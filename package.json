@@ -1,0 +1,12 @@
+{
+  "name": "nodejs-web-server",
+  "version": "1.0.0",
+  "description": "A simple Node.js web server",
+  "main": "index.js",
+  "scripts": {
+    "dev": "node index.js"
+  },
+  "dependencies": {
+    "express": "^4.19.2"
+  }
+}
