@@ -1,15 +1,15 @@
 { pkgs, ... }: {
-  # Add Node.js v20 to your environment
-  packages = [ pkgs.nodejs_20 ];
+  # Add Node.js v20 and pnpm to your environment
+  packages = [ pkgs.nodejs_20 pkgs.pnpm ];
 
   idx = {
     # Install the ESLint extension for code quality
     extensions = [ "dbaeumer.vscode-eslint" ];
 
     workspace = {
-      # Run `npm install` when the workspace is created
+      # Run `pnpm install` when the workspace is created
       onCreate = {
-        npm-install = "npm install";
+        pnpm-install = "pnpm install";
       };
     };
 
@@ -18,7 +18,7 @@
       enable = true;
       previews = {
         web = {
-          command = ["npm" "run" "dev" "--" "--port" "$PORT"];
+          command = ["pnpm" "run" "dev" "--" "--port" "$PORT"];
           manager = "web";
         };
       };
