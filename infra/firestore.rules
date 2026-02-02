@@ -1,0 +1,52 @@
+
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Worlds, scenes, and device profiles are publicly readable if published
+    match /worlds/{worldId} {
+      allow read: if resource.data.status == 'published';
+      allow write: if request.auth.token.admin == true;
+    }
+
+    match /scenes/{sceneId} {
+      allow read: if resource.data.status == 'published';
+      allow write: if request.auth.token.admin == true;
+    }
+
+    match /deviceProfiles/{profileId} {
+      allow read: if true;
+      allow write: if request.auth.token.admin == true;
+    }
+
+    // Entities and anchors are readable if their parent scene is published
+    match /entities/{entityId} {
+      allow read: if get(/databases/$(database)/documents/scenes/$(resource.data.sceneId)).data.status == 'published';
+      allow write: if request.auth.token.admin == true;
+    }
+
+    match /anchors/{anchorId} {
+      allow read: if get(/databases/$(database)/documents/scenes/$(resource.data.sceneId)).data.status == 'published';
+      allow write: if request.auth.token.admin == true;
+    }
+
+    // Assets and builds are admin-only for writes, builds are written by service account
+    match /assets/{assetId} {
+      allow read: if true;
+      allow write: if request.auth.token.admin == true;
+    }
+
+    match /builds/{buildId} {
+      allow read: if true;
+      allow write: if get(/databases/$(database)/documents/assets/$(resource.data.assetId)).data.status == 'building'; // Allow function to write
+    }
+
+    // XR sessions are write-only for clients, admin-readable
+    match /xrSessions/{sessionId} {
+      allow read: if request.auth.token.admin == true;
+      allow create: if true; // Allow clients to create sessions
+      allow update: if request.auth.uid == resource.data.userId; // Allow user to update their own session
+    }
+  }
+}

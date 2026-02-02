@@ -1,0 +1,196 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function isAuthed() { return request.auth != null; }
+    function uid() { return request.auth.uid; }
+    function isOwner(ownerId) { return isAuthed() && ownerId == uid(); }
+
+    // Minimal role system: users/{uid}.roles.spatialAdmin == true
+    function isSpatialAdmin() {
+      return isAuthed()
+        && exists(/databases/$(database)/documents/users/$(uid()))
+        && get(/databases/$(database)/documents/users/$(uid())).data.roles.spatialAdmin == true;
+    }
+
+    function isValidString(x, min, max) { return x is string && x.size() >= min && x.size() <= max; }
+    function isValidBool(x) { return x is bool; }
+    function isValidMap(x) { return x is map; }
+    function isValidList(x) { return x is list; }
+    function isValidTimestamp(x) { return x is timestamp; }
+    function hasOnly(keys) { return request.resource.data.keys().hasOnly(keys); }
+
+    // HARD PRIVACY LINE:
+    // No raw camera frames, no video/audio blobs, no base64 frames.
+    function noRawFrames() {
+      // Disallow obvious fields commonly abused for raw frames.
+      return !("rawFrame" in request.resource.data)
+        && !("rawFrames" in request.resource.data)
+        && !("cameraFrame" in request.resource.data)
+        && !("cameraFrames" in request.resource.data)
+        && !("video" in request.resource.data)
+        && !("audio" in request.resource.data)
+        && !("base64" in request.resource.data)
+        && !("frameBytes" in request.resource.data)
+        && !("imageBytes" in request.resource.data)
+        && !("pixels" in request.resource.data);
+    }
+
+    // USERS (minimal)
+    match /users/{userId} {
+      allow read: if isAuthed() && userId == uid();
+      allow create: if isAuthed() && userId == uid() && noRawFrames();
+      allow update: if isAuthed() && userId == uid() && noRawFrames();
+      allow delete: if false;
+    }
+
+    // ASSETS (published, deterministic)
+    // assets/{assetId} (global, immutable-ish)
+    match /assets/{assetId} {
+      allow read: if true;
+
+      // Only spatial admins can publish assets.
+      allow create: if isSpatialAdmin()
+        && noRawFrames()
+        && isValidString(request.resource.data.type, 2, 32)              // glb, hdr, audio-proxy, etc (no raw)
+        && isValidString(request.resource.data.sha256, 16, 128)
+        && isValidString(request.resource.data.storagePath, 5, 512)
+        && isValidTimestamp(request.resource.data.createdAt)
+        && isValidString(request.resource.data.createdBy, 8, 128);
+
+      // Updates locked down to admin; require version bump + never allow raw frames.
+      allow update: if isSpatialAdmin() && noRawFrames();
+      allow delete: if false;
+    }
+
+    // BUILDS (asset build outputs)
+    match /builds/{buildId} {
+      allow read: if isSpatialAdmin();
+
+      allow create: if isSpatialAdmin()
+        && noRawFrames()
+        && isValidString(request.resource.data.platform, 2, 32)          // webxr, quest, visionos, etc
+        && isValidString(request.resource.data.manifestSha256, 16, 128)
+        && isValidString(request.resource.data.storagePath, 5, 512)
+        && isValidTimestamp(request.resource.data.createdAt)
+        && isValidString(request.resource.data.createdBy, 8, 128);
+
+      allow update: if isSpatialAdmin() && noRawFrames();
+      allow delete: if false;
+    }
+
+    // WORLDS (owned by user; worlds are "places")
+    match /worlds/{worldId} {
+      allow read: if isAuthed() && (
+        resource.data.visibility == "public"
+        || isOwner(resource.data.ownerId)
+        || isSpatialAdmin()
+      );
+
+      // Users can create their own worlds
+      allow create: if isAuthed()
+        && noRawFrames()
+        && request.resource.data.ownerId == uid()
+        && isValidString(request.resource.data.name, 1, 80)
+        && isValidString(request.resource.data.visibility, 3, 16)       // private/public/unlisted
+        && isValidTimestamp(request.resource.data.createdAt);
+
+      // Owners can update core metadata
+      allow update: if isAuthed()
+        && noRawFrames()
+        && isOwner(resource.data.ownerId);
+
+      allow delete: if isSpatialAdmin(); // keep conservative; admin-only deletes
+
+      // scenes subcollection
+      match /scenes/{sceneId} {
+        allow read: if isAuthed() && (
+          get(/databases/$(database)/documents/worlds/$(worldId)).data.visibility == "public"
+          || isOwner(get(/databases/$(database)/documents/worlds/$(worldId)).data.ownerId)
+          || isSpatialAdmin()
+        );
+
+        allow create: if isAuthed()
+          && noRawFrames()
+          && isOwner(get(/databases/$(database)/documents/worlds/$(worldId)).data.ownerId)
+          && isValidString(request.resource.data.name, 1, 80)
+          && isValidTimestamp(request.resource.data.createdAt);
+
+        allow update: if isAuthed()
+          && noRawFrames()
+          && isOwner(get(/databases/$(database)/documents/worlds/$(worldId)).data.ownerId);
+
+        allow delete: if isSpatialAdmin();
+
+        // entities subcollection (anchors/props/portals/npcs/etc)
+        match /entities/{entityId} {
+          allow read: if isAuthed() && (
+            get(/databases/$(database)/documents/worlds/$(worldId)).data.visibility == "public"
+            || isOwner(get(/databases/$(database)/documents/worlds/$(worldId)).data.ownerId)
+            || isSpatialAdmin()
+          );
+
+          allow create, update: if isAuthed()
+            && noRawFrames()
+            && isOwner(get(/databases/$(database)/documents/worlds/$(worldId)).data.ownerId)
+            && isValidString(request.resource.data.kind, 1, 48)          // anchor, portal, prop, room, etc
+            && isValidMap(request.resource.data.transform)               // {p:[x,y,z], r:[x,y,z,w], s:[x,y,z]}
+            && isValidTimestamp(request.resource.data.updatedAt);
+
+          allow delete: if isSpatialAdmin();
+        }
+      }
+
+      // anchors subcollection (AR anchors)
+      // STRICT: anchors store derived transforms + IDs only. No frames, no point clouds unless explicitly enabled.
+      match /anchors/{anchorId} {
+        allow read: if isAuthed()
+          && (isOwner(resource.data.ownerId) || isSpatialAdmin());
+
+        // Anchors require explicit scanning opt-in via sessions.
+        allow create: if isAuthed()
+          && noRawFrames()
+          && request.resource.data.ownerId == uid()
+          && request.resource.data.worldId == worldId
+          && isValidString(request.resource.data.sessionId, 8, 128)
+          && isValidMap(request.resource.data.pose)
+          && isValidTimestamp(request.resource.data.createdAt)
+          && (
+            exists(/databases/$(database)/documents/spatialSessions/$(request.resource.data.sessionId))
+            && get(/databases/$(database)/documents/spatialSessions/$(request.resource.data.sessionId)).data.ownerId == uid()
+            && get(/databases/$(database)/documents/spatialSessions/$(request.resource.data.sessionId)).data.scanOptIn == true
+            && get(/databases/$(database)/documents/spatialSessions/$(request.resource.data.sessionId)).data.status == "active"
+          );
+
+        allow update: if isAuthed()
+          && noRawFrames()
+          && isOwner(resource.data.ownerId);
+
+        allow delete: if isSpatialAdmin();
+      }
+    }
+
+    // Spatial scanning sessions (opt-in)
+    match /spatialSessions/{sessionId} {
+      allow read: if isAuthed() && (isOwner(resource.data.ownerId) || isSpatialAdmin());
+
+      allow create: if isAuthed()
+        && noRawFrames()
+        && request.resource.data.ownerId == uid()
+        && isValidBool(request.resource.data.scanOptIn)
+        && request.resource.data.status == "active"
+        && isValidTimestamp(request.resource.data.createdAt);
+
+      allow update: if isAuthed()
+        && noRawFrames()
+        && isOwner(resource.data.ownerId);
+
+      allow delete: if isSpatialAdmin();
+    }
+
+    // Default deny
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

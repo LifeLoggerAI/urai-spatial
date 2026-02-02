@@ -1,0 +1,384 @@
+{
+  "schemaVersion": "1.0",
+  "sceneId": "scene_memoryroom_v1",
+  "worldId": "world_starworld",
+  "name": "MemoryRoom v1 (Interior, Doors, Exit → StarWorld Dissolve)",
+  "slug": "memoryroom-v1",
+  "description": "Interior memory room scene with door anchors, walk bounds, comfort locomotion, and exit behavior that dissolves back to StarWorld when the user walks out.",
+  "units": "meters",
+  "entrypoint": { "type": "memoryRoom", "entityId": "rig_memory" },
+  "environment": {
+    "skybox": { "type": "none", "intensity": 1.0 },
+    "fog": { "type": "exp2", "density": 0.02 },
+    "postFX": {
+      "bloom": { "enabled": true, "strength": 0.55 },
+      "chromaticAberration": { "enabled": true, "amount": 0.001 }
+    }
+  },
+  "assets": [
+    { "assetId": "asset_room_shell_glb", "kind": "model", "buildRef": "LATEST" },
+    { "assetId": "asset_room_props_glb", "kind": "model", "buildRef": "LATEST" },
+    { "assetId": "asset_character_placeholder_glb", "kind": "model", "buildRef": "LATEST" },
+    { "assetId": "asset_door_left_glb", "kind": "model", "buildRef": "LATEST" },
+    { "assetId": "asset_door_right_glb", "kind": "model", "buildRef": "LATEST" },
+    { "assetId": "asset_exit_portal_glb", "kind": "model", "buildRef": "LATEST" }
+  ],
+  "entities": [
+    {
+      "id": "rig_memory",
+      "type": "cameraRig",
+      "name": "Memory Camera Rig",
+      "tags": ["entry", "camera", "comfort"],
+      "transform": {
+        "position": { "x": 0, "y": 1.65, "z": 2.4 },
+        "rotation": { "x": 0, "y": 3.14159, "z": 0 },
+        "scale": { "x": 1, "y": 1, "z": 1 }
+      },
+      "components": [
+        {
+          "kind": "CameraRig",
+          "data": {
+            "mode": "xrUser",
+            "ease": { "position": 0.10, "rotation": 0.07 },
+            "fov": 62,
+            "near": 0.05,
+            "far": 250,
+            "comfort": {
+              "snapTurn": { "enabled": true, "degrees": 30 },
+              "vignette": { "enabled": true, "strength": 0.35 },
+              "teleport": { "enabled": true },
+              "smoothLocomotion": { "enabled": false }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "light_memory_key",
+      "type": "light",
+      "name": "Memory Key Light",
+      "transform": {
+        "position": { "x": 1.6, "y": 2.8, "z": 1.4 },
+        "rotation": { "x": -0.9, "y": -0.4, "z": 0 },
+        "scale": { "x": 1, "y": 1, "z": 1 }
+      },
+      "components": [
+        {
+          "kind": "Light",
+          "data": {
+            "lightType": "spot",
+            "intensity": 1.1,
+            "castShadows": true,
+            "spot": { "angle": 0.75, "penumbra": 0.35, "distance": 10 }
+          }
+        }
+      ]
+    },
+    {
+      "id": "light_memory_fill",
+      "type": "light",
+      "name": "Memory Fill Light",
+      "transform": {
+        "position": { "x": -1.8, "y": 2.3, "z": 0.8 },
+        "rotation": { "x": -0.6, "y": 0.6, "z": 0 },
+        "scale": { "x": 1, "y": 1, "z": 1 }
+      },
+      "components": [
+        {
+          "kind": "Light",
+          "data": { "lightType": "point", "intensity": 0.65, "castShadows": false }
+        }
+      ]
+    },
+    {
+      "id": "room_shell",
+      "type": "room",
+      "name": "Room Shell",
+      "tags": ["room", "geometry"],
+      "transform": {
+        "position": { "x": 0, "y": 0, "z": 0 },
+        "rotation": { "x": 0, "y": 0, "z": 0 },
+        "scale": { "x": 1, "y": 1, "z": 1 }
+      },
+      "components": [
+        {
+          "kind": "ModelRenderer",
+          "data": {
+            "assetId": "asset_room_shell_glb",
+            "useBuild": "LATEST",
+            "receiveShadows": true,
+            "castShadows": true
+          }
+        }
+      ]
+    },
+    {
+      "id": "room_props",
+      "type": "prop",
+      "name": "Room Props",
+      "tags": ["room", "props"],
+      "transform": {
+        "position": { "x": 0, "y": 0, "z": 0 },
+        "rotation": { "x": 0, "y": 0, "z": 0 },
+        "scale": { "x": 1, "y": 1, "z": 1 }
+      },
+      "components": [
+        {
+          "kind": "ModelRenderer",
+          "data": {
+            "assetId": "asset_room_props_glb",
+            "useBuild": "LATEST",
+            "receiveShadows": true,
+            "castShadows": true
+          }
+        }
+      ]
+    },
+
+    {
+      "id": "anchor_door_left",
+      "type": "anchorProxy",
+      "name": "Door Left Anchor",
+      "tags": ["anchor", "door_left"],
+      "transform": {
+        "position": { "x": -2.1, "y": 0, "z": -1.4 },
+        "rotation": { "x": 0, "y": 1.5708, "z": 0 },
+        "scale": { "x": 1, "y": 1, "z": 1 }
+      },
+      "components": [
+        {
+          "kind": "ARAnchorBinding",
+          "data": { "type": "virtual", "anchorKey": "door_left" }
+        }
+      ]
+    },
+    {
+      "id": "door_left",
+      "type": "prop",
+      "name": "Door Left",
+      "tags": ["door", "left"],
+      "transform": {
+        "position": { "x": -2.1, "y": 0, "z": -1.4 },
+        "rotation": { "x": 0, "y": 1.5708, "z": 0 },
+        "scale": { "x": 1, "y": 1, "z": 1 }
+      },
+      "components": [
+        {
+          "kind": "ModelRenderer",
+          "data": {
+            "assetId": "asset_door_left_glb",
+            "useBuild": "LATEST",
+            "receiveShadows": true,
+            "castShadows": true
+          }
+        },
+        {
+          "kind": "NarrationCue",
+          "data": {
+            "key": "narration.door_left_presence",
+            "trigger": "proximity",
+            "radius": 1.1,
+            "cooldownMs": 12000
+          }
+        }
+      ]
+    },
+
+    {
+      "id": "anchor_door_right",
+      "type": "anchorProxy",
+      "name": "Door Right Anchor",
+      "tags": ["anchor", "door_right"],
+      "transform": {
+        "position": { "x": 2.1, "y": 0, "z": -1.4 },
+        "rotation": { "x": 0, "y": -1.5708, "z": 0 },
+        "scale": { "x": 1, "y": 1, "z": 1 }
+      },
+      "components": [
+        {
+          "kind": "ARAnchorBinding",
+          "data": { "type": "virtual", "anchorKey": "door_right" }
+        }
+      ]
+    },
+    {
+      "id": "door_right",
+      "type": "prop",
+      "name": "Door Right",
+      "tags": ["door", "right"],
+      "transform": {
+        "position": { "x": 2.1, "y": 0, "z": -1.4 },
+        "rotation": { "x": 0, "y": -1.5708, "z": 0 },
+        "scale": { "x": 1, "y": 1, "z": 1 }
+      },
+      "components": [
+        {
+          "kind": "ModelRenderer",
+          "data": {
+            "assetId": "asset_door_right_glb",
+            "useBuild": "LATEST",
+            "receiveShadows": true,
+            "castShadows": true
+          }
+        },
+        {
+          "kind": "NarrationCue",
+          "data": {
+            "key": "narration.door_right_presence",
+            "trigger": "proximity",
+            "radius": 1.1,
+            "cooldownMs": 12000
+          }
+        }
+      ]
+    },
+
+    {
+      "id": "cast_char_01",
+      "type": "character",
+      "name": "Character 01",
+      "tags": ["cast", "placeholder"],
+      "transform": {
+        "position": { "x": -2.1, "y": 0, "z": -1.05 },
+        "rotation": { "x": 0, "y": 1.5708, "z": 0 },
+        "scale": { "x": 1, "y": 1, "z": 1 }
+      },
+      "components": [
+        {
+          "kind": "ModelRenderer",
+          "data": { "assetId": "asset_character_placeholder_glb", "useBuild": "LATEST" }
+        },
+        {
+          "kind": "NarrationCue",
+          "data": {
+            "key": "narration.someone_enters_left",
+            "trigger": "onSpawn",
+            "cooldownMs": 999999
+          }
+        }
+      ]
+    },
+    {
+      "id": "cast_char_02",
+      "type": "character",
+      "name": "Character 02",
+      "tags": ["cast", "placeholder"],
+      "transform": {
+        "position": { "x": 2.1, "y": 0, "z": -1.05 },
+        "rotation": { "x": 0, "y": -1.5708, "z": 0 },
+        "scale": { "x": 1, "y": 1, "z": 1 }
+      },
+      "components": [
+        {
+          "kind": "ModelRenderer",
+          "data": { "assetId": "asset_character_placeholder_glb", "useBuild": "LATEST" }
+        },
+        {
+          "kind": "NarrationCue",
+          "data": {
+            "key": "narration.someone_enters_right",
+            "trigger": "onSpawn",
+            "cooldownMs": 999999
+          }
+        }
+      ]
+    },
+
+    {
+      "id": "walk_bounds",
+      "type": "prop",
+      "name": "Walk Bounds",
+      "tags": ["nav", "bounds"],
+      "transform": {
+        "position": { "x": 0, "y": 0, "z": 0.1 },
+        "rotation": { "x": 0, "y": 0, "z": 0 },
+        "scale": { "x": 1, "y": 1, "z": 1 }
+      },
+      "components": [
+        {
+          "kind": "TriggerZone",
+          "data": {
+            "shape": "box",
+            "extents": { "x": 2.2, "y": 2.2, "z": 2.0 },
+            "purpose": "walkBounds",
+            "onLeave": [{ "event": "comfort.recenter", "targetEntityId": "rig_memory" }]
+          }
+        }
+      ]
+    },
+
+    {
+      "id": "exit_portal",
+      "type": "portal",
+      "name": "Exit Portal",
+      "tags": ["exit", "portal", "comfort"],
+      "transform": {
+        "position": { "x": 0, "y": 1.1, "z": 2.3 },
+        "rotation": { "x": 0, "y": 3.14159, "z": 0 },
+        "scale": { "x": 0.9, "y": 0.9, "z": 0.9 }
+      },
+      "components": [
+        {
+          "kind": "ModelRenderer",
+          "data": {
+            "assetId": "asset_exit_portal_glb",
+            "useBuild": "LATEST",
+            "receiveShadows": false,
+            "castShadows": false
+          }
+        },
+        {
+          "kind": "Portal",
+          "data": {
+            "targetScene": "scene_starworld_v1",
+            "transition": "dissolveToStars",
+            "gateRadius": 0.9
+          }
+        },
+        {
+          "kind": "Interactable",
+          "data": { "interaction": "tapOrGaze", "hint": "Leave Memory" }
+        }
+      ]
+    },
+
+    {
+      "id": "exit_trigger",
+      "type": "prop",
+      "name": "Exit Walk-Out Trigger",
+      "tags": ["exit", "trigger"],
+      "transform": {
+        "position": { "x": 0, "y": 0.9, "z": 2.85 },
+        "rotation": { "x": 0, "y": 0, "z": 0 },
+        "scale": { "x": 1, "y": 1, "z": 1 }
+      },
+      "components": [
+        {
+          "kind": "TriggerZone",
+          "data": {
+            "shape": "box",
+            "extents": { "x": 2.0, "y": 2.2, "z": 0.35 },
+            "onEnter": [
+              {
+                "event": "scene.exit",
+                "data": {
+                  "toScene": "scene_starworld_v1",
+                  "transition": "dissolveToStars",
+                  "reason": "walkOut"
+                }
+              }
+            ]
+          }
+        },
+        {
+          "kind": "NarrationCue",
+          "data": {
+            "key": "narration.leaving_memory",
+            "trigger": "onEnterZone",
+            "cooldownMs": 999999
+          }
+        }
+      ]
+    }
+  ]
+}

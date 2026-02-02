@@ -1,15 +1,23 @@
 { pkgs, ... }: {
-  # Add Node.js v20 and pnpm to your environment
-  packages = [ pkgs.nodejs_20 pkgs.pnpm ];
+  # Use Node.js v20
+  packages = [ pkgs.nodejs_20 pkgs.typescript ];
 
   idx = {
-    # Install the ESLint extension for code quality
-    extensions = [ "dbaeumer.vscode-eslint" ];
+    # Recommended extensions for this project
+    extensions = [
+      "dbaeumer.vscode-eslint" # Linter for code quality
+      "mhutchie.git-graph"   # Visualize Git history
+      "eamodio.gitlens"      # Advanced Git features
+    ];
 
     workspace = {
-      # Run `pnpm install` when the workspace is created
+      # Install dependencies for all packages on workspace creation
       onCreate = {
-        pnpm-install = "pnpm install";
+        install-all-deps = "npm --prefix functions install && npm --prefix apps/spatial-web install && npm --prefix apps/spatial-admin install";
+      };
+      # Automatically start the development server for the web app
+      onStart = {
+        dev-server = "npm --prefix apps/spatial-web run dev";
       };
     };
 
@@ -18,7 +26,7 @@
       enable = true;
       previews = {
         web = {
-          command = ["pnpm" "run" "dev" "--" "--port" "$PORT"];
+          command = ["npm" "--prefix" "apps/spatial-web" "run" "dev" "--" "--port" "$PORT"];
           manager = "web";
         };
       };

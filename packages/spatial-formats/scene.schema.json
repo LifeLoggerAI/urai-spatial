@@ -1,0 +1,142 @@
+
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://urai.app/schemas/urai-spatial-scene.schema.json",
+  "title": "URAI Spatial Scene",
+  "type": "object",
+  "required": ["schemaVersion", "sceneId", "worldId", "name", "units", "entities"],
+  "properties": {
+    "schemaVersion": { "type": "string", "pattern": "^1\\." },
+    "sceneId": { "type": "string", "minLength": 3 },
+    "worldId": { "type": "string", "minLength": 3 },
+    "name": { "type": "string", "minLength": 1 },
+    "slug": { "type": "string" },
+    "description": { "type": "string" },
+    "units": { "type": "string", "enum": ["meters"] },
+    "time": {
+      "type": "object",
+      "properties": {
+        "defaultTimescale": { "type": "number", "default": 1.0 },
+        "fixedDelta": { "type": "number", "default": 0.0166667 }
+      },
+      "additionalProperties": false
+    },
+    "environment": {
+      "type": "object",
+      "properties": {
+        "skybox": {
+          "type": "object",
+          "properties": {
+            "type": { "type": "string", "enum": ["hdr", "procedural", "none"] },
+            "assetRef": { "type": "string" },
+            "intensity": { "type": "number", "default": 1.0 }
+          },
+          "additionalProperties": false
+        },
+        "fog": {
+          "type": "object",
+          "properties": {
+            "type": { "type": "string", "enum": ["none", "linear", "exp2"] },
+            "density": { "type": "number" },
+            "near": { "type": "number" },
+            "far": { "type": "number" }
+          },
+          "additionalProperties": false
+        },
+        "postFX": {
+          "type": "object",
+          "properties": {
+            "bloom": { "type": "object", "properties": { "enabled": { "type": "boolean" }, "strength": { "type": "number" } }, "additionalProperties": false },
+            "chromaticAberration": { "type": "object", "properties": { "enabled": { "type": "boolean" }, "amount": { "type": "number" } }, "additionalProperties": false }
+          },
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false
+    },
+    "entrypoint": {
+      "type": "object",
+      "required": ["type"],
+      "properties": {
+        "type": { "type": "string", "enum": ["starworld", "memoryRoom", "portal"] },
+        "entityId": { "type": "string" }
+      },
+      "additionalProperties": false
+    },
+    "assets": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["assetId", "kind"],
+        "properties": {
+          "assetId": { "type": "string" },
+          "kind": { "type": "string", "enum": ["model", "texture", "audio", "hdr"] },
+          "uri": { "type": "string" },
+          "buildRef": { "type": "string" }
+        },
+        "additionalProperties": false
+      }
+    },
+    "entities": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/entity" }
+    }
+  },
+  "additionalProperties": false,
+  "$defs": {
+    "vec3": {
+      "type": "object",
+      "required": ["x", "y", "z"],
+      "properties": { "x": { "type": "number" }, "y": { "type": "number" }, "z": { "type": "number" } },
+      "additionalProperties": false
+    },
+    "transform": {
+      "type": "object",
+      "properties": {
+        "position": { "$ref": "#/$defs/vec3" },
+        "rotation": { "$ref": "#/$defs/vec3", "description": "Euler radians" },
+        "scale": { "$ref": "#/$defs/vec3" }
+      },
+      "additionalProperties": false
+    },
+    "entity": {
+      "type": "object",
+      "required": ["id", "type", "name", "transform", "components"],
+      "properties": {
+        "id": { "type": "string" },
+        "type": { "type": "string", "enum": ["portal", "room", "prop", "character", "light", "cameraRig", "anchorProxy"] },
+        "name": { "type": "string" },
+        "tags": { "type": "array", "items": { "type": "string" } },
+        "transform": { "$ref": "#/$defs/transform" },
+        "components": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/component" }
+        }
+      },
+      "additionalProperties": false
+    },
+    "component": {
+      "type": "object",
+      "required": ["kind"],
+      "properties": {
+        "kind": {
+          "type": "string",
+          "enum": [
+            "ModelRenderer",
+            "Light",
+            "Portal",
+            "TriggerZone",
+            "CameraRig",
+            "Interactable",
+            "NarrationCue",
+            "MemoryRoomAssembler",
+            "ARAnchorBinding"
+          ]
+        },
+        "data": { "type": "object" }
+      },
+      "additionalProperties": false
+    }
+  }
+}

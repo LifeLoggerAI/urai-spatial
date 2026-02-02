@@ -1,0 +1,202 @@
+lockfileVersion: 5.4
+
+specifiers:
+  '@playwright/test': ^1.42.0
+  '@react-three/drei': ^9.110.0
+  '@react-three/fiber': ^8.16.8
+  '@react-three/xr': ^6.2.5
+  '@types/node': ^20.14.9
+  '@types/react': ^18.3.3
+  '@types/react-dom': ^18.3.0
+  '@types/three': ^0.164.0
+  eslint: ^8.57.0
+  eslint-config-next: 14.2.4
+  firebase: ^10.8.0
+  next: 14.2.4
+  react: 18.3.1
+  react-dom: 18.3.1
+  three: ^0.164.0
+  typescript: ^5.4.5
+
+dependencies:
+  '@react-three/drei': 9.114.0_@react-three_fiber@8.17.0_react-dom@18.3.1_react@18.3.1_three@0.166.1
+  '@react-three/fiber': 8.17.0_react-dom@18.3.1_react@18.3.1_three@0.166.1
+  '@react-three/xr': 6.2.5_@react-three_fiber@8.17.0_react-dom@18.3.1_react@18.3.1_three@0.166.1
+  firebase: 10.8.0
+  next: 14.2.4_react-dom@18.3.1_react@18.3.1
+  react: 18.3.1
+  react-dom: 18.3.1_react@18.3.1
+  three: 0.166.1
+
+devDependencies:
+  '@playwright/test': 1.42.1
+  '@types/node': 20.14.9
+  '@types/react': 18.3.3
+  '@types/react-dom': 18.3.0
+  '@types/three': 0.164.0
+  eslint: 8.57.0
+  eslint-config-next: 14.2.4_@babel_core@7.24.7_eslint@8.57.0
+  typescript: 5.4.5
+
+packages:
+
+  /@ampproject/remapping/2.3.0:
+    resolution: {integrity: sha512-3zOd2oXnBlp56a23xk1s55+bS6a+25f/a/fl2/Ie/4yv/S23j8zvL/v24gWf5zT3dCHsbe3Q74H7mMyv3IF15g==}
+    engines: {node: '>=12.20.0'}
+    dependencies:
+      '@jridgewell/gen-mapping': 0.3.5
+      '@jridgewell/trace-mapping': 0.3.25
+    dev: false
+
+  /@babel/runtime/7.24.7:
+    resolution: {integrity: sha512-QoMuB6w6Hn3zM5YMnGPPxjcXLm1L+sYvBo/qDftg/6j52PAvP3hLh4K2wz8O8e//o/Jd6p/6R7Vj+yzh+6/XkA==}
+    engines: {node: '>=6.9.0'}
+    dependencies:
+      regenerator-runtime: 0.14.1
+    dev: true
+
+  /@jridgewell/gen-mapping/0.3.5:
+    resolution: {integrity: sha512-c2y+2T/I/kcb10KzAkQv233y0+3iS5n9jM9X3dkgwN8c13aN8b3NR29++zab8bXq2aNrq+7YKnkO4o33BfG0gQ==}
+    engines: {node: '>=12.20.0'}
+    dependencies:
+      '@jridgewell/set-array': 1.2.1
+      '@jridgewell/sourcemap-codec': 1.4.15
+    dev: false
+
+  /@jridgewell/resolve-uri/3.1.2:
+    resolution: {integrity: sha512-b2uF7lV1DP/u22Lh22Xkuyz4JEMLRSyB4v2D/p8lka82a2O1/msDbt/xT2i6+G2yLg5d/2VbJvQxqp5s1x5yHQ==}
+    engines: {node: '>=10.0.0'}
+    dev: false
+
+  /@jridgewell/set-array/1.2.1:
+    resolution: {integrity: sha512-E8wL31epqGZbKk22Sj3gADc63rSJf4Sj2pX2CBdF8mIFD43nFEtA1T2yv1d3+j0o/y1a2mG2mNvhO0yZJgB3Qw==}
+    engines: {node: '>=12.20.0'}
+    dev: false
+
+  /@jridgewell/sourcemap-codec/1.4.15:
+    resolution: {integrity: sha512-eF2r9lDVTp2ZOOyXoOAis56eO64o32Q1B1fX2is2S4IAi4sZj5i0+uA+8A+uN24/QW3zZ5LwBrszKrmnVP2mDA==}
+    dev: false
+
+  /@jridgewell/trace-mapping/0.3.25:
+    resolution: {integrity: sha512-vNk62f2wG2282vAdx8+92wpogJ4Q3v9xixvO8i+eN25pvP42N2hCHd4i2f3AAf3A3cW7e+43M4a2KsoU3bn3yg==}
+    dependencies:
+      '@jridgewell/resolve-uri': 3.1.2
+      '@jridgewell/sourcemap-codec': 1.4.15
+    dev: false
+
+  /@playwright/test/1.42.1:
+    resolution: {integrity: sha512-Y3U7EaH6ALlSgH/V7PH0Q4ZQLp2b9FmF3kLKVjEKIn07cMKMxFhBGoH2u3f+oNQB4wS5r1eT4hL25A4b42Jikw==}
+    engines: {node: '>=18'}
+    hasBin: true
+    dependencies:
+      '@types/node': 20.14.9
+      fsevents: 2.3.3
+      playwright-core: 1.42.1
+    optionalDependencies:
+      fsevents: 2.3.3
+    dev: true
+
+  /@react-three/drei/9.114.0_@react-three_fiber@8.17.0_react-dom@18.3.1_react@18.3.1_three@0.166.1:
+    resolution: {integrity: sha512-TmjqU1/j1bW0Q3Bde5dtrdGTLs4gD2v0yA3cWqCpbH/NlBA2Uv29k6e1H+lY9/t2XG7yU3631NflrYVRA0Jd3g==}
+    peerDependencies:
+      '@react-three/fiber': '>=8.0.0'
+      react: '>=18.0.0'
+      react-dom: '>=18.0.0'
+      three: '>=0.137.0'
+    dependencies:
+      '@react-three/fiber': 8.17.0_react-dom@18.3.1_react@18.3.1_three@0.166.1
+      react: 18.3.1
+      react-dom: 18.3.1_react@18.3.1
+      three: 0.166.1
+    dev: false
+
+  /@react-three/fiber/8.17.0_react-dom@18.3.1_react@18.3.1_three@0.166.1:
+    resolution: {integrity: sha512-A0n6hFlv16hsoLBb2o68/32yWowtT/+gGg/D5Cg0Ol3pTwdOndCFb/bExPjA1uWJ2lW0Ff9D4qgR6t2rUvQGcA==}
+    peerDependencies:
+      react: '>=18.0.0'
+      react-dom: '>=18.0.0'
+      three: '>=0.137.0'
+    dependencies:
+      react: 18.3.1
+      react-dom: 18.3.1_react@18.3.1
+      three: 0.166.1
+    dev: false
+
+  /@react-three/xr/6.2.5_@react-three_fiber@8.17.0_react-dom@18.3.1_react@18.3.1_three@0.166.1:
+    resolution: {integrity: sha512-Ua8uN+T1q7lT+8oGfFw46AQL2V9lgygLrsM2QyKusK0b9ZlI6A92VbHlH8VIOICaN3X93+u7dO0yW3p7z4c94g==}
+    peerDependencies:
+      '@react-three/fiber': '>=8.0.0'
+      react: '>=18.0.0'
+      react-dom: '>=18.0.0'
+      three: '>=0.137.0'
+    dependencies:
+      '@react-three/drei': 9.114.0_@react-three_fiber@8.17.0_react-dom@18.3.1_react@18.3.1_three@0.166.1
+      '@react-three/fiber': 8.17.0_react-dom@18.3.1_react@18.3.1_three@0.166.1
+      react: 18.3.1
+      react-dom: 18.3.1_react@18.3.1
+      three: 0.166.1
+      three-mesh-ui: 8.0.2_three@0.166.1
+    dev: false
+
+  /@types/node/20.14.9:
+    resolution: {integrity: sha512-0/m+h/3/A3zTd2lTC13I75gAS3n4e2N-4e+b423ag1k250sPfb6Gv3x1uEDr4Gz/A4M8OaC76W92wzL+2eT/yw==}
+    dependencies:
+      undici-types: 5.26.5
+    dev: true
+
+  /@types/react/18.3.3:
+    resolution: {integrity: sha512-hti/R0pS0q1/c4B7cGFzOEa8+aRS42A2QItjB0e4i62Y3e3R1n83XF2pAlu8X2x9jF0k2a/H6g2/v81M143cw==}
+    dependencies:
+      '@types/prop-types': 15.7.12
+      csstype: 3.0.11
+    dev: true
+
+  /@types/scheduler/0.16.8:
+    resolution: {integrity: sha512-Ea898xSD2LNW1p/3lDq5W4s38x/R3u6yTO9QyLIBK356s5i45QGHa1Yh5wLd2tM88mR/YwdgJqB3s39fXwT59w==}
+    dev: false
+
+  /@types/three/0.164.0:
+    resolution: {integrity: sha512-Y1YcO5rA3c20wA0e6JvqgZ6h4ST0SvhLDT8q+sBv9r7tkoA8gucYPF0tqf28l2iYvOMUqPZ5uV03a2r30nUvYg==}
+    dev: true
+
+  /next/14.2.4_react-dom@18.3.1_react@18.3.1:
+    resolution: {integrity: sha512-70Wf24vF8lR2S2y1fA2gWc3zP2T9fuc37Hh3IqLdZ2JzchW+vKXRve53Vd2eKx3tSB7UtmB5yG0LpYv4UqHgmA==}
+    peerDependencies:
+      react: ^18.2.0
+      react-dom: ^18.2.0
+    peerDependenciesMeta:
+      react:
+        optional: true
+      react-dom:
+        optional: true
+    dependencies:
+      react: 18.3.1
+      react-dom: 18.3.1_react@18.3.1
+    transitivePeerDependencies:
+      - supports-color
+    dev: false
+
+  /react-dom/18.3.1_react@18.3.1:
+    resolution: {integrity: sha512-534L2ZgIe29r9x/3KI6M5b8n2hGhs4Dm8d421M2v2eO8g8n4iBD8T2gG0npz3s/2aU934UWX3i428y1JtSyfA==}
+    peerDependencies:
+      react: ^18.3.1
+    dependencies:
+      react: 18.3.1
+      loose-envify: 1.4.0
+      scheduler: 0.23.2
+    dev: false
+
+  /three-mesh-ui/8.0.2_three@0.166.1:
+    resolution: {integrity: sha512-gH7T3/49+x9wQ2vW84j0I7aP4Nn+s2pP/XQGkB10r3pYkHBC/f4l3B+rN7b+1sC33n3pP8vW9mYVzA==}
+    peerDependencies:
+      three: '>=0.147.0'
+    dependencies:
+      '@types/three': 0.164.0
+      three: 0.166.1
+    dev: false
+
+  /typescript/5.4.5:
+    resolution: {integrity: sha512-vcI4UpRgg81oXqd89deXwTsVzM4newUdFWdE0xGlMPAZP+jTaw+IK3TUBHqg5LAuEkSPNsOkH6IZGQTrQytX6g==}
+    engines: {node: '>=14.17'}
+    hasBin: true
+    dev: true
