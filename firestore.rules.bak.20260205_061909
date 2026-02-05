@@ -1,0 +1,29 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{db}/documents {
+
+    function isAdmin() {
+      return request.auth != null &&
+        request.auth.token.email.matches('.*@urai.app');
+    }
+
+    match /spatialScenes/{id} {
+      allow read: if resource.data.type == 'lifeMap';
+      allow write: if isAdmin();
+    }
+
+    match /spatialAnchors/{id} {
+      allow read: if resource.data.visibility == 'publicPreview';
+      allow write: if isAdmin();
+    }
+
+    match /spatialSessions/{id} {
+      allow read, write: if request.auth.uid == resource.data.uid;
+    }
+
+    match /spatialAuditLogs/{id} {
+      allow write: if request.time < timestamp.date(2100,1,1);
+      allow read: if isAdmin();
+    }
+  }
+}
