@@ -1,6 +1,6 @@
 { pkgs, ... }: {
   # Use Node.js v20
-  packages = [ pkgs.nodejs_20 pkgs.typescript ];
+  packages = [ pkgs.nodejs_20 pkgs.typescript pkgs.pnpm ];
 
   idx = {
     # Recommended extensions for this project
