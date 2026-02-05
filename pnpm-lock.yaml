@@ -49,7 +49,7 @@ importers:
         specifier: ^0.154.0
         version: 0.154.0
       eslint:
-        specifier: ^8
+        specifier: 8.57.1
         version: 8.57.1
       eslint-config-next:
         specifier: 14.2.3
