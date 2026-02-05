@@ -10,7 +10,7 @@ if ! command -v npx --yes pnpm@8.15.9 &> /dev/null; then
     echo "corepack enable skipped (read-only fs)"
 fi
 
-npx --yes pnpm@8.15.9 install --no-optional
+npx --yes pnpm@8.15.9 install --no-optional --no-frozen-lockfile
 npx --yes pnpm@8.15.9 lint
 npx --yes pnpm@8.15.9 typecheck
 npx --yes pnpm@8.15.9 build
