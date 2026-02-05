@@ -1,27 +1,22 @@
 'use client';
 
-import { PerspectiveCamera } from '@react-three/drei';
 import { useThree } from '@react-three/fiber';
 import { useEffect } from 'react';
+import { Vector3 } from 'three';
 
-export default function CameraRig({ preset }: { preset: 'OVERVIEW' | 'FOCUS' | 'ORBIT' }) {
+const presets = {
+  OVERVIEW: new Vector3(0, 0, 10),
+  FOCUS: new Vector3(0, 0, 5),
+  ORBIT: new Vector3(5, 5, 5),
+};
+
+export default function CameraRig({ preset }: { preset: keyof typeof presets }) {
   const { camera } = useThree();
 
   useEffect(() => {
-    switch (preset) {
-      case 'OVERVIEW':
-        camera.position.set(0, 5, 10);
-        camera.lookAt(0, 0, 0);
-        break;
-      case 'FOCUS':
-        camera.position.set(0, 0, 5);
-        camera.lookAt(0, 0, 0);
-        break;
-      case 'ORBIT':
-        // Orbit controls logic would be implemented here
-        break;
-    }
+    camera.position.set(presets[preset].x, presets[preset].y, presets[preset].z);
+    camera.lookAt(0, 0, 0);
   }, [preset, camera]);
 
-  return <PerspectiveCamera makeDefault />;
+  return null;
 }

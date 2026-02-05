@@ -1,21 +1,18 @@
 'use client';
 
-import { Sphere } from '@react-three/drei';
 import { useState } from 'react';
 
-export default function AnchorNode({ position, label }: { position: [number, number, number], label: string }) {
-  const [hovered, setHover] = useState(false);
-  const [active, setActive] = useState(false);
+export default function AnchorNode({ position }: { position: [number, number, number] }) {
+  const [isHovered, setIsHovered] = useState(false);
 
   return (
-    <Sphere
+    <mesh
       position={position}
-      onClick={() => setActive(!active)}
-      onPointerOver={() => setHover(true)}
-      onPointerOut={() => setHover(false)}
-      scale={active ? 1.5 : 1}
+      onPointerEnter={() => setIsHovered(true)}
+      onPointerLeave={() => setIsHovered(false)}
     >
-      <meshStandardMaterial color={hovered ? 'hotpink' : 'orange'} />
-    </Sphere>
+      <sphereGeometry args={[0.2, 16, 16]} />
+      <meshBasicMaterial color={isHovered ? 'hotpink' : 'white'} />
+    </mesh>
   );
 }

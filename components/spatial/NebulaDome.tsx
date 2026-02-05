@@ -1,14 +1,42 @@
 'use client';
 
-import { Sphere } from '@react-three/drei';
-import { useLoader } from '@react-three/fiber';
-import * as THREE from 'three';
+import { useMemo } from 'react';
+import { BackSide, Color, ShaderMaterial } from 'three';
+
+const vertexShader = `
+  varying vec2 vUv;
+  void main() {
+    vUv = uv;
+    gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+  }
+`;
+
+const fragmentShader = `
+  varying vec2 vUv;
+  uniform vec3 color1;
+  uniform vec3 color2;
+  void main() {
+    gl_FragColor = vec4(mix(color1, color2, vUv.y), 1.0);
+  }
+`;
 
 export default function NebulaDome() {
-  const texture = useLoader(THREE.TextureLoader, 'https://cdn.jsdelivr.net/gh/mrdoob/three.js/examples/textures/milkyway.jpg');
+  const material = useMemo(() => {
+    return new ShaderMaterial({
+      uniforms: {
+        color1: { value: new Color('#0a0a2a') },
+        color2: { value: new Color('#1a1a3a') },
+      },
+      vertexShader,
+      fragmentShader,
+      side: BackSide,
+    });
+  }, []);
+
   return (
-    <Sphere args={[200, 32, 32]}>
-      <meshBasicMaterial map={texture} side={THREE.BackSide} />
-    </Sphere>
+    <mesh>
+      <sphereGeometry args={[500, 32, 32]} />
+      <primitive object={material} />
+    </mesh>
   );
 }

@@ -1,11 +1,14 @@
 'use client';
 
-import { Text } from '@react-three/drei';
+import { Html } from '@react-three/drei';
 
 export default function HUD({ mode }: { mode: string }) {
   return (
-    <Text position={[0, -2, -5]} fontSize={0.2} color="white">
-      Mode: {mode}
-    </Text>
+    <Html position={[-4, 3, -10]}>
+      <div className="text-white bg-black bg-opacity-50 p-2 rounded">
+        <h1 className="text-lg">Mode: {mode}</h1>
+        <p>Controls: Gaze and Pinch</p>
+      </div>
+    </Html>
   );
 }

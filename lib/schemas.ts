@@ -2,39 +2,39 @@ import { Timestamp } from 'firebase/firestore';
 
 export interface SpatialScene {
   name: string;
-  type: "lifeMap" | "ritualAR" | "planetarium" | "companion";
+  type: 'lifeMap' | 'ritualAR' | 'planetarium' | 'companion';
   createdAt: Timestamp;
   updatedAt: Timestamp;
   config: {
     seed: number;
     starDensity: number;
     dome: boolean;
-    cameraPreset: "OVERVIEW" | "FOCUS" | "ORBIT";
-    allowedModes: ("vr" | "ar" | "desktop")[];
+    cameraPreset: 'OVERVIEW' | 'FOCUS' | 'ORBIT';
+    allowedModes: ('xr' | 'desktop')[];
   };
 }
 
 export interface SpatialAnchor {
   sceneId: string;
-  kind: "star" | "ritual" | "dreamSymbol";
+  kind: 'star' | 'ritual' | 'dreamSymbol';
   position: { x: number; y: number; z: number };
   radius: number;
   label: string;
   ref: {
-    targetType: "memory" | "ritual" | "replay" | "dream";
+    targetType: 'memory' | 'ritual' | 'replay' | 'dream';
     targetId: string;
   };
-  visibility: "private" | "publicPreview";
+  visibility: 'private' | 'publicPreview';
 }
 
 export interface SpatialSession {
   uid: string;
   sceneId: string;
   startedAt: Timestamp;
-  endedAt?: Timestamp;
+  endedAt: Timestamp;
   device: {
     xrSupported: boolean;
-    mode: string;
+    mode: 'xr' | 'desktop';
     userAgent: string;
   };
   metrics: {
@@ -46,8 +46,8 @@ export interface SpatialSession {
 
 export interface SpatialAuditLog {
   ts: Timestamp;
-  uid: string | null;
+  uid: string;
   action: string;
   resource: string;
-  meta?: any;
+  meta: any;
 }

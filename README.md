@@ -1,40 +1,45 @@
-# URAI Spatial
+# urai-spatial
 
-URAI Spatial is the spatial/XR projection layer of the URAI system.
-It renders human memory, dreams, rituals, and symbolic life events
-as navigable spatial environments using WebXR and Apple Vision Pro.
+URAI's Spatial/XR layer: WebXR + AR viewer experiences that connect to the URAI core data model.
 
-## What This Is
-- Deterministic memory → space renderer
-- Vision Pro–native spatial experience
-- Read-only projection of URAI Core memory graphs
-- Privacy-first, consent-enforced architecture
+## Getting Started
 
-## Key Experiences
-- Life-Map (VR/WebXR)
-- Dream Planetarium
-- Ritual AR Anchoring
-- Companion Spatial Agent
+1. **Install dependencies:**
 
-## Local Development
+   ```bash
+   pnpm install
+   ```
+
+2. **Run the development server:**
+
+   ```bash
+   pnpm dev
+   ```
+
+3. **Build for production:**
+
+   ```bash
+   pnpm build
+   ```
+
+4. **Run tests:**
+
+   ```bash
+   pnpm test
+   ```
+
+## Deployment
+
+To deploy the project to Firebase, run the following command:
+
 ```bash
-corepack enable
-pnpm install
-pnpm dev
+./scripts/ship_urai_spatial.sh
 ```
 
-## Ship
-```bash
-bash scripts/ship_urai_spatial.sh
-```
+## Verification
 
-## Verify
-```bash
-bash scripts/verify_urai_spatial.sh
-```
+To verify the deployment, run the following command:
 
-## Principles
-- No feeds
-- No menus
-- No behavioral tracking
-- Memory belongs to the user
+```bash
+./scripts/verify_urai_spatial.sh
+```
