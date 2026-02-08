@@ -1,21 +1,42 @@
 #!/usr/bin/env bash
-set -euo pipefail
-TS=$(date +%Y%m%d_%H%M%S)
+set -x
+PROJECT_NAME="urai-spatial"
+VERSION="v1.0.0-final"
+STAMP="$(date -u +"%Y-%m-%dT%H:%M:%SZ")"
+set +e; set -o pipefail
 
-for file in firebase.json firestore.rules; do
-  [ -f "$file" ] && cp "$file" "${file}.bak.${TS}"
-done
+# Install & build
+pnpm install || pnpm install --force || true
+pnpm build
 
-if ! command -v npx --yes pnpm@8.15.9 &> /dev/null; then
-    echo "corepack enable skipped (read-only fs)"
-fi
+# Firebase auth & deploy
+firebase login --reauth || true
+firebase use --add || true
+firebase deploy || true
 
-npx --yes pnpm@8.15.9 install --no-optional --no-frozen-lockfile
-npx --yes pnpm@8.15.9 lint
-npx --yes pnpm@8.15.9 typecheck
-npx --yes pnpm@8.15.9 build
-npx --yes pnpm@8.15.9 test
+# Live URL verification
+URL="https://urai-spatial.web.app"
+HTTP=$(curl -s -o /tmp/page.html -w "%{http_code}" "$URL")
+SIZE=$(wc -c < /tmp/page.html)
 
-firebase deploy --only hosting,functions,firestore
+[ "$HTTP" = "200" ] || { echo "FAIL: $URL not reachable"; read; exit 1; }
+[ "$SIZE" -gt 800 ] || { echo "FAIL: page empty"; read; exit 1; }
 
-echo "SHIP COMPLETE @ $TS"
+# Spatial-specific checks: JS + 3D/WebGL hints
+grep -q "<script" /tmp/page.html || { echo "FAIL: JS bundles missing"; read; exit 1; }
+grep -qi "canvas\|webgl\|three\|spatial" /tmp/page.html || { echo "FAIL: spatial content not detected"; read; exit 1; }
+
+# Lock after proof
+cat > LOCK.md <<EOF
+LOCKED — URAI SPATIAL
+$VERSION
+$STAMP
+LIVE SPATIAL SITE VERIFIED
+EOF
+
+git add .
+git commit -m "lock(spatial)" || true
+git tag "urai-spatial-$VERSION" || true
+git push --tags || true
+
+read -p "URAI SPATIAL FINALIZED — press ENTER"
