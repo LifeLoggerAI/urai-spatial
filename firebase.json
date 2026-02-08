@@ -1,15 +1,21 @@
+
 {
   "hosting": {
-    "source": ".",
+    "source": "apps/spatial-web",
     "ignore": ["firebase.json", "**/.*", "**/node_modules/**"],
     "frameworksBackend": {
       "region": "us-central1"
     }
   },
   "functions": {
-    "source": "functions"
+    "source": "functions",
+    "runtime": "nodejs20"
   },
   "firestore": {
-    "rules": "firestore.rules"
+    "rules": "infra/firestore.rules",
+    "indexes": "infra/indexes.json"
+  },
+  "storage": {
+    "rules": "infra/storage.rules"
   }
 }

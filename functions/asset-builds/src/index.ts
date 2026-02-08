@@ -33,10 +33,9 @@ export const buildAsset = functions.storage.object().onFinalize(async (object) =
   }
   const [_, project, assetId, version] = parts;
   const assetKey = `${project}/${assetId}/${version}`;
-  const jobId = functions.config().execution_id || `local-${Date.now()}`;
 
-  // 2. Set initial job status in Firestore.
-  const jobRef = db.doc(`assetBuildJobs/${jobId}`);
+  // Create a new job document with a unique ID.
+  const jobRef = db.collection('assetBuildJobs').doc();
   await jobRef.set({
       assetKey,
       status: 'running',
@@ -51,6 +50,17 @@ export const buildAsset = functions.storage.object().onFinalize(async (object) =
 
   // 4. Optimize the glTF asset.
   try {
+    const originalHash = createHash('sha256').update(originalContent).digest('hex');
+
+    // Idempotency check: if a build with this hash already exists, skip.
+    const existingBuildQuery = await db.collection('assetBuilds').where('originalHash', '==', originalHash).limit(1).get();
+    if (!existingBuildQuery.empty) {
+        const buildId = existingBuildQuery.docs[0].id;
+        console.log(`Build already exists for hash ${originalHash}: ${buildId}`);
+        await jobRef.update({ status: 'skipped', buildRef: db.doc(`assetBuilds/${buildId}`) });
+        return null;
+    }
+
     const io = new NodeIO()
         .registerExtensions(allExtensions)
         .registerDependencies({ 'draco3d.decoder': await dracowasm.createDecoderModule(), 'draco3d.encoder': await dracowasm.createEncoderModule() });
@@ -69,7 +79,6 @@ export const buildAsset = functions.storage.object().onFinalize(async (object) =
     const optimizedContent = await io.writeBinary(document);
 
     // 5. Calculate hashes and create manifest.
-    const originalHash = createHash('sha256').update(originalContent).digest('hex');
     const buildHash = createHash('sha256').update(optimizedContent).digest('hex');
     const buildOutputPath = `assetBuilds/${assetKey}/${buildHash}`;
     

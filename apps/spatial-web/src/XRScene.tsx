@@ -1,10 +1,85 @@
 "use client";
 
-import React, { useMemo, useRef, useState } from "react";
+import React, { useMemo, useRef, useState, useEffect } from "react";
 import * as THREE from "three";
 import { Canvas, useFrame } from "@react-three/fiber";
-import { Environment, Stars } from "@react-three/drei";
+import { Environment } from "@react-three/drei";
 import { XR, VRButton, ARButton, Controllers, Hands } from "@react-three/xr";
+import Starfield from "./Starfield";
+import Constellation from "./Constellation";
+import Camera from "./Camera";
+import { Memory } from "./lib/types";
+
+const memories: Memory[] = [
+  {
+    id: "1",
+    type: "memory",
+    name: "First Memory",
+    tags: [],
+    transform: { position: { x: -2, y: 1, z: -5 }, rotation: { x: 0, y: 0, z: 0 }, scale: { x: 1, y: 1, z: 1 } },
+    components: [],
+    emotionalWeight: 1.2,
+    recency: 0.9,
+    intensity: 1.5,
+    archetype: "insight",
+    activeRelevance: true,
+    constellationId: "constellation-1",
+  },
+  {
+    id: "2",
+    type: "memory",
+    name: "Second Memory",
+    tags: [],
+    transform: { position: { x: 2, y: 2, z: -6 }, rotation: { x: 0, y: 0, z: 0 }, scale: { x: 1, y: 1, z: 1 } },
+    components: [],
+    emotionalWeight: 0.8,
+    recency: 0.5,
+    intensity: 1.0,
+    archetype: "loss",
+    activeRelevance: false,
+    constellationId: "constellation-1",
+  },
+  {
+    id: "3",
+    type: "memory",
+    name: "Third Memory",
+    tags: [],
+    transform: { position: { x: 0, y: 3, z: -7 }, rotation: { x: 0, y: 0, z: 0 }, scale: { x: 1, y: 1, z: 1 } },
+    components: [],
+    emotionalWeight: 1.5,
+    recency: 0.2,
+    intensity: 2.0,
+    archetype: "love",
+    activeRelevance: true,
+    constellationId: "constellation-2",
+  },
+  {
+    id: "4",
+    type: "memory",
+    name: "Fourth Memory",
+    tags: [],
+    transform: { position: { x: 1, y: 0, z: -4 }, rotation: { x: 0, y: 0, z: 0 }, scale: { x: 1, y: 1, z: 1 } },
+    components: [],
+    emotionalWeight: 1.0,
+    recency: 0.8,
+    intensity: 1.2,
+    archetype: "creation",
+    activeRelevance: false,
+    constellationId: "constellation-2",
+  },
+];
+
+function groupMemoriesByConstellation(memories: Memory[]): { [key: string]: Memory[] } {
+  return memories.reduce((acc, memory) => {
+    if (memory.constellationId) {
+      if (!acc[memory.constellationId]) {
+        acc[memory.constellationId] = [];
+      }
+      acc[memory.constellationId].push(memory);
+    }
+    return acc;
+  }, {} as { [key: string]: Memory[] });
+}
 
 function Room() {
   return (
@@ -81,32 +156,30 @@ function HtmlText({ text }: { text: string }) {
   );
 }
 
-export default function XRScene() {
-  const [mode, setMode] = useState<"none" | "vr" | "ar">("none");
+export default function XRScene({demo, replay, season, interactionMode}) {
+  useEffect(() => {
+    console.log({demo, replay, season, interactionMode});
+  }, [demo, replay, season, interactionMode]);
+
+  const constellations = groupMemoriesByConstellation(memories);
 
   return (
     <div style={{ width: "100%", height: "100%" }}>
-      <div style={{ position: "fixed", left: 12, top: 12, zIndex: 10, display: "flex", gap: 8 }}>
-        <button onClick={() => setMode("vr")}>Enable VR</button>
-        <button onClick={() => setMode("ar")}>Enable AR</button>
-        <button onClick={() => setMode("none")}>Disable XR</button>
-      </div>
-
       <div style={{ position: "fixed", right: 12, top: 12, zIndex: 10, display: "flex", gap: 8 }}>
-        {mode === "vr" ? <VRButton /> : null}
-        {mode === "ar" ? <ARButton /> : null}
+        {interactionMode === "vr" ? <VRButton /> : null}
+        {interactionMode === "ar" ? <ARButton /> : null}
       </div>
 
-      <Canvas
-        dpr={[1, 2]}
-        gl={{ antialias: true, alpha: false }}
-        camera={{ position: [0, 1.4, 2.8], fov: 60 }}
-      >
+      <Canvas dpr={[1, 2]} gl={{ antialias: true, alpha: false }}>
         <XR>
+          <Camera />
           <ambientLight intensity={0.4} />
           <directionalLight position={[4, 6, 2]} intensity={1.0} />
           <Environment preset="night" />
-          <Stars radius={60} depth={40} count={2500} factor={2} fade />
+          <Starfield />
+          {Object.entries(constellations).map(([constellationId, memories]) => (
+            <Constellation key={constellationId} memories={memories} />
+          ))}
           <Room />
           <Portal onEnter={() => console.log("ENTER_PORTAL")} />
           <FloatingLabel text="URAI SPATIAL • PORTAL" />

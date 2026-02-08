@@ -74,3 +74,12 @@ export interface Scene {
   assets: Asset[];
   entities: Entity[];
 }
+
+export type Memory = Entity & {
+  emotionalWeight: number;
+  recency: number;
+  intensity: number;
+  archetype: string;
+  activeRelevance: boolean;
+  constellationId?: string;
+};

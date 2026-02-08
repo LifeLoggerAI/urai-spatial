@@ -4,24 +4,39 @@ rules_version = '2';
 service firebase.storage {
   match /b/{bucket}/o {
 
-    // Published builds are publicly readable
-    match /spatial/assets/builds/{assetId}/{sourceSha256}/{pipelineVersion}/{allPaths=**} {
+    // Helper function to check for admin privileges
+    function isAdmin() {
+      return request.auth.token.admin == true;
+    }
+
+    // Published builds are publicly readable, but only writable by admins
+    match /spatial/assets/builds/{assetId}/{buildId}/{allPaths=**} {
       allow read: if true;
+      allow write: if isAdmin();
     }
 
-    // Source assets are admin-uploadable only
+    // Source assets are private and only accessible by admins
     match /spatial/assets/source/{assetId}/{filename} {
-      allow write: if request.auth.token.admin == true;
+      allow read, write: if isAdmin();
     }
 
-    // Scene JSON mirrors are admin-writable
+    // Scene JSON definitions are publicly readable, but only writable by admins
     match /spatial/scenes/{sceneId}/scene.json {
-      allow write: if request.auth.token.admin == true;
+      allow read: if true;
+      allow write: if isAdmin();
     }
 
-    // Allow anyone to read public assets
+    // General public assets
     match /public/{allPaths=**} {
       allow read: if true;
+    }
+
+    // Allow users to manage their own files, with validation
+    match /users/{userId}/{allPaths=**} {
+      allow read: if request.auth.uid == userId;
+      allow write: if request.auth.uid == userId &&
+                    request.resource.size < 10 * 1024 * 1024 && // 10MB limit
+                    request.resource.contentType.matches('image/.*'); // Only images
     }
   }
 }
