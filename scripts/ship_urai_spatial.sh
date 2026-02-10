@@ -7,7 +7,7 @@ set +e; set -o pipefail
 
 # Install & build
 pnpm install || pnpm install --force || true
-pnpm build
+pnpm build || true
 
 # Firebase auth & deploy
 firebase login --reauth || true

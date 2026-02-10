@@ -1,8 +1,8 @@
 {
   "/_not-found/page": "app/_not-found/page.js",
   "/admin/spatial-console/page": "app/admin/spatial-console/page.js",
-  "/dream-planetarium/page": "app/dream-planetarium/page.js",
   "/companion/page": "app/companion/page.js",
+  "/dream-planetarium/page": "app/dream-planetarium/page.js",
   "/life-map/page": "app/life-map/page.js",
   "/page": "app/page.js",
   "/ritual-ar/page": "app/ritual-ar/page.js"
