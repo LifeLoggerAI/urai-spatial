@@ -1,37 +1,39 @@
+# =========================================================
+# URAI-SPATIAL — IDX DEV ENV (UNLOCKED)
+#
+# Schema: Google IDX v1 (flat previews)
+# Locked: 2026-02
+# Invariants:
+#  - NO nested idx.previews.*
+#  - pnpm workspace only
+#  - explicit ports
+# =========================================================
+
 { pkgs, ... }: {
-  # For reproducibility, it's best to pin the Nixpkgs channel.
+  # Updated from 23.11 to 24.05 to resolve deployment issues
   channel = "stable-24.05";
 
-  # Use Node.js v20
-  packages = [ pkgs.nodejs_20 pkgs.typescript pkgs.pnpm pkgs.firebase-tools ];
-
+  packages = [
+    pkgs.nodejs_20
+    pkgs.firebase-tools # Add Firebase CLI for deployment
+    pkgs.go # Add Go for the backend
+  ];
   idx = {
-    # Recommended extensions for this project
-    extensions = [
-      "dbaeumer.vscode-eslint" # Linter for code quality
-      "mhutchie.git-graph"   # Visualize Git history
-      "eamodio.gitlens"      # Advanced Git features
-    ];
-
+    extensions = [ "dbaeumer.vscode-eslint" ];
     workspace = {
-      # Install dependencies for all packages on workspace creation
       onCreate = {
-        install-all-deps = "pnpm install";
+        npm-install = "pnpm install";
       };
     };
-
-    # Configure web previews for both applications
     previews = {
       enable = true;
       previews = {
-        # Preview for the main WebXR application
-        spatial-web = {
-          command = ["pnpm" "--filter" "spatial-web" "run" "dev" "--" "--port" "$PORT"];
+        web = {
+          command = ["pnpm", "run", "dev", "--workspace=packages/spatial-web", "--", "--port", "$PORT"];
           manager = "web";
         };
-        # Preview for the admin console
-        spatial-admin = {
-          command = ["pnpm" "--filter" "spatial-admin" "start"];
+        backend = {
+          command = ["go", "run", "packages/backend/main.go"];
           manager = "web";
         };
       };

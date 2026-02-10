@@ -1,4 +1,5 @@
 
+
 export interface Vec3 {
   x: number;
   y: number;
@@ -82,4 +83,11 @@ export type Memory = Entity & {
   archetype: string;
   activeRelevance: boolean;
   constellationId?: string;
+
+  // STEP 1: Implicit Narrative Fields
+  resonance?: number; // 0.0–1.0
+  gravity?: number; // 0.0–1.0
+  silenceWeight?: number; // 0.0–1.0
+  orbitBias?: "inward" | "outward" | "drift";
+  lightTemperature?: "cool" | "neutral" | "warm";
 };

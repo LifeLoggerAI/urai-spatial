@@ -1,0 +1,73 @@
+
+[
+  {
+    "id": "1",
+    "archetype": "insight",
+    "transform": {
+      "position": {
+        "x": 5,
+        "y": 5,
+        "z": 5
+      }
+    },
+    "emotionalWeight": 0.8,
+    "intensity": 0.9,
+    "activeRelevance": true
+  },
+  {
+    "id": "2",
+    "archetype": "love",
+    "transform": {
+      "position": {
+        "x": -5,
+        "y": -5,
+        "z": -5
+      }
+    },
+    "emotionalWeight": 0.9,
+    "intensity": 0.8,
+    "activeRelevance": true
+  },
+  {
+    "id": "3",
+    "archetype": "creation",
+    "transform": {
+      "position": {
+        "x": 10,
+        "y": 0,
+        "z": 0
+      }
+    },
+    "emotionalWeight": 0.7,
+    "intensity": 0.7,
+    "activeRelevance": false
+  },
+  {
+    "id": "4",
+    "archetype": "loss",
+    "transform": {
+      "position": {
+        "x": 0,
+        "y": 10,
+        "z": 0
+      }
+    },
+    "emotionalWeight": 0.95,
+    "intensity": 0.9,
+    "activeRelevance": true
+  },
+  {
+    "id": "5",
+    "archetype": "default",
+    "transform": {
+      "position": {
+        "x": 0,
+        "y": 0,
+        "z": 10
+      }
+    },
+    "emotionalWeight": 0.5,
+    "intensity": 0.5,
+    "activeRelevance": false
+  }
+]

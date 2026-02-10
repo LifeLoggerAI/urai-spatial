@@ -1,36 +1,14 @@
 {
-  "name": "urai-spatial",
-  "version": "0.1.0",
+  "name": "urai-spatial-monorepo",
   "private": true,
   "scripts": {
-    "lint": "eslint . --ext .js,.jsx,.ts,.tsx",
-    "lint:fix": "eslint . --ext .js,.jsx,.ts,.tsx --fix",
-    "dev": "next dev",
-    "build": "next build",
-    "start": "next start",
-    "typecheck": "tsc --noEmit",
-    "test": "playwright test"
-  },
-  "dependencies": {
-    "@react-three/drei": "^9.80.0",
-    "@react-three/fiber": "^8.13.0",
-    "@react-three/xr": "^5.5.0",
-    "firebase": "^10.1.0",
-    "next": "14.2.3",
-    "react": "^18.0.0",
-    "react-dom": "^18.0.0",
-    "three": "^0.155.0"
+    "spatial-web": "pnpm --filter spatial-web",
+    "spatial-admin": "pnpm --filter spatial-admin"
   },
   "devDependencies": {
-    "@playwright/test": "^1.36.0",
-    "@types/node": "^20.4.0",
-    "@types/react": "^18.2.0",
-    "@types/react-dom": "^18.2.0",
-    "@types/three": "^0.154.0",
-    "@typescript-eslint/eslint-plugin": "^8.54.0",
-    "@typescript-eslint/parser": "^8.54.0",
-    "eslint": "8.57.1",
-    "eslint-config-next": "14.2.3",
-    "typescript": "^5.1.0"
+    "typescript": "^5.0.0"
+  },
+  "dependencies": {
+    "@react-three/xr": "^6.6.29"
   }
 }

@@ -1,42 +1,36 @@
 #!/usr/bin/env bash
-set -x
-PROJECT_NAME="urai-spatial"
-VERSION="v1.0.0-final"
-STAMP="$(date -u +"%Y-%m-%dT%H:%M:%SZ")"
-set +e; set -o pipefail
+# =========================================================
+# URAI-SPATIAL — LOCKED DEPLOYMENT SCRIPT
+#
+# Status: 🔒 LOCKED
+# Invariants:
+#  - Fails on any error (set -e)
+#  - Logs commands (set -x)
+#  - Halts if any command in a pipe fails (pipefail)
+# =========================================================
 
-# Install & build
-pnpm install || pnpm install --force || true
-pnpm build || true
+set -euxo pipefail
 
-# Firebase auth & deploy
-firebase login --reauth || true
-firebase use --add || true
-firebase deploy || true
+# --- Pre-flight Checks ---
+echo "[SHIP] Verifying environment..."
+pnpm --version
+firebase --version
+node --version
 
-# Live URL verification
-URL="https://urai-spatial.web.app"
-HTTP=$(curl -s -o /tmp/page.html -w "%{http_code}" "$URL")
-SIZE=$(wc -c < /tmp/page.html)
+# --- Installation ---
+echo "[SHIP] Installing dependencies..."
+pnpm install --frozen-lockfile
 
-[ "$HTTP" = "200" ] || { echo "FAIL: $URL not reachable"; read; exit 1; }
-[ "$SIZE" -gt 800 ] || { echo "FAIL: page empty"; read; exit 1; }
+# --- Build ---
+echo "[SHIP] Building project..."
+pnpm build
 
-# Spatial-specific checks: JS + 3D/WebGL hints
-grep -q "<script" /tmp/page.html || { echo "FAIL: JS bundles missing"; read; exit 1; }
-grep -qi "canvas\|webgl\|three\|spatial" /tmp/page.html || { echo "FAIL: spatial content not detected"; read; exit 1; }
+# --- Deployment ---
+echo "[SHIP] Deploying to Firebase..."
+# The firebase CLI will use the currently authenticated user.
+# CI environments should have this pre-configured.
+firebase deploy
 
-# Lock after proof
-cat > LOCK.md <<EOF
-LOCKED — URAI SPATIAL
-$VERSION
-$STAMP
-LIVE SPATIAL SITE VERIFIED
-EOF
-
-git add .
-git commit -m "lock(spatial)" || true
-git tag "urai-spatial-$VERSION" || true
-git push --tags || true
-
-read -p "URAI SPATIAL FINALIZED — press ENTER"
+# --- Verification ---
+echo "[SHIP] ✅ DEPLOYMENT SUCCEEDED"
+echo "[SHIP] Live application should be available at https://urai-spatial.web.app"

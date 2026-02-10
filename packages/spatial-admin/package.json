@@ -1,0 +1,11 @@
+{
+  "name": "spatial-admin",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "echo 'Starting spatial-admin dev server'"
+  },
+  "devDependencies": {
+    "typescript": "^5.0.0"
+  }
+}
