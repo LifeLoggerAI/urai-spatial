@@ -15,25 +15,33 @@
 
   packages = [
     pkgs.nodejs_20
+    pkgs.pnpm
     pkgs.firebase-tools # Add Firebase CLI for deployment
-    pkgs.go # Add Go for the backend
   ];
   idx = {
     extensions = [ "dbaeumer.vscode-eslint" ];
     workspace = {
       onCreate = {
+        scaffold = "./scripts/urai_spatial_scaffold.sh";
         npm-install = "pnpm install";
+      };
+      onStart = {
+        lint-and-lock = "./scripts/lint_and_lock.sh";
+        asset-pipeline = "node ./scripts/asset-pipeline/hash_manifest.mjs";
+        verify-spatial = "./scripts/verify_urai_spatial.sh";
+        check-idx-schema = "./scripts/ci/check-idx-schema.sh";
+        smoke-test = "./scripts/tests/spatial-smoke-test.sh";
       };
     };
     previews = {
       enable = true;
       previews = {
         web = {
-          command = ["pnpm", "run", "dev", "--workspace=packages/spatial-web", "--", "--port", "$PORT"];
+          command = ["pnpm", "run", "dev", "--workspace=urai-spatial-web", "--", "--port", "$PORT"];
           manager = "web";
         };
-        backend = {
-          command = ["go", "run", "packages/backend/main.go"];
+        storytime = {
+          command = ["pnpm", "run", "dev", "--workspace=storytime", "--", "--port", "$PORT"];
           manager = "web";
         };
       };
