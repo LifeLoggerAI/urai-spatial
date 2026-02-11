@@ -2,7 +2,7 @@
 
 import { Canvas } from '@react-three/fiber';
 import { Suspense, useRef } from 'react';
-import { OrbitControls, Sphere } from '@react-three/drei';
+import { Sphere } from '@react-three/drei';
 
 const CompanionOrb = () => {
   const ref = useRef<any>();
@@ -22,7 +22,6 @@ export default function CompanionPage() {
           <ambientLight />
           <pointLight position={[10, 10, 10]} />
           <CompanionOrb />
-          <OrbitControls />
         </Suspense>
       </Canvas>
     </div>

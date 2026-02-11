@@ -37,11 +37,11 @@
       enable = true;
       previews = {
         web = {
-          command = ["pnpm", "run", "dev", "--workspace=urai-spatial-web", "--", "--port", "$PORT"];
+          command = ["pnpm" "run" "dev" "--workspace=urai-spatial-web" "--" "--port" "$PORT"];
           manager = "web";
         };
         storytime = {
-          command = ["pnpm", "run", "dev", "--workspace=storytime", "--", "--port", "$PORT"];
+          command = ["pnpm" "run" "dev" "--workspace=storytime" "--" "--port" "$PORT"];
           manager = "web";
         };
       };

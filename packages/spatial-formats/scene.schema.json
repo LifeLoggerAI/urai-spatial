@@ -4,14 +4,12 @@
   "$id": "https://urai.app/schemas/urai-spatial-scene.schema.json",
   "title": "URAI Spatial Scene",
   "type": "object",
-  "required": ["schemaVersion", "sceneId", "worldId", "name", "units", "entities"],
+  "required": ["schemaVersion", "sceneId", "worldId", "units", "entities"],
   "properties": {
     "schemaVersion": { "type": "string", "pattern": "^1\\." },
     "sceneId": { "type": "string", "minLength": 3 },
     "worldId": { "type": "string", "minLength": 3 },
-    "name": { "type": "string", "minLength": 1 },
     "slug": { "type": "string" },
-    "description": { "type": "string" },
     "units": { "type": "string", "enum": ["meters"] },
     "time": {
       "type": "object",
@@ -102,17 +100,21 @@
     },
     "entity": {
       "type": "object",
-      "required": ["id", "type", "name", "transform", "components"],
+      "required": ["id", "type", "transform", "components"],
       "properties": {
         "id": { "type": "string" },
         "type": { "type": "string", "enum": ["portal", "room", "prop", "character", "light", "cameraRig", "anchorProxy"] },
-        "name": { "type": "string" },
         "tags": { "type": "array", "items": { "type": "string" } },
         "transform": { "$ref": "#/$defs/transform" },
         "components": {
           "type": "array",
           "items": { "$ref": "#/$defs/component" }
-        }
+        },
+        "resonance": { "type": "number" },
+        "gravity": { "type": "number" },
+        "silenceWeight": { "type": "number" },
+        "orbitBias": { "type": "number" },
+        "lightTemperature": { "type": "number" }
       },
       "additionalProperties": false
     },
@@ -128,8 +130,6 @@
             "Portal",
             "TriggerZone",
             "CameraRig",
-            "Interactable",
-            "NarrationCue",
             "MemoryRoomAssembler",
             "ARAnchorBinding"
           ]

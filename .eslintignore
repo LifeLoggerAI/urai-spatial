@@ -1,7 +1,7 @@
 .next
 node_modules
+dist
 out
 build
-dist
 coverage
-.swc
+*.log
