@@ -2,14 +2,14 @@
 'use client';
 
 import { Html } from '@react-three/drei';
+import { useRouter } from 'next/navigation';
 
 export default function HUD({ mode }: { mode: string }) {
+  const router = useRouter();
+
   const handleExit = () => {
-    // In a real app, this would trigger a state change to exit the spatial scene
-    // For now, we'll just log to the console
-    console.log('Exiting spatial scene...');
-    // This could also be a router push, a state update, etc.
-    // For example: router.push('/replay');
+    // Navigate back to a non-spatial replay or menu screen.
+    router.push('/replay');
   };
 
   return (
@@ -33,8 +33,11 @@ export default function HUD({ mode }: { mode: string }) {
         bottom: '20px',
         left: '20px',
         color: 'white',
+        padding: '10px',
+        backgroundColor: 'rgba(0,0,0,0.5)',
+        borderRadius: '5px',
       }}>
-        <p>Controls: Gaze and Dwell</p>
+        Mode: {mode}
       </div>
     </Html>
   );
