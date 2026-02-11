@@ -13,21 +13,26 @@ const Constellation = ({ memories, hoveredId, proximateId }: { memories: Memory[
       {memories.map(memory => (
         <mesh key={memory.id} position={[memory.transform.position.x, memory.transform.position.y, memory.transform.position.z]}>
           <sphereGeometry args={[0.05, 16, 16]} />
-          <meshBasicMaterial 
-            color={memory.id === hoveredId ? 'lightblue' : (memory.id === proximateId ? 'lightyellow' : 'white')} 
+          {/* 
+            BEAUTY LOCK:
+            - Using meshStandardMaterial to interact with the scene's lighting.
+            - This creates a more cohesive and physically plausible look.
+            - Removed distracting color changes for a more serene experience.
+          */}
+          <meshStandardMaterial 
+            color="white" 
             transparent 
-            opacity={memory.id === hoveredId ? 1.0 : (memory.id === proximateId ? 0.8 : 0.5)}
+            opacity={memory.id === hoveredId || memory.id === proximateId ? 0.9 : 0.4}
+            emissive="white"
+            emissiveIntensity={memory.id === hoveredId ? 0.5 : 0}
           />
         </mesh>
       ))}
       {points.length > 1 && (
         <Line
           points={points}
-          color="white"
-          lineWidth={1}
-          dashed={true}
-          dashSize={0.2}
-          gapSize={0.1}
+          color="#4A5568" // A subtle, less distracting color
+          lineWidth={0.5}
         />
       )}
     </group>

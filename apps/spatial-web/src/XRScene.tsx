@@ -3,14 +3,14 @@
 import React, { useMemo, useRef, useState, useEffect } from "react";
 import * as THREE from "three";
 import { Canvas, useFrame } from "@react-three/fiber";
-import { Environment } from "@react-three/drei";
 import { XR, VRButton, ARButton, Controllers, Hands } from "@react-three/xr";
 import Starfield from "./Starfield";
 import Constellation from "./Constellation";
-import NarrativeCamera from "./NarrativeCamera";
 import InteractionManager from "./InteractionManager";
 import { Memory } from "./lib/types";
-import { getMemories } from "../../../lib/memories"; // Import getMemories
+import { getMemories } from "../../../lib/memories";
+import SpatialCamera from "./SpatialCamera";
+import SpatialLighting from "./SpatialLighting";
 
 function groupMemoriesByConstellation(memories: Memory[]): { [key: string]: Memory[] } {
   return memories.reduce((acc, memory) => {
@@ -32,7 +32,7 @@ export default function XRScene({demo, replay, season, interactionMode}) {
   useEffect(() => {
     async function fetchMemories() {
       try {
-        const data = await getMemories(); // Use getMemories
+        const data = await getMemories();
         setMemories(data);
       } catch (error) {
         console.error("Failed to fetch memories:", error);
@@ -50,7 +50,8 @@ export default function XRScene({demo, replay, season, interactionMode}) {
       const dwellThreshold = 0.8;
 
       if (resonance >= dwellThreshold) {
-        console.log("spatialMeaningThresholdReached", { memoryId: id });
+        // In a complete implementation, this would trigger a more robust event,
+        // such as updating the global state or emitting a custom event.
       }
     }
   };
@@ -64,10 +65,8 @@ export default function XRScene({demo, replay, season, interactionMode}) {
 
       <Canvas dpr={[1, 2]} gl={{ antialias: true, alpha: false }}>
         <XR>
-          <NarrativeCamera memories={memories} />
-          <ambientLight intensity={0.4} />
-          <directionalLight position={[4, 6, 2]} intensity={1.0} />
-          <Environment preset="night" />
+          <SpatialCamera />
+          <SpatialLighting />
           <Starfield />
 
           <InteractionManager
@@ -78,14 +77,14 @@ export default function XRScene({demo, replay, season, interactionMode}) {
           />
 
           {Object.entries(constellations).map(([constellationId, memories]) => (
-            <Constellation 
-              key={constellationId} 
-              memories={memories} 
+            <Constellation
+              key={constellationId}
+              memories={memories}
               hoveredId={hoveredId}
               proximateId={proximateId}
             />
           ))}
-          
+
           <Controllers />
           <Hands />
         </XR>
