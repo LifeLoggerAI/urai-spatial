@@ -8,8 +8,9 @@ import { XR, VRButton, ARButton, Controllers, Hands } from "@react-three/xr";
 import Starfield from "./Starfield";
 import Constellation from "./Constellation";
 import NarrativeCamera from "./NarrativeCamera";
-import InteractionManager from "./InteractionManager"; // Step 4: Import
+import InteractionManager from "./InteractionManager";
 import { Memory } from "./lib/types";
+import { getMemories } from "../../../lib/memories"; // Import getMemories
 
 function groupMemoriesByConstellation(memories: Memory[]): { [key: string]: Memory[] } {
   return memories.reduce((acc, memory) => {
@@ -23,19 +24,15 @@ function groupMemoriesByConstellation(memories: Memory[]): { [key: string]: Memo
   }, {} as { [key: string]: Memory[] });
 }
 
-// ... (Room, Portal, FloatingLabel, HtmlText components remain the same)
-
 export default function XRScene({demo, replay, season, interactionMode}) {
   const [memories, setMemories] = useState<Memory[]>([]);
-  // Step 4: State for interaction
   const [hoveredId, setHoveredId] = useState<string | null>(null);
   const [proximateId, setProximateId] = useState<string | null>(null);
 
   useEffect(() => {
     async function fetchMemories() {
       try {
-        const response = await fetch("http://localhost:8080/memories");
-        const data = await response.json();
+        const data = await getMemories(); // Use getMemories
         setMemories(data);
       } catch (error) {
         console.error("Failed to fetch memories:", error);
@@ -46,16 +43,14 @@ export default function XRScene({demo, replay, season, interactionMode}) {
 
   const constellations = groupMemoriesByConstellation(memories);
 
-  // Step 5: Spatial -> Replay Handoff
   const handleDwell = (id: string) => {
     const memory = memories.find(m => m.id === id);
     if (memory) {
       const resonance = memory.resonance || 0;
-      const dwellThreshold = 0.8; // High resonance threshold for trigger
+      const dwellThreshold = 0.8;
 
       if (resonance >= dwellThreshold) {
         console.log("spatialMeaningThresholdReached", { memoryId: id });
-        // This is the silent trigger. No UI or navigation change occurs here.
       }
     }
   };
@@ -75,7 +70,6 @@ export default function XRScene({demo, replay, season, interactionMode}) {
           <Environment preset="night" />
           <Starfield />
 
-          {/* Step 4: Add InteractionManager to the scene */}
           <InteractionManager
             memories={memories}
             onHover={setHoveredId}
@@ -87,12 +81,11 @@ export default function XRScene({demo, replay, season, interactionMode}) {
             <Constellation 
               key={constellationId} 
               memories={memories} 
-              hoveredId={hoveredId} // Pass down interaction state
-              proximateId={proximateId} // Pass down interaction state
+              hoveredId={hoveredId}
+              proximateId={proximateId}
             />
           ))}
           
-          {/* ... (Room, Portal, etc. are omitted for brevity but still exist) */}
           <Controllers />
           <Hands />
         </XR>

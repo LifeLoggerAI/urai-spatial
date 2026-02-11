@@ -1,24 +1,33 @@
 'use client';
 
-import { useRef } from 'react';
-import { useFrame } from '@react-three/fiber';
-import { Stars } from '@react-three/drei';
+import { useMemo } from 'react';
 import * as THREE from 'three';
 
-export default function Starfield() {
-  const ref = useRef<THREE.Group>(null);
+const Starfield = () => {
+  const stars = useMemo(() => {
+    const starGeo = new THREE.BufferGeometry();
+    const starCount = 5000;
+    const positions = new Float32Array(starCount * 3);
 
-  useFrame((_, delta) => {
-    if (ref.current) {
-      ref.current.rotation.y += delta * 0.002;
+    for (let i = 0; i < starCount; i++) {
+      const x = Math.random() * 600 - 300;
+      const y = Math.random() * 600 - 300;
+      const z = Math.random() * 600 - 300;
+      positions[i * 3] = x;
+      positions[i * 3 + 1] = y;
+      positions[i * 3 + 2] = z;
     }
-  });
+
+    starGeo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+
+    return starGeo;
+  }, []);
 
   return (
-    <group ref={ref}>
-      <Stars radius={100} depth={50} count={5000} factor={4} saturation={0} fade speed={1} />
-      <Stars radius={200} depth={50} count={5000} factor={4} saturation={0} fade speed={1} />
-      <Stars radius={300} depth={50} count={5000} factor={4} saturation={0} fade speed={1} />
-    </group>
+    <points geometry={stars}>
+      <pointsMaterial color="white" size={0.7} sizeAttenuation />
+    </points>
   );
-}
+};
+
+export default Starfield;

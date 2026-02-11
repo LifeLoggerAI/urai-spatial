@@ -1,4 +1,3 @@
-
 'use client';
 
 import { Html } from '@react-three/drei';
@@ -18,26 +17,20 @@ export default function HUD({ mode }: { mode: string }) {
         position: 'absolute',
         top: '20px',
         left: '20px',
-        color: 'white',
-        padding: '10px',
-        backgroundColor: 'rgba(0,0,0,0.5)',
-        borderRadius: '5px',
-        cursor: 'pointer'
-      }}
-        onClick={handleExit}
-      >
-        Exit
-      </div>
-      <div style={{
-        position: 'absolute',
-        bottom: '20px',
-        left: '20px',
-        color: 'white',
-        padding: '10px',
-        backgroundColor: 'rgba(0,0,0,0.5)',
-        borderRadius: '5px',
+        zIndex: 1000,
       }}>
-        Mode: {mode}
+        <button onClick={handleExit} style={{
+          background: 'rgba(0, 0, 0, 0.5)',
+          color: 'white',
+          border: '1px solid white',
+          borderRadius: '5px',
+          padding: '10px 20px',
+          cursor: 'pointer',
+          fontSize: '16px',
+          fontFamily: 'sans-serif'
+        }}>
+          Exit Spatial View
+        </button>
       </div>
     </Html>
   );
