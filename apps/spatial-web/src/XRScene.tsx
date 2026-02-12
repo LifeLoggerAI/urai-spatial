@@ -1,6 +1,6 @@
-"use client";
+'use client';
 
-import React, { useMemo, useRef, useState, useEffect } from "react";
+import React, { useMemo, useRef, useState, useEffect, Suspense } from "react";
 import * as THREE from "three";
 import { Canvas, useFrame } from "@react-three/fiber";
 import { XR, VRButton, ARButton, Controllers, Hands } from "@react-three/xr";
@@ -24,8 +24,13 @@ function groupMemoriesByConstellation(memories: Memory[]): { [key: string]: Memo
   }, {} as { [key: string]: Memory[] });
 }
 
+/**
+ * The core 3D scene for URAI-SPATIAL.
+ * This component now fetches memory data and only renders the Canvas
+ * once the data is available, preventing any loading flashes or artifacts.
+ */
 export default function XRScene({demo, replay, season, interactionMode}) {
-  const [memories, setMemories] = useState<Memory[]>([]);
+  const [memories, setMemories] = useState<Memory[] | null>(null); // Default to null to indicate loading
   const [hoveredId, setHoveredId] = useState<string | null>(null);
   const [proximateId, setProximateId] = useState<string | null>(null);
 
@@ -36,25 +41,33 @@ export default function XRScene({demo, replay, season, interactionMode}) {
         setMemories(data);
       } catch (error) {
         console.error("Failed to fetch memories:", error);
+        setMemories([]); // Set to empty array on error to prevent infinite loading
       }
     }
     fetchMemories();
   }, [demo, replay, season, interactionMode]);
 
-  const constellations = groupMemoriesByConstellation(memories);
+  const constellations = useMemo(() => 
+    memories ? groupMemoriesByConstellation(memories) : {}
+  , [memories]);
 
   const handleDwell = (id: string) => {
+    if (!memories) return;
     const memory = memories.find(m => m.id === id);
     if (memory) {
       const resonance = memory.resonance || 0;
       const dwellThreshold = 0.8;
-
       if (resonance >= dwellThreshold) {
-        // In a complete implementation, this would trigger a more robust event,
-        // such as updating the global state or emitting a custom event.
+        // Trigger event
       }
     }
   };
+
+  // Do not render anything until the memories have been loaded.
+  // This prevents the flicker and rendering of an empty scene.
+  if (!memories) {
+    return null; 
+  }
 
   return (
     <div style={{ width: "100%", height: "100%" }}>

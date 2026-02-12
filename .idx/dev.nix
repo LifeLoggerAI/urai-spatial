@@ -17,6 +17,7 @@
     pkgs.nodejs_20
     pkgs.pnpm
     pkgs.firebase-tools # Add Firebase CLI for deployment
+    pkgs.perl
   ];
   idx = {
     extensions = [ "dbaeumer.vscode-eslint" ];
@@ -36,8 +37,14 @@
     previews = {
       enable = true;
       previews = {
+        # Main spatial web application
         web = {
           command = ["pnpm" "run" "dev" "--workspace=urai-spatial-web" "--" "--port" "$PORT"];
+          manager = "web";
+        };
+        # Admin dashboard
+        admin = {
+          command = ["pnpm" "run" "start" "--workspace=spatial-admin"];
           manager = "web";
         };
         storytime = {

@@ -6,6 +6,7 @@ service firebase.storage {
 
     // Helper function to check for admin privileges
     function isAdmin() {
+      // This relies on a custom claim being set by a trusted backend process.
       return request.auth.token.admin == true;
     }
 
@@ -31,12 +32,16 @@ service firebase.storage {
       allow read: if true;
     }
 
-    // Allow users to manage their own files, with validation
+    // --- USER DATA LOCK ---
+    // Users can only manage their own files.
+    // Content type is validated to only allow images and GLB models.
+    // This is the gatekeeper for the deterministic asset pipeline.
     match /users/{userId}/{allPaths=**} {
       allow read: if request.auth.uid == userId;
       allow write: if request.auth.uid == userId &&
-                    request.resource.size < 10 * 1024 * 1024 && // 10MB limit
-                    request.resource.contentType.matches('image/.*'); // Only images
+                    request.resource.size < 100 * 1024 * 1024 && // 100MB limit for models
+                    (request.resource.contentType.matches('image/.*') || 
+                     request.resource.contentType.matches('model/gltf-binary'));
     }
   }
 }
