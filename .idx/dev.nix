@@ -22,33 +22,22 @@
   idx = {
     extensions = [ "dbaeumer.vscode-eslint" ];
     workspace = {
+      # Install dependencies with a frozen lockfile on workspace creation
+      # This enforces deterministic, institutional-grade builds.
       onCreate = {
-        scaffold = "./scripts/urai_spatial_scaffold.sh";
-        npm-install = "pnpm install";
+        install-deps = "pnpm install --frozen-lockfile";
       };
+      # Keep the dev server running for terminal access
       onStart = {
-        lint-and-lock = "./scripts/lint_and_lock.sh";
-        asset-pipeline = "node ./scripts/asset-pipeline/hash_manifest.mjs";
-        verify-spatial = "./scripts/verify_urai_spatial.sh";
-        check-idx-schema = "./scripts/ci/check-idx-schema.sh";
-        smoke-test = "./scripts/tests/spatial-smoke-test.sh";
+        start-dev-server = "pnpm --filter spatial-web dev";
       };
     };
     previews = {
       enable = true;
       previews = {
-        # Main spatial web application
+        # Configures the web preview for the main Next.js application
         web = {
-          command = ["pnpm" "run" "dev" "--workspace=urai-spatial-web" "--" "--port" "$PORT"];
-          manager = "web";
-        };
-        # Admin dashboard
-        admin = {
-          command = ["pnpm" "run" "dev" "--workspace=spatial-admin" "--" "--port" "$PORT"];
-          manager = "web";
-        };
-        storytime = {
-          command = ["pnpm" "run" "dev" "--workspace=storytime" "--" "--port" "$PORT"];
+          command = ["pnpm", "--filter", "spatial-web", "dev", "--", "--port", "$PORT"];
           manager = "web";
         };
       };
