@@ -57,6 +57,7 @@ export class SpatialTransitionFSM {
 
     if (!nextState) {
       this.throwIllegalTransition(this.currentState);
+      return; // Explicitly return to prevent any possibility of undefined assignment.
     }
 
     console.log(`[SpatialTransitionFSM] State Change: ${this.currentState} -> ${nextState}`);

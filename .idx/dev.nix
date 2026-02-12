@@ -44,7 +44,7 @@
         };
         # Admin dashboard
         admin = {
-          command = ["pnpm" "run" "start" "--workspace=spatial-admin"];
+          command = ["pnpm" "run" "dev" "--workspace=spatial-admin" "--" "--port" "$PORT"];
           manager = "web";
         };
         storytime = {

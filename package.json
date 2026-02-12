@@ -8,11 +8,20 @@
     "lint:fix": "eslint . --ext .js,.jsx,.ts,.tsx --fix"
   },
   "devDependencies": {
-    "eslint": "^8.57.0",
+    "@types/node": "^25.2.3",
+    "@types/react": "^19.2.14",
+    "@types/react-dom": "^19.2.3",
+    "eslint": "^8.57.1",
     "eslint-config-next": "14.2.3",
-    "typescript": "^5.0.0"
+    "typescript": "^5.9.3"
   },
   "dependencies": {
-    "@react-three/xr": "^6.6.29"
+    "@react-three/drei": "^10.7.7",
+    "@react-three/fiber": "8",
+    "@react-three/xr": "^6.6.29",
+    "next": "^16.1.6",
+    "react": "18",
+    "react-dom": "18",
+    "three": "^0.182.0"
   }
 }

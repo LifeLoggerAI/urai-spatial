@@ -3,7 +3,7 @@
 import React, { useMemo, useRef, useState, useEffect, Suspense } from "react";
 import * as THREE from "three";
 import { Canvas, useFrame } from "@react-three/fiber";
-import { XR, VRButton, ARButton, Controllers, Hands } from "@react-three/xr";
+import { XR, VRButton, ARButton, createXRStore } from "@react-three/xr";
 import Starfield from "./Starfield";
 import Constellation from "./Constellation";
 import InteractionManager from "./InteractionManager";
@@ -11,6 +11,8 @@ import { Memory } from "./lib/types";
 import { getMemories } from "../../../lib/memories";
 import SpatialCamera from "./SpatialCamera";
 import SpatialLighting from "./SpatialLighting";
+
+const store = createXRStore();
 
 function groupMemoriesByConstellation(memories: Memory[]): { [key: string]: Memory[] } {
   return memories.reduce((acc, memory) => {
@@ -77,7 +79,7 @@ export default function XRScene({demo, replay, season, interactionMode}) {
       </div>
 
       <Canvas dpr={[1, 2]} gl={{ antialias: true, alpha: false }}>
-        <XR>
+        <XR store={store}>
           <SpatialCamera />
           <SpatialLighting />
           <Starfield />
@@ -97,9 +99,6 @@ export default function XRScene({demo, replay, season, interactionMode}) {
               proximateId={proximateId}
             />
           ))}
-
-          <Controllers />
-          <Hands />
         </XR>
       </Canvas>
     </div>

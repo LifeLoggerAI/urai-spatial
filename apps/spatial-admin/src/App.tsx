@@ -1,1 +1,12 @@
-\nimport { BrowserRouter as Router, Routes, Route } from 'react-router-dom';\nimport { AuthProvider } from './components/AuthProvider';\nimport ProtectedRoute from './components/ProtectedRoute';\nimport { Login } from './pages/Login';\nimport { Dashboard } from './pages/Dashboard';\nimport { Scene } from './pages/Scene';\n\nfunction App() {\n  return (\n    <AuthProvider>\n      <Router>\n        <Routes>\n          <Route path=\"/login\" element={<Login />} />\n          <Route \n            path=\"/\" \n            element={\n              <ProtectedRoute>\n                <Dashboard />\n              </ProtectedRoute>\n            }\ \n          />\n          <Route \n            path=\"/scene/:sceneId\" \n            element={\n              <ProtectedRoute>\n                <Scene />\n              </ProtectedRoute>\n            }\ \n          />\n          {/* Add other protected routes here */}\n        </Routes>\n      </Router>\n    </AuthProvider>\n  );\n}\n\nexport default App;\n
+import React from 'react';
+
+function App() {
+  return (
+    <div>
+      <h1>Urai Spatial Admin</h1>
+      <p>Scene Publishing Dashboard</p>
+    </div>
+  );
+}
+
+export default App;
