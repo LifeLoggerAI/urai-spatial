@@ -1,0 +1,21 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Users can only read and write their own memory nodes
+    match /users/{userId}/memoryNodes/{nodeId} {
+      allow read, write: if request.auth.uid == userId;
+    }
+
+    // Users can only read and write their own clusters
+    match /users/{userId}/clusters/{clusterId} {
+      allow read, write: if request.auth.uid == userId;
+    }
+
+    // Users can only read and write their own seasonal states
+    match /users/{userId}/seasonalStates/{stateId} {
+      allow read, write: if request.auth.uid == userId;
+    }
+  }
+}
