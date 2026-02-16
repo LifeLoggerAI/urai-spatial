@@ -15,17 +15,5 @@
     "eslint": "^8.57.1",
     "eslint-config-next": "14.2.3",
     "typescript": "^5.9.3"
-  },
-  "dependencies": {
-    "@react-three/drei": "^10.7.7",
-    "@react-three/fiber": "8",
-    "@react-three/postprocessing": "^3.0.4",
-    "@react-three/xr": "^6.6.29",
-    "firebase": "^12.9.0",
-    "gsap": "^3.14.2",
-    "next": "^16.1.6",
-    "react": "18",
-    "react-dom": "18",
-    "three": "^0.182.0"
   }
 }
