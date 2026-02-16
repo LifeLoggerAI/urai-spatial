@@ -1,3 +1,5 @@
+import XRCanvas from "./components/XRCanvas"
+
 export default function Page() {
-  return <h1>Hello, World!</h1>;
+  return <XRCanvas />
 }
