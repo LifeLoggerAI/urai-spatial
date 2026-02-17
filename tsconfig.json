@@ -1,6 +1,6 @@
 {
   "compilerOptions": {
-    "target": "es5",
+    "target": "ES2022",
     "lib": [
       "dom",
       "dom.iterable",
@@ -12,8 +12,8 @@
     "forceConsistentCasingInFileNames": true,
     "noEmit": true,
     "esModuleInterop": true,
-    "module": "esnext",
-    "moduleResolution": "bundler",
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
     "resolveJsonModule": true,
     "isolatedModules": true,
     "jsx": "react-jsx",
@@ -27,7 +27,12 @@
       "@/*": [
         "./*"
       ]
-    }
+    },
+    "types": [
+      "three",
+      "@react-three/fiber"
+    ],
+    "moduleDetection": "force"
   },
   "include": [
     "next-env.d.ts",

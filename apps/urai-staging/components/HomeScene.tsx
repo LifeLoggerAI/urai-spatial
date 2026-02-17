@@ -54,7 +54,7 @@ export default function HomeScene() {
 
   return (
     <Canvas
-      camera={{ position: [0, 0, 6], fov: 50 }}
+      camera={{ position: [0, 0, 3], fov: 45 }}
       gl={{ alpha: true }}
       style={{ width: "100vw", height: "100vh", background: "black" }}
     >

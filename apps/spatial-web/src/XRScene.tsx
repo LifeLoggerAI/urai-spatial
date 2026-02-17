@@ -45,7 +45,7 @@ function SceneContent() {
 
 export default function XRScene() {
   return (
-    <Canvas camera={{ position: [0, 0, 20], fov: 60 }}>
+    <Canvas camera={{ position: [0, 0, 3], fov: 45 }}>
       <SceneContent />
     </Canvas>
   )

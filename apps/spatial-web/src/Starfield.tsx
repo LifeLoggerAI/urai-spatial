@@ -1,6 +1,6 @@
-"use client";
+'''"use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useRef } from "react";
 import { useFrame } from "@react-three/fiber";
 import * as THREE from "three";
 
@@ -18,36 +18,37 @@ function createStars(count: number, depth: number, spread: number) {
 }
 
 export default function Starfield() {
-  const [hovered, setHovered] = useState<number | null>(null);
-  const [warpPulse, setWarpPulse] = useState(0);
+  const groupRef = useRef<THREE.Group>(null!);
+
+  useFrame((state) => {
+    if(groupRef.current) {
+        groupRef.current.rotation.y = state.clock.getElapsedTime() * 0.01;
+    }
+  });
 
   const stars = useMemo(() => createStars(900, 120, 80), []);
 
-  useFrame((state) => {
-    const t = state.clock.getElapsedTime();
-    state.scene.rotation.y = t * 0.01;
-  });
-
   return (
-    <group>
-      {stars.map((star, i) => (
-        <mesh
-          key={i}
-          position={star.position as any}
-          scale={hovered === i ? star.scale * 2 : star.scale}
-          onPointerOver={() => setHovered(i)}
-          onPointerOut={() => setHovered(null)}
-          onClick={() => {
-            setWarpPulse(1);
-            setTimeout(() => setWarpPulse(0), 600);
-          }}
-        >
-          <boxGeometry args={[0.05, 0.05, 0.05]} />
-          <meshBasicMaterial
-            color={hovered === i ? "#ffffff" : "#cccccc"}
-          />
+    <group ref={groupRef}>
+        <mesh>
+            <sphereGeometry args={[100, 64, 64]} />
+            <meshBasicMaterial side={THREE.BackSide} color="#000000" />
         </mesh>
-      ))}
+        {stars.map((star, i) => (
+            <mesh
+            key={i}
+            position={star.position as any}
+            scale={star.scale}
+            >
+            <boxGeometry args={[0.05, 0.05, 0.05]} />
+            <meshBasicMaterial
+                color={"#cccccc"}
+                transparent
+                opacity={0.8}
+            />
+            </mesh>
+        ))}
     </group>
   );
 }
+'''

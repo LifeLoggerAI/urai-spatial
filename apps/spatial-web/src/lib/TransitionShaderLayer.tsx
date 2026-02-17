@@ -20,7 +20,7 @@ export function TransitionShaderLayer() {
 
   return (
     <EffectComposer>
-      <Bloom intensity={isTransitioning ? 0.5 : 0.35} luminanceThreshold={0.2} luminanceSmoothing={0.7} />
+      <Bloom intensity={1.6} luminanceThreshold={0.85} luminanceSmoothing={0.7} />
       <BrightnessContrast brightness={0.01} contrast={0.12} />
       <ChromaticAberration offset={isTransitioning ? [0.001, 0.001] : [0.0005, 0.0005]} />
       <Noise opacity={0.035} />

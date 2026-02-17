@@ -84,13 +84,13 @@ export default function XRCanvas() {
   return (
     <div className="w-screen h-screen bg-black">
       <VRButton />
-      <Canvas camera={{ position: [0, 0, 6], fov: 60 }}>
+      <Canvas camera={{ position: [0, 0, 3], fov: 45 }}>
         <XR>
           <CameraRig />
           <ambientLight intensity={0.3} />
           <Starfield />
           <Orb />
-          <OrbitControls enableZoom={false} />
+          
         </XR>
       </Canvas>
     </div>

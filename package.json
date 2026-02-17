@@ -7,7 +7,7 @@
     "lint": "eslint . --ext .js,.jsx,.ts,.tsx",
     "lint:fix": "eslint . --ext .js,.jsx,.ts,.tsx --fix",
     "build": "next build",
-    "dev": "next dev"
+    "dev": "next dev -p 9000"
   },
   "devDependencies": {
     "@types/node": "^25.2.3",
@@ -28,6 +28,7 @@
     "postprocessing": "^6.38.2",
     "react": "19.2.4",
     "react-dom": "19.2.4",
-    "three": "^0.182.0"
+    "three": "^0.182.0",
+    "three-stdlib": "^2.36.1"
   }
 }

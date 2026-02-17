@@ -68,10 +68,10 @@ export default function SceneEngine() {
           toneMapping: THREE.ACESFilmicToneMapping,
           outputColorSpace: THREE.SRGBColorSpace,
         }}
-        camera={{ position: [0, 0, 40], fov: 75 }}
+        camera={{ position: [0, 0, 3], fov: 45 }}
       >
         <XR>
-          <ambientLight intensity={0.1} />
+          <ambientLight intensity={1.6} />
           
           <mesh ref={lightEmitter} position={[0, 0, 0]}>
             <sphereGeometry args={[3, 64, 64]} />
@@ -86,7 +86,7 @@ export default function SceneEngine() {
           
           <EffectComposer>
             <GodRays sun={lightEmitter.current!} kernelSize={2} density={0.96} decay={0.94} weight={0.6} exposure={0.4} samples={60} blur={true} />
-            <Bloom intensity={0.8} luminanceThreshold={0.2} mipmapBlur />
+            <Bloom intensity={1.6} luminanceThreshold={0.85} mipmapBlur />
             <Vignette eskil={false} offset={0.1} darkness={0.6} />
             <SMAA />
             <Noise opacity={0.025} />

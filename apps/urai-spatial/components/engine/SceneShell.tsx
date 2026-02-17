@@ -12,7 +12,7 @@ export default function SceneShell({ scene }: { scene: string }) {
           antialias: true,
           physicallyCorrectLights: true,
         }}
-        camera={{ position: [0, 5, 20], fov: 55 }}
+        camera={{ position: [0, 0, 3], fov: 45 }}
       >
         <SceneRouter scene={scene} />
       </Canvas>

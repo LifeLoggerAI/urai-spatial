@@ -28,7 +28,7 @@ export default function EngineRoot() {
 
   return (
     <div style={{ width: '100vw', height: '100vh', position: 'fixed' }}>
-      <Canvas shadows camera={{ fov: 60, position: [0, 1.5, 18] }} gl={{ antialias: true, toneMapping: THREE.ACESFilmicToneMapping }}>
+      <Canvas shadows camera={{ position: [0, 0, 3], fov: 45 }} gl={{ antialias: true, toneMapping: THREE.ACESFilmicToneMapping }}>
         <CameraRig mode={mode} isWarping={isWarping} />
         <LightingStack />
 
