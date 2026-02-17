@@ -1,6 +1,0 @@
-{
-  "version": 3,
-  "sources": [],
-  "sections": [
-    {"offset": {"line": 1, "column": 0}, "map": {"version":3,"sources":["file:///home/user/urai-spatial/app/globals.css"],"sourcesContent":["html, body {\n  margin: 0;\n  padding: 0;\n  background: black;\n  overflow: hidden;\n}\n\n* {\n  box-sizing: border-box;\n}\n"],"names":[],"mappings":"AAAA;;;;;;;AAOA"}}]
-}

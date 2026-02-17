@@ -1,52 +1,68 @@
 # URAI-SPATIAL
 
-This repository contains the source code for URAI-SPATIAL, a WebXR-based spatial computing platform built on a deep commitment to user privacy, safety, and a unique narrative philosophy.
+**The 3D / XR rendering engine for the Life Operating System.**
 
-## Core Principles & Safety
+URAI-Spatial is not just a starfield demo. It is a real-time, data-driven, cinematic spatial engine designed to visualize and interact with the memories and experiences of a life, represented as a galaxy of `lifeNodes`.
 
-The URAI Spatial Engine is designed as a space for personal reflection, not a social platform. Our design philosophy is guided by a strict set of safety principles:
+## 🔥 Core Features
 
-*   **Explicit, User-Initiated Actions:** Entry into any experience, especially a memory replay, is always an explicit choice.
-*   **Sacred Pacing:** The tempo of core experiences, like memory replays, is system-controlled to ensure a deliberate and contemplative pace. User controls for fast-forward or rewind are intentionally omitted.
-*   **Locked Interaction Vocabulary:** User interactions are limited to a minimal, focused set of actions: "gaze," "select," and "exit."
-*   **No Social or Gamification Mechanics:** The platform is free from social features (chat, avatars, presence indicators) and gamification (scores, achievements).
+*   **Data-Driven Galaxy:** The starfield is not random. Each star is a `lifeNode` pulled from Firestore, with its position, color, and mass determined by the memory's data (timestamp, emotion, importance).
+*   **Cinematic Home Scene:** A beautiful, immersive home environment with a glowing orb, avatar, and atmospheric lighting, serving as the entry point to the LifeMap.
+*   **Scene Switching Architecture:** A robust engine with clean separation between scenes (Home, LifeMap, Chat, Ground), managed by a state machine for deterministic transitions.
+*   **WebGPU Compute-Powered N-Body Simulation:** A high-performance physics engine running on the GPU simulates the gravitational interactions of thousands of stars, creating a dynamic and living galaxy.
+*   **Production-Grade Rendering Pipeline:** A tiered rendering architecture with a WebGL fallback for broad accessibility and a high-fidelity WebGPU mode for next-generation visuals.
+*   **Cinematic Post-Processing:** A full stack of post-processing effects including bloom, depth of field, vignette, and chromatic aberration for a film-quality look.
+*   **XR Ready:** The architecture is designed to be extended to a full WebXR experience with hand tracking and immersive interaction.
 
-## Our Commitment to Your Privacy
+## 🚀 Roadmap
 
-Your privacy is the foundation of this project. Our unwavering promise to you is as follows:
+The development of URAI-Spatial is planned in several phases:
 
-*   **You Are Anonymous:** We generate a random ID for you. We can never trace data back to your real-world identity or account.
-*   **Only Vectors, Not Words:** We only collect the mathematical `EmotionVector` data (e.g., `{valence: 0.8, arousal: 0.6, agency: 0.7}`).
-*   **Your Memories are Yours:** We NEVER collect your text, tags, audio, or any other personal content. That stays private to you, always.
-*   **You Are In Control:** You can join or leave the data program at any time, for any reason, without affecting your URAI experience.
+1.  **Phase 1: Production Browser Cinematic Pipeline (COMPLETE)**
+    *   Stable, 60fps WebGL-based engine.
+    *   Cinematic Home Scene and LifeMap.
+    *   Data-driven N-body simulation powered by WebGPU with WebGL fallback.
+2.  **Phase 2: High-Tier WebGPU Features**
+    *   Hybrid raster + ray-traced rendering.
+    *   True volumetric clouds and plasma orb.
+    *   Progressive GI.
+3.  **Phase 3: Unreal XR Flagship**
+    *   Porting the engine to Unreal Engine for a high-fidelity VR experience.
+    *   Full implementation of Lumen for global illumination and Nanite for geometry.
+    *   Advanced XR interaction with hand tracking and physics.
 
-## The Storytime Workflow
+## 🛠️ Technical Stack
 
-A core concept in URAI is the ability to share the *essence* of a memory without revealing its content. This is achieved through the "Storytime" workflow:
+*   **Frontend:** Next.js, React
+*   **3D/Graphics:** WebGPU, with WebGL fallback
+*   **Backend:** Node.js, Firebase (Firestore)
+*   **Core Engine:** Custom-built data-oriented ECS (Entity Component System)
 
-1.  **Selection:** A user selects a personal memory to share within their private interface.
-2.  **Abstraction:** The system transports the user to a private "Abstraction Chamber" where the memory is transformed into a `SharedMemoryArchetype`, capturing its core properties (magnitude, valence) without personal details.
-3.  **Consent:** The abstracted memory is presented to the user as a "stone." They are given a solemn and explicit choice to place this stone into a shared story, understanding that only its shape and texture will be known, while its origin remains theirs alone.
+## Project Structure
 
-## Spatial Engine v0.3
+The project is structured as a professional game engine, with a clear separation of concerns:
 
-The `spatial-xr` package contains the foundational implementation of the URAI Spatial Engine v0.3. This version includes:
-
-*   **Firestore-driven spatial memory nodes:** The starfield is populated with data from a Firestore collection.
-*   **Constellation trails:** Subtle lines connect memory nodes.
-*   **Warp tunnel:** A fog and wireframe tunnel effect for transitions.
-*   **Breathing orb:** A central orb with a subtle "breathing" animation.
-*   **WebXR toggle:** A button to enter WebXR mode.
-*   **Avatar embodiment:** A simple placeholder avatar for presence in XR.
-*   **Click-to-Replay routing:** Clicking a memory node transitions to a replay scene.
-*   **Emotional color shader:** Memory nodes are colored based on their `auraColor` property.
-*   **Particle bloom on selection:** A particle bloom effect is triggered when a user selects a memory node.
-*   **Deterministic camera spline path:** The camera follows a smooth, predefined spline path for cinematic movement.
-*   **Replay Cinematic Camera:** The replay scene features its own choreographed camera movement.
+```
+/engine
+  /core         # Core engine classes (EngineRoot, World, Systems)
+  /renderer     # WebGPU and WebGL rendering pipelines
+  /ecs          # Entity Component System core
+  /components   # ECS component definitions
+  /systems      # ECS systems (Physics, Rendering, etc.)
+  /scenes       # Scene composition files
+/app            # Next.js app router and pages
+/server         # Backend services (Gateway, Shard Manager)
+```
 
 ## Getting Started
 
-To get started with the project, please review the following:
-
-1.  `URAI-SPATIAL-PROJECT-CHARTER.md`: The high-level vision, mission, and boundaries of the project.
-2.  `V2_TECHNICAL_SPECIFICATION.md`: The detailed technical blueprint for the V2 build.
+1.  **Install dependencies:**
+    ```bash
+    pnpm install
+    ```
+2.  **Set up your environment variables:**
+    Create a `.env.local` file and populate it with your Firebase project configuration.
+3.  **Run the development server:**
+    ```bash
+    pnpm dev
+    ```

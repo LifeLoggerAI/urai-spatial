@@ -1,5 +1,11 @@
-import SceneShell from "@/components/engine/SceneShell"
+'''use client''';
+import SceneEngine from "@/components/engine/SceneEngine";
+import { Suspense } from "react";
 
 export default function Page() {
-  return <SceneShell scene="home" />
+  return (
+    <Suspense fallback={<div>Loading...</div>}>
+      <SceneEngine />
+    </Suspense>
+  );
 }

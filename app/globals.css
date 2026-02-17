@@ -1,10 +1,4 @@
-html, body {
-  margin: 0;
-  padding: 0;
-  background: black;
-  overflow: hidden;
-}
-
-* {
-  box-sizing: border-box;
+/* Minimal required styles */
+body {
+  background-color: #000;
 }
