@@ -1,5 +1,2 @@
-[00:00:05.169] Server  LOG     ✓ Ready in 4.5s
-[00:00:08.341] Server  LOG     ○ Compiling / ...
-[00:01:36.456] Server  WARN    ⚠ Cross origin request detected from 3000-firebase-urai-spatial-1769687960051.cluster-c72u3gwiofapkvxrcwjq5zllcu.cloudworkstations.dev to /_next/* resource. In a future major version of Next.js, you will need to explicitly configure "allowedDevOrigins" in next.config to allow this.
-Read more: https://nextjs.org/docs/app/api-reference/config/next-config-js/allowedDevOrigins
-[00:01:36.546] Browser INFO    %cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold
+[00:00:12.763] Server  LOG     ✓ Ready in 9.2s
+[00:37:29.424] Server  LOG     ○ Compiling / ...
