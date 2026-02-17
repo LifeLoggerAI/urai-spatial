@@ -1,9 +1,9 @@
+import HUD from '../src/components/HUD';
 'use client';
 
 import dynamic from 'next/dynamic';
 import { useSearchParams } from 'next/navigation';
 import { Suspense } from 'react';
-import CameraRig from '../src/CameraRig'; // Import the CameraRig
 
 const XRScene = dynamic(() => import('../src/XRScene'), { ssr: false });
 
@@ -19,7 +19,6 @@ function SceneSelector() {
 
   return (
     <>
-      <CameraRig preset={cameraPreset} />
       <XRScene demo={demo} replay={replay} season={season} interactionMode={mode} />
     </>
   );

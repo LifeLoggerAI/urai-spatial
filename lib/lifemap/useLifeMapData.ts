@@ -1,8 +1,9 @@
+
 import { useMemo } from "react";
 import { useUser } from "reactfire";
-import { collection, doc, query, orderBy } from "firebase/firestore";
+import { collection, doc, query, orderBy, limit } from "firebase/firestore";
 import { useFirestoreCollectionData, useFirestoreDocumentData } from "reactfire";
-import { firestore } from "../firebase"; // Assuming you have a firebase initialization file
+import { firestore } from "../apps/spatial-web/src/firebase"; // Assuming you have a firebase initialization file
 
 // I. Data Structures & Enums
 
@@ -60,7 +61,7 @@ export function useLifeMapData() {
   const userStateRef = doc(firestore, `users/${user?.uid}/state/current`);
 
   // 2. Fetch real-time data
-  const { data: memoryNodesData } = useFirestoreCollectionData(query(memoryNodesRef, orderBy("timestamp", "desc")), { idField: 'id' });
+  const { data: memoryNodesData } = useFirestoreCollectionData(query(memoryNodesRef, orderBy("timestamp", "desc"), limit(1000)), { idField: 'id' });
   const { data: narrativeArcsData } = useFirestoreCollectionData(query(narrativeArcsRef, orderBy("startDate", "desc")), { idField: 'id' });
   const { data: userStateData } = useFirestoreDocumentData(userStateRef);
 

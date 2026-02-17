@@ -5,19 +5,21 @@
     "spatial-web": "pnpm --filter spatial-web",
     "spatial-admin": "pnpm --filter spatial-admin",
     "lint": "eslint . --ext .js,.jsx,.ts,.tsx",
-    "lint:fix": "eslint . --ext .js,.jsx,.ts,.tsx --fix"
+    "lint:fix": "eslint . --ext .js,.jsx,.ts,.tsx --fix",
+    "build": "next build"
   },
   "devDependencies": {
     "@types/node": "^25.2.3",
     "@types/react": "^19.2.14",
     "@types/react-dom": "^19.2.3",
-    "@types/three": "^0.162.0",
-    "eslint": "^8.57.1",
-    "eslint-config-next": "14.2.3",
+    "@types/three": "^0.182.0",
+    "eslint": "^10.0.0",
+    "eslint-config-next": "16.1.6",
     "typescript": "^5.9.3"
   },
   "dependencies": {
-    "react": "18.2.0",
-    "react-dom": "18.2.0"
+    "next": "16.1.6",
+    "react": "19.2.4",
+    "react-dom": "19.2.4"
   }
 }

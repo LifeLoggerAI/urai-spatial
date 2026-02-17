@@ -20,7 +20,8 @@
       {
         "name": "next"
       }
-    ]
+    ],
+    "types": ["three"]
   },
   "include": [
     "next-env.d.ts",

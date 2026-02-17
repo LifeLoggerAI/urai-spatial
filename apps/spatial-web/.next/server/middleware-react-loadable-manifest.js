@@ -1,0 +1,1 @@
+self.__REACT_LOADABLE_MANIFEST="{\"app/page.tsx -> ../src/XRScene\":{\"id\":\"app/page.tsx -> ../src/XRScene\",\"files\":[\"static/chunks/_app-pages-browser_src_XRScene_tsx.js\"]}}"

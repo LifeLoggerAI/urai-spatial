@@ -4,132 +4,82 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    function isAdmin() {
-      return get(/databases/$(database)/documents/admins/$(request.auth.uid)).data.isAdmin == true;
+    // --- Helper Functions ---
+
+    function isUserAuthenticated() {
+      return request.auth != null;
     }
 
     function isOwner(userId) {
-      return request.auth.uid == userId;
+      return isUserAuthenticated() && request.auth.uid == userId;
+    }
+
+    function getUserData() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
+    }
+
+    function isAdmin() {
+      return isUserAuthenticated() && getUserData().isAdmin == true;
     }
 
     // --- Data Validation Functions ---
 
-    function isValidAsset(data) {
-      return data.name is string &&
-             data.status is string &&
-             data.kind is string &&
-             data.sourcePath is string &&
-             data.sourceSha256 is string &&
-             (data.latestBuildId is string || data.latestBuildId == null) &&
-             (data.publicSceneCount == null || data.publicSceneCount is number);
+    function isValidUser(data) {
+      return data.email is string &&
+             data.createdAt is timestamp &&
+             (data.isAdmin == null || data.isAdmin is bool);
     }
 
-    function isValidBuild(data) {
-      return data.assetId is string && data.pipelineVersion is string && data.sourceSha256 is string && data.status is string && data.outputs is map && data.metrics is map && (data.error is map || data.error == null);
-    }
-
-    function isValidAuditLog(data) {
-      return data.uid is string && data.ts is timestamp && data.action is string && data.resource is string && data.meta is map;
-    }
-
-    function isValidDeviceProfile(data) {
-      return data.name is string && data.type is string && data.config is map;
-    }
-
-    function isValidEntity(data) {
-      return data.sceneId is string &&
-             data.assetId is string &&
+    function isValidMemory(data) {
+      return data.title is string && data.title.size() < 100 &&
+             data.description is string && data.description.size() < 1000 &&
              data.position is map &&
-             data.rotation is map &&
-             data.scale is map &&
-             (data.sceneIsPublished == null || data.sceneIsPublished is bool);
+             data.position.x is number &&
+             data.position.y is number &&
+             data.position.z is number &&
+             data.color is string &&
+             data.ownerId == request.auth.uid && // Enforce ownerId
+             data.createdAt is timestamp &&
+             (data.isPublic == null || data.isPublic is bool);
     }
 
-    function isValidAnchor(data) {
-      return data.sceneId is string &&
-             data.name is string &&
-             data.type is string &&
-             data.position is map &&
-             data.rotation is map &&
-             (data.sceneIsPublished == null || data.sceneIsPublished is bool);
+    function isValidPublicMemory(data) {
+      return isValidMemory(data) && data.isPublic == true;
     }
 
-    function isValidWorld(data) {
-      return data.name is string && data.description is string && data.status is string && data.status in ['draft', 'published'];
-    }
-
-    function isValidScene(data) {
-      return data.name is string && data.worldId is string && exists(/databases/$(database)/documents/worlds/$(data.worldId)) && data.status is string && data.status in ['draft', 'published'];
-    }
-
-    function isValidXrSessionData(data) {
-      return data.userId is string && data.status is string && data.sceneId is string && data.deviceProfile is string;
-    }
 
     // --- Security Rules ---
 
-    match /admins/{uid} {
-      allow read, write: if isAdmin();
+    match /users/{userId} {
+      allow read: if isOwner(userId) || isAdmin();
+      allow create: if isUserAuthenticated() && isValidUser(request.resource.data);
+      allow update: if isOwner(userId) && isValidUser(request.resource.data);
+      allow delete: if isAdmin();
     }
 
-    match /assets/{assetId} {
-      allow read: if (resource.data.publicSceneCount > 0) || isAdmin();
-      allow create: if isAdmin() && isValidAsset(request.resource.data);
-      // To modify or delete an asset, it must not be part of any published scene.
-      allow update: if isAdmin() && isValidAsset(request.resource.data) && (resource.data.publicSceneCount == null || resource.data.publicSceneCount == 0);
-      allow delete: if isAdmin() && (resource.data.publicSceneCount == null || resource.data.publicSceneCount == 0);
+    match /memories/{memoryId} {
+      // Users can only read their own memories
+      allow read: if isOwner(resource.data.ownerId);
+
+      // Users can only write their own memories, with strict validation
+      allow create: if isUserAuthenticated() && isValidMemory(request.resource.data);
+      allow update: if isOwner(resource.data.ownerId) && isValidMemory(request.resource.data);
+      allow delete: if isOwner(resource.data.ownerId);
     }
 
-    match /builds/{buildId} {
-      allow read: if isAdmin();
-      allow create, update, delete: if isAdmin() && isValidBuild(request.resource.data);
+    match /publicMemories/{memoryId} {
+      // Anyone can read public memories
+      allow read: if true;
+
+      // Only authenticated users can write public memories, with strict validation
+      allow create: if isUserAuthenticated() && isValidPublicMemory(request.resource.data);
+      allow update: if isOwner(resource.data.ownerId) && isValidPublicMemory(request.resource.data);
+      allow delete: if isOwner(resource.data.ownerId);
     }
 
-    match /worlds/{worldId} {
-      allow read: if resource.data.status == 'published' || isAdmin();
-      allow create: if isAdmin() && isValidWorld(request.resource.data);
-      allow update: if isAdmin() && isValidWorld(request.resource.data);
-      // Deletion must be handled by a Cloud Function to ensure scenes are removed first.
-      allow delete: if false;
-    }
-
-    match /scenes/{sceneId} {
-      allow read: if resource.data.status == 'published' || isAdmin();
-      allow create: if isAdmin() && isValidScene(request.resource.data);
-      // To modify or delete a scene, it must first be unpublished (set to 'draft').
-      allow update: if isAdmin() && isValidScene(request.resource.data) && resource.data.status == 'draft';
-      allow delete: if isAdmin() && resource.data.status == 'draft';
-    }
-
-    match /entities/{entityId} {
-      allow read: if resource.data.sceneIsPublished == true || isAdmin();
-      // Published scenes are immutable. Modifications require un-publishing first.
-      allow create: if isAdmin() && isValidEntity(request.resource.data) && get(/databases/$(database)/documents/scenes/$(request.resource.data.sceneId)).data.status == 'draft';
-      allow update: if isAdmin() && isValidEntity(request.resource.data) && resource.data.sceneIsPublished == false;
-      allow delete: if isAdmin() && resource.data.sceneIsPublished == false;
-    }
-
-    match /anchors/{anchorId} {
-      allow read: if resource.data.sceneIsPublished == true || isAdmin();
-      // Published scenes are immutable. Modifications require un-publishing first.
-      allow create: if isAdmin() && isValidAnchor(request.resource.data) && get(/databases/$(database)/documents/scenes/$(request.resource.data.sceneId)).data.status == 'draft';
-      allow update: if isAdmin() && isValidAnchor(request.resource.data) && resource.data.sceneIsPublished == false;
-      allow delete: if isAdmin() && resource.data.sceneIsPublished == false;
-    }
-
-    match /deviceProfiles/{profileId} {
-      allow read, create, update, delete: if isAdmin();
-    }
-
-    match /xr/sessions/{sessionId} {
-      allow read: if isOwner(resource.data.userId) || isAdmin();
-      allow create: if isOwner(request.resource.data.userId) && isValidXrSessionData(request.resource.data);
-      allow update: if (isOwner(resource.data.userId) || isAdmin()) && request.resource.data.userId == resource.data.userId && isValidXrSessionData(request.resource.data);
-    }
-
-    match /auditLogs/{logId} {
-      allow read: if isAdmin();
-      allow write: if false;
+    // Lock down all other collections
+    match /{path=**}/{document=**} {
+      allow read, write: if false;
     }
   }
 }
