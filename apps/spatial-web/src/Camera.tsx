@@ -8,7 +8,11 @@ export default function Camera() {
 
   useEffect(() => {
     camera.position.set(0, 1.4, 2.8);
-    camera.fov = 60;
+    
+if ("fov" in camera) {
+  camera.fov = 60;
+}
+
     camera.updateProjectionMatrix();
   }, [camera]);
 

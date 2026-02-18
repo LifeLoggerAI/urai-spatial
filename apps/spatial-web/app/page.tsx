@@ -5,7 +5,19 @@ import dynamic from 'next/dynamic';
 import { useSearchParams } from 'next/navigation';
 import { Suspense } from 'react';
 
-const XRScene = dynamic(() => import('../src/XRScene'), { ssr: false });
+import type { FC } from "react";
+
+type XRSceneProps = {
+  demo: string | null;
+  replay: string | null;
+  season: string | null;
+  interactionMode: string | null;
+};
+
+const XRScene = dynamic<XRSceneProps>(
+  () => import('../src/XRScene') as Promise<{ default: FC<XRSceneProps> }>,
+  { ssr: false }
+);
 
 function SceneSelector() {
   const searchParams = useSearchParams();

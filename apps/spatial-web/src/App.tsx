@@ -1,6 +1,6 @@
 
 import { Canvas } from '@react-three/fiber';
-import { VRButton, XR } from '@react-three/xr';
+
 import { Suspense } from 'react';
 import { UraiSpatialScene } from './UraiSpatialScene';
 import { useMachine } from '@xstate/react';
@@ -32,7 +32,7 @@ function App() {
   return (
     <>
       <div style={{ position: 'absolute', top: 10, left: 10, zIndex: 1, color: 'white' }}>
-        <h1>Current State: {state.value}</h1>
+        <h1>Current State: {JSON.stringify(state.value)}</h1>
         {state.matches('idle') && (
           <button onClick={() => send('LOAD_SCENES')}>Load Scenes</button>
         )}
@@ -61,15 +61,15 @@ function App() {
           </div>
         )}
       </div>
-      <VRButton />
+      
       <Canvas>
-        <XR>
+        
           <Suspense fallback={null}>
             {state.context.currentScene && (
               <UraiSpatialScene sceneName={state.context.currentScene} />
             )}
           </Suspense>
-        </XR>
+        
       </Canvas>
     </>
   );

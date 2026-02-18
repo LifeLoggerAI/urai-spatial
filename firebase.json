@@ -1,21 +1,34 @@
-
 {
-  "hosting": {
-    "source": "apps/spatial-web",
-    "ignore": ["firebase.json", "**/.*", "**/node_modules/**"],
-    "frameworksBackend": {
-      "region": "us-central1"
-    }
-  },
-  "functions": {
-    "source": "functions",
-    "runtime": "nodejs20"
-  },
   "firestore": {
     "rules": "infra/firestore.rules",
     "indexes": "infra/indexes.json"
   },
   "storage": {
     "rules": "infra/storage.rules"
+  },
+  "functions": {
+    "source": "functions",
+    "ignore": [
+      "node_modules",
+      ".git",
+      "firebase-debug.log",
+      "firebase-debug.*.log",
+      "pnpm-lock.yaml"
+    ],
+    "predeploy": [
+      "npm install",
+      "npm run build"
+    ]
+  },
+  "hosting": {
+    "source": "apps/spatial-web",
+    "ignore": [
+      "firebase.json",
+      "**/.*",
+      "**/node_modules/**"
+    ],
+    "frameworksBackend": {
+      "region": "us-central1"
+    }
   }
 }

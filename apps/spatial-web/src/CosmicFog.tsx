@@ -1,11 +1,10 @@
-'use client';
-
-import { Sphere } from '@react-three/drei';
+"use client";
+import React from "react";
 
 export default function CosmicFog() {
   return (
-    <Sphere args={[0.2, 32, 32]}>
-      <meshStandardMaterial color="purple" />
-    </Sphere>
+    <div style={{ color: "white", padding: 10 }}>
+      CosmicFog Placeholder
+    </div>
   );
 }

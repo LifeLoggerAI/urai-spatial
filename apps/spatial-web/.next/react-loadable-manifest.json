@@ -1,8 +1,10 @@
 {
   "app/page.tsx -> ../src/XRScene": {
-    "id": "app/page.tsx -> ../src/XRScene",
+    "id": 391,
     "files": [
-      "static/chunks/_app-pages-browser_src_XRScene_tsx.js"
+      "static/chunks/cbf989d1.9c5dac60e4d1419a.js",
+      "static/chunks/625.10b26c9a4c907f5d.js",
+      "static/chunks/391.738e13432d085437.js"
     ]
   }
 }
