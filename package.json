@@ -30,5 +30,8 @@
     "react-dom": "19.2.4",
     "three": "^0.182.0",
     "three-stdlib": "^2.36.1"
+  },
+  "engines": {
+    "node": "22"
   }
 }

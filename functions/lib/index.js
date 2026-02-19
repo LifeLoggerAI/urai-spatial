@@ -117,8 +117,10 @@ async function runBuild(assetId, sourceSha256, sourceObjectPath) {
         firebase_functions_1.logger.info(`Build already ready: ${buildId}`);
         return buildId;
     }
-    await ref.set({ status: "building", updatedAt: admin.firestore.FieldValue.serverTimestamp() }, { merge: true });
-    await setAssetStatus(assetId, "building", buildId);
+    const buildingBatch = db.batch();
+    buildingBatch.set(ref, { status: "building", updatedAt: admin.firestore.FieldValue.serverTimestamp() }, { merge: true });
+    buildingBatch.set(db.collection("assets").doc(assetId), { status: "building", latestBuildId: buildId, updatedAt: admin.firestore.FieldValue.serverTimestamp() }, { merge: true });
+    await buildingBatch.commit();
     const t0 = Date.now();
     const tmpDir = await fs.mkdtemp(path.join(os.tmpdir(), "urai-spatial-"));
     const inFile = path.join(tmpDir, "in.glb");
@@ -132,7 +134,7 @@ async function runBuild(assetId, sourceSha256, sourceObjectPath) {
         await doc.transform((0, functions_1.dedup)(), (0, functions_1.instance)(), (0, functions_1.weld)(), (0, functions_1.prune)(), (0, functions_1.join)(), (0, functions_1.quantize)({ quantizePosition: 14, quantizeNormal: 10, quantizeTexcoord: 12 }), (0, functions_1.resample)(), (0, functions_1.textureResize)({ size: [2048, 2048] }));
         await io.write(outFile, doc);
         const doc2 = await io.read(outFile);
-        await doc2.transform((0, functions_1.draco)({ encoderMethod: "edgebreaker", quantizePosition: 14, quantizeNormal: 10, quantizeTexcoord: 12 }));
+        await doc2.transform((0, functions_1.draco)({ method: "edgebreaker", quantizePosition: 14, quantizeNormal: 10, quantizeTexcoord: 12 }));
         await io.write(outDracoFile, doc2);
         const outBuf = await fs.readFile(outFile);
         const outDracoBuf = await fs.readFile(outDracoFile);
@@ -144,15 +146,19 @@ async function runBuild(assetId, sourceSha256, sourceObjectPath) {
         await bucket.file(outDracoPath).save(outDracoBuf, { contentType: "model/gltf-binary" });
         const report = { assetId, buildId, pipelineVersion: PIPELINE_VERSION, source: { path: sourceObjectPath, sha256: sourceSha256, bytes: srcBuf.length }, outputs: { glb: { path: outPath, bytes: outBuf.length }, glbDraco: { path: outDracoPath, bytes: outDracoBuf.length } }, timing: { durationMs: Date.now() - t0 } };
         await bucket.file(reportPath).save(JSON.stringify(report, null, 2), { contentType: "application/json" });
-        await ref.set({ status: "ready", outputs: { glb: outPath, glbDraco: outDracoPath, report: reportPath }, metrics: { bytesIn: srcBuf.length, bytesOut: outBuf.length, durationMs: Date.now() - t0 }, error: null, updatedAt: admin.firestore.FieldValue.serverTimestamp() }, { merge: true });
-        await setAssetStatus(assetId, "ready", buildId);
+        const readyBatch = db.batch();
+        readyBatch.set(ref, { status: "ready", outputs: { glb: outPath, glbDraco: outDracoPath, report: reportPath }, metrics: { bytesIn: srcBuf.length, bytesOut: outBuf.length, durationMs: Date.now() - t0 }, error: null, updatedAt: admin.firestore.FieldValue.serverTimestamp() }, { merge: true });
+        readyBatch.set(db.collection("assets").doc(assetId), { status: "ready", latestBuildId: buildId, updatedAt: admin.firestore.FieldValue.serverTimestamp() }, { merge: true });
+        await readyBatch.commit();
         return buildId;
     }
     catch (err) {
         const message = err?.message || String(err);
         const stack = err?.stack || "";
-        await ref.set({ status: "failed", error: { message, stack }, updatedAt: admin.firestore.FieldValue.serverTimestamp() }, { merge: true });
-        await setAssetStatus(assetId, "failed", null);
+        const failedBatch = db.batch();
+        failedBatch.set(ref, { status: "failed", error: { message, stack }, updatedAt: admin.firestore.FieldValue.serverTimestamp() }, { merge: true });
+        failedBatch.set(db.collection("assets").doc(assetId), { status: "failed", latestBuildId: null, updatedAt: admin.firestore.FieldValue.serverTimestamp() }, { merge: true });
+        await failedBatch.commit();
         throw err;
     }
     finally {
@@ -162,7 +168,11 @@ async function runBuild(assetId, sourceSha256, sourceObjectPath) {
         catch { }
     }
 }
-exports.spatialOnAssetUpload = (0, storage_1.onObjectFinalized)({ region: "us-central1" }, async (event) => {
+exports.spatialOnAssetUpload = (0, storage_1.onObjectFinalized)({
+    region: "us-central1",
+    memory: "512MiB",
+    timeoutSeconds: 300,
+}, async (event) => {
     const objectName = event.data.name || "";
     const parsed = assertSourcePath(objectName);
     if (!parsed)
@@ -177,7 +187,12 @@ exports.spatialOnAssetUpload = (0, storage_1.onObjectFinalized)({ region: "us-ce
     await upsertAssetUploaded(assetId, objectName, sourceSha256);
     await runBuild(assetId, sourceSha256, objectName);
 });
-exports.spatialBuildAsset = (0, https_1.onCall)({ region: "us-central1" }, async (req) => {
+exports.spatialBuildAsset = (0, https_1.onCall)({
+    region: "us-central1",
+    memory: "512MiB",
+    timeoutSeconds: 300,
+    minInstances: 0,
+}, async (req) => {
     if (!req.auth)
         throw new https_1.HttpsError("unauthenticated", "Auth required.");
     const isAdmin = req.auth.token.admin === true;
@@ -210,16 +225,19 @@ exports.seedSpatialDemoData = (0, https_1.onCall)({ region: "us-central1" }, asy
     const isAdmin = req.auth.token.admin === true;
     if (!isAdmin)
         throw new https_1.HttpsError("permission-denied", "Admin only.");
+    const batch = db.batch();
     const worldRef = db.collection('worlds').doc('demoWorld');
-    await worldRef.set({ name: 'Demo World', description: 'A world for the Life Map demo scene.', status: 'published', createdAt: admin.firestore.FieldValue.serverTimestamp(), updatedAt: admin.firestore.FieldValue.serverTimestamp() });
+    batch.set(worldRef, { name: 'Demo World', description: 'A world for the Life Map demo scene.', status: 'published', createdAt: admin.firestore.FieldValue.serverTimestamp(), updatedAt: admin.firestore.FieldValue.serverTimestamp() });
     const sceneRef = db.collection('scenes').doc('lifeMap');
-    await sceneRef.set({ name: 'Life Map Demo', worldId: 'demoWorld', status: 'published', createdAt: admin.firestore.FieldValue.serverTimestamp(), updatedAt: admin.firestore.FieldValue.serverTimestamp() });
-    await db.collection("auditLogs").add({
+    batch.set(sceneRef, { name: 'Life Map Demo', worldId: 'demoWorld', status: 'published', createdAt: admin.firestore.FieldValue.serverTimestamp(), updatedAt: admin.firestore.FieldValue.serverTimestamp() });
+    const auditLogRef = db.collection("auditLogs").doc();
+    batch.set(auditLogRef, {
         uid: req.auth.uid,
         ts: admin.firestore.FieldValue.serverTimestamp(),
         action: "seedSpatialDemoData",
         resource: worldRef.path,
         meta: { worldId: worldRef.id, sceneId: sceneRef.id },
     });
+    await batch.commit();
     return { ok: true, worldId: worldRef.id, sceneId: sceneRef.id };
 });
