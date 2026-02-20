@@ -1,4 +1,4 @@
-'use client';
+"use client";
 import { Canvas } from "@react-three/fiber";
 import Starfield from "./Starfield";
 import { useLifeMapData } from "../../lib/useLifeMapData";

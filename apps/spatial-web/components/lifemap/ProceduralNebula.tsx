@@ -1,4 +1,4 @@
-
+'use client';
 /* eslint-disable react/no-unknown-property */
 import { useFrame, extend } from '@react-three/fiber'
 import { shaderMaterial } from '@react-three/drei'

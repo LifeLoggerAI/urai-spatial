@@ -6,8 +6,6 @@
       "esnext"
     ],
     "allowJs": true,
-    "skipLibCheck": true,
-    "strict": false,
     "noEmit": true,
     "incremental": true,
     "module": "esnext",
@@ -21,7 +19,8 @@
         "name": "next"
       }
     ],
-    "types": ["@react-three/fiber"]
+    "skipLibCheck": true,
+    "strict": false
   },
   "include": [
     "next-env.d.ts",

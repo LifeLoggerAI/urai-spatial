@@ -1,1 +1,1 @@
-import '@react-three/fiber';
+import type {} from '@react-three/fiber'
