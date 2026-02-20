@@ -3,19 +3,38 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // Users can only read and write their own memory nodes
-    match /users/{userId}/memoryNodes/{nodeId} {
-      allow read, write: if request.auth.uid == userId;
+    function isStar(data) {
+      return data.size() == 9 &&
+             data.keys().hasAll(['schemaVersion', 'userId', 'position', 'type', 'intensity', 'emotionScore', 'year', 'archetype', 'createdAt']) &&
+             data.schemaVersion is number &&
+             data.userId is string &&
+             data.position.x is number &&
+             data.position.y is number &&
+             data.position.z is number &&
+             data.type is string &&
+             data.intensity is number &&
+             data.emotionScore is number &&
+             data.year is number &&
+             data.archetype is string &&
+             data.createdAt is timestamp;
     }
 
-    // Users can only read and write their own clusters
-    match /users/{userId}/clusters/{clusterId} {
-      allow read, write: if request.auth.uid == userId;
+    match /lifemapStars/{starId} {
+      allow read: if request.auth.uid == resource.data.userId ||
+                   (exists(/databases/$(database)/documents/groups/$(resource.data.groupId)) &&
+                    get(/databases/$(database)/documents/groups/$(resource.data.groupId)).data.members.hasAny([request.auth.uid]));
+
+      allow create: if request.auth.uid == request.resource.data.userId && isStar(request.resource.data);
+      allow update, delete: if request.auth.uid == resource.data.userId;
     }
 
-    // Users can only read and write their own seasonal states
-    match /users/{userId}/seasonalStates/{stateId} {
-      allow read, write: if request.auth.uid == userId;
+    match /groups/{groupId} {
+      allow read, create, update, delete: if request.auth.uid in resource.data.admins;
+    }
+    
+    // Prevent public writes entirely.
+    match /{path=**} {
+        allow write: if false;
     }
   }
 }

@@ -1,10 +1,10 @@
 "use client"
 
-import { Canvas, useFrame } from "@react-three/fiber"
+import { Canvas } from "@react-three/fiber"
 import { EffectComposer, Bloom } from "@react-three/postprocessing"
-import * as THREE from "three"
-import { useMemo } from "react"
-import { mockMemoryNodes } from '../lib/mock-data';
+import Starfield from "../components/lifemap/Starfield";
+import { useLifeMapData } from "../lib/lifemap/useLifeMapData";
+import { Stats } from '@react-three/drei';
 
 function Orb() {
   return (
@@ -35,42 +35,22 @@ function Orb() {
   )
 }
 
-function MemoryStars() {
-  const [positions, colors] = useMemo(() => {
-    const pos = new Float32Array(mockMemoryNodes.length * 3);
-    const col = new Float32Array(mockMemoryNodes.length * 3);
-    const tempColor = new THREE.Color();
-
-    mockMemoryNodes.forEach((node, i) => {
-      pos[i * 3] = node.position[0];
-      pos[i * 3 + 1] = node.position[1];
-      pos[i * 3 + 2] = node.position[2];
-      tempColor.set(node.color);
-      col[i * 3] = tempColor.r;
-      col[i * 3 + 1] = tempColor.g;
-      col[i * 3 + 2] = tempColor.b;
-    });
-
-    return [pos, col];
-  }, []);
-
-  return (
-    <points>
-      <bufferGeometry>
-        <bufferAttribute attach="attributes-position" array={positions} count={positions.length / 3} itemSize={3} />
-        <bufferAttribute attach="attributes-color" array={colors} count={colors.length / 3} itemSize={3} />
-      </bufferGeometry>
-      <pointsMaterial size={0.5} vertexColors={true} />
-    </points>
-  );
-}
-
-
 export default function LifeMapScene() {
+  const { memories, loading, error } = useLifeMapData();
+  const isDev = process.env.NODE_ENV === 'development';
+
+  if (loading) {
+    return <div>Loading...</div>;
+  }
+
+  if (error) {
+    return <div>Error loading data.</div>;
+  }
+  
   return (
     <Canvas camera={{ position: [0, 0, 8], fov: 60 }}>
       <color attach="background" args={["#030712"]} />
-      <MemoryStars />
+      <Starfield stars={memories} />
       <Orb />
       <EffectComposer>
         <Bloom 
@@ -80,6 +60,7 @@ export default function LifeMapScene() {
           mipmapBlur={true}
         />
       </EffectComposer>
+      {isDev && <Stats />}
     </Canvas>
   )
 }

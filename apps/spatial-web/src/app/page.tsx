@@ -7,11 +7,12 @@ import { CameraController } from '@/components/CameraController';
 import Starfield from 'apps/spatial-web/src/Starfield';
 import { useLifeMapData } from '@/hooks/useLifeMapData';
 import { XRSceneManager } from '@/components/XRSceneManager';
-import { Suspense, useRef, useEffect } from 'react';
+import { Suspense, useRef, useEffect, useState } from 'react';
 import Orb from 'apps/spatial-web/src/Orb';
-import { Box } from '@react-three/drei';
+import { Box, Text, Stats } from '@react-three/drei';
 import * as THREE from 'three';
 import { EffectComposer, Bloom } from '@react-three/postprocessing';
+import ErrorBoundary from '@/components/ErrorBoundary';
 
 const Avatar = () => {
   const avatarRef = useRef<THREE.Mesh>(null!);
@@ -33,7 +34,7 @@ const Avatar = () => {
 
 function Scene() {
   const { scene } = useThree();
-  const { memories } = useLifeMapData();
+  const { memories, loading } = useLifeMapData();
   const orbRef = useRef<THREE.Group>(null!);
   const skyRef = useRef<THREE.Group>(null!);
 
@@ -53,6 +54,14 @@ function Scene() {
     }
     camera.lookAt(0, 1.1, 0);
   });
+
+  if (loading) {
+    return <Text position={[0, 1.5, 0]}>Loading memories...</Text>;
+  }
+
+  if (memories.length === 0) {
+    return <Text position={[0, 1.5, 0]}>No memories found.</Text>;
+  }
 
   return (
     <Suspense fallback={null}>
@@ -97,22 +106,35 @@ function Scene() {
 }
 
 export default function SpatialWebPage() {
+  const [showStats, setShowStats] = useState(false);
+
+  useEffect(() => {
+    // Check for a query parameter to show stats, e.g., ?stats=true
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.get('stats') === 'true') {
+      setShowStats(true);
+    }
+  }, []);
+
   return (
     <main className="w-full h-screen bg-black">
       <ARButton />
-      <Canvas
-        shadows
-        camera={{ position: [0, 2.2, 6], fov: 45 }}
-        gl={{ antialias: true }}
-      >
-        <color attach="background" args={['#070b17']} />
-        <XR>
-          <XRSceneManager />
-          <Controllers />
-          <Hands />
-          <Scene />
-        </XR>
-      </Canvas>
+      <ErrorBoundary fallback={<div className="w-full h-full flex items-center justify-center"><p>Something went wrong.</p></div>}>
+        <Canvas
+          shadows
+          camera={{ position: [0, 2.2, 6], fov: 45 }}
+          gl={{ antialias: true }}
+        >
+          <color attach="background" args={['#070b17']} />
+          <XR>
+            <XRSceneManager />
+            <Controllers />
+            <Hands />
+            <Scene />
+          </XR>
+          {showStats && <Stats />}
+        </Canvas>
+      </ErrorBoundary>
     </main>
   );
 }

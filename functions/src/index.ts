@@ -23,6 +23,9 @@ import {
   textureResize,
   weld
 } from "@gltf-transform/functions";
+import { exportUserData } from "./export";
+import { narrate } from "./narrator";
+import { getClusters } from "./clustering";
 
 admin.initializeApp();
 
@@ -146,7 +149,7 @@ async function runBuild(assetId: string, sourceSha256: string, sourceObjectPath:
     const outDracoBuf = await fs.readFile(outDracoFile);
 
     const base = `${BUILDS_PREFIX}${assetId}/${sourceSha256}/${PIPELINE_VERSION}`;
-    const outPath = `${base}/model.glb`;
+  const outPath = `${base}/model.glb`;
     const outDracoPath = `${base}/model.draco.glb`;
     const reportPath = `${base}/report.json`;
 
@@ -231,29 +234,4 @@ export const spatialBuildAsset = onCall({
   return { ok: true, buildId };
 });
 
-export const seedSpatialDemoData = onCall({ region: "us-central1" }, async (req) => {
-  if (!req.auth) throw new HttpsError("unauthenticated", "Auth required.");
-  const isAdmin = (req.auth.token as any).admin === true;
-  if (!isAdmin) throw new HttpsError("permission-denied", "Admin only.");
-
-  const batch = db.batch();
-
-  const worldRef = db.collection('worlds').doc('demoWorld');
-  batch.set(worldRef, { name: 'Demo World', description: 'A world for the Life Map demo scene.', status: 'published', createdAt: admin.firestore.FieldValue.serverTimestamp(), updatedAt: admin.firestore.FieldValue.serverTimestamp() });
-
-  const sceneRef = db.collection('scenes').doc('lifeMap');
-  batch.set(sceneRef, { name: 'Life Map Demo', worldId: 'demoWorld', status: 'published', createdAt: admin.firestore.FieldValue.serverTimestamp(), updatedAt: admin.firestore.FieldValue.serverTimestamp() });
-
-  const auditLogRef = db.collection("auditLogs").doc();
-  batch.set(auditLogRef, {
-    uid: req.auth.uid,
-    ts: admin.firestore.FieldValue.serverTimestamp(),
-    action: "seedSpatialDemoData",
-    resource: worldRef.path,
-    meta: { worldId: worldRef.id, sceneId: sceneRef.id },
-  });
-
-  await batch.commit();
-
-  return { ok: true, worldId: worldRef.id, sceneId: sceneRef.id };
-});
+export { exportUserData, narrate, getClusters };
