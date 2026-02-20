@@ -1,7 +1,7 @@
+'use client';
 import { Canvas } from "@react-three/fiber";
-import { Perf } from "r3f-perf";
 import Starfield from "./Starfield";
-import { useLifeMapData } from "../../lib/lifemap/useLifeMapData";
+import { useLifeMapData } from "../../lib/useLifeMapData";
 
 // --- PHASE 1: RENDER CORE HARDENING ---
 
@@ -19,9 +19,6 @@ export default function LifeMapCanvas() {
       
       {memories.length > 0 && <Starfield stars={memories} />}
 
-      {/* --- PHASE 1: FPS Dev Overlay -- */}
-      {/* This tool is enabled in development environments for performance monitoring. */}
-      {process.env.NODE_ENV === 'development' && <Perf position="top-left" />}
     </Canvas>
   );
 }

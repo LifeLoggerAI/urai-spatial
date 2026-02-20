@@ -1,6 +1,6 @@
-[00:00:27.567] Server  LOG     ✓ Ready in 22.9s
-[00:00:31.056] Server  LOG     ○ Compiling /_not-found/page ...
-[00:00:36.414] Server  ERROR   ⨯ ./app/layout.tsx:2:1
+[00:00:09.281] Server  LOG     ✓ Ready in 6.5s
+[00:03:15.326] Server  LOG     ○ Compiling /_not-found/page ...
+[00:03:49.817] Server  ERROR   ⨯ ./app/layout.tsx:2:1
 Module not found: Can't resolve './globals.css'
   1 |
 > 2 | import "./globals.css";
@@ -14,7 +14,7 @@ Module not found: Can't resolve './globals.css'
 https://nextjs.org/docs/messages/module-not-found
 
 
-[00:00:36.431] Server  ERROR   ⨯ ./app/layout.tsx:2:1
+[00:03:49.851] Server  ERROR   ⨯ ./app/layout.tsx:2:1
 Module not found: Can't resolve './globals.css'
   1 |
 > 2 | import "./globals.css";
@@ -28,11 +28,11 @@ Module not found: Can't resolve './globals.css'
 https://nextjs.org/docs/messages/module-not-found
 
 
-[00:00:39.423] Server  LOG     ○ Compiling /_error ...
-[00:00:45.915] Server  WARN    ⚠ Cross origin request detected from 9000-firebase-urai-spatial-1769687960051.cluster-c72u3gwiofapkvxrcwjq5zllcu.cloudworkstations.dev to /_next/* resource. In a future major version of Next.js, you will need to explicitly configure "allowedDevOrigins" in next.config to allow this.
+[00:03:52.832] Server  LOG     ○ Compiling /_error ...
+[00:04:08.210] Server  WARN    ⚠ Cross origin request detected from 9000-firebase-urai-spatial-1769687960051.cluster-c72u3gwiofapkvxrcwjq5zllcu.cloudworkstations.dev to /_next/* resource. In a future major version of Next.js, you will need to explicitly configure "allowedDevOrigins" in next.config to allow this.
 Read more: https://nextjs.org/docs/app/api-reference/config/next-config-js/allowedDevOrigins
-[00:00:46.187] Browser ERROR   {"name":"Error"}
-[00:00:46.187] Browser ERROR   uncaughtError: Error: ./app/layout.tsx:2:1
+[00:04:08.309] Browser ERROR   {"name":"Error"}
+[00:04:08.309] Browser ERROR   uncaughtError: Error: ./app/layout.tsx:2:1
 Module not found: Can't resolve './globals.css'
   1 |
 > 2 | import "./globals.css";
@@ -46,7 +46,7 @@ Module not found: Can't resolve './globals.css'
 https://nextjs.org/docs/messages/module-not-found
 
 
-[02:41:13.221] Server  ERROR   ⨯ ./app/layout.tsx:2:1
+[00:04:09.371] Browser ERROR   ./app/layout.tsx:2:1
 Module not found: Can't resolve './globals.css'
   1 |
 > 2 | import "./globals.css";
@@ -55,12 +55,8 @@ Module not found: Can't resolve './globals.css'
   4 | export const metadata = {
   5 |   title: "URAI",
 
-
-
 https://nextjs.org/docs/messages/module-not-found
-
-
-[02:41:14.164] Server  ERROR   ⨯ ./app/layout.tsx:2:1
+[00:04:09.371] Browser ERROR   ./app/layout.tsx:2:1
 Module not found: Can't resolve './globals.css'
   1 |
 > 2 | import "./globals.css";
@@ -69,8 +65,4 @@ Module not found: Can't resolve './globals.css'
   4 | export const metadata = {
   5 |   title: "URAI",
 
-
-
 https://nextjs.org/docs/messages/module-not-found
-
-

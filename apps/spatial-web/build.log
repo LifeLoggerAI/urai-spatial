@@ -1,0 +1,48 @@
+
+> spatial-web@0.0.1 build /home/user/urai-spatial/apps/spatial-web
+> next build && next export
+
+  ▲ Next.js 14.2.35
+
+   Creating an optimized production build ...
+ ✓ Compiled successfully
+   Skipping validation of types
+   Skipping linting
+   Collecting page data ...
+   Generating static pages (0/5) ...
+   Generating static pages (1/5) 
+   Generating static pages (2/5) 
+   Generating static pages (3/5) 
+ ✓ Generating static pages (5/5)
+   Finalizing page optimization ...
+   Collecting build traces ...
+
+Route (app)                              Size     First Load JS
+┌ ○ /                                    648 B            88 kB
+├ ○ /_not-found                          874 B          88.3 kB
+└ ○ /lifemap                             209 kB          296 kB
++ First Load JS shared by all            87.4 kB
+  ├ chunks/4-5bb60d1f6a873e63.js         31.8 kB
+  ├ chunks/b6890e83-1f3fe96530c36097.js  53.7 kB
+  └ other shared chunks (total)          1.92 kB
+
+
+○  (Static)  prerendered as static content
+
+ ⨯ 
+    `next export` has been removed in favor of 'output: export' in next.config.js.
+Learn more: https://nextjs.org/docs/app/building-your-application/deploying/static-exports
+  
+ ELIFECYCLE  Command failed with exit code 1.
+st/build/index.js:1924:25
+    at async Span.traceAsyncFn (/home/user/urai-spatial/node_modules/.pnpm/next@14.2.35_@opentelemetry+api@1.9.0_react-dom@18.3.1_react@18.3.1__react@18.3.1/node_modules/next/dist/trace/trace.js:154:20)
+    at async /home/user/urai-spatial/node_modules/.pnpm/next@14.2.35_@opentelemetry+api@1.9.0_react-dom@18.3.1_react@18.3.1__react@18.3.1/node_modules/next/dist/build/index.js:1546:17
+    at async Span.traceAsyncFn (/home/user/urai-spatial/node_modules/.pnpm/next@14.2.35_@opentelemetry+api@1.9.0_react-dom@18.3.1_react@18.3.1__react@18.3.1/node_modules/next/dist/trace/trace.js:154:20)
+    at async build (/home/user/urai-spatial/node_modules/.pnpm/next@14.2.35_@opentelemetry+api@1.9.0_react-dom@18.3.1_react@18.3.1__react@18.3.1/node_modules/next/dist/build/index.js:368:9) {
+  errno: -2,
+  code: 'ENOENT',
+  syscall: 'rename',
+  path: '/home/user/urai-spatial/apps/spatial-web/.next/export/500.html',
+  dest: '/home/user/urai-spatial/apps/spatial-web/.next/server/pages/500.html'
+}
+ ELIFECYCLE  Command failed with exit code 1.

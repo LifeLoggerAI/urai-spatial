@@ -19,12 +19,12 @@ const useUserData = () => {
   return {
     loading: false,
     error: null,
-    data: null, // Start with null data to test the empty state
-    // data: {
-    //   auraState: 'Calm',
-    //   moodSummary: 'Centered',
-    //   latestInsight: 'The journey begins with a single step.',
-    // },
+    // data: null, // Start with null data to test the empty state
+    data: {
+      auraState: 'Calm',
+      moodSummary: 'Centered',
+      latestInsight: 'The journey begins with a single step.',
+    },
   }
 }
 
