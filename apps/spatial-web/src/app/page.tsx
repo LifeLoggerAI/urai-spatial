@@ -5,7 +5,7 @@ import { Canvas, useFrame, useThree } from '@react-three/fiber';
 import { ARButton, XR, Controllers, Hands } from '@react-three/xr';
 import { CameraController } from '@/components/CameraController';
 import Starfield from 'apps/spatial-web/src/Starfield';
-import { useLifeMapData } from '@/hooks/useLifeMapData';
+import { useLifeMapData } from '@/lib/lifemap/useLifeMapData';
 import { XRSceneManager } from '@/components/XRSceneManager';
 import { Suspense, useRef, useEffect, useState } from 'react';
 import Orb from 'apps/spatial-web/src/Orb';

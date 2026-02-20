@@ -1,7 +1,7 @@
 "use client";
 import { Canvas } from "@react-three/fiber";
 import Starfield from "./Starfield";
-import { useLifeMapData } from "../../lib/useLifeMapData";
+import { useLifeMapData } from "@/lib/lifemap/useLifeMapData";
 
 // --- PHASE 1: RENDER CORE HARDENING ---
 
