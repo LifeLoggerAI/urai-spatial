@@ -1,67 +1,43 @@
 'use client'
 
-import { Suspense } from 'react'
-
-// Placeholder for a proper AppShell and layout components
-const AppShell = ({ children }: { children: React.ReactNode }) => (
-  <div style={{ padding: '2rem', background: '#0a0a0a', color: 'white', minHeight: '100vh' }}>
-    <nav style={{ marginBottom: '2rem' }}>
-      <h1 style={{ fontSize: '2rem', fontWeight: 'bold' }}>URAI</h1>
-      {/* Navigation would go here */}
-    </nav>
-    <main>{children}</main>
-  </div>
-)
-
-// Placeholder for data fetching hook. This will be replaced with a real Firestore hook.
-const useUserData = () => {
-  // Simulate a loading state and no data for now to test fallbacks
-  return {
-    loading: false,
-    error: null,
-    // data: null, // Start with null data to test the empty state
-    data: {
-      auraState: 'Calm',
-      moodSummary: 'Centered',
-      latestInsight: 'The journey begins with a single step.',
-    },
-  }
-}
-
-function HomeContent() {
-  const { loading, error, data } = useUserData()
-
-  if (loading) {
-    return <div>Loading user state...</div>
-  }
-
-  if (error || !data) {
-    return (
-      <div>
-        <h2>Welcome</h2>
-        <p>Your journey awaits. We are preparing your space.</p>
-      </div>
-    )
-  }
-
-  return (
-    <div>
-      <h2>Home</h2>
-      <div>
-        <p><strong>Aura:</strong> {data.auraState}</p>
-        <p><strong>Rhythm:</strong> {data.moodSummary}</p>
-        <p><strong>Latest Whisper:</strong> {data.latestInsight}</p>
-      </div>
-    </div>
-  )
-}
+import { useRouter } from 'next/navigation'
 
 export default function Home() {
+  const router = useRouter()
+
   return (
-    <AppShell>
-      <Suspense fallback={<div>Loading...</div>}>
-        <HomeContent />
-      </Suspense>
-    </AppShell>
+    <main className="flex min-h-screen flex-col items-center justify-center bg-transparent">
+      <div className="mb-32 grid text-center lg:mb-0 lg:grid-cols-2 lg:text-left">
+        <button
+          onClick={() => router.push('/lifemap')}
+          className="group rounded-lg border border-transparent px-5 py-4 transition-colors hover:border-gray-300 hover:bg-gray-100 hover:dark:border-neutral-700 hover:dark:bg-neutral-800/30"
+        >
+          <h2 className={`mb-3 text-2xl font-semibold`}>
+            Life Map{' '}
+            <span className="inline-block transition-transform group-hover:translate-x-1 motion-reduce:transform-none">
+              -&gt;
+            </span>
+          </h2>
+          <p className={`m-0 max-w-[30ch] text-sm opacity-50`}>
+            Explore your past, present and future.
+          </p>
+        </button>
+
+        <button
+          onClick={() => router.push('/ground')}
+          className="group rounded-lg border border-transparent px-5 py-4 transition-colors hover:border-gray-300 hover:bg-gray-100 hover:dark:border-neutral-700 hover:dark:bg-neutral-800/30"
+        >
+          <h2 className={`mb-3 text-2xl font-semibold`}>
+            Ground{' '}
+            <span className="inline-block transition-transform group-hover:translate-x-1 motion-reduce:transform-none">
+              -&gt;
+            </span>
+          </h2>
+          <p className={`m-0 max-w-[30ch] text-sm opacity-50`}>
+            A new perspective on your present.
+          </p>
+        </button>
+      </div>
+    </main>
   )
 }

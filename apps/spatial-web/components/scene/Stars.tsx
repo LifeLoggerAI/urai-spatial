@@ -1,27 +1,32 @@
+'use client'
+
+import { useRouter } from 'next/navigation'
 import { useRef } from "react";
 import { useFrame } from "@react-three/fiber";
 import * as THREE from "three";
 
 function StarLayer({ depth, count }: { depth: number; count: number }) {
-  const ref = useRef<THREE.Points>(null!);
+  const ref = useRef<THREE.Points>(null!)
 
-  const positions = new Float32Array(count * 3);
-  const colors = new Float32Array(count * 3);
+  const positions = new Float32Array(count * 3)
+  const colors = new Float32Array(count * 3)
 
   for (let i = 0; i < count; i++) {
-    positions[i * 3] = (Math.random() - 0.5) * 20;
-    positions[i * 3 + 1] = (Math.random() - 0.5) * 20;
-    positions[i * 3 + 2] = -depth;
+    positions[i * 3] = (Math.random() - 0.5) * 20
+    positions[i * 3 + 1] = (Math.random() - 0.5) * 20
+    positions[i * 3 + 2] = -depth
 
-    const brightness = 0.6 + Math.random() * 0.4;
-    colors[i * 3] = brightness;
-    colors[i * 3 + 1] = brightness;
-    colors[i * 3 + 2] = brightness;
+    const brightness = 0.6 + Math.random() * 0.4
+    colors[i * 3] = brightness
+    colors[i * 3 + 1] = brightness
+    colors[i * 3 + 2] = brightness
   }
 
   useFrame(({ clock }) => {
-    ref.current.rotation.y = clock.getElapsedTime() * 0.01 * depth;
-  });
+    if (ref.current) {
+      ref.current.rotation.y = clock.getElapsedTime() * 0.01 * depth
+    }
+  })
 
   return (
     <points ref={ref}>
@@ -47,15 +52,28 @@ function StarLayer({ depth, count }: { depth: number; count: number }) {
         depthWrite={false}
       />
     </points>
-  );
+  )
 }
 
 export default function Stars() {
+  const router = useRouter()
+
   return (
     <>
+      {/* Invisible sky dome for click detection */}
+      <mesh
+        onClick={(e) => {
+          e.stopPropagation()
+          router.push('/lifemap')
+        }}
+      >
+        <sphereGeometry args={[100, 32, 32]} />
+        <meshBasicMaterial transparent opacity={0} side={THREE.BackSide} />
+      </mesh>
+
       <StarLayer depth={1} count={400} />
       <StarLayer depth={2} count={300} />
       <StarLayer depth={3} count={200} />
     </>
-  );
+  )
 }

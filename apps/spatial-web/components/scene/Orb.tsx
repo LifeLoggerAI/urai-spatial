@@ -1,13 +1,16 @@
-import { useRef, forwardRef } from "react";
-import { useFrame, extend } from "@react-three/fiber";
-import * as THREE from "three";
-import { shaderMaterial } from "@react-three/drei";
+'use client'
+
+import { useRouter } from 'next/navigation'
+import { useRef, forwardRef } from 'react'
+import { useFrame, extend } from '@react-three/fiber'
+import * as THREE from 'three'
+import { shaderMaterial } from '@react-three/drei'
 
 const AuraPulseMaterial = shaderMaterial(
   // Uniforms
   {
     uTime: 0,
-    uColor: new THREE.Color("#00ccff"),
+    uColor: new THREE.Color('#00ccff'),
     uPulseSpeed: 1.5,
     uFresnelPower: 3.0,
   },
@@ -50,33 +53,41 @@ const AuraPulseMaterial = shaderMaterial(
       gl_FragColor = vec4(finalColor, alpha);
     }
   `
-);
+)
 
-extend({ AuraPulseMaterial });
+extend({ AuraPulseMaterial })
 
 const Orb = forwardRef<THREE.Mesh>((props, ref) => {
-  const shaderRef = useRef<THREE.ShaderMaterial>(null!);
+  const router = useRouter()
+  const shaderRef = useRef<THREE.ShaderMaterial>(null!)
 
   useFrame(({ clock }) => {
     if (shaderRef.current) {
-      shaderRef.current.uniforms.uTime.value = clock.getElapsedTime();
+      shaderRef.current.uniforms.uTime.value = clock.getElapsedTime()
     }
-  });
+  })
 
   return (
-    <mesh {...props} ref={ref}>
+    <mesh
+      {...props}
+      ref={ref}
+      onClick={(e) => {
+        e.stopPropagation()
+        router.push('/chat')
+      }}
+    >
       <sphereGeometry args={[0.6, 64, 64]} />
       {/* @ts-ignore */}
-      <auraPulseMaterial 
-        ref={shaderRef} 
-        transparent={true} 
-        blending={THREE.AdditiveBlending} 
-        depthWrite={false} 
+      <auraPulseMaterial
+        ref={shaderRef}
+        transparent={true}
+        blending={THREE.AdditiveBlending}
+        depthWrite={false}
       />
     </mesh>
-  );
-});
+  )
+})
 
-Orb.displayName = 'Orb';
+Orb.displayName = 'Orb'
 
-export default Orb;
+export default Orb

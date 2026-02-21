@@ -1,24 +1,64 @@
-"use client";
-import { Canvas } from "@react-three/fiber";
-import Starfield from "./Starfield";
-import { useLifeMapData } from "../../lib/lifemap/useLifeMapData";
+'use client'
 
-// --- PHASE 1: RENDER CORE HARDENING ---
+import { useRef } from 'react'
+import { useFrame } from '@react-three/fiber'
+import { Sphere, Stars } from '@react-three/drei'
+import { useRouter } from 'next/navigation'
+import * as THREE from 'three'
+import { demoStars } from '../../lib/demoData'
+
+function Star({ id, position, size }: any) {
+  const router = useRouter()
+  const materialRef = useRef<THREE.MeshStandardMaterial>(null!)
+
+  // random phase so all stars don't pulse together
+  const phase = Math.random() * Math.PI * 2
+
+  useFrame(({ clock }) => {
+    const t = clock.getElapsedTime()
+
+    // slow pulse
+    const intensity =
+      1.5 + Math.sin(t * 0.8 + phase) * 0.5
+
+    if (materialRef.current) {
+      materialRef.current.emissiveIntensity = intensity
+    }
+  })
+
+  return (
+    <Sphere
+      args={[size, 32, 32]}
+      position={position}
+      onClick={() => router.push(`/lifemap/${id}`)}
+    >
+      <meshStandardMaterial
+        ref={materialRef}
+        color="white"
+        emissive="cyan"
+        emissiveIntensity={1.5}
+      />
+    </Sphere>
+  )
+}
 
 export default function LifeMapCanvas() {
-  const { memories, loading, error } = useLifeMapData();
-
-  if (loading) return <div>Loading...</div>;
-  if (error) return <div>Error loading data.</div>;
-
-  // Per Phase 5, the scene must render if there are zero stars.
   return (
-    <Canvas style={{ background: "#000" }}>
-      <ambientLight intensity={0.5} />
+    <>
+      <ambientLight intensity={0.4} />
       <pointLight position={[10, 10, 10]} />
-      
-      {memories.length > 0 && <Starfield stars={memories} />}
 
-    </Canvas>
-  );
+      <Stars
+        radius={100}
+        depth={50}
+        count={3000}
+        factor={4}
+        fade
+      />
+
+      {demoStars.map((star) => (
+        <Star key={star.id} {...star} />
+      ))}
+    </>
+  )
 }

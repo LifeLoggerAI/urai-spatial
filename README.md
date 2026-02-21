@@ -4,20 +4,27 @@
 
 URAI-Spatial is not just a starfield demo. It is a real-time, data-driven, cinematic spatial engine designed to visualize and experience the vast landscape of a person's digital life. It is the core rendering layer for the URAI Life Operating System, creating a persistent, explorable space from the sum of your digital existence.
 
-Its purpose is not to present data, but to create a sense of place. It is a silent world, free of explicit narration, designed for reflection and presence. Here, the patterns of your life become a universe you can visit, offering a unique perspective on your own journey.
+Its purpose is not to present data, but to create a sense of place. It is a silent world, free of explicit narration, designed to be explored, not explained. It's a space for reflection, where the patterns of your life become visible as celestial phenomena.
 
-## Core Values
+## Core Concepts
 
-*   **Cinematic, not analytic.** The engine prioritizes beauty and immersion over raw data visualization. It is a place of wonder, not a dashboard.
-*   **Presence, not presentation.** There are no charts, graphs, or explicit narratives. The goal is to feel, not to be told.
-*   **Silent, not loud.** The experience is designed to be quiet and contemplative, a digital sanctuary for reflection.
-*   **A world, not a tool.** It is a persistent, explorable space with a sense of history and permanence.
+*   **The Orb**: At the center of your universe is the Orb, a representation of your present self, glowing with the energy of your recent activity.
+*   **The Stars**: Each star in the sky is a memory, a piece of data, a moment from your past. The brighter the star, the more significant the memory.
+*   **The Nebula**: The nebula is the cosmic dust of your digital life, the background noise of your existence, shaping the overall atmosphere of your space.
+*   **The Ground**: The ground provides a sense of orientation, a place to stand as you look out at the universe of your life.
 
-## Next Steps
+## Features (Current & Planned)
 
-The immediate goal is to evolve the current starfield into a **dynamic, data-driven representation of a user's digital life.** This will involve:
+*   **Real-time Data Visualization**: Connects to the URAI Life OS to visualize your digital life in real-time.
+*   **Cinematic Rendering**: Uses `react-three-fiber` to create a beautiful and immersive experience.
+*   **Spatial Interaction**: Future plans include raycasting for star selection and interaction.
+*   **XR Integration**: Designed with XR in mind, with plans for a full WebXR experience.
+*   **LifeMap Scene**: A future scene that will include representations of trauma, recovery, and constellations of related memories.
 
-1.  **Connecting to a real data source:** Integrating with the URAI LifeOS API to stream and visualize real-time life data.
-2.  **Developing a visual language:** Creating a system of visual metaphors to represent different types of data (e.g., communication, creation, consumption).
-3.  **Building a narrative of presence:** Designing an experience that allows the user to feel the flow and rhythm of their digital life without explicit guidance.
-4.  **Laying the foundation for XR:** Ensuring the engine is built from the ground up to support future expansion into virtual and augmented reality.
+## Getting Started
+
+1.  Clone the repository.
+2.  Install dependencies with `npm install`.
+3.  Run the development server with `npm run dev`.
+
+This will start the spatial engine in your browser.
