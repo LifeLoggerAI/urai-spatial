@@ -10,6 +10,15 @@ const clusterCache = new Map<string, any>();
 
 const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
 
+async function checkKillSwitch(): Promise<void> {
+    const killSwitchRef = db.collection("config").doc("killswitch");
+    const killSwitchDoc = await killSwitchRef.get();
+
+    if (killSwitchDoc.exists && killSwitchDoc.data()?.active) {
+        throw new HttpsError("unavailable", "Service is temporarily unavailable.");
+    }
+}
+
 async function calculateAndCacheClusters(uid: string): Promise<any> {
   const cached = clusterCache.get(uid);
   if (cached && (Date.now() - cached.timestamp) < CACHE_TTL) {
@@ -45,6 +54,7 @@ async function calculateAndCacheClusters(uid: string): Promise<any> {
 }
 
 export const getClusters = onCall({ region: "us-central1" }, async (req) => {
+  await checkKillSwitch();
   if (!req.auth) {
     throw new HttpsError("unauthenticated", "Authentication required.");
   }

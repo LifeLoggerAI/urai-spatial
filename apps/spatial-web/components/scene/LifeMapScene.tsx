@@ -19,7 +19,7 @@ import {
   GodRays
 } from '@react-three/postprocessing'
 import ProceduralNebula from './ProceduralNebula' // Replaced Nebula
-import { Vector2, Mesh, MathUtils } from 'three'
+import { Vector2, Mesh, MathUtils, PerspectiveCamera as ThreePerspectiveCamera } from 'three'
 import { BlendFunction } from 'postprocessing'
 
 export default function LifeMapScene() {
@@ -31,26 +31,28 @@ export default function LifeMapScene() {
     const t = clock.getElapsedTime()
     mousePos.current.lerp(mouse, 0.05)
 
-    if (zooming) {
-      // Warp zoom effect
-      camera.position.z = MathUtils.lerp(camera.position.z, 0.8, 0.025)
-      camera.fov = MathUtils.lerp(camera.fov, 100, 0.025)
-      camera.updateProjectionMatrix()
-    } else {
-      // Normal cinematic camera movement
-      const targetX = Math.sin(t * 0.1) * 0.2 + mousePos.current.x * 0.1
-      const targetY = Math.cos(t * 0.1) * 0.1 + mousePos.current.y * 0.1
-      
-      // Lerp camera position for smooth drift and parallax
-      camera.position.x = MathUtils.lerp(camera.position.x, targetX, 0.05)
-      camera.position.y = MathUtils.lerp(camera.position.y, targetY, 0.05)
-      
-      // Ensure it stays at the default zoom level if not zooming
-      camera.position.z = MathUtils.lerp(camera.position.z, 6, 0.05)
-      camera.fov = MathUtils.lerp(camera.fov, 75, 0.05)
-      camera.updateProjectionMatrix()
+    if (camera instanceof ThreePerspectiveCamera) {
+      if (zooming) {
+        // Warp zoom effect
+        camera.position.z = MathUtils.lerp(camera.position.z, 0.8, 0.025)
+        camera.fov = MathUtils.lerp(camera.fov, 100, 0.025)
+        camera.updateProjectionMatrix()
+      } else {
+        // Normal cinematic camera movement
+        const targetX = Math.sin(t * 0.1) * 0.2 + mousePos.current.x * 0.1
+        const targetY = Math.cos(t * 0.1) * 0.1 + mousePos.current.y * 0.1
+        
+        // Lerp camera position for smooth drift and parallax
+        camera.position.x = MathUtils.lerp(camera.position.x, targetX, 0.05)
+        camera.position.y = MathUtils.lerp(camera.position.y, targetY, 0.05)
+        
+        // Ensure it stays at the default zoom level if not zooming
+        camera.position.z = MathUtils.lerp(camera.position.z, 6, 0.05)
+        camera.fov = MathUtils.lerp(camera.fov, 75, 0.05)
+        camera.updateProjectionMatrix()
+      }
+      camera.lookAt(0, 0, 0)
     }
-    camera.lookAt(0, 0, 0)
   })
 
   return (

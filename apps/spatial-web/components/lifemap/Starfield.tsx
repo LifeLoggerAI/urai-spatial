@@ -1,4 +1,4 @@
-import { Star } from "@/lib/lifemap/useLifeMapData";
+import { Star } from "../../lib/lifemap/useLifeMapData";
 import { Point, Points } from "@react-three/drei";
 
 // --- PHASE 1: RENDER CORE HARDENING ---

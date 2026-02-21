@@ -1,11 +1,23 @@
 
 import { onCall, HttpsError } from "firebase-functions/v2/https";
+import * as admin from "firebase-admin";
+
+const db = admin.firestore();
 
 // A simple in-memory rate limiter
 const requests = new Map<string, { count: number; lastRequest: number }>();
 
 const RATE_LIMIT_COUNT = 5; // 5 requests
 const RATE_LIMIT_WINDOW = 60 * 1000; // 60 seconds
+
+async function checkKillSwitch(): Promise<void> {
+    const killSwitchRef = db.collection("config").doc("killswitch");
+    const killSwitchDoc = await killSwitchRef.get();
+
+    if (killSwitchDoc.exists && killSwitchDoc.data()?.active) {
+        throw new HttpsError("unavailable", "Service is temporarily unavailable.");
+    }
+}
 
 function rateLimit(key: string): boolean {
   const now = Date.now();
@@ -25,6 +37,7 @@ function rateLimit(key: string): boolean {
 }
 
 export const narrate = onCall({ region: "us-central1" }, async (req) => {
+  await checkKillSwitch();
   if (!req.auth) {
     throw new HttpsError("unauthenticated", "Authentication required.");
   }

@@ -36,6 +36,15 @@ const PIPELINE_VERSION = "spatial-pipeline-v1";
 const SOURCE_PREFIX = "spatial/assets/source/";
 const BUILDS_PREFIX = "spatial/assets/builds/";
 
+async function checkKillSwitch(): Promise<void> {
+    const killSwitchRef = db.collection("config").doc("killswitch");
+    const killSwitchDoc = await killSwitchRef.get();
+
+    if (killSwitchDoc.exists && killSwitchDoc.data()?.active) {
+        throw new HttpsError("unavailable", "Service is temporarily unavailable.");
+    }
+}
+
 function sha256Hex(buf: Buffer): string {
   return crypto.createHash("sha256").update(buf).digest("hex");
 }
@@ -106,6 +115,7 @@ async function createOrGetBuild(assetId: string, sourceSha256: string) {
 }
 
 async function runBuild(assetId: string, sourceSha256: string, sourceObjectPath: string) {
+  await checkKillSwitch();
   const { buildId, ref } = await createOrGetBuild(assetId, sourceSha256);
 
   const current = await ref.get();
@@ -174,7 +184,7 @@ async function runBuild(assetId: string, sourceSha256: string, sourceObjectPath:
     await failedBatch.commit();
     throw err;
   } finally {
-    try { await fs.rm(tmpDir, { recursive: true, force: true }); } catch {}
+    try { await fs.rm(tmpDir, { recursive: true, force: true }); } catch {}\
   }
 }
 
@@ -183,6 +193,7 @@ export const spatialOnAssetUpload = onObjectFinalized({
   memory: "512MiB",
   timeoutSeconds: 300,
 }, async (event) => {
+  await checkKillSwitch();
   const objectName = event.data.name || "";
   const parsed = assertSourcePath(objectName);
   if (!parsed) return;
@@ -205,6 +216,7 @@ export const spatialBuildAsset = onCall({
   timeoutSeconds: 300,
   minInstances: 0,
 }, async (req) => {
+  await checkKillSwitch();
   if (!req.auth) throw new HttpsError("unauthenticated", "Auth required.");
   const isAdmin = (req.auth.token as any).admin === true;
   if (!isAdmin) throw new HttpsError("permission-denied", "Admin only.");

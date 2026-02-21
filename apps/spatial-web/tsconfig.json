@@ -20,7 +20,7 @@
       }
     ],
     "skipLibCheck": true,
-    "strict": false,
+    "strict": true,
     "baseUrl": ".",
     "paths": {
       "@/*": ["./src/*"]
