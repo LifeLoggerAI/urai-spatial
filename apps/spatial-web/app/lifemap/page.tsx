@@ -1,7 +1,14 @@
-'use client'
+'use client';
 
-import LifeMapScene from '@/apps/spatial-web/components/scene/LifeMapScene'
+import SceneManager from '@/components/SceneManager';
+import Starfield from '@/components/Starfield';
 
-export default function Page() {
-  return <LifeMapScene />
+export default function LifeMapPage() {
+  return (
+    <main style={{ height: '100vh', width: '100vw' }}>
+      <SceneManager>
+        <Starfield />
+      </SceneManager>
+    </main>
+  );
 }
