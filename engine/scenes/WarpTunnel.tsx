@@ -1,24 +1,32 @@
-"use client";
-import { useFrame } from "@react-three/fiber";
-import { useRef } from "react";
-import * as THREE from "three";
-export default function WarpTunnel() {
-    const materialRef = useRef<THREE.ShaderMaterial>(null!);
-    useFrame((state) => { materialRef.current.uniforms.uTime.value = state.clock.getElapsedTime(); });
-    return (
-        <mesh position={[0, 0, -200]} rotation={[Math.PI / 2, 0, 0]}>
-            <cylinderGeometry args={[1, 50, 600, 64, 1, true]} />
-            <shaderMaterial ref={materialRef} transparent side={THREE.BackSide} uniforms={{ uTime: { value: 0 } }}
-                vertexShader={`varying vec2 vUv; void main() { vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }`}
-                fragmentShader={`uniform float uTime; varying vec2 vUv;
-                    void main() {
-                        float speed = 8.0;
-                        float r = fract(vUv.x * 40.0 - uTime * speed);
-                        float g = fract(vUv.y * 20.0 + uTime * speed);
-                        float alpha = pow(1.0 - vUv.y, 4.0);
-                        gl_FragColor = vec4(r, g, 1.0, alpha * 0.8);
-                    }`}
-            />
-        </mesh>
-    );
+'use client';
+
+import { useFrame } from '@react-three/fiber';
+import { useRef } from 'react';
+import { Group } from 'three';
+
+export function WarpTunnel() {
+  const group = useRef<Group>(null);
+
+  useFrame((_, delta) => {
+    if (group.current) {
+      group.current.rotation.z += delta / 2;
+    }
+  });
+
+  return (
+    <group ref={group}>
+      {Array.from({ length: 200 }).map((_, i) => {
+        const angle = (i / 200) * Math.PI * 2;
+        const radius = 3 + Math.random() * 2;
+        const x = Math.cos(angle) * radius;
+        const y = Math.sin(angle) * radius;
+        return (
+          <mesh key={i} position={[x, y, -i * 0.1]}>
+            <sphereGeometry args={[0.02, 8, 8]} />
+            <meshStandardMaterial emissive="white" color="white" />
+          </mesh>
+        );
+      })}
+    </group>
+  );
 }

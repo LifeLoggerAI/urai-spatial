@@ -26,9 +26,13 @@
     "paths": {
       "@/*": [
         "./*"
+      ],
+      "@engine/*": [
+        "engine/*"
       ]
     },
-    "moduleDetection": "force"
+    "moduleDetection": "force",
+    "baseUrl": "."
   },
   "include": [
     "next-env.d.ts",

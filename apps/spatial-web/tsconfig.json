@@ -23,7 +23,12 @@
     "strict": true,
     "baseUrl": ".",
     "paths": {
-      "@/*": ["./*"]
+      "@/*": [
+        "./*"
+      ],
+      "@engine/*": [
+        "src/engine/*"
+      ]
     }
   },
   "include": [

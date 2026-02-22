@@ -1,21 +1,24 @@
 'use client'
 
-import { useRouter } from 'next/navigation'
+import { useRef } from 'react'
+import { Mesh } from 'three'
 
 export default function Ground() {
-  const router = useRouter()
+  const meshRef = useRef<Mesh>(null)
 
   return (
     <mesh
+      ref={meshRef}
       rotation={[-Math.PI / 2, 0, 0]}
-      position={[0, -3.5, -2]}
-      onClick={(e) => {
-        e.stopPropagation()
-        router.push('/ground')
-      }}
+      position={[0, -1, 0]}
+      receiveShadow
     >
       <planeGeometry args={[100, 100]} />
-      <meshBasicMaterial color="#001122" transparent opacity={0.6} />
+      <meshStandardMaterial
+        color="#0a0f1c"
+        roughness={0.95}
+        metalness={0.05}
+      />
     </mesh>
   )
 }
