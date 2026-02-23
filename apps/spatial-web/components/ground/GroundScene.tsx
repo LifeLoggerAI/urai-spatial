@@ -2,7 +2,6 @@
 
 import { Canvas } from '@react-three/fiber';
 import GroundObjects from './GroundObjects';
-import GroundPanel from './GroundPanel';
 
 export default function GroundScene() {
   return (
@@ -21,7 +20,6 @@ export default function GroundScene() {
         </mesh>
         <GroundObjects />
       </Canvas>
-      <GroundPanel />
     </>
   );
 }

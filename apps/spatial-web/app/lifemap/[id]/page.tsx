@@ -1,6 +1,6 @@
 "use client"
 
-import ReplayScene from "@/apps/spatial-web/components/scene/ReplayScene"
+import ReplayScene from "@/engine/scenes/ReplayScene"
 import { useParams } from "next/navigation"
 
 export default function Page() {

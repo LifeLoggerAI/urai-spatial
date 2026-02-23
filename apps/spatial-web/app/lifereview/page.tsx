@@ -1,7 +1,14 @@
 'use client'
 
-import LifeReviewScene from '../../spatial/scenes/LifeReviewScene'
+import { Canvas } from '@react-three/fiber'
+import LifeReviewScene from 'engine/scenes/LifeReviewScene'
 
 export default function Page() {
-  return <LifeReviewScene />
+  return (
+    <div className="w-full h-screen">
+      <Canvas>
+        <LifeReviewScene />
+      </Canvas>
+    </div>
+  )
 }

@@ -1,1 +1,0 @@
-// Narrative templates for Life Review
