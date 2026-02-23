@@ -1,1 +1,1 @@
-export type SceneType = 'home' | 'ground' | 'lifemap' | 'replay';
+export type SceneType = 'home' | 'ground' | 'lifemap' | 'replay' | 'lifereview';

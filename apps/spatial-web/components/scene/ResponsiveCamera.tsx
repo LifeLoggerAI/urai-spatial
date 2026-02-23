@@ -1,19 +1,18 @@
+'use client'
 
-import { useThree } from "@react-three/fiber";
-import { useEffect } from "react";
+import { useEffect } from 'react'
+import { useThree } from '@react-three/fiber'
 
 export default function ResponsiveCamera() {
-  const { camera } = useThree();
+  const { camera, size } = useThree()
 
   useEffect(() => {
-    // URAI V1 Cinematic Composition Lock
-    // This establishes the correct visual hierarchy: Sky -> Orb -> Ground.
-    camera.position.set(0, 2.75, 6);
-    camera.lookAt(0, 0.7, 0);
+    // URAI V1 Cinematic Camera Lock
+    camera.position.set(0, 2.55, 6)
+    camera.lookAt(0, 0.6, 0)
+    camera.fov = 75
+    camera.updateProjectionMatrix()
+  }, [camera, size])
 
-    // Registering the camera to the window for debugging.
-    ;(window as any).__r3fCamera = camera
-  }, [camera]);
-
-  return null;
+  return null
 }
