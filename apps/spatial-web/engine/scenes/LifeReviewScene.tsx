@@ -1,5 +1,5 @@
 'use client'
 
 export default function LifeReviewScene() {
-  return null
+  return <div style={{ color: 'white' }}>Life Review Scene</div>
 }

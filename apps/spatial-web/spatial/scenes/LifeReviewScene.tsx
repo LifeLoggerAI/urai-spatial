@@ -1,13 +1,10 @@
 'use client'
 
-import { Box } from '@react-three/drei'
-
 export default function LifeReviewScene() {
   return (
-    <>
-      <Box>
-        <meshStandardMaterial color="hotpink" />
-      </Box>
-    </>
+    <div style={{ padding: 40 }}>
+      <h1>Life Review Scene</h1>
+      <p>Under construction.</p>
+    </div>
   )
 }

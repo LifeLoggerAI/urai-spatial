@@ -1,9 +1,8 @@
 import { create } from 'zustand'
-import type { SceneType } from './scene-types'
 
-interface SceneState {
-  current: SceneType
-  setScene: (scene: SceneType) => void
+type SceneState = {
+  current: string
+  setScene: (scene: string) => void
 }
 
 export const useSceneStore = create<SceneState>((set) => ({
