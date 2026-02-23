@@ -1,24 +1,15 @@
 'use client'
 
-import { useRef } from 'react'
-import { Mesh } from 'three'
-
+// Using a large sphere to create a subtle, curved horizon.
+// This replaces the flat plane to provide a more realistic planetary feel.
 export default function Ground() {
-  const meshRef = useRef<Mesh>(null)
-
   return (
-    <mesh
-      ref={meshRef}
-      rotation={[-Math.PI / 2, 0, 0]}
-      position={[0, -1, 0]}
-      receiveShadow
-    >
-      <planeGeometry args={[100, 100]} />
-      <meshStandardMaterial
-        color="#0a0f1c"
-        roughness={0.95}
-        metalness={0.05}
-      />
+    // By setting the position to just below the sphere's radius, its top surface aligns perfectly with Y=1.
+    <mesh position={[0, -199, 0]}>
+      {/* A large radius (200) flattens the curve, making the orb feel grounded on a massive world. */}
+      <sphereGeometry args={[200, 64, 64]} />
+      {/* The ground color is lifted to a navy blue to create a tonal bridge and reduce contrast. */}
+      <meshStandardMaterial color="#0b1c30" roughness={1} metalness={0} />
     </mesh>
   )
 }

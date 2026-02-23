@@ -10,6 +10,7 @@ export default function CanvasRoot({ children }: { children: React.ReactNode }) 
         shadows
         style={{ width: '100%', height: '100%' }}
         gl={{ antialias: true }}
+        camera={{ fov: 75 }}
       >
         <SceneManager>{children}</SceneManager>
       </Canvas>

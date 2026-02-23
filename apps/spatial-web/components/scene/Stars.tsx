@@ -1,35 +1,31 @@
 'use client'
 
 import { useRouter } from 'next/navigation'
-import { useRef } from "react";
-import { useFrame } from "@react-three/fiber";
-import * as THREE from "three";
+import { useRef, useMemo } from 'react'
+import { useFrame } from '@react-three/fiber'
+import * as THREE from 'three'
 
 function StarLayer({ depth, count }: { depth: number; count: number }) {
-  const ref = useRef<THREE.Points>(null!)
+  const { positions, colors } = useMemo(() => {
+    const positions = new Float32Array(count * 3)
+    const colors = new Float32Array(count * 3)
 
-  const positions = new Float32Array(count * 3)
-  const colors = new Float32Array(count * 3)
+    for (let i = 0; i < count; i++) {
+      positions[i * 3] = (Math.random() - 0.5) * 20
+      positions[i * 3 + 1] = (Math.random() - 0.5) * 20
+      positions[i * 3 + 2] = -depth
 
-  for (let i = 0; i < count; i++) {
-    positions[i * 3] = (Math.random() - 0.5) * 20
-    positions[i * 3 + 1] = (Math.random() - 0.5) * 20
-    positions[i * 3 + 2] = -depth
-
-    const brightness = 0.6 + Math.random() * 0.4
-    colors[i * 3] = brightness
-    colors[i * 3 + 1] = brightness
-    colors[i * 3 + 2] = brightness
-  }
-
-  useFrame(({ clock }) => {
-    if (ref.current) {
-      ref.current.rotation.y = clock.getElapsedTime() * 0.01 * depth
+      const brightness = 0.6 + Math.random() * 0.4
+      colors[i * 3] = brightness
+      colors[i * 3 + 1] = brightness
+      colors[i * 3 + 2] = brightness
     }
-  })
+
+    return { positions, colors }
+  }, [count, depth])
 
   return (
-    <points ref={ref}>
+    <points>
       <bufferGeometry>
         <bufferAttribute
           attach="attributes-position"
@@ -57,6 +53,15 @@ function StarLayer({ depth, count }: { depth: number; count: number }) {
 
 export default function Stars() {
   const router = useRouter()
+  const starsRef = useRef<THREE.Group>(null!)
+
+  useFrame(({ clock }) => {
+    const t = clock.getElapsedTime()
+
+    // Ultra-subtle global field drift (depth, not motion)
+    starsRef.current.position.x = Math.sin(t * 0.003) * 0.006
+    starsRef.current.position.y = Math.cos(t * 0.0025) * 0.004
+  })
 
   return (
     <>
@@ -71,9 +76,11 @@ export default function Stars() {
         <meshBasicMaterial transparent opacity={0} side={THREE.BackSide} />
       </mesh>
 
-      <StarLayer depth={1} count={400} />
-      <StarLayer depth={2} count={300} />
-      <StarLayer depth={3} count={200} />
+      <group ref={starsRef}>
+        <StarLayer depth={1} count={400} />
+        <StarLayer depth={2} count={300} />
+        <StarLayer depth={3} count={200} />
+      </group>
     </>
   )
 }
