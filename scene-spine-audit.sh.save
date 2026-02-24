@@ -1,0 +1,58 @@
+#!/bin/bash
+
+echo "======================================"
+echo "URAI-SPATIAL SCENE SPINE AUDIT"
+echo "======================================"
+echo ""
+
+BASE="apps/spatial-web"
+
+FILES=(
+  "$BASE/app/page.tsx"
+  "$BASE/components/CanvasRoot.tsx"
+  "$BASE/components/SceneManager.tsx"
+  "$BASE/engine/core/scene-store.ts"
+  "$BASE/engine/scenes/HomeScene.tsx"
+)
+
+for FILE in "${FILES[@]}"; do
+  echo "--------------------------------------"
+  echo "Checking: $FILE"
+  echo "--------------------------------------"
+
+  if [ -f "$FILE" ]; then
+    echo "✓ EXISTS"
+    echo ""
+    echo "----- FIRST 60 LINES -----"
+    sed -n '1,60p' "$FILE"
+    echo ""
+  else
+    echo "✗ MISSING FILE"
+    echo ""
+  fi
+done
+
+echo "======================================"
+echo "CHECKING SCENE STORE DEFAULT"
+echo "======================================"
+
+grep -n "activeScene" $BASE/engine/core/scene-store.ts 2>/dev/null || echo "No activeScene found"
+
+echo ""
+echo "======================================"
+echo "CHECKING SCENEMANAGER MAP"
+echo "======================================"
+
+grep -n "SceneComponents" $BASE/components/SceneManager.tsx 2>/dev/null || echo "No SceneComponents found"
+
+echo ""
+echo "======================================"
+echo "CHECKING CANVAS MOUNT"
+echo "======================================"
+
+grep -n "SceneManager" $BASE/components/CanvasRoot.tsx 2>/dev/null || echo "SceneManager not mounted in CanvasRoot"
+
+echo ""
+echo "======================================"
+echo "CHECK COMPLETE"
+echo "======================================"

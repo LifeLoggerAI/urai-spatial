@@ -151,9 +151,6 @@ export default function LifeReviewScene() {
   const [activeNode, _setActiveNode] = useActiveNode();
   const [bloom, setBloom] = useBloom();
 
-  const ambientRef = useRef<THREE.AmbientLight>(null!)
-  const keyRef = useRef<THREE.DirectionalLight>(null!)
-
   const activeNodeData = useMemo(() => {
     return nodes.find(n => n.id === activeNode);
   }, [nodes, activeNode]);
@@ -168,20 +165,6 @@ export default function LifeReviewScene() {
   }
 
   useFrame((state) => {
-    // Lighting
-    const baseAmbient = 0.1;
-    const baseKey = 0.3;
-    if (activeNodeData && bloom) {
-        const profile = getEmotionLightingProfile(activeNodeData.emotionalIntensity);
-        ambientRef.current.intensity = THREE.MathUtils.lerp(ambientRef.current.intensity, profile.ambientIntensity, 0.05);
-        keyRef.current.intensity = THREE.MathUtils.lerp(keyRef.current.intensity, profile.keyIntensity, 0.05);
-        keyRef.current.color.lerp(profile.color, 0.05);
-    } else {
-        ambientRef.current.intensity = THREE.MathUtils.lerp(ambientRef.current.intensity, baseAmbient, 0.05);
-        keyRef.current.intensity = THREE.MathUtils.lerp(keyRef.current.intensity, baseKey, 0.05);
-        keyRef.current.color.lerp(new THREE.Color('#ffffff'), 0.05);
-    }
-
     // Camera
     if (activeNodeData) {
         const targetPosition = new THREE.Vector3(...activeNodeData.position);
@@ -206,9 +189,6 @@ export default function LifeReviewScene() {
 
   return (
     <>
-      <ambientLight ref={ambientRef} intensity={0.1} />
-      <directionalLight ref={keyRef} position={[5, 5, 5]} intensity={0.3} />
-      
       <MemoryStarField nodes={nodes} activeNode={activeNode} setActiveNode={setActiveNode} />
       <ConstellationLayer nodes={nodes} activeNode={activeNode} />
       <MemoryBloom nodes={nodes} activeNode={activeNode} bloom={bloom} />

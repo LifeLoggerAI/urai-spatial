@@ -9,6 +9,8 @@ import LifeMapScene from '@/spatial/scenes/LifeMapScene'
 import LifeReviewScene from '@/spatial/scenes/LifeReviewScene'
 import ReplayScene from '@/engine/scenes/ReplayScene'
 import ResponsiveCamera from '@/components/scene/ResponsiveCamera'
+import Environment from '@/components/scene/Environment'
+import EmotionalLighting from '@/components/scene/EmotionalLighting'
 
 const SceneComponents: Record<string, React.ComponentType<any>> = {
   home: HomeScene,
@@ -24,22 +26,18 @@ export default function SceneManager() {
   const pathname = usePathname()
 
   useEffect(() => {
-    const pathParts = pathname.split('/').filter(Boolean);
-    const sceneTypeFromPath = pathParts[0];
-    const sceneIdFromPath = pathParts[1];
+    const pathSegments = pathname.split('/').filter(Boolean);
+    const sceneType = pathSegments[0] || 'home';
+    const sceneId = pathSegments[1];
 
-    if (pathname === '/') {
-      if (scene.type !== 'home') setScene({ type: 'home' });
-    } else if (sceneTypeFromPath === 'lifereview') {
-      if (scene.type !== 'lifereview') setScene({ type: 'lifereview' });
-    } else if (sceneTypeFromPath === 'lifemap' && !sceneIdFromPath) {
-      if (scene.type !== 'lifemap') setScene({ type: 'lifemap' });
-    } else if (sceneTypeFromPath === 'replay' || (sceneTypeFromPath === 'lifemap' && sceneIdFromPath)) {
-      if (sceneIdFromPath && (scene.type !== 'replay' || scene.id !== sceneIdFromPath)) {
-        setScene({ type: 'replay', id: sceneIdFromPath });
-      }
+    if (sceneType === 'replay' || (sceneType === 'lifemap' && sceneId)) {
+        setScene({ type: 'replay', id: sceneId });
+    } else if (SceneComponents[sceneType]) {
+        setScene({ type: sceneType });
+    } else {
+        setScene({ type: 'home' }); // Fallback for unknown routes
     }
-  }, [pathname, scene, setScene]);
+  }, [pathname, setScene]);
 
   useEffect(() => {
     if (scene.type === 'replay' && scene.id) {
@@ -58,6 +56,8 @@ export default function SceneManager() {
   return (
     <>
       <ResponsiveCamera />
+      <Environment />
+      <EmotionalLighting />
       {ActiveScene && (scene.type === 'replay' && scene.id ? <ReplayScene id={scene.id} /> : <ActiveScene />)}
     </>
   )

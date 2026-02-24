@@ -1,14 +1,8 @@
 'use client'
 
-import { Canvas } from '@react-three/fiber'
-import LifeReviewScene from 'engine/scenes/LifeReviewScene'
-
-export default function Page() {
-  return (
-    <div className="w-full h-screen">
-      <Canvas>
-        <LifeReviewScene />
-      </Canvas>
-    </div>
-  )
+// This page component is intentionally left blank.
+// The SceneManager, located in the root layout, is responsible for rendering the correct scene based on the URL.
+// This component's existence is primarily for Next.js routing purposes.
+export default function LifeReviewPage() {
+  return null
 }

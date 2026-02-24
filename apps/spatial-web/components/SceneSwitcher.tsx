@@ -1,18 +1,17 @@
 'use client'
 
-import { useSceneStore } from '@/engine/core/scene-store'
+import Link from 'next/link'
 
 export default function SceneSwitcher() {
-  const { setScene } = useSceneStore()
 
   return (
     <div style={{ position: 'absolute', top: 20, left: 20, zIndex: 100 }}>
-      <a href="/" onClick={() => setScene('home')} style={{ color: 'white', background: 'black', padding: '10px', margin: '5px', textDecoration: 'none' }}>Home</a>
-      <a href="/lifereview" onClick={() => setScene('lifereview')} style={{ color: 'white', background: 'black', padding: '10px', margin: '5px', textDecoration: 'none' }}>Life Review</a>
-      <a href="/case-studies/spatial-memory-engine" style={{ color: 'white', background: 'black', padding: '10px', margin: '5px', textDecoration: 'none' }}>Case Study</a>
-      <a href="/capabilities" style={{ color: 'white', background: 'black', padding: '10px', margin: '5px', textDecoration: 'none' }}>Capabilities</a>
-      <a href="/about" style={{ color: 'white', background: 'black', padding: '10px', margin: '5px', textDecoration: 'none' }}>About</a>
-      <a href="/launch" style={{ color: 'white', background: 'black', padding: '10px', margin: '5px', textDecoration: 'none' }}>Launch</a>
+      <Link href="/" style={{ color: 'white', background: 'black', padding: '10px', margin: '5px', textDecoration: 'none' }}>Home</Link>
+      <Link href="/lifereview" style={{ color: 'white', background: 'black', padding: '10px', margin: '5px', textDecoration: 'none' }}>Life Review</Link>
+      <Link href="/case-studies/spatial-memory-engine" style={{ color: 'white', background: 'black', padding: '10px', margin: '5px', textDecoration: 'none' }}>Case Study</Link>
+      <Link href="/capabilities" style={{ color: 'white', background: 'black', padding: '10px', margin: '5px', textDecoration: 'none' }}>Capabilities</Link>
+      <Link href="/about" style={{ color: 'white', background: 'black', padding: '10px', margin: '5px', textDecoration: 'none' }}>About</Link>
+      <Link href="/launch" style={{ color: 'white', background: 'black', padding: '10px', margin: '5px', textDecoration: 'none' }}>Launch</Link>
     </div>
   )
 }

@@ -1,6 +1,7 @@
 import './globals.css'
 import { Inter } from 'next/font/google'
-import CanvasRoot from './CanvasRoot'
+import CanvasRoot from '@/engine/CanvasRoot'
+import SceneManager from '@/components/SceneManager'
 import SceneSwitcher from '@/components/SceneSwitcher'
 import type { Metadata, Viewport } from 'next'
 import SafeModeProvider from './SafeModeProvider'
@@ -24,9 +25,13 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html lang="en">
       <body className={inter.className}>
         <SafeModeProvider>
-          <SceneSwitcher />
-          <CanvasRoot />
-          <main>{children}</main>
+          <CanvasRoot>
+            <SceneManager />
+          </CanvasRoot>
+          <div className="ui-layer">
+            <SceneSwitcher />
+            <main>{children}</main>
+          </div>
         </SafeModeProvider>
       </body>
     </html>
