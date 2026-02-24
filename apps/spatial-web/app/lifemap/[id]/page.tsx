@@ -8,5 +8,5 @@ export default function Page() {
 
   if (!id) return null
 
-  return <ReplayScene id={id as string} />
+  return <ReplayScene memoryId={id as string} emotionalWeight={0.5} timestamp={Date.now()} />
 }
