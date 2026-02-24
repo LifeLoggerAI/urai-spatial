@@ -1,55 +1,38 @@
 'use client'
 
-import { useEffect, useMemo, useRef } from 'react'
-import { useFrame } from '@react-three/fiber'
+import { useReplayStore } from '@/engine/core/replay-store'
+import { Sphere, Text } from '@react-three/drei'
 
-interface ReplaySceneProps {
-  memoryId: string
-  emotionalWeight: number
-  timestamp: number
-}
+export default function ReplayScene() {
+  const { memoryId, emotionalWeight, timestamp } = useReplayStore()
 
-// Deterministic easing function
-function easeInOutCubic(t: number) {
-  return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2
-}
+  // Ensure there's a memoryId before rendering, otherwise, it's a "not found" state.
+  if (!memoryId) {
+    return null
+  }
 
-export default function ReplayScene({ memoryId, emotionalWeight, timestamp }: ReplaySceneProps) {
-  // 1. Seeded Randomness (removed for now)
-  const rng = useMemo(() => Math.random, [])
+  // Calculate a visual property based on emotional weight
+  const sphereColor = emotionalWeight > 0.5 ? 'hotpink' : 'lightblue'
 
-  // 2. Freeze Replay Inputs
-  const replaySnapshot = useMemo(
-    () => ({
-      memoryId,
-      emotionalWeight,
-      timestamp,
-    }),
-    [memoryId, emotionalWeight, timestamp],
-  )
-
-  // Example of using the seeded random number
-  const randomValue = useMemo(() => rng(), [rng])
-
-  // 3. Lock Camera Drift (Example with a dummy camera ref)
-  const cameraRef = useRef<any>()
-  useFrame(({ clock }) => {
-    if (cameraRef.current) {
-      const t = easeInOutCubic((clock.getElapsedTime() % 5) / 5) // Example animation loop
-      cameraRef.current.position.x = t * 10
-    }
-  })
-
-  useEffect(() => {
-    // Use replaySnapshot for all logic to ensure consistency
-    console.log('Replay started with snapshot:', replaySnapshot)
-    console.log('Deterministic random value:', randomValue)
-  }, [replaySnapshot, randomValue])
+  // Format the timestamp for display
+  const date = new Date(timestamp)
+  const formattedTime = date.toLocaleTimeString()
 
   return (
     <>
-      {/* Your scene objects here, using deterministic values */}
-      <perspectiveCamera ref={cameraRef} makeDefault position={[0, 0, 15]} />
+      <ambientLight intensity={0.5} />
+      <pointLight position={[10, 10, 10]} />
+
+      <Sphere args={[1, 32, 32]} position={[0, 0, 0]}>
+        <meshStandardMaterial color={sphereColor} />
+      </Sphere>
+
+      <Text position={[0, 1.5, 0]} fontSize={0.2} color="white">
+        Memory ID: {memoryId}
+      </Text>
+      <Text position={[0, -1.5, 0]} fontSize={0.2} color="white">
+        Time: {formattedTime}
+      </Text>
     </>
   )
 }

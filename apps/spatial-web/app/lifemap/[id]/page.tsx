@@ -1,12 +1,19 @@
-"use client"
+'use client'
 
-import ReplayScene from "@/engine/scenes/ReplayScene"
-import { useParams } from "next/navigation"
+import { useEffect } from 'react'
+import { useSceneStore } from '@/engine/core/scene-store'
 
-export default function Page() {
-  const { id } = useParams()
+export default function LifeMapDetailPage({ params }: { params: { id: string } }) {
+  const { id } = params
+  const setScene = useSceneStore((s) => s.setScene)
 
-  if (!id) return null
+  useEffect(() => {
+    // Set the scene to replay, passing the ID.
+    // The SceneManager will then render the ReplayScene and populate the replay-store.
+    setScene({ type: 'replay', id })
+  }, [id, setScene])
 
-  return <ReplayScene memoryId={id as string} emotionalWeight={0.5} timestamp={Date.now()} />
+  // This page's only job is to trigger a scene change.
+  // It should not render any direct content.
+  return null
 }
