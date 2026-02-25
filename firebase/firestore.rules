@@ -1,40 +1,49 @@
 rules_version = '2';
-
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    function isStar(data) {
-      return data.size() == 9 &&
-             data.keys().hasAll(['schemaVersion', 'userId', 'position', 'type', 'intensity', 'emotionScore', 'year', 'archetype', 'createdAt']) &&
-             data.schemaVersion is number &&
-             data.userId is string &&
-             data.position.x is number &&
-             data.position.y is number &&
-             data.position.z is number &&
-             data.type is string &&
-             data.intensity is number &&
-             data.emotionScore is number &&
-             data.year is number &&
-             data.archetype is string &&
-             data.createdAt is timestamp;
+    function isSignedIn() {
+      return request.auth != null;
     }
 
-    match /lifemapStars/{starId} {
-      allow read: if request.auth.uid == resource.data.userId ||
-                   (exists(/databases/$(database)/documents/groups/$(resource.data.groupId)) &&
-                    get(/databases/$(database)/documents/groups/$(resource.data.groupId)).data.members.hasAny([request.auth.uid]));
-
-      allow create: if request.auth.uid == request.resource.data.userId && isStar(request.resource.data);
-      allow update, delete: if request.auth.uid == resource.data.userId;
+    function isOwner(userId) {
+      return request.auth.uid == userId;
     }
 
-    match /groups/{groupId} {
-      allow read, create, update, delete: if request.auth.uid in resource.data.admins;
+    function validEmotionalWeight() {
+      return request.resource.data.emotionalWeight is number
+        && request.resource.data.emotionalWeight >= 0
+        && request.resource.data.emotionalWeight <= 1;
     }
-    
-    // Prevent public writes entirely.
-    match /{path=**} {
+
+    function validTimestamp() {
+      return request.resource.data.timestamp is timestamp;
+    }
+
+    match /users/{userId} {
+      allow read, write: if isSignedIn() && isOwner(userId);
+
+      match /memories/{memoryId} {
+        allow create: if isSignedIn()
+          && isOwner(userId)
+          && validEmotionalWeight()
+          && validTimestamp();
+
+        allow read, update, delete:
+          if isSignedIn() && isOwner(userId);
+      }
+
+      match /clusters/{clusterId} {
+        allow read: if isSignedIn() && isOwner(userId);
+        // Clusters are server-generated only to ensure integrity.
         allow write: if false;
+      }
+
+      match /replays/{replayId} {
+        allow read: if isSignedIn() && isOwner(userId);
+        // Replay metadata is server-controlled.
+        allow write: if false;
+      }
     }
   }
 }
