@@ -1,5 +1,6 @@
-'use client'
+
+import ConstellationLayer from '../../components/lifemap/ConstellationLayer'
 
 export default function LifeMapScene() {
-  return null
+  return <ConstellationLayer />
 }

@@ -1,5 +1,7 @@
 'use client'
 
-export default function HomePage() {
-  return null
+import CanvasRoot from './CanvasRoot'
+
+export default function Page() {
+  return <CanvasRoot />
 }

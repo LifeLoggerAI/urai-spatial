@@ -1,10 +1,9 @@
 import './globals.css'
 import { Inter } from 'next/font/google'
-import CanvasRoot from '@/engine/CanvasRoot'
-import SceneManager from '@/components/SceneManager'
-import SceneSwitcher from '@/components/SceneSwitcher'
+import CanvasRoot from '@/app/CanvasRoot'
 import type { Metadata, Viewport } from 'next'
 import SafeModeProvider from './SafeModeProvider'
+import { DebugSceneSwitch } from '@/app/DebugSceneSwitch'
 
 const inter = Inter({ subsets: ['latin'] })
 
@@ -25,11 +24,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html lang="en">
       <body className={inter.className}>
         <SafeModeProvider>
-          <CanvasRoot>
-            <SceneManager />
-          </CanvasRoot>
+          <CanvasRoot />
           <div className="ui-layer">
-            <SceneSwitcher />
+            <DebugSceneSwitch />
             <main>{children}</main>
           </div>
         </SafeModeProvider>

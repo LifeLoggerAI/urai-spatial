@@ -1,84 +1,137 @@
-import { useFrame } from '@react-three/fiber'
+
+'use client'
+
+import { Canvas, useFrame, useThree } from '@react-three/fiber'
+import { OrbitControls, Stars } from '@react-three/drei'
 import { useRef } from 'react'
 import * as THREE from 'three'
-import { useRouter } from 'next/navigation'
 
-function Ground({ onClick }: { onClick: () => void }) {
-  return (
-    <mesh
-      rotation={[-Math.PI / 2, 0, 0]}
-      position={[0, -1.5, 0]}
-      onClick={onClick}
-      onPointerOver={(e) => (document.body.style.cursor = 'pointer')}
-      onPointerOut={(e) => (document.body.style.cursor = 'default')}
-    >
-      <planeGeometry args={[30, 30]} />
-      <meshStandardMaterial color="#0f2e0f" />
-    </mesh>
-  )
-}
+/* ===================== ORB ===================== */
 
-function Sky({ onClick }: { onClick: () => void }) {
-  return (
-    <mesh 
-      position={[0, 5, -10]} 
-      onClick={onClick}
-      onPointerOver={(e) => (document.body.style.cursor = 'pointer')}
-      onPointerOut={(e) => (document.body.style.cursor = 'default')}
-    >
-      <sphereGeometry args={[40, 64, 64]} />
-      <meshBasicMaterial color="#000000" side={THREE.BackSide} />
-    </mesh>
-  )
-}
+function Orb() {
+  const ref = useRef<THREE.Mesh>(null!)
 
-function Orb({ onClick }: { onClick: () => void }) {
-  const ref = useRef<THREE.Mesh>(null)
-
-  useFrame((state) => {
-    if (!ref.current) return
-    const t = state.clock.getElapsedTime()
-    ref.current.position.y = 0.8 + Math.sin(t * 0.8) * 0.1
-    ref.current.rotation.y += 0.002
-
-    const mat = ref.current.material as THREE.MeshStandardMaterial
-    mat.emissiveIntensity = 0.7 + Math.sin(t * 1.2) * 0.1
+  useFrame(({ clock }) => {
+    const t = clock.getElapsedTime()
+    const scale = 1 + Math.sin(t * 1.2) * 0.05 // breathing
+    ref.current.scale.set(scale, scale, scale)
   })
 
   return (
-    <mesh 
-      ref={ref} 
-      position={[0, 0.8, 0]} 
-      onClick={onClick}
-      onPointerOver={(e) => (document.body.style.cursor = 'pointer')}
-      onPointerOut={(e) => (document.body.style.cursor = 'default')}
-    >
-      <sphereGeometry args={[1.2, 64, 64]} />
+    <mesh ref={ref} position={[0, 0.6, 0]}>
+      <sphereGeometry args={[1, 128, 128]} />
       <meshStandardMaterial
-        color="#1e3a8a"
-        emissive="#1e3a8a"
-        emissiveIntensity={0.8}
+        color="#b83b8f"
+        roughness={0.25}
+        metalness={0.2}
+        emissive="#3a0a2e"
+        emissiveIntensity={0.4}
       />
     </mesh>
   )
 }
 
-export default function HomeScene() {
-  const router = useRouter()
+/* ===================== GRADIENT GROUND ===================== */
+
+function Ground() {
+  const material = new THREE.ShaderMaterial({
+    uniforms: {},
+    vertexShader: `
+      varying vec2 vUv;
+      void main() {
+        vUv = uv;
+        gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+      }
+    `,
+    fragmentShader: `
+      varying vec2 vUv;
+      void main() {
+        vec3 top = vec3(0.05, 0.08, 0.2);
+        vec3 bottom = vec3(0.01, 0.02, 0.06);
+        vec3 color = mix(bottom, top, vUv.y);
+        gl_FragColor = vec4(color, 1.0);
+      }
+    `,
+  })
 
   return (
-    <>
-      {/* Atmosphere */}
-      <color attach="background" args={['#000000']} />
-      <fog attach="fog" args={['#000000', 6, 18]} />
+    <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -1.5, 0]}>
+      <planeGeometry args={[50, 50]} />
+      <primitive object={material} attach="material" />
+    </mesh>
+  )
+}
 
-      {/* Lighting */}
-      <ambientLight intensity={0.6} />
-      <directionalLight position={[3, 5, 2]} intensity={1} />
+/* ===================== MICRO PARALLAX CAMERA ===================== */
 
-      <Sky onClick={() => router.push('/lifemap')} />
-      <Ground onClick={() => router.push('/ground')} />
-      <Orb onClick={() => router.push('/chat')} />
-    </>
+function CameraRig() {
+  const { camera, mouse } = useThree()
+
+  useFrame(() => {
+    camera.position.x = THREE.MathUtils.lerp(
+      camera.position.x,
+      mouse.x * 0.4,
+      0.05
+    )
+    camera.position.y = THREE.MathUtils.lerp(
+      camera.position.y,
+      mouse.y * 0.2,
+      0.05
+    )
+    camera.lookAt(0, 0, 0)
+  })
+
+  return null
+}
+
+/* ===================== SKY DOME ===================== */
+
+function Sky() {
+  return (
+    <mesh>
+      <sphereGeometry args={[100, 32, 32]} />
+      <meshBasicMaterial
+        color="#020817"
+        side={THREE.BackSide}
+      />
+    </mesh>
+  )
+}
+
+/* ===================== HOME SCENE ===================== */
+
+export default function HomeScene() {
+  return (
+    <Canvas
+      camera={{
+        position: [0, 0, 5],
+        fov: 42, // locked cinematic preset
+      }}
+    >
+      <fog attach="fog" args={['#020817', 6, 20]} />
+
+      <ambientLight intensity={0.35} />
+      <directionalLight position={[5, 10, 5]} intensity={1.3} />
+
+      <Sky />
+
+      {/* Starfield Layer */}
+      <Stars
+        radius={120}
+        depth={60}
+        count={5000}
+        factor={6}
+        saturation={0}
+        fade
+        speed={0.5}
+      />
+
+      <Ground />
+      <Orb />
+
+      <CameraRig />
+
+      <OrbitControls enableZoom={false} enablePan={false} enableRotate={false} />
+    </Canvas>
   )
 }
