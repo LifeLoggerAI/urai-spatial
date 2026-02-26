@@ -1,109 +1,196 @@
 
 'use client'
 
-import { useFrame } from '@react-three/fiber'
+import { useFrame, useThree } from '@react-three/fiber'
 import { Stars } from '@react-three/drei'
 import { useRef } from 'react'
 import * as THREE from 'three'
-import Atmosphere from '../../environment/Atmosphere'
-import EmotionalLighting from '../../components/scene/EmotionalLighting'
+import { useInteractionStore } from '../state/interactionStore'
+import { Anchor } from '../types/anchor'
+import { homeAnchors } from '../state/anchorRegistry'
+
+/* ===================== CAMERA ===================== */
+
+function CameraRig() {
+  const { camera } = useThree()
+
+  useFrame(({ clock }) => {
+    const t = clock.getElapsedTime()
+    camera.position.y = 1.4 + Math.sin(t * 0.2) * 0.02
+    camera.position.x = Math.sin(t * 0.15) * 0.02
+  })
+
+  return null
+}
 
 /* ===================== ORB ===================== */
 
 function Orb() {
-  const ref = useRef<THREE.Mesh>(null!)
+  const meshRef = useRef<THREE.Mesh>(null!)
+  const materialRef = useRef<THREE.MeshStandardMaterial>(null!)
+  const { setHovered, setActive } = useInteractionStore()
 
   useFrame(({ clock }) => {
-    if (!ref.current) return
+    if (!meshRef.current || !materialRef.current) return
     const t = clock.getElapsedTime()
-    const scale = 1 + Math.sin(t * 1.2) * 0.05 // breathing
-    ref.current.scale.set(scale, scale, scale)
+
+    // Breathing effect
+    const scale = 1 + Math.sin(t * 1.2) * 0.015
+    meshRef.current.scale.set(scale, scale, scale)
+
+    // Emissive pulse
+    materialRef.current.emissiveIntensity = 0.35 + Math.sin(t * 0.6) * 0.05
   })
 
   return (
-    <mesh ref={ref} position={[0, 0.6, 0]}>
-      <sphereGeometry args={[1, 128, 128]} />
+    <mesh
+      ref={meshRef}
+      position={[0, 1.1, 0]}
+      onPointerOver={(e) => {
+        e.stopPropagation()
+        setHovered('orb')
+      }}
+      onPointerOut={() => setHovered(null)}
+      onClick={() => setActive('orb')}
+    >
+      <sphereGeometry args={[0.6, 128, 128]} />
       <meshStandardMaterial
-        color="#b83b8f"
-        roughness={0.25}
-        metalness={0.2}
-        emissive="#3a0a2e"
+        ref={materialRef}
+        color="#c2187a"
+        emissive="#4a0033"
         emissiveIntensity={0.4}
+        roughness={0.25}
+        metalness={0.3}
       />
     </mesh>
   )
 }
 
-/* ===================== GRADIENT GROUND ===================== */
+/* ===================== ANCHORS ===================== */
 
-function Ground() {
-  const material = new THREE.ShaderMaterial({
-    uniforms: {},
-    vertexShader: `
-      varying vec2 vUv;
-      void main() {
-        vUv = uv;
-        gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
-      }
-    `,
-    fragmentShader: `
-      varying vec2 vUv;
-      void main() {
-        vec3 top = vec3(0.05, 0.08, 0.2);
-        vec3 bottom = vec3(0.01, 0.02, 0.06);
-        vec3 color = mix(bottom, top, vUv.y);
-        gl_FragColor = vec4(color, 1.0);
-      }
-    `,
+function AnchorObject({ anchor }: { anchor: Anchor }) {
+  const meshRef = useRef<THREE.Mesh>(null!)
+  const { setHovered, setActive, hoveredId } = useInteractionStore()
+  const isHovered = hoveredId === anchor.id
+
+  useFrame(() => {
+    if (!meshRef.current) return
+    const targetY = isHovered ? -1.45 : -1.5
+    meshRef.current.position.y = THREE.MathUtils.lerp(
+      meshRef.current.position.y,
+      targetY,
+      0.1
+    )
   })
 
+  return (
+    <mesh
+      ref={meshRef}
+      position={[anchor.position[0], -1.5, anchor.position[2]]}
+      rotation={[-Math.PI / 2, 0, 0]}
+      onPointerOver={(e) => {
+        e.stopPropagation()
+        setHovered(anchor.id)
+      }}
+      onPointerOut={() => setHovered(null)}
+      onClick={() => setActive(anchor.id)}
+    >
+      <cylinderGeometry args={[0.3, 0.3, 0.05, 64]} />
+      <meshStandardMaterial
+        color={isHovered ? '#ffffff' : '#444444'}
+        emissive={isHovered ? '#ffffff' : '#000000'}
+        emissiveIntensity={isHovered ? 0.5 : 0}
+        toneMapped={false}
+        roughness={0.4}
+        metalness={0.1}
+      />
+    </mesh>
+  )
+}
+
+function Anchors() {
+  return (
+    <>
+      {homeAnchors.map((anchor) => (
+        <AnchorObject key={anchor.id} anchor={anchor} />
+      ))}
+    </>
+  )
+}
+
+/* ===================== GROUND ===================== */
+
+function Ground() {
   return (
     <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -1.5, 0]}>
       <planeGeometry args={[50, 50]} />
-      <primitive object={material} attach="material" />
+      <meshStandardMaterial color="#050a1f" roughness={0.9} metalness={0.0} />
     </mesh>
   )
 }
 
-/* ===================== SKY DOME ===================== */
+/* ===================== ENVIRONMENT ===================== */
 
-function Sky() {
+function Environment() {
+  const starLayer1 = useRef<THREE.Group>(null!)
+  const starLayer2 = useRef<THREE.Group>(null!)
+
+  useFrame(() => {
+    if (!starLayer1.current || !starLayer2.current) return
+    starLayer1.current.rotation.y += 0.0001
+    starLayer2.current.rotation.y += 0.0003
+  })
+
   return (
-    <mesh>
-      <sphereGeometry args={[100, 32, 32]} />
-      <meshBasicMaterial
-        color="#020817"
-        side={THREE.BackSide}
-      />
-    </mesh>
+    <>
+      <fog attach="fog" args={['#050a1f', 6, 18]} />
+      <ambientLight intensity={0.2} />
+      <pointLight position={[0, 3, 0]} intensity={2.5} color="#c2187a" />
+
+      <group ref={starLayer1}>
+        <Stars
+          radius={50}
+          depth={50}
+          count={5000}
+          factor={4}
+          saturation={0}
+          fade
+          speed={1}
+        />
+      </group>
+      <group ref={starLayer2}>
+        <Stars
+          radius={100}
+          depth={50}
+          count={8000}
+          factor={5}
+          saturation={0}
+          fade
+          speed={0.8}
+        />
+      </group>
+    </>
   )
 }
 
 /* ===================== HOME SCENE ===================== */
 
 export default function HomeScene() {
+  const { camera } = useThree()
+
+  // Initial camera setup
+  camera.position.set(0, 1.4, 4.5)
+  camera.lookAt(0, 1.1, 0)
+  camera.fov = 45
+  camera.updateProjectionMatrix()
+
   return (
     <>
-      <fog attach="fog" args={['#020817', 6, 20]} />
-
-      <EmotionalLighting />
-
-      <Sky />
-      <Atmosphere />
-
-      {/* Starfield Layer */}
-      <Stars
-        radius={120}
-        depth={60}
-        count={5000}
-        factor={6}
-        saturation={0}
-        fade
-        speed={0.5}
-      />
-
+      <Environment />
       <Ground />
       <Orb />
+      <Anchors />
+      <CameraRig />
     </>
   )
 }
