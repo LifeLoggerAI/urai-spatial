@@ -1,1 +1,0 @@
-// SafeguardValidator for Life Review

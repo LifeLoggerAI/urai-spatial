@@ -1,42 +1,45 @@
+import AtmosphereLayer from '@/engine/effects/AtmosphereLayer'
+
 'use client'
 
-import { useEffect, useMemo } from 'react'
-import { segmentIntoChapters, StarData, LifeChapter } from '@/engine/chapters/segmentation'
+import { useMemo } from 'react'
+import { segmentIntoChapters, StarData } from '@/spatial/logic/segmentation'
+import { getDeterministicPosition, hashStringToFloat } from '@/spatial/logic/hashPosition'
+import { ConstellationLayer } from '@/components/lifemap/ConstellationLayer'
+import { Stars } from '@react-three/drei'
 
-// Placeholder for generating or fetching real star data
+// A fixed point in time for deterministic generation
+const DETERMINISTIC_TIMESTAMP = 1672531200000; // Jan 1, 2023
+
 function generateMockStars(count: number): StarData[] {
   const stars: StarData[] = [];
-  const now = Date.now();
   const fiveYearsInMillis = 5 * 365 * 24 * 60 * 60 * 1000;
 
   for (let i = 0; i < count; i++) {
+    const id = i.toString();
     stars.push({
       id: i,
-      position: [ (Math.random() - 0.5) * 200, (Math.random() - 0.5) * 100, (Math.random() - 0.5) * 200 ],
-      emotionalWeight: Math.random(),
-      timestamp: now - Math.random() * fiveYearsInMillis,
+      position: getDeterministicPosition(id, 200),
+      // V1 LOCK: All emotional weighting is removed.
+      // Timestamp is now derived from a fixed point, making it deterministic
+      timestamp: DETERMINISTIC_TIMESTAMP - hashStringToFloat(id, 5) * fiveYearsInMillis,
     });
   }
-  return stars;
+  // Sort stars by timestamp, as segmentation expects this
+  return stars.sort((a, b) => a.timestamp - b.timestamp);
 }
 
 export default function LifeMapScene() {
   const stars = useMemo(() => generateMockStars(500), []);
   const chapters = useMemo(() => segmentIntoChapters(stars), [stars]);
 
-  useEffect(() => {
-    console.log("LifeMap Scene Mounted");
-    console.log("Generated Stars:", stars.length);
-    console.log("Segmented Chapters:", chapters);
-  }, [stars, chapters]);
-
   return (
+      <AtmosphereLayer />
     <group>
-      {/* Visualization will be added in the next step */}
-      <mesh>
-        <boxGeometry args={[1, 1, 1]} />
-        <meshStandardMaterial color="blue" />
-      </mesh>
+      {/* The <Stars /> component is used here just to render the points. */}
+      {/* The positions are pre-calculated deterministically. */}
+      <Stars count={stars.length} positions={stars.map(s => s.position)} />
+      <ConstellationLayer chapters={chapters} stars={stars} />
     </group>
   );
 }

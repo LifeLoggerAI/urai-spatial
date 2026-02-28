@@ -5,8 +5,8 @@ import { usePathname } from 'next/navigation'
 import { useSceneStore } from '@/engine/core/scene-store'
 import { useReplayStore } from '@/engine/core/replay-store'
 import HomeScene from '@/engine/scenes/HomeScene'
-import LifeMapScene from '@/spatial/scenes/LifeMapScene'
-import LifeReviewScene from '@/spatial/scenes/LifeReviewScene'
+import LifeMapScene from '@/engine/scenes/LifeMapScene'
+import LifeReviewScene from '@/engine/scenes/LifeReviewScene'
 import ReplayScene from '@/engine/scenes/ReplayScene'
 import ResponsiveCamera from '@/components/scene/ResponsiveCamera'
 import Environment from '@/components/scene/Environment'
@@ -59,6 +59,6 @@ export default function SceneManager() {
       <Environment />
       <EmotionalLighting />
       {ActiveScene && (scene.type === 'replay' && scene.id ? <ReplayScene id={scene.id} /> : <ActiveScene />)}
-    </>
+    </> 
   )
 }

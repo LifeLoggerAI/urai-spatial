@@ -1,17 +1,13 @@
+'use client'
+
 import { create } from 'zustand'
 
-type QualityLevel = 'high' | 'medium' | 'low'
-
 interface QualityState {
-  qualityLevel: QualityLevel
-  setQuality: (level: QualityLevel) => void
-  isSafeMode: boolean
-  setSafeMode: (isSafe: boolean) => void
+  quality: 'low' | 'medium' | 'high'
+  setQuality: (q: 'low' | 'medium' | 'high') => void
 }
 
 export const useQualityStore = create<QualityState>((set) => ({
-  qualityLevel: 'high',
-  setQuality: (level) => set({ qualityLevel: level }),
-  isSafeMode: false,
-  setSafeMode: (isSafe) => set({ isSafeMode: isSafe }),
+  quality: 'high',
+  setQuality: (q) => set({ quality: q })
 }))

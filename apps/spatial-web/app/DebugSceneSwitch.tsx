@@ -1,14 +1,14 @@
-'use client';
-import { useIdentityStore } from '@/engine/state/identity-store'
+'use client'
 
-export function DebugSceneSwitch() {
+import { useIdentityStore } from '../engine/state/identity-store'
+
+export default function DebugSceneSwitch() {
   const setScene = useIdentityStore((s) => s.setScene)
 
   return (
-    <div style={{ position: 'absolute', top: 20, left: 20, zIndex: 100 }}>
-      <button onClick={() => setScene('home')}>Home</button>
-      <button onClick={() => setScene('lifemap')}>LifeMap</button>
-      <button onClick={() => setScene('replay')}>Replay</button>
-    </div>
+    <mesh position={[0, 1, 2]} onClick={() => setScene('lifemap')}>
+      <boxGeometry args={[0.2, 0.2, 0.2]} />
+      <meshStandardMaterial color="red" />
+    </mesh>
   )
 }

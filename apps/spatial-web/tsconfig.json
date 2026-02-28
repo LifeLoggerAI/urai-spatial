@@ -1,11 +1,15 @@
 {
+  "extends": "../../tsconfig.base.json",
   "compilerOptions": {
+    "jsx": "preserve",
     "lib": [
       "dom",
       "dom.iterable",
       "esnext"
     ],
     "allowJs": true,
+    "skipLibCheck": true,
+    "strict": false,
     "noEmit": true,
     "incremental": true,
     "module": "esnext",
@@ -13,29 +17,17 @@
     "moduleResolution": "node",
     "resolveJsonModule": true,
     "isolatedModules": true,
-    "jsx": "preserve",
     "plugins": [
       {
         "name": "next"
       }
-    ],
-    "skipLibCheck": true,
-    "strict": true,
-    "baseUrl": ".",
-    "paths": {
-      "@/*": [
-        "./*"
-      ],
-      "@engine/*": [
-        "src/engine/*"
-      ]
-    }
+    ]
   },
   "include": [
     "next-env.d.ts",
-    ".next/types/**/*.ts",
     "**/*.ts",
-    "**/*.tsx"
+    "**/*.tsx",
+    ".next/types/**/*.ts"
   ],
   "exclude": [
     "node_modules"

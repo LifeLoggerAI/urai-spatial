@@ -1,7 +1,7 @@
 'use client'
 
-import CanvasRoot from './CanvasRoot'
+import EngineSpine from '../engine/spine/EngineSpine'
 
 export default function Page() {
-  return <CanvasRoot />
+  return <EngineSpine />
 }
