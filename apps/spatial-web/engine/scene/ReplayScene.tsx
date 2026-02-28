@@ -97,10 +97,10 @@ export default function ReplayScene() {
         .add(new THREE.Vector3(3, 2, 4))
 
       camera.position.lerp(desiredPos, 0.05)
-      camera.lookAt(target)
+      // camera.lookAt(target)
     } else {
       camera.position.lerp(DEFAULT_CAMERA_POS, 0.04)
-      camera.lookAt(ORB_POSITION)
+      // camera.lookAt(ORB_POSITION)
     }
   })
 

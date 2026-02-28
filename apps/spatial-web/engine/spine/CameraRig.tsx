@@ -11,12 +11,12 @@ export default function CameraRig() {
 
     // Portrait (mobile tall)
     if (aspect < 1) {
-      camera.position.set(0, 0, 6)
+      // camera.position.set(0, 0, 6)
     }
 
     // Landscape / Desktop
     else {
-      camera.position.set(0, 0, 8)
+      // camera.position.set(0, 0, 8)
     }
 
     camera.updateProjectionMatrix()

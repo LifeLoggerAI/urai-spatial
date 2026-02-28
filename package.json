@@ -7,15 +7,18 @@
     "dev": "pnpm --filter spatial-web dev"
   },
   "dependencies": {
-    "@react-three/drei": "^9.108.3",
-    "@react-three/fiber": "^8.16.8",
+    "@react-three/drei": "^9.88.17",
+    "@react-three/fiber": "^8.15.13",
+    "@react-three/postprocessing": "2.16.2",
     "firebase": "^12.9.0",
     "firebase-admin": "^13.6.1",
     "next": "14.2.35",
-    "postprocessing": "^6.35.5",
+    "postprocessing": "6.32.2",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
-    "react-swipeable": "^7.0.2"
+    "react-swipeable": "^7.0.2",
+    "three": "0.152.2",
+    "three-stdlib": "^2.36.1"
   },
   "pnpm": {
     "overrides": {}

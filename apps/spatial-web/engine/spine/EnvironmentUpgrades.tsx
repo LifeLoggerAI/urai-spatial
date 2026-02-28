@@ -1,45 +1,42 @@
 'use client'
 
-import { Stars } from '@react-three/drei'
-import { useThree } from '@react-three/fiber'
-import { useEffect } from 'react'
+import { useMemo } from 'react'
+import * as THREE from 'three'
+import { Points, PointMaterial } from '@react-three/drei'
 
 export default function EnvironmentUpgrades() {
-  const { scene } = useThree()
-
-  useEffect(() => {
-    scene.background = null
-  }, [scene])
+  const stars = useMemo(() => {
+    const arr = new Float32Array(1500 * 3)
+    for (let i = 0; i < 1500; i++) {
+      arr[i * 3] = (Math.random() - 0.5) * 200
+      arr[i * 3 + 1] = Math.random() * 120
+      arr[i * 3 + 2] = (Math.random() - 0.5) * 200
+    }
+    return arr
+  }, [])
 
   return (
     <>
-      {/* Deep Space Stars */}
-      <Stars
-        radius={100}
-        depth={60}
-        count={3000}
-        factor={4}
-        saturation={0}
-        fade
-        speed={0.5}
-      />
 
-      {/* Soft Ambient Light */}
-      <ambientLight intensity={0.6} />
-
-      {/* Directional Rim Light */}
+      {/* Off-axis cinematic key light */}
       <directionalLight
-        position={[5, 5, 5]}
+        position={[8, 12, 6]}
         intensity={1.2}
-        color="#cfe9ff"
+        color={'#ffffff'}
       />
 
-      {/* Subtle Ground Bounce */}
-      <directionalLight
-        position={[0, -5, 2]}
-        intensity={0.3}
-        color="#1e2a4a"
-      />
+      <ambientLight intensity={0.35} />
+
+      {/* Deep background starfield */}
+      <Points positions={stars} stride={3} frustumCulled={false}>
+        <PointMaterial
+          transparent
+          color="#ffffff"
+          size={0.6}
+          sizeAttenuation
+          depthWrite={false}
+        />
+      </Points>
     </>
   )
 }
