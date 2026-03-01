@@ -1,19 +1,19 @@
 'use client'
 
-import { useStarStore } from '../state/star-store'
-import Star from '@/components/Star'
+import { useSceneStore } from '../state/useSceneStore'
+import LifeMap from '../scenes/LifeMapScene'
+import Home from '../scenes/Home'
 
 export default function SceneRouter() {
-  const stars = useStarStore((s) => s.stars)
+  const scene = useSceneStore((s) => s.scene)
 
-  return (
-    <>
-      <ambientLight intensity={1.5} />
-      <directionalLight position={[5, 5, 5]} intensity={2} />
+  if (scene === 'home') {
+    return <Home />
+  }
 
-      {stars.map((star) => (
-        <Star key={star.id} star={star} />
-      ))}
-    </>
-  )
+  if (scene === 'lifemap') {
+    return <LifeMap />
+  }
+
+  return null
 }

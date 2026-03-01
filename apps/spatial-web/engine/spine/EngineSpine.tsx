@@ -1,111 +1,103 @@
 'use client'
 
-import { Canvas } from '@react-three/fiber'
+import { Canvas, useFrame, useThree } from '@react-three/fiber'
 import { OrbitControls } from '@react-three/drei'
 import * as THREE from 'three'
-import { EffectComposer, Bloom } from '@react-three/postprocessing'
+import { useRef } from 'react'
+import SceneRouter from './SceneRouter'
+import { useSceneStore } from '../state/useSceneStore'
 
-function SkyDome() {
+function TransitionController() {
+  const { camera } = useThree()
+
+  const scene = useSceneStore((s) => s.scene)
+  const startTime = useSceneStore((s) => s.transitionStartTime)
+  const setScene = useSceneStore((s) => s.setScene)
+
+  const duration = 1200
+
+  const startPos = new THREE.Vector3(0, 0, 120)
+  const endPos = new THREE.Vector3(0, 32, 0)
+
+  const startLook = new THREE.Vector3(0, 0, 0)
+  const endLook = new THREE.Vector3(0, 20, -30)
+
+  const startFov = 40
+  const endFov = 40
+
+  useFrame(() => {
+    if (scene !== 'transition' || !startTime) return
+
+    const elapsed = performance.now() - startTime
+    const t = Math.min(elapsed / duration, 1)
+
+    const eased =
+      t < 0.5
+        ? 4 * t * t * t
+        : 1 - Math.pow(-2 * t + 2, 3) / 2
+
+    camera.position.lerpVectors(startPos, endPos, eased)
+
+    const currentLook = new THREE.Vector3().lerpVectors(
+      startLook,
+      endLook,
+      eased
+    )
+
+    camera.lookAt(currentLook)
+
+    camera.fov = THREE.MathUtils.lerp(startFov, endFov, eased)
+    camera.updateProjectionMatrix()
+
+    if (t === 1) {
+      setScene('lifemap')
+    }
+  })
+
   return (
-    <mesh>
-      <sphereGeometry args={[100, 32, 32]} />
-      <shaderMaterial
-        side={THREE.BackSide}
-        uniforms={{
-          topColor: { value: new THREE.Color('#05070d') },
-          bottomColor: { value: new THREE.Color('#141a2b') }
-        }}
-        vertexShader={`
-          varying vec3 vWorldPosition;
-          void main() {
-            vec4 worldPosition = modelMatrix * vec4(position, 1.0);
-            vWorldPosition = worldPosition.xyz;
-            gl_Position = projectionMatrix * viewMatrix * worldPosition;
-          }
-        `}
-        fragmentShader={`
-          uniform vec3 topColor;
-          uniform vec3 bottomColor;
-          varying vec3 vWorldPosition;
-          void main() {
-            float h = normalize(vWorldPosition).y;
-            gl_FragColor = vec4(mix(bottomColor, topColor, max(h, 0.0)), 1.0);
-          }
-        `}
-      />
-    </mesh>
+    <OrbitControls
+      makeDefault
+
+      /* FULL 360 */
+      minPolarAngle={0}
+      maxPolarAngle={Math.PI}
+      minAzimuthAngle={-Infinity}
+      maxAzimuthAngle={Infinity}
+
+      enablePan={false}
+      enableZoom={true}
+      enableRotate={true}
+      enableDamping
+      dampingFactor={0.08}
+
+      /* ONLY disable during transition */
+      enabled={scene !== 'transition'}
+    />
   )
 }
 
 export default function EngineSpine() {
   return (
-    <Canvas shadows camera={{ position: [0, 6, 14], fov: 50 }}>
-      <fogExp2 attach="fog" args={['#0b0f1a', 0.055]} />
-      <SkyDome />
+    <Canvas
+      shadows
+      gl={{ antialias: true }}
+      camera={{
+        position: [0, 0, 120], // <-- FIXED BASELINE
+        fov: 40,
+      }}
+    >
+      <ambientLight intensity={0.2} />
 
-      <ambientLight intensity={0.55} />
       <directionalLight
-        position={[5, 8, 5]}
+        position={[10, 20, 15]}
         intensity={1.2}
+        color="#bcdcff"
         castShadow
-        color="#ffd8c2"
-      />
-      <directionalLight
-        position={[-5, 6, -5]}
-        intensity={0.6}
-      />
-      <hemisphereLight
-        args={['#1a2a55', '#0f1628', 0.5]}
       />
 
-      <mesh castShadow receiveShadow position={[0.15, 1, -0.2]}>
-        <boxGeometry />
-        <meshStandardMaterial color="hotpink" />
-      </mesh>
+      <TransitionController />
 
-      <mesh receiveShadow position={[0, -1, 0]} rotation={[-Math.PI / 2, 0, 0]}>
-        <planeGeometry args={[200, 200]} />
-        <meshStandardMaterial
-          color="#232836"
-          roughness={1}
-          metalness={0}
-        >
-          <primitive attach="onBeforeCompile" object={(shader) => {
-            shader.fragmentShader = shader.fragmentShader.replace(
-              '#include <dithering_fragment>',
-              `
-              float noise = fract(sin(dot(gl_FragCoord.xy ,vec2(12.9898,78.233))) * 43758.5453);
-              gl_FragColor.rgb += (noise - 0.5) * 0.015;
-              #include <dithering_fragment>
-              `
-            );
-          }} />
-        </meshStandardMaterial>
-      </mesh>
-
-      <mesh position={[-6, 0.5, -12]}>
-        <boxGeometry args={[1.2, 2.5, 1.2]} />
-        <meshStandardMaterial
-          color="#151a26"
-          roughness={1}
-          metalness={0}
-        />
-      </mesh>
-
-      <OrbitControls
-        enablePan={false}
-        minDistance={4}
-        maxDistance={18}
-        minPolarAngle={Math.PI * 0.25}
-        maxPolarAngle={Math.PI * 0.85}
-      />
-      <EffectComposer>
-        <Bloom
-            intensity={0.28}
-            luminanceThreshold={0.5}
-            luminanceSmoothing={0.8}
-        />
-      </EffectComposer>
+      <SceneRouter />
     </Canvas>
   )
 }

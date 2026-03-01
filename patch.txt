@@ -1,0 +1,22 @@
+--- Replace deep background points section inside LifeMap ---
+
+<points>
+  <bufferGeometry>
+    <bufferAttribute
+      attach="attributes-position"
+      count={8000}
+      array={new Float32Array(
+        Array.from({ length: 8000 * 3 }, () => (Math.random() - 0.5) * 2000)
+      )}
+      itemSize={3}
+    />
+  </bufferGeometry>
+  <pointsMaterial
+    size={1.2}
+    sizeAttenuation
+    color="#7d94ff"
+    transparent
+    opacity={0.6}
+    depthWrite={false}
+  />
+</points>

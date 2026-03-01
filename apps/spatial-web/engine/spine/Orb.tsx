@@ -51,12 +51,13 @@ export default function Orb() {
       base * multiplier * (0.85 + intensity * 0.4)
 
     materialRef.current.emissiveIntensity +=
-      (target - materialRef.current.emissiveIntensity) * 0.08
+ 
+    (target - materialRef.current.emissiveIntensity) * 0.08
   })
 
   return (
     <group position={[0, 1.25, 0]}>
-      <mesh ref={meshRef}>
+      <mesh ref={meshRef} castShadow>
         <sphereGeometry args={[0.85, 64, 64]} />
         <meshStandardMaterial
           ref={materialRef}

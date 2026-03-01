@@ -1,50 +1,50 @@
 'use client'
 
 import * as THREE from 'three'
-import { useMemo, useRef } from 'react'
+import { useMemo, useRef, useEffect } from 'react'
 import { useFrame } from '@react-three/fiber'
 
 export default function Starfield() {
-  const ref = useRef<THREE.Points>(null!)
+  const meshRef = useRef<THREE.InstancedMesh>(null!)
 
   const stars = useMemo(() => {
     const starCount = 2000
-    const positions = new Float32Array(starCount * 3)
-
+    const positions = []
     for (let i = 0; i < starCount; i++) {
       const r = 400
       const theta = Math.random() * 2 * Math.PI
       const phi = Math.acos(2 * Math.random() - 1)
-
-      positions[i * 3] = r * Math.sin(phi) * Math.cos(theta)
-      positions[i * 3 + 1] = r * Math.sin(phi) * Math.sin(theta)
-      positions[i * 3 + 2] = r * Math.cos(phi)
+      positions.push(
+        new THREE.Vector3(
+          r * Math.sin(phi) * Math.cos(theta),
+          r * Math.sin(phi) * Math.sin(theta),
+          r * Math.cos(phi)
+        )
+      )
     }
-
     return positions
   }, [])
 
+  useEffect(() => {
+    const dummy = new THREE.Object3D()
+    stars.forEach((star, i) => {
+      dummy.position.copy(star)
+      dummy.updateMatrix()
+      meshRef.current.setMatrixAt(i, dummy.matrix)
+    })
+    meshRef.current.instanceMatrix.needsUpdate = true
+  }, [stars])
+
   useFrame((state, delta) => {
-    ref.current.rotation.y += delta * 0.01
+    if (meshRef.current) {
+      meshRef.current.rotation.y += delta * 0.01
+    }
   })
 
   return (
-    <points ref={ref}>
-      <bufferGeometry>
-        <bufferAttribute
-          attach="attributes-position"
-          count={stars.length / 3}
-          array={stars}
-          itemSize={3}
-        />
-      </bufferGeometry>
-      <pointsMaterial
-        size={1.5}
-        color="#88aaff"
-        transparent
-        opacity={0.6}
-        depthWrite={false}
-      />
-    </points>
+    <instancedMesh ref={meshRef} args={[undefined, undefined, stars.length]}>
+      <sphereGeometry args={[0.5, 8, 8]} />
+      <meshBasicMaterial color="#88aaff" transparent opacity={0.6} depthWrite={false} />
+    </instancedMesh>
   )
 }

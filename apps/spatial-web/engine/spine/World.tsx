@@ -2,159 +2,127 @@
 
 import * as THREE from 'three'
 import { useThree, useFrame } from '@react-three/fiber'
-import Orb from './Orb'
 import { useEffect, useRef, useMemo } from 'react'
+import Orb from './Orb'
 import { useEmotionStore } from '../state/emotion-store'
 
 export default function World() {
-  const { scene } = useThree()
-  const groundMaterialRef = useRef<THREE.MeshStandardMaterial>(null!)
-  const starMaterialRef = useRef<THREE.ShaderMaterial>(null!)
-  const { state, intensity } = useEmotionStore()
+const { scene, camera } = useThree()
+const starMaterialRef = useRef<THREE.ShaderMaterial>(null!)
+const { state, intensity } = useEmotionStore()
 
-  useEffect(() => {
-    scene.background = new THREE.Color('#0a0f1c')
-    scene.fog = new THREE.FogExp2('#0a0f1c', 0.028)
-  }, [scene])
+useEffect(() => {
+scene.background = new THREE.Color('#030712')
+scene.fog = new THREE.FogExp2('#0a1326', 0.012)
+camera.lookAt(0, 1.5, 0)
+}, [scene, camera])
 
-  useFrame(() => {
-    if (groundMaterialRef.current) {
-      const mat = groundMaterialRef.current
+useFrame(() => {
+if (!starMaterialRef.current) return
 
-      let targetColor = new THREE.Color('#2f3640')
-      let targetRoughness = 0.8
+```
+let brightness = 1
+switch (state) {
+  case 'grief': brightness = 0.6; break
+  case 'trauma': brightness = 0.55; break
+  case 'anxiety': brightness = 0.8; break
+  case 'clarity': brightness = 1.2; break
+  case 'growth': brightness = 1.15; break
+  case 'breakthrough': brightness = 1.35; break
+  case 'recovery': brightness = 1.05; break
+  default: brightness = 1
+}
 
-      switch (state) {
-        case 'growth':
-          targetColor = new THREE.Color('#5e7f62')
-          targetRoughness = 0.75
-          break
+const target = brightness * (0.9 + intensity * 0.4)
+starMaterialRef.current.uniforms.uEmotionBrightness.value +=
+  (target - starMaterialRef.current.uniforms.uEmotionBrightness.value) * 0.05
+```
 
-        case 'clarity':
-          targetColor = new THREE.Color('#4a5d73')
-          targetRoughness = 0.7
-          break
+})
 
-        case 'grief':
-          targetColor = new THREE.Color('#1f2328')
-          targetRoughness = 0.9
-          break
+const starGeometry = useMemo(() => {
+const positions = new Float32Array(10000 * 3)
 
-        case 'trauma':
-          targetColor = new THREE.Color('#1a1d21')
-          targetRoughness = 0.95
-          break
+```
+for (let i = 0; i < 10000; i++) {
+  positions[i * 3] = (Math.random() - 0.5) * 300
+  positions[i * 3 + 1] = Math.random() * 160
+  positions[i * 3 + 2] = (Math.random() - 0.5) * 300
+}
 
-        case 'recovery':
-          targetColor = new THREE.Color('#3a4a5a')
-          targetRoughness = 0.75
-          break
+const geometry = new THREE.BufferGeometry()
+geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3))
+return geometry
+```
 
-        default:
-          targetColor = new THREE.Color('#2f3640')
-          targetRoughness = 0.8
-      }
+}, [])
 
-      mat.color.lerp(targetColor, 0.03)
-      mat.roughness += (targetRoughness - mat.roughness) * 0.05
-    }
+return (
+<>
+<group position={[0, 1.4, 0]}> <Orb /> </group>
 
-    if (starMaterialRef.current) {
-      let brightness = 1
+```
+  <mesh receiveShadow position={[0, -110, 0]}>
+    <sphereGeometry args={[120, 64, 64, 0, Math.PI * 2, 0, Math.PI / 2]} />
+    <shaderMaterial
+      vertexShader={`
+        varying float vY;
+        void main() {
+          vY = position.y;
+          gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+        }
+      `}
+      fragmentShader={`
+        varying float vY;
+        void main() {
+          float g = smoothstep(-120.0, 10.0, vY);
+          vec3 deep = vec3(0.01, 0.03, 0.07);
+          vec3 mid = vec3(0.04, 0.08, 0.15);
+          vec3 light = vec3(0.07, 0.13, 0.22);
+          vec3 col = mix(deep, mid, g);
+          col = mix(col, light, g * 0.6);
+          gl_FragColor = vec4(col, 1.0);
+        }
+      `}
+    />
+  </mesh>
 
-      switch (state) {
-        case 'grief':
-          brightness = 0.7
-          break
+  <points geometry={starGeometry}>
+    <shaderMaterial
+      ref={starMaterialRef}
+      transparent
+      depthWrite={false}
+      blending={THREE.AdditiveBlending}
+      uniforms={{ uEmotionBrightness: { value: 1.0 } }}
+      vertexShader={`
+        void main() {
+          gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+          gl_PointSize = 2.5;
+        }
+      `}
+      fragmentShader={`
+        uniform float uEmotionBrightness;
+        void main() {
+          float d = length(gl_PointCoord - vec2(0.5));
+          float a = smoothstep(0.5, 0.15, d);
+          gl_FragColor = vec4(vec3(uEmotionBrightness), a);
+        }
+      `}
+    />
+  </points>
 
-        case 'trauma':
-          brightness = 0.6
-          break
+  <ambientLight intensity={0.32} />
 
-        case 'anxiety':
-          brightness = 0.85
-          break
+  <directionalLight
+    position={[10, 30, 15]}
+    intensity={1.1}
+    castShadow
+    shadow-mapSize-width={2048}
+    shadow-mapSize-height={2048}
+    shadow-bias={-0.00005}
+  />
+</>
+```
 
-        case 'clarity':
-          brightness = 1.15
-          break
-
-        case 'growth':
-          brightness = 1.1
-          break
-
-        case 'breakthrough':
-          brightness = 1.25
-          break
-
-        case 'recovery':
-          brightness = 1.05
-          break
-
-        default:
-          brightness = 1
-      }
-
-      const target = brightness * (0.9 + intensity * 0.3)
-
-      starMaterialRef.current.uniforms.uEmotionBrightness.value += (target - starMaterialRef.current.uniforms.uEmotionBrightness.value) * 0.05
-    }
-  })
-
-  const starGeometry = useMemo(() => {
-    const positions = new Float32Array(5000 * 3)
-    for (let i = 0; i < 5000; i++) {
-      const x = (Math.random() - 0.5) * 200
-      const y = Math.random() * 100
-      const z = (Math.random() - 0.5) * 200
-      positions[i * 3] = x
-      positions[i * 3 + 1] = y
-      positions[i * 3 + 2] = z
-    }
-    const geometry = new THREE.BufferGeometry()
-    geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3))
-    return geometry
-  }, [])
-
-  return (
-    <>
-      <Orb />
-
-      {/* Ground repositioned for proper horizon */}
-      <mesh position={[0, -1.6, 0]} rotation={[-Math.PI / 2, 0, 0]}>
-        <planeGeometry args={[80, 80]} />
-        <meshStandardMaterial
-          ref={groundMaterialRef}
-          color="#2f3640"
-          roughness={1}
-          metalness={0}
-        />
-      </mesh>
-
-      <points geometry={starGeometry}>
-        <shaderMaterial
-          ref={starMaterialRef}
-          uniforms={{
-            uEmotionBrightness: { value: 1.0 },
-          }}
-          vertexShader={`
-            void main() {
-              gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
-              gl_PointSize = 2.0;
-            }
-          `}
-          fragmentShader={`
-            uniform float uEmotionBrightness;
-
-            void main() {
-              gl_FragColor = vec4(vec3(uEmotionBrightness), 1.0);
-            }
-          `}
-        />
-      </points>
-
-      <ambientLight intensity={0.5} />
-      <directionalLight position={[5, 9, 6]} intensity={1.0} />
-    </>
-  )
+)
 }

@@ -9,18 +9,16 @@ export default function CameraRig() {
   useEffect(() => {
     const aspect = size.width / size.height
 
-    // Portrait (mobile tall)
+    // Only adjust FOV based on screen size
+    // DO NOT touch camera.position here
     if (aspect < 1) {
-      // camera.position.set(0, 0, 6)
-    }
-
-    // Landscape / Desktop
-    else {
-      // camera.position.set(0, 0, 8)
+      camera.fov = 52
+    } else {
+      camera.fov = 48
     }
 
     camera.updateProjectionMatrix()
-  }, [camera, size])
+  }, [size, camera])
 
   return null
 }
