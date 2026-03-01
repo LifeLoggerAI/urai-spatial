@@ -4,7 +4,7 @@ import * as THREE from 'three'
 export default function Orb() {
   return (
     <>
-      <mesh position={[0, 0.6, -6]}>
+      <mesh position={[0, 8, 0]}>
         <sphereGeometry args={[3.2, 64, 64]} />
         <meshStandardMaterial
           color="#d9f0ff"
@@ -13,7 +13,7 @@ export default function Orb() {
         />
       </mesh>
 
-      <mesh position={[0, 0.6, -6]}>
+      <mesh position={[0, 8, 0]}>
         <sphereGeometry args={[5.2, 64, 64]} />
         <meshBasicMaterial
           color="#7ecbff"

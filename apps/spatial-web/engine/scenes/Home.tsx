@@ -7,20 +7,23 @@ import Avatar from '../components/Avatar'
 import Orb from '../components/Orb'
 
 export default function Home() {
-  const startTransition = useSceneStore((s) => s.startTransition)
+  const setScene = useSceneStore((s) => s.setScene)
 
   return (
     <>
-      <Sky />
-
-      {/* SKY CLICK PLANE ONLY */}
-      <mesh
-        position={[0, 30, -40]}
+      <group
         onClick={(e) => {
-          e.stopPropagation()
-          startTransition()
+          if (e.object.name === 'sky') {
+            e.stopPropagation()
+            setScene('lifemap')
+          }
         }}
       >
+        <Sky />
+      </group>
+
+      {/* SKY CLICK PLANE ONLY - NOW DISABLED */}
+      <mesh position={[0, 30, -40]}>
         <planeGeometry args={[400, 200]} />
         <meshBasicMaterial transparent opacity={0} depthWrite={false} />
       </mesh>
