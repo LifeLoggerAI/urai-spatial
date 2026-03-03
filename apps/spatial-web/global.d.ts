@@ -1,1 +1,0 @@
-import type {} from '@react-three/fiber'
