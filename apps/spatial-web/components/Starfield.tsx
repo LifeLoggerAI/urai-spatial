@@ -1,53 +1,52 @@
-'use client';
+'use client'
 
-import { useRouter } from 'next/navigation';
-import { Mesh, Group } from 'three';
-import { useMemo, useRef } from 'react';
-import { useFrame } from '@react-three/fiber';
+import { useMemo } from 'react'
+import * as THREE from 'three'
+import { useLifeMapStore } from '../state/useLifeMapStore'
 
-interface StarData {
-  id: number;
-  position: [number, number, number];
+const STAR_COUNT = 800
+
+function seededPosition(i: number) {
+  const x = Math.sin(i * 127.1) * 18
+  const y = Math.cos(i * 311.7) * 12 + 6
+  const z = -20 - (i % 12) * 8
+  return new THREE.Vector3(x, y, z)
 }
 
 export default function Starfield() {
-  const router = useRouter();
-  const groupRef = useRef<Group>(null);
+  const setSelection = useLifeMapStore((s) => s.setSelection)
+  const selectedId = useLifeMapStore((s) => s.selectedId)
 
-  const stars: StarData[] = useMemo(() => {
-    return Array.from({ length: 30 }).map((_, index) => ({
-      id: index,
-      position: [
-        (Math.random() - 0.5) * 40, // Wider horizontal spread
-        (Math.random() - 0.5) * 20, // Increased vertical spread
-        (Math.random() - 0.5) * 400, // Greatly increased depth
-      ],
-    }));
-  }, []);
-
-  useFrame((_, delta) => {
-    if (groupRef.current) {
-      // Add a slow, subtle drift to the entire starfield
-      groupRef.current.position.z += delta * 0.2;
-      // Reset the starfield position when it drifts too far
-      if (groupRef.current.position.z > 20) {
-        groupRef.current.position.z = -20;
-      }
-    }
-  });
+  const stars = useMemo(() => {
+    return Array.from({ length: STAR_COUNT }).map((_, i) => ({
+      id: `star-${i}`,
+      position: seededPosition(i),
+    }))
+  }, [])
 
   return (
-    <group ref={groupRef}>
-      {stars.map((star) => (
-        <mesh
-          key={star.id}
-          position={star.position}
-          onClick={() => router.push('/replay/1')}
-        >
-          <sphereGeometry args={[0.15, 8, 8]} />
-          <meshStandardMaterial color="#ffffff" emissive="#ffffff" />
-        </mesh>
-      ))}
+    <group position={[0, -4, 0]}>
+      {stars.map((star) => {
+        const isSelected = selectedId === star.id
+
+        return (
+          <mesh
+            key={star.id}
+            position={star.position}
+            onClick={(e) => {
+              e.stopPropagation()
+              setSelection(star.id, star.position.clone())
+            }}
+          >
+            <sphereGeometry args={[0.25, 24, 24]} />
+            <meshStandardMaterial
+              color="#ffffff"
+              emissive="#8ab4ff"
+              emissiveIntensity={isSelected ? 3 : 0.4}
+            />
+          </mesh>
+        )
+      })}
     </group>
-  );
+  )
 }

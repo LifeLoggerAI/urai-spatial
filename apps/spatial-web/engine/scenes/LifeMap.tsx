@@ -18,12 +18,12 @@ export default function LifeMap() {
   const { scene } = useThree()
 
   const groupRef = useRef<THREE.Group>(null)
-  const [selected, setSelected] = useState<StarNode | null>(null)
 
   const setScene = useSceneStore((s) => s.setScene)
   const setActiveMemory = useSceneStore((s) => s.setActiveMemory)
 
   scene.background = new THREE.Color('#02030a')
+  scene.fog = new THREE.FogExp2('#02030a', 0.002)
 
   /* =========================
       ERA COLORS
@@ -35,17 +35,6 @@ export default function LifeMap() {
     new THREE.Color('#ff7bd4'),
     new THREE.Color('#7bffd4')
   ]
-
-  /* =========================
-      FOG
-     ========================= */
-
-  const fog = useMemo(
-    () => new THREE.FogExp2('#02030a', 0.0012),
-    []
-  )
-
-  scene.fog = fog
 
   /* =========================
       NEBULA
@@ -113,21 +102,27 @@ export default function LifeMap() {
   }, [])
 
   /* =========================
-      NODES
+      NODES (REAL GALAXY)
      ========================= */
 
   const nodes: StarNode[] = useMemo(() => {
     const arr: StarNode[] = []
+    const count = 900
+    const radius = 120
 
-    for (let i = 0; i < 140; i++) {
-      const era = Math.floor(Math.random() * 4)
-      const clusterOffset = era * 150 - 225
+    for (let i = 0; i < count; i++) {
+      const era = i % 4
 
-      const base = new THREE.Vector3(
-        clusterOffset + (Math.random() - 0.5) * 140,
-        (Math.random() - 0.5) * 260,
-        (Math.random() - 0.5) * 320
-      )
+      // spherical galaxy distribution with dense core
+      const r = radius * Math.pow(Math.random(), 0.55)
+      const theta = Math.random() * Math.PI * 2
+      const phi = Math.acos(2 * Math.random() - 1)
+
+      const x = r * Math.sin(phi) * Math.cos(theta)
+      const y = r * Math.sin(phi) * Math.sin(theta)
+      const z = r * Math.cos(phi)
+
+      const base = new THREE.Vector3(x, y, z)
 
       arr.push({
         id: `node-${i}`,
@@ -149,31 +144,12 @@ export default function LifeMap() {
     nebulaMaterial.uniforms.time.value += 0.01
 
     if (groupRef.current) {
-      groupRef.current.rotation.y += 0.00015
+      groupRef.current.rotation.y += 0.00008
     }
 
     nodes.forEach(node => {
       if (!selected) {
         node.position.lerp(node.basePosition, 0.05)
-      } else {
-        const dist =
-          node.basePosition.distanceTo(selected.basePosition)
-
-        const gravityRadius = 120
-
-        if (dist < gravityRadius) {
-          const strength =
-            (1 - dist / gravityRadius) * 0.05
-
-          const dir =
-            selected.basePosition.clone()
-              .sub(node.position)
-              .normalize()
-
-          node.position.add(
-            dir.multiplyScalar(strength)
-          )
-        }
       }
     })
   })
@@ -185,80 +161,55 @@ export default function LifeMap() {
   return (
     <>
       <mesh>
-        <sphereGeometry args={[1600,64,64]} />
+        <sphereGeometry args={[1500,64,64]} />
         <primitive object={nebulaMaterial} attach="material" />
       </mesh>
 
       <group
         ref={groupRef}
-        onClick={() => setSelected(null)}
       >
         {nodes.map(node => {
 
-          const size =
-            0.4 + node.weight * 1.6
+          const size = 0.3 + node.weight * 1.4
 
-          let blended =
-            new THREE.Color(0,0,0)
-
-          nodes.forEach(other => {
-            const dist =
-              node.position.distanceTo(other.position)
-
-            const influence =
-              Math.max(0,1 - dist / 220)
-
-            blended.add(
-              eraColors[other.era]
-                .clone()
-                .multiplyScalar(influence * 0.08)
-            )
-          })
-
-          const finalColor =
-            blended.add(eraColors[node.era])
+          const baseColor = eraColors[node.era]
 
           return (
-            <group
+            <mesh
               key={node.id}
               position={node.position}
-            >
-              <mesh
-                onClick={(e)=>{
-                  e.stopPropagation()
-                  setSelected(node)
+              onClick={(e)=>{
+                e.stopPropagation()
 
-                  // ROUTE TO MEMORY
-                  setTimeout(() => {
-                    setActiveMemory(node.id)
-                    setScene('moment')
-                  }, 500)
-                }}
-              >
-                <sphereGeometry args={[size,32,32]} />
-                <meshStandardMaterial
-                  color={finalColor}
-                  emissive={finalColor}
-                  emissiveIntensity={1.4}
-                  roughness={0.4}
-                />
-              </mesh>
-            </group>
+                setTimeout(() => {
+                  setActiveMemory(node.id)
+                  setScene('moment')
+                }, 400)
+              }}
+            >
+              <sphereGeometry args={[size,24,24]} />
+              <meshStandardMaterial
+                color={baseColor}
+                emissive={baseColor}
+                emissiveIntensity={2.0}
+                roughness={0.5}
+              />
+            </mesh>
           )
         })}
       </group>
 
-      <ambientLight intensity={0.4}/>
+      <ambientLight intensity={0.5}/>
       <directionalLight
-        position={[60,80,40]}
-        intensity={1}
-        color="#bcdcff"
+        position={[80,120,60]}
+        intensity={1.2}
+        color="#cde2ff"
       />
 
       <EffectComposer>
         <Bloom
-          intensity={0.6}
-          luminanceThreshold={0.3}
+          intensity={1.0}
+          luminanceThreshold={0.2}
         />
       </EffectComposer>
     </>

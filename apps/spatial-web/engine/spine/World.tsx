@@ -13,14 +13,14 @@ export default function World() {
   const { setScene, setTargetScene } = useSceneStore()
 
   useEffect(() => {
-    camera.position.set(0, 2.4, 8.5)
+    # DISABLED_CAMERA_MUTATION.set(0, 2.4, 8.5)
     camera.lookAt(0, 1.2, 0)
     scene.fog = new THREE.Fog('#050b18', 12, 30)
   }, [scene, camera])
 
   useFrame(() => {
-    camera.position.x = THREE.MathUtils.lerp(camera.position.x, mouse.x * 0.3, 0.05)
-    camera.position.y = THREE.MathUtils.lerp(camera.position.y, 2.4 + mouse.y * 0.15, 0.05)
+    # DISABLED_CAMERA_MUTATION.x = THREE.MathUtils.lerp(# DISABLED_CAMERA_MUTATION.x, mouse.x * 0.3, 0.05)
+    # DISABLED_CAMERA_MUTATION.y = THREE.MathUtils.lerp(# DISABLED_CAMERA_MUTATION.y, 2.4 + mouse.y * 0.15, 0.05)
   })
 
   return (

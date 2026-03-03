@@ -1,56 +1,22 @@
-import { create } from 'zustand'
-import { scenes, Scene } from './scenes'
+import { create } from "zustand"
 
-export type ZoomLevel =
-  | 'decade'
-  | 'year'
-  | 'month'
-  | 'day'
-  | 'moment'
-
-interface SpatialState {
-  scene: Scene
-  targetScene: Scene | null
-
-  zoomLevel: ZoomLevel
-  cameraZ: number
-
-  activeEra: string | null
-  selectedMoment: string | null
-  selectedMomentPosition: [number, number, number] | null
-
-  setScene: (scene: Scene) => void
-  setTargetScene: (scene: Scene | null) => void,
-  setZoomLevel: (level: ZoomLevel) => void
-  setCameraZ: (z: number) => void
-  setActiveEra: (era: string | null) => void
-  setSelectedMoment: (id: string | null) => void
-  setSelectedMomentPosition: (pos: [number, number, number] | null) => void
+type Vec3 = {
+  x: number
+  y: number
+  z: number
 }
 
-export const useSceneStore = create<SpatialState>((set) => ({
-  scene: 'home',
-  targetScene: null,
+type SceneState = {
+  cameraTarget: Vec3 | null
+  isCameraMoving: boolean
+  setCameraTarget: (pos: Vec3 | null) => void
+  setCameraMoving: (moving: boolean) => void
+}
 
-  zoomLevel: 'decade',
-  cameraZ: 60,
+export const useSceneStore = create<SceneState>((set) => ({
+  cameraTarget: null,
+  isCameraMoving: false,
 
-  activeEra: null,
-  selectedMoment: null,
-  selectedMomentPosition: null,
-
-  setScene: (scene) => {
-    if (!scenes.includes(scene)) {
-      console.warn('Invalid scene requested:', scene)
-      return
-    }
-    set({ scene })
-  },
-  setTargetScene: (targetScene) => set({ targetScene }),
-  setZoomLevel: (zoomLevel) => set({ zoomLevel }),
-  setCameraZ: (cameraZ) => set({ cameraZ }),
-  setActiveEra: (activeEra) => set({ activeEra }),
-  setSelectedMoment: (selectedMoment) => set({ selectedMoment }),
-  setSelectedMomentPosition: (selectedMomentPosition) =>
-    set({ selectedMomentPosition }),
+  setCameraTarget: (pos) => set({ cameraTarget: pos }),
+  setCameraMoving: (moving) => set({ isCameraMoving: moving }),
 }))

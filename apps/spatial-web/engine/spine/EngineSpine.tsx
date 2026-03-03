@@ -1,109 +1,88 @@
-'use client'
+"use client"
 
-import { Canvas, useFrame, useThree } from '@react-three/fiber'
-import { OrbitControls } from '@react-three/drei'
-import * as THREE from 'three'
-import { useRef } from 'react'
-import SceneRouter from './SceneRouter'
-import { useSceneStore } from '../state/useSceneStore'
+import { Canvas, useThree } from "@react-three/fiber"
+import { useRef, useEffect } from "react"
+import * as THREE from "three"
+import { STAR_POSITIONS, STAR_COUNT } from "../stars/deterministicStars"
+import CameraRig from "../camera/CameraRig"
+import { cameraTarget } from "../camera/cameraStore"
 
-function TransitionController() {
+const BASE_SCALE = 1
+const SELECT_SCALE = 2
+const CAMERA_OFFSET = 8
+
+function Starfield() {
   const { camera } = useThree()
+  const meshRef = useRef<THREE.InstancedMesh>(null!)
+  const selectedRef = useRef<number | null>(null)
+  const dummy = new THREE.Object3D()
 
-  const scene = useSceneStore((s) => s.scene)
-  const startTime = useSceneStore((s) => s.transitionStartTime)
-  const setScene = useSceneStore((s) => s.setScene)
+  useEffect(() => {
+    const mesh = meshRef.current
 
-  const duration = 1200
-
-  const startPos = new THREE.Vector3(0, 18, 95) // Adjusted to new home position
-  const endPos = new THREE.Vector3(0, 32, 0)
-
-  const startLook = new THREE.Vector3(0, 8, 0) // Adjusted to new target
-  const endLook = new THREE.Vector3(0, 20, -30)
-
-  const startFov = 40
-  const endFov = 40
-
-  const controlsRef = useRef<any>(null)
-
-  useFrame(() => {
-    if (scene === 'transition' && startTime) {
-      const elapsed = performance.now() - startTime
-      const t = Math.min(elapsed / duration, 1)
-
-      const eased =
-        t < 0.5
-          ? 4 * t * t * t
-          : 1 - Math.pow(-2 * t + 2, 3) / 2
-
-      camera.position.lerpVectors(startPos, endPos, eased)
-
-      const currentLook = new THREE.Vector3().lerpVectors(
-        startLook,
-        endLook,
-        eased
-      )
-
-      camera.lookAt(currentLook)
-
-      camera.fov = THREE.MathUtils.lerp(startFov, endFov, eased)
-      camera.updateProjectionMatrix()
-
-      if (t === 1) {
-        setScene('lifemap')
-      }
-    } else if (controlsRef.current) {
-      // Lock orbit target when not in transition
-      controlsRef.current.target.set(0, 8, 0)
+    for (let i = 0; i < STAR_COUNT; i++) {
+      dummy.position.copy(STAR_POSITIONS[i])
+      dummy.scale.setScalar(BASE_SCALE)
+      dummy.updateMatrix()
+      mesh.setMatrixAt(i, dummy.matrix)
     }
-  })
+
+    mesh.instanceMatrix.needsUpdate = true
+  }, [])
+
+  const setScale = (id: number, scale: number) => {
+    dummy.position.copy(STAR_POSITIONS[id])
+    dummy.scale.setScalar(scale)
+    dummy.updateMatrix()
+    meshRef.current.setMatrixAt(id, dummy.matrix)
+    meshRef.current.instanceMatrix.needsUpdate = true
+  }
 
   return (
-    <OrbitControls
-      ref={controlsRef}
-      makeDefault
+    <instancedMesh
+      ref={meshRef}
+      args={[undefined, undefined, STAR_COUNT]}
+      onPointerDown={(e) => {
+        e.stopPropagation()
+        if (e.instanceId === undefined) return
 
-      /* FULL 360 */
-      minPolarAngle={0}
-      maxPolarAngle={Math.PI}
-      minAzimuthAngle={-Infinity}
-      maxAzimuthAngle={Infinity}
+        const id = e.instanceId
 
-      enablePan={false}
-      enableZoom={true}
-      enableRotate={true}
-      enableDamping
-      dampingFactor={0.08}
+        if (selectedRef.current !== null) {
+          setScale(selectedRef.current, BASE_SCALE)
+        }
 
-      /* ONLY disable during transition */
-      enabled={scene !== 'transition'}
-    />
+        setScale(id, SELECT_SCALE)
+        selectedRef.current = id
+
+        const starPos = STAR_POSITIONS[id]
+
+        // Stable radial offset from scene center (0,0,0)
+        const direction = new THREE.Vector3()
+        direction.subVectors(starPos, new THREE.Vector3(0, 0, 0)).normalize()
+
+        cameraTarget.position.copy(starPos)
+        cameraTarget.position.add(
+          direction.multiplyScalar(CAMERA_OFFSET)
+        )
+
+        cameraTarget.lookAt.copy(starPos)
+        cameraTarget.active = true
+      }}
+    >
+      <sphereGeometry args={[0.15, 8, 8]} />
+      <meshBasicMaterial color="white" />
+    </instancedMesh>
   )
 }
 
 export default function EngineSpine() {
   return (
-    <Canvas
-      shadows
-      gl={{ antialias: true }}
-      camera={{
-        position: [0, 18, 95], // <-- CINEMATIC BASELINE
-        fov: 40,
-      }}
-    >
-      <ambientLight intensity={0.2} />
-
-      <directionalLight
-        position={[10, 20, 15]}
-        intensity={1.2}
-        color="#bcdcff"
-        castShadow
-      />
-
-      <TransitionController />
-
-      <SceneRouter />
-    </Canvas>
+    <div style={{ position: "fixed", inset: 0, background: "black" }}>
+      <Canvas camera={{ position: [0, 0, 60], fov: 60 }}>
+        <CameraRig />
+        <Starfield />
+      </Canvas>
+    </div>
   )
 }

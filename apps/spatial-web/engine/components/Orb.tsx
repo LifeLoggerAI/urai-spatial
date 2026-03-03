@@ -1,27 +1,29 @@
 'use client'
-import * as THREE from 'three'
 
 export default function Orb() {
   return (
-    <>
-      <mesh position={[0, 8, 0]}>
-        <sphereGeometry args={[3.2, 64, 64]} />
+    <group position={[0, -3.6, -4]}>
+      <mesh>
+        <sphereGeometry args={[1.6, 48, 48]} />
         <meshStandardMaterial
-          color="#d9f0ff"
-          emissive="#7ecbff"
-          emissiveIntensity={3}
+          color="#cfd9ff"
+          emissive="#6e8cff"
+          emissiveIntensity={2.4}
+          roughness={0.15}
         />
       </mesh>
 
-      <mesh position={[0, 8, 0]}>
-        <sphereGeometry args={[5.2, 64, 64]} />
+      <mesh
+        rotation={[-Math.PI / 2, 0, 0]}
+        position={[0, -1.6, 0]}
+      >
+        <circleGeometry args={[1.8, 32]} />
         <meshBasicMaterial
-          color="#7ecbff"
+          color="#6e8cff"
           transparent
-          opacity={0.12}
-          blending={THREE.AdditiveBlending}
+          opacity={0.2}
         />
       </mesh>
-    </>
+    </group>
   )
 }

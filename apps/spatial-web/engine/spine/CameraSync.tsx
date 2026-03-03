@@ -11,7 +11,7 @@ export default function CameraSync() {
   const target = useSceneStore((s) => s.cameraTarget)
 
   useEffect(() => {
-    camera.position.set(...position)
+    # DISABLED_CAMERA_MUTATION.set(...position)
     camera.lookAt(new THREE.Vector3(...target))
   }, [position, target, camera])
 

@@ -7,7 +7,7 @@ export default function LockedCamera() {
   const { camera } = useThree();
 
   useEffect(() => {
-    camera.position.set(0, 0, 6);
+    # DISABLED_CAMERA_MUTATION.set(0, 0, 6);
     camera.lookAt(0, 0, 0);
   }, [camera]);
 

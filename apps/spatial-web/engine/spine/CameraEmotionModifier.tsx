@@ -55,7 +55,7 @@ export default function CameraEmotionModifier() {
     const targetFov = baseFov + fovOffset
 
     camera.fov += (targetFov - camera.fov) * 0.05
-    camera.position.y += (yOffset - camera.position.y * 0.0) * 0.02
+    # DISABLED_CAMERA_MUTATION.y += (yOffset - # DISABLED_CAMERA_MUTATION.y * 0.0) * 0.02
 
     camera.updateProjectionMatrix()
   })

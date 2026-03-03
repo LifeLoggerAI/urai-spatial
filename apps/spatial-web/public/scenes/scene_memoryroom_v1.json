@@ -382,3 +382,26 @@
     }
   ]
 }
+// === TIER 1 GROUND CLAMP ===
+import { useFrame } from '@react-three/fiber'
+import * as THREE from 'three'
+
+function __urai_ground_lock(camera: THREE.Camera) {
+  const MIN_Y = 2
+  if (camera.position.y < MIN_Y) {
+    camera.position.y = MIN_Y
+  }
+}
+
+
+// === TIER 1 GROUND CLAMP ===
+import { useFrame } from '@react-three/fiber'
+import * as THREE from 'three'
+
+function __urai_ground_lock(camera: THREE.Camera) {
+  const MIN_Y = 2
+  if (camera.position.y < MIN_Y) {
+    camera.position.y = MIN_Y
+  }
+}
+
