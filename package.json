@@ -2,6 +2,20 @@
   "name": "urai-spatial-root",
   "private": true,
   "scripts": {
-    "dev": "cd apps/spatial-web && npm run dev -- --port 9002 --hostname 0.0.0.0"
+    "dev": "npx next dev -p 9002 -H 0.0.0.0"
+  },
+  "dependencies": {
+    "@react-three/drei": "^9.122.0",
+    "@react-three/fiber": "^8.18.0",
+    "next": "^14.2.3",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "three": "^0.162.0",
+    "zustand": "4.5.7"
+  },
+  "devDependencies": {
+    "@types/node": "^25.3.3",
+    "@types/react": "^18.3.28",
+    "typescript": "^5.9.3"
   }
 }

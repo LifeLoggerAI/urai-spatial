@@ -8,6 +8,7 @@ import PostFX from '@/components/post/PostFX';
 import { ColorManagement } from 'three';
 import CinematicIdleCamera from '@/components/camera/CinematicIdleCamera';
 import StableStars from '@/components/stars/StableStars';
+import MemorySphere from '@/components/spatial/MemorySphere';
 
 // Enable Three.js color management for more accurate and realistic color representation.
 ColorManagement.enabled = true
@@ -35,6 +36,7 @@ export default function Scene() {
           <CinematicIdleCamera />
           <StableStars />
           <Orb />
+          <MemorySphere />
           <PostFX />
         </TimeProvider>
       </Canvas>

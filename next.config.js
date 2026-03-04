@@ -1,15 +1,6 @@
-
-const path = require("path");
-/** @type {import("next").NextConfig} */
-const nextConfig = {}
+/** @type {import('next').NextConfig} */
+const nextConfig = {
+  reactStrictMode: false,
+}
 
 module.exports = nextConfig
-
-
-module.exports = {
-  ...module.exports,
-  webpack: (config) => {
-    config.resolve.alias["@engine"] = path.resolve(__dirname, "engine");
-    return config;
-  },
-};
