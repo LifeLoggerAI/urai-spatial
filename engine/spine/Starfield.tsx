@@ -1,83 +1,63 @@
 "use client"
 
-import { useRef, useEffect } from "react"
-import * as THREE from "three"
-import { useSpatialStore } from "../state/spatialStore"
+import { useMemo, useState } from "react"
 
-const COUNT = 120
+export default function Starfield({ setTarget }) {
 
-export default function Starfield(){
+  const [selected, setSelected] = useState<number | null>(null)
 
-  const meshRef = useRef<THREE.InstancedMesh>(null!)
-  const dummy = new THREE.Object3D()
+  const stars = useMemo(() => {
 
-  const selectStar = useSpatialStore(s=>s.selectStar)
-  const setPositions = useSpatialStore(s=>s.setStarPositions)
-  const selected = useSpatialStore(s=>s.selectedStarId)
+    const list = []
+    const radius = 10
 
-  const positionsRef = useRef<THREE.Vector3[]>([])
+    for (let i = 0; i < 140; i++) {
 
-  useEffect(()=>{
+      const theta = (i / 140) * Math.PI * 2
+      const phi = (i * 1.618) % Math.PI
 
-    const mesh = meshRef.current
-    if(!mesh) return
+      const x = radius * Math.cos(theta) * Math.sin(phi)
+      const y = radius * Math.sin(theta) * Math.sin(phi)
+      const z = radius * Math.cos(phi)
 
-    if(positionsRef.current.length===0){
-
-      for(let i=0;i<COUNT;i++){
-
-        const angle = i * 0.618
-        const radius = 120 + (i % 6) * 20
-
-        const x = Math.cos(angle) * radius
-        const y = (i % 8) * 20 - 80
-        const z = Math.sin(angle) * radius
-
-        positionsRef.current.push(new THREE.Vector3(x,y,z))
-
-      }
-
-      setPositions(positionsRef.current)
-
+      list.push({
+        id: i,
+        position: [x, y, z],
+        size: 0.02 + (i % 5) * 0.004
+      })
     }
 
-    for(let i=0;i<COUNT;i++){
+    return list
 
-      const p = positionsRef.current[i]
-      const scale = selected===i ? 3 : 1.2
+  }, [])
 
-      dummy.position.copy(p)
-      dummy.scale.setScalar(scale)
-      dummy.updateMatrix()
+  return (
+    <>
+      {stars.map((star) => {
 
-      mesh.setMatrixAt(i,dummy.matrix)
+        const isSelected = selected === star.id
+        const dim = selected !== null && !isSelected
 
-    }
+        return (
+          <mesh
+            key={star.id}
+            position={star.position}
+            scale={isSelected ? 2.2 : 1}
+            onClick={() => {
+              setSelected(star.id)
+              if (setTarget) setTarget(star.position)
+            }}
+          >
+            <sphereGeometry args={[star.size, 10, 10]} />
+            <meshBasicMaterial
+              color={isSelected ? "#ffffff" : "#cccccc"}
+              transparent
+              opacity={dim ? 0.15 : 1}
+            />
+          </mesh>
+        )
 
-    mesh.instanceMatrix.needsUpdate = true
-
-  },[selected,setPositions])
-
-  const click=(e:any)=>{
-    e.stopPropagation()
-    if(e.instanceId!==undefined){
-      selectStar(e.instanceId)
-    }
-  }
-
-  return(
-
-    <instancedMesh
-      ref={meshRef}
-      args={[
-        new THREE.SphereGeometry(1,16,16),
-        new THREE.MeshBasicMaterial({color:"white"}),
-        COUNT
-      ]}
-      onPointerDown={click}
-      frustumCulled={false}
-    />
-
+      })}
+    </>
   )
-
 }
