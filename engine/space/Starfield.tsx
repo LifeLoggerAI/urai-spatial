@@ -1,17 +1,16 @@
 "use client"
 
 import { useRef, useEffect } from "react"
+import { InstancedMesh } from "three"
 import * as THREE from "three"
 
-const COUNT = 80
+const COUNT = 24
 
 export default function Starfield() {
-
-  const meshRef = useRef<THREE.InstancedMesh>(null!)
+  const meshRef = useRef<InstancedMesh>(null!)
   const dummy = new THREE.Object3D()
 
   useEffect(() => {
-
     const mesh = meshRef.current
     if (!mesh) return
 
@@ -22,14 +21,13 @@ export default function Starfield() {
       const z = (Math.random() - 0.5) * 20
 
       dummy.position.set(x, y, z)
-      dummy.scale.setScalar(0.3)
+      dummy.scale.setScalar(0.25)
       dummy.updateMatrix()
 
       mesh.setMatrixAt(i, dummy.matrix)
     }
 
     mesh.instanceMatrix.needsUpdate = true
-
   }, [])
 
   return (

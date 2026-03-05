@@ -1,65 +1,83 @@
 "use client"
 
-import { useRef, useEffect, useMemo } from "react"
+import { useRef, useEffect } from "react"
 import * as THREE from "three"
-import { useSpatialStore } from "../state/useSpatialStore"
+import { useSpatialStore } from "../state/spatialStore"
 
-export default function Starfield() {
+const COUNT = 120
+
+export default function Starfield(){
+
   const meshRef = useRef<THREE.InstancedMesh>(null!)
+  const dummy = new THREE.Object3D()
 
-  // 20 deterministic stars directly in front of camera
-  const stars = useMemo(() => {
-    const arr = []
-    for (let i = 0; i < 20; i++) {
-      arr.push({
-        x: (i - 10) * 10,
-        y: 0,
-        z: 0
-      })
-    }
-    return arr
-  }, [])
+  const selectStar = useSpatialStore(s=>s.selectStar)
+  const setPositions = useSpatialStore(s=>s.setStarPositions)
+  const selected = useSpatialStore(s=>s.selectedStarId)
 
-  const selectedStarId = useSpatialStore((s) => s.selectedStarId)
-  const selectStar = useSpatialStore((s) => s.selectStar)
+  const positionsRef = useRef<THREE.Vector3[]>([])
 
-  const geometry = useMemo(() => {
-    const g = new THREE.SphereGeometry(5, 16, 16)
-    g.computeBoundingSphere()
-    return g
-  }, [])
+  useEffect(()=>{
 
-  const material = useMemo(() => {
-    return new THREE.MeshBasicMaterial({ color: "white" })
-  }, [])
-
-  useEffect(() => {
     const mesh = meshRef.current
-    if (!mesh) return
+    if(!mesh) return
 
-    const dummy = new THREE.Object3D()
+    if(positionsRef.current.length===0){
 
-    stars.forEach((star, i) => {
-      dummy.position.set(star.x, star.y, star.z)
-      dummy.scale.setScalar(i === selectedStarId ? 1.5 : 1)
+      for(let i=0;i<COUNT;i++){
+
+        const angle = i * 0.618
+        const radius = 120 + (i % 6) * 20
+
+        const x = Math.cos(angle) * radius
+        const y = (i % 8) * 20 - 80
+        const z = Math.sin(angle) * radius
+
+        positionsRef.current.push(new THREE.Vector3(x,y,z))
+
+      }
+
+      setPositions(positionsRef.current)
+
+    }
+
+    for(let i=0;i<COUNT;i++){
+
+      const p = positionsRef.current[i]
+      const scale = selected===i ? 3 : 1.2
+
+      dummy.position.copy(p)
+      dummy.scale.setScalar(scale)
       dummy.updateMatrix()
-      mesh.setMatrixAt(i, dummy.matrix)
-    })
+
+      mesh.setMatrixAt(i,dummy.matrix)
+
+    }
 
     mesh.instanceMatrix.needsUpdate = true
-  }, [selectedStarId, stars])
 
-  return (
+  },[selected,setPositions])
+
+  const click=(e:any)=>{
+    e.stopPropagation()
+    if(e.instanceId!==undefined){
+      selectStar(e.instanceId)
+    }
+  }
+
+  return(
+
     <instancedMesh
       ref={meshRef}
-      args={[geometry, material, stars.length]}
-      raycast={THREE.InstancedMesh.prototype.raycast}
-      onPointerDown={(e) => {
-        e.stopPropagation()
-        if (e.instanceId !== undefined) {
-          selectStar(e.instanceId)
-        }
-      }}
+      args={[
+        new THREE.SphereGeometry(1,16,16),
+        new THREE.MeshBasicMaterial({color:"white"}),
+        COUNT
+      ]}
+      onPointerDown={click}
+      frustumCulled={false}
     />
+
   )
+
 }

@@ -1,7 +1,7 @@
-'use client'
+"use client"
 
-import EngineSpine from '@/engine/spine/EngineSpine'
+import EngineSpine from "@/engine/spine/EngineSpine"
 
-export default function Page() {
-  return <EngineSpine />
+export default function Page(){
+  return <EngineSpine/>
 }
