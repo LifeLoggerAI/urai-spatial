@@ -3,17 +3,17 @@
 import { Canvas } from "@react-three/fiber"
 import Starfield from "./Starfield"
 import CameraRig from "./CameraRig"
+import MemorySphere from "./MemorySphere"
 
 export default function EngineSpine(){
 
   return(
 
-    <Canvas
-      camera={{position:[0,0,300],fov:60}}
-    >
+    <Canvas camera={{position:[0,0,300],fov:60}}>
 
       <CameraRig />
       <Starfield />
+      <MemorySphere />
 
     </Canvas>
 
