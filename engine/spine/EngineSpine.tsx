@@ -1,26 +1,23 @@
 "use client"
 
 import { Canvas } from "@react-three/fiber"
-import { useState } from "react"
 
-import Starfield from "./Starfield"
-import MemorySphere from "./MemorySphere"
-import MemoryImage from "./MemoryImage"
+import Starfield from "../stars/Starfield"
+import MemorySphere from "../scene/MemorySphere"
+import CameraRig from "../scene/CameraRig"
 
-export default function EngineSpine() {
+export default function EngineSpine(){
 
-  const [target, setTarget] = useState([0,0,0])
+  return(
+    <Canvas camera={{position:[0,0,35],fov:60}}>
+      <color attach="background" args={["black"]}/>
+      <ambientLight intensity={1.2}/>
 
-  return (
-    <Canvas camera={{ position:[0,0,8], fov:60 }}>
+      <CameraRig/>
 
-      <ambientLight intensity={1.2} />
-      <directionalLight position={[5,5,5]} intensity={1.4} />
+      <Starfield/>
 
-      <Starfield setTarget={setTarget} />
-
-      <MemorySphere position={target} />
-      <MemoryImage position={target} />
+      <MemorySphere/>
 
     </Canvas>
   )

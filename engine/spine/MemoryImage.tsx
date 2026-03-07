@@ -1,25 +1,18 @@
 "use client"
 
 import { useLoader } from "@react-three/fiber"
-import { TextureLoader } from "three"
+import * as THREE from "three"
 
-export default function MemoryImage({ position }) {
+export default function MemoryImage({ position }){
 
-  const texture = useLoader(TextureLoader, "/memory.jpg")
+  const texture = useLoader(THREE.TextureLoader,"/memory.jpg")
 
-  if (!position) return null
-
-  const [x,y,z] = position
+  if(!position) return null
 
   return (
-    <mesh position={[x,y,z + 0.02]} renderOrder={10}>
-      <circleGeometry args={[0.7,64]} />
-      <meshBasicMaterial
-        map={texture}
-        transparent
-        depthTest={false}
-        depthWrite={false}
-      />
+    <mesh position={[position[0],position[1],position[2]-0.2]}>
+      <planeGeometry args={[2,2]} />
+      <meshBasicMaterial map={texture} transparent />
     </mesh>
   )
 }

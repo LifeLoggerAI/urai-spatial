@@ -1,27 +1,45 @@
 "use client"
 
-import { useFrame, useThree } from "@react-three/fiber"
+import { useThree,useFrame } from "@react-three/fiber"
+import { useSpatialStore } from "../../stores/useSpatialStore"
 import { useRef } from "react"
 import * as THREE from "three"
 
-export default function CameraGlide({ target }) {
+const OFFSET=26
+const SPEED=0.07
+const SNAP=0.05
 
-  const { camera } = useThree()
-  const desired = useRef(new THREE.Vector3())
+export default function CameraGlide(){
 
-  useFrame(() => {
+  const {camera}=useThree()
+  const target=useSpatialStore(s=>s.selected)
+  const setArrived=useSpatialStore(s=>s.setArrived)
 
-    if (!target) return
+  const goal=useRef(new THREE.Vector3())
+  const started=useRef(false)
+  const done=useRef(false)
 
-    desired.current.set(
-      target[0],
-      target[1],
-      target[2] + 8
+  if(target && !started.current){
+    goal.current.set(target[0],target[1],target[2]+OFFSET)
+    started.current=true
+  }
+
+  useFrame(()=>{
+    if(!started.current||done.current) return
+
+    camera.position.lerp(goal.current,SPEED)
+
+    if(camera.position.distanceTo(goal.current)<SNAP){
+      camera.position.copy(goal.current)
+      done.current=true
+      setArrived(true)
+    }
+
+    camera.lookAt(
+      goal.current.x,
+      goal.current.y,
+      goal.current.z-OFFSET
     )
-
-    camera.position.lerp(desired.current, 0.05)
-    camera.lookAt(target[0], target[1], target[2])
-
   })
 
   return null

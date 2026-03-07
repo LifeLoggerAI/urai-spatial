@@ -1,34 +1,20 @@
-import { create } from "zustand"
-import * as THREE from "three"
 
-type SpatialMode = "lifemap" | "memory"
+import { create } from 'zustand'
 
-interface SpatialState {
-  spatialMode: SpatialMode
-  selectedStarId: number | null
-  starPositions: THREE.Vector3[]
-
-  setStarPositions: (p:THREE.Vector3[])=>void
-  selectStar: (id:number)=>void
-  clearSelection: ()=>void
+type SpatialState = {
+  spatialMode: 'lifemap' | 'replay'
+  selectedStarId: string | null
+  actions: {
+    selectStar: (id: string) => void
+    exitReplay: () => void
+  }
 }
 
-export const useSpatialStore = create<SpatialState>((set)=>({
-
-  spatialMode: "lifemap",
+export const useSpatialStore = create<SpatialState>((set) => ({
+  spatialMode: 'lifemap',
   selectedStarId: null,
-  starPositions: [],
-
-  setStarPositions:(p)=>set({starPositions:p}),
-
-  selectStar:(id)=>set({
-    selectedStarId:id,
-    spatialMode:"memory"
-  }),
-
-  clearSelection:()=>set({
-    selectedStarId:null,
-    spatialMode:"lifemap"
-  })
-
+  actions: {
+    selectStar: (id) => set({ spatialMode: 'replay', selectedStarId: id }),
+    exitReplay: () => set({ spatialMode: 'lifemap', selectedStarId: null }),
+  }
 }))
