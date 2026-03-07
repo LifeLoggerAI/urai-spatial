@@ -16,6 +16,7 @@ export default function Starfield(){
 
   const select = useSpatial(s=>s.select)
   const selected = useSpatial(s=>s.selected)
+  const mode = useSpatial(s=>s.spatialMode)
 
   const stars = useMemo(()=>{
 
@@ -23,7 +24,6 @@ export default function Starfield(){
     const arr:{id:number,pos:[number,number,number]}[]=[]
 
     for(let i=0;i<600;i++){
-
       arr.push({
         id:i,
         pos:[
@@ -32,7 +32,6 @@ export default function Starfield(){
           (rand()-0.5)*120
         ]
       })
-
     }
 
     return arr
@@ -44,7 +43,7 @@ export default function Starfield(){
       {stars.map(star=>{
 
         const active = selected===star.id
-        const locked = selected!==null
+        const locked = mode==="memory"
 
         return(
           <mesh
@@ -61,14 +60,15 @@ export default function Starfield(){
 
             }}
           >
-            <sphereGeometry args={[0.2,8,8]}/>
+
+            <sphereGeometry args={[0.22,10,10]}/>
 
             <meshBasicMaterial
-              color={active?"#ffffff":"#cccccc"}
+              color={active ? "#ffffff" : "#aaaaaa"}
               transparent
               opacity={
                 selected!==null
-                  ? active?1:0.08
+                  ? active ? 1 : 0.06
                   : 1
               }
             />
