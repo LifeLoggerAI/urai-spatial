@@ -1,32 +1,38 @@
 "use client"
 
-import { useFrame } from "@react-three/fiber"
 import { useRef } from "react"
-import { useSpatial } from "@/stores/spatialStore"
+import { useFrame } from "@react-three/fiber"
+import * as THREE from "three"
 
-export default function MemorySphere(){
+export default function MemorySphere({ position }:{position:[number,number,number]}){
 
-  const arrived = useSpatial(s=>s.arrived)
-  const position = useSpatial(s=>s.position)
+  const ref = useRef<THREE.Mesh>(null!)
 
-  const ref = useRef<any>()
+  useFrame((state)=>{
 
-  useFrame(({clock})=>{
-    if(!ref.current) return
-    const s = 1 + Math.sin(clock.elapsedTime*2)*0.04
-    ref.current.scale.set(s,s,s)
+    const t = state.clock.getElapsedTime()
+
+    const pulse = 1 + Math.sin(t*2)*0.03
+
+    ref.current.scale.set(pulse,pulse,pulse)
+
   })
 
-  if(!arrived) return null
-
   return(
-    <mesh position={position} ref={ref}>
-      <sphereGeometry args={[2,32,32]}/>
-      <meshBasicMaterial
-        color="#7fa9c6"
+
+    <mesh ref={ref} position={position} scale={3}>
+
+      <sphereGeometry args={[1,32,32]}/>
+
+      <meshStandardMaterial
+        color="#6e8593"
         transparent
         opacity={0.35}
+        roughness={0.2}
+        metalness={0.1}
       />
+
     </mesh>
+
   )
 }

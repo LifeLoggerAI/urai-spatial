@@ -2,6 +2,7 @@
 
 import { useMemo } from "react"
 import { useSpatial } from "@/stores/spatialStore"
+import { createStarGlowMaterial } from "./StarGlowMaterial"
 
 function mulberry32(a:number){
   return function(){
@@ -21,9 +22,11 @@ export default function Starfield(){
   const stars = useMemo(()=>{
 
     const rand = mulberry32(42)
+
     const arr:{id:number,pos:[number,number,number]}[]=[]
 
     for(let i=0;i<600;i++){
+
       arr.push({
         id:i,
         pos:[
@@ -32,6 +35,7 @@ export default function Starfield(){
           (rand()-0.5)*120
         ]
       })
+
     }
 
     return arr
@@ -44,11 +48,17 @@ export default function Starfield(){
 
         const active = selected===star.id
 
+        const opacity =
+          selected!==null
+            ? active ? 1.0 : 0.05
+            : 1.0
+
         return(
+
           <mesh
             key={star.id}
             position={star.pos}
-            scale={active?2.5:1}
+            scale={active?2.6:1}
 
             onPointerDown={(e)=>{
 
@@ -59,18 +69,19 @@ export default function Starfield(){
               select(star.id,star.pos)
 
             }}
+
           >
+
             <sphereGeometry args={[0.22,10,10]}/>
-            <meshBasicMaterial
-              color={active?"#ffffff":"#aaaaaa"}
-              transparent
-              opacity={
-                selected!==null
-                  ? active ? 1 : 0.05
-                  : 1
-              }
+
+            <primitive
+              object={createStarGlowMaterial("#9dd6ff", active?2.6:1)}
+              attach="material"
+              opacity={opacity}
             />
+
           </mesh>
+
         )
 
       })}
