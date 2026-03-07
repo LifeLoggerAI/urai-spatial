@@ -10,6 +10,7 @@ export default function CameraRig(){
 
   const position = useSpatial(s=>s.position)
   const selected = useSpatial(s=>s.selected)
+  const setArrived = useSpatial(s=>s.setArrived)
 
   const target = new THREE.Vector3()
 
@@ -17,19 +18,18 @@ export default function CameraRig(){
 
     if(selected===null) return
 
-    target.set(
-      position[0],
-      position[1],
-      position[2] + 12
-    )
+    target.set(position[0],position[1],position[2]+12)
 
-    camera.position.lerp(target,0.045)
+    camera.position.lerp(target,0.05)
 
-    camera.lookAt(
-      position[0],
-      position[1],
-      position[2]
-    )
+    const d = camera.position.distanceTo(target)
+
+    if(d < 0.15){
+      camera.position.copy(target)
+      setArrived(true)
+    }
+
+    camera.lookAt(position[0],position[1],position[2])
 
   })
 

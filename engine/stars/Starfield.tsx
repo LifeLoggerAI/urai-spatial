@@ -43,16 +43,16 @@ export default function Starfield(){
       {stars.map(star=>{
 
         const active = selected===star.id
-        const locked = mode==="memory"
 
         return(
           <mesh
             key={star.id}
             position={star.pos}
             scale={active?2.5:1}
+
             onPointerDown={(e)=>{
 
-              if(locked) return
+              if(mode==="memory") return
 
               e.stopPropagation()
 
@@ -60,19 +60,16 @@ export default function Starfield(){
 
             }}
           >
-
             <sphereGeometry args={[0.22,10,10]}/>
-
             <meshBasicMaterial
-              color={active ? "#ffffff" : "#aaaaaa"}
+              color={active?"#ffffff":"#aaaaaa"}
               transparent
               opacity={
                 selected!==null
-                  ? active ? 1 : 0.06
+                  ? active ? 1 : 0.05
                   : 1
               }
             />
-
           </mesh>
         )
 
