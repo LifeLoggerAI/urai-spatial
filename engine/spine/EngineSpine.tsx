@@ -2,23 +2,27 @@
 
 import { Canvas } from "@react-three/fiber"
 
-import Starfield from "../stars/Starfield"
-import MemorySphere from "../scene/MemorySphere"
-import CameraRig from "../scene/CameraRig"
+import Environment from "@/engine/environment/Environment"
+import Starfield from "@/engine/stars/Starfield"
+import CameraRig from "@/engine/scene/CameraRig"
+import MemorySphere from "@/engine/scene/MemorySphere"
 
 export default function EngineSpine(){
 
   return(
-    <Canvas camera={{position:[0,0,35],fov:60}}>
-      <color attach="background" args={["black"]}/>
-      <ambientLight intensity={1.2}/>
 
-      <CameraRig/>
+    <Canvas camera={{ position:[0,0,8], fov:60 }}>
 
-      <Starfield/>
+      <Environment />
 
-      <MemorySphere/>
+      <Starfield />
+
+      <CameraRig />
+
+      <MemorySphere />
 
     </Canvas>
+
   )
+
 }
