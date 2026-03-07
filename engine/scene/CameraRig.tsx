@@ -9,30 +9,27 @@ export default function CameraRig(){
   const {camera} = useThree()
 
   const position = useSpatial(s=>s.position)
-  const selected = useSpatial(s=>s.selected)
+  const mode = useSpatial(s=>s.spatialMode)
 
   const target = new THREE.Vector3()
-  const look = new THREE.Vector3()
 
   useFrame(()=>{
 
-    if(selected===null) return
+    if(mode!=="memory") return
 
     target.set(
       position[0],
       position[1],
-      position[2] + 12
+      position[2]+12
     )
 
-    look.set(
+    camera.position.lerp(target,0.06)
+
+    camera.lookAt(
       position[0],
       position[1],
       position[2]
     )
-
-    camera.position.lerp(target,0.05)
-
-    camera.lookAt(look)
 
   })
 
