@@ -1,27 +1,41 @@
 "use client"
 
-import { useFrame } from "@react-three/fiber"
 import { useRef } from "react"
+import { useFrame } from "@react-three/fiber"
+import * as THREE from "three"
 
 export default function Orb(){
 
-  const ref = useRef<any>()
+  const ref = useRef<THREE.Mesh>(null!)
 
-  useFrame(({clock})=>{
-    if(!ref.current) return
-    const t = clock.elapsedTime
-    const s = 1 + Math.sin(t*1.5)*0.06
-    ref.current.scale.set(s,s,s)
+  useFrame((state)=>{
+
+    const t = state.clock.getElapsedTime()
+
+    const pulse = 1 + Math.sin(t*2)*0.05
+
+    ref.current.scale.set(pulse,pulse,pulse)
+
+    ref.current.rotation.y += 0.002
+
   })
 
   return(
-    <mesh position={[0,0,-8]} ref={ref}>
-      <sphereGeometry args={[0.6,32,32]}/>
-      <meshBasicMaterial
-        color="#6fd3ff"
-        transparent
-        opacity={0.9}
+
+    <mesh ref={ref} position={[0,0,-2]}>
+
+      <sphereGeometry args={[0.25,32,32]}/>
+
+      <meshStandardMaterial
+        color="#7fd8ff"
+        emissive="#7fd8ff"
+        emissiveIntensity={2}
+        roughness={0.1}
+        metalness={0.0}
       />
+
     </mesh>
+
   )
+
 }

@@ -1,16 +1,31 @@
 "use client"
 
-import { useSceneStore } from "../state/useSceneStore"
-import HomeScene from "./HomeScene"
-import ReplayScene from "./ReplayScene"
+import { Canvas } from "@react-three/fiber"
 
-export default function MainScene() {
-  const scene = useSceneStore((s) => s.scene)
+import Starfield from "./Starfield"
+import CameraRig from "./CameraRig"
+import MemorySphere from "./MemorySphere"
 
-  if (scene === "replay") {
-    return <ReplayScene />
-  }
+import { useSpatialStore } from "../store/spatialStore"
 
-  // default
-  return <HomeScene />
+export default function MainScene(){
+
+  const target = useSpatialStore((s)=>s.target)
+
+  return(
+    <Canvas camera={{ position:[0,6,12], fov:60 }}>
+
+      <ambientLight intensity={0.6}/>
+      <pointLight position={[10,10,10]}/>
+
+      <CameraRig />
+
+      <Starfield />
+
+      {target && (
+        <MemorySphere position={target}/>
+      )}
+
+    </Canvas>
+  )
 }

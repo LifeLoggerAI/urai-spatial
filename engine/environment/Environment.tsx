@@ -5,11 +5,13 @@ import GroundPlane from "./GroundPlane"
 import Orb from "./Orb"
 
 export default function Environment(){
+
   return(
     <>
-      <SkyDome/>
-      <GroundPlane/>
-      <Orb/>
+      <SkyDome />
+      <GroundPlane />
+      <Orb />
     </>
   )
+
 }

@@ -1,27 +1,43 @@
 "use client"
 
 import { Canvas } from "@react-three/fiber"
+import { useRef } from "react"
 
-import Environment from "@/engine/environment/Environment"
-import Starfield from "@/engine/stars/Starfield"
-import CameraRig from "@/engine/scene/CameraRig"
-import MemorySphere from "@/engine/scene/MemorySphere"
+import Starfield from "../scene/Starfield"
+import MemorySphere from "../scene/MemorySphere"
+import CameraRig from "../camera/CameraRig"
 
 export default function EngineSpine(){
 
+  const container = useRef(null)
+
   return(
 
-    <Canvas camera={{ position:[0,0,8], fov:60 }}>
+    <div
+      ref={container}
+      style={{
+        width:"100vw",
+        height:"100vh",
+        position:"relative"
+      }}
+    >
 
-      <Environment />
+      <Canvas
+        camera={{position:[0,0,8],fov:60}}
+        eventSource={container}
+        eventPrefix="client"
+      >
 
-      <Starfield />
+        <color attach="background" args={["black"]}/>
+        <ambientLight intensity={1.2}/>
 
-      <CameraRig />
+        <Starfield />
+        <MemorySphere />
+        <CameraRig />
 
-      <MemorySphere />
+      </Canvas>
 
-    </Canvas>
+    </div>
 
   )
 

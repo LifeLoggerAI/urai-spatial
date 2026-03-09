@@ -5,19 +5,18 @@ import Starfield from "@/engine/scene/Starfield"
 import CameraRig from "@/engine/camera/CameraRig"
 import MemorySphere from "@/engine/memory/MemorySphere"
 
-export default function Page(){
+export default function SceneRoot(){
 
-  return(
+  return (
+    <Canvas camera={{ position:[0,0,10], fov:50 }}>
 
-    <Canvas camera={{position:[0,0,10],fov:50}}>
+      <ambientLight intensity={0.4} />
 
-      <ambientLight intensity={0.6} />
+      <CameraRig />
 
-      <CameraRig/>
+      <Starfield />
 
-      <Starfield/>
-
-      <MemorySphere/>
+      <MemorySphere />
 
     </Canvas>
 
