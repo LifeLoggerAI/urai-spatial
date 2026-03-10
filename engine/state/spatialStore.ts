@@ -17,23 +17,30 @@ type SpatialState = {
   exitReplay: () => void
 }
 
-export const useSpatialStore = create<SpatialState>((set) => ({
+export const useSpatialStore = create<SpatialState>((set, get) => ({
   mode: "explore",
 
   selectedStar: null,
   cameraTarget: null,
 
-  setStar: (star) =>
+  setStar: (star) => {
+    const { mode } = get()
+
+    // guard: ignore clicks during replay
+    if (mode === "replay") return
+
     set({
       selectedStar: star,
       cameraTarget: star.position,
-      mode: "replay",
-    }),
+      mode: "replay"
+    })
+  },
 
-  exitReplay: () =>
+  exitReplay: () => {
     set({
       selectedStar: null,
       cameraTarget: null,
-      mode: "explore",
-    }),
+      mode: "explore"
+    })
+  }
 }))
