@@ -39,25 +39,30 @@
 
 ---
 
-### **AUDIT PHASE 3: COMPONENT-LEVEL VERIFICATION**
-
-**Objective:** Audit all rendering components for compliance with the new, deterministic state contract.
-
 **FINDING-006: BROKEN STATE IMPORT IN MAIN SCENE**
 
-*   **Violation:** `engine/scene/MainScene.tsx` uses an incorrect import path for the state store.
-*   **Impact:** The component is non-functional and breaks the application.
-*   **Status:** **ACTIVE - CRITICAL**
+*   **Status:** RESOLVED
+
+---
 
 **FINDING-007: ILLEGAL STATE CONSUMPTION IN MAIN SCENE**
 
-*   **Violation:** `engine/scene/MainScene.tsx` illegally reads a non-existent `target` property from the state store, violating the Tier-1 invariant.
-*   **Impact:** The core logic for orchestrating the scene is non-deterministic and broken.
-*   **Status:** **ACTIVE - CRITICAL**
+*   **Status:** RESOLVED
+
+---
+
+**FINDING-008: CATASTROPHIC STATE VIOLATION IN CAMERA RIG**
+
+*   **Status:** RESOLVED
+
+---
+
+### **AUDIT PHASE 4: FINAL COMPONENT VERIFICATION**
+
+**Objective:** Verify the final rendering components in the core interaction loop.
 
 **NEXT ACTION:**
 
-*   Refactor `engine/scene/MainScene.tsx` to derive the `MemorySphere`'s position deterministically from `selectedStarId`.
-*   Correct all broken import paths.
+*   Audit `engine/scene/MemorySphere.tsx` for deterministic scale, position, and content rendering.
 
 **STATUS:** In Progress...

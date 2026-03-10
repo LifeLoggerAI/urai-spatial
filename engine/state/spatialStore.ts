@@ -1,25 +1,39 @@
+"use client"
+
 import { create } from "zustand"
 
-type SpatialMode = "lifemap" | "memory"
-
-interface SpatialState {
-  spatialMode: SpatialMode
-  selectedStarId: number | null
-  selectStar: (id:number)=>void
-  reset: ()=>void
+export type Star = {
+  id: number
+  position: [number, number, number]
 }
 
-export const useSpatialStore = create<SpatialState>((set)=>({
-  spatialMode: "lifemap",
-  selectedStarId: null,
+type SpatialState = {
+  mode: "explore" | "replay"
 
-  selectStar:(id)=>set({
-    spatialMode:"memory",
-    selectedStarId:id
-  }),
+  selectedStar: Star | null
+  cameraTarget: [number, number, number] | null
 
-  reset:()=>set({
-    spatialMode:"lifemap",
-    selectedStarId:null
-  })
+  setStar: (star: Star) => void
+  exitReplay: () => void
+}
+
+export const useSpatialStore = create<SpatialState>((set) => ({
+  mode: "explore",
+
+  selectedStar: null,
+  cameraTarget: null,
+
+  setStar: (star) =>
+    set({
+      selectedStar: star,
+      cameraTarget: star.position,
+      mode: "replay",
+    }),
+
+  exitReplay: () =>
+    set({
+      selectedStar: null,
+      cameraTarget: null,
+      mode: "explore",
+    }),
 }))

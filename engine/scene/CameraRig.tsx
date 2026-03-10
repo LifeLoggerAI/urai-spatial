@@ -1,76 +1,54 @@
 "use client"
 
 import { useFrame, useThree } from "@react-three/fiber"
-import { useMemoryTarget } from "../state/useMemoryTarget"
-import { useRef, useEffect } from "react"
-import * as THREE from "three"
+import { useSpatialStore } from "../state/spatialStore"
+import { Vector3 } from "three"
+import { useRef } from "react"
 
-export default function CameraRig() {
+export default function CameraRig(){
 
-const { camera } = useThree()
+  const { camera } = useThree()
 
-const target = useMemoryTarget((s)=>s.target)
-const lockCamera = useMemoryTarget((s)=>s.lockCamera)
+  const target = useSpatialStore((s)=>s.cameraTarget)
 
-const start = useRef(new THREE.Vector3())
-const end = useRef(new THREE.Vector3())
+  const goal = useRef(new Vector3())
+  const home = useRef(new Vector3(0,0,6))
 
-const progress = useRef(0)
-const locked = useRef(true)
+  useFrame(()=>{
 
-const duration = 0.85
+    if(target){
 
-useEffect(()=>{
+      goal.current.set(
+        target[0],
+        target[1],
+        target[2] + 3
+      )
 
-```
-if(!target) return
+      camera.position.lerp(goal.current,0.08)
 
-console.log("CAMERA_TARGET", target)
+      if(camera.position.distanceTo(goal.current) < 0.01){
+        camera.position.copy(goal.current)
+      }
 
-progress.current = 0
-locked.current = false
+      camera.lookAt(
+        target[0],
+        target[1],
+        target[2]
+      )
 
-start.current.copy(camera.position)
+    } else {
 
-end.current.set(
-  target[0],
-  target[1],
-  target[2] + 2.5
-)
-```
+      camera.position.lerp(home.current,0.06)
 
-},[target])
+      if(camera.position.distanceTo(home.current) < 0.01){
+        camera.position.copy(home.current)
+      }
 
-useFrame((state,delta)=>{
+      camera.lookAt(0,0,-5)
 
-```
-if(!target) return
-if(locked.current) return
+    }
 
-progress.current += delta / duration
+  })
 
-const t = Math.min(progress.current,1)
-const ease = t*t*(3-2*t)
-
-camera.position.lerpVectors(start.current,end.current,ease)
-
-camera.lookAt(target[0],target[1],target[2])
-
-if(t >= 1){
-
-  camera.position.copy(end.current)
-  camera.lookAt(target[0],target[1],target[2])
-
-  locked.current = true
-
-  console.log("CAMERA_LOCKED")
-
-  lockCamera()
-
-}
-```
-
-})
-
-return null
+  return null
 }

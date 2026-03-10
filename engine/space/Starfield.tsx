@@ -1,46 +1,83 @@
 "use client"
 
-import { useRef, useEffect } from "react"
-import { InstancedMesh } from "three"
+import { useMemo } from "react"
+import { useSpatialStore } from "../store/spatialStore"
 import * as THREE from "three"
 
-const COUNT = 120
-
 export default function Starfield() {
-  const meshRef = useRef<InstancedMesh>(null!)
-  const dummy = new THREE.Object3D()
 
-  useEffect(() => {
-    const mesh = meshRef.current
-    if (!mesh) return
+  const setStar = useSpatialStore((s)=>s.setStar)
+  const selectedStar = useSpatialStore((s)=>s.selectedStar)
 
-    const radius = 40
+  const stars = useMemo(()=>{
 
-    for (let i = 0; i < COUNT; i++) {
+    const arr = []
+    const cols = 5
+    const rows = 4
 
-      const theta = (i / COUNT) * Math.PI * 2
-      const phi = (i * 1.618) % Math.PI
+    const spacingX = 3
+    const spacingY = 2.5
 
-      const x = radius * Math.cos(theta) * Math.sin(phi)
-      const y = radius * Math.sin(theta) * Math.sin(phi)
-      const z = radius * Math.cos(phi)
+    for(let x=0;x<cols;x++){
+      for(let y=0;y<rows;y++){
 
-      dummy.position.set(x, y, z)
+        const id = x*rows+y
 
-      const scale = 0.03 + (i % 5) * 0.005
-      dummy.scale.setScalar(scale)
+        arr.push({
+          id,
+          position:[
+            (x-cols/2)*spacingX,
+            (y-rows/2)*spacingY,
+            -2
+          ]
+        })
 
-      dummy.updateMatrix()
-      mesh.setMatrixAt(i, dummy.matrix)
+      }
     }
 
-    mesh.instanceMatrix.needsUpdate = true
-  }, [])
+    return arr
+
+  },[])
 
   return (
-    <instancedMesh ref={meshRef} args={[undefined, undefined, COUNT]}>
-      <sphereGeometry args={[1, 8, 8]} />
-      <meshBasicMaterial color="white" />
-    </instancedMesh>
+
+    <group>
+
+      {stars.map((s)=>{
+
+        const selected = selectedStar?.id === s.id
+        const dimOthers = selectedStar && !selected
+
+        return (
+
+          <mesh
+            key={s.id}
+            position={s.position}
+            raycast={THREE.Mesh.prototype.raycast}
+            onPointerDown={(e)=>{
+              e.stopPropagation()
+              setStar(s)
+            }}
+          >
+
+            <sphereGeometry args={[0.25,32,32]} />
+
+            <meshStandardMaterial
+              color={selected ? "#ffffff" : "#88aaff"}
+              emissive={selected ? "#66ccff" : "#111111"}
+              emissiveIntensity={selected ? 2.5 : dimOthers ? 0.05 : 0.25}
+              transparent
+              opacity={selected ? 1 : 0.5}
+            />
+
+          </mesh>
+
+        )
+
+      })}
+
+    </group>
+
   )
+
 }

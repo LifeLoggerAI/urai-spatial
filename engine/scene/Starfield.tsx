@@ -1,28 +1,37 @@
 "use client"
 
 import { useMemo } from "react"
+import * as THREE from "three"
+import { useSpatialStore } from "../state/spatialStore"
 
-export default function Starfield({ onStarSelect }) {
+export default function Starfield(){
 
-  const stars = useMemo(() => {
+  const setStar = useSpatialStore(s=>s.setStar)
+  const selectedStar = useSpatialStore(s=>s.selectedStar)
 
-    const arr=[]
-    const cols=5
-    const rows=4
-    const spacingX=3
-    const spacingY=2.5
+  const stars = useMemo(()=>{
+
+    const arr = []
+
+    const cols = 5
+    const rows = 4
+
+    const spacingX = 3
+    const spacingY = 2.5
 
     for(let x=0;x<cols;x++){
       for(let y=0;y<rows;y++){
 
-        const position=[
-          (x-cols/2)*spacingX,
-          (y-rows/2)*spacingY,
-          -2
-        ]
+        const id = x*rows+y
 
-        arr.push(position)
-
+        arr.push({
+          id,
+          position:[
+            (x-cols/2)*spacingX,
+            (y-rows/2)*spacingY,
+            -5
+          ] as [number,number,number]
+        })
       }
     }
 
@@ -30,33 +39,41 @@ export default function Starfield({ onStarSelect }) {
 
   },[])
 
-  return (
+  // hide all stars when memory sphere is active
+  if(selectedStar) return null
+
+  return(
 
     <group>
 
-      {stars.map((pos,i)=>(
+      {stars.map((s)=>{
 
-        <mesh
-          key={i}
-          position={pos}
-          onPointerDown={()=>{
+        return(
 
-            console.log("STAR CLICK",pos)
+          <mesh
+            key={s.id}
+            position={s.position}
+            raycast={THREE.Mesh.prototype.raycast}
 
-            if(onStarSelect){
-              onStarSelect(pos)
-            }
+            onPointerDown={(e)=>{
+              e.stopPropagation()
+              setStar(s)
+            }}
+          >
 
-          }}
-        >
+            <sphereGeometry args={[0.35,32,32]} />
 
-          <sphereGeometry args={[0.15,16,16]} />
+            <meshStandardMaterial
+              color="#aaaaaa"
+              emissive="#111111"
+              emissiveIntensity={0.25}
+            />
 
-          <meshStandardMaterial color="white" />
+          </mesh>
 
-        </mesh>
+        )
 
-      ))}
+      })}
 
     </group>
 

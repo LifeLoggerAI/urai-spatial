@@ -1,54 +1,59 @@
 "use client"
 
-import { useMemoryTarget } from "../state/useMemoryTarget"
-import { useFrame } from "@react-three/fiber"
-import { useRef } from "react"
+import { useSpatialStore } from "../state/spatialStore"
+import { useFrame, useLoader } from "@react-three/fiber"
+import * as THREE from "three"
+import { useRef, useEffect } from "react"
 
 export default function MemorySphere(){
 
-  const target = useMemoryTarget(s=>s.target)
-  const locked = useMemoryTarget(s=>s.cameraLocked)
+  const selectedStar = useSpatialStore(s=>s.selectedStar)
 
-  const ref = useRef()
+  const meshRef = useRef<THREE.Mesh>(null!)
+
+  const texture = useLoader(
+    THREE.TextureLoader,
+    "/memory/sample.jpg"
+  )
+
+  useEffect(()=>{
+    texture.colorSpace = THREE.SRGBColorSpace
+    texture.anisotropy = 16
+    texture.needsUpdate = true
+  },[texture])
 
   useFrame(({clock})=>{
 
-    if(!ref.current) return
+    if(!meshRef.current) return
 
     const t = clock.getElapsedTime()
-    const s = 1 + Math.sin(t*2)*0.03
 
-    ref.current.scale.set(s,s,s)
+    // subtle breathing pulse
+    const pulse = 1 + Math.sin(t * 0.8) * 0.015
+
+    meshRef.current.scale.set(pulse,pulse,pulse)
 
   })
 
-  if(!target || !locked) return null
+  if(!selectedStar) return null
 
   return(
-    <group position={[target[0],target[1],target[2]+0.35]} ref={ref}>
 
-      <mesh>
+    <mesh
+      ref={meshRef}
+      position={selectedStar.position}
+      scale={[-1,1,1]} // invert sphere so texture renders inside
+    >
 
-        <sphereGeometry args={[1.0,64,64]} />
+      {/* larger radius so camera remains outside sphere */}
+      <sphereGeometry args={[2.6,96,96]} />
 
-        <meshStandardMaterial
-          color="#ffffff"
-          emissive="#4a90ff"
-          emissiveIntensity={1.5}
-          transparent
-          opacity={0.6}
-        />
+      <meshBasicMaterial
+        map={texture}
+        side={THREE.BackSide}
+      />
 
-      </mesh>
+    </mesh>
 
-      <mesh position={[0,0,0.45]}>
-
-        <planeGeometry args={[0.6,0.6]} />
-
-        <meshBasicMaterial color="white" />
-
-      </mesh>
-
-    </group>
   )
 }
