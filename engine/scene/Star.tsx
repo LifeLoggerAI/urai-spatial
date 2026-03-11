@@ -5,7 +5,7 @@ import { useFrame } from "@react-three/fiber"
 import * as THREE from "three"
 
 interface StarProps {
-  starData: { id: number; position: [number, number, number] }
+  starData?: { id: number; position: [number, number, number] }
   isSelected: boolean
   isDimmed?: boolean
   onClick: (id: number) => void
@@ -21,10 +21,13 @@ export function Star({ starData, isSelected, isDimmed = false, onClick }: StarPr
 
   const materialRef = useRef<THREE.MeshBasicMaterial>(null)
 
-  const positionVec = useMemo(
-    () => new THREE.Vector3(...starData.position),
-    [starData.position]
-  )
+  // safety guard
+  const positionVec = useMemo(() => {
+    if (!starData || !starData.position) {
+      return new THREE.Vector3(0,0,0)
+    }
+    return new THREE.Vector3(...starData.position)
+  }, [starData])
 
   useFrame(() => {
 
@@ -32,26 +35,23 @@ export function Star({ starData, isSelected, isDimmed = false, onClick }: StarPr
     if (!m) return
 
     if (isSelected) {
-
       m.color.lerp(SELECTED_COLOR, LERP_SPEED)
-
-    } else if (isDimmed) {
-
+    } 
+    else if (isDimmed) {
       m.color.lerp(DIM_COLOR, LERP_SPEED)
-
-    } else {
-
+    } 
+    else {
       m.color.lerp(BASE_COLOR, LERP_SPEED)
-
     }
 
   })
+
+  if (!starData) return null
 
   return (
 
     <group position={positionVec}>
 
-      {/* star core */}
       <mesh
         raycast={THREE.Mesh.prototype.raycast}
         onPointerDown={(e) => {
@@ -67,7 +67,6 @@ export function Star({ starData, isSelected, isDimmed = false, onClick }: StarPr
         />
       </mesh>
 
-      {/* star glow */}
       <mesh scale={[4.5, 4.5, 4.5]}>
         <sphereGeometry args={[0.9, 16, 16]} />
 

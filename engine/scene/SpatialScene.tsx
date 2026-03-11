@@ -13,15 +13,15 @@ import ReplayController from "../replay/ReplayController"
 
 export default function SpatialScene(){
 
-  const resetSelection = useSpatialStore(s=>s.resetSelection)
+  const resetSelection = useSpatialStore(s => s.resetSelection)
 
-  const handleWheel = (e:any)=>{
+  const handleWheel = (e:any) => {
 
     e.stopPropagation()
 
     const { selectedStarId, inReplayMode } = useSpatialStore.getState()
 
-    if(inReplayMode || selectedStarId!==null){
+    if(inReplayMode || selectedStarId !== null){
       resetSelection()
     }
 
@@ -31,13 +31,13 @@ export default function SpatialScene(){
 
     <Canvas
       camera={{ position:[0,2,16], fov:60 }}
-
       onWheel={handleWheel}
-
       onPointerMissed={()=>{
         resetSelection()
       }}
     >
+
+      <color attach="background" args={["#000000"]} />
 
       <DeepStars/>
       <SpaceAtmosphere/>

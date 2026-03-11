@@ -8,6 +8,7 @@ export interface StarDataItem {
   image: string
   title: string
   date: string
+  emotion: string
 }
 
 export const STAR_DATA: StarDataItem[] = [
@@ -17,6 +18,7 @@ export const STAR_DATA: StarDataItem[] = [
     image: "/memory/memory-1.jpg",
     title: "First Contact",
     date: "2023-03-15",
+    emotion: "joy",
   },
   {
     id: 2,
@@ -24,6 +26,7 @@ export const STAR_DATA: StarDataItem[] = [
     image: "/memory/memory-2.jpg",
     title: "Project Orion",
     date: "2023-06-22",
+    emotion: "love",
   },
   {
     id: 3,
@@ -31,6 +34,7 @@ export const STAR_DATA: StarDataItem[] = [
     image: "/memory/memory-3.jpg",
     title: "Supernova Witness",
     date: "2023-09-01",
+    emotion: "sadness",
   },
   {
     id: 4,
@@ -38,6 +42,7 @@ export const STAR_DATA: StarDataItem[] = [
     image: "/memory/memory-4.jpg",
     title: "Galaxy NGC-1300",
     date: "2023-11-19",
+    emotion: "anger",
   },
   {
     id: 5,
@@ -45,6 +50,7 @@ export const STAR_DATA: StarDataItem[] = [
     image: "/memory/memory-5.jpg",
     title: "The Anomaly",
     date: "2024-01-05",
+    emotion: "calm",
   },
   {
     id: 6,
@@ -52,5 +58,6 @@ export const STAR_DATA: StarDataItem[] = [
     image: "/memory/memory-6.jpg",
     title: "First Jump",
     date: "2024-02-11",
+    emotion: "joy",
   },
 ]
