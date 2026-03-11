@@ -3,6 +3,7 @@
 import { useMemo } from "react"
 import * as THREE from "three"
 import { useSpatialStore } from "../state/spatialStore"
+import { STAR_RADIUS } from "../camera/cameraConfig"
 
 export default function Starfield(){
 
@@ -32,6 +33,7 @@ export default function Starfield(){
             -5
           ] as [number,number,number]
         })
+
       }
     }
 
@@ -39,14 +41,16 @@ export default function Starfield(){
 
   },[])
 
-  // hide all stars when memory sphere is active
-  if(selectedStar) return null
-
   return(
 
     <group>
 
       {stars.map((s)=>{
+
+        const selected = selectedStar?.id === s.id
+        const dimOthers = selectedStar && !selected
+
+        if(selected) return null
 
         return(
 
@@ -57,16 +61,18 @@ export default function Starfield(){
 
             onPointerDown={(e)=>{
               e.stopPropagation()
+              if(selectedStar) return
               setStar(s)
             }}
           >
 
-            <sphereGeometry args={[0.35,32,32]} />
+            <sphereGeometry args={[STAR_RADIUS,32,32]} />
 
             <meshStandardMaterial
-              color="#aaaaaa"
-              emissive="#111111"
-              emissiveIntensity={0.25}
+              color="#bbbbbb"
+              emissive="#ffffff"
+              emissiveIntensity={dimOthers ? 0.01 : 0.4}
+              roughness={0.2}
             />
 
           </mesh>

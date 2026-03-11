@@ -2,9 +2,12 @@
 
 import { Canvas } from "@react-three/fiber"
 
+import DeepStars from "../environment/DeepStars"
+import SpaceAtmosphere from "../environment/SpaceAtmosphere"
+
 import Starfield from "./Starfield"
 import CameraRig from "../camera/CameraRig"
-import MemorySphere from "../memory/MemorySphere"
+import MemorySphere from "./MemorySphere"
 import ReplayController from "../replay/ReplayController"
 
 export default function SpatialScene(){
@@ -18,6 +21,9 @@ export default function SpatialScene(){
     >
 
       <ambientLight intensity={0.8} />
+
+      <DeepStars />
+      <SpaceAtmosphere />
 
       <CameraRig />
 
