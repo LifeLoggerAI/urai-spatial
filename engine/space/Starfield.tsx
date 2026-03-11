@@ -24,7 +24,6 @@ export default function Starfield(){
 
         const id = x*rows+y
 
-        // slight natural offset so stars don't form a perfect grid
         const jitterX = (Math.random()-0.5)*0.25
         const jitterY = (Math.random()-0.5)*0.25
 

@@ -1,6 +1,9 @@
+cat << 'EOF' > engine/scene/SceneRoot.tsx
 "use client"
 
 import { Canvas } from "@react-three/fiber"
+import { useEffect } from "react"
+import { useNavStore } from "../state/navigationState"
 
 import Starfield from "./Starfield"
 import CameraRig from "../camera/CameraRig"
@@ -9,7 +12,35 @@ import MemoryContent from "../memory/MemoryContent"
 
 export default function SceneRoot(){
 
-  return (
+  const setZoom = useNavStore(s=>s.setZoom)
+
+  useEffect(()=>{
+
+    const wheel = (e:WheelEvent)=>{
+
+      e.preventDefault()
+
+      useNavStore.setState((state)=>{
+
+        let next = state.zoomLevel
+
+        if(e.deltaY > 0) next = Math.min(2,next+1)
+        else next = Math.max(0,next-1)
+
+        return { zoomLevel:next }
+
+      })
+
+    }
+
+    window.addEventListener("wheel",wheel,{passive:false})
+
+    return ()=>window.removeEventListener("wheel",wheel)
+
+  },[])
+
+  return(
+
     <div style={{width:"100vw",height:"100vh"}}>
 
       <Canvas camera={{position:[0,0,8],fov:50}}>
@@ -24,5 +55,8 @@ export default function SceneRoot(){
       </Canvas>
 
     </div>
+
   )
+
 }
+EOF

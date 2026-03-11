@@ -2,11 +2,10 @@
 
 import { useEffect } from "react"
 import { useNavStore } from "../state/navigationState"
-import { useSpatialStore } from "../state/spatialStore"
 
 export default function NavigationController(){
 
-  const clearStar = useSpatialStore(s=>s.clearStar)
+  const setZoom = useNavStore(s=>s.setZoom)
 
   useEffect(()=>{
 
@@ -17,30 +16,21 @@ export default function NavigationController(){
         let next = state.zoomLevel
 
         if(e.deltaY > 0){
-          next = Math.min(2, state.zoomLevel + 1)
-        } else {
-          next = Math.max(0, state.zoomLevel - 1)
+          next = Math.min(2,next+1)
+        }else{
+          next = Math.max(0,next-1)
         }
 
-        return { zoomLevel: next }
+        return { zoomLevel:next }
 
       })
 
     }
 
-    const key = (e:KeyboardEvent)=>{
-      if(e.key === "Escape"){
-        clearStar()
-        useNavStore.setState({ zoomLevel: 0 })
-      }
-    }
-
-    document.addEventListener("wheel", wheel, { passive:false })
-    window.addEventListener("keydown", key)
+    window.addEventListener("wheel",wheel)
 
     return ()=>{
-      document.removeEventListener("wheel", wheel)
-      window.removeEventListener("keydown", key)
+      window.removeEventListener("wheel",wheel)
     }
 
   },[])
