@@ -2,29 +2,38 @@
 
 import { useMemo, useRef, useEffect } from "react"
 import * as THREE from "three"
+import { useFrame } from "@react-three/fiber"
 import { useSpatialStore } from "../state/spatialStore"
 import { memoryDataset } from "../memory/memoryDataset"
-import { generateStarPosition } from "../core/starPosition"
+import { generateStarPositions } from "../core/starPosition"
 
 export default function Starfield(){
 
-  const meshRef = useRef<any>(null)
+  const meshRef = useRef(null)
 
   const setStar = useSpatialStore(s=>s.setStar)
   const selectedStar = useSpatialStore(s=>s.selectedStar)
 
   const stars = useMemo(()=>{
 
-    return memoryDataset.map(m=>({
+    const positions = generateStarPositions(42, memoryDataset.length)
 
-      id:m.id,
-      position:generateStarPosition(Number(m.id), m.timestamp),
-      image:m.image,
-      emotion:m.emotion
+    return memoryDataset.map((m,i)=>{
 
-    }))
+      const p = positions[i].position
+
+      const depth = Math.abs(p[2])
+
+      return{
+        id:m.id,
+        position:p,
+        depth
+      }
+
+    })
 
   },[])
+
 
   useEffect(()=>{
 
@@ -34,20 +43,46 @@ export default function Starfield(){
 
     stars.forEach((s,i)=>{
 
+      const selected = selectedStar?.id === s.id
+      const dimOthers = selectedStar && !selected
+
+      const falloff = Math.max(0.3,1 - s.depth/30)
+
+      const scale = selected
+        ? 2
+        : dimOthers
+          ? 0.5
+          : falloff
+
       temp.position.set(
         s.position[0],
         s.position[1],
         s.position[2]
       )
 
+      temp.scale.set(scale,scale,scale)
+
       temp.updateMatrix()
+
       meshRef.current.setMatrixAt(i,temp.matrix)
 
     })
 
-    meshRef.current.instanceMatrix.needsUpdate=true
+    meshRef.current.instanceMatrix.needsUpdate = true
 
-  },[stars])
+  },[stars,selectedStar])
+
+
+  useFrame(({clock})=>{
+
+    if(!meshRef.current) return
+
+    const pulse = 0.9 + Math.sin(clock.elapsedTime*2)*0.1
+
+    meshRef.current.material.opacity = pulse
+
+  })
+
 
   return(
 
@@ -62,17 +97,20 @@ export default function Starfield(){
         const star = stars[i]
 
         if(selectedStar) return
+
         setStar(star)
 
       }}
     >
 
-      <sphereGeometry args={[0.08,12,12]} />
+      <sphereGeometry args={[0.08,16,16]} />
 
-      <meshBasicMaterial
-        color="#9bbcff"
+      <meshStandardMaterial
+        color="#c8dcff"
+        emissive="#9bbcff"
+        emissiveIntensity={0.7}
         transparent
-        opacity={ selectedStar ? 0.15 : 1 }
+        opacity={0.9}
         depthWrite={false}
       />
 

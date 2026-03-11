@@ -1,39 +1,33 @@
 "use client"
 
 import { useEffect } from "react"
-import { useNavStore } from "../state/navigationState"
+import { useNavigationState } from "../state/navigationState"
+import { useSpatialStore } from "../state/spatialStore"
 
 export default function NavigationController(){
 
-  const setZoom = useNavStore(s=>s.setZoom)
+  const setExplore = useNavigationState(s=>s.setExplore)
+  const clearStar = useSpatialStore(s=>s.clearStar)
 
   useEffect(()=>{
 
-    const wheel = (e:WheelEvent)=>{
+    const onKey = (e:KeyboardEvent)=>{
 
-      useNavStore.setState((state)=>{
+      if(e.key==="Escape"){
 
-        let next = state.zoomLevel
+        clearStar()
+        setExplore()
 
-        if(e.deltaY > 0){
-          next = Math.min(2,next+1)
-        }else{
-          next = Math.max(0,next-1)
-        }
-
-        return { zoomLevel:next }
-
-      })
+      }
 
     }
 
-    window.addEventListener("wheel",wheel)
+    window.addEventListener("keydown",onKey)
 
-    return ()=>{
-      window.removeEventListener("wheel",wheel)
-    }
+    return()=>window.removeEventListener("keydown",onKey)
 
   },[])
 
   return null
+
 }

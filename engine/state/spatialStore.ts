@@ -1,46 +1,48 @@
-"use client"
-
 import { create } from "zustand"
 
-export type Star = {
-  id: number
-  position: [number, number, number]
+type Star = {
+  id:number
+  position:[number,number,number]
 }
 
 type SpatialState = {
-  mode: "explore" | "replay"
+
+  mode:"explore" | "focus"
 
   selectedStar: Star | null
-  cameraTarget: [number, number, number] | null
 
-  setStar: (star: Star) => void
-  exitReplay: () => void
+  cameraTarget:[number,number,number] | null
+
+  setStar:(star:Star)=>void
+  clearStar:()=>void
 }
 
-export const useSpatialStore = create<SpatialState>((set, get) => ({
-  mode: "explore",
+export const useSpatialStore = create<SpatialState>((set)=>({
 
-  selectedStar: null,
-  cameraTarget: null,
+  mode:"explore",
 
-  setStar: (star) => {
-    const { mode } = get()
+  selectedStar:null,
 
-    // guard: ignore clicks during replay
-    if (mode === "replay") return
+  cameraTarget:null,
+
+  setStar:(star)=>{
 
     set({
-      selectedStar: star,
-      cameraTarget: star.position,
-      mode: "replay"
+      selectedStar:star,
+      cameraTarget:star.position,
+      mode:"focus"
     })
+
   },
 
-  exitReplay: () => {
+  clearStar:()=>{
+
     set({
-      selectedStar: null,
-      cameraTarget: null,
-      mode: "explore"
+      selectedStar:null,
+      cameraTarget:null,
+      mode:"explore"
     })
+
   }
+
 }))

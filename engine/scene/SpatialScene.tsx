@@ -3,11 +3,15 @@
 import { Canvas } from "@react-three/fiber"
 
 import DeepStars from "../environment/DeepStars"
-import SpaceAtmosphere from "../environment/SpaceAtmosphere"
 import BackgroundStars from "../space/BackgroundStars"
+import ParallaxStars from "../space/ParallaxStars"
+import SpaceAtmosphere from "../environment/SpaceAtmosphere"
+import GalaxyBand from "../environment/GalaxyBand"
+import NebulaFog from "../environment/NebulaFog"
 
-import Starfield from "./Starfield"
 import CameraRig from "../camera/CameraRig"
+import Starfield from "./Starfield"
+import StarHalo from "../effects/StarHalo"
 import MemorySphere from "./MemorySphere"
 import ReplayController from "../replay/ReplayController"
 
@@ -23,14 +27,18 @@ export default function SpatialScene(){
 
       <ambientLight intensity={0.8} />
 
-      {/* Tier-2 environment depth layers */}
+      {/* Environment */}
       <DeepStars />
       <BackgroundStars />
+      <ParallaxStars />
       <SpaceAtmosphere />
+      <GalaxyBand />
+      <NebulaFog />
 
-      {/* Tier-1 interaction engine */}
+      {/* Interaction */}
       <CameraRig />
       <Starfield />
+      <StarHalo />
       <MemorySphere />
       <ReplayController />
 

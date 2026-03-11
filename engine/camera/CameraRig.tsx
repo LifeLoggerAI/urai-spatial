@@ -2,7 +2,6 @@
 
 import { useThree, useFrame } from "@react-three/fiber"
 import { useSpatialStore } from "../state/spatialStore"
-import { useNavStore } from "../state/navigationState"
 import { Vector3 } from "three"
 import { useRef, useEffect } from "react"
 
@@ -10,60 +9,75 @@ export default function CameraRig(){
 
   const { camera, gl } = useThree()
 
-  const target = useSpatialStore(s => s.cameraTarget)
-  const zoomLevel = useNavStore(s => s.zoomLevel)
+  const target = useSpatialStore(s=>s.cameraTarget)
+  const clearStar = useSpatialStore(s=>s.clearStar)
 
   const pos = useRef(new Vector3())
+  const home = useRef(new Vector3(0,0,6))
 
-  const zoomDistances = [5, 3, 1.8]
+  const zoom = useRef(6)
 
-  useEffect(() => {
+  useEffect(()=>{
 
-    const wheel = (e: WheelEvent) => {
+    const wheel = (e:WheelEvent)=>{
 
       e.preventDefault()
 
-      useNavStore.setState((state) => {
+      zoom.current += e.deltaY * 0.01
 
-        let next = state.zoomLevel
+      if(zoom.current < 2) zoom.current = 2
+      if(zoom.current > 12) zoom.current = 12
 
-        if (e.deltaY > 0) next = Math.min(2, next + 1)
-        else next = Math.max(0, next - 1)
+    }
 
-        return { zoomLevel: next }
+    const key = (e:KeyboardEvent)=>{
 
-      })
+      if(e.key === "Escape"){
+        clearStar()
+      }
 
     }
 
     const canvas = gl.domElement
-    canvas.addEventListener("wheel", wheel, { passive:false })
 
-    return () => {
+    canvas.addEventListener("wheel", wheel, { passive:false })
+    window.addEventListener("keydown", key)
+
+    return ()=>{
       canvas.removeEventListener("wheel", wheel)
+      window.removeEventListener("keydown", key)
     }
 
-  }, [gl])
+  },[gl,clearStar])
 
-  useFrame(() => {
+  useFrame(()=>{
 
-    const dist = zoomDistances[Math.max(0, Math.min(2, zoomLevel))]
-
-    if (target) {
+    if(target){
 
       pos.current.set(
         target[0],
         target[1],
-        target[2] + dist
+        target[2] + 3
       )
 
-      camera.position.lerp(pos.current, 0.12)
-      camera.lookAt(target[0], target[1], target[2])
+      camera.position.lerp(pos.current,0.08)
+
+      camera.lookAt(
+        target[0],
+        target[1],
+        target[2]
+      )
 
     } else {
 
-      pos.current.set(0,0,dist)
-      camera.position.lerp(pos.current,0.08)
+      const homePos = new Vector3(
+        home.current.x,
+        home.current.y,
+        zoom.current
+      )
+
+      camera.position.lerp(homePos,0.06)
+
       camera.lookAt(0,0,-5)
 
     }

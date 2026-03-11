@@ -1,14 +1,26 @@
 import { create } from "zustand"
 
-type NavState = {
-  zoomLevel:number
-  setZoom:(z:number)=>void
+type NavigationMode =
+  | "explore"
+  | "memory"
+  | "replay"
+
+type NavigationState = {
+
+  mode:NavigationMode
+
+  setExplore:()=>void
+  setMemory:()=>void
+  setReplay:()=>void
+
 }
 
-export const useNavStore = create<NavState>((set)=>({
+export const useNavigationState = create<NavigationState>((set)=>({
 
-  zoomLevel:0,
+  mode:"explore",
 
-  setZoom:(z)=>set({zoomLevel:z})
+  setExplore:()=>set({mode:"explore"}),
+  setMemory:()=>set({mode:"memory"}),
+  setReplay:()=>set({mode:"replay"}),
 
 }))
