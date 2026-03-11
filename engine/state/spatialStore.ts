@@ -1,48 +1,40 @@
 import { create } from "zustand"
 
-type Star = {
-  id:number
-  position:[number,number,number]
+interface SpatialState {
+  selectedStarId: number | null
+  interactionLock: boolean
+  inReplayMode: boolean
+
+  setSelectedStarId: (id: number | null) => void
+  setInteractionLock: (locked: boolean) => void
+  setInReplayMode: (state: boolean) => void
+  resetSelection: () => void
 }
 
-type SpatialState = {
+export const useSpatialStore = create<SpatialState>((set) => ({
+  selectedStarId: null,
+  interactionLock: false,
+  inReplayMode: false,
 
-  mode:"explore" | "focus"
+  setSelectedStarId: (id) =>
+    set(() => ({
+      selectedStarId: id,
+    })),
 
-  selectedStar: Star | null
+  setInteractionLock: (locked) =>
+    set(() => ({
+      interactionLock: locked,
+    })),
 
-  cameraTarget:[number,number,number] | null
+  setInReplayMode: (state) =>
+    set(() => ({
+      inReplayMode: state,
+    })),
 
-  setStar:(star:Star)=>void
-  clearStar:()=>void
-}
-
-export const useSpatialStore = create<SpatialState>((set)=>({
-
-  mode:"explore",
-
-  selectedStar:null,
-
-  cameraTarget:null,
-
-  setStar:(star)=>{
-
-    set({
-      selectedStar:star,
-      cameraTarget:star.position,
-      mode:"focus"
-    })
-
-  },
-
-  clearStar:()=>{
-
-    set({
-      selectedStar:null,
-      cameraTarget:null,
-      mode:"explore"
-    })
-
-  }
-
+  resetSelection: () =>
+    set(() => ({
+      selectedStarId: null,
+      interactionLock: false,
+      inReplayMode: false,
+    })),
 }))

@@ -1,121 +1,64 @@
 "use client"
 
-import { useMemo, useRef, useEffect } from "react"
-import * as THREE from "three"
+import { useMemo, useRef } from "react"
 import { useFrame } from "@react-three/fiber"
 import { useSpatialStore } from "../state/spatialStore"
-import { memoryDataset } from "../memory/memoryDataset"
-import { generateStarPositions } from "../core/starPosition"
+import { STAR_DATA } from "../data/starData"
+import { Star } from "./Star"
+import { Vector3 } from "three"
 
-export default function Starfield(){
+const attractor = new Vector3(0,0,-5)
 
-  const meshRef = useRef(null)
+export default function Starfield() {
 
-  const setStar = useSpatialStore(s=>s.setStar)
-  const selectedStar = useSpatialStore(s=>s.selectedStar)
+  const selectedStarId = useSpatialStore((s) => s.selectedStarId)
+  const setSelectedStarId = useSpatialStore((s) => s.setSelectedStarId)
+  const interactionLock = useSpatialStore((s) => s.interactionLock)
 
-  const stars = useMemo(()=>{
+  const stars = useMemo(() => STAR_DATA, [])
+  const starRefs = useRef<any>([])
 
-    const positions = generateStarPositions(42, memoryDataset.length)
+  const handleStarClick = (starId: number) => {
+    if (interactionLock) return
+    if (selectedStarId !== null) return
+    setSelectedStarId(starId)
+  }
 
-    return memoryDataset.map((m,i)=>{
-
-      const p = positions[i].position
-
-      const depth = Math.abs(p[2])
-
-      return{
-        id:m.id,
-        position:p,
-        depth
-      }
-
-    })
-
-  },[])
-
-
-  useEffect(()=>{
-
-    if(!meshRef.current) return
-
-    const temp = new THREE.Object3D()
-
-    stars.forEach((s,i)=>{
-
-      const selected = selectedStar?.id === s.id
-      const dimOthers = selectedStar && !selected
-
-      const falloff = Math.max(0.3,1 - s.depth/30)
-
-      const scale = selected
-        ? 2
-        : dimOthers
-          ? 0.5
-          : falloff
-
-      temp.position.set(
-        s.position[0],
-        s.position[1],
-        s.position[2]
-      )
-
-      temp.scale.set(scale,scale,scale)
-
-      temp.updateMatrix()
-
-      meshRef.current.setMatrixAt(i,temp.matrix)
-
-    })
-
-    meshRef.current.instanceMatrix.needsUpdate = true
-
-  },[stars,selectedStar])
-
+  const matRef = useRef<any>(null)
 
   useFrame(({clock})=>{
+    if(selectedStarId && matRef.current){
+      const pulse = 1.4 + Math.sin(clock.elapsedTime * 2) * 0.25
+      matRef.current.emissiveIntensity = pulse
+    }
 
-    if(!meshRef.current) return
-
-    const pulse = 0.9 + Math.sin(clock.elapsedTime*2)*0.1
-
-    meshRef.current.material.opacity = pulse
-
+    stars.forEach((s,i)=>{
+      const mesh = starRefs.current[i]
+      if(!mesh) return
+  
+      const pos = mesh.position
+  
+      const dir = new Vector3()
+        .subVectors(attractor,pos)
+        .normalize()
+  
+      pos.addScaledVector(dir,0.0006)
+    })
   })
 
-
-  return(
-
-    <instancedMesh
-      ref={meshRef}
-      args={[undefined,undefined,stars.length]}
-      onPointerDown={(e)=>{
-
-        const i = e.instanceId
-        if(i===undefined) return
-
-        const star = stars[i]
-
-        if(selectedStar) return
-
-        setStar(star)
-
-      }}
-    >
-
-      <sphereGeometry args={[0.08,16,16]} />
-
-      <meshStandardMaterial
-        color="#c8dcff"
-        emissive="#9bbcff"
-        emissiveIntensity={0.7}
-        transparent
-        opacity={0.9}
-        depthWrite={false}
-      />
-
-    </instancedMesh>
-
+  return (
+    <group>
+      {stars.map((star, i) => (
+        <Star
+          key={star.id}
+          ref={el => starRefs.current[i] = el}
+          starData={star}
+          isSelected={selectedStarId === star.id}
+          isDimmed={selectedStarId !== null && selectedStarId !== star.id}
+          onClick={handleStarClick}
+          matRef={matRef}
+        />
+      ))}
+    </group>
   )
-
 }

@@ -10,23 +10,13 @@ export default function SpaceAtmosphere(){
 
   useEffect(()=>{
 
-    scene.fog = new THREE.FogExp2("#02020a",0.08)
+    scene.fog = new THREE.FogExp2("#02020a",0.06)
 
   },[scene])
 
   return(
     <>
-      <ambientLight intensity={0.6} />
-
-      <directionalLight
-        position={[3,5,6]}
-        intensity={0.7}
-      />
-
-      <directionalLight
-        position={[-4,-2,3]}
-        intensity={0.25}
-      />
+      <ambientLight intensity={0.35}/>
     </>
   )
 }

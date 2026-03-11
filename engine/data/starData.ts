@@ -1,33 +1,56 @@
-export type Star = {
-  id:number
-  position:[number,number,number]
+// --- Tier-3: Canonical Memory Dataset ---
+// Single source of truth for spatial memory stars.
+// Production systems would fetch this from API / Firestore.
+
+export interface StarDataItem {
+  id: number
+  position: [number, number, number]
+  image: string
+  title: string
+  date: string
 }
 
-function mulberry32(a:number){
-  return function(){
-    let t=a+=0x6D2B79F5
-    t=Math.imul(t^t>>>15,t|1)
-    t^=t+Math.imul(t^t>>>7,t|61)
-    return((t^t>>>14)>>>0)/4294967296
-  }
-}
-
-export function generateStars(count=800):Star[]{
-  const rand = mulberry32(1337)
-  const stars:Star[]=[]
-
-  for(let i=0;i<count;i++){
-    stars.push({
-      id:i,
-      position:[
-        (rand()-0.5)*200,
-        (rand()-0.5)*200,
-        (rand()-0.5)*200
-      ]
-    })
-  }
-
-  return stars
-}
-
-export const STAR_DATA = generateStars()
+export const STAR_DATA: StarDataItem[] = [
+  {
+    id: 1,
+    position: [-8, 4, -10],
+    image: "/memory/memory-1.jpg",
+    title: "First Contact",
+    date: "2023-03-15",
+  },
+  {
+    id: 2,
+    position: [8, -4, -12],
+    image: "/memory/memory-2.jpg",
+    title: "Project Orion",
+    date: "2023-06-22",
+  },
+  {
+    id: 3,
+    position: [5, 5, -15],
+    image: "/memory/memory-3.jpg",
+    title: "Supernova Witness",
+    date: "2023-09-01",
+  },
+  {
+    id: 4,
+    position: [-5, -5, -8],
+    image: "/memory/memory-4.jpg",
+    title: "Galaxy NGC-1300",
+    date: "2023-11-19",
+  },
+  {
+    id: 5,
+    position: [0, 0, -20],
+    image: "/memory/memory-5.jpg",
+    title: "The Anomaly",
+    date: "2024-01-05",
+  },
+  {
+    id: 6,
+    position: [10, 2, -9],
+    image: "/memory/memory-6.jpg",
+    title: "First Jump",
+    date: "2024-02-11",
+  },
+]

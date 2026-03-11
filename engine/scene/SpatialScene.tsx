@@ -1,52 +1,54 @@
 "use client"
 
 import { Canvas } from "@react-three/fiber"
+import { useSpatialStore } from "../state/spatialStore"
 
 import DeepStars from "../environment/DeepStars"
-import BackgroundStars from "../space/BackgroundStars"
-import ParallaxStars from "../space/ParallaxStars"
 import SpaceAtmosphere from "../environment/SpaceAtmosphere"
-import GalaxyBand from "../environment/GalaxyBand"
-import NebulaFog from "../environment/NebulaFog"
 
 import CameraRig from "../camera/CameraRig"
-import TimelineController from "../navigation/TimelineController"
-
-import LifeMap from "./LifeMap"
-import ConstellationLines from "../visual/ConstellationLines"
-import StarHalo from "../effects/StarHalo"
-import MemorySphere from "./MemorySphere"
-
+import Starfield from "./Starfield"
+import MemorySphere from "../memory/MemorySphere"
 import ReplayController from "../replay/ReplayController"
 
 export default function SpatialScene(){
 
+  const resetSelection = useSpatialStore(s=>s.resetSelection)
+
+  const handleWheel = (e:any)=>{
+
+    e.stopPropagation()
+
+    const { selectedStarId, inReplayMode } = useSpatialStore.getState()
+
+    if(inReplayMode || selectedStarId!==null){
+      resetSelection()
+    }
+
+  }
+
   return(
 
     <Canvas
-      camera={{ position:[0,0,6], fov:60 }}
-      raycaster={{ params:{ Mesh:{} } }}
-      onPointerMissed={()=>{}}
+      camera={{ position:[0,2,16], fov:60 }}
+
+      onWheel={handleWheel}
+
+      onPointerMissed={()=>{
+        resetSelection()
+      }}
     >
 
-      <ambientLight intensity={0.8} />
+      <DeepStars/>
+      <SpaceAtmosphere/>
 
-      {/* Environment */}
-      <DeepStars />
-      <BackgroundStars />
-      <ParallaxStars />
-      <SpaceAtmosphere />
-      <GalaxyBand />
-      <NebulaFog />
+      <CameraRig/>
 
-      {/* Interaction */}
-      <CameraRig />
-      <TimelineController />
-      <LifeMap />
-      <ConstellationLines />
-      <StarHalo />
-      <MemorySphere />
-      <ReplayController />
+      <Starfield/>
+
+      <MemorySphere/>
+
+      <ReplayController/>
 
     </Canvas>
 

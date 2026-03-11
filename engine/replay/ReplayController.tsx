@@ -5,30 +5,32 @@ import { useSpatialStore } from "../state/spatialStore"
 
 export default function ReplayController(){
 
-  const mode = useSpatialStore(s=>s.mode)
-  const exitReplay = useSpatialStore(s=>s.exitReplay)
+  const resetSelection = useSpatialStore(s=>s.resetSelection)
 
   useEffect(()=>{
 
-    const onKey = (e:KeyboardEvent)=>{
+    const handleKey = (e:KeyboardEvent)=>{
 
       if(e.key === "Escape"){
 
-        if(mode === "replay"){
-          exitReplay()
+        const { inReplayMode, selectedStarId } = useSpatialStore.getState()
+
+        if(inReplayMode || selectedStarId!==null){
+          resetSelection()
         }
 
       }
 
     }
 
-    window.addEventListener("keydown", onKey)
+    window.addEventListener("keydown",handleKey)
 
-    return ()=>{
-      window.removeEventListener("keydown", onKey)
+    return()=>{
+      window.removeEventListener("keydown",handleKey)
     }
 
-  },[mode, exitReplay])
+  },[resetSelection])
 
   return null
+
 }
