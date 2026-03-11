@@ -1,83 +1,66 @@
 "use client"
 
-import { useSpatialStore } from "../state/spatialStore"
-import { useFrame, useLoader } from "@react-three/fiber"
+import { useRef } from "react"
+import { useFrame } from "@react-three/fiber"
 import * as THREE from "three"
-import { useRef, useEffect } from "react"
-
-import {
-  MEMORY_SPHERE_RADIUS,
-  MEMORY_SHELL_RADIUS,
-  MEMORY_PULSE_SPEED,
-  MEMORY_PULSE_AMPLITUDE
-} from "../camera/cameraConfig"
+import { useSpatialStore } from "../state/spatialStore"
 
 export default function MemorySphere(){
 
-  const selectedStar = useSpatialStore(s => s.selectedStar)
+  const selectedStar = useSpatialStore(s=>s.selectedStar)
 
-  const innerRef = useRef<THREE.Mesh>(null!)
-  const shellRef = useRef<THREE.Mesh>(null!)
+  const mesh = useRef<THREE.Mesh>(null)
 
-  const texture = useLoader(
-    THREE.TextureLoader,
-    "/memory/sample.jpg"
-  )
+  useFrame((state)=>{
 
-  useEffect(()=>{
-    texture.colorSpace = THREE.SRGBColorSpace
-    texture.anisotropy = 16
-    texture.needsUpdate = true
-  },[texture])
+    if(!mesh.current) return
 
-  useFrame(({clock})=>{
+    const t = state.clock.getElapsedTime()
 
-    const t = clock.getElapsedTime()
+    const pulse = 1 + Math.sin(t*1.2)*0.02
 
-    const pulse =
-      1 + Math.sin(t * MEMORY_PULSE_SPEED) * MEMORY_PULSE_AMPLITUDE
-
-    if(innerRef.current){
-      innerRef.current.scale.set(pulse,pulse,pulse)
-    }
-
-    if(shellRef.current){
-      shellRef.current.scale.set(pulse,pulse,pulse)
-    }
+    mesh.current.scale.set(pulse,pulse,pulse)
 
   })
 
   if(!selectedStar) return null
 
+  const texture = new THREE.TextureLoader().load("/memory/sample.jpg")
+
   return(
 
     <group position={selectedStar.position}>
 
-      {/* interior memory world */}
-      <mesh
-        ref={innerRef}
-        scale={[-1,1,1]}
-      >
-        <sphereGeometry args={[MEMORY_SPHERE_RADIUS,96,96]} />
+      {/* main sphere */}
 
-        <meshBasicMaterial
+      <mesh ref={mesh}>
+
+        <sphereGeometry args={[1.3,64,64]} />
+
+        <meshStandardMaterial
           map={texture}
-          side={THREE.BackSide}
+          emissive="#ffb347"
+          emissiveIntensity={0.05}
+          roughness={0.35}
+          metalness={0.05}
+          transparent
+          opacity={0.95}
         />
+
       </mesh>
 
-      {/* outer glass shell */}
-      <mesh ref={shellRef}>
+      {/* outer glow */}
 
-        <sphereGeometry args={[MEMORY_SHELL_RADIUS,64,64]} />
+      <mesh>
 
-        <meshPhysicalMaterial
-          color="#ffffff"
+        <sphereGeometry args={[1.42,64,64]} />
+
+        <meshBasicMaterial
+          color="#ffcc88"
           transparent
-          opacity={0.08}
-          roughness={0}
-          transmission={1}
-          thickness={0.35}
+          opacity={0.04}
+          side={THREE.BackSide}
+          depthWrite={false}
         />
 
       </mesh>

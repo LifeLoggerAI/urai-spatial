@@ -3,7 +3,6 @@
 import { useMemo } from "react"
 import * as THREE from "three"
 import { useSpatialStore } from "../state/spatialStore"
-import { STAR_RADIUS } from "../camera/cameraConfig"
 
 export default function Starfield(){
 
@@ -12,7 +11,7 @@ export default function Starfield(){
 
   const stars = useMemo(()=>{
 
-    const arr = []
+    const arr:any[] = []
 
     const cols = 5
     const rows = 4
@@ -50,15 +49,16 @@ export default function Starfield(){
         const selected = selectedStar?.id === s.id
         const dimOthers = selectedStar && !selected
 
-        if(selected) return null
+        const scale = selected ? 0.18 : (selectedStar ? 0.05 : 0.12)
+        const opacity = selectedStar ? 0.25 : 1
 
         return(
 
           <mesh
             key={s.id}
             position={s.position}
+            scale={scale}
             raycast={THREE.Mesh.prototype.raycast}
-
             onPointerDown={(e)=>{
               e.stopPropagation()
               if(selectedStar) return
@@ -66,13 +66,14 @@ export default function Starfield(){
             }}
           >
 
-            <sphereGeometry args={[STAR_RADIUS,32,32]} />
+            <sphereGeometry args={[1,16,16]} />
 
-            <meshStandardMaterial
-              color="#bbbbbb"
-              emissive="#ffffff"
-              emissiveIntensity={dimOthers ? 0.01 : 0.4}
-              roughness={0.2}
+            <meshBasicMaterial
+              color={ selected ? "#ffffff" : (dimOthers ? "#4d5a7a" : "#9bbcff") }
+              transparent
+              opacity={opacity}
+              depthWrite={false}
+              toneMapped={false}
             />
 
           </mesh>

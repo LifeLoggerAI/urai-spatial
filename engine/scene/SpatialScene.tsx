@@ -4,6 +4,7 @@ import { Canvas } from "@react-three/fiber"
 
 import DeepStars from "../environment/DeepStars"
 import SpaceAtmosphere from "../environment/SpaceAtmosphere"
+import BackgroundStars from "../space/BackgroundStars"
 
 import Starfield from "./Starfield"
 import CameraRig from "../camera/CameraRig"
@@ -22,15 +23,15 @@ export default function SpatialScene(){
 
       <ambientLight intensity={0.8} />
 
+      {/* Tier-2 environment depth layers */}
       <DeepStars />
+      <BackgroundStars />
       <SpaceAtmosphere />
 
+      {/* Tier-1 interaction engine */}
       <CameraRig />
-
       <Starfield />
-
       <MemorySphere />
-
       <ReplayController />
 
     </Canvas>
