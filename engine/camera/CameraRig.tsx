@@ -2,47 +2,54 @@
 
 import { useThree, useFrame } from "@react-three/fiber"
 import { useSpatialStore } from "../state/spatialStore"
-import * as THREE from "three"
+import { useNavStore } from "../state/navigationState"
+import { Vector3 } from "three"
 import { useRef } from "react"
-
-import {
-  CAMERA_HOME,
-  CAMERA_STOP_DISTANCE,
-  CAMERA_LERP_SPEED
-} from "./cameraConfig"
 
 export default function CameraRig(){
 
   const { camera } = useThree()
-  const selectedStar = useSpatialStore(s => s.selectedStar)
 
-  const home = useRef(new THREE.Vector3(...CAMERA_HOME))
-  const targetPos = useRef(new THREE.Vector3())
-  const starVec = useRef(new THREE.Vector3())
+  const target = useSpatialStore(s=>s.cameraTarget)
+  const zoomLevel = useNavStore(s=>s.zoomLevel)
+
+  const pos = useRef(new Vector3())
+
+  const zoomDistances = [
+    14,  // life map
+    7,   // cluster
+    3    // memory
+  ]
 
   useFrame(()=>{
 
-    if(!selectedStar){
+    const dist = zoomDistances[zoomLevel] ?? 14
 
-      camera.position.lerp(home.current,0.05)
+    if(target){
+
+      pos.current.set(
+        target[0],
+        target[1],
+        target[2] + dist
+      )
+
+      camera.position.lerp(pos.current,0.12)
+
+      camera.lookAt(
+        target[0],
+        target[1],
+        target[2]
+      )
+
+    } else {
+
+      pos.current.set(0,0,dist)
+
+      camera.position.lerp(pos.current,0.12)
+
       camera.lookAt(0,0,-5)
-      return
+
     }
-
-    starVec.current.set(
-      selectedStar.position[0],
-      selectedStar.position[1],
-      selectedStar.position[2]
-    )
-
-    targetPos.current.set(
-      starVec.current.x,
-      starVec.current.y,
-      starVec.current.z + CAMERA_STOP_DISTANCE
-    )
-
-    camera.position.lerp(targetPos.current, CAMERA_LERP_SPEED)
-    camera.lookAt(starVec.current)
 
   })
 

@@ -1,88 +1,82 @@
 "use client"
 
-import { useMemo } from "react"
+import { useMemo, useRef, useEffect } from "react"
 import * as THREE from "three"
 import { useSpatialStore } from "../state/spatialStore"
+import { memoryDataset } from "../memory/memoryDataset"
+import { generateStarPosition } from "../core/starPosition"
 
 export default function Starfield(){
+
+  const meshRef = useRef<any>(null)
 
   const setStar = useSpatialStore(s=>s.setStar)
   const selectedStar = useSpatialStore(s=>s.selectedStar)
 
   const stars = useMemo(()=>{
 
-    const arr:any[] = []
+    return memoryDataset.map(m=>({
 
-    const cols = 5
-    const rows = 4
+      id:m.id,
+      position:generateStarPosition(Number(m.id), m.timestamp),
+      image:m.image,
+      emotion:m.emotion
 
-    const spacingX = 3
-    const spacingY = 2.5
-
-    for(let x=0;x<cols;x++){
-      for(let y=0;y<rows;y++){
-
-        const id = x*rows+y
-
-        arr.push({
-          id,
-          position:[
-            (x-cols/2)*spacingX,
-            (y-rows/2)*spacingY,
-            -5
-          ] as [number,number,number]
-        })
-
-      }
-    }
-
-    return arr
+    }))
 
   },[])
 
+  useEffect(()=>{
+
+    if(!meshRef.current) return
+
+    const temp = new THREE.Object3D()
+
+    stars.forEach((s,i)=>{
+
+      temp.position.set(
+        s.position[0],
+        s.position[1],
+        s.position[2]
+      )
+
+      temp.updateMatrix()
+      meshRef.current.setMatrixAt(i,temp.matrix)
+
+    })
+
+    meshRef.current.instanceMatrix.needsUpdate=true
+
+  },[stars])
+
   return(
 
-    <group>
+    <instancedMesh
+      ref={meshRef}
+      args={[undefined,undefined,stars.length]}
+      onPointerDown={(e)=>{
 
-      {stars.map((s)=>{
+        const i = e.instanceId
+        if(i===undefined) return
 
-        const selected = selectedStar?.id === s.id
-        const dimOthers = selectedStar && !selected
+        const star = stars[i]
 
-        const scale = selected ? 0.18 : (selectedStar ? 0.05 : 0.12)
-        const opacity = selectedStar ? 0.25 : 1
+        if(selectedStar) return
+        setStar(star)
 
-        return(
+      }}
+    >
 
-          <mesh
-            key={s.id}
-            position={s.position}
-            scale={scale}
-            raycast={THREE.Mesh.prototype.raycast}
-            onPointerDown={(e)=>{
-              e.stopPropagation()
-              if(selectedStar) return
-              setStar(s)
-            }}
-          >
+      <sphereGeometry args={[0.08,12,12]} />
 
-            <sphereGeometry args={[1,16,16]} />
+      <meshBasicMaterial
+        color="#9bbcff"
+        transparent
+        opacity={ selectedStar ? 0.15 : 1 }
+        depthWrite={false}
+      />
 
-            <meshBasicMaterial
-              color={ selected ? "#ffffff" : (dimOthers ? "#4d5a7a" : "#9bbcff") }
-              transparent
-              opacity={opacity}
-              depthWrite={false}
-              toneMapped={false}
-            />
-
-          </mesh>
-
-        )
-
-      })}
-
-    </group>
+    </instancedMesh>
 
   )
 
