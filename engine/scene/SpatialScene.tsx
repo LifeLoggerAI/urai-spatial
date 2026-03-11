@@ -10,9 +10,13 @@ import GalaxyBand from "../environment/GalaxyBand"
 import NebulaFog from "../environment/NebulaFog"
 
 import CameraRig from "../camera/CameraRig"
-import Starfield from "./Starfield"
+import TimelineController from "../navigation/TimelineController"
+
+import LifeMap from "./LifeMap"
+import ConstellationLines from "../visual/ConstellationLines"
 import StarHalo from "../effects/StarHalo"
 import MemorySphere from "./MemorySphere"
+
 import ReplayController from "../replay/ReplayController"
 
 export default function SpatialScene(){
@@ -37,7 +41,9 @@ export default function SpatialScene(){
 
       {/* Interaction */}
       <CameraRig />
-      <Starfield />
+      <TimelineController />
+      <LifeMap />
+      <ConstellationLines />
       <StarHalo />
       <MemorySphere />
       <ReplayController />

@@ -1,52 +1,76 @@
 "use client"
 
 import { useMemo } from "react"
-import * as THREE from "three"
+import { Line } from "@react-three/drei"
+import { lifeDataset } from "../lifemap/lifeDataset"
+import { generateClusters } from "../lifemap/clusterStars"
 
-export default function ConstellationLines({stars}:{stars:any[]}){
+function dist(a,b){
+  const dx=a[0]-b[0]
+  const dy=a[1]-b[1]
+  const dz=a[2]-b[2]
+  return Math.sqrt(dx*dx+dy*dy+dz*dz)
+}
 
-  const geometry = useMemo(()=>{
+export default function ConstellationLines(){
 
-    const verts:number[] = []
+  const clusters = useMemo(()=>generateClusters(25),[])
 
-    for(let i=0;i<stars.length;i++){
-      for(let j=i+1;j<stars.length;j++){
+  const lines = useMemo(()=>{
 
-        const a = stars[i].position
-        const b = stars[j].position
+    const out=[]
 
-        const dx = a[0]-b[0]
-        const dy = a[1]-b[1]
-        const dist = Math.sqrt(dx*dx+dy*dy)
+    clusters.forEach(cluster=>{
 
-        if(dist < 1.5){
+      const stars = cluster.stars.map(id=>lifeDataset[id])
 
-          verts.push(a[0],a[1],a[2])
-          verts.push(b[0],b[1],b[2])
+      const maxLinks = Math.min(12, stars.length)
 
+      for(let i=0;i<maxLinks;i++){
+
+        const a = stars[i]
+
+        let nearest=null
+        let best=Infinity
+
+        stars.forEach(b=>{
+          if(a===b) return
+          const d = dist(a.position,b.position)
+          if(d<best){
+            best=d
+            nearest=b
+          }
+        })
+
+        if(nearest){
+          out.push([a.position,nearest.position])
         }
 
       }
-    }
 
-    const g = new THREE.BufferGeometry()
+    })
 
-    g.setAttribute(
-      "position",
-      new THREE.Float32BufferAttribute(verts,3)
-    )
+    return out
 
-    return g
-
-  },[stars])
+  },[clusters])
 
   return(
-    <lineSegments geometry={geometry}>
-      <lineBasicMaterial
-        color="#7aa6ff"
-        transparent
-        opacity={0.3}
-      />
-    </lineSegments>
+
+    <group>
+
+      {lines.map((pair,i)=>(
+        <Line
+          key={i}
+          points={pair}
+          color="#7fa8ff"
+          lineWidth={1}
+          transparent
+          opacity={0.25}
+        />
+      ))}
+
+    </group>
+
   )
+
 }
