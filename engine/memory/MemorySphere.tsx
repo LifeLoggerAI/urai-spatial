@@ -1,75 +1,61 @@
-"use client"
+'use client'
 
-import { useMemo, useRef, useEffect } from "react"
-import { useFrame } from "@react-three/fiber"
-import { useTexture } from "@react-three/drei"
-import * as THREE from "three"
-import { useSpatialStore } from "../state/spatialStore"
-import { STAR_DATA } from "../data/starData"
+import { useRef, useEffect, Suspense } from "react";
+import { useFrame, useLoader } from "@react-three/fiber";
+import * as THREE from "three";
+import { useSpatialStore } from "../state/spatialStore";
 
-export default function MemorySphere(){
+function MemoryContent({ starInfo }: { starInfo: any }) {
+  const texture = useLoader(THREE.TextureLoader, starInfo.image);
+  return <meshBasicMaterial map={texture} side={THREE.BackSide} />;
+}
 
-  const sphereRef = useRef<THREE.Mesh>(null)
+export default function MemorySphere() {
+  const selectedStarId = useSpatialStore((s) => s.selectedStarId);
+  const stars = useSpatialStore((s) => s.stars) ?? [];
 
-  const selectedStarId = useSpatialStore(s=>s.selectedStarId)
-  const inReplayMode = useSpatialStore(s=>s.inReplayMode)
+  const sphereRef = useRef<THREE.Mesh>(null);
 
-  const selectedStar = useMemo(()=>{
+  const starInfo = stars?.find?.((s: any) => s.id === selectedStarId) ?? null;
 
-    if(selectedStarId===null) return null
-    return STAR_DATA.find(s=>s.id===selectedStarId) || null
+  useEffect(() => {
+    if (!sphereRef.current) return;
 
-  },[selectedStarId])
-
-  const texture = useTexture(selectedStar?.image || "/memory/sample.jpg")
-
-  useEffect(()=>{
-    if(sphereRef.current){
-      sphereRef.current.scale.set(0.01,0.01,0.01)
+    if (starInfo) {
+      // Reset for cinematic spawn
+      sphereRef.current.scale.set(0.01, 0.01, 0.01);
+    } else {
+      sphereRef.current.scale.set(0, 0, 0);
     }
-  },[])
+  }, [starInfo]);
 
-  useFrame((state)=>{
-    if(!sphereRef.current) return
+  useFrame(() => {
+    if (!sphereRef.current) return;
 
-    const visible = !!selectedStar && !inReplayMode
-    const targetScale = visible ? 1 : 0
+    if (starInfo) {
+      sphereRef.current.position.set(
+        starInfo.position[0],
+        starInfo.position[1],
+        starInfo.position[2]
+      );
 
-    sphereRef.current.scale.lerp(
-      new THREE.Vector3(targetScale,targetScale,targetScale),
-      0.12
-    )
-
-    if(visible){
-
-      const pulse = Math.sin(state.clock.elapsedTime*0.6)*0.04+1
-      sphereRef.current.scale.multiplyScalar(pulse)
-
+      sphereRef.current.scale.lerp(
+        new THREE.Vector3(1, 1, 1),
+        0.12
+      );
+    } else {
+      sphereRef.current.scale.set(0, 0, 0);
     }
+  });
 
-  })
+  if (!starInfo) return null;
 
-  if(!selectedStar) return null
-
-  return(
-
-    <mesh
-      ref={sphereRef}
-      position={selectedStar.position}
-    >
-
-      <sphereGeometry args={[1.25,32,32]} />
-
-      <meshStandardMaterial
-        side={THREE.BackSide}
-        map={texture}
-        emissive="#ffffff"
-        emissiveIntensity={0.6}
-        toneMapped={false}
-      />
-
+  return (
+    <mesh ref={sphereRef}>
+      <sphereGeometry args={[2, 64, 64]} />
+      <Suspense fallback={<meshStandardMaterial color="#000" />}>
+        <MemoryContent starInfo={starInfo} />
+      </Suspense>
     </mesh>
-
-  )
-
+  );
 }

@@ -1,75 +1,50 @@
 "use client"
 
-import { useRef, useMemo } from "react"
+import { useRef, useMemo, forwardRef } from "react"
 import { useFrame } from "@react-three/fiber"
 import * as THREE from "three"
 
 interface StarProps {
-  starData?: { id: number; position: [number, number, number] }
-  isSelected: boolean
-  isDimmed?: boolean
-  onClick: (id: number) => void
+  star: { id: number; position: [number, number, number] };
+  selected: boolean;
+  dimOthers: boolean;
+  onClick: () => void;
 }
 
-const BASE_COLOR = new THREE.Color("#8fb3ff")
-const SELECTED_COLOR = new THREE.Color("#ffffff")
-const DIM_COLOR = new THREE.Color("#1a1a1a")
+export const Star = forwardRef<THREE.Group, StarProps>(({ star, selected, dimOthers, onClick }, ref) => {
+  const matRef = useRef<THREE.MeshStandardMaterial>(null);
 
-const LERP_SPEED = 0.08
-
-export function Star({ starData, isSelected, isDimmed = false, onClick }: StarProps) {
-
-  const materialRef = useRef<THREE.MeshBasicMaterial>(null)
-
-  // safety guard
-  const positionVec = useMemo(() => {
-    if (!starData || !starData.position) {
-      return new THREE.Vector3(0,0,0)
+  useFrame(({ clock }) => {
+    if (matRef.current) {
+      if (selected) {
+        const pulse = 1.4 + Math.sin(clock.elapsedTime * 2) * 0.25;
+        matRef.current.emissiveIntensity = pulse;
+        matRef.current.color.lerp(new THREE.Color("#ffffff"), 0.08);
+      } else {
+        matRef.current.emissiveIntensity = dimOthers ? 0.05 : 0.25;
+        matRef.current.color.lerp(dimOthers ? new THREE.Color("#1a1a1a") : new THREE.Color("#8fb3ff"), 0.08);
+      }
     }
-    return new THREE.Vector3(...starData.position)
-  }, [starData])
-
-  useFrame(() => {
-
-    const m = materialRef.current
-    if (!m) return
-
-    if (isSelected) {
-      m.color.lerp(SELECTED_COLOR, LERP_SPEED)
-    } 
-    else if (isDimmed) {
-      m.color.lerp(DIM_COLOR, LERP_SPEED)
-    } 
-    else {
-      m.color.lerp(BASE_COLOR, LERP_SPEED)
-    }
-
-  })
-
-  if (!starData) return null
+  });
 
   return (
-
-    <group position={positionVec}>
-
+    <group ref={ref} position={star.position}>
       <mesh
-        raycast={THREE.Mesh.prototype.raycast}
-        onPointerDown={(e) => {
-          e.stopPropagation()
-          onClick(starData.id)
+        onClick={(e) => {
+          e.stopPropagation();
+          onClick();
         }}
       >
         <sphereGeometry args={[0.9, 24, 24]} />
-
-        <meshBasicMaterial
-          ref={materialRef}
-          color={BASE_COLOR}
+        <meshStandardMaterial
+          ref={matRef}
+          color={selected ? "#ffffff" : (dimOthers ? "#1a1a1a" : "#8fb3ff")}
+          emissive={selected ? "#ffffff" : (dimOthers ? "#1a1a1a" : "#111111")}
+          emissiveIntensity={selected ? 1.5 : (dimOthers ? 0.05 : 0.25)}
         />
       </mesh>
-
       <mesh scale={[4.5, 4.5, 4.5]}>
         <sphereGeometry args={[0.9, 16, 16]} />
-
         <meshBasicMaterial
           color="#8fb3ff"
           transparent
@@ -77,8 +52,8 @@ export function Star({ starData, isSelected, isDimmed = false, onClick }: StarPr
           depthWrite={false}
         />
       </mesh>
-
     </group>
+  );
+});
 
-  )
-}
+Star.displayName = "Star";

@@ -6,6 +6,7 @@ import { useRef } from "react"
 import Starfield from "../scene/Starfield"
 import MemorySphere from "../scene/MemorySphere"
 import CameraRig from "../camera/CameraRig"
+import { InteractionController } from "../core/InteractionController"
 
 export default function EngineSpine(){
 
@@ -34,6 +35,7 @@ export default function EngineSpine(){
         <Starfield />
         <MemorySphere />
         <CameraRig />
+        <InteractionController />
 
       </Canvas>
 

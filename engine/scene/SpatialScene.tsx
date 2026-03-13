@@ -1,57 +1,68 @@
-"use client"
+'use client'
 
 import { Canvas } from "@react-three/fiber"
+import { Suspense, useEffect } from "react"
+import { OrbitControls } from "@react-three/drei"
+
 import { useSpatialStore } from "../state/spatialStore"
 
 import DeepStars from "../environment/DeepStars"
 import SpaceAtmosphere from "../environment/SpaceAtmosphere"
-
-import CameraRig from "../camera/CameraRig"
 import Starfield from "./Starfield"
 import MemorySphere from "../memory/MemorySphere"
-import ReplayController from "../replay/ReplayController"
 
-export default function SpatialScene(){
+function ResetListener() {
 
-  const resetSelection = useSpatialStore(s => s.resetSelection)
+  const setSelectedStarId = useSpatialStore((s) => s.setSelectedStarId)
+  const setInteractionLock = useSpatialStore((s) => s.setInteractionLock)
 
-  const handleWheel = (e:any) => {
+  useEffect(() => {
 
-    e.stopPropagation()
-
-    const { selectedStarId, inReplayMode } = useSpatialStore.getState()
-
-    if(inReplayMode || selectedStarId !== null){
-      resetSelection()
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        setSelectedStarId(null)
+        setInteractionLock(false)
+      }
     }
 
-  }
+    window.addEventListener("keydown", onKey)
+    return () => window.removeEventListener("keydown", onKey)
 
-  return(
+  }, [setSelectedStarId, setInteractionLock])
 
+  return null
+}
+
+export default function SpatialScene() {
+
+  const selectedStarId = useSpatialStore((s) => s.selectedStarId)
+
+  return (
     <Canvas
-      camera={{ position:[0,2,16], fov:60 }}
-      onWheel={handleWheel}
-      onPointerMissed={()=>{
-        resetSelection()
-      }}
+      camera={{ position: [0, 0, 8], fov: 60 }}
+      gl={{ antialias: true }}
+      style={{ background: "#020412" }}
     >
 
-      <color attach="background" args={["#000000"]} />
+      <Suspense fallback={null}>
 
-      <DeepStars/>
-      <SpaceAtmosphere/>
+        <ResetListener />
 
-      <CameraRig/>
+        <DeepStars />
+        <SpaceAtmosphere />
 
-      <Starfield/>
+        <Starfield />
 
-      <MemorySphere/>
+        {selectedStarId && <MemorySphere />}
 
-      <ReplayController/>
+        <OrbitControls
+          enablePan={false}
+          minDistance={3}
+          maxDistance={25}
+        />
+
+      </Suspense>
 
     </Canvas>
-
   )
-
 }

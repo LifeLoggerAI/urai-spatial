@@ -1,22 +1,44 @@
-"use client"
+'use client'
 
-import { useThree } from "@react-three/fiber"
-import { useEffect } from "react"
-import * as THREE from "three"
+import { useThree, useFrame } from "@react-three/fiber";
+import { useEffect, useMemo } from "react";
+import * as THREE from "three";
+import { useSpatialStore } from "../state/spatialStore";
+import { demoData } from "../data/demoData";
 
-export default function SpaceAtmosphere(){
+const emotionColor = {
+  joy: "#ffcc66",
+  love: "#ff88aa",
+  sadness: "#6688ff",
+  anger: "#ff4444",
+  calm: "#66ffaa",
+  curiosity: "#ffffff",
+  focus: "#ffffff",
+};
 
-  const { scene } = useThree()
+export default function SpaceAtmosphere() {
+  const { scene } = useThree();
+  const { selectedStarId } = useSpatialStore();
 
-  useEffect(()=>{
+  const targetColor = useMemo(() => new THREE.Color(), []);
+  const currentColor = useMemo(() => new THREE.Color(0x050510), []);
 
-    scene.fog = new THREE.FogExp2("#02020a",0.06)
+  useEffect(() => {
+    scene.fog = new THREE.FogExp2("#050510", 0.015);
+    scene.background = currentColor;
+  }, [scene, currentColor]);
 
-  },[scene])
+  useFrame(() => {
+    const star = demoData.find((s) => s.id === selectedStarId);
 
-  return(
-    <>
-      <ambientLight intensity={0.35}/>
-    </>
-  )
+    if (star) {
+      targetColor.set(emotionColor[star.emotion as keyof typeof emotionColor]);
+    } else {
+      targetColor.set(0x050510);
+    }
+
+    currentColor.lerp(targetColor, 0.02);
+  });
+
+  return null;
 }
