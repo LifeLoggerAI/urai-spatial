@@ -1,68 +1,101 @@
-'use client'
+"use client"
 
 import { Canvas } from "@react-three/fiber"
-import { Suspense, useEffect } from "react"
 import { OrbitControls } from "@react-three/drei"
+import * as THREE from "three"
+import { Suspense, useMemo } from "react"
+
+import CameraRig from "../camera/CameraRig"
+import Starfield from "./Starfield"
+import MemorySphere from "../memory/MemorySphere"
+import StarTrails from "../effects/StarTrails"
 
 import { useSpatialStore } from "../state/spatialStore"
 
-import DeepStars from "../environment/DeepStars"
-import SpaceAtmosphere from "../environment/SpaceAtmosphere"
-import Starfield from "./Starfield"
-import MemorySphere from "../memory/MemorySphere"
+function Controls() {
 
-function ResetListener() {
+  const mode = useSpatialStore((s) => s.mode)
 
-  const setSelectedStarId = useSpatialStore((s) => s.setSelectedStarId)
-  const setInteractionLock = useSpatialStore((s) => s.setInteractionLock)
+  return (
+    <OrbitControls
+      enablePan={mode !== "focus"}
+      enableRotate={mode !== "focus"}
+      enableZoom={false}
+      rotateSpeed={0.6}
+    />
+  )
+}
 
-  useEffect(() => {
+/* distant background starfield */
 
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") {
-        setSelectedStarId(null)
-        setInteractionLock(false)
-      }
+function BackgroundStars() {
+
+  const geometry = useMemo(() => {
+
+    const stars = new Float32Array(3000)
+
+    for (let i = 0; i < 3000; i++) {
+      stars[i] = (Math.random() - 0.5) * 900
     }
 
-    window.addEventListener("keydown", onKey)
-    return () => window.removeEventListener("keydown", onKey)
+    const geo = new THREE.BufferGeometry()
 
-  }, [setSelectedStarId, setInteractionLock])
+    geo.setAttribute(
+      "position",
+      new THREE.BufferAttribute(stars, 3)
+    )
 
-  return null
+    return geo
+
+  }, [])
+
+  const material = useMemo(() => {
+
+    return new THREE.PointsMaterial({
+      color: "#888888",
+      size: 0.6,
+      sizeAttenuation: true
+    })
+
+  }, [])
+
+  return <points geometry={geometry} material={material} />
+}
+
+function SceneContent() {
+
+  return (
+    <>
+      <ambientLight intensity={0.8} />
+      <Controls />
+      <BackgroundStars />
+
+      <CameraRig />
+      <Starfield />
+      <StarTrails />
+      <MemorySphere />
+    </>
+  )
 }
 
 export default function SpatialScene() {
 
-  const selectedStarId = useSpatialStore((s) => s.selectedStarId)
-
   return (
+
     <Canvas
-      camera={{ position: [0, 0, 8], fov: 60 }}
+      camera={{ position: [0, 0, 48], fov: 50 }}
       gl={{ antialias: true }}
-      style={{ background: "#020412" }}
+      frameloop="demand"
     >
 
+      <color attach="background" args={["#000000"]} />
+      <fog attach="fog" args={["#000000", 60, 300]} />
+
       <Suspense fallback={null}>
-
-        <ResetListener />
-
-        <DeepStars />
-        <SpaceAtmosphere />
-
-        <Starfield />
-
-        {selectedStarId && <MemorySphere />}
-
-        <OrbitControls
-          enablePan={false}
-          minDistance={3}
-          maxDistance={25}
-        />
-
+        <SceneContent />
       </Suspense>
 
     </Canvas>
+
   )
 }
