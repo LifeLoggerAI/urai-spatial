@@ -1,23 +1,22 @@
 export type AnchorType =
-  | 'identity'
-  | 'work'
-  | 'health'
-  | 'relationships'
-  | 'growth'
-  | 'legacy'
+  | "identity"
+  | "work"
+  | "health"
+  | "relationships"
+  | "growth"
+  | "legacy"
 
 export interface AnchorNode {
-  id: string
+  id: AnchorType
   label: string
-  type: AnchorType
   color: string
 }
 
-export const anchorData: AnchorNode[] = [
-  { id: 'identity', label: 'Identity', type: 'identity', color: '#88ccff' },
-  { id: 'work', label: 'Work', type: 'work', color: '#ffaa88' },
-  { id: 'health', label: 'Health', type: 'health', color: '#88ffaa' },
-  { id: 'relationships', label: 'Relationships', type: 'relationships', color: '#ff88cc' },
-  { id: 'growth', label: 'Growth', type: 'growth', color: '#cc88ff' },
-  { id: 'legacy', label: 'Legacy', type: 'legacy', color: '#ffd966' }
-]
+export const anchorData: ReadonlyArray<AnchorNode> = [
+  { id: "identity", label: "Identity", color: "#88ccff" },
+  { id: "work", label: "Work", color: "#ffaa88" },
+  { id: "health", label: "Health", color: "#88ffaa" },
+  { id: "relationships", label: "Relationships", color: "#ff88cc" },
+  { id: "growth", label: "Growth", color: "#cc88ff" },
+  { id: "legacy", label: "Legacy", color: "#ffd966" }
+] as const

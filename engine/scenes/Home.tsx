@@ -9,15 +9,18 @@ import { useThree } from '@react-three/fiber'
 import { useEffect } from 'react'
 
 export default function Home() {
+
   const setScene = useSceneStore((s) => s.setScene)
   const { camera } = useThree()
 
   useEffect(() => {
-    // Much higher camera
-    # DISABLED_CAMERA_MUTATION.set(4.8, 7.0, 15)
 
-    // Look much higher above the scene
+    // Home scene camera framing
+    camera.position.set(4.8, 7.0, 15)
+
+    // Look slightly above horizon toward avatar/orb area
     camera.lookAt(-1.2, 4.5, -6)
+
   }, [camera])
 
   return (

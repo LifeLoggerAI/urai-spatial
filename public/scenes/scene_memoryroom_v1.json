@@ -1,28 +1,66 @@
-
 {
   "schemaVersion": "1.0",
   "sceneId": "scene_memoryroom_v1",
   "worldId": "world_starworld",
-  "name": "MemoryRoom v1 (Interior, Doors, Exit → StarWorld Dissolve)",
+  "name": "MemoryRoom v1 (Interior, Doors, Exit -> StarWorld Dissolve)",
   "slug": "memoryroom-v1",
   "description": "Interior memory room scene with door anchors, walk bounds, comfort locomotion, and exit behavior that dissolves back to StarWorld when the user walks out.",
   "units": "meters",
-  "entrypoint": { "type": "memoryRoom", "entityId": "rig_memory" },
+  "entrypoint": {
+    "type": "memoryRoom",
+    "entityId": "rig_memory"
+  },
   "environment": {
-    "skybox": { "type": "none", "intensity": 1.0 },
-    "fog": { "type": "exp2", "density": 0.02 },
+    "skybox": {
+      "type": "none",
+      "intensity": 1.0
+    },
+    "fog": {
+      "type": "exp2",
+      "density": 0.02
+    },
     "postFX": {
-      "bloom": { "enabled": true, "strength": 0.55 },
-      "chromaticAberration": { "enabled": true, "amount": 0.001 }
+      "bloom": {
+        "enabled": true,
+        "strength": 0.55
+      },
+      "chromaticAberration": {
+        "enabled": true,
+        "amount": 0.001
+      }
     }
   },
   "assets": [
-    { "assetId": "asset_room_shell_glb", "kind": "model", "buildRef": "LATEST" },
-    { "assetId": "asset_room_props_glb", "kind": "model", "buildRef": "LATEST" },
-    { "assetId": "asset_character_placeholder_glb", "kind": "model", "buildRef": "LATEST" },
-    { "assetId": "asset_door_left_glb", "kind": "model", "buildRef": "LATEST" },
-    { "assetId": "asset_door_right_glb", "kind": "model", "buildRef": "LATEST" },
-    { "assetId": "asset_exit_portal_glb", "kind": "model", "buildRef": "LATEST" }
+    {
+      "assetId": "asset_room_shell_glb",
+      "kind": "model",
+      "buildRef": "LATEST"
+    },
+    {
+      "assetId": "asset_room_props_glb",
+      "kind": "model",
+      "buildRef": "LATEST"
+    },
+    {
+      "assetId": "asset_character_placeholder_glb",
+      "kind": "model",
+      "buildRef": "LATEST"
+    },
+    {
+      "assetId": "asset_door_left_glb",
+      "kind": "model",
+      "buildRef": "LATEST"
+    },
+    {
+      "assetId": "asset_door_right_glb",
+      "kind": "model",
+      "buildRef": "LATEST"
+    },
+    {
+      "assetId": "asset_exit_portal_glb",
+      "kind": "model",
+      "buildRef": "LATEST"
+    }
   ],
   "entities": [
     {
@@ -40,15 +78,28 @@
           "kind": "CameraRig",
           "data": {
             "mode": "xrUser",
-            "ease": { "position": 0.10, "rotation": 0.07 },
+            "ease": {
+              "position": 0.1,
+              "rotation": 0.07
+            },
             "fov": 62,
             "near": 0.05,
             "far": 250,
             "comfort": {
-              "snapTurn": { "enabled": true, "degrees": 30 },
-              "vignette": { "enabled": true, "strength": 0.35 },
-              "teleport": { "enabled": true },
-              "smoothLocomotion": { "enabled": false }
+              "snapTurn": {
+                "enabled": true,
+                "degrees": 30
+              },
+              "vignette": {
+                "enabled": true,
+                "strength": 0.35
+              },
+              "teleport": {
+                "enabled": true
+              },
+              "smoothLocomotion": {
+                "enabled": false
+              }
             }
           }
         }
@@ -70,7 +121,11 @@
             "lightType": "spot",
             "intensity": 1.1,
             "castShadows": true,
-            "spot": { "angle": 0.75, "penumbra": 0.35, "distance": 10 }
+            "spot": {
+              "angle": 0.75,
+              "penumbra": 0.35,
+              "distance": 10
+            }
           }
         }
       ]
@@ -87,7 +142,11 @@
       "components": [
         {
           "kind": "Light",
-          "data": { "lightType": "point", "intensity": 0.65, "castShadows": false }
+          "data": {
+            "lightType": "point",
+            "intensity": 0.65,
+            "castShadows": false
+          }
         }
       ]
     },
@@ -135,7 +194,6 @@
         }
       ]
     },
-
     {
       "id": "anchor_door_left",
       "type": "anchorProxy",
@@ -149,7 +207,10 @@
       "components": [
         {
           "kind": "ARAnchorBinding",
-          "data": { "type": "virtual", "anchorKey": "door_left" }
+          "data": {
+            "type": "virtual",
+            "anchorKey": "door_left"
+          }
         }
       ]
     },
@@ -184,7 +245,6 @@
         }
       ]
     },
-
     {
       "id": "anchor_door_right",
       "type": "anchorProxy",
@@ -198,7 +258,10 @@
       "components": [
         {
           "kind": "ARAnchorBinding",
-          "data": { "type": "virtual", "anchorKey": "door_right" }
+          "data": {
+            "type": "virtual",
+            "anchorKey": "door_right"
+          }
         }
       ]
     },
@@ -233,7 +296,6 @@
         }
       ]
     },
-
     {
       "id": "cast_char_01",
       "type": "character",
@@ -247,7 +309,10 @@
       "components": [
         {
           "kind": "ModelRenderer",
-          "data": { "assetId": "asset_character_placeholder_glb", "useBuild": "LATEST" }
+          "data": {
+            "assetId": "asset_character_placeholder_glb",
+            "useBuild": "LATEST"
+          }
         },
         {
           "kind": "NarrationCue",
@@ -272,7 +337,10 @@
       "components": [
         {
           "kind": "ModelRenderer",
-          "data": { "assetId": "asset_character_placeholder_glb", "useBuild": "LATEST" }
+          "data": {
+            "assetId": "asset_character_placeholder_glb",
+            "useBuild": "LATEST"
+          }
         },
         {
           "kind": "NarrationCue",
@@ -284,10 +352,9 @@
         }
       ]
     },
-
     {
       "id": "walk_bounds",
-      "type": "prop",
+      "type": "trigger",
       "name": "Walk Bounds",
       "tags": ["nav", "bounds"],
       "transform": {
@@ -302,12 +369,16 @@
             "shape": "box",
             "extents": { "x": 2.2, "y": 2.2, "z": 2.0 },
             "purpose": "walkBounds",
-            "onLeave": [{ "event": "comfort.recenter", "targetEntityId": "rig_memory" }]
+            "onLeave": [
+              {
+                "event": "comfort.recenter",
+                "targetEntityId": "rig_memory"
+              }
+            ]
           }
         }
       ]
     },
-
     {
       "id": "exit_portal",
       "type": "portal",
@@ -338,14 +409,16 @@
         },
         {
           "kind": "Interactable",
-          "data": { "interaction": "tapOrGaze", "hint": "Leave Memory" }
+          "data": {
+            "interaction": "tapOrGaze",
+            "hint": "Leave Memory"
+          }
         }
       ]
     },
-
     {
       "id": "exit_trigger",
-      "type": "prop",
+      "type": "trigger",
       "name": "Exit Walk-Out Trigger",
       "tags": ["exit", "trigger"],
       "transform": {
@@ -359,6 +432,7 @@
           "data": {
             "shape": "box",
             "extents": { "x": 2.0, "y": 2.2, "z": 0.35 },
+            "fireOnce": true,
             "onEnter": [
               {
                 "event": "scene.exit",
@@ -383,4 +457,3 @@
     }
   ]
 }
-

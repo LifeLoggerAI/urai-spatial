@@ -1,31 +1,44 @@
 "use client"
 
-import { useRef } from "react"
+import { useRef, useMemo } from "react"
 import { useFrame } from "@react-three/fiber"
+import * as THREE from "three"
 
-export default function NebulaFog(){
+export default function NebulaFog() {
 
-  const ref = useRef()
+  const ref = useRef<THREE.Mesh>(null!)
 
-  useFrame(({clock})=>{
+  const geometry = useMemo(
+    () => new THREE.PlaneGeometry(500, 500),
+    []
+  )
 
-    if(!ref.current) return
+  useFrame(({ clock, camera }) => {
+
+    if (!ref.current) return
 
     ref.current.rotation.z = clock.elapsedTime * 0.01
 
+    // keep the fog facing the camera
+    ref.current.lookAt(camera.position)
+
   })
 
-  return(
+  return (
 
-    <mesh ref={ref} position={[0,0,-120]}>
-
-      <planeGeometry args={[500,500]} />
+    <mesh
+      ref={ref}
+      geometry={geometry}
+      position={[0, 0, -120]}
+      frustumCulled={false}
+    >
 
       <meshBasicMaterial
         color="#24325f"
         transparent
         opacity={0.08}
         depthWrite={false}
+        depthTest={false}
       />
 
     </mesh>

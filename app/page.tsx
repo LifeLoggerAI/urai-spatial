@@ -1,7 +1,12 @@
 "use client"
 
-import SpatialScene from "../engine/scene/SpatialScene"
+import dynamic from "next/dynamic"
 
-export default function Page(){
-  return <SpatialScene/>
+const SpatialScene = dynamic(
+  () => import("../engine/scene/SpatialScene"),
+  { ssr: false }
+)
+
+export default function Page() {
+  return <SpatialScene />
 }

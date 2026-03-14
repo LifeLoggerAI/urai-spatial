@@ -1,19 +1,23 @@
 'use client'
 
 import { Html } from '@react-three/drei'
-import { useSceneModeStore } from '../state/useSceneModeStore'
+import { useSceneModeStore, SceneMode } from '../state/useSceneModeStore'
+
+const MODES: SceneMode[] = ['HOME', 'LIFEMAP', 'REPLAY']
 
 export default function ModeToggle() {
+
   const mode = useSceneModeStore((s) => s.mode)
   const setMode = useSceneModeStore((s) => s.setMode)
 
   return (
     <Html position={[0, 7, 0]} center>
       <div style={{ display: 'flex', gap: '10px' }}>
-        {['HOME', 'LIFEMAP', 'REPLAY'].map((m) => (
+        {MODES.map((m) => (
+
           <div
             key={m}
-            onClick={() => setMode(m as any)}
+            onClick={() => setMode(m)}
             style={{
               padding: '8px 14px',
               background:
@@ -29,6 +33,7 @@ export default function ModeToggle() {
           >
             {m}
           </div>
+
         ))}
       </div>
     </Html>

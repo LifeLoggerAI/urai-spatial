@@ -1,27 +1,42 @@
 "use client"
 
 import { create } from "zustand"
+import * as THREE from "three"
 
-export const useMemoryTarget = create((set)=>({
+type MemoryTargetState = {
 
-  selected:null,
-  target:null,
-  cameraLocked:false,
+  selected: string | null
+  target: THREE.Vector3 | null
+  cameraLocked: boolean
 
-  select:(id,pos)=>set({
-    selected:id,
-    target:pos,
-    cameraLocked:false
-  }),
+  select: (id: string, pos: THREE.Vector3) => void
+  lockCamera: () => void
+  clear: () => void
+}
 
-  lockCamera:()=>set({
-    cameraLocked:true
-  }),
+export const useMemoryTarget = create<MemoryTargetState>((set) => ({
 
-  clear:()=>set({
-    selected:null,
-    target:null,
-    cameraLocked:false
-  })
+  selected: null,
+  target: null,
+  cameraLocked: false,
+
+  select: (id, pos) =>
+    set({
+      selected: id,
+      target: pos.clone(),
+      cameraLocked: false
+    }),
+
+  lockCamera: () =>
+    set({
+      cameraLocked: true
+    }),
+
+  clear: () =>
+    set({
+      selected: null,
+      target: null,
+      cameraLocked: false
+    })
 
 }))

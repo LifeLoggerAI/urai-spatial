@@ -1,13 +1,31 @@
 "use client"
 
+import { useMemo } from "react"
+import * as THREE from "three"
+
 export default function SkyDome(){
+
+  const geometry = useMemo(
+    () => new THREE.SphereGeometry(1, 32, 32),
+    []
+  )
+
   return(
-    <mesh scale={500}>
-      <sphereGeometry args={[1,32,32]}/>
+
+    <mesh
+      geometry={geometry}
+      scale={500}
+      frustumCulled={false}
+    >
+
       <meshBasicMaterial
         color="#05070d"
-        side={1}
+        side={THREE.BackSide}
+        depthWrite={false}
       />
+
     </mesh>
+
   )
+
 }

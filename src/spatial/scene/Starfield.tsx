@@ -1,41 +1,39 @@
-"use client"
+"use client";
 
-import { useRef, useEffect } from "react"
-import * as THREE from "three"
+import { useEffect, useMemo, useRef } from "react";
+import * as THREE from "three";
 
-const COUNT = 80
+const COUNT = 80;
 
 export default function Starfield() {
-
-  const meshRef = useRef<THREE.InstancedMesh>(null!)
-  const dummy = new THREE.Object3D()
+  const meshRef = useRef<THREE.InstancedMesh>(null);
+  const dummy = useMemo(() => new THREE.Object3D(), []);
 
   useEffect(() => {
-
-    const mesh = meshRef.current
-    if (!mesh) return
+    const mesh = meshRef.current;
+    if (!mesh) return;
 
     for (let i = 0; i < COUNT; i++) {
+      const x = ((i * 7.13) % 40) - 20;
+      const y = ((i * 11.71) % 20) - 10;
+      const z = -((i * 5.39) % 20);
 
-      const x = (Math.random() - 0.5) * 40
-      const y = (Math.random() - 0.5) * 20
-      const z = (Math.random() - 0.5) * 20
+      const scale = 0.12 + ((i * 3.17) % 100) / 1000;
 
-      dummy.position.set(x, y, z)
-      dummy.scale.setScalar(0.3)
-      dummy.updateMatrix()
+      dummy.position.set(x, y, z);
+      dummy.scale.setScalar(scale);
+      dummy.updateMatrix();
 
-      mesh.setMatrixAt(i, dummy.matrix)
+      mesh.setMatrixAt(i, dummy.matrix);
     }
 
-    mesh.instanceMatrix.needsUpdate = true
-
-  }, [])
+    mesh.instanceMatrix.needsUpdate = true;
+  }, [dummy]);
 
   return (
     <instancedMesh ref={meshRef} args={[undefined, undefined, COUNT]}>
-      <sphereGeometry args={[1, 16, 16]} />
-      <meshBasicMaterial color="white" />
+      <sphereGeometry args={[1, 12, 12]} />
+      <meshBasicMaterial color="#ffffff" />
     </instancedMesh>
-  )
+  );
 }

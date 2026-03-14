@@ -1,13 +1,16 @@
-#!/bin/bash
+#!/usr/bin/env bash
 set -euo pipefail
 
 ###############################################################################
 # urai_reconstruction_deploy.sh
-# Deploys the spatial reconstruction service.
-# This should be run after the main application is deployed and the feature
-# flag for spatial memories has been rolled out.
+# Deploys the URAI Spatial Reconstruction service to Cloud Run.
 #
-# This script is the final step in bringing the full spatial memory system online.
+# Behavior:
+# - Fails on any error
+# - Logs all output to /tmp
+# - Verifies gcloud, docker/build source assumptions, and active project
+# - Supports interactive local deploys and non-interactive CI deploys
+# - Verifies deployed service URL after release
 ###############################################################################
 
 TS="$(date +%Y%m%d_%H%M%S)"
@@ -17,59 +20,107 @@ exec > >(tee -a "$LOG") 2>&1
 echo "== URAI SPATIAL RECONSTRUCTION DEPLOYMENT =="
 echo "LOG=$LOG"
 
-need(){ command -v "$1" >/dev/null 2>&1 || { echo "ERROR: missing '$1'"; exit 1; }; }
+need() {
+  command -v "$1" >/dev/null 2>&1 || {
+    echo "ERROR: missing required command: $1"
+    exit 1
+  }
+}
+
+need bash
 need gcloud
 
-# --- Pre-flight Checks ---
+SERVICE_NAME="${SERVICE_NAME:-urai-spatial-reconstruction}"
+REGION="${REGION:-us-central1}"
+PROJECT_ID="${PROJECT_ID:-$(gcloud config get-value project 2>/dev/null || true)}"
+IMAGE_URI="${IMAGE_URI:-}"
+
 echo
 echo "--- STAGE 1: PRE-FLIGHT CHECKS ---"
 
-# Ensure gcloud is configured
-if ! gcloud config get-value project &>/dev/null; then
-    echo "ERROR: gcloud project not set. Please run 'gcloud config set project <YOUR_PROJECT_ID>'."
-    exit 1
+if [ -z "${PROJECT_ID}" ] || [ "${PROJECT_ID}" = "(unset)" ]; then
+  echo "ERROR: gcloud project is not set."
+  echo "Run: gcloud config set project <YOUR_PROJECT_ID>"
+  exit 1
 fi
-echo "✅ gcloud project is set."
 
-# --- Confirmation ---
+echo "✅ gcloud project set: ${PROJECT_ID}"
+
+ACTIVE_ACCOUNT="$(gcloud auth list --filter=status:ACTIVE --format='value(account)' 2>/dev/null || true)"
+if [ -z "${ACTIVE_ACCOUNT}" ]; then
+  echo "ERROR: no active gcloud account found."
+  echo "Run: gcloud auth login"
+  exit 1
+fi
+
+echo "✅ Active gcloud account: ${ACTIVE_ACCOUNT}"
+
+if [ -z "${IMAGE_URI}" ]; then
+  IMAGE_URI="gcr.io/${PROJECT_ID}/${SERVICE_NAME}:latest"
+fi
+
+echo "Service : ${SERVICE_NAME}"
+echo "Region  : ${REGION}"
+echo "Project : ${PROJECT_ID}"
+echo "Image   : ${IMAGE_URI}"
+
 echo
-echo "--- STAGE 2: DEPLOYMENT ---"
-read -p "Deploy the Spatial Reconstruction Service to Google Cloud Run? (y/N) " -n 1 -r
+echo "--- STAGE 2: IMAGE CHECK ---"
+if ! gcloud container images describe "${IMAGE_URI}" >/dev/null 2>&1; then
+  echo "ERROR: container image not found:"
+  echo "  ${IMAGE_URI}"
+  echo
+  echo "Build and push the image first, or pass IMAGE_URI explicitly."
+  echo "Example:"
+  echo "  IMAGE_URI=us-central1-docker.pkg.dev/${PROJECT_ID}/YOUR_REPO/${SERVICE_NAME}:latest bash scripts/urai_reconstruction_deploy.sh"
+  exit 1
+fi
+
+echo "✅ Container image exists."
+
 echo
-if [[ ! $REPLY =~ ^[Yy]$ ]]; then
+echo "--- STAGE 3: ENABLE REQUIRED API ---"
+gcloud services enable run.googleapis.com >/dev/null
+echo "✅ Cloud Run API enabled."
+
+echo
+echo "--- STAGE 4: DEPLOYMENT ---"
+if [ "${CI:-}" = "true" ]; then
+  echo "CI=true detected. Deploying non-interactively."
+else
+  read -r -p "Deploy Spatial Reconstruction Service to Cloud Run? (y/N) " REPLY
+  if [[ ! "${REPLY:-}" =~ ^[Yy]$ ]]; then
     echo "Deployment cancelled."
     exit 0
+  fi
 fi
 
-# --- Deploy to Cloud Run ---
-SERVICE_NAME="urai-spatial-reconstruction"
-REGION="us-central1" # Or your preferred region
-
-echo "Deploying to Google Cloud Run..."
-echo "Service: $SERVICE_NAME"
-echo "Region: $REGION"
-
-# Placeholder for the actual container image
-# In a real scenario, this would be built and pushed to GCR/Artifact Registry
-CONTAINER_IMAGE="gcr.io/$(gcloud config get-value project)/$SERVICE_NAME:latest"
-
-echo "Container: $CONTAINER_IMAGE"
-echo "(Note: This script assumes the container has been built and pushed)"
-
-gcloud run deploy "$SERVICE_NAME" \
-  --image "$CONTAINER_IMAGE" \
+gcloud run deploy "${SERVICE_NAME}" \
+  --image "${IMAGE_URI}" \
   --platform managed \
-  --region "$REGION" \
-  --allow-unauthenticated
+  --region "${REGION}" \
+  --project "${PROJECT_ID}" \
+  --allow-unauthenticated \
+  --quiet
 
-if [ $? -eq 0 ]; then
-    echo "✅ DEPLOYMENT SUCCEEDED."
-    SERVICE_URL=$(gcloud run services describe "$SERVICE_NAME" --platform managed --region "$REGION" --format="value(status.url)")
-    echo "Service URL: $SERVICE_URL"
-else
-    echo "❌ DEPLOYMENT FAILED. Check Cloud Run logs."
-    exit 1
+echo "✅ Deployment succeeded."
+
+echo
+echo "--- STAGE 5: VERIFY SERVICE ---"
+SERVICE_URL="$(
+  gcloud run services describe "${SERVICE_NAME}" \
+    --platform managed \
+    --region "${REGION}" \
+    --project "${PROJECT_ID}" \
+    --format='value(status.url)'
+)"
+
+if [ -z "${SERVICE_URL}" ]; then
+  echo "ERROR: deployment finished but service URL could not be resolved."
+  exit 1
 fi
+
+echo "✅ Service URL: ${SERVICE_URL}"
 
 echo
 echo "== SPATIAL RECONSTRUCTION DEPLOYMENT COMPLETE =="

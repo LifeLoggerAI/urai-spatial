@@ -1,22 +1,30 @@
-
 'use client'
 
-import { Fog } from 'three';
-import { useThree } from '@react-three/fiber';
-import { useEffect } from 'react';
+import { useThree } from '@react-three/fiber'
+import { useEffect } from 'react'
+import * as THREE from 'three'
 
 /**
- * A declarative fog layer that adds depth to the scene.
+ * Deterministic atmospheric fog layer.
+ * Tier-1 safe: single scene mutation, cleaned on unmount.
  */
+
 export default function FogLayer() {
-  const { scene } = useThree();
+
+  const { scene } = useThree()
 
   useEffect(() => {
-    scene.fog = new Fog('#000000', 20, 100);
-    return () => {
-        scene.fog = null;
-    }
-  }, [scene]);
 
-  return null;
+    const fog = new THREE.Fog('#000000', 20, 100)
+    scene.fog = fog
+
+    return () => {
+      if (scene.fog === fog) {
+        scene.fog = null
+      }
+    }
+
+  }, [scene])
+
+  return null
 }

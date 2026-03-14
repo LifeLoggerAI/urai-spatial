@@ -1,8 +1,8 @@
-import { useMemo } from "react"
+import { useMemo } from "react";
 
-export function useDeterministicStars(generateStars: (seed: number) => any) {
+export function useDeterministicStars<T>(generateStars: (seed: number) => T): T {
   return useMemo(() => {
-    const SEED = 42
-    return generateStars(SEED)
-  }, [])
+    const SEED = 42;
+    return generateStars(SEED);
+  }, [generateStars]);
 }

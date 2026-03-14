@@ -1,6 +1,8 @@
-import { useStarInteraction } from './useStarInteraction';
+'use client'
 
-export const InteractionController = () => {
-  useStarInteraction();
-  return null;
-};
+import { useStarInteraction } from './useStarInteraction'
+
+export default function InteractionController(): null {
+  useStarInteraction()
+  return null
+}

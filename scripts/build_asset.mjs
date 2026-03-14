@@ -1,73 +1,134 @@
+import { NodeIO } from '@gltf-transform/core'
+import { KHRONOS_EXTENSIONS } from '@gltf-transform/extensions'
+import {
+  dedup,
+  prune,
+  resample,
+  textureResize,
+  draco,
+} from '@gltf-transform/functions'
+import draco3d from 'draco3dgltf'
+import { createHash } from 'node:crypto'
+import { dirname, join, resolve, basename } from 'node:path'
+import { promises as fs } from 'node:fs'
 
-import { NodeIO } from '@gltf-transform/core';
-import { allExtensions } from '@gltf-transform/extensions';
-import { dedup, resample, prune, textureResize, draco } from '@gltf-transform/functions';
-import dracowasm from 'draco3dgltf';
-import { createHash } from 'crypto';
-import { join, dirname } from 'path';
-import { promises as fs } from 'fs';
+const PIPELINE_VERSION = '1'
 
-const PIPELINE_VERSION = '1';
+function sha256(buffer) {
+  return createHash('sha256').update(buffer).digest('hex')
+}
 
-async function buildLocalAsset(inputPath, outputPath) {
-  console.log(`Building asset from: ${inputPath}`);
+async function fileExists(path) {
+  try {
+    await fs.access(path)
+    return true
+  } catch {
+    return false
+  }
+}
 
-  // 1. Read the source asset.
-  const originalContent = await fs.readFile(inputPath);
+async function buildLocalAsset(inputPathArg, outputPathArg) {
+  if (!inputPathArg) {
+    throw new Error('Missing input path')
+  }
 
-  // 2. Optimize the glTF asset.
+  const inputPath = resolve(inputPathArg)
+
+  if (!(await fileExists(inputPath))) {
+    throw new Error(`Input file not found: ${inputPath}`)
+  }
+
+  const ext = inputPath.toLowerCase().split('.').pop()
+  if (!['gltf', 'glb'].includes(ext)) {
+    throw new Error(`Unsupported input type ".${ext}". Use .gltf or .glb`)
+  }
+
+  console.log(`Building asset from: ${inputPath}`)
+
+  const originalContent = await fs.readFile(inputPath)
+
+  const decoderModule = await draco3d.createDecoderModule()
+  const encoderModule = await draco3d.createEncoderModule()
+
   const io = new NodeIO()
-      .registerExtensions(allExtensions)
-      .registerDependencies({ 'draco3d.decoder': await dracowasm.createDecoderModule(), 'draco3d.encoder': await dracowasm.createEncoderModule() });
-  
-  const document = await io.read(inputPath);
+    .registerExtensions(KHRONOS_EXTENSIONS)
+    .registerDependencies({
+      'draco3d.decoder': decoderModule,
+      'draco3d.encoder': encoderModule,
+    })
+
+  const document = await io.read(inputPath)
+
   await document.transform(
-      prune(),
-      dedup(),
-      resample(),
-      textureResize({size: [1024, 1024]}),
-      draco()
-  );
-  
-  const optimizedContent = await io.writeBinary(document);
+    prune(),
+    dedup(),
+    resample(),
+    textureResize({ size: [1024, 1024] }),
+    draco()
+  )
 
-  // 3. Calculate hashes and create manifest.
-  const originalHash = createHash('sha256').update(originalContent).digest('hex');
-  const buildHash = createHash('sha256').update(optimizedContent).digest('hex');
-  
+  const optimizedContent = Buffer.from(await io.writeBinary(document))
+
+  const originalHash = sha256(originalContent)
+  const buildHash = sha256(optimizedContent)
+
+  const outputDir = outputPathArg
+    ? resolve(outputPathArg)
+    : join(dirname(inputPath), 'build', buildHash)
+
+  await fs.mkdir(outputDir, { recursive: true })
+
+  const outputModelPath = join(outputDir, 'model.glb')
+  const manifestPath = join(outputDir, 'manifest.json')
+
   const manifest = {
-      pipelineVersion: PIPELINE_VERSION,
-      buildHash,
-      originalHash,
-      inputs: { [inputPath]: originalHash },
-      outputs: {
-          'model.glb': {
-              hash: buildHash,
-              size: optimizedContent.length,
-              mime: 'model/gltf-binary'
-          }
+    pipelineVersion: PIPELINE_VERSION,
+    createdAt: new Date().toISOString(),
+    source: {
+      path: inputPath,
+      fileName: basename(inputPath),
+      hash: originalHash,
+      size: originalContent.length,
+    },
+    output: {
+      path: outputModelPath,
+      fileName: 'model.glb',
+      hash: buildHash,
+      size: optimizedContent.length,
+      mime: 'model/gltf-binary',
+    },
+    inputs: {
+      [basename(inputPath)]: {
+        hash: originalHash,
+        size: originalContent.length,
       },
-      createdAt: new Date().toISOString()
-  };
+    },
+    outputs: {
+      'model.glb': {
+        hash: buildHash,
+        size: optimizedContent.length,
+        mime: 'model/gltf-binary',
+      },
+    },
+  }
 
-  // 4. Write build outputs and manifest.
-  const outputDir = outputPath || join(dirname(inputPath), 'build', buildHash);
-  await fs.mkdir(outputDir, { recursive: true });
+  await fs.writeFile(outputModelPath, optimizedContent)
+  await fs.writeFile(manifestPath, JSON.stringify(manifest, null, 2), 'utf8')
 
-  await fs.writeFile(join(outputDir, 'model.glb'), optimizedContent);
-  await fs.writeFile(join(outputDir, 'manifest.json'), JSON.stringify(manifest, null, 2));
-
-  console.log(`Successfully built asset. Output at: ${outputDir}`);
-  console.log(`Build Hash: ${buildHash}`);
+  console.log(`Successfully built asset.`)
+  console.log(`Output Dir : ${outputDir}`)
+  console.log(`Model Path : ${outputModelPath}`)
+  console.log(`Manifest   : ${manifestPath}`)
+  console.log(`Build Hash : ${buildHash}`)
 }
 
-// Command-line execution
 if (process.argv.length < 3) {
-  console.error('Usage: node scripts/build_asset.mjs <path-to-gltf-file> [output-path]');
-  process.exit(1);
+  console.error('Usage: node scripts/build_asset.mjs <path-to-gltf-or-glb> [output-dir]')
+  process.exit(1)
 }
 
-buildLocalAsset(process.argv[2], process.argv[3]).catch(err => {
-    console.error('Asset build failed:', err);
-    process.exit(1);
-});
+buildLocalAsset(process.argv[2], process.argv[3]).catch((err) => {
+  console.error('Asset build failed:')
+  console.error(err?.stack || err)
+  process.exit(1)
+})

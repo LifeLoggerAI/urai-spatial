@@ -1,10 +1,13 @@
 import * as THREE from "three"
 
-export function createStarMaterial() {
+export function createStarMaterial(){
 
   return new THREE.ShaderMaterial({
 
     transparent:true,
+    depthWrite:false,
+    blending:THREE.AdditiveBlending,
+    toneMapped:false,
 
     uniforms:{
       color:{ value:new THREE.Color("#ffffff") },
@@ -12,17 +15,20 @@ export function createStarMaterial() {
     },
 
     vertexShader:`
-      varying vec3 vPos;
+
+      varying vec2 vUv;
 
       void main(){
 
-        vPos = position;
+        vUv = position.xy;
 
-        gl_Position = projectionMatrix *
-                      modelViewMatrix *
-                      vec4(position,1.0);
+        gl_Position =
+          projectionMatrix *
+          modelViewMatrix *
+          vec4(position,1.0);
 
       }
+
     `,
 
     fragmentShader:`
@@ -30,13 +36,14 @@ export function createStarMaterial() {
       uniform vec3 color;
       uniform float glow;
 
-      varying vec3 vPos;
+      varying vec2 vUv;
 
       void main(){
 
-        float d = length(vPos.xy);
+        float d = length(vUv);
 
-        float intensity = glow / (d * 12.0 + 0.2);
+        float intensity =
+          glow / max(d * 12.0 + 0.2, 0.2);
 
         vec3 col = color * intensity;
 
@@ -45,6 +52,7 @@ export function createStarMaterial() {
       }
 
     `
+
   })
 
 }

@@ -1,13 +1,18 @@
 import * as THREE from 'three'
 
+const SCALE_MATRIX = new THREE.Matrix4().makeScale(1.6, 1.6, 1.6)
+
 export function applySelectionScale(
   baseMatrix: THREE.Matrix4,
   isSelected: boolean
-) {
-  const matrix = baseMatrix.clone()
-  if (isSelected) {
-    const scale = new THREE.Matrix4().makeScale(1.6, 1.6, 1.6)
-    matrix.multiply(scale)
+): THREE.Matrix4 {
+
+  if (!isSelected) {
+    return baseMatrix
   }
+
+  const matrix = baseMatrix.clone()
+  matrix.multiply(SCALE_MATRIX)
+
   return matrix
 }

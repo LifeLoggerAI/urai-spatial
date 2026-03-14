@@ -1,14 +1,20 @@
-#!/bin/bash
+#!/usr/bin/env bash
 set -euo pipefail
 
 ###############################################################################
 # urai_deploy_production.sh
-# The final step: runs all checks, deploys to Firebase, and provides
-# post-deploy instructions for feature flag management.
+# Locked production deploy script for URAI.
 #
-# Assumes previous lock/audit/fix scripts have been run.
+# Behavior:
+# - Fails on any error
+# - Writes a full log to /tmp
+# - Refuses deploy on dirty git state
+# - Refuses deploy without lockfile
+# - Runs ship:check if present
+# - Runs smoke test if present
+# - Shows active Firebase target before deploy
 #
-# RUN FROM REPO ROOT
+# Run from repo root.
 ###############################################################################
 
 TS="$(date +%Y%m%d_%H%M%S)"
@@ -18,81 +24,101 @@ exec > >(tee -a "$LOG") 2>&1
 echo "== URAI DEPLOY TO PRODUCTION =="
 echo "LOG=$LOG"
 
-need(){ command -v "$1" >/dev/null 2>&1 || { echo "ERROR: missing '$1'"; exit 1; }; }
+need() {
+  command -v "$1" >/dev/null 2>&1 || {
+    echo "ERROR: missing required command: $1"
+    exit 1
+  }
+}
+
 need git
+need node
 need pnpm
 need firebase
 need bash
 
-# --- Pre-flight Checks ---
 echo
-echo "--- STAGE 1: PRE-FLIGHT CHECKS ---"
+echo "--- STAGE 0: REPO ROOT CHECK ---"
+[ -f package.json ] || { echo "ERROR: package.json not found. Run from repo root."; exit 1; }
+[ -f firebase.json ] || { echo "ERROR: firebase.json not found. Run from repo root."; exit 1; }
+[ -f pnpm-lock.yaml ] || { echo "ERROR: pnpm-lock.yaml missing. Refusing unlocked deploy."; exit 1; }
 
-# Check for uncommitted changes
+echo "✅ Repo root verified."
+
+echo
+echo "--- STAGE 1: TOOLING ---"
+echo "node:     $(node --version)"
+echo "pnpm:     $(pnpm --version)"
+echo "firebase: $(firebase --version)"
+echo "git:      $(git --version | head -n 1)"
+
+echo
+echo "--- STAGE 2: GIT STATE ---"
+
+if ! git rev-parse --is-inside-work-tree >/dev/null 2>&1; then
+  echo "ERROR: not inside a git repository."
+  exit 1
+fi
+
 if ! git diff-index --quiet HEAD --; then
-    echo "ERROR: Uncommitted changes in the working tree. Please commit or stash before deploying."
-    git status --porcelain
-    exit 1
-fi
-echo "✅ Git status is clean."
-
-# Run ship:check (lint, typecheck, build)
-if pnpm -w run ship:check; then
-    echo "✅ ship:check passed."
-else
-    echo "❌ ERROR: ship:check failed. Check logs."
-    exit 1
+  echo "ERROR: working tree has uncommitted changes. Commit or stash before deploying."
+  git status --short
+  exit 1
 fi
 
-# --- Smoke Test ---
+echo "✅ Git working tree clean."
+
 echo
-echo "--- STAGE 2: SMOKE TEST ---"
+echo "--- STAGE 3: INSTALL ---"
+pnpm install --frozen-lockfile
+echo "✅ Dependencies installed from lockfile."
+
+echo
+echo "--- STAGE 4: PRE-DEPLOY CHECKS ---"
+
+if node -e 'const p=require("./package.json"); process.exit(p.scripts && p.scripts["ship:check"] ? 0 : 1)'; then
+  pnpm run ship:check
+  echo "✅ ship:check passed."
+else
+  echo "ERROR: package.json is missing script: ship:check"
+  exit 1
+fi
+
+echo
+echo "--- STAGE 5: SMOKE TEST ---"
 if [ -f "scripts/urai_smoke_core.sh" ]; then
-    if bash scripts/urai_smoke_core.sh; then
-        echo "✅ Smoke test passed."
-    else
-        echo "❌ ERROR: Smoke test failed. Check logs."
-        exit 1
-    fi
+  bash scripts/urai_smoke_core.sh
+  echo "✅ Smoke test passed."
 else
-    echo "⚠️ WARNING: scripts/urai_smoke_core.sh not found. Skipping smoke test."
+  echo "WARN: scripts/urai_smoke_core.sh not found. Skipping smoke test."
 fi
 
-# --- Final Confirmation ---
 echo
-echo "--- STAGE 3: DEPLOYMENT ---"
-echo "All checks passed. Ready to deploy to Firebase."
+echo "--- STAGE 6: FIREBASE TARGET ---"
 firebase use
 
-read -p "ARE YOU SURE you want to deploy to production? (y/N) " -n 1 -r
 echo
-if [[ ! $REPLY =~ ^[Yy]$ ]]; then
+echo "--- STAGE 7: DEPLOY ---"
+if [ "${CI:-}" = "true" ]; then
+  echo "CI=true detected. Deploying non-interactively."
+else
+  read -r -p "Deploy to the Firebase target shown above? (y/N) " REPLY
+  if [[ ! "${REPLY:-}" =~ ^[Yy]$ ]]; then
     echo "Deployment cancelled."
     exit 0
+  fi
 fi
 
-# --- Deploy ---
-echo "Deploying to Firebase..."
-if firebase deploy; then
-    echo "✅ DEPLOYMENT SUCCEEDED."
-else
-    echo "❌ DEPLOYMENT FAILED. Check Firebase logs."
-    exit 1
-fi
+firebase deploy
+echo "✅ Deployment succeeded."
 
-# --- Post-Deploy Instructions ---
 echo
-echo "--- STAGE 4: POST-DEPLOY ROLLOUT ---"
-echo "Deployment is complete. You can now manage the 'spatial_memories' feature flag."
-echo "Use the ship script to control rollout:"
+echo "--- STAGE 8: POST-DEPLOY ---"
+echo "Deployment complete."
 echo
-echo "  # Rollout to admins or a specific user:"
-echo "  bash scripts/urai_spatial_ship.sh <your-admin-uid>"
-echo
-echo "  # Rollout to a percentage of users:"
+echo "Feature flag rollout examples:"
+echo "  bash scripts/urai_spatial_ship.sh <admin-uid>"
 echo "  bash scripts/urai_spatial_ship.sh percentage:10"
-echo
-echo "  # Rollout to everyone:"
 echo "  bash scripts/urai_spatial_ship.sh all"
 echo
-echo "== PRODUCTION DEPLOYMENT SCRIPT COMPLETE =="
+echo "Done."

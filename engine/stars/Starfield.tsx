@@ -1,57 +1,79 @@
 "use client"
 
 import { useMemo } from "react"
+import * as THREE from "three"
+import {
+  STAR_COLS,
+  STAR_ROWS,
+  STAR_SPACING_X,
+  STAR_SPACING_Y
+} from "../space/starLayout"
 
-export default function Starfield({ setTarget, target }) {
+type Props = {
+  setTarget: (pos:[number,number,number], id:number) => void
+  targetId: number | null
+}
 
-  const stars = useMemo(() => {
+export default function Starfield({ setTarget, targetId }:Props){
 
-    const arr = []
+  const geometry = useMemo(()=>{
+    return new THREE.SphereGeometry(0.25,16,16)
+  },[])
 
-    const cols = 5
-    const rows = 4
-    const spacingX = 3
-    const spacingY = 2.5
+  const stars = useMemo(()=>{
 
-    for (let x = 0; x < cols; x++) {
-      for (let y = 0; y < rows; y++) {
+    const arr:{id:number,position:[number,number,number]}[] = []
 
-        arr.push([
-          (x - cols/2) * spacingX,
-          (y - rows/2) * spacingY,
-          0
-        ])
+    let id = 0
+
+    for(let x=0;x<STAR_COLS;x++){
+      for(let y=0;y<STAR_ROWS;y++){
+
+        arr.push({
+          id:id++,
+          position:[
+            (x - STAR_COLS/2) * STAR_SPACING_X,
+            (y - STAR_ROWS/2) * STAR_SPACING_Y,
+            0
+          ]
+        })
 
       }
     }
 
     return arr
 
-  }, [])
+  },[])
 
-  return (
+  return(
+
     <>
-      {stars.map((pos,i)=>{
 
-        const isSelected =
-          target &&
-          pos[0] === target[0] &&
-          pos[1] === target[1]
+      {stars.map(star=>{
+
+        const isSelected = star.id === targetId
 
         if(isSelected) return null
 
-        return (
+        return(
+
           <mesh
-            key={i}
-            position={pos}
-            onClick={() => setTarget(pos)}
+            key={star.id}
+            geometry={geometry}
+            position={star.position}
+            onClick={()=>setTarget(star.position,star.id)}
           >
-            <sphereGeometry args={[0.25,16,16]} />
-            <meshBasicMaterial color="white" />
+
+            <meshBasicMaterial color="white"/>
+
           </mesh>
+
         )
 
       })}
+
     </>
+
   )
+
 }

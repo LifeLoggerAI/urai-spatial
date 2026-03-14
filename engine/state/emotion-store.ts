@@ -11,33 +11,48 @@ export type EmotionalState =
   | 'clarity'
 
 interface EmotionStore {
+
   state: EmotionalState
-  intensity: number // 0.0 – 1.0
+  intensity: number
   thresholdActive: boolean
 
   setState: (state: EmotionalState, intensity?: number) => void
   setIntensity: (value: number) => void
   setThreshold: (active: boolean) => void
+  resetEmotion: () => void
 }
 
-export const useEmotionStore = create<EmotionStore>((set) => ({
-  state: 'stability',
-  intensity: 0.5,
-  thresholdActive: false,
+function clamp(v:number){
+  return Math.max(0, Math.min(1, v))
+}
 
-  setState: (state, intensity = 0.5) =>
-    set(() => ({
+export const useEmotionStore = create<EmotionStore>((set)=>({
+
+  state:'stability',
+  intensity:0.5,
+  thresholdActive:false,
+
+  setState:(state,intensity=0.5)=>
+    set({
       state,
-      intensity: Math.max(0, Math.min(1, intensity)),
-    })),
+      intensity: clamp(intensity)
+    }),
 
-  setIntensity: (value) =>
-    set(() => ({
-      intensity: Math.max(0, Math.min(1, value)),
-    })),
+  setIntensity:(value)=>
+    set({
+      intensity: clamp(value)
+    }),
 
-  setThreshold: (active) =>
-    set(() => ({
-      thresholdActive: active,
-    })),
+  setThreshold:(active)=>
+    set({
+      thresholdActive: active
+    }),
+
+  resetEmotion:()=>
+    set({
+      state:'stability',
+      intensity:0.5,
+      thresholdActive:false
+    })
+
 }))

@@ -1,45 +1,65 @@
 'use client'
 
-import { Canvas } from '@react-three/fiber';
-import * as THREE from 'three';
-import { TimeProvider } from '@/components/time-core/TimeProvider';
-import Orb from '@/components/orb/Orb';
-import PostFX from '@/components/post/PostFX';
-import { ColorManagement } from 'three';
-import CinematicIdleCamera from '@/components/camera/CinematicIdleCamera';
-import StableStars from '@/components/stars/StableStars';
-import MemorySphere from '@/components/spatial/MemorySphere';
-
-// Enable Three.js color management for more accurate and realistic color representation.
-ColorManagement.enabled = true
+import { Canvas } from '@react-three/fiber'
+import * as THREE from 'three'
+import { TimeProvider } from '@/components/time-core/TimeProvider'
+import Orb from '@/components/orb/Orb'
+import PostFX from '@/components/post/PostFX'
+import CinematicIdleCamera from '@/components/camera/CinematicIdleCamera'
+import StableStars from '@/components/stars/StableStars'
+import MemorySphere from '@/components/spatial/MemorySphere'
 
 /**
- * The main scene component that composes the entire URAI experience.
+ * Root URAI scene.
+ * Owns the WebGL renderer and mounts the simulation systems.
  */
+
 export default function Scene() {
+
   return (
-    <div style={{ position: 'fixed', inset: 0, width: '100vw', height: '100vh', background: 'black' }}>
+    <div
+      style={{
+        position: 'fixed',
+        inset: 0,
+        width: '100vw',
+        height: '100vh',
+        background: 'black'
+      }}
+    >
+
       <Canvas
+        camera={{ position: [0, 0, 3], fov: 45 }}
         gl={{
           antialias: true,
-          physicallyCorrectLights: true, // Enables physically accurate lighting
-          toneMapping: THREE.ACESFilmicToneMapping, // For a cinematic, HDR-like look
+          toneMapping: THREE.ACESFilmicToneMapping
         }}
         onCreated={({ gl }) => {
+
+          gl.outputColorSpace = THREE.SRGBColorSpace
           gl.toneMappingExposure = 1.0
+
         }}
-        camera={{ position: [0, 0, 3], fov: 45 }}
       >
+
         <fog attach="fog" args={['#020308', 5, 20]} />
-        {/* The TimeProvider is the heart of the simulation */}
+
+        {/* Simulation root */}
         <TimeProvider>
+
           <CinematicIdleCamera />
+
           <StableStars />
+
           <Orb />
+
           <MemorySphere />
+
           <PostFX />
+
         </TimeProvider>
+
       </Canvas>
+
     </div>
-  );
+  )
 }

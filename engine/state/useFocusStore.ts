@@ -4,6 +4,7 @@ import { create } from 'zustand'
 import * as THREE from 'three'
 
 interface FocusState {
+
   selectedId: string | null
   hoverId: string | null
   focusPosition: THREE.Vector3 | null
@@ -11,9 +12,11 @@ interface FocusState {
   selectAnchor: (id: string, position: THREE.Vector3) => void
   clearSelection: () => void
   setHover: (id: string | null) => void
+  resetFocus: () => void
 }
 
 export const useFocusStore = create<FocusState>((set) => ({
+
   selectedId: null,
   hoverId: null,
   focusPosition: null,
@@ -21,7 +24,7 @@ export const useFocusStore = create<FocusState>((set) => ({
   selectAnchor: (id, position) =>
     set({
       selectedId: id,
-      focusPosition: position
+      focusPosition: position.clone()
     }),
 
   clearSelection: () =>
@@ -33,5 +36,13 @@ export const useFocusStore = create<FocusState>((set) => ({
   setHover: (id) =>
     set({
       hoverId: id
+    }),
+
+  resetFocus: () =>
+    set({
+      selectedId: null,
+      hoverId: null,
+      focusPosition: null
     })
+
 }))

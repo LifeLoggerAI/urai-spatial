@@ -9,7 +9,7 @@ export default function Starfield() {
 
   const stars = useMemo(() => {
 
-    const list = []
+    const list: { id: number; position: [number, number, number] }[] = []
     const radius = 80
     const total = 160
 
@@ -24,7 +24,7 @@ export default function Starfield() {
 
       list.push({
         id: i,
-        position: [x, y, z] as [number, number, number]
+        position: [x, y, z]
       })
     }
 
@@ -40,33 +40,18 @@ export default function Starfield() {
         const dim = selectedStarId !== null && !selected
 
         return (
-          <group
+          <mesh
             key={star.id}
             position={star.position}
-            onClick={(e) => {
-              e.stopPropagation()
-              setSelectedStarId(star.id)
-              console.log("Star selected:", star.id)
-            }}
+            onClick={() => setSelectedStarId(star.id)}
           >
-
-            {/* invisible click collider */}
-            <mesh>
-              <sphereGeometry args={[1.2, 8, 8]} />
-              <meshBasicMaterial transparent opacity={0} />
-            </mesh>
-
-            {/* visible star */}
-            <mesh scale={selected ? 1.8 : 1}>
-              <sphereGeometry args={[0.3, 16, 16]} />
-              <meshBasicMaterial
-                color={selected ? "#ffffff" : "#8fb5ff"}
-                transparent
-                opacity={dim ? 0.25 : 1}
-              />
-            </mesh>
-
-          </group>
+            <sphereGeometry args={[selected ? 0.7 : 0.35, 16, 16]} />
+            <meshStandardMaterial
+              color={selected ? "#ffd166" : "#ffffff"}
+              emissive={selected ? "#ffaa00" : "#111111"}
+              emissiveIntensity={selected ? 3 : dim ? 0.1 : 0.6}
+            />
+          </mesh>
         )
       })}
     </>

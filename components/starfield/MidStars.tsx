@@ -1,27 +1,41 @@
+'use client'
 
 import { useMemo, useRef } from 'react'
 import { useFrame } from '@react-three/fiber'
+import * as THREE from 'three'
+
+const STAR_COUNT = 4000
 
 export default function MidStars() {
-  const ref = useRef<any>()
+
+  const pointsRef = useRef<THREE.Points | null>(null)
 
   const particles = useMemo(() => {
-    const count = 4000
-    const arr = new Float32Array(count * 3)
-    for (let i = 0; i < count; i++) {
-      arr[i*3] = (Math.random() - 0.5) * 20
-      arr[i*3+1] = (Math.random() - 0.5) * 20
-      arr[i*3+2] = (Math.random() - 0.5) * 20
+
+    const arr = new Float32Array(STAR_COUNT * 3)
+
+    for (let i = 0; i < STAR_COUNT; i++) {
+      arr[i * 3] = (Math.random() - 0.5) * 20
+      arr[i * 3 + 1] = (Math.random() - 0.5) * 20
+      arr[i * 3 + 2] = (Math.random() - 0.5) * 20
     }
+
     return arr
+
   }, [])
 
   useFrame((_, delta) => {
-    if (ref.current) ref.current.rotation.y += delta * 0.002
+
+    const points = pointsRef.current
+    if (!points) return
+
+    points.rotation.y += delta * 0.002
+
   })
 
   return (
-    <points ref={ref}>
+    <points ref={pointsRef}>
+
       <bufferGeometry>
         <bufferAttribute
           attach="attributes-position"
@@ -30,6 +44,7 @@ export default function MidStars() {
           itemSize={3}
         />
       </bufferGeometry>
+
       <pointsMaterial
         size={0.02}
         transparent
@@ -37,6 +52,7 @@ export default function MidStars() {
         depthWrite={false}
         color="#ffe6c7"
       />
+
     </points>
   )
 }

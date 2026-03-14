@@ -1,33 +1,60 @@
-import { create } from 'zustand';
+import { create } from 'zustand'
 
 export interface Insight {
-  id: string;
-  type: 'chapter' | 'trend' | 'forecast';
-  message: string;
-  timestamp: number;
+  id: string
+  type: 'chapter' | 'trend' | 'forecast'
+  message: string
+  timestamp: number
 }
 
 interface InsightState {
-  enabled: boolean;
-  insights: Insight[];
-  visible: boolean;
 
-  setEnabled: (enabled: boolean) => void;
-  setInsights: (insights: Insight[]) => void;
-  setVisible: (visible: boolean) => void;
-  clearInsights: () => void;
+  enabled: boolean
+  insights: Insight[]
+  visible: boolean
+
+  setEnabled: (enabled: boolean) => void
+
+  setInsights: (insights: Insight[]) => void
+  addInsight: (insight: Insight) => void
+
+  setVisible: (visible: boolean) => void
+
+  clearInsights: () => void
+  resetInsights: () => void
 }
 
 export const useInsightStore = create<InsightState>((set) => ({
+
   enabled: false,
   insights: [],
   visible: false,
 
-  setEnabled: (enabled) => set({ enabled }),
+  setEnabled: (enabled) =>
+    set({ enabled }),
 
-  setInsights: (insights) => set({ insights }),
+  setInsights: (insights) =>
+    set({ insights }),
 
-  setVisible: (visible) => set({ visible }),
+  addInsight: (insight) =>
+    set((state) => ({
+      insights: [...state.insights, insight]
+    })),
 
-  clearInsights: () => set({ insights: [], visible: false }),
-}));
+  setVisible: (visible) =>
+    set({ visible }),
+
+  clearInsights: () =>
+    set({
+      insights: [],
+      visible: false
+    }),
+
+  resetInsights: () =>
+    set({
+      enabled: false,
+      insights: [],
+      visible: false
+    })
+
+}))

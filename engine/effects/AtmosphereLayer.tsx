@@ -1,18 +1,34 @@
-import { useThree } from '@react-three/fiber'
-import { useEffect } from 'react'
-import * as THREE from 'three'
+"use client"
 
-export default function AtmosphereLayer() {
+import { useThree } from "@react-three/fiber"
+import { useEffect, useMemo } from "react"
+import * as THREE from "three"
+
+export default function AtmosphereLayer(){
+
   const { scene } = useThree()
 
-  useEffect(() => {
-    const fogColor = new THREE.Color('#05070d') // deep space tone
-    scene.fog = new THREE.Fog(fogColor, 8, 35)
+  const fog = useMemo(()=>{
 
-    return () => {
-      scene.fog = null
+    const color = new THREE.Color("#04060c")
+
+    /* softer atmospheric depth for large space scenes */
+    return new THREE.FogExp2(color,0.008)
+
+  },[])
+
+  useEffect(()=>{
+
+    const previousFog = scene.fog
+
+    scene.fog = fog
+
+    return ()=>{
+      scene.fog = previousFog ?? null
     }
-  }, [scene])
+
+  },[scene,fog])
 
   return null
+
 }

@@ -12,22 +12,35 @@ interface Props {
 }
 
 export default function MemoryProjection({ memory, position }: Props) {
+
   const groupRef = useRef<THREE.Group>(null!)
 
+  const offset = useRef(new THREE.Vector3(0, 1.5, 0))
+  const target = useRef(new THREE.Vector3())
+
   useFrame(() => {
-    if (!groupRef.current) return
-    groupRef.current.position.lerp(position.clone().add(new THREE.Vector3(0, 1.5, 0)), 0.08)
+
+    const group = groupRef.current
+    if (!group) return
+
+    target.current.copy(position).add(offset.current)
+
+    group.position.lerp(target.current, 0.08)
+
   })
 
   return (
+
     <group ref={groupRef}>
+
       <Html
         center
         style={{
           pointerEvents: 'none',
-          transform: 'translate(-50%, -50%)',
+          transform: 'translate(-50%, -50%)'
         }}
       >
+
         <div
           style={{
             background: 'rgba(10,15,30,0.85)',
@@ -42,6 +55,7 @@ export default function MemoryProjection({ memory, position }: Props) {
             boxShadow: '0 0 40px rgba(136,204,255,0.25)'
           }}
         >
+
           <div style={{ fontSize: '14px', opacity: 0.7 }}>
             {memory.type.toUpperCase()}
           </div>
@@ -59,6 +73,7 @@ export default function MemoryProjection({ memory, position }: Props) {
               overflow: 'hidden'
             }}
           >
+
             <div
               style={{
                 width: `${memory.emotionalWeight * 100}%`,
@@ -66,9 +81,15 @@ export default function MemoryProjection({ memory, position }: Props) {
                 background: '#88ccff'
               }}
             />
+
           </div>
+
         </div>
+
       </Html>
+
     </group>
+
   )
+
 }

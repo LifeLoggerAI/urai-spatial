@@ -1,59 +1,74 @@
-"use client";
+"use client"
 
-import { useEffect } from "react";
-import { useThree } from "@react-three/fiber";
-import { Vector3 } from "three";
-import { useSpatialStore } from "../state/spatialStore";
-import { memoryDataset } from "../memory/memoryDataset";
+import { useEffect, useRef } from "react"
+import { useThree, useFrame } from "@react-three/fiber"
+import * as THREE from "three"
+import { useSpatialStore } from "../state/spatialStore"
+import { memoryDataset } from "../memory/memoryDataset"
 
-const CAMERA_GLIDE_SPEED = 0.05;
-const TARGET_THRESHOLD = 0.1;
+const CAMERA_GLIDE_SPEED = 0.06
+const TARGET_THRESHOLD = 0.12
 
-export default function NavigationController() {
-  const { camera } = useThree();
+export default function NavigationController(){
+
+  const { camera } = useThree()
+
   const {
     selectedStarId,
     interactionLock,
     setInteractionLock,
     setCameraTarget,
-    cameraTarget,
-  } = useSpatialStore();
+    cameraTarget
+  } = useSpatialStore()
 
-  useEffect(() => {
-    if (selectedStarId) {
-      const star = memoryDataset.find((m) => m.id === selectedStarId);
-      if (star) {
-        const targetPosition = new Vector3(...star.position);
-        setCameraTarget(targetPosition);
-        setInteractionLock(true);
+  const targetRef = useRef<THREE.Vector3 | null>(null)
+
+  useEffect(()=>{
+
+    if(selectedStarId !== null){
+
+      const star = memoryDataset.find(m => m.id === selectedStarId)
+
+      if(star){
+        const target = new THREE.Vector3(...star.position)
+        targetRef.current = target
+        setCameraTarget(target)
+        setInteractionLock(true)
       }
+
     } else {
-      // Return to exploration view
-      setCameraTarget(new Vector3(0, 0, 50));
-      setInteractionLock(true);
+
+      const home = new THREE.Vector3(0,0,50)
+      targetRef.current = home
+      setCameraTarget(home)
+      setInteractionLock(true)
+
     }
-  }, [selectedStarId, setCameraTarget, setInteractionLock]);
 
-  useEffect(() => {
-    const frameId = requestAnimationFrame(animate);
+  },[selectedStarId,setCameraTarget,setInteractionLock])
 
-    function animate() {
-      if (cameraTarget) {
-        const distance = camera.position.distanceTo(cameraTarget);
+  useFrame(()=>{
 
-        if (distance > TARGET_THRESHOLD) {
-          camera.position.lerp(cameraTarget, CAMERA_GLIDE_SPEED);
-        } else if (interactionLock) {
-          setInteractionLock(false);
-        }
+    if(!targetRef.current) return
+
+    const target = targetRef.current
+
+    const dist = camera.position.distanceTo(target)
+
+    if(dist > TARGET_THRESHOLD){
+
+      camera.position.lerp(target, CAMERA_GLIDE_SPEED)
+      camera.lookAt(target)
+
+    } else {
+
+      if(interactionLock){
+        setInteractionLock(false)
       }
-      requestAnimationFrame(animate);
+
     }
 
-    return () => {
-      cancelAnimationFrame(frameId);
-    };
-  }, [camera, cameraTarget, interactionLock, setInteractionLock]);
+  })
 
-  return null;
+  return null
 }

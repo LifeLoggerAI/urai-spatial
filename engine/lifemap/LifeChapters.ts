@@ -1,8 +1,37 @@
+export type LifeChapter = {
+  id: string
+  start: number
+  end: number
+}
 
-export const lifeChapters = {
-  childhood: { start: 0, end: 12 },
-  adolescence: { start: 13, end: 18 },
-  earlyAdulthood: { start: 19, end: 30 },
-  midLife: { start: 31, end: 50 },
-  laterLife: { start: 51, end: 100 },
+export const lifeChapters: Record<string, LifeChapter> = {
+  childhood: {
+    id: "childhood",
+    start: 1980,
+    end: 1992,
+  },
+
+  adolescence: {
+    id: "adolescence",
+    start: 1993,
+    end: 1998,
+  },
+
+  earlyAdulthood: {
+    id: "earlyAdulthood",
+    start: 1999,
+    end: 2010,
+  },
+
+  midLife: {
+    id: "midLife",
+    start: 2011,
+    end: 2030,
+  },
+
+  laterLife: {
+    id: "laterLife",
+    start: 2031,
+    end: 2080,
+  },
 }

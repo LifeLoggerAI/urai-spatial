@@ -3,21 +3,29 @@
 import { useMemo } from "react"
 import * as THREE from "three"
 
-export default function ConstellationLines({stars}:{stars:any[]}){
+type Star = {
+  position:[number,number,number]
+}
 
-  const lines = useMemo(()=>{
+export default function ConstellationLines({stars}:{stars:Star[]}){
+
+  const geometry = useMemo(()=>{
 
     const segments:number[] = []
 
     for(let i=0;i<stars.length;i++){
+
+      const a = stars[i].position
+
       for(let j=i+1;j<stars.length;j++){
 
-        const a = stars[i].position
         const b = stars[j].position
 
         const dx = a[0]-b[0]
         const dy = a[1]-b[1]
-        const dist = Math.sqrt(dx*dx+dy*dy)
+        const dz = a[2]-b[2]
+
+        const dist = Math.sqrt(dx*dx + dy*dy + dz*dz)
 
         if(dist < 1.6){
 
@@ -29,10 +37,12 @@ export default function ConstellationLines({stars}:{stars:any[]}){
       }
     }
 
+    const positions = new Float32Array(segments)
+
     const geo = new THREE.BufferGeometry()
     geo.setAttribute(
       "position",
-      new THREE.Float32BufferAttribute(segments,3)
+      new THREE.BufferAttribute(positions,3)
     )
 
     return geo
@@ -41,12 +51,15 @@ export default function ConstellationLines({stars}:{stars:any[]}){
 
   return(
 
-    <lineSegments geometry={lines}>
+    <lineSegments geometry={geometry}>
+
       <lineBasicMaterial
         color="#7aa6ff"
         transparent
         opacity={0.35}
+        depthWrite={false}
       />
+
     </lineSegments>
 
   )

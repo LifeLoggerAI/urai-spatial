@@ -2,52 +2,63 @@
 
 import { useSceneStore } from '../state/useSceneStore'
 import { useThree } from '@react-three/fiber'
-import { useEffect } from 'react'
+import { useEffect, useMemo } from 'react'
 import * as THREE from 'three'
 
-export default function MomentScene() {
+export default function MomentScene(){
+
   const { scene } = useThree()
 
-  const activeMemoryId = useSceneStore((s) => s.activeMemoryId)
-  const setScene = useSceneStore((s) => s.setScene)
-  const setActiveMemory = useSceneStore((s) => s.setActiveMemory)
+  const activeMemoryId = useSceneStore(s=>s.activeMemoryId)
+  const setScene = useSceneStore(s=>s.setScene)
+  const setActiveMemory = useSceneStore(s=>s.setActiveMemory)
 
-  useEffect(() => {
+  useEffect(()=>{
     scene.background = new THREE.Color('#0c1224')
-  }, [scene])
+  },[scene])
 
-  return (
+  const sphereGeometry = useMemo(()=>new THREE.SphereGeometry(30,64,64),[])
+  const buttonGeometry = useMemo(()=>new THREE.BoxGeometry(14,4,2),[])
+
+  const sphereMaterial = useMemo(()=>new THREE.MeshStandardMaterial({
+    color:'#1d2a4f',
+    emissive:'#2c3f7a',
+    emissiveIntensity:0.6,
+    roughness:0.4
+  }),[])
+
+  const buttonMaterial = useMemo(()=>new THREE.MeshStandardMaterial({
+    color:'#333'
+  }),[])
+
+  return(
+
     <>
-      <ambientLight intensity={0.6} />
+
+      <ambientLight intensity={0.6}/>
 
       <directionalLight
-        position={[10, 20, 10]}
+        position={[10,20,10]}
         intensity={1}
         color="#7aa0ff"
       />
 
-      {/* Placeholder memory sphere */}
-      <mesh>
-        <sphereGeometry args={[30, 64, 64]} />
-        <meshStandardMaterial
-          color="#1d2a4f"
-          emissive="#2c3f7a"
-          emissiveIntensity={0.6}
-          roughness={0.4}
-        />
-      </mesh>
+      {/* Memory Sphere */}
+      <mesh geometry={sphereGeometry} material={sphereMaterial} />
 
-      {/* Return to LifeMap */}
+      {/* Return Button */}
       <mesh
-        position={[0, -35, 0]}
-        onClick={() => {
+        position={[0,-35,0]}
+        geometry={buttonGeometry}
+        material={buttonMaterial}
+        onClick={()=>{
           setActiveMemory(null)
           setScene('lifemap')
         }}
-      >
-        <boxGeometry args={[14, 4, 2]} />
-        <meshStandardMaterial color="#333" />
-      </mesh>
+      />
+
     </>
+
   )
+
 }

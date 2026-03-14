@@ -1,13 +1,39 @@
 import { memoryNodes } from "./memoryNodes"
 
-export function getMemoryForStar(star){
+export type MemoryNode = {
+  id: number
+  year: number
+  title?: string
+  description?: string
+}
 
-  if(!star) return null
+export type LifeStar = {
+  id: number
+  year: number
+  position: [number, number, number]
+}
 
-  const year = star.year
+/*
+  Build fast lookup table once
+*/
+const memoryIndex: Record<number, MemoryNode[]> = {}
 
-  const match = memoryNodes.find(m => m.year === year)
+for (const node of memoryNodes) {
+  if (!memoryIndex[node.year]) {
+    memoryIndex[node.year] = []
+  }
+  memoryIndex[node.year].push(node)
+}
 
-  return match || null
+export function getMemoryForStar(
+  star: LifeStar | null | undefined
+): MemoryNode | null {
 
+  if (!star) return null
+
+  const matches = memoryIndex[star.year]
+
+  if (!matches || matches.length === 0) return null
+
+  return matches[0]
 }

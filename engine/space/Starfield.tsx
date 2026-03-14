@@ -3,9 +3,14 @@
 import { useMemo, useState } from "react"
 import * as THREE from "three"
 import { useSpatialStore } from "../state/spatialStore"
-import { generateStarPosition } from "../core/starPosition"
+import { generateStarPositions } from "../core/starPosition"
 import ConstellationLines from "../visual/ConstellationLines"
 import ClusterGlow from "../visual/ClusterGlow"
+
+type Star = {
+  id:number
+  position:[number,number,number]
+}
 
 export default function Starfield(){
 
@@ -14,25 +19,15 @@ export default function Starfield(){
 
   const [hovered,setHovered] = useState<number|null>(null)
 
-  const stars = useMemo(()=>{
-
-    const arr:any[] = []
-    const count = 140
-
-    for(let i=0;i<count;i++){
-
-      arr.push({
-        id:i,
-        position:generateStarPosition(i)
-      })
-
-    }
-
-    return arr
-
+  const stars:Star[] = useMemo(()=>{
+    return generateStarPositions(42,140)
   },[])
 
-  const clusterCenters = [
+  const geometry = useMemo(()=>{
+    return new THREE.SphereGeometry(1,16,16)
+  },[])
+
+  const clusterCenters:[number,number,number][] = [
     [-8,3,-6],
     [-4,-4,-7],
     [0,0,-5],
@@ -47,21 +42,24 @@ export default function Starfield(){
       <ConstellationLines stars={stars}/>
 
       {clusterCenters.map((c,i)=>
-        <ClusterGlow key={i} position={c as any}/>
+        <ClusterGlow key={i} position={c}/>
       )}
 
-      {stars.map((s)=>{
+      {stars.map(s=>{
 
         const selected = selectedStar?.id === s.id
         const hover = hovered === s.id
         const dimOthers = selectedStar && !selected
+
+        const size =
+          hover ? 0.35 :
+          0.25
 
         return(
 
           <mesh
             key={s.id}
             position={s.position}
-            raycast={THREE.Mesh.prototype.raycast}
 
             onPointerOver={()=>setHovered(s.id)}
             onPointerOut={()=>setHovered(null)}
@@ -71,9 +69,10 @@ export default function Starfield(){
               if(selectedStar) return
               setStar(s)
             }}
-          >
 
-            <sphereGeometry args={[hover ? 0.35 : 0.25,16,16]} />
+            scale={[size,size,size]}
+            geometry={geometry}
+          >
 
             <meshStandardMaterial
               color="#ffffff"
@@ -87,6 +86,7 @@ export default function Starfield(){
                       ? 0.06
                       : 1.1
               }
+              roughness={0.5}
             />
 
           </mesh>

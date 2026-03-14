@@ -1,101 +1,193 @@
 "use client"
 
 import { Canvas } from "@react-three/fiber"
-import { OrbitControls } from "@react-three/drei"
-import * as THREE from "three"
 import { Suspense, useMemo } from "react"
+import * as THREE from "three"
+
+import { OrbitControls } from "@react-three/drei"
 
 import CameraRig from "../camera/CameraRig"
 import Starfield from "./Starfield"
 import MemorySphere from "../memory/MemorySphere"
+
+import NebulaLayer from "../background/NebulaLayer"
+import SpiralNebula from "../background/SpiralNebula"
+import NebulaClouds from "../background/NebulaClouds"
+import DeepStars from "../background/DeepStars"
+import ParallaxStars from "../background/ParallaxStars"
+
+import GalaxyDust from "../effects/GalaxyDust"
+import StarLightCones from "../effects/StarLightCones"
+import StarCorona from "../effects/StarCorona"
 import StarTrails from "../effects/StarTrails"
+import HyperspaceStreaks from "../effects/HyperspaceStreaks"
 
 import { useSpatialStore } from "../state/spatialStore"
 
-function Controls() {
 
-  const mode = useSpatialStore((s) => s.mode)
 
-  return (
+function Controls(){
+
+  const mode = useSpatialStore((s)=>s.mode)
+
+  return(
     <OrbitControls
       enablePan={mode !== "focus"}
       enableRotate={mode !== "focus"}
       enableZoom={false}
-      rotateSpeed={0.6}
+      rotateSpeed={0.45}
     />
   )
+
 }
 
-/* distant background starfield */
 
-function BackgroundStars() {
 
-  const geometry = useMemo(() => {
+/* cosmic sky gradient */
 
-    const stars = new Float32Array(3000)
+function CosmicGradient(){
 
-    for (let i = 0; i < 3000; i++) {
-      stars[i] = (Math.random() - 0.5) * 900
-    }
+  const shader = useMemo(()=>{
 
-    const geo = new THREE.BufferGeometry()
+    return new THREE.ShaderMaterial({
 
-    geo.setAttribute(
-      "position",
-      new THREE.BufferAttribute(stars, 3)
-    )
+      side:THREE.BackSide,
+      depthWrite:false,
 
-    return geo
+      uniforms:{
+        top:{value:new THREE.Color("#05071e")},
+        bottom:{value:new THREE.Color("#000000")}
+      },
 
-  }, [])
+      vertexShader:`
 
-  const material = useMemo(() => {
+        varying vec3 vPos;
 
-    return new THREE.PointsMaterial({
-      color: "#888888",
-      size: 0.6,
-      sizeAttenuation: true
+        void main(){
+
+          vPos = position;
+
+          gl_Position =
+            projectionMatrix *
+            modelViewMatrix *
+            vec4(position,1.0);
+
+        }
+
+      `,
+
+      fragmentShader:`
+
+        varying vec3 vPos;
+
+        uniform vec3 top;
+        uniform vec3 bottom;
+
+        void main(){
+
+          float h =
+            normalize(vPos).y * 0.5 + 0.5;
+
+          vec3 col =
+            mix(bottom, top, h);
+
+          gl_FragColor =
+            vec4(col,1.0);
+
+        }
+
+      `
     })
 
-  }, [])
+  },[])
 
-  return <points geometry={geometry} material={material} />
-}
-
-function SceneContent() {
-
-  return (
-    <>
-      <ambientLight intensity={0.8} />
-      <Controls />
-      <BackgroundStars />
-
-      <CameraRig />
-      <Starfield />
-      <StarTrails />
-      <MemorySphere />
-    </>
+  return(
+    <mesh scale={3200} renderOrder={-10}>
+      <sphereGeometry args={[1,64,64]} />
+      <primitive object={shader}/>
+    </mesh>
   )
+
 }
 
-export default function SpatialScene() {
 
-  return (
+
+export default function SpatialScene(){
+
+  return(
 
     <Canvas
-      camera={{ position: [0, 0, 48], fov: 50 }}
-      gl={{ antialias: true }}
-      frameloop="demand"
+
+      camera={{ position:[0,0,60], fov:60 }}
+
+      gl={{
+
+        antialias:true,
+        powerPreference:"high-performance",
+
+        toneMapping:THREE.ACESFilmicToneMapping,
+        toneMappingExposure:0.11,
+
+        outputColorSpace:THREE.SRGBColorSpace,
+        physicallyCorrectLights:true
+
+      }}
+
+      dpr={[1,2]}
+
     >
 
-      <color attach="background" args={["#000000"]} />
-      <fog attach="fog" args={["#000000", 60, 300]} />
+      {/* depth fog improves galaxy contrast */}
+
+      <fog attach="fog" args={["#000000",120,900]} />
 
       <Suspense fallback={null}>
-        <SceneContent />
+
+        <CameraRig/>
+
+        <ambientLight intensity={0.04}/>
+
+        <CosmicGradient/>
+
+        {/* nebula layers */}
+
+        <NebulaLayer radius={1500}/>
+        <SpiralNebula/>
+        <NebulaClouds/>
+
+        {/* deep background stars */}
+
+        <DeepStars/>
+        <ParallaxStars/>
+
+        {/* galaxy dust */}
+
+        <GalaxyDust/>
+
+        {/* main galaxy */}
+
+        <Starfield/>
+
+        {/* glow layers */}
+
+        <StarLightCones/>
+        <StarCorona/>
+
+        {/* memory objects */}
+
+        <MemorySphere/>
+
+        {/* motion effects */}
+
+        <StarTrails/>
+        <HyperspaceStreaks/>
+
+        <Controls/>
+
       </Suspense>
 
     </Canvas>
 
   )
+
 }

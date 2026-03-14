@@ -1,11 +1,24 @@
-import { create } from 'zustand'
+import { create } from "zustand"
 
-interface QualityState {
-  emotionalEnvironment: boolean;
-  setEmotionalEnvironment: (value: boolean) => void;
+type QualityState = {
+
+  emotionalEnvironment: boolean
+
+  setEmotionalEnvironment: (value: boolean) => void
+  toggleEmotionalEnvironment: () => void
+
 }
 
-export const useQualityStore = create<QualityState>((set) => ({
+export const useQualityStore = create<QualityState>((set)=>({
+
   emotionalEnvironment: true,
-  setEmotionalEnvironment: (value) => set({ emotionalEnvironment: value }),
-}));
+
+  setEmotionalEnvironment: (value:boolean)=>
+    set({ emotionalEnvironment:value }),
+
+  toggleEmotionalEnvironment: () =>
+    set((state)=>({
+      emotionalEnvironment: !state.emotionalEnvironment
+    }))
+
+}))

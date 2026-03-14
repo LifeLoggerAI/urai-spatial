@@ -1,48 +1,96 @@
-import { create } from "zustand";
+import { create } from "zustand"
+import * as THREE from "three"
 
-export type Star = {
-  id: string;
-  position: [number, number, number];
-  image?: string;
-};
-
-type CameraMode = "home" | "sky" | "lifemap" | "star" | "memory" | "replay";
+type SpatialMode = "lifemap" | "memory"
 
 type SpatialState = {
-  stars: Star[];
-  selectedStarId: string | null;
-  hoveredStarId: string | null;
-  interactionLock: boolean;
-  inReplayMode: boolean;
-  cameraMode: CameraMode;
 
-  setStars: (stars: Star[]) => void;
-  setSelectedStarId: (id: string | null) => void;
-  setHoveredStarId: (id: string | null) => void;
-  setInteractionLock: (lock: boolean) => void;
-  setReplayMode: (v: boolean) => void;
-  setCameraMode: (mode: CameraMode) => void;
-  clearSelection: () => void;
-};
+  spatialMode: SpatialMode
 
-export const useSpatialStore = create<SpatialState>((set) => ({
-  stars: [],
+  selectedStarId: number | null
+  selectedStarPosition: THREE.Vector3 | null
+
+  cameraTarget: THREE.Vector3 | null
+  lookTarget: THREE.Vector3 | null
+
+  homePosition: THREE.Vector3
+  homeTarget: THREE.Vector3
+
+  exploreRadius: number
+
+  selectStar: (id: number, pos: THREE.Vector3) => void
+  clearSelection: () => void
+  resetSpatial: () => void
+
+  zoomBy: (delta: number) => void
+}
+
+const HOME_POS = new THREE.Vector3(0,0,300)
+const HOME_LOOK = new THREE.Vector3(0,0,0)
+
+export const useSpatialStore = create<SpatialState>((set,get) => ({
+
+  spatialMode: "lifemap",
+
   selectedStarId: null,
-  hoveredStarId: null,
-  interactionLock: false,
-  inReplayMode: false,
-  cameraMode: "home",
+  selectedStarPosition: null,
 
-  setStars: (stars) => set({ stars }),
-  setSelectedStarId: (id) => set({ selectedStarId: id }),
-  setHoveredStarId: (id) => set({ hoveredStarId: id }),
-  setInteractionLock: (lock) => set({ interactionLock: lock }),
-  setReplayMode: (v) => set({ inReplayMode: v }),
-  setCameraMode: (mode) => set({ cameraMode: mode }),
-  clearSelection: () => set({ 
-    selectedStarId: null,
-    interactionLock: false,
-    inReplayMode: false,
-    cameraMode: 'lifemap' 
-  }),
-}));
+  cameraTarget: HOME_POS.clone(),
+  lookTarget: HOME_LOOK.clone(),
+
+  homePosition: HOME_POS,
+  homeTarget: HOME_LOOK,
+
+  exploreRadius: 160,
+
+  selectStar: (id,pos)=>
+    set({
+
+      selectedStarId: id,
+      selectedStarPosition: pos,
+
+      cameraTarget: pos.clone().add(new THREE.Vector3(0,0,18)),
+      lookTarget: pos.clone(),
+
+      spatialMode: "memory"
+
+    }),
+
+  clearSelection: ()=>
+    set({
+
+      selectedStarId: null,
+      selectedStarPosition: null,
+
+      cameraTarget: HOME_POS.clone(),
+      lookTarget: HOME_LOOK.clone(),
+
+      spatialMode: "lifemap"
+
+    }),
+
+  resetSpatial: ()=>
+    set({
+
+      selectedStarId: null,
+      selectedStarPosition: null,
+
+      cameraTarget: HOME_POS.clone(),
+      lookTarget: HOME_LOOK.clone(),
+
+      spatialMode: "lifemap"
+
+    }),
+
+  zoomBy:(delta:number)=>
+    set((state)=>({
+
+      exploreRadius: THREE.MathUtils.clamp(
+        state.exploreRadius + delta,
+        40,
+        900
+      )
+
+    }))
+
+}))

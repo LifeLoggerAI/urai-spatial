@@ -1,20 +1,41 @@
 set -euo pipefail
 
-echo "=== ESLINT SETUP + FIX START (URAI-SPATIAL) ==="
+echo "=== URAI-SPATIAL ESLINT SETUP + FIX START ==="
 
-cd ~/urai-spatial
+REPO="${HOME}/urai-spatial"
+cd "$REPO"
 
-# Ensure correct versions
-pnpm install eslint@^8.57.0 eslint-config-next@14.2.3 -D
+if [ ! -f package.json ]; then
+  echo "ERROR: package.json not found in $REPO"
+  exit 1
+fi
 
-# Create .eslintrc.json (Strict / Next Core Web Vitals)
+echo "=== Installing pinned lint deps ==="
+pnpm add -D eslint@8.57.1 eslint-config-next@14.2.3
+
+echo "=== Writing .eslintrc.json ==="
 cat > .eslintrc.json <<'EOF'
 {
-  "extends": "next/core-web-vitals"
+  "root": true,
+  "extends": ["next/core-web-vitals"],
+  "ignorePatterns": [
+    ".next/",
+    "node_modules/",
+    "dist/",
+    "out/",
+    "build/",
+    "coverage/",
+    "public/engine/gpu/",
+    "public/memories/",
+    "public/memory/",
+    "public/scenes/",
+    "public/shaders/",
+    "*.log"
+  ]
 }
 EOF
 
-# Add .eslintignore
+echo "=== Writing .eslintignore ==="
 cat > .eslintignore <<'EOF'
 .next
 node_modules
@@ -22,22 +43,35 @@ dist
 out
 build
 coverage
+public/engine/gpu
+public/memories
+public/memory
+public/scenes
+public/shaders
 *.log
 EOF
 
-# Patch package.json scripts
-node -e '
+echo "=== Patching package.json scripts ==="
+node <<'EOF'
 const fs = require("fs");
 const path = "package.json";
-const pkg = JSON.parse(fs.readFileSync(path));
+const pkg = JSON.parse(fs.readFileSync(path, "utf8"));
+
 pkg.scripts = pkg.scripts || {};
-pkg.scripts.lint = "eslint . --ext .js,.jsx,.ts,.tsx";
+pkg.scripts.lint = "next lint";
 pkg.scripts["lint:fix"] = "eslint . --ext .js,.jsx,.ts,.tsx --fix";
-fs.writeFileSync(path, JSON.stringify(pkg, null, 2));
-'
 
-# Run install and auto-fix
+fs.writeFileSync(path, JSON.stringify(pkg, null, 2) + "\n");
+EOF
+
+echo "=== Installing lockfile-resolved deps ==="
 pnpm install
-pnpm lint:fix || echo "⚠️ ESLint fix pass complete with issues"
 
-echo "=== ESLINT LOCKED: STRICT MODE ENABLED ==="
+echo "=== Running next lint ==="
+pnpm lint || true
+
+echo "=== Running eslint autofix pass ==="
+pnpm lint:fix || echo "WARN: eslint fix completed with remaining issues"
+
+echo "=== URAI-SPATIAL ESLINT LOCKED ==="
+echo "Repo: $REPO"

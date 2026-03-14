@@ -1,24 +1,25 @@
 import * as THREE from "three"
 
-export function createStarGlowMaterial(color="#9dd6ff"){
+export function createStarGlowMaterial(color = "#9dd6ff") {
 
   return new THREE.ShaderMaterial({
 
-    transparent:true,
-    depthWrite:false,
-    blending:THREE.AdditiveBlending,
+    transparent: true,
+    depthWrite: false,
+    blending: THREE.AdditiveBlending,
+    toneMapped: false,
 
-    uniforms:{
-      color:{ value:new THREE.Color(color) }
+    uniforms: {
+      color: { value: new THREE.Color(color) }
     },
 
-    vertexShader:`
+    vertexShader: `
 
-      varying vec3 vPos;
+      varying vec2 vUv;
 
       void main(){
 
-        vPos = position;
+        vUv = uv;
 
         gl_Position =
           projectionMatrix *
@@ -29,22 +30,24 @@ export function createStarGlowMaterial(color="#9dd6ff"){
 
     `,
 
-    fragmentShader:`
+    fragmentShader: `
 
       uniform vec3 color;
-      varying vec3 vPos;
+      varying vec2 vUv;
 
       void main(){
 
-        float dist = length(vPos.xy);
+        vec2 uv = vUv - 0.5;
 
-        float core = smoothstep(0.25,0.0,dist);
+        float dist = length(uv);
 
-        float halo = 1.8/(dist*2.0+0.03);
+        float core = smoothstep(0.25, 0.0, dist);
+
+        float halo = 0.35 / (dist + 0.08);
 
         float glow = core + halo;
 
-        vec3 finalColor = color * glow * 3.2;
+        vec3 finalColor = color * glow * 1.8;
 
         gl_FragColor = vec4(finalColor, glow);
 
@@ -52,4 +55,5 @@ export function createStarGlowMaterial(color="#9dd6ff"){
 
     `
   })
+
 }

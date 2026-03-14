@@ -1,216 +1,278 @@
-'use client'
+"use client"
 
-import { useMemo, useRef, useEffect } from "react";
-import { useFrame, useThree } from "@react-three/fiber";
-import * as THREE from "three";
-import { useSpatialStore } from "../state/spatialStore";
-import { Line } from "@react-three/drei";
-import { demoData as rawDemoData, demoLinks as rawDemoLinks } from "../data/demoData";
+import { useMemo, useRef } from "react"
+import { useFrame, useLoader } from "@react-three/fiber"
+import * as THREE from "three"
 
-const demoData = rawDemoData ?? [];
-const demoLinks = rawDemoLinks ?? [];
+import { createStarSpriteMaterial } from "../shaders/StarSpriteMaterial"
+import { createStarDiffractionMaterial } from "../shaders/StarDiffractionMaterial"
+import { useSpatialStore } from "../state/spatialStore"
+import { STAR_DATA } from "../data/starData"
+import { kelvinToRGB } from "../utils/starTemperature"
+import { spiralDensity } from "../shaders/SpiralDensityField"
 
-const DUMMY = new THREE.Object3D();
+const STAR_COUNT = 12000
 
-const COLORS = {
-  SELECTED: new THREE.Color('#FFFFFF'),
-  HOVERED: new THREE.Color('#DDDDFF'),
-  DEFAULT: new THREE.Color('#AAAAAA'),
-  DIMMED: new THREE.Color('#333333'),
-};
+const BULGE_RADIUS = 90
+const DISK_RADIUS = 420
+const DISK_THICKNESS = 80
+const ARM_COUNT = 4
 
-const attractor = new THREE.Vector3(0, 0, -10);
+export default function Starfield(){
 
-export default function Starfield() {
+const groupRef = useRef<THREE.Group>(null!)
+const selectStar = useSpatialStore(s => s.selectStar)
 
-  const {
-    selectedStarId,
-    setSelectedStarId,
-    interactionLock,
-    setInteractionLock,
-  } = useSpatialStore();
+const sprite = useLoader(
+  THREE.TextureLoader,
+  "/star-sprite.png"
+)
 
-  const meshRef = useRef<THREE.InstancedMesh>(null!);
-  const materialRef = useRef<THREE.MeshStandardMaterial>(null!);
-  const { camera } = useThree();
+sprite.colorSpace = THREE.SRGBColorSpace
+sprite.magFilter = THREE.LinearFilter
+sprite.minFilter = THREE.LinearMipMapLinearFilter
+sprite.generateMipmaps = true
 
-  const colorArray = useMemo(() =>
-    Float32Array.from(
-      new Array(demoData.length)
-        .fill(0)
-        .flatMap(() => COLORS.DEFAULT.toArray())
-    ),
-    []
-  );
+const {
+normalGeo,
+brightGeo,
+dustGeo,
+normalMat,
+brightMat,
+dustMat
+} = useMemo(()=>{
 
-  const initialPositions = useMemo(
-    () => demoData.map((s: any) => new THREE.Vector3(...s.position)),
-    []
-  );
+const normalPositions:number[] = []
+const brightPositions:number[] = []
+const dustPositions:number[] = []
 
-  useEffect(() => {
-    if (!meshRef.current) return;
+const normalColors:number[] = []
+const brightColors:number[] = []
 
-    demoData.forEach((star: any, i: number) => {
-      DUMMY.position.set(...star.position as [number, number, number]);
-      DUMMY.updateMatrix();
-      meshRef.current.setMatrixAt(i, DUMMY.matrix);
-    });
+const normalSizes:number[] = []
+const brightSizes:number[] = []
 
-    meshRef.current.instanceMatrix.needsUpdate = true;
-  }, []);
+for(let i=0;i<STAR_COUNT;i++){
 
-  useFrame(({ clock }) => {
+  const r =
+    Math.pow(Math.random(),0.55) *
+    DISK_RADIUS
 
-    if (!meshRef.current) return;
+  const arm = i % ARM_COUNT
+  const armAngle = (arm/ARM_COUNT) * Math.PI*2
+  const spiral = r * 0.11
 
-    const tempColor = new THREE.Color();
-    let needsColorUpdate = false;
+  const theta =
+    armAngle +
+    spiral +
+    (Math.random()-0.5)*0.25
 
-    for (let i = 0; i < demoData.length; i++) {
+  const x = Math.cos(theta)*r
+  const z = Math.sin(theta)*r
 
-      const id = demoData[i].id;
-      let targetColor = COLORS.DEFAULT;
+  const density =
+    spiralDensity(x,z,ARM_COUNT)
 
-      if (selectedStarId !== null) {
-        targetColor =
-          id === selectedStarId
-            ? COLORS.SELECTED
-            : COLORS.DIMMED;
-      }
+  const bulge =
+    Math.exp(-(r*r)/(BULGE_RADIUS*BULGE_RADIUS))
 
-      tempColor.fromArray(colorArray, i * 3);
+  const verticalSpread =
+    (DISK_THICKNESS*(1-bulge) +
+     BULGE_RADIUS*bulge)
 
-      if (!tempColor.equals(targetColor)) {
-        tempColor.lerp(targetColor, 0.1);
-        tempColor.toArray(colorArray, i * 3);
-        needsColorUpdate = true;
-      }
+  const y =
+    (Math.random()-0.5) *
+    verticalSpread
 
-      const pos = initialPositions[i].clone();
-      const dir = new THREE.Vector3()
-        .subVectors(attractor, pos)
-        .normalize();
+  const brightness =
+    Math.random() * density
 
-      pos.addScaledVector(dir, 0.0006);
+  const distanceScale =
+    1 - (r / DISK_RADIUS)
 
-      DUMMY.position.copy(pos);
-      DUMMY.updateMatrix();
+  const temp =
+    2600 + Math.random()*9000
 
-      meshRef.current.setMatrixAt(i, DUMMY.matrix);
-    }
+  const [cr,cg,cb] =
+    kelvinToRGB(temp)
 
-    meshRef.current.instanceMatrix.needsUpdate = true;
+  if(brightness < 0.985){
 
-    if (needsColorUpdate && meshRef.current.geometry) {
-      const colorAttribute =
-        meshRef.current.geometry.getAttribute(
-          "color"
-        ) as THREE.InstancedBufferAttribute;
+    normalPositions.push(x,y,z)
 
-      if (colorAttribute) {
-        colorAttribute.needsUpdate = true;
-      }
-    }
+    normalSizes.push(
+      (Math.random()*0.5 + 0.25) *
+      (0.35 + distanceScale*0.65)
+    )
 
-    if (materialRef.current) {
+    normalColors.push(
+      cr * 0.7,
+      cg * 0.7,
+      cb * 0.7
+    )
 
-      if (selectedStarId !== null) {
-        const shimmer =
-          1.6 +
-          Math.sin(clock.elapsedTime * 2.2) * 0.2;
+  } else {
 
-        materialRef.current.emissiveIntensity = shimmer;
-      } else {
-        materialRef.current.emissiveIntensity = 0.25;
-      }
-    }
+    brightPositions.push(x,y,z)
 
-    if (selectedStarId !== null && interactionLock) {
+    brightSizes.push(
+      0.9 + Math.random()*0.45
+    )
 
-      const star = demoData.find(
-        (s: any) => s.id === selectedStarId
-      );
+    brightColors.push(
+      cr,
+      cg,
+      cb
+    )
 
-      if (star) {
+  }
 
-        const targetPosition = new THREE.Vector3(
-          ...star.position as [number, number, number]
-        );
+  if(Math.random() < 0.07){
 
-        const distance =
-          camera.position.distanceTo(targetPosition);
+    dustPositions.push(
+      x + (Math.random()-0.5)*25,
+      y + (Math.random()-0.5)*16,
+      z + (Math.random()-0.5)*25
+    )
 
-        if (distance < 4.0) {
-          setInteractionLock(false);
-        }
-      }
-    }
-  });
+  }
 
-  return (
-    <>
-      <instancedMesh
-        ref={meshRef}
-        args={[undefined, undefined, demoData.length]}
-        onPointerDown={(e) => {
+}
 
-          e.stopPropagation();
+const normalGeo = new THREE.BufferGeometry()
+const brightGeo = new THREE.BufferGeometry()
+const dustGeo = new THREE.BufferGeometry()
 
-          if (interactionLock || selectedStarId !== null) return;
+normalGeo.setAttribute(
+  "position",
+  new THREE.Float32BufferAttribute(normalPositions,3)
+)
 
-          if (e.instanceId !== undefined) {
+normalGeo.setAttribute(
+  "color",
+  new THREE.Float32BufferAttribute(normalColors,3)
+)
 
-            const star = demoData[e.instanceId];
+normalGeo.setAttribute(
+  "size",
+  new THREE.Float32BufferAttribute(normalSizes,1)
+)
 
-            if (star) {
-              setSelectedStarId(star.id);
-            }
-          }
-        }}
-      >
+brightGeo.setAttribute(
+  "position",
+  new THREE.Float32BufferAttribute(brightPositions,3)
+)
 
-        <sphereGeometry args={[0.1, 16, 16]}>
-          <instancedBufferAttribute
-            attach="attributes-color"
-            args={[colorArray, 3]}
-          />
-        </sphereGeometry>
+brightGeo.setAttribute(
+  "color",
+  new THREE.Float32BufferAttribute(brightColors,3)
+)
 
-        <meshStandardMaterial
-          ref={materialRef}
-          vertexColors
-          emissive="#ffffff"
-          emissiveIntensity={0.25}
-        />
+brightGeo.setAttribute(
+  "size",
+  new THREE.Float32BufferAttribute(brightSizes,1)
+)
 
-      </instancedMesh>
+dustGeo.setAttribute(
+  "position",
+  new THREE.Float32BufferAttribute(dustPositions,3)
+)
 
-      {selectedStarId === null &&
-        demoLinks.map(([a, b]: any, i: number) => {
+const normalMat = createStarSpriteMaterial()
+const brightMat = createStarDiffractionMaterial()
 
-          const p1 =
-            demoData.find((s: any) => s.id === a)?.position;
+normalMat.uniforms.sprite = { value: sprite }
+brightMat.uniforms.sprite = { value: sprite }
 
-          const p2 =
-            demoData.find((s: any) => s.id === b)?.position;
+const dustMat = new THREE.PointsMaterial({
 
-          if (!p1 || !p2) return null;
+  size:0.45,
+  map:sprite,
+  transparent:true,
+  opacity:0.012,
+  alphaTest:0.1,
+  depthWrite:false,
+  blending:THREE.AdditiveBlending,
+  color:"#8899aa"
 
-          return (
-            <Line
-              key={i}
-              points={[
-                p1 as [number, number, number],
-                p2 as [number, number, number]
-              ]}
-              color="#ffffff"
-              lineWidth={0.5}
-              transparent
-              opacity={0.2}
-            />
-          );
-        })}
-    </>
-  );
+})
+
+return {
+  normalGeo,
+  brightGeo,
+  dustGeo,
+  normalMat,
+  brightMat,
+  dustMat
+}
+
+},[sprite])
+
+useFrame((state,delta)=>{
+
+if(groupRef.current){
+  groupRef.current.rotation.y += delta * 0.018
+}
+
+if(normalMat.uniforms?.time){
+  normalMat.uniforms.time.value =
+    state.clock.elapsedTime
+}
+
+if(brightMat.uniforms?.time){
+  brightMat.uniforms.time.value =
+    state.clock.elapsedTime
+}
+
+})
+
+const handleClick = (event:any)=>{
+
+event.stopPropagation()
+
+if(event.index == null) return
+
+const index = event.index
+
+const posArray =
+  event.object.geometry.attributes.position.array
+
+const x = posArray[index*3]
+const y = posArray[index*3+1]
+const z = posArray[index*3+2]
+
+const starPos = new THREE.Vector3(x,y,z)
+
+selectStar(index, starPos)
+
+}
+
+return(
+
+<group ref={groupRef} rotation={[0.15,0,0.02]}>
+
+  <points
+    geometry={dustGeo}
+    material={dustMat}
+    frustumCulled={false}
+  />
+
+  <points
+    geometry={normalGeo}
+    material={normalMat}
+    onClick={handleClick}
+    frustumCulled={false}
+  />
+
+  <points
+    geometry={brightGeo}
+    material={brightMat}
+    onClick={handleClick}
+    frustumCulled={false}
+  />
+
+</group>
+
+)
+
 }

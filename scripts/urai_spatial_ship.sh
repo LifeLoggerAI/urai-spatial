@@ -1,62 +1,110 @@
-#!/bin/bash
+#!/usr/bin/env bash
+set -euo pipefail
+
 # urai_spatial_ship.sh
-# Purpose: A final wrapper script for launch.
+# Purpose: Controlled rollout updater for the spatial memories feature flag.
 
-echo "--- URAI Spatial Memory Shipping Control ---"
+echo "=== URAI Spatial Memory Shipping Control ==="
 
-ROLLOUT_TARGET="$1"
-FEATURE_FLAG_DOC="config/feature_flags"
+ROLLOUT_TARGET="${1:-}"
+FEATURE_FLAG_COLLECTION="config"
+FEATURE_FLAG_DOC_ID="feature_flags"
 FEATURE_FLAG_FIELD="spatial_memories_rollout"
 
-if [ -z "$ROLLOUT_TARGET" ]; then
-  echo "Error: Rollout target is required."
-  echo "Usage: ./urai_spatial_ship.sh <user-id | percentage:50 | all>"
-  exit 1
-fi
-
-echo "This script will update the feature flag in Firestore."
-echo "Document:  $FEATURE_FLAG_DOC"
-echo "Field:     $FEATURE_FLAG_FIELD"
-echo "New Value: $ROLLOUT_TARGET"
-echo
-
-# Safety check: ensure gcloud is installed
-if ! command -v gcloud &> /dev/null; then
-    echo "Error: gcloud command could not be found."
-    echo "Please install and configure the Google Cloud SDK."
-    exit 1
-fi
-
-# Safety check: ensure user is authenticated
-if ! gcloud auth print-access-token --quiet &> /dev/null; then
-  echo "Warning: No active gcloud credentials found."
-  echo "Please run \'gcloud auth application-default login\' first."
-  read -p "Continue anyway? (y/N) " -n 1 -r
+usage() {
+  echo "Usage: ./urai_spatial_ship.sh <user-id | percentage:N | all>"
   echo
-  if [[ ! $REPLY =~ ^[Yy]$ ]]; then
+  echo "Examples:"
+  echo "  ./urai_spatial_ship.sh 8k3fUser123"
+  echo "  ./urai_spatial_ship.sh percentage:10"
+  echo "  ./urai_spatial_ship.sh all"
+}
+
+need() {
+  command -v "$1" >/dev/null 2>&1 || {
+    echo "ERROR: missing required command: $1"
+    exit 1
+  }
+}
+
+validate_target() {
+  local target="$1"
+
+  if [ -z "$target" ]; then
+    echo "ERROR: rollout target is required."
+    usage
     exit 1
   fi
-fi
 
-# Confirmation prompt
-read -p "Are you sure you want to proceed with the update? (y/N) " -n 1 -r
-echo
-if [[ ! $REPLY =~ ^[Yy]$ ]]; then
-    echo "Operation cancelled."
-    exit 0
-fi
+  if [ "$target" = "all" ]; then
+    return 0
+  fi
 
-echo "Updating Firestore... "
+  if [[ "$target" =~ ^percentage:([0-9]{1,3})$ ]]; then
+    local pct="${BASH_REMATCH[1]}"
+    if [ "$pct" -ge 0 ] && [ "$pct" -le 100 ]; then
+      return 0
+    fi
+    echo "ERROR: percentage must be between 0 and 100."
+    exit 1
+  fi
 
-# The command to update the Firestore document.
-gcloud firestore documents update "$FEATURE_FLAG_DOC" \
-  --update-fields "$FEATURE_FLAG_FIELD"="$ROLLOUT_TARGET"
+  if [[ "$target" =~ ^[A-Za-z0-9_-]+$ ]]; then
+    return 0
+  fi
 
-if [ $? -eq 0 ]; then
-  echo "✅ Success: Feature flag updated in Firestore."
-  echo "Rollout target for \'spatial_memories\' is now set to \'$ROLLOUT_TARGET\'."
-else
-  echo "❌ Error: Failed to update Firestore document."
-  echo "Please check your gcloud configuration, permissions, and the document path."
+  echo "ERROR: invalid rollout target: $target"
+  usage
+  exit 1
+}
+
+need gcloud
+need date
+
+validate_target "$ROLLOUT_TARGET"
+
+PROJECT_ID="$(gcloud config get-value project 2>/dev/null || true)"
+ACTIVE_ACCOUNT="$(gcloud auth list --filter=status:ACTIVE --format='value(account)' 2>/dev/null || true)"
+TS="$(date -u +"%Y-%m-%dT%H:%M:%SZ")"
+
+if [ -z "$PROJECT_ID" ] || [ "$PROJECT_ID" = "(unset)" ]; then
+  echo "ERROR: gcloud project is not set."
+  echo "Run: gcloud config set project <PROJECT_ID>"
   exit 1
 fi
+
+if [ -z "$ACTIVE_ACCOUNT" ]; then
+  echo "ERROR: no active gcloud account found."
+  echo "Run: gcloud auth login"
+  exit 1
+fi
+
+echo "Project:   $PROJECT_ID"
+echo "Account:   $ACTIVE_ACCOUNT"
+echo "Collection:$FEATURE_FLAG_COLLECTION"
+echo "Document:  $FEATURE_FLAG_DOC_ID"
+echo "Field:     $FEATURE_FLAG_FIELD"
+echo "New Value: $ROLLOUT_TARGET"
+echo "Time:      $TS"
+echo
+
+if [ "${CI:-}" != "true" ]; then
+  read -r -p "Proceed with Firestore feature flag update? (y/N) " REPLY
+  if [[ ! "${REPLY:-}" =~ ^[Yy]$ ]]; then
+    echo "Operation cancelled."
+    exit 0
+  fi
+else
+  echo "CI=true detected. Proceeding non-interactively."
+fi
+
+echo "Updating Firestore document..."
+
+gcloud firestore documents update \
+  "${FEATURE_FLAG_COLLECTION}/${FEATURE_FLAG_DOC_ID}" \
+  --project="$PROJECT_ID" \
+  --update-fields \
+  "${FEATURE_FLAG_FIELD}=${ROLLOUT_TARGET},updatedAt=${TS},updatedBy=${ACTIVE_ACCOUNT}"
+
+echo "✅ Success: feature flag updated."
+echo "spatial_memories rollout is now: $ROLLOUT_TARGET"

@@ -1,7 +1,16 @@
+'use client'
 
-import { useState } from 'react';
+import { useContext } from 'react'
+import { TimeContext } from './TimeProvider'
 
 export const useTimeline = () => {
-  const [time, setTime] = useState(Date.now());
-  return { time, setTime };
-};
+
+  const context = useContext(TimeContext)
+
+  if (!context) {
+    throw new Error('useTimeline must be used inside <TimeProvider>')
+  }
+
+  return context
+
+}

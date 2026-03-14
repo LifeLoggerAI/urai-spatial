@@ -1,0 +1,33 @@
+{
+    "schemaVersion": "1.0",
+    "assets": {
+      "asset_portal_ring_glb": {
+        "type": "model",
+        "src": "/memory/models/placeholder.glb"
+      },
+      "asset_room_shell_glb": {
+        "type": "model",
+        "src": "/memory/models/placeholder.glb"
+      },
+      "asset_room_props_glb": {
+        "type": "model",
+        "src": "/memory/models/placeholder.glb"
+      },
+      "asset_character_placeholder_glb": {
+        "type": "model",
+        "src": "/memory/models/placeholder.glb"
+      },
+      "asset_door_left_glb": {
+        "type": "model",
+        "src": "/memory/models/placeholder.glb"
+      },
+      "asset_door_right_glb": {
+        "type": "model",
+        "src": "/memory/models/placeholder.glb"
+      },
+      "asset_exit_portal_glb": {
+        "type": "model",
+        "src": "/memory/models/placeholder.glb"
+      }
+    }
+  }

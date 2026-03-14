@@ -2,9 +2,10 @@
 
 import { useMemo, useRef, useEffect } from 'react'
 import * as THREE from 'three'
-import { useThree } from '@react-three/fiber'
 import { useDeterministicStars } from '../../src/stabilize/useDeterministicStars'
 import { useSceneStore } from '../../urai-tier1/src/spatial/state/sceneStore'
+
+const STAR_COUNT = 2000
 
 const generateStars = (seed: number) => {
   const a = 1664525
@@ -17,83 +18,129 @@ const generateStars = (seed: number) => {
     return currentSeed / m
   }
 
-  const arr = new Float32Array(2000 * 3)
-  for (let i = 0; i < 2000; i++) {
+  const arr = new Float32Array(STAR_COUNT * 3)
+
+  for (let i = 0; i < STAR_COUNT; i++) {
     arr[i * 3] = (random() - 0.5) * 40
     arr[i * 3 + 1] = (random() - 0.5) * 40
     arr[i * 3 + 2] = -random() * 50
   }
+
   return arr
 }
 
 export default function Starfield() {
-  const points = useRef<THREE.Points>(null!)
+
+  const pointsRef = useRef<THREE.Points | null>(null)
+
   const { selectStar, selectedStarId } = useSceneStore()
 
   const positions = useDeterministicStars(generateStars)
+
   const colors = useMemo(() => {
-    const arr = new Float32Array(2000 * 3)
-    for (let i = 0; i < 2000; i++) {
-      arr[i * 3] = 0.5
-      arr[i * 3 + 1] = 0.6
-      arr[i * 3 + 2] = 1.0
+
+    const arr = new Float32Array(STAR_COUNT * 3)
+
+    for (let i = 0; i < STAR_COUNT; i++) {
+      arr[i * 3] = 0.3
+      arr[i * 3 + 1] = 0.4
+      arr[i * 3 + 2] = 0.7
     }
+
     return arr
+
   }, [])
 
   useEffect(() => {
-    if (!points.current) return;
-    const colorAttribute = points.current.geometry.attributes.color as THREE.BufferAttribute
+
+    const points = pointsRef.current
+    if (!points) return
+
+    const colorAttr = points.geometry.attributes.color as THREE.BufferAttribute
     const selectedIndex = selectedStarId ? parseInt(selectedStarId) : -1
 
-    for (let i = 0; i < 2000; i++) {
+    for (let i = 0; i < STAR_COUNT; i++) {
+
       if (i === selectedIndex) {
-        colorAttribute.setXYZ(i, 1.0, 1.0, 1.0)
+        colorAttr.setXYZ(i, 1.0, 1.0, 1.0)
       } else {
-        colorAttribute.setXYZ(i, 0.3, 0.4, 0.7)
+        colorAttr.setXYZ(i, 0.3, 0.4, 0.7)
       }
+
     }
-    colorAttribute.needsUpdate = true
+
+    colorAttr.needsUpdate = true
+
   }, [selectedStarId])
 
+  const tempStar = new THREE.Vector3()
+
   const handleClick = (event: any) => {
-    event.stopPropagation();
-    const { point } = event;
-    let closestStarIndex = -1;
-    let minDistance = Infinity;
 
-    for (let i = 0; i < positions.length / 3; i++) {
-      const starPosition = new THREE.Vector3(positions[i * 3], positions[i * 3 + 1], positions[i * 3 + 2]);
-      const distance = point.distanceTo(starPosition);
-      if (distance < minDistance) {
-        minDistance = distance;
-        closestStarIndex = i;
+    event.stopPropagation()
+
+    const clickPoint = event.point
+
+    let closestIndex = -1
+    let minDistance = Infinity
+
+    for (let i = 0; i < STAR_COUNT; i++) {
+
+      tempStar.set(
+        positions[i * 3],
+        positions[i * 3 + 1],
+        positions[i * 3 + 2]
+      )
+
+      const dist = clickPoint.distanceTo(tempStar)
+
+      if (dist < minDistance) {
+        minDistance = dist
+        closestIndex = i
       }
+
     }
 
-    if (closestStarIndex !== -1 && minDistance < 1) {
-      const starPosition = new THREE.Vector3(positions[closestStarIndex * 3], positions[closestStarIndex * 3 + 1], positions[closestStarIndex * 3 + 2]);
-      selectStar(closestStarIndex.toString(), starPosition);
+    if (closestIndex !== -1 && minDistance < 1) {
+
+      tempStar.set(
+        positions[closestIndex * 3],
+        positions[closestIndex * 3 + 1],
+        positions[closestIndex * 3 + 2]
+      )
+
+      selectStar(closestIndex.toString(), tempStar.clone())
+
     }
-  };
+
+  }
 
   return (
-    <points ref={points} onClick={handleClick}>
+    <points ref={pointsRef} onClick={handleClick}>
+
       <bufferGeometry>
+
         <bufferAttribute
           attach="attributes-position"
           count={positions.length / 3}
           array={positions}
           itemSize={3}
         />
+
         <bufferAttribute
           attach="attributes-color"
           count={colors.length / 3}
           array={colors}
           itemSize={3}
         />
+
       </bufferGeometry>
-      <pointsMaterial size={0.05} vertexColors />
+
+      <pointsMaterial
+        size={0.05}
+        vertexColors
+      />
+
     </points>
   )
 }

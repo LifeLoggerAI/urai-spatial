@@ -2,15 +2,28 @@ import { create } from "zustand"
 import * as THREE from "three"
 
 type StarState = {
+
   selectedStar: number | null
   starPositions: THREE.Vector3[]
-  setSelectedStar: (id:number)=>void
-  setStarPositions: (p:THREE.Vector3[])=>void
+
+  setSelectedStar: (id: number | null) => void
+  setStarPositions: (positions: THREE.Vector3[]) => void
+  clearSelection: () => void
 }
 
 export const useStarState = create<StarState>((set)=>({
-  selectedStar:null,
-  starPositions:[],
-  setSelectedStar:(id)=>set({selectedStar:id}),
-  setStarPositions:(p)=>set({starPositions:p})
+
+  selectedStar: null,
+
+  starPositions: [],
+
+  setSelectedStar: (id:number | null) =>
+    set({ selectedStar:id }),
+
+  setStarPositions: (positions:THREE.Vector3[]) =>
+    set({ starPositions:positions }),
+
+  clearSelection: () =>
+    set({ selectedStar:null })
+
 }))

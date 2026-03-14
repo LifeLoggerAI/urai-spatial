@@ -1,50 +1,50 @@
 "use client"
 
 import { useMemo } from "react"
+import * as THREE from "three"
 
-export default function GalaxyBand(){
+export default function GalaxyBand() {
 
-  const positions = useMemo(()=>{
+  const geometry = useMemo(() => {
 
-    const arr = []
+    const count = 2000
+    const positions = new Float32Array(count * 3)
 
-    for(let i=0;i<2000;i++){
+    for (let i = 0; i < count; i++) {
 
-      const angle = Math.random()*Math.PI*2
-      const radius = 60 + Math.random()*80
-      const height = (Math.random()-0.5)*10
+      const angle = Math.random() * Math.PI * 2
+      const radius = 60 + Math.random() * 80
+      const height = (Math.random() - 0.5) * 10
 
-      arr.push(
-        Math.cos(angle)*radius,
-        height,
-        Math.sin(angle)*radius - 150
-      )
+      const x = Math.cos(angle) * radius
+      const y = height
+      const z = Math.sin(angle) * radius - 150
+
+      positions[i * 3] = x
+      positions[i * 3 + 1] = y
+      positions[i * 3 + 2] = z
 
     }
 
-    return new Float32Array(arr)
+    const g = new THREE.BufferGeometry()
+    g.setAttribute("position", new THREE.BufferAttribute(positions, 3))
 
-  },[])
+    return g
 
-  return(
+  }, [])
 
-    <points>
+  return (
 
-      <bufferGeometry>
-        <bufferAttribute
-          attach="attributes-position"
-          count={positions.length/3}
-          array={positions}
-          itemSize={3}
-        />
-      </bufferGeometry>
+    <points geometry={geometry} frustumCulled={false}>
 
       <pointsMaterial
         size={1.1}
         color="#b8caff"
         transparent
         opacity={0.25}
+        sizeAttenuation
         depthWrite={false}
+        depthTest={false}
       />
 
     </points>

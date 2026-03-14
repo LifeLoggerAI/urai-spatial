@@ -1,20 +1,20 @@
-"use client"
+'use client'
 
-import { Canvas, useThree } from "@react-three/fiber"
-import { useEffect } from "react"
-import Starfield from "./Starfield"
-import MemorySphere from "../../engine/spine/MemorySphere"
-import useCameraGlide from "../../engine/spine/useCameraGlide"
+import { useThree } from '@react-three/fiber'
+import { useEffect } from 'react'
+import Starfield from './Starfield'
+import MemorySphere from '../../engine/spine/MemorySphere'
+import useCameraGlide from '../../engine/spine/useCameraGlide'
 
-function SceneCore(){
+function SceneCore() {
 
   const { camera } = useThree()
 
   useCameraGlide(camera)
 
-  useEffect(()=>{
-    camera.position.set(0,0,10)
-  },[camera])
+  useEffect(() => {
+    camera.position.set(0, 0, 10)
+  }, [camera])
 
   return (
     <>
@@ -24,10 +24,6 @@ function SceneCore(){
   )
 }
 
-export default function HomeScene(){
-  return (
-    <Canvas>
-      <SceneCore />
-    </Canvas>
-  )
+export default function HomeScene() {
+  return <SceneCore />
 }

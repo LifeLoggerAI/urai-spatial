@@ -1,14 +1,33 @@
 "use client"
 
+import { useMemo } from "react"
+import * as THREE from "three"
+
 export default function GroundPlane(){
-  return(
-    <mesh rotation={[-Math.PI/2,0,0]} position={[0,-3,0]}>
-      <planeGeometry args={[500,500]}/>
-      <meshStandardMaterial
-        color="#020406"
-        roughness={1}
-        metalness={0}
-      />
-    </mesh>
+
+  const geometry = useMemo(
+    () => new THREE.PlaneGeometry(500, 500),
+    []
   )
+
+  return(
+
+    <mesh
+      geometry={geometry}
+      rotation={[-Math.PI/2,0,0]}
+      position={[0,-3,0]}
+      receiveShadow={false}
+      castShadow={false}
+      frustumCulled={false}
+    >
+
+      <meshBasicMaterial
+        color="#020406"
+        depthWrite={true}
+      />
+
+    </mesh>
+
+  )
+
 }

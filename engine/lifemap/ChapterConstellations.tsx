@@ -1,4 +1,3 @@
-
 "use client"
 
 import { useMemo } from "react"
@@ -7,58 +6,66 @@ import { lifeChapters } from "./LifeChapters"
 import { useLifeMapStore } from "../../engine/state/useLifeMapStore"
 
 export default function ChapterConstellations() {
+
   const { stars } = useLifeMapStore()
 
-  const chapterLines = useMemo(() => {
-    const lines: THREE.Vector3[][] = []
+  const geometry = useMemo(() => {
+
+    const positions: number[] = []
 
     Object.values(lifeChapters).forEach(chapter => {
+
       const chapterStars = stars.filter(
         star => star.year >= chapter.start && star.year <= chapter.end
       )
 
-      for (let i = 0; i < chapterStars.length; i++) {
-        for (let j = i + 1; j < chapterStars.length; j++) {
-          const star1 = chapterStars[i]
-          const star2 = chapterStars[j]
+      const vectors = chapterStars.map(
+        s => new THREE.Vector3(...s.position)
+      )
 
-          const distance = new THREE.Vector3(...star1.position).distanceTo(
-            new THREE.Vector3(...star2.position)
-          )
+      for (let i = 0; i < vectors.length; i++) {
+        for (let j = i + 1; j < vectors.length; j++) {
 
-          if (distance < 5) {
-            lines.push([
-              new THREE.Vector3(...star1.position),
-              new THREE.Vector3(...star2.position),
-            ])
+          const dist = vectors[i].distanceTo(vectors[j])
+
+          if (dist < 5) {
+
+            positions.push(
+              vectors[i].x,
+              vectors[i].y,
+              vectors[i].z,
+              vectors[j].x,
+              vectors[j].y,
+              vectors[j].z
+            )
+
           }
+
         }
       }
+
     })
 
-    return lines
+    const geom = new THREE.BufferGeometry()
+    geom.setAttribute(
+      "position",
+      new THREE.Float32BufferAttribute(positions, 3)
+    )
+
+    return geom
+
   }, [stars])
 
   return (
-    <group>
-      {chapterLines.map((line, i) => (
-        <line key={i}>
-          <bufferGeometry attach="geometry">
-            <bufferAttribute
-              attach="attributes-position"
-              array={new Float32Array(line.flatMap(v => v.toArray()))}
-              count={2}
-              itemSize={3}
-            />
-          </bufferGeometry>
-          <lineBasicMaterial
-            attach="material"
-            color="#ffffff"
-            transparent
-            opacity={0.1}
-          />
-        </line>
-      ))}
-    </group>
+
+    <lineSegments geometry={geometry}>
+      <lineBasicMaterial
+        color="#ffffff"
+        transparent
+        opacity={0.1}
+      />
+    </lineSegments>
+
   )
+
 }

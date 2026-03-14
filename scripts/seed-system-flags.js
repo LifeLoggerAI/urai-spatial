@@ -1,33 +1,61 @@
-const admin = require("firebase-admin");
+'use strict';
 
-// IMPORTANT: Make sure you have the service account key file and have set the GOOGLE_APPLICATION_CREDENTIALS environment variable.
+const admin = require('firebase-admin');
 
-admin.initializeApp();
+function initAdmin() {
+  if (admin.apps.length > 0) {
+    return admin.app();
+  }
+  return admin.initializeApp();
+}
+
+initAdmin();
 
 const db = admin.firestore();
 
 async function seedSystemFlags() {
-  const systemFlagsRef = db.collection("config").doc("systemFlags");
+  const ref = db.collection('config').doc('systemFlags');
+
+  const now = admin.firestore.FieldValue.serverTimestamp();
 
   const flags = {
-    // --- Psychological Safety --- 
-    narrationEnabled: false, // Disables all AI-based narration features.
-    futureInterpretationEnabled: false, // Master kill switch for any future interpretive layers.
+    narrationEnabled: false,
+    futureInterpretationEnabled: false,
 
-    // --- Operational Control ---
-    maintenanceMode: false, // If true, clients should show a maintenance message and disable functionality.
-    overlayEnabled: true, // Controls the visibility of additional UI overlays.
+    maintenanceMode: false,
+    overlayEnabled: true,
 
-    // --- Version Control ---
-    schemaVersion: "1.0.0-LOCK", // The canonical schema version the system is currently operating on.
-    minClientVersion: "1.0.0", // The minimum client version required to connect.
+    schemaVersion: '1.0.0-LOCK',
+    minClientVersion: '1.0.0',
+
+    lockState: 'LOCKED',
+    environment: process.env.NODE_ENV || 'development',
+    updatedAt: now,
+    createdAt: now,
   };
 
   try {
-    await systemFlagsRef.set(flags);
-    console.log("Successfully seeded systemFlags document with secure defaults.");
+    const snap = await ref.get();
+
+    if (snap.exists) {
+      await ref.set(
+        {
+          ...flags,
+          createdAt: snap.get('createdAt') || now,
+        },
+        { merge: true }
+      );
+      console.log('Updated existing config/systemFlags with locked defaults.');
+    } else {
+      await ref.set(flags, { merge: false });
+      console.log('Created config/systemFlags with locked defaults.');
+    }
+
+    process.exitCode = 0;
   } catch (error) {
-    console.error("Error seeding systemFlags document:", error);
+    console.error('Failed to seed config/systemFlags');
+    console.error(error && error.stack ? error.stack : error);
+    process.exitCode = 1;
   }
 }
 

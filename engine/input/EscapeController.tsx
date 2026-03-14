@@ -5,13 +5,18 @@ import { useSpatialStore } from "../state/spatialStore"
 
 export default function EscapeController(){
 
-  const clearStar = useSpatialStore(s=>s.clearStar)
+  const clearStar = useSpatialStore(s => s.clearStar)
 
-  useEffect(()=>{
+  useEffect(() => {
 
-    const handleKey = (e:KeyboardEvent)=>{
+    const handleKey = (e: KeyboardEvent) => {
 
-      if(e.key === "Escape"){
+      if (e.repeat) return
+
+      const target = e.target as HTMLElement | null
+      if (target && (target.tagName === "INPUT" || target.tagName === "TEXTAREA")) return
+
+      if (e.key === "Escape") {
         clearStar()
       }
 
@@ -19,11 +24,11 @@ export default function EscapeController(){
 
     window.addEventListener("keydown", handleKey)
 
-    return ()=>{
+    return () => {
       window.removeEventListener("keydown", handleKey)
     }
 
-  },[clearStar])
+  }, [clearStar])
 
   return null
 }

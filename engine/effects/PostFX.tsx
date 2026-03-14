@@ -1,27 +1,36 @@
-'use client'
+"use client"
 
-import { useThree } from "@react-three/fiber";
-import { EffectComposer, Bloom } from "@react-three/postprocessing";
-import { useState, useEffect } from "react";
+import { EffectComposer, Bloom, Vignette } from "@react-three/postprocessing"
 
-export default function PostFX() {
+export default function PostFX(){
 
-  const { gl } = useThree();
-  const [ready, setReady] = useState(false);
+  return(
 
-  useEffect(() => {
-    if (gl) setReady(true);
-  }, [gl]);
+    <EffectComposer
+      disableNormalPass
+      multisampling={8}
+      autoClear={false}
+    >
 
-  if (!ready) return null;
+      {/* star and nebula glow */}
 
-  return (
-    <EffectComposer disableNormalPass>
       <Bloom
-        intensity={0.6}
-        luminanceThreshold={0.2}
+        intensity={1.1}
+        luminanceThreshold={0.35}
         luminanceSmoothing={0.9}
+        radius={0.8}
       />
+
+      {/* deep-space vignette */}
+
+      <Vignette
+        eskil={false}
+        offset={0.25}
+        darkness={0.75}
+      />
+
     </EffectComposer>
-  );
+
+  )
+
 }

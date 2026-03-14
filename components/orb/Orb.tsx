@@ -1,28 +1,40 @@
+'use client'
 
 import { useRef } from 'react'
 import { useFrame } from '@react-three/fiber'
 import * as THREE from 'three'
 import './OrbShader'
-import { useEmotionalTimeEngine } from '@/components/time-core/useEmotionalTimeEngine';
+import { useEmotionalTimeEngine } from '@/components/time-core/useEmotionalTimeEngine'
+
+type OrbMaterial = {
+  uTime: number
+  uEnergy: number
+}
 
 export default function Orb() {
-  const ref = useRef<any>()
-  const { orbState } = useEmotionalTimeEngine([]);
 
-  useFrame((state, delta) => {
-    if (!ref.current) return
+  const materialRef = useRef<OrbMaterial | null>(null)
 
-    ref.current.uTime += delta
-    ref.current.uEnergy = orbState.surfaceIntensity;
+  const { orbState } = useEmotionalTimeEngine([])
+
+  useFrame((_, delta) => {
+
+    const mat = materialRef.current
+    if (!mat) return
+
+    mat.uTime += delta
+    mat.uEnergy = orbState.surfaceIntensity
+
   })
 
   return (
     <group>
+
       {/* Main Orb Surface */}
       <mesh>
         <sphereGeometry args={[1.2, 128, 128]} />
         <consciousOrbMaterial
-          ref={ref}
+          ref={materialRef}
           toneMapped
         />
       </mesh>
@@ -49,6 +61,7 @@ export default function Orb() {
           depthTest={true}
         />
       </mesh>
+
     </group>
   )
 }

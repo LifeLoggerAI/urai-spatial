@@ -1,20 +1,36 @@
 "use client"
 
-export default function MemoryImage({ position }) {
+import { useMemo } from "react"
+import * as THREE from "three"
 
-if(!position) return null
+interface Props {
+  position?: [number, number, number]
+  texture?: THREE.Texture
+}
 
-return (
+export default function MemoryImage({ position, texture }: Props) {
 
-```
-<mesh position={[position[0],position[1],position[2]-0.01]}>
+  const pos = useMemo(() => {
+    if (!position) return null
+    return new THREE.Vector3(position[0], position[1], position[2] - 0.05)
+  }, [position])
 
-  <planeGeometry args={[1.8,1.8]} />
+  if (!pos) return null
 
-  <meshBasicMaterial color="white" />
+  return (
 
-</mesh>
-```
+    <mesh position={pos}>
 
-)
+      <planeGeometry args={[1.8, 1.8]} />
+
+      <meshBasicMaterial
+        color={texture ? "white" : "#eeeeee"}
+        map={texture}
+        transparent
+      />
+
+    </mesh>
+
+  )
+
 }
