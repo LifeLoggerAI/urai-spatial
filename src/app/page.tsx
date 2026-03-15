@@ -1,10 +1,9 @@
 'use client'
 
 import { useState } from 'react'
-import SpatialScene from '@/spatial/scene/SpatialScene'
+import HomeView from '@/spatial/scene/home-view'
 
 export default function Page() {
-
   const [entered, setEntered] = useState(false)
 
   return (
@@ -17,7 +16,7 @@ export default function Page() {
           Enter LifeMap
         </button>
       ) : (
-        <SpatialScene />
+        <HomeView />
       )}
     </div>
   )
