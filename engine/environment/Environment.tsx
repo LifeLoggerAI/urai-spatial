@@ -17,20 +17,34 @@ const EMOTION_COLORS = {
   default: new THREE.Color("#050510"),
 }
 
-function generateLayer(count: number, radius: number) {
+function seededRandom(seed: number) {
+  return function () {
+    seed |= 0
+    seed = seed + 0x6D2B79F5 | 0
+    let t = Math.imul(seed ^ seed >>> 15, 1 | seed)
+    t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t
+    return ((t ^ t >>> 14) >>> 0) / 4294967296
+  }
+}
 
+function generateLayer(count: number, radius: number, seed: number) {
+
+  const rand = seededRandom(seed)
   const arr = new Float32Array(count * 3)
 
   for (let i = 0; i < count; i++) {
 
-    arr[i * 3] = (Math.random() - 0.5) * radius
-    arr[i * 3 + 1] = (Math.random() - 0.5) * radius
-    arr[i * 3 + 2] = (Math.random() - 0.5) * radius
+    const r = rand() * radius
+    const theta = rand() * Math.PI * 2
+    const phi = Math.acos(rand() * 2 - 1)
+
+    arr[i * 3] = r * Math.sin(phi) * Math.cos(theta)
+    arr[i * 3 + 1] = r * Math.sin(phi) * Math.sin(theta)
+    arr[i * 3 + 2] = r * Math.cos(phi)
 
   }
 
   return arr
-
 }
 
 export default function Environment() {
@@ -44,7 +58,7 @@ export default function Environment() {
 
   const targetColor = useMemo(() => {
 
-    if (selectedStarId !== null) {
+    if (selectedStarId !== null && stars) {
 
       const star = stars.find((s) => s.id === selectedStarId)
       const emotion = star?.emotion as keyof typeof EMOTION_COLORS
@@ -64,39 +78,36 @@ export default function Environment() {
 
   }, [scene])
 
-  const p1 = useMemo(() => generateLayer(500, 100), [])
-  const p2 = useMemo(() => generateLayer(1000, 200), [])
-  const p3 = useMemo(() => generateLayer(2000, 400), [])
+  const p1 = useMemo(() => generateLayer(600, 120, 1), [])
+  const p2 = useMemo(() => generateLayer(1200, 260, 2), [])
+  const p3 = useMemo(() => generateLayer(2400, 520, 3), [])
 
   const nearLayer = useRef<THREE.Points>(null!)
   const midLayer = useRef<THREE.Points>(null!)
   const farLayer = useRef<THREE.Points>(null!)
 
-  const lastCameraPos = useRef(new THREE.Vector3())
-  const cameraVelocity = useRef(new THREE.Vector3())
-
   useFrame((state, delta) => {
 
-    cameraVelocity.current
-      .copy(camera.position)
-      .sub(lastCameraPos.current)
-
-    lastCameraPos.current.copy(camera.position)
+    const cam = state.camera.position
 
     if (nearLayer.current) {
-      nearLayer.current.position.addScaledVector(cameraVelocity.current, -0.03)
+      nearLayer.current.position.lerp(cam, 0.04)
     }
 
     if (midLayer.current) {
-      midLayer.current.position.addScaledVector(cameraVelocity.current, -0.015)
+      midLayer.current.position.lerp(cam, 0.02)
     }
 
     if (farLayer.current) {
-      farLayer.current.position.addScaledVector(cameraVelocity.current, -0.006)
+      farLayer.current.position.lerp(cam, 0.01)
     }
 
     if (scene.fog) {
-      ;(scene.fog as THREE.FogExp2).color.lerp(targetColor, delta * 0.5)
+      ;(scene.fog as THREE.FogExp2).color.lerp(targetColor, delta * 0.4)
+    }
+
+    if (scene.background instanceof THREE.Color) {
+      scene.background.lerp(targetColor, delta * 0.08)
     }
 
   })
@@ -110,7 +121,7 @@ export default function Environment() {
           transparent
           opacity={opacity}
           color="#ffffff"
-          size={0.08}
+          size={0.09}
           sizeAttenuation
           depthWrite={false}
           depthTest={false}
@@ -122,7 +133,7 @@ export default function Environment() {
           transparent
           opacity={opacity}
           color="#ffffff"
-          size={0.05}
+          size={0.055}
           sizeAttenuation
           depthWrite={false}
           depthTest={false}
@@ -134,7 +145,7 @@ export default function Environment() {
           transparent
           opacity={opacity}
           color="#ffffff"
-          size={0.03}
+          size={0.035}
           sizeAttenuation
           depthWrite={false}
           depthTest={false}

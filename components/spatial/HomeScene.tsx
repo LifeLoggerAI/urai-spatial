@@ -2,19 +2,23 @@
 
 import { useThree } from '@react-three/fiber'
 import { useEffect } from 'react'
+import * as THREE from 'three'
 import Starfield from './Starfield'
 import MemorySphere from '../../engine/spine/MemorySphere'
 import useCameraGlide from '../../engine/spine/useCameraGlide'
 
-function SceneCore() {
+const HOME_CAMERA_POS = new THREE.Vector3(0, 0, 10)
+const HOME_CAMERA_TARGET = new THREE.Vector3(0, 0, 0)
 
+function SceneCore() {
   const { camera } = useThree()
 
-  useCameraGlide(camera)
-
   useEffect(() => {
-    camera.position.set(0, 0, 10)
+    camera.position.copy(HOME_CAMERA_POS)
+    camera.lookAt(HOME_CAMERA_TARGET)
   }, [camera])
+
+  useCameraGlide(camera)
 
   return (
     <>

@@ -33,11 +33,16 @@ export const memoryNodes: MemoryNode[] = [
 /*
   Fast lookup table for star → memory resolution
 */
-export const memoryYearIndex: Record<number, MemoryNode[]> = {}
 
-for (const node of memoryNodes) {
-  if (!memoryYearIndex[node.year]) {
-    memoryYearIndex[node.year] = []
-  }
-  memoryYearIndex[node.year].push(node)
-}
+export const memoryYearIndex: Record<number, MemoryNode[]> =
+  memoryNodes.reduce((index, node) => {
+
+    if (!index[node.year]) {
+      index[node.year] = []
+    }
+
+    index[node.year].push(node)
+
+    return index
+
+  }, {} as Record<number, MemoryNode[]>)

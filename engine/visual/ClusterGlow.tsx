@@ -1,6 +1,5 @@
 "use client"
 
-import { useMemo } from "react"
 import * as THREE from "three"
 
 type Props = {
@@ -8,21 +7,17 @@ type Props = {
 }
 
 export default function ClusterGlow({ position }: Props) {
-
-  const material = useMemo(() => {
-    return new THREE.MeshBasicMaterial({
-      color: "#7aa6ff",
-      transparent: true,
-      opacity: 0.05,
-      depthWrite: false,
-      blending: THREE.AdditiveBlending
-    })
-  }, [])
-
   return (
-    <mesh position={position} scale={[6, 6, 1]}>
-      <sphereGeometry args={[1, 32, 32]} />
-      <primitive object={material} attach="material" />
+    <mesh position={position} scale={[8, 8, 1]}>
+      <circleGeometry args={[1, 32]} />
+      <meshBasicMaterial
+        color="#7aa6ff"
+        transparent
+        opacity={0.08}
+        depthWrite={false}
+        blending={THREE.AdditiveBlending}
+        toneMapped={false}
+      />
     </mesh>
   )
 }

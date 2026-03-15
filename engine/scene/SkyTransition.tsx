@@ -1,29 +1,25 @@
 "use client"
 
-import { useState, useEffect, useRef } from "react"
+import { useState, useEffect } from "react"
 import { Canvas } from "@react-three/fiber"
 
 import SpatialScene from "./SpatialScene"
 
 export default function SkyTransition(){
 
-  const [entered,setEntered] = useState(false)
-  const [fade,setFade] = useState(false)
-
-  const timer = useRef<number | null>(null)
+  const [entered, setEntered] = useState(false)
+  const [visible, setVisible] = useState(true)
 
   useEffect(()=>{
 
     if(entered){
 
-      timer.current = window.setTimeout(()=>{
-        setFade(true)
-      },150)
+      const t = setTimeout(()=>{
+        setVisible(false)
+      },1200)
 
-    }
+      return ()=> clearTimeout(t)
 
-    return ()=>{
-      if(timer.current) clearTimeout(timer.current)
     }
 
   },[entered])
@@ -41,7 +37,11 @@ export default function SkyTransition(){
     >
 
       <Canvas
-        camera={{ position:[0,2,16], fov:60 }}
+        camera={{ position:[0,2,16], fov:60, near:0.1, far:2000 }}
+        gl={{
+          antialias:true,
+          powerPreference:"high-performance"
+        }}
         style={{
           width:"100%",
           height:"100%"
@@ -50,7 +50,7 @@ export default function SkyTransition(){
         <SpatialScene/>
       </Canvas>
 
-      {!entered && (
+      {visible && (
 
         <div
           onClick={()=>setEntered(true)}
@@ -62,8 +62,8 @@ export default function SkyTransition(){
             justifyContent:"center",
             cursor:"pointer",
             background:"radial-gradient(ellipse at center,#060615 0%,#000000 85%)",
-            transition:"opacity 1.2s",
-            opacity: fade ? 0 : 1
+            transition:"opacity 1.2s ease",
+            opacity: entered ? 0 : 1
           }}
         >
 

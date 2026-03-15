@@ -39,20 +39,20 @@ export function createStarGlowMaterial(){
         vDist = dist;
 
         float twinkle =
-          0.94 +
+          0.95 +
           sin(
-            uTime * 2.2 +
-            position.x * 4.0 +
-            position.y * 3.0
-          ) * 0.06;
+            uTime * 2.0 +
+            position.x * 3.0 +
+            position.y * 2.0
+          ) * 0.05;
 
         float scaledSize =
           size *
           twinkle *
-          (320.0 / dist);
+          (520.0 / dist);
 
         gl_PointSize =
-          clamp(scaledSize,1.2,18.0);
+          clamp(scaledSize,2.0,22.0);
 
         gl_Position =
           projectionMatrix *
@@ -99,17 +99,14 @@ export function createStarGlowMaterial(){
         if(d > 0.5) discard;
 
         float core =
-          smoothstep(0.32,0.0,d);
+          smoothstep(0.28,0.0,d);
 
         float halo =
-          smoothstep(0.55,0.0,d) * 0.5;
+          smoothstep(0.5,0.28,d) * 0.7;
 
         float glow =
           (core + halo) *
-          clamp(28.0 / vDist,0.25,0.8);
-
-        glow =
-          pow(glow,2.0);
+          clamp(45.0 / vDist,0.3,1.0);
 
         vec3 color =
           spectral(vTemp);

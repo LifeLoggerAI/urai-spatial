@@ -1,12 +1,21 @@
-export function depthGlow(distance:number){
+export function depthGlow(distance: number) {
 
   const near = 40
   const far = 800
 
-  let t = (distance - near) / (far - near)
+  const t =
+    Math.min(
+      1,
+      Math.max(
+        0,
+        (distance - near) / (far - near)
+      )
+    )
 
-  t = Math.max(0, Math.min(1, t))
+  // smoother falloff curve
+  const glow =
+    1 - (t * t)
 
-  return 1 - (t * t)
+  return glow
 
 }

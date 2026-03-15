@@ -1,24 +1,34 @@
-'use client'
+"use client"
 
-import { useEffect, useRef } from "react"
+import { useEffect, useRef, useMemo } from "react"
 import * as THREE from "three"
 import { useFrame } from "@react-three/fiber"
 import { useSpatialStore } from "../state/spatialStore"
 
 export default function MemorySupernova() {
 
-  const selectedStar = useSpatialStore(s => s.selectedStar)
+  const selectedStar = useSpatialStore((s) => s.selectedStar)
 
   const meshRef = useRef<THREE.Mesh>(null!)
   const materialRef = useRef<THREE.MeshBasicMaterial>(null!)
 
   const startTime = useRef<number | null>(null)
+  const lastStarId = useRef<number | null>(null)
+
+  const geometry = useMemo(() => {
+    return new THREE.RingGeometry(0.5, 0.6, 48)
+  }, [])
 
   useEffect(() => {
-    if (selectedStar) {
+
+    if (!selectedStar) return
+
+    if (lastStarId.current !== selectedStar.id) {
+      lastStarId.current = selectedStar.id
       startTime.current = null
       if (meshRef.current) meshRef.current.visible = true
     }
+
   }, [selectedStar])
 
   useFrame(({ clock }) => {
@@ -46,7 +56,7 @@ export default function MemorySupernova() {
       selectedStar.position[2]
     )
 
-    mesh.scale.set(scale, scale, scale)
+    mesh.scale.setScalar(scale)
     material.opacity = opacity
 
     if (opacity <= 0) {
@@ -55,15 +65,21 @@ export default function MemorySupernova() {
 
   })
 
+  useEffect(() => {
+    return () => {
+      geometry.dispose()
+    }
+  }, [geometry])
+
   return (
-    <mesh ref={meshRef} visible={false}>
-      <ringGeometry args={[0.5, 0.6, 32]} />
+    <mesh ref={meshRef} geometry={geometry} visible={false}>
       <meshBasicMaterial
         ref={materialRef}
         color="#ffffff"
         side={THREE.DoubleSide}
         blending={THREE.AdditiveBlending}
         transparent
+        depthWrite={false}
       />
     </mesh>
   )

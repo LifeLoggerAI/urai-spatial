@@ -25,17 +25,19 @@ export const VolumetricLightShader = {
 
       float d = length(vPos.xy);
 
-      /* smooth volumetric fade */
+      /* outer volumetric fade */
       float falloff =
-        smoothstep(1.0, 0.0, d);
+        1.0 - smoothstep(0.0, 1.0, d);
 
-      /* secondary inner glow */
+      /* inner glow core */
       float core =
-        smoothstep(0.35, 0.0, d) * 0.6;
+        1.0 - smoothstep(0.0, 0.35, d);
+
+      core *= 0.6;
 
       float intensity =
-        falloff * 0.12 +
-        core * 0.08;
+        (falloff * 0.12) +
+        (core * 0.08);
 
       vec3 color =
         vec3(0.65, 0.72, 0.85);

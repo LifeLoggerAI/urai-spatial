@@ -4,10 +4,12 @@ export type StarPosition = {
 }
 
 function mulberry32(seed: number) {
+
   let a = seed
 
   return () => {
-    let t = (a += 0x6D2B79F5)
+
+    let t = a += 0x6D2B79F5
 
     t = Math.imul(t ^ (t >>> 15), t | 1)
     t ^= t + Math.imul(t ^ (t >>> 7), t | 61)
@@ -17,11 +19,11 @@ function mulberry32(seed: number) {
 }
 
 export function generateStarPositions(
-  seed = 42,
-  count = 20,
-  width = 20,
-  height = 14,
-  depth = 6
+  seed: number = 42,
+  count: number = 20,
+  width: number = 20,
+  height: number = 14,
+  depth: number = 6
 ): StarPosition[] {
 
   const rand = mulberry32(seed)
@@ -38,6 +40,7 @@ export function generateStarPositions(
       id: i,
       position: [x, y, z]
     })
+
   }
 
   return stars

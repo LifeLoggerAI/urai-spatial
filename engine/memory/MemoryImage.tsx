@@ -1,6 +1,6 @@
 "use client"
 
-import { useRef, useMemo } from "react"
+import { useRef, useEffect } from "react"
 import { useSpatialStore } from "../store/spatialStore"
 import { useLoader, useFrame, useThree } from "@react-three/fiber"
 import * as THREE from "three"
@@ -18,15 +18,20 @@ export default function MemoryImage(){
 
   const meshRef = useRef<THREE.Mesh>(null!)
 
-  useMemo(()=>{
+  useEffect(()=>{
+
     texture.colorSpace = THREE.SRGBColorSpace
     texture.anisotropy = 8
+    texture.needsUpdate = true
+
   },[texture])
 
   useFrame(()=>{
+
     if(meshRef.current){
       meshRef.current.lookAt(camera.position)
     }
+
   })
 
   if(!star) return null
@@ -37,8 +42,9 @@ export default function MemoryImage(){
 
     <mesh
       ref={meshRef}
-      position={[x, y, z + 0.06]}
+      position={[x, y, z + 0.08]}
       renderOrder={10}
+      frustumCulled={false}
     >
 
       <planeGeometry args={[0.9,0.9]} />

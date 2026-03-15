@@ -3,15 +3,28 @@ import { Insight } from "../state/useInsightStore"
 import { Star } from "../types"
 
 function average(values: number[]): number {
-  if (!values.length) return 0
-  return values.reduce((a, b) => a + b, 0) / values.length
+  if (values.length === 0) return 0
+
+  let sum = 0
+  for (let i = 0; i < values.length; i++) {
+    sum += values[i]
+  }
+
+  return sum / values.length
 }
 
 function variance(values: number[]): number {
-  if (!values.length) return 0
+  if (values.length === 0) return 0
+
   const avg = average(values)
-  const diffs = values.map(v => (v - avg) ** 2)
-  return average(diffs)
+
+  let total = 0
+  for (let i = 0; i < values.length; i++) {
+    const diff = values[i] - avg
+    total += diff * diff
+  }
+
+  return total / values.length
 }
 
 export function generateChapterInsight(
@@ -19,20 +32,24 @@ export function generateChapterInsight(
   stars: Star[]
 ): Insight | null {
 
-  if (!chapter.starIds.length) return null
+  if (!chapter?.starIds?.length) return null
 
-  const chapterStars = stars.filter(s =>
-    chapter.starIds.includes(s.id)
-  )
+  const starSet = new Set(chapter.starIds)
 
-  if (!chapterStars.length) return null
+  const chapterStars = stars.filter(s => starSet.has(s.id))
 
-  const intensities = chapterStars.map(s => s.intensity || 0)
+  if (chapterStars.length === 0) return null
+
+  const intensities = chapterStars
+    .map(s => typeof s.intensity === "number" ? s.intensity : 0)
+    .filter(v => !Number.isNaN(v))
+
+  if (intensities.length === 0) return null
 
   const avgIntensity = average(intensities)
   const varIntensity = variance(intensities)
 
-  let message = ""
+  let message: string
 
   if (avgIntensity > 0.75 && varIntensity > 0.25) {
     message =
@@ -65,9 +82,12 @@ export function generateReplayInsight(
 
   if (!star) return null
 
-  const intensity = star.intensity ?? 0
+  const intensity =
+    typeof star.intensity === "number"
+      ? star.intensity
+      : 0
 
-  let message = ""
+  let message: string
 
   if (intensity > 0.8) {
     message =
@@ -86,6 +106,6 @@ export function generateReplayInsight(
     id: `replay-${star.id}`,
     type: "replay",
     message,
-    timestamp: Date.now()
+    timestamp: star.timestamp ?? Date.now()
   }
 }

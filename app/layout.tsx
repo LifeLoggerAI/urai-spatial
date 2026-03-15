@@ -1,15 +1,16 @@
-import "./globals.css"
-import type { Metadata } from "next"
+import './globals.css'
+import type { Metadata } from 'next'
+import type { ReactNode } from 'react'
 
 export const metadata: Metadata = {
-  title: "URAI",
-  description: "URAI Spatial",
+  title: 'URAI',
+  description: 'URAI Spatial',
 }
 
 export default function RootLayout({
   children,
 }: {
-  children: React.ReactNode
+  children: ReactNode
 }) {
   return (
     <html lang="en" suppressHydrationWarning>
@@ -17,18 +18,18 @@ export default function RootLayout({
         style={{
           margin: 0,
           padding: 0,
-          background: "black",
-          overflow: "hidden",
-          width: "100vw",
-          height: "100vh",
+          background: '#000',
+          overflow: 'hidden',
+          width: '100vw',
+          height: '100vh',
         }}
       >
         <div
           style={{
-            position: "fixed",
+            position: 'fixed',
             inset: 0,
-            width: "100vw",
-            height: "100vh",
+            width: '100vw',
+            height: '100vh',
           }}
         >
           {children}

@@ -5,29 +5,26 @@ import * as THREE from "three"
 
 export default function Ground() {
 
-  const geometry = useMemo(
-    () => new THREE.PlaneGeometry(200, 200),
-    []
-  )
+  const geometry = useMemo(() => {
+    return new THREE.PlaneGeometry(2000, 2000, 1, 1)
+  }, [])
+
+  const material = useMemo(() => {
+    return new THREE.MeshBasicMaterial({
+      color: "#04050a",
+      side: THREE.DoubleSide
+    })
+  }, [])
 
   return (
 
     <mesh
       geometry={geometry}
+      material={material}
       rotation={[-Math.PI / 2, 0, 0]}
       position={[0, -1.6, 0]}
-      receiveShadow={false}
-      castShadow={false}
       frustumCulled={false}
-    >
-
-      <meshStandardMaterial
-        color="#05060a"
-        roughness={1}
-        metalness={0}
-      />
-
-    </mesh>
+    />
 
   )
 

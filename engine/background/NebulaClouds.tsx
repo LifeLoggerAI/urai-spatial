@@ -4,9 +4,10 @@ import { useRef, useMemo } from "react"
 import { useFrame } from "@react-three/fiber"
 import * as THREE from "three"
 
-export default function NebulaClouds(){
+export default function NebulaFlow(){
 
   const mesh = useRef<THREE.Mesh>(null!)
+  const mat = useRef<THREE.ShaderMaterial>(null!)
 
   const material = useMemo(()=>{
 
@@ -15,12 +16,10 @@ export default function NebulaClouds(){
       side: THREE.BackSide,
       transparent: true,
       depthWrite: false,
-      blending: THREE.AdditiveBlending,
+      blending: THREE.NormalBlending,
 
       uniforms:{
-        uTime:{value:0},
-        colorA:{value:new THREE.Color("#0b1030")},
-        colorB:{value:new THREE.Color("#3a6bff")}
+        uTime:{ value:0 }
       },
 
       vertexShader:`
@@ -42,15 +41,14 @@ export default function NebulaClouds(){
 
       fragmentShader:`
 
-        uniform float uTime;
-        uniform vec3 colorA;
-        uniform vec3 colorB;
+        precision highp float;
 
         varying vec3 vPos;
+        uniform float uTime;
 
         float hash(vec3 p){
           return fract(
-            sin(dot(p,vec3(12.9898,78.233,45.164))) *
+            sin(dot(p,vec3(127.1,311.7,74.7))) *
             43758.5453
           );
         }
@@ -62,11 +60,22 @@ export default function NebulaClouds(){
 
           f = f*f*(3.0-2.0*f);
 
-          float n = mix(
-            mix(hash(i),hash(i+vec3(1,0,0)),f.x),
-            mix(hash(i+vec3(0,1,0)),hash(i+vec3(1,1,0)),f.x),
-            f.y
-          );
+          float n =
+            mix(
+              mix(
+                mix(hash(i+vec3(0,0,0)),
+                    hash(i+vec3(1,0,0)),f.x),
+                mix(hash(i+vec3(0,1,0)),
+                    hash(i+vec3(1,1,0)),f.x),
+                f.y),
+              mix(
+                mix(hash(i+vec3(0,0,1)),
+                    hash(i+vec3(1,0,1)),f.x),
+                mix(hash(i+vec3(0,1,1)),
+                    hash(i+vec3(1,1,1)),f.x),
+                f.y),
+              f.z
+            );
 
           return n;
 
@@ -74,33 +83,23 @@ export default function NebulaClouds(){
 
         void main(){
 
-          vec3 p =
-            vPos * 0.0025 +
-            vec3(0.0,uTime*0.018,0.0);
+          vec3 p = vPos * 0.004;
 
-          float base =
-            noise(p);
-
-          float detail =
-            noise(p*2.0)*0.5 +
-            noise(p*4.0)*0.25;
-
-          float clouds =
-            base + detail;
-
-          float density =
-            smoothstep(0.32,0.78,clouds);
-
-          float radial =
-            smoothstep(1600.0,200.0,length(vPos));
-
-          density *= radial;
+          float n =
+            noise(p + vec3(0.0, uTime * 0.02, 0.0));
 
           vec3 col =
-            mix(colorA,colorB,clouds);
+            mix(
+              vec3(0.02,0.04,0.08),
+              vec3(0.16,0.24,0.55),
+              n
+            );
+
+          float alpha =
+            smoothstep(0.35,0.75,n) * 0.20;
 
           gl_FragColor =
-            vec4(col,density*0.35);
+            vec4(col,alpha);
 
         }
 
@@ -110,24 +109,22 @@ export default function NebulaClouds(){
 
   },[])
 
-  useFrame((state,delta)=>{
+  useFrame((state)=>{
 
-    if(mesh.current){
-      mesh.current.rotation.y += delta * 0.006
-      mesh.current.rotation.z += delta * 0.0015
+    if(mat.current){
+      mat.current.uniforms.uTime.value =
+        state.clock.elapsedTime
     }
 
-    material.uniforms.uTime.value =
-      state.clock.elapsedTime
+    if(mesh.current){
+      mesh.current.rotation.y += 0.00008
+    }
 
   })
 
   return(
-
     <mesh ref={mesh} material={material}>
-      <sphereGeometry args={[1900,64,64]} />
+      <sphereGeometry args={[1200,64,64]} />
     </mesh>
-
   )
-
 }

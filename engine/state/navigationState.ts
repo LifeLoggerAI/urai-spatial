@@ -6,18 +6,14 @@ export type NavigationMode =
   | "replay"
 
 type NavigationState = {
-
   mode: NavigationMode
-
   setMode: (mode: NavigationMode) => void
-
   setExplore: () => void
   setMemory: () => void
   setReplay: () => void
 }
 
-export const useNavigationState = create<NavigationState>((set)=>({
-
+export const useNavigationState = create<NavigationState>((set) => ({
   mode: "explore",
 
   setMode: (mode) =>
@@ -31,5 +27,4 @@ export const useNavigationState = create<NavigationState>((set)=>({
 
   setReplay: () =>
     set({ mode: "replay" }),
-
 }))

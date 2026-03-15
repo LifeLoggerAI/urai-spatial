@@ -17,20 +17,16 @@ export default function Nebula(){
 
   return(
 
-    <mesh
-      scale={[1000,1000,1]}
-      position={[0,0,-500]}
-    >
+    <mesh position={[0,0,-800]}>
 
-      <planeGeometry args={[2,2]} />
+      <planeGeometry args={[4000,4000]} />
 
       <shaderMaterial
         ref={mat}
 
         transparent
         depthWrite={false}
-
-        /* critical: avoid additive wash */
+        side={THREE.DoubleSide}
         blending={THREE.NormalBlending}
 
         uniforms={{
@@ -55,6 +51,8 @@ export default function Nebula(){
         `}
 
         fragmentShader={`
+
+          precision highp float;
 
           varying vec2 vUv;
           uniform float time;
@@ -86,7 +84,7 @@ export default function Nebula(){
 
           void main(){
 
-            vec2 uv = vUv * 3.0;
+            vec2 uv = vUv * 4.0;
 
             float t = time * 0.02;
 
@@ -97,16 +95,14 @@ export default function Nebula(){
               noise(uv*2.0 - t*0.7);
 
             float neb =
-              smoothstep(0.45,0.85,n+n2*0.5);
+              smoothstep(0.4,0.85,n+n2*0.5);
 
             vec3 col =
-              vec3(0.015,0.03,0.08) +
-              neb * vec3(0.12,0.10,0.25);
-
-            /* lower opacity to prevent wash */
+              vec3(0.02,0.04,0.09) +
+              neb * vec3(0.12,0.12,0.30);
 
             float alpha =
-              neb * 0.12;
+              neb * 0.15;
 
             gl_FragColor =
               vec4(col,alpha);

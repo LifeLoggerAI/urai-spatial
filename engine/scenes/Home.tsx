@@ -7,6 +7,7 @@ import Avatar from '../components/Avatar'
 import Orb from '../components/Orb'
 import { useThree } from '@react-three/fiber'
 import { useEffect } from 'react'
+import * as THREE from 'three'
 
 export default function Home() {
 
@@ -15,11 +16,11 @@ export default function Home() {
 
   useEffect(() => {
 
-    // Home scene camera framing
-    camera.position.set(4.8, 7.0, 15)
+    const target = new THREE.Vector3(-1.2, 4.5, -6)
 
-    // Look slightly above horizon toward avatar/orb area
-    camera.lookAt(-1.2, 4.5, -6)
+    camera.position.set(4.8, 7.0, 15)
+    camera.lookAt(target)
+    camera.updateProjectionMatrix()
 
   }, [camera])
 

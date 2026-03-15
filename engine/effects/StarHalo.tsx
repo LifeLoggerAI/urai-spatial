@@ -2,59 +2,65 @@
 
 import { useSpatialStore } from "../state/spatialStore"
 import { useFrame, useThree } from "@react-three/fiber"
-import { useRef } from "react"
+import { useEffect, useRef } from "react"
 import * as THREE from "three"
 
-export default function StarHalo(){
+export default function StarHalo() {
+  const selectedStar = useSpatialStore((s) => s.selectedStar)
 
-  const selectedStar = useSpatialStore(s => s.selectedStar)
+  const meshRef = useRef<THREE.Mesh>(null!)
+  const startTimeRef = useRef(0)
+  const lastStarIdRef = useRef<string | null>(null)
 
-  const mesh = useRef<THREE.Mesh>(null!)
   const { camera } = useThree()
 
+  useEffect(() => {
+    if (!selectedStar) {
+      lastStarIdRef.current = null
+      return
+    }
+
+    if (lastStarIdRef.current !== selectedStar.id) {
+      startTimeRef.current = 0
+      lastStarIdRef.current = selectedStar.id
+    }
+  }, [selectedStar])
+
   useFrame(({ clock }) => {
+    const mesh = meshRef.current
+    if (!mesh || !selectedStar) return
 
-    if(!mesh.current) return
+    if (startTimeRef.current === 0) {
+      startTimeRef.current = clock.elapsedTime
+    }
 
-    /* smooth pulse */
+    const t = clock.elapsedTime - startTimeRef.current
 
-    const pulse =
-      1 + Math.sin(clock.elapsedTime * 2) * 0.08
+    // Follow selected star every frame in case its Vector3 is mutated externally.
+    mesh.position.copy(selectedStar.position)
 
-    mesh.current.scale.setScalar(pulse)
+    // Soft pulse
+    const pulse = 1 + Math.sin(t * 2.0) * 0.08
+    mesh.scale.setScalar(pulse)
 
-    /* billboard toward camera */
-
-    mesh.current.quaternion.copy(
-      camera.quaternion
-    )
-
+    // Billboard toward camera
+    mesh.quaternion.copy(camera.quaternion)
   })
 
-  if(!selectedStar) return null
+  if (!selectedStar) return null
 
   return (
-
-    <mesh
-      ref={mesh}
-      position={selectedStar.position}
-      frustumCulled={false}
-    >
-
-      <planeGeometry args={[3.2,3.2]} />
-
+    <mesh ref={meshRef} frustumCulled={false}>
+      <planeGeometry args={[3.2, 3.2]} />
       <meshBasicMaterial
         color="#9bbcff"
         transparent
         opacity={0.42}
         blending={THREE.AdditiveBlending}
         depthWrite={false}
-        depthTest={false}
+        depthTest={true}
         side={THREE.DoubleSide}
       />
-
     </mesh>
-
   )
-
 }

@@ -18,7 +18,7 @@ export default function Sky(){
       uniforms:{
         topColor:{ value:new THREE.Color('#0b1c2d') },
         bottomColor:{ value:new THREE.Color('#1b2c44') },
-        offset:{ value:33 },
+        offset:{ value:0.0 },
         exponent:{ value:0.6 }
       },
 
@@ -26,10 +26,19 @@ export default function Sky(){
         varying vec3 vWorldPosition;
 
         void main(){
-          vec4 worldPosition = modelMatrix * vec4(position,1.0);
-          vWorldPosition = worldPosition.xyz;
 
-          gl_Position = projectionMatrix * modelViewMatrix * vec4(position,1.0);
+          vec4 worldPosition =
+            modelMatrix *
+            vec4(position,1.0);
+
+          vWorldPosition =
+            worldPosition.xyz;
+
+          gl_Position =
+            projectionMatrix *
+            modelViewMatrix *
+            vec4(position,1.0);
+
         }
       `,
 
@@ -43,14 +52,19 @@ export default function Sky(){
 
         void main(){
 
-          float h = normalize(vWorldPosition + offset).y;
+          float h =
+            normalize(vWorldPosition).y;
 
-          float mixFactor = pow(max(h,0.0), exponent);
+          h = max(h + offset, 0.0);
 
-          gl_FragColor = vec4(
-            mix(bottomColor, topColor, mixFactor),
-            1.0
-          );
+          float mixFactor =
+            pow(h, exponent);
+
+          vec3 color =
+            mix(bottomColor, topColor, mixFactor);
+
+          gl_FragColor =
+            vec4(color,1.0);
 
         }
       `

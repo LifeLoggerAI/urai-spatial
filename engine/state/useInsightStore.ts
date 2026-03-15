@@ -8,7 +8,6 @@ export interface Insight {
 }
 
 interface InsightState {
-
   enabled: boolean
   insights: Insight[]
   visible: boolean
@@ -25,36 +24,31 @@ interface InsightState {
 }
 
 export const useInsightStore = create<InsightState>((set) => ({
-
   enabled: false,
   insights: [],
   visible: false,
 
-  setEnabled: (enabled) =>
-    set({ enabled }),
+  setEnabled: (enabled) => set({ enabled }),
 
-  setInsights: (insights) =>
-    set({ insights }),
+  setInsights: (insights) => set({ insights }),
 
   addInsight: (insight) =>
     set((state) => ({
-      insights: [...state.insights, insight]
+      insights: [...state.insights, insight],
     })),
 
-  setVisible: (visible) =>
-    set({ visible }),
+  setVisible: (visible) => set({ visible }),
 
   clearInsights: () =>
     set({
       insights: [],
-      visible: false
+      visible: false,
     }),
 
   resetInsights: () =>
     set({
       enabled: false,
       insights: [],
-      visible: false
-    })
-
+      visible: false,
+    }),
 }))

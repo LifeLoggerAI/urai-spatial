@@ -1,6 +1,6 @@
 'use client'
 
-import { useFrame } from '@react-three/fiber'
+import { useEffect } from 'react'
 import { usePresenceStore } from '../state/usePresenceStore'
 
 // MOCK DATA FOR NOW
@@ -18,12 +18,12 @@ const MOCK_USERS = [
 ]
 
 export default function PresenceController() {
+
   const setOthers = usePresenceStore((s) => s.setOthers)
 
-  // TODO: Replace with real-time Firestore connection
-  useFrame(() => {
+  useEffect(() => {
     setOthers(MOCK_USERS)
-  })
+  }, [setOthers])
 
   return null
 }

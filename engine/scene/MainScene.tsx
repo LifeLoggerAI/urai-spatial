@@ -1,52 +1,47 @@
-"use client";
+"use client"
 
-import { useMemo } from "react";
-import { Canvas } from "@react-three/fiber";
+import { Canvas } from "@react-three/fiber"
 
-import Starfield from "./Starfield";
-import CameraRig from "./CameraRig";
-import MemorySphere from "../memory/MemorySphere";
-import Presence from "../components/Presence";
-import PresenceController from "../core/PresenceController";
+import Starfield from "./Starfield"
+import CameraRig from "./CameraRig"
+import MemorySphere from "../memory/MemorySphere"
+import Presence from "../components/Presence"
+import PresenceController from "../core/PresenceController"
 
-import { useSpatialStore } from "../state/spatialStore";
-import { STAR_DATA } from "../data/starData";
+import { useSpatialStore } from "../state/spatialStore"
 
 export default function MainScene() {
 
-  const selectedStarId = useSpatialStore((s) => s.selectedStarId)
-
-  const selectedStar = useMemo(() => {
-
-    if (!selectedStarId) return null
-
-    return STAR_DATA.find((star) => star.id === selectedStarId) || null
-
-  }, [selectedStarId])
+  const selectedStarPosition = useSpatialStore(
+    (s) => s.selectedStarPosition
+  )
 
   return (
 
     <Canvas
-      camera={{ position: [0, 2, 16], fov: 60 }}
-      gl={{ antialias: true }}
+      camera={{ position: [0, 2, 16], fov: 60, near: 0.1, far: 2000 }}
+      gl={{
+        antialias: true,
+        powerPreference: "high-performance"
+      }}
     >
 
       <color attach="background" args={["#020409"]} />
 
+      {/* lighting */}
       <ambientLight intensity={0.55} />
-
       <pointLight position={[8, 10, 8]} intensity={1.2} />
 
+      {/* core scene */}
       <CameraRig />
-
       <Starfield />
-
       <Presence />
 
-      {/* Controllers */}
+      {/* controllers */}
       <PresenceController />
 
-      {selectedStar && (
+      {/* memory visuals */}
+      {selectedStarPosition && (
         <MemorySphere />
       )}
 

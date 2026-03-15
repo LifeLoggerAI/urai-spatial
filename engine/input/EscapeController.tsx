@@ -1,34 +1,71 @@
+ 
+
 "use client"
 
+\
+
 import { useEffect } from "react"
+
 import { useSpatialStore } from "../state/spatialStore"
+
+\
 
 export default function EscapeController(){
 
-  const clearStar = useSpatialStore(s => s.clearStar)
+\
 
-  useEffect(() => {
+  const clearStar = useSpatialStore(s => s.clearStar)
 
-    const handleKey = (e: KeyboardEvent) => {
+\
 
-      if (e.repeat) return
+  useEffect(() => {
 
-      const target = e.target as HTMLElement | null
-      if (target && (target.tagName === "INPUT" || target.tagName === "TEXTAREA")) return
+\
 
-      if (e.key === "Escape") {
-        clearStar()
-      }
+    const handleKey = (e: KeyboardEvent) => {
 
-    }
+\
 
-    window.addEventListener("keydown", handleKey)
+      if (e.repeat) return
 
-    return () => {
-      window.removeEventListener("keydown", handleKey)
-    }
+\
 
-  }, [clearStar])
+      const target = e.target as HTMLElement | null
 
-  return null
+      if (target && (target.tagName === "INPUT" || target.tagName === "TEXTAREA")) return
+
+\
+
+      if (e.key === "Escape") {
+
+        clearStar()
+
+      }
+
+\
+
+    }
+
+\
+
+    window.addEventListener("keydown", handleKey)
+
+\
+
+    return () => {
+
+      window.removeEventListener("keydown", handleKey)
+
+    }
+
+\
+
+  }, [clearStar])
+
+\
+
+  return null
+
 }
+
+  

@@ -36,14 +36,17 @@ export const Star = forwardRef<THREE.Group, StarProps>(
     if (selected) {
 
       const pulse = 1.3 + Math.sin(clock.elapsedTime * 2) * 0.25
-
       mat.emissiveIntensity = pulse
-      mat.color.lerp(white, 0.08)
+
+      const c = baseColor.clone().lerp(white, 0.08)
+      mat.color.copy(c)
 
     } else {
 
       mat.emissiveIntensity = dimOthers ? 0.05 : 0.25
-      mat.color.lerp(dimOthers ? dimColor : baseColor, 0.08)
+
+      const c = (dimOthers ? dimColor : baseColor).clone()
+      mat.color.copy(c)
 
     }
 
@@ -51,7 +54,7 @@ export const Star = forwardRef<THREE.Group, StarProps>(
 
   return (
 
-    <group ref={ref} position={position}>
+    <group ref={ref} position={position} frustumCulled={false}>
 
       <mesh
         onPointerDown={(e) => {
@@ -73,7 +76,7 @@ export const Star = forwardRef<THREE.Group, StarProps>(
 
       </mesh>
 
-      <mesh scale={[3.5, 3.5, 3.5]}>
+      <mesh scale={[3.5, 3.5, 3.5]} frustumCulled={false}>
 
         <sphereGeometry args={[0.25, 12, 12]} />
 

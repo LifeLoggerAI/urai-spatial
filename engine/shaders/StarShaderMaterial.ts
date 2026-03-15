@@ -1,6 +1,6 @@
 import * as THREE from "three"
 
-export function createStarMaterial(){
+export function createStarMaterial() {
 
   return new THREE.ShaderMaterial({
 
@@ -10,11 +10,11 @@ export function createStarMaterial(){
     blending: THREE.AdditiveBlending,
     vertexColors: true,
 
-    uniforms:{
-      uSize:{value:3.0}
+    uniforms: {
+      uSize: { value: 3.0 }
     },
 
-    vertexShader:`
+    vertexShader: `
       attribute float size;
 
       varying vec3 vColor;
@@ -29,16 +29,15 @@ export function createStarMaterial(){
           vec4(position,1.0);
 
         float depth =
-          max(-mvPosition.z, 1.0);
+          max(-mvPosition.z, 0.0001);
 
         vDist = depth;
 
         float scaledSize =
-          size *
-          (320.0 / depth);
+          size * (320.0 / depth);
 
         gl_PointSize =
-          clamp(scaledSize,1.2,18.0);
+          clamp(scaledSize, 1.5, 22.0);
 
         gl_Position =
           projectionMatrix *
@@ -47,7 +46,7 @@ export function createStarMaterial(){
       }
     `,
 
-    fragmentShader:`
+    fragmentShader: `
 
       varying vec3 vColor;
       varying float vDist;
@@ -55,7 +54,7 @@ export function createStarMaterial(){
       void main(){
 
         vec2 p =
-          gl_PointCoord - 0.5;
+          gl_PointCoord - vec2(0.5);
 
         float r =
           length(p);
@@ -63,13 +62,15 @@ export function createStarMaterial(){
         if(r > 0.5) discard;
 
         float core =
-          smoothstep(0.35,0.0,r);
+          1.0 - smoothstep(0.0, 0.35, r);
 
         float halo =
-          smoothstep(0.55,0.0,r) * 0.5;
+          1.0 - smoothstep(0.35, 0.5, r);
+
+        halo *= 0.5;
 
         float glow =
-          clamp(28.0 / vDist,0.25,0.7);
+          clamp(28.0 / vDist, 0.25, 0.7);
 
         float intensity =
           (core + halo) * glow;
@@ -78,7 +79,7 @@ export function createStarMaterial(){
           vColor * intensity;
 
         gl_FragColor =
-          vec4(color,intensity);
+          vec4(color, intensity);
 
       }
     `

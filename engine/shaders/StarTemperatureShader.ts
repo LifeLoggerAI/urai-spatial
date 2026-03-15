@@ -1,7 +1,9 @@
 export function temperatureToColor(k:number){
 
-  /* convert Kelvin to scale used by approximation */
-  let t = k / 100
+  /* safe temperature range for approximation */
+  const kelvin = Math.min(40000, Math.max(1000, k))
+
+  let t = kelvin / 100
 
   let r:number
   let g:number
@@ -27,19 +29,19 @@ export function temperatureToColor(k:number){
 
   if(t >= 66){
     b = 255
-  } else if(t <= 19){
+  } 
+  else if(t <= 19){
     b = 0
-  } else {
-    b = 138.5177312231 * Math.log(t - 10) - 305.0447927307
+  } 
+  else {
+    b = 138.5177312231 * Math.log(Math.max(t - 10,1)) - 305.0447927307
   }
 
-  /* clamp to valid RGB range */
+  /* clamp */
 
   r = Math.min(255, Math.max(0, r))
   g = Math.min(255, Math.max(0, g))
   b = Math.min(255, Math.max(0, b))
-
-  /* normalize for shaders / THREE.Color */
 
   return [r/255, g/255, b/255]
 }

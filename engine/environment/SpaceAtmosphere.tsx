@@ -7,27 +7,39 @@ import { useSpatialStore } from "../state/spatialStore"
 import { demoData } from "../data/demoData"
 
 const emotionColor = {
-  joy: "#ffcc66",
-  love: "#ff88aa",
-  sadness: "#6688ff",
-  anger: "#ff4444",
-  calm: "#66ffaa",
-  curiosity: "#ffffff",
-  focus: "#ffffff",
+  joy: new THREE.Color("#ffcc66"),
+  love: new THREE.Color("#ff88aa"),
+  sadness: new THREE.Color("#6688ff"),
+  anger: new THREE.Color("#ff4444"),
+  calm: new THREE.Color("#66ffaa"),
+  curiosity: new THREE.Color("#ffffff"),
+  focus: new THREE.Color("#ffffff"),
 }
 
 export default function SpaceAtmosphere() {
 
   const { scene } = useThree()
-  const { selectedStarId } = useSpatialStore()
+  const selectedStarId = useSpatialStore((s) => s.selectedStarId)
 
   const currentColor = useMemo(() => new THREE.Color(0x050510), [])
   const targetColor = useMemo(() => new THREE.Color(0x050510), [])
 
+  const starMap = useMemo(() => {
+    const map = new Map<number, any>()
+    for (const s of demoData) map.set(s.id, s)
+    return map
+  }, [])
+
   useEffect(() => {
 
-    scene.fog = new THREE.FogExp2(currentColor, 0.015)
+    const fog = new THREE.FogExp2(currentColor, 0.015)
+
+    scene.fog = fog
     scene.background = currentColor
+
+    return () => {
+      scene.fog = null
+    }
 
   }, [scene, currentColor])
 
@@ -35,15 +47,16 @@ export default function SpaceAtmosphere() {
 
     const star =
       selectedStarId !== null
-        ? demoData.find((s) => s.id === selectedStarId)
+        ? starMap.get(selectedStarId)
         : null
 
     if (star) {
 
       const c =
-        emotionColor[star.emotion as keyof typeof emotionColor] || "#050510"
+        emotionColor[star.emotion as keyof typeof emotionColor]
 
-      targetColor.set(c)
+      if (c) targetColor.copy(c)
+      else targetColor.set(0x050510)
 
     } else {
 
@@ -52,12 +65,6 @@ export default function SpaceAtmosphere() {
     }
 
     currentColor.lerp(targetColor, 0.02)
-
-    if (scene.fog) {
-      ;(scene.fog as THREE.FogExp2).color.copy(currentColor)
-    }
-
-    scene.background = currentColor
 
   })
 

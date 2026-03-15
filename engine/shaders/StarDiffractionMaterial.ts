@@ -4,11 +4,11 @@ export function createStarDiffractionMaterial(){
 
   return new THREE.ShaderMaterial({
 
-    transparent:true,
-    depthWrite:false,
-    depthTest:true,
-    blending:THREE.AdditiveBlending,
-    vertexColors:true,
+    transparent: true,
+    depthWrite: false,
+    depthTest: true,
+    blending: THREE.AdditiveBlending,
+    vertexColors: true,
 
     uniforms:{
       sizeScale:{value:1},
@@ -32,7 +32,7 @@ export function createStarDiffractionMaterial(){
           vec4(position,1.0);
 
         float dist =
-          max(-mvPosition.z,1.0);
+          max(-mvPosition.z,0.0001);
 
         vDist = dist;
 
@@ -44,13 +44,13 @@ export function createStarDiffractionMaterial(){
           );
 
         float depthScale =
-          clamp(110.0 / dist,0.35,2.8);
+          clamp(110.0 / dist,0.35,3.0);
 
         float pointSize =
           size * depthScale;
 
         gl_PointSize =
-          clamp(pointSize,0.8,8.0);
+          clamp(pointSize,1.2,10.0);
 
         gl_Position =
           projectionMatrix *
@@ -71,7 +71,7 @@ export function createStarDiffractionMaterial(){
       void main(){
 
         vec2 uv =
-          gl_PointCoord - 0.5;
+          gl_PointCoord - vec2(0.5);
 
         float r =
           length(uv);
@@ -79,10 +79,12 @@ export function createStarDiffractionMaterial(){
         if(r > 0.5) discard;
 
         float core =
-          smoothstep(0.20,0.0,r);
+          1.0 - smoothstep(0.0,0.20,r);
 
         float halo =
-          smoothstep(0.42,0.18,r) * 0.45;
+          1.0 - smoothstep(0.18,0.42,r);
+
+        halo *= 0.45;
 
         float spikeX =
           exp(-abs(uv.x)*14.0);

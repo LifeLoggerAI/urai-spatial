@@ -8,20 +8,15 @@ export type EngineMode =
   | 'replay'
 
 interface EngineState {
-
   mode: EngineMode
-
   setMode: (mode: EngineMode) => void
-
   setHome: () => void
   setLifeMap: () => void
   setReplay: () => void
-
   resetMode: () => void
 }
 
 export const useEngineMode = create<EngineState>((set) => ({
-
   mode: 'home',
 
   setMode: (mode) =>
@@ -37,6 +32,5 @@ export const useEngineMode = create<EngineState>((set) => ({
     set({ mode: 'replay' }),
 
   resetMode: () =>
-    set({ mode: 'home' })
-
+    set({ mode: 'home' }),
 }))

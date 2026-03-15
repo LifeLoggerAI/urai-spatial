@@ -1,28 +1,63 @@
-import * as THREE from 'three';
+export const DustTurbulenceShader = {
 
-export const DustShader = {
-  uniforms: {
-    u_time: { value: 0.0 },
-    u_size: { value: 0.1 },
-    u_color: { value: new THREE.Color(0xaaaaaa) },
+  uniforms:{
+    time:{ value:0 }
   },
 
-  vertexShader: `
-    uniform float u_time;
-    uniform float u_size;
+  vertexShader:`
 
-    void main() {
-      vec4 mvPosition = modelViewMatrix * vec4(position, 1.0);
-      gl_PointSize = u_size * (300.0 / -mvPosition.z);
-      gl_Position = projectionMatrix * mvPosition;
+    uniform float time;
+
+    varying vec3 vPos;
+
+    void main(){
+
+      vec3 p = position;
+
+      float waveA =
+        sin(time*0.5 + p.y*0.04);
+
+      float waveB =
+        cos(time*0.6 + p.x*0.03);
+
+      p.x += waveA * 1.8;
+      p.z += waveB * 1.8;
+
+      vPos = p;
+
+      gl_Position =
+        projectionMatrix *
+        modelViewMatrix *
+        vec4(p,1.0);
+
     }
+
   `,
 
-  fragmentShader: `
-    uniform vec3 u_color;
+  fragmentShader:`
 
-    void main() {
-      gl_FragColor = vec4(u_color, 0.1);
+    precision highp float;
+
+    varying vec3 vPos;
+
+    void main(){
+
+      float d =
+        length(vPos.xy);
+
+      float density =
+        1.0 - smoothstep(0.0,2.5,d);
+
+      vec3 color =
+        vec3(0.8,0.9,1.0) * density;
+
+      float alpha =
+        density * 0.35;
+
+      gl_FragColor =
+        vec4(color,alpha);
+
     }
-  `,
-};
+
+  `
+}

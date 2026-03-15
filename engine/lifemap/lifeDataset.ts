@@ -1,3 +1,5 @@
+import { lifeDataset } from "./lifeDataset"
+
 export type LifeStar = {
   id: number
   year: number
@@ -23,7 +25,6 @@ export const lifeDataset: LifeStar[] = (() => {
   const rand = mulberry32(42)
 
   const stars: LifeStar[] = []
-
   let id = 0
 
   for (let year = 0; year < YEARS; year++) {
@@ -32,13 +33,22 @@ export const lifeDataset: LifeStar[] = (() => {
 
     for (let i = 0; i < STARS_PER_YEAR; i++) {
 
-      const radius = rand() * 2.5
+      const radius = Math.pow(rand(), 0.6) * 2.8
       const angle = rand() * Math.PI * 2
 
-      const x = Math.cos(angle) * radius
-      const y = Math.sin(angle) * radius
+      const jitter = 0.25
 
-      const z = -year * 2
+      const x =
+        Math.cos(angle) * radius +
+        (rand() - 0.5) * jitter
+
+      const y =
+        Math.sin(angle) * radius +
+        (rand() - 0.5) * jitter
+
+      const z =
+        -year * 2 +
+        (rand() - 0.5) * 0.8
 
       stars.push({
         id: id++,

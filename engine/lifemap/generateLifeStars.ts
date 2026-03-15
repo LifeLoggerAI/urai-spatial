@@ -30,14 +30,18 @@ export function generateLifeStars(
 
   for (let i = 0; i < count; i++) {
 
-    const angle = rand() * Math.PI * 2
-    const radius = 20 + rand() * 120
+    const t = i / count
+
+    const angle = t * Math.PI * 10 + rand() * 0.3
+    const radius = Math.pow(rand(), 0.65) * 140 + 20
 
     const x = Math.cos(angle) * radius
     const y = (rand() - 0.5) * 40
-    const z = -rand() * 200
 
     const year = startYear + Math.floor(rand() * spanYears)
+
+    const depth = (year - startYear) / spanYears
+    const z = -depth * 220 + (rand() - 0.5) * 10
 
     stars.push({
       id: i,

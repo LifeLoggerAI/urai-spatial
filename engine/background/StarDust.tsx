@@ -13,7 +13,7 @@ export default function StarDust(){
 
   const { geometry, material } = useMemo(()=>{
 
-    const positions = new Float32Array(COUNT*3)
+    const positions = new Float32Array(COUNT * 3)
 
     for(let i=0;i<COUNT;i++){
 
@@ -34,7 +34,6 @@ export default function StarDust(){
     }
 
     const geo = new THREE.BufferGeometry()
-
     geo.setAttribute(
       "position",
       new THREE.BufferAttribute(positions,3)
@@ -44,10 +43,7 @@ export default function StarDust(){
 
       transparent:true,
       depthWrite:false,
-
-      /* keep depth testing so particles don't stack infinitely */
       depthTest:true,
-
       blending:THREE.AdditiveBlending,
 
       uniforms:{
@@ -55,6 +51,8 @@ export default function StarDust(){
       },
 
       vertexShader:`
+
+        precision highp float;
 
         uniform float uSize;
 
@@ -75,12 +73,13 @@ export default function StarDust(){
           gl_Position =
             projectionMatrix *
             mvPosition;
-
         }
 
       `,
 
       fragmentShader:`
+
+        precision highp float;
 
         void main(){
 
@@ -95,13 +94,11 @@ export default function StarDust(){
           float glow =
             smoothstep(0.5,0.0,d);
 
-          /* reduced brightness */
           float alpha =
             glow * 0.22;
 
           gl_FragColor =
             vec4(vec3(0.85,0.9,1.0),alpha);
-
         }
 
       `
@@ -113,12 +110,13 @@ export default function StarDust(){
 
   useFrame((state)=>{
 
-    if(!pointsRef.current) return
+    const p = pointsRef.current
+    if(!p) return
 
     const t = state.clock.elapsedTime
 
-    pointsRef.current.rotation.y = t * 0.006
-    pointsRef.current.rotation.x = t * 0.002
+    p.rotation.y = t * 0.006
+    p.rotation.x = t * 0.002
 
   })
 
@@ -128,7 +126,7 @@ export default function StarDust(){
       geometry={geometry}
       material={material}
       frustumCulled={false}
+      renderOrder={-1}
     />
   )
-
 }

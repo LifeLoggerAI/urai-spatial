@@ -7,25 +7,30 @@ export type Emotion =
   | "curiosity"
   | "focus"
 
-export type Memory = {
-  id: number
+export type MemoryId = number
 
-  // time reference
+export type MemoryMedia = {
+  image?: string
+  video?: string
+  audio?: string
+}
+
+export type Memory = {
+  id: MemoryId
+
+  // temporal reference
   timestamp: number
-  year?: number
 
   // emotional classification
   emotion: Emotion
 
   // media content
-  image?: string
-  video?: string
-  audio?: string
+  media?: MemoryMedia
 
   // narrative metadata
   title?: string
   description?: string
 
-  // spatial linkage
+  // spatial linkage to star in LifeMap
   starId?: number
 }

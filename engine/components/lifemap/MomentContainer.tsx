@@ -2,7 +2,7 @@
 
 import { useRef, useMemo } from "react"
 import { useFrame } from "@react-three/fiber"
-import { Mesh, SphereGeometry } from "three"
+import * as THREE from "three"
 
 interface Props {
   position: [number, number, number]
@@ -10,25 +10,37 @@ interface Props {
 
 export default function MomentContainer({ position }: Props) {
 
-  const meshRef = useRef<Mesh | null>(null)
-  const scaleRef = useRef(0)
+  const meshRef = useRef<THREE.Mesh>(null!)
+  const grow = useRef(0)
 
-  const geometry = useMemo(
-    () => new SphereGeometry(0.3, 32, 32),
-    []
-  )
+  const geometry = useMemo(() => {
+    return new THREE.SphereGeometry(0.35, 32, 32)
+  }, [])
 
-  useFrame((_, delta) => {
+  useFrame((state, delta) => {
 
-    if (!meshRef.current) return
+    const mesh = meshRef.current
+    if (!mesh) return
 
-    if (scaleRef.current < 1) {
-      scaleRef.current += delta * 1.2
-      scaleRef.current = Math.min(scaleRef.current, 1)
+    /* grow animation */
 
-      const s = 1 + scaleRef.current * 4
-      meshRef.current.scale.set(s, s, s)
+    if (grow.current < 1) {
+      grow.current += delta * 1.1
+      grow.current = Math.min(grow.current, 1)
     }
+
+    /* smooth scale */
+
+    const baseScale = 1 + grow.current * 4
+
+    /* subtle idle pulse */
+
+    const pulse =
+      Math.sin(state.clock.elapsedTime * 2.2) * 0.05
+
+    const s = baseScale + pulse
+
+    mesh.scale.set(s, s, s)
 
   })
 
@@ -42,10 +54,12 @@ export default function MomentContainer({ position }: Props) {
     >
 
       <meshStandardMaterial
+        color="#0a0a0a"
         emissive="#ffffff"
-        emissiveIntensity={3}
+        emissiveIntensity={2.8}
+        roughness={0.2}
+        metalness={0.0}
         toneMapped={false}
-        color="#111111"
       />
 
     </mesh>

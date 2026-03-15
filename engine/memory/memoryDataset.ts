@@ -29,8 +29,9 @@ export const memoryDataset: Memory[] = [
 /*
   Pre-index memories for fast lookup
 */
-export const memoryIndex: Record<string, Memory> = {}
-
-for (const m of memoryDataset) {
-  memoryIndex[m.id] = m
-}
+export const memoryIndex: Record<string, Memory> = Object.freeze(
+  memoryDataset.reduce((acc, memory) => {
+    acc[memory.id] = memory
+    return acc
+  }, {} as Record<string, Memory>)
+)

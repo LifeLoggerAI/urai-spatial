@@ -9,24 +9,17 @@ export default function NebulaFlow(){
   const mesh = useRef<THREE.Mesh>(null!)
   const mat = useRef<THREE.ShaderMaterial>(null!)
 
-  useFrame((state)=>{
-    if(mat.current){
-      mat.current.uniforms.uTime.value =
-        state.clock.elapsedTime
-    }
-  })
-
   const material = useMemo(()=>{
 
     return new THREE.ShaderMaterial({
 
-      side:THREE.BackSide,
-      transparent:true,
-      depthWrite:false,
-      blending:THREE.NormalBlending,
+      side: THREE.BackSide,
+      transparent: true,
+      depthWrite: false,
+      blending: THREE.NormalBlending,
 
       uniforms:{
-        uTime:{value:0}
+        uTime:{ value:0 }
       },
 
       vertexShader:`
@@ -65,6 +58,8 @@ export default function NebulaFlow(){
           vec3 i = floor(p);
           vec3 f = fract(p);
 
+          f = f*f*(3.0-2.0*f);
+
           float n =
             mix(
               mix(
@@ -91,7 +86,7 @@ export default function NebulaFlow(){
           vec3 p = vPos * 0.004;
 
           float n =
-            noise(p + uTime * 0.02);
+            noise(p + vec3(0.0, uTime * 0.02, 0.0));
 
           vec3 col =
             mix(
@@ -101,7 +96,7 @@ export default function NebulaFlow(){
             );
 
           float alpha =
-            smoothstep(0.35,0.75,n) * 0.18;
+            smoothstep(0.35,0.75,n) * 0.20;
 
           gl_FragColor =
             vec4(col,alpha);
@@ -109,14 +104,27 @@ export default function NebulaFlow(){
         }
 
       `
+
     })
 
   },[])
 
+  useFrame((state)=>{
+
+    if(mat.current){
+      mat.current.uniforms.uTime.value =
+        state.clock.elapsedTime
+    }
+
+    if(mesh.current){
+      mesh.current.rotation.y += 0.00008
+    }
+
+  })
+
   return(
-    <mesh ref={mesh}>
+    <mesh ref={mesh} material={material}>
       <sphereGeometry args={[1200,64,64]} />
-      <primitive object={material} ref={mat}/>
     </mesh>
   )
 }

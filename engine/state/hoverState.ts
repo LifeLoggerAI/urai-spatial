@@ -6,14 +6,10 @@ type HoverState = {
   clearHover: () => void
 }
 
-export const useHoverStore = create<HoverState>((set)=>({
-
+export const useHoverStore = create<HoverState>((set) => ({
   hoveredId: null,
 
-  setHovered: (id:number | null) =>
-    set({ hoveredId: id }),
+  setHovered: (id: number | null) => set({ hoveredId: id }),
 
-  clearHover: () =>
-    set({ hoveredId: null })
-
+  clearHover: () => set({ hoveredId: null }),
 }))

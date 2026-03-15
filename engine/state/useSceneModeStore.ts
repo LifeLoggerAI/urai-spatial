@@ -8,7 +8,6 @@ export type SceneMode =
   | 'REPLAY'
 
 interface SceneModeState {
-
   mode: SceneMode
 
   setMode: (mode: SceneMode) => void
@@ -21,22 +20,17 @@ interface SceneModeState {
 }
 
 export const useSceneModeStore = create<SceneModeState>((set) => ({
-
+  // initial scene
   mode: 'HOME',
 
-  setMode: (mode) =>
-    set({ mode }),
+  // generic setter
+  setMode: (mode) => set({ mode }),
 
-  goHome: () =>
-    set({ mode: 'HOME' }),
+  // shortcuts for common transitions
+  goHome: () => set({ mode: 'HOME' }),
+  goLifeMap: () => set({ mode: 'LIFEMAP' }),
+  goReplay: () => set({ mode: 'REPLAY' }),
 
-  goLifeMap: () =>
-    set({ mode: 'LIFEMAP' }),
-
-  goReplay: () =>
-    set({ mode: 'REPLAY' }),
-
-  reset: () =>
-    set({ mode: 'HOME' })
-
+  // reset to default
+  reset: () => set({ mode: 'HOME' }),
 }))

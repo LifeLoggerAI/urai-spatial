@@ -25,10 +25,10 @@ type SpatialState = {
   zoomBy: (delta: number) => void
 }
 
-const HOME_POS = new THREE.Vector3(0,0,300)
-const HOME_LOOK = new THREE.Vector3(0,0,0)
+const HOME_POS = new THREE.Vector3(0, 0, 300)
+const HOME_LOOK = new THREE.Vector3(0, 0, 0)
 
-export const useSpatialStore = create<SpatialState>((set,get) => ({
+export const useSpatialStore = create<SpatialState>((set, get) => ({
 
   spatialMode: "lifemap",
 
@@ -38,25 +38,25 @@ export const useSpatialStore = create<SpatialState>((set,get) => ({
   cameraTarget: HOME_POS.clone(),
   lookTarget: HOME_LOOK.clone(),
 
-  homePosition: HOME_POS,
-  homeTarget: HOME_LOOK,
+  homePosition: HOME_POS.clone(),
+  homeTarget: HOME_LOOK.clone(),
 
   exploreRadius: 160,
 
-  selectStar: (id,pos)=>
+  selectStar: (id, pos) =>
     set({
 
       selectedStarId: id,
-      selectedStarPosition: pos,
+      selectedStarPosition: pos.clone(),
 
-      cameraTarget: pos.clone().add(new THREE.Vector3(0,0,18)),
+      cameraTarget: pos.clone().add(new THREE.Vector3(0, 0, 18)),
       lookTarget: pos.clone(),
 
       spatialMode: "memory"
 
     }),
 
-  clearSelection: ()=>
+  clearSelection: () =>
     set({
 
       selectedStarId: null,
@@ -69,21 +69,11 @@ export const useSpatialStore = create<SpatialState>((set,get) => ({
 
     }),
 
-  resetSpatial: ()=>
-    set({
+  resetSpatial: () =>
+    get().clearSelection(),
 
-      selectedStarId: null,
-      selectedStarPosition: null,
-
-      cameraTarget: HOME_POS.clone(),
-      lookTarget: HOME_LOOK.clone(),
-
-      spatialMode: "lifemap"
-
-    }),
-
-  zoomBy:(delta:number)=>
-    set((state)=>({
+  zoomBy: (delta: number) =>
+    set((state) => ({
 
       exploreRadius: THREE.MathUtils.clamp(
         state.exploreRadius + delta,

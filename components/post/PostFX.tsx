@@ -1,64 +1,49 @@
 'use client'
 
-import { EffectComposer, Bloom, Vignette, Noise, DepthOfField, ChromaticAberration } from '@react-three/postprocessing'
+import {
+  EffectComposer,
+  Bloom,
+  Vignette,
+  Noise,
+  ChromaticAberration,
+} from '@react-three/postprocessing'
 import { BlendFunction } from 'postprocessing'
-import { useFrame, useThree } from '@react-three/fiber'
-import { useRef } from 'react'
+import { useEffect } from 'react'
+import { useThree } from '@react-three/fiber'
 
 export default function PostFX() {
-
   const { gl } = useThree()
-  const exposure = useRef(1)
 
-  useFrame((state) => {
+  useEffect(() => {
+    const prevExposure = gl.toneMappingExposure
+    gl.toneMappingExposure = 1
 
-    const t = state.clock.elapsedTime
-    const nextExposure = 1 + Math.sin(t * 0.4) * 0.03
-
-    if (Math.abs(exposure.current - nextExposure) > 0.0001) {
-      exposure.current = nextExposure
-      gl.toneMappingExposure = exposure.current
+    return () => {
+      gl.toneMappingExposure = prevExposure
     }
-
-  })
+  }, [gl])
 
   return (
-    <EffectComposer multisampling={4}>
-
+    <EffectComposer multisampling={0}>
       <Bloom
-        intensity={1.6}
-        luminanceThreshold={0.9}
-        luminanceSmoothing={0.5}
+        intensity={1.1}
+        luminanceThreshold={0.85}
+        luminanceSmoothing={0.45}
         mipmapBlur
-      />
-
-      <Bloom
-        luminanceThreshold={0.1}
-        luminanceSmoothing={0.8}
-        intensity={0.2}
-        mipmapBlur
-      />
-
-      <DepthOfField
-        focusDistance={0.02}
-        focalLength={0.03}
-        bokehScale={2}
-        height={480}
       />
 
       <ChromaticAberration
         blendFunction={BlendFunction.NORMAL}
-        offset={[0.0005, 0.0005]}
+        offset={[0.00035, 0.00035]}
       />
 
-      <Noise opacity={0.02} />
+      <Noise opacity={0.015} />
 
       <Vignette
         eskil={false}
-        offset={0.1}
-        darkness={0.5}
+        offset={0.12}
+        darkness={0.45}
       />
-
     </EffectComposer>
   )
 }

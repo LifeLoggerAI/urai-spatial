@@ -1,7 +1,7 @@
 'use client'
 
 import { Html } from '@react-three/drei'
-import { useFrame } from '@react-three/fiber'
+import { useFrame, useThree } from '@react-three/fiber'
 import { useRef } from 'react'
 import * as THREE from 'three'
 import { ReplayMemory } from '../data/replayMemoryData'
@@ -14,6 +14,7 @@ interface Props {
 export default function MemoryProjection({ memory, position }: Props) {
 
   const groupRef = useRef<THREE.Group>(null!)
+  const { camera } = useThree()
 
   const offset = useRef(new THREE.Vector3(0, 1.5, 0))
   const target = useRef(new THREE.Vector3())
@@ -27,17 +28,20 @@ export default function MemoryProjection({ memory, position }: Props) {
 
     group.position.lerp(target.current, 0.08)
 
+    group.lookAt(camera.position)
+
   })
 
   return (
 
-    <group ref={groupRef}>
+    <group ref={groupRef} frustumCulled={false}>
 
       <Html
         center
+        transform
+        distanceFactor={8}
         style={{
-          pointerEvents: 'none',
-          transform: 'translate(-50%, -50%)'
+          pointerEvents: 'none'
         }}
       >
 
@@ -48,7 +52,7 @@ export default function MemoryProjection({ memory, position }: Props) {
             padding: '16px 22px',
             borderRadius: '12px',
             backdropFilter: 'blur(12px)',
-            color: '#fff',
+            color: '#ffffff',
             fontFamily: 'sans-serif',
             minWidth: '200px',
             textAlign: 'center',

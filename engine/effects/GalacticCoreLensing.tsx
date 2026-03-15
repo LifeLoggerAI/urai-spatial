@@ -4,99 +4,87 @@ import { useRef, useMemo } from "react"
 import { useFrame } from "@react-three/fiber"
 import * as THREE from "three"
 
-export default function GalacticCoreLensing(){
+const vertexShader = `
+  varying vec3 vWorldPos;
+  varying vec3 vNormal;
 
-  const mat = useRef<THREE.ShaderMaterial>(null!)
+  void main() {
+    vec4 worldPos = modelMatrix * vec4(position, 1.0);
+    vWorldPos = worldPos.xyz;
+    vNormal = normalize(normalMatrix * normal);
 
-  const material = useMemo(()=>{
+    gl_Position =
+      projectionMatrix *
+      modelViewMatrix *
+      vec4(position, 1.0);
+  }
+`
 
-    return new THREE.ShaderMaterial({
+const fragmentShader = `
+  uniform float time;
+  uniform float strength;
 
-      transparent:true,
-      depthWrite:false,
-      blending:THREE.AdditiveBlending,
+  varying vec3 vWorldPos;
+  varying vec3 vNormal;
 
-      uniforms:{
-        time:{value:0},
-        strength:{value:0.45}
-      },
+  void main() {
+    vec3 viewDir = normalize(cameraPosition - vWorldPos);
 
-      vertexShader:`
+    // Rim shell
+    float rim = 1.0 - max(dot(viewDir, vNormal), 0.0);
+    rim = pow(rim, 2.4);
 
-        varying vec3 vPos;
+    // Stable shell-space swirl from normal direction
+    vec2 uv = vNormal.xy;
+    float r = length(uv);
+    float a = atan(uv.y, uv.x);
 
-        void main(){
+    float spiral = sin(a * 6.0 - time * 0.8 + r * 14.0) * 0.5 + 0.5;
+    float bands = sin(r * 18.0 - time * 1.2) * 0.5 + 0.5;
 
-          vPos = position;
+    float energy = mix(spiral, bands, 0.45);
 
-          gl_Position =
-            projectionMatrix *
-            modelViewMatrix *
-            vec4(position,1.0);
+    float glow = rim * (0.55 + energy * 0.45) * strength;
 
-        }
+    vec3 col = vec3(0.7, 0.9, 1.0) * glow;
 
-      `,
+    gl_FragColor = vec4(col, glow * 0.55);
+  }
+`
 
-      fragmentShader:`
+export default function GalacticCoreLensing() {
+  const materialRef = useRef<THREE.ShaderMaterial>(null!)
 
-        uniform float time;
-        uniform float strength;
+  const geometry = useMemo(() => {
+    return new THREE.SphereGeometry(35, 48, 48)
+  }, [])
 
-        varying vec3 vPos;
-
-        float circle(vec2 uv){
-          float d = length(uv);
-          return smoothstep(1.2,0.0,d);
-        }
-
-        void main(){
-
-          vec2 p = vPos.xy * 0.05;
-
-          float r = length(p);
-
-          float swirl =
-            sin(r*10.0 - time*0.6)*0.5 + 0.5;
-
-          float lens =
-            circle(p);
-
-          vec3 col =
-            vec3(0.7,0.9,1.0)
-            * lens
-            * (0.5 + swirl*0.5);
-
-          gl_FragColor =
-            vec4(col, lens * strength);
-
-        }
-
-      `
-    })
-
-  },[])
-
-  useFrame((state)=>{
-    if(mat.current){
-      mat.current.uniforms.time.value = state.clock.elapsedTime
-    }
-  })
-
-  return(
-
-    <mesh position={[0,0,0]}>
-
-      <sphereGeometry args={[35,64,64]} />
-
-      <primitive
-        object={material}
-        ref={mat}
-        attach="material"
-      />
-
-    </mesh>
-
+  const uniforms = useMemo(
+    () => ({
+      time: { value: 0 },
+      strength: { value: 0.45 },
+    }),
+    []
   )
 
+  useFrame(({ clock }) => {
+    if (!materialRef.current) return
+    materialRef.current.uniforms.time.value = clock.elapsedTime
+  })
+
+  return (
+    <mesh geometry={geometry}>
+      <shaderMaterial
+        ref={materialRef}
+        vertexShader={vertexShader}
+        fragmentShader={fragmentShader}
+        uniforms={uniforms}
+        transparent
+        depthWrite={false}
+        depthTest={true}
+        blending={THREE.AdditiveBlending}
+        side={THREE.BackSide}
+      />
+    </mesh>
+  )
 }

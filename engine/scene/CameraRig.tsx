@@ -30,12 +30,21 @@ export default function CameraRig(){
 
   useEffect(()=>{
 
+    camera.near = 0.1
+    camera.far = 20000
+    camera.updateProjectionMatrix()
+
+  },[camera])
+
+  useEffect(()=>{
+
     const el = gl.domElement
 
     const wheel=(e:WheelEvent)=>{
       e.preventDefault()
-      const dir=e.deltaY>0?1:-1
-      zoomBy(dir*10)
+
+      const delta = Math.sign(e.deltaY)
+      zoomBy(delta*10)
     }
 
     const down=(e:MouseEvent)=>{
@@ -44,7 +53,9 @@ export default function CameraRig(){
       last.current.y=e.clientY
     }
 
-    const up=()=>dragging.current=false
+    const up=()=>{
+      dragging.current=false
+    }
 
     const move=(e:MouseEvent)=>{
 
@@ -73,7 +84,7 @@ export default function CameraRig(){
     window.addEventListener("keydown",key)
 
     return()=>{
-      el.removeEventListener("wheel",wheel as EventListener)
+      el.removeEventListener("wheel",wheel)
       el.removeEventListener("mousedown",down)
       window.removeEventListener("mouseup",up)
       window.removeEventListener("mousemove",move)
@@ -87,8 +98,6 @@ export default function CameraRig(){
     const damping = 1 - Math.exp(-5*dt)
 
     idleTime.current += dt
-
-    /* subtle idle drift */
 
     if(!dragging.current && mode !== "focus"){
 

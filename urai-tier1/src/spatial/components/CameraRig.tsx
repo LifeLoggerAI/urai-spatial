@@ -1,48 +1,58 @@
 'use client'
+
 import { useFrame, useThree } from '@react-three/fiber'
 import { useRef } from 'react'
 import * as THREE from 'three'
-import { useSceneStore } from '../state/sceneStore'
-
-function smooth(current: number, target: number) {
-  return current + (target - current) * 0.04
-}
+import { useSceneStore } from '@/spatial/state/sceneStore'
 
 export default function CameraRig() {
   const { camera } = useThree()
-  const { mode } = useSceneStore()
+  const cam = camera as THREE.PerspectiveCamera
 
-  const targetPos = useRef(new THREE.Vector3(0, 0, 400))
-  const lookTarget = useRef(new THREE.Vector3(0, 0, 0))
+  const mode = useSceneStore((s) => s.mode)
+
+  const targetPos = useRef(new THREE.Vector3(0, 0, 180))
+  const targetLook = useRef(new THREE.Vector3(0, 0, 0))
+  const smoothLook = useRef(new THREE.Vector3(0, 0, 0))
   const targetFov = useRef(65)
 
-  useFrame(() => {
-    if (mode === 'home') {
-      targetPos.current.set(0, 10, 500)
-      lookTarget.current.set(0, 0, 0)
-      targetFov.current = 65
+  useFrame((_, delta) => {
+    const posLerp = 1 - Math.exp(-3.5 * delta)
+    const lookLerp = 1 - Math.exp(-5.5 * delta)
+    const fovLerp = 1 - Math.exp(-4.5 * delta)
+
+    switch (mode) {
+      case 'home':
+        targetPos.current.set(0, 0, 180)
+        targetLook.current.set(0, 0, 0)
+        targetFov.current = 65
+        break
+
+      case 'lifemap':
+        targetPos.current.set(0, 60, 140)
+        targetLook.current.set(0, 0, 0)
+        targetFov.current = 58
+        break
+
+      case 'memory':
+        targetPos.current.set(0, 0, 30)
+        targetLook.current.set(0, 0, 0)
+        targetFov.current = 40
+        break
+
+      case 'replay':
+        targetPos.current.set(0, 0, 18)
+        targetLook.current.set(0, 0, 0)
+        targetFov.current = 36
+        break
     }
 
-    if (mode === 'lifemap') {
-      targetPos.current.set(0, 200, 150)
-      lookTarget.current.set(0, 200, 0)  // <-- critical change
-      targetFov.current = 52
-    }
+    cam.position.lerp(targetPos.current, posLerp)
+    smoothLook.current.lerp(targetLook.current, lookLerp)
+    cam.lookAt(smoothLook.current)
 
-    if (mode === 'memory' || mode === 'replay') {
-      targetPos.current.set(0, 0, 25)
-      lookTarget.current.set(0, 0, 0)
-      targetFov.current = 38
-    }
-
-    camera.position.x = smooth(camera.position.x, targetPos.current.x)
-    camera.position.y = smooth(camera.position.y, targetPos.current.y)
-    camera.position.z = smooth(camera.position.z, targetPos.current.z)
-
-    camera.fov = smooth(camera.fov, targetFov.current)
-    camera.updateProjectionMatrix()
-
-    camera.lookAt(lookTarget.current)
+    cam.fov = THREE.MathUtils.lerp(cam.fov, targetFov.current, fovLerp)
+    cam.updateProjectionMatrix()
   })
 
   return null

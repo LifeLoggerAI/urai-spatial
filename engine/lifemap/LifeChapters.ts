@@ -1,10 +1,17 @@
+export type LifeChapterId =
+  | "childhood"
+  | "adolescence"
+  | "earlyAdulthood"
+  | "midLife"
+  | "laterLife"
+
 export type LifeChapter = {
-  id: string
+  id: LifeChapterId
   start: number
   end: number
 }
 
-export const lifeChapters: Record<string, LifeChapter> = {
+export const lifeChapters: Record<LifeChapterId, LifeChapter> = {
   childhood: {
     id: "childhood",
     start: 1980,

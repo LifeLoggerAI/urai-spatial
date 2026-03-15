@@ -4,9 +4,9 @@ import NebulaLayer from "./NebulaLayer"
 
 export default function NebulaSky(){
 
-  return(
+  return (
 
-    <>
+    <group>
 
       <NebulaLayer
         radius={520}
@@ -32,7 +32,7 @@ export default function NebulaSky(){
         opacity={0.08}
       />
 
-    </>
+    </group>
 
   )
 

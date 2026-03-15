@@ -2,14 +2,18 @@
   "name": "urai-spatial-monorepo",
   "private": true,
   "scripts": {
-    "dev": "pnpm --filter spatial-web dev",
-    "build": "pnpm --filter spatial-web build",
-    "start": "pnpm --filter spatial-web start",
-    "lint": "pnpm --filter spatial-web lint",
-    "next-export": "pnpm --filter spatial-web next export",
+    "dev": "pnpm --filter urai-tier1 dev",
+    "build": "pnpm --filter urai-tier1 build",
+    "start": "pnpm --filter urai-tier1 start",
+    "lint": "pnpm --filter urai-tier1 lint",
+    "next-export": "pnpm --filter urai-tier1 next export",
     "ship:check": "pnpm -r --if-present test"
   },
   "devDependencies": {
     "pnpm": "^8.0.0"
+  },
+  "dependencies": {
+    "three": "^0.183.2",
+    "zustand": "^5.0.11"
   }
 }

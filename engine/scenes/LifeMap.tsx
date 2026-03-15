@@ -24,13 +24,21 @@ export default function LifeMap(){
   const setActiveMemory = useSceneStore(s=>s.setActiveMemory)
 
   useEffect(()=>{
+
+    const prevBg = scene.background
+    const prevFog = scene.fog
+
     scene.background = new THREE.Color('#02030a')
     scene.fog = new THREE.FogExp2('#02030a',0.002)
+
+    return ()=>{
+      scene.background = prevBg
+      scene.fog = prevFog
+    }
+
   },[scene])
 
-  /* =========================
-     ERA COLORS
-  ========================= */
+  /* ERA COLORS */
 
   const eraColors = useMemo(()=>[
     new THREE.Color('#6fa8ff'),
@@ -39,9 +47,7 @@ export default function LifeMap(){
     new THREE.Color('#7bffd4')
   ],[])
 
-  /* =========================
-     NEBULA
-  ========================= */
+  /* NEBULA */
 
   const nebulaMaterial = useMemo(()=>{
 
@@ -56,22 +62,36 @@ export default function LifeMap(){
       },
 
       vertexShader:`
+
         varying vec3 vPos;
+
         void main(){
+
           vPos = position;
-          gl_Position = projectionMatrix * modelViewMatrix * vec4(position,1.0);
+
+          gl_Position =
+            projectionMatrix *
+            modelViewMatrix *
+            vec4(position,1.0);
+
         }
+
       `,
 
       fragmentShader:`
+
         varying vec3 vPos;
         uniform float time;
 
         float hash(vec3 p){
-          return fract(sin(dot(p,vec3(12.9898,78.233,37.719))) * 43758.5453);
+          return fract(
+            sin(dot(p,vec3(12.9898,78.233,37.719)))
+            * 43758.5453
+          );
         }
 
         float noise(vec3 p){
+
           vec3 i = floor(p);
           vec3 f = fract(p);
 
@@ -90,6 +110,7 @@ export default function LifeMap(){
           );
 
           return n;
+
         }
 
         void main(){
@@ -97,6 +118,7 @@ export default function LifeMap(){
           vec3 p = normalize(vPos) * 4.0;
 
           float n = 0.0;
+
           n += noise(p + time*0.05) * 0.6;
           n += noise(p*2.0 + time*0.08) * 0.3;
           n += noise(p*4.0 + time*0.12) * 0.1;
@@ -109,15 +131,15 @@ export default function LifeMap(){
           vec3 col = mix(colA,colB,n);
 
           gl_FragColor = vec4(col,0.45);
+
         }
+
       `
     })
 
   },[])
 
-  /* =========================
-     STAR NODES
-  ========================= */
+  /* STAR NODES */
 
   const nodes:StarNode[] = useMemo(()=>{
 
@@ -154,9 +176,7 @@ export default function LifeMap(){
 
   },[])
 
-  /* =========================
-     FRAME LOOP
-  ========================= */
+  /* FRAME LOOP */
 
   useFrame(()=>{
 
@@ -166,15 +186,13 @@ export default function LifeMap(){
       groupRef.current.rotation.y += 0.00008
     }
 
-    nodes.forEach(node=>{
-      node.position.lerp(node.basePosition,0.05)
-    })
+    for(let i=0;i<nodes.length;i++){
+      nodes[i].position.lerp(nodes[i].basePosition,0.05)
+    }
 
   })
 
-  /* =========================
-     JSX
-  ========================= */
+  /* JSX */
 
   return (
 
@@ -226,11 +244,11 @@ export default function LifeMap(){
 
       </group>
 
-      <ambientLight intensity={0.5}/>
+      <ambientLight intensity={0.45}/>
 
       <directionalLight
         position={[80,120,60]}
-        intensity={1.2}
+        intensity={1.0}
         color="#cde2ff"
       />
 

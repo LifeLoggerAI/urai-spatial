@@ -18,7 +18,6 @@ export default function NebulaSky(){
 
       side:THREE.BackSide,
       depthWrite:false,
-      transparent:false,
 
       uniforms:{
         time:{ value:0 }
@@ -82,7 +81,6 @@ export default function NebulaSky(){
 
           vec3 p = normalize(vPos);
 
-          /* slow cosmic drift */
           vec3 warp =
             vec3(
               noise(p*4.0 + time*0.03),
@@ -101,14 +99,10 @@ export default function NebulaSky(){
           vec3 colB = vec3(0.2,0.05,0.4);
           vec3 colC = vec3(0.05,0.2,0.35);
 
-          vec3 nebula =
-            mix(colA,colB,n);
+          vec3 nebula = mix(colA,colB,n);
+          nebula = mix(nebula,colC,n*0.5);
 
-          nebula =
-            mix(nebula,colC,n*0.5);
-
-          float stars =
-            step(0.995,noise(p*200.0));
+          float stars = step(0.995,noise(p*200.0));
 
           vec3 color =
             nebula +
@@ -132,8 +126,8 @@ export default function NebulaSky(){
   })
 
   return (
-    <mesh geometry={geometry}>
-      <primitive object={material} ref={materialRef} attach="material" />
+    <mesh geometry={geometry} frustumCulled={false}>
+      <shaderMaterial ref={materialRef} args={[material]} />
     </mesh>
   )
 

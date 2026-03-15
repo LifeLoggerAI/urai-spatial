@@ -8,28 +8,19 @@ export default function SpiralNebula(){
 
   const mat = useRef<THREE.ShaderMaterial>(null!)
 
-  useFrame((_,dt)=>{
-    if(mat.current){
-      mat.current.uniforms.time.value += dt
-    }
-  })
-
   const material = useMemo(()=>{
 
     return new THREE.ShaderMaterial({
 
-      transparent:true,
-      depthWrite:false,
-
-      /* CRITICAL FIX */
-      blending:THREE.NormalBlending,
-
-      side:THREE.DoubleSide,
+      transparent: true,
+      depthWrite: false,
+      blending: THREE.NormalBlending,
+      side: THREE.DoubleSide,
 
       uniforms:{
-        time:{value:0},
-        radius:{value:480},
-        arms:{value:4}
+        time:{ value:0 },
+        radius:{ value:480 },
+        arms:{ value:4 }
       },
 
       vertexShader:`
@@ -99,7 +90,7 @@ export default function SpiralNebula(){
 
           float r = length(p)/radius;
 
-          if(r>1.0) discard;
+          if(r > 1.0) discard;
 
           float angle = atan(p.y,p.x);
 
@@ -125,6 +116,8 @@ export default function SpiralNebula(){
 
           density += hotspot*0.8;
 
+          density = clamp(density,0.0,1.0);
+
           vec3 colorA = vec3(0.10,0.16,0.55);
           vec3 colorB = vec3(0.35,0.22,0.75);
           vec3 colorC = vec3(0.8,0.4,0.2);
@@ -138,8 +131,6 @@ export default function SpiralNebula(){
           float fog =
             smoothstep(1.0,0.2,r);
 
-          /* CRITICAL FIX: much lower opacity */
-
           gl_FragColor =
             vec4(base,density*0.12*fog);
 
@@ -151,11 +142,20 @@ export default function SpiralNebula(){
 
   },[])
 
+  useFrame((_,dt)=>{
+    if(mat.current){
+      mat.current.uniforms.time.value += dt
+    }
+  })
+
   return(
 
-    <mesh rotation={[Math.PI/2,0,0]}>
+    <mesh
+      material={material}
+      rotation={[Math.PI/2,0,0]}
+      frustumCulled={false}
+    >
       <circleGeometry args={[520,160]} />
-      <primitive object={material} ref={mat}/>
     </mesh>
 
   )

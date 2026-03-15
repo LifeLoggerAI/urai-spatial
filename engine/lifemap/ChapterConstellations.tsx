@@ -7,46 +7,51 @@ import { useLifeMapStore } from "../../engine/state/useLifeMapStore"
 
 export default function ChapterConstellations() {
 
-  const { stars } = useLifeMapStore()
+  const stars = useLifeMapStore((s) => s.stars)
 
   const geometry = useMemo(() => {
 
     const positions: number[] = []
 
-    Object.values(lifeChapters).forEach(chapter => {
+    for (const chapter of Object.values(lifeChapters)) {
 
       const chapterStars = stars.filter(
-        star => star.year >= chapter.start && star.year <= chapter.end
+        (star) =>
+          star.year >= chapter.start &&
+          star.year <= chapter.end
       )
 
-      const vectors = chapterStars.map(
-        s => new THREE.Vector3(...s.position)
-      )
+      for (let i = 0; i < chapterStars.length; i++) {
 
-      for (let i = 0; i < vectors.length; i++) {
-        for (let j = i + 1; j < vectors.length; j++) {
+        const a = chapterStars[i].position
 
-          const dist = vectors[i].distanceTo(vectors[j])
+        for (let j = i + 1; j < chapterStars.length; j++) {
 
-          if (dist < 5) {
+          const b = chapterStars[j].position
+
+          const dx = a[0] - b[0]
+          const dy = a[1] - b[1]
+          const dz = a[2] - b[2]
+
+          const distSq = dx * dx + dy * dy + dz * dz
+
+          if (distSq < 25) { // 5^2
 
             positions.push(
-              vectors[i].x,
-              vectors[i].y,
-              vectors[i].z,
-              vectors[j].x,
-              vectors[j].y,
-              vectors[j].z
+              a[0], a[1], a[2],
+              b[0], b[1], b[2]
             )
 
           }
 
         }
+
       }
 
-    })
+    }
 
     const geom = new THREE.BufferGeometry()
+
     geom.setAttribute(
       "position",
       new THREE.Float32BufferAttribute(positions, 3)
@@ -58,12 +63,14 @@ export default function ChapterConstellations() {
 
   return (
 
-    <lineSegments geometry={geometry}>
+    <lineSegments geometry={geometry} frustumCulled={false}>
+
       <lineBasicMaterial
         color="#ffffff"
         transparent
         opacity={0.1}
       />
+
     </lineSegments>
 
   )

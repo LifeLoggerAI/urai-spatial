@@ -1,22 +1,41 @@
 "use client"
 
-import { useRef, useMemo } from "react"
+import { useRef, useMemo, useEffect } from "react"
 import { useFrame } from "@react-three/fiber"
 import * as THREE from "three"
 
-function createLayer(count:number, depth:number){
+function seededRandom(seed:number){
+  let t = seed += 0x6D2B79F5
+  t = Math.imul(t ^ (t >>> 15), t | 1)
+  t ^= t + Math.imul(t ^ (t >>> 7), t | 61)
+  return ((t ^ (t >>> 14)) >>> 0) / 4294967296
+}
 
-  const positions = new Float32Array(count*3)
+function createLayer(count:number, depth:number, seedOffset:number){
+
+  const positions = new Float32Array(count * 3)
 
   for(let i=0;i<count;i++){
 
-    positions[i*3]   = (Math.random()-0.5)*200
-    positions[i*3+1] = (Math.random()-0.5)*200
-    positions[i*3+2] = -depth - Math.random()*120
+    const rx = seededRandom(i*3 + seedOffset)
+    const ry = seededRandom(i*3 + seedOffset + 1)
+    const rz = seededRandom(i*3 + seedOffset + 2)
+
+    const i3 = i * 3
+
+    positions[i3]     = (rx - 0.5) * 200
+    positions[i3 + 1] = (ry - 0.5) * 200
+    positions[i3 + 2] = -depth - rz * 120
 
   }
 
-  return positions
+  const geo = new THREE.BufferGeometry()
+  geo.setAttribute(
+    "position",
+    new THREE.BufferAttribute(positions,3)
+  )
+
+  return geo
 }
 
 export default function ParallaxStars(){
@@ -25,91 +44,67 @@ export default function ParallaxStars(){
   const layer2 = useRef<THREE.Points>(null!)
   const layer3 = useRef<THREE.Points>(null!)
 
-  const stars1 = useMemo(()=>createLayer(800,20),[])
-  const stars2 = useMemo(()=>createLayer(700,60),[])
-  const stars3 = useMemo(()=>createLayer(600,120),[])
+  const geo1 = useMemo(()=>createLayer(800,20,0),[])
+  const geo2 = useMemo(()=>createLayer(700,60,2000),[])
+  const geo3 = useMemo(()=>createLayer(600,120,4000),[])
+
+  const mat1 = useMemo(()=>new THREE.PointsMaterial({
+    size:0.7,
+    color:"#7fa8ff",
+    transparent:true,
+    opacity:0.6,
+    depthWrite:false,
+    sizeAttenuation:true
+  }),[])
+
+  const mat2 = useMemo(()=>new THREE.PointsMaterial({
+    size:0.9,
+    color:"#9bbcff",
+    transparent:true,
+    opacity:0.5,
+    depthWrite:false,
+    sizeAttenuation:true
+  }),[])
+
+  const mat3 = useMemo(()=>new THREE.PointsMaterial({
+    size:1.1,
+    color:"#c8dcff",
+    transparent:true,
+    opacity:0.4,
+    depthWrite:false,
+    sizeAttenuation:true
+  }),[])
 
   useFrame(({clock})=>{
 
     const t = clock.elapsedTime
 
-    if(layer1.current){
-      const m = layer1.current.material as THREE.PointsMaterial
-      m.opacity = 0.6 + Math.sin(t*2)*0.2
-    }
-
-    if(layer2.current){
-      const m = layer2.current.material as THREE.PointsMaterial
-      m.opacity = 0.5 + Math.sin(t*1.6)*0.25
-    }
-
-    if(layer3.current){
-      const m = layer3.current.material as THREE.PointsMaterial
-      m.opacity = 0.4 + Math.sin(t*1.2)*0.25
-    }
+    mat1.opacity = 0.6 + Math.sin(t*2)*0.2
+    mat2.opacity = 0.5 + Math.sin(t*1.6)*0.25
+    mat3.opacity = 0.4 + Math.sin(t*1.2)*0.25
 
   })
+
+  useEffect(()=>{
+    return ()=>{
+      geo1.dispose()
+      geo2.dispose()
+      geo3.dispose()
+      mat1.dispose()
+      mat2.dispose()
+      mat3.dispose()
+    }
+  },[geo1,geo2,geo3,mat1,mat2,mat3])
 
   return(
 
     <group>
 
-      <points ref={layer1}>
-        <bufferGeometry>
-          <bufferAttribute
-            attach="attributes-position"
-            array={stars1}
-            count={stars1.length/3}
-            itemSize={3}
-          />
-        </bufferGeometry>
-        <pointsMaterial
-          size={0.7}
-          color="#7fa8ff"
-          transparent
-          opacity={0.6}
-          depthWrite={false}
-          sizeAttenuation
-        />
-      </points>
+      <points ref={layer1} geometry={geo1} material={mat1} />
 
-      <points ref={layer2}>
-        <bufferGeometry>
-          <bufferAttribute
-            attach="attributes-position"
-            array={stars2}
-            count={stars2.length/3}
-            itemSize={3}
-          />
-        </bufferGeometry>
-        <pointsMaterial
-          size={0.9}
-          color="#9bbcff"
-          transparent
-          opacity={0.5}
-          depthWrite={false}
-          sizeAttenuation
-        />
-      </points>
+      <points ref={layer2} geometry={geo2} material={mat2} />
 
-      <points ref={layer3}>
-        <bufferGeometry>
-          <bufferAttribute
-            attach="attributes-position"
-            array={stars3}
-            count={stars3.length/3}
-            itemSize={3}
-          />
-        </bufferGeometry>
-        <pointsMaterial
-          size={1.1}
-          color="#c8dcff"
-          transparent
-          opacity={0.4}
-          depthWrite={false}
-          sizeAttenuation
-        />
-      </points>
+      <points ref={layer3} geometry={geo3} material={mat3} />
 
     </group>
 

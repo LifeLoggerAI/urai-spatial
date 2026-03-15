@@ -3,25 +3,25 @@
 import { useEffect } from "react"
 import { useSpatialStore } from "../state/spatialStore"
 
-export default function ReplayController(){
+export default function ReplayController() {
 
-  const clearSelection = useSpatialStore((s)=>s.clearSelection)
+  const clearSelection = useSpatialStore((s) => s.clearSelection)
 
-  useEffect(()=>{
+  useEffect(() => {
 
-    const onKey = (e:KeyboardEvent)=>{
-      if(e.key === "Escape"){
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
         clearSelection()
       }
     }
 
-    window.addEventListener("keydown",onKey)
+    window.addEventListener("keydown", onKey)
 
-    return ()=>{
-      window.removeEventListener("keydown",onKey)
+    return () => {
+      window.removeEventListener("keydown", onKey)
     }
 
-  },[])
+  }, [clearSelection])
 
   return null
 }

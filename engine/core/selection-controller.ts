@@ -17,6 +17,8 @@ class SelectionController {
   private glideSpeed = 2.2
   private lock = false
 
+  private offset = new THREE.Vector3(0, 0, 20)
+
   attachCamera(camera: THREE.Camera) {
     this.cameraRef = camera
   }
@@ -33,7 +35,7 @@ class SelectionController {
 
     this.targetPosition
       .copy(worldPosition)
-      .add(new THREE.Vector3(0, 0, 20))
+      .add(this.offset)
 
     this.onComplete = onComplete
     this.lock = true
@@ -46,16 +48,26 @@ class SelectionController {
 
     const cam = this.cameraRef
 
-    cam.position.lerp(this.targetPosition, delta * this.glideSpeed)
+    const lerpFactor = Math.min(delta * this.glideSpeed, 1)
+
+    cam.position.lerp(this.targetPosition, lerpFactor)
 
     cam.lookAt(this.focusPosition)
 
     const dist = cam.position.distanceTo(this.targetPosition)
 
     if (dist < 0.05) {
+
+      cam.position.copy(this.targetPosition)
+
       this.transitionState = 'focused'
       this.lock = false
-      if (this.onComplete) this.onComplete()
+
+      if (this.onComplete) {
+        const cb = this.onComplete
+        this.onComplete = undefined
+        cb()
+      }
     }
   }
 
@@ -67,6 +79,7 @@ class SelectionController {
     this.transitionState = 'idle'
     this.lock = false
     this.selectedId = null
+    this.onComplete = undefined
   }
 
   getSelected() {

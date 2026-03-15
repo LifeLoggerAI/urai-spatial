@@ -4,39 +4,29 @@ import { useRef, useMemo } from "react"
 import { useFrame } from "@react-three/fiber"
 import * as THREE from "three"
 
-export default function VolumetricNebulaNoise(){
+export default function VolumetricNebula(){
 
   const mesh = useRef<THREE.Mesh>(null!)
-  const mat = useRef<THREE.ShaderMaterial>(null!)
 
-  useFrame((state,delta)=>{
-
+  useFrame((_, delta) => {
     if(mesh.current){
-      mesh.current.rotation.y += delta * 0.00025
-      mesh.current.rotation.x += delta * 0.00008
+      mesh.current.rotation.y += delta * 0.00035
+      mesh.current.rotation.x += delta * 0.00012
     }
-
-    if(mat.current){
-      mat.current.uniforms.uTime.value =
-        state.clock.elapsedTime
-    }
-
   })
 
-  const material = useMemo(()=>{
+  const material = useMemo(() => {
 
     return new THREE.ShaderMaterial({
 
-      transparent:true,
-      depthWrite:false,
-
-      /* critical fix */
-      blending:THREE.NormalBlending,
-
-      side:THREE.BackSide,
+      transparent: true,
+      depthWrite: false,
+      blending: THREE.AdditiveBlending,
+      side: THREE.BackSide,
 
       uniforms:{
-        uTime:{ value:0 }
+        uColorA:{ value:new THREE.Color("#040812") },
+        uColorB:{ value:new THREE.Color("#2c48d8") }
       },
 
       vertexShader:`
@@ -61,36 +51,21 @@ export default function VolumetricNebulaNoise(){
         precision highp float;
 
         varying vec3 vPos;
-        uniform float uTime;
 
-        float noise(vec3 p){
-          return fract(
-            sin(dot(p,vec3(12.9898,78.233,54.53)))
-            *43758.5453
-          );
-        }
+        uniform vec3 uColorA;
+        uniform vec3 uColorB;
 
         void main(){
 
-          float n =
-            noise(vPos*0.02 + uTime*0.02) +
-            noise(vPos*0.05 + uTime*0.01);
-
-          float d =
-            length(vPos) / 700.0;
+          float r =
+            length(vPos) / 600.0;
 
           float fog =
-            smoothstep(0.85,0.25,d) *
-            n;
+            smoothstep(1.0,0.25,r) *
+            smoothstep(0.0,0.65,r);
 
           vec3 color =
-            mix(
-              vec3(0.05,0.08,0.25),
-              vec3(0.35,0.5,0.9),
-              n
-            );
-
-          /* reduce opacity drastically */
+            mix(uColorA,uColorB,fog);
 
           float alpha =
             fog * 0.12;
@@ -101,15 +76,13 @@ export default function VolumetricNebulaNoise(){
         }
 
       `
-
     })
 
-  },[])
+  }, [])
 
-  return(
-    <mesh ref={mesh}>
-      <sphereGeometry args={[700,64,64]} />
-      <primitive object={material} ref={mat}/>
+  return (
+    <mesh ref={mesh} material={material}>
+      <sphereGeometry args={[600,64,64]} />
     </mesh>
   )
 

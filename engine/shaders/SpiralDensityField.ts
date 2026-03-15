@@ -1,26 +1,36 @@
 export function spiralDensity(
-  x:number,
-  z:number,
-  arms:number = 4
-){
+  x: number,
+  z: number,
+  arms: number = 4
+) {
 
   const r =
-    Math.sqrt(x*x + z*z)
+    Math.sqrt(x * x + z * z)
 
   const angle =
-    Math.atan2(z,x)
+    Math.atan2(z, x)
 
-  const spiral =
-    Math.sin(angle * arms + r * 0.04)
+  // spiral twist factor
+  const twist = 0.015
 
+  const spiralAngle =
+    angle - r * twist
+
+  // arm alignment
+  const arm =
+    Math.cos(spiralAngle * arms)
+
+  // concentrate stars toward arm center
   const armStrength =
-    1 - Math.abs(spiral)
+    Math.pow(
+      Math.max(0, arm),
+      4
+    )
 
+  // radial galaxy falloff
   const radialFalloff =
-    Math.exp(-r * 0.002)
+    Math.exp(-r * 0.004)
 
-  return Math.max(
-    0,
-    armStrength * radialFalloff
-  )
+  return armStrength * radialFalloff
+
 }

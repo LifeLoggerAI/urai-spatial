@@ -6,26 +6,34 @@ import * as THREE from "three"
 import { useRef } from "react"
 
 const SKY_POSITION = new THREE.Vector3(0, 0, 6)
+const SKY_TARGET = new THREE.Vector3(0, 0, 0)
 const LERP = 0.08
 
 export default function SceneController() {
-
   const { camera } = useThree()
 
-  const star = useSpatialStore(s => s.selectedStar)
-  const mode = useSpatialStore(s => s.mode)
+  const { selectedStar: star, mode } = useSpatialStore(s => ({
+    selectedStar: s.selectedStar,
+    mode: s.mode,
+  }))
 
   const desired = useRef(new THREE.Vector3())
   const target = useRef(new THREE.Vector3())
+  const quat = useRef(new THREE.Quaternion())
 
   useFrame(() => {
-
     if (mode === "map") {
+      // Smooth position lerp
+      camera.position.lerpVectors(camera.position, SKY_POSITION, LERP)
 
-      camera.position.lerp(SKY_POSITION, LERP)
-      camera.lookAt(0, 0, 0)
+      // Smooth rotation slerp
+      camera.quaternion.slerp(
+        quat.current.setFromRotationMatrix(
+          new THREE.Matrix4().lookAt(camera.position, SKY_TARGET, camera.up)
+        ),
+        LERP
+      )
       return
-
     }
 
     if (!star || !star.position) return
@@ -35,9 +43,16 @@ export default function SceneController() {
     target.current.set(x, y, z)
     desired.current.set(x, y, z + 2.9)
 
-    camera.position.lerp(desired.current, LERP)
-    camera.lookAt(target.current)
+    // Smooth camera movement
+    camera.position.lerpVectors(camera.position, desired.current, LERP)
 
+    // Smooth camera rotation
+    camera.quaternion.slerp(
+      quat.current.setFromRotationMatrix(
+        new THREE.Matrix4().lookAt(camera.position, target.current, camera.up)
+      ),
+      LERP
+    )
   })
 
   return null

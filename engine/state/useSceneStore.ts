@@ -7,7 +7,6 @@ type Vec3 = {
 }
 
 type SceneState = {
-
   cameraTarget: Vec3 | null
   isCameraMoving: boolean
 
@@ -19,29 +18,27 @@ type SceneState = {
 }
 
 export const useSceneStore = create<SceneState>((set) => ({
-
   cameraTarget: null,
   isCameraMoving: false,
 
   setCameraTarget: (pos) =>
     set({
-      cameraTarget: pos ? { ...pos } : null
+      cameraTarget: pos ? { ...pos } : null,
     }),
 
   setCameraMoving: (moving) =>
     set({
-      isCameraMoving: moving
+      isCameraMoving: moving,
     }),
 
   clearCameraTarget: () =>
     set({
-      cameraTarget: null
+      cameraTarget: null,
     }),
 
   resetSceneState: () =>
     set({
       cameraTarget: null,
-      isCameraMoving: false
-    })
-
+      isCameraMoving: false,
+    }),
 }))

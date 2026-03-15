@@ -16,13 +16,20 @@ export default function Sky({ onClick }: { onClick?: () => void }) {
     return new THREE.ShaderMaterial({
 
       side: THREE.BackSide,
+      depthWrite: false,
 
       vertexShader: `
         varying vec3 vPos;
 
         void main() {
+
           vPos = position;
-          gl_Position = projectionMatrix * modelViewMatrix * vec4(position,1.0);
+
+          gl_Position =
+            projectionMatrix *
+            modelViewMatrix *
+            vec4(position,1.0);
+
         }
       `,
 
@@ -31,12 +38,16 @@ export default function Sky({ onClick }: { onClick?: () => void }) {
 
         void main() {
 
-          float h = normalize(vPos).y * 0.5 + 0.5;
+          vec3 dir = normalize(vPos);
+
+          float h = dir.y * 0.5 + 0.5;
 
           vec3 top = vec3(0.02,0.05,0.15);
           vec3 horizon = vec3(0.08,0.12,0.25);
 
-          vec3 col = mix(horizon, top, h);
+          vec3 col = mix(horizon, top, smoothstep(0.0,1.0,h));
+
+          col = pow(col, vec3(1.1));
 
           gl_FragColor = vec4(col,1.0);
 
@@ -60,7 +71,6 @@ export default function Sky({ onClick }: { onClick?: () => void }) {
 
     e.stopPropagation()
 
-    // Only allow click in upper sky region
     if (e.point.y > 2.5) {
       onClick?.()
     }

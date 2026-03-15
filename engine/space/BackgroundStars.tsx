@@ -1,6 +1,6 @@
 "use client"
 
-import { useMemo } from "react"
+import { useMemo, useEffect } from "react"
 import * as THREE from "three"
 
 const STAR_COUNT = 2000
@@ -20,15 +20,19 @@ export default function BackgroundStars(){
 
     for(let i=0;i<STAR_COUNT;i++){
 
-      const r = seededRandom(i)
+      const rx = seededRandom(i * 3)
+      const ry = seededRandom(i * 3 + 1)
+      const rz = seededRandom(i * 3 + 2)
 
-      const x = (r - 0.5) * 140
-      const y = (seededRandom(i+1) - 0.5) * 140
-      const z = -20 - seededRandom(i+2) * 120
+      const x = (rx - 0.5) * 140
+      const y = (ry - 0.5) * 140
+      const z = -20 - rz * 120
 
-      positions[i*3] = x
-      positions[i*3+1] = y
-      positions[i*3+2] = z
+      const i3 = i * 3
+
+      positions[i3] = x
+      positions[i3 + 1] = y
+      positions[i3 + 2] = z
     }
 
     const geo = new THREE.BufferGeometry()
@@ -41,20 +45,26 @@ export default function BackgroundStars(){
 
   },[])
 
+  useEffect(()=>{
+    return ()=>{
+      geometry.dispose()
+    }
+  },[geometry])
+
+  const material = useMemo(()=>{
+    return new THREE.PointsMaterial({
+      size:1.6,
+      sizeAttenuation:true,
+      color:"#cfd8ff",
+      transparent:true,
+      opacity:0.9,
+      depthWrite:false
+    })
+  },[])
+
   return(
 
-    <points geometry={geometry}>
-
-      <pointsMaterial
-        size={1.6}
-        sizeAttenuation
-        color="#cfd8ff"
-        transparent
-        opacity={0.9}
-        depthWrite={false}
-      />
-
-    </points>
+    <points geometry={geometry} material={material} />
 
   )
 

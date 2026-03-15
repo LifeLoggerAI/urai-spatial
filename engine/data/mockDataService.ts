@@ -58,18 +58,50 @@ const mockStarData: ReadonlyArray<StarData> = [
   { starId: 734, memory: mockMemories[4] },
 ] as const
 
+const DEFAULT_DELAY_MS = 300
+
+function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => {
+    setTimeout(resolve, ms)
+  })
+}
+
+function cloneMemory(memory: Memory): Memory {
+  return {
+    ...memory,
+  }
+}
+
+function cloneStarData(star: StarData): StarData {
+  return {
+    ...star,
+    memory: cloneMemory(star.memory),
+  }
+}
+
 export interface DataService {
   getStarData(): Promise<StarData[]>
+  getStarById(starId: number): Promise<StarData | null>
+  getMemoryById(memoryId: string): Promise<Memory | null>
 }
 
 export const mockDataService: DataService = {
-
   async getStarData(): Promise<StarData[]> {
+    await sleep(DEFAULT_DELAY_MS)
+    return mockStarData.map(cloneStarData)
+  },
 
-    await new Promise((r) => setTimeout(r, 500))
+  async getStarById(starId: number): Promise<StarData | null> {
+    await sleep(DEFAULT_DELAY_MS)
 
-    return [...mockStarData]
+    const found = mockStarData.find((star) => star.starId === starId)
+    return found ? cloneStarData(found) : null
+  },
 
-  }
+  async getMemoryById(memoryId: string): Promise<Memory | null> {
+    await sleep(DEFAULT_DELAY_MS)
 
+    const found = mockMemories.find((memory) => memory.id === memoryId)
+    return found ? cloneMemory(found) : null
+  },
 }

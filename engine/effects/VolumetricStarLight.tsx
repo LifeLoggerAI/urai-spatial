@@ -3,78 +3,68 @@
 import * as THREE from "three"
 import { useMemo } from "react"
 
-export default function VolumetricStarLight(){
+const RADIUS = 2
+const HEIGHT = 40
+const SEGMENTS = 32
 
-  const mesh = useMemo(()=>{
+export default function VolumetricStarLight() {
+  const geometry = useMemo(() => {
+    const g = new THREE.ConeGeometry(RADIUS, HEIGHT, SEGMENTS, 1, true)
 
-    const geometry = new THREE.ConeGeometry(
-      2,
-      40,
-      32,
-      1,
-      true
-    )
+    // Move origin to beam base so the mesh anchors at its source point.
+    g.translate(0, -HEIGHT * 0.5, 0)
 
-    /* move origin to beam base */
-    geometry.translate(0,-20,0)
+    return g
+  }, [])
 
-    const material = new THREE.ShaderMaterial({
-
-      transparent:true,
-      depthWrite:false,
-      depthTest:false,
-      blending:THREE.AdditiveBlending,
-      side:THREE.DoubleSide,
-
-      uniforms:{
-        color:{ value:new THREE.Color("#cfe6ff") }
+  const material = useMemo(() => {
+    return new THREE.ShaderMaterial({
+      transparent: true,
+      depthWrite: false,
+      depthTest: true,
+      blending: THREE.AdditiveBlending,
+      side: THREE.DoubleSide,
+      uniforms: {
+        color: { value: new THREE.Color("#cfe6ff") },
+        beamHeight: { value: HEIGHT },
+        opacity: { value: 0.06 },
       },
-
-      vertexShader:`
-
+      vertexShader: `
         varying float vY;
 
-        void main(){
-
+        void main() {
           vY = position.y;
-
-          gl_Position =
-            projectionMatrix *
-            modelViewMatrix *
-            vec4(position,1.0);
-
+          gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
         }
-
       `,
-
-      fragmentShader:`
-
+      fragmentShader: `
         uniform vec3 color;
+        uniform float beamHeight;
+        uniform float opacity;
         varying float vY;
 
-        void main(){
+        void main() {
+          float baseY = -beamHeight * 0.5;
+          float tipY = 0.0;
 
-          float fade =
-            smoothstep(-20.0,0.0,vY);
+          float fade = smoothstep(baseY, tipY, vY);
 
-          gl_FragColor =
-            vec4(color, fade * 0.06);
+          // Slight soft falloff so the tip is not too harsh.
+          fade = pow(fade, 1.35);
 
+          gl_FragColor = vec4(color, fade * opacity);
         }
-
-      `
-
+      `,
     })
+  }, [])
 
-    const m = new THREE.Mesh(geometry,material)
-
-    /* orient beam forward */
-    m.rotation.x = Math.PI / 2
-
-    return m
-
-  },[])
-
-  return <primitive object={mesh} />
-
+  return (
+    <mesh
+      geometry={geometry}
+      rotation-x={Math.PI / 2}
+      frustumCulled={false}
+    >
+      <primitive object={material} attach="material" />
+    </mesh>
+  )
 }

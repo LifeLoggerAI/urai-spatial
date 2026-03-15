@@ -20,8 +20,8 @@ export const DustTurbulenceShader = {
       float waveB =
         cos(time*0.6 + p.x*0.03);
 
-      p.x += waveA * 2.0;
-      p.z += waveB * 2.0;
+      p.x += waveA * 1.8;
+      p.z += waveB * 1.8;
 
       vPos = p;
 
@@ -46,13 +46,16 @@ export const DustTurbulenceShader = {
         length(vPos.xy);
 
       float density =
-        smoothstep(2.5,0.0,d);
+        1.0 - smoothstep(0.0,2.5,d);
 
       vec3 color =
         vec3(0.8,0.9,1.0) * density;
 
+      float alpha =
+        density * 0.35;
+
       gl_FragColor =
-        vec4(color,density*0.35);
+        vec4(color,alpha);
 
     }
 

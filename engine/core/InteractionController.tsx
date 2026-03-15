@@ -2,7 +2,7 @@
 
 import { useStarInteraction } from './useStarInteraction'
 
-export default function InteractionController(): null {
+export default function InteractionController() {
   useStarInteraction()
   return null
 }

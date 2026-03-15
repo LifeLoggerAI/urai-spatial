@@ -16,21 +16,21 @@ const ConsciousOrbMaterial = shaderMaterial(
 
   varying vec3 vNormal;
   varying vec3 vWorldPos;
+  varying vec3 vLocalPos;
 
   void main() {
-
-    vNormal = normalize(normalMatrix * normal);
-
     vec3 pos = position;
 
     float breathe = sin(uTime * 0.8) * 0.02;
     pos += normal * breathe;
 
+    vLocalPos = pos;
+    vNormal = normalize(normalMatrix * normal);
+
     vec4 worldPosition = modelMatrix * vec4(pos, 1.0);
     vWorldPos = worldPosition.xyz;
 
-    gl_Position = projectionMatrix * viewMatrix * worldPosition;
-
+    gl_Position = projectionMatrix * modelViewMatrix * vec4(pos, 1.0);
   }
   `,
 
@@ -43,6 +43,7 @@ const ConsciousOrbMaterial = shaderMaterial(
 
   varying vec3 vNormal;
   varying vec3 vWorldPos;
+  varying vec3 vLocalPos;
 
   float hash(vec3 p) {
     p = fract(p * 0.3183099 + vec3(0.1));
@@ -57,13 +58,13 @@ const ConsciousOrbMaterial = shaderMaterial(
 
     float n = mix(
       mix(
-        mix(hash(i + vec3(0,0,0)), hash(i + vec3(1,0,0)), f.x),
-        mix(hash(i + vec3(0,1,0)), hash(i + vec3(1,1,0)), f.x),
+        mix(hash(i + vec3(0.0, 0.0, 0.0)), hash(i + vec3(1.0, 0.0, 0.0)), f.x),
+        mix(hash(i + vec3(0.0, 1.0, 0.0)), hash(i + vec3(1.0, 1.0, 0.0)), f.x),
         f.y
       ),
       mix(
-        mix(hash(i + vec3(0,0,1)), hash(i + vec3(1,0,1)), f.x),
-        mix(hash(i + vec3(0,1,1)), hash(i + vec3(1,1,1)), f.x),
+        mix(hash(i + vec3(0.0, 0.0, 1.0)), hash(i + vec3(1.0, 0.0, 1.0)), f.x),
+        mix(hash(i + vec3(0.0, 1.0, 1.0)), hash(i + vec3(1.0, 1.0, 1.0)), f.x),
         f.y
       ),
       f.z
@@ -73,15 +74,13 @@ const ConsciousOrbMaterial = shaderMaterial(
   }
 
   void main() {
+    vec3 N = normalize(vNormal);
+    vec3 V = normalize(cameraPosition - vWorldPos);
 
-    vec3 viewDir = normalize(cameraPosition - vWorldPos);
+    float fresnel = pow(1.0 - max(dot(N, V), 0.0), 2.5);
+    float centerGlow = pow(max(dot(N, V), 0.0), 1.5);
 
-    float fresnel = pow(1.0 - dot(vNormal, viewDir), 2.5);
-
-    float centerGlow = 1.0 - length(vNormal.xy);
-    centerGlow = clamp(centerGlow, 0.0, 1.0);
-
-    float micro = noise(vWorldPos * 2.0 + uTime * 0.3);
+    float micro = noise(vLocalPos * 2.0 + vec3(0.0, 0.0, uTime * 0.3));
     micro *= 0.15;
 
     vec3 baseColor = mix(uColorA, uColorB, fresnel);
@@ -93,7 +92,6 @@ const ConsciousOrbMaterial = shaderMaterial(
     vec3 emissive = baseColor * fresnel * uEnergy * 0.9;
 
     gl_FragColor = vec4(color + emissive, 1.0);
-
   }
   `
 )

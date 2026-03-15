@@ -1,51 +1,74 @@
 "use client"
 
-import { useRef, useMemo } from "react"
+import { useRef, useMemo, useEffect } from "react"
 import { useFrame } from "@react-three/fiber"
 import * as THREE from "three"
 
-export default function Orb(){
+export default function Orb() {
 
-  const ref = useRef<THREE.Mesh>(null!)
+  const meshRef = useRef<THREE.Mesh>(null!)
+  const haloRef = useRef<THREE.Mesh>(null!)
 
-  const geometry = useMemo(
-    () => new THREE.SphereGeometry(0.25, 32, 32),
-    []
-  )
+  const geometry = useMemo(() => {
+    return new THREE.SphereGeometry(0.25, 48, 48)
+  }, [])
+
+  const haloGeometry = useMemo(() => {
+    return new THREE.SphereGeometry(0.35, 32, 32)
+  }, [])
+
+  const baseColor = useMemo(() => new THREE.Color("#7fd8ff"), [])
 
   useFrame(({ clock }) => {
 
-    if (!ref.current) return
+    const mesh = meshRef.current
+    const halo = haloRef.current
+
+    if (!mesh) return
 
     const t = clock.getElapsedTime()
 
-    const pulse = 1 + Math.sin(t * 2) * 0.05
+    const pulse = 1 + Math.sin(t * 2.2) * 0.06
 
-    ref.current.scale.set(pulse, pulse, pulse)
+    mesh.scale.setScalar(pulse)
+    mesh.rotation.y += 0.002
 
-    ref.current.rotation.y += 0.002
+    if (halo) {
+      halo.scale.setScalar(pulse * 1.25)
+    }
 
   })
 
-  return(
+  useEffect(() => {
+    return () => {
+      geometry.dispose()
+      haloGeometry.dispose()
+    }
+  }, [geometry, haloGeometry])
 
-    <mesh
-      ref={ref}
-      geometry={geometry}
-      position={[0,0,-2]}
-      frustumCulled={false}
-    >
+  return (
+    <group position={[0, 0, -2]} frustumCulled={false}>
 
-      <meshStandardMaterial
-        color="#7fd8ff"
-        emissive="#7fd8ff"
-        emissiveIntensity={2}
-        roughness={0.15}
-        metalness={0}
-      />
+      <mesh ref={meshRef} geometry={geometry}>
+        <meshStandardMaterial
+          color={baseColor}
+          emissive={baseColor}
+          emissiveIntensity={2.2}
+          roughness={0.15}
+          metalness={0}
+        />
+      </mesh>
 
-    </mesh>
+      <mesh ref={haloRef} geometry={haloGeometry}>
+        <meshBasicMaterial
+          color={baseColor}
+          transparent
+          opacity={0.25}
+          blending={THREE.AdditiveBlending}
+          depthWrite={false}
+        />
+      </mesh>
 
+    </group>
   )
-
 }

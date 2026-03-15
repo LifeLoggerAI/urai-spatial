@@ -6,7 +6,7 @@ import * as THREE from "three"
 export default function GroundPlane(){
 
   const geometry = useMemo(
-    () => new THREE.PlaneGeometry(500, 500),
+    () => new THREE.PlaneGeometry(5000, 5000),
     []
   )
 
@@ -15,7 +15,7 @@ export default function GroundPlane(){
     <mesh
       geometry={geometry}
       rotation={[-Math.PI/2,0,0]}
-      position={[0,-3,0]}
+      position={[0,-5,0]}
       receiveShadow={false}
       castShadow={false}
       frustumCulled={false}
@@ -23,7 +23,7 @@ export default function GroundPlane(){
 
       <meshBasicMaterial
         color="#020406"
-        depthWrite={true}
+        depthWrite={false}
       />
 
     </mesh>

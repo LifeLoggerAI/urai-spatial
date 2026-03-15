@@ -10,18 +10,26 @@ export default function Replay(){
   const { scene } = useThree()
 
   useEffect(()=>{
+
+    const previousBackground = scene.background
+
     scene.background = new THREE.Color('#060914')
+
+    return ()=>{
+      scene.background = previousBackground
+    }
+
   },[scene])
 
   return(
 
     <>
 
-      <ambientLight intensity={0.5} />
+      <ambientLight intensity={0.45} />
 
       <directionalLight
         position={[12,18,10]}
-        intensity={1.0}
+        intensity={0.9}
         color="#88aaff"
       />
 

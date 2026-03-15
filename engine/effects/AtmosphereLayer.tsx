@@ -4,31 +4,24 @@ import { useThree } from "@react-three/fiber"
 import { useEffect, useMemo } from "react"
 import * as THREE from "three"
 
-export default function AtmosphereLayer(){
+const FOG_COLOR = "#04060c"
+const FOG_DENSITY = 0.0035
 
-  const { scene } = useThree()
+export default function AtmosphereLayer() {
+  const scene = useThree((state) => state.scene)
 
-  const fog = useMemo(()=>{
+  const fog = useMemo(() => {
+    return new THREE.FogExp2(new THREE.Color(FOG_COLOR), FOG_DENSITY)
+  }, [])
 
-    const color = new THREE.Color("#04060c")
-
-    /* softer atmospheric depth for large space scenes */
-    return new THREE.FogExp2(color,0.008)
-
-  },[])
-
-  useEffect(()=>{
-
+  useEffect(() => {
     const previousFog = scene.fog
-
     scene.fog = fog
 
-    return ()=>{
+    return () => {
       scene.fog = previousFog ?? null
     }
-
-  },[scene,fog])
+  }, [scene, fog])
 
   return null
-
 }

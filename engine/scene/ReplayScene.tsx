@@ -15,9 +15,9 @@ export default function ReplayScene() {
   const mode = useSceneModeStore((s) => s.mode)
 
   const cursorRef = useRef<THREE.Mesh>(null!)
-  const { camera } = useThree()
-
   const progress = useRef(0)
+
+  const { camera } = useThree()
 
   const memoryPositions = useMemo(() => {
 
@@ -66,15 +66,10 @@ export default function ReplayScene() {
 
   return (
 
-    <>
+    <group>
 
-      <mesh
-        position={ORB_POSITION}
-        rotation={[-Math.PI / 2, 0, 0]}
-      >
-
+      <mesh position={ORB_POSITION} rotation={[-Math.PI / 2, 0, 0]}>
         <ringGeometry args={[5.5, 5.7, 64]} />
-
         <meshStandardMaterial
           color="#88ccff"
           emissive="#88ccff"
@@ -82,38 +77,29 @@ export default function ReplayScene() {
           transparent
           opacity={0.45}
         />
-
       </mesh>
 
       <mesh ref={cursorRef}>
-
         <sphereGeometry args={[0.2, 16, 16]} />
-
         <meshStandardMaterial
           color="#ffffff"
           emissive="#88ccff"
           emissiveIntensity={1.2}
         />
-
       </mesh>
 
       {memoryPositions.map((m) => (
-
         <mesh key={m.id} position={m.position}>
-
           <sphereGeometry args={[0.15, 12, 12]} />
-
           <meshStandardMaterial
             color="#88ccff"
             emissive="#88ccff"
             emissiveIntensity={1}
           />
-
         </mesh>
-
       ))}
 
-    </>
+    </group>
 
   )
 

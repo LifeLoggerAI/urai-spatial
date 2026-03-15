@@ -14,26 +14,40 @@ export type LifeStar = {
 }
 
 /*
-  Build fast lookup table once
+  Build lookup index once at module load
+  Using a Map avoids prototype collisions and improves lookup safety
 */
-const memoryIndex: Record<number, MemoryNode[]> = {}
+const memoryIndex = new Map<number, MemoryNode[]>()
 
 for (const node of memoryNodes) {
-  if (!memoryIndex[node.year]) {
-    memoryIndex[node.year] = []
+
+  const existing = memoryIndex.get(node.year)
+
+  if (existing) {
+    existing.push(node)
+  } else {
+    memoryIndex.set(node.year, [node])
   }
-  memoryIndex[node.year].push(node)
+
 }
 
+/*
+  Deterministic memory selection
+  Same star always maps to same memory
+*/
 export function getMemoryForStar(
   star: LifeStar | null | undefined
 ): MemoryNode | null {
 
   if (!star) return null
 
-  const matches = memoryIndex[star.year]
+  const matches = memoryIndex.get(star.year)
 
-  if (!matches || matches.length === 0) return null
+  if (!matches || matches.length === 0) {
+    return null
+  }
 
-  return matches[0]
+  const index = star.id % matches.length
+
+  return matches[index]
 }

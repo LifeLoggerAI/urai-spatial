@@ -1,23 +1,15 @@
 "use client"
 
-import Starfield from "./Starfield"
+import Starfield from "../space/Starfield"
 import CameraRig from "../camera/CameraRig"
 import MemorySphere from "../memory/MemorySphere"
 
 export default function SceneController(){
-
-  return (
-
+  return(
     <>
-
-      <CameraRig />
-
-      <Starfield />
-
-      <MemorySphere />
-
+      <CameraRig/>
+      <Starfield/>
+      <MemorySphere/>
     </>
-
   )
-
 }

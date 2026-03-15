@@ -26,10 +26,19 @@ export default function AudioField() {
   }))
 
   const listenerRef = useRef<THREE.AudioListener | null>(null)
-  const audioRef = useRef<THREE.Audio | null>(null)
+
+  const activeAudio = useRef<THREE.Audio | null>(null)
+  const nextAudio = useRef<THREE.Audio | null>(null)
+
   const loader = useMemo(() => new THREE.AudioLoader(), [])
 
   const bufferCache = useRef<Record<string, AudioBuffer>>({})
+
+  const fade = useRef({
+    active: false,
+    t: 0,
+    duration: 1.2,
+  })
 
   useEffect(() => {
 
@@ -38,7 +47,8 @@ export default function AudioField() {
 
     camera.add(listener)
 
-    audioRef.current = new THREE.Audio(listener)
+    activeAudio.current = new THREE.Audio(listener)
+    nextAudio.current = new THREE.Audio(listener)
 
     return () => {
       camera.remove(listener)
@@ -47,10 +57,29 @@ export default function AudioField() {
 
   }, [camera])
 
+  useEffect(() => {
+
+    const unlock = () => {
+
+      const ctx = listenerRef.current?.context
+      if (ctx && ctx.state === "suspended") {
+        ctx.resume()
+      }
+
+      window.removeEventListener("pointerdown", unlock)
+      window.removeEventListener("touchstart", unlock)
+
+    }
+
+    window.addEventListener("pointerdown", unlock)
+    window.addEventListener("touchstart", unlock)
+
+  }, [])
+
   const targetEmotion = useMemo(() => {
 
     if (selectedStarId !== null) {
-      const star = stars.find((s) => s.id === selectedStarId)
+      const star = stars?.find((s) => s.id === selectedStarId)
       return star?.emotion || "default"
     }
 
@@ -60,36 +89,76 @@ export default function AudioField() {
 
   useEffect(() => {
 
-    const audio = audioRef.current
-    if (!audio) return
+    const path = EMOTION_SOUNDS[targetEmotion] || EMOTION_SOUNDS.default
 
-    const path =
-      EMOTION_SOUNDS[targetEmotion] || EMOTION_SOUNDS.default
+    const play = (buffer: AudioBuffer) => {
 
-    const playBuffer = (buffer: AudioBuffer) => {
+      const a = activeAudio.current
+      const b = nextAudio.current
 
-      if (audio.isPlaying) audio.stop()
+      if (!a || !b) return
 
-      audio.setBuffer(buffer)
-      audio.setLoop(true)
-      audio.setVolume(0.35)
-      audio.play()
+      b.setBuffer(buffer)
+      b.setLoop(true)
+      b.setVolume(0)
+      b.play()
+
+      fade.current.active = true
+      fade.current.t = 0
 
     }
 
     if (bufferCache.current[path]) {
-      playBuffer(bufferCache.current[path])
+      play(bufferCache.current[path])
       return
     }
 
     loader.load(path, (buffer) => {
 
       bufferCache.current[path] = buffer
-      playBuffer(buffer)
+      play(buffer)
 
     })
 
   }, [targetEmotion, loader])
+
+  useEffect(() => {
+
+    let raf: number
+
+    const tick = () => {
+
+      const a = activeAudio.current
+      const b = nextAudio.current
+
+      if (fade.current.active && a && b) {
+
+        fade.current.t += 0.016
+
+        const k = Math.min(fade.current.t / fade.current.duration, 1)
+
+        a.setVolume(0.35 * (1 - k))
+        b.setVolume(0.35 * k)
+
+        if (k >= 1) {
+
+          a.stop()
+
+          activeAudio.current = b
+          nextAudio.current = a
+
+          fade.current.active = false
+        }
+      }
+
+      raf = requestAnimationFrame(tick)
+    }
+
+    tick()
+
+    return () => cancelAnimationFrame(raf)
+
+  }, [])
 
   return null
 }

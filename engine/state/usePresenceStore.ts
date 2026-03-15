@@ -1,16 +1,16 @@
 "use client"
 
-import { create } from 'zustand'
+import { create } from "zustand"
 
 export type OtherUser = {
-  id: string,
-  position: [number, number, number],
-  rotation: [number, number, number],
+  id: string
+  position: [number, number, number]
+  rotation: [number, number, number]
 }
 
 type PresenceState = {
-  others: OtherUser[],
-  setOthers: (others: OtherUser[]) => void,
+  others: OtherUser[]
+  setOthers: (others: OtherUser[]) => void
 }
 
 export const usePresenceStore = create<PresenceState>((set) => ({

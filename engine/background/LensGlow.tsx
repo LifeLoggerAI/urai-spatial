@@ -1,27 +1,42 @@
 "use client"
 
-import { useMemo } from "react"
+import { useRef, useMemo } from "react"
+import { useFrame, useThree } from "@react-three/fiber"
 import * as THREE from "three"
 
-export default function LensGlow() {
+type Props = {
+  size?: number
+  distance?: number
+  color?: string
+}
 
-  const geometry = useMemo(()=>new THREE.PlaneGeometry(18,18),[])
+export default function LensGlow({
+  size = 18,
+  distance = -140,
+  color = "#6fa8ff"
+}: Props) {
 
-  const material = useMemo(()=>{
+  const mesh = useRef<THREE.Mesh>(null!)
+  const { camera } = useThree()
+
+  const geometry = useMemo(() => {
+    return new THREE.PlaneGeometry(size, size)
+  }, [size])
+
+  const material = useMemo(() => {
 
     return new THREE.ShaderMaterial({
 
-      transparent:true,
-      depthWrite:false,
-
-      /* prevent scene washout */
-      blending:THREE.AdditiveBlending,
+      transparent: true,
+      depthWrite: false,
+      blending: THREE.AdditiveBlending,
 
       uniforms:{
-        color:{value:new THREE.Color("#6fa8ff")}
+        color:{ value:new THREE.Color(color) }
       },
 
       vertexShader:`
+
         varying vec2 vUv;
 
         void main(){
@@ -34,6 +49,7 @@ export default function LensGlow() {
             vec4(position,1.0);
 
         }
+
       `,
 
       fragmentShader:`
@@ -45,12 +61,9 @@ export default function LensGlow() {
 
           float d = distance(vUv,vec2(0.5));
 
-          /* softer falloff */
           float glow = 1.0 - smoothstep(0.0,0.75,d);
-
           glow = pow(glow,2.2);
 
-          /* reduce brightness */
           float alpha = glow * 0.18;
 
           gl_FragColor = vec4(color * glow, alpha);
@@ -58,16 +71,23 @@ export default function LensGlow() {
         }
 
       `
+
     })
 
-  },[])
+  }, [color])
+
+  useFrame(() => {
+    if(mesh.current){
+      mesh.current.quaternion.copy(camera.quaternion)
+    }
+  })
 
   return (
     <mesh
-      position={[0,0,-140]}
+      ref={mesh}
+      position={[0,0,distance]}
       geometry={geometry}
       material={material}
     />
   )
-
 }

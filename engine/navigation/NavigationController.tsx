@@ -4,7 +4,6 @@ import { useEffect, useRef } from "react"
 import { useThree, useFrame } from "@react-three/fiber"
 import * as THREE from "three"
 import { useSpatialStore } from "../state/spatialStore"
-import { memoryDataset } from "../memory/memoryDataset"
 
 const CAMERA_GLIDE_SPEED = 0.06
 const TARGET_THRESHOLD = 0.12
@@ -14,38 +13,42 @@ export default function NavigationController(){
   const { camera } = useThree()
 
   const {
-    selectedStarId,
+    selectedStarPosition,
     interactionLock,
     setInteractionLock,
-    setCameraTarget,
-    cameraTarget
+    setCameraTarget
   } = useSpatialStore()
 
   const targetRef = useRef<THREE.Vector3 | null>(null)
+  const finishedRef = useRef(false)
 
   useEffect(()=>{
 
-    if(selectedStarId !== null){
+    finishedRef.current = false
 
-      const star = memoryDataset.find(m => m.id === selectedStarId)
+    if(selectedStarPosition){
 
-      if(star){
-        const target = new THREE.Vector3(...star.position)
-        targetRef.current = target
-        setCameraTarget(target)
-        setInteractionLock(true)
-      }
+      const target = new THREE.Vector3(
+        selectedStarPosition.x,
+        selectedStarPosition.y,
+        selectedStarPosition.z
+      )
+
+      targetRef.current = target
+      setCameraTarget(target)
+      setInteractionLock(true)
 
     } else {
 
       const home = new THREE.Vector3(0,0,50)
+
       targetRef.current = home
       setCameraTarget(home)
       setInteractionLock(true)
 
     }
 
-  },[selectedStarId,setCameraTarget,setInteractionLock])
+  },[selectedStarPosition,setCameraTarget,setInteractionLock])
 
   useFrame(()=>{
 
@@ -58,9 +61,18 @@ export default function NavigationController(){
     if(dist > TARGET_THRESHOLD){
 
       camera.position.lerp(target, CAMERA_GLIDE_SPEED)
-      camera.lookAt(target)
 
-    } else {
+      camera.lookAt(
+        target.x,
+        target.y,
+        target.z
+      )
+
+    } else if(!finishedRef.current){
+
+      finishedRef.current = true
+
+      camera.position.copy(target)
 
       if(interactionLock){
         setInteractionLock(false)

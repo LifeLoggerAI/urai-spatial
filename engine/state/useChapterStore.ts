@@ -8,7 +8,6 @@ export type Chapter = {
 }
 
 interface ChapterState {
-
   chapters: Chapter[]
 
   activeChapterId: string | null
@@ -22,37 +21,31 @@ interface ChapterState {
 }
 
 export const useChapterStore = create<ChapterState>((set, get) => ({
-
   chapters: [],
 
   activeChapterId: null,
   activeChapter: null,
 
-  setChapters: (chapters) =>
-    set({ chapters }),
+  setChapters: (chapters) => set({ chapters }),
 
   setActiveChapter: (id) => {
-
-    const chapter =
-      id ? get().chapters.find(c => c.chapterId === id) ?? null : null
-
+    const chapter = id ? get().chapters.find(c => c.chapterId === id) ?? null : null
     set({
       activeChapterId: id,
-      activeChapter: chapter
+      activeChapter: chapter,
     })
   },
 
   clearActiveChapter: () =>
     set({
       activeChapterId: null,
-      activeChapter: null
+      activeChapter: null,
     }),
 
   resetChapters: () =>
     set({
       chapters: [],
       activeChapterId: null,
-      activeChapter: null
-    })
-
+      activeChapter: null,
+    }),
 }))

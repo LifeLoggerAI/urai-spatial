@@ -6,17 +6,27 @@ export type RenderQuality = 'low' | 'medium' | 'high'
 
 interface QualityState {
   quality: RenderQuality
-  setQuality: (q: RenderQuality) => void
-
   emotionalEnvironment: boolean
-  setEmotionalEnvironment: (v: boolean) => void
+
+  setQuality: (quality: RenderQuality) => void
+  setEmotionalEnvironment: (enabled: boolean) => void
 }
 
 export const useQualityStore = create<QualityState>((set) => ({
+
   quality: 'high',
-
-  setQuality: (q) => set({ quality: q }),
-
   emotionalEnvironment: true,
-  setEmotionalEnvironment: (v) => set({ emotionalEnvironment: v })
+
+  setQuality: (quality) =>
+    set((state) =>
+      state.quality === quality ? state : { quality }
+    ),
+
+  setEmotionalEnvironment: (enabled) =>
+    set((state) =>
+      state.emotionalEnvironment === enabled
+        ? state
+        : { emotionalEnvironment: enabled }
+    )
+
 }))

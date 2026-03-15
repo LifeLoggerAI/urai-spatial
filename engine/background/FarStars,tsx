@@ -1,6 +1,6 @@
 "use client"
 
-import { useMemo } from "react"
+import { useMemo, useEffect } from "react"
 import * as THREE from "three"
 
 export default function FarStars(){
@@ -23,7 +23,7 @@ export default function FarStars(){
       const y = r * Math.sin(phi) * Math.sin(theta)
       const z = r * Math.cos(phi)
 
-      const i3 = i*3
+      const i3 = i * 3
 
       positions[i3]   = x
       positions[i3+1] = y
@@ -38,27 +38,26 @@ export default function FarStars(){
     )
 
     const material = new THREE.PointsMaterial({
-
       color:"#dfe6ff",
-
-      /* smaller distant stars */
       size:0.45,
-
+      sizeAttenuation:true,
       transparent:true,
-
-      /* softer brightness */
-      opacity:0.30,
-
+      opacity:0.28,
       depthWrite:false,
       depthTest:true,
-
-      blending:THREE.NormalBlending
-
+      blending:THREE.AdditiveBlending
     })
 
     return { geometry, material }
 
   },[])
+
+  useEffect(()=>{
+    return ()=>{
+      geometry.dispose()
+      material.dispose()
+    }
+  },[geometry,material])
 
   return (
     <points

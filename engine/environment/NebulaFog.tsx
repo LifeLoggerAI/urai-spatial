@@ -1,33 +1,37 @@
 "use client"
 
 import { useRef, useMemo } from "react"
-import { useFrame } from "@react-three/fiber"
+import { useFrame, useThree } from "@react-three/fiber"
 import * as THREE from "three"
 
 export default function NebulaFog() {
 
-  const ref = useRef<THREE.Mesh>(null!)
+  const meshRef = useRef<THREE.Mesh>(null!)
+  const { camera } = useThree()
 
   const geometry = useMemo(
     () => new THREE.PlaneGeometry(500, 500),
     []
   )
 
-  useFrame(({ clock, camera }) => {
+  useFrame(({ clock }) => {
 
-    if (!ref.current) return
+    if (!meshRef.current) return
 
-    ref.current.rotation.z = clock.elapsedTime * 0.01
+    const mesh = meshRef.current
 
-    // keep the fog facing the camera
-    ref.current.lookAt(camera.position)
+    // billboard toward camera
+    mesh.quaternion.copy(camera.quaternion)
+
+    // subtle nebula rotation
+    mesh.rotateZ(clock.elapsedTime * 0.01)
 
   })
 
   return (
 
     <mesh
-      ref={ref}
+      ref={meshRef}
       geometry={geometry}
       position={[0, 0, -120]}
       frustumCulled={false}

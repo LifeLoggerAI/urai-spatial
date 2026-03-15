@@ -28,14 +28,12 @@ const generateStars = (count: number, radius: number, seed: number) => {
     positions[i * 3] = x
     positions[i * 3 + 1] = y
     positions[i * 3 + 2] = z
-
   }
 
   const g = new THREE.BufferGeometry()
   g.setAttribute("position", new THREE.BufferAttribute(positions, 3))
 
   return g
-
 }
 
 const generateDust = (count: number, radius: number) => {
@@ -47,11 +45,9 @@ const generateDust = (count: number, radius: number) => {
     arr[i * 3] = (Math.random() - 0.5) * radius
     arr[i * 3 + 1] = (Math.random() - 0.5) * radius
     arr[i * 3 + 2] = (Math.random() - 0.5) * radius
-
   }
 
   return arr
-
 }
 
 export default function DeepStars() {
@@ -95,22 +91,27 @@ export default function DeepStars() {
     if (dustLayer.current) {
       dustLayer.current.rotation.y = clock.elapsedTime * 0.01
     }
-
   })
 
   return (
 
     <>
 
-      <group ref={nearLayer}>
+      {/* Near Stars */}
 
-        <points geometry={nearStars}>
+      <group ref={nearLayer} frustumCulled={false}>
+
+        <points geometry={nearStars} frustumCulled={false}>
 
           <pointsMaterial
             color="#bbbbbb"
-            size={0.08}
+            size={0.12}
             sizeAttenuation
+            transparent
+            opacity={0.9}
             depthWrite={false}
+            depthTest={true}
+            blending={THREE.AdditiveBlending}
             fog={false}
           />
 
@@ -118,15 +119,21 @@ export default function DeepStars() {
 
       </group>
 
-      <group ref={midLayer} scale={2}>
+      {/* Mid Stars */}
 
-        <points geometry={midStars}>
+      <group ref={midLayer} scale={2} frustumCulled={false}>
+
+        <points geometry={midStars} frustumCulled={false}>
 
           <pointsMaterial
             color="#888888"
-            size={0.05}
+            size={0.08}
             sizeAttenuation
+            transparent
+            opacity={0.8}
             depthWrite={false}
+            depthTest={true}
+            blending={THREE.AdditiveBlending}
             fog={false}
           />
 
@@ -134,15 +141,21 @@ export default function DeepStars() {
 
       </group>
 
-      <group ref={farLayer} scale={4}>
+      {/* Far Stars */}
 
-        <points geometry={farStars}>
+      <group ref={farLayer} scale={4} frustumCulled={false}>
+
+        <points geometry={farStars} frustumCulled={false}>
 
           <pointsMaterial
             color="#555555"
-            size={0.03}
+            size={0.05}
             sizeAttenuation
+            transparent
+            opacity={0.7}
             depthWrite={false}
+            depthTest={true}
+            blending={THREE.AdditiveBlending}
             fog={false}
           />
 
@@ -150,7 +163,9 @@ export default function DeepStars() {
 
       </group>
 
-      <points ref={dustLayer}>
+      {/* Dust Field */}
+
+      <points ref={dustLayer} frustumCulled={false}>
 
         <bufferGeometry>
 
@@ -164,16 +179,17 @@ export default function DeepStars() {
         </bufferGeometry>
 
         <pointsMaterial
-          color="#8888ff"
-          size={0.15}
+          color="#8899ff"
+          size={0.18}
+          transparent
+          opacity={0.4}
           sizeAttenuation
           depthWrite={false}
+          blending={THREE.AdditiveBlending}
         />
 
       </points>
 
     </>
-
   )
-
 }

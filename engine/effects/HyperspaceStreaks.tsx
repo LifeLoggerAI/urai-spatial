@@ -1,128 +1,169 @@
 "use client"
 
-import { useRef, useMemo } from "react"
-import { useFrame, useThree, useLoader } from "@react-three/fiber"
+import { useEffect, useMemo, useRef } from "react"
+import { useFrame, useLoader, useThree } from "@react-three/fiber"
 import * as THREE from "three"
 
 const STREAK_COUNT = 700
 const FIELD_SIZE = 900
+const HALF_FIELD = FIELD_SIZE * 0.5
 
-export default function HyperspaceStreaks(){
+function mulberry32(seed: number) {
+  return function () {
+    let t = (seed += 0x6d2b79f5)
+    t = Math.imul(t ^ (t >>> 15), t | 1)
+    t ^= t + Math.imul(t ^ (t >>> 7), t | 61)
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296
+  }
+}
 
+export default function HyperspaceStreaks() {
   const { camera } = useThree()
 
-  const mesh = useRef<THREE.InstancedMesh>(null!)
-  const prev = useRef(new THREE.Vector3())
+  const meshRef = useRef<THREE.InstancedMesh>(null!)
+  const prevCameraPos = useRef(new THREE.Vector3())
+  const initialized = useRef(false)
 
-  const texture = useLoader(
-    THREE.TextureLoader,
-    "/star-sprite.png"
-  )
+  const texture = useLoader(THREE.TextureLoader, "/star-sprite.png")
 
-  const geometry = useMemo(()=>{
-    return new THREE.PlaneGeometry(0.6,6)
-  },[])
+  const geometry = useMemo(() => {
+    const geo = new THREE.PlaneGeometry(0.6, 6)
+    geo.translate(0, 3, 0)
+    return geo
+  }, [])
 
-  const material = useMemo(()=>{
+  const material = useMemo(() => {
+    const tex = texture.clone()
+    tex.wrapS = THREE.ClampToEdgeWrapping
+    tex.wrapT = THREE.ClampToEdgeWrapping
+    tex.colorSpace = THREE.SRGBColorSpace
+    tex.needsUpdate = true
 
     return new THREE.MeshBasicMaterial({
-      map:texture,
-      transparent:true,
-      depthWrite:false,
-      opacity:0.45,
-      blending:THREE.AdditiveBlending
+      map: tex,
+      transparent: true,
+      depthWrite: false,
+      depthTest: true,
+      opacity: 0.45,
+      blending: THREE.AdditiveBlending,
+      side: THREE.DoubleSide,
+      toneMapped: false,
     })
+  }, [texture])
 
-  },[texture])
+  const offsets = useMemo(() => {
+    const rng = mulberry32(9091)
+    const list: THREE.Vector3[] = []
 
-  const positions = useMemo(()=>{
-
-    const list:THREE.Vector3[] = []
-
-    for(let i=0;i<STREAK_COUNT;i++){
-
+    for (let i = 0; i < STREAK_COUNT; i++) {
       list.push(
         new THREE.Vector3(
-          (Math.random()-0.5)*FIELD_SIZE,
-          (Math.random()-0.5)*FIELD_SIZE,
-          (Math.random()-0.5)*FIELD_SIZE
+          (rng() - 0.5) * FIELD_SIZE,
+          (rng() - 0.5) * FIELD_SIZE,
+          (rng() - 0.5) * FIELD_SIZE
         )
       )
-
     }
 
     return list
+  }, [])
 
-  },[])
+  const dummy = useMemo(() => new THREE.Object3D(), [])
+  const moveDir = useMemo(() => new THREE.Vector3(0, 1, 0), [])
+  const worldPos = useMemo(() => new THREE.Vector3(), [])
+  const tmpCam = useMemo(() => new THREE.Vector3(), [])
 
-  const dummy = useMemo(()=> new THREE.Object3D(),[])
-  const direction = useMemo(()=> new THREE.Vector3(),[])
-  const target = useMemo(()=> new THREE.Vector3(),[])
+  useEffect(() => {
+    prevCameraPos.current.copy(camera.position)
+    initialized.current = true
+  }, [camera])
 
-  useFrame(()=>{
+  useEffect(() => {
+    return () => {
+      geometry.dispose()
+      material.dispose()
+      material.map?.dispose()
+    }
+  }, [geometry, material])
 
-    if(!mesh.current) return
+  useFrame((_, delta) => {
+    const mesh = meshRef.current
+    if (!mesh || !initialized.current) return
 
-    const velocity = camera.position.distanceTo(prev.current)
+    const frameDelta = Math.max(delta, 1 / 240)
 
-    direction
-      .subVectors(camera.position, prev.current)
-      .normalize()
+    const dx = camera.position.x - prevCameraPos.current.x
+    const dy = camera.position.y - prevCameraPos.current.y
+    const dz = camera.position.z - prevCameraPos.current.z
 
-    prev.current.copy(camera.position)
+    const distance = Math.sqrt(dx * dx + dy * dy + dz * dz)
+    const speedPerSecond = distance / frameDelta
+    const speed = THREE.MathUtils.clamp(speedPerSecond * 0.025, 0, 14)
 
-    const speed = THREE.MathUtils.clamp(
-      velocity * 60,
-      0,
-      12
-    )
+    if (distance > 0.000001) {
+      moveDir.set(dx, dy, dz).normalize()
+    }
 
-    mesh.current.visible = speed > 0.02
+    mesh.visible = speed > 0.03
 
-    for(let i=0;i<positions.length;i++){
+    tmpCam.copy(camera.position)
 
-      const p = positions[i]
+    for (let i = 0; i < offsets.length; i++) {
+      const p = offsets[i]
 
-      /* keep streaks around camera volume */
+      worldPos.set(
+        p.x + tmpCam.x,
+        p.y + tmpCam.y,
+        p.z + tmpCam.z
+      )
 
-      const worldPos = p.clone().add(camera.position)
+      if (p.x > HALF_FIELD) p.x -= FIELD_SIZE
+      else if (p.x < -HALF_FIELD) p.x += FIELD_SIZE
+
+      if (p.y > HALF_FIELD) p.y -= FIELD_SIZE
+      else if (p.y < -HALF_FIELD) p.y += FIELD_SIZE
+
+      if (p.z > HALF_FIELD) p.z -= FIELD_SIZE
+      else if (p.z < -HALF_FIELD) p.z += FIELD_SIZE
+
+      if (speed > 0.03) {
+        p.addScaledVector(moveDir, -(0.6 + speed * 1.8))
+      }
+
+      if (p.x > HALF_FIELD) p.x -= FIELD_SIZE
+      else if (p.x < -HALF_FIELD) p.x += FIELD_SIZE
+
+      if (p.y > HALF_FIELD) p.y -= FIELD_SIZE
+      else if (p.y < -HALF_FIELD) p.y += FIELD_SIZE
+
+      if (p.z > HALF_FIELD) p.z -= FIELD_SIZE
+      else if (p.z < -HALF_FIELD) p.z += FIELD_SIZE
 
       dummy.position.copy(worldPos)
 
-      /* orient along travel direction */
-
-      target.copy(worldPos).add(direction)
-      dummy.lookAt(target)
-
-      const length = 1 + speed * 6
-
-      dummy.scale.set(
-        0.25,
-        length,
-        1
+      dummy.quaternion.setFromUnitVectors(
+        new THREE.Vector3(0, 1, 0),
+        distance > 0.000001 ? moveDir : new THREE.Vector3(0, 1, 0)
       )
 
+      const length = 1.2 + speed * 7.5
+      const width = 0.12 + Math.min(speed * 0.025, 0.28)
+
+      dummy.scale.set(width, length, 1)
       dummy.updateMatrix()
 
-      mesh.current.setMatrixAt(
-        i,
-        dummy.matrix
-      )
-
+      mesh.setMatrixAt(i, dummy.matrix)
     }
 
-    mesh.current.instanceMatrix.needsUpdate = true
-
+    mesh.instanceMatrix.needsUpdate = true
+    prevCameraPos.current.copy(camera.position)
   })
 
-  return(
-
+  return (
     <instancedMesh
-      ref={mesh}
-      args={[geometry,material,STREAK_COUNT]}
+      ref={meshRef}
+      args={[geometry, material, STREAK_COUNT]}
       frustumCulled={false}
     />
-
   )
-
 }

@@ -8,26 +8,30 @@ const RADIUS = 1200
 
 export default function HaloStars(){
 
-  const points = useMemo(()=>{
+  const { geometry, material } = useMemo(()=>{
 
-    const positions = new Float32Array(COUNT*3)
+    const positions = new Float32Array(COUNT * 3)
 
     for(let i=0;i<COUNT;i++){
 
-      const r = Math.random()*RADIUS
-      const theta = Math.random()*Math.PI*2
-      const phi = Math.acos((Math.random()*2)-1)
+      /* uniform spherical distribution */
+      const u = Math.random()
+      const v = Math.random()
 
-      const x = r*Math.sin(phi)*Math.cos(theta)
-      const y = r*Math.sin(phi)*Math.sin(theta)
-      const z = r*Math.cos(phi)
+      const theta = 2 * Math.PI * u
+      const phi = Math.acos(2 * v - 1)
 
-      const i3 = i*3
+      const r = Math.cbrt(Math.random()) * RADIUS
+
+      const x = r * Math.sin(phi) * Math.cos(theta)
+      const y = r * Math.sin(phi) * Math.sin(theta)
+      const z = r * Math.cos(phi)
+
+      const i3 = i * 3
 
       positions[i3] = x
       positions[i3+1] = y
       positions[i3+2] = z
-
     }
 
     const geometry = new THREE.BufferGeometry()
@@ -43,26 +47,22 @@ export default function HaloStars(){
 
     const material = new THREE.PointsMaterial({
 
-      map:sprite,
-      size:0.5,
-      transparent:true,
-
-      /* reduce brightness */
-      opacity:0.18,
-
-      depthWrite:false,
-
-      /* prevent glow stacking */
-      blending:THREE.NormalBlending,
-
-      color:"#aab6ff"
+      map: sprite,
+      size: 0.5,
+      transparent: true,
+      opacity: 0.18,
+      depthWrite: false,
+      blending: THREE.NormalBlending,
+      color: "#aab6ff"
 
     })
 
-    return new THREE.Points(geometry,material)
+    return { geometry, material }
 
   },[])
 
-  return <primitive object={points} />
+  return (
+    <points geometry={geometry} material={material} />
+  )
 
 }

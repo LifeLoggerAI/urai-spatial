@@ -20,7 +20,12 @@ export default function MemoryDive() {
   const velocity = useRef(new THREE.Vector3())
   const lookTarget = useRef(new THREE.Vector3())
 
-  const offset = new THREE.Vector3(0, 0, 2.5)
+  const diff = useRef(new THREE.Vector3())
+  const currentLook = useRef(new THREE.Vector3())
+  const desiredLook = useRef(new THREE.Vector3())
+  const lookPoint = useRef(new THREE.Vector3())
+
+  const offset = useRef(new THREE.Vector3(0, 0, 2.5))
 
   const MOVE_STRENGTH = 5.0
   const LOOK_STRENGTH = 6.0
@@ -41,34 +46,45 @@ export default function MemoryDive() {
       star.position[2]
     )
 
-    desiredPosition.current.copy(target.current).add(offset)
+    desiredPosition.current
+      .copy(target.current)
+      .add(offset.current)
 
-    const diff = desiredPosition.current.clone().sub(camera.position)
+    diff.current
+      .copy(desiredPosition.current)
+      .sub(camera.position)
 
-    velocity.current.add(
-      diff.multiplyScalar(MOVE_STRENGTH * dt)
+    velocity.current.addScaledVector(
+      diff.current,
+      MOVE_STRENGTH * dt
     )
 
     velocity.current.multiplyScalar(0.85)
 
-    camera.position.add(
-      velocity.current.clone().multiplyScalar(dt * 60)
+    camera.position.addScaledVector(
+      velocity.current,
+      dt * 60
     )
 
     lookTarget.current.copy(target.current)
 
-    const currentLook = new THREE.Vector3()
-    camera.getWorldDirection(currentLook)
+    camera.getWorldDirection(currentLook.current)
 
-    const desiredLook = lookTarget.current.clone()
+    desiredLook.current
+      .copy(lookTarget.current)
       .sub(camera.position)
       .normalize()
 
-    currentLook.lerp(desiredLook, LOOK_STRENGTH * dt)
+    currentLook.current.lerp(
+      desiredLook.current,
+      LOOK_STRENGTH * dt
+    )
 
-    const lookPoint = camera.position.clone().add(currentLook)
+    lookPoint.current
+      .copy(camera.position)
+      .add(currentLook.current)
 
-    camera.lookAt(lookPoint)
+    camera.lookAt(lookPoint.current)
 
     const distance = camera.position.distanceTo(desiredPosition.current)
 
@@ -76,6 +92,8 @@ export default function MemoryDive() {
 
       camera.position.copy(desiredPosition.current)
       camera.lookAt(target.current)
+
+      velocity.current.set(0,0,0)
 
       setInteractionLock(false)
 

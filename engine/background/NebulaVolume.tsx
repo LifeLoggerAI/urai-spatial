@@ -6,18 +6,22 @@ import * as THREE from "three"
 
 export default function NebulaVolume(){
 
-  const mesh = useRef<THREE.Mesh>(null!)
-  const mat = useRef<THREE.ShaderMaterial>(null!)
+  const meshRef = useRef<THREE.Mesh>(null!)
+  const matRef = useRef<THREE.ShaderMaterial>(null!)
 
   useFrame((state,delta)=>{
-    if(mesh.current){
-      mesh.current.rotation.y += delta * 0.0006
+
+    const mesh = meshRef.current
+    const mat = matRef.current
+
+    if(mesh){
+      mesh.rotation.y += delta * 0.0006
     }
 
-    if(mat.current){
-      mat.current.uniforms.uTime.value =
-        state.clock.elapsedTime
+    if(mat){
+      mat.uniforms.uTime.value = state.clock.elapsedTime
     }
+
   })
 
   const material = useMemo(()=>{
@@ -36,6 +40,8 @@ export default function NebulaVolume(){
       },
 
       vertexShader:`
+
+        precision highp float;
 
         varying vec3 vPos;
 
@@ -77,8 +83,8 @@ export default function NebulaVolume(){
           f = f*f*(3.0-2.0*f);
 
           float n = mix(
-            mix(hash(i),hash(i+vec3(1,0,0)),f.x),
-            mix(hash(i+vec3(0,1,0)),hash(i+vec3(1,1,0)),f.x),
+            mix(hash(i),hash(i+vec3(1.0,0.0,0.0)),f.x),
+            mix(hash(i+vec3(0.0,1.0,0.0)),hash(i+vec3(1.0,1.0,0.0)),f.x),
             f.y
           );
 
@@ -108,16 +114,24 @@ export default function NebulaVolume(){
         }
 
       `
-
     })
 
   },[])
 
   return(
-    <mesh ref={mesh}>
+
+    <mesh ref={meshRef} frustumCulled={false}>
+
       <sphereGeometry args={[1200,64,64]} />
-      <primitive object={material} ref={mat}/>
+
+      <shaderMaterial
+        ref={matRef}
+        args={[material]}
+        attach="material"
+      />
+
     </mesh>
+
   )
 
 }

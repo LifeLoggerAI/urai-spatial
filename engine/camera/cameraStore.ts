@@ -6,19 +6,22 @@ export interface CameraTargetState {
   lookAt: THREE.Vector3
 }
 
+const position = new THREE.Vector3()
+const lookAt = new THREE.Vector3()
+
 export const cameraTarget: CameraTargetState = {
   active: false,
-  position: new THREE.Vector3(),
-  lookAt: new THREE.Vector3(),
+  position,
+  lookAt
 }
 
 export function setCameraTarget(
-  position: THREE.Vector3,
-  lookAt: THREE.Vector3
+  targetPosition: THREE.Vector3,
+  targetLookAt: THREE.Vector3
 ) {
+  position.copy(targetPosition)
+  lookAt.copy(targetLookAt)
   cameraTarget.active = true
-  cameraTarget.position.copy(position)
-  cameraTarget.lookAt.copy(lookAt)
 }
 
 export function clearCameraTarget() {

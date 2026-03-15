@@ -5,7 +5,6 @@ import * as THREE from "three"
 
 import { lifeDataset } from "../lifemap/lifeDataset"
 import { useSpatialStore } from "../state/spatialStore"
-
 import { STAR_RADIUS } from "../camera/cameraConfig"
 
 export default function LifeMap(){
@@ -30,21 +29,21 @@ export default function LifeMap(){
             position={s.position}
             raycast={THREE.Mesh.prototype.raycast}
             scale={selected ? 1.6 : 1}
+            frustumCulled={false}
             onPointerDown={(e) => {
 
               e.stopPropagation()
-
               setStar(s)
 
             }}
           >
 
-            <sphereGeometry args={[STAR_RADIUS, 12, 12]} />
+            <sphereGeometry args={[STAR_RADIUS, 16, 16]} />
 
             <meshStandardMaterial
               color={selected ? "#ffffff" : "#aabfff"}
-              emissive={selected ? "#ffffff" : "#111111"}
-              emissiveIntensity={selected ? 2.5 : 0.35}
+              emissive={selected ? "#ffffff" : "#222233"}
+              emissiveIntensity={selected ? 2.2 : 0.6}
               roughness={0.25}
               metalness={0.1}
             />

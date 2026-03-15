@@ -12,9 +12,23 @@ interface Props {
 export default function MemoryBloom({ center, active }: Props) {
 
   const groupRef = useRef<THREE.Group>(null!)
+  const meshesRef = useRef<THREE.Mesh[]>([])
 
   const targetScale = useRef(new THREE.Vector3())
   const tempCenter = useRef(new THREE.Vector3())
+
+  const geometry = useMemo(() => new THREE.SphereGeometry(0.05, 8, 8), [])
+
+  const material = useMemo(() => {
+    return new THREE.MeshStandardMaterial({
+      color: "#88ccff",
+      emissive: "#88ccff",
+      emissiveIntensity: 1.6,
+      transparent: true,
+      opacity: 0,
+      depthWrite: false
+    })
+  }, [])
 
   const particles = useMemo(() => {
 
@@ -47,18 +61,15 @@ export default function MemoryBloom({ center, active }: Props) {
     if (!group) return
 
     const scale = active ? 1 : 0.2
-
     targetScale.current.set(scale, scale, scale)
 
     group.scale.lerp(targetScale.current, 0.08)
 
     tempCenter.current.copy(center)
-
     group.position.lerp(tempCenter.current, 0.08)
 
-    group.children.forEach((child, i) => {
+    meshesRef.current.forEach((mesh, i) => {
 
-      const mesh = child as THREE.Mesh
       const mat = mesh.material as THREE.MeshStandardMaterial
 
       mat.opacity = THREE.MathUtils.lerp(
@@ -90,20 +101,13 @@ export default function MemoryBloom({ center, active }: Props) {
 
       {particles.map((p, i) => (
 
-        <mesh key={i} position={p.base}>
-
-          <sphereGeometry args={[0.05, 8, 8]} />
-
-          <meshStandardMaterial
-            color="#88ccff"
-            emissive="#88ccff"
-            emissiveIntensity={1.6}
-            transparent
-            opacity={0}
-            depthWrite={false}
-          />
-
-        </mesh>
+        <mesh
+          key={i}
+          ref={(m) => { if (m) meshesRef.current[i] = m }}
+          geometry={geometry}
+          material={material.clone()}
+          position={p.base}
+        />
 
       ))}
 

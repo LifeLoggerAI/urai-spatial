@@ -41,13 +41,13 @@ export function createStarSpriteMaterial(){
           );
 
         float depthScale =
-          clamp(120.0 / dist,0.18,2.4);
+          clamp(220.0 / dist,0.35,4.0);
 
         float finalSize =
           size * depthScale;
 
         gl_PointSize =
-          clamp(finalSize,0.35,2.4);
+          clamp(finalSize,1.2,6.0);
 
         gl_Position =
           projectionMatrix *
@@ -76,23 +76,23 @@ export function createStarSpriteMaterial(){
         if(r > 0.5) discard;
 
         float core =
-          smoothstep(0.18,0.0,r);
+          smoothstep(0.20,0.0,r);
 
         float innerHalo =
-          smoothstep(0.36,0.18,r) * 0.6;
+          smoothstep(0.42,0.20,r) * 0.7;
 
         float outerHalo =
-          smoothstep(0.48,0.30,r) * 0.15;
+          smoothstep(0.50,0.32,r) * 0.25;
 
         float twinkle =
-          sin(time*4.0 + vSeed*12.0)
-          * 0.04 + 0.98;
+          sin(time*3.0 + vSeed*10.0)
+          * 0.08 + 1.0;
 
         float depthGlow =
           clamp(
-            5.0 / vDist,
-            0.05,
-            0.25
+            12.0 / vDist,
+            0.12,
+            0.6
           );
 
         float intensity =
@@ -101,7 +101,7 @@ export function createStarSpriteMaterial(){
           * depthGlow;
 
         intensity =
-          clamp(intensity,0.0,0.32);
+          clamp(intensity,0.0,1.0);
 
         vec3 color =
           vColor * intensity;

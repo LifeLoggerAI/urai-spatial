@@ -1,3 +1,5 @@
+'use client'
+
 import { create } from 'zustand'
 
 export type SceneMode = 'home' | 'lifemap' | 'memory' | 'replay'
@@ -5,15 +7,36 @@ export type SceneMode = 'home' | 'lifemap' | 'memory' | 'replay'
 type SceneState = {
   mode: SceneMode
   selectedStarId: string | null
-  setMode: (m: SceneMode) => void
-  selectStar: (id: string) => void
-  clearSelection: () => void
+  setMode: (mode: SceneMode) => void
+  selectStar: (id: string, nextMode?: SceneMode) => void
+  clearSelection: (nextMode?: SceneMode) => void
+  resetScene: () => void
 }
 
 export const useSceneStore = create<SceneState>((set) => ({
   mode: 'home',
   selectedStarId: null,
-  setMode: (m) => set({ mode: m }),
-  selectStar: (id) => set({ selectedStarId: id, mode: 'memory' }),
-  clearSelection: () => set({ selectedStarId: null, mode: 'lifemap' }),
+
+  setMode: (mode) =>
+    set({
+      mode,
+    }),
+
+  selectStar: (id, nextMode = 'memory') =>
+    set({
+      selectedStarId: id,
+      mode: nextMode,
+    }),
+
+  clearSelection: (nextMode = 'lifemap') =>
+    set({
+      selectedStarId: null,
+      mode: nextMode,
+    }),
+
+  resetScene: () =>
+    set({
+      mode: 'home',
+      selectedStarId: null,
+    }),
 }))

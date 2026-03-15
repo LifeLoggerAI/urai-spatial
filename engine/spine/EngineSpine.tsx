@@ -10,12 +10,12 @@ import { InteractionController } from "../core/InteractionController"
 
 export default function EngineSpine(){
 
-  const container = useRef<HTMLDivElement>(null!)
+  const containerRef = useRef<HTMLDivElement>(null)
 
   return(
 
     <div
-      ref={container}
+      ref={containerRef}
       style={{
         width:"100vw",
         height:"100vh",
@@ -25,16 +25,16 @@ export default function EngineSpine(){
     >
 
       <Canvas
-        camera={{position:[0,0,8],fov:60}}
-        eventSource={container}
-        eventPrefix="client"
+        camera={{ position:[0,0,8], fov:60 }}
         dpr={[1,2]}
-        gl={{antialias:true}}
+        gl={{ antialias:true }}
+        eventSource={containerRef}
+        eventPrefix="client"
       >
 
-        <color attach="background" args={["black"]} />
+        <color attach="background" args={["#000000"]} />
 
-        <ambientLight intensity={1.2} />
+        <ambientLight intensity={1} />
 
         <Suspense fallback={null}>
           <Starfield />

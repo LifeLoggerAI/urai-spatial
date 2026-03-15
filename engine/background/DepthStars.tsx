@@ -10,50 +10,56 @@ function createLayer(
   opacity:number
 ){
 
-  const positions = new Float32Array(count*3)
+  const positions = new Float32Array(count * 3)
 
   for(let i=0;i<count;i++){
 
-    const r = Math.random()*radius
-    const theta = Math.random()*Math.PI*2
-    const phi = Math.acos((Math.random()*2)-1)
+    /* uniform spherical distribution */
 
-    const x = r*Math.sin(phi)*Math.cos(theta)
-    const y = r*Math.sin(phi)*Math.sin(theta)
-    const z = r*Math.cos(phi)
+    const u = Math.random()
+    const v = Math.random()
 
-    const i3 = i*3
+    const theta = 2 * Math.PI * u
+    const phi = Math.acos(2 * v - 1)
+
+    const r = Math.cbrt(Math.random()) * radius
+
+    const x = r * Math.sin(phi) * Math.cos(theta)
+    const y = r * Math.sin(phi) * Math.sin(theta)
+    const z = r * Math.cos(phi)
+
+    const i3 = i * 3
 
     positions[i3]   = x
     positions[i3+1] = y
     positions[i3+2] = z
   }
 
-  const geo = new THREE.BufferGeometry()
+  const geometry = new THREE.BufferGeometry()
 
-  geo.setAttribute(
+  geometry.setAttribute(
     "position",
     new THREE.BufferAttribute(positions,3)
   )
 
-  const mat = new THREE.PointsMaterial({
+  const material = new THREE.PointsMaterial({
 
-    size:size,
-    color:"#dfe6ff",
+    size: size,
+    color: "#dfe6ff",
 
-    transparent:true,
+    transparent: true,
+    opacity: opacity,
 
-    /* softer stars */
-    opacity:opacity,
+    depthWrite: false,
+    depthTest: true,
 
-    depthWrite:false,
-    depthTest:true,
-
-    blending:THREE.NormalBlending
+    blending: THREE.NormalBlending
 
   })
 
-  const points = new THREE.Points(geo,mat)
+  const points = new THREE.Points(geometry, material)
+
+  /* prevents stars disappearing during camera motion */
   points.frustumCulled = false
 
   return points
@@ -61,18 +67,18 @@ function createLayer(
 
 export default function DepthStars(){
 
-  const layers = useMemo(()=>{
+  const group = useMemo(()=>{
 
-    const group = new THREE.Group()
+    const g = new THREE.Group()
 
-    group.add(createLayer(2000,800,1.2,0.35))
-    group.add(createLayer(3000,1200,0.9,0.28))
-    group.add(createLayer(5000,1800,0.7,0.22))
+    g.add(createLayer(2000,800,1.2,0.35))
+    g.add(createLayer(3000,1200,0.9,0.28))
+    g.add(createLayer(5000,1800,0.7,0.22))
 
-    return group
+    return g
 
   },[])
 
-  return <primitive object={layers} />
+  return <primitive object={group} />
 
 }

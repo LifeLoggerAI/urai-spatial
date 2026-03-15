@@ -4,7 +4,7 @@ import { useMemo } from "react"
 import * as THREE from "three"
 
 const STAR_COUNT = 9000
-const RADIUS = 2000
+const RADIUS = 8000
 
 export default function DeepStars(){
 
@@ -17,7 +17,7 @@ export default function DeepStars(){
 
     for(let i = 0; i < STAR_COUNT; i++){
 
-      const r = RADIUS + Math.random() * 1000
+      const r = RADIUS + Math.random() * 2000
 
       const theta = Math.random() * Math.PI * 2
       const phi = Math.acos(Math.random() * 2 - 1)
@@ -29,25 +29,17 @@ export default function DeepStars(){
       const i3 = i * 3
 
       positions[i3] = x
-      positions[i3 + 1] = y
-      positions[i3 + 2] = z
+      positions[i3+1] = y
+      positions[i3+2] = z
 
       const brightness =
-        0.35 + Math.random() * 0.35
+        0.5 + Math.random() * 0.5
 
-      const temp = Math.random()
-
-      if(temp < 0.2)
-        color.setRGB(brightness*0.8, brightness*0.9, brightness)
-      else if(temp < 0.7)
-        color.setRGB(brightness, brightness, brightness*0.9)
-      else
-        color.setRGB(brightness, brightness*0.85, brightness*0.7)
+      color.setRGB(brightness, brightness, brightness)
 
       colors[i3] = color.r
       colors[i3+1] = color.g
       colors[i3+2] = color.b
-
     }
 
     const geo = new THREE.BufferGeometry()
@@ -64,18 +56,17 @@ export default function DeepStars(){
 
     const mat = new THREE.PointsMaterial({
 
-      size:0.85,
+      size:1.2,
       vertexColors:true,
       transparent:true,
-
-      /* softer star brightness */
-      opacity:0.35,
+      opacity:0.8,
 
       depthWrite:false,
       depthTest:true,
 
-      /* prevent additive brightness stacking */
-      blending:THREE.NormalBlending
+      fog:false,
+
+      blending:THREE.AdditiveBlending
 
     })
 
@@ -89,6 +80,7 @@ export default function DeepStars(){
       geometry={geometry}
       material={material}
       frustumCulled={false}
+      renderOrder={-5}
     />
 
   )

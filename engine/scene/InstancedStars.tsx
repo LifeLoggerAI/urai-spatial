@@ -1,7 +1,7 @@
 "use client"
 
 import { useMemo, useRef } from "react"
-import { useFrame, useThree } from "@react-three/fiber"
+import { useFrame } from "@react-three/fiber"
 import * as THREE from "three"
 
 const COUNT = 18000
@@ -9,12 +9,23 @@ const ARMS = 4
 const RADIUS = 420
 const INNER_RADIUS = 40
 
+function mulberry32(seed:number){
+  let a = seed
+  return ()=>{
+    let t = (a += 0x6D2B79F5)
+    t = Math.imul(t ^ (t >>> 15), t | 1)
+    t ^= t + Math.imul(t ^ (t >>> 7), t | 61)
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296
+  }
+}
+
 export default function InstancedStars(){
 
   const meshRef = useRef<THREE.InstancedMesh>(null!)
-  const { camera } = useThree()
 
   const { mesh, material } = useMemo(()=>{
+
+    const rand = mulberry32(42)
 
     const geometry = new THREE.PlaneGeometry(1,1)
 
@@ -22,6 +33,7 @@ export default function InstancedStars(){
 
       transparent:true,
       depthWrite:false,
+      depthTest:true,
       blending:THREE.AdditiveBlending,
       side:THREE.DoubleSide,
 
@@ -61,11 +73,14 @@ export default function InstancedStars(){
 
         void main(){
 
-          vec2 coord = vUv - 0.5;
-          float d = length(coord);
+          vec2 p = vUv - 0.5;
+
+          float d = length(p);
 
           float glow =
-            smoothstep(0.5,0.0,d);
+            smoothstep(0.55,0.0,d);
+
+          if(glow <= 0.01) discard;
 
           vec3 warm = vec3(1.0,0.9,0.7);
           vec3 cool = vec3(0.7,0.85,1.0);
@@ -82,11 +97,16 @@ export default function InstancedStars(){
     })
 
     const mesh =
-      new THREE.InstancedMesh(geometry,material,COUNT)
+      new THREE.InstancedMesh(
+        geometry,
+        material,
+        COUNT
+      )
 
     const dummy = new THREE.Object3D()
 
-    const temps = new Float32Array(COUNT)
+    const temps =
+      new Float32Array(COUNT)
 
     for(let i=0;i<COUNT;i++){
 
@@ -94,43 +114,49 @@ export default function InstancedStars(){
 
       const r =
         INNER_RADIUS +
-        Math.pow(Math.random(),0.7) *
+        Math.pow(rand(),0.7) *
         (RADIUS-INNER_RADIUS)
 
       const armAngle =
         (arm/ARMS)*Math.PI*2
 
-      const spiral = r*0.018
+      const spiral =
+        r*0.018
 
-      const angle = armAngle+spiral
+      const angle =
+        armAngle + spiral
 
       const x =
         Math.cos(angle)*r +
-        (Math.random()-0.5)*4
+        (rand()-0.5)*4
 
       const z =
         Math.sin(angle)*r +
-        (Math.random()-0.5)*4
+        (rand()-0.5)*4
 
       const y =
-        (Math.random()-0.5)*18
+        (rand()-0.5)*18
 
       dummy.position.set(x,y,z)
 
-      const s = 2+Math.random()*3
+      const s =
+        1.6 + rand()*2.6
+
       dummy.scale.set(s,s,s)
 
       dummy.updateMatrix()
 
       mesh.setMatrixAt(i,dummy.matrix)
 
-      temps[i]=Math.random()
+      temps[i]=rand()
 
     }
 
     geometry.setAttribute(
       "temp",
-      new THREE.InstancedBufferAttribute(temps,1)
+      new THREE.InstancedBufferAttribute(
+        temps,1
+      )
     )
 
     mesh.instanceMatrix.needsUpdate=true
@@ -148,12 +174,6 @@ export default function InstancedStars(){
     material.uniforms.uTime.value =
       state.clock.elapsedTime
 
-    /* billboard quads toward camera */
-
-    meshRef.current.quaternion.copy(
-      camera.quaternion
-    )
-
   })
 
   return(
@@ -161,6 +181,7 @@ export default function InstancedStars(){
       ref={meshRef}
       object={mesh}
       frustumCulled={false}
+      renderOrder={1}
     />
   )
 }

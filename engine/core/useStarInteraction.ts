@@ -20,6 +20,15 @@ export const useStarInteraction = () => {
 
     const raycaster = new THREE.Raycaster()
     const pointer = new THREE.Vector2()
+    const worldPos = new THREE.Vector3()
+
+    const getStarMeshes = () => {
+      const stars: THREE.Object3D[] = []
+      scene.traverse((obj) => {
+        if (obj.userData?.starId) stars.push(obj)
+      })
+      return stars
+    }
 
     const handlePointerMove = (event: PointerEvent) => {
 
@@ -32,22 +41,17 @@ export const useStarInteraction = () => {
 
       raycaster.setFromCamera(pointer, camera)
 
-      const intersects = raycaster.intersectObjects(scene.children, true)
+      const intersects = raycaster.intersectObjects(getStarMeshes(), true)
 
-      for (const hit of intersects) {
-
-        const starId = hit.object.userData.starId
-
-        if (starId) {
-          setHoveredStarId(starId)
-          return
-        }
+      if (intersects.length > 0) {
+        const starId = intersects[0].object.userData.starId
+        setHoveredStarId(starId ?? null)
+      } else {
+        setHoveredStarId(null)
       }
-
-      setHoveredStarId(null)
     }
 
-    const handleClick = (event: PointerEvent) => {
+    const handlePointerDown = (event: PointerEvent) => {
 
       if (selectionController.isLocked()) return
 
@@ -58,34 +62,32 @@ export const useStarInteraction = () => {
 
       raycaster.setFromCamera(pointer, camera)
 
-      const intersects = raycaster.intersectObjects(scene.children, true)
+      const intersects = raycaster.intersectObjects(getStarMeshes(), true)
 
-      for (const hit of intersects) {
+      if (intersects.length === 0) return
 
-        const starId = hit.object.userData.starId
+      const hit = intersects[0]
+      const starId = hit.object.userData.starId
 
-        if (starId) {
+      if (!starId) return
 
-          setSelectedStarId(starId)
+      setSelectedStarId(starId)
 
-          const worldPos = new THREE.Vector3()
-          hit.object.getWorldPosition(worldPos)
+      hit.object.getWorldPosition(worldPos)
 
-          selectionController.selectStar(starId, worldPos)
+      selectionController.selectStar(starId, worldPos)
 
-          setCameraMode("star")
-
-          return
-        }
-      }
+      setCameraMode("star")
     }
 
-    gl.domElement.addEventListener("pointermove", handlePointerMove)
-    gl.domElement.addEventListener("click", handleClick)
+    const el = gl.domElement
+
+    el.addEventListener("pointermove", handlePointerMove)
+    el.addEventListener("pointerdown", handlePointerDown)
 
     return () => {
-      gl.domElement.removeEventListener("pointermove", handlePointerMove)
-      gl.domElement.removeEventListener("click", handleClick)
+      el.removeEventListener("pointermove", handlePointerMove)
+      el.removeEventListener("pointerdown", handlePointerDown)
     }
 
   }, [scene, camera, gl, setSelectedStarId, setHoveredStarId, setCameraMode])

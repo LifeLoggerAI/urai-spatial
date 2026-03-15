@@ -14,7 +14,21 @@ type MemoryNode = {
   z: number
 }
 
-const EMPTY_STATE = {
+type EngineState = {
+  nodes: MemoryNode[]
+  orbState: {
+    pulse: number
+    colorShift: number
+    surfaceIntensity: number
+  }
+  sceneModulation: {
+    exposure: number
+    bloom: number
+    fogDensity: number
+  }
+}
+
+const EMPTY_STATE: EngineState = {
   nodes: [],
   orbState: {
     pulse: 0.8,
@@ -31,24 +45,17 @@ const EMPTY_STATE = {
 /**
  * Emotional Time Engine Hook
  *
- * Subscribes to the global timeline and computes the emotionally
- * modulated scene state for the current frame.
+ * Computes emotionally modulated scene state from the current timeline time.
  */
 
-export const useEmotionalTimeEngine = (nodes: MemoryNode[] = []) => {
-
+export function useEmotionalTimeEngine(nodes: MemoryNode[] = []): EngineState {
   const { time } = useTimeline()
 
-  const engineState = useMemo(() => {
-
-    if (!nodes.length) {
+  return useMemo<EngineState>(() => {
+    if (nodes.length === 0) {
       return EMPTY_STATE
     }
 
     return runEmotionalTimeEngine(nodes, time)
-
-  }, [time, nodes])
-
-  return engineState
-
+  }, [nodes, time])
 }
