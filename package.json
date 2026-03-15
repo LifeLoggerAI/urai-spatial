@@ -1,30 +1,15 @@
 {
-  "name": "urai-spatial-root",
+  "name": "urai-spatial-monorepo",
   "private": true,
   "scripts": {
-    "dev": "next dev -p 9002 -H 0.0.0.0",
-    "build": "next build",
-    "start": "next start -p 9002",
-    "lint": "next lint",
-    "typecheck": "tsc --noEmit"
-  },
-  "dependencies": {
-    "@react-three/drei": "^9.122.0",
-    "@react-three/fiber": "^8.18.0",
-    "@react-three/postprocessing": "2.16.2",
-    "glsl-noise": "^0.0.0",
-    "next": "^14.2.35",
-    "postprocessing": "^6.38.3",
-    "react": "^18.2.0",
-    "react-dom": "^18.2.0",
-    "seedrandom": "^3.0.5",
-    "three": "^0.162.0",
-    "three-stdlib": "^2.36.1",
-    "zustand": "^4.5.7"
+    "dev": "pnpm --filter spatial-web dev",
+    "build": "pnpm --filter spatial-web build",
+    "start": "pnpm --filter spatial-web start",
+    "lint": "pnpm --filter spatial-web lint",
+    "next-export": "pnpm --filter spatial-web next export",
+    "ship:check": "pnpm -r --if-present test"
   },
   "devDependencies": {
-    "@types/node": "^25.3.3",
-    "@types/react": "^18.3.28",
-    "typescript": "^5.9.3"
+    "pnpm": "^8.0.0"
   }
 }

@@ -1,6 +1,6 @@
 {
   "hosting": {
-    "public": "apps/spatial-web/out",
+    "public": ".next",
     "ignore": [
       "firebase.json",
       "**/.*",
@@ -11,11 +11,15 @@
         "source": "**",
         "destination": "/index.html"
       }
+    ],
+    "predeploy": [
+      "pnpm install",
+      "pnpm build"
     ]
   },
   "firestore": {
-    "rules": "infra/firestore.rules",
-    "indexes": "infra/firestore.indexes.json"
+    "rules": "firebase/firestore.rules",
+    "indexes": "firebase/firestore.indexes.json"
   },
   "functions": [
     {

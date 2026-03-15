@@ -1,12 +1,16 @@
 import { useMemo, useRef } from 'react';
 import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
-import { VolumetricNebulaShader } from '../shaders/VolumetricNebulaShader';
+import { LightConeShader } from '../shaders/LightConeShader';
 
-export default function Nebula() {
+export default function LightCone() {
   const meshRef = useRef<THREE.Mesh>(null!);
 
-  const shader = useMemo(() => VolumetricNebulaShader, []);
+  const { geometry, shader } = useMemo(() => {
+    const geometry = new THREE.CylinderGeometry(0, 1, 2, 32, 1, true);
+    const shader = LightConeShader;
+    return { geometry, shader };
+  }, []);
 
   useFrame(({ clock }) => {
     if (meshRef.current) {
@@ -15,8 +19,7 @@ export default function Nebula() {
   });
 
   return (
-    <mesh ref={meshRef} scale={[1000, 1000, 1000]} frustumCulled={false}>
-      <boxGeometry args={[1, 1, 1]} />
+    <mesh ref={meshRef} geometry={geometry} frustumCulled={false}>
       <shaderMaterial
         attach="material"
         args={[shader]}

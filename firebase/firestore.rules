@@ -35,14 +35,58 @@ service cloud.firestore {
 
       match /clusters/{clusterId} {
         allow read: if isSignedIn() && isOwner(userId);
-        // Clusters are server-generated only to ensure integrity.
-        allow write: if false;
+        allow write: if false; 
       }
 
       match /replays/{replayId} {
         allow read: if isSignedIn() && isOwner(userId);
-        // Replay metadata is server-controlled.
         allow write: if false;
+      }
+
+      match /stars/{starId} {
+        allow read: if isSignedIn() && isOwner(userId);
+        allow write: if false; 
+      }
+
+      match /emotionLogs/{logId} {
+        allow read, write: if isSignedIn() && isOwner(userId);
+      }
+
+      match /voiceEvents/{eventId} {
+        allow read, write: if isSignedIn() && isOwner(userId);
+      }
+
+      match /behaviorSignals/{signalId} {
+        allow read, write: if isSignedIn() && isOwner(userId);
+      }
+
+      match /locations/{locationId} {
+        allow read, write: if isSignedIn() && isOwner(userId);
+      }
+
+      match /relationships/{relationshipId} {
+        allow read, write: if isSignedIn() && isOwner(userId);
+      }
+
+      match /rituals/{ritualId} {
+        allow read, write: if isSignedIn() && isOwner(userId);
+      }
+
+      match /dreamLogs/{logId} {
+        allow read, write: if isSignedIn() && isOwner(userId);
+      }
+
+      match /insights/{insightId} {
+        allow read: if isSignedIn() && isOwner(userId);
+        allow write: if false;
+      }
+
+      match /notifications/{notificationId} {
+        allow read, write: if isSignedIn() && isOwner(userId);
+      }
+
+      match /companionState/{stateId} {
+        allow read, write: if isSignedIn() && isOwner(userId);
       }
     }
   }

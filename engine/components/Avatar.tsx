@@ -3,7 +3,12 @@
 import { useMemo } from "react"
 import * as THREE from "three"
 
-export default function Avatar() {
+type AvatarProps = {
+  position?: [number, number, number],
+  rotation?: [number, number, number],
+}
+
+export default function Avatar({ position, rotation }: AvatarProps) {
 
   const bodyGeometry = useMemo(
     () => new THREE.CapsuleGeometry(0.75, 3.6, 8, 16),
@@ -18,8 +23,8 @@ export default function Avatar() {
   return (
 
     <group
-      position={[2.4, -3.0, -1.2]}
-      rotation={[0, -0.5, 0]}
+      position={position || [0,0,0]}
+      rotation={rotation || [0,0,0]}
       frustumCulled={false}
     >
 

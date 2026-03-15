@@ -5,7 +5,9 @@ import { Canvas } from "@react-three/fiber";
 
 import Starfield from "./Starfield";
 import CameraRig from "./CameraRig";
-import MemorySphere from "./MemorySphere";
+import MemorySphere from "../memory/MemorySphere";
+import Presence from "../components/Presence";
+import PresenceController from "../core/PresenceController";
 
 import { useSpatialStore } from "../state/spatialStore";
 import { STAR_DATA } from "../data/starData";
@@ -39,8 +41,13 @@ export default function MainScene() {
 
       <Starfield />
 
+      <Presence />
+
+      {/* Controllers */}
+      <PresenceController />
+
       {selectedStar && (
-        <MemorySphere position={selectedStar.position} />
+        <MemorySphere />
       )}
 
     </Canvas>
