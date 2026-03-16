@@ -1,3 +1,5 @@
+import { buildStarsFromMemory } from "../lib/memoryToStar";
+
 export type SpatialEra = "origins" | "ascent" | "fracture" | "return" | "becoming";
 export type SpatialKind = "memory" | "threshold" | "recovery" | "signal" | "echo";
 
@@ -17,6 +19,11 @@ export type SpatialStar = {
   glow: number;
   intensity: number;
   position: [number, number, number];
+  dateLabel?: string;
+  summary?: string;
+  detail?: string;
+  tags?: string[];
+  transcript?: string;
 };
 
 function mulberry32(seed: number) {
@@ -92,18 +99,63 @@ export function buildSpatialStars(seed = STAR_SEED, count = STAR_COUNT): Spatial
       glow,
       intensity,
       position: [x, y, z],
+      dateLabel: `${TIMEBANDS[chapterIndex]} ${2026 - ((count - index) % 5)}`,
+      summary: `${LABELS[labelIndex]} node ${index + 1} in ${CHAPTERS[chapterIndex]}.`,
+      detail: `Placeholder detail for ${CHAPTERS[chapterIndex]} ${index + 1}.`,
+      tags: [ERAS[chapterIndex], KINDS[labelIndex], TIMEBANDS[chapterIndex].toLowerCase()],
+      transcript: `Replay placeholder transcript for ${CHAPTERS[chapterIndex]} ${index + 1}.`,
     };
   });
 }
 
-export const SPATIAL_STARS: SpatialStar[] = buildSpatialStars();
+function normalizeStar(raw: Partial<SpatialStar>, index: number): SpatialStar {
+  const fallback = buildSpatialStars(STAR_SEED + index, 1)[0];
+
+  return {
+    ...fallback,
+    ...raw,
+    id: raw.id ?? fallback.id,
+    order: raw.order ?? index + 1,
+    title: raw.title ?? fallback.title,
+    label: raw.label ?? fallback.label,
+    signature: raw.signature ?? fallback.signature,
+    chapter: raw.chapter ?? fallback.chapter,
+    timeband: raw.timeband ?? fallback.timeband,
+    era: (raw.era as SpatialEra | undefined) ?? fallback.era,
+    kind: (raw.kind as SpatialKind | undefined) ?? fallback.kind,
+    description: raw.description ?? fallback.description,
+    color: raw.color ?? fallback.color,
+    size: raw.size ?? fallback.size,
+    glow: raw.glow ?? fallback.glow,
+    intensity: raw.intensity ?? fallback.intensity,
+    position: (raw.position as [number, number, number] | undefined) ?? fallback.position,
+    dateLabel: raw.dateLabel ?? fallback.dateLabel,
+    summary: raw.summary ?? raw.description ?? fallback.summary,
+    detail: raw.detail ?? raw.description ?? fallback.detail,
+    tags: raw.tags ?? fallback.tags,
+    transcript: raw.transcript ?? fallback.transcript,
+  };
+}
+
+let realStars: SpatialStar[] = [];
+
+try {
+  const built = buildStarsFromMemory() as Partial<SpatialStar>[] | undefined;
+  realStars = Array.isArray(built) ? built.map((star, index) => normalizeStar(star, index)) : [];
+} catch (error) {
+  console.warn("stars.ts: buildStarsFromMemory failed, using placeholder stars", error);
+  realStars = [];
+}
+
+export const SPATIAL_STARS_REAL: SpatialStar[] = realStars;
+export const SPATIAL_STARS: SpatialStar[] =
+  SPATIAL_STARS_REAL.length > 0 ? SPATIAL_STARS_REAL : buildSpatialStars();
 
 export function getSpatialStarById(id: string | null | undefined): SpatialStar | null {
   if (!id) return null;
   return SPATIAL_STARS.find((star) => star.id === id) ?? null;
 }
 
-/* PHASE6_REAL_MEMORY_HOOK */
-import { buildStarsFromMemory } from "../lib/memoryToStar";
-
-export const SPATIAL_STARS_REAL = buildStarsFromMemory();
+export function generateStars(): SpatialStar[] {
+  return SPATIAL_STARS;
+}

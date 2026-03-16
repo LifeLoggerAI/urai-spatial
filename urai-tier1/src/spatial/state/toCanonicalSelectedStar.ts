@@ -14,6 +14,7 @@ type StarInput = Partial<SelectedStar> & {
   chapter?: string;
   timeband?: string;
   dateLabel?: string;
+  description?: string;
   tags?: string[];
 };
 
@@ -53,6 +54,7 @@ export function toCanonicalSelectedStar(input: StarInput | null): SelectedStar |
   const chapter = safeText(input.chapter, "unknown");
   const timeband = safeText(input.timeband, "undated");
   const dateLabel = safeText(input.dateLabel, timeband);
+  const description = safeText(input.description, detail || summary);
   const tags = safeTags(input, [chapter, timeband, signature]);
 
   return {
@@ -70,6 +72,7 @@ export function toCanonicalSelectedStar(input: StarInput | null): SelectedStar |
     size: typeof input.size === "number" && Number.isFinite(input.size) ? input.size : 1,
     title,
     label,
+    description,
     summary,
     detail,
     transcript,

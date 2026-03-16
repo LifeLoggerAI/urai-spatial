@@ -13,6 +13,11 @@ export type SelectedStar = {
   signature: string;
   chapter: string;
   timeband: string;
+  dateLabel?: string;
+  summary?: string;
+  detail?: string;
+  tags?: string[];
+  transcript?: string;
   description: string;
 };
 

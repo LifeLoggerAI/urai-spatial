@@ -60,6 +60,7 @@ export default function Starfield() {
                   chapter: star.chapter,
                   timeband: star.timeband,
                   dateLabel: star.dateLabel,
+                  description: star.description,
                   summary: star.summary,
                   detail: star.detail,
                   tags: star.tags,
