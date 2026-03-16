@@ -1,0 +1,157 @@
+"use client"
+
+import { useEffect, useMemo, useRef } from "react"
+import { useThree, useFrame } from "@react-three/fiber"
+import * as THREE from "three"
+import { useSpatialStore } from "../state/spatialStore"
+import { Points, PointMaterial } from "@react-three/drei"
+
+const EMOTION_COLORS = {
+  joy: new THREE.Color("#1A1A2A"),
+  love: new THREE.Color("#2A1A2A"),
+  sadness: new THREE.Color("#1A1A20"),
+  anger: new THREE.Color("#2A1A1A"),
+  calm: new THREE.Color("#1A2A2A"),
+  curiosity: new THREE.Color("#1A2A1A"),
+  focus: new THREE.Color("#20202A"),
+  default: new THREE.Color("#050510"),
+}
+
+function seededRandom(seed: number) {
+  return function () {
+    seed |= 0
+    seed = seed + 0x6D2B79F5 | 0
+    let t = Math.imul(seed ^ seed >>> 15, 1 | seed)
+    t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t
+    return ((t ^ t >>> 14) >>> 0) / 4294967296
+  }
+}
+
+function generateLayer(count: number, radius: number, seed: number) {
+
+  const rand = seededRandom(seed)
+  const arr = new Float32Array(count * 3)
+
+  for (let i = 0; i < count; i++) {
+
+    const r = rand() * radius
+    const theta = rand() * Math.PI * 2
+    const phi = Math.acos(rand() * 2 - 1)
+
+    arr[i * 3] = r * Math.sin(phi) * Math.cos(theta)
+    arr[i * 3 + 1] = r * Math.sin(phi) * Math.sin(theta)
+    arr[i * 3 + 2] = r * Math.cos(phi)
+
+  }
+
+  return arr
+}
+
+export default function Environment() {
+
+  const { scene, camera } = useThree()
+
+  const { selectedStarId, stars } = useSpatialStore((s) => ({
+    selectedStarId: s.selectedStarId,
+    stars: s.stars,
+  }))
+
+  const targetColor = useMemo(() => {
+
+    if (selectedStarId !== null && stars) {
+
+      const star = stars.find((s) => s.id === selectedStarId)
+      const emotion = star?.emotion as keyof typeof EMOTION_COLORS
+
+      return EMOTION_COLORS[emotion] || EMOTION_COLORS.default
+
+    }
+
+    return EMOTION_COLORS.default
+
+  }, [selectedStarId, stars])
+
+  useEffect(() => {
+
+    scene.fog = new THREE.FogExp2(EMOTION_COLORS.default, 0.015)
+    scene.background = new THREE.Color("#02030a")
+
+  }, [scene])
+
+  const p1 = useMemo(() => generateLayer(600, 120, 1), [])
+  const p2 = useMemo(() => generateLayer(1200, 260, 2), [])
+  const p3 = useMemo(() => generateLayer(2400, 520, 3), [])
+
+  const nearLayer = useRef<THREE.Points>(null!)
+  const midLayer = useRef<THREE.Points>(null!)
+  const farLayer = useRef<THREE.Points>(null!)
+
+  useFrame((state, delta) => {
+
+    const cam = state.camera.position
+
+    if (nearLayer.current) {
+      nearLayer.current.position.lerp(cam, 0.04)
+    }
+
+    if (midLayer.current) {
+      midLayer.current.position.lerp(cam, 0.02)
+    }
+
+    if (farLayer.current) {
+      farLayer.current.position.lerp(cam, 0.01)
+    }
+
+    if (scene.fog) {
+      ;(scene.fog as THREE.FogExp2).color.lerp(targetColor, delta * 0.4)
+    }
+
+    if (scene.background instanceof THREE.Color) {
+      scene.background.lerp(targetColor, delta * 0.08)
+    }
+
+  })
+
+  const opacity = selectedStarId !== null ? 0 : 1
+
+  return (
+    <>
+      <Points ref={nearLayer} positions={p1} stride={3} frustumCulled={false}>
+        <PointMaterial
+          transparent
+          opacity={opacity}
+          color="#ffffff"
+          size={0.09}
+          sizeAttenuation
+          depthWrite={false}
+          depthTest={false}
+        />
+      </Points>
+
+      <Points ref={midLayer} positions={p2} stride={3} frustumCulled={false}>
+        <PointMaterial
+          transparent
+          opacity={opacity}
+          color="#ffffff"
+          size={0.055}
+          sizeAttenuation
+          depthWrite={false}
+          depthTest={false}
+        />
+      </Points>
+
+      <Points ref={farLayer} positions={p3} stride={3} frustumCulled={false}>
+        <PointMaterial
+          transparent
+          opacity={opacity}
+          color="#ffffff"
+          size={0.035}
+          sizeAttenuation
+          depthWrite={false}
+          depthTest={false}
+        />
+      </Points>
+    </>
+  )
+
+}

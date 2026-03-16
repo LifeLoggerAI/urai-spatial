@@ -1,0 +1,93 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return request.auth.uid == userId;
+    }
+
+    function validEmotionalWeight() {
+      return request.resource.data.emotionalWeight is number
+        && request.resource.data.emotionalWeight >= 0
+        && request.resource.data.emotionalWeight <= 1;
+    }
+
+    function validTimestamp() {
+      return request.resource.data.timestamp is timestamp;
+    }
+
+    match /users/{userId} {
+      allow read, write: if isSignedIn() && isOwner(userId);
+
+      match /memories/{memoryId} {
+        allow create: if isSignedIn()
+          && isOwner(userId)
+          && validEmotionalWeight()
+          && validTimestamp();
+
+        allow read, update, delete:
+          if isSignedIn() && isOwner(userId);
+      }
+
+      match /clusters/{clusterId} {
+        allow read: if isSignedIn() && isOwner(userId);
+        allow write: if false; 
+      }
+
+      match /replays/{replayId} {
+        allow read: if isSignedIn() && isOwner(userId);
+        allow write: if false;
+      }
+
+      match /stars/{starId} {
+        allow read: if isSignedIn() && isOwner(userId);
+        allow write: if false; 
+      }
+
+      match /emotionLogs/{logId} {
+        allow read, write: if isSignedIn() && isOwner(userId);
+      }
+
+      match /voiceEvents/{eventId} {
+        allow read, write: if isSignedIn() && isOwner(userId);
+      }
+
+      match /behaviorSignals/{signalId} {
+        allow read, write: if isSignedIn() && isOwner(userId);
+      }
+
+      match /locations/{locationId} {
+        allow read, write: if isSignedIn() && isOwner(userId);
+      }
+
+      match /relationships/{relationshipId} {
+        allow read, write: if isSignedIn() && isOwner(userId);
+      }
+
+      match /rituals/{ritualId} {
+        allow read, write: if isSignedIn() && isOwner(userId);
+      }
+
+      match /dreamLogs/{logId} {
+        allow read, write: if isSignedIn() && isOwner(userId);
+      }
+
+      match /insights/{insightId} {
+        allow read: if isSignedIn() && isOwner(userId);
+        allow write: if false;
+      }
+
+      match /notifications/{notificationId} {
+        allow read, write: if isSignedIn() && isOwner(userId);
+      }
+
+      match /companionState/{stateId} {
+        allow read, write: if isSignedIn() && isOwner(userId);
+      }
+    }
+  }
+}

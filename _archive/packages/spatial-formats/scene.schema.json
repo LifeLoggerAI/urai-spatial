@@ -1,0 +1,16 @@
+{
+  "schemaVersion": 1,
+  "rules": {
+    ".read": "auth != null",
+    ".write": "auth != null",
+    "lifemapStars": {
+      "$uid": {
+        ".read": "$uid === auth.uid",
+        ".write": "$uid === auth.uid",
+        "$starId": {
+          ".validate": "newData.hasChildren(['schemaVersion', 'userId', 'position', 'type', 'intensity', 'emotionScore', 'year', 'archetype', 'createdAt']) && newData.child('schemaVersion').val() == 1 && newData.child('userId').val() == auth.uid"
+        }
+      }
+    }
+  }
+}
