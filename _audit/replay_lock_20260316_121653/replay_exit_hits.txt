@@ -1,0 +1,627 @@
+urai-tier1/src/spatial/state/selectedStarContract.ts.bak.20260316-090832:19:  selectedStar: SelectedStar | null
+urai-tier1/src/spatial/state/selectedStarContract.ts.bak.20260316-090832:21:  if (!selectedStar) return null;
+urai-tier1/src/spatial/state/sceneStore.ts.bak.20260316-082011:19:  selectedStar: SelectedStar | null;
+urai-tier1/src/spatial/state/sceneStore.ts.bak.20260316-082011:29:  selectedStar: null,
+urai-tier1/src/spatial/state/sceneStore.ts.bak.20260316-082011:37:      selectedStar: null,
+urai-tier1/src/spatial/state/selectedStarContract.ts.bak.20260316-091829:21:  selectedStar: SelectedStar | null
+urai-tier1/src/spatial/state/selectedStarContract.ts.bak.20260316-091829:23:  if (!selectedStar) return null;
+urai-tier1/src/spatial/state/selectedStarContract.ts.bak.20260316-094614:21:  selectedStar: SelectedStar | null
+urai-tier1/src/spatial/state/selectedStarContract.ts.bak.20260316-094614:23:  if (!selectedStar) return null;
+urai-tier1/src/spatial/state/sceneStore.ts.bak.20260316-090150:21:  selectedStar: SelectedStar | null;
+urai-tier1/src/spatial/state/sceneStore.ts.bak.20260316-090150:41:  selectedStar: null,
+urai-tier1/src/spatial/state/sceneStore.ts.bak.20260316-090150:63:      selectedStar: null,
+urai-tier1/src/spatial/state/sceneStore.ts.bak.20260316-090150:71:      selectedStar: state.mode === "focus" || state.mode === "replay" ? state.selectedStar : null,
+urai-tier1/src/spatial/state/sceneStore.ts.bak.20260316-090150:104:      selectedStar: null,
+urai-tier1/src/spatial/state/sceneStore.ts.bak.20260316-093709:28:  selectedStar: SelectedStar | null;
+urai-tier1/src/spatial/state/sceneStore.ts.bak.20260316-093709:49:  selectedStar: null,
+urai-tier1/src/spatial/state/sceneStore.ts.bak.20260316-093709:80:      selectedStar: null,
+urai-tier1/src/spatial/state/sceneStore.ts.bak.20260316-093709:139:      selectedStar: null,
+urai-tier1/src/spatial/state/sceneStore.ts.bak.20260316-095740:25:  selectedStar: SelectedStar | null;
+urai-tier1/src/spatial/state/sceneStore.ts.bak.20260316-095740:46:  selectedStar: null,
+urai-tier1/src/spatial/state/sceneStore.ts.bak.20260316-095740:77:      selectedStar: null,
+urai-tier1/src/spatial/state/sceneStore.ts.bak.20260316-095740:136:      selectedStar: null,
+urai-tier1/src/spatial/state/sceneStore.ts.bak.20260316-091829:27:  selectedStar: SelectedStar | null;
+urai-tier1/src/spatial/state/sceneStore.ts.bak.20260316-091829:47:  selectedStar: null,
+urai-tier1/src/spatial/state/sceneStore.ts.bak.20260316-091829:74:      selectedStar: null,
+urai-tier1/src/spatial/state/sceneStore.ts.bak.20260316-091829:121:      selectedStar: null,
+urai-tier1/src/spatial/state/sceneStore.ts.bak.20260316-090700:27:  selectedStar: SelectedStar | null;
+urai-tier1/src/spatial/state/sceneStore.ts.bak.20260316-090700:47:  selectedStar: null,
+urai-tier1/src/spatial/state/sceneStore.ts.bak.20260316-090700:69:      selectedStar: null,
+urai-tier1/src/spatial/state/sceneStore.ts.bak.20260316-090700:77:      selectedStar: state.mode === "focus" || state.mode === "replay" ? state.selectedStar : null,
+urai-tier1/src/spatial/state/sceneStore.ts.bak.20260316-090700:110:      selectedStar: null,
+urai-tier1/src/spatial/state/selectedStarContract.ts.bak.20260316-090700:19:  selectedStar: SelectedStar | null
+urai-tier1/src/spatial/state/selectedStarContract.ts.bak.20260316-090700:21:  if (!selectedStar) return null;
+urai-tier1/src/spatial/state/sceneStore.ts.bak.20260316-090323:23:  selectedStar: SelectedStar | null;
+urai-tier1/src/spatial/state/sceneStore.ts.bak.20260316-090323:43:  selectedStar: null,
+urai-tier1/src/spatial/state/sceneStore.ts.bak.20260316-090323:65:      selectedStar: null,
+urai-tier1/src/spatial/state/sceneStore.ts.bak.20260316-090323:73:      selectedStar: state.mode === "focus" || state.mode === "replay" ? state.selectedStar : null,
+urai-tier1/src/spatial/state/sceneStore.ts.bak.20260316-090323:106:      selectedStar: null,
+urai-tier1/src/spatial/state/sceneStore.ts.bak.20260316-091147:29:  selectedStar: SelectedStar | null;
+urai-tier1/src/spatial/state/sceneStore.ts.bak.20260316-091147:49:  selectedStar: null,
+urai-tier1/src/spatial/state/sceneStore.ts.bak.20260316-091147:71:      selectedStar: null,
+urai-tier1/src/spatial/state/sceneStore.ts.bak.20260316-091147:79:      selectedStar: state.mode === "focus" || state.mode === "replay" ? state.selectedStar : null,
+urai-tier1/src/spatial/state/sceneStore.ts.bak.20260316-091147:112:      selectedStar: null,
+urai-tier1/src/spatial/state/sceneStore.ts.bak.20260316-082104:19:  selectedStar: SelectedStar | null;
+urai-tier1/src/spatial/state/sceneStore.ts.bak.20260316-082104:29:  selectedStar: null,
+urai-tier1/src/spatial/state/sceneStore.ts.bak.20260316-082104:37:      selectedStar: null,
+urai-tier1/src/spatial/state/sceneStore.ts.bak.20260316-082707:19:  selectedStar: SelectedStar | null;
+urai-tier1/src/spatial/state/sceneStore.ts.bak.20260316-082707:29:  selectedStar: null,
+urai-tier1/src/spatial/state/sceneStore.ts.bak.20260316-082707:37:      selectedStar: null,
+urai-tier1/src/spatial/state/sceneStore.ts.bak.20260316-090832:27:  selectedStar: SelectedStar | null;
+urai-tier1/src/spatial/state/sceneStore.ts.bak.20260316-090832:47:  selectedStar: null,
+urai-tier1/src/spatial/state/sceneStore.ts.bak.20260316-090832:69:      selectedStar: null,
+urai-tier1/src/spatial/state/sceneStore.ts.bak.20260316-090832:77:      selectedStar: state.mode === "focus" || state.mode === "replay" ? state.selectedStar : null,
+urai-tier1/src/spatial/state/sceneStore.ts.bak.20260316-090832:110:      selectedStar: null,
+urai-tier1/src/spatial/state/selectedStarContract.ts.bak.20260316-091009:20:  selectedStar: SelectedStar | null
+urai-tier1/src/spatial/state/selectedStarContract.ts.bak.20260316-091009:22:  if (!selectedStar) return null;
+urai-tier1/src/spatial/state/sceneStore.ts.bak.20260316-090458:23:  selectedStar: SelectedStar | null;
+urai-tier1/src/spatial/state/sceneStore.ts.bak.20260316-090458:43:  selectedStar: null,
+urai-tier1/src/spatial/state/sceneStore.ts.bak.20260316-090458:65:      selectedStar: null,
+urai-tier1/src/spatial/state/sceneStore.ts.bak.20260316-090458:73:      selectedStar: state.mode === "focus" || state.mode === "replay" ? state.selectedStar : null,
+urai-tier1/src/spatial/state/sceneStore.ts.bak.20260316-090458:106:      selectedStar: null,
+urai-tier1/src/spatial/state/sceneStore.ts.bak.20260316-094613:28:  selectedStar: SelectedStar | null;
+urai-tier1/src/spatial/state/sceneStore.ts.bak.20260316-094613:49:  selectedStar: null,
+urai-tier1/src/spatial/state/sceneStore.ts.bak.20260316-094613:80:      selectedStar: null,
+urai-tier1/src/spatial/state/sceneStore.ts.bak.20260316-094613:139:      selectedStar: null,
+urai-tier1/src/spatial/state/sceneStore.ts.bak.20260316-093132:28:  selectedStar: SelectedStar | null;
+urai-tier1/src/spatial/state/sceneStore.ts.bak.20260316-093132:49:  selectedStar: null,
+urai-tier1/src/spatial/state/sceneStore.ts.bak.20260316-093132:80:      selectedStar: null,
+urai-tier1/src/spatial/state/sceneStore.ts.bak.20260316-093132:139:      selectedStar: null,
+urai-tier1/src/spatial/state/sceneStore.ts.bak.20260316-091318:27:  selectedStar: SelectedStar | null;
+urai-tier1/src/spatial/state/sceneStore.ts.bak.20260316-091318:47:  selectedStar: null,
+urai-tier1/src/spatial/state/sceneStore.ts.bak.20260316-091318:69:      selectedStar: null,
+urai-tier1/src/spatial/state/sceneStore.ts.bak.20260316-091318:116:      selectedStar: null,
+urai-tier1/src/spatial/state/sceneStore.ts.bak.20260316-092402:19:  selectedStar: SelectedStar | null;
+urai-tier1/src/spatial/state/sceneStore.ts.bak.20260316-092402:34:  selectedStar: null,
+urai-tier1/src/spatial/state/sceneStore.ts.bak.20260316-092402:56:      selectedStar: null,
+urai-tier1/src/spatial/state/sceneStore.ts.bak.20260316-092402:79:      selectedStar: null,
+urai-tier1/src/spatial/state/sceneStore.ts:25:  selectedStar: SelectedStar | null;
+urai-tier1/src/spatial/state/sceneStore.ts:46:  selectedStar: null,
+urai-tier1/src/spatial/state/sceneStore.ts:77:      selectedStar: null,
+urai-tier1/src/spatial/state/sceneStore.ts:136:      selectedStar: null,
+urai-tier1/src/spatial/state/selectedStarContract.ts.bak.20260316-095740:6:  selectedStar: SelectedStar | null
+urai-tier1/src/spatial/state/sceneStore.ts.bak.20260316-090559:23:  selectedStar: SelectedStar | null;
+urai-tier1/src/spatial/state/sceneStore.ts.bak.20260316-090559:43:  selectedStar: null,
+urai-tier1/src/spatial/state/sceneStore.ts.bak.20260316-090559:65:      selectedStar: null,
+urai-tier1/src/spatial/state/sceneStore.ts.bak.20260316-090559:73:      selectedStar: state.mode === "focus" || state.mode === "replay" ? state.selectedStar : null,
+urai-tier1/src/spatial/state/sceneStore.ts.bak.20260316-090559:106:      selectedStar: null,
+urai-tier1/src/spatial/state/sceneStore.ts.bak.20260316-083813:19:  selectedStar: SelectedStar | null;
+urai-tier1/src/spatial/state/sceneStore.ts.bak.20260316-083813:30:  selectedStar: null,
+urai-tier1/src/spatial/state/sceneStore.ts.bak.20260316-083813:51:      selectedStar: null,
+urai-tier1/src/spatial/state/sceneStore.ts.bak.20260316-095834:25:  selectedStar: SelectedStar | null;
+urai-tier1/src/spatial/state/sceneStore.ts.bak.20260316-095834:46:  selectedStar: null,
+urai-tier1/src/spatial/state/sceneStore.ts.bak.20260316-095834:77:      selectedStar: null,
+urai-tier1/src/spatial/state/sceneStore.ts.bak.20260316-095834:136:      selectedStar: null,
+urai-tier1/src/spatial/state/sceneStore.ts.bak.20260316-091009:28:  selectedStar: SelectedStar | null;
+urai-tier1/src/spatial/state/sceneStore.ts.bak.20260316-091009:48:  selectedStar: null,
+urai-tier1/src/spatial/state/sceneStore.ts.bak.20260316-091009:70:      selectedStar: null,
+urai-tier1/src/spatial/state/sceneStore.ts.bak.20260316-091009:78:      selectedStar: state.mode === "focus" || state.mode === "replay" ? state.selectedStar : null,
+urai-tier1/src/spatial/state/sceneStore.ts.bak.20260316-091009:111:      selectedStar: null,
+urai-tier1/src/spatial/state/selectedStarContract.ts.bak.20260316-092402:21:  selectedStar: SelectedStar | null
+urai-tier1/src/spatial/state/selectedStarContract.ts.bak.20260316-092402:23:  if (!selectedStar) return null;
+urai-tier1/src/spatial/state/selectedStarContract.ts:6:  selectedStar: SelectedStar | null
+urai-tier1/src/spatial/state/sceneStore.ts.bak.20260316-084311:19:  selectedStar: SelectedStar | null;
+urai-tier1/src/spatial/state/sceneStore.ts.bak.20260316-084311:30:  selectedStar: null,
+urai-tier1/src/spatial/state/sceneStore.ts.bak.20260316-084311:51:      selectedStar: null,
+urai-tier1/src/spatial/state/sceneStore.ts.bak.20260316-085919:19:  selectedStar: SelectedStar | null;
+urai-tier1/src/spatial/state/sceneStore.ts.bak.20260316-085919:39:  selectedStar: null,
+urai-tier1/src/spatial/state/sceneStore.ts.bak.20260316-085919:61:      selectedStar: null,
+urai-tier1/src/spatial/state/sceneStore.ts.bak.20260316-085919:69:      selectedStar: state.mode === "focus" || state.mode === "replay" ? state.selectedStar : null,
+urai-tier1/src/spatial/state/sceneStore.ts.bak.20260316-085919:102:      selectedStar: null,
+urai-tier1/src/spatial/state/selectedStarContract.ts.bak.20260316-095834:6:  selectedStar: SelectedStar | null
+urai-tier1/src/spatial/state/sceneStore.ts.bak.20260316-092938:28:  selectedStar: SelectedStar | null;
+urai-tier1/src/spatial/state/sceneStore.ts.bak.20260316-092938:48:  selectedStar: null,
+urai-tier1/src/spatial/state/sceneStore.ts.bak.20260316-092938:79:      selectedStar: null,
+urai-tier1/src/spatial/state/sceneStore.ts.bak.20260316-092938:127:      selectedStar: null,
+urai-tier1/src/spatial/state/sceneStore.ts.bak.20260316-090356:23:  selectedStar: SelectedStar | null;
+urai-tier1/src/spatial/state/sceneStore.ts.bak.20260316-090356:43:  selectedStar: null,
+urai-tier1/src/spatial/state/sceneStore.ts.bak.20260316-090356:65:      selectedStar: null,
+urai-tier1/src/spatial/state/sceneStore.ts.bak.20260316-090356:73:      selectedStar: state.mode === "focus" || state.mode === "replay" ? state.selectedStar : null,
+urai-tier1/src/spatial/state/sceneStore.ts.bak.20260316-090356:106:      selectedStar: null,
+urai-tier1/src/spatial/state/sceneStore.ts.bak.20260316-083440:19:  selectedStar: SelectedStar | null;
+urai-tier1/src/spatial/state/sceneStore.ts.bak.20260316-083440:29:  selectedStar: null,
+urai-tier1/src/spatial/state/sceneStore.ts.bak.20260316-083440:37:      selectedStar: null,
+urai-tier1/src/spatial/state/sceneStore.ts.bak.20260316-090453:23:  selectedStar: SelectedStar | null;
+urai-tier1/src/spatial/state/sceneStore.ts.bak.20260316-090453:43:  selectedStar: null,
+urai-tier1/src/spatial/state/sceneStore.ts.bak.20260316-090453:65:      selectedStar: null,
+urai-tier1/src/spatial/state/sceneStore.ts.bak.20260316-090453:73:      selectedStar: state.mode === "focus" || state.mode === "replay" ? state.selectedStar : null,
+urai-tier1/src/spatial/state/sceneStore.ts.bak.20260316-090453:106:      selectedStar: null,
+urai-tier1/src/spatial/state/sceneStore.ts.bak.20260316-082008:33:  selectedStar: null,
+urai-tier1/src/spatial/state/sceneStore.ts.bak.20260316-090023:20:  selectedStar: SelectedStar | null;
+urai-tier1/src/spatial/state/sceneStore.ts.bak.20260316-090023:40:  selectedStar: null,
+urai-tier1/src/spatial/state/sceneStore.ts.bak.20260316-090023:62:      selectedStar: null,
+urai-tier1/src/spatial/state/sceneStore.ts.bak.20260316-090023:70:      selectedStar: state.mode === "focus" || state.mode === "replay" ? state.selectedStar : null,
+urai-tier1/src/spatial/state/sceneStore.ts.bak.20260316-090023:103:      selectedStar: null,
+urai-tier1/src/spatial/core/SceneController.tsx:14:        setMode("lifemap");
+urai-tier1/src/spatial/core/SceneController.tsx:16:        setMode("home");
+urai-tier1/src/spatial/core/SceneController.tsx:19:        setMode("lifemap");
+urai-tier1/src/spatial/core/SceneController.tsx:23:    window.addEventListener("keydown", onKey);
+urai-tier1/src/spatial/core/SceneController.tsx:24:    return () => window.removeEventListener("keydown", onKey);
+urai-tier1/src/spatial/replay/replayBootstrap.tsx.bak.20260316-084634:193:        body: "Esc or Back to Focus returns to the selected star.",
+urai-tier1/src/spatial/replay/replayBootstrap.tsx.bak.20260316-084634:208:      if (e.key === "Escape" && mode === "replay") {
+urai-tier1/src/spatial/replay/replayBootstrap.tsx.bak.20260316-084634:238:    window.addEventListener("keydown", onKey);
+urai-tier1/src/spatial/replay/replayBootstrap.tsx.bak.20260316-084634:239:    return () => window.removeEventListener("keydown", onKey);
+urai-tier1/src/spatial/replay/replayBootstrap.tsx.bak.20260316-084634:250:  if (!selectedStar) return null;
+urai-tier1/src/spatial/replay/replayBootstrap.tsx.bak.20260316-084634:382:              <span>Esc back to focus</span>
+urai-tier1/src/spatial/replay/ReplayOverlay.tsx:209:      if (e.key === "Escape" && mode === "replay") {
+urai-tier1/src/spatial/replay/ReplayOverlay.tsx:239:    window.addEventListener("keydown", onKey);
+urai-tier1/src/spatial/replay/ReplayOverlay.tsx:240:    return () => window.removeEventListener("keydown", onKey);
+urai-tier1/src/spatial/replay/ReplayOverlay.tsx:251:  if (!selectedStar) return null;
+urai-tier1/src/spatial/replay/ReplayOverlay.tsx:370:              <span>Esc back to focus</span>
+urai-tier1/src/spatial/replay/ReplayOverlay.tsx.bak.20260316-100541:173:      if (e.key === "Escape" && mode === "replay") {
+urai-tier1/src/spatial/replay/ReplayOverlay.tsx.bak.20260316-100541:203:    window.addEventListener("keydown", onKey);
+urai-tier1/src/spatial/replay/ReplayOverlay.tsx.bak.20260316-100541:204:    return () => window.removeEventListener("keydown", onKey);
+urai-tier1/src/spatial/replay/ReplayOverlay.tsx.bak.20260316-100541:215:  if (!selectedStar) return null;
+urai-tier1/src/spatial/replay/ReplayOverlay.tsx.bak.20260316-100541:348:              <span>Esc back to focus</span>
+urai-tier1/src/spatial/replay/replayBootstrap.tsx.bak.20260316-084311:191:        body: "Esc or Back to Focus returns to the selected star.",
+urai-tier1/src/spatial/replay/replayBootstrap.tsx.bak.20260316-084311:206:      if (e.key === "Escape" && mode === "replay") {
+urai-tier1/src/spatial/replay/replayBootstrap.tsx.bak.20260316-084311:236:    window.addEventListener("keydown", onKey);
+urai-tier1/src/spatial/replay/replayBootstrap.tsx.bak.20260316-084311:237:    return () => window.removeEventListener("keydown", onKey);
+urai-tier1/src/spatial/replay/replayBootstrap.tsx.bak.20260316-084311:248:  if (!selectedStar) return null;
+urai-tier1/src/spatial/replay/replayBootstrap.tsx.bak.20260316-084311:386:              <span>Esc back to focus</span>
+urai-tier1/src/spatial/replay/replayModel.ts:11:  selectedStar: SelectedStar | null
+urai-tier1/src/spatial/replay/replayModel.ts:32:      body: "Esc or Back to Focus returns to the selected star.",
+urai-tier1/src/spatial/replay/replayModel.ts:37:export function getReplayGlow(selectedStar: SelectedStar | null) {
+urai-tier1/src/spatial/replay/replayModel.ts:41:export function getReplayMeta(selectedStar: SelectedStar | null) {
+urai-tier1/src/spatial/replay/replayBootstrap.tsx.bak.20260316-083049:145:      if (e.key === "Escape" && mode === "replay") {
+urai-tier1/src/spatial/replay/replayBootstrap.tsx.bak.20260316-083049:152:    window.addEventListener("keydown", onKey);
+urai-tier1/src/spatial/replay/replayBootstrap.tsx.bak.20260316-083049:153:    return () => window.removeEventListener("keydown", onKey);
+urai-tier1/src/spatial/replay/replayBootstrap.tsx.bak.20260316-083049:156:  if (!selectedStar) return null;
+urai-tier1/src/spatial/replay/replayBootstrap.tsx.bak.20260316-085358:182:      if (e.key === "Escape" && mode === "replay") {
+urai-tier1/src/spatial/replay/replayBootstrap.tsx.bak.20260316-085358:212:    window.addEventListener("keydown", onKey);
+urai-tier1/src/spatial/replay/replayBootstrap.tsx.bak.20260316-085358:213:    return () => window.removeEventListener("keydown", onKey);
+urai-tier1/src/spatial/replay/replayBootstrap.tsx.bak.20260316-085358:224:  if (!selectedStar) return null;
+urai-tier1/src/spatial/replay/replayBootstrap.tsx.bak.20260316-085358:357:              <span>Esc back to focus</span>
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-082707:62:  if (mode !== "focus" || !selectedStar) return null;
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-082707:158:        Press Esc or click empty space to exit focus
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-082707:169:  if (!detailOpen || !selectedStar) return null;
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-082707:376:      if (e.key === "Escape") {
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-082707:383:        setMode("lifemap");
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-082707:387:    window.addEventListener("keydown", onKeyDown);
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-082707:388:    return () => window.removeEventListener("keydown", onKeyDown);
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-082707:394:    setMode("lifemap");
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-082707:487:              setMode("home");
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-082707:496:              setMode("lifemap");
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-082707:505:              setMode("lifemap");
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-090323.bak.20260316-094615:61:  if (mode !== "focus" || !selectedStar) return null;
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-090323.bak.20260316-094615:157:        Press Esc or click empty space to exit focus
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-090323.bak.20260316-094615:168:  if (!detailOpen || !selectedStar) return null;
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-090323.bak.20260316-094615:375:      if (e.key === "Escape") {
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-090323.bak.20260316-094615:382:        setMode("lifemap");
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-090323.bak.20260316-094615:386:    window.addEventListener("keydown", onKeyDown);
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-090323.bak.20260316-094615:387:    return () => window.removeEventListener("keydown", onKeyDown);
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-090323.bak.20260316-094615:393:    setMode("lifemap");
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-090323.bak.20260316-094615:487:              setMode("home");
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-090323.bak.20260316-094615:496:              setMode("lifemap");
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-090323.bak.20260316-094615:505:              setMode("lifemap");
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-095740:327:      if (event.key === "Escape") clearFocus();
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-095740:333:    window.addEventListener("keydown", onKeyDown);
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-095740:334:    return () => window.removeEventListener("keydown", onKeyDown);
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-100209:327:      if (event.key === "Escape") clearFocus();
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-100209:333:    window.addEventListener("keydown", onKeyDown);
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-100209:334:    return () => window.removeEventListener("keydown", onKeyDown);
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-090356.bak.20260316-094615:61:  if (mode !== "focus" || !selectedStar) return null;
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-090356.bak.20260316-094615:157:        Press Esc or click empty space to exit focus
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-090356.bak.20260316-094615:168:  if (!detailOpen || !selectedStar) return null;
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-090356.bak.20260316-094615:375:      if (e.key === "Escape") {
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-090356.bak.20260316-094615:382:        setMode("lifemap");
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-090356.bak.20260316-094615:386:    window.addEventListener("keydown", onKeyDown);
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-090356.bak.20260316-094615:387:    return () => window.removeEventListener("keydown", onKeyDown);
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-090356.bak.20260316-094615:393:    setMode("lifemap");
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-090356.bak.20260316-094615:487:              setMode("home");
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-090356.bak.20260316-094615:496:              setMode("lifemap");
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-090356.bak.20260316-094615:505:              setMode("lifemap");
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-101647:332:      if (event.key === "Escape") clearFocus();
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-101647:338:    window.addEventListener("keydown", onKeyDown);
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-101647:339:    return () => window.removeEventListener("keydown", onKeyDown);
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-082008.bak.20260316-094614:61:  if (mode !== "focus" || !selectedStar) return null;
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-082008.bak.20260316-094614:157:        Press Esc or click empty space to exit focus
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-082008.bak.20260316-094614:168:  if (!detailOpen || !selectedStar) return null;
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-082008.bak.20260316-094614:375:      if (e.key === "Escape") {
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-082008.bak.20260316-094614:382:        setMode("lifemap");
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-082008.bak.20260316-094614:386:    window.addEventListener("keydown", onKeyDown);
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-082008.bak.20260316-094614:387:    return () => window.removeEventListener("keydown", onKeyDown);
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-082008.bak.20260316-094614:393:    setMode("lifemap");
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-082008.bak.20260316-094614:486:              setMode("home");
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-082008.bak.20260316-094614:495:              setMode("lifemap");
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-082008.bak.20260316-094614:504:              setMode("lifemap");
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-090453:62:  if (mode !== "focus" || !selectedStar) return null;
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-090453:158:        Press Esc or click empty space to exit focus
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-090453:169:  if (!detailOpen || !selectedStar) return null;
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-090453:376:      if (e.key === "Escape") {
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-090453:383:        setMode("lifemap");
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-090453:387:    window.addEventListener("keydown", onKeyDown);
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-090453:388:    return () => window.removeEventListener("keydown", onKeyDown);
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-090453:394:    setMode("lifemap");
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-090453:488:              setMode("home");
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-090453:497:              setMode("lifemap");
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-090453:506:              setMode("lifemap");
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-085719.bak.20260316-094017.bak.20260316-094137:63:  if (mode !== "focus" || !selectedStar) return null;
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-085719.bak.20260316-094017.bak.20260316-094137:159:        Press Esc or click empty space to exit focus
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-085719.bak.20260316-094017.bak.20260316-094137:170:  if (!detailOpen || !selectedStar) return null;
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-085719.bak.20260316-094017.bak.20260316-094137:377:      if (e.key === "Escape") {
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-085719.bak.20260316-094017.bak.20260316-094137:384:        setMode("lifemap");
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-085719.bak.20260316-094017.bak.20260316-094137:388:    window.addEventListener("keydown", onKeyDown);
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-085719.bak.20260316-094017.bak.20260316-094137:389:    return () => window.removeEventListener("keydown", onKeyDown);
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-085719.bak.20260316-094017.bak.20260316-094137:395:    setMode("lifemap");
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-085719.bak.20260316-094017.bak.20260316-094137:488:              setMode("home");
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-085719.bak.20260316-094017.bak.20260316-094137:497:              setMode("lifemap");
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-085719.bak.20260316-094017.bak.20260316-094137:506:              setMode("lifemap");
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-100111:327:      if (event.key === "Escape") clearFocus();
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-100111:333:    window.addEventListener("keydown", onKeyDown);
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-100111:334:    return () => window.removeEventListener("keydown", onKeyDown);
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-090023:62:  if (mode !== "focus" || !selectedStar) return null;
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-090023:158:        Press Esc or click empty space to exit focus
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-090023:169:  if (!detailOpen || !selectedStar) return null;
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-090023:376:      if (e.key === "Escape") {
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-090023:383:        setMode("lifemap");
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-090023:387:    window.addEventListener("keydown", onKeyDown);
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-090023:388:    return () => window.removeEventListener("keydown", onKeyDown);
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-090023:394:    setMode("lifemap");
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-090023:488:              setMode("home");
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-090023:497:              setMode("lifemap");
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-090023:506:              setMode("lifemap");
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-094614:326:      if (event.key === "Escape") clearFocus();
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-094614:332:    window.addEventListener("keydown", onKeyDown);
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-094614:333:    return () => window.removeEventListener("keydown", onKeyDown);
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-090559.bak.20260316-094615:61:  if (mode !== "focus" || !selectedStar) return null;
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-090559.bak.20260316-094615:157:        Press Esc or click empty space to exit focus
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-090559.bak.20260316-094615:168:  if (!detailOpen || !selectedStar) return null;
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-090559.bak.20260316-094615:375:      if (e.key === "Escape") {
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-090559.bak.20260316-094615:382:        setMode("lifemap");
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-090559.bak.20260316-094615:386:    window.addEventListener("keydown", onKeyDown);
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-090559.bak.20260316-094615:387:    return () => window.removeEventListener("keydown", onKeyDown);
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-090559.bak.20260316-094615:393:    setMode("lifemap");
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-090559.bak.20260316-094615:487:              setMode("home");
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-090559.bak.20260316-094615:496:              setMode("lifemap");
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-090559.bak.20260316-094615:505:              setMode("lifemap");
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-091009:64:  if (mode !== "focus" || !selectedStar) return null;
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-091009:160:        Press Esc or click empty space to exit focus
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-091009:172:  if (!detailOpen || !selectedStar) return null;
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-091009:379:      if (e.key === "Escape") {
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-091009:386:        setMode("lifemap");
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-091009:390:    window.addEventListener("keydown", onKeyDown);
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-091009:391:    return () => window.removeEventListener("keydown", onKeyDown);
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-091009:397:    setMode("lifemap");
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-091009:491:              setMode("home");
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-091009:500:              setMode("lifemap");
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-091009:509:              setMode("lifemap");
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-100824:327:      if (event.key === "Escape") clearFocus();
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-100824:333:    window.addEventListener("keydown", onKeyDown);
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-100824:334:    return () => window.removeEventListener("keydown", onKeyDown);
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-085719:62:  if (mode !== "focus" || !selectedStar) return null;
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-085719:158:        Press Esc or click empty space to exit focus
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-085719:169:  if (!detailOpen || !selectedStar) return null;
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-085719:376:      if (e.key === "Escape") {
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-085719:383:        setMode("lifemap");
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-085719:387:    window.addEventListener("keydown", onKeyDown);
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-085719:388:    return () => window.removeEventListener("keydown", onKeyDown);
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-085719:394:    setMode("lifemap");
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-085719:487:              setMode("home");
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-085719:496:              setMode("lifemap");
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-085719:505:              setMode("lifemap");
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-090150:62:  if (mode !== "focus" || !selectedStar) return null;
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-090150:158:        Press Esc or click empty space to exit focus
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-090150:169:  if (!detailOpen || !selectedStar) return null;
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-090150:376:      if (e.key === "Escape") {
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-090150:383:        setMode("lifemap");
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-090150:387:    window.addEventListener("keydown", onKeyDown);
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-090150:388:    return () => window.removeEventListener("keydown", onKeyDown);
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-090150:394:    setMode("lifemap");
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-090150:488:              setMode("home");
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-090150:497:              setMode("lifemap");
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-090150:506:              setMode("lifemap");
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-090453.bak.20260316-094615:61:  if (mode !== "focus" || !selectedStar) return null;
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-090453.bak.20260316-094615:157:        Press Esc or click empty space to exit focus
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-090453.bak.20260316-094615:168:  if (!detailOpen || !selectedStar) return null;
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-090453.bak.20260316-094615:375:      if (e.key === "Escape") {
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-090453.bak.20260316-094615:382:        setMode("lifemap");
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-090453.bak.20260316-094615:386:    window.addEventListener("keydown", onKeyDown);
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-090453.bak.20260316-094615:387:    return () => window.removeEventListener("keydown", onKeyDown);
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-090453.bak.20260316-094615:393:    setMode("lifemap");
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-090453.bak.20260316-094615:487:              setMode("home");
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-090453.bak.20260316-094615:496:              setMode("lifemap");
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-090453.bak.20260316-094615:505:              setMode("lifemap");
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-093132.bak.20260316-094616:326:      if (event.key === "Escape") clearFocus();
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-093132.bak.20260316-094616:332:    window.addEventListener("keydown", onKeyDown);
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-093132.bak.20260316-094616:333:    return () => window.removeEventListener("keydown", onKeyDown);
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-082008:62:  if (mode !== "focus" || !selectedStar) return null;
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-082008:158:        Press Esc or click empty space to exit focus
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-082008:169:  if (!detailOpen || !selectedStar) return null;
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-082008:376:      if (e.key === "Escape") {
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-082008:383:        setMode("lifemap");
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-082008:387:    window.addEventListener("keydown", onKeyDown);
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-082008:388:    return () => window.removeEventListener("keydown", onKeyDown);
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-082008:394:    setMode("lifemap");
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-082008:487:              setMode("home");
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-082008:496:              setMode("lifemap");
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-082008:505:              setMode("lifemap");
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-085719.bak.20260316-094017.bak.20260316-094137.bak.20260316-094614:62:  if (mode !== "focus" || !selectedStar) return null;
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-085719.bak.20260316-094017.bak.20260316-094137.bak.20260316-094614:158:        Press Esc or click empty space to exit focus
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-085719.bak.20260316-094017.bak.20260316-094137.bak.20260316-094614:169:  if (!detailOpen || !selectedStar) return null;
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-085719.bak.20260316-094017.bak.20260316-094137.bak.20260316-094614:376:      if (e.key === "Escape") {
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-085719.bak.20260316-094017.bak.20260316-094137.bak.20260316-094614:383:        setMode("lifemap");
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-085719.bak.20260316-094017.bak.20260316-094137.bak.20260316-094614:387:    window.addEventListener("keydown", onKeyDown);
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-085719.bak.20260316-094017.bak.20260316-094137.bak.20260316-094614:388:    return () => window.removeEventListener("keydown", onKeyDown);
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-085719.bak.20260316-094017.bak.20260316-094137.bak.20260316-094614:394:    setMode("lifemap");
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-085719.bak.20260316-094017.bak.20260316-094137.bak.20260316-094614:487:              setMode("home");
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-085719.bak.20260316-094017.bak.20260316-094137.bak.20260316-094614:496:              setMode("lifemap");
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-085719.bak.20260316-094017.bak.20260316-094137.bak.20260316-094614:505:              setMode("lifemap");
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-085719.bak.20260316-094017.bak.20260316-094614:61:  if (mode !== "focus" || !selectedStar) return null;
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-085719.bak.20260316-094017.bak.20260316-094614:157:        Press Esc or click empty space to exit focus
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-085719.bak.20260316-094017.bak.20260316-094614:168:  if (!detailOpen || !selectedStar) return null;
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-085719.bak.20260316-094017.bak.20260316-094614:375:      if (e.key === "Escape") {
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-085719.bak.20260316-094017.bak.20260316-094614:382:        setMode("lifemap");
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-085719.bak.20260316-094017.bak.20260316-094614:386:    window.addEventListener("keydown", onKeyDown);
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-085719.bak.20260316-094017.bak.20260316-094614:387:    return () => window.removeEventListener("keydown", onKeyDown);
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-085719.bak.20260316-094017.bak.20260316-094614:393:    setMode("lifemap");
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-085719.bak.20260316-094017.bak.20260316-094614:486:              setMode("home");
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-085719.bak.20260316-094017.bak.20260316-094614:495:              setMode("lifemap");
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-085719.bak.20260316-094017.bak.20260316-094614:504:              setMode("lifemap");
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-085719.bak.20260316-094017:62:  if (mode !== "focus" || !selectedStar) return null;
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-085719.bak.20260316-094017:158:        Press Esc or click empty space to exit focus
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-085719.bak.20260316-094017:169:  if (!detailOpen || !selectedStar) return null;
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-085719.bak.20260316-094017:376:      if (e.key === "Escape") {
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-085719.bak.20260316-094017:383:        setMode("lifemap");
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-085719.bak.20260316-094017:387:    window.addEventListener("keydown", onKeyDown);
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-085719.bak.20260316-094017:388:    return () => window.removeEventListener("keydown", onKeyDown);
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-085719.bak.20260316-094017:394:    setMode("lifemap");
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-085719.bak.20260316-094017:487:              setMode("home");
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-085719.bak.20260316-094017:496:              setMode("lifemap");
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-085719.bak.20260316-094017:505:              setMode("lifemap");
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-090700.bak.20260316-094615:63:  if (mode !== "focus" || !selectedStar) return null;
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-090700.bak.20260316-094615:159:        Press Esc or click empty space to exit focus
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-090700.bak.20260316-094615:171:  if (!detailOpen || !selectedStar) return null;
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-090700.bak.20260316-094615:378:      if (e.key === "Escape") {
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-090700.bak.20260316-094615:385:        setMode("lifemap");
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-090700.bak.20260316-094615:389:    window.addEventListener("keydown", onKeyDown);
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-090700.bak.20260316-094615:390:    return () => window.removeEventListener("keydown", onKeyDown);
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-090700.bak.20260316-094615:396:    setMode("lifemap");
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-090700.bak.20260316-094615:490:              setMode("home");
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-090700.bak.20260316-094615:499:              setMode("lifemap");
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-090700.bak.20260316-094615:508:              setMode("lifemap");
+urai-tier1/src/spatial/scene/SpatialScene.tsx:332:      if (event.key === "Escape") clearFocus();
+urai-tier1/src/spatial/scene/SpatialScene.tsx:338:    window.addEventListener("keydown", onKeyDown);
+urai-tier1/src/spatial/scene/SpatialScene.tsx:339:    return () => window.removeEventListener("keydown", onKeyDown);
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-082104:62:  if (mode !== "focus" || !selectedStar) return null;
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-082104:158:        Press Esc or click empty space to exit focus
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-082104:169:  if (!detailOpen || !selectedStar) return null;
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-082104:376:      if (e.key === "Escape") {
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-082104:383:        setMode("lifemap");
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-082104:387:    window.addEventListener("keydown", onKeyDown);
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-082104:388:    return () => window.removeEventListener("keydown", onKeyDown);
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-082104:394:    setMode("lifemap");
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-082104:487:              setMode("home");
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-082104:496:              setMode("lifemap");
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-082104:505:              setMode("lifemap");
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-090559:62:  if (mode !== "focus" || !selectedStar) return null;
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-090559:158:        Press Esc or click empty space to exit focus
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-090559:169:  if (!detailOpen || !selectedStar) return null;
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-090559:376:      if (e.key === "Escape") {
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-090559:383:        setMode("lifemap");
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-090559:387:    window.addEventListener("keydown", onKeyDown);
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-090559:388:    return () => window.removeEventListener("keydown", onKeyDown);
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-090559:394:    setMode("lifemap");
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-090559:488:              setMode("home");
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-090559:497:              setMode("lifemap");
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-090559:506:              setMode("lifemap");
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-090023.bak.20260316-094615:61:  if (mode !== "focus" || !selectedStar) return null;
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-090023.bak.20260316-094615:157:        Press Esc or click empty space to exit focus
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-090023.bak.20260316-094615:168:  if (!detailOpen || !selectedStar) return null;
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-090023.bak.20260316-094615:375:      if (e.key === "Escape") {
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-090023.bak.20260316-094615:382:        setMode("lifemap");
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-090023.bak.20260316-094615:386:    window.addEventListener("keydown", onKeyDown);
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-090023.bak.20260316-094615:387:    return () => window.removeEventListener("keydown", onKeyDown);
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-090023.bak.20260316-094615:393:    setMode("lifemap");
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-090023.bak.20260316-094615:487:              setMode("home");
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-090023.bak.20260316-094615:496:              setMode("lifemap");
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-090023.bak.20260316-094615:505:              setMode("lifemap");
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-095149:327:      if (event.key === "Escape") clearFocus();
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-095149:333:    window.addEventListener("keydown", onKeyDown);
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-095149:334:    return () => window.removeEventListener("keydown", onKeyDown);
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-093242.bak.20260316-094616:326:      if (event.key === "Escape") clearFocus();
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-093242.bak.20260316-094616:332:    window.addEventListener("keydown", onKeyDown);
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-093242.bak.20260316-094616:333:    return () => window.removeEventListener("keydown", onKeyDown);
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-085919:62:  if (mode !== "focus" || !selectedStar) return null;
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-085919:158:        Press Esc or click empty space to exit focus
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-085919:169:  if (!detailOpen || !selectedStar) return null;
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-085919:376:      if (e.key === "Escape") {
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-085919:383:        setMode("lifemap");
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-085919:387:    window.addEventListener("keydown", onKeyDown);
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-085919:388:    return () => window.removeEventListener("keydown", onKeyDown);
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-085919:394:    setMode("lifemap");
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-085919:488:              setMode("home");
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-085919:497:              setMode("lifemap");
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-085919:506:              setMode("lifemap");
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-093709:327:      if (event.key === "Escape") clearFocus();
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-093709:333:    window.addEventListener("keydown", onKeyDown);
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-093709:334:    return () => window.removeEventListener("keydown", onKeyDown);
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-093132:327:      if (event.key === "Escape") clearFocus();
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-093132:333:    window.addEventListener("keydown", onKeyDown);
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-093132:334:    return () => window.removeEventListener("keydown", onKeyDown);
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-090832.bak.20260316-094615:63:  if (mode !== "focus" || !selectedStar) return null;
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-090832.bak.20260316-094615:159:        Press Esc or click empty space to exit focus
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-090832.bak.20260316-094615:171:  if (!detailOpen || !selectedStar) return null;
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-090832.bak.20260316-094615:378:      if (e.key === "Escape") {
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-090832.bak.20260316-094615:385:        setMode("lifemap");
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-090832.bak.20260316-094615:389:    window.addEventListener("keydown", onKeyDown);
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-090832.bak.20260316-094615:390:    return () => window.removeEventListener("keydown", onKeyDown);
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-090832.bak.20260316-094615:396:    setMode("lifemap");
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-090832.bak.20260316-094615:490:              setMode("home");
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-090832.bak.20260316-094615:499:              setMode("lifemap");
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-090832.bak.20260316-094615:508:              setMode("lifemap");
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-090700:64:  if (mode !== "focus" || !selectedStar) return null;
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-090700:160:        Press Esc or click empty space to exit focus
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-090700:172:  if (!detailOpen || !selectedStar) return null;
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-090700:379:      if (e.key === "Escape") {
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-090700:386:        setMode("lifemap");
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-090700:390:    window.addEventListener("keydown", onKeyDown);
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-090700:391:    return () => window.removeEventListener("keydown", onKeyDown);
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-090700:397:    setMode("lifemap");
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-090700:491:              setMode("home");
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-090700:500:              setMode("lifemap");
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-090700:509:              setMode("lifemap");
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-095834:327:      if (event.key === "Escape") clearFocus();
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-095834:333:    window.addEventListener("keydown", onKeyDown);
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-095834:334:    return () => window.removeEventListener("keydown", onKeyDown);
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-082011.bak.20260316-094614:61:  if (mode !== "focus" || !selectedStar) return null;
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-082011.bak.20260316-094614:157:        Press Esc or click empty space to exit focus
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-082011.bak.20260316-094614:168:  if (!detailOpen || !selectedStar) return null;
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-082011.bak.20260316-094614:375:      if (e.key === "Escape") {
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-082011.bak.20260316-094614:382:        setMode("lifemap");
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-082011.bak.20260316-094614:386:    window.addEventListener("keydown", onKeyDown);
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-082011.bak.20260316-094614:387:    return () => window.removeEventListener("keydown", onKeyDown);
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-082011.bak.20260316-094614:393:    setMode("lifemap");
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-082011.bak.20260316-094614:486:              setMode("home");
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-082011.bak.20260316-094614:495:              setMode("lifemap");
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-082011.bak.20260316-094614:504:              setMode("lifemap");
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-091009.bak.20260316-094615:63:  if (mode !== "focus" || !selectedStar) return null;
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-091009.bak.20260316-094615:159:        Press Esc or click empty space to exit focus
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-091009.bak.20260316-094615:171:  if (!detailOpen || !selectedStar) return null;
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-091009.bak.20260316-094615:378:      if (e.key === "Escape") {
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-091009.bak.20260316-094615:385:        setMode("lifemap");
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-091009.bak.20260316-094615:389:    window.addEventListener("keydown", onKeyDown);
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-091009.bak.20260316-094615:390:    return () => window.removeEventListener("keydown", onKeyDown);
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-091009.bak.20260316-094615:396:    setMode("lifemap");
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-091009.bak.20260316-094615:490:              setMode("home");
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-091009.bak.20260316-094615:499:              setMode("lifemap");
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-091009.bak.20260316-094615:508:              setMode("lifemap");
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-095358:327:      if (event.key === "Escape") clearFocus();
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-095358:333:    window.addEventListener("keydown", onKeyDown);
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-095358:334:    return () => window.removeEventListener("keydown", onKeyDown);
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-101839:332:      if (event.key === "Escape") clearFocus();
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-101839:338:    window.addEventListener("keydown", onKeyDown);
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-101839:339:    return () => window.removeEventListener("keydown", onKeyDown);
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-082011:62:  if (mode !== "focus" || !selectedStar) return null;
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-082011:158:        Press Esc or click empty space to exit focus
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-082011:169:  if (!detailOpen || !selectedStar) return null;
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-082011:376:      if (e.key === "Escape") {
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-082011:383:        setMode("lifemap");
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-082011:387:    window.addEventListener("keydown", onKeyDown);
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-082011:388:    return () => window.removeEventListener("keydown", onKeyDown);
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-082011:394:    setMode("lifemap");
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-082011:487:              setMode("home");
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-082011:496:              setMode("lifemap");
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-082011:505:              setMode("lifemap");
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-094840:327:      if (event.key === "Escape") clearFocus();
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-094840:333:    window.addEventListener("keydown", onKeyDown);
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-094840:334:    return () => window.removeEventListener("keydown", onKeyDown);
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-090356:62:  if (mode !== "focus" || !selectedStar) return null;
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-090356:158:        Press Esc or click empty space to exit focus
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-090356:169:  if (!detailOpen || !selectedStar) return null;
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-090356:376:      if (e.key === "Escape") {
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-090356:383:        setMode("lifemap");
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-090356:387:    window.addEventListener("keydown", onKeyDown);
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-090356:388:    return () => window.removeEventListener("keydown", onKeyDown);
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-090356:394:    setMode("lifemap");
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-090356:488:              setMode("home");
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-090356:497:              setMode("lifemap");
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-090356:506:              setMode("lifemap");
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-093709.bak.20260316-094616:326:      if (event.key === "Escape") clearFocus();
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-093709.bak.20260316-094616:332:    window.addEventListener("keydown", onKeyDown);
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-093709.bak.20260316-094616:333:    return () => window.removeEventListener("keydown", onKeyDown);
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-090323:62:  if (mode !== "focus" || !selectedStar) return null;
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-090323:158:        Press Esc or click empty space to exit focus
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-090323:169:  if (!detailOpen || !selectedStar) return null;
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-090323:376:      if (e.key === "Escape") {
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-090323:383:        setMode("lifemap");
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-090323:387:    window.addEventListener("keydown", onKeyDown);
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-090323:388:    return () => window.removeEventListener("keydown", onKeyDown);
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-090323:394:    setMode("lifemap");
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-090323:488:              setMode("home");
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-090323:497:              setMode("lifemap");
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-090323:506:              setMode("lifemap");
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-090458:62:  if (mode !== "focus" || !selectedStar) return null;
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-090458:158:        Press Esc or click empty space to exit focus
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-090458:169:  if (!detailOpen || !selectedStar) return null;
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-090458:376:      if (e.key === "Escape") {
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-090458:383:        setMode("lifemap");
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-090458:387:    window.addEventListener("keydown", onKeyDown);
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-090458:388:    return () => window.removeEventListener("keydown", onKeyDown);
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-090458:394:    setMode("lifemap");
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-090458:488:              setMode("home");
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-090458:497:              setMode("lifemap");
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-090458:506:              setMode("lifemap");
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-082707.bak.20260316-094614:61:  if (mode !== "focus" || !selectedStar) return null;
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-082707.bak.20260316-094614:157:        Press Esc or click empty space to exit focus
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-082707.bak.20260316-094614:168:  if (!detailOpen || !selectedStar) return null;
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-082707.bak.20260316-094614:375:      if (e.key === "Escape") {
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-082707.bak.20260316-094614:382:        setMode("lifemap");
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-082707.bak.20260316-094614:386:    window.addEventListener("keydown", onKeyDown);
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-082707.bak.20260316-094614:387:    return () => window.removeEventListener("keydown", onKeyDown);
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-082707.bak.20260316-094614:393:    setMode("lifemap");
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-082707.bak.20260316-094614:486:              setMode("home");
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-082707.bak.20260316-094614:495:              setMode("lifemap");
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-082707.bak.20260316-094614:504:              setMode("lifemap");
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-090832:64:  if (mode !== "focus" || !selectedStar) return null;
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-090832:160:        Press Esc or click empty space to exit focus
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-090832:172:  if (!detailOpen || !selectedStar) return null;
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-090832:379:      if (e.key === "Escape") {
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-090832:386:        setMode("lifemap");
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-090832:390:    window.addEventListener("keydown", onKeyDown);
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-090832:391:    return () => window.removeEventListener("keydown", onKeyDown);
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-090832:397:    setMode("lifemap");
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-090832:491:              setMode("home");
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-090832:500:              setMode("lifemap");
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-090832:509:              setMode("lifemap");
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-101422:327:      if (event.key === "Escape") clearFocus();
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-101422:333:    window.addEventListener("keydown", onKeyDown);
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-101422:334:    return () => window.removeEventListener("keydown", onKeyDown);
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-082104.bak.20260316-094614:61:  if (mode !== "focus" || !selectedStar) return null;
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-082104.bak.20260316-094614:157:        Press Esc or click empty space to exit focus
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-082104.bak.20260316-094614:168:  if (!detailOpen || !selectedStar) return null;
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-082104.bak.20260316-094614:375:      if (e.key === "Escape") {
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-082104.bak.20260316-094614:382:        setMode("lifemap");
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-082104.bak.20260316-094614:386:    window.addEventListener("keydown", onKeyDown);
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-082104.bak.20260316-094614:387:    return () => window.removeEventListener("keydown", onKeyDown);
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-082104.bak.20260316-094614:393:    setMode("lifemap");
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-082104.bak.20260316-094614:486:              setMode("home");
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-082104.bak.20260316-094614:495:              setMode("lifemap");
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-082104.bak.20260316-094614:504:              setMode("lifemap");
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-085919.bak.20260316-094615:61:  if (mode !== "focus" || !selectedStar) return null;
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-085919.bak.20260316-094615:157:        Press Esc or click empty space to exit focus
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-085919.bak.20260316-094615:168:  if (!detailOpen || !selectedStar) return null;
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-085919.bak.20260316-094615:375:      if (e.key === "Escape") {
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-085919.bak.20260316-094615:382:        setMode("lifemap");
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-085919.bak.20260316-094615:386:    window.addEventListener("keydown", onKeyDown);
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-085919.bak.20260316-094615:387:    return () => window.removeEventListener("keydown", onKeyDown);
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-085919.bak.20260316-094615:393:    setMode("lifemap");
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-085919.bak.20260316-094615:487:              setMode("home");
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-085919.bak.20260316-094615:496:              setMode("lifemap");
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-085919.bak.20260316-094615:505:              setMode("lifemap");
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-090458.bak.20260316-094615:61:  if (mode !== "focus" || !selectedStar) return null;
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-090458.bak.20260316-094615:157:        Press Esc or click empty space to exit focus
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-090458.bak.20260316-094615:168:  if (!detailOpen || !selectedStar) return null;
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-090458.bak.20260316-094615:375:      if (e.key === "Escape") {
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-090458.bak.20260316-094615:382:        setMode("lifemap");
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-090458.bak.20260316-094615:386:    window.addEventListener("keydown", onKeyDown);
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-090458.bak.20260316-094615:387:    return () => window.removeEventListener("keydown", onKeyDown);
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-090458.bak.20260316-094615:393:    setMode("lifemap");
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-090458.bak.20260316-094615:487:              setMode("home");
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-090458.bak.20260316-094615:496:              setMode("lifemap");
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-090458.bak.20260316-094615:505:              setMode("lifemap");
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-093242:327:      if (event.key === "Escape") clearFocus();
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-093242:333:    window.addEventListener("keydown", onKeyDown);
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-093242:334:    return () => window.removeEventListener("keydown", onKeyDown);
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-090150.bak.20260316-094615:61:  if (mode !== "focus" || !selectedStar) return null;
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-090150.bak.20260316-094615:157:        Press Esc or click empty space to exit focus
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-090150.bak.20260316-094615:168:  if (!detailOpen || !selectedStar) return null;
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-090150.bak.20260316-094615:375:      if (e.key === "Escape") {
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-090150.bak.20260316-094615:382:        setMode("lifemap");
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-090150.bak.20260316-094615:386:    window.addEventListener("keydown", onKeyDown);
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-090150.bak.20260316-094615:387:    return () => window.removeEventListener("keydown", onKeyDown);
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-090150.bak.20260316-094615:393:    setMode("lifemap");
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-090150.bak.20260316-094615:487:              setMode("home");
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-090150.bak.20260316-094615:496:              setMode("lifemap");
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-090150.bak.20260316-094615:505:              setMode("lifemap");
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-085719.bak.20260316-094614:61:  if (mode !== "focus" || !selectedStar) return null;
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-085719.bak.20260316-094614:157:        Press Esc or click empty space to exit focus
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-085719.bak.20260316-094614:168:  if (!detailOpen || !selectedStar) return null;
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-085719.bak.20260316-094614:375:      if (e.key === "Escape") {
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-085719.bak.20260316-094614:382:        setMode("lifemap");
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-085719.bak.20260316-094614:386:    window.addEventListener("keydown", onKeyDown);
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-085719.bak.20260316-094614:387:    return () => window.removeEventListener("keydown", onKeyDown);
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-085719.bak.20260316-094614:393:    setMode("lifemap");
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-085719.bak.20260316-094614:486:              setMode("home");
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-085719.bak.20260316-094614:495:              setMode("lifemap");
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-085719.bak.20260316-094614:504:              setMode("lifemap");
