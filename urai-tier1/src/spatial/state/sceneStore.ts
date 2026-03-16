@@ -1,5 +1,5 @@
 import { create } from "zustand";
-import { toCanonicalSelectedStar } from "./toCanonicalSelectedStar";
+import { SPATIAL_STARS, SpatialStar } from "../data/stars";
 
 export type SceneMode = "home" | "lifemap" | "focus" | "replay";
 
@@ -10,133 +10,90 @@ export type SelectedStar = {
   size: number;
   title: string;
   label: string;
-  summary: string;
-  detail: string;
-  transcript: string;
   signature: string;
   chapter: string;
   timeband: string;
-  dateLabel: string;
-  tags: string[];
+  description: string;
 };
 
 type SceneState = {
   mode: SceneMode;
+  stars: SpatialStar[];
+  selectedStarId: string | null;
   selectedStar: SelectedStar | null;
-  detailOpen: boolean;
   replayEnteredAt: number | null;
 
   setMode: (mode: SceneMode) => void;
   setSelectedStar: (star: SelectedStar | null) => void;
-  setDetailOpen: (open: boolean) => void;
-
-  enterHome: () => void;
-  enterLifeMap: () => void;
-  enterFocus: (star?: SelectedStar | null) => void;
-  focusStar: (star: SelectedStar | null) => void;
-  enterReplay: () => void;
-
-  exitReplayToFocus: () => void;
-  exitFocusToLifeMap: () => void;
+  selectStar: (star: SelectedStar) => void;
   clearFocus: () => void;
+  exitFocusToLifeMap: () => void;
+  enterReplay: () => void;
+  exitReplay: () => void;
+  exitReplayToFocus: () => void;
 };
 
 export const useSceneStore = create<SceneState>((set, get) => ({
   mode: "home",
+  stars: SPATIAL_STARS,
+  selectedStarId: null,
   selectedStar: null,
-  detailOpen: false,
   replayEnteredAt: null,
 
-  setMode: (mode) =>
-    set((state) => {
-      if (mode === "replay") {
-        return {
-          mode,
-          detailOpen: true,
-          replayEnteredAt: Date.now(),
-        };
-      }
+  setMode: (mode) => set({ mode }),
 
-      return {
-        mode,
-        detailOpen: mode === "focus" ? state.detailOpen : false,
-        replayEnteredAt: null,
-      };
+  setSelectedStar: (star) =>
+    set({
+      selectedStarId: star ? star.id : null,
+      selectedStar: star,
+      mode: star ? "focus" : "lifemap",
     }),
 
-  setSelectedStar: (selectedStar) =>
+  selectStar: (star) =>
     set({
-      selectedStar: toCanonicalSelectedStar(selectedStar),
+      selectedStarId: star.id,
+      selectedStar: star,
+      mode: "focus",
     }),
 
-  setDetailOpen: (detailOpen) => set({ detailOpen }),
-
-  enterHome: () =>
+  clearFocus: () =>
     set({
-      mode: "home",
+      selectedStarId: null,
       selectedStar: null,
-      detailOpen: false,
       replayEnteredAt: null,
-    }),
-
-  enterLifeMap: () =>
-    set((state) => ({
       mode: "lifemap",
-      selectedStar:
-        state.mode === "focus" || state.mode === "replay"
-          ? state.selectedStar
-          : null,
-      detailOpen: false,
-      replayEnteredAt: null,
-    })),
-
-  enterFocus: (star) =>
-    set((state) => {
-      const nextStarRaw = star === undefined ? state.selectedStar : star;
-      const nextStar = toCanonicalSelectedStar(nextStarRaw);
-      return {
-        mode: "focus",
-        selectedStar: nextStar,
-        detailOpen: !!nextStar,
-        replayEnteredAt: null,
-      };
     }),
-
-  focusStar: (star) =>
-    set(() => {
-      const nextStar = toCanonicalSelectedStar(star);
-      return {
-        mode: "focus",
-        selectedStar: nextStar,
-        detailOpen: !!nextStar,
-        replayEnteredAt: null,
-      };
-    }),
-
-  enterReplay: () =>
-    set((state) => {
-      if (!state.selectedStar) return state;
-      return {
-        mode: "replay",
-        detailOpen: true,
-        replayEnteredAt: Date.now(),
-      };
-    }),
-
-  exitReplayToFocus: () =>
-    set((state) => ({
-      mode: state.selectedStar ? "focus" : "lifemap",
-      detailOpen: !!state.selectedStar,
-      replayEnteredAt: null,
-    })),
 
   exitFocusToLifeMap: () =>
     set({
-      mode: "lifemap",
+      selectedStarId: null,
       selectedStar: null,
-      detailOpen: false,
       replayEnteredAt: null,
+      mode: "lifemap",
     }),
 
-  clearFocus: () => get().exitFocusToLifeMap(),
+  enterReplay: () => {
+    const { selectedStar } = get();
+    if (!selectedStar) return;
+    set({
+      mode: "replay",
+      replayEnteredAt: Date.now(),
+    });
+  },
+
+  exitReplay: () => {
+    const { selectedStar } = get();
+    set({
+      mode: selectedStar ? "focus" : "lifemap",
+      replayEnteredAt: null,
+    });
+  },
+
+  exitReplayToFocus: () => {
+    const { selectedStar } = get();
+    set({
+      mode: selectedStar ? "focus" : "lifemap",
+      replayEnteredAt: null,
+    });
+  },
 }));

@@ -1,365 +1,725 @@
 "use client";
-import { toCanonicalSelectedStar } from "../state/toCanonicalSelectedStar";
 
 import { Canvas, ThreeEvent, useFrame, useThree } from "@react-three/fiber";
-import { CSSProperties, useEffect, useMemo, useRef } from "react";
+import { CSSProperties, useEffect, useMemo, useRef, useState } from "react";
 import * as THREE from "three";
-import { SelectedStar, useSceneStore } from "../state/sceneStore";
-
-const STAR_COUNT = 42;
-const STAR_SEED = 19830414;
-const STAR_COLORS = ["#f7f3c6", "#f8c7d8", "#c9ddff", "#ffd98a", "#e8f7df"];
-const STAR_LABELS = ["Memory", "Threshold", "Recovery", "Signal", "Echo"];
-const STAR_CHAPTERS = ["Origins", "Ascent", "Fracture", "Return", "Becoming"];
-const STAR_TIMEBANDS = ["Winter", "Spring", "Summer", "Autumn", "Night"];
+import { toCanonicalSelectedStar } from "../lib/toCanonicalSelectedStar";
+import { SpatialStar } from "../data/stars";
+import { SceneMode, useSceneStore } from "../state/sceneStore";
 
 const shellButtonStyle: CSSProperties = {
   appearance: "none",
-  border: "1px solid rgba(255,255,255,0.28)",
-  borderRadius: 12,
-  background: "rgba(255,255,255,0.08)",
-  color: "#ffffff",
-  padding: "10px 14px",
-  fontSize: 14,
+  border: "1px solid rgba(255,255,255,0.18)",
+  borderRadius: 14,
+  background: "rgba(10,14,28,0.66)",
+  color: "rgba(245,248,255,0.96)",
+  padding: "12px 16px",
+  fontSize: 13,
   fontWeight: 600,
-  lineHeight: 1,
+  letterSpacing: "0.08em",
+  textTransform: "uppercase",
   cursor: "pointer",
-  backdropFilter: "blur(20px)",
-  boxShadow: "0 6px 18px rgba(0,0,0,0.22)",
+  backdropFilter: "blur(16px)",
+  boxShadow: "0 14px 40px rgba(0,0,0,0.28)",
 };
 
-function mulberry32(seed: number) {
-  return function next() {
-    let t = (seed += 0x6d2b79f5);
-    t = Math.imul(t ^ (t >>> 15), t | 1);
-    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
-    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
-  };
-}
+const secondaryButtonStyle: CSSProperties = {
+  ...shellButtonStyle,
+  background: "rgba(255,255,255,0.06)",
+};
 
-function buildStars(): SelectedStar[] {
-  const rand = mulberry32(STAR_SEED);
-  const out: SelectedStar[] = [];
+const ghostButtonStyle: CSSProperties = {
+  ...shellButtonStyle,
+  background: "transparent",
+  border: "1px solid rgba(255,255,255,0.12)",
+  boxShadow: "none",
+};
 
-  for (let i = 0; i < STAR_COUNT; i += 1) {
-    const x = (rand() - 0.5) * 260;
-    const y = rand() * 120 + 8;
-    const z = (rand() - 0.5) * 240;
-    const color = STAR_COLORS[i % STAR_COLORS.length];
-    const size = 0.5 + rand() * 1.35;
+const topChromeStyle: CSSProperties = {
+  position: "absolute",
+  top: 18,
+  left: 18,
+  right: 18,
+  zIndex: 30,
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "space-between",
+  gap: 16,
+  pointerEvents: "none",
+};
 
-    out.push({
-      id: `star-${i + 1}`,
-      position: [Number(x.toFixed(3)), Number(y.toFixed(3)), Number(z.toFixed(3))],
-      color,
-      size,
-      title: `Star ${i + 1}`,
-      label: `Chapter ${Math.floor(i / 8) + 1} • Era ${i + 1}`,
-      summary: `Chapter ${Math.floor(i / 8) + 1} • Era ${i + 1}`,
-      detail: `Chapter ${Math.floor(i / 8) + 1} • Era ${i + 1}`,
-      transcript: `Chapter ${Math.floor(i / 8) + 1} • Era ${i + 1}`,
-      signature: `sig-${(i % 5) + 1}`,
-      chapter: `Chapter ${Math.floor(i / 8) + 1}`,
-      timeband: `Era ${i + 1}`,
-      dateLabel: `Era ${i + 1}`,
-      tags: [`Chapter ${Math.floor(i / 8) + 1}`, `Era ${i + 1}`, `sig-${(i % 5) + 1}`],
-    });
+const chipStyle: CSSProperties = {
+  display: "inline-flex",
+  alignItems: "center",
+  gap: 8,
+  minHeight: 38,
+  borderRadius: 999,
+  padding: "0 14px",
+  background: "rgba(10,14,28,0.52)",
+  border: "1px solid rgba(255,255,255,0.14)",
+  color: "rgba(244,247,255,0.95)",
+  fontSize: 12,
+  letterSpacing: "0.12em",
+  textTransform: "uppercase",
+  backdropFilter: "blur(16px)",
+  boxShadow: "0 14px 40px rgba(0,0,0,0.22)",
+};
+
+const panelStyle: CSSProperties = {
+  borderRadius: 24,
+  border: "1px solid rgba(255,255,255,0.12)",
+  background:
+    "linear-gradient(180deg, rgba(13,18,34,0.78) 0%, rgba(7,10,18,0.86) 100%)",
+  backdropFilter: "blur(18px)",
+  boxShadow: "0 24px 80px rgba(0,0,0,0.32)",
+  color: "rgba(244,247,255,0.96)",
+};
+
+const captionStyle: CSSProperties = {
+  fontSize: 11,
+  letterSpacing: "0.16em",
+  textTransform: "uppercase",
+  color: "rgba(214,223,255,0.7)",
+};
+
+const titleStyle: CSSProperties = {
+  margin: 0,
+  fontSize: "clamp(28px, 3vw, 44px)",
+  lineHeight: 1.02,
+  letterSpacing: "-0.03em",
+  fontWeight: 700,
+};
+
+const subtleTextStyle: CSSProperties = {
+  margin: 0,
+  fontSize: 14,
+  lineHeight: 1.6,
+  color: "rgba(225,233,255,0.78)",
+};
+
+const dividerStyle: CSSProperties = {
+  width: "100%",
+  height: 1,
+  background: "linear-gradient(90deg, rgba(255,255,255,0.14), rgba(255,255,255,0.03))",
+};
+
+function modeLabel(mode: SceneMode) {
+  switch (mode) {
+    case "home":
+      return "Home";
+    case "lifemap":
+      return "LifeMap";
+    case "focus":
+      return "Focus";
+    case "replay":
+      return "Replay";
+    default:
+      return mode;
   }
-
-  return out;
-}
-
-const STAR_CATALOG = buildStars();
-
-function CameraRig() {
-  const camera = useThree((state) => state.camera);
-  const mode = useSceneStore((state) => state.mode);
-  const selectedStar = useSceneStore((state) => state.selectedStar);
-  const target = useMemo(() => new THREE.Vector3(0, 120, 240), []);
-  const lookAt = useMemo(() => new THREE.Vector3(0, 24, 0), []);
-
-  useFrame((_, delta) => {
-    if (mode === "home") {
-      target.set(0, 120, 240);
-      lookAt.set(0, 26, 0);
-    } else if (mode === "lifemap") {
-      target.set(0, 78, 150);
-      lookAt.set(0, 28, 0);
-    } else if ((mode === "focus" || mode === "replay") && selectedStar) {
-      const [sx, sy, sz] = selectedStar.position;
-      target.set(sx * 0.28, sy + (mode === "replay" ? 8 : 12), sz + (mode === "replay" ? 18 : 30));
-      lookAt.set(sx, sy, sz);
-    } else {
-      target.set(0, 78, 150);
-      lookAt.set(0, 28, 0);
-    }
-
-    const t = Math.min(1, delta * 2.6);
-    camera.position.lerp(target, t);
-    camera.lookAt(lookAt);
-    camera.updateProjectionMatrix();
-  });
-
-  return null;
 }
 
 function Atmosphere() {
-  const mode = useSceneStore((state) => state.mode);
-  const glowRef = useRef<THREE.Mesh>(null);
-
-  useFrame(({ clock }) => {
-    if (!glowRef.current) return;
-    const base = mode === "replay" ? 34 : mode === "focus" ? 26 : 18;
-    const pulse = Math.sin(clock.elapsedTime * (mode === "replay" ? 1.8 : 1.1)) * 1.3;
-    glowRef.current.scale.setScalar(base + pulse);
-  });
-
   return (
     <>
-      <color attach="background" args={["#030712"]} />
-      <fog attach="fog" args={["#030712", 140, 420]} />
-      <ambientLight intensity={0.72} />
-      <directionalLight position={[50, 90, 30]} intensity={0.85} />
-      <pointLight position={[0, 56, 0]} intensity={0.6} color="#88aaff" />
-      <mesh ref={glowRef} position={[0, 24, -40]}>
-        <sphereGeometry args={[1, 32, 32]} />
-        <meshBasicMaterial color="#0b2b68" transparent opacity={0.14} />
-      </mesh>
+      <fog attach="fog" args={["#04060b", 20, 78]} />
+      <color attach="background" args={["#04060b"]} />
     </>
   );
 }
 
 function FloorPlane() {
   return (
-    <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -2, 0]}>
-      <planeGeometry args={[700, 700]} />
-      <meshStandardMaterial color="#02050b" metalness={0.1} roughness={1} />
-    </mesh>
-  );
-}
-
-function SpatialStar({ star }: { star: SelectedStar }) {
-  const meshRef = useRef<THREE.Mesh>(null);
-  const mode = useSceneStore((state) => state.mode);
-  const selectedStar = useSceneStore((state) => state.selectedStar);
-  const enterFocus = useSceneStore((state) => state.enterFocus);
-  const enterLifeMap = useSceneStore((state) => state.enterLifeMap);
-
-  const selected = selectedStar?.id === star.id;
-
-  useFrame(({ clock }) => {
-    if (!meshRef.current) return;
-    const pulse = selected ? 1 + Math.sin(clock.elapsedTime * 4.2) * 0.12 : 1;
-    meshRef.current.scale.setScalar(star.size * pulse);
-  });
-
-  const onClick = (event: ThreeEvent<MouseEvent>) => {
-    event.stopPropagation();
-    if (mode === "home") enterLifeMap();
-    enterFocus(star);
-  };
-
-  return (
-    <mesh ref={meshRef} position={star.position} onClick={onClick}>
-      <sphereGeometry args={[1, 18, 18]} />
+    <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -8, 0]} receiveShadow>
+      <circleGeometry args={[50, 96]} />
       <meshStandardMaterial
-        color={star.color}
-        emissive={star.color}
-        emissiveIntensity={selected ? 1.6 : 0.42}
-        toneMapped={false}
+        color="#0a0f1b"
+        transparent
+        opacity={0.82}
+        roughness={1}
+        metalness={0}
       />
     </mesh>
   );
 }
 
-function StarField() {
+function CameraRig() {
+  const { camera } = useThree();
+  const mode = useSceneStore((s) => s.mode);
+  const selectedStar = useSceneStore((s) => s.selectedStar);
+  const cameraTarget = useRef(new THREE.Vector3(0, 4, 28));
+  const lookTarget = useRef(new THREE.Vector3(0, 2, 0));
+
+  useFrame((_, delta) => {
+    const cp = cameraTarget.current;
+    const lp = lookTarget.current;
+
+    if (mode === "home") {
+      cp.set(0, 5.8, 30);
+      lp.set(0, 2, 0);
+    } else if (mode === "lifemap") {
+      cp.set(0, 7.8, 24);
+      lp.set(0, 0.5, 0);
+    } else if (selectedStar) {
+      const [x, y, z] = selectedStar.position;
+      if (mode === "focus") {
+        cp.set(x * 0.18, y + 2.7, z + 8.5);
+        lp.set(x, y, z);
+      } else {
+        cp.set(x * 0.07, y + 1.25, z + 3.8);
+        lp.set(x, y, z);
+      }
+    }
+
+    const t = 1 - Math.exp(-delta * 3.2);
+    camera.position.lerp(cp, t);
+    camera.lookAt(lp);
+  });
+
+  return null;
+}
+
+function StarNode({
+  star,
+  isSelected,
+  dimmed,
+  onSelect,
+}: {
+  star: SpatialStar;
+  isSelected: boolean;
+  dimmed: boolean;
+  onSelect: (star: SpatialStar) => void;
+}) {
+  const meshRef = useRef<THREE.Mesh>(null);
+  const haloRef = useRef<THREE.Mesh>(null);
+  const mode = useSceneStore((s) => s.mode);
+
+  useFrame(({ clock }) => {
+    const t = clock.getElapsedTime();
+    const pulse = 1 + Math.sin(t * 1.45 + star.order * 0.5) * 0.06 * star.glow;
+    const targetScale = isSelected
+      ? pulse * 1.65
+      : dimmed
+      ? pulse * 0.82
+      : pulse;
+
+    if (meshRef.current) {
+      meshRef.current.scale.lerp(
+        new THREE.Vector3(targetScale, targetScale, targetScale),
+        0.1
+      );
+    }
+
+    if (haloRef.current) {
+      const haloScale = isSelected
+        ? 2.15 + Math.sin(t * 1.25) * 0.08
+        : mode === "replay"
+        ? 1.55
+        : 1.25;
+      haloRef.current.scale.lerp(
+        new THREE.Vector3(haloScale, haloScale, haloScale),
+        0.12
+      );
+    }
+  });
+
   return (
-    <group>
-      {STAR_CATALOG.map((star) => (
-        <SpatialStar key={star.id} star={star} />
-      ))}
+    <group position={star.position}>
+      <mesh
+        ref={meshRef}
+        onClick={(event: ThreeEvent<MouseEvent>) => {
+          event.stopPropagation();
+          onSelect(star);
+        }}
+      >
+        <sphereGeometry args={[star.size * 0.22, 18, 18]} />
+        <meshStandardMaterial
+          color={star.color}
+          emissive={star.color}
+          emissiveIntensity={isSelected ? 2.8 : dimmed ? 0.48 : star.intensity * 1.4}
+          roughness={0.2}
+          metalness={0.05}
+          transparent
+          opacity={dimmed ? 0.32 : 0.98}
+        />
+      </mesh>
+
+      <mesh ref={haloRef}>
+        <sphereGeometry args={[star.size * 0.38, 18, 18]} />
+        <meshBasicMaterial
+          color={star.color}
+          transparent
+          opacity={isSelected ? 0.18 : dimmed ? 0.02 : 0.06}
+          side={THREE.BackSide}
+        />
+      </mesh>
     </group>
   );
 }
 
-function Overlay() {
-  const mode = useSceneStore((state) => state.mode);
-  const selectedStar = useSceneStore((state) => state.selectedStar);
-  const detailOpen = useSceneStore((state) => state.detailOpen);
-  const replayEnteredAt = useSceneStore((state) => state.replayEnteredAt);
+function MemorySphere() {
+  const selectedStar = useSceneStore((s) => s.selectedStar);
+  const mode = useSceneStore((s) => s.mode);
+  const ref = useRef<THREE.Mesh>(null);
 
-  const enterHome = useSceneStore((state) => state.enterHome);
-  const enterLifeMap = useSceneStore((state) => state.enterLifeMap);
-  const clearFocus = useSceneStore((state) => state.clearFocus);
-  const enterReplay = useSceneStore((state) => state.enterReplay);
-  const exitReplayToFocus = useSceneStore((state) => state.exitReplayToFocus);
+  useFrame(({ clock }) => {
+    if (!ref.current) return;
+    const t = clock.getElapsedTime();
+    const base = mode === "replay" ? 1.5 : 1.18;
+    const wobble = 1 + Math.sin(t * 0.92) * 0.04;
+    ref.current.scale.lerp(
+      new THREE.Vector3(base * wobble, base * wobble, base * wobble),
+      0.08
+    );
+    ref.current.rotation.y += 0.004;
+    ref.current.rotation.x += 0.0015;
+  });
 
-  const status =
-    mode === "home"
-      ? "Home"
-      : mode === "lifemap"
-        ? "LifeMap"
-        : mode === "focus"
-          ? "Focus"
-          : "Replay";
+  if (!selectedStar) return null;
+
+  return (
+    <group position={selectedStar.position}>
+      <mesh ref={ref}>
+        <sphereGeometry args={[selectedStar.size * 0.72, 32, 32]} />
+        <meshPhysicalMaterial
+          color={selectedStar.color}
+          emissive={selectedStar.color}
+          emissiveIntensity={mode === "replay" ? 0.65 : 0.35}
+          transparent
+          opacity={mode === "replay" ? 0.18 : 0.09}
+          roughness={0.08}
+          metalness={0}
+          transmission={0.82}
+          thickness={1.25}
+          ior={1.18}
+        />
+      </mesh>
+    </group>
+  );
+}
+
+function StarField() {
+  const stars = useSceneStore((s) => s.stars);
+  const selectedStarId = useSceneStore((s) => s.selectedStarId);
+  const mode = useSceneStore((s) => s.mode);
+  const selectStar = useSceneStore((s) => s.selectStar);
+  const clearFocus = useSceneStore((s) => s.clearFocus);
+
+  return (
+    <group>
+      {stars.map((star) => {
+        const isSelected = star.id === selectedStarId;
+        const dimmed = !!selectedStarId && !isSelected;
+
+        return (
+          <StarNode
+            key={star.id}
+            star={star}
+            isSelected={isSelected}
+            dimmed={mode === "replay" ? !isSelected : dimmed}
+            onSelect={(node) => selectStar(toCanonicalSelectedStar(node))}
+          />
+        );
+      })}
+
+      <mesh
+        rotation={[-Math.PI / 2, 0, 0]}
+        position={[0, -7.95, 0]}
+        onClick={() => {
+          if (mode === "focus") clearFocus();
+        }}
+      >
+        <circleGeometry args={[90, 64]} />
+        <meshBasicMaterial transparent opacity={0.001} />
+      </mesh>
+    </group>
+  );
+}
+
+function ReplayConstellation() {
+  const selectedStar = useSceneStore((s) => s.selectedStar);
+  const mode = useSceneStore((s) => s.mode);
+  const ref = useRef<THREE.Group>(null);
+
+  useFrame(({ clock }) => {
+    if (!ref.current || !selectedStar || mode !== "replay") return;
+    const t = clock.getElapsedTime();
+    ref.current.rotation.y = t * 0.18;
+    ref.current.rotation.z = Math.sin(t * 0.42) * 0.08;
+  });
+
+  if (!selectedStar || mode !== "replay") return null;
+
+  return (
+    <group ref={ref} position={selectedStar.position}>
+      {Array.from({ length: 9 }).map((_, i) => {
+        const angle = (i / 9) * Math.PI * 2;
+        const radius = 1.5 + (i % 3) * 0.42;
+        return (
+          <mesh
+            key={i}
+            position={[
+              Math.cos(angle) * radius,
+              Math.sin(angle * 1.35) * 0.45,
+              Math.sin(angle) * radius,
+            ]}
+          >
+            <sphereGeometry args={[0.04 + (i % 3) * 0.015, 12, 12]} />
+            <meshBasicMaterial color={selectedStar.color} transparent opacity={0.65} />
+          </mesh>
+        );
+      })}
+    </group>
+  );
+}
+
+function ProgressBar() {
+  const mode = useSceneStore((s) => s.mode);
+  const [progress, setProgress] = useState(0);
+
+  useEffect(() => {
+    if (mode !== "replay") {
+      setProgress(0);
+      return;
+    }
+
+    let frame = 0;
+    let raf = 0;
+
+    const tick = () => {
+      frame += 1;
+      setProgress((p) => {
+        const next = Math.min(1, p + 0.0055);
+        return next;
+      });
+
+      if (frame < 200) {
+        raf = window.requestAnimationFrame(tick);
+      }
+    };
+
+    raf = window.requestAnimationFrame(tick);
+    return () => window.cancelAnimationFrame(raf);
+  }, [mode]);
 
   return (
     <div
       style={{
-        position: "fixed",
-        inset: 0,
-        zIndex: 10,
-        pointerEvents: "none",
-        color: "#ffffff",
-        fontFamily:
-          "Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, Segoe UI, sans-serif",
+        width: "100%",
+        height: 6,
+        borderRadius: 999,
+        background: "rgba(255,255,255,0.08)",
+        overflow: "hidden",
       }}
     >
       <div
         style={{
-          position: "absolute",
-          inset: 0,
+          width: `${Math.max(progress * 100, 6)}%`,
+          height: "100%",
+          borderRadius: 999,
           background:
-            mode === "replay"
-              ? "radial-gradient(circle at center, rgba(79,70,229,0.16), rgba(0,0,0,0) 42%)"
-              : mode === "focus"
-                ? "radial-gradient(circle at center, rgba(59,130,246,0.08), rgba(0,0,0,0) 36%)"
-                : "none",
-          transition: "background 200ms ease",
+            "linear-gradient(90deg, rgba(255,255,255,0.35), rgba(255,255,255,0.9))",
+          transition: "width 140ms linear",
         }}
       />
-      <div style={{ position: "absolute", top: 16, left: 16, display: "grid", gap: 12, pointerEvents: "auto" }}>
-        <div
-          style={{
-            width: 210,
-            padding: 12,
-            borderRadius: 16,
-            background: "rgba(8,12,20,0.6)",
-            border: "1px solid rgba(255,255,255,0.15)",
-            boxShadow: "0 12px 28px rgba(0,0,0,0.28)",
-            backdropFilter: "blur(14px)",
-          }}
-        >
-          <div style={{ fontSize: 12, opacity: 0.72, fontWeight: 700, letterSpacing: "0.12em" }}>URAI TIER 2</div>
-          <div style={{ marginTop: 6, fontSize: 36, fontWeight: 800, lineHeight: 1 }}>{status}</div>
-          <div style={{ marginTop: 8, fontSize: 14, opacity: 0.86 }}>
-            {mode === "home" && "Enter LifeMap to select"}
-            {mode === "lifemap" && "Click any star to focus"}
-            {mode === "focus" && "Focused memory locked"}
-            {mode === "replay" && "Replay shell active"}
-          </div>
-        </div>
-
-        <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-          <button style={shellButtonStyle} onClick={enterHome}>Home</button>
-          <button style={shellButtonStyle} onClick={enterLifeMap}>LifeMap</button>
-          <button style={shellButtonStyle} onClick={clearFocus}>Clear Focus</button>
-          {selectedStar && mode !== "replay" ? (
-            <button style={shellButtonStyle} onClick={enterReplay}>Replay</button>
-          ) : null}
-          {mode === "replay" ? (
-            <button style={shellButtonStyle} onClick={exitReplayToFocus}>Exit Replay</button>
-          ) : null}
-        </div>
-      </div>
-
-      {selectedStar && detailOpen ? (
-        <div
-          style={{
-            position: "absolute",
-            right: 16,
-            top: 16,
-            width: 320,
-            padding: 16,
-            borderRadius: 18,
-            background: "rgba(8,12,20,0.72)",
-            border: "1px solid rgba(255,255,255,0.15)",
-            boxShadow: "0 18px 36px rgba(0,0,0,0.32)",
-            backdropFilter: "blur(14px)",
-            pointerEvents: "auto",
-          }}
-        >
-          <div style={{ fontSize: 12, opacity: 0.68, letterSpacing: "0.12em", fontWeight: 700 }}>SELECTED STAR</div>
-          <div style={{ marginTop: 6, fontSize: 28, fontWeight: 800 }}>{selectedStar.title}</div>
-          <div style={{ marginTop: 6, fontSize: 15, opacity: 0.9 }}>{selectedStar.label}</div>
-
-          <div style={{ marginTop: 14, display: "grid", gap: 8, fontSize: 14 }}>
-            <div><strong>Signature:</strong> {selectedStar.signature}</div>
-            <div><strong>Chapter:</strong> {selectedStar.chapter}</div>
-            <div><strong>Timeband:</strong> {selectedStar.timeband}</div>
-            <div>
-              <strong>Position:</strong>{" "}
-              {selectedStar.position.map((value) => value.toFixed(1)).join(", ")}
-            </div>
-            {replayEnteredAt ? (
-              <div><strong>Replay Entered:</strong> {new Date(replayEnteredAt).toLocaleTimeString()}</div>
-            ) : null}
-          </div>
-        </div>
-      ) : null}
-
-      <div
-        style={{
-          position: "absolute",
-          left: 16,
-          bottom: 16,
-          width: 36,
-          height: 36,
-          display: "grid",
-          placeItems: "center",
-          borderRadius: 999,
-          background: "rgba(8,12,20,0.66)",
-          border: "1px solid rgba(255,255,255,0.18)",
-          boxShadow: "0 10px 24px rgba(0,0,0,0.24)",
-          fontWeight: 800,
-        }}
-      >
-        N
-      </div>
     </div>
   );
 }
 
-export function SpatialScene() {
-  const clearFocus = useSceneStore((state) => state.clearFocus);
-  const selectedStar = useSceneStore((state) => state.selectedStar);
-  const enterHome = useSceneStore((state) => state.enterHome);
-  const enterLifeMap = useSceneStore((state) => state.enterLifeMap);
-  const enterReplay = useSceneStore((state) => state.enterReplay);
+function OverlayChrome() {
+  const mode = useSceneStore((s) => s.mode);
+  const setMode = useSceneStore((s) => s.setMode);
+  const selectedStar = useSceneStore((s) => s.selectedStar);
+  const clearFocus = useSceneStore((s) => s.clearFocus);
+  const enterReplay = useSceneStore((s) => s.enterReplay);
+  const exitReplay = useSceneStore((s) => s.exitReplay);
 
-  useEffect(() => {
-    const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Escape") clearFocus();
-      if (event.key.toLowerCase() === "h") enterHome();
-      if (event.key.toLowerCase() === "l") enterLifeMap();
-      if (event.key.toLowerCase() === "r" && selectedStar) enterReplay();
-    };
-
-    window.addEventListener("keydown", onKeyDown);
-    return () => window.removeEventListener("keydown", onKeyDown);
-  }, [clearFocus, enterHome, enterLifeMap, enterReplay, selectedStar]);
+  const focusMeta = useMemo(() => {
+    if (!selectedStar) return null;
+    return `${selectedStar.chapter} · ${selectedStar.timeband} · ${selectedStar.label}`;
+  }, [selectedStar]);
 
   return (
-    <div style={{ position: "fixed", inset: 0, overflow: "hidden", background: "#030712" }}>
+    <>
+      <div style={topChromeStyle}>
+        <div style={chipStyle}>
+          <span style={{ width: 8, height: 8, borderRadius: 999, background: "rgba(255,255,255,0.86)" }} />
+          URAI Spatial
+        </div>
+
+        <div style={{ ...chipStyle, pointerEvents: "auto" }}>{modeLabel(mode)}</div>
+      </div>
+
+      {mode === "home" && (
+        <div
+          style={{
+            position: "absolute",
+            inset: 0,
+            zIndex: 20,
+            display: "grid",
+            placeItems: "center",
+            padding: 24,
+            pointerEvents: "none",
+          }}
+        >
+          <div
+            style={{
+              ...panelStyle,
+              width: "min(780px, calc(100vw - 32px))",
+              padding: "34px 32px 30px",
+              pointerEvents: "auto",
+            }}
+          >
+            <div style={{ display: "grid", gap: 18 }}>
+              <div style={captionStyle}>Tier 1 / Canonical Shell</div>
+              <h1 style={titleStyle}>Home → LifeMap → Focus → Replay</h1>
+              <p style={{ ...subtleTextStyle, maxWidth: 640 }}>
+                The spatial shell is live. This phase turns replay from a mode switch into an actual
+                memory-dive scene with camera intent, focus depth, and a readable presentation layer.
+              </p>
+
+              <div style={dividerStyle} />
+
+              <div
+                style={{
+                  display: "flex",
+                  flexWrap: "wrap",
+                  gap: 12,
+                  alignItems: "center",
+                }}
+              >
+                <button style={shellButtonStyle} onClick={() => setMode("lifemap")}>
+                  Enter LifeMap
+                </button>
+                <button style={secondaryButtonStyle} onClick={() => setMode("focus")} disabled={!selectedStar}>
+                  Resume Focus
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {mode === "lifemap" && (
+        <div
+          style={{
+            position: "absolute",
+            left: 18,
+            right: 18,
+            bottom: 18,
+            zIndex: 20,
+            display: "flex",
+            justifyContent: "center",
+            pointerEvents: "none",
+          }}
+        >
+          <div
+            style={{
+              ...panelStyle,
+              width: "min(760px, calc(100vw - 32px))",
+              padding: "18px 20px",
+              pointerEvents: "auto",
+            }}
+          >
+            <div style={{ display: "grid", gap: 8 }}>
+              <div style={captionStyle}>LifeMap</div>
+              <p style={subtleTextStyle}>
+                Select a star to enter focus. From focus, enter replay to dive the selected memory node.
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {mode === "focus" && selectedStar && (
+        <div
+          style={{
+            position: "absolute",
+            right: 18,
+            bottom: 18,
+            zIndex: 24,
+            width: "min(420px, calc(100vw - 32px))",
+            pointerEvents: "auto",
+          }}
+        >
+          <div style={{ ...panelStyle, padding: 24 }}>
+            <div style={{ display: "grid", gap: 14 }}>
+              <div style={captionStyle}>Focus</div>
+              <h2 style={{ margin: 0, fontSize: 28, lineHeight: 1.05 }}>{selectedStar.title}</h2>
+              <div style={{ fontSize: 13, letterSpacing: "0.12em", textTransform: "uppercase", color: "rgba(220,228,255,0.72)" }}>
+                {focusMeta}
+              </div>
+              <p style={subtleTextStyle}>{selectedStar.description}</p>
+
+              <div style={dividerStyle} />
+
+              <div style={{ display: "flex", flexWrap: "wrap", gap: 12 }}>
+                <button style={shellButtonStyle} onClick={enterReplay}>
+                  Enter Replay
+                </button>
+                <button style={secondaryButtonStyle} onClick={clearFocus}>
+                  Clear Focus
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {mode === "replay" && selectedStar && (
+        <div
+          style={{
+            position: "absolute",
+            inset: 0,
+            zIndex: 26,
+            display: "grid",
+            placeItems: "center",
+            padding: 18,
+            pointerEvents: "none",
+            background:
+              "radial-gradient(700px 360px at 50% 56%, rgba(255,255,255,0.06), transparent 60%)",
+          }}
+        >
+          <div
+            style={{
+              ...panelStyle,
+              width: "min(720px, calc(100vw - 32px))",
+              padding: "26px 24px 24px",
+              pointerEvents: "auto",
+            }}
+          >
+            <div style={{ display: "grid", gap: 16 }}>
+              <div style={captionStyle}>Replay / Memory Dive</div>
+              <h2 style={{ margin: 0, fontSize: "clamp(32px, 4vw, 54px)", lineHeight: 0.98 }}>
+                {selectedStar.title}
+              </h2>
+              <div style={{ fontSize: 13, letterSpacing: "0.14em", textTransform: "uppercase", color: "rgba(220,228,255,0.76)" }}>
+                {selectedStar.signature}
+              </div>
+
+              <ProgressBar />
+
+              <p style={{ ...subtleTextStyle, fontSize: 15 }}>
+                {selectedStar.description}
+              </p>
+
+              <div style={dividerStyle} />
+
+              <div
+                style={{
+                  display: "grid",
+                  gridTemplateColumns: "repeat(3, minmax(0, 1fr))",
+                  gap: 12,
+                }}
+              >
+                <div style={{ ...panelStyle, padding: 14, borderRadius: 18 }}>
+                  <div style={captionStyle}>Chapter</div>
+                  <div style={{ marginTop: 8, fontSize: 16 }}>{selectedStar.chapter}</div>
+                </div>
+                <div style={{ ...panelStyle, padding: 14, borderRadius: 18 }}>
+                  <div style={captionStyle}>Timeband</div>
+                  <div style={{ marginTop: 8, fontSize: 16 }}>{selectedStar.timeband}</div>
+                </div>
+                <div style={{ ...panelStyle, padding: 14, borderRadius: 18 }}>
+                  <div style={captionStyle}>Label</div>
+                  <div style={{ marginTop: 8, fontSize: 16 }}>{selectedStar.label}</div>
+                </div>
+              </div>
+
+              <div style={{ display: "flex", flexWrap: "wrap", gap: 12 }}>
+                <button style={shellButtonStyle} onClick={exitReplay}>
+                  Exit Replay
+                </button>
+                <button
+                  style={ghostButtonStyle}
+                  onClick={() => {
+                    exitReplay();
+                    clearFocus();
+                  }}
+                >
+                  Back to LifeMap
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+    </>
+  );
+}
+
+export default function SpatialScene() {
+  const mode = useSceneStore((s) => s.mode);
+  const selectedStar = useSceneStore((s) => s.selectedStar);
+  const setMode = useSceneStore((s) => s.setMode);
+  const clearFocus = useSceneStore((s) => s.clearFocus);
+  const exitReplay = useSceneStore((s) => s.exitReplay);
+
+  useEffect(() => {
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key !== "Escape") return;
+
+      if (mode === "replay") {
+        exitReplay();
+        return;
+      }
+
+      if (mode === "focus") {
+        clearFocus();
+        return;
+      }
+
+      if (mode === "lifemap") {
+        setMode("home");
+      }
+    };
+
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [mode, clearFocus, exitReplay, setMode]);
+
+  return (
+    <main
+      style={{
+        position: "relative",
+        minHeight: "100svh",
+        overflow: "hidden",
+        background:
+          "radial-gradient(1200px 700px at 50% -10%, rgba(91,115,191,0.16), transparent 56%), linear-gradient(180deg, #0a1020 0%, #04060b 48%, #020307 100%)",
+      }}
+    >
       <Canvas
-        style={{ position: "absolute", inset: 0, zIndex: 0 }}
-        camera={{ position: [0, 120, 240], fov: 60 }}
-        onPointerMissed={() => clearFocus()}
+        camera={{ position: [0, 6, 30], fov: 42, near: 0.1, far: 200 }}
+        dpr={[1, 2]}
+        gl={{ antialias: true, alpha: false }}
+        onPointerMissed={() => {
+          if (mode === "focus") clearFocus();
+        }}
       >
-        {/* URAI_NEXT_VISUAL_TIER */}
-        <fog attach="fog" args={["#030712", 26, 240]} />
-        <ambientLight intensity={0.36} />
-        <hemisphereLight args={["#8a96ff", "#040814", 0.52]} />
-        <mesh position={[0, -20, -190]}>
-          <planeGeometry args={[620, 340]} />
-          <meshBasicMaterial color="#06101f" transparent opacity={0.30} depthWrite={false} />
-        </mesh>
         <Atmosphere />
+        <ambientLight intensity={0.95} />
+        <directionalLight position={[8, 12, 10]} intensity={1.1} color="#dbe4ff" />
+        <pointLight position={[0, 6, 10]} intensity={selectedStar ? 10 : 6} color="#ffffff" />
+        <pointLight position={[0, -2, -8]} intensity={4} color="#6f86ff" />
         <CameraRig />
         <FloorPlane />
         <StarField />
+        <MemorySphere />
+        <ReplayConstellation />
       </Canvas>
-      <Overlay />
-    </div>
+
+      <div
+        style={{
+          pointerEvents: "none",
+          position: "absolute",
+          inset: 0,
+          background:
+            mode === "replay"
+              ? "linear-gradient(180deg, rgba(1,2,6,0.28) 0%, rgba(2,3,8,0.08) 30%, rgba(1,2,6,0.44) 100%)"
+              : "linear-gradient(180deg, rgba(1,2,6,0.14) 0%, rgba(2,3,8,0.04) 28%, rgba(1,2,6,0.22) 100%)",
+        }}
+      />
+
+      <OverlayChrome />
+    </main>
   );
 }

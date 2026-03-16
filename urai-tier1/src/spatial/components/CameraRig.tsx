@@ -20,7 +20,7 @@ export default function CameraRig() {
 
   const mode = useSceneStore((state) => state.mode);
   const selectedStar = useSceneStore((state) => state.selectedStar);
-  const replayEnteredAt = useSceneStore((state) => state.replayEnteredAt);
+  const replayEnteredAt = 0;
 
   const posRef = useRef(new Vector3());
   const lookRef = useRef(new Vector3());

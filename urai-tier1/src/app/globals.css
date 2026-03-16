@@ -163,3 +163,68 @@ canvas {
   filter: saturate(1.13) contrast(1.10);
 }
 /* URAI_FX_TIER_CSS_END */
+
+/* PHASE2_VISUAL_POLISH_START */
+:root {
+  --urai-bg-0: #04060b;
+  --urai-bg-1: #0a1020;
+  --urai-bg-2: #131c33;
+  --urai-fg: rgba(242, 246, 255, 0.96);
+  --urai-line: rgba(255, 255, 255, 0.14);
+  --urai-line-strong: rgba(255, 255, 255, 0.28);
+  --urai-panel: rgba(9, 13, 24, 0.58);
+  --urai-panel-strong: rgba(10, 14, 28, 0.72);
+  --urai-blur: 18px;
+  --urai-shadow: 0 24px 80px rgba(0, 0, 0, 0.42);
+}
+
+html, body {
+  min-height: 100%;
+  background:
+    radial-gradient(1200px 700px at 50% -10%, rgba(91, 115, 191, 0.18), transparent 60%),
+    radial-gradient(900px 520px at 50% 100%, rgba(255, 214, 143, 0.08), transparent 56%),
+    linear-gradient(180deg, var(--urai-bg-1) 0%, var(--urai-bg-0) 42%, #030508 100%);
+  color: var(--urai-fg);
+}
+
+body {
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+button {
+  transition:
+    transform 160ms ease,
+    opacity 160ms ease,
+    border-color 160ms ease,
+    background-color 160ms ease,
+    box-shadow 160ms ease;
+}
+
+button:hover {
+  transform: translateY(-1px);
+}
+
+button:active {
+  transform: translateY(0);
+}
+
+button:focus-visible {
+  outline: 1px solid rgba(255,255,255,0.34);
+  outline-offset: 2px;
+  box-shadow: 0 0 0 4px rgba(120, 145, 255, 0.14);
+}
+
+@media (max-width: 900px) {
+  html {
+    font-size: 15px;
+  }
+}
+
+@media (max-width: 640px) {
+  html {
+    font-size: 14px;
+  }
+}
+/* PHASE2_VISUAL_POLISH_END */

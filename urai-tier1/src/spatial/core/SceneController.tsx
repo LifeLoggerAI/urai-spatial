@@ -4,7 +4,7 @@ import { useEffect } from "react";
 import { useSceneStore } from "../state/sceneStore";
 
 export default function SceneController() {
-  const { mode, setMode, setSelectedStar } = useSceneStore();
+  const { mode, setMode } = useSceneStore();
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -15,14 +15,14 @@ export default function SceneController() {
       } else if (mode === "lifemap") {
         setMode("home");
       } else if (mode === "focus") {
-        setSelectedStar(null);
+        useSceneStore.setState({ selectedStar: null });
         setMode("lifemap");
       }
     };
 
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [mode, setMode, setSelectedStar]);
+  }, [mode, setMode]);
 
   return null;
 }
