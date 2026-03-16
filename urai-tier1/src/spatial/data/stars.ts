@@ -102,3 +102,8 @@ export function getSpatialStarById(id: string | null | undefined): SpatialStar |
   if (!id) return null;
   return SPATIAL_STARS.find((star) => star.id === id) ?? null;
 }
+
+/* PHASE6_REAL_MEMORY_HOOK */
+import { buildStarsFromMemory } from "../lib/memoryToStar";
+
+export const SPATIAL_STARS_REAL = buildStarsFromMemory();
