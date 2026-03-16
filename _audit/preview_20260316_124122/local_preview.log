@@ -1,0 +1,15 @@
+
+> urai-tier1@0.1.0 start /home/user/urai-spatial/urai-tier1
+> next start
+
+⨯ Failed to start server
+Error: listen EADDRINUSE: address already in use :::3001
+    at <unknown> (Error: listen EADDRINUSE: address already in use :::3001)
+    at new Promise (<anonymous>) {
+  code: 'EADDRINUSE',
+  errno: -98,
+  syscall: 'listen',
+  address: '::',
+  port: 3001
+}
+ ELIFECYCLE  Command failed with exit code 1.
