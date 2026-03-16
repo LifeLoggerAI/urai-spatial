@@ -24,7 +24,7 @@ const shellButtonStyle: CSSProperties = {
   fontWeight: 600,
   lineHeight: 1,
   cursor: "pointer",
-  backdropFilter: "blur(18px)",
+  backdropFilter: "blur(20px)",
   boxShadow: "0 6px 18px rgba(0,0,0,0.22)",
 };
 
@@ -235,7 +235,7 @@ function Overlay() {
             padding: 12,
             borderRadius: 16,
             background: "rgba(8,12,20,0.6)",
-            border: "1px solid rgba(255,255,255,0.14)",
+            border: "1px solid rgba(255,255,255,0.15)",
             boxShadow: "0 12px 28px rgba(0,0,0,0.28)",
             backdropFilter: "blur(14px)",
           }}
@@ -273,7 +273,7 @@ function Overlay() {
             padding: 16,
             borderRadius: 18,
             background: "rgba(8,12,20,0.72)",
-            border: "1px solid rgba(255,255,255,0.14)",
+            border: "1px solid rgba(255,255,255,0.15)",
             boxShadow: "0 18px 36px rgba(0,0,0,0.32)",
             backdropFilter: "blur(14px)",
             pointerEvents: "auto",
@@ -346,13 +346,13 @@ export function SpatialScene() {
         camera={{ position: [0, 120, 240], fov: 60 }}
         onPointerMissed={() => clearFocus()}
       >
-        {/* URAI_MINDMELT_SCENE */}
-        <fog attach="fog" args={["#040814", 30, 220]} />
-        <ambientLight intensity={0.34} />
-        <hemisphereLight args={["#7b8cff", "#050814", 0.48]} />
-        <mesh position={[0, -18, -170]}>
-          <planeGeometry args={[540, 300]} />
-          <meshBasicMaterial color="#071121" transparent opacity={0.28} depthWrite={false} />
+        {/* URAI_NEXT_VISUAL_TIER */}
+        <fog attach="fog" args={["#030712", 26, 240]} />
+        <ambientLight intensity={0.36} />
+        <hemisphereLight args={["#8a96ff", "#040814", 0.52]} />
+        <mesh position={[0, -20, -190]}>
+          <planeGeometry args={[620, 340]} />
+          <meshBasicMaterial color="#06101f" transparent opacity={0.30} depthWrite={false} />
         </mesh>
         <Atmosphere />
         <CameraRig />
