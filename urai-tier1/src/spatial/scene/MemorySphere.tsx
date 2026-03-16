@@ -1,27 +1,24 @@
-'''"use client";
+"use client";
 
 import { useSceneStore } from "@/spatial/state/sceneStore";
-import { useFrame } from "@react-three/fiber";
-import { useRef } from "react";
-import * as THREE from "three";
 
 export default function MemorySphere() {
-  const focusedStarId = useSceneStore((s) => s.focusedStarId);
-  const mesh = useRef<THREE.Mesh>(null!);
-
-  useFrame(() => {
-    if (mesh.current) {
-      mesh.current.rotation.y += 0.01;
-    }
-  });
-
-  if (!focusedStarId) return null;
+  const mode = useSceneStore((s) => s.mode);
+  const scale = mode === "lifemap" ? 0.55 : 1;
+  const opacity = mode === "lifemap" ? 0.1 : 0.2;
 
   return (
-    <mesh ref={mesh}>
-      <sphereGeometry args={[15, 32, 32]} />
-      <meshBasicMaterial color="lightblue" wireframe />
+    <mesh position={[0, 0, 0]} scale={scale}>
+      <sphereGeometry args={[18, 40, 40]} />
+      <meshStandardMaterial
+        color="#8ec5ff"
+        transparent
+        opacity={opacity}
+        emissive="#1e3a5f"
+        emissiveIntensity={0.45}
+        roughness={0.35}
+        metalness={0.05}
+      />
     </mesh>
   );
 }
-'''

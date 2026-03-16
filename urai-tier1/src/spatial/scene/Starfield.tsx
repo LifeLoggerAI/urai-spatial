@@ -1,38 +1,59 @@
-'''"use client";
-import { useMemo, useRef, useEffect } from "react";
-import * as THREE from "three";
+"use client";
+
+import { useMemo, useState } from "react";
+import { generateStars } from "@/spatial/data/stars";
 import { useSceneStore } from "@/spatial/state/sceneStore";
-import { generateStars, Star } from "@/spatial/data/stars";
 
 export default function Starfield() {
-  const mesh = useRef<THREE.InstancedMesh>(null!);
-  const setFocus = useSceneStore((s) => s.setFocus);
-  const stars = useMemo(() => generateStars("default_seed"), []);
-
-  useEffect(() => {
-    if (!mesh.current) return;
-    const dummy = new THREE.Object3D();
-    stars.forEach((star, i) => {
-      dummy.position.set(star.position[0], star.position[1], star.position[2]);
-      dummy.scale.set(star.scale, star.scale, star.scale);
-      dummy.updateMatrix();
-      mesh.current!.setMatrixAt(i, dummy.matrix);
-    });
-    mesh.current.instanceMatrix.needsUpdate = true;
-  }, [stars]);
-
-  const click = (e: any) => {
-    const id = e.instanceId;
-    if (id == null) return;
-    const star = stars[id];
-    setFocus(star.id.toString());
-  };
+  const stars = useMemo(() => generateStars(), []);
+  const mode = useSceneStore((s) => s.mode);
+  const setMode = useSceneStore((s) => s.setMode);
+  const setSelectedStar = useSceneStore((s) => s.setSelectedStar);
+  const selectedStar = useSceneStore((s) => s.selectedStar);
+  const [hovered, setHovered] = useState<string | null>(null);
 
   return (
-    <instancedMesh ref={mesh} args={[undefined, undefined, stars.length]} onClick={click}>
-      <sphereGeometry args={[0.7, 8, 8]} />
-      <meshBasicMaterial color="#ffffff" />
-    </instancedMesh>
+    <group>
+      {stars.map((star) => {
+        const isHovered = hovered === star.id;
+        const isSelected = selectedStar?.id === star.id;
+        const visibleScale = mode === "lifemap" ? 1.2 : 1;
+        const selectedScale = isSelected ? 1.9 : isHovered ? 1.45 : visibleScale;
+        const hitRadius = Math.max(star.size * (mode === "lifemap" ? 8 : 5), 3.2);
+
+        return (
+          <group key={star.id} position={star.position}>
+            <mesh scale={selectedScale}>
+              <sphereGeometry args={[star.size, 10, 10]} />
+              <meshBasicMaterial color={star.color} />
+            </mesh>
+
+            <mesh
+              onPointerEnter={(e) => {
+                e.stopPropagation();
+                setHovered(star.id);
+              }}
+              onPointerLeave={(e) => {
+                e.stopPropagation();
+                setHovered((prev) => (prev === star.id ? null : prev));
+              }}
+              onPointerDown={(e) => {
+                e.stopPropagation();
+                setSelectedStar({
+                  id: star.id,
+                  position: star.position,
+                  color: star.color,
+                  size: star.size,
+                });
+                setMode("focus");
+              }}
+            >
+              <sphereGeometry args={[hitRadius, 12, 12]} />
+              <meshBasicMaterial transparent opacity={0} depthWrite={false} />
+            </mesh>
+          </group>
+        );
+      })}
+    </group>
   );
 }
-'''
