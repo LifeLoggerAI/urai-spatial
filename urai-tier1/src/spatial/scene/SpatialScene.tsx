@@ -1,7 +1,7 @@
 "use client";
 
 import { Canvas } from "@react-three/fiber";
-import { Suspense } from "react";
+import { Suspense, useEffect } from "react";
 import Starfield from "@/spatial/scene/Starfield";
 import CameraRig from "@/spatial/components/CameraRig";
 import { useSceneStore } from "@/spatial/state/sceneStore";
@@ -36,8 +36,111 @@ function HudButton({
   );
 }
 
+function FocusPanel() {
+  const mode = useSceneStore((s) => s.mode);
+  const selectedStar = useSceneStore((s) => s.selectedStar);
+
+  if (mode !== "focus" || !selectedStar) return null;
+
+  const signature =
+    selectedStar.color === "#ffd27a"
+      ? "Solar Memory"
+      : selectedStar.color === "#9ad1ff"
+        ? "Blue Echo"
+        : selectedStar.color === "#ff9ac6"
+          ? "Rose Thread"
+          : selectedStar.color === "#b7ffb0"
+            ? "Verdant Pulse"
+            : "White Signal";
+
+  return (
+    <div
+      style={{
+        position: "absolute",
+        top: 18,
+        right: 18,
+        zIndex: 120,
+        width: 300,
+        padding: 16,
+        borderRadius: 16,
+        background: "rgba(255,255,255,0.06)",
+        border: "1px solid rgba(255,255,255,0.14)",
+        backdropFilter: "blur(12px)",
+        color: "white",
+        fontFamily: "Arial, sans-serif",
+        pointerEvents: "auto",
+      }}
+      onPointerDown={(e) => e.stopPropagation()}
+    >
+      <div style={{ fontSize: 11, opacity: 0.68, textTransform: "uppercase", letterSpacing: "0.14em" }}>
+        Focused Memory
+      </div>
+
+      <div style={{ marginTop: 10, display: "flex", alignItems: "center", gap: 10 }}>
+        <span
+          style={{
+            width: 14,
+            height: 14,
+            borderRadius: 999,
+            background: selectedStar.color,
+            display: "inline-block",
+            boxShadow: `0 0 16px ${selectedStar.color}`,
+            flex: "0 0 auto",
+          }}
+        />
+        <div style={{ fontSize: 22, fontWeight: 600, lineHeight: 1.1 }}>{signature}</div>
+      </div>
+
+      <div style={{ marginTop: 10, fontSize: 13, opacity: 0.76, lineHeight: 1.5 }}>
+        Selected node <span style={{ opacity: 0.92 }}>{selectedStar.id}</span> is active in focus view.
+        This is the current Tier 1 memory target.
+      </div>
+
+      <div
+        style={{
+          marginTop: 14,
+          display: "grid",
+          gridTemplateColumns: "92px 1fr",
+          rowGap: 8,
+          columnGap: 8,
+          fontSize: 13,
+        }}
+      >
+        <div style={{ opacity: 0.65 }}>Signature</div>
+        <div>{signature}</div>
+
+        <div style={{ opacity: 0.65 }}>Intensity</div>
+        <div>{selectedStar.size.toFixed(2)}</div>
+
+        <div style={{ opacity: 0.65 }}>Color</div>
+        <div>{selectedStar.color}</div>
+      </div>
+
+      <div style={{ marginTop: 14, fontSize: 12, opacity: 0.68 }}>
+        Press Esc or click empty space to exit focus
+      </div>
+    </div>
+  );
+}
+
 export default function SpatialScene() {
   const { mode, setMode, selectedStar, setSelectedStar } = useSceneStore();
+
+  useEffect(() => {
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        setSelectedStar(null);
+        setMode("lifemap");
+      }
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [setMode, setSelectedStar]);
+
+  const exitFocus = () => {
+    setSelectedStar(null);
+    setMode("lifemap");
+  };
 
   return (
     <div
@@ -54,7 +157,22 @@ export default function SpatialScene() {
         overflow: "hidden",
       }}
     >
-      <Canvas camera={{ position: [0, 120, 240], fov: 60 }}>
+      {mode === "focus" ? (
+        <div
+          style={{
+            position: "absolute",
+            inset: 0,
+            zIndex: 40,
+            pointerEvents: "auto",
+          }}
+          onPointerDown={() => exitFocus()}
+        />
+      ) : null}
+
+      <Canvas
+        style={{ position: "relative", zIndex: 10 }}
+        camera={{ position: [0, 120, 240], fov: 60 }}
+      >
         <Suspense fallback={null}>
           <ambientLight intensity={0.72} />
           <pointLight position={[0, 40, 40]} intensity={1.15} />
@@ -70,7 +188,7 @@ export default function SpatialScene() {
           position: "absolute",
           top: 18,
           left: 18,
-          zIndex: 100,
+          zIndex: 120,
           display: "flex",
           flexDirection: "column",
           gap: 12,
@@ -78,6 +196,7 @@ export default function SpatialScene() {
           color: "white",
           pointerEvents: "auto",
         }}
+        onPointerDown={(e) => e.stopPropagation()}
       >
         <div
           style={{
@@ -133,6 +252,8 @@ export default function SpatialScene() {
           />
         </div>
       </div>
+
+      <FocusPanel />
     </div>
   );
 }

@@ -1,29 +1,47 @@
-'use client'
+"use client";
 
-import { useFrame } from '@react-three/fiber'
-import * as THREE from 'three'
-import { useSceneStore } from '../state/sceneStore'
+import { useMemo } from "react";
+import { useSceneStore } from "@/spatial/state/sceneStore";
 
 export default function Ground() {
-  const mode = useSceneStore((s) => s.mode)
+  const mode = useSceneStore((s) => s.mode);
 
-  useFrame(({ scene }) => {
-    const fog = scene.fog
+  const config = useMemo(() => {
+    if (mode === "focus") {
+      return {
+        y: -42,
+        radius: 2200,
+        opacity: 0.09,
+        color: "#0a1220",
+      };
+    }
 
-    if (!(fog instanceof THREE.FogExp2)) return
+    if (mode === "lifemap") {
+      return {
+        y: -58,
+        radius: 3200,
+        opacity: 0.05,
+        color: "#07101b",
+      };
+    }
 
-    const targetDensity =
-      mode === 'memory' || mode === 'replay'
-        ? 0.08
-        : 0.02
-
-    fog.density = THREE.MathUtils.lerp(fog.density, targetDensity, 0.02)
-  })
+    return {
+      y: -72,
+      radius: 4200,
+      opacity: 0.03,
+      color: "#05080d",
+    };
+  }, [mode]);
 
   return (
-    <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -10, 0]} receiveShadow>
-      <circleGeometry args={[200, 64]} />
-      <meshStandardMaterial color="#050505" roughness={1} metalness={0} />
+    <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, config.y, 0]}>
+      <circleGeometry args={[config.radius, 96]} />
+      <meshBasicMaterial
+        color={config.color}
+        transparent
+        opacity={config.opacity}
+        depthWrite={false}
+      />
     </mesh>
-  )
+  );
 }

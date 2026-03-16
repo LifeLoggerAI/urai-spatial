@@ -10,8 +10,9 @@ export default function CameraRig() {
   const mode = useSceneStore((s) => s.mode);
   const selectedStar = useSceneStore((s) => s.selectedStar);
 
-  const targetPosition = useMemo(() => new THREE.Vector3(), []);
+  const targetPosition = useMemo(() => new THREE.Vector3(0, 120, 240), []);
   const targetLookAt = useMemo(() => new THREE.Vector3(0, 0, 0), []);
+  const currentLookAt = useMemo(() => new THREE.Vector3(0, 0, 0), []);
 
   useFrame(() => {
     if (mode === "home") {
@@ -22,13 +23,17 @@ export default function CameraRig() {
       targetLookAt.set(0, 0, 0);
     } else if (mode === "focus" && selectedStar) {
       const [x, y, z] = selectedStar.position;
-      const dir = new THREE.Vector3(x, y, z).normalize().multiplyScalar(42);
-      targetPosition.set(x + dir.x, y + dir.y, z + dir.z);
-      targetLookAt.set(x, y, z);
+      const starVec = new THREE.Vector3(x, y, z);
+      const dir = starVec.clone().normalize();
+
+      const distance = Math.max(52, selectedStar.size * 18);
+      targetPosition.copy(starVec).add(dir.multiplyScalar(distance));
+      targetLookAt.copy(starVec);
     }
 
-    camera.position.lerp(targetPosition, 0.06);
-    camera.lookAt(targetLookAt);
+    camera.position.lerp(targetPosition, 0.055);
+    currentLookAt.lerp(targetLookAt, 0.08);
+    camera.lookAt(currentLookAt);
   });
 
   return null;

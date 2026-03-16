@@ -17,14 +17,21 @@ export default function Starfield() {
       {stars.map((star) => {
         const isHovered = hovered === star.id;
         const isSelected = selectedStar?.id === star.id;
-        const visibleScale = mode === "lifemap" ? 1.2 : 1;
-        const selectedScale = isSelected ? 1.9 : isHovered ? 1.45 : visibleScale;
+        const baseScale = mode === "lifemap" ? 1.15 : 1;
+        const scale = isSelected ? 1.7 : isHovered ? 1.35 : baseScale;
         const hitRadius = Math.max(star.size * (mode === "lifemap" ? 8 : 5), 3.2);
 
         return (
           <group key={star.id} position={star.position}>
-            <mesh scale={selectedScale}>
-              <sphereGeometry args={[star.size, 10, 10]} />
+            {isSelected ? (
+              <mesh scale={2.7}>
+                <sphereGeometry args={[star.size, 24, 24]} />
+                <meshBasicMaterial color={star.color} transparent opacity={0.12} />
+              </mesh>
+            ) : null}
+
+            <mesh scale={scale}>
+              <sphereGeometry args={[star.size, isSelected ? 24 : 12, isSelected ? 24 : 12]} />
               <meshBasicMaterial color={star.color} />
             </mesh>
 
