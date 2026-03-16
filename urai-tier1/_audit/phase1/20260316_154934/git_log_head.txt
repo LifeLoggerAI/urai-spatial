@@ -1,0 +1,10 @@
+f14d1cd a
+ba5bfcf freeze(spatial): lock safe visual tier
+db61c25 freeze(visual): build-clean tier2 visual pass and audit trail
+d7c9a11 closeout(urai-spatial): visual safe pass + publish audit evidence
+ac7fcce release(urai-spatial): tier1 ship pack
+cd7ce1e release(urai-spatial): tier1 ship pack
+9f13d40 freeze(urai-spatial): final tier lock and release note
+e382dc0 freeze(urai-spatial): lock polished shell after finish pass
+aeb04ec freeze(urai-spatial): finish pass quality gates smoke audit
+0075208 audit(urai-spatial): replay lock evidence 20260316_121653

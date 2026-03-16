@@ -1,0 +1,2 @@
+ M src/app/globals.css
+ M src/spatial/scene/Starfield.tsx

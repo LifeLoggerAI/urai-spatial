@@ -1,0 +1,6 @@
+122M	/home/user/urai-spatial/urai-tier1/.next
+2.3M	/home/user/urai-spatial/urai-tier1/_audit
+1.1G	/home/user/urai-spatial/.git
+1.2G	/home/user/.npm
+159M	/home/user/.cache
+4.3G	/home/user/.local/share/pnpm

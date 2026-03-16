@@ -1,0 +1,279 @@
+== start 20260316_184015 ==
+PWD=/home/user/urai-spatial/urai-tier1
+
+== disk before ==
+Filesystem                   Size  Used Avail Use% Mounted on
+/dev/disk/by-id/google-home  9.8G  9.2G   86M 100% /home
+12M	.next
+2.1M	_audit
+252K	src
+
+== cleanup small safe items ==
+src/spatial/data/stars.ts.bak.20260316_183510
+
+== backup target file ==
+BACKUP_RC=0
+
+== show SelectedStar before ==
+export type SelectedStar = {
+  id: string;
+  position: [number, number, number];
+  color: string;
+  size: number;
+  title: string;
+  label: string;
+  signature: string;
+  chapter: string;
+  timeband: string;
+  dateLabel?: string;
+  description: string;
+};
+
+== patch dateLabel into SelectedStar if missing ==
+dateLabel already present
+PATCHED=1
+
+== show SelectedStar after ==
+export type SelectedStar = {
+  id: string;
+  position: [number, number, number];
+  color: string;
+  size: number;
+  title: string;
+  label: string;
+  signature: string;
+  chapter: string;
+  timeband: string;
+  dateLabel?: string;
+  description: string;
+};
+
+== grep dateLabel across spatial ==
+src/spatial/data/memoryDataset.ts:9:  dateLabel: string;
+src/spatial/data/memoryDataset.ts:24:    dateLabel: "Early Arc",
+src/spatial/data/memoryDataset.ts:39:    dateLabel: "Early Arc",
+src/spatial/data/memoryDataset.ts:54:    dateLabel: "Threshold Phase",
+src/spatial/data/memoryDataset.ts:69:    dateLabel: "Threshold Phase",
+src/spatial/data/memoryDataset.ts:84:    dateLabel: "Drift Window",
+src/spatial/data/memoryDataset.ts:99:    dateLabel: "Drift Window",
+src/spatial/data/memoryDataset.ts:114:    dateLabel: "Recovery Window",
+src/spatial/data/memoryDataset.ts:129:    dateLabel: "Recovery Window",
+src/spatial/data/memoryDataset.ts:144:    dateLabel: "Signal Window",
+src/spatial/data/memoryDataset.ts:159:    dateLabel: "Signal Window",
+src/spatial/data/memoryDataset.ts:174:    dateLabel: "Constellation Phase",
+src/spatial/data/memoryDataset.ts:189:    dateLabel: "Constellation Phase",
+src/spatial/data/memoryDataset.ts:204:    dateLabel: "Foundational Recall",
+src/spatial/data/memoryDataset.ts:219:    dateLabel: "Commitment Point",
+src/spatial/data/memoryDataset.ts:234:    dateLabel: "Noise Phase",
+src/spatial/data/memoryDataset.ts:249:    dateLabel: "Repair Window",
+src/spatial/data/memoryDataset.ts:264:    dateLabel: "Signal Window",
+src/spatial/data/memoryDataset.ts:279:    dateLabel: "Archive Phase",
+src/spatial/data/memoryDataset.ts:294:    dateLabel: "Foundational Recall",
+src/spatial/data/memoryDataset.ts:309:    dateLabel: "Commitment Point",
+src/spatial/data/memoryDataset.ts:324:    dateLabel: "Noise Phase",
+src/spatial/data/memoryDataset.ts:339:    dateLabel: "Repair Window",
+src/spatial/data/memoryDataset.ts:354:    dateLabel: "Signal Window",
+src/spatial/data/memoryDataset.ts:369:    dateLabel: "Archive Phase",
+src/spatial/data/stars.ts:22:  dateLabel?: string;
+src/spatial/data/stars.ts:102:      dateLabel: `${TIMEBANDS[chapterIndex]} ${2026 - ((count - index) % 5)}`,
+src/spatial/data/stars.ts:132:    dateLabel: raw.dateLabel ?? fallback.dateLabel,
+src/spatial/state/toCanonicalSelectedStar.ts:16:  dateLabel?: string;
+src/spatial/state/toCanonicalSelectedStar.ts:55:  const dateLabel = safeText(input.dateLabel, timeband);
+src/spatial/state/toCanonicalSelectedStar.ts:79:    dateLabel,
+src/spatial/state/sceneStore.ts:16:  dateLabel?: string;
+src/spatial/scene/SpatialScene.tsx.broken.20260316-135713:64:      dateLabel: `Era ${i + 1}`,
+src/spatial/scene/Starfield.tsx:62:                  dateLabel: star.dateLabel,
+
+== build ==
+
+> urai-tier1@0.1.0 build /home/user/urai-spatial/urai-tier1
+> next build
+
+▲ Next.js 16.1.6 (Turbopack)
+
+  Creating an optimized production build ...
+✓ Compiled successfully in 21.9s
+  Running TypeScript ...
+Failed to compile.
+
+./src/spatial/scene/Starfield.tsx:63:19
+Type error: Object literal may only specify known properties, and 'summary' does not exist in type 'SelectedStar'.
+
+[0m [90m 61 |[39m                   timeband[33m:[39m star[33m.[39mtimeband[33m,[39m
+ [90m 62 |[39m                   dateLabel[33m:[39m star[33m.[39mdateLabel[33m,[39m
+[31m[1m>[22m[39m[90m 63 |[39m                   summary[33m:[39m star[33m.[39msummary[33m,[39m
+ [90m    |[39m                   [31m[1m^[22m[39m
+ [90m 64 |[39m                   detail[33m:[39m star[33m.[39mdetail[33m,[39m
+ [90m 65 |[39m                   tags[33m:[39m star[33m.[39mtags[33m,[39m
+ [90m 66 |[39m                   transcript[33m:[39m star[33m.[39mtranscript[33m,[39m[0m
+Next.js build worker exited with code: 1 and signal: null
+ ELIFECYCLE  Command failed with exit code 1.
+BUILD_RC=1
+
+== disk after ==
+Filesystem                   Size  Used Avail Use% Mounted on
+/dev/disk/by-id/google-home  9.8G  9.2G   86M 100% /home
+12M	.next
+2.1M	_audit
+248K	src
+
+== final ==
+LOG=_audit/fix-selected-star-retry/20260316_184015/run.log
+RESULT=BUILD_FAILED
+
+== tail log ==
+Filesystem                   Size  Used Avail Use% Mounted on
+/dev/disk/by-id/google-home  9.8G  9.2G   86M 100% /home
+12M	.next
+2.1M	_audit
+252K	src
+
+== cleanup small safe items ==
+src/spatial/data/stars.ts.bak.20260316_183510
+
+== backup target file ==
+BACKUP_RC=0
+
+== show SelectedStar before ==
+export type SelectedStar = {
+  id: string;
+  position: [number, number, number];
+  color: string;
+  size: number;
+  title: string;
+  label: string;
+  signature: string;
+  chapter: string;
+  timeband: string;
+  dateLabel?: string;
+  description: string;
+};
+
+== patch dateLabel into SelectedStar if missing ==
+dateLabel already present
+PATCHED=1
+
+== show SelectedStar after ==
+export type SelectedStar = {
+  id: string;
+  position: [number, number, number];
+  color: string;
+  size: number;
+  title: string;
+  label: string;
+  signature: string;
+  chapter: string;
+  timeband: string;
+  dateLabel?: string;
+  description: string;
+};
+
+== grep dateLabel across spatial ==
+src/spatial/data/memoryDataset.ts:9:  dateLabel: string;
+src/spatial/data/memoryDataset.ts:24:    dateLabel: "Early Arc",
+src/spatial/data/memoryDataset.ts:39:    dateLabel: "Early Arc",
+src/spatial/data/memoryDataset.ts:54:    dateLabel: "Threshold Phase",
+src/spatial/data/memoryDataset.ts:69:    dateLabel: "Threshold Phase",
+src/spatial/data/memoryDataset.ts:84:    dateLabel: "Drift Window",
+src/spatial/data/memoryDataset.ts:99:    dateLabel: "Drift Window",
+src/spatial/data/memoryDataset.ts:114:    dateLabel: "Recovery Window",
+src/spatial/data/memoryDataset.ts:129:    dateLabel: "Recovery Window",
+src/spatial/data/memoryDataset.ts:144:    dateLabel: "Signal Window",
+src/spatial/data/memoryDataset.ts:159:    dateLabel: "Signal Window",
+src/spatial/data/memoryDataset.ts:174:    dateLabel: "Constellation Phase",
+src/spatial/data/memoryDataset.ts:189:    dateLabel: "Constellation Phase",
+src/spatial/data/memoryDataset.ts:204:    dateLabel: "Foundational Recall",
+src/spatial/data/memoryDataset.ts:219:    dateLabel: "Commitment Point",
+src/spatial/data/memoryDataset.ts:234:    dateLabel: "Noise Phase",
+src/spatial/data/memoryDataset.ts:249:    dateLabel: "Repair Window",
+src/spatial/data/memoryDataset.ts:264:    dateLabel: "Signal Window",
+src/spatial/data/memoryDataset.ts:279:    dateLabel: "Archive Phase",
+src/spatial/data/memoryDataset.ts:294:    dateLabel: "Foundational Recall",
+src/spatial/data/memoryDataset.ts:309:    dateLabel: "Commitment Point",
+src/spatial/data/memoryDataset.ts:324:    dateLabel: "Noise Phase",
+src/spatial/data/memoryDataset.ts:339:    dateLabel: "Repair Window",
+src/spatial/data/memoryDataset.ts:354:    dateLabel: "Signal Window",
+src/spatial/data/memoryDataset.ts:369:    dateLabel: "Archive Phase",
+src/spatial/data/stars.ts:22:  dateLabel?: string;
+src/spatial/data/stars.ts:102:      dateLabel: `${TIMEBANDS[chapterIndex]} ${2026 - ((count - index) % 5)}`,
+src/spatial/data/stars.ts:132:    dateLabel: raw.dateLabel ?? fallback.dateLabel,
+src/spatial/state/toCanonicalSelectedStar.ts:16:  dateLabel?: string;
+src/spatial/state/toCanonicalSelectedStar.ts:55:  const dateLabel = safeText(input.dateLabel, timeband);
+src/spatial/state/toCanonicalSelectedStar.ts:79:    dateLabel,
+src/spatial/state/sceneStore.ts:16:  dateLabel?: string;
+src/spatial/scene/SpatialScene.tsx.broken.20260316-135713:64:      dateLabel: `Era ${i + 1}`,
+src/spatial/scene/Starfield.tsx:62:                  dateLabel: star.dateLabel,
+
+== build ==
+
+> urai-tier1@0.1.0 build /home/user/urai-spatial/urai-tier1
+> next build
+
+▲ Next.js 16.1.6 (Turbopack)
+
+  Creating an optimized production build ...
+✓ Compiled successfully in 21.9s
+  Running TypeScript ...
+Failed to compile.
+
+./src/spatial/scene/Starfield.tsx:63:19
+Type error: Object literal may only specify known properties, and 'summary' does not exist in type 'SelectedStar'.
+
+[0m [90m 61 |[39m                   timeband[33m:[39m star[33m.[39mtimeband[33m,[39m
+ [90m 62 |[39m                   dateLabel[33m:[39m star[33m.[39mdateLabel[33m,[39m
+[31m[1m>[22m[39m[90m 63 |[39m                   summary[33m:[39m star[33m.[39msummary[33m,[39m
+ [90m    |[39m                   [31m[1m^[22m[39m
+ [90m 64 |[39m                   detail[33m:[39m star[33m.[39mdetail[33m,[39m
+ [90m 65 |[39m                   tags[33m:[39m star[33m.[39mtags[33m,[39m
+ [90m 66 |[39m                   transcript[33m:[39m star[33m.[39mtranscript[33m,[39m[0m
+Next.js build worker exited with code: 1 and signal: null
+ ELIFECYCLE  Command failed with exit code 1.
+BUILD_RC=1
+
+== disk after ==
+Filesystem                   Size  Used Avail Use% Mounted on
+/dev/disk/by-id/google-home  9.8G  9.2G   86M 100% /home
+12M	.next
+2.1M	_audit
+248K	src
+
+== final ==
+LOG=_audit/fix-selected-star-retry/20260316_184015/run.log
+RESULT=BUILD_FAILED
+
+== tail log ==
+]633;D;0]633;P;Cwd=/home/user/urai-spatial/urai-tier1]633;P;Prompt=\x1b]0\x3buser@firebase-urai-spatial-1769687960051: ~/urai-spatial/urai-tier1\x07\x1b[00\x3b35murai-spatial-21209489\x1b[00m:\x1b[01\x3b34m~/urai-spatial/urai-tier1\x1b[00m\x1b[01\x3b32m{phase6-real-memory-20260316_161755}\x1b[00m$ ]633;EnvSingleStart;0;5b673e92-90c2-482a-b1ce-504fd5f6fe75]633;EnvSingleEntry;PWD;/home/user/urai-spatial/urai-tier1;5b673e92-90c2-482a-b1ce-504fd5f6fe75]633;EnvSingleEntry;OLDPWD;/home/user/urai-spatial;5b673e92-90c2-482a-b1ce-504fd5f6fe75]633;EnvSingleDelete;CAPRA_ENABLED_FEATURES;;5b673e92-90c2-482a-b1ce-504fd5f6fe75]633;EnvSingleDelete;VSCODE_GIT_ASKPASS_EXTRA_ARGS;;5b673e92-90c2-482a-b1ce-504fd5f6fe75]633;EnvSingleDelete;MONOSPACE_RECOVERY_MODE;;5b673e92-90c2-482a-b1ce-504fd5f6fe75]633;EnvSingleEnd;5b673e92-90c2-482a-b1ce-504fd5f6fe75;[?2004h]633;A]0;user@firebase-urai-spatial-1769687960051: ~/urai-spatial/urai-tier1[00;35murai-spatial-21209489[00m:[01;34m~/urai-spatial/urai-tier1[00m[01;32m{phase6-real-memory-20260316_161755}[00m$ ]633;B
+[?2004l]633;E;;5b673e92-90c2-482a-b1ce-504fd5f6fe75]633;C]633;D]633;P;Cwd=/home/user/urai-spatial/urai-tier1]633;P;Prompt=\x1b]0\x3buser@firebase-urai-spatial-1769687960051: ~/urai-spatial/urai-tier1\x07\x1b[00\x3b35murai-spatial-21209489\x1b[00m:\x1b[01\x3b34m~/urai-spatial/urai-tier1\x1b[00m\x1b[01\x3b32m{phase6-real-memory-20260316_161755}\x1b[00m$ ]633;EnvSingleStart;0;5b673e92-90c2-482a-b1ce-504fd5f6fe75]633;EnvSingleEnd;5b673e92-90c2-482a-b1ce-504fd5f6fe75;[?2004h]633;A]0;user@firebase-urai-spatial-1769687960051: ~/urai-spatial/urai-tier1[00;35murai-spatial-21209489[00m:[01;34m~/urai-spatial/urai-tier1[00m[01;32m{phase6-real-memory-20260316_161755}[00m$ ]633;B
+[?2004l]633;E;;5b673e92-90c2-482a-b1ce-504fd5f6fe75]633;C]633;D]633;P;Cwd=/home/user/urai-spatial/urai-tier1]633;P;Prompt=\x1b]0\x3buser@firebase-urai-spatial-1769687960051: ~/urai-spatial/urai-tier1\x07\x1b[00\x3b35murai-spatial-21209489\x1b[00m:\x1b[01\x3b34m~/urai-spatial/urai-tier1\x1b[00m\x1b[01\x3b32m{phase6-real-memory-20260316_161755}\x1b[00m$ ]633;EnvSingleStart;0;5b673e92-90c2-482a-b1ce-504fd5f6fe75]633;EnvSingleEnd;5b673e92-90c2-482a-b1ce-504fd5f6fe75;[?2004h]633;A]0;user@firebase-urai-spatial-1769687960051: ~/urai-spatial/urai-tier1[00;35murai-spatial-21209489[00m:[01;34m~/urai-spatial/urai-tier1[00m[01;32m{phase6-real-memory-20260316_161755}[00m$ ]633;Bcd ~/urai-spatial/urai-tier1 || exit 1 
+set -euo pipefail
+set +H
+
+TS="$(date +%Y%m%d_%H%M%S)"
+AUD="_audit/fix-selected-star-shape/$TS"
+mkdir -p "$AUD"
+
+cp src/spatial/state/sceneStore.ts "$AUD/sceneStore.ts.before"
+cp src/spatial/scene/Starfield.tsx "$AUD/Starfield.tsx.before"
+
+python3 <<'PY'
+from pathlib import Path
+import re
+import sys
+
+scene = Path("src/spatial/state/sceneStore.ts")
+starfield = Path("src/spatial/scene/Starfield.tsx")
+
+scene_text = scene.read_text()
+starfield_text = starfield.read_text()
+
+# 1) Expand SelectedStar shape.
+scene_pattern = re.compile(
+    r'(export\s+type\s+SelectedStar\s*=\s*\{.*?timeband:\s*string;\s*)(.*?)(\s*description:\s*string;\s*.*?\};)', 
+    re.S
+)
+
+m = scene_pattern.search(scene_text)
+if not m:
+    print("FAILED: could not locate SelectedStar block in sceneStore.ts")
+    sys.exit(11)middle = m.group(2)needed_lines = [    "  dateLabel?: string;",    "  summary?: string;",    "  detail?: string;",    "  tags?: string[];",    "  transcript?: string;",]for line in needed_lines:    if line not in middle:        middle += line + "\n"scene_text = scene_text[:m.start()] + m.group(1) + middle + m.group(3) + scene_text[m.end():]scene.write_text(scene_text)# 2) Ensure setSelectedStar payload includes required description field.payload_old = """                  chapter: star.chapter,                  timeband: star.timeband,                  dateLabel: star.dateLabel,                  summary: star.summary,                  detail: star.detail,                  tags: star.tags,                  transcript: star.transcript,"""payload_new = """                  chapter: star.chapter,                  timeband: star.timeband,                  dateLabel: star.dateLabel,[7m                  description: star.description,[27m[7m                  summary: star.summary,[27m[7m                  detail: star.detail,[27m[7m                  tags: star.tags,[27m[7m                  transcript: star.transcript,"""[27m[7mif payload_old in starfield_text:[27m[7m    starfield_text = starfield_text.replace(payload_old, payload_new, 1)[27m[7melse:[27m[7m    if "description: star.description," not in starfield_text:[27m[7m        print("FAILED: could not locate Starfield selectedStar payload")[27m[7m        sys.exit(12)[27m[7mstarfield.write_text(starfield_text)[27m[7mprint("PATCH_OK")[27m[7mPY[27m[7mecho[27m[7mecho "== SelectedStar =="[27m[7msed -n '/export type SelectedStar/,/};/p' src/spatial/state/sceneStore.ts[27m[7mecho[27m[7mecho "== Starfield payload =="[27m[7msed -n '/setSelectedStar({/,/});/p' src/spatial/scene/Starfield.tsx[27m[7mecho[27m[7mecho "== build =="[27m[7mrm -rf .next[27m[7mpnpm build[27m[7mecho[27m[7mecho "== disk =="[27m[7mdf -h /home[27m[7mdu -sh .next _audit src 2>/dev/null || true[27m                  description: star.description,                  summary: star.summary,                  detail: star.detail,                  tags: star.tags,                  transcript: star.transcript,"""if payload_old in starfield_text:    starfield_text = starfield_text.replace(payload_old, payload_new, 1)else:    if "description: star.description," not in starfield_text:        print("FAILED: could not locate Starfield selectedStar payload")        sys.exit(12)starfield.write_text(starfield_text)print("PATCH_OK")PYechoecho "== SelectedStar =="sed -n '/export type SelectedStar/,/};/p' src/spatial/state/sceneStore.tsechoecho "== Starfield payload =="sed -n '/setSelectedStar({/,/});/p' src/spatial/scene/Starfield.tsxechoecho "== build =="rm -rf .nextpnpm buildechoecho "== disk =="df -h /homedu -sh .next _audit src 2>/dev/null || true
+[?2004l]633;E;cd ~/urai-spatial/urai-tier1;5b673e92-90c2-482a-b1ce-504fd5f6fe75]633;Cbash: python3: command not found

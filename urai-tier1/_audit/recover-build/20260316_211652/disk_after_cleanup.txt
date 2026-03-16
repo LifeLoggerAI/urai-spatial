@@ -1,0 +1,2 @@
+Filesystem                   Size  Used Avail Use% Mounted on
+/dev/disk/by-id/google-home  9.8G  6.4G  2.9G  69% /home

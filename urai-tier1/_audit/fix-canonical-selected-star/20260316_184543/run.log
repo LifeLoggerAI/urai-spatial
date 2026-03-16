@@ -1,0 +1,301 @@
+== start 20260316_184543 ==
+PWD=/home/user/urai-spatial/urai-tier1
+
+== backup file ==
+
+== patch input shape for description ==
+RC1=0
+
+== patch computed description const ==
+RC2=0
+
+== patch return payload ==
+RC3=0
+
+== file after ==
+import type { SelectedStar } from "./sceneStore";
+
+type StarInput = Partial<SelectedStar> & {
+  id?: string;
+  position?: [number, number, number] | number[];
+  color?: string;
+  size?: number;
+  title?: string;
+  label?: string;
+  summary?: string;
+  detail?: string;
+  transcript?: string;
+  signature?: string;
+  chapter?: string;
+  timeband?: string;
+  dateLabel?: string;
+  description?: string;
+  tags?: string[];
+};
+
+function asVec3(value: StarInput["position"]): [number, number, number] {
+  if (Array.isArray(value) && value.length >= 3) {
+    return [
+      Number(value[0] ?? 0),
+      Number(value[1] ?? 0),
+      Number(value[2] ?? 0),
+    ];
+  }
+  return [0, 0, 0];
+}
+
+function safeText(value: unknown, fallback: string): string {
+  if (typeof value === "string" && value.trim()) return value.trim();
+  return fallback;
+}
+
+function safeTags(input: StarInput, fallback: string[]): string[] {
+  if (Array.isArray(input.tags) && input.tags.length > 0) {
+    return input.tags.map((x) => String(x)).filter(Boolean);
+  }
+  return fallback.filter(Boolean);
+}
+
+export function toCanonicalSelectedStar(input: StarInput | null): SelectedStar | null {
+  if (!input) return null;
+
+  const position = asVec3(input.position);
+  const title = safeText(input.title, "Untitled Star");
+  const label = safeText(input.label, title);
+  const summary = safeText(input.summary, label);
+  const detail = safeText(input.detail, summary);
+  const transcript = safeText(input.transcript, detail);
+  const signature = safeText(input.signature, "signal");
+  const chapter = safeText(input.chapter, "unknown");
+  const timeband = safeText(input.timeband, "undated");
+  const dateLabel = safeText(input.dateLabel, timeband);
+  const description = safeText(input.description, detail || summary);
+  const tags = safeTags(input, [chapter, timeband, signature]);
+
+  return {
+    id: safeText(
+      input.id,
+      [
+        title.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, ""),
+        String(position[0]),
+        String(position[1]),
+        String(position[2]),
+      ].join(":")
+    ),
+    position,
+    color: safeText(input.color, "#ffffff"),
+    size: typeof input.size === "number" && Number.isFinite(input.size) ? input.size : 1,
+    title,
+    label,
+    description,
+    summary,
+    detail,
+    transcript,
+    signature,
+    chapter,
+    timeband,
+    dateLabel,
+    tags,
+  };
+}
+
+== build ==
+
+> urai-tier1@0.1.0 build /home/user/urai-spatial/urai-tier1
+> next build
+
+▲ Next.js 16.1.6 (Turbopack)
+
+  Creating an optimized production build ...
+✓ Compiled successfully in 23.4s
+  Running TypeScript ...
+  Collecting page data using 1 worker ...
+  Generating static pages using 1 worker (0/4) ...
+  Generating static pages using 1 worker (1/4) 
+  Generating static pages using 1 worker (2/4) 
+  Generating static pages using 1 worker (3/4) 
+✓ Generating static pages using 1 worker (4/4) in 479.9ms
+  Finalizing page optimization ...
+
+Route (app)
+┌ ○ /
+└ ○ /_not-found
+
+
+○  (Static)  prerendered as static content
+
+BUILD_RC=0
+
+== disk ==
+Filesystem                   Size  Used Avail Use% Mounted on
+/dev/disk/by-id/google-home  9.8G  9.2G   86M 100% /home
+12M	.next
+2.2M	_audit
+248K	src
+
+== final ==
+LOG=_audit/fix-canonical-selected-star/20260316_184543/run.log
+RESULT=PASS
+
+== tail log ==
+  color?: string;
+  size?: number;
+  title?: string;
+  label?: string;
+  summary?: string;
+  detail?: string;
+  transcript?: string;
+  signature?: string;
+  chapter?: string;
+  timeband?: string;
+  dateLabel?: string;
+  description?: string;
+  tags?: string[];
+};
+
+function asVec3(value: StarInput["position"]): [number, number, number] {
+  if (Array.isArray(value) && value.length >= 3) {
+    return [
+      Number(value[0] ?? 0),
+      Number(value[1] ?? 0),
+      Number(value[2] ?? 0),
+    ];
+  }
+  return [0, 0, 0];
+}
+
+function safeText(value: unknown, fallback: string): string {
+  if (typeof value === "string" && value.trim()) return value.trim();
+  return fallback;
+}
+
+function safeTags(input: StarInput, fallback: string[]): string[] {
+  if (Array.isArray(input.tags) && input.tags.length > 0) {
+    return input.tags.map((x) => String(x)).filter(Boolean);
+  }
+  return fallback.filter(Boolean);
+}
+
+export function toCanonicalSelectedStar(input: StarInput | null): SelectedStar | null {
+  if (!input) return null;
+
+  const position = asVec3(input.position);
+  const title = safeText(input.title, "Untitled Star");
+  const label = safeText(input.label, title);
+  const summary = safeText(input.summary, label);
+  const detail = safeText(input.detail, summary);
+  const transcript = safeText(input.transcript, detail);
+  const signature = safeText(input.signature, "signal");
+  const chapter = safeText(input.chapter, "unknown");
+  const timeband = safeText(input.timeband, "undated");
+  const dateLabel = safeText(input.dateLabel, timeband);
+  const description = safeText(input.description, detail || summary);
+  const tags = safeTags(input, [chapter, timeband, signature]);
+
+  return {
+    id: safeText(
+      input.id,
+      [
+        title.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, ""),
+        String(position[0]),
+        String(position[1]),
+        String(position[2]),
+      ].join(":")
+    ),
+    position,
+    color: safeText(input.color, "#ffffff"),
+    size: typeof input.size === "number" && Number.isFinite(input.size) ? input.size : 1,
+    title,
+    label,
+    description,
+    summary,
+    detail,
+    transcript,
+    signature,
+    chapter,
+    timeband,
+    dateLabel,
+    tags,
+  };
+}
+
+== build ==
+
+> urai-tier1@0.1.0 build /home/user/urai-spatial/urai-tier1
+> next build
+
+▲ Next.js 16.1.6 (Turbopack)
+
+  Creating an optimized production build ...
+✓ Compiled successfully in 23.4s
+  Running TypeScript ...
+  Collecting page data using 1 worker ...
+  Generating static pages using 1 worker (0/4) ...
+  Generating static pages using 1 worker (1/4) 
+  Generating static pages using 1 worker (2/4) 
+  Generating static pages using 1 worker (3/4) 
+✓ Generating static pages using 1 worker (4/4) in 479.9ms
+  Finalizing page optimization ...
+
+Route (app)
+┌ ○ /
+└ ○ /_not-found
+
+
+○  (Static)  prerendered as static content
+
+BUILD_RC=0
+
+== disk ==
+Filesystem                   Size  Used Avail Use% Mounted on
+/dev/disk/by-id/google-home  9.8G  9.2G   86M 100% /home
+12M	.next
+2.2M	_audit
+248K	src
+
+== final ==
+LOG=_audit/fix-canonical-selected-star/20260316_184543/run.log
+RESULT=PASS
+
+== tail log ==
+]633;D;0]633;P;Cwd=/home/user/urai-spatial/urai-tier1]633;P;Prompt=\x1b]0\x3buser@firebase-urai-spatial-1769687960051: ~/urai-spatial/urai-tier1\x07\x1b[00\x3b35murai-spatial-21209489\x1b[00m:\x1b[01\x3b34m~/urai-spatial/urai-tier1\x1b[00m\x1b[01\x3b32m{phase6-real-memory-20260316_161755}\x1b[00m$ ]633;EnvSingleStart;0;cc1b3f4a-b406-42c2-bd19-a96cb44811d6]633;EnvSingleEntry;OLDPWD;/home/user/urai-spatial/urai-tier1;cc1b3f4a-b406-42c2-bd19-a96cb44811d6]633;EnvSingleEnd;cc1b3f4a-b406-42c2-bd19-a96cb44811d6;[?2004h]633;A]0;user@firebase-urai-spatial-1769687960051: ~/urai-spatial/urai-tier1[00;35murai-spatial-21209489[00m:[01;34m~/urai-spatial/urai-tier1[00m[01;32m{phase6-real-memory-20260316_161755}[00m$ ]633;B
+[?2004l]633;E;;cc1b3f4a-b406-42c2-bd19-a96cb44811d6]633;C]633;D]633;P;Cwd=/home/user/urai-spatial/urai-tier1]633;P;Prompt=\x1b]0\x3buser@firebase-urai-spatial-1769687960051: ~/urai-spatial/urai-tier1\x07\x1b[00\x3b35murai-spatial-21209489\x1b[00m:\x1b[01\x3b34m~/urai-spatial/urai-tier1\x1b[00m\x1b[01\x3b32m{phase6-real-memory-20260316_161755}\x1b[00m$ ]633;EnvSingleStart;0;cc1b3f4a-b406-42c2-bd19-a96cb44811d6]633;EnvSingleEnd;cc1b3f4a-b406-42c2-bd19-a96cb44811d6;[?2004h]633;A]0;user@firebase-urai-spatial-1769687960051: ~/urai-spatial/urai-tier1[00;35murai-spatial-21209489[00m:[01;34m~/urai-spatial/urai-tier1[00m[01;32m{phase6-real-memory-20260316_161755}[00m$ ]633;B[7mcd ~/urai-spatial/urai-[27m[7mt[27m[7mier1 || exit 1 [27m
+[7mset -euo pipefail[27m
+[7mset +H[27m
+
+[7mTS="$(date +%Y%m%d_%H%M%S)"[27m
+
+[7mrm -rf .next[27m
+[7mfind src -type f \( -name '*.bak.*' -o -name '*.tmp' \) -delete 2>/dev/null || true[27m
+[7mfind _audit -type f -name 'run.log' -size +1M -delete 2>/dev/null || true[27m
+
+[7mgit status --short[27m
+[7mgit add src/spatial/data/stars.ts src/spatial/scene/Starfield.tsx src/spatial/state/sceneStore.ts src/spatia[27m[7ml[27m[7m/state/toCanonicalSelectedStar.ts [27m
+[7mgit commit -m "fix(urai-spatial): align real memory star contracts $TS" || true[27m
+
+[7mdf -h /home[27m
+[7mgit status --short[27m[A[A[A[A[A[A[A[A[A[A[A[A[A[A[A[A[A]633;A]0;user@firebase-urai-spatial-1769687960051: ~/urai-spatial/urai-tier1[00;35murai-spatial-21209489[00m:[01;34m~/urai-spatial/urai-tier1[00m[01;32m{phase6-real-memory-20260316_161755}[00m$ ]633;Bcd ~/urai-spatial/urai-tier1 || exit 1
+set -euo pipefail
+set +H
+
+TS="$(date +%Y%m%d_%H%M%S)"
+
+rm -rf .next
+find src -type f \( -name '*.bak.*' -o -name '*.tmp' \) -delete 2>/dev/null || true
+find _audit -type f -name 'run.log' -size +1M -delete 2>/dev/null || true
+
+git status --short
+git add src/spatial/data/stars.ts src/spatial/scene/Starfield.tsx src/spatial/state/sceneStore.ts src/spatial/state/toCanonicalSelectedStar.ts
+git commit -m "fix(urai-spatial): align real memory star contracts $TS" || true
+
+df -h /home
+git status --short
+[?2004l]633;E;cd ~/urai-spatial/urai-tier1;cc1b3f4a-b406-42c2-bd19-a96cb44811d6]633;C M src/spatial/data/stars.ts
+ M src/spatial/scene/Starfield.tsx
+ M src/spatial/state/sceneStore.ts
+ M src/spatial/state/toCanonicalSelectedStar.ts
+[phase6-real-memory-20260316_161755 897cf06] fix(urai-spatial): align real memory star contracts 20260316_184928
+ 4 files changed, 66 insertions(+), 5 deletions(-)
+Filesystem                   Size  Used Avail Use% Mounted on
+/dev/disk/by-id/google-home  9.8G  9.2G   98M  99% /home
+]633;D;0]633;P;Cwd=/home/user/urai-spatial/urai-tier1]633;P;Prompt=\x1b]0\x3buser@firebase-urai-spatial-1769687960051: ~/urai-spatial/urai-tier1\x07\x1b[00\x3b35murai-spatial-21209489\x1b[00m:\x1b[01\x3b34m~/urai-spatial/urai-tier1\x1b[00m\x1b[01\x3b32m{phase6-real-memory-20260316_161755}\x1b[00m$ ]633;EnvSingleStart;0;cc1b3f4a-b406-42c2-bd19-a96cb44811d6bash: vsc_aa_env[$key]: unbound variable
