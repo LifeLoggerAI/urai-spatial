@@ -7,6 +7,7 @@ import { toCanonicalSelectedStar } from "../lib/toCanonicalSelectedStar";
 import { SpatialStar } from "../data/stars";
 import { SceneMode, useSceneStore } from "../state/sceneStore";
 import CinematicReplayOverlay from "@/spatial/cinematic/CinematicReplayOverlay";
+import LifeMapIntelligenceOverlay from "@/spatial/intelligence/LifeMapIntelligenceOverlay";
 
 const shellButtonStyle: CSSProperties = {
   appearance: "none",
@@ -707,6 +708,7 @@ export default function SpatialScene() {
         <MemorySphere />
         <ReplayConstellation />
       </Canvas>
+        <LifeMapIntelligenceOverlay />
         <CinematicReplayOverlay />
 
       <div
