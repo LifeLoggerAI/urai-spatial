@@ -1,0 +1,4 @@
+?? CANONICAL_APP_PATH.md
+?? TIER1_STATUS.md
+?? _audit/final_finish_20260316_123318/git_status_pre_freeze.txt
+?? _audit/release_20260316_123855/

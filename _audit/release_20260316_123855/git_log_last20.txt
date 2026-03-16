@@ -1,0 +1,20 @@
+e382dc0 freeze(urai-spatial): lock polished shell after finish pass
+aeb04ec freeze(urai-spatial): finish pass quality gates smoke audit
+0075208 audit(urai-spatial): replay lock evidence 20260316_121653
+24d5b9c audit(urai-spatial): replay lock evidence 20260316_121246
+61e052f audit(urai-spatial): replay lock evidence 20260316_120745
+f4f01fa chore: ignore local backup snapshots
+2c85a22 chore: ignore local backup snapshots
+a63d66d freeze(tier3): working spatial replay shell
+f9af713 freeze(tier3): working spatial replay shell
+bc77acc refactor(tier3): mount replay overlay natively in app tree
+7ecd180 refactor(tier3): mount replay overlay natively in app tree
+56c797d freeze(tier3): canonical scene api and clean build
+a8297f2 refactor(tier3): canonicalize star input at source boundary
+32cc95b freeze(tier1): build-clean canonical Home LifeMap Focus shell
+050f707 freeze(tier1): lock working Home/LifeMap/Focus starflow
+dab072d s
+919b418 Changes before Firebase Studio auto-run
+6c07763 Changes before Firebase Studio auto-run
+d90b2dc as
+a3a29fe a
