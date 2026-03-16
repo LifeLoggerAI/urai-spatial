@@ -13,6 +13,7 @@ import ImmersiveContractOverlay from "@/spatial/immersive/ImmersiveContractOverl
 import SceneExportOverlay from "@/spatial/export/SceneExportOverlay";
 import WebXREntryOverlay from "@/spatial/webxr/WebXREntryOverlay";
 import XRCameraRigOverlay from "@/spatial/xr-runtime/XRCameraRigOverlay";
+import ARPlacementOverlay from "@/spatial/ar/ARPlacementOverlay";
 
 const shellButtonStyle: CSSProperties = {
   appearance: "none",
@@ -713,6 +714,7 @@ export default function SpatialScene() {
         <MemorySphere />
         <ReplayConstellation />
       </Canvas>
+        <ARPlacementOverlay />
         <XRCameraRigOverlay />
         <WebXREntryOverlay />
         <SceneExportOverlay />
