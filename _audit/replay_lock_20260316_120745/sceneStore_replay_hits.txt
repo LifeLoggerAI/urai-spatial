@@ -1,0 +1,15 @@
+4:export type SceneMode = "home" | "lifemap" | "focus" | "replay";
+27:  replayEnteredAt: number | null;
+48:  replayEnteredAt: null,
+52:      if (mode === "replay") {
+56:          replayEnteredAt: Date.now(),
+63:        replayEnteredAt: null,
+79:      replayEnteredAt: null,
+86:        state.mode === "focus" || state.mode === "replay"
+90:      replayEnteredAt: null,
+101:        replayEnteredAt: null,
+112:        replayEnteredAt: null,
+120:        mode: "replay",
+122:        replayEnteredAt: Date.now(),
+130:      replayEnteredAt: null,
+138:      replayEnteredAt: null,

@@ -1,0 +1,1 @@
+scene_mode_has_replay=1

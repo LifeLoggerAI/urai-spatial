@@ -1,0 +1,243 @@
+urai-tier1/src/spatial/state/sceneStore.ts.bak.20260316-090150:48:      detailOpen: mode === "focus" || mode === "replay" ? state.detailOpen : false,
+urai-tier1/src/spatial/state/sceneStore.ts.bak.20260316-090150:50:        mode === "replay"
+urai-tier1/src/spatial/state/sceneStore.ts.bak.20260316-090150:52:          : state.mode === "replay" && mode !== "replay"
+urai-tier1/src/spatial/state/sceneStore.ts.bak.20260316-090150:71:      selectedStar: state.mode === "focus" || state.mode === "replay" ? state.selectedStar : null,
+urai-tier1/src/spatial/state/sceneStore.ts.bak.20260316-093709:55:      if (mode === "replay") {
+urai-tier1/src/spatial/state/sceneStore.ts.bak.20260316-093709:89:        state.mode === "focus" || state.mode === "replay"
+urai-tier1/src/spatial/state/sceneStore.ts.bak.20260316-095740:52:      if (mode === "replay") {
+urai-tier1/src/spatial/state/sceneStore.ts.bak.20260316-095740:86:        state.mode === "focus" || state.mode === "replay"
+urai-tier1/src/spatial/state/sceneStore.ts.bak.20260316-091829:53:      if (mode === "replay") {
+urai-tier1/src/spatial/state/sceneStore.ts.bak.20260316-091829:83:        state.mode === "focus" || state.mode === "replay"
+urai-tier1/src/spatial/state/sceneStore.ts.bak.20260316-090700:54:      detailOpen: mode === "focus" || mode === "replay" ? state.detailOpen : false,
+urai-tier1/src/spatial/state/sceneStore.ts.bak.20260316-090700:56:        mode === "replay"
+urai-tier1/src/spatial/state/sceneStore.ts.bak.20260316-090700:58:          : state.mode === "replay" && mode !== "replay"
+urai-tier1/src/spatial/state/sceneStore.ts.bak.20260316-090700:77:      selectedStar: state.mode === "focus" || state.mode === "replay" ? state.selectedStar : null,
+urai-tier1/src/spatial/state/sceneStore.ts.bak.20260316-090323:50:      detailOpen: mode === "focus" || mode === "replay" ? state.detailOpen : false,
+urai-tier1/src/spatial/state/sceneStore.ts.bak.20260316-090323:52:        mode === "replay"
+urai-tier1/src/spatial/state/sceneStore.ts.bak.20260316-090323:54:          : state.mode === "replay" && mode !== "replay"
+urai-tier1/src/spatial/state/sceneStore.ts.bak.20260316-090323:73:      selectedStar: state.mode === "focus" || state.mode === "replay" ? state.selectedStar : null,
+urai-tier1/src/spatial/state/sceneStore.ts.bak.20260316-091147:56:      detailOpen: mode === "focus" || mode === "replay" ? state.detailOpen : false,
+urai-tier1/src/spatial/state/sceneStore.ts.bak.20260316-091147:58:        mode === "replay"
+urai-tier1/src/spatial/state/sceneStore.ts.bak.20260316-091147:60:          : state.mode === "replay" && mode !== "replay"
+urai-tier1/src/spatial/state/sceneStore.ts.bak.20260316-091147:79:      selectedStar: state.mode === "focus" || state.mode === "replay" ? state.selectedStar : null,
+urai-tier1/src/spatial/state/sceneStore.ts.bak.20260316-090832:54:      detailOpen: mode === "focus" || mode === "replay" ? state.detailOpen : false,
+urai-tier1/src/spatial/state/sceneStore.ts.bak.20260316-090832:56:        mode === "replay"
+urai-tier1/src/spatial/state/sceneStore.ts.bak.20260316-090832:58:          : state.mode === "replay" && mode !== "replay"
+urai-tier1/src/spatial/state/sceneStore.ts.bak.20260316-090832:77:      selectedStar: state.mode === "focus" || state.mode === "replay" ? state.selectedStar : null,
+urai-tier1/src/spatial/state/sceneStore.ts.bak.20260316-090458:50:      detailOpen: mode === "focus" || mode === "replay" ? state.detailOpen : false,
+urai-tier1/src/spatial/state/sceneStore.ts.bak.20260316-090458:52:        mode === "replay"
+urai-tier1/src/spatial/state/sceneStore.ts.bak.20260316-090458:54:          : state.mode === "replay" && mode !== "replay"
+urai-tier1/src/spatial/state/sceneStore.ts.bak.20260316-090458:73:      selectedStar: state.mode === "focus" || state.mode === "replay" ? state.selectedStar : null,
+urai-tier1/src/spatial/state/sceneStore.ts.bak.20260316-094613:55:      if (mode === "replay") {
+urai-tier1/src/spatial/state/sceneStore.ts.bak.20260316-094613:89:        state.mode === "focus" || state.mode === "replay"
+urai-tier1/src/spatial/state/sceneStore.ts.bak.20260316-093132:55:      if (mode === "replay") {
+urai-tier1/src/spatial/state/sceneStore.ts.bak.20260316-093132:89:        state.mode === "focus" || state.mode === "replay"
+urai-tier1/src/spatial/state/sceneStore.ts.bak.20260316-091318:54:      detailOpen: mode === "focus" || mode === "replay" ? state.detailOpen : false,
+urai-tier1/src/spatial/state/sceneStore.ts.bak.20260316-091318:56:        mode === "replay"
+urai-tier1/src/spatial/state/sceneStore.ts.bak.20260316-091318:58:          : state.mode === "replay" && mode !== "replay"
+urai-tier1/src/spatial/state/sceneStore.ts.bak.20260316-091318:78:        state.mode === "focus" || state.mode === "replay"
+urai-tier1/src/spatial/state/sceneStore.ts.bak.20260316-092402:40:      const enteringReplay = mode === "replay";
+urai-tier1/src/spatial/state/sceneStore.ts.bak.20260316-092402:41:      const leavingReplay = state.mode === "replay" && mode !== "replay";
+urai-tier1/src/spatial/state/sceneStore.ts:52:      if (mode === "replay") {
+urai-tier1/src/spatial/state/sceneStore.ts:86:        state.mode === "focus" || state.mode === "replay"
+urai-tier1/src/spatial/state/sceneStore.ts.bak.20260316-090559:50:      detailOpen: mode === "focus" || mode === "replay" ? state.detailOpen : false,
+urai-tier1/src/spatial/state/sceneStore.ts.bak.20260316-090559:52:        mode === "replay"
+urai-tier1/src/spatial/state/sceneStore.ts.bak.20260316-090559:54:          : state.mode === "replay" && mode !== "replay"
+urai-tier1/src/spatial/state/sceneStore.ts.bak.20260316-090559:73:      selectedStar: state.mode === "focus" || state.mode === "replay" ? state.selectedStar : null,
+urai-tier1/src/spatial/state/sceneStore.ts.bak.20260316-083813:38:        mode === "replay"
+urai-tier1/src/spatial/state/sceneStore.ts.bak.20260316-083813:40:          : state.mode === "replay" && mode !== "replay"
+urai-tier1/src/spatial/state/sceneStore.ts.bak.20260316-095834:52:      if (mode === "replay") {
+urai-tier1/src/spatial/state/sceneStore.ts.bak.20260316-095834:86:        state.mode === "focus" || state.mode === "replay"
+urai-tier1/src/spatial/state/sceneStore.ts.bak.20260316-091009:55:      detailOpen: mode === "focus" || mode === "replay" ? state.detailOpen : false,
+urai-tier1/src/spatial/state/sceneStore.ts.bak.20260316-091009:57:        mode === "replay"
+urai-tier1/src/spatial/state/sceneStore.ts.bak.20260316-091009:59:          : state.mode === "replay" && mode !== "replay"
+urai-tier1/src/spatial/state/sceneStore.ts.bak.20260316-091009:78:      selectedStar: state.mode === "focus" || state.mode === "replay" ? state.selectedStar : null,
+urai-tier1/src/spatial/state/sceneStore.ts.bak.20260316-084311:38:        mode === "replay"
+urai-tier1/src/spatial/state/sceneStore.ts.bak.20260316-084311:40:          : state.mode === "replay" && mode !== "replay"
+urai-tier1/src/spatial/state/sceneStore.ts.bak.20260316-085919:46:      detailOpen: mode === "focus" || mode === "replay" ? state.detailOpen : false,
+urai-tier1/src/spatial/state/sceneStore.ts.bak.20260316-085919:48:        mode === "replay"
+urai-tier1/src/spatial/state/sceneStore.ts.bak.20260316-085919:50:          : state.mode === "replay" && mode !== "replay"
+urai-tier1/src/spatial/state/sceneStore.ts.bak.20260316-085919:69:      selectedStar: state.mode === "focus" || state.mode === "replay" ? state.selectedStar : null,
+urai-tier1/src/spatial/state/sceneStore.ts.bak.20260316-092938:54:      if (mode === "replay") {
+urai-tier1/src/spatial/state/sceneStore.ts.bak.20260316-092938:88:        state.mode === "focus" || state.mode === "replay"
+urai-tier1/src/spatial/state/sceneStore.ts.bak.20260316-090356:50:      detailOpen: mode === "focus" || mode === "replay" ? state.detailOpen : false,
+urai-tier1/src/spatial/state/sceneStore.ts.bak.20260316-090356:52:        mode === "replay"
+urai-tier1/src/spatial/state/sceneStore.ts.bak.20260316-090356:54:          : state.mode === "replay" && mode !== "replay"
+urai-tier1/src/spatial/state/sceneStore.ts.bak.20260316-090356:73:      selectedStar: state.mode === "focus" || state.mode === "replay" ? state.selectedStar : null,
+urai-tier1/src/spatial/state/sceneStore.ts.bak.20260316-090453:50:      detailOpen: mode === "focus" || mode === "replay" ? state.detailOpen : false,
+urai-tier1/src/spatial/state/sceneStore.ts.bak.20260316-090453:52:        mode === "replay"
+urai-tier1/src/spatial/state/sceneStore.ts.bak.20260316-090453:54:          : state.mode === "replay" && mode !== "replay"
+urai-tier1/src/spatial/state/sceneStore.ts.bak.20260316-090453:73:      selectedStar: state.mode === "focus" || state.mode === "replay" ? state.selectedStar : null,
+urai-tier1/src/spatial/state/sceneStore.ts.bak.20260316-090023:47:      detailOpen: mode === "focus" || mode === "replay" ? state.detailOpen : false,
+urai-tier1/src/spatial/state/sceneStore.ts.bak.20260316-090023:49:        mode === "replay"
+urai-tier1/src/spatial/state/sceneStore.ts.bak.20260316-090023:51:          : state.mode === "replay" && mode !== "replay"
+urai-tier1/src/spatial/state/sceneStore.ts.bak.20260316-090023:70:      selectedStar: state.mode === "focus" || state.mode === "replay" ? state.selectedStar : null,
+urai-tier1/src/spatial/replay/replayBootstrap.tsx.bak.20260316-084634:208:      if (e.key === "Escape" && mode === "replay") {
+urai-tier1/src/spatial/replay/ReplayOverlay.tsx:209:      if (e.key === "Escape" && mode === "replay") {
+urai-tier1/src/spatial/replay/ReplayOverlay.tsx.bak.20260316-100541:173:      if (e.key === "Escape" && mode === "replay") {
+urai-tier1/src/spatial/replay/replayBootstrap.tsx.bak.20260316-084311:206:      if (e.key === "Escape" && mode === "replay") {
+urai-tier1/src/spatial/replay/replayBootstrap.tsx.bak.20260316-084311:212:        setMode("replay");
+urai-tier1/src/spatial/replay/replayBootstrap.tsx.bak.20260316-084311:256:            onClick={() => setMode("replay")}
+urai-tier1/src/spatial/replay/replayBootstrap.tsx.bak.20260316-083049:145:      if (e.key === "Escape" && mode === "replay") {
+urai-tier1/src/spatial/replay/replayBootstrap.tsx.bak.20260316-083049:149:        setMode("replay");
+urai-tier1/src/spatial/replay/replayBootstrap.tsx.bak.20260316-083049:164:            onClick={() => setMode("replay")}
+urai-tier1/src/spatial/replay/replayBootstrap.tsx.bak.20260316-085358:182:      if (e.key === "Escape" && mode === "replay") {
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-095740:83:    } else if ((mode === "focus" || mode === "replay") && selectedStar) {
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-095740:85:      target.set(sx * 0.28, sy + (mode === "replay" ? 8 : 12), sz + (mode === "replay" ? 18 : 30));
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-095740:107:    const base = mode === "replay" ? 34 : mode === "focus" ? 26 : 18;
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-095740:108:    const pulse = Math.sin(clock.elapsedTime * (mode === "replay" ? 1.8 : 1.1)) * 1.3;
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-095740:218:            mode === "replay"
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-095740:244:            {mode === "replay" && "Replay shell active"}
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-095740:255:          {mode === "replay" ? (
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-100209:83:    } else if ((mode === "focus" || mode === "replay") && selectedStar) {
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-100209:85:      target.set(sx * 0.28, sy + (mode === "replay" ? 8 : 12), sz + (mode === "replay" ? 18 : 30));
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-100209:107:    const base = mode === "replay" ? 34 : mode === "focus" ? 26 : 18;
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-100209:108:    const pulse = Math.sin(clock.elapsedTime * (mode === "replay" ? 1.8 : 1.1)) * 1.3;
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-100209:218:            mode === "replay"
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-100209:244:            {mode === "replay" && "Replay shell active"}
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-100209:255:          {mode === "replay" ? (
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-101647:88:    } else if ((mode === "focus" || mode === "replay") && selectedStar) {
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-101647:90:      target.set(sx * 0.28, sy + (mode === "replay" ? 8 : 12), sz + (mode === "replay" ? 18 : 30));
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-101647:112:    const base = mode === "replay" ? 34 : mode === "focus" ? 26 : 18;
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-101647:113:    const pulse = Math.sin(clock.elapsedTime * (mode === "replay" ? 1.8 : 1.1)) * 1.3;
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-101647:223:            mode === "replay"
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-101647:249:            {mode === "replay" && "Replay shell active"}
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-101647:260:          {mode === "replay" ? (
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-100111:83:    } else if ((mode === "focus" || mode === "replay") && selectedStar) {
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-100111:85:      target.set(sx * 0.28, sy + (mode === "replay" ? 8 : 12), sz + (mode === "replay" ? 18 : 30));
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-100111:107:    const base = mode === "replay" ? 34 : mode === "focus" ? 26 : 18;
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-100111:108:    const pulse = Math.sin(clock.elapsedTime * (mode === "replay" ? 1.8 : 1.1)) * 1.3;
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-100111:218:            mode === "replay"
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-100111:244:            {mode === "replay" && "Replay shell active"}
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-100111:255:          {mode === "replay" ? (
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-094614:82:    } else if ((mode === "focus" || mode === "replay") && selectedStar) {
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-094614:84:      target.set(sx * 0.28, sy + (mode === "replay" ? 8 : 12), sz + (mode === "replay" ? 18 : 30));
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-094614:106:    const base = mode === "replay" ? 34 : mode === "focus" ? 26 : 18;
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-094614:107:    const pulse = Math.sin(clock.elapsedTime * (mode === "replay" ? 1.8 : 1.1)) * 1.3;
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-094614:217:            mode === "replay"
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-094614:243:            {mode === "replay" && "Replay shell active"}
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-094614:254:          {mode === "replay" ? (
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-100824:83:    } else if ((mode === "focus" || mode === "replay") && selectedStar) {
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-100824:85:      target.set(sx * 0.28, sy + (mode === "replay" ? 8 : 12), sz + (mode === "replay" ? 18 : 30));
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-100824:107:    const base = mode === "replay" ? 34 : mode === "focus" ? 26 : 18;
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-100824:108:    const pulse = Math.sin(clock.elapsedTime * (mode === "replay" ? 1.8 : 1.1)) * 1.3;
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-100824:218:            mode === "replay"
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-100824:244:            {mode === "replay" && "Replay shell active"}
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-100824:255:          {mode === "replay" ? (
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-093132.bak.20260316-094616:82:    } else if ((mode === "focus" || mode === "replay") && selectedStar) {
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-093132.bak.20260316-094616:84:      target.set(sx * 0.28, sy + (mode === "replay" ? 8 : 12), sz + (mode === "replay" ? 18 : 30));
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-093132.bak.20260316-094616:106:    const base = mode === "replay" ? 34 : mode === "focus" ? 26 : 18;
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-093132.bak.20260316-094616:107:    const pulse = Math.sin(clock.elapsedTime * (mode === "replay" ? 1.8 : 1.1)) * 1.3;
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-093132.bak.20260316-094616:217:            mode === "replay"
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-093132.bak.20260316-094616:243:            {mode === "replay" && "Replay shell active"}
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-093132.bak.20260316-094616:254:          {mode === "replay" ? (
+urai-tier1/src/spatial/scene/SpatialScene.tsx:88:    } else if ((mode === "focus" || mode === "replay") && selectedStar) {
+urai-tier1/src/spatial/scene/SpatialScene.tsx:90:      target.set(sx * 0.28, sy + (mode === "replay" ? 8 : 12), sz + (mode === "replay" ? 18 : 30));
+urai-tier1/src/spatial/scene/SpatialScene.tsx:112:    const base = mode === "replay" ? 34 : mode === "focus" ? 26 : 18;
+urai-tier1/src/spatial/scene/SpatialScene.tsx:113:    const pulse = Math.sin(clock.elapsedTime * (mode === "replay" ? 1.8 : 1.1)) * 1.3;
+urai-tier1/src/spatial/scene/SpatialScene.tsx:223:            mode === "replay"
+urai-tier1/src/spatial/scene/SpatialScene.tsx:249:            {mode === "replay" && "Replay shell active"}
+urai-tier1/src/spatial/scene/SpatialScene.tsx:260:          {mode === "replay" ? (
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-095149:83:    } else if ((mode === "focus" || mode === "replay") && selectedStar) {
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-095149:85:      target.set(sx * 0.28, sy + (mode === "replay" ? 8 : 12), sz + (mode === "replay" ? 18 : 30));
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-095149:107:    const base = mode === "replay" ? 34 : mode === "focus" ? 26 : 18;
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-095149:108:    const pulse = Math.sin(clock.elapsedTime * (mode === "replay" ? 1.8 : 1.1)) * 1.3;
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-095149:218:            mode === "replay"
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-095149:244:            {mode === "replay" && "Replay shell active"}
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-095149:255:          {mode === "replay" ? (
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-093242.bak.20260316-094616:82:    } else if ((mode === "focus" || mode === "replay") && selectedStar) {
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-093242.bak.20260316-094616:84:      target.set(sx * 0.28, sy + (mode === "replay" ? 8 : 12), sz + (mode === "replay" ? 18 : 30));
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-093242.bak.20260316-094616:106:    const base = mode === "replay" ? 34 : mode === "focus" ? 26 : 18;
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-093242.bak.20260316-094616:107:    const pulse = Math.sin(clock.elapsedTime * (mode === "replay" ? 1.8 : 1.1)) * 1.3;
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-093242.bak.20260316-094616:217:            mode === "replay"
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-093242.bak.20260316-094616:243:            {mode === "replay" && "Replay shell active"}
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-093242.bak.20260316-094616:254:          {mode === "replay" ? (
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-093709:83:    } else if ((mode === "focus" || mode === "replay") && selectedStar) {
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-093709:85:      target.set(sx * 0.28, sy + (mode === "replay" ? 8 : 12), sz + (mode === "replay" ? 18 : 30));
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-093709:107:    const base = mode === "replay" ? 34 : mode === "focus" ? 26 : 18;
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-093709:108:    const pulse = Math.sin(clock.elapsedTime * (mode === "replay" ? 1.8 : 1.1)) * 1.3;
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-093709:218:            mode === "replay"
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-093709:244:            {mode === "replay" && "Replay shell active"}
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-093709:255:          {mode === "replay" ? (
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-093132:83:    } else if ((mode === "focus" || mode === "replay") && selectedStar) {
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-093132:85:      target.set(sx * 0.28, sy + (mode === "replay" ? 8 : 12), sz + (mode === "replay" ? 18 : 30));
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-093132:107:    const base = mode === "replay" ? 34 : mode === "focus" ? 26 : 18;
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-093132:108:    const pulse = Math.sin(clock.elapsedTime * (mode === "replay" ? 1.8 : 1.1)) * 1.3;
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-093132:218:            mode === "replay"
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-093132:244:            {mode === "replay" && "Replay shell active"}
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-093132:255:          {mode === "replay" ? (
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-095834:83:    } else if ((mode === "focus" || mode === "replay") && selectedStar) {
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-095834:85:      target.set(sx * 0.28, sy + (mode === "replay" ? 8 : 12), sz + (mode === "replay" ? 18 : 30));
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-095834:107:    const base = mode === "replay" ? 34 : mode === "focus" ? 26 : 18;
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-095834:108:    const pulse = Math.sin(clock.elapsedTime * (mode === "replay" ? 1.8 : 1.1)) * 1.3;
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-095834:218:            mode === "replay"
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-095834:244:            {mode === "replay" && "Replay shell active"}
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-095834:255:          {mode === "replay" ? (
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-095358:83:    } else if ((mode === "focus" || mode === "replay") && selectedStar) {
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-095358:85:      target.set(sx * 0.28, sy + (mode === "replay" ? 8 : 12), sz + (mode === "replay" ? 18 : 30));
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-095358:107:    const base = mode === "replay" ? 34 : mode === "focus" ? 26 : 18;
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-095358:108:    const pulse = Math.sin(clock.elapsedTime * (mode === "replay" ? 1.8 : 1.1)) * 1.3;
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-095358:218:            mode === "replay"
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-095358:244:            {mode === "replay" && "Replay shell active"}
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-095358:255:          {mode === "replay" ? (
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-101839:88:    } else if ((mode === "focus" || mode === "replay") && selectedStar) {
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-101839:90:      target.set(sx * 0.28, sy + (mode === "replay" ? 8 : 12), sz + (mode === "replay" ? 18 : 30));
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-101839:112:    const base = mode === "replay" ? 34 : mode === "focus" ? 26 : 18;
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-101839:113:    const pulse = Math.sin(clock.elapsedTime * (mode === "replay" ? 1.8 : 1.1)) * 1.3;
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-101839:223:            mode === "replay"
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-101839:249:            {mode === "replay" && "Replay shell active"}
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-101839:260:          {mode === "replay" ? (
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-094840:83:    } else if ((mode === "focus" || mode === "replay") && selectedStar) {
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-094840:85:      target.set(sx * 0.28, sy + (mode === "replay" ? 8 : 12), sz + (mode === "replay" ? 18 : 30));
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-094840:107:    const base = mode === "replay" ? 34 : mode === "focus" ? 26 : 18;
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-094840:108:    const pulse = Math.sin(clock.elapsedTime * (mode === "replay" ? 1.8 : 1.1)) * 1.3;
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-094840:218:            mode === "replay"
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-094840:244:            {mode === "replay" && "Replay shell active"}
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-094840:255:          {mode === "replay" ? (
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-093709.bak.20260316-094616:82:    } else if ((mode === "focus" || mode === "replay") && selectedStar) {
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-093709.bak.20260316-094616:84:      target.set(sx * 0.28, sy + (mode === "replay" ? 8 : 12), sz + (mode === "replay" ? 18 : 30));
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-093709.bak.20260316-094616:106:    const base = mode === "replay" ? 34 : mode === "focus" ? 26 : 18;
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-093709.bak.20260316-094616:107:    const pulse = Math.sin(clock.elapsedTime * (mode === "replay" ? 1.8 : 1.1)) * 1.3;
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-093709.bak.20260316-094616:217:            mode === "replay"
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-093709.bak.20260316-094616:243:            {mode === "replay" && "Replay shell active"}
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-093709.bak.20260316-094616:254:          {mode === "replay" ? (
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-101422:83:    } else if ((mode === "focus" || mode === "replay") && selectedStar) {
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-101422:85:      target.set(sx * 0.28, sy + (mode === "replay" ? 8 : 12), sz + (mode === "replay" ? 18 : 30));
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-101422:107:    const base = mode === "replay" ? 34 : mode === "focus" ? 26 : 18;
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-101422:108:    const pulse = Math.sin(clock.elapsedTime * (mode === "replay" ? 1.8 : 1.1)) * 1.3;
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-101422:218:            mode === "replay"
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-101422:244:            {mode === "replay" && "Replay shell active"}
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-101422:255:          {mode === "replay" ? (
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-093242:83:    } else if ((mode === "focus" || mode === "replay") && selectedStar) {
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-093242:85:      target.set(sx * 0.28, sy + (mode === "replay" ? 8 : 12), sz + (mode === "replay" ? 18 : 30));
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-093242:107:    const base = mode === "replay" ? 34 : mode === "focus" ? 26 : 18;
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-093242:108:    const pulse = Math.sin(clock.elapsedTime * (mode === "replay" ? 1.8 : 1.1)) * 1.3;
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-093242:218:            mode === "replay"
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-093242:244:            {mode === "replay" && "Replay shell active"}
+urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260316-093242:255:          {mode === "replay" ? (
+urai-tier1/src/spatial/components/CameraRig.tsx.bak.20260316-104428:53:    if ((mode === "focus" || mode === "replay") && selectedStar) {
+urai-tier1/src/spatial/components/CameraRig.tsx.bak.20260316-104428:63:    if (mode === "replay" && selectedStar) {
+urai-tier1/src/spatial/components/CameraRig.tsx.bak.20260316-104428:91:      mode === "replay" ? 2.2 : mode === "focus" ? 3.2 : 2.6;
+urai-tier1/src/spatial/components/CameraRig.tsx.bak.20260316-104428:93:      mode === "replay" ? 3.1 : mode === "focus" ? 4.2 : 3.0;
+urai-tier1/src/spatial/components/CameraRig.tsx.bak.20260316-095939:68:    if (mode === "replay" && selectedStar) {
+urai-tier1/src/spatial/components/CameraRig.tsx.bak.20260316-104556:53:    if ((mode === "focus" || mode === "replay") && selectedStar) {
+urai-tier1/src/spatial/components/CameraRig.tsx.bak.20260316-104556:61:    if (mode === "replay" && selectedStar) {
+urai-tier1/src/spatial/components/CameraRig.tsx.bak.20260316-104556:89:      mode === "replay" ? 2.2 : mode === "focus" ? 3.2 : 2.6;
+urai-tier1/src/spatial/components/CameraRig.tsx.bak.20260316-104556:91:      mode === "replay" ? 3.1 : mode === "focus" ? 4.2 : 3.0;
+urai-tier1/src/spatial/components/CameraRig.tsx.bak.20260316-104737:53:    if ((mode === "focus" || mode === "replay") && selectedStar) {
+urai-tier1/src/spatial/components/CameraRig.tsx.bak.20260316-104737:61:    if (mode === "replay" && selectedStar) {
+urai-tier1/src/spatial/components/CameraRig.tsx.bak.20260316-104737:89:      mode === "replay" ? 2.2 : mode === "focus" ? 3.2 : 2.6;
+urai-tier1/src/spatial/components/CameraRig.tsx.bak.20260316-104737:91:      mode === "replay" ? 3.1 : mode === "focus" ? 4.2 : 3.0;
+urai-tier1/src/spatial/components/CameraRig.tsx:53:    if ((mode === "focus" || mode === "replay") && selectedStar) {
+urai-tier1/src/spatial/components/CameraRig.tsx:61:    if (mode === "replay" && selectedStar) {
+urai-tier1/src/spatial/components/CameraRig.tsx:89:      mode === "replay" ? 2.2 : mode === "focus" ? 3.2 : 2.6;
+urai-tier1/src/spatial/components/CameraRig.tsx:91:      mode === "replay" ? 3.1 : mode === "focus" ? 4.2 : 3.0;
+urai-tier1/src/spatial/components/CameraRig.tsx.bak.20260316-083813:68:    if (mode === "replay" && selectedStar) {
+urai-tier1/src/spatial/components/CameraRig.tsx.bak.20260316-100025:53:    if ((mode === "focus" || mode === "replay") && selectedStar) {
+urai-tier1/src/spatial/components/CameraRig.tsx.bak.20260316-100025:63:    if (mode === "replay" && selectedStar) {
+urai-tier1/src/spatial/components/CameraRig.tsx.bak.20260316-100025:91:      mode === "replay" ? 2.2 : mode === "focus" ? 3.2 : 2.6;
+urai-tier1/src/spatial/components/CameraRig.tsx.bak.20260316-100025:93:      mode === "replay" ? 3.1 : mode === "focus" ? 4.2 : 3.0;
+urai-tier1/src/spatial/components/CameraRig.tsx.bak.20260316-104939:53:    if ((mode === "focus" || mode === "replay") && selectedStar) {
+urai-tier1/src/spatial/components/CameraRig.tsx.bak.20260316-104939:61:    if (mode === "replay" && selectedStar) {
+urai-tier1/src/spatial/components/CameraRig.tsx.bak.20260316-104939:89:      mode === "replay" ? 2.2 : mode === "focus" ? 3.2 : 2.6;
+urai-tier1/src/spatial/components/CameraRig.tsx.bak.20260316-104939:91:      mode === "replay" ? 3.1 : mode === "focus" ? 4.2 : 3.0;
