@@ -36,6 +36,7 @@ type SceneState = {
   enterHome: () => void;
   enterLifeMap: () => void;
   enterFocus: (star?: SelectedStar | null) => void;
+  focusStar: (star: SelectedStar | null) => void;
   enterReplay: () => void;
 
   exitReplayToFocus: () => void;
@@ -96,6 +97,17 @@ export const useSceneStore = create<SceneState>((set, get) => ({
     set((state) => {
       const nextStarRaw = star === undefined ? state.selectedStar : star;
       const nextStar = toCanonicalSelectedStar(nextStarRaw);
+      return {
+        mode: "focus",
+        selectedStar: nextStar,
+        detailOpen: !!nextStar,
+        replayEnteredAt: null,
+      };
+    }),
+
+  focusStar: (star) =>
+    set(() => {
+      const nextStar = toCanonicalSelectedStar(star);
       return {
         mode: "focus",
         selectedStar: nextStar,
