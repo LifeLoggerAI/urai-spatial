@@ -346,13 +346,13 @@ export function SpatialScene() {
         camera={{ position: [0, 120, 240], fov: 60 }}
         onPointerMissed={() => clearFocus()}
       >
-        {/* URAI_MINDMELT_SCENE */}
-        <fog attach="fog" args={["#040814", 30, 220]} />
-        <ambientLight intensity={0.34} />
-        <hemisphereLight args={["#7b8cff", "#050814", 0.48]} />
+        {/* URAI_SCENE_POLISH_V3 */}
+        <fog attach="fog" args={["#040814", 32, 220]} />
+        <ambientLight intensity={0.32} />
+        <hemisphereLight args={["#7b8cff", "#050814", 0.46]} />
         <mesh position={[0, -18, -170]}>
-          <planeGeometry args={[540, 300]} />
-          <meshBasicMaterial color="#071121" transparent opacity={0.28} depthWrite={false} />
+          <planeGeometry args={[520, 280]} />
+          <meshBasicMaterial color="#071121" transparent opacity={0.26} depthWrite={false} />
         </mesh>
         <Atmosphere />
         <CameraRig />

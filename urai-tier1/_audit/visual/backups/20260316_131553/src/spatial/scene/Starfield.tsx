@@ -18,8 +18,6 @@ export default function Starfield() {
       {stars.map((star) => {
         const isHovered = hovered === star.id;
         const isSelected = selectedStar?.id === star.id;
-        const isDimmed = !!selectedStar && !isSelected;
-        const drawScale = isSelected ? star.size * 1.55 : star.size;
         const baseScale = mode === "lifemap" ? 1.15 : 1;
         const scale = isSelected ? 1.7 : isHovered ? 1.35 : baseScale;
         const hitRadius = Math.max(star.size * (mode === "lifemap" ? 8 : 5), 3.2);

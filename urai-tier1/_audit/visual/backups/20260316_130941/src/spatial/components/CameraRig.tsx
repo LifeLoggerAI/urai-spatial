@@ -51,8 +51,8 @@ export default function CameraRig() {
     }
 
     if ((mode === "focus" || mode === "replay") && selectedStar) {
-      const focusLift = 1.18 + selectedStar.size * 0.11;
-      const focusDistance = 5.6 + Math.min(selectedStar.size * 0.30, 1.2);
+      const focusLift = 0.8 + selectedStar.size * 0.08;
+      const focusDistance = 4.2 + Math.min(selectedStar.size * 0.25, 0.7);
 
       desiredLook = selectedTarget.clone();
       desiredPos = selectedTarget.clone().add(new Vector3(1.1, focusLift, focusDistance));
@@ -64,7 +64,7 @@ export default function CameraRig() {
 
       const settle = Math.min(replayT / 1.4, 1);
       const orbitAngle = replayT * 0.58;
-      const baseRadius = 5.2 + Math.min(selectedStar.size * 0.36, 1.25);
+      const baseRadius = 4.0 + Math.min(selectedStar.size * 0.3, 0.8);
       const radius = baseRadius - settle * 0.4;
 
       const x = Math.cos(orbitAngle) * radius;

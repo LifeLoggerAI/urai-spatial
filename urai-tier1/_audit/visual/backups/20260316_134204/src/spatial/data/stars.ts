@@ -21,7 +21,7 @@ export type StarRecord = {
 
 const COLORS = ["#ffd27a", "#9ad1ff", "#ff9ac6", "#b7ffb0", "#ffffff"] as const;
 
-export function generateStars(count = 1000, seed = "urai-tier1"): StarRecord[] {
+export function generateStars(count = 900, seed = "urai-tier1"): StarRecord[] {
   const rng = seedrandom(seed);
 
   return Array.from({ length: count }, (_, i) => {
