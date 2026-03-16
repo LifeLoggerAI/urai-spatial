@@ -1,0 +1,79 @@
+"use client";
+
+import { Canvas } from "@react-three/fiber";
+import { Suspense } from "react";
+import Starfield from "@/spatial/scene/Starfield";
+import CameraRig from "@/spatial/components/CameraRig";
+import { useSceneStore } from "@/spatial/state/sceneStore";
+import MemorySphere from "@/spatial/scene/MemorySphere";
+
+export default function SpatialScene() {
+  const { mode, setMode } = useSceneStore();
+
+  return (
+    <div
+      style={{
+        width: "100vw",
+        height: "100vh",
+        background: "#000",
+        position: "relative",
+        overflow: "hidden",
+      }}
+    >
+      <Canvas camera={{ position: [0, 120, 240], fov: 60 }}>
+        <Suspense fallback={null}>
+          <ambientLight intensity={0.7} />
+          <pointLight position={[0, 40, 40]} intensity={1.2} />
+          <CameraRig />
+          <Starfield />
+          <MemorySphere />
+        </Suspense>
+      </Canvas>
+
+      <div
+        style={{
+          position: "absolute",
+          top: 20,
+          left: 20,
+          color: "white",
+          zIndex: 100,
+          display: "flex",
+          flexDirection: "column",
+          gap: 12,
+          fontFamily: "Arial, sans-serif",
+        }}
+      >
+        <h1 style={{ margin: 0, fontSize: 24, fontWeight: 600 }}>Current Mode: {mode}</h1>
+
+        <div style={{ display: "flex", gap: 8 }}>
+          <button
+            onClick={() => setMode("home")}
+            style={{
+              padding: "8px 12px",
+              borderRadius: 8,
+              border: "1px solid rgba(255,255,255,0.25)",
+              background: "rgba(255,255,255,0.08)",
+              color: "white",
+              cursor: "pointer",
+            }}
+          >
+            Home
+          </button>
+          <button
+            onClick={() => setMode("lifemap")}
+            style={{
+              padding: "8px 12px",
+              borderRadius: 8,
+              border: "1px solid rgba(255,255,255,0.25)",
+              background: "rgba(255,255,255,0.08)",
+              color: "white",
+              cursor: "pointer",
+            }}
+          >
+            LifeMap
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}

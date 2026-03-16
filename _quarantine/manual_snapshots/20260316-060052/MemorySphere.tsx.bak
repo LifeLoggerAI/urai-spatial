@@ -1,0 +1,10 @@
+"use client";
+
+export default function MemorySphere() {
+  return (
+    <mesh position={[0, 0, 0]}>
+      <sphereGeometry args={[18, 32, 32]} />
+      <meshStandardMaterial transparent opacity={0.12} />
+    </mesh>
+  );
+}

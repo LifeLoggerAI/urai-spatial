@@ -1,0 +1,7 @@
+./firebase.json
+./package.json
+./_quarantine/next.config.js.legacy
+./urai-tier1/next.config.js
+./urai-tier1/next.config.ts
+./urai-tier1/package.json
+./urai-tier1/tsconfig.json

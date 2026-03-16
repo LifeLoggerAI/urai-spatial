@@ -1,0 +1,69 @@
+export type MemoryMetadata = {
+  label: string;
+  signature: string;
+  chapter: string;
+  timeband: string;
+  summary: string;
+};
+
+const CHAPTERS = [
+  "Origins",
+  "Threshold",
+  "Drift",
+  "Recovery",
+  "Signal",
+  "Constellation",
+] as const;
+
+const TIMEBANDS = [
+  "Dawn Era",
+  "First Arc",
+  "Middle Arc",
+  "Late Arc",
+  "Night Archive",
+] as const;
+
+function signatureFromColor(color: string): string {
+  switch (color) {
+    case "#ffd27a":
+      return "Solar Memory";
+    case "#9ad1ff":
+      return "Blue Echo";
+    case "#ff9ac6":
+      return "Rose Thread";
+    case "#b7ffb0":
+      return "Verdant Pulse";
+    default:
+      return "White Signal";
+  }
+}
+
+function labelFromIndex(index: number): string {
+  return `Memory Node ${String(index + 1).padStart(3, "0")}`;
+}
+
+function chapterFromIndex(index: number): string {
+  return CHAPTERS[index % CHAPTERS.length];
+}
+
+function timebandFromIndex(index: number): string {
+  return TIMEBANDS[index % TIMEBANDS.length];
+}
+
+function summaryFrom(signature: string, chapter: string, timeband: string): string {
+  return `${signature} anchored in ${chapter}, indexed inside ${timeband}.`;
+}
+
+export function getMemoryMetadata(index: number, color: string): MemoryMetadata {
+  const signature = signatureFromColor(color);
+  const chapter = chapterFromIndex(index);
+  const timeband = timebandFromIndex(index);
+
+  return {
+    label: labelFromIndex(index),
+    signature,
+    chapter,
+    timeband,
+    summary: summaryFrom(signature, chapter, timeband),
+  };
+}

@@ -11,16 +11,16 @@ const HOME_LOOK = new Vector3(0, 0.35, 0);
 const MAP_POS = new Vector3(0, 2.8, 20.5);
 const MAP_LOOK = new Vector3(0, 0, 0);
 
-function smoothFactor(delta: number, speed: number) {
+function smooth(delta: number, speed: number) {
   return 1 - Math.exp(-delta * speed);
 }
 
 export default function CameraRig() {
-  const camera = useThree((s) => s.camera);
+  const camera = useThree((state) => state.camera);
 
-  const mode = useSceneStore((s) => s.mode);
-  const selectedStar = useSceneStore((s) => s.selectedStar);
-  const replayEnteredAt = useSceneStore((s) => s.replayEnteredAt);
+  const mode = useSceneStore((state) => state.mode);
+  const selectedStar = useSceneStore((state) => state.selectedStar);
+  const replayEnteredAt = useSceneStore((state) => state.replayEnteredAt);
 
   const posRef = useRef(new Vector3());
   const lookRef = useRef(new Vector3());
@@ -55,9 +55,7 @@ export default function CameraRig() {
       const focusDistance = 4.2 + Math.min(selectedStar.size * 0.25, 0.7);
 
       desiredLook = selectedTarget.clone();
-      desiredPos = selectedTarget
-        .clone()
-        .add(new Vector3(1.1, focusLift, focusDistance));
+      desiredPos = selectedTarget.clone().add(new Vector3(1.1, focusLift, focusDistance));
     }
 
     if (mode === "replay" && selectedStar) {
@@ -92,8 +90,8 @@ export default function CameraRig() {
     const lookSpeed =
       mode === "replay" ? 3.1 : mode === "focus" ? 4.2 : 3.0;
 
-    posRef.current.lerp(desiredPos, smoothFactor(delta, positionSpeed));
-    lookRef.current.lerp(desiredLook, smoothFactor(delta, lookSpeed));
+    posRef.current.lerp(desiredPos, smooth(delta, positionSpeed));
+    lookRef.current.lerp(desiredLook, smooth(delta, lookSpeed));
 
     camera.position.copy(posRef.current);
     camera.lookAt(lookRef.current);

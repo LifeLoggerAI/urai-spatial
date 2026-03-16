@@ -1,0 +1,19 @@
+"use client";
+
+import { useMemo } from "react";
+import { generateStars } from "@/spatial/data/stars";
+
+export default function Starfield() {
+  const stars = useMemo(() => generateStars(), []);
+
+  return (
+    <group>
+      {stars.map((star) => (
+        <mesh key={star.id} position={star.position}>
+          <sphereGeometry args={[star.size, 8, 8]} />
+          <meshBasicMaterial color={star.color} />
+        </mesh>
+      ))}
+    </group>
+  );
+}

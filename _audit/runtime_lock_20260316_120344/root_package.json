@@ -1,0 +1,27 @@
+{
+  "name": "urai-spatial-monorepo",
+  "private": true,
+  "scripts": {
+    "dev": "pnpm --filter urai-tier1 dev",
+    "build": "pnpm --filter urai-tier1 build",
+    "start": "pnpm --filter urai-tier1 start",
+    "lint": "pnpm --filter urai-tier1 lint",
+    "next-export": "pnpm --filter urai-tier1 next export",
+    "ship:check": "pnpm -r --if-present test"
+  },
+  "devDependencies": {
+    "@types/node": "^25.5.0",
+    "@types/react": "^19.2.14",
+    "pnpm": "^8.0.0",
+    "typescript": "^5.9.3"
+  },
+  "dependencies": {
+    "@react-three/drei": "^10.7.7",
+    "@react-three/fiber": "^9.5.0",
+    "@react-three/postprocessing": "^3.0.4",
+    "firebase-admin": "^13.7.0",
+    "postprocessing": "^6.38.3",
+    "three": "^0.183.2",
+    "zustand": "^5.0.11"
+  }
+}

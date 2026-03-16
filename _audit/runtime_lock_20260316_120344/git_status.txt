@@ -1,0 +1,13 @@
+ M urai-tier1/src/spatial/components/CameraRig.tsx
+?? CANONICAL_APP_PATH.md
+?? TIER1_STATUS.md
+?? _audit/runtime_lock_20260316_120043/
+?? _audit/runtime_lock_20260316_120344/
+?? _quarantine/engine_legacy/camera/
+?? _quarantine/engine_legacy/core/
+?? _quarantine/engine_legacy/scene/
+?? _quarantine/engine_legacy/shaders/
+?? _quarantine/engine_legacy/space/
+?? _quarantine/engine_legacy/visual/
+?? _quarantine/manual_snapshots/
+?? next

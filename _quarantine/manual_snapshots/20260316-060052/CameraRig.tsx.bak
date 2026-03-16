@@ -1,0 +1,24 @@
+"use client";
+
+import { useThree } from "@react-three/fiber";
+import { useEffect } from "react";
+import { useSceneStore } from "@/spatial/state/sceneStore";
+
+export default function CameraRig() {
+  const { camera } = useThree();
+  const mode = useSceneStore((s) => s.mode);
+
+  useEffect(() => {
+    if (mode === "home") {
+      camera.position.set(0, 120, 240);
+      camera.lookAt(0, 0, 0);
+    } else if (mode === "lifemap") {
+      camera.position.set(0, 250, 0);
+      camera.lookAt(0, 0, 0);
+    } else if (mode === "focus") {
+      // Placeholder for focus mode
+    }
+  }, [mode, camera]);
+
+  return null;
+}
