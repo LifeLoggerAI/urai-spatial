@@ -1,0 +1,2 @@
+package_json_updated=true
+scripts=build,dev,lint,smoke:route,start,typecheck,verify

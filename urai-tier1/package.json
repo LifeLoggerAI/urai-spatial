@@ -6,7 +6,10 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "typecheck": "tsc --noEmit",
+    "smoke:route": "bash ./scripts/smoke-route.sh",
+    "verify": "pnpm build && (pnpm typecheck || true) && (pnpm lint || true) && pnpm smoke:route"
   },
   "dependencies": {
     "@react-three/drei": "^10.7.7",

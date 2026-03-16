@@ -1,0 +1,5 @@
+
+> urai-tier1@0.1.0 smoke:route /home/user/urai-spatial/urai-tier1
+> bash ./scripts/smoke-route.sh
+
+smoke route ok
