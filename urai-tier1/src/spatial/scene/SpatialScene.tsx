@@ -15,6 +15,7 @@ import WebXREntryOverlay from "@/spatial/webxr/WebXREntryOverlay";
 import XRCameraRigOverlay from "@/spatial/xr-runtime/XRCameraRigOverlay";
 import ARPlacementOverlay from "@/spatial/ar/ARPlacementOverlay";
 import UnityAdapterOverlay from "@/spatial/unity/UnityAdapterOverlay";
+import XRInputOverlay from "@/spatial/input/XRInputOverlay";
 
 const shellButtonStyle: CSSProperties = {
   appearance: "none",
@@ -715,6 +716,7 @@ export default function SpatialScene() {
         <MemorySphere />
         <ReplayConstellation />
       </Canvas>
+        <XRInputOverlay />
         <UnityAdapterOverlay />
         <ARPlacementOverlay />
         <XRCameraRigOverlay />
