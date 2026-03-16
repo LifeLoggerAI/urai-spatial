@@ -1,0 +1,47 @@
+import type { SelectedStar } from "./sceneStore";
+
+export type SelectedStarNormalized = {
+  id: string;
+  position: [number, number, number];
+  color: string;
+  size: number;
+  title: string;
+  label: string;
+  summary: string;
+  detail: string;
+  signature: string;
+  chapter: string;
+  timeband: string;
+  dateLabel: string;
+  tags: string[];
+};
+
+export function normalizeSelectedStar(
+  selectedStar: SelectedStar | null
+): SelectedStarNormalized | null {
+  if (!selectedStar) return null;
+
+  const summary = selectedStar.summary ?? selectedStar.label;
+  const detail = selectedStar.detail ?? summary;
+  const dateLabel = selectedStar.dateLabel ?? selectedStar.timeband;
+  const tags =
+    selectedStar.tags && selectedStar.tags.length > 0
+      ? selectedStar.tags
+      : [selectedStar.chapter, selectedStar.timeband, selectedStar.signature].filter(Boolean);
+
+  return {
+    id: selectedStar.id,
+    position: selectedStar.position,
+    color: selectedStar.color,
+    size: selectedStar.size,
+    title: selectedStar.title,
+    label: selectedStar.label,
+    summary,
+    detail,
+    signature: selectedStar.signature,
+    chapter: selectedStar.chapter,
+    timeband: selectedStar.timeband,
+    dateLabel,
+    tags,
+  };
+}

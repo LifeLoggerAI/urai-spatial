@@ -433,7 +433,8 @@ export default function SpatialScene() {
           <Starfield />
           <MemorySphere />
         </Suspense>
-      </Canvas>
+            <ReplayOverlay />
+</Canvas>
 
       <div
         style={{
@@ -510,7 +511,6 @@ export default function SpatialScene() {
 
       <FocusPanel />
       <MemoryDetailModal />
-          <ReplayOverlay />
-</div>
+    </div>
   );
 }

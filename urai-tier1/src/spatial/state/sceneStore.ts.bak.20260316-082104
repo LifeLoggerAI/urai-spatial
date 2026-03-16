@@ -1,0 +1,40 @@
+import { create } from "zustand";
+
+export type SceneMode = "home" | "lifemap" | "focus" | "replay";
+
+export type SelectedStar = {
+  id: string;
+  position: [number, number, number];
+  color: string;
+  size: number;
+  title: string;
+  label: string;
+  signature: string;
+  chapter: string;
+  timeband: string;
+};
+
+type SceneState = {
+  mode: SceneMode;
+  selectedStar: SelectedStar | null;
+  detailOpen: boolean;
+  setMode: (mode: SceneMode) => void;
+  setSelectedStar: (star: SelectedStar | null) => void;
+  setDetailOpen: (open: boolean) => void;
+  clearFocus: () => void;
+};
+
+export const useSceneStore = create<SceneState>((set) => ({
+  mode: "home",
+  selectedStar: null,
+  detailOpen: false,
+  setMode: (mode) => set({ mode }),
+  setSelectedStar: (selectedStar) => set({ selectedStar }),
+  setDetailOpen: (detailOpen) => set({ detailOpen }),
+  clearFocus: () =>
+    set({
+      mode: "lifemap",
+      selectedStar: null,
+      detailOpen: false,
+    }),
+}));

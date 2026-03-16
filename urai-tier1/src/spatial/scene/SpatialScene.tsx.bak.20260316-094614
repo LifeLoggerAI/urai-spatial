@@ -1,5 +1,4 @@
 "use client";
-import { toCanonicalSelectedStar } from "../state/toCanonicalSelectedStar";
 
 import { Canvas, ThreeEvent, useFrame, useThree } from "@react-three/fiber";
 import { CSSProperties, useEffect, useMemo, useRef } from "react";

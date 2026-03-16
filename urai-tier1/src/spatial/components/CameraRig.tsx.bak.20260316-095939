@@ -1,0 +1,91 @@
+"use client";
+
+import { useEffect, useMemo, useRef } from "react";
+import { useFrame, useThree } from "@react-three/fiber";
+import { Vector3 } from "three";
+import { useSceneStore } from "../state/sceneStore";
+
+type AnyProps = Record<string, unknown>;
+
+const HOME_POS = new Vector3(0, 1.2, 14);
+const HOME_LOOK = new Vector3(0, 0.4, 0);
+
+const MAP_POS = new Vector3(0, 2.6, 20);
+const MAP_LOOK = new Vector3(0, 0, 0);
+
+export default function CameraRig(_props: AnyProps) {
+  const camera = useThree((s) => s.camera);
+
+  const mode = useSceneStore((s) => s.mode);
+  const selectedStar = useSceneStore((s) => s.selectedStar);
+  const replayEnteredAt = useSceneStore((s) => s.replayEnteredAt);
+
+  const lookRef = useRef(new Vector3(0, 0, 0));
+  const posRef = useRef(new Vector3(0, 0, 0));
+
+  const selectedTarget = useMemo(() => {
+    if (!selectedStar) return new Vector3(0, 0, 0);
+    return new Vector3(
+      selectedStar.position[0],
+      selectedStar.position[1],
+      selectedStar.position[2]
+    );
+  }, [selectedStar]);
+
+  useEffect(() => {
+    if (!camera.position.lengthSq()) {
+      camera.position.copy(HOME_POS);
+      camera.lookAt(HOME_LOOK);
+    }
+    posRef.current.copy(camera.position);
+    lookRef.current.copy(HOME_LOOK);
+  }, [camera]);
+
+  useFrame((state, delta) => {
+    const t = state.clock.elapsedTime;
+    const smooth = 1 - Math.exp(-delta * 3.5);
+
+    let desiredPos = HOME_POS.clone();
+    let desiredLook = HOME_LOOK.clone();
+
+    if (mode === "home") {
+      desiredPos = HOME_POS.clone();
+      desiredLook = HOME_LOOK.clone();
+    }
+
+    if (mode === "lifemap") {
+      desiredPos = MAP_POS.clone();
+      desiredLook = MAP_LOOK.clone();
+    }
+
+    if (mode === "focus" && selectedStar) {
+      desiredLook = selectedTarget.clone();
+
+      const focusOffset = new Vector3(0, 0.8, 4.6);
+      desiredPos = selectedTarget.clone().add(focusOffset);
+    }
+
+    if (mode === "replay" && selectedStar) {
+      desiredLook = selectedTarget.clone();
+
+      const entered = replayEnteredAt ?? Date.now();
+      const replayTime = Math.max(0, (Date.now() - entered) / 1000);
+      const orbit = replayTime * 0.7;
+
+      const radius = 3.8;
+      const x = Math.cos(orbit) * radius;
+      const z = Math.sin(orbit) * radius;
+      const y = 1.0 + Math.sin(replayTime * 0.65) * 0.35;
+
+      desiredPos = selectedTarget.clone().add(new Vector3(x, y, z));
+    }
+
+    posRef.current.lerp(desiredPos, smooth);
+    lookRef.current.lerp(desiredLook, smooth);
+
+    camera.position.copy(posRef.current);
+    camera.lookAt(lookRef.current);
+  });
+
+  return null;
+}

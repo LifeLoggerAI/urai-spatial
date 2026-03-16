@@ -1,0 +1,299 @@
+"use client";
+
+import React, { useEffect } from "react";
+import { createRoot, Root } from "react-dom/client";
+import { useSceneStore } from "../state/sceneStore";
+
+declare global {
+  interface Window {
+    __URAI_REPLAY_BOOTED__?: boolean;
+  }
+}
+
+const HOST_ID = "urai-replay-overlay-root";
+
+const shellStyle: React.CSSProperties = {
+  position: "fixed",
+  inset: 0,
+  zIndex: 70,
+  pointerEvents: "none",
+};
+
+const pillWrapStyle: React.CSSProperties = {
+  position: "fixed",
+  right: 24,
+  bottom: 24,
+  display: "flex",
+  gap: 12,
+  alignItems: "center",
+  pointerEvents: "none",
+};
+
+const pillButtonStyle: React.CSSProperties = {
+  pointerEvents: "auto",
+  border: "1px solid rgba(255,255,255,0.18)",
+  background: "rgba(10,12,18,0.82)",
+  color: "#ffffff",
+  borderRadius: 999,
+  padding: "10px 16px",
+  fontSize: 12,
+  letterSpacing: "0.12em",
+  textTransform: "uppercase",
+  cursor: "pointer",
+  backdropFilter: "blur(12px)",
+  WebkitBackdropFilter: "blur(12px)",
+  boxShadow: "0 10px 40px rgba(0,0,0,0.35)",
+};
+
+const overlayStyle: React.CSSProperties = {
+  position: "fixed",
+  inset: 0,
+  background: "rgba(2,4,10,0.72)",
+  display: "grid",
+  placeItems: "center",
+  pointerEvents: "auto",
+  padding: 24,
+};
+
+const panelStyle: React.CSSProperties = {
+  width: "min(680px, calc(100vw - 32px))",
+  borderRadius: 24,
+  border: "1px solid rgba(255,255,255,0.12)",
+  background:
+    "linear-gradient(180deg, rgba(16,20,30,0.96) 0%, rgba(8,10,16,0.96) 100%)",
+  color: "#ffffff",
+  boxShadow: "0 24px 80px rgba(0,0,0,0.45)",
+  overflow: "hidden",
+};
+
+const topStyle: React.CSSProperties = {
+  padding: "22px 24px 8px 24px",
+  borderBottom: "1px solid rgba(255,255,255,0.08)",
+};
+
+const metaStyle: React.CSSProperties = {
+  display: "flex",
+  flexWrap: "wrap",
+  gap: 8,
+  marginTop: 12,
+};
+
+const chipStyle: React.CSSProperties = {
+  border: "1px solid rgba(255,255,255,0.12)",
+  borderRadius: 999,
+  padding: "6px 10px",
+  fontSize: 11,
+  letterSpacing: "0.08em",
+  textTransform: "uppercase",
+  color: "rgba(255,255,255,0.82)",
+};
+
+const bodyStyle: React.CSSProperties = {
+  padding: 24,
+  display: "grid",
+  gap: 18,
+};
+
+const frameStyle: React.CSSProperties = {
+  minHeight: 220,
+  borderRadius: 18,
+  border: "1px solid rgba(255,255,255,0.10)",
+  background:
+    "radial-gradient(circle at 50% 30%, rgba(130,170,255,0.20), rgba(0,0,0,0) 40%), linear-gradient(180deg, rgba(255,255,255,0.04), rgba(255,255,255,0.01))",
+  display: "grid",
+  placeItems: "center",
+  textAlign: "center",
+  padding: 24,
+};
+
+const footerStyle: React.CSSProperties = {
+  display: "flex",
+  justifyContent: "space-between",
+  gap: 12,
+  padding: "0 24px 24px 24px",
+};
+
+function Button(
+  props: React.ButtonHTMLAttributes<HTMLButtonElement> & { quiet?: boolean }
+) {
+  const { quiet, style, ...rest } = props;
+  return (
+    <button
+      {...rest}
+      style={{
+        ...pillButtonStyle,
+        ...(quiet
+          ? {
+              background: "rgba(255,255,255,0.04)",
+              color: "rgba(255,255,255,0.90)",
+            }
+          : {}),
+        ...style,
+      }}
+    />
+  );
+}
+
+function ReplayHud() {
+  const mode = useSceneStore((s) => s.mode);
+  const selectedStar = useSceneStore((s) => s.selectedStar);
+  const setMode = useSceneStore((s) => s.setMode);
+  const clearFocus = useSceneStore((s) => s.clearFocus);
+
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape" && mode === "replay") {
+        setMode("focus");
+      }
+      if ((e.key === "r" || e.key === "R") && mode === "focus" && selectedStar) {
+        setMode("replay");
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [mode, selectedStar, setMode]);
+
+  if (!selectedStar) return null;
+
+  if (mode === "focus") {
+    return (
+      <div style={shellStyle}>
+        <div style={pillWrapStyle}>
+          <Button
+            aria-label="Replay selected star"
+            onClick={() => setMode("replay")}
+            title="Replay selected star"
+          >
+            Replay
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
+  if (mode !== "replay") return null;
+
+  return (
+    <div style={shellStyle}>
+      <div style={overlayStyle} onClick={() => setMode("focus")}>
+        <div style={panelStyle} onClick={(e) => e.stopPropagation()}>
+          <div style={topStyle}>
+            <div
+              style={{
+                fontSize: 11,
+                letterSpacing: "0.16em",
+                textTransform: "uppercase",
+                color: "rgba(255,255,255,0.62)",
+              }}
+            >
+              Replay
+            </div>
+            <div
+              style={{
+                fontSize: 28,
+                lineHeight: 1.1,
+                marginTop: 6,
+                fontWeight: 700,
+              }}
+            >
+              {selectedStar.title}
+            </div>
+            <div
+              style={{
+                marginTop: 8,
+                fontSize: 15,
+                lineHeight: 1.5,
+                color: "rgba(255,255,255,0.78)",
+              }}
+            >
+              {selectedStar.label}
+            </div>
+            <div style={metaStyle}>
+              <div style={chipStyle}>{selectedStar.chapter}</div>
+              <div style={chipStyle}>{selectedStar.timeband}</div>
+              <div style={chipStyle}>{selectedStar.signature}</div>
+            </div>
+          </div>
+
+          <div style={bodyStyle}>
+            <div style={frameStyle}>
+              <div>
+                <div
+                  style={{
+                    fontSize: 12,
+                    letterSpacing: "0.14em",
+                    textTransform: "uppercase",
+                    color: "rgba(255,255,255,0.56)",
+                    marginBottom: 14,
+                  }}
+                >
+                  Replay Slice
+                </div>
+                <div
+                  style={{
+                    fontSize: 34,
+                    lineHeight: 1.05,
+                    marginBottom: 10,
+                    color: selectedStar.color || "#ffffff",
+                    textShadow: "0 0 32px rgba(255,255,255,0.18)",
+                  }}
+                >
+                  {selectedStar.signature}
+                </div>
+                <div
+                  style={{
+                    fontSize: 16,
+                    lineHeight: 1.6,
+                    color: "rgba(255,255,255,0.82)",
+                    maxWidth: 520,
+                    margin: "0 auto",
+                  }}
+                >
+                  {selectedStar.title} • {selectedStar.chapter} • {selectedStar.timeband}
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div style={footerStyle}>
+            <Button quiet onClick={() => clearFocus()}>
+              Exit to LifeMap
+            </Button>
+            <Button onClick={() => setMode("focus")}>Back to Focus</Button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+let root: Root | null = null;
+
+function ensureHost() {
+  let host = document.getElementById(HOST_ID);
+  if (!host) {
+    host = document.createElement("div");
+    host.id = HOST_ID;
+    document.body.appendChild(host);
+  }
+  return host;
+}
+
+function boot() {
+  if (typeof window === "undefined") return;
+  if (window.__URAI_REPLAY_BOOTED__) return;
+  window.__URAI_REPLAY_BOOTED__ = true;
+  const host = ensureHost();
+  root = createRoot(host);
+  root.render(<ReplayHud />);
+}
+
+if (typeof window !== "undefined") {
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", boot, { once: true });
+  } else {
+    boot();
+  }
+}
+
+export {};

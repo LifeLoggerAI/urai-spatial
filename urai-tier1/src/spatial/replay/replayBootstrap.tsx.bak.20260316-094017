@@ -1,0 +1,45 @@
+"use client";
+
+import React from "react";
+import { createRoot, Root } from "react-dom/client";
+import { REPLAY_OVERLAY_HOST_ID } from "./replayConstants";
+import { ReplayOverlay } from "./ReplayOverlay";
+
+declare global {
+  interface Window {
+    __URAI_REPLAY_BOOTED__?: boolean;
+  }
+}
+
+const HOST_ID = REPLAY_OVERLAY_HOST_ID;
+
+let root: Root | null = null;
+
+function ensureHost() {
+  let host = document.getElementById(HOST_ID);
+  if (!host) {
+    host = document.createElement("div");
+    host.id = HOST_ID;
+    document.body.appendChild(host);
+  }
+  return host;
+}
+
+function boot() {
+  if (typeof window === "undefined") return;
+  if (window.__URAI_REPLAY_BOOTED__) return;
+  window.__URAI_REPLAY_BOOTED__ = true;
+  const host = ensureHost();
+  root = createRoot(host);
+  root.render(<ReplayOverlay />);
+}
+
+if (typeof window !== "undefined") {
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", boot, { once: true });
+  } else {
+    boot();
+  }
+}
+
+export {};

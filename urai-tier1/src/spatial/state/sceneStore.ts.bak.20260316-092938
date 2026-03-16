@@ -10,14 +10,17 @@ export type SelectedStar = {
   size: number;
   title: string;
   label: string;
-  summary: string;
-  detail: string;
-  transcript: string;
+
+  summary?: string;
+  detail?: string;
+  transcript?: string;
+
   signature: string;
   chapter: string;
   timeband: string;
-  dateLabel: string;
-  tags: string[];
+
+  dateLabel?: string;
+  tags?: string[];
 };
 
 type SceneState = {
@@ -33,7 +36,6 @@ type SceneState = {
   enterHome: () => void;
   enterLifeMap: () => void;
   enterFocus: (star?: SelectedStar | null) => void;
-  focusStar: (star: SelectedStar | null) => void;
   enterReplay: () => void;
 
   exitReplayToFocus: () => void;
@@ -94,17 +96,6 @@ export const useSceneStore = create<SceneState>((set, get) => ({
     set((state) => {
       const nextStarRaw = star === undefined ? state.selectedStar : star;
       const nextStar = toCanonicalSelectedStar(nextStarRaw);
-      return {
-        mode: "focus",
-        selectedStar: nextStar,
-        detailOpen: !!nextStar,
-        replayEnteredAt: null,
-      };
-    }),
-
-  focusStar: (star) =>
-    set(() => {
-      const nextStar = toCanonicalSelectedStar(star);
       return {
         mode: "focus",
         selectedStar: nextStar,

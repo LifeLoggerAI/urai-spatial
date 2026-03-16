@@ -10,14 +10,17 @@ export type SelectedStar = {
   size: number;
   title: string;
   label: string;
-  summary: string;
-  detail: string;
-  transcript: string;
+
+  summary?: string;
+  detail?: string;
+  transcript?: string;
+
   signature: string;
   chapter: string;
   timeband: string;
-  dateLabel: string;
-  tags: string[];
+
+  dateLabel?: string;
+  tags?: string[];
 };
 
 type SceneState = {

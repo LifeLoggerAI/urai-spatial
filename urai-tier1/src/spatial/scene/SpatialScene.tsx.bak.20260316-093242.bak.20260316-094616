@@ -1,5 +1,4 @@
 "use client";
-import { toCanonicalSelectedStar } from "../state/toCanonicalSelectedStar";
 
 import { Canvas, ThreeEvent, useFrame, useThree } from "@react-three/fiber";
 import { CSSProperties, useEffect, useMemo, useRef } from "react";
@@ -151,7 +150,7 @@ function SpatialStar({ star }: { star: SelectedStar }) {
   const onClick = (event: ThreeEvent<MouseEvent>) => {
     event.stopPropagation();
     if (mode === "home") enterLifeMap();
-    enterFocus(star);
+    focusStar(star);
   };
 
   return (
@@ -187,7 +186,7 @@ function Overlay() {
   const enterLifeMap = useSceneStore((state) => state.enterLifeMap);
   const clearFocus = useSceneStore((state) => state.clearFocus);
   const enterReplay = useSceneStore((state) => state.enterReplay);
-  const exitReplayToFocus = useSceneStore((state) => state.exitReplayToFocus);
+  const exitReplay = useSceneStore((state) => state.exitReplay);
 
   const status =
     mode === "home"
@@ -253,7 +252,7 @@ function Overlay() {
             <button style={shellButtonStyle} onClick={enterReplay}>Replay</button>
           ) : null}
           {mode === "replay" ? (
-            <button style={shellButtonStyle} onClick={exitReplayToFocus}>Exit Replay</button>
+            <button style={shellButtonStyle} onClick={exitReplay}>Exit Replay</button>
           ) : null}
         </div>
       </div>

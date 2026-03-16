@@ -105,7 +105,7 @@ function FocusPanel() {
       </div>
 
       <div style={{ marginTop: 12, fontSize: 13, opacity: 0.82, lineHeight: 1.5 }}>
-        {selectedStar.summary}
+        {selectedStar.summary ?? selectedStar.label}
       </div>
 
       <div
@@ -125,7 +125,7 @@ function FocusPanel() {
         <div>{selectedStar.timeband}</div>
 
         <div style={{ opacity: 0.65 }}>Era</div>
-        <div>{selectedStar.dateLabel}</div>
+        <div>{selectedStar.dateLabel ?? selectedStar.timeband}</div>
 
         <div style={{ opacity: 0.65 }}>Intensity</div>
         <div>{selectedStar.size.toFixed(2)}</div>
@@ -250,7 +250,7 @@ function MemoryDetailModal() {
             </div>
             <div style={{ marginTop: 6, fontSize: 18, fontWeight: 600 }}>{selectedStar.label}</div>
             <div style={{ marginTop: 6, fontSize: 13, opacity: 0.72 }}>
-              {selectedStar.signature} · {selectedStar.chapter} · {selectedStar.timeband} · {selectedStar.dateLabel}
+              {selectedStar.signature} · {selectedStar.chapter} · {selectedStar.timeband} · {selectedStar.dateLabel ?? selectedStar.timeband}
             </div>
           </div>
 
@@ -259,7 +259,7 @@ function MemoryDetailModal() {
               Summary
             </div>
             <div style={{ marginTop: 8, fontSize: 14, lineHeight: 1.7, opacity: 0.88 }}>
-              {selectedStar.summary}
+              {selectedStar.summary ?? selectedStar.label}
             </div>
           </div>
 
@@ -318,7 +318,7 @@ function MemoryDetailModal() {
               <div style={{ fontSize: 12, opacity: 0.64, textTransform: "uppercase", letterSpacing: "0.12em" }}>
                 Era
               </div>
-              <div style={{ marginTop: 8, fontSize: 16, fontWeight: 600 }}>{selectedStar.dateLabel}</div>
+              <div style={{ marginTop: 8, fontSize: 16, fontWeight: 600 }}>{selectedStar.dateLabel ?? selectedStar.timeband}</div>
             </div>
 
             <div
@@ -433,7 +433,8 @@ export default function SpatialScene() {
           <Starfield />
           <MemorySphere />
         </Suspense>
-      </Canvas>
+            <ReplayOverlay />
+</Canvas>
 
       <div
         style={{
@@ -510,7 +511,6 @@ export default function SpatialScene() {
 
       <FocusPanel />
       <MemoryDetailModal />
-          <ReplayOverlay />
-</div>
+    </div>
   );
 }

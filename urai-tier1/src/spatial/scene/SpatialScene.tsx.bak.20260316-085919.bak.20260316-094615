@@ -1,5 +1,4 @@
 "use client";
-import { toCanonicalSelectedStar } from "../state/toCanonicalSelectedStar";
 import { ReplayOverlay } from "../replay/ReplayOverlay";
 import { Canvas } from "@react-three/fiber";
 import { Suspense, useEffect } from "react";
@@ -433,7 +432,8 @@ export default function SpatialScene() {
           <Starfield />
           <MemorySphere />
         </Suspense>
-      </Canvas>
+            <ReplayOverlay />
+</Canvas>
 
       <div
         style={{
@@ -510,7 +510,6 @@ export default function SpatialScene() {
 
       <FocusPanel />
       <MemoryDetailModal />
-          <ReplayOverlay />
-</div>
+    </div>
   );
 }

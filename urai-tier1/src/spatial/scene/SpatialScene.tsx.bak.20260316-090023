@@ -105,7 +105,7 @@ function FocusPanel() {
       </div>
 
       <div style={{ marginTop: 12, fontSize: 13, opacity: 0.82, lineHeight: 1.5 }}>
-        {selectedStar.summary}
+        {selectedStar.summary ?? selectedStar.label}
       </div>
 
       <div
@@ -259,7 +259,7 @@ function MemoryDetailModal() {
               Summary
             </div>
             <div style={{ marginTop: 8, fontSize: 14, lineHeight: 1.7, opacity: 0.88 }}>
-              {selectedStar.summary}
+              {selectedStar.summary ?? selectedStar.label}
             </div>
           </div>
 
@@ -433,7 +433,8 @@ export default function SpatialScene() {
           <Starfield />
           <MemorySphere />
         </Suspense>
-      </Canvas>
+            <ReplayOverlay />
+</Canvas>
 
       <div
         style={{
@@ -510,7 +511,6 @@ export default function SpatialScene() {
 
       <FocusPanel />
       <MemoryDetailModal />
-          <ReplayOverlay />
-</div>
+    </div>
   );
 }

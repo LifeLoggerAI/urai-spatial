@@ -6,6 +6,7 @@ import { Suspense, useEffect } from "react";
 import Starfield from "@/spatial/scene/Starfield";
 import CameraRig from "@/spatial/components/CameraRig";
 import { useSceneStore } from "@/spatial/state/sceneStore";
+import { normalizeSelectedStar } from "../state/selectedStarContract";
 import MemorySphere from "@/spatial/scene/MemorySphere";
 
 function HudButton({
@@ -56,7 +57,8 @@ function TagPill({ label }: { label: string }) {
 
 function FocusPanel() {
   const mode = useSceneStore((s) => s.mode);
-  const selectedStar = useSceneStore((s) => s.selectedStar);
+  const selectedStarRaw = useSceneStore((s) => s.selectedStar);
+  const selectedStar = normalizeSelectedStar(selectedStarRaw);
   const setDetailOpen = useSceneStore((s) => s.setDetailOpen);
 
   if (mode !== "focus" || !selectedStar) return null;
@@ -163,7 +165,8 @@ function FocusPanel() {
 
 function MemoryDetailModal() {
   const detailOpen = useSceneStore((s) => s.detailOpen);
-  const selectedStar = useSceneStore((s) => s.selectedStar);
+  const selectedStarRaw = useSceneStore((s) => s.selectedStar);
+  const selectedStar = normalizeSelectedStar(selectedStarRaw);
   const setDetailOpen = useSceneStore((s) => s.setDetailOpen);
 
   if (!detailOpen || !selectedStar) return null;
@@ -433,7 +436,8 @@ export default function SpatialScene() {
           <Starfield />
           <MemorySphere />
         </Suspense>
-      </Canvas>
+            <ReplayOverlay />
+</Canvas>
 
       <div
         style={{
@@ -510,7 +514,6 @@ export default function SpatialScene() {
 
       <FocusPanel />
       <MemoryDetailModal />
-          <ReplayOverlay />
-</div>
+    </div>
   );
 }

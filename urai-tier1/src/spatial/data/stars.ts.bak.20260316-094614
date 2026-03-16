@@ -1,4 +1,3 @@
-import { toCanonicalSelectedStar } from "../state/toCanonicalSelectedStar";
 import seedrandom from "seedrandom";
 import { getMemoryMetadata } from "@/spatial/data/memoryDataset";
 
