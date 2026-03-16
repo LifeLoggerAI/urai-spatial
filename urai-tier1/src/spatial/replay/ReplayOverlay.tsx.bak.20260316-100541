@@ -12,7 +12,7 @@ const shellStyle: React.CSSProperties = {
   pointerEvents: "none",
 };
 
-const replayPillWrapStyle: React.CSSProperties = {
+const pillWrapStyle: React.CSSProperties = {
   position: "fixed",
   right: 24,
   bottom: 24,
@@ -24,25 +24,24 @@ const replayPillWrapStyle: React.CSSProperties = {
 
 const pillButtonStyle: React.CSSProperties = {
   pointerEvents: "auto",
-  border: "1px solid rgba(255,255,255,0.16)",
-  background: "rgba(8,10,16,0.70)",
+  border: "1px solid rgba(255,255,255,0.18)",
+  background: "rgba(10,12,18,0.82)",
   color: "#ffffff",
   borderRadius: 999,
   padding: "10px 16px",
-  fontSize: 11,
-  letterSpacing: "0.14em",
+  fontSize: 12,
+  letterSpacing: "0.12em",
   textTransform: "uppercase",
   cursor: "pointer",
-  backdropFilter: "blur(14px)",
-  WebkitBackdropFilter: "blur(14px)",
-  boxShadow: "0 14px 40px rgba(0,0,0,0.30)",
+  backdropFilter: "blur(12px)",
+  WebkitBackdropFilter: "blur(12px)",
+  boxShadow: "0 10px 40px rgba(0,0,0,0.35)",
 };
 
 const overlayStyle: React.CSSProperties = {
   position: "fixed",
   inset: 0,
-  background:
-    "radial-gradient(circle at 50% 28%, rgba(110,140,255,0.10), rgba(2,4,10,0) 32%), rgba(2,4,10,0.78)",
+  background: "rgba(2,4,10,0.76)",
   display: "grid",
   placeItems: "center",
   pointerEvents: "auto",
@@ -50,103 +49,68 @@ const overlayStyle: React.CSSProperties = {
 };
 
 const panelStyle: React.CSSProperties = {
-  width: "min(820px, calc(100vw - 32px))",
-  borderRadius: 28,
-  border: "1px solid rgba(255,255,255,0.10)",
+  width: "min(760px, calc(100vw - 32px))",
+  borderRadius: 24,
+  border: "1px solid rgba(255,255,255,0.12)",
   background:
-    "linear-gradient(180deg, rgba(14,18,28,0.90) 0%, rgba(8,10,16,0.88) 100%)",
+    "linear-gradient(180deg, rgba(16,20,30,0.96) 0%, rgba(8,10,16,0.96) 100%)",
   color: "#ffffff",
-  boxShadow: "0 24px 90px rgba(0,0,0,0.46)",
+  boxShadow: "0 24px 80px rgba(0,0,0,0.45)",
   overflow: "hidden",
-  backdropFilter: "blur(18px)",
-  WebkitBackdropFilter: "blur(18px)",
 };
 
-const headerStyle: React.CSSProperties = {
-  padding: "24px 26px 16px 26px",
+const topStyle: React.CSSProperties = {
+  padding: "22px 24px 16px 24px",
   borderBottom: "1px solid rgba(255,255,255,0.08)",
 };
 
-const eyebrowStyle: React.CSSProperties = {
-  fontSize: 11,
-  letterSpacing: "0.18em",
-  textTransform: "uppercase",
-  color: "rgba(255,255,255,0.54)",
-};
-
-const metaRowStyle: React.CSSProperties = {
+const metaStyle: React.CSSProperties = {
   display: "flex",
   flexWrap: "wrap",
   gap: 8,
-  marginTop: 14,
+  marginTop: 12,
 };
 
 const chipStyle: React.CSSProperties = {
-  border: "1px solid rgba(255,255,255,0.10)",
+  border: "1px solid rgba(255,255,255,0.12)",
   borderRadius: 999,
   padding: "6px 10px",
-  fontSize: 10,
-  letterSpacing: "0.10em",
+  fontSize: 11,
+  letterSpacing: "0.08em",
   textTransform: "uppercase",
-  color: "rgba(255,255,255,0.76)",
-  background: "rgba(255,255,255,0.02)",
+  color: "rgba(255,255,255,0.82)",
+};
+
+const bodyStyle: React.CSSProperties = {
+  padding: 24,
+  display: "grid",
+  gap: 18,
+};
+
+const frameStyle: React.CSSProperties = {
+  minHeight: 260,
+  borderRadius: 18,
+  border: "1px solid rgba(255,255,255,0.10)",
+  display: "grid",
+  placeItems: "center",
+  textAlign: "center",
+  padding: 24,
+  overflow: "hidden",
+  position: "relative",
 };
 
 const progressWrapStyle: React.CSSProperties = {
   display: "grid",
   gridTemplateColumns: "repeat(3, minmax(0, 1fr))",
   gap: 8,
-  marginTop: 18,
-};
-
-const bodyStyle: React.CSSProperties = {
-  padding: 26,
-  display: "grid",
-  gap: 18,
-};
-
-const frameStyle: React.CSSProperties = {
-  minHeight: 300,
-  borderRadius: 22,
-  border: "1px solid rgba(255,255,255,0.08)",
-  display: "grid",
-  placeItems: "center",
-  textAlign: "center",
-  padding: 28,
-  overflow: "hidden",
-  position: "relative",
-  background:
-    "linear-gradient(180deg, rgba(255,255,255,0.04), rgba(255,255,255,0.01))",
-};
-
-const frameGlowStyle: React.CSSProperties = {
-  position: "absolute",
-  inset: 0,
-  pointerEvents: "none",
-  opacity: 0.9,
-};
-
-const stepWrapStyle: React.CSSProperties = {
-  position: "relative",
-  zIndex: 1,
-  maxWidth: 620,
-};
-
-const controlsHintStyle: React.CSSProperties = {
-  display: "flex",
-  gap: 8,
-  flexWrap: "wrap",
-  color: "rgba(255,255,255,0.54)",
-  fontSize: 11,
-  letterSpacing: "0.08em",
-  textTransform: "uppercase",
+  marginTop: 14,
 };
 
 const footerStyle: React.CSSProperties = {
   display: "flex",
   justifyContent: "space-between",
   gap: 12,
-  padding: "0 26px 26px 26px",
+  padding: "0 24px 24px 24px",
   flexWrap: "wrap",
 };
 
@@ -168,7 +132,7 @@ function Button(
         ...pillButtonStyle,
         ...(quiet
           ? {
-              background: "rgba(255,255,255,0.03)",
+              background: "rgba(255,255,255,0.04)",
               color: "rgba(255,255,255,0.90)",
             }
           : {}),
@@ -244,7 +208,7 @@ export function ReplayOverlay() {
     if (mode !== "replay" || !playing || steps.length <= 1) return;
     const timer = window.setInterval(() => {
       setStepIndex((v) => (v >= steps.length - 1 ? 0 : v + 1));
-    }, REPLAY_STEP_MS + 150);
+    }, REPLAY_STEP_MS);
     return () => window.clearInterval(timer);
   }, [mode, playing, steps.length]);
 
@@ -253,7 +217,7 @@ export function ReplayOverlay() {
   if (mode === "focus") {
     return (
       <div style={shellStyle}>
-        <div style={replayPillWrapStyle}>
+        <div style={pillWrapStyle}>
           <Button
             aria-label="Replay selected star"
             onClick={() => enterReplay()}
@@ -274,10 +238,19 @@ export function ReplayOverlay() {
     <div style={shellStyle}>
       <div style={overlayStyle} onClick={() => exitReplayToFocus()}>
         <div style={panelStyle} onClick={(e) => e.stopPropagation()}>
-          <div style={headerStyle}>
-            <div style={eyebrowStyle}>Replay Sequence</div>
+          <div style={topStyle}>
+            <div
+              style={{
+                fontSize: 11,
+                letterSpacing: "0.16em",
+                textTransform: "uppercase",
+                color: "rgba(255,255,255,0.62)",
+              }}
+            >
+              Replay Sequence
+            </div>
 
-            <div style={metaRowStyle}>
+            <div style={metaStyle}>
               {meta.map((item) => (
                 <div key={item} style={chipStyle}>
                   {item}
@@ -291,12 +264,11 @@ export function ReplayOverlay() {
                 <div
                   key={s.id}
                   style={{
-                    height: 5,
+                    height: 6,
                     borderRadius: 999,
-                    background: idx <= stepIndex ? glow : "rgba(255,255,255,0.10)",
-                    opacity: idx === stepIndex ? 1 : 0.45,
-                    boxShadow: idx === stepIndex ? `0 0 22px ${glow}` : "none",
-                    transition: "all 180ms ease",
+                    background: idx <= stepIndex ? glow : "rgba(255,255,255,0.12)",
+                    opacity: idx === stepIndex ? 1 : 0.5,
+                    boxShadow: idx === stepIndex ? `0 0 24px ${glow}` : "none",
                   }}
                 />
               ))}
@@ -304,55 +276,51 @@ export function ReplayOverlay() {
           </div>
 
           <div style={bodyStyle}>
-            <div style={frameStyle}>
-              <div
-                style={{
-                  ...frameGlowStyle,
-                  background: `radial-gradient(circle at 50% 32%, ${glow}36, rgba(0,0,0,0) 42%)`,
-                }}
-              />
+            <div
+              style={{
+                ...frameStyle,
+                background: `radial-gradient(circle at 50% 30%, ${glow}33, rgba(0,0,0,0) 40%), linear-gradient(180deg, rgba(255,255,255,0.04), rgba(255,255,255,0.01))`,
+              }}
+            >
               <div
                 style={{
                   position: "absolute",
                   inset: 0,
-                  pointerEvents: "none",
                   background:
                     "linear-gradient(180deg, rgba(255,255,255,0.03), rgba(255,255,255,0))",
+                  pointerEvents: "none",
                 }}
               />
-              <div style={stepWrapStyle}>
+              <div style={{ position: "relative", zIndex: 1 }}>
                 <div
                   style={{
-                    fontSize: 11,
-                    letterSpacing: "0.16em",
+                    fontSize: 12,
+                    letterSpacing: "0.14em",
                     textTransform: "uppercase",
-                    color: "rgba(255,255,255,0.52)",
+                    color: "rgba(255,255,255,0.56)",
                     marginBottom: 14,
                   }}
                 >
                   {step?.eyebrow}
                 </div>
-
                 <div
                   style={{
-                    fontSize: 42,
-                    lineHeight: 1.02,
-                    marginBottom: 14,
+                    fontSize: 36,
+                    lineHeight: 1.05,
+                    marginBottom: 12,
                     color: glow,
-                    textShadow: `0 0 34px ${glow}44`,
-                    letterSpacing: "-0.02em",
+                    textShadow: `0 0 32px ${glow}55`,
                   }}
                 >
                   {step?.title}
                 </div>
-
                 <div
                   style={{
                     fontSize: 16,
-                    lineHeight: 1.75,
+                    lineHeight: 1.6,
                     color: "rgba(255,255,255,0.82)",
-                    margin: "0 auto",
                     maxWidth: 560,
+                    margin: "0 auto",
                   }}
                 >
                   {step?.body}
@@ -360,7 +328,17 @@ export function ReplayOverlay() {
               </div>
             </div>
 
-            <div style={controlsHintStyle}>
+            <div
+              style={{
+                display: "flex",
+                gap: 8,
+                flexWrap: "wrap",
+                color: "rgba(255,255,255,0.62)",
+                fontSize: 12,
+                letterSpacing: "0.06em",
+                textTransform: "uppercase",
+              }}
+            >
               <span>R from focus opens replay</span>
               <span>•</span>
               <span>Space pause/play</span>
@@ -382,11 +360,9 @@ export function ReplayOverlay() {
               >
                 Prev
               </Button>
-
               <Button quiet onClick={() => setPlaying((v) => !v)}>
                 {playing ? "Pause" : "Play"}
               </Button>
-
               <Button
                 quiet
                 onClick={() => {
