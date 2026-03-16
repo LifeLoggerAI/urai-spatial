@@ -9,6 +9,7 @@ import { SceneMode, useSceneStore } from "../state/sceneStore";
 import CinematicReplayOverlay from "@/spatial/cinematic/CinematicReplayOverlay";
 import LifeMapIntelligenceOverlay from "@/spatial/intelligence/LifeMapIntelligenceOverlay";
 import XRBridgeOverlay from "@/spatial/xr/XRBridgeOverlay";
+import ImmersiveContractOverlay from "@/spatial/immersive/ImmersiveContractOverlay";
 
 const shellButtonStyle: CSSProperties = {
   appearance: "none",
@@ -709,6 +710,7 @@ export default function SpatialScene() {
         <MemorySphere />
         <ReplayConstellation />
       </Canvas>
+        <ImmersiveContractOverlay />
         <XRBridgeOverlay />
         <LifeMapIntelligenceOverlay />
         <CinematicReplayOverlay />
