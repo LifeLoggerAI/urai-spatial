@@ -1,0 +1,22 @@
+[tier2-dev ac7fcce] release(urai-spatial): tier1 ship pack
+ 20 files changed, 318 insertions(+)
+ create mode 100644 _audit/ship_20260316_124727/commit.txt
+ create mode 100644 _audit/ship_20260316_124727/git_status_pre_commit.txt
+ create mode 100644 _audit/ship_20260316_124727/local_preview.log
+ create mode 100644 _audit/ship_20260316_124727/local_preview.pid
+ create mode 100644 _audit/ship_20260316_124727/local_preview_home.html
+ create mode 100644 _audit/ship_20260316_124727/local_preview_status.txt
+ create mode 100644 _audit/ship_20260316_124727/local_urls.txt
+ create mode 100644 _audit/ship_20260316_124727/tags_tail.txt
+ create mode 100644 _audit/ship_20260316_124845/branch.txt
+ create mode 100644 _audit/ship_20260316_124845/git_log_last20.txt
+ create mode 100644 _audit/ship_20260316_124845/git_status_before.txt
+ create mode 100644 _audit/ship_20260316_124845/repo_root.txt
+ create mode 100644 _audit/ship_20260316_124845/verify.txt
+ create mode 100644 _audit/ship_20260316_124943/HOSTED_QA.md
+ create mode 100644 _audit/ship_20260316_124943/branch.txt
+ create mode 100644 _audit/ship_20260316_124943/git_log_last20.txt
+ create mode 100644 _audit/ship_20260316_124943/git_status_before.txt
+ create mode 100644 _audit/ship_20260316_124943/repo_root.txt
+ create mode 100644 _audit/ship_20260316_124943/verify.txt
+ create mode 100644 _audit/ship_20260316_124943/verify_status.txt

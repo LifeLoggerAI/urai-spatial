@@ -2,3 +2,13 @@ node_modules
 node_modules
 .next
 apps/**/.next
+firebase-debug.log
+.firebase/
+.DS_Store
+
+# local preview transient files
+_audit/**/local_preview.pid
+_audit/**/local_preview.log
+_audit/**/local_preview_home.html
+_audit/**/local_urls.txt
+_audit/**/local_preview_status.txt

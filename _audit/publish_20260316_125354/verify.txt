@@ -1,0 +1,78 @@
+
+> urai-tier1@0.1.0 verify /home/user/urai-spatial/urai-tier1
+> pnpm build && (pnpm typecheck || true) && (pnpm lint || true) && pnpm smoke:route
+
+
+> urai-tier1@0.1.0 build /home/user/urai-spatial/urai-tier1
+> next build
+
+▲ Next.js 16.1.6 (Turbopack)
+
+  Creating an optimized production build ...
+✓ Compiled successfully in 25.5s
+  Running TypeScript ...
+  Collecting page data using 1 worker ...
+  Generating static pages using 1 worker (0/4) ...
+  Generating static pages using 1 worker (1/4) 
+  Generating static pages using 1 worker (2/4) 
+  Generating static pages using 1 worker (3/4) 
+✓ Generating static pages using 1 worker (4/4) in 340.3ms
+  Finalizing page optimization ...
+
+Route (app)
+┌ ○ /
+└ ○ /_not-found
+
+
+○  (Static)  prerendered as static content
+
+
+> urai-tier1@0.1.0 typecheck /home/user/urai-spatial/urai-tier1
+> tsc --noEmit
+
+
+> urai-tier1@0.1.0 lint /home/user/urai-spatial/urai-tier1
+> eslint
+
+
+/home/user/urai-spatial/urai-tier1/src/spatial/data/memoryDataset.ts
+  1:10  warning  'toCanonicalSelectedStar' is defined but never used  @typescript-eslint/no-unused-vars
+
+/home/user/urai-spatial/urai-tier1/src/spatial/data/stars.ts
+  1:10  warning  'toCanonicalSelectedStar' is defined but never used  @typescript-eslint/no-unused-vars
+
+/home/user/urai-spatial/urai-tier1/src/spatial/replay/ReplayOverlay.tsx
+  203:5  error  Error: Calling setState synchronously within an effect can trigger cascading renders
+
+Effects are intended to synchronize state between React and external systems such as manually updating the DOM, state management libraries, or other platform APIs. In general, the body of an effect should do one or both of the following:
+* Update external systems with the latest state from React.
+* Subscribe for updates from some external system, calling setState in a callback function when external state changes.
+
+Calling setState synchronously within an effect body causes cascading renders that can hurt performance, and is not recommended. (https://react.dev/learn/you-might-not-need-an-effect).
+
+/home/user/urai-spatial/urai-tier1/src/spatial/replay/ReplayOverlay.tsx:203:5
+  201 |
+  202 |   useEffect(() => {
+> 203 |     setStepIndex(0);
+      |     ^^^^^^^^^^^^ Avoid calling setState() directly within an effect
+  204 |     setPlaying(true);
+  205 |   }, [selectedStar?.id, mode]);
+  206 |  react-hooks/set-state-in-effect
+
+/home/user/urai-spatial/urai-tier1/src/spatial/scene/SpatialScene.tsx
+   2:10  warning  'toCanonicalSelectedStar' is defined but never used  @typescript-eslint/no-unused-vars
+  12:7   warning  'STAR_LABELS' is assigned a value but never used     @typescript-eslint/no-unused-vars
+  13:7   warning  'STAR_CHAPTERS' is assigned a value but never used   @typescript-eslint/no-unused-vars
+  14:7   warning  'STAR_TIMEBANDS' is assigned a value but never used  @typescript-eslint/no-unused-vars
+
+/home/user/urai-spatial/urai-tier1/src/spatial/scene/Starfield.tsx
+  2:10  warning  'toCanonicalSelectedStar' is defined but never used  @typescript-eslint/no-unused-vars
+
+✖ 8 problems (1 error, 7 warnings)
+
+ ELIFECYCLE  Command failed with exit code 1.
+
+> urai-tier1@0.1.0 smoke:route /home/user/urai-spatial/urai-tier1
+> bash ./scripts/smoke-route.sh
+
+smoke route ok
