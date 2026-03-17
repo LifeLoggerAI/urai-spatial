@@ -29,6 +29,7 @@ import StoryArcOverlay from "@/spatial/storyarc/StoryArcOverlay";
 import EraCompareOverlay from "@/spatial/era/EraCompareOverlay";
 import SeasonalCycleOverlay from "@/spatial/seasonal/SeasonalCycleOverlay";
 import NarratorOrchestrationOverlay from "@/spatial/narrator/NarratorOrchestrationOverlay";
+import WebXRRendererHandoffOverlay from "@/spatial/xr-renderer/WebXRRendererHandoffOverlay";
 
 const shellButtonStyle: CSSProperties = {
   appearance: "none",
@@ -729,6 +730,7 @@ export default function SpatialScene() {
         <MemorySphere />
         <ReplayConstellation />
       </Canvas>
+        <WebXRRendererHandoffOverlay />
         <NarratorOrchestrationOverlay />
         <SeasonalCycleOverlay />
         <EraCompareOverlay />
@@ -769,3 +771,41 @@ export default function SpatialScene() {
     </main>
   );
 }
+
+
+function XrSessionBridge() {
+  const gl = useThree((s) => s.gl as any);
+  const setPresenting = useXrSessionStore((s) => s.setPresenting);
+  const setHasHeadsetPose = useXrSessionStore((s) => s.setHasHeadsetPose);
+
+  useEffect(() => {
+    const xr = gl?.xr;
+    if (!xr) return;
+
+    const sync = () => {
+      const presenting = !!xr.isPresenting;
+      setPresenting(presenting);
+      setHasHeadsetPose(presenting);
+    };
+
+    sync();
+
+    const onStart = () => sync();
+    const onEnd = () => {
+      setPresenting(false);
+      setHasHeadsetPose(false);
+    };
+
+    xr.addEventListener?.("sessionstart", onStart);
+    xr.addEventListener?.("sessionend", onEnd);
+
+    return () => {
+      xr.removeEventListener?.("sessionstart", onStart);
+      xr.removeEventListener?.("sessionend", onEnd);
+    };
+  }, [gl, setHasHeadsetPose, setPresenting]);
+
+  return null;
+}
+// __URAI_XR_SESSION_BRIDGE__
+
