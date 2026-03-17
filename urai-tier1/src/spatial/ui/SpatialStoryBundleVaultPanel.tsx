@@ -140,7 +140,12 @@ export default function SpatialStoryBundleVaultPanel() {
         Math.random().toString(36).slice(2) +
         "_" +
         Date.now().toString(36),
-      label: generatedBundle.title,
+      label:
+        ((generatedBundle as { title?: string; label?: string; name?: string; id?: string }).title ??
+          (generatedBundle as { title?: string; label?: string; name?: string; id?: string }).label ??
+          (generatedBundle as { title?: string; label?: string; name?: string; id?: string }).name ??
+          (generatedBundle as { title?: string; label?: string; name?: string; id?: string }).id ??
+          "Generated Bundle"),
       storedAt: new Date().toISOString(),
       source: "generated",
       bundle: generatedBundle,
@@ -164,7 +169,12 @@ export default function SpatialStoryBundleVaultPanel() {
         Math.random().toString(36).slice(2) +
         "_" +
         Date.now().toString(36),
-      label: imported.title,
+      label:
+        ((imported as { title?: string; label?: string; name?: string; id?: string }).title ??
+          (imported as { title?: string; label?: string; name?: string; id?: string }).label ??
+          (imported as { title?: string; label?: string; name?: string; id?: string }).name ??
+          (imported as { title?: string; label?: string; name?: string; id?: string }).id ??
+          "Imported Bundle"),
       storedAt: new Date().toISOString(),
       source: "imported",
       bundle: imported,
