@@ -1,4 +1,5 @@
 "use client";
+import SpatialCuratedDeckRecoveryGatePanel from "@/spatial/ui/SpatialCuratedDeckRecoveryGatePanel";
 import SpatialCuratedDeckIncidentResponsePanel from "@/spatial/ui/SpatialCuratedDeckIncidentResponsePanel";
 import SpatialCuratedDeckBreachWatchPanel from "@/spatial/ui/SpatialCuratedDeckBreachWatchPanel";
 import SpatialCuratedDeckSlaPanel from "@/spatial/ui/SpatialCuratedDeckSlaPanel";
@@ -818,6 +819,7 @@ export default function SpatialScene() {
       <SpatialCuratedDeckSlaPanel />
       <SpatialCuratedDeckBreachWatchPanel />
       <SpatialCuratedDeckIncidentResponsePanel />
+      <SpatialCuratedDeckRecoveryGatePanel />
       <Canvas
         camera={{ position: [0, 6, 30], fov: 42, near: 0.1, far: 200 }}
         dpr={[1, 2]}
