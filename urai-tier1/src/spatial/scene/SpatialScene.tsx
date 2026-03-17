@@ -1,64 +1,13 @@
 "use client";
-import SpatialCuratedDeckDestructionAuthorizationPanel from "@/spatial/ui/SpatialCuratedDeckDestructionAuthorizationPanel";
-import SpatialCuratedDeckDestructionExecutionGatePanel from "@/spatial/ui/SpatialCuratedDeckDestructionExecutionGatePanel";
-import SpatialCuratedDeckRetentionHorizonPanel from "@/spatial/ui/SpatialCuratedDeckRetentionHorizonPanel";
-import SpatialCuratedDeckExpiryGovernancePanel from "@/spatial/ui/SpatialCuratedDeckExpiryGovernancePanel";
-import SpatialCuratedDeckPurgeReadinessPanel from "@/spatial/ui/SpatialCuratedDeckPurgeReadinessPanel";
-import SpatialCuratedDeckRetentionLifecyclePanel from "@/spatial/ui/SpatialCuratedDeckRetentionLifecyclePanel";
-import SpatialCuratedDeckReopenWatchPanel from "@/spatial/ui/SpatialCuratedDeckReopenWatchPanel";
-import SpatialCuratedDeckArchiveDispositionPanel from "@/spatial/ui/SpatialCuratedDeckArchiveDispositionPanel";
-import SpatialCuratedDeckClosureCertificatePanel from "@/spatial/ui/SpatialCuratedDeckClosureCertificatePanel";
-import SpatialCuratedDeckRecoveryGatePanel from "@/spatial/ui/SpatialCuratedDeckRecoveryGatePanel";
-import SpatialCuratedDeckIncidentResponsePanel from "@/spatial/ui/SpatialCuratedDeckIncidentResponsePanel";
-import SpatialCuratedDeckBreachWatchPanel from "@/spatial/ui/SpatialCuratedDeckBreachWatchPanel";
-import SpatialCuratedDeckSlaPanel from "@/spatial/ui/SpatialCuratedDeckSlaPanel";
-import SpatialCuratedDeckServiceWindowPanel from "@/spatial/ui/SpatialCuratedDeckServiceWindowPanel";
-import SpatialCuratedDeckSchedulePanel from "@/spatial/ui/SpatialCuratedDeckSchedulePanel";
-import SpatialCuratedDeckQueuePanel from "@/spatial/ui/SpatialCuratedDeckQueuePanel";
-import SpatialCuratedDeckDispatchPanel from "@/spatial/ui/SpatialCuratedDeckDispatchPanel";
-import SpatialCuratedDeckReviewTicketPanel from "@/spatial/ui/SpatialCuratedDeckReviewTicketPanel";
-import SpatialCuratedDeckActionPanel from "@/spatial/ui/SpatialCuratedDeckActionPanel";
-import SpatialCuratedDeckVerdictPanel from "@/spatial/ui/SpatialCuratedDeckVerdictPanel";
-import SpatialCuratedDeckAnomalyPanel from "@/spatial/ui/SpatialCuratedDeckAnomalyPanel";
-import SpatialCuratedDeckDivergencePanel from "@/spatial/ui/SpatialCuratedDeckDivergencePanel";
-import SpatialCuratedDeckConsensusPanel from "@/spatial/ui/SpatialCuratedDeckConsensusPanel";
-import SpatialCuratedDeckAnchorPanel from "@/spatial/ui/SpatialCuratedDeckAnchorPanel";
-import SpatialCuratedDeckDriftPanel from "@/spatial/ui/SpatialCuratedDeckDriftPanel";
-import SpatialCuratedDeckStabilityPanel from "@/spatial/ui/SpatialCuratedDeckStabilityPanel";
-import SpatialCuratedDeckCohortPanel from "@/spatial/ui/SpatialCuratedDeckCohortPanel";
-import SpatialCuratedDeckNeighborDiffPanel from "@/spatial/ui/SpatialCuratedDeckNeighborDiffPanel";
-import SpatialCuratedDeckLineagePanel from "@/spatial/ui/SpatialCuratedDeckLineagePanel";
-import SpatialCuratedDeckChangeLedgerPanel from "@/spatial/ui/SpatialCuratedDeckChangeLedgerPanel";
-import SpatialCuratedDeckDiffPanel from "@/spatial/ui/SpatialCuratedDeckDiffPanel";
-import SpatialCuratedDeckVaultPanel from "@/spatial/ui/SpatialCuratedDeckVaultPanel";
 import SpatialCuratedDeckVaultBootstrap from "@/spatial/curation/SpatialCuratedDeckVaultBootstrap";
-import SpatialCuratedDeckImportPanel from "@/spatial/ui/SpatialCuratedDeckImportPanel";
-import SpatialCuratedDeckExportPanel from "@/spatial/ui/SpatialCuratedDeckExportPanel";
-import SpatialStoryReviewDeckPanel from "@/spatial/ui/SpatialStoryReviewDeckPanel";
-import SpatialBundleLineagePanel from "@/spatial/ui/SpatialBundleLineagePanel";
-import SpatialStoryBundleDiffPanel from "@/spatial/ui/SpatialStoryBundleDiffPanel";
-import SpatialStoryBundleVaultPanel from "@/spatial/ui/SpatialStoryBundleVaultPanel";
 import SpatialStoryBundleVaultBootstrap from "@/spatial/vault/SpatialStoryBundleVaultBootstrap";
-import SpatialStoryBundleImportPanel from "@/spatial/ui/SpatialStoryBundleImportPanel";
-import SpatialStoryBundlePanel from "@/spatial/ui/SpatialStoryBundlePanel";
-import SpatialSeasonalArcPanel from "@/spatial/ui/SpatialSeasonalArcPanel";
 import SpatialSeasonalArcBootstrap from "@/spatial/seasonal/SpatialSeasonalArcBootstrap";
-import SpatialArcPanel from "@/spatial/ui/SpatialArcPanel";
 import SpatialArcBootstrap from "@/spatial/arcs/SpatialArcBootstrap";
-import SpatialVoicePlaybackPanel from "@/spatial/ui/SpatialVoicePlaybackPanel";
-import SpatialNarratorExportPanel from "@/spatial/ui/SpatialNarratorExportPanel";
-import SpatialTimelineLensPanel from "@/spatial/ui/SpatialTimelineLensPanel";
 import SpatialLensBootstrap from "@/spatial/lenses/SpatialLensBootstrap";
-import SpatialComparePanel from "@/spatial/ui/SpatialComparePanel";
 import SpatialCompareBootstrap from "@/spatial/compare/SpatialCompareBootstrap";
-import SpatialAccountPanel from "@/spatial/ui/SpatialAccountPanel";
 import SpatialAccountBootstrap from "@/spatial/account/SpatialAccountBootstrap";
-import SpatialReleasePanel from "@/spatial/ui/SpatialReleasePanel";
 import SpatialReleaseBootstrap from "@/spatial/release/SpatialReleaseBootstrap";
-import SpatialTelemetryPanel from "@/spatial/ui/SpatialTelemetryPanel";
-import SpatialPreferencesPanel from "@/spatial/ui/SpatialPreferencesPanel";
 import SpatialSettingsBootstrap from "@/spatial/settings/SpatialSettingsBootstrap";
-import SpatialImportExportPanel from "@/spatial/ui/SpatialImportExportPanel";
 import SpatialAnalyticsBridge from "@/spatial/telemetry/SpatialAnalyticsBridge";
 import SpatialPersistenceBridge from "@/spatial/persistence/SpatialPersistenceBridge";
 import XrLocomotionRuntime from "@/spatial/xr/XrLocomotionRuntime";
@@ -778,66 +727,15 @@ export default function SpatialScene() {
           "radial-gradient(1200px 700px at 50% -10%, rgba(91,115,191,0.16), transparent 56%), linear-gradient(180deg, #0a1020 0%, #04060b 48%, #020307 100%)",
       }}
     >
-      <SpatialImportExportPanel />
       <SpatialSettingsBootstrap />
-      <SpatialPreferencesPanel />
-      <SpatialTelemetryPanel />
       <SpatialReleaseBootstrap />
-      <SpatialReleasePanel />
       <SpatialAccountBootstrap />
-      <SpatialAccountPanel />
       <SpatialCompareBootstrap />
-      <SpatialComparePanel />
       <SpatialLensBootstrap />
-      <SpatialTimelineLensPanel />
-      <SpatialNarratorExportPanel />
-      <SpatialVoicePlaybackPanel />
       <SpatialArcBootstrap />
-      <SpatialArcPanel />
       <SpatialSeasonalArcBootstrap />
-      <SpatialSeasonalArcPanel />
-      <SpatialStoryBundlePanel />
-      <SpatialStoryBundleImportPanel />
       <SpatialStoryBundleVaultBootstrap />
-      <SpatialStoryBundleVaultPanel />
-      <SpatialStoryBundleDiffPanel />
-      <SpatialBundleLineagePanel />
-      <SpatialStoryReviewDeckPanel />
-      <SpatialCuratedDeckExportPanel />
-      <SpatialCuratedDeckImportPanel />
       <SpatialCuratedDeckVaultBootstrap />
-      <SpatialCuratedDeckVaultPanel />
-      <SpatialCuratedDeckDiffPanel />
-      <SpatialCuratedDeckChangeLedgerPanel />
-      <SpatialCuratedDeckLineagePanel />
-      <SpatialCuratedDeckNeighborDiffPanel />
-      <SpatialCuratedDeckCohortPanel />
-      <SpatialCuratedDeckStabilityPanel />
-      <SpatialCuratedDeckDriftPanel />
-      <SpatialCuratedDeckAnchorPanel />
-      <SpatialCuratedDeckConsensusPanel />
-      <SpatialCuratedDeckDivergencePanel />
-      <SpatialCuratedDeckAnomalyPanel />
-      <SpatialCuratedDeckVerdictPanel />
-      <SpatialCuratedDeckActionPanel />
-      <SpatialCuratedDeckReviewTicketPanel />
-      <SpatialCuratedDeckDispatchPanel />
-      <SpatialCuratedDeckQueuePanel />
-      <SpatialCuratedDeckSchedulePanel />
-      <SpatialCuratedDeckServiceWindowPanel />
-      <SpatialCuratedDeckSlaPanel />
-      <SpatialCuratedDeckBreachWatchPanel />
-      <SpatialCuratedDeckIncidentResponsePanel />
-      <SpatialCuratedDeckRecoveryGatePanel />
-      <SpatialCuratedDeckClosureCertificatePanel />
-      <SpatialCuratedDeckArchiveDispositionPanel />
-      <SpatialCuratedDeckReopenWatchPanel />
-      <SpatialCuratedDeckRetentionLifecyclePanel />
-      <SpatialCuratedDeckRetentionHorizonPanel />
-      <SpatialCuratedDeckExpiryGovernancePanel />
-      <SpatialCuratedDeckPurgeReadinessPanel />
-      <SpatialCuratedDeckDestructionAuthorizationPanel />
-      <SpatialCuratedDeckDestructionExecutionGatePanel />
       <Canvas
         camera={{ position: [0, 6, 30], fov: 42, near: 0.1, far: 200 }}
         dpr={[1, 2]}
@@ -904,7 +802,6 @@ export default function SpatialScene() {
     </main>
   );
 }
-
 
 function XrSessionBridge() {
   const gl = useThree((s) => s.gl as any);
