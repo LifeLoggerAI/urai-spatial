@@ -18,6 +18,7 @@ import UnityAdapterOverlay from "@/spatial/unity/UnityAdapterOverlay";
 import XRInputOverlay from "@/spatial/input/XRInputOverlay";
 import ImmersiveReplayTraversalOverlay from "@/spatial/traversal/ImmersiveReplayTraversalOverlay";
 import MemoryImportOverlay from "@/spatial/data-import/MemoryImportOverlay";
+import ExternalIngestOverlay from "@/spatial/ingest/ExternalIngestOverlay";
 
 const shellButtonStyle: CSSProperties = {
   appearance: "none",
@@ -718,6 +719,7 @@ export default function SpatialScene() {
         <MemorySphere />
         <ReplayConstellation />
       </Canvas>
+        <ExternalIngestOverlay />
         <MemoryImportOverlay />
         <ImmersiveReplayTraversalOverlay />
         <XRInputOverlay />
