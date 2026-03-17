@@ -1,4 +1,5 @@
 "use client";
+import SpatialAnalyticsBridge from "@/spatial/telemetry/SpatialAnalyticsBridge";
 import SpatialPersistenceBridge from "@/spatial/persistence/SpatialPersistenceBridge";
 import XrLocomotionRuntime from "@/spatial/xr/XrLocomotionRuntime";
 import UnityRuntimePayloadBridge from "@/spatial/unity/UnityRuntimePayloadBridge";
@@ -733,6 +734,7 @@ export default function SpatialScene() {
         <ArHitTestBridge />
         <UnityRuntimePayloadBridge />
         <SpatialPersistenceBridge />
+        <SpatialAnalyticsBridge />
         <XrLocomotionRuntime />
         <CameraRig />
         <FloorPlane />
