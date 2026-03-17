@@ -11,9 +11,9 @@ function buildCard(input: {
 }): SpatialCuratedDeckExportCard {
   return {
     id: `curated_card_${input.item.id}`,
-    entryId: input.item.entryId,
-    label: input.item.label,
-    source: input.item.source,
+    entryId: input.item.entryId ?? input.entry.id ?? `entry_${input.item.id ?? "unknown"}`,
+    label: input.item.label ?? input.item.title ?? input.item.name ?? input.item.id ?? "Untitled Curation Item",
+    source: ((input.item.source === "generated" || input.item.source === "imported") ? input.item.source : ((input.entry.source === "generated" || input.entry.source === "imported") ? input.entry.source : "generated")),
     sceneMode: input.entry.bundle.snapshot.sceneMode,
     selectedStarId: input.entry.bundle.snapshot.selectedStarId ?? null,
     narratorTitle: input.entry.bundle.narrator?.title ?? null,
