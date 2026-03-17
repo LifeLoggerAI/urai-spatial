@@ -97,6 +97,17 @@ function scoreStatus(status: SpatialCuratedDeckExpiryGovernanceStatus): number {
   }
 }
 
+function computeExpiryPosture(
+  expiryScore: number,
+  coldStorageEligible: boolean,
+  statusCounts: Record<SpatialCuratedDeckExpiryGovernanceStatus, number>,
+): string {
+  if (coldStorageEligible) return "cold";
+  if (statusCounts.expired > 0 || expiryScore >= 80) return "expired";
+  if (statusCounts.review > 0 || expiryScore >= 55) return "review";
+  return "active";
+}
+
 export function buildSpatialCuratedDeckExpiryGovernance(input: {
   entries: CuratedDeckEntryLike[];
   activeEntryId?: string | null;
@@ -145,6 +156,18 @@ export function buildSpatialCuratedDeckExpiryGovernance(input: {
       )
     : 0;
 
+  const coldStorageEligible =
+    entries.length > 0 &&
+    statusCounts.active === 0 &&
+    statusCounts.blocked === 0 &&
+    (statusCounts.review > 0 || statusCounts.expired > 0);
+
+  const expiryPosture = computeExpiryPosture(
+    expiryScore,
+    coldStorageEligible,
+    statusCounts,
+  );
+
   return {
     schema: "urai.spatial.curated-deck-expiry-governance.v1",
     generatedAt: new Date(now).toISOString(),
@@ -152,6 +175,8 @@ export function buildSpatialCuratedDeckExpiryGovernance(input: {
     activeEntryId: activeEntry?.entryId ?? null,
     activeStatus: activeEntry?.status ?? null,
     expiryScore,
+    expiryPosture,
+    coldStorageEligible,
     statusCounts,
     entries,
   };
