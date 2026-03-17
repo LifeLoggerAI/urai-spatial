@@ -11,7 +11,7 @@ export default function SceneController() {
       if (e.key !== "Enter") return;
 
       if (mode === "home") {
-        setMode("lifemap");
+        setMode("sky");
       } else if (mode === "lifemap") {
         setMode("home");
       } else if (mode === "focus") {
