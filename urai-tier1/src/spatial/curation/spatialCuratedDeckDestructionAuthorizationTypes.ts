@@ -27,3 +27,7 @@ export type SpatialCuratedDeckDestructionAuthorizationSummary = {
   checks: SpatialCuratedDeckDestructionAuthorizationCheck[];
   summaryText: string;
 };
+
+export type SpatialCuratedDeckDestructionExecutionGateCheck = SpatialCuratedDeckDestructionAuthorizationCheck;
+export type SpatialCuratedDeckDestructionExecutionGateSignal = SpatialCuratedDeckDestructionAuthorizationSignal;
+export type SpatialCuratedDeckDestructionExecutionGateSummary = SpatialCuratedDeckDestructionAuthorizationSummary;
