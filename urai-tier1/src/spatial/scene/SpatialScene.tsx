@@ -1,4 +1,5 @@
 "use client";
+import SpatialVoicePlaybackPanel from "@/spatial/ui/SpatialVoicePlaybackPanel";
 import SpatialNarratorExportPanel from "@/spatial/ui/SpatialNarratorExportPanel";
 import SpatialTimelineLensPanel from "@/spatial/ui/SpatialTimelineLensPanel";
 import SpatialLensBootstrap from "@/spatial/lenses/SpatialLensBootstrap";
@@ -744,6 +745,7 @@ export default function SpatialScene() {
       <SpatialLensBootstrap />
       <SpatialTimelineLensPanel />
       <SpatialNarratorExportPanel />
+      <SpatialVoicePlaybackPanel />
       <Canvas
         camera={{ position: [0, 6, 30], fov: 42, near: 0.1, far: 200 }}
         dpr={[1, 2]}
