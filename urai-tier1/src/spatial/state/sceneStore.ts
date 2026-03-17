@@ -1,36 +1,19 @@
 import { create } from "zustand";
-import { SPATIAL_STARS, SpatialStar } from "../data/stars";
+import { SPATIAL_STARS, type SpatialStar } from "../data/stars";
+import type { SelectedStar } from "@/spatial/state/selectedStarContract";
 
-export type SceneMode = "home" | "lifemap" | "focus" | "replay";
+export type SceneMode = "home" | "sky" | "lifemap" | "focus" | "replay";
 
-export type SelectedStar = {
-  id: string;
-  position: [number, number, number];
-  color: string;
-  size: number;
-  title: string;
-  label: string;
-  signature: string;
-  chapter: string;
-  timeband: string;
-  dateLabel?: string;
-  summary?: string;
-  detail?: string;
-  tags?: string[];
-  transcript?: string;
-  description: string;
-};
-
-type SceneState = {
+export type SceneState = {
   mode: SceneMode;
   stars: SpatialStar[];
   selectedStarId: string | null;
   selectedStar: SelectedStar | null;
   replayEnteredAt: number | null;
-
   setMode: (mode: SceneMode) => void;
+  enterSky: () => void;
   setSelectedStar: (star: SelectedStar | null) => void;
-  selectStar: (star: SelectedStar) => void;
+  selectStar: (star: SelectedStar | null) => void;
   clearFocus: () => void;
   exitFocusToLifeMap: () => void;
   enterReplay: () => void;
@@ -45,20 +28,30 @@ export const useSceneStore = create<SceneState>((set, get) => ({
   selectedStar: null,
   replayEnteredAt: null,
 
-  setMode: (mode) => set({ mode }),
+  setMode: (mode: SceneMode) => set({ mode }),
 
-  setSelectedStar: (star) =>
+  enterSky: () =>
     set({
-      selectedStarId: star ? star.id : null,
+      selectedStarId: null,
+      selectedStar: null,
+      replayEnteredAt: null,
+      mode: "sky",
+    }),
+
+  setSelectedStar: (star: SelectedStar | null) =>
+    set({
+      selectedStarId: star?.id ?? null,
       selectedStar: star,
+      replayEnteredAt: null,
       mode: star ? "focus" : "lifemap",
     }),
 
-  selectStar: (star) =>
+  selectStar: (star: SelectedStar | null) =>
     set({
-      selectedStarId: star.id,
+      selectedStarId: star?.id ?? null,
       selectedStar: star,
-      mode: "focus",
+      replayEnteredAt: null,
+      mode: star ? "focus" : "lifemap",
     }),
 
   clearFocus: () =>

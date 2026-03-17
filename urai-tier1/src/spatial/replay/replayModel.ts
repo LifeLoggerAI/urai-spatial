@@ -1,4 +1,4 @@
-import type { SelectedStar } from "../state/sceneStore";
+import type { SelectedStar } from "../state/selectedStarContract";
 
 export type ReplayStep = {
   id: string;

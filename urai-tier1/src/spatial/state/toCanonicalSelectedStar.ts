@@ -1,10 +1,15 @@
-import type { SelectedStar } from "./sceneStore";
+import type { SelectedStar } from "./selectedStarContract";
 
 type StarInput = Partial<SelectedStar> & {
   id?: string;
   position?: [number, number, number] | number[];
   color?: string;
   size?: number;
+  order?: number;
+  era?: string;
+  kind?: string;
+  glow?: number;
+  intensity?: number;
   title?: string;
   label?: string;
   summary?: string;
@@ -32,6 +37,10 @@ function asVec3(value: StarInput["position"]): [number, number, number] {
 function safeText(value: unknown, fallback: string): string {
   if (typeof value === "string" && value.trim()) return value.trim();
   return fallback;
+}
+
+function safeNumber(value: unknown, fallback: number): number {
+  return typeof value === "number" && Number.isFinite(value) ? value : fallback;
 }
 
 function safeTags(input: StarInput, fallback: string[]): string[] {
@@ -69,7 +78,12 @@ export function toCanonicalSelectedStar(input: StarInput | null): SelectedStar |
     ),
     position,
     color: safeText(input.color, "#ffffff"),
-    size: typeof input.size === "number" && Number.isFinite(input.size) ? input.size : 1,
+    size: safeNumber(input.size, 1),
+    order: safeNumber(input.order, 0),
+    era: (typeof input.era === "string" && input.era.trim() ? input.era : "unknown-era") as SelectedStar["era"],
+    kind: (typeof input.kind === "string" && input.kind.trim() ? input.kind : "memory") as SelectedStar["kind"],
+    glow: safeNumber(input.glow, 0.75),
+    intensity: safeNumber(input.intensity, 1),
     title,
     label,
     description,

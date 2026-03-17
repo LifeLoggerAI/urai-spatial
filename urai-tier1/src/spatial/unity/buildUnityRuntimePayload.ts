@@ -1,4 +1,4 @@
-import type { SelectedStar } from "@/spatial/state/sceneStore";
+import type { SelectedStar } from "@/spatial/state/selectedStarContract";
 import type { ArPlacementPose } from "@/spatial/xr/arPlacementTypes";
 import type { XrInputSnapshot } from "@/spatial/xr/xrInputTypes";
 import type { XrLocomotionState } from "@/spatial/xr/xrLocomotionTypes";

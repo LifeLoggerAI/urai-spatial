@@ -147,6 +147,8 @@ function modeLabel(mode: SceneMode) {
   switch (mode) {
     case "home":
       return "Home";
+    case "sky":
+      return "Sky";
     case "lifemap":
       return "LifeMap";
     case "focus":
@@ -511,7 +513,7 @@ function OverlayChrome() {
           >
             <div style={{ display: "grid", gap: 18 }}>
               <div style={captionStyle}>Tier 1 / Canonical Shell</div>
-              <h1 style={titleStyle}>Home → LifeMap → Focus → Replay</h1>
+              <h1 style={titleStyle}>Home → Sky → LifeMap → Focus → Replay</h1>
               <p style={{ ...subtleTextStyle, maxWidth: 640 }}>
                 The spatial shell is live. This phase turns replay from a mode switch into an actual
                 memory-dive scene with camera intent, focus depth, and a readable presentation layer.
@@ -527,7 +529,7 @@ function OverlayChrome() {
                   alignItems: "center",
                 }}
               >
-                <button style={shellButtonStyle} onClick={() => setMode("lifemap")}>
+                <button style={shellButtonStyle} onClick={() => setMode("sky")}>
                   Enter LifeMap
                 </button>
                 <button style={secondaryButtonStyle} onClick={() => setMode("focus")} disabled={!selectedStar}>
@@ -535,6 +537,65 @@ function OverlayChrome() {
                 </button>
               </div>
             </div>
+          </div>
+        </div>
+      )}
+
+      {mode === "sky" && (
+        <div
+          style={{
+            position: "absolute",
+            inset: 0,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            pointerEvents: "none",
+          }}
+        >
+          <div
+            style={{
+              pointerEvents: "auto",
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "center",
+              gap: 16,
+              padding: 24,
+              borderRadius: 20,
+              border: "1px solid rgba(255,255,255,0.14)",
+              background: "rgba(7,10,18,0.58)",
+              backdropFilter: "blur(10px)",
+              boxShadow: "0 20px 80px rgba(0,0,0,0.35)",
+            }}
+          >
+            <div
+              style={{
+                fontSize: 12,
+                letterSpacing: "0.24em",
+                textTransform: "uppercase",
+                opacity: 0.72,
+              }}
+            >
+              Transitional Layer
+            </div>
+            <h1 style={titleStyle}>Sky</h1>
+            <p
+              style={{
+                margin: 0,
+                maxWidth: 520,
+                textAlign: "center",
+                lineHeight: 1.6,
+                color: "rgba(255,255,255,0.78)",
+              }}
+            >
+              This is the minimal sky contract between Home and LifeMap.
+            </p>
+            <button
+              type="button"
+              onClick={() => setMode("lifemap")}
+              style={shellButtonStyle}
+            >
+              Enter LifeMap
+            </button>
           </div>
         </div>
       )}

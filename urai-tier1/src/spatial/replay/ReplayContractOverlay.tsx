@@ -4,6 +4,7 @@ import { useMemo } from "react";
 import { useSceneStore } from "@/spatial/state/sceneStore";
 import { resolveReplaySceneFromSelectedStar } from "@/spatial/replay/resolveReplayScene";
 
+import type { SelectedStar } from "@/spatial/state/selectedStarContract";
 type LooseRecord = Record<string, unknown>;
 
 function str(value: unknown): string | undefined {

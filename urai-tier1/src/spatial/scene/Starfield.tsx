@@ -1,6 +1,7 @@
 "use client";
 import { toCanonicalSelectedStar } from "../state/toCanonicalSelectedStar";
 
+import type { SelectedStar } from "@/spatial/state/selectedStarContract";
 import { useMemo, useState } from "react";
 import { generateStars } from "@/spatial/data/stars";
 import { useSceneStore } from "@/spatial/state/sceneStore";
@@ -49,23 +50,7 @@ export default function Starfield() {
               }}
               onPointerDown={(e) => {
                 e.stopPropagation();
-                setSelectedStar({
-                  id: star.id,
-                  position: star.position,
-                  color: star.color,
-                  size: star.size,
-                  title: star.title,
-                  label: star.label,
-                  signature: star.signature,
-                  chapter: star.chapter,
-                  timeband: star.timeband,
-                  dateLabel: star.dateLabel,
-                  description: star.description,
-                  summary: star.summary,
-                  detail: star.detail,
-                  tags: star.tags,
-                  transcript: star.transcript,
-                });
+                setSelectedStar(toCanonicalSelectedStar(star));
                 setMode("focus");
               }}
             >

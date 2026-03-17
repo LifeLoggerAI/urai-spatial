@@ -1,4 +1,4 @@
-import type { SelectedStar } from "@/spatial/state/sceneStore";
+import type { SelectedStar } from "@/spatial/state/selectedStarContract";
 
 export type HeadsetCameraSyncState = {
   presenting: boolean;

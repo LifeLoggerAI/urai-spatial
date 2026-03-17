@@ -9,6 +9,7 @@ import { useArPlacementStore } from "@/spatial/xr/arPlacementStore";
 import { useXrLocomotionStore } from "@/spatial/xr/xrLocomotionStore";
 import { useXrSessionStore } from "@/spatial/xr/xrSessionStore";
 
+import type { SelectedStar } from "@/spatial/state/selectedStarContract";
 type TelemetryWindow = Window & {
   __URAI_SPATIAL_TELEMETRY_QUEUE__?: unknown;
 };
