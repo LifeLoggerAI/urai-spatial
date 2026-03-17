@@ -749,6 +749,7 @@ function OverlayChrome() {
 }
 
 export default function SpatialScene() {
+  const immersiveEnabled = false;
   const mode = useSceneStore((s) => s.mode);
   const selectedStar = useSceneStore((s) => s.selectedStar);
   const setMode = useSceneStore((s) => s.setMode);
@@ -810,11 +811,15 @@ export default function SpatialScene() {
         <directionalLight position={[8, 12, 10]} intensity={1.1} color="#dbe4ff" />
         <pointLight position={[0, 6, 10]} intensity={selectedStar ? 10 : 6} color="#ffffff" />
         <pointLight position={[0, -2, -8]} intensity={4} color="#6f86ff" />
-        <ArHitTestBridge />
-        <UnityRuntimePayloadBridge />
-        <SpatialPersistenceBridge />
-        <SpatialAnalyticsBridge />
-        <XrLocomotionRuntime />
+        {immersiveEnabled && (
+          <>
+            <ArHitTestBridge />
+            <UnityRuntimePayloadBridge />
+            <SpatialPersistenceBridge />
+            <SpatialAnalyticsBridge />
+            <XrLocomotionRuntime />
+          </>
+        )}
         <CameraRig />
         <FloorPlane />
         <StarField />
