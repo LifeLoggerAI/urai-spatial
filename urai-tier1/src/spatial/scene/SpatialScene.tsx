@@ -23,6 +23,7 @@ import BatchImportAuditOverlay from "@/spatial/validation/BatchImportAuditOverla
 import MergePreflightOverlay from "@/spatial/merge/MergePreflightOverlay";
 import PersistenceSyncOverlay from "@/spatial/persistence/PersistenceSyncOverlay";
 import DatasetVersioningOverlay from "@/spatial/versioning/DatasetVersioningOverlay";
+import ChapterSynthesisOverlay from "@/spatial/chapter/ChapterSynthesisOverlay";
 
 const shellButtonStyle: CSSProperties = {
   appearance: "none",
@@ -723,6 +724,7 @@ export default function SpatialScene() {
         <MemorySphere />
         <ReplayConstellation />
       </Canvas>
+        <ChapterSynthesisOverlay />
         <DatasetVersioningOverlay />
         <PersistenceSyncOverlay />
         <MergePreflightOverlay />
