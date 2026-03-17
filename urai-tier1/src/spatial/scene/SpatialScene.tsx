@@ -1,4 +1,5 @@
 "use client";
+import SpatialPersistenceBridge from "@/spatial/persistence/SpatialPersistenceBridge";
 import XrLocomotionRuntime from "@/spatial/xr/XrLocomotionRuntime";
 import UnityRuntimePayloadBridge from "@/spatial/unity/UnityRuntimePayloadBridge";
 import ArPlaneMarker from "@/spatial/xr/ArPlaneMarker";
@@ -731,6 +732,7 @@ export default function SpatialScene() {
         <pointLight position={[0, -2, -8]} intensity={4} color="#6f86ff" />
         <ArHitTestBridge />
         <UnityRuntimePayloadBridge />
+        <SpatialPersistenceBridge />
         <XrLocomotionRuntime />
         <CameraRig />
         <FloorPlane />
