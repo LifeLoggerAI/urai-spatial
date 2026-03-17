@@ -12,12 +12,15 @@ import {
 import { useSpatialCuratedDeckVaultStore } from "@/spatial/curation/spatialCuratedDeckVaultStore";
 import type { SpatialCuratedDeckExport } from "@/spatial/curation/spatialCuratedDeckExportTypes";
 import type { SpatialCuratedDeckVaultEntry } from "@/spatial/curation/spatialCuratedDeckVaultTypes";
+import {
+  SPATIAL_CURATED_DECK_VAULT_RESTORED_EVENT,
+} from "@/spatial/curation/spatialCuratedDeckImportTypes";
+import type {
+  SpatialCuratedDeckImportWindow,
+  SpatialCuratedDeckVaultRestoredEventDetail,
+} from "@/spatial/curation/spatialCuratedDeckImportTypes";
 import { useSpatialCurationBoardStore } from "@/spatial/curation/spatialCurationBoardStore";
 import { useSpatialStoryBundleVaultStore } from "@/spatial/vault/spatialStoryBundleVaultStore";
-
-type CuratedDeckWindow = Window & {
-  __URAI_SPATIAL_IMPORTED_CURATED_DECK__?: SpatialCuratedDeckExport;
-};
 
 export default function SpatialCuratedDeckVaultPanel() {
   const activeAccountId = useSpatialAccountStore((s) => s.activeAccountId);
@@ -83,7 +86,7 @@ export default function SpatialCuratedDeckVaultPanel() {
   };
 
   const archiveImportedDeck = () => {
-    const imported = (window as CuratedDeckWindow)
+    const imported = (window as SpatialCuratedDeckImportWindow)
       .__URAI_SPATIAL_IMPORTED_CURATED_DECK__;
 
     if (!imported) {
@@ -112,13 +115,16 @@ export default function SpatialCuratedDeckVaultPanel() {
       return;
     }
 
-    const target = window as CuratedDeckWindow;
+    const target = window as SpatialCuratedDeckImportWindow;
     target.__URAI_SPATIAL_IMPORTED_CURATED_DECK__ = activeVaultEntry.deck;
 
     window.dispatchEvent(
-      new CustomEvent("urai:spatial-curated-deck-vault-restored", {
-        detail: activeVaultEntry,
-      }),
+      new CustomEvent<SpatialCuratedDeckVaultRestoredEventDetail>(
+        SPATIAL_CURATED_DECK_VAULT_RESTORED_EVENT,
+        {
+          detail: activeVaultEntry,
+        },
+      ),
     );
 
     setStatus("active curated deck restored to preview memory");

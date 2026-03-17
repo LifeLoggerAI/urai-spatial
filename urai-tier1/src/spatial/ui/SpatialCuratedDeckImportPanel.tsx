@@ -3,22 +3,44 @@
 import type { CSSProperties } from "react";
 import { useMemo, useRef, useState } from "react";
 import type { SpatialCuratedDeckExport } from "@/spatial/curation/spatialCuratedDeckExportTypes";
-import { isSpatialCuratedDeckExport } from "@/spatial/curation/spatialCuratedDeckExportValidation";
+import {
+  SPATIAL_CURATED_DECK_IMPORTED_EVENT,
+} from "@/spatial/curation/spatialCuratedDeckImportTypes";
+import type {
+  SpatialCuratedDeckImportedEventDetail,
+  SpatialCuratedDeckImportStatus,
+  SpatialCuratedDeckImportWindow,
+} from "@/spatial/curation/spatialCuratedDeckImportTypes";
 
-type CuratedDeckWindow = Window & {
-  __URAI_SPATIAL_IMPORTED_CURATED_DECK__?: SpatialCuratedDeckExport;
-};
+function isSpatialCuratedDeckExport(value: unknown): value is SpatialCuratedDeckExport {
+  if (!value || typeof value !== "object") return false;
+
+  const record = value as Record<string, unknown>;
+  const account =
+    record.account && typeof record.account === "object"
+      ? (record.account as Record<string, unknown>)
+      : null;
+
+  return (
+    !!account &&
+    typeof account.id === "string" &&
+    Array.isArray(record.cards) &&
+    typeof record.cardCount === "number" &&
+    typeof record.summaryText === "string"
+  );
+}
 
 export default function SpatialCuratedDeckImportPanel() {
   const fileRef = useRef<HTMLInputElement | null>(null);
-  const [status, setStatus] = useState("idle");
   const [deck, setDeck] = useState<SpatialCuratedDeckExport | null>(null);
   const [cardIndex, setCardIndex] = useState(0);
+  const [status, setStatus] = useState<SpatialCuratedDeckImportStatus>("idle");
 
-  const activeCard = useMemo(
-    () => (deck && deck.cards.length > 0 ? deck.cards[Math.max(0, Math.min(cardIndex, deck.cards.length - 1))] : null),
-    [deck, cardIndex],
-  );
+  const activeCard = useMemo(() => {
+    if (!deck || deck.cards.length === 0) return null;
+    const safeIndex = Math.min(cardIndex, deck.cards.length - 1);
+    return deck.cards[safeIndex] ?? null;
+  }, [deck, cardIndex]);
 
   const importDeck = async (file: File) => {
     try {
@@ -33,13 +55,16 @@ export default function SpatialCuratedDeckImportPanel() {
       setDeck(parsed);
       setCardIndex(0);
 
-      const target = window as CuratedDeckWindow;
+      const target = window as SpatialCuratedDeckImportWindow;
       target.__URAI_SPATIAL_IMPORTED_CURATED_DECK__ = parsed;
 
       window.dispatchEvent(
-        new CustomEvent("urai:spatial-curated-deck-imported", {
-          detail: parsed,
-        }),
+        new CustomEvent<SpatialCuratedDeckImportedEventDetail>(
+          SPATIAL_CURATED_DECK_IMPORTED_EVENT,
+          {
+            detail: parsed,
+          },
+        ),
       );
 
       setStatus("curated deck imported");
