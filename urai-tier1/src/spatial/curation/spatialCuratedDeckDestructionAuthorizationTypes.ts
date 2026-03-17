@@ -28,6 +28,3 @@ export type SpatialCuratedDeckDestructionAuthorizationSummary = {
   summaryText: string;
 };
 
-export type SpatialCuratedDeckDestructionExecutionGateCheck = SpatialCuratedDeckDestructionAuthorizationCheck;
-export type SpatialCuratedDeckDestructionExecutionGateSignal = SpatialCuratedDeckDestructionAuthorizationSignal;
-export type SpatialCuratedDeckDestructionExecutionGateSummary = SpatialCuratedDeckDestructionAuthorizationSummary;

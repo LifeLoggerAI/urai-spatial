@@ -6,7 +6,7 @@ import { buildSpatialCuratedDeckDestructionExecutionGate } from "@/spatial/curat
 import type {
   SpatialCuratedDeckDestructionExecutionGateCheck,
   SpatialCuratedDeckDestructionExecutionGateSignal,
-} from "@/spatial/curation/spatialCuratedDeckDestructionAuthorizationTypes";
+} from "@/spatial/curation/spatialCuratedDeckDestructionExecutionGateTypes";
 import { useSpatialCuratedDeckVaultStore } from "@/spatial/curation/spatialCuratedDeckVaultStore";
 
 export default function SpatialCuratedDeckDestructionExecutionGatePanel() {
