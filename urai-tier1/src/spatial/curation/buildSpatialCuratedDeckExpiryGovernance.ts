@@ -25,17 +25,18 @@ function toTime(value: unknown): number | null {
   return Number.isFinite(ms) ? ms : null;
 }
 
-function ageDays(entry: CuratedDeckEntryLike, now: number): number {
-  const created =
+function computeAgeDays(entry: CuratedDeckEntryLike, now: number): number {
+  const createdAt =
     toTime(entry.generatedAt) ??
     toTime(entry.createdAt) ??
     toTime(entry.updatedAt) ??
     toTime(entry.storedAt);
-  if (created == null) return 0;
-  return Math.max(0, Math.round((now - created) / 86400000));
+
+  if (createdAt == null) return 0;
+  return Math.max(0, Math.round((now - createdAt) / 86400000));
 }
 
-function expiryMs(entry: CuratedDeckEntryLike, now: number): number | null {
+function computeExpiryAt(entry: CuratedDeckEntryLike, now: number): number {
   return (
     toTime(entry.expiresAt) ??
     toTime(entry.retentionUntil) ??
@@ -44,19 +45,19 @@ function expiryMs(entry: CuratedDeckEntryLike, now: number): number | null {
   );
 }
 
-function classify(expiresInDays: number): SpatialCuratedDeckExpiryGovernanceStatus {
+function classifyStatus(expiresInDays: number): SpatialCuratedDeckExpiryGovernanceStatus {
   if (expiresInDays <= 0) return "expired";
   if (expiresInDays <= 7) return "review";
   if (expiresInDays <= 30) return "active";
   return "active";
 }
 
-function makeChecks(
+function buildChecks(
   entry: CuratedDeckEntryLike,
-  age: number,
+  ageDays: number,
   expiresInDays: number,
 ): SpatialCuratedDeckExpiryGovernanceCheck[] {
-  const checks: SpatialCuratedDeckExpiryGovernanceCheck[] = [
+  return [
     {
       id: "clock",
       label: "expiry clock",
@@ -69,19 +70,31 @@ function makeChecks(
             : `expires in ${expiresInDays}d`,
     },
     {
-      id: "retention",
+      id: "retention-age",
       label: "retention age",
-      status: age >= 90 ? "warn" : "pass",
-      detail: `${age}d since creation`,
+      status: ageDays >= 90 ? "warn" : "pass",
+      detail: `${ageDays}d since creation`,
     },
     {
-      id: "provenance",
+      id: "source-trace",
       label: "source trace",
       status: entry.source ? "pass" : "warn",
       detail: entry.source ? `source ${entry.source}` : "source not set",
     },
   ];
-  return checks;
+}
+
+function scoreStatus(status: SpatialCuratedDeckExpiryGovernanceStatus): number {
+  switch (status) {
+    case "expired":
+      return 100;
+    case "review":
+      return 70;
+    case "active":
+      return 25;
+    case "blocked":
+      return 0;
+  }
 }
 
 export function buildSpatialCuratedDeckExpiryGovernance(input: {
@@ -91,39 +104,55 @@ export function buildSpatialCuratedDeckExpiryGovernance(input: {
   const now = Date.now();
 
   const entries: SpatialCuratedDeckExpiryGovernanceEntry[] = (input.entries ?? []).map((entry, index) => {
-    const age = ageDays(entry, now);
-    const exp = expiryMs(entry, now) ?? now;
-    const expiresInDays = Math.round((exp - now) / 86400000);
-    const status = classify(expiresInDays);
+    const ageDays = computeAgeDays(entry, now);
+    const expiryAt = computeExpiryAt(entry, now);
+    const expiresInDays = Math.round((expiryAt - now) / 86400000);
+    const status = classifyStatus(expiresInDays);
 
     return {
       entryId: entry.id ?? `entry-${index + 1}`,
       title: entry.title ?? entry.label ?? `Entry ${index + 1}`,
-      ageDays: age,
+      ageDays,
       expiresInDays,
       status,
-      checks: makeChecks(entry, age, expiresInDays),
+      checks: buildChecks(entry, ageDays, expiresInDays),
     };
   });
 
-  const counts: Record<SpatialCuratedDeckExpiryGovernanceStatus, number> = {
+  const statusCounts: Record<SpatialCuratedDeckExpiryGovernanceStatus, number> = {
     active: 0,
     review: 0,
     expired: 0,
     blocked: 0,
   };
 
-  for (const entry of entries) counts[entry.status] += 1;
+  for (const entry of entries) {
+    statusCounts[entry.status] += 1;
+  }
 
-  const active = entries.find((entry) => entry.entryId === (input.activeEntryId ?? null)) ?? null;
+  const activeEntry =
+    entries.find((entry) => entry.entryId === (input.activeEntryId ?? null)) ?? null;
+
+  const expiryScore = entries.length
+    ? Math.max(
+        0,
+        Math.min(
+          100,
+          Math.round(
+            entries.reduce((sum, entry) => sum + scoreStatus(entry.status), 0) / entries.length,
+          ),
+        ),
+      )
+    : 0;
 
   return {
     schema: "urai.spatial.curated-deck-expiry-governance.v1",
     generatedAt: new Date(now).toISOString(),
     totalEntries: entries.length,
-    activeEntryId: active?.entryId ?? null,
-    activeStatus: active?.status ?? null,
-    statusCounts: counts,
+    activeEntryId: activeEntry?.entryId ?? null,
+    activeStatus: activeEntry?.status ?? null,
+    expiryScore,
+    statusCounts,
     entries,
   };
 }

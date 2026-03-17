@@ -1,6 +1,7 @@
 "use client";
 import SpatialCuratedDeckRetentionHorizonPanel from "@/spatial/ui/SpatialCuratedDeckRetentionHorizonPanel";
 import SpatialCuratedDeckExpiryGovernancePanel from "@/spatial/ui/SpatialCuratedDeckExpiryGovernancePanel";
+import SpatialCuratedDeckPurgeReadinessPanel from "@/spatial/ui/SpatialCuratedDeckPurgeReadinessPanel";
 import SpatialCuratedDeckRetentionLifecyclePanel from "@/spatial/ui/SpatialCuratedDeckRetentionLifecyclePanel";
 import SpatialCuratedDeckReopenWatchPanel from "@/spatial/ui/SpatialCuratedDeckReopenWatchPanel";
 import SpatialCuratedDeckArchiveDispositionPanel from "@/spatial/ui/SpatialCuratedDeckArchiveDispositionPanel";
@@ -832,6 +833,7 @@ export default function SpatialScene() {
       <SpatialCuratedDeckRetentionLifecyclePanel />
       <SpatialCuratedDeckRetentionHorizonPanel />
       <SpatialCuratedDeckExpiryGovernancePanel />
+      <SpatialCuratedDeckPurgeReadinessPanel />
       <Canvas
         camera={{ position: [0, 6, 30], fov: 42, near: 0.1, far: 200 }}
         dpr={[1, 2]}

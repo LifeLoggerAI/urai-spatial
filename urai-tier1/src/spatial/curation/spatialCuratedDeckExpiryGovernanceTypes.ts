@@ -26,6 +26,7 @@ export type SpatialCuratedDeckExpiryGovernanceSummary = {
   totalEntries: number;
   activeEntryId: string | null;
   activeStatus: SpatialCuratedDeckExpiryGovernanceStatus | null;
+  expiryScore: number;
   statusCounts: Record<SpatialCuratedDeckExpiryGovernanceStatus, number>;
   entries: SpatialCuratedDeckExpiryGovernanceEntry[];
 };
