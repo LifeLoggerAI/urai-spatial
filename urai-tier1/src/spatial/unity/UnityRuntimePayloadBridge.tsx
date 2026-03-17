@@ -17,7 +17,7 @@ export default function UnityRuntimePayloadBridge() {
   const mode = useSceneStore((s) => s.mode);
   const selectedStar = useSceneStore((s) => s.selectedStar);
 
-  const presenting = useXrSessionStore((s) => s.isPresenting);
+  const presenting = useXrSessionStore((s) => s.presenting);
   const hasHeadsetPose = useXrSessionStore((s) => s.hasHeadsetPose);
 
   const controllers = useXrInputStore((s) => s.controllers);

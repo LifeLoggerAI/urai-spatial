@@ -81,7 +81,7 @@ export default function XrLocomotionRuntime() {
   const gl = useThree((s) => s.gl as any);
   const scene = useThree((s) => s.scene);
   const mode = useSceneStore((s) => s.mode);
-  const xrPresenting = useXrSessionStore((s) => s.isPresenting);
+  const xrPresenting = useXrSessionStore((s) => s.presenting);
   const setPose = useXrLocomotionStore((s) => s.setPose);
   const reset = useXrLocomotionStore((s) => s.reset);
 
