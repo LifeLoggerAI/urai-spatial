@@ -1,4 +1,7 @@
 "use client";
+import SpatialCuratedDeckReviewTicketPanel from "@/spatial/ui/SpatialCuratedDeckReviewTicketPanel";
+import SpatialCuratedDeckActionPanel from "@/spatial/ui/SpatialCuratedDeckActionPanel";
+import SpatialCuratedDeckVerdictPanel from "@/spatial/ui/SpatialCuratedDeckVerdictPanel";
 import SpatialCuratedDeckAnomalyPanel from "@/spatial/ui/SpatialCuratedDeckAnomalyPanel";
 import SpatialCuratedDeckDivergencePanel from "@/spatial/ui/SpatialCuratedDeckDivergencePanel";
 import SpatialCuratedDeckConsensusPanel from "@/spatial/ui/SpatialCuratedDeckConsensusPanel";
@@ -798,6 +801,9 @@ export default function SpatialScene() {
       <SpatialCuratedDeckConsensusPanel />
       <SpatialCuratedDeckDivergencePanel />
       <SpatialCuratedDeckAnomalyPanel />
+      <SpatialCuratedDeckVerdictPanel />
+      <SpatialCuratedDeckActionPanel />
+      <SpatialCuratedDeckReviewTicketPanel />
       <Canvas
         camera={{ position: [0, 6, 30], fov: 42, near: 0.1, far: 200 }}
         dpr={[1, 2]}
