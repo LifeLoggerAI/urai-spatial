@@ -1,4 +1,5 @@
 "use client";
+import SpatialImportExportPanel from "@/spatial/ui/SpatialImportExportPanel";
 import SpatialAnalyticsBridge from "@/spatial/telemetry/SpatialAnalyticsBridge";
 import SpatialPersistenceBridge from "@/spatial/persistence/SpatialPersistenceBridge";
 import XrLocomotionRuntime from "@/spatial/xr/XrLocomotionRuntime";
@@ -718,6 +719,7 @@ export default function SpatialScene() {
           "radial-gradient(1200px 700px at 50% -10%, rgba(91,115,191,0.16), transparent 56%), linear-gradient(180deg, #0a1020 0%, #04060b 48%, #020307 100%)",
       }}
     >
+      <SpatialImportExportPanel />
       <Canvas
         camera={{ position: [0, 6, 30], fov: 42, near: 0.1, far: 200 }}
         dpr={[1, 2]}
