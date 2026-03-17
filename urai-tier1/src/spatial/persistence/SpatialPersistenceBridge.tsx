@@ -2,13 +2,14 @@
 
 import { useEffect, useMemo, useRef } from "react";
 import { generateStars } from "@/spatial/data/stars";
-import { useSceneStore } from "@/spatial/state/sceneStore";
-import { useXrSessionStore } from "@/spatial/xr/xrSessionStore";
-import { useXrInputStore } from "@/spatial/xr/xrInputStore";
-import { useArPlacementStore } from "@/spatial/xr/arPlacementStore";
-import { useXrLocomotionStore } from "@/spatial/xr/xrLocomotionStore";
 import { buildSpatialPersistenceSnapshot } from "@/spatial/persistence/buildSpatialPersistenceSnapshot";
 import { writeSpatialPersistenceSnapshot } from "@/spatial/persistence/spatialPersistenceIO";
+import { useSpatialSettingsStore } from "@/spatial/settings/spatialSettingsStore";
+import { useSceneStore } from "@/spatial/state/sceneStore";
+import { useArPlacementStore } from "@/spatial/xr/arPlacementStore";
+import { useXrInputStore } from "@/spatial/xr/xrInputStore";
+import { useXrLocomotionStore } from "@/spatial/xr/xrLocomotionStore";
+import { useXrSessionStore } from "@/spatial/xr/xrSessionStore";
 import type { SpatialPersistenceSnapshot } from "@/spatial/persistence/spatialPersistenceTypes";
 
 type PersistenceWindow = Window & {
@@ -16,6 +17,8 @@ type PersistenceWindow = Window & {
 };
 
 export default function SpatialPersistenceBridge() {
+  const persistSnapshots = useSpatialSettingsStore((s) => s.persistSnapshots);
+
   const mode = useSceneStore((s) => s.mode);
   const selectedStar = useSceneStore((s) => s.selectedStar);
 
@@ -57,6 +60,7 @@ export default function SpatialPersistenceBridge() {
   const signature = useMemo(() => JSON.stringify(snapshot), [snapshot]);
 
   useEffect(() => {
+    if (!persistSnapshots) return;
     writeSpatialPersistenceSnapshot(snapshot);
     const target = window as PersistenceWindow;
     target.__URAI_SPATIAL_PERSISTENCE__ = snapshot;
@@ -65,7 +69,7 @@ export default function SpatialPersistenceBridge() {
         detail: snapshot,
       }),
     );
-  }, [snapshot, signature]);
+  }, [persistSnapshots, snapshot, signature]);
 
   return null;
 }

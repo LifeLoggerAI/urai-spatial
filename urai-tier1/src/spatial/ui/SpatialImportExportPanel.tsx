@@ -1,5 +1,6 @@
 "use client";
 
+import type { CSSProperties } from "react";
 import { useMemo, useRef, useState } from "react";
 import {
   SPATIAL_PERSISTENCE_STORAGE_KEY,
@@ -10,6 +11,7 @@ import {
   writeSpatialPersistenceSnapshot,
 } from "@/spatial/persistence/spatialPersistenceIO";
 import { isSpatialPersistenceSnapshot } from "@/spatial/persistence/spatialPersistenceValidation";
+import { useSpatialSettingsStore } from "@/spatial/settings/spatialSettingsStore";
 
 type PersistenceWindow = Window & {
   __URAI_SPATIAL_PERSISTENCE__?: SpatialPersistenceSnapshot;
@@ -28,10 +30,13 @@ function downloadJson(filename: string, data: unknown) {
 }
 
 export default function SpatialImportExportPanel() {
+  const showImportExport = useSpatialSettingsStore((s) => s.showImportExport);
   const fileRef = useRef<HTMLInputElement | null>(null);
   const [status, setStatus] = useState<string>("idle");
 
   const snapshot = useMemo(() => readSpatialPersistenceSnapshot(), [status]);
+
+  if (!showImportExport) return null;
 
   const exportSnapshot = () => {
     const current = readSpatialPersistenceSnapshot();
@@ -141,11 +146,7 @@ export default function SpatialImportExportPanel() {
           marginBottom: 10,
         }}
       >
-        <button
-          type="button"
-          onClick={exportSnapshot}
-          style={buttonStyle}
-        >
+        <button type="button" onClick={exportSnapshot} style={buttonStyle}>
           Export snapshot
         </button>
 
@@ -157,11 +158,7 @@ export default function SpatialImportExportPanel() {
           Import snapshot
         </button>
 
-        <button
-          type="button"
-          onClick={clearSnapshot}
-          style={buttonStyle}
-        >
+        <button type="button" onClick={clearSnapshot} style={buttonStyle}>
           Clear saved snapshot
         </button>
       </div>
@@ -192,7 +189,7 @@ export default function SpatialImportExportPanel() {
   );
 }
 
-const buttonStyle: React.CSSProperties = {
+const buttonStyle: CSSProperties = {
   appearance: "none",
   width: "100%",
   border: "1px solid rgba(255,255,255,0.16)",

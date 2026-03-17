@@ -1,4 +1,7 @@
 "use client";
+import SpatialTelemetryPanel from "@/spatial/ui/SpatialTelemetryPanel";
+import SpatialPreferencesPanel from "@/spatial/ui/SpatialPreferencesPanel";
+import SpatialSettingsBootstrap from "@/spatial/settings/SpatialSettingsBootstrap";
 import SpatialImportExportPanel from "@/spatial/ui/SpatialImportExportPanel";
 import SpatialAnalyticsBridge from "@/spatial/telemetry/SpatialAnalyticsBridge";
 import SpatialPersistenceBridge from "@/spatial/persistence/SpatialPersistenceBridge";
@@ -720,6 +723,9 @@ export default function SpatialScene() {
       }}
     >
       <SpatialImportExportPanel />
+      <SpatialSettingsBootstrap />
+      <SpatialPreferencesPanel />
+      <SpatialTelemetryPanel />
       <Canvas
         camera={{ position: [0, 6, 30], fov: 42, near: 0.1, far: 200 }}
         dpr={[1, 2]}

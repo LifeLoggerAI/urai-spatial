@@ -1,18 +1,21 @@
 "use client";
 
 import { useEffect, useRef } from "react";
+import { useSpatialSettingsStore } from "@/spatial/settings/spatialSettingsStore";
 import { useSceneStore } from "@/spatial/state/sceneStore";
-import { useXrSessionStore } from "@/spatial/xr/xrSessionStore";
-import { useArPlacementStore } from "@/spatial/xr/arPlacementStore";
-import { useXrLocomotionStore } from "@/spatial/xr/xrLocomotionStore";
 import { appendSpatialTelemetryEvent } from "@/spatial/telemetry/spatialTelemetryIO";
 import { createSpatialTelemetryEvent } from "@/spatial/telemetry/spatialTelemetryTypes";
+import { useArPlacementStore } from "@/spatial/xr/arPlacementStore";
+import { useXrLocomotionStore } from "@/spatial/xr/xrLocomotionStore";
+import { useXrSessionStore } from "@/spatial/xr/xrSessionStore";
 
 type TelemetryWindow = Window & {
   __URAI_SPATIAL_TELEMETRY_QUEUE__?: unknown;
 };
 
 export default function SpatialAnalyticsBridge() {
+  const telemetryEnabled = useSpatialSettingsStore((s) => s.telemetryEnabled);
+
   const mode = useSceneStore((s) => s.mode);
   const selectedStar = useSceneStore((s) => s.selectedStar);
 
@@ -40,6 +43,7 @@ export default function SpatialAnalyticsBridge() {
       | "locomotion_activity_changed",
     payload: Record<string, string | number | boolean | null>,
   ) => {
+    if (!telemetryEnabled) return;
     const queue = appendSpatialTelemetryEvent(
       createSpatialTelemetryEvent({ name, payload }),
     );
@@ -63,7 +67,7 @@ export default function SpatialAnalyticsBridge() {
       nextMode: mode,
     });
     prevMode.current = mode;
-  }, [mode]);
+  }, [mode, telemetryEnabled]);
 
   useEffect(() => {
     const starId = selectedStar?.id ?? null;
@@ -78,7 +82,7 @@ export default function SpatialAnalyticsBridge() {
         null,
     });
     prevSelectedStarId.current = starId;
-  }, [selectedStar]);
+  }, [selectedStar, telemetryEnabled]);
 
   useEffect(() => {
     if (prevPresenting.current === null) {
@@ -91,7 +95,7 @@ export default function SpatialAnalyticsBridge() {
       hasHeadsetPose,
     });
     prevPresenting.current = presenting;
-  }, [presenting, hasHeadsetPose]);
+  }, [presenting, hasHeadsetPose, telemetryEnabled]);
 
   useEffect(() => {
     if (prevArVisible.current === null) {
@@ -104,7 +108,7 @@ export default function SpatialAnalyticsBridge() {
       hasPlane: arHasPlane,
     });
     prevArVisible.current = arVisible;
-  }, [arVisible, arHasPlane]);
+  }, [arVisible, arHasPlane, telemetryEnabled]);
 
   useEffect(() => {
     if (prevLocomotionActive.current === null) {
@@ -117,7 +121,7 @@ export default function SpatialAnalyticsBridge() {
       mode: locomotionMode,
     });
     prevLocomotionActive.current = locomotionActive;
-  }, [locomotionActive, locomotionMode]);
+  }, [locomotionActive, locomotionMode, telemetryEnabled]);
 
   return null;
 }
