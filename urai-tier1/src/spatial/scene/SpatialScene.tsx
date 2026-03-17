@@ -1,4 +1,5 @@
 "use client";
+import SpatialCuratedDeckDestructionAuthorizationPanel from "@/spatial/ui/SpatialCuratedDeckDestructionAuthorizationPanel";
 import SpatialCuratedDeckRetentionHorizonPanel from "@/spatial/ui/SpatialCuratedDeckRetentionHorizonPanel";
 import SpatialCuratedDeckExpiryGovernancePanel from "@/spatial/ui/SpatialCuratedDeckExpiryGovernancePanel";
 import SpatialCuratedDeckPurgeReadinessPanel from "@/spatial/ui/SpatialCuratedDeckPurgeReadinessPanel";
@@ -834,6 +835,7 @@ export default function SpatialScene() {
       <SpatialCuratedDeckRetentionHorizonPanel />
       <SpatialCuratedDeckExpiryGovernancePanel />
       <SpatialCuratedDeckPurgeReadinessPanel />
+      <SpatialCuratedDeckDestructionAuthorizationPanel />
       <Canvas
         camera={{ position: [0, 6, 30], fov: 42, near: 0.1, far: 200 }}
         dpr={[1, 2]}
