@@ -199,20 +199,21 @@ function CameraRig() {
       cp.set(0, 5.8, 30);
       lp.set(0, 2, 0);
     } else if (mode === "lifemap") {
-      cp.set(0, 7.8, 24);
-      lp.set(0, 0.5, 0);
+      cp.set(0, 8.8, 16.5);
+      lp.set(0, 3.2, -34);
     } else if (selectedStar) {
       const [x, y, z] = selectedStar.position;
       if (mode === "focus") {
-        cp.set(x * 0.18, y + 2.7, z + 8.5);
+        cp.set(x * 0.16, y + 2.9, z + 8.2);
         lp.set(x, y, z);
       } else {
-        cp.set(x * 0.07, y + 1.25, z + 3.8);
+        cp.set(x * 0.1, y + 1.9, z + 6.2);
         lp.set(x, y, z);
       }
     }
 
-    const t = 1 - Math.exp(-delta * 3.2);
+    const speed = mode === "lifemap" ? 2.2 : 3.2;
+      const t = 1 - Math.exp(-delta * speed);
     camera.position.lerp(cp, t);
     camera.lookAt(lp);
   });
