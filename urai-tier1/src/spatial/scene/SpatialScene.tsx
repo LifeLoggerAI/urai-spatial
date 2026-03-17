@@ -1,4 +1,6 @@
 "use client";
+import SpatialComparePanel from "@/spatial/ui/SpatialComparePanel";
+import SpatialCompareBootstrap from "@/spatial/compare/SpatialCompareBootstrap";
 import SpatialAccountPanel from "@/spatial/ui/SpatialAccountPanel";
 import SpatialAccountBootstrap from "@/spatial/account/SpatialAccountBootstrap";
 import SpatialReleasePanel from "@/spatial/ui/SpatialReleasePanel";
@@ -734,6 +736,8 @@ export default function SpatialScene() {
       <SpatialReleasePanel />
       <SpatialAccountBootstrap />
       <SpatialAccountPanel />
+      <SpatialCompareBootstrap />
+      <SpatialComparePanel />
       <Canvas
         camera={{ position: [0, 6, 30], fov: 42, near: 0.1, far: 200 }}
         dpr={[1, 2]}
