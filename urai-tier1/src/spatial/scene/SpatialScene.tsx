@@ -26,6 +26,7 @@ import DatasetVersioningOverlay from "@/spatial/versioning/DatasetVersioningOver
 import ChapterSynthesisOverlay from "@/spatial/chapter/ChapterSynthesisOverlay";
 import CausalInsightOverlay from "@/spatial/causal/CausalInsightOverlay";
 import StoryArcOverlay from "@/spatial/storyarc/StoryArcOverlay";
+import EraCompareOverlay from "@/spatial/era/EraCompareOverlay";
 
 const shellButtonStyle: CSSProperties = {
   appearance: "none",
@@ -726,6 +727,7 @@ export default function SpatialScene() {
         <MemorySphere />
         <ReplayConstellation />
       </Canvas>
+        <EraCompareOverlay />
         <StoryArcOverlay />
         <CausalInsightOverlay />
         <ChapterSynthesisOverlay />
