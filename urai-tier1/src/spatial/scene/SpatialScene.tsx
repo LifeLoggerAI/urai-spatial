@@ -20,6 +20,7 @@ import ImmersiveReplayTraversalOverlay from "@/spatial/traversal/ImmersiveReplay
 import MemoryImportOverlay from "@/spatial/data-import/MemoryImportOverlay";
 import ExternalIngestOverlay from "@/spatial/ingest/ExternalIngestOverlay";
 import BatchImportAuditOverlay from "@/spatial/validation/BatchImportAuditOverlay";
+import MergePreflightOverlay from "@/spatial/merge/MergePreflightOverlay";
 
 const shellButtonStyle: CSSProperties = {
   appearance: "none",
@@ -720,6 +721,7 @@ export default function SpatialScene() {
         <MemorySphere />
         <ReplayConstellation />
       </Canvas>
+        <MergePreflightOverlay />
         <BatchImportAuditOverlay />
         <ExternalIngestOverlay />
         <MemoryImportOverlay />
