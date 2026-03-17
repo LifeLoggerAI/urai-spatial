@@ -1,3 +1,4 @@
+import { getSpatialScopedStorageKey } from "@/spatial/account/accountScopedStorage";
 import {
   SPATIAL_RELEASE_MAX_ROLLBACKS,
   SPATIAL_RELEASE_STORAGE_KEY,
@@ -12,7 +13,9 @@ export function readSpatialReleaseManifest(): SpatialReleaseManifest {
   }
 
   try {
-    const raw = window.localStorage.getItem(SPATIAL_RELEASE_STORAGE_KEY);
+    const raw = window.localStorage.getItem(
+      getSpatialScopedStorageKey(SPATIAL_RELEASE_STORAGE_KEY),
+    );
     if (!raw) return createDefaultSpatialReleaseManifest();
     const parsed = JSON.parse(raw) as SpatialReleaseManifest;
     if (parsed?.schema !== "urai.spatial.release.v1") {
@@ -38,7 +41,7 @@ export function writeSpatialReleaseManifest(
 
   try {
     window.localStorage.setItem(
-      SPATIAL_RELEASE_STORAGE_KEY,
+      getSpatialScopedStorageKey(SPATIAL_RELEASE_STORAGE_KEY),
       JSON.stringify({
         ...manifest,
         rollbackPoints: manifest.rollbackPoints.slice(

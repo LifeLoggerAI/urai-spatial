@@ -1,4 +1,6 @@
 "use client";
+import SpatialAccountPanel from "@/spatial/ui/SpatialAccountPanel";
+import SpatialAccountBootstrap from "@/spatial/account/SpatialAccountBootstrap";
 import SpatialReleasePanel from "@/spatial/ui/SpatialReleasePanel";
 import SpatialReleaseBootstrap from "@/spatial/release/SpatialReleaseBootstrap";
 import SpatialTelemetryPanel from "@/spatial/ui/SpatialTelemetryPanel";
@@ -730,6 +732,8 @@ export default function SpatialScene() {
       <SpatialTelemetryPanel />
       <SpatialReleaseBootstrap />
       <SpatialReleasePanel />
+      <SpatialAccountBootstrap />
+      <SpatialAccountPanel />
       <Canvas
         camera={{ position: [0, 6, 30], fov: 42, near: 0.1, far: 200 }}
         dpr={[1, 2]}

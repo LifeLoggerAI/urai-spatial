@@ -1,3 +1,4 @@
+import { getSpatialScopedStorageKey } from "@/spatial/account/accountScopedStorage";
 import {
   SPATIAL_PERSISTENCE_STORAGE_KEY,
   type SpatialPersistenceSnapshot,
@@ -9,7 +10,7 @@ export function writeSpatialPersistenceSnapshot(
   if (typeof window === "undefined") return;
   try {
     window.localStorage.setItem(
-      SPATIAL_PERSISTENCE_STORAGE_KEY,
+      getSpatialScopedStorageKey(SPATIAL_PERSISTENCE_STORAGE_KEY),
       JSON.stringify(snapshot),
     );
   } catch (_err) {}
@@ -21,7 +22,9 @@ export function readSpatialPersistenceSnapshot():
   if (typeof window === "undefined") return null;
 
   try {
-    const raw = window.localStorage.getItem(SPATIAL_PERSISTENCE_STORAGE_KEY);
+    const raw = window.localStorage.getItem(
+      getSpatialScopedStorageKey(SPATIAL_PERSISTENCE_STORAGE_KEY),
+    );
     if (!raw) return null;
     const parsed = JSON.parse(raw) as SpatialPersistenceSnapshot;
     if (parsed?.schema !== "urai.spatial.persistence.v1") return null;

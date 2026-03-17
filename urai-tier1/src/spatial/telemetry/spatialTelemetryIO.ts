@@ -1,3 +1,4 @@
+import { getSpatialScopedStorageKey } from "@/spatial/account/accountScopedStorage";
 import {
   SPATIAL_TELEMETRY_MAX_EVENTS,
   SPATIAL_TELEMETRY_STORAGE_KEY,
@@ -8,7 +9,9 @@ export function readSpatialTelemetryQueue(): SpatialTelemetryEvent[] {
   if (typeof window === "undefined") return [];
 
   try {
-    const raw = window.localStorage.getItem(SPATIAL_TELEMETRY_STORAGE_KEY);
+    const raw = window.localStorage.getItem(
+      getSpatialScopedStorageKey(SPATIAL_TELEMETRY_STORAGE_KEY),
+    );
     if (!raw) return [];
     const parsed = JSON.parse(raw) as SpatialTelemetryEvent[];
     if (!Array.isArray(parsed)) return [];
@@ -26,7 +29,7 @@ export function writeSpatialTelemetryQueue(
   try {
     const sliced = queue.slice(-SPATIAL_TELEMETRY_MAX_EVENTS);
     window.localStorage.setItem(
-      SPATIAL_TELEMETRY_STORAGE_KEY,
+      getSpatialScopedStorageKey(SPATIAL_TELEMETRY_STORAGE_KEY),
       JSON.stringify(sliced),
     );
   } catch (_err) {}

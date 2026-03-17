@@ -1,3 +1,4 @@
+import { getSpatialScopedStorageKey } from "@/spatial/account/accountScopedStorage";
 import {
   SPATIAL_SETTINGS_STORAGE_KEY,
   createDefaultSpatialSettings,
@@ -10,7 +11,9 @@ export function readSpatialSettings(): SpatialSettings {
   }
 
   try {
-    const raw = window.localStorage.getItem(SPATIAL_SETTINGS_STORAGE_KEY);
+    const raw = window.localStorage.getItem(
+      getSpatialScopedStorageKey(SPATIAL_SETTINGS_STORAGE_KEY),
+    );
     if (!raw) return createDefaultSpatialSettings();
     const parsed = JSON.parse(raw) as SpatialSettings;
     if (parsed?.schema !== "urai.spatial.settings.v1") {
@@ -31,7 +34,7 @@ export function writeSpatialSettings(settings: SpatialSettings): void {
 
   try {
     window.localStorage.setItem(
-      SPATIAL_SETTINGS_STORAGE_KEY,
+      getSpatialScopedStorageKey(SPATIAL_SETTINGS_STORAGE_KEY),
       JSON.stringify(settings),
     );
   } catch (_err) {}
