@@ -1,4 +1,5 @@
 "use client";
+import SpatialStoryBundlePanel from "@/spatial/ui/SpatialStoryBundlePanel";
 import SpatialSeasonalArcPanel from "@/spatial/ui/SpatialSeasonalArcPanel";
 import SpatialSeasonalArcBootstrap from "@/spatial/seasonal/SpatialSeasonalArcBootstrap";
 import SpatialArcPanel from "@/spatial/ui/SpatialArcPanel";
@@ -754,6 +755,7 @@ export default function SpatialScene() {
       <SpatialArcPanel />
       <SpatialSeasonalArcBootstrap />
       <SpatialSeasonalArcPanel />
+      <SpatialStoryBundlePanel />
       <Canvas
         camera={{ position: [0, 6, 30], fov: 42, near: 0.1, far: 200 }}
         dpr={[1, 2]}
