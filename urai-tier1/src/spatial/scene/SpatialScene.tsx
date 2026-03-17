@@ -1,4 +1,5 @@
 "use client";
+import SpatialCuratedDeckAnchorPanel from "@/spatial/ui/SpatialCuratedDeckAnchorPanel";
 import SpatialCuratedDeckDriftPanel from "@/spatial/ui/SpatialCuratedDeckDriftPanel";
 import SpatialCuratedDeckStabilityPanel from "@/spatial/ui/SpatialCuratedDeckStabilityPanel";
 import SpatialCuratedDeckCohortPanel from "@/spatial/ui/SpatialCuratedDeckCohortPanel";
@@ -790,6 +791,7 @@ export default function SpatialScene() {
       <SpatialCuratedDeckCohortPanel />
       <SpatialCuratedDeckStabilityPanel />
       <SpatialCuratedDeckDriftPanel />
+      <SpatialCuratedDeckAnchorPanel />
       <Canvas
         camera={{ position: [0, 6, 30], fov: 42, near: 0.1, far: 200 }}
         dpr={[1, 2]}
