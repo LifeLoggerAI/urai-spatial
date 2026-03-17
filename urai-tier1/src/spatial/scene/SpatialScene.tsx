@@ -28,6 +28,7 @@ import CausalInsightOverlay from "@/spatial/causal/CausalInsightOverlay";
 import StoryArcOverlay from "@/spatial/storyarc/StoryArcOverlay";
 import EraCompareOverlay from "@/spatial/era/EraCompareOverlay";
 import SeasonalCycleOverlay from "@/spatial/seasonal/SeasonalCycleOverlay";
+import NarratorOrchestrationOverlay from "@/spatial/narrator/NarratorOrchestrationOverlay";
 
 const shellButtonStyle: CSSProperties = {
   appearance: "none",
@@ -728,6 +729,7 @@ export default function SpatialScene() {
         <MemorySphere />
         <ReplayConstellation />
       </Canvas>
+        <NarratorOrchestrationOverlay />
         <SeasonalCycleOverlay />
         <EraCompareOverlay />
         <StoryArcOverlay />
