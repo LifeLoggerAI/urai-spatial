@@ -24,6 +24,7 @@ import MergePreflightOverlay from "@/spatial/merge/MergePreflightOverlay";
 import PersistenceSyncOverlay from "@/spatial/persistence/PersistenceSyncOverlay";
 import DatasetVersioningOverlay from "@/spatial/versioning/DatasetVersioningOverlay";
 import ChapterSynthesisOverlay from "@/spatial/chapter/ChapterSynthesisOverlay";
+import CausalInsightOverlay from "@/spatial/causal/CausalInsightOverlay";
 
 const shellButtonStyle: CSSProperties = {
   appearance: "none",
@@ -724,6 +725,7 @@ export default function SpatialScene() {
         <MemorySphere />
         <ReplayConstellation />
       </Canvas>
+        <CausalInsightOverlay />
         <ChapterSynthesisOverlay />
         <DatasetVersioningOverlay />
         <PersistenceSyncOverlay />
