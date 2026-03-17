@@ -1,4 +1,5 @@
 "use client";
+import SpatialCuratedDeckExportPanel from "@/spatial/ui/SpatialCuratedDeckExportPanel";
 import SpatialStoryReviewDeckPanel from "@/spatial/ui/SpatialStoryReviewDeckPanel";
 import SpatialBundleLineagePanel from "@/spatial/ui/SpatialBundleLineagePanel";
 import SpatialStoryBundleDiffPanel from "@/spatial/ui/SpatialStoryBundleDiffPanel";
@@ -768,6 +769,7 @@ export default function SpatialScene() {
       <SpatialStoryBundleDiffPanel />
       <SpatialBundleLineagePanel />
       <SpatialStoryReviewDeckPanel />
+      <SpatialCuratedDeckExportPanel />
       <Canvas
         camera={{ position: [0, 6, 30], fov: 42, near: 0.1, far: 200 }}
         dpr={[1, 2]}
