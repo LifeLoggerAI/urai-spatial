@@ -1,4 +1,5 @@
 "use client";
+import { useXrSessionStore } from "@/spatial/xr/xrSessionStore";
 
 import { useEffect, useMemo, useRef } from "react";
 import { useFrame, useThree } from "@react-three/fiber";

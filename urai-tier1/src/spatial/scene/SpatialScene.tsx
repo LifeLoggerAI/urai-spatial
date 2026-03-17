@@ -1,4 +1,8 @@
 "use client";
+import XrLocomotionRuntime from "@/spatial/xr/XrLocomotionRuntime";
+import UnityRuntimePayloadBridge from "@/spatial/unity/UnityRuntimePayloadBridge";
+import ArPlaneMarker from "@/spatial/xr/ArPlaneMarker";
+import ArHitTestBridge from "@/spatial/xr/ArHitTestBridge";
 
 import { Canvas, ThreeEvent, useFrame, useThree } from "@react-three/fiber";
 import { CSSProperties, useEffect, useMemo, useRef, useState } from "react";
@@ -30,6 +34,7 @@ import EraCompareOverlay from "@/spatial/era/EraCompareOverlay";
 import SeasonalCycleOverlay from "@/spatial/seasonal/SeasonalCycleOverlay";
 import NarratorOrchestrationOverlay from "@/spatial/narrator/NarratorOrchestrationOverlay";
 import WebXRRendererHandoffOverlay from "@/spatial/xr-renderer/WebXRRendererHandoffOverlay";
+import { useXrSessionStore } from "../state/xrSessionStore";
 
 const shellButtonStyle: CSSProperties = {
   appearance: "none",
@@ -724,11 +729,15 @@ export default function SpatialScene() {
         <directionalLight position={[8, 12, 10]} intensity={1.1} color="#dbe4ff" />
         <pointLight position={[0, 6, 10]} intensity={selectedStar ? 10 : 6} color="#ffffff" />
         <pointLight position={[0, -2, -8]} intensity={4} color="#6f86ff" />
+        <ArHitTestBridge />
+        <UnityRuntimePayloadBridge />
+        <XrLocomotionRuntime />
         <CameraRig />
         <FloorPlane />
         <StarField />
         <MemorySphere />
         <ReplayConstellation />
+        <ArPlaneMarker />
       </Canvas>
         <WebXRRendererHandoffOverlay />
         <NarratorOrchestrationOverlay />

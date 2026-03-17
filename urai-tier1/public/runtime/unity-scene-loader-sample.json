@@ -1,0 +1,69 @@
+{
+  "schema": "urai.unity.runtime.v1",
+  "exportedAt": "1970-01-01T00:00:00.000Z",
+  "sceneMode": "lifemap",
+  "replayActive": false,
+  "selectedStarId": null,
+  "selectedStarLabel": null,
+  "headset": {
+    "presenting": false,
+    "hasHeadsetPose": false,
+    "selectedStarId": null,
+    "handoffMode": "idle"
+  },
+  "xrInput": {
+    "controllers": {
+      "left": {
+        "connected": false,
+        "profile": null,
+        "selecting": false,
+        "squeezing": false,
+        "hasGamepad": false
+      },
+      "right": {
+        "connected": false,
+        "profile": null,
+        "selecting": false,
+        "squeezing": false,
+        "hasGamepad": false
+      }
+    },
+    "hands": {
+      "left": {
+        "connected": false,
+        "jointsTracked": 0,
+        "trackingState": "idle"
+      },
+      "right": {
+        "connected": false,
+        "jointsTracked": 0,
+        "trackingState": "idle"
+      }
+    }
+  },
+  "arPlacement": {
+    "visible": false,
+    "x": 0,
+    "y": 0,
+    "z": 0,
+    "qx": 0,
+    "qy": 0,
+    "qz": 0,
+    "qw": 1,
+    "hasPlane": false
+  },
+  "locomotion": {
+    "active": false,
+    "mode": "idle",
+    "userX": 0,
+    "userY": 0,
+    "userZ": 0,
+    "yaw": 0,
+    "inputMoveX": 0,
+    "inputMoveY": 0,
+    "inputTurnX": 0
+  },
+  "metrics": {
+    "starCount": 42
+  }
+}
