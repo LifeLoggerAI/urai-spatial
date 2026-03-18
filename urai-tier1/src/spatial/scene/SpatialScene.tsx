@@ -276,24 +276,24 @@ function StarNode({
           onSelect(star);
         }}
       >
-        <sphereGeometry args={[mode === "lifemap" ? star.size * 0.42 : star.size * 0.22, 18, 18]} />
+        <sphereGeometry args={[mode === "lifemap" ? star.size * 0.30 : star.size * 0.22, 18, 18]} />
         <meshStandardMaterial
           color={star.color}
           emissive={star.color}
-          emissiveIntensity={isSelected ? 3.2 : dimmed ? 0.52 : mode === "lifemap" ? star.intensity * 2.4 : star.intensity * 1.4}
+          emissiveIntensity={isSelected ? 3.0 : dimmed ? 0.5 : mode === "lifemap" ? star.intensity * 1.8 : star.intensity * 1.4}
           roughness={0.2}
           metalness={0.05}
           transparent
-          opacity={dimmed ? 0.38 : mode === "lifemap" ? 1 : 0.98}
+          opacity={dimmed ? 0.34 : mode === "lifemap" ? 0.96 : 0.98}
         />
       </mesh>
 
       <mesh ref={haloRef}>
-        <sphereGeometry args={[mode === "lifemap" ? star.size * 0.68 : star.size * 0.38, 18, 18]} />
+        <sphereGeometry args={[mode === "lifemap" ? star.size * 0.50 : star.size * 0.38, 18, 18]} />
         <meshBasicMaterial
           color={star.color}
           transparent
-          opacity={isSelected ? 0.22 : dimmed ? 0.03 : mode === "lifemap" ? 0.12 : 0.06}
+          opacity={isSelected ? 0.20 : dimmed ? 0.03 : mode === "lifemap" ? 0.08 : 0.06}
           side={THREE.BackSide}
         />
       </mesh>
@@ -349,28 +349,28 @@ function StarField() {
   const selectStar = useSceneStore((s) => s.selectStar);
   const clearFocus = useSceneStore((s) => s.clearFocus);
 
-      const ambientCount = mode === "lifemap" ? 760 : mode === "sky" ? 220 : 100;
+        const ambientCount = mode === "lifemap" ? 320 : mode === "sky" ? 110 : 45;
 
   return (
     <group>
       {Array.from({ length: ambientCount }).map((_, i) => {
         const angle = i * 2.399963229728653;
-                        const radius = 4 + (i % 17) * 1.65 + Math.sin(i * 0.77) * 1.2;
+                                const radius = mode === "lifemap" ? 8 + (i % 17) * 2.2 + Math.sin(i * 0.77) * 1.4 : mode === "sky" ? 14 + (i % 15) * 3.1 + Math.sin(i * 0.77) * 2.0 : 22 + (i % 13) * 4.6 + Math.sin(i * 0.77) * 2.4;
         const x = Math.cos(angle) * radius;
-                        const y = -8 + (i % 29) * 0.72 + Math.sin(i * 1.13) * 1.7;
-                        const z = 4 - (i % 23) * 2.4 - Math.cos(i * 0.41) * 1.8;
+                                const y = mode === "lifemap" ? -5 + (i % 29) * 0.58 + Math.sin(i * 1.13) * 1.2 : mode === "sky" ? -7 + (i % 23) * 0.72 + Math.sin(i * 1.13) * 1.4 : -9 + (i % 19) * 0.9 + Math.sin(i * 1.13) * 1.5;
+                                const z = mode === "lifemap" ? -10 - (i % 23) * 3.6 - Math.cos(i * 0.41) * 2.2 : mode === "sky" ? -18 - (i % 21) * 4.4 - Math.cos(i * 0.41) * 2.8 : -32 - (i % 17) * 5.6 - Math.cos(i * 0.41) * 3.2;
         const size =
           mode === "lifemap"
-            ? 0.085 + (i % 5) * 0.022
+            ? 0.032 + (i % 5) * 0.010
             : mode === "sky"
             ? 0.028 + (i % 4) * 0.009
-            : 0.02 + (i % 3) * 0.007;
+            : 0.010 + (i % 3) * 0.004;
         const opacity =
           mode === "lifemap"
-            ? 0.42 + (i % 7) * 0.05
+            ? 0.16 + (i % 7) * 0.03
             : mode === "sky"
             ? 0.1 + (i % 5) * 0.03
-            : 0.05 + (i % 4) * 0.02;
+            : 0.03 + (i % 4) * 0.01;
         const color = i % 9 === 0 ? "#dbe7ff" : i % 6 === 0 ? "#8fb5ff" : "#ffffff";
 
         return (
