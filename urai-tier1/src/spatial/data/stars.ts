@@ -69,13 +69,13 @@ export function buildSpatialStars(seed = STAR_SEED, count = STAR_COUNT): Spatial
     const chapterIndex = index % CHAPTERS.length;
     const labelIndex = index % LABELS.length;
 
-    const ring = 14 + chapterIndex * 6 + rand() * 5;
-    const angle = (index / count) * Math.PI * 2 * 1.7 + rand() * 0.9;
-    const height = (rand() - 0.5) * 14 + (chapterIndex - 2) * 1.4;
+          const ring = 6 + chapterIndex * 2.2 + rand() * 1.6;
+          const angle = -Math.PI * 0.55 + (index / count) * Math.PI * 1.1 + rand() * 0.22;
+          const height = (rand() - 0.5) * 5.5 + (chapterIndex - 2) * 0.45;
 
-    const x = rounded(Math.cos(angle) * ring + (rand() - 0.5) * 2.6);
+          const x = rounded(Math.cos(angle) * ring + (rand() - 0.5) * 1.8);
     const y = rounded(height);
-    const z = rounded(Math.sin(angle) * ring + (rand() - 0.5) * 2.6);
+          const z = rounded(-10 - chapterIndex * 3.4 - index * 0.18 + Math.sin(angle) * ring * 0.65 + (rand() - 0.5) * 1.4);
 
     const size = rounded(0.9 + rand() * 1.4, 2);
     const glow = rounded(0.55 + rand() * 0.55, 2);
