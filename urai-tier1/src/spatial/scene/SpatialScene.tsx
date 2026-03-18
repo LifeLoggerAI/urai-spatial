@@ -170,20 +170,22 @@ function Atmosphere() {
 }
 
 function FloorPlane() {
+  const mode = useSceneStore((s) => s.mode);
+
+  if (mode === "lifemap") return null;
+
   return (
-    <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -8, 0]} receiveShadow>
-      <circleGeometry args={[50, 96]} />
-      <meshStandardMaterial
-        color="#0a0f1b"
+    <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -8, 0]}>
+      <circleGeometry args={[90, 96]} />
+      <meshBasicMaterial
+        color="#09101f"
         transparent
-        opacity={0.82}
-        roughness={1}
-        metalness={0}
+        opacity={mode === "sky" ? 0.035 : 0.09}
+        depthWrite={false}
       />
     </mesh>
   );
 }
-
 function CameraRig() {
   const { camera } = useThree();
   const mode = useSceneStore((s) => s.mode);
@@ -347,25 +349,25 @@ function StarField() {
   const selectStar = useSceneStore((s) => s.selectStar);
   const clearFocus = useSceneStore((s) => s.clearFocus);
 
-  const ambientCount = mode === "lifemap" ? 260 : mode === "sky" ? 140 : 80;
+    const ambientCount = mode === "lifemap" ? 520 : mode === "sky" ? 180 : 90;
 
   return (
     <group>
       {Array.from({ length: ambientCount }).map((_, i) => {
         const angle = i * 2.399963229728653;
-        const radius = 16 + (i % 15) * 3.6 + Math.sin(i * 0.77) * 2.2;
+                const radius = 10 + (i % 15) * 2.6 + Math.sin(i * 0.77) * 1.8;
         const x = Math.cos(angle) * radius;
-        const y = -10 + (i % 19) * 1.12 + Math.sin(i * 1.13) * 1.85;
-        const z = -12 - (i % 23) * 5.4 - Math.cos(i * 0.41) * 3.4;
+                const y = -14 + (i % 27) * 1.05 + Math.sin(i * 1.13) * 2.1;
+                const z = -6 - (i % 21) * 3.8 - Math.cos(i * 0.41) * 2.8;
         const size =
           mode === "lifemap"
-            ? 0.038 + (i % 5) * 0.012
+            ? 0.06 + (i % 5) * 0.018
             : mode === "sky"
             ? 0.028 + (i % 4) * 0.009
             : 0.02 + (i % 3) * 0.007;
         const opacity =
           mode === "lifemap"
-            ? 0.18 + (i % 7) * 0.045
+            ? 0.28 + (i % 7) * 0.055
             : mode === "sky"
             ? 0.1 + (i % 5) * 0.03
             : 0.05 + (i % 4) * 0.02;
