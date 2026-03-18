@@ -1,0 +1,30 @@
+== URAI Tier 1 final polish pass ==
+repo: /home/user/urai-spatial/urai-tier1
+stamp: 20260318_094643
+== pnpm build ==
+
+> urai-tier1@0.1.0 build /home/user/urai-spatial/urai-tier1
+> next build
+
+▲ Next.js 16.1.6 (Turbopack)
+
+  Creating an optimized production build ...
+✓ Compiled successfully in 29.7s
+  Running TypeScript ...
+Failed to compile.
+
+./src/spatial/scene/SpatialScene.tsx:530:14
+Type error: Property 'fov' does not exist on type 'Camera'.
+  Property 'fov' does not exist on type 'OrthographicCamera & { manual?: boolean | undefined; }'.
+
+[0m [90m 528 |[39m
+ [90m 529 |[39m     [36mif[39m (mode [33m===[39m [32m"home"[39m) {
+[31m[1m>[22m[39m[90m 530 |[39m       camera[33m.[39mfov [33m=[39m [33mTHREE[39m[33m.[39m[33mMathUtils[39m[33m.[39mlerp(camera[33m.[39mfov[33m,[39m [35m49[39m[33m,[39m [35m0.08[39m)[33m;[39m
+ [90m     |[39m              [31m[1m^[22m[39m
+ [90m 531 |[39m     } [36melse[39m [36mif[39m (mode [33m===[39m [32m"transitionToLifemap"[39m) {
+ [90m 532 |[39m       camera[33m.[39mfov [33m=[39m [33mTHREE[39m[33m.[39m[33mMathUtils[39m[33m.[39mlerp(camera[33m.[39mfov[33m,[39m [35m55[39m[33m,[39m [35m0.08[39m)[33m;[39m
+ [90m 533 |[39m     } [36melse[39m [36mif[39m (mode [33m===[39m [32m"lifemap"[39m) {[0m
+Next.js build worker exited with code: 1 and signal: null
+ ELIFECYCLE  Command failed with exit code 1.
+BUILD_OK=1
+PASS: build succeeded

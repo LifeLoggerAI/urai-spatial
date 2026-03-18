@@ -1,72 +1,96 @@
 "use client";
-import { toCanonicalSelectedStar } from "../state/toCanonicalSelectedStar";
 
-import type { SelectedStar } from "@/spatial/state/selectedStarContract";
-import { useMemo, useState } from "react";
-import { generateStars } from "@/spatial/data/stars";
-import { useSceneStore } from "@/spatial/state/sceneStore";
+import { useRef } from "react";
+import { useFrame } from "@react-three/fiber";
+import * as THREE from "three";
+import { useSceneStore } from "../state/sceneStore";
+import type { SpatialStar } from "../data/stars";
 
-export default function Starfield() {
-  const stars = useMemo(() => generateStars(), []);
-  const mode = useSceneStore((s) => s.mode);
-  const setMode = useSceneStore((s) => s.setMode);
-  const selectStar = useSceneStore((s) => s.selectStar);
-  const selectedStar = useSceneStore((s) => s.selectedStar);
-  const [hovered, setHovered] = useState<string | null>(null);
+function StarNode({
+  star,
+  selected,
+  dimmed,
+  mode,
+  onSelect,
+}: {
+  star: SpatialStar;
+  selected: boolean;
+  dimmed: boolean;
+  mode: "home" | "ascend" | "lifemap" | "focus" | "replay" | "pullback" | "descend_home";
+  onSelect: () => void;
+}) {
+  const ref = useRef<THREE.Mesh>(null);
+
+  useFrame(({ clock }) => {
+    const mesh = ref.current;
+    if (!mesh) return;
+
+    const pulse = 1 + Math.sin(clock.getElapsedTime() * 1.2 + star.size * 8) * 0.08;
+    const targetScale =
+      mode === "replay" && selected
+        ? 2.8 * pulse
+        : selected
+          ? 2.05 * pulse
+          : dimmed
+            ? 0.62 * pulse
+            : 1.0 * pulse;
+
+    mesh.scale.lerp(
+      new THREE.Vector3(targetScale, targetScale, targetScale),
+      0.12,
+    );
+  });
+
+  const opacity =
+    mode === "replay" && selected
+      ? 1
+      : selected
+        ? 0.98
+        : dimmed
+          ? 0.18
+          : 0.82;
 
   return (
-    <group>
+    <mesh
+      ref={ref}
+      position={star.position as [number, number, number]}
+      onClick={onSelect}
+    >
+      <sphereGeometry args={[star.size, 18, 18]} />
+      <meshBasicMaterial color={star.color} transparent opacity={opacity} />
+    </mesh>
+  );
+}
+
+export default function Starfield() {
+  const stars = useSceneStore((s) => s.stars);
+  const mode = useSceneStore((s) => s.mode);
+  const selectedStar = useSceneStore((s) => s.selectedStar);
+  const selectStar = useSceneStore((s) => s.selectStar);
+
+  const dimOthers = mode === "focus" || mode === "replay";
+
+  return (
+    <>
       {stars.map((star) => {
-        const isHovered = hovered === star.id;
         const isSelected = selectedStar?.id === star.id;
-        const isDimmed = !!selectedStar && !isSelected;
-        const drawScale = isSelected ? star.size * 1.55 : star.size;
-        const baseScale = mode === "lifemap" ? 1.15 : 1;
-        const scale = isSelected ? 1.7 : isHovered ? 1.35 : baseScale;
-        const hitRadius = Math.max(star.size * (mode === "lifemap" ? 8 : 5), 3.2);
+        const dimmed = dimOthers && !isSelected;
 
         return (
-          <group key={star.id} position={star.position}>
-            {isSelected ? (
-              <mesh scale={2.7}>
-                <sphereGeometry args={[star.size, 24, 24]} />
-                <meshBasicMaterial color={star.color} transparent opacity={0.12} />
-              </mesh>
-            ) : null}
-
-            <mesh scale={scale}>
-              <sphereGeometry args={[star.size, isSelected ? 24 : 12, isSelected ? 24 : 12]} />
-              <meshBasicMaterial color={star.color} />
-            </mesh>
-
-            <mesh
-              onPointerEnter={(e) => {
-                e.stopPropagation();
-                setHovered(star.id);
-              }}
-              onPointerLeave={(e) => {
-                e.stopPropagation();
-                setHovered((prev) => (prev === star.id ? null : prev));
-              }}
-              onPointerDown={(e) => {
-                e.stopPropagation();
-                selectStar(toCanonicalSelectedStar(star));
-                setMode("focus");
-              }}
-            >
-              <sphereGeometry args={[hitRadius, 12, 12]} />
-              <meshBasicMaterial transparent opacity={0} depthWrite={false} />
-            </mesh>
-        {/* URAI_FX_TIER_HALO */}
-        {isSelected ? (
-          <mesh scale={[drawScale * 2.35, drawScale * 2.35, drawScale * 2.35]}>
-            <sphereGeometry args={[1, 20, 20]} />
-            <meshBasicMaterial color={star.color} transparent opacity={0.10} depthWrite={false} />
-          </mesh>
-        ) : null}
-          </group>
+          <StarNode
+            key={star.id}
+            star={star}
+            selected={isSelected}
+            dimmed={dimmed}
+            mode={mode}
+            onSelect={() => {
+              if (mode === "lifemap" || mode === "focus") {
+                selectStar(star);
+              }
+            }}
+          />
         );
       })}
-    </group>
+    </>
   );
 }

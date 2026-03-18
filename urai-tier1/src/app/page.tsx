@@ -1,5 +1,5 @@
-import SceneController from "@/spatial/core/SceneController";
+import SpatialSceneClient from "../spatial/client/SpatialSceneClient";
 
 export default function Page() {
-  return <SceneController />;
+  return <SpatialSceneClient />;
 }
