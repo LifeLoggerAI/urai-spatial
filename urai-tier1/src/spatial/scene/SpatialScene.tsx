@@ -242,7 +242,7 @@ function StarNode({
     const t = clock.getElapsedTime();
     const pulse = 1 + Math.sin(t * 1.45 + star.order * 0.5) * 0.06 * star.glow;
     const targetScale = isSelected
-      ? pulse * 1.65
+      ? pulse * (mode === "focus" ? 2.05 : 1.75)
       : dimmed
       ? pulse * 0.82
       : pulse;
@@ -256,7 +256,7 @@ function StarNode({
 
     if (haloRef.current) {
       const haloScale = isSelected
-        ? 2.15 + Math.sin(t * 1.25) * 0.08
+        ? mode === "focus" ? 2.8 + Math.sin(t * 1.25) * 0.12 : 2.15 + Math.sin(t * 1.25) * 0.08
         : mode === "replay"
         ? 1.55
         : 1.25;
@@ -276,24 +276,24 @@ function StarNode({
           onSelect(star);
         }}
       >
-        <sphereGeometry args={[mode === "lifemap" ? star.size * 0.30 : star.size * 0.22, 18, 18]} />
+        <sphereGeometry args={[mode === "lifemap" ? star.size * 0.36 : star.size * 0.22, 18, 18]} />
         <meshStandardMaterial
           color={star.color}
           emissive={star.color}
-          emissiveIntensity={isSelected ? 3.0 : dimmed ? 0.5 : mode === "lifemap" ? star.intensity * 1.8 : star.intensity * 1.4}
+          emissiveIntensity={isSelected ? (mode === "focus" ? 4.4 : 3.2) : dimmed ? 0.5 : mode === "lifemap" ? star.intensity * 2.2 : star.intensity * 1.4}
           roughness={0.2}
           metalness={0.05}
           transparent
-          opacity={dimmed ? 0.34 : mode === "lifemap" ? 0.96 : 0.98}
+          opacity={dimmed ? 0.32 : mode === "lifemap" ? 0.98 : 0.98}
         />
       </mesh>
 
       <mesh ref={haloRef}>
-        <sphereGeometry args={[mode === "lifemap" ? star.size * 0.50 : star.size * 0.38, 18, 18]} />
+        <sphereGeometry args={[mode === "lifemap" ? star.size * 0.58 : star.size * 0.38, 18, 18]} />
         <meshBasicMaterial
           color={star.color}
           transparent
-          opacity={isSelected ? 0.20 : dimmed ? 0.03 : mode === "lifemap" ? 0.08 : 0.06}
+          opacity={isSelected ? (mode === "focus" ? 0.32 : 0.22) : dimmed ? 0.03 : mode === "lifemap" ? 0.10 : 0.06}
           side={THREE.BackSide}
         />
       </mesh>
@@ -328,9 +328,9 @@ function MemorySphere() {
         <meshPhysicalMaterial
           color={selectedStar.color}
           emissive={selectedStar.color}
-          emissiveIntensity={mode === "replay" ? 0.65 : 0.35}
+          emissiveIntensity={mode === "replay" ? 0.65 : mode === "focus" ? 0.52 : 0.35}
           transparent
-          opacity={mode === "replay" ? 0.18 : 0.09}
+          opacity={mode === "replay" ? 0.18 : mode === "focus" ? 0.14 : 0.09}
           roughness={0.08}
           metalness={0}
           transmission={0.82}
@@ -349,28 +349,28 @@ function StarField() {
   const selectStar = useSceneStore((s) => s.selectStar);
   const clearFocus = useSceneStore((s) => s.clearFocus);
 
-        const ambientCount = mode === "lifemap" ? 320 : mode === "sky" ? 110 : 45;
+          const ambientCount = mode === "lifemap" ? 460 : mode === "sky" ? 70 : 28;
 
   return (
     <group>
       {Array.from({ length: ambientCount }).map((_, i) => {
         const angle = i * 2.399963229728653;
-                                const radius = mode === "lifemap" ? 8 + (i % 17) * 2.2 + Math.sin(i * 0.77) * 1.4 : mode === "sky" ? 14 + (i % 15) * 3.1 + Math.sin(i * 0.77) * 2.0 : 22 + (i % 13) * 4.6 + Math.sin(i * 0.77) * 2.4;
+                                        const radius = mode === "lifemap" ? 6 + (i % 17) * 1.75 + Math.sin(i * 0.77) * 1.1 : mode === "sky" ? 18 + (i % 15) * 3.8 + Math.sin(i * 0.77) * 2.2 : 26 + (i % 13) * 5.2 + Math.sin(i * 0.77) * 2.6;
         const x = Math.cos(angle) * radius;
-                                const y = mode === "lifemap" ? -5 + (i % 29) * 0.58 + Math.sin(i * 1.13) * 1.2 : mode === "sky" ? -7 + (i % 23) * 0.72 + Math.sin(i * 1.13) * 1.4 : -9 + (i % 19) * 0.9 + Math.sin(i * 1.13) * 1.5;
-                                const z = mode === "lifemap" ? -10 - (i % 23) * 3.6 - Math.cos(i * 0.41) * 2.2 : mode === "sky" ? -18 - (i % 21) * 4.4 - Math.cos(i * 0.41) * 2.8 : -32 - (i % 17) * 5.6 - Math.cos(i * 0.41) * 3.2;
+                                        const y = mode === "lifemap" ? -2.5 + (i % 29) * 0.44 + Math.sin(i * 1.13) * 0.95 : mode === "sky" ? -7 + (i % 23) * 0.72 + Math.sin(i * 1.13) * 1.4 : -10 + (i % 19) * 0.9 + Math.sin(i * 1.13) * 1.6;
+                                        const z = mode === "lifemap" ? -12 - (i % 23) * 2.9 - Math.cos(i * 0.41) * 1.8 : mode === "sky" ? -22 - (i % 21) * 4.8 - Math.cos(i * 0.41) * 3.0 : -36 - (i % 17) * 6.0 - Math.cos(i * 0.41) * 3.6;
         const size =
           mode === "lifemap"
-            ? 0.032 + (i % 5) * 0.010
+            ? 0.020 + (i % 5) * 0.006
             : mode === "sky"
             ? 0.028 + (i % 4) * 0.009
-            : 0.010 + (i % 3) * 0.004;
+            : 0.007 + (i % 3) * 0.003;
         const opacity =
           mode === "lifemap"
-            ? 0.16 + (i % 7) * 0.03
+            ? 0.09 + (i % 7) * 0.018
             : mode === "sky"
             ? 0.1 + (i % 5) * 0.03
-            : 0.03 + (i % 4) * 0.01;
+            : 0.018 + (i % 4) * 0.007;
         const color = i % 9 === 0 ? "#dbe7ff" : i % 6 === 0 ? "#8fb5ff" : "#ffffff";
 
         return (
