@@ -1,3 +1,14 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+APP="$(pwd)"
+TS="$(date +%Y%m%d_%H%M%S)"
+AUD="$APP/_audit/tier1-interaction-lock/$TS"
+mkdir -p "$AUD"
+
+cp src/spatial/scene/SpatialScene.tsx "$AUD/scene.before.tsx" || true
+
+cat > src/spatial/scene/SpatialScene.tsx <<'EOT'
 "use client";
 
 import { Canvas, useFrame } from "@react-three/fiber";
@@ -17,7 +28,6 @@ const STARS: Star[] = Array.from({ length: 60 }, (_, i) => {
   const ring = 2.4 + (i % 6) * 0.55;
   const angle = (i / 60) * Math.PI * 2;
   const height = ((i % 7) - 3) * 0.22;
-
   return {
     id: `star-${i + 1}`,
     position: [
@@ -46,7 +56,6 @@ function CameraRig({
 
     if (selectedStar) {
       const [x, y, z] = selectedStar.position;
-
       if (mode === "focus") {
         targetPos.set(x * 0.45, y + 0.35, z + 1.25);
         targetLook.set(x, y, z);
@@ -82,10 +91,8 @@ function StarNode({
 
   useFrame(({ clock }) => {
     if (!meshRef.current) return;
-
     const pulse = 1 + Math.sin(clock.getElapsedTime() * 1.2) * 0.08;
     const scale = selected ? 1.9 * pulse : dimmed ? 0.7 : 1.0 * pulse;
-
     meshRef.current.scale.lerp(new THREE.Vector3(scale, scale, scale), 0.12);
   });
 
@@ -99,26 +106,52 @@ function StarNode({
       }}
     >
       <sphereGeometry args={[star.size, 12, 12]} />
-      <meshBasicMaterial
-        color={star.color}
-        transparent
-        opacity={dimmed ? 0.18 : 0.98}
-      />
+      <meshBasicMaterial color={star.color} transparent opacity={dimmed ? 0.18 : 0.98} />
     </mesh>
   );
 }
 
-function SceneContent({
+function HtmlOverlay({
   mode,
-  selectedId,
-  setSelectedId,
-  setMode,
+  hasSelection,
+  onReplay,
+  onFocus,
+  onHome,
 }: {
   mode: Mode;
-  selectedId: string | null;
-  setSelectedId: (id: string | null) => void;
-  setMode: (mode: Mode) => void;
+  hasSelection: boolean;
+  onReplay: () => void;
+  onFocus: () => void;
+  onHome: () => void;
 }) {
+  return (
+    <div
+      style={{
+        position: "absolute",
+        top: 12,
+        left: 12,
+        color: "white",
+        fontSize: 12,
+        zIndex: 20,
+        display: "flex",
+        gap: 8,
+        alignItems: "center",
+        flexWrap: "wrap",
+      }}
+    >
+      <span>Tier1 Active</span>
+      <span>Mode: {mode}</span>
+      <button onClick={onHome}>Home</button>
+      {hasSelection && mode !== "focus" && <button onClick={onFocus}>Focus</button>}
+      {hasSelection && mode !== "replay" && <button onClick={onReplay}>Replay</button>}
+    </div>
+  );
+}
+
+function SceneContent() {
+  const [mode, setMode] = useState<Mode>("lifemap");
+  const [selectedId, setSelectedId] = useState<string | null>(null);
+
   const selectedStar = useMemo(
     () => STARS.find((s) => s.id === selectedId) ?? null,
     [selectedId]
@@ -157,69 +190,8 @@ function SceneContent({
           <meshBasicMaterial color="#05070d" />
         </mesh>
       </group>
-    </>
-  );
-}
 
-function Overlay({
-  mode,
-  hasSelection,
-  onReplay,
-  onFocus,
-  onHome,
-}: {
-  mode: Mode;
-  hasSelection: boolean;
-  onReplay: () => void;
-  onFocus: () => void;
-  onHome: () => void;
-}) {
-  return (
-    <div
-      style={{
-        position: "absolute",
-        top: 12,
-        left: 12,
-        color: "white",
-        fontSize: 12,
-        zIndex: 20,
-        display: "flex",
-        gap: 8,
-        alignItems: "center",
-        flexWrap: "wrap",
-        fontFamily: "sans-serif",
-      }}
-    >
-      <span>Tier1 Active</span>
-      <span>Mode: {mode}</span>
-      <button onClick={onHome}>Home</button>
-      {hasSelection && mode !== "focus" && <button onClick={onFocus}>Focus</button>}
-      {hasSelection && mode !== "replay" && <button onClick={onReplay}>Replay</button>}
-    </div>
-  );
-}
-
-export default function SpatialScene() {
-  const [mode, setMode] = useState<Mode>("lifemap");
-  const [selectedId, setSelectedId] = useState<string | null>(null);
-
-  const selectedStar = useMemo(
-    () => STARS.find((s) => s.id === selectedId) ?? null,
-    [selectedId]
-  );
-
-  return (
-    <div style={{ width: "100vw", height: "100vh", background: "#02040a", position: "relative" }}>
-      <Canvas camera={{ position: [0, 0.4, 8], fov: 60 }}>
-        <SceneContent
-          mode={mode}
-          selectedId={selectedId}
-          setSelectedId={setSelectedId}
-          setMode={setMode}
-        />
-      </Canvas>
-
-      <Overlay
+      <HtmlOverlay
         mode={mode}
         hasSelection={!!selectedStar}
         onReplay={() => setMode("replay")}
@@ -229,6 +201,21 @@ export default function SpatialScene() {
           setMode("lifemap");
         }}
       />
+    </>
+  );
+}
+
+export default function SpatialScene() {
+  return (
+    <div style={{ width: "100vw", height: "100vh", background: "#02040a" }}>
+      <Canvas camera={{ position: [0, 0.4, 8], fov: 60 }}>
+        <SceneContent />
+      </Canvas>
     </div>
   );
 }
+EOT
+
+pnpm build | tee "$AUD/build.log"
+
+echo "DONE → $AUD"

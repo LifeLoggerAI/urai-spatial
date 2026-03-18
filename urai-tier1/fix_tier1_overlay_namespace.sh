@@ -1,3 +1,14 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+APP="$(pwd)"
+TS="$(date +%Y%m%d_%H%M%S)"
+AUD="$APP/_audit/tier1-overlay-fix/$TS"
+mkdir -p "$AUD"
+
+cp src/spatial/scene/SpatialScene.tsx "$AUD/scene.before.tsx" || true
+
+cat > src/spatial/scene/SpatialScene.tsx <<'EOT'
 "use client";
 
 import { Canvas, useFrame } from "@react-three/fiber";
@@ -232,3 +243,8 @@ export default function SpatialScene() {
     </div>
   );
 }
+EOT
+
+pnpm build | tee "$AUD/build.log"
+
+echo "DONE -> $AUD"

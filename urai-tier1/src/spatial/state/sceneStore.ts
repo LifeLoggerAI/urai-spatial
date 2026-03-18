@@ -8,6 +8,7 @@ export type SceneState = {
   mode: SceneMode;
   stars: SpatialStar[];
   selectedStarId: string | null;
+  modeEnteredAt: number;
   selectedStar: SelectedStar | null;
   replayEnteredAt: number | null;
   setMode: (mode: SceneMode) => void;
@@ -25,10 +26,11 @@ export const useSceneStore = create<SceneState>((set, get) => ({
   mode: "home",
   stars: SPATIAL_STARS,
   selectedStarId: null,
+  modeEnteredAt: Date.now(),
   selectedStar: null,
   replayEnteredAt: null,
 
-  setMode: (mode: SceneMode) => set({ mode }),
+  setMode: (mode: SceneMode) => set({ mode, modeEnteredAt: Date.now() }),
 
   enterSky: () =>
     set({
@@ -36,6 +38,7 @@ export const useSceneStore = create<SceneState>((set, get) => ({
       selectedStar: null,
       replayEnteredAt: null,
       mode: "sky",
+      modeEnteredAt: Date.now(),
     }),
 
   setSelectedStar: (star: SelectedStar | null) =>
@@ -44,6 +47,7 @@ export const useSceneStore = create<SceneState>((set, get) => ({
       selectedStar: star,
       replayEnteredAt: null,
       mode: star ? "focus" : "lifemap",
+      modeEnteredAt: Date.now(),
     }),
 
   selectStar: (star: SelectedStar | null) =>
@@ -52,6 +56,7 @@ export const useSceneStore = create<SceneState>((set, get) => ({
       selectedStar: star,
       replayEnteredAt: null,
       mode: star ? "focus" : "lifemap",
+      modeEnteredAt: Date.now(),
     }),
 
   clearFocus: () =>
@@ -60,6 +65,7 @@ export const useSceneStore = create<SceneState>((set, get) => ({
       selectedStar: null,
       replayEnteredAt: null,
       mode: "lifemap",
+      modeEnteredAt: Date.now(),
     }),
 
   exitFocusToLifeMap: () =>
@@ -68,6 +74,7 @@ export const useSceneStore = create<SceneState>((set, get) => ({
       selectedStar: null,
       replayEnteredAt: null,
       mode: "lifemap",
+      modeEnteredAt: Date.now(),
     }),
 
   enterReplay: () => {
@@ -75,6 +82,7 @@ export const useSceneStore = create<SceneState>((set, get) => ({
     if (!selectedStar) return;
     set({
       mode: "replay",
+      modeEnteredAt: Date.now(),
       replayEnteredAt: Date.now(),
     });
   },
@@ -83,6 +91,7 @@ export const useSceneStore = create<SceneState>((set, get) => ({
     const { selectedStar } = get();
     set({
       mode: selectedStar ? "focus" : "lifemap",
+      modeEnteredAt: Date.now(),
       replayEnteredAt: null,
     });
   },
@@ -91,6 +100,7 @@ export const useSceneStore = create<SceneState>((set, get) => ({
     const { selectedStar } = get();
     set({
       mode: selectedStar ? "focus" : "lifemap",
+      modeEnteredAt: Date.now(),
       replayEnteredAt: null,
     });
   },

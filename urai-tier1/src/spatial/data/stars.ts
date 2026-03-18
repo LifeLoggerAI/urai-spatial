@@ -69,7 +69,7 @@ export function buildSpatialStars(seed = STAR_SEED, count = STAR_COUNT): Spatial
     const chapterIndex = index % CHAPTERS.length;
     const labelIndex = index % LABELS.length;
 
-          const ring = 6 + chapterIndex * 2.2 + rand() * 1.6;
+          const ring = 6 + chapterIndex * 2 + Math.random() * 2;
           const angle = -Math.PI * 0.55 + (index / count) * Math.PI * 1.1 + rand() * 0.22;
           const height = (rand() - 0.5) * 5.5 + (chapterIndex - 2) * 0.45;
 
@@ -125,7 +125,7 @@ function normalizeStar(raw: Partial<SpatialStar>, index: number): SpatialStar {
     kind: (raw.kind as SpatialKind | undefined) ?? fallback.kind,
     description: raw.description ?? fallback.description,
     color: raw.color ?? fallback.color,
-    size: raw.size ?? fallback.size,
+    size: 0.08,
     glow: raw.glow ?? fallback.glow,
     intensity: raw.intensity ?? fallback.intensity,
     position: (raw.position as [number, number, number] | undefined) ?? fallback.position,

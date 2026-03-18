@@ -1,3 +1,14 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+APP="$(pwd)"
+TS="$(date +%Y%m%d_%H%M%S)"
+AUD="$APP/_audit/tier1-interaction-lock/$TS"
+mkdir -p "$AUD"
+
+cp src/spatial/scene/SpatialScene.tsx "$AUD/scene.before.tsx" || true
+
+cat > src/spatial/scene/SpatialScene.tsx <<'EOT'
 "use client";
 
 import { Canvas, useFrame } from "@react-three/fiber";
@@ -17,7 +28,6 @@ const STARS: Star[] = Array.from({ length: 60 }, (_, i) => {
   const ring = 2.4 + (i % 6) * 0.55;
   const angle = (i / 60) * Math.PI * 2;
   const height = ((i % 7) - 3) * 0.22;
-
   return {
     id: `star-${i + 1}`,
     position: [
@@ -46,7 +56,6 @@ function CameraRig({
 
     if (selectedStar) {
       const [x, y, z] = selectedStar.position;
-
       if (mode === "focus") {
         targetPos.set(x * 0.45, y + 0.35, z + 1.25);
         targetLook.set(x, y, z);
@@ -82,43 +91,23 @@ function StarNode({
 
   useFrame(({ clock }) => {
     if (!meshRef.current) return;
-
     const pulse = 1 + Math.sin(clock.getElapsedTime() * 1.2) * 0.08;
     const scale = selected ? 1.9 * pulse : dimmed ? 0.7 : 1.0 * pulse;
-
     meshRef.current.scale.lerp(new THREE.Vector3(scale, scale, scale), 0.12);
   });
 
   return (
-    <mesh
-      ref={meshRef}
-      position={star.position}
-      onClick={(e) => {
-        e.stopPropagation();
-        onClick();
-      }}
-    >
+    <mesh ref={meshRef} position={star.position} onClick={(e) => { e.stopPropagation(); onClick(); }}>
       <sphereGeometry args={[star.size, 12, 12]} />
-      <meshBasicMaterial
-        color={star.color}
-        transparent
-        opacity={dimmed ? 0.18 : 0.98}
-      />
+      <meshBasicMaterial color={star.color} transparent opacity={dimmed ? 0.18 : 0.98} />
     </mesh>
   );
 }
 
-function SceneContent({
-  mode,
-  selectedId,
-  setSelectedId,
-  setMode,
-}: {
-  mode: Mode;
-  selectedId: string | null;
-  setSelectedId: (id: string | null) => void;
-  setMode: (mode: Mode) => void;
-}) {
+function SceneContent() {
+  const [mode, setMode] = useState<Mode>("lifemap");
+  const [selectedId, setSelectedId] = useState<string | null>(null);
+
   const selectedStar = useMemo(
     () => STARS.find((s) => s.id === selectedId) ?? null,
     [selectedId]
@@ -157,11 +146,22 @@ function SceneContent({
           <meshBasicMaterial color="#05070d" />
         </mesh>
       </group>
+
+      <HtmlOverlay
+        mode={mode}
+        hasSelection={!!selectedStar}
+        onReplay={() => setMode("replay")}
+        onFocus={() => selectedStar && setMode("focus")}
+        onHome={() => {
+          setSelectedId(null);
+          setMode("lifemap");
+        }}
+      />
     </>
   );
 }
 
-function Overlay({
+function HtmlOverlay({
   mode,
   hasSelection,
   onReplay,
@@ -187,7 +187,6 @@ function Overlay({
         gap: 8,
         alignItems: "center",
         flexWrap: "wrap",
-        fontFamily: "sans-serif",
       }}
     >
       <span>Tier1 Active</span>
@@ -200,35 +199,16 @@ function Overlay({
 }
 
 export default function SpatialScene() {
-  const [mode, setMode] = useState<Mode>("lifemap");
-  const [selectedId, setSelectedId] = useState<string | null>(null);
-
-  const selectedStar = useMemo(
-    () => STARS.find((s) => s.id === selectedId) ?? null,
-    [selectedId]
-  );
-
   return (
-    <div style={{ width: "100vw", height: "100vh", background: "#02040a", position: "relative" }}>
+    <div style={{ width: "100vw", height: "100vh", background: "#02040a" }}>
       <Canvas camera={{ position: [0, 0.4, 8], fov: 60 }}>
-        <SceneContent
-          mode={mode}
-          selectedId={selectedId}
-          setSelectedId={setSelectedId}
-          setMode={setMode}
-        />
+        <SceneContent />
       </Canvas>
-
-      <Overlay
-        mode={mode}
-        hasSelection={!!selectedStar}
-        onReplay={() => setMode("replay")}
-        onFocus={() => selectedStar && setMode("focus")}
-        onHome={() => {
-          setSelectedId(null);
-          setMode("lifemap");
-        }}
-      />
     </div>
   );
 }
+EOT
+
+pnpm build | tee "$AUD/build.log"
+
+echo "DONE → $AUD"

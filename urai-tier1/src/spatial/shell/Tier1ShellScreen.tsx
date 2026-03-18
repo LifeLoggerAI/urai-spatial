@@ -208,12 +208,12 @@ export function Tier1ShellScreen(rawProps: Tier1ShellScreenProps) {
           <Tag>Home</Tag>
           <Tag>Tier 1</Tag>
         </div>
-        <div className={TITLE_CLASS}>Enter LifeMap</div>
+        <div className={TITLE_CLASS}></div>
         <p className={BODY_TEXT_CLASS}>
           Shell weight reduced. Scene atmosphere now carries phase identity while the Tier 1 dock only exposes core actions.
         </p>
         <button type="button" className={PRIMARY_BUTTON_CLASS} onClick={runEnterLifeMap}>
-          Enter LifeMap
+          
         </button>
       </div>
     </div>
