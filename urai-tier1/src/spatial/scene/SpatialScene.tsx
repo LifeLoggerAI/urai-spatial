@@ -46,6 +46,7 @@ import SeasonalCycleOverlay from "@/spatial/seasonal/SeasonalCycleOverlay";
 import NarratorOrchestrationOverlay from "@/spatial/narrator/NarratorOrchestrationOverlay";
 import WebXRRendererHandoffOverlay from "@/spatial/xr-renderer/WebXRRendererHandoffOverlay";
 import { useXrSessionStore } from "../state/xrSessionStore";
+import Ground from "./Ground";
 
 const shellButtonStyle: CSSProperties = {
   appearance: "none",
@@ -169,23 +170,6 @@ function Atmosphere() {
   );
 }
 
-function FloorPlane() {
-  const mode = useSceneStore((s) => s.mode);
-
-  if (mode === "lifemap") return null;
-
-  return (
-    <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -8, 0]}>
-      <circleGeometry args={[90, 96]} />
-      <meshBasicMaterial
-        color="#09101f"
-        transparent
-        opacity={mode === "sky" ? 0.035 : 0.09}
-        depthWrite={false}
-      />
-    </mesh>
-  );
-}
 function CameraRig() {
   const { camera } = useThree();
   const mode = useSceneStore((s) => s.mode);
@@ -860,7 +844,7 @@ export default function SpatialScene() {
           </>
         )}
         <CameraRig />
-        <FloorPlane />
+        <Ground />
         <StarField />
         <MemorySphere />
         <ReplayConstellation />

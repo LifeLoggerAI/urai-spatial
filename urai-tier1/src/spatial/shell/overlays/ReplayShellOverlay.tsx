@@ -1,161 +1,101 @@
-"use client";
+'use client';
 
 import React from "react";
-import { ActionButton } from "../ActionButton";
-import type { Tier1ShellOverlayProps } from "../Tier1ShellOverlayProps";
+import {
+  BODY_TEXT_CLASS,
+  GHOST_BUTTON_CLASS,
+  PANEL_STRONG_CLASS,
+  PRIMARY_BUTTON_CLASS,
+  SIDE_DOCK_CLASS,
+  TITLE_CLASS,
+} from "../Tier1ShellConstants";
+import ReplayDatum from "../ReplayDatum";
+import Tag from "../Tag";
 
-export default function ReplayShellOverlay(props: Tier1ShellOverlayProps) {
-  const {
-    mode,
-    uiLocked,
-    showMapWorld,
-    selectedId,
-    selected,
-    transitioning,
-    enterLifeMap,
-    returnHome,
-    enterReplay,
-    clearFocus,
-    exitReplay,
-    pillLabel,
-  } = props;
+export type ReplayShellOverlayProps = Record<string, unknown>;
 
-  if (mode !== "replay") return null;
+function firstText(...values: unknown[]) {
+  for (const value of values) {
+    if (typeof value === "string" && value.trim()) return value;
+  }
+  return "";
+}
+
+function pickFn(props: Record<string, unknown>, names: string[]) {
+  for (const name of names) {
+    const value = props[name];
+    if (typeof value === "function") return value as (...args: unknown[]) => void;
+  }
+  return null;
+}
+
+function asRecord(value: unknown) {
+  return value && typeof value === "object" ? (value as Record<string, unknown>) : {};
+}
+
+export function ReplayShellOverlay(rawProps: ReplayShellOverlayProps) {
+  const props = rawProps as Record<string, unknown>;
+  if (props.hidden === true || props.visible === false) return null;
+
+  const node = asRecord(props.node);
+  const memory = asRecord(props.memory);
+
+  const title =
+    firstText(
+      props.title,
+      memory.title,
+      node.title,
+      node.name,
+      memory.name,
+      props.label,
+    ) || "Replay Active";
+
+  const chapter =
+    firstText(props.chapter, memory.chapter, node.chapter) || "current";
+
+  const emotion =
+    firstText(props.emotion, memory.emotion, node.emotion) || "echo";
+
+  const summary =
+    firstText(
+      props.summary,
+      memory.summary,
+      memory.description,
+      node.summary,
+      node.description,
+    ) || "Replay is still a Tier 1 dock, but now has dedicated scene atmosphere and reduced shell weight.";
+
+  const exitReplay = pickFn(props, ["onExitReplay", "exitReplay", "onResumeFocus"]);
+  const returnHome = pickFn(props, ["onReturnHome", "returnHome", "onHome"]);
 
   return (
-        <section
-          style={{
-            position: "absolute",
-            left: 18,
-            top: "50%",
-            transform: "translateY(-50%)",
-            width: "min(420px, calc(100vw - 36px))",
-            borderRadius: 18,
-            border: "1px solid rgba(255,255,255,0.10)",
-            background: "rgba(7,11,24,0.80)",
-            boxShadow: "0 20px 60px rgba(0,0,0,0.42)",
-            padding: 22,
-            backdropFilter: "blur(16px)",
-            zIndex: 20,
-          }}
-        >
-          <div
-            style={{
-              fontSize: 10,
-              letterSpacing: "0.14em",
-              textTransform: "uppercase",
-              color: "rgba(204,216,245,0.62)",
-              marginBottom: 10,
-            }}
-          >
-            Replay / Memory Dive
-          </div>
-          <div
-            style={{
-              fontSize: 38,
-              lineHeight: 0.98,
-              fontWeight: 700,
-              letterSpacing: "-0.04em",
-              marginBottom: 14,
-            }}
-          >
-            {selected.title}
-          </div>
+    <div className={SIDE_DOCK_CLASS}>
+      <div className={[PANEL_STRONG_CLASS, "space-y-3 border-fuchsia-300/14 bg-slate-950/62"].join(" ")}>
+        <div className="flex items-center justify-between gap-2">
+          <Tag className="border-fuchsia-300/24 bg-fuchsia-500/10 text-fuchsia-100">Replay</Tag>
+          <div className="text-[11px] uppercase tracking-[0.2em] text-slate-400">{chapter}</div>
+        </div>
 
-          <div
-            style={{
-              height: 1,
-              background: "rgba(255,255,255,0.10)",
-              marginBottom: 14,
-            }}
-          />
+        <div className={TITLE_CLASS}>{title}</div>
+        <p className={BODY_TEXT_CLASS}>{summary}</p>
 
-          <div
-            style={{
-              display: "grid",
-              gridTemplateColumns: "repeat(3, minmax(0, 1fr))",
-              gap: 10,
-              marginBottom: 16,
-            }}
-          >
-            <ReplayDatum label="Origin" value={selected.tags[0]} />
-            <ReplayDatum label="Vector" value={selected.tags[1]} />
-            <ReplayDatum label="Thread" value={selected.tags[2]} />
-          </div>
+        <div className="space-y-2 rounded-2xl border border-white/10 bg-black/20 p-3">
+          <ReplayDatum label="Mode" value="Replay" />
+          <ReplayDatum label="Emotion" value={emotion} />
+          <ReplayDatum label="Chapter" value={chapter} />
+        </div>
 
-          <div
-            style={{
-              fontSize: 13,
-              lineHeight: 1.65,
-              color: "rgba(220,228,245,0.78)",
-              marginBottom: 16,
-            }}
-          >
-            Canonical replay holds the same selected memory identity across focus and replay, with a
-            stronger entered-memory composition and deterministic exit path.
-          </div>
-
-          <div style={{ display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap" }}>
-            <ActionButton disabled={uiLocked} label="EXIT REPLAY" onClick={exitReplay} />
-          </div>
-        </section>
-
-      <style jsx global>{`
-        @keyframes breathe {
-          0%,
-          100% {
-            transform: translate(-50%, -50%) scale(0.985);
-          }
-          50% {
-            transform: translate(-50%, -50%) scale(1.025);
-          }
-        }
-
-        @keyframes node-pulse {
-          0% {
-            transform: translate(-50%, -50%) scale(1);
-          }
-          100% {
-            transform: translate(-50%, -50%) scale(1.42);
-          }
-        }
-
-        @keyframes sky-streak-a {
-          0% {
-            transform: translate(-18%, -50%) scaleX(0.72);
-            opacity: 0.12;
-          }
-          100% {
-            transform: translate(22%, -50%) scaleX(1.12);
-            opacity: 1;
-          }
-        }
-
-        @keyframes sky-streak-b {
-          0% {
-            transform: translate(18%, -50%) scaleX(0.82);
-            opacity: 0.10;
-          }
-          100% {
-            transform: translate(-14%, -50%) scaleX(1.08);
-            opacity: 0.84;
-          }
-        }
-
-        @keyframes sky-core {
-          0% {
-            transform: translate(-50%, -50%) scale(0.72);
-            opacity: 0.10;
-          }
-          100% {
-            transform: translate(-50%, -50%) scale(1.18);
-            opacity: 1;
-          }
-        }
-      `}</style>
-    </main>
+        <div className="grid gap-2 pt-1">
+          <button type="button" className={PRIMARY_BUTTON_CLASS} onClick={() => exitReplay?.()}>
+            Exit Replay
+          </button>
+          <button type="button" className={GHOST_BUTTON_CLASS} onClick={() => returnHome?.()}>
+            Home
+          </button>
+        </div>
+      </div>
+    </div>
   );
 }
 
-  );
-}
+export default ReplayShellOverlay;
