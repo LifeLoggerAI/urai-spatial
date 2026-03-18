@@ -201,8 +201,8 @@ function CameraRig() {
       cp.set(0, 5.8, 30);
       lp.set(0, 2, 0);
     } else if (mode === "lifemap") {
-      cp.set(0, 8.8, 16.5);
-      lp.set(0, 3.2, -34);
+      cp.set(0, 6.4, 12.5);
+      lp.set(0, 1.8, -22);
     } else if (selectedStar) {
       const [x, y, z] = selectedStar.position;
       if (mode === "focus") {
@@ -276,24 +276,24 @@ function StarNode({
           onSelect(star);
         }}
       >
-        <sphereGeometry args={[star.size * 0.22, 18, 18]} />
+        <sphereGeometry args={[mode === "lifemap" ? star.size * 0.42 : star.size * 0.22, 18, 18]} />
         <meshStandardMaterial
           color={star.color}
           emissive={star.color}
-          emissiveIntensity={isSelected ? 2.8 : dimmed ? 0.48 : star.intensity * 1.4}
+          emissiveIntensity={isSelected ? 3.2 : dimmed ? 0.52 : mode === "lifemap" ? star.intensity * 2.4 : star.intensity * 1.4}
           roughness={0.2}
           metalness={0.05}
           transparent
-          opacity={dimmed ? 0.32 : 0.98}
+          opacity={dimmed ? 0.38 : mode === "lifemap" ? 1 : 0.98}
         />
       </mesh>
 
       <mesh ref={haloRef}>
-        <sphereGeometry args={[star.size * 0.38, 18, 18]} />
+        <sphereGeometry args={[mode === "lifemap" ? star.size * 0.68 : star.size * 0.38, 18, 18]} />
         <meshBasicMaterial
           color={star.color}
           transparent
-          opacity={isSelected ? 0.18 : dimmed ? 0.02 : 0.06}
+          opacity={isSelected ? 0.22 : dimmed ? 0.03 : mode === "lifemap" ? 0.12 : 0.06}
           side={THREE.BackSide}
         />
       </mesh>
@@ -349,25 +349,25 @@ function StarField() {
   const selectStar = useSceneStore((s) => s.selectStar);
   const clearFocus = useSceneStore((s) => s.clearFocus);
 
-    const ambientCount = mode === "lifemap" ? 520 : mode === "sky" ? 180 : 90;
+      const ambientCount = mode === "lifemap" ? 760 : mode === "sky" ? 220 : 100;
 
   return (
     <group>
       {Array.from({ length: ambientCount }).map((_, i) => {
         const angle = i * 2.399963229728653;
-                const radius = 10 + (i % 15) * 2.6 + Math.sin(i * 0.77) * 1.8;
+                        const radius = 4 + (i % 17) * 1.65 + Math.sin(i * 0.77) * 1.2;
         const x = Math.cos(angle) * radius;
-                const y = -14 + (i % 27) * 1.05 + Math.sin(i * 1.13) * 2.1;
-                const z = -6 - (i % 21) * 3.8 - Math.cos(i * 0.41) * 2.8;
+                        const y = -8 + (i % 29) * 0.72 + Math.sin(i * 1.13) * 1.7;
+                        const z = 4 - (i % 23) * 2.4 - Math.cos(i * 0.41) * 1.8;
         const size =
           mode === "lifemap"
-            ? 0.06 + (i % 5) * 0.018
+            ? 0.085 + (i % 5) * 0.022
             : mode === "sky"
             ? 0.028 + (i % 4) * 0.009
             : 0.02 + (i % 3) * 0.007;
         const opacity =
           mode === "lifemap"
-            ? 0.28 + (i % 7) * 0.055
+            ? 0.42 + (i % 7) * 0.05
             : mode === "sky"
             ? 0.1 + (i % 5) * 0.03
             : 0.05 + (i % 4) * 0.02;
