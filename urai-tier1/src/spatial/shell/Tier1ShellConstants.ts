@@ -37,3 +37,25 @@ export const SECONDARY_BUTTON_CLASS =
 
 export const GHOST_BUTTON_CLASS =
   "inline-flex items-center justify-center rounded-2xl border border-white/8 bg-transparent px-3 py-2 text-sm font-medium text-slate-300 transition hover:bg-white/6";
+
+export const TIER1_FINAL_PRELOCK = {
+  tier2Excluded: true,
+  cameraLedRequired: true,
+  dockLedDisallowed: true,
+  preserveExistingShell: true,
+} as const
+
+export const TIER1_CAMERA_PRELOCK = {
+  homeDwellMs: 520,
+  focusDwellMs: 680,
+  replayDwellMs: 760,
+  returnHomeDwellMs: 620,
+  ease: 0.085,
+} as const
+
+export const TIER1_FIELD_PRELOCK = {
+  compactField: true,
+  emphasizeLocalNodeContrast: true,
+  reduceDockDependence: true,
+  readabilityBias: 1.15,
+} as const
