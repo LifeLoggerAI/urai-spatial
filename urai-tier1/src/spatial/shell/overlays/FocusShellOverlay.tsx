@@ -1,0 +1,91 @@
+"use client";
+
+import React from "react";
+import { ActionButton } from "../ActionButton";
+import type { Tier1ShellOverlayProps } from "../Tier1ShellOverlayProps";
+
+export default function FocusShellOverlay(props: Tier1ShellOverlayProps) {
+  const {
+    mode,
+    uiLocked,
+    showMapWorld,
+    selectedId,
+    selected,
+    transitioning,
+    enterLifeMap,
+    returnHome,
+    enterReplay,
+    clearFocus,
+    exitReplay,
+    pillLabel,
+  } = props;
+
+  if (mode !== "focus") return null;
+
+  return (
+        <aside
+          style={{
+            position: "absolute",
+            right: 18,
+            bottom: 18,
+            width: "min(320px, calc(100vw - 36px))",
+            borderRadius: 16,
+            border: "1px solid rgba(255,255,255,0.10)",
+            background: "rgba(7,11,24,0.78)",
+            boxShadow: "0 18px 56px rgba(0,0,0,0.38)",
+            padding: 18,
+            backdropFilter: "blur(16px)",
+            zIndex: 20,
+          }}
+        >
+          <div
+            style={{
+              fontSize: 10,
+              letterSpacing: "0.14em",
+              textTransform: "uppercase",
+              color: "rgba(204,216,245,0.62)",
+              marginBottom: 10,
+            }}
+          >
+            Focus
+          </div>
+          <div
+            style={{
+              fontSize: 26,
+              lineHeight: 1.02,
+              fontWeight: 700,
+              marginBottom: 8,
+              letterSpacing: "-0.03em",
+            }}
+          >
+            {selected.title}
+          </div>
+          <div
+            style={{
+              display: "flex",
+              gap: 8,
+              marginBottom: 10,
+              flexWrap: "wrap",
+            }}
+          >
+            <Tag value={selected.chapter} />
+            <Tag value={selected.domain} />
+          </div>
+          <div
+            style={{
+              fontSize: 13,
+              lineHeight: 1.65,
+              color: "rgba(220,228,245,0.78)",
+              marginBottom: 16,
+            }}
+          >
+            {selected.summary}
+          </div>
+          <div style={{ display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap" }}>
+            <ActionButton disabled={uiLocked} label="ENTER REPLAY" onClick={enterReplay} />
+            <ActionButton disabled={uiLocked} label="CLEAR FOCUS" onClick={clearFocus} />
+          </div>
+        </aside>
+
+  );
+}
