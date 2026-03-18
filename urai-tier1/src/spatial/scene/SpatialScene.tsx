@@ -821,6 +821,7 @@ export default function SpatialScene() {
       style={{
         position: "relative",
         minHeight: "100svh",
+          height: "100svh",
         overflow: "hidden",
         background:
           "radial-gradient(1200px 700px at 50% -10%, rgba(91,115,191,0.16), transparent 56%), linear-gradient(180deg, #0a1020 0%, #04060b 48%, #020307 100%)",
@@ -837,6 +838,7 @@ export default function SpatialScene() {
       <SpatialCuratedDeckVaultBootstrap />
       <Canvas
         camera={{ position: [0, 6, 30], fov: 42, near: 0.1, far: 200 }}
+          style={{ position: "absolute", inset: 0, width: "100%", height: "100%" }}
         dpr={[1, 2]}
         gl={{ antialias: true, alpha: false }}
         onPointerMissed={() => {
