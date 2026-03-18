@@ -189,8 +189,8 @@ export function ReplayOverlay() {
   const selectedStar = useSceneStore((s) => s.selectedStar);
 
   const enterReplay = useSceneStore((s) => s.enterReplay);
-  const exitReplayToFocus = useSceneStore((s) => s.exitReplayToFocus);
-  const exitFocusToLifeMap = useSceneStore((s) => s.exitFocusToLifeMap);
+  const exitReplay = useSceneStore((s) => s.exitReplay);
+  const clearFocus = useSceneStore((s) => s.clearFocus);
 
   const steps = useMemo(() => buildReplaySteps(selectedStar), [selectedStar]);
   const glow = useMemo(() => getReplayGlow(selectedStar), [selectedStar]);
@@ -207,7 +207,7 @@ export function ReplayOverlay() {
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (e.key === "Escape" && mode === "replay") {
-        exitReplayToFocus();
+        exitReplay();
         return;
       }
 
@@ -238,7 +238,7 @@ export function ReplayOverlay() {
 
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [mode, selectedStar, enterReplay, exitReplayToFocus, steps.length]);
+  }, [mode, selectedStar, enterReplay, exitReplay, steps.length]);
 
   useEffect(() => {
     if (mode !== "replay" || !playing || steps.length <= 1) return;
@@ -272,7 +272,7 @@ export function ReplayOverlay() {
 
   return (
     <div style={shellStyle}>
-      <div style={overlayStyle} onClick={() => exitReplayToFocus()}>
+      <div style={overlayStyle} onClick={() => exitReplay()}>
         <div style={panelStyle} onClick={(e) => e.stopPropagation()}>
           <div style={headerStyle}>
             <div style={eyebrowStyle}>Replay Sequence</div>
@@ -399,10 +399,10 @@ export function ReplayOverlay() {
             </div>
 
             <div style={transportStyle}>
-              <Button quiet onClick={() => exitFocusToLifeMap()}>
+              <Button quiet onClick={() => clearFocus()}>
                 Exit to LifeMap
               </Button>
-              <Button onClick={() => exitReplayToFocus()}>Back to Focus</Button>
+              <Button onClick={() => exitReplay()}>Back to LifeMap</Button>
             </div>
           </div>
         </div>

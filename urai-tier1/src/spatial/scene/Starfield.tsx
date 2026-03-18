@@ -10,7 +10,7 @@ export default function Starfield() {
   const stars = useMemo(() => generateStars(), []);
   const mode = useSceneStore((s) => s.mode);
   const setMode = useSceneStore((s) => s.setMode);
-  const setSelectedStar = useSceneStore((s) => s.setSelectedStar);
+  const selectStar = useSceneStore((s) => s.selectStar);
   const selectedStar = useSceneStore((s) => s.selectedStar);
   const [hovered, setHovered] = useState<string | null>(null);
 
@@ -50,7 +50,7 @@ export default function Starfield() {
               }}
               onPointerDown={(e) => {
                 e.stopPropagation();
-                setSelectedStar(toCanonicalSelectedStar(star));
+                selectStar(toCanonicalSelectedStar(star));
                 setMode("focus");
               }}
             >

@@ -2,7 +2,14 @@ import { create } from "zustand";
 import { SPATIAL_STARS, type SpatialStar } from "../data/stars";
 import type { SelectedStar } from "@/spatial/state/selectedStarContract";
 
-export type SceneMode = "home" | "sky" | "lifemap" | "focus" | "replay";
+export type SceneMode =
+  | "home"
+  | "ascend"
+  | "lifemap"
+  | "focus"
+  | "replay"
+  | "pullback"
+  | "descend_home";
 
 export type SceneState = {
   mode: SceneMode;
@@ -12,14 +19,15 @@ export type SceneState = {
   selectedStar: SelectedStar | null;
   replayEnteredAt: number | null;
   setMode: (mode: SceneMode) => void;
-  enterSky: () => void;
-  setSelectedStar: (star: SelectedStar | null) => void;
+  ascend: () => void;
+  descend: () => void;
   selectStar: (star: SelectedStar | null) => void;
   clearFocus: () => void;
-  exitFocusToLifeMap: () => void;
   enterReplay: () => void;
   exitReplay: () => void;
-  exitReplayToFocus: () => void;
+  finishPullback: () => void;
+  finishAscend: () => void;
+  finishDescend: () => void;
 };
 
 export const useSceneStore = create<SceneState>((set, get) => ({
@@ -32,21 +40,18 @@ export const useSceneStore = create<SceneState>((set, get) => ({
 
   setMode: (mode: SceneMode) => set({ mode, modeEnteredAt: Date.now() }),
 
-  enterSky: () =>
+  ascend: () =>
     set({
       selectedStarId: null,
       selectedStar: null,
       replayEnteredAt: null,
-      mode: "sky",
+      mode: "ascend",
       modeEnteredAt: Date.now(),
     }),
 
-  setSelectedStar: (star: SelectedStar | null) =>
+  descend: () =>
     set({
-      selectedStarId: star?.id ?? null,
-      selectedStar: star,
-      replayEnteredAt: null,
-      mode: star ? "focus" : "lifemap",
+      mode: "descend_home",
       modeEnteredAt: Date.now(),
     }),
 
@@ -68,15 +73,6 @@ export const useSceneStore = create<SceneState>((set, get) => ({
       modeEnteredAt: Date.now(),
     }),
 
-  exitFocusToLifeMap: () =>
-    set({
-      selectedStarId: null,
-      selectedStar: null,
-      replayEnteredAt: null,
-      mode: "lifemap",
-      modeEnteredAt: Date.now(),
-    }),
-
   enterReplay: () => {
     const { selectedStar } = get();
     if (!selectedStar) return;
@@ -88,20 +84,31 @@ export const useSceneStore = create<SceneState>((set, get) => ({
   },
 
   exitReplay: () => {
-    const { selectedStar } = get();
     set({
-      mode: selectedStar ? "focus" : "lifemap",
+      mode: "pullback",
       modeEnteredAt: Date.now(),
       replayEnteredAt: null,
     });
   },
 
-  exitReplayToFocus: () => {
-    const { selectedStar } = get();
+  finishPullback: () => {
     set({
-      mode: selectedStar ? "focus" : "lifemap",
+      mode: "lifemap",
       modeEnteredAt: Date.now(),
-      replayEnteredAt: null,
+    });
+  },
+
+  finishAscend: () => {
+    set({
+      mode: "lifemap",
+      modeEnteredAt: Date.now(),
+    });
+  },
+
+  finishDescend: () => {
+    set({
+      mode: "home",
+      modeEnteredAt: Date.now(),
     });
   },
 }));

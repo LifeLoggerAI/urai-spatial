@@ -1,67 +1,93 @@
 "use client";
 
 import { Canvas, useFrame } from "@react-three/fiber";
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef } from "react";
 import * as THREE from "three";
+import { useSceneStore } from "../state/sceneStore";
+import type { SpatialStar } from "../data/stars";
 
-type Mode = "lifemap" | "focus" | "replay";
+function easeInOut(t: number) {
+  return t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2;
+}
 
-type Star = {
-  id: string;
-  position: [number, number, number];
-  color: string;
-  size: number;
-};
-
-const STARS: Star[] = Array.from({ length: 60 }, (_, i) => {
-  const ring = 2.4 + (i % 6) * 0.55;
-  const angle = (i / 60) * Math.PI * 2;
-  const height = ((i % 7) - 3) * 0.22;
-
-  return {
-    id: `star-${i + 1}`,
-    position: [
-      Math.cos(angle) * ring,
-      height,
-      Math.sin(angle) * ring - 2.5,
-    ],
-    color: i % 3 === 0 ? "#ffffff" : i % 3 === 1 ? "#c9ddff" : "#ffd98a",
-    size: 0.07 + (i % 5) * 0.01,
-  };
-});
-
-function CameraRig({
-  mode,
-  selectedStar,
-}: {
-  mode: Mode;
-  selectedStar: Star | null;
-}) {
-  const refPos = useRef(new THREE.Vector3(0, 0.4, 8));
-  const refLook = useRef(new THREE.Vector3(0, 0, -2.5));
+function CameraRig() {
+  const { mode, selectedStar, modeEnteredAt, finishAscend, finishDescend, finishPullback } = useSceneStore();
+  const pos = useRef(new THREE.Vector3(0, 1.6, 11));
+  const look = useRef(new THREE.Vector3(0, 0.2, -2.5));
 
   useFrame(({ camera }, delta) => {
-    const targetPos = new THREE.Vector3(0, 0.4, 8);
-    const targetLook = new THREE.Vector3(0, 0, -2.5);
+    const targetPos = new THREE.Vector3(0, 1.6, 11);
+    const targetLook = new THREE.Vector3(0, 0.2, -2.5);
+    const age = Date.now() - modeEnteredAt;
 
-    if (selectedStar) {
-      const [x, y, z] = selectedStar.position;
+    if (mode === "home") {
+      const breathe = Math.sin(Date.now() * 0.0012) * 0.08;
+      targetPos.set(0, 1.82 + breathe, 12.2);
+      targetLook.set(0, 0.35, -1.4);
+    }
 
-      if (mode === "focus") {
-        targetPos.set(x * 0.45, y + 0.35, z + 1.25);
-        targetLook.set(x, y, z);
-      } else if (mode === "replay") {
-        targetPos.set(x * 0.2, y + 0.12, z + 0.7);
-        targetLook.set(x, y, z - 0.08);
+    if (mode === "ascend") {
+      const rawT = Math.min(1, age / 1100);
+      const t = easeInOut(rawT);
+      targetPos.set(0, 1.8 - t * 1.4, 12.2 - t * 4.2);
+      targetLook.set(0, 0.35 - t * 0.2, -1.4 - t * 1.2);
+      if (rawT >= 1) {
+        finishAscend();
       }
     }
 
-    const t = 1 - Math.exp(-delta * 3.2);
-    refPos.current.lerp(targetPos, t);
-    refLook.current.lerp(targetLook, t);
+    if (mode === "lifemap") {
+      const drift = Math.sin(Date.now() * 0.0006) * 0.15;
+      targetPos.set(drift, 0.46, 8);
+      targetLook.set(0, 0, -2.5);
+    }
 
-    camera.position.copy(refPos.current);
-    camera.lookAt(refLook.current);
+    if (selectedStar && mode === "focus") {
+      const [x, y, z] = selectedStar.position;
+      targetPos.set(x * 0.34, y + 0.24, z + 1.75);
+      targetLook.set(x, y, z);
+    }
+
+    if (selectedStar && mode === "replay") {
+      const [x, y, z] = selectedStar.position;
+      const wobble = Math.sin(Date.now() * 0.0017) * 0.10;
+      targetPos.set(x * 0.10 + wobble, y + 0.02, z + 1.05);
+      targetLook.set(x, y - 0.02, z - 0.16);
+    }
+    
+    if (mode === "pullback") {
+        const rawT = Math.min(1, age / 900);
+        const t = easeInOut(rawT);
+        if (selectedStar) {
+            const [x, y, z] = selectedStar.position;
+            const startPos = new THREE.Vector3(x * 0.10, y + 0.02, z + 1.05);
+            const startLook = new THREE.Vector3(x, y - 0.02, z - 0.16);
+            const endPos = new THREE.Vector3(0, 0.46, 8);
+            const endLook = new THREE.Vector3(0, 0, -2.5);
+            targetPos.lerpVectors(startPos, endPos, t);
+            targetLook.lerpVectors(startLook, endLook, t);
+        }
+        if(rawT >= 1) {
+            finishPullback();
+        }
+    }
+
+    if (mode === "descend_home") {
+      const rawT = Math.min(1, age / 900);
+      const t = easeInOut(rawT);
+      targetPos.set(0, 0.4 + t * 1.4, 8 + t * 4.2);
+      targetLook.set(0, 0 + t * 0.35, -2.5 + t * 1.1);
+       if (rawT >= 1) {
+        finishDescend();
+      }
+    }
+
+    const lerpT = 1 - Math.exp(-delta * 3.5);
+    pos.current.lerp(targetPos, lerpT);
+    look.current.lerp(targetLook, lerpT);
+
+    camera.position.copy(pos.current);
+    camera.lookAt(look.current);
   });
 
   return null;
@@ -71,75 +97,78 @@ function StarNode({
   star,
   selected,
   dimmed,
-  onClick,
+  onSelect,
+  globalFade,
 }: {
-  star: Star;
+  star: SpatialStar;
   selected: boolean;
   dimmed: boolean;
-  onClick: () => void;
+  globalFade: number;
+  onSelect: () => void;
 }) {
-  const meshRef = useRef<THREE.Mesh>(null);
+  const ref = useRef<THREE.Mesh>(null);
 
   useFrame(({ clock }) => {
-    if (!meshRef.current) return;
-
-    const pulse = 1 + Math.sin(clock.getElapsedTime() * 1.2) * 0.08;
-    const scale = selected ? 1.9 * pulse : dimmed ? 0.7 : 1.0 * pulse;
-
-    meshRef.current.scale.lerp(new THREE.Vector3(scale, scale, scale), 0.12);
+    if (!ref.current) return;
+    const pulse = 1 + Math.sin(clock.getElapsedTime() * 1.3 + star.size * 10) * 0.06;
+    const scale = selected ? 2.35 * pulse : dimmed ? 0.72 : 1.0 * pulse;
+    ref.current.scale.lerp(new THREE.Vector3(scale, scale, scale), 0.12);
   });
 
   return (
     <mesh
-      ref={meshRef}
+      ref={ref}
       position={star.position}
       onClick={(e) => {
         e.stopPropagation();
-        onClick();
+        onSelect();
       }}
     >
       <sphereGeometry args={[star.size, 12, 12]} />
-      <meshBasicMaterial
-        color={star.color}
-        transparent
-        opacity={dimmed ? 0.18 : 0.98}
-      />
+      <meshBasicMaterial color={star.color} transparent opacity={dimmed ? 0.02 : 1.0 - globalFade} />
     </mesh>
   );
 }
 
-function SceneContent({
-  mode,
-  selectedId,
-  setSelectedId,
-  setMode,
-}: {
-  mode: Mode;
-  selectedId: string | null;
-  setSelectedId: (id: string | null) => void;
-  setMode: (mode: Mode) => void;
-}) {
-  const selectedStar = useMemo(
-    () => STARS.find((s) => s.id === selectedId) ?? null,
-    [selectedId]
-  );
+function SceneContent() {
+    const { mode, stars, selectedStar, selectStar } = useSceneStore();
+ 
+    const dimOthers = mode === "focus" || mode === "replay";
+    const globalFade = mode === "focus" ? 0.72 : mode === "replay" ? 0.88 : 0;
+    const showGround = mode === 'home' || mode === 'ascend' || mode === 'descend_home';
 
-  return (
+    return (
     <>
-      <CameraRig mode={mode} selectedStar={selectedStar} />
+      <CameraRig />
 
-      <ambientLight intensity={1.1} />
-      <pointLight position={[4, 6, 6]} intensity={8} />
+      <ambientLight
+        intensity={
+          mode === "replay"
+            ? 0.35
+            : mode === "focus"
+            ? 0.55
+            : 1.05
+        }
+      />
+      <pointLight position={[4, 6, 6]} intensity={mode === "replay" ? 10 : 8} />
+      <fog
+        attach="fog"
+        args={[
+          mode === "replay" ? "#18031f" : mode === "focus" ? "#02030a" : "#02040a",
+          mode === "replay" ? 2.0 : mode === "focus" ? 3.8 : 6,
+          18
+        ]}
+      />
 
-      {STARS.map((star) => (
+      {stars.map((star) => (
         <StarNode
           key={star.id}
           star={star}
-          selected={selectedId === star.id}
-          dimmed={!!selectedId && selectedId !== star.id}
-          onClick={() => {
-            setSelectedId(star.id);
-            setMode("focus");
+          selected={selectedStar?.id === star.id}
+          dimmed={dimOthers && selectedStar?.id !== star.id}
+          globalFade={globalFade}
+          onSelect={() => {
+            selectStar(star);
           }}
         />
       ))}
@@ -151,84 +180,50 @@ function SceneContent({
         </mesh>
       )}
 
-      <group position={[0, -1.6, -2.5]}>
-        <mesh rotation={[-Math.PI / 2, 0, 0]}>
-          <planeGeometry args={[14, 14]} />
-          <meshBasicMaterial color="#05070d" />
-        </mesh>
-      </group>
+      {showGround && (
+          <group>
+            <group position={[0, -1.6, -2.5]}>
+                <mesh rotation={[-Math.PI / 2, 0, 0]}>
+                <planeGeometry args={[14, 14]} />
+                <meshBasicMaterial color={mode === "replay" ? "#04040a" : "#05070d"} />
+                </mesh>
+            </group>
+
+            <mesh position={[0, 0.25, -1.4]}>
+                <sphereGeometry args={[0.14, 16, 16]} />
+                <meshBasicMaterial color="#ffffff" transparent opacity={0.7} />
+            </mesh>
+        </group>
+      )}
     </>
   );
 }
 
-function Overlay({
-  mode,
-  hasSelection,
-  onReplay,
-  onFocus,
-  onHome,
-}: {
-  mode: Mode;
-  hasSelection: boolean;
-  onReplay: () => void;
-  onFocus: () => void;
-  onHome: () => void;
-}) {
-  return (
-    <div
-      style={{
-        position: "absolute",
-        top: 12,
-        left: 12,
-        color: "white",
-        fontSize: 12,
-        zIndex: 20,
-        display: "flex",
-        gap: 8,
-        alignItems: "center",
-        flexWrap: "wrap",
-        fontFamily: "sans-serif",
-      }}
-    >
-      <span>Tier1 Active</span>
-      <span>Mode: {mode}</span>
-      <button onClick={onHome}>Home</button>
-      {hasSelection && mode !== "focus" && <button onClick={onFocus}>Focus</button>}
-      {hasSelection && mode !== "replay" && <button onClick={onReplay}>Replay</button>}
-    </div>
-  );
-}
 
 export default function SpatialScene() {
-  const [mode, setMode] = useState<Mode>("lifemap");
-  const [selectedId, setSelectedId] = useState<string | null>(null);
+  // This is a placeholder for scene interaction.
+  // In a real scenario, this would be driven by user input.
+  useEffect(() => {
+    const { ascend, descend, enterReplay, exitReplay, clearFocus } = useSceneStore.getState();
+    const handleKeyDown = (e: KeyboardEvent) => {
+        const hasSelection = !!useSceneStore.getState().selectedStar;
+        const mode = useSceneStore.getState().mode;
 
-  const selectedStar = useMemo(
-    () => STARS.find((s) => s.id === selectedId) ?? null,
-    [selectedId]
-  );
+        if (e.key === 'e') ascend();
+        if (e.key === 'h') descend();
+        if (e.key === 'r' && hasSelection) enterReplay();
+        if (e.key === 'f' && hasSelection) clearFocus();
+        if (e.key === 'x' && mode === 'replay') exitReplay();
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
 
   return (
     <div style={{ width: "100vw", height: "100vh", background: "#02040a", position: "relative" }}>
-      <Canvas camera={{ position: [0, 0.4, 8], fov: 60 }}>
-        <SceneContent
-          mode={mode}
-          selectedId={selectedId}
-          setSelectedId={setSelectedId}
-          setMode={setMode}
-        />
+      <Canvas camera={{ position: [0, 1.6, 11], fov: 60 }}>
+        <SceneContent />
       </Canvas>
-
-      <Overlay
-        mode={mode}
-        hasSelection={!!selectedStar}
-        onReplay={() => setMode("replay")}
-        onFocus={() => selectedStar && setMode("focus")}
-        onHome={() => {
-          setSelectedId(null);
-          setMode("lifemap");
-        }}
-      />
     </div>
   );
 }
