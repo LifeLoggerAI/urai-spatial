@@ -1,6 +1,6 @@
 "use client";
 
-import { Canvas, ThreeEvent, useFrame, useThree } from "@react-three/fiber";
+import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import { useEffect, useMemo, useRef, useState } from "react";
 import * as THREE from "three";
 
@@ -16,17 +16,14 @@ type Phase =
   | "detail"
   | "transitionHomeFromGround";
 
+type StarTier = "near" | "mid" | "far";
+type GroundObjectId = "cube" | "hanger" | "spire";
+
 type Star = {
   id: string;
   position: [number, number, number];
   size: number;
-};
-
-type GroundObjectId = "cube" | "hanger" | "spire";
-
-type GroundObjectDef = {
-  id: GroundObjectId;
-  position: [number, number, number];
+  tier: StarTier;
 };
 
 type CameraPose = {
@@ -35,31 +32,18 @@ type CameraPose = {
   fov: number;
 };
 
-const STAR_SEED = 41083;
-
-function easeInOut(t: number) {
-  return t < 0.5
-    ? 4 * t * t * t
-    : 1 - Math.pow(-2 * t + 2, 3) / 2;
-}
-
-function easeOutCubic(t: number) {
-  return 1 - Math.pow(1 - t, 3);
-}
+const STAR_SEED = 170141;
 
 function clamp01(v: number) {
   return Math.max(0, Math.min(1, v));
 }
 
-function mulberry32(seed: number) {
-  let a = seed >>> 0;
-  return function () {
-    a |= 0;
-    a = (a + 0x6d2b79f5) | 0;
-    let t = Math.imul(a ^ (a >>> 15), 1 | a);
-    t ^= t + Math.imul(t ^ (t >>> 7), 61 | t);
-    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
-  };
+function easeInOutCubic(t: number) {
+  return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
+}
+
+function easeOutCubic(t: number) {
+  return 1 - Math.pow(1 - t, 3);
 }
 
 function lerpVec3(a: THREE.Vector3, b: THREE.Vector3, t: number) {
@@ -85,164 +69,16 @@ function bezier3(
   return lerpVec3(q0, q1, t);
 }
 
-function computeAlpha(phase: Phase) {
-  const homeAlpha =
-    phase === "home" || phase === "transitionToLifemap" || phase === "transitionToGround"
-      ? 1
-      : phase === "transitionHomeFromLifemap" || phase === "transitionHomeFromGround"
-        ? 1
-        : 0;
-
-  const lifemapAlpha =
-    phase === "lifemap" || phase === "focus" || phase === "replay" || phase === "transitionToLifemap" || phase === "transitionHomeFromLifemap"
-      ? 1
-      : 0;
-
-  const groundAlpha =
-    phase === "ground" || phase === "detail" || phase === "transitionToGround" || phase === "transitionHomeFromGround"
-      ? 1
-      : 0;
-
-  return { homeAlpha, lifemapAlpha, groundAlpha };
-}
-
-function homePose(t = 0): CameraPose {
-  const driftX = Math.sin(t * 0.17) * 0.16;
-  const driftY = Math.sin(t * 0.11) * 0.05;
-  const driftZ = Math.cos(t * 0.13) * 0.14;
-  return {
-    position: new THREE.Vector3(0.15 + driftX, 2.75 + driftY, 10.3 + driftZ),
-    target: new THREE.Vector3(0.15, 1.42, 0.15),
-    fov: 36,
+function mulberry32(seed: number) {
+  let a = seed >>> 0;
+  return function () {
+    a |= 0;
+    a = (a + 0x6d2b79f5) | 0;
+    let t = Math.imul(a ^ (a >>> 15), 1 | a);
+    t ^= t + Math.imul(t ^ (t >>> 7), 61 | t);
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
   };
 }
-
-function lifemapPose(t = 0): CameraPose {
-  const driftX = Math.sin(t * 0.16) * 0.12;
-  const driftY = Math.sin(t * 0.09) * 0.08;
-  const driftZ = Math.cos(t * 0.12) * 0.22;
-  return {
-    position: new THREE.Vector3(driftX, 0.42 + driftY, 13.8 + driftZ),
-    target: new THREE.Vector3(0, 0.22, 0),
-    fov: 34,
-  };
-}
-
-function groundPose(t = 0): CameraPose {
-  const driftX = Math.sin(t * 0.16) * 0.12;
-  const driftY = Math.sin(t * 0.12) * 0.04;
-  const driftZ = Math.cos(t * 0.14) * 0.12;
-  return {
-    position: new THREE.Vector3(-0.35 + driftX, 2.08 + driftY, 8.25 + driftZ),
-    target: new THREE.Vector3(0.18, 1.02, 0.18),
-    fov: 38,
-  };
-}
-
-function focusPose(star: Star, t = 0): CameraPose {
-  const driftX = Math.sin(t * 0.2) * 0.06;
-  const driftY = Math.sin(t * 0.14) * 0.05;
-  return {
-    position: new THREE.Vector3(
-      star.position[0] + 0.85 + driftX,
-      star.position[1] + 0.3 + driftY,
-      star.position[2] + 3.8,
-    ),
-    target: new THREE.Vector3(star.position[0], star.position[1] + 0.02, star.position[2]),
-    fov: 31,
-  };
-}
-
-function replayPose(star: Star, t = 0): CameraPose {
-  const orbit = Math.sin(t * 0.09) * 0.2;
-  const rise = Math.sin(t * 0.05) * 0.08;
-  return {
-    position: new THREE.Vector3(
-      star.position[0] - 0.5 + orbit,
-      star.position[1] + 0.48 + rise,
-      star.position[2] + 4.9,
-    ),
-    target: new THREE.Vector3(star.position[0], star.position[1] + 0.1, star.position[2]),
-    fov: 29,
-  };
-}
-
-function detailPose(id: GroundObjectId, t = 0): CameraPose {
-  switch (id) {
-    case "cube":
-      return {
-        position: new THREE.Vector3(-3.9 + Math.sin(t * 0.18) * 0.05, 1.45, 2.2 + Math.cos(t * 0.14) * 0.08),
-        target: new THREE.Vector3(-2.75, 1.18, -0.55),
-        fov: 32,
-      };
-    case "hanger":
-      return {
-        position: new THREE.Vector3(-0.25 + Math.sin(t * 0.16) * 0.04, 1.48, 4.6 + Math.cos(t * 0.12) * 0.08),
-        target: new THREE.Vector3(0.25, 1.85, 0.15),
-        fov: 30,
-      };
-    case "spire":
-    default:
-      return {
-        position: new THREE.Vector3(3.2 + Math.sin(t * 0.17) * 0.05, 1.25, 3.4 + Math.cos(t * 0.13) * 0.08),
-        target: new THREE.Vector3(2.55, 1.02, 0.05),
-        fov: 31,
-      };
-  }
-}
-
-function generateStars(): Star[] {
-  const rand = mulberry32(STAR_SEED);
-  const stars: Star[] = [];
-  const count = 84;
-
-  for (let i = 0; i < count; i += 1) {
-    const ring = i < 18 ? "near" : i < 46 ? "mid" : "far";
-    const radius =
-      ring === "near"
-        ? 5 + rand() * 4
-        : ring === "mid"
-          ? 8 + rand() * 6
-          : 13 + rand() * 7;
-
-    const angle = rand() * Math.PI * 2;
-    const height =
-      ring === "near"
-        ? -1 + rand() * 2.2
-        : ring === "mid"
-          ? -2 + rand() * 4
-          : -3 + rand() * 6;
-
-    const zJitter =
-      ring === "near"
-        ? -2 + rand() * 4
-        : ring === "mid"
-          ? -3 + rand() * 6
-          : -5 + rand() * 10;
-
-    stars.push({
-      id: `star-${i}`,
-      position: [
-        Math.cos(angle) * radius,
-        height,
-        Math.sin(angle) * radius * 0.45 + zJitter,
-      ],
-      size: ring === "near" ? 0.12 + rand() * 0.07 : ring === "mid" ? 0.08 + rand() * 0.05 : 0.05 + rand() * 0.035,
-    });
-  }
-
-  stars[8] = { id: "hero-a", position: [-1.35, 0.65, -1.4], size: 0.16 };
-  stars[21] = { id: "hero-b", position: [1.7, -0.35, -2.2], size: 0.15 };
-  stars[39] = { id: "hero-c", position: [0.1, 0.95, -0.8], size: 0.17 };
-
-  return stars;
-}
-
-const GROUND_OBJECTS: GroundObjectDef[] = [
-  { id: "cube", position: [-2.75, 1.05, -0.55] },
-  { id: "hanger", position: [0.25, 1.2, 0.15] },
-  { id: "spire", position: [2.55, 0.86, 0.05] },
-];
 
 function applyMaterialOpacity(obj: THREE.Object3D, opacity: number) {
   obj.traverse((child) => {
@@ -265,6 +101,202 @@ function applyMaterialOpacity(obj: THREE.Object3D, opacity: number) {
   });
 }
 
+function setGroupOpacity(group: THREE.Group | null, opacity: number) {
+  if (!group) return;
+  group.visible = opacity > 0.001;
+  applyMaterialOpacity(group, opacity);
+}
+
+function generateStars(): Star[] {
+  const rand = mulberry32(STAR_SEED);
+  const stars: Star[] = [];
+  const nearCount = 34;
+  const midCount = 82;
+  const farCount = 132;
+
+  for (let i = 0; i < nearCount + midCount + farCount; i += 1) {
+    const tier: StarTier =
+      i < nearCount ? "near" : i < nearCount + midCount ? "mid" : "far";
+
+    const radius =
+      tier === "near"
+        ? 5 + rand() * 4
+        : tier === "mid"
+          ? 10 + rand() * 9
+          : 20 + rand() * 18;
+
+    const angle = rand() * Math.PI * 2;
+    const vertical =
+      tier === "near"
+        ? -2 + rand() * 4
+        : tier === "mid"
+          ? -5 + rand() * 10
+          : -9 + rand() * 18;
+
+    const zBase =
+      tier === "near"
+        ? -4 + rand() * 6
+        : tier === "mid"
+          ? -12 + rand() * 20
+          : -30 + rand() * 54;
+
+    const size =
+      tier === "near"
+        ? 0.10 + rand() * 0.08
+        : tier === "mid"
+          ? 0.055 + rand() * 0.045
+          : 0.022 + rand() * 0.024;
+
+    stars.push({
+      id: `star-${i}`,
+      position: [
+        Math.cos(angle) * radius,
+        vertical,
+        Math.sin(angle) * radius * 0.42 + zBase,
+      ],
+      size,
+      tier,
+    });
+  }
+
+  stars[4] = { id: "hero-a", position: [-1.7, 0.8, -4.8], size: 0.20, tier: "near" };
+  stars[16] = { id: "hero-b", position: [1.9, -0.2, -5.4], size: 0.19, tier: "near" };
+  stars[28] = { id: "hero-c", position: [0.12, 1.15, -4.1], size: 0.21, tier: "near" };
+
+  return stars;
+}
+
+function homePose(t = 0): CameraPose {
+  return {
+    position: new THREE.Vector3(
+      0.12 + Math.sin(t * 0.14) * 0.12,
+      2.55 + Math.sin(t * 0.09) * 0.05,
+      10.05 + Math.cos(t * 0.11) * 0.11,
+    ),
+    target: new THREE.Vector3(0.03, 1.34, 0.02),
+    fov: 35.4,
+  };
+}
+
+function groundPose(t = 0): CameraPose {
+  return {
+    position: new THREE.Vector3(
+      -0.42 + Math.sin(t * 0.15) * 0.10,
+      2.02 + Math.sin(t * 0.10) * 0.04,
+      8.0 + Math.cos(t * 0.13) * 0.10,
+    ),
+    target: new THREE.Vector3(0.08, 1.0, 0.02),
+    fov: 37.0,
+  };
+}
+
+function lifemapPose(t = 0): CameraPose {
+  return {
+    position: new THREE.Vector3(
+      Math.sin(t * 0.10) * 0.18,
+      0.24 + Math.sin(t * 0.07) * 0.08,
+      18.4 + Math.cos(t * 0.09) * 0.30,
+    ),
+    target: new THREE.Vector3(0, 0.08, -10.5),
+    fov: 29.8,
+  };
+}
+
+function focusPose(star: Star, t = 0): CameraPose {
+  return {
+    position: new THREE.Vector3(
+      star.position[0] + 1.65 + Math.sin(t * 0.10) * 0.03,
+      star.position[1] + 0.56 + Math.sin(t * 0.07) * 0.03,
+      star.position[2] + 9.1 + Math.cos(t * 0.06) * 0.08,
+    ),
+    target: new THREE.Vector3(star.position[0], star.position[1] + 0.03, star.position[2]),
+    fov: 22.8,
+  };
+}
+
+function replayPose(star: Star, t = 0): CameraPose {
+  return {
+    position: new THREE.Vector3(
+      star.position[0] - 1.55 + Math.sin(t * 0.045) * 0.14,
+      star.position[1] + 0.78 + Math.sin(t * 0.035) * 0.03,
+      star.position[2] + 10.6 + Math.cos(t * 0.04) * 0.09,
+    ),
+    target: new THREE.Vector3(star.position[0], star.position[1] + 0.08, star.position[2]),
+    fov: 21.9,
+  };
+}
+
+function detailPose(id: GroundObjectId, t = 0): CameraPose {
+  if (id === "cube") {
+    return {
+      position: new THREE.Vector3(
+        -4.0 + Math.sin(t * 0.15) * 0.04,
+        1.42 + Math.sin(t * 0.08) * 0.03,
+        3.15 + Math.cos(t * 0.10) * 0.08,
+      ),
+      target: new THREE.Vector3(-2.78, 1.10, -0.95),
+      fov: 30.6,
+    };
+  }
+  if (id === "hanger") {
+    return {
+      position: new THREE.Vector3(
+        -0.18 + Math.sin(t * 0.14) * 0.04,
+        1.54 + Math.sin(t * 0.08) * 0.03,
+        5.15 + Math.cos(t * 0.10) * 0.08,
+      ),
+      target: new THREE.Vector3(0.24, 1.90, 0.15),
+      fov: 28.8,
+    };
+  }
+  return {
+    position: new THREE.Vector3(
+      3.20 + Math.sin(t * 0.15) * 0.04,
+      1.22 + Math.sin(t * 0.08) * 0.03,
+      3.95 + Math.cos(t * 0.10) * 0.08,
+    ),
+    target: new THREE.Vector3(2.55, 0.98, 0.04),
+    fov: 29.3,
+  };
+}
+
+function getWorldOpacities(phase: Phase, elapsedMs: number) {
+  const tLife = clamp01(elapsedMs / 2900);
+  const tHomeLife = clamp01(elapsedMs / 2250);
+  const tGround = clamp01(elapsedMs / 2200);
+  const tHomeGround = clamp01(elapsedMs / 1900);
+
+  if (phase === "home") return { home: 1, life: 0, ground: 0 };
+  if (phase === "lifemap" || phase === "focus" || phase === "replay") return { home: 0, life: 1, ground: 0 };
+  if (phase === "ground" || phase === "detail") return { home: 0, life: 0, ground: 1 };
+
+  if (phase === "transitionToLifemap") {
+    const home = 1 - easeOutCubic(clamp01((tLife - 0.06) / 0.22));
+    const life = easeInOutCubic(clamp01((tLife - 0.28) / 0.56));
+    return { home, life, ground: 0 };
+  }
+
+  if (phase === "transitionHomeFromLifemap") {
+    const life = 1 - easeOutCubic(clamp01((tHomeLife - 0.06) / 0.34));
+    const home = easeInOutCubic(clamp01((tHomeLife - 0.34) / 0.50));
+    return { home, life, ground: 0 };
+  }
+
+  if (phase === "transitionToGround") {
+    const home = 1 - easeOutCubic(clamp01((tGround - 0.08) / 0.24));
+    const ground = easeInOutCubic(clamp01((tGround - 0.30) / 0.52));
+    return { home, life: 0, ground };
+  }
+
+  if (phase === "transitionHomeFromGround") {
+    const ground = 1 - easeOutCubic(clamp01((tHomeGround - 0.06) / 0.34));
+    const home = easeInOutCubic(clamp01((tHomeGround - 0.34) / 0.50));
+    return { home, life: 0, ground };
+  }
+
+  return { home: 0, life: 0, ground: 0 };
+}
+
 function HomeWorld(props: {
   alpha: number;
   phase: Phase;
@@ -272,75 +304,56 @@ function HomeWorld(props: {
   onGroundClick: () => void;
 }) {
   const { alpha, phase, onSkyClick, onGroundClick } = props;
-  const interactive = phase === "home";
-  const targetOpacity = alpha;
   const groupRef = useRef<THREE.Group>(null);
+  const interactive = phase === "home";
 
-  useFrame(() => {
-    if (!groupRef.current) return;
-    applyMaterialOpacity(groupRef.current, targetOpacity);
-    groupRef.current.visible = targetOpacity > 0.001;
-  });
+  useFrame(() => setGroupOpacity(groupRef.current, alpha));
 
   return (
     <group ref={groupRef}>
+      <mesh position={[0, 0, -34]}>
+        <sphereGeometry args={[78, 32, 32]} />
+        <meshBasicMaterial color="#0a1526" side={THREE.BackSide} transparent opacity={1} depthWrite={false} />
+      </mesh>
+
+      <mesh position={[0, 6.8, -12]}>
+        <planeGeometry args={[46, 18]} />
+        <meshBasicMaterial color="#4d6b9d" transparent opacity={0.06} depthWrite={false} />
+      </mesh>
+
       <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.02, 0]}>
         <circleGeometry args={[24, 96]} />
-        <meshStandardMaterial color="#345f9a" roughness={0.95} metalness={0.0} />
+        <meshStandardMaterial color="#33507f" roughness={0.96} metalness={0.0} />
       </mesh>
 
       <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.005, 0]}>
-        <ringGeometry args={[7.5, 10.7, 72]} />
-        <meshStandardMaterial color="#5b7ec0" emissive="#2e5b9a" emissiveIntensity={0.08} roughness={1} metalness={0} />
+        <ringGeometry args={[6.8, 10.8, 96]} />
+        <meshStandardMaterial color="#5877b7" emissive="#28457c" emissiveIntensity={0.12} roughness={0.98} metalness={0.02} />
       </mesh>
 
-      <mesh position={[-6.8, 0.45, -8.6]}>
-        <boxGeometry args={[1.25, 0.9, 1.25]} />
-        <meshStandardMaterial color="#2a3c64" roughness={0.9} metalness={0.02} />
+      <mesh position={[-0.56, 0.92, 0.44]}>
+        <sphereGeometry args={[0.82, 48, 48]} />
+        <meshStandardMaterial color="#f3f8ff" emissive="#a9c9ff" emissiveIntensity={0.35} roughness={0.22} metalness={0.10} />
       </mesh>
 
-      <mesh position={[7.4, 0.42, -9.5]}>
-        <boxGeometry args={[1.5, 0.84, 1.1]} />
-        <meshStandardMaterial color="#243759" roughness={0.9} metalness={0.02} />
+      <mesh position={[1.20, 2.04, -0.08]}>
+        <capsuleGeometry args={[0.38, 1.60, 12, 24]} />
+        <meshStandardMaterial color="#0f2136" emissive="#294a78" emissiveIntensity={0.18} roughness={0.62} metalness={0.08} />
       </mesh>
 
-      <mesh position={[-0.35, 0.9, 0.35]} castShadow>
-        <sphereGeometry args={[0.74, 48, 48]} />
-        <meshStandardMaterial color="#f1f8ff" emissive="#9bc4ff" emissiveIntensity={0.34} roughness={0.22} metalness={0.08} />
-      </mesh>
-
-      <mesh position={[1.35, 1.88, -0.2]} castShadow>
-        <capsuleGeometry args={[0.34, 1.55, 10, 20]} />
-        <meshStandardMaterial color="#0e1a2c" emissive="#27456f" emissiveIntensity={0.16} roughness={0.6} metalness={0.06} />
-      </mesh>
-
-      <mesh position={[1.35, 3.08, -0.2]} castShadow>
+      <mesh position={[1.20, 3.28, -0.08]}>
         <sphereGeometry args={[0.28, 24, 24]} />
-        <meshStandardMaterial color="#14243b" roughness={0.7} metalness={0.05} />
+        <meshStandardMaterial color="#152740" roughness={0.68} metalness={0.06} />
       </mesh>
 
-      <mesh
-        visible={interactive}
-        position={[0, 8, -6]}
-        onClick={interactive ? onSkyClick : undefined}
-      >
-        <planeGeometry args={[48, 18]} />
+      <mesh visible={interactive} position={[0, 8.0, -6]} onClick={interactive ? onSkyClick : undefined}>
+        <planeGeometry args={[52, 20]} />
         <meshBasicMaterial transparent opacity={0} depthWrite={false} />
       </mesh>
 
-      <mesh
-        visible={interactive}
-        rotation={[-Math.PI / 2, 0, 0]}
-        position={[0, 0.18, 0]}
-        onClick={interactive ? onGroundClick : undefined}
-      >
-        <circleGeometry args={[12.5, 64]} />
+      <mesh visible={interactive} rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.16, 0]} onClick={interactive ? onGroundClick : undefined}>
+        <circleGeometry args={[12.8, 72]} />
         <meshBasicMaterial transparent opacity={0} depthWrite={false} />
-      </mesh>
-
-      <mesh position={[0, 8.8, -8]}>
-        <planeGeometry args={[36, 10]} />
-        <meshBasicMaterial color="#6b8bdb" transparent opacity={0.035} depthWrite={false} />
       </mesh>
     </group>
   );
@@ -357,67 +370,77 @@ function LifemapWorld(props: {
   onEnterReplay: () => void;
   onExitFocusOrReplay: () => void;
 }) {
-  const {
-    alpha,
-    phase,
-    stars,
-    hoveredStar,
-    selectedStar,
-    onBackHome,
-    onSelectStar,
-    onEnterReplay,
-    onExitFocusOrReplay,
-  } = props;
-
+  const { alpha, phase, stars, hoveredStar, selectedStar, onBackHome, onSelectStar, onEnterReplay, onExitFocusOrReplay } = props;
   const groupRef = useRef<THREE.Group>(null);
-
-  useFrame(() => {
-    if (!groupRef.current) return;
-    applyMaterialOpacity(groupRef.current, alpha);
-    groupRef.current.visible = alpha > 0.001;
-  });
+  useFrame(() => setGroupOpacity(groupRef.current, alpha));
 
   const showField = phase === "lifemap" || phase === "transitionToLifemap" || phase === "transitionHomeFromLifemap";
-  const showFocus = phase === "focus" || phase === "replay";
-  const replayGlow = phase === "replay";
+  const showNode = phase === "focus" || phase === "replay";
+  const replay = phase === "replay";
 
   return (
     <group ref={groupRef}>
-      <mesh position={[0, 0, -22]}>
-        <sphereGeometry args={[70, 32, 32]} />
-        <meshBasicMaterial color={replayGlow ? "#050814" : "#07101c"} side={THREE.BackSide} transparent opacity={1} depthWrite={false} />
+      <mesh position={[0, 0, -58]}>
+        <sphereGeometry args={[165, 44, 44]} />
+        <meshBasicMaterial color={replay ? "#02050b" : "#02070f"} side={THREE.BackSide} transparent opacity={1} depthWrite={false} />
       </mesh>
 
       {showField && (
         <>
-          <mesh position={[0, 0, -20]} onClick={phase === "lifemap" ? onBackHome : undefined}>
-            <planeGeometry args={[120, 120]} />
+          <mesh position={[0, 0, -42]} onClick={phase === "lifemap" ? onBackHome : undefined}>
+            <planeGeometry args={[260, 260]} />
             <meshBasicMaterial transparent opacity={0} depthWrite={false} />
           </mesh>
 
           {stars.map((star) => {
-            const isHovered = hoveredStar === star.id;
-            const isSelected = selectedStar?.id === star.id;
-            const emissiveIntensity = isSelected ? 1.35 : isHovered ? 0.95 : 0.45;
-            const scale = isSelected ? 1.8 : isHovered ? 1.45 : 1;
+            const hovered = hoveredStar === star.id;
+            const selected = selectedStar?.id === star.id;
+            const scale = selected ? 2.0 : hovered ? 1.6 : 1.0;
+
+            const emissive =
+              selected
+                ? "#eef6ff"
+                : hovered
+                  ? "#d5e7ff"
+                  : star.tier === "near"
+                    ? "#a7cdff"
+                    : star.tier === "mid"
+                      ? "#5f95d6"
+                      : "#315377";
+
+            const intensity =
+              selected
+                ? 1.40
+                : hovered
+                  ? 1.05
+                  : star.tier === "near"
+                    ? 0.62
+                    : star.tier === "mid"
+                      ? 0.22
+                      : 0.07;
+
+            const opacity =
+              star.tier === "near" ? 1 : star.tier === "mid" ? 0.88 : 0.58;
 
             return (
               <mesh
                 key={star.id}
                 position={star.position}
                 scale={scale}
-                onClick={(e: ThreeEvent<MouseEvent>) => {
+                onClick={(e) => {
                   e.stopPropagation();
                   onSelectStar(star);
                 }}
               >
-                <sphereGeometry args={[star.size, 18, 18]} />
+                <sphereGeometry args={[star.size, 16, 16]} />
                 <meshStandardMaterial
                   color="#f8fbff"
-                  emissive={isSelected ? "#dbeaff" : isHovered ? "#b9d7ff" : "#7cb7ff"}
-                  emissiveIntensity={emissiveIntensity}
-                  roughness={0.15}
+                  emissive={emissive}
+                  emissiveIntensity={intensity}
+                  roughness={0.20}
                   metalness={0.0}
+                  transparent={opacity < 0.999}
+                  opacity={opacity}
                 />
               </mesh>
             );
@@ -425,38 +448,38 @@ function LifemapWorld(props: {
         </>
       )}
 
-      {showFocus && selectedStar && (
+      {showNode && selectedStar && (
         <group position={selectedStar.position}>
           <mesh onClick={phase === "focus" ? onEnterReplay : onExitFocusOrReplay}>
-            <sphereGeometry args={[1.18, 48, 48]} />
+            <sphereGeometry args={[0.42, 48, 48]} />
             <meshStandardMaterial
-              color={phase === "replay" ? "#eaf3ff" : "#f7fbff"}
-              emissive={phase === "replay" ? "#d6e9ff" : "#b9d7ff"}
-              emissiveIntensity={phase === "replay" ? 1.1 : 0.58}
-              roughness={0.08}
-              metalness={0.06}
+              color={replay ? "#eff7ff" : "#f8fbff"}
+              emissive={replay ? "#d2e7ff" : "#bbdcff"}
+              emissiveIntensity={replay ? 1.08 : 0.56}
+              roughness={0.12}
+              metalness={0.04}
             />
           </mesh>
 
-          <mesh scale={phase === "replay" ? 2.05 : 1.72}>
-            <sphereGeometry args={[1.28, 48, 48]} />
+          <mesh scale={replay ? 2.0 : 1.55}>
+            <sphereGeometry args={[0.58, 48, 48]} />
             <meshBasicMaterial
-              color={phase === "replay" ? "#9fc8ff" : "#7ab6ff"}
+              color={replay ? "#76b3ff" : "#5da7ff"}
               transparent
-              opacity={phase === "replay" ? 0.14 : 0.08}
+              opacity={replay ? 0.07 : 0.045}
               depthWrite={false}
             />
           </mesh>
 
-          {phase === "replay" && (
+          {replay && (
             <>
-              <mesh rotation={[Math.PI / 2, 0, 0]} position={[0, 0, -0.12]}>
-                <ringGeometry args={[1.55, 1.72, 72]} />
-                <meshBasicMaterial color="#a7cbff" transparent opacity={0.25} depthWrite={false} />
+              <mesh rotation={[Math.PI / 2, 0.10, 0]} position={[0, 0.01, -0.08]}>
+                <ringGeometry args={[0.82, 0.90, 96]} />
+                <meshBasicMaterial color="#a8ceff" transparent opacity={0.22} depthWrite={false} />
               </mesh>
-              <mesh rotation={[Math.PI / 2, 0.3, 0]} position={[0, 0.05, -0.2]}>
-                <ringGeometry args={[1.94, 2.08, 72]} />
-                <meshBasicMaterial color="#6eaefc" transparent opacity={0.12} depthWrite={false} />
+              <mesh rotation={[Math.PI / 2, 0.42, 0]} position={[0, 0.05, -0.18]}>
+                <ringGeometry args={[1.15, 1.23, 96]} />
+                <meshBasicMaterial color="#79b5ff" transparent opacity={0.10} depthWrite={false} />
               </mesh>
             </>
           )}
@@ -477,114 +500,114 @@ function GroundWorld(props: {
 }) {
   const { alpha, phase, selectedObject, hoveredObject, onBackHome, onSelectObject, onExitDetail } = props;
   const groupRef = useRef<THREE.Group>(null);
+  useFrame(() => setGroupOpacity(groupRef.current, alpha));
 
-  useFrame(() => {
-    if (!groupRef.current) return;
-    applyMaterialOpacity(groupRef.current, alpha);
-    groupRef.current.visible = alpha > 0.001;
-  });
-
-  const isGround = phase === "ground" || phase === "transitionToGround" || phase === "transitionHomeFromGround";
   const isDetail = phase === "detail";
+  const isGround = phase === "ground" || phase === "transitionToGround" || phase === "transitionHomeFromGround";
 
-  const secondaryOpacity = isDetail ? 0.08 : 1;
+  const otherOpacity = (id: GroundObjectId) => !isDetail ? 1 : selectedObject === id ? 1 : 0.05;
+  const target = (id: GroundObjectId) => selectedObject === id || hoveredObject === id;
 
   return (
     <group ref={groupRef}>
       <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.01, 0]} onClick={phase === "ground" ? onBackHome : undefined}>
-        <circleGeometry args={[8.9, 96]} />
-        <meshStandardMaterial color="#2a4878" roughness={0.92} metalness={0.02} />
+        <circleGeometry args={[9.2, 96]} />
+        <meshStandardMaterial color="#2b4472" roughness={0.94} metalness={0.02} />
       </mesh>
 
-      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.02, 0]}>
-        <ringGeometry args={[5.85, 7.3, 96]} />
-        <meshStandardMaterial color="#4d6fb3" emissive="#24467c" emissiveIntensity={0.12} roughness={0.95} metalness={0.01} />
+      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.03, 0]}>
+        <ringGeometry args={[6.0, 7.8, 96]} />
+        <meshStandardMaterial color="#506fb0" emissive="#27447b" emissiveIntensity={0.12} roughness={0.96} metalness={0.02} />
       </mesh>
 
       <group
-        position={GROUND_OBJECTS[0].position}
-        onClick={(e: ThreeEvent<MouseEvent>) => {
+        name="cube"
+        position={[-2.78, 1.04, -0.66]}
+        scale={selectedObject === "cube" ? 1.08 : hoveredObject === "cube" ? 1.04 : 1}
+        onClick={(e) => {
           e.stopPropagation();
           if (phase === "ground") onSelectObject("cube");
           if (phase === "detail" && selectedObject === "cube") onExitDetail();
         }}
-        scale={selectedObject === "cube" ? 1.08 : hoveredObject === "cube" ? 1.04 : 1}
       >
-        <mesh visible={!isDetail || selectedObject === "cube"}>
-          <boxGeometry args={[1.55, 1.55, 1.55]} />
+        <mesh>
+          <boxGeometry args={[1.6, 1.6, 1.6]} />
           <meshStandardMaterial
-            color="#6d8fd1"
-            emissive="#a7c0ff"
-            emissiveIntensity={selectedObject === "cube" || hoveredObject === "cube" ? 0.25 : 0.08}
-            roughness={0.58}
-            metalness={0.08}
-            transparent={isDetail && selectedObject !== "cube"}
-            opacity={selectedObject === "cube" ? 1 : secondaryOpacity}
+            color="#6f90d6"
+            emissive="#a6c0ff"
+            emissiveIntensity={target("cube") ? 0.28 : 0.08}
+            roughness={0.56}
+            metalness={0.10}
+            transparent={otherOpacity("cube") < 0.999}
+            opacity={otherOpacity("cube")}
           />
         </mesh>
       </group>
 
       <group
-        position={GROUND_OBJECTS[1].position}
-        onClick={(e: ThreeEvent<MouseEvent>) => {
+        name="hanger"
+        position={[0.24, 1.18, 0.15]}
+        scale={selectedObject === "hanger" ? 1.08 : hoveredObject === "hanger" ? 1.04 : 1}
+        onClick={(e) => {
           e.stopPropagation();
           if (phase === "ground") onSelectObject("hanger");
           if (phase === "detail" && selectedObject === "hanger") onExitDetail();
         }}
-        scale={selectedObject === "hanger" ? 1.08 : hoveredObject === "hanger" ? 1.04 : 1}
       >
-        <mesh position={[0, 1.28, 0]} visible={!isDetail || selectedObject === "hanger"}>
-          <sphereGeometry args={[0.64, 32, 32]} />
+        <mesh position={[0, 1.34, 0]}>
+          <sphereGeometry args={[0.66, 32, 32]} />
           <meshStandardMaterial
-            color="#ff9b54"
-            emissive="#ffb071"
-            emissiveIntensity={selectedObject === "hanger" || hoveredObject === "hanger" ? 0.42 : 0.18}
-            roughness={0.25}
-            metalness={0.05}
-            transparent={isDetail && selectedObject !== "hanger"}
-            opacity={selectedObject === "hanger" ? 1 : secondaryOpacity}
+            color="#ffa86b"
+            emissive="#ffd19b"
+            emissiveIntensity={target("hanger") ? 0.42 : 0.18}
+            roughness={0.24}
+            metalness={0.06}
+            transparent={otherOpacity("hanger") < 0.999}
+            opacity={otherOpacity("hanger")}
           />
         </mesh>
-        <mesh position={[0, 2.62, 0]} visible={!isDetail || selectedObject === "hanger"}>
-          <cylinderGeometry args={[0.05, 0.05, 2.52, 18]} />
+
+        <mesh position={[0, 2.82, 0]}>
+          <cylinderGeometry args={[0.05, 0.05, 2.62, 18]} />
           <meshStandardMaterial
-            color="#8fb2ff"
-            emissive="#7aa6ff"
-            emissiveIntensity={0.1}
-            roughness={0.35}
+            color="#8fb5ff"
+            emissive="#7ca6ff"
+            emissiveIntensity={0.10}
+            roughness={0.36}
             metalness={0.22}
-            transparent={isDetail && selectedObject !== "hanger"}
-            opacity={selectedObject === "hanger" ? 1 : secondaryOpacity}
+            transparent={otherOpacity("hanger") < 0.999}
+            opacity={otherOpacity("hanger")}
           />
         </mesh>
       </group>
 
       <group
-        position={GROUND_OBJECTS[2].position}
-        onClick={(e: ThreeEvent<MouseEvent>) => {
+        name="spire"
+        position={[2.55, 0.88, 0.04]}
+        scale={selectedObject === "spire" ? 1.08 : hoveredObject === "spire" ? 1.04 : 1}
+        onClick={(e) => {
           e.stopPropagation();
           if (phase === "ground") onSelectObject("spire");
           if (phase === "detail" && selectedObject === "spire") onExitDetail();
         }}
-        scale={selectedObject === "spire" ? 1.08 : hoveredObject === "spire" ? 1.04 : 1}
       >
-        <mesh visible={!isDetail || selectedObject === "spire"}>
-          <cylinderGeometry args={[0.22, 0.74, 2.05, 32]} />
+        <mesh>
+          <cylinderGeometry args={[0.23, 0.78, 2.2, 32]} />
           <meshStandardMaterial
-            color="#6ea4ff"
-            emissive="#95bcff"
-            emissiveIntensity={selectedObject === "spire" || hoveredObject === "spire" ? 0.34 : 0.12}
+            color="#6fa5ff"
+            emissive="#98bdff"
+            emissiveIntensity={target("spire") ? 0.34 : 0.12}
             roughness={0.34}
-            metalness={0.1}
-            transparent={isDetail && selectedObject !== "spire"}
-            opacity={selectedObject === "spire" ? 1 : secondaryOpacity}
+            metalness={0.10}
+            transparent={otherOpacity("spire") < 0.999}
+            opacity={otherOpacity("spire")}
           />
         </mesh>
       </group>
 
       {isGround && (
         <mesh position={[0, 0.02, -12]} onClick={phase === "ground" ? onBackHome : undefined}>
-          <planeGeometry args={[60, 40]} />
+          <planeGeometry args={[64, 42]} />
           <meshBasicMaterial transparent opacity={0} depthWrite={false} />
         </mesh>
       )}
@@ -601,144 +624,153 @@ function CameraDirector(props: {
   const { camera, scene } = useThree();
   const perspectiveCamera = camera as THREE.PerspectiveCamera;
   const { phase, phaseStartedAt, selectedStar, selectedObject } = props;
-
-  const targetRef = useRef(new THREE.Vector3(0, 1.4, 0));
-  const bg = useRef(new THREE.Color("#0b1320"));
+  const targetRef = useRef(new THREE.Vector3(0, 1.2, 0));
+  const bgRef = useRef(new THREE.Color("#0b1320"));
 
   useFrame((state) => {
-    const now = state.clock.getElapsedTime();
+    const t = state.clock.getElapsedTime();
     const elapsedMs = performance.now() - phaseStartedAt;
 
-    let desired: CameraPose = homePose(now);
+    let desired = homePose(t);
 
-    if (phase === "home") desired = homePose(now);
-    if (phase === "lifemap") desired = lifemapPose(now);
-    if (phase === "ground") desired = groundPose(now);
-    if (phase === "focus" && selectedStar) desired = focusPose(selectedStar, now);
-    if (phase === "replay" && selectedStar) desired = replayPose(selectedStar, now);
-    if (phase === "detail" && selectedObject) desired = detailPose(selectedObject, now);
+    if (phase === "home") desired = homePose(t);
+    if (phase === "ground") desired = groundPose(t);
+    if (phase === "lifemap") desired = lifemapPose(t);
+    if (phase === "focus" && selectedStar) desired = focusPose(selectedStar, t);
+    if (phase === "replay" && selectedStar) desired = replayPose(selectedStar, t);
+    if (phase === "detail" && selectedObject) desired = detailPose(selectedObject, t);
 
     if (phase === "transitionToLifemap") {
-      const t = clamp01(elapsedMs / 2400);
-      const eased = easeInOut(t);
-      const a = homePose(now);
-      const b = {
-        position: new THREE.Vector3(0.1, 3.45, 10.05),
-        target: new THREE.Vector3(0.18, 1.65, 0.1),
-        fov: 35.5,
+      const n = clamp01(elapsedMs / 2900);
+      const a = homePose(t);
+      const preload: CameraPose = {
+        position: new THREE.Vector3(0.10, 2.74, 9.78),
+        target: new THREE.Vector3(0.04, 1.46, -0.26),
+        fov: 34.9,
       };
-      const c = {
-        position: new THREE.Vector3(0.05, 7.35, 7.8),
-        target: new THREE.Vector3(0.02, 2.7, -2.1),
-        fov: 34.3,
+      const depart: CameraPose = {
+        position: new THREE.Vector3(0.00, 7.6, 2.7),
+        target: new THREE.Vector3(0.0, 1.1, -14.0),
+        fov: 32.4,
       };
-      const d = lifemapPose(now);
-      desired = {
-        position: bezier3(a.position, b.position, c.position, d.position, eased),
-        target: bezier3(a.target, b.target, c.target, d.target, eased),
-        fov: THREE.MathUtils.lerp(a.fov, d.fov, eased),
-      };
+      const arrive = lifemapPose(t);
+
+      if (n < 0.18) {
+        const k = easeOutCubic(n / 0.18);
+        desired = {
+          position: lerpVec3(a.position, preload.position, k),
+          target: lerpVec3(a.target, preload.target, k),
+          fov: THREE.MathUtils.lerp(a.fov, preload.fov, k),
+        };
+      } else {
+        const k = easeInOutCubic((n - 0.18) / 0.82);
+        desired = {
+          position: bezier3(preload.position, depart.position, new THREE.Vector3(0.0, 1.8, -12.8), arrive.position, k),
+          target: bezier3(preload.target, depart.target, new THREE.Vector3(0.0, 0.2, -24.0), arrive.target, k),
+          fov: THREE.MathUtils.lerp(preload.fov, arrive.fov, k),
+        };
+      }
     }
 
     if (phase === "transitionHomeFromLifemap") {
-      const t = clamp01(elapsedMs / 2100);
-      const eased = easeInOut(t);
-      const a = lifemapPose(now);
-      const b = {
-        position: new THREE.Vector3(0.05, 5.6, 8.8),
-        target: new THREE.Vector3(0.05, 1.9, -1.5),
-        fov: 34.5,
+      const n = clamp01(elapsedMs / 2250);
+      const a = lifemapPose(t);
+      const mid: CameraPose = {
+        position: new THREE.Vector3(0.02, 5.0, 7.0),
+        target: new THREE.Vector3(0.03, 1.30, -6.5),
+        fov: 31.8,
       };
-      const c = {
-        position: new THREE.Vector3(0.12, 3.25, 9.6),
-        target: new THREE.Vector3(0.12, 1.55, -0.2),
-        fov: 35.3,
-      };
-      const d = homePose(now);
+      const settle = homePose(t);
+      const k = easeInOutCubic(n);
       desired = {
-        position: bezier3(a.position, b.position, c.position, d.position, eased),
-        target: bezier3(a.target, b.target, c.target, d.target, eased),
-        fov: THREE.MathUtils.lerp(a.fov, d.fov, eased),
+        position: bezier3(a.position, mid.position, new THREE.Vector3(0.08, 3.0, 8.6), settle.position, k),
+        target: bezier3(a.target, mid.target, new THREE.Vector3(0.06, 1.34, -0.60), settle.target, k),
+        fov: THREE.MathUtils.lerp(a.fov, settle.fov, k),
       };
     }
 
     if (phase === "transitionToGround") {
-      const t = clamp01(elapsedMs / 2150);
-      const eased = easeInOut(t);
-      const a = homePose(now);
-      const b = {
-        position: new THREE.Vector3(0.05, 2.45, 10.0),
-        target: new THREE.Vector3(0.2, 1.08, 0.05),
-        fov: 36.2,
+      const n = clamp01(elapsedMs / 2200);
+      const a = homePose(t);
+      const preload: CameraPose = {
+        position: new THREE.Vector3(0.04, 2.42, 9.80),
+        target: new THREE.Vector3(0.08, 1.10, 0.00),
+        fov: 36.0,
       };
-      const c = {
-        position: new THREE.Vector3(-0.15, 1.5, 9.25),
-        target: new THREE.Vector3(0.22, 0.92, 0.08),
-        fov: 37.3,
+      const drop: CameraPose = {
+        position: new THREE.Vector3(-0.18, 1.50, 8.75),
+        target: new THREE.Vector3(0.06, 0.90, -0.55),
+        fov: 36.9,
       };
-      const d = groundPose(now);
-      desired = {
-        position: bezier3(a.position, b.position, c.position, d.position, eased),
-        target: bezier3(a.target, b.target, c.target, d.target, eased),
-        fov: THREE.MathUtils.lerp(a.fov, d.fov, eased),
-      };
+      const arrive = groundPose(t);
+
+      if (n < 0.18) {
+        const k = easeOutCubic(n / 0.18);
+        desired = {
+          position: lerpVec3(a.position, preload.position, k),
+          target: lerpVec3(a.target, preload.target, k),
+          fov: THREE.MathUtils.lerp(a.fov, preload.fov, k),
+        };
+      } else {
+        const k = easeInOutCubic((n - 0.18) / 0.82);
+        desired = {
+          position: bezier3(preload.position, drop.position, new THREE.Vector3(-0.26, 1.78, 7.4), arrive.position, k),
+          target: bezier3(preload.target, drop.target, new THREE.Vector3(0.06, 0.98, -0.60), arrive.target, k),
+          fov: THREE.MathUtils.lerp(preload.fov, arrive.fov, k),
+        };
+      }
     }
 
     if (phase === "transitionHomeFromGround") {
-      const t = clamp01(elapsedMs / 1850);
-      const eased = easeInOut(t);
-      const a = groundPose(now);
-      const b = {
-        position: new THREE.Vector3(-0.08, 1.75, 8.95),
-        target: new THREE.Vector3(0.18, 1.06, 0.12),
-        fov: 37.5,
+      const n = clamp01(elapsedMs / 1900);
+      const a = groundPose(t);
+      const mid: CameraPose = {
+        position: new THREE.Vector3(-0.06, 1.82, 8.75),
+        target: new THREE.Vector3(0.08, 1.0, -0.05),
+        fov: 37.0,
       };
-      const c = {
-        position: new THREE.Vector3(0.02, 2.45, 9.9),
-        target: new THREE.Vector3(0.15, 1.36, 0.08),
-        fov: 36.4,
-      };
-      const d = homePose(now);
+      const settle = homePose(t);
+      const k = easeInOutCubic(n);
       desired = {
-        position: bezier3(a.position, b.position, c.position, d.position, eased),
-        target: bezier3(a.target, b.target, c.target, d.target, eased),
-        fov: THREE.MathUtils.lerp(a.fov, d.fov, eased),
+        position: bezier3(a.position, mid.position, new THREE.Vector3(0.03, 2.18, 9.52), settle.position, k),
+        target: bezier3(a.target, mid.target, new THREE.Vector3(0.04, 1.28, -0.08), settle.target, k),
+        fov: THREE.MathUtils.lerp(a.fov, settle.fov, k),
       };
     }
 
-    const lerpAmount = phase.startsWith("transition") ? 0.1 : phase === "replay" ? 0.055 : 0.08;
+    const lerpAmount = phase.startsWith("transition") ? 0.11 : phase === "replay" ? 0.040 : 0.078;
 
     perspectiveCamera.position.lerp(desired.position, lerpAmount);
     targetRef.current.lerp(desired.target, lerpAmount);
     perspectiveCamera.lookAt(targetRef.current);
-
     perspectiveCamera.fov = THREE.MathUtils.lerp(perspectiveCamera.fov, desired.fov, 0.08);
     perspectiveCamera.updateProjectionMatrix();
 
     let bgTarget = new THREE.Color("#0b1320");
     if (phase === "home" || phase === "transitionToGround" || phase === "ground" || phase === "detail" || phase === "transitionHomeFromGround") {
-      bgTarget = new THREE.Color("#0b1730");
+      bgTarget = new THREE.Color("#0c1730");
     }
     if (phase === "lifemap" || phase === "transitionToLifemap" || phase === "transitionHomeFromLifemap" || phase === "focus") {
-      bgTarget = new THREE.Color("#050b14");
+      bgTarget = new THREE.Color("#02070f");
     }
     if (phase === "replay") {
-      bgTarget = new THREE.Color("#040811");
+      bgTarget = new THREE.Color("#02050b");
     }
 
-    bg.current.lerp(bgTarget, 0.05);
-    scene.background = bg.current;
+    bgRef.current.lerp(bgTarget, 0.05);
+    scene.background = bgRef.current;
   });
 
   return null;
 }
 
 function PointerEvents(props: {
-  setHoveredStar: (id: string | null) => void;
-  setHoveredObject: (id: GroundObjectId | null) => void;
   stars: Star[];
   phase: Phase;
+  setHoveredStar: (id: string | null) => void;
+  setHoveredObject: (id: GroundObjectId | null) => void;
 }) {
+  const { stars, phase, setHoveredStar, setHoveredObject } = props;
   const { gl, scene, camera, raycaster } = useThree();
   const mouse = useRef(new THREE.Vector2(2, 2));
 
@@ -751,8 +783,8 @@ function PointerEvents(props: {
 
     const onLeave = () => {
       mouse.current.set(2, 2);
-      props.setHoveredStar(null);
-      props.setHoveredObject(null);
+      setHoveredStar(null);
+      setHoveredObject(null);
       document.body.style.cursor = "default";
     };
 
@@ -764,31 +796,28 @@ function PointerEvents(props: {
       gl.domElement.removeEventListener("pointerleave", onLeave);
       document.body.style.cursor = "default";
     };
-  }, [gl, props]);
+  }, [gl, setHoveredStar, setHoveredObject]);
 
   useFrame(() => {
     raycaster.setFromCamera(mouse.current, camera);
-    const intersects = raycaster.intersectObjects(scene.children, true);
+    const hits = raycaster.intersectObjects(scene.children, true);
 
     let hoveredStar: string | null = null;
     let hoveredObject: GroundObjectId | null = null;
 
-    for (const hit of intersects) {
+    for (const hit of hits) {
       const obj = hit.object;
       const pos = obj.getWorldPosition(new THREE.Vector3());
 
-      if (props.phase === "lifemap") {
-        const foundStar = props.stars.find((s) => {
-          const d = new THREE.Vector3(...s.position).distanceTo(pos);
-          return d < 0.25;
-        });
-        if (foundStar) {
-          hoveredStar = foundStar.id;
+      if (phase === "lifemap") {
+        const match = stars.find((s) => new THREE.Vector3(...s.position).distanceTo(pos) < 0.30);
+        if (match) {
+          hoveredStar = match.id;
           break;
         }
       }
 
-      if (props.phase === "ground" || props.phase === "detail") {
+      if (phase === "ground" || phase === "detail") {
         const name = obj.parent?.name || obj.name;
         if (name === "cube" || name === "hanger" || name === "spire") {
           hoveredObject = name;
@@ -797,8 +826,8 @@ function PointerEvents(props: {
       }
     }
 
-    props.setHoveredStar(hoveredStar);
-    props.setHoveredObject(hoveredObject);
+    setHoveredStar(hoveredStar);
+    setHoveredObject(hoveredObject);
     document.body.style.cursor = hoveredStar || hoveredObject ? "pointer" : "default";
   });
 
@@ -821,45 +850,46 @@ function SceneContent() {
 
   useEffect(() => {
     if (phase === "transitionToLifemap") {
-      const id = window.setTimeout(() => begin("lifemap"), 2400);
+      const id = window.setTimeout(() => begin("lifemap"), 2900);
       return () => window.clearTimeout(id);
     }
     if (phase === "transitionHomeFromLifemap") {
       const id = window.setTimeout(() => {
         setSelectedStar(null);
         begin("home");
-      }, 2100);
+      }, 2250);
       return () => window.clearTimeout(id);
     }
     if (phase === "transitionToGround") {
-      const id = window.setTimeout(() => begin("ground"), 2150);
+      const id = window.setTimeout(() => begin("ground"), 2200);
       return () => window.clearTimeout(id);
     }
     if (phase === "transitionHomeFromGround") {
       const id = window.setTimeout(() => {
         setSelectedObject(null);
         begin("home");
-      }, 1850);
+      }, 1900);
       return () => window.clearTimeout(id);
     }
     return undefined;
   }, [phase]);
 
-  const { homeAlpha, lifemapAlpha, groundAlpha } = computeAlpha(phase);
+  const elapsedMs = performance.now() - phaseStartedAt;
+  const world = getWorldOpacities(phase, elapsedMs);
 
   return (
     <>
       <color attach="background" args={["#0b1320"]} />
-      <fog attach="fog" args={[phase === "replay" ? "#040811" : "#09111d", 18, 52]} />
+      <fog attach="fog" args={[phase === "replay" ? "#02050b" : "#061018", 24, 110]} />
 
-      <ambientLight intensity={0.78} />
+      <ambientLight intensity={0.84} />
       <hemisphereLight args={["#b7d4ff", "#182338", 1.0]} />
-      <directionalLight position={[7, 10, 8]} intensity={1.15} color="#f4f8ff" />
-      <pointLight position={[-0.35, 1.0, 0.35]} intensity={phase === "home" ? 2.3 : 0.65} distance={14} color="#d7ebff" />
-      <pointLight position={[0, 2.5, 3.5]} intensity={phase === "replay" ? 1.2 : phase === "lifemap" || phase === "focus" ? 0.8 : 0.45} distance={25} color="#8bb8ff" />
+      <directionalLight position={[7, 10, 8]} intensity={1.16} color="#f3f8ff" />
+      <pointLight position={[-0.56, 1.0, 0.44]} intensity={phase === "home" ? 2.34 : 0.55} distance={14} color="#d8ebff" />
+      <pointLight position={[0, 2.6, 3.8]} intensity={phase === "replay" ? 0.70 : phase === "lifemap" || phase === "focus" ? 0.42 : 0.42} distance={26} color="#7eaef0" />
 
       <HomeWorld
-        alpha={homeAlpha}
+        alpha={world.home}
         phase={phase}
         onSkyClick={() => {
           if (phase !== "home") return;
@@ -871,30 +901,28 @@ function SceneContent() {
         }}
       />
 
-      <group visible={phase !== "transitionHomeFromGround"}>
-        <GroundWorld
-          alpha={groundAlpha}
-          phase={phase}
-          selectedObject={selectedObject}
-          hoveredObject={hoveredObject}
-          onBackHome={() => {
-            if (phase !== "ground") return;
-            begin("transitionHomeFromGround");
-          }}
-          onSelectObject={(id) => {
-            if (phase !== "ground") return;
-            setSelectedObject(id);
-            begin("detail");
-          }}
-          onExitDetail={() => {
-            if (phase !== "detail") return;
-            begin("ground");
-          }}
-        />
-      </group>
+      <GroundWorld
+        alpha={world.ground}
+        phase={phase}
+        selectedObject={selectedObject}
+        hoveredObject={hoveredObject}
+        onBackHome={() => {
+          if (phase !== "ground") return;
+          begin("transitionHomeFromGround");
+        }}
+        onSelectObject={(id) => {
+          if (phase !== "ground") return;
+          setSelectedObject(id);
+          begin("detail");
+        }}
+        onExitDetail={() => {
+          if (phase !== "detail") return;
+          begin("ground");
+        }}
+      />
 
       <LifemapWorld
-        alpha={lifemapAlpha}
+        alpha={world.life}
         phase={phase}
         stars={stars}
         hoveredStar={hoveredStar}
@@ -913,13 +941,7 @@ function SceneContent() {
           begin("replay");
         }}
         onExitFocusOrReplay={() => {
-          if (phase === "replay") {
-            begin("lifemap");
-            return;
-          }
-          if (phase === "focus") {
-            begin("lifemap");
-          }
+          if (phase === "focus" || phase === "replay") begin("lifemap");
         }}
       />
 
@@ -946,7 +968,7 @@ export default function SpatialScene() {
       <Canvas
         shadows={false}
         dpr={[1, 1.75]}
-        camera={{ position: [0.15, 2.75, 10.3], fov: 36, near: 0.1, far: 200 }}
+        camera={{ position: [0.12, 2.55, 10.05], fov: 35.4, near: 0.1, far: 360 }}
         gl={{ antialias: true, alpha: false, powerPreference: "high-performance" }}
       >
         <SceneContent />
