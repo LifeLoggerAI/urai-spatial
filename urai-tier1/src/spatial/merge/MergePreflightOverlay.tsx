@@ -1,3 +1,4 @@
+import { resolveStarByIdSafe } from "../lib/resolveStarByIdSafe";
 "use client";
 
 import { useMemo } from "react";
@@ -5,14 +6,14 @@ import { useSceneStore } from "@/spatial/state/sceneStore";
 import { resolveMergePreflightStateById } from "@/spatial/merge/resolveMergePreflightState";
 
 export default function MergePreflightOverlay() {
-  const selectedStar = useSceneStore((s) => s.selectedStar);
+  const selectedStarId = useSceneStore((s) => s.selectedStarId);
 
   const state = useMemo(
-    () => resolveMergePreflightStateById(selectedStar?.id),
-    [selectedStar]
+    () => resolveMergePreflightStateById(selectedStarId),
+    [selectedStarId]
   );
 
-  if (!selectedStar || !state) return null;
+  if (!selectedStarId || !state) return null;
 
   return (
     <div

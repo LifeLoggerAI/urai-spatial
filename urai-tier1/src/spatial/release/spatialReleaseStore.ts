@@ -19,25 +19,30 @@ type SpatialReleaseStore = SpatialReleaseManifest & {
 export const useSpatialReleaseStore = create<SpatialReleaseStore>((set) => ({
   ...createDefaultSpatialReleaseManifest(),
   hydrate: (manifest) =>
-    set({
-      ...createDefaultSpatialReleaseManifest(),
+    set(() => ({
       ...manifest,
-      schema: "urai.spatial.release.v1",
-    }),
-  setActiveChannel: (channel) =>
-    set({
-      activeChannel: channel,
-      lastPromotedAt: new Date().toISOString(),
-    }),
-  appendRollbackPoint: (point) =>
-    set((state) => ({
-      rollbackPoints: [...state.rollbackPoints, point].slice(-12),
     })),
   replaceManifest: (manifest) =>
-    set({
-      ...createDefaultSpatialReleaseManifest(),
+    set(() => ({
       ...manifest,
-      schema: "urai.spatial.release.v1",
-    }),
-  reset: () => set(createDefaultSpatialReleaseManifest()),
+    })),
+  setActiveChannel: (channel) =>
+    set((state) => ({
+      ...state,
+      activeChannel: channel,
+    })),
+  appendRollbackPoint: (point) =>
+    set((state) => ({
+      ...state,
+      rollbackPoints: [...state.rollbackPoints, point],
+    })),
+  setRollbackPoints: (rollbackPoints) =>
+    set((state) => ({
+      ...state,
+      rollbackPoints,
+    })),
+  reset: () =>
+    set(() => ({
+      ...createDefaultSpatialReleaseManifest(),
+    })),
 }));

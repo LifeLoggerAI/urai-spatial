@@ -1,3 +1,4 @@
+import { resolveStarByIdSafe } from "../lib/resolveStarByIdSafe";
 "use client";
 
 import { useMemo } from "react";
@@ -10,14 +11,14 @@ function toneColor(color?: string) {
 
 export default function MemorySphereOverlay() {
   const mode = useSceneStore((s) => s.mode);
-  const selectedStar = useSceneStore((s) => s.selectedStar);
+  const selectedStarId = useSceneStore((s) => s.selectedStarId);
 
   const detail = useMemo(
-    () => resolveMemorySphereById(selectedStar?.id),
-    [selectedStar]
+    () => resolveMemorySphereById(selectedStarId),
+    [selectedStarId]
   );
 
-  if (!selectedStar || !detail) return null;
+  if (!selectedStarId || !detail) return null;
   if (mode === "replay") return null;
 
   const meta = [

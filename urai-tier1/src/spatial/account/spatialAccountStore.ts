@@ -1,57 +1,63 @@
-"use client";
-
 import { create } from "zustand";
-import {
-  createDefaultSpatialAccountManifest,
-  type SpatialAccountManifest,
-  type SpatialAccountProfile,
-} from "@/spatial/account/spatialAccountTypes";
 
-type SpatialAccountStore = SpatialAccountManifest & {
-  hydrate: (manifest: SpatialAccountManifest) => void;
-  replaceManifest: (manifest: SpatialAccountManifest) => void;
-  setActiveAccountId: (accountId: string) => void;
-  addProfile: (profile: SpatialAccountProfile) => void;
-  removeProfile: (accountId: string) => void;
-  reset: () => void;
+export type SpatialAccountProfile = {
+  id: string;
+  displayName: string;
+  email: string | null;
+  tier: "free" | "pro" | "admin";
 };
+
+export type SpatialAccountManifest = {
+  userId: string | null;
+  displayName: string;
+  email: string | null;
+  tier: "free" | "pro" | "admin";
+  isLoaded: boolean;
+  activeAccountId: string | null;
+  profiles: SpatialAccountProfile[];
+};
+
+export type SpatialAccountStore = SpatialAccountManifest & {
+  hydrate: (manifest?: Partial<SpatialAccountManifest>) => void;
+  reset: () => void;
+  setActiveAccountId: (id: string | null) => void;
+  setProfiles: (profiles: SpatialAccountProfile[]) => void;
+};
+
+export function createDefaultSpatialAccountManifest(): SpatialAccountManifest {
+  return {
+    userId: null,
+    displayName: "Guest",
+    email: null,
+    tier: "free",
+    isLoaded: false,
+    activeAccountId: null,
+    profiles: [],
+  };
+}
 
 export const useSpatialAccountStore = create<SpatialAccountStore>((set) => ({
   ...createDefaultSpatialAccountManifest(),
-  hydrate: (manifest) =>
-    set({
-      ...createDefaultSpatialAccountManifest(),
-      ...manifest,
-      schema: "urai.spatial.account.v1",
-    }),
-  replaceManifest: (manifest) =>
-    set({
-      ...createDefaultSpatialAccountManifest(),
-      ...manifest,
-      schema: "urai.spatial.account.v1",
-    }),
-  setActiveAccountId: (accountId) => set({ activeAccountId: accountId }),
-  addProfile: (profile) =>
+
+  hydrate: (manifest = {}) =>
     set((state) => ({
-      profiles: [...state.profiles, profile],
-      activeAccountId: profile.id,
+      ...state,
+      ...manifest,
+      isLoaded: true,
     })),
-  removeProfile: (accountId) =>
-    set((state) => {
-      const profiles = state.profiles.filter((item) => item.id !== accountId);
-      const safeProfiles =
-        profiles.length > 0
-          ? profiles
-          : createDefaultSpatialAccountManifest().profiles;
 
-      const activeAccountId = safeProfiles.some((item) => item.id === state.activeAccountId)
-        ? state.activeAccountId
-        : safeProfiles[0].id;
-
-      return {
-        profiles: safeProfiles,
-        activeAccountId,
-      };
+  reset: () =>
+    set({
+      ...createDefaultSpatialAccountManifest(),
     }),
-  reset: () => set(createDefaultSpatialAccountManifest()),
+
+  setActiveAccountId: (id) =>
+    set({
+      activeAccountId: id,
+    }),
+
+  setProfiles: (profiles) =>
+    set({
+      profiles,
+    }),
 }));

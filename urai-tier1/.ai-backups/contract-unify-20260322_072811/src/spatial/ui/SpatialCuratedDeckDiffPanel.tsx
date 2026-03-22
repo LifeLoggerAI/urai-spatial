@@ -1,0 +1,147 @@
+"use client";
+
+import type { CSSProperties } from "react";
+import { useMemo } from "react";
+import { buildSpatialCuratedDeckDiff } from "@/spatial/curation/buildSpatialCuratedDeckDiff";
+import { useSpatialCuratedDeckVaultStore } from "@/spatial/curation/spatialCuratedDeckVaultStore";
+import type { SpatialCuratedDeckVaultEntry } from "@/spatial/curation/spatialCuratedDeckVaultTypes";
+
+export default function SpatialCuratedDeckDiffPanel() {
+  const activeEntryId = useSpatialCuratedDeckVaultStore((s) => s.activeEntryId);
+  const entries = useSpatialCuratedDeckVaultStore((s) => s.entries);
+
+  const toVaultEntry = (entry: unknown): SpatialCuratedDeckVaultEntry => ({
+    ...(entry as Record<string, unknown>),
+    id:
+      (entry as { id?: string }).id ??
+      (entry as { label?: string }).label ??
+      "deck-" + Math.random().toString(36).slice(2, 10),
+    label:
+      (entry as { label?: string }).label ??
+      (entry as { title?: string }).title ??
+      (entry as { name?: string }).name ??
+      String((entry as { id?: string }).id ?? "entry"),
+    storedAt:
+      (() => {
+        const raw = (entry as { storedAt?: string | number | Date | null }).storedAt;
+        if (typeof raw === "string") return raw;
+        if (typeof raw === "number") return new Date(raw).toISOString();
+        if (raw instanceof Date) return raw.toISOString();
+        return new Date(0).toISOString();
+      })(),
+    source: (() => {
+      const rawSource = (entry as { source?: string }).source;
+      return rawSource === "imported" ? "imported" : "generated";
+    })(),
+    deck: (((entry as { deck?: unknown }).deck ?? entry) as any),
+  });
+
+
+  const activeIndex = useMemo(
+    () => Math.max(0, entries.findIndex((item) => item.id === activeEntryId)),
+    [entries, activeEntryId],
+  );
+
+  const activeEntry = entries[activeIndex] ?? null;
+  const baselineEntry = entries.length > 1 ? entries[Math.max(0, activeIndex - 1)] : null;
+  const baselineVaultEntry = baselineEntry ? toVaultEntry(baselineEntry) : null;
+  const activeVaultEntry = activeEntry ? toVaultEntry(activeEntry) : null;
+
+  const diff = useMemo(() => {
+    if (!activeEntry || !baselineEntry || activeEntry.id === baselineEntry.id) {
+      return null;
+    }
+
+    return buildSpatialCuratedDeckDiff({
+      base: baselineVaultEntry,
+      target: activeVaultEntry,
+    });
+  }, [activeEntry, activeVaultEntry, baselineEntry, baselineVaultEntry]);
+
+  return (
+    <div
+      style={{
+        position: "fixed",
+        left: 360,
+        bottom: 360,
+        zIndex: 80,
+        width: 332,
+        borderRadius: 16,
+        border: "1px solid rgba(255,255,255,0.14)",
+        background: "rgba(8,12,24,0.80)",
+        backdropFilter: "blur(14px)",
+        boxShadow: "0 18px 60px rgba(0,0,0,0.28)",
+        padding: 14,
+        color: "rgba(255,255,255,0.92)",
+        fontFamily: "inherit",
+      }}
+    >
+      <div
+        style={{
+          fontSize: 12,
+          letterSpacing: 1.1,
+          textTransform: "uppercase",
+          opacity: 0.68,
+          marginBottom: 8,
+        }}
+      >
+        Curated Deck Diff
+      </div>
+
+      <div style={{ fontSize: 13, lineHeight: 1.45, opacity: 0.88 }}>
+        baseline: {baselineVaultEntry?.label ?? "none"}
+      </div>
+
+      <div style={{ fontSize: 12, lineHeight: 1.45, opacity: 0.76 }}>
+        target: {activeVaultEntry?.label ?? "none"}
+      </div>
+
+      <div
+        style={{
+          marginTop: 10,
+          fontSize: 12,
+          lineHeight: 1.45,
+          opacity: 0.82,
+          whiteSpace: "pre-wrap",
+        }}
+      >
+        {diff ? diff.summaryText : "Need at least two curated deck vault entries to compare."}
+      </div>
+
+      <div style={{ marginTop: 10, display: "grid", gap: 6 }}>
+        <MetricRow label="same account" value={diff ? (diff.sameAccount ? "yes" : "no") : "n/a"} />
+        <MetricRow label="source changed" value={diff ? (diff.sourceChanged ? "yes" : "no") : "n/a"} />
+        <MetricRow
+          label="first card changed"
+          value={diff ? (diff.firstCardChanged ? "yes" : "no") : "n/a"}
+        />
+        <MetricRow label="card delta" value={diff ? String(diff.cardCountDelta) : "n/a"} />
+        <MetricRow
+          label="scene mode shifts"
+          value={diff ? String(diff.sceneModeShiftCount) : "n/a"}
+        />
+        <MetricRow
+          label="selected star shifts"
+          value={diff ? String(diff.selectedStarShiftCount) : "n/a"}
+        />
+      </div>
+    </div>
+  );
+}
+
+function MetricRow(input: { label: string; value: string }) {
+  return (
+    <div style={rowStyle}>
+      <span>{input.label}</span>
+      <span style={{ opacity: 0.72 }}>{input.value}</span>
+    </div>
+  );
+}
+
+const rowStyle: CSSProperties = {
+  display: "flex",
+  justifyContent: "space-between",
+  gap: 10,
+  fontSize: 12,
+  lineHeight: 1.4,
+};

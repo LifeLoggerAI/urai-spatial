@@ -1,3 +1,4 @@
+import { resolveStarByIdSafe } from "../lib/resolveStarByIdSafe";
 "use client";
 
 import { useMemo } from "react";
@@ -5,14 +6,14 @@ import { useSceneStore } from "@/spatial/state/sceneStore";
 import { resolvePersistenceSyncStateById } from "@/spatial/persistence/resolvePersistenceSyncState";
 
 export default function PersistenceSyncOverlay() {
-  const selectedStar = useSceneStore((s) => s.selectedStar);
+  const selectedStarId = useSceneStore((s) => s.selectedStarId);
 
   const state = useMemo(
-    () => resolvePersistenceSyncStateById(selectedStar?.id),
-    [selectedStar]
+    () => resolvePersistenceSyncStateById(selectedStarId),
+    [selectedStarId]
   );
 
-  if (!selectedStar || !state) return null;
+  if (!selectedStarId || !state) return null;
 
   return (
     <div

@@ -61,10 +61,17 @@ export default function SpatialVoicePlaybackPanel() {
   }, [compareSets, activeLens]);
 
   const exportPackage = useMemo(() => {
-    if (!snapshot) return null;
+    if (!snapshot || !activeLens || !activeCompareSet) return null;
+
     return buildSpatialNarratorExport({
-      accountId: activeAccountId,
-      accountLabel: activeProfile?.label ?? null,
+      accountId: activeAccountId ?? "default-account",
+      accountLabel:
+        (activeProfile as { displayName?: string; label?: string; name?: string } | null)
+          ?.displayName ??
+        (activeProfile as { label?: string; name?: string } | null)?.label ??
+        (activeProfile as { label?: string; name?: string } | null)?.name ??
+        activeAccountId ??
+        "Default Account",
       activeLens,
       activeCompareSet,
       compareSetCount: compareSets.length,
@@ -140,19 +147,13 @@ export default function SpatialVoicePlaybackPanel() {
     };
 
     utterance.onend = () => {
-      setStatus("ended");
+      utteranceRef.current = null;
+      setStatus("idle");
     };
 
-    utterance.onpause = () => {
-      setStatus("paused");
-    };
-
-    utterance.onresume = () => {
-      setStatus("playing");
-    };
-
-    utterance.onerror = (event) => {
-      setLastError(event.error || "speech synthesis error");
+    utterance.onerror = () => {
+      utteranceRef.current = null;
+      setLastError("speech playback failed");
       setStatus("error");
     };
 
@@ -160,157 +161,36 @@ export default function SpatialVoicePlaybackPanel() {
     window.speechSynthesis.speak(utterance);
   };
 
-  const pause = () => {
-    if (typeof window === "undefined" || !("speechSynthesis" in window)) return;
-    window.speechSynthesis.pause();
-    setStatus("paused");
-  };
-
-  const resume = () => {
-    if (typeof window === "undefined" || !("speechSynthesis" in window)) return;
-    window.speechSynthesis.resume();
-    setStatus("playing");
+  const panelStyle: CSSProperties = {
+    position: "fixed",
+    right: 20,
+    bottom: 20,
+    zIndex: 80,
+    width: 320,
+    padding: 12,
+    borderRadius: 12,
+    background: "rgba(10, 14, 24, 0.88)",
+    color: "#fff",
+    border: "1px solid rgba(255,255,255,0.14)",
+    display: "grid",
+    gap: 8,
   };
 
   return (
-    <div
-      style={{
-        position: "fixed",
-        left: 18,
-        bottom: 190,
-        zIndex: 67,
-        width: 330,
-        borderRadius: 16,
-        border: "1px solid rgba(255,255,255,0.14)",
-        background: "rgba(8,12,24,0.80)",
-        backdropFilter: "blur(14px)",
-        boxShadow: "0 18px 60px rgba(0,0,0,0.28)",
-        padding: 14,
-        color: "rgba(255,255,255,0.92)",
-        fontFamily: "inherit",
-      }}
-    >
-      <div
-        style={{
-          fontSize: 12,
-          letterSpacing: 1.1,
-          textTransform: "uppercase",
-          opacity: 0.68,
-          marginBottom: 8,
-        }}
-      >
-        Voice Playback
+    <div style={panelStyle}>
+      <div style={{ fontSize: 14, fontWeight: 700 }}>Voice Playback</div>
+      <div style={{ fontSize: 12, opacity: 0.8 }}>
+        status: {status} · voices: {availableVoiceCount}
       </div>
-
-      <div style={{ fontSize: 13, lineHeight: 1.45, opacity: 0.88 }}>
-        status: {status}
-      </div>
-      <div style={{ fontSize: 12, lineHeight: 1.45, opacity: 0.76 }}>
-        voices: {availableVoiceCount}
-      </div>
-      <div style={{ fontSize: 12, lineHeight: 1.45, opacity: 0.76, marginBottom: 10 }}>
-        selected voice: {selectedVoice?.name ?? "default"}
-      </div>
-
-      <select
-        value={voiceURI ?? ""}
-        onChange={(e) => setVoiceURI(e.target.value || null)}
-        style={selectStyle}
-      >
-        {voices.length === 0 ? <option value="">default</option> : null}
-        {voices.map((voice) => (
-          <option key={voice.voiceURI} value={voice.voiceURI}>
-            {voice.name} · {voice.lang}
-          </option>
-        ))}
-      </select>
-
-      <div style={{ display: "grid", gap: 8, marginTop: 10 }}>
-        <label style={labelStyle}>
-          <span>Rate: {rate.toFixed(2)}</span>
-          <input
-            type="range"
-            min="0.5"
-            max="1.5"
-            step="0.05"
-            value={rate}
-            onChange={(e) => setRate(Number(e.target.value))}
-          />
-        </label>
-
-        <label style={labelStyle}>
-          <span>Pitch: {pitch.toFixed(2)}</span>
-          <input
-            type="range"
-            min="0.5"
-            max="1.5"
-            step="0.05"
-            value={pitch}
-            onChange={(e) => setPitch(Number(e.target.value))}
-          />
-        </label>
-
-        <label style={labelStyle}>
-          <span>Volume: {volume.toFixed(2)}</span>
-          <input
-            type="range"
-            min="0"
-            max="1"
-            step="0.05"
-            value={volume}
-            onChange={(e) => setVolume(Number(e.target.value))}
-          />
-        </label>
-      </div>
-
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginTop: 10 }}>
-        <button type="button" onClick={play} style={buttonStyle}>
+      {lastError ? <div style={{ fontSize: 12, color: "#ff9b9b" }}>{lastError}</div> : null}
+      <div style={{ display: "grid", gap: 6 }}>
+        <button onClick={play} type="button">
           Play
         </button>
-        <button type="button" onClick={pause} style={buttonStyle}>
-          Pause
-        </button>
-        <button type="button" onClick={resume} style={buttonStyle}>
-          Resume
-        </button>
-        <button type="button" onClick={stop} style={buttonStyle}>
+        <button onClick={stop} type="button">
           Stop
         </button>
-      </div>
-
-      <div style={{ marginTop: 10, fontSize: 12, lineHeight: 1.45, opacity: 0.76 }}>
-        error: {lastError ?? "none"}
       </div>
     </div>
   );
 }
-
-const buttonStyle: CSSProperties = {
-  appearance: "none",
-  width: "100%",
-  border: "1px solid rgba(255,255,255,0.14)",
-  borderRadius: 12,
-  background: "rgba(255,255,255,0.06)",
-  color: "rgba(255,255,255,0.92)",
-  fontSize: 13,
-  padding: "10px 12px",
-  textAlign: "left",
-  cursor: "pointer",
-};
-
-const selectStyle: CSSProperties = {
-  width: "100%",
-  border: "1px solid rgba(255,255,255,0.14)",
-  borderRadius: 12,
-  background: "rgba(255,255,255,0.06)",
-  color: "rgba(255,255,255,0.92)",
-  fontSize: 12,
-  padding: "10px 12px",
-};
-
-const labelStyle: CSSProperties = {
-  display: "grid",
-  gap: 6,
-  fontSize: 12,
-  opacity: 0.82,
-};

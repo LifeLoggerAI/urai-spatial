@@ -1,3 +1,4 @@
+import { resolveStarByIdSafe } from "../lib/resolveStarByIdSafe";
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
@@ -8,11 +9,11 @@ type SupportState = "checking" | "supported" | "unsupported";
 
 export default function WebXREntryOverlay() {
   const mode = useSceneStore((s) => s.mode);
-  const selectedStar = useSceneStore((s) => s.selectedStar);
+  const selectedStarId = useSceneStore((s) => s.selectedStarId);
 
   const state = useMemo(
-    () => resolveWebXREntryStateById(selectedStar?.id, mode),
-    [selectedStar, mode]
+    () => resolveWebXREntryStateById(selectedStarId ?? "", mode),
+    [selectedStarId, mode]
   );
 
   const [support, setSupport] = useState<SupportState>("checking");
@@ -82,7 +83,7 @@ export default function WebXREntryOverlay() {
     }
   }
 
-  if (!selectedStar || !state) return null;
+  if (!selectedStarId || !state) return null;
 
   const statusLabel =
     support === "checking"

@@ -1,3 +1,4 @@
+import { resolveStarByIdSafe } from "../lib/resolveStarByIdSafe";
 "use client";
 
 import { useMemo } from "react";
@@ -6,14 +7,14 @@ import { resolveWebXRRendererHandoffById } from "@/spatial/xr-renderer/resolveWe
 
 export default function WebXRRendererHandoffOverlay() {
   const mode = useSceneStore((s) => s.mode);
-  const selectedStar = useSceneStore((s) => s.selectedStar);
+  const selectedStarId = useSceneStore((s) => s.selectedStarId);
 
   const state = useMemo(
-    () => resolveWebXRRendererHandoffById(selectedStar?.id, mode),
-    [selectedStar, mode]
+    () => resolveWebXRRendererHandoffById(selectedStarId ?? "", mode),
+    [selectedStarId, mode]
   );
 
-  if (!selectedStar || !state) return null;
+  if (!selectedStarId || !state) return null;
 
   return (
     <div

@@ -1,3 +1,4 @@
+import { resolveStarByIdSafe } from "../lib/resolveStarByIdSafe";
 "use client";
 import { toCanonicalSelectedStar } from "../state/toCanonicalSelectedStar";
 
@@ -74,7 +75,7 @@ const STAR_CATALOG = buildStars();
 function CameraRig() {
   const camera = useThree((state) => state.camera);
   const mode = useSceneStore((state) => state.mode);
-  const selectedStar = useSceneStore((state) => state.selectedStar);
+  const selectedStarId = useSceneStore((state) => state.selectedStarId);
   const target = useMemo(() => new THREE.Vector3(0, 120, 240), []);
   const lookAt = useMemo(() => new THREE.Vector3(0, 24, 0), []);
 
@@ -85,8 +86,8 @@ function CameraRig() {
     } else if (mode === "lifemap") {
       target.set(0, 78, 150);
       lookAt.set(0, 28, 0);
-    } else if ((mode === "focus" || mode === "replay") && selectedStar) {
-      const [sx, sy, sz] = selectedStar.position;
+    } else if ((mode === "focus" || mode === "replay") && selectedStarId) {
+      const [sx, sy, sz] = selectedStarId.position;
       target.set(sx * 0.28, sy + (mode === "replay" ? 8 : 12), sz + (mode === "replay" ? 18 : 30));
       lookAt.set(sx, sy, sz);
     } else {
@@ -141,11 +142,11 @@ function FloorPlane() {
 function SpatialStar({ star }: { star: SelectedStar }) {
   const meshRef = useRef<THREE.Mesh>(null);
   const mode = useSceneStore((state) => state.mode);
-  const selectedStar = useSceneStore((state) => state.selectedStar);
+  const selectedStarId = useSceneStore((state) => state.selectedStarId);
   const enterFocus = useSceneStore((state) => state.enterFocus);
   const enterLifeMap = useSceneStore((state) => state.enterLifeMap);
 
-  const selected = selectedStar?.id === star.id;
+  const selected = resolveStarByIdSafe(String(selectedStarId?.id ?? selectedStarId)) === star.id;
 
   useFrame(({ clock }) => {
     if (!meshRef.current) return;
@@ -184,7 +185,7 @@ function StarField() {
 
 function Overlay() {
   const mode = useSceneStore((state) => state.mode);
-  const selectedStar = useSceneStore((state) => state.selectedStar);
+  const selectedStarId = useSceneStore((state) => state.selectedStarId);
   const detailOpen = useSceneStore((state) => state.detailOpen);
   const replayEnteredAt = useSceneStore((state) => state.replayEnteredAt);
 
@@ -254,13 +255,13 @@ function Overlay() {
           <button style={shellButtonStyle} onClick={enterHome}>Home</button>
           <button style={shellButtonStyle} onClick={enterLifeMap}>LifeMap</button>
           <button style={shellButtonStyle} onClick={clearFocus}>Clear Focus</button>
-          {selectedStar && mode !== "replay" ? (
+          {selectedStarId && mode !== "replay" ? (
             <button style={shellButtonStyle} onClick={enterReplay}>Replay</button>
           ) : null}
         </div>
       </div>
 
-      {selectedStar && detailOpen ? (
+      {selectedStarId && detailOpen ? (
         <div
           style={{
             position: "absolute",
@@ -277,16 +278,16 @@ function Overlay() {
           }}
         >
           <div style={{ fontSize: 12, opacity: 0.68, letterSpacing: "0.12em", fontWeight: 700 }}>SELECTED STAR</div>
-          <div style={{ marginTop: 6, fontSize: 28, fontWeight: 800 }}>{selectedStar.title}</div>
-          <div style={{ marginTop: 6, fontSize: 15, opacity: 0.9 }}>{selectedStar.label}</div>
+          <div style={{ marginTop: 6, fontSize: 28, fontWeight: 800 }}>{selectedStarId.title}</div>
+          <div style={{ marginTop: 6, fontSize: 15, opacity: 0.9 }}>{selectedStarId.label}</div>
 
           <div style={{ marginTop: 14, display: "grid", gap: 8, fontSize: 14 }}>
-            <div><strong>Signature:</strong> {selectedStar.signature}</div>
-            <div><strong>Chapter:</strong> {selectedStar.chapter}</div>
-            <div><strong>Timeband:</strong> {selectedStar.timeband}</div>
+            <div><strong>Signature:</strong> {selectedStarId.signature}</div>
+            <div><strong>Chapter:</strong> {selectedStarId.chapter}</div>
+            <div><strong>Timeband:</strong> {selectedStarId.timeband}</div>
             <div>
               <strong>Position:</strong>{" "}
-              {selectedStar.position.map((value) => value.toFixed(1)).join(", ")}
+              {selectedStarId.position.map((value) => value.toFixed(1)).join(", ")}
             </div>
             {replayEnteredAt ? (
               <div><strong>Replay Entered:</strong> {new Date(replayEnteredAt).toLocaleTimeString()}</div>
@@ -319,7 +320,7 @@ function Overlay() {
 
 export function SpatialScene() {
   const clearFocus = useSceneStore((state) => state.clearFocus);
-  const selectedStar = useSceneStore((state) => state.selectedStar);
+  const selectedStarId = useSceneStore((state) => state.selectedStarId);
   const enterHome = useSceneStore((state) => state.enterHome);
   const enterLifeMap = useSceneStore((state) => state.enterLifeMap);
   const enterReplay = useSceneStore((state) => state.enterReplay);
@@ -329,12 +330,12 @@ export function SpatialScene() {
       if (event.key === "Escape") clearFocus();
       if (event.key.toLowerCase() === "h") enterHome();
       if (event.key.toLowerCase() === "l") enterLifeMap();
-      if (event.key.toLowerCase() === "r" && selectedStar) enterReplay();
+      if (event.key.toLowerCase() === "r" && selectedStarId) enterReplay();
     };
 
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
-  }, [clearFocus, enterHome, enterLifeMap, enterReplay, selectedStar]);
+  }, [clearFocus, enterHome, enterLifeMap, enterReplay, selectedStarId]);
 
   return (
     <div style={{ position: "fixed", inset: 0, overflow: "hidden", background: "#030712" }}>
@@ -353,12 +354,12 @@ export function SpatialScene() {
           <planeGeometry args={[720, 380]} />
           <meshBasicMaterial color="#05101d" transparent opacity={0.32} depthWrite={false} />
         </mesh>
-        {selectedStar ? (
-          <group position={selectedStar.position}>
-            <mesh scale={[selectedStar.size * 4.2, selectedStar.size * 4.2, selectedStar.size * 4.2]}>
+        {selectedStarId ? (
+          <group position={selectedStarId.position}>
+            <mesh scale={[selectedStarId.size * 4.2, selectedStarId.size * 4.2, selectedStarId.size * 4.2]}>
               <sphereGeometry args={[1, 28, 28]} />
               <meshBasicMaterial
-                color={selectedStar.color}
+                color={selectedStarId.color}
                 transparent
                 opacity=
         <Atmosphere />

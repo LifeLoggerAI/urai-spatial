@@ -1,5 +1,5 @@
 import { create } from "zustand";
-import { SPATIAL_STARS, SpatialStar } from "../data/stars";
+import { SPATIAL_STARS, SpatialStar } from "../../src/spatial/data/stars";
 
 export type SceneMode = "home" | "lifemap" | "focus" | "replay";
 

@@ -1,144 +1,60 @@
 import { create } from "zustand";
-import { SPATIAL_STARS, type SpatialStar } from "../data/stars";
 
-export type SceneMode =
-  | "home"
-  | "ascend"
-  | "lifemap"
-  | "focus"
-  | "replay"
-  | "pullback"
-  | "descend_home";
+export type SceneMode = "home" | "sky" | "lifemap" | "focus" | "replay";
 
 export type SceneState = {
   mode: SceneMode;
-  modeEnteredAt: number;
-  stars: SpatialStar[];
-  selectedStar: SpatialStar | null;
-  replayEnteredAt: number | null;
-
-  ascend: () => void;
-  finishAscend: () => void;
-
-  selectStar: (star: SpatialStar | null) => void;
-  clearFocus: () => void;
-
+  selectedStarId: string | null;
+  hoveredStarId: string | null;
+  isTransitioning: boolean;
+  setMode: (mode: SceneMode) => void;
+  goHome: () => void;
+  returnHome: () => void;
+  enterSky: () => void;
+  enterLifeMap: () => void;
+  focusStar: (id: string | null) => void;
   enterReplay: () => void;
   exitReplay: () => void;
-  finishPullback: () => void;
+  setSelectedStarId: (id: string | null) => void;
+  setHoveredStarId: (id: string | null) => void;
+  setTransitioning: (value: boolean) => void;
+};
 
-  descend: () => void;
-  finishDescend: () => void;
-
-  resetHome: () => void;
+const HOME_STATE = {
+  mode: "home" as SceneMode,
+  selectedStarId: null,
+  hoveredStarId: null,
+  isTransitioning: false,
 };
 
 export const useSceneStore = create<SceneState>((set, get) => ({
-  mode: "home",
-  modeEnteredAt: Date.now(),
-  stars: SPATIAL_STARS,
-  selectedStar: null,
-  replayEnteredAt: null,
+  ...HOME_STATE,
 
-  ascend: () => {
-    const { mode } = get();
-    if (mode !== "home") return;
-    set({
-      mode: "ascend",
-      modeEnteredAt: Date.now(),
-      selectedStar: null,
-      replayEnteredAt: null,
-    });
-  },
+  setMode: (mode) => set({ mode }),
 
-  finishAscend: () => {
-    const { mode } = get();
-    if (mode !== "ascend") return;
-    set({
-      mode: "lifemap",
-      modeEnteredAt: Date.now(),
-    });
-  },
+  goHome: () => set({ ...HOME_STATE }),
+  returnHome: () => set({ ...HOME_STATE }),
 
-  selectStar: (star) => {
-    const { mode } = get();
-    if (mode !== "lifemap" && mode !== "focus") return;
-    set({
-      selectedStar: star,
-      mode: star ? "focus" : "lifemap",
-      modeEnteredAt: Date.now(),
-      replayEnteredAt: null,
-    });
-  },
+  enterSky: () => set({ mode: "sky" }),
+  enterLifeMap: () => set({ mode: "lifemap" }),
 
-  clearFocus: () => {
-    const { mode } = get();
-    if (mode !== "focus") return;
+  focusStar: (id) =>
     set({
-      selectedStar: null,
-      mode: "lifemap",
-      modeEnteredAt: Date.now(),
-      replayEnteredAt: null,
-    });
-  },
+      mode: id ? "focus" : "lifemap",
+      selectedStarId: id,
+    }),
 
   enterReplay: () => {
-    const { mode, selectedStar } = get();
-    set({
-      mode: "replay",
-      modeEnteredAt: Date.now(),
-      replayEnteredAt: Date.now(),
-    });
+    const { selectedStarId } = get();
+    set({ mode: selectedStarId ? "replay" : "lifemap" });
   },
 
   exitReplay: () => {
-    const { mode } = get();
-    if (mode !== "replay") return;
-    set({
-      mode: "pullback",
-      modeEnteredAt: Date.now(),
-      replayEnteredAt: null,
-    });
+    const { selectedStarId } = get();
+    set({ mode: selectedStarId ? "focus" : "lifemap" });
   },
 
-  finishPullback: () => {
-    const { mode } = get();
-    if (mode !== "pullback") return;
-    set({
-      mode: "lifemap",
-      modeEnteredAt: Date.now(),
-      selectedStar: null,
-    });
-  },
-
-  descend: () => {
-    const { mode } = get();
-    if (mode !== "lifemap") return;
-    set({
-      mode: "descend_home",
-      modeEnteredAt: Date.now(),
-      selectedStar: null,
-      replayEnteredAt: null,
-    });
-  },
-
-  finishDescend: () => {
-    const { mode } = get();
-    if (mode !== "descend_home") return;
-    set({
-      mode: "home",
-      modeEnteredAt: Date.now(),
-      selectedStar: null,
-      replayEnteredAt: null,
-    });
-  },
-
-  resetHome: () => {
-    set({
-      mode: "home",
-      modeEnteredAt: Date.now(),
-      selectedStar: null,
-      replayEnteredAt: null,
-    });
-  },
+  setSelectedStarId: (id) => set({ selectedStarId: id }),
+  setHoveredStarId: (id) => set({ hoveredStarId: id }),
+  setTransitioning: (value) => set({ isTransitioning: value }),
 }));

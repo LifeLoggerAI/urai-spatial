@@ -1,0 +1,24 @@
+[
+  {
+    "id": "mem-001",
+    "title": "Threshold One",
+    "summary": "Canonical real-memory seed record replacing placeholder-only flow.",
+    "chapter": "Origins",
+    "timeband": "Winter",
+    "label": "Threshold",
+    "color": "#f7f3c6",
+    "timestamp": "2026-03-16T00:00:00.000Z",
+    "tags": ["threshold", "tier1", "seed"]
+  },
+  {
+    "id": "mem-002",
+    "title": "Return Signal",
+    "summary": "Second seed node for focus and replay contract validation.",
+    "chapter": "Return",
+    "timeband": "Autumn",
+    "label": "Signal",
+    "color": "#c9ddff",
+    "timestamp": "2026-03-16T00:00:00.000Z",
+    "tags": ["signal", "seed"]
+  }
+]

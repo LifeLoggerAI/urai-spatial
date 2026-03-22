@@ -5,16 +5,38 @@ import { useMemo } from "react";
 import { buildSpatialCuratedDeckAnomaly } from "@/spatial/curation/buildSpatialCuratedDeckAnomaly";
 import type { SpatialCuratedDeckAnomalyFlag } from "@/spatial/curation/spatialCuratedDeckAnomalyTypes";
 import { useSpatialCuratedDeckVaultStore } from "@/spatial/curation/spatialCuratedDeckVaultStore";
+import type { SpatialCuratedDeckVaultEntry } from "@/spatial/curation/spatialCuratedDeckVaultTypes";
 
 export default function SpatialCuratedDeckAnomalyPanel() {
   const activeEntryId = useSpatialCuratedDeckVaultStore((s) => s.activeEntryId);
   const entries = useSpatialCuratedDeckVaultStore((s) => s.entries);
 
-  const anomaly = useMemo(
-    () => buildSpatialCuratedDeckAnomaly({ entries, activeEntryId }),
-    [entries, activeEntryId],
+  const vaultEntries = useMemo<SpatialCuratedDeckVaultEntry[]>(
+    () =>
+      entries.map((entry) => ({
+        ...(entry as Record<string, unknown>),
+        label:
+          (entry as { label?: string }).label ??
+          (entry as { title?: string }).title ??
+          (entry as { name?: string }).name ??
+          String((entry as { id?: string }).id ?? "entry"),
+        storedAt: new Date((entry as any).storedAt ?? 0).toISOString()
+          (entry as { storedAt?: string | number | Date | null }).storedAt ??
+          new Date(0).toISOString(),
+        source:
+          (entry as { source?: string }).source ??
+          "panel",
+        deck:
+          (entry as { deck?: unknown }).deck ??
+          entry,
+      })) as SpatialCuratedDeckVaultEntry[],
+    [entries],
   );
 
+  const anomaly = useMemo(
+    () => buildSpatialCuratedDeckAnomaly({ entries: vaultEntries, activeEntryId }),
+    [vaultEntries, activeEntryId],
+  );
   const bandLabel =
     anomaly.anomalyBand === "clear"
       ? "Clear"

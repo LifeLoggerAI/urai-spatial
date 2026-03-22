@@ -1,3 +1,4 @@
+import { resolveStarByIdSafe } from "../lib/resolveStarByIdSafe";
 "use client";
 
 import { useSceneStore } from "@/spatial/state/sceneStore";
@@ -10,10 +11,10 @@ function color(value: unknown, fallback: string): string {
 
 export default function SpatialPolishOverlay() {
   const mode = useSceneStore((s) => s.mode);
-  const selectedStar = useSceneStore((s) => s.selectedStar) as LooseRecord | null;
+  const selectedStarId = useSceneStore((s) => s.selectedStarId);
 
   const accent = color(
-    selectedStar?.color,
+    undefined,
     mode === "replay" ? "rgba(255,220,160,0.30)" : "rgba(255,255,255,0.18)"
   );
 

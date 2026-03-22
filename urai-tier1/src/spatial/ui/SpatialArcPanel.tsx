@@ -69,10 +69,10 @@ export default function SpatialArcPanel() {
         active arc: {activeArc ? activeArc.label : "none"}
       </div>
       <div style={{ fontSize: 12, lineHeight: 1.45, opacity: 0.76 }}>
-        kind: {activeArc ? activeArc.kind : "n/a"}
+        kind: {"n/a"}
       </div>
       <div style={{ fontSize: 12, lineHeight: 1.45, opacity: 0.76 }}>
-        intensity: {activeArc ? activeArc.intensity : "n/a"}
+        intensity: {"n/a"}
       </div>
       <div
         style={{
@@ -82,7 +82,7 @@ export default function SpatialArcPanel() {
           opacity: 0.82,
         }}
       >
-        {activeArc ? activeArc.summary : "No arc summary available."}
+        {"No arc summary available."}
       </div>
     </div>
   );

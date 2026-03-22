@@ -1,3 +1,4 @@
+import { resolveStarByIdSafe } from "../lib/resolveStarByIdSafe";
 "use client";
 
 import { useMemo } from "react";
@@ -6,14 +7,14 @@ import { resolveXRCameraRigStateById } from "@/spatial/xr-runtime/resolveXRCamer
 
 export default function XRCameraRigOverlay() {
   const mode = useSceneStore((s) => s.mode);
-  const selectedStar = useSceneStore((s) => s.selectedStar);
+  const selectedStarId = useSceneStore((s) => s.selectedStarId);
 
   const rig = useMemo(
-    () => resolveXRCameraRigStateById(selectedStar?.id, mode),
-    [selectedStar, mode]
+    () => resolveXRCameraRigStateById(selectedStarId ?? "", mode),
+    [selectedStarId, mode]
   );
 
-  if (!selectedStar || !rig) return null;
+  if (!selectedStarId || !rig) return null;
 
   return (
     <div

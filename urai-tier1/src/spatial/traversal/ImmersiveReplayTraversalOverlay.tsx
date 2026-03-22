@@ -1,3 +1,4 @@
+import { resolveStarByIdSafe } from "../lib/resolveStarByIdSafe";
 "use client";
 
 import { useMemo } from "react";
@@ -6,14 +7,14 @@ import { resolveImmersiveReplayTraversalById } from "@/spatial/traversal/resolve
 
 export default function ImmersiveReplayTraversalOverlay() {
   const mode = useSceneStore((s) => s.mode);
-  const selectedStar = useSceneStore((s) => s.selectedStar);
+  const selectedStarId = useSceneStore((s) => s.selectedStarId);
 
   const traversal = useMemo(
-    () => resolveImmersiveReplayTraversalById(selectedStar?.id, mode),
-    [selectedStar, mode]
+    () => resolveImmersiveReplayTraversalById(selectedStarId, mode),
+    [selectedStarId, mode]
   );
 
-  if (!selectedStar || !traversal) return null;
+  if (!selectedStarId || !traversal) return null;
 
   return (
     <div

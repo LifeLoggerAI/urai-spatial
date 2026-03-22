@@ -1,4 +1,4 @@
-import { SpatialStar } from "../data/stars";
+import { SpatialStar } from "../../src/spatial/data/stars";
 import { SelectedStar } from "../state/sceneStore";
 
 export function toCanonicalSelectedStar(star: SpatialStar): SelectedStar {

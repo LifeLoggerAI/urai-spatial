@@ -1,3 +1,4 @@
+import { resolveStarByIdSafe } from "../lib/resolveStarByIdSafe";
 "use client";
 
 import { useMemo } from "react";
@@ -6,14 +7,14 @@ import { resolveNarrativeReplayById } from "@/spatial/narrative/resolveNarrative
 
 export default function NarrativeReplayOverlay() {
   const mode = useSceneStore((s) => s.mode);
-  const selectedStar = useSceneStore((s) => s.selectedStar);
+  const selectedStarId = useSceneStore((s) => s.selectedStarId);
 
   const narrative = useMemo(
-    () => resolveNarrativeReplayById(selectedStar?.id),
-    [selectedStar]
+    () => resolveNarrativeReplayById(selectedStarId),
+    [selectedStarId]
   );
 
-  if (mode !== "replay" || !selectedStar || !narrative) return null;
+  if (mode !== "replay" || !selectedStarId || !narrative) return null;
 
   const tone = narrative.tone ?? "rgba(255,255,255,0.9)";
 

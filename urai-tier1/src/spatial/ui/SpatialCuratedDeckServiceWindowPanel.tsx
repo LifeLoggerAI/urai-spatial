@@ -5,16 +5,38 @@ import { useMemo } from "react";
 import { buildSpatialCuratedDeckServiceWindow } from "@/spatial/curation/buildSpatialCuratedDeckServiceWindow";
 import type { SpatialCuratedDeckServiceWindowCheckpoint } from "@/spatial/curation/spatialCuratedDeckServiceWindowTypes";
 import { useSpatialCuratedDeckVaultStore } from "@/spatial/curation/spatialCuratedDeckVaultStore";
+import type { SpatialCuratedDeckVaultEntry } from "@/spatial/curation/spatialCuratedDeckVaultTypes";
 
 export default function SpatialCuratedDeckServiceWindowPanel() {
   const activeEntryId = useSpatialCuratedDeckVaultStore((s) => s.activeEntryId);
   const entries = useSpatialCuratedDeckVaultStore((s) => s.entries);
 
-  const serviceWindow = useMemo(
-    () => buildSpatialCuratedDeckServiceWindow({ entries, activeEntryId }),
-    [entries, activeEntryId],
+  const vaultEntries = useMemo<SpatialCuratedDeckVaultEntry[]>(
+    () =>
+      entries.map((entry) => ({
+        ...(entry as Record<string, unknown>),
+        label:
+          (entry as { label?: string }).label ??
+          (entry as { title?: string }).title ??
+          (entry as { name?: string }).name ??
+          String((entry as { id?: string }).id ?? "entry"),
+        storedAt: new Date((entry as any).storedAt ?? 0).toISOString()
+          (entry as { storedAt?: string | number | Date | null }).storedAt ??
+          new Date(0).toISOString(),
+        source:
+          (entry as { source?: string }).source ??
+          "panel",
+        deck:
+          (entry as { deck?: unknown }).deck ??
+          entry,
+      })) as SpatialCuratedDeckVaultEntry[],
+    [entries],
   );
 
+  const serviceWindow = useMemo(
+    () => buildSpatialCuratedDeckServiceWindow({ entries: vaultEntries, activeEntryId }),
+    [vaultEntries, activeEntryId],
+  );
   const requiredCheckpoints = useMemo(
     () =>
       serviceWindow.checkpoints

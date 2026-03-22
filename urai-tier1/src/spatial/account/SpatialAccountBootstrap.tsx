@@ -1,13 +1,7 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
-import { readSpatialAccountManifest, writeSpatialAccountManifest } from "@/spatial/account/spatialAccountIO";
-import { useSpatialAccountStore } from "@/spatial/account/spatialAccountStore";
-import type { SpatialAccountManifest } from "@/spatial/account/spatialAccountTypes";
-
-type AccountWindow = Window & {
-  __URAI_SPATIAL_ACCOUNT_MANIFEST__?: SpatialAccountManifest;
-};
+import { useEffect, useState } from "react";
+import { useSpatialAccountStore } from "./spatialAccountStore";
 
 export default function SpatialAccountBootstrap() {
   const hydrate = useSpatialAccountStore((s) => s.hydrate);
@@ -17,30 +11,18 @@ export default function SpatialAccountBootstrap() {
   const [ready, setReady] = useState(false);
 
   useEffect(() => {
-    hydrate(readSpatialAccountManifest());
+    hydrate();
     setReady(true);
   }, [hydrate]);
 
-  const manifest = useMemo(
-    () => ({
-      schema: "urai.spatial.account.v1" as const,
-      activeAccountId,
-      profiles,
-    }),
-    [activeAccountId, profiles],
+  if (!ready) return null;
+
+  return (
+    <div
+      style={{ display: "none" }}
+      data-spatial-account-ready="true"
+      data-active-account-id={activeAccountId ?? ""}
+      data-profile-count={profiles.length}
+    />
   );
-
-  useEffect(() => {
-    if (!ready) return;
-    writeSpatialAccountManifest(manifest);
-    const target = window as AccountWindow;
-    target.__URAI_SPATIAL_ACCOUNT_MANIFEST__ = manifest;
-    window.dispatchEvent(
-      new CustomEvent("urai:spatial-account-manifest", {
-        detail: manifest,
-      }),
-    );
-  }, [ready, manifest]);
-
-  return null;
 }

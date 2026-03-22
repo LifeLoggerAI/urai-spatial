@@ -1,40 +1,45 @@
-"use client";
-
 import { create } from "zustand";
 import {
   createDefaultSpatialStoryBundleVaultManifest,
-  type SpatialStoryBundleVaultEntry,
   type SpatialStoryBundleVaultManifest,
-} from "@/spatial/vault/spatialStoryBundleVaultTypes";
+  type SpatialStoryBundleVaultEntry,
+} from "./spatialStoryBundleVaultTypes";
 
-type SpatialStoryBundleVaultStore = SpatialStoryBundleVaultManifest & {
+export type SpatialStoryBundleVaultStore = SpatialStoryBundleVaultManifest & {
   hydrate: (manifest: SpatialStoryBundleVaultManifest) => void;
-  replaceManifest: (manifest: SpatialStoryBundleVaultManifest) => void;
-  setActiveEntryId: (id: string | null) => void;
-  appendEntry: (entry: SpatialStoryBundleVaultEntry) => void;
-  reset: () => void;
+  setActiveEntryId: (entryId: string | null) => void;
+  addEntry: (entry: SpatialStoryBundleVaultEntry) => void;
+  removeEntry: (entryId: string) => void;
+  clear: () => void;
 };
 
 export const useSpatialStoryBundleVaultStore =
   create<SpatialStoryBundleVaultStore>((set) => ({
     ...createDefaultSpatialStoryBundleVaultManifest(),
-    hydrate: (manifest) =>
-      set({
-        ...createDefaultSpatialStoryBundleVaultManifest(),
-        ...manifest,
-        schema: "urai.spatial.story-bundle-vault.v1",
-      }),
-    replaceManifest: (manifest) =>
-      set({
-        ...createDefaultSpatialStoryBundleVaultManifest(),
-        ...manifest,
-        schema: "urai.spatial.story-bundle-vault.v1",
-      }),
-    setActiveEntryId: (id) => set({ activeEntryId: id }),
-    appendEntry: (entry) =>
-      set((state) => ({
-        activeEntryId: entry.id,
-        entries: [...state.entries, entry].slice(-20),
+
+    setActiveEntryId: (entryId) =>
+      set(() => ({
+        activeEntryId: entryId,
       })),
-    reset: () => set(createDefaultSpatialStoryBundleVaultManifest()),
+
+    hydrate: (manifest) =>
+      set(() => ({
+        ...createDefaultSpatialStoryBundleVaultManifest(),
+        ...manifest,
+      })),
+
+    addEntry: (entry) =>
+      set((state) => ({
+        entries: [...state.entries.filter((item) => item.id !== entry.id), entry],
+      })),
+
+    removeEntry: (entryId) =>
+      set((state) => ({
+        entries: state.entries.filter((item) => item.id !== entryId),
+      })),
+
+    clear: () =>
+      set(() => ({
+        ...createDefaultSpatialStoryBundleVaultManifest(),
+      })),
   }));

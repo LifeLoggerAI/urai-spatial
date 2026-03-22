@@ -19,15 +19,66 @@ type SpatialSettingsStore = SpatialSettings & {
 export const useSpatialSettingsStore = create<SpatialSettingsStore>((set) => ({
   ...createDefaultSpatialSettings(),
   hydrate: (settings) =>
-    set({
-      ...createDefaultSpatialSettings(),
+    set(() => ({
       ...settings,
-      schema: "urai.spatial.settings.v1",
-    }),
-  reset: () => set(createDefaultSpatialSettings()),
-  setReducedMotion: (value) => set({ reducedMotion: value }),
-  setShowImportExport: (value) => set({ showImportExport: value }),
-  setTelemetryEnabled: (value) => set({ telemetryEnabled: value }),
-  setShowTelemetryPanel: (value) => set({ showTelemetryPanel: value }),
-  setPersistSnapshots: (value) => set({ persistSnapshots: value }),
+    })),
+  replaceSettings: (settings) =>
+    set((state) => ({
+      ...state,
+      ...settings,
+    })),
+  setMotionEnabled: (motionEnabled) =>
+    set((state) => ({
+      ...state,
+      motionEnabled,
+    })),
+  setBloomEnabled: (bloomEnabled) =>
+    set((state) => ({
+      ...state,
+      bloomEnabled,
+    })),
+  setDofEnabled: (dofEnabled) =>
+    set((state) => ({
+      ...state,
+      dofEnabled,
+    })),
+  setAudioReactiveEnabled: (audioReactiveEnabled) =>
+    set((state) => ({
+      ...state,
+      audioReactiveEnabled,
+    })),
+  setQualityPreset: (qualityPreset) =>
+    set((state) => ({
+      ...state,
+      qualityPreset,
+    })),
+  setReducedMotion: (value) =>
+    set((state) => ({
+      ...state,
+      reducedMotion: value,
+    })),
+  setShowImportExport: (value) =>
+    set((state) => ({
+      ...state,
+      showImportExport: value,
+    })),
+  setTelemetryEnabled: (value) =>
+    set((state) => ({
+      ...state,
+      telemetryEnabled: value,
+    })),
+  setShowTelemetryPanel: (value) =>
+    set((state) => ({
+      ...state,
+      showTelemetryPanel: value,
+    })),
+  setPersistSnapshots: (value) =>
+    set((state) => ({
+      ...state,
+      persistSnapshots: value,
+    })),
+  reset: () =>
+    set(() => ({
+      ...createDefaultSpatialSettings(),
+    })),
 }));

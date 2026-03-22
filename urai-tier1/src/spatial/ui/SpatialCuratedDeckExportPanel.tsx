@@ -1,3 +1,4 @@
+import { resolveStarByIdSafe } from "../lib/resolveStarByIdSafe";
 "use client";
 
 import type { CSSProperties } from "react";
@@ -6,6 +7,7 @@ import { useSpatialAccountStore } from "@/spatial/account/spatialAccountStore";
 import { buildSpatialCuratedDeckExport } from "@/spatial/curation/buildSpatialCuratedDeckExport";
 import { useSpatialCurationBoardStore } from "@/spatial/curation/spatialCurationBoardStore";
 import { useSpatialStoryBundleVaultStore } from "@/spatial/vault/spatialStoryBundleVaultStore";
+import type { SpatialCuratedDeckVaultEntry } from "@/spatial/curation/spatialCuratedDeckVaultTypes";
 
 function downloadText(filename: string, text: string) {
   const blob = new Blob([text], { type: "text/plain;charset=utf-8" });
@@ -47,7 +49,7 @@ export default function SpatialCuratedDeckExportPanel() {
     () =>
       buildSpatialCuratedDeckExport({
         accountId: activeAccountId,
-        accountLabel: activeProfile?.label ?? null,
+        accountLabel: ((activeProfile as { title?: string; name?: string } | null)?.title ?? (activeProfile as { title?: string; name?: string } | null)?.name ?? null),
         items: boardItems,
         vaultEntries,
       }),
@@ -127,7 +129,7 @@ export default function SpatialCuratedDeckExportPanel() {
       </div>
 
       <div style={{ fontSize: 13, lineHeight: 1.45, opacity: 0.88 }}>
-        account: {activeProfile?.label ?? activeAccountId}
+        account: {((activeProfile as { title?: string; name?: string } | null)?.title ?? (activeProfile as { title?: string; name?: string } | null)?.name ?? activeAccountId)}
       </div>
       <div style={{ fontSize: 12, lineHeight: 1.45, opacity: 0.76 }}>
         curated cards: {exportPackage.cardCount}

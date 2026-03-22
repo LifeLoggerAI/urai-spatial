@@ -4,16 +4,38 @@ import type { CSSProperties } from "react";
 import { useMemo } from "react";
 import { buildSpatialCuratedDeckLineage } from "@/spatial/curation/buildSpatialCuratedDeckLineage";
 import { useSpatialCuratedDeckVaultStore } from "@/spatial/curation/spatialCuratedDeckVaultStore";
+import type { SpatialCuratedDeckVaultEntry } from "@/spatial/curation/spatialCuratedDeckVaultTypes";
 
 export default function SpatialCuratedDeckLineagePanel() {
   const activeEntryId = useSpatialCuratedDeckVaultStore((s) => s.activeEntryId);
   const entries = useSpatialCuratedDeckVaultStore((s) => s.entries);
 
-  const lineage = useMemo(
-    () => buildSpatialCuratedDeckLineage({ entries, activeEntryId }),
-    [entries, activeEntryId],
+  const vaultEntries = useMemo<SpatialCuratedDeckVaultEntry[]>(
+    () =>
+      entries.map((entry) => ({
+        ...(entry as Record<string, unknown>),
+        label:
+          (entry as { label?: string }).label ??
+          (entry as { title?: string }).title ??
+          (entry as { name?: string }).name ??
+          String((entry as { id?: string }).id ?? "entry"),
+        storedAt: new Date((entry as any).storedAt ?? 0).toISOString()
+          (entry as { storedAt?: string | number | Date | null }).storedAt ??
+          new Date(0).toISOString(),
+        source:
+          (entry as { source?: string }).source ??
+          "panel",
+        deck:
+          (entry as { deck?: unknown }).deck ??
+          entry,
+      })) as SpatialCuratedDeckVaultEntry[],
+    [entries],
   );
 
+  const lineage = useMemo(
+    () => buildSpatialCuratedDeckLineage({ entries: vaultEntries, activeEntryId }),
+    [vaultEntries, activeEntryId],
+  );
   return (
     <div
       style={{

@@ -10,6 +10,7 @@ import { useSpatialLensStore } from "@/spatial/lenses/spatialLensStore";
 import { buildSpatialNarratorExport } from "@/spatial/narrator/buildSpatialNarratorExport";
 import { readSpatialPersistenceSnapshot } from "@/spatial/persistence/spatialPersistenceIO";
 import { useSpatialSeasonalArcStore } from "@/spatial/seasonal/spatialSeasonalArcStore";
+import { toSpatialNarrativeArcs } from "@/spatial/narrative/toSpatialNarrativeArc";
 
 function downloadText(filename: string, text: string) {
   const blob = new Blob([text], { type: "text/plain;charset=utf-8" });
@@ -74,11 +75,21 @@ export default function SpatialStoryBundlePanel() {
 
   const narratorExport = useMemo(() => {
     if (!snapshot) return null;
+    const normalizedActiveCompareSet = activeCompareSet
+      ? ({
+          ...(activeCompareSet as Record<string, unknown>),
+          label:
+            (activeCompareSet as { label?: string; id?: string }).label ??
+            (activeCompareSet as { label?: string; id?: string }).id ??
+            "Compare Set",
+        } as any)
+      : null;
+
     return buildSpatialNarratorExport({
       accountId: activeAccountId,
-      accountLabel: activeProfile?.label ?? null,
+      accountLabel: ((activeProfile as { title?: string; name?: string } | null)?.title ?? (activeProfile as { title?: string; name?: string } | null)?.name ?? activeAccountId),
       activeLens,
-      activeCompareSet,
+      activeCompareSet: normalizedActiveCompareSet,
       compareSetCount: compareSets.length,
       snapshot,
     });
@@ -92,15 +103,25 @@ export default function SpatialStoryBundlePanel() {
   ]);
 
   const bundle = useMemo(() => {
+  const normalizedActiveCompareSet = activeCompareSet
+    ? ({
+        ...(activeCompareSet as Record<string, unknown>),
+        label:
+          (activeCompareSet as { label?: string; id?: string }).label ??
+          (activeCompareSet as { label?: string; id?: string }).id ??
+          "Compare Set",
+      } as any)
+    : null;
     if (!snapshot) return null;
+    const normalizedArcs = toSpatialNarrativeArcs(arcs);
+    const normalizedSeasonalArcs = seasonalArcs;
     return buildSpatialStoryBundle({
       accountId: activeAccountId,
-      accountLabel: activeProfile?.label ?? null,
+      accountLabel: ((activeProfile as { title?: string; name?: string } | null)?.title ?? (activeProfile as { title?: string; name?: string } | null)?.name ?? activeAccountId),
       snapshot,
       activeLens,
-      activeCompareSet,
-      arcs,
-      seasonalArcs,
+      arcs: normalizedArcs,
+      seasonalArcs: normalizedSeasonalArcs,
       narrator: narratorExport,
     });
   }, [
@@ -178,7 +199,7 @@ export default function SpatialStoryBundlePanel() {
       </div>
 
       <div style={{ fontSize: 13, lineHeight: 1.45, opacity: 0.88 }}>
-        account: {activeProfile?.label ?? activeAccountId}
+        account: {((activeProfile as { title?: string; name?: string } | null)?.title ?? (activeProfile as { title?: string; name?: string } | null)?.name ?? activeAccountId)}
       </div>
       <div style={{ fontSize: 12, lineHeight: 1.45, opacity: 0.76 }}>
         arcs: {arcs.length}

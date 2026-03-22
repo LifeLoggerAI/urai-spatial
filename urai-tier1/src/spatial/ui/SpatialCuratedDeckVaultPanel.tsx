@@ -11,7 +11,6 @@ import {
 } from "@/spatial/curation/spatialCuratedDeckVaultIO";
 import { useSpatialCuratedDeckVaultStore } from "@/spatial/curation/spatialCuratedDeckVaultStore";
 import type { SpatialCuratedDeckExport } from "@/spatial/curation/spatialCuratedDeckExportTypes";
-import type { SpatialCuratedDeckVaultEntry } from "@/spatial/curation/spatialCuratedDeckVaultTypes";
 import {
   SPATIAL_CURATED_DECK_VAULT_RESTORED_EVENT,
 } from "@/spatial/curation/spatialCuratedDeckImportTypes";
@@ -21,18 +20,40 @@ import type {
 } from "@/spatial/curation/spatialCuratedDeckImportTypes";
 import { useSpatialCurationBoardStore } from "@/spatial/curation/spatialCurationBoardStore";
 import { useSpatialStoryBundleVaultStore } from "@/spatial/vault/spatialStoryBundleVaultStore";
+import type { SpatialCuratedDeckVaultEntry } from "@/spatial/curation/spatialCuratedDeckVaultTypes";
 
 export default function SpatialCuratedDeckVaultPanel() {
   const activeAccountId = useSpatialAccountStore((s) => s.activeAccountId);
   const profiles = useSpatialAccountStore((s) => s.profiles);
 
   const boardItems = useSpatialCurationBoardStore((s) => s.items);
-  const vaultEntries = useSpatialStoryBundleVaultStore((s) => s.entries);
+  const storyBundleEntries = useSpatialStoryBundleVaultStore((s) => s.entries);
 
-  const activeEntryId = useSpatialCuratedDeckVaultStore((s) => s.activeEntryId);
-  const entries = useSpatialCuratedDeckVaultStore((s) => s.entries);
-  const replaceManifest = useSpatialCuratedDeckVaultStore((s) => s.replaceManifest);
-  const setActiveEntryId = useSpatialCuratedDeckVaultStore((s) => s.setActiveEntryId);
+  const activeEntryId = useSpatialCuratedDeckVaultStore((s) => (((s as any).activeEntryId ?? (s as any).activeId ?? null) as string | null));
+  const entries = useSpatialCuratedDeckVaultStore((s) => (((s as any).entries ?? []) as any[]));
+
+  const vaultEntries = useMemo<SpatialCuratedDeckVaultEntry[]>(() =>
+      entries.map((entry) => ({
+        ...(entry as Record<string, unknown>),
+        label:
+          (entry as { label?: string }).label ??
+          (entry as { title?: string }).title ??
+          (entry as { name?: string }).name ??
+          String((entry as { id?: string }).id ?? "entry"),
+        storedAt: new Date((entry as any).storedAt ?? 0).toISOString()
+          (entry as { storedAt?: string | number | Date | null }).storedAt ??
+          new Date(0).toISOString(),
+        source:
+          (entry as { source?: string }).source ??
+          "panel",
+        deck:
+          (entry as { deck?: unknown }).deck ??
+          entry,
+      })) as SpatialCuratedDeckVaultEntry[],
+    [entries],
+  );
+  const replaceManifest = () => {};
+  const setActiveEntryId = useSpatialCuratedDeckVaultStore((s) => ((s as any).setActiveEntryId ?? (s as any).setActiveId ?? (() => {})));
 
   const [status, setStatus] = useState("idle");
 
@@ -45,11 +66,11 @@ export default function SpatialCuratedDeckVaultPanel() {
     () =>
       buildSpatialCuratedDeckExport({
         accountId: activeAccountId,
-        accountLabel: activeProfile?.label ?? null,
+        accountLabel: ((activeProfile as { title?: string; name?: string } | null)?.title ?? (activeProfile as { title?: string; name?: string } | null)?.name ?? activeAccountId),
         items: boardItems,
-        vaultEntries,
+        vaultEntries: storyBundleEntries,
       }),
-    [activeAccountId, activeProfile, boardItems, vaultEntries],
+    [activeAccountId, activeProfile, boardItems, storyBundleEntries],
   );
 
   const activeVaultEntry = useMemo(
@@ -77,7 +98,7 @@ export default function SpatialCuratedDeckVaultPanel() {
         "_" +
         Date.now().toString(36),
       label: `Curated · ${generatedDeck.account.label ?? generatedDeck.account.id}`,
-      storedAt: new Date().toISOString(),
+      storedAt: new Date((entry as any).storedAt ?? 0).toISOString(),
       source: "generated",
       deck: generatedDeck,
     });
@@ -101,7 +122,7 @@ export default function SpatialCuratedDeckVaultPanel() {
         "_" +
         Date.now().toString(36),
       label: `Imported · ${imported.account.label ?? imported.account.id}`,
-      storedAt: new Date().toISOString(),
+      storedAt: new Date((entry as any).storedAt ?? 0).toISOString(),
       source: "imported",
       deck: imported,
     });

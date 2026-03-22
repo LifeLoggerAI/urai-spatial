@@ -1,45 +1,47 @@
-"use client";
-
 import { create } from "zustand";
-import {
-  createDefaultSpatialArcManifest,
-  type SpatialArcManifest,
-  type SpatialNarrativeArc,
-} from "@/spatial/arcs/spatialArcTypes";
-
-type SpatialArcStore = SpatialArcManifest & {
-  hydrate: (manifest: SpatialArcManifest) => void;
-  replaceManifest: (manifest: SpatialArcManifest) => void;
-  setActiveArcId: (id: string | null) => void;
-  setArcs: (arcs: SpatialNarrativeArc[]) => void;
-  reset: () => void;
+export type SpatialArc = {
+  id: string;
+  fromStarId: string;
+  toStarId: string;
+  strength: number;
+  label?: string;
 };
-
+export type SpatialArcManifest = {
+  arcs: SpatialArc[];
+  isLoaded: boolean;
+  activeArcId: string | null;
+};
+export type SpatialArcStore = SpatialArcManifest & {
+  hydrate: (manifest?: Partial<SpatialArcManifest>) => void;
+  reset: () => void;
+  setArcs: (arcs: SpatialArc[]) => void;
+  setActiveArcId: (id: string | null) => void;
+};
+export function createDefaultSpatialArcManifest(): SpatialArcManifest {
+  return {
+    arcs: [],
+    isLoaded: false,
+    activeArcId: null,
+  };
+}
 export const useSpatialArcStore = create<SpatialArcStore>((set) => ({
   ...createDefaultSpatialArcManifest(),
-  hydrate: (manifest) =>
+  hydrate: (manifest = {}) =>
+    set((state) => ({
+      ...state,
+      ...manifest,
+      isLoaded: true,
+    })),
+  reset: () =>
     set({
       ...createDefaultSpatialArcManifest(),
-      ...manifest,
-      schema: "urai.spatial.arc.v1",
     }),
-  replaceManifest: (manifest) =>
-    set({
-      ...createDefaultSpatialArcManifest(),
-      ...manifest,
-      schema: "urai.spatial.arc.v1",
-    }),
-  setActiveArcId: (id) => set({ activeArcId: id }),
   setArcs: (arcs) =>
-    set((state) => {
-      const activeArcId = arcs.some((item) => item.id === state.activeArcId)
-        ? state.activeArcId
-        : arcs[0]?.id ?? null;
-
-      return {
-        arcs,
-        activeArcId,
-      };
+    set({
+      arcs,
     }),
-  reset: () => set(createDefaultSpatialArcManifest()),
+  setActiveArcId: (id) =>
+    set({
+      activeArcId: id,
+    }),
 }));

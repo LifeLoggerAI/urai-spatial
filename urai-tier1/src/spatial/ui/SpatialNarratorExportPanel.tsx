@@ -58,13 +58,34 @@ export default function SpatialNarratorExportPanel() {
     return compareSets.find((item) => item.id === activeLens.compareSetId) ?? null;
   }, [compareSets, activeLens]);
 
+  const normalizedActiveCompareSet = activeCompareSet
+    ? ({
+        ...(activeCompareSet as Record<string, unknown>),
+        label:
+          (activeCompareSet as { label?: string; id?: string }).label ??
+          (activeCompareSet as { label?: string; id?: string }).id ??
+          "Compare Set",
+      } as any)
+    : null;
+
   const exportPackage = useMemo(() => {
+    const normalizedActiveCompareSet = activeCompareSet
+      ? ({
+          ...(activeCompareSet as Record<string, unknown>),
+          label:
+            (activeCompareSet as { label?: string; id?: string }).label ??
+            (activeCompareSet as { label?: string; id?: string }).id ??
+            "Compare Set",
+        } as any)
+      : null;
     if (!snapshot) return null;
+
+
     return buildSpatialNarratorExport({
       accountId: activeAccountId,
-      accountLabel: activeProfile?.label ?? null,
+      accountLabel: ((activeProfile as { title?: string; name?: string } | null)?.title ?? (activeProfile as { title?: string; name?: string } | null)?.name ?? activeAccountId),
       activeLens,
-      activeCompareSet,
+      activeCompareSet: normalizedActiveCompareSet,
       compareSetCount: compareSets.length,
       snapshot,
     });
@@ -134,7 +155,7 @@ export default function SpatialNarratorExportPanel() {
       </div>
 
       <div style={{ fontSize: 13, lineHeight: 1.45, opacity: 0.88 }}>
-        account: {activeProfile?.label ?? activeAccountId}
+        account: {((activeProfile as { title?: string; name?: string } | null)?.title ?? (activeProfile as { title?: string; name?: string } | null)?.name ?? activeAccountId)}
       </div>
       <div style={{ fontSize: 12, lineHeight: 1.45, opacity: 0.76 }}>
         lens: {activeLens?.label ?? "none"}

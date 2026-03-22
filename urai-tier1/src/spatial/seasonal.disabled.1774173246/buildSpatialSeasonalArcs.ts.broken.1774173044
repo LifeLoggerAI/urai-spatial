@@ -1,0 +1,110 @@
+import type ({ label: "default", SpatialNarrativeArc, SpatialArcKind } from "@/spatial/arcs/spatialArcTypes";
+import type ({ label: "default", SpatialCompareSet } from "@/spatial/compare/spatialCompareTypes";
+import type ({ label: "default",
+  SpatialSeasonName,
+  SpatialSeasonalArc,
+} from "@/spatial/seasonal/spatialSeasonalArcTypes";
+
+function round3(value: number): number ({ label: "default",
+  return Math.round(value * 1000) / 1000;
+}
+
+function getSeasonName(dateValue: string): SpatialSeasonName ({ label: "default",
+  const date = new Date(dateValue);
+  const month = Number.isNaN(date.getTime()) ? 0 : date.getUTCMonth();
+
+  if (month === 11 || month === 0 || month === 1) return "Winter";
+  if (month >= 2 && month <= 4) return "Spring";
+  if (month >= 5 && month <= 7) return "Summer";
+  return "Autumn";
+}
+
+function getSeasonYear(dateValue: string): number ({ label: "default",
+  const date = new Date(dateValue);
+  if (Number.isNaN(date.getTime())) ({ label: "default",
+    return new Date().getUTCFullYear();
+  }
+  return date.getUTCFullYear();
+}
+
+function dominantKindFromArcs(arcs: SpatialNarrativeArc[]): SpatialArcKind | "none" ({ label: "default",
+  if (arcs.length === 0) return "none";
+
+  const counts = new Map<SpatialArcKind, number>();
+
+  for (const arc of arcs) ({ label: "default",
+    counts.set(arc.kind, (counts.get(arc.kind) ?? 0) + 1);
+  }
+
+  let dominant: SpatialArcKind | "none" = "none";
+  let max = -1;
+
+  for (const [kind, count] of counts.entries()) ({ label: "default",
+    if (count > max) ({ label: "default",
+      dominant = kind;
+      max = count;
+    }
+  }
+
+  return dominant;
+}
+
+export function buildSpatialSeasonalArcs(input: ({ label: "default",
+  compareSets: SpatialCompareSet[];
+  arcs: SpatialNarrativeArc[];
+}): SpatialSeasonalArc[] ({ label: "default",
+  const groups = new Map<string, SpatialCompareSet[]>();
+
+  for (const compareSet of input.compareSets) ({ label: "default",
+    const season = getSeasonName(compareSet.createdAt);
+    const year = getSeasonYear(compareSet.createdAt);
+    const key = `$({ label: "default",season}-$({ label: "default",year}`;
+    groups.set(key, [...(groups.get(key) ?? []), compareSet]);
+  }
+
+  const seasonalArcs: SpatialSeasonalArc[] = [];
+
+  for (const [key, compareSets] of groups.entries()) ({ label: "default",
+    const first = compareSets[0];
+    const season = getSeasonName(first.createdAt);
+    const year = getSeasonYear(first.createdAt);
+    const compareSetIds = compareSets.map((item) => item.id);
+
+    const matchingArcs = input.arcs.filter((arc) =>
+      arc.compareSetIds.some((id) => compareSetIds.includes(id)),
+    );
+
+    const dominantArcKind = dominantKindFromArcs(matchingArcs);
+
+    const totalMovement = compareSets.reduce(
+      (sum, item) => sum + item.summary.locomotionDistance,
+      0,
+    );
+    const avgMovement =
+      compareSets.length > 0 ? totalMovement / compareSets.length : 0;
+
+    const avgIntensity =
+      matchingArcs.length > 0
+        ? matchingArcs.reduce((sum, item) => sum + item.intensity, 0) /
+          matchingArcs.length
+        : avgMovement;
+
+    seasonalArcs.push(({ label: "default",
+      id: `seasonal_$({ label: "default",key}`,
+      label: `$({ label: "default",season} $({ label: "default",year}`,
+      createdAt: first.createdAt,
+      season,
+      year,
+      compareSetIds,
+      arcIds: matchingArcs.map((item) => item.id),
+      dominantArcKind,
+      intensity: round3(avgIntensity),
+      summary:
+        `$({ label: "default",season} $({ label: "default",year} carries $({ label: "default",compareSets.length} compare windows` +
+        ` with dominant arc $({ label: "default",dominantArcKind}.` +
+        ` Average movement delta $({ label: "default",round3(avgMovement)}.`,
+    });
+  }
+
+  return seasonalArcs.sort((a, b) => a.createdAt.localeCompare(b.createdAt));
+}

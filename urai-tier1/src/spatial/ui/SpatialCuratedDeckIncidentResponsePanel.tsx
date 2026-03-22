@@ -8,13 +8,36 @@ import type {
   SpatialCuratedDeckIncidentResponseTrigger,
 } from "@/spatial/curation/spatialCuratedDeckIncidentResponseTypes";
 import { useSpatialCuratedDeckVaultStore } from "@/spatial/curation/spatialCuratedDeckVaultStore";
+import type { SpatialCuratedDeckVaultEntry } from "@/spatial/curation/spatialCuratedDeckVaultTypes";
 
 export default function SpatialCuratedDeckIncidentResponsePanel() {
   const activeEntryId = useSpatialCuratedDeckVaultStore((s) => s.activeEntryId);
   const entries = useSpatialCuratedDeckVaultStore((s) => s.entries);
 
+  const vaultEntries = useMemo<SpatialCuratedDeckVaultEntry[]>(
+    () =>
+      entries.map((entry) => ({
+        ...(entry as Record<string, unknown>),
+        label:
+          (entry as { label?: string }).label ??
+          (entry as { title?: string }).title ??
+          (entry as { name?: string }).name ??
+          String((entry as { id?: string }).id ?? "entry"),
+        storedAt: new Date((entry as any).storedAt ?? 0).toISOString()
+          (entry as { storedAt?: string | number | Date | null }).storedAt ??
+          new Date(0).toISOString(),
+        source:
+          (entry as { source?: string }).source ??
+          "panel",
+        deck:
+          (entry as { deck?: unknown }).deck ??
+          entry,
+      })) as SpatialCuratedDeckVaultEntry[],
+    [entries],
+  );
+
   const incident = useMemo(
-    () => buildSpatialCuratedDeckIncidentResponse({ entries, activeEntryId }),
+    () => buildSpatialCuratedDeckIncidentResponse({ entries: vaultEntries, activeEntryId }),
     [entries, activeEntryId],
   );
 

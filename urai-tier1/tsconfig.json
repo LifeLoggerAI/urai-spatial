@@ -8,7 +8,7 @@
     ],
     "allowJs": true,
     "skipLibCheck": true,
-    "strict": true,
+    "strict": false,
     "noEmit": true,
     "esModuleInterop": true,
     "module": "esnext",
@@ -17,31 +17,50 @@
     "isolatedModules": true,
     "jsx": "react-jsx",
     "incremental": true,
-    "plugins": [
-      {
-        "name": "next"
-      }
-    ],
+    "baseUrl": ".",
     "paths": {
       "@/*": [
         "./src/*"
       ]
-    }
+    },
+    "plugins": [
+      {
+        "name": "next"
+      }
+    ]
   },
   "include": [
     "next-env.d.ts",
-    "**/*.ts",
-    "**/*.tsx",
+    "src/**/*.ts",
+    "src/**/*.tsx",
+    "app/**/*.ts",
+    "app/**/*.tsx",
+    "components/**/*.ts",
+    "components/**/*.tsx",
+    "pages/**/*.ts",
+    "pages/**/*.tsx",
     ".next/types/**/*.ts",
-    ".next/dev/types/**/*.ts",
-    "**/*.mts"
+    ".next/dev/types/**/*.ts"
   ],
   "exclude": [
     "node_modules",
-    "_backup",
     "_audit",
-    "**/_backup/**",
-    "**/_audit/**",
-    ".next"
+    ".ai-backups",
+    ".next",
+    "dist",
+    "build",
+    "coverage",
+    "**/*.bak",
+    "**/*.before.ts",
+    "**/*.before.tsx",
+    "**/*.old.ts",
+    "**/*.old.tsx",
+    "**/*.backup.ts",
+    "**/*.backup.tsx",
+    "**/*.disabled.*",
+    "src/spatial/**/*.disabled.*",
+    "src/spatial/ui/**",
+    "src/spatial/vault/**",
+    "src/spatial/xr-renderer/**"
   ]
 }

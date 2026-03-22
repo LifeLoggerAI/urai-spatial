@@ -1,12 +1,10 @@
-"use client";
-
 import { create } from "zustand";
 import {
   createEmptyXrLocomotionState,
   type XrLocomotionState,
-} from "@/spatial/xr/xrLocomotionTypes";
+} from "./xrLocomotionTypes";
 
-type XrLocomotionStore = {
+export type XrLocomotionStore = {
   pose: XrLocomotionState;
   setPose: (pose: XrLocomotionState) => void;
   reset: () => void;
@@ -14,6 +12,6 @@ type XrLocomotionStore = {
 
 export const useXrLocomotionStore = create<XrLocomotionStore>((set) => ({
   pose: createEmptyXrLocomotionState(),
-  setPose: (pose) => set({ pose }),
-  reset: () => set({ pose: createEmptyXrLocomotionState() }),
+  setPose: (pose) => set(() => ({ pose })),
+  reset: () => set(() => ({ pose: createEmptyXrLocomotionState() })),
 }));

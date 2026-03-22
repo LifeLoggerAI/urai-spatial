@@ -1,75 +1,42 @@
+import { resolveStarByIdSafe } from "../lib/resolveStarByIdSafe";
 "use client";
 
-import { useEffect, useMemo, useRef } from "react";
-import { generateStars } from "@/spatial/data/stars";
-import { buildSpatialPersistenceSnapshot } from "@/spatial/persistence/buildSpatialPersistenceSnapshot";
-import { writeSpatialPersistenceSnapshot } from "@/spatial/persistence/spatialPersistenceIO";
-import { useSpatialSettingsStore } from "@/spatial/settings/spatialSettingsStore";
-import { useSceneStore } from "@/spatial/state/sceneStore";
-import { useArPlacementStore } from "@/spatial/xr/arPlacementStore";
-import { useXrInputStore } from "@/spatial/xr/xrInputStore";
-import { useXrLocomotionStore } from "@/spatial/xr/xrLocomotionStore";
-import { useXrSessionStore } from "@/spatial/xr/xrSessionStore";
-import type { SpatialPersistenceSnapshot } from "@/spatial/persistence/spatialPersistenceTypes";
-
-type PersistenceWindow = Window & {
-  __URAI_SPATIAL_PERSISTENCE__?: SpatialPersistenceSnapshot;
-};
+import { useEffect } from "react";
+import { resolveStarById } from "@/spatial/data/stars";
+import { useSceneStore } from "../state/sceneStore";
+import { useXrStore } from "../unity/UnityRuntimePayloadBridge";
+import type { SpatialPersistenceSnapshot } from "../types";
 
 export default function SpatialPersistenceBridge() {
-  const persistSnapshots = useSpatialSettingsStore((s) => s.persistSnapshots);
-
   const mode = useSceneStore((s) => s.mode);
-  const selectedStar = useSceneStore((s) => s.selectedStar);
-
-  const presenting = useXrSessionStore((s) => s.presenting);
-  const hasHeadsetPose = useXrSessionStore((s) => s.hasHeadsetPose);
-
-  const controllers = useXrInputStore((s) => s.controllers);
-  const hands = useXrInputStore((s) => s.hands);
-  const arPlacement = useArPlacementStore((s) => s.pose);
-  const locomotion = useXrLocomotionStore((s) => s.pose);
-
-  const starCountRef = useRef<number>(generateStars().length);
-
-  const snapshot = useMemo(() => {
-    return buildSpatialPersistenceSnapshot({
-      mode,
-      selectedStar,
-      presenting,
-      hasHeadsetPose,
-      xrInput: {
-        controllers,
-        hands,
-      },
-      arPlacement,
-      locomotion,
-      starCount: starCountRef.current,
-    });
-  }, [
-    mode,
-    selectedStar,
-    presenting,
-    hasHeadsetPose,
-    controllers,
-    hands,
-    arPlacement,
-    locomotion,
-  ]);
-
-  const signature = useMemo(() => JSON.stringify(snapshot), [snapshot]);
+  const selectedStarId = useSceneStore((s) => s.selectedStarId);
+  const xrState = useXrStore();
 
   useEffect(() => {
-    if (!persistSnapshots) return;
-    writeSpatialPersistenceSnapshot(snapshot);
-    const target = window as PersistenceWindow;
-    target.__URAI_SPATIAL_PERSISTENCE__ = snapshot;
-    window.dispatchEvent(
-      new CustomEvent("urai:spatial-persistence-saved", {
-        detail: snapshot,
-      }),
-    );
-  }, [persistSnapshots, snapshot, signature]);
+    const star = resolveStarById(selectedStarId);
+    const persistenceSceneMode = mode === "replay" ? "replay" : "lifemap";
+    const snapshot: SpatialPersistenceSnapshot = {
+      schema: "urai.spatial.persistence.v1" as const,
+      savedAt: new Date().toISOString(),
+      sceneMode: persistenceSceneMode,
+      selectedStarId: selectedStarId ?? null,
+      selectedStarLabel: star?.label ?? null,
+      presenting: xrState.presenting,
+      hasHeadsetPose: xrState.hasHeadsetPose,
+      xrInput: xrState.xrInput
+    };
+
+    try {
+      window.localStorage.setItem("urai.spatial.persistence", JSON.stringify(snapshot));
+      (window).__URAI_SPATIAL_PERSISTENCE__ = snapshot;
+    } catch {}
+  }, [mode, selectedStarId, xrState]);
 
   return null;
+}
+
+declare global {
+  interface Window {
+    __URAI_SPATIAL_PERSISTENCE__?: SpatialPersistenceSnapshot;
+  }
 }
