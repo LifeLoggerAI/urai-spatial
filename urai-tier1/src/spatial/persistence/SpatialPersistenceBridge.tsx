@@ -1,3 +1,4 @@
+
 import { resolveStarByIdSafe } from "../lib/resolveStarByIdSafe";
 "use client";
 
@@ -28,7 +29,6 @@ export default function SpatialPersistenceBridge() {
 
     try {
       window.localStorage.setItem("urai.spatial.persistence", JSON.stringify(snapshot));
-      (window).__URAI_SPATIAL_PERSISTENCE__ = snapshot;
     } catch {}
   }, [mode, selectedStarId, xrState]);
 
@@ -37,6 +37,5 @@ export default function SpatialPersistenceBridge() {
 
 declare global {
   interface Window {
-    __URAI_SPATIAL_PERSISTENCE__?: SpatialPersistenceSnapshot;
   }
 }

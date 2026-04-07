@@ -1,0 +1,141 @@
+"use client";
+
+import { useFrame } from "@react-three/fiber";
+import { useMemo, useRef } from "react";
+import type { Group, Mesh } from "three";
+import type { ScenePhase, SelectedStar } from "../types/scene";
+
+type StarfieldProps = {
+  stars: SelectedStar[];
+  phase: ScenePhase;
+  selectedId: string | null;
+  hoveredId: string | null;
+  onHover: (id: string | null) => void;
+  onSelect: (star: SelectedStar) => void;
+};
+
+const STAR_DEPTH_NEAR_MIN = -18;
+const STAR_DEPTH_NEAR_MAX = -8;
+const STAR_DEPTH_MID_MIN = -42;
+const STAR_DEPTH_MID_MAX = -20;
+const STAR_DEPTH_FAR_MIN = -92;
+const STAR_DEPTH_FAR_MAX = -46;
+
+function depthOpacity(z: number) {
+  if (z >= STAR_DEPTH_NEAR_MIN && z <= STAR_DEPTH_NEAR_MAX) return 1.0;
+  if (z >= STAR_DEPTH_MID_MIN && z <= STAR_DEPTH_MID_MAX) return 0.78;
+  return 0.56;
+}
+
+export default function Starfield({
+  stars,
+  phase,
+  selectedId,
+  hoveredId,
+  onHover,
+  onSelect,
+}: StarfieldProps) {
+  const groupRef = useRef<Group>(null);
+  const meshRefs = useRef<Record<string, Mesh | null>>({});
+
+  const flickers = useMemo(
+    () =>
+      Object.fromEntries(
+        stars.map((star, index) => [
+          star.id,
+          {
+            speed: 0.45 + (index % 7) * 0.09,
+            phase: index * 0.71,
+          },
+        ]),
+      ),
+    [stars],
+  );
+
+  useFrame(({ clock }) => {
+    const t = clock.getElapsedTime();
+    for (const star of stars) {
+      const mesh = meshRefs.current[star.id];
+      if (!mesh) continue;
+
+      const flicker = flickers[star.id];
+      const pulse = 0.92 + Math.sin(t * flicker.speed + flicker.phase) * 0.08;
+      const isSelected = selectedId === star.id;
+      const isHovered = hoveredId === star.id;
+      const fadeOthers = selectedId ? (isSelected ? 1 : phase === "replay" ? 0.08 : 0.18) : 1;
+      const hoverScale = isHovered ? 1.18 : 1;
+      const selectedScale = isSelected ? (phase === "replay" ? 2.2 : 1.75) : 1;
+      const baseScale = star.size * pulse * hoverScale * selectedScale;
+      mesh.scale.setScalar(baseScale * fadeOthers);
+
+      const mat = mesh.material as { opacity?: number; emissiveIntensity?: number };
+      const baseOpacity = depthOpacity(star.position[2]);
+      if (typeof mat.opacity === "number") {
+        mat.opacity = baseOpacity * fadeOthers;
+      }
+      if (typeof mat.emissiveIntensity === "number") {
+        mat.emissiveIntensity = isSelected ? 4.4 : isHovered ? 2.4 : 1.5;
+      }
+    }
+
+    const g = groupRef.current;
+    if (g) {
+      g.rotation.y = Math.sin(t * 0.05) * 0.035;
+      g.rotation.x = Math.cos(t * 0.04) * 0.018;
+    }
+  });
+
+  return (
+    <group ref={groupRef}>
+      {stars.map((star) => {
+        const isSelected = selectedId === star.id;
+        const isHovered = hoveredId === star.id;
+        return (
+          <group key={star.id} position={star.position}>
+            <mesh
+              ref={(node) => {
+                meshRefs.current[star.id] = node;
+              }}
+              onPointerEnter={(event) => {
+                event.stopPropagation();
+                onHover(star.id);
+              }}
+              onPointerLeave={(event) => {
+                event.stopPropagation();
+                onHover(null);
+              }}
+              onClick={(event) => {
+                event.stopPropagation();
+                onSelect(star);
+              }}
+            >
+              <sphereGeometry args={[0.32, 20, 20]} />
+              <meshStandardMaterial
+                color={star.color}
+                emissive={star.color}
+                emissiveIntensity={isSelected ? 4.4 : isHovered ? 2.4 : 1.5}
+                transparent
+                opacity={depthOpacity(star.position[2])}
+                roughness={0.18}
+                metalness={0.02}
+              />
+            </mesh>
+            <mesh scale={isSelected ? 2.7 : isHovered ? 2.1 : 1.6}>
+              <sphereGeometry args={[0.32, 18, 18]} />
+              <meshBasicMaterial color={star.color} transparent opacity={isSelected ? 0.16 : 0.07} depthWrite={false} />
+            </mesh>
+          </group>
+        );
+      })}
+    </group>
+  );
+}
+
+export {
+  STAR_DEPTH_NEAR_MIN,
+  STAR_DEPTH_NEAR_MAX,
+  STAR_DEPTH_MID_MIN,
+  STAR_DEPTH_MID_MAX,
+  STAR_DEPTH_FAR_MIN,
+  STAR_DEPTH_FAR_MAX,
+};

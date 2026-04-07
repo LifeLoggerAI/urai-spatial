@@ -1,7 +1,5 @@
 import { getSpatialScopedStorageKey } from "@/spatial/account/accountScopedStorage";
 import {
-  SPATIAL_SEASONAL_ARC_MAX_ITEMS,
-  SPATIAL_SEASONAL_ARC_STORAGE_KEY,
   createDefaultSpatialSeasonalArcManifest,
   type SpatialSeasonalArcManifest,
 } from "@/spatial/seasonal/spatialSeasonalArcTypes";
@@ -13,7 +11,6 @@ export function readSpatialSeasonalArcManifest(): SpatialSeasonalArcManifest {
 
   try {
     const raw = window.localStorage.getItem(
-      getSpatialScopedStorageKey(SPATIAL_SEASONAL_ARC_STORAGE_KEY),
     );
     if (!raw) return createDefaultSpatialSeasonalArcManifest();
 
@@ -23,7 +20,6 @@ export function readSpatialSeasonalArcManifest(): SpatialSeasonalArcManifest {
     }
 
     const seasonalArcs = Array.isArray(parsed.seasonalArcs)
-      ? parsed.seasonalArcs.slice(-SPATIAL_SEASONAL_ARC_MAX_ITEMS)
       : [];
 
     const activeSeasonalArcId = seasonalArcs.some(
@@ -48,7 +44,6 @@ export function writeSpatialSeasonalArcManifest(
   if (typeof window === "undefined") return;
 
   try {
-    const seasonalArcs = manifest.seasonalArcs.slice(-SPATIAL_SEASONAL_ARC_MAX_ITEMS);
     const activeSeasonalArcId = seasonalArcs.some(
       (item) => item.id === manifest.activeSeasonalArcId,
     )
@@ -56,7 +51,6 @@ export function writeSpatialSeasonalArcManifest(
       : seasonalArcs[0]?.id ?? null;
 
     window.localStorage.setItem(
-      getSpatialScopedStorageKey(SPATIAL_SEASONAL_ARC_STORAGE_KEY),
       JSON.stringify({
         schema: "urai.spatial.seasonal-arc.v1",
         activeSeasonalArcId,

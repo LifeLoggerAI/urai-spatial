@@ -1,0 +1,195 @@
+=== URAI PASS 2 — STAR SCHEMA UNIFICATION ===
+ROOT=/home/user/urai-spatial
+AUDIT=/home/user/urai-spatial/_audit/pass2_star_schema_unification_20260328_113814
+WROTE: src/lib/uraiCanon/starTypes.ts
+WROTE: src/lib/uraiCanon/starData.ts
+WROTE: src/lib/uraiCanon/starSchema.ts
+
+=== PATCHING DRIFTING TYPE USAGE ===
+BACKUP: src/spatial/scene/SpatialScene.tsx
+PATCHED: src/spatial/scene/SpatialScene.tsx
+WROTE: scripts/check-star-schema-drift.sh
+WROTE: _audit/pass2_star_schema_unification_20260328_113814/schema_drift_report.txt
+BACKUP: package.json
+PATCHED: package.json (added check:star-schema)
+
+=== ENFORCEMENT RUN ===
+STAR SCHEMA DRIFT DETECTED
+
+DRIFT TYPE DEF: ./_quarantine/_archive/engine/data/demoData.ts
+7:export interface StarNode {
+
+DRIFT TYPE DEF: ./_quarantine/_archive/engine/scenes/LifeMap.tsx
+9:type StarNode = {
+
+DRIFT TYPE DEF: ./urai-tier1/_audit/phase4/20260316_160112/originals/src/spatial/state/sceneStore.ts
+6:export type SelectedStar = {
+
+DRIFT TYPE DEF: ./urai-tier1/_audit/fix_selectedstar_20260324_212226/FocusShellOverlay.tsx
+3:type SelectedStar = {
+
+DRIFT TYPE DEF: ./urai-tier1/_audit/camera_convergence_pass_20260328_084033/backup/src/spatial/scene/SpatialScene.tsx
+9:type StarNode = {
+
+DRIFT TYPE DEF: ./urai-tier1/_audit/lock8-minimal-sky-contract-no-python/20260317_211813/sceneStore.before.ts
+6:export type SelectedStar = {
+
+DRIFT TYPE DEF: ./urai-tier1/_audit/force-rewrite-sceneStore-and-build/20260317_213307/sceneStore.before.ts
+6:export type SelectedStar = {
+
+DRIFT TYPE DEF: ./urai-tier1/_audit/lock8-insert-enterSky-before-setSelectedStar/20260317_212605/sceneStore.before.ts
+6:export type SelectedStar = {
+
+DRIFT TYPE DEF: ./urai-tier1/_audit/camera_convergence_useCameraPresence_20260328_084703/backup/src/spatial/scene/SpatialScene.tsx
+9:type StarNode = {
+
+DRIFT TYPE DEF: ./urai-tier1/_audit/authority_lock_20260328_071430/backups/src/lib/uraiCanon/types.ts
+34:export interface StarNode {
+
+DRIFT TYPE DEF: ./urai-tier1/_audit/authority_lock_20260328_071430/backups/src/spatial/scene/SpatialScene.tsx
+11:type StarNode = {
+
+DRIFT TYPE DEF: ./urai-tier1/_audit/surgical_dominance_patch_20260328_082930/backup/src/spatial/scene/SpatialScene.tsx
+9:type StarNode = {
+
+DRIFT TYPE DEF: ./urai-tier1/_audit/canon_lock_keep_open_20260328_075324/backup/src/spatial/scene/SpatialScene.tsx
+20:type StarNode = {
+
+DRIFT TYPE DEF: ./urai-tier1/_audit/presence_pass_20260328_075842/backup/src/spatial/scene/SpatialScene.tsx
+9:type StarNode = {
+
+DRIFT TYPE DEF: ./urai-tier1/_audit/visual/backups/20260316_130941/src/spatial/state/sceneStore.ts
+6:export type SelectedStar = {
+
+DRIFT TYPE DEF: ./urai-tier1/_audit/lock8-add-enterSky-impl/20260317_212258/sceneStore.before.ts
+6:export type SelectedStar = {
+
+DRIFT TYPE DEF: ./urai-tier1/_audit/pass3c_force_visible_stars_20260325_055418/before.tsx
+8:type StarNode = SelectedStar & {
+
+DRIFT TYPE DEF: ./urai-tier1/_audit/pass3c_force_visible_stars_20260325_055418/after.tsx
+8:type StarNode = SelectedStar & {
+
+DRIFT TYPE DEF: ./urai-tier1/_audit/pass4_restore_minimal_interaction_20260325_060043/before.tsx
+8:type StarNode = SelectedStar & {
+
+DRIFT TYPE DEF: ./urai-tier1/_audit/pass4_restore_minimal_interaction_20260325_060043/after.tsx
+8:type StarNode = SelectedStar & {
+
+DRIFT TYPE DEF: ./urai-tier1/_audit/surgical_dominance_patch_20260328_083125/backup/src/spatial/scene/SpatialScene.tsx
+9:type StarNode = {
+
+DRIFT TYPE DEF: ./urai-tier1/_audit/pass3_restore_minimal_sceneworld_20260325_053919/before.tsx
+8:type StarNode = SelectedStar & {
+
+DRIFT TYPE DEF: ./urai-tier1/_audit/pass3_restore_minimal_sceneworld_20260325_053919/after.tsx
+8:type StarNode = SelectedStar & {
+
+DRIFT TYPE DEF: ./urai-tier1/_audit/lock8-minimal-sky-contract/20260317_211557/sceneStore.before.ts
+6:export type SelectedStar = {
+
+DRIFT TYPE DEF: ./urai-tier1/_audit/lock8-force-insert-enterSky/20260317_212430/sceneStore.before.ts
+6:export type SelectedStar = {
+
+DRIFT TYPE DEF: ./urai-tier1/_audit/surgical_dominance_patch_20260328_082627/backup/src/spatial/scene/SpatialScene.tsx
+9:type StarNode = {
+
+DRIFT TYPE DEF: ./urai-tier1/_audit/fix_selectedstar_20260324_214958/FocusShellOverlay.tsx
+3:type SelectedStar = {
+
+DRIFT TYPE DEF: ./urai-tier1/_audit/lock8-force-insert-enterSky-inside-store-object/20260317_212804/sceneStore.before.ts
+6:export type SelectedStar = {
+
+DRIFT TYPE DEF: ./urai-tier1/_audit/phase3/20260316_155524/originals/src/spatial/state/sceneStore.ts
+6:export type SelectedStar = {
+
+DRIFT TYPE DEF: ./urai-tier1/_audit/lock8-minimal-sky-contract-recover/20260317_211942/sceneStore.pre-reset.ts
+6:export type SelectedStar = {
+
+DRIFT TYPE DEF: ./urai-tier1/_audit/lock8-minimal-sky-contract-recover/20260317_211942/sceneStore.before.ts
+6:export type SelectedStar = {
+
+DRIFT TYPE DEF: ./urai-tier1/_backup/20260316_092316/src/spatial/state/sceneStore.ts
+6:export type SelectedStar = {
+
+DRIFT TYPE DEF: ./urai-tier1/src/lib/uraiCanon/types.ts
+34:export interface StarNode {
+
+DRIFT TYPE DEF: ./urai-tier1/src/spatial/state/selectedStarContract.ts
+17:export type SelectedStar = { id: string; label?: string | null; title?: string | null; name?: string | null; color?: string | null; glow?: number | null; position?: [number, number, number] | null; };
+
+DRIFT TYPE DEF: ./urai-tier1/src/spatial/replay/ReplayOverlay.tsx
+8:type SelectedStar = LooseRecord | null;
+
+DRIFT TYPE DEF: ./urai-tier1/src/spatial/scene/types/scene.ts
+3:export type SelectedStar = {
+
+DRIFT TYPE DEF: ./urai-tier1/src/spatial/types/scene.ts
+11:export type SelectedStar = {
+
+DRIFT TYPE DEF: ./urai-tier1/.ai-backups/error_sweep_20260321_005139/src/spatial/state/selectedStarContract.ts
+3:export type SelectedStar =
+
+DRIFT TYPE DEF: ./urai-tier1/.ai-backups/compile_lock_20260321_004348/src/spatial/state/selectedStarContract.ts
+3:export type SelectedStar = SpatialStar & {
+
+DRIFT TYPE DEF: ./urai-tier1/.ai-backups/20260321_012208/src/spatial/state/selectedStarContract.ts
+19:export type SelectedStar = SelectedStarLike;
+
+DRIFT TYPE DEF: ./urai-tier1/.ai-backups/error_sweep_20260321_005225/src/spatial/state/selectedStarContract.ts
+3:export type SelectedStar =
+
+DRIFT TYPE DEF: ./urai-tier1/.ai-backups/selectedstar-global-fix-20260322_015155/src/spatial/replay/ReplayOverlay.tsx
+7:type SelectedStar = LooseRecord | null;
+
+DRIFT TYPE DEF: ./urai-tier1/.ai-backups/20260321_064108/src.broken/spatial/state/selectedStarContract.ts
+19:export type SelectedStar = SelectedStarLike;
+
+DRIFT TYPE DEF: ./urai-tier1/.ai-backups/20260321_064108/src.broken/spatial/replay/ReplayOverlay.tsx
+7:type SelectedStar = LooseRecord | null;
+
+DRIFT TYPE DEF: ./urai-tier1/.ai-backups/tier1_lock_20260320_235443/src/spatial/unity/buildUnityRuntimePayload.ts
+3:type SelectedStar =
+
+DRIFT TYPE DEF: ./urai-tier1/.ai-backups/full-sanitize-20260322_020922/src/spatial/state/selectedStarContract.ts
+17:export type SelectedStar = { id: string; label?: string | null; title?: string | null; name?: string | null; color?: string | null; glow?: number | null; position?: [number, number, number] | null; };
+
+DRIFT TYPE DEF: ./urai-tier1/.ai-backups/full-sanitize-20260322_020922/src/spatial/replay/ReplayOverlay.tsx
+8:type SelectedStar = LooseRecord | null;
+
+DRIFT TYPE DEF: ./urai-tier1/.ai-backups/20260322_005418/src/spatial/replay/ReplayOverlay.tsx
+7:type SelectedStar = LooseRecord | null;
+
+DRIFT TYPE DEF: ./urai-tier1/.ai-backups/replaymodel_fix_20260321_005342/src/spatial/state/selectedStarContract.ts
+3:export type SelectedStar =
+
+DRIFT TYPE DEF: ./urai-tier1/.ai-backups/selectedstar-resolution-fix-20260322_015313/src/spatial/replay/ReplayOverlay.tsx
+7:type SelectedStar = LooseRecord | null;
+
+DRIFT TYPE DEF: ./urai-tier1/.ai-backups/spatial_repair_debug_20260324_171929/src/spatial/types/scene.ts
+5:export type SelectedStar = {
+
+DRIFT TYPE DEF: ./urai-tier1/.ai-backups/full-sanitize-20260322_021649/src/spatial/state/selectedStarContract.ts
+17:export type SelectedStar = { id: string; label?: string | null; title?: string | null; name?: string | null; color?: string | null; glow?: number | null; position?: [number, number, number] | null; };
+
+DRIFT TYPE DEF: ./urai-tier1/.ai-backups/full-sanitize-20260322_021649/src/spatial/replay/ReplayOverlay.tsx
+8:type SelectedStar = LooseRecord | null;
+
+DRIFT TYPE DEF: ./urai-tier1/.ai-backups/20260321_011806/src/spatial/state/selectedStarContract.ts
+19:export type SelectedStar = SelectedStarLike;
+
+DRIFT TYPE DEF: ./urai-tier1/.ai-backups/spatial_repair_safe_20260324_172353/src/spatial/types/scene.ts
+5:export type SelectedStar = {
+
+DRIFT TYPE DEF: ./src/spatial/scene/SpatialScene.tsx
+12:type StarNode = {
+
+DRIFT TYPE DEF: ./.ai-backups/tier1_nav_replay_orb_20260324_201813/src/spatial/types/scene.ts
+5:export type SelectedStar = {
+
+DRIFT TYPE DEF: ./.ai-backups/tier1_prep_20260324_200033/src/spatial/types/scene.ts
+5:export type SelectedStar = {
+
+DRIFT TYPE DEF: ./.ai-backups/20260321_022950/src/spatial/types.ts
+16:export type SelectedStar = SpatialStar | null;
+

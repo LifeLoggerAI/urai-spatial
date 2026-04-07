@@ -1,0 +1,9 @@
+[BACKUP] src/spatial/state/sceneStore.ts
+[BACKUP] src/spatial/persistence/SpatialPersistenceBridge.tsx
+[BACKUP] src/spatial/types.ts
+[STEP] inspect current failing snippets
+[STEP] hard patch sceneStore compatibility aliases
+
+[FAIL] Failed to inject concrete compatibility fields into src/spatial/state/sceneStore.ts
+
+[FAIL] Script aborted at line 1 (exit 1)

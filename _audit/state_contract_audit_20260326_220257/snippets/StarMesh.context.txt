@@ -1,0 +1,203 @@
+===== src/spatial/scene/StarMesh.tsx : line 3 =====
+"use client";
+
+import { useSceneStore } from "../state/sceneStore";
+
+type StarMeshProps = {
+  id: string;
+  position: [number, number, number];
+  color?: string;
+  glow?: number;
+  scale?: number;
+};
+
+===== src/spatial/scene/StarMesh.tsx : line 14 =====
+  id: string;
+  position: [number, number, number];
+  color?: string;
+  glow?: number;
+  scale?: number;
+};
+
+export default function StarMesh({ id, position, color = "#ffffff", scale = 0.16 }: StarMeshProps) {
+  const hoverStar = useSceneStore((s) => s.hoverStar);
+  const selectStar = useSceneStore((s) => s.selectStar);
+  const selectedStar = useSceneStore((s) => s.selectedStar);
+  const hoveredStar = useSceneStore((s) => s.hoveredStar);
+  const mode = useSceneStore((s) => s.mode);
+
+  const isSelected = selectedStar === id;
+  const isHovered = hoveredStar === id;
+  const size = isSelected ? scale * 1.3 : isHovered ? scale * 1.15 : scale;
+
+===== src/spatial/scene/StarMesh.tsx : line 15 =====
+  position: [number, number, number];
+  color?: string;
+  glow?: number;
+  scale?: number;
+};
+
+export default function StarMesh({ id, position, color = "#ffffff", scale = 0.16 }: StarMeshProps) {
+  const hoverStar = useSceneStore((s) => s.hoverStar);
+  const selectStar = useSceneStore((s) => s.selectStar);
+  const selectedStar = useSceneStore((s) => s.selectedStar);
+  const hoveredStar = useSceneStore((s) => s.hoveredStar);
+  const mode = useSceneStore((s) => s.mode);
+
+  const isSelected = selectedStar === id;
+  const isHovered = hoveredStar === id;
+  const size = isSelected ? scale * 1.3 : isHovered ? scale * 1.15 : scale;
+  const interactive = mode === "lifemap" || mode === "replay";
+
+===== src/spatial/scene/StarMesh.tsx : line 16 =====
+  color?: string;
+  glow?: number;
+  scale?: number;
+};
+
+export default function StarMesh({ id, position, color = "#ffffff", scale = 0.16 }: StarMeshProps) {
+  const hoverStar = useSceneStore((s) => s.hoverStar);
+  const selectStar = useSceneStore((s) => s.selectStar);
+  const selectedStar = useSceneStore((s) => s.selectedStar);
+  const hoveredStar = useSceneStore((s) => s.hoveredStar);
+  const mode = useSceneStore((s) => s.mode);
+
+  const isSelected = selectedStar === id;
+  const isHovered = hoveredStar === id;
+  const size = isSelected ? scale * 1.3 : isHovered ? scale * 1.15 : scale;
+  const interactive = mode === "lifemap" || mode === "replay";
+
+
+===== src/spatial/scene/StarMesh.tsx : line 17 =====
+  glow?: number;
+  scale?: number;
+};
+
+export default function StarMesh({ id, position, color = "#ffffff", scale = 0.16 }: StarMeshProps) {
+  const hoverStar = useSceneStore((s) => s.hoverStar);
+  const selectStar = useSceneStore((s) => s.selectStar);
+  const selectedStar = useSceneStore((s) => s.selectedStar);
+  const hoveredStar = useSceneStore((s) => s.hoveredStar);
+  const mode = useSceneStore((s) => s.mode);
+
+  const isSelected = selectedStar === id;
+  const isHovered = hoveredStar === id;
+  const size = isSelected ? scale * 1.3 : isHovered ? scale * 1.15 : scale;
+  const interactive = mode === "lifemap" || mode === "replay";
+
+  return (
+
+===== src/spatial/scene/StarMesh.tsx : line 18 =====
+  scale?: number;
+};
+
+export default function StarMesh({ id, position, color = "#ffffff", scale = 0.16 }: StarMeshProps) {
+  const hoverStar = useSceneStore((s) => s.hoverStar);
+  const selectStar = useSceneStore((s) => s.selectStar);
+  const selectedStar = useSceneStore((s) => s.selectedStar);
+  const hoveredStar = useSceneStore((s) => s.hoveredStar);
+  const mode = useSceneStore((s) => s.mode);
+
+  const isSelected = selectedStar === id;
+  const isHovered = hoveredStar === id;
+  const size = isSelected ? scale * 1.3 : isHovered ? scale * 1.15 : scale;
+  const interactive = mode === "lifemap" || mode === "replay";
+
+  return (
+    <group
+
+===== src/spatial/scene/StarMesh.tsx : line 20 =====
+
+export default function StarMesh({ id, position, color = "#ffffff", scale = 0.16 }: StarMeshProps) {
+  const hoverStar = useSceneStore((s) => s.hoverStar);
+  const selectStar = useSceneStore((s) => s.selectStar);
+  const selectedStar = useSceneStore((s) => s.selectedStar);
+  const hoveredStar = useSceneStore((s) => s.hoveredStar);
+  const mode = useSceneStore((s) => s.mode);
+
+  const isSelected = selectedStar === id;
+  const isHovered = hoveredStar === id;
+  const size = isSelected ? scale * 1.3 : isHovered ? scale * 1.15 : scale;
+  const interactive = mode === "lifemap" || mode === "replay";
+
+  return (
+    <group
+      position={position}
+      onPointerOver={(e) => {
+
+===== src/spatial/scene/StarMesh.tsx : line 21 =====
+export default function StarMesh({ id, position, color = "#ffffff", scale = 0.16 }: StarMeshProps) {
+  const hoverStar = useSceneStore((s) => s.hoverStar);
+  const selectStar = useSceneStore((s) => s.selectStar);
+  const selectedStar = useSceneStore((s) => s.selectedStar);
+  const hoveredStar = useSceneStore((s) => s.hoveredStar);
+  const mode = useSceneStore((s) => s.mode);
+
+  const isSelected = selectedStar === id;
+  const isHovered = hoveredStar === id;
+  const size = isSelected ? scale * 1.3 : isHovered ? scale * 1.15 : scale;
+  const interactive = mode === "lifemap" || mode === "replay";
+
+  return (
+    <group
+      position={position}
+      onPointerOver={(e) => {
+        e.stopPropagation();
+
+===== src/spatial/scene/StarMesh.tsx : line 30 =====
+  const size = isSelected ? scale * 1.3 : isHovered ? scale * 1.15 : scale;
+  const interactive = mode === "lifemap" || mode === "replay";
+
+  return (
+    <group
+      position={position}
+      onPointerOver={(e) => {
+        e.stopPropagation();
+        if (interactive) hoverStar(id);
+      }}
+      onPointerOut={(e) => {
+        e.stopPropagation();
+        if (interactive) hoverStar(null);
+      }}
+      onClick={(e) => {
+        e.stopPropagation();
+        if (interactive) selectStar(id);
+
+===== src/spatial/scene/StarMesh.tsx : line 34 =====
+    <group
+      position={position}
+      onPointerOver={(e) => {
+        e.stopPropagation();
+        if (interactive) hoverStar(id);
+      }}
+      onPointerOut={(e) => {
+        e.stopPropagation();
+        if (interactive) hoverStar(null);
+      }}
+      onClick={(e) => {
+        e.stopPropagation();
+        if (interactive) selectStar(id);
+      }}
+    >
+      <mesh>
+        <sphereGeometry args={[size, 18, 18]} />
+
+===== src/spatial/scene/StarMesh.tsx : line 38 =====
+        if (interactive) hoverStar(id);
+      }}
+      onPointerOut={(e) => {
+        e.stopPropagation();
+        if (interactive) hoverStar(null);
+      }}
+      onClick={(e) => {
+        e.stopPropagation();
+        if (interactive) selectStar(id);
+      }}
+    >
+      <mesh>
+        <sphereGeometry args={[size, 18, 18]} />
+        <meshBasicMaterial color={color} transparent opacity={0.92} />
+      </mesh>
+      <mesh scale={2.4}>
+        <sphereGeometry args={[size, 14, 14]} />
+

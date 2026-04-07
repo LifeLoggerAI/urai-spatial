@@ -1,3 +1,4 @@
+
 export type SpatialCuratedDeckDiff = {
   schema: "urai.spatial.curated-deck-diff.v1";
   baseEntryId: string;

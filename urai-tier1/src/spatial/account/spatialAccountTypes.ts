@@ -10,16 +10,13 @@ export type SpatialAccountManifest = {
   profiles: SpatialAccountProfile[];
 };
 
-export const SPATIAL_ACCOUNT_STORAGE_KEY = "urai.spatial.account.v1";
-export const SPATIAL_DEFAULT_ACCOUNT_ID = "local-main";
-
 export function createDefaultSpatialAccountManifest(): SpatialAccountManifest {
   return {
     schema: "urai.spatial.account.v1",
-    activeAccountId: SPATIAL_DEFAULT_ACCOUNT_ID,
+    activeAccountId: "local-main",
     profiles: [
       {
-        id: SPATIAL_DEFAULT_ACCOUNT_ID,
+        id: "local-main",
         label: "Local Main",
         createdAt: new Date(0).toISOString(),
       },

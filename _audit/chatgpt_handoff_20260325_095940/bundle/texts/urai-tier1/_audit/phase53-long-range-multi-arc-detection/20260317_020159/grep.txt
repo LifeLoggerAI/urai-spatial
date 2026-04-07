@@ -1,0 +1,24 @@
+src/spatial/ui/SpatialArcPanel.tsx:5:import { useSpatialArcStore } from "@/spatial/arcs/spatialArcStore";
+src/spatial/ui/SpatialArcPanel.tsx:7:export default function SpatialArcPanel() {
+src/spatial/ui/SpatialArcPanel.tsx:8:  const activeArcId = useSpatialArcStore((s) => s.activeArcId);
+src/spatial/ui/SpatialArcPanel.tsx:9:  const arcs = useSpatialArcStore((s) => s.arcs);
+src/spatial/ui/SpatialArcPanel.tsx:10:  const setActiveArcId = useSpatialArcStore((s) => s.setActiveArcId);
+src/spatial/scene/SpatialScene.tsx:2:import SpatialArcPanel from "@/spatial/ui/SpatialArcPanel";
+src/spatial/scene/SpatialScene.tsx:3:import SpatialArcBootstrap from "@/spatial/arcs/SpatialArcBootstrap";
+src/spatial/scene/SpatialScene.tsx:751:      <SpatialArcBootstrap />
+src/spatial/scene/SpatialScene.tsx:752:      <SpatialArcPanel />
+src/spatial/arcs/buildSpatialNarrativeArcs.ts:58:export function buildSpatialNarrativeArcs(input: {
+src/spatial/arcs/spatialArcIO.ts:4:  SPATIAL_ARC_STORAGE_KEY,
+src/spatial/arcs/spatialArcIO.ts:16:      getSpatialScopedStorageKey(SPATIAL_ARC_STORAGE_KEY),
+src/spatial/arcs/spatialArcIO.ts:55:      getSpatialScopedStorageKey(SPATIAL_ARC_STORAGE_KEY),
+src/spatial/arcs/spatialArcTypes.ts:24:export const SPATIAL_ARC_STORAGE_KEY = "urai.spatial.arc.v1";
+src/spatial/arcs/SpatialArcBootstrap.tsx:6:import { buildSpatialNarrativeArcs } from "@/spatial/arcs/buildSpatialNarrativeArcs";
+src/spatial/arcs/SpatialArcBootstrap.tsx:8:import { useSpatialArcStore } from "@/spatial/arcs/spatialArcStore";
+src/spatial/arcs/SpatialArcBootstrap.tsx:15:export default function SpatialArcBootstrap() {
+src/spatial/arcs/SpatialArcBootstrap.tsx:21:  const hydrate = useSpatialArcStore((s) => s.hydrate);
+src/spatial/arcs/SpatialArcBootstrap.tsx:22:  const activeArcId = useSpatialArcStore((s) => s.activeArcId);
+src/spatial/arcs/SpatialArcBootstrap.tsx:23:  const setArcs = useSpatialArcStore((s) => s.setArcs);
+src/spatial/arcs/SpatialArcBootstrap.tsx:24:  const arcs = useSpatialArcStore((s) => s.arcs);
+src/spatial/arcs/SpatialArcBootstrap.tsx:40:      buildSpatialNarrativeArcs({
+src/spatial/arcs/SpatialArcBootstrap.tsx:70:      new CustomEvent("urai:spatial-arc-manifest", {
+src/spatial/arcs/spatialArcStore.ts:18:export const useSpatialArcStore = create<SpatialArcStore>((set) => ({

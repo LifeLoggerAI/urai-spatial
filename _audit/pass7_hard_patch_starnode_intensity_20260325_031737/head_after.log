@@ -1,0 +1,30 @@
+"use client";
+
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import * as THREE from "three";
+import { Canvas, ThreeEvent, useFrame } from "@react-three/fiber";
+import type { ScenePhase, SelectedStar, TransitionName } from "@/spatial/types/scene";
+
+type StarNode = SelectedStar & {
+  stability: number;
+  intensity?: number;
+};
+
+type TransitionState = {
+  name: TransitionName;
+  progress: number;
+};
+
+type WorldWeights = {
+  home: number;
+  lifemap: number;
+  focus: number;
+  replay: number;
+  ascent: number;
+  descent: number;
+};
+
+const DURATIONS: Record<TransitionName, number> = {
+  home_to_lifemap: 2450,
+  lifemap_to_home: 2600,
+  lifemap_to_focus: 2050,

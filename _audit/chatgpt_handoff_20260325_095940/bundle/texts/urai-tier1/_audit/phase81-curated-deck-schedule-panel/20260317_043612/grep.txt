@@ -1,0 +1,9 @@
+src/spatial/ui/SpatialCuratedDeckSchedulePanel.tsx:5:import { buildSpatialCuratedDeckSchedule } from "@/spatial/curation/buildSpatialCuratedDeckSchedule";
+src/spatial/ui/SpatialCuratedDeckSchedulePanel.tsx:9:export default function SpatialCuratedDeckSchedulePanel() {
+src/spatial/ui/SpatialCuratedDeckSchedulePanel.tsx:14:    () => buildSpatialCuratedDeckSchedule({ entries, activeEntryId }),
+src/spatial/ui/SpatialCuratedDeckSchedulePanel.tsx:50:        Curated Deck Schedule
+src/spatial/curation/spatialCuratedDeckScheduleTypes.ts:9:  schema: "urai.spatial.curated-deck-schedule.v1";
+src/spatial/curation/buildSpatialCuratedDeckSchedule.ts:61:export function buildSpatialCuratedDeckSchedule(input: {
+src/spatial/curation/buildSpatialCuratedDeckSchedule.ts:134:    schema: "urai.spatial.curated-deck-schedule.v1",
+src/spatial/scene/SpatialScene.tsx:2:import SpatialCuratedDeckSchedulePanel from "@/spatial/ui/SpatialCuratedDeckSchedulePanel";
+src/spatial/scene/SpatialScene.tsx:812:      <SpatialCuratedDeckSchedulePanel />

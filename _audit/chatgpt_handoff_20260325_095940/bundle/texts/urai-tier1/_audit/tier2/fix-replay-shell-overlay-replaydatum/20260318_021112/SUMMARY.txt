@@ -1,0 +1,95 @@
+PASS: extracted ReplayDatum from Tier1ShellScreen.tsx
+PASS: imported ReplayDatum into ReplayShellOverlay.tsx
+
+== ReplayDatum ==
+"use client";
+
+import React from "react";
+
+export function ReplayDatum(input: { label: string; value: string }) {
+  return (
+    <div
+      style={{
+        borderRadius: 12,
+        border: "1px solid rgba(255,255,255,0.10)",
+        background: "rgba(255,255,255,0.03)",
+        padding: 10,
+      }}
+    >
+      <div
+        style={{
+          fontSize: 10,
+          letterSpacing: "0.12em",
+          textTransform: "uppercase",
+          color: "rgba(204,216,245,0.58)",
+          marginBottom: 6,
+        }}
+      >
+        {input.label}
+      </div>
+      <div style={{ fontSize: 12, color: "rgba(235,241,255,0.90)" }}>{input.value}</div>
+    </div>
+  );
+}
+
+== Replay overlay head ==
+"use client";
+
+import React from "react";
+import { ReplayDatum } from "../ReplayDatum";
+import { ActionButton } from "../ActionButton";
+import type { Tier1ShellOverlayProps } from "../Tier1ShellOverlayProps";
+
+export default function ReplayShellOverlay(props: Tier1ShellOverlayProps) {
+  const {
+    mode,
+    uiLocked,
+    showMapWorld,
+    selectedId,
+    selected,
+    transitioning,
+    enterLifeMap,
+    returnHome,
+    enterReplay,
+    clearFocus,
+    exitReplay,
+    pillLabel,
+  } = props;
+
+  if (mode !== "replay") return null;
+
+  return (
+    <>
+        <section
+          style={{
+            position: "absolute",
+            left: 18,
+            top: "50%",
+            transform: "translateY(-50%)",
+            width: "min(420px, calc(100vw - 36px))",
+            borderRadius: 18,
+            border: "1px solid rgba(255,255,255,0.10)",
+            background: "rgba(7,11,24,0.80)",
+            boxShadow: "0 20px 60px rgba(0,0,0,0.42)",
+            padding: 22,
+            backdropFilter: "blur(16px)",
+            zIndex: 20,
+          }}
+        >
+          <div
+            style={{
+              fontSize: 10,
+              letterSpacing: "0.14em",
+              textTransform: "uppercase",
+              color: "rgba(204,216,245,0.62)",
+              marginBottom: 10,
+            }}
+          >
+            Replay / Memory Dive
+          </div>
+          <div
+            style={{
+              fontSize: 38,
+              lineHeight: 0.98,
+              fontWeight: 700,
+              letterSpacing: "-0.04em",

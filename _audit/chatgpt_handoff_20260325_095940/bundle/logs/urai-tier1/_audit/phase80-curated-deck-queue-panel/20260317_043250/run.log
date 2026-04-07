@@ -1,0 +1,95 @@
+
+== repo + branch ==
+
+$ cd '/home/user/urai-spatial' && git status --short
+_MONOSPACE_ENV_STARTED_=http://localhost:80/
+?? urai-tier1/docs/xr-renderer/
+RC=0
+
+$ cd '/home/user/urai-spatial' && git switch -c 'phase80-curated-deck-queue-panel-20260317_043250'
+_MONOSPACE_ENV_STARTED_=http://localhost:80/
+Switched to a new branch 'phase80-curated-deck-queue-panel-20260317_043250'
+RC=0
+
+== audit plan ==
+
+== create queue summary types ==
+
+== create queue builder ==
+
+== create queue panel ==
+
+== patch scene ==
+
+== targeted grep ==
+
+$ cd '/home/user/urai-spatial/urai-tier1' && grep -RIn 'SpatialCuratedDeckQueuePanel\|buildSpatialCuratedDeckQueue\|urai.spatial.curated-deck-queue.v1\|Curated Deck Queue' src | tee '/home/user/urai-spatial/urai-tier1/_audit/phase80-curated-deck-queue-panel/20260317_043250/grep.txt'
+_MONOSPACE_ENV_STARTED_=http://localhost:80/
+src/spatial/ui/SpatialCuratedDeckQueuePanel.tsx:5:import { buildSpatialCuratedDeckQueue } from "@/spatial/curation/buildSpatialCuratedDeckQueue";
+src/spatial/ui/SpatialCuratedDeckQueuePanel.tsx:9:export default function SpatialCuratedDeckQueuePanel() {
+src/spatial/ui/SpatialCuratedDeckQueuePanel.tsx:14:    () => buildSpatialCuratedDeckQueue({ entries, activeEntryId }),
+src/spatial/ui/SpatialCuratedDeckQueuePanel.tsx:50:        Curated Deck Queue
+src/spatial/curation/spatialCuratedDeckQueueTypes.ts:9:  schema: "urai.spatial.curated-deck-queue.v1";
+src/spatial/curation/buildSpatialCuratedDeckQueue.ts:58:export function buildSpatialCuratedDeckQueue(input: {
+src/spatial/curation/buildSpatialCuratedDeckQueue.ts:139:    schema: "urai.spatial.curated-deck-queue.v1",
+src/spatial/scene/SpatialScene.tsx:2:import SpatialCuratedDeckQueuePanel from "@/spatial/ui/SpatialCuratedDeckQueuePanel";
+src/spatial/scene/SpatialScene.tsx:810:      <SpatialCuratedDeckQueuePanel />
+RC=0
+
+== build ==
+
+$ cd '/home/user/urai-spatial/urai-tier1' && pnpm build
+_MONOSPACE_ENV_STARTED_=http://localhost:80/
+
+> urai-tier1@0.1.0 build /home/user/urai-spatial/urai-tier1
+> next build
+
+▲ Next.js 16.1.6 (Turbopack)
+
+  Creating an optimized production build ...
+✓ Compiled successfully in 26.3s
+  Running TypeScript ...
+  Collecting page data using 1 worker ...
+  Generating static pages using 1 worker (0/4) ...
+  Generating static pages using 1 worker (1/4) 
+  Generating static pages using 1 worker (2/4) 
+  Generating static pages using 1 worker (3/4) 
+✓ Generating static pages using 1 worker (4/4) in 420.7ms
+  Finalizing page optimization ...
+
+Route (app)
+┌ ○ /
+└ ○ /_not-found
+
+
+○  (Static)  prerendered as static content
+
+RC=0
+
+== git snapshot ==
+
+$ cd '/home/user/urai-spatial' && git status --short | tee '/home/user/urai-spatial/urai-tier1/_audit/phase80-curated-deck-queue-panel/20260317_043250/git_status.txt'
+_MONOSPACE_ENV_STARTED_=http://localhost:80/
+ M urai-tier1/src/spatial/scene/SpatialScene.tsx
+?? urai-tier1/docs/xr-renderer/
+?? urai-tier1/src/spatial/curation/buildSpatialCuratedDeckQueue.ts
+?? urai-tier1/src/spatial/curation/spatialCuratedDeckQueueTypes.ts
+?? urai-tier1/src/spatial/ui/SpatialCuratedDeckQueuePanel.tsx
+RC=0
+
+$ cd '/home/user/urai-spatial' && git add urai-tier1/src
+_MONOSPACE_ENV_STARTED_=http://localhost:80/
+RC=0
+
+$ cd '/home/user/urai-spatial' && git commit -m 'feat(urai-spatial): phase80 curated deck queue panel'
+_MONOSPACE_ENV_STARTED_=http://localhost:80/
+[phase80-curated-deck-queue-panel-20260317_043250 2670165] feat(urai-spatial): phase80 curated deck queue panel
+ 4 files changed, 342 insertions(+)
+ create mode 100644 urai-tier1/src/spatial/curation/buildSpatialCuratedDeckQueue.ts
+ create mode 100644 urai-tier1/src/spatial/curation/spatialCuratedDeckQueueTypes.ts
+ create mode 100644 urai-tier1/src/spatial/ui/SpatialCuratedDeckQueuePanel.tsx
+RC=0
+
+== done ==
+AUDIT_DIR=/home/user/urai-spatial/urai-tier1/_audit/phase80-curated-deck-queue-panel/20260317_043250
+FAIL=0

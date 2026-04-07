@@ -1,44 +1,45 @@
-import { getSpatialScopedStorageKey } from "@/spatial/account/accountScopedStorage";
-import {
-  SPATIAL_TELEMETRY_MAX_EVENTS,
-  SPATIAL_TELEMETRY_STORAGE_KEY,
-  type SpatialTelemetryEvent,
-} from "@/spatial/telemetry/spatialTelemetryTypes";
+const SPATIAL_TELEMETRY_KEY = "urai.spatial.telemetry.v1";
+const SPATIAL_TELEMETRY_LIMIT = 200;
 
-export function readSpatialTelemetryQueue(): SpatialTelemetryEvent[] {
+export type SpatialTelemetryEvent = {
+  id?: string;
+  type?: string;
+  createdAt?: string;
+  [key: string]: any;
+};
+
+export function readSpatialTelemetry(): SpatialTelemetryEvent[] {
   if (typeof window === "undefined") return [];
-
   try {
-    const raw = window.localStorage.getItem(
-      getSpatialScopedStorageKey(SPATIAL_TELEMETRY_STORAGE_KEY),
-    );
+    const raw = window.localStorage.getItem(SPATIAL_TELEMETRY_KEY);
     if (!raw) return [];
-    const parsed = JSON.parse(raw) as SpatialTelemetryEvent[];
-    if (!Array.isArray(parsed)) return [];
-    return parsed.filter((item) => item?.schema === "urai.spatial.telemetry.v1");
-  } catch (_err) {
+    const parsed = JSON.parse(raw) as unknown;
+    return Array.isArray(parsed) ? (parsed as SpatialTelemetryEvent[]) : [];
+  } catch {
     return [];
   }
 }
 
-export function writeSpatialTelemetryQueue(
-  queue: SpatialTelemetryEvent[],
-): void {
+export function writeSpatialTelemetry(events: SpatialTelemetryEvent[]): void {
   if (typeof window === "undefined") return;
-
   try {
-    const sliced = queue.slice(-SPATIAL_TELEMETRY_MAX_EVENTS);
     window.localStorage.setItem(
-      getSpatialScopedStorageKey(SPATIAL_TELEMETRY_STORAGE_KEY),
-      JSON.stringify(sliced),
+      SPATIAL_TELEMETRY_KEY,
+      JSON.stringify(events.slice(-SPATIAL_TELEMETRY_LIMIT)),
     );
-  } catch (_err) {}
+  } catch {}
 }
 
-export function appendSpatialTelemetryEvent(
-  event: SpatialTelemetryEvent,
-): SpatialTelemetryEvent[] {
-  const next = [...readSpatialTelemetryQueue(), event];
-  writeSpatialTelemetryQueue(next);
-  return next.slice(-SPATIAL_TELEMETRY_MAX_EVENTS);
+export function appendSpatialTelemetry(event: SpatialTelemetryEvent): SpatialTelemetryEvent[] {
+  const events = readSpatialTelemetry();
+  const next = [...events, event].slice(-SPATIAL_TELEMETRY_LIMIT);
+  writeSpatialTelemetry(next);
+  return next;
+}
+
+export function clearSpatialTelemetry(): void {
+  if (typeof window === "undefined") return;
+  try {
+    window.localStorage.removeItem(SPATIAL_TELEMETRY_KEY);
+  } catch {}
 }

@@ -1,0 +1,9 @@
+import type { SelectedStar } from "./sceneStore";
+
+export type SelectedStarNormalized = SelectedStar;
+
+export function normalizeSelectedStar(
+  selectedStar: SelectedStar | null
+): SelectedStarNormalized | null {
+  return selectedStar;
+}

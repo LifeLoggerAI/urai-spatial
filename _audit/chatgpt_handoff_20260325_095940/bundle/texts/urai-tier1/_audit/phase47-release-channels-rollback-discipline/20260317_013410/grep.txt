@@ -1,0 +1,23 @@
+src/spatial/release/SpatialReleaseBootstrap.tsx:5:import { useSpatialReleaseStore } from "@/spatial/release/spatialReleaseStore";
+src/spatial/release/SpatialReleaseBootstrap.tsx:12:export default function SpatialReleaseBootstrap() {
+src/spatial/release/SpatialReleaseBootstrap.tsx:13:  const hydrate = useSpatialReleaseStore((s) => s.hydrate);
+src/spatial/release/SpatialReleaseBootstrap.tsx:14:  const activeChannel = useSpatialReleaseStore((s) => s.activeChannel);
+src/spatial/release/SpatialReleaseBootstrap.tsx:15:  const lastPromotedAt = useSpatialReleaseStore((s) => s.lastPromotedAt);
+src/spatial/release/SpatialReleaseBootstrap.tsx:16:  const rollbackPoints = useSpatialReleaseStore((s) => s.rollbackPoints);
+src/spatial/release/SpatialReleaseBootstrap.tsx:41:      new CustomEvent("urai:spatial-release-manifest", {
+src/spatial/release/spatialReleaseIO.ts:3:  SPATIAL_RELEASE_STORAGE_KEY,
+src/spatial/release/spatialReleaseIO.ts:15:    const raw = window.localStorage.getItem(SPATIAL_RELEASE_STORAGE_KEY);
+src/spatial/release/spatialReleaseIO.ts:41:      SPATIAL_RELEASE_STORAGE_KEY,
+src/spatial/release/spatialReleaseTypes.ts:22:export const SPATIAL_RELEASE_STORAGE_KEY = "urai.spatial.release.v1";
+src/spatial/release/spatialReleaseStore.ts:19:export const useSpatialReleaseStore = create<SpatialReleaseStore>((set) => ({
+src/spatial/ui/SpatialReleasePanel.tsx:6:import { useSpatialReleaseStore } from "@/spatial/release/spatialReleaseStore";
+src/spatial/ui/SpatialReleasePanel.tsx:16:export default function SpatialReleasePanel() {
+src/spatial/ui/SpatialReleasePanel.tsx:20:  const activeChannel = useSpatialReleaseStore((s) => s.activeChannel);
+src/spatial/ui/SpatialReleasePanel.tsx:21:  const rollbackPoints = useSpatialReleaseStore((s) => s.rollbackPoints);
+src/spatial/ui/SpatialReleasePanel.tsx:22:  const setActiveChannel = useSpatialReleaseStore((s) => s.setActiveChannel);
+src/spatial/ui/SpatialReleasePanel.tsx:23:  const appendRollbackPoint = useSpatialReleaseStore((s) => s.appendRollbackPoint);
+src/spatial/ui/SpatialReleasePanel.tsx:55:      new CustomEvent("urai:spatial-rollback-restored", {
+src/spatial/scene/SpatialScene.tsx:2:import SpatialReleasePanel from "@/spatial/ui/SpatialReleasePanel";
+src/spatial/scene/SpatialScene.tsx:3:import SpatialReleaseBootstrap from "@/spatial/release/SpatialReleaseBootstrap";
+src/spatial/scene/SpatialScene.tsx:731:      <SpatialReleaseBootstrap />
+src/spatial/scene/SpatialScene.tsx:732:      <SpatialReleasePanel />

@@ -1,0 +1,23 @@
+
+> urai-tier1@0.1.0 build /home/user/urai-spatial/urai-tier1
+> next build --webpack --webpack
+
+▲ Next.js 16.2.1 (webpack)
+
+  Creating an optimized production build ...
+✓ Compiled successfully in 9.1s
+  Running TypeScript ...
+Failed to type check.
+
+./src/spatial/scene/SpatialScene.tsx:896:49
+Type error: Property 'intensity' does not exist on type 'StarNode'.
+
+  [90m894 |[0m                 color=[32m"#dfe9ff"[0m
+  [90m895 |[0m                 emissive={star.color}
+[31m[1m>[0m [90m896 |[0m                 emissiveIntensity={([35m0.65[0m + star.intensity * [35m0.8[0m) * starOpacity}
+  [90m    |[0m                                                 [31m[1m^[0m
+  [90m897 |[0m                 roughness={[35m0.22[0m}
+  [90m898 |[0m                 metalness={[35m0[0m}
+  [90m899 |[0m                 transparent
+Next.js build worker exited with code: 1 and signal: null
+ ELIFECYCLE  Command failed with exit code 1.

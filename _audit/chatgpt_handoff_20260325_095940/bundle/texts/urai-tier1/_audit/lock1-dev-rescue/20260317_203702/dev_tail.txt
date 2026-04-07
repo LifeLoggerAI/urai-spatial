@@ -1,0 +1,15 @@
+_MONOSPACE_ENV_STARTED_=http://localhost:80/
+
+> urai-tier1@0.1.0 dev /home/user/urai-spatial/urai-tier1
+> next dev --hostname 127.0.0.1 --port 3040
+
+▲ Next.js 16.1.6 (Turbopack)
+- Local:         http://127.0.0.1:3040
+- Network:       http://127.0.0.1:3040
+
+✓ Starting...
+✓ Ready in 4.6s
+○ Compiling / ...
+ GET / 200 in 7.7s (compile: 6.3s, render: 1398ms)
+ HEAD / 200 in 380ms (compile: 12ms, render: 368ms)
+ GET / 200 in 334ms (compile: 10ms, render: 324ms)

@@ -1,0 +1,8 @@
+ M src/spatial/shell/Tier1ShellScreen.tsx
+ M src/spatial/shell/overlays/FocusShellOverlay.tsx
+ M src/spatial/shell/overlays/ReplayShellOverlay.tsx
+?? src/spatial/shell/ReplayDatum.tsx
+?? src/spatial/shell/Tag.tsx
+?? src/spatial/shell/Tier1ShellConstants.ts
+?? src/spatial/shell/Tier1ShellFocusGlow.tsx
+?? src/spatial/shell/Tier1ShellNodeField.tsx

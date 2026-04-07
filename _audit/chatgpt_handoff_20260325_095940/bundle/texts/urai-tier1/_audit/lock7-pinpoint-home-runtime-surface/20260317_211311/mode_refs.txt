@@ -1,0 +1,5 @@
+src/spatial/state/sceneStore.ts:42:  mode: "home",
+src/spatial/state/sceneStore.ts:61:      mode: "focus",
+src/spatial/state/sceneStore.ts:69:      mode: "lifemap",
+src/spatial/state/sceneStore.ts:77:      mode: "lifemap",
+src/spatial/state/sceneStore.ts:84:      mode: "replay",

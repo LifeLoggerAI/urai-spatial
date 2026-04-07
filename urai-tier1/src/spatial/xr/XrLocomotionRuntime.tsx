@@ -1,3 +1,4 @@
+// CAMERA AUTHORITY LOCK: XR locomotion disabled for Tier1
 "use client";
 
 import { useEffect, useRef } from "react";
@@ -92,8 +93,8 @@ export default function XrLocomotionRuntime() {
   useEffect(() => {
     return () => {
       poseRef.current = createEmptyXrLocomotionState();
-      scene.position.set(0, 0, 0);
-      scene.rotation.set(0, 0, 0);
+      // XR LOCKED: scene.position.set(0, 0, 0);
+      // XR LOCKED: scene.rotation.set(0, 0, 0);
       reset();
     };
   }, [scene, reset]);
@@ -101,8 +102,8 @@ export default function XrLocomotionRuntime() {
   useEffect(() => {
     if (xrPresenting) return;
     poseRef.current = createEmptyXrLocomotionState();
-    scene.position.set(0, 0, 0);
-    scene.rotation.set(0, 0, 0);
+    // XR LOCKED: scene.position.set(0, 0, 0);
+    // XR LOCKED: scene.rotation.set(0, 0, 0);
     reset();
   }, [xrPresenting, scene, reset]);
 
@@ -147,8 +148,8 @@ export default function XrLocomotionRuntime() {
 
     poseRef.current = next;
 
-    scene.position.set(-next.userX, -next.userY, -next.userZ);
-    scene.rotation.set(0, -next.yaw, 0);
+    // XR LOCKED: scene.position.set(-next.userX, -next.userY, -next.userZ);
+    // XR LOCKED: scene.rotation.set(0, -next.yaw, 0);
 
     if (!samePose(current, next)) {
       setPose(next);

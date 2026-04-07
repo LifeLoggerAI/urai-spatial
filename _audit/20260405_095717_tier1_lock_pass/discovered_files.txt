@@ -1,0 +1,10 @@
+PKG_JSON=/home/user/urai-spatial/package.json
+PAGE_TSX=/home/user/urai-spatial/.ai-backups/20260321_023812/src/app/page.tsx
+SCENE_FILE=/home/user/urai-spatial/.ai-backups/20260321_022950/src/spatial/scene/SpatialScene.tsx
+STARFIELD_FILE=/home/user/urai-spatial/.ai-backups/20260321_022950/src/spatial/scene/Starfield.tsx
+FOCUS_FILE=/home/user/urai-spatial/urai-tier1/_audit/20260401_213011_PASS_22E_CAMERA_AUTHORITY_LOCK/backup/spatial/components/FocusSubject.tsx
+HOME_FILE=/home/user/urai-spatial/.ai-backups/tier1_prep_20260324_200033/src/spatial/scene/HomeEnvironment.tsx
+CAMERA_FILE=/home/user/urai-spatial/.ai-backups/20260321_022950/src/spatial/components/CameraRig.tsx
+AUTHORITY_FILE=/home/user/urai-spatial/urai-tier1/_audit/20260401_213011_PASS_22E_CAMERA_AUTHORITY_LOCK/backup/spatial/hooks/useSceneAuthority.ts
+ESC_FILE=/home/user/urai-spatial/_audit/canon_lock_20260326_232234/backup/src/spatial/hooks/useCanonEsc.ts
+TRANSITION_FILE=/home/user/urai-spatial/urai-tier1/_audit/20260401_213011_PASS_22E_CAMERA_AUTHORITY_LOCK/backup/lib/uraiCanon/cameraAuthority.ts

@@ -1,0 +1,2 @@
+src/spatial/scene/SpatialScene.tsx(62,13): error TS1134: Variable declaration expected.
+src/spatial/scene/SpatialScene.tsx(92,13): error TS1134: Variable declaration expected.

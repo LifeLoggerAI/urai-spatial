@@ -1,0 +1,15 @@
+?? ../TIER1_LOCK_CHECKLIST.md
+?? ../TIER1_LOCK_SHEET.md
+?? ../docs/
+?? src/spatial/camera/
+?? src/spatial/entities/
+?? src/spatial/focus/
+?? src/spatial/home/
+?? src/spatial/layout/
+?? src/spatial/lifemap/
+?? src/spatial/memory/.gitkeep
+?? src/spatial/replay/.gitkeep
+?? src/spatial/sky/
+?? src/spatial/theme/
+?? src/spatial/transitions/
+?? src/spatial/world/

@@ -1,0 +1,320 @@
+
+===== PATTERN: position|x:|y:|z: =====
+12-  chapter: string;
+13-  timeband: string;
+14-  era: SpatialEra;
+15-  kind: SpatialKind;
+16-  description: string;
+17-  color: string;
+18-  size: number;
+19-  glow: number;
+20:  intensity: number;
+21:  position: [number, number, number];
+22-  dateLabel?: string;
+23-  summary?: string;
+24-  detail?: string;
+25-  tags?: string[];
+26-  transcript?: string;
+27-};
+28-
+29-function mulberry32(seed: number) {
+--
+48-] as const;
+49-
+50-const LABELS = ["Memory", "Threshold", "Recovery", "Signal", "Echo"] as const;
+51-const KINDS: SpatialKind[] = ["memory", "threshold", "recovery", "signal", "echo"];
+52-const CHAPTERS = ["Origins", "Ascent", "Fracture", "Return", "Becoming"] as const;
+53-const ERAS: SpatialEra[] = ["origins", "ascent", "fracture", "return", "becoming"];
+54-const TIMEBANDS = ["Winter", "Spring", "Summer", "Autumn", "Night"] as const;
+55-
+56:function clamp(n: number, min: number, max: number) {
+57-  return Math.max(min, Math.min(max, n));
+58-}
+59-
+60-function rounded(n: number, places = 3) {
+61-  const m = 10 ** places;
+62-  return Math.round(n * m) / m;
+63-}
+64-
+--
+93-      kind: KINDS[labelIndex],
+94-      description:
+95-        `Deterministic spatial node ${index + 1}. ` +
+96-        `This is the current canonical placeholder content contract for focus and replay.`,
+97-      color: COLORS[(chapterIndex + labelIndex) % COLORS.length],
+98-      size,
+99-      glow,
+100-      intensity,
+101:      position: [x, y, z],
+102-      dateLabel: `${TIMEBANDS[chapterIndex]} ${2026 - ((count - index) % 5)}`,
+103:      summary: `${LABELS[labelIndex]} node ${index + 1} in ${CHAPTERS[chapterIndex]}.`,
+104-      detail: `Placeholder detail for ${CHAPTERS[chapterIndex]} ${index + 1}.`,
+105-      tags: [ERAS[chapterIndex], KINDS[labelIndex], TIMEBANDS[chapterIndex].toLowerCase()],
+106-      transcript: `Replay placeholder transcript for ${CHAPTERS[chapterIndex]} ${index + 1}.`,
+107-    };
+108-  });
+109-}
+110-
+111:function normalizeStar(raw: Partial<SpatialStar>, index: number): SpatialStar {
+112-  const fallback = buildSpatialStars(STAR_SEED + index, 1)[0];
+113-
+114-  return {
+115-    ...fallback,
+116-    ...raw,
+117-    id: raw.id ?? fallback.id,
+118-    order: raw.order ?? index + 1,
+119-    title: raw.title ?? fallback.title,
+--
+122-    chapter: raw.chapter ?? fallback.chapter,
+123-    timeband: raw.timeband ?? fallback.timeband,
+124-    era: (raw.era as SpatialEra | undefined) ?? fallback.era,
+125-    kind: (raw.kind as SpatialKind | undefined) ?? fallback.kind,
+126-    description: raw.description ?? fallback.description,
+127-    color: raw.color ?? fallback.color,
+128-    size: raw.size ?? fallback.size,
+129-    glow: raw.glow ?? fallback.glow,
+130:    intensity: raw.intensity ?? fallback.intensity,
+131:    position: (raw.position as [number, number, number] | undefined) ?? fallback.position,
+132-    dateLabel: raw.dateLabel ?? fallback.dateLabel,
+133:    summary: raw.summary ?? raw.description ?? fallback.summary,
+134-    detail: raw.detail ?? raw.description ?? fallback.detail,
+135-    tags: raw.tags ?? fallback.tags,
+136-    transcript: raw.transcript ?? fallback.transcript,
+137-  };
+138-}
+139-
+140-let realStars: SpatialStar[] = [];
+141-
+
+===== PATTERN: chapter =====
+4-export type SpatialKind = "memory" | "threshold" | "recovery" | "signal" | "echo";
+5-
+6-export type SpatialStar = {
+7-  id: string;
+8-  order: number;
+9-  title: string;
+10-  label: string;
+11-  signature: string;
+12:  chapter: string;
+13-  timeband: string;
+14-  era: SpatialEra;
+15-  kind: SpatialKind;
+16-  description: string;
+17-  color: string;
+18-  size: number;
+19-  glow: number;
+20-  intensity: number;
+--
+61-  const m = 10 ** places;
+62-  return Math.round(n * m) / m;
+63-}
+64-
+65-export function buildSpatialStars(seed = STAR_SEED, count = STAR_COUNT): SpatialStar[] {
+66-  const rand = mulberry32(seed);
+67-
+68-  return Array.from({ length: count }, (_, index) => {
+69:    const chapterIndex = index % CHAPTERS.length;
+70-    const labelIndex = index % LABELS.length;
+71-
+72:          const ring = 6 + chapterIndex * 2.2 + rand() * 1.6;
+73-          const angle = -Math.PI * 0.55 + (index / count) * Math.PI * 1.1 + rand() * 0.22;
+74:          const height = (rand() - 0.5) * 5.5 + (chapterIndex - 2) * 0.45;
+75-
+76-          const x = rounded(Math.cos(angle) * ring + (rand() - 0.5) * 1.8);
+77-    const y = rounded(height);
+78:          const z = rounded(-10 - chapterIndex * 3.4 - index * 0.18 + Math.sin(angle) * ring * 0.65 + (rand() - 0.5) * 1.4);
+79-
+80-    const size = rounded(0.9 + rand() * 1.4, 2);
+81-    const glow = rounded(0.55 + rand() * 0.55, 2);
+82-    const intensity = rounded(clamp(0.65 + rand() * 0.5, 0.65, 1.15), 2);
+83-
+84-    return {
+85-      id: `star-${index + 1}`,
+86-      order: index + 1,
+87:      title: `${CHAPTERS[chapterIndex]} ${index + 1}`,
+88-      label: LABELS[labelIndex],
+89:      signature: `${TIMEBANDS[chapterIndex]} · ${LABELS[labelIndex]}`,
+90:      chapter: CHAPTERS[chapterIndex],
+91:      timeband: TIMEBANDS[chapterIndex],
+92:      era: ERAS[chapterIndex],
+93-      kind: KINDS[labelIndex],
+94-      description:
+95-        `Deterministic spatial node ${index + 1}. ` +
+96-        `This is the current canonical placeholder content contract for focus and replay.`,
+97:      color: COLORS[(chapterIndex + labelIndex) % COLORS.length],
+98-      size,
+99-      glow,
+100-      intensity,
+101-      position: [x, y, z],
+102:      dateLabel: `${TIMEBANDS[chapterIndex]} ${2026 - ((count - index) % 5)}`,
+103:      summary: `${LABELS[labelIndex]} node ${index + 1} in ${CHAPTERS[chapterIndex]}.`,
+104:      detail: `Placeholder detail for ${CHAPTERS[chapterIndex]} ${index + 1}.`,
+105:      tags: [ERAS[chapterIndex], KINDS[labelIndex], TIMEBANDS[chapterIndex].toLowerCase()],
+106:      transcript: `Replay placeholder transcript for ${CHAPTERS[chapterIndex]} ${index + 1}.`,
+107-    };
+108-  });
+109-}
+110-
+111-function normalizeStar(raw: Partial<SpatialStar>, index: number): SpatialStar {
+112-  const fallback = buildSpatialStars(STAR_SEED + index, 1)[0];
+113-
+114-  return {
+115-    ...fallback,
+116-    ...raw,
+117-    id: raw.id ?? fallback.id,
+118-    order: raw.order ?? index + 1,
+119-    title: raw.title ?? fallback.title,
+120-    label: raw.label ?? fallback.label,
+121-    signature: raw.signature ?? fallback.signature,
+122:    chapter: raw.chapter ?? fallback.chapter,
+123-    timeband: raw.timeband ?? fallback.timeband,
+124-    era: (raw.era as SpatialEra | undefined) ?? fallback.era,
+125-    kind: (raw.kind as SpatialKind | undefined) ?? fallback.kind,
+126-    description: raw.description ?? fallback.description,
+127-    color: raw.color ?? fallback.color,
+128-    size: raw.size ?? fallback.size,
+129-    glow: raw.glow ?? fallback.glow,
+130-    intensity: raw.intensity ?? fallback.intensity,
+
+===== PATTERN: id: =====
+1-import { buildStarsFromMemory } from "../lib/memoryToStar";
+2-
+3-export type SpatialEra = "origins" | "ascent" | "fracture" | "return" | "becoming";
+4-export type SpatialKind = "memory" | "threshold" | "recovery" | "signal" | "echo";
+5-
+6-export type SpatialStar = {
+7:  id: string;
+8-  order: number;
+9-  title: string;
+10-  label: string;
+11-  signature: string;
+12-  chapter: string;
+13-  timeband: string;
+14-  era: SpatialEra;
+15-  kind: SpatialKind;
+--
+77-    const y = rounded(height);
+78-          const z = rounded(-10 - chapterIndex * 3.4 - index * 0.18 + Math.sin(angle) * ring * 0.65 + (rand() - 0.5) * 1.4);
+79-
+80-    const size = rounded(0.9 + rand() * 1.4, 2);
+81-    const glow = rounded(0.55 + rand() * 0.55, 2);
+82-    const intensity = rounded(clamp(0.65 + rand() * 0.5, 0.65, 1.15), 2);
+83-
+84-    return {
+85:      id: `star-${index + 1}`,
+86-      order: index + 1,
+87-      title: `${CHAPTERS[chapterIndex]} ${index + 1}`,
+88-      label: LABELS[labelIndex],
+89-      signature: `${TIMEBANDS[chapterIndex]} · ${LABELS[labelIndex]}`,
+90-      chapter: CHAPTERS[chapterIndex],
+91-      timeband: TIMEBANDS[chapterIndex],
+92-      era: ERAS[chapterIndex],
+93-      kind: KINDS[labelIndex],
+--
+109-}
+110-
+111-function normalizeStar(raw: Partial<SpatialStar>, index: number): SpatialStar {
+112-  const fallback = buildSpatialStars(STAR_SEED + index, 1)[0];
+113-
+114-  return {
+115-    ...fallback,
+116-    ...raw,
+117:    id: raw.id ?? fallback.id,
+118-    order: raw.order ?? index + 1,
+119-    title: raw.title ?? fallback.title,
+120-    label: raw.label ?? fallback.label,
+121-    signature: raw.signature ?? fallback.signature,
+122-    chapter: raw.chapter ?? fallback.chapter,
+123-    timeband: raw.timeband ?? fallback.timeband,
+124-    era: (raw.era as SpatialEra | undefined) ?? fallback.era,
+125-    kind: (raw.kind as SpatialKind | undefined) ?? fallback.kind,
+--
+146-  console.warn("stars.ts: buildStarsFromMemory failed, using placeholder stars", error);
+147-  realStars = [];
+148-}
+149-
+150-export const SPATIAL_STARS_REAL: SpatialStar[] = realStars;
+151-export const SPATIAL_STARS: SpatialStar[] =
+152-  SPATIAL_STARS_REAL.length > 0 ? SPATIAL_STARS_REAL : buildSpatialStars();
+153-
+154:export function getSpatialStarById(id: string | null | undefined): SpatialStar | null {
+155-  if (!id) return null;
+156-  return SPATIAL_STARS.find((star) => star.id === id) ?? null;
+157-}
+158-
+159-export function generateStars(): SpatialStar[] {
+160-  return SPATIAL_STARS;
+161-}
+
+===== PATTERN: scale|size|radius =====
+10-  label: string;
+11-  signature: string;
+12-  chapter: string;
+13-  timeband: string;
+14-  era: SpatialEra;
+15-  kind: SpatialKind;
+16-  description: string;
+17-  color: string;
+18:  size: number;
+19-  glow: number;
+20-  intensity: number;
+21-  position: [number, number, number];
+22-  dateLabel?: string;
+23-  summary?: string;
+24-  detail?: string;
+25-  tags?: string[];
+26-  transcript?: string;
+--
+72-          const ring = 6 + chapterIndex * 2.2 + rand() * 1.6;
+73-          const angle = -Math.PI * 0.55 + (index / count) * Math.PI * 1.1 + rand() * 0.22;
+74-          const height = (rand() - 0.5) * 5.5 + (chapterIndex - 2) * 0.45;
+75-
+76-          const x = rounded(Math.cos(angle) * ring + (rand() - 0.5) * 1.8);
+77-    const y = rounded(height);
+78-          const z = rounded(-10 - chapterIndex * 3.4 - index * 0.18 + Math.sin(angle) * ring * 0.65 + (rand() - 0.5) * 1.4);
+79-
+80:    const size = rounded(0.9 + rand() * 1.4, 2);
+81-    const glow = rounded(0.55 + rand() * 0.55, 2);
+82-    const intensity = rounded(clamp(0.65 + rand() * 0.5, 0.65, 1.15), 2);
+83-
+84-    return {
+85-      id: `star-${index + 1}`,
+86-      order: index + 1,
+87-      title: `${CHAPTERS[chapterIndex]} ${index + 1}`,
+88-      label: LABELS[labelIndex],
+--
+90-      chapter: CHAPTERS[chapterIndex],
+91-      timeband: TIMEBANDS[chapterIndex],
+92-      era: ERAS[chapterIndex],
+93-      kind: KINDS[labelIndex],
+94-      description:
+95-        `Deterministic spatial node ${index + 1}. ` +
+96-        `This is the current canonical placeholder content contract for focus and replay.`,
+97-      color: COLORS[(chapterIndex + labelIndex) % COLORS.length],
+98:      size,
+99-      glow,
+100-      intensity,
+101-      position: [x, y, z],
+102-      dateLabel: `${TIMEBANDS[chapterIndex]} ${2026 - ((count - index) % 5)}`,
+103-      summary: `${LABELS[labelIndex]} node ${index + 1} in ${CHAPTERS[chapterIndex]}.`,
+104-      detail: `Placeholder detail for ${CHAPTERS[chapterIndex]} ${index + 1}.`,
+105-      tags: [ERAS[chapterIndex], KINDS[labelIndex], TIMEBANDS[chapterIndex].toLowerCase()],
+106-      transcript: `Replay placeholder transcript for ${CHAPTERS[chapterIndex]} ${index + 1}.`,
+--
+120-    label: raw.label ?? fallback.label,
+121-    signature: raw.signature ?? fallback.signature,
+122-    chapter: raw.chapter ?? fallback.chapter,
+123-    timeband: raw.timeband ?? fallback.timeband,
+124-    era: (raw.era as SpatialEra | undefined) ?? fallback.era,
+125-    kind: (raw.kind as SpatialKind | undefined) ?? fallback.kind,
+126-    description: raw.description ?? fallback.description,
+127-    color: raw.color ?? fallback.color,
+128:    size: raw.size ?? fallback.size,
+129-    glow: raw.glow ?? fallback.glow,
+130-    intensity: raw.intensity ?? fallback.intensity,
+131-    position: (raw.position as [number, number, number] | undefined) ?? fallback.position,
+132-    dateLabel: raw.dateLabel ?? fallback.dateLabel,
+133-    summary: raw.summary ?? raw.description ?? fallback.summary,
+134-    detail: raw.detail ?? raw.description ?? fallback.detail,
+135-    tags: raw.tags ?? fallback.tags,
+136-    transcript: raw.transcript ?? fallback.transcript,

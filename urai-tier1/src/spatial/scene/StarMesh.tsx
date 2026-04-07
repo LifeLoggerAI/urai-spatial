@@ -1,3 +1,4 @@
+import { uraiNow, uraiRandom, uraiTime } from "@/lib/uraiDeterminism";
 "use client";
 
 import { Mesh } from "three";
@@ -65,7 +66,7 @@ export default function StarMesh({
 
     const z = ref.current.position.z;
     const depthFade = Math.max(0.35, Math.min(1.2, 1.18 - Math.abs(z) * 0.03));
-    const pulse = selected ? 0.18 * Math.sin(performance.now() * 0.004) : 0;
+    const pulse = selected ? 0.18 * Math.sin(uraiTime() * 0.004) : 0;
     const material = ref.current.material as {
       emissiveIntensity?: number;
       opacity?: number;

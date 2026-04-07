@@ -1,0 +1,41 @@
+=== PASS_T1_SYNTAX_SAFE_RECOVERY START ===
+APP=/home/user/urai-spatial
+=== VERIFY FILE ANCHORS ===
+9:| 'home_to_lifemap'
+169:if (props.transition.active && props.transition.kind === 'home_to_lifemap') {
+231:if (props.transition.active && props.transition.kind === 'home_to_lifemap') {
+394:if (props.transition.active && props.transition.kind === 'home_to_lifemap') {
+532:if (kind === 'home_to_lifemap') setPhase('lifemap')
+549:begin('home_to_lifemap', T_HOME_TO_LIFEMAP)
+576:    console.log('ESC KEY replay')
+556:console.log('STAR CLICK DIRECT ' + id)
+374:function CameraDirector(props: {
+3:import SpatialScene from '@/spatial/scene/SpatialScene'
+=== STOP OLD DEV SERVERS ===
+=== TYPECHECK ===
+src/spatial/scene/SpatialScene.tsx(214,1): error TS1005: ')' expected.
+src/spatial/scene/SpatialScene.tsx(304,4): error TS1128: Declaration or statement expected.
+src/spatial/scene/SpatialScene.tsx(304,5): error TS1128: Declaration or statement expected.
+src/spatial/scene/SpatialScene.tsx(305,1): error TS1128: Declaration or statement expected.
+src/spatial/scene/SpatialScene.tsx(339,9): error TS1005: ';' expected.
+src/spatial/scene/SpatialScene.tsx(339,31): error TS1005: ':' expected.
+src/spatial/scene/SpatialScene.tsx(340,5): error TS2657: JSX expressions must have one parent element.
+src/spatial/scene/SpatialScene.tsx(342,3): error TS1128: Declaration or statement expected.
+src/spatial/scene/SpatialScene.tsx(344,3): error TS2657: JSX expressions must have one parent element.
+src/spatial/scene/SpatialScene.tsx(368,1): error TS1128: Declaration or statement expected.
+src/spatial/scene/SpatialScene.tsx(591,1): error TS1128: Declaration or statement expected.
+src/spatial/scene/SpatialScene.tsx(605,14): error TS1005: ';' expected.
+src/spatial/scene/SpatialScene.tsx(605,28): error TS1005: ';' expected.
+src/spatial/scene/SpatialScene.tsx(605,52): error TS1005: ';' expected.
+src/spatial/scene/SpatialScene.tsx(605,77): error TS1109: Expression expected.
+src/spatial/scene/SpatialScene.tsx(606,3): error TS2657: JSX expressions must have one parent element.
+src/spatial/scene/SpatialScene.tsx(627,1): error TS1128: Declaration or statement expected.
+src/spatial/scene/SpatialScene.tsx(627,3): error TS1109: Expression expected.
+src/spatial/scene/SpatialScene.tsx(639,1): error TS1160: Unterminated template literal.
+TYPECHECK_STATUS=FAIL
+AUDIT_DIR=/home/user/urai-spatial/*audit/20260402_180945*PASS_T1_SYNTAX_SAFE_RECOVERY
+BACKUP_DIR=/home/user/urai-spatial/*audit/20260402_180945*PASS_T1_SYNTAX_SAFE_RECOVERY/backup
+RUN_LOG=/home/user/urai-spatial/*audit/20260402_180945*PASS_T1_SYNTAX_SAFE_RECOVERY/run.log
+TYPECHECK_LOG=/home/user/urai-spatial/*audit/20260402_180945*PASS_T1_SYNTAX_SAFE_RECOVERY/typecheck.log
+bash: line 2: X: command not found
+bash: line 3: $'\030': command not found

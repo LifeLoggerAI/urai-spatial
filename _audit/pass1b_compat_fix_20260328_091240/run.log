@@ -1,0 +1,35 @@
+=== PASS 1B: COMPATIBILITY FIX ===
+Running typecheck...
+Running build...
+
+> urai-spatial-monorepo@ build /home/user/urai-spatial
+> pnpm --filter urai-tier1 build
+
+
+> urai-tier1@0.1.0 build /home/user/urai-spatial/urai-tier1
+> next build --webpack
+
+▲ Next.js 16.2.1 (webpack)
+
+  Creating an optimized production build ...
+✓ Compiled successfully in 7.7s
+  Running TypeScript ...
+Failed to type check.
+
+./src/spatial/hooks/useCanonEsc.ts:18:11
+Type error: This comparison appears to be unintentional because the types 'Phase' and '"home"' have no overlap.
+
+  [90m16 |[0m       [36mif[0m (next === mode) [36mreturn[0m;
+  [90m17 |[0m       e.preventDefault();
+[31m[1m>[0m [90m18 |[0m       [36mif[0m (next === [32m'home'[0m && clearSelection) clearSelection();
+  [90m   |[0m           [31m[1m^[0m
+  [90m19 |[0m       setMode(next);
+  [90m20 |[0m     }
+  [90m21 |[0m     window.addEventListener([32m'keydown'[0m, onKeyDown);
+Next.js build worker exited with code: 1 and signal: null
+/home/user/urai-spatial/urai-tier1:
+ ERR_PNPM_RECURSIVE_RUN_FIRST_FAIL  urai-tier1@0.1.0 build: `next build --webpack`
+Exit status 1
+ ELIFECYCLE  Command failed with exit code 1.
+FAILED: Build failed
+Press ENTER to exit...exit

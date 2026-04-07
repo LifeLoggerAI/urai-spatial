@@ -1,8 +1,10 @@
+import FocusShellOverlay from "./FocusShellOverlay";
+import ReplayShellOverlay from "./ReplayShellOverlay";
 'use client';
 
 import React, { useEffect, useMemo, useRef, useState } from "react";
-import FocusShellOverlay from "./overlays/FocusShellOverlay";
-import ReplayShellOverlay from "./overlays/ReplayShellOverlay";
+// PASS3_DISABLED_OVERLAY
+// PASS3_DISABLED_OVERLAY
 import Tag from "./Tag";
 import Tier1SceneAtmosphere from "./Tier1SceneAtmosphere";
 import {
@@ -23,7 +25,7 @@ import {
 
 type AnyRecord = Record<string, unknown>;
 
-function normalizePhase(value: unknown): Tier1Phase {
+function normalizePhase(value: any): Tier1Phase {
   const input = String(value ?? "").toLowerCase();
   if (input.includes("replay")) return "replay";
   if (input.includes("focus")) return "focus";
@@ -32,14 +34,14 @@ function normalizePhase(value: unknown): Tier1Phase {
   return "home";
 }
 
-function firstArray(...values: unknown[]) {
+function firstArray(...values: any[]) {
   for (const value of values) {
     if (Array.isArray(value)) return value as AnyRecord[];
   }
   return [] as AnyRecord[];
 }
 
-function firstText(...values: unknown[]) {
+function firstText(...values: any[]) {
   for (const value of values) {
     if (typeof value === "string" && value.trim()) return value;
   }
@@ -49,7 +51,7 @@ function firstText(...values: unknown[]) {
 function pickFn(props: AnyRecord, names: string[]) {
   for (const name of names) {
     const value = props[name];
-    if (typeof value === "function") return value as (...args: unknown[]) => void;
+    if (typeof value === "function") return value as (...args: any[]) => void;
   }
   return null;
 }
@@ -103,10 +105,10 @@ export function Tier1ShellScreen(rawProps: Tier1ShellScreenProps) {
     timers.current = [];
   }
 
-  function schedule(ms: number, fn: () => void) {
-    const id = window.setTimeout(fn, ms);
-    timers.current.push(id);
-  }
+    function schedule(ms: number, fn: () => void) {
+      const id = window.setTimeout(fn, ms);
+      timers.current.push(id);
+    }
 
   function commitPhase(next: Tier1Phase) {
     setPhase(next);

@@ -1,0 +1,30 @@
+=== sceneStore before ===
+7:  selectedStarId: string | null;
+8:  selectedStar: string | null;
+9:  hoveredStarId: string | null;
+10:  hoveredStar: string | null;
+11:  hoverStar: (id: string | null) => void;
+12:  selectStar: (id: string | null) => void;
+13:  enterLifemap: () => void;
+19:  enterLifeMap: () => void;
+30:  selectedStarId: null,
+31:  hoveredStarId: null,
+43:  enterLifeMap: () => set({ mode: "lifemap" }),
+48:      selectedStarId: id,
+52:    const { selectedStarId } = get();
+53:    set({ mode: selectedStarId ? "replay" : "lifemap" });
+57:    const { selectedStarId } = get();
+58:    set({ mode: selectedStarId ? "focus" : "lifemap" });
+61:  setSelectedStarId: (id) => set({ selectedStarId: id }),
+62:  setHoveredStarId: (id) => set({ hoveredStarId: id }),
+
+=== persistence before ===
+7:import type { SpatialPersistenceSnapshot } from "../types";
+11:  const selectedStar = useSceneStore((s) => s.selectedStar);
+15:    const star = resolveStarById(selectedStar);
+16:    const snapshot: SpatialPersistenceSnapshot = {
+17:      schema: "urai.spatial.persistence.v1" as const,
+20:      selectedStarId: selectedStar ?? null,
+21:      selectedStarLabel: star?.label ?? null,
+31:  }, [mode, selectedStar, xrState]);
+38:    __URAI_SPATIAL_PERSISTENCE__?: SpatialPersistenceSnapshot;

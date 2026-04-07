@@ -1,0 +1,3 @@
+src/spatial/scene/Starfield.tsx:7:export default function Starfield() {
+src/spatial/components/Starfield.tsx:250:export default function Starfield({
+src/spatial/components/LifeMapStarfield.tsx:250:export default function LifeMapStarfield({

@@ -1,0 +1,103 @@
+src/spatial/state/sceneStore.ts:27:  selectedStarId: string | null;
+src/spatial/state/sceneStore.ts:28:  selectedStar: SelectedStar | null;
+src/spatial/state/sceneStore.ts:34:  clearFocus: () => void;
+src/spatial/state/sceneStore.ts:35:  exitFocusToLifeMap: () => void;
+src/spatial/state/sceneStore.ts:36:  enterReplay: () => void;
+src/spatial/state/sceneStore.ts:37:  exitReplay: () => void;
+src/spatial/state/sceneStore.ts:38:  exitReplayToFocus: () => void;
+src/spatial/state/sceneStore.ts:44:  selectedStarId: null,
+src/spatial/state/sceneStore.ts:45:  selectedStar: null,
+src/spatial/state/sceneStore.ts:52:      selectedStarId: star ? star.id : null,
+src/spatial/state/sceneStore.ts:53:      selectedStar: star,
+src/spatial/state/sceneStore.ts:59:      selectedStarId: star.id,
+src/spatial/state/sceneStore.ts:60:      selectedStar: star,
+src/spatial/state/sceneStore.ts:64:  clearFocus: () =>
+src/spatial/state/sceneStore.ts:66:      selectedStarId: null,
+src/spatial/state/sceneStore.ts:67:      selectedStar: null,
+src/spatial/state/sceneStore.ts:72:  exitFocusToLifeMap: () =>
+src/spatial/state/sceneStore.ts:74:      selectedStarId: null,
+src/spatial/state/sceneStore.ts:75:      selectedStar: null,
+src/spatial/state/sceneStore.ts:80:  enterReplay: () => {
+src/spatial/state/sceneStore.ts:81:    const { selectedStar } = get();
+src/spatial/state/sceneStore.ts:82:    if (!selectedStar) return;
+src/spatial/state/sceneStore.ts:89:  exitReplay: () => {
+src/spatial/state/sceneStore.ts:90:    const { selectedStar } = get();
+src/spatial/state/sceneStore.ts:92:      mode: selectedStar ? "focus" : "lifemap",
+src/spatial/state/sceneStore.ts:97:  exitReplayToFocus: () => {
+src/spatial/state/sceneStore.ts:98:    const { selectedStar } = get();
+src/spatial/state/sceneStore.ts:100:      mode: selectedStar ? "focus" : "lifemap",
+src/spatial/scene/SpatialScene.tsx:30:import XRCameraRigOverlay from "@/spatial/xr-runtime/XRCameraRigOverlay";
+src/spatial/scene/SpatialScene.tsx:185:function CameraRig() {
+src/spatial/scene/SpatialScene.tsx:188:  const selectedStar = useSceneStore((s) => s.selectedStar);
+src/spatial/scene/SpatialScene.tsx:202:    } else if (selectedStar) {
+src/spatial/scene/SpatialScene.tsx:203:      const [x, y, z] = selectedStar.position;
+src/spatial/scene/SpatialScene.tsx:299:function MemorySphere() {
+src/spatial/scene/SpatialScene.tsx:300:  const selectedStar = useSceneStore((s) => s.selectedStar);
+src/spatial/scene/SpatialScene.tsx:317:  if (!selectedStar) return null;
+src/spatial/scene/SpatialScene.tsx:320:    <group position={selectedStar.position}>
+src/spatial/scene/SpatialScene.tsx:322:        <sphereGeometry args={[selectedStar.size * 0.72, 32, 32]} />
+src/spatial/scene/SpatialScene.tsx:324:          color={selectedStar.color}
+src/spatial/scene/SpatialScene.tsx:325:          emissive={selectedStar.color}
+src/spatial/scene/SpatialScene.tsx:342:  const selectedStarId = useSceneStore((s) => s.selectedStarId);
+src/spatial/scene/SpatialScene.tsx:345:  const clearFocus = useSceneStore((s) => s.clearFocus);
+src/spatial/scene/SpatialScene.tsx:350:        const isSelected = star.id === selectedStarId;
+src/spatial/scene/SpatialScene.tsx:351:        const dimmed = !!selectedStarId && !isSelected;
+src/spatial/scene/SpatialScene.tsx:368:          if (mode === "focus") clearFocus();
+src/spatial/scene/SpatialScene.tsx:379:  const selectedStar = useSceneStore((s) => s.selectedStar);
+src/spatial/scene/SpatialScene.tsx:384:    if (!ref.current || !selectedStar || mode !== "replay") return;
+src/spatial/scene/SpatialScene.tsx:390:  if (!selectedStar || mode !== "replay") return null;
+src/spatial/scene/SpatialScene.tsx:393:    <group ref={ref} position={selectedStar.position}>
+src/spatial/scene/SpatialScene.tsx:407:            <meshBasicMaterial color={selectedStar.color} transparent opacity={0.65} />
+src/spatial/scene/SpatialScene.tsx:471:  const selectedStar = useSceneStore((s) => s.selectedStar);
+src/spatial/scene/SpatialScene.tsx:472:  const clearFocus = useSceneStore((s) => s.clearFocus);
+src/spatial/scene/SpatialScene.tsx:473:  const enterReplay = useSceneStore((s) => s.enterReplay);
+src/spatial/scene/SpatialScene.tsx:474:  const exitReplay = useSceneStore((s) => s.exitReplay);
+src/spatial/scene/SpatialScene.tsx:477:    if (!selectedStar) return null;
+src/spatial/scene/SpatialScene.tsx:478:    return `${selectedStar.chapter} · ${selectedStar.timeband} · ${selectedStar.label}`;
+src/spatial/scene/SpatialScene.tsx:479:  }, [selectedStar]);
+src/spatial/scene/SpatialScene.tsx:533:                <button style={secondaryButtonStyle} onClick={() => setMode("focus")} disabled={!selectedStar}>
+src/spatial/scene/SpatialScene.tsx:573:      {mode === "focus" && selectedStar && (
+src/spatial/scene/SpatialScene.tsx:587:              <h2 style={{ margin: 0, fontSize: 28, lineHeight: 1.05 }}>{selectedStar.title}</h2>
+src/spatial/scene/SpatialScene.tsx:591:              <p style={subtleTextStyle}>{selectedStar.description}</p>
+src/spatial/scene/SpatialScene.tsx:596:                <button style={shellButtonStyle} onClick={enterReplay}>
+src/spatial/scene/SpatialScene.tsx:599:                <button style={secondaryButtonStyle} onClick={clearFocus}>
+src/spatial/scene/SpatialScene.tsx:608:      {mode === "replay" && selectedStar && (
+src/spatial/scene/SpatialScene.tsx:633:                {selectedStar.title}
+src/spatial/scene/SpatialScene.tsx:636:                {selectedStar.signature}
+src/spatial/scene/SpatialScene.tsx:642:                {selectedStar.description}
+src/spatial/scene/SpatialScene.tsx:656:                  <div style={{ marginTop: 8, fontSize: 16 }}>{selectedStar.chapter}</div>
+src/spatial/scene/SpatialScene.tsx:660:                  <div style={{ marginTop: 8, fontSize: 16 }}>{selectedStar.timeband}</div>
+src/spatial/scene/SpatialScene.tsx:664:                  <div style={{ marginTop: 8, fontSize: 16 }}>{selectedStar.label}</div>
+src/spatial/scene/SpatialScene.tsx:669:                <button style={shellButtonStyle} onClick={exitReplay}>
+src/spatial/scene/SpatialScene.tsx:675:                    exitReplay();
+src/spatial/scene/SpatialScene.tsx:676:                    clearFocus();
+src/spatial/scene/SpatialScene.tsx:692:  const selectedStar = useSceneStore((s) => s.selectedStar);
+src/spatial/scene/SpatialScene.tsx:694:  const clearFocus = useSceneStore((s) => s.clearFocus);
+src/spatial/scene/SpatialScene.tsx:695:  const exitReplay = useSceneStore((s) => s.exitReplay);
+src/spatial/scene/SpatialScene.tsx:702:        exitReplay();
+src/spatial/scene/SpatialScene.tsx:707:        clearFocus();
+src/spatial/scene/SpatialScene.tsx:718:  }, [mode, clearFocus, exitReplay, setMode]);
+src/spatial/scene/SpatialScene.tsx:744:          if (mode === "focus") clearFocus();
+src/spatial/scene/SpatialScene.tsx:750:        <pointLight position={[0, 6, 10]} intensity={selectedStar ? 10 : 6} color="#ffffff" />
+src/spatial/scene/SpatialScene.tsx:757:        <CameraRig />
+src/spatial/scene/SpatialScene.tsx:760:        <MemorySphere />
+src/spatial/scene/SpatialScene.tsx:781:        <XRCameraRigOverlay />
+src/spatial/core/SceneController.tsx:18:        useSceneStore.setState({ selectedStar: null });
+src/spatial/components/CameraRig.tsx:19:export default function CameraRig() {
+src/spatial/components/CameraRig.tsx:23:  const selectedStar = useSceneStore((state) => state.selectedStar);
+src/spatial/components/CameraRig.tsx:30:    if (!selectedStar) return new Vector3(0, 0, 0);
+src/spatial/components/CameraRig.tsx:32:      selectedStar.position[0],
+src/spatial/components/CameraRig.tsx:33:      selectedStar.position[1],
+src/spatial/components/CameraRig.tsx:34:      selectedStar.position[2]
+src/spatial/components/CameraRig.tsx:36:  }, [selectedStar]);
+src/spatial/components/CameraRig.tsx:54:    if ((mode === "focus" || mode === "replay") && selectedStar) {
+src/spatial/components/CameraRig.tsx:55:      const focusLift = 1.30 + selectedStar.size * 0.12;
+src/spatial/components/CameraRig.tsx:56:      const focusDistance = 6.4 + Math.min(selectedStar.size * 0.34, 1.35);
+src/spatial/components/CameraRig.tsx:62:    if (mode === "replay" && selectedStar) {
+src/spatial/components/CameraRig.tsx:68:      const baseRadius = 6.0 + Math.min(selectedStar.size * 0.40, 1.4);
+src/spatial/scene/Starfield.tsx:8:export default function Starfield() {
+src/spatial/scene/Starfield.tsx:13:  const selectedStar = useSceneStore((s) => s.selectedStar);
+src/spatial/scene/Starfield.tsx:20:        const isSelected = selectedStar?.id === star.id;
+src/spatial/scene/Starfield.tsx:21:        const isDimmed = !!selectedStar && !isSelected;
+src/spatial/scene/Ground.tsx:6:export default function Ground() {
+src/spatial/scene/MemorySphere.tsx:5:export default function MemorySphere() {

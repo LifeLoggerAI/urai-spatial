@@ -1,0 +1,9 @@
+src/spatial/ui/SpatialCuratedDeckExportPanel.tsx:6:import { buildSpatialCuratedDeckExport } from "@/spatial/curation/buildSpatialCuratedDeckExport";
+src/spatial/ui/SpatialCuratedDeckExportPanel.tsx:32:export default function SpatialCuratedDeckExportPanel() {
+src/spatial/ui/SpatialCuratedDeckExportPanel.tsx:48:      buildSpatialCuratedDeckExport({
+src/spatial/ui/SpatialCuratedDeckExportPanel.tsx:126:        Curated Deck Export
+src/spatial/curation/spatialCuratedDeckExportTypes.ts:14:  schema: "urai.spatial.curated-deck-export.v1";
+src/spatial/curation/buildSpatialCuratedDeckExport.ts:25:export function buildSpatialCuratedDeckExport(input: {
+src/spatial/curation/buildSpatialCuratedDeckExport.ts:54:    schema: "urai.spatial.curated-deck-export.v1",
+src/spatial/scene/SpatialScene.tsx:2:import SpatialCuratedDeckExportPanel from "@/spatial/ui/SpatialCuratedDeckExportPanel";
+src/spatial/scene/SpatialScene.tsx:772:      <SpatialCuratedDeckExportPanel />

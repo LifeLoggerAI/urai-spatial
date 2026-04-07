@@ -1,0 +1,1123 @@
+"use client";
+
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import * as THREE from "three";
+import { Canvas, ThreeEvent, useFrame } from "@react-three/fiber";
+import type { ScenePhase, SelectedStar, TransitionName } from "@/spatial/types/scene";
+
+type StarNode = SelectedStar & {
+  stability: number;
+};
+
+type TransitionState = {
+  name: TransitionName;
+  progress: number;
+};
+
+type WorldWeights = {
+  home: number;
+  lifemap: number;
+  focus: number;
+  replay: number;
+  ascent: number;
+  descent: number;
+};
+
+const DURATIONS: Record<TransitionName, number> = {
+  home_to_lifemap: 2450,
+  lifemap_to_home: 2600,
+  lifemap_to_focus: 2050,
+  focus_to_lifemap: 1880,
+  focus_to_replay: 2550,
+  replay_to_focus: 2150,
+};
+
+const HOME_BG = new THREE.Color("#03060c");
+const LIFEMAP_BG = new THREE.Color("#020413");
+const REPLAY_BG = new THREE.Color("#04070f");
+
+function clamp01(v: number) {
+  return Math.max(0, Math.min(1, v));
+}
+
+function easeIn(t: number) {
+  const x = clamp01(t);
+  return x * x * x;
+}
+
+function easeOut(t: number) {
+  const x = clamp01(t);
+  return 1 - Math.pow(1 - x, 3);
+}
+
+function easeInOut(t: number) {
+  const x = clamp01(t);
+  return x * x * (3 - 2 * x);
+}
+
+function heldRelease(t: number) {
+  if (t <= 0.08) return t * 0.18;
+  return 0.0144 + easeInOut((t - 0.08) / 0.92) * 0.9856;
+}
+
+function gravitationalPull(t: number) {
+  const x = clamp01(t);
+  return easeInOut(Math.pow(x, 0.82));
+}
+
+function resurfacing(t: number) {
+  const x = clamp01(t);
+  return 0.35 * easeIn(x) + 0.65 * easeOut(x);
+}
+
+function lerpVec(a: THREE.Vector3, b: THREE.Vector3, t: number) {
+  return new THREE.Vector3(
+    THREE.MathUtils.lerp(a.x, b.x, t),
+    THREE.MathUtils.lerp(a.y, b.y, t),
+    THREE.MathUtils.lerp(a.z, b.z, t),
+  );
+}
+
+function seeded(seed: number) {
+  let s = seed >>> 0;
+  return () => {
+    s = (1664525 * s + 1013904223) >>> 0;
+    return s / 4294967296;
+  };
+}
+
+function buildStars(): StarNode[] {
+  const rand = seeded(19830414);
+  const titles = [
+    "Council",
+    "Forge",
+    "Anchor",
+    "Echo",
+    "Threshold",
+    "Witness",
+    "Sparrow",
+    "Atlas",
+    "Signal",
+    "Harbor",
+    "Pulse",
+    "Grove",
+    "Beacon",
+    "Keeper",
+    "Archive",
+    "Hearth",
+    "Vector",
+    "Current",
+    "Vow",
+    "North",
+    "Lattice",
+    "Ember",
+    "Ritual",
+    "Mirror",
+    "Axis",
+    "Bloom",
+    "Hallow",
+    "Drift",
+    "Bridge",
+    "Signal-2",
+    "Wake",
+    "Trace",
+    "Orbit",
+    "Cairn",
+    "Crown",
+    "Root",
+    "Chorus",
+    "Thread",
+    "Rune",
+    "Source",
+    "Harrow",
+    "Vault",
+  ];
+
+  return titles.map((title, index) => {
+    const angle = rand() * Math.PI * 2;
+    const radius = 16 + rand() * 56;
+    const depth = -24 - rand() * 126 - index * 1.75;
+    const y = -9 + rand() * 22;
+    const x = Math.cos(angle) * radius * (0.5 + rand() * 0.7);
+    const size = 0.08 + rand() * 0.22;
+    const intensity = 0.45 + rand() * 0.55;
+    const hue = 202 + rand() * 35;
+    const color = new THREE.Color(`hsl(${hue}, 72%, ${66 + rand() * 16}%)`).getStyle();
+
+    return {
+      id: `star-${index + 1}`,
+      title,
+      chapter: index % 3 === 0 ? "council" : index % 3 === 1 ? "forge" : "archive",
+      position: [x, y, depth],
+      color,
+      size,
+      intensity,
+      stability: 0.55 + rand() * 0.45,
+    };
+  });
+}
+
+function buildDust(count: number, seedValue: number, xScale: number, yScale: number, zMin: number, zMax: number) {
+  const rand = seeded(seedValue);
+  const positions = new Float32Array(count * 3);
+
+  for (let i = 0; i < count; i += 1) {
+    positions[i * 3] = (rand() * 2 - 1) * xScale;
+    positions[i * 3 + 1] = (rand() * 2 - 1) * yScale;
+    positions[i * 3 + 2] = -(zMin + rand() * (zMax - zMin));
+  }
+
+  return positions;
+}
+
+function buildCorridor(count: number, seedValue: number) {
+  const rand = seeded(seedValue);
+  const positions = new Float32Array(count * 3);
+
+  for (let i = 0; i < count; i += 1) {
+    const side = i % 2 === 0 ? -1 : 1;
+    const x = side * (0.9 + rand() * 6.2) + (rand() - 0.5) * 0.35;
+    const y = (rand() - 0.5) * 6.5;
+    const z = -(6 + rand() * 150);
+    positions[i * 3] = x;
+    positions[i * 3 + 1] = y;
+    positions[i * 3 + 2] = z;
+  }
+
+  return positions;
+}
+
+function computeWeights(phase: ScenePhase, transition: TransitionState | null): WorldWeights {
+  if (!transition) {
+    return {
+      home: phase === "home" ? 1 : 0,
+      lifemap: phase === "lifemap" ? 1 : 0,
+      focus: phase === "focus" ? 1 : 0,
+      replay: phase === "replay" ? 1 : 0,
+      ascent: 0,
+      descent: 0,
+    };
+  }
+
+  const p =
+    transition.name === "home_to_lifemap" || transition.name === "lifemap_to_home"
+      ? heldRelease(transition.progress)
+      : transition.name === "lifemap_to_focus" || transition.name === "focus_to_replay"
+        ? gravitationalPull(transition.progress)
+        : resurfacing(transition.progress);
+
+  switch (transition.name) {
+    case "home_to_lifemap":
+      return { home: 1 - p, lifemap: p, focus: 0, replay: 0, ascent: p, descent: 0 };
+    case "lifemap_to_home":
+      return { home: p, lifemap: 1 - p, focus: 0, replay: 0, ascent: 0, descent: p };
+    case "lifemap_to_focus":
+      return { home: 0, lifemap: 1 - p, focus: p, replay: 0, ascent: 0, descent: 0 };
+    case "focus_to_lifemap":
+      return { home: 0, lifemap: p, focus: 1 - p, replay: 0, ascent: 0, descent: 0 };
+    case "focus_to_replay":
+      return { home: 0, lifemap: 0, focus: 1 - p, replay: p, ascent: 0, descent: 0 };
+    case "replay_to_focus":
+      return { home: 0, lifemap: 0, focus: p, replay: 1 - p, ascent: 0, descent: 0 };
+    default:
+      return { home: 0, lifemap: 0, focus: 0, replay: 0, ascent: 0, descent: 0 };
+  }
+}
+
+function useTransitionDriver(
+  phase: ScenePhase,
+  setPhase: React.Dispatch<React.SetStateAction<ScenePhase>>,
+  setSelectedId: React.Dispatch<React.SetStateAction<string | null>>,
+) {
+  const [transition, setTransition] = useState<TransitionState | null>(null);
+
+  const startTransition = useCallback(
+    (name: TransitionName) => {
+      if (transition) return;
+
+      const startedAt = performance.now();
+      let raf = 0;
+
+      const step = (now: number) => {
+        const progress = clamp01((now - startedAt) / DURATIONS[name]);
+        setTransition({ name, progress });
+
+        if (progress < 1) {
+          raf = window.requestAnimationFrame(step);
+          return;
+        }
+
+        switch (name) {
+          case "home_to_lifemap":
+            setPhase("lifemap");
+            break;
+          case "lifemap_to_home":
+            setPhase("home");
+            setSelectedId(null);
+            break;
+          case "lifemap_to_focus":
+            setPhase("focus");
+            break;
+          case "focus_to_lifemap":
+            setPhase("lifemap");
+            break;
+          case "focus_to_replay":
+            setPhase("replay");
+            break;
+          case "replay_to_focus":
+            setPhase("focus");
+            break;
+        }
+
+        setTransition(null);
+      };
+
+      setTransition({ name, progress: 0 });
+      raf = window.requestAnimationFrame(step);
+      return () => window.cancelAnimationFrame(raf);
+    },
+    [setPhase, setSelectedId, transition],
+  );
+
+  const handleEscape = useCallback(() => {
+    if (transition) return;
+    if (phase === "replay") {
+      startTransition("replay_to_focus");
+      return;
+    }
+    if (phase === "focus") {
+      startTransition("focus_to_lifemap");
+      return;
+    }
+    if (phase === "lifemap") {
+      startTransition("lifemap_to_home");
+    }
+  }, [phase, startTransition, transition]);
+
+  useEffect(() => {
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        event.preventDefault();
+        handleEscape();
+      }
+    };
+
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [handleEscape]);
+
+  return { transition, startTransition };
+}
+
+function resolveCamera(
+  phase: ScenePhase,
+  transition: TransitionState | null,
+  selectedStar: StarNode | null,
+  elapsed: number,
+) {
+  const breath = Math.sin(elapsed * 0.35) * 0.08;
+  const drift = Math.sin(elapsed * 0.13) * 0.15;
+
+  const homePos = new THREE.Vector3(0, 1.68 + breath, 6.85 + drift * 0.35);
+  const homeLook = new THREE.Vector3(0, 0.92, -0.3);
+
+  const lifemapPos = new THREE.Vector3(0, 2.7 + breath * 0.7, 15.8 + drift * 0.4);
+  const lifemapLook = new THREE.Vector3(0, 1.3, -54);
+
+  const focusAnchor = selectedStar
+    ? new THREE.Vector3(...selectedStar.position)
+    : new THREE.Vector3(0, 1.2, -42);
+
+  const focusPos = focusAnchor.clone().add(new THREE.Vector3(0.34, 0.44 + breath * 0.35, 5.4));
+  const focusLook = focusAnchor.clone();
+
+  const replayPos = focusAnchor.clone().add(new THREE.Vector3(0, 0.22 + breath * 0.25, 1.9));
+  const replayLook = focusAnchor.clone().add(new THREE.Vector3(0, 0, -0.8));
+
+  if (!transition) {
+    if (phase === "home") return { pos: homePos, look: homeLook, fov: 53 };
+    if (phase === "lifemap") return { pos: lifemapPos, look: lifemapLook, fov: 50.5 };
+    if (phase === "focus") return { pos: focusPos, look: focusLook, fov: 46.8 };
+    return { pos: replayPos, look: replayLook, fov: 42.2 };
+  }
+
+  const t = transition.progress;
+
+  if (transition.name === "home_to_lifemap") {
+    if (t < 0.08) {
+      const q = t / 0.08;
+      return {
+        pos: lerpVec(homePos, new THREE.Vector3(0, 1.92, 6.35), q),
+        look: lerpVec(homeLook, new THREE.Vector3(0, 0.98, -1.8), q),
+        fov: THREE.MathUtils.lerp(53, 52.4, q),
+      };
+    }
+    if (t < 0.26) {
+      const q = easeInOut((t - 0.08) / 0.18);
+      return {
+        pos: lerpVec(new THREE.Vector3(0, 1.92, 6.35), new THREE.Vector3(0, 3.4, 3.9), q),
+        look: lerpVec(new THREE.Vector3(0, 0.98, -1.8), new THREE.Vector3(0, 0.92, -12), q),
+        fov: THREE.MathUtils.lerp(52.4, 50.8, q),
+      };
+    }
+    if (t < 0.78) {
+      const q = easeInOut((t - 0.26) / 0.52);
+      return {
+        pos: lerpVec(new THREE.Vector3(0, 3.4, 3.9), new THREE.Vector3(0, 9.8, -11.5), q),
+        look: lerpVec(new THREE.Vector3(0, 0.92, -12), new THREE.Vector3(0, 1.2, -70), q),
+        fov: THREE.MathUtils.lerp(50.8, 49.6, q),
+      };
+    }
+    const q = easeOut((t - 0.78) / 0.22);
+    return {
+      pos: lerpVec(new THREE.Vector3(0, 9.8, -11.5), lifemapPos, q),
+      look: lerpVec(new THREE.Vector3(0, 1.2, -70), lifemapLook, q),
+      fov: THREE.MathUtils.lerp(49.6, 50.5, q),
+    };
+  }
+
+  if (transition.name === "lifemap_to_home") {
+    if (t < 0.10) {
+      const q = easeOut(t / 0.10);
+      return {
+        pos: lerpVec(lifemapPos, new THREE.Vector3(0, 3.1, 13.8), q),
+        look: lerpVec(lifemapLook, new THREE.Vector3(0, 1.25, -42), q),
+        fov: THREE.MathUtils.lerp(50.5, 50.1, q),
+      };
+    }
+    if (t < 0.72) {
+      const q = easeInOut((t - 0.10) / 0.62);
+      return {
+        pos: lerpVec(new THREE.Vector3(0, 3.1, 13.8), new THREE.Vector3(0, 8.7, -7.2), q),
+        look: lerpVec(new THREE.Vector3(0, 1.25, -42), new THREE.Vector3(0, 1.05, -8), q),
+        fov: THREE.MathUtils.lerp(50.1, 52.1, q),
+      };
+    }
+    const q = easeOut((t - 0.72) / 0.28);
+    return {
+      pos: lerpVec(new THREE.Vector3(0, 8.7, -7.2), homePos, q),
+      look: lerpVec(new THREE.Vector3(0, 1.05, -8), homeLook, q),
+      fov: THREE.MathUtils.lerp(52.1, 53, q),
+    };
+  }
+
+  if (transition.name === "lifemap_to_focus") {
+    const lockPos = new THREE.Vector3(focusAnchor.x * 0.1, 2.55, 14.4);
+    const lockLook = focusAnchor.clone();
+
+    if (t < 0.14) {
+      const q = easeOut(t / 0.14);
+      return {
+        pos: lerpVec(lifemapPos, lockPos, q),
+        look: lerpVec(lifemapLook, lockLook, q),
+        fov: THREE.MathUtils.lerp(50.5, 49.2, q),
+      };
+    }
+
+    const q = easeInOut((t - 0.14) / 0.86);
+    return {
+      pos: lerpVec(lockPos, focusPos, q),
+      look: lerpVec(lockLook, focusLook, q),
+      fov: THREE.MathUtils.lerp(49.2, 46.8, q),
+    };
+  }
+
+  if (transition.name === "focus_to_lifemap") {
+    const lockPos = new THREE.Vector3(focusAnchor.x * 0.1, 2.55, 14.4);
+    const lockLook = focusAnchor.clone();
+
+    if (t < 0.18) {
+      const q = easeInOut(t / 0.18);
+      return {
+        pos: lerpVec(focusPos, new THREE.Vector3(focusPos.x, focusPos.y, focusPos.z + 0.35), q),
+        look: lerpVec(focusLook, focusLook.clone().add(new THREE.Vector3(0, 0, -0.8)), q),
+        fov: THREE.MathUtils.lerp(46.8, 47.4, q),
+      };
+    }
+
+    const q = easeOut((t - 0.18) / 0.82);
+    return {
+      pos: lerpVec(lockPos, lifemapPos, q),
+      look: lerpVec(lockLook, lifemapLook, q),
+      fov: THREE.MathUtils.lerp(47.4, 50.5, q),
+    };
+  }
+
+  if (transition.name === "focus_to_replay") {
+    if (t < 0.12) {
+      const q = easeOut(t / 0.12);
+      return {
+        pos: lerpVec(focusPos, focusAnchor.clone().add(new THREE.Vector3(0.18, 0.3, 4.7)), q),
+        look: lerpVec(focusLook, focusLook, q),
+        fov: THREE.MathUtils.lerp(46.8, 45.8, q),
+      };
+    }
+
+    const q = easeInOut((t - 0.12) / 0.88);
+    return {
+      pos: lerpVec(focusAnchor.clone().add(new THREE.Vector3(0.18, 0.3, 4.7)), replayPos, q),
+      look: lerpVec(focusLook, replayLook, q),
+      fov: THREE.MathUtils.lerp(45.8, 42.2, q),
+    };
+  }
+
+  const q = easeOut(t);
+  return {
+    pos: lerpVec(replayPos, focusPos, q),
+    look: lerpVec(replayLook, focusLook, q),
+    fov: THREE.MathUtils.lerp(42.2, 46.8, q),
+  };
+}
+
+function Header({
+  phase,
+  transition,
+  selectedStar,
+}: {
+  phase: ScenePhase;
+  transition: TransitionState | null;
+  selectedStar: StarNode | null;
+}) {
+  let text = "HOME — CLICK SKY OR BEGIN ASCENT";
+
+  if (transition?.name === "home_to_lifemap") text = "ASCENT — THRESHOLD CORRIDOR";
+  else if (transition?.name === "lifemap_to_home") text = "DESCENT — RETURNING TO HOME";
+  else if (phase === "lifemap") text = "LIFEMAP — CLICK A STAR TO ENTER FOCUS";
+  else if (phase === "focus" && selectedStar) text = `${selectedStar.title.toUpperCase()} — ESC RETURNS TO LIFEMAP`;
+  else if (phase === "replay" && selectedStar) text = `${selectedStar.title.toUpperCase()} — ESC RETURNS TO FOCUS`;
+
+  return (
+    <div
+      style={{
+        position: "absolute",
+        inset: "0 auto auto 0",
+        padding: "12px 14px",
+        color: "rgba(235,244,255,0.92)",
+        fontSize: 11,
+        letterSpacing: "0.12em",
+        fontFamily: "ui-monospace, SFMono-Regular, Menlo, monospace",
+        pointerEvents: "none",
+        zIndex: 20,
+      }}
+    >
+      {text}
+    </div>
+  );
+}
+
+function Footer({
+  phase,
+  selectedStar,
+  transition,
+  onReplay,
+}: {
+  phase: ScenePhase;
+  selectedStar: StarNode | null;
+  transition: TransitionState | null;
+  onReplay: () => void;
+}) {
+  const dim = transition ? 0.18 : 1;
+
+  return (
+    <>
+      {selectedStar ? (
+        <div
+          style={{
+            position: "absolute",
+            left: "50%",
+            bottom: 22,
+            transform: "translateX(-50%)",
+            padding: "10px 14px",
+            borderRadius: 999,
+            background: "rgba(3,8,16,0.54)",
+            border: "1px solid rgba(124,164,255,0.18)",
+            color: "rgba(240,246,255,0.92)",
+            fontSize: 12,
+            letterSpacing: "0.08em",
+            textTransform: "uppercase",
+            fontFamily: "ui-monospace, SFMono-Regular, Menlo, monospace",
+            backdropFilter: "blur(10px)",
+            opacity: dim,
+            pointerEvents: "none",
+            zIndex: 20,
+          }}
+        >
+          {selectedStar.title}
+        </div>
+      ) : null}
+
+      {phase === "focus" && selectedStar && !transition ? (
+        <button
+          onClick={onReplay}
+          style={{
+            position: "absolute",
+            right: 20,
+            bottom: 18,
+            borderRadius: 999,
+            border: "1px solid rgba(140,174,255,0.24)",
+            background: "rgba(4,10,18,0.56)",
+            color: "rgba(240,246,255,0.94)",
+            padding: "10px 16px",
+            fontSize: 12,
+            letterSpacing: "0.08em",
+            textTransform: "uppercase",
+            fontFamily: "ui-monospace, SFMono-Regular, Menlo, monospace",
+            backdropFilter: "blur(12px)",
+            zIndex: 20,
+            cursor: "pointer",
+          }}
+        >
+          Replay
+        </button>
+      ) : null}
+    </>
+  );
+}
+
+function Orb({ opacity }: { opacity: number }) {
+  const coreRef = useRef<THREE.Mesh>(null);
+  const innerRef = useRef<THREE.Mesh>(null);
+
+  useFrame(({ clock }) => {
+    const t = clock.getElapsedTime();
+    const pulse = 1 + Math.sin(t * 0.55) * 0.025;
+    const shimmer = 1 + Math.sin(t * 0.8 + 0.5) * 0.015;
+
+    if (coreRef.current) coreRef.current.scale.setScalar(pulse);
+    if (innerRef.current) innerRef.current.scale.setScalar(shimmer);
+  });
+
+  const o = clamp01(opacity);
+
+  return (
+    <group position={[0, 0.6, 0]}>
+      <mesh position={[0, -0.35, 0]} rotation={[-Math.PI / 2, 0, 0]}>
+        <circleGeometry args={[2.4, 64]} />
+        <meshBasicMaterial color="#5fa8ff" transparent opacity={0.08 * o} toneMapped={false} />
+      </mesh>
+
+      <mesh>
+        <sphereGeometry args={[0.9, 48, 48]} />
+        <meshStandardMaterial
+          color="#0f1c2e"
+          emissive="#2f6bc3"
+          emissiveIntensity={0.25 * o}
+          roughness={0.85}
+          metalness={0.05}
+          transparent
+          opacity={0.95 * o}
+        />
+      </mesh>
+
+      <mesh ref={innerRef}>
+        <sphereGeometry args={[0.55, 48, 48]} />
+        <meshStandardMaterial
+          color="#cfe6ff"
+          emissive="#7db7ff"
+          emissiveIntensity={1.1 * o}
+          roughness={0.2}
+          metalness={0.02}
+        />
+      </mesh>
+
+      <mesh ref={coreRef}>
+        <sphereGeometry args={[0.25, 32, 32]} />
+        <meshBasicMaterial color="#ffffff" transparent opacity={0.9 * o} />
+      </mesh>
+
+      <pointLight color="#6ea8ff" intensity={1.2 * o} distance={10} />
+    </group>
+  );
+}
+
+function HomeWorld({
+  weights,
+  onAscend,
+}: {
+  weights: WorldWeights;
+  onAscend: () => void;
+}) {
+  const o = clamp01(weights.home + weights.ascent * 0.25 + weights.descent * 0.9);
+  const horizonOpacity = clamp01(weights.home * 0.05 + weights.descent * 0.12);
+  const corridorFade = 1 - clamp01(weights.ascent * 1.12);
+
+  return (
+    <group>
+      <mesh rotation={[-Math.PI / 2, 0, 0]}>
+        <circleGeometry args={[40, 128]} />
+        <meshStandardMaterial color="#010308" roughness={1} metalness={0} />
+      </mesh>
+
+      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.01, 0]}>
+        <circleGeometry args={[8, 96]} />
+        <meshBasicMaterial color="#3b6ec9" transparent opacity={0.06 * o} toneMapped={false} />
+      </mesh>
+
+      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.02, 0]}>
+        <circleGeometry args={[3, 64]} />
+        <meshBasicMaterial color="#6ea8ff" transparent opacity={0.08 * o} toneMapped={false} />
+      </mesh>
+
+      <mesh position={[0, 2.2, -18]}>
+        <planeGeometry args={[60, 10]} />
+        <meshBasicMaterial color="#4c7ecf" transparent opacity={horizonOpacity} toneMapped={false} />
+      </mesh>
+
+      <mesh position={[0, 8.4, -16]} rotation={[-0.18, 0, 0]}>
+        <planeGeometry args={[42, 18]} />
+        <meshBasicMaterial color="#6aa7ff" transparent opacity={0.035 * corridorFade} toneMapped={false} />
+      </mesh>
+
+      <mesh
+        position={[0, 10, -12]}
+        onPointerDown={(event: ThreeEvent<PointerEvent>) => {
+          event.stopPropagation();
+          onAscend();
+        }}
+      >
+        <planeGeometry args={[60, 40]} />
+        <meshBasicMaterial transparent opacity={0.001} />
+      </mesh>
+
+      <Orb opacity={o * corridorFade} />
+    </group>
+  );
+}
+
+function CorridorField({ weights }: { weights: WorldWeights }) {
+  const corridor = useMemo(() => buildCorridor(700, 29), []);
+  const corridorRef = useRef<THREE.Points>(null);
+
+  useFrame(({ clock }) => {
+    if (!corridorRef.current) return;
+
+    const t = clock.getElapsedTime();
+    corridorRef.current.rotation.z =
+      Math.sin(t * 0.08) * 0.03 * weights.ascent - Math.sin(t * 0.07) * 0.03 * weights.descent;
+
+    corridorRef.current.position.z = THREE.MathUtils.lerp(
+      corridorRef.current.position.z,
+      weights.ascent > 0.001 ? 18 : weights.descent > 0.001 ? 12 : 0,
+      0.08,
+    );
+  });
+
+  const opacity = clamp01(weights.ascent * 0.34 + weights.descent * 0.42);
+  const size = 0.9 + weights.ascent * 1.3 + weights.descent * 0.9;
+
+  if (opacity <= 0.001) return null;
+
+  return (
+    <group>
+      <points ref={corridorRef}>
+        <bufferGeometry>
+          <bufferAttribute
+            attach="attributes-position"
+            args={[corridor, 3]}
+            count={corridor.length / 3}
+            itemSize={3}
+          />
+        </bufferGeometry>
+        <pointsMaterial
+          color="#c5ddff"
+          size={size}
+          sizeAttenuation
+          transparent
+          opacity={opacity}
+          depthWrite={false}
+          toneMapped={false}
+        />
+      </points>
+
+      <mesh position={[0, 0, -36]}>
+        <planeGeometry args={[5.5, 10]} />
+        <meshBasicMaterial
+          color="#7fb8ff"
+          transparent
+          opacity={0.06 * weights.ascent + 0.08 * weights.descent}
+          toneMapped={false}
+        />
+      </mesh>
+
+      <mesh position={[0, 0, -78]}>
+        <planeGeometry args={[3.2, 6.8]} />
+        <meshBasicMaterial
+          color="#b8d8ff"
+          transparent
+          opacity={0.03 * weights.ascent + 0.05 * weights.descent}
+          toneMapped={false}
+        />
+      </mesh>
+    </group>
+  );
+}
+
+function LifemapField({
+  stars,
+  weights,
+  selectedStar,
+  phase,
+  transition,
+  onSelect,
+}: {
+  stars: StarNode[];
+  weights: WorldWeights;
+  selectedStar: StarNode | null;
+  phase: ScenePhase;
+  transition: TransitionState | null;
+  onSelect: (id: string) => void;
+}) {
+  const farDust = useMemo(() => buildDust(900, 11, 180, 70, 70, 240), []);
+  const midDust = useMemo(() => buildDust(320, 12, 70, 34, 22, 120), []);
+  const nearDust = useMemo(() => buildDust(140, 13, 24, 14, 8, 38), []);
+
+  const farOpacity = clamp01(weights.lifemap * 0.30 + weights.focus * 0.14 + weights.ascent * 0.20);
+  const midOpacity = clamp01(weights.lifemap * 0.18 + weights.focus * 0.07 + weights.ascent * 0.08);
+  const nearOpacity = clamp01(weights.lifemap * 0.11 + weights.focus * 0.05);
+
+  return (
+    <group>
+      <points>
+        <bufferGeometry>
+          <bufferAttribute
+            attach="attributes-position"
+            args={[farDust, 3]}
+            count={farDust.length / 3}
+            itemSize={3}
+          />
+        </bufferGeometry>
+        <pointsMaterial
+          color="#90bfff"
+          size={0.34}
+          sizeAttenuation
+          transparent
+          opacity={farOpacity}
+          depthWrite={false}
+          toneMapped={false}
+        />
+      </points>
+
+      <points>
+        <bufferGeometry>
+          <bufferAttribute
+            attach="attributes-position"
+            args={[midDust, 3]}
+            count={midDust.length / 3}
+            itemSize={3}
+          />
+        </bufferGeometry>
+        <pointsMaterial
+          color="#a8ccff"
+          size={0.52}
+          sizeAttenuation
+          transparent
+          opacity={midOpacity}
+          depthWrite={false}
+          toneMapped={false}
+        />
+      </points>
+
+      <points>
+        <bufferGeometry>
+          <bufferAttribute
+            attach="attributes-position"
+            args={[nearDust, 3]}
+            count={nearDust.length / 3}
+            itemSize={3}
+          />
+        </bufferGeometry>
+        <pointsMaterial
+          color="#d3e5ff"
+          size={0.92}
+          sizeAttenuation
+          transparent
+          opacity={nearOpacity}
+          depthWrite={false}
+          toneMapped={false}
+        />
+      </points>
+
+      {stars.map((star, index) => {
+        const selected = selectedStar?.id === star.id;
+
+        const dim =
+          phase === "focus" || phase === "replay" || transition?.name === "lifemap_to_focus"
+            ? selected
+              ? 1
+              : 0.16
+            : 1;
+
+        const arrivalBoost =
+          transition?.name === "home_to_lifemap" ? clamp01(transition.progress * 1.35) : 0;
+
+        const starOpacity = clamp01((weights.lifemap + weights.focus * 0.56 + arrivalBoost * 0.12) * dim);
+
+        const haloOpacity = selected
+          ? clamp01(
+              weights.focus * 0.22 +
+                weights.replay * 0.14 +
+                (transition?.name === "lifemap_to_focus" ? transition.progress * 0.18 : 0),
+            )
+          : 0;
+
+        const twinkle = 0.97 + Math.sin(index + Date.now() * 0.00015 * star.stability) * 0.03;
+
+        const scale =
+          star.size *
+          (selected ? 1.22 + weights.focus * 0.22 + weights.replay * 0.3 : 1) *
+          twinkle;
+
+        return (
+          <group
+            key={star.id}
+            position={star.position}
+            onPointerDown={(event: ThreeEvent<PointerEvent>) => {
+              event.stopPropagation();
+              if (!transition && phase === "lifemap") onSelect(star.id);
+            }}
+          >
+            {selected ? (
+              <mesh>
+                <sphereGeometry args={[star.size * 6.2, 24, 24]} />
+                <meshBasicMaterial
+                  color={star.color}
+                  transparent
+                  opacity={haloOpacity}
+                  toneMapped={false}
+                />
+              </mesh>
+            ) : null}
+
+            <mesh>
+              <sphereGeometry args={[Math.max(0.07, scale), 20, 20]} />
+              <meshStandardMaterial
+                color="#dfe9ff"
+                emissive={star.color}
+                emissiveIntensity={(0.65 + star.intensity * 0.8) * starOpacity}
+                roughness={0.22}
+                metalness={0}
+                transparent
+                opacity={starOpacity}
+              />
+            </mesh>
+          </group>
+        );
+      })}
+    </group>
+  );
+}
+
+function FocusChamber({
+  weights,
+  selectedStar,
+}: {
+  weights: WorldWeights;
+  selectedStar: StarNode | null;
+}) {
+  if (!selectedStar) return null;
+
+  const opacity = clamp01(weights.focus * 0.22 + weights.replay * 0.14);
+
+  return (
+    <group position={selectedStar.position}>
+      <mesh>
+        <sphereGeometry args={[3.2, 24, 24]} />
+        <meshBasicMaterial
+          color={selectedStar.color}
+          transparent
+          opacity={0.07 * opacity}
+          toneMapped={false}
+        />
+      </mesh>
+
+      <mesh rotation={[Math.PI / 2, 0, 0]}>
+        <torusGeometry args={[1.5, 0.02, 16, 64]} />
+        <meshBasicMaterial
+          color="#d9ebff"
+          transparent
+          opacity={0.25 * opacity}
+          toneMapped={false}
+        />
+      </mesh>
+    </group>
+  );
+}
+
+function ReplayField({
+  weights,
+  selectedStar,
+}: {
+  weights: WorldWeights;
+  selectedStar: StarNode | null;
+}) {
+  if (!selectedStar || weights.replay <= 0.001) return null;
+
+  const opacity = clamp01(weights.replay);
+
+  return (
+    <group position={selectedStar.position}>
+      <mesh position={[0, -0.1, -2.8]}>
+        <planeGeometry args={[12, 4]} />
+        <meshBasicMaterial color="#5ea1ff" transparent opacity={0.09 * opacity} toneMapped={false} />
+      </mesh>
+
+      <mesh position={[-1.6, 0.2, -1.4]} rotation={[0, 0.22, 0.18]}>
+        <planeGeometry args={[3.6, 0.22]} />
+        <meshBasicMaterial color="#8ebeff" transparent opacity={0.24 * opacity} toneMapped={false} />
+      </mesh>
+
+      <mesh position={[0, 0, -0.6]}>
+        <sphereGeometry args={[2.1, 24, 24]} />
+        <meshBasicMaterial color="#6da8ff" transparent opacity={0.06 * opacity} toneMapped={false} />
+      </mesh>
+    </group>
+  );
+}
+
+function SceneWorld({
+  phase,
+  transition,
+  stars,
+  selectedStar,
+  onAscend,
+  onSelect,
+}: {
+  phase: ScenePhase;
+  transition: TransitionState | null;
+  stars: StarNode[];
+  selectedStar: StarNode | null;
+  onAscend: () => void;
+  onSelect: (id: string) => void;
+}) {
+  const weights = computeWeights(phase, transition);
+  const lookRef = useRef(new THREE.Vector3(0, 0.9, 0));
+
+  useEffect(() => {
+    lookRef.current.set(0, 0.9, 0);
+  }, []);
+
+  useFrame(({ camera, clock, scene }) => {
+    if (!(scene.fog instanceof THREE.FogExp2)) {
+      scene.fog = new THREE.FogExp2("#02040a", 0.012);
+    }
+
+    const bg = HOME_BG.clone().lerp(
+      LIFEMAP_BG,
+      weights.lifemap + weights.focus * 0.6 + weights.ascent * 0.7,
+    );
+    bg.lerp(REPLAY_BG, weights.replay);
+
+    scene.background = bg;
+    scene.fog.color.copy(bg);
+    scene.fog.density =
+      0.017 * weights.home +
+      0.007 * weights.lifemap +
+      0.012 * weights.focus +
+      0.022 * weights.replay +
+      0.02 * weights.ascent +
+      0.026 * weights.descent;
+
+    const elapsed = clock.getElapsedTime();
+    const resolved = resolveCamera(phase, transition, selectedStar, elapsed);
+
+    camera.position.lerp(resolved.pos, 0.08);
+    lookRef.current.lerp(resolved.look, 0.09);
+    camera.lookAt(lookRef.current);
+
+    const pcam = camera as THREE.PerspectiveCamera;
+    pcam.fov = THREE.MathUtils.lerp(pcam.fov, resolved.fov, 0.08);
+    pcam.near = 0.1;
+    pcam.far = 2000;
+    pcam.updateProjectionMatrix();
+  });
+
+  return (
+    <>
+      <ambientLight
+        intensity={
+          0.36 * weights.home +
+          0.12 * weights.lifemap +
+          0.14 * weights.focus +
+          0.08 * weights.replay +
+          0.06 * weights.ascent
+        }
+      />
+
+      <directionalLight
+        position={[3, 6, 5]}
+        intensity={0.35 * weights.home + 0.08 * weights.lifemap + 0.06 * weights.descent}
+        color="#d9e9ff"
+      />
+
+      <HomeWorld weights={weights} onAscend={onAscend} />
+      <CorridorField weights={weights} />
+
+      <LifemapField
+        stars={stars}
+        weights={weights}
+        selectedStar={selectedStar}
+        phase={phase}
+        transition={transition}
+        onSelect={onSelect}
+      />
+
+      <FocusChamber weights={weights} selectedStar={selectedStar} />
+      <ReplayField weights={weights} selectedStar={selectedStar} />
+    </>
+  );
+}
+
+export default function SpatialScene() {
+  const stars = useMemo(() => buildStars(), []);
+  const [phase, setPhase] = useState<ScenePhase>("home");
+  const [selectedId, setSelectedId] = useState<string | null>(null);
+
+  const selectedStar = useMemo(
+    () => stars.find((star) => star.id === selectedId) ?? null,
+    [selectedId, stars],
+  );
+
+  const { transition, startTransition } = useTransitionDriver(phase, setPhase, setSelectedId);
+
+  const onAscend = useCallback(() => {
+    if (!transition && phase === "home") startTransition("home_to_lifemap");
+  }, [phase, startTransition, transition]);
+
+  const onSelect = useCallback(
+    (id: string) => {
+      if (transition || phase !== "lifemap") return;
+      setSelectedId(id);
+      startTransition("lifemap_to_focus");
+    },
+    [phase, startTransition, transition],
+  );
+
+  const onReplay = useCallback(() => {
+    if (!transition && phase === "focus" && selectedStar) {
+      startTransition("focus_to_replay");
+    }
+  }, [phase, selectedStar, startTransition, transition]);
+
+  return (
+    <div style={{ position: "relative", width: "100%", height: "100%" }}>
+      <Header phase={phase} transition={transition} selectedStar={selectedStar} />
+      <Footer phase={phase} selectedStar={selectedStar} transition={transition} onReplay={onReplay} />
+
+      <Canvas
+        gl={{ antialias: true, alpha: false }}
+        dpr={[1, 2]}
+        camera={{ position: [0, 1.68, 6.85], fov: 53, near: 0.1, far: 2000 }}
+        style={{ width: "100%", height: "100%", background: "#02040a" }}
+      >
+        <SceneWorld
+          phase={phase}
+          transition={transition}
+          stars={stars}
+          selectedStar={selectedStar}
+          onAscend={onAscend}
+          onSelect={onSelect}
+        />
+      </Canvas>
+    </div>
+  );
+}

@@ -1,0 +1,119 @@
+import { buildSpatialCuratedDeckArchiveDisposition } from "@/spatial/curation/buildSpatialCuratedDeckArchiveDisposition";
+import { buildSpatialCuratedDeckExpiryGovernance } from "@/spatial/curation/buildSpatialCuratedDeckExpiryGovernance";
+import { buildSpatialCuratedDeckPurgeReadiness } from "@/spatial/curation/buildSpatialCuratedDeckPurgeReadiness";
+import type {
+import type {
+  SpatialCuratedDeckDestructionExecutionGateCheck,
+  SpatialCuratedDeckDestructionExecutionGateSignal,
+  SpatialCuratedDeckDestructionExecutionGateSummary,
+} from "@/spatial/curation/spatialCuratedDeckDestructionExecutionGateTypes";
+import type { SpatialCuratedDeckVaultEntry } from "@/spatial/curation/spatialCuratedDeckVaultTypes";
+
+function clamp(input: number, min: number, max: number) {
+  return Math.min(max, Math.max(min, input));
+}
+
+function toAuthorization(score: number): "deny" | "review" | "authorize" {
+  if (score <= 29) {
+    return "deny";
+  }
+
+  if (score <= 69) {
+    return "review";
+  }
+
+  return "authorize";
+}
+
+function toDestructionPath(
+  authorization: "deny" | "review" | "authorize",
+): "retain" | "guarded-destruction" | "destroy-candidate" {
+  switch (authorization) {
+    case "deny":
+      return "retain";
+    case "review":
+      return "guarded-destruction";
+    case "authorize":
+      return "destroy-candidate";
+    default:
+      return "retain";
+  }
+}
+
+function toEvidenceState(score: number): "insufficient" | "partial" | "sufficient" {
+  if (score <= 29) {
+    return "insufficient";
+  }
+
+  if (score <= 69) {
+    return "partial";
+  }
+
+  return "sufficient";
+}
+
+function toOperatorText(input: {
+  authorization: "deny" | "review" | "authorize";
+  destructionPath: "retain" | "guarded-destruction" | "destroy-candidate";
+  evidenceState: "insufficient" | "partial" | "sufficient";
+}) {
+  return `Run ${input.authorization} destruction authorization · path ${input.destructionPath} · evidence ${input.evidenceState}.`;
+}
+
+export function buildSpatialCuratedDeckDestructionExecutionGate(input: {
+  entries: SpatialCuratedDeckVaultEntry[];
+  activeEntryId: string | null;
+}): SpatialCuratedDeckDestructionExecutionGateSummary {
+  const purge = buildSpatialCuratedDeckPurgeReadiness(input);
+  const expiry = buildSpatialCuratedDeckExpiryGovernance(input);
+  const archiveDisposition = buildSpatialCuratedDeckArchiveDisposition(input);
+
+  let authorizationScore = 0;
+  authorizationScore += Math.round(purge.purgeScore * 0.55);
+  authorizationScore += Math.round(expiry.expiryScore * 0.30);
+  authorizationScore += Math.round(archiveDisposition.dispositionScore * 0.15);
+  authorizationScore = clamp(authorizationScore, 0, 100);
+
+  const authorization = toAuthorization(authorizationScore);
+  const destructionPath = toDestructionPath(authorization);
+  const evidenceState = toEvidenceState(authorizationScore);
+
+  const signals: SpatialCuratedDeckDestructionExecutionGateSignal[] = [
+    {
+      id: "purge-ready",
+      label: "purge readiness is purge-ready",
+      strength: "high",
+      active: purge.purgePosture === "purge-ready",
+    },
+    {
+      id: "purge-review",
+      label: "purge readiness is under review",
+      strength: "medium",
+      active: purge.purgePosture === "review",
+    },
+    {
+      id: "expiry-ready",
+      label: "expiry governance is expire-ready",
+      strength: "high",
+      active: expiry.expiryPosture === "expire-ready",
+    },
+    {
+      id: "expiry-review",
+      label: "expiry governance is still review-bound",
+      strength: "medium",
+      active: expiry.expiryPosture === "review",
+    },
+    {
+      id: "archive-lane",
+      label: "archive disposition is archive",
+      strength: "high",
+      active: archiveDisposition.disposition === "archive",
+    },
+    {
+      id: "archive-requeue",
+      label: "archive disposition is requeue",
+      strength: "medium",
+      active: archiveDisposition.disposition === "requeue",
+    },
+  ];
+

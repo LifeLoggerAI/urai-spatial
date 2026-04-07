@@ -1,0 +1,14 @@
+[INFO] audit dir: _audit/scene_consolidation_20260326_215901
+[INFO] repo root: /home/user/urai-spatial
+[INFO] entrypoint candidate: src/app/page.tsx
+[INFO] scene authority: /home/user/urai-spatial/src/spatial/scene/SpatialScene.tsx
+[BACKUP] src/app/page.tsx
+[BACKUP] /home/user/urai-spatial/src/spatial/scene/SpatialScene.tsx
+[INFO] entry -> scene import path: ../spatial/scene/SpatialScene
+[WRITE] src/app/page.tsx
+[WRITE] /home/user/urai-spatial/src/spatial/scene/SpatialScene.tsx
+
+[FAIL] TypeScript validation failed.
+[DONE] single-pass scene consolidation + interaction lock completed
+
+[FAIL] Script aborted at line 1 (exit 1)

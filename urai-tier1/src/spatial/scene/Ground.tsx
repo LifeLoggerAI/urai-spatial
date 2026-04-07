@@ -11,3 +11,8 @@ export function Ground() {
 }
 
 export default Ground;
+
+<mesh position={[0, -22, 0]}>
+  <sphereGeometry args={[22, 64, 64]} />
+</mesh>
+

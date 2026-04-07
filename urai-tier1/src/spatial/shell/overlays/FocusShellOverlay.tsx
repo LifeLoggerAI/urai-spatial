@@ -14,7 +14,7 @@ import Tag from "../Tag";
 
 export type FocusShellOverlayProps = Record<string, unknown>;
 
-function firstText(...values: unknown[]) {
+function firstText(...values: any[]) {
   for (const value of values) {
     if (typeof value === "string" && value.trim()) return value;
   }
@@ -24,12 +24,12 @@ function firstText(...values: unknown[]) {
 function pickFn(props: Record<string, unknown>, names: string[]) {
   for (const name of names) {
     const value = props[name];
-    if (typeof value === "function") return value as (...args: unknown[]) => void;
+    if (typeof value === "function") return value as (...args: any[]) => void;
   }
   return null;
 }
 
-function asRecord(value: unknown) {
+function asRecord(value: any) {
   return value && typeof value === "object" ? (value as Record<string, unknown>) : {};
 }
 

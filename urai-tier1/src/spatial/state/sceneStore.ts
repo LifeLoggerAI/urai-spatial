@@ -1,27 +1,32 @@
-import { create } from "zustand";
 
-export type SceneMode = "home" | "sky" | "lifemap" | "focus" | "replay";
+'use client';
+import { create } from 'zustand';
+
+export type SceneMode = 'home' | 'ascent' | 'lifemap' | 'focus' | 'replay';
 
 export type SceneState = {
   mode: SceneMode;
+  progress: number;
   selectedStarId: string | null;
   hoveredStarId: string | null;
   isTransitioning: boolean;
-  setMode: (mode: SceneMode) => void;
-  goHome: () => void;
-  returnHome: () => void;
-  enterSky: () => void;
-  enterLifeMap: () => void;
-  focusStar: (id: string | null) => void;
+  // Actions
+  enterAscent: () => void;
+  completeAscent: () => void;
+  descendToHome: () => void;
+  focusStar: (id: string) => void;
+  unfocus: () => void;
   enterReplay: () => void;
   exitReplay: () => void;
+  // Setters
+  setProgress: (p: number) => void;
   setSelectedStarId: (id: string | null) => void;
   setHoveredStarId: (id: string | null) => void;
-  setTransitioning: (value: boolean) => void;
 };
 
 const HOME_STATE = {
-  mode: "home" as SceneMode,
+  mode: 'home' as SceneMode,
+  progress: 0,
   selectedStarId: null,
   hoveredStarId: null,
   isTransitioning: false,
@@ -30,31 +35,49 @@ const HOME_STATE = {
 export const useSceneStore = create<SceneState>((set, get) => ({
   ...HOME_STATE,
 
-  setMode: (mode) => set({ mode }),
+  enterAscent: () => {
+    if (get().mode === 'home') {
+      set({ mode: 'ascent', isTransitioning: true, progress: 0 });
+    }
+  },
 
-  goHome: () => set({ ...HOME_STATE }),
-  returnHome: () => set({ ...HOME_STATE }),
+  completeAscent: () => {
+    if (get().mode === 'ascent') {
+      set({ mode: 'lifemap', isTransitioning: false, progress: 1 });
+    }
+  },
 
-  enterSky: () => set({ mode: "sky" }),
-  enterLifeMap: () => set({ mode: "lifemap" }),
+  descendToHome: () => {
+    if (get().mode === 'lifemap') {
+      set({ ...HOME_STATE, isTransitioning: true });
+    }
+  },
 
-  focusStar: (id) =>
-    set({
-      mode: id ? "focus" : "lifemap",
-      selectedStarId: id,
-    }),
+  focusStar: (id) => {
+    if (get().mode === 'lifemap') {
+      set({ mode: 'focus', selectedStarId: id, isTransitioning: true });
+    }
+  },
+
+  unfocus: () => {
+    if (get().mode === 'focus') {
+      set({ mode: 'lifemap', selectedStarId: null, isTransitioning: true });
+    }
+  },
 
   enterReplay: () => {
-    const { selectedStarId } = get();
-    set({ mode: selectedStarId ? "replay" : "lifemap" });
+    if (get().mode === 'focus' && get().selectedStarId) {
+      set({ mode: 'replay', isTransitioning: true });
+    }
   },
 
   exitReplay: () => {
-    const { selectedStarId } = get();
-    set({ mode: selectedStarId ? "focus" : "lifemap" });
+    if (get().mode === 'replay') {
+      set({ mode: 'focus', isTransitioning: true });
+    }
   },
-
+  
+  setProgress: (progress) => set({ progress }),
   setSelectedStarId: (id) => set({ selectedStarId: id }),
   setHoveredStarId: (id) => set({ hoveredStarId: id }),
-  setTransitioning: (value) => set({ isTransitioning: value }),
 }));

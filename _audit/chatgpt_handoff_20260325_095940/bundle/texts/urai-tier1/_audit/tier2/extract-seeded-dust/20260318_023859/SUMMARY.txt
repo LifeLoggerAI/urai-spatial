@@ -1,0 +1,152 @@
+
+== shell head ==
+"use client";
+
+import React, { useEffect, useMemo, useRef, useState } from "react";
+import { FOCUS_TO_MAP_MS, FOCUS_TO_REPLAY_MS, MAP_TO_FOCUS_MS, REPLAY_TO_FOCUS_MS, SKY_TRANSIT_MS, pillLabel } from "./Tier1ShellConstants";
+import Tier1ShellNodeField from "./Tier1ShellNodeField";
+import Tier1ShellFocusGlow from "./Tier1ShellFocusGlow";
+import { seededDust } from "./seededDust";
+
+type Mode = "home" | "sky" | "lifemap" | "focus" | "replay";
+
+type MemoryNode = {
+  id: string;
+  title: string;
+  chapter: string;
+  domain: string;
+  summary: string;
+  tags: [string, string, string];
+  x: number;
+  y: number;
+  size: number;
+};
+
+const MEMORY_NODES: MemoryNode[] = [
+  {
+    id: "return-signal",
+    title: "Return Signal",
+    chapter: "Return",
+    domain: "Atmosic",
+    summary: "Second orbit node for focus continuity and selected-state validation.",
+    tags: ["Signal", "Return", "Orbit"],
+    x: 22,
+    y: 58,
+    size: 10,
+  },
+  {
+    id: "threshold-one",
+    title: "Threshold One",
+    chapter: "Winter",
+    domain: "Threshold",
+    summary: "Canonical memory seed used to verify replay identity and focus continuity.",
+    tags: ["Origin", "Winter", "Threshold"],
+    x: 54,
+    y: 46,
+    size: 12,
+  },
+  {
+    id: "echo-lattice",
+    title: "Echo Lattice",
+    chapter: "Signal",
+    domain: "Pattern",
+    summary: "Pattern memory used to test alternate node selection without routing drift.",
+    tags: ["Echo", "Lattice", "Pattern"],
+    x: 73,
+    y: 33,
+    size: 9,
+  },
+  {
+    id: "north-vector",
+    title: "North Vector",
+    chapter: "Guide",
+    domain: "Compass",
+    summary: "Reference waypoint for map readability and deterministic object persistence.",
+    tags: ["North", "Vector", "Guide"],
+    x: 66,
+    y: 68,
+    size: 9,
+  },
+];
+
+
+
+export default function Page() {
+  const [mode, setMode] = useState<Mode>("home");
+  const [selectedId, setSelectedId] = useState<string>("threshold-one");
+  const [transitioning, setTransitioning] = useState(false);
+  const [pulseId, setPulseId] = useState<string | null>(null);
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const dust = useMemo(() => seededDust(72), []);
+  const selected = useMemo(
+    () => MEMORY_NODES.find((node) => node.id === selectedId) ?? MEMORY_NODES[0],
+    [selectedId]
+  );
+
+  useEffect(() => {
+    const onContextMenu = (event: MouseEvent) => event.preventDefault();
+    document.addEventListener("contextmenu", onContextMenu);
+    document.body.style.margin = "0";
+    document.body.style.background = "#030610";
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.removeEventListener("contextmenu", onContextMenu);
+      if (timerRef.current) clearTimeout(timerRef.current);
+    };
+  }, []);
+
+  const lock = (ms: number, next: () => void) => {
+    if (transitioning) return;
+    setTransitioning(true);
+    if (timerRef.current) clearTimeout(timerRef.current);
+    timerRef.current = setTimeout(() => {
+      next();
+      setTransitioning(false);
+    }, ms);
+  };
+
+  const enterLifeMap = () => {
+    if (transitioning) return;
+    setMode("sky");
+    lock(SKY_TRANSIT_MS, () => setMode("lifemap"));
+  };
+
+  const returnHome = () => {
+    if (transitioning) return;
+    setMode("home");
+  };
+
+  const selectMemory = (id: string) => {
+    if (transitioning) return;
+    setSelectedId(id);
+    setPulseId(id);
+
+== seededDust module ==
+export type Tier1DustPoint = {
+  id: string;
+  x: number;
+  y: number;
+  o: number;
+  s: number;
+};
+
+export function seededDust(count: number): Tier1DustPoint[] {
+  let seed = 1337;
+  const next = () => {
+    seed = (seed * 1664525 + 1013904223) >>> 0;
+    return seed / 4294967296;
+  };
+
+  return Array.from({ length: count }, (_, index) => ({
+    id: `dust-${index}`,
+    x: Math.round(next() * 1000) / 10,
+    y: Math.round(next() * 1000) / 10,
+    o: 0.15 + next() * 0.6,
+    s: 1 + next() * 2.4,
+  }));
+}
+PASS: build compiled successfully after seededDust extraction
+NOTE: lint may still report unrelated repo failures; not used as gate for this shell extraction step
+PASS: seededDust extracted to src/spatial/shell/seededDust.ts
+PASS: next safe move is first Tier 2 ground-layer patch using the real spatial scene, not the shell
+PASS: audit folder: /home/user/urai-spatial/urai-tier1/_audit/tier2/extract-seeded-dust/20260318_023859

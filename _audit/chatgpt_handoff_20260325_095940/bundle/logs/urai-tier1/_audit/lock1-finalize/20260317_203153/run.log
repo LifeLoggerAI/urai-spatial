@@ -1,0 +1,47 @@
+
+== preflight ==
+
+$ cd '/home/user/urai-spatial' && git branch --show-current && git status --short
+_MONOSPACE_ENV_STARTED_=http://localhost:80/
+phase97-curated-deck-destruction-execution-gate-panel-20260317_062238
+RC=0
+
+$ cd '/home/user/urai-spatial/urai-tier1' && node -v && pnpm -v
+_MONOSPACE_ENV_STARTED_=http://localhost:80/
+v20.18.1
+10.28.2
+RC=0
+
+== build ==
+
+$ cd '/home/user/urai-spatial/urai-tier1' && pnpm build
+_MONOSPACE_ENV_STARTED_=http://localhost:80/
+
+> urai-tier1@0.1.0 build /home/user/urai-spatial/urai-tier1
+> next build
+
+▲ Next.js 16.1.6 (Turbopack)
+
+  Creating an optimized production build ...
+✓ Compiled successfully in 34.0s
+  Running TypeScript ...
+  Collecting page data using 1 worker ...
+  Generating static pages using 1 worker (0/4) ...
+  Generating static pages using 1 worker (1/4) 
+  Generating static pages using 1 worker (2/4) 
+  Generating static pages using 1 worker (3/4) 
+✓ Generating static pages using 1 worker (4/4) in 912.6ms
+  Finalizing page optimization ...
+
+Route (app)
+┌ ○ /
+└ ○ /_not-found
+
+
+○  (Static)  prerendered as static content
+
+RC=0
+
+== start isolated dev server ==
+
+== wait for local 200 ==

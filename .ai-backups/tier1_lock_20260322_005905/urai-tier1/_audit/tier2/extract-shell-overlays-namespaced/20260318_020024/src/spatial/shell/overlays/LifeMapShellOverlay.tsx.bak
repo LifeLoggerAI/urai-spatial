@@ -1,0 +1,73 @@
+"use client";
+
+import React from "react";
+import { ActionButton } from "../ActionButton";
+import type { Tier1ShellOverlayProps } from "../Tier1ShellOverlayProps";
+
+export default function LifeMapShellOverlay(props: Tier1ShellOverlayProps) {
+  const {
+    mode,
+    uiLocked,
+    showMapWorld,
+    selectedId,
+    selected,
+    transitioning,
+    enterLifeMap,
+    returnHome,
+    enterReplay,
+    clearFocus,
+    exitReplay,
+    pillLabel,
+  } = props;
+
+  return (
+      {mode === "lifemap" && (
+        <>
+          <div
+            style={{
+              position: "absolute",
+              left: "50%",
+              bottom: 18,
+              transform: "translateX(-50%)",
+              width: "min(520px, calc(100vw - 48px))",
+              borderRadius: 14,
+              border: "1px solid rgba(255,255,255,0.10)",
+              background: "rgba(7,11,24,0.74)",
+              boxShadow: "0 14px 34px rgba(0,0,0,0.28)",
+              padding: "10px 14px",
+              backdropFilter: "blur(12px)",
+              zIndex: 20,
+            }}
+          >
+            <div
+              style={{
+                fontSize: 10,
+                letterSpacing: "0.12em",
+                textTransform: "uppercase",
+                color: "rgba(204,216,245,0.62)",
+                marginBottom: 6,
+              }}
+            >
+              Lifemap
+            </div>
+            <div style={{ fontSize: 12, color: "rgba(220,228,245,0.80)", lineHeight: 1.5 }}>
+              Select a star to enter focus. Focus exits always return to the same selected memory
+              node.
+            </div>
+          </div>
+
+          <div
+            style={{
+              position: "absolute",
+              right: 18,
+              bottom: 18,
+              zIndex: 20,
+            }}
+          >
+            <ActionButton disabled={uiLocked} label="RETURN HOME" onClick={returnHome} />
+          </div>
+        </>
+      )}
+
+  );
+}

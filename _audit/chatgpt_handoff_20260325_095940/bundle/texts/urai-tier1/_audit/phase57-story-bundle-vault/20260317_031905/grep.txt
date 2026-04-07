@@ -1,0 +1,32 @@
+src/spatial/ui/SpatialStoryBundleVaultPanel.tsx:22:import { useSpatialStoryBundleVaultStore } from "@/spatial/vault/spatialStoryBundleVaultStore";
+src/spatial/ui/SpatialStoryBundleVaultPanel.tsx:33:export default function SpatialStoryBundleVaultPanel() {
+src/spatial/ui/SpatialStoryBundleVaultPanel.tsx:44:  const activeEntryId = useSpatialStoryBundleVaultStore((s) => s.activeEntryId);
+src/spatial/ui/SpatialStoryBundleVaultPanel.tsx:45:  const entries = useSpatialStoryBundleVaultStore((s) => s.entries);
+src/spatial/ui/SpatialStoryBundleVaultPanel.tsx:46:  const replaceManifest = useSpatialStoryBundleVaultStore((s) => s.replaceManifest);
+src/spatial/ui/SpatialStoryBundleVaultPanel.tsx:47:  const setActiveEntryId = useSpatialStoryBundleVaultStore((s) => s.setActiveEntryId);
+src/spatial/ui/SpatialStoryBundleVaultPanel.tsx:188:      new CustomEvent("urai:spatial-story-bundle-vault-restored", {
+src/spatial/scene/SpatialScene.tsx:2:import SpatialStoryBundleVaultPanel from "@/spatial/ui/SpatialStoryBundleVaultPanel";
+src/spatial/scene/SpatialScene.tsx:3:import SpatialStoryBundleVaultBootstrap from "@/spatial/vault/SpatialStoryBundleVaultBootstrap";
+src/spatial/scene/SpatialScene.tsx:763:      <SpatialStoryBundleVaultBootstrap />
+src/spatial/scene/SpatialScene.tsx:764:      <SpatialStoryBundleVaultPanel />
+src/spatial/vault/spatialStoryBundleVaultStore.ts:18:export const useSpatialStoryBundleVaultStore =
+src/spatial/vault/spatialStoryBundleVaultStore.ts:25:        schema: "urai.spatial.story-bundle-vault.v1",
+src/spatial/vault/spatialStoryBundleVaultStore.ts:31:        schema: "urai.spatial.story-bundle-vault.v1",
+src/spatial/vault/SpatialStoryBundleVaultBootstrap.tsx:8:import { useSpatialStoryBundleVaultStore } from "@/spatial/vault/spatialStoryBundleVaultStore";
+src/spatial/vault/SpatialStoryBundleVaultBootstrap.tsx:15:export default function SpatialStoryBundleVaultBootstrap() {
+src/spatial/vault/SpatialStoryBundleVaultBootstrap.tsx:16:  const hydrate = useSpatialStoryBundleVaultStore((s) => s.hydrate);
+src/spatial/vault/SpatialStoryBundleVaultBootstrap.tsx:17:  const activeEntryId = useSpatialStoryBundleVaultStore((s) => s.activeEntryId);
+src/spatial/vault/SpatialStoryBundleVaultBootstrap.tsx:18:  const entries = useSpatialStoryBundleVaultStore((s) => s.entries);
+src/spatial/vault/SpatialStoryBundleVaultBootstrap.tsx:29:      schema: "urai.spatial.story-bundle-vault.v1" as const,
+src/spatial/vault/SpatialStoryBundleVaultBootstrap.tsx:42:      new CustomEvent("urai:spatial-story-bundle-vault", {
+src/spatial/vault/spatialStoryBundleVaultTypes.ts:12:  schema: "urai.spatial.story-bundle-vault.v1";
+src/spatial/vault/spatialStoryBundleVaultTypes.ts:17:export const SPATIAL_STORY_BUNDLE_VAULT_STORAGE_KEY =
+src/spatial/vault/spatialStoryBundleVaultTypes.ts:18:  "urai.spatial.story-bundle-vault.v1";
+src/spatial/vault/spatialStoryBundleVaultTypes.ts:23:    schema: "urai.spatial.story-bundle-vault.v1",
+src/spatial/vault/spatialStoryBundleVaultIO.ts:4:  SPATIAL_STORY_BUNDLE_VAULT_STORAGE_KEY,
+src/spatial/vault/spatialStoryBundleVaultIO.ts:17:      getSpatialScopedStorageKey(SPATIAL_STORY_BUNDLE_VAULT_STORAGE_KEY),
+src/spatial/vault/spatialStoryBundleVaultIO.ts:22:    if (parsed?.schema !== "urai.spatial.story-bundle-vault.v1") {
+src/spatial/vault/spatialStoryBundleVaultIO.ts:35:      schema: "urai.spatial.story-bundle-vault.v1",
+src/spatial/vault/spatialStoryBundleVaultIO.ts:56:      getSpatialScopedStorageKey(SPATIAL_STORY_BUNDLE_VAULT_STORAGE_KEY),
+src/spatial/vault/spatialStoryBundleVaultIO.ts:58:        schema: "urai.spatial.story-bundle-vault.v1",
+src/spatial/vault/spatialStoryBundleVaultIO.ts:75:    schema: "urai.spatial.story-bundle-vault.v1",

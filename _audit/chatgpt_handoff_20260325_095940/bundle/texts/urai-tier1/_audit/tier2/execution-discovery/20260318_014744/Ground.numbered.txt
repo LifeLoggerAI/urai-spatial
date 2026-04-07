@@ -1,0 +1,50 @@
+===== FILE: src/spatial/scene/Ground.tsx =====
+
+     1	"use client";
+     2	
+     3	import { useMemo } from "react";
+     4	import { useSceneStore } from "@/spatial/state/sceneStore";
+     5	
+     6	export default function Ground() {
+     7	  const mode = useSceneStore((s) => s.mode);
+     8	
+     9	  const config = useMemo(() => {
+    10	    if (mode === "focus") {
+    11	      return {
+    12	        y: -42,
+    13	        radius: 2200,
+    14	        opacity: 0.09,
+    15	        color: "#0a1220",
+    16	      };
+    17	    }
+    18	
+    19	    if (mode === "lifemap") {
+    20	      return {
+    21	        y: -58,
+    22	        radius: 3200,
+    23	        opacity: 0.05,
+    24	        color: "#07101b",
+    25	      };
+    26	    }
+    27	
+    28	    return {
+    29	      y: -72,
+    30	      radius: 4200,
+    31	      opacity: 0.03,
+    32	      color: "#05080d",
+    33	    };
+    34	  }, [mode]);
+    35	
+    36	  return (
+    37	    <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, config.y, 0]}>
+    38	      <circleGeometry args={[config.radius, 96]} />
+    39	      <meshBasicMaterial
+    40	        color={config.color}
+    41	        transparent
+    42	        opacity={config.opacity}
+    43	        depthWrite={false}
+    44	      />
+    45	    </mesh>
+    46	  );
+    47	}
+

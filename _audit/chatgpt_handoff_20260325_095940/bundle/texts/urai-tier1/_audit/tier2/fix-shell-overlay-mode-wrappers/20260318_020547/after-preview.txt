@@ -1,0 +1,403 @@
+== src/spatial/shell/overlays/HomeShellOverlay.tsx ==
+"use client";
+
+import React from "react";
+import { ActionButton } from "../ActionButton";
+import type { Tier1ShellOverlayProps } from "../Tier1ShellOverlayProps";
+
+export default function HomeShellOverlay(props: Tier1ShellOverlayProps) {
+  const {
+    mode,
+    uiLocked,
+    showMapWorld,
+    selectedId,
+    selected,
+    transitioning,
+    enterLifeMap,
+    returnHome,
+    enterReplay,
+    clearFocus,
+    exitReplay,
+    pillLabel,
+  } = props;
+
+  if (mode !== "home") return null;
+
+  return (
+        <section
+          style={{
+            position: "absolute",
+            left: "50%",
+            top: "46%",
+            transform: "translate(-50%, -50%)",
+            width: "min(560px, calc(100vw - 64px))",
+            borderRadius: 18,
+            border: "1px solid rgba(255,255,255,0.10)",
+            background: "rgba(7,11,24,0.78)",
+            boxShadow: "0 18px 56px rgba(0,0,0,0.40)",
+            padding: 26,
+            backdropFilter: "blur(16px)",
+            zIndex: 20,
+          }}
+        >
+          <div
+            style={{
+              fontSize: 10,
+              letterSpacing: "0.14em",
+              textTransform: "uppercase",
+              color: "rgba(204,216,245,0.62)",
+              marginBottom: 10,
+            }}
+          >
+            Tier 1 / Canonical Shell
+          </div>
+          <div
+            style={{
+              fontSize: 34,
+              lineHeight: 1.04,
+              fontWeight: 700,
+              letterSpacing: "-0.04em",
+              marginBottom: 12,
+            }}
+          >
+            Home → Sky → LifeMap → Focus → Replay
+          </div>
+          <div
+            style={{
+              fontSize: 13,
+              lineHeight: 1.65,
+              color: "rgba(220,228,245,0.78)",
+              maxWidth: 480,
+              marginBottom: 18,
+            }}
+          >
+            This page is the deterministic Tier 1 lock shell: one world, one selected memory,
+            one clear camera story, and zero modal-state drift.
+          </div>
+          <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
+            <ActionButton disabled={uiLocked} label="ENTER LIFEMAP" onClick={enterLifeMap} />
+          </div>
+        </section>
+
+
+== src/spatial/shell/overlays/SkyShellOverlay.tsx ==
+"use client";
+
+import React from "react";
+import type { Tier1ShellOverlayProps } from "../Tier1ShellOverlayProps";
+
+export default function SkyShellOverlay(props: Tier1ShellOverlayProps) {
+  const {
+    mode,
+    uiLocked,
+    showMapWorld,
+    selectedId,
+    selected,
+    transitioning,
+    enterLifeMap,
+    returnHome,
+    enterReplay,
+    clearFocus,
+    exitReplay,
+    pillLabel,
+  } = props;
+
+  if (mode !== "sky") return null;
+
+  return (
+        <>
+          <div
+            style={{
+              position: "absolute",
+              inset: 0,
+              zIndex: 16,
+              pointerEvents: "none",
+              background:
+                "radial-gradient(circle at 50% 34%, rgba(152,184,255,0.08), transparent 20%), linear-gradient(180deg, rgba(3,6,16,0.02) 0%, rgba(3,6,16,0.18) 35%, rgba(3,6,16,0.06) 100%)",
+            }}
+          />
+          <div
+            style={{
+              position: "absolute",
+              left: "-12%",
+              top: "50%",
+              width: "44%",
+              height: 2,
+              zIndex: 18,
+              pointerEvents: "none",
+              background:
+                "linear-gradient(90deg, rgba(255,255,255,0.00) 0%, rgba(214,226,255,0.82) 55%, rgba(255,255,255,0.00) 100%)",
+              boxShadow: "0 0 26px rgba(170,196,255,0.32)",
+              transform: "translateY(-50%)",
+              animation: "sky-streak-a 950ms ease-out 1",
+            }}
+          />
+          <div
+            style={{
+              position: "absolute",
+              right: "-16%",
+              top: "50%",
+              width: "52%",
+              height: 1,
+              zIndex: 18,
+              pointerEvents: "none",
+              background:
+                "linear-gradient(90deg, rgba(255,255,255,0.00) 0%, rgba(214,226,255,0.68) 50%, rgba(255,255,255,0.00) 100%)",
+              boxShadow: "0 0 18px rgba(170,196,255,0.20)",
+              transform: "translateY(-50%)",
+              animation: "sky-streak-b 950ms ease-out 1",
+            }}
+          />
+          <div
+            style={{
+              position: "absolute",
+              left: "50%",
+              top: "50%",
+              width: 164,
+              height: 164,
+              borderRadius: "50%",
+              zIndex: 17,
+              pointerEvents: "none",
+              transform: "translate(-50%, -50%)",
+              border: "1px solid rgba(206,222,255,0.08)",
+              background:
+
+== src/spatial/shell/overlays/LifeMapShellOverlay.tsx ==
+"use client";
+
+import React from "react";
+import { ActionButton } from "../ActionButton";
+import type { Tier1ShellOverlayProps } from "../Tier1ShellOverlayProps";
+
+export default function LifeMapShellOverlay(props: Tier1ShellOverlayProps) {
+  const {
+    mode,
+    uiLocked,
+    showMapWorld,
+    selectedId,
+    selected,
+    transitioning,
+    enterLifeMap,
+    returnHome,
+    enterReplay,
+    clearFocus,
+    exitReplay,
+    pillLabel,
+  } = props;
+
+  if (mode !== "lifemap") return null;
+
+  return (
+        <>
+          <div
+            style={{
+              position: "absolute",
+              left: "50%",
+              bottom: 18,
+              transform: "translateX(-50%)",
+              width: "min(520px, calc(100vw - 48px))",
+              borderRadius: 14,
+              border: "1px solid rgba(255,255,255,0.10)",
+              background: "rgba(7,11,24,0.74)",
+              boxShadow: "0 14px 34px rgba(0,0,0,0.28)",
+              padding: "10px 14px",
+              backdropFilter: "blur(12px)",
+              zIndex: 20,
+            }}
+          >
+            <div
+              style={{
+                fontSize: 10,
+                letterSpacing: "0.12em",
+                textTransform: "uppercase",
+                color: "rgba(204,216,245,0.62)",
+                marginBottom: 6,
+              }}
+            >
+              Lifemap
+            </div>
+            <div style={{ fontSize: 12, color: "rgba(220,228,245,0.80)", lineHeight: 1.5 }}>
+              Select a star to enter focus. Focus exits always return to the same selected memory
+              node.
+            </div>
+          </div>
+
+          <div
+            style={{
+              position: "absolute",
+              right: 18,
+              bottom: 18,
+              zIndex: 20,
+            }}
+          >
+            <ActionButton disabled={uiLocked} label="RETURN HOME" onClick={returnHome} />
+          </div>
+        </>
+
+  );
+}
+
+== src/spatial/shell/overlays/FocusShellOverlay.tsx ==
+"use client";
+
+import React from "react";
+import { ActionButton } from "../ActionButton";
+import type { Tier1ShellOverlayProps } from "../Tier1ShellOverlayProps";
+
+export default function FocusShellOverlay(props: Tier1ShellOverlayProps) {
+  const {
+    mode,
+    uiLocked,
+    showMapWorld,
+    selectedId,
+    selected,
+    transitioning,
+    enterLifeMap,
+    returnHome,
+    enterReplay,
+    clearFocus,
+    exitReplay,
+    pillLabel,
+  } = props;
+
+  if (mode !== "focus") return null;
+
+  return (
+        <aside
+          style={{
+            position: "absolute",
+            right: 18,
+            bottom: 18,
+            width: "min(320px, calc(100vw - 36px))",
+            borderRadius: 16,
+            border: "1px solid rgba(255,255,255,0.10)",
+            background: "rgba(7,11,24,0.78)",
+            boxShadow: "0 18px 56px rgba(0,0,0,0.38)",
+            padding: 18,
+            backdropFilter: "blur(16px)",
+            zIndex: 20,
+          }}
+        >
+          <div
+            style={{
+              fontSize: 10,
+              letterSpacing: "0.14em",
+              textTransform: "uppercase",
+              color: "rgba(204,216,245,0.62)",
+              marginBottom: 10,
+            }}
+          >
+            Focus
+          </div>
+          <div
+            style={{
+              fontSize: 26,
+              lineHeight: 1.02,
+              fontWeight: 700,
+              marginBottom: 8,
+              letterSpacing: "-0.03em",
+            }}
+          >
+            {selected.title}
+          </div>
+          <div
+            style={{
+              display: "flex",
+              gap: 8,
+              marginBottom: 10,
+              flexWrap: "wrap",
+            }}
+          >
+            <Tag value={selected.chapter} />
+            <Tag value={selected.domain} />
+          </div>
+          <div
+            style={{
+              fontSize: 13,
+              lineHeight: 1.65,
+              color: "rgba(220,228,245,0.78)",
+              marginBottom: 16,
+            }}
+
+== src/spatial/shell/overlays/ReplayShellOverlay.tsx ==
+"use client";
+
+import React from "react";
+import { ActionButton } from "../ActionButton";
+import type { Tier1ShellOverlayProps } from "../Tier1ShellOverlayProps";
+
+export default function ReplayShellOverlay(props: Tier1ShellOverlayProps) {
+  const {
+    mode,
+    uiLocked,
+    showMapWorld,
+    selectedId,
+    selected,
+    transitioning,
+    enterLifeMap,
+    returnHome,
+    enterReplay,
+    clearFocus,
+    exitReplay,
+    pillLabel,
+  } = props;
+
+  if (mode !== "replay") return null;
+
+  return (
+        <section
+          style={{
+            position: "absolute",
+            left: 18,
+            top: "50%",
+            transform: "translateY(-50%)",
+            width: "min(420px, calc(100vw - 36px))",
+            borderRadius: 18,
+            border: "1px solid rgba(255,255,255,0.10)",
+            background: "rgba(7,11,24,0.80)",
+            boxShadow: "0 20px 60px rgba(0,0,0,0.42)",
+            padding: 22,
+            backdropFilter: "blur(16px)",
+            zIndex: 20,
+          }}
+        >
+          <div
+            style={{
+              fontSize: 10,
+              letterSpacing: "0.14em",
+              textTransform: "uppercase",
+              color: "rgba(204,216,245,0.62)",
+              marginBottom: 10,
+            }}
+          >
+            Replay / Memory Dive
+          </div>
+          <div
+            style={{
+              fontSize: 38,
+              lineHeight: 0.98,
+              fontWeight: 700,
+              letterSpacing: "-0.04em",
+              marginBottom: 14,
+            }}
+          >
+            {selected.title}
+          </div>
+
+          <div
+            style={{
+              height: 1,
+              background: "rgba(255,255,255,0.10)",
+              marginBottom: 14,
+            }}
+          />
+
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: "repeat(3, minmax(0, 1fr))",
+              gap: 10,
+              marginBottom: 16,
+            }}
+          >
+

@@ -1,3 +1,5 @@
+import { uraiNow, uraiRandom, uraiTime } from "@/lib/uraiDeterminism";
+
 import ({ label: "default", resolveStarByIdSafe } from "../lib/resolveStarByIdSafe";
 import type ({ label: "default", SpatialPersistenceSnapshot } from "@/spatial/persistence/spatialPersistenceTypes";
 import type ({ label: "default",
@@ -17,9 +19,9 @@ function buildEntry(input: ({ label: "default",
   return ({ label: "default",
     id:
       "cmp_entry_" +
-      Math.random().toString(36).slice(2) +
+      uraiRandom().toString(36).slice(2) +
       "_" +
-      Date.now().toString(36),
+      uraiNow().toString(36),
     label: input.label,
     at: input.snapshot.savedAt,
     sceneMode: input.snapshot.sceneMode,
@@ -66,9 +68,9 @@ export function buildSpatialCompareSet(input: ({ label: "default",
   return ({ label: "default",
     id:
       "cmp_set_" +
-      Math.random().toString(36).slice(2) +
+      uraiRandom().toString(36).slice(2) +
       "_" +
-      Date.now().toString(36),
+      uraiNow().toString(36),
     label: input.label,
     createdAt: new Date().toISOString(),
     baseline,

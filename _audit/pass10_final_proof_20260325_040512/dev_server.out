@@ -1,0 +1,66 @@
+
+> urai-tier1@0.1.0 dev /home/user/urai-spatial/urai-tier1
+> next dev --webpack
+
+▲ Next.js 16.2.1 (webpack)
+- Local:         http://localhost:3000
+- Network:       http://10.88.0.3:3000
+✓ Ready in 946ms
+
+○ Compiling / ...
+ GET / 200 in 30.3s (next.js: 29.9s, application-code: 419ms)
+ GET / 200 in 19.9s (next.js: 19.5s, application-code: 462ms)
+[browser] THREE.THREE.Clock: This module has been deprecated. Please use THREE.Timer instead.
+ GET / 200 in 811ms (next.js: 315ms, application-code: 496ms)
+[browser] THREE.THREE.Clock: This module has been deprecated. Please use THREE.Timer instead.
+ GET / 200 in 90ms (next.js: 12ms, application-code: 77ms)
+[browser] THREE.THREE.Clock: This module has been deprecated. Please use THREE.Timer instead.
+ GET / 200 in 95ms (next.js: 5ms, application-code: 90ms)
+[browser] THREE.THREE.Clock: This module has been deprecated. Please use THREE.Timer instead.
+ GET / 200 in 79ms (next.js: 5ms, application-code: 74ms)
+[browser] THREE.THREE.Clock: This module has been deprecated. Please use THREE.Timer instead.
+[browser] Maximum update depth exceeded. This can happen when a component calls setState inside useEffect, but useEffect either doesn't have a dependency array, or one of the dependencies changes on every render. 
+    at useTransitionDriver.useCallback[startTransition].step (src/spatial/scene/SpatialScene.tsx:314:9)
+  312 |       const step = (now: number) => {
+  313 |         const progress = clamp01((now - startedAt) / DURATIONS[name]);
+> 314 |         setTransition({ name, progress });
+      |         ^
+  315 |
+  316 |         if (progress < 1) {
+  317 |           raf = window.requestAnimationFrame(step); (src/spatial/scene/SpatialScene.tsx:314:9)
+⚠ Fast Refresh had to perform a full reload due to a runtime error.
+ GET / 200 in 2.4s (next.js: 1044ms, application-code: 1355ms)
+[browser] Uncaught TypeError: inputLocked is not a function
+    at SpatialScene (src/spatial/scene/SpatialScene.tsx:385:39)
+    at Page (app/page.tsx:12:7)
+  383 |   );
+  384 |
+> 385 |   const interactive = !transition && !inputLocked();
+      |                                       ^
+  386 |
+  387 |   useEffect(() => {
+  388 |     if (transition || phase !== "lifemap") {
+⚠ Fast Refresh had to perform a full reload due to a runtime error.
+ GET / 200 in 3.7s (next.js: 2.5s, application-code: 1287ms)
+⨯ ./src/spatial/scene/SpatialScene.tsx
+Error:   x Expression expected
+     ,-[/home/user/urai-spatial/urai-tier1/src/spatial/scene/SpatialScene.tsx:332:1]
+ 329 | 
+ 330 |   const startTransition = useCallback(
+ 331 | 
+ 332 |   const markInput = useCallback(() => {
+     :   ^^^^^
+ 333 |     lastInputAtRef.current = performance.now();
+ 334 |   }, []);
+     `----
+
+Caused by:
+    Syntax Error
+
+Import trace for requested module:
+./src/spatial/scene/SpatialScene.tsx
+./app/page.tsx
+⚠ Fast Refresh had to perform a full reload due to a runtime error.
+ GET / 200 in 2.1s (next.js: 861ms, application-code: 1198ms)
+[?25h
+ ELIFECYCLE  Command failed with exit code 143.

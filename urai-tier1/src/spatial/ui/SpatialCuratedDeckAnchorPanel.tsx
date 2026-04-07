@@ -1,3 +1,4 @@
+
 "use client";
 
 import type { CSSProperties } from "react";
@@ -27,7 +28,7 @@ export default function SpatialCuratedDeckAnchorPanel() {
           (entry as { source?: string }).source ??
           "panel",
         deck:
-          (entry as { deck?: unknown }).deck ??
+          (entry as { deck?: any }).deck ??
           entry,
       })) as SpatialCuratedDeckVaultEntry[],
     [entries],

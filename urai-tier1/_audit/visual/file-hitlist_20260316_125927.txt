@@ -1,2 +1,0 @@
-=== LIVE VISUAL SYMBOLS ===
-rg is not installed, but available in package ripgrep, press [Enter] to run it, Ctrl+C to cancel.

@@ -1,3 +1,4 @@
+
 import { resolveStarByIdSafe } from "../lib/resolveStarByIdSafe";
 import { resolveStarById } from "@/spatial/data/stars";
 import type { SceneMode, UnityRuntimePayload, XrState } from "../types";

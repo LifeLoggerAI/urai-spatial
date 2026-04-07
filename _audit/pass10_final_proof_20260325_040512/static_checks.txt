@@ -1,0 +1,59 @@
+=== STATIC SHAPE CHECKS ===
+open braces:  423
+close braces: 423
+open parens:  642
+close parens: 642
+scene phase refs:
+28:  home_to_lifemap: 2450,
+29:  lifemap_to_home: 2600,
+30:  lifemap_to_focus: 2050,
+31:  focus_to_lifemap: 1880,
+32:  focus_to_replay: 2550,
+33:  replay_to_focus: 2150,
+254:    transition.name === "home_to_lifemap" || transition.name === "lifemap_to_home"
+256:      : transition.name === "lifemap_to_focus" || transition.name === "focus_to_replay"
+258:        : transition.name === "focus_to_lifemap"
+263:    case "home_to_lifemap":
+265:    case "lifemap_to_home":
+267:    case "lifemap_to_focus":
+269:    case "focus_to_lifemap":
+271:    case "focus_to_replay":
+273:    case "replay_to_focus":
+322:          case "home_to_lifemap":
+325:          case "lifemap_to_home":
+329:          case "lifemap_to_focus":
+332:          case "focus_to_lifemap":
+335:          case "focus_to_replay":
+338:          case "replay_to_focus":
+358:      startTransition("replay_to_focus");
+362:      startTransition("focus_to_lifemap");
+366:      startTransition("lifemap_to_home");
+420:  if (transition.name === "home_to_lifemap") {
+453:  if (transition.name === "lifemap_to_home") {
+482:  if (transition.name === "lifemap_to_focus") {
+503:  if (transition.name === "focus_to_lifemap") {
+525:  if (transition.name === "focus_to_replay") {
+562:  if (transition.name === "replay_to_focus") {
+618:  if (transition?.name === "home_to_lifemap") text = "ASCENT — THRESHOLD CORRIDOR";
+619:  else if (transition?.name === "lifemap_to_home") text = "DESCENT — RETURNING TO HOME";
+620:  else if (transition?.name === "focus_to_lifemap") text = "RELEASE — RETURNING TO FIELD";
+621:  else if (transition?.name === "replay_to_focus") text = "RESURFACING — RETURNING TO FOCUS";
+800:    transition?.name === "lifemap_to_home" ? homeReturnEase(transition.progress) : weights.descent;
+861:    transition?.name === "lifemap_to_home" ? homeReturnEase(transition.progress) : weights.descent;
+955:    transition?.name === "focus_to_lifemap" ? clamp01(1 - releaseEase(transition.progress) * 0.82) : 0;
+1027:          phase === "focus" || phase === "replay" || transition?.name === "lifemap_to_focus";
+1031:        if (transition?.name === "focus_to_lifemap") {
+1037:          transition?.name === "home_to_lifemap" ? clamp01(transition.progress * 1.35) : 0;
+1049:                (transition?.name === "lifemap_to_focus" ? transition.progress * 0.12 : 0) +
+1050:                (transition?.name === "focus_to_lifemap" ? (1 - releaseEase(transition.progress)) * 0.14 : 0),
+1058:          transition?.name === "focus_to_lifemap"
+1154:    transition?.name === "replay_to_focus" ? resurfacing(transition.progress) : 0;
+1157:    transition?.name === "focus_to_lifemap" ? clamp01(1 - releaseEase(transition.progress)) : 0;
+1272:  if (!selectedStar || (weights.replay <= 0.001 && transition?.name !== "replay_to_focus")) return null;
+1275:    transition?.name === "replay_to_focus" ? clamp01(1 - resurfacing(transition.progress)) : 1;
+1452:      transition?.name === "lifemap_to_home" ? homeReturnEase(transition.progress) : weights.descent;
+1468:      transition?.name === "replay_to_focus" ? 0.13 : phase === "replay" ? 0.12 : 0.10,
+1565:    startTransition("home_to_lifemap");
+1576:      startTransition("lifemap_to_focus");
+1585:    startTransition("focus_to_replay");
+

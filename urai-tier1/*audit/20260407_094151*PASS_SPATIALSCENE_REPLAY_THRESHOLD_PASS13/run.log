@@ -1,0 +1,14 @@
+
+== typecheck ==
+
+> urai-tier1@0.1.0 typecheck /home/user/urai-spatial/urai-tier1
+> tsc --noEmit
+
+src/spatial/scene/SpatialScene.tsx(176,1): error TS1005: ')' expected.
+src/spatial/scene/SpatialScene.tsx(180,1): error TS1160: Unterminated template literal.
+ ELIFECYCLE  Command failed with exit code 2.
+
+FINAL_RC=2
+PASS_ROOT=*audit/20260407_094151*PASS_SPATIALSCENE_REPLAY_THRESHOLD_PASS13
+LOG=*audit/20260407_094151*PASS_SPATIALSCENE_REPLAY_THRESHOLD_PASS13/run.log
+Press Enter to finish... 

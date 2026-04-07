@@ -1,0 +1,2 @@
+11:export type SelectedStar = {
+13:  title: string;

@@ -1,0 +1,51 @@
+   160	  }
+   161	}
+   162	
+   163	function Atmosphere() {
+   164	  return (
+   165	    <>
+   166	      <fog attach="fog" args={["#04060b", 20, 78]} />
+   167	      <color attach="background" args={["#04060b"]} />
+   168	    </>
+   169	  );
+   170	}
+   171	
+   172	function FloorPlane() {
+   173	  const mode = useSceneStore((s) => s.mode);
+   174	
+   175	  if (mode === "lifemap") return null;
+   176	
+   177	  return (
+   178	    <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -8, 0]}>
+   179	      <circleGeometry args={[90, 96]} />
+   180	      <meshBasicMaterial
+   181	        color="#09101f"
+   182	        transparent
+   183	        opacity={mode === "sky" ? 0.035 : 0.09}
+   184	        depthWrite={false}
+   185	      />
+   186	    </mesh>
+   187	  );
+   188	}
+   189	function CameraRig() {
+   190	  const { camera } = useThree();
+   191	  const mode = useSceneStore((s) => s.mode);
+   192	  const selectedStar = useSceneStore((s) => s.selectedStar);
+   193	  const cameraTarget = useRef(new THREE.Vector3(0, 4, 28));
+   194	  const lookTarget = useRef(new THREE.Vector3(0, 2, 0));
+   195	
+   196	  useFrame((_, delta) => {
+   197	    const cp = cameraTarget.current;
+   198	    const lp = lookTarget.current;
+   199	
+   200	    if (mode === "home") {
+   201	      cp.set(0, 5.8, 30);
+   202	      lp.set(0, 2, 0);
+   203	    } else if (mode === "lifemap") {
+   204	      cp.set(0, 8.8, 16.5);
+   205	      lp.set(0, 3.2, -34);
+   206	    } else if (selectedStar) {
+   207	      const [x, y, z] = selectedStar.position;
+   208	      if (mode === "focus") {
+   209	        cp.set(x * 0.16, y + 2.9, z + 8.2);
+   210	        lp.set(x, y, z);

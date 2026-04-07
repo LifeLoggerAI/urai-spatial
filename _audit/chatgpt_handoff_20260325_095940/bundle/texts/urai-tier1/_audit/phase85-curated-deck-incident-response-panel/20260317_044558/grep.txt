@@ -1,0 +1,9 @@
+src/spatial/ui/SpatialCuratedDeckIncidentResponsePanel.tsx:5:import { buildSpatialCuratedDeckIncidentResponse } from "@/spatial/curation/buildSpatialCuratedDeckIncidentResponse";
+src/spatial/ui/SpatialCuratedDeckIncidentResponsePanel.tsx:12:export default function SpatialCuratedDeckIncidentResponsePanel() {
+src/spatial/ui/SpatialCuratedDeckIncidentResponsePanel.tsx:17:    () => buildSpatialCuratedDeckIncidentResponse({ entries, activeEntryId }),
+src/spatial/ui/SpatialCuratedDeckIncidentResponsePanel.tsx:58:        Curated Deck Incident Response
+src/spatial/curation/buildSpatialCuratedDeckIncidentResponse.ts:65:export function buildSpatialCuratedDeckIncidentResponse(input: {
+src/spatial/curation/buildSpatialCuratedDeckIncidentResponse.ts:182:    schema: "urai.spatial.curated-deck-incident-response.v1",
+src/spatial/curation/spatialCuratedDeckIncidentResponseTypes.ts:16:  schema: "urai.spatial.curated-deck-incident-response.v1";
+src/spatial/scene/SpatialScene.tsx:2:import SpatialCuratedDeckIncidentResponsePanel from "@/spatial/ui/SpatialCuratedDeckIncidentResponsePanel";
+src/spatial/scene/SpatialScene.tsx:820:      <SpatialCuratedDeckIncidentResponsePanel />

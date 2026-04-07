@@ -1,3 +1,4 @@
+
 import { resolveStarByIdSafe } from "../lib/resolveStarByIdSafe";
 "use client";
 
@@ -7,11 +8,11 @@ import { useSceneStore } from "../state/sceneStore";
 type LooseRecord = Record<string, unknown>;
 type SelectedStar = LooseRecord | null;
 
-function asRecord(value: unknown): LooseRecord | null {
+function asRecord(value: any): LooseRecord | null {
   return value !== null && typeof value === "object" ? (value as LooseRecord) : null;
 }
 
-function str(value: unknown): string | null {
+function str(value: any): string | null {
   return typeof value === "string" && value.trim().length > 0 ? value : null;
 }
 
@@ -68,18 +69,18 @@ export default function ReplayOverlay() {
   const glow = useMemo(() => getReplayGlow(selectedStarId), [selectedStarId]);
   const meta = useMemo(() => getReplayMeta(selectedStarId), [selectedStarId]);
 
-  useEffect(() => {
-    if (mode !== "replay") {
-      setStepIndex(0);
-      return;
-    }
+    useEffect(() => {
+      if (mode !== "replay") {
+        setStepIndex(0);
+        return;
+      }
 
-    const id = window.setInterval(() => {
-      setStepIndex((current) => (current + 1) % Math.max(steps.length, 1));
-    }, 1800);
+      const id = window.setInterval(() => {
+        setStepIndex((current) => (current + 1) % Math.max(steps.length, 1));
+      }, 1800);
 
-    return () => window.clearInterval(id);
-  }, [mode, steps.length]);
+      return () => window.clearInterval(id);
+    }, [mode, steps.length]);
 
   if (mode !== "replay") return null;
 

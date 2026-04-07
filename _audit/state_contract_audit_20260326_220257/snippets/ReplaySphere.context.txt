@@ -1,0 +1,68 @@
+===== src/spatial/scene/ReplaySphere.tsx : line 4 =====
+"use client";
+
+import { resolveStarById } from "../data/stars";
+import { useSceneStore } from "../state/sceneStore";
+
+export default function ReplaySphere() {
+  const mode = useSceneStore((s) => s.mode);
+  const selectedStar = useSceneStore((s) => s.selectedStar);
+
+  if (mode !== "replay") return null;
+
+  const star = resolveStarById(selectedStar);
+
+===== src/spatial/scene/ReplaySphere.tsx : line 7 =====
+"use client";
+
+import { resolveStarById } from "../data/stars";
+import { useSceneStore } from "../state/sceneStore";
+
+export default function ReplaySphere() {
+  const mode = useSceneStore((s) => s.mode);
+  const selectedStar = useSceneStore((s) => s.selectedStar);
+
+  if (mode !== "replay") return null;
+
+  const star = resolveStarById(selectedStar);
+  if (!star) return null;
+
+  return (
+
+===== src/spatial/scene/ReplaySphere.tsx : line 8 =====
+"use client";
+
+import { resolveStarById } from "../data/stars";
+import { useSceneStore } from "../state/sceneStore";
+
+export default function ReplaySphere() {
+  const mode = useSceneStore((s) => s.mode);
+  const selectedStar = useSceneStore((s) => s.selectedStar);
+
+  if (mode !== "replay") return null;
+
+  const star = resolveStarById(selectedStar);
+  if (!star) return null;
+
+  return (
+    <group position={star.position}>
+
+===== src/spatial/scene/ReplaySphere.tsx : line 12 =====
+import { useSceneStore } from "../state/sceneStore";
+
+export default function ReplaySphere() {
+  const mode = useSceneStore((s) => s.mode);
+  const selectedStar = useSceneStore((s) => s.selectedStar);
+
+  if (mode !== "replay") return null;
+
+  const star = resolveStarById(selectedStar);
+  if (!star) return null;
+
+  return (
+    <group position={star.position}>
+      <mesh>
+        <sphereGeometry args={[0.58, 30, 30]} />
+        <meshPhysicalMaterial
+          color="#f5f9ff"
+

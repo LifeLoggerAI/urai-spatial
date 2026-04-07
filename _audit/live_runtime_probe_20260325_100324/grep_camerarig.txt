@@ -1,0 +1,18 @@
+/home/user/urai-spatial/urai-tier1/src/spatial/ar/resolveARPlacementState.ts:3:import { resolveXRCameraRigStateById } from "@/spatial/xr-runtime/resolveXRCameraRigState";
+/home/user/urai-spatial/urai-tier1/src/spatial/ar/resolveARPlacementState.ts:30:  const rig = resolveXRCameraRigStateById(id, mode);
+/home/user/urai-spatial/urai-tier1/src/spatial/unity/resolveUnityAdapterState.ts:3:import { resolveXRCameraRigStateById } from "@/spatial/xr-runtime/resolveXRCameraRigState";
+/home/user/urai-spatial/urai-tier1/src/spatial/unity/resolveUnityAdapterState.ts:30:  const rig = resolveXRCameraRigStateById(id, mode);
+/home/user/urai-spatial/urai-tier1/src/spatial/xr-runtime/resolveXRCameraRigState.ts:6:export type XRCameraRigState = {
+/home/user/urai-spatial/urai-tier1/src/spatial/xr-runtime/resolveXRCameraRigState.ts:23:export function resolveXRCameraRigStateById(
+/home/user/urai-spatial/urai-tier1/src/spatial/xr-runtime/resolveXRCameraRigState.ts:26:): XRCameraRigState | undefined {
+/home/user/urai-spatial/urai-tier1/src/spatial/xr-runtime/XRCameraRigOverlay.tsx:6:import { resolveXRCameraRigStateById } from "@/spatial/xr-runtime/resolveXRCameraRigState";
+/home/user/urai-spatial/urai-tier1/src/spatial/xr-runtime/XRCameraRigOverlay.tsx:8:export default function XRCameraRigOverlay() {
+/home/user/urai-spatial/urai-tier1/src/spatial/xr-runtime/XRCameraRigOverlay.tsx:13:    () => resolveXRCameraRigStateById(selectedStarId ?? "", mode),
+/home/user/urai-spatial/urai-tier1/src/spatial/xr-renderer/resolveWebXRRendererHandoff.ts:2:import { resolveXRCameraRigStateById } from "@/spatial/xr-runtime/resolveXRCameraRigState";
+/home/user/urai-spatial/urai-tier1/src/spatial/xr-renderer/resolveWebXRRendererHandoff.ts:30:  const rig = resolveXRCameraRigStateById(id, mode);
+/home/user/urai-spatial/urai-tier1/src/spatial/scene/SpatialScene.tsx:110:function CameraRig({
+/home/user/urai-spatial/urai-tier1/src/spatial/scene/SpatialScene.tsx:365:      <CameraRig mode={mode} selectedStar={selectedStar} transitionPhase={transitionPhase} />
+/home/user/urai-spatial/urai-tier1/src/spatial/scene/CameraRig.tsx:31:export default function CameraRig({
+/home/user/urai-spatial/urai-tier1/src/spatial/components/CameraRig.tsx:15:export default function CameraRig() {
+/home/user/urai-spatial/urai-tier1/src/spatial/input/resolveXRInputState.ts:2:import { resolveXRCameraRigStateById } from "@/spatial/xr-runtime/resolveXRCameraRigState";
+/home/user/urai-spatial/urai-tier1/src/spatial/input/resolveXRInputState.ts:29:  const rig = resolveXRCameraRigStateById(id, mode);

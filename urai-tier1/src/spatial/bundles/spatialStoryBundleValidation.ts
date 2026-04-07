@@ -1,6 +1,6 @@
 import type { SpatialStoryBundle } from "@/spatial/bundles/spatialStoryBundleTypes";
 
-export function isSpatialStoryBundle(value: unknown): value is SpatialStoryBundle {
+export function isSpatialStoryBundle(value: any): value is SpatialStoryBundle {
   if (!value || typeof value !== "object") return false;
 
   const v = value as Record<string, unknown>;

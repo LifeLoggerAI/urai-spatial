@@ -1,0 +1,4 @@
+ M src/app/page.tsx
+?? ../TIER1_LOCK_CHECKLIST.md
+?? ../TIER1_LOCK_SHEET.md
+?? ../docs/

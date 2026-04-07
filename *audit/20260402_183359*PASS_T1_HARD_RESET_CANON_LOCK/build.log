@@ -1,0 +1,39 @@
+
+> urai-spatial-monorepo@ build /home/user/urai-spatial
+> pnpm --filter urai-tier1 build
+
+
+> urai-tier1@0.1.0 build /home/user/urai-spatial/urai-tier1
+> next build --webpack
+
+▲ Next.js 16.2.1 (webpack)
+
+  Creating an optimized production build ...
+Failed to compile.
+
+./src/spatial/scene/SpatialScene.tsx
+Error:   x Expected ',', got 'no substitution template literal'
+     ,-[/home/user/urai-spatial/urai-tier1/src/spatial/scene/SpatialScene.tsx:214:1]
+ 211 |     <meshBasicMaterial transparent opacity={0.001} />
+ 212 |   </mesh>
+ 213 | </group>
+ 214 | ```
+     : ^^
+ 215 | 
+ 216 | )
+ 217 | }
+     `----
+
+Caused by:
+    Syntax Error
+
+Import trace for requested module:
+./src/spatial/scene/SpatialScene.tsx
+./src/app/page.tsx
+
+
+> Build failed because of webpack errors
+/home/user/urai-spatial/urai-tier1:
+ ERR_PNPM_RECURSIVE_RUN_FIRST_FAIL  urai-tier1@0.1.0 build: `next build --webpack`
+Exit status 1
+ ELIFECYCLE  Command failed with exit code 1.

@@ -13,7 +13,7 @@ export type NarrativeReplay = {
   tone?: string;
 };
 
-function str(value: unknown): string | undefined {
+function str(value: any): string | undefined {
   return typeof value === "string" && value.trim() ? value : undefined;
 }
 

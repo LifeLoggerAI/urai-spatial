@@ -1,0 +1,26 @@
+=== PASS_T1_COMPILE_SAFE_LOCK START ===
+APP=/home/user/urai-spatial
+=== VERIFY FILE ANCHORS ===
+9:| 'home_to_lifemap'
+148:if (props.transition.active && props.transition.kind === 'home_to_lifemap') {
+210:if (props.transition.active && props.transition.kind === 'home_to_lifemap') {
+345:if (props.transition.active && props.transition.kind === 'home_to_lifemap') {
+483:if (kind === 'home_to_lifemap') setPhase('lifemap')
+500:begin('home_to_lifemap', T_HOME_TO_LIFEMAP)
+527:    console.log('ESC KEY replay')
+507:console.log('STAR CLICK DIRECT ' + id)
+325:function CameraDirector(props: {
+3:import SpatialScene from '@/spatial/scene/SpatialScene'
+=== STOP OLD DEV SERVERS ===
+=== TYPECHECK ===
+src/spatial/scene/SpatialScene.tsx(193,1): error TS1005: ')' expected.
+src/spatial/scene/SpatialScene.tsx(283,4): error TS1128: Declaration or statement expected.
+src/spatial/scene/SpatialScene.tsx(283,5): error TS1128: Declaration or statement expected.
+src/spatial/scene/SpatialScene.tsx(284,1): error TS1128: Declaration or statement expected.
+src/spatial/scene/SpatialScene.tsx(542,1): error TS1128: Declaration or statement expected.
+src/spatial/scene/SpatialScene.tsx(583,1): error TS1160: Unterminated template literal.
+TYPECHECK_STATUS=FAIL
+AUDIT_DIR=/home/user/urai-spatial/*audit/20260402_181457*PASS_T1_COMPILE_SAFE_LOCK
+BACKUP_DIR=/home/user/urai-spatial/*audit/20260402_181457*PASS_T1_COMPILE_SAFE_LOCK/backup
+RUN_LOG=/home/user/urai-spatial/*audit/20260402_181457*PASS_T1_COMPILE_SAFE_LOCK/run.log
+TYPECHECK_LOG=/home/user/urai-spatial/*audit/20260402_181457*PASS_T1_COMPILE_SAFE_LOCK/typecheck.log

@@ -6,7 +6,7 @@ export type Tier1ShellSelected = {
   domain: string;
   summary: string;
   tags: readonly string[];
-  [key: string]: unknown;
+  [key: string]: any;
 };
 
 export type Tier1ShellOverlayProps = {

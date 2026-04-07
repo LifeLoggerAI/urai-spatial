@@ -1,0 +1,29 @@
+src/spatial/state/sceneStore.ts:4:export type SceneMode = "home" | "lifemap" | "focus" | "replay";
+src/spatial/state/sceneStore.ts:35:  exitFocusToLifeMap: () => void;
+src/spatial/state/sceneStore.ts:54:      mode: star ? "focus" : "lifemap",
+src/spatial/state/sceneStore.ts:69:      mode: "lifemap",
+src/spatial/state/sceneStore.ts:72:  exitFocusToLifeMap: () =>
+src/spatial/state/sceneStore.ts:77:      mode: "lifemap",
+src/spatial/state/sceneStore.ts:92:      mode: selectedStar ? "focus" : "lifemap",
+src/spatial/state/sceneStore.ts:100:      mode: selectedStar ? "focus" : "lifemap",
+src/spatial/scene/SpatialScene.tsx:25:import LifeMapIntelligenceOverlay from "@/spatial/intelligence/LifeMapIntelligenceOverlay";
+src/spatial/scene/SpatialScene.tsx:150:    case "lifemap":
+src/spatial/scene/SpatialScene.tsx:151:      return "LifeMap";
+src/spatial/scene/SpatialScene.tsx:199:    } else if (mode === "lifemap") {
+src/spatial/scene/SpatialScene.tsx:514:              <h1 style={titleStyle}>Home → LifeMap → Focus → Replay</h1>
+src/spatial/scene/SpatialScene.tsx:530:                <button style={shellButtonStyle} onClick={() => setMode("lifemap")}>
+src/spatial/scene/SpatialScene.tsx:531:                  Enter LifeMap
+src/spatial/scene/SpatialScene.tsx:542:      {mode === "lifemap" && (
+src/spatial/scene/SpatialScene.tsx:564:              <div style={captionStyle}>LifeMap</div>
+src/spatial/scene/SpatialScene.tsx:679:                  Back to LifeMap
+src/spatial/scene/SpatialScene.tsx:711:      if (mode === "lifemap") {
+src/spatial/scene/SpatialScene.tsx:786:        <LifeMapIntelligenceOverlay />
+src/spatial/core/SceneController.tsx:14:        setMode("lifemap");
+src/spatial/core/SceneController.tsx:15:      } else if (mode === "lifemap") {
+src/spatial/core/SceneController.tsx:19:        setMode("lifemap");
+src/spatial/components/CameraRig.tsx:49:    if (mode === "lifemap") {
+src/spatial/scene/Starfield.tsx:23:        const baseScale = mode === "lifemap" ? 1.15 : 1;
+src/spatial/scene/Starfield.tsx:25:        const hitRadius = Math.max(star.size * (mode === "lifemap" ? 8 : 5), 3.2);
+src/spatial/scene/Ground.tsx:19:    if (mode === "lifemap") {
+src/spatial/scene/MemorySphere.tsx:7:  const scale = mode === "lifemap" ? 0.55 : 1;
+src/spatial/scene/MemorySphere.tsx:8:  const opacity = mode === "lifemap" ? 0.1 : 0.2;

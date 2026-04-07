@@ -1,0 +1,80 @@
+"use client";
+
+import * as THREE from "three";
+
+type HomeEnvironmentProps = {
+  worldBlend?: number;
+  ascentBlend?: number;
+};
+
+export default function HomeEnvironment({
+  worldBlend = 1,
+  ascentBlend = 0,
+}: HomeEnvironmentProps) {
+  const blend = Math.max(0, Math.min(1, worldBlend));
+  const ascent = Math.max(0, Math.min(1, ascentBlend));
+
+  if (blend <= 0.001 && ascent <= 0.001) return null;
+
+  return (
+    <group>
+      <color attach="background" args={["#02030a"]} />
+      <fog attach="fog" args={["#02030a", 10, 54]} />
+
+      <mesh position={[0, -5.9 + ascent * 0.9, -18]} rotation={[-Math.PI / 2, 0, 0]}>
+        <planeGeometry args={[84, 84, 1, 1]} />
+        <meshStandardMaterial
+          color="#04060b"
+          roughness={1}
+          metalness={0}
+          transparent
+          opacity={0.96 * blend}
+        />
+      </mesh>
+
+      <mesh position={[0, -2.9 + ascent * 0.9, -20]}>
+        <planeGeometry args={[54, 8.5, 1, 1]} />
+        <meshBasicMaterial
+          color="#16233d"
+          transparent
+          opacity={(0.16 * blend) + (0.06 * ascent)}
+          blending={THREE.AdditiveBlending}
+          depthWrite={false}
+        />
+      </mesh>
+
+      <mesh position={[0, -2.25 + ascent * 0.75, -24]}>
+        <planeGeometry args={[70, 13, 1, 1]} />
+        <meshBasicMaterial
+          color="#7ba5ff"
+          transparent
+          opacity={(0.035 * blend) + (0.025 * ascent)}
+          blending={THREE.AdditiveBlending}
+          depthWrite={false}
+        />
+      </mesh>
+
+      <mesh position={[0, -4.25 + ascent * 0.85, -13.8]} rotation={[-Math.PI / 2, 0, 0]}>
+        <ringGeometry args={[2.6, 10.4, 96]} />
+        <meshBasicMaterial
+          color="#4a67c3"
+          transparent
+          opacity={(0.08 * blend) + (0.05 * ascent)}
+          blending={THREE.AdditiveBlending}
+          depthWrite={false}
+          side={THREE.DoubleSide}
+        />
+      </mesh>
+
+      <mesh position={[0, -0.25 + ascent * 0.55, -31]}>
+        <sphereGeometry args={[25, 40, 28, 0, Math.PI * 2, 0, Math.PI / 2.08]} />
+        <meshBasicMaterial
+          color="#0a1020"
+          transparent
+          opacity={0.44 * blend}
+          side={THREE.BackSide}
+        />
+      </mesh>
+    </group>
+  );
+}

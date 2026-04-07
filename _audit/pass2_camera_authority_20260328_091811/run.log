@@ -1,0 +1,57 @@
+=== PASS 2: CAMERA AUTHORITY LOCK ===
+Running typecheck...
+Running build...
+
+> urai-spatial-monorepo@ build /home/user/urai-spatial
+> pnpm --filter urai-tier1 build
+
+
+> urai-tier1@0.1.0 build /home/user/urai-spatial/urai-tier1
+> next build --webpack
+
+▲ Next.js 16.2.1 (webpack)
+
+  Creating an optimized production build ...
+Failed to compile.
+
+./src/spatial/hooks/useCameraController.ts
+Module not found: Can't resolve '@/lib/uraiCanon/useCanonState'
+
+https://nextjs.org/docs/messages/module-not-found
+
+Import trace for requested module:
+./src/spatial/scene/SpatialScene.tsx
+./src/app/page.tsx
+
+./src/spatial/scene/SpatialScene.tsx
+Module not found: Can't resolve '../environment/HomeEnvironment'
+
+https://nextjs.org/docs/messages/module-not-found
+
+Import trace for requested module:
+./src/app/page.tsx
+
+./src/spatial/scene/SpatialScene.tsx
+Module not found: Can't resolve '../space/Starfield'
+
+https://nextjs.org/docs/messages/module-not-found
+
+Import trace for requested module:
+./src/app/page.tsx
+
+./src/spatial/scene/SpatialScene.tsx
+Module not found: Can't resolve '@/lib/uraiCanon/useCanonState'
+
+https://nextjs.org/docs/messages/module-not-found
+
+Import trace for requested module:
+./src/app/page.tsx
+
+
+> Build failed because of webpack errors
+/home/user/urai-spatial/urai-tier1:
+ ERR_PNPM_RECURSIVE_RUN_FIRST_FAIL  urai-tier1@0.1.0 build: `next build --webpack`
+Exit status 1
+ ELIFECYCLE  Command failed with exit code 1.
+FAILED: Build failed
+Press ENTER to exit...exit

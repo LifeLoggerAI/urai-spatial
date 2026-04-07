@@ -1,0 +1,742 @@
+"use client";
+
+import React, { Suspense, useCallback, useMemo, useRef, useState } from "react";
+import { Canvas, useFrame, useThree } from "@react-three/fiber";
+import type { ThreeEvent } from "@react-three/fiber";
+import { Html } from "@react-three/drei";
+import * as THREE from "three";
+
+type ScenePhase = "home" | "lifemap" | "focus" | "replay";
+
+type StarPoint = {
+  id: string;
+  title: string;
+  position: [number, number, number];
+  color: string;
+  size: number;
+  layer: "near" | "mid" | "far";
+};
+
+const STAR_SEED = 19830414;
+
+function lcg(seed: number) {
+  let state = seed >>> 0;
+  return () => {
+    state = (1664525 * state + 1013904223) >>> 0;
+    return state / 4294967296;
+  };
+}
+
+function lerp(a: number, b: number, t: number) {
+  return a + (b - a) * t;
+}
+
+function damp(current: number, target: number, lambda: number, dt: number) {
+  return THREE.MathUtils.damp(current, target, lambda, dt);
+}
+
+function vec3Damp(
+  current: THREE.Vector3,
+  target: THREE.Vector3,
+  lambda: number,
+  dt: number,
+) {
+  current.x = damp(current.x, target.x, lambda, dt);
+  current.y = damp(current.y, target.y, lambda, dt);
+  current.z = damp(current.z, target.z, lambda, dt);
+  return current;
+}
+
+function createStars(): StarPoint[] {
+  const rand = lcg(STAR_SEED);
+  const stars: StarPoint[] = [];
+
+  const layers: Array<{
+    layer: "near" | "mid" | "far";
+    count: number;
+    zMin: number;
+    zMax: number;
+    spreadX: number;
+    spreadY: number;
+    baseSize: number;
+  }> = [
+    { layer: "near", count: 24, zMin: -16, zMax: -7, spreadX: 10, spreadY: 5, baseSize: 0.06 },
+    { layer: "mid", count: 42, zMin: -58, zMax: -18, spreadX: 18, spreadY: 10, baseSize: 0.09 },
+    { layer: "far", count: 72, zMin: -180, zMax: -60, spreadX: 50, spreadY: 30, baseSize: 0.12 },
+  ];
+
+  const colors = ["#9ad6ff", "#d9f3ff", "#8fc1ff", "#d7dcff", "#fff2c7"];
+
+  for (const layer of layers) {
+    for (let i = 0; i < layer.count; i += 1) {
+      const x = (rand() * 2 - 1) * layer.spreadX;
+      const y = (rand() * 2 - 1) * layer.spreadY + (layer.layer === "far" ? 1.5 : 0);
+      const z = lerp(layer.zMin, layer.zMax, rand());
+      const size = layer.baseSize * lerp(0.7, 1.35, rand());
+      const color = colors[Math.floor(rand() * colors.length)] || "#d9f3ff";
+
+      stars.push({
+        id: `${layer.layer}-${i}`,
+        title: layer.layer === "mid" && i < 16 ? `Memory ${String(i + 1).padStart(2, "0")}` : `Star ${layer.layer}-${i}`,
+        position: [x, y, z],
+        color,
+        size,
+        layer: layer.layer,
+      });
+    }
+  }
+
+  return stars;
+}
+
+function PhaseOverlay({
+  phase,
+  selected,
+  onEnterLifeMap,
+  onExitHome,
+  onReplay,
+  onBackToLifeMap,
+  onBackHome,
+}: {
+  phase: ScenePhase;
+  selected: StarPoint | null;
+  onEnterLifeMap: () => void;
+  onExitHome: () => void;
+  onReplay: () => void;
+  onBackToLifeMap: () => void;
+  onBackHome: () => void;
+}) {
+  const label =
+    phase === "home"
+      ? "HOME"
+      : phase === "lifemap"
+        ? "LIFEMAP"
+        : phase === "focus"
+          ? "FOCUS"
+          : "REPLAY";
+
+  return (
+    <div
+      style={{
+        position: "absolute",
+        inset: 0,
+        pointerEvents: "none",
+        display: "flex",
+        flexDirection: "column",
+        justifyContent: "space-between",
+        padding: "24px",
+        color: "#e8f4ff",
+        fontFamily:
+          'Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
+      }}
+    >
+      <div
+        style={{
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "flex-start",
+          gap: "12px",
+        }}
+      >
+        <div
+          style={{
+            background: "rgba(3,8,20,0.34)",
+            border: "1px solid rgba(160,210,255,0.18)",
+            borderRadius: "14px",
+            padding: "10px 12px",
+            backdropFilter: "blur(10px)",
+            boxShadow: "0 12px 40px rgba(0,0,0,0.25)",
+          }}
+        >
+          <div style={{ fontSize: "11px", opacity: 0.75, letterSpacing: "0.22em" }}>{label}</div>
+          <div style={{ fontSize: "14px", marginTop: "4px", opacity: 0.95 }}>
+            {selected ? selected.title : phase === "home" ? "Grounded threshold" : "Spatial field"}
+          </div>
+        </div>
+
+        <div
+          style={{
+            display: "flex",
+            gap: "10px",
+            pointerEvents: "auto",
+          }}
+        >
+          {phase === "home" ? (
+            <button onClick={onEnterLifeMap} style={buttonStyle}>
+              Enter LifeMap
+            </button>
+          ) : null}
+
+          {phase === "lifemap" ? (
+            <button onClick={onBackHome} style={buttonStyle}>
+              Return Home
+            </button>
+          ) : null}
+
+          {phase === "focus" ? (
+            <>
+              <button onClick={onReplay} style={buttonStyle}>
+                Enter Replay
+              </button>
+              <button onClick={onBackToLifeMap} style={buttonStyle}>
+                Back to LifeMap
+              </button>
+            </>
+          ) : null}
+
+          {phase === "replay" ? (
+            <>
+              <button onClick={onBackToLifeMap} style={buttonStyle}>
+                Exit Replay
+              </button>
+              <button onClick={onExitHome} style={buttonStyle}>
+                Home
+              </button>
+            </>
+          ) : null}
+        </div>
+      </div>
+
+      <div
+        style={{
+          alignSelf: "center",
+          textAlign: "center",
+          background: "rgba(3,8,20,0.26)",
+          border: "1px solid rgba(160,210,255,0.12)",
+          borderRadius: "14px",
+          padding: "10px 14px",
+          backdropFilter: "blur(10px)",
+          maxWidth: "680px",
+        }}
+      >
+        <div style={{ fontSize: "12px", opacity: 0.8, letterSpacing: "0.18em" }}>
+          URAI SPATIAL CONTINUITY PASS
+        </div>
+        <div style={{ fontSize: "13px", marginTop: "6px", opacity: 0.94 }}>
+          {phase === "home"
+            ? "Ground, horizon, fog, and orb are anchored as one world. Enter LifeMap to begin forward travel."
+            : phase === "lifemap"
+              ? "Volumetric starfield with near / mid / far separation. Select a memory star to isolate focus."
+              : phase === "focus"
+                ? "Focus collapses background depth and pushes the camera toward the selected star."
+                : "Replay is treated as a chamber beyond focus, not a flat overlay."}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+const buttonStyle: React.CSSProperties = {
+  appearance: "none",
+  border: "1px solid rgba(160,210,255,0.24)",
+  background: "rgba(6,12,24,0.50)",
+  color: "#e8f4ff",
+  borderRadius: "12px",
+  padding: "10px 14px",
+  fontSize: "13px",
+  cursor: "pointer",
+  backdropFilter: "blur(10px)",
+  boxShadow: "0 12px 36px rgba(0,0,0,0.28)",
+};
+
+function AtmosphericSystem({
+  phase,
+  lifeBlend,
+  replayBlend,
+}: {
+  phase: ScenePhase;
+  lifeBlend: number;
+  replayBlend: number;
+}) {
+  const { scene } = useThree();
+
+  useFrame(() => {
+    const fogColor = new THREE.Color().lerpColors(
+      new THREE.Color("#0a1220"),
+      new THREE.Color("#02040b"),
+      replayBlend,
+    );
+    scene.fog = new THREE.Fog(fogColor, 14, lerp(140, 42, replayBlend));
+    scene.background = fogColor;
+    if (phase === "home" && lifeBlend < 0.1 && replayBlend < 0.05) {
+      scene.background = new THREE.Color("#08111b");
+    }
+  });
+
+  return null;
+}
+
+function CameraRig({
+  phase,
+  selected,
+  lifeBlend,
+  focusBlend,
+  replayBlend,
+}: {
+  phase: ScenePhase;
+  selected: StarPoint | null;
+  lifeBlend: number;
+  focusBlend: number;
+  replayBlend: number;
+}) {
+  const { camera } = useThree();
+  const lookAt = useRef(new THREE.Vector3(0, 0.7, 0));
+  const targetPos = useRef(new THREE.Vector3(0, 1.6, 11));
+  const selectedVec = useMemo(
+    () =>
+      selected
+        ? new THREE.Vector3(selected.position[0], selected.position[1], selected.position[2])
+        : new THREE.Vector3(0, 0, -26),
+    [selected],
+  );
+
+  useFrame((state, dt) => {
+    const t = state.clock.getElapsedTime();
+
+    const homePos = new THREE.Vector3(
+      Math.sin(t * 0.18) * 0.18,
+      1.55 + Math.sin(t * 0.26) * 0.07,
+      11 + Math.cos(t * 0.16) * 0.12,
+    );
+    const lifePos = new THREE.Vector3(
+      Math.sin(t * 0.13) * 0.22,
+      Math.cos(t * 0.21) * 0.18,
+      4.2,
+    );
+    const focusPos = selectedVec.clone().add(new THREE.Vector3(0, 0.2, 2.8));
+    const replayPos = selectedVec.clone().add(new THREE.Vector3(0, 0, 0.92));
+
+    const baseTarget = homePos.clone().lerp(lifePos, lifeBlend).lerp(focusPos, focusBlend).lerp(replayPos, replayBlend);
+    targetPos.current.copy(baseTarget);
+
+    const homeLook = new THREE.Vector3(0, 0.65, 0);
+    const lifeLook = new THREE.Vector3(0, 0, -30);
+    const focusLook = selectedVec.clone();
+    const replayLook = selectedVec.clone().add(new THREE.Vector3(0, 0, -1.8));
+
+    const baseLook = homeLook.clone().lerp(lifeLook, lifeBlend).lerp(focusLook, focusBlend).lerp(replayLook, replayBlend);
+
+    vec3Damp(camera.position, targetPos.current, 3.6, dt);
+    vec3Damp(lookAt.current, baseLook, 4.2, dt);
+    camera.lookAt(lookAt.current);
+
+    const perspectiveCamera = camera as THREE.PerspectiveCamera;
+    perspectiveCamera.fov = damp(
+      perspectiveCamera.fov,
+      replayBlend > 0.5 ? 34 : focusBlend > 0.5 ? 40 : lifeBlend > 0.5 ? 50 : 56,
+      3.4,
+      dt,
+    );
+    perspectiveCamera.updateProjectionMatrix();
+  });
+
+  return null;
+}
+
+function GroundedWorld({
+  lifeBlend,
+}: {
+  lifeBlend: number;
+}) {
+  const groundOpacity = 1 - lifeBlend * 0.96;
+  const horizonOpacity = 1 - lifeBlend * 0.88;
+  const orbOffsetY = lerp(0.85, 0.2, lifeBlend);
+  const orbOffsetZ = lerp(0.6, -2.6, lifeBlend);
+
+  return (
+    <group visible={groundOpacity > 0.02}>
+      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -1.42, -10]}>
+        <planeGeometry args={[160, 160, 1, 1]} />
+        <meshStandardMaterial color="#081019" roughness={1} metalness={0} transparent opacity={groundOpacity} />
+      </mesh>
+
+      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -1.4, -4]}>
+        <ringGeometry args={[2.2, 8.4, 96]} />
+        <meshBasicMaterial color="#5ea9ff" transparent opacity={0.12 * groundOpacity} side={THREE.DoubleSide} />
+      </mesh>
+
+      <mesh position={[0, -0.9, -34]}>
+        <planeGeometry args={[90, 18, 1, 1]} />
+        <meshBasicMaterial color="#7fb2ff" transparent opacity={0.09 * horizonOpacity} />
+      </mesh>
+
+      <mesh position={[0, 7, -58]}>
+        <planeGeometry args={[160, 90, 1, 1]} />
+        <meshBasicMaterial color="#173250" transparent opacity={0.18 * horizonOpacity} />
+      </mesh>
+
+      <mesh position={[0, orbOffsetY, orbOffsetZ]}>
+        <sphereGeometry args={[0.74, 48, 48]} />
+        <meshStandardMaterial emissive="#75c8ff" emissiveIntensity={3.4} color="#98d7ff" transparent opacity={0.96} />
+      </mesh>
+
+      <mesh position={[0, orbOffsetY, orbOffsetZ]}>
+        <sphereGeometry args={[1.05, 48, 48]} />
+        <meshBasicMaterial color="#7ecbff" transparent opacity={0.11 * groundOpacity} />
+      </mesh>
+
+      <mesh position={[0, orbOffsetY, orbOffsetZ]}>
+        <sphereGeometry args={[1.65, 48, 48]} />
+        <meshBasicMaterial color="#8dd4ff" transparent opacity={0.045 * groundOpacity} />
+      </mesh>
+
+      <pointLight position={[0, orbOffsetY, orbOffsetZ + 0.4]} intensity={8} distance={38} color="#8ccfff" />
+      <ambientLight intensity={0.35} />
+      <directionalLight position={[0, 6, 8]} intensity={0.85} color="#b7ddff" />
+    </group>
+  );
+}
+
+function AmbientStars({
+  stars,
+  lifeBlend,
+  focusBlend,
+  replayBlend,
+  selected,
+}: {
+  stars: StarPoint[];
+  lifeBlend: number;
+  focusBlend: number;
+  replayBlend: number;
+  selected: StarPoint | null;
+}) {
+  return (
+    <group>
+      {stars
+        .filter((star) => star.layer !== "mid" || !/^mid-(0|1|2|3|4|5|6|7|8|9|10|11|12|13|14|15)$/.test(star.id))
+        .map((star) => {
+          const isSelectedLayer = selected ? star.id === selected.id : false;
+          const selectedDistancePenalty =
+            selected && !isSelectedLayer
+              ? THREE.MathUtils.clamp(
+                  new THREE.Vector3(...star.position).distanceTo(new THREE.Vector3(...selected.position)) / 42,
+                  0.18,
+                  1,
+                )
+              : 1;
+
+          const depthFactor =
+            star.layer === "near" ? 1.0 : star.layer === "mid" ? 0.72 : 0.46;
+
+          const opacityBase = lifeBlend * depthFactor * (1 - replayBlend * 0.85);
+          const opacity =
+            opacityBase *
+            (selected ? lerp(0.04, 0.38, selectedDistancePenalty) * (1 - focusBlend * 0.78) : 1);
+
+          return (
+            <mesh key={star.id} position={star.position} visible={opacity > 0.01}>
+              <sphereGeometry args={[star.size, 10, 10]} />
+              <meshBasicMaterial color={star.color} transparent opacity={opacity} />
+            </mesh>
+          );
+        })}
+    </group>
+  );
+}
+
+function InteractiveStars({
+  stars,
+  lifeBlend,
+  focusBlend,
+  replayBlend,
+  selected,
+  hoveredId,
+  onHover,
+  onSelect,
+}: {
+  stars: StarPoint[];
+  lifeBlend: number;
+  focusBlend: number;
+  replayBlend: number;
+  selected: StarPoint | null;
+  hoveredId: string | null;
+  onHover: (id: string | null) => void;
+  onSelect: (star: StarPoint) => void;
+}) {
+  const interactive = stars.filter((star) => star.layer === "mid").slice(0, 16);
+
+  return (
+    <group>
+      {interactive.map((star) => {
+        const isSelected = selected?.id === star.id;
+        const isHovered = hoveredId === star.id;
+        const otherDim = selected && !isSelected ? 0.08 : 1;
+        const baseScale = isSelected ? 2.4 : isHovered ? 1.45 : 1;
+        const scale = baseScale * lerp(0.75, 1, lifeBlend) * (1 + focusBlend * (isSelected ? 0.12 : -0.10));
+        const opacity = lifeBlend * otherDim * (1 - replayBlend * 0.9);
+        const haloOpacity = isSelected ? 0.24 : isHovered ? 0.14 : 0.07;
+
+        return (
+          <group key={star.id} position={star.position} scale={[scale, scale, scale]}>
+            <mesh
+              onPointerOver={(event: ThreeEvent<PointerEvent>) => {
+                event.stopPropagation();
+                onHover(star.id);
+              }}
+              onPointerOut={(event: ThreeEvent<PointerEvent>) => {
+                event.stopPropagation();
+                onHover(null);
+              }}
+              onClick={(event: ThreeEvent<MouseEvent>) => {
+                event.stopPropagation();
+                onSelect(star);
+              }}
+            >
+              <sphereGeometry args={[star.size * 2.2, 18, 18]} />
+              <meshBasicMaterial color={isSelected ? "#ffffff" : star.color} transparent opacity={opacity} />
+            </mesh>
+
+            <mesh>
+              <sphereGeometry args={[star.size * 4.8, 20, 20]} />
+              <meshBasicMaterial
+                color={isSelected ? "#8fd4ff" : star.color}
+                transparent
+                opacity={haloOpacity * opacity}
+              />
+            </mesh>
+
+            {(isHovered || isSelected) && opacity > 0.02 ? (
+              <Html center distanceFactor={12} style={{ pointerEvents: "none" }}>
+                <div
+                  style={{
+                    color: "#e9f4ff",
+                    fontSize: "12px",
+                    letterSpacing: "0.12em",
+                    padding: "8px 10px",
+                    borderRadius: "12px",
+                    background: "rgba(6,12,24,0.72)",
+                    border: "1px solid rgba(160,210,255,0.22)",
+                    boxShadow: "0 10px 30px rgba(0,0,0,0.35)",
+                    whiteSpace: "nowrap",
+                    transform: "translateY(-26px)",
+                    fontFamily:
+                      'Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
+                  }}
+                >
+                  {star.title}
+                </div>
+              </Html>
+            ) : null}
+          </group>
+        );
+      })}
+    </group>
+  );
+}
+
+function FocusShell({
+  selected,
+  focusBlend,
+  replayBlend,
+}: {
+  selected: StarPoint | null;
+  focusBlend: number;
+  replayBlend: number;
+}) {
+  if (!selected) return null;
+
+  const intensity = focusBlend * (1 - replayBlend * 0.8);
+  if (intensity <= 0.01) return null;
+
+  return (
+    <group position={selected.position}>
+      <mesh scale={[1 + intensity * 6, 1 + intensity * 6, 1 + intensity * 6]}>
+        <sphereGeometry args={[0.55, 24, 24]} />
+        <meshBasicMaterial color="#95d6ff" transparent opacity={0.05 * intensity} side={THREE.BackSide} />
+      </mesh>
+
+      <mesh scale={[1 + intensity * 2.8, 1 + intensity * 2.8, 1 + intensity * 2.8]}>
+        <sphereGeometry args={[0.28, 24, 24]} />
+        <meshBasicMaterial color="#c6ecff" transparent opacity={0.14 * intensity} />
+      </mesh>
+    </group>
+  );
+}
+
+function ReplayChamber({
+  selected,
+  replayBlend,
+}: {
+  selected: StarPoint | null;
+  replayBlend: number;
+}) {
+  if (!selected || replayBlend <= 0.01) return null;
+
+  return (
+    <group position={selected.position}>
+      <mesh scale={[1, 1, 1]}>
+        <sphereGeometry args={[8.2, 32, 32]} />
+        <meshBasicMaterial color="#04070f" transparent opacity={0.55 * replayBlend} side={THREE.BackSide} />
+      </mesh>
+
+      <mesh position={[0, 0, -2.6]}>
+        <planeGeometry args={[4.2, 2.25, 1, 1]} />
+        <meshBasicMaterial color="#0a1320" transparent opacity={0.68 * replayBlend} />
+      </mesh>
+
+      <mesh position={[0, 0, -2.5]}>
+        <ringGeometry args={[1.2, 1.75, 64]} />
+        <meshBasicMaterial color="#85ccff" transparent opacity={0.18 * replayBlend} side={THREE.DoubleSide} />
+      </mesh>
+
+      <Html center position={[0, 0, -2.35]} transform distanceFactor={10}>
+        <div
+          style={{
+            width: "320px",
+            padding: "18px",
+            borderRadius: "18px",
+            background: "linear-gradient(180deg, rgba(7,11,19,0.90), rgba(10,18,32,0.86))",
+            border: "1px solid rgba(160,210,255,0.18)",
+            boxShadow: "0 18px 60px rgba(0,0,0,0.38)",
+            color: "#eaf6ff",
+            fontFamily:
+              'Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
+          }}
+        >
+          <div style={{ fontSize: "11px", letterSpacing: "0.22em", opacity: 0.72 }}>REPLAY CHAMBER</div>
+          <div style={{ fontSize: "18px", marginTop: "8px" }}>{selected.title}</div>
+          <div style={{ fontSize: "13px", opacity: 0.85, marginTop: "10px", lineHeight: 1.5 }}>
+            Replay now lives beyond focus in a dedicated chamber. The field is suppressed, the camera pushes through
+            the selected star, and the memory becomes the place.
+          </div>
+        </div>
+      </Html>
+    </group>
+  );
+}
+
+function SpatialSceneInner() {
+  const [phase, setPhase] = useState<ScenePhase>("home");
+  const [selected, setSelected] = useState<StarPoint | null>(null);
+  const [hoveredId, setHoveredId] = useState<string | null>(null);
+  const stars = useMemo(() => createStars(), []);
+
+  const lifeBlendRef = useRef(0);
+  const focusBlendRef = useRef(0);
+  const replayBlendRef = useRef(0);
+
+  useFrame((_, dt) => {
+    const targetLife = phase === "home" ? 0 : 1;
+    const targetFocus = phase === "focus" || phase === "replay" ? 1 : 0;
+    const targetReplay = phase === "replay" ? 1 : 0;
+
+    lifeBlendRef.current = damp(lifeBlendRef.current, targetLife, 2.5, dt);
+    focusBlendRef.current = damp(focusBlendRef.current, targetFocus, 3.0, dt);
+    replayBlendRef.current = damp(replayBlendRef.current, targetReplay, 3.4, dt);
+  });
+
+  const enterLifeMap = useCallback(() => {
+    setPhase("lifemap");
+  }, []);
+
+  const enterFocus = useCallback((star: StarPoint) => {
+    setSelected(star);
+    setPhase("focus");
+  }, []);
+
+  const enterReplay = useCallback(() => {
+    if (selected) {
+      setPhase("replay");
+    }
+  }, [selected]);
+
+  const backToLifeMap = useCallback(() => {
+    setPhase("lifemap");
+  }, []);
+
+  const backHome = useCallback(() => {
+    setPhase("home");
+    setSelected(null);
+    setHoveredId(null);
+  }, []);
+
+  return (
+    <>
+      <AtmosphericSystem
+        phase={phase}
+        lifeBlend={lifeBlendRef.current}
+        replayBlend={replayBlendRef.current}
+      />
+      <CameraRig
+        phase={phase}
+        selected={selected}
+        lifeBlend={lifeBlendRef.current}
+        focusBlend={focusBlendRef.current}
+        replayBlend={replayBlendRef.current}
+      />
+
+      <GroundedWorld lifeBlend={lifeBlendRef.current} />
+
+      <AmbientStars
+        stars={stars}
+        lifeBlend={lifeBlendRef.current}
+        focusBlend={focusBlendRef.current}
+        replayBlend={replayBlendRef.current}
+        selected={selected}
+      />
+
+      <InteractiveStars
+        stars={stars}
+        lifeBlend={lifeBlendRef.current}
+        focusBlend={focusBlendRef.current}
+        replayBlend={replayBlendRef.current}
+        selected={selected}
+        hoveredId={hoveredId}
+        onHover={setHoveredId}
+        onSelect={enterFocus}
+      />
+
+      <FocusShell
+        selected={selected}
+        focusBlend={focusBlendRef.current}
+        replayBlend={replayBlendRef.current}
+      />
+
+      <ReplayChamber
+        selected={selected}
+        replayBlend={replayBlendRef.current}
+      />
+
+      {phase === "home" ? (
+        <mesh position={[0, 0.85, 0.6]} onClick={enterLifeMap}>
+          <sphereGeometry args={[1.8, 16, 16]} />
+          <meshBasicMaterial transparent opacity={0} />
+        </mesh>
+      ) : null}
+
+      <PhaseOverlay
+        phase={phase}
+        selected={selected}
+        onEnterLifeMap={enterLifeMap}
+        onExitHome={backHome}
+        onReplay={enterReplay}
+        onBackToLifeMap={backToLifeMap}
+        onBackHome={backHome}
+      />
+    </>
+  );
+}
+
+export default function SpatialScene() {
+  return (
+    <div
+      style={{
+        position: "relative",
+        width: "100vw",
+        height: "100vh",
+        overflow: "hidden",
+        background: "#050810",
+      }}
+    >
+      <Canvas
+        dpr={[1, 1.75]}
+        camera={{ position: [0, 1.6, 11], fov: 56, near: 0.1, far: 500 }}
+        gl={{ antialias: true, alpha: false }}
+      >
+        <Suspense fallback={null}>
+          <SpatialSceneInner />
+        </Suspense>
+      </Canvas>
+    </div>
+  );
+}

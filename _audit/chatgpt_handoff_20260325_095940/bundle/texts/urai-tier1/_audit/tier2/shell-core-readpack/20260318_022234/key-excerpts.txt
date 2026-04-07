@@ -1,0 +1,546 @@
+
+===== PATTERN: const SKY_TRANSIT_MS =====
+69-    seed = (seed * 1664525 + 1013904223) >>> 0;
+70-    return seed / 4294967296;
+71-  };
+72-  return Array.from({ length: count }, (_, index) => ({
+73-    id: `dust-${index}`,
+74-    x: Math.round(next() * 1000) / 10,
+75-    y: Math.round(next() * 1000) / 10,
+76-    o: 0.15 + next() * 0.6,
+77-    s: 1 + next() * 2.4,
+78-  }));
+79-}
+80-
+81:const SKY_TRANSIT_MS = 950;
+82-const MAP_TO_FOCUS_MS = 300;
+83-const FOCUS_TO_REPLAY_MS = 220;
+84-const REPLAY_TO_FOCUS_MS = 220;
+85-const FOCUS_TO_MAP_MS = 220;
+86-
+87-function pillLabel(mode: Mode) {
+88-  return mode.toUpperCase();
+89-}
+90-
+91-export default function Page() {
+92-  const [mode, setMode] = useState<Mode>("home");
+93-  const [selectedId, setSelectedId] = useState<string>("threshold-one");
+
+===== PATTERN: const MAP_TO_FOCUS_MS =====
+70-    return seed / 4294967296;
+71-  };
+72-  return Array.from({ length: count }, (_, index) => ({
+73-    id: `dust-${index}`,
+74-    x: Math.round(next() * 1000) / 10,
+75-    y: Math.round(next() * 1000) / 10,
+76-    o: 0.15 + next() * 0.6,
+77-    s: 1 + next() * 2.4,
+78-  }));
+79-}
+80-
+81-const SKY_TRANSIT_MS = 950;
+82:const MAP_TO_FOCUS_MS = 300;
+83-const FOCUS_TO_REPLAY_MS = 220;
+84-const REPLAY_TO_FOCUS_MS = 220;
+85-const FOCUS_TO_MAP_MS = 220;
+86-
+87-function pillLabel(mode: Mode) {
+88-  return mode.toUpperCase();
+89-}
+90-
+91-export default function Page() {
+92-  const [mode, setMode] = useState<Mode>("home");
+93-  const [selectedId, setSelectedId] = useState<string>("threshold-one");
+94-  const [transitioning, setTransitioning] = useState(false);
+
+===== PATTERN: const FOCUS_TO_REPLAY_MS =====
+71-  };
+72-  return Array.from({ length: count }, (_, index) => ({
+73-    id: `dust-${index}`,
+74-    x: Math.round(next() * 1000) / 10,
+75-    y: Math.round(next() * 1000) / 10,
+76-    o: 0.15 + next() * 0.6,
+77-    s: 1 + next() * 2.4,
+78-  }));
+79-}
+80-
+81-const SKY_TRANSIT_MS = 950;
+82-const MAP_TO_FOCUS_MS = 300;
+83:const FOCUS_TO_REPLAY_MS = 220;
+84-const REPLAY_TO_FOCUS_MS = 220;
+85-const FOCUS_TO_MAP_MS = 220;
+86-
+87-function pillLabel(mode: Mode) {
+88-  return mode.toUpperCase();
+89-}
+90-
+91-export default function Page() {
+92-  const [mode, setMode] = useState<Mode>("home");
+93-  const [selectedId, setSelectedId] = useState<string>("threshold-one");
+94-  const [transitioning, setTransitioning] = useState(false);
+95-  const [pulseId, setPulseId] = useState<string | null>(null);
+
+===== PATTERN: const REPLAY_TO_FOCUS_MS =====
+72-  return Array.from({ length: count }, (_, index) => ({
+73-    id: `dust-${index}`,
+74-    x: Math.round(next() * 1000) / 10,
+75-    y: Math.round(next() * 1000) / 10,
+76-    o: 0.15 + next() * 0.6,
+77-    s: 1 + next() * 2.4,
+78-  }));
+79-}
+80-
+81-const SKY_TRANSIT_MS = 950;
+82-const MAP_TO_FOCUS_MS = 300;
+83-const FOCUS_TO_REPLAY_MS = 220;
+84:const REPLAY_TO_FOCUS_MS = 220;
+85-const FOCUS_TO_MAP_MS = 220;
+86-
+87-function pillLabel(mode: Mode) {
+88-  return mode.toUpperCase();
+89-}
+90-
+91-export default function Page() {
+92-  const [mode, setMode] = useState<Mode>("home");
+93-  const [selectedId, setSelectedId] = useState<string>("threshold-one");
+94-  const [transitioning, setTransitioning] = useState(false);
+95-  const [pulseId, setPulseId] = useState<string | null>(null);
+96-  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+===== PATTERN: const FOCUS_TO_MAP_MS =====
+73-    id: `dust-${index}`,
+74-    x: Math.round(next() * 1000) / 10,
+75-    y: Math.round(next() * 1000) / 10,
+76-    o: 0.15 + next() * 0.6,
+77-    s: 1 + next() * 2.4,
+78-  }));
+79-}
+80-
+81-const SKY_TRANSIT_MS = 950;
+82-const MAP_TO_FOCUS_MS = 300;
+83-const FOCUS_TO_REPLAY_MS = 220;
+84-const REPLAY_TO_FOCUS_MS = 220;
+85:const FOCUS_TO_MAP_MS = 220;
+86-
+87-function pillLabel(mode: Mode) {
+88-  return mode.toUpperCase();
+89-}
+90-
+91-export default function Page() {
+92-  const [mode, setMode] = useState<Mode>("home");
+93-  const [selectedId, setSelectedId] = useState<string>("threshold-one");
+94-  const [transitioning, setTransitioning] = useState(false);
+95-  const [pulseId, setPulseId] = useState<string | null>(null);
+96-  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+97-  const dust = useMemo(() => seededDust(72), []);
+
+===== PATTERN: function pillLabel =====
+75-    y: Math.round(next() * 1000) / 10,
+76-    o: 0.15 + next() * 0.6,
+77-    s: 1 + next() * 2.4,
+78-  }));
+79-}
+80-
+81-const SKY_TRANSIT_MS = 950;
+82-const MAP_TO_FOCUS_MS = 300;
+83-const FOCUS_TO_REPLAY_MS = 220;
+84-const REPLAY_TO_FOCUS_MS = 220;
+85-const FOCUS_TO_MAP_MS = 220;
+86-
+87:function pillLabel(mode: Mode) {
+88-  return mode.toUpperCase();
+89-}
+90-
+91-export default function Page() {
+92-  const [mode, setMode] = useState<Mode>("home");
+93-  const [selectedId, setSelectedId] = useState<string>("threshold-one");
+94-  const [transitioning, setTransitioning] = useState(false);
+95-  const [pulseId, setPulseId] = useState<string | null>(null);
+96-  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+97-  const dust = useMemo(() => seededDust(72), []);
+98-  const selected = useMemo(
+99-    () => MEMORY_NODES.find((node) => node.id === selectedId) ?? MEMORY_NODES[0],
+
+===== PATTERN: const selected = =====
+86-
+87-function pillLabel(mode: Mode) {
+88-  return mode.toUpperCase();
+89-}
+90-
+91-export default function Page() {
+92-  const [mode, setMode] = useState<Mode>("home");
+93-  const [selectedId, setSelectedId] = useState<string>("threshold-one");
+94-  const [transitioning, setTransitioning] = useState(false);
+95-  const [pulseId, setPulseId] = useState<string | null>(null);
+96-  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+97-  const dust = useMemo(() => seededDust(72), []);
+98:  const selected = useMemo(
+99-    () => MEMORY_NODES.find((node) => node.id === selectedId) ?? MEMORY_NODES[0],
+100-    [selectedId]
+101-  );
+102-
+103-  useEffect(() => {
+104-    const onContextMenu = (event: MouseEvent) => event.preventDefault();
+105-    document.addEventListener("contextmenu", onContextMenu);
+106-    document.body.style.margin = "0";
+107-    document.body.style.background = "#030610";
+108-    document.body.style.overflow = "hidden";
+109-    return () => {
+110-      document.removeEventListener("contextmenu", onContextMenu);
+
+===== PATTERN: const dust = =====
+85-const FOCUS_TO_MAP_MS = 220;
+86-
+87-function pillLabel(mode: Mode) {
+88-  return mode.toUpperCase();
+89-}
+90-
+91-export default function Page() {
+92-  const [mode, setMode] = useState<Mode>("home");
+93-  const [selectedId, setSelectedId] = useState<string>("threshold-one");
+94-  const [transitioning, setTransitioning] = useState(false);
+95-  const [pulseId, setPulseId] = useState<string | null>(null);
+96-  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+97:  const dust = useMemo(() => seededDust(72), []);
+98-  const selected = useMemo(
+99-    () => MEMORY_NODES.find((node) => node.id === selectedId) ?? MEMORY_NODES[0],
+100-    [selectedId]
+101-  );
+102-
+103-  useEffect(() => {
+104-    const onContextMenu = (event: MouseEvent) => event.preventDefault();
+105-    document.addEventListener("contextmenu", onContextMenu);
+106-    document.body.style.margin = "0";
+107-    document.body.style.background = "#030610";
+108-    document.body.style.overflow = "hidden";
+109-    return () => {
+
+===== PATTERN: const uiLocked = =====
+154-  };
+155-
+156-  const enterReplay = () => {
+157-    if (transitioning) return;
+158-    lock(FOCUS_TO_REPLAY_MS, () => setMode("replay"));
+159-  };
+160-
+161-  const exitReplay = () => {
+162-    if (transitioning) return;
+163-    lock(REPLAY_TO_FOCUS_MS, () => setMode("focus"));
+164-  };
+165-
+166:  const uiLocked = transitioning || mode === "sky";
+167-  const showMapWorld = mode === "lifemap" || mode === "focus" || mode === "replay";
+168-
+169-  return (
+170-    <main
+171-      style={{
+172-        minHeight: "100vh",
+173-        width: "100vw",
+174-        position: "relative",
+175-        overflow: "hidden",
+176-        color: "#f4f7ff",
+177-        fontFamily:
+178-          'Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
+
+===== PATTERN: const showMapWorld = =====
+155-
+156-  const enterReplay = () => {
+157-    if (transitioning) return;
+158-    lock(FOCUS_TO_REPLAY_MS, () => setMode("replay"));
+159-  };
+160-
+161-  const exitReplay = () => {
+162-    if (transitioning) return;
+163-    lock(REPLAY_TO_FOCUS_MS, () => setMode("focus"));
+164-  };
+165-
+166-  const uiLocked = transitioning || mode === "sky";
+167:  const showMapWorld = mode === "lifemap" || mode === "focus" || mode === "replay";
+168-
+169-  return (
+170-    <main
+171-      style={{
+172-        minHeight: "100vh",
+173-        width: "100vw",
+174-        position: "relative",
+175-        overflow: "hidden",
+176-        color: "#f4f7ff",
+177-        fontFamily:
+178-          'Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
+179-        background:
+
+===== PATTERN: seededDust =====
+54-    id: "north-vector",
+55-    title: "North Vector",
+56-    chapter: "Guide",
+57-    domain: "Compass",
+58-    summary: "Reference waypoint for map readability and deterministic object persistence.",
+59-    tags: ["North", "Vector", "Guide"],
+60-    x: 66,
+61-    y: 68,
+62-    size: 9,
+63-  },
+64-];
+65-
+66:function seededDust(count: number) {
+67-  let seed = 1337;
+68-  const next = () => {
+69-    seed = (seed * 1664525 + 1013904223) >>> 0;
+70-    return seed / 4294967296;
+71-  };
+72-  return Array.from({ length: count }, (_, index) => ({
+73-    id: `dust-${index}`,
+74-    x: Math.round(next() * 1000) / 10,
+75-    y: Math.round(next() * 1000) / 10,
+76-    o: 0.15 + next() * 0.6,
+77-    s: 1 + next() * 2.4,
+78-  }));
+--
+85-const FOCUS_TO_MAP_MS = 220;
+86-
+87-function pillLabel(mode: Mode) {
+88-  return mode.toUpperCase();
+89-}
+90-
+91-export default function Page() {
+92-  const [mode, setMode] = useState<Mode>("home");
+93-  const [selectedId, setSelectedId] = useState<string>("threshold-one");
+94-  const [transitioning, setTransitioning] = useState(false);
+95-  const [pulseId, setPulseId] = useState<string | null>(null);
+96-  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+97:  const dust = useMemo(() => seededDust(72), []);
+98-  const selected = useMemo(
+99-    () => MEMORY_NODES.find((node) => node.id === selectedId) ?? MEMORY_NODES[0],
+100-    [selectedId]
+101-  );
+102-
+103-  useEffect(() => {
+104-    const onContextMenu = (event: MouseEvent) => event.preventDefault();
+105-    document.addEventListener("contextmenu", onContextMenu);
+106-    document.body.style.margin = "0";
+107-    document.body.style.background = "#030610";
+108-    document.body.style.overflow = "hidden";
+109-    return () => {
+
+===== PATTERN: MEMORY_NODES.map =====
+289-            top: "50%",
+290-            width: 6,
+291-            height: 6,
+292-            borderRadius: 999,
+293-            background: "rgba(233,243,255,0.92)",
+294-            boxShadow: "0 0 18px rgba(233,243,255,0.55)",
+295-            opacity: 0.94,
+296-          }}
+297-        />
+298-      </div>
+299-
+300-      {(showMapWorld || pulseId) &&
+301:        MEMORY_NODES.map((node) => {
+302-          const selectedNode = node.id === selectedId;
+303-          const pulsingNode = node.id === pulseId;
+304-          return (
+305-            <button
+306-              key={node.id}
+307-              type="button"
+308-              disabled={!showMapWorld || uiLocked}
+309-              onClick={() => selectMemory(node.id)}
+310-              style={{
+311-                position: "absolute",
+312-                left: `${node.x}%`,
+313-                top: `${node.y}%`,
+
+===== PATTERN: selectedNode =====
+290-            width: 6,
+291-            height: 6,
+292-            borderRadius: 999,
+293-            background: "rgba(233,243,255,0.92)",
+294-            boxShadow: "0 0 18px rgba(233,243,255,0.55)",
+295-            opacity: 0.94,
+296-          }}
+297-        />
+298-      </div>
+299-
+300-      {(showMapWorld || pulseId) &&
+301-        MEMORY_NODES.map((node) => {
+302:          const selectedNode = node.id === selectedId;
+303-          const pulsingNode = node.id === pulseId;
+304-          return (
+305-            <button
+306-              key={node.id}
+307-              type="button"
+308-              disabled={!showMapWorld || uiLocked}
+309-              onClick={() => selectMemory(node.id)}
+310-              style={{
+311-                position: "absolute",
+312-                left: `${node.x}%`,
+313-                top: `${node.y}%`,
+314-                transform: "translate(-50%, -50%)",
+315:                width: selectedNode ? node.size + 10 : node.size,
+316:                height: selectedNode ? node.size + 10 : node.size,
+317-                borderRadius: 999,
+318:                border: selectedNode
+319-                  ? "1px solid rgba(255,255,255,0.48)"
+320-                  : "1px solid rgba(255,255,255,0.14)",
+321:                background: selectedNode
+322-                  ? "radial-gradient(circle, rgba(214,226,255,0.92) 0%, rgba(140,160,214,0.38) 55%, rgba(26,36,66,0.18) 100%)"
+323-                  : "radial-gradient(circle, rgba(226,236,255,0.94) 0%, rgba(124,146,206,0.22) 100%)",
+324:                boxShadow: selectedNode
+325-                  ? "0 0 34px rgba(180,200,255,0.42)"
+326-                  : "0 0 12px rgba(190,210,255,0.18)",
+327-                opacity: mode === "home" || mode === "sky" ? 0.16 : 1,
+328-                cursor: showMapWorld && !uiLocked ? "pointer" : "default",
+329-                transition:
+330-                  "transform 220ms ease, width 220ms ease, height 220ms ease, opacity 220ms ease, box-shadow 220ms ease",
+331-                pointerEvents: showMapWorld && !uiLocked ? "auto" : "none",
+332-                animation: pulsingNode ? "node-pulse 280ms ease-out 1" : undefined,
+333-              }}
+334-              aria-label={node.title}
+335-            >
+336:              {selectedNode && (
+337-                <span
+338-                  style={{
+339-                    position: "absolute",
+340-                    inset: -14,
+341-                    borderRadius: 999,
+342-                    border: "1px solid rgba(206,222,255,0.20)",
+343-                    boxShadow: "0 0 26px rgba(154,186,255,0.14)",
+344-                  }}
+345-                />
+346-              )}
+347-            </button>
+348-          );
+
+===== PATTERN: pulsingNode =====
+291-            height: 6,
+292-            borderRadius: 999,
+293-            background: "rgba(233,243,255,0.92)",
+294-            boxShadow: "0 0 18px rgba(233,243,255,0.55)",
+295-            opacity: 0.94,
+296-          }}
+297-        />
+298-      </div>
+299-
+300-      {(showMapWorld || pulseId) &&
+301-        MEMORY_NODES.map((node) => {
+302-          const selectedNode = node.id === selectedId;
+303:          const pulsingNode = node.id === pulseId;
+304-          return (
+305-            <button
+306-              key={node.id}
+307-              type="button"
+308-              disabled={!showMapWorld || uiLocked}
+309-              onClick={() => selectMemory(node.id)}
+310-              style={{
+311-                position: "absolute",
+312-                left: `${node.x}%`,
+313-                top: `${node.y}%`,
+314-                transform: "translate(-50%, -50%)",
+315-                width: selectedNode ? node.size + 10 : node.size,
+--
+320-                  : "1px solid rgba(255,255,255,0.14)",
+321-                background: selectedNode
+322-                  ? "radial-gradient(circle, rgba(214,226,255,0.92) 0%, rgba(140,160,214,0.38) 55%, rgba(26,36,66,0.18) 100%)"
+323-                  : "radial-gradient(circle, rgba(226,236,255,0.94) 0%, rgba(124,146,206,0.22) 100%)",
+324-                boxShadow: selectedNode
+325-                  ? "0 0 34px rgba(180,200,255,0.42)"
+326-                  : "0 0 12px rgba(190,210,255,0.18)",
+327-                opacity: mode === "home" || mode === "sky" ? 0.16 : 1,
+328-                cursor: showMapWorld && !uiLocked ? "pointer" : "default",
+329-                transition:
+330-                  "transform 220ms ease, width 220ms ease, height 220ms ease, opacity 220ms ease, box-shadow 220ms ease",
+331-                pointerEvents: showMapWorld && !uiLocked ? "auto" : "none",
+332:                animation: pulsingNode ? "node-pulse 280ms ease-out 1" : undefined,
+333-              }}
+334-              aria-label={node.title}
+335-            >
+336-              {selectedNode && (
+337-                <span
+338-                  style={{
+339-                    position: "absolute",
+340-                    inset: -14,
+341-                    borderRadius: 999,
+342-                    border: "1px solid rgba(206,222,255,0.20)",
+343-                    boxShadow: "0 0 26px rgba(154,186,255,0.14)",
+344-                  }}
+
+===== PATTERN: mode === "focus" || mode === "replay" =====
+155-
+156-  const enterReplay = () => {
+157-    if (transitioning) return;
+158-    lock(FOCUS_TO_REPLAY_MS, () => setMode("replay"));
+159-  };
+160-
+161-  const exitReplay = () => {
+162-    if (transitioning) return;
+163-    lock(REPLAY_TO_FOCUS_MS, () => setMode("focus"));
+164-  };
+165-
+166-  const uiLocked = transitioning || mode === "sky";
+167:  const showMapWorld = mode === "lifemap" || mode === "focus" || mode === "replay";
+168-
+169-  return (
+170-    <main
+171-      style={{
+172-        minHeight: "100vh",
+173-        width: "100vw",
+174-        position: "relative",
+175-        overflow: "hidden",
+176-        color: "#f4f7ff",
+177-        fontFamily:
+178-          'Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
+179-        background:
+--
+339-                    position: "absolute",
+340-                    inset: -14,
+341-                    borderRadius: 999,
+342-                    border: "1px solid rgba(206,222,255,0.20)",
+343-                    boxShadow: "0 0 26px rgba(154,186,255,0.14)",
+344-                  }}
+345-                />
+346-              )}
+347-            </button>
+348-          );
+349-        })}
+350-
+351:      {(mode === "focus" || mode === "replay") && (
+352-        <div
+353-          style={{
+354-            position: "absolute",
+355-            left: "50%",
+356-            top: mode === "replay" ? "48%" : "50%",
+357-            transform: "translate(-50%, -50%)",
+358-            width: mode === "replay" ? 146 : 118,
+359-            height: mode === "replay" ? 146 : 118,
+360-            borderRadius: "50%",
+361-            background:
+362-              "radial-gradient(circle, rgba(220,230,255,0.20) 0%, rgba(116,136,196,0.20) 45%, rgba(46,60,102,0.14) 68%, rgba(18,26,48,0.00) 100%)",
+363-            border: "1px solid rgba(255,255,255,0.18)",
+
+===== PATTERN: <style jsx global> =====
+675-            }}
+676-          >
+677-            Canonical replay holds the same selected memory identity across focus and replay, with a
+678-            stronger entered-memory composition and deterministic exit path.
+679-          </div>
+680-
+681-          <div style={{ display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap" }}>
+682-            <ActionButton disabled={uiLocked} label="EXIT REPLAY" onClick={exitReplay} />
+683-          </div>
+684-        </section>
+685-      )}
+686-
+687:      <style jsx global>{`
+688-        @keyframes breathe {
+689-          0%,
+690-          100% {
+691-            transform: translate(-50%, -50%) scale(0.985);
+692-          }
+693-          50% {
+694-            transform: translate(-50%, -50%) scale(1.025);
+695-          }
+696-        }
+697-
+698-        @keyframes node-pulse {
+699-          0% {
+
+===== PATTERN: return \( =====

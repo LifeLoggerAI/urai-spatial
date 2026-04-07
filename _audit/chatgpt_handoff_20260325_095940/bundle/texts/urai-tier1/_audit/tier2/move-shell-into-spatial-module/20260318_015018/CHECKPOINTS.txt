@@ -1,0 +1,10 @@
+PAGE=src/app/page.tsx
+APP_SHELL=src/app/_page_shell.tsx
+SPATIAL_SHELL=src/spatial/shell/Tier1ShellScreen.tsx
+AUDIT=/home/user/urai-spatial/urai-tier1/_audit/tier2/move-shell-into-spatial-module/20260318_015018
+
+Expected result:
+- src/app/page.tsx stays thin
+- src/app/_page_shell.tsx becomes a thin export
+- Tier 1 shell source-of-truth moves to src/spatial/shell/Tier1ShellScreen.tsx
+- build remains green

@@ -1,0 +1,24 @@
+src/spatial/ui/SpatialTimelineLensPanel.tsx:5:import { useSpatialLensStore } from "@/spatial/lenses/spatialLensStore";
+src/spatial/ui/SpatialTimelineLensPanel.tsx:7:export default function SpatialTimelineLensPanel() {
+src/spatial/ui/SpatialTimelineLensPanel.tsx:8:  const activeLensId = useSpatialLensStore((s) => s.activeLensId);
+src/spatial/ui/SpatialTimelineLensPanel.tsx:9:  const lenses = useSpatialLensStore((s) => s.lenses);
+src/spatial/ui/SpatialTimelineLensPanel.tsx:10:  const setActiveLensId = useSpatialLensStore((s) => s.setActiveLensId);
+src/spatial/scene/SpatialScene.tsx:2:import SpatialTimelineLensPanel from "@/spatial/ui/SpatialTimelineLensPanel";
+src/spatial/scene/SpatialScene.tsx:3:import SpatialLensBootstrap from "@/spatial/lenses/SpatialLensBootstrap";
+src/spatial/scene/SpatialScene.tsx:743:      <SpatialLensBootstrap />
+src/spatial/scene/SpatialScene.tsx:744:      <SpatialTimelineLensPanel />
+src/spatial/lenses/SpatialLensBootstrap.tsx:4:import { buildSpatialTimelineLenses } from "@/spatial/lenses/buildSpatialTimelineLenses";
+src/spatial/lenses/SpatialLensBootstrap.tsx:6:import { useSpatialLensStore } from "@/spatial/lenses/spatialLensStore";
+src/spatial/lenses/SpatialLensBootstrap.tsx:14:export default function SpatialLensBootstrap() {
+src/spatial/lenses/SpatialLensBootstrap.tsx:17:  const hydrate = useSpatialLensStore((s) => s.hydrate);
+src/spatial/lenses/SpatialLensBootstrap.tsx:18:  const activeLensId = useSpatialLensStore((s) => s.activeLensId);
+src/spatial/lenses/SpatialLensBootstrap.tsx:19:  const setLenses = useSpatialLensStore((s) => s.setLenses);
+src/spatial/lenses/SpatialLensBootstrap.tsx:20:  const lenses = useSpatialLensStore((s) => s.lenses);
+src/spatial/lenses/SpatialLensBootstrap.tsx:30:    () => buildSpatialTimelineLenses(compareSets),
+src/spatial/lenses/SpatialLensBootstrap.tsx:57:      new CustomEvent("urai:spatial-lens-manifest", {
+src/spatial/lenses/buildSpatialTimelineLenses.ts:50:export function buildSpatialTimelineLenses(
+src/spatial/lenses/spatialLensTypes.ts:25:export const SPATIAL_LENS_STORAGE_KEY = "urai.spatial.lens.v1";
+src/spatial/lenses/spatialLensStore.ts:18:export const useSpatialLensStore = create<SpatialLensStore>((set) => ({
+src/spatial/lenses/spatialLensIO.ts:4:  SPATIAL_LENS_STORAGE_KEY,
+src/spatial/lenses/spatialLensIO.ts:16:      getSpatialScopedStorageKey(SPATIAL_LENS_STORAGE_KEY),
+src/spatial/lenses/spatialLensIO.ts:55:      getSpatialScopedStorageKey(SPATIAL_LENS_STORAGE_KEY),

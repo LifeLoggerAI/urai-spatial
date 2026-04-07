@@ -1,0 +1,23 @@
+
+> urai-tier1@0.1.0 build /home/user/urai-spatial/urai-tier1
+> next build --webpack
+
+▲ Next.js 16.2.1 (webpack)
+
+  Creating an optimized production build ...
+✓ Compiled successfully in 27.2s
+  Running TypeScript ...
+Failed to type check.
+
+./src/spatial/scene/FocusShellOverlay.tsx:3:15
+Type error: Module '"../types/scene"' has no exported member 'SelectedStar'.
+
+  [90m1 |[0m [32m"use client"[0m;
+  [90m2 |[0m
+[31m[1m>[0m [90m3 |[0m [36mimport[0m [36mtype[0m { [33mSelectedStar[0m } [36mfrom[0m [32m"../types/scene"[0m;
+  [90m  |[0m               [31m[1m^[0m
+  [90m4 |[0m
+  [90m5 |[0m [36mtype[0m [33mFocusShellOverlayProps[0m = {
+  [90m6 |[0m   selected: [33mSelectedStar[0m | [36mnull[0m;
+Next.js build worker exited with code: 1 and signal: null
+ ELIFECYCLE  Command failed with exit code 1.

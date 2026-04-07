@@ -1,0 +1,33 @@
+=== PASS_T1_CLEAN_REWRITE START ===
+APP=/home/user/urai-spatial
+=== VERIFY FILE ANCHORS ===
+9:| 'home_to_lifemap'
+134:if (props.transition.active && props.transition.kind === 'home_to_lifemap') {
+196:if (props.transition.active && props.transition.kind === 'home_to_lifemap') {
+320:if (props.transition.active && props.transition.kind === 'home_to_lifemap') {
+454:if (kind === 'home_to_lifemap') setPhase('lifemap')
+471:begin('home_to_lifemap', T_HOME_TO_LIFEMAP)
+498:    console.log('ESC KEY replay')
+478:console.log('STAR CLICK DIRECT ' + id)
+300:function CameraDirector(props: {
+3:import SpatialScene from '@/spatial/scene/SpatialScene'
+=== STOP OLD DEV SERVERS ===
+=== TYPECHECK ===
+src/spatial/scene/SpatialScene.tsx(179,1): error TS1005: ')' expected.
+src/spatial/scene/SpatialScene.tsx(264,4): error TS1128: Declaration or statement expected.
+src/spatial/scene/SpatialScene.tsx(264,5): error TS1128: Declaration or statement expected.
+src/spatial/scene/SpatialScene.tsx(265,1): error TS1128: Declaration or statement expected.
+src/spatial/scene/SpatialScene.tsx(511,1): error TS1128: Declaration or statement expected.
+src/spatial/scene/SpatialScene.tsx(525,14): error TS1005: ';' expected.
+src/spatial/scene/SpatialScene.tsx(525,28): error TS1005: ';' expected.
+src/spatial/scene/SpatialScene.tsx(525,52): error TS1005: ';' expected.
+src/spatial/scene/SpatialScene.tsx(525,77): error TS1109: Expression expected.
+src/spatial/scene/SpatialScene.tsx(526,3): error TS2657: JSX expressions must have one parent element.
+src/spatial/scene/SpatialScene.tsx(543,1): error TS1128: Declaration or statement expected.
+src/spatial/scene/SpatialScene.tsx(543,3): error TS1109: Expression expected.
+src/spatial/scene/SpatialScene.tsx(555,1): error TS1160: Unterminated template literal.
+TYPECHECK_STATUS=FAIL
+AUDIT_DIR=/home/user/urai-spatial/*audit/20260402_184012*PASS_T1_CLEAN_REWRITE
+BACKUP_DIR=/home/user/urai-spatial/*audit/20260402_184012*PASS_T1_CLEAN_REWRITE/backup
+RUN_LOG=/home/user/urai-spatial/*audit/20260402_184012*PASS_T1_CLEAN_REWRITE/run.log
+TYPECHECK_LOG=/home/user/urai-spatial/*audit/20260402_184012*PASS_T1_CLEAN_REWRITE/typecheck.log

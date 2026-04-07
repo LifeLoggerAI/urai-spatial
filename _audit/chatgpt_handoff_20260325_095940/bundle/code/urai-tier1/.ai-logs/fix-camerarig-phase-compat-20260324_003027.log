@@ -1,0 +1,123 @@
+== VERIFY CAMERARIG ==
+"use client";
+
+import { useFrame } from "@react-three/fiber";
+import { useRef } from "react";
+import { Vector3 } from "three";
+import type { StarPoint } from "./sceneState";
+
+type CameraPhase =
+  | "home"
+  | "lifemap"
+  | "focus"
+  | "replay"
+  | "focus_travel"
+  | "focus_arrive"
+  | "returningHome"
+  | "ascent"
+  | string;
+
+type Props = {
+  phase: CameraPhase;
+  progress?: number;
+  selected?: StarPoint | null;
+  selectedStar?: StarPoint | null;
+};
+
+const HOME_POS = new Vector3(0, 0.92, 7.6);
+const HOME_LOOK = new Vector3(0, 0.88, 0);
+const LIFEMAP_POS = new Vector3(0, 2.95, 16.2);
+const LIFEMAP_LOOK = new Vector3(0, 2.45, -21.5);
+
+export default function CameraRig({
+  phase,
+  progress = 1,
+  selected = null,
+  selectedStar = null,
+}: Props) {
+  const activeStar = selectedStar ?? selected ?? null;
+  const target = useRef(HOME_POS.clone());
+  const lookAt = useRef(HOME_LOOK.clone());
+  const fallbackDir = useRef(new Vector3(0, 0.18, 1));
+
+  useFrame((state) => {
+    const cam = state.camera;
+    const tNow = state.clock.getElapsedTime();
+
+    let desiredPos = HOME_POS.clone();
+    let desiredLook = HOME_LOOK.clone();
+    let lerpFactor = 0.046;
+
+    if (phase === "home") {
+      desiredPos.x += Math.sin(tNow * 0.18) * 0.05;
+      desiredPos.y += Math.sin(tNow * 0.22) * 0.035;
+      desiredLook.x += Math.sin(tNow * 0.14) * 0.025;
+      desiredLook.y += Math.sin(tNow * 0.18) * 0.02;
+    }
+
+    if (phase === "lifemap") {
+      desiredPos = LIFEMAP_POS.clone();
+      desiredLook = LIFEMAP_LOOK.clone();
+      desiredPos.x += Math.sin(tNow * 0.12) * 0.14;
+      desiredPos.y += Math.sin(tNow * 0.16) * 0.08;
+      desiredLook.x += Math.sin(tNow * 0.10) * 0.08;
+      desiredLook.y += Math.sin(tNow * 0.13) * 0.04;
+      lerpFactor = 0.055;
+    }
+
+    if (activeStar) {
+      const starPos = new Vector3(
+        activeStar.position[0],
+        activeStar.position[1],
+        activeStar.position[2]
+      );
+
+      let offset = fallbackDir.current.clone();
+      const toCamera = new Vector3().subVectors(cam.position, starPos);
+      if (toCamera.lengthSq() > 0.0001) {
+        offset = toCamera.normalize();
+        fallbackDir.current.copy(offset);
+      }
+
+      const t = Math.max(0, Math.min(1, progress));
+
+      if (phase === "focus" || phase === "focus_travel" || phase === "focus_arrive") {
+        const dist = 4.35 - t * 1.0;
+        desiredPos = starPos.clone().add(offset.clone().multiplyScalar(dist));
+        desiredPos.x += Math.sin(tNow * 0.2) * 0.03;
+        desiredPos.y += 0.3 + Math.sin(tNow * 0.24) * 0.025;
+        desiredLook = starPos.clone();
+        desiredLook.y += 0.1;
+        lerpFactor = 0.07;
+      } else if (phase === "replay") {
+        const dist = 2.18 - t * 0.42;
+        desiredPos = starPos.clone().add(offset.clone().multiplyScalar(dist));
+        desiredPos.x += Math.sin(tNow * 0.24) * 0.02;
+        desiredPos.y += 0.16 + Math.sin(tNow * 0.28) * 0.018;
+        desiredLook = starPos.clone();
+        desiredLook.y += 0.04;
+        lerpFactor = 0.082;
+      }
+    }
+
+    target.current.lerp(desiredPos, lerpFactor);
+    lookAt.current.lerp(desiredLook, lerpFactor * 0.9);
+
+    cam.position.copy(target.current);
+    cam.lookAt(lookAt.current);
+  });
+
+  return null;
+}
+== TYPECHECK ==
+
+> urai-tier1@0.1.0 typecheck /home/user/urai-spatial/urai-tier1
+> tsc --noEmit
+
+src/spatial/scene/Starfield.tsx(124,37): error TS1005: ',' expected.
+src/spatial/scene/Starfield.tsx(124,65): error TS1005: ',' expected.
+src/spatial/scene/Starfield.tsx(124,225): error TS1005: ',' expected.
+ ELIFECYCLE  Command failed with exit code 2.
+TYPECHECK FAILED
+LOG: .ai-logs/fix-camerarig-phase-compat-20260324_003027.log
+exit

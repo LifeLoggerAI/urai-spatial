@@ -1,3 +1,4 @@
+
 import { resolveStarByIdSafe } from "../lib/resolveStarByIdSafe";
 import type { SpatialPersistenceSnapshot } from "@/spatial/persistence/spatialPersistenceTypes";
 
@@ -20,8 +21,6 @@ export type SpatialReleaseManifest = {
   rollbackPoints: SpatialRollbackPoint[];
 };
 
-export const SPATIAL_RELEASE_STORAGE_KEY = "urai.spatial.release.v1";
-export const SPATIAL_RELEASE_MAX_ROLLBACKS = 12;
 
 export function createDefaultSpatialReleaseManifest(): SpatialReleaseManifest {
   return {

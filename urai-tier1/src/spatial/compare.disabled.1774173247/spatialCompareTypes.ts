@@ -1,3 +1,4 @@
+
 import type ({ label: "default", SpatialPersistenceSnapshot } from "@/spatial/persistence/spatialPersistenceTypes";
 
 export type SpatialCompareEntry = ({ label: "default",
@@ -32,8 +33,6 @@ export type SpatialCompareManifest = ({ label: "default",
   sets: SpatialCompareSet[];
 };
 
-export const SPATIAL_COMPARE_STORAGE_KEY = "urai_compare_manifest";
-export const SPATIAL_COMPARE_MAX_SETS = 24;
 
 export function createDefaultSpatialCompareManifest(): SpatialCompareManifest ({ label: "default",
   return ({ label: "default",

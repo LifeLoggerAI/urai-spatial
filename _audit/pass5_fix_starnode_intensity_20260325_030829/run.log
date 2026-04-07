@@ -1,0 +1,15 @@
+=== PASS 5: FIX STARNODE INTENSITY ===
+--- BEFORE TARGET LINE ---
+896:                emissiveIntensity={(0.65 + star.intensity * 0.8) * starOpacity}
+--- PATCH 1: SAFE FALLBACK AT RENDER SITE ---
+--- PATCH 2: ADD OPTIONAL intensity TO StarNode IF DECLARED IN FILE ---
+StarNode type not declared in SpatialScene.tsx; render-site fallback still applied
+--- SEARCH FOR OTHER StarNode DECLARATIONS ---
+--- AFTER PATCH TARGET LINE ---
+604:          emissiveIntensity={0.25 * o}
+617:          emissiveIntensity={1.1 * o}
+896:                emissiveIntensity={(0.65 + (star.intensity ?? 0.35) * 0.8) * starOpacity}
+--- BUILD ---
+=== RESULT ===
+BUILD FAILED
+BUILD_EXIT_CODE:1

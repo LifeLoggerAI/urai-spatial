@@ -1,0 +1,45 @@
+"use client";
+
+import { useMemo, useState } from "react";
+import { generateStars } from "@/spatial/data/stars";
+import { useSceneStore } from "@/spatial/state/sceneStore";
+
+export default function Starfield() {
+  const stars = useMemo(() => generateStars(), []);
+  const setMode = useSceneStore((s) => s.setMode);
+  const setSelectedStar = useSceneStore((s) => s.setSelectedStar);
+  const selectedStar = useSceneStore((s) => s.selectedStar);
+  const [hovered, setHovered] = useState<string | null>(null);
+
+  return (
+    <group>
+      {stars.map((star) => {
+        const isHovered = hovered === star.id;
+        const isSelected = selectedStar?.id === star.id;
+        const scale = isSelected ? 1.8 : isHovered ? 1.35 : 1;
+
+        return (
+          <mesh
+            key={star.id}
+            position={star.position}
+            scale={scale}
+            onPointerEnter={() => setHovered(star.id)}
+            onPointerLeave={() => setHovered(null)}
+            onClick={() => {
+              setSelectedStar({
+                id: star.id,
+                position: star.position,
+                color: star.color,
+                size: star.size,
+              });
+              setMode("focus");
+            }}
+          >
+            <sphereGeometry args={[star.size, 8, 8]} />
+            <meshBasicMaterial color={star.color} />
+          </mesh>
+        );
+      })}
+    </group>
+  );
+}

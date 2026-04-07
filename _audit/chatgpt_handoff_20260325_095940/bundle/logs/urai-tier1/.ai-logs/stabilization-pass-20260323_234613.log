@@ -1,0 +1,94 @@
+== WRITE GLOBAL ==
+== WRITE ORB ==
+== PATCH SCENE TEXT ==
+== VERIFY PATCH ==
+463:  const showGround = phase === "home";
+465:  const showGround = phase === "home";
+464:  const showOrb = phase === "home";
+466:  const showOrb = phase === "home";
+5:    __URAI_FROM_LIFEMAP__?: boolean;
+6:type OrbProps = Omit<ComponentProps<"group">, "scale"> & {
+== QUICK SYNTAX SANITY ==
+"use client";
+
+import type { ComponentProps } from "react";
+import { Color } from "three";
+
+type OrbProps = Omit<ComponentProps<"group">, "scale"> & {
+  intensity?: number;
+  orbScale?: number;
+  opacity?: number;
+};
+
+export default function Orb({
+  intensity = 1,
+  orbScale = 1,
+  opacity = 0.92,
+  children,
+  ...props
+}: OrbProps) {
+  const glow = new Color().setRGB(
+    0.28 * intensity,
+    0.54 * intensity,
+    1.0 * intensity
+  );
+
+  return (
+    <group {...props} scale={orbScale}>
+      <mesh>
+        <sphereGeometry args={[0.18, 32, 32]} />
+        <meshBasicMaterial color={glow} transparent opacity={opacity} />
+      </mesh>
+      <mesh scale={1.7}>
+        <sphereGeometry args={[0.18, 32, 32]} />
+        <meshBasicMaterial
+          color={glow}
+          transparent
+          opacity={Math.min(0.28 * intensity, 0.42)}
+        />
+      </mesh>
+      <mesh scale={2.7}>
+        <sphereGeometry args={[0.18, 32, 32]} />
+        <meshBasicMaterial
+          color={glow}
+          transparent
+          opacity={Math.min(0.12 * intensity, 0.18)}
+        />
+      </mesh>
+      {children}
+    </group>
+  );
+}
+65:function SceneEnvironment({ phase }: { phase: ScenePhase }) {
+70:    scene.fog = new FogExp2("#02030a", phase === "home" ? 0.04 : phase === "lifemap" ? 0.023 : 0.017);
+72:  }, [gl, phase, scene]);
+78:  phase,
+81:  phase: ScenePhase;
+95:    if (phase === "lifemap") {
+101:    if ((phase === "focus" || phase === "replay") && selected) {
+103:      if (phase === "focus") {
+121:    const alpha = 1 - Math.exp(-delta * (phase === "replay" ? 3.6 : 2.9));
+131:function SkyShell({ phase }: { phase: ScenePhase }) {
+132:  const opacity = phase === "home" ? 0.16 : phase === "lifemap" ? 0.11 : 0.08;
+157:function SelectedBeacon({ star, phase }: { star: StarPoint; phase: ScenePhase }) {
+159:  const replay = phase === "replay";
+177:  phase,
+184:  phase: ScenePhase;
+190:  const interactive = phase === "lifemap" || phase === "focus";
+194:    phase === "home"
+197:        ? phase === "replay"
+205:    phase === "home"
+211:          : phase === "lifemap"
+217:      ? phase === "replay"
+== TYPECHECK ==
+
+> urai-tier1@0.1.0 typecheck /home/user/urai-spatial/urai-tier1
+> tsc --noEmit
+
+src/spatial/scene/SpatialScene.tsx(463,9): error TS2451: Cannot redeclare block-scoped variable 'showGround'.
+src/spatial/scene/SpatialScene.tsx(464,9): error TS2451: Cannot redeclare block-scoped variable 'showOrb'.
+src/spatial/scene/SpatialScene.tsx(465,9): error TS2451: Cannot redeclare block-scoped variable 'showGround'.
+src/spatial/scene/SpatialScene.tsx(466,9): error TS2451: Cannot redeclare block-scoped variable 'showOrb'.
+ ELIFECYCLE  Command failed with exit code 2.
+TYPECHECK FAILED
+exit

@@ -1,0 +1,204 @@
+
+===== PATTERN: mode|state =====
+1-import { create } from "zustand";
+2-import { SPATIAL_STARS, type SpatialStar } from "../data/stars";
+3:import type { SelectedStar } from "@/spatial/state/selectedStarContract";
+4-
+5-export type SceneMode = "home" | "sky" | "lifemap" | "focus" | "replay";
+6-
+7-export type SceneState = {
+8:  mode: SceneMode;
+9-  stars: SpatialStar[];
+10-  selectedStarId: string | null;
+11-  selectedStar: SelectedStar | null;
+12-  replayEnteredAt: number | null;
+13:  setMode: (mode: SceneMode) => void;
+14-  enterSky: () => void;
+15-  setSelectedStar: (star: SelectedStar | null) => void;
+16-  selectStar: (star: SelectedStar | null) => void;
+17-  clearFocus: () => void;
+18-  exitFocusToLifeMap: () => void;
+19-  enterReplay: () => void;
+20-  exitReplay: () => void;
+21-  exitReplayToFocus: () => void;
+22-};
+23-
+24-export const useSceneStore = create<SceneState>((set, get) => ({
+25:  mode: "home",
+26-  stars: SPATIAL_STARS,
+27-  selectedStarId: null,
+28-  selectedStar: null,
+29-  replayEnteredAt: null,
+30-
+31:  setMode: (mode: SceneMode) => set({ mode }),
+32-
+33-  enterSky: () =>
+34-    set({
+35-      selectedStarId: null,
+36-      selectedStar: null,
+37-      replayEnteredAt: null,
+38:      mode: "sky",
+39-    }),
+40-
+41-  setSelectedStar: (star: SelectedStar | null) =>
+42-    set({
+43-      selectedStarId: star?.id ?? null,
+44-      selectedStar: star,
+45-      replayEnteredAt: null,
+46:      mode: star ? "focus" : "lifemap",
+47-    }),
+48-
+49-  selectStar: (star: SelectedStar | null) =>
+50-    set({
+51-      selectedStarId: star?.id ?? null,
+52-      selectedStar: star,
+53-      replayEnteredAt: null,
+54:      mode: star ? "focus" : "lifemap",
+55-    }),
+56-
+57-  clearFocus: () =>
+58-    set({
+59-      selectedStarId: null,
+60-      selectedStar: null,
+61-      replayEnteredAt: null,
+62:      mode: "lifemap",
+63-    }),
+64-
+65-  exitFocusToLifeMap: () =>
+66-    set({
+67-      selectedStarId: null,
+68-      selectedStar: null,
+69-      replayEnteredAt: null,
+70:      mode: "lifemap",
+71-    }),
+72-
+73-  enterReplay: () => {
+74-    const { selectedStar } = get();
+75-    if (!selectedStar) return;
+76-    set({
+77:      mode: "replay",
+78-      replayEnteredAt: Date.now(),
+79-    });
+80-  },
+81-
+82-  exitReplay: () => {
+83-    const { selectedStar } = get();
+84-    set({
+85:      mode: selectedStar ? "focus" : "lifemap",
+86-      replayEnteredAt: null,
+87-    });
+88-  },
+89-
+90-  exitReplayToFocus: () => {
+91-    const { selectedStar } = get();
+92-    set({
+93:      mode: selectedStar ? "focus" : "lifemap",
+94-      replayEnteredAt: null,
+95-    });
+96-  },
+97-}));
+
+===== PATTERN: selected|focus|replay =====
+1-import { create } from "zustand";
+2-import { SPATIAL_STARS, type SpatialStar } from "../data/stars";
+3:import type { SelectedStar } from "@/spatial/state/selectedStarContract";
+4-
+5:export type SceneMode = "home" | "sky" | "lifemap" | "focus" | "replay";
+6-
+7-export type SceneState = {
+8-  mode: SceneMode;
+9-  stars: SpatialStar[];
+10:  selectedStarId: string | null;
+11:  selectedStar: SelectedStar | null;
+12:  replayEnteredAt: number | null;
+13-  setMode: (mode: SceneMode) => void;
+14-  enterSky: () => void;
+15-  setSelectedStar: (star: SelectedStar | null) => void;
+16-  selectStar: (star: SelectedStar | null) => void;
+17-  clearFocus: () => void;
+18-  exitFocusToLifeMap: () => void;
+19-  enterReplay: () => void;
+20-  exitReplay: () => void;
+21-  exitReplayToFocus: () => void;
+22-};
+23-
+24-export const useSceneStore = create<SceneState>((set, get) => ({
+25-  mode: "home",
+26-  stars: SPATIAL_STARS,
+27:  selectedStarId: null,
+28:  selectedStar: null,
+29:  replayEnteredAt: null,
+30-
+31-  setMode: (mode: SceneMode) => set({ mode }),
+32-
+33-  enterSky: () =>
+34-    set({
+35:      selectedStarId: null,
+36:      selectedStar: null,
+37:      replayEnteredAt: null,
+38-      mode: "sky",
+39-    }),
+40-
+41-  setSelectedStar: (star: SelectedStar | null) =>
+42-    set({
+43:      selectedStarId: star?.id ?? null,
+44:      selectedStar: star,
+45:      replayEnteredAt: null,
+46:      mode: star ? "focus" : "lifemap",
+47-    }),
+48-
+49-  selectStar: (star: SelectedStar | null) =>
+50-    set({
+51:      selectedStarId: star?.id ?? null,
+52:      selectedStar: star,
+53:      replayEnteredAt: null,
+54:      mode: star ? "focus" : "lifemap",
+55-    }),
+56-
+57-  clearFocus: () =>
+58-    set({
+59:      selectedStarId: null,
+60:      selectedStar: null,
+61:      replayEnteredAt: null,
+62-      mode: "lifemap",
+63-    }),
+64-
+65-  exitFocusToLifeMap: () =>
+66-    set({
+67:      selectedStarId: null,
+68:      selectedStar: null,
+69:      replayEnteredAt: null,
+70-      mode: "lifemap",
+71-    }),
+72-
+73-  enterReplay: () => {
+74:    const { selectedStar } = get();
+75:    if (!selectedStar) return;
+76-    set({
+77:      mode: "replay",
+78:      replayEnteredAt: Date.now(),
+79-    });
+80-  },
+81-
+82-  exitReplay: () => {
+83:    const { selectedStar } = get();
+84-    set({
+85:      mode: selectedStar ? "focus" : "lifemap",
+86:      replayEnteredAt: null,
+87-    });
+88-  },
+89-
+90-  exitReplayToFocus: () => {
+91:    const { selectedStar } = get();
+92-    set({
+93:      mode: selectedStar ? "focus" : "lifemap",
+94:      replayEnteredAt: null,
+95-    });
+96-  },
+97-}));
+
+===== PATTERN: camera =====
+
+===== PATTERN: transition =====
+
+===== PATTERN: orb|body|ground|theme|tint =====

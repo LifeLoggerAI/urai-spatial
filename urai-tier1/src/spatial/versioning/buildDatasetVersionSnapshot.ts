@@ -13,7 +13,7 @@ export type DatasetVersionSnapshot = {
   readiness: number;
 };
 
-function str(value: unknown): string {
+function str(value: any): string {
   return typeof value === "string" ? value : "";
 }
 

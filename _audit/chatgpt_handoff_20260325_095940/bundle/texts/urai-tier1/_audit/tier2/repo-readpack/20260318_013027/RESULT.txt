@@ -1,0 +1,15 @@
+== URAI Tier 2 repo read-pack ==
+ROOT=/home/user/urai-spatial/urai-tier1
+SNAPSHOT: src/app/page.tsx
+SNAPSHOT: src/spatial/scene/SpatialScene.tsx
+SNAPSHOT: src/spatial/state/sceneStore.ts
+SNAPSHOT: src/spatial/data/stars.ts
+DONE
+AUDIT_DIR=/home/user/urai-spatial/urai-tier1/_audit/tier2/repo-readpack/20260318_013027
+READPACK=/home/user/urai-spatial/urai-tier1/_audit/tier2/repo-readpack/20260318_013027/readpack.tgz
+NEXT: paste the contents of these files or upload the tgz:
+  /home/user/urai-spatial/urai-tier1/_audit/tier2/repo-readpack/20260318_013027/page.key-excerpts.txt
+  /home/user/urai-spatial/urai-tier1/_audit/tier2/repo-readpack/20260318_013027/SpatialScene.key-excerpts.txt
+  /home/user/urai-spatial/urai-tier1/_audit/tier2/repo-readpack/20260318_013027/sceneStore.key-excerpts.txt
+  /home/user/urai-spatial/urai-tier1/_audit/tier2/repo-readpack/20260318_013027/stars.key-excerpts.txt
+  /home/user/urai-spatial/urai-tier1/_audit/tier2/repo-readpack/20260318_013027/repo-shape.txt

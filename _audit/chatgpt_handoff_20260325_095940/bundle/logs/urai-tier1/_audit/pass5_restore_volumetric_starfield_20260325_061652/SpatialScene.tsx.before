@@ -1,0 +1,632 @@
+"use client";
+
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import * as THREE from "three";
+import { Canvas, ThreeEvent, useFrame } from "@react-three/fiber";
+import type { ScenePhase, SelectedStar, TransitionName } from "@/spatial/types/scene";
+
+type StarNode = SelectedStar & {
+  stability: number;
+  intensity: number;
+};
+
+type TransitionState = {
+  name: TransitionName;
+  progress: number;
+};
+
+type WorldWeights = {
+  home: number;
+  lifemap: number;
+  focus: number;
+  replay: number;
+  ascent: number;
+  descent: number;
+};
+
+const DURATIONS: Record<TransitionName, number> = {
+  home_to_lifemap: 2450,
+  lifemap_to_home: 2600,
+  lifemap_to_focus: 2050,
+  focus_to_lifemap: 1880,
+  focus_to_replay: 2550,
+  replay_to_focus: 2150,
+};
+
+const HOME_BG = new THREE.Color("#02050a");
+const LIFEMAP_BG = new THREE.Color("#020410");
+const FOCUS_BG = new THREE.Color("#020611");
+const REPLAY_BG = new THREE.Color("#040711");
+
+function clamp01(v: number) {
+  return Math.max(0, Math.min(1, v));
+}
+
+function easeIn(t: number) {
+  const x = clamp01(t);
+  return x * x * x;
+}
+
+function easeOut(t: number) {
+  const x = clamp01(t);
+  return 1 - Math.pow(1 - x, 3);
+}
+
+function easeInOut(t: number) {
+  const x = clamp01(t);
+  return x * x * (3 - 2 * x);
+}
+
+function heldRelease(t: number) {
+  if (t <= 0.08) return t * 0.18;
+  return 0.0144 + easeInOut((t - 0.08) / 0.92) * 0.9856;
+}
+
+function gravitationalPull(t: number) {
+  const x = clamp01(t);
+  return easeInOut(Math.pow(x, 0.82));
+}
+
+function resurfacing(t: number) {
+  const x = clamp01(t);
+  return 0.35 * easeIn(x) + 0.65 * easeOut(x);
+}
+
+function releaseEase(t: number) {
+  const x = clamp01(t);
+  if (x < 0.18) return easeOut(x / 0.18) * 0.28;
+  return 0.28 + easeInOut((x - 0.18) / 0.82) * 0.72;
+}
+
+function homeReturnEase(t: number) {
+  const x = clamp01(t);
+  if (x < 0.12) return easeOut(x / 0.12) * 0.10;
+  if (x < 0.78) return 0.10 + easeInOut((x - 0.12) / 0.66) * 0.72;
+  return 0.82 + easeOut((x - 0.78) / 0.22) * 0.18;
+}
+
+function lerpVec(a: THREE.Vector3, b: THREE.Vector3, t: number) {
+  return new THREE.Vector3(
+    THREE.MathUtils.lerp(a.x, b.x, t),
+    THREE.MathUtils.lerp(a.y, b.y, t),
+    THREE.MathUtils.lerp(a.z, b.z, t),
+  );
+}
+
+function seeded(seed: number) {
+  let s = seed >>> 0;
+  return () => {
+    s = (1664525 * s + 1013904223) >>> 0;
+    return s / 4294967296;
+  };
+}
+
+function buildStars(): StarNode[] {
+  const rand = seeded(19830414);
+  const titles = [
+    "Council",
+    "Forge",
+    "Anchor",
+    "Echo",
+    "Threshold",
+    "Witness",
+    "Sparrow",
+    "Atlas",
+    "Signal",
+    "Harbor",
+    "Pulse",
+    "Grove",
+    "Beacon",
+    "Keeper",
+    "Archive",
+    "Hearth",
+    "Vector",
+    "Current",
+    "Vow",
+    "North",
+    "Lattice",
+    "Ember",
+    "Ritual",
+    "Mirror",
+    "Axis",
+    "Bloom",
+    "Hallow",
+    "Drift",
+    "Bridge",
+    "Signal-2",
+    "Wake",
+    "Trace",
+    "Orbit",
+    "Cairn",
+    "Crown",
+    "Root",
+    "Chorus",
+    "Thread",
+    "Rune",
+    "Source",
+    "Harrow",
+    "Vault",
+  ];
+
+  return titles.map((title, index) => {
+    const angle = rand() * Math.PI * 2;
+    const radius = 16 + rand() * 56;
+    const depth = -24 - rand() * 126 - index * 1.75;
+    const y = -9 + rand() * 22;
+    const x = Math.cos(angle) * radius * (0.5 + rand() * 0.7);
+    const size = 0.08 + rand() * 0.22;
+    const intensity = 0.45 + rand() * 0.55;
+    const hue = 202 + rand() * 28;
+    const color = new THREE.Color(`hsl(${hue}, 58%, ${66 + rand() * 10}%)`).getStyle();
+
+    return {
+      id: `star-${index + 1}`,
+      title,
+      chapter: index % 3 === 0 ? "council" : index % 3 === 1 ? "forge" : "archive",
+      position: [x, y, depth],
+      color,
+      size,
+      intensity,
+      stability: 0.55 + rand() * 0.45,
+    };
+  });
+}
+
+function buildDust(count: number, seedValue: number, xScale: number, yScale: number, zMin: number, zMax: number) {
+  const rand = seeded(seedValue);
+  const positions = new Float32Array(count * 3);
+
+  for (let i = 0; i < count; i += 1) {
+    positions[i * 3] = (rand() * 2 - 1) * xScale;
+    positions[i * 3 + 1] = (rand() * 2 - 1) * yScale;
+    positions[i * 3 + 2] = -(zMin + rand() * (zMax - zMin));
+  }
+
+  return positions;
+}
+
+function buildCorridor(count: number, seedValue: number) {
+  const rand = seeded(seedValue);
+  const positions = new Float32Array(count * 3);
+
+  for (let i = 0; i < count; i += 1) {
+    const side = i % 2 === 0 ? -1 : 1;
+    const x = side * (0.9 + rand() * 6.2) + (rand() - 0.5) * 0.35;
+    const y = (rand() - 0.5) * 6.5;
+    const z = -(6 + rand() * 150);
+    positions[i * 3] = x;
+    positions[i * 3 + 1] = y;
+    positions[i * 3 + 2] = z;
+  }
+
+  return positions;
+}
+
+function buildFocusFragments(count: number, seedValue: number) {
+  const rand = seeded(seedValue);
+  const positions = new Float32Array(count * 3);
+
+  for (let i = 0; i < count; i += 1) {
+    const r = 1.8 + rand() * 7.5;
+    const a = rand() * Math.PI * 2;
+    const y = (rand() - 0.5) * 5.5;
+    const z = -0.6 - rand() * 6.5;
+    positions[i * 3] = Math.cos(a) * r;
+    positions[i * 3 + 1] = y;
+    positions[i * 3 + 2] = z;
+  }
+
+  return positions;
+}
+
+function buildReplayFragments(count: number, seedValue: number) {
+  const rand = seeded(seedValue);
+  const positions = new Float32Array(count * 3);
+
+  for (let i = 0; i < count; i += 1) {
+    const layer = i % 3;
+    const radius = 0.6 + rand() * (layer === 0 ? 3.6 : layer === 1 ? 5.6 : 8.2);
+    const angle = rand() * Math.PI * 2;
+    const x = Math.cos(angle) * radius * (0.45 + rand() * 0.9);
+    const y = (rand() - 0.5) * (layer === 2 ? 7.2 : 4.6);
+    const z = -0.2 - rand() * (layer === 0 ? 2.8 : layer === 1 ? 4.8 : 8.8);
+    positions[i * 3] = x;
+    positions[i * 3 + 1] = y;
+    positions[i * 3 + 2] = z;
+  }
+
+  return positions;
+}
+
+function computeWeights(phase: ScenePhase, transition: TransitionState | null): WorldWeights {
+  if (!transition) {
+    return {
+      home: phase === "home" ? 1 : 0,
+      lifemap: phase === "lifemap" ? 1 : 0,
+      focus: phase === "focus" ? 1 : 0,
+      replay: phase === "replay" ? 1 : 0,
+      ascent: 0,
+      descent: 0,
+    };
+  }
+
+  const p =
+    transition.name === "home_to_lifemap" || transition.name === "lifemap_to_home"
+      ? heldRelease(transition.progress)
+      : transition.name === "lifemap_to_focus" || transition.name === "focus_to_replay"
+        ? gravitationalPull(transition.progress)
+        : transition.name === "focus_to_lifemap"
+          ? releaseEase(transition.progress)
+          : resurfacing(transition.progress);
+
+  switch (transition.name) {
+    case "home_to_lifemap":
+      return { home: 1 - p, lifemap: p, focus: 0, replay: 0, ascent: p, descent: 0 };
+    case "lifemap_to_home":
+      return { home: p, lifemap: 1 - p, focus: 0, replay: 0, ascent: 0, descent: p };
+    case "lifemap_to_focus":
+      return { home: 0, lifemap: 1 - p, focus: p, replay: 0, ascent: 0, descent: 0 };
+    case "focus_to_lifemap":
+      return { home: 0, lifemap: p, focus: 1 - p, replay: 0, ascent: 0, descent: 0 };
+    case "focus_to_replay":
+      return { home: 0, lifemap: 0, focus: 1 - p, replay: p, ascent: 0, descent: 0 };
+    case "replay_to_focus":
+      return { home: 0, lifemap: 0, focus: p, replay: 1 - p, ascent: 0, descent: 0 };
+    default:
+      return { home: 0, lifemap: 0, focus: 0, replay: 0, ascent: 0, descent: 0 };
+  }
+}
+
+type TransitionPhaseLocal = "home" | "lifemap" | "focus" | "replay";
+type TransitionNameLocal =
+  | "home_to_lifemap"
+  | "lifemap_to_focus"
+  | "focus_to_replay"
+  | "replay_to_focus"
+  | "focus_to_lifemap"
+  | "lifemap_to_home";
+type TransitionStateLocal = { name: TransitionNameLocal; progress: number };
+
+
+function useTransitionDriver(
+  phase: TransitionPhaseLocal,
+  setPhase: React.Dispatch<React.SetStateAction<TransitionPhaseLocal>>,
+  setSelectedId: React.Dispatch<React.SetStateAction<string | null>>,
+) {
+  const [transition, setTransition] = useState<TransitionStateLocal | null>(null);
+  const rafRef = useRef<number | null>(null);
+  const activeNameRef = useRef<TransitionNameLocal | null>(null);
+  const lastInputAtRef = useRef<number>(0);
+
+  const inputLocked = transition !== null;
+
+  const markInput = useCallback(() => {
+    lastInputAtRef.current = performance.now();
+  }, []);
+
+  const finishTransition = useCallback(
+    (name: TransitionNameLocal) => {
+      activeNameRef.current = null;
+      setTransition(null);
+
+      switch (name) {
+        case "home_to_lifemap":
+          setPhase("lifemap");
+          return;
+        case "lifemap_to_focus":
+          setPhase("focus");
+          return;
+        case "focus_to_replay":
+          setPhase("replay");
+          return;
+        case "replay_to_focus":
+          setPhase("focus");
+          return;
+        case "focus_to_lifemap":
+          setPhase("lifemap");
+          return;
+        case "lifemap_to_home":
+          setSelectedId(null);
+          setPhase("home");
+          return;
+      }
+    },
+    [setPhase, setSelectedId],
+  );
+
+  const startTransition = useCallback(
+    (name: TransitionNameLocal) => {
+      if (activeNameRef.current || transition) return;
+
+      activeNameRef.current = name;
+
+      if (rafRef.current !== null) {
+        window.cancelAnimationFrame(rafRef.current);
+        rafRef.current = null;
+      }
+
+      const startedAt = performance.now();
+      const duration = Math.max(1, DURATIONS[name]);
+
+      setTransition({ name, progress: 0 });
+
+      const step = (now: number) => {
+        const progress = clamp01((now - startedAt) / duration);
+
+        setTransition((prev) => {
+          if (prev && prev.name === name && Math.abs(prev.progress - progress) < 0.008) return prev;
+          return { name, progress };
+        });
+
+        if (progress < 1) {
+          rafRef.current = window.requestAnimationFrame(step);
+          return;
+        }
+
+        rafRef.current = null;
+        finishTransition(name);
+      };
+
+      rafRef.current = window.requestAnimationFrame(step);
+    },
+    [finishTransition, transition],
+  );
+
+  useEffect(() => {
+    return () => {
+      if (rafRef.current !== null) {
+        window.cancelAnimationFrame(rafRef.current);
+      }
+      rafRef.current = null;
+      activeNameRef.current = null;
+    };
+  }, []);
+
+  return { transition, startTransition, inputLocked, markInput };
+}
+export default function SpatialScene() {
+  const stars = useMemo(() => buildStars(), []);
+  const [phase, setPhase] = useState<ScenePhase>("home");
+  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [hoveredId, setHoveredId] = useState<string | null>(null);
+
+  const selectedStar = useMemo(
+    () => stars.find((star) => star.id === selectedId) ?? null,
+    [selectedId, stars],
+  );
+
+  const { transition, startTransition, inputLocked, markInput } = useTransitionDriver(
+    phase,
+    setPhase,
+    setSelectedId,
+  );
+
+  const interactive = !transition && !inputLocked;
+
+  useEffect(() => {
+    if (transition || phase !== "lifemap") {
+      setHoveredId(null);
+    }
+  }, [phase, transition]);
+
+  const onAscend = useCallback(() => {
+    if (phase !== "home") return;
+    if (inputLocked) return;
+    startTransition("home_to_lifemap");
+  }, [inputLocked, phase, startTransition]);
+
+  const onSelect = useCallback(
+    (id: string) => {
+      if (phase !== "lifemap") return;
+      if (inputLocked) return;
+      if (selectedId === id) return;
+      setHoveredId(null);
+      setSelectedId(id);
+      markInput();
+      startTransition("lifemap_to_focus");
+    },
+    [inputLocked, markInput, phase, selectedId, startTransition],
+  );
+
+  const onReplay = useCallback(() => {
+    if (phase !== "focus") return;
+    if (!selectedStar) return;
+    if (inputLocked) return;
+    startTransition("focus_to_replay");
+  }, [inputLocked, phase, selectedStar, startTransition]);
+
+  const onHover = useCallback(
+    (id: string | null) => {
+      if (phase !== "lifemap") return;
+      if (transition) return;
+      setHoveredId(id);
+    },
+    [phase, transition],
+  );
+
+  const onClearHover = useCallback(() => {
+    setHoveredId(null);
+  }, []);
+
+  const replayEnabled = phase === "focus" && !!selectedStar && !transition && !inputLocked;
+
+  return (
+    <div
+      style={{ position: "relative", width: "100%", height: "100%" }}
+      onPointerLeave={() => setHoveredId(null)}
+    >
+      <Header phase={phase} transition={transition} selectedStar={selectedStar} />
+      <Footer
+        phase={phase}
+        selectedStar={selectedStar}
+        transition={transition}
+        replayEnabled={replayEnabled}
+        onReplay={onReplay}
+      />
+
+      <Canvas
+        gl={{ antialias: true, alpha: false }}
+        dpr={[1, 2]}
+        camera={{ position: [0, 1.68, 6.85], fov: 53, near: 0.1, far: 2000 }}
+        style={{ width: "100%", height: "100%", background: "#02040a" }}
+      >
+        <SceneWorld
+          phase={phase}
+          transition={transition}
+          stars={stars}
+          selectedStar={selectedStar}
+          interactive={interactive}
+          hoveredId={hoveredId}
+          onHover={onHover}
+          onClearHover={onClearHover}
+          onAscend={onAscend}
+          onSelect={onSelect}
+        />
+      </Canvas>
+    </div>
+  );
+}
+
+function Header({
+  phase,
+  transition,
+  selectedStar,
+}: {
+  phase: TransitionPhaseLocal;
+  transition: TransitionStateLocal | null;
+  selectedStar: SelectedStar | null;
+}) {
+  const label = transition
+    ? transition.name.replace(/_/g, " ")
+    : phase === "focus" && selectedStar
+      ? selectedStar.title || selectedStar.label || selectedStar.id
+      : phase;
+
+  return (
+    <div
+      style={{
+        position: "absolute",
+        top: 16,
+        left: 16,
+        zIndex: 20,
+        pointerEvents: "none",
+        color: "rgba(255,255,255,0.92)",
+        fontFamily: "Inter, Arial, sans-serif",
+        fontSize: 12,
+        letterSpacing: "0.12em",
+        textTransform: "uppercase",
+      }}
+    >
+      {label}
+    </div>
+  );
+}
+
+function Footer({
+  phase,
+  selectedStar,
+  transition,
+  onReplay,
+  replayEnabled,
+}: {
+  phase: TransitionPhaseLocal;
+  selectedStar: SelectedStar | null;
+  transition: TransitionStateLocal | null;
+  onReplay: () => void;
+  replayEnabled: boolean;
+}) {
+  const canReplay = replayEnabled;
+
+  return (
+    <div
+      style={{
+        position: "absolute",
+        left: 16,
+        right: 16,
+        bottom: 16,
+        zIndex: 20,
+        display: "flex",
+        justifyContent: "space-between",
+        alignItems: "center",
+        gap: 12,
+        color: "rgba(255,255,255,0.9)",
+        fontFamily: "Inter, Arial, sans-serif",
+        fontSize: 12,
+      }}
+    >
+      <div>
+        {selectedStar ? (selectedStar.title || selectedStar.label || selectedStar.id) : phase}
+      </div>
+
+      {canReplay ? (
+        <button
+          onClick={onReplay}
+          style={{
+            pointerEvents: "auto",
+            border: "1px solid rgba(255,255,255,0.25)",
+            background: "rgba(0,0,0,0.35)",
+            color: "white",
+            padding: "8px 12px",
+            borderRadius: 10,
+            cursor: "pointer",
+          }}
+        >
+          Replay
+        </button>
+      ) : null}
+    </div>
+  );
+}
+
+function SceneWorld({
+  phase,
+  stars,
+  selectedStar,
+  interactive,
+  hoveredId,
+  onHover,
+  onClearHover,
+  onAscend,
+  onSelect,
+}: any) {
+  return (
+    <>
+      <ambientLight intensity={1} />
+
+      {phase === "home" ? (
+        <group>
+          <mesh
+            position={[0, 1.65, -3.25]}
+            onClick={interactive ? onAscend : undefined}
+          >
+            <sphereGeometry args={[0.42, 24, 24]} />
+            <meshBasicMaterial color="#dfe9ff" />
+          </mesh>
+        </group>
+      ) : null}
+
+      {phase !== "home" ? (
+        <group>
+          {stars?.slice(0, 42).map((s: any, i: number) => {
+            const x = ((i % 7) - 3) * 1.1;
+            const y = 3.2 - Math.floor(i / 7) * 0.72;
+            const z = -4 - (i % 5) * 0.35;
+            const active = selectedStar?.id === s.id || hoveredId === s.id;
+            return (
+              <mesh
+                key={s.id || i}
+                position={[x, y, z]}
+                onPointerOver={() => onHover?.(s.id)}
+                onPointerOut={() => onClearHover?.()}
+                onClick={interactive ? () => onSelect?.(s.id) : undefined}
+              >
+                <sphereGeometry args={[active ? 0.16 : 0.11, 16, 16]} />
+                <meshBasicMaterial color={active ? "#ffffff" : (s.color || "#bcd0ff")} />
+              </mesh>
+            );
+          })}
+        </group>
+      ) : null}
+    </>
+  );
+}

@@ -1,0 +1,26 @@
+26:function mulberry32(seed: number) {
+28:  return function next() {
+36:export function buildSpatialStars(seed = 19830414, count = 42): SpatialStar[] {
+37:  const rand = mulberry32(seed)
+38:  const palette = ["#f6fbff", "#cfe7ff", "#a7cfff", "#fff4c4", "#d8c8ff"]
+39:  const chapters = ["Origin", "Climb", "Threshold", "Memory", "Return", "Signal"]
+40:  const stars: SpatialStar[] = []
+43:    const band = i % 3
+44:    const spread = band === 0 ? 14 : band === 1 ? 25 : 42
+45:    const zBase = band === 0 ? -18 : band === 1 ? -42 : -78
+46:    const angle = rand() * Math.PI * 2
+47:    const radius = 4 + rand() * spread
+48:    const x = Math.cos(angle) * radius * (0.6 + rand() * 0.9)
+49:    const y = (rand() - 0.5) * (band === 0 ? 10 : band === 1 ? 20 : 34)
+50:    const z = zBase - rand() * (band === 0 ? 12 : band === 1 ? 24 : 50)
+51:    const size =
+57:    const chapter = chapters[i % chapters.length]
+73:export default function Starfield(props: StarfieldProps): JSX.Element {
+74:  const { phase, selectedId, hoveredId, onSelect, onHover } = props
+75:  const stars = useMemo(() => buildSpatialStars(), [])
+80:        const isSelected = star.id === selectedId
+81:        const isHovered = star.id === hoveredId
+82:        const otherSelected = selectedId !== null && !isSelected
+83:        const baseScale = phase === "lifemap" ? 1 : phase === "focus" ? 1.25 : 1.5
+84:        const scale = isSelected ? baseScale * 2.6 : isHovered ? baseScale * 1.4 : baseScale
+85:        const opacity =

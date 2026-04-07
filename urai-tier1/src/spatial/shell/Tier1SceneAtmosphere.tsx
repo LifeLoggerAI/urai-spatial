@@ -70,12 +70,12 @@ export function Tier1SceneAtmosphere({
   const style = useMemo(() => stylesFor(phase), [phase]);
   const [pulseVisible, setPulseVisible] = useState(false);
 
-  useEffect(() => {
-    if (!pulseKey) return;
-    setPulseVisible(true);
-    const id = window.setTimeout(() => setPulseVisible(false), 520);
-    return () => window.clearTimeout(id);
-  }, [pulseKey]);
+    useEffect(() => {
+      if (!pulseKey) return;
+      setPulseVisible(true);
+      const id = window.setTimeout(() => setPulseVisible(false), 520);
+      return () => window.clearTimeout(id);
+    }, [pulseKey]);
 
   return (
     <>

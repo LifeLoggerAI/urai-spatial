@@ -1,0 +1,6 @@
+./firebase.json
+./.firebaserc
+./package.json
+./pnpm-workspace.yaml
+./urai-tier1/firebase.json
+./urai-tier1/package.json

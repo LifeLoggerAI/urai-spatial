@@ -1,0 +1,16 @@
+src/app/page.tsx
+src/app/globals.css
+src/spatial/scene/SpatialScene.tsx
+src/spatial/scene/Starfield.tsx
+src/spatial/scene/Orb.tsx
+src/spatial/scene/ReplayOverlay.tsx
+src/spatial/scene/FocusShellOverlay.tsx
+src/spatial/scene/FocusPanel.tsx
+src/spatial/scene/SceneController.tsx
+src/spatial/scene/CameraRig.tsx
+src/spatial/scene/MemorySphere.tsx
+src/spatial/types/scene.ts
+package.json
+tsconfig.json
+next.config.js
+next.config.mjs

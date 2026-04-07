@@ -1,0 +1,682 @@
+===== src/spatial/scene/SpatialScene.tsx : line 7 =====
+'use client';
+
+import React, { useEffect, useMemo, useRef, useState } from 'react';
+import { Canvas, ThreeEvent, useFrame, useThree } from '@react-three/fiber';
+import * as THREE from 'three';
+
+type Phase = 'home' | 'lifemap' | 'focus' | 'replay' | 'ground';
+
+type StarNode = {
+  id: string;
+  position: [number, number, number];
+  radius: number;
+  energy: number;
+};
+
+
+===== src/spatial/scene/SpatialScene.tsx : line 90 =====
+}) {
+  const { camera } = useThree();
+  const look = useRef(new THREE.Vector3(0, 0, 0));
+
+  useFrame((_, dt) => {
+    let targetPos = HOME_POS.clone();
+    let targetLook = HOME_LOOK.clone();
+
+    if (phase === 'lifemap') {
+      targetPos = LIFEMAP_POS.clone();
+      targetLook = LIFEMAP_LOOK.clone();
+    }
+
+    if (phase === 'ground') {
+      targetPos = GROUND_POS.clone();
+      targetLook = GROUND_LOOK.clone();
+    }
+
+===== src/spatial/scene/SpatialScene.tsx : line 95 =====
+    let targetPos = HOME_POS.clone();
+    let targetLook = HOME_LOOK.clone();
+
+    if (phase === 'lifemap') {
+      targetPos = LIFEMAP_POS.clone();
+      targetLook = LIFEMAP_LOOK.clone();
+    }
+
+    if (phase === 'ground') {
+      targetPos = GROUND_POS.clone();
+      targetLook = GROUND_LOOK.clone();
+    }
+
+    if ((phase === 'focus' || phase === 'replay') && selectedStar) {
+      const star = new THREE.Vector3(...selectedStar.position);
+      const focusOffset = new THREE.Vector3(0, 0.15, phase === 'focus' ? 4.9 : 2.7);
+      targetPos = star.clone().add(focusOffset);
+
+===== src/spatial/scene/SpatialScene.tsx : line 100 =====
+      targetLook = LIFEMAP_LOOK.clone();
+    }
+
+    if (phase === 'ground') {
+      targetPos = GROUND_POS.clone();
+      targetLook = GROUND_LOOK.clone();
+    }
+
+    if ((phase === 'focus' || phase === 'replay') && selectedStar) {
+      const star = new THREE.Vector3(...selectedStar.position);
+      const focusOffset = new THREE.Vector3(0, 0.15, phase === 'focus' ? 4.9 : 2.7);
+      targetPos = star.clone().add(focusOffset);
+      targetLook = star.clone();
+    }
+
+    const posDamp = transitionActive ? 4.75 : 5.75;
+    const lookDamp = transitionActive ? 5.25 : 6.0;
+
+===== src/spatial/scene/SpatialScene.tsx : line 102 =====
+
+    if (phase === 'ground') {
+      targetPos = GROUND_POS.clone();
+      targetLook = GROUND_LOOK.clone();
+    }
+
+    if ((phase === 'focus' || phase === 'replay') && selectedStar) {
+      const star = new THREE.Vector3(...selectedStar.position);
+      const focusOffset = new THREE.Vector3(0, 0.15, phase === 'focus' ? 4.9 : 2.7);
+      targetPos = star.clone().add(focusOffset);
+      targetLook = star.clone();
+    }
+
+    const posDamp = transitionActive ? 4.75 : 5.75;
+    const lookDamp = transitionActive ? 5.25 : 6.0;
+
+    camera.position.x = THREE.MathUtils.damp(camera.position.x, targetPos.x, posDamp, dt);
+
+===== src/spatial/scene/SpatialScene.tsx : line 103 =====
+    if (phase === 'ground') {
+      targetPos = GROUND_POS.clone();
+      targetLook = GROUND_LOOK.clone();
+    }
+
+    if ((phase === 'focus' || phase === 'replay') && selectedStar) {
+      const star = new THREE.Vector3(...selectedStar.position);
+      const focusOffset = new THREE.Vector3(0, 0.15, phase === 'focus' ? 4.9 : 2.7);
+      targetPos = star.clone().add(focusOffset);
+      targetLook = star.clone();
+    }
+
+    const posDamp = transitionActive ? 4.75 : 5.75;
+    const lookDamp = transitionActive ? 5.25 : 6.0;
+
+    camera.position.x = THREE.MathUtils.damp(camera.position.x, targetPos.x, posDamp, dt);
+    camera.position.y = THREE.MathUtils.damp(camera.position.y, targetPos.y, posDamp, dt);
+
+===== src/spatial/scene/SpatialScene.tsx : line 205 =====
+  inputLocked,
+}: {
+  phase: Phase;
+  stars: StarNode[];
+  selectedStar: StarNode | null;
+  onSelect: (s: StarNode) => void;
+  inputLocked: boolean;
+}) {
+  const interactive = phase === 'lifemap';
+
+  return (
+    <group visible={phase === 'lifemap' || phase === 'focus' || phase === 'replay'}>
+      {stars.map((star, idx) => {
+        const isSelected = selectedStar?.id === star.id;
+        const subdued = phase !== 'lifemap' && !isSelected;
+        const baseRadius = star.radius * (subdued ? 0.72 : 1.0);
+        const haloRadius = baseRadius * (isSelected ? 3.2 : 2.15);
+
+===== src/spatial/scene/SpatialScene.tsx : line 208 =====
+  stars: StarNode[];
+  selectedStar: StarNode | null;
+  onSelect: (s: StarNode) => void;
+  inputLocked: boolean;
+}) {
+  const interactive = phase === 'lifemap';
+
+  return (
+    <group visible={phase === 'lifemap' || phase === 'focus' || phase === 'replay'}>
+      {stars.map((star, idx) => {
+        const isSelected = selectedStar?.id === star.id;
+        const subdued = phase !== 'lifemap' && !isSelected;
+        const baseRadius = star.radius * (subdued ? 0.72 : 1.0);
+        const haloRadius = baseRadius * (isSelected ? 3.2 : 2.15);
+        const opacity = subdued ? 0.08 : 0.13;
+
+        return (
+
+===== src/spatial/scene/SpatialScene.tsx : line 211 =====
+  inputLocked: boolean;
+}) {
+  const interactive = phase === 'lifemap';
+
+  return (
+    <group visible={phase === 'lifemap' || phase === 'focus' || phase === 'replay'}>
+      {stars.map((star, idx) => {
+        const isSelected = selectedStar?.id === star.id;
+        const subdued = phase !== 'lifemap' && !isSelected;
+        const baseRadius = star.radius * (subdued ? 0.72 : 1.0);
+        const haloRadius = baseRadius * (isSelected ? 3.2 : 2.15);
+        const opacity = subdued ? 0.08 : 0.13;
+
+        return (
+          <group key={star.id} position={star.position}>
+            <mesh
+              onPointerDown={(e: ThreeEvent<PointerEvent>) => {
+
+===== src/spatial/scene/SpatialScene.tsx : line 262 =====
+  onReplay,
+  inputLocked,
+}: {
+  phase: Phase;
+  selectedStar: StarNode | null;
+  onReplay: () => void;
+  inputLocked: boolean;
+}) {
+  const active = (phase === 'focus' || phase === 'replay') && !!selectedStar;
+  const group = useRef<THREE.Group>(null);
+
+  useFrame((state) => {
+    if (!group.current || !active || !selectedStar) return;
+    const t = state.clock.elapsedTime;
+    const pulse = 1 + 0.012 * Math.sin(t * 0.9);
+    group.current.scale.setScalar(pulse);
+  });
+
+===== src/spatial/scene/SpatialScene.tsx : line 277 =====
+    group.current.scale.setScalar(pulse);
+  });
+
+  if (!selectedStar) return null;
+
+  return (
+    <group ref={group} visible={active} position={selectedStar.position}>
+      <mesh
+        visible={phase === 'focus'}
+        onPointerDown={(e) => {
+          e.stopPropagation();
+          if (phase === 'focus' && !inputLocked) onReplay();
+        }}
+      >
+        <sphereGeometry args={[1.05, 48, 48]} />
+        <meshStandardMaterial color="#D3DCF7" emissive="#9FAEDB" emissiveIntensity={0.7} roughness={0.7} metalness={0} />
+      </mesh>
+
+===== src/spatial/scene/SpatialScene.tsx : line 280 =====
+  if (!selectedStar) return null;
+
+  return (
+    <group ref={group} visible={active} position={selectedStar.position}>
+      <mesh
+        visible={phase === 'focus'}
+        onPointerDown={(e) => {
+          e.stopPropagation();
+          if (phase === 'focus' && !inputLocked) onReplay();
+        }}
+      >
+        <sphereGeometry args={[1.05, 48, 48]} />
+        <meshStandardMaterial color="#D3DCF7" emissive="#9FAEDB" emissiveIntensity={0.7} roughness={0.7} metalness={0} />
+      </mesh>
+      <mesh visible={phase === 'focus'}>
+        <sphereGeometry args={[2.7, 36, 36]} />
+        <meshBasicMaterial color="#B8C4E6" transparent opacity={0.08} />
+
+===== src/spatial/scene/SpatialScene.tsx : line 286 =====
+        onPointerDown={(e) => {
+          e.stopPropagation();
+          if (phase === 'focus' && !inputLocked) onReplay();
+        }}
+      >
+        <sphereGeometry args={[1.05, 48, 48]} />
+        <meshStandardMaterial color="#D3DCF7" emissive="#9FAEDB" emissiveIntensity={0.7} roughness={0.7} metalness={0} />
+      </mesh>
+      <mesh visible={phase === 'focus'}>
+        <sphereGeometry args={[2.7, 36, 36]} />
+        <meshBasicMaterial color="#B8C4E6" transparent opacity={0.08} />
+      </mesh>
+    </group>
+  );
+}
+
+function ReplayField({
+
+===== src/spatial/scene/SpatialScene.tsx : line 301 =====
+
+function ReplayField({
+  phase,
+  selectedStar,
+}: {
+  phase: Phase;
+  selectedStar: StarNode | null;
+}) {
+  const active = phase === 'replay' && !!selectedStar;
+  const group = useRef<THREE.Group>(null);
+
+  useFrame((state) => {
+    if (!group.current || !active) return;
+    const t = state.clock.elapsedTime;
+    group.current.rotation.y = Math.sin(t * 0.22) * 0.03;
+  });
+
+
+===== src/spatial/scene/SpatialScene.tsx : line 339 =====
+        <sphereGeometry args={[0.42, 20, 20]} />
+        <meshBasicMaterial color="#5F6886" transparent opacity={0.12} />
+      </mesh>
+    </group>
+  );
+}
+
+function GroundModeField({ phase }: { phase: Phase }) {
+  const active = phase === 'ground';
+  return (
+    <group visible={active}>
+      <mesh position={[0, -28, -4]}>
+        <sphereGeometry args={[26, 64, 64]} />
+        <meshStandardMaterial color="#031030" roughness={1} metalness={0} />
+      </mesh>
+      <mesh position={[0, -7.5, -2]}>
+        <sphereGeometry args={[7.5, 48, 48]} />
+
+===== src/spatial/scene/SpatialScene.tsx : line 356 =====
+        <meshBasicMaterial color="#0B1E4C" transparent opacity={0.06} />
+      </mesh>
+    </group>
+  );
+}
+
+function Scene() {
+  const stars = useMemo(() => makeStars(), []);
+  const [phase, setPhase] = useState<Phase>('home');
+  const [selectedStar, setSelectedStar] = useState<StarNode | null>(stars[0] ?? null);
+  const [transitionActive, setTransitionActive] = useState<boolean>(true);
+  const [inputLocked, setInputLocked] = useState<boolean>(true);
+
+  const unlockAfter = (ms: number) => {
+    setTransitionActive(true);
+    setInputLocked(true);
+    window.setTimeout(() => setTransitionActive(false), Math.max(200, ms - 120));
+
+===== src/spatial/scene/SpatialScene.tsx : line 382 =====
+    };
+  }, []);
+
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key !== 'Escape') return;
+      if (inputLocked) return;
+
+      if (phase === 'replay') {
+        setPhase('focus');
+        unlockAfter(900);
+        return;
+      }
+      if (phase === 'focus') {
+        setPhase('lifemap');
+        unlockAfter(900);
+        return;
+
+===== src/spatial/scene/SpatialScene.tsx : line 383 =====
+  }, []);
+
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key !== 'Escape') return;
+      if (inputLocked) return;
+
+      if (phase === 'replay') {
+        setPhase('focus');
+        unlockAfter(900);
+        return;
+      }
+      if (phase === 'focus') {
+        setPhase('lifemap');
+        unlockAfter(900);
+        return;
+      }
+
+===== src/spatial/scene/SpatialScene.tsx : line 387 =====
+      if (e.key !== 'Escape') return;
+      if (inputLocked) return;
+
+      if (phase === 'replay') {
+        setPhase('focus');
+        unlockAfter(900);
+        return;
+      }
+      if (phase === 'focus') {
+        setPhase('lifemap');
+        unlockAfter(900);
+        return;
+      }
+      if (phase === 'lifemap') {
+        setPhase('home');
+        unlockAfter(1100);
+        return;
+
+===== src/spatial/scene/SpatialScene.tsx : line 388 =====
+      if (inputLocked) return;
+
+      if (phase === 'replay') {
+        setPhase('focus');
+        unlockAfter(900);
+        return;
+      }
+      if (phase === 'focus') {
+        setPhase('lifemap');
+        unlockAfter(900);
+        return;
+      }
+      if (phase === 'lifemap') {
+        setPhase('home');
+        unlockAfter(1100);
+        return;
+      }
+
+===== src/spatial/scene/SpatialScene.tsx : line 392 =====
+        unlockAfter(900);
+        return;
+      }
+      if (phase === 'focus') {
+        setPhase('lifemap');
+        unlockAfter(900);
+        return;
+      }
+      if (phase === 'lifemap') {
+        setPhase('home');
+        unlockAfter(1100);
+        return;
+      }
+      if (phase === 'ground') {
+        setPhase('home');
+        unlockAfter(900);
+      }
+
+===== src/spatial/scene/SpatialScene.tsx : line 393 =====
+        return;
+      }
+      if (phase === 'focus') {
+        setPhase('lifemap');
+        unlockAfter(900);
+        return;
+      }
+      if (phase === 'lifemap') {
+        setPhase('home');
+        unlockAfter(1100);
+        return;
+      }
+      if (phase === 'ground') {
+        setPhase('home');
+        unlockAfter(900);
+      }
+    };
+
+===== src/spatial/scene/SpatialScene.tsx : line 397 =====
+        unlockAfter(900);
+        return;
+      }
+      if (phase === 'lifemap') {
+        setPhase('home');
+        unlockAfter(1100);
+        return;
+      }
+      if (phase === 'ground') {
+        setPhase('home');
+        unlockAfter(900);
+      }
+    };
+
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [phase, inputLocked]);
+
+===== src/spatial/scene/SpatialScene.tsx : line 398 =====
+        return;
+      }
+      if (phase === 'lifemap') {
+        setPhase('home');
+        unlockAfter(1100);
+        return;
+      }
+      if (phase === 'ground') {
+        setPhase('home');
+        unlockAfter(900);
+      }
+    };
+
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [phase, inputLocked]);
+
+
+===== src/spatial/scene/SpatialScene.tsx : line 408 =====
+      }
+    };
+
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [phase, inputLocked]);
+
+  const fogColor =
+    phase === 'home'
+      ? '#020A18'
+      : phase === 'ground'
+      ? '#020611'
+      : '#020305';
+
+  return (
+    <div style={{ position: 'absolute', inset: 0 }}>
+      <Canvas
+
+===== src/spatial/scene/SpatialScene.tsx : line 410 =====
+
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [phase, inputLocked]);
+
+  const fogColor =
+    phase === 'home'
+      ? '#020A18'
+      : phase === 'ground'
+      ? '#020611'
+      : '#020305';
+
+  return (
+    <div style={{ position: 'absolute', inset: 0 }}>
+      <Canvas
+        camera={{ position: [HOME_POS.x, HOME_POS.y + 0.2, HOME_POS.z + 0.45], fov: 42, near: 0.1, far: 600 }}
+        dpr={[1, 1.75]}
+
+===== src/spatial/scene/SpatialScene.tsx : line 421 =====
+
+  return (
+    <div style={{ position: 'absolute', inset: 0 }}>
+      <Canvas
+        camera={{ position: [HOME_POS.x, HOME_POS.y + 0.2, HOME_POS.z + 0.45], fov: 42, near: 0.1, far: 600 }}
+        dpr={[1, 1.75]}
+        gl={{ antialias: true }}
+      >
+        <color attach="background" args={[fogColor]} />
+        <fog attach="fog" args={[fogColor, 28, 190]} />
+
+        <ambientLight intensity={phase === 'home' ? 0.34 : 0.16} />
+        <pointLight position={[0, 2.5, 3]} intensity={phase === 'home' ? 0.42 : 0.12} color="#9FAEDB" />
+
+        <CameraRig phase={phase} selectedStar={selectedStar} transitionActive={transitionActive} />
+
+        <HomeSky
+
+===== src/spatial/scene/SpatialScene.tsx : line 424 =====
+      <Canvas
+        camera={{ position: [HOME_POS.x, HOME_POS.y + 0.2, HOME_POS.z + 0.45], fov: 42, near: 0.1, far: 600 }}
+        dpr={[1, 1.75]}
+        gl={{ antialias: true }}
+      >
+        <color attach="background" args={[fogColor]} />
+        <fog attach="fog" args={[fogColor, 28, 190]} />
+
+        <ambientLight intensity={phase === 'home' ? 0.34 : 0.16} />
+        <pointLight position={[0, 2.5, 3]} intensity={phase === 'home' ? 0.42 : 0.12} color="#9FAEDB" />
+
+        <CameraRig phase={phase} selectedStar={selectedStar} transitionActive={transitionActive} />
+
+        <HomeSky
+          enabled={phase === 'home'}
+          onClick={() => {
+            if (inputLocked) return;
+
+===== src/spatial/scene/SpatialScene.tsx : line 425 =====
+        camera={{ position: [HOME_POS.x, HOME_POS.y + 0.2, HOME_POS.z + 0.45], fov: 42, near: 0.1, far: 600 }}
+        dpr={[1, 1.75]}
+        gl={{ antialias: true }}
+      >
+        <color attach="background" args={[fogColor]} />
+        <fog attach="fog" args={[fogColor, 28, 190]} />
+
+        <ambientLight intensity={phase === 'home' ? 0.34 : 0.16} />
+        <pointLight position={[0, 2.5, 3]} intensity={phase === 'home' ? 0.42 : 0.12} color="#9FAEDB" />
+
+        <CameraRig phase={phase} selectedStar={selectedStar} transitionActive={transitionActive} />
+
+        <HomeSky
+          enabled={phase === 'home'}
+          onClick={() => {
+            if (inputLocked) return;
+            setPhase('lifemap');
+
+===== src/spatial/scene/SpatialScene.tsx : line 430 =====
+        <fog attach="fog" args={[fogColor, 28, 190]} />
+
+        <ambientLight intensity={phase === 'home' ? 0.34 : 0.16} />
+        <pointLight position={[0, 2.5, 3]} intensity={phase === 'home' ? 0.42 : 0.12} color="#9FAEDB" />
+
+        <CameraRig phase={phase} selectedStar={selectedStar} transitionActive={transitionActive} />
+
+        <HomeSky
+          enabled={phase === 'home'}
+          onClick={() => {
+            if (inputLocked) return;
+            setPhase('lifemap');
+            unlockAfter(1200);
+          }}
+        />
+
+        <HomeGround
+
+===== src/spatial/scene/SpatialScene.tsx : line 433 =====
+        <pointLight position={[0, 2.5, 3]} intensity={phase === 'home' ? 0.42 : 0.12} color="#9FAEDB" />
+
+        <CameraRig phase={phase} selectedStar={selectedStar} transitionActive={transitionActive} />
+
+        <HomeSky
+          enabled={phase === 'home'}
+          onClick={() => {
+            if (inputLocked) return;
+            setPhase('lifemap');
+            unlockAfter(1200);
+          }}
+        />
+
+        <HomeGround
+          enabled={phase === 'home'}
+          onClick={() => {
+            if (inputLocked) return;
+
+===== src/spatial/scene/SpatialScene.tsx : line 439 =====
+          onClick={() => {
+            if (inputLocked) return;
+            setPhase('lifemap');
+            unlockAfter(1200);
+          }}
+        />
+
+        <HomeGround
+          enabled={phase === 'home'}
+          onClick={() => {
+            if (inputLocked) return;
+            setPhase('ground');
+            unlockAfter(950);
+          }}
+        />
+
+        <HomeOrb enabled={phase === 'home'} />
+
+===== src/spatial/scene/SpatialScene.tsx : line 442 =====
+            unlockAfter(1200);
+          }}
+        />
+
+        <HomeGround
+          enabled={phase === 'home'}
+          onClick={() => {
+            if (inputLocked) return;
+            setPhase('ground');
+            unlockAfter(950);
+          }}
+        />
+
+        <HomeOrb enabled={phase === 'home'} />
+
+        <LifeMapStars
+          phase={phase}
+
+===== src/spatial/scene/SpatialScene.tsx : line 447 =====
+          enabled={phase === 'home'}
+          onClick={() => {
+            if (inputLocked) return;
+            setPhase('ground');
+            unlockAfter(950);
+          }}
+        />
+
+        <HomeOrb enabled={phase === 'home'} />
+
+        <LifeMapStars
+          phase={phase}
+          stars={stars}
+          selectedStar={selectedStar}
+          inputLocked={inputLocked}
+          onSelect={(star) => {
+            setSelectedStar(star);
+
+===== src/spatial/scene/SpatialScene.tsx : line 456 =====
+
+        <LifeMapStars
+          phase={phase}
+          stars={stars}
+          selectedStar={selectedStar}
+          inputLocked={inputLocked}
+          onSelect={(star) => {
+            setSelectedStar(star);
+            setPhase('focus');
+            unlockAfter(900);
+          }}
+        />
+
+        <FocusStar
+          phase={phase}
+          selectedStar={selectedStar}
+          inputLocked={inputLocked}
+
+===== src/spatial/scene/SpatialScene.tsx : line 466 =====
+          }}
+        />
+
+        <FocusStar
+          phase={phase}
+          selectedStar={selectedStar}
+          inputLocked={inputLocked}
+          onReplay={() => {
+            setPhase('replay');
+            unlockAfter(900);
+          }}
+        />
+
+        <ReplayField phase={phase} selectedStar={selectedStar} />
+        <GroundModeField phase={phase} />
+      </Canvas>
+    </div>
+

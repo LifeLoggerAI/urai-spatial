@@ -1,0 +1,18 @@
+27:  selectedStarId: string | null;
+28:  selectedStar: SelectedStar | null;
+44:  selectedStarId: null,
+45:  selectedStar: null,
+52:      selectedStarId: star ? star.id : null,
+53:      selectedStar: star,
+59:      selectedStarId: star.id,
+60:      selectedStar: star,
+66:      selectedStarId: null,
+67:      selectedStar: null,
+74:      selectedStarId: null,
+75:      selectedStar: null,
+81:    const { selectedStar } = get();
+82:    if (!selectedStar) return;
+90:    const { selectedStar } = get();
+92:      mode: selectedStar ? "focus" : "lifemap",
+98:    const { selectedStar } = get();
+100:      mode: selectedStar ? "focus" : "lifemap",

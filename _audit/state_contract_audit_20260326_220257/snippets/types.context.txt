@@ -1,0 +1,89 @@
+===== src/spatial/types.ts : line 3 =====
+export type Vec3 = [number, number, number];
+
+export type SceneMode = "home" | "lifemap" | "replay" | "ground";
+
+export type SpatialStar = {
+  id: string;
+  label: string;
+  chapter: string;
+  position: Vec3;
+  color: string;
+  size: number;
+
+===== src/spatial/types.ts : line 31 =====
+  hasHeadsetPose: boolean;
+  xrInput: XrInputSnapshot;
+};
+
+export type SpatialPersistenceSnapshot = {
+  schema: "urai.spatial.persistence.v1";
+  savedAt: string;
+  sceneMode: SceneMode;
+  selectedStarId: string | null;
+  selectedStarLabel: string | null;
+  presenting: boolean;
+  hasHeadsetPose: boolean;
+  xrInput: XrInputSnapshot;
+};
+
+export type UnityRuntimePayload = {
+  schema: "urai.spatial.unity.v1";
+
+===== src/spatial/types.ts : line 32 =====
+  xrInput: XrInputSnapshot;
+};
+
+export type SpatialPersistenceSnapshot = {
+  schema: "urai.spatial.persistence.v1";
+  savedAt: string;
+  sceneMode: SceneMode;
+  selectedStarId: string | null;
+  selectedStarLabel: string | null;
+  presenting: boolean;
+  hasHeadsetPose: boolean;
+  xrInput: XrInputSnapshot;
+};
+
+export type UnityRuntimePayload = {
+  schema: "urai.spatial.unity.v1";
+  sentAt: string;
+
+===== src/spatial/types.ts : line 42 =====
+  hasHeadsetPose: boolean;
+  xrInput: XrInputSnapshot;
+};
+
+export type UnityRuntimePayload = {
+  schema: "urai.spatial.unity.v1";
+  sentAt: string;
+  sceneMode: SceneMode;
+  selectedStarId: string | null;
+  selectedStarLabel: string | null;
+  presenting: boolean;
+  hasHeadsetPose: boolean;
+  xrInput: XrInputSnapshot;
+};
+
+export type ReplayState = {
+  active: boolean;
+
+===== src/spatial/types.ts : line 43 =====
+  xrInput: XrInputSnapshot;
+};
+
+export type UnityRuntimePayload = {
+  schema: "urai.spatial.unity.v1";
+  sentAt: string;
+  sceneMode: SceneMode;
+  selectedStarId: string | null;
+  selectedStarLabel: string | null;
+  presenting: boolean;
+  hasHeadsetPose: boolean;
+  xrInput: XrInputSnapshot;
+};
+
+export type ReplayState = {
+  active: boolean;
+  starId: string | null;
+

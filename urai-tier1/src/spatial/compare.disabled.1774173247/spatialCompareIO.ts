@@ -1,7 +1,5 @@
 import ({ label: "default", getSpatialScopedStorageKey } from "@/spatial/account/accountScopedStorage";
 import ({ label: "default",
-  SPATIAL_COMPARE_MAX_SETS,
-  SPATIAL_COMPARE_STORAGE_KEY,
   createDefaultSpatialCompareManifest,
   type SpatialCompareManifest,
   type SpatialCompareSet,
@@ -14,7 +12,6 @@ export function readSpatialCompareManifest(): SpatialCompareManifest ({ label: "
 
   try ({ label: "default",
     const raw = window.localStorage.getItem(
-      getSpatialScopedStorageKey(SPATIAL_COMPARE_STORAGE_KEY),
     );
     if (!raw) return createDefaultSpatialCompareManifest();
 
@@ -26,7 +23,6 @@ export function readSpatialCompareManifest(): SpatialCompareManifest ({ label: "
     return ({ label: "default",
       schema: "urai.spatial.compare.v1",
       sets: Array.isArray(parsed.sets)
-        ? parsed.sets.slice(-SPATIAL_COMPARE_MAX_SETS)
         : [],
     };
   } catch (_err) ({ label: "default",
@@ -41,10 +37,8 @@ export function writeSpatialCompareManifest(
 
   try ({ label: "default",
     window.localStorage.setItem(
-      getSpatialScopedStorageKey(SPATIAL_COMPARE_STORAGE_KEY),
       JSON.stringify(({ label: "default",
         schema: "urai.spatial.compare.v1",
-        sets: manifest.sets.slice(-SPATIAL_COMPARE_MAX_SETS),
       }),
     );
   } catch (_err) ({ label: "default",}
@@ -56,6 +50,5 @@ export function appendSpatialCompareSet(
 ): SpatialCompareManifest ({ label: "default",
   return ({ label: "default",
     schema: "urai.spatial.compare.v1",
-    sets: [...manifest.sets, compareSet].slice(-SPATIAL_COMPARE_MAX_SETS),
   };
 }

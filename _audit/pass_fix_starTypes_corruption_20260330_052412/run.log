@@ -1,0 +1,104 @@
+BACKUP: src/lib/uraiCanon/starTypes.ts
+=== BEFORE (numbered) ===
+     1	export type StarTone =
+     2	  | 'neutral'
+     3	  | 'warm'
+     4	  | 'cool'
+     5	  | 'joy'
+     6	  | 'grief'
+     7	  | 'focus'
+     8	  | 'memory'
+     9	  | 'mystery'
+    10	  | 'warning'
+    11	  | 'dream'
+    12	
+    13	export type Vec3 = [number, number, number]
+    14	
+    15	export type LifeMapStar = {
+    16	  id: string
+    17	  label: string
+    18	  position: Vec3
+    19	  tone: StarTone | string
+    20	  intensity: number
+    21	  stability: number
+    22	  createdAt?: number | null
+    23	  updatedAt?: number | null
+    24	  source?: string
+    25	  metadata?: Record<string, unknown>
+    26	}
+    27	
+    28	# Canonical UI/interaction type.
+    29	# This kills SelectedStar vs StarNode drift.
+    30	export type SelectedStar = LifeMapStar
+    31	export type StarNode = LifeMapStar
+=== REWRITE CLEAN src/lib/uraiCanon/starTypes.ts ===
+=== AFTER (numbered) ===
+     1	export type StarPhase = 'home' | 'lifemap' | 'focus' | 'replay'
+     2	
+     3	export type StarNode = {
+     4	  id: string
+     5	  x: number
+     6	  y: number
+     7	  z: number
+     8	  title?: string
+     9	  label?: string
+    10	  color?: string
+    11	  size?: number
+    12	  radius?: number
+    13	  intensity?: number
+    14	  importance?: number
+    15	  chapterId?: string
+    16	  isAnchor?: boolean
+    17	  interactive?: boolean
+    18	  metadata?: Record<string, unknown>
+    19	}
+    20	
+    21	export type StarSelectionState = {
+    22	  selectedStarId: string | null
+    23	  hoveredStarId: string | null
+    24	}
+    25	
+    26	export function isStarNode(value: unknown): value is StarNode {
+    27	  if (!value || typeof value !== 'object') return false
+    28	  const v = value as Record<string, unknown>
+    29	
+    30	  return (
+    31	    typeof v.id === 'string' &&
+    32	    typeof v.x === 'number' &&
+    33	    typeof v.y === 'number' &&
+    34	    typeof v.z === 'number'
+    35	  )
+    36	}
+    37	
+    38	export function coerceStarNode(
+    39	  value: Partial<StarNode> & Pick<StarNode, 'id'>
+    40	): StarNode {
+    41	  return {
+    42	    id: value.id,
+    43	    x: Number(value.x ?? 0),
+    44	    y: Number(value.y ?? 0),
+    45	    z: Number(value.z ?? -40),
+    46	    title: value.title,
+    47	    label: value.label,
+    48	    color: value.color ?? '#d6dce6',
+    49	    size: Number(value.size ?? 0.16),
+    50	    radius: Number(value.radius ?? value.size ?? 0.16),
+    51	    intensity: Number(value.intensity ?? 0.8),
+    52	    importance: Number(value.importance ?? value.intensity ?? 0.8),
+    53	    chapterId: value.chapterId,
+    54	    isAnchor: Boolean(value.isAnchor ?? false),
+    55	    interactive: Boolean(value.interactive ?? true),
+    56	    metadata: value.metadata ?? {},
+    57	  }
+    58	}
+=== TYPECHECK ===
+
+=== ERROR ===
+Exit code: 2
+Failed at line: 137
+
+=== LAST 120 RUN LOG LINES ===
+
+=== LAST 120 TYPECHECK LOG LINES ===
+
+=== LAST 120 BUILD LOG LINES ===

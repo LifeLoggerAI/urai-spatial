@@ -1,0 +1,48 @@
+"use client";
+
+import * as THREE from "three";
+
+type HomeEnvironmentProps = {
+  worldBlend?: number;
+  horizonLift?: number;
+};
+
+export default function HomeEnvironment({
+  worldBlend = 1,
+  horizonLift = 0,
+}: HomeEnvironmentProps) {
+  const blend = Math.max(0, Math.min(1, worldBlend));
+  if (blend <= 0.001) return null;
+
+  return (
+    <group>
+      <color attach="background" args={["#02030a"]} />
+      <fog attach="fog" args={["#02030a", 10, 42]} />
+
+      <mesh position={[0, -5.8 + horizonLift * 0.2, -18]} rotation={[-Math.PI / 2, 0, 0]}>
+        <planeGeometry args={[70, 70, 1, 1]} />
+        <meshStandardMaterial color="#05070d" roughness={1} metalness={0} transparent opacity={0.92 * blend} />
+      </mesh>
+
+      <mesh position={[0, -2.45 + horizonLift * 0.35, -22]}>
+        <planeGeometry args={[46, 7.5, 1, 1]} />
+        <meshBasicMaterial color="#152038" transparent opacity={0.18 * blend} blending={THREE.AdditiveBlending} depthWrite={false} />
+      </mesh>
+
+      <mesh position={[0, -1.9 + horizonLift * 0.35, -24]}>
+        <planeGeometry args={[60, 12, 1, 1]} />
+        <meshBasicMaterial color="#7aa0ff" transparent opacity={0.04 * blend} blending={THREE.AdditiveBlending} depthWrite={false} />
+      </mesh>
+
+      <mesh position={[0, -3.6 + horizonLift * 0.2, -14]} rotation={[-Math.PI / 2, 0, 0]}>
+        <ringGeometry args={[3.2, 12.2, 96]} />
+        <meshBasicMaterial color="#4c67b8" transparent opacity={0.08 * blend} blending={THREE.AdditiveBlending} depthWrite={false} side={THREE.DoubleSide} />
+      </mesh>
+
+      <mesh position={[0, -0.4 + horizonLift * 0.12, -28]}>
+        <sphereGeometry args={[22, 40, 28, 0, Math.PI * 2, 0, Math.PI / 2.15]} />
+        <meshBasicMaterial color="#0b1222" transparent opacity={0.4 * blend} side={THREE.BackSide} />
+      </mesh>
+    </group>
+  );
+}

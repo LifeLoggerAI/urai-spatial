@@ -1,0 +1,161 @@
+STAMP=20260324_200033
+ROOT=/home/user/urai-spatial
+APP=/home/user/urai-spatial/urai-tier1
+
+== GIT STATUS ==
+ M ../README.md
+ M ../pnpm-lock.yaml
+ M ../tsconfig.tsbuildinfo
+ D next.config.ts
+ M package.json
+ D src/app/_page_shell.tsx
+ D src/app/favicon.ico
+ M src/app/globals.css
+ M src/app/layout.tsx
+ M src/app/page.tsx
+ M src/spatial/account/spatialAccountTypes.ts
+ M src/spatial/arcs/spatialArcIO.ts
+ M src/spatial/arcs/spatialArcTypes.ts
+ M src/spatial/compare.disabled.1774173247/spatialCompareIO.ts
+ M src/spatial/compare.disabled.1774173247/spatialCompareTypes.ts
+ M src/spatial/components/Orb.tsx
+ M src/spatial/curation.disabled.1774173247/spatialCuratedDeckImportTypes.ts
+ M src/spatial/curation.disabled.1774173247/spatialCuratedDeckSurfaceOwnership.ts
+ M src/spatial/curation.disabled.1774173247/spatialCuratedDeckVaultIO.ts
+ M src/spatial/curation.disabled.1774173247/spatialCuratedDeckVaultTypes.ts
+ M src/spatial/data/stars.ts
+ M src/spatial/lenses.disabled.1774173247/SpatialLensBootstrap.tsx
+ M src/spatial/lenses.disabled.1774173247/spatialLensIO.ts
+ M src/spatial/lenses.disabled.1774173247/spatialLensTypes.ts
+ M src/spatial/lib/resolveStarByIdSafe.ts
+ M src/spatial/persistence/SpatialPersistenceBridge.tsx
+ M src/spatial/persistence/spatialPersistenceIO.ts
+ M src/spatial/persistence/spatialPersistenceTypes.ts
+ M src/spatial/release/SpatialReleaseBootstrap.tsx
+ M src/spatial/release/spatialReleaseIO.ts
+ M src/spatial/release/spatialReleaseTypes.ts
+ M src/spatial/scene/CinematicGroundAccents.tsx
+ M src/spatial/scene/Ground.tsx
+ M src/spatial/scene/GroundWorld.tsx
+ M src/spatial/scene/HomeWorld.tsx
+ M src/spatial/scene/MemorySphere.tsx
+ M src/spatial/scene/OrbGlow.tsx
+ M src/spatial/scene/SpatialScene.tsx
+ M src/spatial/scene/SpatialScene.tsx.broken.20260316-135713
+ M src/spatial/scene/Starfield.tsx
+ M src/spatial/seasonal.disabled.1774173246/SpatialSeasonalArcBootstrap.tsx.broken.1774173044
+ M src/spatial/seasonal.disabled.1774173246/spatialSeasonalArcIO.ts
+ M src/spatial/seasonal.disabled.1774173246/spatialSeasonalArcTypes.ts
+ M src/spatial/settings/SpatialSettingsBootstrap.tsx
+ M src/spatial/settings/spatialSettingsIO.ts
+ M src/spatial/settings/spatialSettingsTypes.ts
+ M src/spatial/shell/Tier1ShellScreen.tsx
+ M src/spatial/shell/overlays/HomeShellOverlay.tsx
+ M src/spatial/shell/overlays/LifeMapShellOverlay.tsx
+ M src/spatial/shell/overlays/SkyShellOverlay.tsx
+ M src/spatial/store/useSceneStore.ts
+ M src/spatial/telemetry/spatialTelemetryIO.ts
+ M src/spatial/telemetry/spatialTelemetryTypes.ts
+ M src/spatial/ui/SpatialCuratedDeckImportPanel.tsx
+ M src/spatial/ui/SpatialCuratedDeckVaultPanel.tsx
+ M src/spatial/ui/SpatialVoicePlaybackPanel.tsx
+ M src/spatial/vault/SpatialStoryBundleVaultBootstrap.tsx
+ M src/spatial/vault/spatialStoryBundleVaultIO.ts
+ M src/spatial/vault/spatialStoryBundleVaultTypes.ts.broken.1774173044
+ M src/spatial/world/World.tsx
+ M tsconfig.json
+?? ../.ai-backups/
+?? ../_audit/tier1_lock_check/
+?? ../_audit/tier1_prep_20260324_200033/
+?? ../src/
+?? ../tsconfig.json
+?? .ai-audit/
+?? .ai-backups/camera-rig-cinematic-20260323_213255/
+?? .ai-backups/cinematic-pass-20260324_050149.log
+?? .ai-backups/clean-scene-20260323_012420/
+?? .ai-backups/composition-pass-20260324_033300/
+?? .ai-backups/composition-pass-noverify-20260324_034122/
+?? .ai-backups/composition-pass-safe-20260324_033707/
+?? .ai-backups/composition-pass-safe-20260324_044327.log
+?? .ai-backups/final-starfield-fix-20260324_024419/
+?? .ai-backups/fix-camera-fov-safe-20260324_051207.log
+?? .ai-backups/fix-continue-20260324_164611.log
+?? .ai-backups/fix-hovered-pointerout-20260323_213446/
+?? .ai-backups/fix-orb-camera-20260324_050745.log
+?? .ai-backups/fix-pass1-20260323_010621/
+?? .ai-backups/fix-show-scope-20260323_222644/
+?? .ai-backups/focus-star-refinement-20260324_164346.log
+?? .ai-backups/focuspresence-immersion-pass-20260323_205011/
+?? .ai-backups/forensic-video-pass-20260324_070003.log
+?? .ai-backups/full-pass-b-20260324_000038/
+?? .ai-backups/home-rebalance-pass2-20260324_035218/
+?? .ai-backups/home-visual-lock-20260323_010206/
+?? .ai-backups/lifemap-falloff-orb-detach-20260324_060019.log
+?? .ai-backups/lifemap-isolation-20260324_053309.log
+?? .ai-backups/memory-panel-repair-20260322_225547/
+?? .ai-backups/motion-pass-20260324_045028.log
+?? .ai-backups/motion-pass-20260324_045340.log
+?? .ai-backups/next-pass-framing-20260324_032613/
+?? .ai-backups/next-pass-safe-20260324_050541.log
+?? .ai-backups/no-close-diagnose-20260324_030545/
+?? .ai-backups/no-close-diagnose-20260324_030806/
+?? .ai-backups/pass1-interaction-20260323_214749/
+?? .ai-backups/pass1-lock-20260323_032438/
+?? .ai-backups/pass1_5-20260323_010938/
+?? .ai-backups/pass2-camera-render-20260323_215712/
+?? .ai-backups/pass2-depth-realism-20260323_011346/
+?? .ai-backups/pass2_1-lifemap-ground-cutoff-20260323_221629/
+?? .ai-backups/pass2_2-lifemap-hide-ground-orb-20260323_222139/
+?? .ai-backups/pass2_5-20260323_011724/
+?? .ai-backups/recover-starfield-20260324_024228/
+?? .ai-backups/replay-lock-20260322_225251/
+?? .ai-backups/replay-threshold-pass-20260324_165918.log
+?? .ai-backups/scenephase-jsx-repair-20260324_031251/
+?? .ai-backups/spatial_cinematic_repair_20260324_171612/
+?? .ai-backups/spatial_repair_debug_20260324_171929/
+?? .ai-backups/spatial_repair_safe_20260324_172353/
+?? .ai-backups/spatialscene-full-replace-20260324_031814/
+?? .ai-backups/spatialscene-hard-fix-20260324_031706/
+?? .ai-backups/spatialscene-hardfix-20260324_023147/
+?? .ai-backups/spatialscene-parser-fix-20260324_031501/
+?? .ai-backups/spatialscene-targeted-jsx-fix-20260324_023627/
+?? .ai-backups/stabilization-pass-20260323_211929/
+?? .ai-backups/stabilization-pass-20260323_234613/
+?? .ai-backups/starfield-hard-reset-20260324_024735/
+?? .ai-backups/starfield-hard-reset-20260324_025713/
+?? .ai-backups/starfield-lifemap-fix-20260324_030335/
+?? .ai-backups/tier1-final-20260322_224605/
+?? .ai-backups/visual-consolidated-pass-20260322_230538/
+?? .ai-backups/visual-rebalance-20260324_034644/
+?? .ai-logs/
+?? app.disabled.pass1.20260323_032438/
+?? app/
+?? docs/tier1-lock/
+?? docs/visual-lock-audit-20260322_230538.md
+?? next.config.mjs
+?? src/spatial/scene/ArrivalSphere.tsx
+?? src/spatial/scene/BackgroundReset.tsx
+?? src/spatial/scene/CameraDirector.tsx
+?? src/spatial/scene/CameraRig.tsx
+?? src/spatial/scene/FocusPresence.tsx
+?? src/spatial/scene/FocusShellOverlay.tsx
+?? src/spatial/scene/HomeEnvironment.tsx
+?? src/spatial/scene/HomeOrb.tsx
+?? src/spatial/scene/Horizon.tsx
+?? src/spatial/scene/LifeMap.tsx
+?? src/spatial/scene/MemoryPanel.tsx
+?? src/spatial/scene/Orb.tsx
+?? src/spatial/scene/ReplayOverlay.tsx
+?? src/spatial/scene/SceneRig.tsx
+?? src/spatial/scene/Starfield.tsx.tmp
+?? src/spatial/scene/sceneState.ts
+?? src/spatial/shell/FocusShellOverlay.tsx
+?? src/spatial/shell/ReplayShellOverlay.tsx
+?? src/spatial/types/scene.ts
+?? src/types/global.d.ts
+
+== BRANCH ==
+tier1-home-ascent-cleanup-20260318_090348
+
+== LAST COMMIT ==
+fa7ea26 green build: stabilize tier1 core

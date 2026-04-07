@@ -1,0 +1,50 @@
+PASS: copied original page.tsx to src/app/_page_shell.tsx
+PASS: rewrote src/app/page.tsx as thin entrypoint
+
+== page.tsx ==
+export { default } from "./_page_shell";
+
+== _page_shell.tsx head ==
+"use client";
+
+import React, { useEffect, useMemo, useRef, useState } from "react";
+
+type Mode = "home" | "sky" | "lifemap" | "focus" | "replay";
+
+type MemoryNode = {
+  id: string;
+  title: string;
+  chapter: string;
+  domain: string;
+  summary: string;
+  tags: [string, string, string];
+  x: number;
+  y: number;
+  size: number;
+};
+
+const MEMORY_NODES: MemoryNode[] = [
+  {
+    id: "return-signal",
+    title: "Return Signal",
+    chapter: "Return",
+    domain: "Atmosic",
+    summary: "Second orbit node for focus continuity and selected-state validation.",
+    tags: ["Signal", "Return", "Orbit"],
+    x: 22,
+    y: 58,
+    size: 10,
+  },
+  {
+    id: "threshold-one",
+    title: "Threshold One",
+    chapter: "Winter",
+    domain: "Threshold",
+    summary: "Canonical memory seed used to verify replay identity and focus continuity.",
+    tags: ["Origin", "Winter", "Threshold"],
+    x: 54,
+    y: 46,
+    size: 12,
+PASS: build compiled successfully after extraction
+PASS: Tier 1 shell migrated out of page.tsx with no intended behavior change
+PASS: audit folder: /home/user/urai-spatial/urai-tier1/_audit/tier2/page-shell-extraction/20260318_013847

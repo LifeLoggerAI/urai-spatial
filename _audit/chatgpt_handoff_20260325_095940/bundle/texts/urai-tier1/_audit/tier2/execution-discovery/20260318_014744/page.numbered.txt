@@ -1,0 +1,4 @@
+===== FILE: src/app/page.tsx =====
+
+     1	export { default } from "./_page_shell";
+

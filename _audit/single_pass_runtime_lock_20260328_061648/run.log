@@ -1,0 +1,37 @@
+=== URAI SINGLE-PASS RUNTIME LOCK ===
+ROOT=/home/user/urai-spatial
+APP=/home/user/urai-spatial/urai-tier1
+AUDIT=/home/user/urai-spatial/_audit/single_pass_runtime_lock_20260328_061648
+=== VERIFY PATHS ===
+=== KILL EXISTING NEXT DEV SERVERS (repo-local only) ===
+=== WRITE HARD-LOCKED SPATIALSCENE ===
+=== VERIFY PAGE ENTRYPOINT IMPORTS SPATIALSCENE ===
+=== WRITE AUDIT NOTES ===
+=== TYPECHECK ===
+=== BUILD ===
+
+> urai-tier1@0.1.0 build /home/user/urai-spatial/urai-tier1
+> next build --webpack
+
+▲ Next.js 16.2.1 (webpack)
+
+  Creating an optimized production build ...
+✓ Compiled successfully in 29.5s
+  Running TypeScript ...
+  Finished TypeScript in 19.7s ...
+  Collecting page data using 1 worker ...
+  Generating static pages using 1 worker (0/3) ...
+✓ Generating static pages using 1 worker (3/3) in 703ms
+  Finalizing page optimization ...
+  Collecting build traces ...
+
+Route (app)
+┌ ○ /
+└ ○ /_not-found
+
+
+○  (Static)  prerendered as static content
+
+=== DONE ===
+Backups: /home/user/urai-spatial/_audit/single_pass_runtime_lock_20260328_061648/backups
+Audit:   /home/user/urai-spatial/_audit/single_pass_runtime_lock_20260328_061648

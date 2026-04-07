@@ -1,0 +1,7 @@
+AUDIT_DIR=/home/user/urai-spatial/urai-tier1/_audit/tier2/ground-readpack/20260318_024217
+Paste back:
+  /home/user/urai-spatial/urai-tier1/_audit/tier2/ground-readpack/20260318_024217/SpatialScene.tsx.readpack.txt
+  /home/user/urai-spatial/urai-tier1/_audit/tier2/ground-readpack/20260318_024217/Ground.tsx.readpack.txt
+  /home/user/urai-spatial/urai-tier1/_audit/tier2/ground-readpack/20260318_024217/Starfield.tsx.readpack.txt
+  /home/user/urai-spatial/urai-tier1/_audit/tier2/ground-readpack/20260318_024217/CameraRig.tsx.readpack.txt
+  /home/user/urai-spatial/urai-tier1/_audit/tier2/ground-readpack/20260318_024217/SceneController.tsx.readpack.txt

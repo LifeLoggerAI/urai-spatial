@@ -1,12 +1,47 @@
-:root {
-  --bg: #000000;
-  --fg: #ffffff;
-}
-
-html, body {
+html, body, #__next {
+  width: 100%;
+  height: 100%;
   margin: 0;
   padding: 0;
-  background: var(--bg);
-  color: var(--fg);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
   overflow: hidden;
+  background: #05070b;
+}
+
+/* === URAI POINTER FORCE FIX === */
+canvas {
+  pointer-events: auto !important;
+}
+
+[data-ascent-continuity],
+[data-overlay],
+[data-veil],
+[data-ui],
+[data-hud],
+[data-runtimehud] {
+  pointer-events: none !important;
+}
+
+
+/* === PASS: overlay passthrough === */
+canvas { pointer-events: auto !important; }
+body, #__next { pointer-events: auto !important; }
+
+div[style*="position: absolute"][style*="inset: 0"] {
+  pointer-events: none !important;
+}
+
+button,
+[role="button"],
+a,
+input,
+select,
+textarea {
+  pointer-events: auto !important;
 }

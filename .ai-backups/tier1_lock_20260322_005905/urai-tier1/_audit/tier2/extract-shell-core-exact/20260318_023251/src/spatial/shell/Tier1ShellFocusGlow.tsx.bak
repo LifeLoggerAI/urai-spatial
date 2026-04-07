@@ -1,0 +1,35 @@
+"use client";
+
+import React from "react";
+
+type Props = {
+  mode: "home" | "sky" | "lifemap" | "focus" | "replay";
+};
+
+export default function Tier1ShellFocusGlow(props: Props) {
+  const { mode } = props;
+
+  if (!(mode === "focus" || mode === "replay")) return null;
+
+  return (
+    <div
+      style={{
+        position: "absolute",
+        left: "50%",
+        top: mode === "replay" ? "48%" : "50%",
+        transform: "translate(-50%, -50%)",
+        width: mode === "replay" ? 146 : 118,
+        height: mode === "replay" ? 146 : 118,
+        borderRadius: "50%",
+        background:
+          "radial-gradient(circle, rgba(220,230,255,0.20) 0%, rgba(116,136,196,0.20) 45%, rgba(46,60,102,0.14) 68%, rgba(18,26,48,0.00) 100%)",
+        border: "1px solid rgba(255,255,255,0.18)",
+        boxShadow:
+          "0 0 42px rgba(150,176,255,0.14), inset 0 0 22px rgba(230,238,255,0.08)",
+        transition: "all 240ms ease",
+        animation: "breathe 4.2s ease-in-out infinite",
+        zIndex: 10,
+      }}
+    />
+  );
+}

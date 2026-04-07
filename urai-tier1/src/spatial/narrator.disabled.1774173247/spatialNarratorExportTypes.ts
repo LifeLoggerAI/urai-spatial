@@ -1,3 +1,4 @@
+
 import { resolveStarByIdSafe } from "../lib/resolveStarByIdSafe";
 export type SpatialNarratorExport = {
   schema: "urai.spatial.narrator-export.v1";

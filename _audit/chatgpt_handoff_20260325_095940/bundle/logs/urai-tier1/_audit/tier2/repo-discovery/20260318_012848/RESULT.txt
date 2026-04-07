@@ -1,0 +1,33 @@
+== URAI Tier 2 repo discovery ==
+ROOT=/home/user/urai-spatial/urai-tier1
+
+== top-level ==
+SNAPSHOT: src/app/page.tsx
+SNAPSHOT: src/spatial/scene/SpatialScene.tsx
+SNAPSHOT: src/spatial/state/sceneStore.ts
+MISSING: src/spatial/state/useSceneStore.ts
+SNAPSHOT: src/spatial/data/stars.ts
+MISSING: src/spatial/layout
+MISSING: src/spatial/world
+MISSING: src/spatial/entities
+MISSING: src/spatial/camera
+MISSING: src/spatial/transitions
+MISSING: src/spatial/theme
+
+== spatial file inventory ==
+
+== symbol grep ==
+
+== package scripts ==
+
+== tsconfig files ==
+
+== likely action map ==
+Review these first:
+1. /home/user/urai-spatial/urai-tier1/_audit/tier2/repo-discovery/20260318_012848/src/spatial/scene/SpatialScene.tsx
+2. /home/user/urai-spatial/urai-tier1/_audit/tier2/repo-discovery/20260318_012848/src/app/page.tsx
+3. /home/user/urai-spatial/urai-tier1/_audit/tier2/repo-discovery/20260318_012848/src/spatial/state/sceneStore.ts and/or useSceneStore.ts
+4. /home/user/urai-spatial/urai-tier1/_audit/tier2/repo-discovery/20260318_012848/spatial-file-inventory.txt
+5. /home/user/urai-spatial/urai-tier1/_audit/tier2/repo-discovery/20260318_012848/symbol-grep.txt
+DONE
+AUDIT_DIR=/home/user/urai-spatial/urai-tier1/_audit/tier2/repo-discovery/20260318_012848

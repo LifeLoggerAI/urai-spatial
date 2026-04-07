@@ -1,3 +1,4 @@
+
 export type SpatialStoryBundleDiff = {
   schema: "urai.spatial.story-bundle-diff.v1";
   baseEntryId: string;

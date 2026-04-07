@@ -1,0 +1,20 @@
+{
+  "name": "urai-tier1",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev --webpack",
+    "build": "next build --webpack",
+    "start": "next start",
+    "lint": "eslint",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@react-three/postprocessing": "^3.0.4",
+    "@tailwindcss/postcss": "^4.2.2",
+    "next": "^16.1.6",
+    "postprocessing": "^6.39.0",
+    "react": "19.2.4",
+    "react-dom": "^19.2.4"
+  }
+}

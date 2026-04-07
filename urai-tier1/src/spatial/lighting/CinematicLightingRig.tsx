@@ -1,7 +1,12 @@
+import { uraiNow, uraiRandom, uraiTime } from "@/lib/uraiDeterminism";
 "use client";
 
-import { useFrame } from "@react-three/fiber";
 import { useRef } from "react";
+
+
+
+
+import { useFrame } from "@react-three/fiber";
 import type { Group, PointLight } from "three";
 
 type Props = {
@@ -9,13 +14,16 @@ type Props = {
 };
 
 export default function CinematicLightingRig({
+
   orbPosition = [0, 0.2, 0],
 }: Props) {
+  const __uraiEpochRef = useRef<number>(uraiTime())
+  const __uraiLocalTime = useRef(uraiTime())
   const groupRef = useRef<Group | null>(null);
   const glowRef = useRef<PointLight | null>(null);
 
-  useFrame(({ clock }) => {
-    const t = clock.getElapsedTime();
+  useFrame(() => {
+    const t = ((uraiTime() - __uraiLocalTime.current) / 1000);
     if (groupRef.current) groupRef.current.position.y = Math.sin(t * 0.18) * 0.03;
     if (glowRef.current) glowRef.current.intensity = 2.45 + Math.sin(t * 1.7) * 0.18;
   });

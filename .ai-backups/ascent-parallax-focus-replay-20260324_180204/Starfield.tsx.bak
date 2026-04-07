@@ -1,0 +1,102 @@
+"use client";
+
+import * as THREE from "three";
+import { useMemo } from "react";
+
+export type SpatialStar = {
+  id: string;
+  position: [number, number, number];
+  size: number;
+  color: string;
+  band: "near" | "mid" | "far";
+  title: string;
+  chapter: string;
+};
+
+type StarfieldProps = {
+  stars: SpatialStar[];
+  phase: "home" | "lifemap" | "focus" | "replay";
+  selectedId: string | null;
+  hoveredId: string | null;
+  onSelect: (id: string) => void;
+  onHover: (id: string | null) => void;
+};
+
+export default function Starfield({
+  stars,
+  phase,
+  selectedId,
+  hoveredId,
+  onSelect,
+  onHover,
+}: StarfieldProps) {
+  const phaseDim = phase === "home" ? 0.18 : phase === "lifemap" ? 1 : phase === "focus" ? 0.28 : 0.14;
+
+  const sortedStars = useMemo(() => {
+    const order = { far: 0, mid: 1, near: 2 } as const;
+    return [...stars].sort((a, b) => order[a.band] - order[b.band]);
+  }, [stars]);
+
+  return (
+    <group>
+      {sortedStars.map((star) => {
+        const isSelected = selectedId === star.id;
+        const isHovered = hoveredId === star.id;
+        const otherSelected = selectedId !== null && !isSelected;
+
+        const baseBandOpacity =
+          star.band === "near" ? 0.95 :
+          star.band === "mid" ? 0.72 :
+          0.46;
+
+        const focusSuppression =
+          phase === "focus" ? (otherSelected ? 0.08 : 1) :
+          phase === "replay" ? (otherSelected ? 0.03 : 0.35) :
+          1;
+
+        const opacity = baseBandOpacity * phaseDim * focusSuppression * (isHovered ? 1.15 : 1);
+        const glowOpacity = opacity * (isSelected ? 0.8 : isHovered ? 0.38 : 0.18);
+        const scale = star.size * (isSelected ? 2.5 : isHovered ? 1.55 : 1);
+
+        return (
+          <group key={star.id} position={star.position}>
+            <mesh
+              onPointerOver={(e) => {
+                e.stopPropagation();
+                onHover(star.id);
+              }}
+              onPointerOut={(e) => {
+                e.stopPropagation();
+                onHover(null);
+              }}
+              onPointerDown={(e) => {
+                e.stopPropagation();
+                onSelect(star.id);
+              }}
+            >
+              <sphereGeometry args={[scale, 14, 14]} />
+              <meshBasicMaterial
+                color={star.color}
+                transparent
+                opacity={opacity}
+                blending={THREE.AdditiveBlending}
+                depthWrite={false}
+              />
+            </mesh>
+
+            <mesh>
+              <sphereGeometry args={[scale * (isSelected ? 4.2 : 2.6), 18, 18]} />
+              <meshBasicMaterial
+                color={star.color}
+                transparent
+                opacity={glowOpacity}
+                blending={THREE.AdditiveBlending}
+                depthWrite={false}
+              />
+            </mesh>
+          </group>
+        );
+      })}
+    </group>
+  );
+}

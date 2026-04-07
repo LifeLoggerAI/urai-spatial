@@ -1,0 +1,20 @@
+[INFO] repo root: /home/user/urai-spatial
+[INFO] audit dir: _audit/state_contract_audit_20260326_220257
+[BACKUP] src/spatial/state/sceneStore.ts
+[BACKUP] src/spatial/types.ts
+[BACKUP] src/spatial/components/CameraRig.tsx
+[BACKUP] src/spatial/persistence/SpatialPersistenceBridge.tsx
+[BACKUP] src/spatial/scene/HomeWorld.tsx
+[BACKUP] src/spatial/scene/ReplaySphere.tsx
+[BACKUP] src/spatial/scene/StarMesh.tsx
+[BACKUP] src/spatial/unity/UnityRuntimePayloadBridge.tsx
+[BACKUP] src/spatial/scene/SpatialScene.tsx
+[BACKUP] src/app/page.tsx
+[STEP] run TypeScript to capture current failing contract
+[INFO] TypeScript failed as expected. Captured in _audit/state_contract_audit_20260326_220257/logs/tsc.log
+[STEP] capture contract signatures
+[STEP] extract import graph hints
+[STEP] summarize likely root causes
+[DONE] state contract audit complete
+
+[FAIL] Script aborted at line 1 (exit 1)

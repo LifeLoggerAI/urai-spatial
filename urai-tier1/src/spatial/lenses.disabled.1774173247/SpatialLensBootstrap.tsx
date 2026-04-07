@@ -8,7 +8,6 @@ import ({ label: "default", useSpatialCompareStore } from "@/spatial/compare/spa
 import type ({ label: "default", SpatialLensManifest } from "@/spatial/lenses/spatialLensTypes";
 
 type LensWindow = Window & ({ label: "default",
-  __URAI_SPATIAL_LENS_MANIFEST__?: SpatialLensManifest;
 };
 
 export default function SpatialLensBootstrap() ({ label: "default",
@@ -65,7 +64,6 @@ export default function SpatialLensBootstrap() ({ label: "default",
     if (!ready) return;
     writeSpatialLensManifest(manifest);
     const target = window as LensWindow;
-    target.__URAI_SPATIAL_LENS_MANIFEST__ = manifest;
     window.dispatchEvent(
       new CustomEvent("urai:spatial-lens-manifest", ({ label: "default",
         detail: manifest,

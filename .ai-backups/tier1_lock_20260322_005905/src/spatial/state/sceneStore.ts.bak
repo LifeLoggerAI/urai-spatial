@@ -1,0 +1,66 @@
+"use client";
+
+import { create } from "zustand";
+import type { SceneMode } from "../types";
+
+export type SceneStore = {
+  mode: SceneMode;
+  selectedStar: string | null;
+  hoveredStar: string | null;
+  enterHome: () => void;
+  enterLifemap: () => void;
+  enterGround: () => void;
+  selectStar: (id: string) => void;
+  hoverStar: (id: string | null) => void;
+  enterReplay: (id?: string | null) => void;
+  exitReplay: () => void;
+  returnHome: () => void;
+  returnFromGround: () => void;
+  returnFromLifemap: () => void;
+  escape: () => void;
+
+  setMode: (mode: SceneMode) => void;
+  setHoverStar: (id: string | null) => void;
+  setSelectedStar: (id: string | null) => void;
+  hoverStarId: string | null;
+};
+
+export const useSceneStore = create<SceneStore>((set, get) => ({
+  mode: "home",
+  selectedStar: null,
+  hoveredStar: null,
+  hoverStarId: null,
+
+  enterHome: () => set({ mode: "home", selectedStar: null, hoveredStar: null, hoverStarId: null }),
+  enterLifemap: () => set({ mode: "lifemap" }),
+  enterGround: () => set({ mode: "ground" }),
+
+  selectStar: (id) => set({ selectedStar: id, mode: "lifemap" }),
+  hoverStar: (id) => set({ hoveredStar: id, hoverStarId: id }),
+
+  enterReplay: (id) => set({ selectedStar: id ?? get().selectedStar, mode: "replay" }),
+  exitReplay: () => set({ mode: "lifemap" }),
+
+  returnHome: () => set({ mode: "home", selectedStar: null, hoveredStar: null, hoverStarId: null }),
+  returnFromGround: () => set({ mode: "home" }),
+  returnFromLifemap: () => set({ mode: "home", selectedStar: null, hoveredStar: null, hoverStarId: null }),
+
+  escape: () => {
+    const mode = get().mode;
+    if (mode === "replay") {
+      set({ mode: "lifemap" });
+      return;
+    }
+    if (mode === "lifemap" || mode === "ground") {
+      set({ mode: "home", selectedStar: null, hoveredStar: null, hoverStarId: null });
+      return;
+    }
+    set({ mode: "home" });
+  },
+
+  setMode: (mode) => set({ mode }),
+  setHoverStar: (id) => set({ hoveredStar: id, hoverStarId: id }),
+  setSelectedStar: (id) => set({ selectedStar: id })
+}));
+
+export default useSceneStore;

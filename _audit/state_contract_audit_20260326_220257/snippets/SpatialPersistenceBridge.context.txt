@@ -1,0 +1,148 @@
+===== src/spatial/persistence/SpatialPersistenceBridge.tsx : line 5 =====
+"use client";
+
+import { useEffect } from "react";
+import { resolveStarById } from "../data/stars";
+import { useSceneStore } from "../state/sceneStore";
+import { useXrStore } from "../unity/UnityRuntimePayloadBridge";
+import type { SpatialPersistenceSnapshot } from "../types";
+
+export default function SpatialPersistenceBridge() {
+  const mode = useSceneStore((s) => s.mode);
+  const selectedStar = useSceneStore((s) => s.selectedStar);
+  const xrState = useXrStore();
+
+
+===== src/spatial/persistence/SpatialPersistenceBridge.tsx : line 10 =====
+
+import { useEffect } from "react";
+import { resolveStarById } from "../data/stars";
+import { useSceneStore } from "../state/sceneStore";
+import { useXrStore } from "../unity/UnityRuntimePayloadBridge";
+import type { SpatialPersistenceSnapshot } from "../types";
+
+export default function SpatialPersistenceBridge() {
+  const mode = useSceneStore((s) => s.mode);
+  const selectedStar = useSceneStore((s) => s.selectedStar);
+  const xrState = useXrStore();
+
+  useEffect(() => {
+    const star = resolveStarById(selectedStar);
+    const snapshot: SpatialPersistenceSnapshot = {
+      schema: "urai.spatial.persistence.v1" as const,
+      savedAt: new Date().toISOString(),
+
+===== src/spatial/persistence/SpatialPersistenceBridge.tsx : line 11 =====
+import { useEffect } from "react";
+import { resolveStarById } from "../data/stars";
+import { useSceneStore } from "../state/sceneStore";
+import { useXrStore } from "../unity/UnityRuntimePayloadBridge";
+import type { SpatialPersistenceSnapshot } from "../types";
+
+export default function SpatialPersistenceBridge() {
+  const mode = useSceneStore((s) => s.mode);
+  const selectedStar = useSceneStore((s) => s.selectedStar);
+  const xrState = useXrStore();
+
+  useEffect(() => {
+    const star = resolveStarById(selectedStar);
+    const snapshot: SpatialPersistenceSnapshot = {
+      schema: "urai.spatial.persistence.v1" as const,
+      savedAt: new Date().toISOString(),
+      sceneMode: mode,
+
+===== src/spatial/persistence/SpatialPersistenceBridge.tsx : line 15 =====
+import type { SpatialPersistenceSnapshot } from "../types";
+
+export default function SpatialPersistenceBridge() {
+  const mode = useSceneStore((s) => s.mode);
+  const selectedStar = useSceneStore((s) => s.selectedStar);
+  const xrState = useXrStore();
+
+  useEffect(() => {
+    const star = resolveStarById(selectedStar);
+    const snapshot: SpatialPersistenceSnapshot = {
+      schema: "urai.spatial.persistence.v1" as const,
+      savedAt: new Date().toISOString(),
+      sceneMode: mode,
+      selectedStarId: selectedStar ?? null,
+      selectedStarLabel: star?.label ?? null,
+      presenting: xrState.presenting,
+      hasHeadsetPose: xrState.hasHeadsetPose,
+
+===== src/spatial/persistence/SpatialPersistenceBridge.tsx : line 19 =====
+  const selectedStar = useSceneStore((s) => s.selectedStar);
+  const xrState = useXrStore();
+
+  useEffect(() => {
+    const star = resolveStarById(selectedStar);
+    const snapshot: SpatialPersistenceSnapshot = {
+      schema: "urai.spatial.persistence.v1" as const,
+      savedAt: new Date().toISOString(),
+      sceneMode: mode,
+      selectedStarId: selectedStar ?? null,
+      selectedStarLabel: star?.label ?? null,
+      presenting: xrState.presenting,
+      hasHeadsetPose: xrState.hasHeadsetPose,
+      xrInput: xrState.xrInput
+    };
+
+    try {
+
+===== src/spatial/persistence/SpatialPersistenceBridge.tsx : line 20 =====
+  const xrState = useXrStore();
+
+  useEffect(() => {
+    const star = resolveStarById(selectedStar);
+    const snapshot: SpatialPersistenceSnapshot = {
+      schema: "urai.spatial.persistence.v1" as const,
+      savedAt: new Date().toISOString(),
+      sceneMode: mode,
+      selectedStarId: selectedStar ?? null,
+      selectedStarLabel: star?.label ?? null,
+      presenting: xrState.presenting,
+      hasHeadsetPose: xrState.hasHeadsetPose,
+      xrInput: xrState.xrInput
+    };
+
+    try {
+      window.localStorage.setItem("urai.spatial.persistence", JSON.stringify(snapshot));
+
+===== src/spatial/persistence/SpatialPersistenceBridge.tsx : line 21 =====
+
+  useEffect(() => {
+    const star = resolveStarById(selectedStar);
+    const snapshot: SpatialPersistenceSnapshot = {
+      schema: "urai.spatial.persistence.v1" as const,
+      savedAt: new Date().toISOString(),
+      sceneMode: mode,
+      selectedStarId: selectedStar ?? null,
+      selectedStarLabel: star?.label ?? null,
+      presenting: xrState.presenting,
+      hasHeadsetPose: xrState.hasHeadsetPose,
+      xrInput: xrState.xrInput
+    };
+
+    try {
+      window.localStorage.setItem("urai.spatial.persistence", JSON.stringify(snapshot));
+      (window).__URAI_SPATIAL_PERSISTENCE__ = snapshot;
+
+===== src/spatial/persistence/SpatialPersistenceBridge.tsx : line 31 =====
+      hasHeadsetPose: xrState.hasHeadsetPose,
+      xrInput: xrState.xrInput
+    };
+
+    try {
+      window.localStorage.setItem("urai.spatial.persistence", JSON.stringify(snapshot));
+      (window).__URAI_SPATIAL_PERSISTENCE__ = snapshot;
+    } catch {}
+  }, [mode, selectedStar, xrState]);
+
+  return null;
+}
+
+declare global {
+  interface Window {
+    __URAI_SPATIAL_PERSISTENCE__?: SpatialPersistenceSnapshot;
+  }
+

@@ -1,0 +1,13 @@
+'use client';
+
+import React from "react";
+
+/**
+ * Tier 2 is explicitly excluded until Tier 1 is locked.
+ * Ground is forced to a no-op to keep the canonical runtime clean.
+ */
+export function Ground() {
+  return null;
+}
+
+export default Ground;

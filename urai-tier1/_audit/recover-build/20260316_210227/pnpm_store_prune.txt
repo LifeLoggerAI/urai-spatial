@@ -1,3 +1,0 @@
-Removed all cached metadata files
-Removed 28450 files
-Removed 420 packages

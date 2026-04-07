@@ -6,7 +6,6 @@ import { useSpatialSettingsStore } from "@/spatial/settings/spatialSettingsStore
 import type { SpatialSettings } from "@/spatial/settings/spatialSettingsTypes";
 
 type SettingsWindow = Window & {
-  __URAI_SPATIAL_SETTINGS__?: SpatialSettings;
 };
 
 export default function SpatialSettingsBootstrap() {
@@ -47,7 +46,6 @@ export default function SpatialSettingsBootstrap() {
     if (!ready) return;
     writeSpatialSettings(settings);
     const target = window as SettingsWindow;
-    target.__URAI_SPATIAL_SETTINGS__ = settings;
     window.dispatchEvent(
       new CustomEvent("urai:spatial-settings", {
         detail: settings,

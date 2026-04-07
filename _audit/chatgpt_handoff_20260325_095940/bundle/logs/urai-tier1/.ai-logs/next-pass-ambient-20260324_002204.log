@@ -1,0 +1,26 @@
+== WRITE CAMERARIG ==
+== PATCH SPATIALSCENE ==
+== VERIFY CAMERARIG ==
+40:      desiredPos.x += Math.sin(tNow * 0.18) * 0.05;
+47:      desiredPos = LIFEMAP_POS.clone();
+49:      desiredPos.x += Math.sin(tNow * 0.12) * 0.14;
+73:        const dist = 4.35 - t * 1.0;
+81:        const dist = 2.18 - t * 0.42;
+== VERIFY SPATIALSCENE ==
+70:    scene.fog = new FogExp2("#02030a", phase === "home" ? 0.034 : phase === "lifemap" ? 0.018 : phase === "focus" ? 0.014 : 0.011);
+340:          ? selected?.summary ?? "Focus locked. Press R for replay."
+341:          : "Replay holds a single thread.";
+255:      <mesh scale={selected ? (phase === "replay" ? 2.72 : 2.18) : hovered ? 1.68 : 1.36}>
+257:        <meshBasicMaterial color={star.color} transparent opacity={opacity * (selected ? 0.045 : 0.026)} />
+== TYPECHECK ==
+
+> urai-tier1@0.1.0 typecheck /home/user/urai-spatial/urai-tier1
+> tsc --noEmit
+
+src/spatial/scene/Starfield.tsx(124,37): error TS1005: ',' expected.
+src/spatial/scene/Starfield.tsx(124,65): error TS1005: ',' expected.
+src/spatial/scene/Starfield.tsx(124,225): error TS1005: ',' expected.
+ ELIFECYCLE  Command failed with exit code 2.
+TYPECHECK FAILED
+LOG: .ai-logs/next-pass-ambient-20260324_002204.log
+exit

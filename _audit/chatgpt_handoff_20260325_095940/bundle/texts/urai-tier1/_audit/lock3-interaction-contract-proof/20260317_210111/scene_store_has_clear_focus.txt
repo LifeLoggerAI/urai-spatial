@@ -1,0 +1,2 @@
+34:  clearFocus: () => void;
+64:  clearFocus: () =>

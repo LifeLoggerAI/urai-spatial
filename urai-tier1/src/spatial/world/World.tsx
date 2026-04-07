@@ -7,10 +7,10 @@ export default function World() {
   return (
     <>
       <color attach="background" args={[mode === "lifemap" ? "#020617" : "#6fa3ff"]} />
+      <fog attach="fog" args={["#000814", 14, 34]} />
 
       <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -1, 0]}>
         <planeGeometry args={[200, 200]} />
-        <meshStandardMaterial color="#1e3a8a" />
       </mesh>
     </>
   );

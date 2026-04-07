@@ -1,0 +1,7 @@
+5:    "dev": "pnpm --filter urai-tier1 dev",
+6:    "build": "pnpm --filter urai-tier1 build",
+2:  - "urai-tier1"
+6:    "dev": "next dev --webpack",
+7:    "build": "next build --webpack",
+5:const SpatialScene = dynamic(() => import("@/spatial/scene/SpatialScene"), {
+19:      <SpatialScene />

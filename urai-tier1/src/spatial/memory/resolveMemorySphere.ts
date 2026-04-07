@@ -14,15 +14,15 @@ export type MemorySphereDetail = {
   tags: string[];
 };
 
-function str(value: unknown): string | undefined {
+function str(value: any): string | undefined {
   return typeof value === "string" && value.trim() ? value : undefined;
 }
 
-function num(value: unknown): number | undefined {
+function num(value: any): number | undefined {
   return typeof value === "number" && Number.isFinite(value) ? value : undefined;
 }
 
-function strArray(value: unknown): string[] {
+function strArray(value: any): string[] {
   return Array.isArray(value)
     ? value.filter((item): item is string => typeof item === "string" && item.trim().length > 0)
     : [];

@@ -1,0 +1,14 @@
+== VERIFY FIX ==
+285:      <CameraRig phase={phase} selected={selected} />
+== TYPECHECK ==
+
+> urai-tier1@0.1.0 typecheck /home/user/urai-spatial/urai-tier1
+> tsc --noEmit
+
+src/spatial/scene/Starfield.tsx(124,37): error TS1005: ',' expected.
+src/spatial/scene/Starfield.tsx(124,65): error TS1005: ',' expected.
+src/spatial/scene/Starfield.tsx(124,225): error TS1005: ',' expected.
+ ELIFECYCLE  Command failed with exit code 2.
+TYPECHECK FAILED
+LOG: .ai-logs/fix-camerarig-progress-prop-20260324_005059.log
+exit

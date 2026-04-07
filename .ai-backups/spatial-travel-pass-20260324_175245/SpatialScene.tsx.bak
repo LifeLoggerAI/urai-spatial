@@ -1,0 +1,480 @@
+"use client"
+
+import { Canvas, useFrame, useThree } from "@react-three/fiber"
+import { Float } from "@react-three/drei"
+import { Suspense, useEffect, useMemo, useRef, useState } from "react"
+import type { JSX } from "react"
+import * as THREE from "three"
+
+import Starfield, { buildSpatialStars, type SpatialPhase, type SpatialStar } from "./Starfield"
+
+type OverlayButtonProps = {
+  label: string
+  onClick: () => void
+  active?: boolean
+}
+
+function OverlayButton(props: OverlayButtonProps) {
+  const { label, onClick, active } = props
+
+  return (
+    <button
+      onClick={onClick}
+      style={{
+        border: "1px solid rgba(255,255,255,0.16)",
+        background: active ? "rgba(255,255,255,0.18)" : "rgba(4,7,20,0.52)",
+        color: "#eef4ff",
+        padding: "10px 14px",
+        borderRadius: 999,
+        cursor: "pointer",
+        backdropFilter: "blur(10px)",
+      }}
+    >
+      {label}
+    </button>
+  )
+}
+
+function lerp(a: number, b: number, t: number) {
+  return a + (b - a) * t
+}
+
+function CameraRig(props: {
+  phase: SpatialPhase
+  selected: SpatialStar | null
+  replayTime: number
+}) {
+  const { camera, scene } = useThree()
+  const { phase, selected, replayTime } = props
+  const cameraTarget = useMemo(() => new THREE.Vector3(), [])
+  const lookTarget = useMemo(() => new THREE.Vector3(), [])
+
+  useEffect(() => {
+    scene.fog = new THREE.FogExp2("#030611", phase === "home" ? 0.045 : phase === "ascent" ? 0.03 : 0.016)
+    return () => {
+      scene.fog = null
+    }
+  }, [phase, scene])
+
+  useFrame((_, delta) => {
+    let targetPosition = new THREE.Vector3(0, 1.7, 9)
+    let targetLook = new THREE.Vector3(0, 1.0, -4)
+
+    if (phase === "ascent") {
+      targetPosition = new THREE.Vector3(0, 3.2, 4.4)
+      targetLook = new THREE.Vector3(0, 1.8, -16)
+    }
+
+    if (phase === "lifemap") {
+      targetPosition = new THREE.Vector3(0, 0.8, 20)
+      targetLook = new THREE.Vector3(0, 0, -48)
+    }
+
+    if ((phase === "focus" || phase === "replay") && selected) {
+      const [sx, sy, sz] = selected.position
+
+      if (phase === "focus") {
+        targetPosition = new THREE.Vector3(sx * 0.12, sy * 0.14 + 0.4, sz + 4.8)
+        targetLook = new THREE.Vector3(sx, sy, sz)
+      } else {
+        const radius = 2.25
+        const orbitX = Math.cos(replayTime * 0.45) * radius
+        const orbitY = 0.8 + Math.sin(replayTime * 0.28) * 0.55
+        const orbitZ = Math.sin(replayTime * 0.45) * radius
+        targetPosition = new THREE.Vector3(sx + orbitX, sy + orbitY, sz + orbitZ)
+        targetLook = new THREE.Vector3(sx, sy, sz)
+      }
+    }
+
+    cameraTarget.set(
+      lerp(camera.position.x, targetPosition.x, 1 - Math.exp(-delta * 2.4)),
+      lerp(camera.position.y, targetPosition.y, 1 - Math.exp(-delta * 2.4)),
+      lerp(camera.position.z, targetPosition.z, 1 - Math.exp(-delta * 2.4)),
+    )
+
+    lookTarget.set(
+      lerp(lookTarget.x, targetLook.x, 1 - Math.exp(-delta * 2.4)),
+      lerp(lookTarget.y, targetLook.y, 1 - Math.exp(-delta * 2.4)),
+      lerp(lookTarget.z, targetLook.z, 1 - Math.exp(-delta * 2.4)),
+    )
+
+    camera.position.copy(cameraTarget)
+    camera.lookAt(targetLook)
+  })
+
+  return null
+}
+
+function SkyShell(props: { phase: SpatialPhase }) {
+  const opacity = props.phase === "home" ? 0.9 : props.phase === "ascent" ? 0.8 : 0.65
+
+  return (
+    <group>
+      <mesh position={[0, 20, -60]} scale={[140, 90, 1]}>
+        <planeGeometry args={[1, 1, 1, 1]} />
+        <meshBasicMaterial color="#071123" transparent opacity={opacity} />
+      </mesh>
+      <mesh position={[0, 8, -28]} scale={[64, 28, 1]}>
+        <planeGeometry args={[1, 1, 1, 1]} />
+        <meshBasicMaterial color="#10243f" transparent opacity={0.28} />
+      </mesh>
+      <mesh position={[0, 12, -38]} scale={[78, 32, 1]}>
+        <planeGeometry args={[1, 1, 1, 1]} />
+        <meshBasicMaterial color="#0c1730" transparent opacity={0.2} />
+      </mesh>
+    </group>
+  )
+}
+
+function GroundPlane(props: { phase: SpatialPhase }) {
+  const visible = props.phase === "home" || props.phase === "ascent"
+
+  return (
+    <group visible={visible}>
+      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -1.95, -18]} receiveShadow>
+        <planeGeometry args={[180, 180, 1, 1]} />
+        <meshStandardMaterial color="#080b12" roughness={1} metalness={0} />
+      </mesh>
+      <mesh position={[0, -0.8, -34]} scale={[64, 7, 1]}>
+        <planeGeometry args={[1, 1, 1, 1]} />
+        <meshBasicMaterial color="#1d2840" transparent opacity={0.2} />
+      </mesh>
+      <mesh position={[0, -1.15, -24]} scale={[44, 2.8, 1]}>
+        <planeGeometry args={[1, 1, 1, 1]} />
+        <meshBasicMaterial color="#223a54" transparent opacity={0.18} />
+      </mesh>
+    </group>
+  )
+}
+
+function OrbAnchor(props: {
+  visible: boolean
+  onEnterLifeMap: () => void
+}) {
+  const { visible, onEnterLifeMap } = props
+
+  return (
+    <group visible={visible} position={[-1.2, 0.35, -1.8]}>
+      <Float speed={1.2} rotationIntensity={0.25} floatIntensity={0.45}>
+        <mesh
+          onClick={(event) => {
+            event.stopPropagation()
+            onEnterLifeMap()
+          }}
+        >
+          <sphereGeometry args={[0.6, 36, 36]} />
+          <meshStandardMaterial emissive="#91c0ff" emissiveIntensity={1.2} color="#8fc1ff" />
+        </mesh>
+        <mesh scale={2.5}>
+          <sphereGeometry args={[0.6, 36, 36]} />
+          <meshBasicMaterial color="#a9cfff" transparent opacity={0.09} />
+        </mesh>
+      </Float>
+    </group>
+  )
+}
+
+function FocusBeacon(props: { selected: SpatialStar | null; phase: SpatialPhase }) {
+  const { selected, phase } = props
+
+  if (!selected || (phase !== "focus" && phase !== "replay")) {
+    return null
+  }
+
+  return (
+    <group position={selected.position}>
+      <mesh scale={6}>
+        <sphereGeometry args={[selected.size, 24, 24]} />
+        <meshBasicMaterial color={selected.color} transparent opacity={phase === "replay" ? 0.16 : 0.1} />
+      </mesh>
+      <mesh scale={10}>
+        <sphereGeometry args={[selected.size, 24, 24]} />
+        <meshBasicMaterial color={selected.color} transparent opacity={0.035} />
+      </mesh>
+    </group>
+  )
+}
+
+function SceneWorld(props: {
+  phase: SpatialPhase
+  selected: SpatialStar | null
+  hoveredId: string | null
+  replayTime: number
+  onSelect: (star: SpatialStar) => void
+  onHover: (id: string | null) => void
+  onEnterLifeMap: () => void
+}) {
+  const { phase, selected, hoveredId, replayTime, onSelect, onHover, onEnterLifeMap } = props
+
+  return (
+    <>
+      <color attach="background" args={["#02030a"]} />
+      <ambientLight intensity={0.55} />
+      <directionalLight position={[4, 8, 6]} intensity={1.15} color="#d8e8ff" />
+      <pointLight position={[-4, 3, 2]} intensity={0.45} color="#7bb3ff" />
+      <SkyShell phase={phase} />
+      <GroundPlane phase={phase} />
+      <OrbAnchor visible={phase === "home"} onEnterLifeMap={onEnterLifeMap} />
+      <Starfield
+        phase={phase}
+        selectedId={selected?.id ?? null}
+        hoveredId={hoveredId}
+        onSelect={onSelect}
+        onHover={onHover}
+      />
+      <FocusBeacon selected={selected} phase={phase} />
+      <CameraRig phase={phase} selected={selected} replayTime={replayTime} />
+    </>
+  )
+}
+
+export default function SpatialScene(): JSX.Element {
+  const stars = useMemo(() => buildSpatialStars(), [])
+  const [phase, setPhase] = useState<SpatialPhase>("home")
+  const [selected, setSelected] = useState<SpatialStar | null>(stars[7] ?? null)
+  const [hoveredId, setHoveredId] = useState<string | null>(null)
+  const [replayTime, setReplayTime] = useState(0)
+  const ascentTimer = useRef<number | null>(null)
+
+  useEffect(() => {
+    return () => {
+      if (ascentTimer.current !== null) {
+        window.clearTimeout(ascentTimer.current)
+      }
+    }
+  }, [])
+
+  useEffect(() => {
+    if (phase !== "replay") {
+      return
+    }
+
+    const id = window.setInterval(() => {
+      setReplayTime((value) => value + 0.04)
+    }, 16)
+
+    return () => {
+      window.clearInterval(id)
+    }
+  }, [phase])
+
+  const enterLifeMap = () => {
+    if (ascentTimer.current !== null) {
+      window.clearTimeout(ascentTimer.current)
+    }
+
+    setPhase("ascent")
+    ascentTimer.current = window.setTimeout(() => {
+      setPhase("lifemap")
+    }, 1400)
+  }
+
+  const selectFromList = (index: number) => {
+    const next = stars[index % stars.length]
+    setSelected(next)
+    setPhase("focus")
+  }
+
+  return (
+    <div
+      style={{
+        position: "fixed",
+        inset: 0,
+        width: "100vw",
+        height: "100vh",
+        overflow: "hidden",
+        background: "radial-gradient(circle at 50% 20%, rgba(20,30,55,0.45), transparent 32%), #02030a",
+      }}
+    >
+      <Canvas
+        camera={{ position: [0, 1.7, 9], fov: 42, near: 0.1, far: 300 }}
+        gl={{ antialias: true, alpha: false }}
+        dpr={[1, 2]}
+      >
+        <Suspense fallback={null}>
+          <SceneWorld
+            phase={phase}
+            selected={selected}
+            hoveredId={hoveredId}
+            replayTime={replayTime}
+            onSelect={(star) => {
+              setSelected(star)
+              setPhase("focus")
+            }}
+            onHover={setHoveredId}
+            onEnterLifeMap={enterLifeMap}
+          />
+        </Suspense>
+      </Canvas>
+
+      <div
+        style={{
+          position: "absolute",
+          inset: 0,
+          pointerEvents: "none",
+          display: "flex",
+          flexDirection: "column",
+          justifyContent: "space-between",
+          padding: "20px",
+          background:
+            phase === "replay"
+              ? "linear-gradient(to bottom, rgba(0,0,0,0.18), rgba(0,0,0,0.1) 55%, rgba(0,0,0,0.28))"
+              : "none",
+        }}
+      >
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "space-between",
+            gap: 12,
+            alignItems: "flex-start",
+          }}
+        >
+          <div
+            style={{
+              pointerEvents: "auto",
+              maxWidth: 560,
+              padding: "14px 16px",
+              borderRadius: 18,
+              border: "1px solid rgba(255,255,255,0.12)",
+              background: "rgba(4,7,20,0.42)",
+              backdropFilter: "blur(12px)",
+            }}
+          >
+            <div style={{ fontSize: 12, letterSpacing: 2.2, textTransform: "uppercase", opacity: 0.72 }}>
+              URAI Spatial
+            </div>
+            <div style={{ fontSize: 28, lineHeight: 1.1, marginTop: 6, fontWeight: 700 }}>
+              {phase === "home" && "Home"}
+              {phase === "ascent" && "Ascent"}
+              {phase === "lifemap" && "LifeMap"}
+              {phase === "focus" && "Focus"}
+              {phase === "replay" && "Replay"}
+            </div>
+            <div style={{ fontSize: 14, lineHeight: 1.5, marginTop: 10, opacity: 0.82 }}>
+              {phase === "home" && "Grounded horizon, anchored orb, and a world that belongs to the user."}
+              {phase === "ascent" && "Camera leaves the ground and commits to real travel instead of a state cut."}
+              {phase === "lifemap" && "Near, mid, and far stars spread in depth so the field reads as volumetric space."}
+              {phase === "focus" && "Selected star isolates cleanly while the rest of the constellation falls away."}
+              {phase === "replay" && "Replay enters the memory node spatially instead of sitting above it as a flat overlay."}
+            </div>
+          </div>
+
+          <div
+            style={{
+              pointerEvents: "auto",
+              display: "flex",
+              flexWrap: "wrap",
+              gap: 10,
+              justifyContent: "flex-end",
+              maxWidth: 520,
+            }}
+          >
+            <OverlayButton label="Home" onClick={() => setPhase("home")} active={phase === "home"} />
+            <OverlayButton label="Enter LifeMap" onClick={enterLifeMap} active={phase === "ascent" || phase === "lifemap"} />
+            <OverlayButton
+              label="Focus"
+              onClick={() => {
+                if (!selected) {
+                  setSelected(stars[7] ?? null)
+                }
+                setPhase("focus")
+              }}
+              active={phase === "focus"}
+            />
+            <OverlayButton
+              label="Replay"
+              onClick={() => {
+                if (!selected) {
+                  setSelected(stars[7] ?? null)
+                }
+                setReplayTime(0)
+                setPhase("replay")
+              }}
+              active={phase === "replay"}
+            />
+            <OverlayButton
+              label="Return"
+              onClick={() => {
+                setReplayTime(0)
+                setPhase(selected ? "focus" : "lifemap")
+              }}
+            />
+          </div>
+        </div>
+
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "flex-end",
+            gap: 12,
+          }}
+        >
+          <div
+            style={{
+              pointerEvents: "auto",
+              display: "flex",
+              gap: 10,
+              flexWrap: "wrap",
+              maxWidth: "60vw",
+            }}
+          >
+            {[3, 7, 14, 21, 29].map((index) => {
+              const star = stars[index]
+
+              return (
+                <button
+                  key={star.id}
+                  onClick={() => selectFromList(index)}
+                  style={{
+                    border: "1px solid rgba(255,255,255,0.12)",
+                    background: selected?.id === star.id ? "rgba(255,255,255,0.18)" : "rgba(4,7,20,0.42)",
+                    color: "#eef4ff",
+                    borderRadius: 16,
+                    padding: "10px 12px",
+                    cursor: "pointer",
+                    backdropFilter: "blur(10px)",
+                    textAlign: "left",
+                    minWidth: 118,
+                  }}
+                >
+                  <div style={{ fontSize: 11, textTransform: "uppercase", letterSpacing: 1.8, opacity: 0.66 }}>
+                    {star.chapter}
+                  </div>
+                  <div style={{ fontSize: 14, marginTop: 4 }}>{star.title}</div>
+                </button>
+              )
+            })}
+          </div>
+
+          <div
+            style={{
+              pointerEvents: "auto",
+              minWidth: 280,
+              maxWidth: 420,
+              padding: "14px 16px",
+              borderRadius: 18,
+              border: "1px solid rgba(255,255,255,0.12)",
+              background: "rgba(4,7,20,0.42)",
+              backdropFilter: "blur(12px)",
+            }}
+          >
+            <div style={{ fontSize: 12, textTransform: "uppercase", letterSpacing: 2.2, opacity: 0.7 }}>
+              Selected Node
+            </div>
+            <div style={{ fontSize: 22, marginTop: 6, fontWeight: 700 }}>
+              {selected?.title ?? "No star selected"}
+            </div>
+            <div style={{ fontSize: 13, marginTop: 4, opacity: 0.68 }}>
+              {selected?.chapter ?? "—"}
+            </div>
+            <div style={{ fontSize: 14, marginTop: 10, lineHeight: 1.5, opacity: 0.84 }}>
+              {selected?.detail ?? "Choose a node to test focus and replay isolation."}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}

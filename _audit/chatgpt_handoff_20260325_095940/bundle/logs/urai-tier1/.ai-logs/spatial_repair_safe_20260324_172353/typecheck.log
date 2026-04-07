@@ -1,0 +1,11 @@
+
+> urai-tier1@0.1.0 typecheck /home/user/urai-spatial/urai-tier1
+> tsc --noEmit
+
+src/spatial/scene/HomeEnvironment.tsx(58,14): error TS2322: Type '{ opacity: number; }' is not assignable to type 'IntrinsicAttributes & OrbProps'.
+  Property 'opacity' does not exist on type 'IntrinsicAttributes & OrbProps'.
+src/spatial/scene/SpatialScene.tsx(140,12): error TS2339: Property 'fov' does not exist on type 'Camera'.
+  Property 'fov' does not exist on type 'OrthographicCamera & { manual?: boolean; }'.
+src/spatial/scene/SpatialScene.tsx(140,30): error TS2339: Property 'fov' does not exist on type 'Camera'.
+  Property 'fov' does not exist on type 'OrthographicCamera & { manual?: boolean; }'.
+ ELIFECYCLE  Command failed with exit code 2.

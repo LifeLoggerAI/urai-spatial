@@ -1,0 +1,10 @@
+Build is green. Runtime proof is still required.
+
+Open:
+  http://127.0.0.1:3040
+
+Artifacts:
+  /home/user/urai-spatial/urai-tier1/_audit/tier1-postpatch-runtime-gate/20260318_031858/SUMMARY.txt
+  /home/user/urai-spatial/urai-tier1/_audit/tier1-postpatch-runtime-gate/20260318_031858/dev.log
+  /home/user/urai-spatial/urai-tier1/_audit/tier1-postpatch-runtime-gate/20260318_031858/MANUAL_RUNTIME_CHECKLIST.txt
+  /home/user/urai-spatial/urai-tier1/_audit/tier1-postpatch-runtime-gate/20260318_031858/QUICK_NOTES.txt

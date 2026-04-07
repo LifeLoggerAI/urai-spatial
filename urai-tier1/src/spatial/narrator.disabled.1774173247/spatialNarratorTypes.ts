@@ -7,5 +7,5 @@ export type SpatialNarratorExport = {
   text?: string;
   createdAt?: string;
   updatedAt?: string;
-  [key: string]: unknown;
+  [key: string]: any;
 };

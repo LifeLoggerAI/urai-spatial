@@ -1,0 +1,10 @@
+export type SelectedStar = {
+  id: string;
+  title: string;
+  label?: string;
+  chapter: string;
+  position: [number, number, number];
+  color: string;
+  size: number;
+  intensity: number;
+};

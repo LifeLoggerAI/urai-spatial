@@ -1,0 +1,165 @@
+PASS: removed stray </main> from ReplayShellOverlay.tsx
+
+== replay overlay tail ==
+            <ReplayDatum label="Vector" value={selected.tags[1]} />
+            <ReplayDatum label="Thread" value={selected.tags[2]} />
+          </div>
+
+          <div
+            style={{
+              fontSize: 13,
+              lineHeight: 1.65,
+              color: "rgba(220,228,245,0.78)",
+              marginBottom: 16,
+            }}
+          >
+            Canonical replay holds the same selected memory identity across focus and replay, with a
+            stronger entered-memory composition and deterministic exit path.
+          </div>
+
+          <div style={{ display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap" }}>
+            <ActionButton disabled={uiLocked} label="EXIT REPLAY" onClick={exitReplay} />
+          </div>
+        </section>
+
+      <style jsx global>{`
+        @keyframes breathe {
+          0%,
+          100% {
+            transform: translate(-50%, -50%) scale(0.985);
+          }
+          50% {
+            transform: translate(-50%, -50%) scale(1.025);
+          }
+        }
+
+        @keyframes node-pulse {
+          0% {
+            transform: translate(-50%, -50%) scale(1);
+          }
+          100% {
+            transform: translate(-50%, -50%) scale(1.42);
+          }
+        }
+
+        @keyframes sky-streak-a {
+          0% {
+            transform: translate(-18%, -50%) scaleX(0.72);
+            opacity: 0.12;
+          }
+          100% {
+            transform: translate(22%, -50%) scaleX(1.12);
+            opacity: 1;
+          }
+        }
+
+        @keyframes sky-streak-b {
+          0% {
+            transform: translate(18%, -50%) scaleX(0.82);
+            opacity: 0.10;
+          }
+          100% {
+            transform: translate(-14%, -50%) scaleX(1.08);
+            opacity: 0.84;
+          }
+        }
+
+        @keyframes sky-core {
+          0% {
+            transform: translate(-50%, -50%) scale(0.72);
+            opacity: 0.10;
+          }
+          100% {
+            transform: translate(-50%, -50%) scale(1.18);
+            opacity: 1;
+          }
+        }
+      `}</style>
+    </>
+  );
+}
+
+  );
+}
+
+== shell tail ==
+            transform: translateX(0%);
+          }
+        }
+      `}</style>
+    </main>
+  );
+}
+
+function ActionButton(input: {
+  label: string;
+  onClick: () => void;
+  disabled?: boolean;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={input.onClick}
+      disabled={input.disabled}
+      style={{
+        borderRadius: 999,
+        border: "1px solid rgba(255,255,255,0.12)",
+        background: input.disabled ? "rgba(255,255,255,0.06)" : "rgba(12,18,34,0.94)",
+        color: input.disabled ? "rgba(240,244,255,0.42)" : "rgba(240,244,255,0.94)",
+        padding: "10px 13px",
+        fontSize: 10,
+        fontWeight: 700,
+        letterSpacing: "0.12em",
+        textTransform: "uppercase",
+        cursor: input.disabled ? "not-allowed" : "pointer",
+      }}
+    >
+      {input.label}
+    </button>
+  );
+}
+
+function Tag(input: { value: string }) {
+  return (
+    <div
+      style={{
+        borderRadius: 999,
+        border: "1px solid rgba(255,255,255,0.10)",
+        background: "rgba(255,255,255,0.05)",
+        padding: "6px 9px",
+        fontSize: 10,
+        letterSpacing: "0.10em",
+        textTransform: "uppercase",
+        color: "rgba(220,228,245,0.86)",
+      }}
+    >
+      {input.value}
+    </div>
+  );
+}
+
+function ReplayDatum(input: { label: string; value: string }) {
+  return (
+    <div
+      style={{
+        borderRadius: 12,
+        border: "1px solid rgba(255,255,255,0.10)",
+        background: "rgba(255,255,255,0.03)",
+        padding: 10,
+      }}
+    >
+      <div
+        style={{
+          fontSize: 10,
+          letterSpacing: "0.12em",
+          textTransform: "uppercase",
+          color: "rgba(204,216,245,0.58)",
+          marginBottom: 6,
+        }}
+      >
+        {input.label}
+      </div>
+      <div style={{ fontSize: 12, color: "rgba(235,241,255,0.90)" }}>{input.value}</div>
+    </div>
+  );
+}

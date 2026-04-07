@@ -1,0 +1,167 @@
+=== SOURCE SNAPSHOT ===
+1638 urai-tier1/src/spatial/scene/SpatialScene.tsx
+
+--- HEAD 80 ---
+"use client";
+
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import * as THREE from "three";
+import { Canvas, ThreeEvent, useFrame } from "@react-three/fiber";
+import type { ScenePhase, SelectedStar, TransitionName } from "@/spatial/types/scene";
+
+type StarNode = SelectedStar & {
+  stability: number;
+  intensity: number;
+};
+
+type TransitionState = {
+  name: TransitionName;
+  progress: number;
+};
+
+type WorldWeights = {
+  home: number;
+  lifemap: number;
+  focus: number;
+  replay: number;
+  ascent: number;
+  descent: number;
+};
+
+const DURATIONS: Record<TransitionName, number> = {
+  home_to_lifemap: 2450,
+  lifemap_to_home: 2600,
+  lifemap_to_focus: 2050,
+  focus_to_lifemap: 1880,
+  focus_to_replay: 2550,
+  replay_to_focus: 2150,
+};
+
+const HOME_BG = new THREE.Color("#02050a");
+const LIFEMAP_BG = new THREE.Color("#020410");
+const FOCUS_BG = new THREE.Color("#020611");
+const REPLAY_BG = new THREE.Color("#040711");
+
+function clamp01(v: number) {
+  return Math.max(0, Math.min(1, v));
+}
+
+function easeIn(t: number) {
+  const x = clamp01(t);
+  return x * x * x;
+}
+
+function easeOut(t: number) {
+  const x = clamp01(t);
+  return 1 - Math.pow(1 - x, 3);
+}
+
+function easeInOut(t: number) {
+  const x = clamp01(t);
+  return x * x * (3 - 2 * x);
+}
+
+function heldRelease(t: number) {
+  if (t <= 0.08) return t * 0.18;
+  return 0.0144 + easeInOut((t - 0.08) / 0.92) * 0.9856;
+}
+
+function gravitationalPull(t: number) {
+  const x = clamp01(t);
+  return easeInOut(Math.pow(x, 0.82));
+}
+
+function resurfacing(t: number) {
+  const x = clamp01(t);
+  return 0.35 * easeIn(x) + 0.65 * easeOut(x);
+}
+
+function releaseEase(t: number) {
+  const x = clamp01(t);
+  if (x < 0.18) return easeOut(x / 0.18) * 0.28;
+  return 0.28 + easeInOut((x - 0.18) / 0.82) * 0.72;
+}
+
+
+--- TAIL 80 ---
+    }
+  }, [phase, transition]);
+
+  const onAscend = useCallback(() => {
+    if (phase !== "home") return;
+    if (inputLocked()) return;
+    startTransition("home_to_lifemap");
+  }, [inputLocked, phase, startTransition]);
+
+  const onSelect = useCallback(
+    (id: string) => {
+      if (phase !== "lifemap") return;
+      if (inputLocked()) return;
+      if (selectedId === id) return;
+      setHoveredId(null);
+      setSelectedId(id);
+      markInput();
+      startTransition("lifemap_to_focus");
+    },
+    [inputLocked, markInput, phase, selectedId, startTransition],
+  );
+
+  const onReplay = useCallback(() => {
+    if (phase !== "focus") return;
+    if (!selectedStar) return;
+    if (inputLocked()) return;
+    startTransition("focus_to_replay");
+  }, [inputLocked, phase, selectedStar, startTransition]);
+
+  const onHover = useCallback(
+    (id: string | null) => {
+      if (phase !== "lifemap") return;
+      if (transition) return;
+      setHoveredId(id);
+    },
+    [phase, transition],
+  );
+
+  const onClearHover = useCallback(() => {
+    setHoveredId(null);
+  }, []);
+
+  const replayEnabled = phase === "focus" && !!selectedStar && !transition && !inputLocked();
+
+  return (
+    <div
+      style={{ position: "relative", width: "100%", height: "100%" }}
+      onPointerLeave={() => setHoveredId(null)}
+    >
+      <Header phase={phase} transition={transition} selectedStar={selectedStar} />
+      <Footer
+        phase={phase}
+        selectedStar={selectedStar}
+        transition={transition}
+        replayEnabled={replayEnabled}
+        onReplay={onReplay}
+      />
+
+      <Canvas
+        gl={{ antialias: true, alpha: false }}
+        dpr={[1, 2]}
+        camera={{ position: [0, 1.68, 6.85], fov: 53, near: 0.1, far: 2000 }}
+        style={{ width: "100%", height: "100%", background: "#02040a" }}
+      >
+        <SceneWorld
+          phase={phase}
+          transition={transition}
+          stars={stars}
+          selectedStar={selectedStar}
+          interactive={interactive}
+          hoveredId={hoveredId}
+          onHover={onHover}
+          onClearHover={onClearHover}
+          onAscend={onAscend}
+          onSelect={onSelect}
+        />
+      </Canvas>
+    </div>
+  );
+}
+

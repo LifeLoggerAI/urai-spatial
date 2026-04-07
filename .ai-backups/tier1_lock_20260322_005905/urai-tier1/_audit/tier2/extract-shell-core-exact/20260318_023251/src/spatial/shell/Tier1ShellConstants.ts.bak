@@ -1,0 +1,9 @@
+export const SKY_TRANSIT_MS = 950;
+export const MAP_TO_FOCUS_MS = 300;
+export const FOCUS_TO_REPLAY_MS = 220;
+export const REPLAY_TO_FOCUS_MS = 220;
+export const FOCUS_TO_MAP_MS = 220;
+
+export function pillLabel(mode: "home" | "sky" | "lifemap" | "focus" | "replay") {
+  return mode.toUpperCase();
+}

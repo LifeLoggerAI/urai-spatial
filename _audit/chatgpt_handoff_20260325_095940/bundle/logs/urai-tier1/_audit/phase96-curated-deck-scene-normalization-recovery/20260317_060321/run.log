@@ -1,0 +1,552 @@
+
+== baseline ==
+
+$ cd '/home/user/urai-spatial' && git branch --show-current && git rev-parse --short HEAD && git status --short
+_MONOSPACE_ENV_STARTED_=http://localhost:80/
+phase96-curated-deck-scene-normalization-20260317_060230
+5f00009
+RC=0
+
+$ cd '/home/user/urai-spatial' && git log --oneline --decorate -n 8
+_MONOSPACE_ENV_STARTED_=http://localhost:80/
+5f00009 (HEAD -> phase96-curated-deck-scene-normalization-20260317_060230, tag: urai-spatial-phase94-green-20260317_060019, tag: urai-spatial-phase94-green-20260317_055037, phase95-curated-deck-integration-freeze-20260317_060019, phase94-curated-deck-destruction-authorization-panel-20260317_054651) feat(urai-spatial): phase94 curated deck destruction authorization panel
+4aa6252 (phase94-curated-deck-destruction-authorization-panel-20260317_054600, phase94-curated-deck-destruction-authorization-panel-20260317_051245) fix(urai-spatial): complete expiry governance summary contract
+24a06ab fix(urai-spatial): add expiry score to expiry governance summary
+b152369 feat(urai-spatial): phase92 curated deck expiry governance panel
+63ffece (phase94-curated-deck-destruction-authorization-panel-20260317_051148, phase91-curated-deck-retention-horizon-panel-20260317_050632) feat(urai-spatial): phase91 curated deck retention horizon panel
+69d3fe0 feat(urai-spatial): phase91 curated deck retention horizon panel
+aa889fc (phase91-curated-deck-retention-horizon-panel-20260317_050336) feat(urai-spatial): phase91 curated deck retention horizon panel
+25b271f (phase90-curated-deck-retention-lifecycle-panel-20260317_050144) feat(urai-spatial): phase90 curated deck retention lifecycle panel
+RC=0
+
+== ensure scene exists ==
+
+== capture current scene regions ==
+
+$ cd '/home/user/urai-spatial/urai-tier1' && nl -ba '/home/user/urai-spatial/urai-tier1/src/spatial/scene/SpatialScene.tsx' | sed -n '1,140p' | tee '/home/user/urai-spatial/urai-tier1/_audit/phase96-curated-deck-scene-normalization-recovery/20260317_060321/scene_head_before.txt'
+_MONOSPACE_ENV_STARTED_=http://localhost:80/
+     1	"use client";
+     2	import SpatialCuratedDeckDestructionAuthorizationPanel from "@/spatial/ui/SpatialCuratedDeckDestructionAuthorizationPanel";
+     3	import SpatialCuratedDeckRetentionHorizonPanel from "@/spatial/ui/SpatialCuratedDeckRetentionHorizonPanel";
+     4	import SpatialCuratedDeckExpiryGovernancePanel from "@/spatial/ui/SpatialCuratedDeckExpiryGovernancePanel";
+     5	import SpatialCuratedDeckPurgeReadinessPanel from "@/spatial/ui/SpatialCuratedDeckPurgeReadinessPanel";
+     6	import SpatialCuratedDeckRetentionLifecyclePanel from "@/spatial/ui/SpatialCuratedDeckRetentionLifecyclePanel";
+     7	import SpatialCuratedDeckReopenWatchPanel from "@/spatial/ui/SpatialCuratedDeckReopenWatchPanel";
+     8	import SpatialCuratedDeckArchiveDispositionPanel from "@/spatial/ui/SpatialCuratedDeckArchiveDispositionPanel";
+     9	import SpatialCuratedDeckClosureCertificatePanel from "@/spatial/ui/SpatialCuratedDeckClosureCertificatePanel";
+    10	import SpatialCuratedDeckRecoveryGatePanel from "@/spatial/ui/SpatialCuratedDeckRecoveryGatePanel";
+    11	import SpatialCuratedDeckIncidentResponsePanel from "@/spatial/ui/SpatialCuratedDeckIncidentResponsePanel";
+    12	import SpatialCuratedDeckBreachWatchPanel from "@/spatial/ui/SpatialCuratedDeckBreachWatchPanel";
+    13	import SpatialCuratedDeckSlaPanel from "@/spatial/ui/SpatialCuratedDeckSlaPanel";
+    14	import SpatialCuratedDeckServiceWindowPanel from "@/spatial/ui/SpatialCuratedDeckServiceWindowPanel";
+    15	import SpatialCuratedDeckSchedulePanel from "@/spatial/ui/SpatialCuratedDeckSchedulePanel";
+    16	import SpatialCuratedDeckQueuePanel from "@/spatial/ui/SpatialCuratedDeckQueuePanel";
+    17	import SpatialCuratedDeckDispatchPanel from "@/spatial/ui/SpatialCuratedDeckDispatchPanel";
+    18	import SpatialCuratedDeckReviewTicketPanel from "@/spatial/ui/SpatialCuratedDeckReviewTicketPanel";
+    19	import SpatialCuratedDeckActionPanel from "@/spatial/ui/SpatialCuratedDeckActionPanel";
+    20	import SpatialCuratedDeckVerdictPanel from "@/spatial/ui/SpatialCuratedDeckVerdictPanel";
+    21	import SpatialCuratedDeckAnomalyPanel from "@/spatial/ui/SpatialCuratedDeckAnomalyPanel";
+    22	import SpatialCuratedDeckDivergencePanel from "@/spatial/ui/SpatialCuratedDeckDivergencePanel";
+    23	import SpatialCuratedDeckConsensusPanel from "@/spatial/ui/SpatialCuratedDeckConsensusPanel";
+    24	import SpatialCuratedDeckAnchorPanel from "@/spatial/ui/SpatialCuratedDeckAnchorPanel";
+    25	import SpatialCuratedDeckDriftPanel from "@/spatial/ui/SpatialCuratedDeckDriftPanel";
+    26	import SpatialCuratedDeckStabilityPanel from "@/spatial/ui/SpatialCuratedDeckStabilityPanel";
+    27	import SpatialCuratedDeckCohortPanel from "@/spatial/ui/SpatialCuratedDeckCohortPanel";
+    28	import SpatialCuratedDeckNeighborDiffPanel from "@/spatial/ui/SpatialCuratedDeckNeighborDiffPanel";
+    29	import SpatialCuratedDeckLineagePanel from "@/spatial/ui/SpatialCuratedDeckLineagePanel";
+    30	import SpatialCuratedDeckChangeLedgerPanel from "@/spatial/ui/SpatialCuratedDeckChangeLedgerPanel";
+    31	import SpatialCuratedDeckDiffPanel from "@/spatial/ui/SpatialCuratedDeckDiffPanel";
+    32	import SpatialCuratedDeckVaultPanel from "@/spatial/ui/SpatialCuratedDeckVaultPanel";
+    33	import SpatialCuratedDeckVaultBootstrap from "@/spatial/curation/SpatialCuratedDeckVaultBootstrap";
+    34	import SpatialCuratedDeckImportPanel from "@/spatial/ui/SpatialCuratedDeckImportPanel";
+    35	import SpatialCuratedDeckExportPanel from "@/spatial/ui/SpatialCuratedDeckExportPanel";
+    36	import SpatialStoryReviewDeckPanel from "@/spatial/ui/SpatialStoryReviewDeckPanel";
+    37	import SpatialBundleLineagePanel from "@/spatial/ui/SpatialBundleLineagePanel";
+    38	import SpatialStoryBundleDiffPanel from "@/spatial/ui/SpatialStoryBundleDiffPanel";
+    39	import SpatialStoryBundleVaultPanel from "@/spatial/ui/SpatialStoryBundleVaultPanel";
+    40	import SpatialStoryBundleVaultBootstrap from "@/spatial/vault/SpatialStoryBundleVaultBootstrap";
+    41	import SpatialStoryBundleImportPanel from "@/spatial/ui/SpatialStoryBundleImportPanel";
+    42	import SpatialStoryBundlePanel from "@/spatial/ui/SpatialStoryBundlePanel";
+    43	import SpatialSeasonalArcPanel from "@/spatial/ui/SpatialSeasonalArcPanel";
+    44	import SpatialSeasonalArcBootstrap from "@/spatial/seasonal/SpatialSeasonalArcBootstrap";
+    45	import SpatialArcPanel from "@/spatial/ui/SpatialArcPanel";
+    46	import SpatialArcBootstrap from "@/spatial/arcs/SpatialArcBootstrap";
+    47	import SpatialVoicePlaybackPanel from "@/spatial/ui/SpatialVoicePlaybackPanel";
+    48	import SpatialNarratorExportPanel from "@/spatial/ui/SpatialNarratorExportPanel";
+    49	import SpatialTimelineLensPanel from "@/spatial/ui/SpatialTimelineLensPanel";
+    50	import SpatialLensBootstrap from "@/spatial/lenses/SpatialLensBootstrap";
+    51	import SpatialComparePanel from "@/spatial/ui/SpatialComparePanel";
+    52	import SpatialCompareBootstrap from "@/spatial/compare/SpatialCompareBootstrap";
+    53	import SpatialAccountPanel from "@/spatial/ui/SpatialAccountPanel";
+    54	import SpatialAccountBootstrap from "@/spatial/account/SpatialAccountBootstrap";
+    55	import SpatialReleasePanel from "@/spatial/ui/SpatialReleasePanel";
+    56	import SpatialReleaseBootstrap from "@/spatial/release/SpatialReleaseBootstrap";
+    57	import SpatialTelemetryPanel from "@/spatial/ui/SpatialTelemetryPanel";
+    58	import SpatialPreferencesPanel from "@/spatial/ui/SpatialPreferencesPanel";
+    59	import SpatialSettingsBootstrap from "@/spatial/settings/SpatialSettingsBootstrap";
+    60	import SpatialImportExportPanel from "@/spatial/ui/SpatialImportExportPanel";
+    61	import SpatialAnalyticsBridge from "@/spatial/telemetry/SpatialAnalyticsBridge";
+    62	import SpatialPersistenceBridge from "@/spatial/persistence/SpatialPersistenceBridge";
+    63	import XrLocomotionRuntime from "@/spatial/xr/XrLocomotionRuntime";
+    64	import UnityRuntimePayloadBridge from "@/spatial/unity/UnityRuntimePayloadBridge";
+    65	import ArPlaneMarker from "@/spatial/xr/ArPlaneMarker";
+    66	import ArHitTestBridge from "@/spatial/xr/ArHitTestBridge";
+    67	
+    68	import { Canvas, ThreeEvent, useFrame, useThree } from "@react-three/fiber";
+    69	import { CSSProperties, useEffect, useMemo, useRef, useState } from "react";
+    70	import * as THREE from "three";
+    71	import { toCanonicalSelectedStar } from "../lib/toCanonicalSelectedStar";
+    72	import { SpatialStar } from "../data/stars";
+    73	import { SceneMode, useSceneStore } from "../state/sceneStore";
+    74	import CinematicReplayOverlay from "@/spatial/cinematic/CinematicReplayOverlay";
+    75	import LifeMapIntelligenceOverlay from "@/spatial/intelligence/LifeMapIntelligenceOverlay";
+    76	import XRBridgeOverlay from "@/spatial/xr/XRBridgeOverlay";
+    77	import ImmersiveContractOverlay from "@/spatial/immersive/ImmersiveContractOverlay";
+    78	import SceneExportOverlay from "@/spatial/export/SceneExportOverlay";
+    79	import WebXREntryOverlay from "@/spatial/webxr/WebXREntryOverlay";
+    80	import XRCameraRigOverlay from "@/spatial/xr-runtime/XRCameraRigOverlay";
+    81	import ARPlacementOverlay from "@/spatial/ar/ARPlacementOverlay";
+    82	import UnityAdapterOverlay from "@/spatial/unity/UnityAdapterOverlay";
+    83	import XRInputOverlay from "@/spatial/input/XRInputOverlay";
+    84	import ImmersiveReplayTraversalOverlay from "@/spatial/traversal/ImmersiveReplayTraversalOverlay";
+    85	import MemoryImportOverlay from "@/spatial/data-import/MemoryImportOverlay";
+    86	import ExternalIngestOverlay from "@/spatial/ingest/ExternalIngestOverlay";
+    87	import BatchImportAuditOverlay from "@/spatial/validation/BatchImportAuditOverlay";
+    88	import MergePreflightOverlay from "@/spatial/merge/MergePreflightOverlay";
+    89	import PersistenceSyncOverlay from "@/spatial/persistence/PersistenceSyncOverlay";
+    90	import DatasetVersioningOverlay from "@/spatial/versioning/DatasetVersioningOverlay";
+    91	import ChapterSynthesisOverlay from "@/spatial/chapter/ChapterSynthesisOverlay";
+    92	import CausalInsightOverlay from "@/spatial/causal/CausalInsightOverlay";
+    93	import StoryArcOverlay from "@/spatial/storyarc/StoryArcOverlay";
+    94	import EraCompareOverlay from "@/spatial/era/EraCompareOverlay";
+    95	import SeasonalCycleOverlay from "@/spatial/seasonal/SeasonalCycleOverlay";
+    96	import NarratorOrchestrationOverlay from "@/spatial/narrator/NarratorOrchestrationOverlay";
+    97	import WebXRRendererHandoffOverlay from "@/spatial/xr-renderer/WebXRRendererHandoffOverlay";
+    98	import { useXrSessionStore } from "../state/xrSessionStore";
+    99	
+   100	const shellButtonStyle: CSSProperties = {
+   101	  appearance: "none",
+   102	  border: "1px solid rgba(255,255,255,0.18)",
+   103	  borderRadius: 14,
+   104	  background: "rgba(10,14,28,0.66)",
+   105	  color: "rgba(245,248,255,0.96)",
+   106	  padding: "12px 16px",
+   107	  fontSize: 13,
+   108	  fontWeight: 600,
+   109	  letterSpacing: "0.08em",
+   110	  textTransform: "uppercase",
+   111	  cursor: "pointer",
+   112	  backdropFilter: "blur(16px)",
+   113	  boxShadow: "0 14px 40px rgba(0,0,0,0.28)",
+   114	};
+   115	
+   116	const secondaryButtonStyle: CSSProperties = {
+   117	  ...shellButtonStyle,
+   118	  background: "rgba(255,255,255,0.06)",
+   119	};
+   120	
+   121	const ghostButtonStyle: CSSProperties = {
+   122	  ...shellButtonStyle,
+   123	  background: "transparent",
+   124	  border: "1px solid rgba(255,255,255,0.12)",
+   125	  boxShadow: "none",
+   126	};
+   127	
+   128	const topChromeStyle: CSSProperties = {
+   129	  position: "absolute",
+   130	  top: 18,
+   131	  left: 18,
+   132	  right: 18,
+   133	  zIndex: 30,
+   134	  display: "flex",
+   135	  alignItems: "center",
+   136	  justifyContent: "space-between",
+   137	  gap: 16,
+   138	  pointerEvents: "none",
+   139	};
+   140	
+RC=0
+
+$ cd '/home/user/urai-spatial/urai-tier1' && grep -n 'SpatialCuratedDeck.*Panel' '/home/user/urai-spatial/urai-tier1/src/spatial/scene/SpatialScene.tsx' | tee '/home/user/urai-spatial/urai-tier1/_audit/phase96-curated-deck-scene-normalization-recovery/20260317_060321/scene_panel_hits_before.txt' || true
+_MONOSPACE_ENV_STARTED_=http://localhost:80/
+2:import SpatialCuratedDeckDestructionAuthorizationPanel from "@/spatial/ui/SpatialCuratedDeckDestructionAuthorizationPanel";
+3:import SpatialCuratedDeckRetentionHorizonPanel from "@/spatial/ui/SpatialCuratedDeckRetentionHorizonPanel";
+4:import SpatialCuratedDeckExpiryGovernancePanel from "@/spatial/ui/SpatialCuratedDeckExpiryGovernancePanel";
+5:import SpatialCuratedDeckPurgeReadinessPanel from "@/spatial/ui/SpatialCuratedDeckPurgeReadinessPanel";
+6:import SpatialCuratedDeckRetentionLifecyclePanel from "@/spatial/ui/SpatialCuratedDeckRetentionLifecyclePanel";
+7:import SpatialCuratedDeckReopenWatchPanel from "@/spatial/ui/SpatialCuratedDeckReopenWatchPanel";
+8:import SpatialCuratedDeckArchiveDispositionPanel from "@/spatial/ui/SpatialCuratedDeckArchiveDispositionPanel";
+9:import SpatialCuratedDeckClosureCertificatePanel from "@/spatial/ui/SpatialCuratedDeckClosureCertificatePanel";
+10:import SpatialCuratedDeckRecoveryGatePanel from "@/spatial/ui/SpatialCuratedDeckRecoveryGatePanel";
+11:import SpatialCuratedDeckIncidentResponsePanel from "@/spatial/ui/SpatialCuratedDeckIncidentResponsePanel";
+12:import SpatialCuratedDeckBreachWatchPanel from "@/spatial/ui/SpatialCuratedDeckBreachWatchPanel";
+13:import SpatialCuratedDeckSlaPanel from "@/spatial/ui/SpatialCuratedDeckSlaPanel";
+14:import SpatialCuratedDeckServiceWindowPanel from "@/spatial/ui/SpatialCuratedDeckServiceWindowPanel";
+15:import SpatialCuratedDeckSchedulePanel from "@/spatial/ui/SpatialCuratedDeckSchedulePanel";
+16:import SpatialCuratedDeckQueuePanel from "@/spatial/ui/SpatialCuratedDeckQueuePanel";
+17:import SpatialCuratedDeckDispatchPanel from "@/spatial/ui/SpatialCuratedDeckDispatchPanel";
+18:import SpatialCuratedDeckReviewTicketPanel from "@/spatial/ui/SpatialCuratedDeckReviewTicketPanel";
+19:import SpatialCuratedDeckActionPanel from "@/spatial/ui/SpatialCuratedDeckActionPanel";
+20:import SpatialCuratedDeckVerdictPanel from "@/spatial/ui/SpatialCuratedDeckVerdictPanel";
+21:import SpatialCuratedDeckAnomalyPanel from "@/spatial/ui/SpatialCuratedDeckAnomalyPanel";
+22:import SpatialCuratedDeckDivergencePanel from "@/spatial/ui/SpatialCuratedDeckDivergencePanel";
+23:import SpatialCuratedDeckConsensusPanel from "@/spatial/ui/SpatialCuratedDeckConsensusPanel";
+24:import SpatialCuratedDeckAnchorPanel from "@/spatial/ui/SpatialCuratedDeckAnchorPanel";
+25:import SpatialCuratedDeckDriftPanel from "@/spatial/ui/SpatialCuratedDeckDriftPanel";
+26:import SpatialCuratedDeckStabilityPanel from "@/spatial/ui/SpatialCuratedDeckStabilityPanel";
+27:import SpatialCuratedDeckCohortPanel from "@/spatial/ui/SpatialCuratedDeckCohortPanel";
+28:import SpatialCuratedDeckNeighborDiffPanel from "@/spatial/ui/SpatialCuratedDeckNeighborDiffPanel";
+29:import SpatialCuratedDeckLineagePanel from "@/spatial/ui/SpatialCuratedDeckLineagePanel";
+30:import SpatialCuratedDeckChangeLedgerPanel from "@/spatial/ui/SpatialCuratedDeckChangeLedgerPanel";
+31:import SpatialCuratedDeckDiffPanel from "@/spatial/ui/SpatialCuratedDeckDiffPanel";
+32:import SpatialCuratedDeckVaultPanel from "@/spatial/ui/SpatialCuratedDeckVaultPanel";
+34:import SpatialCuratedDeckImportPanel from "@/spatial/ui/SpatialCuratedDeckImportPanel";
+35:import SpatialCuratedDeckExportPanel from "@/spatial/ui/SpatialCuratedDeckExportPanel";
+805:      <SpatialCuratedDeckExportPanel />
+806:      <SpatialCuratedDeckImportPanel />
+808:      <SpatialCuratedDeckVaultPanel />
+809:      <SpatialCuratedDeckDiffPanel />
+810:      <SpatialCuratedDeckChangeLedgerPanel />
+811:      <SpatialCuratedDeckLineagePanel />
+812:      <SpatialCuratedDeckNeighborDiffPanel />
+813:      <SpatialCuratedDeckCohortPanel />
+814:      <SpatialCuratedDeckStabilityPanel />
+815:      <SpatialCuratedDeckDriftPanel />
+816:      <SpatialCuratedDeckAnchorPanel />
+817:      <SpatialCuratedDeckConsensusPanel />
+818:      <SpatialCuratedDeckDivergencePanel />
+819:      <SpatialCuratedDeckAnomalyPanel />
+820:      <SpatialCuratedDeckVerdictPanel />
+821:      <SpatialCuratedDeckActionPanel />
+822:      <SpatialCuratedDeckReviewTicketPanel />
+823:      <SpatialCuratedDeckDispatchPanel />
+824:      <SpatialCuratedDeckQueuePanel />
+825:      <SpatialCuratedDeckSchedulePanel />
+826:      <SpatialCuratedDeckServiceWindowPanel />
+827:      <SpatialCuratedDeckSlaPanel />
+828:      <SpatialCuratedDeckBreachWatchPanel />
+829:      <SpatialCuratedDeckIncidentResponsePanel />
+830:      <SpatialCuratedDeckRecoveryGatePanel />
+831:      <SpatialCuratedDeckClosureCertificatePanel />
+832:      <SpatialCuratedDeckArchiveDispositionPanel />
+833:      <SpatialCuratedDeckReopenWatchPanel />
+834:      <SpatialCuratedDeckRetentionLifecyclePanel />
+835:      <SpatialCuratedDeckRetentionHorizonPanel />
+836:      <SpatialCuratedDeckExpiryGovernancePanel />
+837:      <SpatialCuratedDeckPurgeReadinessPanel />
+838:      <SpatialCuratedDeckDestructionAuthorizationPanel />
+RC=0
+
+== switch branch safely ==
+
+$ cd '/home/user/urai-spatial' && git switch -c 'phase96-curated-deck-scene-normalization-recovery-20260317_060321'
+_MONOSPACE_ENV_STARTED_=http://localhost:80/
+Switched to a new branch 'phase96-curated-deck-scene-normalization-recovery-20260317_060321'
+RC=0
+
+== find last import line ==
+LAST_IMPORT_LINE=98
+
+== normalize curated deck imports ==
+
+== find panel indentation ==
+INDENT=\ \ \ \ \ \ 
+
+== remove existing curated deck panel lines everywhere ==
+
+== choose insertion anchor near other panel block ==
+ANCHOR_LINE=835
+
+== insert normalized curated deck panel trio once ==
+
+== post patch audit ==
+
+$ cd '/home/user/urai-spatial/urai-tier1' && nl -ba '/home/user/urai-spatial/urai-tier1/src/spatial/scene/SpatialScene.tsx' | sed -n '1,140p' | tee '/home/user/urai-spatial/urai-tier1/_audit/phase96-curated-deck-scene-normalization-recovery/20260317_060321/scene_head_after.txt'
+_MONOSPACE_ENV_STARTED_=http://localhost:80/
+     1	"use client";
+     2	import SpatialCuratedDeckPurgeReadinessPanel from "@/spatial/ui/SpatialCuratedDeckPurgeReadinessPanel";
+     3	import SpatialCuratedDeckRetentionLifecyclePanel from "@/spatial/ui/SpatialCuratedDeckRetentionLifecyclePanel";
+     4	import SpatialCuratedDeckReopenWatchPanel from "@/spatial/ui/SpatialCuratedDeckReopenWatchPanel";
+     5	import SpatialCuratedDeckArchiveDispositionPanel from "@/spatial/ui/SpatialCuratedDeckArchiveDispositionPanel";
+     6	import SpatialCuratedDeckClosureCertificatePanel from "@/spatial/ui/SpatialCuratedDeckClosureCertificatePanel";
+     7	import SpatialCuratedDeckRecoveryGatePanel from "@/spatial/ui/SpatialCuratedDeckRecoveryGatePanel";
+     8	import SpatialCuratedDeckIncidentResponsePanel from "@/spatial/ui/SpatialCuratedDeckIncidentResponsePanel";
+     9	import SpatialCuratedDeckBreachWatchPanel from "@/spatial/ui/SpatialCuratedDeckBreachWatchPanel";
+    10	import SpatialCuratedDeckSlaPanel from "@/spatial/ui/SpatialCuratedDeckSlaPanel";
+    11	import SpatialCuratedDeckServiceWindowPanel from "@/spatial/ui/SpatialCuratedDeckServiceWindowPanel";
+    12	import SpatialCuratedDeckSchedulePanel from "@/spatial/ui/SpatialCuratedDeckSchedulePanel";
+    13	import SpatialCuratedDeckQueuePanel from "@/spatial/ui/SpatialCuratedDeckQueuePanel";
+    14	import SpatialCuratedDeckDispatchPanel from "@/spatial/ui/SpatialCuratedDeckDispatchPanel";
+    15	import SpatialCuratedDeckReviewTicketPanel from "@/spatial/ui/SpatialCuratedDeckReviewTicketPanel";
+    16	import SpatialCuratedDeckActionPanel from "@/spatial/ui/SpatialCuratedDeckActionPanel";
+    17	import SpatialCuratedDeckVerdictPanel from "@/spatial/ui/SpatialCuratedDeckVerdictPanel";
+    18	import SpatialCuratedDeckAnomalyPanel from "@/spatial/ui/SpatialCuratedDeckAnomalyPanel";
+    19	import SpatialCuratedDeckDivergencePanel from "@/spatial/ui/SpatialCuratedDeckDivergencePanel";
+    20	import SpatialCuratedDeckConsensusPanel from "@/spatial/ui/SpatialCuratedDeckConsensusPanel";
+    21	import SpatialCuratedDeckAnchorPanel from "@/spatial/ui/SpatialCuratedDeckAnchorPanel";
+    22	import SpatialCuratedDeckDriftPanel from "@/spatial/ui/SpatialCuratedDeckDriftPanel";
+    23	import SpatialCuratedDeckStabilityPanel from "@/spatial/ui/SpatialCuratedDeckStabilityPanel";
+    24	import SpatialCuratedDeckCohortPanel from "@/spatial/ui/SpatialCuratedDeckCohortPanel";
+    25	import SpatialCuratedDeckNeighborDiffPanel from "@/spatial/ui/SpatialCuratedDeckNeighborDiffPanel";
+    26	import SpatialCuratedDeckLineagePanel from "@/spatial/ui/SpatialCuratedDeckLineagePanel";
+    27	import SpatialCuratedDeckChangeLedgerPanel from "@/spatial/ui/SpatialCuratedDeckChangeLedgerPanel";
+    28	import SpatialCuratedDeckDiffPanel from "@/spatial/ui/SpatialCuratedDeckDiffPanel";
+    29	import SpatialCuratedDeckVaultPanel from "@/spatial/ui/SpatialCuratedDeckVaultPanel";
+    30	import SpatialCuratedDeckVaultBootstrap from "@/spatial/curation/SpatialCuratedDeckVaultBootstrap";
+    31	import SpatialCuratedDeckImportPanel from "@/spatial/ui/SpatialCuratedDeckImportPanel";
+    32	import SpatialCuratedDeckExportPanel from "@/spatial/ui/SpatialCuratedDeckExportPanel";
+    33	import SpatialStoryReviewDeckPanel from "@/spatial/ui/SpatialStoryReviewDeckPanel";
+    34	import SpatialBundleLineagePanel from "@/spatial/ui/SpatialBundleLineagePanel";
+    35	import SpatialStoryBundleDiffPanel from "@/spatial/ui/SpatialStoryBundleDiffPanel";
+    36	import SpatialStoryBundleVaultPanel from "@/spatial/ui/SpatialStoryBundleVaultPanel";
+    37	import SpatialStoryBundleVaultBootstrap from "@/spatial/vault/SpatialStoryBundleVaultBootstrap";
+    38	import SpatialStoryBundleImportPanel from "@/spatial/ui/SpatialStoryBundleImportPanel";
+    39	import SpatialStoryBundlePanel from "@/spatial/ui/SpatialStoryBundlePanel";
+    40	import SpatialSeasonalArcPanel from "@/spatial/ui/SpatialSeasonalArcPanel";
+    41	import SpatialSeasonalArcBootstrap from "@/spatial/seasonal/SpatialSeasonalArcBootstrap";
+    42	import SpatialArcPanel from "@/spatial/ui/SpatialArcPanel";
+    43	import SpatialArcBootstrap from "@/spatial/arcs/SpatialArcBootstrap";
+    44	import SpatialVoicePlaybackPanel from "@/spatial/ui/SpatialVoicePlaybackPanel";
+    45	import SpatialNarratorExportPanel from "@/spatial/ui/SpatialNarratorExportPanel";
+    46	import SpatialTimelineLensPanel from "@/spatial/ui/SpatialTimelineLensPanel";
+    47	import SpatialLensBootstrap from "@/spatial/lenses/SpatialLensBootstrap";
+    48	import SpatialComparePanel from "@/spatial/ui/SpatialComparePanel";
+    49	import SpatialCompareBootstrap from "@/spatial/compare/SpatialCompareBootstrap";
+    50	import SpatialAccountPanel from "@/spatial/ui/SpatialAccountPanel";
+    51	import SpatialAccountBootstrap from "@/spatial/account/SpatialAccountBootstrap";
+    52	import SpatialReleasePanel from "@/spatial/ui/SpatialReleasePanel";
+    53	import SpatialReleaseBootstrap from "@/spatial/release/SpatialReleaseBootstrap";
+    54	import SpatialTelemetryPanel from "@/spatial/ui/SpatialTelemetryPanel";
+    55	import SpatialPreferencesPanel from "@/spatial/ui/SpatialPreferencesPanel";
+    56	import SpatialSettingsBootstrap from "@/spatial/settings/SpatialSettingsBootstrap";
+    57	import SpatialImportExportPanel from "@/spatial/ui/SpatialImportExportPanel";
+    58	import SpatialAnalyticsBridge from "@/spatial/telemetry/SpatialAnalyticsBridge";
+    59	import SpatialPersistenceBridge from "@/spatial/persistence/SpatialPersistenceBridge";
+    60	import XrLocomotionRuntime from "@/spatial/xr/XrLocomotionRuntime";
+    61	import UnityRuntimePayloadBridge from "@/spatial/unity/UnityRuntimePayloadBridge";
+    62	import ArPlaneMarker from "@/spatial/xr/ArPlaneMarker";
+    63	import ArHitTestBridge from "@/spatial/xr/ArHitTestBridge";
+    64	
+    65	import { Canvas, ThreeEvent, useFrame, useThree } from "@react-three/fiber";
+    66	import { CSSProperties, useEffect, useMemo, useRef, useState } from "react";
+    67	import * as THREE from "three";
+    68	import { toCanonicalSelectedStar } from "../lib/toCanonicalSelectedStar";
+    69	import { SpatialStar } from "../data/stars";
+    70	import { SceneMode, useSceneStore } from "../state/sceneStore";
+    71	import CinematicReplayOverlay from "@/spatial/cinematic/CinematicReplayOverlay";
+    72	import LifeMapIntelligenceOverlay from "@/spatial/intelligence/LifeMapIntelligenceOverlay";
+    73	import XRBridgeOverlay from "@/spatial/xr/XRBridgeOverlay";
+    74	import ImmersiveContractOverlay from "@/spatial/immersive/ImmersiveContractOverlay";
+    75	import SceneExportOverlay from "@/spatial/export/SceneExportOverlay";
+    76	import WebXREntryOverlay from "@/spatial/webxr/WebXREntryOverlay";
+    77	import XRCameraRigOverlay from "@/spatial/xr-runtime/XRCameraRigOverlay";
+    78	import ARPlacementOverlay from "@/spatial/ar/ARPlacementOverlay";
+    79	import UnityAdapterOverlay from "@/spatial/unity/UnityAdapterOverlay";
+    80	import XRInputOverlay from "@/spatial/input/XRInputOverlay";
+    81	import ImmersiveReplayTraversalOverlay from "@/spatial/traversal/ImmersiveReplayTraversalOverlay";
+    82	import MemoryImportOverlay from "@/spatial/data-import/MemoryImportOverlay";
+    83	import ExternalIngestOverlay from "@/spatial/ingest/ExternalIngestOverlay";
+    84	import BatchImportAuditOverlay from "@/spatial/validation/BatchImportAuditOverlay";
+    85	import MergePreflightOverlay from "@/spatial/merge/MergePreflightOverlay";
+    86	import PersistenceSyncOverlay from "@/spatial/persistence/PersistenceSyncOverlay";
+    87	import DatasetVersioningOverlay from "@/spatial/versioning/DatasetVersioningOverlay";
+    88	import ChapterSynthesisOverlay from "@/spatial/chapter/ChapterSynthesisOverlay";
+    89	import CausalInsightOverlay from "@/spatial/causal/CausalInsightOverlay";
+    90	import StoryArcOverlay from "@/spatial/storyarc/StoryArcOverlay";
+    91	import EraCompareOverlay from "@/spatial/era/EraCompareOverlay";
+    92	import SeasonalCycleOverlay from "@/spatial/seasonal/SeasonalCycleOverlay";
+    93	import NarratorOrchestrationOverlay from "@/spatial/narrator/NarratorOrchestrationOverlay";
+    94	import WebXRRendererHandoffOverlay from "@/spatial/xr-renderer/WebXRRendererHandoffOverlay";
+    95	import { useXrSessionStore } from "../state/xrSessionStore";
+    96	import SpatialCuratedDeckRetentionHorizonPanel from "@/spatial/ui/SpatialCuratedDeckRetentionHorizonPanel";
+    97	import SpatialCuratedDeckExpiryGovernancePanel from "@/spatial/ui/SpatialCuratedDeckExpiryGovernancePanel";
+    98	import SpatialCuratedDeckDestructionAuthorizationPanel from "@/spatial/ui/SpatialCuratedDeckDestructionAuthorizationPanel";
+    99	
+   100	const shellButtonStyle: CSSProperties = {
+   101	  appearance: "none",
+   102	  border: "1px solid rgba(255,255,255,0.18)",
+   103	  borderRadius: 14,
+   104	  background: "rgba(10,14,28,0.66)",
+   105	  color: "rgba(245,248,255,0.96)",
+   106	  padding: "12px 16px",
+   107	  fontSize: 13,
+   108	  fontWeight: 600,
+   109	  letterSpacing: "0.08em",
+   110	  textTransform: "uppercase",
+   111	  cursor: "pointer",
+   112	  backdropFilter: "blur(16px)",
+   113	  boxShadow: "0 14px 40px rgba(0,0,0,0.28)",
+   114	};
+   115	
+   116	const secondaryButtonStyle: CSSProperties = {
+   117	  ...shellButtonStyle,
+   118	  background: "rgba(255,255,255,0.06)",
+   119	};
+   120	
+   121	const ghostButtonStyle: CSSProperties = {
+   122	  ...shellButtonStyle,
+   123	  background: "transparent",
+   124	  border: "1px solid rgba(255,255,255,0.12)",
+   125	  boxShadow: "none",
+   126	};
+   127	
+   128	const topChromeStyle: CSSProperties = {
+   129	  position: "absolute",
+   130	  top: 18,
+   131	  left: 18,
+   132	  right: 18,
+   133	  zIndex: 30,
+   134	  display: "flex",
+   135	  alignItems: "center",
+   136	  justifyContent: "space-between",
+   137	  gap: 16,
+   138	  pointerEvents: "none",
+   139	};
+   140	
+RC=0
+
+$ cd '/home/user/urai-spatial/urai-tier1' && grep -n 'SpatialCuratedDeck.*Panel' '/home/user/urai-spatial/urai-tier1/src/spatial/scene/SpatialScene.tsx' | tee '/home/user/urai-spatial/urai-tier1/_audit/phase96-curated-deck-scene-normalization-recovery/20260317_060321/scene_panel_hits_after.txt' || true
+_MONOSPACE_ENV_STARTED_=http://localhost:80/
+2:import SpatialCuratedDeckPurgeReadinessPanel from "@/spatial/ui/SpatialCuratedDeckPurgeReadinessPanel";
+3:import SpatialCuratedDeckRetentionLifecyclePanel from "@/spatial/ui/SpatialCuratedDeckRetentionLifecyclePanel";
+4:import SpatialCuratedDeckReopenWatchPanel from "@/spatial/ui/SpatialCuratedDeckReopenWatchPanel";
+5:import SpatialCuratedDeckArchiveDispositionPanel from "@/spatial/ui/SpatialCuratedDeckArchiveDispositionPanel";
+6:import SpatialCuratedDeckClosureCertificatePanel from "@/spatial/ui/SpatialCuratedDeckClosureCertificatePanel";
+7:import SpatialCuratedDeckRecoveryGatePanel from "@/spatial/ui/SpatialCuratedDeckRecoveryGatePanel";
+8:import SpatialCuratedDeckIncidentResponsePanel from "@/spatial/ui/SpatialCuratedDeckIncidentResponsePanel";
+9:import SpatialCuratedDeckBreachWatchPanel from "@/spatial/ui/SpatialCuratedDeckBreachWatchPanel";
+10:import SpatialCuratedDeckSlaPanel from "@/spatial/ui/SpatialCuratedDeckSlaPanel";
+11:import SpatialCuratedDeckServiceWindowPanel from "@/spatial/ui/SpatialCuratedDeckServiceWindowPanel";
+12:import SpatialCuratedDeckSchedulePanel from "@/spatial/ui/SpatialCuratedDeckSchedulePanel";
+13:import SpatialCuratedDeckQueuePanel from "@/spatial/ui/SpatialCuratedDeckQueuePanel";
+14:import SpatialCuratedDeckDispatchPanel from "@/spatial/ui/SpatialCuratedDeckDispatchPanel";
+15:import SpatialCuratedDeckReviewTicketPanel from "@/spatial/ui/SpatialCuratedDeckReviewTicketPanel";
+16:import SpatialCuratedDeckActionPanel from "@/spatial/ui/SpatialCuratedDeckActionPanel";
+17:import SpatialCuratedDeckVerdictPanel from "@/spatial/ui/SpatialCuratedDeckVerdictPanel";
+18:import SpatialCuratedDeckAnomalyPanel from "@/spatial/ui/SpatialCuratedDeckAnomalyPanel";
+19:import SpatialCuratedDeckDivergencePanel from "@/spatial/ui/SpatialCuratedDeckDivergencePanel";
+20:import SpatialCuratedDeckConsensusPanel from "@/spatial/ui/SpatialCuratedDeckConsensusPanel";
+21:import SpatialCuratedDeckAnchorPanel from "@/spatial/ui/SpatialCuratedDeckAnchorPanel";
+22:import SpatialCuratedDeckDriftPanel from "@/spatial/ui/SpatialCuratedDeckDriftPanel";
+23:import SpatialCuratedDeckStabilityPanel from "@/spatial/ui/SpatialCuratedDeckStabilityPanel";
+24:import SpatialCuratedDeckCohortPanel from "@/spatial/ui/SpatialCuratedDeckCohortPanel";
+25:import SpatialCuratedDeckNeighborDiffPanel from "@/spatial/ui/SpatialCuratedDeckNeighborDiffPanel";
+26:import SpatialCuratedDeckLineagePanel from "@/spatial/ui/SpatialCuratedDeckLineagePanel";
+27:import SpatialCuratedDeckChangeLedgerPanel from "@/spatial/ui/SpatialCuratedDeckChangeLedgerPanel";
+28:import SpatialCuratedDeckDiffPanel from "@/spatial/ui/SpatialCuratedDeckDiffPanel";
+29:import SpatialCuratedDeckVaultPanel from "@/spatial/ui/SpatialCuratedDeckVaultPanel";
+31:import SpatialCuratedDeckImportPanel from "@/spatial/ui/SpatialCuratedDeckImportPanel";
+32:import SpatialCuratedDeckExportPanel from "@/spatial/ui/SpatialCuratedDeckExportPanel";
+96:import SpatialCuratedDeckRetentionHorizonPanel from "@/spatial/ui/SpatialCuratedDeckRetentionHorizonPanel";
+97:import SpatialCuratedDeckExpiryGovernancePanel from "@/spatial/ui/SpatialCuratedDeckExpiryGovernancePanel";
+98:import SpatialCuratedDeckDestructionAuthorizationPanel from "@/spatial/ui/SpatialCuratedDeckDestructionAuthorizationPanel";
+805:      <SpatialCuratedDeckExportPanel />
+806:      <SpatialCuratedDeckImportPanel />
+808:      <SpatialCuratedDeckVaultPanel />
+809:      <SpatialCuratedDeckDiffPanel />
+810:      <SpatialCuratedDeckChangeLedgerPanel />
+811:      <SpatialCuratedDeckLineagePanel />
+812:      <SpatialCuratedDeckNeighborDiffPanel />
+813:      <SpatialCuratedDeckCohortPanel />
+814:      <SpatialCuratedDeckStabilityPanel />
+815:      <SpatialCuratedDeckDriftPanel />
+816:      <SpatialCuratedDeckAnchorPanel />
+817:      <SpatialCuratedDeckConsensusPanel />
+818:      <SpatialCuratedDeckDivergencePanel />
+819:      <SpatialCuratedDeckAnomalyPanel />
+820:      <SpatialCuratedDeckVerdictPanel />
+821:      <SpatialCuratedDeckActionPanel />
+822:      <SpatialCuratedDeckReviewTicketPanel />
+823:      <SpatialCuratedDeckDispatchPanel />
+824:      <SpatialCuratedDeckQueuePanel />
+825:      <SpatialCuratedDeckSchedulePanel />
+826:      <SpatialCuratedDeckServiceWindowPanel />
+827:      <SpatialCuratedDeckSlaPanel />
+828:      <SpatialCuratedDeckBreachWatchPanel />
+829:      <SpatialCuratedDeckIncidentResponsePanel />
+830:      <SpatialCuratedDeckRecoveryGatePanel />
+831:      <SpatialCuratedDeckClosureCertificatePanel />
+832:      <SpatialCuratedDeckArchiveDispositionPanel />
+833:      <SpatialCuratedDeckReopenWatchPanel />
+834:      <SpatialCuratedDeckRetentionLifecyclePanel />
+835:      <SpatialCuratedDeckPurgeReadinessPanel />
+836:      <SpatialCuratedDeckRetentionHorizonPanel />
+837:      <SpatialCuratedDeckExpiryGovernancePanel />
+838:      <SpatialCuratedDeckDestructionAuthorizationPanel />
+RC=0
+
+$ cd '/home/user/urai-spatial' && git diff -- '/home/user/urai-spatial/urai-tier1/src/spatial/scene/SpatialScene.tsx' | tee '/home/user/urai-spatial/urai-tier1/_audit/phase96-curated-deck-scene-normalization-recovery/20260317_060321/scene.diff.txt'
+_MONOSPACE_ENV_STARTED_=http://localhost:80/
+diff --git a/urai-tier1/src/spatial/scene/SpatialScene.tsx b/urai-tier1/src/spatial/scene/SpatialScene.tsx
+index 79ca430..10da7d7 100644
+--- a/urai-tier1/src/spatial/scene/SpatialScene.tsx
++++ b/urai-tier1/src/spatial/scene/SpatialScene.tsx
+@@ -1,7 +1,4 @@
+ "use client";
+-import SpatialCuratedDeckDestructionAuthorizationPanel from "@/spatial/ui/SpatialCuratedDeckDestructionAuthorizationPanel";
+-import SpatialCuratedDeckRetentionHorizonPanel from "@/spatial/ui/SpatialCuratedDeckRetentionHorizonPanel";
+-import SpatialCuratedDeckExpiryGovernancePanel from "@/spatial/ui/SpatialCuratedDeckExpiryGovernancePanel";
+ import SpatialCuratedDeckPurgeReadinessPanel from "@/spatial/ui/SpatialCuratedDeckPurgeReadinessPanel";
+ import SpatialCuratedDeckRetentionLifecyclePanel from "@/spatial/ui/SpatialCuratedDeckRetentionLifecyclePanel";
+ import SpatialCuratedDeckReopenWatchPanel from "@/spatial/ui/SpatialCuratedDeckReopenWatchPanel";
+@@ -96,6 +93,9 @@ import SeasonalCycleOverlay from "@/spatial/seasonal/SeasonalCycleOverlay";
+ import NarratorOrchestrationOverlay from "@/spatial/narrator/NarratorOrchestrationOverlay";
+ import WebXRRendererHandoffOverlay from "@/spatial/xr-renderer/WebXRRendererHandoffOverlay";
+ import { useXrSessionStore } from "../state/xrSessionStore";
++import SpatialCuratedDeckRetentionHorizonPanel from "@/spatial/ui/SpatialCuratedDeckRetentionHorizonPanel";
++import SpatialCuratedDeckExpiryGovernancePanel from "@/spatial/ui/SpatialCuratedDeckExpiryGovernancePanel";
++import SpatialCuratedDeckDestructionAuthorizationPanel from "@/spatial/ui/SpatialCuratedDeckDestructionAuthorizationPanel";
+ 
+ const shellButtonStyle: CSSProperties = {
+   appearance: "none",
+@@ -832,9 +832,9 @@ export default function SpatialScene() {
+       <SpatialCuratedDeckArchiveDispositionPanel />
+       <SpatialCuratedDeckReopenWatchPanel />
+       <SpatialCuratedDeckRetentionLifecyclePanel />
++      <SpatialCuratedDeckPurgeReadinessPanel />
+       <SpatialCuratedDeckRetentionHorizonPanel />
+       <SpatialCuratedDeckExpiryGovernancePanel />
+-      <SpatialCuratedDeckPurgeReadinessPanel />
+       <SpatialCuratedDeckDestructionAuthorizationPanel />
+       <Canvas
+         camera={{ position: [0, 6, 30], fov: 42, near: 0.1, far: 200 }}
+RC=0
+
+== build verify ==
+
+$ cd '/home/user/urai-spatial/urai-tier1' && rm -rf .next && pnpm build
+_MONOSPACE_ENV_STARTED_=http://localhost:80/
+
+> urai-tier1@0.1.0 build /home/user/urai-spatial/urai-tier1
+> next build
+
+▲ Next.js 16.1.6 (Turbopack)
+
+  Creating an optimized production build ...
+✓ Compiled successfully in 26.7s
+  Running TypeScript ...
+  Collecting page data using 1 worker ...
+  Generating static pages using 1 worker (0/4) ...
+  Generating static pages using 1 worker (1/4) 
+  Generating static pages using 1 worker (2/4) 
+  Generating static pages using 1 worker (3/4) 
+✓ Generating static pages using 1 worker (4/4) in 644.0ms
+  Finalizing page optimization ...
+
+Route (app)
+┌ ○ /
+└ ○ /_not-found
+
+
+○  (Static)  prerendered as static content
+
+RC=0
+
+== commit only if changed ==
+
+$ cd '/home/user/urai-spatial' && git add '/home/user/urai-spatial/urai-tier1/src/spatial/scene/SpatialScene.tsx' '/home/user/urai-spatial/urai-tier1/_audit/phase96-curated-deck-scene-normalization-recovery/20260317_060321'
+_MONOSPACE_ENV_STARTED_=http://localhost:80/
+The following paths are ignored by one of your .gitignore files:
+urai-tier1/_audit
+hint: Use -f if you really want to add them.
+hint: Disable this message with "git config advice.addIgnoredFile false"

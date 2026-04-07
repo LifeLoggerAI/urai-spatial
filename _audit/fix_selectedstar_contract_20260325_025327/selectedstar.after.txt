@@ -1,0 +1,17 @@
+export type SelectedStar = {
+  id: string;
+  position: [number, number, number];
+  color: string;
+  size: number;
+  title: string;
+  label?: string;
+  chapter?: string;
+  signature?: string;
+  timeband?: string;
+  dateLabel?: string;
+  summary?: string;
+  detail?: string;
+  description?: string;
+  transcript?: string;
+  tags?: string[];
+};

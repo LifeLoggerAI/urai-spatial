@@ -1,0 +1,8 @@
+/home/user/urai-spatial/urai-tier1/src/spatial/scene/Starfield.tsx:10:export type StarfieldStar = {
+/home/user/urai-spatial/urai-tier1/src/spatial/scene/Starfield.tsx:21:type StarfieldProps = {
+/home/user/urai-spatial/urai-tier1/src/spatial/scene/Starfield.tsx:22:  stars?: StarfieldStar[];
+/home/user/urai-spatial/urai-tier1/src/spatial/scene/Starfield.tsx:28:  onSelectStar?: (star: StarfieldStar) => void;
+/home/user/urai-spatial/urai-tier1/src/spatial/scene/Starfield.tsx:31:const FALLBACK_STARS: StarfieldStar[] = [
+/home/user/urai-spatial/urai-tier1/src/spatial/scene/Starfield.tsx:72:export default function Starfield({
+/home/user/urai-spatial/urai-tier1/src/spatial/scene/Starfield.tsx:80:}: StarfieldProps): JSX.Element | null {
+/home/user/urai-spatial/urai-tier1/src/spatial/scene/Starfield.tsx:84:  const safeStars = useMemo<StarfieldStar[]>(() => {

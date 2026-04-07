@@ -1,0 +1,9 @@
+src/spatial/ui/SpatialCuratedDeckServiceWindowPanel.tsx:5:import { buildSpatialCuratedDeckServiceWindow } from "@/spatial/curation/buildSpatialCuratedDeckServiceWindow";
+src/spatial/ui/SpatialCuratedDeckServiceWindowPanel.tsx:9:export default function SpatialCuratedDeckServiceWindowPanel() {
+src/spatial/ui/SpatialCuratedDeckServiceWindowPanel.tsx:14:    () => buildSpatialCuratedDeckServiceWindow({ entries, activeEntryId }),
+src/spatial/ui/SpatialCuratedDeckServiceWindowPanel.tsx:53:        Curated Deck Service Window
+src/spatial/curation/spatialCuratedDeckServiceWindowTypes.ts:9:  schema: "urai.spatial.curated-deck-service-window.v1";
+src/spatial/curation/buildSpatialCuratedDeckServiceWindow.ts:59:export function buildSpatialCuratedDeckServiceWindow(input: {
+src/spatial/curation/buildSpatialCuratedDeckServiceWindow.ts:132:    schema: "urai.spatial.curated-deck-service-window.v1",
+src/spatial/scene/SpatialScene.tsx:2:import SpatialCuratedDeckServiceWindowPanel from "@/spatial/ui/SpatialCuratedDeckServiceWindowPanel";
+src/spatial/scene/SpatialScene.tsx:814:      <SpatialCuratedDeckServiceWindowPanel />

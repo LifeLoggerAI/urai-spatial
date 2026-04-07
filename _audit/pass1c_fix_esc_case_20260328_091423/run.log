@@ -1,0 +1,35 @@
+=== PASS 1C: ESC CASE FIX ===
+Running typecheck...
+Running build...
+
+> urai-spatial-monorepo@ build /home/user/urai-spatial
+> pnpm --filter urai-tier1 build
+
+
+> urai-tier1@0.1.0 build /home/user/urai-spatial/urai-tier1
+> next build --webpack
+
+▲ Next.js 16.2.1 (webpack)
+
+  Creating an optimized production build ...
+✓ Compiled successfully in 5.7s
+  Running TypeScript ...
+Failed to type check.
+
+./src/spatial/hooks/useCanonInputLock.ts:8:22
+Type error: This comparison appears to be unintentional because the types 'Phase' and '"home"' have no overlap.
+
+  [90m 6 |[0m [36mexport[0m [36mfunction[0m useCanonInputLock(mode: [33mCanonMode[0m) {
+  [90m 7 |[0m   [36mreturn[0m useMemo(() => ({
+[31m[1m>[0m [90m 8 |[0m     skyClickEnabled: mode === [32m'home'[0m,
+  [90m   |[0m                      [31m[1m^[0m
+  [90m 9 |[0m     starClickEnabled: mode === [32m'lifemap'[0m,
+  [90m10 |[0m     replayEnterEnabled: mode === [32m'focus'[0m,
+  [90m11 |[0m   }), [mode]);
+Next.js build worker exited with code: 1 and signal: null
+/home/user/urai-spatial/urai-tier1:
+ ERR_PNPM_RECURSIVE_RUN_FIRST_FAIL  urai-tier1@0.1.0 build: `next build --webpack`
+Exit status 1
+ ELIFECYCLE  Command failed with exit code 1.
+FAILED: Build failed
+Press ENTER to exit...

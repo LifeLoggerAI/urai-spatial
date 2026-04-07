@@ -1,0 +1,9 @@
+src/spatial/ui/SpatialCuratedDeckQueuePanel.tsx:5:import { buildSpatialCuratedDeckQueue } from "@/spatial/curation/buildSpatialCuratedDeckQueue";
+src/spatial/ui/SpatialCuratedDeckQueuePanel.tsx:9:export default function SpatialCuratedDeckQueuePanel() {
+src/spatial/ui/SpatialCuratedDeckQueuePanel.tsx:14:    () => buildSpatialCuratedDeckQueue({ entries, activeEntryId }),
+src/spatial/ui/SpatialCuratedDeckQueuePanel.tsx:50:        Curated Deck Queue
+src/spatial/curation/spatialCuratedDeckQueueTypes.ts:9:  schema: "urai.spatial.curated-deck-queue.v1";
+src/spatial/curation/buildSpatialCuratedDeckQueue.ts:58:export function buildSpatialCuratedDeckQueue(input: {
+src/spatial/curation/buildSpatialCuratedDeckQueue.ts:139:    schema: "urai.spatial.curated-deck-queue.v1",
+src/spatial/scene/SpatialScene.tsx:2:import SpatialCuratedDeckQueuePanel from "@/spatial/ui/SpatialCuratedDeckQueuePanel";
+src/spatial/scene/SpatialScene.tsx:810:      <SpatialCuratedDeckQueuePanel />

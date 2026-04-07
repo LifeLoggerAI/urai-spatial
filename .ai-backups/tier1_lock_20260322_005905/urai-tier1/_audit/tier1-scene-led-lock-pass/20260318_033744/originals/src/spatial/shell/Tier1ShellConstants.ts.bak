@@ -1,0 +1,23 @@
+export type Tier1Phase = "home" | "sky" | "lifemap" | "focus" | "replay";
+
+export const SKY_HOLD_MS = 700;
+export const RETURN_STEP_MS = 420;
+export const DEFAULT_MAP_DWELL_MS = 1000;
+
+export const PANEL_ANCHOR_CLASS =
+  "pointer-events-auto fixed right-6 top-1/2 z-[80] w-[min(420px,calc(100vw-2.5rem))] -translate-y-1/2";
+
+export const SHELL_CARD_CLASS =
+  "rounded-3xl border border-white/15 bg-slate-950/72 p-5 text-white shadow-[0_24px_80px_rgba(0,0,0,0.45)] backdrop-blur-xl";
+
+export const SUBDUED_TEXT_CLASS = "text-sm leading-6 text-slate-300";
+export const MICRO_LABEL_CLASS = "text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-400";
+
+export const PRIMARY_BUTTON_CLASS =
+  "inline-flex items-center justify-center rounded-2xl border border-cyan-300/30 bg-cyan-400/12 px-3 py-2 text-sm font-medium text-cyan-100 transition hover:bg-cyan-400/18";
+
+export const SECONDARY_BUTTON_CLASS =
+  "inline-flex items-center justify-center rounded-2xl border border-white/10 bg-white/6 px-3 py-2 text-sm font-medium text-slate-100 transition hover:bg-white/10";
+
+export const GHOST_BUTTON_CLASS =
+  "inline-flex items-center justify-center rounded-2xl border border-white/8 bg-transparent px-3 py-2 text-sm font-medium text-slate-300 transition hover:bg-white/6";

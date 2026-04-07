@@ -1,0 +1,679 @@
+== URAI TIER1 LOCK CHECK ==
+STAMP=20260324_200220
+ROOT=/home/user/urai-spatial
+== CANONICAL APP ==
+/home/user/urai-spatial/urai-tier1
+== PACKAGE SCRIPTS ==
+6:    "dev": "next dev --webpack",
+7:    "build": "next build --webpack",
+10:    "typecheck": "tsc --noEmit"
+== KEY SCENE FILES ==
+-rw-r--r-- 1 user user   379 Mar 24 17:40 src/app/globals.css
+-rw-r--r-- 1 user user   118 Mar 24 17:40 src/app/page.tsx
+-rw-r--r-- 1 user user 17547 Mar 24 19:46 src/spatial/scene/SpatialScene.tsx
+== MODE WIRES ==
+src/spatial/persistence/spatialPersistenceTypes.ts:63:  sceneMode: "home",
+src/spatial/persistence/SpatialPersistenceBridge.tsx:17:    const persistenceSceneMode = mode === "replay" ? "replay" : "lifemap";
+src/spatial/cinematic/resolveCinematicReplayById.ts:15:    label: `Cinematic replay ready for ${starId}`,
+src/spatial/cinematic/CinematicReplayOverlay.tsx:20:        {cinematic.label ?? cinematic.title ?? "Cinematic replay ready"}
+src/spatial/cinematic/resolveCinematicReplay.ts:46:    "Cinematic replay contract is active.";
+src/spatial/cinematic/resolveCinematicReplay.ts:64:      : "Sustain depth, preserve focus, keep replay motion smooth.";
+src/spatial/chapter/resolveChapterSynthesis.ts:1:import { getMemoryDataset } from "@/spatial/replay/resolveReplayScene";
+src/spatial/ar/resolveARPlacementStateById.ts:24:  if (mode === "home") return null;
+src/spatial/ar/resolveARPlacementStateById.ts:33:  if (mode === "replay") {
+src/spatial/ar/resolveARPlacementStateById.ts:42:  if (mode === "focus") {
+src/spatial/ar/resolveARPlacementStateById.ts:51:  if (mode === "lifemap") {
+src/spatial/ar/resolveARPlacementState.ts.bak.20260322_203100:38:      : mode === "replay"
+src/spatial/ar/resolveARPlacementState.ts.bak.20260322_203100:67:      ? "stage content at human-scale distance with replay-safe framing"
+src/spatial/ar/resolveARPlacementState.ts:38:      : mode === "replay"
+src/spatial/ar/resolveARPlacementState.ts:67:      ? "stage content at human-scale distance with replay-safe framing"
+src/spatial/lenses.disabled.1774173247/buildSpatialTimelineLenses.ts:61:    focus: deriveFocus(compareSet),
+src/spatial/lenses.disabled.1774173247/spatialLensTypes.ts:13:  focus: SpatialTimelineLensFocus;
+src/spatial/lenses.disabled.1774173247/spatialLensTypes.ts:33:    focus: "balanced",
+src/spatial/polish/SpatialPolishOverlay.tsx:18:    mode === "replay" ? "rgba(255,220,160,0.30)" : "rgba(255,255,255,0.18)"
+src/spatial/polish/SpatialPolishOverlay.tsx:21:  const topGlow = mode === "replay" ? "rgba(255,255,255,0.06)" : "rgba(255,255,255,0.035)";
+src/spatial/polish/SpatialPolishOverlay.tsx:22:  const edgeShadow = mode === "replay" ? "rgba(0,0,0,0.44)" : "rgba(0,0,0,0.34)";
+src/spatial/polish/SpatialPolishOverlay.tsx:23:  const bottomWeight = mode === "replay" ? "rgba(4,8,18,0.30)" : "rgba(4,8,18,0.22)";
+src/spatial/polish/SpatialPolishOverlay.tsx:64:          opacity: mode === "replay" ? 0.85 : 0.65,
+src/spatial/polish/SpatialPolishOverlay.tsx:88:        {mode === "replay" ? "Replay Scene" : "Spatial Polish"}
+src/spatial/ingest/resolveExternalIngestState.ts:22:      emotion: "focused",
+src/spatial/data/memoryDataset.ts:147:      "Signal memories represent clarity through focus. A node becomes central enough that context reorganizes itself around it and the rest of the map falls back.",
+src/spatial/data/memoryDataset.ts:148:    tags: ["focus", "node", "attention"],
+src/spatial/data/memoryDataset.ts:150:      "When the node came into focus, everything else stopped asking to be first. The scene finally had a center.",
+src/spatial/data/memoryDataset.ts:327:      "A drift memory focused on branch sprawl: compelling alternatives appear everywhere, but they compete against coherence.",
+src/spatial/data/memoryDataset.ts:355:    summary: "The system learns to leave focus cleanly and come back without damage.",
+src/spatial/data/memoryDataset.ts:358:    tags: ["focus", "return", "stability"],
+src/spatial/data/memoryDataset.ts:360:      "What mattered was not only reaching focus. It was being able to leave it cleanly and return when needed.",
+src/spatial/data/memory-seed.ts:18:    summary: "Second seed node for focus and replay contract validation.",
+src/spatial/data/memory-seed.json:16:    "summary": "Second seed node for focus and replay contract validation.",
+src/spatial/state/sceneStore.ts:3:export type SceneMode = "home" | "sky" | "lifemap" | "focus" | "replay";
+src/spatial/state/sceneStore.ts:15:  focusStar: (id: string | null) => void;
+src/spatial/state/sceneStore.ts:24:  mode: "home" as SceneMode,
+src/spatial/state/sceneStore.ts:39:  enterLifeMap: () => set({ mode: "lifemap" }),
+src/spatial/state/sceneStore.ts:41:  focusStar: (id) =>
+src/spatial/state/sceneStore.ts:43:      mode: id ? "focus" : "lifemap",
+src/spatial/state/sceneStore.ts:49:    set({ mode: selectedStarId ? "replay" : "lifemap" });
+src/spatial/state/sceneStore.ts:54:    set({ mode: selectedStarId ? "focus" : "lifemap" });
+src/spatial/world/World.tsx:9:      <color attach="background" args={[mode === "lifemap" ? "#020617" : "#6fa3ff"]} />
+src/spatial/export/resolveSceneExportManifest.ts:9:  profile: "focus" | "replay";
+src/spatial/export/resolveSceneExportManifest.ts:34:  const profile = mode === "replay" ? "replay" : "focus";
+src/spatial/export/resolveSceneExportManifest.ts:72:    profile === "replay" ? "replay-state" : "focus-state",
+src/spatial/export/resolveSceneExportManifest.ts:77:    profile === "replay"
+src/spatial/export/resolveSceneExportManifestById.ts:14:  if (!starId && mode === "home") return null;
+src/spatial/clustering/resolveMemoryCluster.ts:1:import { getMemoryDataset } from "@/spatial/replay/resolveReplayScene";
+src/spatial/unity/unityRuntimePayloadSample.ts:5:  mode: "lifemap",
+src/spatial/unity/unityRuntimePayloadSample.ts:6:  phase: "lifemap",
+src/spatial/unity/resolveUnityAdapterState.ts:11:  sceneProfile: "focus" | "replay";
+src/spatial/unity/resolveUnityAdapterState.ts:12:  adapterMode: "scene-kit" | "replay-kit" | "ar-kit";
+src/spatial/unity/resolveUnityAdapterState.ts:36:  const sceneProfile = mode === "replay" ? "replay" : "focus";
+src/spatial/unity/resolveUnityAdapterState.ts:41:      : sceneProfile === "replay"
+src/spatial/unity/resolveUnityAdapterState.ts:42:      ? "replay-kit"
+src/spatial/unity/resolveUnityAdapterState.ts:71:      : adapterMode === "replay-kit"
+src/spatial/unity/resolveUnityAdapterState.ts:81:    adapterMode === "replay-kit" ? "replay-timeline" : "focus-state",
+src/spatial/xr/resolveXRBridgeState.ts:32:  const replayBoost = mode === "replay" ? 12 : 0;
+src/spatial/xr/resolveXRBridgeState.ts:34:  const readiness = clamp(base + replayBoost + intensityBoost, 0, 100);
+src/spatial/xr/resolveXRBridgeState.ts:37:    mode === "replay"
+src/spatial/xr/resolveXRBridgeState.ts:47:    mode === "replay"
+src/spatial/xr/resolveXRBridgeState.ts:55:    mode === "replay" ? "cinematic replay" : "lifemap focus",
+src/spatial/xr/XrLocomotionRuntime.tsx:111:    if (mode === "replay") return;
+src/spatial/ui/SpatialTimelineLensPanel.tsx:75:        focus: {activeLens ? activeLens.focus : "n/a"}
+src/spatial/data-import/buildMemoryImportReport.ts:1:import { getMemoryDataset } from "@/spatial/replay/resolveReplayScene";
+src/spatial/replay/replayConstants.ts:2:export const REPLAY_OVERLAY_HOST_ID = "urai-replay-overlay-root";
+src/spatial/replay/ReplayOverlay.tsx:27:    "Stabilizing replay frame",
+src/spatial/replay/ReplayOverlay.tsx:72:    if (mode !== "replay") {
+src/spatial/replay/ReplayOverlay.tsx:84:  if (mode !== "replay") return null;
+src/spatial/replay/PHASE7_TODO.md:5:Bind replay to canonical memory data.
+src/spatial/replay/PHASE7_TODO.md:9:- selectedStarId -> memory node -> replay scene contract created
+src/spatial/replay/PHASE7_TODO.md:11:- fallback replay path remains safe
+src/spatial/replay/PHASE7_TODO.md:14:- wire SpatialScene / replay UI to resolveReplaySceneFromSelectedStar(selectedStarId)
+src/spatial/replay/PHASE7_TODO.md:15:- remove hard-coded placeholder replay copy
+src/spatial/replay/ReplayContractOverlay.tsx:18:  const replay = useSceneStore((s: any) => s.replay ?? null);
+src/spatial/replay/ReplayContractOverlay.tsx:22:    const replayRecord = asRecord(replay);
+src/spatial/replay/ReplayContractOverlay.tsx:26:      str(replayRecord?.title) ??
+src/spatial/replay/ReplayContractOverlay.tsx:27:      str(replayRecord?.label) ??
+src/spatial/replay/ReplayContractOverlay.tsx:32:  }, [replay, selectedStarId]);
+src/spatial/replay/ReplayContractOverlay.tsx:35:    const replayRecord = asRecord(replay);
+src/spatial/replay/ReplayContractOverlay.tsx:39:      str(replayRecord?.subtitle) ??
+src/spatial/replay/ReplayContractOverlay.tsx:40:      str(replayRecord?.description) ??
+src/spatial/replay/ReplayContractOverlay.tsx:45:  }, [replay, selectedStarId]);
+src/spatial/narrative/resolveNarrativeReplay.ts:1:import { resolveReplaySceneById } from "@/spatial/replay/resolveReplayScene";
+src/spatial/narrative/resolveNarrativeReplay.ts:25:  const replay = resolveReplaySceneById(id) as LooseRecord | undefined;
+src/spatial/narrative/resolveNarrativeReplay.ts:28:  if (!replay && !memory) return undefined;
+src/spatial/narrative/resolveNarrativeReplay.ts:31:    str(replay?.title) ??
+src/spatial/narrative/resolveNarrativeReplay.ts:40:    str(replay?.subtitle) ??
+src/spatial/narrative/resolveNarrativeReplay.ts:41:    (kickerParts.length > 0 ? kickerParts.join(" · ") : "Canonical replay");
+src/spatial/narrative/resolveNarrativeReplay.ts:44:    str(replay?.description) ??
+src/spatial/narrative/resolveNarrativeReplay.ts:46:    "This replay is now resolving from the real memory contract.";
+src/spatial/narrative/resolveNarrativeReplay.ts:48:  const emotion = memory?.emotion ?? str(replay?.emotion);
+src/spatial/narrative/resolveNarrativeReplay.ts:49:  const chapter = memory?.chapter ?? str(replay?.chapter);
+src/spatial/narrative/resolveNarrativeReplay.ts:50:  const timeband = memory?.timeband ?? str(replay?.timeband);
+src/spatial/narrative/resolveNarrativeReplay.ts:80:    tone: memory?.color ?? str(replay?.color),
+src/spatial/narrative/NarrativeReplayOverlay.tsx:17:  if (mode !== "replay" || !selectedStarId || !narrative) return null;
+src/spatial/xr-runtime/resolveXRCameraRigState.ts:9:  profile: "focus" | "replay";
+src/spatial/xr-runtime/resolveXRCameraRigState.ts:36:  const profile = mode === "replay" ? "replay" : "focus";
+src/spatial/xr-runtime/resolveXRCameraRigState.ts:38:    mode === "replay"
+src/spatial/xr-runtime/resolveXRCameraRigState.ts:69:      ? "hold near subject, tighten depth, preserve replay framing"
+src/spatial/xr-runtime/resolveXRCameraRigState.ts:70:      : "allow slow spatial drift around focus node";
+src/spatial/xr-runtime/resolveXRCameraRigState.ts:73:    profile === "replay"
+src/spatial/xr-runtime/resolveXRCameraRigState.ts:88:    "focus-depth",
+src/spatial/xr-runtime/resolveXRCameraRigState.ts:89:    profile === "replay" ? "replay-presence" : "lifemap-presence",
+src/spatial/xr-renderer/resolveWebXRRendererHandoff.ts:10:  runtimeMode: "focus" | "replay";
+src/spatial/xr-renderer/resolveWebXRRendererHandoff.ts:37:  const runtimeMode = mode === "replay" ? "replay" : "focus";
+src/spatial/xr-renderer/resolveWebXRRendererHandoff.ts:57:    runtimeMode === "replay"
+src/spatial/xr-renderer/resolveWebXRRendererHandoff.ts:58:      ? "xr-replay-renderer"
+src/spatial/xr-renderer/resolveWebXRRendererHandoff.ts:59:      : "xr-focus-renderer";
+src/spatial/xr-renderer/resolveWebXRRendererHandoff.ts:69:    runtimeMode === "replay" ? "replay-traversal-bind" : "focus-traversal-bind",
+src/spatial/xr-renderer/resolveWebXRRendererHandoff.ts:82:    title: `WebXR Renderer Handoff ${runtimeMode === "replay" ? "Replay" : "Focus"}`,
+src/spatial/narrator.disabled.1774173247/resolveNarratorOrchestration.ts:11:  sceneMode: "focus" | "replay";
+src/spatial/narrator.disabled.1774173247/resolveNarratorOrchestration.ts:33:  sceneMode: "focus" | "replay",
+src/spatial/narrator.disabled.1774173247/resolveNarratorOrchestration.ts:37:  if (sceneMode === "replay") return "witness";
+src/spatial/narrator.disabled.1774173247/resolveNarratorOrchestration.ts:57:  const sceneMode = mode === "replay" ? "replay" : "focus";
+src/spatial/narrator.disabled.1774173247/resolveNarratorOrchestration.ts:73:    sceneMode === "replay"
+src/spatial/narrator.disabled.1774173247/resolveNarratorOrchestration.ts:74:      ? `Stay with ${memory.title}; this is a replay-bound moment.`
+src/spatial/narrator.disabled.1774173247/resolveNarratorOrchestration.ts:83:      ? "The narrator should observe, anchor, and not over-direct the replay."
+src/spatial/narrator.disabled.1774173247/buildSpatialNarratorExport.ts:40:      ((input.snapshot as ({ label: "default", sceneMode?: string } | null)?.sceneMode ?? "home"),
+src/spatial/traversal/resolveImmersiveReplayTraversal.ts:46:      (mode === "replay" ? 12 : 0)
+src/spatial/traversal/resolveImmersiveReplayTraversal.ts:57:  const modeLabel = mode === "replay" ? "Replay Traversal" : "Focus Traversal";
+src/spatial/traversal/resolveImmersiveReplayTraversal.ts:60:    mode === "replay"
+src/spatial/traversal/resolveImmersiveReplayTraversal.ts:62:      : "focus → cluster → orbit → return";
+src/spatial/traversal/resolveImmersiveReplayTraversal.ts:65:    mode === "replay"
+src/spatial/traversal/resolveImmersiveReplayTraversal.ts:66:      ? "Advance through the replay path in short anchored steps and keep narrative framing stable."
+src/spatial/traversal/resolveImmersiveReplayTraversal.ts:67:      : "Traverse outward from the focus node, inspect adjacency, then collapse back to anchor.";
+src/spatial/traversal/resolveImmersiveReplayTraversal.ts:87:      detail: input?.primaryAction ?? "focus advance",
+src/spatial/merge/buildBatchDiffAudit.ts:1:import { getMemoryDataset } from "@/spatial/replay/resolveReplayScene";
+src/spatial/merge/buildBatchDiffAudit.ts:24:      emotion: "focused",
+src/spatial/memory/MemorySphereOverlay.tsx:22:  if (mode === "replay") return null;
+src/spatial/memory/resolveMemorySphere.ts:1:import { resolveMemoryNodeById } from "@/spatial/replay/resolveReplayScene";
+src/spatial/lib/tier1Camera.ts:4:  | "home"
+src/spatial/lib/tier1Camera.ts:8:  | "lifemap"
+src/spatial/lib/tier1Camera.ts:9:  | "focus"
+src/spatial/lib/tier1Camera.ts:10:  | "replay"
+src/spatial/lib/tier1Camera.ts:20:  home: {
+src/spatial/lib/tier1Camera.ts:40:  lifemap: {
+src/spatial/lib/tier1Camera.ts:45:  focus: {
+src/spatial/lib/tier1Camera.ts:50:  replay: {
+src/spatial/types.ts:3:export type SceneMode = "home" | "lifemap" | "replay" | "ground";
+src/spatial/scene/Starfield.tsx.tmp:106:    phase === "home"
+src/spatial/scene/MemorySphere.tsx:7:  const scale = mode === "lifemap" ? 0.55 : 1;
+src/spatial/scene/MemorySphere.tsx:8:  const opacity = mode === "lifemap" ? 0.1 : 0.2;
+src/spatial/scene/LifeMap.tsx:168:    if (phase === "return_home_descent") return 1 - progress * 0.9;
+src/spatial/scene/LifeMap.tsx:169:    if (phase === "return_home_settle") return 0.1 * (1 - progress);
+src/spatial/scene/LifeMap.tsx:173:  const interactive = phase === "lifemap";
+src/spatial/scene/LifeMap.tsx:181:          (phase === "focus_lock" ||
+src/spatial/scene/LifeMap.tsx:182:            phase === "focus_travel" ||
+src/spatial/scene/LifeMap.tsx:183:            phase === "focus_arrive" ||
+src/spatial/scene/LifeMap.tsx:184:            phase === "replay" ||
+src/spatial/scene/LifeMap.tsx:185:            phase === "return_from_replay" ||
+src/spatial/scene/LifeMap.tsx:186:            phase === "return_to_lifemap");
+src/spatial/scene/FocusShellOverlay.tsx:19:    <div className="urai-overlay urai-overlay--focus">
+src/spatial/scene/FocusShellOverlay.tsx:20:      <div className="urai-overlay__card urai-overlay__card--focus">
+src/spatial/scene/SpatialScene.tsx.broken.20260316-135713:85:    if (mode === "home") {
+src/spatial/scene/SpatialScene.tsx.broken.20260316-135713:88:    } else if (mode === "lifemap") {
+src/spatial/scene/SpatialScene.tsx.broken.20260316-135713:91:    } else if ((mode === "focus" || mode === "replay") && selectedStarId) {
+src/spatial/scene/SpatialScene.tsx.broken.20260316-135713:93:      target.set(sx * 0.28, sy + (mode === "replay" ? 8 : 12), sz + (mode === "replay" ? 18 : 30));
+src/spatial/scene/SpatialScene.tsx.broken.20260316-135713:115:    const base = mode === "replay" ? 34 : mode === "focus" ? 26 : 18;
+src/spatial/scene/SpatialScene.tsx.broken.20260316-135713:116:    const pulse = Math.sin(clock.elapsedTime * (mode === "replay" ? 1.8 : 1.1)) * 1.3;
+src/spatial/scene/SpatialScene.tsx.broken.20260316-135713:161:    if (mode === "home") enterLifeMap();
+src/spatial/scene/SpatialScene.tsx.broken.20260316-135713:192:  const replayEnteredAt = useSceneStore((state) => state.replayEnteredAt);
+src/spatial/scene/SpatialScene.tsx.broken.20260316-135713:201:    mode === "home"
+src/spatial/scene/SpatialScene.tsx.broken.20260316-135713:203:      : mode === "lifemap"
+src/spatial/scene/SpatialScene.tsx.broken.20260316-135713:205:        : mode === "focus"
+src/spatial/scene/SpatialScene.tsx.broken.20260316-135713:226:            mode === "replay"
+src/spatial/scene/SpatialScene.tsx.broken.20260316-135713:228:              : mode === "focus"
+src/spatial/scene/SpatialScene.tsx.broken.20260316-135713:249:            {mode === "home" && "Enter LifeMap to select"}
+src/spatial/scene/SpatialScene.tsx.broken.20260316-135713:250:            {mode === "lifemap" && "Click any star to focus"}
+src/spatial/scene/SpatialScene.tsx.broken.20260316-135713:251:            {mode === "focus" && "Focused memory locked"}
+src/spatial/scene/SpatialScene.tsx.broken.20260316-135713:252:            {mode === "replay" && "Replay shell active"}
+src/spatial/scene/SpatialScene.tsx.broken.20260316-135713:260:          {selectedStarId && mode !== "replay" ? (
+src/spatial/scene/SpatialScene.tsx.broken.20260316-135713:294:            {replayEnteredAt ? (
+src/spatial/scene/SpatialScene.tsx.broken.20260316-135713:295:              <div><strong>Replay Entered:</strong> {new Date(replayEnteredAt).toLocaleTimeString()}</div>
+src/spatial/scene/SpatialScene.tsx.broken.20260316-135713:372:      {mode === "replay" ? <div aria-hidden className="urai-replay-grade" /> : null}
+src/spatial/scene/SpatialScene.tsx:8:type ScenePhase = "home" | "ascent" | "lifemap" | "focus" | "replay";
+src/spatial/scene/SpatialScene.tsx:110:    if (phase === "home") {
+src/spatial/scene/SpatialScene.tsx:126:    } else if (phase === "lifemap") {
+src/spatial/scene/SpatialScene.tsx:134:    } else if (phase === "focus" && selected) {
+src/spatial/scene/SpatialScene.tsx:142:    } else if (phase === "replay" && selected) {
+src/spatial/scene/SpatialScene.tsx:208:    groupRef.current.visible = phase === "home" || phase === "ascent";
+src/spatial/scene/SpatialScene.tsx:270:  const dimOthers = (phase === "focus" || phase === "replay") && selected && !isSelected;
+src/spatial/scene/SpatialScene.tsx:340:  if (!selected || (phase !== "focus" && phase !== "replay")) return null;
+src/spatial/scene/SpatialScene.tsx:342:  const haloZ = phase === "focus" ? selected.position[2] - 2.6 : selected.position[2] - 5.4;
+src/spatial/scene/SpatialScene.tsx:343:  const haloY = phase === "focus" ? selected.position[1] : selected.position[1] - 0.12;
+src/spatial/scene/SpatialScene.tsx:349:        <meshBasicMaterial color={"#6f94c9"} transparent opacity={phase === "focus" ? 0.18 : 0.12} depthWrite={false} />
+src/spatial/scene/SpatialScene.tsx:351:      {phase === "replay" ? (
+src/spatial/scene/SpatialScene.tsx:384:            phase === "replay"
+src/spatial/scene/SpatialScene.tsx:392:            {phase === "home" ? "HOME" :
+src/spatial/scene/SpatialScene.tsx:394:             phase === "lifemap" ? "LIFEMAP" :
+src/spatial/scene/SpatialScene.tsx:395:             phase === "focus" ? "FOCUS" :
+src/spatial/scene/SpatialScene.tsx:399:            {phase === "home" && "Enter or click empty space to begin ascent."}
+src/spatial/scene/SpatialScene.tsx:401:            {phase === "lifemap" && "Click a star to isolate it. Esc returns home."}
+src/spatial/scene/SpatialScene.tsx:402:            {phase === "focus" && selected && `${selected.label} — ${selected.summary}`}
+src/spatial/scene/SpatialScene.tsx:403:            {phase === "replay" && selected && `Replay chamber anchored to ${selected.label}.`}
+src/spatial/scene/SpatialScene.tsx:405:          {phase === "home" ? (
+src/spatial/scene/SpatialScene.tsx:425:          {(phase === "lifemap" || phase === "focus" || phase === "replay") ? (
+src/spatial/scene/SpatialScene.tsx:427:              Esc = home
+src/spatial/scene/SpatialScene.tsx:428:              {phase === "focus" ? " · Enter or R = replay" : ""}
+== CAMERA / DEPTH WIRES ==
+src/spatial/persistence/spatialPersistenceStore.ts:6:  selectedStarId: string | null;
+src/spatial/persistence/spatialPersistenceStore.ts:7:  selectedStarLabel: string | null;
+src/spatial/persistence/spatialPersistenceStore.ts:17:    selectedStarId?: string | null;
+src/spatial/persistence/spatialPersistenceTypes.ts:46:  selectedStarId: string | null;
+src/spatial/persistence/spatialPersistenceTypes.ts:47:  selectedStarLabel: string | null;
+src/spatial/persistence/spatialPersistenceTypes.ts:64:  selectedStarId: null,
+src/spatial/persistence/spatialPersistenceTypes.ts:65:  selectedStarLabel: null,
+src/spatial/persistence/spatialPersistenceValidation.ts:15:    "selectedStarId" in v &&
+src/spatial/persistence/spatialPersistenceValidation.ts:16:    "selectedStarLabel" in v &&
+src/spatial/persistence/PersistenceSyncOverlay.tsx:9:  const selectedStarId = useSceneStore((s) => s.selectedStarId);
+src/spatial/persistence/PersistenceSyncOverlay.tsx:12:    () => resolvePersistenceSyncStateById(selectedStarId),
+src/spatial/persistence/PersistenceSyncOverlay.tsx:13:    [selectedStarId]
+src/spatial/persistence/PersistenceSyncOverlay.tsx:16:  if (!selectedStarId || !state) return null;
+src/spatial/persistence/SpatialPersistenceBridge.tsx:12:  const selectedStarId = useSceneStore((s) => s.selectedStarId);
+src/spatial/persistence/SpatialPersistenceBridge.tsx:16:    const star = resolveStarById(selectedStarId);
+src/spatial/persistence/SpatialPersistenceBridge.tsx:22:      selectedStarId: selectedStarId ?? null,
+src/spatial/persistence/SpatialPersistenceBridge.tsx:23:      selectedStarLabel: star?.label ?? null,
+src/spatial/persistence/SpatialPersistenceBridge.tsx:32:  }, [mode, selectedStarId, xrState]);
+src/spatial/persistence/buildSpatialPersistenceSnapshot.ts:14:  selectedStarId: SelectedStarLike;
+src/spatial/persistence/buildSpatialPersistenceSnapshot.ts:23:function getSelectedStarId(selectedStarId: SelectedStarLike): string | null {
+src/spatial/persistence/buildSpatialPersistenceSnapshot.ts:24:  if (!selectedStarId) return null;
+src/spatial/persistence/buildSpatialPersistenceSnapshot.ts:25:  if (typeof selectedStarId === "string") return selectedStarId;
+src/spatial/persistence/buildSpatialPersistenceSnapshot.ts:26:  return selectedStarId.id ?? null;
+src/spatial/persistence/buildSpatialPersistenceSnapshot.ts:29:function getSelectedStarLabel(selectedStarId: SelectedStarLike): string | null {
+src/spatial/persistence/buildSpatialPersistenceSnapshot.ts:30:  if (!selectedStarId || typeof selectedStarId === "string") return null;
+src/spatial/persistence/buildSpatialPersistenceSnapshot.ts:31:  return selectedStarId.label ?? selectedStarId.title ?? null;
+src/spatial/persistence/buildSpatialPersistenceSnapshot.ts:35:  const selectedStarId = getSelectedStarId(input.selectedStarId);
+src/spatial/persistence/buildSpatialPersistenceSnapshot.ts:36:  const selectedStarLabel = getSelectedStarLabel(input.selectedStarId);
+src/spatial/persistence/buildSpatialPersistenceSnapshot.ts:42:    selectedStarId,
+src/spatial/persistence/buildSpatialPersistenceSnapshot.ts:43:    selectedStarLabel,
+src/spatial/persistence/buildSpatialPersistenceSnapshot.ts:56:      hasSelection: Boolean(selectedStarId),
+src/spatial/cinematic/CinematicReplayOverlay.tsx:8:  const selectedStarId = useSceneStore((s) => s.selectedStarId);
+src/spatial/cinematic/CinematicReplayOverlay.tsx:11:    () => resolveCinematicReplayById(selectedStarId ?? undefined),
+src/spatial/cinematic/CinematicReplayOverlay.tsx:12:    [selectedStarId]
+src/spatial/ar/resolveARPlacementStateById.ts:21:  selectedStar: SpatialStarLike,
+src/spatial/ar/resolveARPlacementStateById.ts:26:  const starId = selectedStar?.id ?? null;
+src/spatial/ar/resolveARPlacementStateById.ts:28:    selectedStar?.label ??
+src/spatial/ar/resolveARPlacementStateById.ts:29:    selectedStar?.title ??
+src/spatial/ar/resolveARPlacementStateById.ts:30:    selectedStar?.name ??
+src/spatial/ar/ARPlacementOverlay.tsx:10:  const selectedStarId = useSceneStore((s) => s.selectedStarId);
+src/spatial/ar/ARPlacementOverlay.tsx:12:  const selectedStar = resolveStarByIdSafe(selectedStarId ?? undefined);
+src/spatial/ar/ARPlacementOverlay.tsx:15:    () => resolveARPlacementStateById(selectedStar ?? undefined, mode),
+src/spatial/ar/ARPlacementOverlay.tsx:16:    [selectedStar, mode]
+src/spatial/lenses.disabled.1774173247/buildSpatialTimelineLenses.ts:9:  if (compareSet.summary.sceneModeChanged && compareSet.summary.selectedStarChanged) ({ label: "default",
+src/spatial/lenses.disabled.1774173247/buildSpatialTimelineLenses.ts:17:  if (compareSet.summary.selectedStarChanged) ({ label: "default",
+src/spatial/lenses.disabled.1774173247/buildSpatialTimelineLenses.ts:38:    compareSet.summary.selectedStarChanged
+src/spatial/polish/SpatialPolishOverlay.tsx:14:  const selectedStarId = useSceneStore((s) => s.selectedStarId);
+src/spatial/diffs/buildSpatialStoryBundleDiff.ts:31:  const selectedStarChanged =
+src/spatial/diffs/buildSpatialStoryBundleDiff.ts:32:    (baseBundle.snapshot.selectedStarId ?? null) !==
+src/spatial/diffs/buildSpatialStoryBundleDiff.ts:33:    (targetBundle.snapshot.selectedStarId ?? null);
+src/spatial/diffs/buildSpatialStoryBundleDiff.ts:51:    selectedStarChanged ? "selection changed" : "selection stable",
+src/spatial/diffs/buildSpatialStoryBundleDiff.ts:65:    selectedStarChanged,
+src/spatial/diffs/spatialStoryBundleDiffTypes.ts:7:  selectedStarChanged: boolean;
+src/spatial/ingest/ExternalIngestOverlay.tsx:8:  const selectedStarId = useSceneStore((s) => s.selectedStarId);
+src/spatial/ingest/ExternalIngestOverlay.tsx:11:    () => resolveExternalIngestStateById(selectedStarId ?? undefined),
+src/spatial/ingest/ExternalIngestOverlay.tsx:12:    [selectedStarId]
+src/spatial/data/memoryDataset.ts:45:      "Once it had a name, it stopped being fog. It became something I could return to, refine, and build around.",
+src/spatial/state/toCanonicalSelectedStar.ts:1:import type { CanonicalSelectedStar } from "./selectedStarContract";
+src/spatial/state/toCanonicalSelectedStar.ts:2:import { getSelectedStarId } from "./selectedStarContract";
+src/spatial/state/sceneStore.ts:7:  selectedStarId: string | null;
+src/spatial/state/sceneStore.ts:8:  hoveredStarId: string | null;
+src/spatial/state/sceneStore.ts:25:  selectedStarId: null,
+src/spatial/state/sceneStore.ts:26:  hoveredStarId: null,
+src/spatial/state/sceneStore.ts:44:      selectedStarId: id,
+src/spatial/state/sceneStore.ts:48:    const { selectedStarId } = get();
+src/spatial/state/sceneStore.ts:49:    set({ mode: selectedStarId ? "replay" : "lifemap" });
+src/spatial/state/sceneStore.ts:53:    const { selectedStarId } = get();
+src/spatial/state/sceneStore.ts:54:    set({ mode: selectedStarId ? "focus" : "lifemap" });
+src/spatial/state/sceneStore.ts:57:  setSelectedStarId: (id) => set({ selectedStarId: id }),
+src/spatial/state/sceneStore.ts:58:  setHoveredStarId: (id) => set({ hoveredStarId: id }),
+src/spatial/causal/CausalInsightOverlay.tsx:8:  const selectedStarId = useSceneStore((s) => s.selectedStarId);
+src/spatial/causal/CausalInsightOverlay.tsx:11:    () => resolveCausalInsightById(selectedStarId ?? undefined),
+src/spatial/causal/CausalInsightOverlay.tsx:12:    [selectedStarId]
+src/spatial/review/buildSpatialReviewDeck.ts:19:    selectedStarId: input.entry.bundle.snapshot.selectedStarId ?? null,
+src/spatial/review/spatialReviewDeckTypes.ts:10:  selectedStarId: string | null;
+src/spatial/world/World.tsx:10:      <fog attach="fog" args={["#000814", 14, 34]} />
+src/spatial/export/resolveSceneExportManifest.ts:67:    "selected-star-id",
+src/spatial/export/resolveSceneExportManifest.ts:68:    "camera-anchor",
+src/spatial/export/SceneExportOverlay.tsx:8:  const selectedStarId = useSceneStore((s) => s.selectedStarId);
+src/spatial/export/SceneExportOverlay.tsx:12:    () => resolveSceneExportManifestById(selectedStarId ?? undefined, mode),
+src/spatial/export/SceneExportOverlay.tsx:13:    [selectedStarId, mode]
+src/spatial/clustering/MemoryClusterOverlay.tsx:8:  const selectedStarId = useSceneStore((s) => s.selectedStarId);
+src/spatial/clustering/MemoryClusterOverlay.tsx:11:    () => resolveMemoryClusterById(selectedStarId ?? undefined),
+src/spatial/clustering/MemoryClusterOverlay.tsx:12:    [selectedStarId]
+src/spatial/unity/unityRuntimePayloadSample.ts:7:  selectedStarId: "star-1",
+src/spatial/unity/unityRuntimePayloadSample.ts:8:  selectedObjectId: null,
+src/spatial/unity/resolveUnityAdapterState.ts:72:      ? "Replay payload is ready for Unity cinematic sequencing using anchor, camera, and narrative channels."
+src/spatial/unity/resolveUnityAdapterState.ts:78:    "camera-rig",
+src/spatial/unity/UnityAdapterOverlay.tsx:11:  const selectedStarId = useSceneStore((s) => s.selectedStarId);
+src/spatial/unity/UnityAdapterOverlay.tsx:14:    () => resolveUnityAdapterStateById(selectedStarId ?? "", mode),
+src/spatial/unity/UnityAdapterOverlay.tsx:15:    [selectedStarId, mode]
+src/spatial/unity/UnityAdapterOverlay.tsx:19:    () => exportUnityManifestById(selectedStarId ?? "", mode),
+src/spatial/unity/UnityAdapterOverlay.tsx:20:    [selectedStarId, mode]
+src/spatial/unity/UnityAdapterOverlay.tsx:23:  if (!selectedStarId || !state || !manifest) return null;
+src/spatial/unity/buildUnityRuntimePayload.ts:7:  selectedStarId: string | null,
+src/spatial/unity/buildUnityRuntimePayload.ts:10:  const star = resolveStarById(selectedStarId);
+src/spatial/unity/buildUnityRuntimePayload.ts:16:    selectedStarId: selectedStarId ?? null,
+src/spatial/unity/buildUnityRuntimePayload.ts:17:    selectedStarLabel: star?.label ?? null,
+src/spatial/release/spatialReleaseTypes.ts:12:  selectedStarId: string | null;
+src/spatial/xr/ArHitTestBridge.tsx:29:  const camera = useThree((s) => s.camera as any);
+src/spatial/xr/ArHitTestBridge.tsx:120:        x: camera?.position?.x ?? 0,
+src/spatial/xr/ArHitTestBridge.tsx:121:        y: (camera?.position?.y ?? 0) - 1.25,
+src/spatial/xr/ArHitTestBridge.tsx:122:        z: (camera?.position?.z ?? 0) - 2,
+src/spatial/xr/resolveXRBridgeState.ts:48:      ? "Replay staging is now mappable into immersive camera and presence layers."
+src/spatial/xr/resolveXRBridgeState.ts:52:    "camera anchor",
+src/spatial/xr/XRBridgeOverlay.tsx:10:  const selectedStarId = useSceneStore((s) => s.selectedStarId);
+src/spatial/xr/XRBridgeOverlay.tsx:13:    () => resolveXRBridgeStateById(selectedStarId ?? "", mode),
+src/spatial/xr/XRBridgeOverlay.tsx:14:    [selectedStarId, mode]
+src/spatial/xr/XRBridgeOverlay.tsx:17:  if (!selectedStarId || !xr) return null;
+src/spatial/ui/SpatialCuratedDeckClosureCertificatePanel.tsx:130:            No active closure-certificate items for the selected curated deck vault entry.
+src/spatial/ui/SpatialCuratedDeckDiffPanel.tsx.broken.1774173044:123:          label="selected star shifts"
+src/spatial/ui/SpatialCuratedDeckDiffPanel.tsx.broken.1774173044:124:          value={diff ? String(diff.selectedStarShiftCount) : "n/a"}
+src/spatial/ui/SpatialCuratedDeckReviewTicketPanel.tsx:116:            No required review items for the selected curated deck vault entry.
+src/spatial/ui/SpatialCuratedDeckDestructionAuthorizationPanel.tsx:130:            No active destruction-authorization items for the selected curated deck vault entry.
+src/spatial/ui/SpatialCuratedDeckDriftPanel.tsx.broken.1774173044:119:        <MetricChip label="star" value={String(drift.selectedStarShiftTotal)} />
+src/spatial/ui/SpatialCuratedDeckDriftPanel.tsx.broken.1774173044:162:        <MetricChip label="star" value={String(step.selectedStarShiftCount)} />
+src/spatial/ui/SpatialCuratedDeckServiceWindowPanel.tsx:118:            No required service-window checkpoints for the selected curated deck vault entry.
+src/spatial/ui/SpatialVoicePlaybackPanel.tsx:111:  const selectedVoice = useMemo(
+src/spatial/ui/SpatialVoicePlaybackPanel.tsx:139:    utterance.voice = selectedVoice;
+src/spatial/ui/SpatialCuratedDeckChangeLedgerPanel.tsx:127:                  <MetricChip label="star" value={String(row.selectedStarShiftCount)} />
+src/spatial/ui/SpatialCuratedDeckVaultPanel.tsx:236:        {activeVaultEntry?.deck.summaryText ?? "No curated deck vault entry selected."}
+src/spatial/ui/SpatialCuratedDeckPurgeReadinessPanel.tsx:116:            No active purge-readiness checks for the selected curated deck vault entry.
+src/spatial/ui/SpatialStoryReviewDeckPanel.tsx:98:          star: {activeCard?.selectedStarId ?? "none"}
+src/spatial/ui/SpatialCuratedDeckSlaPanel.tsx:115:            No active SLA signals for the selected curated deck vault entry.
+src/spatial/ui/SpatialCuratedDeckBreachWatchPanel.tsx:129:            No active breach-watch items for the selected curated deck vault entry.
+src/spatial/ui/SpatialCuratedDeckExportPanel.tsx:74:          `Selected star: ${card.selectedStarId ?? "none"}\n` +
+src/spatial/ui/SpatialCuratedDeckQueuePanel.tsx:115:            No active queue reasons for the selected curated deck vault entry.
+src/spatial/ui/SpatialCuratedDeckArchiveDispositionPanel.tsx:116:            No active archive-disposition signals for the selected curated deck vault entry.
+src/spatial/ui/SpatialCuratedDeckDispatchPanel.tsx:115:            No required dispatch tasks for the selected curated deck vault entry.
+src/spatial/ui/SpatialCuratedDeckReopenWatchPanel.tsx:115:            No active reopen-watch triggers for the selected curated deck vault entry.
+src/spatial/ui/SpatialCuratedDeckRetentionHorizonPanel.tsx:116:            No active retention-horizon checkpoints for the selected curated deck vault entry.
+src/spatial/ui/SpatialCuratedDeckDestructionExecutionGatePanel.tsx:130:            No active destruction-authorization items for the selected curated deck vault entry.
+src/spatial/ui/SpatialCuratedDeckVerdictPanel.tsx:122:            No active verdict reasons for the selected curated deck vault entry.
+src/spatial/ui/SpatialCuratedDeckAnomalyPanel.tsx:111:            No active anomaly flags for the selected curated deck vault entry.
+src/spatial/ui/SpatialCuratedDeckIncidentResponsePanel.tsx:130:            No active incident-response items for the selected curated deck vault entry.
+src/spatial/ui/SpatialCuratedDeckImportPanel.tsx:169:              `Selected star: ${activeCard.selectedStarId ?? "none"}`,
+src/spatial/ui/SpatialCuratedDeckRetentionLifecyclePanel.tsx:116:            No active retention-lifecycle signals for the selected curated deck vault entry.
+src/spatial/ui/SpatialCuratedDeckSchedulePanel.tsx:115:            No required schedule checkpoints for the selected curated deck vault entry.
+src/spatial/ui/SpatialCuratedDeckNeighborDiffPanel.tsx:148:          value={diff ? String(diff.selectedStarShiftCount) : "n/a"}
+src/spatial/ui/SpatialCuratedDeckActionPanel.tsx:115:            No active operator action items for the selected curated deck vault entry.
+src/spatial/ui/SpatialCuratedDeckStabilityPanel.tsx:102:        <MetricChip label="star" value={String(stability.selectedStarShiftTotal)} />
+src/spatial/ui/SpatialCuratedDeckAnchorPanel.tsx:146:        <MetricChip label="star" value={diff ? String(diff.selectedStarShiftCount) : "n/a"} />
+src/spatial/ui/SpatialCuratedDeckRecoveryGatePanel.tsx:119:            No active recovery-gate conditions for the selected curated deck vault entry.
+src/spatial/ui/SpatialStoryBundleDiffPanel.tsx:98:          value={diff ? (diff.selectedStarChanged ? "yes" : "no") : "n/a"}
+src/spatial/data-import/MemoryImportOverlay.tsx:8:  const selectedStarId = useSceneStore((s) => s.selectedStarId);
+src/spatial/data-import/MemoryImportOverlay.tsx:11:    () => resolveMemoryImportStateById(selectedStarId ?? undefined),
+src/spatial/data-import/MemoryImportOverlay.tsx:12:    [selectedStarId]
+src/spatial/compare.disabled.1774173247/buildSpatialCompareSet.ts:26:    selectedStarId: input.snapshot.selectedStarId,
+src/spatial/compare.disabled.1774173247/buildSpatialCompareSet.ts:41:    selectedStarChanged:
+src/spatial/compare.disabled.1774173247/buildSpatialCompareSet.ts:42:      (baseline.selectedStarId ?? null) !== (target.selectedStarId ?? null),
+src/spatial/compare.disabled.1774173247/spatialCompareTypes.ts:9:  selectedStarId: string | null;
+src/spatial/compare.disabled.1774173247/spatialCompareTypes.ts:15:  selectedStarChanged?: boolean;
+src/spatial/effects/CinematicAtmosphere.tsx:7:      <fog attach="fog" args={["#020817", 2.5, 12]} />
+src/spatial/effects/CinematicIdleMotion.tsx:16:  const { camera } = useThree();
+src/spatial/effects/CinematicIdleMotion.tsx:17:  const base = useMemo(() => camera.position.clone(), [camera]);
+src/spatial/effects/CinematicIdleMotion.tsx:27:    camera.position.lerp(target, 0.035);
+src/spatial/effects/CinematicFramingBias.tsx:7:  const { camera } = useThree();
+src/spatial/effects/CinematicFramingBias.tsx:10:    if (camera.position.z > 2 && camera.position.y < 3) {
+src/spatial/effects/CinematicFramingBias.tsx:11:      const target = new Vector3(-0.55, 0.16, camera.position.z);
+src/spatial/effects/CinematicFramingBias.tsx:12:      camera.position.lerp(target, 0.035);
+src/spatial/effects/CinematicFramingBias.tsx:13:      camera.lookAt(-0.08, -0.08, 0);
+src/spatial/replay/ReplayOverlay.tsx:18:function buildReplaySteps(selectedStarId: SelectedStar): string[] {
+src/spatial/replay/ReplayOverlay.tsx:20:    str(selectedStarId?.title) ??
+src/spatial/replay/ReplayOverlay.tsx:21:    str(selectedStarId?.label) ??
+src/spatial/replay/ReplayOverlay.tsx:22:    str(selectedStarId?.name) ??
+src/spatial/replay/ReplayOverlay.tsx:32:function getReplayGlow(selectedStarId: SelectedStar): string {
+src/spatial/replay/ReplayOverlay.tsx:34:    str(selectedStarId?.glow) ??
+src/spatial/replay/ReplayOverlay.tsx:35:    str(selectedStarId?.color) ??
+src/spatial/replay/ReplayOverlay.tsx:36:    str(selectedStarId?.auraColor) ??
+src/spatial/replay/ReplayOverlay.tsx:41:function getReplayMeta(selectedStarId: SelectedStar): { title: string; subtitle: string } {
+src/spatial/replay/ReplayOverlay.tsx:44:      str(selectedStarId?.title) ??
+src/spatial/replay/ReplayOverlay.tsx:45:      str(selectedStarId?.label) ??
+src/spatial/replay/ReplayOverlay.tsx:46:      str(selectedStarId?.name) ??
+src/spatial/replay/ReplayOverlay.tsx:49:      str(selectedStarId?.subtitle) ??
+src/spatial/replay/ReplayOverlay.tsx:50:      str(selectedStarId?.description) ??
+src/spatial/replay/ReplayOverlay.tsx:51:      "Replaying the selected memory thread.",
+src/spatial/replay/ReplayOverlay.tsx:56:  const selectedStarRaw = useSceneStore((s: any) => s.selectedStarId ?? null);
+src/spatial/replay/ReplayOverlay.tsx:63:  const selectedStarId = useMemo<SelectedStar>(() => {
+src/spatial/replay/ReplayOverlay.tsx:64:    return asRecord(selectedStarRaw);
+src/spatial/replay/ReplayOverlay.tsx:65:  }, [selectedStarRaw]);
+src/spatial/replay/ReplayOverlay.tsx:67:  const steps = useMemo(() => buildReplaySteps(selectedStarId), [selectedStarId]);
+src/spatial/replay/ReplayOverlay.tsx:68:  const glow = useMemo(() => getReplayGlow(selectedStarId), [selectedStarId]);
+src/spatial/replay/ReplayOverlay.tsx:69:  const meta = useMemo(() => getReplayMeta(selectedStarId), [selectedStarId]);
+src/spatial/replay/ReplayOverlay.tsx:110:            className="rounded-2xl border border-white/10 bg-white/10 px-4 py-2 text-sm text-white/90 transition hover:bg-white/15"
+src/spatial/replay/ReplayOverlay.tsx:117:            className="rounded-2xl border border-white/10 bg-white/10 px-4 py-2 text-sm text-white/90 transition hover:bg-white/15"
+src/spatial/replay/PHASE7_TODO.md:9:- selectedStarId -> memory node -> replay scene contract created
+src/spatial/replay/PHASE7_TODO.md:14:- wire SpatialScene / replay UI to resolveReplaySceneFromSelectedStar(selectedStarId)
+src/spatial/replay/ReplayContractOverlay.tsx:19:  const selectedStarId = useSceneStore((s: any) => s.selectedStarId ?? null);
+src/spatial/replay/ReplayContractOverlay.tsx:23:    const starRecord = asRecord(selectedStarId);
+src/spatial/replay/ReplayContractOverlay.tsx:32:  }, [replay, selectedStarId]);
+src/spatial/replay/ReplayContractOverlay.tsx:36:    const starRecord = asRecord(selectedStarId);
+src/spatial/replay/ReplayContractOverlay.tsx:43:      "Reviewing the selected memory."
+src/spatial/replay/ReplayContractOverlay.tsx:45:  }, [replay, selectedStarId]);
+src/spatial/replay/replayModel.ts:2:import type { SelectedStar } from "../state/selectedStarContract";
+src/spatial/replay/replayModel.ts:16:export function buildReplayModel(selectedStarId: SelectedStar): ReplayModel {
+src/spatial/replay/replayModel.ts:17:  const star = toCanonicalSelectedStar(selectedStarId);
+src/spatial/replay/replayModel.ts:36:export function getReplayAccentColor(selectedStarId: SelectedStar): string {
+src/spatial/replay/replayModel.ts:40:export function getReplayKeywords(selectedStarId: SelectedStar): string[] {
+src/spatial/replay/replayModel.ts:41:  const star = toCanonicalSelectedStar(selectedStarId);
+src/spatial/replay/resolveReplayScene.ts:55:  selectedStarId: SelectedStarLike,
+== OVERLAYS / FLOW ==
+src/spatial/persistence/spatialPersistenceIO.ts:6:  if (typeof window === "undefined") return;
+src/spatial/persistence/spatialPersistenceIO.ts:16:  if (typeof window === "undefined") return null;
+src/spatial/persistence/spatialPersistenceIO.ts:19:    if (!raw) return null;
+src/spatial/persistence/spatialPersistenceIO.ts:20:    return JSON.parse(raw) as SpatialPersistenceSnapshot;
+src/spatial/persistence/spatialPersistenceIO.ts:22:    return null;
+src/spatial/persistence/spatialPersistenceIO.ts:27:  if (typeof window === "undefined") return;
+src/spatial/persistence/resolvePersistenceSyncState.ts:19:  if (!id) return undefined;
+src/spatial/persistence/resolvePersistenceSyncState.ts:22:  if (!memory) return undefined;
+src/spatial/persistence/resolvePersistenceSyncState.ts:26:  return {
+src/spatial/persistence/buildPersistenceSyncPlan.ts:19:  return Math.max(min, Math.min(max, value));
+src/spatial/persistence/buildPersistenceSyncPlan.ts:50:  return {
+src/spatial/persistence/spatialPersistenceStore.ts:30:  if (typeof window === "undefined") return;
+src/spatial/persistence/spatialPersistenceStore.ts:40:  if (typeof window === "undefined") return null;
+src/spatial/persistence/spatialPersistenceStore.ts:44:    if (!raw) return null;
+src/spatial/persistence/spatialPersistenceStore.ts:45:    return JSON.parse(raw) as SpatialPersistenceSnapshot;
+src/spatial/persistence/spatialPersistenceStore.ts:47:    return null;
+src/spatial/persistence/spatialPersistenceStore.ts:52:  if (typeof window === "undefined") return;
+src/spatial/persistence/spatialPersistenceValidation.ts:7:  if (!value || typeof value !== "object") return false;
+src/spatial/persistence/spatialPersistenceValidation.ts:11:  return (
+src/spatial/persistence/PersistenceSyncOverlay.tsx:16:  if (!selectedStarId || !state) return null;
+src/spatial/persistence/PersistenceSyncOverlay.tsx:18:  return (
+src/spatial/persistence/SpatialPersistenceBridge.tsx:34:  return null;
+src/spatial/persistence/buildSpatialPersistenceSnapshot.ts:24:  if (!selectedStarId) return null;
+src/spatial/persistence/buildSpatialPersistenceSnapshot.ts:25:  if (typeof selectedStarId === "string") return selectedStarId;
+src/spatial/persistence/buildSpatialPersistenceSnapshot.ts:26:  return selectedStarId.id ?? null;
+src/spatial/persistence/buildSpatialPersistenceSnapshot.ts:30:  if (!selectedStarId || typeof selectedStarId === "string") return null;
+src/spatial/persistence/buildSpatialPersistenceSnapshot.ts:31:  return selectedStarId.label ?? selectedStarId.title ?? null;
+src/spatial/persistence/buildSpatialPersistenceSnapshot.ts:38:  return {
+src/spatial/cinematic/resolveCinematicReplayById.ts:10:  if (!starId) return null;
+src/spatial/cinematic/resolveCinematicReplayById.ts:12:  return {
+src/spatial/cinematic/CinematicReplayOverlay.tsx:7:export default function CinematicReplayOverlay() {
+src/spatial/cinematic/CinematicReplayOverlay.tsx:15:  if (!cinematic) return null;
+src/spatial/cinematic/CinematicReplayOverlay.tsx:17:  return (
+src/spatial/cinematic/resolveCinematicReplay.ts:17:  if (typeof intensity !== "number" || !Number.isFinite(intensity)) return "medium";
+src/spatial/cinematic/resolveCinematicReplay.ts:18:  if (intensity >= 7) return "high";
+src/spatial/cinematic/resolveCinematicReplay.ts:19:  if (intensity >= 4) return "medium";
+src/spatial/cinematic/resolveCinematicReplay.ts:20:  return "low";
+src/spatial/cinematic/resolveCinematicReplay.ts:26:  if (!id) return undefined;
+src/spatial/cinematic/resolveCinematicReplay.ts:31:  if (!narrative && !memory) return undefined;
+src/spatial/cinematic/resolveCinematicReplay.ts:73:  return {
+src/spatial/chapter/ChapterSynthesisOverlay.tsx:4:  return null;
+src/spatial/chapter/resolveChapterSynthesis.ts:19:  return typeof value === "string" && value.trim().length > 0 ? value.trim() : undefined;
+src/spatial/chapter/resolveChapterSynthesis.ts:23:  if (values.length === 0) return undefined;
+src/spatial/chapter/resolveChapterSynthesis.ts:40:  return best;
+src/spatial/chapter/resolveChapterSynthesis.ts:44:  return [...new Set(values)];
+src/spatial/chapter/resolveChapterSynthesis.ts:48:  return Math.max(min, Math.min(max, value));
+src/spatial/chapter/resolveChapterSynthesis.ts:54:  if (!id) return undefined;
+src/spatial/chapter/resolveChapterSynthesis.ts:57:  if (!memory) return undefined;
+src/spatial/chapter/resolveChapterSynthesis.ts:64:    return rowChapter === chapterLabel;
+src/spatial/chapter/resolveChapterSynthesis.ts:101:  return {
+src/spatial/ar/resolveARPlacementStateById.ts:24:  if (mode === "home") return null;
+src/spatial/ar/resolveARPlacementStateById.ts:34:    return {
+src/spatial/ar/resolveARPlacementStateById.ts:43:    return {
+src/spatial/ar/resolveARPlacementStateById.ts:44:      label: starLabel ? `Focus Locked · ${starLabel}` : "Focus Locked",
+src/spatial/ar/resolveARPlacementStateById.ts:52:    return {
+src/spatial/ar/resolveARPlacementStateById.ts:61:    return {
+src/spatial/ar/resolveARPlacementStateById.ts:69:  return null;
+src/spatial/ar/ARPlacementOverlay.tsx:19:  if (!ar) return null;
+src/spatial/ar/ARPlacementOverlay.tsx:21:  return (
+src/spatial/ar/resolveARPlacementState.ts.bak.20260322_203100:19:  return Math.max(min, Math.min(max, value));
+src/spatial/ar/resolveARPlacementState.ts.bak.20260322_203100:26:  if (!id) return undefined;
+src/spatial/ar/resolveARPlacementState.ts.bak.20260322_203100:33:  if (!xr && !manifest && !rig && !memory) return undefined;
+src/spatial/ar/resolveARPlacementState.ts.bak.20260322_203100:92:  return {
+src/spatial/ar/resolveARPlacementState.ts:19:  return Math.max(min, Math.min(max, value));
+src/spatial/ar/resolveARPlacementState.ts:26:  if (!id) return undefined;
+src/spatial/ar/resolveARPlacementState.ts:33:  if (!xr && !manifest && !rig && !memory) return undefined;
+src/spatial/ar/resolveARPlacementState.ts:92:  return {
+src/spatial/lenses.disabled.1774173247/SpatialLensBootstrap.tsx:47:    if (!ready) return;
+src/spatial/lenses.disabled.1774173247/SpatialLensBootstrap.tsx:64:    if (!ready) return;
+src/spatial/lenses.disabled.1774173247/SpatialLensBootstrap.tsx:74:  return null;
+src/spatial/lenses.disabled.1774173247/buildSpatialTimelineLenses.ts:5:  type SpatialTimelineLensFocus,
+src/spatial/lenses.disabled.1774173247/buildSpatialTimelineLenses.ts:8:function deriveFocus(compareSet: SpatialCompareSet): SpatialTimelineLensFocus ({ label: "default",
+src/spatial/lenses.disabled.1774173247/buildSpatialTimelineLenses.ts:10:    return "balanced";
+src/spatial/lenses.disabled.1774173247/buildSpatialTimelineLenses.ts:14:    return "scene";
+src/spatial/lenses.disabled.1774173247/buildSpatialTimelineLenses.ts:18:    return "selection";
+src/spatial/lenses.disabled.1774173247/buildSpatialTimelineLenses.ts:22:    return "movement";
+src/spatial/lenses.disabled.1774173247/buildSpatialTimelineLenses.ts:25:  return "balanced";
+src/spatial/lenses.disabled.1774173247/buildSpatialTimelineLenses.ts:47:  return parts.join(" · ");
+src/spatial/lenses.disabled.1774173247/buildSpatialTimelineLenses.ts:61:    focus: deriveFocus(compareSet),
+src/spatial/lenses.disabled.1774173247/buildSpatialTimelineLenses.ts:67:  return [current, ...derived];
+src/spatial/lenses.disabled.1774173247/spatialLensTypes.ts:1:export type SpatialTimelineLensFocus =
+src/spatial/lenses.disabled.1774173247/spatialLensTypes.ts:13:  focus: SpatialTimelineLensFocus;
+src/spatial/lenses.disabled.1774173247/spatialLensTypes.ts:27:  return {
+src/spatial/lenses.disabled.1774173247/spatialLensTypes.ts:42:  return {
+src/spatial/lenses.disabled.1774173247/spatialLensIO.ts:9:    return createDefaultSpatialLensManifest();
+src/spatial/lenses.disabled.1774173247/spatialLensIO.ts:15:    if (!raw) return createDefaultSpatialLensManifest();
+src/spatial/lenses.disabled.1774173247/spatialLensIO.ts:19:      return createDefaultSpatialLensManifest();
+src/spatial/lenses.disabled.1774173247/spatialLensIO.ts:29:    return {
+src/spatial/lenses.disabled.1774173247/spatialLensIO.ts:35:    return createDefaultSpatialLensManifest();
+src/spatial/lenses.disabled.1774173247/spatialLensIO.ts:42:  if (typeof window === "undefined") return;
+src/spatial/polish/SpatialPolishOverlay.tsx:9:  return typeof value === "string" && value.trim().length > 0 ? value : fallback;
+src/spatial/polish/SpatialPolishOverlay.tsx:25:  return (
+src/spatial/diffs/buildSpatialStoryBundleDiff.ts:7:  return Math.round(value * 1000) / 1000;
+src/spatial/diffs/buildSpatialStoryBundleDiff.ts:14:  return Math.sqrt(x * x + y * y + z * z);
+src/spatial/diffs/buildSpatialStoryBundleDiff.ts:18:  return bundle.narrator?.title ?? null;
+src/spatial/diffs/buildSpatialStoryBundleDiff.ts:59:  return {
+src/spatial/ingest/resolveExternalIngestState.ts:49:  return Math.max(min, Math.min(max, value));
+src/spatial/ingest/resolveExternalIngestState.ts:55:  if (!id) return undefined;
+src/spatial/ingest/resolveExternalIngestState.ts:58:  if (!memory) return undefined;
+src/spatial/ingest/resolveExternalIngestState.ts:73:  return {
+src/spatial/ingest/normalizeExternalMemoryRows.ts:24:  return typeof value === "string" && value.trim().length > 0 ? value.trim() : fallback;
+src/spatial/ingest/normalizeExternalMemoryRows.ts:28:  if (typeof value === "number" && Number.isFinite(value)) return value;
+src/spatial/ingest/normalizeExternalMemoryRows.ts:29:  return fallback;
+src/spatial/ingest/normalizeExternalMemoryRows.ts:34:  if (!title) return undefined;
+src/spatial/ingest/normalizeExternalMemoryRows.ts:36:  return {
+src/spatial/ingest/normalizeExternalMemoryRows.ts:65:  return {
+src/spatial/ingest/resolveExternalIngestStateById.ts:10:  if (!starId) return null;
+src/spatial/ingest/resolveExternalIngestStateById.ts:12:  return {
+src/spatial/ingest/ExternalIngestOverlay.tsx:15:  if (!state) return null;
+src/spatial/ingest/ExternalIngestOverlay.tsx:17:  return (
+src/spatial/ingest/parseExternalMemoryRows.ts:13:  return typeof value === "string" && value.trim().length > 0 ? value.trim() : undefined;
+src/spatial/ingest/parseExternalMemoryRows.ts:17:  if (typeof value === "number" && Number.isFinite(value)) return value;
+src/spatial/ingest/parseExternalMemoryRows.ts:20:    return Number.isFinite(parsed) ? parsed : undefined;
+src/spatial/ingest/parseExternalMemoryRows.ts:22:  return undefined;
+src/spatial/ingest/parseExternalMemoryRows.ts:28:    return trimmed.slice(1, -1).replace(/""/g, '"');
+src/spatial/ingest/parseExternalMemoryRows.ts:30:  return trimmed;
+src/spatial/ingest/parseExternalMemoryRows.ts:36:    if (!Array.isArray(parsed)) return [];
+src/spatial/ingest/parseExternalMemoryRows.ts:37:    return parsed.map((row) => {
+src/spatial/ingest/parseExternalMemoryRows.ts:39:      return {
+src/spatial/ingest/parseExternalMemoryRows.ts:51:    return [];
+src/spatial/ingest/parseExternalMemoryRows.ts:61:  if (lines.length < 2) return [];
+src/spatial/ingest/parseExternalMemoryRows.ts:66:  return rows.map((line) => {
+src/spatial/ingest/parseExternalMemoryRows.ts:74:    return {
+src/spatial/bundles/buildSpatialStoryBundle.ts:19:  return {
+src/spatial/bundles/spatialStoryBundleValidation.ts:4:  if (!value || typeof value !== "object") return false;
+src/spatial/bundles/spatialStoryBundleValidation.ts:8:  return (
+src/spatial/data/memoryDataset.ts:45:      "Once it had a name, it stopped being fog. It became something I could return to, refine, and build around.",
+src/spatial/data/memoryDataset.ts:117:      "A recovery memory marks the return to a verified route. Noise drops, the canonical path sharpens, and the system becomes honest about what is truly live.",
+src/spatial/data/memoryDataset.ts:139:    title: "Focus Lock",
+src/spatial/data/memoryDataset.ts:192:      "This memory captures the emergence of recurrence: repeated motifs, repeated returns, repeated chapters with new weight each time they reappear.",
+src/spatial/data/memoryDataset.ts:255:      "The return came from precision, not force. Each exact repair made the path a little more believable.",
+src/spatial/data/memoryDataset.ts:349:    title: "Focused Return",
+src/spatial/data/memoryDataset.ts:357:      "A signal memory about controlled transitions. Focus is no longer a trap; it is a reversible, stable state.",
+src/spatial/data/memoryDataset.ts:358:    tags: ["focus", "return", "stability"],
+src/spatial/data/memoryDataset.ts:360:      "What mattered was not only reaching focus. It was being able to leave it cleanly and return when needed.",
+src/spatial/data/memoryDataset.ts:380:  return memoryDataset[index % memoryDataset.length];
+src/spatial/data/stars.ts:8:  if (!id) return null;
+src/spatial/data/stars.ts:9:  return SPATIAL_STARS.find((star) => star.id === id) ?? null;
+src/spatial/state/toCanonicalSelectedStar.ts:5:  return getSelectedStarId(value);
+src/spatial/state/sceneStore.ts:12:  returnHome: () => void;
+src/spatial/state/sceneStore.ts:18:  setSelectedStarId: (id: string | null) => void;
+src/spatial/state/sceneStore.ts:36:  returnHome: () => set({ ...HOME_STATE }),
+src/spatial/state/sceneStore.ts:57:  setSelectedStarId: (id) => set({ selectedStarId: id }),
+src/spatial/state/selectedStarContract.ts:13:  if (!value) return null;
+src/spatial/state/selectedStarContract.ts:14:  if (typeof value === "string") return value;
+src/spatial/state/selectedStarContract.ts:15:  return value.id ?? null;
+src/spatial/causal/CausalInsightOverlay.tsx:15:  if (!state) return null;
+src/spatial/causal/CausalInsightOverlay.tsx:17:  return (
+src/spatial/causal/resolveCausalInsight.ts:22:  return out;
+src/spatial/causal/resolveCausalInsight.ts:26:  return Math.max(min, Math.min(max, value));
+src/spatial/causal/resolveCausalInsight.ts:32:  if (!id) return undefined;
+src/spatial/causal/resolveCausalInsight.ts:39:  if (!memory && !cluster && !intelligence && !chapter) return undefined;
+src/spatial/causal/resolveCausalInsight.ts:40:  if (!memory) return undefined;
+src/spatial/causal/resolveCausalInsight.ts:85:  return {
+src/spatial/causal/resolveCausalInsightById.ts:10:  if (!starId) return null;
+src/spatial/causal/resolveCausalInsightById.ts:12:  return {
+src/spatial/review/buildSpatialReviewDeck.ts:11:  return {
+src/spatial/review/buildSpatialReviewDeck.ts:53:    return buildCard({
+src/spatial/review/buildSpatialReviewDeck.ts:65:  return {
+src/spatial/world/World.tsx:7:  return (
+src/spatial/export/resolveSceneExportManifest.ts:18:  return Math.max(min, Math.min(max, value));
+src/spatial/export/resolveSceneExportManifest.ts:25:  if (!id) return undefined;
+src/spatial/export/resolveSceneExportManifest.ts:32:  if (!immersive && !xr && !intel && !memory) return undefined;
+src/spatial/export/resolveSceneExportManifest.ts:79:      : "Focused scene is now exportable into adapter-ready payloads for downstream viewers and toolchains.";
+src/spatial/export/resolveSceneExportManifest.ts:81:  return {
+src/spatial/export/SceneExportOverlay.tsx:16:  if (!manifest) return null;
+src/spatial/export/SceneExportOverlay.tsx:18:  return (
+src/spatial/export/resolveSceneExportManifestById.ts:14:  if (!starId && mode === "home") return null;
+src/spatial/export/resolveSceneExportManifestById.ts:19:  return {
+src/spatial/clustering/resolveMemoryCluster.ts:25:  return typeof value === "string" && value.trim().length > 0 ? value : undefined;
+src/spatial/clustering/resolveMemoryCluster.ts:34:  return out;
+src/spatial/clustering/resolveMemoryCluster.ts:45:  return score;
+src/spatial/clustering/resolveMemoryCluster.ts:51:  if (!id) return undefined;
+src/spatial/clustering/resolveMemoryCluster.ts:54:  if (!seed) return undefined;
+src/spatial/clustering/resolveMemoryCluster.ts:63:      return {
+src/spatial/clustering/resolveMemoryCluster.ts:97:  return {
+src/spatial/clustering/MemoryClusterOverlay.tsx:15:  if (!cluster) return null;
+src/spatial/clustering/MemoryClusterOverlay.tsx:17:  return (
+src/spatial/clustering/resolveMemoryClusterById.ts:10:  if (!starId) return null;
+src/spatial/clustering/resolveMemoryClusterById.ts:12:  return {
+src/spatial/unity/resolveUnityAdapterState.ts:19:  return Math.max(min, Math.min(max, value));
+src/spatial/unity/resolveUnityAdapterState.ts:26:  if (!id) return undefined;
+src/spatial/unity/resolveUnityAdapterState.ts:34:  if (!manifest && !immersive && !rig && !ar && !memory) return undefined;
+src/spatial/unity/resolveUnityAdapterState.ts:73:      : "Focused scene payload is ready for Unity scene composition and adjacency-aware navigation.";
+src/spatial/unity/resolveUnityAdapterState.ts:85:  return {
+src/spatial/unity/UnityAdapterOverlay.tsx:23:  if (!selectedStarId || !state || !manifest) return null;
+src/spatial/unity/UnityAdapterOverlay.tsx:25:  return (
+src/spatial/unity/exportUnityManifest.ts:16:  if (!state) return undefined;
+src/spatial/unity/exportUnityManifest.ts:18:  return {
+src/spatial/unity/buildUnityRuntimePayload.ts:12:  return {
+src/spatial/lineage/buildSpatialBundleLineage.ts:2:  return null;
+src/spatial/release/SpatialReleaseBootstrap.tsx:35:    if (!ready) return;
+src/spatial/release/SpatialReleaseBootstrap.tsx:45:  return null;
+src/spatial/release/spatialReleaseIO.ts:6:  if (typeof window === "undefined") return null;
+src/spatial/release/spatialReleaseIO.ts:9:    if (!raw) return null;
+src/spatial/release/spatialReleaseIO.ts:10:    return JSON.parse(raw) as SpatialReleaseManifest;
+src/spatial/release/spatialReleaseIO.ts:12:    return null;
+src/spatial/release/spatialReleaseIO.ts:17:  if (typeof window === "undefined") return;
+src/spatial/release/spatialReleaseIO.ts:25:  if (!manifest) return [];
+src/spatial/release/spatialReleaseIO.ts:31:  return Array.isArray(candidate) ? candidate : [];
+== TYPECHECK ==
+
+> urai-tier1@0.1.0 typecheck /home/user/urai-spatial/urai-tier1
+> tsc --noEmit
+
+src/spatial/scene/SpatialScene.tsx(288,22): error TS2345: Argument of type '(current: any) => any' is not assignable to parameter of type 'string'.
+ ELIFECYCLE  Command failed with exit code 1.
+TYPECHECK_STATUS=FAIL
+== BUILD ==
+
+> urai-tier1@0.1.0 build /home/user/urai-spatial/urai-tier1
+> next build --webpack
+
+▲ Next.js 16.2.1 (webpack)
+
+  Creating an optimized production build ...
+✓ Compiled successfully in 14.6s
+  Running TypeScript ...
+Failed to type check.
+
+./src/spatial/scene/SpatialScene.tsx:288:22
+Type error: Argument of type '(current: any) => any' is not assignable to parameter of type 'string'.
+
+  [90m286 |[0m       onPointerOut={(e: [33mThreeEvent[0m<[33mPointerEvent[0m>) => {
+  [90m287 |[0m         e.stopPropagation();
+[31m[1m>[0m [90m288 |[0m         setHoveredId((current) => (current === star.id ? [36mnull[0m : current));
+  [90m    |[0m                      [31m[1m^[0m
+  [90m289 |[0m       }}
+  [90m290 |[0m       onClick={(e: [33mThreeEvent[0m<[33mMouseEvent[0m>) => {
+  [90m291 |[0m         e.stopPropagation();
+Next.js build worker exited with code: 1 and signal: null
+ ELIFECYCLE  Command failed with exit code 1.
+BUILD_STATUS=FAIL
+== DEV SERVER CHECK ==
+PORT3000=FREE
+== STATIC OUTPUT CHECK ==
+OUT_DIR=YES
+out/next.svg
+out/window.svg
+out/favicon.ico
+out/_not-found.txt
+out/__next._head.txt
+out/__next._full.txt
+out/index.txt
+out/__next._tree.txt
+out/_not-found.html
+out/vercel.svg
+out/__next.__PAGE__.txt
+out/__next._index.txt
+out/file.svg
+out/globe.svg
+out/index.html
+out/runtime/unity-scene-loader-sample.json
+out/_not-found/__next._head.txt
+out/_not-found/__next._not-found.__PAGE__.txt
+out/_not-found/__next._full.txt
+out/_not-found/__next._tree.txt
+out/_not-found/__next._index.txt
+out/_not-found/__next._not-found.txt
+out/404.html
+== SUMMARY ==
+tee: _audit/tier1_lock_check/20260324_200220/summary.txt: No such file or directory
+TYPECHECK=FAIL

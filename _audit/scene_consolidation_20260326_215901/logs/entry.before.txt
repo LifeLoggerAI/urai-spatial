@@ -1,0 +1,26 @@
+"use client";
+
+import dynamic from "next/dynamic";
+
+const SpatialScene = dynamic(() => import("../spatial/scene/SpatialScene"), {
+  ssr: false,
+  loading: () => (
+    <div
+      style={{
+        width: "100vw",
+        height: "100vh",
+        display: "grid",
+        placeItems: "center",
+        background: "#05070b",
+        color: "rgba(255,255,255,0.82)",
+        fontFamily: "system-ui, sans-serif",
+      }}
+    >
+      Loading URAI Spatial...
+    </div>
+  ),
+});
+
+export default function Page() {
+  return <SpatialScene />;
+}

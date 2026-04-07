@@ -1,0 +1,95 @@
+
+== repo + branch ==
+
+$ cd '/home/user/urai-spatial' && git status --short
+_MONOSPACE_ENV_STARTED_=http://localhost:80/
+?? urai-tier1/docs/xr-renderer/
+RC=0
+
+$ cd '/home/user/urai-spatial' && git switch -c 'phase85-curated-deck-incident-response-panel-20260317_044558'
+_MONOSPACE_ENV_STARTED_=http://localhost:80/
+Switched to a new branch 'phase85-curated-deck-incident-response-panel-20260317_044558'
+RC=0
+
+== audit plan ==
+
+== create incident-response summary types ==
+
+== create incident-response builder ==
+
+== create incident-response panel ==
+
+== patch scene ==
+
+== targeted grep ==
+
+$ cd '/home/user/urai-spatial/urai-tier1' && grep -RIn 'SpatialCuratedDeckIncidentResponsePanel\|buildSpatialCuratedDeckIncidentResponse\|urai.spatial.curated-deck-incident-response.v1\|Curated Deck Incident Response' src | tee '/home/user/urai-spatial/urai-tier1/_audit/phase85-curated-deck-incident-response-panel/20260317_044558/grep.txt'
+_MONOSPACE_ENV_STARTED_=http://localhost:80/
+src/spatial/ui/SpatialCuratedDeckIncidentResponsePanel.tsx:5:import { buildSpatialCuratedDeckIncidentResponse } from "@/spatial/curation/buildSpatialCuratedDeckIncidentResponse";
+src/spatial/ui/SpatialCuratedDeckIncidentResponsePanel.tsx:12:export default function SpatialCuratedDeckIncidentResponsePanel() {
+src/spatial/ui/SpatialCuratedDeckIncidentResponsePanel.tsx:17:    () => buildSpatialCuratedDeckIncidentResponse({ entries, activeEntryId }),
+src/spatial/ui/SpatialCuratedDeckIncidentResponsePanel.tsx:58:        Curated Deck Incident Response
+src/spatial/curation/buildSpatialCuratedDeckIncidentResponse.ts:65:export function buildSpatialCuratedDeckIncidentResponse(input: {
+src/spatial/curation/buildSpatialCuratedDeckIncidentResponse.ts:182:    schema: "urai.spatial.curated-deck-incident-response.v1",
+src/spatial/curation/spatialCuratedDeckIncidentResponseTypes.ts:16:  schema: "urai.spatial.curated-deck-incident-response.v1";
+src/spatial/scene/SpatialScene.tsx:2:import SpatialCuratedDeckIncidentResponsePanel from "@/spatial/ui/SpatialCuratedDeckIncidentResponsePanel";
+src/spatial/scene/SpatialScene.tsx:820:      <SpatialCuratedDeckIncidentResponsePanel />
+RC=0
+
+== build ==
+
+$ cd '/home/user/urai-spatial/urai-tier1' && pnpm build
+_MONOSPACE_ENV_STARTED_=http://localhost:80/
+
+> urai-tier1@0.1.0 build /home/user/urai-spatial/urai-tier1
+> next build
+
+▲ Next.js 16.1.6 (Turbopack)
+
+  Creating an optimized production build ...
+✓ Compiled successfully in 27.9s
+  Running TypeScript ...
+  Collecting page data using 1 worker ...
+  Generating static pages using 1 worker (0/4) ...
+  Generating static pages using 1 worker (1/4) 
+  Generating static pages using 1 worker (2/4) 
+  Generating static pages using 1 worker (3/4) 
+✓ Generating static pages using 1 worker (4/4) in 474.0ms
+  Finalizing page optimization ...
+
+Route (app)
+┌ ○ /
+└ ○ /_not-found
+
+
+○  (Static)  prerendered as static content
+
+RC=0
+
+== git snapshot ==
+
+$ cd '/home/user/urai-spatial' && git status --short | tee '/home/user/urai-spatial/urai-tier1/_audit/phase85-curated-deck-incident-response-panel/20260317_044558/git_status.txt'
+_MONOSPACE_ENV_STARTED_=http://localhost:80/
+ M urai-tier1/src/spatial/scene/SpatialScene.tsx
+?? urai-tier1/docs/xr-renderer/
+?? urai-tier1/src/spatial/curation/buildSpatialCuratedDeckIncidentResponse.ts
+?? urai-tier1/src/spatial/curation/spatialCuratedDeckIncidentResponseTypes.ts
+?? urai-tier1/src/spatial/ui/SpatialCuratedDeckIncidentResponsePanel.tsx
+RC=0
+
+$ cd '/home/user/urai-spatial' && git add urai-tier1/src
+_MONOSPACE_ENV_STARTED_=http://localhost:80/
+RC=0
+
+$ cd '/home/user/urai-spatial' && git commit -m 'feat(urai-spatial): phase85 curated deck incident response panel'
+_MONOSPACE_ENV_STARTED_=http://localhost:80/
+[phase85-curated-deck-incident-response-panel-20260317_044558 900ab96] feat(urai-spatial): phase85 curated deck incident response panel
+ 4 files changed, 449 insertions(+)
+ create mode 100644 urai-tier1/src/spatial/curation/buildSpatialCuratedDeckIncidentResponse.ts
+ create mode 100644 urai-tier1/src/spatial/curation/spatialCuratedDeckIncidentResponseTypes.ts
+ create mode 100644 urai-tier1/src/spatial/ui/SpatialCuratedDeckIncidentResponsePanel.tsx
+RC=0
+
+== done ==
+AUDIT_DIR=/home/user/urai-spatial/urai-tier1/_audit/phase85-curated-deck-incident-response-panel/20260317_044558
+FAIL=0

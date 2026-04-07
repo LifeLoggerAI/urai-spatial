@@ -1,0 +1,9 @@
+== Tier 1 post-patch runtime gate ==
+APP=/home/user/urai-spatial/urai-tier1
+AUD=/home/user/urai-spatial/urai-tier1/_audit/tier1-postpatch-runtime-gate/20260318_031458
+PORT=3040
+
+PASS: build succeeded and dev server returned 200
+NEXT: perform manual runtime gate using checklist
+URL: http://127.0.0.1:3040
+DEV PID: 122315

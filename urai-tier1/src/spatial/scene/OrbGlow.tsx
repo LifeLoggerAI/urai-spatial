@@ -1,7 +1,12 @@
+import { uraiNow, uraiRandom, uraiTime } from "@/lib/uraiDeterminism";
 "use client";
 
-import { useFrame } from "@react-three/fiber";
 import { useRef } from "react";
+
+
+
+
+import { useFrame } from "@react-three/fiber";
 import type { Mesh } from "three";
 
 type Props = {
@@ -9,10 +14,13 @@ type Props = {
 };
 
 export default function OrbGlow({ position = [0, 0, 0] }: Props) {
+  const __uraiEpochRef = useRef<number>(uraiTime())
+  const __uraiLocalTime = useRef(uraiTime())
+
   const haloRef = useRef<Mesh | null>(null);
 
-  useFrame(({ clock }) => {
-    const t = clock.getElapsedTime();
+  useFrame(() => {
+    const t = ((uraiTime() - __uraiLocalTime.current) / 1000);
     if (haloRef.current) {
       const s = 1.7 + Math.sin(t * 1.8) * 0.05;
       haloRef.current.scale.set(s, s, s);
@@ -22,7 +30,7 @@ export default function OrbGlow({ position = [0, 0, 0] }: Props) {
   return (
     <mesh ref={haloRef} position={position} renderOrder={1}>
       <sphereGeometry args={[1.08, 48, 48]} />
-      <meshBasicMaterial color="#7fc2ff" transparent opacity={0.14} depthWrite={false} />
+      <meshBasicMaterial color="#7fc2ff" transparent opacity={0.75} depthWrite={false} />
     </mesh>
   );
 }

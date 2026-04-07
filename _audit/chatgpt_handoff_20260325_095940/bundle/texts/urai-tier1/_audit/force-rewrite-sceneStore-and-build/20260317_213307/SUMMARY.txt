@@ -1,0 +1,226 @@
+== before ==
+ M src/spatial/scene/SpatialScene.tsx
+ M src/spatial/state/sceneStore.ts
+
+== current sceneStore head ==
+     1	import { create } from "zustand";
+     2	import { SPATIAL_STARS, SpatialStar } from "../data/stars";
+     3	
+     4	export type SceneMode = "home" | "sky" | "lifemap" | "focus" | "replay";
+     5	
+     6	export type SelectedStar = {
+     7	  id: string;
+     8	  position: [number, number, number];
+     9	  color: string;
+    10	  size: number;
+    11	  title: string;
+    12	  label: string;
+    13	  signature: string;
+    14	  chapter: string;
+    15	  timeband: string;
+    16	  dateLabel?: string;
+    17	  summary?: string;
+    18	  detail?: string;
+    19	  tags?: string[];
+    20	  transcript?: string;
+    21	  description: string;
+    22	};
+    23	
+    24	type SceneState = {
+    25	  mode: SceneMode;
+    26	  stars: SpatialStar[];
+    27	  selectedStarId: string | null;
+    28	  selectedStar: SelectedStar | null;
+    29	  replayEnteredAt: number | null;
+    30	
+    31	  setMode: (mode: SceneMode) => void;
+    32	  enterSky: () => void;
+    33	  setSelectedStar: (star: SelectedStar | null) => void;
+    34	  selectStar: (star: SelectedStar) => void;
+    35	  clearFocus: () => void;
+    36	  exitFocusToLifeMap: () => void;
+    37	  enterReplay: () => void;
+    38	  exitReplay: () => void;
+    39	  exitReplayToFocus: () => void;
+    40	};
+    41	
+    42	export const useSceneStore = create<SceneState>((set, get) => ({
+    43	  mode: "home",
+    44	  stars: SPATIAL_STARS,
+    45	  selectedStarId: null,
+    46	  selectedStar: null,
+    47	  replayEnteredAt: null,
+    48	
+    49	  setMode: (mode) => set({ mode }),
+    50	
+    51	  setSelectedStar: (star) =>
+    52	    set({
+    53	      selectedStarId: star ? star.id : null,
+    54	      selectedStar: star,
+    55	      mode: star ? "focus" : "lifemap",
+    56	    }),
+    57	
+    58	  selectStar: (star) =>
+    59	    set({
+    60	      selectedStarId: star.id,
+    61	      selectedStar: star,
+    62	      mode: "focus",
+    63	    }),
+    64	
+    65	  clearFocus: () =>
+    66	    set({
+    67	      selectedStarId: null,
+    68	      selectedStar: null,
+    69	      replayEnteredAt: null,
+    70	      mode: "lifemap",
+    71	    }),
+    72	
+    73	  exitFocusToLifeMap: () =>
+    74	    set({
+    75	      selectedStarId: null,
+    76	      selectedStar: null,
+    77	      replayEnteredAt: null,
+    78	      mode: "lifemap",
+    79	    }),
+    80	
+    81	  enterReplay: () => {
+    82	    const { selectedStar } = get();
+    83	    if (!selectedStar) return;
+    84	    set({
+    85	      mode: "replay",
+    86	      replayEnteredAt: Date.now(),
+    87	    });
+    88	  },
+    89	
+    90	  exitReplay: () => {
+    91	    const { selectedStar } = get();
+    92	    set({
+    93	      mode: selectedStar ? "focus" : "lifemap",
+    94	      replayEnteredAt: null,
+    95	    });
+    96	  },
+    97	
+    98	  exitReplayToFocus: () => {
+    99	    const { selectedStar } = get();
+   100	    set({
+   101	      mode: selectedStar ? "focus" : "lifemap",
+   102	      replayEnteredAt: null,
+   103	    });
+   104	  },
+   105	}));
+
+== rewritten sceneStore ==
+     1	import { create } from "zustand";
+     2	import { SPATIAL_STARS, SpatialStar } from "../data/stars";
+     3	export type SceneMode = "home" | "sky" | "lifemap" | "focus" | "replay";
+     4	
+     5	export type SceneState = {
+     6	  mode: SceneMode;
+     7	  stars: SpatialStar[];
+     8	  selectedStarId: string | null;
+     9	  selectedStar: SelectedStar | null;
+    10	  replayEnteredAt: number | null;
+    11	  setMode: (mode: SceneMode) => void;
+    12	  enterSky: () => void;
+    13	  setSelectedStar: (star: SelectedStar | null) => void;
+    14	  clearFocus: () => void;
+    15	  exitFocusToLifeMap: () => void;
+    16	  enterReplay: () => void;
+    17	  exitReplay: () => void;
+    18	  exitReplayToFocus: () => void;
+    19	};
+    20	
+    21	export const useSceneStore = create<SceneState>((set, get) => ({
+    22	  mode: "home",
+    23	  stars: SPATIAL_STARS,
+    24	  selectedStarId: null,
+    25	  selectedStar: null,
+    26	  replayEnteredAt: null,
+    27	
+    28	  setMode: (mode: SceneMode) => set({ mode }),
+    29	
+    30	  enterSky: () =>
+    31	    set({
+    32	      selectedStarId: null,
+    33	      selectedStar: null,
+    34	      replayEnteredAt: null,
+    35	      mode: "sky",
+    36	    }),
+    37	
+    38	  setSelectedStar: (star: SelectedStar | null) =>
+    39	    set({
+    40	      selectedStarId: star?.id ?? null,
+    41	      selectedStar: star,
+    42	      replayEnteredAt: null,
+    43	      mode: star ? "focus" : "lifemap",
+    44	    }),
+    45	
+    46	  clearFocus: () =>
+    47	    set({
+    48	      selectedStarId: null,
+    49	      selectedStar: null,
+    50	      replayEnteredAt: null,
+    51	      mode: "lifemap",
+    52	    }),
+    53	
+    54	  exitFocusToLifeMap: () =>
+    55	    set({
+    56	      selectedStarId: null,
+    57	      selectedStar: null,
+    58	      replayEnteredAt: null,
+    59	      mode: "lifemap",
+    60	    }),
+    61	
+    62	  enterReplay: () => {
+    63	    const { selectedStar } = get();
+    64	    if (!selectedStar) return;
+    65	    set({
+    66	      mode: "replay",
+    67	      replayEnteredAt: Date.now(),
+    68	    });
+    69	  },
+    70	
+    71	  exitReplay: () => {
+    72	    const { selectedStar } = get();
+    73	    set({
+    74	      mode: selectedStar ? "focus" : "lifemap",
+    75	      replayEnteredAt: null,
+    76	    });
+    77	  },
+    78	
+    79	  exitReplayToFocus: () => {
+    80	    const { selectedStar } = get();
+    81	    set({
+    82	      mode: selectedStar ? "focus" : "lifemap",
+    83	      replayEnteredAt: null,
+    84	    });
+    85	  },
+    86	}));
+
+== enterSky refs ==
+12:  enterSky: () => void;
+30:  enterSky: () =>
+
+== build ==
+
+> urai-tier1@0.1.0 build /home/user/urai-spatial/urai-tier1
+> next build
+
+▲ Next.js 16.1.6 (Turbopack)
+
+  Creating an optimized production build ...
+✓ Compiled successfully in 24.7s
+  Running TypeScript ...
+Failed to compile.
+
+./src/spatial/lib/headsetCameraSync.ts:1:15
+Type error: Module '"@/spatial/state/sceneStore"' has no exported member 'SelectedStar'.
+
+[0m[31m[1m>[22m[39m[90m 1 |[39m [36mimport[39m type { [33mSelectedStar[39m } [36mfrom[39m [32m"@/spatial/state/sceneStore"[39m[33m;[39m
+ [90m   |[39m               [31m[1m^[22m[39m
+ [90m 2 |[39m
+ [90m 3 |[39m [36mexport[39m type [33mHeadsetCameraSyncState[39m [33m=[39m {
+ [90m 4 |[39m   presenting[33m:[39m boolean[33m;[39m[0m
+Next.js build worker exited with code: 1 and signal: null
+ ELIFECYCLE  Command failed with exit code 1.
+FAIL: build failed after full sceneStore rewrite

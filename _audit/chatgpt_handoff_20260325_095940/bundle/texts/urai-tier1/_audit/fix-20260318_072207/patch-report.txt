@@ -1,0 +1,155 @@
+
+===== AFTER PATCH =====
+"use client";
+
+import { useEffect } from "react";
+import { useSceneStore } from "../state/sceneStore";
+
+export default function SceneController() {
+  const { mode, setMode } = useSceneStore();
+
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key !== "Enter") return;
+
+      if (mode === "home") {
+        setMode("sky");
+      } else if (mode === "lifemap") {
+        setMode("home");
+      } else if (mode === "focus") {
+        useSceneStore.setState({ selectedStar: null });
+        setMode("lifemap");
+      }
+    };
+
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [mode, setMode]);
+
+  return null;
+}
+
+===== SceneMode references =====
+src/spatial/state/sceneStore.ts:5:export type SceneMode =
+src/spatial/state/sceneStore.ts.bak.20260318_050528:5:export type SceneMode = "home" | "sky" | "lifemap" | "focus" | "replay";
+src/spatial/core/SceneController.tsx:14:        setMode("sky");
+src/spatial/core/SceneController.tsx:16:        setMode("home");
+src/spatial/core/SceneController.tsx:19:        setMode("lifemap");
+src/spatial/scene/SpatialScene.tsx.bak.20260317_231119:532:                <button style={shellButtonStyle} onClick={() => setMode("sky")}>
+src/spatial/scene/SpatialScene.tsx.bak.20260317_231119:535:                <button style={secondaryButtonStyle} onClick={() => setMode("focus")} disabled={!selectedStar}>
+src/spatial/scene/SpatialScene.tsx.bak.20260317_231119:594:              onClick={() => setMode("lifemap")}
+src/spatial/scene/SpatialScene.tsx.bak.20260317_231119:774:        setMode("home");
+src/spatial/scene/SpatialScene.tsx.bak.20260317_233949:532:                <button style={shellButtonStyle} onClick={() => setMode("sky")}>
+src/spatial/scene/SpatialScene.tsx.bak.20260317_233949:535:                <button style={secondaryButtonStyle} onClick={() => setMode("focus")} disabled={!selectedStar}>
+src/spatial/scene/SpatialScene.tsx.bak.20260317_233949:594:              onClick={() => setMode("lifemap")}
+src/spatial/scene/SpatialScene.tsx.bak.20260317_233949:774:        setMode("home");
+src/spatial/scene/SpatialScene.tsx.bak.20260317_230904:532:                <button style={shellButtonStyle} onClick={() => setMode("sky")}>
+src/spatial/scene/SpatialScene.tsx.bak.20260317_230904:535:                <button style={secondaryButtonStyle} onClick={() => setMode("focus")} disabled={!selectedStar}>
+src/spatial/scene/SpatialScene.tsx.bak.20260317_230904:594:              onClick={() => setMode("lifemap")}
+src/spatial/scene/SpatialScene.tsx.bak.20260317_230904:774:        setMode("home");
+src/spatial/scene/SpatialScene.tsx.bak.20260317_223223:533:                <button style={shellButtonStyle} onClick={() => setMode("sky")}>
+src/spatial/scene/SpatialScene.tsx.bak.20260317_223223:536:                <button style={secondaryButtonStyle} onClick={() => setMode("focus")} disabled={!selectedStar}>
+src/spatial/scene/SpatialScene.tsx.bak.20260317_223223:595:              onClick={() => setMode("lifemap")}
+src/spatial/scene/SpatialScene.tsx.bak.20260317_223223:774:        setMode("home");
+src/spatial/scene/SpatialScene.tsx.bak.20260317_222421:533:                <button style={shellButtonStyle} onClick={() => setMode("sky")}>
+src/spatial/scene/SpatialScene.tsx.bak.20260317_222421:536:                <button style={secondaryButtonStyle} onClick={() => setMode("focus")} disabled={!selectedStar}>
+src/spatial/scene/SpatialScene.tsx.bak.20260317_222421:595:              onClick={() => setMode("lifemap")}
+src/spatial/scene/SpatialScene.tsx.bak.20260317_222421:774:        setMode("home");
+src/spatial/scene/SpatialScene.tsx.bak.1773786170:533:                <button style={shellButtonStyle} onClick={() => setMode("sky")}>
+src/spatial/scene/SpatialScene.tsx.bak.1773786170:536:                <button style={secondaryButtonStyle} onClick={() => setMode("focus")} disabled={!selectedStar}>
+src/spatial/scene/SpatialScene.tsx.bak.1773786170:595:              onClick={() => setMode("lifemap")}
+src/spatial/scene/SpatialScene.tsx.bak.1773786170:774:        setMode("home");
+src/spatial/scene/SpatialScene.tsx.bak.20260317_224323:533:                <button style={shellButtonStyle} onClick={() => setMode("sky")}>
+src/spatial/scene/SpatialScene.tsx.bak.20260317_224323:536:                <button style={secondaryButtonStyle} onClick={() => setMode("focus")} disabled={!selectedStar}>
+src/spatial/scene/SpatialScene.tsx.bak.20260317_224323:595:              onClick={() => setMode("lifemap")}
+src/spatial/scene/SpatialScene.tsx.bak.20260317_224323:774:        setMode("home");
+src/spatial/scene/SpatialScene.tsx.bak.20260317_223056:533:                <button style={shellButtonStyle} onClick={() => setMode("sky")}>
+src/spatial/scene/SpatialScene.tsx.bak.20260317_223056:536:                <button style={secondaryButtonStyle} onClick={() => setMode("focus")} disabled={!selectedStar}>
+src/spatial/scene/SpatialScene.tsx.bak.20260317_223056:595:              onClick={() => setMode("lifemap")}
+src/spatial/scene/SpatialScene.tsx.bak.20260317_223056:774:        setMode("home");
+src/spatial/scene/SpatialScene.tsx.bak.20260318_002732:569:                <button style={shellButtonStyle} onClick={() => setMode("sky")}>
+src/spatial/scene/SpatialScene.tsx.bak.20260318_002732:572:                <button style={secondaryButtonStyle} onClick={() => setMode("focus")} disabled={!selectedStar}>
+src/spatial/scene/SpatialScene.tsx.bak.20260318_002732:631:              onClick={() => setMode("lifemap")}
+src/spatial/scene/SpatialScene.tsx.bak.20260318_002732:811:        setMode("home");
+src/spatial/scene/SpatialScene.tsx.bak.20260317_222554:533:                <button style={shellButtonStyle} onClick={() => setMode("sky")}>
+src/spatial/scene/SpatialScene.tsx.bak.20260317_222554:536:                <button style={secondaryButtonStyle} onClick={() => setMode("focus")} disabled={!selectedStar}>
+src/spatial/scene/SpatialScene.tsx.bak.20260317_222554:595:              onClick={() => setMode("lifemap")}
+src/spatial/scene/SpatialScene.tsx.bak.20260317_222554:774:        setMode("home");
+src/spatial/scene/SpatialScene.tsx.bak.20260317_232458:532:                <button style={shellButtonStyle} onClick={() => setMode("sky")}>
+src/spatial/scene/SpatialScene.tsx.bak.20260317_232458:535:                <button style={secondaryButtonStyle} onClick={() => setMode("focus")} disabled={!selectedStar}>
+src/spatial/scene/SpatialScene.tsx.bak.20260317_232458:594:              onClick={() => setMode("lifemap")}
+src/spatial/scene/SpatialScene.tsx.bak.20260317_232458:774:        setMode("home");
+src/spatial/scene/SpatialScene.tsx.bak.20260318_000846:569:                <button style={shellButtonStyle} onClick={() => setMode("sky")}>
+src/spatial/scene/SpatialScene.tsx.bak.20260318_000846:572:                <button style={secondaryButtonStyle} onClick={() => setMode("focus")} disabled={!selectedStar}>
+src/spatial/scene/SpatialScene.tsx.bak.20260318_000846:631:              onClick={() => setMode("lifemap")}
+src/spatial/scene/SpatialScene.tsx.bak.20260318_000846:811:        setMode("home");
+src/spatial/scene/Starfield.tsx:54:                setMode("focus");
+src/spatial/scene/SpatialScene.tsx.bak.20260318_001306:569:                <button style={shellButtonStyle} onClick={() => setMode("sky")}>
+src/spatial/scene/SpatialScene.tsx.bak.20260318_001306:572:                <button style={secondaryButtonStyle} onClick={() => setMode("focus")} disabled={!selectedStar}>
+src/spatial/scene/SpatialScene.tsx.bak.20260318_001306:631:              onClick={() => setMode("lifemap")}
+src/spatial/scene/SpatialScene.tsx.bak.20260318_001306:811:        setMode("home");
+src/spatial/scene/SpatialScene.tsx.bak.20260317_005942:516:                <button style={shellButtonStyle} onClick={() => setMode("lifemap")}>
+src/spatial/scene/SpatialScene.tsx.bak.20260317_005942:519:                <button style={secondaryButtonStyle} onClick={() => setMode("focus")} disabled={!selectedStar}>
+src/spatial/scene/SpatialScene.tsx.bak.20260317_005942:698:        setMode("home");
+src/spatial/scene/SpatialScene.tsx.bak.20260317_224835:533:                <button style={shellButtonStyle} onClick={() => setMode("sky")}>
+src/spatial/scene/SpatialScene.tsx.bak.20260317_224835:536:                <button style={secondaryButtonStyle} onClick={() => setMode("focus")} disabled={!selectedStar}>
+src/spatial/scene/SpatialScene.tsx.bak.20260317_224835:595:              onClick={() => setMode("lifemap")}
+src/spatial/scene/SpatialScene.tsx.bak.20260317_224835:774:        setMode("home");
+src/spatial/scene/SpatialScene.tsx.bak.20260317_223834:533:                <button style={shellButtonStyle} onClick={() => setMode("sky")}>
+src/spatial/scene/SpatialScene.tsx.bak.20260317_223834:536:                <button style={secondaryButtonStyle} onClick={() => setMode("focus")} disabled={!selectedStar}>
+src/spatial/scene/SpatialScene.tsx.bak.20260317_223834:595:              onClick={() => setMode("lifemap")}
+src/spatial/scene/SpatialScene.tsx.bak.20260317_223834:774:        setMode("home");
+src/spatial/scene/SpatialScene.tsx.bak.20260317_224106:533:                <button style={shellButtonStyle} onClick={() => setMode("sky")}>
+src/spatial/scene/SpatialScene.tsx.bak.20260317_224106:536:                <button style={secondaryButtonStyle} onClick={() => setMode("focus")} disabled={!selectedStar}>
+src/spatial/scene/SpatialScene.tsx.bak.20260317_224106:595:              onClick={() => setMode("lifemap")}
+src/spatial/scene/SpatialScene.tsx.bak.20260317_224106:774:        setMode("home");
+src/spatial/scene/SpatialScene.tsx.bak.20260317_230912:532:                <button style={shellButtonStyle} onClick={() => setMode("sky")}>
+src/spatial/scene/SpatialScene.tsx.bak.20260317_230912:535:                <button style={secondaryButtonStyle} onClick={() => setMode("focus")} disabled={!selectedStar}>
+src/spatial/scene/SpatialScene.tsx.bak.20260317_230912:594:              onClick={() => setMode("lifemap")}
+src/spatial/scene/SpatialScene.tsx.bak.20260317_230912:774:        setMode("home");
+src/spatial/scene/SpatialScene.tsx.bak.20260317_235551:533:                <button style={shellButtonStyle} onClick={() => setMode("sky")}>
+src/spatial/scene/SpatialScene.tsx.bak.20260317_235551:536:                <button style={secondaryButtonStyle} onClick={() => setMode("focus")} disabled={!selectedStar}>
+src/spatial/scene/SpatialScene.tsx.bak.20260317_235551:595:              onClick={() => setMode("lifemap")}
+src/spatial/scene/SpatialScene.tsx.bak.20260317_235551:775:        setMode("home");
+src/spatial/scene/SpatialScene.tsx.bak.20260317_223053:533:                <button style={shellButtonStyle} onClick={() => setMode("sky")}>
+src/spatial/scene/SpatialScene.tsx.bak.20260317_223053:536:                <button style={secondaryButtonStyle} onClick={() => setMode("focus")} disabled={!selectedStar}>
+src/spatial/scene/SpatialScene.tsx.bak.20260317_223053:595:              onClick={() => setMode("lifemap")}
+src/spatial/scene/SpatialScene.tsx.bak.20260317_223053:774:        setMode("home");
+src/spatial/scene/SpatialScene.tsx.bak.20260318_000317:569:                <button style={shellButtonStyle} onClick={() => setMode("sky")}>
+src/spatial/scene/SpatialScene.tsx.bak.20260318_000317:572:                <button style={secondaryButtonStyle} onClick={() => setMode("focus")} disabled={!selectedStar}>
+src/spatial/scene/SpatialScene.tsx.bak.20260318_000317:631:              onClick={() => setMode("lifemap")}
+src/spatial/scene/SpatialScene.tsx.bak.20260318_000317:811:        setMode("home");
+src/spatial/scene/SpatialScene.tsx.bak.20260318_050528:553:                <button style={shellButtonStyle} onClick={() => setMode("sky")}>
+src/spatial/scene/SpatialScene.tsx.bak.20260318_050528:556:                <button style={secondaryButtonStyle} onClick={() => setMode("focus")} disabled={!selectedStar}>
+src/spatial/scene/SpatialScene.tsx.bak.20260318_050528:615:              onClick={() => setMode("lifemap")}
+src/spatial/scene/SpatialScene.tsx.bak.20260318_050528:795:        setMode("home");
+src/spatial/scene/SpatialScene.tsx.bak.20260317_222918:533:                <button style={shellButtonStyle} onClick={() => setMode("sky")}>
+src/spatial/scene/SpatialScene.tsx.bak.20260317_222918:536:                <button style={secondaryButtonStyle} onClick={() => setMode("focus")} disabled={!selectedStar}>
+src/spatial/scene/SpatialScene.tsx.bak.20260317_222918:595:              onClick={() => setMode("lifemap")}
+src/spatial/scene/SpatialScene.tsx.bak.20260317_222918:774:        setMode("home");
+src/spatial/scene/SpatialScene.tsx.bak.20260318_000157:567:                <button style={shellButtonStyle} onClick={() => setMode("sky")}>
+src/spatial/scene/SpatialScene.tsx.bak.20260318_000157:570:                <button style={secondaryButtonStyle} onClick={() => setMode("focus")} disabled={!selectedStar}>
+src/spatial/scene/SpatialScene.tsx.bak.20260318_000157:629:              onClick={() => setMode("lifemap")}
+src/spatial/scene/SpatialScene.tsx.bak.20260318_000157:809:        setMode("home");
+src/spatial/scene/SpatialScene.tsx.bak.20260317_234111:540:                <button style={shellButtonStyle} onClick={() => setMode("sky")}>
+src/spatial/scene/SpatialScene.tsx.bak.20260317_234111:543:                <button style={secondaryButtonStyle} onClick={() => setMode("focus")} disabled={!selectedStar}>
+src/spatial/scene/SpatialScene.tsx.bak.20260317_234111:602:              onClick={() => setMode("lifemap")}
+src/spatial/scene/SpatialScene.tsx.bak.20260317_234111:782:        setMode("home");
+src/spatial/scene/SpatialScene.tsx.bak.20260317_223505:533:                <button style={shellButtonStyle} onClick={() => setMode("sky")}>
+src/spatial/scene/SpatialScene.tsx.bak.20260317_223505:536:                <button style={secondaryButtonStyle} onClick={() => setMode("focus")} disabled={!selectedStar}>
+src/spatial/scene/SpatialScene.tsx.bak.20260317_223505:595:              onClick={() => setMode("lifemap")}
+src/spatial/scene/SpatialScene.tsx.bak.20260317_223505:774:        setMode("home");
+src/spatial/scene/SpatialScene.tsx.bak.20260318_001819:569:                <button style={shellButtonStyle} onClick={() => setMode("sky")}>
+src/spatial/scene/SpatialScene.tsx.bak.20260318_001819:572:                <button style={secondaryButtonStyle} onClick={() => setMode("focus")} disabled={!selectedStar}>
+src/spatial/scene/SpatialScene.tsx.bak.20260318_001819:631:              onClick={() => setMode("lifemap")}
+src/spatial/scene/SpatialScene.tsx.bak.20260318_001819:811:        setMode("home");
+src/spatial/scene/SpatialScene.tsx.bak.20260317_224602:533:                <button style={shellButtonStyle} onClick={() => setMode("sky")}>
+src/spatial/scene/SpatialScene.tsx.bak.20260317_224602:536:                <button style={secondaryButtonStyle} onClick={() => setMode("focus")} disabled={!selectedStar}>
+src/spatial/scene/SpatialScene.tsx.bak.20260317_224602:595:              onClick={() => setMode("lifemap")}
+src/spatial/scene/SpatialScene.tsx.bak.20260317_224602:774:        setMode("home");
+src/spatial/scene/SpatialScene.tsx.bak.20260317_222736:533:                <button style={shellButtonStyle} onClick={() => setMode("sky")}>
+src/spatial/scene/SpatialScene.tsx.bak.20260317_222736:536:                <button style={secondaryButtonStyle} onClick={() => setMode("focus")} disabled={!selectedStar}>
+src/spatial/scene/SpatialScene.tsx.bak.20260317_222736:595:              onClick={() => setMode("lifemap")}
+src/spatial/scene/SpatialScene.tsx.bak.20260317_222736:774:        setMode("home");
+
+===== BUILD =====

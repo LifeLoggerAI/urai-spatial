@@ -1,0 +1,13 @@
+[BACKUP] src/spatial/state/sceneStore.ts
+[BACKUP] src/spatial/persistence/SpatialPersistenceBridge.tsx
+[STEP] capture before snippets
+[STEP] patch sceneStore bad aliases to getter-based aliases
+[STEP] patch persistence alias to use in-scope selectedStar
+[STEP] capture after snippets
+[STEP] TypeScript validation
+[PASS] pnpm exec tsc --noEmit
+[STEP] build validation
+[PASS] pnpm build
+[DONE] state contract hotfix3 completed
+
+[FAIL] Script aborted at line 1 (exit 1)

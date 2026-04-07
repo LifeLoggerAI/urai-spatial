@@ -1,0 +1,355 @@
+ M package.json
+ M pnpm-lock.yaml
+ M urai-tier1/package.json
+ D urai-tier1/src/app/_page_shell.tsx
+ D urai-tier1/src/app/favicon.ico
+ M urai-tier1/src/app/globals.css
+ M urai-tier1/src/app/layout.tsx
+ M urai-tier1/src/app/page.tsx
+ M urai-tier1/src/spatial/account/spatialAccountIO.ts
+ M urai-tier1/src/spatial/account/spatialAccountTypes.ts
+ M urai-tier1/src/spatial/ar/ARPlacementOverlay.tsx
+ M urai-tier1/src/spatial/ar/resolveARPlacementStateById.ts
+ M urai-tier1/src/spatial/arcs/spatialArcIO.ts
+ M urai-tier1/src/spatial/arcs/spatialArcTypes.ts
+ M urai-tier1/src/spatial/arcs/spatialSeasonalArcTypes.ts
+ M urai-tier1/src/spatial/bundles/spatialStoryBundleValidation.ts
+ M urai-tier1/src/spatial/causal/CausalInsightOverlay.tsx
+ M urai-tier1/src/spatial/chapter/resolveChapterSynthesis.ts
+ M urai-tier1/src/spatial/cinematic/CinematicReplayOverlay.tsx
+ M urai-tier1/src/spatial/client/SpatialSceneClient.tsx
+ M urai-tier1/src/spatial/clustering/MemoryClusterOverlay.tsx
+ M urai-tier1/src/spatial/clustering/resolveMemoryCluster.ts
+ M urai-tier1/src/spatial/compare.disabled.1774173247/buildSpatialCompareSet.ts
+ M urai-tier1/src/spatial/compare.disabled.1774173247/spatialCompareIO.ts
+ M urai-tier1/src/spatial/compare.disabled.1774173247/spatialCompareTypes.ts
+ D urai-tier1/src/spatial/components/CameraRig.tsx
+ M urai-tier1/src/spatial/components/Orb.tsx
+ M urai-tier1/src/spatial/components/Tier1Lights.tsx
+ M urai-tier1/src/spatial/core/SceneController.tsx
+ M urai-tier1/src/spatial/curation.disabled.1774173247/buildSpatialCuratedDeckAnomaly.ts
+ M urai-tier1/src/spatial/curation.disabled.1774173247/buildSpatialCuratedDeckChangeLedger.ts
+ M urai-tier1/src/spatial/curation.disabled.1774173247/buildSpatialCuratedDeckDiff.ts
+ M urai-tier1/src/spatial/curation.disabled.1774173247/buildSpatialCuratedDeckDrift.ts
+ M urai-tier1/src/spatial/curation.disabled.1774173247/buildSpatialCuratedDeckExpiryGovernance.ts
+ M urai-tier1/src/spatial/curation.disabled.1774173247/buildSpatialCuratedDeckExport.ts
+ M urai-tier1/src/spatial/curation.disabled.1774173247/buildSpatialCuratedDeckStability.ts
+ M urai-tier1/src/spatial/curation.disabled.1774173247/spatialCuratedDeckChangeLedgerTypes.ts
+ M urai-tier1/src/spatial/curation.disabled.1774173247/spatialCuratedDeckDiffTypes.ts
+ M urai-tier1/src/spatial/curation.disabled.1774173247/spatialCuratedDeckDriftTypes.ts
+ M urai-tier1/src/spatial/curation.disabled.1774173247/spatialCuratedDeckExportTypes.ts
+ M urai-tier1/src/spatial/curation.disabled.1774173247/spatialCuratedDeckExportValidation.ts
+ M urai-tier1/src/spatial/curation.disabled.1774173247/spatialCuratedDeckImportTypes.ts
+ M urai-tier1/src/spatial/curation.disabled.1774173247/spatialCuratedDeckStabilityTypes.ts
+ M urai-tier1/src/spatial/curation.disabled.1774173247/spatialCuratedDeckSurfaceOwnership.ts
+ M urai-tier1/src/spatial/curation.disabled.1774173247/spatialCuratedDeckVaultIO.ts
+ M urai-tier1/src/spatial/curation.disabled.1774173247/spatialCuratedDeckVaultTypes.ts
+ M urai-tier1/src/spatial/data-import/MemoryImportOverlay.tsx
+ M urai-tier1/src/spatial/data-import/buildMemoryImportReport.ts
+ M urai-tier1/src/spatial/data/stars.ts
+ M urai-tier1/src/spatial/diffs/buildSpatialStoryBundleDiff.ts
+ M urai-tier1/src/spatial/diffs/spatialStoryBundleDiffTypes.ts
+ D urai-tier1/src/spatial/effects/CinematicFramingBias.tsx
+ D urai-tier1/src/spatial/effects/CinematicIdleMotion.tsx
+ M urai-tier1/src/spatial/era/EraCompareOverlay.tsx
+ M urai-tier1/src/spatial/era/resolveEraCompare.ts
+ M urai-tier1/src/spatial/export/SceneExportOverlay.tsx
+ M urai-tier1/src/spatial/immersive/ImmersiveContractOverlay.tsx
+ M urai-tier1/src/spatial/ingest/ExternalIngestOverlay.tsx
+ M urai-tier1/src/spatial/ingest/normalizeExternalMemoryRows.ts
+ M urai-tier1/src/spatial/ingest/parseExternalMemoryRows.ts
+ M urai-tier1/src/spatial/input/XRInputOverlay.tsx
+ M urai-tier1/src/spatial/intelligence/LifeMapIntelligenceOverlay.tsx
+ M urai-tier1/src/spatial/lenses.disabled.1774173247/SpatialLensBootstrap.tsx
+ M urai-tier1/src/spatial/lenses.disabled.1774173247/buildSpatialTimelineLenses.ts
+ M urai-tier1/src/spatial/lenses.disabled.1774173247/spatialLensIO.ts
+ M urai-tier1/src/spatial/lenses.disabled.1774173247/spatialLensTypes.ts
+ M urai-tier1/src/spatial/lib/headsetCameraSync.ts
+ M urai-tier1/src/spatial/lib/resolveStarByIdSafe.ts
+ D urai-tier1/src/spatial/lib/tier1Camera.ts
+ M urai-tier1/src/spatial/lib/toCanonicalSelectedStar.ts
+ M urai-tier1/src/spatial/lighting/CinematicLightingRig.tsx
+ M urai-tier1/src/spatial/lineage.disabled.1774173247/buildSpatialBundleLineage.ts
+ M urai-tier1/src/spatial/lineage/buildSpatialBundleLineage.ts
+ M urai-tier1/src/spatial/memory/MemorySphereOverlay.tsx
+ M urai-tier1/src/spatial/memory/resolveMemorySphere.ts
+ M urai-tier1/src/spatial/merge/MergePreflightOverlay.tsx
+ M urai-tier1/src/spatial/merge/buildBatchDiffAudit.ts
+ M urai-tier1/src/spatial/narrative/NarrativeReplayOverlay.tsx
+ M urai-tier1/src/spatial/narrative/resolveNarrativeReplay.ts
+ M urai-tier1/src/spatial/narrator.disabled.1774173247/NarratorOrchestrationOverlay.tsx
+ M urai-tier1/src/spatial/narrator.disabled.1774173247/buildSpatialNarratorExport.ts
+ M urai-tier1/src/spatial/narrator.disabled.1774173247/spatialNarratorExportTypes.ts
+ M urai-tier1/src/spatial/narrator.disabled.1774173247/spatialNarratorTypes.ts
+ M urai-tier1/src/spatial/persistence/PersistenceSyncOverlay.tsx
+ M urai-tier1/src/spatial/persistence/SpatialPersistenceBridge.tsx
+ M urai-tier1/src/spatial/persistence/buildSpatialPersistenceSnapshot.ts
+ M urai-tier1/src/spatial/persistence/spatialPersistenceIO.ts
+ M urai-tier1/src/spatial/persistence/spatialPersistenceStore.ts
+ M urai-tier1/src/spatial/persistence/spatialPersistenceTypes.ts
+ M urai-tier1/src/spatial/persistence/spatialPersistenceValidation.ts
+ M urai-tier1/src/spatial/polish/SpatialPolishOverlay.tsx
+ M urai-tier1/src/spatial/release/SpatialReleaseBootstrap.tsx
+ M urai-tier1/src/spatial/release/spatialReleaseIO.ts
+ M urai-tier1/src/spatial/release/spatialReleaseTypes.ts
+ M urai-tier1/src/spatial/replay/PHASE7_TODO.md
+ M urai-tier1/src/spatial/replay/ReplayContractOverlay.tsx
+ M urai-tier1/src/spatial/replay/ReplayOverlay.tsx
+ M urai-tier1/src/spatial/replay/replayModel.ts
+ M urai-tier1/src/spatial/replay/resolveReplayScene.ts
+ M urai-tier1/src/spatial/review/buildSpatialReviewDeck.ts
+ M urai-tier1/src/spatial/review/spatialReviewDeckTypes.ts
+ M urai-tier1/src/spatial/scene/CinematicGroundAccents.tsx
+ M urai-tier1/src/spatial/scene/Ground.tsx
+ M urai-tier1/src/spatial/scene/GroundWorld.tsx
+ M urai-tier1/src/spatial/scene/HomeWorld.tsx
+ M urai-tier1/src/spatial/scene/ObjectNode.tsx
+ M urai-tier1/src/spatial/scene/OrbGlow.tsx
+ M urai-tier1/src/spatial/scene/ReplaySphere.tsx
+ M urai-tier1/src/spatial/scene/SpatialScene.tsx
+ M urai-tier1/src/spatial/scene/SpatialScene.tsx.broken.20260316-135713
+ M urai-tier1/src/spatial/scene/Starfield.tsx
+ M urai-tier1/src/spatial/seasonal.disabled.1774173246/SeasonalCycleOverlay.tsx
+ M urai-tier1/src/spatial/seasonal.disabled.1774173246/SpatialSeasonalArcBootstrap.tsx.broken.1774173044
+ M urai-tier1/src/spatial/seasonal.disabled.1774173246/resolveSeasonalCycle.ts
+ M urai-tier1/src/spatial/seasonal.disabled.1774173246/spatialSeasonalArcIO.ts
+ M urai-tier1/src/spatial/seasonal.disabled.1774173246/spatialSeasonalArcTypes.ts
+ M urai-tier1/src/spatial/settings/SpatialSettingsBootstrap.tsx
+ M urai-tier1/src/spatial/settings/spatialSettingsIO.ts
+ M urai-tier1/src/spatial/settings/spatialSettingsTypes.ts
+ M urai-tier1/src/spatial/shell/Tier1ShellOverlayProps.ts
+ M urai-tier1/src/spatial/shell/Tier1ShellScreen.tsx
+ M urai-tier1/src/spatial/shell/overlays/FocusShellOverlay.tsx
+ M urai-tier1/src/spatial/shell/overlays/HomeShellOverlay.tsx
+ M urai-tier1/src/spatial/shell/overlays/LifeMapShellOverlay.tsx
+ M urai-tier1/src/spatial/shell/overlays/ReplayShellOverlay.tsx
+ M urai-tier1/src/spatial/shell/overlays/SkyShellOverlay.tsx
+ M urai-tier1/src/spatial/state/sceneStore.ts
+ M urai-tier1/src/spatial/state/toCanonicalSelectedStar.ts
+ M urai-tier1/src/spatial/store/useSceneStore.ts
+ M urai-tier1/src/spatial/storyarc/StoryArcOverlay.tsx
+ M urai-tier1/src/spatial/telemetry/spatialTelemetryIO.ts
+ M urai-tier1/src/spatial/telemetry/spatialTelemetryTypes.ts
+ M urai-tier1/src/spatial/traversal/ImmersiveReplayTraversalOverlay.tsx
+ M urai-tier1/src/spatial/types.ts
+ M urai-tier1/src/spatial/ui/SpatialCuratedDeckActionPanel.tsx
+ M urai-tier1/src/spatial/ui/SpatialCuratedDeckAnchorPanel.tsx
+ M urai-tier1/src/spatial/ui/SpatialCuratedDeckAnomalyPanel.tsx
+ M urai-tier1/src/spatial/ui/SpatialCuratedDeckArchiveDispositionPanel.tsx
+ M urai-tier1/src/spatial/ui/SpatialCuratedDeckBreachWatchPanel.tsx
+ M urai-tier1/src/spatial/ui/SpatialCuratedDeckChangeLedgerPanel.tsx
+ M urai-tier1/src/spatial/ui/SpatialCuratedDeckClosureCertificatePanel.tsx
+ M urai-tier1/src/spatial/ui/SpatialCuratedDeckCohortPanel.tsx
+ M urai-tier1/src/spatial/ui/SpatialCuratedDeckConsensusPanel.tsx
+ M urai-tier1/src/spatial/ui/SpatialCuratedDeckDestructionAuthorizationPanel.tsx
+ M urai-tier1/src/spatial/ui/SpatialCuratedDeckDestructionExecutionGatePanel.tsx
+ M urai-tier1/src/spatial/ui/SpatialCuratedDeckDiffPanel.tsx.broken.1774173044
+ M urai-tier1/src/spatial/ui/SpatialCuratedDeckDispatchPanel.tsx
+ M urai-tier1/src/spatial/ui/SpatialCuratedDeckDivergencePanel.tsx
+ M urai-tier1/src/spatial/ui/SpatialCuratedDeckDriftPanel.tsx.broken.1774173044
+ M urai-tier1/src/spatial/ui/SpatialCuratedDeckExpiryGovernancePanel.tsx.broken.1774173044
+ M urai-tier1/src/spatial/ui/SpatialCuratedDeckExportPanel.tsx
+ M urai-tier1/src/spatial/ui/SpatialCuratedDeckImportPanel.tsx
+ M urai-tier1/src/spatial/ui/SpatialCuratedDeckIncidentResponsePanel.tsx
+ M urai-tier1/src/spatial/ui/SpatialCuratedDeckLineagePanel.tsx
+ M urai-tier1/src/spatial/ui/SpatialCuratedDeckNeighborDiffPanel.tsx
+ M urai-tier1/src/spatial/ui/SpatialCuratedDeckPurgeReadinessPanel.tsx
+ M urai-tier1/src/spatial/ui/SpatialCuratedDeckQueuePanel.tsx
+ M urai-tier1/src/spatial/ui/SpatialCuratedDeckRecoveryGatePanel.tsx
+ M urai-tier1/src/spatial/ui/SpatialCuratedDeckReopenWatchPanel.tsx
+ M urai-tier1/src/spatial/ui/SpatialCuratedDeckRetentionHorizonPanel.tsx
+ M urai-tier1/src/spatial/ui/SpatialCuratedDeckRetentionLifecyclePanel.tsx
+ M urai-tier1/src/spatial/ui/SpatialCuratedDeckReviewTicketPanel.tsx
+ M urai-tier1/src/spatial/ui/SpatialCuratedDeckSchedulePanel.tsx
+ M urai-tier1/src/spatial/ui/SpatialCuratedDeckServiceWindowPanel.tsx
+ M urai-tier1/src/spatial/ui/SpatialCuratedDeckSlaPanel.tsx
+ M urai-tier1/src/spatial/ui/SpatialCuratedDeckStabilityPanel.tsx
+ M urai-tier1/src/spatial/ui/SpatialCuratedDeckVaultPanel.tsx
+ M urai-tier1/src/spatial/ui/SpatialCuratedDeckVerdictPanel.tsx
+ M urai-tier1/src/spatial/ui/SpatialNarratorExportPanel.tsx
+ M urai-tier1/src/spatial/ui/SpatialStoryBundleDiffPanel.tsx
+ M urai-tier1/src/spatial/ui/SpatialStoryBundlePanel.tsx
+ M urai-tier1/src/spatial/ui/SpatialStoryReviewDeckPanel.tsx
+ M urai-tier1/src/spatial/ui/SpatialVoicePlaybackPanel.tsx
+ M urai-tier1/src/spatial/unity/UnityAdapterOverlay.tsx
+ M urai-tier1/src/spatial/unity/buildUnityRuntimePayload.ts
+ M urai-tier1/src/spatial/unity/unityRuntimePayloadSample.ts
+ M urai-tier1/src/spatial/validation/BatchImportAuditOverlay.tsx
+ M urai-tier1/src/spatial/vault/SpatialStoryBundleVaultBootstrap.tsx
+ M urai-tier1/src/spatial/vault/spatialStoryBundleVaultIO.ts
+ M urai-tier1/src/spatial/vault/spatialStoryBundleVaultTypes.ts.broken.1774173044
+ M urai-tier1/src/spatial/versioning/DatasetVersioningOverlay.tsx
+ M urai-tier1/src/spatial/versioning/buildDatasetVersionSnapshot.ts
+ M urai-tier1/src/spatial/webxr/WebXREntryOverlay.tsx
+ M urai-tier1/src/spatial/world/World.tsx
+ M urai-tier1/src/spatial/xr-renderer/WebXRRendererHandoffOverlay.tsx
+ M urai-tier1/src/spatial/xr-runtime/XRCameraRigOverlay.tsx
+ M urai-tier1/src/spatial/xr/ArHitTestBridge.tsx
+ M urai-tier1/src/spatial/xr/XRBridgeOverlay.tsx
+ M urai-tier1/src/spatial/xr/XrLocomotionRuntime.tsx
+ M urai-tier1/tsconfig.json
+ M urai-tier1/urai-tier1@0.1.0
+?? *audit/
+?? .ai-backups/
+?? PASS_38B_starfield_wrapper_lock_relaxed.sh
+?? PASS_38C_starfield_wrapper_minimal.sh
+?? PASS_38_starfield_wrapper_lock.sh
+?? PASS_6_replay_entry_depth_lock.sh
+?? PASS_extract_live_canon_surface.sh
+?? PASS_force_live_runtime_extract.sh
+?? PASS_lifemap_home_audit_lock.sh
+?? _audit/20260402_083121_FULL_REPAIR/
+?? _audit/20260402_083636_FULL_REPAIR/
+?? _audit/20260402_084227_FULL_REPAIR_NO_CLOSE/
+?? _audit/20260402_084348_FULL_REPAIR_NO_CLOSE/
+?? _audit/20260402_085051_FULL_REPAIR_HOLD_OPEN/
+?? _audit/20260402_090115_FULL_REPAIR_SAFE/
+?? _audit/20260402_090756_FULL_REPAIR_SAFE_ROOTFIX/
+?? _audit/20260402_102900_PASS_T1_FOCUS_REPLAY_VISUAL_LOCK/
+?? _audit/20260405_002408_FIX_FOCUS_ESC_CHAIN/
+?? _audit/20260405_052832_tier1_interaction_lock_repair/
+?? _audit/ascent_descent_handoff_20260326_054412/
+?? _audit/ascent_descent_handoff_fullfile_20260326_055447/
+?? _audit/authority_lock_20260325_101020/
+?? _audit/canon_lock_20260326_232116/
+?? _audit/canon_lock_20260326_232234/
+?? _audit/chatgpt_handoff_20260325_095940/
+?? _audit/find_and_fix_starnode_source_20260325_030015/
+?? _audit/first_high_confidence_repair_20260325_105322/
+?? _audit/first_repair_pass_20260325_104708/
+?? _audit/fix_selectedstar_contract_20260325_025018/
+?? _audit/fix_selectedstar_contract_20260325_025327/
+?? _audit/fix_selectedstar_label_20260325_024759/
+?? _audit/fix_starTypes_merge_1774848344/
+?? _audit/fix_starnode_intensity_20260325_025510/
+?? _audit/fix_starnode_intensity_20260325_025630/
+?? _audit/home_lifemap_focus_replay_sync_20260325_111951/
+?? _audit/lifemap_depth_focus_layer_sync_20260325_110955/
+?? _audit/live_runtime_probe_20260325_100324/
+?? _audit/lock_the_loop_20260325_050115/
+?? _audit/look_target_authority_20260325_113900/
+?? _audit/pass10_final_proof_20260325_040512/
+?? _audit/pass1b_compat_fix_20260328_091240/
+?? _audit/pass1c_fix_esc_case_20260328_091423/
+?? _audit/pass1d_fix_inputlock_case_20260328_091539/
+?? _audit/pass2_camera_authority_20260328_091811/
+?? _audit/pass2_home_grounding_20260325_023235/
+?? _audit/pass2_star_schema_unification_20260328_113814/
+?? _audit/pass2b_camera_safe_20260328_091903/
+?? _audit/pass2c_remove_bad_camera_20260328_092025/
+?? _audit/pass3_ascent_descent_corridor_20260325_023719/
+?? _audit/pass3b_real_ascent_20260328_092154/
+?? _audit/pass4_safe_repair_and_lifemap_depth_20260325_024316/
+?? _audit/pass4_safe_repair_and_lifemap_depth_20260325_030509/
+?? _audit/pass4a_lifemap_depth_20260328_092318/
+?? _audit/pass5_fix_starnode_intensity_20260325_030829/
+?? _audit/pass5a_star_interaction_20260328_092647/
+?? _audit/pass6_add_starnode_intensity_type_20260325_031109/
+?? _audit/pass6_replay_chamber_20260325_031504/
+?? _audit/pass6_replay_chamber_20260325_031931/
+?? _audit/pass6_replay_entry_depth_lock_20260329_223054/
+?? _audit/pass6c_clean_restore_20260328_094201/
+?? _audit/pass7_hard_patch_starnode_intensity_20260325_031737/
+?? _audit/pass7_return_chain_polish_20260325_032643/
+?? _audit/pass8_material_bloom_discipline_20260325_033307/
+?? _audit/pass9_interaction_hardening_20260325_034701/
+?? _audit/pass_depth_integration_fix_1774848520/
+?? _audit/pass_depth_path_and_scene_repair_20260330_053036/
+?? _audit/pass_fix_starTypes_corruption_20260330_052412/
+?? _audit/pass_fix_starTypes_merge_safe_20260330_052657/
+?? _audit/pass_true_depth_layer_system_lock_retry_20260330_052224/
+?? _audit/patch_spatialscene_star_intensity_fallback_20260325_030247/
+?? _audit/phase2_focus_lock_20260328_063319/
+?? _audit/phase2_focus_lock_20260328_063507/
+?? _audit/runtime_authority_smoke_20260326_222145/
+?? _audit/runtime_interaction_lock_20260326_223831/
+?? _audit/scene_consolidation_20260326_215901/
+?? _audit/scene_consolidation_interaction_lock_20260325_082901/
+?? _audit/scene_consolidation_interaction_lock_fix_20260325_084417/
+?? _audit/scene_runtime_refine_20260326_222654/
+?? _audit/single_pass_runtime_lock_20260328_061648/
+?? _audit/spatial_cinematic_lock_20260325_022950/
+?? _audit/stabilize_scene_consolidation_interaction_lock_20260325_075049/
+?? _audit/stabilize_scene_consolidation_interaction_lock_keepopen_20260325_081249/
+?? _audit/state_contract_audit_20260326_220257/
+?? _audit/state_contract_hotfix2_20260326_221350/
+?? _audit/state_contract_hotfix3_20260326_221539/
+?? _audit/state_contract_hotfix_20260326_221045/
+?? _audit/state_contract_hotfix_20260326_221113/
+?? _audit/state_contract_reconcile_20260326_220710/
+?? _audit/tier1_lock_check/
+?? _audit/tier1_nav_replay_orb_retry_20260324_203355.log
+?? _audit/tier1_prep_20260324_200033/
+?? _backup/
+?? _quarantine/_archive/_audit/
+?? _quarantine/_archive/src/lib/
+?? _repair_backups/
+?? canon_lock_debug_20260326_233558.log
+?? path
+?? run-canon-lock-safe.sh
+?? scripts/
+?? src/
+?? tsconfig.json
+?? urai-spatial-monorepo@
+?? urai-tier1/pass_home_lifemap_visual_lock.sh
+?? urai-tier1/pass_tier1_structural_lock.sh
+?? urai-tier1/src/lib/
+?? urai-tier1/src/main.ts
+?? urai-tier1/src/scene/
+?? urai-tier1/src/spatial/canon/
+?? urai-tier1/src/spatial/components/CameraRig.tsx.disabled.20260328_140034
+?? urai-tier1/src/spatial/components/CanonCameraRig.tsx.disabled.20260329_071958
+?? urai-tier1/src/spatial/components/CanonHud.tsx
+?? urai-tier1/src/spatial/components/CinematicCameraRig.tsx
+?? urai-tier1/src/spatial/components/FocusHalo.tsx
+?? urai-tier1/src/spatial/components/FocusSubject.tsx
+?? urai-tier1/src/spatial/components/GroundPlane.tsx
+?? urai-tier1/src/spatial/components/HomeEnvironment.tsx
+?? urai-tier1/src/spatial/components/HomeOrb.tsx
+?? urai-tier1/src/spatial/components/HomeSkyDome.tsx
+?? urai-tier1/src/spatial/components/LifeMapStarfield.tsx
+?? urai-tier1/src/spatial/components/NarratorOverlay.tsx
+?? urai-tier1/src/spatial/components/PresenceRig.tsx
+?? urai-tier1/src/spatial/components/ReplayAtmosphere.tsx
+?? urai-tier1/src/spatial/components/ReplayChamber.tsx
+?? urai-tier1/src/spatial/components/ReplayEnvironment.tsx
+?? urai-tier1/src/spatial/components/ReplayImmersion.tsx
+?? urai-tier1/src/spatial/components/ReplayScene.tsx
+?? urai-tier1/src/spatial/components/RuntimeHud.tsx
+?? urai-tier1/src/spatial/components/SceneVeil.tsx
+?? urai-tier1/src/spatial/components/Starfield.tsx
+?? urai-tier1/src/spatial/components/StarfieldDust.tsx
+?? urai-tier1/src/spatial/contracts/
+?? urai-tier1/src/spatial/effects/CinematicFramingBias.tsx.disabled.20260328_140034
+?? urai-tier1/src/spatial/effects/CinematicIdleMotion.tsx.disabled.20260328_140034
+?? urai-tier1/src/spatial/hooks/
+?? urai-tier1/src/spatial/lib/cameraTargets.ts
+?? urai-tier1/src/spatial/lib/canonMotion.ts
+?? urai-tier1/src/spatial/lib/lifemapStars.ts
+?? urai-tier1/src/spatial/lib/sceneAuthorityReducer.ts.disabled.20260403_020429
+?? urai-tier1/src/spatial/lib/tier1Camera.ts.disabled.20260328_140034
+?? urai-tier1/src/spatial/scene/ArrivalSphere.tsx.disabled.ai
+?? urai-tier1/src/spatial/scene/BackgroundReset.tsx
+?? urai-tier1/src/spatial/scene/CameraDirector.tsx.disabled.20260328_140034
+?? urai-tier1/src/spatial/scene/CameraRig.tsx.disabled.ai
+?? urai-tier1/src/spatial/scene/FocusPresence.tsx
+?? urai-tier1/src/spatial/scene/FocusShellOverlay.tsx
+?? urai-tier1/src/spatial/scene/FocusStar.tsx
+?? urai-tier1/src/spatial/scene/HomeEnvironment.tsx
+?? urai-tier1/src/spatial/scene/HomeOrb.tsx
+?? urai-tier1/src/spatial/scene/Horizon.tsx
+?? urai-tier1/src/spatial/scene/LifeMap.tsx
+?? urai-tier1/src/spatial/scene/LifeMapStarfield.tsx
+?? urai-tier1/src/spatial/scene/MemoryPanel.tsx.disabled.ai
+?? urai-tier1/src/spatial/scene/Orb.tsx
+?? urai-tier1/src/spatial/scene/ReplayOverlay.tsx
+?? urai-tier1/src/spatial/scene/SceneRig.tsx.disabled.20260328_140034
+?? urai-tier1/src/spatial/scene/SpatialScene.tsx.tmp
+?? urai-tier1/src/spatial/scene/Starfield.tsx.tmp
+?? urai-tier1/src/spatial/scene/sceneState.ts
+?? urai-tier1/src/spatial/scene/types/
+?? urai-tier1/src/spatial/shell/FocusShellOverlay.tsx
+?? urai-tier1/src/spatial/shell/ReplayShellOverlay.tsx
+?? urai-tier1/src/spatial/state/sceneStore.ts.tmp
+?? urai-tier1/src/spatial/types/scene.ts
+?? urai-tier1/src/types/global.d.ts

@@ -1,0 +1,45 @@
+TIER 1 POST-PATCH MANUAL RUNTIME GATE
+
+Open:
+http://127.0.0.1:3040
+
+Record one clean video showing all of the following:
+
+LOOP A
+1. Start at Home
+2. Enter LifeMap
+3. Confirm visible Sky hold occurs
+4. Confirm LifeMap readable dwell occurs before focus
+5. Select current/default star
+6. Resume Focus
+7. Enter Replay
+8. Exit Replay
+9. Return Home
+10. Confirm reverse unwind, not hard pop
+
+LOOP B
+1. Enter LifeMap again
+2. Use Alternate Star
+3. Resume Focus on alternate star
+4. Enter Replay
+5. Exit Replay
+6. Return Home
+
+LOOP C
+1. Enter LifeMap again
+2. Alternate Star again
+3. Return Home directly from LifeMap
+4. Confirm reverse unwind through Sky/Home path
+
+STRICT PASS CONDITIONS
+- No right/left overlay teleport between Focus and Replay
+- LifeMap visibly dwells before Focus
+- Return Home does not hard-pop
+- Alternate star path works
+- No dead buttons
+- No flicker, clipping, obvious state desync, or broken overlay stacking
+- No ground/orb/avatar/body visible in Tier 1 path
+
+OUTPUT REQUIRED
+- New runtime video
+- Final verdict: PASS or FAIL for each loop

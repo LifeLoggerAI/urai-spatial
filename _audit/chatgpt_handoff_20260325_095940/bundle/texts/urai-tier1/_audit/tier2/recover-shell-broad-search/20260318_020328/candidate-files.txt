@@ -1,0 +1,11 @@
+/home/user/urai-spatial/urai-tier1/_audit/tier1-final-lock-no-python/20260318_012604/page.before.tsx
+/home/user/urai-spatial/urai-tier1/_audit/tier1-final-patch/20260318_012338/page.before.tsx
+/home/user/urai-spatial/urai-tier1/_audit/tier1-lock-rewrite/20260318_011438/page.before.tsx
+/home/user/urai-spatial/urai-tier1/_audit/tier2/extract-shell-overlays/20260318_015835/src/spatial/shell/Tier1ShellScreen.tsx
+/home/user/urai-spatial/urai-tier1/_audit/tier2/extract-shell-overlays/20260318_015846/src/spatial/shell/Tier1ShellScreen.tsx
+/home/user/urai-spatial/urai-tier1/_audit/tier2/extract-shell-overlays-namespaced/20260318_020024/src/spatial/shell/Tier1ShellScreen.tsx
+/home/user/urai-spatial/urai-tier1/_audit/tier2/extract-shell-overlays-namespaced/20260318_020024/Tier1ShellScreen.before.tsx
+/home/user/urai-spatial/urai-tier1/_audit/tier2/move-shell-into-spatial-module/20260318_015018/page.before.tsx
+/home/user/urai-spatial/urai-tier1/_audit/tier2/move-shell-into-spatial-module/20260318_015018/_page_shell.before.tsx
+/home/user/urai-spatial/urai-tier1/_audit/tier2/page-shell-extraction/20260318_013847/page.before.tsx
+/home/user/urai-spatial/urai-tier1/_audit/tier2/shell-overlay-readpack/20260318_015348/Tier1ShellScreen.tsx

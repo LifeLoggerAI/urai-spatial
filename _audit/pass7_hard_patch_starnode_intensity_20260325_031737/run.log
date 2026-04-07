@@ -1,0 +1,22 @@
+=== PASS 7: HARD PATCH STARNODE INTENSITY ===
+--- HEAD BEFORE ---
+--- STAR INTENSITY REFERENCES BEFORE ---
+--- PATCH 1: inject intensity?: number into local StarNode type block ---
+--- PATCH 2: normalize all star.intensity usages to fallback ---
+--- HEAD AFTER ---
+--- STAR INTENSITY REFERENCES AFTER ---
+--- VERIFY TYPE LINE ---
+8:type StarNode = SelectedStar & {
+10:  intensity?: number;
+--- BUILD ---
+
+=== RESULT ===
+BUILD OK
+audit: _audit/pass7_hard_patch_starnode_intensity_20260325_031737
+
+VERIFY:
+1. replay is now visually distinct from focus
+2. replay collapses into a bounded chamber
+3. lifemap stars largely disappear during replay
+4. replay camera is tighter and more subjective
+5. esc still unwinds replay -> focus -> lifemap -> home

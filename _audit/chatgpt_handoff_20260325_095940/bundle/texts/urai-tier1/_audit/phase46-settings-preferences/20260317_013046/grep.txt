@@ -1,0 +1,42 @@
+src/spatial/persistence/SpatialPersistenceBridge.tsx:7:import { useSpatialSettingsStore } from "@/spatial/settings/spatialSettingsStore";
+src/spatial/persistence/SpatialPersistenceBridge.tsx:20:  const persistSnapshots = useSpatialSettingsStore((s) => s.persistSnapshots);
+src/spatial/ui/SpatialPreferencesPanel.tsx:4:import { useSpatialSettingsStore } from "@/spatial/settings/spatialSettingsStore";
+src/spatial/ui/SpatialPreferencesPanel.tsx:6:export default function SpatialPreferencesPanel() {
+src/spatial/ui/SpatialPreferencesPanel.tsx:7:  const reducedMotion = useSpatialSettingsStore((s) => s.reducedMotion);
+src/spatial/ui/SpatialPreferencesPanel.tsx:8:  const showImportExport = useSpatialSettingsStore((s) => s.showImportExport);
+src/spatial/ui/SpatialPreferencesPanel.tsx:9:  const telemetryEnabled = useSpatialSettingsStore((s) => s.telemetryEnabled);
+src/spatial/ui/SpatialPreferencesPanel.tsx:10:  const showTelemetryPanel = useSpatialSettingsStore((s) => s.showTelemetryPanel);
+src/spatial/ui/SpatialPreferencesPanel.tsx:11:  const persistSnapshots = useSpatialSettingsStore((s) => s.persistSnapshots);
+src/spatial/ui/SpatialPreferencesPanel.tsx:13:  const setReducedMotion = useSpatialSettingsStore((s) => s.setReducedMotion);
+src/spatial/ui/SpatialPreferencesPanel.tsx:14:  const setShowImportExport = useSpatialSettingsStore((s) => s.setShowImportExport);
+src/spatial/ui/SpatialPreferencesPanel.tsx:15:  const setTelemetryEnabled = useSpatialSettingsStore((s) => s.setTelemetryEnabled);
+src/spatial/ui/SpatialPreferencesPanel.tsx:16:  const setShowTelemetryPanel = useSpatialSettingsStore((s) => s.setShowTelemetryPanel);
+src/spatial/ui/SpatialPreferencesPanel.tsx:17:  const setPersistSnapshots = useSpatialSettingsStore((s) => s.setPersistSnapshots);
+src/spatial/ui/SpatialTelemetryPanel.tsx:4:import { useSpatialSettingsStore } from "@/spatial/settings/spatialSettingsStore";
+src/spatial/ui/SpatialTelemetryPanel.tsx:8:export default function SpatialTelemetryPanel() {
+src/spatial/ui/SpatialTelemetryPanel.tsx:9:  const showTelemetryPanel = useSpatialSettingsStore((s) => s.showTelemetryPanel);
+src/spatial/ui/SpatialTelemetryPanel.tsx:10:  const telemetryEnabled = useSpatialSettingsStore((s) => s.telemetryEnabled);
+src/spatial/ui/SpatialImportExportPanel.tsx:14:import { useSpatialSettingsStore } from "@/spatial/settings/spatialSettingsStore";
+src/spatial/ui/SpatialImportExportPanel.tsx:33:  const showImportExport = useSpatialSettingsStore((s) => s.showImportExport);
+src/spatial/settings/SpatialSettingsBootstrap.tsx:5:import { useSpatialSettingsStore } from "@/spatial/settings/spatialSettingsStore";
+src/spatial/settings/SpatialSettingsBootstrap.tsx:12:export default function SpatialSettingsBootstrap() {
+src/spatial/settings/SpatialSettingsBootstrap.tsx:13:  const hydrate = useSpatialSettingsStore((s) => s.hydrate);
+src/spatial/settings/SpatialSettingsBootstrap.tsx:15:  const reducedMotion = useSpatialSettingsStore((s) => s.reducedMotion);
+src/spatial/settings/SpatialSettingsBootstrap.tsx:16:  const showImportExport = useSpatialSettingsStore((s) => s.showImportExport);
+src/spatial/settings/SpatialSettingsBootstrap.tsx:17:  const telemetryEnabled = useSpatialSettingsStore((s) => s.telemetryEnabled);
+src/spatial/settings/SpatialSettingsBootstrap.tsx:18:  const showTelemetryPanel = useSpatialSettingsStore((s) => s.showTelemetryPanel);
+src/spatial/settings/SpatialSettingsBootstrap.tsx:19:  const persistSnapshots = useSpatialSettingsStore((s) => s.persistSnapshots);
+src/spatial/settings/SpatialSettingsBootstrap.tsx:52:      new CustomEvent("urai:spatial-settings", {
+src/spatial/settings/spatialSettingsIO.ts:2:  SPATIAL_SETTINGS_STORAGE_KEY,
+src/spatial/settings/spatialSettingsIO.ts:13:    const raw = window.localStorage.getItem(SPATIAL_SETTINGS_STORAGE_KEY);
+src/spatial/settings/spatialSettingsIO.ts:34:      SPATIAL_SETTINGS_STORAGE_KEY,
+src/spatial/settings/spatialSettingsStore.ts:19:export const useSpatialSettingsStore = create<SpatialSettingsStore>((set) => ({
+src/spatial/settings/spatialSettingsTypes.ts:10:export const SPATIAL_SETTINGS_STORAGE_KEY = "urai.spatial.settings.v1";
+src/spatial/scene/SpatialScene.tsx:2:import SpatialTelemetryPanel from "@/spatial/ui/SpatialTelemetryPanel";
+src/spatial/scene/SpatialScene.tsx:3:import SpatialPreferencesPanel from "@/spatial/ui/SpatialPreferencesPanel";
+src/spatial/scene/SpatialScene.tsx:4:import SpatialSettingsBootstrap from "@/spatial/settings/SpatialSettingsBootstrap";
+src/spatial/scene/SpatialScene.tsx:726:      <SpatialSettingsBootstrap />
+src/spatial/scene/SpatialScene.tsx:727:      <SpatialPreferencesPanel />
+src/spatial/scene/SpatialScene.tsx:728:      <SpatialTelemetryPanel />
+src/spatial/telemetry/SpatialAnalyticsBridge.tsx:4:import { useSpatialSettingsStore } from "@/spatial/settings/spatialSettingsStore";
+src/spatial/telemetry/SpatialAnalyticsBridge.tsx:17:  const telemetryEnabled = useSpatialSettingsStore((s) => s.telemetryEnabled);

@@ -1,3 +1,4 @@
+import { uraiNow, uraiRandom, uraiTime } from "@/lib/uraiDeterminism";
 import type {
   SpatialCuratedDeckExpiryGovernanceCheck,
   SpatialCuratedDeckExpiryGovernanceEntry,
@@ -19,7 +20,7 @@ type CuratedDeckEntryLike = {
   source?: string;
 };
 
-function toTime(value: unknown): number | null {
+function toTime(value: any): number | null {
   if (typeof value !== "string" || !value) return null;
   const ms = Date.parse(value);
   return Number.isFinite(ms) ? ms : null;
@@ -112,7 +113,7 @@ export function buildSpatialCuratedDeckExpiryGovernance(input: {
   entries: CuratedDeckEntryLike[];
   activeEntryId?: string | null;
 }): SpatialCuratedDeckExpiryGovernanceSummary {
-  const now = Date.now();
+  const now = uraiNow();
 
   const entries: SpatialCuratedDeckExpiryGovernanceEntry[] = (input.entries ?? []).map((entry, index) => {
     const ageDays = computeAgeDays(entry, now);

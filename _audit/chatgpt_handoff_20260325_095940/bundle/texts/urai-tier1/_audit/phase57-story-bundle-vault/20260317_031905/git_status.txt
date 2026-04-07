@@ -1,0 +1,4 @@
+ M urai-tier1/src/spatial/scene/SpatialScene.tsx
+?? urai-tier1/docs/xr-renderer/
+?? urai-tier1/src/spatial/ui/SpatialStoryBundleVaultPanel.tsx
+?? urai-tier1/src/spatial/vault/

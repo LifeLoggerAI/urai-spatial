@@ -1,0 +1,39 @@
+APP=/home/user/urai-spatial
+AUDIT=/home/user/urai-spatial/_audit/pass_true_depth_layer_system_lock_retry_20260330_052224
+=== WRITE CANON DEPTH CONTRACT ===
+=== WRITE DEPTH STARFIELD COMPONENTS ===
+=== PROOF ===
+16:export const STARFIELD_DEPTH_BANDS: DepthBandSpec[] = [
+22:export const STARFIELD_PHASE_ALPHA: Record<SpatialPhase, number> = {
+29:export const PRIMARY_STAR_DEPTH = {
+4:import { useFrame } from '@react-three/fiber'
+98:function buildDustNodes(
+118:function buildPrimaryNodes(stars: LifeMapStarLike[] | undefined, interactive: boolean): PrimaryNode[] {
+189:function PrimaryLayer({
+271:    return buildDustNodes(spec.count, spec.spreadX, spec.spreadY, spec.zMin, spec.zMax, spec.pointSize)
+276:    return buildDustNodes(spec.count, spec.spreadX, spec.spreadY, spec.zMin, spec.zMax, spec.pointSize)
+281:    return buildDustNodes(spec.count, spec.spreadX, spec.spreadY, spec.zMin, spec.zMax, spec.pointSize)
+284:  const primaryNodes = useMemo(() => buildPrimaryNodes(stars, interactive), [stars, interactive])
+286:  useFrame((state, delta) => {
+347:        <PrimaryLayer
+4:import { useFrame } from '@react-three/fiber'
+98:function buildDustNodes(
+118:function buildPrimaryNodes(stars: LifeMapStarLike[] | undefined, interactive: boolean): PrimaryNode[] {
+189:function PrimaryLayer({
+271:    return buildDustNodes(spec.count, spec.spreadX, spec.spreadY, spec.zMin, spec.zMax, spec.pointSize)
+276:    return buildDustNodes(spec.count, spec.spreadX, spec.spreadY, spec.zMin, spec.zMax, spec.pointSize)
+281:    return buildDustNodes(spec.count, spec.spreadX, spec.spreadY, spec.zMin, spec.zMax, spec.pointSize)
+284:  const primaryNodes = useMemo(() => buildPrimaryNodes(stars, interactive), [stars, interactive])
+286:  useFrame((state, delta) => {
+347:        <PrimaryLayer
+=== TYPECHECK ===
+
+=== ERROR ===
+Exit code: 2
+Failed at line: 501
+
+=== LAST 80 RUN LOG LINES ===
+
+=== LAST 80 TYPECHECK LOG LINES ===
+
+=== LAST 80 BUILD LOG LINES ===

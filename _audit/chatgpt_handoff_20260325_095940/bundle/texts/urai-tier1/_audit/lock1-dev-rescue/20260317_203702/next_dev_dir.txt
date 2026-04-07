@@ -1,0 +1,15 @@
+total 60
+drwxr-xr-x 8 user user 4096 Mar 17 20:37 .
+drwxr-xr-x 9 user user 4096 Mar 17 20:33 ..
+drwxr-xr-x 3 user user 4096 Mar 17 11:14 build
+-rw-r--r-- 1 user user  940 Mar 17 20:28 build-manifest.json
+drwxr-xr-x 3 user user 4096 Mar 17 11:11 cache
+-rw-r--r-- 1 user user  214 Mar 17 20:28 fallback-build-manifest.json
+drwxr-xr-x 2 user user 4096 Mar 17 09:24 logs
+-rw-r--r-- 1 user user   24 Mar 17 20:27 package.json
+-rw-r--r-- 1 user user  354 Mar 17 20:27 prerender-manifest.json
+-rw-r--r-- 1 user user  288 Mar 17 20:27 routes-manifest.json
+drwxr-xr-x 4 user user 4096 Mar 17 20:28 server
+drwxr-xr-x 5 user user 4096 Mar 17 11:14 static
+-rw-r--r-- 1 user user 4459 Mar 17 20:28 trace
+drwxr-xr-x 2 user user 4096 Mar 17 11:11 types

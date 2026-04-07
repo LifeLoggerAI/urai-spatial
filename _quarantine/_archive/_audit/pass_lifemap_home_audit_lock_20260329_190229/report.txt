@@ -1,0 +1,441 @@
+=== PASS — LIFEMAP + HOME AUDIT LOCK ===
+APP=/home/user/urai-spatial/_quarantine/_archive
+AUDIT=/home/user/urai-spatial/_quarantine/_archive/_audit/pass_lifemap_home_audit_lock_20260329_190229
+DATE=2026-03-29T19:02:35+00:00
+
+=== 1) BACKUP CANDIDATE FILES ===
+BACKUP: src/spatial/scene/SpatialScene.tsx
+
+=== 2) WRITE CANON CONTRACT SCAFFOLD ===
+WROTE: src/lib/uraiCanon/lifemap.contract.ts
+
+=== 3) REPO SURVEY ===
+-- Spatial files --
+src/components/CameraRig.tsx
+src/components/LockedCamera.tsx
+src/components/space/GPUStarfield.tsx
+src/components/spatial/SpatialScene.tsx
+src/engine/camera/CameraRig.tsx
+src/engine/camera/CinematicCamera.tsx
+src/engine/space/GPUStarfield.tsx
+src/spatial/scene/SpatialScene.tsx
+
+-- Canon / state files --
+src/lib/uraiCanon/lifemap.contract.ts
+
+=== 4) ANCHOR SEARCH ===
+src/App.tsx:3:import SceneBackground from "./components/SceneBackground";
+src/App.tsx:10:    <SceneBackground>
+src/App.tsx:14:    </SceneBackground>
+src/lib/uraiCanon/lifemap.contract.ts:1:export type StarTier = 'background' | 'memory' | 'anchor'
+src/lib/uraiCanon/lifemap.contract.ts:21:    background: 0.22,
+src/lib/uraiCanon/lifemap.contract.ts:26:    background: 0.50,
+src/lib/uraiCanon/lifemap.contract.ts:31:    background: 0.00,
+src/lib/uraiCanon/lifemap.contract.ts:38:  homeToLifemap: {
+src/lib/uraiCanon/lifemap.contract.ts:45:  lifemapToHome: {
+src/lib/uraiCanon/lifemap.contract.ts:48:    groundReturnMs: 1450,
+src/lib/uraiCanon/lifemap.contract.ts:51:  lifemapToFocus: {
+src/app/page.tsx:4:import HomeView from '@/spatial/scene/home-view'
+src/app/page.tsx:13:          onClick={() => setEntered(true)}
+src/components/SceneBackground.tsx:5:export default function SceneBackground({
+src/components/SceneBackground.tsx:15:        background:
+src/components/SceneBackground.tsx:24:          background:
+src/components/space/GPUStarfield.tsx:3:import { useFrame, useThree } from "@react-three/fiber"
+src/components/space/GPUStarfield.tsx:8:  const { camera } = useThree()
+src/components/space/GPUStarfield.tsx:43:  useFrame((state) => {
+src/components/space/GPUStarfield.tsx:49:      const dz = positions[ix + 2] - camera.position.z
+src/components/space/GPUStarfield.tsx:54:      if (positions[ix + 2] > camera.position.z + radius) positions[ix + 2] = -radius
+src/components/space/GPUStarfield.tsx:58:    // subtle rotation reacts to camera movement
+src/components/space/GPUStarfield.tsx:59:    const camX = camera.position.x / 200
+src/components/space/GPUStarfield.tsx:60:    const camY = camera.position.y / 200
+src/components/space/WarpTrails.tsx:3:import { useFrame, useThree } from "@react-three/fiber"
+src/components/space/WarpTrails.tsx:8:  const { camera } = useThree()
+src/components/space/WarpTrails.tsx:43:  useFrame(() => {
+src/components/space/WarpTrails.tsx:45:    const camVel = camera.position.clone().sub(pointsRef.current.userData.prevCam || camera.position)
+src/components/space/WarpTrails.tsx:46:    pointsRef.current.userData.prevCam = camera.position.clone()
+src/components/visual/NebulaVolume.tsx:3:import { useFrame, useThree } from "@react-three/fiber"
+src/components/visual/NebulaVolume.tsx:9:  const { camera } = useThree()
+src/components/visual/NebulaVolume.tsx:11:  useFrame((state) => {
+src/components/visual/NebulaVolume.tsx:13:    const camFactor = camera.position.z / 300
+src/components/visual/CoreGlow.tsx:4:import { useFrame, useThree } from "@react-three/fiber"
+src/components/visual/CoreGlow.tsx:9:  const { camera } = useThree()
+src/components/visual/CoreGlow.tsx:11:  useFrame(() => {
+src/components/visual/CoreGlow.tsx:13:    const camDist = camera.position.length()
+src/components/LockedCamera.tsx:7:  const { camera } = useThree();
+src/components/LockedCamera.tsx:10:    camera.position.set(0, 0, 6);
+src/components/LockedCamera.tsx:11:    camera.up.set(0, 1, 0);
+src/components/LockedCamera.tsx:12:    camera.lookAt(0, 0, 0);
+src/components/LockedCamera.tsx:13:    camera.updateProjectionMatrix();
+src/components/LockedCamera.tsx:14:  }, [camera]);
+src/components/CameraRig.tsx:8:  const { camera, gl } = useThree()
+src/components/CameraRig.tsx:14:        camera.position.set(0, 80, 260)
+src/components/CameraRig.tsx:21:  }, [camera])
+src/components/CameraRig.tsx:26:      args={[camera, gl.domElement]}
+src/components/spatial/SpatialScene.tsx:16:  const { camera, size } = useThree()
+src/components/spatial/SpatialScene.tsx:18:    camera.aspect = size.width / size.height
+src/components/spatial/SpatialScene.tsx:21:    if (aspect > 2) camera.fov = baseFov / (aspect / 2)
+src/components/spatial/SpatialScene.tsx:22:    else camera.fov = baseFov
+src/components/spatial/SpatialScene.tsx:23:    camera.updateProjectionMatrix()
+src/components/spatial/SpatialScene.tsx:24:  }, [size.width, size.height, camera])
+src/components/spatial/SpatialScene.tsx:31:      camera={{ position: [0, 80, 260], fov: 60 }}
+src/components/spatial/SpatialScene.tsx:42:      <color attach="background" args={["#000000"]} />
+src/engine/shaders/starMaterial.ts:21:vec4 mvPosition = modelViewMatrix * vec4(position,1.0);
+src/engine/space/GPUStarfield.tsx:87:vec4 mvPosition = modelViewMatrix * vec4(position,1.0);
+src/engine/visual/PerlinNebula.tsx:4:import {useFrame} from "@react-three/fiber"
+src/engine/visual/PerlinNebula.tsx:11:useFrame(({clock})=>{
+src/engine/visual/PerlinNebula.tsx:40:gl_Position = projectionMatrix * modelViewMatrix * vec4(position,1.0);
+src/engine/memory/MemorySphere.tsx:9:  const selectedStar = useSpatialStore(s=>s.selectedStar)
+src/engine/memory/MemorySphere.tsx:18:  if(!selectedStar) return null
+src/engine/memory/MemorySphere.tsx:23:      position={selectedStar.position}
+src/engine/scene/SceneController.tsx:5:import CinematicCamera from "../camera/CinematicCamera"
+src/engine/camera/CinematicDrift.tsx:3:import { useFrame, useThree } from "@react-three/fiber"
+src/engine/camera/CinematicDrift.tsx:8:  const { camera } = useThree()
+src/engine/camera/CinematicDrift.tsx:13:  useFrame((_, delta) => {
+src/engine/camera/CinematicDrift.tsx:16:    camera.position.x = Math.sin(t.current) * 40
+src/engine/camera/CinematicDrift.tsx:17:    camera.position.z = 260 + Math.cos(t.current) * 20
+src/engine/camera/CinematicDrift.tsx:18:    camera.position.y = 80 + Math.sin(t.current * 0.5) * 10
+src/engine/camera/CinematicDrift.tsx:20:    camera.lookAt(lookTarget.current)
+src/engine/camera/CameraRig.tsx:4:import { useFrame, useThree } from "@react-three/fiber"
+src/engine/camera/CameraRig.tsx:12:  const { camera } = useThree()
+src/engine/camera/CameraRig.tsx:14:  const selectedStar = useSpatialStore((s) => s.selectedStar)
+src/engine/camera/CameraRig.tsx:22:  useFrame((_, delta) => {
+src/engine/camera/CameraRig.tsx:26:    if (selectedStar) {
+src/engine/camera/CameraRig.tsx:28:        selectedStar.position[0],
+src/engine/camera/CameraRig.tsx:29:        selectedStar.position[1],
+src/engine/camera/CameraRig.tsx:30:        selectedStar.position[2]
+src/engine/camera/CameraRig.tsx:34:        selectedStar.position[0] + starOffset.x,
+src/engine/camera/CameraRig.tsx:35:        selectedStar.position[1] + starOffset.y,
+src/engine/camera/CameraRig.tsx:36:        selectedStar.position[2] + starOffset.z
+src/engine/camera/CameraRig.tsx:43:    camera.position.lerp(desiredPosition.current, posLerp)
+src/engine/camera/CameraRig.tsx:45:    camera.lookAt(smoothLookAt.current)
+src/engine/camera/CinematicCamera.tsx:3:import { useFrame, useThree } from "@react-three/fiber"
+src/engine/camera/CinematicCamera.tsx:8:  const { camera } = useThree()
+src/engine/camera/CinematicCamera.tsx:13:  useFrame((_, delta) => {
+src/engine/camera/CinematicCamera.tsx:16:    camera.position.x = Math.sin(time.current) * 80
+src/engine/camera/CinematicCamera.tsx:17:    camera.position.z = 280 + Math.cos(time.current) * 40
+src/engine/camera/CinematicCamera.tsx:18:    camera.position.y = 120 + Math.sin(time.current * 0.5) * 25
+src/engine/camera/CinematicCamera.tsx:20:    camera.lookAt(target.current)
+src/spatial/scene/SpatialScene.tsx:3:import { Canvas, useFrame, useThree } from "@react-three/fiber";
+src/spatial/scene/SpatialScene.tsx:8:  | "home"
+src/spatial/scene/SpatialScene.tsx:10:  | "ground"
+src/spatial/scene/SpatialScene.tsx:14:  | "lifemap"
+src/spatial/scene/SpatialScene.tsx:15:  | "focus"
+src/spatial/scene/SpatialScene.tsx:16:  | "replay"
+src/spatial/scene/SpatialScene.tsx:85:  mode,
+src/spatial/scene/SpatialScene.tsx:88:  mode: Mode;
+src/spatial/scene/SpatialScene.tsx:92:    mode === "home" || mode === "toGround" || mode === "toHomeFromGround"
+src/spatial/scene/SpatialScene.tsx:93:      ? mode === "home"
+src/spatial/scene/SpatialScene.tsx:96:      : mode === "ground" || mode === "detail"
+src/spatial/scene/SpatialScene.tsx:101:  if (mode === "home") text = "Sky opens LifeMap. Ground opens world layer.";
+src/spatial/scene/SpatialScene.tsx:102:  if (mode === "ground") text = "Select an object. Esc returns Home.";
+src/spatial/scene/SpatialScene.tsx:103:  if (mode === "detail") {
+src/spatial/scene/SpatialScene.tsx:111:  if (mode === "lifemap") text = "Select a memory star. Esc returns Home.";
+src/spatial/scene/SpatialScene.tsx:112:  if (mode === "replay") text = "Replay active. Esc returns to LifeMap.";
+src/spatial/scene/SpatialScene.tsx:135:            background: "rgba(8,16,34,0.7)",
+src/spatial/scene/SpatialScene.tsx:162:          background: "rgba(6,12,24,0.58)",
+src/spatial/scene/SpatialScene.tsx:175:  mode,
+src/spatial/scene/SpatialScene.tsx:180:  mode: Mode;
+src/spatial/scene/SpatialScene.tsx:185:  const { camera, scene } = useThree();
+src/spatial/scene/SpatialScene.tsx:188:  const homeActorsRef = useRef<THREE.Group>(null);
+src/spatial/scene/SpatialScene.tsx:189:  const groundWorldRef = useRef<THREE.Group>(null);
+src/spatial/scene/SpatialScene.tsx:190:  const starfieldRef = useRef<THREE.Group>(null);
+src/spatial/scene/SpatialScene.tsx:193:  const [hoveredStar, setHoveredStar] = useState<string | null>(null);
+src/spatial/scene/SpatialScene.tsx:194:  const [selectedStar, setSelectedStar] = useState<string | null>(null);
+src/spatial/scene/SpatialScene.tsx:199:    if (mode === "toGround") timer = window.setTimeout(() => setMode("ground"), 1000);
+src/spatial/scene/SpatialScene.tsx:200:    if (mode === "toHomeFromGround") timer = window.setTimeout(() => setMode("home"), 1000);
+src/spatial/scene/SpatialScene.tsx:201:    if (mode === "toLifemap") timer = window.setTimeout(() => setMode("lifemap"), 1400);
+src/spatial/scene/SpatialScene.tsx:202:    if (mode === "focus") timer = window.setTimeout(() => setMode("replay"), 900);
+src/spatial/scene/SpatialScene.tsx:203:    if (mode === "toLifemapFromReplay") timer = window.setTimeout(() => setMode("lifemap"), 850);
+src/spatial/scene/SpatialScene.tsx:204:    if (mode === "toHomeFromLifemap") timer = window.setTimeout(() => setMode("home"), 1200);
+src/spatial/scene/SpatialScene.tsx:209:  }, [mode, setMode]);
+src/spatial/scene/SpatialScene.tsx:215:      if (mode === "detail") {
+src/spatial/scene/SpatialScene.tsx:217:        setMode("ground");
+src/spatial/scene/SpatialScene.tsx:221:      if (mode === "ground") {
+src/spatial/scene/SpatialScene.tsx:227:      if (mode === "lifemap") {
+src/spatial/scene/SpatialScene.tsx:233:      if (mode === "replay") {
+src/spatial/scene/SpatialScene.tsx:240:  }, [mode, setMode, setSelectedItem]);
+src/spatial/scene/SpatialScene.tsx:242:  useFrame((state, delta) => {
+src/spatial/scene/SpatialScene.tsx:243:    const lifemapFamily =
+src/spatial/scene/SpatialScene.tsx:244:      mode === "toLifemap" ||
+src/spatial/scene/SpatialScene.tsx:245:      mode === "lifemap" ||
+src/spatial/scene/SpatialScene.tsx:246:      mode === "focus" ||
+src/spatial/scene/SpatialScene.tsx:247:      mode === "replay" ||
+src/spatial/scene/SpatialScene.tsx:248:      mode === "toLifemapFromReplay" ||
+src/spatial/scene/SpatialScene.tsx:249:      mode === "toHomeFromLifemap";
+src/spatial/scene/SpatialScene.tsx:251:    const bg = lifemapFamily ? new THREE.Color("#020611") : new THREE.Color("#07152f");
+src/spatial/scene/SpatialScene.tsx:252:    const fogColor = lifemapFamily ? new THREE.Color("#071120") : new THREE.Color("#0f1d36");
+src/spatial/scene/SpatialScene.tsx:254:    if (!(scene.background instanceof THREE.Color)) {
+src/spatial/scene/SpatialScene.tsx:255:      scene.background = bg.clone();
+src/spatial/scene/SpatialScene.tsx:257:    (scene.background as THREE.Color).lerp(bg, 1 - Math.exp(-delta * 2.5));
+src/spatial/scene/SpatialScene.tsx:258:    scene.fog = new THREE.FogExp2(fogColor, lifemapFamily ? 0.03 : 0.055);
+src/spatial/scene/SpatialScene.tsx:260:    const homeAlpha =
+src/spatial/scene/SpatialScene.tsx:261:      mode === "home" || mode === "toHomeFromGround" ? 1 : 0;
+src/spatial/scene/SpatialScene.tsx:263:    const groundAlpha =
+src/spatial/scene/SpatialScene.tsx:264:      mode === "home" ||
+src/spatial/scene/SpatialScene.tsx:265:      mode === "toGround" ||
+src/spatial/scene/SpatialScene.tsx:266:      mode === "ground" ||
+src/spatial/scene/SpatialScene.tsx:267:      mode === "detail" ||
+src/spatial/scene/SpatialScene.tsx:268:      mode === "toHomeFromGround"
+src/spatial/scene/SpatialScene.tsx:272:    const starAlpha = lifemapFamily ? 1 : 0;
+src/spatial/scene/SpatialScene.tsx:274:    if (homeActorsRef.current) {
+src/spatial/scene/SpatialScene.tsx:275:      homeActorsRef.current.visible = homeAlpha > 0.01;
+src/spatial/scene/SpatialScene.tsx:276:      dampOpacity(homeActorsRef.current, homeAlpha, 5, delta);
+src/spatial/scene/SpatialScene.tsx:277:      homeActorsRef.current.position.y = THREE.MathUtils.damp(
+src/spatial/scene/SpatialScene.tsx:278:        homeActorsRef.current.position.y,
+src/spatial/scene/SpatialScene.tsx:279:        mode === "toGround" ? -0.7 : mode === "toLifemap" ? -1.5 : 0,
+src/spatial/scene/SpatialScene.tsx:283:      homeActorsRef.current.position.z = THREE.MathUtils.damp(
+src/spatial/scene/SpatialScene.tsx:284:        homeActorsRef.current.position.z,
+src/spatial/scene/SpatialScene.tsx:285:        mode === "toLifemap" ? 2.4 : 0,
+src/spatial/scene/SpatialScene.tsx:291:    if (groundWorldRef.current) {
+src/spatial/scene/SpatialScene.tsx:292:      groundWorldRef.current.visible = groundAlpha > 0.01;
+src/spatial/scene/SpatialScene.tsx:293:      dampOpacity(groundWorldRef.current, groundAlpha, 5, delta);
+src/spatial/scene/SpatialScene.tsx:294:      groundWorldRef.current.position.y = THREE.MathUtils.damp(
+src/spatial/scene/SpatialScene.tsx:295:        groundWorldRef.current.position.y,
+src/spatial/scene/SpatialScene.tsx:296:        mode === "toLifemap" ? -2.2 : 0,
+src/spatial/scene/SpatialScene.tsx:300:      groundWorldRef.current.position.z = THREE.MathUtils.damp(
+src/spatial/scene/SpatialScene.tsx:301:        groundWorldRef.current.position.z,
+src/spatial/scene/SpatialScene.tsx:302:        mode === "toLifemap" ? 3 : 0,
+src/spatial/scene/SpatialScene.tsx:308:    if (starfieldRef.current) {
+src/spatial/scene/SpatialScene.tsx:309:      starfieldRef.current.visible = starAlpha > 0.01;
+src/spatial/scene/SpatialScene.tsx:310:      dampOpacity(starfieldRef.current, starAlpha, 5, delta);
+src/spatial/scene/SpatialScene.tsx:316:    if (mode === "toGround") {
+src/spatial/scene/SpatialScene.tsx:319:    } else if (mode === "ground") {
+src/spatial/scene/SpatialScene.tsx:322:    } else if (mode === "detail") {
+src/spatial/scene/SpatialScene.tsx:333:    } else if (mode === "toHomeFromGround") {
+src/spatial/scene/SpatialScene.tsx:336:    } else if (mode === "toLifemap") {
+src/spatial/scene/SpatialScene.tsx:339:    } else if (mode === "lifemap") {
+src/spatial/scene/SpatialScene.tsx:342:    } else if (mode === "focus" || mode === "replay") {
+src/spatial/scene/SpatialScene.tsx:343:      const picked = stars.find((s) => s.id === selectedStar) ?? stars[stars.length - 1];
+src/spatial/scene/SpatialScene.tsx:345:      const orbit =
+src/spatial/scene/SpatialScene.tsx:346:        mode === "replay"
+src/spatial/scene/SpatialScene.tsx:354:      targetPos = base.clone().add(orbit);
+src/spatial/scene/SpatialScene.tsx:356:    } else if (mode === "toLifemapFromReplay") {
+src/spatial/scene/SpatialScene.tsx:359:    } else if (mode === "toHomeFromLifemap") {
+src/spatial/scene/SpatialScene.tsx:364:    camera.position.x = THREE.MathUtils.damp(camera.position.x, targetPos.x, 3.2, delta);
+src/spatial/scene/SpatialScene.tsx:365:    camera.position.y = THREE.MathUtils.damp(camera.position.y, targetPos.y, 3.2, delta);
+src/spatial/scene/SpatialScene.tsx:366:    camera.position.z = THREE.MathUtils.damp(camera.position.z, targetPos.z, 3.2, delta);
+src/spatial/scene/SpatialScene.tsx:367:    camera.lookAt(targetLook);
+src/spatial/scene/SpatialScene.tsx:369:    if (groundWorldRef.current) {
+src/spatial/scene/SpatialScene.tsx:370:      groundWorldRef.current.rotation.y = THREE.MathUtils.damp(
+src/spatial/scene/SpatialScene.tsx:371:        groundWorldRef.current.rotation.y,
+src/spatial/scene/SpatialScene.tsx:372:        mode === "ground" || mode === "detail" || mode === "toGround" ? 0.02 : 0,
+src/spatial/scene/SpatialScene.tsx:379:  const canEnterGround = mode === "home";
+src/spatial/scene/SpatialScene.tsx:380:  const canEnterLifemap = mode === "home";
+src/spatial/scene/SpatialScene.tsx:381:  const canSelectGround = mode === "ground";
+src/spatial/scene/SpatialScene.tsx:382:  const canSelectStar = mode === "lifemap";
+src/spatial/scene/SpatialScene.tsx:385:    mode === "home" || mode === "toHomeFromGround"
+src/spatial/scene/SpatialScene.tsx:390:    mode === "home" || mode === "toHomeFromGround"
+src/spatial/scene/SpatialScene.tsx:395:    mode === "home" || mode === "toHomeFromGround"
+src/spatial/scene/SpatialScene.tsx:406:      <group ref={groundWorldRef}>
+src/spatial/scene/SpatialScene.tsx:410:          onClick={() => {
+src/spatial/scene/SpatialScene.tsx:426:          visible={mode !== "lifemap" && mode !== "focus" && mode !== "replay" && mode !== "toLifemapFromReplay"}
+src/spatial/scene/SpatialScene.tsx:427:          onClick={() => {
+src/spatial/scene/SpatialScene.tsx:448:          onClick={() => {
+src/spatial/scene/SpatialScene.tsx:471:          onClick={() => {
+src/spatial/scene/SpatialScene.tsx:508:          onClick={() => {
+src/spatial/scene/SpatialScene.tsx:527:      <group ref={homeActorsRef}>
+src/spatial/scene/SpatialScene.tsx:554:      <group ref={starfieldRef} visible={false}>
+src/spatial/scene/SpatialScene.tsx:556:          const selected = selectedStar === star.id;
+src/spatial/scene/SpatialScene.tsx:557:          const hovered = hoveredStar === star.id;
+src/spatial/scene/SpatialScene.tsx:568:              onClick={(e) => {
+src/spatial/scene/SpatialScene.tsx:572:                  setMode("focus");
+src/spatial/scene/SpatialScene.tsx:595:  const [mode, setMode] = useState<Mode>("home");
+src/spatial/scene/SpatialScene.tsx:605:        background: "#07152f",
+src/spatial/scene/SpatialScene.tsx:609:        camera={{ position: [0, 2.4, 10.8], fov: 42, near: 0.1, far: 200 }}
+src/spatial/scene/SpatialScene.tsx:614:          mode={mode}
+src/spatial/scene/SpatialScene.tsx:621:      <Overlay mode={mode} selectedItem={selectedItem} />
+src/spatial/scene/InstancedStars.tsx:5:import { useFrame } from '@react-three/fiber'
+src/spatial/scene/InstancedStars.tsx:46:  useFrame((state) => {
+src/spatial/scene/home-view.tsx:13:          onClick={() => setSceneActive(true)}
+src/spatial/scene/home-view.tsx:14:          className="absolute top-4 left-4 z-10 px-4 py-2 bg-black text-white border border-white rounded hover:bg-white hover:text-black transition"
+
+=== 5) DUPLICATE MOTION AUTHORITY SEARCH ===
+src/spatial/scene/SpatialScene.tsx:3:import { Canvas, useFrame, useThree } from "@react-three/fiber";
+src/spatial/scene/SpatialScene.tsx:65:function dampOpacity(root: THREE.Object3D, target: number, lambda: number, delta: number) {
+src/spatial/scene/SpatialScene.tsx:75:        m.opacity = THREE.MathUtils.damp(m.opacity, target, lambda, delta);
+src/spatial/scene/SpatialScene.tsx:242:  useFrame((state, delta) => {
+src/spatial/scene/SpatialScene.tsx:257:    (scene.background as THREE.Color).lerp(bg, 1 - Math.exp(-delta * 2.5));
+src/spatial/scene/SpatialScene.tsx:276:      dampOpacity(homeActorsRef.current, homeAlpha, 5, delta);
+src/spatial/scene/SpatialScene.tsx:277:      homeActorsRef.current.position.y = THREE.MathUtils.damp(
+src/spatial/scene/SpatialScene.tsx:283:      homeActorsRef.current.position.z = THREE.MathUtils.damp(
+src/spatial/scene/SpatialScene.tsx:293:      dampOpacity(groundWorldRef.current, groundAlpha, 5, delta);
+src/spatial/scene/SpatialScene.tsx:294:      groundWorldRef.current.position.y = THREE.MathUtils.damp(
+src/spatial/scene/SpatialScene.tsx:300:      groundWorldRef.current.position.z = THREE.MathUtils.damp(
+src/spatial/scene/SpatialScene.tsx:310:      dampOpacity(starfieldRef.current, starAlpha, 5, delta);
+src/spatial/scene/SpatialScene.tsx:364:    camera.position.x = THREE.MathUtils.damp(camera.position.x, targetPos.x, 3.2, delta);
+src/spatial/scene/SpatialScene.tsx:365:    camera.position.y = THREE.MathUtils.damp(camera.position.y, targetPos.y, 3.2, delta);
+src/spatial/scene/SpatialScene.tsx:366:    camera.position.z = THREE.MathUtils.damp(camera.position.z, targetPos.z, 3.2, delta);
+src/spatial/scene/SpatialScene.tsx:367:    camera.lookAt(targetLook);
+src/spatial/scene/SpatialScene.tsx:370:      groundWorldRef.current.rotation.y = THREE.MathUtils.damp(
+src/spatial/scene/InstancedStars.tsx:5:import { useFrame } from '@react-three/fiber'
+src/spatial/scene/InstancedStars.tsx:46:  useFrame((state) => {
+
+=== 6) HOME RESIDUE RISK SEARCH ===
+src/spatial/scene/SpatialScene.tsx:10:  | "ground"
+src/spatial/scene/SpatialScene.tsx:96:      : mode === "ground" || mode === "detail"
+src/spatial/scene/SpatialScene.tsx:102:  if (mode === "ground") text = "Select an object. Esc returns Home.";
+src/spatial/scene/SpatialScene.tsx:135:            background: "rgba(8,16,34,0.7)",
+src/spatial/scene/SpatialScene.tsx:162:          background: "rgba(6,12,24,0.58)",
+src/spatial/scene/SpatialScene.tsx:189:  const groundWorldRef = useRef<THREE.Group>(null);
+src/spatial/scene/SpatialScene.tsx:199:    if (mode === "toGround") timer = window.setTimeout(() => setMode("ground"), 1000);
+src/spatial/scene/SpatialScene.tsx:217:        setMode("ground");
+src/spatial/scene/SpatialScene.tsx:221:      if (mode === "ground") {
+src/spatial/scene/SpatialScene.tsx:254:    if (!(scene.background instanceof THREE.Color)) {
+src/spatial/scene/SpatialScene.tsx:255:      scene.background = bg.clone();
+src/spatial/scene/SpatialScene.tsx:257:    (scene.background as THREE.Color).lerp(bg, 1 - Math.exp(-delta * 2.5));
+src/spatial/scene/SpatialScene.tsx:263:    const groundAlpha =
+src/spatial/scene/SpatialScene.tsx:266:      mode === "ground" ||
+src/spatial/scene/SpatialScene.tsx:291:    if (groundWorldRef.current) {
+src/spatial/scene/SpatialScene.tsx:292:      groundWorldRef.current.visible = groundAlpha > 0.01;
+src/spatial/scene/SpatialScene.tsx:293:      dampOpacity(groundWorldRef.current, groundAlpha, 5, delta);
+src/spatial/scene/SpatialScene.tsx:294:      groundWorldRef.current.position.y = THREE.MathUtils.damp(
+src/spatial/scene/SpatialScene.tsx:295:        groundWorldRef.current.position.y,
+src/spatial/scene/SpatialScene.tsx:300:      groundWorldRef.current.position.z = THREE.MathUtils.damp(
+src/spatial/scene/SpatialScene.tsx:301:        groundWorldRef.current.position.z,
+src/spatial/scene/SpatialScene.tsx:319:    } else if (mode === "ground") {
+src/spatial/scene/SpatialScene.tsx:345:      const orbit =
+src/spatial/scene/SpatialScene.tsx:354:      targetPos = base.clone().add(orbit);
+src/spatial/scene/SpatialScene.tsx:369:    if (groundWorldRef.current) {
+src/spatial/scene/SpatialScene.tsx:370:      groundWorldRef.current.rotation.y = THREE.MathUtils.damp(
+src/spatial/scene/SpatialScene.tsx:371:        groundWorldRef.current.rotation.y,
+src/spatial/scene/SpatialScene.tsx:372:        mode === "ground" || mode === "detail" || mode === "toGround" ? 0.02 : 0,
+src/spatial/scene/SpatialScene.tsx:381:  const canSelectGround = mode === "ground";
+src/spatial/scene/SpatialScene.tsx:406:      <group ref={groundWorldRef}>
+src/spatial/scene/SpatialScene.tsx:414:          <circleGeometry args={[18, 64]} />
+src/spatial/scene/SpatialScene.tsx:415:          <meshStandardMaterial
+src/spatial/scene/SpatialScene.tsx:432:          <meshStandardMaterial
+src/spatial/scene/SpatialScene.tsx:456:          <meshStandardMaterial
+src/spatial/scene/SpatialScene.tsx:480:            <meshStandardMaterial
+src/spatial/scene/SpatialScene.tsx:491:            <meshStandardMaterial
+src/spatial/scene/SpatialScene.tsx:516:          <meshStandardMaterial
+src/spatial/scene/SpatialScene.tsx:530:          <meshStandardMaterial
+src/spatial/scene/SpatialScene.tsx:543:          <meshStandardMaterial
+src/spatial/scene/SpatialScene.tsx:577:              <meshStandardMaterial
+src/spatial/scene/SpatialScene.tsx:605:        background: "#07152f",
+src/spatial/scene/InstancedStars.tsx:63:        <meshBasicMaterial color="white" toneMapped={false} />
+src/lib/uraiCanon/lifemap.contract.ts:1:export type StarTier = 'background' | 'memory' | 'anchor'
+src/lib/uraiCanon/lifemap.contract.ts:6:  shadowContrastMax: 0.18,
+src/lib/uraiCanon/lifemap.contract.ts:21:    background: 0.22,
+src/lib/uraiCanon/lifemap.contract.ts:26:    background: 0.50,
+src/lib/uraiCanon/lifemap.contract.ts:31:    background: 0.00,
+src/lib/uraiCanon/lifemap.contract.ts:48:    groundReturnMs: 1450,
+
+=== 7) STAR SEMANTICS RISK SEARCH ===
+src/spatial/scene/SpatialScene.tsx:25:  size: number;
+src/spatial/scene/SpatialScene.tsx:40:  const stars: Star[] = [];
+src/spatial/scene/SpatialScene.tsx:47:    const size = 0.04 + rand() * 0.08;
+src/spatial/scene/SpatialScene.tsx:53:    stars.push({ id: `star-${i}`, position: [x, y, z], size, color });
+src/spatial/scene/SpatialScene.tsx:56:  stars.push(
+src/spatial/scene/SpatialScene.tsx:57:    { id: "memory-1", position: [-4.4, 2.2, -12], size: 0.22, color: "#fff2bf" },
+src/spatial/scene/SpatialScene.tsx:58:    { id: "memory-2", position: [0, 0.5, -14], size: 0.26, color: "#d8e7ff" },
+src/spatial/scene/SpatialScene.tsx:59:    { id: "memory-3", position: [4.7, -1.2, -12.4], size: 0.22, color: "#ffd8bf" }
+src/spatial/scene/SpatialScene.tsx:62:  return stars;
+src/spatial/scene/SpatialScene.tsx:86:  selectedItem,
+src/spatial/scene/SpatialScene.tsx:89:  selectedItem: GroundItem | null;
+src/spatial/scene/SpatialScene.tsx:105:      selectedItem === "anchor"
+src/spatial/scene/SpatialScene.tsx:106:        ? "Home anchor selected. Esc returns."
+src/spatial/scene/SpatialScene.tsx:107:        : selectedItem === "guitar"
+src/spatial/scene/SpatialScene.tsx:108:          ? "Guitar selected. Esc returns."
+src/spatial/scene/SpatialScene.tsx:109:          : "Car selected. Esc returns.";
+src/spatial/scene/SpatialScene.tsx:177:  selectedItem,
+src/spatial/scene/SpatialScene.tsx:182:  selectedItem: GroundItem | null;
+src/spatial/scene/SpatialScene.tsx:187:  const stars = useMemo(() => makeStars(), []);
+src/spatial/scene/SpatialScene.tsx:192:  const [hoveredItem, setHoveredItem] = useState<GroundItem | null>(null);
+src/spatial/scene/SpatialScene.tsx:193:  const [hoveredStar, setHoveredStar] = useState<string | null>(null);
+src/spatial/scene/SpatialScene.tsx:194:  const [selectedStar, setSelectedStar] = useState<string | null>(null);
+src/spatial/scene/SpatialScene.tsx:323:      if (selectedItem === "anchor") {
+src/spatial/scene/SpatialScene.tsx:326:      } else if (selectedItem === "guitar") {
+src/spatial/scene/SpatialScene.tsx:343:      const picked = stars.find((s) => s.id === selectedStar) ?? stars[stars.length - 1];
+src/spatial/scene/SpatialScene.tsx:401:      <ambientLight intensity={0.85} />
+src/spatial/scene/SpatialScene.tsx:403:      <directionalLight position={[4, 7, 6]} intensity={1.6} color="#f3f7ff" />
+src/spatial/scene/SpatialScene.tsx:404:      <directionalLight position={[-7, 3, -8]} intensity={0.55} color="#9fc3ff" />
+src/spatial/scene/SpatialScene.tsx:445:          scale={hoveredItem === "anchor" && canSelectGround ? 1.05 : 1}
+src/spatial/scene/SpatialScene.tsx:458:            emissive={hoveredItem === "anchor" ? "#b9995b" : "#000000"}
+src/spatial/scene/SpatialScene.tsx:459:            emissiveIntensity={hoveredItem === "anchor" ? 0.2 : 0}
+src/spatial/scene/SpatialScene.tsx:468:          scale={hoveredItem === "guitar" && canSelectGround ? 1.04 : 1}
+src/spatial/scene/SpatialScene.tsx:482:              emissive={hoveredItem === "guitar" ? "#ffd7bd" : "#000000"}
+src/spatial/scene/SpatialScene.tsx:483:              emissiveIntensity={hoveredItem === "guitar" ? 0.18 : 0}
+src/spatial/scene/SpatialScene.tsx:493:              emissive={hoveredItem === "guitar" ? "#ffd4a0" : "#000000"}
+src/spatial/scene/SpatialScene.tsx:494:              emissiveIntensity={hoveredItem === "guitar" ? 0.18 : 0}
+src/spatial/scene/SpatialScene.tsx:505:          scale={hoveredItem === "car" && canSelectGround ? 1.05 : 1}
+src/spatial/scene/SpatialScene.tsx:518:            emissive={hoveredItem === "car" ? "#9dc1ff" : "#275cbd"}
+src/spatial/scene/SpatialScene.tsx:519:            emissiveIntensity={hoveredItem === "car" ? 0.3 : 0.14}
+src/spatial/scene/SpatialScene.tsx:555:        {stars.map((star) => {
+src/spatial/scene/SpatialScene.tsx:556:          const selected = selectedStar === star.id;
+src/spatial/scene/SpatialScene.tsx:557:          const hovered = hoveredStar === star.id;
+src/spatial/scene/SpatialScene.tsx:562:              scale={selected ? 1.8 : hovered ? 1.4 : 1}
+src/spatial/scene/SpatialScene.tsx:576:              <sphereGeometry args={[star.size, 18, 18]} />
+src/spatial/scene/SpatialScene.tsx:579:                emissive={hovered || selected ? "#ffffff" : star.color}
+src/spatial/scene/SpatialScene.tsx:580:                emissiveIntensity={selected ? 2.3 : hovered ? 1.5 : 0.75}
+src/spatial/scene/SpatialScene.tsx:596:  const [selectedItem, setSelectedItem] = useState<GroundItem | null>(null);
+src/spatial/scene/SpatialScene.tsx:616:          selectedItem={selectedItem}
+src/spatial/scene/SpatialScene.tsx:621:      <Overlay mode={mode} selectedItem={selectedItem} />
+src/spatial/scene/InstancedStars.tsx:13:  const scales = useMemo(() => new Array(starCount).fill(0).map(() => 0.05 + Math.random() * 0.1), [])
+src/spatial/scene/InstancedStars.tsx:19:      const phi = Math.acos(2 * Math.random() - 1)
+src/spatial/scene/InstancedStars.tsx:20:      const theta = 2 * Math.PI * Math.random()
+src/spatial/scene/InstancedStars.tsx:21:      const r = radius * Math.cbrt(Math.random()) // volumetric distribution
+src/spatial/scene/InstancedStars.tsx:38:      dummy.current.scale.setScalar(scales[i])
+src/spatial/scene/InstancedStars.tsx:43:  }, [starPositions, scales])
+src/spatial/scene/InstancedStars.tsx:51:      const scaleVariation = scales[i] * (0.8 + 0.2 * Math.sin(time + i))
+src/spatial/scene/InstancedStars.tsx:52:      dummy.current.scale.setScalar(scaleVariation)
+src/spatial/scene/InstancedStars.tsx:72:          intensity={0.2}
+src/spatial/scene/home-view.tsx:14:          className="absolute top-4 left-4 z-10 px-4 py-2 bg-black text-white border border-white rounded hover:bg-white hover:text-black transition"
+src/lib/uraiCanon/lifemap.contract.ts:17:  hoverScale: 1.08,
+src/lib/uraiCanon/lifemap.contract.ts:18:  hoverBrightness: 1.18,
+src/lib/uraiCanon/lifemap.contract.ts:19:  hoverHaloOpacity: 0.22,
+src/lib/uraiCanon/lifemap.contract.ts:41:    starsRevealStartMs: 900,
+src/lib/uraiCanon/lifemap.contract.ts:42:    starsDominantMs: 1550,
+
+=== 8) WRITE ACTION PLAN ===
+WROTE: /home/user/urai-spatial/_quarantine/_archive/_audit/pass_lifemap_home_audit_lock_20260329_190229/PLAN.md
+
+=== 9) NEXT FILES TO PATCH FIRST ===
+src/spatial/scene/SpatialScene.tsx
+
+=== 10) OPTIONAL TYPECHECK / BUILD ===
+Running: pnpm exec tsc --noEmit
+../../src/lib/uraiCanon/starTypes.ts(28,1): error TS1127: Invalid character.
+../../src/lib/uraiCanon/starTypes.ts(28,3): error TS1005: ';' expected.
+../../src/lib/uraiCanon/starTypes.ts(28,28): error TS1005: ';' expected.
+../../src/lib/uraiCanon/starTypes.ts(28,33): error TS1003: Identifier expected.
+../../src/lib/uraiCanon/starTypes.ts(29,1): error TS1127: Invalid character.
+../../src/lib/uraiCanon/starTypes.ts(29,3): error TS1005: ';' expected.
+../../src/lib/uraiCanon/starTypes.ts(29,8): error TS1434: Unexpected keyword or identifier.
+../../src/lib/uraiCanon/starTypes.ts(29,14): error TS1434: Unexpected keyword or identifier.
+../../src/lib/uraiCanon/starTypes.ts(29,27): error TS1434: Unexpected keyword or identifier.
+../../src/lib/uraiCanon/starTypes.ts(29,30): error TS1434: Unexpected keyword or identifier.
+../../src/lib/uraiCanon/starTypes.ts(29,45): error TS1003: Identifier expected.
+
+Running: pnpm build
+
+> urai-spatial-monorepo@ build /home/user/urai-spatial
+> pnpm --filter urai-tier1 build
+
+
+> urai-tier1@0.1.0 build /home/user/urai-spatial/urai-tier1
+> next build --webpack
+
+▲ Next.js 16.2.1 (webpack)
+
+  Creating an optimized production build ...
+✓ Compiled successfully in 10.5s
+  Running TypeScript ...
+  Finished TypeScript in 28.7s ...
+  Collecting page data using 1 worker ...
+  Generating static pages using 1 worker (0/3) ...
+✓ Generating static pages using 1 worker (3/3) in 1422ms
+  Finalizing page optimization ...
+  Collecting build traces ...
+
+Route (app)
+┌ ○ /
+└ ○ /_not-found
+
+
+○  (Static)  prerendered as static content
+
+
+=== DONE ===
+Audit:  /home/user/urai-spatial/_quarantine/_archive/_audit/pass_lifemap_home_audit_lock_20260329_190229
+Report: /home/user/urai-spatial/_quarantine/_archive/_audit/pass_lifemap_home_audit_lock_20260329_190229/report.txt
+Plan:   /home/user/urai-spatial/_quarantine/_archive/_audit/pass_lifemap_home_audit_lock_20260329_190229/PLAN.md

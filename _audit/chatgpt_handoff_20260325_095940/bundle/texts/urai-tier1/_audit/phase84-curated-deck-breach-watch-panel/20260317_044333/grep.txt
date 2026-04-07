@@ -1,0 +1,9 @@
+src/spatial/ui/SpatialCuratedDeckBreachWatchPanel.tsx:5:import { buildSpatialCuratedDeckBreachWatch } from "@/spatial/curation/buildSpatialCuratedDeckBreachWatch";
+src/spatial/ui/SpatialCuratedDeckBreachWatchPanel.tsx:12:export default function SpatialCuratedDeckBreachWatchPanel() {
+src/spatial/ui/SpatialCuratedDeckBreachWatchPanel.tsx:17:    () => buildSpatialCuratedDeckBreachWatch({ entries, activeEntryId }),
+src/spatial/ui/SpatialCuratedDeckBreachWatchPanel.tsx:58:        Curated Deck Breach Watch
+src/spatial/curation/spatialCuratedDeckBreachWatchTypes.ts:16:  schema: "urai.spatial.curated-deck-breach-watch.v1";
+src/spatial/curation/buildSpatialCuratedDeckBreachWatch.ts:46:export function buildSpatialCuratedDeckBreachWatch(input: {
+src/spatial/curation/buildSpatialCuratedDeckBreachWatch.ts:162:    schema: "urai.spatial.curated-deck-breach-watch.v1",
+src/spatial/scene/SpatialScene.tsx:2:import SpatialCuratedDeckBreachWatchPanel from "@/spatial/ui/SpatialCuratedDeckBreachWatchPanel";
+src/spatial/scene/SpatialScene.tsx:818:      <SpatialCuratedDeckBreachWatchPanel />

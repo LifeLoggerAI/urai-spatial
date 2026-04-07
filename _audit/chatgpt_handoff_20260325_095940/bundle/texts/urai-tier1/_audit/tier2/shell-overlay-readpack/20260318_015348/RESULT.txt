@@ -1,0 +1,3 @@
+AUDIT_DIR=/home/user/urai-spatial/urai-tier1/_audit/tier2/shell-overlay-readpack/20260318_015348
+Paste back:
+  /home/user/urai-spatial/urai-tier1/_audit/tier2/shell-overlay-readpack/20260318_015348/key-excerpts.txt

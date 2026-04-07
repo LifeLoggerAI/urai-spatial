@@ -1,0 +1,12 @@
+=== probable mismatches ===
+1. SceneMode split across sceneStore.ts and types.ts
+2. Legacy API names still consumed by scene files
+3. Store may expose selectedStarId/hoveredStarId while components still expect object refs
+4. ground/home/sky naming is not unified
+
+=== check these first ===
+- src/spatial/state/sceneStore.ts
+- src/spatial/types.ts
+- src/spatial/scene/StarMesh.tsx
+- src/spatial/components/CameraRig.tsx
+- src/spatial/scene/HomeWorld.tsx

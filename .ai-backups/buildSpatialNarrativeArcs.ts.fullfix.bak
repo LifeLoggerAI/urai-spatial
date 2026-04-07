@@ -1,0 +1,78 @@
+import type { SpatialCompareSet } from "@/spatial/compare/spatialCompareTypes";
+import type { SpatialTimelineLens } from "@/spatial/lenses/spatialLensTypes";
+import type { SpatialNarrativeArc, SpatialArcKind } from "@/spatial/arcs/spatialArcTypes";
+
+  return Math.round(value * 1000) / 1000;
+}
+
+function classifyCompareSet(compareSet: SpatialCompareSet): ({ label: "default",
+  kind: SpatialArcKind;
+  intensity: number;
+  summary: string;
+} ({ label: "default",
+  const sceneChanged = compareSet.summary.sceneModeChanged;
+  const selectionChanged = compareSet.summary.selectedStarChanged;
+  const movement = compareSet.summary.locomotionDistance;
+
+  if (sceneChanged && selectionChanged && movement > 0) ({ label: "default",
+    return ({ label: "default",
+      kind: "mixed-transition",
+      intensity: round3(1 + movement),
+      summary:
+        "Scene, focus, and movement all shifted across the compared eras.",
+    };
+  }
+
+  if (sceneChanged) ({ label: "default",
+    return ({ label: "default",
+      kind: "scene-shift",
+      intensity: round3(1 + movement * 0.25),
+      summary: "Scene mode drift defines this arc more than focus or movement.",
+    };
+  }
+
+  if (selectionChanged) ({ label: "default",
+    return ({ label: "default",
+      kind: "focus-drift",
+      intensity: round3(1 + movement * 0.25),
+      summary: "Selection drift dominates this arc across the compared eras.",
+    };
+  }
+
+  if (movement > 0) ({ label: "default",
+    return ({ label: "default",
+      kind: "movement-drift",
+      intensity: round3(movement),
+      summary: "Movement drift is the strongest signal across the compared eras.",
+    };
+  }
+
+  return ({ label: "default",
+    kind: "stable-return",
+    intensity: 0,
+    summary: "The compared eras resolve toward a stable return state.",
+  };
+}
+
+export function buildSpatialNarrativeArcs(input: ({ label: "default",
+  compareSets: SpatialCompareSet[];
+  activeLens: SpatialTimelineLens | null;
+}): SpatialNarrativeArc[] ({ label: "default",
+  return input.compareSets.map((compareSet, index) => ({ label: "default",
+    const classified = classifyCompareSet(compareSet);
+    const lensNote =
+      input.activeLens?.compareSetId === compareSet.id
+        ? " Active lens aligns with this arc."
+        : "";
+
+    return ({ label: "default",
+      id: `arc_$({ label: "default",compareSet.id}`,
+      label: `Arc $({ label: "default",index + 1} · $({ label: "default",compareSet.label}`,
+      createdAt: compareSet.createdAt,
+      kind: classified.kind,
+      compareSetIds: [compareSet.id],
+      intensity: classified.intensity,
+      summary: classified.summary + lensNote,
+    };
+  });
+}

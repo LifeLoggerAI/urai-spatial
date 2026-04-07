@@ -1,35 +1,31 @@
-import { getSpatialScopedStorageKey } from "@/spatial/account/accountScopedStorage";
-import {
-  SPATIAL_PERSISTENCE_STORAGE_KEY,
-  type SpatialPersistenceSnapshot,
-} from "@/spatial/persistence/spatialPersistenceTypes";
+import type { SpatialPersistenceSnapshot } from "../types";
 
-export function writeSpatialPersistenceSnapshot(
-  snapshot: SpatialPersistenceSnapshot,
-): void {
+const SPATIAL_PERSISTENCE_KEY = "urai.spatial.persistence.v1";
+
+export function saveSpatialPersistenceSnapshot(snapshot: SpatialPersistenceSnapshot) {
   if (typeof window === "undefined") return;
   try {
     window.localStorage.setItem(
-      getSpatialScopedStorageKey(SPATIAL_PERSISTENCE_STORAGE_KEY),
+      SPATIAL_PERSISTENCE_KEY,
       JSON.stringify(snapshot),
     );
   } catch (_err) {}
 }
 
-export function readSpatialPersistenceSnapshot():
-  | SpatialPersistenceSnapshot
-  | null {
+export function loadSpatialPersistenceSnapshot(): SpatialPersistenceSnapshot | null {
   if (typeof window === "undefined") return null;
-
   try {
-    const raw = window.localStorage.getItem(
-      getSpatialScopedStorageKey(SPATIAL_PERSISTENCE_STORAGE_KEY),
-    );
+    const raw = window.localStorage.getItem(SPATIAL_PERSISTENCE_KEY);
     if (!raw) return null;
-    const parsed = JSON.parse(raw) as SpatialPersistenceSnapshot;
-    if (parsed?.schema !== "urai.spatial.persistence.v1") return null;
-    return parsed;
+    return JSON.parse(raw) as SpatialPersistenceSnapshot;
   } catch (_err) {
     return null;
   }
+}
+
+export function clearSpatialPersistenceSnapshot() {
+  if (typeof window === "undefined") return;
+  try {
+    window.localStorage.removeItem(SPATIAL_PERSISTENCE_KEY);
+  } catch (_err) {}
 }

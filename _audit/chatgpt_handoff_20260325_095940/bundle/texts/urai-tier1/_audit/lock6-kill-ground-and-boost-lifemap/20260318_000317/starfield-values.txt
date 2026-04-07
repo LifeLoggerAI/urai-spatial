@@ -1,0 +1,8 @@
+352:    const ambientCount = mode === "lifemap" ? 520 : mode === "sky" ? 180 : 90;
+356:      {Array.from({ length: ambientCount }).map((_, i) => {
+358:                const radius = 10 + (i % 15) * 2.6 + Math.sin(i * 0.77) * 1.8;
+360:                const y = -14 + (i % 27) * 1.05 + Math.sin(i * 1.13) * 2.1;
+361:                const z = -6 - (i % 21) * 3.8 - Math.cos(i * 0.41) * 2.8;
+364:            ? 0.06 + (i % 5) * 0.018
+370:            ? 0.28 + (i % 7) * 0.055
+435:        const radius = 1.5 + (i % 3) * 0.42;

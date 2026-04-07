@@ -6,7 +6,7 @@ const FALLBACK_ACCOUNT_ID = "local-spatial-account";
 
 type JsonRecord = Record<string, unknown>;
 
-function isRecord(value: unknown): value is JsonRecord {
+function isRecord(value: any): value is JsonRecord {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
@@ -16,7 +16,7 @@ function readJsonRecord(key: string): JsonRecord | null {
   try {
     const raw = window.localStorage.getItem(key);
     if (!raw) return null;
-    const parsed: unknown = JSON.parse(raw);
+    const parsed: any = JSON.parse(raw);
     return isRecord(parsed) ? parsed : null;
   } catch {
     return null;

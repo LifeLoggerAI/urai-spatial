@@ -1,0 +1,42 @@
+import { create } from "zustand";
+
+export type XrInputState = {
+  primaryPressed: boolean;
+  squeezePressed: boolean;
+  selectPressed: boolean;
+  triggerPressed: boolean;
+  lastInputSourceCount: number;
+  controllerCount: number;
+  handedness: "none" | "left" | "right" | "both";
+  lastUpdatedAt: number;
+  setPartial: (patch: Partial<XrInputState>) => void;
+  reset: () => void;
+  [key: string]: any;
+};
+
+const initialState = {
+  primaryPressed: false,
+  squeezePressed: false,
+  selectPressed: false,
+  triggerPressed: false,
+  lastInputSourceCount: 0,
+  controllerCount: 0,
+  handedness: "none" as const,
+  lastUpdatedAt: 0,
+};
+
+export const useXrInputStore = create<XrInputState>((set) => ({
+  ...initialState,
+  setPartial: (patch) =>
+    set((state) => ({
+      ...state,
+      ...patch,
+      lastUpdatedAt: Date.now(),
+    })),
+  reset: () =>
+    set(() => ({
+      ...initialState,
+      setPartial: useXrInputStore.getState().setPartial,
+      reset: useXrInputStore.getState().reset,
+    })),
+}));

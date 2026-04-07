@@ -1,0 +1,10 @@
+src/spatial/ui/SpatialCuratedDeckStabilityPanel.tsx:5:import { buildSpatialCuratedDeckStability } from "@/spatial/curation/buildSpatialCuratedDeckStability";
+src/spatial/ui/SpatialCuratedDeckStabilityPanel.tsx:8:export default function SpatialCuratedDeckStabilityPanel() {
+src/spatial/ui/SpatialCuratedDeckStabilityPanel.tsx:13:    () => buildSpatialCuratedDeckStability({ entries, activeEntryId }),
+src/spatial/ui/SpatialCuratedDeckStabilityPanel.tsx:51:        Curated Deck Stability
+src/spatial/curation/buildSpatialCuratedDeckStability.ts:48:export function buildSpatialCuratedDeckStability(input: {
+src/spatial/curation/buildSpatialCuratedDeckStability.ts:54:      schema: "urai.spatial.curated-deck-stability.v1",
+src/spatial/curation/buildSpatialCuratedDeckStability.ts:133:    schema: "urai.spatial.curated-deck-stability.v1",
+src/spatial/curation/spatialCuratedDeckStabilityTypes.ts:4:  schema: "urai.spatial.curated-deck-stability.v1";
+src/spatial/scene/SpatialScene.tsx:2:import SpatialCuratedDeckStabilityPanel from "@/spatial/ui/SpatialCuratedDeckStabilityPanel";
+src/spatial/scene/SpatialScene.tsx:790:      <SpatialCuratedDeckStabilityPanel />

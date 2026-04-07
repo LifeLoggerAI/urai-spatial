@@ -1,7 +1,5 @@
 import { getSpatialScopedStorageKey } from "@/spatial/account/accountScopedStorage";
 import {
-  SPATIAL_CURATED_DECK_VAULT_MAX_ITEMS,
-  SPATIAL_CURATED_DECK_VAULT_STORAGE_KEY,
   createDefaultSpatialCuratedDeckVaultManifest,
   type SpatialCuratedDeckVaultEntry,
   type SpatialCuratedDeckVaultManifest,
@@ -14,7 +12,6 @@ export function readSpatialCuratedDeckVaultManifest(): SpatialCuratedDeckVaultMa
 
   try {
     const raw = window.localStorage.getItem(
-      getSpatialScopedStorageKey(SPATIAL_CURATED_DECK_VAULT_STORAGE_KEY),
     );
     if (!raw) return createDefaultSpatialCuratedDeckVaultManifest();
 
@@ -24,7 +21,6 @@ export function readSpatialCuratedDeckVaultManifest(): SpatialCuratedDeckVaultMa
     }
 
     const entries = Array.isArray(parsed.entries)
-      ? parsed.entries.slice(-SPATIAL_CURATED_DECK_VAULT_MAX_ITEMS)
       : [];
 
     const activeEntryId = entries.some((item) => item.id === parsed.activeEntryId)
@@ -47,13 +43,11 @@ export function writeSpatialCuratedDeckVaultManifest(
   if (typeof window === "undefined") return;
 
   try {
-    const entries = manifest.entries.slice(-SPATIAL_CURATED_DECK_VAULT_MAX_ITEMS);
     const activeEntryId = entries.some((item) => item.id === manifest.activeEntryId)
       ? manifest.activeEntryId
       : entries[0]?.id ?? null;
 
     window.localStorage.setItem(
-      getSpatialScopedStorageKey(SPATIAL_CURATED_DECK_VAULT_STORAGE_KEY),
       JSON.stringify({
         schema: "urai.spatial.curated-deck-vault.v1",
         activeEntryId,
@@ -68,7 +62,6 @@ export function appendSpatialCuratedDeckVaultEntry(
   entry: SpatialCuratedDeckVaultEntry,
 ): SpatialCuratedDeckVaultManifest {
   const entries = [...manifest.entries, entry].slice(
-    -SPATIAL_CURATED_DECK_VAULT_MAX_ITEMS,
   );
 
   return {

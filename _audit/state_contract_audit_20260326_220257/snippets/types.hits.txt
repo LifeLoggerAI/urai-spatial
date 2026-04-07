@@ -1,0 +1,5 @@
+3:export type SceneMode = "home" | "lifemap" | "replay" | "ground";
+31:  selectedStarId: string | null;
+32:  selectedStarLabel: string | null;
+42:  selectedStarId: string | null;
+43:  selectedStarLabel: string | null;

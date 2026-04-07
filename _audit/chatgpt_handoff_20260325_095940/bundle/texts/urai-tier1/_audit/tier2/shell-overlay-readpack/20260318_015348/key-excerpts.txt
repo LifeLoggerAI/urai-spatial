@@ -1,0 +1,498 @@
+
+===== PATTERN: mode === "home" =====
+312-                borderRadius: 999,
+313-                border: selectedNode
+314-                  ? "1px solid rgba(255,255,255,0.48)"
+315-                  : "1px solid rgba(255,255,255,0.14)",
+316-                background: selectedNode
+317-                  ? "radial-gradient(circle, rgba(214,226,255,0.92) 0%, rgba(140,160,214,0.38) 55%, rgba(26,36,66,0.18) 100%)"
+318-                  : "radial-gradient(circle, rgba(226,236,255,0.94) 0%, rgba(124,146,206,0.22) 100%)",
+319-                boxShadow: selectedNode
+320-                  ? "0 0 34px rgba(180,200,255,0.42)"
+321-                  : "0 0 12px rgba(190,210,255,0.18)",
+322:                opacity: mode === "home" || mode === "sky" ? 0.16 : 1,
+323-                cursor: showMapWorld && !uiLocked ? "pointer" : "default",
+324-                transition:
+325-                  "transform 220ms ease, width 220ms ease, height 220ms ease, opacity 220ms ease, box-shadow 220ms ease",
+326-                pointerEvents: showMapWorld && !uiLocked ? "auto" : "none",
+327-                animation: pulsingNode ? "node-pulse 280ms ease-out 1" : undefined,
+328-              }}
+329-              aria-label={node.title}
+330-            >
+331-              {selectedNode && (
+332-                <span
+--
+358-            border: "1px solid rgba(255,255,255,0.18)",
+359-            boxShadow:
+360-              "0 0 42px rgba(150,176,255,0.14), inset 0 0 22px rgba(230,238,255,0.08)",
+361-            transition: "all 240ms ease",
+362-            animation: "breathe 4.2s ease-in-out infinite",
+363-            zIndex: 10,
+364-          }}
+365-        />
+366-      )}
+367-
+368:      {mode === "home" && (
+369-        <section
+370-          style={{
+371-            position: "absolute",
+372-            left: "50%",
+373-            top: "46%",
+374-            transform: "translate(-50%, -50%)",
+375-            width: "min(560px, calc(100vw - 64px))",
+376-            borderRadius: 18,
+377-            border: "1px solid rgba(255,255,255,0.10)",
+378-            background: "rgba(7,11,24,0.78)",
+
+===== PATTERN: mode === "sky" =====
+151-  const enterReplay = () => {
+152-    if (transitioning) return;
+153-    lock(FOCUS_TO_REPLAY_MS, () => setMode("replay"));
+154-  };
+155-
+156-  const exitReplay = () => {
+157-    if (transitioning) return;
+158-    lock(REPLAY_TO_FOCUS_MS, () => setMode("focus"));
+159-  };
+160-
+161:  const uiLocked = transitioning || mode === "sky";
+162-  const showMapWorld = mode === "lifemap" || mode === "focus" || mode === "replay";
+163-
+164-  return (
+165-    <main
+166-      style={{
+167-        minHeight: "100vh",
+168-        width: "100vw",
+169-        position: "relative",
+170-        overflow: "hidden",
+171-        color: "#f4f7ff",
+--
+312-                borderRadius: 999,
+313-                border: selectedNode
+314-                  ? "1px solid rgba(255,255,255,0.48)"
+315-                  : "1px solid rgba(255,255,255,0.14)",
+316-                background: selectedNode
+317-                  ? "radial-gradient(circle, rgba(214,226,255,0.92) 0%, rgba(140,160,214,0.38) 55%, rgba(26,36,66,0.18) 100%)"
+318-                  : "radial-gradient(circle, rgba(226,236,255,0.94) 0%, rgba(124,146,206,0.22) 100%)",
+319-                boxShadow: selectedNode
+320-                  ? "0 0 34px rgba(180,200,255,0.42)"
+321-                  : "0 0 12px rgba(190,210,255,0.18)",
+322:                opacity: mode === "home" || mode === "sky" ? 0.16 : 1,
+323-                cursor: showMapWorld && !uiLocked ? "pointer" : "default",
+324-                transition:
+325-                  "transform 220ms ease, width 220ms ease, height 220ms ease, opacity 220ms ease, box-shadow 220ms ease",
+326-                pointerEvents: showMapWorld && !uiLocked ? "auto" : "none",
+327-                animation: pulsingNode ? "node-pulse 280ms ease-out 1" : undefined,
+328-              }}
+329-              aria-label={node.title}
+330-            >
+331-              {selectedNode && (
+332-                <span
+--
+415-          >
+416-            This page is the deterministic Tier 1 lock shell: one world, one selected memory,
+417-            one clear camera story, and zero modal-state drift.
+418-          </div>
+419-          <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
+420-            <ActionButton disabled={uiLocked} label="ENTER LIFEMAP" onClick={enterLifeMap} />
+421-          </div>
+422-        </section>
+423-      )}
+424-
+425:      {mode === "sky" && (
+426-        <>
+427-          <div
+428-            style={{
+429-              position: "absolute",
+430-              inset: 0,
+431-              zIndex: 16,
+432-              pointerEvents: "none",
+433-              background:
+434-                "radial-gradient(circle at 50% 34%, rgba(152,184,255,0.08), transparent 20%), linear-gradient(180deg, rgba(3,6,16,0.02) 0%, rgba(3,6,16,0.18) 35%, rgba(3,6,16,0.06) 100%)",
+435-            }}
+
+===== PATTERN: mode === "lifemap" =====
+152-    if (transitioning) return;
+153-    lock(FOCUS_TO_REPLAY_MS, () => setMode("replay"));
+154-  };
+155-
+156-  const exitReplay = () => {
+157-    if (transitioning) return;
+158-    lock(REPLAY_TO_FOCUS_MS, () => setMode("focus"));
+159-  };
+160-
+161-  const uiLocked = transitioning || mode === "sky";
+162:  const showMapWorld = mode === "lifemap" || mode === "focus" || mode === "replay";
+163-
+164-  return (
+165-    <main
+166-      style={{
+167-        minHeight: "100vh",
+168-        width: "100vw",
+169-        position: "relative",
+170-        overflow: "hidden",
+171-        color: "#f4f7ff",
+172-        fontFamily:
+--
+501-              textTransform: "uppercase",
+502-              color: "rgba(226,236,255,0.74)",
+503-              backdropFilter: "blur(10px)",
+504-            }}
+505-          >
+506-            Transit
+507-          </div>
+508-        </>
+509-      )}
+510-
+511:      {mode === "lifemap" && (
+512-        <>
+513-          <div
+514-            style={{
+515-              position: "absolute",
+516-              left: "50%",
+517-              bottom: 18,
+518-              transform: "translateX(-50%)",
+519-              width: "min(520px, calc(100vw - 48px))",
+520-              borderRadius: 14,
+521-              border: "1px solid rgba(255,255,255,0.10)",
+
+===== PATTERN: mode === "focus" =====
+152-    if (transitioning) return;
+153-    lock(FOCUS_TO_REPLAY_MS, () => setMode("replay"));
+154-  };
+155-
+156-  const exitReplay = () => {
+157-    if (transitioning) return;
+158-    lock(REPLAY_TO_FOCUS_MS, () => setMode("focus"));
+159-  };
+160-
+161-  const uiLocked = transitioning || mode === "sky";
+162:  const showMapWorld = mode === "lifemap" || mode === "focus" || mode === "replay";
+163-
+164-  return (
+165-    <main
+166-      style={{
+167-        minHeight: "100vh",
+168-        width: "100vw",
+169-        position: "relative",
+170-        overflow: "hidden",
+171-        color: "#f4f7ff",
+172-        fontFamily:
+--
+336-                    borderRadius: 999,
+337-                    border: "1px solid rgba(206,222,255,0.20)",
+338-                    boxShadow: "0 0 26px rgba(154,186,255,0.14)",
+339-                  }}
+340-                />
+341-              )}
+342-            </button>
+343-          );
+344-        })}
+345-
+346:      {(mode === "focus" || mode === "replay") && (
+347-        <div
+348-          style={{
+349-            position: "absolute",
+350-            left: "50%",
+351-            top: mode === "replay" ? "48%" : "50%",
+352-            transform: "translate(-50%, -50%)",
+353-            width: mode === "replay" ? 146 : 118,
+354-            height: mode === "replay" ? 146 : 118,
+355-            borderRadius: "50%",
+356-            background:
+--
+549-              right: 18,
+550-              bottom: 18,
+551-              zIndex: 20,
+552-            }}
+553-          >
+554-            <ActionButton disabled={uiLocked} label="RETURN HOME" onClick={returnHome} />
+555-          </div>
+556-        </>
+557-      )}
+558-
+559:      {mode === "focus" && (
+560-        <aside
+561-          style={{
+562-            position: "absolute",
+563-            right: 18,
+564-            bottom: 18,
+565-            width: "min(320px, calc(100vw - 36px))",
+566-            borderRadius: 16,
+567-            border: "1px solid rgba(255,255,255,0.10)",
+568-            background: "rgba(7,11,24,0.78)",
+569-            boxShadow: "0 18px 56px rgba(0,0,0,0.38)",
+
+===== PATTERN: mode === "replay" =====
+152-    if (transitioning) return;
+153-    lock(FOCUS_TO_REPLAY_MS, () => setMode("replay"));
+154-  };
+155-
+156-  const exitReplay = () => {
+157-    if (transitioning) return;
+158-    lock(REPLAY_TO_FOCUS_MS, () => setMode("focus"));
+159-  };
+160-
+161-  const uiLocked = transitioning || mode === "sky";
+162:  const showMapWorld = mode === "lifemap" || mode === "focus" || mode === "replay";
+163-
+164-  return (
+165-    <main
+166-      style={{
+167-        minHeight: "100vh",
+168-        width: "100vw",
+169-        position: "relative",
+170-        overflow: "hidden",
+171-        color: "#f4f7ff",
+172-        fontFamily:
+--
+336-                    borderRadius: 999,
+337-                    border: "1px solid rgba(206,222,255,0.20)",
+338-                    boxShadow: "0 0 26px rgba(154,186,255,0.14)",
+339-                  }}
+340-                />
+341-              )}
+342-            </button>
+343-          );
+344-        })}
+345-
+346:      {(mode === "focus" || mode === "replay") && (
+347-        <div
+348-          style={{
+349-            position: "absolute",
+350-            left: "50%",
+351:            top: mode === "replay" ? "48%" : "50%",
+352-            transform: "translate(-50%, -50%)",
+353:            width: mode === "replay" ? 146 : 118,
+354:            height: mode === "replay" ? 146 : 118,
+355-            borderRadius: "50%",
+356-            background:
+357-              "radial-gradient(circle, rgba(220,230,255,0.20) 0%, rgba(116,136,196,0.20) 45%, rgba(46,60,102,0.14) 68%, rgba(18,26,48,0.00) 100%)",
+358-            border: "1px solid rgba(255,255,255,0.18)",
+359-            boxShadow:
+360-              "0 0 42px rgba(150,176,255,0.14), inset 0 0 22px rgba(230,238,255,0.08)",
+361-            transition: "all 240ms ease",
+362-            animation: "breathe 4.2s ease-in-out infinite",
+363-            zIndex: 10,
+364-          }}
+--
+615-          >
+616-            {selected.summary}
+617-          </div>
+618-          <div style={{ display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap" }}>
+619-            <ActionButton disabled={uiLocked} label="ENTER REPLAY" onClick={enterReplay} />
+620-            <ActionButton disabled={uiLocked} label="CLEAR FOCUS" onClick={clearFocus} />
+621-          </div>
+622-        </aside>
+623-      )}
+624-
+625:      {mode === "replay" && (
+626-        <section
+627-          style={{
+628-            position: "absolute",
+629-            left: 18,
+630-            top: "50%",
+631-            transform: "translateY(-50%)",
+632-            width: "min(420px, calc(100vw - 36px))",
+633-            borderRadius: 18,
+634-            border: "1px solid rgba(255,255,255,0.10)",
+635-            background: "rgba(7,11,24,0.80)",
+
+===== PATTERN: function ActionButton =====
+751-          100% {
+752-            transform: translate(-50%, -50%) scale(1.18);
+753-            opacity: 1;
+754-          }
+755-        }
+756-      `}</style>
+757-    </main>
+758-  );
+759-}
+760-
+761:function ActionButton(input: {
+762-  label: string;
+763-  onClick: () => void;
+764-  disabled?: boolean;
+765-}) {
+766-  return (
+767-    <button
+768-      type="button"
+769-      onClick={input.onClick}
+770-      disabled={input.disabled}
+771-      style={{
+
+===== PATTERN: panelStyle =====
+
+===== PATTERN: captionStyle =====
+
+===== PATTERN: shellButtonStyle =====
+
+===== PATTERN: selectedStar =====
+
+===== PATTERN: enterReplay =====
+141-      setPulseId(null);
+142-      setMode("focus");
+143-    });
+144-  };
+145-
+146-  const clearFocus = () => {
+147-    if (transitioning) return;
+148-    lock(FOCUS_TO_MAP_MS, () => setMode("lifemap"));
+149-  };
+150-
+151:  const enterReplay = () => {
+152-    if (transitioning) return;
+153-    lock(FOCUS_TO_REPLAY_MS, () => setMode("replay"));
+154-  };
+155-
+156-  const exitReplay = () => {
+157-    if (transitioning) return;
+158-    lock(REPLAY_TO_FOCUS_MS, () => setMode("focus"));
+159-  };
+160-
+161-  const uiLocked = transitioning || mode === "sky";
+--
+609-            style={{
+610-              fontSize: 13,
+611-              lineHeight: 1.65,
+612-              color: "rgba(220,228,245,0.78)",
+613-              marginBottom: 16,
+614-            }}
+615-          >
+616-            {selected.summary}
+617-          </div>
+618-          <div style={{ display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap" }}>
+619:            <ActionButton disabled={uiLocked} label="ENTER REPLAY" onClick={enterReplay} />
+620-            <ActionButton disabled={uiLocked} label="CLEAR FOCUS" onClick={clearFocus} />
+621-          </div>
+622-        </aside>
+623-      )}
+624-
+625-      {mode === "replay" && (
+626-        <section
+627-          style={{
+628-            position: "absolute",
+629-            left: 18,
+
+===== PATTERN: clearFocus =====
+136-  const selectMemory = (id: string) => {
+137-    if (transitioning) return;
+138-    setSelectedId(id);
+139-    setPulseId(id);
+140-    lock(MAP_TO_FOCUS_MS, () => {
+141-      setPulseId(null);
+142-      setMode("focus");
+143-    });
+144-  };
+145-
+146:  const clearFocus = () => {
+147-    if (transitioning) return;
+148-    lock(FOCUS_TO_MAP_MS, () => setMode("lifemap"));
+149-  };
+150-
+151-  const enterReplay = () => {
+152-    if (transitioning) return;
+153-    lock(FOCUS_TO_REPLAY_MS, () => setMode("replay"));
+154-  };
+155-
+156-  const exitReplay = () => {
+--
+610-              fontSize: 13,
+611-              lineHeight: 1.65,
+612-              color: "rgba(220,228,245,0.78)",
+613-              marginBottom: 16,
+614-            }}
+615-          >
+616-            {selected.summary}
+617-          </div>
+618-          <div style={{ display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap" }}>
+619-            <ActionButton disabled={uiLocked} label="ENTER REPLAY" onClick={enterReplay} />
+620:            <ActionButton disabled={uiLocked} label="CLEAR FOCUS" onClick={clearFocus} />
+621-          </div>
+622-        </aside>
+623-      )}
+624-
+625-      {mode === "replay" && (
+626-        <section
+627-          style={{
+628-            position: "absolute",
+629-            left: 18,
+630-            top: "50%",
+
+===== PATTERN: setMode =====
+82-const MAP_TO_FOCUS_MS = 300;
+83-const FOCUS_TO_REPLAY_MS = 220;
+84-const REPLAY_TO_FOCUS_MS = 220;
+85-const FOCUS_TO_MAP_MS = 220;
+86-
+87-function pillLabel(mode: Mode) {
+88-  return mode.toUpperCase();
+89-}
+90-
+91-export default function Page() {
+92:  const [mode, setMode] = useState<Mode>("home");
+93-  const [selectedId, setSelectedId] = useState<string>("threshold-one");
+94-  const [transitioning, setTransitioning] = useState(false);
+95-  const [pulseId, setPulseId] = useState<string | null>(null);
+96-  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+97-  const dust = useMemo(() => seededDust(72), []);
+98-  const selected = useMemo(
+99-    () => MEMORY_NODES.find((node) => node.id === selectedId) ?? MEMORY_NODES[0],
+100-    [selectedId]
+101-  );
+102-
+--
+117-    setTransitioning(true);
+118-    if (timerRef.current) clearTimeout(timerRef.current);
+119-    timerRef.current = setTimeout(() => {
+120-      next();
+121-      setTransitioning(false);
+122-    }, ms);
+123-  };
+124-
+125-  const enterLifeMap = () => {
+126-    if (transitioning) return;
+127:    setMode("sky");
+128:    lock(SKY_TRANSIT_MS, () => setMode("lifemap"));
+129-  };
+130-
+131-  const returnHome = () => {
+132-    if (transitioning) return;
+133:    setMode("home");
+134-  };
+135-
+136-  const selectMemory = (id: string) => {
+137-    if (transitioning) return;
+138-    setSelectedId(id);
+139-    setPulseId(id);
+140-    lock(MAP_TO_FOCUS_MS, () => {
+141-      setPulseId(null);
+142:      setMode("focus");
+143-    });
+144-  };
+145-
+146-  const clearFocus = () => {
+147-    if (transitioning) return;
+148:    lock(FOCUS_TO_MAP_MS, () => setMode("lifemap"));
+149-  };
+150-
+151-  const enterReplay = () => {
+152-    if (transitioning) return;
+153:    lock(FOCUS_TO_REPLAY_MS, () => setMode("replay"));
+154-  };
+155-
+156-  const exitReplay = () => {
+157-    if (transitioning) return;
+158:    lock(REPLAY_TO_FOCUS_MS, () => setMode("focus"));
+159-  };
+160-
+161-  const uiLocked = transitioning || mode === "sky";
+162-  const showMapWorld = mode === "lifemap" || mode === "focus" || mode === "replay";
+163-
+164-  return (
+165-    <main
+166-      style={{
+167-        minHeight: "100vh",
+168-        width: "100vw",
+
+===== PATTERN: return \( =====

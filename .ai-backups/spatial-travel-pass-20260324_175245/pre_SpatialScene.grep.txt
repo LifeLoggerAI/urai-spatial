@@ -1,0 +1,36 @@
+17:function OverlayButton(props: OverlayButtonProps) {
+18:  const { label, onClick, active } = props
+38:function lerp(a: number, b: number, t: number) {
+42:function CameraRig(props: {
+47:  const { camera, scene } = useThree()
+48:  const { phase, selected, replayTime } = props
+49:  const cameraTarget = useMemo(() => new THREE.Vector3(), [])
+50:  const lookTarget = useMemo(() => new THREE.Vector3(), [])
+74:      const [sx, sy, sz] = selected.position
+80:        const radius = 2.25
+81:        const orbitX = Math.cos(replayTime * 0.45) * radius
+82:        const orbitY = 0.8 + Math.sin(replayTime * 0.28) * 0.55
+83:        const orbitZ = Math.sin(replayTime * 0.45) * radius
+108:function SkyShell(props: { phase: SpatialPhase }) {
+109:  const opacity = props.phase === "home" ? 0.9 : props.phase === "ascent" ? 0.8 : 0.65
+129:function GroundPlane(props: { phase: SpatialPhase }) {
+130:  const visible = props.phase === "home" || props.phase === "ascent"
+150:function OrbAnchor(props: {
+154:  const { visible, onEnterLifeMap } = props
+177:function FocusBeacon(props: { selected: SpatialStar | null; phase: SpatialPhase }) {
+178:  const { selected, phase } = props
+198:function SceneWorld(props: {
+207:  const { phase, selected, hoveredId, replayTime, onSelect, onHover, onEnterLifeMap } = props
+231:export default function SpatialScene(): JSX.Element {
+232:  const stars = useMemo(() => buildSpatialStars(), [])
+233:  const [phase, setPhase] = useState<SpatialPhase>("home")
+234:  const [selected, setSelected] = useState<SpatialStar | null>(stars[7] ?? null)
+235:  const [hoveredId, setHoveredId] = useState<string | null>(null)
+236:  const [replayTime, setReplayTime] = useState(0)
+237:  const ascentTimer = useRef<number | null>(null)
+252:    const id = window.setInterval(() => {
+261:  const enterLifeMap = () => {
+272:  const selectFromList = (index: number) => {
+273:    const next = stars[index % stars.length]
+358:              {phase === "focus" && "Selected star isolates cleanly while the rest of the constellation falls away."}
+424:              const star = stars[index]

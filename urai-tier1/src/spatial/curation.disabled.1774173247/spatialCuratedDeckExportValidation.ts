@@ -1,7 +1,7 @@
 import type { SpatialCuratedDeckExport } from "@/spatial/curation/spatialCuratedDeckExportTypes";
 
 export function isSpatialCuratedDeckExport(
-  value: unknown,
+  value: any,
 ): value is SpatialCuratedDeckExport {
   if (!value || typeof value !== "object") return false;
 

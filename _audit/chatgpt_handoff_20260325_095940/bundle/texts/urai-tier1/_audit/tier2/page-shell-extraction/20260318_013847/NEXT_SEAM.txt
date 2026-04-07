@@ -1,0 +1,10 @@
+Next seam after this extraction:
+1. keep runtime behavior frozen
+2. extract mode-specific overlay JSX from _page_shell.tsx into:
+   - src/spatial/home/
+   - src/spatial/sky/
+   - src/spatial/lifemap/
+   - src/spatial/focus/
+   - src/spatial/replay/
+3. do not change sceneStore.ts contracts
+4. do not change SpatialScene.tsx behavior in this step

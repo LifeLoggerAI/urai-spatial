@@ -1,3 +1,4 @@
+
 import { resolveStarByIdSafe } from "../lib/resolveStarByIdSafe";
 "use client";
 
@@ -5,7 +6,7 @@ import { useSceneStore } from "@/spatial/state/sceneStore";
 
 type LooseRecord = Record<string, unknown>;
 
-function color(value: unknown, fallback: string): string {
+function color(value: any, fallback: string): string {
   return typeof value === "string" && value.trim().length > 0 ? value : fallback;
 }
 

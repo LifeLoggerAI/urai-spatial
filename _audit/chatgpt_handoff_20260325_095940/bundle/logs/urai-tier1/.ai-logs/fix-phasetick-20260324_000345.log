@@ -1,0 +1,11 @@
+== VERIFY FIX ==
+285:      <CameraRig phase={phase} progress={1} selected={selected} />
+== PHASETICK SEARCH ==
+466:  const [phaseTick, setPhaseTick] = useState(0);
+== TYPECHECK ==
+
+> urai-tier1@0.1.0 typecheck /home/user/urai-spatial/urai-tier1
+> tsc --noEmit
+
+src/spatial/scene/Starfield.tsx(124,37): error TS1005: ',' expected.
+ ELIFECYCLE  Command failed with exit code 1.

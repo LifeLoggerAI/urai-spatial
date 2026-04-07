@@ -1,3 +1,4 @@
+
 import { resolveStarByIdSafe } from "../lib/resolveStarByIdSafe";
 type LooseRecord = Record<string, unknown>;
 type SelectedStarLike = string | LooseRecord | null | undefined;
@@ -25,11 +26,11 @@ const MEMORY_DATASET: MemoryNode[] = REPLAY_SCENES.map((scene) => ({
   description: scene.description,
 }));
 
-function asRecord(value: unknown): LooseRecord | null {
+function asRecord(value: any): LooseRecord | null {
   return value !== null && typeof value === "object" ? (value as LooseRecord) : null;
 }
 
-function asString(value: unknown): string | undefined {
+function asString(value: any): string | undefined {
   return typeof value === "string" && value.trim().length > 0 ? value : undefined;
 }
 

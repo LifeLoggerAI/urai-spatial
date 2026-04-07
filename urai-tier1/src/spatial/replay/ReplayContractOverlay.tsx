@@ -1,3 +1,4 @@
+
 import { resolveStarByIdSafe } from "../lib/resolveStarByIdSafe";
 "use client";
 
@@ -6,11 +7,11 @@ import { useSceneStore } from "../state/sceneStore";
 
 type LooseRecord = Record<string, unknown>;
 
-function asRecord(value: unknown): LooseRecord | null {
+function asRecord(value: any): LooseRecord | null {
   return value !== null && typeof value === "object" ? (value as LooseRecord) : null;
 }
 
-function str(value: unknown): string | null {
+function str(value: any): string | null {
   return typeof value === "string" && value.trim().length > 0 ? value : null;
 }
 

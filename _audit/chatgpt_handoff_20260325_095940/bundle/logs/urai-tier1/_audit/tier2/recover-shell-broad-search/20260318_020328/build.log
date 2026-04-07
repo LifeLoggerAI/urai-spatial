@@ -1,0 +1,24 @@
+$ pnpm build
+
+> urai-tier1@0.1.0 build /home/user/urai-spatial/urai-tier1
+> next build
+
+▲ Next.js 16.1.6 (Turbopack)
+
+  Creating an optimized production build ...
+✓ Compiled successfully in 22.7s
+  Running TypeScript ...
+Failed to compile.
+
+./src/spatial/shell/overlays/FocusShellOverlay.tsx:24:7
+Type error: This comparison appears to be unintentional because the types '{ mode: Tier1ShellMode; }' and 'string' have no overlap.
+
+[0m [90m 22 |[39m
+ [90m 23 |[39m   [36mreturn[39m (
+[31m[1m>[22m[39m[90m 24 |[39m       {mode [33m===[39m [32m"focus"[39m [33m&&[39m (
+ [90m    |[39m       [31m[1m^[22m[39m
+ [90m 25 |[39m         [33m<[39m[33maside[39m
+ [90m 26 |[39m           style[33m=[39m{{
+ [90m 27 |[39m             position[33m:[39m [32m"absolute"[39m[33m,[39m[0m
+Next.js build worker exited with code: 1 and signal: null
+ ELIFECYCLE  Command failed with exit code 1.

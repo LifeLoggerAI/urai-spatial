@@ -1,0 +1,14 @@
+=== DEV START ===
+DEV_PID=87679
+--- DEV SERVER OUTPUT (tail 120) ---
+
+> urai-tier1@0.1.0 dev /home/user/urai-spatial/urai-tier1
+> next dev --webpack
+
+▲ Next.js 16.2.1 (webpack)
+- Local:         http://localhost:3000
+- Network:       http://10.88.0.3:3000
+✓ Ready in 946ms
+
+
+URL=http://localhost:3000

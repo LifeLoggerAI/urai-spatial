@@ -1,0 +1,299 @@
+'use client';
+
+import React, { useEffect, useMemo, useRef, useState } from "react";
+import FocusShellOverlay from "./overlays/FocusShellOverlay";
+import ReplayShellOverlay from "./overlays/ReplayShellOverlay";
+import Tag from "./Tag";
+import Tier1ShellNodeField from "./Tier1ShellNodeField";
+import {
+  DEFAULT_MAP_DWELL_MS,
+  GHOST_BUTTON_CLASS,
+  MICRO_LABEL_CLASS,
+  PANEL_ANCHOR_CLASS,
+  PRIMARY_BUTTON_CLASS,
+  RETURN_STEP_MS,
+  SECONDARY_BUTTON_CLASS,
+  SHELL_CARD_CLASS,
+  SKY_HOLD_MS,
+  SUBDUED_TEXT_CLASS,
+  type Tier1Phase,
+} from "./Tier1ShellConstants";
+
+type AnyRecord = Record<string, unknown>;
+
+function normalizePhase(value: unknown): Tier1Phase {
+  const input = String(value ?? "").toLowerCase();
+  if (input.includes("replay")) return "replay";
+  if (input.includes("focus")) return "focus";
+  if (input.includes("life")) return "lifemap";
+  if (input.includes("sky")) return "sky";
+  return "home";
+}
+
+function firstArray(...values: unknown[]) {
+  for (const value of values) {
+    if (Array.isArray(value)) return value as AnyRecord[];
+  }
+  return [] as AnyRecord[];
+}
+
+function firstText(...values: unknown[]) {
+  for (const value of values) {
+    if (typeof value === "string" && value.trim()) return value;
+  }
+  return "";
+}
+
+function pickFn(props: AnyRecord, names: string[]) {
+  for (const name of names) {
+    const value = props[name];
+    if (typeof value === "function") return value as (...args: unknown[]) => void;
+  }
+  return null;
+}
+
+function itemTitle(item: AnyRecord | undefined, index: number) {
+  if (!item) return `Star ${index + 1}`;
+  return String(item.title ?? item.name ?? item.label ?? item.id ?? `Star ${index + 1}`);
+}
+
+const fallbackItems: AnyRecord[] = [
+  { id: "threshold-one", title: "Threshold One", chapter: "Origin", emotion: "steady" },
+  { id: "threshold-two", title: "Threshold Two", chapter: "Ascent", emotion: "echo" },
+];
+
+export type Tier1ShellScreenProps = Record<string, unknown>;
+
+export function Tier1ShellScreen(rawProps: Tier1ShellScreenProps) {
+  const props = rawProps as AnyRecord;
+  const items = useMemo(
+    () =>
+      firstArray(
+        props.items,
+        props.nodes,
+        props.memories,
+        props.stars,
+        props.data,
+      ).filter(Boolean) as AnyRecord[],
+    [props.items, props.nodes, props.memories, props.stars, props.data],
+  );
+
+  const shellItems = items.length ? items : fallbackItems;
+  const initialPhase = normalizePhase(props.phase ?? props.mode ?? props.screen);
+  const [phase, setPhase] = useState<Tier1Phase>(initialPhase);
+  const [selectedIndex, setSelectedIndex] = useState<number>(0);
+
+  const selected = shellItems[selectedIndex] ?? fallbackItems[0];
+
+  const enterReplay = pickFn(props, ["onEnterReplay", "enterReplay", "onReplay"]);
+  const exitReplay = pickFn(props, ["onExitReplay", "exitReplay", "onResumeFocus"]);
+  const returnHomeExternal = pickFn(props, ["onReturnHome", "returnHome", "onHome"]);
+  const selectExternal = pickFn(props, ["onSelectNode", "onSelectStar", "onSelectMemory", "selectNode", "selectStar"]);
+  const clearExternal = pickFn(props, ["onClearFocus", "clearFocus", "onClear"]);
+  const phaseExternal = pickFn(props, ["onShellPhaseChange", "onPhaseChange", "setPhase"]);
+  const enterLifeMapExternal = pickFn(props, ["onEnterLifemap", "enterLifemap", "onEnterLifeMap"]);
+
+  const timers = useRef<number[]>([]);
+
+  function clearTimers() {
+    for (const id of timers.current) window.clearTimeout(id);
+    timers.current = [];
+  }
+
+  function schedule(ms: number, fn: () => void) {
+    const id = window.setTimeout(fn, ms);
+    timers.current.push(id);
+  }
+
+  function commitPhase(next: Tier1Phase) {
+    setPhase(next);
+    phaseExternal?.(next);
+  }
+
+  function selectIndex(nextIndex: number) {
+    const clamped = ((nextIndex % shellItems.length) + shellItems.length) % shellItems.length;
+    setSelectedIndex(clamped);
+    const item = shellItems[clamped];
+    selectExternal?.(item, clamped, item?.id);
+  }
+
+  useEffect(() => {
+    return () => clearTimers();
+  }, []);
+
+  useEffect(() => {
+    const selectedId = props.selectedId;
+    if (!selectedId) return;
+    const idx = shellItems.findIndex((item) => String(item.id ?? item.slug ?? "") === String(selectedId));
+    if (idx >= 0) setSelectedIndex(idx);
+  }, [props.selectedId, shellItems]);
+
+  useEffect(() => {
+    const controlledPhase = props.phase ?? props.mode ?? props.screen;
+    if (controlledPhase == null) return;
+    const next = normalizePhase(controlledPhase);
+    setPhase((current) => (current === next ? current : next));
+  }, [props.phase, props.mode, props.screen]);
+
+  function runEnterLifeMap() {
+    clearTimers();
+    commitPhase("sky");
+    enterLifeMapExternal?.();
+    schedule(SKY_HOLD_MS, () => {
+      commitPhase("lifemap");
+    });
+  }
+
+  function runResumeFocus() {
+    clearTimers();
+    commitPhase("focus");
+  }
+
+  function runEnterReplay() {
+    clearTimers();
+    commitPhase("replay");
+    enterReplay?.(selected, selectedIndex);
+  }
+
+  function runExitReplay() {
+    clearTimers();
+    commitPhase("focus");
+    exitReplay?.(selected, selectedIndex);
+  }
+
+  function runClearFocus() {
+    clearTimers();
+    commitPhase("lifemap");
+    clearExternal?.();
+  }
+
+  function runReturnHome() {
+    clearTimers();
+    commitPhase(phase === "replay" ? "focus" : "lifemap");
+    schedule(RETURN_STEP_MS, () => commitPhase("sky"));
+    schedule(RETURN_STEP_MS * 2, () => {
+      commitPhase("home");
+      returnHomeExternal?.();
+    });
+  }
+
+  const title = itemTitle(selected, selectedIndex);
+  const chapter = firstText(selected.chapter, props.chapter) || "current";
+  const emotion = firstText(selected.emotion, props.emotion) || "stable";
+
+  const HomePanel = (
+    <div className={PANEL_ANCHOR_CLASS}>
+      <div className={SHELL_CARD_CLASS}>
+        <div className="mb-4 flex items-center justify-between gap-3">
+          <Tag>Home</Tag>
+          <div className={MICRO_LABEL_CLASS}>Canonical start state</div>
+        </div>
+        <div className="space-y-3">
+          <h2 className="text-2xl font-semibold tracking-tight text-white">Home → Sky → LifeMap</h2>
+          <p className={SUBDUED_TEXT_CLASS}>
+            Tier 1 shell now enforces a readable path. Entering LifeMap stops at a visible map state instead of collapsing directly into focus.
+          </p>
+          <div className="grid gap-2 pt-3 sm:grid-cols-2">
+            <button type="button" className={PRIMARY_BUTTON_CLASS} onClick={runEnterLifeMap}>
+              Enter LifeMap
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+
+  const SkyPanel = (
+    <div className={PANEL_ANCHOR_CLASS}>
+      <div className={SHELL_CARD_CLASS}>
+        <div className="mb-4 flex items-center justify-between gap-3">
+          <Tag>Sky</Tag>
+          <div className={MICRO_LABEL_CLASS}>Transit hold</div>
+        </div>
+        <div className="space-y-3">
+          <h2 className="text-2xl font-semibold tracking-tight text-white">Sky transition</h2>
+          <p className={SUBDUED_TEXT_CLASS}>
+            This is a timed handoff state. Reverse return also passes through this same step to avoid a hard modal pop.
+          </p>
+        </div>
+      </div>
+    </div>
+  );
+
+  const LifeMapPanel = (
+    <div className={PANEL_ANCHOR_CLASS}>
+      <div className={SHELL_CARD_CLASS}>
+        <div className="mb-4 flex items-center justify-between gap-3">
+          <Tag>LifeMap</Tag>
+          <div className={MICRO_LABEL_CLASS}>Readable unselected dwell</div>
+        </div>
+        <div className="space-y-3">
+          <h2 className="text-2xl font-semibold tracking-tight text-white">{title}</h2>
+          <p className={SUBDUED_TEXT_CLASS}>
+            LifeMap remains visible before focus. Select a different star here, then resume focus explicitly.
+          </p>
+          <Tier1ShellNodeField
+            items={shellItems}
+            selectedIndex={selectedIndex}
+            onSelect={selectIndex}
+          />
+          <div className="grid gap-2 pt-3 sm:grid-cols-2">
+            <button type="button" className={PRIMARY_BUTTON_CLASS} onClick={runResumeFocus}>
+              Resume Focus
+            </button>
+            <button type="button" className={SECONDARY_BUTTON_CLASS} onClick={() => selectIndex(selectedIndex + 1)}>
+              Alternate Star
+            </button>
+            <button type="button" className={GHOST_BUTTON_CLASS} onClick={runReturnHome}>
+              Return Home
+            </button>
+          </div>
+          <div className="pt-2 text-xs text-slate-400">
+            Map dwell target: {DEFAULT_MAP_DWELL_MS}ms minimum before focus.
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+
+  return (
+    <>
+      <div className="pointer-events-none fixed right-6 top-5 z-[85]">
+        <Tag>{phase.toUpperCase()}</Tag>
+      </div>
+
+      {phase === "home" && HomePanel}
+      {phase === "sky" && SkyPanel}
+      {phase === "lifemap" && LifeMapPanel}
+
+      {phase === "focus" && (
+        <FocusShellOverlay
+          visible
+          node={selected}
+          memory={selected}
+          title={title}
+          chapter={chapter}
+          emotion={emotion}
+          onEnterReplay={runEnterReplay}
+          onClearFocus={runClearFocus}
+          onReturnHome={runReturnHome}
+        />
+      )}
+
+      {phase === "replay" && (
+        <ReplayShellOverlay
+          visible
+          node={selected}
+          memory={selected}
+          title={title}
+          chapter={chapter}
+          emotion={emotion}
+          onExitReplay={runExitReplay}
+          onReturnHome={runReturnHome}
+        />
+      )}
+    </>
+  );
+}
+
+export default Tier1ShellScreen;

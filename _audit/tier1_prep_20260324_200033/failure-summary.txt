@@ -1,0 +1,5 @@
+TYPECHECK_ERRORS
+10:Failed to type check.
+13:Type error: Argument of type '(current: any) => any' is not assignable to parameter of type 'string'.
+
+MISSING_FILES

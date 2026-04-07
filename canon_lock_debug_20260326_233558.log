@@ -1,0 +1,197 @@
+=== START ===
+Thu Mar 26 11:35:58 PM UTC 2026
+
+=== PWD ===
+/home/user/urai-spatial
+
+=== ROOT LS ===
+total 656
+drwxr-xr-x 19 user user   4096 Mar 26 23:35 .
+drwxr-xr-x 17 user user   4096 Mar 26 23:33 ..
+drwxr-xr-x 43 user user   4096 Mar 26 23:33 .ai-backups
+-rwxr-xr-x  1 user user   8216 Mar 18 05:36 apply_tier1_lock.sh
+-rw-r--r--  1 user user   2352 Mar  4 07:16 ARCHITECTURAL_INVARIANTS_SPATIAL.md
+drwxr-xr-x 75 user user   4096 Mar 26 23:33 _audit
+-rw-r--r--  1 user user   1322 Mar 16 00:30 AUDIT_CANONICAL_RUNTIME.md
+drwxr-xr-x  3 user user   4096 Mar 25 00:11 _backup
+drwxr-xr-x  2 user user   4096 Feb  5 06:09 .bak
+-rw-r--r--  1 user user    539 Mar 16 05:26 CANONICAL_APP_PATH.md
+-rw-r--r--  1 user user    100 Mar 26 23:35 canon_lock_debug_20260326_233558.log
+-rw-r--r--  1 user user      0 Feb 28 15:44 Click
+-rw-r--r--  1 user user   2859 Feb 21 03:15 CONTRIBUTING.md
+-rw-r--r--  1 user user    749 Feb 24 14:56 decoded.js
+-rw-r--r--  1 user user     36 Feb 26 09:54 DETERMINISM_AUDIT.md
+-rw-r--r--  1 user user      0 Mar 10 01:41 dev
+drwxr-xr-x  3 user user   4096 Mar 18 00:56 docs
+-rw-r--r--  1 user user    428 Feb  2 07:43 .env.example
+-rw-r--r--  1 user user    122 Feb 17 05:01 .env.local
+-rw-r--r--  1 user user     49 Feb 11 12:11 .eslintignore
+-rw-r--r--  1 user user  22115 Mar 16 12:45 firebase-debug.log
+-rw-r--r--  1 user user    666 Mar 14 18:14 firebase.json
+-rw-r--r--  1 user user    118 Feb  8 04:39 .firebaserc
+-rwxr-xr-x  1 user user   1248 Mar 18 06:01 fix_visibility_tier1.sh
+drwxr-xr-x  9 user user   4096 Mar 26 05:54 .git
+-rw-r--r--  1 user user    269 Mar 16 13:08 .gitignore
+drwxr-xr-x  2 user user   4096 Feb 10 08:47 .governance
+drwxr-xr-x  3 user user   4096 Feb 24 09:21 home
+-rw-r--r--  1 user user   1625 Feb 11 21:48 h -u origin main --tags
+drwxr-xr-x  2 user user   4096 Feb 12 16:25 .idx
+drwxr-xr-x  2 user user   4096 Mar 18 12:04 _lockfile_backup
+-rw-r--r--  1 user user   1510 Mar 15 00:27 LOCK.md
+drwxr-xr-x  2 user user   4096 Mar 23 04:23 .next
+drwxr-xr-x 27 user user  12288 Mar 24 20:00 node_modules
+-rw-r--r--  1 user user      7 Mar 10 01:41 npx
+drwxr-xr-x  2 user user   4096 Mar 18 09:45 _ops
+-rw-r--r--  1 user user    760 Mar 22 00:59 package.json
+-rw-r--r--  1 user user    474 Feb 28 22:11 patch.txt
+-rw-r--r--  1 user user    451 Feb  2 09:26 playwright.config.ts
+-rw-r--r--  1 user user      0 Feb 28 04:41 pnpm
+-rw-r--r--  1 user user  97139 Mar 23 02:26 pnpm-lock.yaml
+-rw-r--r--  1 user user     66 Mar 18 17:38 pnpm-workspace.yaml
+drwxr-xr-x  7 user user   4096 Mar 16 06:00 _quarantine
+-rw-r--r--  1 user user  12109 Mar 21 01:55 README.md
+drwxr-xr-x  3 user user   4096 Mar 24 23:40 _repair_backups
+-rwxr-xr-x  1 user user   1189 Mar 26 23:35 run-canon-lock-safe.sh
+-rw-r--r--  1 user user   1188 Mar 14 19:55 SPATIAL_TIER1_AUDIT.md
+-rw-r--r--  1 user user   2892 Feb 24 08:00 SPATIAL_V1_LOCK.md
+-rw-r--r--  1 user user   4344 Feb 24 08:01 SPATIAL_V2_TRUST_ROADMAP.md
+-rw-r--r--  1 user user   2977 Feb 27 20:47 SPATIAL_VISUAL_LOCK.md
+-rw-r--r--  1 user user    100 Mar  2 23:10 spatial-web@0.0.1
+drwxr-xr-x  4 user user   4096 Mar 21 02:29 src
+-rwxr-xr-x  1 user user   5265 Mar 18 06:11 tier1_interaction_lock.sh
+-rw-r--r--  1 user user  16974 Mar 18 00:54 TIER1_LOCK_CHECKLIST.md
+-rw-r--r--  1 user user     50 Mar 10 06:11 TIER1_LOCK.md
+-rw-r--r--  1 user user  11152 Mar 18 00:54 TIER1_LOCK_SHEET.md
+-rw-r--r--  1 user user   1234 Mar 11 01:32 TIER1_SPATIAL_LOCK.md
+-rw-r--r--  1 user user   1605 Mar  3 21:35 TIER1_START_PROTOCOL.md
+-rw-r--r--  1 user user   1168 Mar 16 05:29 TIER1_STATUS.md
+-rw-r--r--  1 user user   5155 Mar 13 09:09 TIER3_COMPLETION_PLAN.md
+-rw-r--r--  1 user user    108 Feb 26 16:42 tsconfig.base.json
+-rw-r--r--  1 user user    547 Mar 22 00:59 tsconfig.json
+-rw-r--r--  1 user user 168568 Mar 26 22:38 tsconfig.tsbuildinfo
+-rw-r--r--  1 user user   2062 Mar 14 23:56 URAI_ECOSYSTEM_ARCHITECTURE.md
+-rw-r--r--  1 user user   2517 Mar 15 00:02 URAI_ECOSYSTEM_AUDIT.md
+-rw-r--r--  1 user user   2371 Mar 15 00:15 URAI_ECOSYSTEM_COMPLETION.md
+-rw-r--r--  1 user user   2881 Mar 15 00:21 URAI_ECOSYSTEM_DEPLOYMENT.md
+-rw-r--r--  1 user user   3094 Mar 15 00:08 URAI_ECOSYSTEM_ROADMAP.md
+-rw-r--r--  1 user user   8889 Mar 14 17:04 URAI_SPATIAL_ARCHITECTURE.md
+-rw-r--r--  1 user user   8991 Mar 13 08:36 URAI_SPATIAL_DEVELOPMENT_PLAN.md
+-rw-r--r--  1 user user   4231 Feb 27 00:08 URAI-SPATIAL-LOCK-SEQUENCE.md
+-rw-r--r--  1 user user  14528 Feb 27 20:51 URAI-SPATIAL-VISUAL-HARDENING-EXECUTION-BRIEF.md
+-rw-r--r--  1 user user      0 Feb 12 05:16 urai-staging@1.0.0
+drwxr-xr-x 23 user user   4096 Mar 25 04:05 urai-tier1
+-rw-r--r--  1 user user   3907 Feb 24 05:09 URAI-V1-FOUNDER-LOCK.md
+-rw-r--r--  1 user user     15 Feb 11 13:35 VERSION.txt
+
+=== APP LS ===
+total 980
+drwxr-xr-x  23 user user   4096 Mar 25 04:05 .
+drwxr-xr-x  19 user user   4096 Mar 26 23:35 ..
+-rw-r--r--   1 user user      0 Mar 20 23:15 2
+-rw-r--r--   1 user user      0 Mar 20 23:17 5
+-rw-r--r--   1 user user      0 Mar 20 03:58 6
+drwxr-xr-x   6 user user   4096 Mar 24 02:18 .ai-audit
+drwxr-xr-x 411 user user  69632 Mar 24 17:40 .ai-backups
+-rw-r--r--   1 user user   1349 Mar 22 07:51 .ai-backups.buildSpatialNarratorExport.20260322_075118.bak
+-rw-r--r--   1 user user    318 Mar 22 01:08 .ai-backups.package.20260322_010817.bak
+-rw-r--r--   1 user user    372 Mar 22 01:22 .ai-backups.selectedstar.20260322_012212.bak
+-rw-r--r--   1 user user   2850 Mar 22 01:27 .ai-backups.spatialscene_dedupe.20260322_012706.bak
+-rw-r--r--   1 user user   2797 Mar 22 01:30 .ai-backups.spatialscene_dedupe.20260322_013004.bak
+-rw-r--r--   1 user user   2849 Mar 22 01:26 .ai-backups.spatialscene_useclient.20260322_012602.bak
+-rw-r--r--   1 user user   7696 Mar 22 07:51 .ai-backups.SpatialStoryBundlePanel.20260322_075124.bak
+-rw-r--r--   1 user user   7696 Mar 22 07:52 .ai-backups.SpatialStoryBundlePanel.insert-activeCompareSet.20260322_075201.bak
+-rw-r--r--   1 user user   7912 Mar 22 07:53 .ai-backups.SpatialStoryBundlePanel.remove-bad-lines.20260322_075356.bak
+drwxr-xr-x   4 user user   4096 Mar 24 17:23 .ai-logs
+drwxr-xr-x   2 user user   4096 Mar 23 22:00 app
+drwxr-xr-x   2 user user   4096 Mar 23 03:19 app.disabled.pass1.20260323_032438
+-rwxr-xr-x   1 user user   7676 Mar 18 05:45 apply_tier1_lock_node.sh
+-rwxr-xr-x   1 user user   8216 Mar 18 05:36 apply_tier1_lock.sh
+drwxr-xr-x 313 user user  20480 Mar 25 07:03 _audit
+drwxr-xr-x  13 user user   4096 Mar 19 02:04 .backup
+drwxr-xr-x   7 user user   4096 Mar 24 23:33 _backup
+drwxr-xr-x   4 user user   4096 Mar 18 09:46 backups
+-rw-r--r--   1 user user   1100 Mar 19 02:10 .backup_sceneStore_20260319_021051.bak
+drwxr-xr-x   2 user user   4096 Mar 18 22:50 .backup-spatial
+-rw-r--r--   1 user user  24619 Mar 19 02:07 .backup_SpatialScene_20260319_020737.bak
+-rw-r--r--   1 user user  24086 Mar 19 02:09 .backup_SpatialScene_parsefix_20260319_020909.bak
+drwxr-xr-x   2 user user   4096 Mar 19 01:34 .backup_tier1_pass_20260319_013403
+-rw-r--r--   1 user user   1118 Mar 19 02:06 .backup_useGestures_20260319_020601.bak
+drwxr-xr-x   2 user user   4096 Mar 19 01:23 .backup_visual_language_pass_20260319_012315
+-rw-r--r--   1 user user      0 Mar 20 23:15 Build
+drwxr-xr-x  30 user user   4096 Mar 22 23:05 docs
+-rw-r--r--   1 user user    465 Mar  3 21:54 eslint.config.mjs
+drwxr-xr-x   2 user user   4096 Mar 16 22:40 .firebase
+-rw-r--r--   1 user user    284 Mar 16 22:41 firebase.json
+-rwxr-xr-x   1 user user   5811 Mar 18 06:16 fix_tier1_overlay_namespace.sh
+-rwxr-xr-x   1 user user   1248 Mar 18 06:01 fix_visibility_tier1.sh
+-rwxr-xr-x   1 user user   1076 Mar 18 06:06 force_scene_visibility_debug.sh
+-rwxr-xr-x   1 user user    782 Mar 18 05:58 force_tier1_scene.sh
+-rw-r--r--   1 user user    586 Mar 16 10:42 .gitignore
+drwxr-xr-x   8 user user   4096 Mar 26 22:39 .next
+-rw-r--r--   1 user user    103 Mar 20 23:15 next
+-rw-r--r--   1 user user    316 Mar 23 04:57 next.config.mjs
+-rw-r--r--   1 user user    247 Mar 26 22:39 next-env.d.ts
+drwxr-xr-x   5 user user   4096 Mar 23 02:26 node_modules
+-rw-r--r--   1 user user     47 Mar 22 01:02 .npmrc
+drwxr-xr-x   5 user user   4096 Mar 18 10:02 out
+-rw-r--r--   1 user user    453 Mar 23 02:26 package.json
+-rw-r--r--   1 user user 151463 Mar 16 07:25 pnpm-lock.yaml.disabled
+drwxr-xr-x   3 user user   4096 Mar 17 01:01 public
+-rw-r--r--   1 user user   1450 Mar  3 21:54 README.md
+-rwxr-xr-x   1 user user   1276 Mar 18 06:08 rebuild_tier1_scene.sh
+drwxr-xr-x   3 user user   4096 Mar 16 23:14 scripts
+drwxr-xr-x   6 user user   4096 Mar 26 23:21 src
+-rwxr-xr-x   1 user user   5310 Mar 18 06:13 tier1_interaction_lock.sh
+-rw-r--r--   1 user user   1270 Mar 23 21:19 tsconfig.json
+-rw-r--r--   1 user user 453417 Mar 26 23:21 tsconfig.tsbuildinfo
+drwxr-xr-x   3 user user   4096 Mar 18 09:46 .urai-runlogs
+-rw-r--r--   1 user user    103 Mar 20 23:15 urai-tier1@0.1.0
+-rw-r--r--   1 user user    636 Mar 18 22:51 urai-tier1-build.log
+
+=== SRC CHECK ===
+src exists
+src/app exists
+app exists
+package.json exists
+
+=== PNPM CHECK ===
+/home/user/.local/share/pnpm/pnpm
+10.28.2
+
+=== TYPESCRIPT CHECK ===
+src/app/page.tsx(5,33): error TS2503: Cannot find namespace 'JSX'.
+src/spatial/scene/SpatialScene.tsx(264,12): error TS2339: Property 'fov' does not exist on type 'Camera'.
+  Property 'fov' does not exist on type 'OrthographicCamera & { manual?: boolean; }'.
+src/spatial/scene/SpatialScene.tsx(264,30): error TS2339: Property 'fov' does not exist on type 'Camera'.
+  Property 'fov' does not exist on type 'OrthographicCamera & { manual?: boolean; }'.
+src/spatial/scene/SpatialScene.tsx(485,41): error TS2503: Cannot find namespace 'JSX'.
+TSC_EXIT=1
+
+=== BUILD CHECK ===
+
+> urai-tier1@0.1.0 build /home/user/urai-spatial/urai-tier1
+> next build --webpack
+
+▲ Next.js 16.2.1 (webpack)
+
+  Creating an optimized production build ...
+✓ Compiled successfully in 13.0s
+  Running TypeScript ...
+Failed to type check.
+
+./src/app/page.tsx:5:33
+Type error: Cannot find namespace 'JSX'.
+
+  [90m3 |[0m [36mconst[0m [33mSpatialScene[0m = dynamic(() => [36mimport[0m([32m"../spatial/scene/SpatialScene"[0m), { ssr: [36mfalse[0m });
+  [90m4 |[0m
+[31m[1m>[0m [90m5 |[0m [36mexport[0m [36mdefault[0m [36mfunction[0m [33mPage[0m(): [33mJSX[0m.[33mElement[0m {
+  [90m  |[0m                                 [31m[1m^[0m
+  [90m6 |[0m   [36mreturn[0m (
+  [90m7 |[0m     <main
+  [90m8 |[0m       style={{
+Next.js build worker exited with code: 1 and signal: null
+ ELIFECYCLE  Command failed with exit code 1.
+BUILD_EXIT=1
+
+=== END ===
+Thu Mar 26 11:36:58 PM UTC 2026

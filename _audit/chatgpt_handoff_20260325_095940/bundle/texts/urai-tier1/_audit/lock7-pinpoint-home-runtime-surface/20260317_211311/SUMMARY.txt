@@ -1,0 +1,74 @@
+== lock7 pinpoint home runtime surface ==
+timestamp=20260317_211311
+branch=lock6-home-sky-gap-20260317_211058
+commit=1821fb7
+app_dir=src/app
+scene_store=src/spatial/state/sceneStore.ts
+
+== git status before ==
+
+== active runtime files ==
+src/app/page.tsx
+src/app/layout.tsx
+src/spatial/state/sceneStore.ts
+src/spatial/scene/SpatialScene.tsx
+src/spatial/core/SceneController.tsx
+src/spatial/components/CameraRig.tsx
+src/spatial/scene/Starfield.tsx
+src/spatial/scene/Ground.tsx
+src/spatial/scene/MemorySphere.tsx
+
+== ref counts ==
+home_refs=10
+sky_refs=0
+lifemap_refs=29
+mode_refs=5
+runtime_refs=103
+
+== first home refs ==
+src/spatial/state/sceneStore.ts:4:export type SceneMode = "home" | "lifemap" | "focus" | "replay";
+src/spatial/state/sceneStore.ts:42:  mode: "home",
+src/spatial/scene/SpatialScene.tsx:148:    case "home":
+src/spatial/scene/SpatialScene.tsx:149:      return "Home";
+src/spatial/scene/SpatialScene.tsx:196:    if (mode === "home") {
+src/spatial/scene/SpatialScene.tsx:492:      {mode === "home" && (
+src/spatial/scene/SpatialScene.tsx:514:              <h1 style={titleStyle}>Home → LifeMap → Focus → Replay</h1>
+src/spatial/scene/SpatialScene.tsx:712:        setMode("home");
+src/spatial/core/SceneController.tsx:13:      if (mode === "home") {
+src/spatial/core/SceneController.tsx:16:        setMode("home");
+
+== first mode refs ==
+src/spatial/state/sceneStore.ts:42:  mode: "home",
+src/spatial/state/sceneStore.ts:61:      mode: "focus",
+src/spatial/state/sceneStore.ts:69:      mode: "lifemap",
+src/spatial/state/sceneStore.ts:77:      mode: "lifemap",
+src/spatial/state/sceneStore.ts:84:      mode: "replay",
+
+== build tail ==
+
+> urai-tier1@0.1.0 build /home/user/urai-spatial/urai-tier1
+> next build
+
+▲ Next.js 16.1.6 (Turbopack)
+
+  Creating an optimized production build ...
+✓ Compiled successfully in 19.6s
+  Running TypeScript ...
+  Collecting page data using 1 worker ...
+  Generating static pages using 1 worker (0/4) ...
+  Generating static pages using 1 worker (1/4) 
+  Generating static pages using 1 worker (2/4) 
+  Generating static pages using 1 worker (3/4) 
+✓ Generating static pages using 1 worker (4/4) in 413.8ms
+  Finalizing page optimization ...
+
+Route (app)
+┌ ○ /
+└ ○ /_not-found
+
+
+○  (Static)  prerendered as static content
+
+
+PASS: lock7 home runtime surface captured
+tag=lock7-home-runtime-surface-captured-20260317_211311

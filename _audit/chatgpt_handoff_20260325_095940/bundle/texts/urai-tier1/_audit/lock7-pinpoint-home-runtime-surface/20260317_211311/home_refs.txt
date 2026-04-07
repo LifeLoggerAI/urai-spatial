@@ -1,0 +1,10 @@
+src/spatial/state/sceneStore.ts:4:export type SceneMode = "home" | "lifemap" | "focus" | "replay";
+src/spatial/state/sceneStore.ts:42:  mode: "home",
+src/spatial/scene/SpatialScene.tsx:148:    case "home":
+src/spatial/scene/SpatialScene.tsx:149:      return "Home";
+src/spatial/scene/SpatialScene.tsx:196:    if (mode === "home") {
+src/spatial/scene/SpatialScene.tsx:492:      {mode === "home" && (
+src/spatial/scene/SpatialScene.tsx:514:              <h1 style={titleStyle}>Home → LifeMap → Focus → Replay</h1>
+src/spatial/scene/SpatialScene.tsx:712:        setMode("home");
+src/spatial/core/SceneController.tsx:13:      if (mode === "home") {
+src/spatial/core/SceneController.tsx:16:        setMode("home");

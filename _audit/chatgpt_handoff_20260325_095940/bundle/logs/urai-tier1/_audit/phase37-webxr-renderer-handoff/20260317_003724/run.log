@@ -1,0 +1,359 @@
+
+== where we are ==
+
+$ git branch --show-current
+_MONOSPACE_ENV_STARTED_=http://localhost:80/
+phase36-narrator-orchestration-20260317_003517
+RC=0
+
+$ git status --short
+_MONOSPACE_ENV_STARTED_=http://localhost:80/
+RC=0
+
+$ df -h /home
+_MONOSPACE_ENV_STARTED_=http://localhost:80/
+Filesystem                   Size  Used Avail Use% Mounted on
+/dev/disk/by-id/google-home  9.8G  6.4G  2.9G  69% /home
+RC=0
+
+== freeze phase36 ==
+
+$ git add urai-tier1/src/spatial urai-tier1/docs urai-tier1/scripts/hardening urai-tier1/next.config.js urai-tier1/firebase.json
+_MONOSPACE_ENV_STARTED_=http://localhost:80/
+RC=0
+
+$ git add -u urai-tier1
+_MONOSPACE_ENV_STARTED_=http://localhost:80/
+RC=0
+
+$ git commit -m 'feat(urai-spatial): lock narrator orchestration phase 20260317_003724'
+_MONOSPACE_ENV_STARTED_=http://localhost:80/
+On branch phase36-narrator-orchestration-20260317_003517
+nothing to commit, working tree clean
+RC=1
+
+$ git tag urai-spatial-phase36-locked-20260317_003724
+_MONOSPACE_ENV_STARTED_=http://localhost:80/
+RC=0
+
+== start phase37 branch ==
+
+$ git switch -c 'phase37-webxr-renderer-handoff-20260317_003724'
+_MONOSPACE_ENV_STARTED_=http://localhost:80/
+Switched to a new branch 'phase37-webxr-renderer-handoff-20260317_003724'
+RC=0
+
+== make renderer folders ==
+
+$ mkdir -p '/home/user/urai-spatial/urai-tier1/src/spatial/xr-renderer' '/home/user/urai-spatial/urai-tier1/docs/xr-renderer'
+_MONOSPACE_ENV_STARTED_=http://localhost:80/
+RC=0
+
+== write renderer handoff resolver ==
+
+== write renderer overlay ==
+
+== patch SpatialScene ==
+
+== write docs ==
+
+== show patch summary ==
+
+$ grep -n 'WebXRRendererHandoffOverlay' '/home/user/urai-spatial/urai-tier1/src/spatial/scene/SpatialScene.tsx' || true
+_MONOSPACE_ENV_STARTED_=http://localhost:80/
+32:import WebXRRendererHandoffOverlay from "@/spatial/xr-renderer/WebXRRendererHandoffOverlay";
+733:        <WebXRRendererHandoffOverlay />
+RC=0
+
+$ sed -n '1,280p' '/home/user/urai-spatial/urai-tier1/src/spatial/xr-renderer/resolveWebXRRendererHandoff.ts'
+_MONOSPACE_ENV_STARTED_=http://localhost:80/
+import { resolveWebXREntryStateById } from "@/spatial/webxr/resolveWebXREntryState";
+import { resolveXRCameraRigStateById } from "@/spatial/xr-runtime/resolveXRCameraRigState";
+import { resolveXRInputStateById } from "@/spatial/input/resolveXRInputState";
+import { resolveImmersiveReplayTraversalById } from "@/spatial/traversal/resolveImmersiveReplayTraversal";
+import { resolveNarratorOrchestrationById } from "@/spatial/narrator/resolveNarratorOrchestration";
+
+export type WebXRRendererHandoffState = {
+  id: string;
+  title: string;
+  runtimeMode: "focus" | "replay";
+  handoffState: "cold" | "ready" | "armed";
+  readiness: number;
+  rendererTarget: string;
+  sessionTarget: string;
+  pipeline: string[];
+  blockers: string[];
+};
+
+function clamp(value: number, min: number, max: number): number {
+  return Math.max(min, Math.min(max, value));
+}
+
+export function resolveWebXRRendererHandoffById(
+  id: string | null | undefined,
+  mode: string | null | undefined
+): WebXRRendererHandoffState | undefined {
+  if (!id) return undefined;
+
+  const webxr = resolveWebXREntryStateById(id, mode);
+  const rig = resolveXRCameraRigStateById(id, mode);
+  const input = resolveXRInputStateById(id, mode);
+  const traversal = resolveImmersiveReplayTraversalById(id, mode);
+  const narrator = resolveNarratorOrchestrationById(id, mode);
+
+  if (!webxr && !rig && !input && !traversal && !narrator) return undefined;
+
+  const runtimeMode = mode === "replay" ? "replay" : "focus";
+
+  const readiness = clamp(
+    Math.round(
+      (webxr?.readiness ?? 0) * 0.30 +
+      (rig?.readiness ?? 0) * 0.25 +
+      (input?.readiness ?? 0) * 0.20 +
+      (traversal?.readiness ?? 0) * 0.15 +
+      (narrator?.readiness ?? 0) * 0.10
+    ),
+    0,
+    100
+  );
+
+  const handoffState =
+    readiness >= 75 ? "armed" :
+    readiness >= 45 ? "ready" :
+    "cold";
+
+  const rendererTarget =
+    runtimeMode === "replay"
+      ? "xr-replay-renderer"
+      : "xr-focus-renderer";
+
+  const sessionTarget =
+    webxr?.targetMode ?? "immersive-vr";
+
+  const pipeline = [
+    "session-request",
+    "renderer-bind",
+    "camera-rig-bind",
+    "input-attach",
+    runtimeMode === "replay" ? "replay-traversal-bind" : "focus-traversal-bind",
+    "narrator-state-bind",
+  ];
+
+  const blockers = [
+    handoffState === "cold" ? "renderer handoff below armed threshold" : undefined,
+    !webxr ? "missing xr entry state" : undefined,
+    !rig ? "missing xr camera rig state" : undefined,
+    !input ? "missing xr input state" : undefined,
+  ].filter((value): value is string => Boolean(value));
+
+  return {
+    id,
+    title: `WebXR Renderer Handoff ${runtimeMode === "replay" ? "Replay" : "Focus"}`,
+    runtimeMode,
+    handoffState,
+    readiness,
+    rendererTarget,
+    sessionTarget,
+    pipeline,
+    blockers,
+  };
+}
+RC=0
+
+$ sed -n '1,340p' '/home/user/urai-spatial/urai-tier1/src/spatial/xr-renderer/WebXRRendererHandoffOverlay.tsx'
+_MONOSPACE_ENV_STARTED_=http://localhost:80/
+"use client";
+
+import { useMemo } from "react";
+import { useSceneStore } from "@/spatial/state/sceneStore";
+import { resolveWebXRRendererHandoffById } from "@/spatial/xr-renderer/resolveWebXRRendererHandoff";
+
+export default function WebXRRendererHandoffOverlay() {
+  const mode = useSceneStore((s) => s.mode);
+  const selectedStar = useSceneStore((s) => s.selectedStar);
+
+  const state = useMemo(
+    () => resolveWebXRRendererHandoffById(selectedStar?.id, mode),
+    [selectedStar, mode]
+  );
+
+  if (!selectedStar || !state) return null;
+
+  return (
+    <div
+      style={{
+        position: "absolute",
+        left: 24,
+        bottom: 24,
+        width: "min(460px, calc(100vw - 32px))",
+        padding: 16,
+        borderRadius: 16,
+        border: "1px solid rgba(255,255,255,0.14)",
+        background: "linear-gradient(180deg, rgba(9,12,22,0.82), rgba(7,10,18,0.92))",
+        boxShadow: "0 18px 60px rgba(0,0,0,0.32)",
+        backdropFilter: "blur(12px)",
+        color: "rgba(255,255,255,0.95)",
+        zIndex: 50,
+        pointerEvents: "none",
+      }}
+    >
+      <div style={{ fontSize: 11, letterSpacing: "0.14em", textTransform: "uppercase", opacity: 0.66, marginBottom: 8 }}>
+        WebXR Renderer Handoff
+      </div>
+
+      <div style={{ fontSize: 20, lineHeight: 1.08, fontWeight: 600, marginBottom: 10 }}>
+        {state.title}
+      </div>
+
+      <div
+        style={{
+          display: "inline-flex",
+          alignItems: "center",
+          gap: 8,
+          padding: "7px 10px",
+          borderRadius: 999,
+          border: "1px solid rgba(255,255,255,0.12)",
+          background: "rgba(255,255,255,0.05)",
+          fontSize: 11,
+          lineHeight: 1,
+          marginBottom: 12,
+          opacity: 0.86,
+        }}
+      >
+        <span>{state.runtimeMode}</span>
+        <span>{state.handoffState}</span>
+        <span>{state.readiness}</span>
+      </div>
+
+      <div style={{ fontSize: 12, lineHeight: 1.5, opacity: 0.74, marginBottom: 8 }}>
+        renderer · {state.rendererTarget}
+      </div>
+
+      <div style={{ fontSize: 12, lineHeight: 1.5, opacity: 0.74, marginBottom: 12 }}>
+        session · {state.sessionTarget}
+      </div>
+
+      <div style={{ display: "grid", gap: 8, marginBottom: state.blockers.length > 0 ? 12 : 0 }}>
+        {state.pipeline.map((item) => (
+          <div
+            key={item}
+            style={{
+              fontSize: 12,
+              lineHeight: 1.5,
+              opacity: 0.74,
+              padding: "10px 12px",
+              borderRadius: 12,
+              border: "1px solid rgba(255,255,255,0.10)",
+              background: "rgba(255,255,255,0.04)",
+            }}
+          >
+            {item}
+          </div>
+        ))}
+      </div>
+
+      {state.blockers.length > 0 ? (
+        <div style={{ display: "grid", gap: 8 }}>
+          {state.blockers.map((item) => (
+            <div
+              key={item}
+              style={{
+                fontSize: 12,
+                lineHeight: 1.5,
+                opacity: 0.72,
+                padding: "10px 12px",
+                borderRadius: 12,
+                border: "1px solid rgba(255,255,255,0.10)",
+                background: "rgba(255,255,255,0.04)",
+              }}
+            >
+              {item}
+            </div>
+          ))}
+        </div>
+      ) : null}
+    </div>
+  );
+}
+RC=0
+
+== build verify ==
+
+$ cd '/home/user/urai-spatial/urai-tier1' && rm -rf .next out && pnpm build
+_MONOSPACE_ENV_STARTED_=http://localhost:80/
+
+> urai-tier1@0.1.0 build /home/user/urai-spatial/urai-tier1
+> next build
+
+▲ Next.js 16.1.6 (Turbopack)
+
+  Creating an optimized production build ...
+✓ Compiled successfully in 23.6s
+  Running TypeScript ...
+  Collecting page data using 1 worker ...
+  Generating static pages using 1 worker (0/4) ...
+  Generating static pages using 1 worker (1/4) 
+  Generating static pages using 1 worker (2/4) 
+  Generating static pages using 1 worker (3/4) 
+✓ Generating static pages using 1 worker (4/4) in 407.9ms
+  Finalizing page optimization ...
+
+Route (app)
+┌ ○ /
+└ ○ /_not-found
+
+
+○  (Static)  prerendered as static content
+
+RC=0
+
+== preview deploy ==
+
+$ cd '/home/user/urai-spatial/urai-tier1' && firebase hosting:channel:deploy preview-20260317_003724 --project urai-4dc1d --expires 7d
+_MONOSPACE_ENV_STARTED_=http://localhost:80/
+✔  hosting:channel: Channel preview-20260317-003724 has been created on site urai-4dc1d.
+
+=== Deploying to 'urai-4dc1d'...
+
+i  deploying hosting
+i  hosting[urai-4dc1d]: beginning deploy...
+i  hosting[urai-4dc1d]: found 41 files in out
+✔  hosting[urai-4dc1d]: file upload complete
+i  hosting[urai-4dc1d]: finalizing version...
+✔  hosting[urai-4dc1d]: version finalized
+i  hosting[urai-4dc1d]: releasing new version...
+✔  hosting[urai-4dc1d]: release complete
+
+✔  Deploy complete!
+
+Project Console: https://console.firebase.google.com/project/urai-4dc1d/overview
+Hosting URL: https://urai-4dc1d.web.app
+
+✔  hosting:channel: Channel URL (urai-4dc1d): https://urai-4dc1d--preview-20260317-003724-vxdsc851.web.app [expires 2026-03-24 00:38:09]
+RC=0
+
+== final status ==
+
+$ git branch --show-current
+_MONOSPACE_ENV_STARTED_=http://localhost:80/
+phase37-webxr-renderer-handoff-20260317_003724
+RC=0
+
+$ git status --short
+_MONOSPACE_ENV_STARTED_=http://localhost:80/
+ M urai-tier1/src/spatial/scene/SpatialScene.tsx
+?? urai-tier1/docs/xr-renderer/
+?? urai-tier1/src/spatial/xr-renderer/
+RC=0
+
+$ git log --oneline -n 8
+_MONOSPACE_ENV_STARTED_=http://localhost:80/
+03ddd30 feat(urai-spatial): lock seasonal cycle phase 20260317_003517
+3a7d0fe feat(urai-spatial): lock seasonal cycle phase 20260317_003307
+6e30b3d feat(urai-spatial): lock story arc detection phase 20260317_002646
+baea0df feat(urai-spatial): lock story arc detection phase 20260317_002534
+e7c13bd feat(urai-spatial): lock causal insight phase 20260317_002213
+cb1f68f feat(urai-spatial): lock chapter synthesis phase 20260317_001936
+c12f402 feat(urai-spatial): lock dataset versioning phase 20260317_001624
+a288643 feat(urai-spatial): lock persistence sync phase 20260317_001410
+RC=0

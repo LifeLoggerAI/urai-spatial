@@ -1,0 +1,93 @@
+=== ENTRY ===
+5:const SpatialScene = dynamic(() => import('../spatial/scene/SpatialScene'), { ssr: false });
+9:    <main
+11:        position: 'fixed',
+13:        width: '100vw',
+14:        height: '100vh',
+19:      <SpatialScene />
+20:    </main>
+
+=== SCENE ===
+4:import { Canvas, ThreeEvent, useFrame, useThree } from '@react-three/fiber';
+7:type Phase = 'home' | 'lifemap' | 'focus' | 'replay' | 'ground';
+75:  phase,
+76:  selectedStar,
+79:  phase: Phase;
+80:  selectedStar: StarNode | null;
+83:  const { camera } = useThree();
+90:    if (phase === 'lifemap') {
+95:    if (phase === 'ground') {
+100:    if ((phase === 'focus' || phase === 'replay') && selectedStar) {
+101:      const star = new THREE.Vector3(...selectedStar.position);
+102:      const focusOffset = new THREE.Vector3(0, 0.15, phase === 'focus' ? 4.9 : 2.7);
+103:      targetPos = star.clone().add(focusOffset);
+110:    camera.position.x = THREE.MathUtils.damp(camera.position.x, targetPos.x, posDamp, dt);
+111:    camera.position.y = THREE.MathUtils.damp(camera.position.y, targetPos.y, posDamp, dt);
+112:    camera.position.z = THREE.MathUtils.damp(camera.position.z, targetPos.z, posDamp, dt);
+118:    camera.lookAt(look.current);
+193:  phase,
+195:  selectedStar,
+199:  phase: Phase;
+201:  selectedStar: StarNode | null;
+205:  const interactive = phase === 'lifemap';
+208:    <group visible={phase === 'lifemap' || phase === 'focus' || phase === 'replay'}>
+210:        const isSelected = selectedStar?.id === star.id;
+211:        const subdued = phase !== 'lifemap' && !isSelected;
+252:  phase,
+253:  selectedStar,
+257:  phase: Phase;
+258:  selectedStar: StarNode | null;
+262:  const active = (phase === 'focus' || phase === 'replay') && !!selectedStar;
+266:    if (!group.current || !active || !selectedStar) return;
+272:  if (!selectedStar) return null;
+275:    <group ref={group} visible={active} position={selectedStar.position}>
+277:        visible={phase === 'focus'}
+280:          if (phase === 'focus' && !inputLocked) onReplay();
+286:      <mesh visible={phase === 'focus'}>
+295:  phase,
+296:  selectedStar,
+298:  phase: Phase;
+299:  selectedStar: StarNode | null;
+301:  const active = phase === 'replay' && !!selectedStar;
+310:  if (!selectedStar) return null;
+313:    <group ref={group} visible={active} position={selectedStar.position}>
+338:function GroundModeField({ phase }: { phase: Phase }) {
+339:  const active = phase === 'ground';
+356:  const [phase, setPhase] = useState<Phase>('home');
+357:  const [selectedStar, setSelectedStar] = useState<StarNode | null>(stars[0] ?? null);
+379:      if (e.key !== 'Escape') return;
+382:      if (phase === 'replay') {
+383:        setPhase('focus');
+387:      if (phase === 'focus') {
+388:        setPhase('lifemap');
+392:      if (phase === 'lifemap') {
+393:        setPhase('home');
+397:      if (phase === 'ground') {
+398:        setPhase('home');
+403:    window.addEventListener('keydown', onKey);
+404:    return () => window.removeEventListener('keydown', onKey);
+405:  }, [phase, inputLocked]);
+407:  const fogColor =
+408:    phase === 'home'
+410:      : phase === 'ground'
+416:      <Canvas
+417:        camera={{ position: [HOME_POS.x, HOME_POS.y + 0.2, HOME_POS.z + 0.45], fov: 42, near: 0.1, far: 600 }}
+421:        <color attach="background" args={[fogColor]} />
+422:        <fog attach="fog" args={[fogColor, 28, 190]} />
+424:        <ambientLight intensity={phase === 'home' ? 0.34 : 0.16} />
+425:        <pointLight position={[0, 2.5, 3]} intensity={phase === 'home' ? 0.42 : 0.12} color="#9FAEDB" />
+427:        <CameraRig phase={phase} selectedStar={selectedStar} transitionActive={transitionActive} />
+430:          enabled={phase === 'home'}
+433:            setPhase('lifemap');
+439:          enabled={phase === 'home'}
+442:            setPhase('ground');
+447:        <HomeOrb enabled={phase === 'home'} />
+450:          phase={phase}
+452:          selectedStar={selectedStar}
+456:            setPhase('focus');
+462:          phase={phase}
+463:          selectedStar={selectedStar}
+466:            setPhase('replay');
+471:        <ReplayField phase={phase} selectedStar={selectedStar} />
+472:        <GroundModeField phase={phase} />
+473:      </Canvas>

@@ -1,0 +1,163 @@
+=== PASS 2C: REMOVE BROKEN CAMERA HOOK ===
+Removed: useCameraController.ts
+Running typecheck...
+Running build...
+
+> urai-spatial-monorepo@ build /home/user/urai-spatial
+> pnpm --filter urai-tier1 build
+
+
+> urai-tier1@0.1.0 build /home/user/urai-spatial/urai-tier1
+> next build --webpack
+
+▲ Next.js 16.2.1 (webpack)
+
+  Creating an optimized production build ...
+✓ Compiled successfully in 7.5s
+  Running TypeScript ...
+  Finished TypeScript in 23.3s ...
+  Collecting page data using 1 worker ...
+  Generating static pages using 1 worker (0/3) ...
+✓ Generating static pages using 1 worker (3/3) in 1285ms
+  Finalizing page optimization ...
+  Collecting build traces ...
+
+Route (app)
+┌ ○ /
+└ ○ /_not-found
+
+
+○  (Static)  prerendered as static content
+
+PASS 2C COMPLETE
+]633;D;0]633;P;Cwd=/home/user/urai-spatial]633;P;Prompt=\x1b]0\x3buser@firebase-urai-spatial-1769687960051: ~/urai-spatial\x07\x1b[00\x3b35murai-spatial-21209489\x1b[00m:\x1b[01\x3b34m~/urai-spatial\x1b[00m\x1b[01\x3b32m{tier1-home-ascent-cleanup-20260318_090348}\x1b[00m$ ]633;EnvSingleStart;0;89f857f4-9165-435f-99c2-30a96aa1988d]633;EnvSingleDelete;CAPRA_ENABLED_FEATURES;;89f857f4-9165-435f-99c2-30a96aa1988d]633;EnvSingleDelete;VSCODE_GIT_ASKPASS_EXTRA_ARGS;;89f857f4-9165-435f-99c2-30a96aa1988d]633;EnvSingleDelete;MONOSPACE_RECOVERY_MODE;;89f857f4-9165-435f-99c2-30a96aa1988d]633;EnvSingleEnd;89f857f4-9165-435f-99c2-30a96aa1988d;[?2004h]633;A]0;user@firebase-urai-spatial-1769687960051: ~/urai-spatial[00;35murai-spatial-21209489[00m:[01;34m~/urai-spatial[00m[01;32m{tier1-home-ascent-cleanup-20260318_090348}[00m$ ]633;B#!/usr/bin/env bash
+set -e
+
+ROOT="/home/user/urai-spatial/urai-tier1"
+AUDIT="_audit/pass3b_real_ascent_$(date +%Y%m%d_%H%M%S)"
+BACKUP="$AUDIT/backup"
+LOG="$AUDIT/run.log"
+
+mkdir -p "$AUDIT" "$BACKUP"
+exec > >(tee -a "$LOG") 2>&1
+
+echo "=== PASS 3B: REAL ASCENT WIRING ==="
+
+fail() {
+  echo "FAILED: $1"
+  read -r -p "Press ENTER to exit..."
+  exit 1
+}
+
+SCENE="$ROOT/src/spatial/scene/SpatialScene.tsx"
+cp "$SCENE" "$BACKUP/SpatialScene.tsx"
+
+cat > "$SCENE" <<'EOF'
+import { Canvas, useFrame, useThree } from '@react-three/fiber'
+import * as THREE from 'three'
+import { useRef, useState } from 'react'
+
+function CameraController({ phase, transition, onTransitionComplete }) {
+  const { camera } = useThree()
+
+  const HOME_POS = new THREE.Vector3(0, 1.6, 6)
+  const HOME_LOOK = new THREE.Vector3(0, 1.2, 0)  const LIFEMAP_POS = new THREE.Vector3(0, 0, 0)  const LIFEMAP_LOOK = new THREE.Vector3(0, 0, -5)  const t = useRef(0)  useFrame((_, delta) => {    if (transition === 'ASCENT') {      t.current += delta / 2 // ~2s duration      const clamped = Math.min(t.current, 1)      const pos = HOME_POS.clone().lerp(LIFEMAP_POS, clamped)      const look = HOME_LOOK.clone().lerp(LIFEMAP_LOOK, clamped)      camera.position.copy(pos)      camera.lookAt(look)      if (clamped >= 1) {        onTransitionComplete()        t.current = 0      }    } else if (phase === 'HOME') {      camera.position.lerp(HOME_POS, 0.05)      camera.lookAt(HOME_LOOK)    } else if (phase === 'LIFEMAP') {      camera.position.lerp(LIFEMAP_POS, 0.05)      camera.lookAt(LIFEMAP_LOOK)    }  })  return null}function SkyClickLayer({ onClick, enabled }) {  return (    <mesh      position={[0, 0, -10]}      onClick={enabled ? onClick : undefined}    >      <planeGeometry args={[100, 100]} />      <meshBasicMaterial transparent opacity={0} />    </mesh>  )}export default function SpatialScene() {  const [phase, setPhase] = useState('HOME')  const [transition, setTransition] = useState('IDLE')  const [inputLocked, setInputLocked] = useState(false)  const startAscent = () => {    if (inputLocked || phase !== 'HOME') return    setInputLocked(true)[7m    setTransition('ASCENT')[27m[7m  }[27m[7m  const completeAscent = () => {[27m[7m    setPhase('LIFEMAP')[27m[7m    setTransition('IDLE')[27m[7m    setInputLocked(false)[27m[7m  }[27m[7m  return ([27m[7m    <Canvas camera={{ position: [0, 1.6, 6], fov: 50 }}>[27m[7m      <CameraController[27m[7m        phase={phase}[27m[7m        transition={transition}[27m[7m        onTransitionComplete={completeAscent}[27m[7m      />[27m[7m      <SkyClickLayer onClick={startAscent} enabled={!inputLocked} />[27m[7m      {/* Existing scene content remains here */}[27m[7m    </Canvas>[27m[7m  )[27m[7m}[27m[7mEOF[27m[7mecho "Running typecheck..."[27m[7mpnpm exec tsc --noEmit || fail "Typecheck failed"[27m[7mecho "Running build..."[27m[7mpnpm build || fail "Build failed"[27m[7mecho "PASS 3B COMPLETE"[27m    setTransition('ASCENT')  }  const completeAscent = () => {    setPhase('LIFEMAP')    setTransition('IDLE')    setInputLocked(false)  }  return (    <Canvas camera={{ position: [0, 1.6, 6], fov: 50 }}>      <CameraController        phase={phase}        transition={transition}        onTransitionComplete={completeAscent}      />      <SkyClickLayer onClick={startAscent} enabled={!inputLocked} />      {/* Existing scene content remains here */}    </Canvas>  )}EOFecho "Running typecheck..."pnpm exec tsc --noEmit || fail "Typecheck failed"echo "Running build..."pnpm build || fail "Build failed"echo "PASS 3B COMPLETE"
+[?2004l]633;E;set -e;89f857f4-9165-435f-99c2-30a96aa1988d]633;C=== PASS 3B: REAL ASCENT WIRING ===
+Running typecheck...
+Running build...
+
+> urai-spatial-monorepo@ build /home/user/urai-spatial
+> pnpm --filter urai-tier1 build
+
+
+> urai-tier1@0.1.0 build /home/user/urai-spatial/urai-tier1
+> next build --webpack
+
+▲ Next.js 16.2.1 (webpack)
+
+  Creating an optimized production build ...
+✓ Compiled successfully in 6.5s
+  Running TypeScript ...
+  Finished TypeScript in 18.8s ...
+  Collecting page data using 1 worker ...
+  Generating static pages using 1 worker (0/3) ...
+✓ Generating static pages using 1 worker (3/3) in 806ms
+  Finalizing page optimization ...
+  Collecting build traces ...
+
+Route (app)
+┌ ○ /
+└ ○ /_not-found
+
+
+○  (Static)  prerendered as static content
+
+PASS 3B COMPLETE
+]633;D;0]633;P;Cwd=/home/user/urai-spatial]633;P;Prompt=\x1b]0\x3buser@firebase-urai-spatial-1769687960051: ~/urai-spatial\x07\x1b[00\x3b35murai-spatial-21209489\x1b[00m:\x1b[01\x3b34m~/urai-spatial\x1b[00m\x1b[01\x3b32m{tier1-home-ascent-cleanup-20260318_090348}\x1b[00m$ ]633;EnvSingleStart;0;89f857f4-9165-435f-99c2-30a96aa1988d]633;EnvSingleEnd;89f857f4-9165-435f-99c2-30a96aa1988d;[?2004h]633;A]0;user@firebase-urai-spatial-1769687960051: ~/urai-spatial[00;35murai-spatial-21209489[00m:[01;34m~/urai-spatial[00m[01;32m{tier1-home-ascent-cleanup-20260318_090348}[00m$ ]633;B#!/usr/bin/env bash
+set -e
+
+ROOT="/home/user/urai-spatial/urai-tier1"
+AUDIT="_audit/pass4a_lifemap_depth_$(date +%Y%m%d_%H%M%S)"
+BACKUP="$AUDIT/backup"
+LOG="$AUDIT/run.log"
+
+mkdir -p "$AUDIT" "$BACKUP"
+exec > >(tee -a "$LOG") 2>&1
+
+echo "=== PASS 4A: LIFEMAP DEPTH FIELD ==="
+
+fail() {
+  echo "FAILED: $1"
+  read -r -p "Press ENTER to exit..."
+  exit 1
+}
+
+SCENE="$ROOT/src/spatial/scene/SpatialScene.tsx"
+cp "$SCENE" "$BACKUP/SpatialScene.tsx"
+
+cat > "$SCENE" <<'EOF'
+import { Canvas, useFrame, useThree } from '@react-three/fiber'
+import * as THREE from 'three'
+import { useRef, useState, useMemo } from 'react'
+
+/* =========================
+   CAMERA CONTROLLER
+========================= */
+
+function CameraController({ phase, transition, onTransitionComplete }) {
+  const { camera } = useThree()  const HOME_POS = new THREE.Vector3(0, 1.6, 6)  const HOME_LOOK = new THREE.Vector3(0, 1.2, 0)  const LIFEMAP_POS = new THREE.Vector3(0, 0, 2)  const LIFEMAP_LOOK = new THREE.Vector3(0, 0, -10)  const t = useRef(0)  useFrame((_, delta) => {    if (transition === 'ASCENT') {      t.current += delta / 2      const k = Math.min(t.current, 1)      camera.position.lerpVectors(HOME_POS, LIFEMAP_POS, k)      const look = HOME_LOOK.clone().lerp(LIFEMAP_LOOK, k)      camera.lookAt(look)      if (k >= 1) {        t.current = 0        onTransitionComplete()      }    } else if (phase === 'HOME') {      camera.position.lerp(HOME_POS, 0.05)      camera.lookAt(HOME_LOOK)    } else if (phase === 'LIFEMAP') {      camera.position.lerp(LIFEMAP_POS, 0.05)      camera.lookAt(LIFEMAP_LOOK)    }  })  return null}/* =========================   STARFIELD SYSTEM========================= */function generateStars(count, spread, zRange, sizeRange) {  const arr = []  for (let i = 0; i < count; i++) {    arr.push({      id: i,      position: new THREE.Vector3(        (Math.random() - 0.5) * spread,        (Math.random() - 0.5) * spread,        THREE.MathUtils.lerp(zRange[0], zRange[1], Math.random())      ),      size: THREE.MathUtils.lerp(sizeRange[0], sizeRange[1], Math.random()),      intensity: Math.random()    })  }  return arr}function Star({ data }) {  const ref = useRef()  useFrame((state) => {    if (!ref.current) return    const t = state.clock.elapsedTime    const pulse = 1 + Math.sin(t * 2 + data.id) * 0.15    ref.current.scale.setScalar(data.size * pulse)  })  return (    <mesh position={data.position} ref={ref}>      <sphereGeometry args={[0.05, 8, 8]} />      <meshStandardMaterial        emissive={'#88ccff'}        emissiveIntensity={0.5 + data.intensity}        color={'#ffffff'}      />    </mesh>  )}function StarLayer({ stars }) {  return (    <>      {stars.map((s) => (        <Star key={s.id} data={s} />      ))}    </>  )}function LifeMapField({ active }) {  const near = useMemo(() => generateStars(80, 8, [-3, -6], [0.04, 0.08]), [])  const mid = useMemo(() => generateStars(120, 20, [-10, -20], [0.05, 0.12]), [])  const far = useMemo(() => generateStars(200, 40, [-30, -80], [0.02, 0.05]), [])  if (!active) return null  return (    <>      <StarLayer stars={far} />      <StarLayer stars={mid} />      <StarLayer stars={near} />    </>  )}/* =========================   SKY CLICK========================= */function SkyClickLayer({ onClick, enabled }) {  return (    <mesh position={[0, 0, -10]} onClick={enabled ? onClick : undefined}>      <planeGeometry args={[100, 100]} />      <meshBasicMaterial transparent opacity={0} />    </mesh>  )}/* =========================   MAIN========================= */export default function SpatialScene() {  const [phase, setPhase] = useState('HOME')  const [transition, setTransition] = useState('IDLE')  const [inputLocked, setInputLocked] = useState(false)  const startAscent = () => {    if (inputLocked || phase !== 'HOME') return    setInputLocked(true)    setTransition('ASCENT')  }[7m  const completeAscent = () => {[27m[7m    setPhase('LIFEMAP')[27m[7m    setTransition('IDLE')[27m[7m    setInputLocked(false)[27m[7m  }[27m[7m  return ([27m[7m    <Canvas camera={{ position: [0, 1.6, 6], fov: 50 }}>[27m[7m      <ambientLight intensity={0.3} />[27m[7m      <CameraController[27m[7m        phase={phase}[27m[7m        transition={transition}[27m[7m        onTransitionComplete={completeAscent}[27m[7m      />[27m[7m      <SkyClickLayer onClick={startAscent} enabled={!inputLocked} />[27m[7m      <LifeMapField active={phase === 'LIFEMAP'} />[27m[7m    </Canvas>[27m[7m  )[27m[7m}[27m[7mEOF[27m[7mecho "Typecheck..."[27m[7mpnpm exec tsc --noEmit || fail "Typecheck failed"[27m[7mecho "Build..."[27m[7mpnpm build || fail "Build failed"[27m[7mecho "PASS 4A COMPLETE"[27m  const completeAscent = () => {    setPhase('LIFEMAP')    setTransition('IDLE')    setInputLocked(false)  }  return (    <Canvas camera={{ position: [0, 1.6, 6], fov: 50 }}>      <ambientLight intensity={0.3} />      <CameraController        phase={phase}        transition={transition}        onTransitionComplete={completeAscent}      />      <SkyClickLayer onClick={startAscent} enabled={!inputLocked} />      <LifeMapField active={phase === 'LIFEMAP'} />    </Canvas>  )}EOFecho "Typecheck..."pnpm exec tsc --noEmit || fail "Typecheck failed"echo "Build..."pnpm build || fail "Build failed"echo "PASS 4A COMPLETE"
+[?2004l]633;E;set -e;89f857f4-9165-435f-99c2-30a96aa1988d]633;C=== PASS 4A: LIFEMAP DEPTH FIELD ===
+Typecheck...
+Build...
+
+> urai-spatial-monorepo@ build /home/user/urai-spatial
+> pnpm --filter urai-tier1 build
+
+
+> urai-tier1@0.1.0 build /home/user/urai-spatial/urai-tier1
+> next build --webpack
+
+▲ Next.js 16.2.1 (webpack)
+
+  Creating an optimized production build ...
+✓ Compiled successfully in 7.9s
+  Running TypeScript ...
+Failed to type check.
+
+./src/spatial/scene/SpatialScene.tsx:69:15
+Type error: Expected 1 arguments, but got 0.
+
+  [90m67 |[0m
+  [90m68 |[0m [36mfunction[0m [33mStar[0m({ data }) {
+[31m[1m>[0m [90m69 |[0m   [36mconst[0m ref = useRef()
+  [90m   |[0m               [31m[1m^[0m
+  [90m70 |[0m
+  [90m71 |[0m   useFrame((state) => {
+  [90m72 |[0m     [36mif[0m (!ref.current) [36mreturn[0m
+Next.js build worker exited with code: 1 and signal: null
+/home/user/urai-spatial/urai-tier1:
+ ERR_PNPM_RECURSIVE_RUN_FIRST_FAIL  urai-tier1@0.1.0 build: `next build --webpack`
+Exit status 1
+ ELIFECYCLE  Command failed with exit code 1.
+FAILED: Build failed
+Press ENTER to exit...exit

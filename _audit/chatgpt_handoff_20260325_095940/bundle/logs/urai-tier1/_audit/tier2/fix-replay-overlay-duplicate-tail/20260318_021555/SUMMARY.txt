@@ -1,0 +1,42 @@
+
+== replay overlay tail after patch ==
+            transform: translate(-50%, -50%) scale(1.42);
+          }
+        }
+
+        @keyframes sky-streak-a {
+          0% {
+            transform: translate(-18%, -50%) scaleX(0.72);
+            opacity: 0.12;
+          }
+          100% {
+            transform: translate(22%, -50%) scaleX(1.12);
+            opacity: 1;
+          }
+        }
+
+        @keyframes sky-streak-b {
+          0% {
+            transform: translate(18%, -50%) scaleX(0.82);
+            opacity: 0.10;
+          }
+          100% {
+            transform: translate(-14%, -50%) scaleX(1.08);
+            opacity: 0.84;
+          }
+        }
+
+        @keyframes sky-core {
+          0% {
+            transform: translate(-50%, -50%) scale(0.72);
+            opacity: 0.10;
+          }
+          100% {
+            transform: translate(-50%, -50%) scale(1.18);
+            opacity: 1;
+          }
+        }
+      `}</style>
+    </>
+  );
+}

@@ -1,8 +1,7 @@
+
 import { resolveStarByIdSafe } from "../lib/resolveStarByIdSafe";
 import type { XrInputSnapshot } from "../xr/xrInputTypes";
 
-export const SPATIAL_PERSISTENCE_STORAGE_KEY = "urai.spatial.persistence";
-export const SPATIAL_PERSISTENCE_SCHEMA = "urai.spatial.persistence.v1";
 
 export type SpatialArPlacement = {
   enabled: boolean;
@@ -43,7 +42,6 @@ export type SpatialHeadset = {
 };
 
 export type SpatialPersistenceSnapshot = {
-  schema: typeof SPATIAL_PERSISTENCE_SCHEMA;
   savedAt: string;
   sceneMode: string;
   selectedStarId: string | null;
@@ -62,7 +60,6 @@ export type SpatialPersistenceSnapshot = {
 };
 
 export const spatialPersistenceSample: SpatialPersistenceSnapshot = {
-  schema: SPATIAL_PERSISTENCE_SCHEMA,
   savedAt: new Date(0).toISOString(),
   sceneMode: "home",
   selectedStarId: null,
@@ -153,5 +150,5 @@ export const spatialPersistenceSample: SpatialPersistenceSnapshot = {
 export default spatialPersistenceSample;
 
 export type SpatialSnapshot = {
-  [key: string]: unknown;
+  [key: string]: any;
 };

@@ -1,68 +1,176 @@
-import { resolveStarByIdSafe } from "../lib/resolveStarByIdSafe";
-"use client";
+'use client'
 
-import { useEffect } from "react";
-import { Canvas } from "@react-three/fiber";
-import { useSceneStore } from "../state/sceneStore";
-import HomeWorld from "./HomeWorld";
-import Starfield from "./Starfield";
-import ReplaySphere from "./ReplaySphere";
-import CameraRig from "../components/CameraRig";
+import React, { useMemo } from 'react'
+import { Canvas } from '@react-three/fiber'
+import { STAR_DATA } from '@/lib/uraiCanon/starData'
+import { resolveAtmosphere, type TransitionPhase } from '@/spatial/canon/cameraCanon'
+import { CameraDirector, TransitionVeil } from '@/spatial/components/CameraDirector'
+import useSceneAuthority from '@/spatial/hooks/useSceneAuthority'
+import LifeMapStarfield from '@/spatial/components/LifeMapStarfield'
+import FocusSubject from '@/spatial/components/FocusSubject'
+import ReplayScene from '@/spatial/components/ReplayScene'
+import HomeEnvironment from '@/spatial/components/HomeEnvironment'
+import { useCanonEsc } from '../hooks/useCanonEsc'
+
+type VisualStar = {
+  id: string
+  position: [number, number, number]
+  size: number
+  alpha: number
+  tone: string
+  band: 'near' | 'mid' | 'far'
+}
+
+function clamp(value: number, min: number, max: number) {
+  return Math.max(min, Math.min(max, value))
+}
+
+function toVisualStar(star: any, idx: number): VisualStar {
+  const raw =
+    Array.isArray(star?.position) && star.position.length === 3
+      ? star.position
+      : [Number(star?.x) || 0, Number(star?.y) || 0, Number(star?.z) || (-14 - idx * 5)]
+
+  const z = clamp(Number(raw[2]) || -20, -58, -13)
+  const band: 'near' | 'mid' | 'far' =
+    z > -22 ? 'near' : z > -38 ? 'mid' : 'far'
+
+  return {
+    id: String(star?.id ?? `star-${idx + 1}`),
+    position: [
+      clamp((Number(raw[0]) || 0) * 2.2, -16, 16),
+      clamp((Number(raw[1]) || 0) * 1.9, -9, 9),
+      z,
+    ],
+    size:
+      band === 'near'
+        ? clamp((Number(star?.size) || 0.07) * 2.0, 0.10, 0.22)
+        : band === 'mid'
+          ? clamp((Number(star?.size) || 0.06) * 1.5, 0.06, 0.14)
+          : clamp((Number(star?.size) || 0.05) * 1.1, 0.035, 0.08),
+    alpha:
+      band === 'near'
+        ? clamp(Number(star?.intensity) || 0.9, 0.45, 1)
+        : band === 'mid'
+          ? clamp((Number(star?.intensity) || 0.8) * 0.8, 0.22, 0.72)
+          : clamp((Number(star?.intensity) || 0.7) * 0.55, 0.10, 0.42),
+    tone:
+      typeof star?.tone === 'string'
+        ? star.tone
+        : typeof star?.color === 'string'
+          ? star.color
+          : '#dfe8ff',
+    band,
+  }
+}
 
 export default function SpatialScene() {
-  const mode = useSceneStore((s) => s.mode);
-  const selectedStarId = useSceneStore((s) => s.selectedStarId);
-  const goHome = useSceneStore((s) => s.goHome);
-  const exitReplay = useSceneStore((s) => s.exitReplay);
-  const focusStar = useSceneStore((s) => s.focusStar);
+  const { authority, authorityActions } = useSceneAuthority({ stars: STAR_DATA })
+  useCanonEsc(authority)
 
-  useEffect(() => {
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key !== "Escape") return;
-      const state = useSceneStore.getState();
+  const visualStars = useMemo<VisualStar[]>(
+    () => (authority.stars ?? []).map((star: any, idx: number) => toVisualStar(star, idx)),
+    [authority.stars]
+  )
 
-      if (state.mode === "replay") {
-        state.exitReplay();
-        return;
-      }
+  const phase = (authority.transitionPhase ?? 'idle') as TransitionPhase
+  const atmosphere = useMemo(
+    () => resolveAtmosphere(authority.mode, phase),
+    [authority.mode, phase]
+  )
 
-      if (state.mode === "focus") {
-        state.focusStar(null);
-        return;
-      }
+  const showHome =
+    authority.mode === 'home' ||
+    phase === 'ascent' ||
+    phase === 'go_home'
 
-      state.goHome();
-    };
+  const showLifeMap =
+    authority.mode === 'lifemap' ||
+    authority.mode === 'focus' ||
+    authority.mode === 'replay' ||
+    phase === 'ascent' ||
+    phase === 'arrive_lifemap' ||
+    phase === 'open_focus' ||
+    phase === 'open_replay' ||
+    phase === 'close_focus' ||
+    phase === 'close_replay'
 
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, []);
+  const showFocus =
+    authority.mode === 'focus' ||
+    authority.mode === 'replay' ||
+    phase === 'open_focus' ||
+    phase === 'open_replay' ||
+    phase === 'close_focus' ||
+    phase === 'close_replay'
+
+  const showReplay =
+    authority.mode === 'replay' ||
+    phase === 'open_replay' ||
+    phase === 'close_replay'
+
+  const replayOpacity =
+    phase === 'open_replay' ? 0.16 :
+    phase === 'close_replay' ? 0.10 :
+    showReplay ? 0.22 : 0
 
   return (
-    <div className="relative h-screen w-screen overflow-hidden bg-black">
+    <div style={{ width: '100%', height: '100vh', overflow: 'hidden', background: atmosphere.bgColor }}>
       <Canvas
-        camera={{ position: [0, 1.1, 7.5], fov: 42, near: 0.1, far: 200 }}
-        gl={{ antialias: true, alpha: false }}
+        camera={{ position: [0, 1.1, 10.9], fov: 54, near: 0.1, far: 260 }}
         dpr={[1, 1.75]}
       >
-        <color attach="background" args={["#02040b"]} />
-        <fog attach="fog" args={["#02040b", 10, 58]} />
-        <ambientLight intensity={0.35} />
-        <directionalLight position={[4, 8, 6]} intensity={1.35} color={"#8aa4ff"} />
-        <pointLight position={[0, 2.2, 1.5]} intensity={2.4} color={"#dbe8ff"} distance={18} />
-        <CameraRig />
-        <HomeWorld />
-        <Starfield />
-        {mode === "replay" && selectedStarId ? <ReplaySphere starId={selectedStarId} /> : null}
+        <CameraDirector mode={authority.mode} transitionPhase={phase} />
+
+        <color attach="background" args={[atmosphere.bgColor]} />
+        <fog attach="fog" args={atmosphere.fogArgs} />
+
+        <ambientLight intensity={atmosphere.ambientLight} />
+        <directionalLight
+          position={[4, 8, 6]}
+          intensity={atmosphere.directionalLightIntensity}
+          color={atmosphere.directionalLightColor}
+        />
+        <pointLight
+          position={atmosphere.pointLightPosition}
+          intensity={atmosphere.pointLightIntensity}
+          color={'#dfe8ff'}
+          distance={atmosphere.pointLightDistance}
+        />
+
+        {showHome ? (
+          <HomeEnvironment
+            visible={true}
+            onSkyOpen={() => authorityActions.openLifeMap()}
+          />
+        ) : null}
+
+        {showLifeMap ? (
+          <LifeMapStarfield
+            visible={true}
+            stars={visualStars}
+            selectedStarId={authority.selectedStarId}
+            onSelectStar={(id: string) => authorityActions.openFocus(id)}
+          />
+        ) : null}
+
+        {showFocus ? (
+          <FocusSubject
+            visible={true}
+            onEnterReplay={() => authorityActions.openReplay(authority.selectedStarId)}
+          />
+        ) : null}
+
+        {showReplay ? (
+          <ReplayScene
+            active={showReplay}
+            starId={authority.replayStarId ?? authority.selectedStarId}
+            opacity={replayOpacity}
+            visible={showReplay}
+          />
+        ) : null}
+
+        <TransitionVeil mode={authority.mode} transitionPhase={phase} />
       </Canvas>
-
-      <div className="pointer-events-none absolute left-4 top-4 z-20 rounded-full border border-white/15 bg-black/40 px-3 py-1 text-[11px] uppercase tracking-[0.24em] text-white/72 backdrop-blur-md">
-        {mode === "home" ? "Home" : mode === "sky" ? "Sky" : mode === "lifemap" ? "LifeMap" : mode === "focus" ? "Star Focus" : "Replay"}
-      </div>
-
-      <div className="pointer-events-none absolute bottom-4 left-1/2 z-20 -translate-x-1/2 rounded-full border border-white/10 bg-black/35 px-4 py-2 text-xs text-white/65 backdrop-blur-md">
-        ESC returns one level back. ESC on Home hard-resets to Home.
-      </div>
     </div>
-  );
+  )
 }

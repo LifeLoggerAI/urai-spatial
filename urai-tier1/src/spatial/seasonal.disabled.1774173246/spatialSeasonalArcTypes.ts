@@ -21,8 +21,6 @@ export type SpatialSeasonalArcManifest = {
   seasonalArcs: SpatialSeasonalArc[];
 };
 
-export const SPATIAL_SEASONAL_ARC_STORAGE_KEY = "urai.spatial.seasonal-arc.v1";
-export const SPATIAL_SEASONAL_ARC_MAX_ITEMS = 24;
 
 export function createDefaultSpatialSeasonalArcManifest(): SpatialSeasonalArcManifest {
   return {

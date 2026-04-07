@@ -1,0 +1,11 @@
+src/spatial/ui/SpatialCuratedDeckDriftPanel.tsx:5:import { buildSpatialCuratedDeckDrift } from "@/spatial/curation/buildSpatialCuratedDeckDrift";
+src/spatial/ui/SpatialCuratedDeckDriftPanel.tsx:9:export default function SpatialCuratedDeckDriftPanel() {
+src/spatial/ui/SpatialCuratedDeckDriftPanel.tsx:14:    () => buildSpatialCuratedDeckDrift({ entries, activeEntryId, windowSize: 4 }),
+src/spatial/ui/SpatialCuratedDeckDriftPanel.tsx:57:        Curated Deck Drift
+src/spatial/curation/buildSpatialCuratedDeckDrift.ts:24:export function buildSpatialCuratedDeckDrift(input: {
+src/spatial/curation/buildSpatialCuratedDeckDrift.ts:33:      schema: "urai.spatial.curated-deck-drift.v1",
+src/spatial/curation/buildSpatialCuratedDeckDrift.ts:60:      schema: "urai.spatial.curated-deck-drift.v1",
+src/spatial/curation/buildSpatialCuratedDeckDrift.ts:164:    schema: "urai.spatial.curated-deck-drift.v1",
+src/spatial/curation/spatialCuratedDeckDriftTypes.ts:15:  schema: "urai.spatial.curated-deck-drift.v1";
+src/spatial/scene/SpatialScene.tsx:2:import SpatialCuratedDeckDriftPanel from "@/spatial/ui/SpatialCuratedDeckDriftPanel";
+src/spatial/scene/SpatialScene.tsx:792:      <SpatialCuratedDeckDriftPanel />

@@ -1,0 +1,110 @@
+===== FILE: src/spatial/core/SceneController.tsx =====
+
+     1	"use client";
+     2	
+     3	import { useEffect } from "react";
+     4	import { useSceneStore } from "../state/sceneStore";
+     5	
+     6	export default function SceneController() {
+     7	  const { mode, setMode } = useSceneStore();
+     8	
+     9	  useEffect(() => {
+    10	    const onKey = (e: KeyboardEvent) => {
+    11	      if (e.key !== "Enter") return;
+    12	
+    13	      if (mode === "home") {
+    14	        setMode("sky");
+    15	      } else if (mode === "lifemap") {
+    16	        setMode("home");
+    17	      } else if (mode === "focus") {
+    18	        useSceneStore.setState({ selectedStar: null });
+    19	        setMode("lifemap");
+    20	      }
+    21	    };
+    22	
+    23	    window.addEventListener("keydown", onKey);
+    24	    return () => window.removeEventListener("keydown", onKey);
+    25	  }, [mode, setMode]);
+    26	
+    27	  return null;
+    28	}
+
+
+===== PATTERN: function =====
+1-"use client";
+2-
+3-import { useEffect } from "react";
+4-import { useSceneStore } from "../state/sceneStore";
+5-
+6:export default function SceneController() {
+7-  const { mode, setMode } = useSceneStore();
+8-
+9-  useEffect(() => {
+10-    const onKey = (e: KeyboardEvent) => {
+11-      if (e.key !== "Enter") return;
+12-
+13-      if (mode === "home") {
+14-        setMode("sky");
+15-      } else if (mode === "lifemap") {
+16-        setMode("home");
+17-      } else if (mode === "focus") {
+18-        useSceneStore.setState({ selectedStar: null });
+
+===== PATTERN: mode =====
+1-"use client";
+2-
+3-import { useEffect } from "react";
+4-import { useSceneStore } from "../state/sceneStore";
+5-
+6-export default function SceneController() {
+7:  const { mode, setMode } = useSceneStore();
+8-
+9-  useEffect(() => {
+10-    const onKey = (e: KeyboardEvent) => {
+11-      if (e.key !== "Enter") return;
+12-
+13:      if (mode === "home") {
+14-        setMode("sky");
+15:      } else if (mode === "lifemap") {
+16-        setMode("home");
+17:      } else if (mode === "focus") {
+18-        useSceneStore.setState({ selectedStar: null });
+19-        setMode("lifemap");
+20-      }
+21-    };
+22-
+23-    window.addEventListener("keydown", onKey);
+24-    return () => window.removeEventListener("keydown", onKey);
+25:  }, [mode, setMode]);
+26-
+27-  return null;
+28-}
+
+===== PATTERN: selectedStar =====
+6-export default function SceneController() {
+7-  const { mode, setMode } = useSceneStore();
+8-
+9-  useEffect(() => {
+10-    const onKey = (e: KeyboardEvent) => {
+11-      if (e.key !== "Enter") return;
+12-
+13-      if (mode === "home") {
+14-        setMode("sky");
+15-      } else if (mode === "lifemap") {
+16-        setMode("home");
+17-      } else if (mode === "focus") {
+18:        useSceneStore.setState({ selectedStar: null });
+19-        setMode("lifemap");
+20-      }
+21-    };
+22-
+23-    window.addEventListener("keydown", onKey);
+24-    return () => window.removeEventListener("keydown", onKey);
+25-  }, [mode, setMode]);
+26-
+27-  return null;
+28-}
+
+===== PATTERN: progress =====
+
+===== PATTERN: camera =====

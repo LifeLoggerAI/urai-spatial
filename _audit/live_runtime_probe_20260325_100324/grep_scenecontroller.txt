@@ -1,0 +1,1 @@
+/home/user/urai-spatial/urai-tier1/src/spatial/core/SceneController.tsx:3:export default function SceneController() {

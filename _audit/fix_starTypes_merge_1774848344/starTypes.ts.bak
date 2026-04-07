@@ -1,0 +1,58 @@
+export type StarPhase = 'home' | 'lifemap' | 'focus' | 'replay'
+
+export type StarNode = {
+  id: string
+  x: number
+  y: number
+  z: number
+  title?: string
+  label?: string
+  color?: string
+  size?: number
+  radius?: number
+  intensity?: number
+  importance?: number
+  chapterId?: string
+  isAnchor?: boolean
+  interactive?: boolean
+  metadata?: Record<string, unknown>
+}
+
+export type StarSelectionState = {
+  selectedStarId: string | null
+  hoveredStarId: string | null
+}
+
+export function isStarNode(value: unknown): value is StarNode {
+  if (!value || typeof value !== 'object') return false
+  const v = value as Record<string, unknown>
+
+  return (
+    typeof v.id === 'string' &&
+    typeof v.x === 'number' &&
+    typeof v.y === 'number' &&
+    typeof v.z === 'number'
+  )
+}
+
+export function coerceStarNode(
+  value: Partial<StarNode> & Pick<StarNode, 'id'>
+): StarNode {
+  return {
+    id: value.id,
+    x: Number(value.x ?? 0),
+    y: Number(value.y ?? 0),
+    z: Number(value.z ?? -40),
+    title: value.title,
+    label: value.label,
+    color: value.color ?? '#d6dce6',
+    size: Number(value.size ?? 0.16),
+    radius: Number(value.radius ?? value.size ?? 0.16),
+    intensity: Number(value.intensity ?? 0.8),
+    importance: Number(value.importance ?? value.intensity ?? 0.8),
+    chapterId: value.chapterId,
+    isAnchor: Boolean(value.isAnchor ?? false),
+    interactive: Boolean(value.interactive ?? true),
+    metadata: value.metadata ?? {},
+  }
+}

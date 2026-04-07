@@ -1,0 +1,20 @@
+=== URAI SPATIAL SINGLE BASH STABILIZATION FIX PASS ===
+timestamp: 20260325_084417
+root: /home/user/urai-spatial
+
+canonical app: /home/user/urai-spatial/urai-tier1
+target file: /home/user/urai-spatial/urai-tier1/src/spatial/scene/SpatialScene.tsx
+
+[1/6] verifying file anchors before patch
+[2/6] writing single-scene lock implementation
+[3/6] post-write sanity checks
+[4/6] snapshotting diff
+[5/6] type/build verification
+build_rc=0
+[6/6] success summary
+
+SUCCESS: stabilization fix pass completed
+audit dir: /home/user/urai-spatial/_audit/scene_consolidation_interaction_lock_fix_20260325_084417
+
+
+press enter to close... exit

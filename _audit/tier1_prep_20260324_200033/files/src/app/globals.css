@@ -1,0 +1,37 @@
+html,
+body,
+:root {
+  width: 100%;
+  height: 100%;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+  background: #02030a;
+  color: #f5f7ff;
+  font-family: Arial, Helvetica, sans-serif;
+}
+
+body,
+#__next {
+  min-height: 100vh;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+button,
+input,
+textarea,
+select {
+  font: inherit;
+}

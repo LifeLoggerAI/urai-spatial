@@ -1,0 +1,23 @@
+
+> urai-tier1@0.1.0 build /home/user/urai-spatial/urai-tier1
+> next build --webpack
+
+▲ Next.js 16.2.1 (webpack)
+
+  Creating an optimized production build ...
+✓ Compiled successfully in 16.6s
+  Running TypeScript ...
+Failed to type check.
+
+./src/spatial/scene/SpatialScene.tsx:288:22
+Type error: Argument of type '(current: any) => any' is not assignable to parameter of type 'string'.
+
+  [90m286 |[0m       onPointerOut={(e: [33mThreeEvent[0m<[33mPointerEvent[0m>) => {
+  [90m287 |[0m         e.stopPropagation();
+[31m[1m>[0m [90m288 |[0m         setHoveredId((current) => (current === star.id ? [36mnull[0m : current));
+  [90m    |[0m                      [31m[1m^[0m
+  [90m289 |[0m       }}
+  [90m290 |[0m       onClick={(e: [33mThreeEvent[0m<[33mMouseEvent[0m>) => {
+  [90m291 |[0m         e.stopPropagation();
+Next.js build worker exited with code: 1 and signal: null
+ ELIFECYCLE  Command failed with exit code 1.

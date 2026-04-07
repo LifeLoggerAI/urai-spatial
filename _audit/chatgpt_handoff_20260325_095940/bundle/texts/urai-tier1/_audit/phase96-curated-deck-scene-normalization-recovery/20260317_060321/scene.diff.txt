@@ -1,0 +1,33 @@
+diff --git a/urai-tier1/src/spatial/scene/SpatialScene.tsx b/urai-tier1/src/spatial/scene/SpatialScene.tsx
+index 79ca430..10da7d7 100644
+--- a/urai-tier1/src/spatial/scene/SpatialScene.tsx
++++ b/urai-tier1/src/spatial/scene/SpatialScene.tsx
+@@ -1,7 +1,4 @@
+ "use client";
+-import SpatialCuratedDeckDestructionAuthorizationPanel from "@/spatial/ui/SpatialCuratedDeckDestructionAuthorizationPanel";
+-import SpatialCuratedDeckRetentionHorizonPanel from "@/spatial/ui/SpatialCuratedDeckRetentionHorizonPanel";
+-import SpatialCuratedDeckExpiryGovernancePanel from "@/spatial/ui/SpatialCuratedDeckExpiryGovernancePanel";
+ import SpatialCuratedDeckPurgeReadinessPanel from "@/spatial/ui/SpatialCuratedDeckPurgeReadinessPanel";
+ import SpatialCuratedDeckRetentionLifecyclePanel from "@/spatial/ui/SpatialCuratedDeckRetentionLifecyclePanel";
+ import SpatialCuratedDeckReopenWatchPanel from "@/spatial/ui/SpatialCuratedDeckReopenWatchPanel";
+@@ -96,6 +93,9 @@ import SeasonalCycleOverlay from "@/spatial/seasonal/SeasonalCycleOverlay";
+ import NarratorOrchestrationOverlay from "@/spatial/narrator/NarratorOrchestrationOverlay";
+ import WebXRRendererHandoffOverlay from "@/spatial/xr-renderer/WebXRRendererHandoffOverlay";
+ import { useXrSessionStore } from "../state/xrSessionStore";
++import SpatialCuratedDeckRetentionHorizonPanel from "@/spatial/ui/SpatialCuratedDeckRetentionHorizonPanel";
++import SpatialCuratedDeckExpiryGovernancePanel from "@/spatial/ui/SpatialCuratedDeckExpiryGovernancePanel";
++import SpatialCuratedDeckDestructionAuthorizationPanel from "@/spatial/ui/SpatialCuratedDeckDestructionAuthorizationPanel";
+ 
+ const shellButtonStyle: CSSProperties = {
+   appearance: "none",
+@@ -832,9 +832,9 @@ export default function SpatialScene() {
+       <SpatialCuratedDeckArchiveDispositionPanel />
+       <SpatialCuratedDeckReopenWatchPanel />
+       <SpatialCuratedDeckRetentionLifecyclePanel />
++      <SpatialCuratedDeckPurgeReadinessPanel />
+       <SpatialCuratedDeckRetentionHorizonPanel />
+       <SpatialCuratedDeckExpiryGovernancePanel />
+-      <SpatialCuratedDeckPurgeReadinessPanel />
+       <SpatialCuratedDeckDestructionAuthorizationPanel />
+       <Canvas
+         camera={{ position: [0, 6, 30], fov: 42, near: 0.1, far: 200 }}

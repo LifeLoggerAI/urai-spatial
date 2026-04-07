@@ -1,0 +1,17 @@
+
+> urai-spatial-monorepo@ dev /home/user/urai-spatial
+> pnpm --filter urai-tier1 dev
+
+
+> urai-tier1@0.1.0 dev /home/user/urai-spatial/urai-tier1
+> next dev --webpack
+
+▲ Next.js 16.2.1 (webpack)
+- Local:         http://localhost:3000
+- Network:       http://10.88.0.3:3000
+✓ Ready in 2.8s
+
+○ Compiling / ...
+ HEAD / 200 in 13.4s (next.js: 12.5s, application-code: 841ms)
+ GET / 200 in 115ms (next.js: 13ms, application-code: 101ms)
+ GET / 200 in 13.6s (next.js: 12.5s, application-code: 1094ms)

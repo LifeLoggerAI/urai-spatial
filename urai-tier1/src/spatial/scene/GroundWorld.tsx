@@ -2,15 +2,15 @@
 
 export default function GroundWorld() {
   return (
-    <group>
-      <mesh rotation={[-Math.PI / 2, 0, 0]} receiveShadow>
-        <circleGeometry args={[3.3, 64]} />
-        <meshStandardMaterial color="#02040a" roughness={1} metalness={0.01} />
+    <group position={[0, -2.82, -3.8]}>
+      <mesh rotation={[-Math.PI / 2 + 0.115, 0, 0]} position={[0, -0.55, -6.8]}>
+        <circleGeometry args={[8.4, 96]} />
+        <meshBasicMaterial color="#081a62" />
       </mesh>
 
-      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.015, -0.45]} receiveShadow>
-        <circleGeometry args={[9, 64]} />
-        <meshStandardMaterial color="#03091a" roughness={1} metalness={0} transparent opacity={0.22} />
+      <mesh rotation={[-Math.PI / 2 + 0.095, 0, 0]} position={[0, -1.4, -11.8]}>
+        <circleGeometry args={[14.5, 96]} />
+        <meshBasicMaterial color="#030d35" transparent opacity={0.72} />
       </mesh>
     </group>
   );

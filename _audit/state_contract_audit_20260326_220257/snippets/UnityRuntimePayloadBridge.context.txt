@@ -1,0 +1,76 @@
+===== src/spatial/unity/UnityRuntimePayloadBridge.tsx : line 33 =====
+  setHeadsetPose: (hasHeadsetPose) => set({ hasHeadsetPose }),
+  setInput: (patch) =>
+    set((state) => ({
+      xrInput: { ...state.xrInput, ...patch }
+    }))
+}));
+
+export default function UnityRuntimePayloadBridge() {
+  const mode = useSceneStore((s) => s.mode);
+  const selectedStar = useSceneStore((s) => s.selectedStar);
+  const xrState = useXrStore();
+
+  useEffect(() => {
+    const payload = buildUnityRuntimePayload(mode, selectedStar, xrState);
+    (window).__URAI_UNITY_RUNTIME_PAYLOAD__ = payload;
+  }, [mode, selectedStar, xrState]);
+
+
+===== src/spatial/unity/UnityRuntimePayloadBridge.tsx : line 34 =====
+  setInput: (patch) =>
+    set((state) => ({
+      xrInput: { ...state.xrInput, ...patch }
+    }))
+}));
+
+export default function UnityRuntimePayloadBridge() {
+  const mode = useSceneStore((s) => s.mode);
+  const selectedStar = useSceneStore((s) => s.selectedStar);
+  const xrState = useXrStore();
+
+  useEffect(() => {
+    const payload = buildUnityRuntimePayload(mode, selectedStar, xrState);
+    (window).__URAI_UNITY_RUNTIME_PAYLOAD__ = payload;
+  }, [mode, selectedStar, xrState]);
+
+  return null;
+
+===== src/spatial/unity/UnityRuntimePayloadBridge.tsx : line 38 =====
+}));
+
+export default function UnityRuntimePayloadBridge() {
+  const mode = useSceneStore((s) => s.mode);
+  const selectedStar = useSceneStore((s) => s.selectedStar);
+  const xrState = useXrStore();
+
+  useEffect(() => {
+    const payload = buildUnityRuntimePayload(mode, selectedStar, xrState);
+    (window).__URAI_UNITY_RUNTIME_PAYLOAD__ = payload;
+  }, [mode, selectedStar, xrState]);
+
+  return null;
+}
+
+declare global {
+  interface Window {
+
+===== src/spatial/unity/UnityRuntimePayloadBridge.tsx : line 40 =====
+export default function UnityRuntimePayloadBridge() {
+  const mode = useSceneStore((s) => s.mode);
+  const selectedStar = useSceneStore((s) => s.selectedStar);
+  const xrState = useXrStore();
+
+  useEffect(() => {
+    const payload = buildUnityRuntimePayload(mode, selectedStar, xrState);
+    (window).__URAI_UNITY_RUNTIME_PAYLOAD__ = payload;
+  }, [mode, selectedStar, xrState]);
+
+  return null;
+}
+
+declare global {
+  interface Window {
+    __URAI_UNITY_RUNTIME_PAYLOAD__?: ReturnType<typeof buildUnityRuntimePayload>;
+  }
+

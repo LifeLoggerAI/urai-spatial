@@ -1,3 +1,4 @@
+
 import { resolveStarByIdSafe } from "../lib/resolveStarByIdSafe";
 "use client";
 
@@ -19,7 +20,7 @@ function downloadText(filename: string, text: string) {
   URL.revokeObjectURL(url);
 }
 
-function downloadJson(filename: string, data: unknown) {
+function downloadJson(filename: string, data: any) {
   const blob = new Blob([JSON.stringify(data, null, 2)], {
     type: "application/json",
   });

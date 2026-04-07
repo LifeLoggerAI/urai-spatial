@@ -1,8 +1,0 @@
- M urai-tier1/src/app/globals.css
- M urai-tier1/src/app/page.tsx
- M urai-tier1/src/spatial/components/CameraRig.tsx
- M urai-tier1/src/spatial/data/stars.ts
- M urai-tier1/src/spatial/scene/SpatialScene.tsx
- M urai-tier1/src/spatial/scene/Starfield.tsx
- M urai-tier1/src/spatial/state/sceneStore.ts
-?? urai-tier1/src/spatial/lib/

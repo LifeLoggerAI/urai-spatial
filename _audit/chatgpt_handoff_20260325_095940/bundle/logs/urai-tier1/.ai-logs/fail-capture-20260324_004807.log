@@ -1,0 +1,1384 @@
+== PWD ==
+/home/user/urai-spatial/urai-tier1
+
+== GIT STATUS ==
+ M ../README.md
+ M ../pnpm-lock.yaml
+ M ../tsconfig.tsbuildinfo
+ D next.config.ts
+ M package.json
+ D src/app/_page_shell.tsx
+ D src/app/favicon.ico
+ M src/app/globals.css
+ M src/app/layout.tsx
+ M src/app/page.tsx
+ M src/spatial/account/spatialAccountTypes.ts
+ M src/spatial/arcs/spatialArcIO.ts
+ M src/spatial/arcs/spatialArcTypes.ts
+ M src/spatial/compare.disabled.1774173247/spatialCompareIO.ts
+ M src/spatial/compare.disabled.1774173247/spatialCompareTypes.ts
+ M src/spatial/components/Orb.tsx
+ M src/spatial/curation.disabled.1774173247/spatialCuratedDeckImportTypes.ts
+ M src/spatial/curation.disabled.1774173247/spatialCuratedDeckSurfaceOwnership.ts
+ M src/spatial/curation.disabled.1774173247/spatialCuratedDeckVaultIO.ts
+ M src/spatial/curation.disabled.1774173247/spatialCuratedDeckVaultTypes.ts
+ M src/spatial/data/stars.ts
+ M src/spatial/lenses.disabled.1774173247/SpatialLensBootstrap.tsx
+ M src/spatial/lenses.disabled.1774173247/spatialLensIO.ts
+ M src/spatial/lenses.disabled.1774173247/spatialLensTypes.ts
+ M src/spatial/lib/resolveStarByIdSafe.ts
+ M src/spatial/persistence/SpatialPersistenceBridge.tsx
+ M src/spatial/persistence/spatialPersistenceIO.ts
+ M src/spatial/persistence/spatialPersistenceTypes.ts
+ M src/spatial/release/SpatialReleaseBootstrap.tsx
+ M src/spatial/release/spatialReleaseIO.ts
+ M src/spatial/release/spatialReleaseTypes.ts
+ M src/spatial/scene/CinematicGroundAccents.tsx
+ M src/spatial/scene/Ground.tsx
+ M src/spatial/scene/GroundWorld.tsx
+ M src/spatial/scene/HomeWorld.tsx
+ M src/spatial/scene/MemorySphere.tsx
+ M src/spatial/scene/OrbGlow.tsx
+ M src/spatial/scene/SpatialScene.tsx
+ M src/spatial/scene/SpatialScene.tsx.broken.20260316-135713
+ M src/spatial/scene/Starfield.tsx
+ M src/spatial/seasonal.disabled.1774173246/SpatialSeasonalArcBootstrap.tsx.broken.1774173044
+ M src/spatial/seasonal.disabled.1774173246/spatialSeasonalArcIO.ts
+ M src/spatial/seasonal.disabled.1774173246/spatialSeasonalArcTypes.ts
+ M src/spatial/settings/SpatialSettingsBootstrap.tsx
+ M src/spatial/settings/spatialSettingsIO.ts
+ M src/spatial/settings/spatialSettingsTypes.ts
+ M src/spatial/shell/Tier1ShellScreen.tsx
+ M src/spatial/shell/overlays/HomeShellOverlay.tsx
+ M src/spatial/shell/overlays/LifeMapShellOverlay.tsx
+ M src/spatial/shell/overlays/SkyShellOverlay.tsx
+ M src/spatial/store/useSceneStore.ts
+ M src/spatial/telemetry/spatialTelemetryIO.ts
+ M src/spatial/telemetry/spatialTelemetryTypes.ts
+ M src/spatial/ui/SpatialCuratedDeckImportPanel.tsx
+ M src/spatial/ui/SpatialCuratedDeckVaultPanel.tsx
+ M src/spatial/ui/SpatialVoicePlaybackPanel.tsx
+ M src/spatial/vault/SpatialStoryBundleVaultBootstrap.tsx
+ M src/spatial/vault/spatialStoryBundleVaultIO.ts
+ M src/spatial/vault/spatialStoryBundleVaultTypes.ts.broken.1774173044
+ M src/spatial/world/World.tsx
+ M tsconfig.json
+?? ../.ai-backups/
+?? ../src/
+?? ../tsconfig.json
+?? .ai-audit/
+?? .ai-backups/camera-rig-cinematic-20260323_213255/
+?? .ai-backups/clean-scene-20260323_012420/
+?? .ai-backups/fix-hovered-pointerout-20260323_213446/
+?? .ai-backups/fix-pass1-20260323_010621/
+?? .ai-backups/fix-show-scope-20260323_222644/
+?? .ai-backups/focuspresence-immersion-pass-20260323_205011/
+?? .ai-backups/full-pass-b-20260324_000038/
+?? .ai-backups/home-visual-lock-20260323_010206/
+?? .ai-backups/memory-panel-repair-20260322_225547/
+?? .ai-backups/pass1-interaction-20260323_214749/
+?? .ai-backups/pass1-lock-20260323_032438/
+?? .ai-backups/pass1_5-20260323_010938/
+?? .ai-backups/pass2-camera-render-20260323_215712/
+?? .ai-backups/pass2-depth-realism-20260323_011346/
+?? .ai-backups/pass2_1-lifemap-ground-cutoff-20260323_221629/
+?? .ai-backups/pass2_2-lifemap-hide-ground-orb-20260323_222139/
+?? .ai-backups/pass2_5-20260323_011724/
+?? .ai-backups/replay-lock-20260322_225251/
+?? .ai-backups/stabilization-pass-20260323_211929/
+?? .ai-backups/stabilization-pass-20260323_234613/
+?? .ai-backups/tier1-final-20260322_224605/
+?? .ai-backups/visual-consolidated-pass-20260322_230538/
+?? .ai-logs/
+?? app.disabled.pass1.20260323_032438/
+?? app/
+?? docs/tier1-lock/
+?? docs/visual-lock-audit-20260322_230538.md
+?? next.config.mjs
+?? src/spatial/scene/ArrivalSphere.tsx
+?? src/spatial/scene/BackgroundReset.tsx
+?? src/spatial/scene/CameraDirector.tsx
+?? src/spatial/scene/CameraRig.tsx
+?? src/spatial/scene/FocusPresence.tsx
+?? src/spatial/scene/HomeEnvironment.tsx
+?? src/spatial/scene/HomeOrb.tsx
+?? src/spatial/scene/Horizon.tsx
+?? src/spatial/scene/LifeMap.tsx
+?? src/spatial/scene/MemoryPanel.tsx
+?? src/spatial/scene/Orb.tsx
+?? src/spatial/scene/SceneRig.tsx
+?? src/spatial/scene/sceneState.ts
+?? src/spatial/shell/FocusShellOverlay.tsx
+?? src/spatial/shell/ReplayShellOverlay.tsx
+?? src/types/global.d.ts
+
+== LAST CAMERARIG ==
+"use client";
+
+import { useFrame } from "@react-three/fiber";
+import { useRef } from "react";
+import { Vector3 } from "three";
+import type { StarPoint } from "./sceneState";
+
+type CameraPhase =
+  | "home"
+  | "lifemap"
+  | "focus"
+  | "replay"
+  | "focus_travel"
+  | "focus_arrive"
+  | "returningHome"
+  | "ascent"
+  | string;
+
+type Props = {
+  phase: CameraPhase;
+  progress?: number;
+  selected?: StarPoint | null;
+  selectedStar?: StarPoint | null;
+};
+
+const HOME_POS = new Vector3(0, 0.92, 7.6);
+const HOME_LOOK = new Vector3(0, 0.88, 0);
+const LIFEMAP_POS = new Vector3(0, 2.95, 16.2);
+const LIFEMAP_LOOK = new Vector3(0, 2.45, -21.5);
+
+export default function CameraRig({
+  phase,
+  progress = 1,
+  selected = null,
+  selectedStar = null,
+}: Props) {
+  const activeStar = selectedStar ?? selected ?? null;
+  const target = useRef(HOME_POS.clone());
+  const lookAt = useRef(HOME_LOOK.clone());
+  const fallbackDir = useRef(new Vector3(0, 0.18, 1));
+
+  useFrame((state) => {
+    const cam = state.camera;
+    const tNow = state.clock.getElapsedTime();
+
+    let desiredPos = HOME_POS.clone();
+    let desiredLook = HOME_LOOK.clone();
+    let lerpFactor = 0.046;
+
+    if (phase === "home") {
+      desiredPos.x += Math.sin(tNow * 0.18) * 0.05;
+      desiredPos.y += Math.sin(tNow * 0.22) * 0.035;
+      desiredLook.x += Math.sin(tNow * 0.14) * 0.025;
+      desiredLook.y += Math.sin(tNow * 0.18) * 0.02;
+    }
+
+    if (phase === "lifemap") {
+      desiredPos = LIFEMAP_POS.clone();
+      desiredLook = LIFEMAP_LOOK.clone();
+      desiredPos.x += Math.sin(tNow * 0.12) * 0.14;
+      desiredPos.y += Math.sin(tNow * 0.16) * 0.08;
+      desiredLook.x += Math.sin(tNow * 0.10) * 0.08;
+      desiredLook.y += Math.sin(tNow * 0.13) * 0.04;
+      lerpFactor = 0.055;
+    }
+
+    if (activeStar) {
+      const starPos = new Vector3(
+        activeStar.position[0],
+        activeStar.position[1],
+        activeStar.position[2]
+      );
+
+      let offset = fallbackDir.current.clone();
+      const toCamera = new Vector3().subVectors(cam.position, starPos);
+      if (toCamera.lengthSq() > 0.0001) {
+        offset = toCamera.normalize();
+        fallbackDir.current.copy(offset);
+      }
+
+      const t = Math.max(0, Math.min(1, progress));
+
+      if (phase === "focus" || phase === "focus_travel" || phase === "focus_arrive") {
+        const dist = 4.35 - t * 1.0;
+        desiredPos = starPos.clone().add(offset.clone().multiplyScalar(dist));
+        desiredPos.x += Math.sin(tNow * 0.2) * 0.03;
+        desiredPos.y += 0.3 + Math.sin(tNow * 0.24) * 0.025;
+        desiredLook = starPos.clone();
+        desiredLook.y += 0.1;
+        lerpFactor = 0.07;
+      } else if (phase === "replay") {
+        const dist = 2.18 - t * 0.42;
+        desiredPos = starPos.clone().add(offset.clone().multiplyScalar(dist));
+        desiredPos.x += Math.sin(tNow * 0.24) * 0.02;
+        desiredPos.y += 0.16 + Math.sin(tNow * 0.28) * 0.018;
+        desiredLook = starPos.clone();
+        desiredLook.y += 0.04;
+        lerpFactor = 0.082;
+      }
+    }
+
+    target.current.lerp(desiredPos, lerpFactor);
+    lookAt.current.lerp(desiredLook, lerpFactor * 0.9);
+
+    cam.position.copy(target.current);
+    cam.lookAt(lookAt.current);
+  });
+
+  return null;
+}
+
+== LAST SPATIALSCENE ==
+"use client";
+
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { Canvas, useFrame, useThree } from "@react-three/fiber";
+import type { ThreeEvent } from "@react-three/fiber";
+import { BackSide, Color, FogExp2, MathUtils, Vector3 } from "three";
+import Orb from "./Orb";
+
+type ScenePhase = "home" | "lifemap" | "focus" | "replay";
+
+type StarPoint = {
+  id: string;
+  position: [number, number, number];
+  color: string;
+  size: number;
+  title: string;
+  summary: string;
+  chapter: string;
+};
+
+const STAR_SEED = 19830414;
+const STAR_COUNT = 42;
+
+const TARGET_POS = new Vector3();
+const TARGET_LOOK = new Vector3();
+const TMP = new Vector3();
+
+function mulberry32(seed: number) {
+  let t = seed >>> 0;
+  return function () {
+    t += 0x6d2b79f5;
+    let r = Math.imul(t ^ (t >>> 15), 1 | t);
+    r ^= r + Math.imul(r ^ (r >>> 7), 61 | r);
+    return ((r ^ (r >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+function buildStars(): StarPoint[] {
+  const rand = mulberry32(STAR_SEED);
+  const chapters = ["Origin", "Ascent", "Threshold", "Shift", "Recovery", "Signal", "Mirror"];
+
+  return Array.from({ length: STAR_COUNT }, (_, i) => {
+    const band = i % 7;
+    const angle = rand() * Math.PI * 2;
+    const radius = 3.4 + rand() * 9.6;
+    const depth = -5 - rand() * 24 - band * 0.45;
+    const x = Math.cos(angle) * radius * (0.78 + rand() * 0.38);
+    const y = (rand() - 0.5) * (4.4 + band * 0.22);
+    const hue = 202 + rand() * 34;
+    const size = 0.05 + rand() * 0.11;
+    const chapter = chapters[i % chapters.length];
+
+    return {
+      id: `star-${i + 1}`,
+      position: [Number(x.toFixed(3)), Number(y.toFixed(3)), Number(depth.toFixed(3))],
+      color: `hsl(${hue.toFixed(0)} 100% 88%)`,
+      size,
+      title: `${chapter} ${i + 1}`,
+      summary: `Deterministic memory point ${i + 1} in the URAI spatial field.`,
+      chapter,
+    };
+  });
+}
+
+function SceneEnvironment({ phase }: { phase: ScenePhase }) {
+  const { scene, gl } = useThree();
+
+  useEffect(() => {
+    scene.background = new Color("#02030a");
+    scene.fog = new FogExp2("#02030a", phase === "home" ? 0.034 : phase === "lifemap" ? 0.018 : phase === "focus" ? 0.014 : 0.011);
+    gl.setClearColor("#02030a", 1);
+  }, [gl, phase, scene]);
+
+  return null;
+}
+
+function CameraRig({
+  phase,
+  selected,
+}: {
+  phase: ScenePhase;
+  selected: StarPoint | null;
+}) {
+  const { camera } = useThree();
+  const drift = useRef(0);
+
+  useFrame(({ clock }, delta) => {
+    const t = clock.getElapsedTime();
+    drift.current = MathUtils.damp(drift.current, 1, 1.4, delta);
+
+    let basePos: [number, number, number] = [0, 0.95, 7.25];
+    let baseLook: [number, number, number] = [0, 0.08, -3];
+    let wobble = 0.018;
+
+    if (phase === "lifemap") {
+      basePos = [0, 0.24, 11.6];
+      baseLook = [0, 0.03, -10.8];
+      wobble = 0.026;
+    }
+
+    if ((phase === "focus" || phase === "replay") && selected) {
+      const [sx, sy, sz] = selected.position;
+      if (phase === "focus") {
+        basePos = [sx * 0.34, sy * 0.28 + 0.14, sz + 3.25];
+        baseLook = [sx, sy, sz];
+        wobble = 0.014;
+      } else {
+        basePos = [sx * 0.16, sy * 0.12 + 0.08, sz + 1.6];
+        baseLook = [sx, sy, sz];
+        wobble = 0.01;
+      }
+    }
+
+    TARGET_POS.set(basePos[0], basePos[1], basePos[2]);
+    TARGET_LOOK.set(baseLook[0], baseLook[1], baseLook[2]);
+
+    TARGET_POS.x += Math.sin(t * 0.18) * wobble;
+    TARGET_POS.y += Math.sin(t * 0.22) * wobble * 0.8;
+    TARGET_LOOK.y += Math.sin(t * 0.2) * wobble * 0.45;
+
+    const alpha = 1 - Math.exp(-delta * (phase === "replay" ? 3.6 : 2.9));
+    camera.position.lerp(TARGET_POS, alpha);
+
+    TMP.copy(TARGET_LOOK);
+    camera.lookAt(TMP);
+  });
+
+  return null;
+}
+
+function SkyShell({ phase }: { phase: ScenePhase }) {
+  const opacity = phase === "home" ? 0.16 : phase === "lifemap" ? 0.11 : 0.08;
+
+  return (
+    <mesh scale={[1, 1, 1]}>
+      <sphereGeometry args={[82, 48, 48]} />
+      <meshBasicMaterial color="#081223" side={BackSide} transparent opacity={opacity} />
+    </mesh>
+  );
+}
+
+function Ground({ visible }: { visible: boolean }) {
+  return (
+    <>
+      <mesh visible={visible} rotation={[-Math.PI / 2, 0, 0]} position={[0, -1.2, -12]}>
+        <planeGeometry args={[140, 140]} />
+        <meshStandardMaterial color="#0a0d16" roughness={0.985} metalness={0.015} />
+      </mesh>
+      <mesh visible={visible} rotation={[-Math.PI / 2, 0, 0]} position={[0, -1.17, -8.2]}>
+        <ringGeometry args={[0.8, 7.5, 64]} />
+        <meshBasicMaterial color="#234a96" transparent opacity={0.055} />
+      </mesh>
+    </>
+  );
+}
+
+function SelectedBeacon({ star, phase }: { star: StarPoint; phase: ScenePhase }) {
+  const [x, y, z] = star.position;
+  const replay = phase === "replay";
+
+  return (
+    <group position={[x, y, z]}>
+      <mesh scale={replay ? 5.2 : 3.8}>
+        <sphereGeometry args={[star.size, 24, 24]} />
+        <meshBasicMaterial color={star.color} transparent opacity={replay ? 0.13 : 0.09} />
+      </mesh>
+      <mesh position={[0, replay ? -0.18 : -0.28, 0]} scale={[1, replay ? 1.8 : 1.3, 1]}>
+        <cylinderGeometry args={[star.size * 0.09, star.size * 0.24, replay ? 1.6 : 1.15, 10]} />
+        <meshBasicMaterial color={star.color} transparent opacity={replay ? 0.22 : 0.12} />
+      </mesh>
+    </group>
+  );
+}
+
+function StarNode({
+  star,
+  phase,
+  selected,
+  hovered,
+  onHover,
+  onSelect,
+}: {
+  star: StarPoint;
+  phase: ScenePhase;
+  selected: boolean;
+  hovered: boolean;
+  onHover: (id: string | null) => void;
+  onSelect: (id: string) => void;
+}) {
+  const interactive = phase === "lifemap";
+  const [x, y, z] = star.position;
+
+  const scale =
+    phase === "home"
+      ? 0.28
+      : selected
+        ? phase === "replay"
+          ? 2.4
+          : 1.95
+        : hovered
+          ? 1.32
+          : 1;
+
+  const opacity =
+    phase === "home"
+      ? 0.05
+      : selected
+        ? 1
+        : hovered
+          ? 0.94
+          : phase === "lifemap"
+            ? 0.74
+            : 0.42;
+
+  const emissiveIntensity =
+    selected
+      ? phase === "replay"
+        ? 3.1
+        : 2.35
+      : hovered
+        ? 1.5
+        : phase === "home"
+          ? 0.16
+          : 0.78;
+
+  return (
+    <group position={[x, y, z]}>
+      <mesh
+        scale={scale}
+        onPointerOver={(e: ThreeEvent<PointerEvent>) => {
+          e.stopPropagation();
+          if (interactive) onHover(star.id);
+        }}
+        onPointerOut={(e: ThreeEvent<PointerEvent>) => {
+          e.stopPropagation();
+          if (interactive) onHover(null);
+        }}
+        onClick={(e: ThreeEvent<MouseEvent>) => {
+          e.stopPropagation();
+          if (interactive) onSelect(star.id);
+        }}
+      >
+        <sphereGeometry args={[star.size, 22, 22]} />
+        <meshStandardMaterial
+          color={star.color}
+          emissive={star.color}
+          emissiveIntensity={emissiveIntensity}
+          transparent
+          opacity={opacity}
+          roughness={0.12}
+          metalness={0.03}
+        />
+      </mesh>
+
+      <mesh scale={selected ? (phase === "replay" ? 2.72 : 2.18) : hovered ? 1.68 : 1.36}>
+        <sphereGeometry args={[star.size, 16, 16]} />
+        <meshBasicMaterial color={star.color} transparent opacity={opacity * (selected ? 0.045 : 0.026)} />
+      </mesh>
+    </group>
+  );
+
+}
+
+function SceneField({
+  phase,
+  stars,
+  selectedId,
+  hoveredId,
+  onHover,
+  onSelect,
+}: {
+  phase: ScenePhase;
+  stars: StarPoint[];
+  selectedId: string | null;
+  hoveredId: string | null;
+  onHover: (id: string | null) => void;
+  onSelect: (id: string) => void;
+}) {
+  const selected = stars.find((s) => s.id === selectedId) ?? null;
+  const orbVisible = phase === "home";
+  const mapGlow = phase === "lifemap" ? 0.22 : phase === "focus" ? 0.14 : phase === "replay" ? 0.09 : 0.05;
+
+  return (
+    <>
+      <SceneEnvironment phase={phase} />
+      <CameraRig phase={phase} progress={1} selected={selected} />
+      <SkyShell phase={phase} />
+
+      <ambientLight intensity={0.72} />
+      <directionalLight position={[5, 6, 8]} intensity={0.85} color="#dfe9ff" />
+      <pointLight position={[0, 0.12, 1.05]} intensity={orbVisible ? 12 : 2.5} color="#82b8ff" />
+      <pointLight position={[0, 1.5, -10]} intensity={2.2 + mapGlow} color="#9ab5ff" />
+
+      <Ground visible={orbVisible} />
+      <Orb visible={orbVisible} position={[0, 0.15, 1.15]} intensity={1.15} orbScale={1} />
+
+      <mesh position={[0, phase === "home" ? -0.55 : -0.22, phase === "home" ? -0.5 : -7.8]} rotation={[-Math.PI / 2, 0, 0]}>
+        <ringGeometry args={[1.3, phase === "home" ? 6.8 : 10.5, 72]} />
+        <meshBasicMaterial color="#2d56a8" transparent opacity={phase === "home" ? 0.05 : 0.04} />
+      </mesh>
+
+      {stars.map((star) => (
+        <StarNode
+          key={star.id}
+          star={star}
+          phase={phase}
+          selected={selectedId === star.id}
+          hovered={hoveredId === star.id}
+          onHover={onHover}
+          onSelect={onSelect}
+        />
+      ))}
+
+      {selected ? <SelectedBeacon star={selected} phase={phase} /> : null}
+    </>
+  );
+}
+
+function Overlay({
+  phase,
+  selected,
+}: {
+  phase: ScenePhase;
+  selected: StarPoint | null;
+}) {
+  const title =
+    phase === "home"
+      ? "URAI"
+      : phase === "lifemap"
+        ? "LifeMap"
+        : phase === "focus"
+          ? selected?.title ?? "Focus"
+          : `Replay • ${selected?.title ?? "Memory"}`;
+
+  const body =
+    phase === "home"
+      ? "A deterministic spatial core with a grounded home scene, owned sky, and cinematic entry into the LifeMap."
+      : phase === "lifemap"
+        ? "The field is live. Select a point to enter a memory anchor."
+        : phase === "focus"
+          ? selected?.summary ?? "Focus locked. Press R for replay."
+          : "Replay holds a single thread.";
+
+  const hint =
+    phase === "home"
+      ? "Press Enter or F, or click to enter the LifeMap."
+      : phase === "lifemap"
+        ? "Click a star to focus. Press Esc to return."
+        : phase === "focus"
+          ? "Press R for replay. Press Esc to return to the map."
+          : "Replay mode. Esc steps back.";
+
+  return (
+    <div
+      style={{
+        position: "fixed",
+        inset: 0,
+        pointerEvents: "none",
+        color: "#eef4ff",
+        fontFamily:
+          'ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
+      }}
+    >
+      <div
+        style={{
+          position: "absolute",
+          inset: 0,
+          background:
+            phase === "replay"
+              ? "radial-gradient(circle at 50% 48%, rgba(40,64,124,0.14), rgba(2,3,10,0.14) 36%, rgba(2,3,10,0.38) 100%)"
+              : "none",
+        }}
+      />
+
+      <div
+        style={{
+          position: "absolute",
+          top: 24,
+          left: 24,
+          maxWidth: 540,
+        }}
+      >
+        <div
+          style={{
+            fontSize: 11,
+            letterSpacing: "0.26em",
+            textTransform: "uppercase",
+            opacity: 0.62,
+            marginBottom: 8,
+          }}
+        >
+          Spatial Core
+        </div>
+
+        <div
+          style={{
+            fontSize: phase === "home" ? 35 : 32,
+            lineHeight: 1.02,
+            fontWeight: 600,
+            marginBottom: 10,
+          }}
+        >
+          {title}
+        </div>
+
+        <div
+          style={{
+            fontSize: 14,
+            lineHeight: 1.5,
+            opacity: 0.76,
+            maxWidth: 500,
+          }}
+        >
+          {body}
+        </div>
+      </div>
+
+      <div
+        style={{
+          position: "absolute",
+          left: 24,
+          bottom: 24,
+          display: "grid",
+          gap: 6,
+          opacity: 0.78,
+          fontSize: 13,
+          lineHeight: 1.35,
+        }}
+      >
+        <div>{hint}</div>
+        <div>
+          Phase: <strong>{phase}</strong>
+          {selected ? (
+            <>
+              {" "}
+              • Selected: <strong>{selected.title}</strong>
+            </>
+          ) : null}
+        </div>
+      </div>
+
+      {phase === "replay" ? (
+        <div
+          style={{
+            position: "absolute",
+            right: 24,
+            bottom: 24,
+            fontSize: 12,
+            letterSpacing: "0.18em",
+            textTransform: "uppercase",
+            opacity: 0.64,
+          }}
+        >
+          Replay mode
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
+export default function SpatialScene() {
+  const stars = useMemo(() => buildStars(), []);
+  const [phase, setPhase] = useState<ScenePhase>("home");
+  const showGround = phase === "home";
+  const showOrb = phase === "home";
+  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [phaseTick, setPhaseTick] = useState(0);
+  const [hoveredId, setHoveredId] = useState<string | null>(null);
+
+  const selected = useMemo(
+    () => stars.find((s) => s.id === selectedId) ?? null,
+    [selectedId, stars]
+  );
+
+  const enterLifeMap = useCallback(() => {
+    setHoveredId(null);
+    setPhase("lifemap");
+          setPhaseTick((value) => value + 1);
+    setPhaseTick((value) => value + 1);
+  }, []);
+
+  const selectStar = useCallback((id: string) => {
+    setSelectedId(id);
+    setPhase("focus");
+          setPhaseTick((value) => value + 1);
+    setPhaseTick((value) => value + 1);
+  }, []);
+
+  useEffect(() => {
+    const onKeyDown = (event: KeyboardEvent) => {
+      const key = event.key.toLowerCase();
+
+      if ((key === "enter" || key === "f") && phase === "home") {
+        event.preventDefault();
+        enterLifeMap();
+        return;
+      }
+
+      if (key === "r" && phase === "focus" && selectedId) {
+        event.preventDefault();
+        setPhase("replay");
+        setPhaseTick((value) => value + 1);
+        return;
+      }
+
+      if (key === "escape") {
+        event.preventDefault();
+
+        if (phase === "replay") {
+          setPhase("focus");
+          setPhaseTick((value) => value + 1);
+    setPhaseTick((value) => value + 1);
+          return;
+        }
+
+        if (phase === "focus") {
+          setHoveredId(null);
+          setPhase("lifemap");
+          setPhaseTick((value) => value + 1);
+    setPhaseTick((value) => value + 1);
+          return;
+
+        }
+
+        if (phase === "lifemap") {
+          setHoveredId(null);
+          setSelectedId(null);
+          setPhase("home");
+          setPhaseTick((value) => value + 1);
+        }
+      }
+    };
+
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [enterLifeMap, phase, selectedId]);
+
+  return (
+    <div
+      onClick={() => {
+        if (phase === "home") enterLifeMap();
+      }}
+      style={{
+        position: "fixed",
+        inset: 0,
+        overflow: "hidden",
+        background:
+          phase === "home"
+            ? "radial-gradient(circle at 50% 78%, rgba(23,47,92,0.32), rgba(2,3,10,1) 38%, rgba(2,3,10,1) 100%)"
+            : phase === "replay"
+              ? "radial-gradient(circle at 50% 52%, rgba(18,30,64,0.3), rgba(2,3,10,1) 48%, rgba(2,3,10,1) 100%)"
+              : "radial-gradient(circle at 50% 58%, rgba(11,22,46,0.22), rgba(2,3,10,1) 52%, rgba(2,3,10,1) 100%)",
+      }}
+    >
+      <Canvas
+        dpr={[1, 1.75]}
+        gl={{ antialias: true, alpha: false }}
+        camera={{ position: [0, 0.95, 7.25], fov: 42, near: 0.1, far: 260 }}
+        onPointerMissed={() => {
+          if (phase === "focus") {
+            setHoveredId(null);
+            setPhase("lifemap");
+          setPhaseTick((value) => value + 1);
+    setPhaseTick((value) => value + 1);
+          }
+        }}
+      >
+        <SceneField
+          phase={phase}
+          stars={stars}
+          selectedId={selectedId}
+          hoveredId={hoveredId}
+          onHover={setHoveredId}
+          onSelect={selectStar}
+        />
+      </Canvas>
+
+      <Overlay phase={phase} selected={selected} />
+    </div>
+  );
+}
+
+== LAST STARFIELD ==
+"use client";
+
+import { useMemo } from "react";
+
+export type SpatialStar = {
+  id: string;
+  position: [number, number, number];
+  scale: number;
+  opacity: number;
+  color: string;
+  featured?: boolean;
+};
+
+type ScenePhase =
+  | "home"
+  | "ascent"
+  | "map"
+  | "starFocus"
+  | "arrival"
+  | "replay"
+  | "exitingToMap"
+  | "returningHome";
+
+type StarfieldProps = {
+  visible: boolean;
+  presence: number;
+  interactive: boolean;
+  selectedId: string | null;
+  phase: ScenePhase;
+  onSelectStar?: (star: SpatialStar) => void;
+};
+
+function fract(value: number) {
+  return value - Math.floor(value);
+}
+
+function rand(seed: number) {
+  return fract(Math.sin(seed * 127.1 + 311.7) * 43758.5453123);
+}
+
+function pickColor(seed: number) {
+  const r = rand(seed);
+  if (r > 0.92) return "#ffe2bf";
+  if (r > 0.78) return "#eadbff";
+  if (r > 0.58) return "#d9e6ff";
+  return "#c9dbff";
+}
+
+function buildStars(): SpatialStar[] {
+  const stars: SpatialStar[] = [];
+
+  stars.push({
+    id: "featured-core",
+    position: [0.18, 6.15, -53],
+    scale: 0.14,
+    opacity: 0.98,
+    color: "#edf4ff",
+    featured: true,
+  });
+
+  for (let i = 0; i < 240; i += 1) {
+    const seed = i + 1;
+    const depthBand = i < 34 ? "near" : i < 104 ? "mid" : "far";
+
+    const xSpread = depthBand === "near" ? 16 : depthBand === "mid" ? 26 : 44;
+    const yMin = depthBand === "near" ? 2.0 : depthBand === "mid" ? 0.8 : -1.2;
+    const yMax = depthBand === "near" ? 13.8 : depthBand === "mid" ? 17.5 : 22;
+    const zBase = depthBand === "near" ? -18 : depthBand === "mid" ? -34 : -58;
+    const zRange = depthBand === "near" ? 18 : depthBand === "mid" ? 28 : 52;
+
+    const x = (rand(seed * 3.1) - 0.5) * xSpread;
+    const y = yMin + rand(seed * 5.7) * (yMax - yMin);
+    const z = zBase - rand(seed * 7.9) * zRange;
+    const scale =
+      depthBand === "near"
+        ? 0.04 + rand(seed * 11.3) * 0.05
+        : depthBand === "mid"
+          ? 0.022 + rand(seed * 11.3) * 0.03
+          : 0.01 + rand(seed * 11.3) * 0.018;
+    const opacity =
+      depthBand === "near"
+        ? 0.18 + rand(seed * 13.7) * 0.22
+        : depthBand === "mid"
+          ? 0.12 + rand(seed * 13.7) * 0.18
+          : 0.05 + rand(seed * 13.7) * 0.12;
+
+    stars.push({
+      id: `star-${i}`,
+      position: [x, y, z],
+      scale,
+      opacity,
+      color: pickColor(seed * 17.9),
+    });
+  }
+
+  return stars;
+}
+
+export default function Starfield({
+  visible,
+  presence,
+  interactive,
+  selectedId,
+  phase,
+  onSelectStar,
+}: StarfieldProps) {
+  const stars = useMemo(() => buildStars(), []);
+
+  if (!visible || presence <= 0.001) return null;
+
+  const yOffset =
+    phase === "home"
+      ? 0
+      : phase === "ascent"
+        ? -1.4
+        : phase === "returningHome"
+          ? -0.4
+          : -2.6;
+
+  return (
+    <group position={[0, yOffset, 0]}>
+      {stars.map((star) => {
+        const isSelected = star.id === selectedId;
+        const otherDim = selectedId const otherDim = selectedId const otherDim = selectedId && !isSelected ? 0.33 : 1;const otherDim = selectedId && !isSelected ? 0.33 : 1; !isSelected ? 0.14 : 1;const otherDim = selectedId const otherDim = selectedId && !isSelected ? 0.33 : 1;const otherDim = selectedId && !isSelected ? 0.33 : 1; !isSelected ? 0.14 : 1; !isSelected ? 0.18 : 1;
+        const featuredBoost = star.featured ? 1.45 : 1;
+        const opacity = Math.max(
+          0,
+          Math.min(1, star.opacity * presence * otherDim * featuredBoost)
+        );
+        const scale = isSelected ? star.scale * 2.0 : star.scale;
+
+        return (
+          <group
+            key={star.id}
+            position={star.position}
+            onClick={
+              interactive && onSelectStar
+                ? (event) => {
+                    event.stopPropagation();
+                    onSelectStar(star);
+                  }
+                : undefined
+            }
+          >
+            <mesh>
+              <sphereGeometry args={[scale, 12, 12]} />
+              <meshBasicMaterial
+                color={isSelected ? "#ffffff" : star.color}
+                transparent
+                opacity={opacity}
+                depthWrite={false}
+              />
+            </mesh>
+
+            <mesh>
+              <sphereGeometry
+                args={[scale * (isSelected ? 2.8 : star.featured ? 2.4 : 1.7), 12, 12]}
+              />
+              <meshBasicMaterial
+                color={isSelected ? "#8fb8ff" : star.color}
+                transparent
+                opacity={
+                  isSelected
+                    ? 0.10 * presence
+                    : star.featured
+                      ? 0.04 * presence
+                      : 0.03 * presence
+                }
+                depthWrite={false}
+              />
+            </mesh>
+          </group>
+        );
+      })}
+    </group>
+  );
+}
+
+== KEY SEARCHES ==
+src/spatial/scene/LifeMap.tsx:12:  selectedStar: StarPoint | null;
+src/spatial/scene/LifeMap.tsx:159:  selectedStar,
+src/spatial/scene/LifeMap.tsx:179:          !!selectedStar &&
+src/spatial/scene/LifeMap.tsx:180:          selectedStar.id !== star.id &&
+src/spatial/scene/LifeMap.tsx:182:            phase === "focus_travel" ||
+src/spatial/scene/LifeMap.tsx:183:            phase === "focus_arrive" ||
+src/spatial/scene/LifeMap.tsx:188:        const selected = selectedStar?.id === star.id;
+src/spatial/scene/LifeMap.tsx:196:            selected={selected}
+src/spatial/scene/ObjectNode.tsx:20:  const selectedObject = useSceneStore((state) => state.selectedStarId);
+src/spatial/scene/ObjectNode.tsx:25:      setSelectedStarId?: (id: string | null) => void;
+src/spatial/scene/ObjectNode.tsx:27:    state.setSelectedStarId?.(nextId);
+src/spatial/scene/SpatialScene.tsx.broken.20260316-135713:3:import { toCanonicalSelectedStar } from "../state/toCanonicalSelectedStar";
+src/spatial/scene/SpatialScene.tsx.broken.20260316-135713:8:import { SelectedStar, useSceneStore } from "../state/sceneStore";
+src/spatial/scene/SpatialScene.tsx.broken.20260316-135713:41:function buildStars(): SelectedStar[] {
+src/spatial/scene/SpatialScene.tsx.broken.20260316-135713:43:  const out: SelectedStar[] = [];
+src/spatial/scene/SpatialScene.tsx.broken.20260316-135713:77:function CameraRig() {
+src/spatial/scene/SpatialScene.tsx.broken.20260316-135713:80:  const selectedStarId = useSceneStore((state) => state.selectedStarId);
+src/spatial/scene/SpatialScene.tsx.broken.20260316-135713:91:    } else if ((mode === "focus" || mode === "replay") && selectedStarId) {
+src/spatial/scene/SpatialScene.tsx.broken.20260316-135713:92:      const [sx, sy, sz] = selectedStarId.position;
+src/spatial/scene/SpatialScene.tsx.broken.20260316-135713:144:function SpatialStar({ star }: { star: SelectedStar }) {
+src/spatial/scene/SpatialScene.tsx.broken.20260316-135713:147:  const selectedStarId = useSceneStore((state) => state.selectedStarId);
+src/spatial/scene/SpatialScene.tsx.broken.20260316-135713:151:  const selected = resolveStarByIdSafe(String(selectedStarId?.id ?? selectedStarId)) === star.id;
+src/spatial/scene/SpatialScene.tsx.broken.20260316-135713:190:  const selectedStarId = useSceneStore((state) => state.selectedStarId);
+src/spatial/scene/SpatialScene.tsx.broken.20260316-135713:260:          {selectedStarId && mode !== "replay" ? (
+src/spatial/scene/SpatialScene.tsx.broken.20260316-135713:266:      {selectedStarId && detailOpen ? (
+src/spatial/scene/SpatialScene.tsx.broken.20260316-135713:283:          <div style={{ marginTop: 6, fontSize: 28, fontWeight: 800 }}>{selectedStarId.title}</div>
+src/spatial/scene/SpatialScene.tsx.broken.20260316-135713:284:          <div style={{ marginTop: 6, fontSize: 15, opacity: 0.9 }}>{selectedStarId.label}</div>
+src/spatial/scene/SpatialScene.tsx.broken.20260316-135713:287:            <div><strong>Signature:</strong> {selectedStarId.signature}</div>
+src/spatial/scene/SpatialScene.tsx.broken.20260316-135713:288:            <div><strong>Chapter:</strong> {selectedStarId.chapter}</div>
+src/spatial/scene/SpatialScene.tsx.broken.20260316-135713:289:            <div><strong>Timeband:</strong> {selectedStarId.timeband}</div>
+src/spatial/scene/SpatialScene.tsx.broken.20260316-135713:292:              {selectedStarId.position.map((value) => value.toFixed(1)).join(", ")}
+src/spatial/scene/SpatialScene.tsx.broken.20260316-135713:325:  const selectedStarId = useSceneStore((state) => state.selectedStarId);
+src/spatial/scene/SpatialScene.tsx.broken.20260316-135713:335:      if (event.key.toLowerCase() === "r" && selectedStarId) enterReplay();
+src/spatial/scene/SpatialScene.tsx.broken.20260316-135713:340:  }, [clearFocus, enterHome, enterLifeMap, enterReplay, selectedStarId]);
+src/spatial/scene/SpatialScene.tsx.broken.20260316-135713:359:        {selectedStarId ? (
+src/spatial/scene/SpatialScene.tsx.broken.20260316-135713:360:          <group position={selectedStarId.position}>
+src/spatial/scene/SpatialScene.tsx.broken.20260316-135713:361:            <mesh scale={[selectedStarId.size * 4.2, selectedStarId.size * 4.2, selectedStarId.size * 4.2]}>
+src/spatial/scene/SpatialScene.tsx.broken.20260316-135713:364:                color={selectedStarId.color}
+src/spatial/scene/SpatialScene.tsx.broken.20260316-135713:368:        <CameraRig />
+src/spatial/scene/SpatialScene.tsx:70:    scene.fog = new FogExp2("#02030a", phase === "home" ? 0.034 : phase === "lifemap" ? 0.018 : phase === "focus" ? 0.014 : 0.011);
+src/spatial/scene/SpatialScene.tsx:77:function CameraRig({
+src/spatial/scene/SpatialScene.tsx:101:    if ((phase === "focus" || phase === "replay") && selected) {
+src/spatial/scene/SpatialScene.tsx:103:      if (phase === "focus") {
+src/spatial/scene/SpatialScene.tsx:280:  const mapGlow = phase === "lifemap" ? 0.22 : phase === "focus" ? 0.14 : phase === "replay" ? 0.09 : 0.05;
+src/spatial/scene/SpatialScene.tsx:285:      <CameraRig phase={phase} progress={1} selected={selected} />
+src/spatial/scene/SpatialScene.tsx:306:          selected={selectedId === star.id}
+src/spatial/scene/SpatialScene.tsx:330:        : phase === "focus"
+src/spatial/scene/SpatialScene.tsx:339:        : phase === "focus"
+src/spatial/scene/SpatialScene.tsx:348:        : phase === "focus"
+src/spatial/scene/SpatialScene.tsx:466:  const [phaseTick, setPhaseTick] = useState(0);
+src/spatial/scene/SpatialScene.tsx:477:          setPhaseTick((value) => value + 1);
+src/spatial/scene/SpatialScene.tsx:478:    setPhaseTick((value) => value + 1);
+src/spatial/scene/SpatialScene.tsx:484:          setPhaseTick((value) => value + 1);
+src/spatial/scene/SpatialScene.tsx:485:    setPhaseTick((value) => value + 1);
+src/spatial/scene/SpatialScene.tsx:498:      if (key === "r" && phase === "focus" && selectedId) {
+src/spatial/scene/SpatialScene.tsx:501:        setPhaseTick((value) => value + 1);
+src/spatial/scene/SpatialScene.tsx:510:          setPhaseTick((value) => value + 1);
+src/spatial/scene/SpatialScene.tsx:511:    setPhaseTick((value) => value + 1);
+src/spatial/scene/SpatialScene.tsx:515:        if (phase === "focus") {
+src/spatial/scene/SpatialScene.tsx:518:          setPhaseTick((value) => value + 1);
+src/spatial/scene/SpatialScene.tsx:519:    setPhaseTick((value) => value + 1);
+src/spatial/scene/SpatialScene.tsx:527:          setPhaseTick((value) => value + 1);
+src/spatial/scene/SpatialScene.tsx:558:          if (phase === "focus") {
+src/spatial/scene/SpatialScene.tsx:561:          setPhaseTick((value) => value + 1);
+src/spatial/scene/SpatialScene.tsx:562:    setPhaseTick((value) => value + 1);
+src/spatial/scene/SpatialScene.tsx:576:      <Overlay phase={phase} selected={selected} />
+src/spatial/scene/FocusPresence.tsx:11:  selectedStar: StarPoint | null;
+src/spatial/scene/FocusPresence.tsx:16:  if (phase === "focus_travel") return 0.22;
+src/spatial/scene/FocusPresence.tsx:17:  if (phase === "focus_arrive") return 0.24 + progress * 0.12;
+src/spatial/scene/FocusPresence.tsx:24:export default function FocusPresence({ phase, progress, selectedStar }: Props) {
+src/spatial/scene/FocusPresence.tsx:29:  const isVisible = !!selectedStar;
+src/spatial/scene/FocusPresence.tsx:33:    phase === "focus_arrive" || phase === "replay" || phase === "return_from_replay"
+src/spatial/scene/FocusPresence.tsx:61:    <group ref={group} position={selectedStar.position}>
+src/spatial/scene/CameraRig.tsx:13:  | "focus_travel"
+src/spatial/scene/CameraRig.tsx:14:  | "focus_arrive"
+src/spatial/scene/CameraRig.tsx:23:  selectedStar?: StarPoint | null;
+src/spatial/scene/CameraRig.tsx:31:export default function CameraRig({
+src/spatial/scene/CameraRig.tsx:35:  selectedStar = null,
+src/spatial/scene/CameraRig.tsx:37:  const activeStar = selectedStar ?? selected ?? null;
+src/spatial/scene/CameraRig.tsx:83:      if (phase === "focus" || phase === "focus_travel" || phase === "focus_arrive") {
+src/spatial/scene/SpatialScene.tsx.bak_camera_lock:10:function CameraRig() {
+src/spatial/scene/SpatialScene.tsx.bak_camera_lock:52:        <CameraRig />
+src/spatial/scene/sceneState.ts:9:  | "focus_travel"
+src/spatial/scene/sceneState.ts:10:  | "focus_arrive"
+src/spatial/scene/sceneState.ts:42:  focus_travel: 1650,
+src/spatial/scene/sceneState.ts:43:  focus_arrive: 900,
+src/spatial/scene/sceneState.ts:84:  "focus_travel",
+src/spatial/scene/sceneState.ts:85:  "focus_arrive",
+src/spatial/scene/sceneState.ts:199:    phase === "focus_travel" ||
+src/spatial/scene/sceneState.ts:200:    phase === "focus_arrive" ||
+src/spatial/scene/CameraDirector.tsx:25:  selectedStar: StarPoint | null;
+src/spatial/scene/CameraDirector.tsx:65:  if ((phase === "focus_lock" || phase === "focus_travel" || phase === "focus_arrive" || phase === "replay" || phase === "return_from_replay" || phase === "return_to_lifemap") && !focus) {
+src/spatial/scene/CameraDirector.tsx:76:  if (phase === "focus_travel" && focus) {
+src/spatial/scene/CameraDirector.tsx:87:  if (phase === "focus_arrive" && focus) {
+src/spatial/scene/CameraDirector.tsx:145:export default function CameraDirector({ phase, progress, selectedStar }: Props) {
+src/spatial/scene/CameraDirector.tsx:151:    const pose = samplePose(phase, progress, selectedStar);
+
+== TYPECHECK ==
+
+> urai-tier1@0.1.0 typecheck /home/user/urai-spatial/urai-tier1
+> tsc --noEmit
+
+src/spatial/scene/Starfield.tsx(124,37): error TS1005: ',' expected.
+src/spatial/scene/Starfield.tsx(124,65): error TS1005: ',' expected.
+src/spatial/scene/Starfield.tsx(124,225): error TS1005: ',' expected.
+ ELIFECYCLE  Command failed with exit code 1.
+TYPECHECK_EXIT=1
+
+== BUILD ==
+
+> urai-tier1@0.1.0 build /home/user/urai-spatial/urai-tier1
+> next build --webpack
+
+▲ Next.js 16.2.1 (webpack)
+
+  Creating an optimized production build ...
+✓ Compiled successfully in 6.1s
+  Running TypeScript ...
+Failed to type check.
+
+./src/spatial/scene/SpatialScene.tsx:285:32
+Type error: Type '{ phase: ScenePhase; progress: number; selected: StarPoint; }' is not assignable to type 'IntrinsicAttributes & { phase: ScenePhase; selected: StarPoint; }'.
+  Property 'progress' does not exist on type 'IntrinsicAttributes & { phase: ScenePhase; selected: StarPoint; }'.
+
+  [90m283 |[0m     <>
+  [90m284 |[0m       <[33mSceneEnvironment[0m phase={phase} />
+[31m[1m>[0m [90m285 |[0m       <[33mCameraRig[0m phase={phase} progress={[35m1[0m} selected={selected} />
+  [90m    |[0m                                [31m[1m^[0m
+  [90m286 |[0m       <[33mSkyShell[0m phase={phase} />
+  [90m287 |[0m
+  [90m288 |[0m       <ambientLight intensity={[35m0.72[0m} />
+Next.js build worker exited with code: 1 and signal: null
+ ELIFECYCLE  Command failed with exit code 1.
+BUILD_EXIT=1
+
+== LAST 200 LOG LINES ==
+        : phase === "returningHome"
+          ? -0.4
+          : -2.6;
+
+  return (
+    <group position={[0, yOffset, 0]}>
+      {stars.map((star) => {
+        const isSelected = star.id === selectedId;
+        const otherDim = selectedId const otherDim = selectedId const otherDim = selectedId && !isSelected ? 0.33 : 1;const otherDim = selectedId && !isSelected ? 0.33 : 1; !isSelected ? 0.14 : 1;const otherDim = selectedId const otherDim = selectedId && !isSelected ? 0.33 : 1;const otherDim = selectedId && !isSelected ? 0.33 : 1; !isSelected ? 0.14 : 1; !isSelected ? 0.18 : 1;
+        const featuredBoost = star.featured ? 1.45 : 1;
+        const opacity = Math.max(
+          0,
+          Math.min(1, star.opacity * presence * otherDim * featuredBoost)
+        );
+        const scale = isSelected ? star.scale * 2.0 : star.scale;
+
+        return (
+          <group
+            key={star.id}
+            position={star.position}
+            onClick={
+              interactive && onSelectStar
+                ? (event) => {
+                    event.stopPropagation();
+                    onSelectStar(star);
+                  }
+                : undefined
+            }
+          >
+            <mesh>
+              <sphereGeometry args={[scale, 12, 12]} />
+              <meshBasicMaterial
+                color={isSelected ? "#ffffff" : star.color}
+                transparent
+                opacity={opacity}
+                depthWrite={false}
+              />
+            </mesh>
+
+            <mesh>
+              <sphereGeometry
+                args={[scale * (isSelected ? 2.8 : star.featured ? 2.4 : 1.7), 12, 12]}
+              />
+              <meshBasicMaterial
+                color={isSelected ? "#8fb8ff" : star.color}
+                transparent
+                opacity={
+                  isSelected
+                    ? 0.10 * presence
+                    : star.featured
+                      ? 0.04 * presence
+                      : 0.03 * presence
+                }
+                depthWrite={false}
+              />
+            </mesh>
+          </group>
+        );
+      })}
+    </group>
+  );
+}
+
+== KEY SEARCHES ==
+src/spatial/scene/LifeMap.tsx:12:  selectedStar: StarPoint | null;
+src/spatial/scene/LifeMap.tsx:159:  selectedStar,
+src/spatial/scene/LifeMap.tsx:179:          !!selectedStar &&
+src/spatial/scene/LifeMap.tsx:180:          selectedStar.id !== star.id &&
+src/spatial/scene/LifeMap.tsx:182:            phase === "focus_travel" ||
+src/spatial/scene/LifeMap.tsx:183:            phase === "focus_arrive" ||
+src/spatial/scene/LifeMap.tsx:188:        const selected = selectedStar?.id === star.id;
+src/spatial/scene/LifeMap.tsx:196:            selected={selected}
+src/spatial/scene/ObjectNode.tsx:20:  const selectedObject = useSceneStore((state) => state.selectedStarId);
+src/spatial/scene/ObjectNode.tsx:25:      setSelectedStarId?: (id: string | null) => void;
+src/spatial/scene/ObjectNode.tsx:27:    state.setSelectedStarId?.(nextId);
+src/spatial/scene/SpatialScene.tsx.broken.20260316-135713:3:import { toCanonicalSelectedStar } from "../state/toCanonicalSelectedStar";
+src/spatial/scene/SpatialScene.tsx.broken.20260316-135713:8:import { SelectedStar, useSceneStore } from "../state/sceneStore";
+src/spatial/scene/SpatialScene.tsx.broken.20260316-135713:41:function buildStars(): SelectedStar[] {
+src/spatial/scene/SpatialScene.tsx.broken.20260316-135713:43:  const out: SelectedStar[] = [];
+src/spatial/scene/SpatialScene.tsx.broken.20260316-135713:77:function CameraRig() {
+src/spatial/scene/SpatialScene.tsx.broken.20260316-135713:80:  const selectedStarId = useSceneStore((state) => state.selectedStarId);
+src/spatial/scene/SpatialScene.tsx.broken.20260316-135713:91:    } else if ((mode === "focus" || mode === "replay") && selectedStarId) {
+src/spatial/scene/SpatialScene.tsx.broken.20260316-135713:92:      const [sx, sy, sz] = selectedStarId.position;
+src/spatial/scene/SpatialScene.tsx.broken.20260316-135713:144:function SpatialStar({ star }: { star: SelectedStar }) {
+src/spatial/scene/SpatialScene.tsx.broken.20260316-135713:147:  const selectedStarId = useSceneStore((state) => state.selectedStarId);
+src/spatial/scene/SpatialScene.tsx.broken.20260316-135713:151:  const selected = resolveStarByIdSafe(String(selectedStarId?.id ?? selectedStarId)) === star.id;
+src/spatial/scene/SpatialScene.tsx.broken.20260316-135713:190:  const selectedStarId = useSceneStore((state) => state.selectedStarId);
+src/spatial/scene/SpatialScene.tsx.broken.20260316-135713:260:          {selectedStarId && mode !== "replay" ? (
+src/spatial/scene/SpatialScene.tsx.broken.20260316-135713:266:      {selectedStarId && detailOpen ? (
+src/spatial/scene/SpatialScene.tsx.broken.20260316-135713:283:          <div style={{ marginTop: 6, fontSize: 28, fontWeight: 800 }}>{selectedStarId.title}</div>
+src/spatial/scene/SpatialScene.tsx.broken.20260316-135713:284:          <div style={{ marginTop: 6, fontSize: 15, opacity: 0.9 }}>{selectedStarId.label}</div>
+src/spatial/scene/SpatialScene.tsx.broken.20260316-135713:287:            <div><strong>Signature:</strong> {selectedStarId.signature}</div>
+src/spatial/scene/SpatialScene.tsx.broken.20260316-135713:288:            <div><strong>Chapter:</strong> {selectedStarId.chapter}</div>
+src/spatial/scene/SpatialScene.tsx.broken.20260316-135713:289:            <div><strong>Timeband:</strong> {selectedStarId.timeband}</div>
+src/spatial/scene/SpatialScene.tsx.broken.20260316-135713:292:              {selectedStarId.position.map((value) => value.toFixed(1)).join(", ")}
+src/spatial/scene/SpatialScene.tsx.broken.20260316-135713:325:  const selectedStarId = useSceneStore((state) => state.selectedStarId);
+src/spatial/scene/SpatialScene.tsx.broken.20260316-135713:335:      if (event.key.toLowerCase() === "r" && selectedStarId) enterReplay();
+src/spatial/scene/SpatialScene.tsx.broken.20260316-135713:340:  }, [clearFocus, enterHome, enterLifeMap, enterReplay, selectedStarId]);
+src/spatial/scene/SpatialScene.tsx.broken.20260316-135713:359:        {selectedStarId ? (
+src/spatial/scene/SpatialScene.tsx.broken.20260316-135713:360:          <group position={selectedStarId.position}>
+src/spatial/scene/SpatialScene.tsx.broken.20260316-135713:361:            <mesh scale={[selectedStarId.size * 4.2, selectedStarId.size * 4.2, selectedStarId.size * 4.2]}>
+src/spatial/scene/SpatialScene.tsx.broken.20260316-135713:364:                color={selectedStarId.color}
+src/spatial/scene/SpatialScene.tsx.broken.20260316-135713:368:        <CameraRig />
+src/spatial/scene/SpatialScene.tsx:70:    scene.fog = new FogExp2("#02030a", phase === "home" ? 0.034 : phase === "lifemap" ? 0.018 : phase === "focus" ? 0.014 : 0.011);
+src/spatial/scene/SpatialScene.tsx:77:function CameraRig({
+src/spatial/scene/SpatialScene.tsx:101:    if ((phase === "focus" || phase === "replay") && selected) {
+src/spatial/scene/SpatialScene.tsx:103:      if (phase === "focus") {
+src/spatial/scene/SpatialScene.tsx:280:  const mapGlow = phase === "lifemap" ? 0.22 : phase === "focus" ? 0.14 : phase === "replay" ? 0.09 : 0.05;
+src/spatial/scene/SpatialScene.tsx:285:      <CameraRig phase={phase} progress={1} selected={selected} />
+src/spatial/scene/SpatialScene.tsx:306:          selected={selectedId === star.id}
+src/spatial/scene/SpatialScene.tsx:330:        : phase === "focus"
+src/spatial/scene/SpatialScene.tsx:339:        : phase === "focus"
+src/spatial/scene/SpatialScene.tsx:348:        : phase === "focus"
+src/spatial/scene/SpatialScene.tsx:466:  const [phaseTick, setPhaseTick] = useState(0);
+src/spatial/scene/SpatialScene.tsx:477:          setPhaseTick((value) => value + 1);
+src/spatial/scene/SpatialScene.tsx:478:    setPhaseTick((value) => value + 1);
+src/spatial/scene/SpatialScene.tsx:484:          setPhaseTick((value) => value + 1);
+src/spatial/scene/SpatialScene.tsx:485:    setPhaseTick((value) => value + 1);
+src/spatial/scene/SpatialScene.tsx:498:      if (key === "r" && phase === "focus" && selectedId) {
+src/spatial/scene/SpatialScene.tsx:501:        setPhaseTick((value) => value + 1);
+src/spatial/scene/SpatialScene.tsx:510:          setPhaseTick((value) => value + 1);
+src/spatial/scene/SpatialScene.tsx:511:    setPhaseTick((value) => value + 1);
+src/spatial/scene/SpatialScene.tsx:515:        if (phase === "focus") {
+src/spatial/scene/SpatialScene.tsx:518:          setPhaseTick((value) => value + 1);
+src/spatial/scene/SpatialScene.tsx:519:    setPhaseTick((value) => value + 1);
+src/spatial/scene/SpatialScene.tsx:527:          setPhaseTick((value) => value + 1);
+src/spatial/scene/SpatialScene.tsx:558:          if (phase === "focus") {
+src/spatial/scene/SpatialScene.tsx:561:          setPhaseTick((value) => value + 1);
+src/spatial/scene/SpatialScene.tsx:562:    setPhaseTick((value) => value + 1);
+src/spatial/scene/SpatialScene.tsx:576:      <Overlay phase={phase} selected={selected} />
+src/spatial/scene/FocusPresence.tsx:11:  selectedStar: StarPoint | null;
+src/spatial/scene/FocusPresence.tsx:16:  if (phase === "focus_travel") return 0.22;
+src/spatial/scene/FocusPresence.tsx:17:  if (phase === "focus_arrive") return 0.24 + progress * 0.12;
+src/spatial/scene/FocusPresence.tsx:24:export default function FocusPresence({ phase, progress, selectedStar }: Props) {
+src/spatial/scene/FocusPresence.tsx:29:  const isVisible = !!selectedStar;
+src/spatial/scene/FocusPresence.tsx:33:    phase === "focus_arrive" || phase === "replay" || phase === "return_from_replay"
+src/spatial/scene/FocusPresence.tsx:61:    <group ref={group} position={selectedStar.position}>
+src/spatial/scene/CameraRig.tsx:13:  | "focus_travel"
+src/spatial/scene/CameraRig.tsx:14:  | "focus_arrive"
+src/spatial/scene/CameraRig.tsx:23:  selectedStar?: StarPoint | null;
+src/spatial/scene/CameraRig.tsx:31:export default function CameraRig({
+src/spatial/scene/CameraRig.tsx:35:  selectedStar = null,
+src/spatial/scene/CameraRig.tsx:37:  const activeStar = selectedStar ?? selected ?? null;
+src/spatial/scene/CameraRig.tsx:83:      if (phase === "focus" || phase === "focus_travel" || phase === "focus_arrive") {
+src/spatial/scene/SpatialScene.tsx.bak_camera_lock:10:function CameraRig() {
+src/spatial/scene/SpatialScene.tsx.bak_camera_lock:52:        <CameraRig />
+src/spatial/scene/sceneState.ts:9:  | "focus_travel"
+src/spatial/scene/sceneState.ts:10:  | "focus_arrive"
+src/spatial/scene/sceneState.ts:42:  focus_travel: 1650,
+src/spatial/scene/sceneState.ts:43:  focus_arrive: 900,
+src/spatial/scene/sceneState.ts:84:  "focus_travel",
+src/spatial/scene/sceneState.ts:85:  "focus_arrive",
+src/spatial/scene/sceneState.ts:199:    phase === "focus_travel" ||
+src/spatial/scene/sceneState.ts:200:    phase === "focus_arrive" ||
+src/spatial/scene/CameraDirector.tsx:25:  selectedStar: StarPoint | null;
+src/spatial/scene/CameraDirector.tsx:65:  if ((phase === "focus_lock" || phase === "focus_travel" || phase === "focus_arrive" || phase === "replay" || phase === "return_from_replay" || phase === "return_to_lifemap") && !focus) {
+src/spatial/scene/CameraDirector.tsx:76:  if (phase === "focus_travel" && focus) {
+src/spatial/scene/CameraDirector.tsx:87:  if (phase === "focus_arrive" && focus) {
+src/spatial/scene/CameraDirector.tsx:145:export default function CameraDirector({ phase, progress, selectedStar }: Props) {
+src/spatial/scene/CameraDirector.tsx:151:    const pose = samplePose(phase, progress, selectedStar);
+
+== TYPECHECK ==
+
+> urai-tier1@0.1.0 typecheck /home/user/urai-spatial/urai-tier1
+> tsc --noEmit
+
+src/spatial/scene/Starfield.tsx(124,37): error TS1005: ',' expected.
+src/spatial/scene/Starfield.tsx(124,65): error TS1005: ',' expected.
+src/spatial/scene/Starfield.tsx(124,225): error TS1005: ',' expected.
+ ELIFECYCLE  Command failed with exit code 1.
+TYPECHECK_EXIT=1
+
+== BUILD ==
+
+> urai-tier1@0.1.0 build /home/user/urai-spatial/urai-tier1
+> next build --webpack
+
+▲ Next.js 16.2.1 (webpack)
+
+  Creating an optimized production build ...
+✓ Compiled successfully in 6.1s
+  Running TypeScript ...
+Failed to type check.
+
+./src/spatial/scene/SpatialScene.tsx:285:32
+Type error: Type '{ phase: ScenePhase; progress: number; selected: StarPoint; }' is not assignable to type 'IntrinsicAttributes & { phase: ScenePhase; selected: StarPoint; }'.
+  Property 'progress' does not exist on type 'IntrinsicAttributes & { phase: ScenePhase; selected: StarPoint; }'.
+
+  [90m283 |[0m     <>
+  [90m284 |[0m       <[33mSceneEnvironment[0m phase={phase} />
+[31m[1m>[0m [90m285 |[0m       <[33mCameraRig[0m phase={phase} progress={[35m1[0m} selected={selected} />
+  [90m    |[0m                                [31m[1m^[0m
+  [90m286 |[0m       <[33mSkyShell[0m phase={phase} />
+  [90m287 |[0m
+  [90m288 |[0m       <ambientLight intensity={[35m0.72[0m} />
+Next.js build worker exited with code: 1 and signal: null
+ ELIFECYCLE  Command failed with exit code 1.
+BUILD_EXIT=1
+
+== LAST 200 LOG LINES ==
+
+== LOG FILE ==
+.ai-logs/fail-capture-20260324_004807.log
+]633;D;0]633;P;Cwd=/home/user/urai-spatial/urai-tier1]633;P;Prompt=\x1b]0\x3buser@firebase-urai-spatial-1769687960051: ~/urai-spatial/urai-tier1\x07\x1b[00\x3b35murai-spatial-21209489\x1b[00m:\x1b[01\x3b34m~/urai-spatial/urai-tier1\x1b[00m\x1b[01\x3b32m{tier1-home-ascent-cleanup-20260318_090348}\x1b[00m$ ]633;EnvSingleStart;0;75202d6e-37a5-4333-b395-39cb01ae0969]633;EnvSingleEntry;OLDPWD;/home/user/urai-spatial/urai-tier1;75202d6e-37a5-4333-b395-39cb01ae0969]633;EnvSingleEnd;75202d6e-37a5-4333-b395-39cb01ae0969;[?2004h]633;A]0;user@firebase-urai-spatial-1769687960051: ~/urai-spatial/urai-tier1[00;35murai-spatial-21209489[00m:[01;34m~/urai-spatial/urai-tier1[00m[01;32m{tier1-home-ascent-cleanup-20260318_090348}[00m$ ]633;Bcd ~/urai-spatial/urai-tier1 || exit 1 
+set -u
+
+LOGDIR=".ai-logs"
+mkdir -p "$LOGDIR"
+LOG="$LOGDIR/fix-camerarig-progress-prop-$(date +%Y%m%d_%H%M%S).log"
+exec > >(tee -a "$LOG") 2>&1
+
+STAMP="$(date +%Y%m%d_%H%M%S)"
+[7mBACK=".ai-backups/fix-camerarig-progress-prop-$STAMP"[27m
+[7mSCENE="src/spatial/scene/SpatialScene.tsx"[27m
+
+[7mmkdir -p "$BACK"[27m
+[7mcp "$SCENE" "$BACK/SpatialScene.tsx.bak"[27m
+
+[7mawk '[27m
+[7m{[27m
+[7m  line = $0[27m
+[7m  gsub(/<CameraRig phase=\{phase\} progress=\{1\} selected=\{selected\} \/>/, "<CameraRig phase={phase} selec[27m[7mt[27m[7med={selected} />", line) [27m
+[7m  print line[27m
+[7m}[27m
+[7m' "$BACK/SpatialScene.tsx.bak" > "$SCENE.tmp" && mv "$SCENE.tmp" "$SCENE"[27m
+
+[7mecho "== VERIFY FIX =="[27m
+[7mgrep -n '<CameraRig phase={phase} selected={selected} />' "$SCENE" || { echo "CameraRig call replacement miss[27m[7mi[27m[7mng"; exit 1; } [27m
+[7m! grep -n 'progress={1}' "$SCENE" || { echo "progress prop still present"; exit 1; }[27m[7mecho "== TYPECHECK =="[27m[7mpnpm typecheck || { echo "TYPECHECK FAILED"; echo "LOG: $LOG"; exit 1; }[27m[7mecho "== BUILD =="[27m[7mpnpm build || { echo "BUILD FAILED"; echo "LOG: $LOG"; exit 1; }[27m[7mecho "== SUCCESS =="[27m[7mecho "LOG: $LOG"[27m[A[A[A[A[A[A[A[A[A[A[A[A[A[A[A[A[A[ABACK=".ai-backups/fix-camerarig-progress-prop-$STAMP"
+SCENE="src/spatial/scene/SpatialScene.tsx"
+
+mkdir -p "$BACK"
+cp "$SCENE" "$BACK/SpatialScene.tsx.bak"
+
+awk '
+{
+  line = $0
+  gsub(/<CameraRig phase=\{phase\} progress=\{1\} selected=\{selected\} \/>/, "<CameraRig phase={phase} selected={selected} />", line)
+  print line
+}
+' "$BACK/SpatialScene.tsx.bak" > "$SCENE.tmp" && mv "$SCENE.tmp" "$SCENE"
+
+echo "== VERIFY FIX =="
+grep -n '<CameraRig phase={phase} selected={selected} />' "$SCENE" || { echo "CameraRig call replacement missing"; exit 1; }
+! grep -n 'progress={1}' "$SCENE" || { echo "progress prop still present"; exit 1; }echo "== TYPECHECK =="pnpm typecheck || { echo "TYPECHECK FAILED"; echo "LOG: $LOG"; exit 1; }echo "== BUILD =="pnpm build || { echo "BUILD FAILED"; echo "LOG: $LOG"; exit 1; }echo "== SUCCESS =="echo "LOG: $LOG"
+[?2004l]633;E;cd ~/urai-spatial/urai-tier1;75202d6e-37a5-4333-b395-39cb01ae0969]633;C== VERIFY FIX ==
+285:      <CameraRig phase={phase} selected={selected} />
+== TYPECHECK ==
+
+> urai-tier1@0.1.0 typecheck /home/user/urai-spatial/urai-tier1
+> tsc --noEmit
+
+src/spatial/scene/Starfield.tsx(124,37): error TS1005: ',' expected.
+src/spatial/scene/Starfield.tsx(124,65): error TS1005: ',' expected.
+src/spatial/scene/Starfield.tsx(124,225): error TS1005: ',' expected.
+ ELIFECYCLE  Command failed with exit code 2.
+TYPECHECK FAILED
+LOG: .ai-logs/fix-camerarig-progress-prop-20260324_005059.log
+exit

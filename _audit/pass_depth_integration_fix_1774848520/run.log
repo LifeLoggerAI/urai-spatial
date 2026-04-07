@@ -1,0 +1,9 @@
+=== CREATE starfieldDepth ===
+=== FIX PositionLike narrowing ===
+patched src/spatial/components/Starfield.tsx
+patched src/spatial/components/LifeMapStarfield.tsx
+=== FIX starSchema path ===
+=== FIX stray ry ===
+=== TYPECHECK ===
+=== BUILD ===
+=== DONE ===

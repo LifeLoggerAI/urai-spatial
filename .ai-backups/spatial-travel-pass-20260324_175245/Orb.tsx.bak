@@ -1,0 +1,58 @@
+"use client";
+
+import { useFrame } from "@react-three/fiber";
+import { useRef } from "react";
+import type { Group } from "three";
+import * as THREE from "three";
+import type { ScenePhase } from "../types/scene";
+
+type OrbProps = {
+  phase: ScenePhase;
+  position?: [number, number, number];
+};
+
+export default function Orb({ phase, position = [-1.25, 0.32, -2.6] }: OrbProps) {
+  const groupRef = useRef<Group>(null);
+
+  useFrame(({ clock }) => {
+    const t = clock.getElapsedTime();
+    const g = groupRef.current;
+    if (!g) return;
+
+    const phaseLift =
+      phase === "home" ? 0 :
+      phase === "ascent" ? 0.3 :
+      phase === "lifemap" ? 0.45 :
+      phase === "focus" ? 0.25 :
+      phase === "replay" ? 0.15 :
+      0.1;
+
+    g.position.y = position[1] + Math.sin(t * 0.8) * 0.05 + phaseLift;
+    g.rotation.y += 0.0035;
+    g.rotation.z = Math.sin(t * 0.35) * 0.06;
+  });
+
+  return (
+    <group ref={groupRef} position={position}>
+      <pointLight position={[0, 0, 0]} intensity={phase === "home" ? 3.2 : 2.2} distance={10} color="#8fd6ff" />
+      <mesh>
+        <sphereGeometry args={[0.18, 48, 48]} />
+        <meshStandardMaterial
+          color="#9fe1ff"
+          emissive="#61c8ff"
+          emissiveIntensity={phase === "home" ? 2.2 : 1.5}
+          roughness={0.04}
+          metalness={0.08}
+        />
+      </mesh>
+      <mesh scale={1.8}>
+        <sphereGeometry args={[0.18, 32, 32]} />
+        <meshBasicMaterial color="#71cbff" transparent opacity={0.11} depthWrite={false} blending={THREE.AdditiveBlending} />
+      </mesh>
+      <mesh scale={2.8}>
+        <sphereGeometry args={[0.18, 24, 24]} />
+        <meshBasicMaterial color="#71cbff" transparent opacity={0.045} depthWrite={false} blending={THREE.AdditiveBlending} />
+      </mesh>
+    </group>
+  );
+}

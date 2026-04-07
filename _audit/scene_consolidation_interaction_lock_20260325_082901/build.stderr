@@ -1,0 +1,13 @@
+Failed to type check.
+
+./src/spatial/scene/SpatialScene.tsx:180:16
+Type error: Property 'lerpScalar' does not exist on type 'Vector3'.
+
+  [90m178 |[0m
+  [90m179 |[0m     mat.opacity = [33mTHREE[0m.[33mMathUtils[0m.lerp(mat.opacity, targetOpacity, [35m0.075[0m);
+[31m[1m>[0m [90m180 |[0m     mesh.scale.lerpScalar(targetScale, [35m0.08[0m);
+  [90m    |[0m                [31m[1m^[0m
+  [90m181 |[0m     mesh.rotation.y += [35m0.0028[0m;
+  [90m182 |[0m     mesh.rotation.x += [35m0.0011[0m;
+  [90m183 |[0m     mesh.visible = mat.opacity > [35m0.01[0m;
+Next.js build worker exited with code: 1 and signal: null

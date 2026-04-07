@@ -1,3 +1,4 @@
+import { uraiNow, uraiRandom, uraiTime } from "@/lib/uraiDeterminism";
 "use client";
 
 import { useMemo, useState } from "react";
@@ -35,7 +36,7 @@ export default function SpatialAccountPanel() {
           id:
             typeof crypto !== "undefined" && "randomUUID" in crypto
               ? crypto.randomUUID()
-              : `profile-${Date.now()}`,
+              : `profile-${uraiNow()}`,
           label: nextLabel,
           createdAt: new Date().toISOString(),
         },

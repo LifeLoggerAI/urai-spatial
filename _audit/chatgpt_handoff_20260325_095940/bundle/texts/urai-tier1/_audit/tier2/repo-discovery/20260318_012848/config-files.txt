@@ -1,0 +1,3 @@
+./_audit/static-fix-20260316_224129/next.config.js.bak
+./next.config.js
+./tsconfig.json

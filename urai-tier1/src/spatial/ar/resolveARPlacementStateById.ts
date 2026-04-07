@@ -1,3 +1,4 @@
+
 import type { SceneMode } from "../state/sceneStore";
 
 type SpatialStarLike =
@@ -57,7 +58,7 @@ export function resolveARPlacementStateById(
     };
   }
 
-  if (mode === "sky") {
+  if (mode === "ascent") {
     return {
       label: "Sky Anchor Ready",
       active: true,

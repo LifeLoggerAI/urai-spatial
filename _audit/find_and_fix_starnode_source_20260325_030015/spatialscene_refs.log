@@ -1,0 +1,12 @@
+6:import type { ScenePhase, SelectedStar, TransitionName } from "@/spatial/types/scene";
+8:type StarNode = SelectedStar & {
+89:function buildStars(): StarNode[] {
+315:  selectedStar: StarNode | null,
+479:  selectedStar: StarNode | null;
+515:  selectedStar: StarNode | null;
+763:  stars: StarNode[];
+765:  selectedStar: StarNode | null;
+915:  selectedStar: StarNode | null;
+951:  selectedStar: StarNode | null;
+987:  stars: StarNode[];
+988:  selectedStar: StarNode | null;

@@ -1,0 +1,34 @@
+=== LIVE RUNTIME PROBE ===
+ROOT=/home/user/urai-spatial
+APP=/home/user/urai-spatial/urai-tier1
+
+=== package.json scripts ===
+
+
+=== app entry candidates ===
+
+=== live spatial files (excluding quarantine/archive/backups) ===
+
+=== import trace from app/page.tsx ===
+PAGE=/home/user/urai-spatial/urai-tier1/src/app/page.tsx
+
+=== files mentioning SpatialScene ===
+
+=== files mentioning SceneController ===
+
+=== files mentioning CameraRig ===
+
+=== files mentioning Starfield ===
+
+=== files mentioning ReplayOverlay ===
+
+=== top candidate files: first 200 lines each ===
+--- FILE: /home/user/urai-spatial/urai-tier1/src/spatial/scene/SpatialScene.tsx ---
+--- FILE: /home/user/urai-spatial/urai-tier1/src/spatial/core/SceneController.tsx ---
+--- FILE: /home/user/urai-spatial/urai-tier1/src/spatial/scene/CameraRig.tsx ---
+--- FILE: /home/user/urai-spatial/urai-tier1/src/spatial/scene/Starfield.tsx ---
+--- FILE: /home/user/urai-spatial/urai-tier1/src/spatial/replay/ReplayOverlay.tsx ---
+
+=== recent runtime logs ===
+
+DONE: /home/user/urai-spatial/_audit/live_runtime_probe_20260325_100324

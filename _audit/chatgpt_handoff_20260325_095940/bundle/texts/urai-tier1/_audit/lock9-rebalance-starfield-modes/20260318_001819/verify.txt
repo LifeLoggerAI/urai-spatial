@@ -1,0 +1,10 @@
+279:        <sphereGeometry args={[mode === "lifemap" ? star.size * 0.30 : star.size * 0.22, 18, 18]} />
+283:          emissiveIntensity={isSelected ? 3.0 : dimmed ? 0.5 : mode === "lifemap" ? star.intensity * 1.8 : star.intensity * 1.4}
+292:        <sphereGeometry args={[mode === "lifemap" ? star.size * 0.50 : star.size * 0.38, 18, 18]} />
+352:        const ambientCount = mode === "lifemap" ? 320 : mode === "sky" ? 110 : 45;
+356:      {Array.from({ length: ambientCount }).map((_, i) => {
+358:                                const radius = mode === "lifemap" ? 8 + (i % 17) * 2.2 + Math.sin(i * 0.77) * 1.4 : mode === "sky" ? 14 + (i % 15) * 3.1 + Math.sin(i * 0.77) * 2.0 : 22 + (i % 13) * 4.6 + Math.sin(i * 0.77) * 2.4;
+360:                                const y = mode === "lifemap" ? -5 + (i % 29) * 0.58 + Math.sin(i * 1.13) * 1.2 : mode === "sky" ? -7 + (i % 23) * 0.72 + Math.sin(i * 1.13) * 1.4 : -9 + (i % 19) * 0.9 + Math.sin(i * 1.13) * 1.5;
+361:                                const z = mode === "lifemap" ? -10 - (i % 23) * 3.6 - Math.cos(i * 0.41) * 2.2 : mode === "sky" ? -18 - (i % 21) * 4.4 - Math.cos(i * 0.41) * 2.8 : -32 - (i % 17) * 5.6 - Math.cos(i * 0.41) * 3.2;
+364:            ? 0.032 + (i % 5) * 0.010
+370:            ? 0.16 + (i % 7) * 0.03

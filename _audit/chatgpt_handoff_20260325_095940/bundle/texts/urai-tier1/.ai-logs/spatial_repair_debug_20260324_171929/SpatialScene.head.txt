@@ -1,0 +1,220 @@
+"use client";
+
+import { Canvas, useFrame, useThree } from "@react-three/fiber";
+import { useEffect, useMemo, useRef, useState } from "react";
+import * as THREE from "three";
+import Orb from "./Orb";
+import Starfield, {
+  STAR_DEPTH_FAR_MAX,
+  STAR_DEPTH_FAR_MIN,
+  STAR_DEPTH_MID_MAX,
+  STAR_DEPTH_MID_MIN,
+  STAR_DEPTH_NEAR_MAX,
+  STAR_DEPTH_NEAR_MIN,
+} from "./Starfield";
+import ReplayOverlay from "./ReplayOverlay";
+import FocusShellOverlay from "./FocusShellOverlay";
+import type { ScenePhase, SelectedStar } from "../types/scene";
+
+const STAR_SEED = 19830414;
+const STAR_COUNT = 42;
+
+function seeded(step: number) {
+  const x = Math.sin(STAR_SEED * 0.0001 + step * 12.9898) * 43758.5453;
+  return x - Math.floor(x);
+}
+
+function lerp(current: number, target: number, alpha: number) {
+  return current + (target - current) * alpha;
+}
+
+function generateStars(): SelectedStar[] {
+  const palette = ["#e9f7ff", "#a8dcff", "#ffd1a1", "#d6c4ff", "#bfffe2", "#ffe6f2"];
+  const chapters = ["Origin", "Threshold", "Shift", "Signal", "Memory", "Echo"];
+  const tones = ["calm", "charged", "reflective", "distant", "restorative", "awake"];
+
+  return Array.from({ length: STAR_COUNT }, (_, index) => {
+    const band = index < 10 ? "near" : index < 27 ? "mid" : "far";
+    const z =
+      band === "near"
+        ? STAR_DEPTH_NEAR_MIN + seeded(index + 1) * (STAR_DEPTH_NEAR_MAX - STAR_DEPTH_NEAR_MIN)
+        : band === "mid"
+          ? STAR_DEPTH_MID_MIN + seeded(index + 1) * (STAR_DEPTH_MID_MAX - STAR_DEPTH_MID_MIN)
+          : STAR_DEPTH_FAR_MIN + seeded(index + 1) * (STAR_DEPTH_FAR_MAX - STAR_DEPTH_FAR_MIN);
+
+    const radius = band === "near" ? 7 : band === "mid" ? 13 : 22;
+    const angle = seeded(index + 33) * Math.PI * 2;
+    const vertical = (seeded(index + 77) - 0.5) * (band === "near" ? 5.5 : band === "mid" ? 10 : 18);
+
+    return {
+      id: `star-${index + 1}`,
+      title: `Memory ${index + 1}`,
+      chapter: chapters[index % chapters.length],
+      summary: `Deterministic spatial memory node ${index + 1} distributed into ${band} depth for cinematic travel and isolation.`,
+      dateLabel: `Chapter ${index + 1}`,
+      position: [
+        Math.cos(angle) * radius + (seeded(index + 17) - 0.5) * 2.6,
+        vertical,
+        z,
+      ],
+      color: palette[index % palette.length],
+      size: band === "near" ? 0.68 + seeded(index + 101) * 0.3 : band === "mid" ? 0.46 + seeded(index + 101) * 0.24 : 0.34 + seeded(index + 101) * 0.18,
+      depthBand: band,
+      memoryTone: tones[index % tones.length],
+    };
+  });
+}
+
+function SceneWorld({
+  phase,
+  selected,
+  hoveredId,
+  onHover,
+  onSelect,
+}: {
+  phase: ScenePhase;
+  selected: SelectedStar | null;
+  hoveredId: string | null;
+  onHover: (id: string | null) => void;
+  onSelect: (star: SelectedStar) => void;
+}) {
+  const { camera, scene } = useThree();
+  const stars = useMemo(() => generateStars(), []);
+  const fogColor = useMemo(() => new THREE.Color("#040812"), []);
+  const lookAt = useRef(new THREE.Vector3(0, 0.1, -7));
+  const targetPos = useRef(new THREE.Vector3(0, 1.45, 7.8));
+  const selectedVector = useMemo(
+    () => (selected ? new THREE.Vector3(...selected.position) : null),
+    [selected],
+  );
+
+  useEffect(() => {
+    scene.fog = new THREE.FogExp2(fogColor, phase === "home" ? 0.026 : phase === "lifemap" ? 0.018 : 0.022);
+    scene.background = fogColor;
+    return () => {
+      scene.fog = null;
+    };
+  }, [fogColor, phase, scene]);
+
+  useFrame((state) => {
+    const t = state.clock.getElapsedTime();
+
+    if (phase === "home") {
+      targetPos.current.set(0, 1.38, 8.6);
+      lookAt.current.set(0, 0.05, -8);
+    } else if (phase === "ascent") {
+      targetPos.current.set(0, 4.9, 2.2);
+      lookAt.current.set(0, 1.9, -19);
+    } else if (phase === "lifemap") {
+      targetPos.current.set(0, 2.35, 0.6);
+      lookAt.current.set(0, 1.45, -30);
+    } else if (phase === "focus" && selectedVector) {
+      targetPos.current.set(selectedVector.x * 0.16, selectedVector.y * 0.18 + 0.55, selectedVector.z + 5.7);
+      lookAt.current.set(selectedVector.x, selectedVector.y, selectedVector.z);
+    } else if (phase === "replay" && selectedVector) {
+      targetPos.current.set(selectedVector.x * 0.06, selectedVector.y * 0.1 + 0.3, selectedVector.z + 1.95);
+      lookAt.current.set(selectedVector.x, selectedVector.y, selectedVector.z - 0.25);
+    } else if (phase === "return") {
+      targetPos.current.set(0, 3.5, 1.8);
+      lookAt.current.set(0, 1.2, -18);
+    }
+
+    const idleX = phase === "home" ? Math.sin(t * 0.22) * 0.08 : Math.sin(t * 0.18) * 0.03;
+    const idleY = phase === "home" ? Math.cos(t * 0.17) * 0.06 : Math.cos(t * 0.15) * 0.02;
+
+    camera.position.x = lerp(camera.position.x, targetPos.current.x + idleX, 0.05);
+    camera.position.y = lerp(camera.position.y, targetPos.current.y + idleY, 0.05);
+    camera.position.z = lerp(camera.position.z, targetPos.current.z, 0.05);
+
+    const currentLook = new THREE.Vector3();
+    currentLook.copy(lookAt.current);
+    camera.lookAt(currentLook);
+
+    camera.fov = lerp(camera.fov, phase === "replay" ? 40 : phase === "focus" ? 46 : phase === "home" ? 53 : 50, 0.08);
+    camera.updateProjectionMatrix();
+  });
+
+  const selectedId = selected?.id ?? null;
+  const dimBackground = phase === "focus" || phase === "replay";
+
+  return (
+    <>
+      <ambientLight intensity={dimBackground ? 0.34 : 0.56} />
+      <hemisphereLight intensity={0.7} color="#9dc8ff" groundColor="#0a0910" />
+      <directionalLight position={[-8, 9, 6]} intensity={1.15} color="#d7e8ff" />
+      <pointLight position={[0, 3, -10]} intensity={0.9} color="#7cbfff" />
+
+      <mesh position={[0, 12, -52]}>
+        <sphereGeometry args={[92, 40, 40]} />
+        <meshBasicMaterial color="#07101e" side={THREE.BackSide} />
+      </mesh>
+
+      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -1.22, -15]}>
+        <planeGeometry args={[150, 150, 1, 1]} />
+        <meshStandardMaterial color="#090b12" roughness={0.98} metalness={0.02} />
+      </mesh>
+
+      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -1.18, -15]}>
+        <ringGeometry args={[11, 52, 128]} />
+        <meshBasicMaterial color="#5f6f95" transparent opacity={0.08} side={THREE.DoubleSide} />
+      </mesh>
+
+      <mesh position={[0, 0.9, -38]}>
+        <sphereGeometry args={[36, 48, 48, 0, Math.PI * 2, 0.1, 0.95]} />
+        <meshBasicMaterial color="#0a1627" transparent opacity={0.22} side={THREE.BackSide} />
+      </mesh>
+
+      <group visible={phase === "home" || phase === "ascent" || phase === "return"}>
+        <Orb phase={phase} position={[-1.2, 0.35, -2.7]} />
+      </group>
+
+      <group position={[0, 0, 0]}>
+        <Starfield
+          stars={stars}
+          phase={phase}
+          selectedId={selectedId}
+          hoveredId={hoveredId}
+          onHover={onHover}
+          onSelect={onSelect}
+        />
+      </group>
+    </>
+  );
+}
+
+export default function SpatialScene() {
+  const [phase, setPhase] = useState<ScenePhase>("home");
+  const [selected, setSelected] = useState<SelectedStar | null>(null);
+  const [hoveredId, setHoveredId] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (phase !== "ascent") return;
+    const id = window.setTimeout(() => {
+      setPhase((current) => (current === "ascent" ? "lifemap" : current));
+    }, 1700);
+    return () => window.clearTimeout(id);
+  }, [phase]);
+
+  useEffect(() => {
+    if (phase !== "return") return;
+    const id = window.setTimeout(() => {
+      setSelected(null);
+      setHoveredId(null);
+      setPhase("home");
+    }, 1600);
+    return () => window.clearTimeout(id);
+  }, [phase]);
+
+  const beginAscent = () => {
+    setHoveredId(null);
+    setSelected(null);
+    setPhase("ascent");
+  };
+
+  const enterFocus = (star: SelectedStar) => {
+    setSelected(star);
+    setHoveredId(star.id);
+    setPhase("focus");
+  };
+
+  const enterReplay = () => {

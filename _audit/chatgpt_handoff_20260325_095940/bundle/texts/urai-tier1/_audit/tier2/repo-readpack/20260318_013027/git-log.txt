@@ -1,0 +1,20 @@
+5ef3068 feat(urai-spatial): recenter deterministic curated stars into visible lifemap cluster
+8d48585 feat(urai-spatial): sharpen focus node and separate lifemap from sky
+957d177 feat(urai-spatial): rebalance home sky lifemap starfield modes
+a3d112e fix(urai-spatial): make SpatialScene canvas fill full viewport
+a80e925 feat(urai-spatial): center lifemap camera and boost visible starfield
+9c7f14a feat(urai-spatial): remove lifemap ground and boost ambient star depth
+dc9d09a feat(urai-spatial): add deterministic ambient backdrop stars for lifemap depth
+95f9da0 feat(urai-spatial): deepen lifemap camera targets safely
+f76e7b9 fix(urai-spatial): repair immersive gate block in SpatialScene
+4d148ec fix(urai-tier1): normalize controller home to sky parity for tier2 baseline
+54bf725 feat(urai-tier1): finalize minimal sky contract between home and lifemap
+1821fb7 chore(urai-tier1): finalize lock1 clean shell green
+011cf23 refactor(urai-spatial): share import and vault controller types
+3d55b7f chore(urai-spatial): codify import and vault controller ownership
+fe46fab fix(urai-spatial): normalize execution gate type ownership
+2a49314 fix(urai-spatial): stabilize destruction execution gate wiring
+7d7b657 fix(urai-spatial): normalize destruction execution gate schema
+44dde74 fix(urai-spatial): normalize destruction execution gate schema
+5f00009 feat(urai-spatial): phase94 curated deck destruction authorization panel
+4aa6252 fix(urai-spatial): complete expiry governance summary contract

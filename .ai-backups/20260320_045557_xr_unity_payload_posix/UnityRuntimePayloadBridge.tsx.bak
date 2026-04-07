@@ -1,0 +1,56 @@
+"use client";
+
+import { useMemo } from "react";
+import { buildUnityRuntimePayload } from "./buildUnityRuntimePayload";
+import { useSceneStore } from "../state/sceneStore";
+import { resolveStarById } from "../data/stars";
+
+declare global {
+  interface Window {
+    __URAI_UNITY_RUNTIME_PAYLOAD__?: unknown;
+    __URAI_XR_STATE__?: {
+      presenting?: boolean;
+      hasHeadsetPose?: boolean;
+      xrInput?: {
+        handedness?: string | null;
+        pointerActive?: boolean;
+        squeezeActive?: boolean;
+        selectActive?: boolean;
+      };
+    };
+  }
+}
+
+export default function UnityRuntimePayloadBridge() {
+  const mode = useSceneStore((s) => s.mode);
+  const selectedStarId = useSceneStore((s) => s.selectedStar);
+
+  const selectedStar = useMemo(
+    () => resolveStarById(selectedStarId),
+    [selectedStarId]
+  );
+
+  const xrState =
+    typeof window !== "undefined" ? window.__URAI_XR_STATE__ ?? null : null;
+
+  const payload = useMemo(() => {
+    return buildUnityRuntimePayload({
+      mode,
+      selectedStar,
+      presenting: xrState?.presenting ?? false,
+      hasHeadsetPose: xrState?.hasHeadsetPose ?? false,
+      xrInput: {
+        handedness: xrState?.xrInput?.handedness ?? null,
+        pointerActive: xrState?.xrInput?.pointerActive ?? false,
+        squeezeActive: xrState?.xrInput?.squeezeActive ?? false,
+        selectActive: xrState?.xrInput?.selectActive ?? false,
+      },
+    });
+  }, [mode, selectedStar, xrState]);
+
+  if (typeof window !== "undefined") {
+    window.__URAI_UNITY_RUNTIME_PAYLOAD__ = payload;
+  }
+
+  return null;
+}

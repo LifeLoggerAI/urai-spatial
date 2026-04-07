@@ -1,0 +1,14 @@
+[BACKUP] src/app/page.tsx
+[BACKUP] /home/user/urai-spatial/src/spatial/scene/SpatialScene.tsx
+[INFO] entrypoint: src/app/page.tsx
+[INFO] scene authority: /home/user/urai-spatial/src/spatial/scene/SpatialScene.tsx
+[STEP] capture scene/runtime anchors
+[STEP] TypeScript validation
+[PASS] pnpm exec tsc --noEmit
+[STEP] build validation
+[PASS] pnpm build
+[STEP] boot dev server for runtime smoke
+[PASS] dev server started (pid=16222)
+[STEP] smoke request
+[STEP] capture last dev log tail
+[DONE] runtime authority smoke pass completed

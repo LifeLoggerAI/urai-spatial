@@ -1,0 +1,35 @@
+=== PASS 5A: STAR INTERACTION + FOCUS ===
+Typecheck...
+Build...
+
+> urai-spatial-monorepo@ build /home/user/urai-spatial
+> pnpm --filter urai-tier1 build
+
+
+> urai-tier1@0.1.0 build /home/user/urai-spatial/urai-tier1
+> next build --webpack
+
+▲ Next.js 16.2.1 (webpack)
+
+  Creating an optimized production build ...
+✓ Compiled successfully in 9.1s
+  Running TypeScript ...
+Failed to type check.
+
+./src/spatial/scene/SpatialScene.tsx:76:15
+Type error: Expected 1 arguments, but got 0.
+
+  [90m74 |[0m
+  [90m75 |[0m [36mfunction[0m [33mStar[0m({ data, onSelect, isHovered }) {
+[31m[1m>[0m [90m76 |[0m   [36mconst[0m ref = useRef()
+  [90m   |[0m               [31m[1m^[0m
+  [90m77 |[0m
+  [90m78 |[0m   useFrame((state) => {
+  [90m79 |[0m     [36mconst[0m t = state.clock.elapsedTime
+Next.js build worker exited with code: 1 and signal: null
+/home/user/urai-spatial/urai-tier1:
+ ERR_PNPM_RECURSIVE_RUN_FIRST_FAIL  urai-tier1@0.1.0 build: `next build --webpack`
+Exit status 1
+ ELIFECYCLE  Command failed with exit code 1.
+FAILED: Build failed
+Press ENTER to exit...

@@ -1,0 +1,151 @@
+CANONICAL APP: /home/user/urai-spatial/urai-tier1
+PAGE ENTRY: /home/user/urai-spatial/urai-tier1/src/app/page.tsx
+SCENE COMPOSITION: /home/user/urai-spatial/urai-tier1/src/spatial/scene/SpatialScene.tsx
+CAMERA BEHAVIOR: /home/user/urai-spatial/urai-tier1/src/spatial/scene/SpatialScene.tsx
+TRANSITION DRIVER / PHASE MAPPING: /home/user/urai-spatial/urai-tier1/src/spatial/scene/SpatialScene.tsx
+STAR SELECTION / SELECTED-STAR CONTRACT: /home/user/urai-spatial/urai-tier1/src/spatial/scene/SpatialScene.tsx
+REPLAY BUTTON CONDITIONAL RENDERING: /home/user/urai-spatial/urai-tier1/src/spatial/scene/SpatialScene.tsx
+ESC HANDLING: /home/user/urai-spatial/urai-tier1/src/spatial/core/SceneController.tsx
+
+--- page import mentions ---
+5:const SpatialScene = dynamic(() => import("@/spatial/scene/SpatialScene"), {
+19:      <SpatialScene />
+
+--- scene anchors ---
+4:import { Canvas, ThreeEvent, useFrame } from "@react-three/fiber";
+7:type SceneMode = "home" | "lifemap" | "focus" | "replay";
+8:type TransitionPhase = "idle" | "ascend" | "descend" | "focus" | "replay";
+75:    summary: "Primary focus/replay anchor.",
+76:    detail: "Primary focus and replay target used for the authority lock pass.",
+91:function modeLabel(mode: SceneMode, selectedStar: StarNode | null) {
+92:  if ((mode === "focus" || mode === "replay") && selectedStar?.title) return selectedStar.title.toUpperCase();
+96:function lowerLabel(mode: SceneMode, selectedStar: StarNode | null) {
+97:  if ((mode === "focus" || mode === "replay") && selectedStar?.title) return selectedStar.title;
+106:  const [mode, setMode] = useState<SceneMode>("home");
+107:  const [transitionPhase, setTransitionPhase] = useState<TransitionPhase>("idle");
+108:  const [selectedStar, setSelectedStar] = useState<StarNode | null>(null);
+133:    if (mode === "lifemap" && transitionPhase === "idle") return;
+134:    runPhase("ascend", "lifemap", null);
+135:  }, [mode, transitionPhase, runPhase]);
+138:    runPhase("descend", "home", null);
+141:  const focusStar = useCallback(
+144:      runPhase("focus", "focus", star);
+150:    if (!selectedStar) return;
+151:    runPhase("replay", "replay", selectedStar);
+152:  }, [runPhase, selectedStar]);
+155:    if (!selectedStar) {
+156:      setMode("lifemap");
+160:    runPhase("focus", "focus", selectedStar, 550);
+161:  }, [runPhase, selectedStar]);
+165:    setMode("lifemap");
+176:        if (mode === "replay") {
+181:        if (mode === "focus") {
+186:        if (mode === "lifemap") {
+193:      if ((event.key === "Enter" || event.key === " ") && mode === "home") {
+199:      if (event.key.toLowerCase() === "r" && mode === "focus" && selectedStar?.isReplay) {
+204:      if (event.key === "Backspace" && mode === "focus") {
+210:    window.addEventListener("keydown", onKeyDown);
+211:    return () => window.removeEventListener("keydown", onKeyDown);
+212:  }, [mode, selectedStar, enterLifeMap, enterReplay, exitFocus, exitReplay, returnHome]);
+215:    if (!selectedStar && stars.length > 0) {
+218:  }, [selectedStar, stars]);
+222:    transitionPhase,
+223:    selectedStar,
+227:    focusStar,
+236:  selectedStar,
+237:  transitionPhase,
+240:  selectedStar: StarNode | null;
+241:  transitionPhase: TransitionPhase;
+248:  useFrame(({ camera }) => {
+251:    if (mode === "home") {
+254:    } else if (mode === "lifemap") {
+257:    } else if (selectedStar) {
+258:      const [sx, sy, sz] = selectedStar.position;
+261:      const focusDistance = mode === "replay" ? 4.8 : 6.4;
+262:      desiredPos.current.copy(starVec.clone().add(dir.multiplyScalar(focusDistance)));
+265:      if (mode === "replay") {
+275:    const phaseBoost = transitionPhase === "ascend" || transitionPhase === "descend" ? 0.085 : 0.065;
+286:  transitionPhase,
+289:  transitionPhase: TransitionPhase;
+292:  useFrame(({ scene }) => {
+294:    if (mode === "home") {
+297:      fog.density = transitionPhase === "ascend" ? 0.03 : 0.038;
+298:    } else if (mode === "lifemap") {
+302:    } else if (mode === "focus") {
+318:  transitionPhase,
+322:  transitionPhase: TransitionPhase;
+330:  useFrame(() => {
+338:    const homeVisible = mode === "home" || transitionPhase === "descend";
+339:    const targetOpacity = homeVisible ? 0.98 : 0.0;
+340:    const targetScale = mode === "home" ? 1.0 : transitionPhase === "descend" ? 0.72 : 0.18;
+364:          if (mode === "home") onActivate();
+389:  useFrame(() => {
+392:    const targetOpacity = mode === "home" ? 0.22 : 0.06;
+405:  selectedStar,
+408:  selectedStar: StarNode | null;
+413:  useFrame(() => {
+414:    if (!groupRef.current || !selectedStar || (mode !== "focus" && mode !== "replay")) return;
+416:    groupRef.current.rotation.y += mode === "replay" ? 0.01 : 0.004;
+417:    groupRef.current.position.y = selectedStar.position[1] + Math.sin(t * 1.1) * 0.06;
+420:  if (!selectedStar || (mode !== "focus" && mode !== "replay")) return null;
+423:    <group ref={groupRef} position={selectedStar.position}>
+425:        <sphereGeometry args={[selectedStar.size * (mode === "replay" ? 3.2 : 2.4), 24, 24]} />
+427:          color={selectedStar.color}
+429:          opacity={mode === "replay" ? 0.18 : 0.12}
+434:        <ringGeometry args={[selectedStar.size * 3.1, selectedStar.size * 4.6, 40]} />
+436:          color={selectedStar.color}
+438:          opacity={mode === "replay" ? 0.22 : 0.14}
+450:  selectedStar,
+456:  selectedStar: StarNode | null;
+463:  useFrame((state, delta) => {
+465:    const targetVisible = mode === "home" ? 0 : 1;
+472:      mode === "replay" ? 0.045 : mode === "focus" ? 0.022 : 0,
+484:    <group ref={root} visible={mode !== "home"}>
+486:        const isSelected = selectedStar?.id === star.id;
+492:        const interactive = mode === "lifemap" && !isTransitioning;
+502:                document.body.style.cursor = "pointer";
+543:  transitionPhase,
+544:  selectedStar,
+552:  transitionPhase: TransitionPhase;
+553:  selectedStar: StarNode | null;
+560:  const isTransitioning = transitionPhase !== "idle";
+562:    mode === "home"
+564:      : mode === "lifemap"
+566:      : mode === "focus"
+567:      ? selectedStar?.isReplay
+573:    mode === "home"
+575:      : mode === "lifemap"
+577:      : mode === "focus"
+578:      ? selectedStar?.isReplay
+584:    <div className="pointer-events-none absolute inset-0 z-20">
+589:            {modeLabel(mode, selectedStar)}
+592:            {mode === "home" && "Grounded entry state. Click the orb or press Enter to ascend."}
+593:            {mode === "lifemap" && "Memory field unlocked. Select a star to enter focus."}
+594:            {mode === "focus" && selectedStar && `${selectedStar.summary} Press Esc to return.`}
+595:            {mode === "replay" && selectedStar && `${selectedStar.detail} Press Esc to leave replay.`}
+601:          <div className="mt-2 text-base text-white/92">{lowerLabel(mode, selectedStar)}</div>
+602:          <div className="mt-2 text-xs text-white/60">phase: {transitionPhase}</div>
+609:          <div className="mt-2 text-lg text-white/94">{selectedStar?.title ?? "None"}</div>
+611:            {selectedStar ? `${selectedStar.chapter} · ${selectedStar.signature} · ${selectedStar.timeband}` : "No active memory."}
+615:        <div className="pointer-events-auto flex gap-3">
+620:            className="rounded-2xl border border-white/10 bg-white/10 px-4 py-2 text-sm text-white/90 transition hover:bg-white/15 disabled:cursor-not-allowed disabled:opacity-40"
+625:          {mode === "focus" && (
+630:              className="rounded-2xl border border-white/10 bg-white/10 px-4 py-2 text-sm text-white/90 transition hover:bg-white/15 disabled:cursor-not-allowed disabled:opacity-40"
+636:          {mode === "replay" && (
+641:              className="rounded-2xl border border-white/10 bg-white/10 px-4 py-2 text-sm text-white/90 transition hover:bg-white/15 disabled:cursor-not-allowed disabled:opacity-40"
+655:  const isTransitioning = controller.transitionPhase !== "idle";
+659:      <Canvas
+668:        <Atmosphere mode={controller.mode} transitionPhase={controller.transitionPhase} />
+671:          selectedStar={controller.selectedStar}
+672:          transitionPhase={controller.transitionPhase}
+678:          transitionPhase={controller.transitionPhase}
+684:          selectedStar={controller.selectedStar}
+686:          onSelect={controller.focusStar}
+688:        <FocusAnchor selectedStar={controller.selectedStar} mode={controller.mode} />
+689:      </Canvas>
+693:        transitionPhase={controller.transitionPhase}
+694:        selectedStar={controller.selectedStar}
+
+--- controller anchors ---
+3:export type SceneAuthorityMode = "home" | "lifemap" | "focus" | "replay";
+4:export type SceneAuthorityPhase = "idle" | "ascend" | "descend" | "focus" | "replay";

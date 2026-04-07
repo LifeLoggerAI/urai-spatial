@@ -1,0 +1,14 @@
+3:export type SceneMode = "home" | "sky" | "lifemap" | "focus" | "replay";
+7:  selectedStarId: string | null;
+8:  hoveredStarId: string | null;
+14:  enterLifeMap: () => void;
+25:  selectedStarId: null,
+26:  hoveredStarId: null,
+38:  enterLifeMap: () => set({ mode: "lifemap" }),
+43:      selectedStarId: id,
+47:    const { selectedStarId } = get();
+48:    set({ mode: selectedStarId ? "replay" : "lifemap" });
+52:    const { selectedStarId } = get();
+53:    set({ mode: selectedStarId ? "focus" : "lifemap" });
+56:  setSelectedStarId: (id) => set({ selectedStarId: id }),
+57:  setHoveredStarId: (id) => set({ hoveredStarId: id }),

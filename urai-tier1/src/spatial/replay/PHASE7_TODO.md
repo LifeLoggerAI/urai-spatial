@@ -1,3 +1,5 @@
+function s{ if(!s || !s.position){ throw new Error("INVALID_STAR_ID") } return s }
+
 import { resolveStarByIdSafe } from "../lib/resolveStarByIdSafe";
 # Phase 7: Replay Contract Lock
 

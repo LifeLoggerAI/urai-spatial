@@ -1,0 +1,344 @@
+"use client";
+
+import { Canvas, useFrame } from "@react-three/fiber";
+import { useEffect, useMemo, useRef, useState } from "react";
+import * as THREE from "three";
+
+type Phase =
+  | "home"
+  | "transitionToLifemap"
+  | "lifemap"
+  | "focus"
+  | "replay"
+  | "transitionHome";
+
+type Star = {
+  id: string;
+  position: [number, number, number];
+  color: string;
+  size: number;
+};
+
+function easeInOut(t: number) {
+  return t < 0.5
+    ? 2 * t * t
+    : 1 - Math.pow(-2 * t + 2, 2) / 2;
+}
+
+const STARS: Star[] = Array.from({ length: 60 }, (_, i) => {
+  const ring = 2.4 + (i % 6) * 0.55;
+  const angle = (i / 60) * Math.PI * 2;
+  const height = ((i % 7) - 3) * 0.22;
+  return {
+    id: `star-${i + 1}`,
+    position: [
+      Math.cos(angle) * ring,
+      height,
+      Math.sin(angle) * ring - 2.5,
+    ],
+    color: i % 3 === 0 ? "#ffffff" : i % 3 === 1 ? "#c9ddff" : "#ffd98a",
+    size: 0.07 + (i % 5) * 0.01,
+  };
+});
+
+function CameraRig({
+  phase,
+  selectedStar,
+  phaseEnteredAt,
+}: {
+  phase: Phase;
+  selectedStar: Star | null;
+  phaseEnteredAt: number;
+}) {
+  const pos = useRef(new THREE.Vector3(0, 1.6, 11));
+  const look = useRef(new THREE.Vector3(0, 0.2, -2.5));
+
+  useFrame(({ camera }, delta) => {
+    const targetPos = new THREE.Vector3(0, 1.6, 11);
+    const targetLook = new THREE.Vector3(0, 0.2, -2.5);
+    const age = Date.now() - phaseEnteredAt;
+
+    if (phase === "home") {
+      const breathe = Math.sin(Date.now() * 0.0012) * 0.08;
+      targetPos.set(0, 1.82 + breathe, 12.2);
+      targetLook.set(0, 0.35, -1.4);
+    }
+
+    if (phase === "transitionToLifemap") {
+      const rawT = Math.min(1, age / 1100);
+      const t = easeInOut(rawT);
+      targetPos.set(0, 1.8 - t * 1.4, 12.2 - t * 4.2);
+      targetLook.set(0, 0.35 - t * 0.2, -1.4 - t * 1.2);
+    }
+
+    if (phase === "lifemap") {
+      const drift = Math.sin(Date.now() * 0.0006) * 0.15;
+      targetPos.set(drift, 0.46, 8);
+      targetLook.set(0, 0, -2.5);
+    }
+
+    if (selectedStar && phase === "focus") {
+      const [x, y, z] = selectedStar.position;
+      targetPos.set(x * 0.45, y + 0.35, z + 1.25);
+      targetLook.set(x, y, z);
+    }
+
+    if (selectedStar && phase === "replay") {
+      const [x, y, z] = selectedStar.position;
+      const wobble = Math.sin(Date.now() * 0.0015) * 0.08;
+      targetPos.set(
+        x * 0.15 + wobble,
+        y + 0.08,
+        z + 0.55
+      );
+      targetLook.set(x, y, z - 0.08);
+    }
+
+    if (phase === "transitionHome") {
+      const rawT = Math.min(1, age / 900);
+      const t = easeInOut(rawT);
+      targetPos.set(0, 0.4 + t * 1.4, 8 + t * 4.2);
+      targetLook.set(0, 0 + t * 0.35, -2.5 + t * 1.1);
+    }
+
+    const lerpT = 1 - Math.exp(-delta * 3.5);
+    pos.current.lerp(targetPos, lerpT);
+    look.current.lerp(targetLook, lerpT);
+
+    camera.position.copy(pos.current);
+    camera.lookAt(look.current);
+  });
+
+  return null;
+}
+
+function StarNode({
+  star,
+  selected,
+  dimmed,
+  onSelect,
+  globalFade,
+}: {
+  star: Star;
+  selected: boolean;
+  dimmed: boolean;
+  globalFade: number;
+  onSelect: () => void;
+}) {
+  const ref = useRef<THREE.Mesh>(null);
+
+  useFrame(({ clock }) => {
+    if (!ref.current) return;
+    const pulse = 1 + Math.sin(clock.getElapsedTime() * 1.3 + star.size * 10) * 0.06;
+    const scale = selected ? 2.9 * pulse : dimmed ? 0.72 : 1.0 * pulse;
+    ref.current.scale.lerp(new THREE.Vector3(scale, scale, scale), 0.12);
+  });
+
+  return (
+    <mesh
+      ref={ref}
+      position={star.position}
+      onClick={(e) => {
+        e.stopPropagation();
+        onSelect();
+      }}
+    >
+      <sphereGeometry args={[star.size, 12, 12]} />
+      <meshBasicMaterial color={star.color} transparent opacity={dimmed ? 0.005 : 1.0 - globalFade} />
+    </mesh>
+  );
+}
+
+function SceneContent({
+  phase,
+  selectedId,
+  phaseEnteredAt,
+  setSelectedId,
+  setPhase,
+  setPhaseEnteredAt,
+}: {
+  phase: Phase;
+  selectedId: string | null;
+  phaseEnteredAt: number;
+  setSelectedId: (v: string | null) => void;
+  setPhase: (p: Phase) => void;
+  setPhaseEnteredAt: (n: number) => void;
+}) {
+  const selectedStar = useMemo(
+    () => STARS.find((s) => s.id === selectedId) ?? null,
+    [selectedId]
+  );
+
+  useEffect(() => {
+    if (phase === "transitionToLifemap") {
+      const t = setTimeout(() => {
+        setPhase("lifemap");
+        setPhaseEnteredAt(Date.now());
+      }, 1100);
+      return () => clearTimeout(t);
+    }
+
+    if (phase === "transitionHome") {
+      const t = setTimeout(() => {
+        setSelectedId(null);
+        setPhase("home");
+        setPhaseEnteredAt(Date.now());
+      }, 900);
+      return () => clearTimeout(t);
+    }
+  }, [phase, setPhase, setPhaseEnteredAt, setSelectedId]);
+
+  const dimOthers = phase === "focus" || phase === "replay";
+  const globalFade = phase === "focus" ? 0.72 : phase === "replay" ? 0.88 : 0;
+
+  return (
+    <>
+      <CameraRig phase={phase} selectedStar={selectedStar} phaseEnteredAt={phaseEnteredAt} />
+
+      <ambientLight
+        intensity={
+          phase === "replay"
+            ? 0.35
+            : phase === "focus"
+            ? 0.55
+            : 1.05
+        }
+      />
+      <pointLight position={[4, 6, 6]} intensity={phase === "replay" ? 10 : 8} />
+      <fog
+        attach="fog"
+        args={[
+          phase === "replay" ? "#120216" : phase === "focus" ? "#02030a" : "#02040a",
+          phase === "replay" ? 2.4 : phase === "focus" ? 3.8 : 6,
+          18
+        ]}
+      />
+
+      {STARS.map((star) => (
+        <StarNode
+          key={star.id}
+          star={star}
+          selected={selectedId === star.id}
+          dimmed={dimOthers && selectedId !== star.id}
+          globalFade={globalFade}
+          onSelect={() => {
+            setSelectedId(star.id);
+            setPhase("focus");
+            setPhaseEnteredAt(Date.now());
+          }}
+        />
+      ))}
+
+      {selectedStar && phase === "replay" && (
+        <mesh position={selectedStar.position}>
+          <sphereGeometry args={[0.22, 20, 20]} />
+          <meshBasicMaterial color="#ff4db8" transparent opacity={0.35} />
+        </mesh>
+      )}
+
+      <group position={[0, -1.6, -2.5]}>
+        <mesh rotation={[-Math.PI / 2, 0, 0]}>
+          <planeGeometry args={[14, 14]} />
+          <meshBasicMaterial color={phase === "replay" ? "#04040a" : "#05070d"} />
+        </mesh>
+      </group>
+
+      {phase === "home" && (
+        <mesh position={[0, 0.25, -1.4]}>
+          <sphereGeometry args={[0.14, 16, 16]} />
+          <meshBasicMaterial color="#ffffff" transparent opacity={0.7} />
+        </mesh>
+      )}
+    </>
+  );
+}
+
+function Overlay({
+  phase,
+  hasSelection,
+  onEnter,
+  onReplay,
+  onFocus,
+  onHome,
+}: {
+  phase: Phase;
+  hasSelection: boolean;
+  onEnter: () => void;
+  onReplay: () => void;
+  onFocus: () => void;
+  onHome: () => void;
+}) {
+  return (
+    <div
+      style={{
+        position: "absolute",
+        top: 12,
+        left: 12,
+        color: "white",
+        fontSize: 12,
+        zIndex: 20,
+        display: "flex",
+        gap: 8,
+        alignItems: "center",
+        flexWrap: "wrap",
+        fontFamily: "sans-serif",
+      }}
+    >
+      <span>Tier1 Active</span>
+      <span>Phase: {phase}</span>
+      {phase === "home" && <button onClick={onEnter}>Enter</button>}
+      {phase !== "home" && <button onClick={onHome}>Home</button>}
+      {hasSelection && phase !== "focus" && phase !== "home" && <button onClick={onFocus}>Focus</button>}
+      {hasSelection && phase !== "replay" && phase !== "home" && <button onClick={onReplay}>Replay</button>}
+    </div>
+  );
+}
+
+export default function SpatialScene() {
+  const [phase, setPhase] = useState<Phase>("home");
+  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [phaseEnteredAt, setPhaseEnteredAt] = useState<number>(Date.now());
+
+  const selectedStar = useMemo(
+    () => STARS.find((s) => s.id === selectedId) ?? null,
+    [selectedId]
+  );
+
+  return (
+    <div style={{ width: "100vw", height: "100vh", background: "#02040a", position: "relative" }}>
+      <Canvas camera={{ position: [0, 1.6, 11], fov: 60 }}>
+        <SceneContent
+          phase={phase}
+          selectedId={selectedId}
+          phaseEnteredAt={phaseEnteredAt}
+          setSelectedId={setSelectedId}
+          setPhase={setPhase}
+          setPhaseEnteredAt={setPhaseEnteredAt}
+        />
+      </Canvas>
+
+      <Overlay
+        phase={phase}
+        hasSelection={!!selectedStar}
+        onEnter={() => {
+          setPhase("transitionToLifemap");
+          setPhaseEnteredAt(Date.now());
+        }}
+        onReplay={() => {
+          setPhase("replay");
+          setPhaseEnteredAt(Date.now());
+        }}
+        onFocus={() => {
+          if (selectedStar) {
+            setPhase("focus");
+            setPhaseEnteredAt(Date.now());
+          }
+        }}
+        onHome={() => {
+          setPhase("transitionHome");
+          setPhaseEnteredAt(Date.now());
+        }}
+      />
+    </div>
+  );
+}

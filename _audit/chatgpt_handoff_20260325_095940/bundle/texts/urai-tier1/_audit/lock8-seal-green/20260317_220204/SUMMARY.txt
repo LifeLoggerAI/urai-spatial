@@ -1,0 +1,24 @@
+== lock8 seal green ==
+timestamp=20260317_220204
+branch=lock8-minimal-sky-contract-20260317_211557
+commit_before=1821fb7
+
+== git status before ==
+ M src/spatial/lib/headsetCameraSync.ts
+ M src/spatial/lib/toCanonicalSelectedStar.ts
+ M src/spatial/persistence/buildSpatialPersistenceSnapshot.ts
+ M src/spatial/replay/ReplayContractOverlay.tsx
+ M src/spatial/replay/replayModel.ts
+ M src/spatial/scene/SpatialScene.tsx
+ M src/spatial/scene/Starfield.tsx
+ M src/spatial/state/sceneStore.ts
+ M src/spatial/state/selectedStarContract.ts
+ M src/spatial/state/toCanonicalSelectedStar.ts
+ M src/spatial/telemetry/SpatialAnalyticsBridge.tsx
+ M src/spatial/unity/buildUnityRuntimePayload.ts
+
+== git status after ==
+commit_after=54bf725
+
+PASS: lock8 sealed green
+tag=lock8-minimal-sky-contract-green-20260317_220204

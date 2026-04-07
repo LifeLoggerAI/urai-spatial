@@ -1,0 +1,396 @@
+"use client";
+import SpatialCuratedDeckVaultBootstrap from "@/spatial/curation/SpatialCuratedDeckVaultBootstrap";
+import SpatialStoryBundleVaultBootstrap from "@/spatial/vault/SpatialStoryBundleVaultBootstrap";
+import SpatialSeasonalArcBootstrap from "@/spatial/seasonal/SpatialSeasonalArcBootstrap";
+import SpatialArcBootstrap from "@/spatial/arcs/SpatialArcBootstrap";
+import SpatialLensBootstrap from "@/spatial/lenses/SpatialLensBootstrap";
+import SpatialCompareBootstrap from "@/spatial/compare/SpatialCompareBootstrap";
+import SpatialAccountBootstrap from "@/spatial/account/SpatialAccountBootstrap";
+import SpatialReleaseBootstrap from "@/spatial/release/SpatialReleaseBootstrap";
+import SpatialSettingsBootstrap from "@/spatial/settings/SpatialSettingsBootstrap";
+import SpatialAnalyticsBridge from "@/spatial/telemetry/SpatialAnalyticsBridge";
+import SpatialPersistenceBridge from "@/spatial/persistence/SpatialPersistenceBridge";
+import XrLocomotionRuntime from "@/spatial/xr/XrLocomotionRuntime";
+import UnityRuntimePayloadBridge from "@/spatial/unity/UnityRuntimePayloadBridge";
+import ArPlaneMarker from "@/spatial/xr/ArPlaneMarker";
+import ArHitTestBridge from "@/spatial/xr/ArHitTestBridge";
+
+import { Canvas, ThreeEvent, useFrame, useThree } from "@react-three/fiber";
+import { CSSProperties, useEffect, useMemo, useRef, useState } from "react";
+import * as THREE from "three";
+import { toCanonicalSelectedStar } from "../lib/toCanonicalSelectedStar";
+import { SpatialStar } from "../data/stars";
+import { SceneMode, useSceneStore } from "../state/sceneStore";
+import CinematicReplayOverlay from "@/spatial/cinematic/CinematicReplayOverlay";
+import LifeMapIntelligenceOverlay from "@/spatial/intelligence/LifeMapIntelligenceOverlay";
+import XRBridgeOverlay from "@/spatial/xr/XRBridgeOverlay";
+import ImmersiveContractOverlay from "@/spatial/immersive/ImmersiveContractOverlay";
+import SceneExportOverlay from "@/spatial/export/SceneExportOverlay";
+import WebXREntryOverlay from "@/spatial/webxr/WebXREntryOverlay";
+import XRCameraRigOverlay from "@/spatial/xr-runtime/XRCameraRigOverlay";
+import ARPlacementOverlay from "@/spatial/ar/ARPlacementOverlay";
+import UnityAdapterOverlay from "@/spatial/unity/UnityAdapterOverlay";
+import XRInputOverlay from "@/spatial/input/XRInputOverlay";
+import ImmersiveReplayTraversalOverlay from "@/spatial/traversal/ImmersiveReplayTraversalOverlay";
+import MemoryImportOverlay from "@/spatial/data-import/MemoryImportOverlay";
+import ExternalIngestOverlay from "@/spatial/ingest/ExternalIngestOverlay";
+import BatchImportAuditOverlay from "@/spatial/validation/BatchImportAuditOverlay";
+import MergePreflightOverlay from "@/spatial/merge/MergePreflightOverlay";
+import PersistenceSyncOverlay from "@/spatial/persistence/PersistenceSyncOverlay";
+import DatasetVersioningOverlay from "@/spatial/versioning/DatasetVersioningOverlay";
+import ChapterSynthesisOverlay from "@/spatial/chapter/ChapterSynthesisOverlay";
+import CausalInsightOverlay from "@/spatial/causal/CausalInsightOverlay";
+import StoryArcOverlay from "@/spatial/storyarc/StoryArcOverlay";
+import EraCompareOverlay from "@/spatial/era/EraCompareOverlay";
+import SeasonalCycleOverlay from "@/spatial/seasonal/SeasonalCycleOverlay";
+import NarratorOrchestrationOverlay from "@/spatial/narrator/NarratorOrchestrationOverlay";
+import WebXRRendererHandoffOverlay from "@/spatial/xr-renderer/WebXRRendererHandoffOverlay";
+import { useXrSessionStore } from "../state/xrSessionStore";
+
+const shellButtonStyle: CSSProperties = {
+  appearance: "none",
+  border: "1px solid rgba(255,255,255,0.18)",
+  borderRadius: 14,
+  background: "rgba(10,14,28,0.66)",
+  color: "rgba(245,248,255,0.96)",
+  padding: "12px 16px",
+  fontSize: 13,
+  fontWeight: 600,
+  letterSpacing: "0.08em",
+  textTransform: "uppercase",
+  cursor: "pointer",
+  backdropFilter: "blur(16px)",
+  boxShadow: "0 14px 40px rgba(0,0,0,0.28)",
+};
+
+const secondaryButtonStyle: CSSProperties = {
+  ...shellButtonStyle,
+  background: "rgba(255,255,255,0.06)",
+};
+
+const ghostButtonStyle: CSSProperties = {
+  ...shellButtonStyle,
+  background: "transparent",
+  border: "1px solid rgba(255,255,255,0.12)",
+  boxShadow: "none",
+};
+
+const topChromeStyle: CSSProperties = {
+  position: "absolute",
+  top: 18,
+  left: 18,
+  right: 18,
+  zIndex: 30,
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "space-between",
+  gap: 16,
+  pointerEvents: "none",
+};
+
+const chipStyle: CSSProperties = {
+  display: "inline-flex",
+  alignItems: "center",
+  gap: 8,
+  minHeight: 38,
+  borderRadius: 999,
+  padding: "0 14px",
+  background: "rgba(10,14,28,0.52)",
+  border: "1px solid rgba(255,255,255,0.14)",
+  color: "rgba(244,247,255,0.95)",
+  fontSize: 12,
+  letterSpacing: "0.12em",
+  textTransform: "uppercase",
+  backdropFilter: "blur(16px)",
+  boxShadow: "0 14px 40px rgba(0,0,0,0.22)",
+};
+
+const panelStyle: CSSProperties = {
+  borderRadius: 24,
+  border: "1px solid rgba(255,255,255,0.12)",
+  background:
+    "linear-gradient(180deg, rgba(13,18,34,0.78) 0%, rgba(7,10,18,0.86) 100%)",
+  backdropFilter: "blur(18px)",
+  boxShadow: "0 24px 80px rgba(0,0,0,0.32)",
+  color: "rgba(244,247,255,0.96)",
+};
+
+const captionStyle: CSSProperties = {
+  fontSize: 11,
+  letterSpacing: "0.16em",
+  textTransform: "uppercase",
+  color: "rgba(214,223,255,0.7)",
+};
+
+const titleStyle: CSSProperties = {
+  margin: 0,
+  fontSize: "clamp(28px, 3vw, 44px)",
+  lineHeight: 1.02,
+  letterSpacing: "-0.03em",
+  fontWeight: 700,
+};
+
+const subtleTextStyle: CSSProperties = {
+  margin: 0,
+  fontSize: 14,
+  lineHeight: 1.6,
+  color: "rgba(225,233,255,0.78)",
+};
+
+const dividerStyle: CSSProperties = {
+  width: "100%",
+  height: 1,
+  background: "linear-gradient(90deg, rgba(255,255,255,0.14), rgba(255,255,255,0.03))",
+};
+
+function modeLabel(mode: SceneMode) {
+  switch (mode) {
+    case "home":
+      return "Home";
+    case "sky":
+      return "Sky";
+    case "lifemap":
+      return "LifeMap";
+    case "focus":
+      return "Focus";
+    case "replay":
+      return "Replay";
+    default:
+      return mode;
+  }
+}
+
+function Atmosphere() {
+  return (
+    <>
+      <fog attach="fog" args={["#04060b", 20, 78]} />
+      <color attach="background" args={["#04060b"]} />
+    </>
+  );
+}
+
+function FloorPlane() {
+  return (
+    <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -8, 0]} receiveShadow>
+      <circleGeometry args={[50, 96]} />
+      <meshStandardMaterial
+        color="#0a0f1b"
+        transparent
+        opacity={0.82}
+        roughness={1}
+        metalness={0}
+      />
+    </mesh>
+  );
+}
+
+function CameraRig() {
+  const { camera } = useThree();
+  const mode = useSceneStore((s) => s.mode);
+  const currentPosition = useRef(new THREE.Vector3(0, 4, 28));
+  const currentLookAt = useRef(new THREE.Vector3(0, 2, 0));
+  const targetPosition = useRef(new THREE.Vector3(0, 4, 28));
+  const targetLookAt = useRef(new THREE.Vector3(0, 2, 0));
+  const lerpAlpha = useRef(0.06);
+
+  useEffect(() => {
+    if (mode === "home") {
+      targetPosition.current.set(0, 4, 28);
+      targetLookAt.current.set(0, 2, 0);
+      lerpAlpha.current = 0.06;
+      return;
+    }
+
+    if (mode === "sky") {
+      targetPosition.current.set(0, 15, 20);
+      targetLookAt.current.set(0, 8, -20);
+      lerpAlpha.current = 0.04;
+      return;
+    }
+
+    if (mode === "focus") {
+      targetPosition.current.set(0, 2.8, 8.5);
+      targetLookAt.current.set(0, 1.8, -6);
+      lerpAlpha.current = 0.085;
+      return;
+    }
+
+    if (mode === "replay") {
+      targetPosition.current.set(0, 3.2, 6.8);
+      targetLookAt.current.set(0, 1.6, -10);
+      lerpAlpha.current = 0.075;
+      return;
+    }
+
+    targetPosition.current.set(0, 5.5, 13.5);
+    targetLookAt.current.set(0, 3.2, -28);
+    lerpAlpha.current = 0.055;
+  }, [mode]);
+
+  useFrame(() => {
+    currentPosition.current.lerp(targetPosition.current, lerpAlpha.current);
+    currentLookAt.current.lerp(targetLookAt.current, lerpAlpha.current);
+
+    camera.position.copy(currentPosition.current);
+    camera.lookAt(currentLookAt.current);
+  });
+
+  return null;
+}
+export default function SpatialScene() {
+  const immersiveEnabled = false;
+  const mode = useSceneStore((s) => s.mode);
+  const selectedStar = useSceneStore((s) => s.selectedStar);
+  const setMode = useSceneStore((s) => s.setMode);
+  const clearFocus = useSceneStore((s) => s.clearFocus);
+  const exitReplay = useSceneStore((s) => s.exitReplay);
+
+  useEffect(() => {
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key !== "Escape") return;
+
+      if (mode === "replay") {
+        exitReplay();
+        return;
+      }
+
+      if (mode === "focus") {
+        clearFocus();
+        return;
+      }
+
+      if (mode === "lifemap") {
+        setMode("home");
+      }
+    };
+
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [mode, clearFocus, exitReplay, setMode]);
+
+  return (
+    <main
+      style={{
+        position: "relative",
+        minHeight: "100svh",
+        overflow: "hidden",
+        background:
+          "radial-gradient(1200px 700px at 50% -10%, rgba(91,115,191,0.16), transparent 56%), linear-gradient(180deg, #0a1020 0%, #04060b 48%, #020307 100%)",
+      }}
+    >
+      <SpatialSettingsBootstrap />
+      <SpatialReleaseBootstrap />
+      <SpatialAccountBootstrap />
+      <SpatialCompareBootstrap />
+      <SpatialLensBootstrap />
+      <SpatialArcBootstrap />
+      <SpatialSeasonalArcBootstrap />
+      <SpatialStoryBundleVaultBootstrap />
+      <SpatialCuratedDeckVaultBootstrap />
+      <Canvas
+        camera={{ position: [0, 6, 30], fov: 42, near: 0.1, far: 200 }}
+        dpr={[1, 2]}
+        gl={{ antialias: true, alpha: false }}
+        onPointerMissed={() => {
+          if (mode === "focus") clearFocus();
+        }}
+      >
+        <Atmosphere />
+        <ambientLight intensity={0.95} />
+        <directionalLight position={[8, 12, 10]} intensity={1.1} color="#dbe4ff" />
+        <pointLight position={[0, 6, 10]} intensity={selectedStar ? 10 : 6} color="#ffffff" />
+        <pointLight position={[0, -2, -8]} intensity={4} color="#6f86ff" />
+        {immersiveEnabled && (
+          <>
+            <ArHitTestBridge />
+            <UnityRuntimePayloadBridge />
+            <SpatialPersistenceBridge />
+            <SpatialAnalyticsBridge />
+            <XrLocomotionRuntime />
+          </>
+        )}
+        <CameraRig />
+        <FloorPlane />
+        <StarField />
+        <MemorySphere />
+        <ReplayConstellation />
+        <ArPlaneMarker />
+      </Canvas>
+        <WebXRRendererHandoffOverlay />
+        <NarratorOrchestrationOverlay />
+        <SeasonalCycleOverlay />
+        <EraCompareOverlay />
+        <StoryArcOverlay />
+        <CausalInsightOverlay />
+        <ChapterSynthesisOverlay />
+        <DatasetVersioningOverlay />
+        <PersistenceSyncOverlay />
+        <MergePreflightOverlay />
+        <BatchImportAuditOverlay />
+        <ExternalIngestOverlay />
+        <MemoryImportOverlay />
+        <ImmersiveReplayTraversalOverlay />
+        <XRInputOverlay />
+        <UnityAdapterOverlay />
+        <ARPlacementOverlay />
+        <XRCameraRigOverlay />
+        <WebXREntryOverlay />
+        <SceneExportOverlay />
+        <ImmersiveContractOverlay />
+        <XRBridgeOverlay />
+        <LifeMapIntelligenceOverlay />
+        <CinematicReplayOverlay />
+
+      <div
+        style={{
+          pointerEvents: "none",
+          position: "absolute",
+          inset: 0,
+          background:
+            mode === "replay"
+              ? "linear-gradient(180deg, rgba(1,2,6,0.28) 0%, rgba(2,3,8,0.08) 30%, rgba(1,2,6,0.44) 100%)"
+              : "linear-gradient(180deg, rgba(1,2,6,0.14) 0%, rgba(2,3,8,0.04) 28%, rgba(1,2,6,0.22) 100%)",
+        }}
+      />
+
+      <OverlayChrome />
+    </main>
+  );
+}
+
+function XrSessionBridge() {
+  const gl = useThree((s) => s.gl as any);
+  const setPresenting = useXrSessionStore((s) => s.setPresenting);
+  const setHasHeadsetPose = useXrSessionStore((s) => s.setHasHeadsetPose);
+
+  useEffect(() => {
+    const xr = gl?.xr;
+    if (!xr) return;
+
+    const sync = () => {
+      const presenting = !!xr.isPresenting;
+      setPresenting(presenting);
+      setHasHeadsetPose(presenting);
+    };
+
+    sync();
+
+    const onStart = () => sync();
+    const onEnd = () => {
+      setPresenting(false);
+      setHasHeadsetPose(false);
+    };
+
+    xr.addEventListener?.("sessionstart", onStart);
+    xr.addEventListener?.("sessionend", onEnd);
+
+    return () => {
+      xr.removeEventListener?.("sessionstart", onStart);
+      xr.removeEventListener?.("sessionend", onEnd);
+    };
+  }, [gl, setHasHeadsetPose, setPresenting]);
+
+  return null;
+}
+// __URAI_XR_SESSION_BRIDGE__
+

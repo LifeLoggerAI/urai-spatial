@@ -1,0 +1,1140 @@
+
+===== PATTERN: stars|star =====
+14-import UnityRuntimePayloadBridge from "@/spatial/unity/UnityRuntimePayloadBridge";
+15-import ArPlaneMarker from "@/spatial/xr/ArPlaneMarker";
+16-import ArHitTestBridge from "@/spatial/xr/ArHitTestBridge";
+17-
+18-import { Canvas, ThreeEvent, useFrame, useThree } from "@react-three/fiber";
+19-import { CSSProperties, useEffect, useMemo, useRef, useState } from "react";
+20-import * as THREE from "three";
+21-import { toCanonicalSelectedStar } from "../lib/toCanonicalSelectedStar";
+22:import { SpatialStar } from "../data/stars";
+23-import { SceneMode, useSceneStore } from "../state/sceneStore";
+24-import CinematicReplayOverlay from "@/spatial/cinematic/CinematicReplayOverlay";
+25-import LifeMapIntelligenceOverlay from "@/spatial/intelligence/LifeMapIntelligenceOverlay";
+26-import XRBridgeOverlay from "@/spatial/xr/XRBridgeOverlay";
+27-import ImmersiveContractOverlay from "@/spatial/immersive/ImmersiveContractOverlay";
+28-import SceneExportOverlay from "@/spatial/export/SceneExportOverlay";
+29-import WebXREntryOverlay from "@/spatial/webxr/WebXREntryOverlay";
+30-import XRCameraRigOverlay from "@/spatial/xr-runtime/XRCameraRigOverlay";
+--
+219-    camera.position.lerp(cp, t);
+220-    camera.lookAt(lp);
+221-  });
+222-
+223-  return null;
+224-}
+225-
+226-function StarNode({
+227:  star,
+228-  isSelected,
+229-  dimmed,
+230-  onSelect,
+231-}: {
+232:  star: SpatialStar;
+233-  isSelected: boolean;
+234-  dimmed: boolean;
+235:  onSelect: (star: SpatialStar) => void;
+236-}) {
+237-  const meshRef = useRef<THREE.Mesh>(null);
+238-  const haloRef = useRef<THREE.Mesh>(null);
+239-  const mode = useSceneStore((s) => s.mode);
+240-
+241-  useFrame(({ clock }) => {
+242-    const t = clock.getElapsedTime();
+243:    const pulse = 1 + Math.sin(t * 1.45 + star.order * 0.5) * 0.06 * star.glow;
+244-    const targetScale = isSelected
+245-      ? pulse * (mode === "focus" ? 2.05 : 1.75)
+246-      : dimmed
+247-      ? pulse * 0.82
+248-      : pulse;
+249-
+250-    if (meshRef.current) {
+251-      meshRef.current.scale.lerp(
+--
+263-      haloRef.current.scale.lerp(
+264-        new THREE.Vector3(haloScale, haloScale, haloScale),
+265-        0.12
+266-      );
+267-    }
+268-  });
+269-
+270-  return (
+271:    <group position={star.position}>
+272-      <mesh
+273-        ref={meshRef}
+274-        onClick={(event: ThreeEvent<MouseEvent>) => {
+275-          event.stopPropagation();
+276:          onSelect(star);
+277-        }}
+278-      >
+279:        <sphereGeometry args={[mode === "lifemap" ? star.size * 0.36 : star.size * 0.22, 18, 18]} />
+280-        <meshStandardMaterial
+281:          color={star.color}
+282:          emissive={star.color}
+283:          emissiveIntensity={isSelected ? (mode === "focus" ? 4.4 : 3.2) : dimmed ? 0.5 : mode === "lifemap" ? star.intensity * 2.2 : star.intensity * 1.4}
+284-          roughness={0.2}
+285-          metalness={0.05}
+286-          transparent
+287-          opacity={dimmed ? 0.32 : mode === "lifemap" ? 0.98 : 0.98}
+288-        />
+289-      </mesh>
+290-
+291-      <mesh ref={haloRef}>
+292:        <sphereGeometry args={[mode === "lifemap" ? star.size * 0.58 : star.size * 0.38, 18, 18]} />
+293-        <meshBasicMaterial
+294:          color={star.color}
+295-          transparent
+296-          opacity={isSelected ? (mode === "focus" ? 0.32 : 0.22) : dimmed ? 0.03 : mode === "lifemap" ? 0.10 : 0.06}
+297-          side={THREE.BackSide}
+298-        />
+299-      </mesh>
+300-    </group>
+301-  );
+302-}
+--
+338-          ior={1.18}
+339-        />
+340-      </mesh>
+341-    </group>
+342-  );
+343-}
+344-
+345-function StarField() {
+346:  const stars = useSceneStore((s) => s.stars);
+347-  const selectedStarId = useSceneStore((s) => s.selectedStarId);
+348-  const mode = useSceneStore((s) => s.mode);
+349-  const selectStar = useSceneStore((s) => s.selectStar);
+350-  const clearFocus = useSceneStore((s) => s.clearFocus);
+351-
+352-          const ambientCount = mode === "lifemap" ? 460 : mode === "sky" ? 70 : 28;
+353-
+354-  return (
+--
+381-              transparent
+382-              opacity={opacity}
+383-              depthWrite={false}
+384-            />
+385-          </mesh>
+386-        );
+387-      })}
+388-
+389:      {stars.map((star) => {
+390:        const isSelected = star.id === selectedStarId;
+391-        const dimmed = !!selectedStarId && !isSelected;
+392-
+393-        return (
+394-          <StarNode
+395:            key={star.id}
+396:            star={star}
+397-            isSelected={isSelected}
+398-            dimmed={mode === "replay" ? !isSelected : dimmed}
+399-            onSelect={(node) => selectStar(toCanonicalSelectedStar(node))}
+400-          />
+401-        );
+402-      })}
+403-
+404-      <mesh
+--
+656-              width: "min(760px, calc(100vw - 32px))",
+657-              padding: "18px 20px",
+658-              pointerEvents: "auto",
+659-            }}
+660-          >
+661-            <div style={{ display: "grid", gap: 8 }}>
+662-              <div style={captionStyle}>LifeMap</div>
+663-              <p style={subtleTextStyle}>
+664:                Select a star to enter focus. From focus, enter replay to dive the selected memory node.
+665-              </p>
+666-            </div>
+667-          </div>
+668-        </div>
+669-      )}
+670-
+671-      {mode === "focus" && selectedStar && (
+672-        <div
+--
+926-    sync();
+927-
+928-    const onStart = () => sync();
+929-    const onEnd = () => {
+930-      setPresenting(false);
+931-      setHasHeadsetPose(false);
+932-    };
+933-
+934:    xr.addEventListener?.("sessionstart", onStart);
+935-    xr.addEventListener?.("sessionend", onEnd);
+936-
+937-    return () => {
+938:      xr.removeEventListener?.("sessionstart", onStart);
+939-      xr.removeEventListener?.("sessionend", onEnd);
+940-    };
+941-  }, [gl, setHasHeadsetPose, setPresenting]);
+942-
+943-  return null;
+944-}
+945-// __URAI_XR_SESSION_BRIDGE__
+946-
+
+===== PATTERN: camera|Camera =====
+22-import { SpatialStar } from "../data/stars";
+23-import { SceneMode, useSceneStore } from "../state/sceneStore";
+24-import CinematicReplayOverlay from "@/spatial/cinematic/CinematicReplayOverlay";
+25-import LifeMapIntelligenceOverlay from "@/spatial/intelligence/LifeMapIntelligenceOverlay";
+26-import XRBridgeOverlay from "@/spatial/xr/XRBridgeOverlay";
+27-import ImmersiveContractOverlay from "@/spatial/immersive/ImmersiveContractOverlay";
+28-import SceneExportOverlay from "@/spatial/export/SceneExportOverlay";
+29-import WebXREntryOverlay from "@/spatial/webxr/WebXREntryOverlay";
+30:import XRCameraRigOverlay from "@/spatial/xr-runtime/XRCameraRigOverlay";
+31-import ARPlacementOverlay from "@/spatial/ar/ARPlacementOverlay";
+32-import UnityAdapterOverlay from "@/spatial/unity/UnityAdapterOverlay";
+33-import XRInputOverlay from "@/spatial/input/XRInputOverlay";
+34-import ImmersiveReplayTraversalOverlay from "@/spatial/traversal/ImmersiveReplayTraversalOverlay";
+35-import MemoryImportOverlay from "@/spatial/data-import/MemoryImportOverlay";
+36-import ExternalIngestOverlay from "@/spatial/ingest/ExternalIngestOverlay";
+37-import BatchImportAuditOverlay from "@/spatial/validation/BatchImportAuditOverlay";
+38-import MergePreflightOverlay from "@/spatial/merge/MergePreflightOverlay";
+--
+181-        color="#09101f"
+182-        transparent
+183-        opacity={mode === "sky" ? 0.035 : 0.09}
+184-        depthWrite={false}
+185-      />
+186-    </mesh>
+187-  );
+188-}
+189:function CameraRig() {
+190:  const { camera } = useThree();
+191-  const mode = useSceneStore((s) => s.mode);
+192-  const selectedStar = useSceneStore((s) => s.selectedStar);
+193:  const cameraTarget = useRef(new THREE.Vector3(0, 4, 28));
+194-  const lookTarget = useRef(new THREE.Vector3(0, 2, 0));
+195-
+196-  useFrame((_, delta) => {
+197:    const cp = cameraTarget.current;
+198-    const lp = lookTarget.current;
+199-
+200-    if (mode === "home") {
+201-      cp.set(0, 5.8, 30);
+202-      lp.set(0, 2, 0);
+203-    } else if (mode === "lifemap") {
+204-      cp.set(0, 6.4, 12.5);
+205-      lp.set(0, 1.8, -22);
+--
+211-      } else {
+212-        cp.set(x * 0.1, y + 1.9, z + 6.2);
+213-        lp.set(x, y, z);
+214-      }
+215-    }
+216-
+217-    const speed = mode === "lifemap" ? 2.2 : 3.2;
+218-      const t = 1 - Math.exp(-delta * speed);
+219:    camera.position.lerp(cp, t);
+220:    camera.lookAt(lp);
+221-  });
+222-
+223-  return null;
+224-}
+225-
+226-function StarNode({
+227-  star,
+228-  isSelected,
+--
+548-              pointerEvents: "auto",
+549-            }}
+550-          >
+551-            <div style={{ display: "grid", gap: 18 }}>
+552-              <div style={captionStyle}>Tier 1 / Canonical Shell</div>
+553-              <h1 style={titleStyle}>Home → Sky → LifeMap → Focus → Replay</h1>
+554-              <p style={{ ...subtleTextStyle, maxWidth: 640 }}>
+555-                The spatial shell is live. This phase turns replay from a mode switch into an actual
+556:                memory-dive scene with camera intent, focus depth, and a readable presentation layer.
+557-              </p>
+558-
+559-              <div style={dividerStyle} />
+560-
+561-              <div
+562-                style={{
+563-                  display: "flex",
+564-                  flexWrap: "wrap",
+--
+832-      <SpatialAccountBootstrap />
+833-      <SpatialCompareBootstrap />
+834-      <SpatialLensBootstrap />
+835-      <SpatialArcBootstrap />
+836-      <SpatialSeasonalArcBootstrap />
+837-      <SpatialStoryBundleVaultBootstrap />
+838-      <SpatialCuratedDeckVaultBootstrap />
+839-      <Canvas
+840:        camera={{ position: [0, 6, 30], fov: 42, near: 0.1, far: 200 }}
+841-          style={{ position: "absolute", inset: 0, width: "100%", height: "100%" }}
+842-        dpr={[1, 2]}
+843-        gl={{ antialias: true, alpha: false }}
+844-        onPointerMissed={() => {
+845-          if (mode === "focus") clearFocus();
+846-        }}
+847-      >
+848-        <Atmosphere />
+--
+854-          <>
+855-            <ArHitTestBridge />
+856-            <UnityRuntimePayloadBridge />
+857-            <SpatialPersistenceBridge />
+858-            <SpatialAnalyticsBridge />
+859-            <XrLocomotionRuntime />
+860-          </>
+861-        )}
+862:        <CameraRig />
+863-        <FloorPlane />
+864-        <StarField />
+865-        <MemorySphere />
+866-        <ReplayConstellation />
+867-        <ArPlaneMarker />
+868-      </Canvas>
+869-        <WebXRRendererHandoffOverlay />
+870-        <NarratorOrchestrationOverlay />
+--
+878-        <MergePreflightOverlay />
+879-        <BatchImportAuditOverlay />
+880-        <ExternalIngestOverlay />
+881-        <MemoryImportOverlay />
+882-        <ImmersiveReplayTraversalOverlay />
+883-        <XRInputOverlay />
+884-        <UnityAdapterOverlay />
+885-        <ARPlacementOverlay />
+886:        <XRCameraRigOverlay />
+887-        <WebXREntryOverlay />
+888-        <SceneExportOverlay />
+889-        <ImmersiveContractOverlay />
+890-        <XRBridgeOverlay />
+891-        <LifeMapIntelligenceOverlay />
+892-        <CinematicReplayOverlay />
+893-
+894-      <div
+
+===== PATTERN: orb|halo|glow =====
+230-  onSelect,
+231-}: {
+232-  star: SpatialStar;
+233-  isSelected: boolean;
+234-  dimmed: boolean;
+235-  onSelect: (star: SpatialStar) => void;
+236-}) {
+237-  const meshRef = useRef<THREE.Mesh>(null);
+238:  const haloRef = useRef<THREE.Mesh>(null);
+239-  const mode = useSceneStore((s) => s.mode);
+240-
+241-  useFrame(({ clock }) => {
+242-    const t = clock.getElapsedTime();
+243:    const pulse = 1 + Math.sin(t * 1.45 + star.order * 0.5) * 0.06 * star.glow;
+244-    const targetScale = isSelected
+245-      ? pulse * (mode === "focus" ? 2.05 : 1.75)
+246-      : dimmed
+247-      ? pulse * 0.82
+248-      : pulse;
+249-
+250-    if (meshRef.current) {
+251-      meshRef.current.scale.lerp(
+252-        new THREE.Vector3(targetScale, targetScale, targetScale),
+253-        0.1
+254-      );
+255-    }
+256-
+257:    if (haloRef.current) {
+258:      const haloScale = isSelected
+259-        ? mode === "focus" ? 2.8 + Math.sin(t * 1.25) * 0.12 : 2.15 + Math.sin(t * 1.25) * 0.08
+260-        : mode === "replay"
+261-        ? 1.55
+262-        : 1.25;
+263:      haloRef.current.scale.lerp(
+264:        new THREE.Vector3(haloScale, haloScale, haloScale),
+265-        0.12
+266-      );
+267-    }
+268-  });
+269-
+270-  return (
+271-    <group position={star.position}>
+272-      <mesh
+--
+283-          emissiveIntensity={isSelected ? (mode === "focus" ? 4.4 : 3.2) : dimmed ? 0.5 : mode === "lifemap" ? star.intensity * 2.2 : star.intensity * 1.4}
+284-          roughness={0.2}
+285-          metalness={0.05}
+286-          transparent
+287-          opacity={dimmed ? 0.32 : mode === "lifemap" ? 0.98 : 0.98}
+288-        />
+289-      </mesh>
+290-
+291:      <mesh ref={haloRef}>
+292-        <sphereGeometry args={[mode === "lifemap" ? star.size * 0.58 : star.size * 0.38, 18, 18]} />
+293-        <meshBasicMaterial
+294-          color={star.color}
+295-          transparent
+296-          opacity={isSelected ? (mode === "focus" ? 0.32 : 0.22) : dimmed ? 0.03 : mode === "lifemap" ? 0.10 : 0.06}
+297-          side={THREE.BackSide}
+298-        />
+299-      </mesh>
+
+===== PATTERN: body|avatar|figure|silhouette =====
+
+===== PATTERN: ground|floor|terrain|horizon =====
+46-import NarratorOrchestrationOverlay from "@/spatial/narrator/NarratorOrchestrationOverlay";
+47-import WebXRRendererHandoffOverlay from "@/spatial/xr-renderer/WebXRRendererHandoffOverlay";
+48-import { useXrSessionStore } from "../state/xrSessionStore";
+49-
+50-const shellButtonStyle: CSSProperties = {
+51-  appearance: "none",
+52-  border: "1px solid rgba(255,255,255,0.18)",
+53-  borderRadius: 14,
+54:  background: "rgba(10,14,28,0.66)",
+55-  color: "rgba(245,248,255,0.96)",
+56-  padding: "12px 16px",
+57-  fontSize: 13,
+58-  fontWeight: 600,
+59-  letterSpacing: "0.08em",
+60-  textTransform: "uppercase",
+61-  cursor: "pointer",
+62-  backdropFilter: "blur(16px)",
+63-  boxShadow: "0 14px 40px rgba(0,0,0,0.28)",
+64-};
+65-
+66-const secondaryButtonStyle: CSSProperties = {
+67-  ...shellButtonStyle,
+68:  background: "rgba(255,255,255,0.06)",
+69-};
+70-
+71-const ghostButtonStyle: CSSProperties = {
+72-  ...shellButtonStyle,
+73:  background: "transparent",
+74-  border: "1px solid rgba(255,255,255,0.12)",
+75-  boxShadow: "none",
+76-};
+77-
+78-const topChromeStyle: CSSProperties = {
+79-  position: "absolute",
+80-  top: 18,
+81-  left: 18,
+--
+90-
+91-const chipStyle: CSSProperties = {
+92-  display: "inline-flex",
+93-  alignItems: "center",
+94-  gap: 8,
+95-  minHeight: 38,
+96-  borderRadius: 999,
+97-  padding: "0 14px",
+98:  background: "rgba(10,14,28,0.52)",
+99-  border: "1px solid rgba(255,255,255,0.14)",
+100-  color: "rgba(244,247,255,0.95)",
+101-  fontSize: 12,
+102-  letterSpacing: "0.12em",
+103-  textTransform: "uppercase",
+104-  backdropFilter: "blur(16px)",
+105-  boxShadow: "0 14px 40px rgba(0,0,0,0.22)",
+106-};
+107-
+108-const panelStyle: CSSProperties = {
+109-  borderRadius: 24,
+110-  border: "1px solid rgba(255,255,255,0.12)",
+111:  background:
+112-    "linear-gradient(180deg, rgba(13,18,34,0.78) 0%, rgba(7,10,18,0.86) 100%)",
+113-  backdropFilter: "blur(18px)",
+114-  boxShadow: "0 24px 80px rgba(0,0,0,0.32)",
+115-  color: "rgba(244,247,255,0.96)",
+116-};
+117-
+118-const captionStyle: CSSProperties = {
+119-  fontSize: 11,
+--
+135-  fontSize: 14,
+136-  lineHeight: 1.6,
+137-  color: "rgba(225,233,255,0.78)",
+138-};
+139-
+140-const dividerStyle: CSSProperties = {
+141-  width: "100%",
+142-  height: 1,
+143:  background: "linear-gradient(90deg, rgba(255,255,255,0.14), rgba(255,255,255,0.03))",
+144-};
+145-
+146-function modeLabel(mode: SceneMode) {
+147-  switch (mode) {
+148-    case "home":
+149-      return "Home";
+150-    case "sky":
+151-      return "Sky";
+--
+159-      return mode;
+160-  }
+161-}
+162-
+163-function Atmosphere() {
+164-  return (
+165-    <>
+166-      <fog attach="fog" args={["#04060b", 20, 78]} />
+167:      <color attach="background" args={["#04060b"]} />
+168-    </>
+169-  );
+170-}
+171-
+172-function FloorPlane() {
+173-  const mode = useSceneStore((s) => s.mode);
+174-
+175-  if (mode === "lifemap") return null;
+--
+481-  }, [mode]);
+482-
+483-  return (
+484-    <div
+485-      style={{
+486-        width: "100%",
+487-        height: 6,
+488-        borderRadius: 999,
+489:        background: "rgba(255,255,255,0.08)",
+490-        overflow: "hidden",
+491-      }}
+492-    >
+493-      <div
+494-        style={{
+495-          width: `${Math.max(progress * 100, 6)}%`,
+496-          height: "100%",
+497-          borderRadius: 999,
+498:          background:
+499-            "linear-gradient(90deg, rgba(255,255,255,0.35), rgba(255,255,255,0.9))",
+500-          transition: "width 140ms linear",
+501-        }}
+502-      />
+503-    </div>
+504-  );
+505-}
+506-
+--
+516-    if (!selectedStar) return null;
+517-    return `${selectedStar.chapter} · ${selectedStar.timeband} · ${selectedStar.label}`;
+518-  }, [selectedStar]);
+519-
+520-  return (
+521-    <>
+522-      <div style={topChromeStyle}>
+523-        <div style={chipStyle}>
+524:          <span style={{ width: 8, height: 8, borderRadius: 999, background: "rgba(255,255,255,0.86)" }} />
+525-          URAI Spatial
+526-        </div>
+527-
+528-        <div style={{ ...chipStyle, pointerEvents: "auto" }}>{modeLabel(mode)}</div>
+529-      </div>
+530-
+531-      {mode === "home" && (
+532-        <div
+--
+594-              pointerEvents: "auto",
+595-              display: "flex",
+596-              flexDirection: "column",
+597-              alignItems: "center",
+598-              gap: 16,
+599-              padding: 24,
+600-              borderRadius: 20,
+601-              border: "1px solid rgba(255,255,255,0.14)",
+602:              background: "rgba(7,10,18,0.58)",
+603-              backdropFilter: "blur(10px)",
+604-              boxShadow: "0 20px 80px rgba(0,0,0,0.35)",
+605-            }}
+606-          >
+607-            <div
+608-              style={{
+609-                fontSize: 12,
+610-                letterSpacing: "0.24em",
+--
+708-          style={{
+709-            position: "absolute",
+710-            inset: 0,
+711-            zIndex: 26,
+712-            display: "grid",
+713-            placeItems: "center",
+714-            padding: 18,
+715-            pointerEvents: "none",
+716:            background:
+717-              "radial-gradient(700px 360px at 50% 56%, rgba(255,255,255,0.06), transparent 60%)",
+718-          }}
+719-        >
+720-          <div
+721-            style={{
+722-              ...panelStyle,
+723-              width: "min(720px, calc(100vw - 32px))",
+724-              padding: "26px 24px 24px",
+--
+818-
+819-  return (
+820-    <main
+821-      style={{
+822-        position: "relative",
+823-        minHeight: "100svh",
+824-          height: "100svh",
+825-        overflow: "hidden",
+826:        background:
+827-          "radial-gradient(1200px 700px at 50% -10%, rgba(91,115,191,0.16), transparent 56%), linear-gradient(180deg, #0a1020 0%, #04060b 48%, #020307 100%)",
+828-      }}
+829-    >
+830-      <SpatialSettingsBootstrap />
+831-      <SpatialReleaseBootstrap />
+832-      <SpatialAccountBootstrap />
+833-      <SpatialCompareBootstrap />
+834-      <SpatialLensBootstrap />
+--
+891-        <LifeMapIntelligenceOverlay />
+892-        <CinematicReplayOverlay />
+893-
+894-      <div
+895-        style={{
+896-          pointerEvents: "none",
+897-          position: "absolute",
+898-          inset: 0,
+899:          background:
+900-            mode === "replay"
+901-              ? "linear-gradient(180deg, rgba(1,2,6,0.28) 0%, rgba(2,3,8,0.08) 30%, rgba(1,2,6,0.44) 100%)"
+902-              : "linear-gradient(180deg, rgba(1,2,6,0.14) 0%, rgba(2,3,8,0.04) 28%, rgba(1,2,6,0.22) 100%)",
+903-        }}
+904-      />
+905-
+906-      <OverlayChrome />
+907-    </main>
+
+===== PATTERN: fog|atmosphere|cloud|particle =====
+158-    default:
+159-      return mode;
+160-  }
+161-}
+162-
+163-function Atmosphere() {
+164-  return (
+165-    <>
+166:      <fog attach="fog" args={["#04060b", 20, 78]} />
+167-      <color attach="background" args={["#04060b"]} />
+168-    </>
+169-  );
+170-}
+171-
+172-function FloorPlane() {
+173-  const mode = useSceneStore((s) => s.mode);
+174-
+
+===== PATTERN: transition|focus|replay|lifemap|home =====
+140-const dividerStyle: CSSProperties = {
+141-  width: "100%",
+142-  height: 1,
+143-  background: "linear-gradient(90deg, rgba(255,255,255,0.14), rgba(255,255,255,0.03))",
+144-};
+145-
+146-function modeLabel(mode: SceneMode) {
+147-  switch (mode) {
+148:    case "home":
+149-      return "Home";
+150-    case "sky":
+151-      return "Sky";
+152:    case "lifemap":
+153-      return "LifeMap";
+154:    case "focus":
+155-      return "Focus";
+156:    case "replay":
+157-      return "Replay";
+158-    default:
+159-      return mode;
+160-  }
+161-}
+162-
+163-function Atmosphere() {
+164-  return (
+--
+167-      <color attach="background" args={["#04060b"]} />
+168-    </>
+169-  );
+170-}
+171-
+172-function FloorPlane() {
+173-  const mode = useSceneStore((s) => s.mode);
+174-
+175:  if (mode === "lifemap") return null;
+176-
+177-  return (
+178-    <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -8, 0]}>
+179-      <circleGeometry args={[90, 96]} />
+180-      <meshBasicMaterial
+181-        color="#09101f"
+182-        transparent
+183-        opacity={mode === "sky" ? 0.035 : 0.09}
+--
+192-  const selectedStar = useSceneStore((s) => s.selectedStar);
+193-  const cameraTarget = useRef(new THREE.Vector3(0, 4, 28));
+194-  const lookTarget = useRef(new THREE.Vector3(0, 2, 0));
+195-
+196-  useFrame((_, delta) => {
+197-    const cp = cameraTarget.current;
+198-    const lp = lookTarget.current;
+199-
+200:    if (mode === "home") {
+201-      cp.set(0, 5.8, 30);
+202-      lp.set(0, 2, 0);
+203:    } else if (mode === "lifemap") {
+204-      cp.set(0, 6.4, 12.5);
+205-      lp.set(0, 1.8, -22);
+206-    } else if (selectedStar) {
+207-      const [x, y, z] = selectedStar.position;
+208:      if (mode === "focus") {
+209-        cp.set(x * 0.16, y + 2.9, z + 8.2);
+210-        lp.set(x, y, z);
+211-      } else {
+212-        cp.set(x * 0.1, y + 1.9, z + 6.2);
+213-        lp.set(x, y, z);
+214-      }
+215-    }
+216-
+217:    const speed = mode === "lifemap" ? 2.2 : 3.2;
+218-      const t = 1 - Math.exp(-delta * speed);
+219-    camera.position.lerp(cp, t);
+220-    camera.lookAt(lp);
+221-  });
+222-
+223-  return null;
+224-}
+225-
+--
+237-  const meshRef = useRef<THREE.Mesh>(null);
+238-  const haloRef = useRef<THREE.Mesh>(null);
+239-  const mode = useSceneStore((s) => s.mode);
+240-
+241-  useFrame(({ clock }) => {
+242-    const t = clock.getElapsedTime();
+243-    const pulse = 1 + Math.sin(t * 1.45 + star.order * 0.5) * 0.06 * star.glow;
+244-    const targetScale = isSelected
+245:      ? pulse * (mode === "focus" ? 2.05 : 1.75)
+246-      : dimmed
+247-      ? pulse * 0.82
+248-      : pulse;
+249-
+250-    if (meshRef.current) {
+251-      meshRef.current.scale.lerp(
+252-        new THREE.Vector3(targetScale, targetScale, targetScale),
+253-        0.1
+254-      );
+255-    }
+256-
+257-    if (haloRef.current) {
+258-      const haloScale = isSelected
+259:        ? mode === "focus" ? 2.8 + Math.sin(t * 1.25) * 0.12 : 2.15 + Math.sin(t * 1.25) * 0.08
+260:        : mode === "replay"
+261-        ? 1.55
+262-        : 1.25;
+263-      haloRef.current.scale.lerp(
+264-        new THREE.Vector3(haloScale, haloScale, haloScale),
+265-        0.12
+266-      );
+267-    }
+268-  });
+--
+271-    <group position={star.position}>
+272-      <mesh
+273-        ref={meshRef}
+274-        onClick={(event: ThreeEvent<MouseEvent>) => {
+275-          event.stopPropagation();
+276-          onSelect(star);
+277-        }}
+278-      >
+279:        <sphereGeometry args={[mode === "lifemap" ? star.size * 0.36 : star.size * 0.22, 18, 18]} />
+280-        <meshStandardMaterial
+281-          color={star.color}
+282-          emissive={star.color}
+283:          emissiveIntensity={isSelected ? (mode === "focus" ? 4.4 : 3.2) : dimmed ? 0.5 : mode === "lifemap" ? star.intensity * 2.2 : star.intensity * 1.4}
+284-          roughness={0.2}
+285-          metalness={0.05}
+286-          transparent
+287:          opacity={dimmed ? 0.32 : mode === "lifemap" ? 0.98 : 0.98}
+288-        />
+289-      </mesh>
+290-
+291-      <mesh ref={haloRef}>
+292:        <sphereGeometry args={[mode === "lifemap" ? star.size * 0.58 : star.size * 0.38, 18, 18]} />
+293-        <meshBasicMaterial
+294-          color={star.color}
+295-          transparent
+296:          opacity={isSelected ? (mode === "focus" ? 0.32 : 0.22) : dimmed ? 0.03 : mode === "lifemap" ? 0.10 : 0.06}
+297-          side={THREE.BackSide}
+298-        />
+299-      </mesh>
+300-    </group>
+301-  );
+302-}
+303-
+304-function MemorySphere() {
+305-  const selectedStar = useSceneStore((s) => s.selectedStar);
+306-  const mode = useSceneStore((s) => s.mode);
+307-  const ref = useRef<THREE.Mesh>(null);
+308-
+309-  useFrame(({ clock }) => {
+310-    if (!ref.current) return;
+311-    const t = clock.getElapsedTime();
+312:    const base = mode === "replay" ? 1.5 : 1.18;
+313-    const wobble = 1 + Math.sin(t * 0.92) * 0.04;
+314-    ref.current.scale.lerp(
+315-      new THREE.Vector3(base * wobble, base * wobble, base * wobble),
+316-      0.08
+317-    );
+318-    ref.current.rotation.y += 0.004;
+319-    ref.current.rotation.x += 0.0015;
+320-  });
+--
+323-
+324-  return (
+325-    <group position={selectedStar.position}>
+326-      <mesh ref={ref}>
+327-        <sphereGeometry args={[selectedStar.size * 0.72, 32, 32]} />
+328-        <meshPhysicalMaterial
+329-          color={selectedStar.color}
+330-          emissive={selectedStar.color}
+331:          emissiveIntensity={mode === "replay" ? 0.65 : mode === "focus" ? 0.52 : 0.35}
+332-          transparent
+333:          opacity={mode === "replay" ? 0.18 : mode === "focus" ? 0.14 : 0.09}
+334-          roughness={0.08}
+335-          metalness={0}
+336-          transmission={0.82}
+337-          thickness={1.25}
+338-          ior={1.18}
+339-        />
+340-      </mesh>
+341-    </group>
+--
+344-
+345-function StarField() {
+346-  const stars = useSceneStore((s) => s.stars);
+347-  const selectedStarId = useSceneStore((s) => s.selectedStarId);
+348-  const mode = useSceneStore((s) => s.mode);
+349-  const selectStar = useSceneStore((s) => s.selectStar);
+350-  const clearFocus = useSceneStore((s) => s.clearFocus);
+351-
+352:          const ambientCount = mode === "lifemap" ? 460 : mode === "sky" ? 70 : 28;
+353-
+354-  return (
+355-    <group>
+356-      {Array.from({ length: ambientCount }).map((_, i) => {
+357-        const angle = i * 2.399963229728653;
+358:                                        const radius = mode === "lifemap" ? 6 + (i % 17) * 1.75 + Math.sin(i * 0.77) * 1.1 : mode === "sky" ? 18 + (i % 15) * 3.8 + Math.sin(i * 0.77) * 2.2 : 26 + (i % 13) * 5.2 + Math.sin(i * 0.77) * 2.6;
+359-        const x = Math.cos(angle) * radius;
+360:                                        const y = mode === "lifemap" ? -2.5 + (i % 29) * 0.44 + Math.sin(i * 1.13) * 0.95 : mode === "sky" ? -7 + (i % 23) * 0.72 + Math.sin(i * 1.13) * 1.4 : -10 + (i % 19) * 0.9 + Math.sin(i * 1.13) * 1.6;
+361:                                        const z = mode === "lifemap" ? -12 - (i % 23) * 2.9 - Math.cos(i * 0.41) * 1.8 : mode === "sky" ? -22 - (i % 21) * 4.8 - Math.cos(i * 0.41) * 3.0 : -36 - (i % 17) * 6.0 - Math.cos(i * 0.41) * 3.6;
+362-        const size =
+363:          mode === "lifemap"
+364-            ? 0.020 + (i % 5) * 0.006
+365-            : mode === "sky"
+366-            ? 0.028 + (i % 4) * 0.009
+367-            : 0.007 + (i % 3) * 0.003;
+368-        const opacity =
+369:          mode === "lifemap"
+370-            ? 0.09 + (i % 7) * 0.018
+371-            : mode === "sky"
+372-            ? 0.1 + (i % 5) * 0.03
+373-            : 0.018 + (i % 4) * 0.007;
+374-        const color = i % 9 === 0 ? "#dbe7ff" : i % 6 === 0 ? "#8fb5ff" : "#ffffff";
+375-
+376-        return (
+377-          <mesh key={`ambient-${i}`} position={[x, y, z]} renderOrder={-1}>
+--
+390-        const isSelected = star.id === selectedStarId;
+391-        const dimmed = !!selectedStarId && !isSelected;
+392-
+393-        return (
+394-          <StarNode
+395-            key={star.id}
+396-            star={star}
+397-            isSelected={isSelected}
+398:            dimmed={mode === "replay" ? !isSelected : dimmed}
+399-            onSelect={(node) => selectStar(toCanonicalSelectedStar(node))}
+400-          />
+401-        );
+402-      })}
+403-
+404-      <mesh
+405-        rotation={[-Math.PI / 2, 0, 0]}
+406-        position={[0, -7.95, 0]}
+407-        onClick={() => {
+408:          if (mode === "focus") clearFocus();
+409-        }}
+410-      >
+411-        <circleGeometry args={[90, 64]} />
+412-        <meshBasicMaterial transparent opacity={0.001} />
+413-      </mesh>
+414-    </group>
+415-  );
+416-}
+417-function ReplayConstellation() {
+418-  const selectedStar = useSceneStore((s) => s.selectedStar);
+419-  const mode = useSceneStore((s) => s.mode);
+420-  const ref = useRef<THREE.Group>(null);
+421-
+422-  useFrame(({ clock }) => {
+423:    if (!ref.current || !selectedStar || mode !== "replay") return;
+424-    const t = clock.getElapsedTime();
+425-    ref.current.rotation.y = t * 0.18;
+426-    ref.current.rotation.z = Math.sin(t * 0.42) * 0.08;
+427-  });
+428-
+429:  if (!selectedStar || mode !== "replay") return null;
+430-
+431-  return (
+432-    <group ref={ref} position={selectedStar.position}>
+433-      {Array.from({ length: 9 }).map((_, i) => {
+434-        const angle = (i / 9) * Math.PI * 2;
+435-        const radius = 1.5 + (i % 3) * 0.42;
+436-        return (
+437-          <mesh
+--
+451-  );
+452-}
+453-
+454-function ProgressBar() {
+455-  const mode = useSceneStore((s) => s.mode);
+456-  const [progress, setProgress] = useState(0);
+457-
+458-  useEffect(() => {
+459:    if (mode !== "replay") {
+460-      setProgress(0);
+461-      return;
+462-    }
+463-
+464-    let frame = 0;
+465-    let raf = 0;
+466-
+467-    const tick = () => {
+--
+492-    >
+493-      <div
+494-        style={{
+495-          width: `${Math.max(progress * 100, 6)}%`,
+496-          height: "100%",
+497-          borderRadius: 999,
+498-          background:
+499-            "linear-gradient(90deg, rgba(255,255,255,0.35), rgba(255,255,255,0.9))",
+500:          transition: "width 140ms linear",
+501-        }}
+502-      />
+503-    </div>
+504-  );
+505-}
+506-
+507-function OverlayChrome() {
+508-  const mode = useSceneStore((s) => s.mode);
+509-  const setMode = useSceneStore((s) => s.setMode);
+510-  const selectedStar = useSceneStore((s) => s.selectedStar);
+511-  const clearFocus = useSceneStore((s) => s.clearFocus);
+512-  const enterReplay = useSceneStore((s) => s.enterReplay);
+513-  const exitReplay = useSceneStore((s) => s.exitReplay);
+514-
+515:  const focusMeta = useMemo(() => {
+516-    if (!selectedStar) return null;
+517-    return `${selectedStar.chapter} · ${selectedStar.timeband} · ${selectedStar.label}`;
+518-  }, [selectedStar]);
+519-
+520-  return (
+521-    <>
+522-      <div style={topChromeStyle}>
+523-        <div style={chipStyle}>
+524-          <span style={{ width: 8, height: 8, borderRadius: 999, background: "rgba(255,255,255,0.86)" }} />
+525-          URAI Spatial
+526-        </div>
+527-
+528-        <div style={{ ...chipStyle, pointerEvents: "auto" }}>{modeLabel(mode)}</div>
+529-      </div>
+530-
+531:      {mode === "home" && (
+532-        <div
+533-          style={{
+534-            position: "absolute",
+535-            inset: 0,
+536-            zIndex: 20,
+537-            display: "grid",
+538-            placeItems: "center",
+539-            padding: 24,
+--
+547-              padding: "34px 32px 30px",
+548-              pointerEvents: "auto",
+549-            }}
+550-          >
+551-            <div style={{ display: "grid", gap: 18 }}>
+552-              <div style={captionStyle}>Tier 1 / Canonical Shell</div>
+553-              <h1 style={titleStyle}>Home → Sky → LifeMap → Focus → Replay</h1>
+554-              <p style={{ ...subtleTextStyle, maxWidth: 640 }}>
+555:                The spatial shell is live. This phase turns replay from a mode switch into an actual
+556:                memory-dive scene with camera intent, focus depth, and a readable presentation layer.
+557-              </p>
+558-
+559-              <div style={dividerStyle} />
+560-
+561-              <div
+562-                style={{
+563-                  display: "flex",
+564-                  flexWrap: "wrap",
+565-                  gap: 12,
+566-                  alignItems: "center",
+567-                }}
+568-              >
+569-                <button style={shellButtonStyle} onClick={() => setMode("sky")}>
+570-                  Enter LifeMap
+571-                </button>
+572:                <button style={secondaryButtonStyle} onClick={() => setMode("focus")} disabled={!selectedStar}>
+573-                  Resume Focus
+574-                </button>
+575-              </div>
+576-            </div>
+577-          </div>
+578-        </div>
+579-      )}
+580-
+--
+623-                lineHeight: 1.6,
+624-                color: "rgba(255,255,255,0.78)",
+625-              }}
+626-            >
+627-              This is the minimal sky contract between Home and LifeMap.
+628-            </p>
+629-            <button
+630-              type="button"
+631:              onClick={() => setMode("lifemap")}
+632-              style={shellButtonStyle}
+633-            >
+634-              Enter LifeMap
+635-            </button>
+636-          </div>
+637-        </div>
+638-      )}
+639-
+640:      {mode === "lifemap" && (
+641-        <div
+642-          style={{
+643-            position: "absolute",
+644-            left: 18,
+645-            right: 18,
+646-            bottom: 18,
+647-            zIndex: 20,
+648-            display: "flex",
+--
+656-              width: "min(760px, calc(100vw - 32px))",
+657-              padding: "18px 20px",
+658-              pointerEvents: "auto",
+659-            }}
+660-          >
+661-            <div style={{ display: "grid", gap: 8 }}>
+662-              <div style={captionStyle}>LifeMap</div>
+663-              <p style={subtleTextStyle}>
+664:                Select a star to enter focus. From focus, enter replay to dive the selected memory node.
+665-              </p>
+666-            </div>
+667-          </div>
+668-        </div>
+669-      )}
+670-
+671:      {mode === "focus" && selectedStar && (
+672-        <div
+673-          style={{
+674-            position: "absolute",
+675-            right: 18,
+676-            bottom: 18,
+677-            zIndex: 24,
+678-            width: "min(420px, calc(100vw - 32px))",
+679-            pointerEvents: "auto",
+680-          }}
+681-        >
+682-          <div style={{ ...panelStyle, padding: 24 }}>
+683-            <div style={{ display: "grid", gap: 14 }}>
+684-              <div style={captionStyle}>Focus</div>
+685-              <h2 style={{ margin: 0, fontSize: 28, lineHeight: 1.05 }}>{selectedStar.title}</h2>
+686-              <div style={{ fontSize: 13, letterSpacing: "0.12em", textTransform: "uppercase", color: "rgba(220,228,255,0.72)" }}>
+687:                {focusMeta}
+688-              </div>
+689-              <p style={subtleTextStyle}>{selectedStar.description}</p>
+690-
+691-              <div style={dividerStyle} />
+692-
+693-              <div style={{ display: "flex", flexWrap: "wrap", gap: 12 }}>
+694-                <button style={shellButtonStyle} onClick={enterReplay}>
+695-                  Enter Replay
+--
+698-                  Clear Focus
+699-                </button>
+700-              </div>
+701-            </div>
+702-          </div>
+703-        </div>
+704-      )}
+705-
+706:      {mode === "replay" && selectedStar && (
+707-        <div
+708-          style={{
+709-            position: "absolute",
+710-            inset: 0,
+711-            zIndex: 26,
+712-            display: "grid",
+713-            placeItems: "center",
+714-            padding: 18,
+--
+792-  const setMode = useSceneStore((s) => s.setMode);
+793-  const clearFocus = useSceneStore((s) => s.clearFocus);
+794-  const exitReplay = useSceneStore((s) => s.exitReplay);
+795-
+796-  useEffect(() => {
+797-    const onKey = (event: KeyboardEvent) => {
+798-      if (event.key !== "Escape") return;
+799-
+800:      if (mode === "replay") {
+801-        exitReplay();
+802-        return;
+803-      }
+804-
+805:      if (mode === "focus") {
+806-        clearFocus();
+807-        return;
+808-      }
+809-
+810:      if (mode === "lifemap") {
+811:        setMode("home");
+812-      }
+813-    };
+814-
+815-    window.addEventListener("keydown", onKey);
+816-    return () => window.removeEventListener("keydown", onKey);
+817-  }, [mode, clearFocus, exitReplay, setMode]);
+818-
+819-  return (
+--
+837-      <SpatialStoryBundleVaultBootstrap />
+838-      <SpatialCuratedDeckVaultBootstrap />
+839-      <Canvas
+840-        camera={{ position: [0, 6, 30], fov: 42, near: 0.1, far: 200 }}
+841-          style={{ position: "absolute", inset: 0, width: "100%", height: "100%" }}
+842-        dpr={[1, 2]}
+843-        gl={{ antialias: true, alpha: false }}
+844-        onPointerMissed={() => {
+845:          if (mode === "focus") clearFocus();
+846-        }}
+847-      >
+848-        <Atmosphere />
+849-        <ambientLight intensity={0.95} />
+850-        <directionalLight position={[8, 12, 10]} intensity={1.1} color="#dbe4ff" />
+851-        <pointLight position={[0, 6, 10]} intensity={selectedStar ? 10 : 6} color="#ffffff" />
+852-        <pointLight position={[0, -2, -8]} intensity={4} color="#6f86ff" />
+853-        {immersiveEnabled && (
+--
+892-        <CinematicReplayOverlay />
+893-
+894-      <div
+895-        style={{
+896-          pointerEvents: "none",
+897-          position: "absolute",
+898-          inset: 0,
+899-          background:
+900:            mode === "replay"
+901-              ? "linear-gradient(180deg, rgba(1,2,6,0.28) 0%, rgba(2,3,8,0.08) 30%, rgba(1,2,6,0.44) 100%)"
+902-              : "linear-gradient(180deg, rgba(1,2,6,0.14) 0%, rgba(2,3,8,0.04) 28%, rgba(1,2,6,0.22) 100%)",
+903-        }}
+904-      />
+905-
+906-      <OverlayChrome />
+907-    </main>
+908-  );

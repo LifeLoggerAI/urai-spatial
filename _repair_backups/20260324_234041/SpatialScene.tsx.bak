@@ -1,0 +1,563 @@
+"use client";
+
+import type { JSX } from "react";
+import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { Canvas, useFrame } from "@react-three/fiber";
+import { Float, Stars } from "@react-three/drei";
+import * as THREE from "three";
+
+import Orb from "./Orb";
+import Starfield from "./Starfield";
+import FocusShellOverlay from "./FocusShellOverlay";
+import ReplayOverlay from "./ReplayOverlay";
+import type { ScenePhase, SelectedStar } from "./types/scene";
+
+const STAR_POINTS: SelectedStar[] = [
+  {
+    id: "s1",
+    position: [-2.8, 1.2, -18],
+    color: "#7fb3ff",
+    size: 0.2,
+    title: "Origin Point",
+    chapter: "Foundation",
+    summary: "Initial memory anchor.",
+  },
+  {
+    id: "s2",
+    position: [0.4, 2.4, -24],
+    color: "#b7d0ff",
+    size: 0.26,
+    title: "Signal Rise",
+    chapter: "Acceleration",
+    summary: "Momentum begins to compound.",
+  },
+  {
+    id: "s3",
+    position: [3.1, 0.9, -22],
+    color: "#8ea8ff",
+    size: 0.23,
+    title: "System Lock",
+    chapter: "Structure",
+    summary: "Architecture stabilizes into form.",
+  },
+  {
+    id: "s4",
+    position: [-0.8, -0.1, -16],
+    color: "#d7e4ff",
+    size: 0.18,
+    title: "Replay Core",
+    chapter: "Reflection",
+    summary: "Narrative playback anchor.",
+  },
+];
+
+function lerpExp(current: number, target: number, speed: number, delta: number): number {
+  return THREE.MathUtils.lerp(current, target, 1 - Math.exp(-speed * delta));
+}
+
+function FlowRig({
+  phase,
+  selected,
+}: {
+  phase: ScenePhase;
+  selected: SelectedStar | null;
+}): null {
+  const ascent = useRef(0);
+  const focus = useRef(0);
+  const replay = useRef(0);
+  const look = useRef(new THREE.Vector3(0, 0.15, -12));
+  const targetPos = useRef(new THREE.Vector3(0, 0.4, 9.2));
+  const targetLook = useRef(new THREE.Vector3(0, 0.15, -12));
+
+  useFrame((state, delta) => {
+    const camera = state.camera as THREE.PerspectiveCamera;
+
+    const ascentTarget = phase === "home" ? 0 : 1;
+    const focusTarget = phase === "focus" || phase === "replay" ? 1 : 0;
+    const replayTarget = phase === "replay" ? 1 : 0;
+
+    ascent.current = lerpExp(ascent.current, ascentTarget, 2.0, delta);
+    focus.current = lerpExp(focus.current, focusTarget, 3.8, delta);
+    replay.current = lerpExp(replay.current, replayTarget, 4.4, delta);
+
+    const homePos = new THREE.Vector3(0, 0.45, 9.4);
+    const mapPos = new THREE.Vector3(0, 1.35, 5.6);
+    const homeLook = new THREE.Vector3(0, 0.25, -10);
+    const mapLook = new THREE.Vector3(0, 0.95, -26);
+
+    targetPos.current.copy(homePos).lerp(mapPos, ascent.current);
+    targetLook.current.copy(homeLook).lerp(mapLook, ascent.current);
+
+    if (selected) {
+      const star = new THREE.Vector3(...selected.position);
+      const focusPos = star.clone().add(new THREE.Vector3(0.0, 0.35, 4.5));
+      const replayPos = star.clone().add(new THREE.Vector3(0.0, 0.1, 3.15));
+      const focusLook = star.clone().add(new THREE.Vector3(0, 0.0, -0.1));
+      const replayLook = star.clone().add(new THREE.Vector3(0, 0.0, -0.6));
+
+      const focusedPos = focusPos.clone().lerp(replayPos, replay.current);
+      const focusedLook = focusLook.clone().lerp(replayLook, replay.current);
+
+      targetPos.current.lerp(focusedPos, focus.current);
+      targetLook.current.lerp(focusedLook, focus.current);
+    }
+
+    camera.position.lerp(targetPos.current, 1 - Math.exp(-3.4 * delta));
+    look.current.lerp(targetLook.current, 1 - Math.exp(-4.2 * delta));
+    camera.lookAt(look.current);
+
+    const targetFov =
+      phase === "replay"
+        ? 34
+        : phase === "focus"
+          ? 38
+          : phase === "home"
+            ? 50
+            : 44;
+
+    camera.fov = lerpExp(camera.fov, targetFov, 4.2, delta);
+    camera.updateProjectionMatrix();
+  });
+
+  return null;
+}
+
+function HomeWorld({
+  phase,
+  onEnterLifemap,
+}: {
+  phase: ScenePhase;
+  onEnterLifemap: () => void;
+}): JSX.Element {
+  const group = useRef<THREE.Group>(null);
+  const halo = useRef<THREE.Mesh>(null);
+  const shadow = useRef<THREE.Mesh>(null);
+  const sky = useRef<THREE.Mesh>(null);
+  const aura = useRef<THREE.Mesh>(null);
+  const alpha = useRef(1);
+  const skyHover = useRef(0);
+
+  useFrame((state, delta) => {
+    const homeTarget = phase === "home" ? 1 : 0;
+    alpha.current = lerpExp(alpha.current, homeTarget, 2.4, delta);
+    skyHover.current = lerpExp(skyHover.current, skyHover.current > 0.5 ? 1 : 0, 7.0, delta);
+
+    if (group.current) {
+      group.current.position.y = THREE.MathUtils.lerp(-0.05, -2.2, 1 - alpha.current);
+      group.current.position.z = THREE.MathUtils.lerp(0, -16, 1 - alpha.current);
+      group.current.scale.setScalar(THREE.MathUtils.lerp(1, 0.76, 1 - alpha.current));
+    }
+
+    if (shadow.current) {
+      const mat = shadow.current.material as THREE.MeshBasicMaterial;
+      mat.opacity = 0.42 * alpha.current;
+      shadow.current.scale.set(
+        THREE.MathUtils.lerp(1.0, 0.72, 1 - alpha.current),
+        1,
+        THREE.MathUtils.lerp(1.0, 0.72, 1 - alpha.current),
+      );
+    }
+
+    if (halo.current) {
+      const mat = halo.current.material as THREE.MeshBasicMaterial;
+      mat.opacity = 0.1 * alpha.current;
+      halo.current.position.z = THREE.MathUtils.lerp(-0.6, -3.0, 1 - alpha.current);
+      halo.current.rotation.z += delta * 0.03;
+    }
+
+    if (aura.current) {
+      const mat = aura.current.material as THREE.MeshBasicMaterial;
+      mat.opacity = 0.055 * alpha.current;
+      aura.current.scale.setScalar(THREE.MathUtils.lerp(1.0, 0.84, 1 - alpha.current));
+      aura.current.rotation.z -= delta * 0.05;
+    }
+
+    if (sky.current) {
+      const mat = sky.current.material as THREE.MeshBasicMaterial;
+      mat.opacity = THREE.MathUtils.lerp(0.08, 0.16, skyHover.current) * alpha.current;
+      sky.current.position.y = THREE.MathUtils.lerp(3.7, 4.2, skyHover.current);
+      sky.current.rotation.x = THREE.MathUtils.lerp(-0.12, -0.19, skyHover.current);
+      sky.current.rotation.z = THREE.MathUtils.lerp(0.0, 0.025, skyHover.current);
+    }
+
+    const t = state.clock.getElapsedTime();
+    if (group.current) {
+      group.current.position.x = Math.sin(t * 0.18) * 0.08 * alpha.current;
+    }
+  });
+
+  return (
+    <group ref={group}>
+      <Float speed={1.05} rotationIntensity={0.05} floatIntensity={0.12}>
+        <group position={[0, -0.08, 0.2]}>
+          <Orb visible={alpha.current > 0.02} position={[0, 0.12, 0.7]} intensity={1.24 * alpha.current} orbScale={1.04} />
+        </group>
+      </Float>
+
+      <mesh ref={shadow} position={[0, -1.02, -0.55]} rotation={[-Math.PI / 2, 0, 0]}>
+        <circleGeometry args={[2.65, 72]} />
+        <meshBasicMaterial color="#000000" transparent opacity={0.42} />
+      </mesh>
+
+      <mesh ref={halo} position={[0, -0.56, -0.7]} rotation={[-Math.PI / 2, 0, 0]}>
+        <ringGeometry args={[1.25, 7.8, 96]} />
+        <meshBasicMaterial color="#2d56a8" transparent opacity={0.1} />
+      </mesh>
+
+      <mesh ref={aura} position={[0, -0.52, -0.62]} rotation={[-Math.PI / 2, 0, 0]}>
+        <ringGeometry args={[0.95, 4.6, 96]} />
+        <meshBasicMaterial color="#1d4f9f" transparent opacity={0.055} />
+      </mesh>
+
+      <mesh position={[0, -1.24, -12.5]} rotation={[-Math.PI / 2, 0, 0]}>
+        <planeGeometry args={[110, 110, 1, 1]} />
+        <meshStandardMaterial color="#07111e" transparent opacity={0.95 * alpha.current} />
+      </mesh>
+
+      <mesh position={[0, 0.8, -22.5]} rotation={[-0.03, 0, 0]}>
+        <planeGeometry args={[120, 46, 1, 1]} />
+        <meshBasicMaterial color="#021537" transparent opacity={0.12 * alpha.current} />
+      </mesh>
+
+      <mesh
+        ref={sky}
+        position={[0, 3.75, -20]}
+        rotation={[-0.12, 0, 0]}
+        onPointerOver={() => {
+          skyHover.current = 1;
+        }}
+        onPointerOut={() => {
+          skyHover.current = 0;
+        }}
+        onClick={(event) => {
+          event.stopPropagation();
+          onEnterLifemap();
+        }}
+      >
+        <planeGeometry args={[48, 10.5, 1, 1]} />
+        <meshBasicMaterial color="#05235a" transparent opacity={0.08} />
+      </mesh>
+    </group>
+  );
+}
+
+function FocusCreatures({
+  phase,
+  selected,
+}: {
+  phase: ScenePhase;
+  selected: SelectedStar | null;
+}): JSX.Element | null {
+  const points = useMemo(
+    () => [
+      { radius: 1.15, speed: 1.2, size: 0.09, lift: 0.18, offset: 0 },
+      { radius: 1.55, speed: 0.82, size: 0.07, lift: -0.05, offset: 1.8 },
+      { radius: 1.95, speed: 0.65, size: 0.05, lift: 0.32, offset: 3.1 },
+    ],
+    [],
+  );
+
+  const refs = useRef<Array<THREE.Mesh | null>>([]);
+  const presence = useRef(0);
+
+  useFrame((state, delta) => {
+    const target = phase === "focus" || phase === "replay" ? 1 : 0;
+    presence.current = lerpExp(presence.current, target, 4.2, delta);
+    const t = state.clock.getElapsedTime();
+
+    refs.current.forEach((mesh, index) => {
+      if (!mesh || !selected) return;
+      const cfg = points[index];
+      const base = new THREE.Vector3(...selected.position);
+      const angle = t * cfg.speed + cfg.offset;
+      mesh.position.set(
+        base.x + Math.cos(angle) * cfg.radius,
+        base.y + Math.sin(angle * 1.7) * 0.22 + cfg.lift,
+        base.z + Math.sin(angle) * cfg.radius * 0.4,
+      );
+      mesh.scale.setScalar(THREE.MathUtils.lerp(0.001, 1, presence.current));
+      const mat = mesh.material as THREE.MeshBasicMaterial;
+      mat.opacity = 0.12 * presence.current;
+    });
+  });
+
+  if (!selected) return null;
+
+  return (
+    <>
+      {points.map((cfg, index) => (
+        <mesh key={index} ref={(node) => (refs.current[index] = node)}>
+          <sphereGeometry args={[cfg.size, 12, 12]} />
+          <meshBasicMaterial color="#d9ebff" transparent opacity={0} />
+        </mesh>
+      ))}
+    </>
+  );
+}
+
+function ReplayChamber({
+  phase,
+  selected,
+}: {
+  phase: ScenePhase;
+  selected: SelectedStar | null;
+}): JSX.Element | null {
+  const shell = useRef<THREE.Mesh>(null);
+  const ringA = useRef<THREE.Mesh>(null);
+  const ringB = useRef<THREE.Mesh>(null);
+  const beam = useRef<THREE.Mesh>(null);
+  const presence = useRef(0);
+
+  useFrame((state, delta) => {
+    const target = phase === "replay" ? 1 : 0;
+    presence.current = lerpExp(presence.current, target, 4.0, delta);
+    const t = state.clock.getElapsedTime();
+
+    if (selected) {
+      const base = new THREE.Vector3(...selected.position);
+
+      if (shell.current) {
+        shell.current.position.copy(base);
+        shell.current.scale.setScalar(THREE.MathUtils.lerp(0.001, 1.0, presence.current));
+        const mat = shell.current.material as THREE.MeshBasicMaterial;
+        mat.opacity = 0.2 * presence.current;
+      }
+
+      if (ringA.current) {
+        ringA.current.position.copy(base);
+        ringA.current.rotation.z = t * 0.18;
+        ringA.current.scale.setScalar(THREE.MathUtils.lerp(0.001, 1.0, presence.current));
+        const mat = ringA.current.material as THREE.MeshBasicMaterial;
+        mat.opacity = 0.24 * presence.current;
+      }
+
+      if (ringB.current) {
+        ringB.current.position.copy(base);
+        ringB.current.rotation.z = -t * 0.12;
+        ringB.current.scale.setScalar(THREE.MathUtils.lerp(0.001, 1.0, presence.current));
+        const mat = ringB.current.material as THREE.MeshBasicMaterial;
+        mat.opacity = 0.12 * presence.current;
+      }
+
+      if (beam.current) {
+        beam.current.position.set(base.x, base.y, base.z - 5.5);
+        beam.current.scale.set(
+          THREE.MathUtils.lerp(0.001, 1.0, presence.current),
+          THREE.MathUtils.lerp(0.001, 1.0, presence.current),
+          1
+        );
+        const mat = beam.current.material as THREE.MeshBasicMaterial;
+        mat.opacity = 0.09 * presence.current;
+      }
+    }
+  });
+
+  if (!selected) return null;
+
+  return (
+    <>
+      <mesh ref={beam}>
+        <planeGeometry args={[5.4, 10.5, 1, 1]} />
+        <meshBasicMaterial color="#173868" transparent opacity={0} side={THREE.DoubleSide} />
+      </mesh>
+
+      <mesh ref={shell}>
+        <sphereGeometry args={[1.65, 32, 24]} />
+        <meshBasicMaterial color="#0a172c" transparent opacity={0} wireframe />
+      </mesh>
+
+      <mesh ref={ringA}>
+        <ringGeometry args={[1.8, 2.25, 72]} />
+        <meshBasicMaterial color="#83b0ff" transparent opacity={0} side={THREE.DoubleSide} />
+      </mesh>
+
+      <mesh ref={ringB}>
+        <ringGeometry args={[2.45, 3.1, 72]} />
+        <meshBasicMaterial color="#3e6ac2" transparent opacity={0} side={THREE.DoubleSide} />
+      </mesh>
+    </>
+  );
+}
+
+function SceneWorld({
+  phase,
+  selected,
+  onSelect,
+  onEnterLifemap,
+}: {
+  phase: ScenePhase;
+  selected: SelectedStar | null;
+  onSelect: (star: SelectedStar) => void;
+  onEnterLifemap: () => void;
+}): JSX.Element {
+  const background = useMemo(() => new THREE.Color("#01040d"), []);
+  const selectedId = selected?.id ?? null;
+  const phaseMix = useRef(0);
+
+  useFrame((_, delta) => {
+    phaseMix.current = lerpExp(phaseMix.current, phase === "home" ? 0 : 1, 2.2, delta);
+  });
+
+  return (
+    <>
+      <color attach="background" args={[background]} />
+      <fog attach="fog" args={["#01040d", 22, 88]} />
+
+      <ambientLight intensity={THREE.MathUtils.lerp(0.52, 0.2, phaseMix.current)} />
+      <directionalLight position={[2, 5, 3]} intensity={THREE.MathUtils.lerp(1.2, 0.48, phaseMix.current)} color="#9db7ff" />
+      <pointLight position={[0, 0.2, 2.2]} intensity={THREE.MathUtils.lerp(1.55, 0.2, phaseMix.current)} color="#88aaff" />
+      <pointLight position={[0, 1.25, -22]} intensity={THREE.MathUtils.lerp(0.18, 0.62, phaseMix.current)} color="#739dff" />
+
+      <Suspense fallback={null}>
+        <FlowRig phase={phase} selected={selected} />
+
+        <HomeWorld phase={phase} onEnterLifemap={onEnterLifemap} />
+
+        <Stars
+          radius={150}
+          depth={90}
+          count={2200}
+          factor={phase === "home" ? 2.6 : phase === "replay" ? 5.1 : 4.2}
+          saturation={0}
+          fade
+          speed={phase === "replay" ? 0.24 : phase === "focus" ? 0.12 : 0.06}
+        />
+
+        <Starfield
+          stars={STAR_POINTS}
+          visible={phase !== "home"}
+          presence={phase === "home" ? 0 : phase === "replay" ? 0.92 : 1}
+          interactive={phase === "lifemap"}
+          selectedId={selectedId}
+          phase={phase}
+          onSelectStar={(star) => {
+            const matched = STAR_POINTS.find((point) => point.id === star.id);
+            if (matched) onSelect(matched);
+          }}
+        />
+
+        {selected ? (
+          <mesh position={selected.position}>
+            <sphereGeometry args={[selected.size * (phase === "replay" ? 3.8 : 3.2), 20, 20]} />
+            <meshBasicMaterial
+              color={selected.color}
+              transparent
+              opacity={phase === "replay" ? 0.1 : 0.06}
+              blending={THREE.AdditiveBlending}
+            />
+          </mesh>
+        ) : null}
+
+        <FocusCreatures phase={phase} selected={selected} />
+        <ReplayChamber phase={phase} selected={selected} />
+      </Suspense>
+    </>
+  );
+}
+
+export default function SpatialScene(): JSX.Element {
+  const [phase, setPhase] = useState<ScenePhase>("home");
+  const [selected, setSelected] = useState<SelectedStar | null>(null);
+
+  const enterLifemap = useCallback((): void => {
+    setPhase("lifemap");
+  }, []);
+
+  const goHome = useCallback((): void => {
+    setSelected(null);
+    setPhase("home");
+  }, []);
+
+  const goLifemap = useCallback((): void => {
+    setPhase("lifemap");
+  }, []);
+
+  const goFocus = useCallback((): void => {
+    if (selected) setPhase("focus");
+  }, [selected]);
+
+  const goReplay = useCallback((): void => {
+    if (selected) setPhase("replay");
+  }, [selected]);
+
+  useEffect(() => {
+    const onKey = (event: KeyboardEvent): void => {
+      if (event.key === "Enter") {
+        if (phase === "home") {
+          enterLifemap();
+        } else {
+          goHome();
+        }
+        return;
+      }
+
+      if (event.key === "Escape") {
+        if (phase === "replay") {
+          setPhase("focus");
+          return;
+        }
+        if (phase === "focus") {
+          setPhase("lifemap");
+          return;
+        }
+        if (phase === "lifemap") {
+          goHome();
+        }
+        return;
+      }
+
+      if (event.key.toLowerCase() === "r" && selected && phase === "focus") {
+        setPhase("replay");
+      }
+    };
+
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [enterLifemap, goHome, phase, selected]);
+
+  const handleSelect = useCallback((star: SelectedStar): void => {
+    setSelected(star);
+    setPhase("focus");
+  }, []);
+
+  return (
+    <div className="relative h-screen w-screen overflow-hidden bg-black">
+      <Canvas
+        dpr={[1, 1.75]}
+        gl={{ antialias: true, alpha: false }}
+        camera={{ position: [0, 0.45, 9.4], fov: 50, near: 0.1, far: 240 }}
+      >
+        <SceneWorld phase={phase} selected={selected} onSelect={handleSelect} onEnterLifemap={enterLifemap} />
+      </Canvas>
+
+      {phase === "focus" && selected ? <FocusShellOverlay selected={selected} /> : null}
+      {phase === "replay" && selected ? <ReplayOverlay selected={selected} /> : null}
+
+      <div className="pointer-events-none absolute right-5 top-5 rounded-2xl border border-white/10 bg-black/35 px-4 py-3 text-xs text-white/85 shadow-[0_0_40px_rgba(0,0,0,0.35)] backdrop-blur-sm">
+        <div>Enter: Home/LifeMap</div>
+        <div>Click sky: Begin ascent</div>
+        <div>Click star: Focus</div>
+        <div>R: Replay</div>
+        <div>Esc: Back one phase</div>
+      </div>
+
+      <div className="absolute bottom-5 left-5 flex gap-3 text-sm">
+        <button className="rounded border border-white/35 bg-white/90 px-3 py-1 text-black" onClick={goHome} type="button">
+          Home
+        </button>
+        <button className="rounded border border-white/35 bg-white/90 px-3 py-1 text-black" onClick={enterLifemap} type="button">
+          Begin ascent
+        </button>
+        <button className="rounded border border-white/35 bg-white/90 px-3 py-1 text-black" onClick={goFocus} type="button">
+          Focus
+        </button>
+        <button className="rounded border border-white/35 bg-white/90 px-3 py-1 text-black" onClick={goReplay} type="button">
+          Replay
+        </button>
+        <button className="rounded border border-white/20 bg-black/40 px-3 py-1 text-white" onClick={goLifemap} type="button">
+          LifeMap
+        </button>
+      </div>
+    </div>
+  );
+}

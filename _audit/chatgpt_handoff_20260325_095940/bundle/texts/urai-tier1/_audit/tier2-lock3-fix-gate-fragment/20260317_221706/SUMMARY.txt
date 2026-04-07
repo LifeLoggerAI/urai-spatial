@@ -1,0 +1,152 @@
+== tier2 lock3 fix gate fragment ==
+timestamp=20260317_221706
+branch=tier2-lock3-add-immersive-gate-20260317_221550
+commit_before=4d148ec
+
+== git status before ==
+ M src/spatial/scene/SpatialScene.tsx
+
+== SpatialScene broken window ==
+   808	      >
+   809	        <Atmosphere />
+   810	        <ambientLight intensity={0.95} />
+   811	        <directionalLight position={[8, 12, 10]} intensity={1.1} color="#dbe4ff" />
+   812	        <pointLight position={[0, 6, 10]} intensity={selectedStar ? 10 : 6} color="#ffffff" />
+   813	        <pointLight position={[0, -2, -8]} intensity={4} color="#6f86ff" />
+   814	        {immersiveEnabled && (
+   815	        <ArHitTestBridge />
+   816	        <UnityRuntimePayloadBridge />
+   817	        <SpatialPersistenceBridge />
+   818	        <SpatialAnalyticsBridge />
+   819	        <XrLocomotionRuntime />
+   820	        <CameraRig />
+   821	        <FloorPlane />
+   822	        <StarField />
+   823	        <MemorySphere />
+   824	        <ReplayConstellation />
+   825	        <ArPlaneMarker />
+   826	      </Canvas>
+   827	        <WebXRRendererHandoffOverlay />
+   828	        <NarratorOrchestrationOverlay />
+   829	        <SeasonalCycleOverlay />
+   830	        <EraCompareOverlay />
+   831	        <StoryArcOverlay />
+   832	        <CausalInsightOverlay />
+   833	        <ChapterSynthesisOverlay />
+   834	        <DatasetVersioningOverlay />
+   835	        <PersistenceSyncOverlay />
+   836	        <MergePreflightOverlay />
+   837	        <BatchImportAuditOverlay />
+   838	        <ExternalIngestOverlay />
+   839	        <MemoryImportOverlay />
+   840	        <ImmersiveReplayTraversalOverlay />
+   841	        <XRInputOverlay />
+   842	        <UnityAdapterOverlay />
+   843	        <ARPlacementOverlay />
+   844	        <XRCameraRigOverlay />
+   845	        <WebXREntryOverlay />
+   846	        <SceneExportOverlay />
+   847	        <ImmersiveContractOverlay />
+   848	        <XRBridgeOverlay />
+   849	        )}
+   850	        <LifeMapIntelligenceOverlay />
+   851	        <CinematicReplayOverlay />
+   852	
+
+== SpatialScene fixed window ==
+   808	      >
+   809	        <Atmosphere />
+   810	        <ambientLight intensity={0.95} />
+   811	        <directionalLight position={[8, 12, 10]} intensity={1.1} color="#dbe4ff" />
+   812	        <pointLight position={[0, 6, 10]} intensity={selectedStar ? 10 : 6} color="#ffffff" />
+   813	        <pointLight position={[0, -2, -8]} intensity={4} color="#6f86ff" />
+   814	        {immersiveEnabled {immersiveEnabled && ({immersiveEnabled && ( (<>
+   815	        <ArHitTestBridge />
+   816	        <UnityRuntimePayloadBridge />
+   817	        <SpatialPersistenceBridge />
+   818	        <SpatialAnalyticsBridge />
+   819	        <XrLocomotionRuntime />
+   820	        <CameraRig />
+   821	        <FloorPlane />
+   822	        <StarField />
+   823	        <MemorySphere />
+   824	        <ReplayConstellation />
+   825	        <ArPlaneMarker />
+   826	      </Canvas>
+   827	        <WebXRRendererHandoffOverlay />
+   828	        <NarratorOrchestrationOverlay />
+   829	        <SeasonalCycleOverlay />
+   830	        <EraCompareOverlay />
+   831	        <StoryArcOverlay />
+   832	        <CausalInsightOverlay />
+   833	        <ChapterSynthesisOverlay />
+   834	        <DatasetVersioningOverlay />
+   835	        <PersistenceSyncOverlay />
+   836	        <MergePreflightOverlay />
+   837	        <BatchImportAuditOverlay />
+   838	        <ExternalIngestOverlay />
+   839	        <MemoryImportOverlay />
+   840	        <ImmersiveReplayTraversalOverlay />
+   841	        <XRInputOverlay />
+   842	        <UnityAdapterOverlay />
+   843	        <ARPlacementOverlay />
+   844	        <XRCameraRigOverlay />
+   845	        <WebXREntryOverlay />
+   846	        <SceneExportOverlay />
+   847	        <ImmersiveContractOverlay />
+   848	        <XRBridgeOverlay />
+   849	        </>)}
+   850	        <LifeMapIntelligenceOverlay />
+   851	        <CinematicReplayOverlay />
+   852	
+
+== gate refs ==
+165:    <>
+168:    </>
+190:  const immersiveEnabled = false;
+485:    <>
+543:      </>)}
+602:      </>)}
+633:      </>)}
+668:      </>)}
+747:      </>)}
+748:    </>
+814:        {immersiveEnabled {immersiveEnabled && ({immersiveEnabled && ( (<>
+849:        </>)}
+
+== diff stat ==
+ urai-tier1/src/spatial/scene/SpatialScene.tsx | 13 ++++++++-----
+ 1 file changed, 8 insertions(+), 5 deletions(-)
+
+== build tail ==
+
+> urai-tier1@0.1.0 build /home/user/urai-spatial/urai-tier1
+> next build
+
+▲ Next.js 16.1.6 (Turbopack)
+
+  Creating an optimized production build ...
+
+> Build error occurred
+Error: Turbopack build failed with 1 errors:
+./urai-tier1/src/spatial/scene/SpatialScene.tsx:543:8
+Parsing ecmascript source code failed
+[0m [90m 541 |[39m           [33m<[39m[33m/[39m[33mdiv[39m[33m>[39m
+ [90m 542 |[39m         [33m<[39m[33m/[39m[33mdiv[39m[33m>[39m
+[31m[1m>[22m[39m[90m 543 |[39m       [33m<[39m[33m/[39m[33m>[39m)}
+ [90m     |[39m        [31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m[31m[1m^[22m[39m
+ [90m 544 |[39m
+ [90m 545 |[39m       {mode [33m===[39m [32m"sky"[39m [33m&&[39m (
+ [90m 546 |[39m         [33m<[39m[33mdiv[39m[0m
+
+Unterminated regexp literal
+
+Import trace:
+  Server Component:
+    ./urai-tier1/src/spatial/scene/SpatialScene.tsx
+    ./urai-tier1/src/app/page.tsx
+
+
+    at <unknown> (./urai-tier1/src/spatial/scene/SpatialScene.tsx:543:8)
+ ELIFECYCLE  Command failed with exit code 1.
+FAIL: build failed after fixing immersive gate fragment

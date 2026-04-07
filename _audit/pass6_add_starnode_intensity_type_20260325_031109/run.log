@@ -1,0 +1,24 @@
+=== PASS 6: ADD STARNODE INTENSITY TYPE ===
+--- STAR TYPE BEFORE ---
+--- RENDER LINE BEFORE ---
+604:          emissiveIntensity={0.25 * o}
+617:          emissiveIntensity={1.1 * o}
+896:                emissiveIntensity={(0.65 + (star.intensity ?? 0.35) * 0.8) * starOpacity}
+--- PATCH 1: ensure StarNode declares intensity?: number ---
+--- PATCH 2: keep safe fallback at render site ---
+--- STAR TYPE AFTER ---
+--- VERIFY TARGETS ---
+8:type StarNode = SelectedStar & {
+9:  intensity?: number;
+897:                emissiveIntensity={(0.65 + (star.intensity ?? 0.35) * 0.8) * starOpacity}
+--- BUILD ---
+
+=== RESULT ===
+BUILD OK
+audit: _audit/pass6_add_starnode_intensity_type_20260325_031109
+
+NEXT VERIFY:
+1. app loads without syntax error
+2. home->lifemap corridor works
+3. lifemap has more depth and density
+4. esc still unwinds replay->focus->lifemap->home

@@ -1,0 +1,129 @@
+"use client"
+
+import { useMemo } from "react"
+import type { JSX } from "react"
+
+export type SpatialPhase = "home" | "ascent" | "lifemap" | "focus" | "replay"
+
+export type SpatialStar = {
+  id: string
+  title: string
+  chapter: string
+  detail: string
+  position: [number, number, number]
+  size: number
+  color: string
+}
+
+type StarfieldProps = {
+  phase: SpatialPhase
+  selectedId: string | null
+  hoveredId: string | null
+  onSelect: (star: SpatialStar) => void
+  onHover: (id: string | null) => void
+}
+
+function mulberry32(seed: number) {
+  let t = seed >>> 0
+  return function next() {
+    t += 0x6d2b79f5
+    let r = Math.imul(t ^ (t >>> 15), 1 | t)
+    r ^= r + Math.imul(r ^ (r >>> 7), 61 | r)
+    return ((r ^ (r >>> 14)) >>> 0) / 4294967296
+  }
+}
+
+export function buildSpatialStars(seed = 19830414, count = 42): SpatialStar[] {
+  const rand = mulberry32(seed)
+  const palette = ["#f6fbff", "#cfe7ff", "#a7cfff", "#fff4c4", "#d8c8ff"]
+  const chapters = ["Origin", "Climb", "Threshold", "Memory", "Return", "Signal"]
+  const stars: SpatialStar[] = []
+
+  for (let i = 0; i < count; i += 1) {
+    const band = i % 3
+    const spread = band === 0 ? 14 : band === 1 ? 25 : 42
+    const zBase = band === 0 ? -18 : band === 1 ? -42 : -78
+    const angle = rand() * Math.PI * 2
+    const radius = 4 + rand() * spread
+    const x = Math.cos(angle) * radius * (0.6 + rand() * 0.9)
+    const y = (rand() - 0.5) * (band === 0 ? 10 : band === 1 ? 20 : 34)
+    const z = zBase - rand() * (band === 0 ? 12 : band === 1 ? 24 : 50)
+    const size =
+      band === 0
+        ? 0.12 + rand() * 0.08
+        : band === 1
+          ? 0.18 + rand() * 0.12
+          : 0.24 + rand() * 0.18
+    const chapter = chapters[i % chapters.length]
+
+    stars.push({
+      id: `star-${i + 1}`,
+      title: `Memory ${String(i + 1).padStart(2, "0")}`,
+      chapter,
+      detail: `${chapter} node ${i + 1} anchored in the URAI life map.`,
+      position: [Number(x.toFixed(3)), Number(y.toFixed(3)), Number(z.toFixed(3))],
+      size: Number(size.toFixed(3)),
+      color: palette[i % palette.length],
+    })
+  }
+
+  return stars.sort((a, b) => b.position[2] - a.position[2])
+}
+
+export default function Starfield(props: StarfieldProps): JSX.Element {
+  const { phase, selectedId, hoveredId, onSelect, onHover } = props
+  const stars = useMemo(() => buildSpatialStars(), [])
+
+  return (
+    <group visible={phase !== "home"}>
+      {stars.map((star) => {
+        const isSelected = star.id === selectedId
+        const isHovered = star.id === hoveredId
+        const otherSelected = selectedId !== null && !isSelected
+        const baseScale = phase === "lifemap" ? 1 : phase === "focus" ? 1.25 : 1.5
+        const scale = isSelected ? baseScale * 2.6 : isHovered ? baseScale * 1.4 : baseScale
+        const opacity =
+          phase === "replay"
+            ? isSelected
+              ? 0.98
+              : 0.03
+            : phase === "focus"
+              ? isSelected
+                ? 0.96
+                : otherSelected
+                  ? 0.08
+                  : 0.2
+              : otherSelected
+                ? 0.22
+                : 0.86
+
+        return (
+          <group key={star.id} position={star.position}>
+            <mesh
+              scale={scale}
+              onPointerOver={(event) => {
+                event.stopPropagation()
+                onHover(star.id)
+              }}
+              onPointerOut={(event) => {
+                event.stopPropagation()
+                onHover(null)
+              }}
+              onClick={(event) => {
+                event.stopPropagation()
+                onSelect(star)
+              }}
+            >
+              <sphereGeometry args={[star.size, 18, 18]} />
+              <meshBasicMaterial color={star.color} transparent opacity={opacity} />
+            </mesh>
+            <mesh scale={scale * 4.2}>
+              <sphereGeometry args={[star.size, 18, 18]} />
+              <meshBasicMaterial color={star.color} transparent opacity={opacity * 0.085} />
+            </mesh>
+          </group>
+        )
+      })}
+    </group>
+  )
+}

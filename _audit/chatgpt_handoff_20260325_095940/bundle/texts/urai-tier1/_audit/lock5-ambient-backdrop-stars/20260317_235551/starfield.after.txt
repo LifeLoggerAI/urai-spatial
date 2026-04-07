@@ -1,0 +1,88 @@
+   343	function StarField() {
+   344	  const stars = useSceneStore((s) => s.stars);
+   345	  const selectedStarId = useSceneStore((s) => s.selectedStarId);
+   346	  const mode = useSceneStore((s) => s.mode);
+   347	  const selectStar = useSceneStore((s) => s.selectStar);
+   348	  const clearFocus = useSceneStore((s) => s.clearFocus);
+   349	
+   350	  const ambientCount = mode === "lifemap" ? 260 : mode === "sky" ? 140 : 80;
+   351	
+   352	  return (
+   353	    <group>
+   354	      {Array.from({ length: ambientCount }).map((_, i) => {
+   355	        const angle = i * 2.399963229728653;
+   356	        const radius = 16 + (i % 15) * 3.6 + Math.sin(i * 0.77) * 2.2;
+   357	        const x = Math.cos(angle) * radius;
+   358	        const y = -10 + (i % 19) * 1.12 + Math.sin(i * 1.13) * 1.85;
+   359	        const z = -12 - (i % 23) * 5.4 - Math.cos(i * 0.41) * 3.4;
+   360	        const size =
+   361	          mode === "lifemap"
+   362	            ? 0.038 + (i % 5) * 0.012
+   363	            : mode === "sky"
+   364	            ? 0.028 + (i % 4) * 0.009
+   365	            : 0.02 + (i % 3) * 0.007;
+   366	        const opacity =
+   367	          mode === "lifemap"
+   368	            ? 0.18 + (i % 7) * 0.045
+   369	            : mode === "sky"
+   370	            ? 0.1 + (i % 5) * 0.03
+   371	            : 0.05 + (i % 4) * 0.02;
+   372	        const color = i % 9 === 0 ? "#dbe7ff" : i % 6 === 0 ? "#8fb5ff" : "#ffffff";
+   373	
+   374	        return (
+   375	          <mesh key={`ambient-${i}`} position={[x, y, z]} renderOrder={-1}>
+   376	            <sphereGeometry args={[size, 10, 10]} />
+   377	            <meshBasicMaterial
+   378	              color={color}
+   379	              transparent
+   380	              opacity={opacity}
+   381	              depthWrite={false}
+   382	            />
+   383	          </mesh>
+   384	        );
+   385	      })}
+   386	
+   387	      {stars.map((star) => {
+   388	        const isSelected = star.id === selectedStarId;
+   389	        const dimmed = !!selectedStarId && !isSelected;
+   390	
+   391	        return (
+   392	          <StarNode
+   393	            key={star.id}
+   394	            star={star}
+   395	            isSelected={isSelected}
+   396	            dimmed={mode === "replay" ? !isSelected : dimmed}
+   397	            onSelect={(node) => selectStar(toCanonicalSelectedStar(node))}
+   398	          />
+   399	        );
+   400	      })}
+   401	
+   402	      <mesh
+   403	        rotation={[-Math.PI / 2, 0, 0]}
+   404	        position={[0, -7.95, 0]}
+   405	        onClick={() => {
+   406	          if (mode === "focus") clearFocus();
+   407	        }}
+   408	      >
+   409	        <circleGeometry args={[90, 64]} />
+   410	        <meshBasicMaterial transparent opacity={0.001} />
+   411	      </mesh>
+   412	    </group>
+   413	  );
+   414	}
+   415	function ReplayConstellation() {
+   416	  const selectedStar = useSceneStore((s) => s.selectedStar);
+   417	  const mode = useSceneStore((s) => s.mode);
+   418	  const ref = useRef<THREE.Group>(null);
+   419	
+   420	  useFrame(({ clock }) => {
+   421	    if (!ref.current || !selectedStar || mode !== "replay") return;
+   422	    const t = clock.getElapsedTime();
+   423	    ref.current.rotation.y = t * 0.18;
+   424	    ref.current.rotation.z = Math.sin(t * 0.42) * 0.08;
+   425	  });
+   426	
+   427	  if (!selectedStar || mode !== "replay") return null;
+   428	
+   429	  return (
+   430	    <group ref={ref} position={selectedStar.position}>

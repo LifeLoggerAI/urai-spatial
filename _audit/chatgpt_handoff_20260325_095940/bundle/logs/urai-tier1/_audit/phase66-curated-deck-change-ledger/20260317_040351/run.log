@@ -1,0 +1,95 @@
+
+== repo + branch ==
+
+$ cd '/home/user/urai-spatial' && git status --short
+_MONOSPACE_ENV_STARTED_=http://localhost:80/
+?? urai-tier1/docs/xr-renderer/
+RC=0
+
+$ cd '/home/user/urai-spatial' && git switch -c 'phase66-curated-deck-change-ledger-20260317_040351'
+_MONOSPACE_ENV_STARTED_=http://localhost:80/
+Switched to a new branch 'phase66-curated-deck-change-ledger-20260317_040351'
+RC=0
+
+== audit plan ==
+
+== create curated deck ledger row types ==
+
+== create curated deck ledger builder ==
+
+== create curated deck ledger panel ==
+
+== patch scene ==
+
+== targeted grep ==
+
+$ cd '/home/user/urai-spatial/urai-tier1' && grep -RIn 'SpatialCuratedDeckChangeLedgerPanel\|buildSpatialCuratedDeckChangeLedger\|urai.spatial.curated-deck-change-ledger.v1\|Curated Deck Change Ledger' src | tee '/home/user/urai-spatial/urai-tier1/_audit/phase66-curated-deck-change-ledger/20260317_040351/grep.txt'
+_MONOSPACE_ENV_STARTED_=http://localhost:80/
+src/spatial/ui/SpatialCuratedDeckChangeLedgerPanel.tsx:5:import { buildSpatialCuratedDeckChangeLedger } from "@/spatial/curation/buildSpatialCuratedDeckChangeLedger";
+src/spatial/ui/SpatialCuratedDeckChangeLedgerPanel.tsx:8:export default function SpatialCuratedDeckChangeLedgerPanel() {
+src/spatial/ui/SpatialCuratedDeckChangeLedgerPanel.tsx:13:    () => buildSpatialCuratedDeckChangeLedger({ entries }),
+src/spatial/ui/SpatialCuratedDeckChangeLedgerPanel.tsx:49:        Curated Deck Change Ledger
+src/spatial/curation/spatialCuratedDeckChangeLedgerTypes.ts:16:  schema: "urai.spatial.curated-deck-change-ledger.v1";
+src/spatial/curation/buildSpatialCuratedDeckChangeLedger.ts:29:export function buildSpatialCuratedDeckChangeLedger(input: {
+src/spatial/curation/buildSpatialCuratedDeckChangeLedger.ts:46:    schema: "urai.spatial.curated-deck-change-ledger.v1",
+src/spatial/scene/SpatialScene.tsx:2:import SpatialCuratedDeckChangeLedgerPanel from "@/spatial/ui/SpatialCuratedDeckChangeLedgerPanel";
+src/spatial/scene/SpatialScene.tsx:782:      <SpatialCuratedDeckChangeLedgerPanel />
+RC=0
+
+== build ==
+
+$ cd '/home/user/urai-spatial/urai-tier1' && pnpm build
+_MONOSPACE_ENV_STARTED_=http://localhost:80/
+
+> urai-tier1@0.1.0 build /home/user/urai-spatial/urai-tier1
+> next build
+
+▲ Next.js 16.1.6 (Turbopack)
+
+  Creating an optimized production build ...
+✓ Compiled successfully in 25.0s
+  Running TypeScript ...
+  Collecting page data using 1 worker ...
+  Generating static pages using 1 worker (0/4) ...
+  Generating static pages using 1 worker (1/4) 
+  Generating static pages using 1 worker (2/4) 
+  Generating static pages using 1 worker (3/4) 
+✓ Generating static pages using 1 worker (4/4) in 370.6ms
+  Finalizing page optimization ...
+
+Route (app)
+┌ ○ /
+└ ○ /_not-found
+
+
+○  (Static)  prerendered as static content
+
+RC=0
+
+== git snapshot ==
+
+$ cd '/home/user/urai-spatial' && git status --short | tee '/home/user/urai-spatial/urai-tier1/_audit/phase66-curated-deck-change-ledger/20260317_040351/git_status.txt'
+_MONOSPACE_ENV_STARTED_=http://localhost:80/
+ M urai-tier1/src/spatial/scene/SpatialScene.tsx
+?? urai-tier1/docs/xr-renderer/
+?? urai-tier1/src/spatial/curation/buildSpatialCuratedDeckChangeLedger.ts
+?? urai-tier1/src/spatial/curation/spatialCuratedDeckChangeLedgerTypes.ts
+?? urai-tier1/src/spatial/ui/SpatialCuratedDeckChangeLedgerPanel.tsx
+RC=0
+
+$ cd '/home/user/urai-spatial' && git add urai-tier1/src
+_MONOSPACE_ENV_STARTED_=http://localhost:80/
+RC=0
+
+$ cd '/home/user/urai-spatial' && git commit -m 'feat(urai-spatial): phase66 curated deck change ledger'
+_MONOSPACE_ENV_STARTED_=http://localhost:80/
+[phase66-curated-deck-change-ledger-20260317_040351 f2fd650] feat(urai-spatial): phase66 curated deck change ledger
+ 4 files changed, 211 insertions(+)
+ create mode 100644 urai-tier1/src/spatial/curation/buildSpatialCuratedDeckChangeLedger.ts
+ create mode 100644 urai-tier1/src/spatial/curation/spatialCuratedDeckChangeLedgerTypes.ts
+ create mode 100644 urai-tier1/src/spatial/ui/SpatialCuratedDeckChangeLedgerPanel.tsx
+RC=0
+
+== done ==
+AUDIT_DIR=/home/user/urai-spatial/urai-tier1/_audit/phase66-curated-deck-change-ledger/20260317_040351
+FAIL=0

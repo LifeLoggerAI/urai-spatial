@@ -1,0 +1,2 @@
+5:    "dev": "pnpm --filter urai-tier1 dev",
+6:    "build": "pnpm --filter urai-tier1 build",

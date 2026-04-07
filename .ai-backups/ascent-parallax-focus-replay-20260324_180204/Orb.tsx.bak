@@ -1,0 +1,85 @@
+"use client";
+
+import * as THREE from "three";
+import { Float } from "@react-three/drei";
+import { useFrame } from "@react-three/fiber";
+import { useMemo, useRef } from "react";
+
+export type OrbProps = {
+  visible?: boolean;
+  position?: [number, number, number];
+  intensity?: number;
+  orbScale?: number;
+  opacity?: number;
+};
+
+export default function Orb({
+  visible = true,
+  position = [0, 0, 0],
+  intensity = 1,
+  orbScale = 1,
+  opacity = 1,
+}: OrbProps) {
+  const coreRef = useRef<THREE.Mesh>(null);
+  const shellRef = useRef<THREE.Mesh>(null);
+
+  const color = useMemo(() => new THREE.Color("#c8d7ff"), []);
+  const shellColor = useMemo(() => new THREE.Color("#5a7cff"), []);
+
+  useFrame((state) => {
+    const t = state.clock.elapsedTime;
+    if (coreRef.current) {
+      coreRef.current.rotation.y += 0.0025;
+      coreRef.current.rotation.x = Math.sin(t * 0.3) * 0.08;
+      coreRef.current.scale.setScalar(1 + Math.sin(t * 1.2) * 0.02);
+    }
+    if (shellRef.current) {
+      shellRef.current.rotation.y -= 0.0015;
+      shellRef.current.rotation.z = Math.cos(t * 0.4) * 0.04;
+      shellRef.current.scale.setScalar(1.15 + Math.sin(t * 0.9) * 0.025);
+    }
+  });
+
+  if (!visible) return null;
+
+  return (
+    <group position={position} scale={orbScale}>
+      <Float speed={0.7} rotationIntensity={0.1} floatIntensity={0.35}>
+        <mesh ref={shellRef}>
+          <sphereGeometry args={[0.78, 48, 48]} />
+          <meshBasicMaterial
+            color={shellColor}
+            transparent
+            opacity={0.14 * intensity * opacity}
+            blending={THREE.AdditiveBlending}
+            depthWrite={false}
+          />
+        </mesh>
+
+        <mesh ref={coreRef}>
+          <sphereGeometry args={[0.5, 48, 48]} />
+          <meshStandardMaterial
+            color={color}
+            emissive={color}
+            emissiveIntensity={1.8 * intensity}
+            roughness={0.18}
+            metalness={0.05}
+            transparent
+            opacity={0.95 * opacity}
+          />
+        </mesh>
+
+        <mesh>
+          <sphereGeometry args={[0.58, 40, 40]} />
+          <meshBasicMaterial
+            color="#ffffff"
+            transparent
+            opacity={0.06 * intensity * opacity}
+            blending={THREE.AdditiveBlending}
+            depthWrite={false}
+          />
+        </mesh>
+      </Float>
+    </group>
+  );
+}

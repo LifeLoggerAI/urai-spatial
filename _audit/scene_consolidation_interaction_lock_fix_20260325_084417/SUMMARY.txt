@@ -1,0 +1,23 @@
+PASS: single-scene stabilization lock applied
+
+target: /home/user/urai-spatial/urai-tier1/src/spatial/scene/SpatialScene.tsx
+
+locks enforced:
+- one continuous scene for home/lifemap/focus/replay
+- stable deterministic stars built once
+- camera-driven mode transitions
+- transition lock window to prevent double input
+- orb hidden outside home/descend timing
+- lifemap click-to-focus
+- replay path from focus
+- escape ladder: replay -> focus -> lifemap -> home
+
+fixes included:
+- canonical app pinned to ./urai-tier1, never node_modules
+- Vector3 lerpScalar error replaced with Vector3 lerp
+- deprecated THREE.Clock usage avoided in this file
+
+artifacts:
+- backup: /home/user/urai-spatial/_audit/scene_consolidation_interaction_lock_fix_20260325_084417/backup/SpatialScene.tsx.before
+- diff:   /home/user/urai-spatial/_audit/scene_consolidation_interaction_lock_fix_20260325_084417/SpatialScene.diff
+- build:  /home/user/urai-spatial/_audit/scene_consolidation_interaction_lock_fix_20260325_084417/build.stdout / /home/user/urai-spatial/_audit/scene_consolidation_interaction_lock_fix_20260325_084417/build.stderr

@@ -1,0 +1,12 @@
+== lock8 minimal sky contract no-python ==
+timestamp=20260317_211813
+branch=lock8-minimal-sky-contract-20260317_211557
+commit=1821fb7
+
+== git status before ==
+ M src/spatial/scene/SpatialScene.tsx
+ M src/spatial/state/sceneStore.ts
+== patch sceneStore ==
+== patch SpatialScene title and mode case ==
+== patch home advance to sky ==
+== insert sky overlay block ==

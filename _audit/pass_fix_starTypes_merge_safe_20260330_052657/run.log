@@ -1,0 +1,113 @@
+BACKUP: src/lib/uraiCanon/starTypes.ts
+=== WRITE MERGED starTypes.ts ===
+=== PROOF starTypes.ts ===
+     1	export type StarTone =
+     2	  | 'neutral'
+     3	  | 'warm'
+     4	  | 'cool'
+     5	  | 'joy'
+     6	  | 'grief'
+     7	  | 'focus'
+     8	  | 'memory'
+     9	  | 'mystery'
+    10	  | 'warning'
+    11	  | 'dream'
+    12	
+    13	export type Vec3 = [number, number, number]
+    14	
+    15	export type LifeMapStar = {
+    16	  id: string
+    17	  label: string
+    18	  position: Vec3
+    19	  tone: StarTone | string
+    20	  intensity: number
+    21	  stability: number
+    22	  createdAt?: number | null
+    23	  updatedAt?: number | null
+    24	  source?: string
+    25	  metadata?: Record<string, unknown>
+    26	}
+    27	
+    28	export type SelectedStar = LifeMapStar
+    29	
+    30	export type StarPhase = 'home' | 'lifemap' | 'focus' | 'replay'
+    31	
+    32	export type StarNode = {
+    33	  id: string
+    34	  x: number
+    35	  y: number
+    36	  z: number
+    37	  title?: string
+    38	  label?: string
+    39	  color?: string
+    40	  size?: number
+    41	  radius?: number
+    42	  intensity?: number
+    43	  importance?: number
+    44	  chapterId?: string
+    45	  isAnchor?: boolean
+    46	  interactive?: boolean
+    47	  metadata?: Record<string, unknown>
+    48	}
+    49	
+    50	export type StarSelectionState = {
+    51	  selectedStarId: string | null
+    52	  hoveredStarId: string | null
+    53	}
+    54	
+    55	export function isStarNode(value: unknown): value is StarNode {
+    56	  if (!value || typeof value !== 'object') return false
+    57	  const v = value as Record<string, unknown>
+    58	  return (
+    59	    typeof v.id === 'string' &&
+    60	    typeof v.x === 'number' &&
+    61	    typeof v.y === 'number' &&
+    62	    typeof v.z === 'number'
+    63	  )
+    64	}
+    65	
+    66	export function coerceStarNode(
+    67	  value: Partial<StarNode> & Pick<StarNode, 'id'>
+    68	): StarNode {
+    69	  return {
+    70	    id: value.id,
+    71	    x: Number(value.x ?? 0),
+    72	    y: Number(value.y ?? 0),
+    73	    z: Number(value.z ?? -40),
+    74	    title: value.title,
+    75	    label: value.label,
+    76	    color: value.color ?? '#d6dce6',
+    77	    size: Number(value.size ?? 0.16),
+    78	    radius: Number(value.radius ?? value.size ?? 0.16),
+    79	    intensity: Number(value.intensity ?? 0.8),
+    80	    importance: Number(value.importance ?? value.intensity ?? 0.8),
+    81	    chapterId: value.chapterId,
+    82	    isAnchor: Boolean(value.isAnchor ?? false),
+    83	    interactive: Boolean(value.interactive ?? true),
+    84	    metadata: value.metadata ?? {},
+    85	  }
+    86	}
+=== FIX BAD IMPORT PATHS ===
+No bad @/src/lib/uraiCanon imports found.
+=== TYPECHECK ===
+TYPECHECK_EXIT=2
+
+=== LAST 120 TYPECHECK LINES ===
+src/spatial/components/LifeMapStarfield.tsx(12,8): error TS2307: Cannot find module '@/lib/uraiCanon/starfieldDepth' or its corresponding type declarations.
+src/spatial/components/LifeMapStarfield.tsx(86,28): error TS2339: Property 'x' does not exist on type 'PositionLike'.
+  Property 'x' does not exist on type 'Vec3Tuple'.
+src/spatial/components/LifeMapStarfield.tsx(87,28): error TS2339: Property 'y' does not exist on type 'PositionLike'.
+  Property 'y' does not exist on type 'Vec3Tuple'.
+src/spatial/components/LifeMapStarfield.tsx(88,28): error TS2339: Property 'z' does not exist on type 'PositionLike'.
+  Property 'z' does not exist on type 'Vec3Tuple'.
+src/spatial/components/Starfield.tsx(12,8): error TS2307: Cannot find module '@/lib/uraiCanon/starfieldDepth' or its corresponding type declarations.
+src/spatial/components/Starfield.tsx(86,28): error TS2339: Property 'x' does not exist on type 'PositionLike'.
+  Property 'x' does not exist on type 'Vec3Tuple'.
+src/spatial/components/Starfield.tsx(87,28): error TS2339: Property 'y' does not exist on type 'PositionLike'.
+  Property 'y' does not exist on type 'Vec3Tuple'.
+src/spatial/components/Starfield.tsx(88,28): error TS2339: Property 'z' does not exist on type 'PositionLike'.
+  Property 'z' does not exist on type 'Vec3Tuple'.
+src/spatial/scene/SpatialScene.tsx(1,34): error TS2307: Cannot find module '@/lib/uraiCanon/starSchema' or its corresponding type declarations.
+src/spatial/scene/SpatialScene.tsx(81,50): error TS2304: Cannot find name 'ry'.
+
+Audit: /home/user/urai-spatial/_audit/pass_fix_starTypes_merge_safe_20260330_052657

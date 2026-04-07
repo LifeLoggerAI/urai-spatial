@@ -1,0 +1,709 @@
+"use client";
+
+import React, { useEffect, useMemo, useRef, useState } from "react";
+import { FOCUS_TO_MAP_MS, FOCUS_TO_REPLAY_MS, MAP_TO_FOCUS_MS, REPLAY_TO_FOCUS_MS, SKY_TRANSIT_MS, pillLabel } from "./Tier1ShellConstants";
+import Tier1ShellNodeField from "./Tier1ShellNodeField";
+import Tier1ShellFocusGlow from "./Tier1ShellFocusGlow";
+import { seededDust } from "./seededDust";
+
+type Mode = "home" | "sky" | "lifemap" | "focus" | "replay";
+
+type MemoryNode = {
+  id: string;
+  title: string;
+  chapter: string;
+  domain: string;
+  summary: string;
+  tags: [string, string, string];
+  x: number;
+  y: number;
+  size: number;
+};
+
+const MEMORY_NODES: MemoryNode[] = [
+  {
+    id: "return-signal",
+    title: "Return Signal",
+    chapter: "Return",
+    domain: "Atmosic",
+    summary: "Second orbit node for focus continuity and selected-state validation.",
+    tags: ["Signal", "Return", "Orbit"],
+    x: 22,
+    y: 58,
+    size: 10,
+  },
+  {
+    id: "threshold-one",
+    title: "Threshold One",
+    chapter: "Winter",
+    domain: "Threshold",
+    summary: "Canonical memory seed used to verify replay identity and focus continuity.",
+    tags: ["Origin", "Winter", "Threshold"],
+    x: 54,
+    y: 46,
+    size: 12,
+  },
+  {
+    id: "echo-lattice",
+    title: "Echo Lattice",
+    chapter: "Signal",
+    domain: "Pattern",
+    summary: "Pattern memory used to test alternate node selection without routing drift.",
+    tags: ["Echo", "Lattice", "Pattern"],
+    x: 73,
+    y: 33,
+    size: 9,
+  },
+  {
+    id: "north-vector",
+    title: "North Vector",
+    chapter: "Guide",
+    domain: "Compass",
+    summary: "Reference waypoint for map readability and deterministic object persistence.",
+    tags: ["North", "Vector", "Guide"],
+    x: 66,
+    y: 68,
+    size: 9,
+  },
+];
+
+
+
+export default function Page() {
+  const [mode, setMode] = useState<Mode>("home");
+  const [selectedId, setSelectedId] = useState<string>("threshold-one");
+  const [transitioning, setTransitioning] = useState(false);
+  const [pulseId, setPulseId] = useState<string | null>(null);
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const dust = useMemo(() => seededDust(72), []);
+  const selected = useMemo(
+    () => MEMORY_NODES.find((node) => node.id === selectedId) ?? MEMORY_NODES[0],
+    [selectedId]
+  );
+
+  useEffect(() => {
+    const onContextMenu = (event: MouseEvent) => event.preventDefault();
+    document.addEventListener("contextmenu", onContextMenu);
+    document.body.style.margin = "0";
+    document.body.style.background = "#030610";
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.removeEventListener("contextmenu", onContextMenu);
+      if (timerRef.current) clearTimeout(timerRef.current);
+    };
+  }, []);
+
+  const lock = (ms: number, next: () => void) => {
+    if (transitioning) return;
+    setTransitioning(true);
+    if (timerRef.current) clearTimeout(timerRef.current);
+    timerRef.current = setTimeout(() => {
+      next();
+      setTransitioning(false);
+    }, ms);
+  };
+
+  const enterLifeMap = () => {
+    if (transitioning) return;
+    setMode("sky");
+    lock(SKY_TRANSIT_MS, () => setMode("lifemap"));
+  };
+
+  const returnHome = () => {
+    if (transitioning) return;
+    setMode("home");
+  };
+
+  const selectMemory = (id: string) => {
+    if (transitioning) return;
+    setSelectedId(id);
+    setPulseId(id);
+    lock(MAP_TO_FOCUS_MS, () => {
+      setPulseId(null);
+      setMode("focus");
+    });
+  };
+
+  const resumeFocus = () => {
+    if (transitioning) return;
+    setMode("focus");
+  };
+
+  const clearFocus = () => {
+    if (transitioning) return;
+    lock(FOCUS_TO_MAP_MS, () => setMode("lifemap"));
+  };
+
+  const enterReplay = () => {
+    if (transitioning) return;
+    lock(FOCUS_TO_REPLAY_MS, () => setMode("replay"));
+  };
+
+  const exitReplay = () => {
+    if (transitioning) return;
+    lock(REPLAY_TO_FOCUS_MS, () => setMode("focus"));
+  };
+
+  const uiLocked = transitioning || mode === "sky";
+  const showMapWorld = mode === "lifemap" || mode === "focus" || mode === "replay";
+
+  return (
+    <main
+      style={{
+        minHeight: "100vh",
+        width: "100vw",
+        position: "relative",
+        overflow: "hidden",
+        color: "#f4f7ff",
+        fontFamily:
+          'Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
+        background:
+          "radial-gradient(circle at 50% 0%, rgba(34,66,120,0.20), transparent 28%), linear-gradient(180deg, #040814 0%, #030611 52%, #03050d 100%)",
+      }}
+    >
+      <div
+        style={{
+          position: "absolute",
+          inset: 0,
+          background:
+            "radial-gradient(circle at 50% 20%, rgba(88,120,208,0.09), transparent 32%), radial-gradient(circle at 50% 85%, rgba(38,72,144,0.16), transparent 30%)",
+        }}
+      />
+
+      {dust.map((dot) => (
+        <div
+          key={dot.id}
+          style={{
+            position: "absolute",
+            left: `${dot.x}%`,
+            top: `${dot.y}%`,
+            width: dot.s,
+            height: dot.s,
+            opacity: dot.o,
+            borderRadius: 999,
+            background: "rgba(226,236,255,0.95)",
+            boxShadow: "0 0 10px rgba(226,236,255,0.16)",
+          }}
+        />
+      ))}
+
+      <div
+        style={{
+          position: "absolute",
+          inset: 0,
+          background:
+            "linear-gradient(180deg, rgba(3,6,16,0.00) 0%, rgba(3,6,16,0.10) 40%, rgba(3,6,16,0.40) 100%)",
+        }}
+      />
+
+      <header
+        style={{
+          position: "absolute",
+          top: 18,
+          left: 18,
+          right: 18,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          zIndex: 20,
+        }}
+      >
+        <div
+          style={{
+            borderRadius: 999,
+            border: "1px solid rgba(255,255,255,0.10)",
+            background: "rgba(6,10,22,0.74)",
+            padding: "7px 10px",
+            fontSize: 10,
+            letterSpacing: "0.12em",
+            textTransform: "uppercase",
+            color: "rgba(236,242,255,0.92)",
+            backdropFilter: "blur(12px)",
+          }}
+        >
+          URAI SPATIAL
+        </div>
+
+        <div
+          style={{
+            borderRadius: 999,
+            border: "1px solid rgba(255,255,255,0.10)",
+            background: "rgba(6,10,22,0.74)",
+            padding: "7px 10px",
+            fontSize: 10,
+            letterSpacing: "0.12em",
+            textTransform: "uppercase",
+            color: "rgba(236,242,255,0.92)",
+            backdropFilter: "blur(12px)",
+          }}
+        >
+          {pillLabel(mode)}
+        </div>
+      </header>
+
+      <div
+        style={{
+          position: "absolute",
+          inset: 0,
+          opacity: showMapWorld ? 1 : 0.82,
+          transition: "opacity 240ms ease",
+          pointerEvents: "none",
+        }}
+      >
+        <div
+          style={{
+            position: "absolute",
+            left: "6%",
+            top: "50%",
+            width: 6,
+            height: 6,
+            borderRadius: 999,
+            background: "rgba(233,243,255,0.92)",
+            boxShadow: "0 0 18px rgba(233,243,255,0.55)",
+            opacity: 0.94,
+          }}
+        />
+        <div
+          style={{
+            position: "absolute",
+            right: "6%",
+            top: "50%",
+            width: 6,
+            height: 6,
+            borderRadius: 999,
+            background: "rgba(233,243,255,0.92)",
+            boxShadow: "0 0 18px rgba(233,243,255,0.55)",
+            opacity: 0.94,
+          }}
+        />
+      </div>
+
+      <Tier1ShellNodeField
+        mode={mode}
+        uiLocked={uiLocked}
+        showMapWorld={showMapWorld}
+        pulseId={pulseId}
+        selectedId={selectedId}
+        nodes={MEMORY_NODES}
+        selectMemory={selectMemory}
+      />
+      <Tier1ShellFocusGlow mode={mode} />
+      {mode === "home" && (
+        <section
+          style={{
+            position: "absolute",
+            left: "50%",
+            top: "46%",
+            transform: "translate(-50%, -50%)",
+            width: "min(560px, calc(100vw - 64px))",
+            borderRadius: 18,
+            border: "1px solid rgba(255,255,255,0.10)",
+            background: "rgba(7,11,24,0.78)",
+            boxShadow: "0 18px 56px rgba(0,0,0,0.40)",
+            padding: 26,
+            backdropFilter: "blur(16px)",
+            zIndex: 20,
+          }}
+        >
+          <div
+            style={{
+              fontSize: 10,
+              letterSpacing: "0.14em",
+              textTransform: "uppercase",
+              color: "rgba(204,216,245,0.62)",
+              marginBottom: 10,
+            }}
+          >
+            Tier 1 / Canonical Shell
+          </div>
+          <div
+            style={{
+              fontSize: 34,
+              lineHeight: 1.04,
+              fontWeight: 700,
+              letterSpacing: "-0.04em",
+              marginBottom: 12,
+            }}
+          >
+            Home → Sky → LifeMap → Focus → Replay
+          </div>
+          <div
+            style={{
+              fontSize: 13,
+              lineHeight: 1.65,
+              color: "rgba(220,228,245,0.78)",
+              maxWidth: 480,
+              marginBottom: 18,
+            }}
+          >
+            This page is the deterministic Tier 1 lock shell: one world, one selected memory,
+            one clear camera story, and zero modal-state drift.
+          </div>
+          <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
+            <ActionButton disabled={uiLocked} label="ENTER LIFEMAP" onClick={enterLifeMap} />
+            <ActionButton disabled={uiLocked} label="RESUME FOCUS" onClick={resumeFocus} />
+          </div>
+        </section>
+      )}
+
+      {mode === "sky" && (
+        <section
+          style={{
+            position: "absolute",
+            left: "50%",
+            top: "42%",
+            transform: "translate(-50%, -50%)",
+            width: "min(320px, calc(100vw - 64px))",
+            borderRadius: 16,
+            border: "1px solid rgba(255,255,255,0.10)",
+            background: "rgba(7,11,24,0.72)",
+            boxShadow: "0 18px 56px rgba(0,0,0,0.34)",
+            padding: 22,
+            backdropFilter: "blur(16px)",
+            zIndex: 20,
+            textAlign: "center",
+          }}
+        >
+          <div
+            style={{
+              fontSize: 10,
+              letterSpacing: "0.14em",
+              textTransform: "uppercase",
+              color: "rgba(204,216,245,0.62)",
+              marginBottom: 10,
+            }}
+          >
+            Transitional Layer
+          </div>
+          <div style={{ fontSize: 34, lineHeight: 1.04, fontWeight: 700, marginBottom: 8 }}>
+            Sky
+          </div>
+          <div
+            style={{
+              fontSize: 13,
+              lineHeight: 1.6,
+              color: "rgba(220,228,245,0.78)",
+              marginBottom: 14,
+            }}
+          >
+            This is transit only. Input is locked until the map settles.
+          </div>
+          <div
+            style={{
+              height: 6,
+              borderRadius: 999,
+              background: "rgba(255,255,255,0.10)",
+              overflow: "hidden",
+            }}
+          >
+            <div
+              style={{
+                width: "100%",
+                height: "100%",
+                background:
+                  "linear-gradient(90deg, rgba(170,196,255,0.20) 0%, rgba(214,226,255,0.88) 100%)",
+                animation: "transit-fill 950ms linear 1",
+              }}
+            />
+          </div>
+        </section>
+      )}
+
+      {mode === "lifemap" && (
+        <>
+          <div
+            style={{
+              position: "absolute",
+              left: "50%",
+              bottom: 18,
+              transform: "translateX(-50%)",
+              width: "min(520px, calc(100vw - 48px))",
+              borderRadius: 14,
+              border: "1px solid rgba(255,255,255,0.10)",
+              background: "rgba(7,11,24,0.74)",
+              boxShadow: "0 14px 34px rgba(0,0,0,0.28)",
+              padding: "10px 14px",
+              backdropFilter: "blur(12px)",
+              zIndex: 20,
+            }}
+          >
+            <div
+              style={{
+                fontSize: 10,
+                letterSpacing: "0.12em",
+                textTransform: "uppercase",
+                color: "rgba(204,216,245,0.62)",
+                marginBottom: 6,
+              }}
+            >
+              Lifemap
+            </div>
+            <div style={{ fontSize: 12, color: "rgba(220,228,245,0.80)", lineHeight: 1.5 }}>
+              Select a star to enter focus. Focus exits always return to the same selected memory
+              node.
+            </div>
+          </div>
+
+          <div
+            style={{
+              position: "absolute",
+              right: 18,
+              bottom: 18,
+              zIndex: 20,
+            }}
+          >
+            <ActionButton disabled={uiLocked} label="RETURN HOME" onClick={returnHome} />
+          </div>
+        </>
+      )}
+
+      {mode === "focus" && (
+        <aside
+          style={{
+            position: "absolute",
+            right: 18,
+            bottom: 18,
+            width: "min(320px, calc(100vw - 36px))",
+            borderRadius: 16,
+            border: "1px solid rgba(255,255,255,0.10)",
+            background: "rgba(7,11,24,0.78)",
+            boxShadow: "0 18px 56px rgba(0,0,0,0.38)",
+            padding: 18,
+            backdropFilter: "blur(16px)",
+            zIndex: 20,
+          }}
+        >
+          <div
+            style={{
+              fontSize: 10,
+              letterSpacing: "0.14em",
+              textTransform: "uppercase",
+              color: "rgba(204,216,245,0.62)",
+              marginBottom: 10,
+            }}
+          >
+            Focus
+          </div>
+          <div
+            style={{
+              fontSize: 26,
+              lineHeight: 1.02,
+              fontWeight: 700,
+              marginBottom: 8,
+              letterSpacing: "-0.03em",
+            }}
+          >
+            {selected.title}
+          </div>
+          <div
+            style={{
+              display: "flex",
+              gap: 8,
+              marginBottom: 10,
+              flexWrap: "wrap",
+            }}
+          >
+            <Tag value={selected.chapter} />
+            <Tag value={selected.domain} />
+          </div>
+          <div
+            style={{
+              fontSize: 13,
+              lineHeight: 1.65,
+              color: "rgba(220,228,245,0.78)",
+              marginBottom: 16,
+            }}
+          >
+            {selected.summary}
+          </div>
+          <div style={{ display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap" }}>
+            <ActionButton disabled={uiLocked} label="ENTER REPLAY" onClick={enterReplay} />
+            <ActionButton disabled={uiLocked} label="CLEAR FOCUS" onClick={clearFocus} />
+          </div>
+        </aside>
+      )}
+
+      {mode === "replay" && (
+        <section
+          style={{
+            position: "absolute",
+            left: 18,
+            top: "50%",
+            transform: "translateY(-50%)",
+            width: "min(420px, calc(100vw - 36px))",
+            borderRadius: 18,
+            border: "1px solid rgba(255,255,255,0.10)",
+            background: "rgba(7,11,24,0.80)",
+            boxShadow: "0 20px 60px rgba(0,0,0,0.42)",
+            padding: 22,
+            backdropFilter: "blur(16px)",
+            zIndex: 20,
+          }}
+        >
+          <div
+            style={{
+              fontSize: 10,
+              letterSpacing: "0.14em",
+              textTransform: "uppercase",
+              color: "rgba(204,216,245,0.62)",
+              marginBottom: 10,
+            }}
+          >
+            Replay / Memory Dive
+          </div>
+          <div
+            style={{
+              fontSize: 38,
+              lineHeight: 0.98,
+              fontWeight: 700,
+              letterSpacing: "-0.04em",
+              marginBottom: 14,
+            }}
+          >
+            {selected.title}
+          </div>
+
+          <div
+            style={{
+              height: 1,
+              background: "rgba(255,255,255,0.10)",
+              marginBottom: 14,
+            }}
+          />
+
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: "repeat(3, minmax(0, 1fr))",
+              gap: 10,
+              marginBottom: 16,
+            }}
+          >
+            <ReplayDatum label="Origin" value={selected.tags[0]} />
+            <ReplayDatum label="Vector" value={selected.tags[1]} />
+            <ReplayDatum label="Thread" value={selected.tags[2]} />
+          </div>
+
+          <div
+            style={{
+              fontSize: 13,
+              lineHeight: 1.65,
+              color: "rgba(220,228,245,0.78)",
+              marginBottom: 16,
+            }}
+          >
+            Canonical replay holds the same selected memory identity across focus and replay, with a
+            stronger entered-memory composition and deterministic exit path.
+          </div>
+
+          <div style={{ display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap" }}>
+            <ActionButton disabled={uiLocked} label="EXIT REPLAY" onClick={exitReplay} />
+          </div>
+        </section>
+      )}
+
+      <style jsx global>{`
+        @keyframes breathe {
+          0%,
+          100% {
+            transform: translate(-50%, -50%) scale(0.985);
+          }
+          50% {
+            transform: translate(-50%, -50%) scale(1.025);
+          }
+        }
+
+        @keyframes node-pulse {
+          0% {
+            transform: translate(-50%, -50%) scale(1);
+          }
+          100% {
+            transform: translate(-50%, -50%) scale(1.42);
+          }
+        }
+
+        @keyframes transit-fill {
+          0% {
+            transform: translateX(-100%);
+          }
+          100% {
+            transform: translateX(0%);
+          }
+        }
+      `}</style>
+    </main>
+  );
+}
+
+function ActionButton(input: {
+  label: string;
+  onClick: () => void;
+  disabled?: boolean;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={input.onClick}
+      disabled={input.disabled}
+      style={{
+        borderRadius: 999,
+        border: "1px solid rgba(255,255,255,0.12)",
+        background: input.disabled ? "rgba(255,255,255,0.06)" : "rgba(12,18,34,0.94)",
+        color: input.disabled ? "rgba(240,244,255,0.42)" : "rgba(240,244,255,0.94)",
+        padding: "10px 13px",
+        fontSize: 10,
+        fontWeight: 700,
+        letterSpacing: "0.12em",
+        textTransform: "uppercase",
+        cursor: input.disabled ? "not-allowed" : "pointer",
+      }}
+    >
+      {input.label}
+    </button>
+  );
+}
+
+function Tag(input: { value: string }) {
+  return (
+    <div
+      style={{
+        borderRadius: 999,
+        border: "1px solid rgba(255,255,255,0.10)",
+        background: "rgba(255,255,255,0.05)",
+        padding: "6px 9px",
+        fontSize: 10,
+        letterSpacing: "0.10em",
+        textTransform: "uppercase",
+        color: "rgba(220,228,245,0.86)",
+      }}
+    >
+      {input.value}
+    </div>
+  );
+}
+
+function ReplayDatum(input: { label: string; value: string }) {
+  return (
+    <div
+      style={{
+        borderRadius: 12,
+        border: "1px solid rgba(255,255,255,0.10)",
+        background: "rgba(255,255,255,0.03)",
+        padding: 10,
+      }}
+    >
+      <div
+        style={{
+          fontSize: 10,
+          letterSpacing: "0.12em",
+          textTransform: "uppercase",
+          color: "rgba(204,216,245,0.58)",
+          marginBottom: 6,
+        }}
+      >
+        {input.label}
+      </div>
+      <div style={{ fontSize: 12, color: "rgba(235,241,255,0.90)" }}>{input.value}</div>
+    </div>
+  );
+}

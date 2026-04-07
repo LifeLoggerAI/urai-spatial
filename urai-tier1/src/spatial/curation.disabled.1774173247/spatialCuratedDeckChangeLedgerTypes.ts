@@ -1,3 +1,4 @@
+
 export type SpatialCuratedDeckChangeLedgerRow = {
   id: string;
   baseEntryId: string;

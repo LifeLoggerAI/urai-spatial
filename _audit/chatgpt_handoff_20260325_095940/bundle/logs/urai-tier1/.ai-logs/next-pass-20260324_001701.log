@@ -1,0 +1,10 @@
+== WRITE CAMERARIG ==
+== PATCH STARFIELD ==
+== PATCH SPATIALSCENE ==
+== VERIFY CAMERARIG ==
+17:const LIFEMAP_POS = new Vector3(0, 2.95, 16.2);
+61:        const dist = 4.6 - t * 1.15;
+68:        const dist = 2.35 - t * 0.5;
+== VERIFY STARFIELD ==
+Starfield dim patch missing
+exit

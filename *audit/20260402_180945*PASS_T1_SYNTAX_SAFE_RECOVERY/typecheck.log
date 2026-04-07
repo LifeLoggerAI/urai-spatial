@@ -1,0 +1,19 @@
+src/spatial/scene/SpatialScene.tsx(214,1): error TS1005: ')' expected.
+src/spatial/scene/SpatialScene.tsx(304,4): error TS1128: Declaration or statement expected.
+src/spatial/scene/SpatialScene.tsx(304,5): error TS1128: Declaration or statement expected.
+src/spatial/scene/SpatialScene.tsx(305,1): error TS1128: Declaration or statement expected.
+src/spatial/scene/SpatialScene.tsx(339,9): error TS1005: ';' expected.
+src/spatial/scene/SpatialScene.tsx(339,31): error TS1005: ':' expected.
+src/spatial/scene/SpatialScene.tsx(340,5): error TS2657: JSX expressions must have one parent element.
+src/spatial/scene/SpatialScene.tsx(342,3): error TS1128: Declaration or statement expected.
+src/spatial/scene/SpatialScene.tsx(344,3): error TS2657: JSX expressions must have one parent element.
+src/spatial/scene/SpatialScene.tsx(368,1): error TS1128: Declaration or statement expected.
+src/spatial/scene/SpatialScene.tsx(591,1): error TS1128: Declaration or statement expected.
+src/spatial/scene/SpatialScene.tsx(605,14): error TS1005: ';' expected.
+src/spatial/scene/SpatialScene.tsx(605,28): error TS1005: ';' expected.
+src/spatial/scene/SpatialScene.tsx(605,52): error TS1005: ';' expected.
+src/spatial/scene/SpatialScene.tsx(605,77): error TS1109: Expression expected.
+src/spatial/scene/SpatialScene.tsx(606,3): error TS2657: JSX expressions must have one parent element.
+src/spatial/scene/SpatialScene.tsx(627,1): error TS1128: Declaration or statement expected.
+src/spatial/scene/SpatialScene.tsx(627,3): error TS1109: Expression expected.
+src/spatial/scene/SpatialScene.tsx(639,1): error TS1160: Unterminated template literal.

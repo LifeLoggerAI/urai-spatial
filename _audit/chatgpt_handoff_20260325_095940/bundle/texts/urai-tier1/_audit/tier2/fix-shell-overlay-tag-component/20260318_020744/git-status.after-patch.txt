@@ -1,0 +1,2 @@
+ M src/spatial/shell/overlays/FocusShellOverlay.tsx
+?? src/spatial/shell/Tag.tsx

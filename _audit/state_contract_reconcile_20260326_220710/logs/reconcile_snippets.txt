@@ -1,0 +1,31 @@
+=== STORE SceneMode / aliases ===
+3:export type SceneMode = import("../types").SceneMode;
+6:  mode: SceneMode;
+7:  selectedStarId: string | null;
+8:  selectedStar: string | null;
+9:  hoveredStarId: string | null;
+10:  hoveredStar: string | null;
+11:  hoverStar: (id: string | null) => void;
+12:  selectStar: (id: string | null) => void;
+13:  enterLifemap: () => void;
+15:  setMode: (mode: SceneMode) => void;
+19:  enterLifeMap: () => void;
+29:  mode: "home" as SceneMode,
+30:  selectedStarId: null,
+31:  hoveredStarId: null,
+43:  enterLifeMap: () => set({ mode: "lifemap" }),
+48:      selectedStarId: id,
+52:    const { selectedStarId } = get();
+53:    set({ mode: selectedStarId ? "replay" : "lifemap" });
+57:    const { selectedStarId } = get();
+58:    set({ mode: selectedStarId ? "focus" : "lifemap" });
+61:  setSelectedStarId: (id) => set({ selectedStarId: id }),
+62:  setHoveredStarId: (id) => set({ hoveredStarId: id }),
+
+=== TYPES SceneMode / aliases ===
+3:export type SceneMode = 'home' | 'ground' | 'lifemap' | 'focus' | 'replay';
+30:  sceneMode: SceneMode;
+31:  selectedStarId: string | null;
+32:  selectedStar: string | null;
+42:  sceneMode: SceneMode;
+43:  selectedStarId: string | null;

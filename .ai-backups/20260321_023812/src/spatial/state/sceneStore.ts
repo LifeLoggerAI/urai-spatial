@@ -1,0 +1,87 @@
+"use client";
+
+import { create } from "zustand";
+import { resolveStarById } from "../data/stars";
+import type { SceneMode } from "../types";
+
+type SceneStore = {
+  mode: SceneMode;
+  selectedStar: string | null;
+  hoveredStar: string | null;
+  returnTarget: SceneMode;
+  enterHome: () => void;
+  enterLifemap: () => void;
+  enterGround: () => void;
+  selectStar: (id: string) => void;
+  hoverStar: (id: string | null) => void;
+  enterReplay: (id?: string | null) => void;
+  exitReplay: () => void;
+  returnHome: () => void;
+  returnFromGround: () => void;
+  returnFromLifemap: () => void;
+  escape: () => void;
+};
+
+export const useSceneStore = create<SceneStore>((set, get) => ({
+  mode: "home",
+  selectedStar: null,
+  hoveredStar: null,
+  returnTarget: "home",
+
+  enterHome: () => set({ mode: "home", hoveredStar: null }),
+  enterLifemap: () => set({ mode: "lifemap", returnTarget: "home" }),
+  enterGround: () => set({ mode: "ground", returnTarget: "home" }),
+
+  selectStar: (id) => {
+    const star = resolveStarById(id);
+    set({
+      selectedStar: star?.id ?? null,
+      mode: "lifemap",
+      returnTarget: "lifemap",
+    });
+  },
+
+  hoverStar: (id) => set({ hoveredStar: id }),
+
+  enterReplay: (id) => {
+    const nextId = id ?? get().selectedStar;
+    set({
+      selectedStar: nextId ?? null,
+      mode: "replay",
+      returnTarget: "lifemap",
+    });
+  },
+
+  exitReplay: () => {
+    const selectedStar = get().selectedStar;
+    set({
+      mode: selectedStar ? "lifemap" : "home",
+      returnTarget: "home",
+    });
+  },
+
+  returnHome: () => set({ mode: "home", selectedStar: null, hoveredStar: null, returnTarget: "home" }),
+
+  returnFromGround: () => set({ mode: "home", hoveredStar: null }),
+
+  returnFromLifemap: () => set({ mode: "home", selectedStar: null, hoveredStar: null, returnTarget: "home" }),
+
+  escape: () => {
+    const { mode } = get();
+    if (mode === "replay") {
+      set({ mode: "lifemap" });
+      return;
+    }
+    if (mode === "lifemap") {
+      set({ mode: "home", selectedStar: null, hoveredStar: null, returnTarget: "home" });
+      return;
+    }
+    if (mode === "ground") {
+      set({ mode: "home", hoveredStar: null, returnTarget: "home" });
+      return;
+    }
+    set({ mode: "home", selectedStar: null, hoveredStar: null, returnTarget: "home" });
+  },
+}));
+
+export default useSceneStore;

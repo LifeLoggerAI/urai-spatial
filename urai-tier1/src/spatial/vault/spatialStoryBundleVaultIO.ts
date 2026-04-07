@@ -1,7 +1,5 @@
 import { getSpatialScopedStorageKey } from "@/spatial/account/accountScopedStorage";
 import {
-  SPATIAL_STORY_BUNDLE_VAULT_MAX_ITEMS,
-  SPATIAL_STORY_BUNDLE_VAULT_STORAGE_KEY,
   createDefaultSpatialStoryBundleVaultManifest,
   type SpatialStoryBundleVaultEntry,
   type SpatialStoryBundleVaultManifest,
@@ -14,7 +12,6 @@ export function readSpatialStoryBundleVaultManifest(): SpatialStoryBundleVaultMa
 
   try {
     const raw = window.localStorage.getItem(
-      getSpatialScopedStorageKey(SPATIAL_STORY_BUNDLE_VAULT_STORAGE_KEY),
     );
     if (!raw) return createDefaultSpatialStoryBundleVaultManifest();
 
@@ -24,7 +21,6 @@ export function readSpatialStoryBundleVaultManifest(): SpatialStoryBundleVaultMa
     }
 
     const entries = Array.isArray(parsed.entries)
-      ? parsed.entries.slice(-SPATIAL_STORY_BUNDLE_VAULT_MAX_ITEMS)
       : [];
 
     const activeEntryId = entries.some((item) => item.id === parsed.activeEntryId)
@@ -47,13 +43,11 @@ export function writeSpatialStoryBundleVaultManifest(
   if (typeof window === "undefined") return;
 
   try {
-    const entries = manifest.entries.slice(-SPATIAL_STORY_BUNDLE_VAULT_MAX_ITEMS);
     const activeEntryId = entries.some((item) => item.id === manifest.activeEntryId)
       ? manifest.activeEntryId
       : entries[0]?.id ?? null;
 
     window.localStorage.setItem(
-      getSpatialScopedStorageKey(SPATIAL_STORY_BUNDLE_VAULT_STORAGE_KEY),
       JSON.stringify({
         schema: "urai.spatial.story-bundle-vault.v1",
         activeEntryId,
@@ -68,7 +62,6 @@ export function appendSpatialStoryBundleVaultEntry(
   entry: SpatialStoryBundleVaultEntry,
 ): SpatialStoryBundleVaultManifest {
   const entries = [...manifest.entries, entry].slice(
-    -SPATIAL_STORY_BUNDLE_VAULT_MAX_ITEMS,
   );
 
   return {

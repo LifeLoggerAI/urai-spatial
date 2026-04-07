@@ -6,7 +6,6 @@ import { useSpatialReleaseStore } from "@/spatial/release/spatialReleaseStore";
 import type { SpatialReleaseManifest } from "@/spatial/release/spatialReleaseTypes";
 
 type ReleaseWindow = Window & {
-  __URAI_SPATIAL_RELEASE_MANIFEST__?: SpatialReleaseManifest;
 };
 
 export default function SpatialReleaseBootstrap() {
@@ -36,7 +35,6 @@ export default function SpatialReleaseBootstrap() {
     if (!ready) return;
     writeSpatialReleaseManifest(manifest);
     const target = window as ReleaseWindow;
-    target.__URAI_SPATIAL_RELEASE_MANIFEST__ = manifest;
     window.dispatchEvent(
       new CustomEvent("urai:spatial-release-manifest", {
         detail: manifest,

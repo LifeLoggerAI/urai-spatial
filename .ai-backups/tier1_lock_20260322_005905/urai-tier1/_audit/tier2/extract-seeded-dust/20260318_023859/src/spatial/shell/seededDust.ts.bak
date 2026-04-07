@@ -1,0 +1,23 @@
+export type Tier1DustPoint = {
+  id: string;
+  x: number;
+  y: number;
+  o: number;
+  s: number;
+};
+
+export function seededDust(count: number): Tier1DustPoint[] {
+  let seed = 1337;
+  const next = () => {
+    seed = (seed * 1664525 + 1013904223) >>> 0;
+    return seed / 4294967296;
+  };
+
+  return Array.from({ length: count }, (_, index) => ({
+    id: `dust-${index}`,
+    x: Math.round(next() * 1000) / 10,
+    y: Math.round(next() * 1000) / 10,
+    o: 0.15 + next() * 0.6,
+    s: 1 + next() * 2.4,
+  }));
+}

@@ -1,3 +1,4 @@
+
 import { resolveStarByIdSafe } from "../lib/resolveStarByIdSafe";
 import type { SelectedStar } from "../state/selectedStarContract";
 import { toCanonicalSelectedStar } from "../state/toCanonicalSelectedStar";

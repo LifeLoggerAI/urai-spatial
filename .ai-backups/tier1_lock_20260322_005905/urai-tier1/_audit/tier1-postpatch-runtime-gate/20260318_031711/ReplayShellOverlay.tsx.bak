@@ -1,0 +1,108 @@
+'use client';
+
+import React from "react";
+import {
+  PANEL_ANCHOR_CLASS,
+  SHELL_CARD_CLASS,
+  SUBDUED_TEXT_CLASS,
+  MICRO_LABEL_CLASS,
+  PRIMARY_BUTTON_CLASS,
+  SECONDARY_BUTTON_CLASS,
+  GHOST_BUTTON_CLASS,
+} from "../Tier1ShellConstants";
+import Tag from "../Tag";
+import ReplayDatum from "../ReplayDatum";
+
+export type ReplayShellOverlayProps = Record<string, unknown>;
+
+function firstText(...values: unknown[]) {
+  for (const value of values) {
+    if (typeof value === "string" && value.trim()) return value;
+  }
+  return "";
+}
+
+function pickFn(props: Record<string, unknown>, names: string[]) {
+  for (const name of names) {
+    const value = props[name];
+    if (typeof value === "function") return value as (...args: unknown[]) => void;
+  }
+  return null;
+}
+
+function asRecord(value: unknown) {
+  return value && typeof value === "object" ? (value as Record<string, unknown>) : {};
+}
+
+export function ReplayShellOverlay(rawProps: ReplayShellOverlayProps) {
+  const props = rawProps as Record<string, unknown>;
+  if (props.hidden === true || props.visible === false) return null;
+
+  const node = asRecord(props.node);
+  const memory = asRecord(props.memory);
+
+  const title =
+    firstText(
+      props.title,
+      memory.title,
+      node.title,
+      node.name,
+      memory.name,
+      props.label,
+    ) || "Replay Active";
+
+  const summary =
+    firstText(
+      props.summary,
+      memory.summary,
+      memory.description,
+      node.summary,
+      node.description,
+    ) || "Replay is visually differentiated but remains anchored to the same shell position to avoid panel teleportation.";
+
+  const chapter =
+    firstText(props.chapter, memory.chapter, node.chapter) || "current";
+  const emotion =
+    firstText(props.emotion, memory.emotion, node.emotion) || "echo";
+
+  const exitReplay = pickFn(props, ["onExitReplay", "exitReplay", "onResumeFocus"]);
+  const returnHome = pickFn(props, ["onReturnHome", "returnHome", "onHome"]);
+
+  return (
+    <div className={PANEL_ANCHOR_CLASS}>
+      <div
+        className={[
+          SHELL_CARD_CLASS,
+          "border-fuchsia-300/18 bg-[linear-gradient(180deg,rgba(88,28,135,0.28),rgba(2,6,23,0.80))]",
+        ].join(" ")}
+      >
+        <div className="mb-4 flex items-center justify-between gap-3">
+          <Tag className="border-fuchsia-300/20 bg-fuchsia-400/12 text-fuchsia-100">Replay</Tag>
+          <div className={MICRO_LABEL_CLASS}>Distinct replay surface</div>
+        </div>
+
+        <div className="space-y-3">
+          <h2 className="text-2xl font-semibold tracking-tight text-white">{title}</h2>
+          <p className={SUBDUED_TEXT_CLASS}>{summary}</p>
+
+          <div className="space-y-2 rounded-2xl border border-white/10 bg-black/20 p-3">
+            <ReplayDatum label="Mode" value="Replay" />
+            <ReplayDatum label="Emotion" value={emotion} />
+            <ReplayDatum label="Chapter" value={chapter} />
+          </div>
+
+          <div className="grid gap-2 pt-3 sm:grid-cols-2">
+            <button type="button" className={PRIMARY_BUTTON_CLASS} onClick={() => exitReplay?.()}>
+              Exit Replay
+            </button>
+            <button type="button" className={GHOST_BUTTON_CLASS} onClick={() => returnHome?.()}>
+              Return Home
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+export default ReplayShellOverlay;

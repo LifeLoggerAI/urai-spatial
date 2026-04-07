@@ -1,0 +1,97 @@
+
+== repo + branch ==
+
+$ cd '/home/user/urai-spatial' && git status --short
+_MONOSPACE_ENV_STARTED_=http://localhost:80/
+?? urai-tier1/docs/xr-renderer/
+RC=0
+
+$ cd '/home/user/urai-spatial' && git switch -c 'phase71-curated-deck-drift-panel-20260317_041213'
+_MONOSPACE_ENV_STARTED_=http://localhost:80/
+Switched to a new branch 'phase71-curated-deck-drift-panel-20260317_041213'
+RC=0
+
+== audit plan ==
+
+== create drift summary types ==
+
+== create drift builder ==
+
+== create drift panel ==
+
+== patch scene ==
+
+== targeted grep ==
+
+$ cd '/home/user/urai-spatial/urai-tier1' && grep -RIn 'SpatialCuratedDeckDriftPanel\|buildSpatialCuratedDeckDrift\|urai.spatial.curated-deck-drift.v1\|Curated Deck Drift' src | tee '/home/user/urai-spatial/urai-tier1/_audit/phase71-curated-deck-drift-panel/20260317_041213/grep.txt'
+_MONOSPACE_ENV_STARTED_=http://localhost:80/
+src/spatial/ui/SpatialCuratedDeckDriftPanel.tsx:5:import { buildSpatialCuratedDeckDrift } from "@/spatial/curation/buildSpatialCuratedDeckDrift";
+src/spatial/ui/SpatialCuratedDeckDriftPanel.tsx:9:export default function SpatialCuratedDeckDriftPanel() {
+src/spatial/ui/SpatialCuratedDeckDriftPanel.tsx:14:    () => buildSpatialCuratedDeckDrift({ entries, activeEntryId, windowSize: 4 }),
+src/spatial/ui/SpatialCuratedDeckDriftPanel.tsx:57:        Curated Deck Drift
+src/spatial/curation/buildSpatialCuratedDeckDrift.ts:24:export function buildSpatialCuratedDeckDrift(input: {
+src/spatial/curation/buildSpatialCuratedDeckDrift.ts:33:      schema: "urai.spatial.curated-deck-drift.v1",
+src/spatial/curation/buildSpatialCuratedDeckDrift.ts:60:      schema: "urai.spatial.curated-deck-drift.v1",
+src/spatial/curation/buildSpatialCuratedDeckDrift.ts:164:    schema: "urai.spatial.curated-deck-drift.v1",
+src/spatial/curation/spatialCuratedDeckDriftTypes.ts:15:  schema: "urai.spatial.curated-deck-drift.v1";
+src/spatial/scene/SpatialScene.tsx:2:import SpatialCuratedDeckDriftPanel from "@/spatial/ui/SpatialCuratedDeckDriftPanel";
+src/spatial/scene/SpatialScene.tsx:792:      <SpatialCuratedDeckDriftPanel />
+RC=0
+
+== build ==
+
+$ cd '/home/user/urai-spatial/urai-tier1' && pnpm build
+_MONOSPACE_ENV_STARTED_=http://localhost:80/
+
+> urai-tier1@0.1.0 build /home/user/urai-spatial/urai-tier1
+> next build
+
+▲ Next.js 16.1.6 (Turbopack)
+
+  Creating an optimized production build ...
+✓ Compiled successfully in 26.4s
+  Running TypeScript ...
+  Collecting page data using 1 worker ...
+  Generating static pages using 1 worker (0/4) ...
+  Generating static pages using 1 worker (1/4) 
+  Generating static pages using 1 worker (2/4) 
+  Generating static pages using 1 worker (3/4) 
+✓ Generating static pages using 1 worker (4/4) in 393.3ms
+  Finalizing page optimization ...
+
+Route (app)
+┌ ○ /
+└ ○ /_not-found
+
+
+○  (Static)  prerendered as static content
+
+RC=0
+
+== git snapshot ==
+
+$ cd '/home/user/urai-spatial' && git status --short | tee '/home/user/urai-spatial/urai-tier1/_audit/phase71-curated-deck-drift-panel/20260317_041213/git_status.txt'
+_MONOSPACE_ENV_STARTED_=http://localhost:80/
+ M urai-tier1/src/spatial/scene/SpatialScene.tsx
+?? urai-tier1/docs/xr-renderer/
+?? urai-tier1/src/spatial/curation/buildSpatialCuratedDeckDrift.ts
+?? urai-tier1/src/spatial/curation/spatialCuratedDeckDriftTypes.ts
+?? urai-tier1/src/spatial/ui/SpatialCuratedDeckDriftPanel.tsx
+RC=0
+
+$ cd '/home/user/urai-spatial' && git add urai-tier1/src
+_MONOSPACE_ENV_STARTED_=http://localhost:80/
+RC=0
+
+$ cd '/home/user/urai-spatial' && git commit -m 'feat(urai-spatial): phase71 curated deck drift panel'
+_MONOSPACE_ENV_STARTED_=http://localhost:80/
+[phase71-curated-deck-drift-panel-20260317_041213 a56872f] feat(urai-spatial): phase71 curated deck drift panel
+ 4 files changed, 373 insertions(+)
+ create mode 100644 urai-tier1/src/spatial/curation/buildSpatialCuratedDeckDrift.ts
+ create mode 100644 urai-tier1/src/spatial/curation/spatialCuratedDeckDriftTypes.ts
+ create mode 100644 urai-tier1/src/spatial/ui/SpatialCuratedDeckDriftPanel.tsx
+RC=0
+
+== done ==
+AUDIT_DIR=/home/user/urai-spatial/urai-tier1/_audit/phase71-curated-deck-drift-panel/20260317_041213
+FAIL=0

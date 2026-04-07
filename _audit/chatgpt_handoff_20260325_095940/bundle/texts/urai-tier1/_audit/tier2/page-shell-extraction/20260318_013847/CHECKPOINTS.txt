@@ -1,0 +1,8 @@
+PAGE=src/app/page.tsx
+SHELL=src/app/_page_shell.tsx
+AUDIT=/home/user/urai-spatial/urai-tier1/_audit/tier2/page-shell-extraction/20260318_013847
+
+Expected result:
+- page.tsx becomes a thin export only
+- original locked shell now lives in _page_shell.tsx
+- build remains green

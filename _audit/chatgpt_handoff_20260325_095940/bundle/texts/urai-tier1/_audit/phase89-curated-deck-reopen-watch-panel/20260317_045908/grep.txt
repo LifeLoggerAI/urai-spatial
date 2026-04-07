@@ -1,0 +1,9 @@
+src/spatial/ui/SpatialCuratedDeckReopenWatchPanel.tsx:5:import { buildSpatialCuratedDeckReopenWatch } from "@/spatial/curation/buildSpatialCuratedDeckReopenWatch";
+src/spatial/ui/SpatialCuratedDeckReopenWatchPanel.tsx:9:export default function SpatialCuratedDeckReopenWatchPanel() {
+src/spatial/ui/SpatialCuratedDeckReopenWatchPanel.tsx:14:    () => buildSpatialCuratedDeckReopenWatch({ entries, activeEntryId }),
+src/spatial/ui/SpatialCuratedDeckReopenWatchPanel.tsx:50:        Curated Deck Reopen Watch
+src/spatial/curation/spatialCuratedDeckReopenWatchTypes.ts:9:  schema: "urai.spatial.curated-deck-reopen-watch.v1";
+src/spatial/curation/buildSpatialCuratedDeckReopenWatch.ts:64:export function buildSpatialCuratedDeckReopenWatch(input: {
+src/spatial/curation/buildSpatialCuratedDeckReopenWatch.ts:154:    schema: "urai.spatial.curated-deck-reopen-watch.v1",
+src/spatial/scene/SpatialScene.tsx:2:import SpatialCuratedDeckReopenWatchPanel from "@/spatial/ui/SpatialCuratedDeckReopenWatchPanel";
+src/spatial/scene/SpatialScene.tsx:828:      <SpatialCuratedDeckReopenWatchPanel />

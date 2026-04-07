@@ -1,0 +1,12 @@
+src/spatial/persistence/SpatialPersistenceBridge.tsx:5:import { useSceneStore } from "../state/sceneStore";
+src/spatial/persistence/SpatialPersistenceBridge.tsx:7:import type { SpatialPersistenceSnapshot } from "../types";
+src/spatial/data/stars.ts:1:import type { SpatialStar } from "../types";
+src/spatial/unity/buildUnityRuntimePayload.ts:2:import type { SceneMode, UnityRuntimePayload, XrState } from "../types";
+src/spatial/unity/UnityRuntimePayloadBridge.tsx:5:import { useSceneStore } from "../state/sceneStore";
+src/spatial/unity/UnityRuntimePayloadBridge.tsx:7:import type { XrState } from "../types";
+src/spatial/replay/replayModel.ts:1:import type { ReplayState } from "../types";
+src/spatial/scene/ReplaySphere.tsx:4:import { useSceneStore } from "../state/sceneStore";
+src/spatial/scene/Starfield.tsx:4:import { useSceneStore } from "../state/sceneStore";
+src/spatial/scene/HomeWorld.tsx:4:import { useSceneStore } from "../state/sceneStore";
+src/spatial/scene/StarMesh.tsx:3:import { useSceneStore } from "../state/sceneStore";
+src/spatial/components/CameraRig.tsx:6:import { useSceneStore } from "../state/sceneStore";

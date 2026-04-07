@@ -1,0 +1,25 @@
+'use client';
+
+import React from "react";
+
+export type TagProps = {
+  children?: React.ReactNode;
+  label?: React.ReactNode;
+  className?: string;
+};
+
+export function Tag({ children, label, className = "" }: TagProps) {
+  const value = children ?? label;
+  return (
+    <span
+      className={[
+        "inline-flex items-center rounded-full border border-white/12 bg-white/8 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.22em] text-slate-200",
+        className,
+      ].join(" ")}
+    >
+      {value}
+    </span>
+  );
+}
+
+export default Tag;

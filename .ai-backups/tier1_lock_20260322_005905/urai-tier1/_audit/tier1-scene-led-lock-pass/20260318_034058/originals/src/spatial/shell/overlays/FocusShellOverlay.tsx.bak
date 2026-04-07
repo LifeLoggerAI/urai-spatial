@@ -1,0 +1,107 @@
+'use client';
+
+import React from "react";
+import {
+  PANEL_ANCHOR_CLASS,
+  SHELL_CARD_CLASS,
+  SUBDUED_TEXT_CLASS,
+  MICRO_LABEL_CLASS,
+  PRIMARY_BUTTON_CLASS,
+  SECONDARY_BUTTON_CLASS,
+  GHOST_BUTTON_CLASS,
+} from "../Tier1ShellConstants";
+import Tag from "../Tag";
+import Tier1ShellFocusGlow from "../Tier1ShellFocusGlow";
+
+export type FocusShellOverlayProps = Record<string, unknown>;
+
+function firstText(...values: unknown[]) {
+  for (const value of values) {
+    if (typeof value === "string" && value.trim()) return value;
+  }
+  return "";
+}
+
+function pickFn(props: Record<string, unknown>, names: string[]) {
+  for (const name of names) {
+    const value = props[name];
+    if (typeof value === "function") return value as (...args: unknown[]) => void;
+  }
+  return null;
+}
+
+function asRecord(value: unknown) {
+  return value && typeof value === "object" ? (value as Record<string, unknown>) : {};
+}
+
+export function FocusShellOverlay(rawProps: FocusShellOverlayProps) {
+  const props = rawProps as Record<string, unknown>;
+  if (props.hidden === true || props.visible === false) return null;
+
+  const node = asRecord(props.node);
+  const memory = asRecord(props.memory);
+
+  const title =
+    firstText(
+      props.title,
+      memory.title,
+      node.title,
+      node.name,
+      memory.name,
+      props.label,
+    ) || "Focused Memory";
+
+  const summary =
+    firstText(
+      props.summary,
+      memory.summary,
+      memory.description,
+      node.summary,
+      node.description,
+    ) || "Focused memory state is active. Replay and return actions now stay on a single anchored overlay path.";
+
+  const emotion =
+    firstText(props.emotion, memory.emotion, node.emotion) || "stable";
+  const chapter =
+    firstText(props.chapter, memory.chapter, node.chapter) || "current";
+
+  const enterReplay = pickFn(props, ["onEnterReplay", "enterReplay", "onReplay"]);
+  const clearFocus = pickFn(props, ["onClearFocus", "clearFocus", "onClear"]);
+  const returnHome = pickFn(props, ["onReturnHome", "returnHome", "onHome"]);
+
+  return (
+    <div className={PANEL_ANCHOR_CLASS}>
+      <div className={[SHELL_CARD_CLASS, "relative overflow-hidden"].join(" ")}>
+        <Tier1ShellFocusGlow />
+        <div className="mb-4 flex items-center justify-between gap-3">
+          <Tag>Focus</Tag>
+          <div className={MICRO_LABEL_CLASS}>Tier 1 anchored overlay</div>
+        </div>
+
+        <div className="space-y-3">
+          <h2 className="text-2xl font-semibold tracking-tight text-white">{title}</h2>
+          <p className={SUBDUED_TEXT_CLASS}>{summary}</p>
+
+          <div className="flex flex-wrap gap-2 pt-1">
+            <Tag>{emotion}</Tag>
+            <Tag>{chapter}</Tag>
+          </div>
+
+          <div className="grid gap-2 pt-3 sm:grid-cols-2">
+            <button type="button" className={PRIMARY_BUTTON_CLASS} onClick={() => enterReplay?.()}>
+              Enter Replay
+            </button>
+            <button type="button" className={SECONDARY_BUTTON_CLASS} onClick={() => clearFocus?.()}>
+              Clear Focus
+            </button>
+            <button type="button" className={GHOST_BUTTON_CLASS} onClick={() => returnHome?.()}>
+              Return Home
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+export default FocusShellOverlay;

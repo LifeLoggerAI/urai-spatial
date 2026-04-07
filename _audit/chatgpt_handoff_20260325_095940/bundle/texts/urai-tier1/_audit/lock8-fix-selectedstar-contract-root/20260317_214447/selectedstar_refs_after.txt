@@ -1,0 +1,54 @@
+src/spatial/persistence/buildSpatialPersistenceSnapshot.ts:1:import type { SelectedStar } from "@/spatial/state/selectedStarContract";
+src/spatial/persistence/buildSpatialPersistenceSnapshot.ts:13:  selectedStar: SelectedStar | null;
+src/spatial/data/memoryDataset.ts:1:import { toCanonicalSelectedStar } from "../state/toCanonicalSelectedStar";
+src/spatial/state/toCanonicalSelectedStar.ts:1:import type { SelectedStar } from "./selectedStarContract";
+src/spatial/state/toCanonicalSelectedStar.ts:3:type StarInput = Partial<SelectedStar> & {
+src/spatial/state/toCanonicalSelectedStar.ts:44:export function toCanonicalSelectedStar(input: StarInput | null): SelectedStar | null {
+src/spatial/state/sceneStore.ts:4:import type { SelectedStar } from "@/spatial/state/selectedStarContract";
+src/spatial/state/sceneStore.ts:10:  selectedStar: SelectedStar | null;
+src/spatial/state/sceneStore.ts:14:  setSelectedStar: (star: SelectedStar | null) => void;
+src/spatial/state/sceneStore.ts:15:  selectStar: (star: SelectedStar | null) => void;
+src/spatial/state/sceneStore.ts:40:  setSelectedStar: (star: SelectedStar | null) =>
+src/spatial/state/selectedStarContract.ts:3:export type SelectedStar = SpatialStar & {
+src/spatial/state/selectedStarContract.ts:7:export type SelectedStarNormalized = SelectedStar;
+src/spatial/state/selectedStarContract.ts:9:export function normalizeSelectedStar(
+src/spatial/state/selectedStarContract.ts:10:  selectedStar: SelectedStar | null
+src/spatial/state/selectedStarContract.ts:11:): SelectedStarNormalized | null {
+src/spatial/unity/buildUnityRuntimePayload.ts:1:import type { SelectedStar } from "@/spatial/state/selectedStarContract";
+src/spatial/unity/buildUnityRuntimePayload.ts:13:  selectedStar: SelectedStar | null;
+src/spatial/replay/PHASE7_TODO.md:13:- wire SpatialScene / replay UI to resolveReplaySceneFromSelectedStar(selectedStar)
+src/spatial/replay/ReplayContractOverlay.tsx:5:import { resolveReplaySceneFromSelectedStar } from "@/spatial/replay/resolveReplayScene";
+src/spatial/replay/ReplayContractOverlay.tsx:7:import type { SelectedStar } from "@/spatial/state/selectedStarContract";
+src/spatial/replay/ReplayContractOverlay.tsx:19:    () => resolveReplaySceneFromSelectedStar(selectedStar as LooseRecord | null | undefined),
+src/spatial/replay/replayModel.ts:1:import type { SelectedStar } from "../state/selectedStarContract";
+src/spatial/replay/replayModel.ts:11:  selectedStar: SelectedStar | null
+src/spatial/replay/replayModel.ts:37:export function getReplayGlow(selectedStar: SelectedStar | null) {
+src/spatial/replay/replayModel.ts:41:export function getReplayMeta(selectedStar: SelectedStar | null) {
+src/spatial/replay/resolveReplayScene.ts:4:type SelectedStarLike = {
+src/spatial/replay/resolveReplayScene.ts:93:export function resolveReplaySceneFromSelectedStar(
+src/spatial/replay/resolveReplayScene.ts:94:  selectedStar: SelectedStarLike
+src/spatial/curation/buildSpatialCuratedDeckDiff.ts:21:function countSelectedStarShifts(
+src/spatial/curation/buildSpatialCuratedDeckDiff.ts:50:  const selectedStarShiftCount = countSelectedStarShifts(baseDeck.cards, targetDeck.cards);
+src/spatial/lib/toCanonicalSelectedStar.ts:2:import type { SelectedStar } from "../state/selectedStarContract";
+src/spatial/lib/toCanonicalSelectedStar.ts:4:export function toCanonicalSelectedStar(star: SpatialStar): SelectedStar {
+src/spatial/lib/headsetCameraSync.ts:1:import type { SelectedStar } from "@/spatial/state/selectedStarContract";
+src/spatial/lib/headsetCameraSync.ts:13:  selectedStar: SelectedStar | null;
+src/spatial/scene/SpatialScene.tsx.broken.20260316-135713:2:import { toCanonicalSelectedStar } from "../state/toCanonicalSelectedStar";
+src/spatial/scene/SpatialScene.tsx.broken.20260316-135713:7:import { SelectedStar, useSceneStore } from "../state/sceneStore";
+src/spatial/scene/SpatialScene.tsx.broken.20260316-135713:40:function buildStars(): SelectedStar[] {
+src/spatial/scene/SpatialScene.tsx.broken.20260316-135713:42:  const out: SelectedStar[] = [];
+src/spatial/scene/SpatialScene.tsx.broken.20260316-135713:141:function SpatialStar({ star }: { star: SelectedStar }) {
+src/spatial/scene/SpatialScene.tsx:21:import { toCanonicalSelectedStar } from "../lib/toCanonicalSelectedStar";
+src/spatial/scene/SpatialScene.tsx:361:            onSelect={(node) => selectStar(toCanonicalSelectedStar(node))}
+src/spatial/scene/Starfield.tsx:2:import { toCanonicalSelectedStar } from "../state/toCanonicalSelectedStar";
+src/spatial/scene/Starfield.tsx:4:import type { SelectedStar } from "@/spatial/state/selectedStarContract";
+src/spatial/scene/Starfield.tsx:13:  const setSelectedStar = useSceneStore((s) => s.setSelectedStar);
+src/spatial/scene/Starfield.tsx:53:                setSelectedStar({
+src/spatial/scene/SpatialScene.tsx.bak.20260317_005942:8:import { toCanonicalSelectedStar } from "../lib/toCanonicalSelectedStar";
+src/spatial/scene/SpatialScene.tsx.bak.20260317_005942:345:            onSelect={(node) => selectStar(toCanonicalSelectedStar(node))}
+src/spatial/telemetry/SpatialAnalyticsBridge.tsx:12:import type { SelectedStar } from "@/spatial/state/selectedStarContract";
+src/spatial/telemetry/SpatialAnalyticsBridge.tsx:33:  const prevSelectedStarId = useRef<string | null>(null);
+src/spatial/telemetry/SpatialAnalyticsBridge.tsx:75:    if (prevSelectedStarId.current === null && starId === null) return;
+src/spatial/telemetry/SpatialAnalyticsBridge.tsx:76:    if (prevSelectedStarId.current === starId) return;
+src/spatial/telemetry/SpatialAnalyticsBridge.tsx:78:      previousStarId: prevSelectedStarId.current,
+src/spatial/telemetry/SpatialAnalyticsBridge.tsx:85:    prevSelectedStarId.current = starId;

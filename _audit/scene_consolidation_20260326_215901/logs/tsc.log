@@ -1,0 +1,14 @@
+src/spatial/components/CameraRig.tsx(11,47): error TS2551: Property 'selectedStar' does not exist on type 'SceneState'. Did you mean 'selectedStarId'?
+src/spatial/components/CameraRig.tsx(18,16): error TS2367: This comparison appears to be unintentional because the types '"sky" | "lifemap" | "focus" | "replay"' and '"ground"' have no overlap.
+src/spatial/persistence/SpatialPersistenceBridge.tsx(11,47): error TS2551: Property 'selectedStar' does not exist on type 'SceneState'. Did you mean 'selectedStarId'?
+src/spatial/persistence/SpatialPersistenceBridge.tsx(19,7): error TS2322: Type 'import("/home/user/urai-spatial/src/spatial/state/sceneStore").SceneMode' is not assignable to type 'import("/home/user/urai-spatial/src/spatial/types").SceneMode'.
+  Type '"sky"' is not assignable to type 'SceneMode'.
+src/spatial/scene/HomeWorld.tsx(7,47): error TS2551: Property 'enterLifemap' does not exist on type 'SceneState'. Did you mean 'enterLifeMap'?
+src/spatial/scene/ReplaySphere.tsx(8,47): error TS2551: Property 'selectedStar' does not exist on type 'SceneState'. Did you mean 'selectedStarId'?
+src/spatial/scene/StarMesh.tsx(14,44): error TS2339: Property 'hoverStar' does not exist on type 'SceneState'.
+src/spatial/scene/StarMesh.tsx(15,45): error TS2339: Property 'selectStar' does not exist on type 'SceneState'.
+src/spatial/scene/StarMesh.tsx(16,47): error TS2551: Property 'selectedStar' does not exist on type 'SceneState'. Did you mean 'selectedStarId'?
+src/spatial/scene/StarMesh.tsx(17,46): error TS2551: Property 'hoveredStar' does not exist on type 'SceneState'. Did you mean 'hoveredStarId'?
+src/spatial/unity/UnityRuntimePayloadBridge.tsx(34,47): error TS2551: Property 'selectedStar' does not exist on type 'SceneState'. Did you mean 'selectedStarId'?
+src/spatial/unity/UnityRuntimePayloadBridge.tsx(38,46): error TS2345: Argument of type 'import("/home/user/urai-spatial/src/spatial/state/sceneStore").SceneMode' is not assignable to parameter of type 'import("/home/user/urai-spatial/src/spatial/types").SceneMode'.
+  Type '"sky"' is not assignable to type 'SceneMode'.

@@ -1,3 +1,4 @@
+
 import type { CanonicalSelectedStar } from "./selectedStarContract";
 import { getSelectedStarId } from "./selectedStarContract";
 

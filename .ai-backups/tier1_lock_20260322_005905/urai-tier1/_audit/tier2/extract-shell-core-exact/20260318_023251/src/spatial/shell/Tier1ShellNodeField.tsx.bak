@@ -1,0 +1,82 @@
+"use client";
+
+import React from "react";
+
+type Tier1ShellNode = {
+  id: string;
+  title: string;
+  x: number;
+  y: number;
+  size: number;
+};
+
+type Props = {
+  mode: "home" | "sky" | "lifemap" | "focus" | "replay";
+  uiLocked: boolean;
+  showMapWorld: boolean;
+  pulseId: string | null;
+  selectedId: string;
+  nodes: readonly Tier1ShellNode[];
+  selectMemory: (id: string) => void;
+};
+
+export default function Tier1ShellNodeField(props: Props) {
+  const { mode, uiLocked, showMapWorld, pulseId, selectedId, nodes, selectMemory } = props;
+
+  if (!(showMapWorld || pulseId)) return null;
+
+  return (
+    <>
+      {nodes.map((node) => {
+        const selectedNode = node.id === selectedId;
+        const pulsingNode = node.id === pulseId;
+
+        return (
+          <button
+            key={node.id}
+            type="button"
+            disabled={!showMapWorld || uiLocked}
+            onClick={() => selectMemory(node.id)}
+            style={{
+              position: "absolute",
+              left: `${node.x}%`,
+              top: `${node.y}%`,
+              transform: "translate(-50%, -50%)",
+              width: selectedNode ? node.size + 10 : node.size,
+              height: selectedNode ? node.size + 10 : node.size,
+              borderRadius: 999,
+              border: selectedNode
+                ? "1px solid rgba(255,255,255,0.48)"
+                : "1px solid rgba(255,255,255,0.14)",
+              background: selectedNode
+                ? "radial-gradient(circle, rgba(214,226,255,0.92) 0%, rgba(140,160,214,0.38) 55%, rgba(26,36,66,0.18) 100%)"
+                : "radial-gradient(circle, rgba(226,236,255,0.94) 0%, rgba(124,146,206,0.22) 100%)",
+              boxShadow: selectedNode
+                ? "0 0 34px rgba(180,200,255,0.42)"
+                : "0 0 12px rgba(190,210,255,0.18)",
+              opacity: mode === "home" || mode === "sky" ? 0.16 : 1,
+              cursor: showMapWorld && !uiLocked ? "pointer" : "default",
+              transition:
+                "transform 220ms ease, width 220ms ease, height 220ms ease, opacity 220ms ease, box-shadow 220ms ease",
+              pointerEvents: showMapWorld && !uiLocked ? "auto" : "none",
+              animation: pulsingNode ? "node-pulse 280ms ease-out 1" : undefined,
+            }}
+            aria-label={node.title}
+          >
+            {selectedNode && (
+              <span
+                style={{
+                  position: "absolute",
+                  inset: -14,
+                  borderRadius: 999,
+                  border: "1px solid rgba(206,222,255,0.20)",
+                  boxShadow: "0 0 26px rgba(154,186,255,0.14)",
+                }}
+              />
+            )}
+          </button>
+        );
+      })}
+    </>
+  );
+}

@@ -1,0 +1,8 @@
+BACKUP: src/spatial/components/Starfield.tsx
+BACKUP: src/spatial/components/LifeMapStarfield.tsx
+BACKUP: src/spatial/scene/SpatialScene.tsx
+BACKUP: src/lib/uraiCanon/starfieldDepth.ts
+APP=/home/user/urai-spatial
+=== WRITE starfieldDepth.ts IN CORRECT APP ROOT ===
+=== FIX starfieldDepth IMPORT PATHS ===
+=== FIX PositionLike OBJECT ACCESS SAFELY ===

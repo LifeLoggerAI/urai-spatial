@@ -1,0 +1,2 @@
+replay_button_repair=UNTOUCHED_IN_THIS_PASS
+reason=not proven safe to normalize beyond canonical replayAvailable gating without broader selected-star contract risk

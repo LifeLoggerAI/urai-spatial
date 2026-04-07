@@ -1,3 +1,4 @@
+
 import type { SpatialCuratedDeckDiff } from "@/spatial/curation/spatialCuratedDeckDiffTypes";
 
 export type SpatialCuratedDeckStabilitySummary = {

@@ -1,0 +1,24 @@
+== lock1 verify and seal ==
+timestamp=20260317_205123
+
+== branch ==
+lock1-clean-shell-20260317_204254
+
+== status before ==
+
+== last 5 commits ==
+1821fb7 (HEAD -> lock1-clean-shell-20260317_204254, tag: lock1-clean-shell-green-20260317_204945) chore(urai-tier1): finalize lock1 clean shell green
+011cf23 (tag: urai-tier1-lock-candidate-20260317_091501, tag: urai-curated-surface-layer-green-20260317_084801, tag: urai-curated-surface-layer-green-20260317_084650, tag: urai-curated-surface-layer-green-20260317_084221, phase97-curated-deck-destruction-execution-gate-panel-20260317_062238) refactor(urai-spatial): share import and vault controller types
+3d55b7f chore(urai-spatial): codify import and vault controller ownership
+fe46fab (tag: urai-phase105-execution-gate-type-ownership-green-20260317_075336) fix(urai-spatial): normalize execution gate type ownership
+2a49314 (tag: urai-phase97-execution-gate-green-20260317_072639) fix(urai-spatial): stabilize destruction execution gate wiring
+
+== current tags matching lock1 ==
+lock1-clean-shell-green-20260317_204945
+
+== diff for SpatialScene.tsx ==
+
+== status after ==
+
+PASS: lock1 sealed
+tag=lock1-clean-shell-sealed-20260317_205123

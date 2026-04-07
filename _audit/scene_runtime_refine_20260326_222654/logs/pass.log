@@ -1,0 +1,9 @@
+[BACKUP] src/app/page.tsx
+[BACKUP] src/spatial/scene/SpatialScene.tsx
+[STEP] TypeScript validation
+[PASS] pnpm exec tsc --noEmit
+[STEP] build validation
+[PASS] pnpm build
+[DONE] scene runtime refine pass completed
+
+[FAIL] Script aborted at line 1 (exit 1)

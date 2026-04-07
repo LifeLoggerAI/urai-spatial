@@ -1,0 +1,194 @@
+===== src/app/globals.css =====
+5:  height: 100%;
+16:  overflow: hidden;
+24:  min-height: 100vh;
+
+===== src/app/page.tsx =====
+
+===== src/spatial/scene/SpatialScene.tsx =====
+3:import { Canvas, ThreeEvent, useFrame } from "@react-three/fiber";
+8:type ScenePhase = "home" | "ascent" | "lifemap" | "focus" | "replay";
+26:function lerp(a: number, b: number, t: number): number {
+43:function buildStars(): StarPoint[] {
+60:      const z = lerp(zMin, zMax, rng());
+63:      const size = lerp(sizeMin, sizeMax, rng());
+87:  phase,
+89:  selected,
+91:  phase: ScenePhase;
+93:  selected: StarPoint | null;
+98:  useFrame(({ camera, clock }) => {
+110:    if (phase === "home") {
+118:    } else if (phase === "ascent") {
+119:      tx = lerp(0, 1.25, ascentEase) + Math.sin(t * 0.55) * 0.08;
+120:      ty = lerp(0.12, 3.6, ascentEase) + Math.sin(t * 0.75) * 0.12;
+121:      tz = lerp(8.4, -26, ascentEase);
+122:      lx = lerp(0, 0.1, ascentEase);
+123:      ly = lerp(0.05, 1.2, ascentEase);
+124:      lz = lerp(-24, -180, ascentEase);
+125:      targetFov = lerp(52, 44, ascentEase);
+126:    } else if (phase === "lifemap") {
+134:    } else if (phase === "focus" && selected) {
+135:      tx = selected.position[0] * 0.1 + 0.8;
+136:      ty = selected.position[1] * 0.08 + 0.35;
+137:      tz = selected.position[2] + 7.5;
+138:      lx = selected.position[0] * 0.22;
+139:      ly = selected.position[1] * 0.18;
+140:      lz = selected.position[2] - 2.8;
+142:    } else if (phase === "replay" && selected) {
+143:      tx = selected.position[0] * 0.08 + 0.15;
+144:      ty = selected.position[1] * 0.08 + 0.1;
+145:      tz = selected.position[2] + 4.1;
+146:      lx = selected.position[0] * 0.12;
+147:      ly = selected.position[1] * 0.12;
+148:      lz = selected.position[2] - 5.5;
+155:    camera.position.lerp(drift.current, 0.055);
+156:    camera.lookAt(look.current);
+158:    const perspective = camera as THREE.PerspectiveCamera;
+159:    perspective.fov = lerp(perspective.fov, targetFov, 0.08);
+179:          opacity={lerp(0.98, 0.25, easeInOutCubic(ascent))}
+188:          opacity={lerp(0.22, 0.06, easeInOutCubic(ascent))}
+197:function Orb({ phase, ascent }: { phase: ScenePhase; ascent: number }) {
+200:  useFrame(({ clock }) => {
+205:    groupRef.current.position.y = lerp(-0.55, 0.45, ease) + Math.sin(t * 0.65) * 0.12;
+206:    groupRef.current.position.z = lerp(-4.5, -16, ease);
+207:    groupRef.current.scale.setScalar(lerp(1, 0.72, ease));
+208:    groupRef.current.visible = phase === "home" || phase === "ascent";
+231:  phase,
+232:  selected,
+233:  hoveredId,
+239:  phase: ScenePhase;
+240:  selected: StarPoint | null;
+241:  hoveredId: string | null;
+248:  useFrame(({ clock }) => {
+255:    const selectedNow = selected?.id === star.id;
+256:    const hoveredNow = hoveredId === star.id;
+263:    const liftScale = phase === "ascent" ? lerp(1, star.band === "near" ? 2.2 : star.band === "mid" ? 1.45 : 1.08, ascentEase) : 1;
+264:    const activeScale = selectedNow ? 2.2 : hoveredNow ? 1.5 : 1;
+268:  const isSelected = selected?.id === star.id;
+269:  const isHovered = hoveredId === star.id;
+270:  const dimOthers = (phase === "focus" || phase === "replay") && selected && !isSelected;
+282:      onPointerOver={(e: ThreeEvent<PointerEvent>) => {
+286:      onPointerOut={(e: ThreeEvent<PointerEvent>) => {
+290:      onClick={(e: ThreeEvent<MouseEvent>) => {
+308:  phase,
+310:  selected,
+313:  phase: ScenePhase;
+315:  selected: StarPoint | null;
+318:  const stars = useMemo(() => buildStars(), []);
+319:  const [hoveredId, setHoveredId] = useState<string | null>(null);
+327:          phase={phase}
+328:          selected={selected}
+329:          hoveredId={hoveredId}
+339:function FocusHalo({ selected, phase }: { selected: StarPoint | null; phase: ScenePhase }) {
+340:  if (!selected || (phase !== "focus" && phase !== "replay")) return null;
+342:  const haloZ = phase === "focus" ? selected.position[2] - 2.6 : selected.position[2] - 5.4;
+343:  const haloY = phase === "focus" ? selected.position[1] : selected.position[1] - 0.12;
+346:    <group position={[selected.position[0], haloY, haloZ]}>
+349:        <meshBasicMaterial color={"#6f94c9"} transparent opacity={phase === "focus" ? 0.18 : 0.12} depthWrite={false} />
+351:      {phase === "replay" ? (
+362:  phase,
+363:  selected,
+368:  phase: ScenePhase;
+369:  selected: StarPoint | null;
+384:            phase === "replay"
+392:            {phase === "home" ? "HOME" :
+393:             phase === "ascent" ? "ASCENT" :
+394:             phase === "lifemap" ? "LIFEMAP" :
+395:             phase === "focus" ? "FOCUS" :
+399:            {phase === "home" && "Enter or click empty space to begin ascent."}
+400:            {phase === "ascent" && "Camera is moving forward through depth bands."}
+401:            {phase === "lifemap" && "Click a star to isolate it. Esc returns home."}
+402:            {phase === "focus" && selected && `${selected.label} — ${selected.summary}`}
+403:            {phase === "replay" && selected && `Replay chamber anchored to ${selected.label}.`}
+405:          {phase === "home" ? (
+407:              onClick={(e) => {
+425:          {(phase === "lifemap" || phase === "focus" || phase === "replay") ? (
+427:              Esc = home
+428:              {phase === "focus" ? " · Enter or R = replay" : ""}
+429:              {phase === "replay" ? " · Enter = focus" : ""}
+432:          {(phase === "focus" || phase === "replay") ? (
+434:              onClick={(e) => {
+436:                if (phase === "focus") onReplay();
+450:              {phase === "focus" ? "Enter replay" : "Exit replay"}
+460:  const [phase, setPhase] = useState<ScenePhase>("home");
+461:  const [selected, setSelected] = useState<StarPoint | null>(null);
+466:    if (phase !== "home") return;
+477:    setPhase("home");
+481:    if (!selected) return;
+482:    setPhase("replay");
+486:    if (phase !== "ascent") return;
+495:        setPhase("lifemap");
+503:  }, [phase]);
+508:        if (phase === "home") {
+510:        } else if (phase === "focus" && selected) {
+511:          setPhase("replay");
+512:        } else if (phase === "replay" && selected) {
+513:          setPhase("focus");
+517:      if (event.key.toLowerCase() === "r" && phase === "focus" && selected) {
+518:        setPhase("replay");
+522:        if (phase === "replay" && selected) {
+523:          setPhase("focus");
+532:  }, [phase, selected]);
+535:    if (phase === "focus" || phase === "replay") return;
+536:    if (!selected) return;
+537:    setPhase("focus");
+538:  }, [selected, phase]);
+542:      <Canvas
+544:        camera={{ position: [0, 0.12, 8.4], fov: 52, near: 0.1, far: 1200 }}
+546:        onPointerMissed={() => {
+547:          if (phase === "home") startAscent();
+548:          else if (phase === "focus") setPhase("lifemap");
+549:          else if (phase === "replay") setPhase("focus");
+553:        <fog attach="fog" args={["#010611", 90, 460]} />
+556:          <CameraRig phase={phase} ascent={ascent} selected={selected} />
+558:          <Orb phase={phase} ascent={ascent} />
+559:          <Starfield phase={phase} ascent={ascent} selected={selected} setSelected={setSelected} />
+560:          <FocusHalo selected={selected} phase={phase} />
+562:            phase={phase}
+563:            selected={selected}
+565:            onExit={() => setPhase("focus")}
+569:      </Canvas>
+
+===== src/spatial/scene/Starfield.tsx =====
+16:type ScenePhase = "home" | "ascent" | "lifemap" | "focus" | "replay";
+20:  phase: ScenePhase;
+21:  selectedId: string | null;
+22:  hoveredId: string | null;
+30:  phase,
+31:  selectedId,
+32:  hoveredId,
+45:        const isSelected = star.id === selectedId;
+46:        const isHovered = star.id === hoveredId;
+47:        const isOther = selectedId !== null && !isSelected;
+70:        const phaseOpacity =
+71:          phase === "home" ? 0.04 :
+72:          phase === "ascent" ? (star.band === "near" ? 0.82 : star.band === "mid" ? 0.54 : 0.28) :
+73:          phase === "lifemap" ? 1 :
+74:          phase === "focus" ? (isOther ? 0.05 : 0.55) :
+75:          phase === "replay" ? (isOther ? 0.015 : 0.14) :
+83:        const opacity = baseBand * phaseOpacity * (isHovered ? 1.15 : 1);
+84:        const scale = star.size * (isSelected ? (phase === "replay" ? 3.4 : 2.7) : isHovered ? 1.55 : 1);
+85:        const glowScale = isSelected ? (phase === "replay" ? 5.8 : 4.2) : isHovered ? 3 : 2.2;
+86:        const glowOpacity = opacity * (isSelected ? (phase === "replay" ? 0.46 : 0.82) : isHovered ? 0.34 : 0.14);
+91:              onPointerOver={(e) => {
+95:              onPointerOut={(e) => {
+99:              onPointerDown={(e) => {
+
+===== src/spatial/scene/HomeEnvironment.tsx =====
+22:      <fog attach="fog" args={["#02030a", 10, 54]} />
+
+===== src/spatial/scene/ReplayOverlay.tsx =====
+6:  selected: SelectedStar | null;
+12:  selected,
+16:  if (!selected) return null;
+19:    <div className="urai-overlay urai-overlay--replay">
+20:      <div className="urai-overlay__card urai-overlay__card--replay">
+22:        <h2 className="urai-overlay__title">{selected.title}</h2>
+24:          <span>{selected.chapter}</span>
+25:          <span>{selected.dateLabel}</span>
+26:          <span>{selected.memoryTone}</span>
+29:          The camera has entered the memory volume around this star. The interface stays minimal so the
+30:          world remains primary and the replay reads as spatial travel rather than a screen overlay.
+33:          <button className="urai-btn urai-btn--ghost" onClick={onBack} type="button">
+36:          <button className="urai-btn" onClick={onExit} type="button">
+

@@ -1,0 +1,5 @@
+14:export default function Orb({ phase, position = [-1.25, 0.32, -2.6] }: OrbProps) {
+15:  const groupRef = useRef<Group>(null);
+18:    const t = clock.getElapsedTime();
+19:    const g = groupRef.current;
+22:    const phaseLift =

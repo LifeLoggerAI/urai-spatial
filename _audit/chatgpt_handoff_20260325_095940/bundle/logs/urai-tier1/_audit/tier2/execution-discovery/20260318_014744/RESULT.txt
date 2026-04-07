@@ -1,0 +1,30 @@
+== URAI Tier 2 execution discovery ==
+ROOT=/home/user/urai-spatial/urai-tier1
+SNAPSHOT: src/app/page.tsx
+SNAPSHOT: src/spatial/scene/SpatialScene.tsx
+SNAPSHOT: src/spatial/scene/Ground.tsx
+SNAPSHOT: src/spatial/scene/Starfield.tsx
+SNAPSHOT: src/spatial/components/CameraRig.tsx
+SNAPSHOT: src/spatial/core/SceneController.tsx
+SNAPSHOT: src/spatial/state/sceneStore.ts
+SNAPSHOT: src/spatial/scene/MemorySphere.tsx
+SNAPSHOT: src/spatial/layout
+SNAPSHOT: src/spatial/world
+SNAPSHOT: src/spatial/entities
+SNAPSHOT: src/spatial/camera
+SNAPSHOT: src/spatial/transitions
+SNAPSHOT: src/spatial/theme
+DONE
+AUDIT_DIR=/home/user/urai-spatial/urai-tier1/_audit/tier2/execution-discovery/20260318_014744
+ARCHIVE=/home/user/urai-spatial/urai-tier1/_audit/tier2/execution-discovery/20260318_014744/execution-discovery.tgz
+Paste back:
+  page.numbered.txt
+  SpatialScene.numbered.txt
+  Ground.numbered.txt
+  Starfield.numbered.txt
+  CameraRig.numbered.txt
+  SceneController.numbered.txt
+  sceneStore.numbered.txt
+  MemorySphere.numbered.txt
+  symbol-grep.txt
+  spatial-tree.txt

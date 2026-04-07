@@ -1,0 +1,41 @@
+import { create } from "zustand";
+
+export type SceneMode = "home" | "sky" | "lifemap" | "focus" | "replay" | "ground";
+
+type SceneState = {
+  mode: SceneMode;
+  selectedStarId: string | null;
+  hoveredStar: string | null;
+
+  setMode: (mode: SceneMode) => void;
+  goHome: () => void;
+  returnHome: () => void;
+  enterSky: () => void;
+  enterLifeMap: () => void;
+  enterGround: () => void;
+  enterReplay: () => void;
+  escape: () => void;
+
+  selectStar: (id: string) => void;
+  clearSelection: () => void;
+  hoverStar: (id: string | null) => void;
+};
+
+const HOME_STATE = {
+  mode: "home" as SceneMode,
+  selectedStarId: null,
+  hoveredStar: null,
+};
+
+
+export const useSceneStore = create<SceneState>((set) => ({
+  ...HOME_STATE,
+
+  setMode: (mode) => set({ mode }),
+  goHome: () => set({ ...HOME_STATE }),
+  returnHome: () => set({ ...HOME_STATE }),
+  enterSky: () => set({ mode: "sky" }),
+  enterLifeMap: () => set({ mode: "lifemap" }),
+  selectStar: (id) => set({ selectedStarId: id }),
+  clearSelection: () => set({ selectedStarId: null }),
+}));

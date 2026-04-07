@@ -1,0 +1,66 @@
+2:import SpatialCuratedDeckPurgeReadinessPanel from "@/spatial/ui/SpatialCuratedDeckPurgeReadinessPanel";
+3:import SpatialCuratedDeckRetentionLifecyclePanel from "@/spatial/ui/SpatialCuratedDeckRetentionLifecyclePanel";
+4:import SpatialCuratedDeckReopenWatchPanel from "@/spatial/ui/SpatialCuratedDeckReopenWatchPanel";
+5:import SpatialCuratedDeckArchiveDispositionPanel from "@/spatial/ui/SpatialCuratedDeckArchiveDispositionPanel";
+6:import SpatialCuratedDeckClosureCertificatePanel from "@/spatial/ui/SpatialCuratedDeckClosureCertificatePanel";
+7:import SpatialCuratedDeckRecoveryGatePanel from "@/spatial/ui/SpatialCuratedDeckRecoveryGatePanel";
+8:import SpatialCuratedDeckIncidentResponsePanel from "@/spatial/ui/SpatialCuratedDeckIncidentResponsePanel";
+9:import SpatialCuratedDeckBreachWatchPanel from "@/spatial/ui/SpatialCuratedDeckBreachWatchPanel";
+10:import SpatialCuratedDeckSlaPanel from "@/spatial/ui/SpatialCuratedDeckSlaPanel";
+11:import SpatialCuratedDeckServiceWindowPanel from "@/spatial/ui/SpatialCuratedDeckServiceWindowPanel";
+12:import SpatialCuratedDeckSchedulePanel from "@/spatial/ui/SpatialCuratedDeckSchedulePanel";
+13:import SpatialCuratedDeckQueuePanel from "@/spatial/ui/SpatialCuratedDeckQueuePanel";
+14:import SpatialCuratedDeckDispatchPanel from "@/spatial/ui/SpatialCuratedDeckDispatchPanel";
+15:import SpatialCuratedDeckReviewTicketPanel from "@/spatial/ui/SpatialCuratedDeckReviewTicketPanel";
+16:import SpatialCuratedDeckActionPanel from "@/spatial/ui/SpatialCuratedDeckActionPanel";
+17:import SpatialCuratedDeckVerdictPanel from "@/spatial/ui/SpatialCuratedDeckVerdictPanel";
+18:import SpatialCuratedDeckAnomalyPanel from "@/spatial/ui/SpatialCuratedDeckAnomalyPanel";
+19:import SpatialCuratedDeckDivergencePanel from "@/spatial/ui/SpatialCuratedDeckDivergencePanel";
+20:import SpatialCuratedDeckConsensusPanel from "@/spatial/ui/SpatialCuratedDeckConsensusPanel";
+21:import SpatialCuratedDeckAnchorPanel from "@/spatial/ui/SpatialCuratedDeckAnchorPanel";
+22:import SpatialCuratedDeckDriftPanel from "@/spatial/ui/SpatialCuratedDeckDriftPanel";
+23:import SpatialCuratedDeckStabilityPanel from "@/spatial/ui/SpatialCuratedDeckStabilityPanel";
+24:import SpatialCuratedDeckCohortPanel from "@/spatial/ui/SpatialCuratedDeckCohortPanel";
+25:import SpatialCuratedDeckNeighborDiffPanel from "@/spatial/ui/SpatialCuratedDeckNeighborDiffPanel";
+26:import SpatialCuratedDeckLineagePanel from "@/spatial/ui/SpatialCuratedDeckLineagePanel";
+27:import SpatialCuratedDeckChangeLedgerPanel from "@/spatial/ui/SpatialCuratedDeckChangeLedgerPanel";
+28:import SpatialCuratedDeckDiffPanel from "@/spatial/ui/SpatialCuratedDeckDiffPanel";
+29:import SpatialCuratedDeckVaultPanel from "@/spatial/ui/SpatialCuratedDeckVaultPanel";
+31:import SpatialCuratedDeckImportPanel from "@/spatial/ui/SpatialCuratedDeckImportPanel";
+32:import SpatialCuratedDeckExportPanel from "@/spatial/ui/SpatialCuratedDeckExportPanel";
+96:import SpatialCuratedDeckRetentionHorizonPanel from "@/spatial/ui/SpatialCuratedDeckRetentionHorizonPanel";
+97:import SpatialCuratedDeckExpiryGovernancePanel from "@/spatial/ui/SpatialCuratedDeckExpiryGovernancePanel";
+98:import SpatialCuratedDeckDestructionAuthorizationPanel from "@/spatial/ui/SpatialCuratedDeckDestructionAuthorizationPanel";
+805:      <SpatialCuratedDeckExportPanel />
+806:      <SpatialCuratedDeckImportPanel />
+808:      <SpatialCuratedDeckVaultPanel />
+809:      <SpatialCuratedDeckDiffPanel />
+810:      <SpatialCuratedDeckChangeLedgerPanel />
+811:      <SpatialCuratedDeckLineagePanel />
+812:      <SpatialCuratedDeckNeighborDiffPanel />
+813:      <SpatialCuratedDeckCohortPanel />
+814:      <SpatialCuratedDeckStabilityPanel />
+815:      <SpatialCuratedDeckDriftPanel />
+816:      <SpatialCuratedDeckAnchorPanel />
+817:      <SpatialCuratedDeckConsensusPanel />
+818:      <SpatialCuratedDeckDivergencePanel />
+819:      <SpatialCuratedDeckAnomalyPanel />
+820:      <SpatialCuratedDeckVerdictPanel />
+821:      <SpatialCuratedDeckActionPanel />
+822:      <SpatialCuratedDeckReviewTicketPanel />
+823:      <SpatialCuratedDeckDispatchPanel />
+824:      <SpatialCuratedDeckQueuePanel />
+825:      <SpatialCuratedDeckSchedulePanel />
+826:      <SpatialCuratedDeckServiceWindowPanel />
+827:      <SpatialCuratedDeckSlaPanel />
+828:      <SpatialCuratedDeckBreachWatchPanel />
+829:      <SpatialCuratedDeckIncidentResponsePanel />
+830:      <SpatialCuratedDeckRecoveryGatePanel />
+831:      <SpatialCuratedDeckClosureCertificatePanel />
+832:      <SpatialCuratedDeckArchiveDispositionPanel />
+833:      <SpatialCuratedDeckReopenWatchPanel />
+834:      <SpatialCuratedDeckRetentionLifecyclePanel />
+835:      <SpatialCuratedDeckPurgeReadinessPanel />
+836:      <SpatialCuratedDeckRetentionHorizonPanel />
+837:      <SpatialCuratedDeckExpiryGovernancePanel />
+838:      <SpatialCuratedDeckDestructionAuthorizationPanel />

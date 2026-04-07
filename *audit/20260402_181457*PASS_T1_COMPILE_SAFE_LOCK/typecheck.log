@@ -1,0 +1,6 @@
+src/spatial/scene/SpatialScene.tsx(193,1): error TS1005: ')' expected.
+src/spatial/scene/SpatialScene.tsx(283,4): error TS1128: Declaration or statement expected.
+src/spatial/scene/SpatialScene.tsx(283,5): error TS1128: Declaration or statement expected.
+src/spatial/scene/SpatialScene.tsx(284,1): error TS1128: Declaration or statement expected.
+src/spatial/scene/SpatialScene.tsx(542,1): error TS1128: Declaration or statement expected.
+src/spatial/scene/SpatialScene.tsx(583,1): error TS1160: Unterminated template literal.

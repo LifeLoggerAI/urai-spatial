@@ -1,0 +1,63 @@
+===== src/app/page.tsx =====
+1:import SpatialScene from "@/spatial/scene/SpatialScene"
+3:export default function Page() {
+
+===== src/spatial/scene/SpatialScene.tsx =====
+3:import { Canvas, ThreeEvent, useFrame } from "@react-three/fiber";
+4:import { Html } from "@react-three/drei";
+5:import React, { Suspense, useEffect, useMemo, useRef, useState } from "react";
+6:import * as THREE from "three";
+8:type ScenePhase = "home" | "ascent" | "lifemap" | "focus" | "replay";
+9:type DepthBand = "near" | "mid" | "far";
+11:type StarPoint = {
+22:function clamp01(v: number): number {
+26:function lerp(a: number, b: number, t: number): number {
+30:function easeInOutCubic(t: number): number {
+35:function makeRng(seed: number): () => number {
+43:function buildStars(): StarPoint[] {
+86:function CameraRig({
+166:function Horizon({ ascent }: { ascent: number }) {
+197:function Orb({ phase, ascent }: { phase: ScenePhase; ascent: number }) {
+229:function StarNode({
+307:function Starfield({
+339:function FocusHalo({ selected, phase }: { selected: StarPoint | null; phase: ScenePhase }) {
+361:function Overlay({
+459:function SceneRoot() {
+574:export default function SpatialScene() {
+
+===== src/spatial/scene/Starfield.tsx =====
+3:import * as THREE from "three";
+4:import { useMemo } from "react";
+6:export type SpatialStar = {
+16:type ScenePhase = "home" | "ascent" | "lifemap" | "focus" | "replay";
+18:type StarfieldProps = {
+28:export default function Starfield({
+
+===== src/spatial/scene/HomeEnvironment.tsx =====
+3:import * as THREE from "three";
+5:type HomeEnvironmentProps = {
+10:export default function HomeEnvironment({
+
+===== src/spatial/scene/Orb.tsx =====
+3:import * as THREE from "three";
+4:import { Float } from "@react-three/drei";
+5:import { useFrame } from "@react-three/fiber";
+6:import { useMemo, useRef } from "react";
+8:export type OrbProps = {
+16:export default function Orb({
+
+===== src/spatial/scene/FocusShellOverlay.tsx =====
+3:import type { SelectedStar } from "../types/scene";
+5:type FocusShellOverlayProps = {
+11:export default function FocusShellOverlay({
+
+===== src/spatial/scene/ReplayOverlay.tsx =====
+3:import type { SelectedStar } from "../types/scene";
+5:type ReplayOverlayProps = {
+11:export default function ReplayOverlay({
+
+===== src/spatial/types/scene.ts =====
+1:export type ScenePhase = "home" | "ascent" | "lifemap" | "focus" | "replay" | "return";
+3:export type StarDepthBand = "near" | "mid" | "far";
+5:export type SelectedStar = {
+

@@ -1,0 +1,24 @@
+$ pnpm build
+
+> urai-tier1@0.1.0 build /home/user/urai-spatial/urai-tier1
+> next build
+
+▲ Next.js 16.1.6 (Turbopack)
+
+  Creating an optimized production build ...
+✓ Compiled successfully in 18.0s
+  Running TypeScript ...
+Failed to compile.
+
+./src/spatial/shell/overlays/ReplayShellOverlay.tsx:82:14
+Type error: Cannot find name 'ReplayDatum'.
+
+[0m [90m 80 |[39m             }}
+ [90m 81 |[39m           [33m>[39m
+[31m[1m>[22m[39m[90m 82 |[39m             [33m<[39m[33mReplayDatum[39m label[33m=[39m[32m"Origin"[39m value[33m=[39m{selected[33m.[39mtags[[35m0[39m]} [33m/[39m[33m>[39m
+ [90m    |[39m              [31m[1m^[22m[39m
+ [90m 83 |[39m             [33m<[39m[33mReplayDatum[39m label[33m=[39m[32m"Vector"[39m value[33m=[39m{selected[33m.[39mtags[[35m1[39m]} [33m/[39m[33m>[39m
+ [90m 84 |[39m             [33m<[39m[33mReplayDatum[39m label[33m=[39m[32m"Thread"[39m value[33m=[39m{selected[33m.[39mtags[[35m2[39m]} [33m/[39m[33m>[39m
+ [90m 85 |[39m           [33m<[39m[33m/[39m[33mdiv[39m[33m>[39m[0m
+Next.js build worker exited with code: 1 and signal: null
+ ELIFECYCLE  Command failed with exit code 1.

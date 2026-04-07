@@ -1,0 +1,794 @@
+===== FILE: src/spatial/shell/Tier1ShellScreen.tsx =====
+
+     1	"use client";
+     2	
+     3	import React, { useEffect, useMemo, useRef, useState } from "react";
+     4	
+     5	type Mode = "home" | "sky" | "lifemap" | "focus" | "replay";
+     6	
+     7	type MemoryNode = {
+     8	  id: string;
+     9	  title: string;
+    10	  chapter: string;
+    11	  domain: string;
+    12	  summary: string;
+    13	  tags: [string, string, string];
+    14	  x: number;
+    15	  y: number;
+    16	  size: number;
+    17	};
+    18	
+    19	const MEMORY_NODES: MemoryNode[] = [
+    20	  {
+    21	    id: "return-signal",
+    22	    title: "Return Signal",
+    23	    chapter: "Return",
+    24	    domain: "Atmosic",
+    25	    summary: "Second orbit node for focus continuity and selected-state validation.",
+    26	    tags: ["Signal", "Return", "Orbit"],
+    27	    x: 22,
+    28	    y: 58,
+    29	    size: 10,
+    30	  },
+    31	  {
+    32	    id: "threshold-one",
+    33	    title: "Threshold One",
+    34	    chapter: "Winter",
+    35	    domain: "Threshold",
+    36	    summary: "Canonical memory seed used to verify replay identity and focus continuity.",
+    37	    tags: ["Origin", "Winter", "Threshold"],
+    38	    x: 54,
+    39	    y: 46,
+    40	    size: 12,
+    41	  },
+    42	  {
+    43	    id: "echo-lattice",
+    44	    title: "Echo Lattice",
+    45	    chapter: "Signal",
+    46	    domain: "Pattern",
+    47	    summary: "Pattern memory used to test alternate node selection without routing drift.",
+    48	    tags: ["Echo", "Lattice", "Pattern"],
+    49	    x: 73,
+    50	    y: 33,
+    51	    size: 9,
+    52	  },
+    53	  {
+    54	    id: "north-vector",
+    55	    title: "North Vector",
+    56	    chapter: "Guide",
+    57	    domain: "Compass",
+    58	    summary: "Reference waypoint for map readability and deterministic object persistence.",
+    59	    tags: ["North", "Vector", "Guide"],
+    60	    x: 66,
+    61	    y: 68,
+    62	    size: 9,
+    63	  },
+    64	];
+    65	
+    66	function seededDust(count: number) {
+    67	  let seed = 1337;
+    68	  const next = () => {
+    69	    seed = (seed * 1664525 + 1013904223) >>> 0;
+    70	    return seed / 4294967296;
+    71	  };
+    72	  return Array.from({ length: count }, (_, index) => ({
+    73	    id: `dust-${index}`,
+    74	    x: Math.round(next() * 1000) / 10,
+    75	    y: Math.round(next() * 1000) / 10,
+    76	    o: 0.15 + next() * 0.6,
+    77	    s: 1 + next() * 2.4,
+    78	  }));
+    79	}
+    80	
+    81	const SKY_TRANSIT_MS = 950;
+    82	const MAP_TO_FOCUS_MS = 300;
+    83	const FOCUS_TO_REPLAY_MS = 220;
+    84	const REPLAY_TO_FOCUS_MS = 220;
+    85	const FOCUS_TO_MAP_MS = 220;
+    86	
+    87	function pillLabel(mode: Mode) {
+    88	  return mode.toUpperCase();
+    89	}
+    90	
+    91	export default function Page() {
+    92	  const [mode, setMode] = useState<Mode>("home");
+    93	  const [selectedId, setSelectedId] = useState<string>("threshold-one");
+    94	  const [transitioning, setTransitioning] = useState(false);
+    95	  const [pulseId, setPulseId] = useState<string | null>(null);
+    96	  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+    97	  const dust = useMemo(() => seededDust(72), []);
+    98	  const selected = useMemo(
+    99	    () => MEMORY_NODES.find((node) => node.id === selectedId) ?? MEMORY_NODES[0],
+   100	    [selectedId]
+   101	  );
+   102	
+   103	  useEffect(() => {
+   104	    const onContextMenu = (event: MouseEvent) => event.preventDefault();
+   105	    document.addEventListener("contextmenu", onContextMenu);
+   106	    document.body.style.margin = "0";
+   107	    document.body.style.background = "#030610";
+   108	    document.body.style.overflow = "hidden";
+   109	    return () => {
+   110	      document.removeEventListener("contextmenu", onContextMenu);
+   111	      if (timerRef.current) clearTimeout(timerRef.current);
+   112	    };
+   113	  }, []);
+   114	
+   115	  const lock = (ms: number, next: () => void) => {
+   116	    if (transitioning) return;
+   117	    setTransitioning(true);
+   118	    if (timerRef.current) clearTimeout(timerRef.current);
+   119	    timerRef.current = setTimeout(() => {
+   120	      next();
+   121	      setTransitioning(false);
+   122	    }, ms);
+   123	  };
+   124	
+   125	  const enterLifeMap = () => {
+   126	    if (transitioning) return;
+   127	    setMode("sky");
+   128	    lock(SKY_TRANSIT_MS, () => setMode("lifemap"));
+   129	  };
+   130	
+   131	  const returnHome = () => {
+   132	    if (transitioning) return;
+   133	    setMode("home");
+   134	  };
+   135	
+   136	  const selectMemory = (id: string) => {
+   137	    if (transitioning) return;
+   138	    setSelectedId(id);
+   139	    setPulseId(id);
+   140	    lock(MAP_TO_FOCUS_MS, () => {
+   141	      setPulseId(null);
+   142	      setMode("focus");
+   143	    });
+   144	  };
+   145	
+   146	  const resumeFocus = () => {
+   147	    if (transitioning) return;
+   148	    setMode("focus");
+   149	  };
+   150	
+   151	  const clearFocus = () => {
+   152	    if (transitioning) return;
+   153	    lock(FOCUS_TO_MAP_MS, () => setMode("lifemap"));
+   154	  };
+   155	
+   156	  const enterReplay = () => {
+   157	    if (transitioning) return;
+   158	    lock(FOCUS_TO_REPLAY_MS, () => setMode("replay"));
+   159	  };
+   160	
+   161	  const exitReplay = () => {
+   162	    if (transitioning) return;
+   163	    lock(REPLAY_TO_FOCUS_MS, () => setMode("focus"));
+   164	  };
+   165	
+   166	  const uiLocked = transitioning || mode === "sky";
+   167	  const showMapWorld = mode === "lifemap" || mode === "focus" || mode === "replay";
+   168	
+   169	  return (
+   170	    <main
+   171	      style={{
+   172	        minHeight: "100vh",
+   173	        width: "100vw",
+   174	        position: "relative",
+   175	        overflow: "hidden",
+   176	        color: "#f4f7ff",
+   177	        fontFamily:
+   178	          'Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
+   179	        background:
+   180	          "radial-gradient(circle at 50% 0%, rgba(34,66,120,0.20), transparent 28%), linear-gradient(180deg, #040814 0%, #030611 52%, #03050d 100%)",
+   181	      }}
+   182	    >
+   183	      <div
+   184	        style={{
+   185	          position: "absolute",
+   186	          inset: 0,
+   187	          background:
+   188	            "radial-gradient(circle at 50% 20%, rgba(88,120,208,0.09), transparent 32%), radial-gradient(circle at 50% 85%, rgba(38,72,144,0.16), transparent 30%)",
+   189	        }}
+   190	      />
+   191	
+   192	      {dust.map((dot) => (
+   193	        <div
+   194	          key={dot.id}
+   195	          style={{
+   196	            position: "absolute",
+   197	            left: `${dot.x}%`,
+   198	            top: `${dot.y}%`,
+   199	            width: dot.s,
+   200	            height: dot.s,
+   201	            opacity: dot.o,
+   202	            borderRadius: 999,
+   203	            background: "rgba(226,236,255,0.95)",
+   204	            boxShadow: "0 0 10px rgba(226,236,255,0.16)",
+   205	          }}
+   206	        />
+   207	      ))}
+   208	
+   209	      <div
+   210	        style={{
+   211	          position: "absolute",
+   212	          inset: 0,
+   213	          background:
+   214	            "linear-gradient(180deg, rgba(3,6,16,0.00) 0%, rgba(3,6,16,0.10) 40%, rgba(3,6,16,0.40) 100%)",
+   215	        }}
+   216	      />
+   217	
+   218	      <header
+   219	        style={{
+   220	          position: "absolute",
+   221	          top: 18,
+   222	          left: 18,
+   223	          right: 18,
+   224	          display: "flex",
+   225	          alignItems: "center",
+   226	          justifyContent: "space-between",
+   227	          zIndex: 20,
+   228	        }}
+   229	      >
+   230	        <div
+   231	          style={{
+   232	            borderRadius: 999,
+   233	            border: "1px solid rgba(255,255,255,0.10)",
+   234	            background: "rgba(6,10,22,0.74)",
+   235	            padding: "7px 10px",
+   236	            fontSize: 10,
+   237	            letterSpacing: "0.12em",
+   238	            textTransform: "uppercase",
+   239	            color: "rgba(236,242,255,0.92)",
+   240	            backdropFilter: "blur(12px)",
+   241	          }}
+   242	        >
+   243	          URAI SPATIAL
+   244	        </div>
+   245	
+   246	        <div
+   247	          style={{
+   248	            borderRadius: 999,
+   249	            border: "1px solid rgba(255,255,255,0.10)",
+   250	            background: "rgba(6,10,22,0.74)",
+   251	            padding: "7px 10px",
+   252	            fontSize: 10,
+   253	            letterSpacing: "0.12em",
+   254	            textTransform: "uppercase",
+   255	            color: "rgba(236,242,255,0.92)",
+   256	            backdropFilter: "blur(12px)",
+   257	          }}
+   258	        >
+   259	          {pillLabel(mode)}
+   260	        </div>
+   261	      </header>
+   262	
+   263	      <div
+   264	        style={{
+   265	          position: "absolute",
+   266	          inset: 0,
+   267	          opacity: showMapWorld ? 1 : 0.82,
+   268	          transition: "opacity 240ms ease",
+   269	          pointerEvents: "none",
+   270	        }}
+   271	      >
+   272	        <div
+   273	          style={{
+   274	            position: "absolute",
+   275	            left: "6%",
+   276	            top: "50%",
+   277	            width: 6,
+   278	            height: 6,
+   279	            borderRadius: 999,
+   280	            background: "rgba(233,243,255,0.92)",
+   281	            boxShadow: "0 0 18px rgba(233,243,255,0.55)",
+   282	            opacity: 0.94,
+   283	          }}
+   284	        />
+   285	        <div
+   286	          style={{
+   287	            position: "absolute",
+   288	            right: "6%",
+   289	            top: "50%",
+   290	            width: 6,
+   291	            height: 6,
+   292	            borderRadius: 999,
+   293	            background: "rgba(233,243,255,0.92)",
+   294	            boxShadow: "0 0 18px rgba(233,243,255,0.55)",
+   295	            opacity: 0.94,
+   296	          }}
+   297	        />
+   298	      </div>
+   299	
+   300	      {(showMapWorld || pulseId) &&
+   301	        MEMORY_NODES.map((node) => {
+   302	          const selectedNode = node.id === selectedId;
+   303	          const pulsingNode = node.id === pulseId;
+   304	          return (
+   305	            <button
+   306	              key={node.id}
+   307	              type="button"
+   308	              disabled={!showMapWorld || uiLocked}
+   309	              onClick={() => selectMemory(node.id)}
+   310	              style={{
+   311	                position: "absolute",
+   312	                left: `${node.x}%`,
+   313	                top: `${node.y}%`,
+   314	                transform: "translate(-50%, -50%)",
+   315	                width: selectedNode ? node.size + 10 : node.size,
+   316	                height: selectedNode ? node.size + 10 : node.size,
+   317	                borderRadius: 999,
+   318	                border: selectedNode
+   319	                  ? "1px solid rgba(255,255,255,0.48)"
+   320	                  : "1px solid rgba(255,255,255,0.14)",
+   321	                background: selectedNode
+   322	                  ? "radial-gradient(circle, rgba(214,226,255,0.92) 0%, rgba(140,160,214,0.38) 55%, rgba(26,36,66,0.18) 100%)"
+   323	                  : "radial-gradient(circle, rgba(226,236,255,0.94) 0%, rgba(124,146,206,0.22) 100%)",
+   324	                boxShadow: selectedNode
+   325	                  ? "0 0 34px rgba(180,200,255,0.42)"
+   326	                  : "0 0 12px rgba(190,210,255,0.18)",
+   327	                opacity: mode === "home" || mode === "sky" ? 0.16 : 1,
+   328	                cursor: showMapWorld && !uiLocked ? "pointer" : "default",
+   329	                transition:
+   330	                  "transform 220ms ease, width 220ms ease, height 220ms ease, opacity 220ms ease, box-shadow 220ms ease",
+   331	                pointerEvents: showMapWorld && !uiLocked ? "auto" : "none",
+   332	                animation: pulsingNode ? "node-pulse 280ms ease-out 1" : undefined,
+   333	              }}
+   334	              aria-label={node.title}
+   335	            >
+   336	              {selectedNode && (
+   337	                <span
+   338	                  style={{
+   339	                    position: "absolute",
+   340	                    inset: -14,
+   341	                    borderRadius: 999,
+   342	                    border: "1px solid rgba(206,222,255,0.20)",
+   343	                    boxShadow: "0 0 26px rgba(154,186,255,0.14)",
+   344	                  }}
+   345	                />
+   346	              )}
+   347	            </button>
+   348	          );
+   349	        })}
+   350	
+   351	      {(mode === "focus" || mode === "replay") && (
+   352	        <div
+   353	          style={{
+   354	            position: "absolute",
+   355	            left: "50%",
+   356	            top: mode === "replay" ? "48%" : "50%",
+   357	            transform: "translate(-50%, -50%)",
+   358	            width: mode === "replay" ? 146 : 118,
+   359	            height: mode === "replay" ? 146 : 118,
+   360	            borderRadius: "50%",
+   361	            background:
+   362	              "radial-gradient(circle, rgba(220,230,255,0.20) 0%, rgba(116,136,196,0.20) 45%, rgba(46,60,102,0.14) 68%, rgba(18,26,48,0.00) 100%)",
+   363	            border: "1px solid rgba(255,255,255,0.18)",
+   364	            boxShadow:
+   365	              "0 0 42px rgba(150,176,255,0.14), inset 0 0 22px rgba(230,238,255,0.08)",
+   366	            transition: "all 240ms ease",
+   367	            animation: "breathe 4.2s ease-in-out infinite",
+   368	            zIndex: 10,
+   369	          }}
+   370	        />
+   371	      )}
+   372	
+   373	      {mode === "home" && (
+   374	        <section
+   375	          style={{
+   376	            position: "absolute",
+   377	            left: "50%",
+   378	            top: "46%",
+   379	            transform: "translate(-50%, -50%)",
+   380	            width: "min(560px, calc(100vw - 64px))",
+   381	            borderRadius: 18,
+   382	            border: "1px solid rgba(255,255,255,0.10)",
+   383	            background: "rgba(7,11,24,0.78)",
+   384	            boxShadow: "0 18px 56px rgba(0,0,0,0.40)",
+   385	            padding: 26,
+   386	            backdropFilter: "blur(16px)",
+   387	            zIndex: 20,
+   388	          }}
+   389	        >
+   390	          <div
+   391	            style={{
+   392	              fontSize: 10,
+   393	              letterSpacing: "0.14em",
+   394	              textTransform: "uppercase",
+   395	              color: "rgba(204,216,245,0.62)",
+   396	              marginBottom: 10,
+   397	            }}
+   398	          >
+   399	            Tier 1 / Canonical Shell
+   400	          </div>
+   401	          <div
+   402	            style={{
+   403	              fontSize: 34,
+   404	              lineHeight: 1.04,
+   405	              fontWeight: 700,
+   406	              letterSpacing: "-0.04em",
+   407	              marginBottom: 12,
+   408	            }}
+   409	          >
+   410	            Home → Sky → LifeMap → Focus → Replay
+   411	          </div>
+   412	          <div
+   413	            style={{
+   414	              fontSize: 13,
+   415	              lineHeight: 1.65,
+   416	              color: "rgba(220,228,245,0.78)",
+   417	              maxWidth: 480,
+   418	              marginBottom: 18,
+   419	            }}
+   420	          >
+   421	            This page is the deterministic Tier 1 lock shell: one world, one selected memory,
+   422	            one clear camera story, and zero modal-state drift.
+   423	          </div>
+   424	          <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
+   425	            <ActionButton disabled={uiLocked} label="ENTER LIFEMAP" onClick={enterLifeMap} />
+   426	            <ActionButton disabled={uiLocked} label="RESUME FOCUS" onClick={resumeFocus} />
+   427	          </div>
+   428	        </section>
+   429	      )}
+   430	
+   431	      {mode === "sky" && (
+   432	        <section
+   433	          style={{
+   434	            position: "absolute",
+   435	            left: "50%",
+   436	            top: "42%",
+   437	            transform: "translate(-50%, -50%)",
+   438	            width: "min(320px, calc(100vw - 64px))",
+   439	            borderRadius: 16,
+   440	            border: "1px solid rgba(255,255,255,0.10)",
+   441	            background: "rgba(7,11,24,0.72)",
+   442	            boxShadow: "0 18px 56px rgba(0,0,0,0.34)",
+   443	            padding: 22,
+   444	            backdropFilter: "blur(16px)",
+   445	            zIndex: 20,
+   446	            textAlign: "center",
+   447	          }}
+   448	        >
+   449	          <div
+   450	            style={{
+   451	              fontSize: 10,
+   452	              letterSpacing: "0.14em",
+   453	              textTransform: "uppercase",
+   454	              color: "rgba(204,216,245,0.62)",
+   455	              marginBottom: 10,
+   456	            }}
+   457	          >
+   458	            Transitional Layer
+   459	          </div>
+   460	          <div style={{ fontSize: 34, lineHeight: 1.04, fontWeight: 700, marginBottom: 8 }}>
+   461	            Sky
+   462	          </div>
+   463	          <div
+   464	            style={{
+   465	              fontSize: 13,
+   466	              lineHeight: 1.6,
+   467	              color: "rgba(220,228,245,0.78)",
+   468	              marginBottom: 14,
+   469	            }}
+   470	          >
+   471	            This is transit only. Input is locked until the map settles.
+   472	          </div>
+   473	          <div
+   474	            style={{
+   475	              height: 6,
+   476	              borderRadius: 999,
+   477	              background: "rgba(255,255,255,0.10)",
+   478	              overflow: "hidden",
+   479	            }}
+   480	          >
+   481	            <div
+   482	              style={{
+   483	                width: "100%",
+   484	                height: "100%",
+   485	                background:
+   486	                  "linear-gradient(90deg, rgba(170,196,255,0.20) 0%, rgba(214,226,255,0.88) 100%)",
+   487	                animation: "transit-fill 950ms linear 1",
+   488	              }}
+   489	            />
+   490	          </div>
+   491	        </section>
+   492	      )}
+   493	
+   494	      {mode === "lifemap" && (
+   495	        <>
+   496	          <div
+   497	            style={{
+   498	              position: "absolute",
+   499	              left: "50%",
+   500	              bottom: 18,
+   501	              transform: "translateX(-50%)",
+   502	              width: "min(520px, calc(100vw - 48px))",
+   503	              borderRadius: 14,
+   504	              border: "1px solid rgba(255,255,255,0.10)",
+   505	              background: "rgba(7,11,24,0.74)",
+   506	              boxShadow: "0 14px 34px rgba(0,0,0,0.28)",
+   507	              padding: "10px 14px",
+   508	              backdropFilter: "blur(12px)",
+   509	              zIndex: 20,
+   510	            }}
+   511	          >
+   512	            <div
+   513	              style={{
+   514	                fontSize: 10,
+   515	                letterSpacing: "0.12em",
+   516	                textTransform: "uppercase",
+   517	                color: "rgba(204,216,245,0.62)",
+   518	                marginBottom: 6,
+   519	              }}
+   520	            >
+   521	              Lifemap
+   522	            </div>
+   523	            <div style={{ fontSize: 12, color: "rgba(220,228,245,0.80)", lineHeight: 1.5 }}>
+   524	              Select a star to enter focus. Focus exits always return to the same selected memory
+   525	              node.
+   526	            </div>
+   527	          </div>
+   528	
+   529	          <div
+   530	            style={{
+   531	              position: "absolute",
+   532	              right: 18,
+   533	              bottom: 18,
+   534	              zIndex: 20,
+   535	            }}
+   536	          >
+   537	            <ActionButton disabled={uiLocked} label="RETURN HOME" onClick={returnHome} />
+   538	          </div>
+   539	        </>
+   540	      )}
+   541	
+   542	      {mode === "focus" && (
+   543	        <aside
+   544	          style={{
+   545	            position: "absolute",
+   546	            right: 18,
+   547	            bottom: 18,
+   548	            width: "min(320px, calc(100vw - 36px))",
+   549	            borderRadius: 16,
+   550	            border: "1px solid rgba(255,255,255,0.10)",
+   551	            background: "rgba(7,11,24,0.78)",
+   552	            boxShadow: "0 18px 56px rgba(0,0,0,0.38)",
+   553	            padding: 18,
+   554	            backdropFilter: "blur(16px)",
+   555	            zIndex: 20,
+   556	          }}
+   557	        >
+   558	          <div
+   559	            style={{
+   560	              fontSize: 10,
+   561	              letterSpacing: "0.14em",
+   562	              textTransform: "uppercase",
+   563	              color: "rgba(204,216,245,0.62)",
+   564	              marginBottom: 10,
+   565	            }}
+   566	          >
+   567	            Focus
+   568	          </div>
+   569	          <div
+   570	            style={{
+   571	              fontSize: 26,
+   572	              lineHeight: 1.02,
+   573	              fontWeight: 700,
+   574	              marginBottom: 8,
+   575	              letterSpacing: "-0.03em",
+   576	            }}
+   577	          >
+   578	            {selected.title}
+   579	          </div>
+   580	          <div
+   581	            style={{
+   582	              display: "flex",
+   583	              gap: 8,
+   584	              marginBottom: 10,
+   585	              flexWrap: "wrap",
+   586	            }}
+   587	          >
+   588	            <Tag value={selected.chapter} />
+   589	            <Tag value={selected.domain} />
+   590	          </div>
+   591	          <div
+   592	            style={{
+   593	              fontSize: 13,
+   594	              lineHeight: 1.65,
+   595	              color: "rgba(220,228,245,0.78)",
+   596	              marginBottom: 16,
+   597	            }}
+   598	          >
+   599	            {selected.summary}
+   600	          </div>
+   601	          <div style={{ display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap" }}>
+   602	            <ActionButton disabled={uiLocked} label="ENTER REPLAY" onClick={enterReplay} />
+   603	            <ActionButton disabled={uiLocked} label="CLEAR FOCUS" onClick={clearFocus} />
+   604	          </div>
+   605	        </aside>
+   606	      )}
+   607	
+   608	      {mode === "replay" && (
+   609	        <section
+   610	          style={{
+   611	            position: "absolute",
+   612	            left: 18,
+   613	            top: "50%",
+   614	            transform: "translateY(-50%)",
+   615	            width: "min(420px, calc(100vw - 36px))",
+   616	            borderRadius: 18,
+   617	            border: "1px solid rgba(255,255,255,0.10)",
+   618	            background: "rgba(7,11,24,0.80)",
+   619	            boxShadow: "0 20px 60px rgba(0,0,0,0.42)",
+   620	            padding: 22,
+   621	            backdropFilter: "blur(16px)",
+   622	            zIndex: 20,
+   623	          }}
+   624	        >
+   625	          <div
+   626	            style={{
+   627	              fontSize: 10,
+   628	              letterSpacing: "0.14em",
+   629	              textTransform: "uppercase",
+   630	              color: "rgba(204,216,245,0.62)",
+   631	              marginBottom: 10,
+   632	            }}
+   633	          >
+   634	            Replay / Memory Dive
+   635	          </div>
+   636	          <div
+   637	            style={{
+   638	              fontSize: 38,
+   639	              lineHeight: 0.98,
+   640	              fontWeight: 700,
+   641	              letterSpacing: "-0.04em",
+   642	              marginBottom: 14,
+   643	            }}
+   644	          >
+   645	            {selected.title}
+   646	          </div>
+   647	
+   648	          <div
+   649	            style={{
+   650	              height: 1,
+   651	              background: "rgba(255,255,255,0.10)",
+   652	              marginBottom: 14,
+   653	            }}
+   654	          />
+   655	
+   656	          <div
+   657	            style={{
+   658	              display: "grid",
+   659	              gridTemplateColumns: "repeat(3, minmax(0, 1fr))",
+   660	              gap: 10,
+   661	              marginBottom: 16,
+   662	            }}
+   663	          >
+   664	            <ReplayDatum label="Origin" value={selected.tags[0]} />
+   665	            <ReplayDatum label="Vector" value={selected.tags[1]} />
+   666	            <ReplayDatum label="Thread" value={selected.tags[2]} />
+   667	          </div>
+   668	
+   669	          <div
+   670	            style={{
+   671	              fontSize: 13,
+   672	              lineHeight: 1.65,
+   673	              color: "rgba(220,228,245,0.78)",
+   674	              marginBottom: 16,
+   675	            }}
+   676	          >
+   677	            Canonical replay holds the same selected memory identity across focus and replay, with a
+   678	            stronger entered-memory composition and deterministic exit path.
+   679	          </div>
+   680	
+   681	          <div style={{ display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap" }}>
+   682	            <ActionButton disabled={uiLocked} label="EXIT REPLAY" onClick={exitReplay} />
+   683	          </div>
+   684	        </section>
+   685	      )}
+   686	
+   687	      <style jsx global>{`
+   688	        @keyframes breathe {
+   689	          0%,
+   690	          100% {
+   691	            transform: translate(-50%, -50%) scale(0.985);
+   692	          }
+   693	          50% {
+   694	            transform: translate(-50%, -50%) scale(1.025);
+   695	          }
+   696	        }
+   697	
+   698	        @keyframes node-pulse {
+   699	          0% {
+   700	            transform: translate(-50%, -50%) scale(1);
+   701	          }
+   702	          100% {
+   703	            transform: translate(-50%, -50%) scale(1.42);
+   704	          }
+   705	        }
+   706	
+   707	        @keyframes transit-fill {
+   708	          0% {
+   709	            transform: translateX(-100%);
+   710	          }
+   711	          100% {
+   712	            transform: translateX(0%);
+   713	          }
+   714	        }
+   715	      `}</style>
+   716	    </main>
+   717	  );
+   718	}
+   719	
+   720	function ActionButton(input: {
+   721	  label: string;
+   722	  onClick: () => void;
+   723	  disabled?: boolean;
+   724	}) {
+   725	  return (
+   726	    <button
+   727	      type="button"
+   728	      onClick={input.onClick}
+   729	      disabled={input.disabled}
+   730	      style={{
+   731	        borderRadius: 999,
+   732	        border: "1px solid rgba(255,255,255,0.12)",
+   733	        background: input.disabled ? "rgba(255,255,255,0.06)" : "rgba(12,18,34,0.94)",
+   734	        color: input.disabled ? "rgba(240,244,255,0.42)" : "rgba(240,244,255,0.94)",
+   735	        padding: "10px 13px",
+   736	        fontSize: 10,
+   737	        fontWeight: 700,
+   738	        letterSpacing: "0.12em",
+   739	        textTransform: "uppercase",
+   740	        cursor: input.disabled ? "not-allowed" : "pointer",
+   741	      }}
+   742	    >
+   743	      {input.label}
+   744	    </button>
+   745	  );
+   746	}
+   747	
+   748	function Tag(input: { value: string }) {
+   749	  return (
+   750	    <div
+   751	      style={{
+   752	        borderRadius: 999,
+   753	        border: "1px solid rgba(255,255,255,0.10)",
+   754	        background: "rgba(255,255,255,0.05)",
+   755	        padding: "6px 9px",
+   756	        fontSize: 10,
+   757	        letterSpacing: "0.10em",
+   758	        textTransform: "uppercase",
+   759	        color: "rgba(220,228,245,0.86)",
+   760	      }}
+   761	    >
+   762	      {input.value}
+   763	    </div>
+   764	  );
+   765	}
+   766	
+   767	function ReplayDatum(input: { label: string; value: string }) {
+   768	  return (
+   769	    <div
+   770	      style={{
+   771	        borderRadius: 12,
+   772	        border: "1px solid rgba(255,255,255,0.10)",
+   773	        background: "rgba(255,255,255,0.03)",
+   774	        padding: 10,
+   775	      }}
+   776	    >
+   777	      <div
+   778	        style={{
+   779	          fontSize: 10,
+   780	          letterSpacing: "0.12em",
+   781	          textTransform: "uppercase",
+   782	          color: "rgba(204,216,245,0.58)",
+   783	          marginBottom: 6,
+   784	        }}
+   785	      >
+   786	        {input.label}
+   787	      </div>
+   788	      <div style={{ fontSize: 12, color: "rgba(235,241,255,0.90)" }}>{input.value}</div>
+   789	    </div>
+   790	  );
+   791	}
+

@@ -1,65 +1,32 @@
-import { getSpatialScopedStorageKey } from "@/spatial/account/accountScopedStorage";
-import {
-  SPATIAL_RELEASE_MAX_ROLLBACKS,
-  SPATIAL_RELEASE_STORAGE_KEY,
-  createDefaultSpatialReleaseManifest,
-  type SpatialReleaseManifest,
-  type SpatialRollbackPoint,
-} from "@/spatial/release/spatialReleaseTypes";
+import type { SpatialReleaseManifest } from "@/spatial/release/spatialReleaseTypes";
 
-export function readSpatialReleaseManifest(): SpatialReleaseManifest {
-  if (typeof window === "undefined") {
-    return createDefaultSpatialReleaseManifest();
-  }
+const SPATIAL_RELEASE_KEY = "urai.spatial.release.v1";
 
+export function readSpatialReleaseManifest(): SpatialReleaseManifest | null {
+  if (typeof window === "undefined") return null;
   try {
-    const raw = window.localStorage.getItem(
-      getSpatialScopedStorageKey(SPATIAL_RELEASE_STORAGE_KEY),
-    );
-    if (!raw) return createDefaultSpatialReleaseManifest();
-    const parsed = JSON.parse(raw) as SpatialReleaseManifest;
-    if (parsed?.schema !== "urai.spatial.release.v1") {
-      return createDefaultSpatialReleaseManifest();
-    }
-    return {
-      ...createDefaultSpatialReleaseManifest(),
-      ...parsed,
-      schema: "urai.spatial.release.v1",
-      rollbackPoints: Array.isArray(parsed.rollbackPoints)
-        ? parsed.rollbackPoints.slice(-SPATIAL_RELEASE_MAX_ROLLBACKS)
-        : [],
-    };
-  } catch (_err) {
-    return createDefaultSpatialReleaseManifest();
+    const raw = window.localStorage.getItem(SPATIAL_RELEASE_KEY);
+    if (!raw) return null;
+    return JSON.parse(raw) as SpatialReleaseManifest;
+  } catch {
+    return null;
   }
 }
 
-export function writeSpatialReleaseManifest(
-  manifest: SpatialReleaseManifest,
-): void {
+export function writeSpatialReleaseManifest(manifest: SpatialReleaseManifest): void {
   if (typeof window === "undefined") return;
-
   try {
-    window.localStorage.setItem(
-      getSpatialScopedStorageKey(SPATIAL_RELEASE_STORAGE_KEY),
-      JSON.stringify({
-        ...manifest,
-        rollbackPoints: manifest.rollbackPoints.slice(
-          -SPATIAL_RELEASE_MAX_ROLLBACKS,
-        ),
-      }),
-    );
-  } catch (_err) {}
+    window.localStorage.setItem(SPATIAL_RELEASE_KEY, JSON.stringify(manifest));
+  } catch {}
 }
 
-export function appendSpatialRollbackPoint(
-  manifest: SpatialReleaseManifest,
-  point: SpatialRollbackPoint,
-): SpatialReleaseManifest {
-  return {
-    ...manifest,
-    rollbackPoints: [...manifest.rollbackPoints, point].slice(
-      -SPATIAL_RELEASE_MAX_ROLLBACKS,
-    ),
-  };
+export function loadSpatialReleases(): any[] {
+  const manifest = readSpatialReleaseManifest() as Record<string, unknown> | null;
+  if (!manifest) return [];
+  const candidate =
+    (manifest["releases"] as unknown) ??
+    (manifest["items"] as unknown) ??
+    (manifest["entries"] as unknown) ??
+    (manifest["history"] as unknown);
+  return Array.isArray(candidate) ? candidate : [];
 }

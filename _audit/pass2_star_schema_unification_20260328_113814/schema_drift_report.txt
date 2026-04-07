@@ -1,0 +1,33 @@
+=== STAR SCHEMA DRIFT REPORT ===
+ROOT=/home/user/urai-spatial
+
+FILE: src/lib/uraiCanon/starSchema.ts
+1:export type { LifeMapStar, SelectedStar, StarNode, StarTone, Vec3 } from './starTypes'
+
+FILE: src/lib/uraiCanon/starData.ts
+1:import type { LifeMapStar, StarTone, Vec3 } from './starTypes'
+43:export function normalizeLifeMapStar(input: unknown, fallbackId?: string): LifeMapStar {
+94:export function isLifeMapStar(input: unknown): input is LifeMapStar {
+104:export function assertLifeMapStar(input: unknown, context = 'unknown'): asserts input is LifeMapStar {
+106:    throw new Error(`Invalid LifeMapStar in ${context}`)
+
+FILE: src/lib/uraiCanon/starTypes.ts
+15:export type LifeMapStar = {
+29:# This kills SelectedStar vs StarNode drift.
+30:export type SelectedStar = LifeMapStar
+31:export type StarNode = LifeMapStar
+
+FILE: src/spatial/scene/SpatialScene.tsx
+1:import type { LifeMapStar } from '@/lib/uraiCanon/starSchema'
+12:type StarNode = {
+37:function makeStars(): StarNode[] {
+39:  const out: StarNode[] = [];
+123:  selectedStar: StarNode | null;
+266:  stars: StarNode[];
+267:  selectedStar: StarNode | null;
+270:  onSelect: (s: StarNode) => void;
+362:  selectedStar: StarNode | null;
+411:  selectedStar: StarNode | null;
+482:  selectedStar: StarNode | null;
+559:  const [selectedStar, setSelectedStar] = useState<StarNode | null>(interactiveStars[0] ?? stars[0] ?? null);
+

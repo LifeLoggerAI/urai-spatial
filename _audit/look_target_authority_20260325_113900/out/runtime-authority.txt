@@ -1,0 +1,63 @@
+LOOK_TARGET_AUTHORITY
+17:type TargetAuthority =
+231:function resolveLookTarget(
+236:): { target: [number, number, number]; authority: TargetAuthority } {
+242:      authority: "ascent-transitional",
+249:      authority: "descent-transitional",
+256:    return { target: replayTarget, authority: "replay-narrative" };
+262:    return { target: focusTarget, authority: "focus-interaction" };
+266:    return { target: LIFEMAP_CAMERA.target, authority: "lifemap-structural" };
+269:  return { target: HOME_CAMERA.target, authority: "home-structural" };
+283:  onAuthorityResolved: (authority: TargetAuthority) => void;
+289:  const authorityRef = useRef<TargetAuthority>("home-structural");
+361:    const resolved = resolveLookTarget(mode, phase, progress, selectedStar);
+625:  onAuthorityResolved: (authority: TargetAuthority) => void;
+671:  const [targetAuthority, setTargetAuthority] = useState<TargetAuthority>("home-structural");
+772:          onAuthorityResolved={setTargetAuthority}
+
+CAMERA_USE
+272:function CameraAuthority({
+277:  onAuthorityResolved,
+283:  onAuthorityResolved: (authority: TargetAuthority) => void;
+364:      onAuthorityResolved(resolved.authority);
+373:    camera.lookAt(lookTarget.current);
+613:  onAuthorityResolved,
+625:  onAuthorityResolved: (authority: TargetAuthority) => void;
+637:      <CameraAuthority
+642:        onAuthorityResolved={onAuthorityResolved}
+671:  const [targetAuthority, setTargetAuthority] = useState<TargetAuthority>("home-structural");
+772:          onAuthorityResolved={setTargetAuthority}
+
+ESC_PATH
+11:  | "descending"
+13:  | "exitingFocus"
+15:  | "exitingReplay";
+196:  if (phase === "descending") return t;
+203:  if (phase === "descending") return 1 - t;
+206:    phase === "exitingFocus" ||
+208:    phase === "exitingReplay"
+216:  if (phase === "exitingFocus" || phase === "exitingReplay") return 1 - easeInOutCubic(progress);
+246:  if (phase === "descending") {
+253:  if (mode === "replay" || phase === "enteringReplay" || phase === "exitingReplay") {
+259:  if (mode === "focus" || phase === "enteringFocus" || phase === "exitingFocus") {
+316:    } else if (phase === "descending") {
+328:    } else if (mode === "focus" || phase === "enteringFocus" || phase === "exitingFocus") {
+333:      } else if (phase === "exitingFocus") {
+343:    if (mode === "replay" || phase === "enteringReplay" || phase === "exitingReplay") {
+350:      } else if (phase === "exitingReplay") {
+689:        } else if (phase === "descending") {
+694:        } else if (phase === "exitingFocus") {
+698:        } else if (phase === "exitingReplay") {
+716:      if (event.key !== "Escape") return;
+720:        setPhase("descending");
+724:        setPhase("exitingFocus");
+727:        setPhase("exitingReplay");
+732:    window.addEventListener("keydown", onKeyDown);
+733:    return () => window.removeEventListener("keydown", onKeyDown);
+
+REPLAY_GATE
+220:function replayReady(mode: Mode, phase: Phase, selectedStar: StarRecord | null): boolean {
+221:  return mode === "focus" && phase === "idle" && Boolean(selectedStar?.replayAvailable);
+750:    if (!replayReady(mode, phase, selectedStar)) return;
+755:  const replayVisible = replayReady(mode, phase, selectedStar);
+839:      {replayVisible ? (

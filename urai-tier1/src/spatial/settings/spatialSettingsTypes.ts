@@ -7,7 +7,6 @@ export type SpatialSettings = {
   persistSnapshots: boolean;
 };
 
-export const SPATIAL_SETTINGS_STORAGE_KEY = "urai.spatial.settings.v1";
 
 export function createDefaultSpatialSettings(): SpatialSettings {
   return {

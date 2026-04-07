@@ -20,11 +20,11 @@ export type IngestValidation = {
   errors: string[];
 };
 
-function str(value: unknown, fallback: string): string {
+function str(value: any, fallback: string): string {
   return typeof value === "string" && value.trim().length > 0 ? value.trim() : fallback;
 }
 
-function num(value: unknown, fallback: number): number {
+function num(value: any, fallback: number): number {
   if (typeof value === "number" && Number.isFinite(value)) return value;
   return fallback;
 }

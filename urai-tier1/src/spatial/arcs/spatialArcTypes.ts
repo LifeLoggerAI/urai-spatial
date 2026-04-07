@@ -21,8 +21,6 @@ export type SpatialArcManifest = {
   arcs: SpatialNarrativeArc[];
 };
 
-export const SPATIAL_ARC_STORAGE_KEY = "urai.spatial.arc.v1";
-export const SPATIAL_ARC_MAX_ITEMS = 24;
 
 export function createDefaultSpatialArcManifest(): SpatialArcManifest {
   return {

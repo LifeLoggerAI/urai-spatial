@@ -1,3 +1,3 @@
-export function buildSpatialBundleLineage(_input?: unknown) {
+export function buildSpatialBundleLineage(_input?: any) {
   return null;
 }

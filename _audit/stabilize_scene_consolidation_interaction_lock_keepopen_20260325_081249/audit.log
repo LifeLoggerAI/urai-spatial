@@ -1,0 +1,22 @@
+=== URAI-SPATIAL SCENE CONSOLIDATION + INTERACTION LOCK (KEEP OPEN) ===
+timestamp=20260325_081249
+
+[phase] detect canonical runnable app from actual scripts
+[phase] trace actual runtime entrypoint
+FAIL: page.tsx import path to SpatialScene not proven
+CANONICAL_APP=urai-tier1
+ENTRYPOINT=urai-tier1/src/app/page.tsx
+CANONICAL_SCENE=urai-tier1/src/spatial/scene/SpatialScene.tsx
+
+[classification]
+IMPLEMENTED  package.json  root scripts exist
+WIRED        package.json  root scripts point to urai-tier1
+IMPLEMENTED  pnpm-workspace.yaml  workspace manifest exists
+WIRED        pnpm-workspace.yaml  urai-tier1 is listed in workspace
+IMPLEMENTED  urai-tier1/package.json  next app package exists
+WIRED        urai-tier1/package.json  next dev/build scripts proven
+IMPLEMENTED  urai-tier1/src/app/page.tsx  canonical page exists
+WIRED        urai-tier1/src/app/page.tsx  canonical page imports SpatialScene
+PARTIAL      urai-tier1/src/spatial/scene/SpatialScene.tsx  scene file is on runtime path but current behavior still shows interaction/transition defects
+UNVERIFIED   companion files beyond page.tsx and SpatialScene.tsx are not patched in this pass because runtime necessity is not proven here
+

@@ -1,0 +1,27 @@
+"use client";
+
+import type { ScenePhase } from "../types/scene";
+import Orb from "./Orb";
+
+type HomeEnvironmentProps = {
+  homeOpacity?: number;
+  phase?: ScenePhase;
+};
+
+export default function HomeEnvironment({
+  homeOpacity = 1,
+  phase = "home",
+}: HomeEnvironmentProps) {
+  return (
+    <group>
+      <group visible={homeOpacity > 0.001}>
+        <Orb phase={phase} />
+      </group>
+
+      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -1.2, -10]}>
+        <planeGeometry args={[160, 160, 1, 1]} />
+        <meshStandardMaterial color="#07090f" transparent opacity={0.96} />
+      </mesh>
+    </group>
+  );
+}

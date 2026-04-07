@@ -1,0 +1,17 @@
+=== PASS_T1_EXIT1_RECOVERY START ===
+ROOT=/home/user/urai-spatial
+APP=/home/user/urai-spatial
+=== RAW BACKTICK CHECK ===
+148:```
+176:```
+209:```
+263:```
+311:```
+406:```
+448:```
+458:```
+491:```
+510:```
+519:```
+539:```
+FAIL: markdown backticks leaked into SpatialScene.tsx

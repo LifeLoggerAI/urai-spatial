@@ -1,0 +1,68 @@
+src/spatial/persistence/SpatialPersistenceBridge.tsx:11:  const selectedStar = useSceneStore((s) => s.selectedStar);
+src/spatial/persistence/SpatialPersistenceBridge.tsx:15:    const star = resolveStarById(selectedStar);
+src/spatial/persistence/SpatialPersistenceBridge.tsx:20:      selectedStarId: selectedStar ?? null,
+src/spatial/persistence/SpatialPersistenceBridge.tsx:21:      selectedStarLabel: star?.label ?? null,
+src/spatial/persistence/SpatialPersistenceBridge.tsx:31:  }, [mode, selectedStar, xrState]);
+src/spatial/state/sceneStore.ts:7:  selectedStarId: string | null;
+src/spatial/state/sceneStore.ts:8:  hoveredStarId: string | null;
+src/spatial/state/sceneStore.ts:14:  enterLifeMap: () => void;
+src/spatial/state/sceneStore.ts:25:  selectedStarId: null,
+src/spatial/state/sceneStore.ts:26:  hoveredStarId: null,
+src/spatial/state/sceneStore.ts:38:  enterLifeMap: () => set({ mode: "lifemap" }),
+src/spatial/state/sceneStore.ts:43:      selectedStarId: id,
+src/spatial/state/sceneStore.ts:47:    const { selectedStarId } = get();
+src/spatial/state/sceneStore.ts:48:    set({ mode: selectedStarId ? "replay" : "lifemap" });
+src/spatial/state/sceneStore.ts:52:    const { selectedStarId } = get();
+src/spatial/state/sceneStore.ts:53:    set({ mode: selectedStarId ? "focus" : "lifemap" });
+src/spatial/state/sceneStore.ts:56:  setSelectedStarId: (id) => set({ selectedStarId: id }),
+src/spatial/state/sceneStore.ts:57:  setHoveredStarId: (id) => set({ hoveredStarId: id }),
+src/spatial/unity/buildUnityRuntimePayload.ts:6:  selectedStar: string | null,
+src/spatial/unity/buildUnityRuntimePayload.ts:9:  const star = resolveStarById(selectedStar);
+src/spatial/unity/buildUnityRuntimePayload.ts:15:    selectedStarId: selectedStar ?? null,
+src/spatial/unity/buildUnityRuntimePayload.ts:16:    selectedStarLabel: star?.label ?? null,
+src/spatial/unity/UnityRuntimePayloadBridge.tsx:34:  const selectedStar = useSceneStore((s) => s.selectedStar);
+src/spatial/unity/UnityRuntimePayloadBridge.tsx:38:    const payload = buildUnityRuntimePayload(mode, selectedStar, xrState);
+src/spatial/unity/UnityRuntimePayloadBridge.tsx:40:  }, [mode, selectedStar, xrState]);
+src/spatial/types.ts:31:  selectedStarId: string | null;
+src/spatial/types.ts:32:  selectedStarLabel: string | null;
+src/spatial/types.ts:42:  selectedStarId: string | null;
+src/spatial/types.ts:43:  selectedStarLabel: string | null;
+src/spatial/scene/SpatialScene.tsx:76:  selectedStar,
+src/spatial/scene/SpatialScene.tsx:80:  selectedStar: StarNode | null;
+src/spatial/scene/SpatialScene.tsx:100:    if ((phase === 'focus' || phase === 'replay') && selectedStar) {
+src/spatial/scene/SpatialScene.tsx:101:      const star = new THREE.Vector3(...selectedStar.position);
+src/spatial/scene/SpatialScene.tsx:195:  selectedStar,
+src/spatial/scene/SpatialScene.tsx:201:  selectedStar: StarNode | null;
+src/spatial/scene/SpatialScene.tsx:210:        const isSelected = selectedStar?.id === star.id;
+src/spatial/scene/SpatialScene.tsx:253:  selectedStar,
+src/spatial/scene/SpatialScene.tsx:258:  selectedStar: StarNode | null;
+src/spatial/scene/SpatialScene.tsx:262:  const active = (phase === 'focus' || phase === 'replay') && !!selectedStar;
+src/spatial/scene/SpatialScene.tsx:266:    if (!group.current || !active || !selectedStar) return;
+src/spatial/scene/SpatialScene.tsx:272:  if (!selectedStar) return null;
+src/spatial/scene/SpatialScene.tsx:275:    <group ref={group} visible={active} position={selectedStar.position}>
+src/spatial/scene/SpatialScene.tsx:296:  selectedStar,
+src/spatial/scene/SpatialScene.tsx:299:  selectedStar: StarNode | null;
+src/spatial/scene/SpatialScene.tsx:301:  const active = phase === 'replay' && !!selectedStar;
+src/spatial/scene/SpatialScene.tsx:310:  if (!selectedStar) return null;
+src/spatial/scene/SpatialScene.tsx:313:    <group ref={group} visible={active} position={selectedStar.position}>
+src/spatial/scene/SpatialScene.tsx:357:  const [selectedStar, setSelectedStar] = useState<StarNode | null>(stars[0] ?? null);
+src/spatial/scene/SpatialScene.tsx:427:        <CameraRig phase={phase} selectedStar={selectedStar} transitionActive={transitionActive} />
+src/spatial/scene/SpatialScene.tsx:452:          selectedStar={selectedStar}
+src/spatial/scene/SpatialScene.tsx:463:          selectedStar={selectedStar}
+src/spatial/scene/SpatialScene.tsx:471:        <ReplayField phase={phase} selectedStar={selectedStar} />
+src/spatial/scene/ReplaySphere.tsx:8:  const selectedStar = useSceneStore((s) => s.selectedStar);
+src/spatial/scene/ReplaySphere.tsx:12:  const star = resolveStarById(selectedStar);
+src/spatial/scene/HomeWorld.tsx:7:  const enterLifemap = useSceneStore((s) => s.enterLifemap);
+src/spatial/scene/HomeWorld.tsx:21:      <Orb interactive active onClick={enterLifemap} />
+src/spatial/scene/StarMesh.tsx:14:  const hoverStar = useSceneStore((s) => s.hoverStar);
+src/spatial/scene/StarMesh.tsx:15:  const selectStar = useSceneStore((s) => s.selectStar);
+src/spatial/scene/StarMesh.tsx:16:  const selectedStar = useSceneStore((s) => s.selectedStar);
+src/spatial/scene/StarMesh.tsx:17:  const hoveredStar = useSceneStore((s) => s.hoveredStar);
+src/spatial/scene/StarMesh.tsx:20:  const isSelected = selectedStar === id;
+src/spatial/scene/StarMesh.tsx:21:  const isHovered = hoveredStar === id;
+src/spatial/scene/StarMesh.tsx:30:        if (interactive) hoverStar(id);
+src/spatial/scene/StarMesh.tsx:34:        if (interactive) hoverStar(null);
+src/spatial/scene/StarMesh.tsx:38:        if (interactive) selectStar(id);
+src/spatial/components/CameraRig.tsx:11:  const selectedStar = useSceneStore((s) => s.selectedStar);
+src/spatial/components/CameraRig.tsx:24:      const star = resolveStarById(selectedStar);
+src/spatial/components/CameraRig.tsx:32:      const star = resolveStarById(selectedStar);

@@ -1,0 +1,24 @@
+
+> urai-tier1@0.1.0 build /home/user/urai-spatial/urai-tier1
+> next build --webpack
+
+▲ Next.js 16.2.1 (webpack)
+
+  Creating an optimized production build ...
+✓ Compiled successfully in 5.9s
+  Running TypeScript ...
+Failed to type check.
+
+./src/spatial/scene/HomeEnvironment.tsx:58:14
+Type error: Type '{ opacity: number; }' is not assignable to type 'IntrinsicAttributes & OrbProps'.
+  Property 'opacity' does not exist on type 'IntrinsicAttributes & OrbProps'.
+
+  [90m56 |[0m
+  [90m57 |[0m       <group position={[[35m0[0m, [35m0[0m, [35m0[0m]}>
+[31m[1m>[0m [90m58 |[0m         <[33mOrb[0m opacity={homeOpacity} />
+  [90m   |[0m              [31m[1m^[0m
+  [90m59 |[0m       </group>
+  [90m60 |[0m
+  [90m61 |[0m       <mesh
+Next.js build worker exited with code: 1 and signal: null
+ ELIFECYCLE  Command failed with exit code 1.

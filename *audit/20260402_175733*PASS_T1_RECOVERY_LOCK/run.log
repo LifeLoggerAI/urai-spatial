@@ -1,0 +1,38 @@
+=== PASS_T1_RECOVERY_LOCK START ===
+REPO_ROOT=/home/user/urai-spatial
+=== VERIFY FILE ANCHORS ===
+9:| 'home_to_lifemap'
+169:if (props.transition.active && props.transition.kind === 'home_to_lifemap') {
+231:if (props.transition.active && props.transition.kind === 'home_to_lifemap') {
+395:if (props.transition.active && props.transition.kind === 'home_to_lifemap') {
+528:if (kind === 'home_to_lifemap') setPhase('lifemap')
+545:begin('home_to_lifemap', T_HOME_TO_LIFEMAP)
+572:    console.log('ESC KEY replay')
+552:console.log('STAR CLICK DIRECT ' + id)
+375:function CameraDirector(props: {
+616:  <CameraDirector
+3:import SpatialScene from '@/spatial/scene/SpatialScene'
+6:return <SpatialScene />
+=== STOP OLD DEV SERVERS ===
+=== TYPECHECK ===
+src/spatial/scene/SpatialScene.tsx(214,1): error TS1005: ')' expected.
+src/spatial/scene/SpatialScene.tsx(306,1): error TS1128: Declaration or statement expected.
+src/spatial/scene/SpatialScene.tsx(340,9): error TS1005: ';' expected.
+src/spatial/scene/SpatialScene.tsx(340,31): error TS1005: ':' expected.
+src/spatial/scene/SpatialScene.tsx(341,5): error TS2657: JSX expressions must have one parent element.
+src/spatial/scene/SpatialScene.tsx(343,3): error TS1128: Declaration or statement expected.
+src/spatial/scene/SpatialScene.tsx(345,3): error TS2657: JSX expressions must have one parent element.
+src/spatial/scene/SpatialScene.tsx(369,1): error TS1128: Declaration or statement expected.
+src/spatial/scene/SpatialScene.tsx(601,14): error TS1005: ';' expected.
+src/spatial/scene/SpatialScene.tsx(601,28): error TS1005: ';' expected.
+src/spatial/scene/SpatialScene.tsx(601,52): error TS1005: ';' expected.
+src/spatial/scene/SpatialScene.tsx(601,77): error TS1109: Expression expected.
+src/spatial/scene/SpatialScene.tsx(602,3): error TS2657: JSX expressions must have one parent element.
+src/spatial/scene/SpatialScene.tsx(623,1): error TS1128: Declaration or statement expected.
+src/spatial/scene/SpatialScene.tsx(623,3): error TS1109: Expression expected.
+src/spatial/scene/SpatialScene.tsx(635,1): error TS1160: Unterminated template literal.
+TYPECHECK_STATUS=FAIL
+AUDIT_DIR=/home/user/urai-spatial/*audit/20260402_175733*PASS_T1_RECOVERY_LOCK
+BACKUP_DIR=/home/user/urai-spatial/*audit/20260402_175733*PASS_T1_RECOVERY_LOCK/backup
+RUN_LOG=/home/user/urai-spatial/*audit/20260402_175733*PASS_T1_RECOVERY_LOCK/run.log
+TYPECHECK_LOG=/home/user/urai-spatial/*audit/20260402_175733*PASS_T1_RECOVERY_LOCK/typecheck.log

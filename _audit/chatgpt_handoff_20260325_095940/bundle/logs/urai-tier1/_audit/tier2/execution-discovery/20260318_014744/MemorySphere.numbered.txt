@@ -1,0 +1,27 @@
+===== FILE: src/spatial/scene/MemorySphere.tsx =====
+
+     1	"use client";
+     2	
+     3	import { useSceneStore } from "@/spatial/state/sceneStore";
+     4	
+     5	export default function MemorySphere() {
+     6	  const mode = useSceneStore((s) => s.mode);
+     7	  const scale = mode === "lifemap" ? 0.55 : 1;
+     8	  const opacity = mode === "lifemap" ? 0.1 : 0.2;
+     9	
+    10	  return (
+    11	    <mesh position={[0, 0, 0]} scale={scale}>
+    12	      <sphereGeometry args={[18, 40, 40]} />
+    13	      <meshStandardMaterial
+    14	        color="#8ec5ff"
+    15	        transparent
+    16	        opacity={opacity}
+    17	        emissive="#1e3a5f"
+    18	        emissiveIntensity={0.45}
+    19	        roughness={0.35}
+    20	        metalness={0.05}
+    21	      />
+    22	    </mesh>
+    23	  );
+    24	}
+

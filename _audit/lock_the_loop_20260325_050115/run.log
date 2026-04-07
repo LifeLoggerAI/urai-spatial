@@ -1,0 +1,32 @@
+=== URAI LOCK THE LOOP / DISCOVERY PASS ===
+timestamp: 20260325_050115
+pwd: /home/user/urai-spatial
+MISSING repo: urai-spatial
+MISSING repo: urai-jobs
+MISSING repo: asset-factory
+MISSING repo: urai-labs
+MISSING repo: urai-foundation
+MISSING repo: urai-ip-holdings
+=== ROOT FILE SNAPSHOT ===
+=== CANONICAL APP DETECTION ===
+MISSING: urai-spatial/urai-tier1
+=== SPATIAL ENTRY CHAIN ===
+MISSING: urai-spatial/urai-tier1/src/app/page.tsx
+MISSING: urai-spatial/urai-tier1/src/spatial/scene/SpatialScene.tsx
+=== LOOP ANCHOR SEARCH ===
+=== JOB CREATION PATHS ===
+=== WORKER / RESULT PATHS ===
+=== SPATIAL CONSUMPTION PATHS ===
+=== FIREBASE / ENV SNAPSHOT ===
+=== QUICK BUILD TARGET DETECTION ===
+=== STATUS SUMMARY ===
+BROKEN/MISSING evidence: _audit/lock_the_loop_20260325_050115/loop_anchors.txt
+BROKEN/MISSING evidence: _audit/lock_the_loop_20260325_050115/job_paths.txt
+BROKEN/MISSING evidence: _audit/lock_the_loop_20260325_050115/result_paths.txt
+BROKEN/MISSING evidence: _audit/lock_the_loop_20260325_050115/spatial_consumption.txt
+Audit folder: _audit/lock_the_loop_20260325_050115
+Next step: paste the contents of:
+  _audit/lock_the_loop_20260325_050115/loop_anchors.txt
+  _audit/lock_the_loop_20260325_050115/job_paths.txt
+  _audit/lock_the_loop_20260325_050115/result_paths.txt
+  _audit/lock_the_loop_20260325_050115/spatial_consumption.txt

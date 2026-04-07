@@ -1,0 +1,85 @@
+import type { SelectedStar } from "./selectedStarContract";
+
+type StarInput = Partial<SelectedStar> & {
+  id?: string;
+  position?: [number, number, number] | number[];
+  color?: string;
+  size?: number;
+  title?: string;
+  label?: string;
+  summary?: string;
+  detail?: string;
+  transcript?: string;
+  signature?: string;
+  chapter?: string;
+  timeband?: string;
+  dateLabel?: string;
+  description?: string;
+  tags?: string[];
+};
+
+function asVec3(value: StarInput["position"]): [number, number, number] {
+  if (Array.isArray(value) && value.length >= 3) {
+    return [
+      Number(value[0] ?? 0),
+      Number(value[1] ?? 0),
+      Number(value[2] ?? 0),
+    ];
+  }
+  return [0, 0, 0];
+}
+
+function safeText(value: unknown, fallback: string): string {
+  if (typeof value === "string" && value.trim()) return value.trim();
+  return fallback;
+}
+
+function safeTags(input: StarInput, fallback: string[]): string[] {
+  if (Array.isArray(input.tags) && input.tags.length > 0) {
+    return input.tags.map((x) => String(x)).filter(Boolean);
+  }
+  return fallback.filter(Boolean);
+}
+
+export function toCanonicalSelectedStar(input: StarInput | null): SelectedStar | null {
+  if (!input) return null;
+
+  const position = asVec3(input.position);
+  const title = safeText(input.title, "Untitled Star");
+  const label = safeText(input.label, title);
+  const summary = safeText(input.summary, label);
+  const detail = safeText(input.detail, summary);
+  const transcript = safeText(input.transcript, detail);
+  const signature = safeText(input.signature, "signal");
+  const chapter = safeText(input.chapter, "unknown");
+  const timeband = safeText(input.timeband, "undated");
+  const dateLabel = safeText(input.dateLabel, timeband);
+  const description = safeText(input.description, detail || summary);
+  const tags = safeTags(input, [chapter, timeband, signature]);
+
+  return {
+    id: safeText(
+      input.id,
+      [
+        title.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, ""),
+        String(position[0]),
+        String(position[1]),
+        String(position[2]),
+      ].join(":")
+    ),
+    position,
+    color: safeText(input.color, "#ffffff"),
+    size: typeof input.size === "number" && Number.isFinite(input.size) ? input.size : 1,
+    title,
+    label,
+    description,
+    summary,
+    detail,
+    transcript,
+    signature,
+    chapter,
+    timeband,
+    dateLabel,
+    tags,
+  };
+}

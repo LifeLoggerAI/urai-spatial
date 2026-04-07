@@ -1,0 +1,6 @@
+/home/user/urai-spatial/urai-tier1/src/app/page.tsx:5:const SpatialScene = dynamic(() => import("@/spatial/scene/SpatialScene"), {
+/home/user/urai-spatial/urai-tier1/src/app/page.tsx:19:      <SpatialScene />
+/home/user/urai-spatial/urai-tier1/src/spatial/scene/SpatialScene.tsx:370:export default function SpatialScene() {
+/home/user/urai-spatial/urai-tier1/src/spatial/client/SpatialSceneClient.tsx:5:const SpatialScene = dynamic(() => import("../scene/SpatialScene"), {
+/home/user/urai-spatial/urai-tier1/src/spatial/client/SpatialSceneClient.tsx:10:export default function SpatialSceneClient() {
+/home/user/urai-spatial/urai-tier1/src/spatial/client/SpatialSceneClient.tsx:11:  return <SpatialScene />;

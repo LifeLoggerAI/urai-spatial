@@ -1,0 +1,242 @@
+
+== shell head ==
+"use client";
+
+import React, { useEffect, useMemo, useRef, useState } from "react";
+import { FOCUS_TO_MAP_MS, FOCUS_TO_REPLAY_MS, MAP_TO_FOCUS_MS, REPLAY_TO_FOCUS_MS, SKY_TRANSIT_MS, pillLabel } from "./Tier1ShellConstants";
+import Tier1ShellNodeField from "./Tier1ShellNodeField";
+import Tier1ShellFocusGlow from "./Tier1ShellFocusGlow";
+
+type Mode = "home" | "sky" | "lifemap" | "focus" | "replay";
+
+type MemoryNode = {
+  id: string;
+  title: string;
+  chapter: string;
+  domain: string;
+  summary: string;
+  tags: [string, string, string];
+  x: number;
+  y: number;
+  size: number;
+};
+
+const MEMORY_NODES: MemoryNode[] = [
+  {
+    id: "return-signal",
+    title: "Return Signal",
+    chapter: "Return",
+    domain: "Atmosic",
+    summary: "Second orbit node for focus continuity and selected-state validation.",
+    tags: ["Signal", "Return", "Orbit"],
+    x: 22,
+    y: 58,
+    size: 10,
+  },
+  {
+    id: "threshold-one",
+    title: "Threshold One",
+    chapter: "Winter",
+    domain: "Threshold",
+    summary: "Canonical memory seed used to verify replay identity and focus continuity.",
+    tags: ["Origin", "Winter", "Threshold"],
+    x: 54,
+    y: 46,
+    size: 12,
+  },
+  {
+    id: "echo-lattice",
+    title: "Echo Lattice",
+    chapter: "Signal",
+    domain: "Pattern",
+    summary: "Pattern memory used to test alternate node selection without routing drift.",
+    tags: ["Echo", "Lattice", "Pattern"],
+    x: 73,
+    y: 33,
+    size: 9,
+  },
+  {
+    id: "north-vector",
+    title: "North Vector",
+    chapter: "Guide",
+    domain: "Compass",
+    summary: "Reference waypoint for map readability and deterministic object persistence.",
+    tags: ["North", "Vector", "Guide"],
+    x: 66,
+    y: 68,
+    size: 9,
+  },
+];
+
+function seededDust(count: number) {
+  let seed = 1337;
+  const next = () => {
+    seed = (seed * 1664525 + 1013904223) >>> 0;
+    return seed / 4294967296;
+  };
+  return Array.from({ length: count }, (_, index) => ({
+    id: `dust-${index}`,
+    x: Math.round(next() * 1000) / 10,
+    y: Math.round(next() * 1000) / 10,
+    o: 0.15 + next() * 0.6,
+    s: 1 + next() * 2.4,
+  }));
+}
+
+
+export default function Page() {
+  const [mode, setMode] = useState<Mode>("home");
+  const [selectedId, setSelectedId] = useState<string>("threshold-one");
+  const [transitioning, setTransitioning] = useState(false);
+  const [pulseId, setPulseId] = useState<string | null>(null);
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const dust = useMemo(() => seededDust(72), []);
+  const selected = useMemo(
+    () => MEMORY_NODES.find((node) => node.id === selectedId) ?? MEMORY_NODES[0],
+    [selectedId]
+  );
+
+  useEffect(() => {
+    const onContextMenu = (event: MouseEvent) => event.preventDefault();
+    document.addEventListener("contextmenu", onContextMenu);
+    document.body.style.margin = "0";
+    document.body.style.background = "#030610";
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.removeEventListener("contextmenu", onContextMenu);
+      if (timerRef.current) clearTimeout(timerRef.current);
+    };
+  }, []);
+
+  const lock = (ms: number, next: () => void) => {
+    if (transitioning) return;
+    setTransitioning(true);
+    if (timerRef.current) clearTimeout(timerRef.current);
+    timerRef.current = setTimeout(() => {
+      next();
+      setTransitioning(false);
+    }, ms);
+  };
+
+  const enterLifeMap = () => {
+    if (transitioning) return;
+
+== shell core seam ==
+          style={{
+            position: "absolute",
+            right: "6%",
+            top: "50%",
+            width: 6,
+            height: 6,
+            borderRadius: 999,
+            background: "rgba(233,243,255,0.92)",
+            boxShadow: "0 0 18px rgba(233,243,255,0.55)",
+            opacity: 0.94,
+          }}
+        />
+      </div>
+
+      <Tier1ShellNodeField
+        mode={mode}
+        uiLocked={uiLocked}
+        showMapWorld={showMapWorld}
+        pulseId={pulseId}
+        selectedId={selectedId}
+        nodes={MEMORY_NODES}
+        selectMemory={selectMemory}
+      />
+      <Tier1ShellFocusGlow mode={mode} />
+      {mode === "home" && (
+        <section
+          style={{
+            position: "absolute",
+            left: "50%",
+            top: "46%",
+            transform: "translate(-50%, -50%)",
+            width: "min(560px, calc(100vw - 64px))",
+            borderRadius: 18,
+            border: "1px solid rgba(255,255,255,0.10)",
+            background: "rgba(7,11,24,0.78)",
+            boxShadow: "0 18px 56px rgba(0,0,0,0.40)",
+            padding: 26,
+            backdropFilter: "blur(16px)",
+            zIndex: 20,
+          }}
+        >
+          <div
+            style={{
+              fontSize: 10,
+              letterSpacing: "0.14em",
+              textTransform: "uppercase",
+              color: "rgba(204,216,245,0.62)",
+              marginBottom: 10,
+            }}
+          >
+            Tier 1 / Canonical Shell
+          </div>
+          <div
+            style={{
+              fontSize: 34,
+              lineHeight: 1.04,
+              fontWeight: 700,
+              letterSpacing: "-0.04em",
+              marginBottom: 12,
+            }}
+          >
+            Home → Sky → LifeMap → Focus → Replay
+          </div>
+          <div
+            style={{
+              fontSize: 13,
+              lineHeight: 1.65,
+              color: "rgba(220,228,245,0.78)",
+              maxWidth: 480,
+              marginBottom: 18,
+            }}
+          >
+            This page is the deterministic Tier 1 lock shell: one world, one selected memory,
+            one clear camera story, and zero modal-state drift.
+          </div>
+          <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
+            <ActionButton disabled={uiLocked} label="ENTER LIFEMAP" onClick={enterLifeMap} />
+            <ActionButton disabled={uiLocked} label="RESUME FOCUS" onClick={resumeFocus} />
+          </div>
+        </section>
+      )}
+
+      {mode === "sky" && (
+        <section
+          style={{
+            position: "absolute",
+            left: "50%",
+            top: "42%",
+            transform: "translate(-50%, -50%)",
+            width: "min(320px, calc(100vw - 64px))",
+            borderRadius: 16,
+            border: "1px solid rgba(255,255,255,0.10)",
+            background: "rgba(7,11,24,0.72)",
+            boxShadow: "0 18px 56px rgba(0,0,0,0.34)",
+            padding: 22,
+            backdropFilter: "blur(16px)",
+            zIndex: 20,
+            textAlign: "center",
+          }}
+        >
+          <div
+            style={{
+              fontSize: 10,
+              letterSpacing: "0.14em",
+              textTransform: "uppercase",
+              color: "rgba(204,216,245,0.62)",
+              marginBottom: 10,
+            }}
+          >
+            Transitional Layer
+          </div>
+PASS: build compiled successfully after exact shell core extraction
+NOTE: lint may still report unrelated repo failures; not used as gate for this shell extraction step
+PASS: timing helpers extracted to Tier1ShellConstants.ts
+PASS: node field extracted to Tier1ShellNodeField.tsx
+PASS: central glow extracted to Tier1ShellFocusGlow.tsx
+PASS: next safe seam is dust/background helper cleanup, then first Tier 2 ground-layer patch
+PASS: audit folder: /home/user/urai-spatial/urai-tier1/_audit/tier2/extract-shell-core-exact/20260318_023251

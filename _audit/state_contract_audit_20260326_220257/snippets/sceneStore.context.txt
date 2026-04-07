@@ -1,0 +1,243 @@
+===== src/spatial/state/sceneStore.ts : line 3 =====
+import { create } from "zustand";
+
+export type SceneMode = "home" | "sky" | "lifemap" | "focus" | "replay";
+
+export type SceneState = {
+  mode: SceneMode;
+  selectedStarId: string | null;
+  hoveredStarId: string | null;
+  isTransitioning: boolean;
+  setMode: (mode: SceneMode) => void;
+  goHome: () => void;
+
+===== src/spatial/state/sceneStore.ts : line 7 =====
+import { create } from "zustand";
+
+export type SceneMode = "home" | "sky" | "lifemap" | "focus" | "replay";
+
+export type SceneState = {
+  mode: SceneMode;
+  selectedStarId: string | null;
+  hoveredStarId: string | null;
+  isTransitioning: boolean;
+  setMode: (mode: SceneMode) => void;
+  goHome: () => void;
+  returnHome: () => void;
+  enterSky: () => void;
+  enterLifeMap: () => void;
+  focusStar: (id: string | null) => void;
+
+===== src/spatial/state/sceneStore.ts : line 8 =====
+import { create } from "zustand";
+
+export type SceneMode = "home" | "sky" | "lifemap" | "focus" | "replay";
+
+export type SceneState = {
+  mode: SceneMode;
+  selectedStarId: string | null;
+  hoveredStarId: string | null;
+  isTransitioning: boolean;
+  setMode: (mode: SceneMode) => void;
+  goHome: () => void;
+  returnHome: () => void;
+  enterSky: () => void;
+  enterLifeMap: () => void;
+  focusStar: (id: string | null) => void;
+  enterReplay: () => void;
+
+===== src/spatial/state/sceneStore.ts : line 14 =====
+  mode: SceneMode;
+  selectedStarId: string | null;
+  hoveredStarId: string | null;
+  isTransitioning: boolean;
+  setMode: (mode: SceneMode) => void;
+  goHome: () => void;
+  returnHome: () => void;
+  enterSky: () => void;
+  enterLifeMap: () => void;
+  focusStar: (id: string | null) => void;
+  enterReplay: () => void;
+  exitReplay: () => void;
+  setSelectedStarId: (id: string | null) => void;
+  setHoveredStarId: (id: string | null) => void;
+  setTransitioning: (value: boolean) => void;
+};
+
+
+===== src/spatial/state/sceneStore.ts : line 25 =====
+  exitReplay: () => void;
+  setSelectedStarId: (id: string | null) => void;
+  setHoveredStarId: (id: string | null) => void;
+  setTransitioning: (value: boolean) => void;
+};
+
+const HOME_STATE = {
+  mode: "home" as SceneMode,
+  selectedStarId: null,
+  hoveredStarId: null,
+  isTransitioning: false,
+};
+
+export const useSceneStore = create<SceneState>((set, get) => ({
+  ...HOME_STATE,
+
+  setMode: (mode) => set({ mode }),
+
+===== src/spatial/state/sceneStore.ts : line 26 =====
+  setSelectedStarId: (id: string | null) => void;
+  setHoveredStarId: (id: string | null) => void;
+  setTransitioning: (value: boolean) => void;
+};
+
+const HOME_STATE = {
+  mode: "home" as SceneMode,
+  selectedStarId: null,
+  hoveredStarId: null,
+  isTransitioning: false,
+};
+
+export const useSceneStore = create<SceneState>((set, get) => ({
+  ...HOME_STATE,
+
+  setMode: (mode) => set({ mode }),
+  goHome: () => set({ ...HOME_STATE }),
+
+===== src/spatial/state/sceneStore.ts : line 38 =====
+export const useSceneStore = create<SceneState>((set, get) => ({
+  ...HOME_STATE,
+
+  setMode: (mode) => set({ mode }),
+  goHome: () => set({ ...HOME_STATE }),
+  returnHome: () => set({ ...HOME_STATE }),
+
+  enterSky: () => set({ mode: "sky" }),
+  enterLifeMap: () => set({ mode: "lifemap" }),
+
+  focusStar: (id) =>
+    set({
+      mode: id ? "focus" : "lifemap",
+      selectedStarId: id,
+    }),
+
+  enterReplay: () => {
+
+===== src/spatial/state/sceneStore.ts : line 43 =====
+  returnHome: () => set({ ...HOME_STATE }),
+
+  enterSky: () => set({ mode: "sky" }),
+  enterLifeMap: () => set({ mode: "lifemap" }),
+
+  focusStar: (id) =>
+    set({
+      mode: id ? "focus" : "lifemap",
+      selectedStarId: id,
+    }),
+
+  enterReplay: () => {
+    const { selectedStarId } = get();
+    set({ mode: selectedStarId ? "replay" : "lifemap" });
+  },
+
+  exitReplay: () => {
+
+===== src/spatial/state/sceneStore.ts : line 47 =====
+
+  focusStar: (id) =>
+    set({
+      mode: id ? "focus" : "lifemap",
+      selectedStarId: id,
+    }),
+
+  enterReplay: () => {
+    const { selectedStarId } = get();
+    set({ mode: selectedStarId ? "replay" : "lifemap" });
+  },
+
+  exitReplay: () => {
+    const { selectedStarId } = get();
+    set({ mode: selectedStarId ? "focus" : "lifemap" });
+  },
+
+
+===== src/spatial/state/sceneStore.ts : line 48 =====
+  focusStar: (id) =>
+    set({
+      mode: id ? "focus" : "lifemap",
+      selectedStarId: id,
+    }),
+
+  enterReplay: () => {
+    const { selectedStarId } = get();
+    set({ mode: selectedStarId ? "replay" : "lifemap" });
+  },
+
+  exitReplay: () => {
+    const { selectedStarId } = get();
+    set({ mode: selectedStarId ? "focus" : "lifemap" });
+  },
+
+  setSelectedStarId: (id) => set({ selectedStarId: id }),
+
+===== src/spatial/state/sceneStore.ts : line 52 =====
+    }),
+
+  enterReplay: () => {
+    const { selectedStarId } = get();
+    set({ mode: selectedStarId ? "replay" : "lifemap" });
+  },
+
+  exitReplay: () => {
+    const { selectedStarId } = get();
+    set({ mode: selectedStarId ? "focus" : "lifemap" });
+  },
+
+  setSelectedStarId: (id) => set({ selectedStarId: id }),
+  setHoveredStarId: (id) => set({ hoveredStarId: id }),
+  setTransitioning: (value) => set({ isTransitioning: value }),
+}));
+
+===== src/spatial/state/sceneStore.ts : line 53 =====
+
+  enterReplay: () => {
+    const { selectedStarId } = get();
+    set({ mode: selectedStarId ? "replay" : "lifemap" });
+  },
+
+  exitReplay: () => {
+    const { selectedStarId } = get();
+    set({ mode: selectedStarId ? "focus" : "lifemap" });
+  },
+
+  setSelectedStarId: (id) => set({ selectedStarId: id }),
+  setHoveredStarId: (id) => set({ hoveredStarId: id }),
+  setTransitioning: (value) => set({ isTransitioning: value }),
+}));
+
+===== src/spatial/state/sceneStore.ts : line 56 =====
+    set({ mode: selectedStarId ? "replay" : "lifemap" });
+  },
+
+  exitReplay: () => {
+    const { selectedStarId } = get();
+    set({ mode: selectedStarId ? "focus" : "lifemap" });
+  },
+
+  setSelectedStarId: (id) => set({ selectedStarId: id }),
+  setHoveredStarId: (id) => set({ hoveredStarId: id }),
+  setTransitioning: (value) => set({ isTransitioning: value }),
+}));
+
+===== src/spatial/state/sceneStore.ts : line 57 =====
+  },
+
+  exitReplay: () => {
+    const { selectedStarId } = get();
+    set({ mode: selectedStarId ? "focus" : "lifemap" });
+  },
+
+  setSelectedStarId: (id) => set({ selectedStarId: id }),
+  setHoveredStarId: (id) => set({ hoveredStarId: id }),
+  setTransitioning: (value) => set({ isTransitioning: value }),
+}));
+

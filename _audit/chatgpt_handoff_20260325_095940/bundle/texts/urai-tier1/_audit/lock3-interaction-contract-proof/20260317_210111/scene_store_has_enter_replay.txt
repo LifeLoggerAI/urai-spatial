@@ -1,0 +1,2 @@
+36:  enterReplay: () => void;
+80:  enterReplay: () => {

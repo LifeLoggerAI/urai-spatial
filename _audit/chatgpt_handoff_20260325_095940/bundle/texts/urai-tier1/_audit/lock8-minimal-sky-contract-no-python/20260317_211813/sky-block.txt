@@ -1,0 +1,59 @@
+      {mode === "sky" && (
+        <div
+          style={{
+            position: "absolute",
+            inset: 0,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            pointerEvents: "none",
+          }}
+        >
+          <div
+            style={{
+              pointerEvents: "auto",
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "center",
+              gap: 16,
+              padding: 24,
+              borderRadius: 20,
+              border: "1px solid rgba(255,255,255,0.14)",
+              background: "rgba(7,10,18,0.58)",
+              backdropFilter: "blur(10px)",
+              boxShadow: "0 20px 80px rgba(0,0,0,0.35)",
+            }}
+          >
+            <div
+              style={{
+                fontSize: 12,
+                letterSpacing: "0.24em",
+                textTransform: "uppercase",
+                opacity: 0.72,
+              }}
+            >
+              Transitional Layer
+            </div>
+            <h1 style={titleStyle}>Sky</h1>
+            <p
+              style={{
+                margin: 0,
+                maxWidth: 520,
+                textAlign: "center",
+                lineHeight: 1.6,
+                color: "rgba(255,255,255,0.78)",
+              }}
+            >
+              This is the minimal sky contract between Home and LifeMap.
+            </p>
+            <button
+              type="button"
+              onClick={() => setMode("lifemap")}
+              style={primaryButtonStyle}
+            >
+              Enter LifeMap
+            </button>
+          </div>
+        </div>
+      )}
+

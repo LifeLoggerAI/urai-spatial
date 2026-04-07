@@ -1,0 +1,509 @@
+
+----- src/app/page.tsx
+import SpatialScene from "../spatial/scene/SpatialScene";
+
+export default function Page() {
+  return <SpatialScene />;
+}
+
+----- src/spatial/state/sceneStore.ts
+import { create } from "zustand";
+import { SPATIAL_STARS, SpatialStar } from "../data/stars";
+
+export type SceneMode = "home" | "lifemap" | "focus" | "replay";
+
+export type SelectedStar = {
+  id: string;
+  position: [number, number, number];
+  color: string;
+  size: number;
+  title: string;
+  label: string;
+  signature: string;
+  chapter: string;
+  timeband: string;
+  dateLabel?: string;
+  summary?: string;
+  detail?: string;
+  tags?: string[];
+  transcript?: string;
+  description: string;
+};
+
+type SceneState = {
+  mode: SceneMode;
+  stars: SpatialStar[];
+  selectedStarId: string | null;
+  selectedStar: SelectedStar | null;
+  replayEnteredAt: number | null;
+
+  setMode: (mode: SceneMode) => void;
+  setSelectedStar: (star: SelectedStar | null) => void;
+  selectStar: (star: SelectedStar) => void;
+  clearFocus: () => void;
+  exitFocusToLifeMap: () => void;
+  enterReplay: () => void;
+  exitReplay: () => void;
+  exitReplayToFocus: () => void;
+};
+
+export const useSceneStore = create<SceneState>((set, get) => ({
+  mode: "home",
+  stars: SPATIAL_STARS,
+  selectedStarId: null,
+  selectedStar: null,
+  replayEnteredAt: null,
+
+  setMode: (mode) => set({ mode }),
+
+  setSelectedStar: (star) =>
+    set({
+      selectedStarId: star ? star.id : null,
+      selectedStar: star,
+      mode: star ? "focus" : "lifemap",
+    }),
+
+  selectStar: (star) =>
+    set({
+      selectedStarId: star.id,
+      selectedStar: star,
+      mode: "focus",
+    }),
+
+  clearFocus: () =>
+    set({
+      selectedStarId: null,
+      selectedStar: null,
+      replayEnteredAt: null,
+      mode: "lifemap",
+    }),
+
+  exitFocusToLifeMap: () =>
+    set({
+      selectedStarId: null,
+      selectedStar: null,
+      replayEnteredAt: null,
+      mode: "lifemap",
+    }),
+
+  enterReplay: () => {
+    const { selectedStar } = get();
+    if (!selectedStar) return;
+    set({
+      mode: "replay",
+      replayEnteredAt: Date.now(),
+    });
+  },
+
+  exitReplay: () => {
+    const { selectedStar } = get();
+    set({
+      mode: selectedStar ? "focus" : "lifemap",
+      replayEnteredAt: null,
+    });
+  },
+
+  exitReplayToFocus: () => {
+    const { selectedStar } = get();
+    set({
+      mode: selectedStar ? "focus" : "lifemap",
+      replayEnteredAt: null,
+    });
+  },
+}));
+
+----- src/spatial/scene/SpatialScene.tsx
+"use client";
+import SpatialCuratedDeckVaultBootstrap from "@/spatial/curation/SpatialCuratedDeckVaultBootstrap";
+import SpatialStoryBundleVaultBootstrap from "@/spatial/vault/SpatialStoryBundleVaultBootstrap";
+import SpatialSeasonalArcBootstrap from "@/spatial/seasonal/SpatialSeasonalArcBootstrap";
+import SpatialArcBootstrap from "@/spatial/arcs/SpatialArcBootstrap";
+import SpatialLensBootstrap from "@/spatial/lenses/SpatialLensBootstrap";
+import SpatialCompareBootstrap from "@/spatial/compare/SpatialCompareBootstrap";
+import SpatialAccountBootstrap from "@/spatial/account/SpatialAccountBootstrap";
+import SpatialReleaseBootstrap from "@/spatial/release/SpatialReleaseBootstrap";
+import SpatialSettingsBootstrap from "@/spatial/settings/SpatialSettingsBootstrap";
+import SpatialAnalyticsBridge from "@/spatial/telemetry/SpatialAnalyticsBridge";
+import SpatialPersistenceBridge from "@/spatial/persistence/SpatialPersistenceBridge";
+import XrLocomotionRuntime from "@/spatial/xr/XrLocomotionRuntime";
+import UnityRuntimePayloadBridge from "@/spatial/unity/UnityRuntimePayloadBridge";
+import ArPlaneMarker from "@/spatial/xr/ArPlaneMarker";
+import ArHitTestBridge from "@/spatial/xr/ArHitTestBridge";
+
+import { Canvas, ThreeEvent, useFrame, useThree } from "@react-three/fiber";
+import { CSSProperties, useEffect, useMemo, useRef, useState } from "react";
+import * as THREE from "three";
+import { toCanonicalSelectedStar } from "../lib/toCanonicalSelectedStar";
+import { SpatialStar } from "../data/stars";
+import { SceneMode, useSceneStore } from "../state/sceneStore";
+import CinematicReplayOverlay from "@/spatial/cinematic/CinematicReplayOverlay";
+import LifeMapIntelligenceOverlay from "@/spatial/intelligence/LifeMapIntelligenceOverlay";
+import XRBridgeOverlay from "@/spatial/xr/XRBridgeOverlay";
+import ImmersiveContractOverlay from "@/spatial/immersive/ImmersiveContractOverlay";
+import SceneExportOverlay from "@/spatial/export/SceneExportOverlay";
+import WebXREntryOverlay from "@/spatial/webxr/WebXREntryOverlay";
+import XRCameraRigOverlay from "@/spatial/xr-runtime/XRCameraRigOverlay";
+import ARPlacementOverlay from "@/spatial/ar/ARPlacementOverlay";
+import UnityAdapterOverlay from "@/spatial/unity/UnityAdapterOverlay";
+import XRInputOverlay from "@/spatial/input/XRInputOverlay";
+import ImmersiveReplayTraversalOverlay from "@/spatial/traversal/ImmersiveReplayTraversalOverlay";
+import MemoryImportOverlay from "@/spatial/data-import/MemoryImportOverlay";
+import ExternalIngestOverlay from "@/spatial/ingest/ExternalIngestOverlay";
+import BatchImportAuditOverlay from "@/spatial/validation/BatchImportAuditOverlay";
+import MergePreflightOverlay from "@/spatial/merge/MergePreflightOverlay";
+import PersistenceSyncOverlay from "@/spatial/persistence/PersistenceSyncOverlay";
+import DatasetVersioningOverlay from "@/spatial/versioning/DatasetVersioningOverlay";
+import ChapterSynthesisOverlay from "@/spatial/chapter/ChapterSynthesisOverlay";
+import CausalInsightOverlay from "@/spatial/causal/CausalInsightOverlay";
+import StoryArcOverlay from "@/spatial/storyarc/StoryArcOverlay";
+import EraCompareOverlay from "@/spatial/era/EraCompareOverlay";
+import SeasonalCycleOverlay from "@/spatial/seasonal/SeasonalCycleOverlay";
+import NarratorOrchestrationOverlay from "@/spatial/narrator/NarratorOrchestrationOverlay";
+import WebXRRendererHandoffOverlay from "@/spatial/xr-renderer/WebXRRendererHandoffOverlay";
+import { useXrSessionStore } from "../state/xrSessionStore";
+
+const shellButtonStyle: CSSProperties = {
+  appearance: "none",
+  border: "1px solid rgba(255,255,255,0.18)",
+  borderRadius: 14,
+  background: "rgba(10,14,28,0.66)",
+  color: "rgba(245,248,255,0.96)",
+  padding: "12px 16px",
+  fontSize: 13,
+  fontWeight: 600,
+  letterSpacing: "0.08em",
+  textTransform: "uppercase",
+  cursor: "pointer",
+  backdropFilter: "blur(16px)",
+  boxShadow: "0 14px 40px rgba(0,0,0,0.28)",
+};
+
+const secondaryButtonStyle: CSSProperties = {
+  ...shellButtonStyle,
+  background: "rgba(255,255,255,0.06)",
+};
+
+const ghostButtonStyle: CSSProperties = {
+  ...shellButtonStyle,
+  background: "transparent",
+  border: "1px solid rgba(255,255,255,0.12)",
+  boxShadow: "none",
+};
+
+const topChromeStyle: CSSProperties = {
+  position: "absolute",
+  top: 18,
+  left: 18,
+  right: 18,
+  zIndex: 30,
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "space-between",
+  gap: 16,
+  pointerEvents: "none",
+};
+
+const chipStyle: CSSProperties = {
+  display: "inline-flex",
+  alignItems: "center",
+  gap: 8,
+  minHeight: 38,
+  borderRadius: 999,
+  padding: "0 14px",
+  background: "rgba(10,14,28,0.52)",
+  border: "1px solid rgba(255,255,255,0.14)",
+  color: "rgba(244,247,255,0.95)",
+  fontSize: 12,
+  letterSpacing: "0.12em",
+  textTransform: "uppercase",
+  backdropFilter: "blur(16px)",
+  boxShadow: "0 14px 40px rgba(0,0,0,0.22)",
+};
+
+const panelStyle: CSSProperties = {
+  borderRadius: 24,
+  border: "1px solid rgba(255,255,255,0.12)",
+  background:
+    "linear-gradient(180deg, rgba(13,18,34,0.78) 0%, rgba(7,10,18,0.86) 100%)",
+  backdropFilter: "blur(18px)",
+  boxShadow: "0 24px 80px rgba(0,0,0,0.32)",
+  color: "rgba(244,247,255,0.96)",
+};
+
+const captionStyle: CSSProperties = {
+  fontSize: 11,
+  letterSpacing: "0.16em",
+  textTransform: "uppercase",
+  color: "rgba(214,223,255,0.7)",
+};
+
+const titleStyle: CSSProperties = {
+  margin: 0,
+  fontSize: "clamp(28px, 3vw, 44px)",
+  lineHeight: 1.02,
+  letterSpacing: "-0.03em",
+  fontWeight: 700,
+};
+
+const subtleTextStyle: CSSProperties = {
+  margin: 0,
+  fontSize: 14,
+  lineHeight: 1.6,
+  color: "rgba(225,233,255,0.78)",
+};
+
+const dividerStyle: CSSProperties = {
+  width: "100%",
+  height: 1,
+  background: "linear-gradient(90deg, rgba(255,255,255,0.14), rgba(255,255,255,0.03))",
+};
+
+function modeLabel(mode: SceneMode) {
+  switch (mode) {
+    case "home":
+      return "Home";
+    case "lifemap":
+      return "LifeMap";
+    case "focus":
+      return "Focus";
+    case "replay":
+      return "Replay";
+    default:
+      return mode;
+  }
+}
+
+function Atmosphere() {
+  return (
+    <>
+      <fog attach="fog" args={["#04060b", 20, 78]} />
+      <color attach="background" args={["#04060b"]} />
+    </>
+  );
+}
+
+function FloorPlane() {
+  return (
+    <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -8, 0]} receiveShadow>
+      <circleGeometry args={[50, 96]} />
+      <meshStandardMaterial
+        color="#0a0f1b"
+        transparent
+        opacity={0.82}
+        roughness={1}
+        metalness={0}
+      />
+    </mesh>
+  );
+}
+
+function CameraRig() {
+  const { camera } = useThree();
+  const mode = useSceneStore((s) => s.mode);
+  const selectedStar = useSceneStore((s) => s.selectedStar);
+  const cameraTarget = useRef(new THREE.Vector3(0, 4, 28));
+  const lookTarget = useRef(new THREE.Vector3(0, 2, 0));
+
+  useFrame((_, delta) => {
+    const cp = cameraTarget.current;
+    const lp = lookTarget.current;
+
+    if (mode === "home") {
+      cp.set(0, 5.8, 30);
+      lp.set(0, 2, 0);
+    } else if (mode === "lifemap") {
+      cp.set(0, 7.8, 24);
+      lp.set(0, 0.5, 0);
+    } else if (selectedStar) {
+      const [x, y, z] = selectedStar.position;
+      if (mode === "focus") {
+        cp.set(x * 0.18, y + 2.7, z + 8.5);
+        lp.set(x, y, z);
+      } else {
+        cp.set(x * 0.07, y + 1.25, z + 3.8);
+        lp.set(x, y, z);
+      }
+    }
+
+    const t = 1 - Math.exp(-delta * 3.2);
+    camera.position.lerp(cp, t);
+    camera.lookAt(lp);
+  });
+
+  return null;
+}
+
+function StarNode({
+  star,
+  isSelected,
+  dimmed,
+  onSelect,
+}: {
+  star: SpatialStar;
+  isSelected: boolean;
+  dimmed: boolean;
+  onSelect: (star: SpatialStar) => void;
+}) {
+  const meshRef = useRef<THREE.Mesh>(null);
+  const haloRef = useRef<THREE.Mesh>(null);
+  const mode = useSceneStore((s) => s.mode);
+
+  useFrame(({ clock }) => {
+    const t = clock.getElapsedTime();
+    const pulse = 1 + Math.sin(t * 1.45 + star.order * 0.5) * 0.06 * star.glow;
+    const targetScale = isSelected
+      ? pulse * 1.65
+      : dimmed
+      ? pulse * 0.82
+      : pulse;
+
+    if (meshRef.current) {
+      meshRef.current.scale.lerp(
+        new THREE.Vector3(targetScale, targetScale, targetScale),
+        0.1
+      );
+    }
+
+    if (haloRef.current) {
+      const haloScale = isSelected
+        ? 2.15 + Math.sin(t * 1.25) * 0.08
+        : mode === "replay"
+        ? 1.55
+        : 1.25;
+      haloRef.current.scale.lerp(
+        new THREE.Vector3(haloScale, haloScale, haloScale),
+        0.12
+
+----- src/spatial/core/SceneController.tsx
+"use client";
+
+import { useEffect } from "react";
+import { useSceneStore } from "../state/sceneStore";
+
+export default function SceneController() {
+  const { mode, setMode } = useSceneStore();
+
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key !== "Enter") return;
+
+      if (mode === "home") {
+        setMode("lifemap");
+      } else if (mode === "lifemap") {
+        setMode("home");
+      } else if (mode === "focus") {
+        useSceneStore.setState({ selectedStar: null });
+        setMode("lifemap");
+      }
+    };
+
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [mode, setMode]);
+
+  return null;
+}
+
+----- src/spatial/components/CameraRig.tsx
+"use client";
+import { useXrSessionStore } from "@/spatial/xr/xrSessionStore";
+
+import { useEffect, useMemo, useRef } from "react";
+import { useFrame, useThree } from "@react-three/fiber";
+import { Vector3 } from "three";
+import { useSceneStore } from "../state/sceneStore";
+
+const HOME_POS = new Vector3(0, 1.15, 14.5);
+const HOME_LOOK = new Vector3(0, 0.35, 0);
+
+const MAP_POS = new Vector3(0, 2.8, 20.5);
+const MAP_LOOK = new Vector3(0, 0, 0);
+
+function smooth(delta: number, speed: number) {
+  return 1 - Math.exp(-delta * speed);
+}
+
+export default function CameraRig() {
+  const camera = useThree((state) => state.camera);
+
+  const mode = useSceneStore((state) => state.mode);
+  const selectedStar = useSceneStore((state) => state.selectedStar);
+  const replayEnteredAt = 0;
+
+  const posRef = useRef(new Vector3());
+  const lookRef = useRef(new Vector3());
+
+  const selectedTarget = useMemo(() => {
+    if (!selectedStar) return new Vector3(0, 0, 0);
+    return new Vector3(
+      selectedStar.position[0],
+      selectedStar.position[1],
+      selectedStar.position[2]
+    );
+  }, [selectedStar]);
+
+  useEffect(() => {
+    camera.position.copy(HOME_POS);
+    camera.lookAt(HOME_LOOK);
+    posRef.current.copy(HOME_POS);
+    lookRef.current.copy(HOME_LOOK);
+  }, [camera]);
+
+  useFrame((state, delta) => {
+    let desiredPos = HOME_POS.clone();
+    let desiredLook = HOME_LOOK.clone();
+
+    if (mode === "lifemap") {
+      desiredPos = MAP_POS.clone();
+      desiredLook = MAP_LOOK.clone();
+    }
+
+    if ((mode === "focus" || mode === "replay") && selectedStar) {
+      const focusLift = 1.30 + selectedStar.size * 0.12;
+      const focusDistance = 6.4 + Math.min(selectedStar.size * 0.34, 1.35);
+
+      desiredLook = selectedTarget.clone();
+      desiredPos = selectedTarget.clone().add(new Vector3(1.1, focusLift, focusDistance));
+    }
+
+    if (mode === "replay" && selectedStar) {
+      const enteredAt = replayEnteredAt ?? Date.now();
+      const replayT = Math.max(0, (Date.now() - enteredAt) / 1000);
+
+      const settle = Math.min(replayT / 1.4, 1);
+      const orbitAngle = replayT * 0.58;
+      const baseRadius = 6.0 + Math.min(selectedStar.size * 0.40, 1.4);
+      const radius = baseRadius - settle * 0.4;
+
+      const x = Math.cos(orbitAngle) * radius;
+      const z = Math.sin(orbitAngle) * radius;
+      const y =
+        0.95 +
+        Math.sin(replayT * 0.7) * 0.22 +
+        Math.cos(replayT * 0.23) * 0.08;
+
+      desiredLook = selectedTarget.clone().add(
+        new Vector3(
+          Math.sin(replayT * 0.21) * 0.1,
+          0.02 + Math.cos(replayT * 0.33) * 0.04,
+          0
+        )
+      );
+
+      desiredPos = selectedTarget.clone().add(new Vector3(x, y, z));
+    }
+
+    const positionSpeed =
+      mode === "replay" ? 2.2 : mode === "focus" ? 3.2 : 2.6;
+    const lookSpeed =
+      mode === "replay" ? 3.1 : mode === "focus" ? 4.2 : 3.0;
+
+    posRef.current.lerp(desiredPos, smooth(delta, positionSpeed));
+    lookRef.current.lerp(desiredLook, smooth(delta, lookSpeed));
+
+    camera.position.copy(posRef.current);
+    camera.lookAt(lookRef.current);
+  });
+
+  return null;
+}

@@ -9,11 +9,11 @@ export type RawImportRow = {
   intensity?: number;
 };
 
-function str(value: unknown): string | undefined {
+function str(value: any): string | undefined {
   return typeof value === "string" && value.trim().length > 0 ? value.trim() : undefined;
 }
 
-function num(value: unknown): number | undefined {
+function num(value: any): number | undefined {
   if (typeof value === "number" && Number.isFinite(value)) return value;
   if (typeof value === "string" && value.trim().length > 0) {
     const parsed = Number(value);

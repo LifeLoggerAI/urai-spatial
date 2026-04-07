@@ -1,0 +1,11 @@
+Next safe seam after this move:
+1. keep Tier 1 shell behavior frozen
+2. extract mode-specific JSX blocks out of src/spatial/shell/Tier1ShellScreen.tsx
+3. first targets:
+   - src/spatial/home/HomeOverlay.tsx
+   - src/spatial/sky/SkyOverlay.tsx
+   - src/spatial/lifemap/LifeMapOverlay.tsx
+   - src/spatial/focus/FocusOverlay.tsx
+   - src/spatial/replay/ReplayOverlay.tsx
+4. do not change sceneStore.ts contract in that step
+5. do not change visual behavior while extracting

@@ -1,0 +1,989 @@
+src/app/_page_shell.tsx:5:type Mode = "home" | "sky" | "lifemap" | "focus" | "replay";
+src/app/_page_shell.tsx:25:    summary: "Second orbit node for focus continuity and selected-state validation.",
+src/app/_page_shell.tsx:36:    summary: "Canonical memory seed used to verify replay identity and focus continuity.",
+src/app/_page_shell.tsx:87:function pillLabel(mode: Mode) {
+src/app/_page_shell.tsx:88:  return mode.toUpperCase();
+src/app/_page_shell.tsx:92:  const [mode, setMode] = useState<Mode>("home");
+src/app/_page_shell.tsx:106:    document.body.style.margin = "0";
+src/app/_page_shell.tsx:107:    document.body.style.background = "#030610";
+src/app/_page_shell.tsx:108:    document.body.style.overflow = "hidden";
+src/app/_page_shell.tsx:128:    lock(SKY_TRANSIT_MS, () => setMode("lifemap"));
+src/app/_page_shell.tsx:142:      setMode("focus");
+src/app/_page_shell.tsx:148:    lock(FOCUS_TO_MAP_MS, () => setMode("lifemap"));
+src/app/_page_shell.tsx:153:    lock(FOCUS_TO_REPLAY_MS, () => setMode("replay"));
+src/app/_page_shell.tsx:158:    lock(REPLAY_TO_FOCUS_MS, () => setMode("focus"));
+src/app/_page_shell.tsx:161:  const uiLocked = transitioning || mode === "sky";
+src/app/_page_shell.tsx:162:  const showMapWorld = mode === "lifemap" || mode === "focus" || mode === "replay";
+src/app/_page_shell.tsx:254:          {pillLabel(mode)}
+src/app/_page_shell.tsx:322:                opacity: mode === "home" || mode === "sky" ? 0.16 : 1,
+src/app/_page_shell.tsx:346:      {(mode === "focus" || mode === "replay") && (
+src/app/_page_shell.tsx:351:            top: mode === "replay" ? "48%" : "50%",
+src/app/_page_shell.tsx:353:            width: mode === "replay" ? 146 : 118,
+src/app/_page_shell.tsx:354:            height: mode === "replay" ? 146 : 118,
+src/app/_page_shell.tsx:368:      {mode === "home" && (
+src/app/_page_shell.tsx:425:      {mode === "sky" && (
+src/app/_page_shell.tsx:511:      {mode === "lifemap" && (
+src/app/_page_shell.tsx:541:              Select a star to enter focus. Focus exits always return to the same selected memory
+src/app/_page_shell.tsx:559:      {mode === "focus" && (
+src/app/_page_shell.tsx:625:      {mode === "replay" && (
+src/app/_page_shell.tsx:694:            Canonical replay holds the same selected memory identity across focus and replay, with a
+src/app/globals.css:16:body {
+src/app/globals.css:23:body {
+src/app/globals.css:39:html, body {
+src/app/globals.css:47:body {
+src/app/globals.css:53:body::before {
+src/app/globals.css:63:body::after {
+src/app/globals.css:124:.urai-replay-grade {
+src/app/globals.css:131:  mix-blend-mode: screen;
+src/app/globals.css:144:html, body {
+src/app/globals.css:151:body::before {
+src/app/globals.css:157:body::after {
+src/app/globals.css:181:html, body {
+src/app/globals.css:190:body {
+src/app/globals.css:213:button:focus-visible {
+src/app/layout.tsx:27:      <body
+src/app/layout.tsx:31:      </body>
+src/spatial/persistence/resolvePersistenceSyncState.ts:2:import { resolveMemorySphereById } from "@/spatial/memory/resolveMemorySphere";
+src/spatial/persistence/resolvePersistenceSyncState.ts:21:  const memory = resolveMemorySphereById(id);
+src/spatial/persistence/spatialPersistenceTypes.ts:10:  selectedStarId: string | null;
+src/spatial/persistence/spatialPersistenceTypes.ts:11:  selectedStarLabel: string | null;
+src/spatial/persistence/spatialPersistenceTypes.ts:28:    selectedStarId: null,
+src/spatial/persistence/spatialPersistenceTypes.ts:29:    selectedStarLabel: null,
+src/spatial/persistence/spatialPersistenceTypes.ts:33:      selectedStarId: null,
+src/spatial/persistence/spatialPersistenceTypes.ts:79:      mode: "idle",
+src/spatial/persistence/spatialPersistenceValidation.ts:14:    "selectedStarId" in v &&
+src/spatial/persistence/spatialPersistenceValidation.ts:15:    "selectedStarLabel" in v &&
+src/spatial/persistence/PersistenceSyncOverlay.tsx:8:  const selectedStar = useSceneStore((s) => s.selectedStar);
+src/spatial/persistence/PersistenceSyncOverlay.tsx:11:    () => resolvePersistenceSyncStateById(selectedStar?.id),
+src/spatial/persistence/PersistenceSyncOverlay.tsx:12:    [selectedStar]
+src/spatial/persistence/PersistenceSyncOverlay.tsx:15:  if (!selectedStar || !state) return null;
+src/spatial/persistence/SpatialPersistenceBridge.tsx:22:  const mode = useSceneStore((s) => s.mode);
+src/spatial/persistence/SpatialPersistenceBridge.tsx:23:  const selectedStar = useSceneStore((s) => s.selectedStar);
+src/spatial/persistence/SpatialPersistenceBridge.tsx:37:      mode,
+src/spatial/persistence/SpatialPersistenceBridge.tsx:38:      selectedStar,
+src/spatial/persistence/SpatialPersistenceBridge.tsx:50:    mode,
+src/spatial/persistence/SpatialPersistenceBridge.tsx:51:    selectedStar,
+src/spatial/persistence/buildSpatialPersistenceSnapshot.ts:1:import type { SelectedStar } from "@/spatial/state/selectedStarContract";
+src/spatial/persistence/buildSpatialPersistenceSnapshot.ts:12:  mode: string;
+src/spatial/persistence/buildSpatialPersistenceSnapshot.ts:13:  selectedStar: SelectedStar | null;
+src/spatial/persistence/buildSpatialPersistenceSnapshot.ts:24:    selectedStar: input.selectedStar,
+src/spatial/persistence/buildSpatialPersistenceSnapshot.ts:25:    mode: input.mode,
+src/spatial/persistence/buildSpatialPersistenceSnapshot.ts:33:    sceneMode: input.mode,
+src/spatial/persistence/buildSpatialPersistenceSnapshot.ts:34:    selectedStarId: input.selectedStar?.id ?? null,
+src/spatial/persistence/buildSpatialPersistenceSnapshot.ts:35:    selectedStarLabel:
+src/spatial/persistence/buildSpatialPersistenceSnapshot.ts:36:      (input.selectedStar as { label?: string; title?: string } | null)?.label ??
+src/spatial/persistence/buildSpatialPersistenceSnapshot.ts:37:      (input.selectedStar as { label?: string; title?: string } | null)?.title ??
+src/spatial/compare/buildSpatialCompareSet.ts:25:    selectedStarId: input.snapshot.selectedStarId,
+src/spatial/compare/buildSpatialCompareSet.ts:40:    selectedStarChanged:
+src/spatial/compare/buildSpatialCompareSet.ts:41:      (baseline.selectedStarId ?? null) !== (target.selectedStarId ?? null),
+src/spatial/compare/spatialCompareTypes.ts:8:  selectedStarId: string | null;
+src/spatial/compare/spatialCompareTypes.ts:14:  selectedStarChanged: boolean;
+src/spatial/cinematic/CinematicReplayOverlay.tsx:14:  const mode = useSceneStore((s) => s.mode);
+src/spatial/cinematic/CinematicReplayOverlay.tsx:15:  const selectedStar = useSceneStore((s) => s.selectedStar);
+src/spatial/cinematic/CinematicReplayOverlay.tsx:18:    () => resolveCinematicReplayById(selectedStar?.id),
+src/spatial/cinematic/CinematicReplayOverlay.tsx:19:    [selectedStar]
+src/spatial/cinematic/CinematicReplayOverlay.tsx:22:  if (mode !== "replay" || !selectedStar || !cinematic) return null;
+src/spatial/cinematic/resolveCinematicReplay.ts:2:import { resolveMemorySphereById } from "@/spatial/memory/resolveMemorySphere";
+src/spatial/cinematic/resolveCinematicReplay.ts:29:  const memory = resolveMemorySphereById(id);
+src/spatial/cinematic/resolveCinematicReplay.ts:46:    "Cinematic replay contract is active.";
+src/spatial/cinematic/resolveCinematicReplay.ts:61:      ? "Hold the frame, increase glow, keep the scene anchored."
+src/spatial/cinematic/resolveCinematicReplay.ts:63:      ? "Reduce motion, soften atmosphere, keep detail close."
+src/spatial/cinematic/resolveCinematicReplay.ts:64:      : "Sustain depth, preserve focus, keep replay motion smooth.";
+src/spatial/chapter/ChapterSynthesisOverlay.tsx:8:  const selectedStar = useSceneStore((s) => s.selectedStar);
+src/spatial/chapter/ChapterSynthesisOverlay.tsx:11:    () => resolveChapterSynthesisById(selectedStar?.id),
+src/spatial/chapter/ChapterSynthesisOverlay.tsx:12:    [selectedStar]
+src/spatial/chapter/ChapterSynthesisOverlay.tsx:15:  if (!selectedStar || !state) return null;
+src/spatial/chapter/resolveChapterSynthesis.ts:1:import { getMemoryDataset } from "@/spatial/replay/resolveReplayScene";
+src/spatial/chapter/resolveChapterSynthesis.ts:2:import { resolveMemorySphereById } from "@/spatial/memory/resolveMemorySphere";
+src/spatial/chapter/resolveChapterSynthesis.ts:56:  const memory = resolveMemorySphereById(id);
+src/spatial/ar/ARPlacementOverlay.tsx:8:  const mode = useSceneStore((s) => s.mode);
+src/spatial/ar/ARPlacementOverlay.tsx:9:  const selectedStar = useSceneStore((s) => s.selectedStar);
+src/spatial/ar/ARPlacementOverlay.tsx:12:    () => resolveARPlacementStateById(selectedStar?.id, mode),
+src/spatial/ar/ARPlacementOverlay.tsx:13:    [selectedStar, mode]
+src/spatial/ar/ARPlacementOverlay.tsx:16:  if (!selectedStar || !ar) return null;
+src/spatial/ar/resolveARPlacementState.ts:3:import { resolveXRCameraRigStateById } from "@/spatial/xr-runtime/resolveXRCameraRigState";
+src/spatial/ar/resolveARPlacementState.ts:4:import { resolveMemorySphereById } from "@/spatial/memory/resolveMemorySphere";
+src/spatial/ar/resolveARPlacementState.ts:24:  mode: string | null | undefined
+src/spatial/ar/resolveARPlacementState.ts:28:  const xr = resolveWebXREntryStateById(id, mode);
+src/spatial/ar/resolveARPlacementState.ts:29:  const manifest = resolveSceneExportManifestById(id, mode);
+src/spatial/ar/resolveARPlacementState.ts:30:  const rig = resolveXRCameraRigStateById(id, mode);
+src/spatial/ar/resolveARPlacementState.ts:31:  const memory = resolveMemorySphereById(id);
+src/spatial/ar/resolveARPlacementState.ts:38:      : mode === "replay"
+src/spatial/ar/resolveARPlacementState.ts:67:      ? "stage content at human-scale distance with replay-safe framing"
+src/spatial/polish/SpatialPolishOverlay.tsx:12:  const mode = useSceneStore((s) => s.mode);
+src/spatial/polish/SpatialPolishOverlay.tsx:13:  const selectedStar = useSceneStore((s) => s.selectedStar) as LooseRecord | null;
+src/spatial/polish/SpatialPolishOverlay.tsx:16:    selectedStar?.color,
+src/spatial/polish/SpatialPolishOverlay.tsx:17:    mode === "replay" ? "rgba(255,220,160,0.30)" : "rgba(255,255,255,0.18)"
+src/spatial/polish/SpatialPolishOverlay.tsx:20:  const topGlow = mode === "replay" ? "rgba(255,255,255,0.06)" : "rgba(255,255,255,0.035)";
+src/spatial/polish/SpatialPolishOverlay.tsx:21:  const edgeShadow = mode === "replay" ? "rgba(0,0,0,0.44)" : "rgba(0,0,0,0.34)";
+src/spatial/polish/SpatialPolishOverlay.tsx:22:  const bottomWeight = mode === "replay" ? "rgba(4,8,18,0.30)" : "rgba(4,8,18,0.22)";
+src/spatial/polish/SpatialPolishOverlay.tsx:63:          opacity: mode === "replay" ? 0.85 : 0.65,
+src/spatial/polish/SpatialPolishOverlay.tsx:87:        {mode === "replay" ? "Replay Scene" : "Spatial Polish"}
+src/spatial/diffs/buildSpatialStoryBundleDiff.ts:30:  const selectedStarChanged =
+src/spatial/diffs/buildSpatialStoryBundleDiff.ts:31:    (baseBundle.snapshot.selectedStarId ?? null) !==
+src/spatial/diffs/buildSpatialStoryBundleDiff.ts:32:    (targetBundle.snapshot.selectedStarId ?? null);
+src/spatial/diffs/buildSpatialStoryBundleDiff.ts:49:    sceneModeChanged ? "scene mode changed" : "scene mode stable",
+src/spatial/diffs/buildSpatialStoryBundleDiff.ts:50:    selectedStarChanged ? "selection changed" : "selection stable",
+src/spatial/diffs/buildSpatialStoryBundleDiff.ts:64:    selectedStarChanged,
+src/spatial/diffs/spatialStoryBundleDiffTypes.ts:7:  selectedStarChanged: boolean;
+src/spatial/ingest/resolveExternalIngestState.ts:2:import { resolveMemorySphereById } from "@/spatial/memory/resolveMemorySphere";
+src/spatial/ingest/resolveExternalIngestState.ts:22:      emotion: "focused",
+src/spatial/ingest/resolveExternalIngestState.ts:57:  const memory = resolveMemorySphereById(id);
+src/spatial/ingest/ExternalIngestOverlay.tsx:8:  const selectedStar = useSceneStore((s) => s.selectedStar);
+src/spatial/ingest/ExternalIngestOverlay.tsx:11:    () => resolveExternalIngestStateById(selectedStar?.id),
+src/spatial/ingest/ExternalIngestOverlay.tsx:12:    [selectedStar]
+src/spatial/ingest/ExternalIngestOverlay.tsx:15:  if (!selectedStar || !state) return null;
+src/spatial/bundles/buildSpatialStoryBundle.ts:21:    `Scene mode: ${input.snapshot.sceneMode}`,
+src/spatial/bundles/buildSpatialStoryBundle.ts:22:    `Selected star: ${input.snapshot.selectedStarId ?? "none"}`,
+src/spatial/data/memoryDataset.ts:42:      "This memory marks the transition from vague perception into explicit naming. It is the moment the system begins turning intuition into a repeatable model.",
+src/spatial/data/memoryDataset.ts:45:      "Once it had a name, it stopped being fog. It became something I could return to, refine, and build around.",
+src/spatial/data/memoryDataset.ts:147:      "Signal memories represent clarity through focus. A node becomes central enough that context reorganizes itself around it and the rest of the map falls back.",
+src/spatial/data/memoryDataset.ts:148:    tags: ["focus", "node", "attention"],
+src/spatial/data/memoryDataset.ts:150:      "When the node came into focus, everything else stopped asking to be first. The scene finally had a center.",
+src/spatial/data/memoryDataset.ts:327:      "A drift memory focused on branch sprawl: compelling alternatives appear everywhere, but they compete against coherence.",
+src/spatial/data/memoryDataset.ts:355:    summary: "The system learns to leave focus cleanly and come back without damage.",
+src/spatial/data/memoryDataset.ts:358:    tags: ["focus", "return", "stability"],
+src/spatial/data/memoryDataset.ts:360:      "What mattered was not only reaching focus. It was being able to leave it cleanly and return when needed.",
+src/spatial/data/memory-seed.ts:18:    summary: "Second seed node for focus and replay contract validation.",
+src/spatial/data/stars.ts:19:  glow: number;
+src/spatial/data/stars.ts:81:    const glow = rounded(0.55 + rand() * 0.55, 2);
+src/spatial/data/stars.ts:96:        `This is the current canonical placeholder content contract for focus and replay.`,
+src/spatial/data/stars.ts:99:      glow,
+src/spatial/data/stars.ts:129:    glow: raw.glow ?? fallback.glow,
+src/spatial/data/memory-seed.json:16:    "summary": "Second seed node for focus and replay contract validation.",
+src/spatial/state/toCanonicalSelectedStar.ts:1:import type { SelectedStar } from "./selectedStarContract";
+src/spatial/state/toCanonicalSelectedStar.ts:11:  glow?: number;
+src/spatial/state/toCanonicalSelectedStar.ts:85:    glow: safeNumber(input.glow, 0.75),
+src/spatial/state/sceneStore.ts:3:import type { SelectedStar } from "@/spatial/state/selectedStarContract";
+src/spatial/state/sceneStore.ts:5:export type SceneMode = "home" | "sky" | "lifemap" | "focus" | "replay";
+src/spatial/state/sceneStore.ts:8:  mode: SceneMode;
+src/spatial/state/sceneStore.ts:10:  selectedStarId: string | null;
+src/spatial/state/sceneStore.ts:11:  selectedStar: SelectedStar | null;
+src/spatial/state/sceneStore.ts:12:  replayEnteredAt: number | null;
+src/spatial/state/sceneStore.ts:13:  setMode: (mode: SceneMode) => void;
+src/spatial/state/sceneStore.ts:25:  mode: "home",
+src/spatial/state/sceneStore.ts:27:  selectedStarId: null,
+src/spatial/state/sceneStore.ts:28:  selectedStar: null,
+src/spatial/state/sceneStore.ts:29:  replayEnteredAt: null,
+src/spatial/state/sceneStore.ts:31:  setMode: (mode: SceneMode) => set({ mode }),
+src/spatial/state/sceneStore.ts:35:      selectedStarId: null,
+src/spatial/state/sceneStore.ts:36:      selectedStar: null,
+src/spatial/state/sceneStore.ts:37:      replayEnteredAt: null,
+src/spatial/state/sceneStore.ts:38:      mode: "sky",
+src/spatial/state/sceneStore.ts:43:      selectedStarId: star?.id ?? null,
+src/spatial/state/sceneStore.ts:44:      selectedStar: star,
+src/spatial/state/sceneStore.ts:45:      replayEnteredAt: null,
+src/spatial/state/sceneStore.ts:46:      mode: star ? "focus" : "lifemap",
+src/spatial/state/sceneStore.ts:51:      selectedStarId: star?.id ?? null,
+src/spatial/state/sceneStore.ts:52:      selectedStar: star,
+src/spatial/state/sceneStore.ts:53:      replayEnteredAt: null,
+src/spatial/state/sceneStore.ts:54:      mode: star ? "focus" : "lifemap",
+src/spatial/state/sceneStore.ts:59:      selectedStarId: null,
+src/spatial/state/sceneStore.ts:60:      selectedStar: null,
+src/spatial/state/sceneStore.ts:61:      replayEnteredAt: null,
+src/spatial/state/sceneStore.ts:62:      mode: "lifemap",
+src/spatial/state/sceneStore.ts:67:      selectedStarId: null,
+src/spatial/state/sceneStore.ts:68:      selectedStar: null,
+src/spatial/state/sceneStore.ts:69:      replayEnteredAt: null,
+src/spatial/state/sceneStore.ts:70:      mode: "lifemap",
+src/spatial/state/sceneStore.ts:74:    const { selectedStar } = get();
+src/spatial/state/sceneStore.ts:75:    if (!selectedStar) return;
+src/spatial/state/sceneStore.ts:77:      mode: "replay",
+src/spatial/state/sceneStore.ts:78:      replayEnteredAt: Date.now(),
+src/spatial/state/sceneStore.ts:83:    const { selectedStar } = get();
+src/spatial/state/sceneStore.ts:85:      mode: selectedStar ? "focus" : "lifemap",
+src/spatial/state/sceneStore.ts:86:      replayEnteredAt: null,
+src/spatial/state/sceneStore.ts:91:    const { selectedStar } = get();
+src/spatial/state/sceneStore.ts:93:      mode: selectedStar ? "focus" : "lifemap",
+src/spatial/state/sceneStore.ts:94:      replayEnteredAt: null,
+src/spatial/state/selectedStarContract.ts:10:  selectedStar: SelectedStar | null
+src/spatial/state/selectedStarContract.ts:12:  if (!selectedStar) return null;
+src/spatial/state/selectedStarContract.ts:13:  return { ...selectedStar };
+src/spatial/causal/CausalInsightOverlay.tsx:8:  const selectedStar = useSceneStore((s) => s.selectedStar);
+src/spatial/causal/CausalInsightOverlay.tsx:11:    () => resolveCausalInsightById(selectedStar?.id),
+src/spatial/causal/CausalInsightOverlay.tsx:12:    [selectedStar]
+src/spatial/causal/CausalInsightOverlay.tsx:15:  if (!selectedStar || !state) return null;
+src/spatial/causal/resolveCausalInsight.ts:1:import { resolveMemorySphereById } from "@/spatial/memory/resolveMemorySphere";
+src/spatial/causal/resolveCausalInsight.ts:34:  const memory = resolveMemorySphereById(id);
+src/spatial/review/buildSpatialReviewDeck.ts:18:    selectedStarId: input.entry.bundle.snapshot.selectedStarId ?? null,
+src/spatial/review/spatialReviewDeckTypes.ts:9:  selectedStarId: string | null;
+src/spatial/export/resolveSceneExportManifest.ts:4:import { resolveMemorySphereById } from "@/spatial/memory/resolveMemorySphere";
+src/spatial/export/resolveSceneExportManifest.ts:9:  profile: "focus" | "replay";
+src/spatial/export/resolveSceneExportManifest.ts:23:  mode: string | null | undefined
+src/spatial/export/resolveSceneExportManifest.ts:27:  const immersive = resolveImmersiveContractById(id, mode);
+src/spatial/export/resolveSceneExportManifest.ts:28:  const xr = resolveXRBridgeStateById(id, mode);
+src/spatial/export/resolveSceneExportManifest.ts:30:  const memory = resolveMemorySphereById(id);
+src/spatial/export/resolveSceneExportManifest.ts:34:  const profile = mode === "replay" ? "replay" : "focus";
+src/spatial/export/resolveSceneExportManifest.ts:72:    profile === "replay" ? "replay-state" : "focus-state",
+src/spatial/export/resolveSceneExportManifest.ts:77:    profile === "replay"
+src/spatial/export/SceneExportOverlay.tsx:8:  const mode = useSceneStore((s) => s.mode);
+src/spatial/export/SceneExportOverlay.tsx:9:  const selectedStar = useSceneStore((s) => s.selectedStar);
+src/spatial/export/SceneExportOverlay.tsx:12:    () => resolveSceneExportManifestById(selectedStar?.id, mode),
+src/spatial/export/SceneExportOverlay.tsx:13:    [selectedStar, mode]
+src/spatial/export/SceneExportOverlay.tsx:16:  if (!selectedStar || !manifest) return null;
+src/spatial/clustering/resolveMemoryCluster.ts:1:import { getMemoryDataset } from "@/spatial/replay/resolveReplayScene";
+src/spatial/clustering/resolveMemoryCluster.ts:2:import { resolveMemorySphereById } from "@/spatial/memory/resolveMemorySphere";
+src/spatial/clustering/resolveMemoryCluster.ts:53:  const seed = resolveMemorySphereById(id);
+src/spatial/clustering/MemoryClusterOverlay.tsx:8:  const mode = useSceneStore((s) => s.mode);
+src/spatial/clustering/MemoryClusterOverlay.tsx:9:  const selectedStar = useSceneStore((s) => s.selectedStar);
+src/spatial/clustering/MemoryClusterOverlay.tsx:12:    () => resolveMemoryClusterById(selectedStar?.id),
+src/spatial/clustering/MemoryClusterOverlay.tsx:13:    [selectedStar]
+src/spatial/clustering/MemoryClusterOverlay.tsx:16:  if (!selectedStar || !cluster) return null;
+src/spatial/clustering/MemoryClusterOverlay.tsx:17:  if (mode === "replay") return null;
+src/spatial/unity/unityRuntimePayloadSample.ts:7:  mode: "lifemap",
+src/spatial/unity/unityRuntimePayloadSample.ts:8:  selectedStar: null,
+src/spatial/unity/unityRuntimePayloadTypes.ts:10:  replayActive: boolean;
+src/spatial/unity/unityRuntimePayloadTypes.ts:11:  selectedStarId: string | null;
+src/spatial/unity/unityRuntimePayloadTypes.ts:12:  selectedStarLabel: string | null;
+src/spatial/unity/unityRuntimePayloadTypes.ts:27:    replayActive: false,
+src/spatial/unity/unityRuntimePayloadTypes.ts:28:    selectedStarId: null,
+src/spatial/unity/unityRuntimePayloadTypes.ts:29:    selectedStarLabel: null,
+src/spatial/unity/unityRuntimePayloadTypes.ts:33:      selectedStarId: null,
+src/spatial/unity/unityRuntimePayloadTypes.ts:79:      mode: "idle",
+src/spatial/unity/resolveUnityAdapterState.ts:3:import { resolveXRCameraRigStateById } from "@/spatial/xr-runtime/resolveXRCameraRigState";
+src/spatial/unity/resolveUnityAdapterState.ts:5:import { resolveMemorySphereById } from "@/spatial/memory/resolveMemorySphere";
+src/spatial/unity/resolveUnityAdapterState.ts:11:  sceneProfile: "focus" | "replay";
+src/spatial/unity/resolveUnityAdapterState.ts:12:  adapterMode: "scene-kit" | "replay-kit" | "ar-kit";
+src/spatial/unity/resolveUnityAdapterState.ts:24:  mode: string | null | undefined
+src/spatial/unity/resolveUnityAdapterState.ts:28:  const manifest = resolveSceneExportManifestById(id, mode);
+src/spatial/unity/resolveUnityAdapterState.ts:29:  const immersive = resolveImmersiveContractById(id, mode);
+src/spatial/unity/resolveUnityAdapterState.ts:30:  const rig = resolveXRCameraRigStateById(id, mode);
+src/spatial/unity/resolveUnityAdapterState.ts:31:  const ar = resolveARPlacementStateById(id, mode);
+src/spatial/unity/resolveUnityAdapterState.ts:32:  const memory = resolveMemorySphereById(id);
+src/spatial/unity/resolveUnityAdapterState.ts:36:  const sceneProfile = mode === "replay" ? "replay" : "focus";
+src/spatial/unity/resolveUnityAdapterState.ts:41:      : sceneProfile === "replay"
+src/spatial/unity/resolveUnityAdapterState.ts:42:      ? "replay-kit"
+src/spatial/unity/resolveUnityAdapterState.ts:71:      : adapterMode === "replay-kit"
+src/spatial/unity/resolveUnityAdapterState.ts:81:    adapterMode === "replay-kit" ? "replay-timeline" : "focus-state",
+src/spatial/unity/UnityAdapterOverlay.tsx:9:  const mode = useSceneStore((s) => s.mode);
+src/spatial/unity/UnityAdapterOverlay.tsx:10:  const selectedStar = useSceneStore((s) => s.selectedStar);
+src/spatial/unity/UnityAdapterOverlay.tsx:13:    () => resolveUnityAdapterStateById(selectedStar?.id, mode),
+src/spatial/unity/UnityAdapterOverlay.tsx:14:    [selectedStar, mode]
+src/spatial/unity/UnityAdapterOverlay.tsx:18:    () => exportUnityManifestById(selectedStar?.id, mode),
+src/spatial/unity/UnityAdapterOverlay.tsx:19:    [selectedStar, mode]
+src/spatial/unity/UnityAdapterOverlay.tsx:22:  if (!selectedStar || !state || !manifest) return null;
+src/spatial/unity/exportUnityManifest.ts:13:  mode: string | null | undefined
+src/spatial/unity/exportUnityManifest.ts:15:  const state = resolveUnityAdapterStateById(id, mode);
+src/spatial/unity/buildUnityRuntimePayload.ts:1:import type { SelectedStar } from "@/spatial/state/selectedStarContract";
+src/spatial/unity/buildUnityRuntimePayload.ts:12:  mode: string;
+src/spatial/unity/buildUnityRuntimePayload.ts:13:  selectedStar: SelectedStar | null;
+src/spatial/unity/buildUnityRuntimePayload.ts:24:    selectedStar: input.selectedStar,
+src/spatial/unity/buildUnityRuntimePayload.ts:25:    mode: input.mode,
+src/spatial/unity/buildUnityRuntimePayload.ts:33:    sceneMode: input.mode,
+src/spatial/unity/buildUnityRuntimePayload.ts:34:    replayActive: input.mode === "replay",
+src/spatial/unity/buildUnityRuntimePayload.ts:35:    selectedStarId: input.selectedStar?.id ?? null,
+src/spatial/unity/buildUnityRuntimePayload.ts:36:    selectedStarLabel:
+src/spatial/unity/buildUnityRuntimePayload.ts:37:      (input.selectedStar as { label?: string; title?: string } | null)?.label ??
+src/spatial/unity/buildUnityRuntimePayload.ts:38:      (input.selectedStar as { label?: string; title?: string } | null)?.title ??
+src/spatial/unity/UnityRuntimePayloadBridge.tsx:17:  const mode = useSceneStore((s) => s.mode);
+src/spatial/unity/UnityRuntimePayloadBridge.tsx:18:  const selectedStar = useSceneStore((s) => s.selectedStar);
+src/spatial/unity/UnityRuntimePayloadBridge.tsx:32:      mode,
+src/spatial/unity/UnityRuntimePayloadBridge.tsx:33:      selectedStar,
+src/spatial/unity/UnityRuntimePayloadBridge.tsx:45:    mode,
+src/spatial/unity/UnityRuntimePayloadBridge.tsx:46:    selectedStar,
+src/spatial/lineage/buildSpatialBundleLineage.ts:25:  const selectedStarChanged =
+src/spatial/lineage/buildSpatialBundleLineage.ts:26:    (from.bundle.snapshot.selectedStarId ?? null) !==
+src/spatial/lineage/buildSpatialBundleLineage.ts:27:    (to.bundle.snapshot.selectedStarId ?? null);
+src/spatial/lineage/buildSpatialBundleLineage.ts:33:    sceneModeChanged ? "scene mode changed" : "scene mode stable",
+src/spatial/lineage/buildSpatialBundleLineage.ts:34:    selectedStarChanged ? "selection changed" : "selection stable",
+src/spatial/release/spatialReleaseTypes.ts:11:  selectedStarId: string | null;
+src/spatial/xr/resolveXRBridgeState.ts:3:import { resolveMemorySphereById } from "@/spatial/memory/resolveMemorySphere";
+src/spatial/xr/resolveXRBridgeState.ts:9:  modeLabel: string;
+src/spatial/xr/resolveXRBridgeState.ts:21:  mode: string | null | undefined
+src/spatial/xr/resolveXRBridgeState.ts:27:  const memory = resolveMemorySphereById(id);
+src/spatial/xr/resolveXRBridgeState.ts:32:  const replayBoost = mode === "replay" ? 12 : 0;
+src/spatial/xr/resolveXRBridgeState.ts:34:  const readiness = clamp(base + replayBoost + intensityBoost, 0, 100);
+src/spatial/xr/resolveXRBridgeState.ts:36:  const modeLabel =
+src/spatial/xr/resolveXRBridgeState.ts:37:    mode === "replay"
+src/spatial/xr/resolveXRBridgeState.ts:47:    mode === "replay"
+src/spatial/xr/resolveXRBridgeState.ts:55:    mode === "replay" ? "cinematic replay" : "lifemap focus",
+src/spatial/xr/resolveXRBridgeState.ts:62:    modeLabel,
+src/spatial/xr/xrLocomotionTypes.ts:5:  mode: XrLocomotionMode;
+src/spatial/xr/xrLocomotionTypes.ts:18:    mode: "idle",
+src/spatial/xr/XRBridgeOverlay.tsx:8:  const mode = useSceneStore((s) => s.mode);
+src/spatial/xr/XRBridgeOverlay.tsx:9:  const selectedStar = useSceneStore((s) => s.selectedStar);
+src/spatial/xr/XRBridgeOverlay.tsx:12:    () => resolveXRBridgeStateById(selectedStar?.id, mode),
+src/spatial/xr/XRBridgeOverlay.tsx:13:    [selectedStar, mode]
+src/spatial/xr/XRBridgeOverlay.tsx:16:  if (!selectedStar || !xr) return null;
+src/spatial/xr/XRBridgeOverlay.tsx:45:        {xr.modeLabel}
+src/spatial/xr/XrLocomotionRuntime.tsx:69:    a.mode === b.mode &&
+src/spatial/xr/XrLocomotionRuntime.tsx:83:  const mode = useSceneStore((s) => s.mode);
+src/spatial/xr/XrLocomotionRuntime.tsx:111:    if (mode === "replay") return;
+src/spatial/xr/XrLocomotionRuntime.tsx:129:      mode:
+src/spatial/ui/SpatialCuratedDeckDiffPanel.tsx:90:          label="scene mode shifts"
+src/spatial/ui/SpatialCuratedDeckDiffPanel.tsx:95:          value={diff ? String(diff.selectedStarShiftCount) : "n/a"}
+src/spatial/ui/SpatialComparePanel.tsx:90:        scene mode changed: {latestSet ? (latestSet.summary.sceneModeChanged ? "yes" : "no") : "n/a"}
+src/spatial/ui/SpatialComparePanel.tsx:93:        selected star changed: {latestSet ? (latestSet.summary.selectedStarChanged ? "yes" : "no") : "n/a"}
+src/spatial/ui/SpatialCuratedDeckChangeLedgerPanel.tsx:104:                  <MetricChip label="star" value={String(row.selectedStarShiftCount)} />
+src/spatial/ui/SpatialReleasePanel.tsx:17:  const mode = useSceneStore((s) => s.mode);
+src/spatial/ui/SpatialReleasePanel.tsx:18:  const selectedStar = useSceneStore((s) => s.selectedStar);
+src/spatial/ui/SpatialReleasePanel.tsx:42:      sceneMode: mode,
+src/spatial/ui/SpatialReleasePanel.tsx:43:      selectedStarId: selectedStar?.id ?? null,
+src/spatial/ui/SpatialStoryReviewDeckPanel.tsx:97:          star: {activeCard?.selectedStarId ?? "none"}
+src/spatial/ui/SpatialCuratedDeckExportPanel.tsx:72:          `Selected star: ${card.selectedStarId ?? "none"}\n` +
+src/spatial/ui/SpatialCuratedDeckDriftPanel.tsx:86:        <MetricChip label="star" value={String(drift.selectedStarShiftTotal)} />
+src/spatial/ui/SpatialCuratedDeckDriftPanel.tsx:129:        <MetricChip label="star" value={String(step.selectedStarShiftCount)} />
+src/spatial/ui/SpatialCuratedDeckReopenWatchPanel.tsx:86:        <MetricChip label="mode" value={reopenWatch.watchMode} />
+src/spatial/ui/SpatialCuratedDeckRetentionHorizonPanel.tsx:13:  const horizon = useMemo(
+src/spatial/ui/SpatialCuratedDeckRetentionHorizonPanel.tsx:19:    () => horizon.checkpoints.filter((checkpoint) => checkpoint.required).slice(0, 4),
+src/spatial/ui/SpatialCuratedDeckRetentionHorizonPanel.tsx:20:    [horizon.checkpoints],
+src/spatial/ui/SpatialCuratedDeckRetentionHorizonPanel.tsx:55:          {horizon.horizonScore}
+src/spatial/ui/SpatialCuratedDeckRetentionHorizonPanel.tsx:58:          {horizon.storageHorizon}
+src/spatial/ui/SpatialCuratedDeckRetentionHorizonPanel.tsx:70:        {horizon.operatorText}
+src/spatial/ui/SpatialCuratedDeckRetentionHorizonPanel.tsx:82:        {horizon.summaryText}
+src/spatial/ui/SpatialCuratedDeckRetentionHorizonPanel.tsx:86:        <MetricChip label="expiry" value={horizon.expiryBand} />
+src/spatial/ui/SpatialCuratedDeckRetentionHorizonPanel.tsx:87:        <MetricChip label="window" value={horizon.retentionWindow} />
+src/spatial/ui/SpatialCuratedDeckRetentionHorizonPanel.tsx:93:            No active retention-horizon checkpoints for the selected curated deck vault entry.
+src/spatial/ui/SpatialCuratedDeckRetentionHorizonPanel.tsx:128:          horizon checkpoint
+src/spatial/ui/SpatialCuratedDeckRetentionHorizonPanel.tsx:130:        <span style={{ opacity: 0.72 }}>{input.checkpoint.horizon}</span>
+src/spatial/ui/SpatialTimelineLensPanel.tsx:75:        focus: {activeLens ? activeLens.focus : "n/a"}
+src/spatial/ui/SpatialCuratedDeckIncidentResponsePanel.tsx:94:        <MetricChip label="mode" value={incident.responseMode} />
+src/spatial/ui/SpatialCuratedDeckImportPanel.tsx:171:              `Selected star: ${activeCard.selectedStarId ?? "none"}`,
+src/spatial/ui/SpatialCuratedDeckNeighborDiffPanel.tsx:125:          value={diff ? String(diff.selectedStarShiftCount) : "n/a"}
+src/spatial/ui/SpatialCuratedDeckStabilityPanel.tsx:80:        <MetricChip label="star" value={String(stability.selectedStarShiftTotal)} />
+src/spatial/ui/SpatialCuratedDeckAnchorPanel.tsx:124:        <MetricChip label="star" value={diff ? String(diff.selectedStarShiftCount) : "n/a"} />
+src/spatial/ui/SpatialStoryBundleDiffPanel.tsx:93:          label="scene mode changed"
+src/spatial/ui/SpatialStoryBundleDiffPanel.tsx:98:          value={diff ? (diff.selectedStarChanged ? "yes" : "no") : "n/a"}
+src/spatial/data-import/MemoryImportOverlay.tsx:9:  const selectedStar = useSceneStore((s) => s.selectedStar);
+src/spatial/data-import/MemoryImportOverlay.tsx:12:    () => resolveMemoryImportStateById(selectedStar?.id),
+src/spatial/data-import/MemoryImportOverlay.tsx:13:    [selectedStar]
+src/spatial/data-import/MemoryImportOverlay.tsx:21:  if (!selectedStar || !state) return null;
+src/spatial/data-import/resolveMemoryImportState.ts:2:import { resolveMemorySphereById } from "@/spatial/memory/resolveMemorySphere";
+src/spatial/data-import/resolveMemoryImportState.ts:18:  const memory = resolveMemorySphereById(id);
+src/spatial/data-import/buildMemoryImportReport.ts:1:import { getMemoryDataset } from "@/spatial/replay/resolveReplayScene";
+src/spatial/core/SceneController.tsx:6:export default function SceneController() {
+src/spatial/core/SceneController.tsx:7:  const { mode, setMode } = useSceneStore();
+src/spatial/core/SceneController.tsx:13:      if (mode === "home") {
+src/spatial/core/SceneController.tsx:15:      } else if (mode === "lifemap") {
+src/spatial/core/SceneController.tsx:17:      } else if (mode === "focus") {
+src/spatial/core/SceneController.tsx:18:        useSceneStore.setState({ selectedStar: null });
+src/spatial/core/SceneController.tsx:19:        setMode("lifemap");
+src/spatial/core/SceneController.tsx:25:  }, [mode, setMode]);
+src/spatial/replay/replayConstants.ts:2:export const REPLAY_OVERLAY_HOST_ID = "urai-replay-overlay-root";
+src/spatial/replay/ReplayOverlay.tsx:5:import { REPLAY_STEP_MS } from "./replayConstants";
+src/spatial/replay/ReplayOverlay.tsx:6:import { buildReplaySteps, getReplayGlow, getReplayMeta } from "./replayModel";
+src/spatial/replay/ReplayOverlay.tsx:15:const replayPillWrapStyle: React.CSSProperties = {
+src/spatial/replay/ReplayOverlay.tsx:102:const bodyStyle: React.CSSProperties = {
+src/spatial/replay/ReplayOverlay.tsx:188:  const mode = useSceneStore((s) => s.mode);
+src/spatial/replay/ReplayOverlay.tsx:189:  const selectedStar = useSceneStore((s) => s.selectedStar);
+src/spatial/replay/ReplayOverlay.tsx:195:  const steps = useMemo(() => buildReplaySteps(selectedStar), [selectedStar]);
+src/spatial/replay/ReplayOverlay.tsx:196:  const glow = useMemo(() => getReplayGlow(selectedStar), [selectedStar]);
+src/spatial/replay/ReplayOverlay.tsx:197:  const meta = useMemo(() => getReplayMeta(selectedStar), [selectedStar]);
+src/spatial/replay/ReplayOverlay.tsx:205:  }, [selectedStar?.id, mode]);
+src/spatial/replay/ReplayOverlay.tsx:209:      if (e.key === "Escape" && mode === "replay") {
+src/spatial/replay/ReplayOverlay.tsx:214:      if ((e.key === "r" || e.key === "R") && mode === "focus" && selectedStar) {
+src/spatial/replay/ReplayOverlay.tsx:219:      if (mode !== "replay") return;
+src/spatial/replay/ReplayOverlay.tsx:241:  }, [mode, selectedStar, enterReplay, exitReplayToFocus, steps.length]);
+src/spatial/replay/ReplayOverlay.tsx:244:    if (mode !== "replay" || !playing || steps.length <= 1) return;
+src/spatial/replay/ReplayOverlay.tsx:249:  }, [mode, playing, steps.length]);
+src/spatial/replay/ReplayOverlay.tsx:251:  if (!selectedStar) return null;
+src/spatial/replay/ReplayOverlay.tsx:253:  if (mode === "focus") {
+src/spatial/replay/ReplayOverlay.tsx:256:        <div style={replayPillWrapStyle}>
+src/spatial/replay/ReplayOverlay.tsx:269:  if (mode !== "replay") return null;
+src/spatial/replay/ReplayOverlay.tsx:296:                    background: idx <= stepIndex ? glow : "rgba(255,255,255,0.10)",
+src/spatial/replay/ReplayOverlay.tsx:298:                    boxShadow: idx === stepIndex ? `0 0 22px ${glow}` : "none",
+src/spatial/replay/ReplayOverlay.tsx:306:          <div style={bodyStyle}>
+src/spatial/replay/ReplayOverlay.tsx:311:                  background: `radial-gradient(circle at 50% 32%, ${glow}36, rgba(0,0,0,0) 42%)`,
+src/spatial/replay/ReplayOverlay.tsx:341:                    color: glow,
+src/spatial/replay/ReplayOverlay.tsx:342:                    textShadow: `0 0 34px ${glow}44`,
+src/spatial/replay/ReplayOverlay.tsx:358:                  {step?.body}
+src/spatial/replay/ReplayOverlay.tsx:364:              <span>R from focus opens replay</span>
+src/spatial/replay/ReplayOverlay.tsx:370:              <span>Esc back to focus</span>
+src/spatial/replay/PHASE7_TODO.md:4:Bind replay to canonical memory data.
+src/spatial/replay/PHASE7_TODO.md:8:- selectedStar -> memory node -> replay scene contract created
+src/spatial/replay/PHASE7_TODO.md:10:- fallback replay path remains safe
+src/spatial/replay/PHASE7_TODO.md:13:- wire SpatialScene / replay UI to resolveReplaySceneFromSelectedStar(selectedStar)
+src/spatial/replay/PHASE7_TODO.md:14:- remove hard-coded placeholder replay copy
+src/spatial/replay/ReplayContractOverlay.tsx:5:import { resolveReplaySceneFromSelectedStar } from "@/spatial/replay/resolveReplayScene";
+src/spatial/replay/ReplayContractOverlay.tsx:7:import type { SelectedStar } from "@/spatial/state/selectedStarContract";
+src/spatial/replay/ReplayContractOverlay.tsx:15:  const mode = useSceneStore((s) => s.mode);
+src/spatial/replay/ReplayContractOverlay.tsx:16:  const selectedStar = useSceneStore((s) => s.selectedStar);
+src/spatial/replay/ReplayContractOverlay.tsx:18:  const replay = useMemo(
+src/spatial/replay/ReplayContractOverlay.tsx:19:    () => resolveReplaySceneFromSelectedStar(selectedStar as LooseRecord | null | undefined),
+src/spatial/replay/ReplayContractOverlay.tsx:20:    [selectedStar]
+src/spatial/replay/ReplayContractOverlay.tsx:23:  if (mode !== "replay" || !selectedStar || !replay) return null;
+src/spatial/replay/ReplayContractOverlay.tsx:26:    str(replay.title) ??
+src/spatial/replay/ReplayContractOverlay.tsx:27:    str(replay.label) ??
+src/spatial/replay/ReplayContractOverlay.tsx:28:    str((selectedStar as LooseRecord).title) ??
+src/spatial/replay/ReplayContractOverlay.tsx:29:    str((selectedStar as LooseRecord).label) ??
+src/spatial/replay/ReplayContractOverlay.tsx:32:  const subtitleParts = [str(replay.chapter), str(replay.timeband)].filter(
+src/spatial/replay/ReplayContractOverlay.tsx:37:    str(replay.subtitle) ??
+src/spatial/replay/ReplayContractOverlay.tsx:38:    (subtitleParts.length > 0 ? subtitleParts.join(" · ") : "Canonical replay");
+src/spatial/replay/ReplayContractOverlay.tsx:41:    str(replay.description) ??
+src/spatial/replay/ReplayContractOverlay.tsx:42:    str(replay.summary) ??
+src/spatial/replay/ReplayContractOverlay.tsx:46:    str(replay.color) ??
+src/spatial/replay/ReplayContractOverlay.tsx:47:    str((selectedStar as LooseRecord).color) ??
+src/spatial/replay/ReplayContractOverlay.tsx:51:    str(replay.chapter),
+src/spatial/replay/ReplayContractOverlay.tsx:52:    str(replay.timeband),
+src/spatial/replay/ReplayContractOverlay.tsx:53:    str(replay.emotion),
+src/spatial/replay/ReplayContractOverlay.tsx:54:    str(replay.nodeId),
+src/spatial/replay/replayModel.ts:1:import type { SelectedStar } from "../state/selectedStarContract";
+src/spatial/replay/replayModel.ts:7:  body: string;
+src/spatial/replay/replayModel.ts:11:  selectedStar: SelectedStar | null
+src/spatial/replay/replayModel.ts:13:  if (!selectedStar) return [];
+src/spatial/replay/replayModel.ts:19:      title: selectedStar.title,
+src/spatial/replay/replayModel.ts:20:      body: selectedStar.label,
+src/spatial/replay/replayModel.ts:25:      title: selectedStar.signature,
+src/spatial/replay/replayModel.ts:26:      body: `${selectedStar.chapter} • ${selectedStar.timeband}`,
+src/spatial/replay/replayModel.ts:32:      body: "Esc or Back to Focus returns to the selected star.",
+src/spatial/replay/replayModel.ts:37:export function getReplayGlow(selectedStar: SelectedStar | null) {
+src/spatial/replay/replayModel.ts:38:  return selectedStar?.color || "#ffffff";
+src/spatial/replay/replayModel.ts:41:export function getReplayMeta(selectedStar: SelectedStar | null) {
+src/spatial/replay/replayModel.ts:42:  if (!selectedStar) return [];
+src/spatial/replay/replayModel.ts:44:    selectedStar.chapter,
+src/spatial/replay/replayModel.ts:45:    selectedStar.timeband,
+src/spatial/replay/replayModel.ts:46:    selectedStar.signature,
+src/spatial/replay/resolveReplayScene.ts:47:  const replay = raw.replayScene as ReplayScene | undefined;
+src/spatial/replay/resolveReplayScene.ts:48:  if (replay) return replay;
+src/spatial/replay/resolveReplayScene.ts:61:    id: firstString(raw.id, "replay"),
+src/spatial/replay/resolveReplayScene.ts:94:  selectedStar: SelectedStarLike
+src/spatial/replay/resolveReplayScene.ts:96:  const id = selectedStar?.id ?? undefined;
+src/spatial/replay/resolveReplayScene.ts:100:  if (!selectedStar) return undefined;
+src/spatial/replay/resolveReplayScene.ts:103:    id: firstString(selectedStar.id, "replay-fallback"),
+src/spatial/replay/resolveReplayScene.ts:104:    title: firstString(selectedStar.title, selectedStar.label, "Memory Replay"),
+src/spatial/replay/resolveReplayScene.ts:105:    subtitle: firstString(selectedStar.chapter, selectedStar.timeband),
+src/spatial/replay/resolveReplayScene.ts:107:    chapter: firstString(selectedStar.chapter),
+src/spatial/replay/resolveReplayScene.ts:108:    timeband: firstString(selectedStar.timeband),
+src/spatial/replay/resolveReplayScene.ts:109:    color: firstString(selectedStar.color),
+src/spatial/replay/resolveReplayScene.ts:110:    nodeId: firstString(selectedStar.id),
+src/spatial/intelligence/LifeMapIntelligenceOverlay.tsx:8:  const mode = useSceneStore((s) => s.mode);
+src/spatial/intelligence/LifeMapIntelligenceOverlay.tsx:9:  const selectedStar = useSceneStore((s) => s.selectedStar);
+src/spatial/intelligence/LifeMapIntelligenceOverlay.tsx:12:    () => resolveLifeMapIntelligenceById(selectedStar?.id),
+src/spatial/intelligence/LifeMapIntelligenceOverlay.tsx:13:    [selectedStar]
+src/spatial/intelligence/LifeMapIntelligenceOverlay.tsx:16:  if (!selectedStar || !intel) return null;
+src/spatial/intelligence/LifeMapIntelligenceOverlay.tsx:17:  if (mode === "replay") return null;
+src/spatial/intelligence/resolveLifeMapIntelligence.ts:1:import { resolveMemorySphereById } from "@/spatial/memory/resolveMemorySphere";
+src/spatial/intelligence/resolveLifeMapIntelligence.ts:30:  const memory = resolveMemorySphereById(id);
+src/spatial/narrative/resolveNarrativeReplay.ts:1:import { resolveReplaySceneById } from "@/spatial/replay/resolveReplayScene";
+src/spatial/narrative/resolveNarrativeReplay.ts:2:import { resolveMemorySphereById } from "@/spatial/memory/resolveMemorySphere";
+src/spatial/narrative/resolveNarrativeReplay.ts:25:  const replay = resolveReplaySceneById(id) as LooseRecord | undefined;
+src/spatial/narrative/resolveNarrativeReplay.ts:26:  const memory = resolveMemorySphereById(id);
+src/spatial/narrative/resolveNarrativeReplay.ts:28:  if (!replay && !memory) return undefined;
+src/spatial/narrative/resolveNarrativeReplay.ts:31:    str(replay?.title) ??
+src/spatial/narrative/resolveNarrativeReplay.ts:40:    str(replay?.subtitle) ??
+src/spatial/narrative/resolveNarrativeReplay.ts:41:    (kickerParts.length > 0 ? kickerParts.join(" · ") : "Canonical replay");
+src/spatial/narrative/resolveNarrativeReplay.ts:44:    str(replay?.description) ??
+src/spatial/narrative/resolveNarrativeReplay.ts:46:    "This replay is now resolving from the real memory contract.";
+src/spatial/narrative/resolveNarrativeReplay.ts:48:  const emotion = memory?.emotion ?? str(replay?.emotion);
+src/spatial/narrative/resolveNarrativeReplay.ts:49:  const chapter = memory?.chapter ?? str(replay?.chapter);
+src/spatial/narrative/resolveNarrativeReplay.ts:50:  const timeband = memory?.timeband ?? str(replay?.timeband);
+src/spatial/narrative/resolveNarrativeReplay.ts:80:    tone: memory?.color ?? str(replay?.color),
+src/spatial/narrative/NarrativeReplayOverlay.tsx:8:  const mode = useSceneStore((s) => s.mode);
+src/spatial/narrative/NarrativeReplayOverlay.tsx:9:  const selectedStar = useSceneStore((s) => s.selectedStar);
+src/spatial/narrative/NarrativeReplayOverlay.tsx:12:    () => resolveNarrativeReplayById(selectedStar?.id),
+src/spatial/narrative/NarrativeReplayOverlay.tsx:13:    [selectedStar]
+src/spatial/narrative/NarrativeReplayOverlay.tsx:16:  if (mode !== "replay" || !selectedStar || !narrative) return null;
+src/spatial/xr-runtime/resolveXRCameraRigState.ts:4:import { resolveMemorySphereById } from "@/spatial/memory/resolveMemorySphere";
+src/spatial/xr-runtime/resolveXRCameraRigState.ts:6:export type XRCameraRigState = {
+src/spatial/xr-runtime/resolveXRCameraRigState.ts:9:  profile: "focus" | "replay";
+src/spatial/xr-runtime/resolveXRCameraRigState.ts:23:export function resolveXRCameraRigStateById(
+src/spatial/xr-runtime/resolveXRCameraRigState.ts:25:  mode: string | null | undefined
+src/spatial/xr-runtime/resolveXRCameraRigState.ts:26:): XRCameraRigState | undefined {
+src/spatial/xr-runtime/resolveXRCameraRigState.ts:29:  const xr = resolveWebXREntryStateById(id, mode);
+src/spatial/xr-runtime/resolveXRCameraRigState.ts:30:  const manifest = resolveSceneExportManifestById(id, mode);
+src/spatial/xr-runtime/resolveXRCameraRigState.ts:31:  const immersive = resolveImmersiveContractById(id, mode);
+src/spatial/xr-runtime/resolveXRCameraRigState.ts:32:  const memory = resolveMemorySphereById(id);
+src/spatial/xr-runtime/resolveXRCameraRigState.ts:36:  const profile = mode === "replay" ? "replay" : "focus";
+src/spatial/xr-runtime/resolveXRCameraRigState.ts:38:    mode === "replay"
+src/spatial/xr-runtime/resolveXRCameraRigState.ts:67:      ? "lock camera to local anchor and keep horizon stable"
+src/spatial/xr-runtime/resolveXRCameraRigState.ts:69:      ? "hold near subject, tighten depth, preserve replay framing"
+src/spatial/xr-runtime/resolveXRCameraRigState.ts:70:      : "allow slow spatial drift around focus node";
+src/spatial/xr-runtime/resolveXRCameraRigState.ts:73:    profile === "replay"
+src/spatial/xr-runtime/resolveXRCameraRigState.ts:75:      : "favor soft orbit and memory-adjacent discovery";
+src/spatial/xr-runtime/resolveXRCameraRigState.ts:88:    "focus-depth",
+src/spatial/xr-runtime/resolveXRCameraRigState.ts:89:    profile === "replay" ? "replay-presence" : "lifemap-presence",
+src/spatial/xr-runtime/XRCameraRigOverlay.tsx:5:import { resolveXRCameraRigStateById } from "@/spatial/xr-runtime/resolveXRCameraRigState";
+src/spatial/xr-runtime/XRCameraRigOverlay.tsx:7:export default function XRCameraRigOverlay() {
+src/spatial/xr-runtime/XRCameraRigOverlay.tsx:8:  const mode = useSceneStore((s) => s.mode);
+src/spatial/xr-runtime/XRCameraRigOverlay.tsx:9:  const selectedStar = useSceneStore((s) => s.selectedStar);
+src/spatial/xr-runtime/XRCameraRigOverlay.tsx:12:    () => resolveXRCameraRigStateById(selectedStar?.id, mode),
+src/spatial/xr-runtime/XRCameraRigOverlay.tsx:13:    [selectedStar, mode]
+src/spatial/xr-runtime/XRCameraRigOverlay.tsx:16:  if (!selectedStar || !rig) return null;
+src/spatial/curation/spatialCuratedDeckChangeLedgerTypes.ts:9:  selectedStarShiftCount: number;
+src/spatial/curation/buildSpatialCuratedDeckStability.ts:27:  penalty += Math.min(20, diff.selectedStarShiftCount * 4);
+src/spatial/curation/buildSpatialCuratedDeckStability.ts:65:      selectedStarShiftTotal: 0,
+src/spatial/curation/buildSpatialCuratedDeckStability.ts:106:  const selectedStarShiftTotal =
+src/spatial/curation/buildSpatialCuratedDeckStability.ts:107:    (previousDiff?.selectedStarShiftCount ?? 0) +
+src/spatial/curation/buildSpatialCuratedDeckStability.ts:108:    (nextDiff?.selectedStarShiftCount ?? 0);
+src/spatial/curation/buildSpatialCuratedDeckStability.ts:129:    `star shifts ${selectedStarShiftTotal}`,
+src/spatial/curation/buildSpatialCuratedDeckStability.ts:144:    selectedStarShiftTotal,
+src/spatial/curation/buildSpatialCuratedDeckChangeLedger.ts:22:    selectedStarShiftCount: diff.selectedStarShiftCount,
+src/spatial/curation/spatialCuratedDeckDiffTypes.ts:10:  selectedStarShiftCount: number;
+src/spatial/curation/buildSpatialCuratedDeckAnomaly.ts:79:        drift.selectedStarShiftTotal > 0 &&
+src/spatial/curation/buildSpatialCuratedDeckDiff.ts:29:    if ((baseCards[i]?.selectedStarId ?? null) !== (targetCards[i]?.selectedStarId ?? null)) {
+src/spatial/curation/buildSpatialCuratedDeckDiff.ts:50:  const selectedStarShiftCount = countSelectedStarShifts(baseDeck.cards, targetDeck.cards);
+src/spatial/curation/buildSpatialCuratedDeckDiff.ts:57:    `scene mode shifts ${sceneModeShiftCount}`,
+src/spatial/curation/buildSpatialCuratedDeckDiff.ts:58:    `selected star shifts ${selectedStarShiftCount}`,
+src/spatial/curation/buildSpatialCuratedDeckDiff.ts:70:    selectedStarShiftCount,
+src/spatial/curation/buildSpatialCuratedDeckRetentionHorizon.ts:27:  horizon: "hot" | "warm" | "cold",
+src/spatial/curation/buildSpatialCuratedDeckRetentionHorizon.ts:29:  switch (horizon) {
+src/spatial/curation/buildSpatialCuratedDeckRetentionHorizon.ts:42:  horizon: "hot" | "warm" | "cold",
+src/spatial/curation/buildSpatialCuratedDeckRetentionHorizon.ts:44:  switch (horizon) {
+src/spatial/curation/buildSpatialCuratedDeckRetentionHorizon.ts:61:  return `Run ${input.storageHorizon} retention horizon · expiry ${input.expiryBand} · window ${input.retentionWindow}.`;
+src/spatial/curation/buildSpatialCuratedDeckRetentionHorizon.ts:72:  let horizonScore = 0;
+src/spatial/curation/buildSpatialCuratedDeckRetentionHorizon.ts:73:  horizonScore += Math.round(lifecycle.retentionScore * 0.50);
+src/spatial/curation/buildSpatialCuratedDeckRetentionHorizon.ts:74:  horizonScore += Math.round((100 - reopenWatch.reopenScore) * 0.30);
+src/spatial/curation/buildSpatialCuratedDeckRetentionHorizon.ts:75:  horizonScore += Math.round(archiveDisposition.dispositionScore * 0.20);
+src/spatial/curation/buildSpatialCuratedDeckRetentionHorizon.ts:76:  horizonScore = clamp(horizonScore, 0, 100);
+src/spatial/curation/buildSpatialCuratedDeckRetentionHorizon.ts:78:  const storageHorizon = toStorageHorizon(horizonScore);
+src/spatial/curation/buildSpatialCuratedDeckRetentionHorizon.ts:89:      id: "confirm-horizon",
+src/spatial/curation/buildSpatialCuratedDeckRetentionHorizon.ts:90:      label: "confirm storage horizon against retention lifecycle",
+src/spatial/curation/buildSpatialCuratedDeckRetentionHorizon.ts:91:      horizon: storageHorizon === "hot" ? "near" : storageHorizon === "warm" ? "mid" : "far",
+src/spatial/curation/buildSpatialCuratedDeckRetentionHorizon.ts:96:      label: "recheck reopen-watch state before horizon roll-forward",
+src/spatial/curation/buildSpatialCuratedDeckRetentionHorizon.ts:97:      horizon: storageHorizon === "cold" ? "far" : "mid",
+src/spatial/curation/buildSpatialCuratedDeckRetentionHorizon.ts:103:      horizon: storageHorizon === "cold" ? "far" : "mid",
+src/spatial/curation/buildSpatialCuratedDeckRetentionHorizon.ts:109:      horizon: storageHorizon === "hot" ? "near" : storageHorizon === "warm" ? "mid" : "far",
+src/spatial/curation/buildSpatialCuratedDeckRetentionHorizon.ts:117:    `horizon ${horizonScore}`,
+src/spatial/curation/buildSpatialCuratedDeckRetentionHorizon.ts:128:    schema: "urai.spatial.curated-deck-retention-horizon.v1",
+src/spatial/curation/buildSpatialCuratedDeckRetentionHorizon.ts:131:    horizonScore,
+src/spatial/curation/buildSpatialCuratedDeckPurgeReadiness.ts:52:  const horizon = buildSpatialCuratedDeckRetentionHorizon(input);
+src/spatial/curation/buildSpatialCuratedDeckPurgeReadiness.ts:58:  purgeScore += Math.round(horizon.horizonScore * 0.25)
+src/spatial/curation/buildSpatialCuratedDeckPurgeReadiness.ts:68:    horizon.storageHorizon === "cold" &&
+src/spatial/curation/buildSpatialCuratedDeckPurgeReadiness.ts:85:      id: "cold-horizon",
+src/spatial/curation/buildSpatialCuratedDeckPurgeReadiness.ts:86:      label: "retention horizon is cold with long window",
+src/spatial/curation/buildSpatialCuratedDeckPurgeReadiness.ts:88:        horizon.storageHorizon === "cold"
+src/spatial/curation/buildSpatialCuratedDeckPurgeReadiness.ts:90:          : horizon.storageHorizon === "warm"
+src/spatial/curation/buildSpatialCuratedDeckPurgeReadiness.ts:135:    `horizon ${horizon.storageHorizon}`,
+src/spatial/curation/spatialCuratedDeckExportTypes.ts:7:  selectedStarId: string | null;
+src/spatial/curation/buildSpatialCuratedDeckReopenWatch.ts:61:  return `Run ${input.reopenState} reopen watch · mode ${input.watchMode} · path ${input.reentryPath}.`;
+src/spatial/curation/buildSpatialCuratedDeckReopenWatch.ts:145:    `mode ${watchMode}`,
+src/spatial/curation/spatialCuratedDeckStabilityTypes.ts:15:  selectedStarShiftTotal: number;
+src/spatial/curation/buildSpatialCuratedDeckDrift.ts:44:      selectedStarShiftTotal: 0,
+src/spatial/curation/buildSpatialCuratedDeckDrift.ts:71:      selectedStarShiftTotal: 0,
+src/spatial/curation/buildSpatialCuratedDeckDrift.ts:111:      selectedStarShiftCount: diff.selectedStarShiftCount,
+src/spatial/curation/buildSpatialCuratedDeckDrift.ts:133:  const selectedStarShiftTotal = steps.reduce(
+src/spatial/curation/buildSpatialCuratedDeckDrift.ts:134:    (sum, step) => sum + step.selectedStarShiftCount,
+src/spatial/curation/buildSpatialCuratedDeckDrift.ts:147:    Math.min(24, selectedStarShiftTotal * 4) +
+src/spatial/curation/buildSpatialCuratedDeckDrift.ts:160:    `star shifts ${selectedStarShiftTotal}`,
+src/spatial/curation/buildSpatialCuratedDeckDrift.ts:175:    selectedStarShiftTotal,
+src/spatial/curation/buildSpatialCuratedDeckExport.ts:18:    selectedStarId: input.entry.bundle.snapshot.selectedStarId ?? null,
+src/spatial/curation/buildSpatialCuratedDeckExport.ts:49:        `${index + 1}. ${card.label} · ${card.sceneMode} · ${card.selectedStarId ?? "no-star"}`,
+src/spatial/curation/buildSpatialCuratedDeckIncidentResponse.ts:43:  mode: "observe" | "contain" | "escalate",
+src/spatial/curation/buildSpatialCuratedDeckIncidentResponse.ts:45:  switch (mode) {
+src/spatial/curation/buildSpatialCuratedDeckIncidentResponse.ts:62:  return `Run ${input.incidentBand} response · mode ${input.responseMode} · playbook ${input.playbook}.`;
+src/spatial/curation/buildSpatialCuratedDeckIncidentResponse.ts:175:    `mode ${responseMode}`,
+src/spatial/curation/spatialCuratedDeckDriftTypes.ts:8:  selectedStarShiftCount: number;
+src/spatial/curation/spatialCuratedDeckDriftTypes.ts:26:  selectedStarShiftTotal: number;
+src/spatial/curation/spatialCuratedDeckRetentionHorizonTypes.ts:4:  horizon: "near" | "mid" | "far";
+src/spatial/curation/spatialCuratedDeckRetentionHorizonTypes.ts:9:  schema: "urai.spatial.curated-deck-retention-horizon.v1";
+src/spatial/curation/spatialCuratedDeckRetentionHorizonTypes.ts:12:  horizonScore: number;
+src/spatial/curation/spatialCurationBoardTypes.ts:48:  mode?: string;
+src/spatial/xr-renderer/WebXRRendererHandoffOverlay.tsx:8:  const mode = useSceneStore((s) => s.mode);
+src/spatial/xr-renderer/WebXRRendererHandoffOverlay.tsx:9:  const selectedStar = useSceneStore((s) => s.selectedStar);
+src/spatial/xr-renderer/WebXRRendererHandoffOverlay.tsx:12:    () => resolveWebXRRendererHandoffById(selectedStar?.id, mode),
+src/spatial/xr-renderer/WebXRRendererHandoffOverlay.tsx:13:    [selectedStar, mode]
+src/spatial/xr-renderer/WebXRRendererHandoffOverlay.tsx:16:  if (!selectedStar || !state) return null;
+src/spatial/xr-renderer/resolveWebXRRendererHandoff.ts:2:import { resolveXRCameraRigStateById } from "@/spatial/xr-runtime/resolveXRCameraRigState";
+src/spatial/xr-renderer/resolveWebXRRendererHandoff.ts:10:  runtimeMode: "focus" | "replay";
+src/spatial/xr-renderer/resolveWebXRRendererHandoff.ts:25:  mode: string | null | undefined
+src/spatial/xr-renderer/resolveWebXRRendererHandoff.ts:29:  const webxr = resolveWebXREntryStateById(id, mode);
+src/spatial/xr-renderer/resolveWebXRRendererHandoff.ts:30:  const rig = resolveXRCameraRigStateById(id, mode);
+src/spatial/xr-renderer/resolveWebXRRendererHandoff.ts:31:  const input = resolveXRInputStateById(id, mode);
+src/spatial/xr-renderer/resolveWebXRRendererHandoff.ts:32:  const traversal = resolveImmersiveReplayTraversalById(id, mode);
+src/spatial/xr-renderer/resolveWebXRRendererHandoff.ts:33:  const narrator = resolveNarratorOrchestrationById(id, mode);
+src/spatial/xr-renderer/resolveWebXRRendererHandoff.ts:37:  const runtimeMode = mode === "replay" ? "replay" : "focus";
+src/spatial/xr-renderer/resolveWebXRRendererHandoff.ts:57:    runtimeMode === "replay"
+src/spatial/xr-renderer/resolveWebXRRendererHandoff.ts:58:      ? "xr-replay-renderer"
+src/spatial/xr-renderer/resolveWebXRRendererHandoff.ts:59:      : "xr-focus-renderer";
+src/spatial/xr-renderer/resolveWebXRRendererHandoff.ts:69:    runtimeMode === "replay" ? "replay-traversal-bind" : "focus-traversal-bind",
+src/spatial/xr-renderer/resolveWebXRRendererHandoff.ts:82:    title: `WebXR Renderer Handoff ${runtimeMode === "replay" ? "Replay" : "Focus"}`,
+src/spatial/traversal/resolveImmersiveReplayTraversal.ts:16:  modeLabel: string;
+src/spatial/traversal/resolveImmersiveReplayTraversal.ts:29:  mode: string | null | undefined
+src/spatial/traversal/resolveImmersiveReplayTraversal.ts:36:  const unity = resolveUnityAdapterStateById(id, mode);
+src/spatial/traversal/resolveImmersiveReplayTraversal.ts:37:  const input = resolveXRInputStateById(id, mode);
+src/spatial/traversal/resolveImmersiveReplayTraversal.ts:46:      (mode === "replay" ? 12 : 0)
+src/spatial/traversal/resolveImmersiveReplayTraversal.ts:57:  const modeLabel = mode === "replay" ? "Replay Traversal" : "Focus Traversal";
+src/spatial/traversal/resolveImmersiveReplayTraversal.ts:60:    mode === "replay"
+src/spatial/traversal/resolveImmersiveReplayTraversal.ts:62:      : "focus → cluster → orbit → return";
+src/spatial/traversal/resolveImmersiveReplayTraversal.ts:65:    mode === "replay"
+src/spatial/traversal/resolveImmersiveReplayTraversal.ts:66:      ? "Advance through the replay path in short anchored steps and keep narrative framing stable."
+src/spatial/traversal/resolveImmersiveReplayTraversal.ts:67:      : "Traverse outward from the focus node, inspect adjacency, then collapse back to anchor.";
+src/spatial/traversal/resolveImmersiveReplayTraversal.ts:87:      detail: input?.primaryAction ?? "focus advance",
+src/spatial/traversal/resolveImmersiveReplayTraversal.ts:100:    modeLabel,
+src/spatial/traversal/ImmersiveReplayTraversalOverlay.tsx:8:  const mode = useSceneStore((s) => s.mode);
+src/spatial/traversal/ImmersiveReplayTraversalOverlay.tsx:9:  const selectedStar = useSceneStore((s) => s.selectedStar);
+src/spatial/traversal/ImmersiveReplayTraversalOverlay.tsx:12:    () => resolveImmersiveReplayTraversalById(selectedStar?.id, mode),
+src/spatial/traversal/ImmersiveReplayTraversalOverlay.tsx:13:    [selectedStar, mode]
+src/spatial/traversal/ImmersiveReplayTraversalOverlay.tsx:16:  if (!selectedStar || !traversal) return null;
+src/spatial/traversal/ImmersiveReplayTraversalOverlay.tsx:74:        <span>{traversal.modeLabel}</span>
+src/spatial/merge/resolveMergePreflightState.ts:2:import { resolveMemorySphereById } from "@/spatial/memory/resolveMemorySphere";
+src/spatial/merge/resolveMergePreflightState.ts:23:  const memory = resolveMemorySphereById(id);
+src/spatial/merge/buildBatchDiffAudit.ts:1:import { getMemoryDataset } from "@/spatial/replay/resolveReplayScene";
+src/spatial/merge/buildBatchDiffAudit.ts:24:      emotion: "focused",
+src/spatial/merge/MergePreflightOverlay.tsx:8:  const selectedStar = useSceneStore((s) => s.selectedStar);
+src/spatial/merge/MergePreflightOverlay.tsx:11:    () => resolveMergePreflightStateById(selectedStar?.id),
+src/spatial/merge/MergePreflightOverlay.tsx:12:    [selectedStar]
+src/spatial/merge/MergePreflightOverlay.tsx:15:  if (!selectedStar || !state) return null;
+src/spatial/memory/MemorySphereOverlay.tsx:5:import { resolveMemorySphereById } from "@/spatial/memory/resolveMemorySphere";
+src/spatial/memory/MemorySphereOverlay.tsx:11:export default function MemorySphereOverlay() {
+src/spatial/memory/MemorySphereOverlay.tsx:12:  const mode = useSceneStore((s) => s.mode);
+src/spatial/memory/MemorySphereOverlay.tsx:13:  const selectedStar = useSceneStore((s) => s.selectedStar);
+src/spatial/memory/MemorySphereOverlay.tsx:16:    () => resolveMemorySphereById(selectedStar?.id),
+src/spatial/memory/MemorySphereOverlay.tsx:17:    [selectedStar]
+src/spatial/memory/MemorySphereOverlay.tsx:20:  if (!selectedStar || !detail) return null;
+src/spatial/memory/MemorySphereOverlay.tsx:21:  if (mode === "replay") return null;
+src/spatial/memory/resolveMemorySphere.ts:1:import { resolveMemoryNodeById } from "@/spatial/replay/resolveReplayScene";
+src/spatial/memory/resolveMemorySphere.ts:5:export type MemorySphereDetail = {
+src/spatial/memory/resolveMemorySphere.ts:31:export function resolveMemorySphereById(id: string | null | undefined): MemorySphereDetail | undefined {
+src/spatial/lib/toCanonicalSelectedStar.ts:2:import type { SelectedStar } from "../state/selectedStarContract";
+src/spatial/lib/toCanonicalSelectedStar.ts:14:    glow: star.glow,
+src/spatial/lib/memoryToStar.ts:27:    glow: 0.9,
+src/spatial/lib/headsetCameraSync.ts:1:import type { SelectedStar } from "@/spatial/state/selectedStarContract";
+src/spatial/lib/headsetCameraSync.ts:6:  selectedStarId: string | null;
+src/spatial/lib/headsetCameraSync.ts:7:  handoffMode: "idle" | "selection-focus" | "replay-lock";
+src/spatial/lib/headsetCameraSync.ts:13:  selectedStar: SelectedStar | null;
+src/spatial/lib/headsetCameraSync.ts:14:  mode: string;
+src/spatial/lib/headsetCameraSync.ts:16:  const selectedStarId = input.selectedStar?.id ?? null;
+src/spatial/lib/headsetCameraSync.ts:19:  if (selectedStarId) handoffMode = "selection-focus";
+src/spatial/lib/headsetCameraSync.ts:20:  if (input.mode === "replay") handoffMode = "replay-lock";
+src/spatial/lib/headsetCameraSync.ts:25:    selectedStarId,
+src/spatial/scene/MemorySphere.tsx:5:export default function MemorySphere() {
+src/spatial/scene/MemorySphere.tsx:6:  const mode = useSceneStore((s) => s.mode);
+src/spatial/scene/MemorySphere.tsx:7:  const scale = mode === "lifemap" ? 0.55 : 1;
+src/spatial/scene/MemorySphere.tsx:8:  const opacity = mode === "lifemap" ? 0.1 : 0.2;
+src/spatial/scene/SpatialScene.tsx.broken.20260316-135713:74:function CameraRig() {
+src/spatial/scene/SpatialScene.tsx.broken.20260316-135713:76:  const mode = useSceneStore((state) => state.mode);
+src/spatial/scene/SpatialScene.tsx.broken.20260316-135713:77:  const selectedStar = useSceneStore((state) => state.selectedStar);
+src/spatial/scene/SpatialScene.tsx.broken.20260316-135713:82:    if (mode === "home") {
+src/spatial/scene/SpatialScene.tsx.broken.20260316-135713:85:    } else if (mode === "lifemap") {
+src/spatial/scene/SpatialScene.tsx.broken.20260316-135713:88:    } else if ((mode === "focus" || mode === "replay") && selectedStar) {
+src/spatial/scene/SpatialScene.tsx.broken.20260316-135713:89:      const [sx, sy, sz] = selectedStar.position;
+src/spatial/scene/SpatialScene.tsx.broken.20260316-135713:90:      target.set(sx * 0.28, sy + (mode === "replay" ? 8 : 12), sz + (mode === "replay" ? 18 : 30));
+src/spatial/scene/SpatialScene.tsx.broken.20260316-135713:107:  const mode = useSceneStore((state) => state.mode);
+src/spatial/scene/SpatialScene.tsx.broken.20260316-135713:108:  const glowRef = useRef<THREE.Mesh>(null);
+src/spatial/scene/SpatialScene.tsx.broken.20260316-135713:111:    if (!glowRef.current) return;
+src/spatial/scene/SpatialScene.tsx.broken.20260316-135713:112:    const base = mode === "replay" ? 34 : mode === "focus" ? 26 : 18;
+src/spatial/scene/SpatialScene.tsx.broken.20260316-135713:113:    const pulse = Math.sin(clock.elapsedTime * (mode === "replay" ? 1.8 : 1.1)) * 1.3;
+src/spatial/scene/SpatialScene.tsx.broken.20260316-135713:114:    glowRef.current.scale.setScalar(base + pulse);
+src/spatial/scene/SpatialScene.tsx.broken.20260316-135713:120:      <fog attach="fog" args={["#030712", 140, 420]} />
+src/spatial/scene/SpatialScene.tsx.broken.20260316-135713:124:      <mesh ref={glowRef} position={[0, 24, -40]}>
+src/spatial/scene/SpatialScene.tsx.broken.20260316-135713:143:  const mode = useSceneStore((state) => state.mode);
+src/spatial/scene/SpatialScene.tsx.broken.20260316-135713:144:  const selectedStar = useSceneStore((state) => state.selectedStar);
+src/spatial/scene/SpatialScene.tsx.broken.20260316-135713:148:  const selected = selectedStar?.id === star.id;
+src/spatial/scene/SpatialScene.tsx.broken.20260316-135713:158:    if (mode === "home") enterLifeMap();
+src/spatial/scene/SpatialScene.tsx.broken.20260316-135713:186:  const mode = useSceneStore((state) => state.mode);
+src/spatial/scene/SpatialScene.tsx.broken.20260316-135713:187:  const selectedStar = useSceneStore((state) => state.selectedStar);
+src/spatial/scene/SpatialScene.tsx.broken.20260316-135713:189:  const replayEnteredAt = useSceneStore((state) => state.replayEnteredAt);
+src/spatial/scene/SpatialScene.tsx.broken.20260316-135713:198:    mode === "home"
+src/spatial/scene/SpatialScene.tsx.broken.20260316-135713:200:      : mode === "lifemap"
+src/spatial/scene/SpatialScene.tsx.broken.20260316-135713:202:        : mode === "focus"
+src/spatial/scene/SpatialScene.tsx.broken.20260316-135713:223:            mode === "replay"
+src/spatial/scene/SpatialScene.tsx.broken.20260316-135713:225:              : mode === "focus"
+src/spatial/scene/SpatialScene.tsx.broken.20260316-135713:246:            {mode === "home" && "Enter LifeMap to select"}
+src/spatial/scene/SpatialScene.tsx.broken.20260316-135713:247:            {mode === "lifemap" && "Click any star to focus"}
+src/spatial/scene/SpatialScene.tsx.broken.20260316-135713:248:            {mode === "focus" && "Focused memory locked"}
+src/spatial/scene/SpatialScene.tsx.broken.20260316-135713:249:            {mode === "replay" && "Replay shell active"}
+src/spatial/scene/SpatialScene.tsx.broken.20260316-135713:257:          {selectedStar && mode !== "replay" ? (
+src/spatial/scene/SpatialScene.tsx.broken.20260316-135713:263:      {selectedStar && detailOpen ? (
+src/spatial/scene/SpatialScene.tsx.broken.20260316-135713:280:          <div style={{ marginTop: 6, fontSize: 28, fontWeight: 800 }}>{selectedStar.title}</div>
+src/spatial/scene/SpatialScene.tsx.broken.20260316-135713:281:          <div style={{ marginTop: 6, fontSize: 15, opacity: 0.9 }}>{selectedStar.label}</div>
+src/spatial/scene/SpatialScene.tsx.broken.20260316-135713:284:            <div><strong>Signature:</strong> {selectedStar.signature}</div>
+src/spatial/scene/SpatialScene.tsx.broken.20260316-135713:285:            <div><strong>Chapter:</strong> {selectedStar.chapter}</div>
+src/spatial/scene/SpatialScene.tsx.broken.20260316-135713:286:            <div><strong>Timeband:</strong> {selectedStar.timeband}</div>
+src/spatial/scene/SpatialScene.tsx.broken.20260316-135713:289:              {selectedStar.position.map((value) => value.toFixed(1)).join(", ")}
+src/spatial/scene/SpatialScene.tsx.broken.20260316-135713:291:            {replayEnteredAt ? (
+src/spatial/scene/SpatialScene.tsx.broken.20260316-135713:292:              <div><strong>Replay Entered:</strong> {new Date(replayEnteredAt).toLocaleTimeString()}</div>
+src/spatial/scene/SpatialScene.tsx.broken.20260316-135713:322:  const selectedStar = useSceneStore((state) => state.selectedStar);
+src/spatial/scene/SpatialScene.tsx.broken.20260316-135713:332:      if (event.key.toLowerCase() === "r" && selectedStar) enterReplay();
+src/spatial/scene/SpatialScene.tsx.broken.20260316-135713:337:  }, [clearFocus, enterHome, enterLifeMap, enterReplay, selectedStar]);
+src/spatial/scene/SpatialScene.tsx.broken.20260316-135713:349:        <fog attach="fog" args={["#020712", 22, 260]} />
+src/spatial/scene/SpatialScene.tsx.broken.20260316-135713:356:        {selectedStar ? (
+src/spatial/scene/SpatialScene.tsx.broken.20260316-135713:357:          <group position={selectedStar.position}>
+src/spatial/scene/SpatialScene.tsx.broken.20260316-135713:358:            <mesh scale={[selectedStar.size * 4.2, selectedStar.size * 4.2, selectedStar.size * 4.2]}>
+src/spatial/scene/SpatialScene.tsx.broken.20260316-135713:361:                color={selectedStar.color}
+src/spatial/scene/SpatialScene.tsx.broken.20260316-135713:365:        <CameraRig />
+src/spatial/scene/SpatialScene.tsx.broken.20260316-135713:369:      {mode === "replay" ? <div aria-hidden className="urai-replay-grade" /> : null}
+src/spatial/scene/SpatialScene.tsx:30:import XRCameraRigOverlay from "@/spatial/xr-runtime/XRCameraRigOverlay";
+src/spatial/scene/SpatialScene.tsx:146:function modeLabel(mode: SceneMode) {
+src/spatial/scene/SpatialScene.tsx:147:  switch (mode) {
+src/spatial/scene/SpatialScene.tsx:152:    case "lifemap":
+src/spatial/scene/SpatialScene.tsx:154:    case "focus":
+src/spatial/scene/SpatialScene.tsx:156:    case "replay":
+src/spatial/scene/SpatialScene.tsx:159:      return mode;
+src/spatial/scene/SpatialScene.tsx:166:      <fog attach="fog" args={["#04060b", 20, 78]} />
+src/spatial/scene/SpatialScene.tsx:173:  const mode = useSceneStore((s) => s.mode);
+src/spatial/scene/SpatialScene.tsx:175:  if (mode === "lifemap") return null;
+src/spatial/scene/SpatialScene.tsx:183:        opacity={mode === "sky" ? 0.035 : 0.09}
+src/spatial/scene/SpatialScene.tsx:189:function CameraRig() {
+src/spatial/scene/SpatialScene.tsx:191:  const mode = useSceneStore((s) => s.mode);
+src/spatial/scene/SpatialScene.tsx:192:  const selectedStar = useSceneStore((s) => s.selectedStar);
+src/spatial/scene/SpatialScene.tsx:200:    if (mode === "home") {
+src/spatial/scene/SpatialScene.tsx:203:    } else if (mode === "lifemap") {
+src/spatial/scene/SpatialScene.tsx:206:    } else if (selectedStar) {
+src/spatial/scene/SpatialScene.tsx:207:      const [x, y, z] = selectedStar.position;
+src/spatial/scene/SpatialScene.tsx:208:      if (mode === "focus") {
+src/spatial/scene/SpatialScene.tsx:217:    const speed = mode === "lifemap" ? 2.2 : 3.2;
+src/spatial/scene/SpatialScene.tsx:238:  const haloRef = useRef<THREE.Mesh>(null);
+src/spatial/scene/SpatialScene.tsx:239:  const mode = useSceneStore((s) => s.mode);
+src/spatial/scene/SpatialScene.tsx:243:    const pulse = 1 + Math.sin(t * 1.45 + star.order * 0.5) * 0.06 * star.glow;
+src/spatial/scene/SpatialScene.tsx:245:      ? pulse * (mode === "focus" ? 2.05 : 1.75)
+src/spatial/scene/SpatialScene.tsx:257:    if (haloRef.current) {
+src/spatial/scene/SpatialScene.tsx:258:      const haloScale = isSelected
+src/spatial/scene/SpatialScene.tsx:259:        ? mode === "focus" ? 2.8 + Math.sin(t * 1.25) * 0.12 : 2.15 + Math.sin(t * 1.25) * 0.08
+src/spatial/scene/SpatialScene.tsx:260:        : mode === "replay"
+src/spatial/scene/SpatialScene.tsx:263:      haloRef.current.scale.lerp(
+src/spatial/scene/SpatialScene.tsx:264:        new THREE.Vector3(haloScale, haloScale, haloScale),
+src/spatial/scene/SpatialScene.tsx:279:        <sphereGeometry args={[mode === "lifemap" ? star.size * 0.36 : star.size * 0.22, 18, 18]} />
+src/spatial/scene/SpatialScene.tsx:283:          emissiveIntensity={isSelected ? (mode === "focus" ? 4.4 : 3.2) : dimmed ? 0.5 : mode === "lifemap" ? star.intensity * 2.2 : star.intensity * 1.4}
+src/spatial/scene/SpatialScene.tsx:287:          opacity={dimmed ? 0.32 : mode === "lifemap" ? 0.98 : 0.98}
+src/spatial/scene/SpatialScene.tsx:291:      <mesh ref={haloRef}>
+src/spatial/scene/SpatialScene.tsx:292:        <sphereGeometry args={[mode === "lifemap" ? star.size * 0.58 : star.size * 0.38, 18, 18]} />
+src/spatial/scene/SpatialScene.tsx:296:          opacity={isSelected ? (mode === "focus" ? 0.32 : 0.22) : dimmed ? 0.03 : mode === "lifemap" ? 0.10 : 0.06}
+src/spatial/scene/SpatialScene.tsx:304:function MemorySphere() {
+src/spatial/scene/SpatialScene.tsx:305:  const selectedStar = useSceneStore((s) => s.selectedStar);
+src/spatial/scene/SpatialScene.tsx:306:  const mode = useSceneStore((s) => s.mode);
+src/spatial/scene/SpatialScene.tsx:312:    const base = mode === "replay" ? 1.5 : 1.18;
+src/spatial/scene/SpatialScene.tsx:322:  if (!selectedStar) return null;
+src/spatial/scene/SpatialScene.tsx:325:    <group position={selectedStar.position}>
+src/spatial/scene/SpatialScene.tsx:327:        <sphereGeometry args={[selectedStar.size * 0.72, 32, 32]} />
+src/spatial/scene/SpatialScene.tsx:329:          color={selectedStar.color}
+src/spatial/scene/SpatialScene.tsx:330:          emissive={selectedStar.color}
+src/spatial/scene/SpatialScene.tsx:331:          emissiveIntensity={mode === "replay" ? 0.65 : mode === "focus" ? 0.52 : 0.35}
+src/spatial/scene/SpatialScene.tsx:333:          opacity={mode === "replay" ? 0.18 : mode === "focus" ? 0.14 : 0.09}
+src/spatial/scene/SpatialScene.tsx:347:  const selectedStarId = useSceneStore((s) => s.selectedStarId);
+src/spatial/scene/SpatialScene.tsx:348:  const mode = useSceneStore((s) => s.mode);
+src/spatial/scene/SpatialScene.tsx:352:          const ambientCount = mode === "lifemap" ? 460 : mode === "sky" ? 70 : 28;
+src/spatial/scene/SpatialScene.tsx:358:                                        const radius = mode === "lifemap" ? 6 + (i % 17) * 1.75 + Math.sin(i * 0.77) * 1.1 : mode === "sky" ? 18 + (i % 15) * 3.8 + Math.sin(i * 0.77) * 2.2 : 26 + (i % 13) * 5.2 + Math.sin(i * 0.77) * 2.6;
+src/spatial/scene/SpatialScene.tsx:360:                                        const y = mode === "lifemap" ? -2.5 + (i % 29) * 0.44 + Math.sin(i * 1.13) * 0.95 : mode === "sky" ? -7 + (i % 23) * 0.72 + Math.sin(i * 1.13) * 1.4 : -10 + (i % 19) * 0.9 + Math.sin(i * 1.13) * 1.6;
+src/spatial/scene/SpatialScene.tsx:361:                                        const z = mode === "lifemap" ? -12 - (i % 23) * 2.9 - Math.cos(i * 0.41) * 1.8 : mode === "sky" ? -22 - (i % 21) * 4.8 - Math.cos(i * 0.41) * 3.0 : -36 - (i % 17) * 6.0 - Math.cos(i * 0.41) * 3.6;
+src/spatial/scene/SpatialScene.tsx:363:          mode === "lifemap"
+src/spatial/scene/SpatialScene.tsx:365:            : mode === "sky"
+src/spatial/scene/SpatialScene.tsx:369:          mode === "lifemap"
+src/spatial/scene/SpatialScene.tsx:371:            : mode === "sky"
+src/spatial/scene/SpatialScene.tsx:390:        const isSelected = star.id === selectedStarId;
+src/spatial/scene/SpatialScene.tsx:391:        const dimmed = !!selectedStarId && !isSelected;
+src/spatial/scene/SpatialScene.tsx:398:            dimmed={mode === "replay" ? !isSelected : dimmed}
+src/spatial/scene/SpatialScene.tsx:408:          if (mode === "focus") clearFocus();
+src/spatial/scene/SpatialScene.tsx:418:  const selectedStar = useSceneStore((s) => s.selectedStar);
+src/spatial/scene/SpatialScene.tsx:419:  const mode = useSceneStore((s) => s.mode);
+src/spatial/scene/SpatialScene.tsx:423:    if (!ref.current || !selectedStar || mode !== "replay") return;
+src/spatial/scene/SpatialScene.tsx:429:  if (!selectedStar || mode !== "replay") return null;
+src/spatial/scene/SpatialScene.tsx:432:    <group ref={ref} position={selectedStar.position}>
+src/spatial/scene/SpatialScene.tsx:446:            <meshBasicMaterial color={selectedStar.color} transparent opacity={0.65} />
+src/spatial/scene/SpatialScene.tsx:455:  const mode = useSceneStore((s) => s.mode);
+src/spatial/scene/SpatialScene.tsx:459:    if (mode !== "replay") {
+src/spatial/scene/SpatialScene.tsx:481:  }, [mode]);
+src/spatial/scene/SpatialScene.tsx:508:  const mode = useSceneStore((s) => s.mode);
+src/spatial/scene/SpatialScene.tsx:510:  const selectedStar = useSceneStore((s) => s.selectedStar);
+src/spatial/scene/SpatialScene.tsx:515:  const focusMeta = useMemo(() => {
+src/spatial/scene/SpatialScene.tsx:516:    if (!selectedStar) return null;
+src/spatial/scene/SpatialScene.tsx:517:    return `${selectedStar.chapter} · ${selectedStar.timeband} · ${selectedStar.label}`;
+src/spatial/scene/SpatialScene.tsx:518:  }, [selectedStar]);
+src/spatial/scene/SpatialScene.tsx:528:        <div style={{ ...chipStyle, pointerEvents: "auto" }}>{modeLabel(mode)}</div>
+src/spatial/scene/SpatialScene.tsx:531:      {mode === "home" && (
+src/spatial/scene/SpatialScene.tsx:555:                The spatial shell is live. This phase turns replay from a mode switch into an actual
+src/spatial/scene/SpatialScene.tsx:556:                memory-dive scene with camera intent, focus depth, and a readable presentation layer.
+src/spatial/scene/SpatialScene.tsx:572:                <button style={secondaryButtonStyle} onClick={() => setMode("focus")} disabled={!selectedStar}>
+src/spatial/scene/SpatialScene.tsx:581:      {mode === "sky" && (
+src/spatial/scene/SpatialScene.tsx:631:              onClick={() => setMode("lifemap")}
+src/spatial/scene/SpatialScene.tsx:640:      {mode === "lifemap" && (
+src/spatial/scene/SpatialScene.tsx:664:                Select a star to enter focus. From focus, enter replay to dive the selected memory node.
+src/spatial/scene/SpatialScene.tsx:671:      {mode === "focus" && selectedStar && (
+src/spatial/scene/SpatialScene.tsx:685:              <h2 style={{ margin: 0, fontSize: 28, lineHeight: 1.05 }}>{selectedStar.title}</h2>
+src/spatial/scene/SpatialScene.tsx:687:                {focusMeta}
+src/spatial/scene/SpatialScene.tsx:689:              <p style={subtleTextStyle}>{selectedStar.description}</p>
+src/spatial/scene/SpatialScene.tsx:706:      {mode === "replay" && selectedStar && (
+src/spatial/scene/SpatialScene.tsx:731:                {selectedStar.title}
+src/spatial/scene/SpatialScene.tsx:734:                {selectedStar.signature}
+src/spatial/scene/SpatialScene.tsx:740:                {selectedStar.description}
+src/spatial/scene/SpatialScene.tsx:754:                  <div style={{ marginTop: 8, fontSize: 16 }}>{selectedStar.chapter}</div>
+src/spatial/scene/SpatialScene.tsx:758:                  <div style={{ marginTop: 8, fontSize: 16 }}>{selectedStar.timeband}</div>
+src/spatial/scene/SpatialScene.tsx:762:                  <div style={{ marginTop: 8, fontSize: 16 }}>{selectedStar.label}</div>
+src/spatial/scene/SpatialScene.tsx:790:  const mode = useSceneStore((s) => s.mode);
+src/spatial/scene/SpatialScene.tsx:791:  const selectedStar = useSceneStore((s) => s.selectedStar);
+src/spatial/scene/SpatialScene.tsx:800:      if (mode === "replay") {
+src/spatial/scene/SpatialScene.tsx:805:      if (mode === "focus") {
+src/spatial/scene/SpatialScene.tsx:810:      if (mode === "lifemap") {
+src/spatial/scene/SpatialScene.tsx:817:  }, [mode, clearFocus, exitReplay, setMode]);
+src/spatial/scene/SpatialScene.tsx:845:          if (mode === "focus") clearFocus();
+src/spatial/scene/SpatialScene.tsx:851:        <pointLight position={[0, 6, 10]} intensity={selectedStar ? 10 : 6} color="#ffffff" />
+src/spatial/scene/SpatialScene.tsx:862:        <CameraRig />
+src/spatial/scene/SpatialScene.tsx:865:        <MemorySphere />
+src/spatial/scene/SpatialScene.tsx:886:        <XRCameraRigOverlay />
+src/spatial/scene/SpatialScene.tsx:900:            mode === "replay"
+src/spatial/scene/Starfield.tsx:4:import type { SelectedStar } from "@/spatial/state/selectedStarContract";
+src/spatial/scene/Starfield.tsx:9:export default function Starfield() {
+src/spatial/scene/Starfield.tsx:11:  const mode = useSceneStore((s) => s.mode);
+src/spatial/scene/Starfield.tsx:14:  const selectedStar = useSceneStore((s) => s.selectedStar);
+src/spatial/scene/Starfield.tsx:21:        const isSelected = selectedStar?.id === star.id;
+src/spatial/scene/Starfield.tsx:22:        const isDimmed = !!selectedStar && !isSelected;
+src/spatial/scene/Starfield.tsx:24:        const baseScale = mode === "lifemap" ? 1.15 : 1;
+src/spatial/scene/Starfield.tsx:26:        const hitRadius = Math.max(star.size * (mode === "lifemap" ? 8 : 5), 3.2);
+src/spatial/scene/Starfield.tsx:54:                setMode("focus");
+src/spatial/scene/Ground.tsx:6:export default function Ground() {
+src/spatial/scene/Ground.tsx:7:  const mode = useSceneStore((s) => s.mode);
+src/spatial/scene/Ground.tsx:10:    if (mode === "focus") {
+src/spatial/scene/Ground.tsx:19:    if (mode === "lifemap") {
+src/spatial/scene/Ground.tsx:34:  }, [mode]);
+src/spatial/arcs/buildSpatialNarrativeArcs.ts:15:  const selectionChanged = compareSet.summary.selectedStarChanged;
+src/spatial/arcs/buildSpatialNarrativeArcs.ts:23:        "Scene, focus, and movement all shifted across the compared eras.",
+src/spatial/arcs/buildSpatialNarrativeArcs.ts:31:      summary: "Scene mode drift defines this arc more than focus or movement.",
+src/spatial/arcs/buildSpatialNarrativeArcs.ts:37:      kind: "focus-drift",
+src/spatial/arcs/spatialArcTypes.ts:3:  | "focus-drift"
+src/spatial/immersive/resolveImmersiveContract.ts:21:  mode: string | null | undefined
+src/spatial/immersive/resolveImmersiveContract.ts:25:  const xr = resolveXRBridgeStateById(id, mode);
+src/spatial/immersive/resolveImmersiveContract.ts:32:    mode === "replay"
+src/spatial/immersive/resolveImmersiveContract.ts:38:  const readiness = clamp((xr?.readiness ?? 44) + (mode === "replay" ? 8 : 0), 0, 100);
+src/spatial/immersive/resolveImmersiveContract.ts:54:      ? "headset replay transport"
+src/spatial/immersive/resolveImmersiveContract.ts:61:    "focus node",
+src/spatial/immersive/ImmersiveContractOverlay.tsx:8:  const mode = useSceneStore((s) => s.mode);
+src/spatial/immersive/ImmersiveContractOverlay.tsx:9:  const selectedStar = useSceneStore((s) => s.selectedStar);
+src/spatial/immersive/ImmersiveContractOverlay.tsx:12:    () => resolveImmersiveContractById(selectedStar?.id, mode),
+src/spatial/immersive/ImmersiveContractOverlay.tsx:13:    [selectedStar, mode]
+src/spatial/immersive/ImmersiveContractOverlay.tsx:16:  if (!selectedStar || !contract) return null;
+src/spatial/seasonal/SeasonalCycleOverlay.tsx:8:  const selectedStar = useSceneStore((s) => s.selectedStar);
+src/spatial/seasonal/SeasonalCycleOverlay.tsx:11:    () => resolveSeasonalCycleById(selectedStar?.id),
+src/spatial/seasonal/SeasonalCycleOverlay.tsx:12:    [selectedStar]
+src/spatial/seasonal/SeasonalCycleOverlay.tsx:15:  if (!selectedStar || !state) return null;
+src/spatial/seasonal/resolveSeasonalCycle.ts:1:import { getMemoryDataset } from "@/spatial/replay/resolveReplayScene";
+src/spatial/seasonal/resolveSeasonalCycle.ts:2:import { resolveMemorySphereById } from "@/spatial/memory/resolveMemorySphere";
+src/spatial/seasonal/resolveSeasonalCycle.ts:53:  const memory = resolveMemorySphereById(id);
+src/spatial/seasonal/resolveSeasonalCycle.ts:60:  const focusSeason = normalizeSeason(memory.timeband) ?? "Seasonal Focus";
+src/spatial/seasonal/resolveSeasonalCycle.ts:64:    return rowSeason === focusSeason;
+src/spatial/seasonal/resolveSeasonalCycle.ts:74:    focusSeason,
+src/spatial/seasonal/resolveSeasonalCycle.ts:83:    focusSeason;
+src/spatial/seasonal/resolveSeasonalCycle.ts:104:    seasonFocus: focusSeason,
+src/spatial/narrator/resolveNarratorOrchestration.ts:1:import { resolveMemorySphereById } from "@/spatial/memory/resolveMemorySphere";
+src/spatial/narrator/resolveNarratorOrchestration.ts:11:  sceneMode: "focus" | "replay";
+src/spatial/narrator/resolveNarratorOrchestration.ts:14:  body: string;
+src/spatial/narrator/resolveNarratorOrchestration.ts:33:  sceneMode: "focus" | "replay",
+src/spatial/narrator/resolveNarratorOrchestration.ts:37:  if (sceneMode === "replay") return "witness";
+src/spatial/narrator/resolveNarratorOrchestration.ts:45:  mode: string | null | undefined
+src/spatial/narrator/resolveNarratorOrchestration.ts:49:  const memory = resolveMemorySphereById(id);
+src/spatial/narrator/resolveNarratorOrchestration.ts:57:  const sceneMode = mode === "replay" ? "replay" : "focus";
+src/spatial/narrator/resolveNarratorOrchestration.ts:73:    sceneMode === "replay"
+src/spatial/narrator/resolveNarratorOrchestration.ts:74:      ? `Stay with ${memory.title}; this is a replay-bound moment.`
+src/spatial/narrator/resolveNarratorOrchestration.ts:77:  const body =
+src/spatial/narrator/resolveNarratorOrchestration.ts:83:      ? "The narrator should observe, anchor, and not over-direct the replay."
+src/spatial/narrator/resolveNarratorOrchestration.ts:109:    body,
+src/spatial/narrator/NarratorOrchestrationOverlay.tsx:8:  const mode = useSceneStore((s) => s.mode);
+src/spatial/narrator/NarratorOrchestrationOverlay.tsx:9:  const selectedStar = useSceneStore((s) => s.selectedStar);
+src/spatial/narrator/NarratorOrchestrationOverlay.tsx:12:    () => resolveNarratorOrchestrationById(selectedStar?.id, mode),
+src/spatial/narrator/NarratorOrchestrationOverlay.tsx:13:    [selectedStar, mode]
+src/spatial/narrator/NarratorOrchestrationOverlay.tsx:16:  if (!selectedStar || !state) return null;
+src/spatial/narrator/NarratorOrchestrationOverlay.tsx:98:        {state.body}
+src/spatial/narrator/buildSpatialNarratorExport.ts:26:    `Scene mode: ${input.snapshot.sceneMode}`,
+src/spatial/narrator/buildSpatialNarratorExport.ts:27:    `Selected star: ${input.snapshot.selectedStarId ?? "none"}`,
+src/spatial/narrator/buildSpatialNarratorExport.ts:29:    `Lens focus: ${input.activeLens?.focus ?? "n/a"}`,
+src/spatial/narrator/buildSpatialNarratorExport.ts:36:      ? `Scene mode changed: ${input.activeCompareSet.summary.sceneModeChanged ? "yes" : "no"}`
+src/spatial/narrator/buildSpatialNarratorExport.ts:37:      : "Scene mode changed: n/a",
+src/spatial/narrator/buildSpatialNarratorExport.ts:39:      ? `Selected star changed: ${input.activeCompareSet.summary.selectedStarChanged ? "yes" : "no"}`
+src/spatial/narrator/buildSpatialNarratorExport.ts:52:    input.snapshot.selectedStarId
+src/spatial/narrator/buildSpatialNarratorExport.ts:53:      ? `Focus remains anchored on star ${input.snapshot.selectedStarId}.`
+src/spatial/narrator/buildSpatialNarratorExport.ts:63:      : "Movement drift remains minimal across the visible narrative horizon.",
+src/spatial/narrator/buildSpatialNarratorExport.ts:75:    selectedStarId: input.snapshot.selectedStarId,
+src/spatial/narrator/spatialNarratorExportTypes.ts:9:  selectedStarId: string | null;
+src/spatial/webxr/WebXREntryOverlay.tsx:10:  const mode = useSceneStore((s) => s.mode);
+src/spatial/webxr/WebXREntryOverlay.tsx:11:  const selectedStar = useSceneStore((s) => s.selectedStar);
+src/spatial/webxr/WebXREntryOverlay.tsx:14:    () => resolveWebXREntryStateById(selectedStar?.id, mode),
+src/spatial/webxr/WebXREntryOverlay.tsx:15:    [selectedStar, mode]
+src/spatial/webxr/WebXREntryOverlay.tsx:85:  if (!selectedStar || !state) return null;
+src/spatial/webxr/WebXREntryOverlay.tsx:152:        <span>{state.modeLabel}</span>
+src/spatial/webxr/WebXREntryOverlay.tsx:218:          Enter {state.modeLabel}
+src/spatial/webxr/resolveWebXREntryState.ts:7:  modeLabel: string;
+src/spatial/webxr/resolveWebXREntryState.ts:20:  mode: string | null | undefined
+src/spatial/webxr/resolveWebXREntryState.ts:24:  const manifest = resolveSceneExportManifestById(id, mode);
+src/spatial/webxr/resolveWebXREntryState.ts:25:  const immersive = resolveImmersiveContractById(id, mode);
+src/spatial/webxr/resolveWebXREntryState.ts:43:  const modeLabel =
+src/spatial/webxr/resolveWebXREntryState.ts:49:      : "WebXR entry contract is ready for immersive replay and spatial presence when the browser supports VR sessions.";
+src/spatial/webxr/resolveWebXREntryState.ts:61:    modeLabel,
+src/spatial/webxr/webxr.d.ts:5:    isSessionSupported(mode: XRSessionMode): Promise<boolean>;
+src/spatial/webxr/webxr.d.ts:6:    requestSession(mode: XRSessionMode, options?: XRSessionInit): Promise<XRSession>;
+src/spatial/validation/resolveBatchImportAuditState.ts:3:import { resolveMemorySphereById } from "@/spatial/memory/resolveMemorySphere";
+src/spatial/validation/resolveBatchImportAuditState.ts:23:      emotion: "focused",
+src/spatial/validation/resolveBatchImportAuditState.ts:55:  const memory = resolveMemorySphereById(id);
+src/spatial/validation/BatchImportAuditOverlay.tsx:8:  const selectedStar = useSceneStore((s) => s.selectedStar);
+src/spatial/validation/BatchImportAuditOverlay.tsx:11:    () => resolveBatchImportAuditStateById(selectedStar?.id),
+src/spatial/validation/BatchImportAuditOverlay.tsx:12:    [selectedStar]
+src/spatial/validation/BatchImportAuditOverlay.tsx:15:  if (!selectedStar || !state) return null;
+src/spatial/versioning/buildDatasetVersionSnapshot.ts:1:import { getMemoryDataset } from "@/spatial/replay/resolveReplayScene";
+src/spatial/versioning/resolveDatasetVersioningState.ts:2:import { resolveMemorySphereById } from "@/spatial/memory/resolveMemorySphere";
+src/spatial/versioning/resolveDatasetVersioningState.ts:22:  const memory = resolveMemorySphereById(id);
+src/spatial/versioning/DatasetVersioningOverlay.tsx:8:  const selectedStar = useSceneStore((s) => s.selectedStar);
+src/spatial/versioning/DatasetVersioningOverlay.tsx:11:    () => resolveDatasetVersioningStateById(selectedStar?.id),
+src/spatial/versioning/DatasetVersioningOverlay.tsx:12:    [selectedStar]
+src/spatial/versioning/DatasetVersioningOverlay.tsx:15:  if (!selectedStar || !state) return null;
+src/spatial/lenses/buildSpatialTimelineLenses.ts:9:  if (compareSet.summary.sceneModeChanged && compareSet.summary.selectedStarChanged) {
+src/spatial/lenses/buildSpatialTimelineLenses.ts:17:  if (compareSet.summary.selectedStarChanged) {
+src/spatial/lenses/buildSpatialTimelineLenses.ts:33:      ? "scene mode drift detected"
+src/spatial/lenses/buildSpatialTimelineLenses.ts:34:      : "scene mode stable",
+src/spatial/lenses/buildSpatialTimelineLenses.ts:38:    compareSet.summary.selectedStarChanged
+src/spatial/lenses/buildSpatialTimelineLenses.ts:61:    focus: deriveFocus(compareSet),
+src/spatial/lenses/spatialLensTypes.ts:13:  focus: SpatialTimelineLensFocus;
+src/spatial/lenses/spatialLensTypes.ts:35:    focus: "balanced",
+src/spatial/components/CameraRig.tsx:19:export default function CameraRig() {
+src/spatial/components/CameraRig.tsx:22:  const mode = useSceneStore((state) => state.mode);
+src/spatial/components/CameraRig.tsx:23:  const selectedStar = useSceneStore((state) => state.selectedStar);
+src/spatial/components/CameraRig.tsx:24:  const replayEnteredAt = 0;
+src/spatial/components/CameraRig.tsx:30:    if (!selectedStar) return new Vector3(0, 0, 0);
+src/spatial/components/CameraRig.tsx:32:      selectedStar.position[0],
+src/spatial/components/CameraRig.tsx:33:      selectedStar.position[1],
+src/spatial/components/CameraRig.tsx:34:      selectedStar.position[2]
+src/spatial/components/CameraRig.tsx:36:  }, [selectedStar]);
+src/spatial/components/CameraRig.tsx:49:    if (mode === "lifemap") {
+src/spatial/components/CameraRig.tsx:54:    if ((mode === "focus" || mode === "replay") && selectedStar) {
+src/spatial/components/CameraRig.tsx:55:      const focusLift = 1.30 + selectedStar.size * 0.12;
+src/spatial/components/CameraRig.tsx:56:      const focusDistance = 6.4 + Math.min(selectedStar.size * 0.34, 1.35);
+src/spatial/components/CameraRig.tsx:59:      desiredPos = selectedTarget.clone().add(new Vector3(1.1, focusLift, focusDistance));
+src/spatial/components/CameraRig.tsx:62:    if (mode === "replay" && selectedStar) {
+src/spatial/components/CameraRig.tsx:63:      const enteredAt = replayEnteredAt ?? Date.now();
+src/spatial/components/CameraRig.tsx:64:      const replayT = Math.max(0, (Date.now() - enteredAt) / 1000);
+src/spatial/components/CameraRig.tsx:66:      const settle = Math.min(replayT / 1.4, 1);
+src/spatial/components/CameraRig.tsx:67:      const orbitAngle = replayT * 0.58;
+src/spatial/components/CameraRig.tsx:68:      const baseRadius = 6.0 + Math.min(selectedStar.size * 0.40, 1.4);
+src/spatial/components/CameraRig.tsx:71:      const x = Math.cos(orbitAngle) * radius;
+src/spatial/components/CameraRig.tsx:72:      const z = Math.sin(orbitAngle) * radius;
+src/spatial/components/CameraRig.tsx:75:        Math.sin(replayT * 0.7) * 0.22 +
+src/spatial/components/CameraRig.tsx:76:        Math.cos(replayT * 0.23) * 0.08;
+src/spatial/components/CameraRig.tsx:80:          Math.sin(replayT * 0.21) * 0.1,
+src/spatial/components/CameraRig.tsx:81:          0.02 + Math.cos(replayT * 0.33) * 0.04,
+src/spatial/components/CameraRig.tsx:90:      mode === "replay" ? 2.2 : mode === "focus" ? 3.2 : 2.6;
+src/spatial/components/CameraRig.tsx:92:      mode === "replay" ? 3.1 : mode === "focus" ? 4.2 : 3.0;
+src/spatial/era/resolveEraCompare.ts:1:import { getMemoryDataset } from "@/spatial/replay/resolveReplayScene";
+src/spatial/era/resolveEraCompare.ts:2:import { resolveMemorySphereById } from "@/spatial/memory/resolveMemorySphere";
+src/spatial/era/resolveEraCompare.ts:61:  const memory = resolveMemorySphereById(id);
+src/spatial/era/EraCompareOverlay.tsx:8:  const selectedStar = useSceneStore((s) => s.selectedStar);
+src/spatial/era/EraCompareOverlay.tsx:11:    () => resolveEraCompareById(selectedStar?.id),
+src/spatial/era/EraCompareOverlay.tsx:12:    [selectedStar]
+src/spatial/era/EraCompareOverlay.tsx:15:  if (!selectedStar || !state) return null;
+src/spatial/storyarc/resolveStoryArc.ts:1:import { resolveMemorySphereById } from "@/spatial/memory/resolveMemorySphere";
+src/spatial/storyarc/resolveStoryArc.ts:47:  const memory = resolveMemorySphereById(id);
+src/spatial/storyarc/StoryArcOverlay.tsx:8:  const selectedStar = useSceneStore((s) => s.selectedStar);
+src/spatial/storyarc/StoryArcOverlay.tsx:11:    () => resolveStoryArcById(selectedStar?.id),
+src/spatial/storyarc/StoryArcOverlay.tsx:12:    [selectedStar]
+src/spatial/storyarc/StoryArcOverlay.tsx:15:  if (!selectedStar || !state) return null;
+src/spatial/telemetry/SpatialAnalyticsBridge.tsx:12:import type { SelectedStar } from "@/spatial/state/selectedStarContract";
+src/spatial/telemetry/SpatialAnalyticsBridge.tsx:20:  const mode = useSceneStore((s) => s.mode);
+src/spatial/telemetry/SpatialAnalyticsBridge.tsx:21:  const selectedStar = useSceneStore((s) => s.selectedStar);
+src/spatial/telemetry/SpatialAnalyticsBridge.tsx:30:  const locomotionMode = useXrLocomotionStore((s) => s.pose.mode);
+src/spatial/telemetry/SpatialAnalyticsBridge.tsx:40:      | "scene_mode_changed"
+src/spatial/telemetry/SpatialAnalyticsBridge.tsx:62:      prevMode.current = mode;
+src/spatial/telemetry/SpatialAnalyticsBridge.tsx:65:    if (prevMode.current === mode) return;
+src/spatial/telemetry/SpatialAnalyticsBridge.tsx:66:    push("scene_mode_changed", {
+src/spatial/telemetry/SpatialAnalyticsBridge.tsx:68:      nextMode: mode,
+src/spatial/telemetry/SpatialAnalyticsBridge.tsx:70:    prevMode.current = mode;
+src/spatial/telemetry/SpatialAnalyticsBridge.tsx:71:  }, [mode, telemetryEnabled]);
+src/spatial/telemetry/SpatialAnalyticsBridge.tsx:74:    const starId = selectedStar?.id ?? null;
+src/spatial/telemetry/SpatialAnalyticsBridge.tsx:81:        (selectedStar as { label?: string; title?: string } | null)?.label ??
+src/spatial/telemetry/SpatialAnalyticsBridge.tsx:82:        (selectedStar as { label?: string; title?: string } | null)?.title ??
+src/spatial/telemetry/SpatialAnalyticsBridge.tsx:86:  }, [selectedStar, telemetryEnabled]);
+src/spatial/telemetry/SpatialAnalyticsBridge.tsx:122:      mode: locomotionMode,
+src/spatial/telemetry/spatialTelemetryTypes.ts:2:  | "scene_mode_changed"
+src/spatial/input/resolveXRInputState.ts:2:import { resolveXRCameraRigStateById } from "@/spatial/xr-runtime/resolveXRCameraRigState";
+src/spatial/input/resolveXRInputState.ts:24:  mode: string | null | undefined
+src/spatial/input/resolveXRInputState.ts:28:  const webxr = resolveWebXREntryStateById(id, mode);
+src/spatial/input/resolveXRInputState.ts:29:  const rig = resolveXRCameraRigStateById(id, mode);
+src/spatial/input/resolveXRInputState.ts:30:  const unity = resolveUnityAdapterStateById(id, mode);
+src/spatial/input/resolveXRInputState.ts:31:  const ar = resolveARPlacementStateById(id, mode);
+src/spatial/input/resolveXRInputState.ts:38:      : mode === "replay"
+src/spatial/input/resolveXRInputState.ts:62:      ? "trigger to focus or advance replay"
+src/spatial/input/resolveXRInputState.ts:63:      : "trigger or pinch to focus";
+src/spatial/input/resolveXRInputState.ts:69:      ? "grip to hold anchor and thumbstick to orbit"
+src/spatial/input/resolveXRInputState.ts:73:    mode === "replay"
+src/spatial/input/resolveXRInputState.ts:77:      : "anchor-safe orbit locomotion";
+src/spatial/input/resolveXRInputState.ts:90:    mode === "replay" ? "replay-advance" : "focus-orbit",
+src/spatial/input/XRInputOverlay.tsx:8:  const mode = useSceneStore((s) => s.mode);
+src/spatial/input/XRInputOverlay.tsx:9:  const selectedStar = useSceneStore((s) => s.selectedStar);
+src/spatial/input/XRInputOverlay.tsx:12:    () => resolveXRInputStateById(selectedStar?.id, mode),
+src/spatial/input/XRInputOverlay.tsx:13:    [selectedStar, mode]
+src/spatial/input/XRInputOverlay.tsx:16:  if (!selectedStar || !input) return null;

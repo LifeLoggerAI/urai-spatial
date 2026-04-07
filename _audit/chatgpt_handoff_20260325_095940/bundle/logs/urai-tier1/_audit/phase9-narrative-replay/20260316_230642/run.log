@@ -1,0 +1,119 @@
+
+== where we are ==
+
+$ git branch --show-current
+_MONOSPACE_ENV_STARTED_=http://localhost:80/
+phase8-memory-sphere-20260316_230259
+RC=0
+
+$ git status --short
+_MONOSPACE_ENV_STARTED_=http://localhost:80/
+?? urai-tier1/src/spatial/memory/
+RC=0
+
+== freeze phase8 ==
+
+$ git add urai-tier1/src/spatial/memory urai-tier1/src/spatial/replay urai-tier1/src/spatial/scene/SpatialScene.tsx urai-tier1/next.config.js urai-tier1/firebase.json
+_MONOSPACE_ENV_STARTED_=http://localhost:80/
+RC=0
+
+$ git add -u urai-tier1
+_MONOSPACE_ENV_STARTED_=http://localhost:80/
+RC=0
+
+$ git commit -m 'feat(urai-spatial): lock memory sphere phase 20260316_230642'
+_MONOSPACE_ENV_STARTED_=http://localhost:80/
+[phase8-memory-sphere-20260316_230259 4595fce] feat(urai-spatial): lock memory sphere phase 20260316_230642
+ 2 files changed, 213 insertions(+)
+ create mode 100644 urai-tier1/src/spatial/memory/MemorySphereOverlay.tsx
+ create mode 100644 urai-tier1/src/spatial/memory/resolveMemorySphere.ts
+RC=0
+
+$ git tag urai-spatial-phase8-locked-20260316_230642
+_MONOSPACE_ENV_STARTED_=http://localhost:80/
+RC=0
+
+== start phase9 branch ==
+
+$ git switch -c 'phase9-narrative-replay-20260316_230642'
+_MONOSPACE_ENV_STARTED_=http://localhost:80/
+Switched to a new branch 'phase9-narrative-replay-20260316_230642'
+RC=0
+
+== make narrative folder ==
+
+$ mkdir -p '/home/user/urai-spatial/urai-tier1/src/spatial/narrative'
+_MONOSPACE_ENV_STARTED_=http://localhost:80/
+RC=0
+
+== write narrative resolver ==
+
+== write narrative overlay ==
+
+== patch SpatialScene ==
+
+== write phase9 plan ==
+
+== build verify ==
+
+$ cd '/home/user/urai-spatial/urai-tier1' && rm -rf .next out && pnpm build
+_MONOSPACE_ENV_STARTED_=http://localhost:80/
+
+> urai-tier1@0.1.0 build /home/user/urai-spatial/urai-tier1
+> next build
+
+▲ Next.js 16.1.6 (Turbopack)
+
+  Creating an optimized production build ...
+✓ Compiled successfully in 16.2s
+  Running TypeScript ...
+Failed to compile.
+
+./src/spatial/narrative/resolveNarrativeReplay.ts:36:5
+Type error: '??' and '||' operations cannot be mixed without parentheses.
+
+[0m [90m 34 |[39m
+ [90m 35 |[39m   [36mconst[39m kicker [33m=[39m
+[31m[1m>[22m[39m[90m 36 |[39m     str(replay[33m?[39m[33m.[39msubtitle) [33m?[39m[33m?[39m
+ [90m    |[39m     [31m[1m^[22m[39m
+ [90m 37 |[39m     [memory[33m?[39m[33m.[39mchapter[33m,[39m memory[33m?[39m[33m.[39mtimeband][33m.[39mfilter([33mBoolean[39m)[33m.[39mjoin([32m" · "[39m) [33m||[39m
+ [90m 38 |[39m     [32m"Canonical replay"[39m[33m;[39m
+ [90m 39 |[39m[0m
+Next.js build worker exited with code: 1 and signal: null
+ ELIFECYCLE  Command failed with exit code 1.
+RC=1
+
+== preview deploy ==
+
+$ cd '/home/user/urai-spatial/urai-tier1' && firebase hosting:channel:deploy preview-20260316_230642 --project urai-4dc1d --expires 7d
+_MONOSPACE_ENV_STARTED_=http://localhost:80/
+✔  hosting:channel: Channel preview-20260316-230642 has been created on site urai-4dc1d.
+
+=== Deploying to 'urai-4dc1d'...
+
+i  deploying hosting
+i  hosting[urai-4dc1d]: beginning deploy...
+
+Error: Directory 'out' for Hosting does not exist.
+RC=1
+
+== final status ==
+
+$ git branch --show-current
+_MONOSPACE_ENV_STARTED_=http://localhost:80/
+phase9-narrative-replay-20260316_230642
+RC=0
+
+$ git status --short
+_MONOSPACE_ENV_STARTED_=http://localhost:80/
+?? urai-tier1/src/spatial/narrative/
+RC=0
+
+$ git log --oneline -n 5
+_MONOSPACE_ENV_STARTED_=http://localhost:80/
+4595fce feat(urai-spatial): lock memory sphere phase 20260316_230642
+0474b9e feat(urai-spatial): lock replay contract phase 20260316_230259
+0c39b79 chore(urai-spatial): record quarantine backup deletion
+7abbf9e fix(urai-spatial): enable static export and firebase hosting preview
+897cf06 fix(urai-spatial): align real memory star contracts 20260316_184928
+RC=0

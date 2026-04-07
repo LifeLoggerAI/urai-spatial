@@ -1,0 +1,10 @@
+[BACKUP] src/spatial/state/sceneStore.ts
+[BACKUP] src/spatial/persistence/SpatialPersistenceBridge.tsx
+[BACKUP] src/spatial/types.ts
+[STEP] capture before snippets
+[STEP] capture after snippets
+[STEP] TypeScript validation
+
+[FAIL] TypeScript validation failed after hotfix2.
+
+[FAIL] Script aborted at line 1 (exit 1)

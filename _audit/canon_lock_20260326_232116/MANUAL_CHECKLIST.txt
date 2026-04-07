@@ -1,0 +1,12 @@
+URAI manual validation:
+1. Home loads full-viewport with orb + ground, no top-strip compression.
+2. Clicking empty sky in Home ascends into LifeMap.
+3. LifeMap shows fixed stars in depth; no orb or ground visible after ascent settles.
+4. Clicking any star enters Focus without label mismatch.
+5. Focus frames one anchor without clipping the entire screen.
+6. Replay button exists only in Focus.
+7. Replay is visually distinct from Focus.
+8. ESC path is exact:
+   REPLAY -> FOCUS -> LIFEMAP -> HOME
+9. No teleport cut on any transition.
+10. Production build succeeds.

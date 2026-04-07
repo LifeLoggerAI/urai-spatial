@@ -1,3 +1,4 @@
+// CAMERA AUTHORITY LOCK: XR disabled for Tier1 canonical mode
 "use client";
 
 import { useEffect, useRef } from "react";

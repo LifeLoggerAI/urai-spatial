@@ -1,0 +1,5 @@
+=== URAI CANON LOCK PASS ===
+ROOT=/home/user/urai-spatial
+APP=/home/user/urai-spatial/urai-tier1
+AUDIT_DIR=/home/user/urai-spatial/_audit/canon_lock_20260326_232234
+NOTE: app/page.tsx exists but canonical entry was written to src/app/page.tsx

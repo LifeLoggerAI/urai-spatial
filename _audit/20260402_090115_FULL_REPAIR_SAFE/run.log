@@ -1,0 +1,13 @@
+=== PASS 0 — FORENSIC SNAPSHOT ===
+FATAL: no HomeEnvironment.tsx found
+
+PATCH_APPLIED: NO
+TYPECHECK: NOT_RUN
+BUILD: NOT_RUN
+FILES TOUCHED:
+none
+FINAL_STATUS: FAIL
+
+AUDIT_DIR: /home/user/urai-spatial/_audit/20260402_090115_FULL_REPAIR_SAFE
+LOG: /home/user/urai-spatial/_audit/20260402_090115_FULL_REPAIR_SAFE/run.log
+Press ENTER to close...exit

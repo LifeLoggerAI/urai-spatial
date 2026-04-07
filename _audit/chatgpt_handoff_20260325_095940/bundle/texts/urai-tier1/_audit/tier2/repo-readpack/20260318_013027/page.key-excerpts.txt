@@ -1,0 +1,887 @@
+
+===== PATTERN: Mode =====
+1-"use client";
+2-
+3-import React, { useEffect, useMemo, useRef, useState } from "react";
+4-
+5:type Mode = "home" | "sky" | "lifemap" | "focus" | "replay";
+6-
+7-type MemoryNode = {
+8-  id: string;
+9-  title: string;
+10-  chapter: string;
+11-  domain: string;
+12-  summary: string;
+13-  tags: [string, string, string];
+--
+79-}
+80-
+81-const SKY_TRANSIT_MS = 950;
+82-const MAP_TO_FOCUS_MS = 300;
+83-const FOCUS_TO_REPLAY_MS = 220;
+84-const REPLAY_TO_FOCUS_MS = 220;
+85-const FOCUS_TO_MAP_MS = 220;
+86-
+87:function pillLabel(mode: Mode) {
+88-  return mode.toUpperCase();
+89-}
+90-
+91-export default function Page() {
+92:  const [mode, setMode] = useState<Mode>("home");
+93-  const [selectedId, setSelectedId] = useState<string>("threshold-one");
+94-  const [transitioning, setTransitioning] = useState(false);
+95-  const [pulseId, setPulseId] = useState<string | null>(null);
+96-  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+97-  const dust = useMemo(() => seededDust(72), []);
+98-  const selected = useMemo(
+99-    () => MEMORY_NODES.find((node) => node.id === selectedId) ?? MEMORY_NODES[0],
+100-    [selectedId]
+--
+119-    timerRef.current = setTimeout(() => {
+120-      next();
+121-      setTransitioning(false);
+122-    }, ms);
+123-  };
+124-
+125-  const enterLifeMap = () => {
+126-    if (transitioning) return;
+127:    setMode("sky");
+128:    lock(SKY_TRANSIT_MS, () => setMode("lifemap"));
+129-  };
+130-
+131-  const returnHome = () => {
+132-    if (transitioning) return;
+133:    setMode("home");
+134-  };
+135-
+136-  const selectMemory = (id: string) => {
+137-    if (transitioning) return;
+138-    setSelectedId(id);
+139-    setPulseId(id);
+140-    lock(MAP_TO_FOCUS_MS, () => {
+141-      setPulseId(null);
+142:      setMode("focus");
+143-    });
+144-  };
+145-
+146-  const clearFocus = () => {
+147-    if (transitioning) return;
+148:    lock(FOCUS_TO_MAP_MS, () => setMode("lifemap"));
+149-  };
+150-
+151-  const enterReplay = () => {
+152-    if (transitioning) return;
+153:    lock(FOCUS_TO_REPLAY_MS, () => setMode("replay"));
+154-  };
+155-
+156-  const exitReplay = () => {
+157-    if (transitioning) return;
+158:    lock(REPLAY_TO_FOCUS_MS, () => setMode("focus"));
+159-  };
+160-
+161-  const uiLocked = transitioning || mode === "sky";
+162-  const showMapWorld = mode === "lifemap" || mode === "focus" || mode === "replay";
+163-
+164-  return (
+165-    <main
+166-      style={{
+
+===== PATTERN: SpatialScene =====
+
+===== PATTERN: home|sky|lifemap|focus|replay =====
+1-"use client";
+2-
+3-import React, { useEffect, useMemo, useRef, useState } from "react";
+4-
+5:type Mode = "home" | "sky" | "lifemap" | "focus" | "replay";
+6-
+7-type MemoryNode = {
+8-  id: string;
+9-  title: string;
+10-  chapter: string;
+11-  domain: string;
+12-  summary: string;
+13-  tags: [string, string, string];
+--
+17-};
+18-
+19-const MEMORY_NODES: MemoryNode[] = [
+20-  {
+21-    id: "return-signal",
+22-    title: "Return Signal",
+23-    chapter: "Return",
+24-    domain: "Atmosic",
+25:    summary: "Second orbit node for focus continuity and selected-state validation.",
+26-    tags: ["Signal", "Return", "Orbit"],
+27-    x: 22,
+28-    y: 58,
+29-    size: 10,
+30-  },
+31-  {
+32-    id: "threshold-one",
+33-    title: "Threshold One",
+34-    chapter: "Winter",
+35-    domain: "Threshold",
+36:    summary: "Canonical memory seed used to verify replay identity and focus continuity.",
+37-    tags: ["Origin", "Winter", "Threshold"],
+38-    x: 54,
+39-    y: 46,
+40-    size: 12,
+41-  },
+42-  {
+43-    id: "echo-lattice",
+44-    title: "Echo Lattice",
+--
+84-const REPLAY_TO_FOCUS_MS = 220;
+85-const FOCUS_TO_MAP_MS = 220;
+86-
+87-function pillLabel(mode: Mode) {
+88-  return mode.toUpperCase();
+89-}
+90-
+91-export default function Page() {
+92:  const [mode, setMode] = useState<Mode>("home");
+93-  const [selectedId, setSelectedId] = useState<string>("threshold-one");
+94-  const [transitioning, setTransitioning] = useState(false);
+95-  const [pulseId, setPulseId] = useState<string | null>(null);
+96-  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+97-  const dust = useMemo(() => seededDust(72), []);
+98-  const selected = useMemo(
+99-    () => MEMORY_NODES.find((node) => node.id === selectedId) ?? MEMORY_NODES[0],
+100-    [selectedId]
+--
+119-    timerRef.current = setTimeout(() => {
+120-      next();
+121-      setTransitioning(false);
+122-    }, ms);
+123-  };
+124-
+125-  const enterLifeMap = () => {
+126-    if (transitioning) return;
+127:    setMode("sky");
+128:    lock(SKY_TRANSIT_MS, () => setMode("lifemap"));
+129-  };
+130-
+131-  const returnHome = () => {
+132-    if (transitioning) return;
+133:    setMode("home");
+134-  };
+135-
+136-  const selectMemory = (id: string) => {
+137-    if (transitioning) return;
+138-    setSelectedId(id);
+139-    setPulseId(id);
+140-    lock(MAP_TO_FOCUS_MS, () => {
+141-      setPulseId(null);
+142:      setMode("focus");
+143-    });
+144-  };
+145-
+146-  const clearFocus = () => {
+147-    if (transitioning) return;
+148:    lock(FOCUS_TO_MAP_MS, () => setMode("lifemap"));
+149-  };
+150-
+151-  const enterReplay = () => {
+152-    if (transitioning) return;
+153:    lock(FOCUS_TO_REPLAY_MS, () => setMode("replay"));
+154-  };
+155-
+156-  const exitReplay = () => {
+157-    if (transitioning) return;
+158:    lock(REPLAY_TO_FOCUS_MS, () => setMode("focus"));
+159-  };
+160-
+161:  const uiLocked = transitioning || mode === "sky";
+162:  const showMapWorld = mode === "lifemap" || mode === "focus" || mode === "replay";
+163-
+164-  return (
+165-    <main
+166-      style={{
+167-        minHeight: "100vh",
+168-        width: "100vw",
+169-        position: "relative",
+170-        overflow: "hidden",
+--
+314-                  ? "1px solid rgba(255,255,255,0.48)"
+315-                  : "1px solid rgba(255,255,255,0.14)",
+316-                background: selectedNode
+317-                  ? "radial-gradient(circle, rgba(214,226,255,0.92) 0%, rgba(140,160,214,0.38) 55%, rgba(26,36,66,0.18) 100%)"
+318-                  : "radial-gradient(circle, rgba(226,236,255,0.94) 0%, rgba(124,146,206,0.22) 100%)",
+319-                boxShadow: selectedNode
+320-                  ? "0 0 34px rgba(180,200,255,0.42)"
+321-                  : "0 0 12px rgba(190,210,255,0.18)",
+322:                opacity: mode === "home" || mode === "sky" ? 0.16 : 1,
+323-                cursor: showMapWorld && !uiLocked ? "pointer" : "default",
+324-                transition:
+325-                  "transform 220ms ease, width 220ms ease, height 220ms ease, opacity 220ms ease, box-shadow 220ms ease",
+326-                pointerEvents: showMapWorld && !uiLocked ? "auto" : "none",
+327-                animation: pulsingNode ? "node-pulse 280ms ease-out 1" : undefined,
+328-              }}
+329-              aria-label={node.title}
+330-            >
+--
+338-                    boxShadow: "0 0 26px rgba(154,186,255,0.14)",
+339-                  }}
+340-                />
+341-              )}
+342-            </button>
+343-          );
+344-        })}
+345-
+346:      {(mode === "focus" || mode === "replay") && (
+347-        <div
+348-          style={{
+349-            position: "absolute",
+350-            left: "50%",
+351:            top: mode === "replay" ? "48%" : "50%",
+352-            transform: "translate(-50%, -50%)",
+353:            width: mode === "replay" ? 146 : 118,
+354:            height: mode === "replay" ? 146 : 118,
+355-            borderRadius: "50%",
+356-            background:
+357-              "radial-gradient(circle, rgba(220,230,255,0.20) 0%, rgba(116,136,196,0.20) 45%, rgba(46,60,102,0.14) 68%, rgba(18,26,48,0.00) 100%)",
+358-            border: "1px solid rgba(255,255,255,0.18)",
+359-            boxShadow:
+360-              "0 0 42px rgba(150,176,255,0.14), inset 0 0 22px rgba(230,238,255,0.08)",
+361-            transition: "all 240ms ease",
+362-            animation: "breathe 4.2s ease-in-out infinite",
+363-            zIndex: 10,
+364-          }}
+365-        />
+366-      )}
+367-
+368:      {mode === "home" && (
+369-        <section
+370-          style={{
+371-            position: "absolute",
+372-            left: "50%",
+373-            top: "46%",
+374-            transform: "translate(-50%, -50%)",
+375-            width: "min(560px, calc(100vw - 64px))",
+376-            borderRadius: 18,
+--
+417-            one clear camera story, and zero modal-state drift.
+418-          </div>
+419-          <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
+420-            <ActionButton disabled={uiLocked} label="ENTER LIFEMAP" onClick={enterLifeMap} />
+421-          </div>
+422-        </section>
+423-      )}
+424-
+425:      {mode === "sky" && (
+426-        <>
+427-          <div
+428-            style={{
+429-              position: "absolute",
+430-              inset: 0,
+431-              zIndex: 16,
+432-              pointerEvents: "none",
+433-              background:
+--
+442-              width: "44%",
+443-              height: 2,
+444-              zIndex: 18,
+445-              pointerEvents: "none",
+446-              background:
+447-                "linear-gradient(90deg, rgba(255,255,255,0.00) 0%, rgba(214,226,255,0.82) 55%, rgba(255,255,255,0.00) 100%)",
+448-              boxShadow: "0 0 26px rgba(170,196,255,0.32)",
+449-              transform: "translateY(-50%)",
+450:              animation: "sky-streak-a 950ms ease-out 1",
+451-            }}
+452-          />
+453-          <div
+454-            style={{
+455-              position: "absolute",
+456-              right: "-16%",
+457-              top: "50%",
+458-              width: "52%",
+459-              height: 1,
+460-              zIndex: 18,
+461-              pointerEvents: "none",
+462-              background:
+463-                "linear-gradient(90deg, rgba(255,255,255,0.00) 0%, rgba(214,226,255,0.68) 50%, rgba(255,255,255,0.00) 100%)",
+464-              boxShadow: "0 0 18px rgba(170,196,255,0.20)",
+465-              transform: "translateY(-50%)",
+466:              animation: "sky-streak-b 950ms ease-out 1",
+467-            }}
+468-          />
+469-          <div
+470-            style={{
+471-              position: "absolute",
+472-              left: "50%",
+473-              top: "50%",
+474-              width: 164,
+--
+476-              borderRadius: "50%",
+477-              zIndex: 17,
+478-              pointerEvents: "none",
+479-              transform: "translate(-50%, -50%)",
+480-              border: "1px solid rgba(206,222,255,0.08)",
+481-              background:
+482-                "radial-gradient(circle, rgba(220,230,255,0.10) 0%, rgba(116,136,196,0.06) 55%, rgba(18,26,48,0.00) 100%)",
+483-              boxShadow: "0 0 44px rgba(150,176,255,0.10)",
+484:              animation: "sky-core 950ms ease-out 1",
+485-            }}
+486-          />
+487-          <div
+488-            style={{
+489-              position: "absolute",
+490-              left: "50%",
+491-              bottom: 22,
+492-              transform: "translateX(-50%)",
+--
+503-              backdropFilter: "blur(10px)",
+504-            }}
+505-          >
+506-            Transit
+507-          </div>
+508-        </>
+509-      )}
+510-
+511:      {mode === "lifemap" && (
+512-        <>
+513-          <div
+514-            style={{
+515-              position: "absolute",
+516-              left: "50%",
+517-              bottom: 18,
+518-              transform: "translateX(-50%)",
+519-              width: "min(520px, calc(100vw - 48px))",
+--
+533-                textTransform: "uppercase",
+534-                color: "rgba(204,216,245,0.62)",
+535-                marginBottom: 6,
+536-              }}
+537-            >
+538-              Lifemap
+539-            </div>
+540-            <div style={{ fontSize: 12, color: "rgba(220,228,245,0.80)", lineHeight: 1.5 }}>
+541:              Select a star to enter focus. Focus exits always return to the same selected memory
+542-              node.
+543-            </div>
+544-          </div>
+545-
+546-          <div
+547-            style={{
+548-              position: "absolute",
+549-              right: 18,
+--
+551-              zIndex: 20,
+552-            }}
+553-          >
+554-            <ActionButton disabled={uiLocked} label="RETURN HOME" onClick={returnHome} />
+555-          </div>
+556-        </>
+557-      )}
+558-
+559:      {mode === "focus" && (
+560-        <aside
+561-          style={{
+562-            position: "absolute",
+563-            right: 18,
+564-            bottom: 18,
+565-            width: "min(320px, calc(100vw - 36px))",
+566-            borderRadius: 16,
+567-            border: "1px solid rgba(255,255,255,0.10)",
+--
+617-          </div>
+618-          <div style={{ display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap" }}>
+619-            <ActionButton disabled={uiLocked} label="ENTER REPLAY" onClick={enterReplay} />
+620-            <ActionButton disabled={uiLocked} label="CLEAR FOCUS" onClick={clearFocus} />
+621-          </div>
+622-        </aside>
+623-      )}
+624-
+625:      {mode === "replay" && (
+626-        <section
+627-          style={{
+628-            position: "absolute",
+629-            left: 18,
+630-            top: "50%",
+631-            transform: "translateY(-50%)",
+632-            width: "min(420px, calc(100vw - 36px))",
+633-            borderRadius: 18,
+--
+686-          <div
+687-            style={{
+688-              fontSize: 13,
+689-              lineHeight: 1.65,
+690-              color: "rgba(220,228,245,0.78)",
+691-              marginBottom: 16,
+692-            }}
+693-          >
+694:            Canonical replay holds the same selected memory identity across focus and replay, with a
+695-            stronger entered-memory composition and deterministic exit path.
+696-          </div>
+697-
+698-          <div style={{ display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap" }}>
+699-            <ActionButton disabled={uiLocked} label="EXIT REPLAY" onClick={exitReplay} />
+700-          </div>
+701-        </section>
+702-      )}
+--
+716-          0% {
+717-            transform: translate(-50%, -50%) scale(1);
+718-          }
+719-          100% {
+720-            transform: translate(-50%, -50%) scale(1.42);
+721-          }
+722-        }
+723-
+724:        @keyframes sky-streak-a {
+725-          0% {
+726-            transform: translate(-18%, -50%) scaleX(0.72);
+727-            opacity: 0.12;
+728-          }
+729-          100% {
+730-            transform: translate(22%, -50%) scaleX(1.12);
+731-            opacity: 1;
+732-          }
+733-        }
+734-
+735:        @keyframes sky-streak-b {
+736-          0% {
+737-            transform: translate(18%, -50%) scaleX(0.82);
+738-            opacity: 0.10;
+739-          }
+740-          100% {
+741-            transform: translate(-14%, -50%) scaleX(1.08);
+742-            opacity: 0.84;
+743-          }
+744-        }
+745-
+746:        @keyframes sky-core {
+747-          0% {
+748-            transform: translate(-50%, -50%) scale(0.72);
+749-            opacity: 0.10;
+750-          }
+751-          100% {
+752-            transform: translate(-50%, -50%) scale(1.18);
+753-            opacity: 1;
+754-          }
+
+===== PATTERN: ActionButton =====
+412-              maxWidth: 480,
+413-              marginBottom: 18,
+414-            }}
+415-          >
+416-            This page is the deterministic Tier 1 lock shell: one world, one selected memory,
+417-            one clear camera story, and zero modal-state drift.
+418-          </div>
+419-          <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
+420:            <ActionButton disabled={uiLocked} label="ENTER LIFEMAP" onClick={enterLifeMap} />
+421-          </div>
+422-        </section>
+423-      )}
+424-
+425-      {mode === "sky" && (
+426-        <>
+427-          <div
+428-            style={{
+--
+546-          <div
+547-            style={{
+548-              position: "absolute",
+549-              right: 18,
+550-              bottom: 18,
+551-              zIndex: 20,
+552-            }}
+553-          >
+554:            <ActionButton disabled={uiLocked} label="RETURN HOME" onClick={returnHome} />
+555-          </div>
+556-        </>
+557-      )}
+558-
+559-      {mode === "focus" && (
+560-        <aside
+561-          style={{
+562-            position: "absolute",
+--
+611-              lineHeight: 1.65,
+612-              color: "rgba(220,228,245,0.78)",
+613-              marginBottom: 16,
+614-            }}
+615-          >
+616-            {selected.summary}
+617-          </div>
+618-          <div style={{ display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap" }}>
+619:            <ActionButton disabled={uiLocked} label="ENTER REPLAY" onClick={enterReplay} />
+620:            <ActionButton disabled={uiLocked} label="CLEAR FOCUS" onClick={clearFocus} />
+621-          </div>
+622-        </aside>
+623-      )}
+624-
+625-      {mode === "replay" && (
+626-        <section
+627-          style={{
+628-            position: "absolute",
+--
+691-              marginBottom: 16,
+692-            }}
+693-          >
+694-            Canonical replay holds the same selected memory identity across focus and replay, with a
+695-            stronger entered-memory composition and deterministic exit path.
+696-          </div>
+697-
+698-          <div style={{ display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap" }}>
+699:            <ActionButton disabled={uiLocked} label="EXIT REPLAY" onClick={exitReplay} />
+700-          </div>
+701-        </section>
+702-      )}
+703-
+704-      <style jsx global>{`
+705-        @keyframes breathe {
+706-          0%,
+707-          100% {
+--
+753-            opacity: 1;
+754-          }
+755-        }
+756-      `}</style>
+757-    </main>
+758-  );
+759-}
+760-
+761:function ActionButton(input: {
+762-  label: string;
+763-  onClick: () => void;
+764-  disabled?: boolean;
+765-}) {
+766-  return (
+767-    <button
+768-      type="button"
+769-      onClick={input.onClick}
+
+===== PATTERN: selected|focus|replay =====
+1-"use client";
+2-
+3-import React, { useEffect, useMemo, useRef, useState } from "react";
+4-
+5:type Mode = "home" | "sky" | "lifemap" | "focus" | "replay";
+6-
+7-type MemoryNode = {
+8-  id: string;
+9-  title: string;
+10-  chapter: string;
+11-  domain: string;
+12-  summary: string;
+13-  tags: [string, string, string];
+--
+17-};
+18-
+19-const MEMORY_NODES: MemoryNode[] = [
+20-  {
+21-    id: "return-signal",
+22-    title: "Return Signal",
+23-    chapter: "Return",
+24-    domain: "Atmosic",
+25:    summary: "Second orbit node for focus continuity and selected-state validation.",
+26-    tags: ["Signal", "Return", "Orbit"],
+27-    x: 22,
+28-    y: 58,
+29-    size: 10,
+30-  },
+31-  {
+32-    id: "threshold-one",
+33-    title: "Threshold One",
+34-    chapter: "Winter",
+35-    domain: "Threshold",
+36:    summary: "Canonical memory seed used to verify replay identity and focus continuity.",
+37-    tags: ["Origin", "Winter", "Threshold"],
+38-    x: 54,
+39-    y: 46,
+40-    size: 12,
+41-  },
+42-  {
+43-    id: "echo-lattice",
+44-    title: "Echo Lattice",
+--
+85-const FOCUS_TO_MAP_MS = 220;
+86-
+87-function pillLabel(mode: Mode) {
+88-  return mode.toUpperCase();
+89-}
+90-
+91-export default function Page() {
+92-  const [mode, setMode] = useState<Mode>("home");
+93:  const [selectedId, setSelectedId] = useState<string>("threshold-one");
+94-  const [transitioning, setTransitioning] = useState(false);
+95-  const [pulseId, setPulseId] = useState<string | null>(null);
+96-  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+97-  const dust = useMemo(() => seededDust(72), []);
+98:  const selected = useMemo(
+99:    () => MEMORY_NODES.find((node) => node.id === selectedId) ?? MEMORY_NODES[0],
+100:    [selectedId]
+101-  );
+102-
+103-  useEffect(() => {
+104-    const onContextMenu = (event: MouseEvent) => event.preventDefault();
+105-    document.addEventListener("contextmenu", onContextMenu);
+106-    document.body.style.margin = "0";
+107-    document.body.style.background = "#030610";
+108-    document.body.style.overflow = "hidden";
+--
+134-  };
+135-
+136-  const selectMemory = (id: string) => {
+137-    if (transitioning) return;
+138-    setSelectedId(id);
+139-    setPulseId(id);
+140-    lock(MAP_TO_FOCUS_MS, () => {
+141-      setPulseId(null);
+142:      setMode("focus");
+143-    });
+144-  };
+145-
+146-  const clearFocus = () => {
+147-    if (transitioning) return;
+148-    lock(FOCUS_TO_MAP_MS, () => setMode("lifemap"));
+149-  };
+150-
+151-  const enterReplay = () => {
+152-    if (transitioning) return;
+153:    lock(FOCUS_TO_REPLAY_MS, () => setMode("replay"));
+154-  };
+155-
+156-  const exitReplay = () => {
+157-    if (transitioning) return;
+158:    lock(REPLAY_TO_FOCUS_MS, () => setMode("focus"));
+159-  };
+160-
+161-  const uiLocked = transitioning || mode === "sky";
+162:  const showMapWorld = mode === "lifemap" || mode === "focus" || mode === "replay";
+163-
+164-  return (
+165-    <main
+166-      style={{
+167-        minHeight: "100vh",
+168-        width: "100vw",
+169-        position: "relative",
+170-        overflow: "hidden",
+--
+289-            boxShadow: "0 0 18px rgba(233,243,255,0.55)",
+290-            opacity: 0.94,
+291-          }}
+292-        />
+293-      </div>
+294-
+295-      {(showMapWorld || pulseId) &&
+296-        MEMORY_NODES.map((node) => {
+297:          const selectedNode = node.id === selectedId;
+298-          const pulsingNode = node.id === pulseId;
+299-          return (
+300-            <button
+301-              key={node.id}
+302-              type="button"
+303-              disabled={!showMapWorld || uiLocked}
+304-              onClick={() => selectMemory(node.id)}
+305-              style={{
+306-                position: "absolute",
+307-                left: `${node.x}%`,
+308-                top: `${node.y}%`,
+309-                transform: "translate(-50%, -50%)",
+310:                width: selectedNode ? node.size + 10 : node.size,
+311:                height: selectedNode ? node.size + 10 : node.size,
+312-                borderRadius: 999,
+313:                border: selectedNode
+314-                  ? "1px solid rgba(255,255,255,0.48)"
+315-                  : "1px solid rgba(255,255,255,0.14)",
+316:                background: selectedNode
+317-                  ? "radial-gradient(circle, rgba(214,226,255,0.92) 0%, rgba(140,160,214,0.38) 55%, rgba(26,36,66,0.18) 100%)"
+318-                  : "radial-gradient(circle, rgba(226,236,255,0.94) 0%, rgba(124,146,206,0.22) 100%)",
+319:                boxShadow: selectedNode
+320-                  ? "0 0 34px rgba(180,200,255,0.42)"
+321-                  : "0 0 12px rgba(190,210,255,0.18)",
+322-                opacity: mode === "home" || mode === "sky" ? 0.16 : 1,
+323-                cursor: showMapWorld && !uiLocked ? "pointer" : "default",
+324-                transition:
+325-                  "transform 220ms ease, width 220ms ease, height 220ms ease, opacity 220ms ease, box-shadow 220ms ease",
+326-                pointerEvents: showMapWorld && !uiLocked ? "auto" : "none",
+327-                animation: pulsingNode ? "node-pulse 280ms ease-out 1" : undefined,
+328-              }}
+329-              aria-label={node.title}
+330-            >
+331:              {selectedNode && (
+332-                <span
+333-                  style={{
+334-                    position: "absolute",
+335-                    inset: -14,
+336-                    borderRadius: 999,
+337-                    border: "1px solid rgba(206,222,255,0.20)",
+338-                    boxShadow: "0 0 26px rgba(154,186,255,0.14)",
+339-                  }}
+340-                />
+341-              )}
+342-            </button>
+343-          );
+344-        })}
+345-
+346:      {(mode === "focus" || mode === "replay") && (
+347-        <div
+348-          style={{
+349-            position: "absolute",
+350-            left: "50%",
+351:            top: mode === "replay" ? "48%" : "50%",
+352-            transform: "translate(-50%, -50%)",
+353:            width: mode === "replay" ? 146 : 118,
+354:            height: mode === "replay" ? 146 : 118,
+355-            borderRadius: "50%",
+356-            background:
+357-              "radial-gradient(circle, rgba(220,230,255,0.20) 0%, rgba(116,136,196,0.20) 45%, rgba(46,60,102,0.14) 68%, rgba(18,26,48,0.00) 100%)",
+358-            border: "1px solid rgba(255,255,255,0.18)",
+359-            boxShadow:
+360-              "0 0 42px rgba(150,176,255,0.14), inset 0 0 22px rgba(230,238,255,0.08)",
+361-            transition: "all 240ms ease",
+362-            animation: "breathe 4.2s ease-in-out infinite",
+--
+408-            style={{
+409-              fontSize: 13,
+410-              lineHeight: 1.65,
+411-              color: "rgba(220,228,245,0.78)",
+412-              maxWidth: 480,
+413-              marginBottom: 18,
+414-            }}
+415-          >
+416:            This page is the deterministic Tier 1 lock shell: one world, one selected memory,
+417-            one clear camera story, and zero modal-state drift.
+418-          </div>
+419-          <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
+420-            <ActionButton disabled={uiLocked} label="ENTER LIFEMAP" onClick={enterLifeMap} />
+421-          </div>
+422-        </section>
+423-      )}
+424-
+--
+533-                textTransform: "uppercase",
+534-                color: "rgba(204,216,245,0.62)",
+535-                marginBottom: 6,
+536-              }}
+537-            >
+538-              Lifemap
+539-            </div>
+540-            <div style={{ fontSize: 12, color: "rgba(220,228,245,0.80)", lineHeight: 1.5 }}>
+541:              Select a star to enter focus. Focus exits always return to the same selected memory
+542-              node.
+543-            </div>
+544-          </div>
+545-
+546-          <div
+547-            style={{
+548-              position: "absolute",
+549-              right: 18,
+--
+551-              zIndex: 20,
+552-            }}
+553-          >
+554-            <ActionButton disabled={uiLocked} label="RETURN HOME" onClick={returnHome} />
+555-          </div>
+556-        </>
+557-      )}
+558-
+559:      {mode === "focus" && (
+560-        <aside
+561-          style={{
+562-            position: "absolute",
+563-            right: 18,
+564-            bottom: 18,
+565-            width: "min(320px, calc(100vw - 36px))",
+566-            borderRadius: 16,
+567-            border: "1px solid rgba(255,255,255,0.10)",
+--
+587-            style={{
+588-              fontSize: 26,
+589-              lineHeight: 1.02,
+590-              fontWeight: 700,
+591-              marginBottom: 8,
+592-              letterSpacing: "-0.03em",
+593-            }}
+594-          >
+595:            {selected.title}
+596-          </div>
+597-          <div
+598-            style={{
+599-              display: "flex",
+600-              gap: 8,
+601-              marginBottom: 10,
+602-              flexWrap: "wrap",
+603-            }}
+604-          >
+605:            <Tag value={selected.chapter} />
+606:            <Tag value={selected.domain} />
+607-          </div>
+608-          <div
+609-            style={{
+610-              fontSize: 13,
+611-              lineHeight: 1.65,
+612-              color: "rgba(220,228,245,0.78)",
+613-              marginBottom: 16,
+614-            }}
+615-          >
+616:            {selected.summary}
+617-          </div>
+618-          <div style={{ display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap" }}>
+619-            <ActionButton disabled={uiLocked} label="ENTER REPLAY" onClick={enterReplay} />
+620-            <ActionButton disabled={uiLocked} label="CLEAR FOCUS" onClick={clearFocus} />
+621-          </div>
+622-        </aside>
+623-      )}
+624-
+625:      {mode === "replay" && (
+626-        <section
+627-          style={{
+628-            position: "absolute",
+629-            left: 18,
+630-            top: "50%",
+631-            transform: "translateY(-50%)",
+632-            width: "min(420px, calc(100vw - 36px))",
+633-            borderRadius: 18,
+--
+654-            style={{
+655-              fontSize: 38,
+656-              lineHeight: 0.98,
+657-              fontWeight: 700,
+658-              letterSpacing: "-0.04em",
+659-              marginBottom: 14,
+660-            }}
+661-          >
+662:            {selected.title}
+663-          </div>
+664-
+665-          <div
+666-            style={{
+667-              height: 1,
+668-              background: "rgba(255,255,255,0.10)",
+669-              marginBottom: 14,
+670-            }}
+--
+673-          <div
+674-            style={{
+675-              display: "grid",
+676-              gridTemplateColumns: "repeat(3, minmax(0, 1fr))",
+677-              gap: 10,
+678-              marginBottom: 16,
+679-            }}
+680-          >
+681:            <ReplayDatum label="Origin" value={selected.tags[0]} />
+682:            <ReplayDatum label="Vector" value={selected.tags[1]} />
+683:            <ReplayDatum label="Thread" value={selected.tags[2]} />
+684-          </div>
+685-
+686-          <div
+687-            style={{
+688-              fontSize: 13,
+689-              lineHeight: 1.65,
+690-              color: "rgba(220,228,245,0.78)",
+691-              marginBottom: 16,
+692-            }}
+693-          >
+694:            Canonical replay holds the same selected memory identity across focus and replay, with a
+695-            stronger entered-memory composition and deterministic exit path.
+696-          </div>
+697-
+698-          <div style={{ display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap" }}>
+699-            <ActionButton disabled={uiLocked} label="EXIT REPLAY" onClick={exitReplay} />
+700-          </div>
+701-        </section>
+702-      )}

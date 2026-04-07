@@ -1,0 +1,9 @@
+src/spatial/ui/SpatialCuratedDeckDestructionAuthorizationPanel.tsx:5:import { buildSpatialCuratedDeckDestructionAuthorization } from "@/spatial/curation/buildSpatialCuratedDeckDestructionAuthorization";
+src/spatial/ui/SpatialCuratedDeckDestructionAuthorizationPanel.tsx:12:export default function SpatialCuratedDeckDestructionAuthorizationPanel() {
+src/spatial/ui/SpatialCuratedDeckDestructionAuthorizationPanel.tsx:17:    () => buildSpatialCuratedDeckDestructionAuthorization({ entries, activeEntryId }),
+src/spatial/ui/SpatialCuratedDeckDestructionAuthorizationPanel.tsx:58:        Curated Deck Destruction Authorization
+src/spatial/curation/buildSpatialCuratedDeckDestructionAuthorization.ts:62:export function buildSpatialCuratedDeckDestructionAuthorization(input: {
+src/spatial/curation/buildSpatialCuratedDeckDestructionAuthorization.ts:184:    schema: "urai.spatial.curated-deck-destruction-authorization.v1",
+src/spatial/curation/spatialCuratedDeckDestructionAuthorizationTypes.ts:16:  schema: "urai.spatial.curated-deck-destruction-authorization.v1";
+src/spatial/scene/SpatialScene.tsx:2:import SpatialCuratedDeckDestructionAuthorizationPanel from "@/spatial/ui/SpatialCuratedDeckDestructionAuthorizationPanel";
+src/spatial/scene/SpatialScene.tsx:838:      <SpatialCuratedDeckDestructionAuthorizationPanel />

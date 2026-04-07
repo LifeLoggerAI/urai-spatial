@@ -1,0 +1,75 @@
+===== FILE: src/spatial/scene/Starfield.tsx =====
+
+     1	"use client";
+     2	import { toCanonicalSelectedStar } from "../state/toCanonicalSelectedStar";
+     3	
+     4	import type { SelectedStar } from "@/spatial/state/selectedStarContract";
+     5	import { useMemo, useState } from "react";
+     6	import { generateStars } from "@/spatial/data/stars";
+     7	import { useSceneStore } from "@/spatial/state/sceneStore";
+     8	
+     9	export default function Starfield() {
+    10	  const stars = useMemo(() => generateStars(), []);
+    11	  const mode = useSceneStore((s) => s.mode);
+    12	  const setMode = useSceneStore((s) => s.setMode);
+    13	  const setSelectedStar = useSceneStore((s) => s.setSelectedStar);
+    14	  const selectedStar = useSceneStore((s) => s.selectedStar);
+    15	  const [hovered, setHovered] = useState<string | null>(null);
+    16	
+    17	  return (
+    18	    <group>
+    19	      {stars.map((star) => {
+    20	        const isHovered = hovered === star.id;
+    21	        const isSelected = selectedStar?.id === star.id;
+    22	        const isDimmed = !!selectedStar && !isSelected;
+    23	        const drawScale = isSelected ? star.size * 1.55 : star.size;
+    24	        const baseScale = mode === "lifemap" ? 1.15 : 1;
+    25	        const scale = isSelected ? 1.7 : isHovered ? 1.35 : baseScale;
+    26	        const hitRadius = Math.max(star.size * (mode === "lifemap" ? 8 : 5), 3.2);
+    27	
+    28	        return (
+    29	          <group key={star.id} position={star.position}>
+    30	            {isSelected ? (
+    31	              <mesh scale={2.7}>
+    32	                <sphereGeometry args={[star.size, 24, 24]} />
+    33	                <meshBasicMaterial color={star.color} transparent opacity={0.12} />
+    34	              </mesh>
+    35	            ) : null}
+    36	
+    37	            <mesh scale={scale}>
+    38	              <sphereGeometry args={[star.size, isSelected ? 24 : 12, isSelected ? 24 : 12]} />
+    39	              <meshBasicMaterial color={star.color} />
+    40	            </mesh>
+    41	
+    42	            <mesh
+    43	              onPointerEnter={(e) => {
+    44	                e.stopPropagation();
+    45	                setHovered(star.id);
+    46	              }}
+    47	              onPointerLeave={(e) => {
+    48	                e.stopPropagation();
+    49	                setHovered((prev) => (prev === star.id ? null : prev));
+    50	              }}
+    51	              onPointerDown={(e) => {
+    52	                e.stopPropagation();
+    53	                setSelectedStar(toCanonicalSelectedStar(star));
+    54	                setMode("focus");
+    55	              }}
+    56	            >
+    57	              <sphereGeometry args={[hitRadius, 12, 12]} />
+    58	              <meshBasicMaterial transparent opacity={0} depthWrite={false} />
+    59	            </mesh>
+    60	        {/* URAI_FX_TIER_HALO */}
+    61	        {isSelected ? (
+    62	          <mesh scale={[drawScale * 2.35, drawScale * 2.35, drawScale * 2.35]}>
+    63	            <sphereGeometry args={[1, 20, 20]} />
+    64	            <meshBasicMaterial color={star.color} transparent opacity={0.10} depthWrite={false} />
+    65	          </mesh>
+    66	        ) : null}
+    67	          </group>
+    68	        );
+    69	      })}
+    70	    </group>
+    71	  );
+    72	}
+

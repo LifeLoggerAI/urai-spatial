@@ -1,8 +1,9 @@
+
 import { resolveStarByIdSafe } from "../lib/resolveStarByIdSafe";
 import type { SpatialPersistenceSnapshot } from "@/spatial/persistence/spatialPersistenceTypes";
 
 export function isSpatialPersistenceSnapshot(
-  value: unknown,
+  value: any,
 ): value is SpatialPersistenceSnapshot {
   if (!value || typeof value !== "object") return false;
 

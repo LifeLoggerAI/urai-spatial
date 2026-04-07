@@ -1,0 +1,5 @@
+=== URAI-SPATIAL SCENE CONSOLIDATION + INTERACTION LOCK ===
+timestamp=20260325_075049
+
+[phase] detect canonical runnable app from actual scripts
+FAIL: pnpm-workspace.yaml does not prove urai-tier1 is in workspace

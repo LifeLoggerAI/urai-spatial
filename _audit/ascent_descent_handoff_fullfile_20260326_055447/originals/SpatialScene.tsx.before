@@ -1,0 +1,863 @@
+"use client";
+
+import React, { useEffect, useMemo, useRef, useState } from "react";
+import { Canvas, ThreeEvent, useFrame, useThree } from "@react-three/fiber";
+import * as THREE from "three";
+
+type Mode = "home" | "lifemap" | "focus" | "replay";
+type Phase =
+  | "idle"
+  | "ascending"
+  | "descending"
+  | "enteringFocus"
+  | "exitingFocus"
+  | "enteringReplay"
+  | "exitingReplay";
+
+type TargetAuthority =
+  | "home-structural"
+  | "ascent-transitional"
+  | "lifemap-structural"
+  | "focus-interaction"
+  | "replay-narrative"
+  | "descent-transitional";
+
+type StarRecord = {
+  id: string;
+  title: string;
+  chapter: string;
+  position: [number, number, number];
+  size: number;
+  color: string;
+  replayAvailable: boolean;
+  importance: number;
+  interactive: boolean;
+};
+
+type DustRecord = {
+  id: string;
+  position: [number, number, number];
+  size: number;
+  opacity: number;
+  color: string;
+};
+
+const STAR_SEED = 19830414;
+const STAR_COUNT = 42;
+const DUST_COUNT = 220;
+const TRANSITION_SECONDS = 1.24;
+
+const HOME_CAMERA = {
+  position: [0, 1.18, 10.55] as [number, number, number],
+  target: [0, -0.02, -0.1] as [number, number, number],
+};
+
+const ASCENT_TARGET = [0, 0.32, -5.8] as [number, number, number];
+
+const LIFEMAP_CAMERA = {
+  position: [0.24, 0.72, 21.2] as [number, number, number],
+  target: [0, 0.18, -13.6] as [number, number, number],
+};
+
+function clamp01(n: number): number {
+  if (n < 0) return 0;
+  if (n > 1) return 1;
+  return n;
+}
+
+function easeInOutCubic(t: number): number {
+  const x = clamp01(t);
+  return x < 0.5 ? 4 * x * x * x : 1 - Math.pow(-2 * x + 2, 3) / 2;
+}
+
+function mix(a: number, b: number, t: number): number {
+  return a + (b - a) * t;
+}
+
+function mix3(
+  a: [number, number, number],
+  b: [number, number, number],
+  t: number,
+): [number, number, number] {
+  return [mix(a[0], b[0], t), mix(a[1], b[1], t), mix(a[2], b[2], t)];
+}
+
+function add3(
+  a: [number, number, number],
+  b: [number, number, number],
+): [number, number, number] {
+  return [a[0] + b[0], a[1] + b[1], a[2] + b[2]];
+}
+
+function mulberry32(seed: number): () => number {
+  let t = seed >>> 0;
+  return () => {
+    t += 0x6d2b79f5;
+    let r = Math.imul(t ^ (t >>> 15), t | 1);
+    r ^= r + Math.imul(r ^ (r >>> 7), r | 61);
+    return ((r ^ (r >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+function buildStars(): StarRecord[] {
+  const rnd = mulberry32(STAR_SEED);
+  const stars: StarRecord[] = [];
+
+  for (let i = 0; i < STAR_COUNT; i += 1) {
+    const importance = i % 11 === 0 ? 3 : i % 5 === 0 ? 2 : 1;
+    const interactive = importance >= 2;
+    const spread = importance === 3 ? 12 : importance === 2 ? 18 : 25;
+    const x = (rnd() - 0.5) * spread * 2.0;
+    const y = (rnd() - 0.5) * spread * 0.9;
+    const z =
+      importance === 3
+        ? mix(-18, -9, rnd())
+        : importance === 2
+          ? mix(-28, -11, rnd())
+          : mix(-38, -14, rnd());
+    const size =
+      importance === 3
+        ? mix(0.72, 1.08, rnd())
+        : importance === 2
+          ? mix(0.28, 0.52, rnd())
+          : mix(0.08, 0.18, rnd());
+
+    const colorPool =
+      importance === 3
+        ? ["#dde7ff", "#d6e1ff", "#ccd8ff"]
+        : importance === 2
+          ? ["#b9cee6", "#afc6e0", "#a7bfd8"]
+          : ["#8895ab", "#7d899f", "#748095"];
+
+    stars.push({
+      id: `memory-${i + 1}`,
+      title: `Memory ${i + 1}`,
+      chapter: importance === 3 ? "Anchor" : importance === 2 ? "Chapter" : "Field",
+      position: [Number(x.toFixed(3)), Number(y.toFixed(3)), Number(z.toFixed(3))],
+      size: Number(size.toFixed(3)),
+      color: colorPool[Math.floor(rnd() * colorPool.length)],
+      replayAvailable: importance >= 2,
+      importance,
+      interactive,
+    });
+  }
+
+  return stars;
+}
+
+function buildDust(): DustRecord[] {
+  const rnd = mulberry32(STAR_SEED + 404);
+  const dust: DustRecord[] = [];
+
+  for (let i = 0; i < DUST_COUNT; i += 1) {
+    const band = i % 3;
+    const z =
+      band === 0
+        ? mix(-62, -38, rnd())
+        : band === 1
+          ? mix(-48, -22, rnd())
+          : mix(-30, -10, rnd());
+
+    dust.push({
+      id: `dust-${i + 1}`,
+      position: [
+        Number((((rnd() - 0.5) * 64)).toFixed(3)),
+        Number((((rnd() - 0.5) * 28)).toFixed(3)),
+        Number(z.toFixed(3)),
+      ],
+      size: Number(
+        (
+          band === 0
+            ? mix(0.01, 0.028, rnd())
+            : band === 1
+              ? mix(0.014, 0.036, rnd())
+              : mix(0.018, 0.045, rnd())
+        ).toFixed(3),
+      ),
+      opacity: Number(
+        (
+          band === 0
+            ? mix(0.16, 0.28, rnd())
+            : band === 1
+              ? mix(0.22, 0.36, rnd())
+              : mix(0.26, 0.46, rnd())
+        ).toFixed(3),
+      ),
+      color: band === 0 ? "#505969" : band === 1 ? "#626d81" : "#78859c",
+    });
+  }
+
+  return dust;
+}
+
+function alphaForHome(mode: Mode, phase: Phase, t: number): number {
+  if (mode === "home" && phase === "idle") return 1;
+  if (phase === "ascending") return 1 - t;
+  if (phase === "descending") return t;
+  return 0;
+}
+
+function alphaForLifeMap(mode: Mode, phase: Phase, t: number): number {
+  if ((mode === "lifemap" || mode === "focus" || mode === "replay") && phase === "idle") return 1;
+  if (phase === "ascending") return Math.max(0, (t - 0.05) / 0.95);
+  if (phase === "descending") return 1 - t;
+  if (
+    phase === "enteringFocus" ||
+    phase === "exitingFocus" ||
+    phase === "enteringReplay" ||
+    phase === "exitingReplay"
+  ) return 1;
+  return 0;
+}
+
+function focusBlend(mode: Mode, phase: Phase, progress: number): number {
+  if (mode === "focus" || mode === "replay") return 1;
+  if (phase === "enteringFocus" || phase === "enteringReplay") return easeInOutCubic(progress);
+  if (phase === "exitingFocus" || phase === "exitingReplay") return 1 - easeInOutCubic(progress);
+  return 0;
+}
+
+function replayReady(mode: Mode, phase: Phase, selectedStar: StarRecord | null): boolean {
+  return mode === "focus" && phase === "idle" && Boolean(selectedStar?.replayAvailable);
+}
+
+function modeLabel(mode: Mode, selectedStar: StarRecord | null): string {
+  if (mode === "focus" && selectedStar) return selectedStar.title.toUpperCase();
+  if (mode === "replay") return "REPLAY";
+  if (mode === "lifemap") return "LIFEMAP";
+  return "HOME";
+}
+
+function resolveLookTarget(
+  mode: Mode,
+  phase: Phase,
+  progress: number,
+  selectedStar: StarRecord | null,
+): { target: [number, number, number]; authority: TargetAuthority } {
+  const t = easeInOutCubic(progress);
+
+  if (phase === "ascending") {
+    return {
+      target: mix3(HOME_CAMERA.target, ASCENT_TARGET, Math.max(t, 0.18)),
+      authority: "ascent-transitional",
+    };
+  }
+
+  if (phase === "descending") {
+    return {
+      target: mix3(LIFEMAP_CAMERA.target, HOME_CAMERA.target, t),
+      authority: "descent-transitional",
+    };
+  }
+
+  if (mode === "replay" || phase === "enteringReplay" || phase === "exitingReplay") {
+    const subject = selectedStar?.position ?? [0, 0, -12];
+    const replayTarget: [number, number, number] = [subject[0], subject[1], subject[2] - 0.34];
+    return { target: replayTarget, authority: "replay-narrative" };
+  }
+
+  if (mode === "focus" || phase === "enteringFocus" || phase === "exitingFocus") {
+    const subject = selectedStar?.position ?? [0, 0, -12];
+    const focusTarget: [number, number, number] = [subject[0], subject[1] + 0.06, subject[2] - 0.1];
+    return { target: focusTarget, authority: "focus-interaction" };
+  }
+
+  if (mode === "lifemap") {
+    return { target: LIFEMAP_CAMERA.target, authority: "lifemap-structural" };
+  }
+
+  return { target: HOME_CAMERA.target, authority: "home-structural" };
+}
+
+function CameraAuthority({
+  mode,
+  phase,
+  progress,
+  selectedStar,
+  onAuthorityResolved,
+}: {
+  mode: Mode;
+  phase: Phase;
+  progress: number;
+  selectedStar: StarRecord | null;
+  onAuthorityResolved: (authority: TargetAuthority) => void;
+}) {
+  const { camera, scene } = useThree();
+  const lookTarget = useRef(new THREE.Vector3(0, 0, 0));
+  const tempPos = useRef(new THREE.Vector3(0, 0, 0));
+  const tempColor = useRef(new THREE.Color("#020611"));
+  const authorityRef = useRef<TargetAuthority>("home-structural");
+
+  useFrame(({ clock }, dt) => {
+    const t = easeInOutCubic(progress);
+    const idle = clock.getElapsedTime();
+    const homeDriftX = Math.sin(idle * 0.18) * 0.025;
+    const homeDriftY = Math.cos(idle * 0.14) * 0.016;
+    const lifeDriftX = Math.sin(idle * 0.2) * 0.055;
+    const lifeDriftY = Math.cos(idle * 0.16) * 0.032;
+
+    let pos: [number, number, number] = HOME_CAMERA.position;
+    let bg = "#071321";
+    let fogNear = 10;
+    let fogFar = 28;
+
+    if (mode === "home" && phase === "idle") {
+      pos = [HOME_CAMERA.position[0] + homeDriftX, HOME_CAMERA.position[1] + homeDriftY, HOME_CAMERA.position[2]];
+      bg = "#071321";
+      fogNear = 10;
+      fogFar = 28;
+    } else if (phase === "ascending") {
+      const arcLift = Math.sin(Math.PI * t) * 0.9;
+      pos = mix3(HOME_CAMERA.position, LIFEMAP_CAMERA.position, t);
+      pos = [pos[0] + lifeDriftX * 0.18, pos[1] + arcLift, pos[2]];
+      bg = t < 0.42 ? "#030914" : "#01030b";
+      fogNear = 12;
+      fogFar = 48;
+    } else if (phase === "descending") {
+      const settleArc = Math.sin(Math.PI * (1 - t)) * 0.85;
+      pos = mix3(LIFEMAP_CAMERA.position, HOME_CAMERA.position, t);
+      pos = [pos[0] + homeDriftX * 0.18, pos[1] + settleArc, pos[2]];
+      bg = t < 0.54 ? "#01030b" : "#071321";
+      fogNear = 10;
+      fogFar = 32;
+    } else if (mode === "lifemap" && phase === "idle") {
+      pos = [LIFEMAP_CAMERA.position[0] + lifeDriftX * 0.46, LIFEMAP_CAMERA.position[1] + lifeDriftY * 0.34, LIFEMAP_CAMERA.position[2]];
+      bg = "#01030b";
+      fogNear = 14;
+      fogFar = 56;
+    } else if (mode === "focus" || phase === "enteringFocus" || phase === "exitingFocus") {
+      const subject = selectedStar?.position ?? [0, 0, -12];
+      const focusPos = add3(subject, [0, 0.72, 5.2]);
+      if (phase === "enteringFocus") {
+        pos = mix3(LIFEMAP_CAMERA.position, focusPos, t);
+      } else if (phase === "exitingFocus") {
+        pos = mix3(focusPos, LIFEMAP_CAMERA.position, t);
+      } else {
+        pos = [focusPos[0] + lifeDriftX * 0.08, focusPos[1] + lifeDriftY * 0.06, focusPos[2]];
+      }
+      bg = "#01030b";
+      fogNear = 8;
+      fogFar = 22;
+    }
+
+    if (mode === "replay" || phase === "enteringReplay" || phase === "exitingReplay") {
+      const subject = selectedStar?.position ?? [0, 0, -12];
+      const focusPos = add3(subject, [0, 0.72, 5.2]);
+      const replayPos = add3(subject, [0, 0.22, 4.0]);
+
+      if (phase === "enteringReplay") {
+        pos = mix3(focusPos, replayPos, t);
+      } else if (phase === "exitingReplay") {
+        pos = mix3(replayPos, focusPos, t);
+      } else {
+        pos = [replayPos[0], replayPos[1] + lifeDriftY * 0.05, replayPos[2]];
+      }
+
+      bg = "#000208";
+      fogNear = 7;
+      fogFar = 18;
+    }
+
+    const resolved = resolveLookTarget(mode, phase, progress, selectedStar);
+    if (authorityRef.current !== resolved.authority) {
+      authorityRef.current = resolved.authority;
+      onAuthorityResolved(resolved.authority);
+    }
+
+    tempPos.current.set(pos[0], pos[1], pos[2]);
+    camera.position.lerp(tempPos.current, Math.min(1, dt * 4.15));
+    lookTarget.current.lerp(
+      new THREE.Vector3(resolved.target[0], resolved.target[1], resolved.target[2]),
+      Math.min(1, dt * 4.15),
+    );
+    camera.lookAt(lookTarget.current);
+
+    tempColor.current.set(bg);
+    scene.background = tempColor.current;
+    scene.fog = new THREE.Fog(bg, fogNear, fogFar);
+  });
+
+  return null;
+}
+
+function HomeLayers({
+  alpha,
+  onSkyClick,
+}: {
+  alpha: number;
+  onSkyClick: () => void;
+}) {
+  if (alpha <= 0.001) return null;
+
+  return (
+    <group>
+      <mesh position={[0, 2.9, -13.2]} onClick={onSkyClick}>
+        <planeGeometry args={[44, 18]} />
+        <meshBasicMaterial color="#11243b" transparent opacity={0.16 * alpha} depthWrite={false} />
+      </mesh>
+
+      <mesh position={[0, -2.35, -0.85]} rotation={[-Math.PI / 2, 0, 0]}>
+        <circleGeometry args={[8.1, 72]} />
+        <meshBasicMaterial color="#0d1b32" transparent opacity={0.82 * alpha} />
+      </mesh>
+
+      <mesh position={[0, -0.72, 0]}>
+        <sphereGeometry args={[0.94, 42, 42]} />
+        <meshStandardMaterial
+          color="#adc2d8"
+          emissive="#2c4968"
+          emissiveIntensity={0.38 * alpha}
+          transparent
+          opacity={alpha}
+        />
+      </mesh>
+    </group>
+  );
+}
+
+function DustLayer({
+  dust,
+  alpha,
+  focusAmount,
+}: {
+  dust: DustRecord[];
+  alpha: number;
+  focusAmount: number;
+}) {
+  if (alpha <= 0.001) return null;
+
+  const effectiveAlpha = alpha * (1 - focusAmount * 0.38);
+
+  return (
+    <group>
+      {dust.map((dot) => (
+        <mesh key={dot.id} position={dot.position}>
+          <sphereGeometry args={[dot.size, 8, 8]} />
+          <meshBasicMaterial
+            color={dot.color}
+            transparent
+            opacity={dot.opacity * effectiveAlpha}
+            toneMapped={false}
+          />
+        </mesh>
+      ))}
+    </group>
+  );
+}
+
+function StarLayer({
+  stars,
+  mode,
+  phase,
+  alpha,
+  focusAmount,
+  hoveredId,
+  selectedStar,
+  setHoveredId,
+  onSelect,
+}: {
+  stars: StarRecord[];
+  mode: Mode;
+  phase: Phase;
+  alpha: number;
+  focusAmount: number;
+  hoveredId: string | null;
+  selectedStar: StarRecord | null;
+  setHoveredId: (id: string | null) => void;
+  onSelect: (star: StarRecord) => void;
+}) {
+  if (alpha <= 0.001) return null;
+  const interactive = mode === "lifemap" && phase === "idle";
+
+  return (
+    <group>
+      {stars.map((star) => {
+        const isHovered = hoveredId === star.id;
+        const isSelected = selectedStar?.id === star.id;
+        const baseOpacity =
+          star.importance === 3 ? 0.98 : star.importance === 2 ? 0.8 : 0.38;
+
+        const dim =
+          focusAmount > 0
+            ? isSelected
+              ? 1
+              : star.interactive
+                ? mix(1, 0.16, focusAmount)
+                : mix(1, 0.06, focusAmount)
+            : 1;
+
+        const scale =
+          star.size *
+          (isSelected
+            ? mix(1.18, 2.02, focusAmount > 0 ? focusAmount : 1)
+            : isHovered && interactive && star.interactive
+              ? 1.18
+              : 1);
+
+        return (
+          <mesh
+            key={star.id}
+            position={star.position}
+            onPointerOver={(e: ThreeEvent<PointerEvent>) => {
+              e.stopPropagation();
+              if (interactive && star.interactive) setHoveredId(star.id);
+            }}
+            onPointerOut={(e: ThreeEvent<PointerEvent>) => {
+              e.stopPropagation();
+              if (interactive) setHoveredId(null);
+            }}
+            onClick={(e: ThreeEvent<MouseEvent>) => {
+              e.stopPropagation();
+              if (interactive && star.interactive) onSelect(star);
+            }}
+          >
+            <sphereGeometry args={[scale, 16, 16]} />
+            <meshBasicMaterial
+              color={star.color}
+              transparent
+              opacity={alpha * baseOpacity * dim}
+              toneMapped={false}
+            />
+          </mesh>
+        );
+      })}
+    </group>
+  );
+}
+
+function FocusHalo({
+  selectedStar,
+  focusAmount,
+  mode,
+}: {
+  selectedStar: StarRecord | null;
+  focusAmount: number;
+  mode: Mode;
+}) {
+  if (!selectedStar || focusAmount <= 0.001) return null;
+
+  const haloOpacity = mode === "replay" ? 0.26 : 0.18;
+
+  return (
+    <group position={selectedStar.position}>
+      <mesh>
+        <sphereGeometry args={[selectedStar.size * mix(2.4, 3.15, focusAmount), 20, 20]} />
+        <meshBasicMaterial
+          color={selectedStar.color}
+          transparent
+          opacity={haloOpacity * focusAmount}
+          toneMapped={false}
+        />
+      </mesh>
+      <mesh rotation={[Math.PI / 2, 0, 0]}>
+        <ringGeometry args={[selectedStar.size * 3.1, selectedStar.size * 4.35, 40]} />
+        <meshBasicMaterial
+          color={selectedStar.color}
+          transparent
+          opacity={0.12 * focusAmount}
+          side={THREE.DoubleSide}
+          toneMapped={false}
+        />
+      </mesh>
+    </group>
+  );
+}
+
+function FocusOverlay({
+  visible,
+  selectedStar,
+}: {
+  visible: boolean;
+  selectedStar: StarRecord | null;
+}) {
+  if (!visible || !selectedStar) return null;
+
+  return (
+    <div
+      style={{
+        position: "absolute",
+        left: 16,
+        bottom: 54,
+        padding: "10px 12px",
+        borderRadius: 12,
+        border: "1px solid rgba(216,228,246,0.20)",
+        background: "rgba(6,10,18,0.58)",
+        color: "#eaf0f8",
+        fontFamily: "system-ui, -apple-system, Segoe UI, sans-serif",
+        fontSize: 13,
+        lineHeight: 1.35,
+        maxWidth: 280,
+        pointerEvents: "none",
+        userSelect: "none",
+      }}
+    >
+      <div style={{ fontSize: 11, letterSpacing: "0.12em", textTransform: "uppercase", opacity: 0.72 }}>
+        {selectedStar.chapter}
+      </div>
+      <div style={{ marginTop: 4, fontSize: 16 }}>{selectedStar.title}</div>
+    </div>
+  );
+}
+
+function FrameDriver({
+  mode,
+  phase,
+  progress,
+  selectedStar,
+  stars,
+  dust,
+  hoveredId,
+  setHoveredId,
+  onSkyClick,
+  onSelectStar,
+  onAuthorityResolved,
+}: {
+  mode: Mode;
+  phase: Phase;
+  progress: number;
+  selectedStar: StarRecord | null;
+  stars: StarRecord[];
+  dust: DustRecord[];
+  hoveredId: string | null;
+  setHoveredId: (id: string | null) => void;
+  onSkyClick: () => void;
+  onSelectStar: (star: StarRecord) => void;
+  onAuthorityResolved: (authority: TargetAuthority) => void;
+}) {
+  const homeAlpha = alphaForHome(mode, phase, progress);
+  const lifeAlpha = alphaForLifeMap(mode, phase, progress);
+  const focusAmount = focusBlend(mode, phase, progress);
+
+  return (
+    <>
+      <ambientLight intensity={0.82} />
+      <pointLight position={[0, 6, 8]} intensity={1.95} color="#bfd1ea" />
+      <pointLight position={[0, -3, 6]} intensity={0.7} color="#304f73" />
+
+      <CameraAuthority
+        mode={mode}
+        phase={phase}
+        progress={progress}
+        selectedStar={selectedStar}
+        onAuthorityResolved={onAuthorityResolved}
+      />
+
+      <HomeLayers alpha={homeAlpha} onSkyClick={onSkyClick} />
+      <DustLayer dust={dust} alpha={lifeAlpha} focusAmount={focusAmount} />
+      <StarLayer
+        stars={stars}
+        mode={mode}
+        phase={phase}
+        alpha={lifeAlpha}
+        focusAmount={focusAmount}
+        hoveredId={hoveredId}
+        selectedStar={selectedStar}
+        setHoveredId={setHoveredId}
+        onSelect={onSelectStar}
+      />
+      <FocusHalo selectedStar={selectedStar} focusAmount={focusAmount} mode={mode} />
+    </>
+  );
+}
+
+export default function SpatialScene() {
+  const stars = useMemo(() => buildStars(), []);
+  const dust = useMemo(() => buildDust(), []);
+  const [mode, setMode] = useState<Mode>("home");
+  const [phase, setPhase] = useState<Phase>("idle");
+  const [progress, setProgress] = useState(0);
+  const [selectedStar, setSelectedStar] = useState<StarRecord | null>(null);
+  const [hoveredId, setHoveredId] = useState<string | null>(null);
+  const [targetAuthority, setTargetAuthority] = useState<TargetAuthority>("home-structural");
+
+  useEffect(() => {
+    if (phase === "idle") return;
+
+    let raf = 0;
+    let last = performance.now();
+
+    const tick = (now: number) => {
+      const dt = (now - last) / 1000;
+      last = now;
+
+      setProgress((prev) => {
+        const next = clamp01(prev + dt / TRANSITION_SECONDS);
+        if (next < 1) return next;
+
+        if (phase === "ascending") {
+          setMode("lifemap");
+        } else if (phase === "descending") {
+          setMode("home");
+          setSelectedStar(null);
+        } else if (phase === "enteringFocus") {
+          setMode("focus");
+        } else if (phase === "exitingFocus") {
+          setMode("lifemap");
+        } else if (phase === "enteringReplay") {
+          setMode("replay");
+        } else if (phase === "exitingReplay") {
+          setMode("focus");
+        }
+
+        setPhase("idle");
+        setHoveredId(null);
+        return 0;
+      });
+
+      raf = window.requestAnimationFrame(tick);
+    };
+
+    raf = window.requestAnimationFrame(tick);
+    return () => window.cancelAnimationFrame(raf);
+  }, [phase]);
+
+  useEffect(() => {
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key !== "Escape") return;
+      if (phase !== "idle") return;
+
+      if (mode === "lifemap") {
+        setPhase("descending");
+        setProgress(0);
+        setHoveredId(null);
+      } else if (mode === "focus") {
+        setPhase("exitingFocus");
+        setProgress(0);
+      } else if (mode === "replay") {
+        setPhase("exitingReplay");
+        setProgress(0);
+      }
+    };
+
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [mode, phase]);
+
+  const onSkyClick = () => {
+    if (mode !== "home" || phase !== "idle") return;
+    setPhase("ascending");
+    setProgress(0);
+  };
+
+  const onSelectStar = (star: StarRecord) => {
+    if (mode !== "lifemap" || phase !== "idle") return;
+    setSelectedStar(star);
+    setPhase("enteringFocus");
+    setProgress(0);
+  };
+
+  const onReplay = () => {
+    if (!replayReady(mode, phase, selectedStar)) return;
+    setPhase("enteringReplay");
+    setProgress(0);
+  };
+
+  const replayVisible = replayReady(mode, phase, selectedStar);
+  const focusOverlayVisible = (mode === "focus" || mode === "replay") && phase === "idle";
+
+  return (
+    <div style={{ position: "fixed", inset: 0, background: "#01030b" }}>
+      <Canvas gl={{ antialias: true }} camera={{ position: HOME_CAMERA.position, fov: 42 }}>
+        <FrameDriver
+          mode={mode}
+          phase={phase}
+          progress={progress}
+          selectedStar={selectedStar}
+          stars={stars}
+          dust={dust}
+          hoveredId={hoveredId}
+          setHoveredId={setHoveredId}
+          onSkyClick={onSkyClick}
+          onSelectStar={onSelectStar}
+          onAuthorityResolved={setTargetAuthority}
+        />
+      </Canvas>
+
+      <div
+        style={{
+          position: "absolute",
+          left: 16,
+          top: 12,
+          color: "#f2f5fb",
+          fontFamily: "ui-monospace, SFMono-Regular, Menlo, monospace",
+          fontSize: 28,
+          letterSpacing: "0.18em",
+          textTransform: "uppercase",
+          pointerEvents: "none",
+          userSelect: "none",
+        }}
+      >
+        {modeLabel(mode, selectedStar)}
+      </div>
+
+      <div
+        style={{
+          position: "absolute",
+          left: 16,
+          bottom: 14,
+          color: "#e6ebf3",
+          fontFamily: "system-ui, -apple-system, Segoe UI, sans-serif",
+          fontSize: 18,
+          pointerEvents: "none",
+          userSelect: "none",
+          opacity: 0.95,
+        }}
+      >
+        {mode === "home"
+          ? "home"
+          : mode === "lifemap"
+            ? "lifemap"
+            : selectedStar
+              ? selectedStar.title
+              : mode}
+      </div>
+
+      <div
+        style={{
+          position: "absolute",
+          right: 18,
+          top: 16,
+          padding: "6px 10px",
+          borderRadius: 999,
+          background: "rgba(7,11,19,0.42)",
+          border: "1px solid rgba(216,228,246,0.14)",
+          color: "#cad4e3",
+          fontFamily: "ui-monospace, SFMono-Regular, Menlo, monospace",
+          fontSize: 11,
+          letterSpacing: "0.08em",
+          textTransform: "uppercase",
+          pointerEvents: "none",
+          userSelect: "none",
+          opacity: 0.72,
+        }}
+      >
+        {targetAuthority}
+      </div>
+
+      <FocusOverlay visible={focusOverlayVisible} selectedStar={selectedStar} />
+
+      {replayVisible ? (
+        <button
+          type="button"
+          onClick={onReplay}
+          style={{
+            position: "absolute",
+            right: 20,
+            bottom: 18,
+            border: "1px solid rgba(216,228,246,0.35)",
+            background: "rgba(10,16,27,0.72)",
+            color: "#f1f5fb",
+            borderRadius: 999,
+            padding: "10px 16px",
+            fontSize: 14,
+            letterSpacing: "0.08em",
+            textTransform: "uppercase",
+            cursor: "pointer",
+          }}
+        >
+          Replay
+        </button>
+      ) : null}
+    </div>
+  );
+}

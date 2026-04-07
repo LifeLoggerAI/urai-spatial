@@ -1,0 +1,2 @@
+src/spatial/state/sceneStore.ts:3:export type SceneMode = "home" | "sky" | "lifemap" | "focus" | "replay";
+src/spatial/types.ts:3:export type SceneMode = "home" | "lifemap" | "replay" | "ground";

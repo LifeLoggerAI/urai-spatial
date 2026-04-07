@@ -1,0 +1,21 @@
+[BACKUP] src/spatial/state/sceneStore.ts
+[BACKUP] src/spatial/types.ts
+[BACKUP] src/spatial/components/CameraRig.tsx
+[BACKUP] src/spatial/persistence/SpatialPersistenceBridge.tsx
+[BACKUP] src/spatial/scene/HomeWorld.tsx
+[BACKUP] src/spatial/scene/ReplaySphere.tsx
+[BACKUP] src/spatial/scene/StarMesh.tsx
+[BACKUP] src/spatial/unity/UnityRuntimePayloadBridge.tsx
+[STEP] normalize mode vocabulary from sky -> home in runtime spatial files
+[STEP] make sceneStore export the canonical SceneMode from types.ts
+[STEP] force canonical SceneMode union in types.ts
+[STEP] add compatibility aliases to SceneState interface in types.ts
+[STEP] add compatibility aliases to SceneState interface in sceneStore.ts
+[STEP] inject runtime alias fields/actions into sceneStore create-state object
+[STEP] normalize historical API spelling in consumers
+[STEP] capture reconciliation diff snippets
+[STEP] TypeScript validation
+
+[FAIL] TypeScript validation failed after reconciliation pass.
+
+[FAIL] Script aborted at line 1 (exit 1)

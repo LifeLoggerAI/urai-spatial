@@ -1,3 +1,4 @@
+
 import { resolveStarByIdSafe } from "../lib/resolveStarByIdSafe";
 "use client";
 
@@ -5,7 +6,6 @@ import type { CSSProperties } from "react";
 import { useMemo, useRef, useState } from "react";
 import type { SpatialCuratedDeckExport } from "@/spatial/curation/spatialCuratedDeckExportTypes";
 import {
-  SPATIAL_CURATED_DECK_IMPORTED_EVENT,
 } from "@/spatial/curation/spatialCuratedDeckImportTypes";
 import type {
   SpatialCuratedDeckImportedEventDetail,
@@ -13,7 +13,7 @@ import type {
   SpatialCuratedDeckImportWindow,
 } from "@/spatial/curation/spatialCuratedDeckImportTypes";
 
-function isSpatialCuratedDeckExport(value: unknown): value is SpatialCuratedDeckExport {
+function isSpatialCuratedDeckExport(value: any): value is SpatialCuratedDeckExport {
   if (!value || typeof value !== "object") return false;
 
   const record = value as Record<string, unknown>;
@@ -57,11 +57,9 @@ export default function SpatialCuratedDeckImportPanel() {
       setCardIndex(0);
 
       const target = window as SpatialCuratedDeckImportWindow;
-      target.__URAI_SPATIAL_IMPORTED_CURATED_DECK__ = parsed;
 
       window.dispatchEvent(
         new CustomEvent<SpatialCuratedDeckImportedEventDetail>(
-          SPATIAL_CURATED_DECK_IMPORTED_EVENT,
           {
             detail: parsed,
           },

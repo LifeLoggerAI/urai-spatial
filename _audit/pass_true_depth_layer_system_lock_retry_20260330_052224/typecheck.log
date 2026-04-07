@@ -1,0 +1,11 @@
+src/lib/uraiCanon/starTypes.ts(28,1): error TS1127: Invalid character.
+src/lib/uraiCanon/starTypes.ts(28,3): error TS1005: ';' expected.
+src/lib/uraiCanon/starTypes.ts(28,28): error TS1005: ';' expected.
+src/lib/uraiCanon/starTypes.ts(28,33): error TS1003: Identifier expected.
+src/lib/uraiCanon/starTypes.ts(29,1): error TS1127: Invalid character.
+src/lib/uraiCanon/starTypes.ts(29,3): error TS1005: ';' expected.
+src/lib/uraiCanon/starTypes.ts(29,8): error TS1434: Unexpected keyword or identifier.
+src/lib/uraiCanon/starTypes.ts(29,14): error TS1434: Unexpected keyword or identifier.
+src/lib/uraiCanon/starTypes.ts(29,27): error TS1434: Unexpected keyword or identifier.
+src/lib/uraiCanon/starTypes.ts(29,30): error TS1434: Unexpected keyword or identifier.
+src/lib/uraiCanon/starTypes.ts(29,45): error TS1003: Identifier expected.

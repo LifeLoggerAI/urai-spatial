@@ -1,0 +1,21 @@
+=== PASS: ASCENT / DESCENT HANDOFF + ARRIVAL SETTLE (FULLFILE AUTHORITY) ===
+[build test]
+BUILD_RC=0
+SUCCESS: ASCENT / DESCENT HANDOFF + ARRIVAL SETTLE pass completed
+TARGET=/home/user/urai-spatial/urai-tier1/src/spatial/scene/SpatialScene.tsx
+ESC_FILE=/home/user/urai-spatial/urai-tier1/src/spatial/scene/SpatialScene.tsx
+LOOK_TARGET_OWNER=/home/user/urai-spatial/urai-tier1/src/spatial/scene/SpatialScene.tsx
+BUILD_STATUS=passed
+
+Backups:
+  /home/user/urai-spatial/_audit/ascent_descent_handoff_fullfile_20260326_055447/originals/SpatialScene.tsx.before
+  /home/user/urai-spatial/urai-tier1/src/spatial/scene/SpatialScene.tsx.bak.20260326_055447
+  /home/user/urai-spatial/_audit/ascent_descent_handoff_fullfile_20260326_055447/originals/SceneController.tsx.before
+
+Artifacts:
+  /home/user/urai-spatial/_audit/ascent_descent_handoff_fullfile_20260326_055447/out/live-files.txt
+  /home/user/urai-spatial/_audit/ascent_descent_handoff_fullfile_20260326_055447/out/anchors.txt
+  /home/user/urai-spatial/_audit/ascent_descent_handoff_fullfile_20260326_055447/out/runtime-authority.txt
+  /home/user/urai-spatial/_audit/ascent_descent_handoff_fullfile_20260326_055447/out/scene.diff.txt
+  /home/user/urai-spatial/_audit/ascent_descent_handoff_fullfile_20260326_055447/out/build.stdout
+  /home/user/urai-spatial/_audit/ascent_descent_handoff_fullfile_20260326_055447/out/build.stderr

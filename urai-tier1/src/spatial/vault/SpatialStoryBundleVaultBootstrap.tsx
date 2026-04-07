@@ -9,7 +9,6 @@ import { useSpatialStoryBundleVaultStore } from "@/spatial/vault/spatialStoryBun
 import type { SpatialStoryBundleVaultManifest } from "@/spatial/vault/spatialStoryBundleVaultTypes";
 
 type VaultWindow = Window & {
-  __URAI_SPATIAL_STORY_BUNDLE_VAULT__?: SpatialStoryBundleVaultManifest;
 };
 
 export default function SpatialStoryBundleVaultBootstrap() {
@@ -37,7 +36,6 @@ export default function SpatialStoryBundleVaultBootstrap() {
     if (!ready) return;
     writeSpatialStoryBundleVaultManifest(manifest);
     const target = window as VaultWindow;
-    target.__URAI_SPATIAL_STORY_BUNDLE_VAULT__ = manifest;
     window.dispatchEvent(
       new CustomEvent("urai:spatial-story-bundle-vault", {
         detail: manifest,

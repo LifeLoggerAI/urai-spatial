@@ -1,0 +1,29 @@
+== INSPECT SCENEPHASE ==
+1:export type ScenePhase =
+11:  | "replay"
+86:  "replay",
+201:    phase === "replay" ||
+8:  | "focus_lock"
+9:  | "focus_travel"
+10:  | "focus_arrive"
+83:  "focus_lock",
+84:  "focus_travel",
+85:  "focus_arrive",
+198:    phase === "focus_lock" ||
+199:    phase === "focus_travel" ||
+200:    phase === "focus_arrive" ||
+== PATCH CAMERARIG TO MATCH REAL PHASE NAMES ==
+== VERIFY PATCH ==
+72:      if (phase === "focus_travel" || phase === "focus_arrive") {
+== TYPECHECK ==
+
+> urai-tier1@0.1.0 typecheck /home/user/urai-spatial/urai-tier1
+> tsc --noEmit
+
+src/spatial/scene/Starfield.tsx(124,37): error TS1005: ',' expected.
+src/spatial/scene/Starfield.tsx(124,65): error TS1005: ',' expected.
+src/spatial/scene/Starfield.tsx(124,225): error TS1005: ',' expected.
+ ELIFECYCLE  Command failed with exit code 2.
+TYPECHECK FAILED
+LOG: .ai-logs/fix-camerarig-scenephase-20260324_002746.log
+exit

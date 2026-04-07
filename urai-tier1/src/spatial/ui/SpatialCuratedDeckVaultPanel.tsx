@@ -1,3 +1,4 @@
+import { uraiNow, uraiRandom, uraiTime } from "@/lib/uraiDeterminism";
 "use client";
 
 import type { CSSProperties } from "react";
@@ -12,7 +13,6 @@ import {
 import { useSpatialCuratedDeckVaultStore } from "@/spatial/curation/spatialCuratedDeckVaultStore";
 import type { SpatialCuratedDeckExport } from "@/spatial/curation/spatialCuratedDeckExportTypes";
 import {
-  SPATIAL_CURATED_DECK_VAULT_RESTORED_EVENT,
 } from "@/spatial/curation/spatialCuratedDeckImportTypes";
 import type {
   SpatialCuratedDeckImportWindow,
@@ -47,7 +47,7 @@ export default function SpatialCuratedDeckVaultPanel() {
           (entry as { source?: string }).source ??
           "panel",
         deck:
-          (entry as { deck?: unknown }).deck ??
+          (entry as { deck?: any }).deck ??
           entry,
       })) as SpatialCuratedDeckVaultEntry[],
     [entries],
@@ -94,9 +94,9 @@ export default function SpatialCuratedDeckVaultPanel() {
     persistEntry({
       id:
         "curated_vault_" +
-        Math.random().toString(36).slice(2) +
+        uraiRandom().toString(36).slice(2) +
         "_" +
-        Date.now().toString(36),
+        uraiNow().toString(36),
       label: `Curated · ${generatedDeck.account.label ?? generatedDeck.account.id}`,
       storedAt: new Date((entry as any).storedAt ?? 0).toISOString(),
       source: "generated",
@@ -108,7 +108,6 @@ export default function SpatialCuratedDeckVaultPanel() {
 
   const archiveImportedDeck = () => {
     const imported = (window as SpatialCuratedDeckImportWindow)
-      .__URAI_SPATIAL_IMPORTED_CURATED_DECK__;
 
     if (!imported) {
       setStatus("no imported curated deck");
@@ -118,9 +117,9 @@ export default function SpatialCuratedDeckVaultPanel() {
     persistEntry({
       id:
         "curated_vault_" +
-        Math.random().toString(36).slice(2) +
+        uraiRandom().toString(36).slice(2) +
         "_" +
-        Date.now().toString(36),
+        uraiNow().toString(36),
       label: `Imported · ${imported.account.label ?? imported.account.id}`,
       storedAt: new Date((entry as any).storedAt ?? 0).toISOString(),
       source: "imported",
@@ -137,11 +136,9 @@ export default function SpatialCuratedDeckVaultPanel() {
     }
 
     const target = window as SpatialCuratedDeckImportWindow;
-    target.__URAI_SPATIAL_IMPORTED_CURATED_DECK__ = activeVaultEntry.deck;
 
     window.dispatchEvent(
       new CustomEvent<SpatialCuratedDeckVaultRestoredEventDetail>(
-        SPATIAL_CURATED_DECK_VAULT_RESTORED_EVENT,
         {
           detail: activeVaultEntry,
         },

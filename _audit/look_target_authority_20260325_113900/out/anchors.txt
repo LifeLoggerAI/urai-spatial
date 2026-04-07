@@ -1,0 +1,269 @@
+SCENE ANCHORS
+1:"use client";
+4:import { Canvas, ThreeEvent, useFrame, useThree } from "@react-three/fiber";
+7:type Mode = "home" | "lifemap" | "focus" | "replay";
+24:  replayAvailable: boolean;
+129:      replayAvailable: importance >= 2,
+183:function alphaForHome(mode: Mode, phase: Phase, t: number): number {
+184:  if (mode === "home" && phase === "idle") return 1;
+185:  if (phase === "ascending") return 1 - t;
+186:  if (phase === "descending") return t;
+190:function alphaForLifeMap(mode: Mode, phase: Phase, t: number): number {
+191:  if ((mode === "lifemap" || mode === "focus" || mode === "replay") && phase === "idle") return 1;
+192:  if (phase === "ascending") return Math.max(0, (t - 0.05) / 0.95);
+193:  if (phase === "descending") return 1 - t;
+195:    phase === "enteringFocus" ||
+196:    phase === "exitingFocus" ||
+197:    phase === "enteringReplay" ||
+198:    phase === "exitingReplay"
+203:function focusBlend(mode: Mode, phase: Phase, progress: number): number {
+204:  if (mode === "focus" || mode === "replay") return 1;
+205:  if (phase === "enteringFocus" || phase === "enteringReplay") return easeInOutCubic(progress);
+206:  if (phase === "exitingFocus" || phase === "exitingReplay") return 1 - easeInOutCubic(progress);
+210:function replayReady(mode: Mode, phase: Phase, selectedStar: StarRecord | null): boolean {
+211:  return mode === "focus" && phase === "idle" && Boolean(selectedStar?.replayAvailable);
+214:function modeLabel(mode: Mode, selectedStar: StarRecord | null): string {
+215:  if (mode === "focus" && selectedStar) return selectedStar.title.toUpperCase();
+216:  if (mode === "replay") return "REPLAY";
+217:  if (mode === "lifemap") return "LIFEMAP";
+223:  phase,
+225:  selectedStar,
+228:  phase: Phase;
+230:  selectedStar: StarRecord | null;
+232:  const { camera, scene } = useThree();
+240:    const homeDriftX = Math.sin(idle * 0.18) * 0.025;
+241:    const homeDriftY = Math.cos(idle * 0.14) * 0.016;
+251:    if (mode === "home" && phase === "idle") {
+252:      pos = [HOME_CAMERA.position[0] + homeDriftX, HOME_CAMERA.position[1] + homeDriftY, HOME_CAMERA.position[2]];
+257:    } else if (phase === "ascending") {
+265:    } else if (phase === "descending") {
+268:      pos = [pos[0] + homeDriftX * 0.18, pos[1] + settleArc, pos[2]];
+273:    } else if (mode === "lifemap" && phase === "idle") {
+279:    } else if (mode === "focus" || phase === "enteringFocus" || phase === "exitingFocus") {
+280:      const subject = selectedStar?.position ?? [0, 0, -12];
+281:      const focusPos = add3(subject, [0, 0.72, 5.2]);
+282:      if (phase === "enteringFocus") {
+283:        pos = mix3(LIFEMAP_CAMERA.position, focusPos, t);
+285:      } else if (phase === "exitingFocus") {
+286:        pos = mix3(focusPos, LIFEMAP_CAMERA.position, t);
+289:        pos = [focusPos[0] + lifeDriftX * 0.08, focusPos[1] + lifeDriftY * 0.06, focusPos[2]];
+297:    if (mode === "replay" || phase === "enteringReplay" || phase === "exitingReplay") {
+298:      const subject = selectedStar?.position ?? [0, 0, -12];
+299:      const focusPos = add3(subject, [0, 0.72, 5.2]);
+300:      const replayPos = add3(subject, [0, 0.22, 4.0]);
+302:      if (phase === "enteringReplay") {
+303:        pos = mix3(focusPos, replayPos, t);
+305:      } else if (phase === "exitingReplay") {
+306:        pos = mix3(replayPos, focusPos, t);
+309:        pos = [replayPos[0], replayPos[1] + lifeDriftY * 0.05, replayPos[2]];
+319:    camera.position.lerp(tempPos.current, Math.min(1, dt * 4.15));
+321:    camera.lookAt(lookTarget.current);
+333:  onSkyClick,
+336:  onSkyClick: () => void;
+342:      <mesh position={[0, 2.9, -13.2]} onClick={onSkyClick}>
+369:  focusAmount,
+373:  focusAmount: number;
+377:  const effectiveAlpha = alpha * (1 - focusAmount * 0.38);
+399:  phase,
+401:  focusAmount,
+403:  selectedStar,
+409:  phase: Phase;
+411:  focusAmount: number;
+413:  selectedStar: StarRecord | null;
+418:  const interactive = mode === "lifemap" && phase === "idle";
+424:        const isSelected = selectedStar?.id === star.id;
+429:          focusAmount > 0
+433:                ? mix(1, 0.16, focusAmount)
+434:                : mix(1, 0.06, focusAmount)
+440:            ? mix(1.18, 2.02, focusAmount > 0 ? focusAmount : 1)
+477:  selectedStar,
+478:  focusAmount,
+481:  selectedStar: StarRecord | null;
+482:  focusAmount: number;
+485:  if (!selectedStar || focusAmount <= 0.001) return null;
+487:  const haloOpacity = mode === "replay" ? 0.26 : 0.18;
+490:    <group position={selectedStar.position}>
+492:        <sphereGeometry args={[selectedStar.size * mix(2.4, 3.15, focusAmount), 20, 20]} />
+494:          color={selectedStar.color}
+496:          opacity={haloOpacity * focusAmount}
+501:        <ringGeometry args={[selectedStar.size * 3.1, selectedStar.size * 4.35, 40]} />
+503:          color={selectedStar.color}
+505:          opacity={0.12 * focusAmount}
+516:  selectedStar,
+519:  selectedStar: StarRecord | null;
+521:  if (!visible || !selectedStar) return null;
+543:        {selectedStar.chapter}
+545:      <div style={{ marginTop: 4, fontSize: 16 }}>{selectedStar.title}</div>
+552:  phase,
+554:  selectedStar,
+559:  onSkyClick,
+563:  phase: Phase;
+565:  selectedStar: StarRecord | null;
+570:  onSkyClick: () => void;
+573:  const homeAlpha = alphaForHome(mode, phase, progress);
+574:  const lifeAlpha = alphaForLifeMap(mode, phase, progress);
+575:  const focusAmount = focusBlend(mode, phase, progress);
+585:        phase={phase}
+587:        selectedStar={selectedStar}
+590:      <HomeLayers alpha={homeAlpha} onSkyClick={onSkyClick} />
+591:      <DustLayer dust={dust} alpha={lifeAlpha} focusAmount={focusAmount} />
+595:        phase={phase}
+597:        focusAmount={focusAmount}
+599:        selectedStar={selectedStar}
+603:      <FocusHalo selectedStar={selectedStar} focusAmount={focusAmount} mode={mode} />
+608:export default function SpatialScene() {
+611:  const [mode, setMode] = useState<Mode>("home");
+612:  const [phase, setPhase] = useState<Phase>("idle");
+614:  const [selectedStar, setSelectedStar] = useState<StarRecord | null>(null);
+618:    if (phase === "idle") return;
+631:        if (phase === "ascending") {
+632:          setMode("lifemap");
+633:        } else if (phase === "descending") {
+634:          setMode("home");
+635:          setSelectedStar(null);
+636:        } else if (phase === "enteringFocus") {
+637:          setMode("focus");
+638:        } else if (phase === "exitingFocus") {
+639:          setMode("lifemap");
+640:        } else if (phase === "enteringReplay") {
+641:          setMode("replay");
+642:        } else if (phase === "exitingReplay") {
+643:          setMode("focus");
+656:  }, [phase]);
+660:      if (event.key !== "Escape") return;
+661:      if (phase !== "idle") return;
+663:      if (mode === "lifemap") {
+667:      } else if (mode === "focus") {
+670:      } else if (mode === "replay") {
+676:    window.addEventListener("keydown", onKeyDown);
+677:    return () => window.removeEventListener("keydown", onKeyDown);
+678:  }, [mode, phase]);
+680:  const onSkyClick = () => {
+681:    if (mode !== "home" || phase !== "idle") return;
+687:    if (mode !== "lifemap" || phase !== "idle") return;
+688:    setSelectedStar(star);
+693:  const onReplay = () => {
+694:    if (!replayReady(mode, phase, selectedStar)) return;
+699:  const replayVisible = replayReady(mode, phase, selectedStar);
+700:  const focusOverlayVisible = (mode === "focus" || mode === "replay") && phase === "idle";
+704:      <Canvas gl={{ antialias: true }} camera={{ position: HOME_CAMERA.position, fov: 42 }}>
+707:          phase={phase}
+709:          selectedStar={selectedStar}
+714:          onSkyClick={onSkyClick}
+717:      </Canvas>
+733:        {modeLabel(mode, selectedStar)}
+749:        {mode === "home"
+750:          ? "home"
+751:          : mode === "lifemap"
+752:            ? "lifemap"
+753:            : selectedStar
+754:              ? selectedStar.title
+758:      <FocusOverlay visible={focusOverlayVisible} selectedStar={selectedStar} />
+760:      {replayVisible ? (
+763:          onClick={onReplay}
+
+ESC OWNER ANCHORS
+7:type Mode = "home" | "lifemap" | "focus" | "replay";
+24:  replayAvailable: boolean;
+129:      replayAvailable: importance >= 2,
+184:  if (mode === "home" && phase === "idle") return 1;
+191:  if ((mode === "lifemap" || mode === "focus" || mode === "replay") && phase === "idle") return 1;
+203:function focusBlend(mode: Mode, phase: Phase, progress: number): number {
+204:  if (mode === "focus" || mode === "replay") return 1;
+210:function replayReady(mode: Mode, phase: Phase, selectedStar: StarRecord | null): boolean {
+211:  return mode === "focus" && phase === "idle" && Boolean(selectedStar?.replayAvailable);
+214:function modeLabel(mode: Mode, selectedStar: StarRecord | null): string {
+215:  if (mode === "focus" && selectedStar) return selectedStar.title.toUpperCase();
+216:  if (mode === "replay") return "REPLAY";
+217:  if (mode === "lifemap") return "LIFEMAP";
+225:  selectedStar,
+230:  selectedStar: StarRecord | null;
+240:    const homeDriftX = Math.sin(idle * 0.18) * 0.025;
+241:    const homeDriftY = Math.cos(idle * 0.14) * 0.016;
+251:    if (mode === "home" && phase === "idle") {
+252:      pos = [HOME_CAMERA.position[0] + homeDriftX, HOME_CAMERA.position[1] + homeDriftY, HOME_CAMERA.position[2]];
+268:      pos = [pos[0] + homeDriftX * 0.18, pos[1] + settleArc, pos[2]];
+273:    } else if (mode === "lifemap" && phase === "idle") {
+279:    } else if (mode === "focus" || phase === "enteringFocus" || phase === "exitingFocus") {
+280:      const subject = selectedStar?.position ?? [0, 0, -12];
+281:      const focusPos = add3(subject, [0, 0.72, 5.2]);
+283:        pos = mix3(LIFEMAP_CAMERA.position, focusPos, t);
+286:        pos = mix3(focusPos, LIFEMAP_CAMERA.position, t);
+289:        pos = [focusPos[0] + lifeDriftX * 0.08, focusPos[1] + lifeDriftY * 0.06, focusPos[2]];
+297:    if (mode === "replay" || phase === "enteringReplay" || phase === "exitingReplay") {
+298:      const subject = selectedStar?.position ?? [0, 0, -12];
+299:      const focusPos = add3(subject, [0, 0.72, 5.2]);
+300:      const replayPos = add3(subject, [0, 0.22, 4.0]);
+303:        pos = mix3(focusPos, replayPos, t);
+306:        pos = mix3(replayPos, focusPos, t);
+309:        pos = [replayPos[0], replayPos[1] + lifeDriftY * 0.05, replayPos[2]];
+369:  focusAmount,
+373:  focusAmount: number;
+377:  const effectiveAlpha = alpha * (1 - focusAmount * 0.38);
+401:  focusAmount,
+403:  selectedStar,
+411:  focusAmount: number;
+413:  selectedStar: StarRecord | null;
+418:  const interactive = mode === "lifemap" && phase === "idle";
+424:        const isSelected = selectedStar?.id === star.id;
+429:          focusAmount > 0
+433:                ? mix(1, 0.16, focusAmount)
+434:                : mix(1, 0.06, focusAmount)
+440:            ? mix(1.18, 2.02, focusAmount > 0 ? focusAmount : 1)
+477:  selectedStar,
+478:  focusAmount,
+481:  selectedStar: StarRecord | null;
+482:  focusAmount: number;
+485:  if (!selectedStar || focusAmount <= 0.001) return null;
+487:  const haloOpacity = mode === "replay" ? 0.26 : 0.18;
+490:    <group position={selectedStar.position}>
+492:        <sphereGeometry args={[selectedStar.size * mix(2.4, 3.15, focusAmount), 20, 20]} />
+494:          color={selectedStar.color}
+496:          opacity={haloOpacity * focusAmount}
+501:        <ringGeometry args={[selectedStar.size * 3.1, selectedStar.size * 4.35, 40]} />
+503:          color={selectedStar.color}
+505:          opacity={0.12 * focusAmount}
+516:  selectedStar,
+519:  selectedStar: StarRecord | null;
+521:  if (!visible || !selectedStar) return null;
+543:        {selectedStar.chapter}
+545:      <div style={{ marginTop: 4, fontSize: 16 }}>{selectedStar.title}</div>
+554:  selectedStar,
+565:  selectedStar: StarRecord | null;
+573:  const homeAlpha = alphaForHome(mode, phase, progress);
+575:  const focusAmount = focusBlend(mode, phase, progress);
+587:        selectedStar={selectedStar}
+590:      <HomeLayers alpha={homeAlpha} onSkyClick={onSkyClick} />
+591:      <DustLayer dust={dust} alpha={lifeAlpha} focusAmount={focusAmount} />
+597:        focusAmount={focusAmount}
+599:        selectedStar={selectedStar}
+603:      <FocusHalo selectedStar={selectedStar} focusAmount={focusAmount} mode={mode} />
+611:  const [mode, setMode] = useState<Mode>("home");
+614:  const [selectedStar, setSelectedStar] = useState<StarRecord | null>(null);
+632:          setMode("lifemap");
+634:          setMode("home");
+637:          setMode("focus");
+639:          setMode("lifemap");
+641:          setMode("replay");
+643:          setMode("focus");
+660:      if (event.key !== "Escape") return;
+663:      if (mode === "lifemap") {
+667:      } else if (mode === "focus") {
+670:      } else if (mode === "replay") {
+676:    window.addEventListener("keydown", onKeyDown);
+677:    return () => window.removeEventListener("keydown", onKeyDown);
+681:    if (mode !== "home" || phase !== "idle") return;
+687:    if (mode !== "lifemap" || phase !== "idle") return;
+694:    if (!replayReady(mode, phase, selectedStar)) return;
+699:  const replayVisible = replayReady(mode, phase, selectedStar);
+700:  const focusOverlayVisible = (mode === "focus" || mode === "replay") && phase === "idle";
+709:          selectedStar={selectedStar}
+733:        {modeLabel(mode, selectedStar)}
+749:        {mode === "home"
+750:          ? "home"
+751:          : mode === "lifemap"
+752:            ? "lifemap"
+753:            : selectedStar
+754:              ? selectedStar.title
+758:      <FocusOverlay visible={focusOverlayVisible} selectedStar={selectedStar} />
+760:      {replayVisible ? (

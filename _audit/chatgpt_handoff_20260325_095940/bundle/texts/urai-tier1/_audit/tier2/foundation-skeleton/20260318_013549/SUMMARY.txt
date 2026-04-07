@@ -1,0 +1,19 @@
+Tier 2 foundation skeleton created.
+
+Created directories:
+- src/spatial/layout
+- src/spatial/world
+- src/spatial/entities
+- src/spatial/camera
+- src/spatial/transitions
+- src/spatial/theme
+- src/spatial/memory
+- src/spatial/replay
+- src/spatial/focus
+- src/spatial/home
+- src/spatial/sky
+- src/spatial/lifemap
+
+Goal:
+Start Tier 2 by creating the stable module structure first,
+before moving Tier 1 shell behavior into the new architecture.

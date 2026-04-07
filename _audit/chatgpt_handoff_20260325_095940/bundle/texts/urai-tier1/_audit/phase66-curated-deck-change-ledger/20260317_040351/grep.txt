@@ -1,0 +1,9 @@
+src/spatial/ui/SpatialCuratedDeckChangeLedgerPanel.tsx:5:import { buildSpatialCuratedDeckChangeLedger } from "@/spatial/curation/buildSpatialCuratedDeckChangeLedger";
+src/spatial/ui/SpatialCuratedDeckChangeLedgerPanel.tsx:8:export default function SpatialCuratedDeckChangeLedgerPanel() {
+src/spatial/ui/SpatialCuratedDeckChangeLedgerPanel.tsx:13:    () => buildSpatialCuratedDeckChangeLedger({ entries }),
+src/spatial/ui/SpatialCuratedDeckChangeLedgerPanel.tsx:49:        Curated Deck Change Ledger
+src/spatial/curation/spatialCuratedDeckChangeLedgerTypes.ts:16:  schema: "urai.spatial.curated-deck-change-ledger.v1";
+src/spatial/curation/buildSpatialCuratedDeckChangeLedger.ts:29:export function buildSpatialCuratedDeckChangeLedger(input: {
+src/spatial/curation/buildSpatialCuratedDeckChangeLedger.ts:46:    schema: "urai.spatial.curated-deck-change-ledger.v1",
+src/spatial/scene/SpatialScene.tsx:2:import SpatialCuratedDeckChangeLedgerPanel from "@/spatial/ui/SpatialCuratedDeckChangeLedgerPanel";
+src/spatial/scene/SpatialScene.tsx:782:      <SpatialCuratedDeckChangeLedgerPanel />

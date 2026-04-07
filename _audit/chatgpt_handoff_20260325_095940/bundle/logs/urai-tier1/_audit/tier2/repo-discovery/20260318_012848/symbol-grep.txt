@@ -1,0 +1,1254 @@
+src/app/globals.css:89:  transition:
+src/app/globals.css:197:  transition:
+src/app/page.tsx:94:  const [transitioning, setTransitioning] = useState(false);
+src/app/page.tsx:116:    if (transitioning) return;
+src/app/page.tsx:126:    if (transitioning) return;
+src/app/page.tsx:132:    if (transitioning) return;
+src/app/page.tsx:137:    if (transitioning) return;
+src/app/page.tsx:147:    if (transitioning) return;
+src/app/page.tsx:152:    if (transitioning) return;
+src/app/page.tsx:157:    if (transitioning) return;
+src/app/page.tsx:161:  const uiLocked = transitioning || mode === "sky";
+src/app/page.tsx:263:          transition: "opacity 240ms ease",
+src/app/page.tsx:324:                transition:
+src/app/page.tsx:361:            transition: "all 240ms ease",
+src/app/page.tsx:417:            one clear camera story, and zero modal-state drift.
+src/spatial/persistence/PersistenceSyncOverlay.tsx:4:import { useSceneStore } from "@/spatial/state/sceneStore";
+src/spatial/persistence/PersistenceSyncOverlay.tsx:8:  const selectedStar = useSceneStore((s) => s.selectedStar);
+src/spatial/persistence/SpatialPersistenceBridge.tsx:4:import { generateStars } from "@/spatial/data/stars";
+src/spatial/persistence/SpatialPersistenceBridge.tsx:8:import { useSceneStore } from "@/spatial/state/sceneStore";
+src/spatial/persistence/SpatialPersistenceBridge.tsx:22:  const mode = useSceneStore((s) => s.mode);
+src/spatial/persistence/SpatialPersistenceBridge.tsx:23:  const selectedStar = useSceneStore((s) => s.selectedStar);
+src/spatial/cinematic/CinematicReplayOverlay.tsx:4:import { useSceneStore } from "@/spatial/state/sceneStore";
+src/spatial/cinematic/CinematicReplayOverlay.tsx:14:  const mode = useSceneStore((s) => s.mode);
+src/spatial/cinematic/CinematicReplayOverlay.tsx:15:  const selectedStar = useSceneStore((s) => s.selectedStar);
+src/spatial/chapter/ChapterSynthesisOverlay.tsx:4:import { useSceneStore } from "@/spatial/state/sceneStore";
+src/spatial/chapter/ChapterSynthesisOverlay.tsx:8:  const selectedStar = useSceneStore((s) => s.selectedStar);
+src/spatial/ar/ARPlacementOverlay.tsx:4:import { useSceneStore } from "@/spatial/state/sceneStore";
+src/spatial/ar/ARPlacementOverlay.tsx:8:  const mode = useSceneStore((s) => s.mode);
+src/spatial/ar/ARPlacementOverlay.tsx:9:  const selectedStar = useSceneStore((s) => s.selectedStar);
+src/spatial/polish/SpatialPolishOverlay.tsx:3:import { useSceneStore } from "@/spatial/state/sceneStore";
+src/spatial/polish/SpatialPolishOverlay.tsx:12:  const mode = useSceneStore((s) => s.mode);
+src/spatial/polish/SpatialPolishOverlay.tsx:13:  const selectedStar = useSceneStore((s) => s.selectedStar) as LooseRecord | null;
+src/spatial/ingest/ExternalIngestOverlay.tsx:4:import { useSceneStore } from "@/spatial/state/sceneStore";
+src/spatial/ingest/ExternalIngestOverlay.tsx:8:  const selectedStar = useSceneStore((s) => s.selectedStar);
+src/spatial/data/memoryDataset.ts:42:      "This memory marks the transition from vague perception into explicit naming. It is the moment the system begins turning intuition into a repeatable model.",
+src/spatial/data/memoryDataset.ts:165:      "The stars stopped being dots and started becoming decisions. That was the moment the map turned into a system of meaning.",
+src/spatial/data/memoryDataset.ts:357:      "A signal memory about controlled transitions. Focus is no longer a trap; it is a reversible, stable state.",
+src/spatial/data/stars.ts:146:  console.warn("stars.ts: buildStarsFromMemory failed, using placeholder stars", error);
+src/spatial/data/stars.ts.bak.20260318_003721:146:  console.warn("stars.ts: buildStarsFromMemory failed, using placeholder stars", error);
+src/spatial/state/sceneStore.ts:2:import { SPATIAL_STARS, type SpatialStar } from "../data/stars";
+src/spatial/state/sceneStore.ts:9:  stars: SpatialStar[];
+src/spatial/state/sceneStore.ts:24:export const useSceneStore = create<SceneState>((set, get) => ({
+src/spatial/state/sceneStore.ts:26:  stars: SPATIAL_STARS,
+src/spatial/state/selectedStarContract.ts:1:import type { SpatialStar } from "../data/stars";
+src/spatial/causal/CausalInsightOverlay.tsx:4:import { useSceneStore } from "@/spatial/state/sceneStore";
+src/spatial/causal/CausalInsightOverlay.tsx:8:  const selectedStar = useSceneStore((s) => s.selectedStar);
+src/spatial/export/resolveSceneExportManifest.ts:68:    "camera-anchor",
+src/spatial/export/SceneExportOverlay.tsx:4:import { useSceneStore } from "@/spatial/state/sceneStore";
+src/spatial/export/SceneExportOverlay.tsx:8:  const mode = useSceneStore((s) => s.mode);
+src/spatial/export/SceneExportOverlay.tsx:9:  const selectedStar = useSceneStore((s) => s.selectedStar);
+src/spatial/clustering/MemoryClusterOverlay.tsx:4:import { useSceneStore } from "@/spatial/state/sceneStore";
+src/spatial/clustering/MemoryClusterOverlay.tsx:8:  const mode = useSceneStore((s) => s.mode);
+src/spatial/clustering/MemoryClusterOverlay.tsx:9:  const selectedStar = useSceneStore((s) => s.selectedStar);
+src/spatial/unity/UnityRuntimePayloadBridge.tsx.bak.20260317_010558:4:import { generateStars } from "@/spatial/data/stars";
+src/spatial/unity/UnityRuntimePayloadBridge.tsx.bak.20260317_010558:5:import { useSceneStore } from "@/spatial/state/sceneStore";
+src/spatial/unity/UnityRuntimePayloadBridge.tsx.bak.20260317_010558:16:  const mode = useSceneStore((s) => s.mode);
+src/spatial/unity/UnityRuntimePayloadBridge.tsx.bak.20260317_010558:17:  const selectedStar = useSceneStore((s) => s.selectedStar);
+src/spatial/unity/resolveUnityAdapterState.ts:72:      ? "Replay payload is ready for Unity cinematic sequencing using anchor, camera, and narrative channels."
+src/spatial/unity/resolveUnityAdapterState.ts:78:    "camera-rig",
+src/spatial/unity/UnityRuntimePayloadBridge.tsx.bak.20260317_010434:4:import { generateStars } from "@/spatial/data/stars";
+src/spatial/unity/UnityRuntimePayloadBridge.tsx.bak.20260317_010434:5:import { useSceneStore } from "@/spatial/state/sceneStore";
+src/spatial/unity/UnityRuntimePayloadBridge.tsx.bak.20260317_010434:16:  const mode = useSceneStore((s) => s.mode);
+src/spatial/unity/UnityRuntimePayloadBridge.tsx.bak.20260317_010434:17:  const selectedStar = useSceneStore((s) => s.selectedStar);
+src/spatial/unity/UnityAdapterOverlay.tsx:4:import { useSceneStore } from "@/spatial/state/sceneStore";
+src/spatial/unity/UnityAdapterOverlay.tsx:9:  const mode = useSceneStore((s) => s.mode);
+src/spatial/unity/UnityAdapterOverlay.tsx:10:  const selectedStar = useSceneStore((s) => s.selectedStar);
+src/spatial/unity/UnityRuntimePayloadBridge.tsx:4:import { generateStars } from "@/spatial/data/stars";
+src/spatial/unity/UnityRuntimePayloadBridge.tsx:5:import { useSceneStore } from "@/spatial/state/sceneStore";
+src/spatial/unity/UnityRuntimePayloadBridge.tsx:17:  const mode = useSceneStore((s) => s.mode);
+src/spatial/unity/UnityRuntimePayloadBridge.tsx:18:  const selectedStar = useSceneStore((s) => s.selectedStar);
+src/spatial/xr/ArHitTestBridge.tsx:29:  const camera = useThree((s) => s.camera as any);
+src/spatial/xr/ArHitTestBridge.tsx:120:        x: camera?.position?.x ?? 0,
+src/spatial/xr/ArHitTestBridge.tsx:121:        y: (camera?.position?.y ?? 0) - 1.25,
+src/spatial/xr/ArHitTestBridge.tsx:122:        z: (camera?.position?.z ?? 0) - 2,
+src/spatial/xr/resolveXRBridgeState.ts:48:      ? "Replay staging is now mappable into immersive camera and presence layers."
+src/spatial/xr/resolveXRBridgeState.ts:52:    "camera anchor",
+src/spatial/xr/XRBridgeOverlay.tsx:4:import { useSceneStore } from "@/spatial/state/sceneStore";
+src/spatial/xr/XRBridgeOverlay.tsx:8:  const mode = useSceneStore((s) => s.mode);
+src/spatial/xr/XRBridgeOverlay.tsx:9:  const selectedStar = useSceneStore((s) => s.selectedStar);
+src/spatial/xr/XrLocomotionRuntime.tsx:6:import { useSceneStore } from "@/spatial/state/sceneStore";
+src/spatial/xr/XrLocomotionRuntime.tsx:83:  const mode = useSceneStore((s) => s.mode);
+src/spatial/ui/SpatialCuratedDeckChangeLedgerPanel.tsx:53:        recent vault transitions: {ledger.rowCount}
+src/spatial/ui/SpatialReleasePanel.tsx:5:import { useSceneStore } from "@/spatial/state/sceneStore";
+src/spatial/ui/SpatialReleasePanel.tsx:17:  const mode = useSceneStore((s) => s.mode);
+src/spatial/ui/SpatialReleasePanel.tsx:18:  const selectedStar = useSceneStore((s) => s.selectedStar);
+src/spatial/data-import/MemoryImportOverlay.tsx:4:import { useSceneStore } from "@/spatial/state/sceneStore";
+src/spatial/data-import/MemoryImportOverlay.tsx:9:  const selectedStar = useSceneStore((s) => s.selectedStar);
+src/spatial/core/SceneController.tsx:4:import { useSceneStore } from "../state/sceneStore";
+src/spatial/core/SceneController.tsx:7:  const { mode, setMode } = useSceneStore();
+src/spatial/core/SceneController.tsx:18:        useSceneStore.setState({ selectedStar: null });
+src/spatial/replay/ReplayOverlay.tsx:4:import { useSceneStore } from "../state/sceneStore";
+src/spatial/replay/ReplayOverlay.tsx:188:  const mode = useSceneStore((s) => s.mode);
+src/spatial/replay/ReplayOverlay.tsx:189:  const selectedStar = useSceneStore((s) => s.selectedStar);
+src/spatial/replay/ReplayOverlay.tsx:191:  const enterReplay = useSceneStore((s) => s.enterReplay);
+src/spatial/replay/ReplayOverlay.tsx:192:  const exitReplayToFocus = useSceneStore((s) => s.exitReplayToFocus);
+src/spatial/replay/ReplayOverlay.tsx:193:  const exitFocusToLifeMap = useSceneStore((s) => s.exitFocusToLifeMap);
+src/spatial/replay/ReplayOverlay.tsx:299:                    transition: "all 180ms ease",
+src/spatial/replay/PHASE7_TODO.md:13:- wire SpatialScene / replay UI to resolveReplaySceneFromSelectedStar(selectedStar)
+src/spatial/replay/ReplayContractOverlay.tsx:4:import { useSceneStore } from "@/spatial/state/sceneStore";
+src/spatial/replay/ReplayContractOverlay.tsx:15:  const mode = useSceneStore((s) => s.mode);
+src/spatial/replay/ReplayContractOverlay.tsx:16:  const selectedStar = useSceneStore((s) => s.selectedStar);
+src/spatial/intelligence/LifeMapIntelligenceOverlay.tsx:4:import { useSceneStore } from "@/spatial/state/sceneStore";
+src/spatial/intelligence/LifeMapIntelligenceOverlay.tsx:8:  const mode = useSceneStore((s) => s.mode);
+src/spatial/intelligence/LifeMapIntelligenceOverlay.tsx:9:  const selectedStar = useSceneStore((s) => s.selectedStar);
+src/spatial/narrative/NarrativeReplayOverlay.tsx:4:import { useSceneStore } from "@/spatial/state/sceneStore";
+src/spatial/narrative/NarrativeReplayOverlay.tsx:8:  const mode = useSceneStore((s) => s.mode);
+src/spatial/narrative/NarrativeReplayOverlay.tsx:9:  const selectedStar = useSceneStore((s) => s.selectedStar);
+src/spatial/xr-runtime/resolveXRCameraRigState.ts:67:      ? "lock camera to local anchor and keep horizon stable"
+src/spatial/xr-runtime/resolveXRCameraRigState.ts:85:    "camera-root",
+src/spatial/xr-runtime/XRCameraRigOverlay.tsx:4:import { useSceneStore } from "@/spatial/state/sceneStore";
+src/spatial/xr-runtime/XRCameraRigOverlay.tsx:8:  const mode = useSceneStore((s) => s.mode);
+src/spatial/xr-runtime/XRCameraRigOverlay.tsx:9:  const selectedStar = useSceneStore((s) => s.selectedStar);
+src/spatial/xr-renderer/WebXRRendererHandoffOverlay.tsx:4:import { useSceneStore } from "@/spatial/state/sceneStore";
+src/spatial/xr-renderer/WebXRRendererHandoffOverlay.tsx:8:  const mode = useSceneStore((s) => s.mode);
+src/spatial/xr-renderer/WebXRRendererHandoffOverlay.tsx:9:  const selectedStar = useSceneStore((s) => s.selectedStar);
+src/spatial/xr-renderer/resolveWebXRRendererHandoff.ts:67:    "camera-rig-bind",
+src/spatial/xr-renderer/resolveWebXRRendererHandoff.ts:76:    !rig ? "missing xr camera rig state" : undefined,
+src/spatial/traversal/ImmersiveReplayTraversalOverlay.tsx:4:import { useSceneStore } from "@/spatial/state/sceneStore";
+src/spatial/traversal/ImmersiveReplayTraversalOverlay.tsx:8:  const mode = useSceneStore((s) => s.mode);
+src/spatial/traversal/ImmersiveReplayTraversalOverlay.tsx:9:  const selectedStar = useSceneStore((s) => s.selectedStar);
+src/spatial/merge/MergePreflightOverlay.tsx:4:import { useSceneStore } from "@/spatial/state/sceneStore";
+src/spatial/merge/MergePreflightOverlay.tsx:8:  const selectedStar = useSceneStore((s) => s.selectedStar);
+src/spatial/memory/MemorySphereOverlay.tsx:4:import { useSceneStore } from "@/spatial/state/sceneStore";
+src/spatial/memory/MemorySphereOverlay.tsx:12:  const mode = useSceneStore((s) => s.mode);
+src/spatial/memory/MemorySphereOverlay.tsx:13:  const selectedStar = useSceneStore((s) => s.selectedStar);
+src/spatial/lib/toCanonicalSelectedStar.ts:1:import type { SpatialStar } from "../data/stars";
+src/spatial/scene/SpatialScene.tsx.bak.20260317_231119:22:import { SpatialStar } from "../data/stars";
+src/spatial/scene/SpatialScene.tsx.bak.20260317_231119:23:import { SceneMode, useSceneStore } from "../state/sceneStore";
+src/spatial/scene/SpatialScene.tsx.bak.20260317_231119:188:  const { camera } = useThree();
+src/spatial/scene/SpatialScene.tsx.bak.20260317_231119:189:  const mode = useSceneStore((s) => s.mode);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_231119:190:  const selectedStar = useSceneStore((s) => s.selectedStar);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_231119:191:  const cameraTarget = useRef(new THREE.Vector3(0, 4, 28));
+src/spatial/scene/SpatialScene.tsx.bak.20260317_231119:195:    const cp = cameraTarget.current;
+src/spatial/scene/SpatialScene.tsx.bak.20260317_231119:216:    camera.position.lerp(cp, t);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_231119:217:    camera.lookAt(lp);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_231119:236:  const mode = useSceneStore((s) => s.mode);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_231119:302:  const selectedStar = useSceneStore((s) => s.selectedStar);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_231119:303:  const mode = useSceneStore((s) => s.mode);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_231119:343:  const stars = useSceneStore((s) => s.stars);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_231119:344:  const selectedStarId = useSceneStore((s) => s.selectedStarId);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_231119:345:  const mode = useSceneStore((s) => s.mode);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_231119:346:  const selectStar = useSceneStore((s) => s.selectStar);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_231119:347:  const clearFocus = useSceneStore((s) => s.clearFocus);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_231119:351:      {stars.map((star) => {
+src/spatial/scene/SpatialScene.tsx.bak.20260317_231119:381:  const selectedStar = useSceneStore((s) => s.selectedStar);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_231119:382:  const mode = useSceneStore((s) => s.mode);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_231119:418:  const mode = useSceneStore((s) => s.mode);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_231119:463:          transition: "width 140ms linear",
+src/spatial/scene/SpatialScene.tsx.bak.20260317_231119:471:  const mode = useSceneStore((s) => s.mode);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_231119:472:  const setMode = useSceneStore((s) => s.setMode);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_231119:473:  const selectedStar = useSceneStore((s) => s.selectedStar);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_231119:474:  const clearFocus = useSceneStore((s) => s.clearFocus);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_231119:475:  const enterReplay = useSceneStore((s) => s.enterReplay);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_231119:476:  const exitReplay = useSceneStore((s) => s.exitReplay);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_231119:519:                memory-dive scene with camera intent, focus depth, and a readable presentation layer.
+src/spatial/scene/SpatialScene.tsx.bak.20260317_231119:751:export default function SpatialScene() {
+src/spatial/scene/SpatialScene.tsx.bak.20260317_231119:753:  const mode = useSceneStore((s) => s.mode);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_231119:754:  const selectedStar = useSceneStore((s) => s.selectedStar);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_231119:755:  const setMode = useSceneStore((s) => s.setMode);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_231119:756:  const clearFocus = useSceneStore((s) => s.clearFocus);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_231119:757:  const exitReplay = useSceneStore((s) => s.exitReplay);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_231119:802:        camera={{ position: [0, 6, 30], fov: 42, near: 0.1, far: 200 }}
+src/spatial/scene/SpatialScene.tsx.bak.20260317_233949:22:import { SpatialStar } from "../data/stars";
+src/spatial/scene/SpatialScene.tsx.bak.20260317_233949:23:import { SceneMode, useSceneStore } from "../state/sceneStore";
+src/spatial/scene/SpatialScene.tsx.bak.20260317_233949:188:  const { camera } = useThree();
+src/spatial/scene/SpatialScene.tsx.bak.20260317_233949:189:  const mode = useSceneStore((s) => s.mode);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_233949:190:  const selectedStar = useSceneStore((s) => s.selectedStar);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_233949:191:  const cameraTarget = useRef(new THREE.Vector3(0, 4, 28));
+src/spatial/scene/SpatialScene.tsx.bak.20260317_233949:195:    const cp = cameraTarget.current;
+src/spatial/scene/SpatialScene.tsx.bak.20260317_233949:216:    camera.position.lerp(cp, t);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_233949:217:    camera.lookAt(lp);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_233949:236:  const mode = useSceneStore((s) => s.mode);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_233949:302:  const selectedStar = useSceneStore((s) => s.selectedStar);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_233949:303:  const mode = useSceneStore((s) => s.mode);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_233949:343:  const stars = useSceneStore((s) => s.stars);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_233949:344:  const selectedStarId = useSceneStore((s) => s.selectedStarId);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_233949:345:  const mode = useSceneStore((s) => s.mode);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_233949:346:  const selectStar = useSceneStore((s) => s.selectStar);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_233949:347:  const clearFocus = useSceneStore((s) => s.clearFocus);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_233949:351:      {stars.map((star) => {
+src/spatial/scene/SpatialScene.tsx.bak.20260317_233949:381:  const selectedStar = useSceneStore((s) => s.selectedStar);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_233949:382:  const mode = useSceneStore((s) => s.mode);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_233949:418:  const mode = useSceneStore((s) => s.mode);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_233949:463:          transition: "width 140ms linear",
+src/spatial/scene/SpatialScene.tsx.bak.20260317_233949:471:  const mode = useSceneStore((s) => s.mode);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_233949:472:  const setMode = useSceneStore((s) => s.setMode);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_233949:473:  const selectedStar = useSceneStore((s) => s.selectedStar);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_233949:474:  const clearFocus = useSceneStore((s) => s.clearFocus);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_233949:475:  const enterReplay = useSceneStore((s) => s.enterReplay);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_233949:476:  const exitReplay = useSceneStore((s) => s.exitReplay);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_233949:519:                memory-dive scene with camera intent, focus depth, and a readable presentation layer.
+src/spatial/scene/SpatialScene.tsx.bak.20260317_233949:751:export default function SpatialScene() {
+src/spatial/scene/SpatialScene.tsx.bak.20260317_233949:753:  const mode = useSceneStore((s) => s.mode);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_233949:754:  const selectedStar = useSceneStore((s) => s.selectedStar);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_233949:755:  const setMode = useSceneStore((s) => s.setMode);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_233949:756:  const clearFocus = useSceneStore((s) => s.clearFocus);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_233949:757:  const exitReplay = useSceneStore((s) => s.exitReplay);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_233949:802:        camera={{ position: [0, 6, 30], fov: 42, near: 0.1, far: 200 }}
+src/spatial/scene/SpatialScene.tsx.bak.20260317_230904:22:import { SpatialStar } from "../data/stars";
+src/spatial/scene/SpatialScene.tsx.bak.20260317_230904:23:import { SceneMode, useSceneStore } from "../state/sceneStore";
+src/spatial/scene/SpatialScene.tsx.bak.20260317_230904:188:  const { camera } = useThree();
+src/spatial/scene/SpatialScene.tsx.bak.20260317_230904:189:  const mode = useSceneStore((s) => s.mode);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_230904:190:  const selectedStar = useSceneStore((s) => s.selectedStar);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_230904:191:  const cameraTarget = useRef(new THREE.Vector3(0, 4, 28));
+src/spatial/scene/SpatialScene.tsx.bak.20260317_230904:195:    const cp = cameraTarget.current;
+src/spatial/scene/SpatialScene.tsx.bak.20260317_230904:216:    camera.position.lerp(cp, t);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_230904:217:    camera.lookAt(lp);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_230904:236:  const mode = useSceneStore((s) => s.mode);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_230904:302:  const selectedStar = useSceneStore((s) => s.selectedStar);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_230904:303:  const mode = useSceneStore((s) => s.mode);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_230904:343:  const stars = useSceneStore((s) => s.stars);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_230904:344:  const selectedStarId = useSceneStore((s) => s.selectedStarId);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_230904:345:  const mode = useSceneStore((s) => s.mode);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_230904:346:  const selectStar = useSceneStore((s) => s.selectStar);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_230904:347:  const clearFocus = useSceneStore((s) => s.clearFocus);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_230904:351:      {stars.map((star) => {
+src/spatial/scene/SpatialScene.tsx.bak.20260317_230904:381:  const selectedStar = useSceneStore((s) => s.selectedStar);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_230904:382:  const mode = useSceneStore((s) => s.mode);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_230904:418:  const mode = useSceneStore((s) => s.mode);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_230904:463:          transition: "width 140ms linear",
+src/spatial/scene/SpatialScene.tsx.bak.20260317_230904:471:  const mode = useSceneStore((s) => s.mode);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_230904:472:  const setMode = useSceneStore((s) => s.setMode);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_230904:473:  const selectedStar = useSceneStore((s) => s.selectedStar);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_230904:474:  const clearFocus = useSceneStore((s) => s.clearFocus);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_230904:475:  const enterReplay = useSceneStore((s) => s.enterReplay);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_230904:476:  const exitReplay = useSceneStore((s) => s.exitReplay);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_230904:519:                memory-dive scene with camera intent, focus depth, and a readable presentation layer.
+src/spatial/scene/SpatialScene.tsx.bak.20260317_230904:751:export default function SpatialScene() {
+src/spatial/scene/SpatialScene.tsx.bak.20260317_230904:753:  const mode = useSceneStore((s) => s.mode);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_230904:754:  const selectedStar = useSceneStore((s) => s.selectedStar);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_230904:755:  const setMode = useSceneStore((s) => s.setMode);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_230904:756:  const clearFocus = useSceneStore((s) => s.clearFocus);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_230904:757:  const exitReplay = useSceneStore((s) => s.exitReplay);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_230904:802:        camera={{ position: [0, 6, 30], fov: 42, near: 0.1, far: 200 }}
+src/spatial/scene/MemorySphere.tsx:3:import { useSceneStore } from "@/spatial/state/sceneStore";
+src/spatial/scene/MemorySphere.tsx:6:  const mode = useSceneStore((s) => s.mode);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_223223:22:import { SpatialStar } from "../data/stars";
+src/spatial/scene/SpatialScene.tsx.bak.20260317_223223:23:import { SceneMode, useSceneStore } from "../state/sceneStore";
+src/spatial/scene/SpatialScene.tsx.bak.20260317_223223:188:  const { camera } = useThree();
+src/spatial/scene/SpatialScene.tsx.bak.20260317_223223:189:  const mode = useSceneStore((s) => s.mode);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_223223:191:  const selectedStar = useSceneStore((s) => s.selectedStar);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_223223:192:  const cameraTarget = useRef(new THREE.Vector3(0, 4, 28));
+src/spatial/scene/SpatialScene.tsx.bak.20260317_223223:196:    const cp = cameraTarget.current;
+src/spatial/scene/SpatialScene.tsx.bak.20260317_223223:217:    camera.position.lerp(cp, t);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_223223:218:    camera.lookAt(lp);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_223223:237:  const mode = useSceneStore((s) => s.mode);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_223223:303:  const selectedStar = useSceneStore((s) => s.selectedStar);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_223223:304:  const mode = useSceneStore((s) => s.mode);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_223223:344:  const stars = useSceneStore((s) => s.stars);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_223223:345:  const selectedStarId = useSceneStore((s) => s.selectedStarId);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_223223:346:  const mode = useSceneStore((s) => s.mode);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_223223:347:  const selectStar = useSceneStore((s) => s.selectStar);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_223223:348:  const clearFocus = useSceneStore((s) => s.clearFocus);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_223223:352:      {stars.map((star) => {
+src/spatial/scene/SpatialScene.tsx.bak.20260317_223223:382:  const selectedStar = useSceneStore((s) => s.selectedStar);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_223223:383:  const mode = useSceneStore((s) => s.mode);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_223223:419:  const mode = useSceneStore((s) => s.mode);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_223223:464:          transition: "width 140ms linear",
+src/spatial/scene/SpatialScene.tsx.bak.20260317_223223:472:  const mode = useSceneStore((s) => s.mode);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_223223:473:  const setMode = useSceneStore((s) => s.setMode);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_223223:474:  const selectedStar = useSceneStore((s) => s.selectedStar);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_223223:475:  const clearFocus = useSceneStore((s) => s.clearFocus);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_223223:476:  const enterReplay = useSceneStore((s) => s.enterReplay);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_223223:477:  const exitReplay = useSceneStore((s) => s.exitReplay);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_223223:520:                memory-dive scene with camera intent, focus depth, and a readable presentation layer.
+src/spatial/scene/SpatialScene.tsx.bak.20260317_223223:752:export default function SpatialScene() {
+src/spatial/scene/SpatialScene.tsx.bak.20260317_223223:753:  const mode = useSceneStore((s) => s.mode);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_223223:754:  const selectedStar = useSceneStore((s) => s.selectedStar);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_223223:755:  const setMode = useSceneStore((s) => s.setMode);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_223223:756:  const clearFocus = useSceneStore((s) => s.clearFocus);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_223223:757:  const exitReplay = useSceneStore((s) => s.exitReplay);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_223223:802:        camera={{ position: [0, 6, 30], fov: 42, near: 0.1, far: 200 }}
+src/spatial/scene/SpatialScene.tsx.bak.20260317_222421:22:import { SpatialStar } from "../data/stars";
+src/spatial/scene/SpatialScene.tsx.bak.20260317_222421:23:import { SceneMode, useSceneStore } from "../state/sceneStore";
+src/spatial/scene/SpatialScene.tsx.bak.20260317_222421:188:  const { camera } = useThree();
+src/spatial/scene/SpatialScene.tsx.bak.20260317_222421:189:  const mode = useSceneStore((s) => s.mode);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_222421:191:  const selectedStar = useSceneStore((s) => s.selectedStar);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_222421:192:  const cameraTarget = useRef(new THREE.Vector3(0, 4, 28));
+src/spatial/scene/SpatialScene.tsx.bak.20260317_222421:196:    const cp = cameraTarget.current;
+src/spatial/scene/SpatialScene.tsx.bak.20260317_222421:217:    camera.position.lerp(cp, t);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_222421:218:    camera.lookAt(lp);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_222421:237:  const mode = useSceneStore((s) => s.mode);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_222421:303:  const selectedStar = useSceneStore((s) => s.selectedStar);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_222421:304:  const mode = useSceneStore((s) => s.mode);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_222421:344:  const stars = useSceneStore((s) => s.stars);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_222421:345:  const selectedStarId = useSceneStore((s) => s.selectedStarId);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_222421:346:  const mode = useSceneStore((s) => s.mode);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_222421:347:  const selectStar = useSceneStore((s) => s.selectStar);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_222421:348:  const clearFocus = useSceneStore((s) => s.clearFocus);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_222421:352:      {stars.map((star) => {
+src/spatial/scene/SpatialScene.tsx.bak.20260317_222421:382:  const selectedStar = useSceneStore((s) => s.selectedStar);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_222421:383:  const mode = useSceneStore((s) => s.mode);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_222421:419:  const mode = useSceneStore((s) => s.mode);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_222421:464:          transition: "width 140ms linear",
+src/spatial/scene/SpatialScene.tsx.bak.20260317_222421:472:  const mode = useSceneStore((s) => s.mode);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_222421:473:  const setMode = useSceneStore((s) => s.setMode);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_222421:474:  const selectedStar = useSceneStore((s) => s.selectedStar);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_222421:475:  const clearFocus = useSceneStore((s) => s.clearFocus);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_222421:476:  const enterReplay = useSceneStore((s) => s.enterReplay);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_222421:477:  const exitReplay = useSceneStore((s) => s.exitReplay);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_222421:520:                memory-dive scene with camera intent, focus depth, and a readable presentation layer.
+src/spatial/scene/SpatialScene.tsx.bak.20260317_222421:752:export default function SpatialScene() {
+src/spatial/scene/SpatialScene.tsx.bak.20260317_222421:753:  const mode = useSceneStore((s) => s.mode);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_222421:754:  const selectedStar = useSceneStore((s) => s.selectedStar);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_222421:755:  const setMode = useSceneStore((s) => s.setMode);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_222421:756:  const clearFocus = useSceneStore((s) => s.clearFocus);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_222421:757:  const exitReplay = useSceneStore((s) => s.exitReplay);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_222421:802:        camera={{ position: [0, 6, 30], fov: 42, near: 0.1, far: 200 }}
+src/spatial/scene/SpatialScene.tsx.bak.1773786170:22:import { SpatialStar } from "../data/stars";
+src/spatial/scene/SpatialScene.tsx.bak.1773786170:23:import { SceneMode, useSceneStore } from "../state/sceneStore";
+src/spatial/scene/SpatialScene.tsx.bak.1773786170:188:  const { camera } = useThree();
+src/spatial/scene/SpatialScene.tsx.bak.1773786170:189:  const mode = useSceneStore((s) => s.mode);
+src/spatial/scene/SpatialScene.tsx.bak.1773786170:191:  const selectedStar = useSceneStore((s) => s.selectedStar);
+src/spatial/scene/SpatialScene.tsx.bak.1773786170:192:  const cameraTarget = useRef(new THREE.Vector3(0, 4, 28));
+src/spatial/scene/SpatialScene.tsx.bak.1773786170:196:    const cp = cameraTarget.current;
+src/spatial/scene/SpatialScene.tsx.bak.1773786170:217:    camera.position.lerp(cp, t);
+src/spatial/scene/SpatialScene.tsx.bak.1773786170:218:    camera.lookAt(lp);
+src/spatial/scene/SpatialScene.tsx.bak.1773786170:237:  const mode = useSceneStore((s) => s.mode);
+src/spatial/scene/SpatialScene.tsx.bak.1773786170:303:  const selectedStar = useSceneStore((s) => s.selectedStar);
+src/spatial/scene/SpatialScene.tsx.bak.1773786170:304:  const mode = useSceneStore((s) => s.mode);
+src/spatial/scene/SpatialScene.tsx.bak.1773786170:344:  const stars = useSceneStore((s) => s.stars);
+src/spatial/scene/SpatialScene.tsx.bak.1773786170:345:  const selectedStarId = useSceneStore((s) => s.selectedStarId);
+src/spatial/scene/SpatialScene.tsx.bak.1773786170:346:  const mode = useSceneStore((s) => s.mode);
+src/spatial/scene/SpatialScene.tsx.bak.1773786170:347:  const selectStar = useSceneStore((s) => s.selectStar);
+src/spatial/scene/SpatialScene.tsx.bak.1773786170:348:  const clearFocus = useSceneStore((s) => s.clearFocus);
+src/spatial/scene/SpatialScene.tsx.bak.1773786170:352:      {stars.map((star) => {
+src/spatial/scene/SpatialScene.tsx.bak.1773786170:382:  const selectedStar = useSceneStore((s) => s.selectedStar);
+src/spatial/scene/SpatialScene.tsx.bak.1773786170:383:  const mode = useSceneStore((s) => s.mode);
+src/spatial/scene/SpatialScene.tsx.bak.1773786170:419:  const mode = useSceneStore((s) => s.mode);
+src/spatial/scene/SpatialScene.tsx.bak.1773786170:464:          transition: "width 140ms linear",
+src/spatial/scene/SpatialScene.tsx.bak.1773786170:472:  const mode = useSceneStore((s) => s.mode);
+src/spatial/scene/SpatialScene.tsx.bak.1773786170:473:  const setMode = useSceneStore((s) => s.setMode);
+src/spatial/scene/SpatialScene.tsx.bak.1773786170:474:  const selectedStar = useSceneStore((s) => s.selectedStar);
+src/spatial/scene/SpatialScene.tsx.bak.1773786170:475:  const clearFocus = useSceneStore((s) => s.clearFocus);
+src/spatial/scene/SpatialScene.tsx.bak.1773786170:476:  const enterReplay = useSceneStore((s) => s.enterReplay);
+src/spatial/scene/SpatialScene.tsx.bak.1773786170:477:  const exitReplay = useSceneStore((s) => s.exitReplay);
+src/spatial/scene/SpatialScene.tsx.bak.1773786170:520:                memory-dive scene with camera intent, focus depth, and a readable presentation layer.
+src/spatial/scene/SpatialScene.tsx.bak.1773786170:752:export default function SpatialScene() {
+src/spatial/scene/SpatialScene.tsx.bak.1773786170:753:  const mode = useSceneStore((s) => s.mode);
+src/spatial/scene/SpatialScene.tsx.bak.1773786170:754:  const selectedStar = useSceneStore((s) => s.selectedStar);
+src/spatial/scene/SpatialScene.tsx.bak.1773786170:755:  const setMode = useSceneStore((s) => s.setMode);
+src/spatial/scene/SpatialScene.tsx.bak.1773786170:756:  const clearFocus = useSceneStore((s) => s.clearFocus);
+src/spatial/scene/SpatialScene.tsx.bak.1773786170:757:  const exitReplay = useSceneStore((s) => s.exitReplay);
+src/spatial/scene/SpatialScene.tsx.bak.1773786170:802:        camera={{ position: [0, 6, 30], fov: 42, near: 0.1, far: 200 }}
+src/spatial/scene/SpatialScene.tsx.bak.20260317_224323:22:import { SpatialStar } from "../data/stars";
+src/spatial/scene/SpatialScene.tsx.bak.20260317_224323:23:import { SceneMode, useSceneStore } from "../state/sceneStore";
+src/spatial/scene/SpatialScene.tsx.bak.20260317_224323:188:  const { camera } = useThree();
+src/spatial/scene/SpatialScene.tsx.bak.20260317_224323:189:  const mode = useSceneStore((s) => s.mode);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_224323:191:  const selectedStar = useSceneStore((s) => s.selectedStar);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_224323:192:  const cameraTarget = useRef(new THREE.Vector3(0, 4, 28));
+src/spatial/scene/SpatialScene.tsx.bak.20260317_224323:196:    const cp = cameraTarget.current;
+src/spatial/scene/SpatialScene.tsx.bak.20260317_224323:217:    camera.position.lerp(cp, t);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_224323:218:    camera.lookAt(lp);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_224323:237:  const mode = useSceneStore((s) => s.mode);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_224323:303:  const selectedStar = useSceneStore((s) => s.selectedStar);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_224323:304:  const mode = useSceneStore((s) => s.mode);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_224323:344:  const stars = useSceneStore((s) => s.stars);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_224323:345:  const selectedStarId = useSceneStore((s) => s.selectedStarId);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_224323:346:  const mode = useSceneStore((s) => s.mode);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_224323:347:  const selectStar = useSceneStore((s) => s.selectStar);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_224323:348:  const clearFocus = useSceneStore((s) => s.clearFocus);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_224323:352:      {stars.map((star) => {
+src/spatial/scene/SpatialScene.tsx.bak.20260317_224323:382:  const selectedStar = useSceneStore((s) => s.selectedStar);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_224323:383:  const mode = useSceneStore((s) => s.mode);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_224323:419:  const mode = useSceneStore((s) => s.mode);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_224323:464:          transition: "width 140ms linear",
+src/spatial/scene/SpatialScene.tsx.bak.20260317_224323:472:  const mode = useSceneStore((s) => s.mode);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_224323:473:  const setMode = useSceneStore((s) => s.setMode);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_224323:474:  const selectedStar = useSceneStore((s) => s.selectedStar);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_224323:475:  const clearFocus = useSceneStore((s) => s.clearFocus);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_224323:476:  const enterReplay = useSceneStore((s) => s.enterReplay);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_224323:477:  const exitReplay = useSceneStore((s) => s.exitReplay);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_224323:520:                memory-dive scene with camera intent, focus depth, and a readable presentation layer.
+src/spatial/scene/SpatialScene.tsx.bak.20260317_224323:752:export default function SpatialScene() {
+src/spatial/scene/SpatialScene.tsx.bak.20260317_224323:753:  const mode = useSceneStore((s) => s.mode);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_224323:754:  const selectedStar = useSceneStore((s) => s.selectedStar);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_224323:755:  const setMode = useSceneStore((s) => s.setMode);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_224323:756:  const clearFocus = useSceneStore((s) => s.clearFocus);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_224323:757:  const exitReplay = useSceneStore((s) => s.exitReplay);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_224323:802:        camera={{ position: [0, 6, 30], fov: 42, near: 0.1, far: 200 }}
+src/spatial/scene/SpatialScene.tsx.bak.20260317_223056:22:import { SpatialStar } from "../data/stars";
+src/spatial/scene/SpatialScene.tsx.bak.20260317_223056:23:import { SceneMode, useSceneStore } from "../state/sceneStore";
+src/spatial/scene/SpatialScene.tsx.bak.20260317_223056:188:  const { camera } = useThree();
+src/spatial/scene/SpatialScene.tsx.bak.20260317_223056:189:  const mode = useSceneStore((s) => s.mode);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_223056:191:  const selectedStar = useSceneStore((s) => s.selectedStar);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_223056:192:  const cameraTarget = useRef(new THREE.Vector3(0, 4, 28));
+src/spatial/scene/SpatialScene.tsx.bak.20260317_223056:196:    const cp = cameraTarget.current;
+src/spatial/scene/SpatialScene.tsx.bak.20260317_223056:217:    camera.position.lerp(cp, t);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_223056:218:    camera.lookAt(lp);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_223056:237:  const mode = useSceneStore((s) => s.mode);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_223056:303:  const selectedStar = useSceneStore((s) => s.selectedStar);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_223056:304:  const mode = useSceneStore((s) => s.mode);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_223056:344:  const stars = useSceneStore((s) => s.stars);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_223056:345:  const selectedStarId = useSceneStore((s) => s.selectedStarId);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_223056:346:  const mode = useSceneStore((s) => s.mode);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_223056:347:  const selectStar = useSceneStore((s) => s.selectStar);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_223056:348:  const clearFocus = useSceneStore((s) => s.clearFocus);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_223056:352:      {stars.map((star) => {
+src/spatial/scene/SpatialScene.tsx.bak.20260317_223056:382:  const selectedStar = useSceneStore((s) => s.selectedStar);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_223056:383:  const mode = useSceneStore((s) => s.mode);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_223056:419:  const mode = useSceneStore((s) => s.mode);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_223056:464:          transition: "width 140ms linear",
+src/spatial/scene/SpatialScene.tsx.bak.20260317_223056:472:  const mode = useSceneStore((s) => s.mode);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_223056:473:  const setMode = useSceneStore((s) => s.setMode);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_223056:474:  const selectedStar = useSceneStore((s) => s.selectedStar);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_223056:475:  const clearFocus = useSceneStore((s) => s.clearFocus);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_223056:476:  const enterReplay = useSceneStore((s) => s.enterReplay);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_223056:477:  const exitReplay = useSceneStore((s) => s.exitReplay);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_223056:520:                memory-dive scene with camera intent, focus depth, and a readable presentation layer.
+src/spatial/scene/SpatialScene.tsx.bak.20260317_223056:752:export default function SpatialScene() {
+src/spatial/scene/SpatialScene.tsx.bak.20260317_223056:753:  const mode = useSceneStore((s) => s.mode);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_223056:754:  const selectedStar = useSceneStore((s) => s.selectedStar);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_223056:755:  const setMode = useSceneStore((s) => s.setMode);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_223056:756:  const clearFocus = useSceneStore((s) => s.clearFocus);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_223056:757:  const exitReplay = useSceneStore((s) => s.exitReplay);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_223056:802:        camera={{ position: [0, 6, 30], fov: 42, near: 0.1, far: 200 }}
+src/spatial/scene/SpatialScene.tsx.bak.20260318_002732:22:import { SpatialStar } from "../data/stars";
+src/spatial/scene/SpatialScene.tsx.bak.20260318_002732:23:import { SceneMode, useSceneStore } from "../state/sceneStore";
+src/spatial/scene/SpatialScene.tsx.bak.20260318_002732:173:  const mode = useSceneStore((s) => s.mode);
+src/spatial/scene/SpatialScene.tsx.bak.20260318_002732:190:  const { camera } = useThree();
+src/spatial/scene/SpatialScene.tsx.bak.20260318_002732:191:  const mode = useSceneStore((s) => s.mode);
+src/spatial/scene/SpatialScene.tsx.bak.20260318_002732:192:  const selectedStar = useSceneStore((s) => s.selectedStar);
+src/spatial/scene/SpatialScene.tsx.bak.20260318_002732:193:  const cameraTarget = useRef(new THREE.Vector3(0, 4, 28));
+src/spatial/scene/SpatialScene.tsx.bak.20260318_002732:197:    const cp = cameraTarget.current;
+src/spatial/scene/SpatialScene.tsx.bak.20260318_002732:219:    camera.position.lerp(cp, t);
+src/spatial/scene/SpatialScene.tsx.bak.20260318_002732:220:    camera.lookAt(lp);
+src/spatial/scene/SpatialScene.tsx.bak.20260318_002732:239:  const mode = useSceneStore((s) => s.mode);
+src/spatial/scene/SpatialScene.tsx.bak.20260318_002732:305:  const selectedStar = useSceneStore((s) => s.selectedStar);
+src/spatial/scene/SpatialScene.tsx.bak.20260318_002732:306:  const mode = useSceneStore((s) => s.mode);
+src/spatial/scene/SpatialScene.tsx.bak.20260318_002732:346:  const stars = useSceneStore((s) => s.stars);
+src/spatial/scene/SpatialScene.tsx.bak.20260318_002732:347:  const selectedStarId = useSceneStore((s) => s.selectedStarId);
+src/spatial/scene/SpatialScene.tsx.bak.20260318_002732:348:  const mode = useSceneStore((s) => s.mode);
+src/spatial/scene/SpatialScene.tsx.bak.20260318_002732:349:  const selectStar = useSceneStore((s) => s.selectStar);
+src/spatial/scene/SpatialScene.tsx.bak.20260318_002732:350:  const clearFocus = useSceneStore((s) => s.clearFocus);
+src/spatial/scene/SpatialScene.tsx.bak.20260318_002732:389:      {stars.map((star) => {
+src/spatial/scene/SpatialScene.tsx.bak.20260318_002732:418:  const selectedStar = useSceneStore((s) => s.selectedStar);
+src/spatial/scene/SpatialScene.tsx.bak.20260318_002732:419:  const mode = useSceneStore((s) => s.mode);
+src/spatial/scene/SpatialScene.tsx.bak.20260318_002732:455:  const mode = useSceneStore((s) => s.mode);
+src/spatial/scene/SpatialScene.tsx.bak.20260318_002732:500:          transition: "width 140ms linear",
+src/spatial/scene/SpatialScene.tsx.bak.20260318_002732:508:  const mode = useSceneStore((s) => s.mode);
+src/spatial/scene/SpatialScene.tsx.bak.20260318_002732:509:  const setMode = useSceneStore((s) => s.setMode);
+src/spatial/scene/SpatialScene.tsx.bak.20260318_002732:510:  const selectedStar = useSceneStore((s) => s.selectedStar);
+src/spatial/scene/SpatialScene.tsx.bak.20260318_002732:511:  const clearFocus = useSceneStore((s) => s.clearFocus);
+src/spatial/scene/SpatialScene.tsx.bak.20260318_002732:512:  const enterReplay = useSceneStore((s) => s.enterReplay);
+src/spatial/scene/SpatialScene.tsx.bak.20260318_002732:513:  const exitReplay = useSceneStore((s) => s.exitReplay);
+src/spatial/scene/SpatialScene.tsx.bak.20260318_002732:556:                memory-dive scene with camera intent, focus depth, and a readable presentation layer.
+src/spatial/scene/SpatialScene.tsx.bak.20260318_002732:788:export default function SpatialScene() {
+src/spatial/scene/SpatialScene.tsx.bak.20260318_002732:790:  const mode = useSceneStore((s) => s.mode);
+src/spatial/scene/SpatialScene.tsx.bak.20260318_002732:791:  const selectedStar = useSceneStore((s) => s.selectedStar);
+src/spatial/scene/SpatialScene.tsx.bak.20260318_002732:792:  const setMode = useSceneStore((s) => s.setMode);
+src/spatial/scene/SpatialScene.tsx.bak.20260318_002732:793:  const clearFocus = useSceneStore((s) => s.clearFocus);
+src/spatial/scene/SpatialScene.tsx.bak.20260318_002732:794:  const exitReplay = useSceneStore((s) => s.exitReplay);
+src/spatial/scene/SpatialScene.tsx.bak.20260318_002732:840:        camera={{ position: [0, 6, 30], fov: 42, near: 0.1, far: 200 }}
+src/spatial/scene/SpatialScene.tsx.bak.20260317_222554:22:import { SpatialStar } from "../data/stars";
+src/spatial/scene/SpatialScene.tsx.bak.20260317_222554:23:import { SceneMode, useSceneStore } from "../state/sceneStore";
+src/spatial/scene/SpatialScene.tsx.bak.20260317_222554:188:  const { camera } = useThree();
+src/spatial/scene/SpatialScene.tsx.bak.20260317_222554:189:  const mode = useSceneStore((s) => s.mode);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_222554:191:  const selectedStar = useSceneStore((s) => s.selectedStar);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_222554:192:  const cameraTarget = useRef(new THREE.Vector3(0, 4, 28));
+src/spatial/scene/SpatialScene.tsx.bak.20260317_222554:196:    const cp = cameraTarget.current;
+src/spatial/scene/SpatialScene.tsx.bak.20260317_222554:217:    camera.position.lerp(cp, t);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_222554:218:    camera.lookAt(lp);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_222554:237:  const mode = useSceneStore((s) => s.mode);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_222554:303:  const selectedStar = useSceneStore((s) => s.selectedStar);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_222554:304:  const mode = useSceneStore((s) => s.mode);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_222554:344:  const stars = useSceneStore((s) => s.stars);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_222554:345:  const selectedStarId = useSceneStore((s) => s.selectedStarId);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_222554:346:  const mode = useSceneStore((s) => s.mode);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_222554:347:  const selectStar = useSceneStore((s) => s.selectStar);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_222554:348:  const clearFocus = useSceneStore((s) => s.clearFocus);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_222554:352:      {stars.map((star) => {
+src/spatial/scene/SpatialScene.tsx.bak.20260317_222554:382:  const selectedStar = useSceneStore((s) => s.selectedStar);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_222554:383:  const mode = useSceneStore((s) => s.mode);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_222554:419:  const mode = useSceneStore((s) => s.mode);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_222554:464:          transition: "width 140ms linear",
+src/spatial/scene/SpatialScene.tsx.bak.20260317_222554:472:  const mode = useSceneStore((s) => s.mode);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_222554:473:  const setMode = useSceneStore((s) => s.setMode);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_222554:474:  const selectedStar = useSceneStore((s) => s.selectedStar);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_222554:475:  const clearFocus = useSceneStore((s) => s.clearFocus);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_222554:476:  const enterReplay = useSceneStore((s) => s.enterReplay);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_222554:477:  const exitReplay = useSceneStore((s) => s.exitReplay);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_222554:520:                memory-dive scene with camera intent, focus depth, and a readable presentation layer.
+src/spatial/scene/SpatialScene.tsx.bak.20260317_222554:752:export default function SpatialScene() {
+src/spatial/scene/SpatialScene.tsx.bak.20260317_222554:753:  const mode = useSceneStore((s) => s.mode);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_222554:754:  const selectedStar = useSceneStore((s) => s.selectedStar);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_222554:755:  const setMode = useSceneStore((s) => s.setMode);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_222554:756:  const clearFocus = useSceneStore((s) => s.clearFocus);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_222554:757:  const exitReplay = useSceneStore((s) => s.exitReplay);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_222554:802:        camera={{ position: [0, 6, 30], fov: 42, near: 0.1, far: 200 }}
+src/spatial/scene/SpatialScene.tsx.bak.20260317_232458:22:import { SpatialStar } from "../data/stars";
+src/spatial/scene/SpatialScene.tsx.bak.20260317_232458:23:import { SceneMode, useSceneStore } from "../state/sceneStore";
+src/spatial/scene/SpatialScene.tsx.bak.20260317_232458:188:  const { camera } = useThree();
+src/spatial/scene/SpatialScene.tsx.bak.20260317_232458:189:  const mode = useSceneStore((s) => s.mode);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_232458:190:  const selectedStar = useSceneStore((s) => s.selectedStar);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_232458:191:  const cameraTarget = useRef(new THREE.Vector3(0, 4, 28));
+src/spatial/scene/SpatialScene.tsx.bak.20260317_232458:195:    const cp = cameraTarget.current;
+src/spatial/scene/SpatialScene.tsx.bak.20260317_232458:216:    camera.position.lerp(cp, t);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_232458:217:    camera.lookAt(lp);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_232458:236:  const mode = useSceneStore((s) => s.mode);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_232458:302:  const selectedStar = useSceneStore((s) => s.selectedStar);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_232458:303:  const mode = useSceneStore((s) => s.mode);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_232458:343:  const stars = useSceneStore((s) => s.stars);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_232458:344:  const selectedStarId = useSceneStore((s) => s.selectedStarId);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_232458:345:  const mode = useSceneStore((s) => s.mode);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_232458:346:  const selectStar = useSceneStore((s) => s.selectStar);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_232458:347:  const clearFocus = useSceneStore((s) => s.clearFocus);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_232458:351:      {stars.map((star) => {
+src/spatial/scene/SpatialScene.tsx.bak.20260317_232458:381:  const selectedStar = useSceneStore((s) => s.selectedStar);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_232458:382:  const mode = useSceneStore((s) => s.mode);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_232458:418:  const mode = useSceneStore((s) => s.mode);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_232458:463:          transition: "width 140ms linear",
+src/spatial/scene/SpatialScene.tsx.bak.20260317_232458:471:  const mode = useSceneStore((s) => s.mode);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_232458:472:  const setMode = useSceneStore((s) => s.setMode);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_232458:473:  const selectedStar = useSceneStore((s) => s.selectedStar);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_232458:474:  const clearFocus = useSceneStore((s) => s.clearFocus);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_232458:475:  const enterReplay = useSceneStore((s) => s.enterReplay);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_232458:476:  const exitReplay = useSceneStore((s) => s.exitReplay);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_232458:519:                memory-dive scene with camera intent, focus depth, and a readable presentation layer.
+src/spatial/scene/SpatialScene.tsx.bak.20260317_232458:751:export default function SpatialScene() {
+src/spatial/scene/SpatialScene.tsx.bak.20260317_232458:753:  const mode = useSceneStore((s) => s.mode);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_232458:754:  const selectedStar = useSceneStore((s) => s.selectedStar);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_232458:755:  const setMode = useSceneStore((s) => s.setMode);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_232458:756:  const clearFocus = useSceneStore((s) => s.clearFocus);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_232458:757:  const exitReplay = useSceneStore((s) => s.exitReplay);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_232458:802:        camera={{ position: [0, 6, 30], fov: 42, near: 0.1, far: 200 }}
+src/spatial/scene/SpatialScene.tsx.bak.20260318_000846:22:import { SpatialStar } from "../data/stars";
+src/spatial/scene/SpatialScene.tsx.bak.20260318_000846:23:import { SceneMode, useSceneStore } from "../state/sceneStore";
+src/spatial/scene/SpatialScene.tsx.bak.20260318_000846:173:  const mode = useSceneStore((s) => s.mode);
+src/spatial/scene/SpatialScene.tsx.bak.20260318_000846:190:  const { camera } = useThree();
+src/spatial/scene/SpatialScene.tsx.bak.20260318_000846:191:  const mode = useSceneStore((s) => s.mode);
+src/spatial/scene/SpatialScene.tsx.bak.20260318_000846:192:  const selectedStar = useSceneStore((s) => s.selectedStar);
+src/spatial/scene/SpatialScene.tsx.bak.20260318_000846:193:  const cameraTarget = useRef(new THREE.Vector3(0, 4, 28));
+src/spatial/scene/SpatialScene.tsx.bak.20260318_000846:197:    const cp = cameraTarget.current;
+src/spatial/scene/SpatialScene.tsx.bak.20260318_000846:219:    camera.position.lerp(cp, t);
+src/spatial/scene/SpatialScene.tsx.bak.20260318_000846:220:    camera.lookAt(lp);
+src/spatial/scene/SpatialScene.tsx.bak.20260318_000846:239:  const mode = useSceneStore((s) => s.mode);
+src/spatial/scene/SpatialScene.tsx.bak.20260318_000846:305:  const selectedStar = useSceneStore((s) => s.selectedStar);
+src/spatial/scene/SpatialScene.tsx.bak.20260318_000846:306:  const mode = useSceneStore((s) => s.mode);
+src/spatial/scene/SpatialScene.tsx.bak.20260318_000846:346:  const stars = useSceneStore((s) => s.stars);
+src/spatial/scene/SpatialScene.tsx.bak.20260318_000846:347:  const selectedStarId = useSceneStore((s) => s.selectedStarId);
+src/spatial/scene/SpatialScene.tsx.bak.20260318_000846:348:  const mode = useSceneStore((s) => s.mode);
+src/spatial/scene/SpatialScene.tsx.bak.20260318_000846:349:  const selectStar = useSceneStore((s) => s.selectStar);
+src/spatial/scene/SpatialScene.tsx.bak.20260318_000846:350:  const clearFocus = useSceneStore((s) => s.clearFocus);
+src/spatial/scene/SpatialScene.tsx.bak.20260318_000846:389:      {stars.map((star) => {
+src/spatial/scene/SpatialScene.tsx.bak.20260318_000846:418:  const selectedStar = useSceneStore((s) => s.selectedStar);
+src/spatial/scene/SpatialScene.tsx.bak.20260318_000846:419:  const mode = useSceneStore((s) => s.mode);
+src/spatial/scene/SpatialScene.tsx.bak.20260318_000846:455:  const mode = useSceneStore((s) => s.mode);
+src/spatial/scene/SpatialScene.tsx.bak.20260318_000846:500:          transition: "width 140ms linear",
+src/spatial/scene/SpatialScene.tsx.bak.20260318_000846:508:  const mode = useSceneStore((s) => s.mode);
+src/spatial/scene/SpatialScene.tsx.bak.20260318_000846:509:  const setMode = useSceneStore((s) => s.setMode);
+src/spatial/scene/SpatialScene.tsx.bak.20260318_000846:510:  const selectedStar = useSceneStore((s) => s.selectedStar);
+src/spatial/scene/SpatialScene.tsx.bak.20260318_000846:511:  const clearFocus = useSceneStore((s) => s.clearFocus);
+src/spatial/scene/SpatialScene.tsx.bak.20260318_000846:512:  const enterReplay = useSceneStore((s) => s.enterReplay);
+src/spatial/scene/SpatialScene.tsx.bak.20260318_000846:513:  const exitReplay = useSceneStore((s) => s.exitReplay);
+src/spatial/scene/SpatialScene.tsx.bak.20260318_000846:556:                memory-dive scene with camera intent, focus depth, and a readable presentation layer.
+src/spatial/scene/SpatialScene.tsx.bak.20260318_000846:788:export default function SpatialScene() {
+src/spatial/scene/SpatialScene.tsx.bak.20260318_000846:790:  const mode = useSceneStore((s) => s.mode);
+src/spatial/scene/SpatialScene.tsx.bak.20260318_000846:791:  const selectedStar = useSceneStore((s) => s.selectedStar);
+src/spatial/scene/SpatialScene.tsx.bak.20260318_000846:792:  const setMode = useSceneStore((s) => s.setMode);
+src/spatial/scene/SpatialScene.tsx.bak.20260318_000846:793:  const clearFocus = useSceneStore((s) => s.clearFocus);
+src/spatial/scene/SpatialScene.tsx.bak.20260318_000846:794:  const exitReplay = useSceneStore((s) => s.exitReplay);
+src/spatial/scene/SpatialScene.tsx.bak.20260318_000846:839:        camera={{ position: [0, 6, 30], fov: 42, near: 0.1, far: 200 }}
+src/spatial/scene/SpatialScene.tsx.broken.20260316-135713:7:import { SelectedStar, useSceneStore } from "../state/sceneStore";
+src/spatial/scene/SpatialScene.tsx.broken.20260316-135713:75:  const camera = useThree((state) => state.camera);
+src/spatial/scene/SpatialScene.tsx.broken.20260316-135713:76:  const mode = useSceneStore((state) => state.mode);
+src/spatial/scene/SpatialScene.tsx.broken.20260316-135713:77:  const selectedStar = useSceneStore((state) => state.selectedStar);
+src/spatial/scene/SpatialScene.tsx.broken.20260316-135713:98:    camera.position.lerp(target, t);
+src/spatial/scene/SpatialScene.tsx.broken.20260316-135713:99:    camera.lookAt(lookAt);
+src/spatial/scene/SpatialScene.tsx.broken.20260316-135713:100:    camera.updateProjectionMatrix();
+src/spatial/scene/SpatialScene.tsx.broken.20260316-135713:107:  const mode = useSceneStore((state) => state.mode);
+src/spatial/scene/SpatialScene.tsx.broken.20260316-135713:143:  const mode = useSceneStore((state) => state.mode);
+src/spatial/scene/SpatialScene.tsx.broken.20260316-135713:144:  const selectedStar = useSceneStore((state) => state.selectedStar);
+src/spatial/scene/SpatialScene.tsx.broken.20260316-135713:145:  const enterFocus = useSceneStore((state) => state.enterFocus);
+src/spatial/scene/SpatialScene.tsx.broken.20260316-135713:146:  const enterLifeMap = useSceneStore((state) => state.enterLifeMap);
+src/spatial/scene/SpatialScene.tsx.broken.20260316-135713:186:  const mode = useSceneStore((state) => state.mode);
+src/spatial/scene/SpatialScene.tsx.broken.20260316-135713:187:  const selectedStar = useSceneStore((state) => state.selectedStar);
+src/spatial/scene/SpatialScene.tsx.broken.20260316-135713:188:  const detailOpen = useSceneStore((state) => state.detailOpen);
+src/spatial/scene/SpatialScene.tsx.broken.20260316-135713:189:  const replayEnteredAt = useSceneStore((state) => state.replayEnteredAt);
+src/spatial/scene/SpatialScene.tsx.broken.20260316-135713:191:  const enterHome = useSceneStore((state) => state.enterHome);
+src/spatial/scene/SpatialScene.tsx.broken.20260316-135713:192:  const enterLifeMap = useSceneStore((state) => state.enterLifeMap);
+src/spatial/scene/SpatialScene.tsx.broken.20260316-135713:193:  const clearFocus = useSceneStore((state) => state.clearFocus);
+src/spatial/scene/SpatialScene.tsx.broken.20260316-135713:194:  const enterReplay = useSceneStore((state) => state.enterReplay);
+src/spatial/scene/SpatialScene.tsx.broken.20260316-135713:195:  const exitReplayToFocus = useSceneStore((state) => state.exitReplayToFocus);
+src/spatial/scene/SpatialScene.tsx.broken.20260316-135713:228:          transition: "background 200ms ease",
+src/spatial/scene/SpatialScene.tsx.broken.20260316-135713:320:export function SpatialScene() {
+src/spatial/scene/SpatialScene.tsx.broken.20260316-135713:321:  const clearFocus = useSceneStore((state) => state.clearFocus);
+src/spatial/scene/SpatialScene.tsx.broken.20260316-135713:322:  const selectedStar = useSceneStore((state) => state.selectedStar);
+src/spatial/scene/SpatialScene.tsx.broken.20260316-135713:323:  const enterHome = useSceneStore((state) => state.enterHome);
+src/spatial/scene/SpatialScene.tsx.broken.20260316-135713:324:  const enterLifeMap = useSceneStore((state) => state.enterLifeMap);
+src/spatial/scene/SpatialScene.tsx.broken.20260316-135713:325:  const enterReplay = useSceneStore((state) => state.enterReplay);
+src/spatial/scene/SpatialScene.tsx.broken.20260316-135713:343:        camera={{ position: [0, 120, 240], fov: 60 }}
+src/spatial/scene/SpatialScene.tsx:22:import { SpatialStar } from "../data/stars";
+src/spatial/scene/SpatialScene.tsx:23:import { SceneMode, useSceneStore } from "../state/sceneStore";
+src/spatial/scene/SpatialScene.tsx:173:  const mode = useSceneStore((s) => s.mode);
+src/spatial/scene/SpatialScene.tsx:190:  const { camera } = useThree();
+src/spatial/scene/SpatialScene.tsx:191:  const mode = useSceneStore((s) => s.mode);
+src/spatial/scene/SpatialScene.tsx:192:  const selectedStar = useSceneStore((s) => s.selectedStar);
+src/spatial/scene/SpatialScene.tsx:193:  const cameraTarget = useRef(new THREE.Vector3(0, 4, 28));
+src/spatial/scene/SpatialScene.tsx:197:    const cp = cameraTarget.current;
+src/spatial/scene/SpatialScene.tsx:219:    camera.position.lerp(cp, t);
+src/spatial/scene/SpatialScene.tsx:220:    camera.lookAt(lp);
+src/spatial/scene/SpatialScene.tsx:239:  const mode = useSceneStore((s) => s.mode);
+src/spatial/scene/SpatialScene.tsx:305:  const selectedStar = useSceneStore((s) => s.selectedStar);
+src/spatial/scene/SpatialScene.tsx:306:  const mode = useSceneStore((s) => s.mode);
+src/spatial/scene/SpatialScene.tsx:346:  const stars = useSceneStore((s) => s.stars);
+src/spatial/scene/SpatialScene.tsx:347:  const selectedStarId = useSceneStore((s) => s.selectedStarId);
+src/spatial/scene/SpatialScene.tsx:348:  const mode = useSceneStore((s) => s.mode);
+src/spatial/scene/SpatialScene.tsx:349:  const selectStar = useSceneStore((s) => s.selectStar);
+src/spatial/scene/SpatialScene.tsx:350:  const clearFocus = useSceneStore((s) => s.clearFocus);
+src/spatial/scene/SpatialScene.tsx:389:      {stars.map((star) => {
+src/spatial/scene/SpatialScene.tsx:418:  const selectedStar = useSceneStore((s) => s.selectedStar);
+src/spatial/scene/SpatialScene.tsx:419:  const mode = useSceneStore((s) => s.mode);
+src/spatial/scene/SpatialScene.tsx:455:  const mode = useSceneStore((s) => s.mode);
+src/spatial/scene/SpatialScene.tsx:500:          transition: "width 140ms linear",
+src/spatial/scene/SpatialScene.tsx:508:  const mode = useSceneStore((s) => s.mode);
+src/spatial/scene/SpatialScene.tsx:509:  const setMode = useSceneStore((s) => s.setMode);
+src/spatial/scene/SpatialScene.tsx:510:  const selectedStar = useSceneStore((s) => s.selectedStar);
+src/spatial/scene/SpatialScene.tsx:511:  const clearFocus = useSceneStore((s) => s.clearFocus);
+src/spatial/scene/SpatialScene.tsx:512:  const enterReplay = useSceneStore((s) => s.enterReplay);
+src/spatial/scene/SpatialScene.tsx:513:  const exitReplay = useSceneStore((s) => s.exitReplay);
+src/spatial/scene/SpatialScene.tsx:556:                memory-dive scene with camera intent, focus depth, and a readable presentation layer.
+src/spatial/scene/SpatialScene.tsx:788:export default function SpatialScene() {
+src/spatial/scene/SpatialScene.tsx:790:  const mode = useSceneStore((s) => s.mode);
+src/spatial/scene/SpatialScene.tsx:791:  const selectedStar = useSceneStore((s) => s.selectedStar);
+src/spatial/scene/SpatialScene.tsx:792:  const setMode = useSceneStore((s) => s.setMode);
+src/spatial/scene/SpatialScene.tsx:793:  const clearFocus = useSceneStore((s) => s.clearFocus);
+src/spatial/scene/SpatialScene.tsx:794:  const exitReplay = useSceneStore((s) => s.exitReplay);
+src/spatial/scene/SpatialScene.tsx:840:        camera={{ position: [0, 6, 30], fov: 42, near: 0.1, far: 200 }}
+src/spatial/scene/Starfield.tsx:6:import { generateStars } from "@/spatial/data/stars";
+src/spatial/scene/Starfield.tsx:7:import { useSceneStore } from "@/spatial/state/sceneStore";
+src/spatial/scene/Starfield.tsx:10:  const stars = useMemo(() => generateStars(), []);
+src/spatial/scene/Starfield.tsx:11:  const mode = useSceneStore((s) => s.mode);
+src/spatial/scene/Starfield.tsx:12:  const setMode = useSceneStore((s) => s.setMode);
+src/spatial/scene/Starfield.tsx:13:  const setSelectedStar = useSceneStore((s) => s.setSelectedStar);
+src/spatial/scene/Starfield.tsx:14:  const selectedStar = useSceneStore((s) => s.selectedStar);
+src/spatial/scene/Starfield.tsx:19:      {stars.map((star) => {
+src/spatial/scene/SpatialScene.tsx.bak.20260318_001306:22:import { SpatialStar } from "../data/stars";
+src/spatial/scene/SpatialScene.tsx.bak.20260318_001306:23:import { SceneMode, useSceneStore } from "../state/sceneStore";
+src/spatial/scene/SpatialScene.tsx.bak.20260318_001306:173:  const mode = useSceneStore((s) => s.mode);
+src/spatial/scene/SpatialScene.tsx.bak.20260318_001306:190:  const { camera } = useThree();
+src/spatial/scene/SpatialScene.tsx.bak.20260318_001306:191:  const mode = useSceneStore((s) => s.mode);
+src/spatial/scene/SpatialScene.tsx.bak.20260318_001306:192:  const selectedStar = useSceneStore((s) => s.selectedStar);
+src/spatial/scene/SpatialScene.tsx.bak.20260318_001306:193:  const cameraTarget = useRef(new THREE.Vector3(0, 4, 28));
+src/spatial/scene/SpatialScene.tsx.bak.20260318_001306:197:    const cp = cameraTarget.current;
+src/spatial/scene/SpatialScene.tsx.bak.20260318_001306:219:    camera.position.lerp(cp, t);
+src/spatial/scene/SpatialScene.tsx.bak.20260318_001306:220:    camera.lookAt(lp);
+src/spatial/scene/SpatialScene.tsx.bak.20260318_001306:239:  const mode = useSceneStore((s) => s.mode);
+src/spatial/scene/SpatialScene.tsx.bak.20260318_001306:305:  const selectedStar = useSceneStore((s) => s.selectedStar);
+src/spatial/scene/SpatialScene.tsx.bak.20260318_001306:306:  const mode = useSceneStore((s) => s.mode);
+src/spatial/scene/SpatialScene.tsx.bak.20260318_001306:346:  const stars = useSceneStore((s) => s.stars);
+src/spatial/scene/SpatialScene.tsx.bak.20260318_001306:347:  const selectedStarId = useSceneStore((s) => s.selectedStarId);
+src/spatial/scene/SpatialScene.tsx.bak.20260318_001306:348:  const mode = useSceneStore((s) => s.mode);
+src/spatial/scene/SpatialScene.tsx.bak.20260318_001306:349:  const selectStar = useSceneStore((s) => s.selectStar);
+src/spatial/scene/SpatialScene.tsx.bak.20260318_001306:350:  const clearFocus = useSceneStore((s) => s.clearFocus);
+src/spatial/scene/SpatialScene.tsx.bak.20260318_001306:389:      {stars.map((star) => {
+src/spatial/scene/SpatialScene.tsx.bak.20260318_001306:418:  const selectedStar = useSceneStore((s) => s.selectedStar);
+src/spatial/scene/SpatialScene.tsx.bak.20260318_001306:419:  const mode = useSceneStore((s) => s.mode);
+src/spatial/scene/SpatialScene.tsx.bak.20260318_001306:455:  const mode = useSceneStore((s) => s.mode);
+src/spatial/scene/SpatialScene.tsx.bak.20260318_001306:500:          transition: "width 140ms linear",
+src/spatial/scene/SpatialScene.tsx.bak.20260318_001306:508:  const mode = useSceneStore((s) => s.mode);
+src/spatial/scene/SpatialScene.tsx.bak.20260318_001306:509:  const setMode = useSceneStore((s) => s.setMode);
+src/spatial/scene/SpatialScene.tsx.bak.20260318_001306:510:  const selectedStar = useSceneStore((s) => s.selectedStar);
+src/spatial/scene/SpatialScene.tsx.bak.20260318_001306:511:  const clearFocus = useSceneStore((s) => s.clearFocus);
+src/spatial/scene/SpatialScene.tsx.bak.20260318_001306:512:  const enterReplay = useSceneStore((s) => s.enterReplay);
+src/spatial/scene/SpatialScene.tsx.bak.20260318_001306:513:  const exitReplay = useSceneStore((s) => s.exitReplay);
+src/spatial/scene/SpatialScene.tsx.bak.20260318_001306:556:                memory-dive scene with camera intent, focus depth, and a readable presentation layer.
+src/spatial/scene/SpatialScene.tsx.bak.20260318_001306:788:export default function SpatialScene() {
+src/spatial/scene/SpatialScene.tsx.bak.20260318_001306:790:  const mode = useSceneStore((s) => s.mode);
+src/spatial/scene/SpatialScene.tsx.bak.20260318_001306:791:  const selectedStar = useSceneStore((s) => s.selectedStar);
+src/spatial/scene/SpatialScene.tsx.bak.20260318_001306:792:  const setMode = useSceneStore((s) => s.setMode);
+src/spatial/scene/SpatialScene.tsx.bak.20260318_001306:793:  const clearFocus = useSceneStore((s) => s.clearFocus);
+src/spatial/scene/SpatialScene.tsx.bak.20260318_001306:794:  const exitReplay = useSceneStore((s) => s.exitReplay);
+src/spatial/scene/SpatialScene.tsx.bak.20260318_001306:839:        camera={{ position: [0, 6, 30], fov: 42, near: 0.1, far: 200 }}
+src/spatial/scene/SpatialScene.tsx.bak.20260317_005942:9:import { SpatialStar } from "../data/stars";
+src/spatial/scene/SpatialScene.tsx.bak.20260317_005942:10:import { SceneMode, useSceneStore } from "../state/sceneStore";
+src/spatial/scene/SpatialScene.tsx.bak.20260317_005942:172:  const { camera } = useThree();
+src/spatial/scene/SpatialScene.tsx.bak.20260317_005942:173:  const mode = useSceneStore((s) => s.mode);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_005942:174:  const selectedStar = useSceneStore((s) => s.selectedStar);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_005942:175:  const cameraTarget = useRef(new THREE.Vector3(0, 4, 28));
+src/spatial/scene/SpatialScene.tsx.bak.20260317_005942:179:    const cp = cameraTarget.current;
+src/spatial/scene/SpatialScene.tsx.bak.20260317_005942:200:    camera.position.lerp(cp, t);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_005942:201:    camera.lookAt(lp);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_005942:220:  const mode = useSceneStore((s) => s.mode);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_005942:286:  const selectedStar = useSceneStore((s) => s.selectedStar);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_005942:287:  const mode = useSceneStore((s) => s.mode);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_005942:327:  const stars = useSceneStore((s) => s.stars);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_005942:328:  const selectedStarId = useSceneStore((s) => s.selectedStarId);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_005942:329:  const mode = useSceneStore((s) => s.mode);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_005942:330:  const selectStar = useSceneStore((s) => s.selectStar);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_005942:331:  const clearFocus = useSceneStore((s) => s.clearFocus);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_005942:335:      {stars.map((star) => {
+src/spatial/scene/SpatialScene.tsx.bak.20260317_005942:365:  const selectedStar = useSceneStore((s) => s.selectedStar);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_005942:366:  const mode = useSceneStore((s) => s.mode);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_005942:402:  const mode = useSceneStore((s) => s.mode);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_005942:447:          transition: "width 140ms linear",
+src/spatial/scene/SpatialScene.tsx.bak.20260317_005942:455:  const mode = useSceneStore((s) => s.mode);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_005942:456:  const setMode = useSceneStore((s) => s.setMode);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_005942:457:  const selectedStar = useSceneStore((s) => s.selectedStar);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_005942:458:  const clearFocus = useSceneStore((s) => s.clearFocus);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_005942:459:  const enterReplay = useSceneStore((s) => s.enterReplay);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_005942:460:  const exitReplay = useSceneStore((s) => s.exitReplay);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_005942:503:                memory-dive scene with camera intent, focus depth, and a readable presentation layer.
+src/spatial/scene/SpatialScene.tsx.bak.20260317_005942:676:export default function SpatialScene() {
+src/spatial/scene/SpatialScene.tsx.bak.20260317_005942:677:  const mode = useSceneStore((s) => s.mode);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_005942:678:  const selectedStar = useSceneStore((s) => s.selectedStar);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_005942:679:  const setMode = useSceneStore((s) => s.setMode);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_005942:680:  const clearFocus = useSceneStore((s) => s.clearFocus);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_005942:681:  const exitReplay = useSceneStore((s) => s.exitReplay);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_005942:717:        camera={{ position: [0, 6, 30], fov: 42, near: 0.1, far: 200 }}
+src/spatial/scene/SpatialScene.tsx.bak.20260317_224835:22:import { SpatialStar } from "../data/stars";
+src/spatial/scene/SpatialScene.tsx.bak.20260317_224835:23:import { SceneMode, useSceneStore } from "../state/sceneStore";
+src/spatial/scene/SpatialScene.tsx.bak.20260317_224835:188:  const { camera } = useThree();
+src/spatial/scene/SpatialScene.tsx.bak.20260317_224835:189:  const mode = useSceneStore((s) => s.mode);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_224835:191:  const selectedStar = useSceneStore((s) => s.selectedStar);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_224835:192:  const cameraTarget = useRef(new THREE.Vector3(0, 4, 28));
+src/spatial/scene/SpatialScene.tsx.bak.20260317_224835:196:    const cp = cameraTarget.current;
+src/spatial/scene/SpatialScene.tsx.bak.20260317_224835:217:    camera.position.lerp(cp, t);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_224835:218:    camera.lookAt(lp);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_224835:237:  const mode = useSceneStore((s) => s.mode);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_224835:303:  const selectedStar = useSceneStore((s) => s.selectedStar);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_224835:304:  const mode = useSceneStore((s) => s.mode);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_224835:344:  const stars = useSceneStore((s) => s.stars);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_224835:345:  const selectedStarId = useSceneStore((s) => s.selectedStarId);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_224835:346:  const mode = useSceneStore((s) => s.mode);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_224835:347:  const selectStar = useSceneStore((s) => s.selectStar);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_224835:348:  const clearFocus = useSceneStore((s) => s.clearFocus);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_224835:352:      {stars.map((star) => {
+src/spatial/scene/SpatialScene.tsx.bak.20260317_224835:382:  const selectedStar = useSceneStore((s) => s.selectedStar);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_224835:383:  const mode = useSceneStore((s) => s.mode);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_224835:419:  const mode = useSceneStore((s) => s.mode);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_224835:464:          transition: "width 140ms linear",
+src/spatial/scene/SpatialScene.tsx.bak.20260317_224835:472:  const mode = useSceneStore((s) => s.mode);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_224835:473:  const setMode = useSceneStore((s) => s.setMode);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_224835:474:  const selectedStar = useSceneStore((s) => s.selectedStar);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_224835:475:  const clearFocus = useSceneStore((s) => s.clearFocus);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_224835:476:  const enterReplay = useSceneStore((s) => s.enterReplay);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_224835:477:  const exitReplay = useSceneStore((s) => s.exitReplay);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_224835:520:                memory-dive scene with camera intent, focus depth, and a readable presentation layer.
+src/spatial/scene/SpatialScene.tsx.bak.20260317_224835:752:export default function SpatialScene() {
+src/spatial/scene/SpatialScene.tsx.bak.20260317_224835:753:  const mode = useSceneStore((s) => s.mode);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_224835:754:  const selectedStar = useSceneStore((s) => s.selectedStar);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_224835:755:  const setMode = useSceneStore((s) => s.setMode);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_224835:756:  const clearFocus = useSceneStore((s) => s.clearFocus);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_224835:757:  const exitReplay = useSceneStore((s) => s.exitReplay);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_224835:802:        camera={{ position: [0, 6, 30], fov: 42, near: 0.1, far: 200 }}
+src/spatial/scene/SpatialScene.tsx.bak.20260317_223834:22:import { SpatialStar } from "../data/stars";
+src/spatial/scene/SpatialScene.tsx.bak.20260317_223834:23:import { SceneMode, useSceneStore } from "../state/sceneStore";
+src/spatial/scene/SpatialScene.tsx.bak.20260317_223834:188:  const { camera } = useThree();
+src/spatial/scene/SpatialScene.tsx.bak.20260317_223834:189:  const mode = useSceneStore((s) => s.mode);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_223834:191:  const selectedStar = useSceneStore((s) => s.selectedStar);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_223834:192:  const cameraTarget = useRef(new THREE.Vector3(0, 4, 28));
+src/spatial/scene/SpatialScene.tsx.bak.20260317_223834:196:    const cp = cameraTarget.current;
+src/spatial/scene/SpatialScene.tsx.bak.20260317_223834:217:    camera.position.lerp(cp, t);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_223834:218:    camera.lookAt(lp);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_223834:237:  const mode = useSceneStore((s) => s.mode);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_223834:303:  const selectedStar = useSceneStore((s) => s.selectedStar);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_223834:304:  const mode = useSceneStore((s) => s.mode);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_223834:344:  const stars = useSceneStore((s) => s.stars);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_223834:345:  const selectedStarId = useSceneStore((s) => s.selectedStarId);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_223834:346:  const mode = useSceneStore((s) => s.mode);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_223834:347:  const selectStar = useSceneStore((s) => s.selectStar);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_223834:348:  const clearFocus = useSceneStore((s) => s.clearFocus);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_223834:352:      {stars.map((star) => {
+src/spatial/scene/SpatialScene.tsx.bak.20260317_223834:382:  const selectedStar = useSceneStore((s) => s.selectedStar);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_223834:383:  const mode = useSceneStore((s) => s.mode);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_223834:419:  const mode = useSceneStore((s) => s.mode);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_223834:464:          transition: "width 140ms linear",
+src/spatial/scene/SpatialScene.tsx.bak.20260317_223834:472:  const mode = useSceneStore((s) => s.mode);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_223834:473:  const setMode = useSceneStore((s) => s.setMode);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_223834:474:  const selectedStar = useSceneStore((s) => s.selectedStar);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_223834:475:  const clearFocus = useSceneStore((s) => s.clearFocus);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_223834:476:  const enterReplay = useSceneStore((s) => s.enterReplay);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_223834:477:  const exitReplay = useSceneStore((s) => s.exitReplay);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_223834:520:                memory-dive scene with camera intent, focus depth, and a readable presentation layer.
+src/spatial/scene/SpatialScene.tsx.bak.20260317_223834:752:export default function SpatialScene() {
+src/spatial/scene/SpatialScene.tsx.bak.20260317_223834:753:  const mode = useSceneStore((s) => s.mode);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_223834:754:  const selectedStar = useSceneStore((s) => s.selectedStar);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_223834:755:  const setMode = useSceneStore((s) => s.setMode);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_223834:756:  const clearFocus = useSceneStore((s) => s.clearFocus);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_223834:757:  const exitReplay = useSceneStore((s) => s.exitReplay);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_223834:802:        camera={{ position: [0, 6, 30], fov: 42, near: 0.1, far: 200 }}
+src/spatial/scene/SpatialScene.tsx.bak.20260317_224106:22:import { SpatialStar } from "../data/stars";
+src/spatial/scene/SpatialScene.tsx.bak.20260317_224106:23:import { SceneMode, useSceneStore } from "../state/sceneStore";
+src/spatial/scene/SpatialScene.tsx.bak.20260317_224106:188:  const { camera } = useThree();
+src/spatial/scene/SpatialScene.tsx.bak.20260317_224106:189:  const mode = useSceneStore((s) => s.mode);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_224106:191:  const selectedStar = useSceneStore((s) => s.selectedStar);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_224106:192:  const cameraTarget = useRef(new THREE.Vector3(0, 4, 28));
+src/spatial/scene/SpatialScene.tsx.bak.20260317_224106:196:    const cp = cameraTarget.current;
+src/spatial/scene/SpatialScene.tsx.bak.20260317_224106:217:    camera.position.lerp(cp, t);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_224106:218:    camera.lookAt(lp);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_224106:237:  const mode = useSceneStore((s) => s.mode);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_224106:303:  const selectedStar = useSceneStore((s) => s.selectedStar);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_224106:304:  const mode = useSceneStore((s) => s.mode);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_224106:344:  const stars = useSceneStore((s) => s.stars);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_224106:345:  const selectedStarId = useSceneStore((s) => s.selectedStarId);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_224106:346:  const mode = useSceneStore((s) => s.mode);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_224106:347:  const selectStar = useSceneStore((s) => s.selectStar);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_224106:348:  const clearFocus = useSceneStore((s) => s.clearFocus);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_224106:352:      {stars.map((star) => {
+src/spatial/scene/SpatialScene.tsx.bak.20260317_224106:382:  const selectedStar = useSceneStore((s) => s.selectedStar);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_224106:383:  const mode = useSceneStore((s) => s.mode);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_224106:419:  const mode = useSceneStore((s) => s.mode);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_224106:464:          transition: "width 140ms linear",
+src/spatial/scene/SpatialScene.tsx.bak.20260317_224106:472:  const mode = useSceneStore((s) => s.mode);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_224106:473:  const setMode = useSceneStore((s) => s.setMode);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_224106:474:  const selectedStar = useSceneStore((s) => s.selectedStar);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_224106:475:  const clearFocus = useSceneStore((s) => s.clearFocus);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_224106:476:  const enterReplay = useSceneStore((s) => s.enterReplay);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_224106:477:  const exitReplay = useSceneStore((s) => s.exitReplay);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_224106:520:                memory-dive scene with camera intent, focus depth, and a readable presentation layer.
+src/spatial/scene/SpatialScene.tsx.bak.20260317_224106:752:export default function SpatialScene() {
+src/spatial/scene/SpatialScene.tsx.bak.20260317_224106:753:  const mode = useSceneStore((s) => s.mode);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_224106:754:  const selectedStar = useSceneStore((s) => s.selectedStar);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_224106:755:  const setMode = useSceneStore((s) => s.setMode);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_224106:756:  const clearFocus = useSceneStore((s) => s.clearFocus);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_224106:757:  const exitReplay = useSceneStore((s) => s.exitReplay);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_224106:802:        camera={{ position: [0, 6, 30], fov: 42, near: 0.1, far: 200 }}
+src/spatial/scene/SpatialScene.tsx.bak.20260317_230912:22:import { SpatialStar } from "../data/stars";
+src/spatial/scene/SpatialScene.tsx.bak.20260317_230912:23:import { SceneMode, useSceneStore } from "../state/sceneStore";
+src/spatial/scene/SpatialScene.tsx.bak.20260317_230912:188:  const { camera } = useThree();
+src/spatial/scene/SpatialScene.tsx.bak.20260317_230912:189:  const mode = useSceneStore((s) => s.mode);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_230912:190:  const selectedStar = useSceneStore((s) => s.selectedStar);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_230912:191:  const cameraTarget = useRef(new THREE.Vector3(0, 4, 28));
+src/spatial/scene/SpatialScene.tsx.bak.20260317_230912:195:    const cp = cameraTarget.current;
+src/spatial/scene/SpatialScene.tsx.bak.20260317_230912:216:    camera.position.lerp(cp, t);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_230912:217:    camera.lookAt(lp);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_230912:236:  const mode = useSceneStore((s) => s.mode);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_230912:302:  const selectedStar = useSceneStore((s) => s.selectedStar);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_230912:303:  const mode = useSceneStore((s) => s.mode);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_230912:343:  const stars = useSceneStore((s) => s.stars);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_230912:344:  const selectedStarId = useSceneStore((s) => s.selectedStarId);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_230912:345:  const mode = useSceneStore((s) => s.mode);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_230912:346:  const selectStar = useSceneStore((s) => s.selectStar);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_230912:347:  const clearFocus = useSceneStore((s) => s.clearFocus);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_230912:351:      {stars.map((star) => {
+src/spatial/scene/SpatialScene.tsx.bak.20260317_230912:381:  const selectedStar = useSceneStore((s) => s.selectedStar);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_230912:382:  const mode = useSceneStore((s) => s.mode);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_230912:418:  const mode = useSceneStore((s) => s.mode);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_230912:463:          transition: "width 140ms linear",
+src/spatial/scene/SpatialScene.tsx.bak.20260317_230912:471:  const mode = useSceneStore((s) => s.mode);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_230912:472:  const setMode = useSceneStore((s) => s.setMode);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_230912:473:  const selectedStar = useSceneStore((s) => s.selectedStar);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_230912:474:  const clearFocus = useSceneStore((s) => s.clearFocus);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_230912:475:  const enterReplay = useSceneStore((s) => s.enterReplay);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_230912:476:  const exitReplay = useSceneStore((s) => s.exitReplay);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_230912:519:                memory-dive scene with camera intent, focus depth, and a readable presentation layer.
+src/spatial/scene/SpatialScene.tsx.bak.20260317_230912:751:export default function SpatialScene() {
+src/spatial/scene/SpatialScene.tsx.bak.20260317_230912:753:  const mode = useSceneStore((s) => s.mode);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_230912:754:  const selectedStar = useSceneStore((s) => s.selectedStar);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_230912:755:  const setMode = useSceneStore((s) => s.setMode);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_230912:756:  const clearFocus = useSceneStore((s) => s.clearFocus);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_230912:757:  const exitReplay = useSceneStore((s) => s.exitReplay);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_230912:802:        camera={{ position: [0, 6, 30], fov: 42, near: 0.1, far: 200 }}
+src/spatial/scene/SpatialScene.tsx.bak.20260317_235551:22:import { SpatialStar } from "../data/stars";
+src/spatial/scene/SpatialScene.tsx.bak.20260317_235551:23:import { SceneMode, useSceneStore } from "../state/sceneStore";
+src/spatial/scene/SpatialScene.tsx.bak.20260317_235551:188:  const { camera } = useThree();
+src/spatial/scene/SpatialScene.tsx.bak.20260317_235551:189:  const mode = useSceneStore((s) => s.mode);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_235551:190:  const selectedStar = useSceneStore((s) => s.selectedStar);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_235551:191:  const cameraTarget = useRef(new THREE.Vector3(0, 4, 28));
+src/spatial/scene/SpatialScene.tsx.bak.20260317_235551:195:    const cp = cameraTarget.current;
+src/spatial/scene/SpatialScene.tsx.bak.20260317_235551:217:    camera.position.lerp(cp, t);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_235551:218:    camera.lookAt(lp);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_235551:237:  const mode = useSceneStore((s) => s.mode);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_235551:303:  const selectedStar = useSceneStore((s) => s.selectedStar);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_235551:304:  const mode = useSceneStore((s) => s.mode);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_235551:344:  const stars = useSceneStore((s) => s.stars);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_235551:345:  const selectedStarId = useSceneStore((s) => s.selectedStarId);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_235551:346:  const mode = useSceneStore((s) => s.mode);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_235551:347:  const selectStar = useSceneStore((s) => s.selectStar);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_235551:348:  const clearFocus = useSceneStore((s) => s.clearFocus);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_235551:352:      {stars.map((star) => {
+src/spatial/scene/SpatialScene.tsx.bak.20260317_235551:382:  const selectedStar = useSceneStore((s) => s.selectedStar);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_235551:383:  const mode = useSceneStore((s) => s.mode);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_235551:419:  const mode = useSceneStore((s) => s.mode);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_235551:464:          transition: "width 140ms linear",
+src/spatial/scene/SpatialScene.tsx.bak.20260317_235551:472:  const mode = useSceneStore((s) => s.mode);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_235551:473:  const setMode = useSceneStore((s) => s.setMode);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_235551:474:  const selectedStar = useSceneStore((s) => s.selectedStar);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_235551:475:  const clearFocus = useSceneStore((s) => s.clearFocus);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_235551:476:  const enterReplay = useSceneStore((s) => s.enterReplay);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_235551:477:  const exitReplay = useSceneStore((s) => s.exitReplay);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_235551:520:                memory-dive scene with camera intent, focus depth, and a readable presentation layer.
+src/spatial/scene/SpatialScene.tsx.bak.20260317_235551:752:export default function SpatialScene() {
+src/spatial/scene/SpatialScene.tsx.bak.20260317_235551:754:  const mode = useSceneStore((s) => s.mode);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_235551:755:  const selectedStar = useSceneStore((s) => s.selectedStar);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_235551:756:  const setMode = useSceneStore((s) => s.setMode);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_235551:757:  const clearFocus = useSceneStore((s) => s.clearFocus);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_235551:758:  const exitReplay = useSceneStore((s) => s.exitReplay);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_235551:803:        camera={{ position: [0, 6, 30], fov: 42, near: 0.1, far: 200 }}
+src/spatial/scene/SpatialScene.tsx.bak.20260317_223053:22:import { SpatialStar } from "../data/stars";
+src/spatial/scene/SpatialScene.tsx.bak.20260317_223053:23:import { SceneMode, useSceneStore } from "../state/sceneStore";
+src/spatial/scene/SpatialScene.tsx.bak.20260317_223053:188:  const { camera } = useThree();
+src/spatial/scene/SpatialScene.tsx.bak.20260317_223053:189:  const mode = useSceneStore((s) => s.mode);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_223053:191:  const selectedStar = useSceneStore((s) => s.selectedStar);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_223053:192:  const cameraTarget = useRef(new THREE.Vector3(0, 4, 28));
+src/spatial/scene/SpatialScene.tsx.bak.20260317_223053:196:    const cp = cameraTarget.current;
+src/spatial/scene/SpatialScene.tsx.bak.20260317_223053:217:    camera.position.lerp(cp, t);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_223053:218:    camera.lookAt(lp);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_223053:237:  const mode = useSceneStore((s) => s.mode);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_223053:303:  const selectedStar = useSceneStore((s) => s.selectedStar);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_223053:304:  const mode = useSceneStore((s) => s.mode);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_223053:344:  const stars = useSceneStore((s) => s.stars);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_223053:345:  const selectedStarId = useSceneStore((s) => s.selectedStarId);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_223053:346:  const mode = useSceneStore((s) => s.mode);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_223053:347:  const selectStar = useSceneStore((s) => s.selectStar);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_223053:348:  const clearFocus = useSceneStore((s) => s.clearFocus);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_223053:352:      {stars.map((star) => {
+src/spatial/scene/SpatialScene.tsx.bak.20260317_223053:382:  const selectedStar = useSceneStore((s) => s.selectedStar);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_223053:383:  const mode = useSceneStore((s) => s.mode);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_223053:419:  const mode = useSceneStore((s) => s.mode);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_223053:464:          transition: "width 140ms linear",
+src/spatial/scene/SpatialScene.tsx.bak.20260317_223053:472:  const mode = useSceneStore((s) => s.mode);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_223053:473:  const setMode = useSceneStore((s) => s.setMode);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_223053:474:  const selectedStar = useSceneStore((s) => s.selectedStar);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_223053:475:  const clearFocus = useSceneStore((s) => s.clearFocus);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_223053:476:  const enterReplay = useSceneStore((s) => s.enterReplay);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_223053:477:  const exitReplay = useSceneStore((s) => s.exitReplay);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_223053:520:                memory-dive scene with camera intent, focus depth, and a readable presentation layer.
+src/spatial/scene/SpatialScene.tsx.bak.20260317_223053:752:export default function SpatialScene() {
+src/spatial/scene/SpatialScene.tsx.bak.20260317_223053:753:  const mode = useSceneStore((s) => s.mode);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_223053:754:  const selectedStar = useSceneStore((s) => s.selectedStar);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_223053:755:  const setMode = useSceneStore((s) => s.setMode);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_223053:756:  const clearFocus = useSceneStore((s) => s.clearFocus);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_223053:757:  const exitReplay = useSceneStore((s) => s.exitReplay);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_223053:802:        camera={{ position: [0, 6, 30], fov: 42, near: 0.1, far: 200 }}
+src/spatial/scene/SpatialScene.tsx.bak.20260318_000317:22:import { SpatialStar } from "../data/stars";
+src/spatial/scene/SpatialScene.tsx.bak.20260318_000317:23:import { SceneMode, useSceneStore } from "../state/sceneStore";
+src/spatial/scene/SpatialScene.tsx.bak.20260318_000317:173:  const mode = useSceneStore((s) => s.mode);
+src/spatial/scene/SpatialScene.tsx.bak.20260318_000317:190:  const { camera } = useThree();
+src/spatial/scene/SpatialScene.tsx.bak.20260318_000317:191:  const mode = useSceneStore((s) => s.mode);
+src/spatial/scene/SpatialScene.tsx.bak.20260318_000317:192:  const selectedStar = useSceneStore((s) => s.selectedStar);
+src/spatial/scene/SpatialScene.tsx.bak.20260318_000317:193:  const cameraTarget = useRef(new THREE.Vector3(0, 4, 28));
+src/spatial/scene/SpatialScene.tsx.bak.20260318_000317:197:    const cp = cameraTarget.current;
+src/spatial/scene/SpatialScene.tsx.bak.20260318_000317:219:    camera.position.lerp(cp, t);
+src/spatial/scene/SpatialScene.tsx.bak.20260318_000317:220:    camera.lookAt(lp);
+src/spatial/scene/SpatialScene.tsx.bak.20260318_000317:239:  const mode = useSceneStore((s) => s.mode);
+src/spatial/scene/SpatialScene.tsx.bak.20260318_000317:305:  const selectedStar = useSceneStore((s) => s.selectedStar);
+src/spatial/scene/SpatialScene.tsx.bak.20260318_000317:306:  const mode = useSceneStore((s) => s.mode);
+src/spatial/scene/SpatialScene.tsx.bak.20260318_000317:346:  const stars = useSceneStore((s) => s.stars);
+src/spatial/scene/SpatialScene.tsx.bak.20260318_000317:347:  const selectedStarId = useSceneStore((s) => s.selectedStarId);
+src/spatial/scene/SpatialScene.tsx.bak.20260318_000317:348:  const mode = useSceneStore((s) => s.mode);
+src/spatial/scene/SpatialScene.tsx.bak.20260318_000317:349:  const selectStar = useSceneStore((s) => s.selectStar);
+src/spatial/scene/SpatialScene.tsx.bak.20260318_000317:350:  const clearFocus = useSceneStore((s) => s.clearFocus);
+src/spatial/scene/SpatialScene.tsx.bak.20260318_000317:389:      {stars.map((star) => {
+src/spatial/scene/SpatialScene.tsx.bak.20260318_000317:418:  const selectedStar = useSceneStore((s) => s.selectedStar);
+src/spatial/scene/SpatialScene.tsx.bak.20260318_000317:419:  const mode = useSceneStore((s) => s.mode);
+src/spatial/scene/SpatialScene.tsx.bak.20260318_000317:455:  const mode = useSceneStore((s) => s.mode);
+src/spatial/scene/SpatialScene.tsx.bak.20260318_000317:500:          transition: "width 140ms linear",
+src/spatial/scene/SpatialScene.tsx.bak.20260318_000317:508:  const mode = useSceneStore((s) => s.mode);
+src/spatial/scene/SpatialScene.tsx.bak.20260318_000317:509:  const setMode = useSceneStore((s) => s.setMode);
+src/spatial/scene/SpatialScene.tsx.bak.20260318_000317:510:  const selectedStar = useSceneStore((s) => s.selectedStar);
+src/spatial/scene/SpatialScene.tsx.bak.20260318_000317:511:  const clearFocus = useSceneStore((s) => s.clearFocus);
+src/spatial/scene/SpatialScene.tsx.bak.20260318_000317:512:  const enterReplay = useSceneStore((s) => s.enterReplay);
+src/spatial/scene/SpatialScene.tsx.bak.20260318_000317:513:  const exitReplay = useSceneStore((s) => s.exitReplay);
+src/spatial/scene/SpatialScene.tsx.bak.20260318_000317:556:                memory-dive scene with camera intent, focus depth, and a readable presentation layer.
+src/spatial/scene/SpatialScene.tsx.bak.20260318_000317:788:export default function SpatialScene() {
+src/spatial/scene/SpatialScene.tsx.bak.20260318_000317:790:  const mode = useSceneStore((s) => s.mode);
+src/spatial/scene/SpatialScene.tsx.bak.20260318_000317:791:  const selectedStar = useSceneStore((s) => s.selectedStar);
+src/spatial/scene/SpatialScene.tsx.bak.20260318_000317:792:  const setMode = useSceneStore((s) => s.setMode);
+src/spatial/scene/SpatialScene.tsx.bak.20260318_000317:793:  const clearFocus = useSceneStore((s) => s.clearFocus);
+src/spatial/scene/SpatialScene.tsx.bak.20260318_000317:794:  const exitReplay = useSceneStore((s) => s.exitReplay);
+src/spatial/scene/SpatialScene.tsx.bak.20260318_000317:839:        camera={{ position: [0, 6, 30], fov: 42, near: 0.1, far: 200 }}
+src/spatial/scene/SpatialScene.tsx.bak.20260317_222918:22:import { SpatialStar } from "../data/stars";
+src/spatial/scene/SpatialScene.tsx.bak.20260317_222918:23:import { SceneMode, useSceneStore } from "../state/sceneStore";
+src/spatial/scene/SpatialScene.tsx.bak.20260317_222918:188:  const { camera } = useThree();
+src/spatial/scene/SpatialScene.tsx.bak.20260317_222918:189:  const mode = useSceneStore((s) => s.mode);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_222918:191:  const selectedStar = useSceneStore((s) => s.selectedStar);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_222918:192:  const cameraTarget = useRef(new THREE.Vector3(0, 4, 28));
+src/spatial/scene/SpatialScene.tsx.bak.20260317_222918:196:    const cp = cameraTarget.current;
+src/spatial/scene/SpatialScene.tsx.bak.20260317_222918:217:    camera.position.lerp(cp, t);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_222918:218:    camera.lookAt(lp);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_222918:237:  const mode = useSceneStore((s) => s.mode);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_222918:303:  const selectedStar = useSceneStore((s) => s.selectedStar);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_222918:304:  const mode = useSceneStore((s) => s.mode);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_222918:344:  const stars = useSceneStore((s) => s.stars);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_222918:345:  const selectedStarId = useSceneStore((s) => s.selectedStarId);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_222918:346:  const mode = useSceneStore((s) => s.mode);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_222918:347:  const selectStar = useSceneStore((s) => s.selectStar);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_222918:348:  const clearFocus = useSceneStore((s) => s.clearFocus);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_222918:352:      {stars.map((star) => {
+src/spatial/scene/SpatialScene.tsx.bak.20260317_222918:382:  const selectedStar = useSceneStore((s) => s.selectedStar);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_222918:383:  const mode = useSceneStore((s) => s.mode);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_222918:419:  const mode = useSceneStore((s) => s.mode);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_222918:464:          transition: "width 140ms linear",
+src/spatial/scene/SpatialScene.tsx.bak.20260317_222918:472:  const mode = useSceneStore((s) => s.mode);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_222918:473:  const setMode = useSceneStore((s) => s.setMode);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_222918:474:  const selectedStar = useSceneStore((s) => s.selectedStar);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_222918:475:  const clearFocus = useSceneStore((s) => s.clearFocus);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_222918:476:  const enterReplay = useSceneStore((s) => s.enterReplay);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_222918:477:  const exitReplay = useSceneStore((s) => s.exitReplay);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_222918:520:                memory-dive scene with camera intent, focus depth, and a readable presentation layer.
+src/spatial/scene/SpatialScene.tsx.bak.20260317_222918:752:export default function SpatialScene() {
+src/spatial/scene/SpatialScene.tsx.bak.20260317_222918:753:  const mode = useSceneStore((s) => s.mode);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_222918:754:  const selectedStar = useSceneStore((s) => s.selectedStar);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_222918:755:  const setMode = useSceneStore((s) => s.setMode);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_222918:756:  const clearFocus = useSceneStore((s) => s.clearFocus);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_222918:757:  const exitReplay = useSceneStore((s) => s.exitReplay);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_222918:802:        camera={{ position: [0, 6, 30], fov: 42, near: 0.1, far: 200 }}
+src/spatial/scene/Ground.tsx:4:import { useSceneStore } from "@/spatial/state/sceneStore";
+src/spatial/scene/Ground.tsx:7:  const mode = useSceneStore((s) => s.mode);
+src/spatial/scene/SpatialScene.tsx.bak.20260318_000157:22:import { SpatialStar } from "../data/stars";
+src/spatial/scene/SpatialScene.tsx.bak.20260318_000157:23:import { SceneMode, useSceneStore } from "../state/sceneStore";
+src/spatial/scene/SpatialScene.tsx.bak.20260318_000157:188:  const { camera } = useThree();
+src/spatial/scene/SpatialScene.tsx.bak.20260318_000157:189:  const mode = useSceneStore((s) => s.mode);
+src/spatial/scene/SpatialScene.tsx.bak.20260318_000157:190:  const selectedStar = useSceneStore((s) => s.selectedStar);
+src/spatial/scene/SpatialScene.tsx.bak.20260318_000157:191:  const cameraTarget = useRef(new THREE.Vector3(0, 4, 28));
+src/spatial/scene/SpatialScene.tsx.bak.20260318_000157:195:    const cp = cameraTarget.current;
+src/spatial/scene/SpatialScene.tsx.bak.20260318_000157:217:    camera.position.lerp(cp, t);
+src/spatial/scene/SpatialScene.tsx.bak.20260318_000157:218:    camera.lookAt(lp);
+src/spatial/scene/SpatialScene.tsx.bak.20260318_000157:237:  const mode = useSceneStore((s) => s.mode);
+src/spatial/scene/SpatialScene.tsx.bak.20260318_000157:303:  const selectedStar = useSceneStore((s) => s.selectedStar);
+src/spatial/scene/SpatialScene.tsx.bak.20260318_000157:304:  const mode = useSceneStore((s) => s.mode);
+src/spatial/scene/SpatialScene.tsx.bak.20260318_000157:344:  const stars = useSceneStore((s) => s.stars);
+src/spatial/scene/SpatialScene.tsx.bak.20260318_000157:345:  const selectedStarId = useSceneStore((s) => s.selectedStarId);
+src/spatial/scene/SpatialScene.tsx.bak.20260318_000157:346:  const mode = useSceneStore((s) => s.mode);
+src/spatial/scene/SpatialScene.tsx.bak.20260318_000157:347:  const selectStar = useSceneStore((s) => s.selectStar);
+src/spatial/scene/SpatialScene.tsx.bak.20260318_000157:348:  const clearFocus = useSceneStore((s) => s.clearFocus);
+src/spatial/scene/SpatialScene.tsx.bak.20260318_000157:387:      {stars.map((star) => {
+src/spatial/scene/SpatialScene.tsx.bak.20260318_000157:416:  const selectedStar = useSceneStore((s) => s.selectedStar);
+src/spatial/scene/SpatialScene.tsx.bak.20260318_000157:417:  const mode = useSceneStore((s) => s.mode);
+src/spatial/scene/SpatialScene.tsx.bak.20260318_000157:453:  const mode = useSceneStore((s) => s.mode);
+src/spatial/scene/SpatialScene.tsx.bak.20260318_000157:498:          transition: "width 140ms linear",
+src/spatial/scene/SpatialScene.tsx.bak.20260318_000157:506:  const mode = useSceneStore((s) => s.mode);
+src/spatial/scene/SpatialScene.tsx.bak.20260318_000157:507:  const setMode = useSceneStore((s) => s.setMode);
+src/spatial/scene/SpatialScene.tsx.bak.20260318_000157:508:  const selectedStar = useSceneStore((s) => s.selectedStar);
+src/spatial/scene/SpatialScene.tsx.bak.20260318_000157:509:  const clearFocus = useSceneStore((s) => s.clearFocus);
+src/spatial/scene/SpatialScene.tsx.bak.20260318_000157:510:  const enterReplay = useSceneStore((s) => s.enterReplay);
+src/spatial/scene/SpatialScene.tsx.bak.20260318_000157:511:  const exitReplay = useSceneStore((s) => s.exitReplay);
+src/spatial/scene/SpatialScene.tsx.bak.20260318_000157:554:                memory-dive scene with camera intent, focus depth, and a readable presentation layer.
+src/spatial/scene/SpatialScene.tsx.bak.20260318_000157:786:export default function SpatialScene() {
+src/spatial/scene/SpatialScene.tsx.bak.20260318_000157:788:  const mode = useSceneStore((s) => s.mode);
+src/spatial/scene/SpatialScene.tsx.bak.20260318_000157:789:  const selectedStar = useSceneStore((s) => s.selectedStar);
+src/spatial/scene/SpatialScene.tsx.bak.20260318_000157:790:  const setMode = useSceneStore((s) => s.setMode);
+src/spatial/scene/SpatialScene.tsx.bak.20260318_000157:791:  const clearFocus = useSceneStore((s) => s.clearFocus);
+src/spatial/scene/SpatialScene.tsx.bak.20260318_000157:792:  const exitReplay = useSceneStore((s) => s.exitReplay);
+src/spatial/scene/SpatialScene.tsx.bak.20260318_000157:837:        camera={{ position: [0, 6, 30], fov: 42, near: 0.1, far: 200 }}
+src/spatial/scene/SpatialScene.tsx.bak.20260317_234111:22:import { SpatialStar } from "../data/stars";
+src/spatial/scene/SpatialScene.tsx.bak.20260317_234111:23:import { SceneMode, useSceneStore } from "../state/sceneStore";
+src/spatial/scene/SpatialScene.tsx.bak.20260317_234111:188:  const { camera } = useThree();
+src/spatial/scene/SpatialScene.tsx.bak.20260317_234111:189:  const mode = useSceneStore((s) => s.mode);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_234111:190:  const selectedStar = useSceneStore((s) => s.selectedStar);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_234111:191:  const cameraTarget = useRef(new THREE.Vector3(0, 4, 28));
+src/spatial/scene/SpatialScene.tsx.bak.20260317_234111:195:    const cp = cameraTarget.current;
+src/spatial/scene/SpatialScene.tsx.bak.20260317_234111:223:    camera.position.lerp(cp, t);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_234111:224:    camera.lookAt(lp);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_234111:244:  const mode = useSceneStore((s) => s.mode);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_234111:310:  const selectedStar = useSceneStore((s) => s.selectedStar);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_234111:311:  const mode = useSceneStore((s) => s.mode);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_234111:351:  const stars = useSceneStore((s) => s.stars);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_234111:352:  const selectedStarId = useSceneStore((s) => s.selectedStarId);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_234111:353:  const mode = useSceneStore((s) => s.mode);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_234111:354:  const selectStar = useSceneStore((s) => s.selectStar);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_234111:355:  const clearFocus = useSceneStore((s) => s.clearFocus);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_234111:359:      {stars.map((star) => {
+src/spatial/scene/SpatialScene.tsx.bak.20260317_234111:389:  const selectedStar = useSceneStore((s) => s.selectedStar);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_234111:390:  const mode = useSceneStore((s) => s.mode);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_234111:426:  const mode = useSceneStore((s) => s.mode);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_234111:471:          transition: "width 140ms linear",
+src/spatial/scene/SpatialScene.tsx.bak.20260317_234111:479:  const mode = useSceneStore((s) => s.mode);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_234111:480:  const setMode = useSceneStore((s) => s.setMode);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_234111:481:  const selectedStar = useSceneStore((s) => s.selectedStar);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_234111:482:  const clearFocus = useSceneStore((s) => s.clearFocus);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_234111:483:  const enterReplay = useSceneStore((s) => s.enterReplay);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_234111:484:  const exitReplay = useSceneStore((s) => s.exitReplay);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_234111:527:                memory-dive scene with camera intent, focus depth, and a readable presentation layer.
+src/spatial/scene/SpatialScene.tsx.bak.20260317_234111:759:export default function SpatialScene() {
+src/spatial/scene/SpatialScene.tsx.bak.20260317_234111:761:  const mode = useSceneStore((s) => s.mode);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_234111:762:  const selectedStar = useSceneStore((s) => s.selectedStar);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_234111:763:  const setMode = useSceneStore((s) => s.setMode);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_234111:764:  const clearFocus = useSceneStore((s) => s.clearFocus);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_234111:765:  const exitReplay = useSceneStore((s) => s.exitReplay);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_234111:810:        camera={{ position: [0, 6, 30], fov: 42, near: 0.1, far: 200 }}
+src/spatial/scene/SpatialScene.tsx.bak.20260317_223505:22:import { SpatialStar } from "../data/stars";
+src/spatial/scene/SpatialScene.tsx.bak.20260317_223505:23:import { SceneMode, useSceneStore } from "../state/sceneStore";
+src/spatial/scene/SpatialScene.tsx.bak.20260317_223505:188:  const { camera } = useThree();
+src/spatial/scene/SpatialScene.tsx.bak.20260317_223505:189:  const mode = useSceneStore((s) => s.mode);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_223505:191:  const selectedStar = useSceneStore((s) => s.selectedStar);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_223505:192:  const cameraTarget = useRef(new THREE.Vector3(0, 4, 28));
+src/spatial/scene/SpatialScene.tsx.bak.20260317_223505:196:    const cp = cameraTarget.current;
+src/spatial/scene/SpatialScene.tsx.bak.20260317_223505:217:    camera.position.lerp(cp, t);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_223505:218:    camera.lookAt(lp);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_223505:237:  const mode = useSceneStore((s) => s.mode);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_223505:303:  const selectedStar = useSceneStore((s) => s.selectedStar);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_223505:304:  const mode = useSceneStore((s) => s.mode);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_223505:344:  const stars = useSceneStore((s) => s.stars);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_223505:345:  const selectedStarId = useSceneStore((s) => s.selectedStarId);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_223505:346:  const mode = useSceneStore((s) => s.mode);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_223505:347:  const selectStar = useSceneStore((s) => s.selectStar);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_223505:348:  const clearFocus = useSceneStore((s) => s.clearFocus);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_223505:352:      {stars.map((star) => {
+src/spatial/scene/SpatialScene.tsx.bak.20260317_223505:382:  const selectedStar = useSceneStore((s) => s.selectedStar);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_223505:383:  const mode = useSceneStore((s) => s.mode);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_223505:419:  const mode = useSceneStore((s) => s.mode);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_223505:464:          transition: "width 140ms linear",
+src/spatial/scene/SpatialScene.tsx.bak.20260317_223505:472:  const mode = useSceneStore((s) => s.mode);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_223505:473:  const setMode = useSceneStore((s) => s.setMode);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_223505:474:  const selectedStar = useSceneStore((s) => s.selectedStar);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_223505:475:  const clearFocus = useSceneStore((s) => s.clearFocus);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_223505:476:  const enterReplay = useSceneStore((s) => s.enterReplay);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_223505:477:  const exitReplay = useSceneStore((s) => s.exitReplay);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_223505:520:                memory-dive scene with camera intent, focus depth, and a readable presentation layer.
+src/spatial/scene/SpatialScene.tsx.bak.20260317_223505:752:export default function SpatialScene() {
+src/spatial/scene/SpatialScene.tsx.bak.20260317_223505:753:  const mode = useSceneStore((s) => s.mode);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_223505:754:  const selectedStar = useSceneStore((s) => s.selectedStar);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_223505:755:  const setMode = useSceneStore((s) => s.setMode);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_223505:756:  const clearFocus = useSceneStore((s) => s.clearFocus);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_223505:757:  const exitReplay = useSceneStore((s) => s.exitReplay);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_223505:802:        camera={{ position: [0, 6, 30], fov: 42, near: 0.1, far: 200 }}
+src/spatial/scene/SpatialScene.tsx.bak.20260318_001819:22:import { SpatialStar } from "../data/stars";
+src/spatial/scene/SpatialScene.tsx.bak.20260318_001819:23:import { SceneMode, useSceneStore } from "../state/sceneStore";
+src/spatial/scene/SpatialScene.tsx.bak.20260318_001819:173:  const mode = useSceneStore((s) => s.mode);
+src/spatial/scene/SpatialScene.tsx.bak.20260318_001819:190:  const { camera } = useThree();
+src/spatial/scene/SpatialScene.tsx.bak.20260318_001819:191:  const mode = useSceneStore((s) => s.mode);
+src/spatial/scene/SpatialScene.tsx.bak.20260318_001819:192:  const selectedStar = useSceneStore((s) => s.selectedStar);
+src/spatial/scene/SpatialScene.tsx.bak.20260318_001819:193:  const cameraTarget = useRef(new THREE.Vector3(0, 4, 28));
+src/spatial/scene/SpatialScene.tsx.bak.20260318_001819:197:    const cp = cameraTarget.current;
+src/spatial/scene/SpatialScene.tsx.bak.20260318_001819:219:    camera.position.lerp(cp, t);
+src/spatial/scene/SpatialScene.tsx.bak.20260318_001819:220:    camera.lookAt(lp);
+src/spatial/scene/SpatialScene.tsx.bak.20260318_001819:239:  const mode = useSceneStore((s) => s.mode);
+src/spatial/scene/SpatialScene.tsx.bak.20260318_001819:305:  const selectedStar = useSceneStore((s) => s.selectedStar);
+src/spatial/scene/SpatialScene.tsx.bak.20260318_001819:306:  const mode = useSceneStore((s) => s.mode);
+src/spatial/scene/SpatialScene.tsx.bak.20260318_001819:346:  const stars = useSceneStore((s) => s.stars);
+src/spatial/scene/SpatialScene.tsx.bak.20260318_001819:347:  const selectedStarId = useSceneStore((s) => s.selectedStarId);
+src/spatial/scene/SpatialScene.tsx.bak.20260318_001819:348:  const mode = useSceneStore((s) => s.mode);
+src/spatial/scene/SpatialScene.tsx.bak.20260318_001819:349:  const selectStar = useSceneStore((s) => s.selectStar);
+src/spatial/scene/SpatialScene.tsx.bak.20260318_001819:350:  const clearFocus = useSceneStore((s) => s.clearFocus);
+src/spatial/scene/SpatialScene.tsx.bak.20260318_001819:389:      {stars.map((star) => {
+src/spatial/scene/SpatialScene.tsx.bak.20260318_001819:418:  const selectedStar = useSceneStore((s) => s.selectedStar);
+src/spatial/scene/SpatialScene.tsx.bak.20260318_001819:419:  const mode = useSceneStore((s) => s.mode);
+src/spatial/scene/SpatialScene.tsx.bak.20260318_001819:455:  const mode = useSceneStore((s) => s.mode);
+src/spatial/scene/SpatialScene.tsx.bak.20260318_001819:500:          transition: "width 140ms linear",
+src/spatial/scene/SpatialScene.tsx.bak.20260318_001819:508:  const mode = useSceneStore((s) => s.mode);
+src/spatial/scene/SpatialScene.tsx.bak.20260318_001819:509:  const setMode = useSceneStore((s) => s.setMode);
+src/spatial/scene/SpatialScene.tsx.bak.20260318_001819:510:  const selectedStar = useSceneStore((s) => s.selectedStar);
+src/spatial/scene/SpatialScene.tsx.bak.20260318_001819:511:  const clearFocus = useSceneStore((s) => s.clearFocus);
+src/spatial/scene/SpatialScene.tsx.bak.20260318_001819:512:  const enterReplay = useSceneStore((s) => s.enterReplay);
+src/spatial/scene/SpatialScene.tsx.bak.20260318_001819:513:  const exitReplay = useSceneStore((s) => s.exitReplay);
+src/spatial/scene/SpatialScene.tsx.bak.20260318_001819:556:                memory-dive scene with camera intent, focus depth, and a readable presentation layer.
+src/spatial/scene/SpatialScene.tsx.bak.20260318_001819:788:export default function SpatialScene() {
+src/spatial/scene/SpatialScene.tsx.bak.20260318_001819:790:  const mode = useSceneStore((s) => s.mode);
+src/spatial/scene/SpatialScene.tsx.bak.20260318_001819:791:  const selectedStar = useSceneStore((s) => s.selectedStar);
+src/spatial/scene/SpatialScene.tsx.bak.20260318_001819:792:  const setMode = useSceneStore((s) => s.setMode);
+src/spatial/scene/SpatialScene.tsx.bak.20260318_001819:793:  const clearFocus = useSceneStore((s) => s.clearFocus);
+src/spatial/scene/SpatialScene.tsx.bak.20260318_001819:794:  const exitReplay = useSceneStore((s) => s.exitReplay);
+src/spatial/scene/SpatialScene.tsx.bak.20260318_001819:840:        camera={{ position: [0, 6, 30], fov: 42, near: 0.1, far: 200 }}
+src/spatial/scene/SpatialScene.tsx.bak.20260317_224602:22:import { SpatialStar } from "../data/stars";
+src/spatial/scene/SpatialScene.tsx.bak.20260317_224602:23:import { SceneMode, useSceneStore } from "../state/sceneStore";
+src/spatial/scene/SpatialScene.tsx.bak.20260317_224602:188:  const { camera } = useThree();
+src/spatial/scene/SpatialScene.tsx.bak.20260317_224602:189:  const mode = useSceneStore((s) => s.mode);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_224602:191:  const selectedStar = useSceneStore((s) => s.selectedStar);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_224602:192:  const cameraTarget = useRef(new THREE.Vector3(0, 4, 28));
+src/spatial/scene/SpatialScene.tsx.bak.20260317_224602:196:    const cp = cameraTarget.current;
+src/spatial/scene/SpatialScene.tsx.bak.20260317_224602:217:    camera.position.lerp(cp, t);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_224602:218:    camera.lookAt(lp);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_224602:237:  const mode = useSceneStore((s) => s.mode);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_224602:303:  const selectedStar = useSceneStore((s) => s.selectedStar);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_224602:304:  const mode = useSceneStore((s) => s.mode);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_224602:344:  const stars = useSceneStore((s) => s.stars);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_224602:345:  const selectedStarId = useSceneStore((s) => s.selectedStarId);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_224602:346:  const mode = useSceneStore((s) => s.mode);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_224602:347:  const selectStar = useSceneStore((s) => s.selectStar);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_224602:348:  const clearFocus = useSceneStore((s) => s.clearFocus);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_224602:352:      {stars.map((star) => {
+src/spatial/scene/SpatialScene.tsx.bak.20260317_224602:382:  const selectedStar = useSceneStore((s) => s.selectedStar);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_224602:383:  const mode = useSceneStore((s) => s.mode);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_224602:419:  const mode = useSceneStore((s) => s.mode);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_224602:464:          transition: "width 140ms linear",
+src/spatial/scene/SpatialScene.tsx.bak.20260317_224602:472:  const mode = useSceneStore((s) => s.mode);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_224602:473:  const setMode = useSceneStore((s) => s.setMode);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_224602:474:  const selectedStar = useSceneStore((s) => s.selectedStar);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_224602:475:  const clearFocus = useSceneStore((s) => s.clearFocus);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_224602:476:  const enterReplay = useSceneStore((s) => s.enterReplay);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_224602:477:  const exitReplay = useSceneStore((s) => s.exitReplay);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_224602:520:                memory-dive scene with camera intent, focus depth, and a readable presentation layer.
+src/spatial/scene/SpatialScene.tsx.bak.20260317_224602:752:export default function SpatialScene() {
+src/spatial/scene/SpatialScene.tsx.bak.20260317_224602:753:  const mode = useSceneStore((s) => s.mode);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_224602:754:  const selectedStar = useSceneStore((s) => s.selectedStar);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_224602:755:  const setMode = useSceneStore((s) => s.setMode);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_224602:756:  const clearFocus = useSceneStore((s) => s.clearFocus);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_224602:757:  const exitReplay = useSceneStore((s) => s.exitReplay);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_224602:802:        camera={{ position: [0, 6, 30], fov: 42, near: 0.1, far: 200 }}
+src/spatial/scene/SpatialScene.tsx.bak.20260317_222736:22:import { SpatialStar } from "../data/stars";
+src/spatial/scene/SpatialScene.tsx.bak.20260317_222736:23:import { SceneMode, useSceneStore } from "../state/sceneStore";
+src/spatial/scene/SpatialScene.tsx.bak.20260317_222736:188:  const { camera } = useThree();
+src/spatial/scene/SpatialScene.tsx.bak.20260317_222736:189:  const mode = useSceneStore((s) => s.mode);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_222736:191:  const selectedStar = useSceneStore((s) => s.selectedStar);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_222736:192:  const cameraTarget = useRef(new THREE.Vector3(0, 4, 28));
+src/spatial/scene/SpatialScene.tsx.bak.20260317_222736:196:    const cp = cameraTarget.current;
+src/spatial/scene/SpatialScene.tsx.bak.20260317_222736:217:    camera.position.lerp(cp, t);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_222736:218:    camera.lookAt(lp);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_222736:237:  const mode = useSceneStore((s) => s.mode);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_222736:303:  const selectedStar = useSceneStore((s) => s.selectedStar);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_222736:304:  const mode = useSceneStore((s) => s.mode);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_222736:344:  const stars = useSceneStore((s) => s.stars);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_222736:345:  const selectedStarId = useSceneStore((s) => s.selectedStarId);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_222736:346:  const mode = useSceneStore((s) => s.mode);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_222736:347:  const selectStar = useSceneStore((s) => s.selectStar);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_222736:348:  const clearFocus = useSceneStore((s) => s.clearFocus);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_222736:352:      {stars.map((star) => {
+src/spatial/scene/SpatialScene.tsx.bak.20260317_222736:382:  const selectedStar = useSceneStore((s) => s.selectedStar);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_222736:383:  const mode = useSceneStore((s) => s.mode);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_222736:419:  const mode = useSceneStore((s) => s.mode);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_222736:464:          transition: "width 140ms linear",
+src/spatial/scene/SpatialScene.tsx.bak.20260317_222736:472:  const mode = useSceneStore((s) => s.mode);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_222736:473:  const setMode = useSceneStore((s) => s.setMode);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_222736:474:  const selectedStar = useSceneStore((s) => s.selectedStar);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_222736:475:  const clearFocus = useSceneStore((s) => s.clearFocus);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_222736:476:  const enterReplay = useSceneStore((s) => s.enterReplay);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_222736:477:  const exitReplay = useSceneStore((s) => s.exitReplay);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_222736:520:                memory-dive scene with camera intent, focus depth, and a readable presentation layer.
+src/spatial/scene/SpatialScene.tsx.bak.20260317_222736:752:export default function SpatialScene() {
+src/spatial/scene/SpatialScene.tsx.bak.20260317_222736:753:  const mode = useSceneStore((s) => s.mode);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_222736:754:  const selectedStar = useSceneStore((s) => s.selectedStar);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_222736:755:  const setMode = useSceneStore((s) => s.setMode);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_222736:756:  const clearFocus = useSceneStore((s) => s.clearFocus);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_222736:757:  const exitReplay = useSceneStore((s) => s.exitReplay);
+src/spatial/scene/SpatialScene.tsx.bak.20260317_222736:802:        camera={{ position: [0, 6, 30], fov: 42, near: 0.1, far: 200 }}
+src/spatial/arcs/buildSpatialNarrativeArcs.ts:20:      kind: "mixed-transition",
+src/spatial/arcs/spatialArcTypes.ts:6:  | "mixed-transition";
+src/spatial/immersive/resolveImmersiveContract.ts:60:    "camera anchor",
+src/spatial/immersive/ImmersiveContractOverlay.tsx:4:import { useSceneStore } from "@/spatial/state/sceneStore";
+src/spatial/immersive/ImmersiveContractOverlay.tsx:8:  const mode = useSceneStore((s) => s.mode);
+src/spatial/immersive/ImmersiveContractOverlay.tsx:9:  const selectedStar = useSceneStore((s) => s.selectedStar);
+src/spatial/seasonal/SeasonalCycleOverlay.tsx:4:import { useSceneStore } from "@/spatial/state/sceneStore";
+src/spatial/seasonal/SeasonalCycleOverlay.tsx:8:  const selectedStar = useSceneStore((s) => s.selectedStar);
+src/spatial/narrator/NarratorOrchestrationOverlay.tsx:4:import { useSceneStore } from "@/spatial/state/sceneStore";
+src/spatial/narrator/NarratorOrchestrationOverlay.tsx:8:  const mode = useSceneStore((s) => s.mode);
+src/spatial/narrator/NarratorOrchestrationOverlay.tsx:9:  const selectedStar = useSceneStore((s) => s.selectedStar);
+src/spatial/webxr/WebXREntryOverlay.tsx:4:import { useSceneStore } from "@/spatial/state/sceneStore";
+src/spatial/webxr/WebXREntryOverlay.tsx:10:  const mode = useSceneStore((s) => s.mode);
+src/spatial/webxr/WebXREntryOverlay.tsx:11:  const selectedStar = useSceneStore((s) => s.selectedStar);
+src/spatial/validation/BatchImportAuditOverlay.tsx:4:import { useSceneStore } from "@/spatial/state/sceneStore";
+src/spatial/validation/BatchImportAuditOverlay.tsx:8:  const selectedStar = useSceneStore((s) => s.selectedStar);
+src/spatial/versioning/DatasetVersioningOverlay.tsx:4:import { useSceneStore } from "@/spatial/state/sceneStore";
+src/spatial/versioning/DatasetVersioningOverlay.tsx:8:  const selectedStar = useSceneStore((s) => s.selectedStar);
+src/spatial/components/CameraRig.tsx:7:import { useSceneStore } from "../state/sceneStore";
+src/spatial/components/CameraRig.tsx:20:  const camera = useThree((state) => state.camera);
+src/spatial/components/CameraRig.tsx:22:  const mode = useSceneStore((state) => state.mode);
+src/spatial/components/CameraRig.tsx:23:  const selectedStar = useSceneStore((state) => state.selectedStar);
+src/spatial/components/CameraRig.tsx:39:    camera.position.copy(HOME_POS);
+src/spatial/components/CameraRig.tsx:40:    camera.lookAt(HOME_LOOK);
+src/spatial/components/CameraRig.tsx:43:  }, [camera]);
+src/spatial/components/CameraRig.tsx:97:    camera.position.copy(posRef.current);
+src/spatial/components/CameraRig.tsx:98:    camera.lookAt(lookRef.current);
+src/spatial/era/EraCompareOverlay.tsx:4:import { useSceneStore } from "@/spatial/state/sceneStore";
+src/spatial/era/EraCompareOverlay.tsx:8:  const selectedStar = useSceneStore((s) => s.selectedStar);
+src/spatial/storyarc/StoryArcOverlay.tsx:4:import { useSceneStore } from "@/spatial/state/sceneStore";
+src/spatial/storyarc/StoryArcOverlay.tsx:8:  const selectedStar = useSceneStore((s) => s.selectedStar);
+src/spatial/telemetry/SpatialAnalyticsBridge.tsx:5:import { useSceneStore } from "@/spatial/state/sceneStore";
+src/spatial/telemetry/SpatialAnalyticsBridge.tsx:20:  const mode = useSceneStore((s) => s.mode);
+src/spatial/telemetry/SpatialAnalyticsBridge.tsx:21:  const selectedStar = useSceneStore((s) => s.selectedStar);
+src/spatial/input/XRInputOverlay.tsx:4:import { useSceneStore } from "@/spatial/state/sceneStore";
+src/spatial/input/XRInputOverlay.tsx:8:  const mode = useSceneStore((s) => s.mode);
+src/spatial/input/XRInputOverlay.tsx:9:  const selectedStar = useSceneStore((s) => s.selectedStar);

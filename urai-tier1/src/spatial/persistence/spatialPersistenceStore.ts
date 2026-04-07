@@ -1,3 +1,4 @@
+
 import { resolveStarByIdSafe } from "../lib/resolveStarByIdSafe";
 export type SpatialPersistenceSnapshot = {
   schema: "urai.spatial.persistence.v1";
@@ -7,9 +8,9 @@ export type SpatialPersistenceSnapshot = {
   selectedStarLabel: string | null;
   presenting: boolean;
   hasHeadsetPose: boolean;
-  xrInput: unknown;
-  arPlacement: unknown;
-  locomotion: unknown;
+  xrInput: any;
+  arPlacement: any;
+  locomotion: any;
   starCount: number;
   headset: {
     presenting: boolean;

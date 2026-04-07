@@ -1,0 +1,75 @@
+LOOK_TARGET_AUTHORITY
+19:type TargetAuthority =
+20:  | "home-structural"
+21:  | "ascent-transitional"
+22:  | "lifemap-structural"
+23:  | "focus-interaction"
+24:  | "replay-narrative"
+25:  | "descent-transitional";
+234:function resolveLookTarget(
+239:): { target: [number, number, number]; authority: TargetAuthority } {
+246:      authority: "ascent-transitional",
+253:      authority: "descent-transitional",
+261:      authority: "replay-narrative",
+269:      authority: "focus-interaction",
+276:      authority: "lifemap-structural",
+282:    authority: "home-structural",
+297:  onAuthorityResolved: (authority: TargetAuthority) => void;
+303:  const authorityRef = useRef<TargetAuthority>("home-structural");
+385:    const resolved = resolveLookTarget(mode, phase, progress, selectedStar);
+658:  onAuthorityResolved: (authority: TargetAuthority) => void;
+704:  const [targetAuthority, setTargetAuthority] = useState<TargetAuthority>("home-structural");
+829:          onAuthorityResolved={setTargetAuthority}
+
+SETTLE_PATHS
+11:  | "ascendingSettle"
+13:  | "descendingSettle"
+51:const SETTLE_SECONDS = 0.42;
+198:  if (phase === "ascending" || phase === "ascendingSettle") return 1 - t;
+199:  if (phase === "descending" || phase === "descendingSettle") return t;
+205:  if (phase === "ascending" || phase === "ascendingSettle") return Math.max(0, (t - 0.05) / 0.95);
+206:  if (phase === "descending" || phase === "descendingSettle") return 1 - t;
+242:  if (phase === "ascending" || phase === "ascendingSettle") {
+250:  if (phase === "descending" || phase === "descendingSettle") {
+330:    } else if (phase === "ascendingSettle") {
+342:    } else if (phase === "descendingSettle") {
+392:      phase === "ascendingSettle" || phase === "descendingSettle" || phase === "idle"
+712:      phase === "ascendingSettle" || phase === "descendingSettle"
+713:        ? SETTLE_SECONDS
+726:          setPhase("ascendingSettle");
+730:        if (phase === "ascendingSettle") {
+739:          setPhase("descendingSettle");
+743:        if (phase === "descendingSettle") {
+
+ESC_PATH
+12:  | "descending"
+13:  | "descendingSettle"
+15:  | "exitingFocus"
+17:  | "exitingReplay";
+199:  if (phase === "descending" || phase === "descendingSettle") return t;
+206:  if (phase === "descending" || phase === "descendingSettle") return 1 - t;
+209:    phase === "exitingFocus" ||
+211:    phase === "exitingReplay"
+219:  if (phase === "exitingFocus" || phase === "exitingReplay") return 1 - easeInOutCubic(progress);
+250:  if (phase === "descending" || phase === "descendingSettle") {
+257:  if (mode === "replay" || phase === "enteringReplay" || phase === "exitingReplay") {
+265:  if (mode === "focus" || phase === "enteringFocus" || phase === "exitingFocus") {
+335:    } else if (phase === "descending") {
+342:    } else if (phase === "descendingSettle") {
+352:    } else if (mode === "focus" || phase === "enteringFocus" || phase === "exitingFocus") {
+357:      } else if (phase === "exitingFocus") {
+367:    if (mode === "replay" || phase === "enteringReplay" || phase === "exitingReplay") {
+374:      } else if (phase === "exitingReplay") {
+392:      phase === "ascendingSettle" || phase === "descendingSettle" || phase === "idle"
+712:      phase === "ascendingSettle" || phase === "descendingSettle"
+736:        if (phase === "descending") {
+739:          setPhase("descendingSettle");
+743:        if (phase === "descendingSettle") {
+751:        } else if (phase === "exitingFocus") {
+755:        } else if (phase === "exitingReplay") {
+773:      if (event.key !== "Escape") return;
+777:        setPhase("descending");
+781:        setPhase("exitingFocus");
+784:        setPhase("exitingReplay");
+789:    window.addEventListener("keydown", onKeyDown);
+790:    return () => window.removeEventListener("keydown", onKeyDown);

@@ -10,5 +10,5 @@ export type SpatialSeasonalArc = {
   endAt?: string;
   createdAt?: string;
   updatedAt?: string;
-  [key: string]: unknown;
+  [key: string]: any;
 };

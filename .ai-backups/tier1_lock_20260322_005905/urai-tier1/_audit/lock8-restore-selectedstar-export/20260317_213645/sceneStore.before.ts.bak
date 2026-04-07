@@ -1,0 +1,86 @@
+import { create } from "zustand";
+import { SPATIAL_STARS, SpatialStar } from "../data/stars";
+export type SceneMode = "home" | "sky" | "lifemap" | "focus" | "replay";
+
+export type SceneState = {
+  mode: SceneMode;
+  stars: SpatialStar[];
+  selectedStarId: string | null;
+  selectedStar: SelectedStar | null;
+  replayEnteredAt: number | null;
+  setMode: (mode: SceneMode) => void;
+  enterSky: () => void;
+  setSelectedStar: (star: SelectedStar | null) => void;
+  clearFocus: () => void;
+  exitFocusToLifeMap: () => void;
+  enterReplay: () => void;
+  exitReplay: () => void;
+  exitReplayToFocus: () => void;
+};
+
+export const useSceneStore = create<SceneState>((set, get) => ({
+  mode: "home",
+  stars: SPATIAL_STARS,
+  selectedStarId: null,
+  selectedStar: null,
+  replayEnteredAt: null,
+
+  setMode: (mode: SceneMode) => set({ mode }),
+
+  enterSky: () =>
+    set({
+      selectedStarId: null,
+      selectedStar: null,
+      replayEnteredAt: null,
+      mode: "sky",
+    }),
+
+  setSelectedStar: (star: SelectedStar | null) =>
+    set({
+      selectedStarId: star?.id ?? null,
+      selectedStar: star,
+      replayEnteredAt: null,
+      mode: star ? "focus" : "lifemap",
+    }),
+
+  clearFocus: () =>
+    set({
+      selectedStarId: null,
+      selectedStar: null,
+      replayEnteredAt: null,
+      mode: "lifemap",
+    }),
+
+  exitFocusToLifeMap: () =>
+    set({
+      selectedStarId: null,
+      selectedStar: null,
+      replayEnteredAt: null,
+      mode: "lifemap",
+    }),
+
+  enterReplay: () => {
+    const { selectedStar } = get();
+    if (!selectedStar) return;
+    set({
+      mode: "replay",
+      replayEnteredAt: Date.now(),
+    });
+  },
+
+  exitReplay: () => {
+    const { selectedStar } = get();
+    set({
+      mode: selectedStar ? "focus" : "lifemap",
+      replayEnteredAt: null,
+    });
+  },
+
+  exitReplayToFocus: () => {
+    const { selectedStar } = get();
+    set({
+      mode: selectedStar ? "focus" : "lifemap",
+      replayEnteredAt: null,
+    });
+  },
+}));

@@ -1,0 +1,72 @@
+=== FINAL PROOF CHECKLIST ===
+Manual proof flow to verify in browser:
+
+1. Open the app and idle on HOME for 5 seconds.
+   Confirm:
+   - orb is grounded
+   - home is stable
+   - no lifemap interaction is active yet
+
+2. Click the sky once.
+   Confirm:
+   - only one ascent starts
+   - corridor reads clearly
+   - no jump or double-trigger
+
+3. Arrive in LIFEMAP and wait 3 seconds.
+   Confirm:
+   - stars are visible
+   - depth reads near/mid/far
+   - no home orb remains active
+
+4. Hover several stars.
+   Confirm:
+   - hover is subtle
+   - only works in lifemap
+   - no random state change
+
+5. Click one star once.
+   Confirm:
+   - one focus transition only
+   - selected star persists
+   - no duplicate entry
+
+6. In FOCUS wait 3 seconds.
+   Confirm:
+   - replay button is visible
+   - selected star remains correct
+   - non-selected field is suppressed
+
+7. Click Replay once.
+   Confirm:
+   - replay enters once
+   - replay chamber is distinct
+   - lifemap field is suppressed
+
+8. Press ESC once.
+   Confirm:
+   - replay -> focus only
+
+9. Press ESC once again.
+   Confirm:
+   - focus -> lifemap only
+
+10. Press ESC once again.
+    Confirm:
+    - lifemap -> home only
+    - orb reforms late
+    - return feels heavier than ascent
+
+11. Stress test:
+    - spam click sky in home
+    - spam click star in lifemap
+    - spam replay in focus
+    - spam ESC in replay/focus/lifemap
+    Confirm:
+    - no overlapping transitions
+    - no state skips
+    - no broken half-state visuals
+
+12. Record final proof video showing:
+    home idle -> ascent -> lifemap browse -> focus -> replay -> focus -> lifemap -> home
+

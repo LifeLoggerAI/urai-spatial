@@ -1,0 +1,697 @@
+=== PASS 0 — FORENSIC SNAPSHOT ===
+## tier1-home-ascent-cleanup-20260318_090348
+ M README.md
+ M package.json
+ M pnpm-lock.yaml
+ M tsconfig.tsbuildinfo
+ D urai-tier1/next.config.ts
+ M urai-tier1/package.json
+ D urai-tier1/src/app/_page_shell.tsx
+ D urai-tier1/src/app/favicon.ico
+ M urai-tier1/src/app/globals.css
+ M urai-tier1/src/app/layout.tsx
+ M urai-tier1/src/app/page.tsx
+ M urai-tier1/src/spatial/account/spatialAccountIO.ts
+ M urai-tier1/src/spatial/account/spatialAccountTypes.ts
+ M urai-tier1/src/spatial/arcs/spatialArcIO.ts
+ M urai-tier1/src/spatial/arcs/spatialArcTypes.ts
+ M urai-tier1/src/spatial/arcs/spatialSeasonalArcTypes.ts
+ M urai-tier1/src/spatial/bundles/spatialStoryBundleValidation.ts
+ M urai-tier1/src/spatial/chapter/resolveChapterSynthesis.ts
+ M urai-tier1/src/spatial/clustering/resolveMemoryCluster.ts
+ M urai-tier1/src/spatial/compare.disabled.1774173247/spatialCompareIO.ts
+ M urai-tier1/src/spatial/compare.disabled.1774173247/spatialCompareTypes.ts
+ D urai-tier1/src/spatial/components/CameraRig.tsx
+ M urai-tier1/src/spatial/components/Orb.tsx
+ M urai-tier1/src/spatial/components/Tier1Lights.tsx
+ M urai-tier1/src/spatial/core/SceneController.tsx
+ M urai-tier1/src/spatial/curation.disabled.1774173247/buildSpatialCuratedDeckExpiryGovernance.ts
+ M urai-tier1/src/spatial/curation.disabled.1774173247/spatialCuratedDeckExportValidation.ts
+ M urai-tier1/src/spatial/curation.disabled.1774173247/spatialCuratedDeckImportTypes.ts
+ M urai-tier1/src/spatial/curation.disabled.1774173247/spatialCuratedDeckSurfaceOwnership.ts
+ M urai-tier1/src/spatial/curation.disabled.1774173247/spatialCuratedDeckVaultIO.ts
+ M urai-tier1/src/spatial/curation.disabled.1774173247/spatialCuratedDeckVaultTypes.ts
+ M urai-tier1/src/spatial/data-import/buildMemoryImportReport.ts
+ M urai-tier1/src/spatial/data/stars.ts
+ D urai-tier1/src/spatial/effects/CinematicFramingBias.tsx
+ D urai-tier1/src/spatial/effects/CinematicIdleMotion.tsx
+ M urai-tier1/src/spatial/era/resolveEraCompare.ts
+ M urai-tier1/src/spatial/ingest/normalizeExternalMemoryRows.ts
+ M urai-tier1/src/spatial/ingest/parseExternalMemoryRows.ts
+ M urai-tier1/src/spatial/lenses.disabled.1774173247/SpatialLensBootstrap.tsx
+ M urai-tier1/src/spatial/lenses.disabled.1774173247/spatialLensIO.ts
+ M urai-tier1/src/spatial/lenses.disabled.1774173247/spatialLensTypes.ts
+ M urai-tier1/src/spatial/lib/resolveStarByIdSafe.ts
+ D urai-tier1/src/spatial/lib/tier1Camera.ts
+ M urai-tier1/src/spatial/lighting/CinematicLightingRig.tsx
+ M urai-tier1/src/spatial/lineage/buildSpatialBundleLineage.ts
+ M urai-tier1/src/spatial/memory/resolveMemorySphere.ts
+ M urai-tier1/src/spatial/merge/buildBatchDiffAudit.ts
+ M urai-tier1/src/spatial/narrative/resolveNarrativeReplay.ts
+ M urai-tier1/src/spatial/narrator.disabled.1774173247/spatialNarratorTypes.ts
+ M urai-tier1/src/spatial/persistence/SpatialPersistenceBridge.tsx
+ M urai-tier1/src/spatial/persistence/spatialPersistenceIO.ts
+ M urai-tier1/src/spatial/persistence/spatialPersistenceStore.ts
+ M urai-tier1/src/spatial/persistence/spatialPersistenceTypes.ts
+ M urai-tier1/src/spatial/persistence/spatialPersistenceValidation.ts
+ M urai-tier1/src/spatial/polish/SpatialPolishOverlay.tsx
+ M urai-tier1/src/spatial/release/SpatialReleaseBootstrap.tsx
+ M urai-tier1/src/spatial/release/spatialReleaseIO.ts
+ M urai-tier1/src/spatial/release/spatialReleaseTypes.ts
+ M urai-tier1/src/spatial/replay/ReplayContractOverlay.tsx
+ M urai-tier1/src/spatial/replay/ReplayOverlay.tsx
+ M urai-tier1/src/spatial/replay/resolveReplayScene.ts
+ M urai-tier1/src/spatial/scene/CinematicGroundAccents.tsx
+ M urai-tier1/src/spatial/scene/Ground.tsx
+ M urai-tier1/src/spatial/scene/GroundWorld.tsx
+ M urai-tier1/src/spatial/scene/HomeWorld.tsx
+ M urai-tier1/src/spatial/scene/MemorySphere.tsx
+ M urai-tier1/src/spatial/scene/OrbGlow.tsx
+ M urai-tier1/src/spatial/scene/ReplaySphere.tsx
+ M urai-tier1/src/spatial/scene/SpatialScene.tsx
+ M urai-tier1/src/spatial/scene/SpatialScene.tsx.broken.20260316-135713
+ M urai-tier1/src/spatial/scene/Starfield.tsx
+ M urai-tier1/src/spatial/seasonal.disabled.1774173246/SpatialSeasonalArcBootstrap.tsx.broken.1774173044
+ M urai-tier1/src/spatial/seasonal.disabled.1774173246/resolveSeasonalCycle.ts
+ M urai-tier1/src/spatial/seasonal.disabled.1774173246/spatialSeasonalArcIO.ts
+ M urai-tier1/src/spatial/seasonal.disabled.1774173246/spatialSeasonalArcTypes.ts
+ M urai-tier1/src/spatial/settings/SpatialSettingsBootstrap.tsx
+ M urai-tier1/src/spatial/settings/spatialSettingsIO.ts
+ M urai-tier1/src/spatial/settings/spatialSettingsTypes.ts
+ M urai-tier1/src/spatial/shell/Tier1ShellOverlayProps.ts
+ M urai-tier1/src/spatial/shell/Tier1ShellScreen.tsx
+ M urai-tier1/src/spatial/shell/overlays/FocusShellOverlay.tsx
+ M urai-tier1/src/spatial/shell/overlays/HomeShellOverlay.tsx
+ M urai-tier1/src/spatial/shell/overlays/LifeMapShellOverlay.tsx
+ M urai-tier1/src/spatial/shell/overlays/ReplayShellOverlay.tsx
+ M urai-tier1/src/spatial/shell/overlays/SkyShellOverlay.tsx
+ M urai-tier1/src/spatial/store/useSceneStore.ts
+ M urai-tier1/src/spatial/telemetry/spatialTelemetryIO.ts
+ M urai-tier1/src/spatial/telemetry/spatialTelemetryTypes.ts
+ M urai-tier1/src/spatial/ui/SpatialCuratedDeckActionPanel.tsx
+ M urai-tier1/src/spatial/ui/SpatialCuratedDeckAnchorPanel.tsx
+ M urai-tier1/src/spatial/ui/SpatialCuratedDeckAnomalyPanel.tsx
+ M urai-tier1/src/spatial/ui/SpatialCuratedDeckArchiveDispositionPanel.tsx
+ M urai-tier1/src/spatial/ui/SpatialCuratedDeckBreachWatchPanel.tsx
+ M urai-tier1/src/spatial/ui/SpatialCuratedDeckChangeLedgerPanel.tsx
+ M urai-tier1/src/spatial/ui/SpatialCuratedDeckClosureCertificatePanel.tsx
+ M urai-tier1/src/spatial/ui/SpatialCuratedDeckCohortPanel.tsx
+ M urai-tier1/src/spatial/ui/SpatialCuratedDeckConsensusPanel.tsx
+ M urai-tier1/src/spatial/ui/SpatialCuratedDeckDestructionAuthorizationPanel.tsx
+ M urai-tier1/src/spatial/ui/SpatialCuratedDeckDestructionExecutionGatePanel.tsx
+ M urai-tier1/src/spatial/ui/SpatialCuratedDeckDiffPanel.tsx.broken.1774173044
+ M urai-tier1/src/spatial/ui/SpatialCuratedDeckDispatchPanel.tsx
+ M urai-tier1/src/spatial/ui/SpatialCuratedDeckDivergencePanel.tsx
+ M urai-tier1/src/spatial/ui/SpatialCuratedDeckDriftPanel.tsx.broken.1774173044
+ M urai-tier1/src/spatial/ui/SpatialCuratedDeckExpiryGovernancePanel.tsx.broken.1774173044
+ M urai-tier1/src/spatial/ui/SpatialCuratedDeckExportPanel.tsx
+ M urai-tier1/src/spatial/ui/SpatialCuratedDeckImportPanel.tsx
+ M urai-tier1/src/spatial/ui/SpatialCuratedDeckIncidentResponsePanel.tsx
+ M urai-tier1/src/spatial/ui/SpatialCuratedDeckLineagePanel.tsx
+ M urai-tier1/src/spatial/ui/SpatialCuratedDeckNeighborDiffPanel.tsx
+ M urai-tier1/src/spatial/ui/SpatialCuratedDeckPurgeReadinessPanel.tsx
+ M urai-tier1/src/spatial/ui/SpatialCuratedDeckQueuePanel.tsx
+ M urai-tier1/src/spatial/ui/SpatialCuratedDeckRecoveryGatePanel.tsx
+ M urai-tier1/src/spatial/ui/SpatialCuratedDeckReopenWatchPanel.tsx
+ M urai-tier1/src/spatial/ui/SpatialCuratedDeckRetentionHorizonPanel.tsx
+ M urai-tier1/src/spatial/ui/SpatialCuratedDeckRetentionLifecyclePanel.tsx
+ M urai-tier1/src/spatial/ui/SpatialCuratedDeckReviewTicketPanel.tsx
+ M urai-tier1/src/spatial/ui/SpatialCuratedDeckSchedulePanel.tsx
+ M urai-tier1/src/spatial/ui/SpatialCuratedDeckServiceWindowPanel.tsx
+ M urai-tier1/src/spatial/ui/SpatialCuratedDeckSlaPanel.tsx
+ M urai-tier1/src/spatial/ui/SpatialCuratedDeckStabilityPanel.tsx
+ M urai-tier1/src/spatial/ui/SpatialCuratedDeckVaultPanel.tsx
+ M urai-tier1/src/spatial/ui/SpatialCuratedDeckVerdictPanel.tsx
+ M urai-tier1/src/spatial/ui/SpatialNarratorExportPanel.tsx
+ M urai-tier1/src/spatial/ui/SpatialStoryBundlePanel.tsx
+ M urai-tier1/src/spatial/ui/SpatialVoicePlaybackPanel.tsx
+ M urai-tier1/src/spatial/vault/SpatialStoryBundleVaultBootstrap.tsx
+ M urai-tier1/src/spatial/vault/spatialStoryBundleVaultIO.ts
+ M urai-tier1/src/spatial/vault/spatialStoryBundleVaultTypes.ts.broken.1774173044
+ M urai-tier1/src/spatial/versioning/buildDatasetVersionSnapshot.ts
+ M urai-tier1/src/spatial/world/World.tsx
+ M urai-tier1/src/spatial/xr/ArHitTestBridge.tsx
+ M urai-tier1/src/spatial/xr/XrLocomotionRuntime.tsx
+ M urai-tier1/tsconfig.json
+?? .ai-backups/
+?? PASS_38B_starfield_wrapper_lock_relaxed.sh
+?? PASS_38C_starfield_wrapper_minimal.sh
+?? PASS_38_starfield_wrapper_lock.sh
+?? PASS_6_replay_entry_depth_lock.sh
+?? PASS_extract_live_canon_surface.sh
+?? PASS_force_live_runtime_extract.sh
+?? PASS_lifemap_home_audit_lock.sh
+?? _audit/20260402_083121_FULL_REPAIR/
+?? _audit/ascent_descent_handoff_20260326_054412/
+?? _audit/ascent_descent_handoff_fullfile_20260326_055447/
+?? _audit/authority_lock_20260325_101020/
+?? _audit/canon_lock_20260326_232116/
+?? _audit/canon_lock_20260326_232234/
+?? _audit/chatgpt_handoff_20260325_095940/
+?? _audit/find_and_fix_starnode_source_20260325_030015/
+?? _audit/first_high_confidence_repair_20260325_105322/
+?? _audit/first_repair_pass_20260325_104708/
+?? _audit/fix_selectedstar_contract_20260325_025018/
+?? _audit/fix_selectedstar_contract_20260325_025327/
+?? _audit/fix_selectedstar_label_20260325_024759/
+?? _audit/fix_starTypes_merge_1774848344/
+?? _audit/fix_starnode_intensity_20260325_025510/
+?? _audit/fix_starnode_intensity_20260325_025630/
+?? _audit/home_lifemap_focus_replay_sync_20260325_111951/
+?? _audit/lifemap_depth_focus_layer_sync_20260325_110955/
+?? _audit/live_runtime_probe_20260325_100324/
+?? _audit/lock_the_loop_20260325_050115/
+?? _audit/look_target_authority_20260325_113900/
+?? _audit/pass10_final_proof_20260325_040512/
+?? _audit/pass1b_compat_fix_20260328_091240/
+?? _audit/pass1c_fix_esc_case_20260328_091423/
+?? _audit/pass1d_fix_inputlock_case_20260328_091539/
+?? _audit/pass2_camera_authority_20260328_091811/
+?? _audit/pass2_home_grounding_20260325_023235/
+?? _audit/pass2_star_schema_unification_20260328_113814/
+?? _audit/pass2b_camera_safe_20260328_091903/
+?? _audit/pass2c_remove_bad_camera_20260328_092025/
+?? _audit/pass3_ascent_descent_corridor_20260325_023719/
+?? _audit/pass3b_real_ascent_20260328_092154/
+?? _audit/pass4_safe_repair_and_lifemap_depth_20260325_024316/
+?? _audit/pass4_safe_repair_and_lifemap_depth_20260325_030509/
+?? _audit/pass4a_lifemap_depth_20260328_092318/
+?? _audit/pass5_fix_starnode_intensity_20260325_030829/
+?? _audit/pass5a_star_interaction_20260328_092647/
+?? _audit/pass6_add_starnode_intensity_type_20260325_031109/
+?? _audit/pass6_replay_chamber_20260325_031504/
+?? _audit/pass6_replay_chamber_20260325_031931/
+?? _audit/pass6_replay_entry_depth_lock_20260329_223054/
+?? _audit/pass6c_clean_restore_20260328_094201/
+?? _audit/pass7_hard_patch_starnode_intensity_20260325_031737/
+?? _audit/pass7_return_chain_polish_20260325_032643/
+?? _audit/pass8_material_bloom_discipline_20260325_033307/
+?? _audit/pass9_interaction_hardening_20260325_034701/
+?? _audit/pass_depth_integration_fix_1774848520/
+?? _audit/pass_depth_path_and_scene_repair_20260330_053036/
+?? _audit/pass_fix_starTypes_corruption_20260330_052412/
+?? _audit/pass_fix_starTypes_merge_safe_20260330_052657/
+?? _audit/pass_true_depth_layer_system_lock_retry_20260330_052224/
+?? _audit/patch_spatialscene_star_intensity_fallback_20260325_030247/
+?? _audit/phase2_focus_lock_20260328_063319/
+?? _audit/phase2_focus_lock_20260328_063507/
+?? _audit/runtime_authority_smoke_20260326_222145/
+?? _audit/runtime_interaction_lock_20260326_223831/
+?? _audit/scene_consolidation_20260326_215901/
+?? _audit/scene_consolidation_interaction_lock_20260325_082901/
+?? _audit/scene_consolidation_interaction_lock_fix_20260325_084417/
+?? _audit/scene_runtime_refine_20260326_222654/
+?? _audit/single_pass_runtime_lock_20260328_061648/
+?? _audit/spatial_cinematic_lock_20260325_022950/
+?? _audit/stabilize_scene_consolidation_interaction_lock_20260325_075049/
+?? _audit/stabilize_scene_consolidation_interaction_lock_keepopen_20260325_081249/
+?? _audit/state_contract_audit_20260326_220257/
+?? _audit/state_contract_hotfix2_20260326_221350/
+?? _audit/state_contract_hotfix3_20260326_221539/
+?? _audit/state_contract_hotfix_20260326_221045/
+?? _audit/state_contract_hotfix_20260326_221113/
+?? _audit/state_contract_reconcile_20260326_220710/
+?? _audit/tier1_lock_check/
+?? _audit/tier1_nav_replay_orb_retry_20260324_203355.log
+?? _audit/tier1_prep_20260324_200033/
+?? _backup/
+?? _quarantine/_archive/_audit/
+?? _quarantine/_archive/src/lib/
+?? _repair_backups/
+?? canon_lock_debug_20260326_233558.log
+?? run-canon-lock-safe.sh
+?? scripts/
+?? src/
+?? tsconfig.json
+?? urai-tier1/.ai-audit/
+?? urai-tier1/.ai-backups/camera-rig-cinematic-20260323_213255/
+?? urai-tier1/.ai-backups/cinematic-pass-20260324_050149.log
+?? urai-tier1/.ai-backups/clean-scene-20260323_012420/
+?? urai-tier1/.ai-backups/composition-pass-20260324_033300/
+?? urai-tier1/.ai-backups/composition-pass-noverify-20260324_034122/
+?? urai-tier1/.ai-backups/composition-pass-safe-20260324_033707/
+?? urai-tier1/.ai-backups/composition-pass-safe-20260324_044327.log
+?? urai-tier1/.ai-backups/final-starfield-fix-20260324_024419/
+?? urai-tier1/.ai-backups/fix-camera-fov-safe-20260324_051207.log
+?? urai-tier1/.ai-backups/fix-continue-20260324_164611.log
+?? urai-tier1/.ai-backups/fix-hovered-pointerout-20260323_213446/
+?? urai-tier1/.ai-backups/fix-orb-camera-20260324_050745.log
+?? urai-tier1/.ai-backups/fix-pass1-20260323_010621/
+?? urai-tier1/.ai-backups/fix-show-scope-20260323_222644/
+?? urai-tier1/.ai-backups/focus-star-refinement-20260324_164346.log
+?? urai-tier1/.ai-backups/focuspresence-immersion-pass-20260323_205011/
+?? urai-tier1/.ai-backups/forensic-video-pass-20260324_070003.log
+?? urai-tier1/.ai-backups/full-pass-b-20260324_000038/
+?? urai-tier1/.ai-backups/home-rebalance-pass2-20260324_035218/
+?? urai-tier1/.ai-backups/home-visual-lock-20260323_010206/
+?? urai-tier1/.ai-backups/lifemap-falloff-orb-detach-20260324_060019.log
+?? urai-tier1/.ai-backups/lifemap-isolation-20260324_053309.log
+?? urai-tier1/.ai-backups/memory-panel-repair-20260322_225547/
+?? urai-tier1/.ai-backups/motion-pass-20260324_045028.log
+?? urai-tier1/.ai-backups/motion-pass-20260324_045340.log
+?? urai-tier1/.ai-backups/next-pass-framing-20260324_032613/
+?? urai-tier1/.ai-backups/next-pass-safe-20260324_050541.log
+?? urai-tier1/.ai-backups/no-close-diagnose-20260324_030545/
+?? urai-tier1/.ai-backups/no-close-diagnose-20260324_030806/
+?? urai-tier1/.ai-backups/pass1-interaction-20260323_214749/
+?? urai-tier1/.ai-backups/pass1-lock-20260323_032438/
+?? urai-tier1/.ai-backups/pass1_5-20260323_010938/
+?? urai-tier1/.ai-backups/pass2-camera-render-20260323_215712/
+?? urai-tier1/.ai-backups/pass2-depth-realism-20260323_011346/
+?? urai-tier1/.ai-backups/pass2_1-lifemap-ground-cutoff-20260323_221629/
+?? urai-tier1/.ai-backups/pass2_2-lifemap-hide-ground-orb-20260323_222139/
+?? urai-tier1/.ai-backups/pass2_5-20260323_011724/
+?? urai-tier1/.ai-backups/recover-starfield-20260324_024228/
+?? urai-tier1/.ai-backups/replay-lock-20260322_225251/
+?? urai-tier1/.ai-backups/replay-threshold-pass-20260324_165918.log
+?? urai-tier1/.ai-backups/router-root-fix/
+?? urai-tier1/.ai-backups/scenephase-jsx-repair-20260324_031251/
+?? urai-tier1/.ai-backups/spatial_cinematic_repair_20260324_171612/
+?? urai-tier1/.ai-backups/spatial_repair_debug_20260324_171929/
+?? urai-tier1/.ai-backups/spatial_repair_safe_20260324_172353/
+?? urai-tier1/.ai-backups/spatialscene-full-replace-20260324_031814/
+?? urai-tier1/.ai-backups/spatialscene-hard-fix-20260324_031706/
+?? urai-tier1/.ai-backups/spatialscene-hardfix-20260324_023147/
+?? urai-tier1/.ai-backups/spatialscene-parser-fix-20260324_031501/
+?? urai-tier1/.ai-backups/spatialscene-targeted-jsx-fix-20260324_023627/
+?? urai-tier1/.ai-backups/stabilization-pass-20260323_211929/
+?? urai-tier1/.ai-backups/stabilization-pass-20260323_234613/
+?? urai-tier1/.ai-backups/starfield-hard-reset-20260324_024735/
+?? urai-tier1/.ai-backups/starfield-hard-reset-20260324_025713/
+?? urai-tier1/.ai-backups/starfield-lifemap-fix-20260324_030335/
+?? urai-tier1/.ai-backups/tier1-final-20260322_224605/
+?? urai-tier1/.ai-backups/visual-consolidated-pass-20260322_230538/
+?? urai-tier1/.ai-backups/visual-rebalance-20260324_034644/
+?? urai-tier1/.ai-logs/
+?? urai-tier1/.pass66a.tmp
+?? urai-tier1/FIX_78_REMOVE_CORRUPTION.sh
+?? urai-tier1/FIX_PASS1_ANCHOR_FLEX.sh
+?? urai-tier1/FIX_PASS1_ANCHOR_FLEX_V2.sh
+?? urai-tier1/FIX_PASS1_STARFIELD_FLEX.sh
+?? urai-tier1/FIX_PASS2_ROOT_GUARD.sh
+?? urai-tier1/FIX_PASS_1_ROOT_GUARD.sh
+?? urai-tier1/FIX_camera_type_guard_full.sh
+?? urai-tier1/FIX_focus_replay_camera_fov_guard.sh
+?? urai-tier1/FIX_home_env_use_client_order.sh
+?? urai-tier1/FIX_lifemap_scene_no_python.sh
+?? urai-tier1/FIX_lifemap_star_rendering_signature_alignment.sh
+?? urai-tier1/FIX_overwrite_live_home_lifemap_lock.sh
+?? urai-tier1/FIX_restore_lifemap_reveal_keep_severance.sh
+?? urai-tier1/FIX_scene_patch_after_sed_fail.sh
+?? urai-tier1/FIX_spatialscene_remove_missing_starfield.sh
+?? urai-tier1/FIX_state_compat_shims.sh
+?? urai-tier1/FIX_state_exports_lock.sh
+?? urai-tier1/FIX_state_transition_compat.sh
+?? urai-tier1/PASS4_camera_state_authority_lock.sh
+?? urai-tier1/PASS_01_AUTHORITY_LOCK.sh
+?? urai-tier1/PASS_02B_STATE_BIND_ROBUST.sh
+?? urai-tier1/PASS_02C_SPATIALSCENE_FORENSIC_READ.sh
+?? urai-tier1/PASS_02_REAL_AUTHORITY_CLEAN.sh
+?? urai-tier1/PASS_02_STATE_BIND.sh
+?? urai-tier1/PASS_03A_REPAIR_VISIBLE_LINES.sh
+?? urai-tier1/PASS_03B_REPAIR_RUNTIMEHUD_BLOCK.sh
+?? urai-tier1/PASS_03C_REPAIR_CAMERA_ARGS_AND_RUNTIMEHUD_PROPS.sh
+?? urai-tier1/PASS_03D_HARD_FIX_CAMERA_AND_HUD.sh
+?? urai-tier1/PASS_03E_REBUILD_RUNTIMEHUD_CLEAN.sh
+?? urai-tier1/PASS_03F_STRIP_ORPHAN_RUNTIMEHUD_TAIL.sh
+?? urai-tier1/PASS_03G_FORCE_RUNTIMEHUD_REBUILD.sh
+?? urai-tier1/PASS_03G_FORCE_RUNTIMEHUD_REBUILD_SAFE.sh
+?? urai-tier1/PASS_03_CAMERA_FOCUS_CONVERGENCE_LOCK.sh
+?? urai-tier1/PASS_10_selectedStarId_full_cleanup.sh
+?? urai-tier1/PASS_10_state_camera_authority_lock.sh
+?? urai-tier1/PASS_11_HARD_RESET_TRANSITION_SYSTEM.sh
+?? urai-tier1/PASS_11_authority_corruption_fix.sh
+?? urai-tier1/PASS_11_transition_sync_lock.sh
+?? urai-tier1/PASS_11_transition_sync_lock_FIX.sh
+?? urai-tier1/PASS_12_FINAL_FIXED_ROOT.sh
+?? urai-tier1/PASS_12_PRESENCE_NO_TRANSITIONT.sh
+?? urai-tier1/PASS_12_final_presence_polish.sh
+?? urai-tier1/PASS_12_final_presence_polish_fix.sh
+?? urai-tier1/PASS_12_focus_camera_contract_lock.sh
+?? urai-tier1/PASS_12_full_camera_phase_integration_lock.sh
+?? urai-tier1/PASS_13_14_ROLLBACK_TO_PASS12_GOOD_STATE.sh
+?? urai-tier1/PASS_13_CAMERA_FEEL_PERCEPTION_LOCK.sh
+?? urai-tier1/PASS_13_HOOK_SCOPE_FIX.sh
+?? urai-tier1/PASS_13_true_transition_authority_lock.sh
+?? urai-tier1/PASS_13_true_transition_authority_lock_BASH_ONLY.sh
+?? urai-tier1/PASS_14A_STARFIELD_VISIBLE_COMPAT_FIX.sh
+?? urai-tier1/PASS_14B_STARFIELD_PROP_COMPAT_FIX.sh
+?? urai-tier1/PASS_14_LIFEMAP_DEPTH_DENSITY_LOCK.sh
+?? urai-tier1/PASS_14_transition_write_authority_lock.sh
+?? urai-tier1/PASS_15A_focus_isolation_repair.sh
+?? urai-tier1/PASS_15B_focus_isolation_live_shape_fix.sh
+?? urai-tier1/PASS_15C_scene_fov_forensic_lock.sh
+?? urai-tier1/PASS_15_focus_replay_weight_lock.sh
+?? urai-tier1/PASS_15_focus_replay_weight_lock_BASH.sh
+?? urai-tier1/PASS_15_focus_replay_weight_lock_SAFE.sh
+?? urai-tier1/PASS_16_first_time_experience_lock.sh
+?? urai-tier1/PASS_17_final_presence_lock.sh
+?? urai-tier1/PASS_18_visual_field_coherence_lock.sh
+?? urai-tier1/PASS_19_narrator_overlay_grade_lock.sh
+?? urai-tier1/PASS_1_camera_lifemap_lock.sh
+?? urai-tier1/PASS_1_canonical_write_lock.sh
+?? urai-tier1/PASS_1_continuity_authority_lock.sh
+?? urai-tier1/PASS_1_lifemap_volumetric_field_lock.sh
+?? urai-tier1/PASS_1_retry.sh
+?? urai-tier1/PASS_1_runtime_authority_lock.sh
+?? urai-tier1/PASS_20_narrator_copy_refine.sh
+?? urai-tier1/PASS_21B_demo_mode_fix.sh
+?? urai-tier1/PASS_21C_demo_mode_scope_lock.sh
+?? urai-tier1/PASS_21_demo_mode_lock.sh
+?? urai-tier1/PASS_22_public_demo_polish.sh
+?? urai-tier1/PASS_23B_restore_last_balanced_scene.sh
+?? urai-tier1/PASS_23C_restore_last_balanced_overlay.sh
+?? urai-tier1/PASS_23D_overlay_canonical_rewrite.sh
+?? urai-tier1/PASS_23E_spatialscene_contract_fix.sh
+?? urai-tier1/PASS_23F_spatialscene_line69_forensic.sh
+?? urai-tier1/PASS_23G_fix_useCanonEsc.sh
+?? urai-tier1/PASS_23H2_fix_useCanonEsc_order_bash.sh
+?? urai-tier1/PASS_23H_fix_useCanonEsc_order.sh
+?? urai-tier1/PASS_23I2_useCanonEsc_runtime_state_forensic_bash.sh
+?? urai-tier1/PASS_23I_useCanonEsc_runtime_state_forensic.sh
+?? urai-tier1/PASS_23J2_forensic_and_patch_useCanonEsc.sh
+?? urai-tier1/PASS_23J_fix_useCanonEsc_runtime_dispatch.sh
+?? urai-tier1/PASS_23K_fix_scene_authority_contract.sh
+?? urai-tier1/PASS_23L_bind_runtime_correctly.sh
+?? urai-tier1/PASS_23M_force_useCanonEsc_rewrite.sh
+?? urai-tier1/PASS_23N_restore_broken_files.sh
+?? urai-tier1/PASS_23O_rebuild_spatialscene_tail.sh
+?? urai-tier1/PASS_23P_stabilize_scene_contract.sh
+?? urai-tier1/PASS_23Q_fix_useCanonEsc_types.sh
+?? urai-tier1/PASS_23_scene_structure_repair.sh
+?? urai-tier1/PASS_23_tts_sync_lock.sh
+?? urai-tier1/PASS_24B_authority_runtime_unification_fix.sh
+?? urai-tier1/PASS_24C_fix_scene_syntax.sh
+?? urai-tier1/PASS_24D_rebuild_scene_midsection.sh
+?? urai-tier1/PASS_24_authority_runtime_unification.sh
+?? urai-tier1/PASS_25_restore_real_scene_jsx_tail.sh
+?? urai-tier1/PASS_25_restore_real_scene_jsx_tail_FIXED.sh
+?? urai-tier1/PASS_26A_react_import_repair.sh
+?? urai-tier1/PASS_26B_restore_starfield_from_last_good_backup.sh
+?? urai-tier1/PASS_26_align_scene_props.sh
+?? urai-tier1/PASS_26_fixed_anchor_safe.sh
+?? urai-tier1/PASS_26_home_to_lifemap_causal_ascent_lock.sh
+?? urai-tier1/PASS_27_starfield_depth_architecture.sh
+?? urai-tier1/PASS_28A_camera_anchor_discovery.sh
+?? urai-tier1/PASS_28B_camera_canon_physics_lock.sh
+?? urai-tier1/PASS_28C_camera_canon_weighted_progress_repair.sh
+?? urai-tier1/PASS_28_camera_ascent_physics_lock.sh
+?? urai-tier1/PASS_29A_dedupe_handoff_props.sh
+?? urai-tier1/PASS_29A_dedupe_handoff_props_bash_only.sh
+?? urai-tier1/PASS_29B_dedupe_handoff_props_bash_only_safe.sh
+?? urai-tier1/PASS_29_environment_handoff_lock.sh
+?? urai-tier1/PASS_2_camera_canon_lock.sh
+?? urai-tier1/PASS_2_direct_write_purge.sh
+?? urai-tier1/PASS_2_interaction_focus_lock.sh
+?? urai-tier1/PASS_2_parallax_camera_depth_lock.sh
+?? urai-tier1/PASS_2_runtime_ui_suppression_lock.sh
+?? urai-tier1/PASS_30A_REPAIR_lifemap_starfield_structure.sh
+?? urai-tier1/PASS_30B_restore_lifemap_starfield_from_last_good_backup.sh
+?? urai-tier1/PASS_30C_align_lifemap_callsite_to_restored_contract.sh
+?? urai-tier1/PASS_30_FIX_lifemap_safe_depth.sh
+?? urai-tier1/PASS_30_lifemap_arrival_depth_activation.sh
+?? urai-tier1/PASS_31_near_field_dominance_lock.sh
+?? urai-tier1/PASS_32_perceptual_depth_lock.sh
+?? urai-tier1/PASS_33_mode_severance_lock.sh
+?? urai-tier1/PASS_34A_restore_lifemap_from_last_good_pre34.sh
+?? urai-tier1/PASS_34B_clean_fullfile_lifemap_replacement.sh
+?? urai-tier1/PASS_34_lifemap_world_isolation.sh
+?? urai-tier1/PASS_35_causal_ascent_lock.sh
+?? urai-tier1/PASS_36_starfield_ascent_density_sync.sh
+?? urai-tier1/PASS_37A_fix_tsc_invocation_no_perl.sh
+?? urai-tier1/PASS_37_restore_star_types_contract.sh
+?? urai-tier1/PASS_38B_force_starfield_authority_restore.sh
+?? urai-tier1/PASS_39_lifemap_depth_exaggeration_lock.sh
+?? urai-tier1/PASS_3_authority_sweep.sh
+?? urai-tier1/PASS_3_focus_reducer_lock.sh
+?? urai-tier1/PASS_3_home_to_lifemap_ascent_cinematic_lock.sh
+?? urai-tier1/PASS_40B_resume_lifemap_field_ingress_lock.sh
+?? urai-tier1/PASS_40C_insert_missing_lifemap_z_ingress.sh
+?? urai-tier1/PASS_40_lifemap_field_ingress_lock.sh
+?? urai-tier1/PASS_41A_phase_driven_ascent_continuity_lock.sh
+?? urai-tier1/PASS_41B_resume_scene_wraps_multiline_safe.sh
+?? urai-tier1/PASS_41C_scene_ascent_repair_lock.sh
+?? urai-tier1/PASS_41D_mode_aligned_ascent_fix.sh
+?? urai-tier1/PASS_41_home_lifemap_ascent_continuity_lock.sh
+?? urai-tier1/PASS_42A_rollback_raw_camera_block.sh
+?? urai-tier1/PASS_42B_camera_canon_forensics.sh
+?? urai-tier1/PASS_42C_camera_canon_progress_lock.sh
+?? urai-tier1/PASS_42D_fix_reveal_binding_placement.sh
+?? urai-tier1/PASS_42_camera_ascent_realization.sh
+?? urai-tier1/PASS_43A_fix_progress_curve_block_placement.sh
+?? urai-tier1/PASS_43B_rewrite_transition_curve_region.sh
+?? urai-tier1/PASS_43_camera_progress_curve_realization.sh
+?? urai-tier1/PASS_44A_pose_amplification_lock.sh
+?? urai-tier1/PASS_44B_pose_amplification_modepair_fix.sh
+?? urai-tier1/PASS_44_camera_pose_forensics.sh
+?? urai-tier1/PASS_45A_fix_vec3_indexed_pose_mutation.sh
+?? urai-tier1/PASS_45_depth_fov_ascent_realization.sh
+?? urai-tier1/PASS_46B_depth_wrapper_forward_bias_continuity.sh
+?? urai-tier1/PASS_46C1_probe_lifemap_primarylayer_shape.sh
+?? urai-tier1/PASS_46C_fix_depth_wrapper_anchor.sh
+?? urai-tier1/PASS_46D_phase_depth_blend_lock.sh
+?? urai-tier1/PASS_46E_bash_only_live_anchor_repair.sh
+?? urai-tier1/PASS_46E_phase_depth_blend_lock_live_anchor.sh
+?? urai-tier1/PASS_46F_spatialscene_jsx_wrapper_repair.sh
+?? urai-tier1/PASS_47A_camera_violation_cleanup.sh
+?? urai-tier1/PASS_47_camera_authority_lock.sh
+?? urai-tier1/PASS_48A_ascent_continuity_literal_fix.sh
+?? urai-tier1/PASS_48_ascent_continuity.sh
+?? urai-tier1/PASS_4_orb_vs_focus_identity_separation_lock.sh
+?? urai-tier1/PASS_4_selected_star_derivation_lock.sh
+?? urai-tier1/PASS_51_authority_rewire.sh
+?? urai-tier1/PASS_51_authority_rewire_fix.sh
+?? urai-tier1/PASS_51_probe.sh
+?? urai-tier1/PASS_52B_fix_camera_top_scope_injection.sh
+?? urai-tier1/PASS_52C2_dedupe_camera_progress_hardfix.sh
+?? urai-tier1/PASS_52C_dedupe_camera_progress.sh
+?? urai-tier1/PASS_52D_verify_camera_scope_and_build.sh
+?? urai-tier1/PASS_52_fix_authority_break.sh
+?? urai-tier1/PASS_53A_probe_lifemap_live_shape.sh
+?? urai-tier1/PASS_53B_depth_perception_amplify.sh
+?? urai-tier1/PASS_53_lifemap_depth_parallax_lock.sh
+?? urai-tier1/PASS_54B_focus_convergence_lock_no_perl.sh
+?? urai-tier1/PASS_54_focus_convergence_lock.sh
+?? urai-tier1/PASS_55B_repair_transitionBlend_scope.sh
+?? urai-tier1/PASS_55C_focus_dedupe_and_stabilize.sh
+?? urai-tier1/PASS_55D_hard_rewrite_transition_focus_block.sh
+?? urai-tier1/PASS_55E2_rewrite_lifemap_props_live.sh
+?? urai-tier1/PASS_55E3_fix_lifemapReveal_scope.sh
+?? urai-tier1/PASS_55E4_move_lifemap_prop_block_below_reveal.sh
+?? urai-tier1/PASS_55E_stabilize_lifemap_prop_authority.sh
+?? urai-tier1/PASS_55_focus_gravity_convergence.sh
+?? urai-tier1/PASS_56B_fix_camera_lock_mode_scope.sh
+?? urai-tier1/PASS_56_camera_lock_authority.sh
+?? urai-tier1/PASS_57_replay_descent_continuity_lock.sh
+?? urai-tier1/PASS_58B_fix_unwind_from_mode_scope.sh
+?? urai-tier1/PASS_58C_fix_unwind_mode_scope_to_args.sh
+?? urai-tier1/PASS_58_esc_unwind_final_polish.sh
+?? urai-tier1/PASS_59_final_authority_cleanup.sh
+?? urai-tier1/PASS_5_focus_convergence_lock.sh
+?? urai-tier1/PASS_5_selected_star_consumption_lock.sh
+?? urai-tier1/PASS_60A_fix_star_input_contract.sh
+?? urai-tier1/PASS_60A_fix_star_input_contract_bash_only.sh
+?? urai-tier1/PASS_60_65_spatial_depth_lock.sh
+?? urai-tier1/PASS_60_camera_contract_lock.sh
+?? urai-tier1/PASS_61_scene_authority_travel_lock.sh
+?? urai-tier1/PASS_62_force_authority_travel_runtime.sh
+?? urai-tier1/PASS_63B_scene_contract_surgical_fix.sh
+?? urai-tier1/PASS_63C_scene_contract_surgical_fix_bash_only.sh
+?? urai-tier1/PASS_64B_depth_expression_gain.sh
+?? urai-tier1/PASS_64_revert_scene_authority_and_unblock_camera.sh
+?? urai-tier1/PASS_65_hard_revert_contract_and_optionalize_camera.sh
+?? urai-tier1/PASS_66A_focus_prop_injection_repair.sh
+?? urai-tier1/PASS_66B_focus_jsx_tag_repair.sh
+?? urai-tier1/PASS_66B_revert_bad_scene_probe_and_safe_instrument.sh
+?? urai-tier1/PASS_66C_safe_scene_restore_and_log_only.sh
+?? urai-tier1/PASS_66C_scene_visibility_block_repair.sh
+?? urai-tier1/PASS_66D_scene_block_full_reset.sh
+?? urai-tier1/PASS_66E_restore_full_spatialscene_from_backup.sh
+?? urai-tier1/PASS_66_focus_entry_spatial_lock.sh
+?? urai-tier1/PASS_66_interaction_chain_probe.sh
+?? urai-tier1/PASS_67A_fix_focus_blend_numeric_types.sh
+?? urai-tier1/PASS_67B_fix_useCanonEsc_signature.sh
+?? urai-tier1/PASS_67C_define_escRuntime_fallback.sh
+?? urai-tier1/PASS_67_fix_star_numeric_contract.sh
+?? urai-tier1/PASS_67_force_single_star.sh
+?? urai-tier1/PASS_68B_restore_and_force_scene_star_prop_safely.sh
+?? urai-tier1/PASS_68_focus_open_path_audit.sh
+?? urai-tier1/PASS_68_force_scene_star_prop.sh
+?? urai-tier1/PASS_69A_repair_starcloud_interactive_block.sh
+?? urai-tier1/PASS_69B_fix_interactive_id_types.sh
+?? urai-tier1/PASS_69C_fix_interactive_callback_types.sh
+?? urai-tier1/PASS_69_force_click_binding_on_primary_nodes.sh
+?? urai-tier1/PASS_69_restore_starfield_interaction_contract.sh
+?? urai-tier1/PASS_6_replay_entry_depth_lock.sh
+?? urai-tier1/PASS_6_selected_star_fix_scope_lock.sh
+?? urai-tier1/PASS_70_restore_real_star_pipeline_and_probe.sh
+?? urai-tier1/PASS_71A_fix_useEffect_structure.sh
+?? urai-tier1/PASS_71B_hard_restore_scene_and_audit_star_source.sh
+?? urai-tier1/PASS_71_force_star_source_and_pipeline_lock.sh
+?? urai-tier1/PASS_72_trace_and_seed_star_source.sh
+?? urai-tier1/PASS_73_interaction_lock.sh
+?? urai-tier1/PASS_74B_read_star_export_lock_no_perl.sh
+?? urai-tier1/PASS_74_read_star_export_lock.sh
+?? urai-tier1/PASS_75_FOCUS_FORENSIC_LOCK.sh
+?? urai-tier1/PASS_76_FOCUS_DOMINANCE_LOCK.sh
+?? urai-tier1/PASS_76_FOCUS_SEPARATION_LOCK.sh
+?? urai-tier1/PASS_77_CAMERA_ARRIVAL_FORENSIC.sh
+?? urai-tier1/PASS_78_CAMERA_ARRIVAL_LOCK.sh
+?? urai-tier1/PASS_79_CAMERA_RIG_ARRIVAL_LOCK.sh
+?? urai-tier1/PASS_7_return_path_hierarchy_lock.sh
+?? urai-tier1/PASS_7_selected_star_anchor_fix.sh
+?? urai-tier1/PASS_80_STAR_DOMINANCE_LOCK.sh
+?? urai-tier1/PASS_81_MODE_SEPARATION_ENFORCEMENT.sh
+?? urai-tier1/PASS_82_BACKGROUND_DEMOTION_FIELD_LOCK.sh
+?? urai-tier1/PASS_8_composition_discipline_lock.sh
+?? urai-tier1/PASS_8_selected_star_forced_injection.sh
+?? urai-tier1/PASS_9_camera_presence_inertia_lock.sh
+?? urai-tier1/PASS_9_selectedStarId_source_fix.sh
+?? urai-tier1/PASS_DEPTH_REPAIR_FORCE_TIER1.sh
+?? urai-tier1/PASS_FIX_spatial_scene_reset.sh
+?? urai-tier1/PASS_FOCUS_01B_STAR_CLICK_AUTHORITY_LOCK.sh
+?? urai-tier1/PASS_FOCUS_01D_FORENSIC_SCENE_BLOCK.sh
+?? urai-tier1/PASS_FOCUS_01_STAR_CLICK_AUTHORITY_LOCK.sh
+?? urai-tier1/PASS_FOCUS_02A_IMPORT_USESTATE_LOCK.sh
+?? urai-tier1/PASS_FOCUS_02_TRANSITION_STATE_LOCK.sh
+?? urai-tier1/PASS_FOCUS_03_INTERCEPT_OPENFOCUS.sh
+?? urai-tier1/PASS_FOCUS_05B_NORMALIZE_RESET_EFFECT.sh
+?? urai-tier1/PASS_FOCUS_05_RESET_TRANSITION_ON_UNWIND.sh
+?? urai-tier1/PASS_FOCUS_06_REMOVE_RUNTIMEHUD_MODE_BYPASS.sh
+?? urai-tier1/PASS_FOCUS_07B_HARD_GATE_FOCUS_RENDER_TO_TRANSITION_AND_MODE.sh
+?? urai-tier1/PASS_FOCUS_07_HARD_GATE_FOCUS_RENDER_TO_TRANSITION_AND_MODE.sh
+?? urai-tier1/PASS_HOME_01_FORENSIC_HOME_INTERACTION_WINDOW.sh
+?? urai-tier1/PASS_HOME_02B_FORCE_HOME_CLICK_SURFACE.sh
+?? urai-tier1/PASS_HOME_02C_FIX_CLICK_AND_TYPES.sh
+?? urai-tier1/PASS_HOME_02_FORCE_HOME_CLICK_SURFACE.sh
+?? urai-tier1/PASS_HOME_03B_FORCE_HOME_ENV_VISIBLE.sh
+?? urai-tier1/PASS_HOME_03_FORCE_HOME_ENV_VISIBLE.sh
+?? urai-tier1/PASS_LIFEMAP_01B_FORCE_LAYER_ISOLATION.sh
+?? urai-tier1/PASS_LIFEMAP_01_FORCE_LAYER_ISOLATION.sh
+?? urai-tier1/PASS_RUNTIME_04B_REMOVE_HUD.sh
+?? urai-tier1/PASS_camera_presence_lock_final.sh
+?? urai-tier1/PASS_camera_weight_focus_depth_lock.sh
+?? urai-tier1/PASS_cinematic_field_realization.sh
+?? urai-tier1/PASS_fix_camera_fov_clean.sh
+?? urai-tier1/PASS_fix_camera_fov_type_guard.sh
+?? urai-tier1/PASS_focus_replay_entry_lock.sh
+?? urai-tier1/PASS_focus_visual_reintroduction_clean.sh
+?? urai-tier1/PASS_golden_home_lifemap.sh
+?? urai-tier1/PASS_golden_path_cinematic_lock.sh
+?? urai-tier1/PASS_home_composition_lock.sh
+?? urai-tier1/PASS_home_environment_injection.sh
+?? urai-tier1/PASS_home_final_balance_lock.sh
+?? urai-tier1/PASS_home_lifemap_semantic_lock.sh
+?? urai-tier1/PASS_home_lifemap_severance_midband_affordance.sh
+?? urai-tier1/PASS_home_presence_anchor.sh
+?? urai-tier1/PASS_home_to_lifemap_lock.sh
+?? urai-tier1/PASS_home_true_depth_lock.sh
+?? urai-tier1/PASS_home_truth_restoration.sh
+?? urai-tier1/PASS_home_truth_restoration_bash_only.sh
+?? urai-tier1/PASS_home_weight_and_horizon_fix.sh
+?? urai-tier1/PASS_hud_reduction_canon_cleanup.sh
+?? urai-tier1/PASS_interaction_focus_replay_lock.sh
+?? urai-tier1/PASS_lifemap_depth_composition_focus_readability.sh
+?? urai-tier1/PASS_lifemap_depth_lock.sh
+?? urai-tier1/PASS_lifemap_focus_lock.sh
+?? urai-tier1/PASS_lifemap_star_rendering_clean.sh
+?? urai-tier1/PASS_lifemap_structure_lock.sh
+?? urai-tier1/PASS_lifemap_volumetric_field_camera_depth_parallax_lock.sh
+?? urai-tier1/PASS_live_video_forensic_fix.sh
+?? urai-tier1/PASS_live_video_forensic_fix_v2.sh
+?? urai-tier1/PASS_mode_state_authority_lock.sh
+?? urai-tier1/PASS_quarantine_competing_camera_writers.sh
+?? urai-tier1/PASS_real_camera_bridge_canonical.sh
+?? urai-tier1/PASS_replay_visual_reintroduction_clean.sh
+?? urai-tier1/PASS_scene_composition_lock.sh
+?? urai-tier1/PASS_threshold_atmosphere_settle_lock.sh
+?? urai-tier1/PASS_total_canon_polish_lock.sh
+?? urai-tier1/PASS_true_lifemap_isolation.sh
+?? urai-tier1/PASS_video_forensic_FIX_STABLE.sh
+?? urai-tier1/PASS_video_forensic_full_fix.sh
+?? urai-tier1/RUN_FROM_LIVE_APP_ONLY.sh
+?? urai-tier1/_quarantine_app_disabled_20260327_013442/
+?? urai-tier1/_quarantine_app_disabled_pass1_20260327_013442/
+?? urai-tier1/camera_convergence_pass_keep_open.sh
+?? urai-tier1/camera_convergence_useCameraPresence_keep_open.sh
+?? urai-tier1/canon_lock_keep_open.sh
+?? urai-tier1/canon_scene_rehydration_pass.sh
+?? urai-tier1/cinematic_runtime_integration_pass.sh
+?? urai-tier1/docs/tier1-lock/
+?? urai-tier1/docs/visual-lock-audit-20260322_230538.md
+?? urai-tier1/engagement
+?? urai-tier1/final_spatial_polish_pass.sh
+?? urai-tier1/fix_bad_pass4_scaffold.sh
+?? urai-tier1/fix_missing_pass11_transition_sync.sh
+?? urai-tier1/fix_pass1_typecheck.sh
+?? urai-tier1/fix_pass4_scene_types.sh
+?? urai-tier1/functions/
+?? urai-tier1/next.config.mjs
+?? urai-tier1/next_pass_camera_canon_lock.sh
+?? urai-tier1/next_pass_esc_backchain_law.sh
+?? urai-tier1/next_pass_focus_mode_lock.sh
+?? urai-tier1/next_pass_interaction_lock.sh
+?? urai-tier1/next_pass_mode_isolation.sh
+?? urai-tier1/next_pass_read_authority_lock.sh
+?? urai-tier1/next_pass_replay_mode_build_lock.sh
+?? urai-tier1/next_pass_scene_authority_contract.sh
+?? urai-tier1/next_pass_tier1_final_e2e_validation.sh
+?? urai-tier1/presence_pass.sh
+?? urai-tier1/runtime_stabilization_sweep.sh
+?? urai-tier1/scripts/check-lifemapstars-direct-reads.sh
+?? urai-tier1/scripts/check-lifemapstars-direct-writes.sh
+?? urai-tier1/src/lib/
+?? urai-tier1/src/spatial/components/CameraRig.tsx.disabled.20260328_140034
+?? urai-tier1/src/spatial/components/CanonCameraRig.tsx.disabled.20260329_071958
+?? urai-tier1/src/spatial/components/CanonHud.tsx
+?? urai-tier1/src/spatial/components/CinematicCameraRig.tsx
+?? urai-tier1/src/spatial/components/FocusHalo.tsx
+?? urai-tier1/src/spatial/components/FocusSubject.tsx
+?? urai-tier1/src/spatial/components/GroundPlane.tsx
+?? urai-tier1/src/spatial/components/HomeEnvironment.tsx
+?? urai-tier1/src/spatial/components/HomeOrb.tsx
+?? urai-tier1/src/spatial/components/HomeSkyDome.tsx
+?? urai-tier1/src/spatial/components/LifeMapStarfield.tsx
+?? urai-tier1/src/spatial/components/NarratorOverlay.tsx
+?? urai-tier1/src/spatial/components/PresenceRig.tsx
+?? urai-tier1/src/spatial/components/ReplayAtmosphere.tsx
+?? urai-tier1/src/spatial/components/ReplayChamber.tsx
+?? urai-tier1/src/spatial/components/ReplayScene.tsx
+?? urai-tier1/src/spatial/components/RuntimeHud.tsx
+?? urai-tier1/src/spatial/components/SceneVeil.tsx
+?? urai-tier1/src/spatial/components/Starfield.tsx
+?? urai-tier1/src/spatial/components/StarfieldDust.tsx
+?? urai-tier1/src/spatial/contracts/
+?? urai-tier1/src/spatial/effects/CinematicFramingBias.tsx.disabled.20260328_140034
+?? urai-tier1/src/spatial/effects/CinematicIdleMotion.tsx.disabled.20260328_140034
+?? urai-tier1/src/spatial/hooks/
+?? urai-tier1/src/spatial/lib/cameraTargets.ts
+?? urai-tier1/src/spatial/lib/lifemapStars.ts
+?? urai-tier1/src/spatial/lib/sceneAuthorityReducer.ts
+?? urai-tier1/src/spatial/lib/tier1Camera.ts.disabled.20260328_140034
+?? urai-tier1/src/spatial/scene/ArrivalSphere.tsx.disabled.ai
+?? urai-tier1/src/spatial/scene/BackgroundReset.tsx
+?? urai-tier1/src/spatial/scene/CameraDirector.tsx.disabled.20260328_140034
+?? urai-tier1/src/spatial/scene/CameraRig.tsx.disabled.ai
+?? urai-tier1/src/spatial/scene/FocusPresence.tsx
+?? urai-tier1/src/spatial/scene/FocusShellOverlay.tsx
+?? urai-tier1/src/spatial/scene/HomeEnvironment.tsx
+?? urai-tier1/src/spatial/scene/HomeOrb.tsx
+?? urai-tier1/src/spatial/scene/Horizon.tsx
+?? urai-tier1/src/spatial/scene/LifeMap.tsx
+?? urai-tier1/src/spatial/scene/MemoryPanel.tsx.disabled.ai
+?? urai-tier1/src/spatial/scene/Orb.tsx
+?? urai-tier1/src/spatial/scene/ReplayOverlay.tsx
+?? urai-tier1/src/spatial/scene/SceneRig.tsx.disabled.20260328_140034
+?? urai-tier1/src/spatial/scene/Starfield.tsx.tmp
+?? urai-tier1/src/spatial/scene/sceneState.ts
+?? urai-tier1/src/spatial/scene/types/
+?? urai-tier1/src/spatial/shell/FocusShellOverlay.tsx
+?? urai-tier1/src/spatial/shell/ReplayShellOverlay.tsx
+?? urai-tier1/src/spatial/types/scene.ts
+?? urai-tier1/src/types/global.d.ts
+?? urai-tier1/surgical_dominance_patch_keep_open.sh
+?? urai-tier1/visual_tuning_pass.sh
+=== PASS 1 — HARD BACKUP ===
+FATAL: missing required file: /home/user/urai-spatial/src/spatial/lib/sceneAuthorityReducer.ts
+exit

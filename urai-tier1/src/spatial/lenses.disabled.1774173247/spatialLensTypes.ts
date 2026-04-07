@@ -22,8 +22,6 @@ export type SpatialLensManifest = {
   lenses: SpatialTimelineLens[];
 };
 
-export const SPATIAL_LENS_STORAGE_KEY = "urai.spatial.lens.v1";
-export const SPATIAL_LENS_MAX_ITEMS = 32;
 
 export function createSystemCurrentLens(): SpatialTimelineLens {
   return {

@@ -1,0 +1,16 @@
+src/spatial/components/LifeMapStarfield.tsx(12,8): error TS2307: Cannot find module '@/lib/uraiCanon/starfieldDepth' or its corresponding type declarations.
+src/spatial/components/LifeMapStarfield.tsx(86,28): error TS2339: Property 'x' does not exist on type 'PositionLike'.
+  Property 'x' does not exist on type 'Vec3Tuple'.
+src/spatial/components/LifeMapStarfield.tsx(87,28): error TS2339: Property 'y' does not exist on type 'PositionLike'.
+  Property 'y' does not exist on type 'Vec3Tuple'.
+src/spatial/components/LifeMapStarfield.tsx(88,28): error TS2339: Property 'z' does not exist on type 'PositionLike'.
+  Property 'z' does not exist on type 'Vec3Tuple'.
+src/spatial/components/Starfield.tsx(12,8): error TS2307: Cannot find module '@/lib/uraiCanon/starfieldDepth' or its corresponding type declarations.
+src/spatial/components/Starfield.tsx(86,28): error TS2339: Property 'x' does not exist on type 'PositionLike'.
+  Property 'x' does not exist on type 'Vec3Tuple'.
+src/spatial/components/Starfield.tsx(87,28): error TS2339: Property 'y' does not exist on type 'PositionLike'.
+  Property 'y' does not exist on type 'Vec3Tuple'.
+src/spatial/components/Starfield.tsx(88,28): error TS2339: Property 'z' does not exist on type 'PositionLike'.
+  Property 'z' does not exist on type 'Vec3Tuple'.
+src/spatial/scene/SpatialScene.tsx(1,34): error TS2307: Cannot find module '@/lib/uraiCanon/starSchema' or its corresponding type declarations.
+src/spatial/scene/SpatialScene.tsx(81,50): error TS2304: Cannot find name 'ry'.

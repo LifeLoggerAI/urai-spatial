@@ -1,0 +1,23 @@
+
+> urai-tier1@0.1.0 build /home/user/urai-spatial/urai-tier1
+> next build --webpack
+
+▲ Next.js 16.2.1 (webpack)
+
+  Creating an optimized production build ...
+✓ Compiled successfully in 11.4s
+  Running TypeScript ...
+Failed to type check.
+
+./src/spatial/scene/FocusShellOverlay.tsx:16:14
+Type error: Property 'signature' does not exist on type 'SelectedStar'.
+
+  [90m14 |[0m     selected.label ||
+  [90m15 |[0m     selected.chapter ||
+[31m[1m>[0m [90m16 |[0m     selected.signature ||
+  [90m   |[0m              [31m[1m^[0m
+  [90m17 |[0m     [32m"Selected Memory"[0m;
+  [90m18 |[0m
+  [90m19 |[0m   [36mconst[0m body =
+Next.js build worker exited with code: 1 and signal: null
+ ELIFECYCLE  Command failed with exit code 1.

@@ -1,0 +1,784 @@
+"use client";
+
+import React, { useEffect, useMemo, useRef, useState } from "react";
+import { Canvas, useFrame, useThree } from "@react-three/fiber";
+import * as THREE from "three";
+
+type Mode = "home" | "lifemap" | "focus" | "replay";
+type Transition = "idle" | "ascending" | "descending";
+
+type StarDef = {
+  id: string;
+  title: string;
+  position: [number, number, number];
+  size: number;
+  tint: string;
+  chapter: string;
+};
+
+const STAR_SEED = 19830414;
+
+const STARS: StarDef[] = [
+  { id: "s1", title: "Origin",     position: [-8.5,  3.8, -22], size: 0.22, tint: "#d8e7ff", chapter: "Threshold" },
+  { id: "s2", title: "Signal",     position: [-5.8,  6.4, -36], size: 0.18, tint: "#d6e1ff", chapter: "Signals" },
+  { id: "s3", title: "Memory",     position: [-2.7,  5.2, -28], size: 0.25, tint: "#f2f6ff", chapter: "Memory" },
+  { id: "s4", title: "Break",      position: [ 0.5,  8.0, -48], size: 0.16, tint: "#cfdcff", chapter: "Break" },
+  { id: "s5", title: "Rebirth",    position: [ 3.6,  5.8, -32], size: 0.26, tint: "#f8fbff", chapter: "Rebirth" },
+  { id: "s6", title: "North",      position: [ 7.5,  3.9, -24], size: 0.20, tint: "#dce8ff", chapter: "North" },
+  { id: "s7", title: "Council",    position: [-1.1,  1.1, -15], size: 0.30, tint: "#ffffff", chapter: "Council" },
+  { id: "s8", title: "Forge",      position: [ 5.7,  0.5, -18], size: 0.22, tint: "#e8efff", chapter: "Forge" },
+  { id: "s9", title: "Journey",    position: [-6.7, -0.7, -19], size: 0.21, tint: "#eef3ff", chapter: "Journey" },
+  { id: "s10",title: "Legacy",     position: [ 0.0, 11.0, -68], size: 0.15, tint: "#cbd8ff", chapter: "Legacy" },
+  { id: "s11",title: "Orbit",      position: [ 9.3,  7.9, -62], size: 0.13, tint: "#d9e4ff", chapter: "Orbit" },
+  { id: "s12",title: "Pulse",      position: [-9.7, 8.7, -58],  size: 0.14, tint: "#d5e1ff", chapter: "Pulse" },
+];
+
+function lerp(a: number, b: number, t: number) {
+  return a + (b - a) * t;
+}
+
+function smoothstep(t: number) {
+  const x = Math.max(0, Math.min(1, t));
+  return x * x * (3 - 2 * x);
+}
+
+function seededNoise(n: number) {
+  const x = Math.sin(n * 127.1 + STAR_SEED * 0.001) * 43758.5453123;
+  return x - Math.floor(x);
+}
+
+function ScreenText({
+  mode,
+  selected,
+  onHome,
+  onAscent,
+  onLifeMap,
+  onFocus,
+  onReplay,
+}: {
+  mode: Mode;
+  selected: StarDef | null;
+  onHome: () => void;
+  onAscent: () => void;
+  onLifeMap: () => void;
+  onFocus: () => void;
+  onReplay: () => void;
+}) {
+  const label =
+    mode === "home"
+      ? "HOME — CLICK SKY OR BEGIN ASCENT"
+      : mode === "lifemap"
+        ? "LIFEMAP — CLICK A STAR TO ENTER FOCUS"
+        : mode === "focus"
+          ? `FOCUS — ${selected?.title?.toUpperCase() ?? "STAR"} — ESC RETURNS TO LIFEMAP`
+          : `REPLAY — ${selected?.title?.toUpperCase() ?? "STAR"} — ESC RETURNS TO FOCUS`;
+
+  return (
+    <div
+      style={{
+        position: "absolute",
+        inset: 0,
+        pointerEvents: "none",
+        color: "#eaf1ff",
+        fontFamily: "Arial, Helvetica, sans-serif",
+      }}
+    >
+      <div
+        style={{
+          position: "absolute",
+          top: 16,
+          left: 16,
+          fontSize: 12,
+          letterSpacing: 0.6,
+          textTransform: "uppercase",
+          opacity: 0.95,
+        }}
+      >
+        {label}
+      </div>
+
+      <div
+        style={{
+          position: "absolute",
+          left: 16,
+          bottom: 16,
+          display: "flex",
+          gap: 8,
+          pointerEvents: "auto",
+        }}
+      >
+        <button onClick={onHome}>Home</button>
+        <button onClick={onAscent}>Begin ascent</button>
+        <button onClick={onLifeMap}>LifeMap</button>
+        <button onClick={onFocus} disabled={!selected}>Focus</button>
+        <button onClick={onReplay} disabled={!selected}>Replay</button>
+      </div>
+
+      {selected && mode !== "home" && (
+        <div
+          style={{
+            position: "absolute",
+            right: 18,
+            bottom: 18,
+            maxWidth: 360,
+            padding: "10px 12px",
+            background: "rgba(4, 8, 18, 0.44)",
+            border: "1px solid rgba(170, 200, 255, 0.18)",
+            borderRadius: 12,
+            boxShadow: "0 10px 30px rgba(0,0,0,0.28)",
+            backdropFilter: "blur(10px)",
+            pointerEvents: "none",
+          }}
+        >
+          <div style={{ fontSize: 12, opacity: 0.75, letterSpacing: 0.5, textTransform: "uppercase" }}>
+            {selected.chapter}
+          </div>
+          <div style={{ fontSize: 18, fontWeight: 700, marginTop: 4 }}>{selected.title}</div>
+          <div style={{ fontSize: 12, opacity: 0.82, marginTop: 4 }}>
+            Spatial focus lock engaged. Replay chamber available.
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function CameraRig({
+  mode,
+  travel,
+  selected,
+}: {
+  mode: Mode;
+  travel: number;
+  selected: StarDef | null;
+}) {
+  const { camera } = useThree();
+
+  useFrame((state) => {
+    const t = smoothstep(travel);
+    const breathe = state.clock.getElapsedTime();
+
+    let targetPos = new THREE.Vector3(
+      lerp(0, 0, t),
+      lerp(1.8, 3.4, t) + Math.sin(breathe * 0.18) * 0.04,
+      lerp(13.5, 9.0, t)
+    );
+
+    let targetLook = new THREE.Vector3(
+      0,
+      lerp(1.1, 4.0, t),
+      lerp(0.0, -24.0, t)
+    );
+
+    let targetFov = lerp(56, 44, t);
+
+    if (mode === "focus" && selected) {
+      targetPos = new THREE.Vector3(
+        selected.position[0] * 0.18,
+        selected.position[1] * 0.12 + 1.0,
+        Math.max(4.3, Math.abs(selected.position[2]) * 0.12)
+      );
+      targetLook = new THREE.Vector3(
+        selected.position[0] * 0.28,
+        selected.position[1] * 0.22,
+        selected.position[2]
+      );
+      targetFov = 34;
+    }
+
+    if (mode === "replay" && selected) {
+      const orbit = breathe * 0.18;
+      targetPos = new THREE.Vector3(
+        Math.sin(orbit) * 0.55,
+        0.9 + Math.cos(orbit * 1.7) * 0.12,
+        Math.max(3.8, Math.abs(selected.position[2]) * 0.10)
+      );
+      targetLook = new THREE.Vector3(0, 0.35, selected.position[2] - 1.5);
+      targetFov = 28;
+    }
+
+    camera.position.x = lerp(camera.position.x, targetPos.x, 0.05);
+    camera.position.y = lerp(camera.position.y, targetPos.y, 0.05);
+    camera.position.z = lerp(camera.position.z, targetPos.z, 0.05);
+
+    if ((camera as THREE.PerspectiveCamera).isPerspectiveCamera) {
+      const c = camera as THREE.PerspectiveCamera;
+      c.fov = lerp(c.fov, targetFov, 0.05);
+      c.updateProjectionMatrix();
+    }
+
+    camera.lookAt(targetLook);
+  });
+
+  return null;
+}
+
+function SkyShell({ travel, mode }: { travel: number; mode: Mode }) {
+  const domeRef = useRef<THREE.Mesh>(null);
+  const hazeRef = useRef<THREE.Mesh>(null);
+
+  useFrame((state) => {
+    const t = smoothstep(travel);
+    const pulse = state.clock.getElapsedTime();
+
+    if (domeRef.current) {
+      domeRef.current.rotation.z = Math.sin(pulse * 0.04) * 0.03;
+      domeRef.current.position.y = lerp(0, 1.5, t);
+      const mat = domeRef.current.material as THREE.MeshBasicMaterial;
+      mat.opacity = mode === "replay" ? 0.18 : 1;
+    }
+
+    if (hazeRef.current) {
+      hazeRef.current.rotation.z = pulse * 0.01;
+      const mat = hazeRef.current.material as THREE.MeshBasicMaterial;
+      mat.opacity = mode === "replay" ? 0.08 : lerp(0.22, 0.38, t);
+    }
+  });
+
+  return (
+    <>
+      <mesh ref={domeRef} position={[0, 8, -28]} scale={[80, 44, 1]}>
+        <planeGeometry args={[1, 1]} />
+        <meshBasicMaterial color="#020a2a" transparent opacity={1} />
+      </mesh>
+
+      <mesh ref={hazeRef} position={[0, 1.5, -18]} scale={[42, 16, 1]}>
+        <planeGeometry args={[1, 1]} />
+        <meshBasicMaterial color="#0a2d77" transparent opacity={0.24} />
+      </mesh>
+
+      <mesh position={[0, 12, -52]} rotation={[-0.18, 0, 0]} scale={[70, 26, 1]}>
+        <planeGeometry args={[1, 1]} />
+        <meshBasicMaterial color="#07174b" transparent opacity={0.12} />
+      </mesh>
+    </>
+  );
+}
+
+function Horizon({ travel }: { travel: number }) {
+  const glowRef = useRef<THREE.Mesh>(null);
+
+  useFrame(() => {
+    const t = smoothstep(travel);
+    if (glowRef.current) {
+      glowRef.current.position.y = lerp(-0.5, 0.3, t);
+      glowRef.current.scale.x = lerp(18, 28, t);
+      glowRef.current.scale.y = lerp(1.6, 2.8, t);
+    }
+  });
+
+  return (
+    <>
+      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -1.02, 0]}>
+        <planeGeometry args={[180, 180]} />
+        <meshStandardMaterial color="#020202" roughness={1} metalness={0} />
+      </mesh>
+
+      <mesh ref={glowRef} position={[0, -0.12, -28]} scale={[18, 1.6, 1]}>
+        <planeGeometry args={[1, 1]} />
+        <meshBasicMaterial color="#123d96" transparent opacity={0.15} />
+      </mesh>
+
+      <mesh position={[0, -0.24, -18]} scale={[26, 0.6, 1]}>
+        <planeGeometry args={[1, 1]} />
+        <meshBasicMaterial color="#06183f" transparent opacity={0.22} />
+      </mesh>
+    </>
+  );
+}
+
+function OrbWorld({ travel, mode }: { travel: number; mode: Mode }) {
+  const coreRef = useRef<THREE.Mesh>(null);
+  const auraRef = useRef<THREE.Mesh>(null);
+  const ring1Ref = useRef<THREE.Mesh>(null);
+  const ring2Ref = useRef<THREE.Mesh>(null);
+
+  useFrame((state) => {
+    const t = smoothstep(travel);
+    const time = state.clock.getElapsedTime();
+    const homeWeight = 1 - t;
+    const show = mode === "home" ? 1 : mode === "lifemap" ? 0.55 : 0.22;
+
+    if (coreRef.current) {
+      coreRef.current.position.y = -0.16 + Math.sin(time * 1.8) * 0.05 * (0.7 + homeWeight);
+      coreRef.current.scale.setScalar(lerp(1.0, 0.68, t) * (mode === "focus" ? 0.65 : 1));
+      const mat = coreRef.current.material as THREE.MeshStandardMaterial;
+      mat.emissiveIntensity = 2.8 * show;
+    }
+
+    if (auraRef.current) {
+      auraRef.current.rotation.z += 0.003;
+      auraRef.current.scale.set(lerp(5.4, 2.2, t), lerp(2.0, 0.8, t), 1);
+      const mat = auraRef.current.material as THREE.MeshBasicMaterial;
+      mat.opacity = 0.18 * show;
+    }
+
+    if (ring1Ref.current) {
+      ring1Ref.current.rotation.z += 0.004;
+      ring1Ref.current.position.z = lerp(-1.8, -8.5, t);
+      const mat = ring1Ref.current.material as THREE.MeshBasicMaterial;
+      mat.opacity = 0.15 * show;
+    }
+
+    if (ring2Ref.current) {
+      ring2Ref.current.rotation.z -= 0.003;
+      ring2Ref.current.position.z = lerp(-1.2, -9.8, t);
+      const mat = ring2Ref.current.material as THREE.MeshBasicMaterial;
+      mat.opacity = 0.08 * show;
+    }
+  });
+
+  return (
+    <group position={[0, -0.1, -1.4]}>
+      <mesh ref={auraRef} rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.72, -0.4]}>
+        <ringGeometry args={[1.7, 2.7, 96]} />
+        <meshBasicMaterial color="#0b51d1" transparent opacity={0.18} side={THREE.DoubleSide} />
+      </mesh>
+
+      <mesh ref={ring2Ref} rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.78, -1.2]}>
+        <ringGeometry args={[2.6, 4.0, 96]} />
+        <meshBasicMaterial color="#092867" transparent opacity={0.08} side={THREE.DoubleSide} />
+      </mesh>
+
+      <mesh ref={ring1Ref} rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.75, -0.7]}>
+        <ringGeometry args={[0.9, 1.25, 96]} />
+        <meshBasicMaterial color="#0f7bff" transparent opacity={0.15} side={THREE.DoubleSide} />
+      </mesh>
+
+      <mesh ref={coreRef} position={[0, -0.1, 0]}>
+        <sphereGeometry args={[0.34, 32, 32]} />
+        <meshStandardMaterial
+          color="#ecf5ff"
+          emissive="#78b9ff"
+          emissiveIntensity={2.4}
+          roughness={0.12}
+          metalness={0.08}
+        />
+      </mesh>
+
+      <mesh position={[0, -0.1, 0]} scale={[2.4, 2.4, 2.4]}>
+        <sphereGeometry args={[0.34, 24, 24]} />
+        <meshBasicMaterial color="#8bc4ff" transparent opacity={mode === "home" ? 0.10 : 0.06} />
+      </mesh>
+    </group>
+  );
+}
+
+function DustField({ mode }: { mode: Mode }) {
+  const points = useMemo(() => {
+    const arr: [number, number, number, number][] = [];
+    for (let i = 0; i < 220; i += 1) {
+      const x = (seededNoise(i + 1) - 0.5) * 55;
+      const y = seededNoise(i + 2) * 22 - 3;
+      const z = -8 - seededNoise(i + 3) * 90;
+      const s = 0.02 + seededNoise(i + 4) * 0.08;
+      arr.push([x, y, z, s]);
+    }
+    return arr;
+  }, []);
+
+  return (
+    <group>
+      {points.map((p, i) => (
+        <mesh key={`dust-${i}`} position={[p[0], p[1], p[2]]}>
+          <sphereGeometry args={[p[3], 8, 8]} />
+          <meshBasicMaterial
+            color="#dbe8ff"
+            transparent
+            opacity={mode === "replay" ? 0.10 : 0.28}
+          />
+        </mesh>
+      ))}
+    </group>
+  );
+}
+
+function Star({
+  star,
+  mode,
+  selected,
+  onSelect,
+}: {
+  star: StarDef;
+  mode: Mode;
+  selected: boolean;
+  onSelect: () => void;
+}) {
+  const groupRef = useRef<THREE.Group>(null);
+  const glowRef = useRef<THREE.Mesh>(null);
+  const pulseRef = useRef<THREE.Mesh>(null);
+  const hoverRef = useRef(false);
+
+  useFrame((state) => {
+    const t = state.clock.getElapsedTime();
+    const hovered = hoverRef.current;
+    const active = selected || hovered;
+    const focusDim = mode === "focus" || mode === "replay";
+
+    if (groupRef.current) {
+      groupRef.current.position.y = star.position[1] + Math.sin(t * 0.8 + star.position[0]) * 0.08;
+      const s = selected ? star.size * 1.42 : hovered ? star.size * 1.22 : star.size;
+      groupRef.current.scale.setScalar(s);
+    }
+
+    if (glowRef.current) {
+      const mat = glowRef.current.material as THREE.MeshBasicMaterial;
+      mat.opacity = selected ? 0.38 : hovered ? 0.26 : focusDim ? 0.05 : 0.12;
+    }
+
+    if (pulseRef.current) {
+      pulseRef.current.scale.setScalar(1.6 + Math.sin(t * 1.5 + star.position[2]) * 0.12);
+      const mat = pulseRef.current.material as THREE.MeshBasicMaterial;
+      mat.opacity = active ? 0.16 : focusDim ? 0.03 : 0.07;
+    }
+  });
+
+  return (
+    <group
+      ref={groupRef}
+      position={star.position}
+      onPointerEnter={() => { hoverRef.current = true; }}
+      onPointerLeave={() => { hoverRef.current = false; }}
+      onClick={(e) => {
+        e.stopPropagation();
+        onSelect();
+      }}
+    >
+      <mesh ref={pulseRef}>
+        <sphereGeometry args={[1.0, 16, 16]} />
+        <meshBasicMaterial color={star.tint} transparent opacity={0.08} />
+      </mesh>
+
+      <mesh ref={glowRef}>
+        <sphereGeometry args={[0.56, 16, 16]} />
+        <meshBasicMaterial color="#7db2ff" transparent opacity={0.14} />
+      </mesh>
+
+      <mesh>
+        <sphereGeometry args={[0.26, 20, 20]} />
+        <meshStandardMaterial
+          color={selected ? "#ffffff" : star.tint}
+          emissive="#82b8ff"
+          emissiveIntensity={selected ? 2.6 : 1.35}
+          roughness={0.14}
+          metalness={0.04}
+        />
+      </mesh>
+    </group>
+  );
+}
+
+function StarField({
+  mode,
+  selectedId,
+  onSelect,
+}: {
+  mode: Mode;
+  selectedId: string | null;
+  onSelect: (id: string) => void;
+}) {
+  return (
+    <group>
+      {STARS.map((star) => (
+        <Star
+          key={star.id}
+          star={star}
+          mode={mode}
+          selected={selectedId === star.id}
+          onSelect={() => onSelect(star.id)}
+        />
+      ))}
+    </group>
+  );
+}
+
+function FocusHalo({ selected, mode }: { selected: StarDef | null; mode: Mode }) {
+  const ringRef = useRef<THREE.Mesh>(null);
+  const veilRef = useRef<THREE.Mesh>(null);
+
+  useFrame((state) => {
+    const t = state.clock.getElapsedTime();
+
+    if (ringRef.current) {
+      ringRef.current.rotation.z += 0.008;
+      const mat = ringRef.current.material as THREE.MeshBasicMaterial;
+      mat.opacity = mode === "focus" && selected ? 0.28 : mode === "replay" && selected ? 0.16 : 0;
+    }
+
+    if (veilRef.current) {
+      const mat = veilRef.current.material as THREE.MeshBasicMaterial;
+      mat.opacity = selected && (mode === "focus" || mode === "replay") ? 0.14 : 0;
+      veilRef.current.scale.x = 20 + Math.sin(t * 0.8) * 0.8;
+      veilRef.current.scale.y = 10 + Math.cos(t * 0.7) * 0.5;
+    }
+  });
+
+  if (!selected) return null;
+
+  return (
+    <group position={[selected.position[0], selected.position[1], selected.position[2]]}>
+      <mesh ref={veilRef} position={[0, 0, -1.5]} scale={[20, 10, 1]}>
+        <planeGeometry args={[1, 1]} />
+        <meshBasicMaterial color="#07132f" transparent opacity={0} />
+      </mesh>
+
+      <mesh ref={ringRef} rotation={[0.35, 0.2, 0]}>
+        <torusGeometry args={[1.5, 0.06, 16, 120]} />
+        <meshBasicMaterial color="#69abff" transparent opacity={0} />
+      </mesh>
+    </group>
+  );
+}
+
+function ReplayChamber({ selected, mode }: { selected: StarDef | null; mode: Mode }) {
+  const tunnelRef = useRef<THREE.Group>(null);
+
+  useFrame((state) => {
+    if (!tunnelRef.current) return;
+    const t = state.clock.getElapsedTime();
+    tunnelRef.current.visible = mode === "replay" && !!selected;
+    tunnelRef.current.rotation.z = t * 0.06;
+  });
+
+  if (!selected) return null;
+
+  return (
+    <group ref={tunnelRef} position={[0, 0.2, selected.position[2] - 3.0]} visible={false}>
+      {Array.from({ length: 8 }).map((_, i) => (
+        <mesh
+          key={`ring-${i}`}
+          rotation={[Math.PI / 2, 0, i * 0.32]}
+          position={[0, 0, -i * 1.35]}
+        >
+          <torusGeometry args={[2.6 + i * 0.55, 0.03 + i * 0.002, 12, 120]} />
+          <meshBasicMaterial
+            color={i % 2 === 0 ? "#6faeff" : "#163d90"}
+            transparent
+            opacity={0.18 - i * 0.014}
+          />
+        </mesh>
+      ))}
+
+      <mesh position={[0, 0, -7.5]} scale={[9, 9, 1]}>
+        <planeGeometry args={[1, 1]} />
+        <meshBasicMaterial color="#091838" transparent opacity={0.42} />
+      </mesh>
+    </group>
+  );
+}
+
+function Scene({
+  mode,
+  travel,
+  selected,
+  onSkyClick,
+  onSelectStar,
+}: {
+  mode: Mode;
+  travel: number;
+  selected: StarDef | null;
+  onSkyClick: () => void;
+  onSelectStar: (id: string) => void;
+}) {
+  return (
+    <Canvas
+      camera={{ position: [0, 1.8, 13.5], fov: 56, near: 0.1, far: 300 }}
+      dpr={[1, 1.8]}
+      gl={{ antialias: true }}
+      onPointerMissed={() => {
+        if (mode === "home") onSkyClick();
+      }}
+      style={{ position: "absolute", inset: 0, width: "100%", height: "100%" }}
+    >
+      <color attach="background" args={[mode === "replay" ? "#01040d" : "#010816"]} />
+      <fog attach="fog" args={[mode === "replay" ? "#01040d" : "#020916", 20, 130]} />
+      <ambientLight intensity={0.38} />
+      <directionalLight position={[0, 12, 10]} intensity={0.35} color="#dfeaff" />
+      <pointLight position={[0, 0.2, -1.2]} intensity={5.8} distance={20} color="#87bdff" />
+      <pointLight position={[0, 7, -20]} intensity={0.7} distance={80} color="#5f8cff" />
+
+      <CameraRig mode={mode} travel={travel} selected={selected} />
+
+      <group onClick={() => { if (mode === "home") onSkyClick(); }}>
+        <SkyShell travel={travel} mode={mode} />
+      </group>
+
+      <Horizon travel={travel} />
+      <DustField mode={mode} />
+      <OrbWorld travel={travel} mode={mode} />
+      <StarField mode={mode} selectedId={selected?.id ?? null} onSelect={onSelectStar} />
+      <FocusHalo selected={selected} mode={mode} />
+      <ReplayChamber selected={selected} mode={mode} />
+    </Canvas>
+  );
+}
+
+export function SpatialScene() {
+  const [mode, setMode] = useState<Mode>("home");
+  const [travel, setTravel] = useState(0);
+  const [transition, setTransition] = useState<Transition>("idle");
+  const [selectedId, setSelectedId] = useState<string | null>(STARS[6]?.id ?? STARS[0].id);
+
+  const selected = useMemo(
+    () => STARS.find((s) => s.id === selectedId) ?? null,
+    [selectedId]
+  );
+
+  useEffect(() => {
+    if (transition === "idle") return;
+
+    let alive = true;
+    let raf = 0;
+
+    const tick = () => {
+      if (!alive) return;
+
+      setTravel((prev) => {
+        const next =
+          transition === "ascending"
+            ? Math.min(1, prev + 0.022)
+            : Math.max(0, prev - 0.022);
+
+        if (transition === "ascending" && next >= 1) {
+          setTransition("idle");
+          setMode((m) => (m === "home" ? "lifemap" : m));
+        }
+
+        if (transition === "descending" && next <= 0) {
+          setTransition("idle");
+          setMode("home");
+        }
+
+        return next;
+      });
+
+      raf = window.setTimeout(tick, 16) as unknown as number;
+    };
+
+    tick();
+
+    return () => {
+      alive = false;
+      window.clearTimeout(raf);
+    };
+  }, [transition]);
+
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key !== "Escape") return;
+
+      if (mode === "replay") {
+        setMode("focus");
+        return;
+      }
+
+      if (mode === "focus") {
+        setMode("lifemap");
+        return;
+      }
+
+      if (mode === "lifemap") {
+        setTransition("descending");
+        return;
+      }
+    };
+
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [mode]);
+
+  const beginAscent = () => {
+    setMode("lifemap");
+    setTransition("ascending");
+  };
+
+  const goHome = () => {
+    if (mode === "home" && travel === 0) return;
+    setMode("lifemap");
+    setTransition("descending");
+  };
+
+  const goLifeMap = () => {
+    if (travel < 1) {
+      setMode("lifemap");
+      setTransition("ascending");
+      return;
+    }
+    setMode("lifemap");
+  };
+
+  const goFocus = () => {
+    if (!selected) return;
+    if (travel < 1) {
+      setMode("lifemap");
+      setTransition("ascending");
+      return;
+    }
+    setMode("focus");
+  };
+
+  const goReplay = () => {
+    if (!selected) return;
+    if (travel < 1) {
+      setMode("lifemap");
+      setTransition("ascending");
+      return;
+    }
+    setMode("replay");
+  };
+
+  return (
+    <div
+      style={{
+        position: "fixed",
+        inset: 0,
+        overflow: "hidden",
+        background: "#020816",
+      }}
+    >
+      <Scene
+        mode={mode}
+        travel={travel}
+        selected={selected}
+        onSkyClick={beginAscent}
+        onSelectStar={(id) => {
+          setSelectedId(id);
+          if (travel < 1) {
+            setMode("lifemap");
+            setTransition("ascending");
+            return;
+          }
+          setMode("focus");
+        }}
+      />
+
+      <div
+        style={{
+          position: "absolute",
+          inset: 0,
+          background:
+            mode === "replay"
+              ? "radial-gradient(circle at 50% 46%, rgba(72,116,255,0.07), rgba(0,0,0,0) 40%)"
+              : transition === "ascending"
+                ? `radial-gradient(circle at 50% ${60 - smoothstep(travel) * 24}%, rgba(102,169,255,${0.12 + smoothstep(travel) * 0.12}), rgba(0,0,0,0) 44%)`
+                : transition === "descending"
+                  ? `radial-gradient(circle at 50% ${36 + (1 - smoothstep(travel)) * 22}%, rgba(102,169,255,${0.10 + (1 - smoothstep(travel)) * 0.10}), rgba(0,0,0,0) 42%)`
+                  : "none",
+          pointerEvents: "none",
+        }}
+      />
+
+      <ScreenText
+        mode={mode}
+        selected={selected}
+        onHome={goHome}
+        onAscent={beginAscent}
+        onLifeMap={goLifeMap}
+        onFocus={goFocus}
+        onReplay={goReplay}
+      />
+    </div>
+  );
+}
+
+export default SpatialScene;
