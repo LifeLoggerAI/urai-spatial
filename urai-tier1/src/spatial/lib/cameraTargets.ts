@@ -1,7 +1,7 @@
 
 import type { LifeMapStar } from '@/lib/uraiCanon/lifemapStar'
 import type { CanonMode } from '@/spatial/contracts/sceneAuthority'
-import type { CameraPose, Vec3 } from '@/spatial/contracts/cameraCanon'
+import type { CameraPose, Vec3 } from '@/spatial/canon/cameraCanon'
 
 const HOME_POSITION: Vec3 = [0, 1.34, 11.6]
 const HOME_TARGET: Vec3 = [0, 0.88, 0]

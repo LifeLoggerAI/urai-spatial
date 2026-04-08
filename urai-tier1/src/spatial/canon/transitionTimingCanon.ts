@@ -7,23 +7,23 @@ export type LockWindowSpec = {
 
 export const transitionDurations: Record<TransitionPhase, number> = {
   idle: 0,
-  ascent: 4200,
-  arrive_lifemap: 2200,
-  open_focus: 1500,
-  close_focus: 1200,
-  open_replay: 2600,
-  close_replay: 1500,
+  ascent: 4800,
+  arrive_lifemap: 2600,
+  open_focus: 1100,
+  close_focus: 900,
+  open_replay: 3000,
+  close_replay: 1100,
   go_home: 2000,
 }
 
 export const transitionLockWindows: Record<TransitionPhase, LockWindowSpec> = {
   idle: { durationMs: 0, unlockAtEnd: true },
-  ascent: { durationMs: 4200, unlockAtEnd: false },
-  arrive_lifemap: { durationMs: 2200, unlockAtEnd: true },
-  open_focus: { durationMs: 1500, unlockAtEnd: true },
-  close_focus: { durationMs: 1200, unlockAtEnd: true },
-  open_replay: { durationMs: 2600, unlockAtEnd: true },
-  close_replay: { durationMs: 1500, unlockAtEnd: true },
+  ascent: { durationMs: 4800, unlockAtEnd: false },
+  arrive_lifemap: { durationMs: 2600, unlockAtEnd: true },
+  open_focus: { durationMs: 1100, unlockAtEnd: true },
+  close_focus: { durationMs: 900, unlockAtEnd: true },
+  open_replay: { durationMs: 3600, unlockAtEnd: true },
+  close_replay: { durationMs: 1100, unlockAtEnd: true },
   go_home: { durationMs: 2000, unlockAtEnd: true },
 }
 

@@ -55,6 +55,7 @@ function toPosition(star: StarLike, idx: number): [number, number, number] {
 }
 
 function normalizeStar(star: StarLike, idx: number): StarLike {
+  let replayEnterTime: number | null = null;
   return {
     ...star,
     id: typeof star.id === 'string' && star.id.trim() ? star.id.trim() : `star-${idx + 1}`,
@@ -203,6 +204,7 @@ export function useSceneAuthority(input?: unknown) {
     escape: esc,
   }
 
+  let replayEnterTime: number | null = null;
   return {
     ...result,
     authority: result,

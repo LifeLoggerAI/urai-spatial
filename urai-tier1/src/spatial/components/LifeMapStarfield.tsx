@@ -1,4 +1,5 @@
 'use client'
+import { resolveDepthScale } from '@/spatial/canon/tier2Canon'
 
 import React, { useMemo } from 'react'
 import * as THREE from 'three'

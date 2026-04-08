@@ -60,7 +60,7 @@ function DistantAtmosphere() {
         size={0.09}
         sizeAttenuation
         transparent
-        opacity={0.22}
+        opacity={0.78}
         depthWrite={false}
         color="#8eb6ff"
       />
@@ -85,12 +85,12 @@ function HorizonBloom() {
     <group position={[0, -1.52, -18]}>
       <mesh ref={ringRef} rotation={[-Math.PI / 2, 0, 0]}>
         <ringGeometry args={[8.5, 17.5, 96]} />
-        <meshBasicMaterial color="#29507f" transparent opacity={0.24} depthWrite={false} />
+        <meshBasicMaterial color="#29507f" transparent opacity={0.78} depthWrite={false} />
       </mesh>
 
       <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.02, 0]}>
         <ringGeometry args={[4.2, 10.5, 96]} />
-        <meshBasicMaterial color="#3e6da8" transparent opacity={0.12} depthWrite={false} />
+        <meshBasicMaterial color="#3e6da8" transparent opacity={0.78} depthWrite={false} />
       </mesh>
     </group>
   )
@@ -145,12 +145,12 @@ function OrbCore({
 
       <mesh ref={haloRef} scale={[2.5, 2.5, 2.5]}>
         <sphereGeometry args={[0.42, 32, 32]} />
-        <meshBasicMaterial color="#6ea8ff" transparent opacity={0.18} depthWrite={false} />
+        <meshBasicMaterial color="#6ea8ff" transparent opacity={0.78} depthWrite={false} />
       </mesh>
 
       <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.86, -0.08]}>
         <ringGeometry args={[0.45, 1.75, 64]} />
-        <meshBasicMaterial color="#7fb2ff" transparent opacity={0.14} depthWrite={false} />
+        <meshBasicMaterial color="#7fb2ff" transparent opacity={0.78} depthWrite={false} />
       </mesh>
 
       <pointLight position={[0, 0, 0]} intensity={12} distance={20} color="#8cbcff" />
@@ -213,12 +213,12 @@ export default function HomeEnvironment({
 
   return (
     <group ref={rootRef}>
-      <color attach="background" args={['#01030a']} />
-      <fog attach="fog" args={['#01030a', 10, 72]} />
+      <color attach="background" args={['#10233f']} />
+      <fog attach="fog" args={['#10233f', 10, 72]} />
 
-      <ambientLight intensity={0.42} color="#7fa2d6" />
-      <directionalLight position={[4.5, 7.5, 5]} intensity={0.82} color="#cfe1ff" />
-      <directionalLight position={[-7, 3.5, -8]} intensity={0.22} color="#38527d" />
+      <ambientLight intensity={1.35} color="#7fa2d6" />
+      <directionalLight position={[4.5, 7.5, 5]} intensity={1.35} color="#cfe1ff" />
+      <directionalLight position={[-7, 3.5, -8]} intensity={1.35} color="#38527d" />
 
       <mesh {...skyEvents} position={[0, 7, -20]}>
         <sphereGeometry args={[38, 48, 48, 0, Math.PI * 2, 0, Math.PI * 0.52]} />
@@ -226,7 +226,7 @@ export default function HomeEnvironment({
           color="#081325"
           side={THREE.BackSide}
           transparent
-          opacity={0.98}
+          opacity={0.78}
           depthWrite={false}
         />
       </mesh>
@@ -235,12 +235,12 @@ export default function HomeEnvironment({
 
       <mesh position={[0, 4.5, -25]}>
         <sphereGeometry args={[42, 48, 48, 0, Math.PI * 2, Math.PI * 0.5, Math.PI * 0.5]} />
-        <meshBasicMaterial color="#16365b" transparent opacity={0.16} depthWrite={false} />
+        <meshBasicMaterial color="#16365b" transparent opacity={0.78} depthWrite={false} />
       </mesh>
 
       <mesh position={[0, 1.4, -22]}>
         <sphereGeometry args={[42, 64, 64, 0, Math.PI * 2, Math.PI * 0.5, Math.PI * 0.5]} />
-        <meshBasicMaterial color="#3c6ca8" transparent opacity={0.11} depthWrite={false} />
+        <meshBasicMaterial color="#3c6ca8" transparent opacity={0.78} depthWrite={false} />
       </mesh>
 
       <HorizonBloom />
@@ -253,23 +253,23 @@ export default function HomeEnvironment({
 
         <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.06, -2.2]} scale={[1, 1.12, 1]}>
           <circleGeometry args={[9.2, 96]} />
-          <meshBasicMaterial color="#103050" transparent opacity={0.18} depthWrite={false} />
+          <meshBasicMaterial color="#103050" transparent opacity={0.78} depthWrite={false} />
         </mesh>
 
         <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.09, -3.1]} scale={[1, 1.28, 1]}>
           <ringGeometry args={[3.2, 7.8, 96]} />
-          <meshBasicMaterial color="#29507f" transparent opacity={0.12} depthWrite={false} />
+          <meshBasicMaterial color="#29507f" transparent opacity={0.78} depthWrite={false} />
         </mesh>
       </group>
 
       <mesh ref={fogPlaneA} position={[0, -0.85, -7.5]} rotation={[-0.18, 0, 0]}>
         <planeGeometry args={[22, 4.8]} />
-        <meshBasicMaterial color="#22446d" transparent opacity={0.16} depthWrite={false} />
+        <meshBasicMaterial color="#22446d" transparent opacity={0.78} depthWrite={false} />
       </mesh>
 
       <mesh ref={fogPlaneB} position={[0, -0.35, -12.5]} rotation={[-0.12, 0, 0]}>
         <planeGeometry args={[28, 7]} />
-        <meshBasicMaterial color="#193454" transparent opacity={0.11} depthWrite={false} />
+        <meshBasicMaterial color="#193454" transparent opacity={0.78} depthWrite={false} />
       </mesh>
 
       <OrbCore interactive={interactive} onOrbSelect={onOrbSelect} />

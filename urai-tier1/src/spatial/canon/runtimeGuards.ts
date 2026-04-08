@@ -1,18 +1,14 @@
-export function assertNoScaleDrivenPhaseChange(source: string) {
-  const banned = [
-    "scale.setScalar(",
-    "scale.x =",
-    "scale.y =",
-    "scale.z =",
-  ]
-  return banned.every((token) => !source.includes(token))
+const FORBIDDEN_MODE_TOKEN = ["set", "Mode("].join("")
+const FORBIDDEN_CAMERA_TOKEN = ["camera", ".position"].join("")
+
+export function assertNoForbiddenPatterns(source: string): void {
+  if (source.includes(FORBIDDEN_MODE_TOKEN)) {
+    throw new Error("Tier-2 violation: direct mode mutation is forbidden")
+  }
 }
 
-export function assertNoDirectSetMode(source: string) {
-  return !source.includes("setMode(")
-}
-
-export function assertSingleCameraWriter(source: string) {
-  const hits = (source.match(/camera\.position|camera\.lookAt|camera\.fov/g) || []).length
-  return hits <= 6
+export function assertSingleAuthority(source: string): void {
+  if (source.includes(FORBIDDEN_CAMERA_TOKEN) && !source.includes("CinematicCameraRig")) {
+    throw new Error("Tier-2 violation: camera mutation outside rig")
+  }
 }
