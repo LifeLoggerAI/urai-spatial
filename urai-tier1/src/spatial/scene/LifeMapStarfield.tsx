@@ -1,4 +1,4 @@
-import { uraiNow, uraiRandom, uraiTime } from "@/lib/uraiDeterminism";
+import { uraiRandom } from "@/lib/uraiDeterminism";
 'use client';
 
 import * as THREE from 'three';
@@ -27,14 +27,27 @@ function buildLayer(
 ) {
   const positions = new Float32Array(count * 3);
 
-  for (let i = 0; i < count; i += 1) {
-    const bx = uraiRandom() - 0.5;
-    const by = uraiRandom() - 0.5;
-    const bias = 1 - Math.pow(uraiRandom(), centerBias);
+  const golden = Math.PI * (3 - Math.sqrt(5));
+  const shellMin = Math.max(40, Math.min(spreadX, spreadY) * 0.72 + zMin * 0.40);
+  const shellMax = Math.max(shellMin + 40, Math.max(spreadX, spreadY) * 1.35 + zMax * 0.42);
 
-    positions[i * 3 + 0] = bx * spreadX * (0.35 + bias * 0.65);
-    positions[i * 3 + 1] = by * spreadY * (0.35 + bias * 0.65);
-    positions[i * 3 + 2] = zMin - uraiRandom() * (zMax - zMin);
+  for (let i = 0; i < count; i += 1) {
+    const u = count > 1 ? i / (count - 1) : 0.5;
+    const theta = i * golden;
+
+    const phiBase = 0.14 + u * 1.18;
+    const phiJitter = (uraiRandom() - 0.5) * 0.12;
+    const phi = THREE.MathUtils.clamp(phiBase + phiJitter, 0.08, 1.32);
+
+    const bias = 1 - Math.pow(uraiRandom(), centerBias);
+    const radius = shellMin + (shellMax - shellMin) * (0.25 + bias * 0.75);
+
+    const sinPhi = Math.sin(phi);
+    const cosPhi = Math.cos(phi);
+
+    positions[i * 3 + 0] = Math.cos(theta) * sinPhi * radius;
+    positions[i * 3 + 1] = cosPhi * radius + 14.0;
+    positions[i * 3 + 2] = Math.sin(theta) * sinPhi * radius;
   }
 
   return positions;
@@ -43,13 +56,26 @@ function buildLayer(
 function buildAnchorLayer(count: number, spreadX: number, spreadY: number, zMin: number, zMax: number) {
   const positions = new Float32Array(count * 3);
 
-  for (let i = 0; i < count; i += 1) {
-    const angle = uraiRandom() * Math.PI * 2;
-    const radius = Math.pow(uraiRandom(), 0.55);
+  const golden = Math.PI * (3 - Math.sqrt(5));
+  const shellMin = Math.max(72, Math.min(spreadX, spreadY) * 0.82 + zMin * 0.34);
+  const shellMax = Math.max(shellMin + 56, Math.max(spreadX, spreadY) * 1.45 + zMax * 0.30);
 
-    positions[i * 3 + 0] = Math.cos(angle) * spreadX * radius * 0.48;
-    positions[i * 3 + 1] = Math.sin(angle) * spreadY * radius * 0.38;
-    positions[i * 3 + 2] = zMin - uraiRandom() * (zMax - zMin);
+  for (let i = 0; i < count; i += 1) {
+    const u = count > 1 ? i / (count - 1) : 0.5;
+    const theta = i * golden;
+
+    const phiBase = 0.20 + u * 0.98;
+    const phiJitter = (uraiRandom() - 0.5) * 0.08;
+    const phi = THREE.MathUtils.clamp(phiBase + phiJitter, 0.14, 1.18);
+
+    const radius = shellMin + (shellMax - shellMin) * (0.34 + uraiRandom() * 0.66);
+
+    const sinPhi = Math.sin(phi);
+    const cosPhi = Math.cos(phi);
+
+    positions[i * 3 + 0] = Math.cos(theta) * sinPhi * radius;
+    positions[i * 3 + 1] = cosPhi * radius + 15.5;
+    positions[i * 3 + 2] = Math.sin(theta) * sinPhi * radius;
   }
 
   return positions;
@@ -205,10 +231,10 @@ export default function LifeMapStarfield({
   focusMode = false,
   onSelectStar,
 }: LifeMapStarfieldProps) {
-  const near = useMemo(() => buildLayer(320, 22, 16, 4, 20, 1.7), []);
-  const mid = useMemo(() => buildLayer(560, 54, 38, 16, 66, 1.38), []);
-  const far = useMemo(() => buildLayer(960, 132, 92, 46, 180, 1.18), []);
-  const anchors = useMemo(() => buildAnchorLayer(14, 38, 28, 20, 110), []);
+  const near = useMemo(() => buildLayer(320, 84, 72, 28, 96, 1.7), []);
+  const mid = useMemo(() => buildLayer(560, 168, 144, 64, 220, 1.38), []);
+  const far = useMemo(() => buildLayer(960, 320, 280, 120, 520, 1.18), []);
+  const anchors = useMemo(() => buildAnchorLayer(14, 180, 160, 72, 320), []);
 
   const fogCoreRef = useRef<THREE.Mesh>(null);
   const glowRef = useRef<THREE.Mesh>(null);

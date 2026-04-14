@@ -1,0 +1,463 @@
+== backup ==
+
+== ensure import ==
+
+== rebuild exact starfield block by line numbers ==
+
+== verify import ==
+2:import Starfield3D from '@/spatial/components/Starfield3D'
+331:  <Starfield3D
+
+== verify replaced block ==
+}}
+/>
+</>
+)}
+{/* STARFIELD: Reworked for depth, per LIFEMAP LAW */}
+{showField && (
+<div style={{ position: 'absolute', inset: 0 }}>
+  <Starfield3D
+    stars={STAR_DATA}
+    phase={state.phase}
+    onSelect={(id) => dispatch({ type: 'OPEN_FOCUS', starId: id })}
+  />
+</div>
+)}
+
+{/* REPLAY ENVIRONMENT: Reworked to be immersive, per REPLAY LAW */}
+{state.phase === 'REPLAY' && (
+<div
+aria-hidden={!replayVisible}
+style={{
+position: 'absolute',
+inset: 0,
+opacity: camera.replayOpacity,
+transition: 'opacity 600ms ease-in',
+background: 'radial-gradient(circle at 50% 50%, rgba(204,174,58,0.1) 0%, transparent 40%), #000',
+}}
+>
+{/* Immersive content, not a panel. */}
+<div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)' }}>
+<p>Memory: {selectedStar?.label}</p>
+{/* Placeholder for memory-dominant content */}
+</div>
+</div>
+)}
+</div>
+
+{/* Vignette Overlay */}
+<div
+aria-hidden="true"
+style={{
+position: 'absolute',
+inset: 0,
+boxShadow: `inset 0 0 180px rgba(0,0,0,${camera.vignette})`,
+pointerEvents: 'none',
+transition: 'box-shadow 750ms ease-out',
+}}
+/>
+</div>
+)
+}
+
+== clean ==
+
+== build ==
+
+> urai-tier1@0.1.0 build /home/user/urai-spatial/urai-tier1
+> next build --webpack
+
+▲ Next.js 16.1.6 (webpack)
+
+  Creating an optimized production build ...
+✓ Compiled successfully in 6.7s
+  Running TypeScript ...
+Failed to compile.
+
+./src/spatial/scene/SpatialScene.tsx:47:10
+Type error: Property 'phase' is missing in type '{ stars: { id: string; x: number; y: number; z: number; }[]; onSelect: (id: string) => void; }' but required in type '{ stars: Star[]; phase: "HOME" | "ASCENT" | "LIFEMAP" | "FOCUS" | "REPLAY"; onSelect?: (id: string) => void; }'.
+
+[0m [90m 45 |[39m         [33m<[39m[33mambientLight[39m intensity[33m=[39m{[35m0.6[39m} [33m/[39m[33m>[39m
+ [90m 46 |[39m
+[31m[1m>[22m[39m[90m 47 |[39m         [33m<[39m[33mStarfield3D[39m
+ [90m    |[39m          [31m[1m^[22m[39m
+ [90m 48 |[39m           stars[33m=[39m{[33mSTAR_DATA[39m}
+ [90m 49 |[39m           onSelect[33m=[39m{(id) [33m=>[39m dispatch({ type[33m:[39m[32m'FOCUS'[39m[33m,[39m id })}
+ [90m 50 |[39m         [33m/[39m[33m>[39m[0m
+Next.js build worker exited with code: 1 and signal: null
+ ELIFECYCLE  Command failed with exit code 1.
+
+LOG: /home/user/urai-spatial/_audit/20260411_105911_replace_starfield_block/run.log
+Press ENTER to exit...]633;D;0]633;P;Cwd=/home/user/urai-spatial/urai-tier1]633;P;Prompt=\x1b]0\x3buser@firebase-urai-spatial-1769687960051: ~/urai-spatial/urai-tier1\x07\x1b[00\x3b35murai-spatial-21209489\x1b[00m:\x1b[01\x3b34m~/urai-spatial/urai-tier1\x1b[00m\x1b[01\x3b32m{tier1-home-ascent-cleanup-20260318_090348}\x1b[00m$ ]633;EnvSingleStart;0;fcbddc5d-a876-46dd-89cf-7a5c0441e34b]633;EnvSingleEntry;PWD;/home/user/urai-spatial/urai-tier1;fcbddc5d-a876-46dd-89cf-7a5c0441e34bbash: vsc_aa_env[$key]: unbound variable
+[?2004h]633;A]0;user@firebase-urai-spatial-1769687960051: ~/urai-spatial/urai-tier1[00;35murai-spatial-21209489[00m:[01;34m~/urai-spatial/urai-tier1[00m[01;32m{tier1-home-ascent-cleanup-20260318_090348}[00m$ ]633;B[7m#!/usr/bin/env bash[27m
+[7mset -u[27m
+
+[7mcd /home/user/urai-spatial/urai-tier1 || { echo "bad path"; read -r -p "Press ENTER to exit..."; exit 1; }[27m
+
+[7mFILE="src/spatial/scene/SpatialScene.tsx"[27m
+
+[7mecho "== backup =="[27m
+[7mmkdir -p "_audit/$(date +%Y%m%d_%H%M%S)_add_phase_prop/src/spatial/scene"[27m
+[7mcp -p "$FILE" "_audit/$(date +%Y%m%d_%H%M%S)_add_phase_prop/src/spatial/scene/SpatialScene.tsx" || true[27m
+
+[7mecho[27m
+[7mecho "== patch missing phase prop on Starfield3D =="[27m
+[7msed -i "/<Starfield3D/,/\/>/ s/^\([[:space:]]*stars={STAR_DATA}[[:space:]]*\)$/\1\\[27m
+[7m\          phase={state.phase}/" "$FILE"[27m
+
+[7mecho[27m
+[7mecho "== verify Starfield3D callsites =="[27m
+[7mgrep -n "Starfield3D\|phase={state.phase}\|stars={STAR_DATA}" "$FILE" || true[27m
+
+[7mecho[27m
+[7mecho "== build =="[27m
+[7mrm -rf .next[27m
+[7mpnpm build || true[27m
+
+[7mecho[27m
+[7mread -r -p "Press ENTER to exit..."[27m[A[A[A[A[A[A[A[A[A[A[A[A[A[A[A[A[A[A[A[A[A[A[A[A[A[A]633;A]0;user@firebase-urai-spatial-1769687960051: ~/urai-spatial/urai-tier1[00;35murai-spatial-21209489[00m:[01;34m~/urai-spatial/urai-tier1[00m[01;32m{tier1-home-ascent-cleanup-20260318_090348}[00m$ ]633;B#!/usr/bin/env bash
+set -u
+
+cd /home/user/urai-spatial/urai-tier1 || { echo "bad path"; read -r -p "Press ENTER to exit..."; exit 1; }
+
+FILE="src/spatial/scene/SpatialScene.tsx"
+
+echo "== backup =="
+mkdir -p "_audit/$(date +%Y%m%d_%H%M%S)_add_phase_prop/src/spatial/scene"
+cp -p "$FILE" "_audit/$(date +%Y%m%d_%H%M%S)_add_phase_prop/src/spatial/scene/SpatialScene.tsx" || true
+
+echo
+echo "== patch missing phase prop on Starfield3D =="
+sed -i "/<Starfield3D/,/\/>/ s/^\([[:space:]]*stars={STAR_DATA}[[:space:]]*\)$/\1\\
+\          phase={state.phase}/" "$FILE"
+
+echo
+echo "== verify Starfield3D callsites =="
+grep -n "Starfield3D\|phase={state.phase}\|stars={STAR_DATA}" "$FILE" || true
+
+echo
+echo "== build =="
+rm -rf .next
+pnpm build || true
+
+echo
+read -r -p "Press ENTER to exit..."
+[?2004l]633;E;set -u;fcbddc5d-a876-46dd-89cf-7a5c0441e34b]633;C== backup ==
+
+== patch missing phase prop on Starfield3D ==
+
+== verify Starfield3D callsites ==
+6:import Starfield3D from '@/spatial/components/Starfield3D'
+43:        <CinematicCameraRig phase={state.phase} selected={selectedPos} />
+47:        <Starfield3D
+48:          stars={STAR_DATA}
+49:          phase={state.phase}
+
+== build ==
+
+> urai-tier1@0.1.0 build /home/user/urai-spatial/urai-tier1
+> next build --webpack
+
+▲ Next.js 16.1.6 (webpack)
+
+  Creating an optimized production build ...
+✓ Compiled successfully in 25.9s
+  Running TypeScript ...
+  Collecting page data using 1 worker ...
+  Generating static pages using 1 worker (0/3) ...
+✓ Generating static pages using 1 worker (3/3) in 2.7s
+  Finalizing page optimization ...
+  Collecting build traces ...
+
+Route (app)
+┌ ○ /
+└ ○ /_not-found
+
+
+○  (Static)  prerendered as static content
+
+
+Press ENTER to exit...]633;D;0]633;P;Cwd=/home/user/urai-spatial/urai-tier1]633;P;Prompt=\x1b]0\x3buser@firebase-urai-spatial-1769687960051: ~/urai-spatial/urai-tier1\x07\x1b[00\x3b35murai-spatial-21209489\x1b[00m:\x1b[01\x3b34m~/urai-spatial/urai-tier1\x1b[00m\x1b[01\x3b32m{tier1-home-ascent-cleanup-20260318_090348}\x1b[00m$ ]633;EnvSingleStart;0;fcbddc5d-a876-46dd-89cf-7a5c0441e34bbash: vsc_aa_env[$key]: unbound variable
+[?2004h]633;A]0;user@firebase-urai-spatial-1769687960051: ~/urai-spatial/urai-tier1[00;35murai-spatial-21209489[00m:[01;34m~/urai-spatial/urai-tier1[00m[01;32m{tier1-home-ascent-cleanup-20260318_090348}[00m$ ]633;B[7mpkill -f "next dev" || true && rm -rf .next/dev/lock && pnpm dev[27mpkill -f "next dev" || true && rm -rf .next/dev/lock && pnpm dev
+[?2004l]633;E;pkill -f "next dev";fcbddc5d-a876-46dd-89cf-7a5c0441e34b]633;C
+> urai-tier1@0.1.0 dev /home/user/urai-spatial/urai-tier1
+> next dev --webpack
+
+▲ Next.js 16.1.6 (webpack)
+- Local:         http://localhost:3000
+- Network:       http://10.88.0.3:3000
+
+✓ Starting...
+✓ Ready in 5.5s
+○ Compiling / ...
+ GET / 200 in 21.9s (compile: 20.6s, render: 1330ms)
+[?25h
+]633;D;0]633;P;Cwd=/home/user/urai-spatial/urai-tier1]633;P;Prompt=\x1b]0\x3buser@firebase-urai-spatial-1769687960051: ~/urai-spatial/urai-tier1\x07\x1b[00\x3b35murai-spatial-21209489\x1b[00m:\x1b[01\x3b34m~/urai-spatial/urai-tier1\x1b[00m\x1b[01\x3b32m{tier1-home-ascent-cleanup-20260318_090348}\x1b[00m$ ]633;EnvSingleStart;0;fcbddc5d-a876-46dd-89cf-7a5c0441e34bbash: vsc_aa_env[$key]: unbound variable
+[?2004h]633;A]0;user@firebase-urai-spatial-1769687960051: ~/urai-spatial/urai-tier1[00;35murai-spatial-21209489[00m:[01;34m~/urai-spatial/urai-tier1[00m[01;32m{tier1-home-ascent-cleanup-20260318_090348}[00m$ ]633;B
+[?2004l]633;E;;fcbddc5d-a876-46dd-89cf-7a5c0441e34b]633;C]633;D]633;P;Cwd=/home/user/urai-spatial/urai-tier1]633;P;Prompt=\x1b]0\x3buser@firebase-urai-spatial-1769687960051: ~/urai-spatial/urai-tier1\x07\x1b[00\x3b35murai-spatial-21209489\x1b[00m:\x1b[01\x3b34m~/urai-spatial/urai-tier1\x1b[00m\x1b[01\x3b32m{tier1-home-ascent-cleanup-20260318_090348}\x1b[00m$ ]633;EnvSingleStart;0;fcbddc5d-a876-46dd-89cf-7a5c0441e34bbash: vsc_aa_env[$key]: unbound variable
+[?2004h]633;A]0;user@firebase-urai-spatial-1769687960051: ~/urai-spatial/urai-tier1[00;35murai-spatial-21209489[00m:[01;34m~/urai-spatial/urai-tier1[00m[01;32m{tier1-home-ascent-cleanup-20260318_090348}[00m$ ]633;Bcat > src/spatial/components/Starfield3D.tsx <<'TSX'
+'use client'
+
+import { useMemo, useRef } from 'react'
+import { useFrame } from '@react-three/fiber'
+import * as THREE from 'three'
+
+type Star = { id: string; x:number; y:number; z:number }
+
+export default function Starfield3D({
+  stars,
+  phase,
+  onSelect,
+}: {
+  stars: Star[]
+  phase: 'HOME' | 'ASCENT' | 'LIFEMAP' | 'FOCUS' | 'REPLAY'
+  onSelect?: (id: string) => void
+}) {
+  const group = useRef<THREE.Group>(null)
+  const velocity = useRef(0)
+
+  const nodes = useMemo(() => {
+    return stars.map((s) => ({
+      id: s.id,
+      position: new THREE.Vector3(
+        (s.x - 50) / 2,
+        (s.y - 50) / 2,
+        -s.z * 20 - Math.random() * 50
+      ),
+    }))
+  }, [stars])
+
+  useFrame((_, dt) => {
+[7m    if (!group.current) return[27m
+
+[7m    let targetSpeed = 0[27m
+
+[7m    if (phase === 'ASCENT') targetSpeed = 18[27m
+[7m    else if (phase === 'LIFEMAP') targetSpeed = 0.2[27m
+[7m    else if (phase === 'FOCUS') targetSpeed = 0[27m
+[7m    else if (phase === 'REPLAY') targetSpeed = 3[27m[7m    // 🔴 THIS IS THE FIX: SMOOTH ACCELERATION[27m[7m    velocity.current += (targetSpeed - velocity.current) * 0.08[27m[7m    group.current.children.forEach((child: any) => {[27m[7m      child.position.z += dt * velocity.current[27m[7m      if (child.position.z > 5) {[27m[7m        child.position.z = -80 - Math.random() * 40[27m[7m      }[27m[7m    })[27m[7m  })[27m[7m  return ([27m[7m    <group ref={group}>[27m[7m      {nodes.map((n) => ([27m[7m        <mesh[27m[7m          key={n.id}[27m[7m          position={[n.position.x, n.position.y, n.position.z]}[27m[7m          onClick={() => onSelect?.(n.id)}[27m[7m        >[27m[7m          <sphereGeometry args={[0.2, 8, 8]} />[27m[7m          <meshBasicMaterial color="#ffffff" />[27m[7m        </mesh>[27m[7m      ))}[27m[7m    </group>[27m[7m  )[27m[7m}[27m[7mTSX[27m[7mrm -rf .next[27m[7mpnpm build[27m[A[A[A[A[A[A[A    if (!group.current) return
+
+    let targetSpeed = 0
+
+    if (phase === 'ASCENT') targetSpeed = 18
+    else if (phase === 'LIFEMAP') targetSpeed = 0.2
+    else if (phase === 'FOCUS') targetSpeed = 0
+    else if (phase === 'REPLAY') targetSpeed = 3    // 🔴 THIS IS THE FIX: SMOOTH ACCELERATION    velocity.current += (targetSpeed - velocity.current) * 0.08    group.current.children.forEach((child: any) => {      child.position.z += dt * velocity.current      if (child.position.z > 5) {        child.position.z = -80 - Math.random() * 40      }    })  })  return (    <group ref={group}>      {nodes.map((n) => (        <mesh          key={n.id}          position={[n.position.x, n.position.y, n.position.z]}          onClick={() => onSelect?.(n.id)}        >          <sphereGeometry args={[0.2, 8, 8]} />          <meshBasicMaterial color="#ffffff" />        </mesh>      ))}    </group>  )}TSXrm -rf .nextpnpm build
+[?2004l]633;E;cat > src/spatial/components/Starfield3D.tsx <<'TSX'\x0a'use client'\x0a\x0aimport { useMemo, useRef } from 'react'\x0aimport { useFrame } from '@react-three/fiber'\x0aimport * as THREE from 'three'\x0a\x0atype Star = { id: string\x3b x:number\x3b y:number\x3b z:number }\x0a\x0aexport default function Starfield3D({\x0a  stars,\x0a  phase,\x0a  onSelect,\x0a}: {\x0a  stars: Star[]\x0a  phase: 'HOME' | 'ASCENT' | 'LIFEMAP' | 'FOCUS' | 'REPLAY'\x0a  onSelect?: (id: string) => void\x0a}) {\x0a  const group = useRef<THREE.Group>(null)\x0a  const velocity = useRef(0)\x0a\x0a  const nodes = useMemo(() => {\x0a    return stars.map((s) => ({\x0a      id: s.id,\x0a      position: new THREE.Vector3(\x0a        (s.x - 50) / 2,\x0a        (s.y - 50) / 2,\x0a        -s.z * 20 - Math.random() * 50\x0a      ),\x0a    }))\x0a  }, [stars])\x0a\x0a  useFrame((_, dt) => {\x0a    if (!group.current) return\x0a\x0a    let targetSpeed = 0\x0a\x0a    if (phase === 'ASCENT') targetSpeed = 18\x0a    else if (phase === 'LIFEMAP') targetSpeed = 0.2\x0a    else if (phase === 'FOCUS') targetSpeed = 0\x0a    else if (phase === 'REPLAY') targetSpeed = 3\x0a\x0a    // 🔴 THIS IS THE FIX: SMOOTH ACCELERATION\x0a    velocity.current += (targetSpeed - velocity.current) * 0.08\x0a\x0a    group.current.children.forEach((child: any) => {\x0a      child.position.z += dt * velocity.current\x0a\x0a      if (child.position.z > 5) {\x0a        child.position.z = -80 - Math.random() * 40\x0a      }\x0a    })\x0a  })\x0a\x0a  return (\x0a    <group ref={group}>\x0a      {nodes.map((n) => (\x0a        <mesh\x0a          key={n.id}\x0a          position={[n.position.x, n.position.y, n.position.z]}\x0a          onClick={() => onSelect?.(n.id)}\x0a        >\x0a          <sphereGeometry args={[0.2, 8, 8]} />\x0a          <meshBasicMaterial color="#ffffff" />\x0a        </mesh>\x0a      ))}\x0a    </group>\x0a  )\x0a}\x0aTSX\x0a;fcbddc5d-a876-46dd-89cf-7a5c0441e34b]633;C
+> urai-tier1@0.1.0 build /home/user/urai-spatial/urai-tier1
+> next build --webpack
+
+▲ Next.js 16.1.6 (webpack)
+
+  Creating an optimized production build ...
+✓ Compiled successfully in 25.6s
+  Running TypeScript ...
+  Collecting page data using 1 worker ...
+  Generating static pages using 1 worker (0/3) ...
+✓ Generating static pages using 1 worker (3/3) in 860.7ms
+  Finalizing page optimization ...
+  Collecting build traces ...
+
+Route (app)
+┌ ○ /
+└ ○ /_not-found
+
+
+○  (Static)  prerendered as static content
+
+]633;D;0]633;P;Cwd=/home/user/urai-spatial/urai-tier1]633;P;Prompt=\x1b]0\x3buser@firebase-urai-spatial-1769687960051: ~/urai-spatial/urai-tier1\x07\x1b[00\x3b35murai-spatial-21209489\x1b[00m:\x1b[01\x3b34m~/urai-spatial/urai-tier1\x1b[00m\x1b[01\x3b32m{tier1-home-ascent-cleanup-20260318_090348}\x1b[00m$ ]633;EnvSingleStart;0;fcbddc5d-a876-46dd-89cf-7a5c0441e34bbash: vsc_aa_env[$key]: unbound variable
+[?2004h]633;A]0;user@firebase-urai-spatial-1769687960051: ~/urai-spatial/urai-tier1[00;35murai-spatial-21209489[00m:[01;34m~/urai-spatial/urai-tier1[00m[01;32m{tier1-home-ascent-cleanup-20260318_090348}[00m$ ]633;Bpbpm[K[K[K[Kpnpm dev
+[?2004l]633;E;pnpm dev;fcbddc5d-a876-46dd-89cf-7a5c0441e34b]633;C
+> urai-tier1@0.1.0 dev /home/user/urai-spatial/urai-tier1
+> next dev --webpack
+
+▲ Next.js 16.1.6 (webpack)
+- Local:         http://localhost:3000
+- Network:       http://10.88.0.3:3000
+
+✓ Starting...
+✓ Ready in 2.9s
+○ Compiling / ...
+ GET / 200 in 24.5s (compile: 22.9s, render: 1651ms)
+[?25h
+]633;D;0]633;P;Cwd=/home/user/urai-spatial/urai-tier1]633;P;Prompt=\x1b]0\x3buser@firebase-urai-spatial-1769687960051: ~/urai-spatial/urai-tier1\x07\x1b[00\x3b35murai-spatial-21209489\x1b[00m:\x1b[01\x3b34m~/urai-spatial/urai-tier1\x1b[00m\x1b[01\x3b32m{tier1-home-ascent-cleanup-20260318_090348}\x1b[00m$ ]633;EnvSingleStart;0;fcbddc5d-a876-46dd-89cf-7a5c0441e34bbash: vsc_aa_env[$key]: unbound variable
+[?2004h]633;A]0;user@firebase-urai-spatial-1769687960051: ~/urai-spatial/urai-tier1[00;35murai-spatial-21209489[00m:[01;34m~/urai-spatial/urai-tier1[00m[01;32m{tier1-home-ascent-cleanup-20260318_090348}[00m$ ]633;B
+[?2004l]633;E;;fcbddc5d-a876-46dd-89cf-7a5c0441e34b]633;C]633;D]633;P;Cwd=/home/user/urai-spatial/urai-tier1]633;P;Prompt=\x1b]0\x3buser@firebase-urai-spatial-1769687960051: ~/urai-spatial/urai-tier1\x07\x1b[00\x3b35murai-spatial-21209489\x1b[00m:\x1b[01\x3b34m~/urai-spatial/urai-tier1\x1b[00m\x1b[01\x3b32m{tier1-home-ascent-cleanup-20260318_090348}\x1b[00m$ ]633;EnvSingleStart;0;fcbddc5d-a876-46dd-89cf-7a5c0441e34bbash: vsc_aa_env[$key]: unbound variable
+[?2004h]633;A]0;user@firebase-urai-spatial-1769687960051: ~/urai-spatial/urai-tier1[00;35murai-spatial-21209489[00m:[01;34m~/urai-spatial/urai-tier1[00m[01;32m{tier1-home-ascent-cleanup-20260318_090348}[00m$ ]633;Bcat > src/spatial/components/Starfield3D.tsx <<'TSX'
+'use client'
+
+import { useMemo, useRef } from 'react'
+import { useFrame } from '@react-three/fiber'
+import * as THREE from 'three'
+
+type Star = { id: string; x:number; y:number; z:number }
+
+export default function Starfield3D({
+  stars,
+  phase,
+  onSelect,
+}: {
+  stars: Star[]
+  phase: 'HOME' | 'ASCENT' | 'LIFEMAP' | 'FOCUS' | 'REPLAY'
+  onSelect?: (id: string) => void
+}) {
+  const group = useRef<THREE.Group>(null)
+  const velocity = useRef(0)
+
+  const nodes = useMemo(() => {
+    return stars.map((s) => ({
+      id: s.id,
+      position: new THREE.Vector3(
+        (s.x - 50) / 2,
+        (s.y - 50) / 2,
+        -s.z * 20 - Math.random() * 50
+      ),
+    }))
+  }, [stars])
+
+  useFrame((_, dt) => {
+    if (!group.current) return
+
+[7m    let targetSpeed = 0[27m
+
+[7m    // 🔴 TUNED VALUES[27m
+[7m    if (phase === 'ASCENT') targetSpeed = 26[27m
+[7m    else if (phase === 'LIFEMAP') targetSpeed = 0.05[27m
+[7m    else if (phase === 'FOCUS') targetSpeed = 0[27m[7m    else if (phase === 'REPLAY') targetSpeed = 6[27m[7m    // �� FASTER RESPONSE (fix slow start)[27m[7m    velocity.current += (targetSpeed - velocity.current) * 0.18[27m[7m    group.current.children.forEach((child: any) => {[27m[7m      child.position.z += dt * velocity.current[27m[7m      if (child.position.z > 5) {[27m[7m        child.position.z = -80 - Math.random() * 40[27m[7m      }[27m[7m    })[27m[7m  })[27m[7m  return ([27m[7m    <group ref={group}>[27m[7m      {nodes.map((n) => ([27m[7m        <mesh[27m[7m          key={n.id}[27m[7m          position={[n.position.x, n.position.y, n.position.z]}[27m[7m          onClick={() => onSelect?.(n.id)}[27m[7m        >[27m[7m          <sphereGeometry args={[0.2, 8, 8]} />[27m[7m          <meshBasicMaterial color="#ffffff" />[27m[7m        </mesh>[27m[7m      ))}[27m[7m    </group>[27m[7m  )[27m[7m}[27m[7mTSX[27m[7mrm -rf .next[27m[7mpnpm build[27m[A[A[A[A[A    let targetSpeed = 0
+
+    // 🔴 TUNED VALUES
+    if (phase === 'ASCENT') targetSpeed = 26
+    else if (phase === 'LIFEMAP') targetSpeed = 0.05
+    else if (phase === 'FOCUS') targetSpeed = 0    else if (phase === 'REPLAY') targetSpeed = 6    // �� FASTER RESPONSE (fix slow start)    velocity.current += (targetSpeed - velocity.current) * 0.18    group.current.children.forEach((child: any) => {      child.position.z += dt * velocity.current      if (child.position.z > 5) {        child.position.z = -80 - Math.random() * 40      }    })  })  return (    <group ref={group}>      {nodes.map((n) => (        <mesh          key={n.id}          position={[n.position.x, n.position.y, n.position.z]}          onClick={() => onSelect?.(n.id)}        >          <sphereGeometry args={[0.2, 8, 8]} />          <meshBasicMaterial color="#ffffff" />        </mesh>      ))}    </group>  )}TSXrm -rf .nextpnpm build
+[?2004l]633;E;cat > src/spatial/components/Starfield3D.tsx <<'TSX'\x0a'use client'\x0a\x0aimport { useMemo, useRef } from 'react'\x0aimport { useFrame } from '@react-three/fiber'\x0aimport * as THREE from 'three'\x0a\x0atype Star = { id: string\x3b x:number\x3b y:number\x3b z:number }\x0a\x0aexport default function Starfield3D({\x0a  stars,\x0a  phase,\x0a  onSelect,\x0a}: {\x0a  stars: Star[]\x0a  phase: 'HOME' | 'ASCENT' | 'LIFEMAP' | 'FOCUS' | 'REPLAY'\x0a  onSelect?: (id: string) => void\x0a}) {\x0a  const group = useRef<THREE.Group>(null)\x0a  const velocity = useRef(0)\x0a\x0a  const nodes = useMemo(() => {\x0a    return stars.map((s) => ({\x0a      id: s.id,\x0a      position: new THREE.Vector3(\x0a        (s.x - 50) / 2,\x0a        (s.y - 50) / 2,\x0a        -s.z * 20 - Math.random() * 50\x0a      ),\x0a    }))\x0a  }, [stars])\x0a\x0a  useFrame((_, dt) => {\x0a    if (!group.current) return\x0a\x0a    let targetSpeed = 0\x0a\x0a    // 🔴 TUNED VALUES\x0a    if (phase === 'ASCENT') targetSpeed = 26\x0a    else if (phase === 'LIFEMAP') targetSpeed = 0.05\x0a    else if (phase === 'FOCUS') targetSpeed = 0\x0a    else if (phase === 'REPLAY') targetSpeed = 6\x0a\x0a    // �� FASTER RESPONSE (fix slow start)\x0a    velocity.current += (targetSpeed - velocity.current) * 0.18\x0a\x0a    group.current.children.forEach((child: any) => {\x0a      child.position.z += dt * velocity.current\x0a\x0a      if (child.position.z > 5) {\x0a        child.position.z = -80 - Math.random() * 40\x0a      }\x0a    })\x0a  })\x0a\x0a  return (\x0a    <group ref={group}>\x0a      {nodes.map((n) => (\x0a        <mesh\x0a          key={n.id}\x0a          position={[n.position.x, n.position.y, n.position.z]}\x0a          onClick={() => onSelect?.(n.id)}\x0a        >\x0a          <sphereGeometry args={[0.2, 8, 8]} />\x0a          <meshBasicMaterial color="#ffffff" />\x0a        </mesh>\x0a      ))}\x0a    </group>\x0a  )\x0a}\x0aTSX\x0a;fcbddc5d-a876-46dd-89cf-7a5c0441e34b]633;C
+> urai-tier1@0.1.0 build /home/user/urai-spatial/urai-tier1
+> next build --webpack
+
+▲ Next.js 16.1.6 (webpack)
+
+  Creating an optimized production build ...
+✓ Compiled successfully in 24.9s
+  Running TypeScript ...
+  Collecting page data using 1 worker ...
+  Generating static pages using 1 worker (0/3) ...
+✓ Generating static pages using 1 worker (3/3) in 783.5ms
+  Finalizing page optimization ...
+  Collecting build traces ...
+
+Route (app)
+┌ ○ /
+└ ○ /_not-found
+
+
+○  (Static)  prerendered as static content
+
+]633;D;0]633;P;Cwd=/home/user/urai-spatial/urai-tier1]633;P;Prompt=\x1b]0\x3buser@firebase-urai-spatial-1769687960051: ~/urai-spatial/urai-tier1\x07\x1b[00\x3b35murai-spatial-21209489\x1b[00m:\x1b[01\x3b34m~/urai-spatial/urai-tier1\x1b[00m\x1b[01\x3b32m{tier1-home-ascent-cleanup-20260318_090348}\x1b[00m$ ]633;EnvSingleStart;0;fcbddc5d-a876-46dd-89cf-7a5c0441e34bbash: vsc_aa_env[$key]: unbound variable
+[?2004h]633;A]0;user@firebase-urai-spatial-1769687960051: ~/urai-spatial/urai-tier1[00;35murai-spatial-21209489[00m:[01;34m~/urai-spatial/urai-tier1[00m[01;32m{tier1-home-ascent-cleanup-20260318_090348}[00m$ ]633;B[7mgrep -n "opacity: camera.replayOpacity" -n src/spatial/scene/SpatialScene.tsx && \[27m 
+[7msed -i "s/opacity: camera.replayOpacity,/opacity: camera.replayOpacity,\ntransform: \`scale(\${1 + (1 - camera.replayOpacity) * 0.2})\`,/" src/spatial/scene/SpatialScene.tsx [27m[7m&[27m[7m& \ [27m
+[7msed -n '384,410p' src/spatial/scene/SpatialScene.tsx[27m[A[A[A[A]633;A]0;user@firebase-urai-spatial-1769687960051: ~/urai-spatial/urai-tier1[00;35murai-spatial-21209489[00m:[01;34m~/urai-spatial/urai-tier1[00m[01;32m{tier1-home-ascent-cleanup-20260318_090348}[00m$ ]633;Bgrep -n "opacity: camera.replayOpacity" -n src/spatial/scene/SpatialScene.tsx && \ 
+sed -i "s/opacity: camera.replayOpacity,/opacity: camera.replayOpacity,\ntransform: \`scale(\${1 + (1 - camera.replayOpacity) * 0.2})\`,/" src/spatial/scene/SpatialScene.tsx && \
+sed -n '384,410p' src/spatial/scene/SpatialScene.tsx
+[?2004l]633;E;grep --color=auto -n "opacity: camera.replayOpacity" -n src/spatial/scene/SpatialScene.tsx;fcbddc5d-a876-46dd-89cf-7a5c0441e34b]633;C]633;D;1]633;P;Cwd=/home/user/urai-spatial/urai-tier1]633;P;Prompt=\x1b]0\x3buser@firebase-urai-spatial-1769687960051: ~/urai-spatial/urai-tier1\x07\x1b[00\x3b35murai-spatial-21209489\x1b[00m:\x1b[01\x3b34m~/urai-spatial/urai-tier1\x1b[00m\x1b[01\x3b32m{tier1-home-ascent-cleanup-20260318_090348}\x1b[00m$ ]633;EnvSingleStart;0;fcbddc5d-a876-46dd-89cf-7a5c0441e34bbash: vsc_aa_env[$key]: unbound variable
+[?2004h]633;A]0;user@firebase-urai-spatial-1769687960051: ~/urai-spatial/urai-tier1[00;35murai-spatial-21209489[00m:[01;34m~/urai-spatial/urai-tier1[00m[01;32m{tier1-home-ascent-cleanup-20260318_090348}[00m$ ]633;Bpbpm[K[K[K[Kpnpm dev
+[?2004l]633;E;pnpm dev;fcbddc5d-a876-46dd-89cf-7a5c0441e34b]633;C
+> urai-tier1@0.1.0 dev /home/user/urai-spatial/urai-tier1
+> next dev --webpack
+
+▲ Next.js 16.1.6 (webpack)
+- Local:         http://localhost:3000
+- Network:       http://10.88.0.3:3000
+
+✓ Starting...
+✓ Ready in 2.8s
+○ Compiling / ...
+ GET / 200 in 30.5s (compile: 29.8s, render: 725ms)
+[?25h
+]633;D;0]633;P;Cwd=/home/user/urai-spatial/urai-tier1]633;P;Prompt=\x1b]0\x3buser@firebase-urai-spatial-1769687960051: ~/urai-spatial/urai-tier1\x07\x1b[00\x3b35murai-spatial-21209489\x1b[00m:\x1b[01\x3b34m~/urai-spatial/urai-tier1\x1b[00m\x1b[01\x3b32m{tier1-home-ascent-cleanup-20260318_090348}\x1b[00m$ ]633;EnvSingleStart;0;fcbddc5d-a876-46dd-89cf-7a5c0441e34bbash: vsc_aa_env[$key]: unbound variable
+[?2004h]633;A]0;user@firebase-urai-spatial-1769687960051: ~/urai-spatial/urai-tier1[00;35murai-spatial-21209489[00m:[01;34m~/urai-spatial/urai-tier1[00m[01;32m{tier1-home-ascent-cleanup-20260318_090348}[00m$ ]633;B
+[?2004l]633;E;;fcbddc5d-a876-46dd-89cf-7a5c0441e34b]633;C]633;D]633;P;Cwd=/home/user/urai-spatial/urai-tier1]633;P;Prompt=\x1b]0\x3buser@firebase-urai-spatial-1769687960051: ~/urai-spatial/urai-tier1\x07\x1b[00\x3b35murai-spatial-21209489\x1b[00m:\x1b[01\x3b34m~/urai-spatial/urai-tier1\x1b[00m\x1b[01\x3b32m{tier1-home-ascent-cleanup-20260318_090348}\x1b[00m$ ]633;EnvSingleStart;0;fcbddc5d-a876-46dd-89cf-7a5c0441e34bbash: vsc_aa_env[$key]: unbound variable
+[?2004h]633;A]0;user@firebase-urai-spatial-1769687960051: ~/urai-spatial/urai-tier1[00;35murai-spatial-21209489[00m:[01;34m~/urai-spatial/urai-tier1[00m[01;32m{tier1-home-ascent-cleanup-20260318_090348}[00m$ ]633;Bcat > src/spatial/components/Starfield3D.tsx <<'TSX'
+'use client'
+
+import { useMemo, useRef } from 'react'
+import { useFrame } from '@react-three/fiber'
+import * as THREE from 'three'
+
+type Star = { id: string; x:number; y:number; z:number }
+
+export default function Starfield3D({
+  stars,
+  phase,
+  onSelect,
+}: {
+  stars: Star[]
+  phase: 'HOME' | 'ASCENT' | 'LIFEMAP' | 'FOCUS' | 'REPLAY'
+  onSelect?: (id: string) => void
+}) {
+  const group = useRef<THREE.Group>(null)
+  const velocity = useRef(0)
+
+  const nodes = useMemo(() => {
+    return stars.map((s) => ({
+      id: s.id,
+      position: new THREE.Vector3(
+        (s.x - 50) / 2,
+        (s.y - 50) / 2,
+        -s.z * 20 - Math.random() * 50
+      ),
+    }))
+  }, [stars])
+
+  useFrame((_, dt) => {
+    if (!group.current) return
+
+    let targetSpeed = 0
+
+    // 🔴 FINAL TUNED VALUES
+[7m    if (phase === 'ASCENT') targetSpeed = 22[27m
+[7m    else if (phase === 'LIFEMAP') targetSpeed = 0.01[27m
+[7m    else if (phase === 'FOCUS') targetSpeed = 0[27m[7m    else if (phase === 'REPLAY') targetSpeed = 7[27m[7m    // 🔴 tighter damping (fix overspeed)[27m[7m    velocity.current += (targetSpeed - velocity.current) * 0.12[27m[7m    group.current.children.forEach((child: any) => {[27m[7m      child.position.z += dt * velocity.current[27m[7m      if (child.position.z > 5) {[27m[7m        child.position.z = -80 - Math.random() * 40[27m[7m      }[27m[7m    })[27m[7m  })[27m[7m  return ([27m[7m    <group ref={group}>[27m[7m      {nodes.map((n) => ([27m[7m        <mesh[27m[7m          key={n.id}[27m[7m          position={[n.position.x, n.position.y, n.position.z]}[27m[7m          onClick={() => onSelect?.(n.id)}[27m[7m        >[27m[7m          <sphereGeometry args={[0.25, 10, 10]} />[27m[7m          <meshBasicMaterial[27m[7m            color="#ffffff"[27m[7m            transparent[27m[7m            opacity={phase === 'FOCUS' ? 0.15 : 1}[27m[7m          />[27m[7m        </mesh>[27m[7m      ))}[27m[7m    </group>[27m[7m  )[27m[7m}[27m[7mTSX[27m[7mrm -rf .next[27m[7mpnpm build[27m[A[A    if (phase === 'ASCENT') targetSpeed = 22
+    else if (phase === 'LIFEMAP') targetSpeed = 0.01
+    else if (phase === 'FOCUS') targetSpeed = 0    else if (phase === 'REPLAY') targetSpeed = 7    // 🔴 tighter damping (fix overspeed)    velocity.current += (targetSpeed - velocity.current) * 0.12    group.current.children.forEach((child: any) => {      child.position.z += dt * velocity.current      if (child.position.z > 5) {        child.position.z = -80 - Math.random() * 40      }    })  })  return (    <group ref={group}>      {nodes.map((n) => (        <mesh          key={n.id}          position={[n.position.x, n.position.y, n.position.z]}          onClick={() => onSelect?.(n.id)}        >          <sphereGeometry args={[0.25, 10, 10]} />          <meshBasicMaterial            color="#ffffff"            transparent            opacity={phase === 'FOCUS' ? 0.15 : 1}          />        </mesh>      ))}    </group>  )}TSXrm -rf .nextpnpm build
+[?2004l]633;E;cat > src/spatial/components/Starfield3D.tsx <<'TSX'\x0a'use client'\x0a\x0aimport { useMemo, useRef } from 'react'\x0aimport { useFrame } from '@react-three/fiber'\x0aimport * as THREE from 'three'\x0a\x0atype Star = { id: string\x3b x:number\x3b y:number\x3b z:number }\x0a\x0aexport default function Starfield3D({\x0a  stars,\x0a  phase,\x0a  onSelect,\x0a}: {\x0a  stars: Star[]\x0a  phase: 'HOME' | 'ASCENT' | 'LIFEMAP' | 'FOCUS' | 'REPLAY'\x0a  onSelect?: (id: string) => void\x0a}) {\x0a  const group = useRef<THREE.Group>(null)\x0a  const velocity = useRef(0)\x0a\x0a  const nodes = useMemo(() => {\x0a    return stars.map((s) => ({\x0a      id: s.id,\x0a      position: new THREE.Vector3(\x0a        (s.x - 50) / 2,\x0a        (s.y - 50) / 2,\x0a        -s.z * 20 - Math.random() * 50\x0a      ),\x0a    }))\x0a  }, [stars])\x0a\x0a  useFrame((_, dt) => {\x0a    if (!group.current) return\x0a\x0a    let targetSpeed = 0\x0a\x0a    // 🔴 FINAL TUNED VALUES\x0a    if (phase === 'ASCENT') targetSpeed = 22\x0a    else if (phase === 'LIFEMAP') targetSpeed = 0.01\x0a    else if (phase === 'FOCUS') targetSpeed = 0\x0a    else if (phase === 'REPLAY') targetSpeed = 7\x0a\x0a    // 🔴 tighter damping (fix overspeed)\x0a    velocity.current += (targetSpeed - velocity.current) * 0.12\x0a\x0a    group.current.children.forEach((child: any) => {\x0a      child.position.z += dt * velocity.current\x0a\x0a      if (child.position.z > 5) {\x0a        child.position.z = -80 - Math.random() * 40\x0a      }\x0a    })\x0a  })\x0a\x0a  return (\x0a    <group ref={group}>\x0a      {nodes.map((n) => (\x0a        <mesh\x0a          key={n.id}\x0a          position={[n.position.x, n.position.y, n.position.z]}\x0a          onClick={() => onSelect?.(n.id)}\x0a        >\x0a          <sphereGeometry args={[0.25, 10, 10]} />\x0a          <meshBasicMaterial\x0a            color="#ffffff"\x0a            transparent\x0a            opacity={phase === 'FOCUS' ? 0.15 : 1}\x0a          />\x0a        </mesh>\x0a      ))}\x0a    </group>\x0a  )\x0a}\x0aTSX\x0a;fcbddc5d-a876-46dd-89cf-7a5c0441e34b]633;C
+> urai-tier1@0.1.0 build /home/user/urai-spatial/urai-tier1
+> next build --webpack
+
+▲ Next.js 16.1.6 (webpack)
+
+  Creating an optimized production build ...
+✓ Compiled successfully in 25.1s
+  Running TypeScript ...
+  Collecting page data using 1 worker ...
+  Generating static pages using 1 worker (0/3) ...
+✓ Generating static pages using 1 worker (3/3) in 768.2ms
+  Finalizing page optimization ...
+  Collecting build traces ...
+
+Route (app)
+┌ ○ /
+└ ○ /_not-found
+
+
+○  (Static)  prerendered as static content
+
+]633;D;0]633;P;Cwd=/home/user/urai-spatial/urai-tier1]633;P;Prompt=\x1b]0\x3buser@firebase-urai-spatial-1769687960051: ~/urai-spatial/urai-tier1\x07\x1b[00\x3b35murai-spatial-21209489\x1b[00m:\x1b[01\x3b34m~/urai-spatial/urai-tier1\x1b[00m\x1b[01\x3b32m{tier1-home-ascent-cleanup-20260318_090348}\x1b[00m$ ]633;EnvSingleStart;0;fcbddc5d-a876-46dd-89cf-7a5c0441e34bbash: vsc_aa_env[$key]: unbound variable
+[?2004h]633;A]0;user@firebase-urai-spatial-1769687960051: ~/urai-spatial/urai-tier1[00;35murai-spatial-21209489[00m:[01;34m~/urai-spatial/urai-tier1[00m[01;32m{tier1-home-ascent-cleanup-20260318_090348}[00m$ ]633;Bov[Kbo[K[K[Kpbpn dev[K[K[K[K[K[K[Kmp,[K[K[K[Kpnpm dev
+[?2004l]633;E;pnpm dev;fcbddc5d-a876-46dd-89cf-7a5c0441e34b]633;C
+> urai-tier1@0.1.0 dev /home/user/urai-spatial/urai-tier1
+> next dev --webpack
+
+▲ Next.js 16.1.6 (webpack)
+- Local:         http://localhost:3000
+- Network:       http://10.88.0.3:3000
+
+✓ Starting...
+✓ Ready in 3.5s
+○ Compiling / ...
+ GET / 200 in 23.8s (compile: 22.1s, render: 1703ms)
+[?25h
+]633;D;0]633;P;Cwd=/home/user/urai-spatial/urai-tier1]633;P;Prompt=\x1b]0\x3buser@firebase-urai-spatial-1769687960051: ~/urai-spatial/urai-tier1\x07\x1b[00\x3b35murai-spatial-21209489\x1b[00m:\x1b[01\x3b34m~/urai-spatial/urai-tier1\x1b[00m\x1b[01\x3b32m{tier1-home-ascent-cleanup-20260318_090348}\x1b[00m$ ]633;EnvSingleStart;0;fcbddc5d-a876-46dd-89cf-7a5c0441e34bbash: vsc_aa_env[$key]: unbound variable
+[?2004h]633;A]0;user@firebase-urai-spatial-1769687960051: ~/urai-spatial/urai-tier1[00;35murai-spatial-21209489[00m:[01;34m~/urai-spatial/urai-tier1[00m[01;32m{tier1-home-ascent-cleanup-20260318_090348}[00m$ ]633;B
+[?2004l]633;E;;fcbddc5d-a876-46dd-89cf-7a5c0441e34b]633;C]633;D]633;P;Cwd=/home/user/urai-spatial/urai-tier1]633;P;Prompt=\x1b]0\x3buser@firebase-urai-spatial-1769687960051: ~/urai-spatial/urai-tier1\x07\x1b[00\x3b35murai-spatial-21209489\x1b[00m:\x1b[01\x3b34m~/urai-spatial/urai-tier1\x1b[00m\x1b[01\x3b32m{tier1-home-ascent-cleanup-20260318_090348}\x1b[00m$ ]633;EnvSingleStart;0;fcbddc5d-a876-46dd-89cf-7a5c0441e34bbash: vsc_aa_env[$key]: unbound variable
+[?2004h]633;A]0;user@firebase-urai-spatial-1769687960051: ~/urai-spatial/urai-tier1[00;35murai-spatial-21209489[00m:[01;34m~/urai-spatial/urai-tier1[00m[01;32m{tier1-home-ascent-cleanup-20260318_090348}[00m$ ]633;B
+[?2004l]633;E;;fcbddc5d-a876-46dd-89cf-7a5c0441e34b]633;C]633;D]633;P;Cwd=/home/user/urai-spatial/urai-tier1]633;P;Prompt=\x1b]0\x3buser@firebase-urai-spatial-1769687960051: ~/urai-spatial/urai-tier1\x07\x1b[00\x3b35murai-spatial-21209489\x1b[00m:\x1b[01\x3b34m~/urai-spatial/urai-tier1\x1b[00m\x1b[01\x3b32m{tier1-home-ascent-cleanup-20260318_090348}\x1b[00m$ ]633;EnvSingleStart;0;fcbddc5d-a876-46dd-89cf-7a5c0441e34bbash: vsc_aa_env[$key]: unbound variable
+[?2004h]633;A]0;user@firebase-urai-spatial-1769687960051: ~/urai-spatial/urai-tier1[00;35murai-spatial-21209489[00m:[01;34m~/urai-spatial/urai-tier1[00m[01;32m{tier1-home-ascent-cleanup-20260318_090348}[00m$ ]633;B

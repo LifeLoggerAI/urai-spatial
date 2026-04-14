@@ -1,0 +1,167 @@
+'use client'
+
+import { useEffect, useMemo, useRef } from 'react'
+import { useFrame, useThree } from '@react-three/fiber'
+import * as THREE from 'three'
+
+type Vec3Tuple = [number, number, number]
+
+type Props = {
+  phase: string
+  selected?: [number, number, number]
+  onSettled?: ((settledPhase: string) => void) | undefined
+}
+
+type Pose = {
+  position: THREE.Vector3
+  lookAt: THREE.Vector3
+  fov: number
+}
+
+const HOME_POSE: Pose = {
+    position: new THREE.Vector3(0, 1.35, 10.6),
+    lookAt: new THREE.Vector3(0.02, 0.42, -0.85),
+  fov: 42,
+}
+
+const ASCENT_ANTICIPATION_POSE: Pose = {
+  position: new THREE.Vector3(0, 1.05, 9.1),
+  lookAt: new THREE.Vector3(0, 0.48, -0.18),
+  fov: 42.5,
+}
+
+const ASCENT_CARRY_POSE: Pose = {
+  position: new THREE.Vector3(0, 5.1, 10.6),
+  lookAt: new THREE.Vector3(0, 1.9, -3.6),
+  fov: 46,
+}
+
+const LIFEMAP_POSE: Pose = {
+  position: new THREE.Vector3(0, 9.6, 12.8),
+  lookAt: new THREE.Vector3(0, 8.8, -10.5),
+  fov: 49,
+}
+
+function clamp01(v: number) {
+  return Math.max(0, Math.min(1, v))
+}
+
+function smootherstep(t: number) {
+  const x = clamp01(t)
+  return x * x * x * (x * (x * 6 - 15) + 10)
+}
+
+function lerp(a: number, b: number, t: number) {
+  return a + (b - a) * t
+}
+
+function lerpPose(a: Pose, b: Pose, t: number, outPos: THREE.Vector3, outLook: THREE.Vector3) {
+  outPos.copy(a.position).lerp(b.position, t)
+  outLook.copy(a.lookAt).lerp(b.lookAt, t)
+  return lerp(a.fov, b.fov, t)
+}
+
+function phaseName(value: string) {
+  return String(value || '').toUpperCase()
+}
+
+export default function CinematicCameraRig({ phase, selected = null }: Props) {
+  const { camera } = useThree()
+  const perspectiveCamera = camera as THREE.PerspectiveCamera
+  const prevPhase = useRef<string>(phaseName(phase))
+  const phaseStartedAt = useRef<number>(0)
+  const scratchPos = useMemo(() => new THREE.Vector3(), [])
+  const scratchLook = useMemo(() => new THREE.Vector3(), [])
+  const currentLook = useRef(new THREE.Vector3().copy(HOME_POSE.lookAt))
+
+  useEffect(() => {
+    camera.position.copy(HOME_POSE.position)
+    currentLook.current.copy(HOME_POSE.lookAt)
+    camera.lookAt(HOME_POSE.lookAt)
+    perspectiveCamera.fov = HOME_POSE.fov
+    perspectiveCamera.updateProjectionMatrix()
+  }, [camera])
+
+  useFrame((state) => {
+    /* URAI CANONICAL ASCENT PHYSICS */
+    const __urai_now = state.clock.getElapsedTime()
+    const __urai_ascent_active = phase !== 'HOME' && phase !== 'FOCUS' && phase !== 'REPLAY'
+    if (__urai_ascent_active) {
+      const __urai_drift = Math.sin(__urai_now * 0.8) * 0.03
+      camera.position.y += __urai_drift
+      camera.position.z += 0.02
+    }
+    const now = state.clock.getElapsedTime()
+    const currentPhase = phaseName(phase)
+    if (currentPhase !== prevPhase.current) {
+      prevPhase.current = currentPhase
+      phaseStartedAt.current = now
+    }
+
+    const elapsed = now - phaseStartedAt.current
+    let fov = HOME_POSE.fov
+    let damping = 0.12
+
+    if (currentPhase === 'HOME') {
+      const homeBob = Math.sin(now * 0.35) * 0.03
+      scratchPos.copy(HOME_POSE.position).add(new THREE.Vector3(0, homeBob, 0))
+      scratchLook.copy(HOME_POSE.lookAt)
+      fov = HOME_POSE.fov
+      damping = 0.08
+    } else if (currentPhase === 'ASCENT') {
+      const total = 2.35
+      const t = clamp01(elapsed / total)
+
+      const a = smootherstep(clamp01(t / 0.14))
+      const c = smootherstep(clamp01((t - 0.14) / 0.56))
+      const d = smootherstep(clamp01((t - 0.70) / 0.30))
+
+      if (t <= 0.14) {
+        fov = lerpPose(HOME_POSE, ASCENT_ANTICIPATION_POSE, a, scratchPos, scratchLook)
+      } else if (t <= 0.70) {
+        fov = lerpPose(ASCENT_ANTICIPATION_POSE, ASCENT_CARRY_POSE, c, scratchPos, scratchLook)
+      } else {
+        fov = lerpPose(ASCENT_CARRY_POSE, LIFEMAP_POSE, d, scratchPos, scratchLook)
+      }
+
+      const carryDrift = Math.sin(now * 0.9) * 0.035
+      scratchPos.x += carryDrift
+      scratchLook.x += carryDrift * 0.5
+      damping = 0.11
+    } else if (currentPhase === 'LIFEMAP') {
+      const settle = smootherstep(clamp01(elapsed / 0.85))
+      scratchPos.copy(ASCENT_CARRY_POSE.position).lerp(LIFEMAP_POSE.position, settle)
+      scratchLook.copy(ASCENT_CARRY_POSE.lookAt).lerp(LIFEMAP_POSE.lookAt, settle)
+      fov = lerp(ASCENT_CARRY_POSE.fov, LIFEMAP_POSE.fov, settle)
+      damping = 0.10
+    } else if (currentPhase === 'FOCUS' || currentPhase === 'REPLAY') {
+      const base = currentPhase === 'REPLAY' ? 3.8 : 5.0
+      const depth = currentPhase === 'REPLAY' ? 2.7 : 3.2
+      const y = currentPhase === 'REPLAY' ? 0.9 : 0.65
+
+      if (selected) {
+        scratchLook.set(selected[0], selected[1], selected[2])
+        scratchPos.set(selected[0] + 0.35, selected[1] + y, selected[2] + depth)
+      } else {
+        scratchLook.copy(LIFEMAP_POSE.lookAt)
+        scratchPos.copy(LIFEMAP_POSE.position)
+      }
+
+      fov = currentPhase === 'REPLAY' ? 44 : 47
+      damping = currentPhase === 'REPLAY' ? 0.13 : 0.12
+    } else {
+      scratchPos.copy(HOME_POSE.position)
+      scratchLook.copy(HOME_POSE.lookAt)
+      fov = HOME_POSE.fov
+      damping = 0.08
+    }
+
+    camera.position.lerp(scratchPos, damping)
+    currentLook.current.lerp(scratchLook, damping)
+    camera.lookAt(currentLook.current)
+    perspectiveCamera.fov = lerp(perspectiveCamera.fov, fov, damping)
+    perspectiveCamera.updateProjectionMatrix()
+  })
+
+  return null
+}

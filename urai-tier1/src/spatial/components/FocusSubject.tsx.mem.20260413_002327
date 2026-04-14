@@ -1,0 +1,106 @@
+'use client'
+
+import { useFrame } from '@react-three/fiber'
+import { useRef } from 'react'
+import type { Group, Mesh, MeshBasicMaterial } from 'three'
+
+type Props = {
+  visible?: boolean
+  starId?: string
+  position?: [number, number, number]
+  opacity?: number
+  interactive?: boolean
+  onEnterReplay?: () => void
+}
+
+export default function FocusSubject({
+  visible = true,
+  position = [0, 0, -6],
+  opacity = 1,
+  interactive = false,
+  onEnterReplay,
+}: Props) {
+  const rootRef = useRef<Group>(null)
+  const ringARef = useRef<Mesh>(null)
+  const ringBRef = useRef<Mesh>(null)
+
+  useFrame(({ clock }) => {
+    const t = clock.getElapsedTime()
+
+    if (rootRef.current) {
+      rootRef.current.rotation.y = Math.sin(t * 0.08) * 0.012
+    }
+
+    if (ringARef.current) {
+      ringARef.current.rotation.z = t * 0.028
+      const mat = ringARef.current.material as MeshBasicMaterial
+      mat.opacity = 0.007 * opacity * (0.97 + 0.03 * Math.sin(t * 0.45))
+    }
+
+    if (ringBRef.current) {
+      ringBRef.current.rotation.y = Math.sin(t * 0.22 + 0.6) * 0.03
+      const mat = ringBRef.current.material as MeshBasicMaterial
+      mat.opacity = 0.004 * opacity * (0.97 + 0.03 * Math.sin(t * 0.55 + 1.1))
+    }
+  })
+
+  if (!visible) return null
+
+  const handleReplay = (e?: { stopPropagation?: () => void }) => {
+    e?.stopPropagation?.()
+    if (!interactive) return
+    onEnterReplay?.()
+  }
+
+  return (
+    <group ref={rootRef} position={position}>
+      <mesh>
+        <sphereGeometry args={[0.80, 36, 36]} />
+        <meshBasicMaterial color="#6f93d6" transparent opacity={0.004 * opacity} depthWrite={false} />
+      </mesh>
+
+      <mesh>
+        <sphereGeometry args={[0.58, 36, 36]} />
+        <meshBasicMaterial color="#a8c4ff" transparent opacity={0.008 * opacity} depthWrite={false} />
+      </mesh>
+
+      <mesh ref={ringARef} rotation={[0.55, 0.2, 0]}>
+        <torusGeometry args={[0.42, 0.007, 16, 96]} />
+        <meshBasicMaterial color="#bfd2ff" transparent opacity={0.007 * opacity} depthWrite={false} />
+      </mesh>
+
+      <mesh ref={ringBRef} rotation={[-0.35, 0.8, 0.2]}>
+        <torusGeometry args={[0.34, 0.005, 16, 96]} />
+        <meshBasicMaterial color="#d8e5ff" transparent opacity={0.004 * opacity} depthWrite={false} />
+      </mesh>
+
+      <mesh>
+        <sphereGeometry args={[0.22, 32, 32]} />
+        <meshBasicMaterial color="#dbe7ff" transparent opacity={0.014 * opacity} depthWrite={false} />
+      </mesh>
+
+      <mesh
+        name="focus-replay-hit-area"
+        onClick={interactive ? handleReplay : undefined}
+        onPointerDown={interactive ? handleReplay : undefined}
+      >
+        <sphereGeometry args={[0.48, 24, 24]} />
+        <meshBasicMaterial transparent opacity={0} depthWrite={false} />
+      </mesh>
+
+      <mesh
+        name="focus-core"
+        onClick={interactive ? handleReplay : undefined}
+        onPointerDown={interactive ? handleReplay : undefined}
+      >
+        <sphereGeometry args={[0.34, 36, 36]} />
+        <meshBasicMaterial color="#fffdf6" transparent opacity={0.98 * opacity} />
+      </mesh>
+
+      <mesh>
+        <sphereGeometry args={[0.16, 24, 24]} />
+        <meshBasicMaterial color="#ffffff" transparent opacity={0.16 * opacity} depthWrite={false} />
+      </mesh>
+    </group>
+  )
+}

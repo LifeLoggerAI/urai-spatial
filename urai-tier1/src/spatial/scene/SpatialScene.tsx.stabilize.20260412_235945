@@ -1,0 +1,274 @@
+'use client'
+
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { Canvas, useFrame } from "@react-three/fiber"
+import * as THREE from 'three'
+import CinematicCameraRig from '@/spatial/components/CinematicCameraRig'
+import HomeEnvironment from '@/spatial/scene/HomeEnvironment'
+import Starfield from '@/spatial/components/Starfield'
+import FocusSubject from '@/spatial/components/FocusSubject'
+import ReplayScene from "@/spatial/components/ReplayScene"
+import ReplayEnvironment from "@/spatial/components/ReplayEnvironment"
+import useSceneAuthority from '@/spatial/hooks/useSceneAuthority'
+
+type Phase = 'HOME' | 'ASCENT' | 'LIFEMAP' | 'FOCUS' | 'REPLAY'
+type HomePhase = 'home' | 'ascent' | 'lifemap' | 'focus' | 'replay'
+
+type SpatialStar = {
+  id: string
+  position: [number, number, number]
+  color?: string
+}
+
+const STARS: SpatialStar[] = [
+  { id: 'star-1', position: [0.0, 0.35, -6.2], color: '#9fd3ff' },
+  { id: 'star-2', position: [-1.1, 0.65, -7.1], color: '#b8a6ff' },
+  { id: 'star-3', position: [1.15, -0.15, -7.8], color: '#7ce2ff' },
+  { id: 'star-4', position: [-1.9, -0.65, -8.7], color: '#ffd6a8' },
+  { id: 'star-5', position: [2.0, 0.9, -9.4], color: '#d9c2ff' },
+]
+
+function getStarById(id: string | null): SpatialStar | null {
+  if (!id) return null
+  return STARS.find((s) => s.id === id) ?? null
+}
+
+function clamp01(v: number) {
+  if (v < 0) return 0
+  if (v > 1) return 1
+  return v
+}
+
+function toHomePhase(phase: Phase): HomePhase {
+  switch (phase) {
+    case 'HOME': return 'home'
+    case 'ASCENT': return 'ascent'
+    case 'LIFEMAP': return 'lifemap'
+    case 'FOCUS': return 'focus'
+    case 'REPLAY': return 'replay'
+  }
+}
+
+export default function SpatialScene() {
+  const authority = useSceneAuthority()
+  const phase = authority.phase as Phase
+  const actions = authority.actions
+
+  const [selectedStarId, setSelectedStarId] = useState<string | null>(null)
+  const [focusReady, setFocusReady] = useState(false)
+  const [ascentProgress, setAscentProgress] = useState(0)
+  const [homeReturnProgress, setHomeReturnProgress] = useState(0)
+
+  const fogRef = useRef<THREE.Fog | null>(null)
+
+  const ascentTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const ascentRafRef = useRef<number | null>(null)
+  const returnRafRef = useRef<number | null>(null)
+
+  const selectedStar = useMemo(() => getStarById(selectedStarId), [selectedStarId])
+  const selectedPosition = selectedStar?.position
+
+  const stopAscentAnimation = useCallback(() => {
+    if (ascentRafRef.current !== null) {
+      cancelAnimationFrame(ascentRafRef.current)
+      ascentRafRef.current = null
+    }
+  }, [])
+
+  const stopReturnAnimation = useCallback(() => {
+    if (returnRafRef.current !== null) {
+      cancelAnimationFrame(returnRafRef.current)
+      returnRafRef.current = null
+    }
+  }, [])
+
+  useEffect(() => {
+    return () => {
+      if (ascentTimerRef.current) clearTimeout(ascentTimerRef.current)
+      stopAscentAnimation()
+      stopReturnAnimation()
+    }
+  }, [stopAscentAnimation, stopReturnAnimation])
+
+  const clearFocusState = useCallback(() => {
+    setFocusReady(false)
+  }, [])
+
+  const startAscentAnimation = useCallback(() => {
+    stopAscentAnimation()
+    const startedAt = performance.now()
+    const durationMs = 820
+
+    const tick = (now: number) => {
+      const t = clamp01((now - startedAt) / durationMs)
+      setAscentProgress(t)
+      if (t < 1) {
+        ascentRafRef.current = requestAnimationFrame(tick)
+      } else {
+        ascentRafRef.current = null
+      }
+    }
+
+    setAscentProgress(0)
+    ascentRafRef.current = requestAnimationFrame(tick)
+  }, [stopAscentAnimation])
+
+  const startHomeReturnAnimation = useCallback(() => {
+    stopReturnAnimation()
+    const startedAt = performance.now()
+    const durationMs = 1050
+
+    const tick = (now: number) => {
+      const t = clamp01((now - startedAt) / durationMs)
+      setHomeReturnProgress(1 - t)
+      if (t < 1) {
+        returnRafRef.current = requestAnimationFrame(tick)
+      } else {
+        setHomeReturnProgress(0)
+        returnRafRef.current = null
+      }
+    }
+
+    setHomeReturnProgress(1)
+    returnRafRef.current = requestAnimationFrame(tick)
+  }, [stopReturnAnimation])
+
+  const openAscent = useCallback(() => {
+    if (phase !== 'HOME') return
+    clearFocusState()
+    stopReturnAnimation()
+    setHomeReturnProgress(0)
+    actions.beginAscent()
+    startAscentAnimation()
+    if (ascentTimerRef.current) clearTimeout(ascentTimerRef.current)
+    ascentTimerRef.current = setTimeout(() => {
+      setAscentProgress(1)
+    }, 820)
+  }, [actions, clearFocusState, phase, startAscentAnimation, stopReturnAnimation])
+
+  const openFocus = useCallback((starId: string) => {
+    if (phase !== 'LIFEMAP') return
+    setSelectedStarId(starId)
+    clearFocusState()
+    actions.openFocus(starId)
+  }, [actions, clearFocusState, phase])
+
+  const openReplay = useCallback(() => {
+    if (phase !== 'FOCUS') return
+    if (!focusReady) return
+    if (!selectedStarId) return
+    actions.openReplay()
+  }, [actions, focusReady, phase, selectedStarId])
+
+  const esc = useCallback(() => {
+    if (phase === 'REPLAY') {
+      actions.closeReplay()
+      return
+    }
+    if (phase === 'FOCUS') {
+      clearFocusState()
+      actions.closeFocus()
+      return
+    }
+    if (phase === 'ASCENT') {
+      if (ascentTimerRef.current) clearTimeout(ascentTimerRef.current)
+      stopAscentAnimation()
+      setAscentProgress(0)
+      clearFocusState()
+      setSelectedStarId(null)
+      actions.goHome()
+      startHomeReturnAnimation()
+      return
+    }
+    if (phase === 'LIFEMAP') {
+      clearFocusState()
+      setSelectedStarId(null)
+      actions.goHome()
+      startHomeReturnAnimation()
+    }
+  }, [actions, clearFocusState, phase, startHomeReturnAnimation, stopAscentAnimation])
+
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') esc()
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [esc])
+
+  const handleCameraSettled = useCallback((settledPhase: Phase) => {
+    if (settledPhase === 'FOCUS') {
+      setFocusReady(true)
+      return
+    }
+    if (settledPhase === 'LIFEMAP' || settledPhase === 'HOME') {
+      setFocusReady(false)
+    }
+  }, [])
+
+  // fog animation
+  useEffect(() => {
+  }, [phase])
+
+
+  const showHome = phase === 'HOME' || phase === 'ASCENT' || homeReturnProgress > 0.001
+
+  const starfieldVisible =
+    phase === 'ASCENT' ||
+    phase === 'LIFEMAP' ||
+    phase === 'FOCUS' ||
+    phase === 'REPLAY' ||
+    homeReturnProgress > 0.001
+
+  return (
+    <Canvas gl={{ antialias: true }} dpr={[1, 1.75]}>
+      <fog attach="fog" args={['#050510', 2, 22]} ref={fogRef} />
+
+      <CinematicCameraRig
+        phase={phase}
+        selected={selectedPosition}
+        onSettled={handleCameraSettled}
+      />
+
+      <ambientLight intensity={phase === 'REPLAY' ? 0.25 : 0.7} />
+      <directionalLight position={[3, 4, 2]} intensity={phase === 'REPLAY' ? 0.5 : 1.1} />
+      <ReplayEnvironment active={phase === 'REPLAY'} />
+
+      <HomeEnvironment
+        visible={showHome}
+        interactive={phase === 'HOME'}
+        dim={0}
+        phase={toHomePhase(phase)}
+        opacity={1}
+        worldScale={1}
+        yOffset={0}
+        zOffset={0}
+        onSkySelect={openAscent}
+      />
+
+      <Starfield
+        visible={starfieldVisible}
+        selectedStarId={selectedStarId ?? undefined}
+        onStarClick={(id: string) => {
+          if (phase !== 'LIFEMAP') return
+          openFocus(id)
+        }}
+        interactive={phase === 'LIFEMAP'}
+        opacity={1}
+      />
+
+      <FocusSubject
+        visible={phase === 'FOCUS'}
+        starId={selectedStarId ?? undefined}
+        position={selectedPosition}
+        interactive={phase === 'FOCUS' && focusReady}
+        onEnterReplay={openReplay}
+      />
+
+      <ReplayScene
+        visible={phase === 'REPLAY'}
+        starId={selectedStarId ?? undefined}
+      />
+    </Canvas>
+  )
+}

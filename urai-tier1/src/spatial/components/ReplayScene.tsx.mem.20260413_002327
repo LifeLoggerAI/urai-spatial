@@ -1,0 +1,117 @@
+'use client'
+
+import { useMemo } from 'react'
+
+type Props = {
+  starId?: string
+  visible?: boolean
+  opacity?: number
+  onExit?: () => void
+}
+
+function clamp01(value: number) {
+  if (value < 0) return 0
+  if (value > 1) return 1
+  return value
+}
+
+function mix(a: number, b: number, t: number) {
+  return a + (b - a) * t
+}
+
+function hashToTint(input?: string) {
+  const text = (input ?? '').trim()
+  if (!text) return '#d7c2ff'
+  let acc = 0
+  for (let i = 0; i < text.length; i++) acc = (acc * 31 + text.charCodeAt(i)) >>> 0
+  const hue = acc % 360
+  return 'hsl(' + String(hue) + ' 55% 72%)'
+}
+
+export default function ReplayScene({
+  starId,
+  visible = true,
+  opacity = 1,
+  onExit,
+}: Props) {
+  if (!visible) return null
+
+  const presence = clamp01(opacity)
+  const veilOpacity = mix(0.08, 0.84, presence)
+  const shellOpacity = mix(0.06, 0.28, presence)
+  const coreOpacity = mix(0.16, 0.96, presence)
+  const driftZ = mix(2.6, 0, presence)
+  const driftScale = mix(1.24, 1.0, presence)
+
+  const replayGroupScale = useMemo(
+    () => [driftScale, driftScale, driftScale] as [number, number, number],
+    [driftScale]
+  )
+
+  const tint = useMemo(() => hashToTint(starId), [starId])
+
+  return (
+    <group position={[0, 0, driftZ]} scale={replayGroupScale}>
+      <mesh name="replay-immersion-shell" position={[0, 0, -3.2]}>
+        <sphereGeometry args={[5.8, 24, 24]} />
+        <meshBasicMaterial
+          transparent
+          opacity={shellOpacity}
+          depthWrite={false}
+          color="#180814"
+          side={2}
+        />
+      </mesh>
+
+      <mesh name="replay-veil" position={[0, 0, 1.2]} onClick={() => onExit?.()}>
+        <planeGeometry args={[20, 12]} />
+        <meshBasicMaterial
+          transparent
+          opacity={veilOpacity}
+          depthWrite={false}
+          color="#060309"
+        />
+      </mesh>
+
+      <mesh name="replay-core-glow" position={[0, 0, -1.8]}>
+        <sphereGeometry args={[1.35, 24, 24]} />
+        <meshBasicMaterial
+          transparent
+          opacity={coreOpacity}
+          depthWrite={false}
+          color={tint}
+        />
+      </mesh>
+
+      <mesh name="replay-memory-gate" position={[0, 0, -2.6]}>
+        <ringGeometry args={[0.9, 1.6, 48]} />
+        <meshBasicMaterial
+          transparent
+          opacity={mix(0.22, 0.72, presence)}
+          depthWrite={false}
+          color="#f4e8ff"
+        />
+      </mesh>
+
+      <mesh name="replay-depth-plane-a" position={[0, 0, -4.6]}>
+        <planeGeometry args={[9.5, 6.0]} />
+        <meshBasicMaterial
+          transparent
+          opacity={mix(0.04, 0.14, presence)}
+          depthWrite={false}
+          color="#120814"
+        />
+      </mesh>
+
+      <mesh name="replay-depth-plane-b" position={[0, 0, -7.2]}>
+        <planeGeometry args={[13.5, 8.0]} />
+        <meshBasicMaterial
+          transparent
+          opacity={mix(0.02, 0.09, presence)}
+          depthWrite={false}
+          color="#07040a"
+        />
+      </mesh>
+    </group>
+  )
+}

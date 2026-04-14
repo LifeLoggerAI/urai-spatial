@@ -1,77 +1,173 @@
-import { uraiNow, uraiRandom, uraiTime } from "@/lib/uraiDeterminism";
 "use client"
 
-import { useMemo } from "react"
-import { useSceneStore } from "@/spatial/store/useSceneStore"
+import { uraiNow, uraiRandom, uraiTime } from "@/lib/uraiDeterminism"
+import { useMemo, useRef } from "react"
+import { useFrame } from "@react-three/fiber"
 
 type StarNode = {
   id: string
   position: [number, number, number]
   size: number
+  featured?: boolean
+  color?: string
+}
+
+function clamp01(v: number) {
+  if (v < 0) return 0
+  if (v > 1) return 1
+  return v
+}
+
+function impulse(t: number) {
+  return 1 - Math.pow(1 - t, 3)
 }
 
 export default function Starfield(props: {
   visible: boolean
+  stars?: Array<{
+    id: string
+    position: [number, number, number]
+    size?: number
+    color?: string
+  }>
   selectedStarId: string | null
-  onStarClick: (id: string) => void
+  onStarClick: (id: string, position: [number, number, number]) => void
+  interactive?: boolean
+  opacity?: number
+  worldScale?: number
+  yOffset?: number
+  zOffset?: number
+  collapseToSelected?: boolean
+  focusSuppression?: number
 }) {
-  const openFocus = useSceneStore((s) => s.openFocus)
-
-  const stars = useMemo<StarNode[]>(() => {
-    const out: StarNode[] = []
-
-    const addBand = (
-      count: number,
-      zMin: number,
-      zMax: number,
-      spreadX: number,
-      spreadY: number,
-      sizeMin: number,
-      sizeMax: number
-    ) => {
-      for (let i = 0; i < count; i++) {
-        const z = zMin + uraiRandom() * (zMax - zMin)
-        const x = (uraiRandom() - 0.5) * spreadX
-        const y = (uraiRandom() - 0.5) * spreadY
-        const size = sizeMin + uraiRandom() * (sizeMax - sizeMin)
-
-        out.push({
-          id: `star-${out.length}`,
-          position: [x, y, z],
-          size,
-        })
-      }
+  const generatedStars = useMemo<StarNode[]>(() => {
+    uraiNow()
+    uraiTime()
+    const nodes: StarNode[] = []
+    for (let i = 0; i < 85; i += 1) {
+      const x = (uraiRandom() - 0.5) * 12.4
+      const y = (uraiRandom() - 0.5) * 7.8
+      const z = -1.8 - uraiRandom() * 11.8
+      const size = 0.02 + uraiRandom() * 0.14
+      nodes.push({
+        id: `star-${i}`,
+        position: [x, y, z],
+        size,
+        featured: false,
+        color: "#8ea3c7",
+      })
     }
-
-    addBand(60, -18, -10, 26, 16, 0.03, 0.07)
-    addBand(45, -9, -4, 16, 10, 0.05, 0.11)
-    addBand(10, -3.5, -1.5, 8, 5, 0.14, 0.34)
-
-    return out
+    return nodes
   }, [])
 
-  if (!props.visible) return null
+  const featuredStars: StarNode[] = (props.stars ?? []).map((star) => ({
+    id: star.id,
+    position: star.position,
+    size: star.size ?? 0.13,
+    featured: true,
+    color: star.color ?? "#9fd3ff",
+  }))
+
+  const allStars: StarNode[] = [...generatedStars, ...featuredStars]
+
+  const opacity = props.opacity ?? 1
+  const worldScale = props.worldScale ?? 1
+  const yOffset = props.yOffset ?? 0
+  const zOffset = props.zOffset ?? 0
+  const interactive = props.interactive ?? true
+  const collapseToSelected = props.collapseToSelected ?? false
+  const focusSuppression = clamp01(props.focusSuppression ?? 0)
+
+  const selectedStar = allStars.find((s) => s.id === props.selectedStarId) ?? null
+
+  const seenIds = new Set<string>()
+  for (const s of allStars) {
+    if (seenIds.has(s.id)) {
+      console.warn("[Starfield] duplicate star id", s.id)
+    }
+    seenIds.add(s.id)
+  }
+
+  const collapseRef = useRef(0)
+
+  useFrame((_, delta) => {
+      const time = performance.now() * 0.001
+    const target = collapseToSelected && props.selectedStarId ? 1 : 0
+    const speed = target > collapseRef.current ? 8 : 5
+    collapseRef.current += (target - collapseRef.current) * Math.min(delta * speed, 1)
+  })
 
   return (
-    <group>
-      {stars.map((star) => {
+    <group
+      visible={props.visible}
+      position={[0, yOffset, zOffset]}
+      scale={[worldScale, worldScale, worldScale]}
+    >
+      {allStars.map((star, index) => {
         const selected = props.selectedStarId === star.id
-        const dim = props.selectedStarId && !selected
+        const hasSelection = collapseToSelected && !!props.selectedStarId
+        const t = clamp01(collapseRef.current)
+        const g = impulse(t)
+
+          let position: [number, number, number] = star.position
+
+          // === SAFE PARALLAX DEPTH LAYERS ===
+          const driftT = performance.now() * 0.001
+          const depth = Math.abs(star.position[2])
+          const layer = depth < 6 ? 1.0 : depth < 10 ? 0.58 : 0.24
+          const nearPass = depth < 6 ? 1 : 0
+          const driftX = Math.cos(driftT * (0.34 + layer * 0.22) + index * 0.17) * (0.035 + nearPass * 0.060) * layer
+          const driftY = Math.sin(driftT * (0.46 + layer * 0.28) + index * 0.13) * (0.055 + nearPass * 0.075) * layer
+          const driftZ = nearPass ? Math.sin(driftT * 1.2 + index * 0.31) * 1.6 - 0.6 : 0
+
+          position = [
+            star.position[0] + driftX,
+            star.position[1] + driftY + 3.2,
+            star.position[2] + driftZ,
+          ]
+        if (selectedStar && hasSelection) {
+          const dx = star.position[0] - selectedStar.position[0]
+          const dy = star.position[1] - selectedStar.position[1]
+          const dz = star.position[2] - selectedStar.position[2]
+          const dist = Math.sqrt(dx * dx + dy * dy + dz * dz) + 0.0001
+          const gravity = 1 / (1 + dist * 0.35)
+          const curve = 1 - 0.58 * g * gravity
+          const push = selected ? 0 : (3.2 + dist * 0.35) * g
+
+          position = [
+            selectedStar.position[0] + dx * curve,
+            selectedStar.position[1] + dy * curve,
+            selectedStar.position[2] + dz * curve - push,
+          ]
+        }
+
+        const renderedSize = selected
+          ? star.size * 3.0
+          : star.featured
+            ? star.size * 1.8 * (1 - focusSuppression * 0.10)
+            : star.size * 1.25 * (1 - focusSuppression * 0.22)
+
+        const renderedOpacity = selected
+          ? 1 * opacity
+          : star.featured
+            ? (1.00 * (1 - focusSuppression * 0.78)) * opacity
+            : (0.82 * (1 - focusSuppression * 0.74)) * opacity
 
         return (
           <mesh
-            key={star.id}
-            position={star.position}
+            key={`${star.id}-${index}`}
+            position={position}
             onPointerDown={(e) => {
+              if (!interactive) return
               e.stopPropagation()
-              console.log("CLICK", star.id)
+              props.onStarClick(star.id, star.position)
             }}
           >
-            <sphereGeometry args={[star.size, 24, 24]} />
+            <sphereGeometry args={[renderedSize, 20, 20]} />
             <meshStandardMaterial
-              color={selected || star.size > 0.13 ? "#d8c36b" : "#b4c4df"}
+              color={selected ? "#ffe27a" : (star.color ?? "#8ea3c7")}
               transparent
-              opacity={selected ? 1 : dim ? 0.15 : 0.9}
+              opacity={renderedOpacity}
             />
           </mesh>
         )

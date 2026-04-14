@@ -1,0 +1,44 @@
+"use client"
+
+import { useRef } from "react"
+import { useFrame } from "@react-three/fiber"
+import * as THREE from "three"
+
+function clamp01(v: number) {
+  if (v < 0) return 0
+  if (v > 1) return 1
+  return v
+}
+
+// release curve (fast exit → slow settle)
+function releaseCurve(t: number) {
+  return t * t * (3 - 2 * t)
+}
+
+export default function ReplayEnvironment({ active }: { active: boolean }) {
+  const fog = useRef<THREE.Fog>(new THREE.Fog("#04030a", 2, 22))
+  const tRef = useRef(0)
+
+  useFrame((_, delta) => {
+    const target = active ? 1 : 0
+
+    // faster exit than entry
+    const speed = active ? 3.8 : 6.2
+    tRef.current += (target - tRef.current) * Math.min(delta * speed, 1)
+
+    const t = clamp01(tRef.current)
+    const r = active ? t : releaseCurve(t)
+
+    // unified unwind (smooth release back to lifemap)
+    fog.current.near = 2 + r * 9.5
+    fog.current.far = 22 - r * 14.0
+
+    // color unwind
+    const cr = 5 - r * 3
+    const cg = 3 - r * 2
+    const cb = 10 - r * 6
+    fog.current.color = new THREE.Color(`rgb(${cr},${cg},${cb})`)
+  })
+
+  return <primitive object={fog.current} attach="fog" />
+}

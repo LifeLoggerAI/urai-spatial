@@ -1,48 +1,100 @@
-import type { AuthorityPhase, Tier1Mode, UraiPhase } from './types'
-import { modeToPhase, phaseToMode } from './state'
+import {
+  Phase,
+  UraiPhase,
+  phaseToMode,
+  modeToPhase,
+  assertLegalTransition,
+} from './state'
 
-type PhaseLike = AuthorityPhase | Tier1Mode | string
+function isString(value: unknown): value is string {
+  return typeof value === 'string'
+}
 
-export const LEGAL_PHASE_TRANSITIONS: Record<UraiPhase, UraiPhase[]> = {
+function isUpperPhase(value: unknown): value is UraiPhase {
+  return value === 'HOME' ||
+    value === 'ASCENT' ||
+    value === 'LIFEMAP' ||
+    value === 'FOCUS' ||
+    value === 'REPLAY'
+}
+
+function isLowerPhase(value: unknown): value is Phase {
+  return value === 'home' ||
+    value === 'ascent' ||
+    value === 'lifemap' ||
+    value === 'focus' ||
+    value === 'replay'
+}
+
+// Always return UraiPhase (UPPERCASE)
+export function normalizeToUraiPhase(input: unknown): UraiPhase {
+  if (isUpperPhase(input)) return input
+  if (isLowerPhase(input)) return phaseToMode(input)
+  if (isString(input)) {
+    const lowered = input.toLowerCase()
+    if (isLowerPhase(lowered)) return phaseToMode(lowered)
+    const uppered = input.toUpperCase()
+    if (isUpperPhase(uppered)) return uppered
+  }
+  return 'HOME'
+}
+
+// Always return Phase (lowercase)
+export function normalizeToPhase(input: unknown): Phase {
+  if (isLowerPhase(input)) return input
+  if (isUpperPhase(input)) return modeToPhase(input)
+  if (isString(input)) {
+    const lowered = input.toLowerCase()
+    if (isLowerPhase(lowered)) return lowered
+    const uppered = input.toUpperCase()
+    if (isUpperPhase(uppered)) return modeToPhase(uppered)
+  }
+  return 'home'
+}
+
+// Safe transition guard (canonical)
+export function guardTransition(
+  from: unknown,
+  to: unknown
+): UraiPhase {
+  const fromPhase = normalizeToPhase(from)
+  const toPhase = normalizeToPhase(to)
+
+  assertLegalTransition(fromPhase, toPhase)
+
+  return normalizeToUraiPhase(toPhase)
+}
+
+// ---- RESTORED API SURFACE (COMPAT LAYER) ----
+
+export const LEGAL_PHASE_TRANSITIONS = {
   HOME: ['ASCENT'],
   ASCENT: ['LIFEMAP'],
-  LIFEMAP: ['FOCUS', 'HOME'],
-  FOCUS: ['REPLAY', 'LIFEMAP'],
+  LIFEMAP: ['FOCUS'],
+  FOCUS: ['REPLAY'],
   REPLAY: ['FOCUS'],
 }
 
-export function normalizeAuthorityPhase(input: PhaseLike): UraiPhase | null {
-  if (input === 'HOME' || input === 'ASCENT' || input === 'LIFEMAP' || input === 'FOCUS' || input === 'REPLAY') {
-    return input
-  }
-  if (input === 'home' || input === 'ascent' || input === 'lifemap' || input === 'focus' || input === 'replay') {
-    return modeToPhase(input)
-  }
-  return null
+export const normalizeAuthorityPhase = normalizeToUraiPhase
+
+export function assertAuthorityTransition(from: unknown, to: unknown) {
+  return guardTransition(from, to)
 }
 
-export function assertAuthorityTransition(from: PhaseLike, to: PhaseLike): boolean {
-  const a = normalizeAuthorityPhase(from)
-  const b = normalizeAuthorityPhase(to)
-  if (!a || !b) return false
-  return Boolean(LEGAL_PHASE_TRANSITIONS[a]?.includes(b))
+export function isFocusOrReplay(p: unknown) {
+  const u = normalizeToUraiPhase(p)
+  return u === 'FOCUS' || u === 'REPLAY'
 }
 
-export function isFocusOrReplay(phase: PhaseLike): boolean {
-  const p = normalizeAuthorityPhase(phase)
-  return p === 'FOCUS' || p === 'REPLAY'
+export function isReplayPhase(p: unknown) {
+  return normalizeToUraiPhase(p) === 'REPLAY'
 }
 
-export function isReplayPhase(phase: PhaseLike): boolean {
-  return normalizeAuthorityPhase(phase) === 'REPLAY'
+export function isHomeLike(p: unknown) {
+  const u = normalizeToUraiPhase(p)
+  return u === 'HOME' || u === 'ASCENT'
 }
 
-export function isHomeLike(phase: PhaseLike): boolean {
-  const p = normalizeAuthorityPhase(phase)
-  return p === 'HOME' || p === 'ASCENT'
-}
-
-export function resolveStableMode(phase: PhaseLike): Tier1Mode {
-  const normalized = normalizeAuthorityPhase(phase) ?? 'HOME'
-  return phaseToMode(normalized)
+export function resolveStableMode(p: unknown) {
+  return normalizeToUraiPhase(p)
 }

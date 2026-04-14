@@ -1,0 +1,8 @@
+== VERIFY REPO ROOT ==
+Missing src/spatial/components/CinematicCameraRig.tsx
+exit
+
+== DONE ==
+EXIT_CODE=1
+LOG_FILE=/home/user/urai-spatial/_audit/20260413_151637_canonical_safe_window_open/run.log
+Shell kept open.

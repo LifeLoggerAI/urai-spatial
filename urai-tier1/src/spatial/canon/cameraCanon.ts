@@ -156,7 +156,7 @@ export function normalizeTransitionPhase(input: PhaseInput): TransitionPhase {
     case 'CLOSE_FOCUS':
       return input === 'close_replay' || input === 'CLOSE_REPLAY' ? 'close_replay' : 'close_focus'
     case 'go_home':
-    case 'GO_HOME':
+    case 'ESCAPE':
       return 'go_home'
     default:
       return 'idle'

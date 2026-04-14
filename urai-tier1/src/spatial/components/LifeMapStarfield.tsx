@@ -1,173 +1,120 @@
 'use client'
-import { resolveDepthScale } from '@/spatial/canon/tier2Canon'
 
-import React, { useMemo } from 'react'
+import { useMemo } from 'react'
 import * as THREE from 'three'
 
-type VisualStar = {
+export type LifeMapStar = {
   id: string
-  position: [number, number, number]
-  size: number
-  alpha: number
-  tone: string
-  band?: 'near' | 'mid' | 'far'
+  position?: [number, number, number]
+  color?: string
+  size?: number
 }
 
-export type LifeMapStarfieldProps = {
+type Props = {
   visible?: boolean
-  stars: VisualStar[]
+  stars?: LifeMapStar[]
   selectedStarId?: string | null
-  onSelectStar: (id: string) => void
+  onSelectStar?: (id: string) => void
+  onHoverStar?: (id: string | null) => void
+  focusSuppression?: boolean
 }
 
-type SupportStar = {
-  position: [number, number, number]
-  scale: number
-  opacity: number
-  color: string
+const FALLBACK_STAR_COUNT = 48
+const FAR_RADIUS_MIN = 180
+const FAR_RADIUS_MAX = 520
+const DEPTH_MIN = -780
+const DEPTH_MAX = -180
+
+function hashIndex(i: number) {
+  const x = Math.sin((i + 1) * 12.9898) * 43758.5453
+  return x - Math.floor(x)
 }
 
-function buildSupportStars(count: number): SupportStar[] {
-  const data: SupportStar[] = []
-  for (let i = 0; i < count; i += 1) {
-    const x = Math.sin(i * 1.618) * (7 + (i % 13) * 0.86)
-    const y = Math.cos(i * 1.113) * (3.5 + (i % 9) * 0.52)
-    const z = -18 - ((i * 7) % 38)
-    const hue = 0.58 + (i % 7) * 0.012
-    const color = new THREE.Color().setHSL(hue, 0.45, 0.74).getStyle()
-    data.push({
+function fallbackStars(): LifeMapStar[] {
+  const out: LifeMapStar[] = []
+  for (let i = 0; i < FALLBACK_STAR_COUNT; i++) {
+    const a = hashIndex(i) * Math.PI * 2
+    const r = FAR_RADIUS_MIN + hashIndex(i + 101) * (FAR_RADIUS_MAX - FAR_RADIUS_MIN)
+    const x = Math.cos(a) * r * 0.55
+    const y = -8 + hashIndex(i + 202) * 42
+    const z = DEPTH_MIN + hashIndex(i + 303) * (DEPTH_MAX - DEPTH_MIN)
+    const s = 0.9 + hashIndex(i + 404) * 2.4
+    out.push({
+      id: "generated-star-" + String(i + 1),
       position: [x, y, z],
-      scale: 0.018 + (i % 5) * 0.01,
-      opacity: 0.12 + (i % 6) * 0.06,
-      color,
+      size: s,
+      color: '#c9d6ff',
     })
   }
-  return data
+  return out
+}
+
+function dedupeStars(input?: LifeMapStar[]) {
+  const seen = new Set<string>()
+  const source = Array.isArray(input) && input.length > 0 ? input : fallbackStars()
+  const out: LifeMapStar[] = []
+
+  for (let i = 0; i < source.length; i++) {
+    const raw = source[i]
+    const baseId = String(raw?.id || "star-" + String(i + 1))
+    let id = baseId
+    let n = 2
+    while (seen.has(id)) {
+      id = baseId + "--" + String(n)
+      n += 1
+    }
+    seen.add(id)
+
+    const p = Array.isArray(raw?.position) && raw.position.length === 3
+      ? raw.position
+      : fallbackStars()[i % FALLBACK_STAR_COUNT].position!
+
+    out.push({
+      id,
+      position: [p[0], p[1], p[2]],
+      size: typeof raw?.size === 'number' ? raw.size : fallbackStars()[i % FALLBACK_STAR_COUNT].size,
+      color: raw?.color || '#c9d6ff',
+    })
+  }
+
+  return out
 }
 
 export default function LifeMapStarfield({
   visible = true,
-  stars,
-  selectedStarId,
+  stars = [],
+  selectedStarId = null,
   onSelectStar,
-}: LifeMapStarfieldProps) {
-  const supportStars = useMemo(() => buildSupportStars(360), [])
+  onHoverStar,
+  focusSuppression = false,
+}: Props) {
+  const stableStars = useMemo(() => dedupeStars(stars), [stars])
+
+  if (!visible) return null
 
   return (
     <group visible={visible}>
-      <mesh position={[0, 0, -34]}>
-        <sphereGeometry args={[72, 56, 56]} />
-        <meshBasicMaterial
-          color="#010611"
-          transparent
-          opacity={0.96}
-          side={THREE.BackSide}
-          depthWrite={false}
-        />
-      </mesh>
-
-      <mesh position={[0, 1.6, -30]} rotation={[0.36, 0.18, 0.08]}>
-        <torusGeometry args={[18, 2.8, 24, 140]} />
-        <meshBasicMaterial
-          color="#102544"
-          transparent
-          opacity={0.16}
-          depthWrite={false}
-        />
-      </mesh>
-
-      <mesh position={[-2.5, -0.8, -25]} rotation={[0.28, -0.22, 0.2]}>
-        <torusGeometry args={[11.8, 1.8, 20, 110]} />
-        <meshBasicMaterial
-          color="#17325f"
-          transparent
-          opacity={0.12}
-          depthWrite={false}
-        />
-      </mesh>
-
-      <mesh position={[2.2, 0.2, -23]}>
-        <sphereGeometry args={[8.5, 28, 28]} />
-        <meshBasicMaterial
-          color="#11254a"
-          transparent
-          opacity={0.08}
-          depthWrite={false}
-        />
-      </mesh>
-
-      <mesh position={[-4.4, 1.8, -29]}>
-        <sphereGeometry args={[10.8, 28, 28]} />
-        <meshBasicMaterial
-          color="#0d1f3d"
-          transparent
-          opacity={0.06}
-          depthWrite={false}
-        />
-      </mesh>
-
-      {supportStars.map((star, idx) => (
-        <mesh key={`support-star-${idx}`} position={star.position} scale={star.scale}>
-          <sphereGeometry args={[1, 10, 10]} />
-          <meshBasicMaterial
-            color={star.color}
-            transparent
-            opacity={star.opacity}
-            depthWrite={false}
-            toneMapped={false}
-          />
-        </mesh>
-      ))}
-
-      {stars.map((star) => {
-        const selected = star.id === selectedStarId
-        const haloScale = selected ? star.size * 8.4 : star.size * 4.6
-        const ringOuter = selected ? star.size * 10.5 : star.size * 6.2
-        const ringInner = selected ? star.size * 8.4 : star.size * 4.9
+      {stableStars.map((star) => {
+        const pos = star.position || [0, 0, -240]
+        const isSelected = selectedStarId === star.id
+        const radius = isSelected ? (star.size || 1.2) * 1.35 : (star.size || 1.2)
+        const opacity = focusSuppression && !isSelected ? 0.14 : isSelected ? 0.98 : 0.72
 
         return (
-          <group
+          <mesh
             key={star.id}
-            position={star.position}
-            onClick={(event) => {
-              event.stopPropagation()
-              onSelectStar(star.id)
-            }}
+            position={new THREE.Vector3(pos[0], pos[1], pos[2])}
+            onPointerOver={() => onHoverStar?.(star.id)}
+            onPointerOut={() => onHoverStar?.(null)}
+            onClick={() => onSelectStar?.(star.id)}
           >
-            <mesh scale={selected ? star.size * 1.55 : star.size}>
-              <sphereGeometry args={[1, 20, 20]} />
-              <meshBasicMaterial
-                color={star.tone}
-                transparent
-                opacity={selected ? 1 : star.alpha}
-                depthWrite={false}
-                toneMapped={false}
-              />
-            </mesh>
-
-            <mesh scale={haloScale}>
-              <sphereGeometry args={[1, 20, 20]} />
-              <meshBasicMaterial
-                color={star.tone}
-                transparent
-                opacity={selected ? 0.18 : 0.06}
-                depthWrite={false}
-                toneMapped={false}
-              />
-            </mesh>
-
-            <mesh rotation={[Math.PI / 2, 0, 0]}>
-              <ringGeometry args={[ringInner, ringOuter, 48]} />
-              <meshBasicMaterial
-                color={selected ? '#dfeaff' : '#7fa8ff'}
-                transparent
-                opacity={selected ? 0.34 : 0.08}
-                depthWrite={false}
-                side={THREE.DoubleSide}
-                toneMapped={false}
-              />
-            </mesh>
-          </group>
+            <sphereGeometry args={[radius, 24, 24]} />
+            <meshBasicMaterial
+              color={star.color || '#c9d6ff'}
+              transparent
+              opacity={opacity}
+            />
+          </mesh>
         )
       })}
     </group>

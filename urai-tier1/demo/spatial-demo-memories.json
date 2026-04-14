@@ -1,0 +1,68 @@
+[
+  {
+    "id": "memory_000",
+    "ts": 1704067200000,
+    "title": "Threshold",
+    "emotion": "clarity",
+    "intensity": 0.92,
+    "x": 0.0,
+    "y": 0.10,
+    "z": -8.0,
+    "summary": "Foundational threshold event."
+  },
+  {
+    "id": "memory_001",
+    "ts": 1706745600000,
+    "title": "Weight",
+    "emotion": "weight",
+    "intensity": 0.84,
+    "x": -1.4,
+    "y": 0.55,
+    "z": -11.5,
+    "summary": "High-density memory cluster."
+  },
+  {
+    "id": "memory_002",
+    "ts": 1709251200000,
+    "title": "Recovery",
+    "emotion": "recovery",
+    "intensity": 0.76,
+    "x": 1.8,
+    "y": -0.25,
+    "z": -13.8,
+    "summary": "Return-from-depth marker."
+  },
+  {
+    "id": "memory_003",
+    "ts": 1711929600000,
+    "title": "Wonder",
+    "emotion": "wonder",
+    "intensity": 0.68,
+    "x": 2.6,
+    "y": 1.15,
+    "z": -16.4,
+    "summary": "Exploratory expansion point."
+  },
+  {
+    "id": "memory_004",
+    "ts": 1714521600000,
+    "title": "Calm",
+    "emotion": "calm",
+    "intensity": 0.58,
+    "x": -2.2,
+    "y": -0.85,
+    "z": -18.2,
+    "summary": "Low-friction stability window."
+  },
+  {
+    "id": "memory_005",
+    "ts": 1717200000000,
+    "title": "Tension",
+    "emotion": "tension",
+    "intensity": 0.88,
+    "x": 0.7,
+    "y": 1.35,
+    "z": -20.6,
+    "summary": "High-charge tension moment."
+  }
+]

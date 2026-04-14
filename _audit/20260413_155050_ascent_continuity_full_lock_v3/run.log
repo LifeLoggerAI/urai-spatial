@@ -1,0 +1,6 @@
+== VERIFY ROOT ==
+Missing src/spatial/components/CinematicCameraRig.tsx
+
+== DONE ==
+EXIT_CODE=1
+LOG_FILE=/home/user/urai-spatial/_audit/20260413_155050_ascent_continuity_full_lock_v3/run.log

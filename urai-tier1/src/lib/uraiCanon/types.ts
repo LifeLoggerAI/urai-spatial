@@ -85,13 +85,11 @@ export type UraiCommand =
   | { type: 'OPEN_LIFEMAP' }
   | { type: 'OPEN_FOCUS'; starId: string }
   | { type: 'OPEN_REPLAY'; starId?: string }
-  | { type: 'GO_HOME' }
   | { type: 'GO_ASCENT' }
   | { type: 'GO_LIFEMAP' }
   | { type: 'GO_FOCUS'; starId: string }
   | { type: 'GO_REPLAY'; starId?: string }
   | { type: 'ESCAPE' }
-  | { type: 'ESC' }
   | { type: 'TRANSITION_DONE' }
   | { type: 'BEGIN_ASCENT' }
   | { type: 'ARRIVE_LIFEMAP' }
@@ -100,4 +98,5 @@ export type UraiCommand =
   | { type: 'CLOSE_FOCUS' }
 
 export type CanonAction = UraiCommand
-export type CanonEscAction = { type: 'ESCAPE' } | { type: 'ESC' }
+
+export type CanonEscAction = CanonAction

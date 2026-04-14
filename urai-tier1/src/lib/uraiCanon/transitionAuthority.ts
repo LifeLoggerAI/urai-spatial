@@ -1,36 +1,57 @@
-import { assertAuthorityTransition, normalizeAuthorityPhase } from '@/lib/uraiCanon/authorityGuards'
-import type { AuthorityPhase, Tier1Mode, TransitionPhase, UraiPhase } from '@/lib/uraiCanon/types'
+import {
+  normalizeAuthorityPhase,
+  assertAuthorityTransition,
+  isFocusOrReplay,
+  isReplayPhase,
+  isHomeLike,
+  resolveStableMode,
+} from '@/lib/uraiCanon/authorityGuards'
+import type { Phase, UraiPhase } from '@/lib/uraiCanon/state'
 
-type PhaseLike = AuthorityPhase | Tier1Mode | string
+export type AuthorityPhase = Phase | UraiPhase
 
-export function normalizePhaseLike(input: PhaseLike): UraiPhase | null {
+export function normalizeTransitionPhase(input: AuthorityPhase): UraiPhase {
   return normalizeAuthorityPhase(input)
 }
 
-export function assertTransitionAuthority(from: PhaseLike, to: PhaseLike): boolean {
-  return assertAuthorityTransition(from, to)
+export function canTransition(from: AuthorityPhase, to: AuthorityPhase): boolean {
+  try {
+    assertAuthorityTransition(from, to)
+    return true
+  } catch {
+    return false
+  }
 }
 
-export function resolveAuthorityTransition(from: PhaseLike): UraiPhase | null {
-  const phase = normalizeAuthorityPhase(from)
-  if (phase === 'HOME') return 'ASCENT'
-  if (phase === 'ASCENT') return 'LIFEMAP'
-  if (phase === 'LIFEMAP') return 'FOCUS'
-  if (phase === 'FOCUS') return 'REPLAY'
-  if (phase === 'REPLAY') return 'FOCUS'
-  return null
+export function isImmersivePhase(input: AuthorityPhase): boolean {
+  return isFocusOrReplay(input)
 }
 
-export function resolveTransitionPhaseName(from: PhaseLike, to: PhaseLike): TransitionPhase {
-  const a = normalizeAuthorityPhase(from)
-  const b = normalizeAuthorityPhase(to)
+export function isTerminalReplayPhase(input: AuthorityPhase): boolean {
+  return isReplayPhase(input)
+}
 
-  if (a === 'HOME' && b === 'ASCENT') return 'ascent'
-  if (a === 'ASCENT' && b === 'LIFEMAP') return 'arrive_lifemap'
-  if (a === 'LIFEMAP' && b === 'FOCUS') return 'open_focus'
-  if (a === 'FOCUS' && b === 'REPLAY') return 'open_replay'
-  if (a === 'REPLAY' && b === 'FOCUS') return 'close_replay'
-  if (a === 'FOCUS' && b === 'LIFEMAP') return 'close_focus'
-  if (a === 'LIFEMAP' && b === 'HOME') return 'go_home'
-  return 'idle'
+export function isHomeEnvelopePhase(input: AuthorityPhase): boolean {
+  return isHomeLike(input)
+}
+
+export function getStableAuthorityPhase(input: AuthorityPhase): UraiPhase {
+  return resolveStableMode(input)
+}
+
+// ---- RESTORED API SURFACE (COMPAT LAYER) ----
+
+export const normalizePhaseLike = normalizeTransitionPhase
+
+export function assertTransitionAuthority(from: AuthorityPhase, to: AuthorityPhase): boolean {
+  return canTransition(from, to)
+}
+
+export function resolveAuthorityTransition(from: AuthorityPhase, to: AuthorityPhase): UraiPhase {
+  assertAuthorityTransition(from, to)
+  return normalizeTransitionPhase(to)
+}
+
+export function resolveTransitionPhaseName(input: AuthorityPhase): UraiPhase {
+  return normalizeTransitionPhase(input)
 }

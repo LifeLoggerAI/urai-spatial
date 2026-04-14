@@ -1,0 +1,10 @@
+== USING ROOT ==
+/home/user/urai-spatial
+== VERIFY FILES ==
+Missing src/spatial/components/CinematicCameraRig.tsx
+
+== DONE ==
+EXIT_CODE=1
+ROOT=/home/user/urai-spatial
+LOG_FILE=/home/user/urai-spatial/_audit/20260413_151748_canonical_safe_window_open_v2/run.log
+Shell kept open.

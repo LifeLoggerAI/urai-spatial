@@ -1,236 +1,335 @@
-'use client'
+"use client"
 
-import Tier3NarratorOverlay from '@/spatial/components/Tier3NarratorOverlay'
-import React, { useMemo } from 'react'
-import { Canvas } from '@react-three/fiber'
-import { STAR_DATA } from '@/lib/uraiCanon/starData'
-import { resolveAtmosphere, type TransitionPhase } from '@/spatial/canon/cameraCanon'
-import { CameraDirector, TransitionVeil } from '@/spatial/components/CameraDirector'
-import useSceneAuthority from '@/spatial/hooks/useSceneAuthority'
-import LifeMapStarfield from '@/spatial/components/LifeMapStarfield'
+import { useCallback, useEffect, useRef, useState } from 'react'
+import { Canvas } from "@react-three/fiber"
+import * as THREE from 'three'
+import CinematicCameraRig from '@/spatial/components/CinematicCameraRig'
+import HomeEnvironment from '@/spatial/scene/HomeEnvironment'
+import Starfield from '@/spatial/components/Starfield'
 import FocusSubject from '@/spatial/components/FocusSubject'
-import ReplayScene from '@/spatial/components/ReplayScene'
-import HomeEnvironment from '@/spatial/components/HomeEnvironment'
-import { useCanonEsc } from '../hooks/useCanonEsc'
+import ReplayScene from "@/spatial/components/ReplayScene"
+import ReplayEnvironment from "@/spatial/components/ReplayEnvironment"
+import useSceneAuthority from '@/spatial/hooks/useSceneAuthority'
 
-type VisualStar = {
- id: string
- position: [number, number, number]
- size: number
- alpha: number
- tone: string
- band: 'near' | 'mid' | 'far'
+type Phase = 'HOME' | 'ASCENT' | 'LIFEMAP' | 'FOCUS' | 'REPLAY'
+type HomePhase = 'home' | 'ascent' | 'lifemap' | 'focus' | 'replay'
+
+type SpatialStar = {
+  id: string
+  position: [number, number, number]
+  color?: string
+  size?: number
 }
 
-function clamp(value: number, min: number, max: number) {
- return Math.max(min, Math.min(max, value))
+const STARS: SpatialStar[] = [
+  { id: 'star-1', position: [0.0, 1.15, -7.4], color: '#9fd3ff', size: 0.14 },
+  { id: 'star-2', position: [-2.2, 1.85, -8.7], color: '#b8a6ff', size: 0.13 },
+  { id: 'star-3', position: [2.3, 0.95, -9.5], color: '#7ce2ff', size: 0.13 },
+  { id: 'star-4', position: [-3.1, 0.25, -10.8], color: '#ffd6a8', size: 0.125 },
+  { id: 'star-5', position: [3.0, 2.2, -11.6], color: '#d9c2ff', size: 0.12 },
+  { id: 'star-6', position: [-0.8, 2.75, -12.6], color: '#8fdcff', size: 0.115 },
+  { id: 'star-7', position: [1.1, 3.35, -13.8], color: '#d9c8ff', size: 0.11 },
+]
+
+function clamp01(v: number) {
+  if (v < 0) return 0
+  if (v > 1) return 1
+  return v
 }
 
-function toVisualStar(star: any, idx: number): VisualStar {
- const raw =
-  Array.isArray(star?.position) && star.position.length === 3
-   ? star.position
-   : [Number(star?.x) || 0, Number(star?.y) || 0, Number(star?.z) || (-14 - idx * 5)]
-
- const z = clamp(Number(raw[2]) || -20, -58, -13)
- const band: 'near' | 'mid' | 'far' =
-  z > -22 ? 'near' : z > -38 ? 'mid' : 'far'
-
- return {
-  id: String(star?.id ?? `star-${idx + 1}`),
-  position: [
-   clamp((Number(raw[0]) || 0) * 2.2, -16, 16),
-   clamp((Number(raw[1]) || 0) * 1.9, -9, 9),
-   z,
-  ],
-  size:
-   band === 'near'
-    ? clamp((Number(star?.size) || 0.07) * 2.0, 0.10, 0.22)
-    : band === 'mid'
-     ? clamp((Number(star?.size) || 0.06) * 1.5, 0.06, 0.14)
-     : clamp((Number(star?.size) || 0.05) * 1.1, 0.035, 0.08),
-  alpha:
-   band === 'near'
-    ? clamp(Number(star?.intensity) || 0.9, 0.45, 1)
-    : band === 'mid'
-     ? clamp((Number(star?.intensity) || 0.8) * 0.8, 0.22, 0.72)
-     : clamp((Number(star?.intensity) || 0.7) * 0.55, 0.10, 0.42),
-  tone:
-   typeof star?.tone === 'string'
-    ? star.tone
-    : typeof star?.color === 'string'
-     ? star.color
-     : '#dfe8ff',
-  band,
- }
+function toHomePhase(phase: Phase): HomePhase {
+  switch (phase) {
+    case 'HOME': return 'home'
+    case 'ASCENT': return 'ascent'
+    case 'LIFEMAP': return 'lifemap'
+    case 'FOCUS': return 'focus'
+    case 'REPLAY': return 'replay'
+  }
 }
 
 export default function SpatialScene() {
- const { authority, authorityActions } = useSceneAuthority({ stars: STAR_DATA })
-  const focusEntryBias =
-    authority.mode === 'focus' || authority.mode === 'replay'
-      ? 1
-      : 0
+  const authority = useSceneAuthority()
+  const phase = authority.phase as Phase
+  const actions = authority.actions
 
- useCanonEsc(authority)
+  const [selectedStarId, setSelectedStarId] = useState<string | null>(null)
+  const [selectedStarPosition, setSelectedStarPosition] = useState<[number, number, number] | undefined>(undefined)
+  const [focusReady, setFocusReady] = useState(false)
+  const [ascentProgress, setAscentProgress] = useState(0)
+  const [homeReturnProgress, setHomeReturnProgress] = useState(0)
 
- const visualStars = useMemo<VisualStar[]>(
-  () => (authority.stars ?? []).map((star: any, idx: number) => toVisualStar(star, idx)),
-  [authority.stars]
- )
+  const fogRef = useRef<THREE.Fog | null>(null)
+  const ascentTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const ascentRafRef = useRef<number | null>(null)
+  const returnRafRef = useRef<number | null>(null)
+    const focusEnteredAtRef = useRef<number>(0)
 
- const phase = (authority.phase ?? 'idle') as TransitionPhase
- const atmosphere = useMemo(
-  () => resolveAtmosphere(authority.mode, phase),
-  [authority.mode, phase]
- )
+  const stopAscentAnimation = useCallback(() => {
+    if (ascentRafRef.current !== null) {
+      cancelAnimationFrame(ascentRafRef.current)
+      ascentRafRef.current = null
+    }
+  }, [])
 
- const showHome =
-  authority.mode === 'home' ||
-  phase === 'ascent' ||
-  phase === 'go_home'
+  const stopReturnAnimation = useCallback(() => {
+    if (returnRafRef.current !== null) {
+      cancelAnimationFrame(returnRafRef.current)
+      returnRafRef.current = null
+    }
+  }, [])
 
- const showLifeMap =
-  authority.mode === 'lifemap' ||
-  authority.mode === 'focus' ||
-  authority.mode === 'replay' ||
-  phase === 'ascent' ||
-  phase === 'arrive_lifemap' ||
-  phase === 'open_focus' ||
-  phase === 'open_replay' ||
-  phase === 'close_focus' ||
-  phase === 'close_replay'
+  useEffect(() => {
+    return () => {
+      if (ascentTimerRef.current) clearTimeout(ascentTimerRef.current)
+      stopAscentAnimation()
+      stopReturnAnimation()
+    }
+  }, [stopAscentAnimation, stopReturnAnimation])
 
- const showFocus =
-  authority.mode === 'focus' ||
-  authority.mode === 'replay' ||
-  phase === 'open_focus' ||
-  phase === 'open_replay' ||
-  phase === 'close_focus' ||
-  phase === 'close_replay'
+  const clearFocusState = useCallback(() => {
+    setFocusReady(false)
+  }, [])
 
- const showReplay =
-  authority.mode === 'replay' ||
-  phase === 'open_replay' ||
-  phase === 'close_replay'
+  const clearSelection = useCallback(() => {
+    setSelectedStarId(null)
+    setSelectedStarPosition(undefined)
+  }, [])
 
- const replayOpacity =
-  phase === 'open_replay' ? 0.20 :
-  phase === 'close_replay' ? 0.14 :
-  showReplay ? 0.22 : 0
+  const startAscentAnimation = useCallback(() => {
+    stopAscentAnimation()
+    const startedAt = performance.now()
+    const durationMs = 820
 
- return (
-  <div
-   style={{
-    width: '100%',
-    height: '100vh',
-    overflow: 'hidden',
-    background: `radial-gradient(ellipse at 50% 42%, ${atmosphere.bgColor} 0%, #04101d 46%, #020812 74%, #01040a 100%)`,
-    position: 'relative',
-   }}
-  >
-   <Canvas
-    camera={{ position: [0, 1.1, 10.9], fov: 54, near: 0.1, far: 260 }}
-    dpr={[1, 1.75]}
-   >
-    <CameraDirector mode={authority.mode} transitionPhase={phase} />
+    const tick = (now: number) => {
+      const t = clamp01((now - startedAt) / durationMs)
+      setAscentProgress(t)
+      if (t < 1) {
+        ascentRafRef.current = requestAnimationFrame(tick)
+      } else {
+        ascentRafRef.current = null
+      }
+    }
 
-    <color attach="background" args={[atmosphere.bgColor]} />
-    <fog attach="fog" args={
-      authority.mode === 'replay'
-        ? ['#0b040d', 4, 14]
-        : atmosphere.fogArgs
-    } />
+    setAscentProgress(0)
+    ascentRafRef.current = requestAnimationFrame(tick)
+  }, [stopAscentAnimation])
 
-    <ambientLight
-     intensity={authority.mode === 'home' ? atmosphere.ambientLight * 1.55 : atmosphere.ambientLight}
-    />
+  const startHomeReturnAnimation = useCallback(() => {
+    stopReturnAnimation()
+    const startedAt = performance.now()
+    const durationMs = 1050
 
-    {authority.mode === 'home' ? (
-     <directionalLight
-      position={[0, 5, 8]}
-      intensity={0.85}
-      color={'#9ec5ff'}
-     />
-    ) : null}
+    const tick = (now: number) => {
+      const t = clamp01((now - startedAt) / durationMs)
+      setHomeReturnProgress(1 - t)
+      if (t < 1) {
+        returnRafRef.current = requestAnimationFrame(tick)
+      } else {
+        setHomeReturnProgress(0)
+        returnRafRef.current = null
+      }
+    }
 
-    <directionalLight
-     position={[4, 8, 6]}
-     intensity={atmosphere.directionalLightIntensity}
-     color={atmosphere.directionalLightColor}
-    />
+    setHomeReturnProgress(1)
+    returnRafRef.current = requestAnimationFrame(tick)
+  }, [stopReturnAnimation])
 
-    <pointLight
-     position={atmosphere.pointLightPosition}
-     intensity={atmosphere.pointLightIntensity}
-     color={'#dfe8ff'}
-     distance={atmosphere.pointLightDistance}
-    />
+  const openAscent = useCallback(() => {
+    if (phase !== 'HOME') return
+    clearFocusState()
+    stopReturnAnimation()
+    setHomeReturnProgress(0)
+    actions.beginAscent()
+    startAscentAnimation()
+    if (ascentTimerRef.current) clearTimeout(ascentTimerRef.current)
+    ascentTimerRef.current = setTimeout(() => {
+      setAscentProgress(1)
+    }, 820)
+  }, [actions, clearFocusState, phase, startAscentAnimation, stopReturnAnimation])
 
-    {showHome ? (
-     <HomeEnvironment
-      visible={true}
-      onSkyOpen={() => authorityActions.openLifeMap()}
-     />
-    ) : null}
+  const openFocus = useCallback((starId: string, position: [number, number, number]) => {
+    if (phase !== 'LIFEMAP') return
+    setSelectedStarId(starId)
+    setSelectedStarPosition(position)
+    clearFocusState()
+    actions.openFocus(starId)
+  }, [actions, clearFocusState, phase])
 
-    {showLifeMap ? (
-     <LifeMapStarfield
-      visible={true}
-      stars={visualStars}
-      selectedStarId={authority.selectedStarId}
-      onSelectStar={(id: string) => authorityActions.openFocus(id)}
-     />
-    ) : null}
+  const openReplay = useCallback(() => {
+    if (phase !== 'FOCUS') return
+    if (!focusReady) return
+    if (!selectedStarId) return
+      if (focusEnteredAtRef.current > 0 && performance.now() - focusEnteredAtRef.current < 700) return
+    actions.openReplay()
+  }, [actions, focusReady, phase, selectedStarId])
 
-    {showFocus ? (
-     <FocusSubject
-      visible={true}
-      onEnterReplay={() => authorityActions.openReplay(authority.selectedStarId)}
-     />
-    ) : null}
+  const esc = useCallback(() => {
+    if (phase === 'REPLAY') {
+      actions.closeReplay()
+      return
+    }
 
-    {showReplay ? (
-     <ReplayScene
-      starId={authority.replayStarId ?? authority.selectedStarId}
-      opacity={replayOpacity}
-      visible={showReplay}
-     />
-    ) : null}
+    if (phase === 'FOCUS') {
+      clearFocusState()
+      actions.closeFocus()
+      return
+    }
 
-    <TransitionVeil mode={authority.mode} transitionPhase={phase} />
-   </Canvas>
+    if (phase === 'ASCENT') {
+      if (ascentTimerRef.current) clearTimeout(ascentTimerRef.current)
+      stopAscentAnimation()
+      setAscentProgress(0)
+      clearFocusState()
+      clearSelection()
+      actions.goHome()
+      startHomeReturnAnimation()
+      return
+    }
 
-   {authority.mode === 'home' ? (
-    <div
-     aria-hidden="true"
-     style={{
-      position: 'absolute',
-      inset: 0,
-      pointerEvents: 'none',
-      background:
-       'radial-gradient(ellipse at 50% 48%, rgba(255,255,255,0.00) 0%, rgba(0,0,0,0.00) 44%, rgba(0,0,0,0.10) 68%, rgba(0,0,0,0.22) 100%)',
-      zIndex: 12,
-     }}
-    />
-   ) : null}
+    if (phase === 'LIFEMAP') {
+      clearFocusState()
+      clearSelection()
+      actions.goHome()
+      startHomeReturnAnimation()
+    }
+  }, [actions, clearFocusState, clearSelection, phase, startHomeReturnAnimation, stopAscentAnimation])
 
-   <Tier3NarratorOverlay
-    mode={authority.mode}
-    transitionPhase={phase}
-    visible={true}
-   />
-  </div>
- )
-}
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') esc()
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [esc])
 
-export function __urai_mode_visible(mode: any, target: any) {
- return mode === target
-}
+  useEffect(() => {
+    if (phase !== 'FOCUS') {
+      setFocusReady(false)
+    }
+  }, [phase])
 
-const MODE_PALETTE: Record<string, { bg: string }> = {
- home: { bg: '#050b14' },
- lifemap: { bg: '#040812' },
- focus: { bg: '#050814' },
- replay: { bg: '#0b040d' },
+    useEffect(() => {
+      if (phase === 'FOCUS') {
+        focusEnteredAtRef.current = performance.now()
+      } else {
+        focusEnteredAtRef.current = 0
+      }
+    }, [phase])
+
+  const handleCameraSettled = useCallback((settledPhase: Phase) => {
+    if (settledPhase === 'FOCUS') {
+      setFocusReady(true)
+      return
+    }
+    if (settledPhase === 'LIFEMAP' || settledPhase === 'HOME') {
+      setFocusReady(false)
+    }
+  }, [])
+
+  useEffect(() => {
+    if (!fogRef.current) return
+
+    if (phase === 'HOME') {
+      fogRef.current.color = new THREE.Color('#0c1726')
+      fogRef.current.near = 10
+      fogRef.current.far = 52
+      } else if (phase === 'ASCENT') {
+        fogRef.current.color = new THREE.Color('#0f1d31')
+        fogRef.current.near = 18
+        fogRef.current.far = 120
+    } else if (phase === 'LIFEMAP') {
+      fogRef.current.color = new THREE.Color('#102238')
+      fogRef.current.near = 10
+      fogRef.current.far = 82
+    } else if (phase === 'REPLAY') {
+      fogRef.current.color = new THREE.Color('#05030b')
+      fogRef.current.near = 1
+      fogRef.current.far = 14
+    }
+  }, [phase])
+
+  const showHome = phase === 'HOME' || phase === 'ASCENT' || homeReturnProgress > 0.001
+  const starfieldVisible =
+    phase === 'ASCENT' ||
+    phase === 'LIFEMAP' ||
+    phase === 'FOCUS' ||
+    phase === 'REPLAY' ||
+    homeReturnProgress > 0.001
+
+  const isReplay = phase === 'REPLAY'
+
+  return (
+    <Canvas
+      shadows
+      dpr={[1, 2]}
+      gl={{
+        antialias: true,
+        toneMapping: THREE.NoToneMapping,
+        outputColorSpace: THREE.SRGBColorSpace,
+      }}
+      camera={{ fov: 60, position: [0, 1.5, 6] }}
+      onCreated={({ gl }) => {
+        gl.toneMappingExposure = 2.05
+      }}
+    >
+      <color attach="background" args={["#091521"]} />
+      <fog attach="fog" args={['#0c1726', 10, 52]} ref={fogRef} />
+
+      <ambientLight intensity={0.72} color="#d5e6ff" />
+      <directionalLight position={[2.4, 6.4, 3.6]} intensity={2.35} color="#ffffff" castShadow />
+      <directionalLight position={[-2.2, 1.4, -7.5]} intensity={0.38} color="#5daeff" />
+      <pointLight position={[0, -1.4, -5.0]} intensity={1.35} distance={18} color="#9fd1ff" />
+
+      <CinematicCameraRig
+        phase={phase}
+        selected={selectedStarPosition}
+        onSettled={handleCameraSettled}
+      />
+
+      <ReplayEnvironment active={phase === 'REPLAY'} />
+
+      {!isReplay && (
+        <HomeEnvironment
+            visible={true}
+          interactive={phase === 'HOME'}
+          dim={0}
+          phase={toHomePhase(phase)}
+          opacity={1}
+          worldScale={1}
+          yOffset={0}
+          zOffset={0}
+          onSkySelect={openAscent}
+        />
+      )}
+
+      <Starfield
+        visible={starfieldVisible && !isReplay}
+        stars={STARS}
+        selectedStarId={phase === 'FOCUS' || phase === 'REPLAY' ? selectedStarId : null}
+        onStarClick={(id: string, position: [number, number, number]) => {
+          if (phase !== 'LIFEMAP') return
+          openFocus(id, position)
+        }}
+        interactive={phase === 'LIFEMAP'}
+        collapseToSelected={phase === 'REPLAY'}
+        focusSuppression={phase === 'FOCUS' || phase === 'REPLAY' ? 1 : 0}
+        opacity={1}
+      />
+
+      <FocusSubject
+        visible={phase === 'FOCUS'}
+        starId={selectedStarId ?? undefined}
+        position={selectedStarPosition ?? [0, 0, -18]}
+        onEnterReplay={openReplay}
+        interactive={phase === 'FOCUS' && focusReady}
+      />
+
+      <ReplayScene
+        visible={phase === 'REPLAY'}
+        opacity={1}
+        driftZ={0.4}
+        replayGroupScale={1.35}
+      />
+    </Canvas>
+  )
 }

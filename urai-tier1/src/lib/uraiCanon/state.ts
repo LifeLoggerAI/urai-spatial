@@ -1,310 +1,264 @@
-import { uraiNow, uraiRandom, uraiTime } from "@/lib/uraiDeterminism";
-import type {
-  CanonAction,
-  CanonState,
-  StarNode,
-  Tier1Mode,
-  TransitionPhase,
-  TransitionState,
-  UraiCommand,
-  UraiPhase,
-  UraiRuntimeState,
-  Vec3,
-} from './types'
+export type Phase = 'home' | 'ascent' | 'lifemap' | 'focus' | 'replay'
+export type UraiPhase = 'HOME' | 'ASCENT' | 'LIFEMAP' | 'FOCUS' | 'REPLAY'
+export type Tier1Mode = UraiPhase
 
-export type {
-  CanonAction,
-  CanonState,
-  Tier1Mode,
-  TransitionPhase,
-  TransitionState,
-  UraiCommand,
-  UraiPhase,
-  UraiRuntimeState,
-  Vec3,
-  StarNode,
-} from './types'
+export type TransitionPhase = 'idle' | 'ascent' | 'focus' | 'replay' | 'unwind'
 
-const PHASE_TO_MODE: Record<UraiPhase, Tier1Mode> = {
-  HOME: 'home',
-  ASCENT: 'ascent',
-  LIFEMAP: 'lifemap',
-  FOCUS: 'focus',
-  REPLAY: 'replay',
+export type Tier1State = {
+  phase: UraiPhase
+  mode: Phase
+  transitionPhase: TransitionPhase
+  transitionLock: boolean
+  transitioning: boolean
+  hoveredStarId: string | null
+  selectedStarId: string | null
+  replayStarId: string | null
 }
 
-const LEGAL_TRANSITIONS: Record<UraiPhase, UraiPhase[]> = {
-  HOME: ['ASCENT'],
-  ASCENT: ['LIFEMAP'],
-  LIFEMAP: ['FOCUS', 'HOME'],
-  FOCUS: ['REPLAY', 'LIFEMAP'],
-  REPLAY: ['FOCUS'],
+export type Tier1Action =
+  | { type: 'BEGIN_ASCENT' }
+  | { type: 'ARRIVE_LIFEMAP' }
+  | { type: 'SET_HOVERED_STAR'; starId: string | null }
+  | { type: 'OPEN_FOCUS'; starId: string }
+  | { type: 'CLOSE_FOCUS' }
+  | { type: 'OPEN_REPLAY'; starId: string }
+  | { type: 'CLOSE_REPLAY' }
+  | { type: 'END_TRANSITION' }
+  | { type: 'ESC' }
+
+export const VALID_TRANSITIONS: Record<Phase, Phase[]> = {
+  home: ['ascent'],
+  ascent: ['lifemap'],
+  lifemap: ['focus'],
+  focus: ['replay', 'lifemap'],
+  replay: ['focus'],
 }
 
-function nowMs(): number {
-  return uraiNow()
-}
-
-export function phaseToMode(phase: UraiPhase): Tier1Mode {
-  return PHASE_TO_MODE[phase]
-}
-
-export function modeToPhase(mode: Tier1Mode): UraiPhase {
-  if (mode === 'home') return 'HOME'
-  if (mode === 'ascent') return 'ASCENT'
-  if (mode === 'lifemap') return 'LIFEMAP'
-  if (mode === 'focus') return 'FOCUS'
-  return 'REPLAY'
-}
-
-export function assertLegalTransition(from: UraiPhase, to: UraiPhase): boolean {
-  return Boolean(LEGAL_TRANSITIONS[from]?.includes(to))
-}
-
-export function isTransitioningState(
-  state: Pick<UraiRuntimeState, 'isTransitioning' | 'transitioning' | 'inputLocked' | 'transitionLock' | 'transitionState'> | null | undefined
-): boolean {
-  return Boolean(
-    state &&
-      (
-        state.isTransitioning ||
-        state.transitioning ||
-        state.inputLocked ||
-        state.transitionLock ||
-        state.transitionState !== 'idle'
-      )
-  )
-}
-
-export function getPhaseDurationMs(
-  phase: UraiPhase,
-  previousPhase: UraiPhase | null = null
-): number {
-  if (phase === 'ASCENT') return 2200
-  if (phase === 'FOCUS' && previousPhase === 'LIFEMAP') return 950
-  if (phase === 'REPLAY' && previousPhase === 'FOCUS') return 1350
-  if (phase === 'FOCUS' && previousPhase === 'REPLAY') return 900
-  if (phase === 'LIFEMAP' && previousPhase === 'FOCUS') return 900
-  if (phase === 'HOME' && previousPhase === 'LIFEMAP') return 1500
-  return 0
-}
-
-function toTransitionPhase(action: UraiCommand['type'] | 'idle'): TransitionPhase {
-  switch (action) {
-    case 'ENTER_ASCENT':
-    case 'BEGIN_ASCENT':
-      return 'ascent'
-    case 'COMPLETE_ASCENT':
-    case 'ARRIVE_LIFEMAP':
-    case 'OPEN_LIFEMAP':
-      return 'arrive_lifemap'
-    case 'SELECT_STAR':
-    case 'OPEN_FOCUS':
-      return 'open_focus'
-    case 'ENTER_REPLAY':
-    case 'OPEN_REPLAY':
-      return 'open_replay'
-    case 'EXIT_REPLAY':
-    case 'CLOSE_REPLAY':
-      return 'close_replay'
-    case 'EXIT_FOCUS':
-    case 'CLOSE_FOCUS':
-      return 'close_focus'
-    case 'RETURN_HOME':
-    case 'GO_HOME':
-      return 'go_home'
-    default:
-      return 'idle'
+export function phaseToMode(p: Phase): Tier1Mode {
+  switch (p) {
+    case 'home': return 'HOME'
+    case 'ascent': return 'ASCENT'
+    case 'lifemap': return 'LIFEMAP'
+    case 'focus': return 'FOCUS'
+    case 'replay': return 'REPLAY'
   }
 }
 
-function normalizedAction(action: UraiCommand): UraiCommand {
-  switch (action.type) {
-    case 'GO_ASCENT':
-    case 'BEGIN_ASCENT':
-      return { type: 'ENTER_ASCENT' }
-    case 'GO_LIFEMAP':
-    case 'ARRIVE_LIFEMAP':
-      return { type: 'COMPLETE_ASCENT' }
-    case 'GO_FOCUS':
-      return { type: 'SELECT_STAR', starId: action.starId }
-    case 'GO_REPLAY':
-      return { type: 'ENTER_REPLAY', starId: action.starId }
-    case 'CLOSE_REPLAY':
-      return { type: 'EXIT_REPLAY' }
-    case 'CLOSE_FOCUS':
-      return { type: 'EXIT_FOCUS' }
-    case 'ESC':
-      return { type: 'ESCAPE' }
-    case 'TRANSITION_DONE':
-    case 'END_TRANSITION':
-      return { type: 'SET_TRANSITIONING', value: false }
-    default:
-      return action
+export function modeToPhase(m: Tier1Mode | UraiPhase): Phase {
+  switch (m) {
+    case 'HOME': return 'home'
+    case 'ASCENT': return 'ascent'
+    case 'LIFEMAP': return 'lifemap'
+    case 'FOCUS': return 'focus'
+    case 'REPLAY': return 'replay'
   }
 }
 
-function stamp(
-  state: UraiRuntimeState,
-  nextPhase: UraiPhase,
-  transitioning: boolean,
-  phaseLabel: TransitionPhase,
-  selectedStarId: string | null = state.selectedStarId,
-  replayStarId: string | null = state.replayStarId,
-  hoveredStarId: string | null = state.hoveredStarId
-): UraiRuntimeState {
-  return {
-    ...state,
-    phase: nextPhase,
-    mode: phaseToMode(nextPhase),
-    previousPhase: state.phase,
-    selectedStarId,
-    replayStarId,
-    hoveredStarId,
-    isTransitioning: transitioning,
-    transitioning,
-    inputLocked: transitioning,
-    transitionLock: transitioning,
-    phaseEnteredAt: nowMs(),
-    transitionPhase: phaseLabel,
-    transitionState: phaseLabel,
+function normalizePhase(input: Phase | UraiPhase): Phase {
+  return input === 'HOME' || input === 'ASCENT' || input === 'LIFEMAP' || input === 'FOCUS' || input === 'REPLAY'
+    ? modeToPhase(input)
+    : input
+}
+
+export function assertTransition(from: Phase, to: Phase) {
+  if (!VALID_TRANSITIONS[from].includes(to)) {
+    throw new Error(`ILLEGAL TRANSITION: ${from} → ${to}`)
   }
 }
 
-export const INITIAL_TIER1_STATE: CanonState = {
+export function assertLegalTransition(from: Phase | UraiPhase, to: Phase | UraiPhase) {
+  return assertTransition(normalizePhase(from), normalizePhase(to))
+}
+
+export const INITIAL_TIER1_STATE: Tier1State = {
   phase: 'HOME',
   mode: 'home',
-  previousPhase: null,
+  transitionPhase: 'idle',
+  transitionLock: false,
+  transitioning: false,
+  hoveredStarId: null,
   selectedStarId: null,
   replayStarId: null,
-  hoveredStarId: null,
-  isTransitioning: false,
-  transitioning: false,
-  inputLocked: false,
-  transitionLock: false,
-  phaseEnteredAt: 0,
-  transitionPhase: 'idle',
-  transitionState: 'idle',
 }
 
 export const INITIAL_URAI_RUNTIME_STATE = INITIAL_TIER1_STATE
 export const initialCanonState = INITIAL_TIER1_STATE
 export const initialUraiState = INITIAL_TIER1_STATE
 
-export function resolveEscTarget(
-  input: UraiPhase | Tier1Mode | Pick<UraiRuntimeState, 'phase' | 'mode'>
-): Tier1Mode | null {
-  const phase: UraiPhase =
-    typeof input === 'string'
-      ? (
-          input === 'home' || input === 'ascent' || input === 'lifemap' || input === 'focus' || input === 'replay'
-            ? modeToPhase(input)
-            : input
-        )
-      : (input.phase ?? modeToPhase(input.mode))
-
-  if (phase === 'REPLAY') return 'focus'
-  if (phase === 'FOCUS') return 'lifemap'
-  if (phase === 'LIFEMAP') return 'home'
-  return null
+export function isTransitioningState(state?: Partial<Tier1State> | null) {
+  return !!state && (state.transitioning === true || state.transitionLock === true || state.transitionPhase !== 'idle')
 }
 
-export function reduceRuntimeState(
-  state: CanonState = INITIAL_TIER1_STATE,
-  incoming: UraiCommand
-): CanonState {
-  const action = normalizedAction(incoming)
+export function getPhaseDurationMs(phase?: TransitionPhase) {
+  switch (phase) {
+    case 'ascent': return 1600
+    case 'focus': return 900
+    case 'replay': return 1200
+    case 'unwind': return 700
+    default: return 0
+  }
+}
 
+export function resolveEscTarget(phase: Phase | UraiPhase): UraiPhase {
+  switch (normalizePhase(phase)) {
+    case 'replay': return 'FOCUS'
+    case 'focus': return 'LIFEMAP'
+    case 'lifemap': return 'HOME'
+    case 'ascent': return 'HOME'
+    case 'home': return 'HOME'
+  }
+}
+
+function withPhase(state: Tier1State, mode: Phase): Tier1State {
+  return {
+    ...state,
+    mode,
+    phase: phaseToMode(mode),
+  }
+}
+
+export function tier1Reducer(state: Tier1State, action: Tier1Action): Tier1State {
   switch (action.type) {
-    case 'ENTER_ASCENT':
-      if (state.phase !== 'HOME') return state
-      return stamp(state, 'ASCENT', true, toTransitionPhase(action.type), null, null)
-
-    case 'COMPLETE_ASCENT':
-    case 'OPEN_LIFEMAP':
-      if (state.phase !== 'ASCENT' && state.phase !== 'FOCUS') return state
-      return stamp(state, 'LIFEMAP', false, 'idle', state.selectedStarId, null)
-
-    case 'SELECT_STAR':
-    case 'OPEN_FOCUS':
-      if (state.phase !== 'LIFEMAP') return state
-      return stamp(state, 'FOCUS', true, toTransitionPhase(action.type), action.starId, null)
-
-    case 'ENTER_REPLAY':
-    case 'OPEN_REPLAY':
-      if (state.phase !== 'FOCUS') return state
-      return stamp(
-        state,
-        'REPLAY',
-        true,
-        toTransitionPhase(action.type),
-        state.selectedStarId,
-        action.starId ?? state.selectedStarId
-      )
-
-    case 'EXIT_REPLAY':
-      if (state.phase !== 'REPLAY') return state
-      return stamp(state, 'FOCUS', true, 'close_replay', state.selectedStarId, null)
-
-    case 'EXIT_FOCUS':
-      if (state.phase !== 'FOCUS') return state
-      return stamp(state, 'LIFEMAP', true, 'close_focus', state.selectedStarId, null)
-
-    case 'RETURN_HOME':
-    case 'GO_HOME':
-      if (state.phase !== 'LIFEMAP') return state
-      return stamp(state, 'HOME', true, 'go_home', null, null)
-
-    case 'SET_TRANSITIONING':
+    case 'BEGIN_ASCENT': {
+      if (state.mode !== 'home' || state.transitionLock) return state
+      assertLegalTransition('home', 'ascent')
       return {
-        ...state,
-        isTransitioning: action.value,
-        transitioning: action.value,
-        inputLocked: action.value,
-        transitionLock: action.value,
-        transitionPhase: action.value ? state.transitionPhase : 'idle',
-        transitionState: action.value ? state.transitionState : 'idle',
+        ...withPhase(state, 'ascent'),
+        transitionPhase: 'ascent',
+        transitionLock: true,
+        transitioning: true,
+        hoveredStarId: null,
       }
+    }
 
-    case 'SET_HOVERED_STAR':
+    case 'ARRIVE_LIFEMAP': {
+      if (state.mode !== 'ascent') return state
+      assertLegalTransition('ascent', 'lifemap')
+      return {
+        ...withPhase(state, 'lifemap'),
+        transitionPhase: 'idle',
+        transitionLock: false,
+        transitioning: false,
+      }
+    }
+
+    case 'SET_HOVERED_STAR': {
+      if (state.mode !== 'lifemap' || state.transitionLock) return state
       return {
         ...state,
         hoveredStarId: action.starId,
       }
+    }
 
-    case 'ESCAPE':
-      if (state.phase === 'REPLAY') {
-        return stamp(state, 'FOCUS', true, 'close_replay', state.selectedStarId, null)
+    case 'OPEN_FOCUS': {
+      if (state.mode !== 'lifemap' || state.transitionLock) return state
+      assertLegalTransition('lifemap', 'focus')
+      return {
+        ...withPhase(state, 'focus'),
+        transitionPhase: 'focus',
+        transitionLock: true,
+        transitioning: true,
+        selectedStarId: action.starId,
+        replayStarId: null,
       }
-      if (state.phase === 'FOCUS') {
-        return stamp(state, 'LIFEMAP', true, 'close_focus', state.selectedStarId, null)
+    }
+
+      case 'OPEN_REPLAY': {
+        if (state.mode !== 'focus') return state
+        if (!action.starId || !state.selectedStarId) return state
+        if (action.starId !== state.selectedStarId) return state
+        if (state.transitionLock) return state
+        assertLegalTransition('focus', 'replay')
+        return {
+          ...withPhase(state, 'replay'),
+          replayStarId: action.starId,
+          transitionPhase: 'replay',
+          transitionLock: true,
+          transitioning: true,
+        }
       }
-      if (state.phase === 'LIFEMAP') {
-        return stamp(state, 'HOME', true, 'go_home', null, null)
+
+    case 'CLOSE_REPLAY': {
+      if (state.mode !== 'replay' || state.transitionLock) return state
+      assertLegalTransition('replay', 'focus')
+      return {
+        ...withPhase(state, 'focus'),
+        transitionPhase: 'unwind',
+        transitionLock: true,
+        transitioning: true,
+        replayStarId: null,
       }
+    }
+
+    case 'CLOSE_FOCUS': {
+      if (state.mode !== 'focus' || state.transitionLock) return state
+      return {
+        ...withPhase(state, 'lifemap'),
+        transitionPhase: 'unwind',
+        transitionLock: true,
+        transitioning: true,
+      }
+    }
+
+    case 'ESC': {
+      if (state.transitionLock) return state
+
+      if (state.mode === 'replay') {
+        return {
+          ...withPhase(state, 'focus'),
+          transitionPhase: 'unwind',
+          transitionLock: true,
+          transitioning: true,
+          replayStarId: null,
+        }
+      }
+
+      if (state.mode === 'focus') {
+        return {
+          ...withPhase(state, 'lifemap'),
+          transitionPhase: 'unwind',
+          transitionLock: true,
+          transitioning: true,
+        }
+      }
+
+      if (state.mode === 'lifemap' || state.mode === 'ascent') {
+        return {
+          ...withPhase(state, 'home'),
+          transitionPhase: 'unwind',
+          transitionLock: true,
+          transitioning: true,
+          hoveredStarId: null,
+          selectedStarId: null,
+          replayStarId: null,
+        }
+      }
+
       return state
+    }
+
+    case 'END_TRANSITION': {
+      return {
+        ...state,
+        transitionPhase: 'idle',
+        transitionLock: false,
+        transitioning: false,
+      }
+    }
 
     default:
       return state
   }
 }
 
-export const tier1Reducer = reduceRuntimeState
-export const uraiReducer = reduceRuntimeState
+export function reduceRuntimeState(state: Tier1State, action: Tier1Action) {
+  return tier1Reducer(state, action)
+}
 
-export function makeStarNode(
-  id: string,
-  position: Vec3,
-  intensity = 1,
-  kind: StarNode['kind'] = 'memory'
-): StarNode {
-  return {
-    id,
-    position,
-    x: position[0],
-    y: position[1],
-    z: position[2],
-    intensity,
-    kind,
-  }
+export function uraiReducer(state: Tier1State, action: Tier1Action) {
+  return tier1Reducer(state, action)
+}
+
+export function makeStarNode() {
+  return null
 }

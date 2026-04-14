@@ -1,37 +1,54 @@
-'use client'
-import * as THREE from 'three'
-import { useRef } from 'react'
-import { useFrame } from '@react-three/fiber'
+"use client"
+
+import { useRef } from "react"
+import { useFrame } from "@react-three/fiber"
+import * as THREE from "three"
+
+function clamp01(v: number) {
+  if (v < 0) return 0
+  if (v > 1) return 1
+  return v
+}
+
+// fast drop → slow settle (entry), smooth release (exit)
+function dropCurve(t: number) {
+  return 1 - Math.pow(1 - t, 4)
+}
+function releaseCurve(t: number) {
+  return t * t * (3 - 2 * t)
+}
 
 export default function ReplayEnvironment({ active }: { active: boolean }) {
-  const group = useRef<THREE.Group>(null)
+  const fog = useRef<THREE.Fog>(new THREE.Fog("#04030a", 2, 22))
+  const tRef = useRef(0)
 
-  useFrame(() => {
-    if (!group.current || !active) return
-    group.current.rotation.y += 0.0005
+  useFrame((_, delta) => {
+    const target = active ? 1 : 0
+    const speed = active ? 3.8 : 6.2
+    tRef.current += (target - tRef.current) * Math.min(delta * speed, 1)
+
+    const t = clamp01(tRef.current)
+    const k = active ? dropCurve(t) : releaseCurve(t)
+
+    // --- SAFE FOG (never invert, no blowout) ---
+    const nearMin = 2.0
+    const nearMax = 9.0          // capped
+    const farMin  = 14.0         // ensure > nearMax
+    const farMax  = 22.0
+
+    const near = nearMin + (nearMax - nearMin) * k
+    const far  = farMax - (farMax - farMin) * k
+
+    // guarantee valid ordering
+    fog.current.near = Math.min(near, far - 0.5)
+    fog.current.far  = Math.max(far, fog.current.near + 0.5)
+
+    // subtle, non-clipping color shift (avoid white)
+    const r = 6 - k * 2.5
+    const g = 4 - k * 2.0
+    const b = 12 - k * 6.5
+    fog.current.color = new THREE.Color(`rgb(${Math.round(r)},${Math.round(g)},${Math.round(b)})`)
   })
 
-  if (!active) return null
-
-  return (
-    <group ref={group}>
-      {/* FAR LAYER */}
-      <mesh position={[0,0,-80]}>
-        <sphereGeometry args={[60, 64, 64]} />
-        <meshBasicMaterial color="#05010a" side={THREE.BackSide} />
-      </mesh>
-
-      {/* MID LAYER */}
-      <mesh position={[0,0,-30]}>
-        <sphereGeometry args={[25, 32, 32]} />
-        <meshStandardMaterial color="#12051a" roughness={1} />
-      </mesh>
-
-      {/* NEAR LAYER */}
-      <mesh position={[0,0,-8]}>
-        <sphereGeometry args={[6, 32, 32]} />
-        <meshStandardMaterial color="#2a0a3a" />
-      </mesh>
-    </group>
-  )
+  return <primitive object={fog.current} attach="fog" />
 }

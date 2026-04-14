@@ -1,54 +1,38 @@
 'use client'
 
 import { useEffect } from 'react'
-import type { UraiCommand } from '@/lib/uraiCanon/types'
 
-type EscHandler = () => void
-type EscDispatch = (command: UraiCommand) => void
-type EscRuntime = { inputLocked?: boolean }
-type EscController = {
-  inputLocked?: boolean
-  dispatch?: EscDispatch
-  esc?: () => void
+type CanonPhase = 'HOME' | 'ASCENT' | 'LIFEMAP' | 'FOCUS' | 'REPLAY'
+
+type EscActions = {
+  closeReplay?: () => void
+  openLifeMap?: () => void
+  goHome?: () => void
 }
 
-export function useCanonEsc(handler: EscHandler): void
-export function useCanonEsc(runtime: EscRuntime, dispatch: EscDispatch): void
-export function useCanonEsc(controller: EscController): void
-export function useCanonEsc(
-  arg1: EscHandler | EscRuntime | EscController,
-  arg2?: EscDispatch
-) {
+export default function useCanonEsc(phase: CanonPhase | string, actions: EscActions) {
   useEffect(() => {
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key !== 'Escape') return
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key !== 'Escape') return
 
-      if (typeof arg1 === 'function') {
-        arg1()
+      const p = String(phase || '').toUpperCase()
+
+      if (p === 'REPLAY') {
+        actions.closeReplay?.()
         return
       }
 
-      const locked = Boolean(arg1.inputLocked)
-      if (locked) return
-
-      if ('esc' in arg1 && typeof arg1.esc === 'function') {
-        arg1.esc()
+      if (p === 'FOCUS') {
+        actions.openLifeMap?.()
         return
       }
 
-      if ('dispatch' in arg1 && typeof arg1.dispatch === 'function') {
-        arg1.dispatch({ type: 'ESCAPE' })
-        return
-      }
-
-      if (arg2) {
-        arg2({ type: 'ESCAPE' })
+      if (p === 'LIFEMAP' || p === 'ASCENT') {
+        actions.goHome?.()
       }
     }
 
-    window.addEventListener('keydown', onKey, { capture: true })
-    return () => window.removeEventListener('keydown', onKey, { capture: true })
-  }, [arg1, arg2])
+    window.addEventListener('keydown', onKeyDown)
+    return () => window.removeEventListener('keydown', onKeyDown)
+  }, [phase, actions])
 }
-
-export default useCanonEsc

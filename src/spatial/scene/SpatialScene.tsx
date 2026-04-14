@@ -1,4 +1,5 @@
 'use client'
+import Starfield3D from '@/spatial/components/Starfield3D'
 
 import React, { useEffect, useMemo, useReducer, useRef, useState } from 'react'
 
@@ -324,60 +325,14 @@ boxShadow: '0 0 0 1px rgba(255,255,255,0.02)',
 />
 </>
 )}
-
 {/* STARFIELD: Reworked for depth, per LIFEMAP LAW */}
 {showField && (
 <div style={{ position: 'absolute', inset: 0 }}>
-{STAR_DATA.map((star) => {
-const isSelected = selectedStar?.id === star.id
-const isHovered = hoveredStarId === star.id
-const inFocus = state.phase === 'FOCUS'
-
-// Canon compliance: Farther stars are smaller and dimmer
-const zSizeFactor = 1 - star.z * 0.25
-const zOpacityFactor = 1 - star.z * 0.2
-
-const opacity =
-inFocus
-? isSelected ? 1 : camera.starOpacity
-: camera.starOpacity * zOpacityFactor
-
-const size =
-(inFocus && isSelected) ? star.size * 1.5 :
-(state.phase === 'LIFEMAP' && isHovered) ? star.size * 1.25 * zSizeFactor :
-star.size * zSizeFactor
-
-return (
-<button
-key={star.id}
-aria-label={star.label}
-onMouseEnter={() => state.phase === 'LIFEMAP' && setHoveredStarId(star.id)}
-onMouseLeave={() => setHoveredStarId(null)}
-onClick={(e) => {
-e.stopPropagation() // Fix for POINTER_MISSED log noise
-if (state.phase === 'LIFEMAP') openFocus(star)
-else if (inFocus && isSelected) openReplay()
-}}
-style={{
-position: 'absolute',
-left: `${star.x}%`,
-top: `${star.y}%`,
-width: `${size}px`,
-height: `${size}px`,
-borderRadius: '50%',
-transform: 'translate(-50%, -50%)',
-background: isSelected ? '#dac66a' : '#e5e5e5',
-border: '0',
-padding: 0,
-cursor: state.inputLocked || transitionKind ? 'default' : (state.phase === 'LIFEMAP' || (inFocus && isSelected)) ? 'pointer' : 'default',
-opacity: opacity,
-// Enhanced hover affordance
-boxShadow: isHovered && state.phase === 'LIFEMAP' ? '0 0 20px rgba(255, 255, 255, 0.8)' : isSelected && inFocus ? '0 0 30px rgba(218,198,106,0.7)' : 'none',
-transition: 'all 260ms ease',
-}}
-/>
-)
-})}
+  <Starfield3D
+    stars={STAR_DATA}
+    phase={state.phase}
+    onSelect={(id) => dispatch({ type: 'OPEN_FOCUS', starId: id })}
+  />
 </div>
 )}
 
