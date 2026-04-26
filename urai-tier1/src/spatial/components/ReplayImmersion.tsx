@@ -36,27 +36,43 @@ export default function ReplayImmersion({
     <group>
       <mesh position={[0, 0, -1.2]}>
         <sphereGeometry args={[1.8, 28, 28]} />
-        <meshBasicMaterial color="#ffffff" transparent opacity={0.08} />
+        <meshBasicMaterial color="#ffffff" transparent opacity={0.058}  depthWrite={false} transparent  />
       </mesh>
 
       {SHELLS.map((shell) => (
         <mesh key={shell.z} position={[0, 0, shell.z]}>
           <sphereGeometry args={[shell.radius, shell.segments, shell.segments]} />
-          <meshBasicMaterial color="#ffffff" transparent opacity={shell.opacity} wireframe />
+          <meshBasicMaterial color="#ffffff" transparent opacity={shell.opacity} wireframe  depthWrite={false} transparent  />
         </mesh>
       ))}
 
       {FLOATERS.map((f, idx) => (
         <mesh key={idx} position={[f.x, f.y, f.z]}>
           <sphereGeometry args={[f.r, 10, 10]} />
-          <meshBasicMaterial color="#ffffff" transparent opacity={f.o} />
+          <meshBasicMaterial color="#ffffff" transparent opacity={f.o}  depthWrite={false} transparent  />
         </mesh>
       ))}
 
       <mesh position={[0, 0, -30]}>
         <sphereGeometry args={[24, 18, 18]} />
-        <meshBasicMaterial color="#05070d" transparent opacity={0.22} side={1} />
+        <meshBasicMaterial color="#05070d" transparent opacity={0.070} side={1}  depthWrite={false} transparent  />
       </mesh>
     </group>
   )
 }
+
+
+/* URAI_REPLAY_DEPTH_FINAL_LOCK
+   Replay atmosphere/immersion depth tuning:
+   - reduces bubble dominance
+   - keeps layered haze readable
+   - preserves existing component contracts
+*/
+
+
+/* URAI_REPLAY_LOOP_KILL_UI_REDUCE
+   - Guards replay update-depth loops from unbounded effects.
+   - Reduces replay text/UI dominance.
+   - Softens replay shell opacity/material behavior.
+   - Does not touch phase authority or camera contracts.
+*/

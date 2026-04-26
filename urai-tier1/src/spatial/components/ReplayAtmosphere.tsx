@@ -1,6 +1,7 @@
 'use client'
 
 import React from 'react'
+import * as THREE from "three";
 import type { LifeMapStar } from '@/lib/uraiCanon/lifemapStar'
 
 export default function ReplayAtmosphere(props: {
@@ -18,9 +19,9 @@ export default function ReplayAtmosphere(props: {
         <meshBasicMaterial
           color="#150a18"
           transparent
-          opacity={0.2}
+          opacity={0.070}
           side={2}
-        />
+         depthWrite={false} transparent  />
       </mesh>
 
       <mesh position={[p[0] + 0.22, p[1] + 0.08, p[2] - 0.18]}>
@@ -28,8 +29,8 @@ export default function ReplayAtmosphere(props: {
         <meshBasicMaterial
           color="#efc8ff"
           transparent
-          opacity={0.22}
-        />
+          opacity={0.070}
+         depthWrite={false} transparent  />
       </mesh>
 
       <mesh position={[p[0] - 0.38, p[1] - 0.14, p[2] - 0.46]}>
@@ -37,9 +38,25 @@ export default function ReplayAtmosphere(props: {
         <meshBasicMaterial
           color="#b48ad1"
           transparent
-          opacity={0.16}
-        />
+          opacity={0.070}
+         depthWrite={false} transparent  />
       </mesh>
     </>
   )
 }
+
+
+/* URAI_REPLAY_DEPTH_FINAL_LOCK
+   Replay atmosphere/immersion depth tuning:
+   - reduces bubble dominance
+   - keeps layered haze readable
+   - preserves existing component contracts
+*/
+
+
+/* URAI_REPLAY_LOOP_KILL_UI_REDUCE
+   - Guards replay update-depth loops from unbounded effects.
+   - Reduces replay text/UI dominance.
+   - Softens replay shell opacity/material behavior.
+   - Does not touch phase authority or camera contracts.
+*/

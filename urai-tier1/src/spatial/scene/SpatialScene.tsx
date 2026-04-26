@@ -43,7 +43,7 @@ type Star = {
 };
 
 const ASCENT_MS = 3400;
-const ASCENT_LIFEMAP_HANDOFF_MS = 1650;
+const ASCENT_LIFEMAP_HANDOFF_MS = 2100;
 const FOCUS_MS = 1500;
 const FOCUS_ARRIVAL_SETTLE_MS = 1100;
 const REPLAY_MS = 1600;
@@ -443,8 +443,8 @@ function CameraRig({
         -8.65
       );
 
-      const lifeMapPos = new THREE.Vector3(0, 10.05, 3.05);
-      const lifeMapLook = new THREE.Vector3(0, 6.62, -6.92);
+      const lifeMapPos = new THREE.Vector3(0, 9.92, 3.28);
+      const lifeMapLook = new THREE.Vector3(0, 6.48, -6.72);
 
       targetPos = ascentEndPos.lerp(lifeMapPos, handoff);
       targetLook = ascentEndLook.lerp(lifeMapLook, handoff);
@@ -1533,13 +1533,13 @@ useEffect(() => {
             top: 22,
             left: "50%",
             transform: "translateX(-50%)",
-            padding: "9px 13px",
+            padding: "7px 10px",
             borderRadius: 999,
             border: "1px solid rgba(190,170,255,0.22)",
             background: "rgba(5,4,16,0.46)",
             color: "rgba(240,236,255,0.88)",
             fontFamily: "Inter, system-ui, sans-serif",
-            fontSize: 11,
+            fontSize: 10,
             letterSpacing: 0.08,
             pointerEvents: "none",
             backdropFilter: "blur(10px)",
@@ -1647,19 +1647,19 @@ useEffect(() => {
           display: "flex",
           justifyContent: "center",
           pointerEvents: "none",
-          opacity: phase === "REPLAY" || phase === "ASCENT" ? 0 : 0.72,
+          opacity: phase === "FOCUS" || phase === "REPLAY" || phase === "ASCENT" ? 0 : 0.42,
         }}
       >
         {/* TIER3_NARRATOR_CINEMATIC */}
         <div style={{
           maxWidth: 480,
-          padding: "10px 14px",
+          padding: "7px 10px",
           borderRadius: 14,
           background: "rgba(8,4,18,0.42)",
           backdropFilter: "blur(8px)",
           border: "1px solid rgba(140,120,255,0.18)",
           color: "rgba(230,225,255,0.88)",
-          fontSize: 13,
+          fontSize: 10,
           letterSpacing: 0.06,
           textAlign: "center",
           lineHeight: 1.45,
@@ -1670,15 +1670,15 @@ useEffect(() => {
           style={{
             position: "absolute",
             left: "50%",
-            bottom: phase === "REPLAY" ? 72 : 112,
+            bottom: phase === "REPLAY" ? 48 : 96,
             transform: "translateX(-50%)",
-            width: "min(560px, calc(100vw - 64px))",
-            padding: "9px 12px",
+            width: "min(460px, calc(100vw - 96px))",
+            padding: "7px 10px",
             borderRadius: 18,
-            background: "rgba(8, 6, 18, 0.30)",
+            background: "rgba(8, 6, 18, 0.24)",
             border: "1px solid rgba(210, 196, 255, 0.22)",
             color: "rgba(242, 237, 255, 0.94)",
-            fontSize: 11,
+            fontSize: 10,
             lineHeight: 1.45,
             letterSpacing: "0.01em",
             backdropFilter: "blur(14px)",
@@ -1709,8 +1709,8 @@ useEffect(() => {
                 background: voiceEnabled ? "rgba(125,90,255,0.24)" : "rgba(8,4,18,0.44)",
                 color: "rgba(240,236,255,0.9)",
                 borderRadius: 999,
-                padding: "6px 10px",
-                fontSize: 11,
+                padding: "7px 10px",
+                fontSize: 10,
                 cursor: "pointer"
               }}
             >
@@ -1728,8 +1728,8 @@ useEffect(() => {
                 background: "rgba(8,4,18,0.44)",
                 color: "rgba(240,236,255,0.9)",
                 borderRadius: 999,
-                padding: "6px 10px",
-                fontSize: 11,
+                padding: "7px 10px",
+                fontSize: 10,
                 cursor: "pointer"
               }}
             >
@@ -1749,8 +1749,8 @@ useEffect(() => {
                 background: demoMode ? "rgba(125,90,255,0.28)" : "rgba(8,4,18,0.44)",
                 color: "rgba(240,236,255,0.9)",
                 borderRadius: 999,
-                padding: "6px 10px",
-                fontSize: 11,
+                padding: "7px 10px",
+                fontSize: 10,
                 cursor: "pointer"
               }}
             >
@@ -1770,13 +1770,13 @@ useEffect(() => {
             top: 18,
             left: "50%",
             transform: "translateX(-50%)",
-            padding: "8px 12px",
+            padding: "7px 10px",
             borderRadius: 999,
             border: "1px solid rgba(180,160,255,0.22)",
             background: "rgba(5,4,16,0.46)",
             color: "rgba(240,236,255,0.88)",
             fontFamily: "Inter, system-ui, sans-serif",
-            fontSize: 11,
+            fontSize: 10,
             letterSpacing: 0.08,
             pointerEvents: "none",
             backdropFilter: "blur(10px)"
@@ -1794,13 +1794,13 @@ useEffect(() => {
           right: 18,
           bottom: 58,
           maxWidth: 360,
-          padding: "8px 10px",
+          padding: "7px 10px",
           border: "1px solid rgba(180,160,255,0.22)",
           borderRadius: 10,
           background: "rgba(4,2,14,0.42)",
           color: "rgba(235,230,255,0.80)",
           fontFamily: "Inter, system-ui, sans-serif",
-          fontSize: 11,
+          fontSize: 10,
           lineHeight: 1.35,
           letterSpacing: 0.06,
           userSelect: "none",
@@ -1817,13 +1817,13 @@ useEffect(() => {
           position: "absolute",
           right: 18,
           bottom: 16,
-          padding: "8px 10px",
+          padding: "7px 10px",
           border: "1px solid rgba(180,160,255,0.24)",
           borderRadius: 10,
           background: "rgba(4,2,14,0.44)",
           color: "rgba(235,230,255,0.82)",
           fontFamily: "Inter, system-ui, sans-serif",
-          fontSize: 11,
+          fontSize: 10,
           letterSpacing: 0.08,
           userSelect: "none",
           pointerEvents: "none",
@@ -1838,13 +1838,13 @@ useEffect(() => {
           position: "absolute",
           left: 18,
           bottom: 16,
-          padding: "8px 10px",
+          padding: "7px 10px",
           border: "1px solid rgba(180,160,255,0.24)",
           borderRadius: 10,
           background: "rgba(4,2,14,0.44)",
           color: "rgba(235,230,255,0.82)",
           fontFamily: "Inter, system-ui, sans-serif",
-          fontSize: 11,
+          fontSize: 10,
           letterSpacing: 0.08,
           userSelect: "none",
         }}
@@ -1857,7 +1857,7 @@ useEffect(() => {
         left: 24,
         bottom: 24,
         maxWidth: 460,
-        padding: "14px 16px",
+        padding: "7px 10px",
         borderRadius: 18,
         border: "1px solid rgba(190,170,255,0.22)",
         background: "rgba(5, 7, 18, 0.54)",
@@ -1868,14 +1868,14 @@ useEffect(() => {
         pointerEvents: "none",
         boxShadow: "0 18px 70px rgba(40,20,90,0.28)"
       }}>
-        <div style={{ fontSize: 11, textTransform: "uppercase", opacity: 0.58, marginBottom: 6 }}>
+        <div style={{ fontSize: 10, textTransform: "uppercase", opacity: 0.58, marginBottom: 6 }}>
           {phase} · Tier-3 narrator
         </div>
-        <div style={{ fontSize: 15, lineHeight: 1.45 }}>
+        <div style={{ fontSize: 10, lineHeight: 1.45 }}>
           {/* TIER3_SAFE_NARRATOR_VISIBILITY_V1 */ narratorReady ? narratorCopy : ""}
         </div>
         {selected ? (
-          <div style={{ fontSize: 11, opacity: 0.66, marginTop: 8 }}>
+          <div style={{ fontSize: 10, opacity: 0.66, marginTop: 8 }}>
             {selected.memoryType} · {selected.emotionalTone} · weight {selected.memoryWeight.toFixed(2)}
           </div>
         ) : null}
@@ -1901,4 +1901,13 @@ useEffect(() => {
    - Uses smootherstep easing for arrival.
    - Softens final lifemap camera target.
    - Reduces narrator/meaning UI dominance during cinematic phases.
+*/
+
+
+/* URAI_FINAL_DECLUTTER_HANDOFF_SOFTENER
+   - Extends ASCENT→LIFEMAP bridge to reduce last visible snap.
+   - Softens LifeMap camera target.
+   - Reduces Tier-3/Tier-4 text dominance.
+   - Hides controls during ASCENT / FOCUS / REPLAY where possible.
+   - No state, authority, replay logic, or narrator logic changed.
 */
