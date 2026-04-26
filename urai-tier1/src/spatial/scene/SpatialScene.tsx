@@ -1670,21 +1670,21 @@ useEffect(() => {
           style={{
             position: "absolute",
             left: "50%",
-            bottom: phase === "REPLAY" ? 48 : 96,
+            bottom: phase === "REPLAY" ? 34 : 88,
             transform: "translateX(-50%)",
             width: "min(460px, calc(100vw - 96px))",
             padding: "7px 10px",
             borderRadius: 18,
-            background: "rgba(8, 6, 18, 0.24)",
-            border: "1px solid rgba(210, 196, 255, 0.22)",
-            color: "rgba(242, 237, 255, 0.94)",
+            background: "rgba(8, 6, 18, 0.18)",
+            border: "1px solid rgba(210, 196, 255, 0.10)",
+            color: "rgba(242, 237, 255, 0.68)",
             fontSize: 10,
             lineHeight: 1.45,
             letterSpacing: "0.01em",
             backdropFilter: "blur(14px)",
-            boxShadow: "0 18px 60px rgba(0,0,0,0.34)",
+            boxShadow: "0 10px 38px rgba(0,0,0,0.18)",
             pointerEvents: "none",
-            zIndex: 45,
+            zIndex: 35,
           }}
         >
           {tier4MeaningLine}
@@ -1910,4 +1910,12 @@ useEffect(() => {
    - Reduces Tier-3/Tier-4 text dominance.
    - Hides controls during ASCENT / FOCUS / REPLAY where possible.
    - No state, authority, replay logic, or narrator logic changed.
+*/
+
+
+/* URAI_FINAL_PRESENTATION_CLEANUP_LOCK
+   Final presentation cleanup:
+   - softens Tier-4 text dominance
+   - reduces replay UI feel
+   - preserves engine, state, camera, replay, and narrator logic
 */
