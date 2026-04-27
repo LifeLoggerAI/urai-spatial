@@ -1,126 +1,81 @@
 'use client'
 
-import { useEffect, useMemo, useRef } from 'react'
-import { useFrame } from '@react-three/fiber'
+import { useMemo } from 'react'
+import type { ThreeEvent } from '@react-three/fiber'
 import * as THREE from 'three'
 
-type Star = { id: string; x: number; y: number; z: number }
+type Phase = 'HOME' | 'ASCENT' | 'LIFEMAP' | 'FOCUS' | 'REPLAY'
+
+type Star = {
+  id: string
+  x: number
+  y: number
+  z: number
+}
 
 export default function Starfield3D({
   stars,
   phase,
   selectedId,
-  ascentProgress = 0,
+  ascentProgress = 1,
   onSelect,
+  onEnterReplay,
 }: {
   stars: Star[]
-  phase: 'HOME' | 'ASCENT' | 'LIFEMAP' | 'FOCUS' | 'REPLAY'
+  phase: Phase
   selectedId?: string | null
   ascentProgress?: number
   onSelect?: (id: string) => void
+  onEnterReplay?: () => void
 }) {
-  const group = useRef<THREE.Group>(null)
-  const velocity = useRef(0)
-
   const nodes = useMemo(() => {
-    return stars.map((s) => ({
+    return stars.map((s, i) => ({
       id: s.id,
-      position: new THREE.Vector3(
-        (s.x - 50) / 2,
-        (s.y - 50) / 2,
-        -18 - s.z * 18 - Math.random() * 46
+      depth: -16 - s.z * 6 - i * 3.2,
+      pos: new THREE.Vector3(
+        (s.x - 50) * 0.12,
+        (50 - s.y) * 0.1,
+        -16 - s.z * 6 - i * 3.2
       ),
     }))
   }, [stars])
 
-  useEffect(() => {
-    if (!group.current) return
-    group.current.children.forEach((child: any) => {
-      const id = child.userData.id as string
-      const isSelected = selectedId === id
-      const mesh = child.children[0]
-      const halo = child.children[1]
-
-      if (!mesh || !mesh.material) return
-
-      let opacity = 1
-      let scale = 1
-      let haloOpacity = 0
-
-      if (phase === 'HOME') {
-        opacity = 0
-      } else if (phase === 'ASCENT') {
-        opacity = Math.max(0, Math.min(1, ascentProgress * 1.15 - 0.18))
-      } else if (phase === 'LIFEMAP') {
-        opacity = 1
-      } else if (phase === 'FOCUS') {
-        opacity = isSelected ? 1 : 0.05
-        scale = isSelected ? 1.8 : 0.7
-        haloOpacity = isSelected ? 0.18 : 0
-      } else if (phase === 'REPLAY') {
-        opacity = 0.08
-        scale = isSelected ? 1.25 : 0.65
-        haloOpacity = isSelected ? 0.10 : 0
-      }
-
-      mesh.material.opacity = opacity
-      child.scale.setScalar(scale)
-
-      if (halo && halo.material) {
-        halo.material.opacity = haloOpacity
-      }
-    })
-  }, [phase, selectedId, ascentProgress])
-
-  useFrame((_, dt) => {
-    if (!group.current) return
-
-    let targetSpeed = 0
-    if (phase === 'ASCENT') {
-      targetSpeed = 4 + ascentProgress * 20
-    } else if (phase === 'LIFEMAP') {
-      targetSpeed = 0.01
-    } else if (phase === 'FOCUS') {
-      targetSpeed = 0
-    } else if (phase === 'REPLAY') {
-      targetSpeed = 6
-    }
-
-    velocity.current += (targetSpeed - velocity.current) * 0.12
-
-    group.current.children.forEach((child: any) => {
-      child.position.z += dt * velocity.current
-      if (child.position.z > 5) {
-        child.position.z = -80 - Math.random() * 40
-      }
-    })
-  })
+  const click = (e: ThreeEvent<MouseEvent>, id: string) => {
+    e.stopPropagation()
+    if (phase === 'LIFEMAP') onSelect?.(id)
+    if (phase === 'FOCUS' && selectedId === id) onEnterReplay?.()
+  }
 
   return (
-    <group ref={group}>
-      {nodes.map((n) => {
-        const isSelected = selectedId === n.id
+    <group>
+      {nodes.map((n, i) => {
+        const sel = selectedId === n.id
+
+        const depthFactor = Math.min(1, Math.abs(n.depth) / 40)
+
+        const opacity =
+          phase === 'ASCENT'
+            ? 0.2 + ascentProgress * 0.5
+            : phase === 'LIFEMAP'
+              ? 0.7 * depthFactor
+              : phase === 'FOCUS'
+                ? sel ? 0.9 : 0.03
+                : phase === 'REPLAY'
+                  ? sel ? 0.12 : 0.05 * depthFactor
+                  : 0
+
+        const scale =
+          phase === 'FOCUS'
+            ? sel ? 0.55 : 0.28
+            : phase === 'REPLAY'
+              ? sel ? 0.42 : 0.25
+              : 0.38
+
         return (
-          <group
-            key={n.id}
-            userData={{ id: n.id }}
-            position={[n.position.x, n.position.y, n.position.z]}
-          >
-            <mesh onClick={() => onSelect?.(n.id)}>
-              <sphereGeometry args={[isSelected ? 0.28 : 0.24, 12, 12]} />
-              <meshBasicMaterial
-                color={isSelected ? '#f6d76b' : '#ffffff'}
-                transparent
-                opacity={0}
-              />
-            </mesh>
-            <mesh>
-              <sphereGeometry args={[0.72, 18, 18]} />
-              <meshBasicMaterial
-                color="#f6d76b"
-                transparent
-                opacity={0}
-              />
+          <group key={n.id} position={[n.pos.x, n.pos.y, n.pos.z]} scale={scale}>
+            <mesh onClick={(e) => click(e, n.id)}>
+              <sphereGeometry args={[0.18 + (i % 3) * 0.02, 20, 20]} />
+              <meshBasicMaterial transparent opacity={opacity} color={sel ? '#f6d76b' : '#cfe1ff'} />
             </mesh>
           </group>
         )

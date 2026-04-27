@@ -1,0 +1,5 @@
+[STEP] locate repo root
+[FAIL] missing src/spatial/components/CinematicCameraRig.tsx
+[AUDIT] /home/user/urai-spatial/_audit/camera_ascent_continuity_lock_20260418_021102
+[LOG] /home/user/urai-spatial/_audit/camera_ascent_continuity_lock_20260418_021102/pass.log
+exit

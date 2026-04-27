@@ -40,7 +40,6 @@ export default function Starfield(props: {
       const z = -1.8 - uraiRandom() * 11.8
       const size = 0.02 + uraiRandom() * 0.14
       nodes.push({
-        id: `star-${i}`,
         position: [x, y, z],
         size,
       })

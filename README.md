@@ -8,6 +8,8 @@ URAI-Spatial is a real-time 3D engine for visualizing user memories as a navigab
 
 - **Deterministic Rendering:** The galaxy is generated procedurally from user data, ensuring that the same data always produces the same visual output.
 - **Memory-as-Stars Model:** Each star in the galaxy represents a single memory, with its properties (color, size, position) determined by the memory's metadata.
+
+
 - **Cinematic Navigation:** The camera system is designed to be fluid and intuitive, allowing for seamless transitions between different views and levels of detail.
 - **Passive Intelligence:** The engine passively analyzes user data to reveal patterns and insights, which are then visualized in the galaxy.
 
@@ -98,6 +100,20 @@ The engine is built in tiers, from the core rendering engine to the high-level n
 - **Memory Constraints:** The engine is designed to run within a 1GB memory budget.
 
 ## 5. Data Model
+
+### Memory-as-Stars Model
+The "Memory-as-Stars Model" is a core concept in the URAI-Spatial engine. Each star in the galaxy represents a single memory, with its properties determined by the memory's metadata. This creates a personal and visually rich representation of a user's life.
+
+The following properties of a star are derived from the memory it represents:
+
+*   **`id`**: A unique identifier for the star, derived from the memory's own unique ID. This allows for a stable and consistent mapping between memories and stars.
+*   **`position`**: The star's position in 3D space is determined by a deterministic algorithm based on the memory's creation date and other metadata. This places the memory within the larger context of the user's life, with related memories appearing closer to each other.
+*   **`size`**: The size of the star can represent the significance or richness of the memory. Larger stars may indicate more detailed or important memories.
+*   **`color`**: The color of the star is determined by the emotional content of the memory. A color mapping system translates emotions into specific hues, providing a quick visual reference to the feeling of a memory.
+*   **`featured`**: A boolean that indicates whether a star is "featured". This can be used to highlight significant memories, such as milestones or important life events.
+*   **`selected`**: When a user selects a star, its appearance changes to indicate that it is the current focus. This is a transient state, not an intrinsic property of the star itself.
+
+This model allows for a deeply personal and meaningful representation of a user's memories, turning an abstract collection of data into a beautiful and explorable galaxy.
 
 - **Star Objects:** Each star is represented by a star object, which contains its position, color, size, and other properties.
 - **Memory Events:** Each memory is represented by a memory event, which contains its date, title, content, and other metadata.

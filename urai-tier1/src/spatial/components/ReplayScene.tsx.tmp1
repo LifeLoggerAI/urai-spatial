@@ -89,7 +89,6 @@ function tintHex(hex: string, amount: number) {
   hsl.l = clamp(hsl.l * lerp(0.90, 1.04, Math.random()), 0, 1)
   const out = new THREE.Color()
   out.setHSL(hsl.h, hsl.s, hsl.l)
-  return `#${out.getHexString()}`
 }
 
 function emotionTuning(memory: SpatialMemory | null | undefined) {
@@ -233,7 +232,6 @@ export default function ReplayScene({
           ? lerp(0.78, 1.00, Math.random())
           : lerp(0.52, 0.88, Math.random())
 
-      const tinted = new THREE.Color(tintHex(`#${baseColor.getHexString()}`, contam))
       tinted.multiplyScalar(dimmer)
 
       colors[i * 3 + 0] = tinted.r
@@ -281,7 +279,6 @@ export default function ReplayScene({
       basePositions[i * 3 + 2] = -Math.random() * 2.7
 
       const contam = (Math.random() - 0.5) * 0.03
-      const c = new THREE.Color(tintHex(`#${base.getHexString()}`, contam))
       colors[i * 3 + 0] = c.r
       colors[i * 3 + 1] = c.g
       colors[i * 3 + 2] = c.b
@@ -312,7 +309,6 @@ export default function ReplayScene({
       uniforms: {
         uOpacity: { value: opacity },
       },
-      vertexShader: `
         attribute float size;
         attribute float alpha;
         varying vec3 vColor;
@@ -327,8 +323,6 @@ export default function ReplayScene({
           gl_PointSize = size * 720.0 / max(z, 0.001);
           gl_Position = projectionMatrix * mvPosition;
         }
-      `,
-      fragmentShader: `
         uniform float uOpacity;
         varying vec3 vColor;
         varying float vAlpha;
@@ -340,7 +334,6 @@ export default function ReplayScene({
           float finalAlpha = radial * vAlpha * vDepthFade * uOpacity;
           gl_FragColor = vec4(vColor, finalAlpha);
         }
-      `,
     })
   }, [opacity])
 
@@ -353,7 +346,6 @@ export default function ReplayScene({
       uniforms: {
         uOpacity: { value: opacity },
       },
-      vertexShader: `
         attribute float size;
         attribute float alpha;
         varying vec3 vColor;
@@ -366,8 +358,6 @@ export default function ReplayScene({
           gl_PointSize = size * 520.0 / max(z, 0.001);
           gl_Position = projectionMatrix * mvPosition;
         }
-      `,
-      fragmentShader: `
         uniform float uOpacity;
         varying vec3 vColor;
         varying float vAlpha;
@@ -377,7 +367,6 @@ export default function ReplayScene({
           float radial = smoothstep(0.5, 0.0, d);
           gl_FragColor = vec4(vColor, radial * vAlpha * uOpacity);
         }
-      `,
     })
   }, [opacity])
 

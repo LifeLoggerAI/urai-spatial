@@ -17,15 +17,24 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { uraiRuntimeGuard } from "@/lib/uraiRuntimeGuard";
 import { useSpatialNarrator } from "@/spatial/hooks/useSpatialNarrator";
 import { NarratorOverlay } from "@/spatial/components/NarratorOverlay";
+import type { NarratorLine, NarratorMoment } from "@/spatial/narrator/types";
 import { Tier3Field } from "@/spatial/components/Tier3Field";
 import { Canvas, ThreeEvent, useFrame, useThree } from "@react-three/fiber";
 import * as THREE from "three";
+import { useUraiXRManifest } from "@/spatial/hooks/useUraiXRManifest";
+import { useUraiAgentLoop } from "@/spatial/hooks/useUraiAgentLoop";
 import { ReplayVisualEngine } from "@/spatial/visual-engine/ReplayVisualEngine";
 import { FocusVisualEngine } from "@/spatial/visual-engine/FocusVisualEngine";
 import { LifeMapVisualEngine } from "@/spatial/visual-engine/LifeMapVisualEngine";
 import { HomeVisualEngine } from "@/spatial/visual-engine/HomeVisualEngine";
 import { AscentVisualEngine } from "@/spatial/visual-engine/AscentVisualEngine";
 import { Tier3PresenceLayer } from "@/spatial/components/Tier3PresenceLayer";
+import { useUraiPersistence } from "@/spatial/hooks/useUraiPersistence";
+import type { UraiPersistenceSnapshot } from "@/lib/uraiPersistence/types";
+import { useUraiAdaptiveLearning } from "@/spatial/hooks/useUraiAdaptiveLearning";
+import type { UraiAdaptiveSignal } from "@/lib/uraiAdaptive/types";
+import { useUraiSocialConstellation } from "@/spatial/hooks/useUraiSocialConstellation";
+import type { UraiSocialConstellation } from "@/lib/uraiSocial/types";
 
 
 type Phase = "HOME" | "ASCENT" | "LIFEMAP" | "FOCUS" | "REPLAY";
@@ -43,13 +52,33 @@ type Star = {
 };
 
 const ASCENT_MS = 3400;
-const ASCENT_LIFEMAP_HANDOFF_MS = 2100;
+const ASCENT_LIFEMAP_HANDOFF_MS = 2600;
 const FOCUS_MS = 1500;
 const FOCUS_ARRIVAL_SETTLE_MS = 1100;
 const REPLAY_MS = 1600;
 const REPLAY_PRESENCE_SETTLE_MS = 1400;
 const REPLAY_DWELL_MS = 900;
+/* URAI_TIER4_NARRATOR_PACING_CONSTANTS_V1 */
+const URAI_NARRATOR_MIN_DWELL_MS = 1200;
+const URAI_NARRATOR_REPLAY_WEIGHT_MS = 1800;
+
 const FOCUS_REVERSE_BRIDGE_MS = 520;
+
+
+/* URAI_ASCENT_LIFEMAP_HANDOFF_SMOOTHING_LOCK */
+function uraiHandoffEase01(v: number) {
+  const x = Math.max(0, Math.min(1, v));
+  return x * x * (3 - 2 * x);
+}
+
+function uraiBlendVec3(a: any, b: any, t: number) {
+  const k = uraiHandoffEase01(t);
+  return [
+    a[0] + (b[0] - a[0]) * k,
+    a[1] + (b[1] - a[1]) * k,
+    a[2] + (b[2] - a[2]) * k,
+  ] as const;
+}
 
 function clamp01(n: number): number {
   return Math.max(0, Math.min(1, n));
@@ -95,6 +124,18 @@ type MemoryPatternInsight = {
   nextSuggestedFocusId: string | null;
   chainLine: string;
 };
+
+ /* URAI_TIER6_COMPANION_TYPES_V1 */
+type CompanionMode = "idle" | "witness" | "guide" | "guardian" | "reflector";
+
+type CompanionState = {
+  mode: CompanionMode;
+  presence: number;
+  whisper: string;
+  suggestedAction: "none" | "observe" | "slow_down" | "enter_focus" | "hold_replay";
+  confidence: number;
+};
+
 
 
 
@@ -202,38 +243,146 @@ function formatDominantArcLabel(arc: MemoryPatternInsight["dominantArc"]): strin
   return "Mixed field";
 }
 
+/* URAI_TIER6_COMPANION_RESOLVER_V1 */
+function resolveCompanionState(
+  phase: Phase,
+  selected: Star | null,
+  emotionalModel: EmotionalModel,
+  patternInsight: MemoryPatternInsight
+): CompanionState {
+  const heavy = emotionalModel.memoryWeight >= 0.72;
+  const shadow = emotionalModel.tone === "shadow";
+  const threshold = emotionalModel.tone === "threshold" || selected?.memoryType === "threshold";
+  const recovery = selected?.memoryType === "recovery";
+
+  const mode: CompanionMode =
+    phase === "HOME" ? "idle" :
+    phase === "ASCENT" ? "witness" :
+    phase === "REPLAY" && (shadow || heavy) ? "guardian" :
+    phase === "FOCUS" && threshold ? "guide" :
+    phase === "LIFEMAP" ? "reflector" :
+    "witness";
+
+  const suggestedAction: CompanionState["suggestedAction"] =
+    phase === "HOME" ? "observe" :
+    phase === "ASCENT" ? "none" :
+    phase === "LIFEMAP" && patternInsight.nextSuggestedFocusId ? "enter_focus" :
+    phase === "FOCUS" && heavy ? "hold_replay" :
+    phase === "REPLAY" && (shadow || threshold) ? "slow_down" :
+    "none";
+
+  const whisper =
+    mode === "idle"
+      ? "I am quiet until the map opens."
+      : mode === "guardian"
+        ? "I am holding the edge of this memory so it does not collapse into noise."
+        : mode === "guide"
+          ? "This point is behaving like a threshold. Move slowly."
+          : mode === "reflector"
+            ? "I can see a pattern forming between these signals."
+            : recovery
+              ? "This signal is not only pain. It includes return."
+              : "I am tracking the field without steering it.";
+
+  const phasePresence =
+    phase === "HOME" ? 0.22 :
+    phase === "ASCENT" ? 0.32 :
+    phase === "LIFEMAP" ? 0.46 :
+    phase === "FOCUS" ? 0.62 :
+    phase === "REPLAY" ? 0.78 :
+    0.3;
+
+  return {
+    mode,
+    presence: clamp01(phasePresence + emotionalModel.auraIntensity * 0.18),
+    whisper,
+    suggestedAction,
+    confidence: clamp01(0.44 + emotionalModel.memoryWeight * 0.36 + patternInsight.relatedMemoryIds.length * 0.08),
+  };
+}
+
+
+
+/* URAI_TIER4_NARRATOR_LINE_OBJECT_ADAPTER_V1 */
+function resolveTier4NarratorLineObject(star: Star | null, phase: Phase, emotionalModel: EmotionalModel): NarratorLine | null {
+  const text =
+    star && !["HOME", "ASCENT"].includes(phase as Phase)
+      ? resolveTier4DynamicMeaning(star, phase, emotionalModel)
+      : "";
+
+  if (!text) return null;
+
+  const narratorMoment: NarratorMoment =
+    phase === "REPLAY" ? "replay_enter" :
+    phase === "FOCUS" ? "focus_arrival" :
+    "lifemap_arrival";
+
+  const narratorTone =
+    emotionalModel.tone === "threshold" ? "tension" :
+    emotionalModel.tone === "shadow" ? "grief" :
+    emotionalModel.tone === "bright" ? "hope" :
+    emotionalModel.tone;
+
+  return {
+    id: `${phase}-${star?.id ?? "none"}-${star?.memoryType ?? "none"}`,
+    moment: narratorMoment,
+    text,
+    tone: narratorTone,
+    priority:
+      phase === "REPLAY" ? 3 :
+      phase === "FOCUS" ? 2 :
+      1,
+    delayMs:
+      phase === "REPLAY" ? 900 :
+      phase === "FOCUS" ? 450 :
+      250,
+    durationMs:
+      phase === "REPLAY" ? 4200 :
+      phase === "FOCUS" ? 3200 :
+      2600,
+  };
+}
+
 function resolveTier4DynamicMeaning(star: Star | null, phase: Phase, emotionalModel: EmotionalModel): string {
+  /* URAI_TIER4_PHASE_NARRATOR_COPY_LOCK_V1 */
   if (!star) return "";
 
-  const weight = emotionalModel.memoryWeight;
-  const stillness = emotionalModel.replayStillness;
   const tone = emotionalModel.tone;
+  const weight = emotionalModel.memoryWeight;
 
-  const weightLine =
-    weight >= 0.78 ? "URAI is treating this as a high-weight memory because the signal is dense, persistent, or emotionally marked." :
-    weight >= 0.52 ? "URAI is treating this as a medium-weight memory because it carries enough pattern signal to hold focus." :
-    "URAI is treating this as a lighter memory because the signal is present but not dominant.";
+  if (phase === "LIFEMAP") {
 
-  const toneLine =
-    tone === "shadow" ? "The field is slower because this memory carries unresolved pressure." :
-    tone === "threshold" ? "The field is heightened because this point marks a transition." :
-    tone === "charged" ? "The field is more active because this memory carries relational or emotional charge." :
-    tone === "bright" ? "The field is clearer because this memory resolves into a brighter signal." :
-    tone === "calm" ? "The field is quieter because this memory is stabilizing rather than disruptive." :
-    "The field is neutral because the memory is present without a dominant emotional signature.";
+    return "URAI is reading the wider field. " + star.title + " is visible as a " + star.memoryType + " signal inside the larger pattern.";
+  }
 
-  const phaseLine =
-    phase === "REPLAY" && stillness >= 0.72
-      ? "Replay is holding the scene with extra stillness so the memory feels like a place, not a passing overlay."
-      : phase === "REPLAY"
-        ? "Replay is active. URAI is preserving the memory long enough for its weight to become visible."
-        : phase === "FOCUS"
-          ? "Focus is isolating this memory from the wider LifeMap so its signal can be read clearly."
-          : phase === "LIFEMAP"
-            ? "The LifeMap is showing this as one point inside the larger pattern."
-            : "";
+  if (phase === "FOCUS") {
+    const weightLine =
+      weight >= 0.78
+        ? "This memory is carrying high symbolic weight."
+        : weight >= 0.52
+          ? "This memory is carrying a readable emotional signal."
+          : "This memory is present, but not dominating the field.";
 
-  return [star.narratorLine, weightLine, toneLine, phaseLine].filter(Boolean).join(" ");
+    return star.title + " is being isolated from the LifeMap. " + weightLine + " Tone: " + tone + ".";
+  }
+
+  if (phase === "REPLAY") {
+    if (star.memoryType === "threshold") {
+      return star.narratorLine + " Replay is holding this as a threshold place, not a passing image.";
+    }
+    if (star.memoryType === "shadow") {
+      return star.narratorLine + " Replay is slowing the field around the unresolved pressure.";
+    }
+    if (star.memoryType === "recovery") {
+      return star.narratorLine + " Replay is marking the rebound and the return.";
+    }
+    if (star.memoryType === "relationship") {
+      return star.narratorLine + " Replay is preserving the connection pattern around this memory.";
+    }
+    return star.narratorLine + " Replay is holding the scene long enough for the pattern to become visible.";
+  }
+
+  return "";
 }
 
 function resolveTier4WhyThis(star: Star | null, phase: Phase, emotionalModel: EmotionalModel): string {
@@ -294,50 +443,45 @@ function memoryVisualProfile(star: Star | null) {
 }
 
 function buildEmotionalModel(phase: Phase, selected: Star | null): EmotionalModel {
-  const base =
+  /* URAI_TIER3_STABLE_AURA_FIELD_DENSITY_V1 */
+  const phaseBase =
     phase === "REPLAY" ? 0.82 :
     phase === "FOCUS" ? 0.62 :
     phase === "LIFEMAP" ? 0.34 :
-    phase === "ASCENT" ? 0.26 :
-    0.18;
+    phase === "ASCENT" ? 0.24 :
+    0.16;
 
-  const starWeight = selected?.memoryWeight ?? 0.35;
-  const aura = selected?.auraIntensity ?? 0.32;
-  const weight = clamp01(base * 0.52 + starWeight * 0.48);
+  const starWeight = clamp01(selected?.memoryWeight ?? 0.35);
+  const starAura = clamp01(selected?.auraIntensity ?? 0.35);
+  const weight = clamp01(phaseBase * 0.5 + starWeight * 0.5);
+
+  const tone = selected?.emotionalTone ?? "neutral";
+
+  const toneGain =
+    tone === "threshold" ? 1.16 :
+    tone === "shadow" ? 1.08 :
+    tone === "charged" ? 1.12 :
+    tone === "bright" ? 1.04 :
+    tone === "calm" ? 0.92 :
+    1;
+
+  const replayGain = phase === "REPLAY" ? 1.24 : phase === "FOCUS" ? 1.06 : phase === "LIFEMAP" ? 0.72 : 0.42;
 
   return {
     memoryWeight: weight,
-    auraIntensity: clamp01(
-      (0.34 + weight * 0.66) *
-      (phase === "REPLAY" ? 1.4 :
-       phase === "FOCUS" ? 1.1 :
-       phase === "LIFEMAP" ? 0.72 :
-       phase === "ASCENT" ? 0.46 :
-       0.34)
-    ),
-    fogWeight: clamp01(
-      (0.28 + weight * 0.72) *
-      (phase === "REPLAY" ? 1.25 :
-       phase === "FOCUS" ? 0.9 :
-       phase === "LIFEMAP" ? 0.52 :
-       0.34)
-    ),
-    particleDensity: clamp01(
-      (0.3 + weight * 0.7) *
-      (phase === "REPLAY" ? 1.3 :
-       phase === "FOCUS" ? 1.0 :
-       phase === "LIFEMAP" ? 0.66 :
-       0.42)
-    ),
+    auraIntensity: clamp01((0.24 + weight * 0.46 + starAura * 0.14) * replayGain * Math.min(toneGain, 1.08)),
+    fogWeight: clamp01((0.18 + weight * 0.52) * (phase === "REPLAY" ? 1.08 : phase === "FOCUS" ? 0.76 : 0.42)),
+    particleDensity: clamp01((0.20 + weight * 0.46 + starAura * 0.10) * (phase === "REPLAY" ? 1.04 : phase === "FOCUS" ? 0.80 : phase === "LIFEMAP" ? 0.56 : 0.30)),
     pulseRate:
-      phase === "REPLAY" ? 0.74 + weight * 0.18 :
-      phase === "FOCUS" ? 0.98 + weight * 0.22 :
-      0.58 + weight * 0.18,
+      phase === "REPLAY" ? 0.68 + weight * 0.12 :
+      phase === "FOCUS" ? 0.82 + weight * 0.14 :
+      phase === "LIFEMAP" ? 0.52 + weight * 0.1 :
+      0.42,
     replayStillness:
       phase === "REPLAY"
-        ? clamp01(0.6 + weight * 0.4)
+        ? clamp01(0.68 + weight * 0.20)
         : 0,
-    tone: selected?.emotionalTone ?? "neutral",
+    tone,
   };
 }
 
@@ -351,7 +495,12 @@ function useClock(): number {
       raf = requestAnimationFrame(loop);
     };
     raf = requestAnimationFrame(loop);
-return () => cancelAnimationFrame(raf);
+
+
+  /* URAI_NO_VOID_RENDERING_LAW_V1 */
+  const uraiNeverUnmountWorlds = true;
+
+  return () => cancelAnimationFrame(raf);
   }, []);
 
   return now;
@@ -380,29 +529,108 @@ function CameraRig({
   const pos = useRef(new THREE.Vector3(0, 0.8, 12));
   const look = useRef(new THREE.Vector3(0, 0.4, 0));
 
-  useFrame((_, delta) => {
-  const smoothedDelta = Math.min(delta, 0.032);
-    /* TIER2_REVERSE_SYMMETRY_DAMPING */
+  /* URAI_ASCENT_FIX_V3_CAMERA_SCOPE */
+  const ascentExitPosRef = useRef<THREE.Vector3 | null>(null);
+  const ascentExitLookRef = useRef<THREE.Vector3 | null>(null);
+  const prevPhaseRef = useRef<Phase | null>(null);
+  const handoffRef = useRef(0);
+
+  
+  /* URAI_CAMERA_CONTINUITY_REFS_V1 */
+  const uraiCameraContinuityRef = useRef({
+    px: 0, py: 0, pz: 0,
+    tx: 0, ty: 0, tz: 0,
+    initialized: false,
+    ascentToLifeMapBlend: 0,
+    lastPhase: "",
+    lx: 0, ly: 0, lz: 0,
+  });
+useFrame((_, delta) => {
+
+    /* URAI_ASCENT_LIFEMAP_HANDOFF_SOFTENER_V1 */
+    const uraiContinuity = uraiCameraContinuityRef.current;
+    const uraiDt = typeof delta === "number" ? delta : 1 / 60;
+
+    if (!uraiContinuity.initialized) {
+      uraiContinuity.px = camera.position.x;
+      uraiContinuity.py = camera.position.y;
+      uraiContinuity.pz = camera.position.z;
+      uraiContinuity.tx = 0;
+      uraiContinuity.ty = 0;
+      uraiContinuity.tz = 0;
+      uraiContinuity.initialized = true;
+    }
+
+    const uraiWasAscent = uraiContinuity.lastPhase === "ASCENT";
+    const uraiIsLifeMap = phase === "LIFEMAP";
+
+    if (uraiWasAscent && uraiIsLifeMap) {
+      uraiContinuity.ascentToLifeMapBlend = 0.001;
+    }
+
+    if (uraiContinuity.ascentToLifeMapBlend > 0 && uraiContinuity.ascentToLifeMapBlend < 1) {
+      uraiContinuity.ascentToLifeMapBlend = uraiClamp01(
+        uraiContinuity.ascentToLifeMapBlend + uraiDt * 1.85
+      );
+
+      camera.position.x = uraiDamp(camera.position.x, uraiContinuity.px, 18, uraiDt);
+      camera.position.y = uraiDamp(camera.position.y, uraiContinuity.py, 18, uraiDt);
+      camera.position.z = uraiDamp(camera.position.z, uraiContinuity.pz, 18, uraiDt);
+
+      /* URAI_CAMERA_TARGET_INHERITANCE_LOCK_V1 */
+      const uraiInheritedLookX = uraiContinuity.lx;
+      const uraiInheritedLookY = uraiContinuity.ly;
+      const uraiInheritedLookZ = uraiContinuity.lz;
+      camera.lookAt(uraiInheritedLookX, uraiInheritedLookY, uraiInheritedLookZ);
+    }
+
+
+
+    const prev = prevPhaseRef.current;
+    const justEnteredLifeMap = prev === "ASCENT" && phase === "LIFEMAP";
+
+    if (phase === "ASCENT") {
+      ascentExitPosRef.current = camera.position.clone();
+
+      const dir = new THREE.Vector3();
+      camera.getWorldDirection(dir);
+
+      ascentExitLookRef.current = camera.position.clone().add(dir.multiplyScalar(10));
+      handoffRef.current = 0;
+    }
+
+    if (justEnteredLifeMap && ascentExitPosRef.current && ascentExitLookRef.current) {
+      camera.position.copy(ascentExitPosRef.current);
+      camera.lookAt(ascentExitLookRef.current);
+      handoffRef.current = 1;
+    }
+
+    prevPhaseRef.current = phase;
+
+    const smoothedDelta = Math.min(delta, 0.032);
+
     const returnDamp =
-  phase === "ASCENT" ? 2.1 :
-  phase === "HOME" ? 2.7 :
-  phase === "LIFEMAP" ? 2.9 :
-  phase === "FOCUS" ? 3.2 :
-  phase === "REPLAY" ? 3.0 :
-  2.8;
+      phase === "ASCENT" ? 2.1 :
+      phase === "HOME" ? 2.7 :
+      phase === "LIFEMAP" ? 2.9 :
+      phase === "FOCUS" ? 3.2 :
+      phase === "REPLAY" ? 3.0 :
+      2.8;
 
     const returnLookDamp = returnDamp;
-
-
     const elapsed = now - startedAt;
+
     const ASCENT_CAMERA_SYNC_DELAY_MS = 120;
     const ascentRaw = Math.max(0, elapsed - ASCENT_CAMERA_SYNC_DELAY_MS) / ASCENT_MS;
-    /* TIER2_ASCENT_MICRO_SEAM_CAMERA_SYNC_V1 */
-    const ascentClamped = Math.max(0, Math.min(1, ascentRaw));
+    const ascentClamped = clamp01(ascentRaw);
     const ascentSmooth = ascentClamped * ascentClamped * (3 - 2 * ascentClamped);
     const ascent = ease(ascentSmooth);
+
     const focus = ease(elapsed / FOCUS_MS);
     const replay = ease(elapsed / REPLAY_MS);
+
+    const ascentEndPos = new THREE.Vector3(0, 0.9 + 12.4, 12 - 11.25);
+    const ascentEndLook = new THREE.Vector3(0, 0.2 + 7.95, -8.65);
 
     let targetPos = new THREE.Vector3(0, 0.8, 12);
     let targetLook = new THREE.Vector3(0, 0.2, 0);
@@ -415,85 +643,76 @@ function CameraRig({
     if (phase === "ASCENT") {
       targetPos = new THREE.Vector3(
         0,
-        /* TIER2_ASCENT_CAMERA_POSITION_SEAM_SOFTEN_V1 */
         0.9 + ascent * 12.4,
         12 - ascent * 11.25
       );
       targetLook = new THREE.Vector3(
         0,
-        /* TIER2_ASCENT_LOOKAT_SEAM_SOFTEN_V1 */
         0.2 + ascent * 7.95,
         -ascent * 8.65
       );
     }
 
     if (phase === "LIFEMAP") {
-      const handoffRaw = clamp01((now - startedAt) / ASCENT_LIFEMAP_HANDOFF_MS);
-      const handoff = handoffRaw * handoffRaw * handoffRaw * (handoffRaw * (handoffRaw * 6 - 15) + 10);
+      const handoffT = clamp01((now - startedAt) / ASCENT_LIFEMAP_HANDOFF_MS);
+      const t = handoffT * handoffT * (3 - 2 * handoffT);
 
-      const ascentEndPos = new THREE.Vector3(
-        0,
-        0.9 + 12.4,
-        12 - 11.25
-      );
+      const lifeMapPos = new THREE.Vector3(0, 10.72, 1.42);
+      const lifeMapLook = new THREE.Vector3(0, 8.06, -8.22);
 
-      const ascentEndLook = new THREE.Vector3(
-        0,
-        0.2 + 7.95,
-        -8.65
-      );
-
-      const lifeMapPos = new THREE.Vector3(0, 9.92, 3.28);
-      const lifeMapLook = new THREE.Vector3(0, 6.48, -6.72);
-
-      targetPos = ascentEndPos.lerp(lifeMapPos, handoff);
-      targetLook = ascentEndLook.lerp(lifeMapLook, handoff);
+      targetPos = ascentEndPos.clone().lerp(lifeMapPos, t);
+      targetLook = ascentEndLook.clone().lerp(lifeMapLook, t);
     }
 
     if (phase === "FOCUS" && selected) {
-  const s = new THREE.Vector3(...selected);
+      const star = new THREE.Vector3(...selected);
+      const focusRaw = clamp01((now - startedAt) / FOCUS_MS);
+      const focusArrival = focusRaw < 0.82 ? ease(focusRaw / 0.82) : 1;
+      const settleRaw = clamp01((now - startedAt - FOCUS_MS * 0.82) / FOCUS_ARRIVAL_SETTLE_MS);
+      const settle = ease(settleRaw);
 
-  // Start far, travel forward into space
-  const start = new THREE.Vector3(
-    s.x * 0.3,
-    s.y + 2.5,
-    s.z + 12
-  );
+      const lifeMapAnchorPos = new THREE.Vector3(0, 10.72, 1.42);
+      const lifeMapAnchorLook = new THREE.Vector3(0, 8.06, -8.22);
 
-  const end = new THREE.Vector3(
-    s.x * 0.6,
-    s.y + 1.4,
-    s.z + 4.35
-  );
+      const arrivalPos = new THREE.Vector3(star.x * 0.58, star.y + 1.52, star.z + 4.55);
+      const settledPos = new THREE.Vector3(star.x * 0.52, star.y + 1.42, star.z + 4.78);
+      const arrivalLook = new THREE.Vector3(star.x, star.y + 0.08, star.z);
+      const settledLook = new THREE.Vector3(star.x, star.y + 0.04, star.z - 0.18);
 
-  targetPos = start.lerp(end, focus);
-  targetLook = new THREE.Vector3(s.x, s.y, s.z);
-}
+      targetPos = lifeMapAnchorPos.clone().lerp(arrivalPos, focusArrival).lerp(settledPos, settle * 0.20);
+      targetLook = lifeMapAnchorLook.clone().lerp(arrivalLook, focusArrival).lerp(settledLook, settle * 0.32);
+    }
 
     if (phase === "REPLAY" && selected) {
-  const s = new THREE.Vector3(...selected);
+      const star = new THREE.Vector3(...selected);
+      const replayRaw = clamp01((now - startedAt) / REPLAY_MS);
+      const replayEnter = ease(replayRaw);
+      const presence = ease((now - startedAt) / REPLAY_PRESENCE_SETTLE_MS);
 
-  // Continue forward motion deeper into space
-  const start = new THREE.Vector3(
-    s.x * 0.6,
-    s.y + 1.4,
-    s.z + 4.35
-  );
+      const start = new THREE.Vector3(star.x * 0.52, star.y + 1.42, star.z + 4.78);
+      const place = new THREE.Vector3(star.x * 0.76, star.y + 0.88, star.z + 2.42);
+      const held = new THREE.Vector3(star.x * 0.72, star.y + 0.82, star.z + 2.58);
 
-  const end = new THREE.Vector3(
-    s.x * 0.8,
-    s.y + 0.9,
-    s.z + 2.35
-  );
+      targetPos = start.clone().lerp(place, replayEnter).lerp(held, presence * 0.22);
+      targetLook = new THREE.Vector3(star.x, star.y + 0.03, star.z - 0.86);
+    }
 
-  targetPos = start.lerp(end, replay);
-  targetLook = new THREE.Vector3(s.x, s.y + 0.05, s.z - 0.92);
-}
+    pos.current.lerp(targetPos, 1 - Math.pow(phase === "ASCENT" || phase === "LIFEMAP" ? 0.00108 : 0.00085, smoothedDelta));
+    look.current.lerp(targetLook, 1 - Math.pow(phase === "ASCENT" || phase === "LIFEMAP" ? 0.00112 : 0.0009, smoothedDelta));
 
-    pos.current.lerp(targetPos, 1 - Math.pow(0.0008, smoothedDelta));
-    look.current.lerp(targetLook, 1 - Math.pow(0.0012, smoothedDelta));
+    /* URAI_ELITE_CAMERA_MICRO_DRIFT_V1 */
+    const microDrift =
+      phase === "HOME" ? 0.006 :
+      phase === "ASCENT" ? 0.012 :
+      phase === "LIFEMAP" ? 0.008 :
+      phase === "FOCUS" ? 0.005 :
+      phase === "REPLAY" ? 0.003 :
+      0;
 
     camera.position.copy(pos.current);
+    camera.position.x += Math.sin(now * 0.00042) * microDrift;
+    camera.position.y += Math.cos(now * 0.00037) * microDrift * 0.55;
+
     look.current.x = THREE.MathUtils.damp(look.current.x, targetLook.x, returnLookDamp, smoothedDelta);
     look.current.y = THREE.MathUtils.damp(look.current.y, targetLook.y, returnLookDamp, smoothedDelta);
     look.current.z = THREE.MathUtils.damp(look.current.z, targetLook.z, returnLookDamp, smoothedDelta);
@@ -504,12 +723,37 @@ function CameraRig({
       const targetFov =
         phase === "REPLAY" ? 29 :
         phase === "FOCUS" ? 34 :
-        /* TIER2_ASCENT_FOV_SEAM_SOFTEN_V1 */
         phase === "ASCENT" ? 39 :
         40;
 
       camera.fov += (targetFov - camera.fov) * (1 - Math.pow(0.001, smoothedDelta));
       camera.updateProjectionMatrix();
+
+    
+    /* URAI_MICRO_CAMERA_DRIFT_V1 */
+    const uraiT = performance.now() / 1000;
+    const uraiDriftStrength =
+      phase === "HOME" ? 0.0035 :
+      phase === "ASCENT" ? 0.0025 :
+      phase === "LIFEMAP" ? 0.004 :
+      phase === "FOCUS" ? 0.002 :
+      phase === "REPLAY" ? 0.0015 :
+      0;
+
+    camera.position.x += Math.sin(uraiT * 0.23) * uraiDriftStrength;
+    camera.position.y += Math.cos(uraiT * 0.19) * uraiDriftStrength * 0.45;
+
+    /* URAI_CAMERA_CONTINUITY_CAPTURE_V1 */
+    uraiContinuity.px = camera.position.x;
+    uraiContinuity.py = camera.position.y;
+    uraiContinuity.pz = camera.position.z;
+
+    const uraiForward = new THREE.Vector3(0, 0, -1).applyQuaternion(camera.quaternion);
+    uraiContinuity.lx = camera.position.x + uraiForward.x * 8;
+    uraiContinuity.ly = camera.position.y + uraiForward.y * 8;
+    uraiContinuity.lz = camera.position.z + uraiForward.z * 8;
+
+    uraiContinuity.lastPhase = phase;
     }
   });
 
@@ -583,6 +827,8 @@ function LifeMapWorld({
   stars,
   onSelectStar,
   emotionalModel,
+  patternInsight,
+  activeStarId,
 }: {
   phase: Phase;
   startedAt: number;
@@ -590,6 +836,8 @@ function LifeMapWorld({
   stars: Star[];
   onSelectStar: (id: string) => void;
   emotionalModel: EmotionalModel;
+  patternInsight: MemoryPatternInsight;
+  activeStarId: string | null;
 }) {
   const handoff =
     phase === "LIFEMAP"
@@ -600,20 +848,42 @@ function LifeMapWorld({
 
   if (!visible) return null;
 
-  const opacity =
+  /* URAI_TIER5_LIFEMAP_PATTERN_BINDING_V1 */
+  const relatedIds = new Set(patternInsight.relatedMemoryIds);
+  const suggestedId = patternInsight.nextSuggestedFocusId;
+  const activeStar = activeStarId ? stars.find((star) => star.id === activeStarId) ?? null : null;
+  const relatedStars = activeStar
+    ? stars.filter((star) => relatedIds.has(star.id))
+    : [];
+  const patternLinePositions = new Float32Array(
+    activeStar
+      ? relatedStars.flatMap((star) => [
+          activeStar.position[0],
+          activeStar.position[1],
+          activeStar.position[2],
+          star.position[0],
+          star.position[1],
+          star.position[2],
+        ])
+      : []
+  );
+
+const opacity =
     phase === "ASCENT"
-      ? Math.pow(Math.max(0, ascentReveal - 0.72) / 0.28, 1.25)
-    : phase === "LIFEMAP" ? 1
-    : phase === "FOCUS" ? 0.52
-    : 0.22;
+      ? 0.72
+      : phase === "LIFEMAP"
+        ? 1
+        : phase === "FOCUS" ? 0.36
+          : 0.16;
+
 
   return (
     <group
       /* TIER2_ASCENT_Z_ALIGNMENT_V1 */
       position={[
         0,
-        (phase === "ASCENT" || phase === "LIFEMAP") ? (5.6 + (4.8 - 5.6) * handoff) : 4.8,
-        (phase === "ASCENT" || phase === "LIFEMAP") ? (-12.3 + (-8.5 + 12.3) * handoff) : -8.5
+        (phase === "ASCENT" || phase === "LIFEMAP") ? (5.6 + (5.05 - 5.6) * handoff) : 5.05,
+        (phase === "ASCENT" || phase === "LIFEMAP") ? (-12.3 + (-9.35 + 12.3) * handoff) : -9.35
       ]}
     >
       <mesh position={[0, 0, -18]}>
@@ -623,16 +893,31 @@ function LifeMapWorld({
 
       {stars.map((star) => {
         const profile = memoryVisualProfile(star);
+        /* URAI_TIER5_STAR_PATTERN_WEIGHTING_V1 */
+        const isPatternRelated = relatedIds.has(star.id);
+        const isSuggestedNext = suggestedId === star.id;
+        const tier5PatternBoost = isSuggestedNext ? 1.22 : isPatternRelated ? 1.14 : 1;
+        /* URAI_TIER3_STABLE_STARFIELD_BINDING_V1 */
+        const starToneGain =
+          star.emotionalTone === "threshold" ? 1.14 :
+          star.emotionalTone === "shadow" ? 0.86 :
+          star.emotionalTone === "charged" ? 1.08 :
+          star.emotionalTone === "bright" ? 1.1 :
+          star.emotionalTone === "calm" ? 0.94 :
+          1;
+
         const starGlow =
-          ((phase === "LIFEMAP" ? 1.6 : 0.55) * profile.glow) +
-          emotionalModel.auraIntensity * (0.45 + star.memoryWeight * 0.75);
-        const starAura =
+          (((phase === "LIFEMAP" ? 1.34 : 0.5) * profile.glow * starToneGain * tier5PatternBoost)) +
+          emotionalModel.auraIntensity * (0.32 + star.memoryWeight * 0.46);
+const starAura =
           opacity *
-          (0.12 + star.auraIntensity * 0.24 + emotionalModel.particleDensity * 0.12) *
-          profile.aura;
+          (0.08 + star.auraIntensity * 0.18 + emotionalModel.particleDensity * 0.08) *
+          profile.aura *
+          starToneGain *
+          tier5PatternBoost;
         const starScale =
           star.scale *
-          (1 + star.auraIntensity * 0.18 * profile.aura + emotionalModel.memoryWeight * 0.045);
+          (1 + star.auraIntensity * 0.11 * profile.aura + emotionalModel.memoryWeight * 0.025);
 
         return (
         <group key={star.id} position={star.position} scale={starScale}>
@@ -657,9 +942,41 @@ function LifeMapWorld({
             <ringGeometry args={[star.scale * 1.8, star.scale * 2.2, 64]}  />
             <meshBasicMaterial color="#8d6bff" transparent opacity={starAura} side={THREE.DoubleSide}  depthWrite={false}  />
           </mesh>
+
+          {/* URAI_TIER5_SUGGESTED_NEXT_RING_V1 */}
+          {isSuggestedNext && phase === "LIFEMAP" && (
+            <mesh rotation={[0, 0, 0]}>
+              <ringGeometry args={[star.scale * 2.55, star.scale * 2.76, 96]} />
+              <meshBasicMaterial
+                color="#e7ddff"
+                transparent
+                opacity={0.20 + emotionalModel.memoryWeight * 0.12}
+                side={THREE.DoubleSide}
+                depthWrite={false}
+              />
+            </mesh>
+          )}
         </group>
         );
       })}
+
+      {/* URAI_TIER5_CONSTELLATION_RELATION_LINES_V1 */}
+      {phase === "LIFEMAP" && patternLinePositions.length > 0 && (
+        <lineSegments>
+          <bufferGeometry>
+            <bufferAttribute
+              attach="attributes-position"
+              args={[patternLinePositions, 3]}
+            />
+          </bufferGeometry>
+          <lineBasicMaterial
+            color="#bca7ff"
+            transparent
+            opacity={0.22 + emotionalModel.memoryWeight * 0.16}
+            depthWrite={false}
+          />
+        </lineSegments>
+      )}
 
       <points>
         <bufferGeometry>
@@ -671,7 +988,7 @@ function LifeMapWorld({
                   const a = i * 12.9898;
                   const r = 7 + ((i * 19) % 28) * 0.35;
                   const z = -20 - ((i * 11) % 30);
-                  return [Math.sin(a) * r, Math.cos(a * 0.7) * r * 0.42, z];
+                  return [Math.sin(a) * r, Math.cos(a * 0.7) * r * 0.20, z];
                 }).flat()
               ),
               3,
@@ -708,20 +1025,28 @@ function FocusWorld({
   if (!selected || (phase !== "FOCUS" && phase !== "REPLAY" && !reverseBridge)) return null;
 
   const replay = phase === "REPLAY";
+
+/* URAI_FOCUS_REPLAY_PRESENCE_FIX */
+const replayPresence = replay ? 1 : 0;
+
   const p = selected.position;
   const profile = memoryVisualProfile(selected);
-  const pulse = 1 + Math.sin(now * 0.0022 * emotionalModel.pulseRate) * 0.035 * profile.pulse;
+  /* URAI_FOCUS_VISUAL_SETTLE_LOCK_V1 */
+  const focusSettle = phase === "FOCUS" ? ease((now - startedAt) / FOCUS_ARRIVAL_SETTLE_MS) : 1;
+  const pulse = 1 + Math.sin(now * 0.0016 * emotionalModel.pulseRate) * 0.012 * profile.pulse * focusSettle;
   const coreScale =
     (replay ? 0.21 : 0.29) *
     pulse *
-    (1 + emotionalModel.memoryWeight * 0.08);
-  const auraScale = (1 + emotionalModel.auraIntensity * 0.42) * profile.aura;
+    (1 + emotionalModel.memoryWeight * 0.055) *
+    (phase === "FOCUS" ? 0.96 + focusSettle * 0.04 : 1);
+  const auraScale = Math.min((1 + emotionalModel.auraIntensity * 0.22 * focusSettle) * profile.aura, phase === "REPLAY" ? 1.22 : 1.6);
+  /* URAI_TIER3_STABLE_FOCUS_FIELD_BINDING_V1 */
   const fieldOpacity = replay
-    ? 0.07 + emotionalModel.particleDensity * 0.18 + emotionalModel.memoryWeight * 0.045
-    : 0.18 + emotionalModel.particleDensity * 0.24 + emotionalModel.auraIntensity * 0.08;
+    ? 0.055 + emotionalModel.particleDensity * 0.13 + emotionalModel.memoryWeight * 0.035
+    : 0.135 + emotionalModel.particleDensity * 0.18 + emotionalModel.auraIntensity * 0.055;
   const auraOpacity = replay
-    ? 0.04 + emotionalModel.auraIntensity * 0.075 + emotionalModel.memoryWeight * 0.035
-    : 0.09 + emotionalModel.auraIntensity * 0.13 + emotionalModel.memoryWeight * 0.055;
+    ? 0.035 + emotionalModel.auraIntensity * 0.055 + emotionalModel.memoryWeight * 0.028
+    : 0.075 + emotionalModel.auraIntensity * 0.105 + emotionalModel.memoryWeight * 0.038;
 
   return (
     <group position={[p[0], p[1] + 4.8, p[2] - 8.5]} scale={reverseBridge ? 1 - bridgeT * 0.08 : 1}>
@@ -745,17 +1070,17 @@ function FocusWorld({
       {/* TIER2_FOCUS_CONTEXT_RINGS */}
       <mesh rotation={[Math.PI / 2, 0, 0]}>
         <ringGeometry args={[1.55, 1.68, 128]}  />
-        <meshBasicMaterial color="#d7ccff" transparent opacity={bridgeOpacity * (replay ? 0.08 : 0.18)} side={THREE.DoubleSide}  depthWrite={false}  />
+        <meshBasicMaterial color="#d7ccff" transparent opacity={(bridgeOpacity * (replay ? 0.08 : 0.18)) * (0.86 + replayPresence * 0.22)} side={THREE.DoubleSide}  depthWrite={false}  />
       </mesh>
 
       <mesh rotation={[Math.PI / 2, 0, 0]}>
         <ringGeometry args={[2.45, 2.52, 128]}  />
-        <meshBasicMaterial color="#7e58ff" transparent opacity={bridgeOpacity * (replay ? 0.045 : 0.105)} side={THREE.DoubleSide}  depthWrite={false}  />
+        <meshBasicMaterial color="#7e58ff" transparent opacity={(bridgeOpacity * (replay ? 0.045 : 0.105)) * (0.86 + replayPresence * 0.22)} side={THREE.DoubleSide}  depthWrite={false}  />
       </mesh>
 
       <mesh rotation={[Math.PI / 2, 0, 0]}>
         <ringGeometry args={[2.85, 2.92, 128]}  />
-        <meshBasicMaterial color="#4d2bb4" transparent opacity={bridgeOpacity * (replay ? 0.035 : 0.075)} side={THREE.DoubleSide}  depthWrite={false}  />
+        <meshBasicMaterial color="#4d2bb4" transparent opacity={(bridgeOpacity * (replay ? 0.035 : 0.075)) * (0.86 + replayPresence * 0.22)} side={THREE.DoubleSide}  depthWrite={false}  />
       </mesh>
 
       {/* TIER2_FOCUS_MEMORY_CORE */}
@@ -785,12 +1110,12 @@ function FocusWorld({
 
       {phase !== "REPLAY" && (<mesh>
         <sphereGeometry args={[1.75 * auraScale, 48, 48]} />
-        <meshBasicMaterial color={selected.memoryType === "shadow" ? "#241433" : selected.memoryType === "recovery" ? "#6f58ff" : "#4d2bb4"} transparent opacity={bridgeOpacity * (replay ? 0.045 : 0.085) * profile.glow} side={THREE.BackSide} depthWrite={false}  />
+        <meshBasicMaterial color={selected.memoryType === "shadow" ? "#241433" : selected.memoryType === "recovery" ? "#6f58ff" : "#4d2bb4"} transparent opacity={(bridgeOpacity * (replay ? 0.045 : 0.085) * profile.glow) * (0.86 + replayPresence * 0.22)} side={THREE.BackSide} depthWrite={false}  />
       </mesh>)}
 
       {phase !== "REPLAY" && (<mesh>
         <sphereGeometry args={[3.9, 64, 64]}  />
-        <meshBasicMaterial color="#16082f" transparent opacity={bridgeOpacity * (replay ? 0.07 : 0.045)} side={THREE.BackSide} depthWrite={false}  />
+        <meshBasicMaterial color="#16082f" transparent opacity={(bridgeOpacity * (replay ? 0.07 : 0.045)) * (0.86 + replayPresence * 0.22)} side={THREE.BackSide} depthWrite={false}  />
       </mesh>)}
     </group>
   );
@@ -805,19 +1130,17 @@ function ReplayWorld({
   selected: Star | null;
   emotionalModel: EmotionalModel;
 }) {
+/* URAI_REPLAY_ENCLOSURE_LOCAL_FALLBACK_V1 */
+
   if (phase !== "REPLAY" || !selected) return null;
 
   const p = selected.position;
   const profile = memoryVisualProfile(selected);
   const stillness = emotionalModel.replayStillness;
-  const replayPulse =
-    1 +
-    Math.sin(Date.now() * 0.0011 * emotionalModel.pulseRate) *
-      (0.012 + emotionalModel.particleDensity * 0.018) *
-      (1 - stillness * 0.55);
-
+  /* URAI_REPLAY_ENCLOSURE_WEIGHT_LOCK_V1 */
+  
   return (
-    <group position={[p[0], p[1] + 4.8, p[2] - 8.5]} scale={replayPulse}>
+    <group position={[p[0], p[1] + 4.8, p[2] - 8.5]} scale={1}>
       {/* TIER3_FOCUS_EDGE_FALLOFF */}
       <mesh>
         <sphereGeometry args={[7.5, 64, 64]}  />
@@ -888,6 +1211,156 @@ function ReplayWorld({
   );
 }
 
+/* URAI_TIER6_COMPANION_VISUAL_V1 */
+function CompanionVisual({
+  phase,
+  now,
+  selected,
+  companionState,
+}: {
+  phase: Phase;
+  now: number;
+  selected: Star | null;
+  companionState: CompanionState;
+}) {
+  if (companionState.presence <= 0.05) return null;
+
+  const selectedPos = selected?.position ?? [0, 0, 0];
+  const phaseY =
+    phase === "HOME" ? 1.0 :
+    phase === "ASCENT" ? 4.4 :
+    phase === "LIFEMAP" ? 6.4 :
+    phase === "FOCUS" ? selectedPos[1] + 5.8 :
+    phase === "REPLAY" ? selectedPos[1] + 5.6 :
+    1.0;
+
+  const phaseZ =
+    phase === "HOME" ? 2.8 :
+    phase === "ASCENT" ? -2.4 :
+    phase === "LIFEMAP" ? -8.2 :
+    phase === "FOCUS" ? selectedPos[2] - 6.8 :
+    phase === "REPLAY" ? selectedPos[2] - 7.2 :
+    2.8;
+
+  const phaseX =
+    phase === "FOCUS" || phase === "REPLAY"
+      ? selectedPos[0] + 1.15
+      : 1.8;
+
+  const pulse = 1 + Math.sin(now * 0.0014) * 0.035;
+  const scale = (0.18 + companionState.presence * 0.16) * pulse;
+
+  return (
+    <group position={[phaseX, phaseY, phaseZ]}>
+      <mesh>
+        <sphereGeometry args={[scale, 32, 32]} />
+        <meshBasicMaterial
+          color={
+            companionState.mode === "guardian" ? "#d8ccff" :
+            companionState.mode === "guide" ? "#c5a6ff" :
+            companionState.mode === "reflector" ? "#9fc7ff" :
+            "#bda8ff"
+          }
+          transparent
+          opacity={0.20 + companionState.presence * 0.28}
+          depthWrite={false}
+        />
+      </mesh>
+
+      <mesh>
+        <sphereGeometry args={[scale * 2.8, 32, 32]} />
+        <meshBasicMaterial
+          color="#8060ff"
+          transparent
+          opacity={0.035 + companionState.presence * 0.045}
+          side={THREE.BackSide}
+          depthWrite={false}
+        />
+      </mesh>
+    </group>
+  );
+}
+
+/* URAI_TIER9_SOCIAL_VISUAL_V1 */
+function SocialConstellationVisual({
+  phase,
+  socialConstellation,
+}: {
+  phase: Phase;
+  socialConstellation: UraiSocialConstellation;
+}) {
+  if (phase !== "LIFEMAP") return null;
+
+  const nodeById = new Map(socialConstellation.nodes.map((node) => [node.id, node]));
+  const edgePositions = new Float32Array(
+    socialConstellation.edges.flatMap((edge) => {
+      const from = nodeById.get(edge.fromId);
+      const to = nodeById.get(edge.toId);
+      if (!from || !to) return [];
+      return [
+        from.position[0],
+        from.position[1] + 7.6,
+        from.position[2] - 3.8,
+        to.position[0],
+        to.position[1] + 7.6,
+        to.position[2] - 3.8,
+      ];
+    })
+  );
+
+  return (
+    <group>
+      {edgePositions.length > 0 && (
+        <lineSegments>
+          <bufferGeometry>
+            <bufferAttribute attach="attributes-position" args={[edgePositions, 3]} />
+          </bufferGeometry>
+          <lineBasicMaterial color="#86b7ff" transparent opacity={0.18} depthWrite={false} />
+        </lineSegments>
+      )}
+
+      {socialConstellation.nodes.map((node) => {
+        const isSuggested = node.id === socialConstellation.suggestedSocialFocusId;
+        const scale = 0.09 + node.weight * 0.13;
+        const opacity = 0.18 + node.trustSignal * 0.24;
+
+        return (
+          <group key={node.id} position={[node.position[0], node.position[1] + 7.6, node.position[2] - 3.8]}>
+            <mesh>
+              <sphereGeometry args={[scale, 24, 24]} />
+              <meshBasicMaterial
+                color={
+                  node.role === "ghost" ? "#7f8aa8" :
+                  node.role === "challenger" ? "#ff92ac" :
+                  node.role === "anchor" ? "#9fffd0" :
+                  node.role === "mirror" ? "#9fc7ff" :
+                  "#ffffff"
+                }
+                transparent
+                opacity={opacity}
+                depthWrite={false}
+              />
+            </mesh>
+
+            {isSuggested && (
+              <mesh>
+                <ringGeometry args={[scale * 2.4, scale * 2.75, 64]} />
+                <meshBasicMaterial
+                  color="#dbeafe"
+                  transparent
+                  opacity={0.22}
+                  side={THREE.DoubleSide}
+                  depthWrite={false}
+                />
+              </mesh>
+            )}
+          </group>
+        );
+      })}
+    </group>
+  );
+}
+
 function Atmosphere({ phase, emotionalModel }: { phase: Phase; emotionalModel: EmotionalModel }) {
   const memoryColor =
     emotionalModel.tone === "shadow" ? "#5f7cff" :
@@ -917,7 +1390,17 @@ function Atmosphere({ phase, emotionalModel }: { phase: Phase; emotionalModel: E
 
   return (
     <>
-      <color attach="background" args={[phase === "HOME" ? "#070111" : phase === "REPLAY" ? "#000105" : "#020711"]} />
+      <color
+        attach="background"
+        args={[
+          phase === "HOME" ? "#070111" :
+          phase === "ASCENT" ? "#030818" :
+          phase === "LIFEMAP" ? "#020814" :
+          phase === "FOCUS" ? "#030512" :
+          phase === "REPLAY" ? "#000105" :
+          "#020711"
+        ]}
+      />
       <fog attach="fog" args={[phase === "REPLAY" ? "#020008" : "#050214", fogNear, fogFar]} />
       <ambientLight
         intensity={
@@ -930,7 +1413,7 @@ function Atmosphere({ phase, emotionalModel }: { phase: Phase; emotionalModel: E
         position={[0, 8, 4]}
         intensity={
           phase === "REPLAY"
-            ? Math.max(0.82, 1.65 - emotionalModel.fogWeight * 0.92 + emotionalModel.auraIntensity * 0.28)
+            ? Math.max(0.82, 1.65 - emotionalModel.fogWeight * 0.92 + emotionalModel.auraIntensity * 0.20)
             : 1.05 + emotionalModel.auraIntensity * 0.45
         }
         color={memoryColor}
@@ -1031,7 +1514,23 @@ function resolveTier3NarratorLine(memory: any, phase: string, emotionalState: an
   return "URAI is resting at the origin.";
 }
 
+
+/* URAI_VISUAL_UNBREAKABLE_PASS_01 */
+function uraiClamp01(v) {
+  return Math.max(0, Math.min(1, Number.isFinite(v) ? v : 0));
+}
+
+function uraiDamp(current, target, lambda, dt) {
+  const t = 1 - Math.exp(-Math.max(0.0001, lambda) * Math.max(0.0001, dt));
+  return current + (target - current) * t;
+}
+
+function uraiSoftPhaseWeight(active, strength = 1) {
+  return active ? strength : 0;
+}
+
 export default function SpatialScene() {
+
   const [tier4MeaningLine, setTier4MeaningLine] = useState("");
   const [tier4MeaningVisible, setTier4MeaningVisible] = useState(false);
 
@@ -1069,6 +1568,21 @@ export default function SpatialScene() {
   const [selectedStarId, setSelectedStarId] = useState<string | null>(null);
   const [replayEnteredAt, setReplayEnteredAt] = useState<number>(0);
   const previousPhaseRef = useRef<Phase>("HOME");
+
+  /* URAI_TIER4_NARRATOR_INTEGRITY_LOCK_V1 */
+  const tier4NarratorKeyRef = useRef<string>("");
+  const tier4NarratorTimerRef = useRef<number | null>(null);
+  const [tier4NarratorLine, setTier4NarratorLine] = useState<NarratorLine | null>(null);
+
+  /* URAI_TIER3_INTERPOLATION_SCOPE_FIX_V1 */
+  const uraiTier3SmoothRef = useRef({
+    auraIntensity: 0,
+    particleDensity: 0,
+    focusPresence: 0,
+    replayDensity: 0,
+    breathRate: 0,
+    glow: 0,
+  });
   const [lastPhase, setLastPhase] = useState<Phase>("HOME");
 
   const stars = useMemo<Star[]>(() => [
@@ -1117,11 +1631,140 @@ export default function SpatialScene() {
 
   const emotionalModel = useMemo(() => {
   return buildEmotionalModel(phase, selected);
+
+  /* URAI_TIER4_NARRATOR_DEBOUNCE_EFFECT_V1 */
+  useEffect(() => {
+    const line = resolveTier4NarratorLineObject(selected, phase, emotionalModel);
+    const key = line ? line.id + ":" + line.moment + ":" + phase : "none:" + phase;
+
+    if (tier4NarratorKeyRef.current === key) return;
+    tier4NarratorKeyRef.current = key;
+
+    if (tier4NarratorTimerRef.current !== null) {
+      window.clearTimeout(tier4NarratorTimerRef.current);
+      tier4NarratorTimerRef.current = null;
+    }
+
+    if (!line) {
+      setTier4NarratorLine(null);
+      return;
+    }
+
+    tier4NarratorTimerRef.current = window.setTimeout(() => {
+      setTier4NarratorLine(line);
+      tier4NarratorTimerRef.current = null;
+    }, Math.max(0, line.delayMs ?? 0));
+
+    return () => {
+      if (tier4NarratorTimerRef.current !== null) {
+        window.clearTimeout(tier4NarratorTimerRef.current);
+        tier4NarratorTimerRef.current = null;
+      }
+    };
+  }, [phase, selected?.id, emotionalModel.memoryWeight, emotionalModel.auraIntensity, emotionalModel.tone]);
 }, [phase, selected]);
 
 const patternInsight = useMemo(() => {
   return inferMemoryPattern(stars, selected);
 }, [stars, selected]);
+
+  /* URAI_TIER6_COMPANION_STATE_BINDING_V1 */
+  const companionState = useMemo(() => {
+    return resolveCompanionState(phase, selected, emotionalModel, patternInsight);
+  }, [phase, selected, emotionalModel, patternInsight]);
+
+  /* URAI_TIER9_SOCIAL_STATE_BINDING_V1 */
+  const socialConstellation = useUraiSocialConstellation(now);
+
+  /* URAI_TIER8_ADAPTIVE_SIGNAL_V1 */
+  const tier8Signal = useMemo<UraiAdaptiveSignal>(() => {
+    return {
+      phase,
+      selectedMemoryType: selected?.memoryType ?? null,
+      selectedTone: selected?.emotionalTone ?? null,
+      dominantArc: patternInsight.dominantArc,
+      companionMode: companionState.mode,
+      companionAction: companionState.suggestedAction,
+      memoryWeight: emotionalModel.memoryWeight,
+      auraIntensity: emotionalModel.auraIntensity,
+      timestamp: nowMs(),
+    };
+  }, [
+    phase,
+    selected,
+    patternInsight.dominantArc,
+    companionState.mode,
+    companionState.suggestedAction,
+    emotionalModel.memoryWeight,
+    emotionalModel.auraIntensity,
+  ]);
+
+  /* URAI_TIER8_ADAPTIVE_LEARNING_HOOK_V1 */
+  const adaptiveOutput = useUraiAdaptiveLearning({
+    signal: tier8Signal,
+    enabled: true,
+    debounceMs: 1100,
+  });
+
+  /* URAI_TIER7_PERSISTENCE_SNAPSHOT_V1 */
+  const tier7Snapshot = useMemo<UraiPersistenceSnapshot>(() => {
+    const t = nowMs();
+
+    return {
+      version: 1,
+      session: {
+        sessionId: "local-demo-session",
+        phase,
+        selectedStarId,
+        lastPhase,
+        replayEnteredAt,
+        updatedAt: t,
+      },
+      memories: stars.map((star) => ({
+        id: star.id,
+        title: star.title,
+        memoryType: star.memoryType,
+        emotionalTone: star.emotionalTone,
+        memoryWeight: star.memoryWeight,
+        auraIntensity: star.auraIntensity,
+        position: star.position,
+        updatedAt: t,
+      })),
+      pattern: {
+        dominantArc: patternInsight.dominantArc,
+        relatedMemoryIds: patternInsight.relatedMemoryIds,
+        relatedTitles: patternInsight.relatedTitles,
+        nextSuggestedFocusId: patternInsight.nextSuggestedFocusId,
+        chainLine: patternInsight.chainLine,
+        systemInsight: patternInsight.systemInsight,
+        updatedAt: t,
+      },
+      /* URAI_TIER9_PERSISTENCE_BINDING_V1 */
+      companion: {
+        mode: companionState.mode,
+        presence: clamp01(companionState.presence * adaptiveOutput.companionPresenceMultiplier),
+        suggestedAction: companionState.suggestedAction,
+        confidence: companionState.confidence,
+        whisper: companionState.whisper,
+        updatedAt: t,
+      },
+    };
+  }, [
+    phase,
+    selectedStarId,
+    lastPhase,
+    replayEnteredAt,
+    stars,
+    patternInsight,
+    companionState,
+  ]);
+
+  /* URAI_TIER7_LOCAL_PERSISTENCE_HOOK_V1 */
+  useUraiPersistence({
+    snapshot: tier7Snapshot,
+    enabled: true,
+    debounceMs: 500,
+  });
 
   /* TIER4_MEANING_TRIGGER_SCOPED_FINAL_LOOP_KILL */
   useEffect(() => {
@@ -1149,25 +1792,85 @@ const patternInsight = useMemo(() => {
 
       setTier4MeaningLine((prev) => (prev === nextLine ? prev : nextLine));
       setTier4MeaningVisible((prev) => (prev ? prev : true));
-    }, phase === "REPLAY" ? 900 : 520);
+    }, phase === "REPLAY" ? 1250 : phase === "FOCUS" ? 760 : 520);
 
     const hideTimer = window.setTimeout(() => {
       setTier4MeaningVisible((prev) => (prev ? false : prev));
-    }, phase === "REPLAY" ? 5200 : 3600);
+    }, phase === "REPLAY" ? 6400 : phase === "FOCUS" ? 4400 : 3600);
 
-    return () => {
+    
+  /* URAI_SAFE_TIER3_LOCK_V2 */
+  const uraiSafeClamp = (v: number, min = 0, max = 1) =>
+    Math.max(min, Math.min(max, Number.isFinite(v) ? v : min));
+
+  const uraiSelectedAny = selected as any;
+
+  const uraiMemoryWeight =
+    Number(
+      uraiSelectedAny?.memoryWeight ??
+      uraiSelectedAny?.intensity ??
+      uraiSelectedAny?.weight ??
+      0.55
+    ) || 0.55;
+
+  const uraiEmotionalPhaseGain =
+    phase === "REPLAY" ? 1 :
+    phase === "FOCUS" ? 0.82 :
+    phase === "LIFEMAP" ? 0.62 :
+    phase === "ASCENT" ? 0.38 :
+    0.18;
+
+  const uraiTier3RawState = {
+    phase,
+    activeMemoryId: uraiSelectedAny?.id ?? selectedStarId ?? null,
+    tone: uraiSelectedAny?.tone ?? uraiSelectedAny?.emotionalTone ?? "neutral",
+    symbolicWeight: uraiSelectedAny?.symbolicWeight ?? "medium",
+    auraColor: uraiSelectedAny?.auraColor ?? uraiSelectedAny?.color ?? "#9fb7ff",
+    auraIntensity: uraiSafeClamp(uraiMemoryWeight * uraiEmotionalPhaseGain, 0.08, 1),
+    replayDensity: uraiSafeClamp(
+      phase === "REPLAY" ? 0.72 + uraiMemoryWeight * 0.20 :
+      phase === "FOCUS" ? 0.38 + uraiMemoryWeight * 0.22 :
+      0.12 + uraiMemoryWeight * 0.12,
+      0,
+      1
+    ),
+    breathPulse: 1,
+  };
+
+  const uraiTier3Smooth = uraiTier3SmoothRef.current;
+  uraiTier3Smooth.auraIntensity = uraiDamp(uraiTier3Smooth.auraIntensity, uraiTier3RawState.auraIntensity ?? 0, 7.5, 1 / 60);
+  uraiTier3Smooth.particleDensity = uraiDamp(uraiTier3Smooth.particleDensity, (uraiTier3RawState as any).particleDensity ?? 0, 7.5, 1 / 60);
+  uraiTier3Smooth.focusPresence = uraiDamp(uraiTier3Smooth.focusPresence, (uraiTier3RawState as any).focusPresence ?? 0, 7.5, 1 / 60);
+  uraiTier3Smooth.replayDensity = uraiDamp(uraiTier3Smooth.replayDensity, uraiTier3RawState.replayDensity ?? 0, 7.5, 1 / 60);
+  uraiTier3Smooth.breathRate = uraiDamp(uraiTier3Smooth.breathRate, (uraiTier3RawState as any).breathRate ?? ((uraiTier3RawState as any).breathPulse ?? 0), 7.5, 1 / 60);
+  uraiTier3Smooth.glow = uraiDamp(uraiTier3Smooth.glow, (uraiTier3RawState as any).glow ?? ((uraiTier3RawState as any).auraIntensity ?? 0), 7.5, 1 / 60);
+
+  const uraiTier3EmotionalState = {
+    ...uraiTier3RawState,
+    auraIntensity: uraiTier3Smooth.auraIntensity,
+    particleDensity: uraiTier3Smooth.particleDensity,
+    focusPresence: uraiTier3Smooth.focusPresence,
+    replayDensity: uraiTier3Smooth.replayDensity,
+    breathRate: uraiTier3Smooth.breathRate,
+    glow: uraiTier3Smooth.glow,
+  };
+
+return () => {
       window.clearTimeout(timer);
       window.clearTimeout(hideTimer);
     };
   }, [
     phase,
-    selected?.id,
+    selectedStarId,
     emotionalModel.memoryWeight,
     emotionalModel.replayStillness,
     emotionalModel.tone,
     patternInsight.dominantArc,
     patternInsight.systemInsight,
     patternInsight.chainLine,
+    companionState.suggestedAction,
+    companionState.whisper,
+    socialConstellation.systemInsight,
   ]);
 
   /* TIER4_NARRATOR_HOOK_SAFE_SCOPE */
@@ -1175,7 +1878,7 @@ const patternInsight = useMemo(() => {
     phase,
     emotionalState: {
       phase,
-      activeMemoryId: selected?.id ?? null,
+      activeMemoryId: selectedStarId ?? null,
       tone:
         emotionalModel.tone === "shadow" ? "grief" :
         emotionalModel.tone === "bright" ? "hope" :
@@ -1245,6 +1948,33 @@ const patternInsight = useMemo(() => {
     const arcLabel = formatDominantArcLabel(patternInsight.dominantArc);
     const chainLabel = patternInsight.chainLine;
 
+    /* URAI_TIER5_NARRATOR_NEXT_PATH_BINDING_V1 */
+    const nextSuggestedTitle =
+      patternInsight.nextSuggestedFocusId
+        ? stars.find((star) => star.id === patternInsight.nextSuggestedFocusId)?.title ?? ""
+        : "";
+    const nextPathLine = nextSuggestedTitle
+      ? " Suggested next signal: " + nextSuggestedTitle + "."
+      : "";
+
+    /* URAI_TIER6_COMPANION_NARRATOR_BINDING_V1 */
+    const companionLine =
+      companionState.suggestedAction !== "none"
+        ? " Companion: " + companionState.whisper
+        : "";
+
+    /* URAI_TIER8_NARRATOR_ADAPTIVE_LINE_V1 */
+    const adaptiveLine =
+      adaptiveOutput.profile.totalSignals >= 3
+        ? " " + adaptiveOutput.adaptiveLine
+        : "";
+
+    /* URAI_TIER9_NARRATOR_SOCIAL_BINDING_V1 */
+    const socialLine =
+      phase === "LIFEMAP"
+        ? " Social field: " + socialConstellation.systemInsight
+        : "";
+
     if (phase === "HOME") {
       return "URAI Spatial is idle. The surface is stable. The life-map is waiting behind the sky.";
     }
@@ -1256,18 +1986,18 @@ const patternInsight = useMemo(() => {
     if (phase === "LIFEMAP") {
       return selected
         ? "Selected: " + selected.title + ". Signal weight: " + memoryWeightLabel + ". Tone: " + toneLabel + ". Dominant arc: " + arcLabel + ". " + chainLabel
-        : "LifeMap open. Dominant arc: " + arcLabel + ". Choose a memory star to enter focus.";
+        : "LifeMap open. Dominant arc: " + arcLabel + "." + nextPathLine + companionLine + adaptiveLine + socialLine + " Choose a memory star to enter focus.";
     }
 
     if (phase === "FOCUS") {
       return selected
-        ? "Focus locked: " + selected.title + ". This is a " + memoryWeightLabel + " memory carrying " + toneLabel + ". Dominant arc: " + arcLabel + ". " + chainLabel + " " + selected.narratorLine
+        ? "Focus locked: " + selected.title + ". This is a " + memoryWeightLabel + " memory carrying " + toneLabel + ". Dominant arc: " + arcLabel + ". " + chainLabel + nextPathLine + companionLine + adaptiveLine + socialLine + companionLine + " " + selected.narratorLine
         : "Focus requires a selected memory.";
     }
 
     if (phase === "REPLAY") {
       return selected
-        ? "Replay active: " + selected.title + ". " + holdLabel + " " + chainLabel
+        ? "Replay active: " + selected.title + ". " + holdLabel + " " + chainLabel + nextPathLine + companionLine + adaptiveLine + socialLine + companionLine
         : "Replay blocked until a memory is selected.";
     }
 
@@ -1283,10 +2013,54 @@ const patternInsight = useMemo(() => {
     patternInsight.chainLine,
   ]);
 
+  /* URAI_TIER4_STABILIZED_NARRATOR_COPY_V1 */
+  const stabilizedNarratorCopy = useMemo(() => {
+    if (!narratorReady) return "";
+    if (phase === "ASCENT") return "";
+    if (phase === "HOME") return narratorCopy;
+    if ((phase === "FOCUS" || phase === "REPLAY") && !selected) return "";
+    return narratorCopy;
+  }, [narratorReady, narratorCopy, phase, selected]);
+
   /* URAI_NARRATOR_VOICE_PRODUCTION_V2 */
   const [voiceEnabled, setVoiceEnabled] = useState(false);
+
+  /* URAI_TIER11_XR_MANIFEST_BINDING_V3 */
+  const xrLayer = useUraiXRManifest({
+    phase,
+    selectedMemoryId: selected?.id ?? null,
+    selectedMemoryTitle: selected?.title ?? null,
+    selectedMemoryPosition: selected?.position ?? null,
+  });
+
+  const exportTier11XRManifest = useCallback(() => {
+    if (typeof window === "undefined") return;
+    const blob = new Blob([JSON.stringify(xrLayer.manifest, null, 2)], { type: "application/json" });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "urai-xr-manifest-" + Date.now() + ".json";
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    window.URL.revokeObjectURL(url);
+  }, [xrLayer.manifest]);
+
+  /* URAI_TIER12_AGENT_LOOP_BINDING_V2 */
+  const agentLoop = useUraiAgentLoop({
+    phase,
+    selectedMemoryId: selected?.id ?? null,
+    memoryWeight: emotionalModel.memoryWeight,
+    dominantArc: patternInsight.dominantArc,
+    nextSuggestedFocusId: patternInsight.nextSuggestedFocusId,
+    companionAction: companionState.suggestedAction,
+    companionWhisper: companionState.whisper,
+    xrReady: xrLayer.mode === "xr_ready",
+  });
   /* URAI_DEMO_MODE_STATE_V1 */
   const [demoMode, setDemoMode] = useState(false);
+  /* URAI_FINAL_UI_DECLUTTER_STATE_V1 */
+  const [launchPolishMode, setLaunchPolishMode] = useState(true);
   const demoStepRef = useRef(0);
   const lastSpokenRef = useRef("");
   const tier4MeaningLastKeyRef = useRef("");
@@ -1294,24 +2068,84 @@ const patternInsight = useMemo(() => {
   /* URAI_VOICE_DIRECTION_REF_V1 */
   const voiceLastPhaseRef = useRef<Phase>("HOME");
 
+  /* URAI_ELITE_AUDIO_LAYER_V1 */
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+
+    const AudioCtx =
+      (window as any).AudioContext ||
+      (window as any).webkitAudioContext;
+
+    if (!AudioCtx) return;
+
+    let ctx: AudioContext | null = null;
+    let osc: OscillatorNode | null = null;
+    let gain: GainNode | null = null;
+
+    const start = () => {
+      try {
+        ctx = new AudioCtx();
+        osc = ctx.createOscillator();
+        gain = ctx.createGain();
+
+        osc.type = "sine";
+        osc.frequency.value =
+          phase === "REPLAY" ? 96 :
+          phase === "FOCUS" ? 128 :
+          phase === "LIFEMAP" ? 156 :
+          phase === "ASCENT" ? 184 :
+          112;
+
+        gain.gain.value =
+          phase === "HOME" ? 0 :
+          phase === "ASCENT" ? 0.007 :
+          phase === "LIFEMAP" ? 0.006 :
+          phase === "FOCUS" ? 0.005 :
+          phase === "REPLAY" ? 0.009 :
+          0;
+
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.start();
+      } catch {
+        // no-op
+      }
+    };
+
+    const timer = window.setTimeout(start, 80);
+
+    return () => {
+      window.clearTimeout(timer);
+      try {
+        osc?.stop();
+        osc?.disconnect();
+        gain?.disconnect();
+        ctx?.close();
+      } catch {
+        // no-op
+      }
+    };
+  }, [phase]);
+
   const speakNarrator = useCallback(() => {
-    if (!narratorCopy.trim()) return;
+    if (!stabilizedNarratorCopy.trim()) return;
     if (typeof window === "undefined" || !("speechSynthesis" in window)) return;
 
     window.speechSynthesis.cancel();
 
-    const utterance = new SpeechSynthesisUtterance(narratorCopy);
-    utterance.rate = phase === "REPLAY" ? 0.82 : phase === "ASCENT" ? 0.92 : 0.88;
+    const utterance = new SpeechSynthesisUtterance(stabilizedNarratorCopy);
+    /* URAI_TIER8_VOICE_TEMPO_BINDING_V1 */
+    utterance.rate = (phase === "REPLAY" ? 0.82 : phase === "ASCENT" ? 0.92 : 0.88) / adaptiveOutput.narratorTempoMultiplier;
     utterance.pitch = phase === "REPLAY" ? 0.82 : phase === "FOCUS" ? 0.94 : 1.0;
     utterance.volume = 0.88;
 
     window.speechSynthesis.speak(utterance);
-  }, [narratorCopy, phase]);
+  }, [stabilizedNarratorCopy, phase, adaptiveOutput.narratorTempoMultiplier]);
 
   useEffect(() => {
     if (!voiceEnabled) return;
     if (!narratorReady) return;
-    if (!narratorCopy.trim()) return;
+    if (!stabilizedNarratorCopy.trim()) return;
 
     const from = voiceLastPhaseRef.current;
     const forward = isForwardPhaseMove(from, phase);
@@ -1319,7 +2153,7 @@ const patternInsight = useMemo(() => {
 
     if (!forward && !firstHomeSpeak) return;
 
-    const speakKey = phase + "::" + narratorCopy;
+    const speakKey = phase + "::" + stabilizedNarratorCopy;
     if (lastSpokenRef.current === speakKey) return;
 
     const timer = window.setTimeout(() => {
@@ -1329,7 +2163,7 @@ const patternInsight = useMemo(() => {
     }, phase === "REPLAY" ? 520 : phase === "FOCUS" ? 320 : 140);
 
     return () => window.clearTimeout(timer);
-  }, [voiceEnabled, narratorReady, narratorCopy, phase, speakNarrator]);
+  }, [voiceEnabled, narratorReady, stabilizedNarratorCopy, phase, speakNarrator]);
 
 
   /* URAI_EMPTY_STARS_SELECTION_FALLBACK */
@@ -1509,12 +2343,32 @@ useEffect(() => {
     return () => window.removeEventListener("keydown", onKeyDown);
   }, [escapeBack]);
 
+  /* URAI_FINAL_UI_DECLUTTER_V1 */
+  const cinematicActive =
+    demoMode ||
+    phase === "ASCENT" ||
+    phase === "FOCUS" ||
+    phase === "REPLAY";
+
+  const cinematicUiStyle: React.CSSProperties = {
+    opacity: cinematicActive ? 0 : 1,
+    pointerEvents: cinematicActive ? "none" : "auto",
+    transition: "opacity 420ms ease",
+  };
+
+  const cinematicSoftUiStyle: React.CSSProperties = {
+    opacity: cinematicActive ? 0.28 : 1,
+    transition: "opacity 420ms ease",
+  };
+
   const selectedPosition = selected
     ? ([selected.position[0], selected.position[1] + 4.8, selected.position[2] - 8.5] as [number, number, number])
     : null;
 
   return (
     <div
+      /* URAI_FINAL_UI_DECLUTTER_CLASS_V1 */
+      className={launchPolishMode ? "urai-launch-polish" : undefined}
       style={{
         position: "absolute",
         inset: 0,
@@ -1526,7 +2380,7 @@ useEffect(() => {
       onContextMenu={(e) => e.preventDefault()}
     >
       {/* LAUNCH_DEMO_HINT_V1 */}
-      {phase === "HOME" && !demoMode ? (
+      {phase === "HOME" && !demoMode && !cinematicActive ? (
         <div
           style={{
             position: "absolute",
@@ -1550,6 +2404,23 @@ useEffect(() => {
         </div>
       ) : null}
 
+      {phase === "ASCENT" && (
+        <div
+          /* URAI_ELITE_ASCENT_MOTION_BLUR_V1 */
+          style={{
+            position: "absolute",
+            inset: 0,
+            zIndex: 6,
+            pointerEvents: "none",
+            background:
+              "radial-gradient(circle at 50% 42%, rgba(190,170,255,0.045), rgba(40,20,90,0.025) 38%, rgba(0,0,0,0) 72%)",
+            backdropFilter: "blur(0.8px)",
+            opacity: 0.42,
+            transition: "opacity 260ms ease",
+          }}
+        />
+      )}
+
       <Canvas camera={{ position: [0, 0.8, 12], fov: 40, near: 0.1, far: 260 }}>
         <Atmosphere phase={phase} emotionalModel={emotionalModel}  />
 
@@ -1564,7 +2435,7 @@ useEffect(() => {
 
         {/* TIER4_HOME_ASCENT_VISUAL_ENGINE_MOUNT_V1 */}
         <HomeVisualEngine visible={phase === "HOME" || phase === "ASCENT"}  />
-        <AscentVisualEngine visible={phase === "ASCENT" || (phase === "LIFEMAP" && now - startedAt < ASCENT_LIFEMAP_HANDOFF_MS)} />
+        <AscentVisualEngine visible={phase === "ASCENT" || (phase === "LIFEMAP" && 0 < ASCENT_LIFEMAP_HANDOFF_MS)} />
 
         {phase === "ASCENT" && (
           <group position={[0, 3.2, -6.8]}>
@@ -1587,7 +2458,9 @@ useEffect(() => {
           stars={stars}
           onSelectStar={openFocus}
           emotionalModel={emotionalModel}
-        />
+        patternInsight={patternInsight}
+        activeStarId={selectedStarId}
+      />
 
         {/* TIER4_LIFEMAP_VISUAL_ENGINE_MOUNT_V1 */}
         <LifeMapVisualEngine visible={phase === "ASCENT" || phase === "LIFEMAP" || phase === "FOCUS" || phase === "REPLAY"} />
@@ -1638,6 +2511,107 @@ useEffect(() => {
   </points>
 )}
       </Canvas>
+
+      {/* URAI_TIER11_XR_UI_V3 */}
+        <button
+          type="button"
+          onClick={xrLayer.cycleMode}
+          style={{
+            position: "fixed",
+            left: 18,
+            bottom: 100,
+            zIndex: 40,
+            padding: "8px 12px",
+            borderRadius: 999,
+            border: "1px solid rgba(255,255,255,0.16)",
+            background: "rgba(8,6,18,0.42)",
+            color: "rgba(255,255,255,0.72)",
+            fontSize: 12,
+            letterSpacing: "0.04em",
+          }}
+        >
+          XR mode: {xrLayer.mode}
+        </button>
+
+        <button
+          type="button"
+          onClick={exportTier11XRManifest}
+          style={{
+            position: "fixed",
+            left: 18,
+            bottom: 140,
+            zIndex: 40,
+            padding: "8px 12px",
+            borderRadius: 999,
+            border: "1px solid rgba(255,255,255,0.16)",
+            background: "rgba(8,6,18,0.42)",
+            color: "rgba(255,255,255,0.72)",
+            fontSize: 12,
+            letterSpacing: "0.04em",
+          }}
+        >
+          Export XR manifest
+        </button>
+
+      {/* URAI_TIER12_AGENT_UI_V2 */}
+        <div
+          style={{
+            position: "fixed",
+            right: 18,
+            top: 18,
+            zIndex: 45,
+            maxWidth: 360,
+            padding: "10px 12px",
+            borderRadius: 18,
+            border: "1px solid rgba(255,255,255,0.12)",
+            background: "rgba(8,6,18,0.42)",
+            color: "rgba(255,255,255,0.72)",
+            fontSize: 12,
+            lineHeight: 1.35,
+            letterSpacing: "0.02em",
+            backdropFilter: "blur(16px)",
+            pointerEvents: "none",
+          }}
+        >
+          <div style={{ color: "rgba(255,255,255,0.88)", marginBottom: 4 }}>
+            Agent Loop · {agentLoop.plan.intent}
+          </div>
+          <div>{agentLoop.plan.reason}</div>
+        </div>
+
+      {/* URAI_FINAL_UI_DECLUTTER_STYLE_V1 */}
+      <style jsx global>{`
+        .urai-launch-polish button {
+          opacity: 0.58;
+          transform: scale(0.94);
+          backdrop-filter: blur(16px);
+          transition: opacity 180ms ease, transform 180ms ease;
+        }
+
+        .urai-launch-polish button:hover {
+          opacity: 0.92;
+          transform: scale(1);
+        }
+
+        .urai-launch-polish [data-debug],
+        .urai-launch-polish .debug,
+        .urai-launch-polish .dev-debug,
+        .urai-launch-polish pre {
+          display: none !important;
+        }
+
+        .urai-launch-polish .narrator,
+        .urai-launch-polish [data-narrator],
+        .urai-launch-polish [class*="Narrator"] {
+          max-width: 760px;
+          opacity: 0.88;
+          text-shadow: 0 10px 40px rgba(0,0,0,0.48);
+        }
+
+        .urai-launch-polish canvas {
+          outline: none;
+        }
+      `}</style>
 <div
         style={{
           position: "absolute",
@@ -1691,8 +2665,7 @@ useEffect(() => {
         </div>
       )}
 
-          <NarratorOverlay line={narratorLine}
-      />
+          <div style={cinematicSoftUiStyle}><NarratorOverlay line={tier4NarratorLine} /></div>
           {/* URAI_NARRATOR_VOICE_CONTROLS_V1 */}
           <div style={{
             marginTop: 8,
@@ -1716,6 +2689,27 @@ useEffect(() => {
             >
               {voiceEnabled ? "Voice on" : "Voice off"}
             </button>
+
+        /* URAI_FINAL_UI_DECLUTTER_TOGGLE_V1 */
+        <button
+          type="button"
+          onClick={() => setLaunchPolishMode((v) => !v)}
+          style={{
+            position: "fixed",
+            right: 18,
+            bottom: 18,
+            zIndex: 40,
+            padding: "8px 12px",
+            borderRadius: 999,
+            border: "1px solid rgba(255,255,255,0.16)",
+            background: "rgba(8,6,18,0.42)",
+            color: "rgba(255,255,255,0.72)",
+            fontSize: 12,
+            letterSpacing: "0.04em",
+          }}
+        >
+          {launchPolishMode ? "Launch polish on" : "Launch polish off"}
+        </button>
 
             <button
               type="button"
@@ -1918,4 +2912,14 @@ useEffect(() => {
    - softens Tier-4 text dominance
    - reduces replay UI feel
    - preserves engine, state, camera, replay, and narrator logic
+*/
+
+
+/* URAI_FINAL_ASCENT_LIFEMAP_NO_SNAP_LOCK
+   Final handoff correction:
+   - keeps LifeMap closer to Ascent end target
+   - lengthens transition bridge
+   - prevents full target snap on first LIFEMAP frame
+   - moves starfield target less aggressively
+   - does not touch state, narrator, replay, or authority
 */

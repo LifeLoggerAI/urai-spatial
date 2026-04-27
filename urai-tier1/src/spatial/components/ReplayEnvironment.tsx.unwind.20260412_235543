@@ -37,7 +37,6 @@ export default function ReplayEnvironment({ active }: { active: boolean }) {
     const r = 5 - d * 3
     const g = 3 - d * 2
     const b = 10 - d * 6
-    fog.current.color = new THREE.Color(`rgb(${r},${g},${b})`)
   })
 
   return <primitive object={fog.current} attach="fog" />

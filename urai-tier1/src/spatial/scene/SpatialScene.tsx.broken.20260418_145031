@@ -1,0 +1,27 @@
+"use client";
+
+import { Suspense, useEffect, useMemo, useRef } from "react";
+import { Canvas } from "@react-three/fiber";
+
+import { useSceneAuthority } from "@/spatial/hooks/useSceneAuthority";
+import CinematicCameraRig from "@/spatial/components/CinematicCameraRig";
+import HomeEnvironment from "@/spatial/components/HomeEnvironment";
+import LifeMapStarfield, { type LifeMapStar } from "@/spatial/components/LifeMapStarfield";
+import FocusSubject from "@/spatial/components/FocusSubject";
+import ReplayShell from "@/spatial/components/ReplayShell";
+
+export default function SpatialScene() {
+  const authority = useSceneAuthority();
+
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        e.preventDefault();
+        authority.escape();
+      }
+    };
+
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, [authority]);
+
