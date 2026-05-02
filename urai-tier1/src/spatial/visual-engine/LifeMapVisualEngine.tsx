@@ -1,48 +1,142 @@
 "use client";
 
+import { useMemo, useRef } from "react";
+import { useFrame } from "@react-three/fiber";
 import * as THREE from "three";
 
-export function LifeMapVisualEngine({ visible }: { visible: boolean }) {
+type LifeMapVisualEngineProps = {
+  visible: boolean;
+};
+
+function seeded(n: number) {
+  const x = Math.sin(n * 127.1 + 311.7) * 43758.5453123;
+  return x - Math.floor(x);
+}
+
+export function LifeMapVisualEngine({ visible }: LifeMapVisualEngineProps) {
+  const rootRef = useRef<THREE.Group>(null);
+  const farRef = useRef<THREE.Points>(null);
+  const midRef = useRef<THREE.Points>(null);
+  const nearRef = useRef<THREE.Points>(null);
+  const nebulaARef = useRef<THREE.Mesh>(null);
+  const nebulaBRef = useRef<THREE.Mesh>(null);
+  const depthFogRef = useRef<THREE.Mesh>(null);
+
+  const farStars = useMemo(() => {
+    const arr: number[] = [];
+    for (let i = 0; i < 520; i++) {
+      const a = seeded(i + 1) * Math.PI * 2;
+      const r = 22 + seeded(i + 2) * 34;
+      const y = -7 + seeded(i + 3) * 22;
+      const z = -34 - seeded(i + 4) * 44;
+      arr.push(Math.cos(a) * r, y, z + Math.sin(a) * r * 0.18);
+    }
+    return new Float32Array(arr);
+  }, []);
+
+  const midStars = useMemo(() => {
+    const arr: number[] = [];
+    for (let i = 0; i < 280; i++) {
+      const a = seeded(i + 800) * Math.PI * 2;
+      const r = 12 + seeded(i + 801) * 24;
+      const y = -4 + seeded(i + 802) * 15;
+      const z = -18 - seeded(i + 803) * 28;
+      arr.push(Math.cos(a) * r, y, z + Math.sin(a) * r * 0.16);
+    }
+    return new Float32Array(arr);
+  }, []);
+
+  const nearStars = useMemo(() => {
+    const arr: number[] = [];
+    for (let i = 0; i < 110; i++) {
+      const a = seeded(i + 1400) * Math.PI * 2;
+      const r = 7 + seeded(i + 1401) * 16;
+      const y = -2 + seeded(i + 1402) * 10;
+      const z = -8 - seeded(i + 1403) * 18;
+      arr.push(Math.cos(a) * r, y, z + Math.sin(a) * r * 0.12);
+    }
+    return new Float32Array(arr);
+  }, []);
+
+  useFrame((state) => {
+    const t = state.clock.elapsedTime;
+    const presence = visible ? 1 : 0;
+
+    if (rootRef.current) rootRef.current.visible = presence > 0.001;
+
+    if (farRef.current) {
+      farRef.current.rotation.y = Math.sin(t * 0.018) * 0.012;
+      farRef.current.rotation.x = Math.cos(t * 0.014) * 0.006;
+      (farRef.current.material as THREE.PointsMaterial).opacity = 0.34 * presence;
+    }
+
+    if (midRef.current) {
+      midRef.current.rotation.y = Math.sin(t * 0.026) * 0.018;
+      midRef.current.rotation.x = Math.cos(t * 0.019) * 0.008;
+      (midRef.current.material as THREE.PointsMaterial).opacity = 0.48 * presence;
+    }
+
+    if (nearRef.current) {
+      nearRef.current.rotation.y = Math.sin(t * 0.034) * 0.026;
+      nearRef.current.rotation.x = Math.cos(t * 0.025) * 0.011;
+      (nearRef.current.material as THREE.PointsMaterial).opacity = 0.62 * presence;
+    }
+
+    if (nebulaARef.current) {
+      nebulaARef.current.rotation.z = Math.sin(t * 0.022) * 0.03;
+      (nebulaARef.current.material as THREE.MeshBasicMaterial).opacity = 0.115 * presence;
+    }
+
+    if (nebulaBRef.current) {
+      nebulaBRef.current.rotation.z = Math.cos(t * 0.018) * 0.025;
+      (nebulaBRef.current.material as THREE.MeshBasicMaterial).opacity = 0.085 * presence;
+    }
+
+    if (depthFogRef.current) {
+      (depthFogRef.current.material as THREE.MeshBasicMaterial).opacity =
+        (0.12 + Math.sin(t * 0.05) * 0.018) * presence;
+    }
+  });
+
   if (!visible) return null;
 
   return (
-    <group position={[0, 4.9, -15.2]}>
-      {/* TIER4_REFERENCE_LIFEMAP_VISUAL_ENGINE_V1 */}
-
-      <mesh position={[0, 0, -6.2]}>
-        <sphereGeometry args={[38, 96, 96]} />
-        <meshBasicMaterial color="#020714" transparent opacity={0.28} side={THREE.BackSide} depthWrite={false} />
+    <group ref={rootRef} name="URAI_LIFEMAP_DEPTH_POLISH_LOCK">
+      <mesh ref={nebulaARef} position={[-12, 8, -42]} rotation={[0.18, 0.28, -0.16]} scale={[28, 11, 1]}>
+        <planeGeometry args={[1, 1, 32, 8]} />
+        <meshBasicMaterial color={new THREE.Color("#27105a")} transparent opacity={0.115} depthWrite={false} side={THREE.DoubleSide} blending={THREE.AdditiveBlending} />
       </mesh>
 
-      <mesh rotation={[Math.PI / 2.16, 0.18, 0]} position={[0, -0.6, -2.4]}>
-        <ringGeometry args={[6.5, 6.68, 260]} />
-        <meshBasicMaterial color="#9a81ff" transparent opacity={0.12} side={THREE.DoubleSide} depthWrite={false} />
+      <mesh ref={nebulaBRef} position={[15, 10, -54]} rotation={[-0.12, -0.34, 0.22]} scale={[36, 13, 1]}>
+        <planeGeometry args={[1, 1, 32, 8]} />
+        <meshBasicMaterial color={new THREE.Color("#123267")} transparent opacity={0.085} depthWrite={false} side={THREE.DoubleSide} blending={THREE.AdditiveBlending} />
       </mesh>
 
-      <mesh rotation={[Math.PI / 2.35, -0.28, 0.18]} position={[0, -0.2, -3.7]}>
-        <ringGeometry args={[10.4, 10.58, 300]} />
-        <meshBasicMaterial color="#5a42d0" transparent opacity={0.085} side={THREE.DoubleSide} depthWrite={false} />
+      <mesh ref={depthFogRef} position={[0, 4.8, -31]} scale={[54, 20, 1]}>
+        <circleGeometry args={[1, 160]} />
+        <meshBasicMaterial color={new THREE.Color("#0a1230")} transparent opacity={0.12} depthWrite={false} side={THREE.DoubleSide} />
       </mesh>
 
-      <mesh rotation={[Math.PI / 2.58, 0.3, -0.08]} position={[0, 0.35, -5.4]}>
-        <ringGeometry args={[14.5, 14.64, 320]} />
-        <meshBasicMaterial color="#2c236f" transparent opacity={0.06} side={THREE.DoubleSide} depthWrite={false} />
-      </mesh>
+      <points ref={farRef}>
+        <bufferGeometry>
+          <bufferAttribute attach="attributes-position" args={[farStars, 3]} />
+        </bufferGeometry>
+        <pointsMaterial size={0.026} color={new THREE.Color("#8fa5ff")} transparent opacity={0.34} depthWrite={false} />
+      </points>
 
-      {Array.from({ length: 420 }).map((_, i) => {
-        const a = i * 2.399963;
-        const layer = i % 9;
-        const radius = 3.2 + layer * 1.22 + (i % 17) * 0.055;
-        const y = Math.sin(i * 0.43) * (1.4 + layer * 0.2);
-        const z = -0.8 - layer * 1.0 - (i % 23) * 0.04;
-        const size = 0.007 + (i % 5) * 0.0035;
-        return (
-          <mesh key={i} position={[Math.cos(a) * radius, y, Math.sin(a) * radius + z]}>
-            <sphereGeometry args={[size, 8, 8]} />
-            <meshBasicMaterial color={layer % 4 === 0 ? "#fff8ff" : layer % 4 === 1 ? "#c5b7ff" : layer % 4 === 2 ? "#806dff" : "#4a38a9"} transparent opacity={0.075 + layer * 0.007} depthWrite={false} />
-          </mesh>
-        );
-      })}
+      <points ref={midRef}>
+        <bufferGeometry>
+          <bufferAttribute attach="attributes-position" args={[midStars, 3]} />
+        </bufferGeometry>
+        <pointsMaterial size={0.042} color={new THREE.Color("#b8a8ff")} transparent opacity={0.48} depthWrite={false} />
+      </points>
+
+      <points ref={nearRef}>
+        <bufferGeometry>
+          <bufferAttribute attach="attributes-position" args={[nearStars, 3]} />
+        </bufferGeometry>
+        <pointsMaterial size={0.058} color={new THREE.Color("#e0d8ff")} transparent opacity={0.62} depthWrite={false} />
+      </points>
     </group>
   );
 }

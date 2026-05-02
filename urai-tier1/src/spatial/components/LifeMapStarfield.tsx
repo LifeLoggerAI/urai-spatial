@@ -1,89 +1,144 @@
 "use client";
 
+import { useMemo } from "react";
 import * as THREE from "three";
 
-export type StarPoint = {
+export type LifeMapStar = {
 id: string;
-x: number;
-y: number;
-z: number;
-color: string;
-size: number;
+title?: string;
+tone?: string;
+symbolicWeight?: string;
+position?: [number, number, number];
 };
 
-type Props = {
-visible: boolean;
-selectedStarId?: string | null;
-onSelectStar: (starId: string) => void;
-ascentProgress: number;
-focusProgress: number;
-replayProgress: number;
-};
-
-export const LIFE_MAP_STARS: StarPoint[] = [
-{ id: "origin", x: -5.8, y: -1.8, z: -16.5, color: "#9dc9ff", size: 0.3 },
-{ id: "echo", x: -2.1, y: 1.3, z: -13.8, color: "#d6c3ff", size: 0.27 },
-{ id: "ember", x: 2.6, y: 0.4, z: -12.9, color: "#ffc79d", size: 0.28 },
-{ id: "rift", x: 5.2, y: -2.3, z: -15.2, color: "#9de0d1", size: 0.32 },
-{ id: "veil", x: 0.4, y: 2.8, z: -18.4, color: "#c7dcff", size: 0.26 },
-{ id: "north", x: -0.8, y: -0.7, z: -11.9, color: "#7ee8ff", size: 0.33 },
+export const LIFE_MAP_STARS: LifeMapStar[] = [
+{ id: "center-memory", title: "Center Memory", tone: "awe", symbolicWeight: "threshold", position: [0, 18, -220] },
+{ id: "left-memory", title: "Left Memory", tone: "hope", symbolicWeight: "heavy", position: [-30, 18, -220] },
+{ id: "right-memory", title: "Right Memory", tone: "recovery", symbolicWeight: "heavy", position: [30, 18, -220] },
+{ id: "low-left-memory", title: "Low Left Memory", tone: "calm", symbolicWeight: "medium", position: [-20, 8, -220] },
+{ id: "low-right-memory", title: "Low Right Memory", tone: "charged", symbolicWeight: "medium", position: [20, 8, -220] },
+{ id: "upper-left-memory", title: "Upper Left Memory", tone: "grief", symbolicWeight: "medium", position: [-42, 30, -220] },
+{ id: "upper-right-memory", title: "Upper Right Memory", tone: "tension", symbolicWeight: "medium", position: [42, 30, -220] },
+{ id: "far-left-thread", title: "Far Left Thread", tone: "calm", symbolicWeight: "light", position: [-72, 34, -310] },
+{ id: "far-right-thread", title: "Far Right Thread", tone: "hope", symbolicWeight: "light", position: [72, 35, -315] },
+{ id: "deep-thread", title: "Deep Thread", tone: "awe", symbolicWeight: "medium", position: [0, 54, -370] },
 ];
 
-function clamp01(v: number) {
-return Math.max(0, Math.min(1, v));
+type Props = {
+active?: boolean;
+phase?: string;
+selectedStarId?: string | null;
+ascentProgress?: number;
+onSelectStar?: any;
+onStarSelect?: any;
+};
+
+const COLORS: Record<string, string> = {
+neutral: "#ffffff",
+calm: "#93c5fd",
+charged: "#fb7185",
+grief: "#b79bff",
+hope: "#fde68a",
+tension: "#fb923c",
+awe: "#67e8f9",
+recovery: "#86efac",
+};
+
+function makeDust(seedStart: number, count: number) {
+const out: Array<{ id: string; position: [number, number, number]; size: number; opacity: number; color: string }> = [];
+let seed = seedStart;
+
+const rand = () => {
+seed = (seed * 1664525 + 1013904223) >>> 0;
+return seed / 4294967296;
+};
+
+for (let i = 0; i < count; i++) {
+out.push({
+id: "dust-" + seedStart + "-" + i,
+position: [-190 + rand() * 380, rand() * 110, -130 - rand() * 920],
+size: 0.045 + rand() * 0.1,
+opacity: 0.16 + rand() * 0.4,
+color: rand() > 0.72 ? "#d5e5ff" : "#ffffff",
+});
 }
 
-export default function LifeMapStarfield({
-visible,
-selectedStarId,
+return out;
+}
+
+function starScale(weight?: string) {
+if (weight === "threshold") return 1.22;
+if (weight === "heavy") return 1.1;
+if (weight === "medium") return 1;
+return 0.82;
+}
+
+export function LifeMapStarfield({
+active = true,
+phase = "HIDDEN",
+selectedStarId = null,
 onSelectStar,
-ascentProgress,
-focusProgress,
-replayProgress,
+onStarSelect,
 }: Props) {
-if (!visible) return null;
+const phaseName = String(phase);
+const isAscent = phaseName === "ASCENT";
+const isLifeMap = phaseName === "LIFEMAP";
+const isFocusOrReplay = phaseName === "FOCUS" || phaseName === "REPLAY";
+const dust = useMemo(() => makeDust(991, 950), []);
+const visibleDust = isAscent ? dust.slice(0, 340) : dust;
 
-const reveal = clamp01(ascentProgress);
-const mapFade = Math.max(0, reveal - replayProgress * 0.36);
-const focusFade = 1 - focusProgress * 0.28;
+const clickStar = (star: LifeMapStar, e: any) => {
+e.stopPropagation();
+console.info("[URAI_STAR_CLICK]", star.id);
+onSelectStar?.(star);
+onStarSelect?.(star);
+if (typeof window !== "undefined") {
+window.dispatchEvent(new CustomEvent("urai:lifemap-star-click", { detail: { id: star.id, star } }));
+}
+};
 
-return ( <group visible={mapFade > 0.01}>
-<fog attach="fog" args={["#03101b", 8, 44]} />
+if (active === false) return null;
+if (!isAscent && !isLifeMap && !isFocusOrReplay) return null;
 
+return ( <group>
+<fog attach="fog" args={["#020617", isAscent ? 110 : 125, 920]} />
 
-  {LIFE_MAP_STARS.map((star) => {
-    const selected = star.id === selectedStarId;
-    const opacity = (0.2 + mapFade * 0.8) * focusFade;
-    const scale = selected ? 1.45 : 1;
+```
+  {visibleDust.map((star) => (
+    <mesh key={star.id} position={star.position} scale={star.size}>
+      <sphereGeometry args={[1, 10, 10]} />
+      <meshBasicMaterial color={star.color} transparent opacity={star.opacity * (isFocusOrReplay ? 0.18 : 1)} depthWrite={false} toneMapped={false} />
+    </mesh>
+  ))}
 
-    return (
-      <group key={star.id} position={[star.x, star.y, star.z]}>
-        <mesh onClick={() => onSelectStar(star.id)} scale={[scale, scale, scale]}>
-          <sphereGeometry args={[star.size, 32, 24]} />
-          <meshBasicMaterial color={star.color} transparent opacity={opacity} />
-        </mesh>
+  {isLifeMap && (
+    <group>
+      {LIFE_MAP_STARS.map((star) => {
+        const color = COLORS[star.tone ?? "neutral"] ?? "#ffffff";
+        const selected = selectedStarId === star.id;
+        const p = star.position ?? [0, 18, -220];
+        const scale = starScale(star.symbolicWeight);
 
-        <mesh onClick={() => onSelectStar(star.id)} scale={[2.8 * scale, 2.8 * scale, 2.8 * scale]}>
-          <sphereGeometry args={[star.size, 32, 24]} />
-          <meshBasicMaterial color={star.color} transparent opacity={0.055 * opacity} depthWrite={false} />
-        </mesh>
+        return (
+          <group key={star.id} position={p} scale={scale} userData={{ starId: star.id }} onPointerDown={(e: any) => clickStar(star, e)} onClick={(e: any) => clickStar(star, e)}>
+            <mesh renderOrder={40}>
+              <sphereGeometry args={[3.4, 48, 48]} />
+              <meshBasicMaterial color={color} transparent opacity={1} toneMapped={false} />
+            </mesh>
 
-        <mesh onClick={() => onSelectStar(star.id)} scale={[5, 5, 5]}>
-          <sphereGeometry args={[star.size, 16, 12]} />
-          <meshBasicMaterial transparent opacity={0} depthWrite={false} />
-        </mesh>
-
-        {selected && (
-          <mesh scale={[2.6, 2.6, 2.6]}>
-            <ringGeometry args={[star.size * 1.8, star.size * 1.92, 96]} />
-            <meshBasicMaterial color="#bdefff" transparent opacity={0.24 * opacity} side={THREE.DoubleSide} />
-          </mesh>
-        )}
-      </group>
-    );
-  })}
+            <mesh scale={2.0} renderOrder={39}>
+              <sphereGeometry args={[3.4, 48, 48]} />
+              <meshBasicMaterial color={color} transparent opacity={selected ? 0.34 : 0.2} depthWrite={false} blending={THREE.AdditiveBlending} toneMapped={false} />
+            </mesh>
+          </group>
+        );
+      })}
+    </group>
+  )}
 </group>
-
+```
 
 );
 }
+
+export default LifeMapStarfield;

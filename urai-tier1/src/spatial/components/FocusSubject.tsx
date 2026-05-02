@@ -1,110 +1,65 @@
 "use client";
 
-import React, { useEffect, useRef } from "react";
 import * as THREE from "three";
-import { useFrame } from "@react-three/fiber";
 
-type FocusSubjectProps = any & {
-  visible?: boolean;
-  interactive?: boolean;
-  opacity?: number;
-  starId?: string | null;
-  position?: [number, number, number];
-  onEnterReplay?: (() => void) | null;
-  enteringReplay?: boolean;
+type Props = {
+phase?: string;
+active?: boolean;
+selectedStar?: { id?: string; title?: string; tone?: string; position?: [number, number, number] } | null;
+star?: { id?: string; title?: string; tone?: string; position?: [number, number, number] } | null;
+selectedStarPosition?: [number, number, number] | null;
+position?: [number, number, number] | null;
+[key: string]: unknown;
 };
 
-export default function FocusSubject({
-  visible = false,
-  interactive = true,
-  opacity = 1,
-  starId = null,
-  position = [0, 0, -3],
-  onEnterReplay = null,
-  enteringReplay = false,
-  ...props
-}: FocusSubjectProps) {
-  const rootRef = useRef<THREE.Group>(null);
-  const shellRef = useRef<THREE.Mesh>(null);
-  const coreRef = useRef<THREE.Mesh>(null);
+const COLORS: Record<string, string> = {
+neutral: "#ffffff",
+calm: "#93c5fd",
+charged: "#fb7185",
+grief: "#b79bff",
+hope: "#fde68a",
+tension: "#fb923c",
+awe: "#67e8f9",
+recovery: "#86efac",
+};
 
-  useEffect(() => {
-    if (!rootRef.current) return;
-    rootRef.current.position.set(position[0], position[1], position[2]);
-  }, [position]);
+export function FocusSubject(props: Props) {
+const phase = String(props.phase ?? "HIDDEN");
+const visible = props.active !== false && (phase === "FOCUS" || phase === "REPLAY");
+if (!visible) return null;
 
-  useFrame((state, delta) => {
-    const t = state.clock.elapsedTime;
-    const gate = visible ? opacity : 0;
+const selected = props.selectedStar ?? props.star ?? null;
+const p = props.selectedStarPosition ?? props.position ?? selected?.position ?? [0, 18, -220];
+const color = COLORS[String(selected?.tone ?? "awe")] ?? "#67e8f9";
 
-    if (rootRef.current) {
-      rootRef.current.visible = visible || gate > 0.001;
-      rootRef.current.rotation.y += delta * 0.08 * gate;
-      rootRef.current.position.y = THREE.MathUtils.damp(
-        rootRef.current.position.y,
-        position[1] + Math.sin(t * 0.6) * 0.03,
-        3.0,
-        delta
-      );
-      rootRef.current.scale.setScalar(
-        THREE.MathUtils.damp(rootRef.current.scale.x, enteringReplay ? 1.05 : 1.0, 4.0, delta)
-      );
-    }
-
-    if (shellRef.current) {
-      const mat = shellRef.current.material as THREE.MeshBasicMaterial;
-      mat.opacity = THREE.MathUtils.damp(mat.opacity, 0.12 * gate, 5.0, delta);
-      shellRef.current.rotation.y += delta * 0.05 * gate;
-    }
-
-    if (coreRef.current) {
-      const mat = coreRef.current.material as THREE.MeshStandardMaterial;
-      mat.opacity = THREE.MathUtils.damp(mat.opacity, 0.85 * gate, 5.5, delta);
-      coreRef.current.rotation.y += delta * 0.12 * gate;
-      coreRef.current.rotation.x = Math.sin(t * 0.5) * 0.03 * gate;
-    }
-  });
-
-  return (
-    <group
-      ref={rootRef}
-      visible={visible || opacity > 0.001}
-      {...props}
-      onClick={interactive && onEnterReplay ? () => onEnterReplay() : undefined}
-    >
-      <pointLight position={[0, 0.2, 0.8]} intensity={1.4} distance={8} />
-      <mesh ref={shellRef}>
-        <sphereGeometry args={[0.92, 48, 48]} />
-        <meshBasicMaterial
-          color="#7d66ff"
-          transparent
-          opacity={0.001}
-          side={THREE.BackSide}
-          depthWrite={false}
-        />
-      </mesh>
-      <mesh ref={coreRef}>
-        <icosahedronGeometry args={[0.42, 6]} />
-        <meshStandardMaterial
-          color="#b9abff"
-          emissive="#7f67ff"
-          emissiveIntensity={1.7}
-          roughness={0.28}
-          metalness={0.08}
-          transparent
-          opacity={0.001}
-        />
-      </mesh>
-      <mesh position={[0, -0.02, 0]} rotation={[-Math.PI / 2, 0, 0]}>
-        <ringGeometry args={[0.56, 0.92, 96]} />
-        <meshBasicMaterial
-          color="#cdc3ff"
-          transparent
-          opacity={0.14 * opacity}
-          depthWrite={false}
-          blending={THREE.AdditiveBlending}
-        />
-      </mesh>
-    </group>
-  );
+const enterReplay = (e: any) => {
+e.stopPropagation();
+console.info("[URAI_REPLAY_CLICK]", selected?.id ?? "selected-memory");
+if (typeof window !== "undefined") {
+window.dispatchEvent(new CustomEvent("urai:focus-enter-replay"));
 }
+};
+
+return (
+<group position={p} onPointerDown={phase === "FOCUS" ? enterReplay : undefined} onClick={phase === "FOCUS" ? enterReplay : undefined}> <mesh renderOrder={80}>
+<sphereGeometry args={[5.4, 72, 72]} /> <meshBasicMaterial color={color} depthTest={false} toneMapped={false} /> </mesh>
+
+```
+  <mesh scale={[2.0, 2.0, 2.0]} renderOrder={79}>
+    <sphereGeometry args={[5.4, 72, 72]} />
+    <meshBasicMaterial color={color} transparent opacity={0.28} depthWrite={false} depthTest={false} blending={THREE.AdditiveBlending} toneMapped={false} />
+  </mesh>
+
+  {phase === "FOCUS" && (
+    <mesh position={[0, -10, 0]} scale={[1.35, 1.35, 1.35]} renderOrder={85}>
+      <sphereGeometry args={[1.4, 32, 32]} />
+      <meshBasicMaterial color="#ffffff" transparent opacity={0.92} depthWrite={false} depthTest={false} toneMapped={false} />
+    </mesh>
+  )}
+</group>
+```
+
+);
+}
+
+export default FocusSubject;

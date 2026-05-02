@@ -1,242 +1,218 @@
 "use client";
 
-import React, { useMemo, useRef } from "react";
 import * as THREE from "three";
-import { useFrame } from "@react-three/fiber";
+import HomeGround from "./HomeGround";
+import { Sparkles } from "@react-three/drei";
+import { useMemo } from "react";
 
-type HomeEnvironmentProps = {
-  visible: boolean;
-  interactive?: boolean;
-  phase: "HOME" | "ASCENT";
-  dim?: number;
-  onSkySelect?: () => void;
-  onGroundSelect?: () => void;
-  onOrbSelect?: () => void;
+export type HomeEnvironmentProps = {
+  active?: boolean;
+  phase?: unknown;
+  ascentProgress?: number;
+  cinematicClean?: boolean;
 };
 
-type StarTier = {
-  id: string;
-  position: [number, number, number];
-  scale: number;
-  opacity: 1};
+function SkyDome() {
+  const uniforms = useMemo(
+    () => ({
+      topColor: { value: new THREE.Color("#01020c") },
+      midColor: { value: new THREE.Color("#070d22") },
+      horizonColor: { value: new THREE.Color("#172347") },
+      glowColor: { value: new THREE.Color("#4f5fd1") },
+    }),
+    []
+  );
 
-function buildTier(
-  prefix: string,
-  count: number,
-  spreadX: number,
-  spreadY: number,
-  zMin: number,
-  zMax: number,
-  scaleMin: number,
-  scaleMax: number,
-  opacityMin: number,
-  opacityMax: number,
-  seed: number,
-): StarTier[] {
-  let s = seed >> 0;
-  const rand = () => {
-    s = (s * 1664525 + 1013904223) >> 0;
-    return s / 4294967296;
-  };
+  return (
+    <mesh renderOrder={-100}>
+      <sphereGeometry args={[125, 128, 64]} />
+      <shaderMaterial
+        side={THREE.BackSide}
+        depthWrite={false}
+        uniforms={uniforms}
+        vertexShader={`
+          varying vec3 vDir;
+          void main() {
+            vec4 wp = modelMatrix * vec4(position, 1.0);
+            vDir = normalize(wp.xyz);
+            gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+          }
+        `}
+        fragmentShader={`
+          uniform vec3 topColor;
+          uniform vec3 midColor;
+          uniform vec3 horizonColor;
+          uniform vec3 glowColor;
+          varying vec3 vDir;
 
-  const out: StarTier[] = [];
-  for (let i = 0; i < count; i += 1) {
-    out.push({
-      id: `${prefix}-${i}`,
-      position: [
-        (rand() * 2 - 1) * spreadX,
-        0.8 + rand() * spreadY,
-        zMin + rand() * (zMax - zMin),
-      ],
-      scale: scaleMin + rand() * (scaleMax - scaleMin),
-      opacity: 1,
-    });
-  }
-  return out;
+          void main() {
+            float h = clamp(vDir.y * 0.5 + 0.5, 0.0, 1.0);
+            vec3 c = mix(horizonColor, midColor, smoothstep(0.18, 0.55, h));
+            c = mix(c, topColor, smoothstep(0.62, 1.0, h));
+            float horizon = exp(-pow((h - 0.34) * 5.6, 2.0));
+            c += glowColor * horizon * 0.16;
+            gl_FragColor = vec4(c, 1.0);
+          }
+        `}
+      />
+    </mesh>
+  );
 }
 
-function StarTierField({
-  stars,
-  drift,
-  tint,
-}: {
-  stars: StarTier[];
-  drift: number;
-  tint: string;
-}) {
-  const groupRef = useRef<THREE.Group>(null);
-
-  useFrame((state) => {
-    if (!groupRef.current) return;
-    const t = state.clock.elapsedTime;
-    groupRef.current.position.x = Math.sin(t * drift) * 0.08;
-    groupRef.current.position.y = Math.cos(t * drift * 0.8) * 0.05;
-  });
-
-  if (phase !== "HOME") return null;
-
-return (
-    <group ref={groupRef}>
-      {stars.map((star) => (
-        <mesh key={star.id} position={star.position}>
-          <sphereGeometry args={[star.scale, 8, 8]} />
-          <meshBasicMaterial color={tint} transparent opacity={star.opacity} depthWrite={false} />
-        </mesh>
-      ))}
+function HorizonFog() {
+  return (
+    <group position={[0, -0.35, -24]}>
+      <HomeGround phase="HOME" ascentProgress={0} emotionalState={null} />
+      <mesh renderOrder={1}>
+        <planeGeometry args={[140, 18]} />
+        <meshBasicMaterial color="#1a264c" transparent opacity={0.155} depthWrite={false} />
+      </mesh>
+      <mesh position={[0, 3.2, -8]} renderOrder={2}>
+        <planeGeometry args={[150, 26]} />
+        <meshBasicMaterial color="#070b20" transparent opacity={0.135} depthWrite={false} />
+      </mesh>
+      <mesh position={[0, -1.8, 8]} rotation={[-Math.PI / 2, 0, 0]} renderOrder={3}>
+        <ringGeometry args={[22, 70, 224]} />
+        <meshBasicMaterial color="#1f2b56" transparent opacity={0.11} depthWrite={false} blending={THREE.AdditiveBlending} />
+      </mesh>
     </group>
   );
 }
 
-export default function HomeEnvironment({
-  visible,
-  interactive = false,
-  phase,
-  dim = 0,
-  onSkySelect,
-  onGroundSelect,
-  onOrbSelect,
-}: HomeEnvironmentProps) {
-  const orbRef = useRef<THREE.Group>(null);
-  const ringARef = useRef<THREE.Mesh>(null);
-  const ringBRef = useRef<THREE.Mesh>(null);
-  const nearStars = useMemo(
-    () => buildTier("near", 34, 14, 9.5, -16, -9.5, 0.028, 0.058, 0.20, 0.40, 781),
-    [],
-  );
-  const midStars = useMemo(
-    () => buildTier("mid", 52, 18, 12, -28, -17, 0.020, 0.042, 0.14, 0.28, 991),
-    [],
-  );
-  const farStars = useMemo(
-    () => buildTier("far", 70, 22, 14, -42, -29, 0.014, 0.026, 0.08, 0.18, 1231),
-    [],
-  );
-
-  useFrame((state, delta) => {
-    const t = state.clock.elapsedTime;
-    if (orbRef.current) {
-      orbRef.current.scale.set(pulse, pulse, pulse);
-
-      orbRef.current.position.x += driftX;
-      orbRef.current.position.z += driftZ;
-
-      orbRef.current.position.y = 2.9 + Math.sin(t * 0.55) * 0.05;
-      orbRef.current.rotation.y += delta * 0.12;
-    }
-    if (ringARef.current) ringARef.current.rotation.z += delta * 0.16;
-    if (ringBRef.current) ringBRef.current.rotation.z -= delta * 0.11;
-  });
-
-  const orbOpacity = THREE.MathUtils.clamp(1 - dim * 0.42, 0.48, 1);
-  const ringOpacity = THREE.MathUtils.clamp(0.32 - dim * 0.14, 0.10, 0.32);
-  const haloOpacity = THREE.MathUtils.clamp(0.12 - dim * 0.05, 0.05, 0.14);
-  const groundOpacity = THREE.MathUtils.clamp(0.16 - dim * 0.05, 0.08, 0.16);
-  const glowOpacity = THREE.MathUtils.clamp(0.05 - dim * 0.018, 0.018, 0.06);
-
+function Ground() {
   return (
-    <group visible={visible}>
-      <StarTierField stars={farStars} drift={0.05} tint="#94a5c8" />
-      <StarTierField stars={midStars} drift={0.08} tint="#a9b8d8" />
-      <StarTierField stars={nearStars} drift={0.12} tint="#d5e6ff" />
+    <group position={[0, -1.2, 0]}>
+  <mesh rotation={[-Math.PI / 2, 0, 0]} receiveShadow>
+    <circleGeometry args={[140, 128]} />
+    <meshStandardMaterial
+      color={"#080c18"}
+      roughness={0.95}
+      metalness={0.03}
+    />
+  </mesh>
 
-      <mesh position={[0, 0.9, -18]}>
-        <sphereGeometry args={[28, 32, 32]} />
-        <meshBasicMaterial color="#031126" transparent opacity={0.92} side={THREE.BackSide} depthWrite={false} />
-      </mesh>
+  <mesh rotation={[-Math.PI / 2, 0, 0]}>
+    <circleGeometry args={[180, 128]} />
+    <meshStandardMaterial
+      color={"#0b1020"}
+      roughness={1}
+      metalness={0}
+      transparent
+      opacity={0.25}
+    />
+  </mesh>
 
-      <mesh
-        position={[0, 3.8, -20]}
-        rotation={[-Math.PI / 2, 0, 0]}
-        onClick={interactive ? onSkySelect : undefined}
-      >
-        <circleGeometry args={[24, 64]} />
-        <meshBasicMaterial transparent opacity={0} depthWrite={false} />
-      </mesh>
+  <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.01, 0]}>
+    <circleGeometry args={[2.25, 128]} />
+    <meshBasicMaterial
+      color={"#000"}
+      transparent
+      opacity={0.26}
+    />
+  </mesh>
 
-      <mesh
-        position={[0, -1.82, -5.1]}
-        rotation={[-Math.PI / 2, 0, 0]}
-        onClick={interactive ? onGroundSelect : undefined}
-      >
-        <circleGeometry args={[11.4, 96]} />
-        <meshBasicMaterial color="#08131f" transparent opacity={groundOpacity} depthWrite={false} />
-      </mesh>
+  <mesh rotation={[-Math.PI / 2, 0, 0]}>
+    <circleGeometry args={[220, 192]} />
+    <meshBasicMaterial
+      color={"#000"}
+      transparent
+      opacity={0.08}
+    />
+  </mesh>
 
-      <mesh position={[0, -1.81, -5.08]} rotation={[-Math.PI / 2, 0, 0]}>
-        <circleGeometry args={[6.4, 80]} />
-        <meshBasicMaterial color="#0b2337" transparent opacity={0.92} depthWrite={false} />
-      </mesh>
+  <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.02, 0]}>
+    <circleGeometry args={[140, 64]} />
+    <meshBasicMaterial
+      color={"#0a0f1f"}
+      transparent
+      opacity={0.055}
+    />
+  </mesh>
+</group>
+  );
+}
 
-      <mesh position={[0, -1.80, -5.05]} rotation={[-Math.PI / 2, 0, 0]}>
-        <ringGeometry args={[1.7, 2.25, 72]} />
-        <meshBasicMaterial color="#4b87c9" transparent opacity={0.92} depthWrite={false} />
-      </mesh>
+function Orb() {
+  return (
+    <group position={[0, 0.67, 0]}>
+      <pointLight color="#b7c2ff" intensity={3.25} distance={8.5} decay={2.35} />
+      <pointLight color="#6f67ff" intensity={0.78} distance={5.0} decay={2.5} position={[0, -0.78, 0]} />
 
-      <mesh position={[0, 1.68, -4.45]} rotation={[-Math.PI / 2, 0, 0]}>
-        <circleGeometry args={[1.08, 64]} />
-        <meshBasicMaterial color="#02060c" transparent opacity={0.92} depthWrite={false} />
-      </mesh>
-
-      <mesh position={[0, 1.69, -4.42]} rotation={[-Math.PI / 2, 0, 0]}>
-        <circleGeometry args={[1.9, 64]} />
-        <meshBasicMaterial color="#7fbfff" transparent opacity={glowOpacity} depthWrite={false} />
-      </mesh>
-
-      <group ref={orbRef} position={[0, 2.9, -4.2]}>
-        <mesh onClick={interactive ? onOrbSelect : undefined}>
-          <sphereGeometry args={[0.96, 56, 56]} />
-          <meshStandardMaterial
-            color="#dfe8f2"
-            emissive="#9ecbff"
-            emissiveIntensity={0.17}
-            roughness={0.68}
-            metalness={0.06}
+              {/* URAI_ORB_LOOK_REFINEMENT_LOCK */}
+        <mesh scale={[1.22, 1.22, 1.22]} renderOrder={8}>
+          <sphereGeometry args={[1.0, 48, 48]} />
+          <meshBasicMaterial
+            color="#b8c4ff"
             transparent
-            opacity={orbOpacity}
-          depthWrite={false} />
-        </mesh>
-
-        <mesh scale={[1.06, 1.06, 1.06]}>
-          <sphereGeometry args={[0.98, 48, 48]} />
-          <meshPhysicalMaterial
-            color="#f1f7ff"
-            roughness={0.18}
-            metalness={0.0}
-            transmission={0.0}
-            clearcoat={0.65}
-            clearcoatRoughness={0.38}
-            transparent
-            opacity={0.92}
+            opacity={0.08}
+            depthWrite={false}
+            blending={THREE.AdditiveBlending}
+            toneMapped={false}
           />
         </mesh>
 
-        <mesh position={[0.16, 0.22, 0.58]}>
-          <sphereGeometry args={[0.16, 20, 20]} />
-          <meshBasicMaterial color="#ffffff" transparent opacity={0.92} depthWrite={false} />
-        </mesh>
+        <mesh scale={[0.96, 0.96, 0.96]} castShadow receiveShadow>
+        <sphereGeometry args={[1, 128, 128]} />
+        <meshPhysicalMaterial
+          color="#b6bfeb"
+          roughness={0.54}
+          metalness={0.055}
+          clearcoat={0.22}
+          clearcoatRoughness={0.7}
+          emissive="#374195"
+          emissiveIntensity={0.035}
+          reflectivity={0.28}
+        />
+      </mesh>
 
-        <mesh scale={[1.78, 1.78, 1.78]}>
-          <sphereGeometry args={[1.0, 40, 40]} />
-          <meshBasicMaterial color="#a7c9ff" transparent opacity={haloOpacity} side={THREE.BackSide} depthWrite={false} />
-        </mesh>
+      <mesh scale={[1.105, 1.105, 1.105]} renderOrder={18}>
+        <sphereGeometry args={[1, 128, 128]} />
+        <meshBasicMaterial color="#d7dcff" transparent opacity={0.016} depthWrite={false} blending={THREE.AdditiveBlending} />
+      </mesh>
 
-        <mesh ref={ringARef} rotation={[0.55, 0.18, 0.12]} scale={[1.55, 0.72, 1.0]}>
-          <torusGeometry args={[1.32, 0.045, 14, 120]} />
-          <meshBasicMaterial color="#83a9df" transparent opacity={ringOpacity} depthWrite={false} />
-        </mesh>
-
-        <mesh ref={ringBRef} rotation={[-0.92, 0.3, -0.42]} scale={[1.48, 0.58, 1.0]}>
-          <torusGeometry args={[1.46, 0.038, 14, 120]} />
-          <meshBasicMaterial color="#728fbd" transparent opacity={ringOpacity * 0.9} depthWrite={false} />
-        </mesh>
-      </group>
-
-      {phase === "ASCENT" && (
-        <mesh position={[0, 2.9, -4.2]} scale={[2.2, 2.2, 2.2]}>
-          <sphereGeometry args={[1, 36, 36]} />
-          <meshBasicMaterial color="#9bc7ff" transparent opacity={0.92} side={THREE.BackSide} depthWrite={false} />
-        </mesh>
-      )}
+      <mesh scale={[1.48, 1.48, 1.48]} renderOrder={9}>
+        <sphereGeometry args={[1, 96, 96]} />
+        <meshBasicMaterial color="#6871ff" transparent opacity={0.011} depthWrite={false} side={THREE.BackSide} blending={THREE.AdditiveBlending} />
+      </mesh>
     </group>
   );
 }
+
+export default function HomeEnvironment(_props: HomeEnvironmentProps) {
+  return (
+    <group>
+      <fog attach="fog" args={["#070b1d", 26, 150]} />
+
+      <ambientLight intensity={0.34} color="#747fa8" />
+      <directionalLight position={[-4.8, 7.6, 5.8]} intensity={1.65} color="#dce2ff" castShadow />
+      <directionalLight position={[5.8, 2.7, -5.5]} intensity={0.26} color="#48518f" />
+
+      <SkyDome />
+      <HorizonFog />
+      <Ground />
+
+      <Sparkles
+        count={72}
+        scale={[48, 24, 36]}
+        size={0.45}
+        speed={0.035}
+        opacity={0.055}
+        color="#99a4ff"
+        position={[0, 8, -18]}
+      />
+
+      <Orb />
+    </group>
+  );
+}
+
+
+/*
+URAI_HOME_ASCENT_READY
+
+HOME must remain visually valid during ASCENT:
+- Ground falls away beneath camera.
+- Orb recedes without scale snap.
+- Sky has enough vertical depth.
+- Fog blends horizon during travel.
+*/

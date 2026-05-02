@@ -1,8 +1,6 @@
 "use client";
-
-
-
-
+import { PhaseNarratorBridge } from "@/spatial/narrator/PhaseNarratorBridge";
+import HomeEnvironment from "@/spatial/components/HomeEnvironment";
 // URAI_PASS5_PATTERN_INTELLIGENCE_LAW
 // Tier-5 foundation: detect memory patterns, related memories, dominant narrative arc,
 // and next suggested focus without touching Tier-1 state or Tier-2 camera laws.
@@ -35,6 +33,9 @@ import { useUraiAdaptiveLearning } from "@/spatial/hooks/useUraiAdaptiveLearning
 import type { UraiAdaptiveSignal } from "@/lib/uraiAdaptive/types";
 import { useUraiSocialConstellation } from "@/spatial/hooks/useUraiSocialConstellation";
 import type { UraiSocialConstellation } from "@/lib/uraiSocial/types";
+import { URAISpatialLookAtAuthority } from "../components/URAISpatialLookAtAuthority";
+import { URAISpatialVideoLockStarVolume } from "../components/URAISpatialVideoLockStarVolume";
+import { URAISpatialContinuityIdentityLock } from "../components/URAISpatialContinuityIdentityLock";
 
 
 type Phase = "HOME" | "ASCENT" | "LIFEMAP" | "FOCUS" | "REPLAY";
@@ -52,7 +53,7 @@ type Star = {
 };
 
 const ASCENT_MS = 3400;
-const ASCENT_LIFEMAP_HANDOFF_MS = 2600;
+const ASCENT_LIFEMAP_HANDOFF_MS = 4200;
 const FOCUS_MS = 1500;
 const FOCUS_ARRIVAL_SETTLE_MS = 1100;
 const REPLAY_MS = 1600;
@@ -66,6 +67,31 @@ const FOCUS_REVERSE_BRIDGE_MS = 520;
 
 
 /* URAI_ASCENT_LIFEMAP_HANDOFF_SMOOTHING_LOCK */
+
+function uraiToneColor(tone?: string | null) {
+  switch (tone) {
+    case "joy": return "#ffd27a";
+    case "hope": return "#8fffd2";
+    case "calm": return "#8fb8ff";
+    case "grief": return "#8c7cff";
+    case "tension": return "#ff7a9a";
+    case "awe": return "#caa8ff";
+    case "recovery": return "#9dffb8";
+    case "charged": return "#ff9d66";
+    default: return "#b8c7ff";
+  }
+}
+
+function uraiWeightIntensity(weight?: string | null) {
+  switch (weight) {
+    case "heavy": return 1.0;
+    case "threshold": return 1.15;
+    case "medium": return 0.74;
+    case "light": return 0.48;
+    default: return 0.62;
+  }
+}
+
 function uraiHandoffEase01(v: number) {
   const x = Math.max(0, Math.min(1, v));
   return x * x * (3 - 2 * x);
@@ -514,252 +540,78 @@ function assertLegal(from: Phase, allowed: Phase[], action: string): boolean {
   return true;
 }
 
-function CameraRig({
-  phase,
-  startedAt,
-  selected,
-  now,
-}: {
-  phase: Phase;
-  startedAt: number;
-  selected: [number, number, number] | null;
-  now: number;
-}) {
+/* URAI_ASCENT_LIFEMAP_CONTINUITY_SMOOTHING_LOCK */
+
+
+function CameraRig(props) {
+  const { phase, ascentProgress = 0, focusProgress = 0, replayProgress = 0 } = props;
+
   const { camera } = useThree();
-  const pos = useRef(new THREE.Vector3(0, 0.8, 12));
-  const look = useRef(new THREE.Vector3(0, 0.4, 0));
+  const target = new THREE.Vector3();
+  const pos = new THREE.Vector3();
 
-  /* URAI_ASCENT_FIX_V3_CAMERA_SCOPE */
-  const ascentExitPosRef = useRef<THREE.Vector3 | null>(null);
-  const ascentExitLookRef = useRef<THREE.Vector3 | null>(null);
-  const prevPhaseRef = useRef<Phase | null>(null);
-  const handoffRef = useRef(0);
+  useFrame((state, dt) => {
+    const t = state.clock.getElapsedTime();
 
-  
-  /* URAI_CAMERA_CONTINUITY_REFS_V1 */
-  const uraiCameraContinuityRef = useRef({
-    px: 0, py: 0, pz: 0,
-    tx: 0, ty: 0, tz: 0,
-    initialized: false,
-    ascentToLifeMapBlend: 0,
-    lastPhase: "",
-    lx: 0, ly: 0, lz: 0,
-  });
-useFrame((_, delta) => {
-
-    /* URAI_ASCENT_LIFEMAP_HANDOFF_SOFTENER_V1 */
-    const uraiContinuity = uraiCameraContinuityRef.current;
-    const uraiDt = typeof delta === "number" ? delta : 1 / 60;
-
-    if (!uraiContinuity.initialized) {
-      uraiContinuity.px = camera.position.x;
-      uraiContinuity.py = camera.position.y;
-      uraiContinuity.pz = camera.position.z;
-      uraiContinuity.tx = 0;
-      uraiContinuity.ty = 0;
-      uraiContinuity.tz = 0;
-      uraiContinuity.initialized = true;
-    }
-
-    const uraiWasAscent = uraiContinuity.lastPhase === "ASCENT";
-    const uraiIsLifeMap = phase === "LIFEMAP";
-
-    if (uraiWasAscent && uraiIsLifeMap) {
-      uraiContinuity.ascentToLifeMapBlend = 0.001;
-    }
-
-    if (uraiContinuity.ascentToLifeMapBlend > 0 && uraiContinuity.ascentToLifeMapBlend < 1) {
-      uraiContinuity.ascentToLifeMapBlend = uraiClamp01(
-        uraiContinuity.ascentToLifeMapBlend + uraiDt * 1.85
-      );
-
-      camera.position.x = uraiDamp(camera.position.x, uraiContinuity.px, 18, uraiDt);
-      camera.position.y = uraiDamp(camera.position.y, uraiContinuity.py, 18, uraiDt);
-      camera.position.z = uraiDamp(camera.position.z, uraiContinuity.pz, 18, uraiDt);
-
-      /* URAI_CAMERA_TARGET_INHERITANCE_LOCK_V1 */
-      const uraiInheritedLookX = uraiContinuity.lx;
-      const uraiInheritedLookY = uraiContinuity.ly;
-      const uraiInheritedLookZ = uraiContinuity.lz;
-      camera.lookAt(uraiInheritedLookX, uraiInheritedLookY, uraiInheritedLookZ);
-    }
-
-
-
-    const prev = prevPhaseRef.current;
-    const justEnteredLifeMap = prev === "ASCENT" && phase === "LIFEMAP";
-
-    if (phase === "ASCENT") {
-      ascentExitPosRef.current = camera.position.clone();
-
-      const dir = new THREE.Vector3();
-      camera.getWorldDirection(dir);
-
-      ascentExitLookRef.current = camera.position.clone().add(dir.multiplyScalar(10));
-      handoffRef.current = 0;
-    }
-
-    if (justEnteredLifeMap && ascentExitPosRef.current && ascentExitLookRef.current) {
-      camera.position.copy(ascentExitPosRef.current);
-      camera.lookAt(ascentExitLookRef.current);
-      handoffRef.current = 1;
-    }
-
-    prevPhaseRef.current = phase;
-
-    const smoothedDelta = Math.min(delta, 0.032);
-
-    const returnDamp =
-      phase === "ASCENT" ? 2.1 :
-      phase === "HOME" ? 2.7 :
-      phase === "LIFEMAP" ? 2.9 :
-      phase === "FOCUS" ? 3.2 :
-      phase === "REPLAY" ? 3.0 :
-      2.8;
-
-    const returnLookDamp = returnDamp;
-    const elapsed = now - startedAt;
-
-    const ASCENT_CAMERA_SYNC_DELAY_MS = 120;
-    const ascentRaw = Math.max(0, elapsed - ASCENT_CAMERA_SYNC_DELAY_MS) / ASCENT_MS;
-    const ascentClamped = clamp01(ascentRaw);
-    const ascentSmooth = ascentClamped * ascentClamped * (3 - 2 * ascentClamped);
-    const ascent = ease(ascentSmooth);
-
-    const focus = ease(elapsed / FOCUS_MS);
-    const replay = ease(elapsed / REPLAY_MS);
-
-    const ascentEndPos = new THREE.Vector3(0, 0.9 + 12.4, 12 - 11.25);
-    const ascentEndLook = new THREE.Vector3(0, 0.2 + 7.95, -8.65);
-
-    let targetPos = new THREE.Vector3(0, 0.8, 12);
-    let targetLook = new THREE.Vector3(0, 0.2, 0);
+    const ease = (v) => 1 - Math.pow(1 - v, 3);
 
     if (phase === "HOME") {
-      targetPos = new THREE.Vector3(0, 0.9, 12);
-      targetLook = new THREE.Vector3(0, 0.2, 0);
+      pos.set(0, 1.6, 6);
+      target.set(0, 0, 0);
     }
 
     if (phase === "ASCENT") {
-      targetPos = new THREE.Vector3(
+      const p = ease(ascentProgress);
+
+      // TRUE upward travel (not zoom)
+      pos.set(
         0,
-        0.9 + ascent * 12.4,
-        12 - ascent * 11.25
+        1.6 + p * 18,     // strong vertical gain
+        6 - p * 4         // slight forward drift
       );
-      targetLook = new THREE.Vector3(
-        0,
-        0.2 + ascent * 7.95,
-        -ascent * 8.65
-      );
+
+      target.set(0, p * 6, 0); // look upward into space
     }
 
     if (phase === "LIFEMAP") {
-      const handoffT = clamp01((now - startedAt) / ASCENT_LIFEMAP_HANDOFF_MS);
-      const t = handoffT * handoffT * (3 - 2 * handoffT);
+      // inherit ASCENT momentum (NO SNAP)
+      pos.set(
+        0,
+        19,
+        2
+      );
 
-      const lifeMapPos = new THREE.Vector3(0, 10.72, 1.42);
-      const lifeMapLook = new THREE.Vector3(0, 8.06, -8.22);
-
-      targetPos = ascentEndPos.clone().lerp(lifeMapPos, t);
-      targetLook = ascentEndLook.clone().lerp(lifeMapLook, t);
+      target.set(0, 10, 0);
     }
 
-    if (phase === "FOCUS" && selected) {
-      const star = new THREE.Vector3(...selected);
-      const focusRaw = clamp01((now - startedAt) / FOCUS_MS);
-      const focusArrival = focusRaw < 0.82 ? ease(focusRaw / 0.82) : 1;
-      const settleRaw = clamp01((now - startedAt - FOCUS_MS * 0.82) / FOCUS_ARRIVAL_SETTLE_MS);
-      const settle = ease(settleRaw);
+    if (phase === "FOCUS") {
+      const p = ease(focusProgress);
 
-      const lifeMapAnchorPos = new THREE.Vector3(0, 10.72, 1.42);
-      const lifeMapAnchorLook = new THREE.Vector3(0, 8.06, -8.22);
+      pos.lerp(
+        new THREE.Vector3(0, 6, 4),
+        p
+      );
 
-      const arrivalPos = new THREE.Vector3(star.x * 0.58, star.y + 1.52, star.z + 4.55);
-      const settledPos = new THREE.Vector3(star.x * 0.52, star.y + 1.42, star.z + 4.78);
-      const arrivalLook = new THREE.Vector3(star.x, star.y + 0.08, star.z);
-      const settledLook = new THREE.Vector3(star.x, star.y + 0.04, star.z - 0.18);
-
-      targetPos = lifeMapAnchorPos.clone().lerp(arrivalPos, focusArrival).lerp(settledPos, settle * 0.20);
-      targetLook = lifeMapAnchorLook.clone().lerp(arrivalLook, focusArrival).lerp(settledLook, settle * 0.32);
+      target.set(0, 0, 0);
     }
 
-    if (phase === "REPLAY" && selected) {
-      const star = new THREE.Vector3(...selected);
-      const replayRaw = clamp01((now - startedAt) / REPLAY_MS);
-      const replayEnter = ease(replayRaw);
-      const presence = ease((now - startedAt) / REPLAY_PRESENCE_SETTLE_MS);
+    if (phase === "REPLAY") {
+      const p = ease(replayProgress);
 
-      const start = new THREE.Vector3(star.x * 0.52, star.y + 1.42, star.z + 4.78);
-      const place = new THREE.Vector3(star.x * 0.76, star.y + 0.88, star.z + 2.42);
-      const held = new THREE.Vector3(star.x * 0.72, star.y + 0.82, star.z + 2.58);
+      pos.lerp(
+        new THREE.Vector3(0, 2.8, 2.2),
+        p
+      );
 
-      targetPos = start.clone().lerp(place, replayEnter).lerp(held, presence * 0.22);
-      targetLook = new THREE.Vector3(star.x, star.y + 0.03, star.z - 0.86);
+      target.set(0, 0, 0);
     }
 
-    pos.current.lerp(targetPos, 1 - Math.pow(phase === "ASCENT" || phase === "LIFEMAP" ? 0.00108 : 0.00085, smoothedDelta));
-    look.current.lerp(targetLook, 1 - Math.pow(phase === "ASCENT" || phase === "LIFEMAP" ? 0.00112 : 0.0009, smoothedDelta));
-
-    /* URAI_ELITE_CAMERA_MICRO_DRIFT_V1 */
-    const microDrift =
-      phase === "HOME" ? 0.006 :
-      phase === "ASCENT" ? 0.012 :
-      phase === "LIFEMAP" ? 0.008 :
-      phase === "FOCUS" ? 0.005 :
-      phase === "REPLAY" ? 0.003 :
-      0;
-
-    camera.position.copy(pos.current);
-    camera.position.x += Math.sin(now * 0.00042) * microDrift;
-    camera.position.y += Math.cos(now * 0.00037) * microDrift * 0.55;
-
-    look.current.x = THREE.MathUtils.damp(look.current.x, targetLook.x, returnLookDamp, smoothedDelta);
-    look.current.y = THREE.MathUtils.damp(look.current.y, targetLook.y, returnLookDamp, smoothedDelta);
-    look.current.z = THREE.MathUtils.damp(look.current.z, targetLook.z, returnLookDamp, smoothedDelta);
-
-    camera.lookAt(look.current);
-
-    if (camera instanceof THREE.PerspectiveCamera) {
-      const targetFov =
-        phase === "REPLAY" ? 29 :
-        phase === "FOCUS" ? 34 :
-        phase === "ASCENT" ? 39 :
-        40;
-
-      camera.fov += (targetFov - camera.fov) * (1 - Math.pow(0.001, smoothedDelta));
-      camera.updateProjectionMatrix();
-
-    
-    /* URAI_MICRO_CAMERA_DRIFT_V1 */
-    const uraiT = performance.now() / 1000;
-    const uraiDriftStrength =
-      phase === "HOME" ? 0.0035 :
-      phase === "ASCENT" ? 0.0025 :
-      phase === "LIFEMAP" ? 0.004 :
-      phase === "FOCUS" ? 0.002 :
-      phase === "REPLAY" ? 0.0015 :
-      0;
-
-    camera.position.x += Math.sin(uraiT * 0.23) * uraiDriftStrength;
-    camera.position.y += Math.cos(uraiT * 0.19) * uraiDriftStrength * 0.45;
-
-    /* URAI_CAMERA_CONTINUITY_CAPTURE_V1 */
-    uraiContinuity.px = camera.position.x;
-    uraiContinuity.py = camera.position.y;
-    uraiContinuity.pz = camera.position.z;
-
-    const uraiForward = new THREE.Vector3(0, 0, -1).applyQuaternion(camera.quaternion);
-    uraiContinuity.lx = camera.position.x + uraiForward.x * 8;
-    uraiContinuity.ly = camera.position.y + uraiForward.y * 8;
-    uraiContinuity.lz = camera.position.z + uraiForward.z * 8;
-
-    uraiContinuity.lastPhase = phase;
-    }
+    camera.position.lerp(pos, 0.08);
+    camera.lookAt(target);
   });
 
   return null;
 }
-
 function HomeWorld({
   phase,
   now,
@@ -782,34 +634,247 @@ function HomeWorld({
         ? 1
         : 0;
   /* TIER2_ASCENT_HOME_Y_SOFTEN_V1 */
-  const homeY = -2.4 * ascentEase;
+  /* URAI_HOME_ASCENT_CONTINUITY_PROOF_LOCK_V2 */
+  const homeY = -1.85 * ascentEase;
   /* TIER2_ASCENT_HOME_Z_SOFTEN_V1 */
-  const homeZ = -4.2 * ascentEase;
-  const homeScale = 1 - 0.35 * ascentEase;
+  const homeZ = -3.35 * ascentEase;
+  const homeScale = 1 - 0.24 * ascentEase;
+
   /* TIER2_ASCENT_HOME_LATE_FADE */
   /* TIER2_ASCENT_HOME_LATE_FADE_V2 */
+  const homeAscentContinuity = phase === "ASCENT" ? Math.max(0.34, 1 - ascentEase * 0.58) : 1;
   const homePresence =
-    phase === "LIFEMAP"
-      ? Math.max(0, handoffGhost * 0.32)
-      : 1;
+    phase === "HOME" ? 1 :
+    phase === "ASCENT" ? homeAscentContinuity :
+    handoffGhost;
+
+  /* URAI_HOME_ORB_BREATHING_EMOTION_LOCK_V1 */
+  const homeBreath = 1 + Math.sin(now * 1.18) * (0.026 + emotionalModel.auraIntensity * 0.022);
+  const homeOrbDriftX = Math.sin(now * 0.34) * (0.035 + emotionalModel.auraIntensity * 0.024);
+  const homeOrbDriftY = Math.sin(now * 0.58) * (0.028 + emotionalModel.auraIntensity * 0.018);
+  const homeOrbDriftZ = Math.cos(now * 0.29) * (0.028 + emotionalModel.auraIntensity * 0.016);
+  const homeOrbEmission = homePresence * (1.25 + emotionalModel.auraIntensity * 1.2 + Math.sin(now * 1.18) * 0.24);
+  const homeOrbGlowOpacity = homePresence * (0.07 + emotionalModel.auraIntensity * 0.085 + Math.sin(now * 1.18) * 0.025);
+  const homeContactGlowOpacity = homePresence * (0.11 + emotionalModel.auraIntensity * 0.11 + Math.sin(now * 1.18) * 0.025);
 
   if (!visible) return null;
 
   return (
     <group position={[0, homeY, homeZ]} scale={homeScale}>
-      <mesh onClick={phase === "HOME" ? onBeginAscent : undefined} position={[0, 0, 0]}>
-        <sphereGeometry args={[1.18, 64, 64]}  />
-        <meshStandardMaterial color="#7c3cff" emissive="#3f18a8" emissiveIntensity={0.9 * homePresence + emotionalModel.auraIntensity * 0.35} roughness={0.52} transparent opacity={homePresence}  />
+      {/* 
+{/* HOME_ORB_AUTHORITY_START */}
+<group position={[0, 1.08, -1.9]}>
+  <pointLight
+    position={[0, 0.08, 0.18]}
+    intensity={3.0}
+    distance={7}
+    color="#c7adff"
+  />
+
+  <mesh
+    name="URAI_HOME_SINGLE_AUTHORITY_ORB"
+    onClick={phase === "HOME" ? onBeginAscent : undefined}
+    scale={[0.68, 0.68, 0.68]}
+  >
+    <sphereGeometry args={[1, 96, 96]} />
+    <meshStandardMaterial
+      color="#b58cff"
+      emissive="#8d63ff"
+      emissiveIntensity={2.0}
+      roughness={0.4}
+      metalness={0.02}
+      transparent
+      opacity={0.95}
+    />
+  </mesh>
+
+  <mesh scale={[0.7, 0.7, 0.7]}>
+    <sphereGeometry args={[1, 96, 96]} />
+    <meshBasicMaterial
+      color="#f0ddff"
+      transparent
+      opacity={0.06}
+      depthWrite={false}
+    />
+  </mesh>
+
+  <mesh rotation={[Math.PI / 2, 0, 0]} position={[0, -0.7, 0]}>
+    <torusGeometry args={[1, 0.01, 20, 120]} />
+    <meshBasicMaterial
+      color="#d8c7ff"
+      transparent
+      opacity={0.18}
+    />
+  </mesh>
+</group>
+{/* HOME_ORB_AUTHORITY_END */}
+      {/* URAI_REPLAY_CHAMBER_DEPTH_LOCK */}
+      <mesh position={[0, 0, -2.4]} scale={[4.8, 3.2, 0.22]}>
+        <sphereGeometry args={[1, 96, 96]} />
+        <meshBasicMaterial color={"#8ed7ff"} transparent opacity={0.075} depthWrite={false} />
       </mesh>
 
-      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -1.38, 0]} onClick={phase === "HOME" ? onBeginAscent : undefined}>
-        <ringGeometry args={[2.1, 3.2, 96]}  />
-        <meshBasicMaterial color="#6b4cff" transparent opacity={0.16 * homePresence} side={THREE.DoubleSide}  depthWrite={false}  />
+      <mesh position={[0, -1.45, -0.65]} rotation={[-Math.PI / 2, 0, 0]}>
+        <circleGeometry args={[2.25, 96]} />
+        <meshBasicMaterial color={"#8ed7ff"} transparent opacity={0.052} depthWrite={false} />
       </mesh>
+
+      <mesh position={[0, 0.1, -1.15]} scale={[3.2, 2.1, 0.18]}>
+        <sphereGeometry args={[1, 96, 96]} />
+        <meshBasicMaterial color={"#8ed7ff"} transparent opacity={0.038} depthWrite={false} />
+      </mesh>
+      {/* URAI_HOME_SKY_FOG_LOCK_V1 */}
+      <group>
+        <mesh position={[0, 7.5, -42]}>
+          <sphereGeometry args={[58, 96, 48]} />
+          <meshBasicMaterial
+            color="#080214"
+            side={THREE.BackSide}
+            transparent
+            opacity={0.92 * homePresence}
+            depthWrite={false}
+          />
+        </mesh>
+
+        <mesh position={[-18, 10, -46]} rotation={[0.08, 0.24, -0.08]}>
+          <planeGeometry args={[44, 18, 32, 8]} />
+          <meshBasicMaterial
+            color="#24104a"
+            transparent
+            opacity={0.16 * homePresence}
+            depthWrite={false}
+            side={THREE.DoubleSide}
+            blending={THREE.AdditiveBlending}
+          />
+        </mesh>
+
+        <mesh position={[20, 13, -54]} rotation={[-0.04, -0.28, 0.12]}>
+          <planeGeometry args={[52, 20, 32, 8]} />
+          <meshBasicMaterial
+            color="#171f55"
+            transparent
+            opacity={0.11 * homePresence}
+            depthWrite={false}
+            side={THREE.DoubleSide}
+            blending={THREE.AdditiveBlending}
+          />
+        </mesh>
+
+        <mesh position={[0, 1.25, -20]} rotation={[-Math.PI / 2, 0, 0]}>
+          <ringGeometry args={[8, 34, 192]} />
+          <meshBasicMaterial
+            color="#4f35d8"
+            transparent
+            opacity={0.075 * homePresence}
+            depthWrite={false}
+            side={THREE.DoubleSide}
+            blending={THREE.AdditiveBlending}
+          />
+        </mesh>
+
+        <mesh position={[0, -0.85, -7]} rotation={[-Math.PI / 2, 0, 0]}>
+          <ringGeometry args={[4.5, 18, 192]} />
+          <meshBasicMaterial
+            color="#8d63ff"
+            transparent
+            opacity={0.095 * homePresence}
+            depthWrite={false}
+            side={THREE.DoubleSide}
+            blending={THREE.AdditiveBlending}
+          />
+        </mesh>
+
+        <mesh position={[0, -1.05, -13]} rotation={[-Math.PI / 2, 0, 0]}>
+          <circleGeometry args={[46, 192]} />
+          <meshBasicMaterial
+            color="#110622"
+            transparent
+            opacity={0.34 * homePresence}
+            depthWrite={false}
+            side={THREE.DoubleSide}
+          />
+        </mesh>
+      </group>
+      
+<group>
+
+  {/* ORB CORE */}
+  
+          {/* duplicate inline Home orb removed - using HomeEnvironment/HomeOrb */}
+
+
+  {/* HALO RING */}
+  <mesh rotation={[-Math.PI / 2, 0, 0]} position={[homeOrbDriftX * 0.35, -1.365, homeOrbDriftZ * 0.35]} scale={1 + Math.sin(now * 1.18) * 0.035}>
+    <ringGeometry args={[1.8, 3.8, 128]} />
+    <meshBasicMaterial
+      color="#7c3cff"
+      transparent
+      opacity={homeContactGlowOpacity}
+      depthWrite={false}
+      side={THREE.DoubleSide}
+    />
+  </mesh>
+
+</group>
+
+
+      
+<mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -1.38, 0]}>
+  {/* URAI_HOME_GROUND_CONTACT_GLOW_LOCK_V1 */}
+  <circleGeometry args={[8, 128]} />
+  <meshStandardMaterial
+    color="#17102a"
+    emissive="#120829"
+    emissiveIntensity={0.4 * homePresence}
+    roughness={0.85}
+    metalness={0.02}
+    transparent
+    opacity={0.7 * homePresence}
+    side={THREE.DoubleSide}
+  />
+</mesh>
+
 
       <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -1.42, 0]}>
         <circleGeometry args={[10.8, 128]}  />
         <meshBasicMaterial color="#140521" transparent opacity={0.42 * homePresence} side={THREE.DoubleSide}  depthWrite={false}  />
+      </mesh>
+
+      {/* URAI_HOME_GROUND_CONTACT_GLOW_LOCK_V1 */}
+      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[homeOrbDriftX * 0.25, -1.355, homeOrbDriftZ * 0.25]} scale={1 + Math.sin(now * 1.18) * 0.045}>
+        <circleGeometry args={[2.85, 128]} />
+        <meshBasicMaterial
+          color="#a78bfa"
+          transparent
+          opacity={homeContactGlowOpacity * 0.9}
+          depthWrite={false}
+          side={THREE.DoubleSide}
+          blending={THREE.AdditiveBlending}
+        />
+      </mesh>
+
+      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[homeOrbDriftX * 0.18, -1.352, homeOrbDriftZ * 0.18]} scale={1 + Math.sin(now * 0.72) * 0.025}>
+        <ringGeometry args={[2.65, 6.25, 160]} />
+        <meshBasicMaterial
+          color="#6b4cff"
+          transparent
+          opacity={homeContactGlowOpacity * 0.45}
+          depthWrite={false}
+          side={THREE.DoubleSide}
+          blending={THREE.AdditiveBlending}
+        />
+      </mesh>
+
+      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -1.349, -1.2]} scale={1 + emotionalModel.auraIntensity * 0.06}>
+        <ringGeometry args={[6.2, 9.4, 192]} />
+        <meshBasicMaterial
+          color="#3f2bbd"
+          transparent
+          opacity={homePresence * 0.055}
+          depthWrite={false}
+          side={THREE.DoubleSide}
+          blending={THREE.AdditiveBlending}
+        />
       </mesh>
 
       <mesh position={[0, 0, -15]} onClick={phase === "HOME" ? onBeginAscent : undefined}>
@@ -922,6 +987,7 @@ const starAura =
         return (
         <group key={star.id} position={star.position} scale={starScale}>
           <mesh
+            scale={[1.6,1.6,1.6]}
             onClick={phase === "LIFEMAP" ? (e: ThreeEvent<MouseEvent>) => {
               e.stopPropagation();
               onSelectStar(star.id);
@@ -931,9 +997,9 @@ const starAura =
             <meshStandardMaterial
               color="#a980ff"
               emissive="#6e37ff"
-              emissiveIntensity={starGlow}
+              emissiveIntensity={starGlow * 1.35}
               transparent
-              opacity={opacity}
+              opacity={Math.min(1, opacity * 1.15)}
               roughness={0.35}
              />
           </mesh>
@@ -1033,13 +1099,16 @@ const replayPresence = replay ? 1 : 0;
   const profile = memoryVisualProfile(selected);
   /* URAI_FOCUS_VISUAL_SETTLE_LOCK_V1 */
   const focusSettle = phase === "FOCUS" ? ease((now - startedAt) / FOCUS_ARRIVAL_SETTLE_MS) : 1;
-  const pulse = 1 + Math.sin(now * 0.0016 * emotionalModel.pulseRate) * 0.012 * profile.pulse * focusSettle;
+  const pulse = 1 + Math.sin(now * 0.0016 * emotionalModel.pulseRate) * 0.006;
   const coreScale =
-    (replay ? 0.21 : 0.29) *
-    pulse *
-    (1 + emotionalModel.memoryWeight * 0.055) *
-    (phase === "FOCUS" ? 0.96 + focusSettle * 0.04 : 1);
-  const auraScale = Math.min((1 + emotionalModel.auraIntensity * 0.22 * focusSettle) * profile.aura, phase === "REPLAY" ? 1.22 : 1.6);
+    selected.scale *
+    (replay ? 1.08 : 1.72 + emotionalModel.memoryWeight * 0.42) *
+    pulse;
+
+  const auraScale = Math.min(
+    (1 + emotionalModel.auraIntensity * 0.10) * profile.aura,
+    1.12
+  );
   /* URAI_TIER3_STABLE_FOCUS_FIELD_BINDING_V1 */
   const fieldOpacity = replay
     ? 0.055 + emotionalModel.particleDensity * 0.13 + emotionalModel.memoryWeight * 0.035
@@ -1048,8 +1117,12 @@ const replayPresence = replay ? 1 : 0;
     ? 0.035 + emotionalModel.auraIntensity * 0.055 + emotionalModel.memoryWeight * 0.028
     : 0.075 + emotionalModel.auraIntensity * 0.105 + emotionalModel.memoryWeight * 0.038;
 
+  /* URAI_FOCUS_ARRIVAL_LOCK_V3 */
+  const driftX = Math.sin(now * 0.00018) * 0.045;
+  const driftY = Math.sin(now * 0.00023) * 0.03;
+
   return (
-    <group position={[p[0], p[1] + 4.8, p[2] - 8.5]} scale={reverseBridge ? 1 - bridgeT * 0.08 : 1}>
+    <group position={[p[0] + driftX, p[1] + 4.8 + driftY, p[2] - 8.5]} scale={reverseBridge ? 1 - bridgeT * 0.08 : 1}>
       {/* TIER2_FOCUS_ARRIVAL_FIELD */}
       <group>
         {Array.from({ length: 56 }).map((_, i) => {
@@ -1067,27 +1140,61 @@ const replayPresence = replay ? 1 : 0;
         })}
       </group>
 
+      {/* URAI_FOCUS_DEPTH_STRATA_FINAL_SAFE */}
+      <group>
+        {Array.from({ length: 72 }).map((_, i) => {
+          const a = i * 2.399963;
+          const layer = i % 3;
+          const r = layer === 0 ? 0.72 + (i % 9) * 0.035 : layer === 1 ? 1.55 + (i % 11) * 0.055 : 2.75 + (i % 13) * 0.075;
+          const z = layer === 0 ? -0.22 - (i % 5) * 0.025 : layer === 1 ? -0.78 - (i % 7) * 0.045 : -1.85 - (i % 9) * 0.07;
+          const y = layer === 0 ? Math.sin(i * 0.91) * 0.20 : layer === 1 ? Math.sin(i * 0.73) * 0.42 : Math.sin(i * 0.51) * 0.72;
+          const size = layer === 0 ? 0.014 : layer === 1 ? 0.019 : 0.026;
+          const alpha = layer === 0 ? 0.030 : layer === 1 ? 0.020 : 0.010;
+
+          return (
+            <mesh key={"focus-depth-" + i} position={[Math.cos(a) * r, y, Math.sin(a) * r + z]}>
+              <sphereGeometry args={[size, 8, 8]} />
+              <meshBasicMaterial
+                color={layer === 2 ? "#8f7cff" : "#d8ceff"}
+                transparent
+                opacity={bridgeOpacity * (alpha + emotionalModel.particleDensity * alpha)}
+                depthWrite={false}
+              />
+            </mesh>
+          );
+        })}
+      </group>
+
       {/* TIER2_FOCUS_CONTEXT_RINGS */}
       <mesh rotation={[Math.PI / 2, 0, 0]}>
         <ringGeometry args={[1.55, 1.68, 128]}  />
-        <meshBasicMaterial color="#d7ccff" transparent opacity={(bridgeOpacity * (replay ? 0.08 : 0.18)) * (0.86 + replayPresence * 0.22)} side={THREE.DoubleSide}  depthWrite={false}  />
+        <meshBasicMaterial color="#d7ccff" transparent opacity={(bridgeOpacity * (replay ? 0.045 : 0.075)) * (0.86 + replayPresence * 0.22)} side={THREE.DoubleSide}  depthWrite={false}  />
       </mesh>
 
       <mesh rotation={[Math.PI / 2, 0, 0]}>
         <ringGeometry args={[2.45, 2.52, 128]}  />
-        <meshBasicMaterial color="#7e58ff" transparent opacity={(bridgeOpacity * (replay ? 0.045 : 0.105)) * (0.86 + replayPresence * 0.22)} side={THREE.DoubleSide}  depthWrite={false}  />
+        <meshBasicMaterial color="#7e58ff" transparent opacity={(bridgeOpacity * (replay ? 0.026 : 0.052)) * (0.86 + replayPresence * 0.22)} side={THREE.DoubleSide}  depthWrite={false}  />
       </mesh>
 
       <mesh rotation={[Math.PI / 2, 0, 0]}>
         <ringGeometry args={[2.85, 2.92, 128]}  />
-        <meshBasicMaterial color="#4d2bb4" transparent opacity={(bridgeOpacity * (replay ? 0.035 : 0.075)) * (0.86 + replayPresence * 0.22)} side={THREE.DoubleSide}  depthWrite={false}  />
+        <meshBasicMaterial color="#4d2bb4" transparent opacity={(bridgeOpacity * (replay ? 0.02 : 0.038)) * (0.86 + replayPresence * 0.22)} side={THREE.DoubleSide}  depthWrite={false}  />
       </mesh>
 
       {/* TIER2_FOCUS_MEMORY_CORE */}
       <mesh
-        onClick={phase === "FOCUS" ? (e: ThreeEvent<MouseEvent>) => {
+            scale={[1.6,1.6,1.6]}
+            onClick={phase === "FOCUS" ? (e: ThreeEvent<MouseEvent>) => {
           e.stopPropagation();
           onOpenReplay();
+        } : undefined}
+        onPointerOver={phase === "FOCUS" ? (e: ThreeEvent<PointerEvent>) => {
+          e.stopPropagation();
+          document.body.style.cursor = "pointer";
+        } : undefined}
+        onPointerOut={phase === "FOCUS" ? (e: ThreeEvent<PointerEvent>) => {
+          e.stopPropagation();
+          document.body.style.cursor = "default";
         } : undefined}
       >
         <sphereGeometry args={[coreScale, 64, 64]}  />
@@ -1096,7 +1203,7 @@ const replayPresence = replay ? 1 : 0;
           emissive="#7a46ff"
           emissiveIntensity={
     replay
-      ? 1.35 + emotionalModel.memoryWeight * 0.75
+      ? 1.08 + emotionalModel.memoryWeight * 0.18
       : 1.45 + emotionalModel.auraIntensity * 0.85
   }
           roughness={0.28}
@@ -1109,17 +1216,19 @@ const replayPresence = replay ? 1 : 0;
       </mesh>)}
 
       {phase !== "REPLAY" && (<mesh>
-        <sphereGeometry args={[1.75 * auraScale, 48, 48]} />
+        <sphereGeometry args={[1.38 * auraScale, 48, 48]} />
         <meshBasicMaterial color={selected.memoryType === "shadow" ? "#241433" : selected.memoryType === "recovery" ? "#6f58ff" : "#4d2bb4"} transparent opacity={(bridgeOpacity * (replay ? 0.045 : 0.085) * profile.glow) * (0.86 + replayPresence * 0.22)} side={THREE.BackSide} depthWrite={false}  />
       </mesh>)}
 
       {phase !== "REPLAY" && (<mesh>
-        <sphereGeometry args={[3.9, 64, 64]}  />
+        <sphereGeometry args={[3.15, 64, 64]}  />
         <meshBasicMaterial color="#16082f" transparent opacity={(bridgeOpacity * (replay ? 0.07 : 0.045)) * (0.86 + replayPresence * 0.22)} side={THREE.BackSide} depthWrite={false}  />
       </mesh>)}
     </group>
   );
 }
+
+
 
 function ReplayWorld({
   phase,
@@ -1127,91 +1236,122 @@ function ReplayWorld({
   emotionalModel,
 }: {
   phase: Phase;
-  selected: Star | null;
-  emotionalModel: EmotionalModel;
+  selected?: Star | null;
+  emotionalModel?: EmotionalModel;
 }) {
-/* URAI_REPLAY_ENCLOSURE_LOCAL_FALLBACK_V1 */
+  const chamberRef = useRef<THREE.Group>(null);
+  const hazeRef = useRef<THREE.Group>(null);
+  const memoryRef = useRef<THREE.Group>(null);
 
-  if (phase !== "REPLAY" || !selected) return null;
+  const active = phase === "REPLAY";
 
-  const p = selected.position;
-  const profile = memoryVisualProfile(selected);
-  const stillness = emotionalModel.replayStillness;
-  /* URAI_REPLAY_ENCLOSURE_WEIGHT_LOCK_V1 */
-  
+  const toneColor =
+    selected?.emotionalTone === "shadow" ? "#4d2b6f" :
+    selected?.emotionalTone === "threshold" ? "#b88cff" :
+    selected?.emotionalTone === "charged" ? "#ff9bd2" :
+    selected?.emotionalTone === "bright" ? "#d8d0ff" :
+    selected?.emotionalTone === "calm" ? "#8ee8ff" :
+    "#9f7cff";
+
+  const density = THREE.MathUtils.clamp(
+    (emotionalModel?.particleDensity ?? 0.42) +
+      (emotionalModel?.memoryWeight ?? 0.45) * 0.32,
+    0.22,
+    0.92
+  );
+
+  useFrame((state) => {
+    const t = state.clock.elapsedTime;
+
+    if (chamberRef.current) {
+      chamberRef.current.rotation.y = Math.sin(t * 0.055) * 0.014;
+      chamberRef.current.position.y = Math.sin(t * 0.09) * 0.018;
+    }
+
+    if (hazeRef.current) {
+      hazeRef.current.rotation.z = Math.sin(t * 0.04) * 0.025;
+      hazeRef.current.position.z = Math.sin(t * 0.08) * 0.08;
+    }
+
+    if (memoryRef.current) {
+      memoryRef.current.rotation.y = t * 0.07;
+      memoryRef.current.scale.setScalar(1 + Math.sin(t * 1.1) * 0.018);
+    }
+  });
+
+  if (!active) return null;
+
   return (
-    <group position={[p[0], p[1] + 4.8, p[2] - 8.5]} scale={1}>
-      {/* TIER3_FOCUS_EDGE_FALLOFF */}
-      <mesh>
-        <sphereGeometry args={[7.5, 64, 64]}  />
-        <meshBasicMaterial color="#0a0418" transparent opacity={0.025} side={THREE.BackSide} depthWrite={false}  />
+    <group ref={chamberRef} name="URAI_FOCUS_REPLAY_CHAMBER_POLISH" position={[0, 0.05, -4.8]}>
+      <mesh position={[0, 0.05, -3.25]} scale={[5.8, 3.5, 1]}>
+        <sphereGeometry args={[1, 64, 64]} />
+        <meshBasicMaterial color={toneColor} transparent opacity={0.045 + density * 0.035} depthWrite={false} side={THREE.BackSide} blending={THREE.AdditiveBlending} />
       </mesh>
-      {/* TIER2_REPLAY_ENCLOSURE */}
-      
 
-      
+      <group ref={hazeRef}>
+        <mesh position={[0, 0, -2.1]} scale={[3.6, 2.15, 1]}>
+          <sphereGeometry args={[1, 48, 48]} />
+          <meshBasicMaterial color={toneColor} transparent opacity={0.035 + density * 0.03} depthWrite={false} blending={THREE.AdditiveBlending} />
+        </mesh>
 
-      
+        <mesh position={[-1.75, 0.08, -1.45]} scale={[0.9, 2.2, 1.4]}>
+          <sphereGeometry args={[1, 32, 32]} />
+          <meshBasicMaterial color={toneColor} transparent opacity={0.032 + density * 0.025} depthWrite={false} blending={THREE.AdditiveBlending} />
+        </mesh>
 
-      
+        <mesh position={[1.82, -0.05, -1.6]} scale={[0.82, 2.05, 1.35]}>
+          <sphereGeometry args={[1, 32, 32]} />
+          <meshBasicMaterial color="#8ee8ff" transparent opacity={0.02 + density * 0.022} depthWrite={false} blending={THREE.AdditiveBlending} />
+        </mesh>
+      </group>
 
-      {/* TIER2_REPLAY_DEPTH_PARTICLES */}
-      {Array.from({ length: 210 }).map((_, i) => {
-        const a = i * 2.399963;
-        const shell = i % 5;
-        const r = 0.9 + shell * 0.78 + (i % 13) * 0.032;
-        const z = -0.55 - shell * 0.46 - (i % 19) * 0.035;
-        const y = Math.sin(i * 0.73) * (1.1 + shell * 0.22);
+      <group ref={memoryRef} position={[0, 0.02, -0.82]}>
+        <mesh>
+          <icosahedronGeometry args={[0.34, 4]} />
+          <meshStandardMaterial color="#ffffff" emissive={toneColor} emissiveIntensity={0.85 + density * 0.7} roughness={0.34} metalness={0.08} />
+        </mesh>
+
+        <mesh scale={[1.95, 1.95, 1.95]}>
+          <sphereGeometry args={[0.34, 48, 48]} />
+          <meshBasicMaterial color={toneColor} transparent opacity={0.075 + density * 0.04} depthWrite={false} blending={THREE.AdditiveBlending} />
+        </mesh>
+      </group>
+
+      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -1.05, -1.4]}>
+        <ringGeometry args={[1.1, 1.16, 160]} />
+        <meshBasicMaterial color="#ffffff" transparent opacity={0.045 + density * 0.025} depthWrite={false} side={THREE.DoubleSide} blending={THREE.AdditiveBlending} />
+      </mesh>
+
+      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -1.08, -1.8]}>
+        <ringGeometry args={[1.85, 1.855, 192]} />
+        <meshBasicMaterial color={toneColor} transparent opacity={0.04} depthWrite={false} side={THREE.DoubleSide} blending={THREE.AdditiveBlending} />
+      </mesh>
+
+      <mesh rotation={[0, 0, 0]} position={[0, 0, -1.1]}>
+        <torusGeometry args={[1.42, 0.008, 12, 192]} />
+        <meshBasicMaterial color={toneColor} transparent opacity={0.09 + density * 0.04} depthWrite={false} blending={THREE.AdditiveBlending} />
+      </mesh>
+
+      {Array.from({ length: 36 }).map((_, i) => {
+        const x = Math.sin(i * 8.13) * 2.45;
+        const y = Math.cos(i * 5.71) * 1.2;
+        const z = 0.45 + Math.sin(i * 3.17) * 0.7;
+        const size = 0.01 + (i % 5) * 0.004;
+
         return (
-          <mesh key={i} position={[Math.cos(a) * r, y, Math.sin(a) * r + z]}>
-            <sphereGeometry args={[0.014 + (i % 4) * 0.005, 8, 8]}  />
-            <meshBasicMaterial
-              color="#ded4ff"
-              transparent
-              opacity={
-                0.025 +
-                shell * 0.008 +
-                emotionalModel.memoryWeight * 0.035 +
-                emotionalModel.particleDensity * 0.035
-              }
-              depthWrite={false}
-            />
+          <mesh key={"replay-chamber-particle-" + i} position={[x, y, z]}>
+            <sphereGeometry args={[size, 8, 8]} />
+            <meshBasicMaterial color={i % 3 === 0 ? "#ffffff" : toneColor} transparent opacity={0.075 + density * 0.07} depthWrite={false} blending={THREE.AdditiveBlending} />
           </mesh>
         );
       })}
 
-      {/* TIER2_REPLAY_MEMORY_ANCHOR */}
-      <mesh position={[0, -0.02, -0.82]}>
-        <sphereGeometry args={[0.19, 40, 40]}  />
-        <meshStandardMaterial color="#f2ecff" emissive="#a578ff" emissiveIntensity={(1.55 + emotionalModel.memoryWeight * 0.92) * profile.glow} roughness={0.18}  />
-      </mesh>
-
-      <mesh position={[0, -0.02, -0.82]}>
-        <sphereGeometry args={[0.72, 48, 48]}  />
-        <meshBasicMaterial
-          color="#bca7ff"
-          transparent
-          opacity={0.035 + emotionalModel.auraIntensity * 0.045}
-          side={THREE.DoubleSide}
-          depthWrite={false}
-        />
-      </mesh>
-
-      <mesh rotation={[Math.PI / 2, 0, 0]} position={[0, -0.02, -0.82]}>
-        <ringGeometry args={[1.1, 1.18, 128]}  />
-        <meshBasicMaterial
-          color="#e5dcff"
-          transparent
-          opacity={0.035 + emotionalModel.memoryWeight * 0.055}
-          side={THREE.DoubleSide}
-          depthWrite={false}
-        />
-      </mesh>
+      <pointLight color={toneColor} intensity={0.85 + density * 0.8} distance={8} />
     </group>
   );
 }
 
-/* URAI_TIER6_COMPANION_VISUAL_V1 */
+
 function CompanionVisual({
   phase,
   now,
@@ -1337,7 +1477,7 @@ function SocialConstellationVisual({
                   "#ffffff"
                 }
                 transparent
-                opacity={opacity}
+                opacity={Math.min(1, opacity * 1.15)}
                 depthWrite={false}
               />
             </mesh>
@@ -1401,7 +1541,7 @@ function Atmosphere({ phase, emotionalModel }: { phase: Phase; emotionalModel: E
           "#020711"
         ]}
       />
-      <fog attach="fog" args={[phase === "REPLAY" ? "#020008" : "#050214", fogNear, fogFar]} />
+      <fog attach="fog" args={["#020314", 76, 520]} />
       <ambientLight
         intensity={
           phase === "REPLAY"
@@ -1630,7 +1770,8 @@ export default function SpatialScene() {
     "#8a65ff";
 
   const emotionalModel = useMemo(() => {
-  return buildEmotionalModel(phase, selected);
+    return buildEmotionalModel(phase, selected);
+  }, [phase, selected]);
 
   /* URAI_TIER4_NARRATOR_DEBOUNCE_EFFECT_V1 */
   useEffect(() => {
@@ -1662,7 +1803,6 @@ export default function SpatialScene() {
       }
     };
   }, [phase, selected?.id, emotionalModel.memoryWeight, emotionalModel.auraIntensity, emotionalModel.tone]);
-}, [phase, selected]);
 
 const patternInsight = useMemo(() => {
   return inferMemoryPattern(stars, selected);
@@ -1924,9 +2064,8 @@ return () => {
   });
 
   /* TIER3_SAFE_NARRATOR_COPY_V1 */
+  /* URAI_HOME_NARRATOR_POLISH_LOCK_V2 */
   const narratorCopy = useMemo(() => {
-    if (!narratorReady) return "";
-
     const memoryWeightLabel =
       emotionalModel.memoryWeight >= 0.78 ? "heavy" :
       emotionalModel.memoryWeight >= 0.52 ? "medium" :
@@ -1948,28 +2087,25 @@ return () => {
     const arcLabel = formatDominantArcLabel(patternInsight.dominantArc);
     const chainLabel = patternInsight.chainLine;
 
-    /* URAI_TIER5_NARRATOR_NEXT_PATH_BINDING_V1 */
     const nextSuggestedTitle =
       patternInsight.nextSuggestedFocusId
         ? stars.find((star) => star.id === patternInsight.nextSuggestedFocusId)?.title ?? ""
         : "";
+
     const nextPathLine = nextSuggestedTitle
       ? " Suggested next signal: " + nextSuggestedTitle + "."
       : "";
 
-    /* URAI_TIER6_COMPANION_NARRATOR_BINDING_V1 */
     const companionLine =
       companionState.suggestedAction !== "none"
         ? " Companion: " + companionState.whisper
         : "";
 
-    /* URAI_TIER8_NARRATOR_ADAPTIVE_LINE_V1 */
     const adaptiveLine =
       adaptiveOutput.profile.totalSignals >= 3
         ? " " + adaptiveOutput.adaptiveLine
         : "";
 
-    /* URAI_TIER9_NARRATOR_SOCIAL_BINDING_V1 */
     const socialLine =
       phase === "LIFEMAP"
         ? " Social field: " + socialConstellation.systemInsight
@@ -1991,13 +2127,13 @@ return () => {
 
     if (phase === "FOCUS") {
       return selected
-        ? "Focus locked: " + selected.title + ". This is a " + memoryWeightLabel + " memory carrying " + toneLabel + ". Dominant arc: " + arcLabel + ". " + chainLabel + nextPathLine + companionLine + adaptiveLine + socialLine + companionLine + " " + selected.narratorLine
+        ? "Focus locked: " + selected.title + ". This is a " + memoryWeightLabel + " memory carrying " + toneLabel + ". Dominant arc: " + arcLabel + ". " + chainLabel + nextPathLine + companionLine + adaptiveLine + socialLine + " " + selected.narratorLine
         : "Focus requires a selected memory.";
     }
 
     if (phase === "REPLAY") {
       return selected
-        ? "Replay active: " + selected.title + ". " + holdLabel + " " + chainLabel + nextPathLine + companionLine + adaptiveLine + socialLine + companionLine
+        ? "Replay active: " + selected.title + ". " + holdLabel + " " + chainLabel + nextPathLine + companionLine + adaptiveLine + socialLine
         : "Replay blocked until a memory is selected.";
     }
 
@@ -2005,12 +2141,18 @@ return () => {
   }, [
     phase,
     selected,
-    narratorReady,
+    stars,
     emotionalModel.memoryWeight,
     emotionalModel.replayStillness,
     emotionalModel.tone,
     patternInsight.dominantArc,
     patternInsight.chainLine,
+    patternInsight.nextSuggestedFocusId,
+    companionState.suggestedAction,
+    companionState.whisper,
+    adaptiveOutput.profile.totalSignals,
+    adaptiveOutput.adaptiveLine,
+    socialConstellation.systemInsight,
   ]);
 
   /* URAI_TIER4_STABILIZED_NARRATOR_COPY_V1 */
@@ -2151,6 +2293,13 @@ return () => {
     const forward = isForwardPhaseMove(from, phase);
     const firstHomeSpeak = from === phase && phase === "HOME" && lastSpokenRef.current === "";
 
+    /* URAI_HOME_NARRATOR_POLISH_LOCK_V2 */
+    const homeIdleRepeatBlocked =
+      phase === "HOME" &&
+      lastSpokenRef.current === "HOME_IDLE_LOCKED";
+
+    if (homeIdleRepeatBlocked) return;
+
     if (!forward && !firstHomeSpeak) return;
 
     const speakKey = phase + "::" + stabilizedNarratorCopy;
@@ -2206,6 +2355,8 @@ return () => {
     }
 
     /* URAI_ASCENT_ENTRY_GUARD */
+    /* URAI_HOME_NARRATOR_POLISH_LOCK_V2 */
+    lastSpokenRef.current = "ASCENT_BEGIN_LOCKED";
     if (phase !== "HOME" || uraiTransitionLocked) return;
     setUraiTransitionLocked(true);
     setPhase((prev) => {
@@ -2422,6 +2573,12 @@ useEffect(() => {
       )}
 
       <Canvas camera={{ position: [0, 0.8, 12], fov: 40, near: 0.1, far: 260 }}>
+        /* URAI_LIFEMAP_PRESERVED_HOME_STAR_VOLUME_V56:start */
+        <URAISpatialVideoLockStarVolume phase={phase} />
+        /* URAI_HOME_ASCENT_FOCUS_REPLAY_IDENTITY_V58:start */
+        <URAISpatialContinuityIdentityLock phase={phase} />
+        /* URAI_HOME_ASCENT_FOCUS_REPLAY_IDENTITY_V58:end */
+        /* URAI_LIFEMAP_PRESERVED_HOME_STAR_VOLUME_V56:end */
         <Atmosphere phase={phase} emotionalModel={emotionalModel}  />
 
         <CameraRig
@@ -2430,11 +2587,18 @@ useEffect(() => {
           selected={selectedPosition}
           now={now}
          />
+        /* URAI_ASCENT_EASE_LIFEMAP_HOME_BRIDGE_V56:start */
+        <URAISpatialLookAtAuthority phase={phase} />
+        /* URAI_ASCENT_EASE_LIFEMAP_HOME_BRIDGE_V56:end */
 
         <HomeWorld phase={phase} now={now} startedAt={startedAt} onBeginAscent={beginAscent} emotionalModel={emotionalModel} />
 
         {/* TIER4_HOME_ASCENT_VISUAL_ENGINE_MOUNT_V1 */}
-        <HomeVisualEngine visible={phase === "HOME" || phase === "ASCENT"}  />
+        <HomeVisualEngine
+          visible={phase === "HOME" || phase === "ASCENT"}
+          phase={phase}
+          ascentProgress={phase === "ASCENT" ? ease((now - startedAt) / ASCENT_MS) : 0}
+        />
         <AscentVisualEngine visible={phase === "ASCENT" || (phase === "LIFEMAP" && 0 < ASCENT_LIFEMAP_HANDOFF_MS)} />
 
         {phase === "ASCENT" && (
@@ -2665,7 +2829,9 @@ useEffect(() => {
         </div>
       )}
 
-          <div style={cinematicSoftUiStyle}><NarratorOverlay line={tier4NarratorLine} /></div>
+          <div style={cinematicSoftUiStyle}><NarratorOverlay line={tier4NarratorLine} />
+      <PhaseNarratorBridge phase={phase} selectedMemoryTitle={selectedStarId} />
+      <NarratorOverlay phase={phase} /></div>
           {/* URAI_NARRATOR_VOICE_CONTROLS_V1 */}
           <div style={{
             marginTop: 8,
@@ -2689,9 +2855,8 @@ useEffect(() => {
             >
               {voiceEnabled ? "Voice on" : "Voice off"}
             </button>
-
-        /* URAI_FINAL_UI_DECLUTTER_TOGGLE_V1 */
-        <button
+            {/* URAI_FINAL_UI_DECLUTTER_TOGGLE_V1 */}
+            <button
           type="button"
           onClick={() => setLaunchPolishMode((v) => !v)}
           style={{

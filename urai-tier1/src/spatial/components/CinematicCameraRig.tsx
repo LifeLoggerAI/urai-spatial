@@ -1,218 +1,244 @@
 "use client";
 
 import { useFrame, useThree } from "@react-three/fiber";
+import { useRef } from "react";
 import * as THREE from "three";
-import { useMemo, useRef } from "react";
 
-type Phase = "HOME" | "ASCENT" | "LIFEMAP" | "FOCUS" | "REPLAY";
+type CanonPhase = "HOME" | "ASCENT" | "LIFEMAP" | "FOCUS" | "REPLAY" | string;
 
-type Props = {
-  phase: Phase;
-  selected?: THREE.Vector3 | [number, number, number] | null;
+type CinematicCameraRigProps = {
+  phase?: CanonPhase;
+  activePhase?: CanonPhase;
+  scenePhase?: CanonPhase;
+  selectedStar?: { position?: [number, number, number] } | null;
+  selectedStarPosition?: [number, number, number] | null;
+  ascentProgress?: number;
+  focusProgress?: number;
+  replayProgress?: number;
 };
 
-function uraiEaseOutCubic(t: number): number {
-  const x = Math.max(0, Math.min(1, t));
-  return 1 - Math.pow(1 - x, 3);
+const clamp01 = (v: number) => Math.max(0, Math.min(1, v));
+const smooth = (v: number) => v * v * (3 - 2 * v);
+
+const HOME_POS = new THREE.Vector3(0, 1.65, 8.8);
+const HOME_TARGET = new THREE.Vector3(0, 0.68, 0);
+
+const CLEAR_POS = new THREE.Vector3(0, 9.15, 2.55);
+const CLEAR_TARGET = new THREE.Vector3(0, -3.0, -15.0);
+
+const SKY_POS = new THREE.Vector3(0, 11.5, -13.5);
+const SKY_TARGET = new THREE.Vector3(0, 6.8, -145.0);
+
+const LIFE_POS = new THREE.Vector3(0, 12.4, -52.0);
+const LIFE_TARGET = new THREE.Vector3(0, 20.0, -255.0);
+const LIFE_FOV = 50;
+
+function readPhase(props: CinematicCameraRigProps): CanonPhase {
+  return props.phase ?? props.activePhase ?? props.scenePhase ?? "HOME";
 }
 
-function uraiArrivalSettle(t: number): number {
-  const x = Math.max(0, Math.min(1, t));
-  return 1 - Math.pow(1 - x, 4);
+function pathAt(raw: number) {
+  const p = smooth(clamp01(raw));
+
+  /*
+    URAI_LIFEMAP_SCREENSPACE_HERO_PROOF_LOCK
+
+    This is a proof pass:
+    - ASCENT gets clean dust only.
+    - LIFEMAP lands on a known visible hero-star plane.
+    - The camera is intentionally close enough that targets are obvious.
+    - After click proof works, cinematic depth can be reintroduced safely.
+  */
+  const clearT = smooth(clamp01(p / 0.34));
+  const skyT = smooth(clamp01((p - 0.22) / 0.34));
+  const lifeT = smooth(clamp01((p - 0.56) / 0.32));
+
+  const pos = HOME_POS.clone()
+    .lerp(CLEAR_POS, clearT)
+    .lerp(SKY_POS, skyT)
+    .lerp(LIFE_POS, lifeT);
+
+  const target = HOME_TARGET.clone()
+    .lerp(CLEAR_TARGET, clearT)
+    .lerp(SKY_TARGET, skyT)
+    .lerp(LIFE_TARGET, lifeT);
+
+  const fov = THREE.MathUtils.lerp(42, LIFE_FOV, p);
+  return { pos, target, fov };
 }
 
-
-function clamp01(n: number) {
-  return Math.max(0, Math.min(1, n));
-}
-
-function smoothstep(t: number) {
-  const x = clamp01(t);
-  return x * x * (3 - 2 * x);
-}
-
-function asVec3(v: Props["selected"]) {
-  if (!v) return new THREE.Vector3(0, 1.2, -8);
-  if (Array.isArray(v)) return new THREE.Vector3(v[0], v[1], v[2]);
-  return v.clone();
-}
-
-
-// URAI_HANDOFF_LOCK_V2
-const uraiDamp = (c, t, l, d) => c + (t - c) * (1 - Math.exp(-l * d));
-
-export default function CinematicCameraRig({ phase, selected }: Props) {
-  // URAI_CAMERA_TARGET_ANCHOR_LOCK
-  const uraiStableTargetRef = useRef(new THREE.Vector3(0, 0, 0));
-  const uraiStablePositionRef = useRef(new THREE.Vector3(0, 2.2, 8));
-  const uraiLastPhaseRef = useRef<string | null>(null);
-
-  // URAI_TARGET_FREEZE_LOCK
-  const uraiLockedTargetRef = useRef(new THREE.Vector3(0,0,0));
-
-  const uraiPrevPhase = useRef(null);
-
+export default function CinematicCameraRig(props: CinematicCameraRigProps) {
   const { camera } = useThree();
 
-  const ascentClock = useRef(0);
-  const focusClock = useRef(0);
-  const replayClock = useRef(0);
-  const look = useRef(new THREE.Vector3(0, 0.4, 0));
-  const selectedTarget = useMemo(() => asVec3(selected), [selected]);
+  const travelRef = useRef(0);
+  const focusRef = useRef(0);
+  const replayRef = useRef(0);
+  const targetRef = useRef(HOME_TARGET.clone());
+  const bootedRef = useRef(false);
 
-  useFrame((_, delta) => {
-    // URAI_CAMERA_TARGET_ANCHOR_LOCK
-    const uraiPhaseChanged = uraiLastPhaseRef.current !== phase;
-
-    if (uraiPhaseChanged && (phase === "FOCUS" || phase === "REPLAY")) {
-      uraiLockedTargetRef.current.copy(selectedTarget);
-    }
-    if (uraiPhaseChanged) {
-      uraiLastPhaseRef.current = phase;
-      uraiStableTargetRef.current.copy(camera.position).multiplyScalar(0.15);
-      uraiStablePositionRef.current.copy(camera.position);
-    }
-
-    if (uraiPrevPhase.current !== phase) {
-      uraiPrevPhase.current = phase;
-    }
-
-    if (phase === "ASCENT") {
-      ascentClock.current = Math.min(1, ascentClock.current + delta / 2.35);
-    } else if (phase === "HOME") {
-      ascentClock.current = 0;
-    } else {
-      ascentClock.current = 1;
-    }
-
-    /* FOCUS_ARRIVAL_CLOCK_LOCK */
-    if (phase === "FOCUS") {
-      focusClock.current = Math.min(1, focusClock.current + delta / 0.42);
-    } else if (phase !== "REPLAY") {
-      focusClock.current = 0;
-    }
-
-    const focusArrival = smoothstep(focusClock.current);
-    // URAI_FINAL_CINEMATIC_POLISH_LOCK
-    const focusOvershoot = Math.sin(focusArrival * Math.PI) * 0.18;
-    const focusSettle = 1 - Math.exp(-focusClock.current * 5.5);
-
-    /* REPLAY_ENTRY_CLOCK_LOCK */
-    if (phase === "REPLAY") {
-      replayClock.current = Math.min(1, replayClock.current + delta / 0.85);
-    } else {
-      replayClock.current = 0;
-    }
-    const r = replayClock.current;
-    const rEase = r * r * (3 - 2 * r);
-
-    const a = smoothstep(ascentClock.current);
-    const pos = new THREE.Vector3();
-    const target = new THREE.Vector3();
+  useFrame((_state, dt) => {
+    const phase = readPhase(props);
 
     if (phase === "HOME") {
-      pos.set(0, 0.22, 11.5);
-      target.set(0, 0.35, 0);
+      travelRef.current = Math.max(0, travelRef.current - dt / 1.0);
     } else if (phase === "ASCENT") {
-      pos.set(0, 0.65 + a * 2.35, 11.5 - a * 20.5);
-      target.set(0, 0.85 + a * 1.55, -4.0 - a * 15.0);
-    } else if (phase === "LIFEMAP") {
-      pos.set(0, 1.45, -7.6);
-      target.set(0, 1.15, -15);
-    } else if (phase === "FOCUS") {
-      /* FOCUS_DISTANCE_CAP */
-      const baseDist = 4.85;         // stable viewing distance
-      const minDist = 4.55;          // never closer than this
-      const dist = Math.max(minDist, baseDist - focusOvershoot * 0.35);
-
-      const backward = new THREE.Vector3(0, 0.42 + focusSettle * 0.08, dist);
-      pos.copy(uraiLockedTargetRef.current).add(backward);
-
-      target.copy(uraiLockedTargetRef.current);
+      const ascentTarget = clamp01((props.ascentProgress ?? 0) * 0.92 + 0.12);
+      travelRef.current = Math.max(travelRef.current, ascentTarget);
+      travelRef.current = Math.min(1, travelRef.current + dt / 1.08);
     } else {
-      /* REPLAY enclosure — pulled back + controlled forward entry */
-      const base = new THREE.Vector3(0, 0.46, 4.25);
-      const entry = new THREE.Vector3(0, 0.08, -1.05).multiplyScalar(rEase);
-      pos.copy(uraiLockedTargetRef.current).add(base).add(entry);
-
-      const lookOffset = new THREE.Vector3(0, 0.04, -0.55 * rEase);
-      target.copy(uraiLockedTargetRef.current).add(lookOffset);
+      travelRef.current = 1;
     }
 
-    camera.position.x = THREE.MathUtils.damp(camera.position.x, pos.x, phase === "FOCUS" ? 4.35 : phase === "ASCENT" ? 3.75 : phase === "REPLAY" ? 3.15 : 3.25, delta);
-    camera.position.y = THREE.MathUtils.damp(camera.position.y, pos.y, phase === "FOCUS" ? 4.15 : phase === "ASCENT" ? 3.35 : phase === "REPLAY" ? 3.05 : 3.2, delta);
-    camera.position.z = THREE.MathUtils.damp(camera.position.z, pos.z, phase === "FOCUS" ? 4.25 : phase === "ASCENT" ? 3.65 : phase === "REPLAY" ? 3.0 : 3.2, delta);
+    if (phase === "HOME" && travelRef.current < 0.012) {
+      travelRef.current = 0;
+    }
 
-    look.current.x = THREE.MathUtils.damp(look.current.x, target.x, phase === "FOCUS" ? 4.8 : phase === "ASCENT" ? 3.45 : phase === "REPLAY" ? 3.4 : 3.55, delta);
-    look.current.y = THREE.MathUtils.damp(look.current.y, target.y, phase === "FOCUS" ? 4.75 : phase === "ASCENT" ? 3.15 : phase === "REPLAY" ? 3.25 : 3.5, delta);
-    look.current.z = THREE.MathUtils.damp(look.current.z, target.z, phase === "FOCUS" ? 4.7 : phase === "ASCENT" ? 3.35 : phase === "REPLAY" ? 3.2 : 3.55, delta);
+    const focusTarget = phase === "FOCUS" || phase === "REPLAY" ? 1 : 0;
+    const replayTarget = phase === "REPLAY" ? 1 : 0;
 
+    focusRef.current = THREE.MathUtils.damp(focusRef.current, focusTarget, 7.0, dt);
+    replayRef.current = THREE.MathUtils.damp(replayRef.current, replayTarget, 7.0, dt);
+
+    const base = pathAt(travelRef.current);
+
+    let desiredPos = base.pos.clone();
+    let desiredTarget = base.target.clone();
+    let desiredFov = phase === "HOME" ? 42 : base.fov;
+
+    if (phase === "LIFEMAP") {
+      desiredPos = LIFE_POS.clone();
+      desiredTarget = LIFE_TARGET.clone();
+      desiredFov = LIFE_FOV;
+    }
+
+    const selected = props.selectedStarPosition ?? props.selectedStar?.position ?? [0, 20, -255];
+
+    if (focusRef.current > 0.001) {
+      const fp = smooth(clamp01(focusRef.current));
+      desiredPos.lerp(new THREE.Vector3(selected[0] * 0.18, selected[1] + 2.5, selected[2] + 34), fp);
+      desiredTarget.lerp(new THREE.Vector3(selected[0], selected[1], selected[2]), fp);
+      desiredFov = THREE.MathUtils.lerp(desiredFov, 38, fp);
+    }
+
+    if (replayRef.current > 0.001) {
+      const rp = smooth(clamp01(replayRef.current));
+      desiredPos.lerp(new THREE.Vector3(selected[0] * 0.12, selected[1] + 1.6, selected[2] + 10), rp);
+      desiredTarget.lerp(new THREE.Vector3(selected[0], selected[1], selected[2] - 2), rp);
+      desiredFov = THREE.MathUtils.lerp(desiredFov, 36, rp);
+    }
+
+    if (!bootedRef.current) {
+      camera.position.copy(desiredPos);
+      targetRef.current.copy(desiredTarget);
+      (camera as THREE.PerspectiveCamera).fov = desiredFov;
+      camera.updateProjectionMatrix();
+      bootedRef.current = true;
+    }
+
+    if (phase === "LIFEMAP" && focusRef.current < 0.001 && replayRef.current < 0.001) {
+      camera.position.copy(LIFE_POS);
+      targetRef.current.copy(LIFE_TARGET);
+      (camera as THREE.PerspectiveCamera).fov = LIFE_FOV;
+      camera.updateProjectionMatrix();
+      camera.lookAt(targetRef.current);
+      return;
+    }
+
+    const lambda =
+      phase === "ASCENT" ? 8.8 :
+      phase === "FOCUS" || phase === "REPLAY" ? 7.0 :
+      7.5;
+
+    camera.position.x = THREE.MathUtils.damp(camera.position.x, desiredPos.x, lambda, dt);
+    camera.position.y = THREE.MathUtils.damp(camera.position.y, desiredPos.y, lambda, dt);
+    camera.position.z = THREE.MathUtils.damp(camera.position.z, desiredPos.z, lambda, dt);
+
+    targetRef.current.x = THREE.MathUtils.damp(targetRef.current.x, desiredTarget.x, lambda, dt);
+    targetRef.current.y = THREE.MathUtils.damp(targetRef.current.y, desiredTarget.y, lambda, dt);
+    targetRef.current.z = THREE.MathUtils.damp(targetRef.current.z, desiredTarget.z, lambda, dt);
+
+    (camera as THREE.PerspectiveCamera).fov = THREE.MathUtils.damp(
+      (camera as THREE.PerspectiveCamera).fov,
+      desiredFov,
+      5.8,
+      dt
+    );
+
+    camera.updateProjectionMatrix();
+    camera.lookAt(targetRef.current);
+
+    /* URAI_FULL_TIER_VIDEO_CAMERA_LOCK_V4:start */
     {
-      const uraiNextLookTarget = look.current;
-      if (uraiNextLookTarget && typeof uraiNextLookTarget === "object" && "x" in uraiNextLookTarget) {
-        uraiStableTargetRef.current.lerp(uraiNextLookTarget, 1 - Math.exp(-4.2 * delta));
-        const uraiLookTarget = uraiStableTargetRef.current.clone ? uraiStableTargetRef.current.clone() : uraiStableTargetRef.current;
+      const uraiPhase = String(phase);
+      const uraiDt = (typeof dt === "number" ? dt : 1 / 60);
+      const uraiUserData = camera.userData as Record<string, unknown>;
 
-    if (phase === "FOCUS" && uraiLookTarget.y !== undefined) {
-      uraiLookTarget.y += Math.sin(clock.elapsedTime * 0.65) * 0.012;
-      uraiLookTarget.x += Math.sin(clock.elapsedTime * 0.45) * 0.01;
-    }
-
-    if (phase === "LIFEMAP" && uraiLookTarget.y !== undefined) {
-      uraiLookTarget.y += Math.sin(clock.elapsedTime * 0.5) * 0.008;
-    }
-
-    camera.lookAt(uraiLookTarget);
+      if (uraiUserData.uraiVideoLockPhase !== uraiPhase) {
+        uraiUserData.uraiVideoLockPhase = uraiPhase;
+        uraiUserData.uraiVideoLockElapsed = 0;
       } else {
-        camera.lookAt(0, 0, 0);
+        uraiUserData.uraiVideoLockElapsed =
+          typeof uraiUserData.uraiVideoLockElapsed === "number"
+            ? uraiUserData.uraiVideoLockElapsed + uraiDt
+            : uraiDt;
+      }
+
+      const uraiElapsed =
+        typeof uraiUserData.uraiVideoLockElapsed === "number"
+          ? uraiUserData.uraiVideoLockElapsed
+          : 0;
+
+      const uraiClamp01 = (value: number) => Math.max(0, Math.min(1, value));
+      const uraiEase = (value: number) => {
+        const t = uraiClamp01(value);
+        return t * t * (3 - 2 * t);
+      };
+
+      if (uraiPhase !== "HOME") {
+        const ascentT = uraiEase(uraiElapsed / 2.85);
+
+        const homeExitPos = new THREE.Vector3(0, 5.8, 12.5);
+        const lifeMapEntryPos = new THREE.Vector3(0, 22.5, -74);
+        const ascentPos = homeExitPos.clone().lerp(lifeMapEntryPos, ascentT);
+
+        const homeExitTarget = new THREE.Vector3(0, 3.8, -14);
+        const lifeMapEntryTarget = new THREE.Vector3(0, 21.5, -158);
+        const ascentTarget = homeExitTarget.clone().lerp(lifeMapEntryTarget, ascentT);
+
+        let uraiPos = ascentPos;
+        let uraiTarget = ascentTarget;
+
+        if (uraiPhase === "LIFEMAP") {
+          uraiPos = new THREE.Vector3(0, 22.5, -74);
+          uraiTarget = new THREE.Vector3(0, 21.5, -158);
+        } else if (uraiPhase === "FOCUS") {
+          uraiPos = new THREE.Vector3(0, 19.0, -94);
+          uraiTarget = new THREE.Vector3(0, 18.2, -160);
+        } else if (uraiPhase === "REPLAY") {
+          uraiPos = new THREE.Vector3(0, 17.2, -114);
+          uraiTarget = new THREE.Vector3(0, 16.6, -174);
+        }
+
+        const uraiLambda =
+          uraiPhase === "ASCENT" ? 2.25 :
+          uraiPhase === "LIFEMAP" ? 5.4 :
+          4.45;
+
+        const uraiStep = uraiClamp01(1 - Math.exp(-uraiDt * uraiLambda));
+
+        camera.position.lerp(uraiPos, uraiStep);
+        targetRef.current.lerp(uraiTarget, uraiStep);
+
+        camera.near = 0.03;
+        camera.far = 2000;
+        camera.updateProjectionMatrix();
+        camera.lookAt(targetRef.current);
       }
     }
-
-    const cam = camera as THREE.PerspectiveCamera;
-    if (typeof cam.fov === "number") {
-      cam.fov = THREE.MathUtils.damp(
-        cam.fov,
-        phase === "REPLAY" ? 32 : phase === "FOCUS" ? 35 : phase === "ASCENT" ? 37 : 36,
-        3.2,
-        delta
-      );
-      cam.updateProjectionMatrix();
-    }
-  });
+    /* URAI_FULL_TIER_VIDEO_CAMERA_LOCK_V4:end */
+});
 
   return null;
 }
 
 export { CinematicCameraRig };
-
-
-/* URAI_CAMERA_EASING_ARRIVAL_SETTLE
-   Surgical Tier-2 camera pass:
-   - Adds non-linear arrival easing.
-   - Adds subtle Lifemap and Focus settle weight.
-   - Does not touch state, authority, narrator, props, or scene contracts.
-*/
-
-
-/* URAI_SAFE_CAMERA_ARRIVAL_PASS
-   Safe camera arrival tuning:
-   - Slows terminal damping for LIFEMAP / FOCUS / REPLAY.
-   - Adds tiny post-arrival embodied look drift.
-   - No state, authority, props, scene contracts, or narrator changes.
-*/
-
-
-/* URAI_FOCUS_CURVATURE_ARRIVAL_HOLD
-   Final Tier-2 focus-arrival pass:
-   - Adds slight curved camera approach in FOCUS.
-   - Adds terminal damping so FOCUS feels like arrival, not zoom.
-   - Leaves state machine, authority, props, scene contracts, and narrator untouched.
-*/
-
-
-/* URAI_ASCENT_LIFEMAP_HANDOFF_GLITCH_GUARD
-   Surgical Tier-2 guard:
-   - slows terminal ASCENT/LIFEMAP damping
-   - offsets target slightly to prevent perceptual snap at handoff
-   - does not touch phase authority, state machine, replay, narrator, or props
-*/

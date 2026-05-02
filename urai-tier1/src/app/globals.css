@@ -101,3 +101,22 @@ canvas {
   width: 100vw !important;
   height: 100vh !important;
 }
+
+/* URAI_HOME_CANON_VISUAL_HIDE_DEBUG */
+body:has(canvas) [class*="debug"],
+body:has(canvas) [class*="Debug"],
+body:has(canvas) [class*="xr"],
+body:has(canvas) [class*="XR"] {
+  pointer-events: none;
+}
+
+/* URAI_HOME_HIDE_DEBUG_FINAL */
+body:has(canvas) [class*="debug"],
+body:has(canvas) [class*="Debug"],
+body:has(canvas) [class*="XR"],
+body:has(canvas) [class*="xr"],
+body:has(canvas) [class*="pattern"],
+body:has(canvas) [class*="Pattern"] {
+  opacity: 0 !important;
+  pointer-events: none !important;
+}

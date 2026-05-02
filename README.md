@@ -1,5 +1,5 @@
-# URAI-Spatial Engine
-
+ # URAI-Spatial Engine
+zzZz
 ## 1. System Overview
 
 URAI-Spatial is a real-time 3D engine for visualizing user memories as a navigable galaxy. It's the core of the URAI platform's spatial interface, translating abstract data into an interactive, explorable starfield.

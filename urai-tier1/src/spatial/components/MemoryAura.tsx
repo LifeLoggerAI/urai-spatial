@@ -19,7 +19,7 @@ export default function MemoryAura({
 
       {/* Primary subtle ring */}
       <mesh rotation={[Math.PI / 2, 0, 0]}>
-        <torusGeometry args={[1, 0.01, 12, 120]} />
+        <sphereGeometry args={[0.001, 4, 4]} />
         <meshBasicMaterial
           color="#9b7bff"
           transparent
@@ -30,7 +30,7 @@ export default function MemoryAura({
 
       {/* Secondary faint ring */}
       <mesh rotation={[Math.PI / 2.2, 0.2, 0.1]}>
-        <torusGeometry args={[1, 0.005, 10, 120]} />
+        <sphereGeometry args={[0.001, 4, 4]} />
         <meshBasicMaterial
           color="#9b7bff"
           transparent
