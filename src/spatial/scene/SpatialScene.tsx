@@ -1,18 +1,29 @@
 'use client'
+
+import React, { useEffect, useMemo, useRef, useState } from 'react'
 import Starfield3D from '@/spatial/components/Starfield3D'
-import React, { useEffect, useMemo, useReducer, useRef, useState } from 'react'
+import { useSceneStore } from '../state/sceneStore'
 
 type Phase = 'HOME' | 'ASCENT' | 'LIFEMAP' | 'FOCUS' | 'REPLAY'
-type StarNode = { id: string; x: number; y: number; z: number; size: number; label: string; tone: string }
-type SceneState = { phase: Phase; selectedStarId: string | null; inputLocked: boolean }
-type SceneAction = { type: 'START_ASCENT' } | { type: 'COMPLETE_ASCENT' } | { type: 'OPEN_FOCUS'; starId: string } | { type: 'OPEN_REPLAY' } | { type: 'ESC' }
+type TransitionKind = 'homeToLifemap' | 'lifemapToHome' | null
 
-const publicDemoMode = true
-const recordingMode = false
+type StarNode = {
+  id: string
+  x: number
+  y: number
+  z: number
+  size: number
+  label: string
+  tone: string
+  memoryRef?: string
+}
+
 const ASCENT_MS = 2200
 const RETURN_HOME_MS = 1600
+const FOCUS_ENTER_MS = 450
+const REPLAY_ENTER_MS = 600
 
-const MAJOR_STARS: StarNode[] = [
+const STAR_DATA: StarNode[] = [
   { id: 'charged', x: 24, y: 29, z: 0, size: 14, label: 'Charged Memory', tone: 'tense' },
   { id: 'recovery', x: 40, y: 21, z: 1, size: 13, label: 'Recovery Signal', tone: 'recovery' },
   { id: 'relationship', x: 58, y: 34, z: 0, size: 13, label: 'Relationship Echo', tone: 'relationship' },
@@ -21,89 +32,416 @@ const MAJOR_STARS: StarNode[] = [
   { id: 'quiet', x: 52, y: 67, z: 2, size: 12, label: 'Quiet Shift', tone: 'neutral' },
 ]
 
-function sceneReducer(state: SceneState, action: SceneAction): SceneState {
-  switch (action.type) {
-    case 'START_ASCENT': return state.phase === 'HOME' ? { ...state, phase: 'ASCENT', inputLocked: true } : state
-    case 'COMPLETE_ASCENT': return state.phase === 'ASCENT' ? { ...state, phase: 'LIFEMAP', inputLocked: false } : state
-    case 'OPEN_FOCUS': return state.phase === 'LIFEMAP' ? { ...state, phase: 'FOCUS', selectedStarId: action.starId } : state
-    case 'OPEN_REPLAY': return state.phase === 'FOCUS' ? { ...state, phase: 'REPLAY' } : state
-    case 'ESC':
-      if (state.phase === 'REPLAY') return { ...state, phase: 'FOCUS' }
-      if (state.phase === 'FOCUS') return { ...state, phase: 'LIFEMAP' }
-      if (state.phase === 'LIFEMAP') return { phase: 'HOME', selectedStarId: null, inputLocked: false }
-      return state
+function clamp01(v: number) {
+  return Math.max(0, Math.min(1, v))
+}
+
+function easeInOutCubic(t: number) {
+  return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2
+}
+
+function getCameraDirector(progress: number, phase: Phase, selectedStar: StarNode | null) {
+  const p = clamp01(progress)
+  const e = easeInOutCubic(p)
+
+  if (phase === 'HOME') {
+    return {
+      scale: 1,
+      translateY: 0,
+      translateX: 0,
+      background: '#020748',
+      starOpacity: 0,
+      vignette: 0.1,
+      homeOpacity: 1,
+      replayOpacity: 0,
+      orbScale: 1,
+      groundOpacity: 1,
+    }
+  }
+
+  if (phase === 'ASCENT') {
+    return {
+      scale: 1 + e * 0.8,
+      translateY: e * -25,
+      translateX: 0,
+      background: '#020748',
+      starOpacity: e * 0.7,
+      vignette: 0.1 + e * 0.1,
+      homeOpacity: 1 - e,
+      replayOpacity: 0,
+      orbScale: 1 - e * 0.5,
+      groundOpacity: 1 - e,
+    }
+  }
+
+  if (phase === 'LIFEMAP') {
+    return {
+      scale: 1,
+      translateY: 0,
+      translateX: 0,
+      background: '#01031a',
+      starOpacity: 1,
+      vignette: 0.2,
+      homeOpacity: 0,
+      replayOpacity: 0,
+      orbScale: 0,
+      groundOpacity: 0,
+    }
+  }
+
+  if (phase === 'FOCUS') {
+    const focusX = selectedStar ? 50 - selectedStar.x : 0
+    const focusY = selectedStar ? 50 - selectedStar.y : 0
+
+    return {
+      scale: 2.5,
+      translateY: focusY,
+      translateX: focusX,
+      background: '#010210',
+      starOpacity: 0.1,
+      vignette: 0.4,
+      homeOpacity: 0,
+      replayOpacity: 0,
+      orbScale: 0,
+      groundOpacity: 0,
+    }
+  }
+
+  return {
+    scale: 1,
+    translateY: 0,
+    translateX: 0,
+    background: '#000000',
+    starOpacity: 0,
+    vignette: 1,
+    homeOpacity: 0,
+    replayOpacity: 1,
+    orbScale: 0,
+    groundOpacity: 0,
   }
 }
 
 export default function SpatialScene() {
-  const [state, dispatch] = useReducer(sceneReducer, { phase: 'HOME', selectedStarId: null, inputLocked: false })
-  const [openingVisible, setOpeningVisible] = useState(true)
-  const [statusToast, setStatusToast] = useState('')
-  const [pulse, setPulse] = useState(false)
-  const transitionFrameRef = useRef<number | null>(null)
-  const selectedStar = useMemo(() => MAJOR_STARS.find((s) => s.id === state.selectedStarId) ?? null, [state.selectedStarId])
+  const mode = useSceneStore((s) => s.mode)
+  const selectedStarId = useSceneStore((s) => s.selectedStarId)
+  const applyTransition = useSceneStore((s) => s.applyTransition)
+  const canTransition = useSceneStore((s) => s.canTransition)
 
-  useEffect(() => {
-    const t = setTimeout(() => setOpeningVisible(false), 3000)
-    return () => clearTimeout(t)
-  }, [])
+  const [inputLocked, setInputLocked] = useState(false)
+  const [transitionKind, setTransitionKind] = useState<TransitionKind>(null)
+  const [transitionProgress, setTransitionProgress] = useState(0)
+  const [replayVisible, setReplayVisible] = useState(false)
+  const [focusVisible, setFocusVisible] = useState(false)
+
+  const transitionFrameRef = useRef<number | null>(null)
+
+  const selectedStar = useMemo(
+    () => STAR_DATA.find((s) => s.id === selectedStarId) ?? null,
+    [selectedStarId]
+  )
+
+  const phase: Phase =
+    mode === 'home'
+      ? 'HOME'
+      : mode === 'ground'
+        ? 'ASCENT'
+        : mode === 'lifemap'
+          ? 'LIFEMAP'
+          : mode === 'focus'
+            ? 'FOCUS'
+            : 'REPLAY'
+
+  const phaseForView: Phase = transitionKind === 'lifemapToHome' ? 'ASCENT' : phase
+
+  const camera = getCameraDirector(
+    transitionKind
+      ? transitionKind === 'lifemapToHome'
+        ? 1 - transitionProgress
+        : transitionProgress
+      : 0,
+    phaseForView,
+    selectedStar
+  )
 
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') dispatch({ type: 'ESC' })
+      if (event.key !== 'Escape' || inputLocked || !canTransition('ESC', { inputLocked })) return
+
+      if (phase === 'REPLAY') {
+        setReplayVisible(false)
+        setInputLocked(false)
+        applyTransition('ESC')
+        return
+      }
+
+      if (phase === 'FOCUS') {
+        setFocusVisible(false)
+        setInputLocked(false)
+        applyTransition('ESC')
+        return
+      }
+
+      if (phase === 'LIFEMAP') {
+        setInputLocked(true)
+        setTransitionKind('lifemapToHome')
+
+        const start = performance.now()
+
+        const tick = (now: number) => {
+          const t = clamp01((now - start) / RETURN_HOME_MS)
+          setTransitionProgress(t)
+
+          if (t < 1) {
+            transitionFrameRef.current = requestAnimationFrame(tick)
+          } else {
+            setTransitionKind(null)
+            setTransitionProgress(0)
+            setInputLocked(false)
+            applyTransition('ESC')
+          }
+        }
+
+        if (transitionFrameRef.current) cancelAnimationFrame(transitionFrameRef.current)
+        transitionFrameRef.current = requestAnimationFrame(tick)
+      }
     }
+
     window.addEventListener('keydown', onKeyDown)
-    return () => window.removeEventListener('keydown', onKeyDown)
-  }, [])
+
+    return () => {
+      window.removeEventListener('keydown', onKeyDown)
+      if (transitionFrameRef.current) cancelAnimationFrame(transitionFrameRef.current)
+    }
+  }, [inputLocked, phase, applyTransition, canTransition])
 
   const startAscent = () => {
-    if (state.phase !== 'HOME') return
-    setPulse(true)
-    setOpeningVisible(false)
-    setTimeout(() => {
-      dispatch({ type: 'START_ASCENT' })
-      const start = performance.now()
-      const tick = (now: number) => {
-        if (now - start < ASCENT_MS) transitionFrameRef.current = requestAnimationFrame(tick)
-        else dispatch({ type: 'COMPLETE_ASCENT' })
+    if (!canTransition('START_ASCENT', { inputLocked }) || transitionKind) return
+
+    applyTransition('START_ASCENT', { inputLocked })
+    setInputLocked(true)
+    setTransitionKind('homeToLifemap')
+
+    const start = performance.now()
+
+    const tick = (now: number) => {
+      const t = clamp01((now - start) / ASCENT_MS)
+      setTransitionProgress(t)
+
+      if (t < 1) {
+        transitionFrameRef.current = requestAnimationFrame(tick)
+      } else {
+        setTransitionKind(null)
+        setTransitionProgress(0)
+        setInputLocked(false)
+        applyTransition('COMPLETE_ASCENT')
       }
-      transitionFrameRef.current = requestAnimationFrame(tick)
-    }, 360)
+    }
+
+    if (transitionFrameRef.current) cancelAnimationFrame(transitionFrameRef.current)
+    transitionFrameRef.current = requestAnimationFrame(tick)
   }
 
-  const openReplay = () => dispatch({ type: 'OPEN_REPLAY' })
-  const completeReplay = () => {
-    setStatusToast('Replay complete. Pattern saved to your Life Map.')
-    dispatch({ type: 'ESC' })
-    setTimeout(() => setStatusToast(''), 1500)
+  const openFocus = (star: StarNode) => {
+    if (!canTransition('OPEN_FOCUS', { starId: star.id, inputLocked }) || transitionKind) return
+
+    setFocusVisible(false)
+    applyTransition('OPEN_FOCUS', { starId: star.id, inputLocked })
+    setTimeout(() => setFocusVisible(true), FOCUS_ENTER_MS)
   }
 
-  return <div style={{ position: 'fixed', inset: 0, color: '#F4EDFF', background: 'radial-gradient(circle at 50% 20%, #3b2168 0%, #160a29 42%, #05040c 100%)' }}>
-    <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(180deg, rgba(168,129,255,0.2), transparent 40%)' }} />
-    <div style={{ position: 'absolute', inset: 0, opacity: state.phase === 'HOME' ? 1 : 0.7 }}>
-      <Starfield3D stars={Array.from({ length: 40 }, (_, i) => ({ id: `bg-${i}`, x: (i * 37) % 100, y: (i * 17) % 100, z: i % 4 }))} phase={state.phase} />
-      <Starfield3D stars={MAJOR_STARS} phase={state.phase} onSelect={(id) => dispatch({ type: 'OPEN_FOCUS', starId: id })} />
+  const openReplay = () => {
+    if (!selectedStar || !canTransition('OPEN_REPLAY', { inputLocked })) return
+
+    setInputLocked(true)
+    applyTransition('OPEN_REPLAY', { inputLocked })
+    setTimeout(() => {
+      setReplayVisible(true)
+      setInputLocked(false)
+    }, REPLAY_ENTER_MS)
+  }
+
+  const showHome = phaseForView === 'HOME' || phaseForView === 'ASCENT'
+  const showField = phaseForView === 'LIFEMAP' || phaseForView === 'FOCUS' || phaseForView === 'ASCENT'
+
+  return (
+    <div
+      style={{
+        position: 'fixed',
+        inset: 0,
+        overflow: 'hidden',
+        background: camera.background,
+        color: '#fff',
+      }}
+    >
+      <div
+        style={{
+          position: 'absolute',
+          inset: 0,
+          transform: `translateY(${camera.translateY}%) translateX(${camera.translateX}%) scale(${camera.scale})`,
+          transformOrigin: '50% 50%',
+          transition: transitionKind ? 'none' : 'transform 750ms ease-out, background 750ms ease-out',
+        }}
+      >
+        {showHome && (
+          <>
+            <div
+              aria-label="Enter spatial field via sky"
+              onClick={startAscent}
+              style={{
+                position: 'absolute',
+                left: 0,
+                right: 0,
+                top: 0,
+                height: '60%',
+                cursor: phase === 'HOME' && !inputLocked ? 'pointer' : 'default',
+                background: 'linear-gradient(to bottom, #010541 0%, #020748 100%)',
+                opacity: camera.homeOpacity,
+                transition: 'opacity 400ms linear',
+              }}
+            />
+
+            <div
+              aria-hidden="true"
+              style={{
+                position: 'absolute',
+                left: 0,
+                right: 0,
+                bottom: 0,
+                height: '40%',
+                background: 'linear-gradient(to top, #0a0a10, transparent)',
+                opacity: camera.groundOpacity,
+                transition: 'opacity 400ms linear',
+              }}
+            />
+
+            <div
+              aria-hidden="true"
+              style={{
+                position: 'absolute',
+                left: '50%',
+                top: '85%',
+                width: 100,
+                height: 100,
+                borderRadius: '50%',
+                background: '#dddddf',
+                transform: `translate(-50%, -50%) scale(${camera.orbScale})`,
+                opacity: camera.homeOpacity,
+                transition: 'opacity 400ms linear, transform 400ms ease-out',
+                boxShadow: '0 0 0 1px rgba(255,255,255,0.02)',
+              }}
+            />
+          </>
+        )}
+
+        {showField && (
+          <div style={{ position: 'absolute', inset: 0, opacity: camera.starOpacity }}>
+            <Starfield3D
+              stars={STAR_DATA}
+              phase={phase}
+              onSelect={(id) => {
+                const star = STAR_DATA.find((s) => s.id === id)
+                if (star) openFocus(star)
+              }}
+            />
+          </div>
+        )}
+
+        {phase === 'FOCUS' && selectedStar && (
+          <>
+            <div
+              aria-hidden={!focusVisible}
+              style={{
+                position: 'absolute',
+                inset: 0,
+                pointerEvents: 'none',
+                opacity: focusVisible ? 1 : 0,
+                transition: 'opacity 500ms ease-out',
+                background:
+                  'radial-gradient(circle at 50% 50%, rgba(137,177,255,0.2) 0%, rgba(66,98,177,0.1) 22%, rgba(0,0,0,0.45) 60%, rgba(0,0,0,0.75) 100%)',
+              }}
+            />
+
+            <button
+              onClick={openReplay}
+              style={{
+                position: 'absolute',
+                left: '50%',
+                bottom: '10%',
+                transform: 'translateX(-50%)',
+                padding: '0.75rem 1rem',
+                borderRadius: 999,
+                border: '1px solid rgba(255,255,255,0.28)',
+                background: 'rgba(255,255,255,0.12)',
+                color: '#fff',
+                cursor: 'pointer',
+              }}
+            >
+              Replay gently
+            </button>
+          </>
+        )}
+
+        {phase === 'REPLAY' && (
+          <div
+            aria-hidden={!replayVisible}
+            style={{
+              position: 'absolute',
+              inset: 0,
+              opacity: camera.replayOpacity,
+              transition: 'opacity 600ms ease-in',
+              background: 'radial-gradient(circle at 50% 50%, rgba(204,174,58,0.1) 0%, transparent 40%), #000',
+            }}
+          >
+            <div
+              style={{
+                position: 'absolute',
+                top: '50%',
+                left: '50%',
+                transform: 'translate(-50%, -50%)',
+                textAlign: 'center',
+                color: '#f8f3dc',
+                fontFamily: 'ui-sans-serif, system-ui, -apple-system',
+                opacity: replayVisible ? 1 : 0,
+                transition: 'opacity 500ms ease-out',
+              }}
+            >
+              <p
+                style={{
+                  letterSpacing: '0.16em',
+                  fontSize: '0.8rem',
+                  margin: 0,
+                  textTransform: 'uppercase',
+                  opacity: 0.65,
+                }}
+              >
+                Memory Trace
+              </p>
+
+              <h2
+                style={{
+                  margin: '0.45rem 0 0',
+                  fontWeight: 500,
+                  fontSize: '2rem',
+                  textShadow: '0 0 24px rgba(255,227,163,0.35)',
+                }}
+              >
+                {selectedStar?.label}
+              </h2>
+            </div>
+          </div>
+        )}
+      </div>
+
+      <div
+        aria-hidden="true"
+        style={{
+          position: 'absolute',
+          inset: 0,
+          boxShadow: `inset 0 0 180px rgba(0,0,0,${camera.vignette})`,
+          pointerEvents: 'none',
+          transition: 'box-shadow 750ms ease-out',
+        }}
+      />
     </div>
-
-    {state.phase === 'HOME' && <button aria-label='Open Life Map' onClick={startAscent} style={{ position: 'absolute', left: '50%', top: '70%', width: 132, height: 132, borderRadius: '50%', border: '1px solid rgba(212,187,255,.7)', background: pulse ? 'radial-gradient(circle,#f2e8ff 0,#9e6dff 45%,#4d2b84 100%)' : 'radial-gradient(circle,#c7adff 0,#7b4bcc 50%,#31144e 100%)', transform: `translate(-50%, -50%) scale(${pulse ? 1.08 : 1})`, boxShadow: '0 0 80px rgba(141,97,255,0.55)', cursor: 'pointer' }} />}
-
-    {openingVisible && <div style={{ position: 'absolute', top: 30, left: '50%', transform: 'translateX(-50%)', textAlign: 'center', background: 'rgba(7,6,16,.55)', backdropFilter: 'blur(8px)', padding: '16px 22px', borderRadius: 14 }}><h1 style={{ margin: 0, fontSize: 36 }}>URAI Spatial Life Map</h1><p style={{ margin: '8px 0 0', fontSize: 20 }}>A living map of memory, mood, and reflection.</p></div>}
-
-    <div style={{ position: 'absolute', bottom: 26, left: 24, fontSize: 18, background: 'rgba(5,4,14,.65)', padding: '10px 12px', borderRadius: 10 }}>Open Life Map · Select a memory · Press Esc to return</div>
-
-    {state.phase === 'FOCUS' && selectedStar && <div style={{ position: 'absolute', right: 20, top: 20, width: 400, background: 'rgba(8,8,20,.78)', border: '1px solid rgba(191,164,255,.5)', borderRadius: 14, padding: 18 }}>
-      <h2 style={{ margin: 0 }}>Selected memory</h2><p>{selectedStar.label} · {selectedStar.tone}</p><p>A recurring memory pattern appeared.</p>
-      <button onClick={openReplay}>Replay gently</button>
-    </div>}
-
-    {state.phase === 'REPLAY' && <div style={{ position: 'absolute', inset: 0, display: 'grid', placeItems: 'center', background: 'radial-gradient(circle at 50% 50%, rgba(180,140,255,.2) 0%, rgba(0,0,0,.9) 65%)' }}>
-      <div style={{ width: 220, height: 220, borderRadius: '50%', border: '10px solid rgba(168,123,255,.7)', boxShadow: '0 0 80px rgba(130,84,255,.7)' }} />
-      <div style={{ position: 'absolute', bottom: 80, textAlign: 'center' }}><p>This replay is emotionally weighted. URAI will slow the pace.</p><button onClick={completeReplay}>Finish replay</button></div>
-    </div>}
-
-    {statusToast && <div style={{ position: 'absolute', top: 20, right: 20, background: 'rgba(31,18,58,.9)', padding: '10px 14px', borderRadius: 10 }}>{statusToast}</div>}
-
-    <div style={{ position: 'absolute', bottom: 8, right: 12, fontSize: 12, opacity: 0.85 }}>Your memories stay private. You control what is saved, replayed, or exported.</div>
-    {!publicDemoMode && !recordingMode && <div>internal</div>}
-  </div>
+  )
 }
