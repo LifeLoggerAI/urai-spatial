@@ -1,0 +1,28 @@
+{
+  "users": {
+    "tier1-demo": { "entitlementTier": "tier1", "consents": {} },
+    "tier2-user": { "entitlementTier": "tier2", "consents": { "privacy.core": true, "spatial.personalization": true } },
+    "tier3-user": { "entitlementTier": "tier3", "consents": { "privacy.core": true, "spatial.personalization": true, "spatial.interactive": true, "spatial.xr": true } },
+    "founder-admin": { "entitlementTier": "tier3", "consents": { "privacy.core": true }, "claims": { "admin": true, "founder": true } }
+  },
+  "features": {
+    "spatial_home_sky": { "enabled": true },
+    "spatial_weather_basic": { "enabled": true },
+    "spatial_starfield_preview": { "enabled": true },
+    "spatial_lifemap_personal": { "enabled": true },
+    "spatial_memory_stars_personal": { "enabled": true },
+    "spatial_companion_visual": { "enabled": false },
+    "spatial_ritual_preview": { "enabled": true },
+    "spatial_ritual_interactive": { "enabled": false },
+    "spatial_dream_planetarium": { "enabled": false },
+    "spatial_life_museum": { "enabled": false },
+    "spatial_season_tunnel": { "enabled": false },
+    "spatial_xr_room_mapping": { "enabled": false },
+    "spatial_vr_memory_room": { "enabled": false },
+    "spatial_marketplace_free_assets": { "enabled": false },
+    "spatial_marketplace_paid_assets": { "enabled": false },
+    "spatial_exports_card": { "enabled": false },
+    "spatial_exports_story": { "enabled": false },
+    "spatial_admin_inspect_locks": { "enabled": false }
+  }
+}
