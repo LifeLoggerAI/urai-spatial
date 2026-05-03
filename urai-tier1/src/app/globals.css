@@ -29,7 +29,12 @@ body {
   font-family: var(--font-sans);
   color: #eef3ff;
   background:
-    radial-gradient(circle at 20% 20%, rgba(26, 43, 73, 0.95) 0%, rgba(6, 7, 17, 0.98) 45%, #030309 100%);
+    radial-gradient(
+      circle at 20% 20%,
+      rgba(26, 43, 73, 0.95) 0%,
+      rgba(6, 7, 17, 0.98) 45%,
+      #030309 100%
+    );
   overscroll-behavior: none;
   touch-action: manipulation;
 }
@@ -61,7 +66,13 @@ canvas {
   height: 100vh;
   height: 100dvh;
   overflow: hidden;
-  background: radial-gradient(circle at 50% 20%, #111a33 0%, #050710 48%, #010208 100%);
+  background:
+    radial-gradient(
+      circle at 50% 20%,
+      #111a33 0%,
+      #050710 48%,
+      #010208 100%
+    );
 }
 
 .urai-spatial-canvas {
@@ -85,7 +96,11 @@ canvas {
 }
 
 .urai-hud-panel {
-  background: linear-gradient(150deg, rgba(17, 30, 55, 0.76), rgba(16, 12, 36, 0.82));
+  background: linear-gradient(
+    150deg,
+    rgba(17, 30, 55, 0.76),
+    rgba(16, 12, 36, 0.82)
+  );
   border: 1px solid rgba(159, 211, 255, 0.32);
   border-radius: 16px;
   backdrop-filter: blur(12px);

@@ -344,6 +344,7 @@ export default function Starfield({
 
         const drift = timeRef.current
         const driftStrength = isMajor ? 0.14 : 0.24
+
         let position: [number, number, number] = [
           star.position[0] + Math.sin(drift * 0.16 + index * 0.71) * driftStrength,
           star.position[1] + Math.cos(drift * 0.2 + index * 0.43) * driftStrength * 0.7,
@@ -388,22 +389,27 @@ export default function Starfield({
               renderOrder={isMajor ? 20 : 8}
               onPointerOver={(event) => {
                 if (!isMajor) return
+
                 event.stopPropagation()
                 setHoveredId(star.id)
+
                 if (typeof document !== "undefined") {
                   document.body.style.cursor = interactive ? "pointer" : "default"
                 }
               }}
               onPointerOut={(event) => {
                 if (!isMajor) return
+
                 event.stopPropagation()
                 setHoveredId(null)
+
                 if (typeof document !== "undefined") {
                   document.body.style.cursor = "default"
                 }
               }}
               onPointerDown={(event) => {
                 if (!interactive || !isMajor) return
+
                 event.stopPropagation()
                 onStarClick(star.id, star.position)
               }}

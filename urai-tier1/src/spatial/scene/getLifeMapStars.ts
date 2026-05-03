@@ -75,7 +75,7 @@ export function getLifeMapStars(): { stars: LifeMapStar[]; source: "seed" | "fal
   }))
 
   return {
-    stars: normalized.length > 0 ? normalized : [],
-    source: "seed",
+    stars: normalized,
+    source: normalized.length > 0 ? "seed" : "fallback",
   }
 }

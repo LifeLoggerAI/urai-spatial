@@ -215,8 +215,16 @@ export default function SpatialScene() {
 
     ascentTimerRef.current = setTimeout(() => {
       setAscentProgress(1)
+      actions.openLifeMap()
     }, 820)
-  }, [actions, clearFocusState, clearSelection, phase, startAscentAnimation, stopReturnAnimation])
+  }, [
+    actions,
+    clearFocusState,
+    clearSelection,
+    phase,
+    startAscentAnimation,
+    stopReturnAnimation,
+  ])
 
   const openFocus = useCallback(
     (starId: string, position: [number, number, number]) => {
@@ -235,9 +243,10 @@ export default function SpatialScene() {
     if (!focusReady) return
     if (!selectedStarId) return
     if (focusEnteredAtRef.current > 0 && performance.now() - focusEnteredAtRef.current < 700) return
+    if (!canUseAdvancedReplay) return
 
     actions.openReplay(selectedStarId)
-  }, [actions, focusReady, phase, selectedStarId])
+  }, [actions, canUseAdvancedReplay, focusReady, phase, selectedStarId])
 
   const returnToLifeMap = useCallback(() => {
     if (phase !== 'FOCUS' && phase !== 'REPLAY') return
@@ -281,11 +290,19 @@ export default function SpatialScene() {
       actions.goHome()
       startHomeReturnAnimation()
     }
-  }, [actions, clearFocusState, clearSelection, phase, startHomeReturnAnimation, stopAscentAnimation])
+  }, [
+    actions,
+    clearFocusState,
+    clearSelection,
+    phase,
+    startHomeReturnAnimation,
+    stopAscentAnimation,
+  ])
 
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => {
       if (event.key === 'Escape') esc()
+
       if (event.key.toLowerCase() === 'd' || event.key === '`') {
         setDebugOpen((value) => !value)
       }
@@ -314,7 +331,10 @@ export default function SpatialScene() {
   useEffect(() => {
     if (phase === 'FOCUS') {
       focusEnteredAtRef.current = performance.now()
-      const timer = window.setTimeout(() => setFocusReady(true), 380)
+
+      const timer = window.setTimeout(() => {
+        setFocusReady(true)
+      }, 380)
 
       return () => window.clearTimeout(timer)
     }
@@ -364,6 +384,8 @@ export default function SpatialScene() {
 
   const isReplay = phase === 'REPLAY'
   const starfieldOpacity = phase === 'ASCENT' ? ascentProgress : 1
+  const canBack = phase !== 'HOME'
+  const isBusy = phase === 'ASCENT'
 
   return (
     <main style={rootStyle}>
@@ -372,7 +394,9 @@ export default function SpatialScene() {
         starCount={lifeMap.stars.length}
         memoryTitle={selectedMeta?.title ?? 'No node selected'}
         source={source}
-        canReplay={phase === 'FOCUS' && focusReady}
+        canReplay={phase === 'FOCUS' && focusReady && canUseAdvancedReplay}
+        canBack={canBack}
+        isBusy={isBusy}
         onOpen={openAscent}
         onBack={esc}
         onReplay={openReplay}
@@ -395,10 +419,21 @@ export default function SpatialScene() {
           <div style={{ fontWeight: 700 }}>{selectedMeta.title}</div>
           <div style={{ fontSize: 12, opacity: 0.9 }}>Tone: {selectedTone}</div>
           <div style={{ fontSize: 12, opacity: 0.86 }}>{selectedTime}</div>
-          <div style={{ fontSize: 12, opacity: 0.82, marginTop: 6 }}>{selectedNarrator}</div>
+          <div style={{ fontSize: 12, opacity: 0.82, marginTop: 6, lineHeight: 1.45 }}>
+            {selectedNarrator}
+          </div>
 
           <div style={{ display: 'flex', gap: 8, marginTop: 10 }}>
-            <button type="button" style={panelButtonStyle} onClick={openReplay} disabled={!focusReady}>
+            <button
+              type="button"
+              style={{
+                ...panelButtonStyle,
+                opacity: focusReady && canUseAdvancedReplay ? 1 : 0.62,
+                cursor: focusReady && canUseAdvancedReplay ? 'pointer' : 'not-allowed',
+              }}
+              onClick={openReplay}
+              disabled={!focusReady || !canUseAdvancedReplay}
+            >
               Replay
             </button>
 
@@ -434,7 +469,8 @@ export default function SpatialScene() {
           <br />
           source={source}
           <br />
-          gates={String(canUsePersonalLifeMap)}/{String(canUsePersonalMemoryStars)}/{String(canUseAdvancedReplay)}
+          gates={String(canUsePersonalLifeMap)}/{String(canUsePersonalMemoryStars)}/
+          {String(canUseAdvancedReplay)}
         </div>
       )}
 
@@ -476,7 +512,7 @@ export default function SpatialScene() {
             lifeMapStars={lifeMap.stars}
             selectedStarId={phase === 'FOCUS' || phase === 'REPLAY' ? selectedStarId : null}
             onStarClick={openFocus}
-            interactive={phase === 'LIFEMAP'}
+            interactive={phase === 'LIFEMAP' && canUsePersonalLifeMap && canUsePersonalMemoryStars}
             collapseToSelected={phase === 'REPLAY'}
             focusSuppression={phase === 'FOCUS' || phase === 'REPLAY' ? 1 : 0}
             opacity={starfieldOpacity}

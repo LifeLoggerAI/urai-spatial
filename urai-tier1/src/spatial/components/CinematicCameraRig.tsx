@@ -35,10 +35,14 @@ function readPhase(props: CinematicCameraRigProps): CanonPhase {
   return props.phase ?? props.activePhase ?? props.scenePhase ?? "HOME";
 }
 
-function finiteVector(values: [number, number, number] | null | undefined, fallback: THREE.Vector3): THREE.Vector3 {
+function finiteVector(
+  values: [number, number, number] | null | undefined,
+  fallback: THREE.Vector3,
+): THREE.Vector3 {
   if (!values || values.length !== 3) return fallback.clone();
 
   const [x, y, z] = values;
+
   if (!Number.isFinite(x) || !Number.isFinite(y) || !Number.isFinite(z)) {
     return fallback.clone();
   }
@@ -60,6 +64,7 @@ function lifePathAt(progress: number) {
 
 export default function CinematicCameraRig(props: CinematicCameraRigProps) {
   const { camera } = useThree();
+
   const travelRef = useRef(0);
   const replayOrbitRef = useRef(0);
   const targetRef = useRef(HOME_TARGET.clone());
@@ -85,6 +90,7 @@ export default function CinematicCameraRig(props: CinematicCameraRigProps) {
     }
 
     const base = lifePathAt(travelRef.current);
+
     let desiredPos = base.position;
     let desiredTarget = base.target;
     let desiredFov = phase === "HOME" ? 42 : base.fov;
@@ -101,8 +107,7 @@ export default function CinematicCameraRig(props: CinematicCameraRigProps) {
     );
 
     if (phase === "FOCUS" || phase === "REPLAY") {
-      const focusPos = new THREE.Vector3(selected.x * 0.24, selected.y + 4.2, selected.z + 23);
-      desiredPos = focusPos;
+      desiredPos = new THREE.Vector3(selected.x * 0.24, selected.y + 4.2, selected.z + 23);
       desiredTarget = selected.clone();
       desiredFov = 42;
     }
@@ -116,6 +121,7 @@ export default function CinematicCameraRig(props: CinematicCameraRigProps) {
         selected.y + 2.8 + Math.sin(orbit * 0.3) * 0.55,
         selected.z + 12 + Math.cos(orbit * 0.42) * 2.2,
       );
+
       desiredTarget = new THREE.Vector3(selected.x, selected.y, selected.z - 1.2);
       desiredFov = 38;
     } else {
