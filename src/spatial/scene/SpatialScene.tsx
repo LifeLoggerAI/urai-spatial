@@ -2,35 +2,18 @@
 
 import React, { useEffect, useMemo, useRef, useState } from 'react'
 import Starfield3D from '@/spatial/components/Starfield3D'
+import { getSpatialStarData, type SpatialStarNode } from '@/spatial/data/stars'
 import { useSceneStore } from '../state/sceneStore'
 
 type Phase = 'HOME' | 'ASCENT' | 'LIFEMAP' | 'FOCUS' | 'REPLAY'
 type TransitionKind = 'homeToLifemap' | 'lifemapToHome' | null
-
-type StarNode = {
-  id: string
-  x: number
-  y: number
-  z: number
-  size: number
-  label: string
-  tone: string
-  memoryRef?: string
-}
 
 const ASCENT_MS = 2200
 const RETURN_HOME_MS = 1600
 const FOCUS_ENTER_MS = 450
 const REPLAY_ENTER_MS = 600
 
-const STAR_DATA: StarNode[] = [
-  { id: 'charged', x: 24, y: 29, z: 0, size: 14, label: 'Charged Memory', tone: 'tense' },
-  { id: 'recovery', x: 40, y: 21, z: 1, size: 13, label: 'Recovery Signal', tone: 'recovery' },
-  { id: 'relationship', x: 58, y: 34, z: 0, size: 13, label: 'Relationship Echo', tone: 'relationship' },
-  { id: 'focus', x: 70, y: 58, z: 2, size: 12, label: 'Focus Thread', tone: 'focus' },
-  { id: 'joy', x: 28, y: 60, z: 1, size: 14, label: 'Joy Marker', tone: 'joy' },
-  { id: 'quiet', x: 52, y: 67, z: 2, size: 12, label: 'Quiet Shift', tone: 'neutral' },
-]
+const STAR_DATA: SpatialStarNode[] = getSpatialStarData()
 
 function clamp01(v: number) {
   return Math.max(0, Math.min(1, v))
@@ -40,7 +23,7 @@ function easeInOutCubic(t: number) {
   return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2
 }
 
-function getCameraDirector(progress: number, phase: Phase, selectedStar: StarNode | null) {
+function getCameraDirector(progress: number, phase: Phase, selectedStar: SpatialStarNode | null) {
   const p = clamp01(progress)
   const e = easeInOutCubic(p)
 
@@ -241,7 +224,7 @@ export default function SpatialScene() {
     transitionFrameRef.current = requestAnimationFrame(tick)
   }
 
-  const openFocus = (star: StarNode) => {
+  const openFocus = (star: SpatialStarNode) => {
     if (!canTransition('OPEN_FOCUS', { starId: star.id, inputLocked }) || transitionKind) return
 
     setFocusVisible(false)
@@ -338,6 +321,7 @@ export default function SpatialScene() {
             <Starfield3D
               stars={STAR_DATA}
               phase={phase}
+              selectedStarId={selectedStarId}
               onSelect={(id) => {
                 const star = STAR_DATA.find((s) => s.id === id)
                 if (star) openFocus(star)
