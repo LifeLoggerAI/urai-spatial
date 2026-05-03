@@ -41,6 +41,10 @@ We welcome code contributions! If you would like to contribute code, please foll
 4.  Make sure your changes are well-tested.
 5.  Create a pull request. Please provide a clear description of the changes you have made.
 
+### Backup and Snapshot Hygiene
+
+Backup-style runtime snapshots must not live under `src/` or any production source tree. If you need to preserve historical copies, move them into `_quarantine/backups/` with their original relative path structure and keep executable/runtime imports pointed only at canonical source files.
+
 ## Pull Request Process
 
 1.  The pull request will be reviewed by one of the project maintainers.
