@@ -1,47 +1,29 @@
 {
-  "compilerOptions": {
-    "target": "ES2017",
-    "lib": [
-      "dom",
-      "dom.iterable",
-      "esnext"
-    ],
-    "allowJs": false,
-    "skipLibCheck": true,
-    "strict": false,
-    "noEmit": true,
-    "esModuleInterop": true,
-    "module": "esnext",
-    "moduleResolution": "bundler",
-    "resolveJsonModule": true,
-    "isolatedModules": true,
-    "jsx": "react-jsx",
-    "incremental": true,
-    "plugins": [
-      {
-        "name": "next"
-      }
-    ],
-    "baseUrl": ".",
-    "paths": {
-      "@/*": [
-        "src/*"
-      ]
-    }
-  },
-  "include": [
-    "next-env.d.ts",
-    ".next/types/**/*.ts",
-    "src/app/page.tsx",
-    "src/lib/uraiCanon/types.ts",
-    "src/lib/uraiCanon/state.ts",
-    "src/lib/uraiCanon/index.ts",
-    "src/spatial/hooks/useSceneAuthority.ts",
-    "src/spatial/hooks/useCanonEsc.ts",
-    "src/spatial/scene/SpatialScene.tsx",
-    ".next/dev/types/**/*.ts"
-  ],
-  "exclude": [
-    "node_modules"
-  ]
+"compilerOptions": {
+"target": "ES2017",
+"lib": ["dom", "dom.iterable", "esnext"],
+"allowJs": false,
+"skipLibCheck": true,
+"strict": false,
+"noEmit": true,
+"esModuleInterop": true,
+"module": "esnext",
+"moduleResolution": "bundler",
+"resolveJsonModule": true,
+"isolatedModules": true,
+"jsx": "react-jsx",
+"incremental": true,
+"plugins": [{ "name": "next" }],
+"paths": {
+"@/*": ["./src/*"]
+}
+},
+"include": [
+"next-env.d.ts",
+".next/types/**/*.ts",
+".next/dev/types/**/*.ts",
+"src/**/*.ts",
+"src/**/*.tsx"
+],
+"exclude": ["node_modules"]
 }

@@ -11,5 +11,7 @@ export function resolveLifeMapIntelligenceById(
 
   return {
     id: starId,
+    title: "LifeMap intelligence",
+    label: "LifeMap intelligence ready",
   };
 }

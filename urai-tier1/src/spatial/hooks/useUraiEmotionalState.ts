@@ -20,7 +20,7 @@ export function useUraiEmotionalState(input: {
 
     if (signals.length === 0) {
       signals.push({
-        source: "system",
+        source: "memory",
         emotion: input.phase === "FOCUS" || input.phase === "REPLAY" ? "awe" : "calm",
         confidence: 0.62,
         intensity: input.phase === "REPLAY" ? 0.72 : 0.45,

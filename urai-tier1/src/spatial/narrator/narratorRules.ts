@@ -19,9 +19,6 @@ function textFor(moment: NarratorMoment, memory: SpatialMemory | null, emotional
   if (moment === "home_idle") return "The field is quiet.";
   if (moment === "ascent_begin") return "The system is leaving the surface.";
   if (moment === "lifemap_arrival") return "The map is open.";
-  if (moment === "memory_selected") return `${title} is coming into focus.`;
-  if (moment === "focus_arrival") return memory?.narratorSeed ?? `${title} is carrying more weight now.`;
-  if (moment === "replay_enter") return `Entering the place inside ${title}.`;
   if (moment === "replay_hold") {
     if (emotional.symbolicWeight === "threshold") return "This is a threshold memory.";
     if (emotional.symbolicWeight === "heavy") return "This moment still has gravity.";
@@ -42,7 +39,6 @@ export function createNarratorLine(args: {
   if (!moment) return null;
 
   return {
-    id: `${moment}:${args.memory?.id ?? "none"}:${args.phase}`,
     moment,
     text: textFor(moment, args.memory, args.emotional),
     tone: args.emotional.tone,

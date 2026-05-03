@@ -11,5 +11,7 @@ export function resolveEraCompareById(
 
   return {
     id: starId,
+    title: "Era compare",
+    label: "Era compare ready",
   };
 }

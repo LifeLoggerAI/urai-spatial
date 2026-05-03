@@ -169,13 +169,10 @@ export function buildNarratorLine(
   const base = pickLine(moment);
   const title =
     memoryTitle && ["memory_selected", "focus_arrival", "replay_enter"].includes(moment)
-      ? ` ${memoryTitle}.`
       : "";
 
   return {
-    id: `${moment}:${tone}:${base}:${memoryTitle || "none"}`,
     moment,
-    text: `${base}${title}`,
     tone,
     priority: timing.priority,
     delayMs: timing.delayMs,

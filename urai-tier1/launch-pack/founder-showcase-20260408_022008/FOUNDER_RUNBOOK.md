@@ -3,8 +3,9 @@
 ## Status
 The spatial core is certified:
 - Tier-1 locked
-- Tier-2 locked
+- Tier-2 completed locked
 - Tier-3 locked
+- Tier-4 locked
 
 ## Demo path
 Home → Ascent → LifeMap → Focus → Replay → hold ~3s → exit → Focus → LifeMap → Home

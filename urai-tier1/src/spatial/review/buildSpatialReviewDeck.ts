@@ -7,7 +7,6 @@ export function buildSpatialReviewDeck(items: string[]): SpatialReviewDeck {
 return {
 title: "Spatial Review Deck",
 slides: items.map((item, index) => ({
-id: `slide-${index + 1}`,
 title: item,
 })),
 };

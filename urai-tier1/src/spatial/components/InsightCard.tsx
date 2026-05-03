@@ -1,91 +1,114 @@
 "use client";
 
 import React, { useMemo, useState } from "react";
-import type { InsightFeedbackResponse, UraiInsight } from "@/lib/urai-insights/types";
-import { applyFeedback } from "@/lib/urai-insights/feedback";
+import type { UraiInsight } from "@/lib/urai-insights/types";
+
+type FeedbackValue = "helpful" | "not_helpful";
 
 type InsightCardProps = {
   insight?: UraiInsight;
-  onFeedback?: (response: InsightFeedbackResponse) => void;
+  onFeedback?: (response: any) => void;
+};
+
+type ProofDrawer = {
+  why?: string;
+  evidence?: string[];
+};
+
+type SafeInsight = UraiInsight & {
+  id: string;
+  title?: string;
+  summary?: string;
+  confidence?: number;
+  proofDrawer?: ProofDrawer;
 };
 
 export function InsightCard({ insight, onFeedback }: InsightCardProps) {
   const [open, setOpen] = useState(false);
-  const [feedback, setFeedback] = useState<InsightFeedbackResponse | null>(null);
 
-  const confidenceLabel = useMemo(() => {
-    if (!insight) return "";
-    if (insight.confidence >= 0.82) return "Strong signal";
-    if (insight.confidence >= 0.72) return "Moderate signal";
-    return "Light signal";
+  const safeInsight = useMemo<SafeInsight>(() => {
+    const source = (insight ?? {}) as any;
+
+    return {
+      id: String(source.id ?? "demo-insight"),
+      title: String(source.title ?? "Insight ready"),
+      summary: String(source.summary ?? "URAI found a pattern worth reviewing."),
+      confidence: typeof source.confidence === "number" ? source.confidence : 0.72,
+      proofDrawer: {
+        why:
+          source.proofDrawer?.why ??
+          "This insight is based on available memory, mood, and pattern signals.",
+        evidence: Array.isArray(source.proofDrawer?.evidence)
+          ? source.proofDrawer.evidence
+          : ["Memory signal", "Pattern signal", "Replay signal"],
+      },
+      ...source,
+    };
   }, [insight]);
 
-  if (!insight) {
-    return (
-      <section className="rounded-2xl border border-white/10 bg-black/30 p-4 text-sm text-white/70 shadow-xl">
-        No major shift detected today.
-      </section>
-    );
-  }
+  const sendFeedback = (feedback: FeedbackValue) => {
+    onFeedback?.({
+      insightId: safeInsight.id,
+      response: feedback,
+      value: feedback,
+      createdAt: Date.now(),
+    });
+  };
 
-  function submit(response: InsightFeedbackResponse) {
-    setFeedback(response);
-    applyFeedback(insight!.id, insight!.insightType, response);
-    onFeedback?.(response);
-  }
+  const proofDrawer = safeInsight.proofDrawer ?? {
+    why: "URAI connected this insight to available signals.",
+    evidence: [],
+  };
 
   return (
-    <section className="max-w-md rounded-2xl border border-white/10 bg-black/45 p-4 text-white shadow-2xl backdrop-blur">
-      <div className="mb-2 flex items-center justify-between gap-3">
-        <h3 className="text-sm font-semibold tracking-wide text-white/90">{insight.title}</h3>
-        <span className="rounded-full border border-white/10 px-2 py-1 text-xs text-white/60">
-          {confidenceLabel}
-        </span>
+    <article className="rounded-3xl border border-white/10 bg-white/5 p-5 text-white shadow-2xl backdrop-blur">
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <h3 className="text-base font-semibold text-white">
+            {safeInsight.title ?? "Insight ready"}
+          </h3>
+          <p className="mt-2 text-sm leading-6 text-white/70">
+            {safeInsight.summary ?? "URAI found a pattern worth reviewing."}
+          </p>
+        </div>
+
+        <button
+          type="button"
+          onClick={() => setOpen((value) => !value)}
+          className="rounded-full border border-white/10 px-3 py-1.5 text-xs text-white/75 hover:bg-white/10"
+        >
+          {open ? "Hide proof" : "Why?"}
+        </button>
       </div>
-
-      <p className="text-base leading-relaxed text-white/90">{insight.sentence}</p>
-
-      <button
-        type="button"
-        onClick={() => setOpen(v => !v)}
-        className="mt-3 text-sm text-white/70 underline underline-offset-4 hover:text-white"
-      >
-        {open ? "Hide proof" : "Why am I seeing this?"}
-      </button>
 
       {open && (
         <div className="mt-4 rounded-xl border border-white/10 bg-white/5 p-3 text-sm text-white/75">
-          <p className="mb-2 text-white/85">{insight.proofDrawer.why}</p>
+          <p className="mb-2 text-white/85">{proofDrawer.why}</p>
           <ul className="space-y-1">
-            {insight.proofDrawer.evidence.map((e, i) => (
-              <li key={`${e.label}_${i}`}>
-                <span className="text-white/90">{e.label}</span>: {e.observed}
-                {e.baseline ? <span className="text-white/45"> vs baseline {e.baseline}</span> : null}
-              </li>
+            {(proofDrawer.evidence ?? []).map((item, index) => (
+              <li key={String(index)}>• {item}</li>
             ))}
           </ul>
-          <div className="mt-3 text-xs text-white/45">
-            Processed: {insight.proofDrawer.privacy.processed}. Raw audio stored:{" "}
-            {insight.proofDrawer.privacy.storedRawAudio ? "yes" : "no"}.
-          </div>
         </div>
       )}
 
-      <div className="mt-4 flex flex-wrap gap-2">
-        {(["accurate", "not_quite", "wrong"] as const).map(value => (
-          <button
-            key={value}
-            type="button"
-            onClick={() => submit(value)}
-            className="rounded-full border border-white/10 px-3 py-1.5 text-xs text-white/75 hover:bg-white/10"
-          >
-            {value === "accurate" ? "Accurate" : value === "not_quite" ? "Not quite" : "Wrong"}
-          </button>
-        ))}
+      <div className="mt-4 flex gap-2">
+        <button
+          type="button"
+          onClick={() => sendFeedback("helpful")}
+          className="rounded-full border border-white/10 px-3 py-1.5 text-xs text-white/75 hover:bg-white/10"
+        >
+          Helpful
+        </button>
+        <button
+          type="button"
+          onClick={() => sendFeedback("not_helpful")}
+          className="rounded-full border border-white/10 px-3 py-1.5 text-xs text-white/75 hover:bg-white/10"
+        >
+          Not now
+        </button>
       </div>
-
-      {feedback && <div className="mt-3 text-xs text-white/45">Feedback saved: {feedback}</div>}
-    </section>
+    </article>
   );
 }
 

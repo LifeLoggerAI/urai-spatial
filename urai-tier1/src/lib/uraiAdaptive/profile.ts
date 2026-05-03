@@ -93,7 +93,7 @@ export function resolveAdaptiveOutput(profile: UraiAdaptiveProfile): UraiAdaptiv
   const adaptiveLine =
     profile.totalSignals < 3
       ? "Adaptive layer is calibrating."
-      : "Adaptive layer is tuning narrator pace, companion presence, and visual sensitivity from repeated signals.";
+      : "Adaptive layer is tuning narrator pace, supportive reflection, and visual sensitivity from repeated signals.";
 
   return {
     profile,

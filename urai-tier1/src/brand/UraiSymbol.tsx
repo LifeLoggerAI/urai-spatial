@@ -7,7 +7,6 @@ import {
   type UraiSymbolModifier,
   type UraiSymbolState,
 } from "./urai-brand.registry";
-import "./urai-symbol.css";
 
 type Props = {
   product?: UraiProductKey;

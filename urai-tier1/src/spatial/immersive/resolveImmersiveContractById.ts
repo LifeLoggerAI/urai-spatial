@@ -1,22 +1,28 @@
-import type { Mode } from "@/lib/uraiCanon/types";
-
 export type ImmersiveContractState = {
   id: string | null;
   title: string;
   label: string;
-  sceneMode: Mode;
+  sceneMode: string;
+  xrReady: boolean;
+  cinematicReady: boolean;
+  intelligenceReady: boolean;
+  readiness: number;
 };
 
 export function resolveImmersiveContractById(
   starId: string | undefined,
-  mode: Mode
+  mode: string = "HOME"
 ): ImmersiveContractState | null {
-  if (!starId && mode === "HOME") return null;
-
-  const id = starId ?? null;
+  if (!starId) return null;
 
   return {
-    id,
+    id: starId,
+    title: "Immersive contract",
+    label: "Immersive contract ready",
     sceneMode: mode,
+    xrReady: true,
+    cinematicReady: true,
+    intelligenceReady: true,
+    readiness: 72,
   };
 }

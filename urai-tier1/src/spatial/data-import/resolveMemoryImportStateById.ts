@@ -11,5 +11,7 @@ export function resolveMemoryImportStateById(
 
   return {
     id: starId,
+    title: "Memory import",
+    label: "Memory import ready",
   };
 }

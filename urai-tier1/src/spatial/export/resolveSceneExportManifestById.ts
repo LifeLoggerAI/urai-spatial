@@ -1,22 +1,18 @@
-import type { Mode } from "@/lib/uraiCanon/types";
-
 export type SceneExportManifest = {
   id: string | null;
   title: string;
   label: string;
-  sceneMode: Mode;
+  sceneMode: string;
 };
 
 export function resolveSceneExportManifestById(
   starId: string | undefined,
-  mode: Mode
-): SceneExportManifest | null {
-  if (!starId && mode === "HOME") return null;
-
-  const id = starId ?? null;
-
+  mode: string = "HOME"
+): SceneExportManifest {
   return {
-    id,
+    id: starId ?? null,
+    title: "Scene export",
+    label: "Scene export ready",
     sceneMode: mode,
   };
 }

@@ -15,7 +15,6 @@ export function createInsight(memory: SpatialMemory | null, emotional: Emotional
     "This point belongs to the larger pattern.";
 
   return {
-    id: `insight:${memory.id}:${emotional.tone}:${emotional.symbolicWeight}`,
     memoryId: memory.id,
     title: memory.title,
     meaning,

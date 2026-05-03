@@ -11,5 +11,7 @@ export function resolveCinematicReplayById(
 
   return {
     id: starId,
+    title: "Cinematic replay",
+    label: "Cinematic replay ready",
   };
 }

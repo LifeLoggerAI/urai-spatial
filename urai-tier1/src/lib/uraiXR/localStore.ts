@@ -20,6 +20,6 @@ export function saveUraiXRMode(mode: UraiXRMode): void {
   try {
     window.localStorage.setItem(KEY, mode);
   } catch {
-    // XR mode must never break Spatial
+    // Spatial mode must never break Spatial
   }
 }

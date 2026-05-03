@@ -27,7 +27,7 @@ export default function ReplayShell({ active }: { active: boolean }) {
         side={THREE.BackSide}
         transparent
         opacity={0.026}
-       depthWrite={false} transparent  />
+       depthWrite={false}  />
     </mesh>
   );
 }

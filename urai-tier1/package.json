@@ -6,9 +6,10 @@
     "dev": "next dev --webpack",
     "build": "next build --webpack",
     "start": "next start",
-    "lint": "tsc --noEmit",
+    "lint": "eslint",
     "typecheck": "tsc --noEmit",
-    "test": "echo \"No app tests configured\" && exit 0"
+    "verify:tier-lock": "node scripts/verify-tier-lock.mjs",
+    "audit:visual-lock": "npm run verify:tier-lock && npm run typecheck && npm run build"
   },
   "dependencies": {
     "@react-three/fiber": "^9.5.0",
@@ -22,6 +23,9 @@
     "three-stdlib": "^2.36.1"
   },
   "devDependencies": {
-    "@types/three": "^0.183.1"
+    "@types/react": "^19.2.14",
+    "@types/react-dom": "^19.2.3",
+    "@types/three": "^0.183.1",
+    "typescript": "^6.0.3"
   }
 }

@@ -27,7 +27,6 @@ const AMBIENT_SRC: Record<AmbientTrack, string> = {
 };
 
 function log(msg: string) {
-  console.info(`[URAI_AUDIO] ${msg}`);
 }
 
 function hasWindow() {
@@ -109,7 +108,6 @@ export function useAudioController() {
 
       if (!next) return;
 
-      log(`AMBIENT phase=${phase} track=${nextTrack}`);
 
       if (fadeRafRef.current) {
         cancelAnimationFrame(fadeRafRef.current);
@@ -120,7 +118,6 @@ export function useAudioController() {
       next.loop = true;
       next.volume = 0;
       next.play().catch(() => {
-        log(`AMBIENT_BLOCKED track=${nextTrack}`);
       });
 
       const started = performance.now();
@@ -158,7 +155,6 @@ export function useAudioController() {
   const playGoogle = useCallback(async (line: NarratorAudioLine, signal: AbortSignal) => {
     if (!hasWindow()) return;
 
-    log(`engine=google id=${line.id} START`);
 
     const utterance = new SpeechSynthesisUtterance(line.text);
     utterance.rate = 0.92;
@@ -178,13 +174,11 @@ export function useAudioController() {
       window.speechSynthesis.speak(utterance);
     });
 
-    log(`engine=google id=${line.id} END`);
   }, []);
 
   const playElevenLabs = useCallback(async (line: NarratorAudioLine, signal: AbortSignal) => {
     if (!hasWindow()) return;
 
-    log(`engine=elevenlabs id=${line.id} START`);
 
     const res = await fetch("/api/voice/elevenlabs", {
       method: "POST",
@@ -228,7 +222,6 @@ export function useAudioController() {
       audio.play().catch(reject);
     });
 
-    log(`engine=elevenlabs id=${line.id} END`);
   }, []);
 
   const speak = useCallback(
@@ -237,7 +230,6 @@ export function useAudioController() {
       if (!line?.id || !line?.text) return;
 
       if (lastPlayedIdRef.current === line.id) {
-        log(`SKIP_DUPLICATE id=${line.id}`);
         return;
       }
 
@@ -260,11 +252,9 @@ export function useAudioController() {
         }
       } catch (err) {
         if (!controller.signal.aborted && activeEngineRef.current === "elevenlabs") {
-          log(`FALLBACK_GOOGLE id=${line.id}`);
           try {
             await playGoogle(line, controller.signal);
           } catch {
-            log(`VOICE_FAILED id=${line.id}`);
           }
         }
       } finally {
@@ -279,7 +269,6 @@ export function useAudioController() {
   );
 
   const setVoiceEngine = useCallback((engine: VoiceEngine) => {
-    log(`SET_ENGINE ${engine}`);
     activeEngineRef.current = engine;
   }, []);
 

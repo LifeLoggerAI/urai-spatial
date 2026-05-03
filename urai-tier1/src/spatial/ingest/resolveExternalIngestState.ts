@@ -1,82 +1,92 @@
-import { normalizeExternalRows } from "@/spatial/ingest/normalizeExternalMemoryRows";
+import {
+  normalizeExternalRows,
+  type CanonicalImportRow,
+} from "@/spatial/ingest/normalizeExternalMemoryRows";
 import { resolveMemorySphereById } from "@/spatial/memory/resolveMemorySphere";
 
 const SAMPLE_JSON = JSON.stringify(
   [
     {
-      id: "ext-json-1",
-      title: "Imported Dawn Memory",
-      summary: "External JSON import row.",
-      chapter: "Origins",
-      timeband: "Dawn",
-      emotion: "curious",
-      color: "#c9ddff",
-      intensity: 6
+      id: "sample-memory",
+      title: "Sample memory",
+      summary: "Imported memory row.",
+      chapter: "Imported Chapter",
+      timeband: "Imported Timeband",
+      emotion: "neutral",
+      color: "#67e8f9",
+      intensity: 0.5,
     },
-    {
-      id: "ext-json-2",
-      title: "Imported Threshold Memory",
-      summary: "Second imported row.",
-      chapter: "Becoming",
-      timeband: "Night",
-      emotion: "focused",
-      color: "#ffd98a",
-      intensity: 7
-    }
   ],
   null,
   2
 );
 
-const SAMPLE_CSV = [
-  "id,title,summary,chapter,timeband,emotion,color,intensity",
-  "ext-csv-1,CSV Echo,External CSV import row,Fracture,Autumn,reflective,#f8c7d8,4",
-  "ext-csv-2,CSV Return,Second CSV import row,Return,Spring,steady,#e8f7df,5"
-].join("\n");
-
 export type ExternalIngestState = {
-  id: string;
+  id: string | null;
   title: string;
-  summary: string;
-  jsonCanonicalCount: number;
-  csvCanonicalCount: number;
-  invalidCount: number;
-  readiness: number;
-  errors: string[];
+  label: string;
+  rows: CanonicalImportRow[];
+  rowCount: number;
+  sampleJson: string;
+  ready: boolean;
 };
 
-function clamp(value: number, min: number, max: number): number {
-  return Math.max(min, Math.min(max, value));
+type LooseRecord = Record<string, unknown>;
+
+function field(record: LooseRecord, key: string, fallback: string): string {
+  const value = record[key];
+  return typeof value === "string" && value.trim().length > 0
+    ? value.trim()
+    : fallback;
 }
 
-export function resolveExternalIngestStateById(
-  id: string | null | undefined
-): ExternalIngestState | undefined {
-  if (!id) return undefined;
+function numberField(record: LooseRecord, key: string, fallback: number): number {
+  const value = record[key];
+  return typeof value === "number" && Number.isFinite(value) ? value : fallback;
+}
 
-  const memory = resolveMemorySphereById(id);
-  if (!memory) return undefined;
+export function resolveExternalIngestState(
+  starId: string | null | undefined,
+  rows?: Record<string, unknown>[] | null
+): ExternalIngestState {
+  const id = starId ?? null;
+  const memory = id ? resolveMemorySphereById(id) : undefined;
+  const record = (memory ?? {}) as LooseRecord;
 
-  const jsonValidation = normalizeExternalRows("json", SAMPLE_JSON);
-  const csvValidation = normalizeExternalRows("csv", SAMPLE_CSV);
-
-  const readiness = clamp(
-    Math.round(
-      jsonValidation.canonicalCount * 18 +
-      csvValidation.canonicalCount * 18 -
-      (jsonValidation.invalidCount + csvValidation.invalidCount) * 8
-    ),
-    0,
-    100
+  const normalizedRows = normalizeExternalRows(
+    Array.isArray(rows)
+      ? rows
+      : memory
+        ? [
+            {
+              id: id ?? "memory",
+              title: field(record, "title", "Imported memory"),
+              summary: field(record, "summary", "Imported memory row."),
+              chapter: field(record, "chapter", "Imported Chapter"),
+              timeband: field(record, "timeband", "Imported Timeband"),
+              emotion: field(record, "emotion", "neutral"),
+              color: field(record, "color", "#67e8f9"),
+              intensity: numberField(record, "intensity", 0.5),
+            },
+          ]
+        : []
   );
 
   return {
     id,
-    summary: "External JSON and CSV ingest contracts are now normalized into canonical memory rows.",
-    jsonCanonicalCount: jsonValidation.canonicalCount,
-    csvCanonicalCount: csvValidation.canonicalCount,
-    invalidCount: jsonValidation.invalidCount + csvValidation.invalidCount,
-    readiness,
-    errors: [...jsonValidation.errors, ...csvValidation.errors],
+    title: "External ingest",
+    label: "External ingest ready",
+    rows: normalizedRows,
+    rowCount: normalizedRows.length,
+    sampleJson: SAMPLE_JSON,
+    ready: normalizedRows.length > 0,
   };
 }
+
+export function resolveExternalIngestStateById(
+  starId: string | undefined
+): ExternalIngestState {
+  return resolveExternalIngestState(starId);
+}
+
+export default resolveExternalIngestState;

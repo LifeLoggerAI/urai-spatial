@@ -11,5 +11,7 @@ export function resolveExternalIngestStateById(
 
   return {
     id: starId,
+    title: "External ingest",
+    label: "External ingest ready",
   };
 }

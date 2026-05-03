@@ -26,7 +26,7 @@ export function resolveUraiAgentLoop(args: Args): UraiAgentLoopState {
   } else if (args.phase === "LIFEMAP" && args.nextSuggestedFocusId) {
     intent = "suggest_focus";
     priority = 0.68;
-    reason = "Pattern layer has a deterministic next memory signal.";
+    reason = "Pattern layer has a memory pattern that may be worth reviewing.";
     suggestedMemoryId = args.nextSuggestedFocusId;
   } else if (args.phase === "FOCUS" && args.memoryWeight >= 0.72) {
     intent = "suggest_replay";
@@ -36,7 +36,7 @@ export function resolveUraiAgentLoop(args: Args): UraiAgentLoopState {
   } else if (args.phase === "REPLAY" && (args.dominantArc === "shadow_loop" || args.companionAction === "slow_down")) {
     intent = "slow_down";
     priority = 0.82;
-    reason = "Replay contains shadow pressure or slowdown signal.";
+    reason = "This replay is emotionally weighted. URAI will slow the pace.";
     suggestedMemoryId = args.selectedMemoryId;
   } else if (args.phase === "REPLAY") {
     intent = "suggest_export";

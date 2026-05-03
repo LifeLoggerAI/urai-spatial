@@ -13,10 +13,10 @@ export function resolveXRInputStateById(
 ): XRInputState | null {
   if (!starId && mode === "HOME") return null;
 
-  const id = starId ?? null;
-
   return {
-    id,
+    id: starId ?? null,
+    title: "XR input",
+    label: "XR input ready",
     sceneMode: mode,
   };
 }
