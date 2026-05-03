@@ -1,6 +1,8 @@
 "use client";
 
 import React from "react";
+const __URAI_DEBUG_SHELL__ = process.env.NEXT_PUBLIC_URAI_DEBUG_SPATIAL === "true"
+
 
 type ReplayShellOverlayProps = {
   visible?: boolean;
@@ -16,6 +18,7 @@ type ReplayShellOverlayProps = {
 };
 
 export default function ReplayShellOverlay(props: ReplayShellOverlayProps) {
+  if (!__URAI_DEBUG_SHELL__) return null
   if (!props.visible) return null;
 
   return (

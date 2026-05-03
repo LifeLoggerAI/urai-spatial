@@ -14,7 +14,8 @@ service cloud.firestore {
     // Users may read own profile summary; entitlement elevation fields are immutable from client.
     match /users/{uid} {
       allow read: if isSelf(uid) || isAdmin();
-      allow create: if isSelf(uid);
+      allow create: if isSelf(uid)
+        && !(('entitlementTier' in request.resource.data) || ('isAdmin' in request.resource.data) || ('founderOverride' in request.resource.data));
       allow update: if isSelf(uid)
         && !('entitlementTier' in request.resource.data.diff(resource.data).changedKeys())
         && !('isAdmin' in request.resource.data.diff(resource.data).changedKeys())

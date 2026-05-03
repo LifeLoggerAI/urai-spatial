@@ -11,6 +11,8 @@ import {
   TITLE_CLASS,
 } from "../Tier1ShellConstants";
 import Tag from "../Tag";
+const __URAI_DEBUG_SHELL__ = process.env.NEXT_PUBLIC_URAI_DEBUG_SPATIAL === "true"
+
 
 export type FocusShellOverlayProps = Record<string, unknown>;
 
@@ -34,6 +36,7 @@ function asRecord(value: any) {
 }
 
 export function FocusShellOverlay(rawProps: FocusShellOverlayProps) {
+  if (!__URAI_DEBUG_SHELL__) return null
   const props = rawProps as Record<string, unknown>;
   if (props.hidden === true || props.visible === false) return null;
 
