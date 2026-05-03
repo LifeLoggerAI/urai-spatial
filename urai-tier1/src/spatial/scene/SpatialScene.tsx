@@ -11,6 +11,7 @@ import ReplayScene from '@/spatial/components/ReplayScene'
 import ReplayEnvironment from '@/spatial/components/ReplayEnvironment'
 import useSceneAuthority from '@/spatial/hooks/useSceneAuthority'
 import { useSpatialFeatureEnabled } from '@/lib/tier-locks/client'
+import { getLifeMapStars } from '@/spatial/scene/getLifeMapStars'
 
 type Phase = 'HOME' | 'ASCENT' | 'LIFEMAP' | 'FOCUS' | 'REPLAY'
 type HomePhase = 'home' | 'ascent' | 'lifemap' | 'focus' | 'replay'
@@ -224,14 +225,13 @@ export default function SpatialScene() {
   }, [esc])
 
   useEffect(() => {
-    if (phase !== 'FOCUS') setFocusReady(false)
-  }, [phase])
-
-  useEffect(() => {
     if (phase === 'FOCUS') {
       focusEnteredAtRef.current = performance.now()
+      const timer = window.setTimeout(() => setFocusReady(true), 380)
+      return () => window.clearTimeout(timer)
     } else {
       focusEnteredAtRef.current = 0
+      setFocusReady(false)
     }
   }, [phase])
 
@@ -242,17 +242,6 @@ export default function SpatialScene() {
       stopReturnAnimation()
     }
   }, [stopAscentAnimation, stopReturnAnimation])
-
-  const handleCameraSettled = useCallback((settledPhase: Phase) => {
-    if (settledPhase === 'FOCUS') {
-      setFocusReady(true)
-      return
-    }
-
-    if (settledPhase === 'LIFEMAP' || settledPhase === 'HOME') {
-      setFocusReady(false)
-    }
-  }, [])
 
   useEffect(() => {
     if (!fogRef.current) return
@@ -289,8 +278,24 @@ export default function SpatialScene() {
   const starfieldOpacity = phase === 'ASCENT' ? ascentProgress : 1
   const homeOpacity = phase === 'ASCENT' ? 1 - ascentProgress * 0.35 : homeReturnProgress > 0 ? homeReturnProgress : 1
 
+  const lifeMap = getLifeMapStars()
+  const selectedMeta = lifeMap.stars.find((s) => s.id === selectedStarId)
+
   return (
     <main className="relative min-h-screen overflow-hidden bg-[#05010d] text-white">
+      <div className="urai-hud-panel absolute left-4 top-4 z-20 w-[min(92vw,420px)] p-4">
+        <p className="m-0 text-xs uppercase tracking-[0.18em] text-cyan-200/80">URAI Spatial OS</p>
+        <p className="mb-3 mt-1 text-sm text-slate-100/90">Phase: {phase} · Memory node: {selectedMeta?.title ?? selectedStarId ?? 'none'} · stars: {lifeMap.stars.length}</p>
+        <div className="flex flex-wrap gap-2">
+          <button className="rounded-full border border-cyan-200/50 px-3 py-1 text-xs" onClick={openAscent}>Open LifeMap</button>
+          <button className="rounded-full border border-cyan-200/50 px-3 py-1 text-xs" onClick={esc}>Back / Escape</button>
+          {phase === 'FOCUS' && <button className="rounded-full border border-violet-200/50 px-3 py-1 text-xs" onClick={openReplay}>Enter Replay</button>}
+        </div>
+        <p className="mt-2 text-[11px] text-slate-300/80">Hint: ESC / Back to unwind</p>
+        {process.env.NODE_ENV !== 'production' && (
+          <p className="mt-1 text-[11px] text-cyan-100/70">debug: phase={phase} selected={selectedStarId ?? 'none'} starCount={lifeMap.stars.length} camera={phase} source={lifeMap.source}</p>
+        )}
+      </div>
       <Canvas
         camera={{ position: [0, 1.4, 7.5], fov: 42, near: 0.1, far: 180 }}
         dpr={[1, 2]}
@@ -299,14 +304,13 @@ export default function SpatialScene() {
         <color attach="background" args={['#05010d']} />
         <fog ref={fogRef} attach="fog" args={['#0c1726', 10, 52]} />
 
-        <ambientLight intensity={0.45} />
-        <directionalLight position={[4, 7, 5]} intensity={0.75} />
-        <pointLight position={[0, 2.5, -4]} intensity={1.25} color="#8fdcff" />
+        <ambientLight intensity={0.62} />
+        <directionalLight position={[4, 7, 5]} intensity={1.05} />
+        <pointLight position={[0, 2.5, -4]} intensity={2.1} color="#8fdcff" />
 
         <CinematicCameraRig
           phase={phase}
-          selected={selectedStarPosition}
-          onSettled={handleCameraSettled}
+          selectedStarPosition={selectedStarPosition}
         />
 
         <ReplayEnvironment active={phase === 'REPLAY'} />
@@ -317,11 +321,8 @@ export default function SpatialScene() {
             interactive={phase === 'HOME'}
             dim={phase === 'LIFEMAP' || phase === 'FOCUS' ? 0.45 : 0}
             phase={toHomePhase(phase)}
-            opacity={homeOpacity}
-            worldScale={1}
-            yOffset={0}
-            zOffset={0}
             onSkySelect={openAscent}
+            onOrbSelect={openAscent}
           />
         )}
 
@@ -339,6 +340,7 @@ export default function SpatialScene() {
           collapseToSelected={phase === 'REPLAY'}
           focusSuppression={phase === 'FOCUS' || phase === 'REPLAY' ? 1 : 0}
           opacity={starfieldOpacity}
+          lifeMapStars={lifeMap.stars}
         />
 
         <FocusSubject
