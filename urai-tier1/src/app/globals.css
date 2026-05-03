@@ -57,3 +57,24 @@ html, body, #__next {
 body {
   background: #000;
 }
+
+
+/* Product hardening: avoid default HTML chrome in immersive scene */
+button, [role="button"] {
+  appearance: none;
+  -webkit-appearance: none;
+  background: transparent;
+  color: inherit;
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+  font: inherit;
+}
+
+#__next, main {
+  width: 100dvw;
+  height: 100dvh;
+  max-width: 100dvw;
+  max-height: 100dvh;
+  touch-action: manipulation;
+}

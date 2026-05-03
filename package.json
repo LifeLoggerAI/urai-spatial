@@ -7,7 +7,10 @@
     "start": "pnpm --filter urai-tier1 start",
     "lint": "pnpm --filter urai-tier1 lint",
     "next-export": "pnpm --filter urai-tier1 next export",
-    "ship:check": "pnpm -r --if-present test"
+    "ship:check": "pnpm -r --if-present test",
+    "typecheck": "pnpm --filter urai-tier1 typecheck",
+    "test": "pnpm --filter urai-functions build && pnpm --filter urai-functions test && pnpm --filter urai-tier1 test && pnpm test:e2e",
+    "test:e2e": "playwright test"
   },
   "devDependencies": {
     "@types/node": "^25.5.0",

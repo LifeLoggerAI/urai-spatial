@@ -1,4 +1,5 @@
 packages:
   - "urai-tier1"
+  - "apps/functions"
   - "!**/_audit/**"
   - "!**/.next/**"
