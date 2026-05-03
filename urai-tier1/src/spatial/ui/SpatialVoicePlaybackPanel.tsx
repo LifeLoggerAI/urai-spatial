@@ -169,9 +169,9 @@ export default function SpatialVoicePlaybackPanel() {
     width: 320,
     padding: 12,
     borderRadius: 12,
-    background: "rgba(6,12,28,0.84)", 14, 24, 0.88)",
+    background: "rgba(6,12,28,0.84)",
     color: "#fff",
-    border: "1px solid rgba(180,220,255,0.16)",255,255,0.14)",
+    border: "1px solid rgba(180,220,255,0.16)",
     display: "grid",
     gap: 8,
   };
