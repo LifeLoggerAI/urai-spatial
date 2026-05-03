@@ -13,6 +13,8 @@ import ReplayEnvironment from '@/spatial/components/ReplayEnvironment'
 import useSceneAuthority from '@/spatial/hooks/useSceneAuthority'
 import { useSpatialFeatureEnabled } from '@/lib/tier-locks/client'
 import { getLifeMapStars } from '@/spatial/scene/getLifeMapStars'
+import SpatialHUD from '@/spatial/scene/SpatialHUD'
+import { useSpatialMemoryNodes } from '@/spatial/scene/useSpatialMemoryNodes'
 
 type Phase = 'HOME' | 'ASCENT' | 'LIFEMAP' | 'FOCUS' | 'REPLAY'
 type HomePhase = 'home' | 'ascent' | 'lifemap' | 'focus' | 'replay'
@@ -54,31 +56,6 @@ const canvasWrapStyle: CSSProperties = {
   zIndex: 0,
 }
 
-const hudStyle: CSSProperties = {
-  position: 'absolute',
-  left: 16,
-  top: 16,
-  zIndex: 20,
-  width: 'min(92vw, 420px)',
-  padding: 16,
-  borderRadius: 16,
-  background: 'rgba(8, 12, 28, 0.72)',
-  border: '1px solid rgba(159, 211, 255, 0.32)',
-  backdropFilter: 'blur(12px)',
-  boxShadow: '0 16px 50px rgba(0,0,0,.45)',
-  pointerEvents: 'auto',
-}
-
-const hudButtonStyle: CSSProperties = {
-  border: '1px solid rgba(159,211,255,.45)',
-  borderRadius: 999,
-  padding: '6px 12px',
-  fontSize: 12,
-  color: '#e8f3ff',
-  background: 'rgba(16,22,40,.55)',
-  cursor: 'pointer',
-}
-
 function clamp01(value: number) {
   if (value < 0) return 0
   if (value > 1) return 1
@@ -114,6 +91,7 @@ export default function SpatialScene() {
   const [focusReady, setFocusReady] = useState(false)
   const [ascentProgress, setAscentProgress] = useState(0)
   const [homeReturnProgress, setHomeReturnProgress] = useState(0)
+  const [debugOpen, setDebugOpen] = useState(false)
 
   const fogRef = useRef<THREE.Fog | null>(null)
   const ascentTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
@@ -122,7 +100,27 @@ export default function SpatialScene() {
   const focusEnteredAtRef = useRef<number>(0)
 
   const lifeMap = getLifeMapStars()
-  const selectedMeta = lifeMap.stars.find((star) => star.id === selectedStarId)
+  const { nodes, source } = useSpatialMemoryNodes()
+
+  const selectedMeta =
+    nodes.find((node) => node.id === selectedStarId) ??
+    lifeMap.stars.find((star) => star.id === selectedStarId)
+
+  const selectedTone =
+    (selectedMeta as { emotionalTone?: string; tone?: string } | undefined)?.emotionalTone ??
+    (selectedMeta as { emotionalTone?: string; tone?: string } | undefined)?.tone ??
+    'neutral'
+
+  const selectedTime =
+    (selectedMeta as { timestamp?: string; era?: string; date?: string } | undefined)?.timestamp ??
+    (selectedMeta as { timestamp?: string; era?: string; date?: string } | undefined)?.date ??
+    (selectedMeta as { timestamp?: string; era?: string; date?: string } | undefined)?.era ??
+    ''
+
+  const selectedNarrator =
+    (selectedMeta as { narratorLine?: string; narrator?: string } | undefined)?.narratorLine ??
+    (selectedMeta as { narratorLine?: string; narrator?: string } | undefined)?.narrator ??
+    'This memory forms a stable emotional signal.'
 
   const clearFocusState = useCallback(() => {
     setFocusReady(false)
@@ -231,6 +229,18 @@ export default function SpatialScene() {
     actions.openReplay()
   }, [actions, canUseAdvancedReplay, focusReady, phase, selectedStarId])
 
+  const returnToLifeMap = useCallback(() => {
+    if (phase !== 'FOCUS' && phase !== 'REPLAY') return
+
+    if (phase === 'REPLAY') {
+      actions.closeReplay()
+      return
+    }
+
+    clearFocusState()
+    actions.closeFocus()
+  }, [actions, clearFocusState, phase])
+
   const esc = useCallback(() => {
     if (phase === 'REPLAY') {
       actions.closeReplay()
@@ -266,6 +276,7 @@ export default function SpatialScene() {
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => {
       if (event.key === 'Escape') esc()
+      if (event.key.toLowerCase() === 'd' || event.key === '`') setDebugOpen((value) => !value)
     }
 
     window.addEventListener('keydown', onKey)
@@ -273,9 +284,17 @@ export default function SpatialScene() {
   }, [esc])
 
   useEffect(() => {
+    if (typeof window === 'undefined') return
+
+    const queryParams = new URLSearchParams(window.location.search)
+    if (queryParams.get('debug') === 'true') setDebugOpen(true)
+  }, [])
+
+  useEffect(() => {
     if (phase === 'FOCUS') {
       focusEnteredAtRef.current = performance.now()
       const timer = window.setTimeout(() => setFocusReady(true), 380)
+
       return () => window.clearTimeout(timer)
     }
 
@@ -328,39 +347,95 @@ export default function SpatialScene() {
 
   return (
     <main style={rootStyle}>
-      <div style={hudStyle}>
-        <p style={{ margin: 0, fontSize: 11, letterSpacing: '0.16em', textTransform: 'uppercase', color: 'rgba(178,235,255,.9)' }}>
-          URAI Spatial OS
-        </p>
+      <SpatialHUD
+        phaseLabel={phase}
+        starCount={lifeMap.stars.length}
+        memoryTitle={selectedMeta?.title ?? 'No node selected'}
+        source={source}
+        canReplay={phase === 'FOCUS' && focusReady && canUseAdvancedReplay}
+        onOpen={openAscent}
+        onBack={esc}
+        onReplay={openReplay}
+      />
 
-        <p style={{ margin: '6px 0 12px', fontSize: 13, color: 'rgba(240,248,255,.92)' }}>
-          Phase: {phase} · Memory node: {selectedMeta?.title ?? selectedStarId ?? 'none'} · stars: {lifeMap.stars.length}
-        </p>
+      {selectedMeta && (phase === 'FOCUS' || phase === 'REPLAY') && (
+        <div
+          className="urai-hud-panel"
+          style={{
+            position: 'absolute',
+            right: 16,
+            bottom: 16,
+            zIndex: 24,
+            width: 'min(90vw, 360px)',
+            padding: 14,
+            borderRadius: 16,
+            pointerEvents: 'auto',
+          }}
+        >
+          <div style={{ fontWeight: 700 }}>{selectedMeta.title}</div>
+          <div style={{ fontSize: 12, opacity: 0.9 }}>Tone: {selectedTone}</div>
+          <div style={{ fontSize: 12, opacity: 0.86 }}>{selectedTime}</div>
+          <div style={{ fontSize: 12, opacity: 0.82, marginTop: 6 }}>{selectedNarrator}</div>
 
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
-          <button type="button" aria-label="Open LifeMap" style={hudButtonStyle} onClick={openAscent}>
-            Open LifeMap
-          </button>
-
-          <button type="button" aria-label="Back or Escape" style={hudButtonStyle} onClick={esc}>
-            Back / Escape
-          </button>
-
-          {phase === 'FOCUS' && (
-            <button type="button" aria-label="Enter Replay" style={hudButtonStyle} onClick={openReplay}>
-              Enter Replay
+          <div style={{ display: 'flex', gap: 8, marginTop: 10 }}>
+            <button
+              type="button"
+              style={{
+                border: '1px solid rgba(190,210,255,.28)',
+                borderRadius: 999,
+                padding: '8px 12px',
+                background: 'rgba(100,130,255,.22)',
+                color: '#fff',
+              }}
+              onClick={openReplay}
+              disabled={!focusReady || !canUseAdvancedReplay}
+            >
+              Replay
             </button>
-          )}
+
+            <button
+              type="button"
+              style={{
+                border: '1px solid rgba(190,210,255,.28)',
+                borderRadius: 999,
+                padding: '8px 12px',
+                background: 'rgba(100,130,255,.12)',
+                color: '#fff',
+              }}
+              onClick={returnToLifeMap}
+            >
+              Return to LifeMap
+            </button>
+          </div>
         </div>
+      )}
 
-        <p style={{ marginTop: 8, marginBottom: 0, fontSize: 11, color: 'rgba(210,220,235,.84)' }}>Hint: ESC / Back to unwind</p>
-
-        {process.env.NODE_ENV !== 'production' && (
-          <p style={{ marginTop: 4, marginBottom: 0, fontSize: 11, color: 'rgba(175,227,255,.76)' }}>
-            debug: phase={phase} selected={selectedStarId ?? 'none'} starCount={lifeMap.stars.length} camera={phase} source={lifeMap.source}
-          </p>
-        )}
-      </div>
+      {debugOpen && (
+        <div
+          style={{
+            position: 'absolute',
+            left: 16,
+            bottom: 16,
+            zIndex: 30,
+            padding: 10,
+            borderRadius: 12,
+            background: 'rgba(0,0,0,.65)',
+            fontSize: 12,
+            color: '#d2e8ff',
+            pointerEvents: 'auto',
+          }}
+        >
+          phase={phase}
+          <br />
+          selected={selectedStarId ?? 'none'}
+          <br />
+          starCount={lifeMap.stars.length}
+          <br />
+          camera={phase}
+          <br />
+          source={source}
+        </div>
+      )}
 
       <div style={canvasWrapStyle}>
         <Canvas camera={{ position: [0, 1.4, 7.5], fov: 42, near: 0.1, far: 340 }} dpr={[1, 2]} gl={{ antialias: true, alpha: false }}>
@@ -409,10 +484,12 @@ export default function SpatialScene() {
                 <sphereGeometry args={[1.1, 16, 16]} />
                 <meshBasicMaterial color="#ffffff" toneMapped={false} depthWrite={false} depthTest={false} />
               </mesh>
+
               <mesh position={[-8, 16, -55]}>
                 <sphereGeometry args={[1.1, 16, 16]} />
                 <meshBasicMaterial color="#6de3ff" toneMapped={false} depthWrite={false} depthTest={false} />
               </mesh>
+
               <mesh position={[8, 18, -65]}>
                 <sphereGeometry args={[1.1, 16, 16]} />
                 <meshBasicMaterial color="#ff9ee5" toneMapped={false} depthWrite={false} depthTest={false} />
