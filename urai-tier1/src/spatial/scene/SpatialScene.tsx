@@ -16,6 +16,7 @@ import HomeEnvironment from '@/spatial/scene/HomeEnvironment'
 import { getLifeMapStars } from '@/spatial/scene/getLifeMapStars'
 import SpatialHUD from '@/spatial/scene/SpatialHUD'
 import { useSpatialMemoryNodes } from '@/spatial/scene/useSpatialMemoryNodes'
+import { readSpatialRuntimeFlags } from '@/spatial/runtime/runtimeFlags'
 
 type Phase = 'HOME' | 'ASCENT' | 'LIFEMAP' | 'FOCUS' | 'REPLAY'
 type HomePhase = 'home' | 'ascent' | 'lifemap' | 'focus' | 'replay'
@@ -382,6 +383,7 @@ export default function SpatialScene() {
     phase === 'REPLAY' ||
     homeReturnProgress > 0.001
 
+  const runtimeFlags = readSpatialRuntimeFlags()
   const isReplay = phase === 'REPLAY'
   const starfieldOpacity = phase === 'ASCENT' ? ascentProgress : 1
   const canBack = phase !== 'HOME'
@@ -400,9 +402,11 @@ export default function SpatialScene() {
         onOpen={openAscent}
         onBack={esc}
         onReplay={openReplay}
+        publicDemoMode={runtimeFlags.publicDemoMode}
+        recordingMode={runtimeFlags.recordingMode}
       />
 
-      {selectedMeta && (phase === 'FOCUS' || phase === 'REPLAY') && (
+      {selectedMeta && (phase === 'FOCUS' || phase === 'REPLAY') && !runtimeFlags.recordingMode && (
         <div
           className="urai-hud-panel"
           style={{
@@ -444,7 +448,7 @@ export default function SpatialScene() {
         </div>
       )}
 
-      {debugOpen && (
+      {debugOpen && !runtimeFlags.publicDemoMode && !runtimeFlags.recordingMode && (
         <div
           style={{
             position: 'absolute',
