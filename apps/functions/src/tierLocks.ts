@@ -1,44 +1,13 @@
 import * as functions from 'firebase-functions'
 import * as admin from 'firebase-admin'
+import { CANONICAL_FEATURE_RULES, TIER_ORDER, type SpatialFeatureId, type UraiTier } from '../../../packages/tier-locks/src/index'
 
 if (!admin.apps.length) admin.initializeApp()
 
-type UraiTier = 'tier1' | 'tier2' | 'tier3'
 type LockReason = 'unauthenticated' | 'insufficient_tier' | 'missing_consent' | 'feature_flag_disabled' | 'safety_blocked' | 'admin_only' | 'unavailable' | 'unknown'
-type SpatialFeatureId =
-  | 'spatial.home.sky' | 'spatial.weather.basic' | 'spatial.starfield.preview'
-  | 'spatial.lifeMap.personal' | 'spatial.memoryStars.personal' | 'spatial.companion.visual'
-  | 'spatial.ritual.preview' | 'spatial.ritual.interactive' | 'spatial.dreamPlanetarium'
-  | 'spatial.lifeMuseum' | 'spatial.seasonTunnel' | 'spatial.xr.roomMapping'
-  | 'spatial.vr.memoryRoom' | 'spatial.marketplace.freeAssets' | 'spatial.marketplace.paidAssets'
-  | 'spatial.exports.card' | 'spatial.exports.story' | 'spatial.admin.inspectLocks'
-
-const TIER_ORDER: Record<UraiTier, number> = { tier1: 1, tier2: 2, tier3: 3 }
-
-const FEATURE_RULES: Record<SpatialFeatureId, { requiredTier: UraiTier; requiresAuth: boolean; requiredConsents: string[]; requiredFlags: string[]; adminOnly?: boolean; safetyClass: 'baseline' | 'personal' | 'premium' | 'admin'; fallback: SpatialFeatureId }> = {
-  'spatial.home.sky': { requiredTier: 'tier1', requiresAuth: false, requiredConsents: [], requiredFlags: ['spatial_home_sky'], safetyClass: 'baseline', fallback: 'spatial.home.sky' },
-  'spatial.weather.basic': { requiredTier: 'tier1', requiresAuth: false, requiredConsents: [], requiredFlags: ['spatial_weather_basic'], safetyClass: 'baseline', fallback: 'spatial.home.sky' },
-  'spatial.starfield.preview': { requiredTier: 'tier1', requiresAuth: false, requiredConsents: [], requiredFlags: ['spatial_starfield_preview'], safetyClass: 'baseline', fallback: 'spatial.home.sky' },
-  'spatial.lifeMap.personal': { requiredTier: 'tier2', requiresAuth: true, requiredConsents: ['privacy.core', 'spatial.personalization'], requiredFlags: ['spatial_lifemap_personal'], safetyClass: 'personal', fallback: 'spatial.starfield.preview' },
-  'spatial.memoryStars.personal': { requiredTier: 'tier2', requiresAuth: true, requiredConsents: ['privacy.core', 'spatial.personalization'], requiredFlags: ['spatial_memory_stars_personal'], safetyClass: 'personal', fallback: 'spatial.starfield.preview' },
-  'spatial.companion.visual': { requiredTier: 'tier2', requiresAuth: true, requiredConsents: ['privacy.core', 'spatial.companion'], requiredFlags: ['spatial_companion_visual'], safetyClass: 'personal', fallback: 'spatial.starfield.preview' },
-  'spatial.ritual.preview': { requiredTier: 'tier2', requiresAuth: true, requiredConsents: ['privacy.core'], requiredFlags: ['spatial_ritual_preview'], safetyClass: 'personal', fallback: 'spatial.starfield.preview' },
-  'spatial.ritual.interactive': { requiredTier: 'tier3', requiresAuth: true, requiredConsents: ['privacy.core', 'spatial.interactive'], requiredFlags: ['spatial_ritual_interactive'], safetyClass: 'premium', fallback: 'spatial.ritual.preview' },
-  'spatial.dreamPlanetarium': { requiredTier: 'tier3', requiresAuth: true, requiredConsents: ['privacy.core', 'spatial.personalization'], requiredFlags: ['spatial_dream_planetarium'], safetyClass: 'premium', fallback: 'spatial.lifeMap.personal' },
-  'spatial.lifeMuseum': { requiredTier: 'tier3', requiresAuth: true, requiredConsents: ['privacy.core', 'spatial.personalization'], requiredFlags: ['spatial_life_museum'], safetyClass: 'premium', fallback: 'spatial.lifeMap.personal' },
-  'spatial.seasonTunnel': { requiredTier: 'tier3', requiresAuth: true, requiredConsents: ['privacy.core'], requiredFlags: ['spatial_season_tunnel'], safetyClass: 'premium', fallback: 'spatial.lifeMap.personal' },
-  'spatial.xr.roomMapping': { requiredTier: 'tier3', requiresAuth: true, requiredConsents: ['privacy.core', 'spatial.xr'], requiredFlags: ['spatial_xr_room_mapping'], safetyClass: 'premium', fallback: 'spatial.home.sky' },
-  'spatial.vr.memoryRoom': { requiredTier: 'tier3', requiresAuth: true, requiredConsents: ['privacy.core', 'spatial.xr'], requiredFlags: ['spatial_vr_memory_room'], safetyClass: 'premium', fallback: 'spatial.home.sky' },
-  'spatial.marketplace.freeAssets': { requiredTier: 'tier2', requiresAuth: true, requiredConsents: ['privacy.core'], requiredFlags: ['spatial_marketplace_free_assets'], safetyClass: 'personal', fallback: 'spatial.home.sky' },
-  'spatial.marketplace.paidAssets': { requiredTier: 'tier3', requiresAuth: true, requiredConsents: ['privacy.core', 'commerce.terms'], requiredFlags: ['spatial_marketplace_paid_assets'], safetyClass: 'premium', fallback: 'spatial.marketplace.freeAssets' },
-  'spatial.exports.card': { requiredTier: 'tier2', requiresAuth: true, requiredConsents: ['privacy.core'], requiredFlags: ['spatial_exports_card'], safetyClass: 'personal', fallback: 'spatial.home.sky' },
-  'spatial.exports.story': { requiredTier: 'tier3', requiresAuth: true, requiredConsents: ['privacy.core'], requiredFlags: ['spatial_exports_story'], safetyClass: 'premium', fallback: 'spatial.exports.card' },
-  'spatial.admin.inspectLocks': { requiredTier: 'tier3', requiresAuth: true, requiredConsents: [], requiredFlags: ['spatial_admin_inspect_locks'], adminOnly: true, safetyClass: 'admin', fallback: 'spatial.home.sky' },
-}
-
 
 export function evaluateDecision(input: { featureId: SpatialFeatureId; userTier: UraiTier; authenticated: boolean; isAdmin: boolean; isFounder: boolean; consents: Record<string, boolean>; flags: Record<string, boolean>; safetyChecks?: Record<string, boolean> }) {
-  const cfg = FEATURE_RULES[input.featureId]
+  const cfg = CANONICAL_FEATURE_RULES[input.featureId]
   const reasons: LockReason[] = []
   if (cfg.requiresAuth && !input.authenticated && !input.isAdmin && !input.isFounder) reasons.push('unauthenticated')
   if (!input.isAdmin && !input.isFounder && TIER_ORDER[input.userTier] < TIER_ORDER[cfg.requiredTier]) reasons.push('insufficient_tier')
@@ -51,7 +20,7 @@ export function evaluateDecision(input: { featureId: SpatialFeatureId; userTier:
 
 export const evaluateSpatialTierLock = functions.https.onCall(async (data, context) => {
   const featureId = String(data?.featureId ?? '') as SpatialFeatureId
-  const cfg = FEATURE_RULES[featureId]
+  const cfg = CANONICAL_FEATURE_RULES[featureId]
   if (!cfg) throw new functions.https.HttpsError('invalid-argument', 'Unknown featureId')
 
   const uid = context.auth?.uid ?? null
