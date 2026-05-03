@@ -1,0 +1,58 @@
+.urai-symbol {
+color: var(--urai-accent, #a855f7);
+display: inline-flex;
+flex-direction: column;
+align-items: center;
+gap: 0.5rem;
+}
+
+.urai-symbol svg {
+display: block;
+filter: drop-shadow(0 0 24px color-mix(in srgb, var(--urai-accent, #a855f7) 55%, transparent));
+}
+
+.urai-symbol__outer-ring {
+transform-origin: 50% 50%;
+animation: urai-symbol-breathe 4s ease-in-out infinite;
+}
+
+.urai-symbol__core-node {
+filter: drop-shadow(0 0 12px var(--urai-accent, #a855f7));
+}
+
+.urai-symbol__wordmark {
+display: inline-flex;
+align-items: baseline;
+gap: 0.35rem;
+color: white;
+letter-spacing: 0.08em;
+text-transform: uppercase;
+}
+
+.urai-symbol__wordmark span {
+color: rgba(235, 222, 255, 0.74);
+font-size: 0.72em;
+letter-spacing: 0.12em;
+}
+
+.urai-symbol--active .urai-symbol__outer-ring,
+.urai-symbol--listening .urai-symbol__outer-ring {
+animation-duration: 2s;
+}
+
+.urai-symbol--locked .urai-symbol__outer-ring {
+opacity: 0.72;
+}
+
+@keyframes urai-symbol-breathe {
+0%,
+100% {
+transform: scale(0.96);
+opacity: 0.72;
+}
+
+50% {
+transform: scale(1.04);
+opacity: 1;
+}
+}

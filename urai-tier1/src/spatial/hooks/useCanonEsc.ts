@@ -1,38 +1,16 @@
-'use client'
+"use client";
 
-import { useEffect } from 'react'
+import { useEffect } from "react";
 
-type CanonPhase = 'HOME' | 'ASCENT' | 'LIFEMAP' | 'FOCUS' | 'REPLAY'
-
-type EscActions = {
-  closeReplay?: () => void
-  openLifeMap?: () => void
-  goHome?: () => void
-}
-
-export default function useCanonEsc(phase: CanonPhase | string, actions: EscActions) {
+export function useCanonEsc(onEsc: () => void) {
   useEffect(() => {
-    const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key !== 'Escape') return
+    const handler = (event: KeyboardEvent) => {
+      if (event.key !== "Escape") return;
+      event.preventDefault();
+      onEsc();
+    };
 
-      const p = String(phase || '').toUpperCase()
-
-      if (p === 'REPLAY') {
-        actions.closeReplay?.()
-        return
-      }
-
-      if (p === 'FOCUS') {
-        actions.openLifeMap?.()
-        return
-      }
-
-      if (p === 'LIFEMAP' || p === 'ASCENT') {
-        actions.goHome?.()
-      }
-    }
-
-    window.addEventListener('keydown', onKeyDown)
-    return () => window.removeEventListener('keydown', onKeyDown)
-  }, [phase, actions])
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, [onEsc]);
 }

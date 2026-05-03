@@ -11,7 +11,7 @@ export function resolveExternalIngestStateById(
 
   return {
     id: starId,
-    title: `External Ingest · ${starId}`,
-    label: `External ingest ready for ${starId}`,
+    title: "External ingest",
+    label: "External ingest ready",
   };
 }

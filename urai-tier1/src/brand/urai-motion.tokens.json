@@ -1,0 +1,51 @@
+{
+  "uraiMotionSystem": {
+    "version": "1.0.0",
+    "principles": {
+      "origin": "core-node",
+      "movementLogic": "state-driven-field-motion",
+      "maxSimultaneousEffects": 2,
+      "randomMotionAllowed": false
+    },
+    "timing": {
+      "microMs": 160,
+      "standardMs": 280,
+      "emphasisMs": 520,
+      "idleLoopSec": 3.6,
+      "slowOrbitSec": 24,
+      "fieldLoopSec": 4.8
+    },
+    "easing": {
+      "default": "cubic-bezier(0.4, 0, 0.2, 1)",
+      "enter": "cubic-bezier(0.22, 1, 0.36, 1)",
+      "exit": "cubic-bezier(0.55, 0, 1, 0.45)",
+      "linear": "linear"
+    },
+    "globalStates": {
+      "idle": {
+        "coreScale": [1, 1.06, 1],
+        "coreDurationSec": 3.6,
+        "ringRotationDeg": [0, 360],
+        "ringDurationSec": 24,
+        "glowOpacity": [0.18, 0.28, 0.18]
+      },
+      "hover": {
+        "symbolScale": 1.08,
+        "coreScale": 1.12,
+        "glowBoost": 0.22,
+        "motionSpeedMultiplier": 1.2,
+        "durationMs": 280
+      },
+      "active": {
+        "pulseRings": 3,
+        "contractScale": 0.94,
+        "expandScale": 1.16,
+        "durationMs": 320
+      },
+      "disabled": {
+        "opacity": 0.36,
+        "motionSpeedMultiplier": 0
+      }
+    }
+  }
+}

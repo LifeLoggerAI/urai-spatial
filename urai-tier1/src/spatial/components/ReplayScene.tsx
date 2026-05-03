@@ -1,115 +1,87 @@
-import * as THREE from 'three'
-import { useMemo, useRef } from 'react'
-import { useFrame } from '@react-three/fiber'
+"use client";
 
-type ReplaySceneProps = {
-  visible: boolean
-  opacity?: number
-  driftZ?: number
-  replayGroupScale?: number
-}
+import * as THREE from "three";
 
-export default function ReplayScene({
-  visible,
-  opacity = 1,
-  driftZ = 0,
-  replayGroupScale = 1,
-}: ReplaySceneProps) {
-  const groupRef = useRef<THREE.Group>(null)
-  const shellRef = useRef<THREE.Mesh>(null)
-  const hazeRef = useRef<THREE.Mesh>(null)
+type StarLike = {
+  id?: string;
+  title?: string;
+  tone?: string;
+  position?: [number, number, number];
+};
 
-  const targetScale = useMemo(
-    () => new THREE.Vector3(replayGroupScale, replayGroupScale, replayGroupScale),
-    [replayGroupScale]
-  )
+type Props = {
+  phase?: string;
+  active?: boolean;
+  selectedStar?: StarLike | null;
+  star?: StarLike | null;
+  selectedStarPosition?: [number, number, number] | null;
+  position?: [number, number, number] | null;
+  [key: string]: unknown;
+};
 
-  useFrame((state, delta) => {
-    if (!groupRef.current) return
+const COLORS: Record<string, string> = {
+  neutral: "#ffffff",
+  calm: "#93c5fd",
+  charged: "#fb7185",
+  grief: "#b79bff",
+  hope: "#fde68a",
+  tension: "#fb923c",
+  awe: "#67e8f9",
+  recovery: "#86efac",
+};
 
-    const t = state.clock.elapsedTime
-    const g = groupRef.current
+export function ReplayScene(props: Props) {
+  const phase = String(props.phase ?? "HIDDEN");
+  const visible = props.active !== false && phase === "REPLAY";
 
-    g.position.z = driftZ - 0.35
-    g.scale.lerp(targetScale, 1 - Math.exp(-delta * 2.2))
+  if (!visible) return null;
 
-    // STILLNESS LOCK: removed rotation
-    // STILLNESS LOCK: removed rotation
-
-    if (shellRef.current) {
-      // STILLNESS LOCK: removed shell rotation
-    }
-
-    if (hazeRef.current) {
-      // STILLNESS LOCK: removed haze rotation
-    }
-  })
-
-  if (!visible) return null
+  const selected = props.selectedStar ?? props.star ?? null;
+  const p = props.selectedStarPosition ?? props.position ?? selected?.position ?? [0, 18, -220];
+  const color = COLORS[String(selected?.tone ?? "awe")] ?? "#67e8f9";
 
   return (
-    <group ref={groupRef}>
-      <mesh ref={shellRef}>
-        <sphereGeometry args={[10, 48, 48]} />
+    <group position={p}>
+      <fog attach="fog" args={["#09051f", 10, 130]} />
+
+      <mesh renderOrder={120}>
+        <sphereGeometry args={[7.4, 72, 72]} />
         <meshBasicMaterial
-          color="#05070a"
+          color={color}
           transparent
-          opacity={0.22 * opacity}
-          side={THREE.BackSide}
+          opacity={0.42}
           depthWrite={false}
+          depthTest={false}
+          toneMapped={false}
         />
       </mesh>
 
-      <mesh>
-        <sphereGeometry args={[6.4, 40, 40]} />
+      <mesh scale={[1.75, 1.75, 1.75]} renderOrder={119}>
+        <sphereGeometry args={[7.4, 72, 72]} />
         <meshBasicMaterial
-          color="#120d1f"
+          color={color}
           transparent
-          opacity={0.20 * opacity}
-          side={THREE.BackSide}
+          opacity={0.18}
           depthWrite={false}
+          depthTest={false}
+          blending={THREE.AdditiveBlending}
+          toneMapped={false}
         />
       </mesh>
 
-      <mesh ref={hazeRef} position={[0, 0, 0.7]}>
-        <sphereGeometry args={[4.6, 32, 32]} />
+      <mesh position={[0, -11, 0]} scale={[1.3, 1.3, 1.3]} renderOrder={125}>
+        <sphereGeometry args={[1.4, 32, 32]} />
         <meshBasicMaterial
-          color="#3a235c"
+          color="#ffffff"
           transparent
-          opacity={0.05 * opacity}
+          opacity={0.9}
           depthWrite={false}
-        />
-      </mesh>
-
-      <mesh>
-        <sphereGeometry args={[2.3, 40, 40]} />
-        <meshBasicMaterial
-          color="#8d61ff"
-          transparent
-          opacity={0.20 * opacity}
-          depthWrite={false}
-        />
-      </mesh>
-
-      <mesh>
-        <sphereGeometry args={[1.15, 48, 48]} />
-        <meshBasicMaterial
-          color="#d7c2ff"
-          transparent
-          opacity={0.96 * opacity}
-          depthWrite={false}
-        />
-      </mesh>
-
-      <mesh>
-        <sphereGeometry args={[1.9, 48, 48]} />
-        <meshBasicMaterial
-          color="#a97cff"
-          transparent
-          opacity={0.15 * opacity}
-          depthWrite={false}
+          depthTest={false}
+          toneMapped={false}
         />
       </mesh>
     </group>
-  )
+  );
 }
+
+export default ReplayScene;

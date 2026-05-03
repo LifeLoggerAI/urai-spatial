@@ -11,7 +11,7 @@ export function resolveMemoryClusterById(
 
   return {
     id: starId,
-    title: `Memory Cluster · ${starId}`,
-    label: `Memory cluster ready for ${starId}`,
+    title: "Memory cluster",
+    label: "Memory cluster ready",
   };
 }

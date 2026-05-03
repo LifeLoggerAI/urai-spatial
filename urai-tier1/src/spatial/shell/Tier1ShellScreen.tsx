@@ -29,11 +29,11 @@ type AnyRecord = Record<string, unknown>;
 
 function normalizePhase(value: any): Tier1Phase {
   const input = String(value ?? "").toLowerCase();
-  if (input.includes("replay")) return "replay";
-  if (input.includes("focus")) return "focus";
-  if (input.includes("life")) return "lifemap";
+  if (input.includes("REPLAY")) return "REPLAY";
+  if (input.includes("FOCUS")) return "FOCUS";
+  if (input.includes("life")) return "LIFEMAP";
   if (input.includes("sky")) return "sky";
-  return "home";
+  return "HOME";
 }
 
 function firstArray(...values: any[]) {
@@ -59,8 +59,6 @@ function pickFn(props: AnyRecord, names: string[]) {
 }
 
 function itemTitle(item: AnyRecord | undefined, index: number) {
-  if (!item) return `Star ${index + 1}`;
-  return String(item.title ?? item.name ?? item.label ?? item.id ?? `Star ${index + 1}`);
 }
 
 const fallbackItems: AnyRecord[] = [
@@ -160,44 +158,44 @@ export function Tier1ShellScreen(rawProps: Tier1ShellScreenProps) {
     commitPhase("sky");
     enterLifeMapExternal?.();
     schedule(SKY_HOLD_MS, () => {
-      commitPhase("lifemap");
+      commitPhase("LIFEMAP");
     });
   }
 
   function runResumeFocus() {
     clearTimers();
     pulse();
-    commitPhase("focus");
+    commitPhase("FOCUS");
   }
 
   function runEnterReplay() {
     clearTimers();
     pulse();
-    commitPhase("replay");
+    commitPhase("REPLAY");
     enterReplayExternal?.(selected, selectedIndex);
   }
 
   function runExitReplay() {
     clearTimers();
     pulse();
-    commitPhase("focus");
+    commitPhase("FOCUS");
     exitReplayExternal?.(selected, selectedIndex);
   }
 
   function runClearFocus() {
     clearTimers();
     pulse();
-    commitPhase("lifemap");
+    commitPhase("LIFEMAP");
     clearExternal?.();
   }
 
   function runReturnHome() {
     clearTimers();
     pulse();
-    commitPhase(phase === "replay" ? "focus" : "lifemap");
+    commitPhase(phase === "REPLAY" ? "FOCUS" : "LIFEMAP");
     schedule(RETURN_STEP_MS, () => commitPhase("sky"));
     schedule(RETURN_STEP_MS * 2, () => {
-      commitPhase("home");
+      commitPhase("HOME");
       returnHomeExternal?.();
     });
   }
@@ -218,7 +216,7 @@ export function Tier1ShellScreen(rawProps: Tier1ShellScreenProps) {
           Shell weight reduced. Scene atmosphere now carries phase identity while the Tier 1 dock only exposes core actions.
         </p>
         <button type="button" className={PRIMARY_BUTTON_CLASS} onClick={runEnterLifeMap}>
-          
+
         </button>
       </div>
     </div>
@@ -242,7 +240,6 @@ export function Tier1ShellScreen(rawProps: Tier1ShellScreenProps) {
             const active = index === selectedIndex;
             return (
               <button
-                key={`${itemTitle(item, index)}-${index}`}
                 type="button"
                 onClick={() => selectIndex(index)}
                 className={[
@@ -283,17 +280,17 @@ export function Tier1ShellScreen(rawProps: Tier1ShellScreenProps) {
 
   return (
     <>
-      <Tier1SceneAtmosphere phase={phase} pulseKey={pulseKey} title={phase === "focus" || phase === "replay" ? title : ""} />
+      <Tier1SceneAtmosphere phase={phase} pulseKey={pulseKey} title={phase === "FOCUS" || phase === "REPLAY" ? title : ""} />
 
       <div className="pointer-events-none fixed right-6 top-5 z-[85]">
         <Tag>{phase.toUpperCase()}</Tag>
       </div>
 
-      {phase === "home" && HomeDock}
+      {phase === "HOME" && HomeDock}
       {phase === "sky" && SkyTransit}
-      {phase === "lifemap" && LifeMapDock}
+      {phase === "LIFEMAP" && LifeMapDock}
 
-      {phase === "focus" && (
+      {phase === "FOCUS" && (
         <FocusShellOverlay
           visible
           node={selected}
@@ -307,7 +304,7 @@ export function Tier1ShellScreen(rawProps: Tier1ShellScreenProps) {
         />
       )}
 
-      {phase === "replay" && (
+      {phase === "REPLAY" && (
         <ReplayShellOverlay
           visible
           node={selected}

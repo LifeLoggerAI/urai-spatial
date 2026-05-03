@@ -11,7 +11,7 @@ export function resolveCinematicReplayById(
 
   return {
     id: starId,
-    title: `Cinematic Replay · ${starId}`,
-    label: `Cinematic replay ready for ${starId}`,
+    title: "Cinematic replay",
+    label: "Cinematic replay ready",
   };
 }

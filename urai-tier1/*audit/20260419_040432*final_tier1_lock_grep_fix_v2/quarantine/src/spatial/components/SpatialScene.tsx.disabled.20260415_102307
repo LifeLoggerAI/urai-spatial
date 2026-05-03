@@ -1,0 +1,143 @@
+'use client'
+
+import React, { useEffect, useMemo, useState } from 'react'
+import { Canvas } from '@react-three/fiber'
+import HomeEnvironment from './HomeEnvironment'
+import LifeMapStarfield, { type LifeMapStar } from './LifeMapStarfield'
+import FocusSubject from './FocusSubject'
+import ReplayScene from './ReplayScene'
+import CinematicCameraRig from './CinematicCameraRig'
+
+type Phase = 'HOME' | 'ASCENT' | 'LIFEMAP' | 'FOCUS' | 'REPLAY'
+
+const STAR_DATA: LifeMapStar[] = [
+  { id: 'star-1', label: 'Threshold', position: [-4.2, -1.0, -19.8], color: '#d8c19f', size: 0.14 },
+  { id: 'star-2', label: 'Signal', position: [-2.6, -0.15, -18.6], color: '#aec8f7', size: 0.17 },
+  { id: 'star-3', label: 'Origin', position: [-1.0, 0.55, -17.5], color: '#d2c0ff', size: 0.20 },
+  { id: 'star-4', label: 'Memory', position: [1.0, -0.35, -16.6], color: '#b6ecff', size: 0.25 },
+  { id: 'star-5', label: 'Bridge', position: [2.9, 0.92, -17.7], color: '#d7e5ff', size: 0.18 },
+  { id: 'star-6', label: 'Echo', position: [4.6, 0.15, -18.9], color: '#a6dfff', size: 0.16 },
+]
+
+export function SpatialScene() {
+  const [phase, setPhase] = useState<Phase>('HOME')
+  const [selectedStarId, setSelectedStarId] = useState<string | null>('star-4')
+  const [hoveredStarId, setHoveredStarId] = useState<string | null>(null)
+
+  const selectedStar = useMemo(
+    () => STAR_DATA.find((star) => star.id === selectedStarId) ?? STAR_DATA[3],
+    [selectedStarId]
+  )
+
+  useEffect(() => {
+    if (phase !== 'ASCENT') return
+    const timer = window.setTimeout(() => setPhase('LIFEMAP'), 2400)
+    return () => window.clearTimeout(timer)
+  }, [phase])
+
+  useEffect(() => {
+    if (phase !== 'REPLAY') return
+    const timer = window.setTimeout(() => {}, 1900)
+    return () => window.clearTimeout(timer)
+  }, [phase])
+
+  useEffect(() => {
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key !== 'Escape') return
+
+      if (phase === 'REPLAY') {
+        event.preventDefault()
+        setPhase('FOCUS')
+        return
+      }
+
+      if (phase === 'FOCUS') {
+        event.preventDefault()
+        setPhase('LIFEMAP')
+        return
+      }
+
+      if (phase === 'LIFEMAP') {
+        event.preventDefault()
+        setPhase('HOME')
+      }
+    }
+
+    window.addEventListener('keydown', onKeyDown)
+    return () => window.removeEventListener('keydown', onKeyDown)
+  }, [phase])
+
+  const showHome = phase === 'HOME' || phase === 'ASCENT'
+  const showLifeMap = phase === 'ASCENT' || phase === 'LIFEMAP' || phase === 'FOCUS'
+  const showFocus = phase === 'FOCUS'
+  const showReplay = phase === 'REPLAY'
+
+  const beginAscent = () => {
+    if (phase !== 'HOME') return
+    setPhase('ASCENT')
+  }
+
+  const selectStar = (id: string) => {
+    if (phase !== 'LIFEMAP') return
+    setSelectedStarId(id)
+    setPhase('FOCUS')
+  }
+
+  const enterReplay = () => {
+    if (phase !== 'FOCUS') return
+    setPhase('REPLAY')
+  }
+
+  return (
+    <div style={{ position: 'fixed', inset: 0, background: '#020611' }}>
+      <Canvas
+        dpr={[1, 2]}
+        camera={{ position: [0, 1.42, 8.8], fov: 46, near: 0.1, far: 300 }}
+        gl={{ antialias: true, alpha: false }}
+      >
+        <color attach="background" args={['#020611']} />
+        <fog attach="fog" args={['#020611', 16, 100]} />
+        <ambientLight intensity={0.22} color="#9ab8ff" />
+
+        <CinematicCameraRig phase={phase} selected={selectedStar.position} />
+
+        <HomeEnvironment
+          visible={showHome}
+          interactive={phase === 'HOME'}
+          onSkySelect={beginAscent}
+          onGroundSelect={beginAscent}
+          onOrbSelect={beginAscent}
+          phase={phase}
+          dim={phase === 'ASCENT' ? 0.64 : 0}
+        />
+
+        <LifeMapStarfield
+          visible={showLifeMap}
+          stars={STAR_DATA}
+          selectedStarId={phase === 'FOCUS' ? selectedStarId : hoveredStarId ?? selectedStarId}
+          onSelectStar={selectStar}
+          onHoverStar={setHoveredStarId}
+          focusSuppression={phase === 'FOCUS' ? 1 : 0}
+          interactive={phase === 'LIFEMAP'}
+          opacity={phase === 'ASCENT' ? 0.94 : phase === 'FOCUS' ? 0.38 : 1}
+        />
+
+        <FocusSubject
+          visible={showFocus}
+          star={selectedStar}
+          interactive={phase === 'FOCUS'}
+          opacity={1}
+          onEnterReplay={enterReplay}
+        />
+
+        <ReplayScene
+          visible={showReplay}
+          star={selectedStar}
+          opacity={1}
+        />
+      </Canvas>
+    </div>
+  )
+}
+
+export default SpatialScene

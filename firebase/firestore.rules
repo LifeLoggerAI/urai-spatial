@@ -1,25 +1,47 @@
 rules_version = '2';
+
 service cloud.firestore {
   match /databases/{database}/documents {
-    function isSignedIn() { return request.auth != null; }
-    function isSelf(uid) { return isSignedIn() && request.auth.uid == uid; }
-    function isAdmin() { return isSignedIn() && (request.auth.token.admin == true || request.auth.token.founder == true); }
+    function isSignedIn() {
+      return request.auth != null;
+    }
 
-    // Feature flags are server/admin controlled. Clients can read but cannot mutate.
+    function isSelf(uid) {
+      return isSignedIn() && request.auth.uid == uid;
+    }
+
+    function isAdmin() {
+      return isSignedIn()
+        && (
+          request.auth.token.admin == true
+          || request.auth.token.founder == true
+        );
+    }
+
+    // Feature flags are server/admin controlled.
+    // Clients can read but cannot mutate.
     match /features/{flagId} {
       allow read: if true;
       allow write: if isAdmin();
     }
 
-    // Users may read own profile summary; entitlement elevation fields are immutable from client.
+    // Users may read their own profile summary.
+    // Entitlement elevation fields are immutable from the client.
     match /users/{uid} {
       allow read: if isSelf(uid) || isAdmin();
+
       allow create: if isSelf(uid)
-        && !(('entitlementTier' in request.resource.data) || ('isAdmin' in request.resource.data) || ('founderOverride' in request.resource.data));
+        && !(
+          ('entitlementTier' in request.resource.data)
+          || ('isAdmin' in request.resource.data)
+          || ('founderOverride' in request.resource.data)
+        );
+
       allow update: if isSelf(uid)
         && !('entitlementTier' in request.resource.data.diff(resource.data).changedKeys())
         && !('isAdmin' in request.resource.data.diff(resource.data).changedKeys())
         && !('founderOverride' in request.resource.data.diff(resource.data).changedKeys());
+
       allow delete: if false;
 
       // Tier lock audit is append-only from trusted server/admin paths.
@@ -29,7 +51,7 @@ service cloud.firestore {
       }
     }
 
-    // Default deny for sensitive spatial collections unless owner/admin.
+    // Default deny for sensitive spatial collections unless admin.
     match /spatial/{doc=**} {
       allow read, write: if isAdmin();
     }

@@ -11,7 +11,7 @@ export function resolveEraCompareById(
 
   return {
     id: starId,
-    title: `Era Compare · ${starId}`,
-    label: `Era compare ready for ${starId}`,
+    title: "Era compare",
+    label: "Era compare ready",
   };
 }

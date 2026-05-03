@@ -42,6 +42,7 @@ type SceneAction =
 const ASCENT_MS = 2200
 const RETURN_HOME_MS = 1600
 const REPLAY_ENTER_MS = 750
+const FOCUS_ENTER_MS = 520
 
 // CANON COMPLIANCE: Star data now includes a 'z' index for depth layering.
 const STAR_DATA: StarNode[] = [
@@ -187,6 +188,7 @@ const [hoveredStarId, setHoveredStarId] = useState<string | null>(null)
 const [transitionKind, setTransitionKind] = useState<TransitionKind>(null)
 const [transitionProgress, setTransitionProgress] = useState(0)
 const [replayVisible, setReplayVisible] = useState(false)
+const [focusVisible, setFocusVisible] = useState(false)
 const transitionFrameRef = useRef<number | null>(null)
 
 const selectedStar = useMemo(
@@ -259,7 +261,9 @@ transitionFrameRef.current = requestAnimationFrame(tick)
 
 const openFocus = (star: StarNode) => {
 if (state.phase !== 'LIFEMAP' || state.inputLocked || transitionKind) return
+setFocusVisible(false)
 dispatch({ type: 'OPEN_FOCUS', starId: star.id })
+setTimeout(() => setFocusVisible(true), FOCUS_ENTER_MS)
 }
 
 const openReplay = () => {
@@ -349,11 +353,38 @@ background: 'radial-gradient(circle at 50% 50%, rgba(204,174,58,0.1) 0%, transpa
 }}
 >
 {/* Immersive content, not a panel. */}
-<div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)' }}>
-<p>Memory: {selectedStar?.label}</p>
-{/* Placeholder for memory-dominant content */}
+<div
+style={{
+position: 'absolute',
+top: '50%',
+left: '50%',
+transform: 'translate(-50%, -50%)',
+textAlign: 'center',
+color: '#f8f3dc',
+fontFamily: 'ui-sans-serif, system-ui, -apple-system',
+opacity: replayVisible ? 1 : 0,
+transition: 'opacity 500ms ease-out',
+}}
+>
+<p style={{ letterSpacing: '0.16em', fontSize: '0.8rem', margin: 0, textTransform: 'uppercase', opacity: 0.65 }}>Memory Trace</p>
+<h2 style={{ margin: '0.45rem 0 0', fontWeight: 500, fontSize: '2rem', textShadow: '0 0 24px rgba(255,227,163,0.35)' }}>{selectedStar?.label}</h2>
 </div>
 </div>
+)}
+
+{state.phase === 'FOCUS' && selectedStar && (
+<div
+aria-hidden={!focusVisible}
+style={{
+position: 'absolute',
+inset: 0,
+pointerEvents: 'none',
+opacity: focusVisible ? 1 : 0,
+transition: 'opacity 500ms ease-out',
+background:
+'radial-gradient(circle at 50% 50%, rgba(137,177,255,0.2) 0%, rgba(66,98,177,0.1) 22%, rgba(0,0,0,0.45) 60%, rgba(0,0,0,0.75) 100%)',
+}}
+/>
 )}
 </div>
 

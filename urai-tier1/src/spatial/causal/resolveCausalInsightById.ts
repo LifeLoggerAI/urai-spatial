@@ -11,7 +11,7 @@ export function resolveCausalInsightById(
 
   return {
     id: starId,
-    title: `Causal Insight · ${starId}`,
-    label: `Causal insight ready for ${starId}`,
+    title: "Causal insight",
+    label: "Causal insight ready",
   };
 }

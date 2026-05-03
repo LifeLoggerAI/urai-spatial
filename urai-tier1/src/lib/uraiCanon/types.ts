@@ -1,102 +1,152 @@
-export type Vec3 = [number, number, number]
+export type Phase =
+| "HOME"
+| "ASCENT"
+| "LIFEMAP"
+| "FOCUS"
+| "REPLAY";
 
-export type UraiPhase = 'HOME' | 'ASCENT' | 'LIFEMAP' | 'FOCUS' | 'REPLAY'
-export type AuthorityPhase = UraiPhase
-export type LowerPhase = 'home' | 'ascent' | 'lifemap' | 'focus' | 'replay'
-export type Tier1Mode = LowerPhase
-export type CanonMode = Tier1Mode
-export type AuthorityMode = Tier1Mode
+export type Mode = Phase;
+export type UraiPhase = Phase;
+export type ScenePhase =
+| Phase
+| "OPEN_REPLAY"
+| "CLOSE_REPLAY"
+| "DESCENT"
+| "EXIT_FOCUS"
+| "EXIT_REPLAY"
+| "idle"
+| string;
 
-export type TransitionPhase =
-  | 'idle'
-  | 'ascent'
-  | 'arrive_lifemap'
-  | 'open_focus'
-  | 'open_replay'
-  | 'close_replay'
-  | 'close_focus'
-  | 'go_home'
+export type CanonState = {
+phase: Phase;
+selectedStarId: string | null;
+transitionToken: number;
+illegalCount: number;
+dwellUntil: number;
+enteredAt: number;
+};
 
-export type TransitionState = TransitionPhase
-
-export interface StarNode {
-  id: string
-  position?: Vec3
-  x?: number
-  y?: number
-  z?: number
-  intensity: number
-  kind?: 'background' | 'memory' | 'anchor'
-}
-
-export interface CameraPose {
-  position: Vec3
-  target: Vec3
-  fov?: number
-}
-
-export interface CameraConvergenceSpec {
-  durationMs: number
-  damping?: number
-}
-
-export interface PerformanceBudget {
-  maxStars?: number
-  maxParticles?: number
-  lodBias?: number
-}
-
-export interface TransitionSpec {
-  from: UraiPhase
-  to: UraiPhase
-  durationMs: number
-  damping?: number
-}
-
-export interface UraiRuntimeState {
-  phase: UraiPhase
-  mode: Tier1Mode
-  previousPhase: UraiPhase | null
-  selectedStarId: string | null
-  replayStarId: string | null
-  hoveredStarId: string | null
-  isTransitioning: boolean
-  transitioning: boolean
-  inputLocked: boolean
-  transitionLock: boolean
-  phaseEnteredAt: number
-  transitionPhase: TransitionPhase
-  transitionState: TransitionState
-}
-
-export type UraiState = UraiRuntimeState
-export type CanonState = UraiRuntimeState
+export type CanonAction =
+| { type: "BEGIN_ASCENT" }
+| { type: "ARRIVE_LIFEMAP" }
+| { type: "OPEN_FOCUS"; starId?: string | null }
+| { type: "OPEN_REPLAY" }
+| { type: "CLOSE_REPLAY" }
+| { type: "CLOSE_FOCUS" }
+| { type: "GO_HOME" };
 
 export type UraiCommand =
-  | { type: 'ENTER_ASCENT' }
-  | { type: 'COMPLETE_ASCENT' }
-  | { type: 'SELECT_STAR'; starId: string }
-  | { type: 'ENTER_REPLAY'; starId?: string }
-  | { type: 'EXIT_REPLAY' }
-  | { type: 'EXIT_FOCUS' }
-  | { type: 'RETURN_HOME' }
-  | { type: 'SET_TRANSITIONING'; value: boolean }
-  | { type: 'SET_HOVERED_STAR'; starId: string | null }
-  | { type: 'OPEN_LIFEMAP' }
-  | { type: 'OPEN_FOCUS'; starId: string }
-  | { type: 'OPEN_REPLAY'; starId?: string }
-  | { type: 'GO_ASCENT' }
-  | { type: 'GO_LIFEMAP' }
-  | { type: 'GO_FOCUS'; starId: string }
-  | { type: 'GO_REPLAY'; starId?: string }
-  | { type: 'ESCAPE' }
-  | { type: 'TRANSITION_DONE' }
-  | { type: 'BEGIN_ASCENT' }
-  | { type: 'ARRIVE_LIFEMAP' }
-  | { type: 'END_TRANSITION' }
-  | { type: 'CLOSE_REPLAY' }
-  | { type: 'CLOSE_FOCUS' }
+| "BEGIN_ASCENT"
+| "ARRIVE_LIFEMAP"
+| "OPEN_FOCUS"
+| "OPEN_REPLAY"
+| "CLOSE_REPLAY"
+| "CLOSE_FOCUS"
+| "GO_HOME"
+| "RESET"
+| "ESC"
+| string;
 
-export type CanonAction = UraiCommand
+export type Vec3 = [number, number, number];
 
-export type CanonEscAction = CanonAction
+export type CameraPose = {
+position?: Vec3 | number[] | { x?: number; y?: number; z?: number };
+target?: Vec3 | number[] | { x?: number; y?: number; z?: number };
+rotation?: Vec3 | number[] | { x?: number; y?: number; z?: number };
+rotationX?: number;
+rotationY?: number;
+rotationZ?: number;
+zoom?: number;
+fov?: number;
+[key: string]: unknown;
+};
+
+export type CameraConvergenceSpec = {
+pose?: CameraPose;
+from?: CameraPose;
+to?: CameraPose;
+durationMs?: number;
+damping?: number;
+easing?: string;
+phase?: ScenePhase;
+locked?: boolean;
+[key: string]: unknown;
+};
+
+export type CanonLockState = {
+locked?: boolean;
+label?: string;
+status?: string;
+[key: string]: unknown;
+};
+
+export type CanonTierLock = {
+id?: string;
+label?: string;
+locked?: boolean;
+completed?: boolean;
+status?: string;
+[key: string]: unknown;
+};
+
+export type MemoryWeight = {
+emotionalWeight?: number;
+intensity?: number;
+recovery?: number;
+[key: string]: unknown;
+};
+
+export type NarratorCue = {
+headline?: string;
+body?: string;
+actionLabel?: string;
+tone?: string;
+[key: string]: unknown;
+};
+
+export type UraiState = {
+mode?: UraiPhase;
+phase: UraiPhase;
+selectedStarId: string | null;
+transitionToken: number;
+inputLocked: boolean;
+enteredAt: number;
+dwellUntil: number;
+isTransitioning: boolean;
+transitioning: boolean;
+transitionLock: boolean;
+transitionState: string;
+[key: string]: unknown;
+};
+
+export type UraiRuntimeState = {
+mode?: Mode;
+phase?: Phase;
+selectedStarId?: string | null;
+transitionToken?: number;
+illegalCount?: number;
+dwellUntil?: number;
+enteredAt?: number;
+inputLocked?: boolean;
+isTransitioning?: boolean;
+transitioning?: boolean;
+transitionLock?: boolean;
+transitionState?: string;
+[key: string]: unknown;
+};
+
+export type NarratorPhase =
+  | Phase
+  | Mode
+  | "HOME"
+  | "ASCENT"
+  | "LIFEMAP"
+  | "FOCUS"
+  | "REPLAY"
+  | "home"
+  | "ascent"
+  | "lifemap"
+  | "focus"
+  | "replay"
+  | "idle"
+  | string;

@@ -1,41 +1,56 @@
-export type SpatialPhase = 'home' | 'lifemap' | 'focus' | 'replay'
-
-export type DepthBandSpec = {
-  id: 'far' | 'mid' | 'near'
-  count: number
-  zMin: number
-  zMax: number
-  parallax: number
-  drift: number
-  opacity: number
-  spreadX: number
-  spreadY: number
-  pointSize: number
-}
+export type SpatialPhase = "home" | "lifemap" | "focus" | "replay";
 
 export const PRIMARY_STAR_DEPTH = {
-  zMin: -60,
-  zMax: -20,
   baseRadius: 0.22,
-}
+  zMin: -34,
+  zMax: -8,
+};
+
+export const STARFIELD_DEPTH_BANDS = [
+  {
+    count: 120,
+    spreadX: 20,
+    spreadY: 12,
+    zMin: -34,
+    zMax: -8,
+    pointSize: 0.012,
+    opacity: 0.25,
+    parallax: 0.05,
+    drift: 0.05,
+  },
+  {
+    count: 90,
+    spreadX: 16,
+    spreadY: 10,
+    zMin: -34,
+    zMax: -8,
+    pointSize: 0.016,
+    opacity: 0.35,
+    parallax: 0.12,
+    drift: 0.08,
+  },
+  {
+    count: 60,
+    spreadX: 12,
+    spreadY: 8,
+    zMin: -34,
+    zMax: -8,
+    pointSize: 0.022,
+    opacity: 0.5,
+    parallax: 0.2,
+    drift: 0.12,
+  },
+];
 
 export const STARFIELD_IDLE = {
-  drift: 0.002,
-  pulse: 0.015,
-  xAmp: 0.6,
-  yAmp: 0.4,
-  zAmp: 0.25,
-}
-
-export const STARFIELD_DEPTH_BANDS: DepthBandSpec[] = [
-  { id: 'far',  count: 320, zMin: -160, zMax: -110, parallax: 0.02, drift: 0.01, opacity: 0.08, spreadX: 96, spreadY: 164, pointSize: 0.6 },
-  { id: 'mid',  count: 180, zMin: -100, zMax: -60,  parallax: 0.05, drift: 0.02, opacity: 0.18, spreadX: 34, spreadY: 82,  pointSize: 0.9 },
-  { id: 'near', count: 100, zMin: -50,  zMax: -20,  parallax: 0.09, drift: 0.03, opacity: 0.35, spreadX: 18, spreadY: 48,  pointSize: 1.2 },
-]
+  xAmp: 0.2,
+  yAmp: 0.25,
+  zAmp: 0.15,
+};
 
 export const STARFIELD_PHASE_ALPHA: Record<SpatialPhase, number> = {
-  home: 0.2,
-  lifemap: 1,
-  focus: 0.7,
-  replay: 0.5,
-}
+  home: 0.0,
+  lifemap: 1.0,
+  focus: 0.9,
+  replay: 0.7,
+};

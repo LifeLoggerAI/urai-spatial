@@ -8,18 +8,25 @@
     "start": "next start",
     "lint": "tsc --noEmit",
     "typecheck": "tsc --noEmit",
+    "verify:tier-lock": "node scripts/verify-tier-lock.mjs",
+    "audit:visual-lock": "npm run verify:tier-lock && npm run typecheck && npm run build",
     "test": "echo \"No app tests configured\" && exit 0"
   },
   "dependencies": {
     "@react-three/fiber": "^9.5.0",
+    "@react-three/postprocessing": "^3.0.4",
     "@tailwindcss/postcss": "^4.2.2",
     "firebase": "^12.11.0",
     "next": "^16.1.6",
     "react": "19.2.4",
     "react-dom": "^19.2.4",
-    "three": "^0.183.2"
+    "three": "^0.183.2",
+    "three-stdlib": "^2.36.1"
   },
   "devDependencies": {
-    "@types/three": "^0.183.1"
+    "@types/react": "^19.2.14",
+    "@types/react-dom": "^19.2.3",
+    "@types/three": "^0.183.1",
+    "typescript": "^6.0.3"
   }
 }

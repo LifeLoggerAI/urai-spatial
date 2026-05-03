@@ -11,7 +11,7 @@ export function resolveMemoryImportStateById(
 
   return {
     id: starId,
-    title: `Memory Import · ${starId}`,
-    label: `Memory import ready for ${starId}`,
+    title: "Memory import",
+    label: "Memory import ready",
   };
 }
