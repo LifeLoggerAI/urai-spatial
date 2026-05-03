@@ -3,7 +3,7 @@ import Starfield3D from '@/spatial/components/Starfield3D'
 
 import React, { useEffect, useMemo, useReducer, useRef, useState } from 'react'
 
-// CANON: URAI Tier-1 Visual and Interaction Canon
+// CANON: URAI Tier 1 Visual and Interaction Canon
 // 1. PHASE LAW: Legal forward path is HOME -> ASCENT -> LIFEMAP -> FOCUS -> REPLAY.
 // 2. UNWIND LAW: Legal unwind path is REPLAY -> FOCUS -> LIFEMAP -> HOME. Strict ESC-only.
 // 3. HOME LAW: Must have low ground, anchored orb, dominant sky. Entry to LifeMap is sky-click ONLY.
@@ -289,7 +289,7 @@ transition: transitionKind ? 'none' : 'transform 750ms ease-out, background 750m
 <>
 {/* Sky click target - HOME LAW */}
 <div
-aria-label="Enter LifeMap via sky"
+aria-label="Enter spatial field via sky"
 onClick={startAscent}
 style={{
 position: 'absolute', left: 0, right: 0, top: 0, height: '60%',
