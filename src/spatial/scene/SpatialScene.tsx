@@ -1,5 +1,6 @@
 'use client'
 import Starfield3D from '@/spatial/components/Starfield3D'
+import { getSpatialStarData, type SpatialStarNode } from '@/spatial/data/stars'
 
 import React, { useEffect, useMemo, useReducer, useRef, useState } from 'react'
 
@@ -15,16 +16,6 @@ import React, { useEffect, useMemo, useReducer, useRef, useState } from 'react'
 
 type Phase = 'HOME' | 'ASCENT' | 'LIFEMAP' | 'FOCUS' | 'REPLAY'
 type TransitionKind = 'homeToLifemap' | 'lifemapToHome' | null
-
-type StarNode = {
-id: string
-x: number
-y: number
-z: number // Added for z-depth to enforce LifeMap depth canon
-size: number
-memoryRef: string
-label: string
-}
 
 type SceneState = {
 phase: Phase
@@ -44,14 +35,8 @@ const RETURN_HOME_MS = 1600
 const REPLAY_ENTER_MS = 750
 const FOCUS_ENTER_MS = 520
 
-// CANON COMPLIANCE: Star data now includes a 'z' index for depth layering.
-const STAR_DATA: StarNode[] = [
-{ id: 'star_1', x: 24, y: 29, z: 0, size: 14, memoryRef: 'memory_ref_star_1', label: 'Threshold' },
-{ id: 'star_2', x: 40, y: 21, z: 1, size: 12, memoryRef: 'memory_ref_star_2', label: 'Signal' },
-{ id: 'star_3', x: 58, y: 34, z: 0, size: 13, memoryRef: 'memory_ref_star_3', label: 'Echo' },
-{ id: 'star_4', x: 70, y: 58, z: 2, size: 11, memoryRef: 'memory_ref_star_4', label: 'Memory' },
-{ id: 'star_5', x: 28, y: 60, z: 1, size: 12, memoryRef: 'memory_ref_star_5', label: 'Return' },
-]
+const STAR_DATA: SpatialStarNode[] = getSpatialStarData()
+
 
 // REDUCER: Single source of truth for phase state. Complies with AUTHORITY LAW.
 function validateTransition(state: SceneState, action: SceneAction): boolean {
@@ -102,7 +87,7 @@ return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2
 
 // CAMERA_DIRECTOR: Single writer for camera state. Complies with AUTHORITY LAW.
 // Values updated to enforce visual canon for all phases.
-function getCameraDirector(progress: number, phase: Phase, selectedStarId: StarNode | null) {
+function getCameraDirector(progress: number, phase: Phase, selectedStar: SpatialStarNode | null) {
 const p = clamp01(progress)
 const e = easeInOutCubic(p)
 
@@ -184,7 +169,6 @@ phase: 'HOME',
 selectedStarId: null,
 inputLocked: false,
 })
-const [hoveredStarId, setHoveredStarId] = useState<string | null>(null)
 const [transitionKind, setTransitionKind] = useState<TransitionKind>(null)
 const [transitionProgress, setTransitionProgress] = useState(0)
 const [replayVisible, setReplayVisible] = useState(false)
@@ -259,7 +243,7 @@ if (transitionFrameRef.current) cancelAnimationFrame(transitionFrameRef.current)
 transitionFrameRef.current = requestAnimationFrame(tick)
 }
 
-const openFocus = (star: StarNode) => {
+const openFocus = (star: SpatialStarNode) => {
 if (state.phase !== 'LIFEMAP' || state.inputLocked || transitionKind) return
 setFocusVisible(false)
 dispatch({ type: 'OPEN_FOCUS', starId: star.id })
@@ -335,7 +319,11 @@ boxShadow: '0 0 0 1px rgba(255,255,255,0.02)',
   <Starfield3D
     stars={STAR_DATA}
     phase={state.phase}
-    onSelect={(id) => dispatch({ type: 'OPEN_FOCUS', starId: id })}
+    selectedStarId={state.selectedStarId}
+    onSelect={(id) => {
+      const target = STAR_DATA.find((star) => star.id === id)
+      if (target) openFocus(target)
+    }}
   />
 </div>
 )}
