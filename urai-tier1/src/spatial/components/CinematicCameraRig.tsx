@@ -16,6 +16,7 @@ type CinematicCameraRigProps = {
 };
 
 const clamp01 = (value: number) => Math.max(0, Math.min(1, value));
+
 const smooth = (value: number) => {
   const t = clamp01(value);
   return t * t * (3 - 2 * t);
@@ -38,7 +39,9 @@ function finiteVector(values: [number, number, number] | null | undefined, fallb
   if (!values || values.length !== 3) return fallback.clone();
 
   const [x, y, z] = values;
-  if (!Number.isFinite(x) || !Number.isFinite(y) || !Number.isFinite(z)) return fallback.clone();
+  if (!Number.isFinite(x) || !Number.isFinite(y) || !Number.isFinite(z)) {
+    return fallback.clone();
+  }
 
   return new THREE.Vector3(x, y, z);
 }
@@ -77,7 +80,9 @@ export default function CinematicCameraRig(props: CinematicCameraRigProps) {
       delta,
     );
 
-    if (phase === "HOME" && travelRef.current < 0.01) travelRef.current = 0;
+    if (phase === "HOME" && travelRef.current < 0.01) {
+      travelRef.current = 0;
+    }
 
     const base = lifePathAt(travelRef.current);
     let desiredPos = base.position;
@@ -105,6 +110,7 @@ export default function CinematicCameraRig(props: CinematicCameraRigProps) {
     if (phase === "REPLAY") {
       replayOrbitRef.current += delta;
       const orbit = replayOrbitRef.current;
+
       desiredPos = new THREE.Vector3(
         selected.x * 0.18 + Math.sin(orbit * 0.42) * 2.6,
         selected.y + 2.8 + Math.sin(orbit * 0.3) * 0.55,
@@ -119,10 +125,13 @@ export default function CinematicCameraRig(props: CinematicCameraRigProps) {
     if (!bootedRef.current) {
       camera.position.copy(desiredPos);
       targetRef.current.copy(desiredTarget);
-      (camera as THREE.PerspectiveCamera).fov = desiredFov;
-      camera.near = 0.05;
-      camera.far = 1200;
-      camera.updateProjectionMatrix();
+
+      const perspective = camera as THREE.PerspectiveCamera;
+      perspective.fov = desiredFov;
+      perspective.near = 0.05;
+      perspective.far = 1200;
+      perspective.updateProjectionMatrix();
+
       camera.lookAt(targetRef.current);
       bootedRef.current = true;
       return;
@@ -139,6 +148,7 @@ export default function CinematicCameraRig(props: CinematicCameraRigProps) {
     perspective.near = 0.05;
     perspective.far = 1200;
     perspective.updateProjectionMatrix();
+
     camera.lookAt(targetRef.current);
   });
 

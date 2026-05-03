@@ -390,13 +390,17 @@ export default function Starfield({
                 if (!isMajor) return
                 event.stopPropagation()
                 setHoveredId(star.id)
-                if (typeof document !== "undefined") document.body.style.cursor = interactive ? "pointer" : "default"
+                if (typeof document !== "undefined") {
+                  document.body.style.cursor = interactive ? "pointer" : "default"
+                }
               }}
               onPointerOut={(event) => {
                 if (!isMajor) return
                 event.stopPropagation()
                 setHoveredId(null)
-                if (typeof document !== "undefined") document.body.style.cursor = "default"
+                if (typeof document !== "undefined") {
+                  document.body.style.cursor = "default"
+                }
               }}
               onPointerDown={(event) => {
                 if (!interactive || !isMajor) return
