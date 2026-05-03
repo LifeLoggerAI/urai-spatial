@@ -1,0 +1,37 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function isSignedIn() { return request.auth != null; }
+    function isSelf(uid) { return isSignedIn() && request.auth.uid == uid; }
+    function isAdmin() { return isSignedIn() && (request.auth.token.admin == true || request.auth.token.founder == true); }
+
+    // Feature flags are server/admin controlled. Clients can read but cannot mutate.
+    match /features/{flagId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    // Users may read own profile summary; entitlement elevation fields are immutable from client.
+    match /users/{uid} {
+      allow read: if isSelf(uid) || isAdmin();
+      allow create: if isSelf(uid)
+        && !(('entitlementTier' in request.resource.data) || ('isAdmin' in request.resource.data) || ('founderOverride' in request.resource.data));
+      allow update: if isSelf(uid)
+        && !('entitlementTier' in request.resource.data.diff(resource.data).changedKeys())
+        && !('isAdmin' in request.resource.data.diff(resource.data).changedKeys())
+        && !('founderOverride' in request.resource.data.diff(resource.data).changedKeys());
+      allow delete: if false;
+
+      // Tier lock audit is append-only from trusted server/admin paths.
+      match /tierLockAudit/{auditId} {
+        allow read: if isSelf(uid) || isAdmin();
+        allow write: if false;
+      }
+    }
+
+    // Default deny for sensitive spatial collections unless owner/admin.
+    match /spatial/{doc=**} {
+      allow read, write: if isAdmin();
+    }
+  }
+}

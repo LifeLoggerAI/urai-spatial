@@ -1,4 +1,6 @@
 packages:
   - "urai-tier1"
+  - "apps/functions"
+  - "packages/tier-locks"
   - "!**/_audit/**"
   - "!**/.next/**"

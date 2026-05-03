@@ -10,6 +10,7 @@ import FocusSubject from '@/spatial/components/FocusSubject'
 import ReplayScene from "@/spatial/components/ReplayScene"
 import ReplayEnvironment from "@/spatial/components/ReplayEnvironment"
 import useSceneAuthority from '@/spatial/hooks/useSceneAuthority'
+import { useSpatialFeatureEnabled } from '@/lib/tier-locks/client'
 
 type Phase = 'HOME' | 'ASCENT' | 'LIFEMAP' | 'FOCUS' | 'REPLAY'
 type HomePhase = 'home' | 'ascent' | 'lifemap' | 'focus' | 'replay'
@@ -51,6 +52,10 @@ export default function SpatialScene() {
   const authority = useSceneAuthority()
   const phase = authority.phase as Phase
   const actions = authority.actions
+
+  const canUsePersonalLifeMap = useSpatialFeatureEnabled('spatial.lifeMap.personal')
+  const canUsePersonalMemoryStars = useSpatialFeatureEnabled('spatial.memoryStars.personal')
+  const canUseAdvancedReplay = useSpatialFeatureEnabled('spatial.ritual.interactive')
 
   const [selectedStarId, setSelectedStarId] = useState<string | null>(null)
   const [selectedStarPosition, setSelectedStarPosition] = useState<[number, number, number] | undefined>(undefined)
@@ -149,19 +154,21 @@ export default function SpatialScene() {
 
   const openFocus = useCallback((starId: string, position: [number, number, number]) => {
     if (phase !== 'LIFEMAP') return
+    if (!canUsePersonalLifeMap || !canUsePersonalMemoryStars) return
     setSelectedStarId(starId)
     setSelectedStarPosition(position)
     clearFocusState()
     actions.openFocus(starId)
-  }, [actions, clearFocusState, phase])
+  }, [actions, canUsePersonalLifeMap, canUsePersonalMemoryStars, clearFocusState, phase])
 
   const openReplay = useCallback(() => {
     if (phase !== 'FOCUS') return
     if (!focusReady) return
+    if (!canUseAdvancedReplay) return
     if (!selectedStarId) return
       if (focusEnteredAtRef.current > 0 && performance.now() - focusEnteredAtRef.current < 700) return
     actions.openReplay()
-  }, [actions, focusReady, phase, selectedStarId])
+  }, [actions, canUseAdvancedReplay, focusReady, phase, selectedStarId])
 
   const esc = useCallback(() => {
     if (phase === 'REPLAY') {
@@ -308,16 +315,17 @@ export default function SpatialScene() {
         selectedStarId={phase === 'FOCUS' || phase === 'REPLAY' ? selectedStarId : null}
         onStarClick={(id: string, position: [number, number, number]) => {
           if (phase !== 'LIFEMAP') return
+    if (!canUsePersonalLifeMap || !canUsePersonalMemoryStars) return
           openFocus(id, position)
         }}
-        interactive={phase === 'LIFEMAP'}
+        interactive={phase === 'LIFEMAP' && canUsePersonalLifeMap && canUsePersonalMemoryStars}
         collapseToSelected={phase === 'REPLAY'}
         focusSuppression={phase === 'FOCUS' || phase === 'REPLAY' ? 1 : 0}
         opacity={1}
       />
 
       <FocusSubject
-        visible={phase === 'FOCUS'}
+        visible={phase === 'FOCUS' && canUsePersonalLifeMap}
         starId={selectedStarId ?? undefined}
         position={selectedStarPosition ?? [0, 0, -18]}
         onEnterReplay={openReplay}
@@ -325,7 +333,7 @@ export default function SpatialScene() {
       />
 
       <ReplayScene
-        visible={phase === 'REPLAY'}
+        visible={phase === 'REPLAY' && canUseAdvancedReplay}
         opacity={1}
         driftZ={0.4}
         replayGroupScale={1.35}

@@ -1,0 +1,1 @@
+export { evaluateSpatialTierLock } from './tierLocks'

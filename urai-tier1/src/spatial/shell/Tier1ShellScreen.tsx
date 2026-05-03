@@ -23,6 +23,8 @@ import {
   type Tier1Phase,
 } from "./Tier1ShellConstants";
 
+const __URAI_DEBUG_SHELL__ = process.env.NEXT_PUBLIC_URAI_DEBUG_SPATIAL === "true";
+
 type AnyRecord = Record<string, unknown>;
 
 function normalizePhase(value: any): Tier1Phase {
@@ -69,6 +71,7 @@ const fallbackItems: AnyRecord[] = [
 export type Tier1ShellScreenProps = Record<string, unknown>;
 
 export function Tier1ShellScreen(rawProps: Tier1ShellScreenProps) {
+  if (!__URAI_DEBUG_SHELL__) return null
   const props = rawProps as AnyRecord;
 
   const items = useMemo(

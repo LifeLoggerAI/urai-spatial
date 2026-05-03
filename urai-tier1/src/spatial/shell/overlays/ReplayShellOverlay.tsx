@@ -11,6 +11,8 @@ import {
 } from "../Tier1ShellConstants";
 import ReplayDatum from "../ReplayDatum";
 import Tag from "../Tag";
+const __URAI_DEBUG_SHELL__ = process.env.NEXT_PUBLIC_URAI_DEBUG_SPATIAL === "true"
+
 
 export type ReplayShellOverlayProps = Record<string, unknown>;
 
@@ -34,6 +36,7 @@ function asRecord(value: any) {
 }
 
 export function ReplayShellOverlay(rawProps: ReplayShellOverlayProps) {
+  if (!__URAI_DEBUG_SHELL__) return null
   const props = rawProps as Record<string, unknown>;
   if (props.hidden === true || props.visible === false) return null;
 
