@@ -1,87 +1,43 @@
 "use client";
 
+import { useFrame } from "@react-three/fiber";
+import { useMemo, useRef } from "react";
 import * as THREE from "three";
 
-type StarLike = {
-  id?: string;
-  title?: string;
-  tone?: string;
-  position?: [number, number, number];
-};
-
 type Props = {
-  phase?: string;
-  active?: boolean;
-  selectedStar?: StarLike | null;
-  star?: StarLike | null;
-  selectedStarPosition?: [number, number, number] | null;
-  position?: [number, number, number] | null;
-  [key: string]: unknown;
+  visible?: boolean;
+  opacity?: number;
+  driftZ?: number;
+  replayGroupScale?: number;
 };
 
-const COLORS: Record<string, string> = {
-  neutral: "#ffffff",
-  calm: "#93c5fd",
-  charged: "#fb7185",
-  grief: "#b79bff",
-  hope: "#fde68a",
-  tension: "#fb923c",
-  awe: "#67e8f9",
-  recovery: "#86efac",
-};
+export default function ReplayScene({ visible = false, opacity = 1, replayGroupScale = 1.2 }: Props) {
+  const ringRef = useRef<THREE.Mesh>(null);
+  const shards = useMemo(() => Array.from({ length: 18 }, (_, i) => i), []);
 
-export function ReplayScene(props: Props) {
-  const phase = String(props.phase ?? "HIDDEN");
-  const visible = props.active !== false && phase === "REPLAY";
+  useFrame(({ clock }) => {
+    if (!ringRef.current) return;
+    ringRef.current.rotation.z = clock.getElapsedTime() * 0.2;
+  });
 
   if (!visible) return null;
 
-  const selected = props.selectedStar ?? props.star ?? null;
-  const p = props.selectedStarPosition ?? props.position ?? selected?.position ?? [0, 18, -220];
-  const color = COLORS[String(selected?.tone ?? "awe")] ?? "#67e8f9";
-
   return (
-    <group position={p}>
-      <fog attach="fog" args={["#09051f", 10, 130]} />
-
-      <mesh renderOrder={120}>
-        <sphereGeometry args={[7.4, 72, 72]} />
-        <meshBasicMaterial
-          color={color}
-          transparent
-          opacity={0.42}
-          depthWrite={false}
-          depthTest={false}
-          toneMapped={false}
-        />
+    <group scale={replayGroupScale}>
+      <mesh ref={ringRef} rotation={[-Math.PI / 2, 0, 0]}>
+        <torusGeometry args={[5.5, 0.08, 16, 128]} />
+        <meshBasicMaterial color="#b78cff" transparent opacity={0.5 * opacity} />
       </mesh>
-
-      <mesh scale={[1.75, 1.75, 1.75]} renderOrder={119}>
-        <sphereGeometry args={[7.4, 72, 72]} />
-        <meshBasicMaterial
-          color={color}
-          transparent
-          opacity={0.18}
-          depthWrite={false}
-          depthTest={false}
-          blending={THREE.AdditiveBlending}
-          toneMapped={false}
-        />
-      </mesh>
-
-      <mesh position={[0, -11, 0]} scale={[1.3, 1.3, 1.3]} renderOrder={125}>
-        <sphereGeometry args={[1.4, 32, 32]} />
-        <meshBasicMaterial
-          color="#ffffff"
-          transparent
-          opacity={0.9}
-          depthWrite={false}
-          depthTest={false}
-          toneMapped={false}
-        />
-      </mesh>
+      {shards.map((i) => {
+        const a = (i / shards.length) * Math.PI * 2;
+        return (
+          <mesh key={i} position={[Math.cos(a) * 4.6, Math.sin(i * 0.2) * 1.2, Math.sin(a) * 4.6]}>
+            <octahedronGeometry args={[0.22, 0]} />
+            <meshStandardMaterial color="#d8c6ff" emissive="#725cff" emissiveIntensity={0.6} transparent opacity={0.8 * opacity} />
+          </mesh>
+        );
+      })}
+      <pointLight color="#9c7dff" intensity={2.1} distance={26} />
     </group>
   );
 }
-
-export default ReplayScene;
