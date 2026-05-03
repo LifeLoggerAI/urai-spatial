@@ -13,162 +13,152 @@ type CinematicCameraRigProps = {
   selectedStar?: { position?: [number, number, number] } | null;
   selectedStarPosition?: [number, number, number] | null;
   ascentProgress?: number;
-  focusProgress?: number;
-  replayProgress?: number;
 };
 
-const clamp01 = (v: number) => Math.max(0, Math.min(1, v));
-const smooth = (v: number) => v * v * (3 - 2 * v);
+const clamp01 = (value: number) => Math.max(0, Math.min(1, value));
+
+const smooth = (value: number) => {
+  const t = clamp01(value);
+  return t * t * (3 - 2 * t);
+};
 
 const HOME_POS = new THREE.Vector3(0, 1.65, 8.8);
 const HOME_TARGET = new THREE.Vector3(0, 0.68, 0);
 
-const CLEAR_POS = new THREE.Vector3(0, 9.15, 2.55);
-const CLEAR_TARGET = new THREE.Vector3(0, -3.0, -15.0);
+const ASCENT_POS = new THREE.Vector3(0, 8.2, 10.8);
+const ASCENT_TARGET = new THREE.Vector3(0, 8.8, -36);
 
-const SKY_POS = new THREE.Vector3(0, 11.5, -13.5);
-const SKY_TARGET = new THREE.Vector3(0, 6.8, -145.0);
-
-const LIFE_POS = new THREE.Vector3(0, 14.8, -6.5);
-const LIFE_TARGET = new THREE.Vector3(0, 14.2, -64.0);
-const LIFE_FOV = 56;
+const LIFEMAP_POS = new THREE.Vector3(0, 14.4, 22);
+const LIFEMAP_TARGET = new THREE.Vector3(0, 15.4, -70);
 
 function readPhase(props: CinematicCameraRigProps): CanonPhase {
   return props.phase ?? props.activePhase ?? props.scenePhase ?? "HOME";
 }
 
-function pathAt(raw: number) {
-  const p = smooth(clamp01(raw));
+function finiteVector(
+  values: [number, number, number] | null | undefined,
+  fallback: THREE.Vector3,
+): THREE.Vector3 {
+  if (!values || values.length !== 3) return fallback.clone();
 
-  /*
-    URAI_LIFEMAP_SCREENSPACE_HERO_PROOF_LOCK
+  const [x, y, z] = values;
 
-    This is a proof pass:
-    - ASCENT gets clean dust only.
-    - LIFEMAP lands on a known visible hero-star plane.
-    - The camera is intentionally close enough that targets are obvious.
-    - After click proof works, cinematic depth can be reintroduced safely.
-  */
-  const clearT = smooth(clamp01(p / 0.34));
-  const skyT = smooth(clamp01((p - 0.22) / 0.34));
-  const lifeT = smooth(clamp01((p - 0.56) / 0.32));
+  if (!Number.isFinite(x) || !Number.isFinite(y) || !Number.isFinite(z)) {
+    return fallback.clone();
+  }
 
-  const pos = HOME_POS.clone()
-    .lerp(CLEAR_POS, clearT)
-    .lerp(SKY_POS, skyT)
-    .lerp(LIFE_POS, lifeT);
+  return new THREE.Vector3(x, y, z);
+}
 
-  const target = HOME_TARGET.clone()
-    .lerp(CLEAR_TARGET, clearT)
-    .lerp(SKY_TARGET, skyT)
-    .lerp(LIFE_TARGET, lifeT);
+function lifePathAt(progress: number) {
+  const t = smooth(progress);
+  const liftT = smooth(clamp01(t / 0.5));
+  const settleT = smooth(clamp01((t - 0.35) / 0.65));
 
-  const fov = THREE.MathUtils.lerp(42, LIFE_FOV, p);
-  return { pos, target, fov };
+  const position = HOME_POS.clone().lerp(ASCENT_POS, liftT).lerp(LIFEMAP_POS, settleT);
+  const target = HOME_TARGET.clone().lerp(ASCENT_TARGET, liftT).lerp(LIFEMAP_TARGET, settleT);
+  const fov = THREE.MathUtils.lerp(42, 56, t);
+
+  return { position, target, fov };
 }
 
 export default function CinematicCameraRig(props: CinematicCameraRigProps) {
   const { camera } = useThree();
 
   const travelRef = useRef(0);
-  const focusRef = useRef(0);
-  const replayRef = useRef(0);
+  const replayOrbitRef = useRef(0);
   const targetRef = useRef(HOME_TARGET.clone());
   const bootedRef = useRef(false);
 
-  useFrame((_state, dt) => {
+  useFrame((_state, rawDelta) => {
     const phase = readPhase(props);
+    const delta = Math.min(Math.max(rawDelta, 0), 1 / 20);
 
-    if (phase === "HOME") {
-      travelRef.current = Math.max(0, travelRef.current - dt / 1.0);
-    } else if (phase === "ASCENT") {
-      const ascentTarget = clamp01((props.ascentProgress ?? 0) * 0.92 + 0.12);
-      travelRef.current = Math.max(travelRef.current, ascentTarget);
-      travelRef.current = Math.min(1, travelRef.current + dt / 1.08);
-    } else {
-      travelRef.current = 1;
-    }
+    const travelTarget = phase === "HOME" ? 0 : 1;
+    const travelLambda = phase === "ASCENT" ? 2.35 : phase === "HOME" ? 3.15 : 5.2;
+    const explicitAscent = phase === "ASCENT" ? clamp01(props.ascentProgress ?? 0) : travelTarget;
 
-    if (phase === "HOME" && travelRef.current < 0.012) {
+    travelRef.current = THREE.MathUtils.damp(
+      travelRef.current,
+      phase === "ASCENT" ? Math.max(explicitAscent, 0.18) : travelTarget,
+      travelLambda,
+      delta,
+    );
+
+    if (phase === "HOME" && travelRef.current < 0.01) {
       travelRef.current = 0;
     }
 
-    const focusTarget = phase === "FOCUS" || phase === "REPLAY" ? 1 : 0;
-    const replayTarget = phase === "REPLAY" ? 1 : 0;
+    const base = lifePathAt(travelRef.current);
 
-    focusRef.current = THREE.MathUtils.damp(focusRef.current, focusTarget, 7.0, dt);
-    replayRef.current = THREE.MathUtils.damp(replayRef.current, replayTarget, 7.0, dt);
-
-    const base = pathAt(travelRef.current);
-
-    let desiredPos = base.pos.clone();
-    let desiredTarget = base.target.clone();
+    let desiredPos = base.position;
+    let desiredTarget = base.target;
     let desiredFov = phase === "HOME" ? 42 : base.fov;
 
     if (phase === "LIFEMAP") {
-      desiredPos = LIFE_POS.clone();
-      desiredTarget = LIFE_TARGET.clone();
-      desiredFov = LIFE_FOV;
+      desiredPos = LIFEMAP_POS.clone();
+      desiredTarget = LIFEMAP_TARGET.clone();
+      desiredFov = 56;
     }
 
-    const selected = props.selectedStarPosition ?? props.selectedStar?.position ?? [0, 14, -62];
+    const selected = finiteVector(
+      props.selectedStarPosition ?? props.selectedStar?.position ?? null,
+      new THREE.Vector3(0, 15, -65),
+    );
 
-    if (focusRef.current > 0.001) {
-      const fp = smooth(clamp01(focusRef.current));
-      desiredPos.lerp(new THREE.Vector3(selected[0] * 0.18, selected[1] + 2.5, selected[2] + 34), fp);
-      desiredTarget.lerp(new THREE.Vector3(selected[0], selected[1], selected[2]), fp);
-      desiredFov = THREE.MathUtils.lerp(desiredFov, 38, fp);
+    if (phase === "FOCUS" || phase === "REPLAY") {
+      desiredPos = new THREE.Vector3(selected.x * 0.24, selected.y + 4.2, selected.z + 23);
+      desiredTarget = selected.clone();
+      desiredFov = 42;
     }
 
-    if (replayRef.current > 0.001) {
-      const rp = smooth(clamp01(replayRef.current));
-      desiredPos.lerp(new THREE.Vector3(selected[0] * 0.12, selected[1] + 1.6, selected[2] + 10), rp);
-      desiredTarget.lerp(new THREE.Vector3(selected[0], selected[1], selected[2] - 2), rp);
-      desiredFov = THREE.MathUtils.lerp(desiredFov, 36, rp);
+    if (phase === "REPLAY") {
+      replayOrbitRef.current += delta;
+      const orbit = replayOrbitRef.current;
+
+      desiredPos = new THREE.Vector3(
+        selected.x * 0.18 + Math.sin(orbit * 0.42) * 2.6,
+        selected.y + 2.8 + Math.sin(orbit * 0.3) * 0.55,
+        selected.z + 12 + Math.cos(orbit * 0.42) * 2.2,
+      );
+
+      desiredTarget = new THREE.Vector3(selected.x, selected.y, selected.z - 1.2);
+      desiredFov = 38;
+    } else {
+      replayOrbitRef.current = 0;
     }
 
     if (!bootedRef.current) {
       camera.position.copy(desiredPos);
       targetRef.current.copy(desiredTarget);
-      (camera as THREE.PerspectiveCamera).fov = desiredFov;
-      camera.updateProjectionMatrix();
-      bootedRef.current = true;
-    }
 
-    if (phase === "LIFEMAP" && focusRef.current < 0.001 && replayRef.current < 0.001) {
-      camera.position.copy(LIFE_POS);
-      targetRef.current.copy(LIFE_TARGET);
-      (camera as THREE.PerspectiveCamera).fov = LIFE_FOV;
-      camera.updateProjectionMatrix();
+      const perspective = camera as THREE.PerspectiveCamera;
+      perspective.fov = desiredFov;
+      perspective.near = 0.05;
+      perspective.far = 1200;
+      perspective.updateProjectionMatrix();
+
       camera.lookAt(targetRef.current);
+      bootedRef.current = true;
       return;
     }
 
-    const lambda =
-      phase === "ASCENT" ? 8.8 :
-      phase === "FOCUS" || phase === "REPLAY" ? 7.0 :
-      7.5;
+    const lambda = phase === "ASCENT" ? 4.8 : phase === "FOCUS" || phase === "REPLAY" ? 5.7 : 6.2;
+    const step = clamp01(1 - Math.exp(-delta * lambda));
 
-    camera.position.x = THREE.MathUtils.damp(camera.position.x, desiredPos.x, lambda, dt);
-    camera.position.y = THREE.MathUtils.damp(camera.position.y, desiredPos.y, lambda, dt);
-    camera.position.z = THREE.MathUtils.damp(camera.position.z, desiredPos.z, lambda, dt);
+    camera.position.lerp(desiredPos, step);
+    targetRef.current.lerp(desiredTarget, step);
 
-    targetRef.current.x = THREE.MathUtils.damp(targetRef.current.x, desiredTarget.x, lambda, dt);
-    targetRef.current.y = THREE.MathUtils.damp(targetRef.current.y, desiredTarget.y, lambda, dt);
-    targetRef.current.z = THREE.MathUtils.damp(targetRef.current.z, desiredTarget.z, lambda, dt);
+    const perspective = camera as THREE.PerspectiveCamera;
+    perspective.fov = THREE.MathUtils.damp(perspective.fov, desiredFov, 5.4, delta);
+    perspective.near = 0.05;
+    perspective.far = 1200;
+    perspective.updateProjectionMatrix();
 
-    (camera as THREE.PerspectiveCamera).fov = THREE.MathUtils.damp(
-      (camera as THREE.PerspectiveCamera).fov,
-      desiredFov,
-      5.8,
-      dt
-    );
-
-    camera.updateProjectionMatrix();
     camera.lookAt(targetRef.current);
-    return;
-
-      });
+  });
 
   return null;
 }
+
+export { CinematicCameraRig };
