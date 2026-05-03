@@ -1,93 +1,45 @@
 "use client";
 
+import { useFrame } from "@react-three/fiber";
+import { useRef } from "react";
 import * as THREE from "three";
 
-type StarLike = {
-  id?: string;
-  title?: string;
-  tone?: string;
-  position?: [number, number, number];
-};
-
 type Props = {
-  phase?: string;
-  active?: boolean;
-  selectedStar?: StarLike | null;
-  star?: StarLike | null;
-  selectedStarPosition?: [number, number, number] | null;
-  position?: [number, number, number] | null;
-  [key: string]: unknown;
+  visible?: boolean;
+  starId?: string;
+  position?: [number, number, number];
+  onEnterReplay?: () => void;
+  interactive?: boolean;
 };
 
-const COLORS: Record<string, string> = {
-  neutral: "#ffffff",
-  calm: "#93c5fd",
-  charged: "#fb7185",
-  grief: "#b79bff",
-  hope: "#fde68a",
-  tension: "#fb923c",
-  awe: "#67e8f9",
-  recovery: "#86efac",
-};
+export default function FocusSubject({ visible = false, position = [0, 0, -18], onEnterReplay, interactive = false }: Props) {
+  const auraRef = useRef<THREE.Mesh>(null);
+  const coreRef = useRef<THREE.Mesh>(null);
 
-export function FocusSubject(props: Props) {
-  const phase = String(props.phase ?? "HIDDEN");
-  const visible = props.active !== false && (phase === "FOCUS" || phase === "REPLAY");
+  useFrame(({ clock }) => {
+    const t = clock.getElapsedTime();
+    const pulse = 1 + Math.sin(t * 1.1) * 0.06;
+    if (auraRef.current) auraRef.current.scale.setScalar(2.1 * pulse);
+    if (coreRef.current) coreRef.current.position.y = Math.sin(t * 0.7) * 0.08;
+  });
 
   if (!visible) return null;
 
-  const selected = props.selectedStar ?? props.star ?? null;
-  const p = props.selectedStarPosition ?? props.position ?? selected?.position ?? [0, 18, -220];
-  const color = COLORS[String(selected?.tone ?? "awe")] ?? "#67e8f9";
-
-  const enterReplay = (event: { stopPropagation?: () => void }) => {
-    event.stopPropagation?.();
-    console.info("[URAI_REPLAY_CLICK]", selected?.id ?? "selected-memory");
-
-    if (typeof window !== "undefined") {
-      window.dispatchEvent(new CustomEvent("urai:focus-enter-replay"));
-    }
-  };
-
   return (
-    <group
-      position={p}
-      onPointerDown={phase === "FOCUS" ? enterReplay : undefined}
-      onClick={phase === "FOCUS" ? enterReplay : undefined}
-    >
-      <mesh renderOrder={80}>
-        <sphereGeometry args={[5.4, 72, 72]} />
-        <meshBasicMaterial color={color} depthTest={false} toneMapped={false} />
+    <group position={position}>
+      <mesh ref={auraRef} renderOrder={45}>
+        <icosahedronGeometry args={[1.5, 5]} />
+        <meshBasicMaterial color="#7fd9ff" transparent opacity={0.16} depthWrite={false} blending={THREE.AdditiveBlending} />
       </mesh>
-
-      <mesh scale={[2.0, 2.0, 2.0]} renderOrder={79}>
-        <sphereGeometry args={[5.4, 72, 72]} />
-        <meshBasicMaterial
-          color={color}
-          transparent
-          opacity={0.28}
-          depthWrite={false}
-          depthTest={false}
-          blending={THREE.AdditiveBlending}
-          toneMapped={false}
-        />
+      <mesh
+        ref={coreRef}
+        renderOrder={50}
+        onPointerDown={interactive ? () => onEnterReplay?.() : undefined}
+      >
+        <dodecahedronGeometry args={[0.75, 1]} />
+        <meshStandardMaterial color="#b8f4ff" emissive="#7fd9ff" emissiveIntensity={0.9} metalness={0.4} roughness={0.18} />
       </mesh>
-
-      {phase === "FOCUS" && (
-        <mesh position={[0, -10, 0]} scale={[1.35, 1.35, 1.35]} renderOrder={85}>
-          <sphereGeometry args={[1.4, 32, 32]} />
-          <meshBasicMaterial
-            color="#ffffff"
-            transparent
-            opacity={0.92}
-            depthWrite={false}
-            depthTest={false}
-            toneMapped={false}
-          />
-        </mesh>
-      )}
+      <pointLight color="#7fd9ff" intensity={2.2} distance={16} />
     </group>
   );
 }
-
-export default FocusSubject;
