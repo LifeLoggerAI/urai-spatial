@@ -516,6 +516,7 @@ export default function SpatialScene() {
             collapseToSelected={phase === 'REPLAY'}
             focusSuppression={phase === 'FOCUS' || phase === 'REPLAY' ? 1 : 0}
             opacity={starfieldOpacity}
+            worldScale={phase === 'LIFEMAP' || phase === 'FOCUS' ? 1.2 : 1}
           />
 
           {process.env.NODE_ENV !== 'production' && phase === 'LIFEMAP' && (

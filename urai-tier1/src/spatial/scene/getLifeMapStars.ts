@@ -29,14 +29,14 @@ export function getLifeMapStars(): { stars: LifeMapStar[]; source: "seed" | "fal
 
   for (let index = 0; index < 10; index += 1) {
     const angle = (index / 10) * Math.PI * 2
-    const radius = 14 + (index % 3) * 3
+    const radius = 12 + (index % 3) * 3
 
     stars.push({
       id: `major-${index}`,
       x: Math.cos(angle) * radius,
-      y: 14 + Math.sin(angle * 1.4) * 6,
-      z: -48 - index * 4.2,
-      r: 0.9,
+      y: 13 + Math.sin(angle * 1.4) * 5,
+      z: -38 - index * 3.8,
+      r: 1.35,
       color: COLORS[index % COLORS.length],
       tone: TONES[index % TONES.length],
       soft: 1,
@@ -53,8 +53,8 @@ export function getLifeMapStars(): { stars: LifeMapStar[]; source: "seed" | "fal
       id: `bg-${index}`,
       x: ((index * 37) % 48) - 24,
       y: 4 + ((index * 23) % 24),
-      z: -35 - ((index * 41) % 70),
-      r: 0.06 + ((index * 13) % 8) * 0.01,
+      z: -30 - ((index * 41) % 58),
+      r: 0.12 + ((index * 13) % 8) * 0.02,
       color: "#8ea3c7",
       tone: "neutral",
       soft: 0.7,

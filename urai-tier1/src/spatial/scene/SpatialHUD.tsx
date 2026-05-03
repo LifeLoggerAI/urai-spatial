@@ -26,7 +26,6 @@ export default function SpatialHUD({
   onReplay,
 }: Props) {
   const isHome = phaseLabel === "HOME";
-  const isLifeMap = phaseLabel === "LIFEMAP";
   const primaryLabel = isBusy ? "Opening..." : isHome ? "Open LifeMap" : "Center LifeMap";
   const primaryAriaLabel = isHome ? "Open LifeMap" : "Center LifeMap";
   const sourceLabel = source === "seed" ? "Demo constellation" : source;
@@ -70,9 +69,7 @@ export default function SpatialHUD({
           </button>
         ) : null}
 
-        <span style={hintText}>
-          {isLifeMap && !canBack ? "Tap a star to open a memory" : helperText}
-        </span>
+        <span style={hintText}>{helperText}</span>
       </div>
     </div>
   );
