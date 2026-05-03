@@ -10,7 +10,7 @@
     "typecheck": "tsc --noEmit",
     "verify:tier-lock": "node scripts/verify-tier-lock.mjs",
     "audit:visual-lock": "npm run verify:tier-lock && npm run typecheck && npm run build",
-    "test": "echo \"No app tests configured\" && exit 0"
+    "test": "node --test --experimental-strip-types \"src/**/*.test.ts\""
   },
   "dependencies": {
     "@react-three/fiber": "^9.5.0",
