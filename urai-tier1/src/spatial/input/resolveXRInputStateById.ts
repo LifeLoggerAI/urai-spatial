@@ -1,25 +1,22 @@
-import type { SceneMode } from "../state/sceneStore";
+import type { Mode } from "@/lib/uraiCanon/types";
 
 export type XRInputState = {
   id: string | null;
   title: string;
   label: string;
-  sceneMode: SceneMode;
+  sceneMode: Mode;
 };
 
 export function resolveXRInputStateById(
   starId: string | undefined,
-  mode: SceneMode
+  mode: Mode
 ): XRInputState | null {
-  if (!starId && mode === "home") return null;
-
-  const id = starId ?? null;
-  const suffix = id ? ` for ${id}` : "";
+  if (!starId && mode === "HOME") return null;
 
   return {
-    id,
-    title: `XR Input · ${mode}`,
-    label: `XR input ready${suffix}`,
+    id: starId ?? null,
+    title: "XR input",
+    label: "XR input ready",
     sceneMode: mode,
   };
 }

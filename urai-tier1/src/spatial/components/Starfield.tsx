@@ -50,7 +50,7 @@ export default function Starfield(props: {
       const z = -1.8 - uraiRandom() * 11.8
       const size = 0.02 + uraiRandom() * 0.14
       nodes.push({
-        id: `star-${i}`,
+        id: "field-star-" + i,
         position: [x, y, z],
         size,
         featured: false,
@@ -110,6 +110,14 @@ export default function Starfield(props: {
         const g = impulse(t)
 
           let position: [number, number, number] = star.position
+        if (
+          !Array.isArray(star.position) ||
+          star.position.length !== 3 ||
+          !star.position.every((v) => Number.isFinite(v))
+        ) {
+          throw new Error(
+          );
+        }
 
           // === SAFE PARALLAX DEPTH LAYERS ===
           const driftT = performance.now() * 0.001
@@ -126,6 +134,14 @@ export default function Starfield(props: {
             star.position[2] + driftZ,
           ]
         if (selectedStar && hasSelection) {
+          if (
+            !Array.isArray(selectedStar.position) ||
+            selectedStar.position.length !== 3 ||
+            !selectedStar.position.every((v) => Number.isFinite(v))
+          ) {
+            throw new Error(
+            );
+          }
           const dx = star.position[0] - selectedStar.position[0]
           const dy = star.position[1] - selectedStar.position[1]
           const dz = star.position[2] - selectedStar.position[2]
@@ -155,7 +171,6 @@ export default function Starfield(props: {
 
         return (
           <mesh
-            key={`${star.id}-${index}`}
             position={position}
             onPointerDown={(e) => {
               if (!interactive) return

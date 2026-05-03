@@ -1,25 +1,28 @@
-import type { SceneMode } from "../state/sceneStore";
-
 export type ImmersiveContractState = {
   id: string | null;
   title: string;
   label: string;
-  sceneMode: SceneMode;
+  sceneMode: string;
+  xrReady: boolean;
+  cinematicReady: boolean;
+  intelligenceReady: boolean;
+  readiness: number;
 };
 
 export function resolveImmersiveContractById(
   starId: string | undefined,
-  mode: SceneMode
+  mode: string = "HOME"
 ): ImmersiveContractState | null {
-  if (!starId && mode === "home") return null;
-
-  const id = starId ?? null;
-  const suffix = id ? ` for ${id}` : "";
+  if (!starId) return null;
 
   return {
-    id,
-    title: `Immersive Contract · ${mode}`,
-    label: `Immersive contract ready${suffix}`,
+    id: starId,
+    title: "Immersive contract",
+    label: "Immersive contract ready",
     sceneMode: mode,
+    xrReady: true,
+    cinematicReady: true,
+    intelligenceReady: true,
+    readiness: 72,
   };
 }

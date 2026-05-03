@@ -1,48 +1,24 @@
-import { getMemoryDataset } from "@/spatial/replay/resolveReplayScene";
 import { resolveMemorySphereById } from "@/spatial/memory/resolveMemorySphere";
-
-type LooseRecord = Record<string, unknown>;
-
-export type ClusterNeighbor = {
-  id: string;
-  title: string;
-  chapter?: string;
-  timeband?: string;
-  emotion?: string;
-  color?: string;
-  score: number;
-};
 
 export type MemoryCluster = {
   id: string;
   title: string;
   summary: string;
-  axis: string[];
-  neighbors: ClusterNeighbor[];
+  axis: string;
+  neighbors: string[];
 };
 
-function str(value: any): string | undefined {
-  return typeof value === "string" && value.trim().length > 0 ? value : undefined;
+type LooseRecord = Record<string, unknown>;
+
+function stringFrom(value: unknown, fallback = ""): string {
+  return typeof value === "string" && value.trim().length > 0
+    ? value.trim()
+    : fallback;
 }
 
-function unique(values: Array<string | undefined | null>): string[] {
-  const out: string[] = [];
-  for (const value of values) {
-    if (!value) continue;
-    if (!out.includes(value)) out.push(value);
-  }
-  return out;
-}
-
-function scoreNode(seed: LooseRecord, node: LooseRecord): number {
-  let score = 0;
-
-  if (str(seed.chapter) && str(seed.chapter) === str(node.chapter)) score += 4;
-  if (str(seed.timeband) && str(seed.timeband) === str(node.timeband)) score += 3;
-  if (str(seed.emotion) && str(seed.emotion) === str(node.emotion)) score += 2;
-  if (str(seed.color) && str(seed.color) === str(node.color)) score += 1;
-
-  return score;
+function arrayOfStrings(value: unknown): string[] {
+  if (!Array.isArray(value)) return [];
+  return value.filter((item): item is string => typeof item === "string");
 }
 
 export function resolveMemoryClusterById(
@@ -50,49 +26,26 @@ export function resolveMemoryClusterById(
 ): MemoryCluster | undefined {
   if (!id) return undefined;
 
-  const seed = resolveMemorySphereById(id);
-  if (!seed) return undefined;
-
-  const dataset = getMemoryDataset() as LooseRecord[];
-
-  const neighbors = dataset
-    .filter((node) => str(node.id) && str(node.id) !== id)
-    .map((node) => {
-      const score = scoreNode(seed as unknown as LooseRecord, node);
-
-      return {
-        id: str(node.id) ?? "neighbor",
-        title:
-          str(node.title) ??
-          str(node.label) ??
-          str(node.name) ??
-          "Related Memory",
-        chapter: str(node.chapter) ?? str(node.arc),
-        timeband: str(node.timeband) ?? str(node.season),
-        emotion: str(node.emotion) ?? str(node.primaryEmotion),
-        color: str(node.color) ?? str(node.auraColor),
-        score,
-      };
-    })
-    .filter((node) => node.score > 0)
-    .sort((a, b) => b.score - a.score || a.title.localeCompare(b.title))
-    .slice(0, 6);
-
-  const axis = unique([
-    seed.chapter,
-    seed.timeband,
-    seed.emotion,
-  ]);
+  const memory = resolveMemorySphereById(id);
+  const record = (memory ?? {}) as LooseRecord;
 
   const title =
-    neighbors.length > 0
-      ? `${seed.title} Cluster`
-      : `${seed.title} Solo Cluster`;
+    stringFrom(record.title) ||
+    stringFrom(record.label) ||
+    stringFrom(record.name) ||
+    "Memory cluster";
+
+  const axis =
+    stringFrom(record.axis) ||
+    stringFrom(record.emotion) ||
+    stringFrom(record.chapter) ||
+    "memory";
+
+  const neighbors = arrayOfStrings(record.neighbors);
 
   const summary =
-    neighbors.length > 0
-      ? `Related memories resolved by shared chapter, timeband, emotion, and tone.`
-      : `No strong adjacent memories found yet. Cluster contract is active and ready for richer datasets.`;
+    stringFrom(record.summary) ||
+    "This cluster groups nearby memory signals around " + axis + ".";
 
   return {
     id,

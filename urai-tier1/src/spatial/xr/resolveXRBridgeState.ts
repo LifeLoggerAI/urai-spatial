@@ -1,67 +1,11 @@
-import { resolveLifeMapIntelligenceById } from "@/spatial/intelligence/resolveLifeMapIntelligence";
-import { resolveCinematicReplayById } from "@/spatial/cinematic/resolveCinematicReplay";
-import { resolveMemorySphereById } from "@/spatial/memory/resolveMemorySphere";
-
 export type XRBridgeState = {
-  id: string;
-  title: string;
-  readiness: number;
-  modeLabel: string;
-  summary: string;
-  channels: string[];
-  anchor?: string;
+label: string;
+connected: boolean;
 };
 
-function clamp(value: number, min: number, max: number): number {
-  return Math.max(min, Math.min(max, value));
-}
-
-export function resolveXRBridgeStateById(
-  id: string | null | undefined,
-  mode: string | null | undefined
-): XRBridgeState | undefined {
-  if (!id) return undefined;
-
-  const intel = resolveLifeMapIntelligenceById(id);
-  const cinematic = resolveCinematicReplayById(id);
-  const memory = resolveMemorySphereById(id);
-
-  if (!intel && !cinematic && !memory) return undefined;
-
-  const base = intel?.score ?? 42;
-  const replayBoost = mode === "replay" ? 12 : 0;
-  const intensityBoost = typeof memory?.intensity === "number" ? Math.round(memory.intensity * 3) : 0;
-  const readiness = clamp(base + replayBoost + intensityBoost, 0, 100);
-
-  const modeLabel =
-    mode === "replay"
-      ? "XR Replay Bridge"
-      : "XR Spatial Bridge";
-
-  const title =
-    memory?.title
-      ? `${memory.title} XR Bridge`
-      : "XR Bridge";
-
-  const summary =
-    mode === "replay"
-      ? "Replay staging is now mappable into immersive camera and presence layers."
-      : "Focused memory state is now mappable into immersive navigation and adjacency layers.";
-
-  const channels = [
-    "camera anchor",
-    "memory sphere",
-    "narrative layer",
-    mode === "replay" ? "cinematic replay" : "lifemap focus",
-  ];
-
-  return {
-    id,
-    title,
-    readiness,
-    modeLabel,
-    summary,
-    channels,
-    anchor: memory?.chapter ?? cinematic?.sceneLabel ?? intel?.title,
-  };
+export function resolveXRBridgeState(connected: boolean): XRBridgeState {
+return {
+label: "XR Bridge",
+connected,
+};
 }

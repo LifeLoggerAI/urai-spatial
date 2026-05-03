@@ -1,0 +1,74 @@
+===== PHASE REFERENCES =====
+8:import HomeEnvironment from "@/spatial/components/HomeEnvironment";
+11:type Phase = "HOME" | "ASCENT" | "LIFEMAP" | "FOCUS" | "REPLAY";
+31:  | { type: "START_ASCENT" }
+32:  | { type: "COMPLETE_ASCENT" }
+37:const ASCENT_MS = 2200;
+64:    case "START_ASCENT":
+66:      return { ...state, phase: "ASCENT", inputLocked: true };
+68:    case "COMPLETE_ASCENT":
+69:      if (state.phase !== "ASCENT") return state;
+70:      return { ...state, phase: "LIFEMAP", inputLocked: false };
+73:      if (state.phase !== "LIFEMAP" || state.inputLocked) return state;
+90:        return { ...state, phase: "LIFEMAP", inputLocked: false };
+92:      if (state.phase === "LIFEMAP") {
+95:      if (state.phase === "ASCENT") {
+175:        case "ASCENT":
+182:        case "LIFEMAP":
+249:    if (state.phase !== "ASCENT") return;
+251:      dispatch({ type: "COMPLETE_ASCENT" });
+264:      if (state.phase === "LIFEMAP") {
+296:    dispatch({ type: "START_ASCENT" });
+301:      const t = clamp01((now - start) / ASCENT_MS);
+317:    if (state.phase !== "LIFEMAP" || state.inputLocked || transitionKind) return;
+327:    transitionKind === "lifemapToHome" ? "ASCENT" : state.phase;
+329:  const showHome = phaseForRender === "HOME" || phaseForRender === "ASCENT";
+331:    phaseForRender === "ASCENT" ||
+332:    phaseForRender === "LIFEMAP" ||
+370:        <HomeEnvironment
+
+===== LIFEMAPSTARFIELD PROP TYPE =====
+250:export default function LifeMapStarfield({
+
+===== HOMEENVIRONMENT PROP TYPE =====
+
+===== CAMERA HARD SETS =====
+src/spatial/scene/SpatialScene.tsx:58:function damp(current: number, target: number, lambda: number, dt: number) {
+src/spatial/scene/SpatialScene.tsx:59:  return current + (target - current) * (1 - Math.exp(-lambda * dt));
+src/spatial/scene/SpatialScene.tsx:92:      if (state.phase === "LIFEMAP") {
+src/spatial/scene/SpatialScene.tsx:132:    let targetPos: [number, number, number] = [0, 1.15, 20];
+src/spatial/scene/SpatialScene.tsx:133:    let targetLook: [number, number, number] = [0, 1.2, 0];
+src/spatial/scene/SpatialScene.tsx:134:    let targetFov = 32;
+src/spatial/scene/SpatialScene.tsx:139:      targetPos = [
+src/spatial/scene/SpatialScene.tsx:144:      targetLook = [
+src/spatial/scene/SpatialScene.tsx:149:      targetFov = 32 + t * 6;
+src/spatial/scene/SpatialScene.tsx:154:      targetPos = [
+src/spatial/scene/SpatialScene.tsx:159:      targetLook = [
+src/spatial/scene/SpatialScene.tsx:164:      targetFov = 32 + inv * 6;
+src/spatial/scene/SpatialScene.tsx:169:          targetPos = [0, 1.15, 20];
+src/spatial/scene/SpatialScene.tsx:170:          targetLook = [0, 1.2, 0];
+src/spatial/scene/SpatialScene.tsx:171:          targetFov = 32;
+src/spatial/scene/SpatialScene.tsx:176:          targetPos = [0, 5.8, 5];
+src/spatial/scene/SpatialScene.tsx:177:          targetLook = [0, 1.6, -12];
+src/spatial/scene/SpatialScene.tsx:178:          targetFov = 36;
+src/spatial/scene/SpatialScene.tsx:183:          targetPos = [0, 3.1, -12];
+src/spatial/scene/SpatialScene.tsx:184:          targetLook = [0, 0.6, -22];
+src/spatial/scene/SpatialScene.tsx:185:          targetFov = 38;
+src/spatial/scene/SpatialScene.tsx:190:          targetPos = [
+src/spatial/scene/SpatialScene.tsx:195:          targetLook = [
+src/spatial/scene/SpatialScene.tsx:200:          targetFov = 29;
+src/spatial/scene/SpatialScene.tsx:205:          targetPos = [
+src/spatial/scene/SpatialScene.tsx:210:          targetLook = [
+src/spatial/scene/SpatialScene.tsx:215:          targetFov = 31;
+src/spatial/scene/SpatialScene.tsx:221:    cam.position.x = damp(cam.position.x, targetPos[0], lambda, dt);
+src/spatial/scene/SpatialScene.tsx:222:    cam.position.y = damp(cam.position.y, targetPos[1], lambda, dt);
+src/spatial/scene/SpatialScene.tsx:223:    cam.position.z = damp(cam.position.z, targetPos[2], lambda, dt);
+src/spatial/scene/SpatialScene.tsx:224:    cam.fov = damp(cam.fov, targetFov, lambda, dt);
+src/spatial/scene/SpatialScene.tsx:226:    cam.lookAt(targetLook[0], targetLook[1], targetLook[2]);
+src/spatial/scene/SpatialScene.tsx:264:      if (state.phase === "LIFEMAP") {
+
+===== CURRENT TYPECHECK =====
+undefined
+ ERR_PNPM_RECURSIVE_EXEC_FIRST_FAIL  Command "typecheck" not found
+
+Did you mean "pnpm ship:check"?

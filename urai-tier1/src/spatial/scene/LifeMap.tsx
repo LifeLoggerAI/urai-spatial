@@ -2,6 +2,8 @@ import { uraiNow, uraiRandom, uraiTime } from "@/lib/uraiDeterminism";
 
 "use client";
 
+import { URAI_SEED_MEMORIES } from "@/spatial/data/uraiSeedMemories";
+
 import { useRef, useMemo } from "react";
 
 
@@ -67,7 +69,6 @@ function makeStar(id: number, band: "foreground" | "mid" | "background"): StarPo
   const y = mapRange(b, 0, 1, -spreadY * 0.72, spreadY);
 
   return {
-    id: `star-${id}`,
     position: [x, y + 9.0, z],
     importance,
     band,
@@ -80,11 +81,17 @@ function makeStar(id: number, band: "foreground" | "mid" | "background"): StarPo
 export function useStarData() {
 
   return useMemo(() => {
-    const stars: StarPoint[] = [];
-    for (let i = 0; i < 14; i++) stars.push(makeStar(i, "foreground"));
-    for (let i = 14; i < 94; i++) stars.push(makeStar(i, "mid"));
-    for (let i = 94; i < 310; i++) stars.push(makeStar(i, "background"));
-    return stars;
+    const stars = URAI_SEED_MEMORIES.map((memory) => ({
+  id: memory.id,
+  title: memory.title,
+  position: memory.position,
+  scale: memory.scale,
+  color: memory.auraColor,
+  tone: memory.tone,
+  symbolicWeight: memory.symbolicWeight,
+  memory
+}));
+return stars;
   }, []);
 }
 
@@ -176,18 +183,68 @@ export default function LifeMap({
   const stars = useStarData();
 
   const sceneOpacity = (() => {
-    if (phase === "enter_ascent") return 0.08 + 0.27 * progress;
-    if (phase === "enter_separation") return 0.35 + 0.43 * progress;
-    if (phase === "enter_arrival") return 0.78 + 0.22 * progress;
-    if (phase === "return_home_descent") return 1 - progress * 0.9;
-    if (phase === "return_home_settle") return 0.1 * (1 - progress);
+    if (phase === "enter_ascent") {
+      const t = Math.max(0, Math.min(1, progress));
+      const eased = t * t * (3 - 2 * t);
+      return 0.02 + 0.42 * eased;
+    }
+
+    if (phase === "enter_separation") {
+      const t = Math.max(0, Math.min(1, progress));
+      const eased = t * t * (3 - 2 * t);
+      return 0.44 + 0.36 * eased;
+    }
+
+    if (phase === "enter_arrival") {
+      const t = Math.max(0, Math.min(1, progress));
+      const eased = t * t * (3 - 2 * t);
+      return 0.8 + 0.2 * eased;
+    }
+
+    if (phase === "return_home_descent") return Math.max(0.12, 1 - progress * 0.78);
+    if (phase === "return_home_settle") return 0.12 * (1 - progress);
     return opacity;
   })();
 
-  const interactive = phase === "lifemap";
+  const continuityProgress =
+    phase === "enter_ascent" ||
+    phase === "enter_separation" ||
+    phase === "enter_arrival"
+      ? Math.max(0, Math.min(1, progress))
+      : 1;
+
+  const continuityEase =
+    continuityProgress * continuityProgress * (3 - 2 * continuityProgress);
+
+  const lifeMapContinuityY =
+    phase === "enter_ascent"
+      ? 3.8 * (1 - continuityEase)
+      : phase === "enter_separation"
+        ? 1.35 * (1 - continuityEase)
+        : 0;
+
+  const lifeMapContinuityZ =
+    phase === "enter_ascent"
+      ? -10.5 * (1 - continuityEase)
+      : phase === "enter_separation"
+        ? -3.2 * (1 - continuityEase)
+        : 0;
+
+  const lifeMapContinuityScale =
+    phase === "enter_ascent"
+      ? 0.86 + 0.14 * continuityEase
+      : phase === "enter_separation"
+        ? 0.96 + 0.04 * continuityEase
+        : 1;
+
+  const interactive = phase === "LIFEMAP";
 
   return (
-    <group visible={sceneOpacity > 0.001}>
+    <group
+      visible={sceneOpacity > 0.001}
+      position={[0, lifeMapContinuityY, lifeMapContinuityZ]}
+      scale={lifeMapContinuityScale}
+    >
       {stars.map((star) => {
         const dimmed =
           !!selectedStar &&
@@ -195,7 +252,7 @@ export default function LifeMap({
           (phase === "focus_lock" ||
             phase === "focus_travel" ||
             phase === "focus_arrive" ||
-            phase === "replay" ||
+            phase === "REPLAY" ||
             phase === "return_from_replay" ||
             phase === "return_to_lifemap");
 

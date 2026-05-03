@@ -1,25 +1,18 @@
-import type { SceneMode } from "../state/sceneStore";
-
 export type SceneExportManifest = {
   id: string | null;
   title: string;
   label: string;
-  sceneMode: SceneMode;
+  sceneMode: string;
 };
 
 export function resolveSceneExportManifestById(
   starId: string | undefined,
-  mode: SceneMode
-): SceneExportManifest | null {
-  if (!starId && mode === "home") return null;
-
-  const id = starId ?? null;
-  const suffix = id ? ` for ${id}` : "";
-
+  mode: string = "HOME"
+): SceneExportManifest {
   return {
-    id,
-    title: `Scene Export · ${mode}`,
-    label: `Scene export ready${suffix}`,
+    id: starId ?? null,
+    title: "Scene export",
+    label: "Scene export ready",
     sceneMode: mode,
   };
 }

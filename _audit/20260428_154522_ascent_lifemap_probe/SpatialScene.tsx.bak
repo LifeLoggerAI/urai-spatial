@@ -1,0 +1,430 @@
+"use client";
+
+import React, { useEffect, useMemo, useReducer, useRef, useState } from "react";
+import { Canvas, useFrame, useThree } from "@react-three/fiber";
+import type { PerspectiveCamera } from "three";
+
+import Starfield3D from "@/spatial/components/Starfield3D";
+import HomeEnvironment from "@/spatial/components/HomeEnvironment";
+import ReplayScene from "@/spatial/components/ReplayScene";
+
+type Phase = "HOME" | "ASCENT" | "LIFEMAP" | "FOCUS" | "REPLAY";
+type TransitionKind = "homeToLifemap" | "lifemapToHome" | null;
+
+type StarNode = {
+  id: string;
+  x: number;
+  y: number;
+  z: number;
+  size: number;
+  memoryRef: string;
+  label: string;
+};
+
+type SceneState = {
+  phase: Phase;
+  selectedStarId: string | null;
+  inputLocked: boolean;
+};
+
+type SceneAction =
+  | { type: "START_ASCENT" }
+  | { type: "COMPLETE_ASCENT" }
+  | { type: "OPEN_FOCUS"; starId: string }
+  | { type: "OPEN_REPLAY" }
+  | { type: "ESC" };
+
+const ASCENT_MS = 2200;
+const RETURN_HOME_MS = 1600;
+
+const STAR_DATA: StarNode[] = [
+  { id: "star_1", x: 24, y: 29, z: 0, size: 14, memoryRef: "memory_ref_star_1", label: "Threshold" },
+  { id: "star_2", x: 40, y: 21, z: 1, size: 12, memoryRef: "memory_ref_star_2", label: "Signal" },
+  { id: "star_3", x: 58, y: 34, z: 0, size: 13, memoryRef: "memory_ref_star_3", label: "Echo" },
+  { id: "star_4", x: 70, y: 58, z: 2, size: 11, memoryRef: "memory_ref_star_4", label: "Memory" },
+  { id: "star_5", x: 28, y: 60, z: 1, size: 12, memoryRef: "memory_ref_star_5", label: "Return" },
+];
+
+function clamp01(v: number) {
+  return Math.max(0, Math.min(1, v));
+}
+
+function easeInOutCubic(t: number) {
+  return t < 0.5
+    ? 4 * t * t * t
+    : 1 - Math.pow(-2 * t + 2, 3) / 2;
+}
+
+function damp(current: number, target: number, lambda: number, dt: number) {
+  return current + (target - current) * (1 - Math.exp(-lambda * dt));
+}
+
+function sceneReducer(state: SceneState, action: SceneAction): SceneState {
+  switch (action.type) {
+    case "START_ASCENT":
+      if (state.phase !== "HOME" || state.inputLocked) return state;
+      return { ...state, phase: "ASCENT", inputLocked: true };
+
+    case "COMPLETE_ASCENT":
+      if (state.phase !== "ASCENT") return state;
+      return { ...state, phase: "LIFEMAP", inputLocked: false };
+
+    case "OPEN_FOCUS":
+      if (state.phase !== "LIFEMAP" || state.inputLocked) return state;
+      return {
+        ...state,
+        phase: "FOCUS",
+        selectedStarId: action.starId,
+        inputLocked: false,
+      };
+
+    case "OPEN_REPLAY":
+      if (state.phase !== "FOCUS" || !state.selectedStarId || state.inputLocked) return state;
+      return { ...state, phase: "REPLAY", inputLocked: false };
+
+    case "ESC":
+      if (state.phase === "REPLAY") {
+        return { ...state, phase: "FOCUS", inputLocked: false };
+      }
+      if (state.phase === "FOCUS") {
+        return { ...state, phase: "LIFEMAP", inputLocked: false };
+      }
+      if (state.phase === "LIFEMAP") {
+        return { ...state, phase: "HOME", selectedStarId: null, inputLocked: false };
+      }
+      if (state.phase === "ASCENT") {
+        return { ...state, phase: "HOME", inputLocked: false };
+      }
+      return state;
+
+    default:
+      return state;
+  }
+}
+
+function starToWorld(star: StarNode | null): [number, number, number] {
+  if (!star) return [0, 0, -18];
+  const x = (star.x - 50) * 0.22;
+  const y = (50 - star.y) * 0.16;
+  const z = -16 - star.z * 5.5;
+  return [x, y, z];
+}
+
+type CameraDirectorProps = {
+  phase: Phase;
+  transitionKind: TransitionKind;
+  transitionProgress: number;
+  selectedStar: StarNode | null;
+};
+
+function CameraDirector({
+  phase,
+  transitionKind,
+  transitionProgress,
+  selectedStar,
+}: CameraDirectorProps) {
+  const { camera } = useThree();
+  const cam = camera as PerspectiveCamera;
+
+  useFrame((_, dt) => {
+    const starWorld = starToWorld(selectedStar);
+
+    let targetPos: [number, number, number] = [0, 1.15, 20];
+    let targetLook: [number, number, number] = [0, 1.2, 0];
+    let targetFov = 32;
+    let lambda = 3.8;
+
+    if (transitionKind === "homeToLifemap") {
+      const t = easeInOutCubic(clamp01(transitionProgress));
+      targetPos = [
+        starWorld[0] * 0.08,
+        1.15 + t * 7.8,
+        20 - t * 31,
+      ];
+      targetLook = [
+        starWorld[0] * 0.04,
+        1.2 + t * 1.4,
+        -4 - t * 13,
+      ];
+      targetFov = 32 + t * 6;
+      lambda = 5.2;
+    } else if (transitionKind === "lifemapToHome") {
+      const t = easeInOutCubic(clamp01(transitionProgress));
+      const inv = 1 - t;
+      targetPos = [
+        starWorld[0] * 0.08 * inv,
+        1.15 + inv * 7.8,
+        20 - inv * 31,
+      ];
+      targetLook = [
+        starWorld[0] * 0.04 * inv,
+        1.2 + inv * 1.4,
+        -4 - inv * 13,
+      ];
+      targetFov = 32 + inv * 6;
+      lambda = 5.2;
+    } else {
+      switch (phase) {
+        case "HOME":
+          targetPos = [0, 1.15, 20];
+          targetLook = [0, 1.2, 0];
+          targetFov = 32;
+          lambda = 4.2;
+          break;
+
+        case "ASCENT":
+          targetPos = [0, 5.8, 5];
+          targetLook = [0, 1.6, -12];
+          targetFov = 36;
+          lambda = 4.6;
+          break;
+
+        case "LIFEMAP":
+          targetPos = [0, 3.1, -12];
+          targetLook = [0, 0.6, -22];
+          targetFov = 38;
+          lambda = 3.8;
+          break;
+
+        case "FOCUS":
+          targetPos = [
+            starWorld[0] * 0.92,
+            starWorld[1] * 0.9 + 0.8,
+            starWorld[2] + 8.8,
+          ];
+          targetLook = [
+            starWorld[0] * 0.98,
+            starWorld[1] * 0.98,
+            starWorld[2],
+          ];
+          targetFov = 29;
+          lambda = 4.8;
+          break;
+
+        case "REPLAY":
+          targetPos = [
+            starWorld[0] * 0.4,
+            starWorld[1] * 0.35 + 0.2,
+            -5.2,
+          ];
+          targetLook = [
+            starWorld[0] * 0.18,
+            starWorld[1] * 0.18,
+            -10.5,
+          ];
+          targetFov = 31;
+          lambda = 2.8;
+          break;
+      }
+    }
+
+    cam.position.x = damp(cam.position.x, targetPos[0], lambda, dt);
+    cam.position.y = damp(cam.position.y, targetPos[1], lambda, dt);
+    cam.position.z = damp(cam.position.z, targetPos[2], lambda, dt);
+    cam.fov = damp(cam.fov, targetFov, lambda, dt);
+    cam.updateProjectionMatrix();
+    cam.lookAt(targetLook[0], targetLook[1], targetLook[2]);
+  });
+
+  return null;
+}
+
+export default function SpatialScene() {
+  const [state, dispatch] = useReducer(sceneReducer, {
+    phase: "HOME",
+    selectedStarId: null,
+    inputLocked: false,
+  });
+
+  const [transitionKind, setTransitionKind] = useState<TransitionKind>(null);
+  const [transitionProgress, setTransitionProgress] = useState(0);
+  const transitionFrameRef = useRef<number | null>(null);
+
+  const selectedStar = useMemo(
+    () => STAR_DATA.find((s) => s.id === state.selectedStarId) ?? null,
+    [state.selectedStarId],
+  );
+
+  useEffect(() => {
+    if (state.phase !== "ASCENT") return;
+    if (transitionProgress >= 1) {
+      dispatch({ type: "COMPLETE_ASCENT" });
+    }
+  }, [state.phase, transitionProgress]);
+
+  useEffect(() => {
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key !== "Escape") return;
+
+      if (state.phase === "REPLAY" || state.phase === "FOCUS") {
+        dispatch({ type: "ESC" });
+        return;
+      }
+
+      if (state.phase === "LIFEMAP") {
+        setTransitionKind("lifemapToHome");
+        const start = performance.now();
+
+        const tick = (now: number) => {
+          const t = clamp01((now - start) / RETURN_HOME_MS);
+          setTransitionProgress(t);
+
+          if (t < 1) {
+            transitionFrameRef.current = requestAnimationFrame(tick);
+          } else {
+            setTransitionKind(null);
+            setTransitionProgress(0);
+            dispatch({ type: "ESC" });
+          }
+        };
+
+        if (transitionFrameRef.current) cancelAnimationFrame(transitionFrameRef.current);
+        transitionFrameRef.current = requestAnimationFrame(tick);
+      }
+    };
+
+    window.addEventListener("keydown", onKeyDown);
+    return () => {
+      window.removeEventListener("keydown", onKeyDown);
+      if (transitionFrameRef.current) cancelAnimationFrame(transitionFrameRef.current);
+    };
+  }, [state.phase]);
+
+  const startAscent = () => {
+    if (state.phase !== "HOME" || state.inputLocked || transitionKind) return;
+
+    dispatch({ type: "START_ASCENT" });
+    setTransitionKind("homeToLifemap");
+
+    const start = performance.now();
+    const tick = (now: number) => {
+      const t = clamp01((now - start) / ASCENT_MS);
+      setTransitionProgress(t);
+
+      if (t < 1) {
+        transitionFrameRef.current = requestAnimationFrame(tick);
+      } else {
+        setTransitionKind(null);
+        setTransitionProgress(0);
+      }
+    };
+
+    if (transitionFrameRef.current) cancelAnimationFrame(transitionFrameRef.current);
+    transitionFrameRef.current = requestAnimationFrame(tick);
+  };
+
+  const openFocus = (id: string) => {
+    if (state.phase !== "LIFEMAP" || state.inputLocked || transitionKind) return;
+    dispatch({ type: "OPEN_FOCUS", starId: id });
+  };
+
+  const openReplay = () => {
+    if (state.phase !== "FOCUS" || !state.selectedStarId || state.inputLocked) return;
+    dispatch({ type: "OPEN_REPLAY" });
+  };
+
+  const phaseForRender: Phase =
+    transitionKind === "lifemapToHome" ? "ASCENT" : state.phase;
+
+  const showHome = phaseForRender === "HOME" || phaseForRender === "ASCENT";
+  const showField =
+    phaseForRender === "ASCENT" ||
+    phaseForRender === "LIFEMAP" ||
+    phaseForRender === "FOCUS" ||
+    phaseForRender === "REPLAY";
+
+  return (
+    <div style={{ position: "fixed", inset: 0 }}>
+      <Canvas
+        camera={{ position: [0, 1.15, 20], fov: 32, near: 0.1, far: 320 }}
+        gl={{ antialias: true, alpha: false }}
+        dpr={[1, 1.5]}
+        style={{ background: "#020611" }}
+      >
+        <color attach="background" args={[phaseForRender === "REPLAY" ? "#03030a" : "#071326"]} />
+        <fog
+          attach="fog"
+          args={[phaseForRender === "REPLAY" ? "#05040b" : "#071326", 30, 240]}
+        />
+
+        <ambientLight intensity={phaseForRender === "REPLAY" ? 0.34 : 0.5} />
+        <hemisphereLight intensity={0.5} groundColor="#090d14" />
+        <directionalLight
+          castShadow
+          intensity={1.08}
+          position={[6, 9, 18]}
+          shadow-mapSize-width={2048}
+          shadow-mapSize-height={2048}
+        />
+        <pointLight intensity={0.95} position={[0, 4, 8]} />
+        <pointLight intensity={0.55} position={[-8, 3, -10]} />
+        <pointLight intensity={0.45} position={[8, 6, -18]} />
+
+        <CameraDirector
+          phase={state.phase}
+          transitionKind={transitionKind}
+          transitionProgress={transitionProgress}
+          selectedStar={selectedStar}
+        />
+
+        <HomeEnvironment
+          visible={showHome}
+          interactive={state.phase === "HOME"}
+          dim={state.phase !== "HOME"}
+          phase={phaseForRender}
+          onSkySelect={startAscent}
+          onGroundSelect={() => undefined}
+          onOrbSelect={startAscent}
+        />
+
+        {showField && (
+          <Starfield3D
+            stars={STAR_DATA}
+            phase={state.phase}
+            onSelect={openFocus}
+          />
+        )}
+
+        <ReplayScene
+          visible={state.phase === "REPLAY"}
+          opacity={state.phase === "REPLAY" ? 1 : 0}
+          starId={state.selectedStarId}
+          onExit={() => dispatch({ type: "ESC" })}
+        />
+      </Canvas>
+
+      {state.phase === "FOCUS" && (
+        <button
+          type="button"
+          onClick={openReplay}
+          style={buttonStyle}
+        >
+          Enter Replay
+        </button>
+      )}
+
+      {state.phase === "REPLAY" && (
+        <button
+          type="button"
+          onClick={() => dispatch({ type: "ESC" })}
+          style={buttonStyle}
+        >
+          Exit Replay
+        </button>
+      )}
+    </div>
+  );
+}
+
+const buttonStyle: React.CSSProperties = {
+  position: "absolute",
+  right: 20,
+  bottom: 20,
+  padding: "10px 16px",
+  borderRadius: 10,
+  background: "rgba(10, 12, 18, 0.84)",
+  color: "#fff",
+  border: "1px solid rgba(255,255,255,0.18)",
+  cursor: "pointer",
+  backdropFilter: "blur(10px)",
+};

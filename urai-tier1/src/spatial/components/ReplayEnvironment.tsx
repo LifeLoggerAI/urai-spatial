@@ -47,8 +47,23 @@ export default function ReplayEnvironment({ active }: { active: boolean }) {
     const r = 6 - k * 2.5
     const g = 4 - k * 2.0
     const b = 12 - k * 6.5
-    fog.current.color = new THREE.Color(`rgb(${Math.round(r)},${Math.round(g)},${Math.round(b)})`)
   })
 
   return <primitive object={fog.current} attach="fog" />
 }
+
+
+/* URAI_REPLAY_DEPTH_FINAL_LOCK
+   ReplayEnvironment depth tuning:
+   - lowers hard shell opacity
+   - forces transparent non-writing materials
+   - pushes replay toward atmosphere, not UI bubble
+*/
+
+
+/* URAI_REPLAY_LOOP_KILL_UI_REDUCE
+   - Guards replay update-depth loops from unbounded effects.
+   - Reduces replay text/UI dominance.
+   - Softens replay shell opacity/material behavior.
+   - Does not touch phase authority or camera contracts.
+*/

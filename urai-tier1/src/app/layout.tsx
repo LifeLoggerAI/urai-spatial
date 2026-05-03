@@ -20,7 +20,18 @@ export const viewport: Viewport = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en">
-      <body data-debug-spatial={process.env.NEXT_PUBLIC_URAI_DEBUG_SPATIAL === "true" ? "true" : "false"}>{children}</body>
+      <body
+        data-debug-spatial={
+          process.env.NEXT_PUBLIC_URAI_DEBUG_SPATIAL === 'true' ? 'true' : 'false'
+        }
+        style={{
+          margin: 0,
+          background: '#08030f',
+          overflowX: 'hidden',
+        }}
+      >
+        {children}
+      </body>
     </html>
   )
 }

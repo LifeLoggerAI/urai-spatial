@@ -1,45 +1,46 @@
-'use client'
+"use client";
 
-import React from 'react'
-import type { LifeMapStar } from '@/lib/uraiCanon/lifemapStar'
+import * as THREE from "three";
 
-export default function ReplayAtmosphere(props: {
-  star: LifeMapStar | null
-  visible: boolean
-}) {
-  if (!props.visible) return null
+type Props = {
+phase?: string;
+active?: boolean;
+position?: [number, number, number] | null;
+};
 
-  const p = props.star?.position ?? [0, 0, 0]
+export function ReplayAtmosphere({
+phase = "HIDDEN",
+active = true,
+position = null,
+}: Props) {
+if (!active || phase !== "REPLAY") return null;
 
-  return (
-    <>
-      <mesh position={[p[0], p[1], p[2] - 0.7]}>
-        <sphereGeometry args={[5.2, 48, 48]} />
-        <meshBasicMaterial
-          color="#150a18"
-          transparent
-          opacity={0.2}
-          side={2}
-        />
-      </mesh>
+const p = position ?? [0, 18, -220];
 
-      <mesh position={[p[0] + 0.22, p[1] + 0.08, p[2] - 0.18]}>
-        <sphereGeometry args={[0.18, 14, 14]} />
-        <meshBasicMaterial
-          color="#efc8ff"
-          transparent
-          opacity={0.22}
-        />
-      </mesh>
+return ( <group position={p}> <mesh>
+<sphereGeometry args={[18, 48, 48]} /> <meshBasicMaterial
+       color="#7c3aed"
+       transparent
+       opacity={0.07}
+       side={THREE.BackSide}
+       depthWrite={false}
+       toneMapped={false}
+     /> </mesh>
 
-      <mesh position={[p[0] - 0.38, p[1] - 0.14, p[2] - 0.46]}>
-        <sphereGeometry args={[0.1, 14, 14]} />
-        <meshBasicMaterial
-          color="#b48ad1"
-          transparent
-          opacity={0.16}
-        />
-      </mesh>
-    </>
-  )
+  <mesh position={[0.22, 0.08, -0.18]}>
+    <sphereGeometry args={[10, 36, 36]} />
+    <meshBasicMaterial
+      color="#67e8f9"
+      transparent
+      opacity={0.05}
+      depthWrite={false}
+      blending={THREE.AdditiveBlending}
+      toneMapped={false}
+    />
+  </mesh>
+</group>
+
+);
 }
+
+export default ReplayAtmosphere;

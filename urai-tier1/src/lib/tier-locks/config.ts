@@ -1,4 +1,10 @@
-import { CANONICAL_FEATURE_RULES, TIER_ORDER, type SpatialFeatureId, type UraiTier, type SafetyClass } from '../../../../packages/tier-locks/src/index'
+import {
+  CANONICAL_FEATURE_RULES,
+  TIER_ORDER,
+  type SpatialFeatureId,
+  type UraiTier,
+  type SafetyClass,
+} from '../../../../packages/tier-locks/src/index'
 
 export type { SafetyClass }
 
@@ -29,10 +35,13 @@ export const SPATIAL_FEATURE_MATRIX: Record<SpatialFeatureId, FeatureMatrixEntry
       safetyClass: cfg.safetyClass,
       fallbackFeature: cfg.fallback,
       telemetryEvent: `${featureId.replace(/\./g, '_')}_rendered`,
-      defaultEnabledInStaging: cfg.requiredTier === 'tier1' || featureId === 'spatial.lifeMap.personal' || featureId === 'spatial.memoryStars.personal',
+      defaultEnabledInStaging:
+        cfg.requiredTier === 'tier1' ||
+        featureId === 'spatial.lifeMap.personal' ||
+        featureId === 'spatial.memoryStars.personal',
       defaultEnabledInProduction: cfg.requiredTier === 'tier1',
     },
-  ])
+  ]),
 ) as Record<SpatialFeatureId, FeatureMatrixEntry>
 
 export { TIER_ORDER }

@@ -1,122 +1,179 @@
-'use client'
+"use client";
 
-import { useMemo } from 'react'
-import * as THREE from 'three'
+import { useMemo } from "react";
+import * as THREE from "three";
 
 export type LifeMapStar = {
-  id: string
-  position?: [number, number, number]
-  color?: string
-  size?: number
-}
+  id: string;
+  title?: string;
+  tone?: string;
+  symbolicWeight?: string;
+  position?: [number, number, number];
+};
+
+export const LIFE_MAP_STARS: LifeMapStar[] = [
+  { id: "center-memory", title: "Center Memory", tone: "awe", symbolicWeight: "threshold", position: [0, 18, -220] },
+  { id: "left-memory", title: "Left Memory", tone: "hope", symbolicWeight: "heavy", position: [-30, 18, -220] },
+  { id: "right-memory", title: "Right Memory", tone: "recovery", symbolicWeight: "heavy", position: [30, 18, -220] },
+  { id: "low-left-memory", title: "Low Left Memory", tone: "calm", symbolicWeight: "medium", position: [-20, 8, -220] },
+  { id: "low-right-memory", title: "Low Right Memory", tone: "charged", symbolicWeight: "medium", position: [20, 8, -220] },
+  { id: "upper-left-memory", title: "Upper Left Memory", tone: "grief", symbolicWeight: "medium", position: [-42, 30, -220] },
+  { id: "upper-right-memory", title: "Upper Right Memory", tone: "tension", symbolicWeight: "medium", position: [42, 30, -220] },
+  { id: "far-left-thread", title: "Far Left Thread", tone: "calm", symbolicWeight: "light", position: [-72, 34, -310] },
+  { id: "far-right-thread", title: "Far Right Thread", tone: "hope", symbolicWeight: "light", position: [72, 35, -315] },
+  { id: "deep-thread", title: "Deep Thread", tone: "awe", symbolicWeight: "medium", position: [0, 54, -370] },
+];
 
 type Props = {
-  visible?: boolean
-  stars?: LifeMapStar[]
-  selectedStarId?: string | null
-  onSelectStar?: (id: string) => void
-  onHoverStar?: (id: string | null) => void
-  focusSuppression?: boolean
-}
+  active?: boolean;
+  phase?: string;
+  selectedStarId?: string | null;
+  ascentProgress?: number;
+  onSelectStar?: (star: LifeMapStar) => void;
+  onStarSelect?: (star: LifeMapStar) => void;
+};
 
-const FALLBACK_STAR_COUNT = 48
-const FAR_RADIUS_MIN = 180
-const FAR_RADIUS_MAX = 520
-const DEPTH_MIN = -780
-const DEPTH_MAX = -180
+const COLORS: Record<string, string> = {
+  neutral: "#ffffff",
+  calm: "#93c5fd",
+  charged: "#fb7185",
+  grief: "#b79bff",
+  hope: "#fde68a",
+  tension: "#fb923c",
+  awe: "#67e8f9",
+  recovery: "#86efac",
+};
 
-function hashIndex(i: number) {
-  const x = Math.sin((i + 1) * 12.9898) * 43758.5453
-  return x - Math.floor(x)
-}
+function makeDust(seedStart: number, count: number) {
+  const out: Array<{
+    id: string;
+    position: [number, number, number];
+    size: number;
+    opacity: number;
+    color: string;
+  }> = [];
 
-function fallbackStars(): LifeMapStar[] {
-  const out: LifeMapStar[] = []
-  for (let i = 0; i < FALLBACK_STAR_COUNT; i++) {
-    const a = hashIndex(i) * Math.PI * 2
-    const r = FAR_RADIUS_MIN + hashIndex(i + 101) * (FAR_RADIUS_MAX - FAR_RADIUS_MIN)
-    const x = Math.cos(a) * r * 0.55
-    const y = -8 + hashIndex(i + 202) * 42
-    const z = DEPTH_MIN + hashIndex(i + 303) * (DEPTH_MAX - DEPTH_MIN)
-    const s = 0.9 + hashIndex(i + 404) * 2.4
+  let seed = seedStart;
+
+  const rand = () => {
+    seed = (seed * 1664525 + 1013904223) >>> 0;
+    return seed / 4294967296;
+  };
+
+  for (let i = 0; i < count; i++) {
     out.push({
-      id: "generated-star-" + String(i + 1),
-      position: [x, y, z],
-      size: s,
-      color: '#c9d6ff',
-    })
-  }
-  return out
-}
-
-function dedupeStars(input?: LifeMapStar[]) {
-  const seen = new Set<string>()
-  const source = Array.isArray(input) && input.length > 0 ? input : fallbackStars()
-  const out: LifeMapStar[] = []
-
-  for (let i = 0; i < source.length; i++) {
-    const raw = source[i]
-    const baseId = String(raw?.id || "star-" + String(i + 1))
-    let id = baseId
-    let n = 2
-    while (seen.has(id)) {
-      id = baseId + "--" + String(n)
-      n += 1
-    }
-    seen.add(id)
-
-    const p = Array.isArray(raw?.position) && raw.position.length === 3
-      ? raw.position
-      : fallbackStars()[i % FALLBACK_STAR_COUNT].position!
-
-    out.push({
-      id,
-      position: [p[0], p[1], p[2]],
-      size: typeof raw?.size === 'number' ? raw.size : fallbackStars()[i % FALLBACK_STAR_COUNT].size,
-      color: raw?.color || '#c9d6ff',
-    })
+      id: "dust-" + seedStart + "-" + i,
+      position: [-190 + rand() * 380, rand() * 110, -130 - rand() * 920],
+      size: 0.045 + rand() * 0.1,
+      opacity: 0.16 + rand() * 0.4,
+      color: rand() > 0.72 ? "#d5e5ff" : "#ffffff",
+    });
   }
 
-  return out
+  return out;
 }
 
-export default function LifeMapStarfield({
-  visible = true,
-  stars = [],
+function starScale(weight?: string) {
+  if (weight === "threshold") return 1.22;
+  if (weight === "heavy") return 1.1;
+  if (weight === "medium") return 1;
+  return 0.82;
+}
+
+export function LifeMapStarfield({
+  active = true,
+  phase = "HIDDEN",
   selectedStarId = null,
   onSelectStar,
-  onHoverStar,
-  focusSuppression = false,
+  onStarSelect,
 }: Props) {
-  const stableStars = useMemo(() => dedupeStars(stars), [stars])
+  const phaseName = String(phase);
+  const isAscent = phaseName === "ASCENT";
+  const isLifeMap = phaseName === "LIFEMAP";
+  const isFocusOrReplay = phaseName === "FOCUS" || phaseName === "REPLAY";
+  const dust = useMemo(() => makeDust(991, 950), []);
+  const visibleDust = isAscent ? dust.slice(0, 340) : dust;
 
-  if (!visible) return null
+  const clickStar = (star: LifeMapStar, event: { stopPropagation?: () => void }) => {
+    event.stopPropagation?.();
+    console.info("[URAI_STAR_CLICK]", star.id);
+    onSelectStar?.(star);
+    onStarSelect?.(star);
+
+    if (typeof window !== "undefined") {
+      window.dispatchEvent(
+        new CustomEvent("urai:lifemap-star-click", {
+          detail: { id: star.id, star },
+        })
+      );
+    }
+  };
+
+  if (active === false) return null;
+  if (!isAscent && !isLifeMap && !isFocusOrReplay) return null;
 
   return (
-    <group visible={visible}>
-      {stableStars.map((star) => {
-        const pos = star.position || [0, 0, -240]
-        const isSelected = selectedStarId === star.id
-        const radius = isSelected ? (star.size || 1.2) * 1.35 : (star.size || 1.2)
-        const opacity = focusSuppression && !isSelected ? 0.14 : isSelected ? 0.98 : 0.72
+    <group>
+      <fog attach="fog" args={["#020617", isAscent ? 110 : 125, 920]} />
 
-        return (
-          <mesh
-            key={star.id}
-            position={new THREE.Vector3(pos[0], pos[1], pos[2])}
-            onPointerOver={() => onHoverStar?.(star.id)}
-            onPointerOut={() => onHoverStar?.(null)}
-            onClick={() => onSelectStar?.(star.id)}
-          >
-            <sphereGeometry args={[radius, 24, 24]} />
-            <meshBasicMaterial
-              color={star.color || '#c9d6ff'}
-              transparent
-              opacity={opacity}
-            />
-          </mesh>
-        )
-      })}
+      {visibleDust.map((star) => (
+        <mesh key={star.id} position={star.position} scale={star.size}>
+          <sphereGeometry args={[1, 10, 10]} />
+          <meshBasicMaterial
+            color={star.color}
+            transparent
+            opacity={star.opacity * (isFocusOrReplay ? 0.18 : 1)}
+            depthWrite={false}
+            toneMapped={false}
+          />
+        </mesh>
+      ))}
+
+      {isLifeMap && (
+        <group>
+          {LIFE_MAP_STARS.map((star) => {
+            const color = COLORS[star.tone ?? "neutral"] ?? "#ffffff";
+            const selected = selectedStarId === star.id;
+            const p = star.position ?? [0, 18, -220];
+            const scale = starScale(star.symbolicWeight);
+
+            return (
+              <group
+                key={star.id}
+                position={p}
+                scale={scale}
+                userData={{ starId: star.id }}
+                onPointerDown={(event: any) => clickStar(star, event)}
+                onClick={(event: any) => clickStar(star, event)}
+              >
+                <mesh renderOrder={40}>
+                  <sphereGeometry args={[3.4, 48, 48]} />
+                  <meshBasicMaterial
+                    color={color}
+                    transparent
+                    opacity={1}
+                    toneMapped={false}
+                  />
+                </mesh>
+
+                <mesh scale={2.0} renderOrder={39}>
+                  <sphereGeometry args={[3.4, 48, 48]} />
+                  <meshBasicMaterial
+                    color={color}
+                    transparent
+                    opacity={selected ? 0.34 : 0.2}
+                    depthWrite={false}
+                    blending={THREE.AdditiveBlending}
+                    toneMapped={false}
+                  />
+                </mesh>
+              </group>
+            );
+          })}
+        </group>
+      )}
     </group>
-  )
+  );
 }
+
+export default LifeMapStarfield;
