@@ -1,7 +1,8 @@
 'use client'
 import Starfield3D from '@/spatial/components/Starfield3D'
 
-import React, { useEffect, useMemo, useReducer, useRef, useState } from 'react'
+import React, { useEffect, useMemo, useRef, useState } from 'react'
+import { useSceneStore } from '../state/sceneStore'
 
 // CANON: URAI Tier 1 Visual and Interaction Canon
 // 1. PHASE LAW: Legal forward path is HOME -> ASCENT -> LIFEMAP -> FOCUS -> REPLAY.
@@ -26,19 +27,6 @@ memoryRef: string
 label: string
 }
 
-type SceneState = {
-phase: Phase
-selectedStarId: string | null
-inputLocked: boolean
-}
-
-type SceneAction =
-| { type: 'START_ASCENT' }
-| { type: 'COMPLETE_ASCENT' }
-| { type: 'OPEN_FOCUS'; starId: string }
-| { type: 'OPEN_REPLAY' }
-| { type: 'ESC' }
-
 const ASCENT_MS = 2200
 const RETURN_HOME_MS = 1600
 const REPLAY_ENTER_MS = 750
@@ -53,45 +41,6 @@ const STAR_DATA: StarNode[] = [
 { id: 'star_5', x: 28, y: 60, z: 1, size: 12, memoryRef: 'memory_ref_star_5', label: 'Return' },
 ]
 
-// REDUCER: Single source of truth for phase state. Complies with AUTHORITY LAW.
-function validateTransition(state: SceneState, action: SceneAction): boolean {
-switch (action.type) {
-case 'START_ASCENT':
-return state.phase === 'HOME' && !state.inputLocked
-case 'COMPLETE_ASCENT':
-return state.phase === 'ASCENT'
-case 'OPEN_FOCUS':
-return state.phase === 'LIFEMAP' && !!action.starId && !state.inputLocked
-case 'OPEN_REPLAY':
-return state.phase === 'FOCUS' && !!state.selectedStarId && !state.inputLocked
-case 'ESC':
-return state.phase === 'REPLAY' || state.phase === 'FOCUS' || state.phase === 'LIFEMAP'
-default:
-return false
-}
-}
-
-function sceneReducer(state: SceneState, action: SceneAction): SceneState {
-if (!validateTransition(state, action)) return state
-
-switch (action.type) {
-case 'START_ASCENT':
-return { ...state, phase: 'ASCENT', inputLocked: true }
-case 'COMPLETE_ASCENT':
-return { ...state, phase: 'LIFEMAP', inputLocked: false }
-case 'OPEN_FOCUS':
-return { ...state, phase: 'FOCUS', selectedStarId: action.starId, inputLocked: false }
-case 'OPEN_REPLAY':
-return { ...state, phase: 'REPLAY', inputLocked: true }
-case 'ESC':
-if (state.phase === 'REPLAY') return { ...state, phase: 'FOCUS', inputLocked: false }
-if (state.phase === 'FOCUS') return { ...state, phase: 'LIFEMAP', selectedStarId: state.selectedStarId, inputLocked: false }
-return { phase: 'HOME', selectedStarId: null, inputLocked: false }
-default:
-return state
-}
-}
-
 function clamp01(v: number) {
 return Math.max(0, Math.min(1, v))
 }
@@ -102,7 +51,7 @@ return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2
 
 // CAMERA_DIRECTOR: Single writer for camera state. Complies with AUTHORITY LAW.
 // Values updated to enforce visual canon for all phases.
-function getCameraDirector(progress: number, phase: Phase, selectedStarId: StarNode | null) {
+function getCameraDirector(progress: number, phase: Phase, selectedStar: StarNode | null) {
 const p = clamp01(progress)
 const e = easeInOutCubic(p)
 
@@ -179,11 +128,11 @@ groundOpacity: 0,
 }
 
 export default function SpatialScene() {
-const [state, dispatch] = useReducer(sceneReducer, {
-phase: 'HOME',
-selectedStarId: null,
-inputLocked: false,
-})
+const mode = useSceneStore((s) => s.mode)
+const selectedStarId = useSceneStore((s) => s.selectedStarId)
+const applyTransition = useSceneStore((s) => s.applyTransition)
+const canTransition = useSceneStore((s) => s.canTransition)
+const [inputLocked, setInputLocked] = useState(false)
 const [hoveredStarId, setHoveredStarId] = useState<string | null>(null)
 const [transitionKind, setTransitionKind] = useState<TransitionKind>(null)
 const [transitionProgress, setTransitionProgress] = useState(0)
@@ -192,11 +141,13 @@ const [focusVisible, setFocusVisible] = useState(false)
 const transitionFrameRef = useRef<number | null>(null)
 
 const selectedStar = useMemo(
-() => STAR_DATA.find((s) => s.id === state.selectedStarId) ?? null,
-[state.selectedStarId]
+() => STAR_DATA.find((s) => s.id === selectedStarId) ?? null,
+[selectedStarId]
 )
 
-const phaseForView: Phase = transitionKind === 'lifemapToHome' ? 'ASCENT' : state.phase
+
+const phase: Phase = mode === 'home' ? 'HOME' : mode === 'ground' ? 'ASCENT' : mode === 'lifemap' ? 'LIFEMAP' : mode === 'focus' ? 'FOCUS' : 'REPLAY'
+const phaseForView: Phase = transitionKind === 'lifemapToHome' ? 'ASCENT' : phase
 
 const camera = getCameraDirector(
 transitionKind ? (transitionKind === 'lifemapToHome' ? 1 - transitionProgress : transitionProgress) : 0,
@@ -206,14 +157,17 @@ selectedStar
 
 useEffect(() => {
 const onKeyDown = (event: KeyboardEvent) => {
-if (event.key !== 'Escape' || state.inputLocked) return
+if (event.key !== 'Escape' || inputLocked || !canTransition('ESC', { inputLocked })) return
 
-if (state.phase === 'REPLAY') {
+if (phase === 'REPLAY') {
 setReplayVisible(false)
-dispatch({ type: 'ESC' })
-} else if (state.phase === 'FOCUS') {
-dispatch({ type: 'ESC' })
-} else if (state.phase === 'LIFEMAP') {
+setInputLocked(false)
+applyTransition('ESC')
+} else if (phase === 'FOCUS') {
+setInputLocked(false)
+applyTransition('ESC')
+} else if (phase === 'LIFEMAP') {
+setInputLocked(true)
 setTransitionKind('lifemapToHome')
 const start = performance.now()
 const tick = (now: number) => {
@@ -224,7 +178,8 @@ transitionFrameRef.current = requestAnimationFrame(tick)
 } else {
 setTransitionKind(null)
 setTransitionProgress(0)
-dispatch({ type: 'ESC' })
+setInputLocked(false)
+applyTransition('ESC')
 }
 }
 if (transitionFrameRef.current) cancelAnimationFrame(transitionFrameRef.current)
@@ -237,11 +192,12 @@ return () => {
 window.removeEventListener('keydown', onKeyDown)
 if (transitionFrameRef.current) cancelAnimationFrame(transitionFrameRef.current)
 }
-}, [state.inputLocked, state.phase])
+}, [inputLocked, phase])
 
 const startAscent = () => {
-if (state.phase !== 'HOME' || state.inputLocked || transitionKind) return
-dispatch({ type: 'START_ASCENT' })
+if (!canTransition('START_ASCENT', { inputLocked }) || transitionKind) return
+applyTransition('START_ASCENT', { inputLocked })
+setInputLocked(true)
 setTransitionKind('homeToLifemap')
 const start = performance.now()
 const tick = (now: number) => {
@@ -252,7 +208,7 @@ transitionFrameRef.current = requestAnimationFrame(tick)
 } else {
 setTransitionKind(null)
 setTransitionProgress(0)
-dispatch({ type: 'COMPLETE_ASCENT' })
+setInputLocked(false); applyTransition('COMPLETE_ASCENT')
 }
 }
 if (transitionFrameRef.current) cancelAnimationFrame(transitionFrameRef.current)
@@ -260,15 +216,15 @@ transitionFrameRef.current = requestAnimationFrame(tick)
 }
 
 const openFocus = (star: StarNode) => {
-if (state.phase !== 'LIFEMAP' || state.inputLocked || transitionKind) return
+if (!canTransition('OPEN_FOCUS', { starId: star.id, inputLocked }) || transitionKind) return
 setFocusVisible(false)
-dispatch({ type: 'OPEN_FOCUS', starId: star.id })
+applyTransition('OPEN_FOCUS', { starId: star.id, inputLocked })
 setTimeout(() => setFocusVisible(true), FOCUS_ENTER_MS)
 }
 
 const openReplay = () => {
-if (state.phase !== 'FOCUS' || state.inputLocked || !selectedStar) return
-dispatch({ type: 'OPEN_REPLAY' })
+if (!selectedStar || !canTransition('OPEN_REPLAY', { inputLocked })) return
+setInputLocked(true); applyTransition('OPEN_REPLAY', { inputLocked })
 setTimeout(() => setReplayVisible(true), REPLAY_ENTER_MS)
 }
 
@@ -297,7 +253,7 @@ aria-label="Enter spatial field via sky"
 onClick={startAscent}
 style={{
 position: 'absolute', left: 0, right: 0, top: 0, height: '60%',
-cursor: state.phase === 'HOME' && !state.inputLocked ? 'pointer' : 'default',
+cursor: phase === 'HOME' && !inputLocked ? 'pointer' : 'default',
 background: 'linear-gradient(to bottom, #010541 0%, #020748 100%)',
 opacity: camera.homeOpacity,
 transition: 'opacity 400ms linear',
@@ -334,14 +290,14 @@ boxShadow: '0 0 0 1px rgba(255,255,255,0.02)',
 <div style={{ position: 'absolute', inset: 0 }}>
   <Starfield3D
     stars={STAR_DATA}
-    phase={state.phase}
-    onSelect={(id) => dispatch({ type: 'OPEN_FOCUS', starId: id })}
+    phase={phase}
+    onSelect={(id) => applyTransition('OPEN_FOCUS', { starId: id, inputLocked })}
   />
 </div>
 )}
 
 {/* REPLAY ENVIRONMENT: Reworked to be immersive, per REPLAY LAW */}
-{state.phase === 'REPLAY' && (
+{phase === 'REPLAY' && (
 <div
 aria-hidden={!replayVisible}
 style={{
@@ -372,7 +328,7 @@ transition: 'opacity 500ms ease-out',
 </div>
 )}
 
-{state.phase === 'FOCUS' && selectedStar && (
+{phase === 'FOCUS' && selectedStar && (
 <div
 aria-hidden={!focusVisible}
 style={{

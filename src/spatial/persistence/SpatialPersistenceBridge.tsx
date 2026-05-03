@@ -8,17 +8,17 @@ import type { SpatialPersistenceSnapshot } from "../types";
 
 export default function SpatialPersistenceBridge() {
   const mode = useSceneStore((s) => s.mode);
-  const selectedStar = useSceneStore((s) => s.selectedStar);
+  const selectedStarId = useSceneStore((s) => s.selectedStarId);
   const xrState = useXrStore();
 
   useEffect(() => {
-    const star = resolveStarById(selectedStar);
+    const star = resolveStarById(selectedStarId);
     const snapshot: SpatialPersistenceSnapshot = {
       schema: "urai.spatial.persistence.v1" as const,
       savedAt: new Date().toISOString(),
       sceneMode: mode,
-      selectedStarId: selectedStar ?? null,
-      selectedStar: selectedStar,
+      selectedStarId: selectedStarId ?? null,
+      selectedStar: selectedStarId,
       selectedStarLabel: star?.label ?? null,
       presenting: xrState.presenting,
       hasHeadsetPose: xrState.hasHeadsetPose,
@@ -29,7 +29,7 @@ export default function SpatialPersistenceBridge() {
       window.localStorage.setItem("urai.spatial.persistence", JSON.stringify(snapshot));
       (window).__URAI_SPATIAL_PERSISTENCE__ = snapshot;
     } catch {}
-  }, [mode, selectedStar, xrState]);
+  }, [mode, selectedStarId, xrState]);
 
   return null;
 }
