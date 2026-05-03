@@ -60,6 +60,10 @@ const TONE_COLORS: Record<string, string> = {
   calm: "#a7c7ff",
 }
 
+function clamp01(value: number): number {
+  return Math.max(0, Math.min(1, value))
+}
+
 function isFinitePosition(position: unknown): position is [number, number, number] {
   return (
     Array.isArray(position) &&
@@ -71,9 +75,7 @@ function isFinitePosition(position: unknown): position is [number, number, numbe
 function normalizeLifeMapStar(star: LifeMapStar): StarNode | null {
   const position: [number, number, number] = [star.x, star.y, star.z]
 
-  if (!isFinitePosition(position) || !Number.isFinite(star.r)) {
-    return null
-  }
+  if (!isFinitePosition(position) || !Number.isFinite(star.r)) return null
 
   return {
     ...star,
@@ -91,8 +93,7 @@ function mapInputStarToLifeMapStar(star: InputStar, index: number): StarNode | n
   const tone = star.tone ?? "focus"
   const x = star.position[0] * 3.4
   const y = star.position[1] + 16 + (index % 3) * 1.6
-  const z = -138 - index * 13 + star.position[2] * 3
-
+  const z = -48 - index * 6 + star.position[2] * 0.8
   const position: [number, number, number] = [x, y, z]
 
   return {
@@ -116,10 +117,10 @@ function createFallbackMajorStars(): StarNode[] {
 
   return Array.from({ length: 10 }, (_, index) => {
     const angle = (index / 10) * Math.PI * 2
-    const radius = 14 + (index % 3) * 4.5
+    const radius = 10 + (index % 3) * 3.5
     const x = Math.cos(angle) * radius
-    const y = 15 + Math.sin(angle * 1.45) * 7
-    const z = -132 - index * 14
+    const y = 10 + Math.sin(angle * 1.45) * 5
+    const z = -42 - index * 5.5
     const tone = tones[index] ?? "neutral"
 
     return {
@@ -155,9 +156,9 @@ function createFallbackMajorStars(): StarNode[] {
 
 function createBackgroundStars(count = 70): StarNode[] {
   return Array.from({ length: count }, (_, index) => {
-    const x = ((index * 37) % 97) - 48
-    const y = 3 + ((index * 23) % 42)
-    const z = -96 - ((index * 41) % 230)
+    const x = ((index * 37) % 97) * 0.55 - 26
+    const y = 3 + ((index * 23) % 34) * 0.72
+    const z = -32 - ((index * 41) % 86)
     const r = 0.055 + ((index * 13) % 9) * 0.009
 
     return {
@@ -176,10 +177,21 @@ function createBackgroundStars(count = 70): StarNode[] {
   })
 }
 
-function clamp01(value: number): number {
-  if (value < 0) return 0
-  if (value > 1) return 1
-  return value
+function normalizeVisibleDepth(star: StarNode, index: number): StarNode {
+  const isMajor = Boolean(star.major)
+  const zTooFar = star.z < -118
+  const zTooNear = star.z > -24
+
+  if (!zTooFar && !zTooNear) return star
+
+  const z = isMajor ? -42 - index * 5.5 : -34 - (index % 70) * 1.1
+  const position: [number, number, number] = [star.x, star.y, z]
+
+  return {
+    ...star,
+    z,
+    position,
+  }
 }
 
 export default function Starfield({
@@ -208,12 +220,17 @@ export default function Starfield({
     const normalizedLifeMapStars = (lifeMapStars ?? [])
       .map(normalizeLifeMapStar)
       .filter((star): star is StarNode => Boolean(star))
+      .map(normalizeVisibleDepth)
 
     const mappedInputStars = (stars ?? [])
       .map(mapInputStarToLifeMapStar)
       .filter((star): star is StarNode => Boolean(star))
 
-    const invalidCount = (lifeMapStars?.length ?? 0) + (stars?.length ?? 0) - normalizedLifeMapStars.length - mappedInputStars.length
+    const invalidCount =
+      (lifeMapStars?.length ?? 0) +
+      (stars?.length ?? 0) -
+      normalizedLifeMapStars.length -
+      mappedInputStars.length
 
     if (invalidCount > 0 && process.env.NODE_ENV !== "production" && !warnedInvalidRef.current) {
       warnedInvalidRef.current = true
@@ -257,7 +274,7 @@ export default function Starfield({
         .sort((a, b) => a.sort - b.sort)
         .slice(1)
         .map((star, index) => [majorStars[index], star] as const)
-        .filter(([a, b]) => Boolean(a && b)),
+        .filter(([from, to]) => Boolean(from && to)),
     [majorStars],
   )
 
@@ -286,15 +303,38 @@ export default function Starfield({
               <bufferAttribute attach="attributes-position" args={[positions, 3]} />
             </bufferGeometry>
             <lineBasicMaterial
-              color="#7fa8e8"
+              color="#8fb7ff"
               transparent
-              opacity={0.22 * baseOpacity * (1 - focusDim * 0.45)}
+              opacity={0.32 * baseOpacity * (1 - focusDim * 0.35)}
               depthWrite={false}
-              depthTest={true}
+              depthTest={false}
+              toneMapped={false}
             />
           </line>
         )
       })}
+
+      {process.env.NODE_ENV !== "production" && (
+        <>
+          {[
+            [0, 12, -45],
+            [-8, 16, -55],
+            [8, 18, -65],
+          ].map((position, index) => (
+            <mesh key={`dev-proof-star-${index}`} position={position as [number, number, number]} renderOrder={100}>
+              <sphereGeometry args={[0.6, 24, 24]} />
+              <meshBasicMaterial
+                color={["#ffffff", "#ffe27a", "#7ce2ff"][index]}
+                transparent
+                opacity={0.95}
+                depthWrite={false}
+                depthTest={false}
+                toneMapped={false}
+              />
+            </mesh>
+          ))}
+        </>
+      )}
 
       {allStars.map((star, index) => {
         const isMajor = Boolean(star.major)
@@ -303,7 +343,7 @@ export default function Starfield({
         const hasSelection = Boolean(selectedStar)
 
         const drift = timeRef.current
-        const driftStrength = isMajor ? 0.18 : 0.32
+        const driftStrength = isMajor ? 0.14 : 0.24
         let position: [number, number, number] = [
           star.position[0] + Math.sin(drift * 0.16 + index * 0.71) * driftStrength,
           star.position[1] + Math.cos(drift * 0.2 + index * 0.43) * driftStrength * 0.7,
@@ -322,20 +362,21 @@ export default function Starfield({
         }
 
         const dimForSelection = hasSelection && !isSelected ? 0.42 : 1
-        const dimForFocus = isMajor ? 1 - focusDim * 0.16 : 1 - focusDim * 0.54
-        const starOpacity = baseOpacity * dimForSelection * dimForFocus * (isMajor ? 0.94 : 0.5)
+        const dimForFocus = isMajor ? 1 - focusDim * 0.16 : 1 - focusDim * 0.42
+        const starOpacity = baseOpacity * dimForSelection * dimForFocus * (isMajor ? 0.98 : 0.62)
         const radius = star.r * (isSelected ? 1.9 : isHovered ? 1.35 : 1)
 
         return (
           <group key={star.id}>
             {isMajor && (
               <mesh position={position} renderOrder={10}>
-                <sphereGeometry args={[radius * 2.7, 24, 24]} />
+                <sphereGeometry args={[radius * 2.8, 24, 24]} />
                 <meshBasicMaterial
                   color={isSelected ? "#ffe27a" : star.color}
                   transparent
-                  opacity={starOpacity * (isSelected ? 0.2 : isHovered ? 0.16 : 0.1)}
+                  opacity={starOpacity * (isSelected ? 0.24 : isHovered ? 0.18 : 0.13)}
                   depthWrite={false}
+                  depthTest={false}
                   blending={THREE.AdditiveBlending}
                   toneMapped={false}
                 />
@@ -367,8 +408,9 @@ export default function Starfield({
               <meshBasicMaterial
                 color={isSelected ? "#ffe27a" : star.color}
                 transparent
-                opacity={Math.max(0.08, starOpacity)}
+                opacity={Math.max(isMajor ? 0.35 : 0.18, starOpacity)}
                 depthWrite={false}
+                depthTest={false}
                 toneMapped={false}
               />
             </mesh>
@@ -380,7 +422,7 @@ export default function Starfield({
                   <meshBasicMaterial
                     color={isSelected ? "#ffe9a8" : "#b9d7ff"}
                     transparent
-                    opacity={0.58 * baseOpacity}
+                    opacity={0.62 * baseOpacity}
                     depthWrite={false}
                     depthTest={false}
                     toneMapped={false}
@@ -392,7 +434,7 @@ export default function Starfield({
                   <meshBasicMaterial
                     color={star.color}
                     transparent
-                    opacity={0.82 * baseOpacity}
+                    opacity={0.86 * baseOpacity}
                     depthWrite={false}
                     depthTest={false}
                     toneMapped={false}

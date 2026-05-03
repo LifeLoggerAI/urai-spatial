@@ -1,5 +1,6 @@
 'use client'
 
+import type { CSSProperties } from 'react'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { Canvas } from '@react-three/fiber'
 import * as THREE from 'three'
@@ -32,6 +33,51 @@ const STARS: SpatialStar[] = [
   { id: 'star-6', position: [-0.8, 2.75, -12.6], color: '#8fdcff', size: 0.115 },
   { id: 'star-7', position: [1.1, 3.35, -13.8], color: '#d9c8ff', size: 0.11 },
 ]
+
+const rootStyle: CSSProperties = {
+  position: 'fixed',
+  inset: 0,
+  width: '100vw',
+  height: '100dvh',
+  overflow: 'hidden',
+  background: '#05010d',
+  color: '#fff',
+  margin: 0,
+  padding: 0,
+}
+
+const canvasWrapStyle: CSSProperties = {
+  position: 'absolute',
+  inset: 0,
+  width: '100%',
+  height: '100%',
+  zIndex: 0,
+}
+
+const hudStyle: CSSProperties = {
+  position: 'absolute',
+  left: 16,
+  top: 16,
+  zIndex: 20,
+  width: 'min(92vw, 420px)',
+  padding: 16,
+  borderRadius: 16,
+  background: 'rgba(8, 12, 28, 0.72)',
+  border: '1px solid rgba(159, 211, 255, 0.32)',
+  backdropFilter: 'blur(12px)',
+  boxShadow: '0 16px 50px rgba(0,0,0,.45)',
+  pointerEvents: 'auto',
+}
+
+const hudButtonStyle: CSSProperties = {
+  border: '1px solid rgba(159,211,255,.45)',
+  borderRadius: 999,
+  padding: '6px 12px',
+  fontSize: 12,
+  color: '#e8f3ff',
+  background: 'rgba(16,22,40,.55)',
+  cursor: 'pointer',
+}
 
 function clamp01(value: number) {
   if (value < 0) return 0
@@ -251,19 +297,19 @@ export default function SpatialScene() {
     if (phase === 'HOME') {
       fogRef.current.color = new THREE.Color('#0c1726')
       fogRef.current.near = 10
-      fogRef.current.far = 52
+      fogRef.current.far = 60
     } else if (phase === 'ASCENT') {
       fogRef.current.color = new THREE.Color('#0f1d31')
       fogRef.current.near = 18
-      fogRef.current.far = 120
+      fogRef.current.far = 150
     } else if (phase === 'LIFEMAP' || phase === 'FOCUS') {
       fogRef.current.color = new THREE.Color('#102238')
-      fogRef.current.near = 18
-      fogRef.current.far = 260
+      fogRef.current.near = 40
+      fogRef.current.far = 360
     } else if (phase === 'REPLAY') {
       fogRef.current.color = new THREE.Color('#05030b')
       fogRef.current.near = 1
-      fogRef.current.far = 42
+      fogRef.current.far = 80
     }
   }, [phase])
 
@@ -281,104 +327,110 @@ export default function SpatialScene() {
   const homeOpacity = phase === 'ASCENT' ? 1 - ascentProgress * 0.35 : homeReturnProgress > 0 ? homeReturnProgress : 1
 
   return (
-    <main className="relative min-h-screen overflow-hidden bg-[#05010d] text-white">
-      <div className="urai-hud-panel absolute left-4 top-4 z-20 w-[min(92vw,420px)] p-4">
-        <p className="m-0 text-xs uppercase tracking-[0.18em] text-cyan-200/80">URAI Spatial OS</p>
-        <p className="mb-3 mt-1 text-sm text-slate-100/90">
+    <main style={rootStyle}>
+      <div style={hudStyle}>
+        <p style={{ margin: 0, fontSize: 11, letterSpacing: '0.16em', textTransform: 'uppercase', color: 'rgba(178,235,255,.9)' }}>
+          URAI Spatial OS
+        </p>
+
+        <p style={{ margin: '6px 0 12px', fontSize: 13, color: 'rgba(240,248,255,.92)' }}>
           Phase: {phase} · Memory node: {selectedMeta?.title ?? selectedStarId ?? 'none'} · stars: {lifeMap.stars.length}
         </p>
 
-        <div className="flex flex-wrap gap-2">
-          <button
-            type="button"
-            aria-label="Open LifeMap"
-            className="rounded-full border border-cyan-200/50 px-3 py-1 text-xs"
-            onClick={openAscent}
-          >
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+          <button type="button" aria-label="Open LifeMap" style={hudButtonStyle} onClick={openAscent}>
             Open LifeMap
           </button>
 
-          <button
-            type="button"
-            aria-label="Back or Escape"
-            className="rounded-full border border-cyan-200/50 px-3 py-1 text-xs"
-            onClick={esc}
-          >
+          <button type="button" aria-label="Back or Escape" style={hudButtonStyle} onClick={esc}>
             Back / Escape
           </button>
 
           {phase === 'FOCUS' && (
-            <button
-              type="button"
-              aria-label="Enter Replay"
-              className="rounded-full border border-violet-200/50 px-3 py-1 text-xs"
-              onClick={openReplay}
-            >
+            <button type="button" aria-label="Enter Replay" style={hudButtonStyle} onClick={openReplay}>
               Enter Replay
             </button>
           )}
         </div>
 
-        <p className="mt-2 text-[11px] text-slate-300/80">Hint: ESC / Back to unwind</p>
+        <p style={{ marginTop: 8, marginBottom: 0, fontSize: 11, color: 'rgba(210,220,235,.84)' }}>Hint: ESC / Back to unwind</p>
 
         {process.env.NODE_ENV !== 'production' && (
-          <p className="mt-1 text-[11px] text-cyan-100/70">
-            debug: phase={phase} selected={selectedStarId ?? 'none'} starCount={lifeMap.stars.length} camera={phase} source=
-            {lifeMap.source}
+          <p style={{ marginTop: 4, marginBottom: 0, fontSize: 11, color: 'rgba(175,227,255,.76)' }}>
+            debug: phase={phase} selected={selectedStarId ?? 'none'} starCount={lifeMap.stars.length} camera={phase} source={lifeMap.source}
           </p>
         )}
       </div>
 
-      <Canvas camera={{ position: [0, 1.4, 7.5], fov: 42, near: 0.1, far: 320 }} dpr={[1, 2]} gl={{ antialias: true, alpha: false }}>
-        <color attach="background" args={['#05010d']} />
-        <fog ref={fogRef} attach="fog" args={['#0c1726', 10, 52]} />
+      <div style={canvasWrapStyle}>
+        <Canvas camera={{ position: [0, 1.4, 7.5], fov: 42, near: 0.1, far: 340 }} dpr={[1, 2]} gl={{ antialias: true, alpha: false }}>
+          <color attach="background" args={['#05010d']} />
+          <fog ref={fogRef} attach="fog" args={['#0c1726', 10, 52]} />
 
-        <ambientLight intensity={0.62} />
-        <directionalLight position={[4, 7, 5]} intensity={1.05} />
-        <pointLight position={[0, 2.5, -4]} intensity={2.1} color="#8fdcff" />
+          <ambientLight intensity={0.62} />
+          <directionalLight position={[4, 7, 5]} intensity={1.05} />
+          <pointLight position={[0, 2.5, -4]} intensity={2.1} color="#8fdcff" />
 
-        <CinematicCameraRig phase={phase} selectedStarPosition={selectedStarPosition} />
+          <CinematicCameraRig phase={phase} selectedStarPosition={selectedStarPosition} />
 
-        <ReplayEnvironment active={phase === 'REPLAY'} />
+          <ReplayEnvironment active={phase === 'REPLAY'} />
 
-        {!isReplay && (
-          <HomeEnvironment
-            visible={showHome}
-            interactive={phase === 'HOME'}
-            dim={phase === 'LIFEMAP' || phase === 'FOCUS' ? 0.45 : 0}
-            phase={toHomePhase(phase)}
-            opacity={homeOpacity}
-            onSkySelect={openAscent}
-            onOrbSelect={openAscent}
+          {!isReplay && (
+            <HomeEnvironment
+              visible={showHome}
+              interactive={phase === 'HOME'}
+              dim={phase === 'LIFEMAP' || phase === 'FOCUS' ? 0.45 : 0}
+              phase={toHomePhase(phase)}
+              opacity={homeOpacity}
+              onSkySelect={openAscent}
+              onOrbSelect={openAscent}
+            />
+          )}
+
+          <Starfield
+            visible={starfieldVisible && !isReplay}
+            stars={STARS}
+            lifeMapStars={lifeMap.stars}
+            selectedStarId={phase === 'FOCUS' || phase === 'REPLAY' ? selectedStarId : null}
+            onStarClick={(id: string, position: [number, number, number]) => {
+              if (phase !== 'LIFEMAP') return
+              if (!canUsePersonalLifeMap || !canUsePersonalMemoryStars) return
+              openFocus(id, position)
+            }}
+            interactive={phase === 'LIFEMAP' && canUsePersonalLifeMap && canUsePersonalMemoryStars}
+            collapseToSelected={phase === 'REPLAY'}
+            focusSuppression={phase === 'FOCUS' || phase === 'REPLAY' ? 1 : 0}
+            opacity={starfieldOpacity}
           />
-        )}
 
-        <Starfield
-          visible={starfieldVisible && !isReplay}
-          stars={STARS}
-          lifeMapStars={lifeMap.stars}
-          selectedStarId={phase === 'FOCUS' || phase === 'REPLAY' ? selectedStarId : null}
-          onStarClick={(id: string, position: [number, number, number]) => {
-            if (phase !== 'LIFEMAP') return
-            if (!canUsePersonalLifeMap || !canUsePersonalMemoryStars) return
-            openFocus(id, position)
-          }}
-          interactive={phase === 'LIFEMAP' && canUsePersonalLifeMap && canUsePersonalMemoryStars}
-          collapseToSelected={phase === 'REPLAY'}
-          focusSuppression={phase === 'FOCUS' || phase === 'REPLAY' ? 1 : 0}
-          opacity={starfieldOpacity}
-        />
+          {process.env.NODE_ENV !== 'production' && phase === 'LIFEMAP' && (
+            <group>
+              <mesh position={[0, 12, -45]}>
+                <sphereGeometry args={[1.1, 16, 16]} />
+                <meshBasicMaterial color="#ffffff" toneMapped={false} depthWrite={false} depthTest={false} />
+              </mesh>
+              <mesh position={[-8, 16, -55]}>
+                <sphereGeometry args={[1.1, 16, 16]} />
+                <meshBasicMaterial color="#6de3ff" toneMapped={false} depthWrite={false} depthTest={false} />
+              </mesh>
+              <mesh position={[8, 18, -65]}>
+                <sphereGeometry args={[1.1, 16, 16]} />
+                <meshBasicMaterial color="#ff9ee5" toneMapped={false} depthWrite={false} depthTest={false} />
+              </mesh>
+            </group>
+          )}
 
-        <FocusSubject
-          visible={phase === 'FOCUS' && canUsePersonalLifeMap}
-          starId={selectedStarId ?? undefined}
-          position={selectedStarPosition ?? [0, 0, -18]}
-          onEnterReplay={openReplay}
-          interactive={phase === 'FOCUS' && focusReady}
-        />
+          <FocusSubject
+            visible={phase === 'FOCUS' && canUsePersonalLifeMap}
+            starId={selectedStarId ?? undefined}
+            position={selectedStarPosition ?? [0, 0, -18]}
+            onEnterReplay={openReplay}
+            interactive={phase === 'FOCUS' && focusReady}
+          />
 
-        <ReplayScene visible={phase === 'REPLAY' && canUseAdvancedReplay} opacity={1} driftZ={0.4} replayGroupScale={1.35} />
-      </Canvas>
+          <ReplayScene visible={phase === 'REPLAY' && canUseAdvancedReplay} opacity={1} driftZ={0.4} replayGroupScale={1.35} />
+        </Canvas>
+      </div>
     </main>
   )
 }
