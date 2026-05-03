@@ -1,4 +1,4 @@
-import LifeMapScene from '@/components/spatial/LifeMapScene';
+import LifeMapScene from '../../components/spatial/LifeMapScene';
 import { Metadata } from 'next';
 
 export const metadata: Metadata = {
