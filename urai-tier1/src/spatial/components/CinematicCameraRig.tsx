@@ -29,9 +29,9 @@ const CLEAR_TARGET = new THREE.Vector3(0, -3.0, -15.0);
 const SKY_POS = new THREE.Vector3(0, 11.5, -13.5);
 const SKY_TARGET = new THREE.Vector3(0, 6.8, -145.0);
 
-const LIFE_POS = new THREE.Vector3(0, 12.4, -52.0);
-const LIFE_TARGET = new THREE.Vector3(0, 20.0, -255.0);
-const LIFE_FOV = 50;
+const LIFE_POS = new THREE.Vector3(0, 14.8, -6.5);
+const LIFE_TARGET = new THREE.Vector3(0, 14.2, -64.0);
+const LIFE_FOV = 56;
 
 function readPhase(props: CinematicCameraRigProps): CanonPhase {
   return props.phase ?? props.activePhase ?? props.scenePhase ?? "HOME";
@@ -111,7 +111,7 @@ export default function CinematicCameraRig(props: CinematicCameraRigProps) {
       desiredFov = LIFE_FOV;
     }
 
-    const selected = props.selectedStarPosition ?? props.selectedStar?.position ?? [0, 20, -255];
+    const selected = props.selectedStarPosition ?? props.selectedStar?.position ?? [0, 14, -62];
 
     if (focusRef.current > 0.001) {
       const fp = smooth(clamp01(focusRef.current));
@@ -166,79 +166,9 @@ export default function CinematicCameraRig(props: CinematicCameraRigProps) {
 
     camera.updateProjectionMatrix();
     camera.lookAt(targetRef.current);
+    return;
 
-    /* URAI_FULL_TIER_VIDEO_CAMERA_LOCK_V4:start */
-    {
-      const uraiPhase = String(phase);
-      const uraiDt = (typeof dt === "number" ? dt : 1 / 60);
-      const uraiUserData = camera.userData as Record<string, unknown>;
-
-      if (uraiUserData.uraiVideoLockPhase !== uraiPhase) {
-        uraiUserData.uraiVideoLockPhase = uraiPhase;
-        uraiUserData.uraiVideoLockElapsed = 0;
-      } else {
-        uraiUserData.uraiVideoLockElapsed =
-          typeof uraiUserData.uraiVideoLockElapsed === "number"
-            ? uraiUserData.uraiVideoLockElapsed + uraiDt
-            : uraiDt;
-      }
-
-      const uraiElapsed =
-        typeof uraiUserData.uraiVideoLockElapsed === "number"
-          ? uraiUserData.uraiVideoLockElapsed
-          : 0;
-
-      const uraiClamp01 = (value: number) => Math.max(0, Math.min(1, value));
-      const uraiEase = (value: number) => {
-        const t = uraiClamp01(value);
-        return t * t * (3 - 2 * t);
-      };
-
-      if (uraiPhase !== "HOME") {
-        const ascentT = uraiEase(uraiElapsed / 2.85);
-
-        const homeExitPos = new THREE.Vector3(0, 5.8, 12.5);
-        const lifeMapEntryPos = new THREE.Vector3(0, 22.5, -74);
-        const ascentPos = homeExitPos.clone().lerp(lifeMapEntryPos, ascentT);
-
-        const homeExitTarget = new THREE.Vector3(0, 3.8, -14);
-        const lifeMapEntryTarget = new THREE.Vector3(0, 21.5, -158);
-        const ascentTarget = homeExitTarget.clone().lerp(lifeMapEntryTarget, ascentT);
-
-        let uraiPos = ascentPos;
-        let uraiTarget = ascentTarget;
-
-        if (uraiPhase === "LIFEMAP") {
-          uraiPos = new THREE.Vector3(0, 22.5, -74);
-          uraiTarget = new THREE.Vector3(0, 21.5, -158);
-        } else if (uraiPhase === "FOCUS") {
-          uraiPos = new THREE.Vector3(0, 19.0, -94);
-          uraiTarget = new THREE.Vector3(0, 18.2, -160);
-        } else if (uraiPhase === "REPLAY") {
-          uraiPos = new THREE.Vector3(0, 17.2, -114);
-          uraiTarget = new THREE.Vector3(0, 16.6, -174);
-        }
-
-        const uraiLambda =
-          uraiPhase === "ASCENT" ? 2.25 :
-          uraiPhase === "LIFEMAP" ? 5.4 :
-          4.45;
-
-        const uraiStep = uraiClamp01(1 - Math.exp(-uraiDt * uraiLambda));
-
-        camera.position.lerp(uraiPos, uraiStep);
-        targetRef.current.lerp(uraiTarget, uraiStep);
-
-        camera.near = 0.03;
-        camera.far = 2000;
-        camera.updateProjectionMatrix();
-        camera.lookAt(targetRef.current);
-      }
-    }
-    /* URAI_FULL_TIER_VIDEO_CAMERA_LOCK_V4:end */
-});
+      });
 
   return null;
 }
-
-export { CinematicCameraRig };
