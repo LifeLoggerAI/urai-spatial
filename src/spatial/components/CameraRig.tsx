@@ -15,10 +15,6 @@ export default function CameraRig() {
       camera.position.set(-5.2, 1.25, 6.6);
       camera.lookAt(-0.6, 1.05, 0);
       camera.fov = 33;
-    } else if (mode === "ground") {
-      camera.position.set(-4.6, 0.95, 5.2);
-      camera.lookAt(-0.3, 0.2, 0);
-      camera.fov = 32;
     } else if (mode === "lifemap") {
       camera.position.set(0, 2.6, 8.2);
       const star = resolveStarById(selectedStar);

@@ -15,7 +15,7 @@ export type SceneState = {
   setMode: (mode: SceneMode) => void;
   goHome: () => void;
   returnHome: () => void;
-  enterSky: () => void;
+  enterHome: () => void;
   enterLifeMap: () => void;
   focusStar: (id: string | null) => void;
   enterReplay: () => void;
@@ -39,7 +39,7 @@ export const useSceneStore = create<SceneState>((set, get) => ({
   goHome: () => set({ ...HOME_STATE }),
   returnHome: () => set({ ...HOME_STATE }),
 
-  enterSky: () => set({ mode: "home" }),
+  enterHome: () => set({ mode: "home" }),
   enterLifeMap: () => set({ mode: "lifemap" }),
 
   focusStar: (id) =>
