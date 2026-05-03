@@ -2,6 +2,7 @@
 import Starfield3D from '@/spatial/components/Starfield3D'
 
 import React, { useEffect, useMemo, useReducer, useRef, useState } from 'react'
+import { getRuntimeFlags, type RecordingMode } from '@/spatial/config/runtimeFlags'
 
 // CANON: URAI Tier 1 Visual and Interaction Canon
 // 1. PHASE LAW: Legal forward path is HOME -> ASCENT -> LIFEMAP -> FOCUS -> REPLAY.
@@ -92,6 +93,25 @@ return state
 }
 }
 
+
+const PUBLIC_PHASE_LABELS: Record<Phase, string> = {
+HOME: 'Home / Life Orb',
+ASCENT: 'Opening Life Map',
+LIFEMAP: 'Life Map',
+FOCUS: 'Memory Focus',
+REPLAY: 'Memory Replay',
+}
+
+function getPublicPhaseLabel(phase: Phase, transitionKind: TransitionKind): string {
+if (transitionKind === 'lifemapToHome') return 'Returning Home'
+return PUBLIC_PHASE_LABELS[phase]
+}
+
+function getRecordingLabel(mode: RecordingMode): string | null {
+if (mode === 'active') return 'Recording Active'
+if (mode === 'passive') return 'Recording Ready'
+return null
+}
 function clamp01(v: number) {
 return Math.max(0, Math.min(1, v))
 }
@@ -179,12 +199,12 @@ groundOpacity: 0,
 }
 
 export default function SpatialScene() {
+const runtimeFlags = getRuntimeFlags()
 const [state, dispatch] = useReducer(sceneReducer, {
 phase: 'HOME',
 selectedStarId: null,
 inputLocked: false,
 })
-const [hoveredStarId, setHoveredStarId] = useState<string | null>(null)
 const [transitionKind, setTransitionKind] = useState<TransitionKind>(null)
 const [transitionProgress, setTransitionProgress] = useState(0)
 const [replayVisible, setReplayVisible] = useState(false)
@@ -293,7 +313,7 @@ transition: transitionKind ? 'none' : 'transform 750ms ease-out, background 750m
 <>
 {/* Sky click target - HOME LAW */}
 <div
-aria-label="Enter spatial field via sky"
+aria-label={runtimeFlags.publicDemoMode ? 'Open Life Map' : 'Enter spatial field via sky'}
 onClick={startAscent}
 style={{
 position: 'absolute', left: 0, right: 0, top: 0, height: '60%',
@@ -366,7 +386,7 @@ opacity: replayVisible ? 1 : 0,
 transition: 'opacity 500ms ease-out',
 }}
 >
-<p style={{ letterSpacing: '0.16em', fontSize: '0.8rem', margin: 0, textTransform: 'uppercase', opacity: 0.65 }}>Memory Trace</p>
+<p style={{ letterSpacing: '0.16em', fontSize: '0.8rem', margin: 0, textTransform: 'uppercase', opacity: 0.65 }}>{runtimeFlags.publicDemoMode ? 'Memory Replay' : 'Memory Trace'}</p>
 <h2 style={{ margin: '0.45rem 0 0', fontWeight: 500, fontSize: '2rem', textShadow: '0 0 24px rgba(255,227,163,0.35)' }}>{selectedStar?.label}</h2>
 </div>
 </div>
@@ -385,6 +405,30 @@ background:
 'radial-gradient(circle at 50% 50%, rgba(137,177,255,0.2) 0%, rgba(66,98,177,0.1) 22%, rgba(0,0,0,0.45) 60%, rgba(0,0,0,0.75) 100%)',
 }}
 />
+)}
+</div>
+
+
+<div
+style={{
+position: 'absolute',
+top: 20,
+left: '50%',
+transform: 'translateX(-50%)',
+padding: '0.45rem 0.8rem',
+borderRadius: '999px',
+background: 'rgba(5, 8, 24, 0.65)',
+border: '1px solid rgba(185, 202, 255, 0.35)',
+fontSize: '0.78rem',
+letterSpacing: '0.08em',
+textTransform: 'uppercase',
+pointerEvents: 'none',
+opacity: 0.95,
+}}
+>
+<span>{runtimeFlags.publicDemoMode ? getPublicPhaseLabel(state.phase, transitionKind) : state.phase}</span>
+{runtimeFlags.recordingMode !== 'off' && (
+<span style={{ marginLeft: '0.7rem', opacity: 0.8 }}>| {getRecordingLabel(runtimeFlags.recordingMode)}</span>
 )}
 </div>
 
