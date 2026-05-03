@@ -175,8 +175,8 @@ export function HomeEnvironment({
       </mesh>
 
       <mesh position={[-2.2, 0.74, -1.5]} rotation={[0.08, -0.28, -0.08]} castShadow receiveShadow>
-        <boxGeometry args={[1.8, 1.2, 1.8]} />
-        <meshStandardMaterial color="#485d73" roughness={1} metalness={0} />
+        <dodecahedronGeometry args={[1.05, 1]} />
+        <meshStandardMaterial color="#6a8eb1" roughness={0.58} metalness={0.16} emissive="#1a2f4f" emissiveIntensity={0.26} />
       </mesh>
 
       <mesh position={[-0.9, 0.18, -0.45]} rotation={[-Math.PI / 2, 0, 0.28]} receiveShadow>
@@ -185,8 +185,8 @@ export function HomeEnvironment({
       </mesh>
 
       <mesh position={[6.0, 0.56, -2.95]} rotation={[0.02, 0.46, 0]} castShadow receiveShadow>
-        <boxGeometry args={[1.28, 0.84, 1.95]} />
-        <meshStandardMaterial color="#536a82" roughness={1} metalness={0} />
+        <icosahedronGeometry args={[0.92, 1]} />
+        <meshStandardMaterial color="#7da0c5" roughness={0.5} metalness={0.2} emissive="#29466f" emissiveIntensity={0.22} />
       </mesh>
 
       <mesh position={[8.0, 0.33, -5.8]} rotation={[-Math.PI / 2, 0, -0.24]} receiveShadow>
