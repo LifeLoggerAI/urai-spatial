@@ -224,14 +224,13 @@ export default function SpatialScene() {
   }, [esc])
 
   useEffect(() => {
-    if (phase !== 'FOCUS') setFocusReady(false)
-  }, [phase])
-
-  useEffect(() => {
     if (phase === 'FOCUS') {
       focusEnteredAtRef.current = performance.now()
+      const timer = window.setTimeout(() => setFocusReady(true), 380)
+      return () => window.clearTimeout(timer)
     } else {
       focusEnteredAtRef.current = 0
+      setFocusReady(false)
     }
   }, [phase])
 
@@ -242,17 +241,6 @@ export default function SpatialScene() {
       stopReturnAnimation()
     }
   }, [stopAscentAnimation, stopReturnAnimation])
-
-  const handleCameraSettled = useCallback((settledPhase: Phase) => {
-    if (settledPhase === 'FOCUS') {
-      setFocusReady(true)
-      return
-    }
-
-    if (settledPhase === 'LIFEMAP' || settledPhase === 'HOME') {
-      setFocusReady(false)
-    }
-  }, [])
 
   useEffect(() => {
     if (!fogRef.current) return
@@ -314,8 +302,7 @@ export default function SpatialScene() {
 
         <CinematicCameraRig
           phase={phase}
-          selected={selectedStarPosition}
-          onSettled={handleCameraSettled}
+          selectedStarPosition={selectedStarPosition}
         />
 
         <ReplayEnvironment active={phase === 'REPLAY'} />
@@ -326,10 +313,6 @@ export default function SpatialScene() {
             interactive={phase === 'HOME'}
             dim={phase === 'LIFEMAP' || phase === 'FOCUS' ? 0.45 : 0}
             phase={toHomePhase(phase)}
-            opacity={homeOpacity}
-            worldScale={1}
-            yOffset={0}
-            zOffset={0}
             onSkySelect={openAscent}
           />
         )}
