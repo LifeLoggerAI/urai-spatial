@@ -4,6 +4,7 @@ import type { CSSProperties } from 'react'
 
 const CANON_TIER_LOCK_LINE =
   'Tier 1 interaction and camera flow are locked to canonical orbit-release behavior.'
+
 const CANON_SEQUENCE_LINE =
   'Tier sequence: Tier 0 foundation → Tier 1 orbit/release → Tier 2 cinematic camera.'
 
@@ -75,12 +76,6 @@ const badgeBaseStyle: CSSProperties = {
   letterSpacing: '0.04em',
 }
 
-const lockedBadgeStyle: CSSProperties = {
-  ...badgeBaseStyle,
-  background: 'rgba(148, 163, 184, 0.12)',
-  color: 'rgba(241,245,249,0.92)',
-}
-
 const completedBadgeStyle: CSSProperties = {
   ...badgeBaseStyle,
   background: 'rgba(34, 211, 238, 0.13)',
@@ -97,13 +92,14 @@ export function CanonicalTierLockHud() {
       <div style={labelStyle}>Visual audit closeout</div>
       <div style={lineStyle}>{CANON_TIER_LOCK_LINE}</div>
       <div style={sequenceStyle}>{CANON_SEQUENCE_LINE}</div>
+
       <div style={rowStyle}>
         {URAI_SPATIAL_TIER_LOCKS.map((tier) => (
           <span
             key={tier.label}
             data-tier={tier.label}
             data-status={tier.status}
-            style={tier.status === 'completed locked' ? completedBadgeStyle : lockedBadgeStyle}
+            style={completedBadgeStyle}
           >
             <span>{tier.label}</span>
             <span>{tier.status}</span>
