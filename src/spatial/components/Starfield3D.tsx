@@ -37,7 +37,9 @@ export default function Starfield3D({
     else if (phase === 'FOCUS') speed = 0
     else if (phase === 'REPLAY') speed = 2
 
-    group.current.children.forEach((child: any) => {
+    group.current.children.forEach((child: THREE.Object3D) => {
+      if (!('position' in child)) return
+
       child.position.z += dt * speed
       if (child.position.z > 5) {
         child.position.z = -80 - Math.random() * 40
