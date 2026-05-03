@@ -1,35 +1,16 @@
 "use client"
 
-import { uraiNow, uraiRandom, uraiTime } from "@/lib/uraiDeterminism"
-import { useMemo, useRef } from "react"
 import { useFrame } from "@react-three/fiber"
+import { useMemo, useRef, useState } from "react"
+import * as THREE from "three"
 
-type StarNode = {
-  id: string
-  position: [number, number, number]
-  size: number
-  featured?: boolean
-  color?: string
-}
+export type LifeMapStar = { id: string; x: number; y: number; z: number; r: number; color: string; tone: string; soft: number; sort: number; major?: boolean }
 
-function clamp01(v: number) {
-  if (v < 0) return 0
-  if (v > 1) return 1
-  return v
-}
-
-function impulse(t: number) {
-  return 1 - Math.pow(1 - t, 3)
-}
+type StarNode = LifeMapStar & { position: [number, number, number] }
 
 export default function Starfield(props: {
   visible: boolean
-  stars?: Array<{
-    id: string
-    position: [number, number, number]
-    size?: number
-    color?: string
-  }>
+  stars?: Array<{ id: string; position: [number, number, number]; size?: number; color?: string }>
   selectedStarId: string | null
   onStarClick: (id: string, position: [number, number, number]) => void
   interactive?: boolean
@@ -39,154 +20,108 @@ export default function Starfield(props: {
   zOffset?: number
   collapseToSelected?: boolean
   focusSuppression?: number
+  lifeMapStars?: LifeMapStar[]
 }) {
-  const generatedStars = useMemo<StarNode[]>(() => {
-    uraiNow()
-    uraiTime()
-    const nodes: StarNode[] = []
-    for (let i = 0; i < 85; i += 1) {
-      const x = (uraiRandom() - 0.5) * 12.4
-      const y = (uraiRandom() - 0.5) * 7.8
-      const z = -1.8 - uraiRandom() * 11.8
-      const size = 0.02 + uraiRandom() * 0.14
-      nodes.push({
-        id: "field-star-" + i,
-        position: [x, y, z],
-        size,
-        featured: false,
-        color: "#8ea3c7",
-      })
-    }
-    return nodes
+  const [hoveredId, setHoveredId] = useState<string | null>(null)
+  const tRef = useRef(0)
+
+  const fallbackMajor = useMemo<StarNode[]>(() => {
+    const tones = ["focus", "grief", "joy", "tense", "neutral", "awe", "recovery", "calm"]
+    return Array.from({ length: 10 }, (_, i) => {
+      const a = (i / 10) * Math.PI * 2
+      const z = -170 - i * 11
+      return {
+        id: `major-${i}`,
+        x: Math.cos(a) * (14 + (i % 3) * 4),
+        y: 16 + Math.sin(a * 1.5) * 7,
+        z,
+        r: 0.95,
+        color: ["#9fd3ff", "#c6a7ff", "#ffd18e", "#7ce2ff", "#ff9fb8"][i % 5],
+        tone: tones[i % tones.length],
+        soft: 0.95,
+        sort: i,
+        major: true,
+        position: [Math.cos(a) * (14 + (i % 3) * 4), 16 + Math.sin(a * 1.5) * 7, z],
+      }
+    })
   }, [])
 
-  const featuredStars: StarNode[] = (props.stars ?? []).map((star) => ({
-    id: star.id,
-    position: star.position,
-    size: star.size ?? 0.13,
-    featured: true,
-    color: star.color ?? "#9fd3ff",
+  const background = useMemo<StarNode[]>(() => Array.from({ length: 70 }, (_, i) => {
+    const x = ((i * 37) % 97) - 48
+    const y = 4 + ((i * 23) % 38)
+    const z = -120 - ((i * 41) % 190)
+    return { id: `bg-${i}`, x, y, z, r: 0.08 + ((i * 13) % 9) * 0.01, color: "#8ea3c7", tone: "neutral", soft: 0.72, sort: i + 100, position: [x, y, z] }
+  }), [])
+
+  const passedMajors = (props.lifeMapStars ?? []).filter((s) => s.major).map((s, i) => ({
+    id: s.id,
+    x: s.x, y: s.y, z: s.z, r: s.r,
+    color: s.color,
+    tone: s.tone,
+    soft: s.soft,
+    sort: s.sort,
+    major: true,
+    position: [s.x, s.y, s.z] as [number, number, number],
+  }))
+  const mappedBackground = (props.lifeMapStars ?? []).filter((s) => !s.major).map((s) => ({
+    ...s, major: false, position: [s.x, s.y, s.z] as [number, number, number],
   }))
 
-  const allStars: StarNode[] = [...generatedStars, ...featuredStars]
+  const positionalMajors = (props.stars ?? []).map((s, i) => ({
+    id: s.id,
+    x: s.position[0], y: s.position[1] + 15, z: s.position[2] * 12 - 170,
+    r: (s.size ?? 0.13) * 7,
+    color: s.color ?? "#9fd3ff",
+    tone: "focus",
+    soft: 1,
+    sort: i,
+    major: true,
+    position: [s.position[0], s.position[1] + 15, s.position[2] * 12 - 170] as [number, number, number],
+  }))
 
-  const opacity = props.opacity ?? 1
-  const worldScale = props.worldScale ?? 1
-  const yOffset = props.yOffset ?? 0
-  const zOffset = props.zOffset ?? 0
-  const interactive = props.interactive ?? true
-  const collapseToSelected = props.collapseToSelected ?? false
-  const focusSuppression = clamp01(props.focusSuppression ?? 0)
+  const majors = passedMajors.length > 0 ? passedMajors : (positionalMajors.length > 0 ? positionalMajors : fallbackMajor)
+  const allStars = [...(mappedBackground.length > 0 ? mappedBackground : background), ...majors]
 
-  const selectedStar = allStars.find((s) => s.id === props.selectedStarId) ?? null
+  const links = useMemo(() => majors.slice(1).map((s, i) => [majors[i], s] as const), [majors])
 
-  const seenIds = new Set<string>()
-  for (const s of allStars) {
-    if (seenIds.has(s.id)) {
-      console.warn("[Starfield] duplicate star id", s.id)
-    }
-    seenIds.add(s.id)
-  }
+  useFrame((_, d) => { tRef.current += d })
+  if (!props.visible) return null
 
-  const collapseRef = useRef(0)
+  const selected = allStars.find((s) => s.id === props.selectedStarId) ?? null
 
-  useFrame((_, delta) => {
-      const time = performance.now() * 0.001
-    const target = collapseToSelected && props.selectedStarId ? 1 : 0
-    const speed = target > collapseRef.current ? 8 : 5
-    collapseRef.current += (target - collapseRef.current) * Math.min(delta * speed, 1)
-  })
+  return <group position={[0, props.yOffset ?? 0, props.zOffset ?? 0]} scale={props.worldScale ?? 1}>
+    {links.map(([a, b], i) => <line key={`link-${i}`}>
+      <bufferGeometry>
+        <bufferAttribute attach="attributes-position" args={[new Float32Array([...a.position, ...b.position]), 3]} />
+      </bufferGeometry>
+      <lineBasicMaterial color="#6f8bc6" transparent opacity={0.25 * (props.opacity ?? 1)} depthWrite={false} />
+    </line>)}
 
-  return (
-    <group
-      visible={props.visible}
-      position={[0, yOffset, zOffset]}
-      scale={[worldScale, worldScale, worldScale]}
-    >
-      {allStars.map((star, index) => {
-        const selected = props.selectedStarId === star.id
-        const hasSelection = collapseToSelected && !!props.selectedStarId
-        const t = clamp01(collapseRef.current)
-        const g = impulse(t)
-
-          let position: [number, number, number] = star.position
-        if (
-          !Array.isArray(star.position) ||
-          star.position.length !== 3 ||
-          !star.position.every((v) => Number.isFinite(v))
-        ) {
-          throw new Error(
-          );
-        }
-
-          // === SAFE PARALLAX DEPTH LAYERS ===
-          const driftT = performance.now() * 0.001
-          const depth = Math.abs(star.position[2])
-          const layer = depth < 6 ? 1.0 : depth < 10 ? 0.58 : 0.24
-          const nearPass = depth < 6 ? 1 : 0
-          const driftX = Math.cos(driftT * (0.34 + layer * 0.22) + index * 0.17) * (0.035 + nearPass * 0.060) * layer
-          const driftY = Math.sin(driftT * (0.46 + layer * 0.28) + index * 0.13) * (0.055 + nearPass * 0.075) * layer
-          const driftZ = nearPass ? Math.sin(driftT * 1.2 + index * 0.31) * 1.6 - 0.6 : 0
-
-          position = [
-            star.position[0] + driftX,
-            star.position[1] + driftY + 3.2,
-            star.position[2] + driftZ,
-          ]
-        if (selectedStar && hasSelection) {
-          if (
-            !Array.isArray(selectedStar.position) ||
-            selectedStar.position.length !== 3 ||
-            !selectedStar.position.every((v) => Number.isFinite(v))
-          ) {
-            throw new Error(
-            );
-          }
-          const dx = star.position[0] - selectedStar.position[0]
-          const dy = star.position[1] - selectedStar.position[1]
-          const dz = star.position[2] - selectedStar.position[2]
-          const dist = Math.sqrt(dx * dx + dy * dy + dz * dz) + 0.0001
-          const gravity = 1 / (1 + dist * 0.35)
-          const curve = 1 - 0.58 * g * gravity
-          const push = selected ? 0 : (3.2 + dist * 0.35) * g
-
-          position = [
-            selectedStar.position[0] + dx * curve,
-            selectedStar.position[1] + dy * curve,
-            selectedStar.position[2] + dz * curve - push,
-          ]
-        }
-
-        const renderedSize = selected
-          ? star.size * 3.0
-          : star.featured
-            ? star.size * 1.8 * (1 - focusSuppression * 0.10)
-            : star.size * 1.25 * (1 - focusSuppression * 0.22)
-
-        const renderedOpacity = selected
-          ? 1 * opacity
-          : star.featured
-            ? (1.00 * (1 - focusSuppression * 0.78)) * opacity
-            : (0.82 * (1 - focusSuppression * 0.74)) * opacity
-
-        return (
-          <mesh
-            position={position}
-            onPointerDown={(e) => {
-              if (!interactive) return
-              e.stopPropagation()
-              props.onStarClick(star.id, star.position)
-            }}
-          >
-            <sphereGeometry args={[renderedSize, 20, 20]} />
-            <meshStandardMaterial
-              color={selected ? "#ffe27a" : (star.color ?? "#8ea3c7")}
-              transparent
-              opacity={renderedOpacity}
-            />
-          </mesh>
-        )
-      })}
-    </group>
-  )
+    {allStars.map((star, idx) => {
+      const drift = tRef.current
+      const position: [number, number, number] = [star.position[0] + Math.sin(drift * 0.14 + idx) * 0.22, star.position[1] + Math.cos(drift * 0.2 + idx) * 0.18, star.position[2]]
+      const isSelected = props.selectedStarId === star.id
+      const isHovered = hoveredId === star.id
+      const dim = selected && !isSelected ? 0.42 : 1
+      const rad = star.major ? star.r * (isSelected ? 1.8 : isHovered ? 1.35 : 1) : star.r
+      return <group key={star.id}>
+        <mesh
+          position={position}
+          onPointerOver={() => setHoveredId(star.id)}
+          onPointerOut={() => setHoveredId(null)}
+          onPointerDown={(e) => { if (!props.interactive || !star.major) return; e.stopPropagation(); props.onStarClick(star.id, star.position) }}>
+          <sphereGeometry args={[rad, 16, 16]} />
+          <meshBasicMaterial color={isSelected ? "#ffe27a" : star.color} transparent opacity={(props.opacity ?? 1) * dim * (star.major ? 0.85 : 0.3)} depthWrite={false} toneMapped={false} />
+        </mesh>
+        {star.major ? <mesh position={position} renderOrder={2}>
+          <sphereGeometry args={[rad * 1.9, 14, 14]} />
+          <meshBasicMaterial color={star.color} transparent opacity={isSelected ? 0.42 : 0.28} depthWrite={false} toneMapped={false} blending={THREE.AdditiveBlending} />
+        </mesh> : null}
+        {star.major && (isSelected || isHovered) ? <mesh position={[position[0], position[1] + 1.3, position[2]]}>
+          <planeGeometry args={[2.4, 0.42]} />
+          <meshBasicMaterial color="#b9d7ff" transparent opacity={0.72} />
+        </mesh> : null}
+      </group>
+    })}
+  </group>
 }

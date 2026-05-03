@@ -19,11 +19,26 @@
 }
 },
 "include": [
-"next-env.d.ts",
-".next/types/**/*.ts",
-".next/dev/types/**/*.ts",
-"src/**/*.ts",
-"src/**/*.tsx"
+  "next-env.d.ts",
+  ".next/types/**/*.ts",
+  ".next/dev/types/**/*.ts",
+  "src/app/**/*.ts",
+  "src/app/**/*.tsx",
+  "src/lib/**/*.ts",
+  "src/lib/**/*.tsx",
+  "src/spatial/components/**/*.ts",
+  "src/spatial/components/**/*.tsx",
+  "src/spatial/hooks/useSceneAuthority.ts",
+  "src/spatial/scene/**/*.ts",
+  "src/spatial/scene/**/*.tsx"
 ],
-"exclude": ["node_modules"]
+"exclude": [
+  "node_modules",
+  "src/spatial/ui/**",
+  "src/spatial/narrator/**",
+  "src/spatial/vault/**",
+  "src/spatial/scene/LifeMap.tsx",
+  "src/spatial/scene/sceneData.ts",
+  "src/spatial/scene/starData.ts"
+]
 }
