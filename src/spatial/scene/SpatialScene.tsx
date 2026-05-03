@@ -2,6 +2,7 @@
 import Starfield3D from '@/spatial/components/Starfield3D'
 
 import React, { useEffect, useMemo, useReducer, useRef, useState } from 'react'
+import { getPublicPhaseLabel, runtimeFlags } from '@/spatial/config/runtimeFlags'
 
 // CANON: URAI Tier 1 Visual and Interaction Canon
 // 1. PHASE LAW: Legal forward path is HOME -> ASCENT -> LIFEMAP -> FOCUS -> REPLAY.
@@ -275,6 +276,9 @@ setTimeout(() => setReplayVisible(true), REPLAY_ENTER_MS)
 const showHome = phaseForView === 'HOME' || phaseForView === 'ASCENT'
 const showField = phaseForView === 'LIFEMAP' || phaseForView === 'FOCUS' || phaseForView === 'ASCENT'
 
+const isReturningHome = transitionKind === 'lifemapToHome'
+const publicPhaseLabel = getPublicPhaseLabel(phaseForView, isReturningHome)
+
 return (
 <div
 style={{ position: 'fixed', inset: 0, overflow: 'hidden', background: camera.background, color: '#fff' }}
@@ -366,7 +370,7 @@ opacity: replayVisible ? 1 : 0,
 transition: 'opacity 500ms ease-out',
 }}
 >
-<p style={{ letterSpacing: '0.16em', fontSize: '0.8rem', margin: 0, textTransform: 'uppercase', opacity: 0.65 }}>Memory Trace</p>
+{!runtimeFlags.publicDemoMode && (<p style={{ letterSpacing: '0.16em', fontSize: '0.8rem', margin: 0, textTransform: 'uppercase', opacity: 0.65 }}>Memory Trace</p>)}
 <h2 style={{ margin: '0.45rem 0 0', fontWeight: 500, fontSize: '2rem', textShadow: '0 0 24px rgba(255,227,163,0.35)' }}>{selectedStar?.label}</h2>
 </div>
 </div>
@@ -386,6 +390,33 @@ background:
 }}
 />
 )}
+
+<div
+style={{
+position: 'absolute',
+top: 18,
+left: '50%',
+transform: 'translateX(-50%)',
+padding: '8px 12px',
+borderRadius: 999,
+fontSize: '0.78rem',
+letterSpacing: '0.08em',
+textTransform: 'uppercase',
+background: 'rgba(0,0,0,0.35)',
+backdropFilter: 'blur(6px)',
+border: '1px solid rgba(255,255,255,0.15)',
+}}
+>
+{publicPhaseLabel}
+</div>
+
+{!runtimeFlags.publicDemoMode && (
+<div style={{ position: 'absolute', top: 52, left: 16, fontSize: '0.72rem', opacity: 0.75 }}>
+  <div>phase: {state.phase}</div>
+  <div>selected: {state.selectedStarId ?? 'none'}</div>
+</div>
+)}
+
 </div>
 
 {/* Vignette Overlay */}
