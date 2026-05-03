@@ -2,7 +2,7 @@
 import Starfield3D from '@/spatial/components/Starfield3D'
 
 import React, { useEffect, useMemo, useReducer, useRef, useState } from 'react'
-
+import { getLifeMapStars, type LifeMapStarNode } from './getLifeMapStars'
 // CANON: URAI Tier 1 Visual and Interaction Canon
 // 1. PHASE LAW: Legal forward path is HOME -> ASCENT -> LIFEMAP -> FOCUS -> REPLAY.
 // 2. UNWIND LAW: Legal unwind path is REPLAY -> FOCUS -> LIFEMAP -> HOME. Strict ESC-only.
@@ -16,15 +16,7 @@ import React, { useEffect, useMemo, useReducer, useRef, useState } from 'react'
 type Phase = 'HOME' | 'ASCENT' | 'LIFEMAP' | 'FOCUS' | 'REPLAY'
 type TransitionKind = 'homeToLifemap' | 'lifemapToHome' | null
 
-type StarNode = {
-id: string
-x: number
-y: number
-z: number // Added for z-depth to enforce LifeMap depth canon
-size: number
-memoryRef: string
-label: string
-}
+type StarNode = LifeMapStarNode
 
 type SceneState = {
 phase: Phase
@@ -45,13 +37,8 @@ const REPLAY_ENTER_MS = 750
 const FOCUS_ENTER_MS = 520
 
 // CANON COMPLIANCE: Star data now includes a 'z' index for depth layering.
-const STAR_DATA: StarNode[] = [
-{ id: 'star_1', x: 24, y: 29, z: 0, size: 14, memoryRef: 'memory_ref_star_1', label: 'Threshold' },
-{ id: 'star_2', x: 40, y: 21, z: 1, size: 12, memoryRef: 'memory_ref_star_2', label: 'Signal' },
-{ id: 'star_3', x: 58, y: 34, z: 0, size: 13, memoryRef: 'memory_ref_star_3', label: 'Echo' },
-{ id: 'star_4', x: 70, y: 58, z: 2, size: 11, memoryRef: 'memory_ref_star_4', label: 'Memory' },
-{ id: 'star_5', x: 28, y: 60, z: 1, size: 12, memoryRef: 'memory_ref_star_5', label: 'Return' },
-]
+const LIFE_MAP_DATA = getLifeMapStars()
+const STAR_DATA: StarNode[] = LIFE_MAP_DATA.stars
 
 // REDUCER: Single source of truth for phase state. Complies with AUTHORITY LAW.
 function validateTransition(state: SceneState, action: SceneAction): boolean {
@@ -334,6 +321,7 @@ boxShadow: '0 0 0 1px rgba(255,255,255,0.02)',
 <div style={{ position: 'absolute', inset: 0 }}>
   <Starfield3D
     stars={STAR_DATA}
+    links={LIFE_MAP_DATA.links}
     phase={state.phase}
     onSelect={(id) => dispatch({ type: 'OPEN_FOCUS', starId: id })}
   />
