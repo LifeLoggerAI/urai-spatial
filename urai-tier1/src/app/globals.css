@@ -128,3 +128,50 @@ body[data-debug-spatial="false"] [data-overlay-text],
 body[data-debug-spatial="false"] [data-hud-text] {
   visibility: hidden !important;
 }
+
+
+/* Product hardening: avoid default HTML chrome in immersive scene */
+button, [role="button"] {
+  appearance: none;
+  -webkit-appearance: none;
+  background: transparent;
+  color: inherit;
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+  font: inherit;
+}
+
+#__next, main {
+  width: 100dvw;
+  height: 100dvh;
+  max-width: 100dvw;
+  max-height: 100dvh;
+  touch-action: manipulation;
+}
+
+
+/* Production lock: keep canonical home fully spatial/silent unless debug is explicitly enabled */
+body[data-debug-spatial="false"] button,
+body[data-debug-spatial="false"] [role="button"],
+body[data-debug-spatial="false"] input,
+body[data-debug-spatial="false"] select,
+body[data-debug-spatial="false"] textarea {
+  display: none !important;
+}
+
+body[data-debug-spatial="false"] h1,
+body[data-debug-spatial="false"] h2,
+body[data-debug-spatial="false"] h3,
+body[data-debug-spatial="false"] h4,
+body[data-debug-spatial="false"] h5,
+body[data-debug-spatial="false"] h6,
+body[data-debug-spatial="false"] p,
+body[data-debug-spatial="false"] small,
+body[data-debug-spatial="false"] label,
+body[data-debug-spatial="false"] li,
+body[data-debug-spatial="false"] a,
+body[data-debug-spatial="false"] [data-overlay-text],
+body[data-debug-spatial="false"] [data-hud-text] {
+  visibility: hidden !important;
+}
