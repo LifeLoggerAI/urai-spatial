@@ -31,21 +31,25 @@ export function useSpatialTierLock(featureId: SpatialFeatureId): TierLockDecisio
   const [decision, setDecision] = useState<TierLockDecision>(() => evaluateTierLock(featureId, defaultContext(userTier)))
 
   useEffect(() => {
+    let active = true
     const key = `${userTier}:${featureId}`
-    if (cache.has(key)) { setDecision(cache.get(key)!); return }
+    if (cache.has(key)) { setDecision(cache.get(key)!); return () => { active = false } }
     const fallback = evaluateTierLock(featureId, defaultContext(userTier))
     setDecision(fallback)
 
     const callable = getCallable()
-    if (!callable) return
+    if (!callable) return () => { active = false }
     callable({ featureId }).then((res: any) => {
+      if (!active) return
       const data = res.data as TierLockDecision
       cache.set(key, data)
       setDecision(data)
       telemetry(data.allowed ? 'spatial_lock_allowed' : 'spatial_lock_denied', { featureId: data.featureId, reasons: data.reasons })
     }).catch(() => {
+      if (!active) return
       telemetry('spatial_lock_fallback_rendered', { featureId, fallback: fallback.safeFallbackFeatureId })
     })
+    return () => { active = false }
   }, [featureId, userTier])
 
   return decision

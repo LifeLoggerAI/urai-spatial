@@ -159,7 +159,7 @@ export default function SpatialScene() {
     setSelectedStarPosition(position)
     clearFocusState()
     actions.openFocus(starId)
-  }, [actions, clearFocusState, phase])
+  }, [actions, canUsePersonalLifeMap, canUsePersonalMemoryStars, clearFocusState, phase])
 
   const openReplay = useCallback(() => {
     if (phase !== 'FOCUS') return
@@ -168,7 +168,7 @@ export default function SpatialScene() {
     if (!selectedStarId) return
       if (focusEnteredAtRef.current > 0 && performance.now() - focusEnteredAtRef.current < 700) return
     actions.openReplay()
-  }, [actions, focusReady, phase, selectedStarId])
+  }, [actions, canUseAdvancedReplay, focusReady, phase, selectedStarId])
 
   const esc = useCallback(() => {
     if (phase === 'REPLAY') {

@@ -37,7 +37,7 @@ const FEATURE_RULES: Record<SpatialFeatureId, { requiredTier: UraiTier; requires
 }
 
 
-export function evaluateDecision(input: { featureId: SpatialFeatureId; userTier: UraiTier; authenticated: boolean; isAdmin: boolean; isFounder: boolean; consents: Record<string, boolean>; flags: Record<string, boolean> }) {
+export function evaluateDecision(input: { featureId: SpatialFeatureId; userTier: UraiTier; authenticated: boolean; isAdmin: boolean; isFounder: boolean; consents: Record<string, boolean>; flags: Record<string, boolean>; safetyChecks?: Record<string, boolean> }) {
   const cfg = FEATURE_RULES[input.featureId]
   const reasons: LockReason[] = []
   if (cfg.requiresAuth && !input.authenticated && !input.isAdmin && !input.isFounder) reasons.push('unauthenticated')
@@ -45,6 +45,7 @@ export function evaluateDecision(input: { featureId: SpatialFeatureId; userTier:
   if (cfg.adminOnly && !input.isAdmin && !input.isFounder) reasons.push('admin_only')
   for (const c of cfg.requiredConsents) { if (!input.consents[c] && !input.isAdmin && !input.isFounder) { reasons.push('missing_consent'); break } }
   for (const f of cfg.requiredFlags) { if (!input.flags[f]) reasons.push('feature_flag_disabled') }
+  if (cfg.safetyClass === 'premium' && input.safetyChecks && Object.values(input.safetyChecks).some((v) => v === false) && !input.isAdmin && !input.isFounder) reasons.push('safety_blocked')
   return { allowed: reasons.length===0, reasons, requiredTier: cfg.requiredTier, fallback: cfg.fallback }
 }
 
@@ -84,12 +85,17 @@ export const evaluateSpatialTierLock = functions.https.onCall(async (data, conte
     }
   }
 
-  for (const flagName of cfg.requiredFlags) {
+  const flagResults = await Promise.all(cfg.requiredFlags.map(async (flagName) => {
     const snap = await admin.firestore().doc(`features/${flagName}`).get()
-    const enabled = snap.exists ? Boolean(snap.get('enabled')) : false
+    return { flagName, enabled: snap.exists ? Boolean(snap.get('enabled')) : false }
+  }))
+  for (const { flagName, enabled } of flagResults) {
     flags[flagName] = enabled
     if (!enabled) reasons.push('feature_flag_disabled')
   }
+
+  const safetyChecks = uid ? ((await admin.firestore().doc(`users/${uid}/meta/safety`).get()).data() ?? {}) as Record<string, boolean> : {}
+  if (cfg.safetyClass === 'premium' && Object.values(safetyChecks).some((v) => v === false) && !isAdmin && !isFounder) reasons.push('safety_blocked')
 
   const allowed = reasons.length === 0
   const response = { allowed, featureId, requiredTier: cfg.requiredTier, userTier, reasons, flags, safeFallbackFeatureId: allowed ? undefined : cfg.fallback, messageKey: allowed ? 'tierLock.allowed' : 'tierLock.denied', auditId: undefined as string | undefined }
