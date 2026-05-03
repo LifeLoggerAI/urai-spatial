@@ -8,10 +8,12 @@ type Star = { id: string; x: number; y: number; z: number }
 
 function hash01FromId(id: string): number {
   let hash = 2166136261
+
   for (let i = 0; i < id.length; i++) {
     hash ^= id.charCodeAt(i)
     hash = Math.imul(hash, 16777619)
   }
+
   return (hash >>> 0) / 4294967295
 }
 
@@ -28,8 +30,8 @@ export default function Starfield3D({
 
   const nodes = useMemo(() => {
     return stars.map((s) => {
-      // Deterministic hash-based depth preserves rendering guarantees across runs.
       const depthOffset = hash01FromId(s.id)
+
       return {
         id: s.id,
         position: new THREE.Vector3(
@@ -46,18 +48,20 @@ export default function Starfield3D({
     if (!group.current) return
 
     let speed = 0
+
     if (phase === 'ASCENT') speed = 10
     else if (phase === 'LIFEMAP') speed = 0.5
     else if (phase === 'FOCUS') speed = 0
     else if (phase === 'REPLAY') speed = 2
 
-    group.current.children.forEach((child: any, index) => {
+    group.current.children.forEach((child: THREE.Object3D, index) => {
       child.position.z += dt * speed
+
       if (child.position.z > 5) {
         child.position.z = nodes[index]?.respawnZ ?? -80
       }
     })
-  }, [nodes, phase])
+  })
 
   return (
     <group ref={group}>
