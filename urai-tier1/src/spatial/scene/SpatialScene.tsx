@@ -1,5 +1,6 @@
 'use client'
 
+import type { CSSProperties } from 'react'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { Canvas } from '@react-three/fiber'
 import * as THREE from 'three'
@@ -35,10 +36,30 @@ const STARS: SpatialStar[] = [
   { id: 'star-7', position: [1.1, 3.35, -13.8], color: '#d9c8ff', size: 0.11 },
 ]
 
-function clamp01(v: number) {
-  if (v < 0) return 0
-  if (v > 1) return 1
-  return v
+const rootStyle: CSSProperties = {
+  position: 'fixed',
+  inset: 0,
+  width: '100vw',
+  height: '100dvh',
+  overflow: 'hidden',
+  background: '#05010d',
+  color: '#fff',
+  margin: 0,
+  padding: 0,
+}
+
+const canvasWrapStyle: CSSProperties = {
+  position: 'absolute',
+  inset: 0,
+  width: '100%',
+  height: '100%',
+  zIndex: 0,
+}
+
+function clamp01(value: number) {
+  if (value < 0) return 0
+  if (value > 1) return 1
+  return value
 }
 
 function toHomePhase(phase: Phase): HomePhase {
@@ -77,6 +98,29 @@ export default function SpatialScene() {
   const ascentRafRef = useRef<number | null>(null)
   const returnRafRef = useRef<number | null>(null)
   const focusEnteredAtRef = useRef<number>(0)
+
+  const lifeMap = getLifeMapStars()
+  const { nodes, source } = useSpatialMemoryNodes()
+
+  const selectedMeta =
+    nodes.find((node) => node.id === selectedStarId) ??
+    lifeMap.stars.find((star) => star.id === selectedStarId)
+
+  const selectedTone =
+    (selectedMeta as { emotionalTone?: string; tone?: string } | undefined)?.emotionalTone ??
+    (selectedMeta as { emotionalTone?: string; tone?: string } | undefined)?.tone ??
+    'neutral'
+
+  const selectedTime =
+    (selectedMeta as { timestamp?: string; era?: string; date?: string } | undefined)?.timestamp ??
+    (selectedMeta as { timestamp?: string; era?: string; date?: string } | undefined)?.date ??
+    (selectedMeta as { timestamp?: string; era?: string; date?: string } | undefined)?.era ??
+    ''
+
+  const selectedNarrator =
+    (selectedMeta as { narratorLine?: string; narrator?: string } | undefined)?.narratorLine ??
+    (selectedMeta as { narratorLine?: string; narrator?: string } | undefined)?.narrator ??
+    'This memory forms a stable emotional signal.'
 
   const clearFocusState = useCallback(() => {
     setFocusReady(false)
@@ -172,7 +216,7 @@ export default function SpatialScene() {
       clearFocusState()
       actions.openFocus(starId)
     },
-    [actions, canUsePersonalLifeMap, canUsePersonalMemoryStars, clearFocusState, phase]
+    [actions, canUsePersonalLifeMap, canUsePersonalMemoryStars, clearFocusState, phase],
   )
 
   const openReplay = useCallback(() => {
@@ -184,6 +228,18 @@ export default function SpatialScene() {
 
     actions.openReplay()
   }, [actions, canUseAdvancedReplay, focusReady, phase, selectedStarId])
+
+  const returnToLifeMap = useCallback(() => {
+    if (phase !== 'FOCUS' && phase !== 'REPLAY') return
+
+    if (phase === 'REPLAY') {
+      actions.closeReplay()
+      return
+    }
+
+    clearFocusState()
+    actions.closeFocus()
+  }, [actions, clearFocusState, phase])
 
   const esc = useCallback(() => {
     if (phase === 'REPLAY') {
@@ -218,31 +274,32 @@ export default function SpatialScene() {
   }, [actions, clearFocusState, clearSelection, phase, startHomeReturnAnimation, stopAscentAnimation])
 
   useEffect(() => {
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') esc()
-      if (e.key.toLowerCase() === 'd' || e.key === '`') setDebugOpen((v) => !v)
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') esc()
+      if (event.key.toLowerCase() === 'd' || event.key === '`') setDebugOpen((value) => !value)
     }
 
     window.addEventListener('keydown', onKey)
-
     return () => window.removeEventListener('keydown', onKey)
   }, [esc])
 
   useEffect(() => {
     if (typeof window === 'undefined') return
-    const qp = new URLSearchParams(window.location.search)
-    if (qp.get('debug') === 'true') setDebugOpen(true)
+
+    const queryParams = new URLSearchParams(window.location.search)
+    if (queryParams.get('debug') === 'true') setDebugOpen(true)
   }, [])
 
   useEffect(() => {
     if (phase === 'FOCUS') {
       focusEnteredAtRef.current = performance.now()
       const timer = window.setTimeout(() => setFocusReady(true), 380)
+
       return () => window.clearTimeout(timer)
-    } else {
-      focusEnteredAtRef.current = 0
-      setFocusReady(false)
     }
+
+    focusEnteredAtRef.current = 0
+    setFocusReady(false)
   }, [phase])
 
   useEffect(() => {
@@ -288,89 +345,168 @@ export default function SpatialScene() {
   const starfieldOpacity = phase === 'ASCENT' ? ascentProgress : 1
   const homeOpacity = phase === 'ASCENT' ? 1 - ascentProgress * 0.35 : homeReturnProgress > 0 ? homeReturnProgress : 1
 
-  const lifeMap = getLifeMapStars()
-  const { nodes, source } = useSpatialMemoryNodes()
-  const selectedMeta = nodes.find((s) => s.id === selectedStarId) ?? lifeMap.stars.find((s) => s.id === selectedStarId)
-  const selectedTone = (selectedMeta as { emotionalTone?: string; tone?: string } | undefined)?.emotionalTone ?? (selectedMeta as { emotionalTone?: string; tone?: string } | undefined)?.tone ?? 'neutral'
-  const selectedTime = (selectedMeta as { timestamp?: string; era?: string } | undefined)?.timestamp ?? (selectedMeta as { timestamp?: string; era?: string } | undefined)?.era ?? ''
-  const selectedNarrator = (selectedMeta as { narratorLine?: string; narrator?: string } | undefined)?.narratorLine ?? (selectedMeta as { narratorLine?: string; narrator?: string } | undefined)?.narrator ?? 'This memory forms a stable emotional signal.'
-
   return (
-    <main style={{ position: 'fixed', inset: 0, width: '100vw', height: '100dvh', overflow: 'hidden', background: '#05010d', color: '#fff', margin: 0, padding: 0 }}>
-      <SpatialHUD phaseLabel={phase} starCount={lifeMap.stars.length} memoryTitle={selectedMeta?.title ?? 'No node selected'} source={source} canReplay={phase === 'FOCUS'} onOpen={openAscent} onBack={esc} onReplay={openReplay} />
-      {selectedMeta && (phase === 'FOCUS' || phase === 'REPLAY') && <div style={{position:'absolute',right:16,bottom:16,zIndex:24, width:'min(90vw,360px)',padding:14,borderRadius:16,background:'rgba(8,12,28,.68)',border:'1px solid rgba(188,210,255,.22)',backdropFilter:'blur(14px)'}}><div style={{fontWeight:700}}>{selectedMeta.title}</div><div style={{fontSize:12,opacity:.9}}>Tone: {selectedTone}</div><div style={{fontSize:12,opacity:.86}}>{selectedTime}</div><div style={{fontSize:12,opacity:.82,marginTop:6}}>{selectedNarrator}</div><div style={{display:'flex',gap:8,marginTop:10}}><button style={{border:'1px solid rgba(190,210,255,.28)',borderRadius:999,padding:'8px 12px',background:'rgba(100,130,255,.22)',color:'#fff'}} onClick={openReplay}>Replay</button><button style={{border:'1px solid rgba(190,210,255,.28)',borderRadius:999,padding:'8px 12px',background:'rgba(100,130,255,.12)',color:'#fff'}} onClick={() => actions.closeFocus()}>Return to LifeMap</button></div></div>}
-      {debugOpen && <div style={{position:'absolute',left:16,bottom:16,zIndex:30,padding:10,borderRadius:12,background:'rgba(0,0,0,.65)',fontSize:12,color:'#d2e8ff'}}>phase={phase}<br/>selected={selectedStarId ?? 'none'}<br/>starCount={lifeMap.stars.length}<br/>camera={phase}<br/>source={source}</div>}
-      <div style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', zIndex: 0 }}>
-      <Canvas
-        camera={{ position: [0, 1.4, 7.5], fov: 42, near: 0.1, far: 340 }}
-        dpr={[1, 2]}
-        gl={{ antialias: true, alpha: false }}
-      >
-        <color attach="background" args={['#05010d']} />
-        <fog ref={fogRef} attach="fog" args={['#0c1726', 10, 52]} />
+    <main style={rootStyle}>
+      <SpatialHUD
+        phaseLabel={phase}
+        starCount={lifeMap.stars.length}
+        memoryTitle={selectedMeta?.title ?? 'No node selected'}
+        source={source}
+        canReplay={phase === 'FOCUS' && focusReady && canUseAdvancedReplay}
+        onOpen={openAscent}
+        onBack={esc}
+        onReplay={openReplay}
+      />
 
-        <ambientLight intensity={0.62} />
-        <directionalLight position={[4, 7, 5]} intensity={1.05} />
-        <pointLight position={[0, 2.5, -4]} intensity={2.1} color="#8fdcff" />
-
-        <CinematicCameraRig
-          phase={phase}
-          selectedStarPosition={selectedStarPosition}
-        />
-
-        <ReplayEnvironment active={phase === 'REPLAY'} />
-
-        {!isReplay && (
-          <HomeEnvironment
-            visible={showHome}
-            interactive={phase === 'HOME'}
-            dim={phase === 'LIFEMAP' || phase === 'FOCUS' ? 0.45 : 0}
-            phase={toHomePhase(phase)}
-            onSkySelect={openAscent}
-            onOrbSelect={openAscent}
-          />
-        )}
-
-        <Starfield
-          visible={starfieldVisible && !isReplay}
-          stars={STARS}
-          selectedStarId={phase === 'FOCUS' || phase === 'REPLAY' ? selectedStarId : null}
-          onStarClick={(id: string, position: [number, number, number]) => {
-            if (phase !== 'LIFEMAP') return
-            if (!canUsePersonalLifeMap || !canUsePersonalMemoryStars) return
-
-            openFocus(id, position)
+      {selectedMeta && (phase === 'FOCUS' || phase === 'REPLAY') && (
+        <div
+          className="urai-hud-panel"
+          style={{
+            position: 'absolute',
+            right: 16,
+            bottom: 16,
+            zIndex: 24,
+            width: 'min(90vw, 360px)',
+            padding: 14,
+            borderRadius: 16,
+            pointerEvents: 'auto',
           }}
-          interactive={phase === 'LIFEMAP' && canUsePersonalLifeMap && canUsePersonalMemoryStars}
-          collapseToSelected={phase === 'REPLAY'}
-          focusSuppression={phase === 'FOCUS' || phase === 'REPLAY' ? 1 : 0}
-          opacity={starfieldOpacity}
-          lifeMapStars={lifeMap.stars}
-        />
-        {process.env.NODE_ENV !== 'production' && phase === 'LIFEMAP' && (
-          <group>
-            {/* Dev proof stars: verify camera/fog/layout visibility pipeline */}
-            <mesh position={[0, 12, -45]}><sphereGeometry args={[1.1, 16, 16]} /><meshBasicMaterial color="#ffffff" toneMapped={false} /></mesh>
-            <mesh position={[-8, 16, -55]}><sphereGeometry args={[1.1, 16, 16]} /><meshBasicMaterial color="#6de3ff" toneMapped={false} /></mesh>
-            <mesh position={[8, 18, -65]}><sphereGeometry args={[1.1, 16, 16]} /><meshBasicMaterial color="#ff9ee5" toneMapped={false} /></mesh>
-          </group>
-        )}
+        >
+          <div style={{ fontWeight: 700 }}>{selectedMeta.title}</div>
+          <div style={{ fontSize: 12, opacity: 0.9 }}>Tone: {selectedTone}</div>
+          <div style={{ fontSize: 12, opacity: 0.86 }}>{selectedTime}</div>
+          <div style={{ fontSize: 12, opacity: 0.82, marginTop: 6 }}>{selectedNarrator}</div>
 
-        <FocusSubject
-          visible={phase === 'FOCUS' && canUsePersonalLifeMap}
-          starId={selectedStarId ?? undefined}
-          position={selectedStarPosition ?? [0, 0, -18]}
-          onEnterReplay={openReplay}
-          interactive={phase === 'FOCUS' && focusReady}
-        />
+          <div style={{ display: 'flex', gap: 8, marginTop: 10 }}>
+            <button
+              type="button"
+              style={{
+                border: '1px solid rgba(190,210,255,.28)',
+                borderRadius: 999,
+                padding: '8px 12px',
+                background: 'rgba(100,130,255,.22)',
+                color: '#fff',
+              }}
+              onClick={openReplay}
+              disabled={!focusReady || !canUseAdvancedReplay}
+            >
+              Replay
+            </button>
 
-        <ReplayScene
-          visible={phase === 'REPLAY' && canUseAdvancedReplay}
-          opacity={1}
-          driftZ={0.4}
-          replayGroupScale={1.35}
-        />
-      </Canvas>
+            <button
+              type="button"
+              style={{
+                border: '1px solid rgba(190,210,255,.28)',
+                borderRadius: 999,
+                padding: '8px 12px',
+                background: 'rgba(100,130,255,.12)',
+                color: '#fff',
+              }}
+              onClick={returnToLifeMap}
+            >
+              Return to LifeMap
+            </button>
+          </div>
+        </div>
+      )}
+
+      {debugOpen && (
+        <div
+          style={{
+            position: 'absolute',
+            left: 16,
+            bottom: 16,
+            zIndex: 30,
+            padding: 10,
+            borderRadius: 12,
+            background: 'rgba(0,0,0,.65)',
+            fontSize: 12,
+            color: '#d2e8ff',
+            pointerEvents: 'auto',
+          }}
+        >
+          phase={phase}
+          <br />
+          selected={selectedStarId ?? 'none'}
+          <br />
+          starCount={lifeMap.stars.length}
+          <br />
+          camera={phase}
+          <br />
+          source={source}
+        </div>
+      )}
+
+      <div style={canvasWrapStyle}>
+        <Canvas camera={{ position: [0, 1.4, 7.5], fov: 42, near: 0.1, far: 340 }} dpr={[1, 2]} gl={{ antialias: true, alpha: false }}>
+          <color attach="background" args={['#05010d']} />
+          <fog ref={fogRef} attach="fog" args={['#0c1726', 10, 52]} />
+
+          <ambientLight intensity={0.62} />
+          <directionalLight position={[4, 7, 5]} intensity={1.05} />
+          <pointLight position={[0, 2.5, -4]} intensity={2.1} color="#8fdcff" />
+
+          <CinematicCameraRig phase={phase} selectedStarPosition={selectedStarPosition} />
+
+          <ReplayEnvironment active={phase === 'REPLAY'} />
+
+          {!isReplay && (
+            <HomeEnvironment
+              visible={showHome}
+              interactive={phase === 'HOME'}
+              dim={phase === 'LIFEMAP' || phase === 'FOCUS' ? 0.45 : 0}
+              phase={toHomePhase(phase)}
+              opacity={homeOpacity}
+              onSkySelect={openAscent}
+              onOrbSelect={openAscent}
+            />
+          )}
+
+          <Starfield
+            visible={starfieldVisible && !isReplay}
+            stars={STARS}
+            lifeMapStars={lifeMap.stars}
+            selectedStarId={phase === 'FOCUS' || phase === 'REPLAY' ? selectedStarId : null}
+            onStarClick={(id: string, position: [number, number, number]) => {
+              if (phase !== 'LIFEMAP') return
+              if (!canUsePersonalLifeMap || !canUsePersonalMemoryStars) return
+              openFocus(id, position)
+            }}
+            interactive={phase === 'LIFEMAP' && canUsePersonalLifeMap && canUsePersonalMemoryStars}
+            collapseToSelected={phase === 'REPLAY'}
+            focusSuppression={phase === 'FOCUS' || phase === 'REPLAY' ? 1 : 0}
+            opacity={starfieldOpacity}
+          />
+
+          {process.env.NODE_ENV !== 'production' && phase === 'LIFEMAP' && (
+            <group>
+              <mesh position={[0, 12, -45]}>
+                <sphereGeometry args={[1.1, 16, 16]} />
+                <meshBasicMaterial color="#ffffff" toneMapped={false} depthWrite={false} depthTest={false} />
+              </mesh>
+
+              <mesh position={[-8, 16, -55]}>
+                <sphereGeometry args={[1.1, 16, 16]} />
+                <meshBasicMaterial color="#6de3ff" toneMapped={false} depthWrite={false} depthTest={false} />
+              </mesh>
+
+              <mesh position={[8, 18, -65]}>
+                <sphereGeometry args={[1.1, 16, 16]} />
+                <meshBasicMaterial color="#ff9ee5" toneMapped={false} depthWrite={false} depthTest={false} />
+              </mesh>
+            </group>
+          )}
+
+          <FocusSubject
+            visible={phase === 'FOCUS' && canUsePersonalLifeMap}
+            starId={selectedStarId ?? undefined}
+            position={selectedStarPosition ?? [0, 0, -18]}
+            onEnterReplay={openReplay}
+            interactive={phase === 'FOCUS' && focusReady}
+          />
+
+          <ReplayScene visible={phase === 'REPLAY' && canUseAdvancedReplay} opacity={1} driftZ={0.4} replayGroupScale={1.35} />
+        </Canvas>
       </div>
     </main>
   )
