@@ -1,6 +1,6 @@
-import { Suspense } from 'react'
-import SpatialScene from '@/spatial/scene/SpatialScene'
-import LifeMapCanonicalSurface from '@/spatial/components/LifeMapCanonicalSurface'
+import { Suspense } from "react";
+import SpatialScene from "@/spatial/scene/SpatialScene";
+import LifeMapCanonicalSurface from "@/spatial/components/LifeMapCanonicalSurface";
 
 function FocusRouteStage() {
   return (
@@ -8,7 +8,7 @@ function FocusRouteStage() {
       <SpatialScene />
       <LifeMapCanonicalSurface />
     </>
-  )
+  );
 }
 
 export default function FocusPage() {
@@ -16,5 +16,5 @@ export default function FocusPage() {
     <Suspense fallback={null}>
       <FocusRouteStage />
     </Suspense>
-  )
+  );
 }

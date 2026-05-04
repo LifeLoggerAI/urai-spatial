@@ -4,15 +4,7 @@ import type { CSSProperties } from "react";
 import { useEffect, useMemo, useState } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 
-type NodeType =
-  | "signal"
-  | "threshold"
-  | "recovery"
-  | "pattern"
-  | "memory"
-  | "council"
-  | "return";
-
+type NodeType = "signal" | "threshold" | "recovery" | "pattern" | "memory" | "council" | "return";
 type Mode = "home" | "lifemap" | "focus" | "replay" | "mirror" | "rewind";
 type Filter = "all" | NodeType;
 
@@ -556,11 +548,15 @@ export function LifeMapCanonicalSurface() {
   const phaseIndex = Math.min(replayPhases.length - 1, Math.floor(progress / 25));
 
   const cameraScale =
-    mode === "focus" ? 1.32 :
-    mode === "replay" ? 1.42 :
-    mode === "mirror" ? 1.24 :
-    mode === "rewind" ? 1.36 :
-    1;
+    mode === "focus"
+      ? 1.32
+      : mode === "replay"
+        ? 1.42
+        : mode === "mirror"
+          ? 1.24
+          : mode === "rewind"
+            ? 1.36
+            : 1;
 
   const cameraX =
     selected && (mode === "focus" || mode === "replay" || mode === "mirror" || mode === "rewind")
@@ -573,12 +569,17 @@ export function LifeMapCanonicalSurface() {
       : 0;
 
   const replayTone = ["#7dd3fc", "#a78bfa", "#f9a8d4", "#ffffff"][phaseIndex] ?? "#7dd3fc";
+
   const activeTier =
-    mode === "home" ? 1 :
-    mode === "lifemap" ? 2 :
-    mode === "focus" ? 3 :
-    mode === "replay" ? 4 :
-    5;
+    mode === "home"
+      ? 1
+      : mode === "lifemap"
+        ? 2
+        : mode === "focus"
+          ? 3
+          : mode === "replay"
+            ? 4
+            : 5;
 
   useEffect(() => {
     if (mode !== "replay" || progress < 100) return;
@@ -846,7 +847,9 @@ export function LifeMapCanonicalSurface() {
           <p>{selected.type.toUpperCase()} NODE / {era}</p>
           <h1>{selected.title}</h1>
           <strong>{selected.subtitle}</strong>
-          <span>{selected.timestamp} - {selected.emotion} - {Math.round(selected.intensity * 100)}%</span>
+          <span>
+            {selected.timestamp} - {selected.emotion} - {Math.round(selected.intensity * 100)}%
+          </span>
           <article>{selected.description}</article>
           <blockquote>{selected.narratorLine}</blockquote>
           {selected.locked ? <b className="lock-message">This memory is still forming.</b> : null}
@@ -1023,19 +1026,19 @@ export function LifeMapCanonicalSurface() {
           <button
             type="button"
             disabled={!selected || selected.locked || !selected.replayAvailable}
-            onClick={() => (mode === "replay" ? unwind() : startReplay())}
+            onClick={() => (mode === "replay" || mode === "rewind" ? unwind() : startReplay())}
           >
-            {mode === "replay" ? "Collapse Replay" : "Replay"}
+            {mode === "replay" ? "Collapse Replay" : mode === "rewind" ? "Back to Replay" : "Replay"}
           </button>
         ) : null}
 
-        {mode !== "replay" ? (
+        {mode !== "replay" && mode !== "rewind" ? (
           <button type="button" onClick={() => setPanel(panel === "filter" ? null : "filter")}>
             Filter
           </button>
         ) : null}
 
-        {mode !== "replay" ? (
+        {mode !== "replay" && mode !== "rewind" ? (
           <button type="button" onClick={() => setPanel(panel === "era" ? null : "era")}>
             Era
           </button>

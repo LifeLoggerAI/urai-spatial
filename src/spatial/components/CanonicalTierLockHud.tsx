@@ -1,89 +1,35 @@
-'use client'
+"use client";
 
-import type { CSSProperties } from 'react'
-
-const CANON_TIER_LOCK_LINE =
-  'Tier 1 interaction and camera flow are locked to canonical orbit-release behavior.'
-
-const CANON_SEQUENCE_LINE =
-  'Tier sequence: Tier 0 foundation → Tier 1 orbit/release → Tier 2 cinematic camera.'
+import type { CSSProperties } from "react";
 
 const URAI_SPATIAL_TIER_LOCKS = [
-  { label: 'Tier 0', status: 'completed locked' },
-  { label: 'Tier 1', status: 'completed locked' },
-  { label: 'Tier 2', status: 'completed locked' },
-  { label: 'Tier 3', status: 'lock candidate — verify' },
-  { label: 'Tier 4', status: 'lock candidate — CI required' },
-  { label: 'Tier 5', status: 'lock candidate — live visual pass' },
-] as const
+  { label: "Tier 0", status: "completed locked" },
+  { label: "Tier 1", status: "completed locked" },
+  { label: "Tier 2", status: "completed locked" },
+  { label: "Tier 3", status: "lock candidate — verify" },
+  { label: "Tier 4", status: "lock candidate — CI required" },
+  { label: "Tier 5", status: "lock candidate — live visual pass" },
+] as const;
 
 const shellStyle: CSSProperties = {
-  position: 'fixed',
+  position: "fixed",
   right: 16,
   bottom: 16,
   zIndex: 2147483647,
-  display: 'grid',
+  display: "grid",
   gap: 8,
-  width: 'min(520px, calc(100vw - 32px))',
-  padding: '12px 14px',
+  width: "min(560px, calc(100vw - 32px))",
+  padding: "12px 14px",
   borderRadius: 18,
-  border: '1px solid rgba(255,255,255,0.14)',
-  background: 'rgba(3, 7, 18, 0.72)',
-  color: 'rgba(255,255,255,0.92)',
-  boxShadow: '0 18px 70px rgba(0,0,0,0.42)',
-  backdropFilter: 'blur(16px)',
-  WebkitBackdropFilter: 'blur(16px)',
-  pointerEvents: 'none',
+  border: "1px solid rgba(255,255,255,0.14)",
+  background: "rgba(3, 7, 18, 0.72)",
+  color: "rgba(255,255,255,0.92)",
+  boxShadow: "0 18px 70px rgba(0,0,0,0.42)",
+  backdropFilter: "blur(16px)",
+  pointerEvents: "none",
   fontFamily:
     'ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
-}
-
-const labelStyle: CSSProperties = {
-  fontSize: 10,
-  lineHeight: '14px',
-  letterSpacing: '0.18em',
-  textTransform: 'uppercase',
-  color: 'rgba(203, 213, 225, 0.72)',
-}
-
-const lineStyle: CSSProperties = {
-  fontSize: 12,
-  lineHeight: '18px',
-  fontWeight: 700,
-  color: 'rgba(255,255,255,0.96)',
-}
-
-const sequenceStyle: CSSProperties = {
-  fontSize: 11,
-  lineHeight: '16px',
-  color: 'rgba(203, 213, 225, 0.82)',
-}
-
-const rowStyle: CSSProperties = {
-  display: 'flex',
-  flexWrap: 'wrap',
-  gap: 6,
-}
-
-const badgeBaseStyle: CSSProperties = {
-  display: 'inline-flex',
-  alignItems: 'center',
-  gap: 6,
-  minHeight: 24,
-  padding: '4px 8px',
-  borderRadius: 999,
-  border: '1px solid rgba(255,255,255,0.12)',
-  fontSize: 10,
-  lineHeight: '12px',
-  fontWeight: 700,
-  letterSpacing: '0.04em',
-}
-
-const completedBadgeStyle: CSSProperties = {
-  ...badgeBaseStyle,
-  background: 'rgba(34, 211, 238, 0.13)',
-  color: 'rgba(207,250,254,0.96)',
-}
+};
 
 export function CanonicalTierLockHud() {
   return (
@@ -92,23 +38,49 @@ export function CanonicalTierLockHud() {
       data-urai-canon-tier-lock="true"
       style={shellStyle}
     >
-      <div style={labelStyle}>Visual audit closeout</div>
-      <div style={lineStyle}>{CANON_TIER_LOCK_LINE}</div>
-      <div style={sequenceStyle}>{CANON_SEQUENCE_LINE}</div>
+      <div
+        style={{
+          fontSize: 10,
+          letterSpacing: "0.18em",
+          textTransform: "uppercase",
+          color: "rgba(203,213,225,.72)",
+        }}
+      >
+        Visual audit status
+      </div>
 
-      <div style={rowStyle}>
-        {URAI_SPATIAL_TIER_LOCKS.map((tier) => (
-          <span
-            key={tier.label}
-            data-tier={tier.label}
-            data-status={tier.status}
-            style={completedBadgeStyle}
-          >
-            <span>{tier.label}</span>
-            <span>{tier.status}</span>
-          </span>
-        ))}
+      <div style={{ fontSize: 12, fontWeight: 700 }}>
+        Tier flow with ESC unwind is wired; Tier 3+ awaiting final CI + live visual signoff.
+      </div>
+
+      <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+        {URAI_SPATIAL_TIER_LOCKS.map((tier) => {
+          const isLocked = tier.status.includes("locked");
+
+          return (
+            <span
+              key={tier.label}
+              data-tier={tier.label}
+              data-status={tier.status}
+              style={{
+                display: "inline-flex",
+                gap: 6,
+                borderRadius: 999,
+                padding: "4px 8px",
+                border: "1px solid rgba(255,255,255,.16)",
+                background: isLocked
+                  ? "rgba(34,211,238,.13)"
+                  : "rgba(251,191,36,.12)",
+                fontSize: 10,
+                fontWeight: 700,
+              }}
+            >
+              <span>{tier.label}</span>
+              <span>{tier.status}</span>
+            </span>
+          );
+        })}
       </div>
     </aside>
-  )
+  );
 }

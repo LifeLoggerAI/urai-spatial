@@ -1,33 +1,33 @@
-'use client'
+"use client";
 
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from "react";
 
-type Mode = 'home' | 'ground' | 'ascent' | 'lifemap' | 'focus' | 'replay' | 'mirror'
+type Mode = "home" | "ground" | "ascent" | "lifemap" | "focus" | "replay" | "mirror";
 
-const STAR_COUNT = 160
-const SKY_BANDS = 5
+const STAR_COUNT = 160;
+const SKY_BANDS = 5;
 
 function modeFromLocation(): Mode {
-  if (typeof window === 'undefined') return 'home'
+  if (typeof window === "undefined") return "home";
 
-  const url = new URL(window.location.href)
-  const source = `${url.pathname} ${url.searchParams.get('phase') ?? ''}`.toLowerCase()
+  const url = new URL(window.location.href);
+  const source = `${url.pathname} ${url.searchParams.get("phase") ?? ""}`.toLowerCase();
 
-  if (source.includes('replay')) return 'replay'
-  if (source.includes('ground')) return 'ground'
-  if (source.includes('mirror')) return 'mirror'
-  if (source.includes('focus')) return 'focus'
-  if (source.includes('life-map') || source.includes('lifemap')) return 'lifemap'
-  if (source.includes('ascent')) return 'ascent'
+  if (source.includes("replay")) return "replay";
+  if (source.includes("ground")) return "ground";
+  if (source.includes("mirror")) return "mirror";
+  if (source.includes("focus")) return "focus";
+  if (source.includes("life-map") || source.includes("lifemap")) return "lifemap";
+  if (source.includes("ascent")) return "ascent";
 
-  return 'home'
+  return "home";
 }
 
 export default function SpatialScene() {
-  const [mode, setMode] = useState<Mode>('home')
-  const [ascentArmed, setAscentArmed] = useState(false)
-  const [groundOpen, setGroundOpen] = useState(false)
-  const [ascentProgress, setAscentProgress] = useState(0)
+  const [mode, setMode] = useState<Mode>("home");
+  const [ascentArmed, setAscentArmed] = useState(false);
+  const [groundOpen, setGroundOpen] = useState(false);
+  const [ascentProgress, setAscentProgress] = useState(0);
 
   const stars = useMemo(
     () =>
@@ -38,65 +38,65 @@ export default function SpatialScene() {
         size: 1 + ((i * 13) % 3),
       })),
     [],
-  )
+  );
 
   useEffect(() => {
-    const sync = () => setMode(modeFromLocation())
+    const sync = () => setMode(modeFromLocation());
 
-    sync()
-    window.addEventListener('popstate', sync)
+    sync();
+    window.addEventListener("popstate", sync);
 
-    return () => window.removeEventListener('popstate', sync)
-  }, [])
+    return () => window.removeEventListener("popstate", sync);
+  }, []);
 
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => {
-      if (event.key !== 'Escape') return
+      if (event.key !== "Escape") return;
 
-      if (mode === 'ground') {
-        event.preventDefault()
-        setGroundOpen(false)
-        setMode('home')
-        window.history.replaceState(null, '', '/home')
-        window.dispatchEvent(new PopStateEvent('popstate'))
+      if (mode === "ground") {
+        event.preventDefault();
+        setGroundOpen(false);
+        setMode("home");
+        window.history.replaceState(null, "", "/home");
+        window.dispatchEvent(new PopStateEvent("popstate"));
       }
-    }
+    };
 
-    window.addEventListener('keydown', onKey)
+    window.addEventListener("keydown", onKey);
 
-    return () => window.removeEventListener('keydown', onKey)
-  }, [mode])
+    return () => window.removeEventListener("keydown", onKey);
+  }, [mode]);
 
   useEffect(() => {
-    if (!ascentArmed && !groundOpen) return
+    if (!ascentArmed && !groundOpen) return;
 
-    setMode('ascent')
-    setAscentProgress(0)
+    setMode("ascent");
+    setAscentProgress(0);
 
-    const started = performance.now()
-    const duration = 1400
-    let raf = 0
+    const started = performance.now();
+    const duration = 1400;
+    let raf = 0;
 
     const tick = (time: number) => {
-      const progress = Math.min(1, (time - started) / duration)
+      const progress = Math.min(1, (time - started) / duration);
 
-      setAscentProgress(progress)
+      setAscentProgress(progress);
 
       if (progress < 1) {
-        raf = requestAnimationFrame(tick)
+        raf = requestAnimationFrame(tick);
       } else {
-        setMode('lifemap')
-        setAscentArmed(false)
-        setGroundOpen(false)
-        window.history.replaceState(null, '', '/life-map')
-        window.dispatchEvent(new PopStateEvent('popstate'))
+        setMode("lifemap");
+        setAscentArmed(false);
+        setGroundOpen(false);
+        window.history.replaceState(null, "", "/life-map");
+        window.dispatchEvent(new PopStateEvent("popstate"));
       }
-    }
+    };
 
-    raf = requestAnimationFrame(tick)
+    raf = requestAnimationFrame(tick);
 
-    return () => cancelAnimationFrame(raf)
-  }, [ascentArmed, groundOpen])
+    return () => cancelAnimationFrame(raf);
+  }, [ascentArmed, groundOpen]);
 
   return (
     <div data-testid="urai-spatial-stage" data-mode={mode} className={`spatial-stage mode-${mode}`}>
@@ -106,10 +106,7 @@ export default function SpatialScene() {
         ))}
       </div>
 
-      <div
-        className="bg-nebula"
-        style={{ transform: `translate3d(0, ${ascentProgress * -20}px, 0)` }}
-      />
+      <div className="bg-nebula" style={{ transform: `translate3d(0, ${ascentProgress * -20}px, 0)` }} />
 
       <div
         className="bg-stars"
@@ -132,7 +129,7 @@ export default function SpatialScene() {
         ))}
       </div>
 
-      {mode === 'home' ? (
+      {mode === "home" ? (
         <section data-testid="urai-home-scene" className="home-scene">
           <div data-testid="urai-home-horizon" className="home-horizon" />
 
@@ -142,9 +139,9 @@ export default function SpatialScene() {
             className="home-ground"
             aria-label="Open Ground"
             onClick={() => {
-              setGroundOpen(true)
-              window.history.replaceState(null, '', '/?phase=ground')
-              window.dispatchEvent(new PopStateEvent('popstate'))
+              setGroundOpen(true);
+              window.history.replaceState(null, "", "/?phase=ground");
+              window.dispatchEvent(new PopStateEvent("popstate"));
             }}
           />
 
@@ -164,7 +161,7 @@ export default function SpatialScene() {
         </section>
       ) : null}
 
-      {mode === 'ground' ? (
+      {mode === "ground" ? (
         <section data-testid="urai-ground-scene" className="ground-scene">
           <div className="ground-core" />
           <button type="button" className="ground-enter" onClick={() => setGroundOpen(true)}>
@@ -173,7 +170,7 @@ export default function SpatialScene() {
         </section>
       ) : null}
 
-      {mode === 'ascent' ? (
+      {mode === "ascent" ? (
         <section
           data-testid="urai-ascent-cover"
           className="ascent-cover"
@@ -189,7 +186,7 @@ export default function SpatialScene() {
         </section>
       ) : null}
 
-      {mode === 'lifemap' || mode === 'focus' || mode === 'replay' || mode === 'mirror' ? (
+      {mode === "lifemap" || mode === "focus" || mode === "replay" || mode === "mirror" ? (
         <section data-testid="urai-lifemap-scene" className="lifemap-scene" />
       ) : null}
 
@@ -220,5 +217,5 @@ export default function SpatialScene() {
         @keyframes skyShift{from{transform:translate3d(0,0,0)}to{transform:translate3d(2%,1%,0)}}
       `}</style>
     </div>
-  )
+  );
 }
