@@ -13,7 +13,8 @@ import React, { useEffect, useMemo, useReducer, useRef, useState } from 'react'
 // 7. REPLAY LAW: Must be an immersive, memory-dominant environment. NOT a panel over the starfield.
 // 8. AUTHORITY LAW: Reducer owns phase. CameraDirector is the single camera writer. No illegal shortcuts.
 
-type Phase = 'HOME' | 'ASCENT' | 'LIFEMAP' | 'FOCUS' | 'REPLAY'
+import { getAscentChannels, type Phase, sceneReducer, type SceneState } from './phaseMachine'
+
 type TransitionKind = 'homeToLifemap' | 'lifemapToHome' | null
 
 type StarNode = {
@@ -26,72 +27,6 @@ memoryRef: string
 label: string
 }
 
-type SceneState = {
-phase: Phase
-selectedStarId: string | null
-inputLocked: boolean
-}
-
-type SceneAction =
-| { type: 'START_ASCENT' }
-| { type: 'COMPLETE_ASCENT' }
-| { type: 'OPEN_FOCUS'; starId: string }
-| { type: 'OPEN_REPLAY' }
-| { type: 'ESC' }
-
-const ASCENT_MS = 2200
-const RETURN_HOME_MS = 1600
-const REPLAY_ENTER_MS = 750
-const FOCUS_ENTER_MS = 520
-
-// CANON COMPLIANCE: Star data now includes a 'z' index for depth layering.
-const STAR_DATA: StarNode[] = [
-{ id: 'star_1', x: 24, y: 29, z: 0, size: 14, memoryRef: 'memory_ref_star_1', label: 'Threshold' },
-{ id: 'star_2', x: 40, y: 21, z: 1, size: 12, memoryRef: 'memory_ref_star_2', label: 'Signal' },
-{ id: 'star_3', x: 58, y: 34, z: 0, size: 13, memoryRef: 'memory_ref_star_3', label: 'Echo' },
-{ id: 'star_4', x: 70, y: 58, z: 2, size: 11, memoryRef: 'memory_ref_star_4', label: 'Memory' },
-{ id: 'star_5', x: 28, y: 60, z: 1, size: 12, memoryRef: 'memory_ref_star_5', label: 'Return' },
-]
-
-// REDUCER: Single source of truth for phase state. Complies with AUTHORITY LAW.
-function validateTransition(state: SceneState, action: SceneAction): boolean {
-switch (action.type) {
-case 'START_ASCENT':
-return state.phase === 'HOME' && !state.inputLocked
-case 'COMPLETE_ASCENT':
-return state.phase === 'ASCENT'
-case 'OPEN_FOCUS':
-return state.phase === 'LIFEMAP' && !!action.starId && !state.inputLocked
-case 'OPEN_REPLAY':
-return state.phase === 'FOCUS' && !!state.selectedStarId && !state.inputLocked
-case 'ESC':
-return state.phase === 'REPLAY' || state.phase === 'FOCUS' || state.phase === 'LIFEMAP'
-default:
-return false
-}
-}
-
-function sceneReducer(state: SceneState, action: SceneAction): SceneState {
-if (!validateTransition(state, action)) return state
-
-switch (action.type) {
-case 'START_ASCENT':
-return { ...state, phase: 'ASCENT', inputLocked: true }
-case 'COMPLETE_ASCENT':
-return { ...state, phase: 'LIFEMAP', inputLocked: false }
-case 'OPEN_FOCUS':
-return { ...state, phase: 'FOCUS', selectedStarId: action.starId, inputLocked: false }
-case 'OPEN_REPLAY':
-return { ...state, phase: 'REPLAY', inputLocked: true }
-case 'ESC':
-if (state.phase === 'REPLAY') return { ...state, phase: 'FOCUS', inputLocked: false }
-if (state.phase === 'FOCUS') return { ...state, phase: 'LIFEMAP', selectedStarId: state.selectedStarId, inputLocked: false }
-return { phase: 'HOME', selectedStarId: null, inputLocked: false }
-default:
-return state
-}
-}
-
 function clamp01(v: number) {
 return Math.max(0, Math.min(1, v))
 }
@@ -102,7 +37,7 @@ return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2
 
 // CAMERA_DIRECTOR: Single writer for camera state. Complies with AUTHORITY LAW.
 // Values updated to enforce visual canon for all phases.
-function getCameraDirector(progress: number, phase: Phase, selectedStarId: StarNode | null) {
+function getCameraDirector(progress: number, phase: Phase, selectedStar: StarNode | null) {
 const p = clamp01(progress)
 const e = easeInOutCubic(p)
 
@@ -117,20 +52,30 @@ homeOpacity: 1, // Home elements fully visible
 replayOpacity: 0,
 orbScale: 1,
 groundOpacity: 1, // Ground visible
+translateX: 0,
+nebulaOpacity: 0,
+cameraY: 0.8,
+near: 0.1,
+far: 150,
 }
 }
 if (phase === 'ASCENT') {
-// Enhanced cinematic departure, per ASCENT LAW.
+const ascent = getAscentChannels(p)
 return {
-scale: 1 + e * 0.8,
-translateY: e * -25, // Stronger lift to show ground severance
+scale: 1 + ascent.cameraLift * 0.6,
+translateY: ascent.cameraLift * -18,
+translateX: 0,
 background: '#020748',
-starOpacity: e * 0.7, // Stars fade in during ascent
-vignette: 0.1 + e * 0.1,
-homeOpacity: 1 - e, // Home elements (orb, ground) fade out
+starOpacity: ascent.starStreak * 0.85,
+vignette: 0.1 + ascent.nebulaReveal * 0.22,
+homeOpacity: 1 - ascent.groundRecession,
 replayOpacity: 0,
-orbScale: 1 - e * 0.5,
-groundOpacity: 1 - e,
+orbScale: 1 - ascent.groundRecession * 0.55,
+groundOpacity: 1 - ascent.groundRecession,
+nebulaOpacity: ascent.nebulaReveal,
+cameraY: 1.0 + ascent.cameraLift * 0.6,
+near: 0.09 + ascent.nebulaReveal * 0.06,
+far: 130 + ascent.cameraLift * 50,
 }
 }
 if (phase === 'LIFEMAP') {
@@ -145,6 +90,11 @@ homeOpacity: 0,
 replayOpacity: 0,
 orbScale: 0,
 groundOpacity: 0,
+translateX: 0,
+nebulaOpacity: 0,
+cameraY: 0.8,
+near: 0.1,
+far: 150,
 }
 }
 if (phase === 'FOCUS') {
@@ -162,6 +112,10 @@ homeOpacity: 0,
 replayOpacity: 0,
 orbScale: 0,
 groundOpacity: 0,
+nebulaOpacity: 0,
+cameraY: 1.3,
+near: 0.15,
+far: 180,
 }
 }
 // REPLAY Phase, per REPLAY LAW (immersive, not a panel).
@@ -175,6 +129,10 @@ homeOpacity: 0,
 replayOpacity: 1, // Replay environment takes over
 orbScale: 0,
 groundOpacity: 0,
+nebulaOpacity: 0,
+cameraY: 1.3,
+near: 0.15,
+far: 180,
 }
 }
 
@@ -203,17 +161,20 @@ transitionKind ? (transitionKind === 'lifemapToHome' ? 1 - transitionProgress : 
 phaseForView,
 selectedStar
 )
+const clampedCameraY = Math.max(0.45, Math.min(3.5, camera.cameraY ?? 0.8))
+const clampedNear = Math.max(0.08, Math.min(0.25, camera.near ?? 0.1))
+const clampedFar = Math.max(80, Math.min(220, camera.far ?? 150))
 
 useEffect(() => {
 const onKeyDown = (event: KeyboardEvent) => {
-if (event.key !== 'Escape' || state.inputLocked) return
+if (event.key !== 'Escape') return
 
 if (state.phase === 'REPLAY') {
 setReplayVisible(false)
 dispatch({ type: 'ESC' })
 } else if (state.phase === 'FOCUS') {
 dispatch({ type: 'ESC' })
-} else if (state.phase === 'LIFEMAP') {
+} else if (state.phase === 'LIFEMAP' || state.phase === 'ASCENT') {
 setTransitionKind('lifemapToHome')
 const start = performance.now()
 const tick = (now: number) => {
@@ -336,8 +297,18 @@ boxShadow: '0 0 0 1px rgba(255,255,255,0.02)',
     stars={STAR_DATA}
     phase={state.phase}
     onSelect={(id) => dispatch({ type: 'OPEN_FOCUS', starId: id })}
+    cameraY={clampedCameraY}
+    cameraNear={clampedNear}
+    cameraFar={clampedFar}
+    streakIntensity={camera.starOpacity}
+    nebulaReveal={camera.nebulaOpacity ?? 0}
   />
 </div>
+)}
+
+
+{phaseForView === 'ASCENT' && (
+<div aria-hidden="true" style={{position:'absolute',inset:0,opacity:camera.nebulaOpacity ?? 0,transition:'opacity 120ms linear',background:'radial-gradient(circle at 50% 40%, rgba(109,133,255,0.24) 0%, rgba(57,33,102,0.16) 28%, rgba(1,3,26,0.02) 64%, transparent 85%)',pointerEvents:'none'}} />
 )}
 
 {/* REPLAY ENVIRONMENT: Reworked to be immersive, per REPLAY LAW */}
