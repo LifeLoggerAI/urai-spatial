@@ -1,2 +1,10 @@
-import { redirect } from 'next/navigation'
-export default function FocusRoute(){ redirect('/?phase=focus') }
+import { Suspense } from "react";
+import SpatialScene from "@/spatial/scene/SpatialScene";
+
+export default function FocusRoute() {
+  return (
+    <Suspense fallback={null}>
+      <SpatialScene />
+    </Suspense>
+  );
+}
