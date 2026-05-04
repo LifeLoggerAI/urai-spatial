@@ -5,155 +5,103 @@ import { usePathname, useRouter, useSearchParams } from "next/navigation";
 
 type Phase = "home" | "lifemap" | "focus" | "replay";
 
-type MemoryStar = {
+type Node = {
   id: string;
+  title: string;
+  subtitle: string;
   x: number;
   y: number;
-  size: number;
-  opacity: number;
-  title: string;
+  color: string;
+  replayTitle: string;
 };
 
-const FEATURED_STAR: MemoryStar = {
-  id: "signal",
-  x: 50,
-  y: 52,
-  size: 26,
-  opacity: 1,
-  title: "Signal",
-};
+const NODES: Node[] = [
+  { id: "pattern", title: "Pattern", subtitle: "Rhythm returning after static", x: 52, y: 38, color: "#7dd3fc", replayTitle: "Pattern Replay" },
+  { id: "recovery", title: "Recovery", subtitle: "A soft return after overload", x: 28, y: 68, color: "#86efac", replayTitle: "Recovery Replay" },
+  { id: "threshold", title: "Threshold", subtitle: "The door before the climb", x: 76, y: 58, color: "#c4b5fd", replayTitle: "Threshold Replay" },
+  { id: "signal", title: "Signal", subtitle: "A first pulse under the surface", x: 18, y: 34, color: "#f0abfc", replayTitle: "Signal Replay" },
+  { id: "return", title: "Return", subtitle: "The body came back before the mind named it", x: 45, y: 82, color: "#fde68a", replayTitle: "Return Replay" },
+];
 
-function normalizePhase(value: string | null, pathname: string | null): Phase {
-  const source = `${value ?? ""} ${pathname ?? ""}`.toLowerCase();
+function phaseFromLocation(queryPhase: string | null, pathname: string | null): Phase {
+  const source = `${queryPhase ?? ""} ${pathname ?? ""}`.toLowerCase();
   if (source.includes("replay")) return "replay";
   if (source.includes("focus")) return "focus";
   if (source.includes("life-map") || source.includes("lifemap")) return "lifemap";
   return "home";
 }
 
-function fract(n: number) {
-  return n - Math.floor(n);
-}
-
-function makeStars(): MemoryStar[] {
-  const anchors: MemoryStar[] = [
-    { id: "anchor-left-low", x: 18, y: 72, size: 18, opacity: 0.82, title: "Recovery" },
-    { id: "anchor-right-low", x: 78, y: 68, size: 16, opacity: 0.76, title: "Threshold" },
-    { id: "anchor-left-mid", x: 28, y: 48, size: 15, opacity: 0.72, title: "Echo" },
-    { id: "anchor-right-mid", x: 68, y: 43, size: 14, opacity: 0.74, title: "Signal" },
-    { id: "anchor-bottom", x: 52, y: 82, size: 14, opacity: 0.68, title: "Return" },
-  ];
-
-  const generated = Array.from({ length: 170 }, (_, index) => {
-    const randA = fract(Math.sin((index + 1) * 12.9898) * 43758.5453);
-    const randB = fract(Math.sin((index + 7) * 78.233) * 24634.6345);
-    const randC = fract(Math.sin((index + 17) * 37.719) * 19187.123);
-
-    return {
-      id: `star-${index}`,
-      x: 4 + randA * 92,
-      y: 8 + randB * 80,
-      size: 7 + randC * 8,
-      opacity: 0.42 + randC * 0.54,
-      title: index % 9 === 0 ? "Memory" : "Echo",
-    };
-  });
-
-  return [...generated, ...anchors];
+function star(index: number) {
+  return {
+    x: (index * 37 + 11) % 100,
+    y: (index * 53 + 17) % 100,
+    size: 1 + ((index * 7) % 5) * 0.6,
+    opacity: 0.28 + (((index * 13) % 65) / 100),
+  };
 }
 
 export default function SpatialScene() {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
-  const phase = normalizePhase(searchParams.get("phase"), pathname);
-  const stars = useMemo(() => makeStars(), []);
+  const phase = phaseFromLocation(searchParams.get("phase"), pathname);
+  const stars = useMemo(() => Array.from({ length: 220 }, (_, index) => star(index)), []);
+  const activeNode = NODES[phase === "replay" ? 1 : 0];
 
-  const goto = (next: Phase) => {
-    const path = next === "lifemap" ? "/life-map" : `/${next}`;
-    router.push(path);
-  };
-
-  const isMap = phase === "lifemap" || phase === "focus" || phase === "replay";
-  const card = phase === "focus"
-    ? { eyebrow: "LIFEMAP FOCUS", title: "Signal", copy: "A first pulse under the surface." }
-    : phase === "replay"
-      ? { eyebrow: "REPLAY STREAM", title: "Recovery", copy: "The place where the body returns." }
-      : null;
+  const goto = (next: Phase) => router.push(next === "lifemap" ? "/life-map" : `/${next}`);
 
   return (
-    <main className={`urai-spatial-shell phase-${phase}`}>
-      <div className="cosmic-bg" />
-      <div className="sky-glow" />
-      <div className="constellation-lines" />
-
-      <button className="quiet-orb" aria-label="URAI spatial status" />
-
-      {isMap ? (
-        <section
-          className="lifemap-layer"
-          aria-label="URAI LifeMap starfield"
-          onClick={() => {
-            if (phase === "lifemap") goto("focus");
-          }}
-        >
-          <div className="lifemap-depth-grid" />
-          {[...stars, FEATURED_STAR].map((star) => (
+    <main className="stage" data-mode={phase} data-testid="urai-spatial-stage">
+      {phase === "home" ? (
+        <section className="home" data-testid="urai-home-scene">
+          <div className="home-sky" />
+          <div className="home-hill hill-a" />
+          <div className="home-hill hill-b" />
+          <div className="home-hill hill-c" />
+          <button type="button" className="enter-label" onClick={() => goto("lifemap")}>ENTER THE SKY</button>
+          <button type="button" className="orb" data-testid="urai-orb-button" aria-label="Enter LifeMap" onClick={() => goto("lifemap")} />
+          <div className="body" data-testid="urai-home-body" />
+        </section>
+      ) : (
+        <section className="lifemap" data-testid="urai-lifemap-scene" onClick={() => phase === "lifemap" && goto("focus")}>
+          <div className="map-bg" />
+          <div className="map-stars" data-testid="lifemap-starfield">
+            {stars.map((s, index) => (
+              <i key={index} style={{ left: `${s.x}%`, top: `${s.y}%`, width: s.size, height: s.size, opacity: s.opacity }} />
+            ))}
+          </div>
+          <svg className="lines" aria-hidden="true">
+            <line x1="52%" y1="38%" x2="28%" y2="68%" />
+            <line x1="28%" y1="68%" x2="45%" y2="82%" />
+            <line x1="52%" y1="38%" x2="76%" y2="58%" />
+            <line x1="18%" y1="34%" x2="52%" y2="38%" />
+          </svg>
+          {NODES.map((node) => (
             <button
-              key={star.id}
+              key={node.id}
               type="button"
-              className={`memory-star ${star.id === FEATURED_STAR.id ? "featured" : ""}`}
-              style={{
-                left: `${star.x}%`,
-                top: `${star.y}%`,
-                width: star.size,
-                height: star.size,
-                opacity: star.opacity,
-              }}
-              aria-label={`Open ${star.title}`}
-              title={`Open ${star.title}`}
-              onClick={(event) => {
-                event.preventDefault();
-                event.stopPropagation();
-                goto("focus");
-              }}
-            />
-          ))}
-          {phase === "lifemap" ? (
-            <button
-              type="button"
-              className="lifemap-click-shield"
-              aria-label="Open Signal focus"
+              className="node"
+              data-testid={`lifemap-node-${node.id}-01`}
+              aria-label={`${node.title} node`}
+              style={{ left: `${node.x}%`, top: `${node.y}%`, ["--aura" as string]: node.color }}
               onClick={(event) => {
                 event.preventDefault();
                 event.stopPropagation();
                 goto("focus");
               }}
             >
-              <span>Tap any star to focus</span>
+              <span />
             </button>
-          ) : null}
-        </section>
-      ) : (
-        <section className="home-layer" aria-label="URAI home world">
-          <button className="sky-hit" type="button" onClick={() => goto("lifemap")} aria-label="Enter the sky">
-            ENTER THE SKY
-          </button>
-          <div className="home-orb-wrap">
-            <div className="home-orb" />
-            <div className="body-shadow" />
-          </div>
-          <div className="ground ground-back" />
-          <div className="ground ground-mid" />
-          <div className="ground ground-front" />
+          ))}
+          {phase === "lifemap" ? <p className="map-hint">Tap any star to focus</p> : null}
         </section>
       )}
 
-      {card ? (
-        <section className="focus-card" aria-label={card.title}>
-          <p>{card.eyebrow}</p>
-          <h1>{card.title}</h1>
-          <span>{card.copy}</span>
+      {phase === "focus" ? (
+        <section className="card" data-testid="urai-focus-card">
+          <p>PATTERN NODE</p>
+          <h1>{activeNode.title}</h1>
+          <span>{activeNode.subtitle}.</span>
           <div>
             <button type="button" onClick={() => goto("replay")}>Replay</button>
             <button type="button" onClick={() => goto("lifemap")}>Unwind</button>
@@ -161,326 +109,270 @@ export default function SpatialScene() {
         </section>
       ) : null}
 
-      <nav className="bottom-dock" aria-label="Spatial actions" onClick={(event) => event.stopPropagation()}>
+      {phase === "replay" ? (
+        <section className="card replay" data-testid="urai-replay-overlay">
+          <p>REPLAY STREAM</p>
+          <h1>{activeNode.title}</h1>
+          <span>The place where the body returns.</span>
+          <div>
+            <button type="button" onClick={() => goto("replay")}>Replay</button>
+            <button type="button" onClick={() => goto("lifemap")}>Unwind</button>
+          </div>
+        </section>
+      ) : null}
+
+      <nav className="dock" data-testid="urai-command-ribbon" onClick={(event) => event.stopPropagation()}>
         <button type="button" onClick={() => goto("lifemap")}>✦ LifeMap</button>
         <button type="button" onClick={() => goto("replay")}>⟳ Replay</button>
         <button type="button" onClick={() => goto("home")}>↺ Unwind</button>
       </nav>
 
       <style jsx>{`
-        .urai-spatial-shell {
-          position: relative;
-          width: 100%;
-          min-height: 100vh;
+        .stage {
+          position: fixed;
+          inset: 0;
+          width: 100vw;
+          height: 100vh;
           overflow: hidden;
+          background: #020612;
           color: white;
-          background: #040813;
           font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
         }
 
-        .cosmic-bg,
-        .sky-glow,
-        .constellation-lines,
-        .lifemap-layer,
-        .home-layer {
+        button { font: inherit; }
+
+        .home,
+        .lifemap,
+        .home-sky,
+        .map-bg,
+        .map-stars,
+        .lines {
           position: absolute;
           inset: 0;
         }
 
-        .cosmic-bg {
-          pointer-events: none;
+        .home-sky {
           background:
-            radial-gradient(circle at 50% 22%, rgba(126, 181, 219, 0.52), transparent 31%),
-            linear-gradient(180deg, #050813 0%, #122f4f 56%, #06101e 100%);
+            radial-gradient(circle at 50% 28%, rgba(139, 203, 255, 0.36), transparent 28%),
+            linear-gradient(180deg, #050813 0%, #142e4b 52%, #06111f 100%);
         }
 
-        .sky-glow {
-          pointer-events: none;
-          background:
-            radial-gradient(circle at 50% 44%, rgba(115, 182, 239, 0.22), transparent 23%),
-            radial-gradient(circle at 18% 16%, rgba(100, 144, 208, 0.16), transparent 22%),
-            radial-gradient(circle at 82% 24%, rgba(91, 142, 191, 0.12), transparent 28%);
-        }
-
-        .constellation-lines {
-          pointer-events: none;
-          opacity: 0.24;
-          background:
-            linear-gradient(31deg, transparent 0 18%, rgba(190, 225, 255, 0.28) 18.2%, transparent 18.5% 100%),
-            linear-gradient(140deg, transparent 0 26%, rgba(190, 225, 255, 0.18) 26.2%, transparent 26.5% 100%),
-            linear-gradient(71deg, transparent 0 51%, rgba(190, 225, 255, 0.16) 51.2%, transparent 51.5% 100%);
-          filter: blur(0.2px);
-          transform: translateY(0) scale(1.08);
-        }
-
-        .quiet-orb {
-          position: absolute;
-          left: 18px;
-          top: 18px;
-          z-index: 30;
-          width: 28px;
-          height: 28px;
-          border-radius: 999px;
-          border: 1px solid rgba(191, 225, 255, 0.22);
-          background: radial-gradient(circle, rgba(155, 211, 255, 0.85) 0 24%, rgba(46, 79, 107, 0.55) 26% 45%, rgba(5, 10, 22, 0.35) 47%);
-          box-shadow: 0 0 18px rgba(120, 184, 255, 0.16);
-        }
-
-        .home-layer {
-          z-index: 4;
-          display: grid;
-          place-items: center;
-        }
-
-        .sky-hit {
-          position: absolute;
-          top: 41%;
-          left: 50%;
-          z-index: 8;
-          transform: translate(-50%, -165px);
-          border: 0;
-          border-radius: 999px;
-          padding: 8px 14px;
-          color: rgba(231, 244, 255, 0.62);
-          background: rgba(10, 18, 33, 0.34);
-          box-shadow: inset 0 0 0 1px rgba(203, 230, 255, 0.08);
-          font-size: 11px;
-          font-weight: 800;
-          letter-spacing: 0.08em;
-          cursor: pointer;
-        }
-
-        .home-orb-wrap {
-          position: relative;
-          z-index: 6;
-          width: 180px;
-          height: 310px;
-          transform: translateY(40px);
-          display: flex;
-          justify-content: center;
-          align-items: flex-start;
-        }
-
-        .home-orb {
-          width: 70px;
-          height: 70px;
-          border-radius: 999px;
-          background: radial-gradient(circle at 34% 24%, #f6fbff 0 13%, #9bd6ff 20%, #316fb8 58%, #0d2f62 100%);
-          box-shadow: 0 0 18px rgba(179, 226, 255, 0.98), 0 0 55px rgba(83, 175, 255, 0.5), 0 0 120px rgba(94, 171, 255, 0.24);
-        }
-
-        .home-orb::before,
-        .home-orb::after {
-          content: "";
-          position: absolute;
-          left: 50%;
-          width: 2px;
-          transform: translateX(-50%);
-          background: linear-gradient(180deg, transparent, rgba(180, 222, 255, 0.5), transparent);
-        }
-
-        .home-orb::before { top: -120px; height: 120px; }
-        .home-orb::after { top: 70px; height: 230px; opacity: 0.5; }
-
-        .body-shadow {
-          position: absolute;
-          top: 88px;
-          width: 80px;
-          height: 120px;
-          border-radius: 48% 48% 42% 42%;
-          background: linear-gradient(180deg, rgba(13, 33, 58, 0.96), rgba(3, 13, 26, 0.92));
-          box-shadow: inset 16px 0 28px rgba(88, 152, 220, 0.1);
-        }
-
-        .ground {
+        .home-hill {
           position: absolute;
           left: 50%;
           width: 120vw;
-          border-radius: 50% 50% 0 0;
           transform: translateX(-50%);
-          background: rgba(22, 49, 83, 0.78);
+          border-radius: 50% 50% 0 0;
+          background: rgba(21, 48, 82, 0.78);
         }
+        .hill-a { bottom: 34vh; height: 24vh; opacity: 0.42; }
+        .hill-b { bottom: 20vh; height: 23vh; opacity: 0.62; }
+        .hill-c { bottom: -4vh; height: 35vh; opacity: 0.88; }
 
-        .ground-back { bottom: 35%; height: 24vh; opacity: 0.44; }
-        .ground-mid { bottom: 21%; height: 22vh; opacity: 0.66; }
-        .ground-front { bottom: -2%; height: 34vh; opacity: 0.9; }
-
-        .lifemap-layer {
-          z-index: 12;
-          pointer-events: auto;
-          cursor: crosshair;
-          transition: opacity 260ms ease, transform 420ms ease;
-        }
-
-        .lifemap-depth-grid {
-          position: absolute;
-          inset: 0;
-          pointer-events: none;
-          background:
-            radial-gradient(circle at 50% 52%, rgba(199, 232, 255, 0.08), transparent 18%),
-            radial-gradient(circle at 25% 75%, rgba(161, 209, 255, 0.08), transparent 20%),
-            radial-gradient(circle at 78% 70%, rgba(161, 209, 255, 0.07), transparent 22%);
-        }
-
-        .lifemap-click-shield {
-          position: absolute;
-          inset: 0;
-          z-index: 1;
-          border: 0;
-          padding: 0;
-          background: transparent;
-          color: transparent;
-          cursor: crosshair;
-        }
-
-        .lifemap-click-shield span {
+        .enter-label {
           position: absolute;
           left: 50%;
-          bottom: 88px;
-          transform: translateX(-50%);
-          padding: 7px 12px;
+          top: 43%;
+          transform: translate(-50%, -160px);
+          z-index: 4;
+          border: 0;
           border-radius: 999px;
-          border: 1px solid rgba(190, 225, 255, 0.16);
-          background: rgba(4, 11, 24, 0.42);
-          color: rgba(232, 246, 255, 0.52);
+          padding: 8px 14px;
+          background: rgba(7, 14, 28, 0.38);
+          color: rgba(235, 247, 255, 0.62);
+          cursor: pointer;
+          font-size: 11px;
+          font-weight: 800;
+          letter-spacing: 0.08em;
+        }
+
+        .orb {
+          position: absolute;
+          left: 50%;
+          top: 43%;
+          z-index: 5;
+          width: 70px;
+          height: 70px;
+          transform: translate(-50%, -50%);
+          border: 1px solid rgba(230, 248, 255, 0.5);
+          border-radius: 999px;
+          cursor: pointer;
+          background: radial-gradient(circle at 34% 24%, #f8fcff 0 14%, #9ddcff 22%, #3175bd 58%, #102d60 100%);
+          box-shadow: 0 0 18px rgba(179, 226, 255, 0.95), 0 0 58px rgba(83, 175, 255, 0.54);
+        }
+
+        .body {
+          position: absolute;
+          left: 50%;
+          top: calc(43% + 42px);
+          width: 80px;
+          height: 118px;
+          transform: translateX(-50%);
+          border-radius: 48% 48% 42% 42%;
+          background: linear-gradient(180deg, rgba(12, 32, 58, 0.96), rgba(3, 13, 26, 0.92));
+        }
+
+        .lifemap {
+          cursor: crosshair;
+          background: #020612;
+        }
+
+        .map-bg {
+          pointer-events: none;
+          background:
+            radial-gradient(circle at 50% 36%, rgba(123, 195, 255, 0.34), transparent 30%),
+            radial-gradient(circle at 18% 82%, rgba(244, 114, 182, 0.13), transparent 28%),
+            radial-gradient(circle at 82% 78%, rgba(134, 239, 172, 0.1), transparent 26%),
+            linear-gradient(180deg, #030715 0%, #0d2746 48%, #030817 100%);
+        }
+
+        .map-stars {
+          pointer-events: none;
+          overflow: hidden;
+        }
+
+        .map-stars i {
+          position: absolute;
+          display: block;
+          border-radius: 999px;
+          background: white;
+          box-shadow: 0 0 10px rgba(255,255,255,.82), 0 0 24px rgba(151,202,255,.32);
+        }
+
+        .lines {
+          pointer-events: none;
+          width: 100%;
+          height: 100%;
+        }
+
+        .lines line {
+          stroke: rgba(232, 247, 255, 0.26);
+          stroke-width: 1;
+          stroke-dasharray: 5 9;
+        }
+
+        .node {
+          position: absolute;
+          z-index: 8;
+          width: 52px;
+          height: 52px;
+          transform: translate(-50%, -50%);
+          border: 0;
+          border-radius: 999px;
+          background: color-mix(in srgb, var(--aura), transparent 72%);
+          box-shadow: 0 0 38px var(--aura), 0 0 88px color-mix(in srgb, var(--aura), transparent 70%);
+          cursor: pointer;
+        }
+
+        .node span {
+          position: absolute;
+          left: 50%;
+          top: 50%;
+          width: 14px;
+          height: 14px;
+          transform: translate(-50%, -50%);
+          border-radius: 999px;
+          background: white;
+          box-shadow: 0 0 20px var(--aura);
+        }
+
+        .node:hover,
+        .node:focus-visible {
+          outline: 3px solid rgba(255,255,255,.7);
+          outline-offset: 8px;
+        }
+
+        .map-hint {
+          position: absolute;
+          left: 50%;
+          bottom: 90px;
+          z-index: 9;
+          transform: translateX(-50%);
+          margin: 0;
+          border-radius: 999px;
+          padding: 7px 12px;
+          background: rgba(3, 10, 24, 0.48);
+          color: rgba(232, 246, 255, 0.58);
           font-size: 11px;
           font-weight: 800;
           letter-spacing: 0.08em;
           text-transform: uppercase;
-        }
-
-        .memory-star {
-          position: absolute;
-          z-index: 2;
-          display: block;
-          border: 0;
-          border-radius: 999px;
-          padding: 0;
-          transform: translate(-50%, -50%);
-          background: #edf7ff;
-          box-shadow: 0 0 9px rgba(221, 244, 255, 0.85), 0 0 22px rgba(142, 195, 255, 0.28);
-          cursor: pointer;
-          pointer-events: auto;
-          touch-action: manipulation;
-        }
-
-        .memory-star::after {
-          content: "";
-          position: absolute;
-          inset: -18px;
-          border-radius: 999px;
-        }
-
-        .memory-star:hover,
-        .memory-star:focus-visible {
-          opacity: 1 !important;
-          outline: none;
-          box-shadow: 0 0 14px rgba(255, 255, 255, 0.98), 0 0 42px rgba(142, 195, 255, 0.65);
-        }
-
-        .memory-star.featured {
-          background: #ffffff;
-          box-shadow: 0 0 18px rgba(255, 255, 255, 0.95), 0 0 50px rgba(142, 195, 255, 0.55);
-        }
-
-        .phase-lifemap .home-layer,
-        .phase-focus .home-layer,
-        .phase-replay .home-layer { opacity: 0; pointer-events: none; }
-
-        .phase-focus .lifemap-layer,
-        .phase-replay .lifemap-layer {
-          opacity: 0.48;
-          filter: blur(0.1px);
           pointer-events: none;
         }
 
-        .phase-focus .lifemap-click-shield,
-        .phase-replay .lifemap-click-shield { display: none; }
-
-        .focus-card {
+        .card {
           position: absolute;
-          z-index: 22;
           left: 50%;
-          top: 56%;
-          width: min(345px, calc(100vw - 44px));
+          top: 50%;
+          z-index: 20;
+          width: min(440px, calc(100vw - 32px));
           transform: translate(-50%, -50%);
-          padding: 22px 22px 18px;
-          border-radius: 22px;
-          border: 1px solid rgba(185, 218, 255, 0.24);
-          background: linear-gradient(135deg, rgba(23, 45, 72, 0.78), rgba(6, 13, 29, 0.72));
-          box-shadow: 0 24px 90px rgba(0, 0, 0, 0.38), inset 0 0 30px rgba(171, 219, 255, 0.05);
-          backdrop-filter: blur(18px);
+          border: 1px solid rgba(219, 241, 255, 0.2);
+          border-radius: 28px;
+          padding: 24px;
+          background: rgba(4, 13, 29, 0.72);
+          box-shadow: 0 24px 90px rgba(0, 0, 0, 0.55), inset 0 0 44px rgba(158, 218, 255, 0.08);
+          backdrop-filter: blur(20px);
         }
 
-        .focus-card p {
-          margin: 0 0 4px;
-          font-size: 10px;
-          font-weight: 800;
-          letter-spacing: 0.24em;
-          color: rgba(201, 227, 255, 0.64);
-        }
-
-        .focus-card h1 {
+        .card p {
           margin: 0;
-          font-size: 31px;
-          line-height: 1.1;
+          color: rgba(210, 236, 255, 0.65);
+          font-size: 11px;
+          font-weight: 800;
+          letter-spacing: 0.28em;
         }
 
-        .focus-card span {
+        .card h1 {
+          margin: 10px 0 0;
+          font-size: 34px;
+          line-height: 1.05;
+        }
+
+        .card span {
           display: block;
-          margin-top: 10px;
-          font-size: 12px;
-          color: rgba(238, 247, 255, 0.76);
+          margin-top: 12px;
+          color: rgba(238, 248, 255, 0.74);
+          font-size: 14px;
         }
 
-        .focus-card div {
+        .card div {
           display: flex;
           gap: 10px;
-          margin-top: 18px;
+          margin-top: 22px;
         }
 
-        .focus-card button,
-        .bottom-dock button {
-          border: 1px solid rgba(193, 224, 255, 0.28);
+        .card button,
+        .dock button {
+          border: 1px solid rgba(214, 238, 255, 0.24);
           border-radius: 999px;
-          background: rgba(85, 129, 169, 0.32);
-          color: #eef7ff;
-          font-weight: 750;
+          background: rgba(255, 255, 255, 0.1);
+          color: white;
           cursor: pointer;
-          box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08);
+          font-weight: 750;
         }
 
-        .focus-card button { padding: 9px 14px; }
+        .card button { padding: 10px 16px; }
 
-        .bottom-dock {
+        .dock {
           position: absolute;
-          z-index: 24;
           left: 50%;
-          bottom: 24px;
-          transform: translateX(-50%);
+          bottom: 22px;
+          z-index: 30;
           display: flex;
           gap: 8px;
-          padding: 7px;
+          transform: translateX(-50%);
+          border: 1px solid rgba(210, 235, 255, 0.16);
           border-radius: 999px;
-          border: 1px solid rgba(175, 209, 255, 0.16);
-          background: rgba(3, 10, 23, 0.5);
-          backdrop-filter: blur(14px);
+          padding: 7px;
+          background: rgba(0, 0, 0, 0.42);
+          backdrop-filter: blur(16px);
         }
 
-        .bottom-dock button {
-          min-width: 76px;
-          padding: 8px 12px;
-          font-size: 11px;
-        }
-
-        .phase-lifemap .bottom-dock,
-        .phase-focus .bottom-dock,
-        .phase-replay .bottom-dock { opacity: 0.88; }
-
-        @media (max-width: 720px) {
-          .bottom-dock { bottom: 16px; }
-          .bottom-dock button { min-width: auto; padding: 8px 10px; }
-          .focus-card { top: 54%; }
+        .dock button {
+          min-width: 80px;
+          padding: 9px 12px;
+          font-size: 12px;
         }
       `}</style>
     </main>
