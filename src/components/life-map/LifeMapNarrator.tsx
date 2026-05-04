@@ -1,0 +1,1 @@
+export function LifeMapNarrator({ line }: { line?: string }) { if (!line) return null; return <div className='absolute top-3 right-3 z-40 max-w-xs rounded-xl bg-indigo-950/70 p-3 text-sm text-indigo-100'>{line}</div> }

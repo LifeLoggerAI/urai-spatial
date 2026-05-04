@@ -1,0 +1,1 @@
+export function CompanionGuide({ mood='calm' }: { mood?: string }) { return <div className='absolute right-4 bottom-28 z-40 h-12 w-12 rounded-full bg-gradient-to-br from-white/70 to-indigo-400/50 shadow-[0_0_40px_rgba(139,92,246,.8)]'><span className='sr-only'>Companion {mood}</span></div> }

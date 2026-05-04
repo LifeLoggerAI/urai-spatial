@@ -1,7 +1,7 @@
 "use client";
 
 import type { CSSProperties } from "react";
-import { useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import {
   edgeNodes,
@@ -16,13 +16,43 @@ import {
   type LifeMapPhase,
 } from "./lifeMapModel";
 
-function phaseFromLocation(queryPhase: string | null, pathname: string | null): LifeMapPhase {
+type ScenePhase = LifeMapPhase | "ascent";
+
+type Snapshot = {
+  phase: LifeMapPhase;
+  nodeId: string | null;
+  mode: LifeMapMode;
+  showReplay: boolean;
+  zoom: number;
+};
+
+const DEFAULT_NODE_ID = lifeMapNodes[0]?.id ?? null;
+
+const PHASE_ROUTES: Record<LifeMapPhase, string> = {
+  home: "/home",
+  lifemap: "/life-map",
+  focus: "/focus",
+  replay: "/replay",
+  mirror: "/mirror",
+};
+
+function phaseFromLocation(
+  queryPhase: string | null,
+  pathname: string | null
+): LifeMapPhase {
   const source = `${queryPhase ?? ""} ${pathname ?? ""}`.toLowerCase();
+
   if (source.includes("mirror")) return "mirror";
   if (source.includes("replay")) return "replay";
   if (source.includes("focus")) return "focus";
   if (source.includes("life-map") || source.includes("lifemap")) return "lifemap";
+
   return "home";
+}
+
+function normalizeNodeId(value: string | null): string | null {
+  if (!value) return DEFAULT_NODE_ID;
+  return lifeMapNodes.some((node) => node.id === value) ? value : DEFAULT_NODE_ID;
 }
 
 function backgroundStar(index: number) {
@@ -57,10 +87,13 @@ function EmptyState({ onDemo }: { onDemo: () => void }) {
       <p>YOUR SKY IS QUIET</p>
       <h1>Your Life Map grows passively over time.</h1>
       <span>
-        As URAI notices memories, moods, places, voices, rituals, and patterns, this sky will begin to bloom.
+        As URAI notices memories, moods, places, voices, rituals, and patterns,
+        this sky will begin to bloom.
       </span>
       <div>
-        <button type="button" onClick={onDemo}>Preview demo map</button>
+        <button type="button" onClick={onDemo}>
+          Preview demo map
+        </button>
         <button type="button">Connect data</button>
       </div>
       <small>Private by default. Share cards only when you choose.</small>
@@ -68,28 +101,81 @@ function EmptyState({ onDemo }: { onDemo: () => void }) {
   );
 }
 
-function DetailCard({ node, onReplay, onClose }: { node: LifeMapNode; onReplay: () => void; onClose: () => void }) {
+function DetailCard({
+  node,
+  onReplay,
+  onClose,
+}: {
+  node: LifeMapNode;
+  onReplay: () => void;
+  onClose: () => void;
+}) {
   return (
-    <section className="detail-card" data-testid="urai-focus-card">
-      <button type="button" className="close" onClick={onClose} aria-label="Close memory card">x</button>
-      <p>{node.nodeType.toUpperCase()} / {node.season.toUpperCase()}</p>
+    <section
+      className="detail-card"
+      data-testid="urai-focus-card"
+      role="dialog"
+      aria-label={`${node.title} focus`}
+    >
+      <button
+        type="button"
+        className="close"
+        onClick={onClose}
+        aria-label="Close memory card"
+      >
+        ×
+      </button>
+
+      <p>
+        {node.nodeType.toUpperCase()} / {node.season.toUpperCase()}
+      </p>
       <h1>{node.title}</h1>
       <strong>{node.subtitle}</strong>
-      <span>{new Date(node.timestamp).toLocaleDateString(undefined, { month: "long", day: "numeric", year: "numeric" })}</span>
+
+      <span>
+        {new Date(node.timestamp).toLocaleDateString(undefined, {
+          month: "long",
+          day: "numeric",
+          year: "numeric",
+        })}
+      </span>
+
       <div className="aura-row">
-        <i style={{ background: node.auraColor, boxShadow: `0 0 28px ${node.auraColor}` }} />
+        <i
+          style={{
+            background: node.auraColor,
+            boxShadow: `0 0 28px ${node.auraColor}`,
+          }}
+        />
         <b>{node.emotionalTone} aura</b>
         <em>{scoreLabel(node.importanceScore)}</em>
       </div>
+
       <article>{node.description}</article>
       <blockquote>{node.narratorLine}</blockquote>
+
       <dl>
-        <div><dt>Chapter</dt><dd>{lifeChapters.find((chapter) => chapter.id === node.chapterId)?.title ?? "Unchaptered"}</dd></div>
-        <div><dt>Signals</dt><dd>{node.sourceSignals.join(", ")}</dd></div>
-        <div><dt>Privacy</dt><dd>{node.privacyLevel}</dd></div>
+        <div>
+          <dt>Chapter</dt>
+          <dd>
+            {lifeChapters.find((chapter) => chapter.id === node.chapterId)
+              ?.title ?? "Unchaptered"}
+          </dd>
+        </div>
+        <div>
+          <dt>Signals</dt>
+          <dd>{node.sourceSignals.join(", ")}</dd>
+        </div>
+        <div>
+          <dt>Privacy</dt>
+          <dd>{node.privacyLevel}</dd>
+        </div>
       </dl>
+
       <div className="card-actions">
-        <button type="button" onClick={onReplay}>Replay</button>
+        <button type="button" onClick={onReplay}>
+          Replay
+        </button>
         <button type="button">Add ritual</button>
         <button type="button">Export card</button>
       </div>
@@ -97,7 +183,13 @@ function DetailCard({ node, onReplay, onClose }: { node: LifeMapNode; onReplay: 
   );
 }
 
-function CompanionGuide({ mode, selectedNode }: { mode: LifeMapMode; selectedNode: LifeMapNode | null }) {
+function CompanionGuide({
+  mode,
+  selectedNode,
+}: {
+  mode: LifeMapMode;
+  selectedNode: LifeMapNode | null;
+}) {
   const message = selectedNode
     ? selectedNode.narratorLine
     : mode === "shadow"
@@ -117,16 +209,41 @@ function CompanionGuide({ mode, selectedNode }: { mode: LifeMapMode; selectedNod
   );
 }
 
-function ReplayOverlay({ active, onClose }: { active: LifeMapNode | null; onClose: () => void }) {
+function ReplayOverlay({
+  active,
+  onClose,
+}: {
+  active: LifeMapNode | null;
+  onClose: () => void;
+}) {
   const path = active
-    ? [{ nodeId: active.id, cameraLabel: active.title, narrator: active.narratorLine, weather: active.isRecovery ? "recovery" : active.isDream ? "dream" : active.isShadow ? "shadow" : "timeline" as LifeMapMode }]
+    ? [
+        {
+          nodeId: active.id,
+          cameraLabel: active.title,
+          narrator: active.narratorLine,
+          weather: active.isRecovery
+            ? "recovery"
+            : active.isDream
+              ? "dream"
+              : active.isShadow
+                ? "shadow"
+                : ("timeline" as LifeMapMode),
+        },
+      ]
     : mirrorReplayPath;
 
   return (
-    <section className="replay-overlay" data-testid="urai-replay-overlay">
+    <section
+      className="replay-overlay"
+      data-testid="urai-replay-overlay"
+      role="dialog"
+      aria-label={active ? `${active.title} replay` : "Mirror of Becoming replay"}
+    >
       <div className="replay-camera" />
       <p>REPLAY STREAM</p>
       <h1>{active ? active.title : "Mirror of Becoming"}</h1>
+
       <ol>
         {path.map((frame) => (
           <li key={`${frame.nodeId}-${frame.cameraLabel}`}>
@@ -135,9 +252,12 @@ function ReplayOverlay({ active, onClose }: { active: LifeMapNode | null; onClos
           </li>
         ))}
       </ol>
+
       <div>
         <button type="button">Enable TTS hook</button>
-        <button type="button" onClick={onClose}>Unwind</button>
+        <button type="button" onClick={onClose}>
+          Unwind
+        </button>
       </div>
     </section>
   );
@@ -158,67 +278,351 @@ export default function SpatialScene() {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
-  const phase = phaseFromLocation(searchParams.get("phase"), pathname);
-  const [mode, setMode] = useState<LifeMapMode>(phase === "mirror" ? "mirror" : "timeline");
-  const [selectedNodeId, setSelectedNodeId] = useState<string | null>(phase === "focus" ? lifeMapNodes[0].id : null);
-  const [showReplay, setShowReplay] = useState(phase === "replay" || phase === "mirror");
+
+  const routePhase = phaseFromLocation(searchParams.get("phase"), pathname);
+  const routeNodeId = normalizeNodeId(searchParams.get("node"));
+
+  const [phase, setPhase] = useState<ScenePhase>(routePhase);
+  const [mode, setMode] = useState<LifeMapMode>(
+    routePhase === "mirror" ? "mirror" : "timeline"
+  );
+  const [selectedNodeId, setSelectedNodeId] = useState<string | null>(
+    routePhase === "focus" || routePhase === "replay" ? routeNodeId : null
+  );
+  const [showReplay, setShowReplay] = useState(
+    routePhase === "replay" || routePhase === "mirror"
+  );
   const [demoEnabled, setDemoEnabled] = useState(true);
   const [zoom, setZoom] = useState(1);
-  const stars = useMemo(() => Array.from({ length: 260 }, (_, index) => backgroundStar(index)), []);
-  const selectedNode = lifeMapNodes.find((node) => node.id === selectedNodeId) ?? null;
-  const visibleNodes = useMemo(() => (demoEnabled ? filteredNodes(mode) : []), [demoEnabled, mode]);
-  const visibleNodeIds = new Set(visibleNodes.map((node) => node.id));
-  const visibleEdges = lifeMapEdges.filter((edge) => visibleNodeIds.has(edge.from) && visibleNodeIds.has(edge.to));
+  const [history, setHistory] = useState<Snapshot[]>([]);
+  const [isTransitioning, setIsTransitioning] = useState(false);
 
-  const goto = (next: LifeMapPhase) => router.push(next === "lifemap" ? "/life-map" : `/${next}`);
-  const enterLifeMap = () => {
+  const timers = useRef<ReturnType<typeof setTimeout>[]>([]);
+
+  const stars = useMemo(
+    () => Array.from({ length: 260 }, (_, index) => backgroundStar(index)),
+    []
+  );
+
+  const selectedNode =
+    lifeMapNodes.find((node) => node.id === selectedNodeId) ?? null;
+
+  const visibleNodes = useMemo(
+    () => (demoEnabled ? filteredNodes(mode) : []),
+    [demoEnabled, mode]
+  );
+
+  const visibleNodeIds = useMemo(
+    () => new Set(visibleNodes.map((node) => node.id)),
+    [visibleNodes]
+  );
+
+  const visibleEdges = useMemo(
+    () =>
+      lifeMapEdges.filter(
+        (edge) => visibleNodeIds.has(edge.from) && visibleNodeIds.has(edge.to)
+      ),
+    [visibleNodeIds]
+  );
+
+  const clearTimers = useCallback(() => {
+    timers.current.forEach(clearTimeout);
+    timers.current = [];
+  }, []);
+
+  const queueTimer = useCallback((callback: () => void, delay: number) => {
+    const timer = setTimeout(callback, delay);
+    timers.current.push(timer);
+  }, []);
+
+  const writeUrl = useCallback(
+    (next: LifeMapPhase, nodeId: string | null = selectedNodeId) => {
+      const base = PHASE_ROUTES[next];
+
+      if (next === "home" || !nodeId) {
+        router.push(base, { scroll: false });
+        return;
+      }
+
+      router.push(`${base}?node=${encodeURIComponent(nodeId)}`, {
+        scroll: false,
+      });
+    },
+    [router, selectedNodeId]
+  );
+
+  const pushSnapshot = useCallback(() => {
+    if (phase === "ascent") return;
+
+    setHistory((current) => [
+      ...current,
+      {
+        phase,
+        nodeId: selectedNodeId,
+        mode,
+        showReplay,
+        zoom,
+      },
+    ]);
+  }, [mode, phase, selectedNodeId, showReplay, zoom]);
+
+  const goto = useCallback(
+    (next: LifeMapPhase, nodeId: string | null = selectedNodeId) => {
+      setPhase(next);
+      writeUrl(next, nodeId);
+    },
+    [selectedNodeId, writeUrl]
+  );
+
+  const goHome = useCallback(() => {
+    clearTimers();
+    setHistory([]);
+    setShowReplay(false);
+    setSelectedNodeId(null);
+    setMode("timeline");
+    setZoom(1);
+    setIsTransitioning(false);
+    setPhase("home");
+    writeUrl("home", null);
+  }, [clearTimers, writeUrl]);
+
+  const enterLifeMap = useCallback(() => {
+    if (isTransitioning || phase !== "home") return;
+
+    clearTimers();
+    pushSnapshot();
     setDemoEnabled(true);
     setMode("timeline");
-    goto("lifemap");
-  };
-
-  const focusNode = (node: LifeMapNode) => {
-    setSelectedNodeId(node.id);
     setShowReplay(false);
-    goto("focus");
-  };
+    setIsTransitioning(true);
+    setPhase("ascent");
+
+    queueTimer(() => {
+      setPhase("lifemap");
+      setIsTransitioning(false);
+      writeUrl("lifemap", selectedNodeId);
+    }, 720);
+  }, [
+    clearTimers,
+    isTransitioning,
+    phase,
+    pushSnapshot,
+    queueTimer,
+    selectedNodeId,
+    writeUrl,
+  ]);
+
+  const focusNode = useCallback(
+    (node: LifeMapNode) => {
+      if (isTransitioning) return;
+
+      pushSnapshot();
+      setSelectedNodeId(node.id);
+      setShowReplay(false);
+      setPhase("focus");
+      writeUrl("focus", node.id);
+    },
+    [isTransitioning, pushSnapshot, writeUrl]
+  );
+
+  const startReplay = useCallback(
+    (node: LifeMapNode | null = selectedNode) => {
+      if (isTransitioning) return;
+
+      pushSnapshot();
+
+      if (node) {
+        setSelectedNodeId(node.id);
+      }
+
+      setShowReplay(true);
+      setPhase("replay");
+      writeUrl("replay", node?.id ?? selectedNodeId);
+    },
+    [isTransitioning, pushSnapshot, selectedNode, selectedNodeId, writeUrl]
+  );
+
+  const unwind = useCallback(() => {
+    if (isTransitioning) return;
+
+    const previous = history[history.length - 1];
+
+    if (!previous) {
+      if (phase !== "home") goHome();
+      return;
+    }
+
+    setHistory((current) => current.slice(0, -1));
+    setPhase(previous.phase);
+    setSelectedNodeId(previous.nodeId);
+    setMode(previous.mode);
+    setShowReplay(previous.showReplay);
+    setZoom(previous.zoom);
+    writeUrl(previous.phase, previous.nodeId);
+  }, [goHome, history, isTransitioning, phase, writeUrl]);
+
+  useEffect(() => () => clearTimers(), [clearTimers]);
+
+  useEffect(() => {
+    if (isTransitioning || phase === "ascent") return;
+
+    const nextPhase = phaseFromLocation(searchParams.get("phase"), pathname);
+    const nextNodeId = normalizeNodeId(searchParams.get("node"));
+
+    setPhase(nextPhase);
+
+    if (nextPhase === "home") {
+      setSelectedNodeId(null);
+      setShowReplay(false);
+      setMode("timeline");
+      return;
+    }
+
+    if (nextPhase === "mirror") {
+      setSelectedNodeId(null);
+      setMode("mirror");
+      setShowReplay(true);
+      return;
+    }
+
+    if (nextPhase === "focus" || nextPhase === "replay") {
+      setSelectedNodeId(nextNodeId);
+      setShowReplay(nextPhase === "replay");
+      return;
+    }
+
+    setShowReplay(false);
+  }, [isTransitioning, pathname, phase, searchParams]);
+
+  useEffect(() => {
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key !== "Escape") return;
+      event.preventDefault();
+      unwind();
+    };
+
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [unwind]);
+
+  const showHome = phase === "home" || phase === "ascent";
+  const showLifeMap =
+    phase === "ascent" ||
+    phase === "lifemap" ||
+    phase === "focus" ||
+    phase === "replay" ||
+    phase === "mirror";
 
   return (
-    <main className="stage" data-mode={phase} data-lifemap-mode={mode} data-testid="urai-spatial-stage">
-      {phase === "home" ? (
-        <section className="home" data-testid="urai-home-scene">
+    <main
+      className="stage"
+      data-mode={phase}
+      data-lifemap-mode={mode}
+      data-testid="urai-spatial-stage"
+      aria-live="polite"
+    >
+      {showHome ? (
+        <section
+          className={`home ${phase === "ascent" ? "home-exiting" : ""}`}
+          data-testid="urai-home-scene"
+          aria-label="URAI home sky entry"
+        >
           <div className="home-sky" />
+
           <div className="home-stars">
-            {stars.slice(0, 56).map((s, index) => <i key={index} style={{ left: `${s.x}%`, top: `${s.y}%`, opacity: s.opacity }} />)}
+            {stars.slice(0, 56).map((s, index) => (
+              <i
+                key={index}
+                style={{
+                  left: `${s.x}%`,
+                  top: `${s.y}%`,
+                  opacity: s.opacity,
+                }}
+              />
+            ))}
           </div>
+
           <div className="home-hill hill-a" />
           <div className="home-hill hill-b" />
           <div className="home-hill hill-c" />
-          <button type="button" className="enter-label" onClick={enterLifeMap}>ENTER THE SKY</button>
-          <button type="button" className="orb" data-testid="urai-orb-button" aria-label="Enter Life Map" onClick={enterLifeMap} />
+
+          <button
+            type="button"
+            className="enter-label"
+            onClick={enterLifeMap}
+            disabled={isTransitioning}
+          >
+            ENTER THE SKY
+          </button>
+
+          <button
+            type="button"
+            className="orb"
+            data-testid="urai-orb-button"
+            aria-label="Enter Life Map"
+            onClick={enterLifeMap}
+            disabled={isTransitioning}
+          />
+
           <div className="body" data-testid="urai-home-body" />
-          <p className="home-copy">A living emotional galaxy of memory, pattern, recovery, dream, and becoming.</p>
+
+          <p className="home-copy">
+            A living emotional galaxy of memory, pattern, recovery, dream, and
+            becoming.
+          </p>
         </section>
-      ) : (
+      ) : null}
+
+      {showLifeMap ? (
         <section
-          className={`lifemap ${weatherClass(mode)}`}
+          className={`lifemap ${weatherClass(mode)} ${
+            phase === "ascent" ? "lifemap-entering" : ""
+          }`}
           data-testid="urai-lifemap-scene"
-          onWheel={(event) => setZoom((current) => Math.max(0.7, Math.min(1.8, current + (event.deltaY < 0 ? 0.05 : -0.05))))}
+          aria-label="URAI Life Map starfield"
+          onWheel={(event) => {
+            setZoom((current) =>
+              Math.max(
+                0.7,
+                Math.min(1.8, current + (event.deltaY < 0 ? 0.05 : -0.05))
+              )
+            );
+          }}
         >
           <div className="map-bg" />
           <div className="fog-layer" />
           <div className="particle-layer" />
-          <div className="map-stars" data-testid="lifemap-starfield" style={{ transform: `scale(${zoom})` }}>
+
+          <div
+            className="map-stars"
+            data-testid="lifemap-starfield"
+            style={{ transform: `scale(${zoom})` }}
+          >
             {stars.map((s, index) => (
-              <i key={index} style={{ left: `${s.x}%`, top: `${s.y}%`, width: s.size, height: s.size, opacity: s.opacity, animationDelay: `${s.delay}s` }} />
+              <i
+                key={index}
+                style={{
+                  left: `${s.x}%`,
+                  top: `${s.y}%`,
+                  width: s.size,
+                  height: s.size,
+                  opacity: s.opacity,
+                  animationDelay: `${s.delay}s`,
+                }}
+              />
             ))}
           </div>
 
           {demoEnabled ? (
-            <svg className="lines" aria-hidden="true" style={{ transform: `scale(${zoom})` }}>
+            <svg
+              className="lines"
+              aria-hidden="true"
+              style={{ transform: `scale(${zoom})` }}
+            >
               {visibleEdges.map((edge) => {
                 const { from, to } = edgeNodes(edge);
                 if (!from || !to) return null;
+
                 return (
                   <line
                     key={edge.id}
@@ -246,13 +650,17 @@ export default function SpatialScene() {
                   "--aura": node.auraColor,
                   "--pulse": `${1.6 - node.emotionalIntensity * 0.7}s`,
                 } as CSSProperties;
+
                 return (
                   <button
                     key={node.id}
                     type="button"
-                    className={`node ${node.visualState} ${selectedNodeId === node.id ? "selected" : ""}`}
+                    className={`node ${node.visualState} ${
+                      selectedNodeId === node.id ? "selected" : ""
+                    }`}
                     data-testid={`lifemap-node-${node.id}`}
                     aria-label={`${node.title} ${node.nodeType} star`}
+                    aria-pressed={selectedNodeId === node.id}
                     style={style}
                     onClick={(event) => {
                       event.preventDefault();
@@ -263,8 +671,7 @@ export default function SpatialScene() {
                     onContextMenu={(event) => {
                       event.preventDefault();
                       setSelectedNodeId(node.id);
-                      setShowReplay(true);
-                      goto("replay");
+                      startReplay(node);
                     }}
                   >
                     <span />
@@ -279,29 +686,75 @@ export default function SpatialScene() {
 
           <div className="chapter-portals" data-testid="lifemap-chapter-layer">
             {lifeChapters.map((chapter, index) => (
-              <article key={chapter.id} style={{ left: `${14 + index * 18}%`, background: chapter.coverGradient }}>
+              <article
+                key={chapter.id}
+                style={{
+                  left: `${14 + index * 18}%`,
+                  background: chapter.coverGradient,
+                }}
+              >
                 <b>{chapter.title}</b>
                 <span>{chapter.dominantEmotions.join(" / ")}</span>
               </article>
             ))}
           </div>
 
-          <section className="mirror-panel" data-visible={mode === "mirror" || phase === "mirror"}>
+          <section
+            className="mirror-panel"
+            data-visible={mode === "mirror" || phase === "mirror"}
+          >
             <p>MIRROR OF BECOMING</p>
             <h2>The full arc is visible now.</h2>
-            <span>Life phases, repeated patterns, recovery cycles, relationship lessons, and purpose threads are connected in one zoom-out.</span>
+            <span>
+              Life phases, repeated patterns, recovery cycles, relationship
+              lessons, and purpose threads are connected in one zoom-out.
+            </span>
           </section>
 
           <CompanionGuide mode={mode} selectedNode={selectedNode} />
           <ExportPanel />
-          {selectedNode && !showReplay ? <DetailCard node={selectedNode} onReplay={() => { setShowReplay(true); goto("replay"); }} onClose={() => { setSelectedNodeId(null); goto("lifemap"); }} /> : null}
-          {showReplay ? <ReplayOverlay active={phase === "mirror" ? null : selectedNode} onClose={() => { setShowReplay(false); goto("lifemap"); }} /> : null}
 
-          <p className="map-hint">Pinch or wheel to zoom. Tap a star for memory detail. Long press or right-click for replay.</p>
+          {selectedNode && !showReplay && phase === "focus" ? (
+            <DetailCard
+              node={selectedNode}
+              onReplay={() => startReplay(selectedNode)}
+              onClose={() => {
+                setSelectedNodeId(null);
+                setShowReplay(false);
+                goto("lifemap", null);
+              }}
+            />
+          ) : null}
+
+          {showReplay ? (
+            <ReplayOverlay
+              active={phase === "mirror" ? null : selectedNode}
+              onClose={() => {
+                setShowReplay(false);
+                goto("lifemap", selectedNodeId);
+              }}
+            />
+          ) : null}
+
+          <p className="map-hint">
+            Pinch or wheel to zoom. Tap a star for memory detail. Long press or
+            right-click for replay.
+          </p>
         </section>
-      )}
+      ) : null}
 
-      <nav className="mode-ribbon" data-testid="urai-command-ribbon" onClick={(event) => event.stopPropagation()}>
+      {phase === "ascent" ? (
+        <div className="ascent-cover" data-testid="urai-ascent-cover">
+          <span>ASCENDING INTO LIFEMAP</span>
+        </div>
+      ) : null}
+
+      <nav
+        className="mode-ribbon"
+        data-testid="urai-command-ribbon"
+        aria-label="Spatial controls"
+        onClick={(event) => event.stopPropagation()}
+      >
         {lifeMapModes.map((item) => (
           <button
             key={item.id}
@@ -309,17 +762,39 @@ export default function SpatialScene() {
             className={mode === item.id ? "active" : ""}
             title={item.helper}
             onClick={() => {
+              pushSnapshot();
               setMode(item.id);
               setSelectedNodeId(null);
               setShowReplay(item.id === "mirror");
-              goto(item.id === "mirror" ? "mirror" : "lifemap");
+              goto(item.id === "mirror" ? "mirror" : "lifemap", null);
             }}
           >
             {item.label}
           </button>
         ))}
-        <button type="button" onClick={() => setDemoEnabled((enabled) => !enabled)}>{demoEnabled ? "Empty" : "Demo"}</button>
-        <button type="button" onClick={() => goto("home")}>Unwind</button>
+
+        <button
+          type="button"
+          onClick={() => setDemoEnabled((enabled) => !enabled)}
+        >
+          {demoEnabled ? "Empty" : "Demo"}
+        </button>
+
+        {phase === "home" ? (
+          <button type="button" onClick={enterLifeMap}>
+            LifeMap
+          </button>
+        ) : (
+          <button type="button" onClick={unwind}>
+            Unwind
+          </button>
+        )}
+
+        {phase !== "home" ? (
+          <button type="button" onClick={goHome}>
+            Home
+          </button>
+        ) : null}
       </nav>
 
       <style jsx>{`
@@ -328,14 +803,23 @@ export default function SpatialScene() {
           inset: 0;
           width: 100vw;
           height: 100vh;
+          height: 100dvh;
           overflow: hidden;
           background: #020612;
           color: white;
-          font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+          font-family: Inter, ui-sans-serif, system-ui, -apple-system,
+            BlinkMacSystemFont, "Segoe UI", sans-serif;
           touch-action: none;
         }
 
-        button { font: inherit; }
+        button {
+          font: inherit;
+        }
+
+        button:disabled {
+          opacity: 0.62;
+          cursor: not-allowed;
+        }
 
         .home,
         .lifemap,
@@ -351,10 +835,33 @@ export default function SpatialScene() {
           inset: 0;
         }
 
+        .home {
+          z-index: 3;
+          transition:
+            opacity 720ms cubic-bezier(0.16, 1, 0.3, 1),
+            transform 720ms cubic-bezier(0.16, 1, 0.3, 1),
+            filter 720ms cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        .home-exiting {
+          opacity: 0;
+          transform: translateY(20vh) scale(1.08);
+          filter: blur(20px);
+          pointer-events: none;
+        }
+
         .home-sky {
           background:
-            radial-gradient(circle at 50% 28%, rgba(139, 203, 255, 0.36), transparent 28%),
-            radial-gradient(circle at 70% 18%, rgba(196, 181, 253, 0.18), transparent 20%),
+            radial-gradient(
+              circle at 50% 28%,
+              rgba(139, 203, 255, 0.36),
+              transparent 28%
+            ),
+            radial-gradient(
+              circle at 70% 18%,
+              rgba(196, 181, 253, 0.18),
+              transparent 20%
+            ),
             linear-gradient(180deg, #050813 0%, #142e4b 52%, #06111f 100%);
           animation: sky-breathe 8s ease-in-out infinite alternate;
         }
@@ -365,11 +872,16 @@ export default function SpatialScene() {
           display: block;
           border-radius: 999px;
           background: white;
-          box-shadow: 0 0 10px rgba(255,255,255,.82), 0 0 24px rgba(151,202,255,.32);
+          box-shadow:
+            0 0 10px rgba(255, 255, 255, 0.82),
+            0 0 24px rgba(151, 202, 255, 0.32);
           animation: star-pulse 2.4s ease-in-out infinite alternate;
         }
 
-        .home-stars i { width: 2px; height: 2px; }
+        .home-stars i {
+          width: 2px;
+          height: 2px;
+        }
 
         .home-hill {
           position: absolute;
@@ -379,16 +891,31 @@ export default function SpatialScene() {
           border-radius: 50% 50% 0 0;
           background: rgba(21, 48, 82, 0.78);
         }
-        .hill-a { bottom: 34vh; height: 24vh; opacity: 0.42; }
-        .hill-b { bottom: 20vh; height: 23vh; opacity: 0.62; }
-        .hill-c { bottom: -4vh; height: 35vh; opacity: 0.88; }
+
+        .hill-a {
+          bottom: 34vh;
+          height: 24vh;
+          opacity: 0.42;
+        }
+
+        .hill-b {
+          bottom: 20vh;
+          height: 23vh;
+          opacity: 0.62;
+        }
+
+        .hill-c {
+          bottom: -4vh;
+          height: 35vh;
+          opacity: 0.88;
+        }
 
         .enter-label {
           position: absolute;
           left: 50%;
           top: 43%;
-          transform: translate(-50%, -160px);
           z-index: 4;
+          transform: translate(-50%, -160px);
           border: 0;
           border-radius: 999px;
           padding: 8px 14px;
@@ -397,7 +924,7 @@ export default function SpatialScene() {
           cursor: pointer;
           font-size: 11px;
           font-weight: 800;
-          letter-spacing: 0.08em;
+          letter-spacing: 0.16em;
         }
 
         .orb {
@@ -405,14 +932,22 @@ export default function SpatialScene() {
           left: 50%;
           top: 43%;
           z-index: 5;
-          width: 78px;
-          height: 78px;
+          width: clamp(76px, 14vw, 150px);
+          height: clamp(76px, 14vw, 150px);
           transform: translate(-50%, -50%);
           border: 1px solid rgba(230, 248, 255, 0.5);
           border-radius: 999px;
           cursor: pointer;
-          background: radial-gradient(circle at 34% 24%, #f8fcff 0 14%, #9ddcff 22%, #3175bd 58%, #102d60 100%);
-          box-shadow: 0 0 18px rgba(179, 226, 255, 0.95), 0 0 58px rgba(83, 175, 255, 0.54);
+          background: radial-gradient(
+            circle at 34% 24%,
+            #f8fcff 0 14%,
+            #9ddcff 22%,
+            #3175bd 58%,
+            #102d60 100%
+          );
+          box-shadow:
+            0 0 18px rgba(179, 226, 255, 0.95),
+            0 0 58px rgba(83, 175, 255, 0.54);
           animation: orb-float 3.8s ease-in-out infinite alternate;
         }
 
@@ -420,11 +955,15 @@ export default function SpatialScene() {
           position: absolute;
           left: 50%;
           top: calc(43% + 42px);
-          width: 80px;
-          height: 118px;
+          width: clamp(74px, 10vw, 112px);
+          height: clamp(116px, 18vw, 190px);
           transform: translateX(-50%);
           border-radius: 48% 48% 42% 42%;
-          background: linear-gradient(180deg, rgba(12, 32, 58, 0.96), rgba(3, 13, 26, 0.92));
+          background: linear-gradient(
+            180deg,
+            rgba(12, 32, 58, 0.96),
+            rgba(3, 13, 26, 0.92)
+          );
           box-shadow: inset 0 0 30px rgba(140, 216, 255, 0.18);
         }
 
@@ -442,31 +981,76 @@ export default function SpatialScene() {
         }
 
         .lifemap {
-          cursor: crosshair;
+          z-index: 1;
           background: #020612;
+          opacity: 1;
+          transition:
+            opacity 720ms cubic-bezier(0.16, 1, 0.3, 1),
+            transform 720ms cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        .lifemap-entering {
+          opacity: 0.72;
+          transform: scale(1.06);
         }
 
         .map-bg {
           pointer-events: none;
           background:
-            radial-gradient(circle at 50% 36%, rgba(123, 195, 255, 0.34), transparent 30%),
-            radial-gradient(circle at 18% 82%, rgba(244, 114, 182, 0.13), transparent 28%),
-            radial-gradient(circle at 82% 78%, rgba(134, 239, 172, 0.1), transparent 26%),
+            radial-gradient(
+              circle at 50% 36%,
+              rgba(123, 195, 255, 0.34),
+              transparent 30%
+            ),
+            radial-gradient(
+              circle at 18% 82%,
+              rgba(244, 114, 182, 0.13),
+              transparent 28%
+            ),
+            radial-gradient(
+              circle at 82% 78%,
+              rgba(134, 239, 172, 0.1),
+              transparent 26%
+            ),
             linear-gradient(180deg, #030715 0%, #0d2746 48%, #030817 100%);
-          transition: filter 700ms ease, opacity 700ms ease;
+          transition:
+            filter 700ms ease,
+            opacity 700ms ease;
         }
 
-        .weather-shadow .map-bg { filter: hue-rotate(35deg) saturate(0.7) brightness(0.62); }
-        .weather-dream .map-bg { filter: hue-rotate(58deg) saturate(1.35); }
-        .weather-recovery .map-bg { filter: hue-rotate(105deg) saturate(1.1) brightness(1.08); }
-        .weather-relationship .map-bg { filter: hue-rotate(310deg) saturate(1.18); }
-        .weather-mirror .map-bg { filter: saturate(0.2) brightness(1.28); }
+        .weather-shadow .map-bg {
+          filter: hue-rotate(35deg) saturate(0.7) brightness(0.62);
+        }
+
+        .weather-dream .map-bg {
+          filter: hue-rotate(58deg) saturate(1.35);
+        }
+
+        .weather-recovery .map-bg {
+          filter: hue-rotate(105deg) saturate(1.1) brightness(1.08);
+        }
+
+        .weather-relationship .map-bg {
+          filter: hue-rotate(310deg) saturate(1.18);
+        }
+
+        .weather-mirror .map-bg {
+          filter: saturate(0.2) brightness(1.28);
+        }
 
         .fog-layer {
           pointer-events: none;
           background:
-            radial-gradient(circle at 18% 60%, rgba(255,255,255,.08), transparent 28%),
-            radial-gradient(circle at 72% 42%, rgba(196,181,253,.12), transparent 24%);
+            radial-gradient(
+              circle at 18% 60%,
+              rgba(255, 255, 255, 0.08),
+              transparent 28%
+            ),
+            radial-gradient(
+              circle at 72% 42%,
+              rgba(196, 181, 253, 0.12),
+              transparent 24%
+            );
           mix-blend-mode: screen;
           opacity: 0.76;
           animation: fog-drift 12s ease-in-out infinite alternate;
@@ -474,14 +1058,26 @@ export default function SpatialScene() {
 
         .weather-shadow .fog-layer {
           background:
-            radial-gradient(circle at 50% 50%, rgba(23, 8, 45, 0.72), transparent 45%),
-            radial-gradient(circle at 68% 65%, rgba(244,63,94,.16), transparent 28%);
+            radial-gradient(
+              circle at 50% 50%,
+              rgba(23, 8, 45, 0.72),
+              transparent 45%
+            ),
+            radial-gradient(
+              circle at 68% 65%,
+              rgba(244, 63, 94, 0.16),
+              transparent 28%
+            );
           opacity: 1;
         }
 
         .particle-layer {
           pointer-events: none;
-          background-image: radial-gradient(circle, rgba(255,255,255,.16) 0 1px, transparent 1.5px);
+          background-image: radial-gradient(
+            circle,
+            rgba(255, 255, 255, 0.16) 0 1px,
+            transparent 1.5px
+          );
           background-size: 34px 34px;
           opacity: 0.12;
           animation: particle-flow 18s linear infinite;
@@ -489,13 +1085,15 @@ export default function SpatialScene() {
 
         .map-stars,
         .node-layer,
-        .lines { transform-origin: center; transition: transform 280ms ease; }
+        .lines {
+          transform-origin: center;
+          transition: transform 280ms ease;
+        }
 
         .lines {
           pointer-events: none;
           width: 100%;
           height: 100%;
-          transform-origin: center;
         }
 
         .lines line {
@@ -504,11 +1102,25 @@ export default function SpatialScene() {
           animation: line-draw 5s ease-in-out infinite alternate;
         }
 
-        .lines .edge-shadow { stroke: rgba(248, 113, 113, 0.46); }
-        .lines .edge-recovery { stroke: rgba(134, 239, 172, 0.62); }
-        .lines .edge-dream { stroke: rgba(196, 181, 253, 0.58); }
-        .lines .edge-relationship { stroke: rgba(251, 191, 36, 0.48); }
-        .lines .edge-mirror { stroke: rgba(255, 255, 255, 0.72); }
+        .lines .edge-shadow {
+          stroke: rgba(248, 113, 113, 0.46);
+        }
+
+        .lines .edge-recovery {
+          stroke: rgba(134, 239, 172, 0.62);
+        }
+
+        .lines .edge-dream {
+          stroke: rgba(196, 181, 253, 0.58);
+        }
+
+        .lines .edge-relationship {
+          stroke: rgba(251, 191, 36, 0.48);
+        }
+
+        .lines .edge-mirror {
+          stroke: rgba(255, 255, 255, 0.72);
+        }
 
         .node {
           position: absolute;
@@ -517,7 +1129,9 @@ export default function SpatialScene() {
           border: 0;
           border-radius: 999px;
           background: color-mix(in srgb, var(--aura), transparent 72%);
-          box-shadow: 0 0 38px var(--aura), 0 0 88px color-mix(in srgb, var(--aura), transparent 70%);
+          box-shadow:
+            0 0 38px var(--aura),
+            0 0 88px color-mix(in srgb, var(--aura), transparent 70%);
           cursor: pointer;
           animation: node-pulse var(--pulse) ease-in-out infinite alternate;
         }
@@ -539,15 +1153,23 @@ export default function SpatialScene() {
           left: 50%;
           top: 50%;
           transform: translate(-50%, 18px);
-          color: rgba(255,255,255,.65);
+          color: rgba(255, 255, 255, 0.65);
           font-size: 10px;
           font-style: normal;
           font-weight: 900;
           pointer-events: none;
         }
 
-        .node.fogged { filter: saturate(0.75) brightness(0.72); }
-        .node.blooming { box-shadow: 0 0 54px var(--aura), 0 0 120px rgba(134,239,172,.58); }
+        .node.fogged {
+          filter: saturate(0.75) brightness(0.72);
+        }
+
+        .node.blooming {
+          box-shadow:
+            0 0 54px var(--aura),
+            0 0 120px rgba(134, 239, 172, 0.58);
+        }
+
         .node.orbiting::after {
           content: "";
           position: absolute;
@@ -556,10 +1178,11 @@ export default function SpatialScene() {
           border-radius: 999px;
           animation: orbit 6s linear infinite;
         }
+
         .node.selected,
         .node:hover,
         .node:focus-visible {
-          outline: 3px solid rgba(255,255,255,.7);
+          outline: 3px solid rgba(255, 255, 255, 0.7);
           outline-offset: 8px;
         }
 
@@ -568,6 +1191,7 @@ export default function SpatialScene() {
           inset: auto 0 104px 0;
           z-index: 7;
           pointer-events: none;
+          white-space: nowrap;
         }
 
         .chapter-portals article {
@@ -575,16 +1199,55 @@ export default function SpatialScene() {
           bottom: 0;
           width: 118px;
           min-height: 44px;
-          border: 1px solid rgba(255,255,255,.18);
+          border: 1px solid rgba(255, 255, 255, 0.18);
           border-radius: 18px;
           padding: 10px;
-          box-shadow: 0 10px 44px rgba(0,0,0,.32);
-          opacity: .42;
+          box-shadow: 0 10px 44px rgba(0, 0, 0, 0.32);
+          opacity: 0.42;
         }
 
         .chapter-portals b,
-        .chapter-portals span { display: block; font-size: 10px; }
-        .chapter-portals span { margin-top: 4px; color: rgba(255,255,255,.7); }
+        .chapter-portals span {
+          display: block;
+          font-size: 10px;
+        }
+
+        .chapter-portals span {
+          margin-top: 4px;
+          color: rgba(255, 255, 255, 0.7);
+        }
+
+        .ascent-cover {
+          position: absolute;
+          inset: 0;
+          z-index: 18;
+          display: grid;
+          place-items: center;
+          pointer-events: none;
+          background:
+            radial-gradient(
+              circle at 50% 20%,
+              rgba(125, 211, 252, 0.38),
+              transparent 32%
+            ),
+            linear-gradient(
+              180deg,
+              rgba(2, 6, 18, 0.08),
+              rgba(2, 6, 18, 0.76)
+            );
+          animation: ascent 720ms cubic-bezier(0.16, 1, 0.3, 1) both;
+        }
+
+        .ascent-cover span {
+          border: 1px solid rgba(255, 255, 255, 0.16);
+          border-radius: 999px;
+          padding: 10px 14px;
+          background: rgba(0, 0, 0, 0.22);
+          color: rgba(235, 247, 255, 0.68);
+          font-size: 11px;
+          font-weight: 800;
+          letter-spacing: 0.18em;
+        }
 
         .companion,
         .export-panel,
@@ -596,8 +1259,11 @@ export default function SpatialScene() {
           z-index: 22;
           border: 1px solid rgba(219, 241, 255, 0.2);
           background: rgba(4, 13, 29, 0.68);
-          box-shadow: 0 24px 90px rgba(0, 0, 0, 0.45), inset 0 0 44px rgba(158, 218, 255, 0.08);
+          box-shadow:
+            0 24px 90px rgba(0, 0, 0, 0.45),
+            inset 0 0 44px rgba(158, 218, 255, 0.08);
           backdrop-filter: blur(20px);
+          animation: cardIn 320ms cubic-bezier(0.16, 1, 0.3, 1) both;
         }
 
         .companion {
@@ -616,7 +1282,7 @@ export default function SpatialScene() {
           height: 26px;
           border-radius: 999px;
           background: radial-gradient(circle, #fff, #9bdcff 45%, #7c3aed);
-          box-shadow: 0 0 28px rgba(155, 220, 255, .82);
+          box-shadow: 0 0 28px rgba(155, 220, 255, 0.82);
         }
 
         .companion p,
@@ -632,7 +1298,13 @@ export default function SpatialScene() {
           letter-spacing: 0.22em;
         }
 
-        .companion span { display: block; margin-top: 7px; color: rgba(238,248,255,.78); font-size: 13px; line-height: 1.45; }
+        .companion span {
+          display: block;
+          margin-top: 7px;
+          color: rgba(238, 248, 255, 0.78);
+          font-size: 13px;
+          line-height: 1.45;
+        }
 
         .export-panel {
           left: max(16px, env(safe-area-inset-left));
@@ -656,7 +1328,10 @@ export default function SpatialScene() {
           font-weight: 750;
         }
 
-        .export-panel button { padding: 8px 10px; font-size: 12px; }
+        .export-panel button {
+          padding: 8px 10px;
+          font-size: 12px;
+        }
 
         .detail-card,
         .replay-overlay,
@@ -675,9 +1350,9 @@ export default function SpatialScene() {
           top: 14px;
           width: 32px;
           height: 32px;
-          border: 1px solid rgba(255,255,255,.2);
+          border: 1px solid rgba(255, 255, 255, 0.2);
           border-radius: 999px;
-          background: rgba(255,255,255,.1);
+          background: rgba(255, 255, 255, 0.1);
           color: white;
           cursor: pointer;
         }
@@ -697,35 +1372,123 @@ export default function SpatialScene() {
         .mirror-panel span {
           display: block;
           margin-top: 10px;
-          color: rgba(238,248,255,.75);
+          color: rgba(238, 248, 255, 0.75);
           line-height: 1.5;
         }
 
-        .aura-row { display: flex; align-items: center; gap: 10px; margin-top: 18px; color: rgba(238,248,255,.8); }
-        .aura-row i { width: 16px; height: 16px; border-radius: 999px; }
-        .aura-row em { margin-left: auto; color: rgba(255,255,255,.6); font-size: 12px; font-style: normal; }
-        .detail-card article { margin-top: 18px; color: rgba(238,248,255,.82); line-height: 1.6; }
-        .detail-card blockquote { margin: 18px 0 0; padding-left: 14px; border-left: 2px solid rgba(155,220,255,.5); color: rgba(222,242,255,.78); }
-        .detail-card dl { display: grid; gap: 10px; margin: 18px 0 0; }
-        .detail-card dl div { display: grid; grid-template-columns: 82px 1fr; gap: 12px; }
-        .detail-card dt { color: rgba(210,236,255,.55); font-size: 12px; text-transform: uppercase; }
-        .detail-card dd { margin: 0; color: rgba(255,255,255,.75); font-size: 13px; }
-        .card-actions, .replay-overlay div, .empty-state div { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 20px; }
-        .card-actions button, .replay-overlay button, .empty-state button { padding: 10px 14px; }
+        .aura-row {
+          display: flex;
+          align-items: center;
+          gap: 10px;
+          margin-top: 18px;
+          color: rgba(238, 248, 255, 0.8);
+        }
+
+        .aura-row i {
+          width: 16px;
+          height: 16px;
+          border-radius: 999px;
+        }
+
+        .aura-row em {
+          margin-left: auto;
+          color: rgba(255, 255, 255, 0.6);
+          font-size: 12px;
+          font-style: normal;
+        }
+
+        .detail-card article {
+          margin-top: 18px;
+          color: rgba(238, 248, 255, 0.82);
+          line-height: 1.6;
+        }
+
+        .detail-card blockquote {
+          margin: 18px 0 0;
+          padding-left: 14px;
+          border-left: 2px solid rgba(155, 220, 255, 0.5);
+          color: rgba(222, 242, 255, 0.78);
+        }
+
+        .detail-card dl {
+          display: grid;
+          gap: 10px;
+          margin: 18px 0 0;
+        }
+
+        .detail-card dl div {
+          display: grid;
+          grid-template-columns: 82px 1fr;
+          gap: 12px;
+        }
+
+        .detail-card dt {
+          color: rgba(210, 236, 255, 0.55);
+          font-size: 12px;
+          text-transform: uppercase;
+        }
+
+        .detail-card dd {
+          margin: 0;
+          color: rgba(255, 255, 255, 0.75);
+          font-size: 13px;
+        }
+
+        .card-actions,
+        .replay-overlay div,
+        .empty-state div {
+          display: flex;
+          flex-wrap: wrap;
+          gap: 10px;
+          margin-top: 20px;
+        }
+
+        .card-actions button,
+        .replay-overlay button,
+        .empty-state button {
+          padding: 10px 14px;
+        }
 
         .replay-camera {
           position: absolute;
           inset: -40%;
           z-index: -1;
-          background: conic-gradient(from 90deg, transparent, rgba(155,220,255,.22), transparent, rgba(196,181,253,.18), transparent);
+          background: conic-gradient(
+            from 90deg,
+            transparent,
+            rgba(155, 220, 255, 0.22),
+            transparent,
+            rgba(196, 181, 253, 0.18),
+            transparent
+          );
           animation: orbit 9s linear infinite;
         }
-        .replay-overlay ol { margin: 20px 0 0; padding-left: 20px; color: rgba(238,248,255,.78); }
-        .replay-overlay li { margin-top: 10px; }
-        .replay-overlay li span { display: block; margin-top: 3px; color: rgba(238,248,255,.66); }
 
-        .empty-state { text-align: center; }
-        .empty-state small { display: block; margin-top: 14px; color: rgba(255,255,255,.52); }
+        .replay-overlay ol {
+          margin: 20px 0 0;
+          padding-left: 20px;
+          color: rgba(238, 248, 255, 0.78);
+        }
+
+        .replay-overlay li {
+          margin-top: 10px;
+        }
+
+        .replay-overlay li span {
+          display: block;
+          margin-top: 3px;
+          color: rgba(238, 248, 255, 0.66);
+        }
+
+        .empty-state {
+          text-align: center;
+        }
+
+        .empty-state small {
+          display: block;
+          margin-top: 14px;
+          color: rgba(255, 255, 255, 0.52);
+        }
 
         .mirror-panel {
           left: 50%;
@@ -736,10 +1499,19 @@ export default function SpatialScene() {
           padding: 18px;
           opacity: 0;
           pointer-events: none;
-          transition: opacity 320ms ease, transform 320ms ease;
+          transition:
+            opacity 320ms ease,
+            transform 320ms ease;
         }
-        .mirror-panel[data-visible="true"] { opacity: 1; transform: translateX(-50%) translateY(0); }
-        .mirror-panel h2 { font-size: 24px; }
+
+        .mirror-panel[data-visible="true"] {
+          opacity: 1;
+          transform: translateX(-50%) translateY(0);
+        }
+
+        .mirror-panel h2 {
+          font-size: 24px;
+        }
 
         .map-hint {
           position: absolute;
@@ -783,31 +1555,169 @@ export default function SpatialScene() {
           min-width: max-content;
           padding: 9px 12px;
           font-size: 12px;
-          color: rgba(255,255,255,.76);
+          color: rgba(255, 255, 255, 0.76);
         }
-        .mode-ribbon button.active { background: rgba(155,220,255,.22); color: white; }
 
-        @keyframes sky-breathe { from { filter: brightness(.92); } to { filter: brightness(1.12); } }
-        @keyframes orb-float { from { transform: translate(-50%, -53%); } to { transform: translate(-50%, -47%); } }
-        @keyframes star-pulse { from { transform: scale(.8); } to { transform: scale(1.45); } }
-        @keyframes fog-drift { from { transform: translateX(-2%); } to { transform: translateX(2%); } }
-        @keyframes particle-flow { from { background-position: 0 0; } to { background-position: 120px 240px; } }
-        @keyframes node-pulse { from { filter: brightness(.84); } to { filter: brightness(1.22); } }
-        @keyframes orbit { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
-        @keyframes line-draw { from { stroke-dashoffset: 28; } to { stroke-dashoffset: 0; } }
+        .mode-ribbon button.active {
+          background: rgba(155, 220, 255, 0.22);
+          color: white;
+        }
+
+        @keyframes sky-breathe {
+          from {
+            filter: brightness(0.92);
+          }
+          to {
+            filter: brightness(1.12);
+          }
+        }
+
+        @keyframes orb-float {
+          from {
+            transform: translate(-50%, -53%);
+          }
+          to {
+            transform: translate(-50%, -47%);
+          }
+        }
+
+        @keyframes star-pulse {
+          from {
+            transform: scale(0.8);
+          }
+          to {
+            transform: scale(1.45);
+          }
+        }
+
+        @keyframes fog-drift {
+          from {
+            transform: translateX(-2%);
+          }
+          to {
+            transform: translateX(2%);
+          }
+        }
+
+        @keyframes particle-flow {
+          from {
+            background-position: 0 0;
+          }
+          to {
+            background-position: 120px 240px;
+          }
+        }
+
+        @keyframes node-pulse {
+          from {
+            filter: brightness(0.84);
+          }
+          to {
+            filter: brightness(1.22);
+          }
+        }
+
+        @keyframes orbit {
+          from {
+            transform: rotate(0deg);
+          }
+          to {
+            transform: rotate(360deg);
+          }
+        }
+
+        @keyframes line-draw {
+          from {
+            stroke-dashoffset: 28;
+          }
+          to {
+            stroke-dashoffset: 0;
+          }
+        }
+
+        @keyframes ascent {
+          0% {
+            opacity: 0;
+            transform: scale(0.98);
+          }
+          55% {
+            opacity: 1;
+          }
+          100% {
+            opacity: 0;
+            transform: scale(1.06);
+          }
+        }
+
+        @keyframes cardIn {
+          from {
+            opacity: 0;
+            transform: translate(-50%, calc(-50% + 18px)) scale(0.97);
+          }
+          to {
+            opacity: 1;
+            transform: translate(-50%, -50%) scale(1);
+          }
+        }
 
         @media (max-width: 760px) {
-          .companion { top: 12px; right: 12px; left: 12px; width: auto; }
-          .export-panel { display: none; }
-          .chapter-portals { display: none; }
-          .map-hint { bottom: 84px; font-size: 9px; }
+          .companion {
+            top: 12px;
+            right: 12px;
+            left: 12px;
+            width: auto;
+          }
+
+          .export-panel {
+            display: none;
+          }
+
+          .chapter-portals {
+            display: none;
+          }
+
+          .map-hint {
+            bottom: 84px;
+            font-size: 9px;
+          }
+
           .detail-card,
           .replay-overlay,
-          .empty-state { padding: 20px; max-height: calc(100vh - 150px); overflow: auto; }
+          .empty-state {
+            max-height: calc(100vh - 150px);
+            overflow: auto;
+            padding: 20px;
+          }
+        }
+
+        @media (max-width: 520px) {
+          .enter-label {
+            top: 39%;
+            transform: translate(-50%, -132px);
+          }
+
+          .orb {
+            top: 39%;
+          }
+
+          .body {
+            top: calc(39% + 42px);
+          }
+
+          .mode-ribbon {
+            width: calc(100vw - 24px);
+          }
         }
 
         @media (prefers-reduced-motion: reduce) {
-          *, *::before, *::after { animation-duration: 0.001ms !important; animation-iteration-count: 1 !important; transition-duration: 0.001ms !important; }
+          *,
+          *::before,
+          *::after {
+            animation-duration: 1ms !important;
+            animation-iteration-count: 1 !important;
+            transition-duration: 1ms !important;
+            scroll-behavior: auto !important;
+          }
         }
       `}</style>
     </main>

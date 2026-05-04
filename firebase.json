@@ -1,20 +1,14 @@
 {
   "hosting": {
-    "public": ".next",
+    "source": "urai-tier1",
     "ignore": [
       "firebase.json",
       "**/.*",
       "**/node_modules/**"
     ],
-    "rewrites": [
-      {
-        "source": "**",
-        "destination": "/index.html"
-      }
-    ],
     "predeploy": [
-      "pnpm install",
-      "pnpm build"
+      "pnpm install --frozen-lockfile",
+      "pnpm --filter urai-tier1 build"
     ]
   },
   "firestore": {
