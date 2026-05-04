@@ -13,9 +13,9 @@ concurrency:
 
 jobs:
   verify:
-    name: Verify source, build, tests, E2E, and visual artifacts
+    name: Verify source, build, tests, E2E, replay lock, and visual artifacts
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 35
     env:
       CI: "true"
       PNPM_HOME: ~/.local/share/pnpm
@@ -46,8 +46,10 @@ jobs:
           test -f urai-tier1/package.json
           test -f urai-tier1/src/app/page.tsx
           test -f urai-tier1/src/spatial/scene/SpatialScene.tsx
+          test -f urai-tier1/src/spatial/scene/Tier5ReplayScene.tsx
           test -f docs/URAI_SPATIAL_SOURCE_OF_TRUTH_LOCK.md
           test -f tests/spatial-lock.mjs
+          test -f tests/replay-tier5-lock.mjs
 
       - name: Install dependencies
         run: pnpm install --no-frozen-lockfile --prefer-offline
@@ -80,12 +82,24 @@ jobs:
       - name: Run spatial E2E and visual lock flow
         run: pnpm test:e2e
 
+      - name: Run Tier 5 Replay Chamber validation
+        run: pnpm test:replay-tier5
+
       - name: Upload spatial visual audit artifacts
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: urai-spatial-visual-audit
           path: artifacts/spatial-lock
+          if-no-files-found: warn
+          retention-days: 14
+
+      - name: Upload Tier 5 Replay Chamber artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: urai-replay-tier5-audit
+          path: artifacts/replay-tier5-lock
           if-no-files-found: warn
           retention-days: 14
 
