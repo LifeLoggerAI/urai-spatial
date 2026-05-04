@@ -1,10 +1,10 @@
 import { Suspense } from "react";
-import SpatialSceneHomeWorld from "@/spatial/scene/SpatialSceneHomeWorld";
+import SpatialHomeWorld from "@/spatial/home/SpatialHomeWorld";
 
 export default function Page() {
   return (
     <Suspense fallback={null}>
-      <SpatialSceneHomeWorld />
+      <SpatialHomeWorld />
     </Suspense>
   );
 }
