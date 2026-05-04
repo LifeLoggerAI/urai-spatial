@@ -2,12 +2,16 @@
 
 import Orb from "../components/Orb";
 import { useSceneStore } from "../state/sceneStore";
+import GroundWorld from "./GroundWorld";
+import HomeSky from "./HomeSky";
 
 export default function HomeWorld() {
   const enterLifeMap = useSceneStore((s) => s.enterLifeMap);
 
   return (
     <group>
+      <HomeSky />
+      <GroundWorld />
       <mesh rotation={[-Math.PI / 2, 0, 0]} position={[-0.52, 0.012, -0.05]} receiveShadow>
         <circleGeometry args={[1.1, 36]} />
         <shadowMaterial opacity={0.5} />

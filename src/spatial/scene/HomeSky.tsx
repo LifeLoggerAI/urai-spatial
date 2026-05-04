@@ -1,0 +1,89 @@
+"use client";
+
+import { useEffect, useMemo, useRef, useState } from "react";
+import { useFrame } from "@react-three/fiber";
+import type { Group, Mesh } from "three";
+
+import { useSceneStore } from "../state/sceneStore";
+
+function useReducedMotion() {
+  const [reducedMotion, setReducedMotion] = useState(false);
+
+  useEffect(() => {
+    const media = window.matchMedia("(prefers-reduced-motion: reduce)");
+    const onChange = () => setReducedMotion(media.matches);
+    onChange();
+    media.addEventListener("change", onChange);
+    return () => media.removeEventListener("change", onChange);
+  }, []);
+
+  return reducedMotion;
+}
+
+export default function HomeSky() {
+  const phase = useSceneStore((s) => s.phase);
+  const reducedMotion = useReducedMotion();
+  const skyRoot = useRef<Group>(null);
+  const nebula = useRef<Mesh>(null);
+
+  const stars = useMemo(
+    () =>
+      Array.from({ length: 220 }, (_, i) => ({
+        key: `home-sky-star-${i}`,
+        x: (Math.sin(i * 17.13) * 0.5 + 0.5) * 52 - 26,
+        y: (Math.sin(i * 9.1 + 2.7) * 0.5 + 0.5) * 16 + 4,
+        z: -30 - (Math.sin(i * 21.77) * 0.5 + 0.5) * 120,
+        size: 0.01 + (Math.sin(i * 4.77 + 7.2) * 0.5 + 0.5) * 0.03,
+        alpha: 0.1 + (Math.sin(i * 6.31 + 4.2) * 0.5 + 0.5) * 0.3,
+        speed: 0.4 + (Math.sin(i * 3.33 + 1.1) * 0.5 + 0.5) * 0.8,
+      })),
+    []
+  );
+
+  const starMix = phase === "HOME" ? 0.28 : phase === "ASCENT" ? 0.64 : 1;
+  const opacity = phase === "HOME" ? 1 : phase === "ASCENT" ? 0.72 : 0.24;
+  const nebulaOpacity = 0.06 + starMix * 0.05;
+
+  useFrame(({ clock }) => {
+    if (!skyRoot.current || !nebula.current) return;
+
+    if (!reducedMotion) {
+      const t = clock.elapsedTime;
+      skyRoot.current.rotation.y = Math.sin(t * 0.03) * 0.04;
+      skyRoot.current.rotation.x = Math.sin(t * 0.02) * 0.01;
+      nebula.current.rotation.z = Math.sin(t * 0.04) * 0.06;
+    } else {
+      skyRoot.current.rotation.set(0, 0, 0);
+      nebula.current.rotation.set(0, 0, 0);
+    }
+  });
+
+  return (
+    <group ref={skyRoot} visible={opacity > 0.001}>
+      <mesh scale={[1, 0.62, 1]} position={[0, -4.5, -48]}>
+        <sphereGeometry args={[84, 64, 48, 0, Math.PI * 2, 0, Math.PI * 0.5]} />
+        <meshBasicMaterial color="#02030a" side={1} transparent opacity={0.98 * opacity} depthWrite={false} />
+      </mesh>
+
+      <mesh ref={nebula} position={[0, 11.4, -56]}>
+        <circleGeometry args={[42, 48]} />
+        <meshBasicMaterial color="#2d3f74" transparent opacity={nebulaOpacity * opacity} depthWrite={false} />
+      </mesh>
+
+      {stars.map((star) => {
+        const twinkle = reducedMotion ? 1 : 0.75 + Math.sin(Date.now() * 0.001 * star.speed + star.x) * 0.25;
+        return (
+          <mesh key={star.key} position={[star.x, star.y, star.z]}>
+            <sphereGeometry args={[star.size * (0.8 + starMix * 0.5), 8, 8]} />
+            <meshBasicMaterial
+              color="#dbeafe"
+              transparent
+              opacity={star.alpha * starMix * opacity * twinkle}
+              depthWrite={false}
+            />
+          </mesh>
+        );
+      })}
+    </group>
+  );
+}
