@@ -2,6 +2,7 @@
 
 import React, { useEffect, useMemo, useRef, useState } from 'react'
 import Starfield3D from '@/spatial/components/Starfield3D'
+import { getRuntimeFlags, type RecordingMode } from '@/spatial/config/runtimeFlags'
 import { getSpatialStarData, type SpatialStarNode } from '@/spatial/data/stars'
 import { useSceneStore } from '../state/sceneStore'
 
@@ -14,6 +15,25 @@ const FOCUS_ENTER_MS = 450
 const REPLAY_ENTER_MS = 600
 
 const STAR_DATA: SpatialStarNode[] = getSpatialStarData()
+
+const PUBLIC_PHASE_LABELS: Record<Phase, string> = {
+  HOME: 'Home / Life Orb',
+  ASCENT: 'Opening Life Map',
+  LIFEMAP: 'Life Map',
+  FOCUS: 'Memory Focus',
+  REPLAY: 'Memory Replay',
+}
+
+function getPublicPhaseLabel(phase: Phase, transitionKind: TransitionKind): string {
+  if (transitionKind === 'lifemapToHome') return 'Returning Home'
+  return PUBLIC_PHASE_LABELS[phase]
+}
+
+function getRecordingLabel(mode: RecordingMode): string | null {
+  if (mode === 'active') return 'Recording Active'
+  if (mode === 'passive') return 'Recording Ready'
+  return null
+}
 
 function clamp01(v: number) {
   return Math.max(0, Math.min(1, v))
@@ -105,6 +125,8 @@ function getCameraDirector(progress: number, phase: Phase, selectedStar: Spatial
 }
 
 export default function SpatialScene() {
+  const runtimeFlags = getRuntimeFlags()
+
   const mode = useSceneStore((s) => s.mode)
   const selectedStarId = useSceneStore((s) => s.selectedStarId)
   const applyTransition = useSceneStore((s) => s.applyTransition)
@@ -262,6 +284,7 @@ export default function SpatialScene() {
 
   const showHome = phaseForView === 'HOME' || phaseForView === 'ASCENT'
   const showField = phaseForView === 'LIFEMAP' || phaseForView === 'FOCUS' || phaseForView === 'ASCENT'
+  const recordingLabel = getRecordingLabel(runtimeFlags.recordingMode)
 
   return (
     <div
@@ -289,7 +312,7 @@ export default function SpatialScene() {
           <>
             <button
               type="button"
-              aria-label="Enter spatial field via sky"
+              aria-label={runtimeFlags.publicDemoMode ? 'Open Life Map' : 'Enter spatial field via sky'}
               onClick={startAscent}
               onFocus={() => setFocusedControl('sky')}
               onBlur={() => setFocusedControl(null)}
@@ -326,7 +349,7 @@ export default function SpatialScene() {
 
             <button
               type="button"
-              aria-label="Enter spatial field via orb"
+              aria-label={runtimeFlags.publicDemoMode ? 'Open Life Map via orb' : 'Enter spatial field via orb'}
               onClick={startAscent}
               onFocus={() => setFocusedControl('orb')}
               onBlur={() => setFocusedControl(null)}
@@ -504,7 +527,7 @@ export default function SpatialScene() {
                   opacity: 0.8,
                 }}
               >
-                Memory Trace
+                {runtimeFlags.publicDemoMode ? 'Memory Replay' : 'Memory Trace'}
               </p>
 
               <h2
@@ -520,6 +543,27 @@ export default function SpatialScene() {
             </div>
           </div>
         )}
+      </div>
+
+      <div
+        style={{
+          position: 'absolute',
+          top: 20,
+          left: '50%',
+          transform: 'translateX(-50%)',
+          padding: '0.45rem 0.8rem',
+          borderRadius: 999,
+          background: 'rgba(5, 8, 24, 0.65)',
+          border: '1px solid rgba(185, 202, 255, 0.35)',
+          fontSize: '0.78rem',
+          letterSpacing: '0.08em',
+          textTransform: 'uppercase',
+          pointerEvents: 'none',
+          opacity: 0.95,
+        }}
+      >
+        <span>{runtimeFlags.publicDemoMode ? getPublicPhaseLabel(phase, transitionKind) : phase}</span>
+        {recordingLabel && <span style={{ marginLeft: '0.7rem', opacity: 0.8 }}>| {recordingLabel}</span>}
       </div>
 
       <p
