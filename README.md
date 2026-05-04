@@ -150,3 +150,33 @@ This model allows for a deeply personal and meaningful representation of a user'
 4.  **User selects a star:** The user clicks on a star, and the camera zooms in on it.
 5.  **User enters a memory sphere:** The user enters the memory sphere, and the memory's content is displayed.
 6.  **User exits back to the galaxy:** The user exits the memory sphere and returns to the galaxy view.
+
+## Development Quickstart
+
+- Install: `pnpm install`
+- Dev app: `pnpm dev`
+- Build app: `pnpm build`
+- Typecheck: `pnpm typecheck`
+- Full test chain: `pnpm test`
+- E2E lock runner: `pnpm test:e2e`
+- Replay tier-5 runner: `pnpm test:replay-tier5`
+
+## Environment
+
+- Node 22+
+- pnpm 8+
+- Playwright Chromium required for visual lock tests
+- Firebase project config if running cloud-backed flows
+
+## Core Spatial Modes
+
+- Home
+- Ground
+- Ascent
+- LifeMap
+- Focus
+- Replay
+- Mirror
+- Rewind
+
+These are orchestrated via `SpatialScene` (world layer) and `LifeMapCanonicalSurface` (interaction/UI/state layer).
