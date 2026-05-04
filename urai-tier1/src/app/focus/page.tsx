@@ -1,2 +1,10 @@
-import { redirect } from 'next/navigation'
-export default function FocusRoute(){ redirect('/?phase=focus') }
+import { Suspense } from "react";
+import Tier5ReplayScene from "@/spatial/scene/Tier5ReplayScene";
+
+export default function FocusRoute() {
+  return (
+    <Suspense fallback={null}>
+      <Tier5ReplayScene />
+    </Suspense>
+  );
+}

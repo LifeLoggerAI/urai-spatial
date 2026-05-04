@@ -1,10 +1,10 @@
 import { Suspense } from "react";
-import SpatialHomeWorld from "@/spatial/home/SpatialHomeWorld";
+import Tier5ReplayScene from "@/spatial/scene/Tier5ReplayScene";
 
 export default function Page() {
   return (
     <Suspense fallback={null}>
-      <SpatialHomeWorld />
+      <Tier5ReplayScene />
     </Suspense>
   );
 }
