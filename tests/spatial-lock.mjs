@@ -1,4 +1,5 @@
-import { chromium } from 'playwright';
+import playwright from '../urai-tier1/node_modules/playwright/index.js';
+const { chromium } = playwright;
 import { spawn } from 'node:child_process';
 import { mkdirSync, writeFileSync } from 'node:fs';
 import process from 'node:process';
@@ -29,7 +30,7 @@ async function waitForServer(url, timeoutMs = 90000) {
 
 function startServer() {
   if (USE_EXISTING) return null;
-  const child = spawn('pnpm', ['--filter', 'urai-tier1', 'dev', '--', '--port', '3000'], {
+  const child = spawn('pnpm', ['--filter', 'urai-tier1', 'dev', '--port', '3000'], {
     cwd: process.cwd(),
     env: { ...process.env, CI: '1' },
     stdio: 'inherit',

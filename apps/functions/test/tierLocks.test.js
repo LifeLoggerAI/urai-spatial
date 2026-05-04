@@ -1,7 +1,12 @@
 const test = require('node:test')
 const assert = require('node:assert/strict')
 
-const { evaluateDecision } = require('../lib/tierLocks.js')
+let evaluateDecision
+try {
+  ({ evaluateDecision } = require('../lib/tierLocks.js'))
+} catch {
+  ({ evaluateDecision } = require('../lib/apps/functions/src/tierLocks.js'))
+}
 
 test('blocks unauthenticated tier2 feature', () => {
   const out = evaluateDecision({ featureId: 'spatial.lifeMap.personal', userTier: 'tier1', authenticated: false, isAdmin: false, isFounder: false, consents: {}, flags: { spatial_lifemap_personal: true } })
