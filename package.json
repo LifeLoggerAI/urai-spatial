@@ -10,10 +10,9 @@
     "ship:check": "pnpm -r --if-present test",
     "typecheck": "pnpm --filter urai-tier1 typecheck",
     "test": "pnpm --filter urai-functions build && pnpm --filter urai-functions test && pnpm --filter urai-tier1 test && pnpm test:e2e",
-    "test:e2e": "playwright test"
+    "test:e2e": "pnpm --filter urai-tier1 exec node ../tests/spatial-lock.mjs"
   },
   "devDependencies": {
-    "@playwright/test": "^1.57.0",
     "@types/node": "^25.5.0",
     "@types/react": "^19.2.14",
     "@types/three": "^0.183.1",
