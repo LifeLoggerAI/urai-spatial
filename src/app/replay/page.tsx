@@ -1,5 +1,5 @@
 import { redirect } from 'next/navigation'
 
-export default function AscentAliasPage() {
+export default function ReplayAliasPage() {
   redirect('/')
 }

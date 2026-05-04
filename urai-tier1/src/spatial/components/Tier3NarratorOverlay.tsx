@@ -1,6 +1,7 @@
 'use client'
 
 import React from 'react'
+import { readSpatialRuntimeFlags } from '@/spatial/runtime/runtimeFlags'
 import {
   resolveNarratorLine,
   resolveNarratorOpacity,
@@ -20,7 +21,8 @@ export default function Tier3NarratorOverlay({
   transitionPhase,
   visible = true,
 }: Tier3NarratorOverlayProps) {
-  if (!visible) return null
+  const flags = readSpatialRuntimeFlags()
+  if (!visible || flags.publicDemoMode || flags.recordingMode) return null
 
   const line = resolveNarratorLine(mode)
   const opacity = resolveNarratorOpacity(mode, transitionPhase)
@@ -47,16 +49,16 @@ export default function Tier3NarratorOverlay({
       <div
         style={{
           display: 'inline-block',
-          padding: '10px 18px 8px 18px',
+          padding: '12px 22px 10px 22px',
           borderRadius: '999px',
-          background: 'linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.00))',
-          boxShadow: '0 0 42px rgba(0,0,0,0.16)',
-          backdropFilter: 'blur(1.5px)',
+          background: 'linear-gradient(180deg, rgba(26,30,42,0.84), rgba(10,12,18,0.74))',
+          boxShadow: '0 12px 56px rgba(0,0,0,0.44), inset 0 0 0 1px rgba(255,255,255,0.08)',
+          backdropFilter: 'blur(5px)',
         }}
       >
         <div
           style={{
-            fontSize: 'clamp(18px, 2.2vw, 28px)',
+            fontSize: 'clamp(22px, 2.65vw, 34px)',
             lineHeight: 1.12,
             letterSpacing: '0.01em',
             color: titleColor,
@@ -69,7 +71,7 @@ export default function Tier3NarratorOverlay({
         </div>
         <div
           style={{
-            fontSize: 'clamp(12px, 1.25vw, 15px)',
+            fontSize: 'clamp(15px, 1.52vw, 19px)',
             lineHeight: 1.34,
             letterSpacing: '0.018em',
             color: subtitleColor,
