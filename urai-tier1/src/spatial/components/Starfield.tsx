@@ -18,6 +18,7 @@ export type LifeMapStar = {
   title?: string
   date?: string
   narrator?: string
+  relatedTo?: string[]
 }
 
 type InputStar = {
@@ -267,16 +268,25 @@ export default function Starfield({
     }
   }, [fallbackBackgroundStars, fallbackMajorStars, lifeMapStars, stars])
 
-  const constellationLinks = useMemo(
-    () =>
-      majorStars
-        .slice()
-        .sort((a, b) => a.sort - b.sort)
-        .slice(1)
-        .map((star, index) => [majorStars[index], star] as const)
-        .filter(([from, to]) => Boolean(from && to)),
-    [majorStars],
-  )
+  const constellationLinks = useMemo(() => {
+    const sorted = majorStars.slice().sort((a, b) => a.sort - b.sort)
+    const byId = new Map(sorted.map((star) => [star.id, star]))
+    const links = new Map<string, readonly [StarNode, StarNode]>()
+
+    sorted.forEach((star, index) => {
+      const prev = sorted[index - 1]
+      if (prev) links.set(`${prev.id}|${star.id}`, [prev, star])
+
+      ;(star.relatedTo ?? []).forEach((targetId) => {
+        const target = byId.get(targetId)
+        if (!target) return
+        const key = [star.id, target.id].sort().join("|")
+        links.set(key, [star, target])
+      })
+    })
+
+    return Array.from(links.values())
+  }, [majorStars])
 
   useFrame((_, delta) => {
     timeRef.current += Math.min(delta, 0.05)
@@ -298,7 +308,7 @@ export default function Starfield({
         const positions = new Float32Array([...from.position, ...to.position])
 
         return (
-          <line key={`constellation-${from.id}-${to.id}-${index}`} renderOrder={5}>
+          <line key={`constellation-${from.id}-${to.id}-${index}`}>
             <bufferGeometry>
               <bufferAttribute attach="attributes-position" args={[positions, 3]} />
             </bufferGeometry>
@@ -364,8 +374,8 @@ export default function Starfield({
 
         const dimForSelection = hasSelection && !isSelected ? 0.42 : 1
         const dimForFocus = isMajor ? 1 - focusDim * 0.16 : 1 - focusDim * 0.42
-        const starOpacity = baseOpacity * dimForSelection * dimForFocus * (isMajor ? 0.98 : 0.62)
-        const radius = star.r * (isSelected ? 1.9 : isHovered ? 1.35 : 1)
+        const starOpacity = baseOpacity * dimForSelection * dimForFocus * (isMajor ? 0.96 : 0.36)
+        const radius = star.r * (isMajor ? (isSelected ? 2.1 : isHovered ? 1.5 : 1.2) : 0.74)
 
         return (
           <group key={star.id}>
@@ -418,7 +428,7 @@ export default function Starfield({
               <meshBasicMaterial
                 color={isSelected ? "#ffe27a" : star.color}
                 transparent
-                opacity={Math.max(isMajor ? 0.35 : 0.18, starOpacity)}
+                opacity={Math.max(isMajor ? 0.4 : 0.1, starOpacity)}
                 depthWrite={false}
                 depthTest={false}
                 toneMapped={false}
