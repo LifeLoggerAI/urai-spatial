@@ -5,11 +5,11 @@ import { useSceneStore } from "../state/sceneStore";
 
 export default function ReplaySphere() {
   const mode = useSceneStore((s) => s.mode);
-  const selectedStar = useSceneStore((s) => s.selectedStar);
+  const selectedStarId = useSceneStore((s) => s.selectedStarId);
 
   if (mode !== "replay") return null;
 
-  const star = resolveStarById(selectedStar);
+  const star = resolveStarById(selectedStarId);
   if (!star) return null;
 
   return (
