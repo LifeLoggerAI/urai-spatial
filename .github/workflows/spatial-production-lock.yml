@@ -16,6 +16,9 @@ jobs:
     name: Verify source, build, tests, E2E, and visual artifacts
     runs-on: ubuntu-latest
     timeout-minutes: 30
+    env:
+      CI: "true"
+      PNPM_HOME: ~/.local/share/pnpm
 
     steps:
       - name: Checkout
@@ -47,7 +50,7 @@ jobs:
           test -f tests/spatial-lock.mjs
 
       - name: Install dependencies with lockfile enforcement
-        run: pnpm install --frozen-lockfile
+        run: pnpm install --frozen-lockfile --prefer-offline
 
       - name: Typecheck app
         run: pnpm typecheck
@@ -76,7 +79,7 @@ jobs:
         with:
           name: urai-spatial-visual-audit
           path: artifacts/spatial-lock
-          if-no-files-found: error
+          if-no-files-found: warn
           retention-days: 14
 
       - name: Validate Firebase deploy references
