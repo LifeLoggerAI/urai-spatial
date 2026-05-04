@@ -2,12 +2,33 @@
 
 import Orb from "../components/Orb";
 import { useSceneStore } from "../state/sceneStore";
+import GroundWorld from "./GroundWorld";
+import { getGroundChannelsForPhase } from "./phaseMachine";
 
-export default function HomeWorld() {
+type HomeWorldProps = {
+  phase?: string;
+  progress?: number;
+  reducedMotion?: boolean;
+};
+
+const easeOutCubic = (t: number) => 1 - Math.pow(1 - Math.max(0, Math.min(1, t)), 3);
+
+export default function HomeWorld({ phase = "HOME", progress = 0, reducedMotion = false }: HomeWorldProps) {
   const enterLifeMap = useSceneStore((s) => s.enterLifeMap);
+  const channels = getGroundChannelsForPhase(phase, progress);
+
+  const groundVisual = reducedMotion
+    ? {
+        recession: easeOutCubic(channels.recession),
+        elevation: easeOutCubic(channels.elevation),
+        opacity: easeOutCubic(channels.opacity),
+      }
+    : channels;
 
   return (
     <group>
+      <GroundWorld recession={groundVisual.recession} elevation={groundVisual.elevation} opacity={groundVisual.opacity} />
+
       <mesh rotation={[-Math.PI / 2, 0, 0]} position={[-0.52, 0.012, -0.05]} receiveShadow>
         <circleGeometry args={[1.1, 36]} />
         <shadowMaterial opacity={0.5} />
