@@ -5,7 +5,7 @@ import { useEffect, useMemo, useState } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 
 type NodeType = "signal" | "threshold" | "recovery" | "pattern" | "memory" | "council" | "return";
-type Mode = "home" | "lifemap" | "focus" | "replay" | "mirror";
+type Mode = "home" | "lifemap" | "focus" | "replay" | "mirror" | "rewind";
 type Filter = "all" | NodeType;
 
 type LifeNode = {
@@ -95,6 +95,7 @@ function routePairs(group: LifeGroup) {
 function modeFromRoute(pathname: string | null, phase: string | null): Mode {
   const source = `${pathname ?? ""} ${phase ?? ""}`.toLowerCase();
   if (source.includes("replay")) return "replay";
+  if (source.includes("rewind")) return "rewind";
   if (source.includes("mirror")) return "mirror";
   if (source.includes("focus")) return "focus";
   if (source.includes("life-map") || source.includes("lifemap")) return "lifemap";
@@ -106,7 +107,8 @@ function routeForMode(mode: Mode, selectedId: string | null) {
   if (mode === "lifemap") return "/life-map";
   if (mode === "focus") return `/focus${selectedId ? `?node=${encodeURIComponent(selectedId)}` : ""}`;
   if (mode === "replay") return `/replay${selectedId ? `?node=${encodeURIComponent(selectedId)}` : ""}`;
-  return `/mirror${selectedId ? `?node=${encodeURIComponent(selectedId)}` : ""}`;
+  if (mode === "mirror") return `/mirror${selectedId ? `?node=${encodeURIComponent(selectedId)}` : ""}`;
+  return `/rewind${selectedId ? `?node=${encodeURIComponent(selectedId)}` : ""}`;
 }
 
 export function LifeMapCanonicalSurface() {
@@ -121,6 +123,7 @@ export function LifeMapCanonicalSurface() {
   const [era, setEra] = useState("Current Season");
   const [panel, setPanel] = useState<"filter" | "era" | null>(null);
   const [progress, setProgress] = useState(0);
+  const [rewindProgress, setRewindProgress] = useState(100);
   const [replayPaused, setReplayPaused] = useState(false);
   const [returnHeld, setReturnHeld] = useState(false);
   const [isTransitioning, setIsTransitioning] = useState(false);
@@ -135,10 +138,11 @@ export function LifeMapCanonicalSurface() {
   const visibleNodes = lifeNodes.filter((node) => filter === "all" || node.type === filter || node.id === selectedId);
   const activePatterns = lifeNodes.filter((node) => node.type === "pattern").length;
   const phaseIndex = Math.min(replayPhases.length - 1, Math.floor(progress / 25));
-  const cameraScale = mode === "focus" ? 1.32 : mode === "replay" ? 1.42 : mode === "mirror" ? 1.24 : 1;
-  const cameraX = selected && (mode === "focus" || mode === "replay" || mode === "mirror") ? (50 - selected.x) * 0.56 : 0;
-  const cameraY = selected && (mode === "focus" || mode === "replay" || mode === "mirror") ? (50 - selected.y) * 0.42 : 0;
+  const cameraScale = mode === "focus" ? 1.32 : mode === "replay" ? 1.42 : mode === "mirror" ? 1.24 : mode === "rewind" ? 1.36 : 1;
+  const cameraX = selected && (mode === "focus" || mode === "replay" || mode === "mirror" || mode === "rewind") ? (50 - selected.x) * 0.56 : 0;
+  const cameraY = selected && (mode === "focus" || mode === "replay" || mode === "mirror" || mode === "rewind") ? (50 - selected.y) * 0.42 : 0;
   const replayTone = ["#7dd3fc", "#a78bfa", "#f9a8d4", "#ffffff"][phaseIndex] ?? "#7dd3fc";
+  const activeTier = mode === "home" ? 1 : mode === "lifemap" ? 2 : mode === "focus" ? 3 : mode === "replay" ? 4 : 5;
 
   useEffect(() => {
     if (mode !== "replay" || progress < 100) return;
@@ -152,7 +156,7 @@ export function LifeMapCanonicalSurface() {
 
   useEffect(() => {
     setMode(routeMode);
-    if (routeMode === "focus" || routeMode === "replay" || routeMode === "mirror") {
+    if (routeMode === "focus" || routeMode === "replay" || routeMode === "mirror" || routeMode === "rewind") {
       const nextNode = routeNode && lifeNodes.some((node) => node.id === routeNode) ? routeNode : "pattern-01";
       setSelectedId(nextNode);
     }
@@ -218,7 +222,8 @@ export function LifeMapCanonicalSurface() {
   };
 
   const unwind = () => {
-    if (mode === "replay") navigate("focus", selectedId ?? "pattern-01");
+    if (mode === "rewind") navigate("replay", selectedId ?? "pattern-01");
+    else if (mode === "replay") navigate("focus", selectedId ?? "pattern-01");
     else if (mode === "mirror") navigate("focus", selectedId ?? "pattern-01");
     else if (mode === "focus") navigate("lifemap", null);
     else if (mode === "lifemap") navigate("home", null);
@@ -279,7 +284,7 @@ export function LifeMapCanonicalSurface() {
       </section>
 
       <section className="hud hud-right" aria-label="Private status">
-        <p>Private Spatial State</p>
+        <p>Private Spatial State</p><span>Tier {activeTier}</span><span>Mode {mode.toUpperCase()}</span>
         <span>Signals Synced</span>
         {selected?.replayAvailable ? <span>Replay Ready</span> : null}
         {reducedMotion ? <span>Reduced Motion</span> : null}
@@ -296,8 +301,10 @@ export function LifeMapCanonicalSurface() {
         <article>{selected.description}</article>
         <blockquote>{selected.narratorLine}</blockquote>
         {selected.locked ? <b className="lock-message">This memory is still forming.</b> : null}
-        <div><button type="button" disabled={selected.locked || !selected.replayAvailable} onClick={startReplay}>Replay</button><button type="button" onClick={() => navigate("mirror", selected.id)}>Mirror</button><button type="button" onClick={unwind}>Unwind</button><button type="button" onClick={() => navigate("home", null)}>Return Home</button></div>
+        <div><button type="button" disabled={selected.locked || !selected.replayAvailable} onClick={startReplay}>Replay</button><button type="button" onClick={() => navigate("mirror", selected.id)}>Mirror</button><button type="button" onClick={() => navigate("rewind", selected.id)}>Rewind</button><button type="button" onClick={unwind}>Unwind</button><button type="button" onClick={() => navigate("home", null)}>Return Home</button></div>
       </section> : null
+
+      {selected && mode === "rewind" ? <section className="replay-overlay mirror-overlay" data-testid="urai-rewind-overlay" role="dialog" aria-label={`${selected.title} rewind`}><p>REWIND CHAMBER</p><h1>{selected.title}</h1><div className="phase">TIMELINE REFRAME</div><div className="progress progress-shell"><i style={{ width: `${rewindProgress}%` }} /></div><input aria-label="Rewind progress" type="range" min={0} max={100} value={rewindProgress} onChange={(event) => setRewindProgress(Number(event.target.value))} /><article>{selected.replayScript[Math.max(0, Math.min(selected.replayScript.length - 1, Math.floor((100 - rewindProgress) / 25)))] ?? selected.narratorLine}</article><blockquote>{selected.narratorLine}</blockquote><div><button type="button" onClick={() => navigate("replay", selected.id)}>Back to Replay</button><button type="button" onClick={unwind}>Unwind</button><button type="button" onClick={() => navigate("home", null)}>Return Home</button></div></section> : null}
 
       {selected && mode === "mirror" ? <section className="replay-overlay mirror-overlay" data-testid="urai-mirror-overlay" role="dialog" aria-label={`${selected.title} mirror`}><p>MIRROR OF BECOMING</p><h1>{selected.title}</h1><div className="phase">INTEGRATION</div><article>{selected.description}</article><blockquote>{selected.narratorLine}</blockquote><div><button type="button" onClick={() => navigate("replay", selected.id)}>Enter Replay</button><button type="button" onClick={unwind}>Unwind</button><button type="button" onClick={() => navigate("home", null)}>Return Home</button></div></section> : null}
 
