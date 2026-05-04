@@ -8,5 +8,8 @@ export const metadata: Metadata = {
 };
 
 export default function AscentPage() {
-  return <div data-urai-page="ascent"><AscentScene /></div>;
+  const publicDemoMode = process.env.NEXT_PUBLIC_PUBLIC_DEMO_MODE === 'true';
+  const recordingMode = process.env.NEXT_PUBLIC_RECORDING_MODE === 'true';
+  const dataAttrs = !publicDemoMode && !recordingMode ? { 'data-urai-page': 'ascent' } : {};
+  return <div {...dataAttrs}><AscentScene /></div>;
 }

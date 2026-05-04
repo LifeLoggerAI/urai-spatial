@@ -7,6 +7,7 @@ import { useSpatialCompareStore } from "@/spatial/compare/spatialCompareStore";
 import { useSpatialLensStore } from "@/spatial/lenses/spatialLensStore";
 import { buildSpatialNarratorExport } from "@/spatial/narrator/buildSpatialNarratorExport";
 import { readSpatialPersistenceSnapshot } from "@/spatial/persistence/spatialPersistenceIO";
+import { readSpatialRuntimeFlags } from "@/spatial/runtime/runtimeFlags";
 
 function downloadText(filename: string, text: string) {
   const blob = new Blob([text], { type: "text/plain;charset=utf-8" });
@@ -40,6 +41,8 @@ export default function SpatialNarratorExportPanel() {
   const compareSets = useSpatialCompareStore((s) => s.sets);
 
   const [status, setStatus] = useState("idle");
+  const runtimeFlags = readSpatialRuntimeFlags();
+  if (runtimeFlags.publicDemoMode && !runtimeFlags.showDemoExportControls) return null;
 
   const snapshot = useMemo(() => readSpatialPersistenceSnapshot(), [status]);
 
@@ -104,9 +107,7 @@ export default function SpatialNarratorExportPanel() {
       return;
     }
 
-    downloadText(
-      exportPackage.scriptText,
-    );
+    downloadText("URAI-Spatial-Demo-Manifest.txt", exportPackage.scriptText);
     setStatus("narrator txt exported");
   };
 
@@ -116,10 +117,8 @@ export default function SpatialNarratorExportPanel() {
       return;
     }
 
-    downloadJson(
-      exportPackage,
-    );
-    setStatus("narrator json exported");
+    downloadJson("URAI-Spatial-Demo-Manifest.json", exportPackage);
+    setStatus("XR manifest exported.");
   };
 
   return (

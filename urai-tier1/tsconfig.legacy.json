@@ -1,0 +1,11 @@
+{
+  "extends": "./tsconfig.json",
+  "include": [
+    "src/spatial/ui/**/*.ts",
+    "src/spatial/ui/**/*.tsx",
+    "src/spatial/narrator/**/*.ts",
+    "src/spatial/narrator/**/*.tsx",
+    "src/spatial/vault/**/*.ts",
+    "src/spatial/vault/**/*.tsx"
+  ]
+}
