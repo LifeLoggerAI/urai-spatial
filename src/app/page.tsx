@@ -1,3 +1,4 @@
+import SpatialScene from '@/spatial/scene/SpatialScene'
 import { CanonicalTierLockHud } from '@/spatial/components/CanonicalTierLockHud'
 import LifeMapCanonicalSurface from '@/spatial/components/LifeMapCanonicalSurface'
 
@@ -8,6 +9,7 @@ const showInternalHud = !publicDemoMode && !recordingMode
 export default function HomePage() {
   return (
     <>
+      <SpatialScene />
       <LifeMapCanonicalSurface />
       {showInternalHud ? <CanonicalTierLockHud /> : null}
     </>
