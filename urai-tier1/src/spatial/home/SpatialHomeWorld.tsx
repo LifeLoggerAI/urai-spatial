@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { HomeWorldLayerStack } from "./HomeWorldLayerStack";
 import { useHomeWorldState } from "./useHomeWorldState";
 import { useAscentTransition } from "./motion/useAscentTransition";
+import type { ExplainableContribution } from "./homeWorldTypes";
 
 export default function SpatialHomeWorld({ userId = "demo-user" }: { userId?: string }) {
   const router = useRouter();
@@ -91,7 +92,7 @@ export default function SpatialHomeWorld({ userId = "demo-user" }: { userId?: st
   );
 }
 
-function renderContributors(contributors = []) {
+function renderContributors(contributors: ExplainableContribution[] = []) {
   return (
     <div className="chips">
       {contributors.slice(0, 3).map((item) => (
