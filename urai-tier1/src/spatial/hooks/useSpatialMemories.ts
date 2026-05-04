@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react'
 import { collection, getDocs, limit, orderBy, query } from 'firebase/firestore'
+import { resolveSpatialUserId } from '@/spatial/state/resolveSpatialUserId'
 import { getFirebaseDb } from '@/lib/firebase/client'
 import type { SpatialMemory } from '@/spatial/data/spatialMemory'
 import { getSpatialMemory, getSpatialMemories, getSpatialStars, toSpatialMemory, type SpatialMemoryRecord } from '@/spatial/data/spatialMemoryAdapter'
@@ -49,7 +50,8 @@ export function useSpatialMemories(selectedId?: string | null): SpatialMemoriesS
 
     async function run() {
       const db = getFirebaseDb()
-      if (!db) {
+      const userId = resolveSpatialUserId()
+      if (!db || !userId) {
         setMemories(getSpatialMemories())
         setIsRemote(false)
         setIsLoading(false)
@@ -61,7 +63,7 @@ export function useSpatialMemories(selectedId?: string | null): SpatialMemoriesS
       setError(null)
 
       try {
-        const q = query(collection(db, 'spatialMemories'), orderBy('ts', 'desc'), limit(200))
+        const q = query(collection(db, 'users', userId, 'spatialMemories'), orderBy('ts', 'desc'), limit(200))
         const snap = await getDocs(q)
         const rows = snap.docs.map((doc) => normalizeRecord(doc.id, doc.data() as Record<string, unknown>))
         const next = rows.map(toSpatialMemory)
