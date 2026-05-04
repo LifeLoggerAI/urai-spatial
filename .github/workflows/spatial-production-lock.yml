@@ -13,7 +13,7 @@ concurrency:
 
 jobs:
   verify:
-    name: Verify source, build, tests, and E2E flow
+    name: Verify source, build, tests, E2E, and visual artifacts
     runs-on: ubuntu-latest
     timeout-minutes: 30
 
@@ -67,8 +67,17 @@ jobs:
       - name: Install Playwright browser
         run: pnpm --filter urai-tier1 exec playwright install --with-deps chromium
 
-      - name: Run spatial E2E lock flow
+      - name: Run spatial E2E and visual lock flow
         run: pnpm test:e2e
+
+      - name: Upload spatial visual audit artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: urai-spatial-visual-audit
+          path: artifacts/spatial-lock
+          if-no-files-found: error
+          retention-days: 14
 
       - name: Validate Firebase deploy references
         run: |
