@@ -1,0 +1,3 @@
+import { LifeMapMode } from '@/lib/life-map/lifeMapTypes'
+const modes: LifeMapMode[] = ['timeline','constellation','weather','recovery','shadow','dream','relationship','chapter','mirror']
+export function LifeMapControls({ mode, setMode }: { mode: LifeMapMode; setMode:(m:LifeMapMode)=>void }) { return <div className='absolute bottom-3 inset-x-2 z-40 overflow-x-auto rounded-full border border-white/20 bg-slate-900/70 p-2 backdrop-blur'><div className='flex gap-2'>{modes.map(m=><button key={m} onClick={()=>setMode(m)} className={`rounded-full px-3 py-1 text-xs ${mode===m?'bg-indigo-500 text-white':'bg-white/10 text-white/80'}`}>{m}</button>)}</div></div> }
