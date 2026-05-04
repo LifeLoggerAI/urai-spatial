@@ -31,13 +31,13 @@ export const useXrStore = create<XrStore>((set) => ({
 
 export default function UnityRuntimePayloadBridge() {
   const mode = useSceneStore((s) => s.mode);
-  const selectedStar = useSceneStore((s) => s.selectedStar);
+  const selectedStarId = useSceneStore((s) => s.selectedStarId);
   const xrState = useXrStore();
 
   useEffect(() => {
-    const payload = buildUnityRuntimePayload(mode, selectedStar, xrState);
+    const payload = buildUnityRuntimePayload(mode, selectedStarId, xrState);
     (window).__URAI_UNITY_RUNTIME_PAYLOAD__ = payload;
-  }, [mode, selectedStar, xrState]);
+  }, [mode, selectedStarId, xrState]);
 
   return null;
 }
