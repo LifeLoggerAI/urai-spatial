@@ -1,0 +1,38 @@
+{
+  "name": "URAI Spatial Launch Verification Lock",
+  "version": 1,
+  "status": "locked_until_verified",
+  "requiredChecks": [
+    "workspace-install",
+    "tier1-typecheck",
+    "tier1-build",
+    "tier1-tests",
+    "functions-build",
+    "spatial-lock-test",
+    "firebase-config-smoke",
+    "preflight",
+    "preview-deploy",
+    "production-smoke"
+  ],
+  "requiredSecrets": [
+    "FIREBASE_SERVICE_ACCOUNT_URAI_SPATIAL",
+    "URAI_SPATIAL_FIREBASE_PROJECT_ID",
+    "URAI_SPATIAL_FIREBASE_WEB_CONFIG"
+  ],
+  "requiredFirebaseSetup": [
+    "Firebase Hosting site connected",
+    "Firebase Auth authorized domains configured",
+    "Firestore rules deployed",
+    "Functions deployed using nodejs20 runtime",
+    "Admin/founder custom claims assigned where required"
+  ],
+  "requiredManualSignoffs": [
+    "engineering",
+    "rendering_performance",
+    "security_privacy",
+    "domain_dns_ssl",
+    "product_launch"
+  ],
+  "unlockRule": "Do not mark the PR ready, merge, or production deploy until all required checks pass and signoffs.md has no Status: PENDING entries.",
+  "lastUpdated": "2026-05-04"
+}

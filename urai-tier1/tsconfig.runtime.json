@@ -13,5 +13,11 @@
     "src/spatial/hooks/useSceneAuthority.ts",
     "src/spatial/scene/**/*.ts",
     "src/spatial/scene/**/*.tsx"
+  ],
+  "exclude": [
+    "src/**/*.corrupt.*.ts",
+    "src/**/*.corrupt.*.tsx",
+    "src/**/*.bak.*",
+    "src/**/*.backup.*"
   ]
 }

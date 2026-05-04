@@ -1,0 +1,119 @@
+name: URAI Spatial CI
+
+on:
+  pull_request:
+    paths:
+      - "**"
+  push:
+    branches: [main]
+
+jobs:
+  workspace:
+    name: Workspace install and preflight
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 8
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+      - name: Install
+        run: pnpm install --no-frozen-lockfile
+      - name: Preflight
+        run: pnpm preflight
+
+  tier1:
+    name: Tier 1 typecheck build and tests
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 8
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+      - name: Install
+        run: pnpm install --no-frozen-lockfile
+      - name: Typecheck
+        run: pnpm --filter urai-tier1 typecheck
+      - name: Tier lock verifier
+        run: pnpm --filter urai-tier1 verify:tier-lock
+      - name: Unit tests
+        run: pnpm --filter urai-tier1 test
+      - name: Build
+        run: pnpm --filter urai-tier1 build
+
+  functions:
+    name: Functions build and tests
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 8
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+      - name: Install
+        run: pnpm install --no-frozen-lockfile
+      - name: Build functions
+        run: pnpm --filter urai-functions build
+      - name: Test functions
+        run: pnpm --filter urai-functions test
+
+  firebase-config:
+    name: Firebase config smoke
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Validate Firebase JSON
+        run: |
+          python -m json.tool firebase.json > /dev/null
+          python -m json.tool firebase/firestore.indexes.json > /dev/null
+      - name: Verify Firebase rules and runtime
+        run: |
+          test -f firebase/firestore.rules
+          grep -q "nodejs20" firebase.json
+          grep -q "urai-spatial-functions" firebase.json
+          grep -q "isAdmin" firebase/firestore.rules
+          grep -Fq "match /spatial/{doc=**}" firebase/firestore.rules
+
+  verification-lock:
+    name: Verification lock preflight
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 8
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+      - name: Install
+        run: pnpm install --no-frozen-lockfile
+      - name: Preflight
+        run: pnpm preflight
+      - name: Keep PR locked until signoffs complete
+        run: |
+          grep -q "locked_until_verified" verification/launch-lock.json
+          grep -q "Status: PENDING" verification/signoffs.md
