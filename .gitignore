@@ -5,6 +5,8 @@ apps/**/.next
 firebase-debug.log
 .firebase/
 .DS_Store
+*.bak
+*.bak.*
 
 # local preview transient files
 _audit/**/local_preview.pid
