@@ -6,11 +6,12 @@
     "dev": "next dev --webpack",
     "build": "next build --webpack",
     "start": "next start",
-    "lint": "tsc --noEmit",
-    "typecheck": "tsc --noEmit",
+    "lint": "tsc --noEmit -p tsconfig.runtime.json",
+    "typecheck": "tsc --noEmit -p tsconfig.runtime.json",
+    "typecheck:legacy": "tsc --noEmit -p tsconfig.legacy.json",
     "verify:tier-lock": "node scripts/verify-tier-lock.mjs",
     "audit:visual-lock": "npm run verify:tier-lock && npm run typecheck && npm run build",
-    "test": "node --test --experimental-strip-types \"src/**/*.test.ts\""
+    "test": "node --experimental-strip-types --test tests/*.test.mjs"
   },
   "dependencies": {
     "@react-three/fiber": "^9.5.0",

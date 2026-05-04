@@ -1,6 +1,7 @@
 'use client'
 
 import React from 'react'
+import { readSpatialRuntimeFlags } from '@/spatial/runtime/runtimeFlags'
 import {
   resolveNarratorLine,
   resolveNarratorOpacity,
@@ -20,7 +21,8 @@ export default function Tier3NarratorOverlay({
   transitionPhase,
   visible = true,
 }: Tier3NarratorOverlayProps) {
-  if (!visible) return null
+  const flags = readSpatialRuntimeFlags()
+  if (!visible || flags.publicDemoMode || flags.recordingMode) return null
 
   const line = resolveNarratorLine(mode)
   const opacity = resolveNarratorOpacity(mode, transitionPhase)
