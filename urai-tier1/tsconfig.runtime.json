@@ -1,0 +1,17 @@
+{
+  "extends": "./tsconfig.json",
+  "include": [
+    "next-env.d.ts",
+    ".next/types/**/*.ts",
+    "src/**/*.d.ts",
+    "src/app/**/*.ts",
+    "src/app/**/*.tsx",
+    "src/lib/**/*.ts",
+    "src/lib/**/*.tsx",
+    "src/spatial/components/**/*.ts",
+    "src/spatial/components/**/*.tsx",
+    "src/spatial/hooks/useSceneAuthority.ts",
+    "src/spatial/scene/**/*.ts",
+    "src/spatial/scene/**/*.tsx"
+  ]
+}
