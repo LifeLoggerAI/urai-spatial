@@ -1,15 +1,21 @@
 import { doc, getDoc, serverTimestamp, setDoc, type DocumentData } from "firebase/firestore";
 import { getFirebaseDb } from "@/lib/firebase/client";
 import { defaultHomeWorldState } from "@/spatial/home/homeWorldDefaults";
+import { deriveHomeWorldStateFromSignals, type HomeWorldSignalInput } from "@/spatial/home/deriveHomeWorldStateFromSignals";
 import type { HomeMoodState, HomeRecoveryState, HomeWorldState, HomeWorldTier } from "@/spatial/home/homeWorldTypes";
 
 const HOME_WORLD_DOC_ID = "state";
+const HOME_WORLD_EXPLAIN_DOC_ID = "latest";
 const tierValues: HomeWorldTier[] = [1, 2, 3, 4, 5];
 const moodValues: HomeMoodState[] = ["calm", "low", "recovery", "dream", "shadow", "focused", "joy"];
 const recoveryValues: HomeRecoveryState[] = ["dormant", "recovering", "stable", "growing", "awakened"];
 
 function homeWorldRef(userId: string) {
   return doc(getFirebaseDb(), "users", userId, "homeWorld", HOME_WORLD_DOC_ID);
+}
+
+function homeWorldExplainRef(userId: string) {
+  return doc(getFirebaseDb(), "users", userId, "homeWorldExplainability", HOME_WORLD_EXPLAIN_DOC_ID);
 }
 
 function validUser(userId: string) {
@@ -108,5 +114,31 @@ export async function saveHomeWorldState(userId: string, state: Partial<HomeWorl
   } catch (error) {
     console.warn("[HomeWorld] Failed to save Home World state", error);
     return { ...merged, source: "demo-fallback" as const };
+  }
+}
+
+export async function deriveAndSaveHomeWorldState(input: HomeWorldSignalInput) {
+  const derived = deriveHomeWorldStateFromSignals(input);
+  const saved = await saveHomeWorldState(input.userId, derived.state);
+
+  if (!validUser(input.userId)) {
+    return { ...derived, saved, source: "demo-fallback" as const };
+  }
+
+  try {
+    await setDoc(
+      homeWorldExplainRef(input.userId),
+      {
+        userId: input.userId,
+        reasons: derived.reasons,
+        sourceSignals: input,
+        updatedAt: serverTimestamp(),
+      },
+      { merge: true },
+    );
+    return { ...derived, saved, source: "firestore" as const };
+  } catch (error) {
+    console.warn("[HomeWorld] Failed to save explainability reasons", error);
+    return { ...derived, saved, source: "demo-fallback" as const };
   }
 }
