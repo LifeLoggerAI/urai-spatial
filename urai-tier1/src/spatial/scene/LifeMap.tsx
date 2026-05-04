@@ -1,19 +1,10 @@
 "use client";
 
-
-
-import { uraiNow, uraiRandom, uraiTime } from "@/lib/uraiDeterminism";
-
+import { useMemo, useRef } from "react";
+import { useFrame } from "@react-three/fiber";
+import type { Group, Mesh, MeshBasicMaterial } from "three";
 
 import { URAI_SEED_MEMORIES } from "@/spatial/data/uraiSeedMemories";
-
-import { useRef, useMemo } from "react";
-
-
-
-
-import { useFrame } from "@react-three/fiber";
-import type { Group, Mesh } from "three";
 import type { ScenePhase, StarPoint } from "./sceneState";
 
 type Props = {
@@ -25,19 +16,16 @@ type Props = {
 };
 
 function hash(n: number) {
-
   const x = Math.sin(n * 127.1 + 311.7) * 43758.5453123;
   return x - Math.floor(x);
 }
 
 function mapRange(n: number, inMin: number, inMax: number, outMin: number, outMax: number) {
-
   const t = (n - inMin) / (inMax - inMin);
   return outMin + (outMax - outMin) * t;
 }
 
-function makeStar(id: number, band: "foreground" | "mid" | "background"): StarPoint {
-
+function makeStar(id: number, band: StarPoint["band"]): StarPoint {
   const a = hash(id + 1);
   const b = hash(id + 2);
   const c = hash(id + 3);
@@ -47,7 +35,7 @@ function makeStar(id: number, band: "foreground" | "mid" | "background"): StarPo
   let radius = 0.04;
   let alpha = 0.16;
   let clickable = false;
-  let importance = mapRange(s, 0, 1, 0.2, 1);
+  const importance = mapRange(s, 0, 1, 0.2, 1);
 
   if (band === "foreground") {
     z = mapRange(c, 0, 1, -28, -52);
@@ -63,16 +51,18 @@ function makeStar(id: number, band: "foreground" | "mid" | "background"): StarPo
     z = mapRange(c, 0, 1, -90, -165);
     radius = mapRange(s, 0, 1, 0.008, 0.028);
     alpha = mapRange(b, 0, 1, 0.05, 0.16);
-    clickable = false;
   }
 
   const spreadX = mapRange(Math.abs(z), 28, 165, 9, 28);
   const spreadY = mapRange(Math.abs(z), 28, 165, 5, 18);
-  const x = mapRange(a, 0, 1, -spreadX, spreadX);
-  const y = mapRange(b, 0, 1, -spreadY * 0.72, spreadY);
 
   return {
-    position: [x, y + 9.0, z],
+    id: `sky-star-${band}-${id}`,
+    position: [
+      mapRange(a, 0, 1, -spreadX, spreadX),
+      mapRange(b, 0, 1, -spreadY * 0.72, spreadY) + 9,
+      z,
+    ],
     importance,
     band,
     radius,
@@ -82,24 +72,40 @@ function makeStar(id: number, band: "foreground" | "mid" | "background"): StarPo
 }
 
 export function useStarData() {
+  return useMemo<StarPoint[]>(() => {
+    const memoryStars = URAI_SEED_MEMORIES.map((memory): StarPoint => ({
+      id: memory.id,
+      position: memory.position,
+      importance: memory.focusPresence,
+      band: "foreground",
+      radius: Math.max(0.065, memory.scale * 0.075),
+      alpha: memory.auraIntensity,
+      clickable: true,
+    }));
 
-  return useMemo(() => {
-    const stars = URAI_SEED_MEMORIES.map((memory) => ({
-  id: memory.id,
-  title: memory.title,
-  position: memory.position,
-  scale: memory.scale,
-  color: memory.auraColor,
-  tone: memory.tone,
-  symbolicWeight: memory.symbolicWeight,
-  memory
-}));
-return stars;
+    const ambientStars = [
+      ...Array.from({ length: 34 }, (_, i) => makeStar(i, "foreground")),
+      ...Array.from({ length: 90 }, (_, i) => makeStar(i + 200, "mid")),
+      ...Array.from({ length: 160 }, (_, i) => makeStar(i + 500, "background")),
+    ];
+
+    return [...memoryStars, ...ambientStars];
   }, []);
 }
 
-function StarMesh({
+function setOpacity(mesh: Mesh | null, opacity: number) {
+  if (!mesh) return;
 
+  const material = mesh.material as MeshBasicMaterial | MeshBasicMaterial[];
+
+  if (Array.isArray(material)) {
+    material.forEach((m) => (m.opacity = opacity));
+  } else {
+    material.opacity = opacity;
+  }
+}
+
+function StarMesh({
   star,
   sceneOpacity,
   dimmed,
@@ -117,25 +123,18 @@ function StarMesh({
   const group = useRef<Group>(null);
   const core = useRef<Mesh>(null);
   const halo = useRef<Mesh>(null);
+  const start = useRef(Date.now());
 
-  const __uraiEpochRef = useRef<number>(uraiTime())
-  const __uraiLocalTime = useRef(uraiTime())
   useFrame(() => {
-    const t = ((uraiTime() - __uraiLocalTime.current) / 1000);
-    const pulse = 1 + Math.sin(t * (0.25 + star.importance * 0.15) + star.importance * 10) * 0.03;
-    const dim = dimmed ? 0.74 : 1;
-    const sel = selected ? 1.18 : 1;
-    const haloScale = selected ? 3.4 : 2.2;
-    if (group.current) {
-      group.current.scale.setScalar(pulse * sel);
-    }
-    if (core.current && "opacity" in core.current.material) {
-      core.current.material.opacity = star.alpha * sceneOpacity * dim * (selected ? 1.12 : 1);
-    }
-    if (halo.current && "opacity" in halo.current.material) {
-      halo.current.material.opacity = star.alpha * 0.25 * sceneOpacity * dim * (selected ? 1.25 : 1);
-      halo.current.scale.setScalar(haloScale);
-    }
+    const t = (Date.now() - start.current) / 1000;
+    const pulse = 1 + Math.sin(t * (0.25 + star.importance * 0.15)) * 0.03;
+
+    group.current?.scale.setScalar(pulse * (selected ? 1.18 : 1));
+
+    setOpacity(core.current, star.alpha * sceneOpacity * (dimmed ? 0.46 : 1));
+    setOpacity(halo.current, star.alpha * 0.25 * sceneOpacity * (dimmed ? 0.46 : 1));
+
+    halo.current?.scale.setScalar(selected ? 3.4 : 2.2);
   });
 
   return (
@@ -149,130 +148,35 @@ function StarMesh({
     >
       <mesh ref={halo}>
         <sphereGeometry args={[star.radius * 2.2, 12, 12]} />
-        <meshBasicMaterial
-          color={selected ? "#c9ddff" : "#8faeff"}
-          transparent
-          opacity={star.alpha * 0.25 * sceneOpacity}
-          depthWrite={false}
-        />
+        <meshBasicMaterial transparent depthWrite={false} color="#8faeff" />
       </mesh>
+
       <mesh ref={core}>
         <sphereGeometry args={[star.radius, 14, 14]} />
-        <meshBasicMaterial
-          color={selected ? "#eef5ff" : "#dce7ff"}
-          transparent
-          opacity={star.alpha * sceneOpacity}
-          depthWrite={false}
-        />
+        <meshBasicMaterial transparent depthWrite={false} color="#dce7ff" />
       </mesh>
-      {interactive && star.clickable ? (
-        <mesh visible={false}>
-          <sphereGeometry args={[Math.max(star.radius * 1.8, 0.12), 10, 10]} />
-          <meshBasicMaterial transparent opacity={0} />
-        </mesh>
-      ) : null}
     </group>
   );
 }
 
-export default function LifeMap({
-
-  phase,
-  progress,
-  opacity,
-  selectedStar,
-  onSelectStar,
-}: Props) {
+export default function LifeMap({ phase, progress, opacity, selectedStar, onSelectStar }: Props) {
   const stars = useStarData();
-
-  const sceneOpacity = (() => {
-    if (phase === "enter_ascent") {
-      const t = Math.max(0, Math.min(1, progress));
-      const eased = t * t * (3 - 2 * t);
-      return 0.02 + 0.42 * eased;
-    }
-
-    if (phase === "enter_separation") {
-      const t = Math.max(0, Math.min(1, progress));
-      const eased = t * t * (3 - 2 * t);
-      return 0.44 + 0.36 * eased;
-    }
-
-    if (phase === "enter_arrival") {
-      const t = Math.max(0, Math.min(1, progress));
-      const eased = t * t * (3 - 2 * t);
-      return 0.8 + 0.2 * eased;
-    }
-
-    if (phase === "return_home_descent") return Math.max(0.12, 1 - progress * 0.78);
-    if (phase === "return_home_settle") return 0.12 * (1 - progress);
-    return opacity;
-  })();
-
-  const continuityProgress =
-    phase === "enter_ascent" ||
-    phase === "enter_separation" ||
-    phase === "enter_arrival"
-      ? Math.max(0, Math.min(1, progress))
-      : 1;
-
-  const continuityEase =
-    continuityProgress * continuityProgress * (3 - 2 * continuityProgress);
-
-  const lifeMapContinuityY =
-    phase === "enter_ascent"
-      ? 3.8 * (1 - continuityEase)
-      : phase === "enter_separation"
-        ? 1.35 * (1 - continuityEase)
-        : 0;
-
-  const lifeMapContinuityZ =
-    phase === "enter_ascent"
-      ? -10.5 * (1 - continuityEase)
-      : phase === "enter_separation"
-        ? -3.2 * (1 - continuityEase)
-        : 0;
-
-  const lifeMapContinuityScale =
-    phase === "enter_ascent"
-      ? 0.86 + 0.14 * continuityEase
-      : phase === "enter_separation"
-        ? 0.96 + 0.04 * continuityEase
-        : 1;
 
   const interactive = phase === "LIFEMAP";
 
   return (
-    <group
-      visible={sceneOpacity > 0.001}
-      position={[0, lifeMapContinuityY, lifeMapContinuityZ]}
-      scale={lifeMapContinuityScale}
-    >
-      {stars.map((star) => {
-        const dimmed =
-          !!selectedStar &&
-          selectedStar.id !== star.id &&
-          (phase === "focus_lock" ||
-            phase === "focus_travel" ||
-            phase === "focus_arrive" ||
-            phase === "REPLAY" ||
-            phase === "return_from_replay" ||
-            phase === "return_to_lifemap");
-
-        const selected = selectedStar?.id === star.id;
-
-        return (
-          <StarMesh
-            key={star.id}
-            star={star}
-            sceneOpacity={sceneOpacity}
-            dimmed={dimmed}
-            selected={selected}
-            interactive={interactive}
-            onSelectStar={onSelectStar}
-          />
-        );
-      })}
+    <group visible={opacity > 0.001}>
+      {stars.map((star) => (
+        <StarMesh
+          key={star.id}
+          star={star}
+          sceneOpacity={opacity}
+          dimmed={!!selectedStar && selectedStar.id !== star.id}
+          selected={selectedStar?.id === star.id}
+          interactive={interactive}
+          onSelectStar={onSelectStar}
+        />
+      ))}
     </group>
   );
 }
