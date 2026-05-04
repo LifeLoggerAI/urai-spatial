@@ -1,10 +1,12 @@
 "use client";
 
 import Orb from "../components/Orb";
+import PresenceRig from "../components/PresenceRig";
 import { useSceneStore } from "../state/sceneStore";
 
 export default function HomeWorld() {
   const enterLifeMap = useSceneStore((s) => s.enterLifeMap);
+  const phase = useSceneStore((s) => s.phase);
 
   return (
     <group>
@@ -19,6 +21,8 @@ export default function HomeWorld() {
       </mesh>
 
       <Orb interactive active onClick={enterLifeMap} />
+
+      <PresenceRig visible phase={phase} focusTarget={[-0.52, 0.38, -0.05]} />
 
       <mesh position={[-4.2, 1.3, -3.2]} castShadow receiveShadow>
         <boxGeometry args={[0.36, 2.6, 0.36]} />
