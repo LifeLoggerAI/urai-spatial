@@ -43,6 +43,7 @@ const ASCENT_MS = 2200
 const RETURN_HOME_MS = 1600
 const REPLAY_ENTER_MS = 750
 const FOCUS_ENTER_MS = 520
+const INTRO_TIMEOUT_MS = 3600
 
 // CANON COMPLIANCE: Star data now includes a 'z' index for depth layering.
 const STAR_DATA: StarNode[] = [
@@ -189,7 +190,11 @@ const [transitionKind, setTransitionKind] = useState<TransitionKind>(null)
 const [transitionProgress, setTransitionProgress] = useState(0)
 const [replayVisible, setReplayVisible] = useState(false)
 const [focusVisible, setFocusVisible] = useState(false)
+const [introVisible, setIntroVisible] = useState(true)
+const [introDismissed, setIntroDismissed] = useState(false)
+const [prefersReducedMotion, setPrefersReducedMotion] = useState(false)
 const transitionFrameRef = useRef<number | null>(null)
+const introTimeoutRef = useRef<number | null>(null)
 
 const selectedStar = useMemo(
 () => STAR_DATA.find((s) => s.id === state.selectedStarId) ?? null,
@@ -203,6 +208,25 @@ transitionKind ? (transitionKind === 'lifemapToHome' ? 1 - transitionProgress : 
 phaseForView,
 selectedStar
 )
+
+useEffect(() => {
+const mediaQuery = window.matchMedia('(prefers-reduced-motion: reduce)')
+const update = () => setPrefersReducedMotion(mediaQuery.matches)
+update()
+mediaQuery.addEventListener('change', update)
+return () => mediaQuery.removeEventListener('change', update)
+}, [])
+
+useEffect(() => {
+if (introDismissed) return
+introTimeoutRef.current = window.setTimeout(() => {
+setIntroVisible(false)
+setIntroDismissed(true)
+}, prefersReducedMotion ? 1200 : INTRO_TIMEOUT_MS)
+return () => {
+if (introTimeoutRef.current) window.clearTimeout(introTimeoutRef.current)
+}
+}, [introDismissed, prefersReducedMotion])
 
 useEffect(() => {
 const onKeyDown = (event: KeyboardEvent) => {
@@ -241,11 +265,14 @@ if (transitionFrameRef.current) cancelAnimationFrame(transitionFrameRef.current)
 
 const startAscent = () => {
 if (state.phase !== 'HOME' || state.inputLocked || transitionKind) return
+setIntroVisible(false)
+setIntroDismissed(true)
 dispatch({ type: 'START_ASCENT' })
 setTransitionKind('homeToLifemap')
 const start = performance.now()
 const tick = (now: number) => {
-const t = clamp01((now - start) / ASCENT_MS)
+const duration = prefersReducedMotion ? Math.min(ASCENT_MS, 700) : ASCENT_MS
+const t = clamp01((now - start) / duration)
 setTransitionProgress(t)
 if (t < 1) {
 transitionFrameRef.current = requestAnimationFrame(tick)
@@ -292,7 +319,8 @@ transition: transitionKind ? 'none' : 'transform 750ms ease-out, background 750m
 {showHome && (
 <>
 {/* Sky click target - HOME LAW */}
-<div
+<button
+type="button"
 aria-label="Enter spatial field via sky"
 onClick={startAscent}
 style={{
@@ -300,8 +328,12 @@ position: 'absolute', left: 0, right: 0, top: 0, height: '60%',
 cursor: state.phase === 'HOME' && !state.inputLocked ? 'pointer' : 'default',
 background: 'linear-gradient(to bottom, #010541 0%, #020748 100%)',
 opacity: camera.homeOpacity,
-transition: 'opacity 400ms linear',
+transition: prefersReducedMotion ? 'none' : 'opacity 400ms linear',
+border: 'none',
+padding: 0,
+outline: 'none',
 }}
+onFocus={() => setIntroVisible(false)}
 />
 {/* Ground Plane - HOME LAW */}
 <div
@@ -388,6 +420,46 @@ background:
 )}
 </div>
 
+{introDismissed === false && (
+<div
+aria-hidden={!introVisible}
+style={{
+position: 'absolute',
+inset: 0,
+display: 'grid',
+placeItems: 'center',
+pointerEvents: introVisible ? 'auto' : 'none',
+background: 'linear-gradient(to bottom, rgba(2, 7, 72, 0.86), rgba(1, 3, 26, 0.55))',
+opacity: introVisible ? 1 : 0,
+transition: prefersReducedMotion ? 'none' : 'opacity 500ms ease',
+}}
+>
+<button
+type="button"
+onClick={startAscent}
+onFocus={() => setIntroVisible(true)}
+style={{
+display: 'flex',
+flexDirection: 'column',
+gap: '0.7rem',
+alignItems: 'center',
+justifyContent: 'center',
+background: 'rgba(0,0,0,0.25)',
+color: '#ffffff',
+border: '1px solid rgba(255,255,255,0.3)',
+borderRadius: '14px',
+padding: '1.1rem 1.4rem',
+maxWidth: 'min(92vw, 640px)',
+textAlign: 'center',
+fontFamily: 'ui-sans-serif, system-ui, -apple-system',
+}}
+>
+<h1 style={{ margin: 0, fontWeight: 550, fontSize: 'clamp(1.4rem, 3.8vw, 2.25rem)', letterSpacing: '0.02em' }}>URAI Spatial Life Map</h1>
+<p style={{ margin: 0, opacity: 0.9, fontSize: 'clamp(0.9rem, 2.2vw, 1.1rem)' }}>A living map of memory, mood, and reflection.</p>
+</button>
+</div>
+)}
+
 {/* Vignette Overlay */}
 <div
 aria-hidden="true"
@@ -399,6 +471,14 @@ pointerEvents: 'none',
 transition: 'box-shadow 750ms ease-out',
 }}
 />
+<style jsx>{`
+button[aria-label='Enter spatial field via sky']:focus-visible,
+button[type='button']:focus-visible {
+outline: 3px solid #9ec6ff;
+outline-offset: 3px;
+box-shadow: 0 0 0 4px rgba(20, 74, 177, 0.45);
+}
+`}</style>
 </div>
 )
 }
