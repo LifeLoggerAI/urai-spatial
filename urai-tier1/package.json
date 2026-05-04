@@ -13,7 +13,8 @@
     "audit:visual-lock": "npm run verify:tier-lock && npm run typecheck && npm run build",
     "audit:final-visual": "node scripts/audit-final-visual.mjs",
     "audit:final": "npm run audit:final-visual && npm run audit:visual-lock",
-    "test": "node --experimental-strip-types --test tests/*.test.mjs"
+    "test": "node --experimental-strip-types --test tests/*.test.mjs",
+    "test:unit": "node --experimental-strip-types --test tests/*.test.mjs"
   },
   "dependencies": {
     "@react-three/fiber": "^9.5.0",
@@ -27,6 +28,7 @@
     "three-stdlib": "^2.36.1"
   },
   "devDependencies": {
+    "@playwright/test": "^1.57.0",
     "@types/react": "^19.2.14",
     "@types/react-dom": "^19.2.3",
     "@types/three": "^0.183.1",
