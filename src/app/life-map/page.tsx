@@ -1,5 +1,5 @@
-import { redirect } from 'next/navigation'
+import LifeMapView from '@/components/life-map/LifeMapView'
 
-export default function LifeMapAliasPage() {
-  redirect('/')
+export default function LifeMapPage() {
+  return <LifeMapView userId='demo-user' />
 }
