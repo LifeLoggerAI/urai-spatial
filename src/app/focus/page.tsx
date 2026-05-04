@@ -1,11 +1,20 @@
+import { Suspense } from 'react'
 import SpatialScene from '@/spatial/scene/SpatialScene'
 import LifeMapCanonicalSurface from '@/spatial/components/LifeMapCanonicalSurface'
 
-export default function ReplayPage() {
+function FocusRouteStage() {
   return (
     <>
       <SpatialScene />
       <LifeMapCanonicalSurface />
     </>
+  )
+}
+
+export default function FocusPage() {
+  return (
+    <Suspense fallback={null}>
+      <FocusRouteStage />
+    </Suspense>
   )
 }

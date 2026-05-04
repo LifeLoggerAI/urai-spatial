@@ -100,6 +100,7 @@ export function explainHomeWorldState(
         : `Recovery is ${state.recoveryState}, so the ground reflects a steadier formation path.`,
     confidence: {
       label: confidenceLabel,
+      confidenceBucket: confidenceLabel,
       reasons: confidenceReasons(state),
     },
     dataSources: {
@@ -112,7 +113,7 @@ export function explainHomeWorldState(
       rawSignalsStored: false,
       usedRawAudio: false,
       usedContactIdentity: false,
-      note: "Derived only · no raw audio stored",
+      note: "Derived only · private media is never stored",
     },
     updatedAt,
   };

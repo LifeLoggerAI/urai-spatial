@@ -47,12 +47,16 @@ jobs:
           test -f urai-tier1/src/app/page.tsx
           test -f urai-tier1/src/spatial/scene/SpatialScene.tsx
           test -f urai-tier1/src/spatial/scene/Tier5ReplayScene.tsx
+          test -f urai-tier1/src/spatial/home/deriveHomeWorldStateFromSignals.ts
+          test -f urai-tier1/src/spatial/home/explainHomeWorldState.ts
           test -f docs/URAI_SPATIAL_SOURCE_OF_TRUTH_LOCK.md
+          test -f docs/architecture/homeworld-v3-tier-stability.md
           test -f tests/spatial-lock.mjs
           test -f tests/replay-tier5-lock.mjs
+          test -f tests/homeworld.smoke.spec.ts
 
       - name: Install dependencies
-        run: pnpm install --no-frozen-lockfile --prefer-offline
+        run: pnpm install --no-frozen-lockfile
 
       - name: Report lockfile drift
         run: |
@@ -61,11 +65,17 @@ jobs:
             git diff -- pnpm-lock.yaml | sed -n '1,220p'
           fi
 
-      - name: Typecheck app
-        run: pnpm typecheck
+      - name: Typecheck Tier 1 app
+        run: pnpm --filter urai-tier1 typecheck
+
+      - name: Test Tier 1 app
+        run: pnpm --filter urai-tier1 test
+
+      - name: Test Tier 1 unit suite
+        run: pnpm --filter urai-tier1 test:unit
 
       - name: Build app
-        run: pnpm build
+        run: pnpm --filter urai-tier1 build
 
       - name: Build functions
         run: pnpm --filter urai-functions build
@@ -73,11 +83,11 @@ jobs:
       - name: Test functions
         run: pnpm --filter urai-functions test
 
-      - name: Test app
-        run: pnpm --filter urai-tier1 test
-
       - name: Install Playwright browser
         run: pnpm --filter urai-tier1 exec playwright install --with-deps chromium
+
+      - name: Run Home World smoke tests
+        run: pnpm exec playwright test tests/homeworld*.spec.ts
 
       - name: Run spatial E2E and visual lock flow
         run: pnpm test:e2e

@@ -26,7 +26,7 @@ function finite(value: number, fallback: number) {
 
 function buildSeededStars() {
   const majorCount = 8
-  const backgroundCount = 56
+  const backgroundCount = 80
 
   const majors: LifeMapStar[] = Array.from({ length: majorCount }, (_, index) => {
     const angle = (index / majorCount) * Math.PI * 2
