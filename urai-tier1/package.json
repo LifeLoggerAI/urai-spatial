@@ -11,6 +11,8 @@
     "typecheck:legacy": "tsc --noEmit -p tsconfig.legacy.json",
     "verify:tier-lock": "node scripts/verify-tier-lock.mjs",
     "audit:visual-lock": "npm run verify:tier-lock && npm run typecheck && npm run build",
+    "audit:final-visual": "node scripts/audit-final-visual.mjs",
+    "audit:final": "npm run audit:final-visual && npm run audit:visual-lock",
     "test": "node --experimental-strip-types --test tests/*.test.mjs"
   },
   "dependencies": {
@@ -28,6 +30,7 @@
     "@types/react": "^19.2.14",
     "@types/react-dom": "^19.2.3",
     "@types/three": "^0.183.1",
+    "playwright": "^1.57.0",
     "typescript": "^6.0.3"
   }
 }
