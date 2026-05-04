@@ -158,6 +158,7 @@ const nodeBlueprints: Array<[LifeMapNodeType, EmotionalTone, string, string, str
 export const lifeMapNodes: LifeMapNode[] = nodeBlueprints.map((item, index) => {
   const [nodeType, emotionalTone, title, subtitle, description, x, y, chapterId] = item;
   const id = `node-${String(index + 1).padStart(2, "0")}`;
+
   return {
     id,
     userId: "demo-user",
@@ -182,9 +183,20 @@ export const lifeMapNodes: LifeMapNode[] = nodeBlueprints.map((item, index) => {
     relatedLocations: nodeType === "locationMoment" ? ["Home radius"] : [],
     relatedTags: [nodeType, emotionalTone, chapterId],
     sourceSignals: ["passive rhythm", "mood weather", "interaction metadata"],
-    replayScript: ["The camera slows near this star.", "The aura opens and reveals what changed.", "The companion translates the pattern gently."],
+    replayScript: [
+      "The camera slows near this star.",
+      "The aura opens and reveals what changed.",
+      "The companion translates the pattern gently.",
+    ],
     narratorLine: narratorLineFor(nodeType, emotionalTone),
-    visualState: nodeType === "shadow" ? "fogged" : nodeType === "recovery" ? "blooming" : nodeType === "relationship" ? "orbiting" : "glowing",
+    visualState:
+      nodeType === "shadow"
+        ? "fogged"
+        : nodeType === "recovery"
+          ? "blooming"
+          : nodeType === "relationship"
+            ? "orbiting"
+            : "glowing",
     isMilestone: nodeType === "milestone" || nodeType === "rebirth" || nodeType === "mirrorMoment",
     isShadow: nodeType === "shadow",
     isRecovery: nodeType === "recovery",
@@ -219,31 +231,132 @@ export const lifeMapEdges: LifeMapEdge[] = [
 }));
 
 export const lifeChapters: LifeChapter[] = [
-  { id: "chapter-becoming", title: "The Season of Becoming", summary: "Early signals, calm anchors, and the first visible shape of the life map.", dominantEmotions: ["memory", "calm", "clarity"], coverGradient: "linear-gradient(135deg, #0f2747, #7dd3fc)", keyNodeIds: ["node-01", "node-02", "node-03", "node-14", "node-24"], narratorVoiceover: "This chapter began quietly. URAI noticed small signals before they became a story." },
-  { id: "chapter-threshold", title: "The Threshold", summary: "A difficult region where static, shadow, and tension became visible without judgment.", dominantEmotions: ["conflict", "shadow", "pain"], coverGradient: "linear-gradient(135deg, #18091f, #f97316)", keyNodeIds: ["node-04", "node-05", "node-06", "node-20", "node-22"], narratorVoiceover: "This was not failure. It was the door before the return." },
-  { id: "chapter-return", title: "The Recovery Arc", summary: "Recovery blooms, ritual anchors, and relationship orbits turned pressure into movement.", dominantEmotions: ["recovery", "growth", "purpose"], coverGradient: "linear-gradient(135deg, #052e1d, #86efac)", keyNodeIds: ["node-07", "node-08", "node-09", "node-15", "node-19", "node-21", "node-23"], narratorVoiceover: "The bloom returned more than once. That repetition is evidence of resilience." },
-  { id: "chapter-dream", title: "The Purple Dream Field", summary: "Dream symbols and mystery nodes linked the inner life to mood weather.", dominantEmotions: ["dream", "mystery", "milestone"], coverGradient: "linear-gradient(135deg, #1e1b4b, #c4b5fd)", keyNodeIds: ["node-10", "node-11", "node-12"], narratorVoiceover: "The symbols repeated because some part of you was already organizing the truth." },
-  { id: "chapter-mirror", title: "Mirror of Becoming", summary: "The zoom-out chapter where rebirth, legacy, purpose, and the full symbolic arc connect.", dominantEmotions: ["rebirth", "clarity", "purpose"], coverGradient: "linear-gradient(135deg, #020617, #f8fafc)", keyNodeIds: ["node-16", "node-17", "node-18", "node-25"], narratorVoiceover: "You were becoming someone new before you had language for it." },
+  {
+    id: "chapter-becoming",
+    title: "The Season of Becoming",
+    summary: "Early signals, calm anchors, and the first visible shape of the life map.",
+    dominantEmotions: ["memory", "calm", "clarity"],
+    coverGradient: "linear-gradient(135deg, #0f2747, #7dd3fc)",
+    keyNodeIds: ["node-01", "node-02", "node-03", "node-14", "node-24"],
+    narratorVoiceover: "This chapter began quietly. URAI noticed small signals before they became a story.",
+  },
+  {
+    id: "chapter-threshold",
+    title: "The Threshold",
+    summary: "A difficult region where static, shadow, and tension became visible without judgment.",
+    dominantEmotions: ["conflict", "shadow", "pain"],
+    coverGradient: "linear-gradient(135deg, #18091f, #f97316)",
+    keyNodeIds: ["node-04", "node-05", "node-06", "node-20", "node-22"],
+    narratorVoiceover: "This was not failure. It was the door before the return.",
+  },
+  {
+    id: "chapter-return",
+    title: "The Recovery Arc",
+    summary: "Recovery blooms, ritual anchors, and relationship orbits turned pressure into movement.",
+    dominantEmotions: ["recovery", "growth", "purpose"],
+    coverGradient: "linear-gradient(135deg, #052e1d, #86efac)",
+    keyNodeIds: ["node-07", "node-08", "node-09", "node-15", "node-19", "node-21", "node-23"],
+    narratorVoiceover: "The bloom returned more than once. That repetition is evidence of resilience.",
+  },
+  {
+    id: "chapter-dream",
+    title: "The Purple Dream Field",
+    summary: "Dream symbols and mystery nodes linked the inner life to mood weather.",
+    dominantEmotions: ["dream", "mystery", "milestone"],
+    coverGradient: "linear-gradient(135deg, #1e1b4b, #c4b5fd)",
+    keyNodeIds: ["node-10", "node-11", "node-12"],
+    narratorVoiceover: "The symbols repeated because some part of you was already organizing the truth.",
+  },
+  {
+    id: "chapter-mirror",
+    title: "Mirror of Becoming",
+    summary: "The zoom-out chapter where rebirth, legacy, purpose, and the full symbolic arc connect.",
+    dominantEmotions: ["rebirth", "clarity", "purpose"],
+    coverGradient: "linear-gradient(135deg, #020617, #f8fafc)",
+    keyNodeIds: ["node-16", "node-17", "node-18", "node-25"],
+    narratorVoiceover: "You were becoming someone new before you had language for it.",
+  },
 ];
 
 export const mirrorReplayPath: ReplayFrame[] = [
-  { nodeId: "node-01", cameraLabel: "First signal", narrator: "The map begins where the first signal glows.", weather: "timeline" },
-  { nodeId: "node-05", cameraLabel: "Shadow loop", narrator: "A hidden loop appears, not as judgment, but as information.", weather: "shadow" },
-  { nodeId: "node-07", cameraLabel: "Recovery bloom", narrator: "This was the beginning of a recovery bloom.", weather: "recovery" },
-  { nodeId: "node-11", cameraLabel: "Dream field", narrator: "The dream returned with the same symbol across seasons.", weather: "dream" },
-  { nodeId: "node-18", cameraLabel: "Mirror zoom-out", narrator: "This is one of your hidden growth arcs.", weather: "mirror" },
+  {
+    nodeId: "node-01",
+    cameraLabel: "First signal",
+    narrator: "The map begins where the first signal glows.",
+    weather: "timeline",
+  },
+  {
+    nodeId: "node-05",
+    cameraLabel: "Shadow loop",
+    narrator: "A hidden loop appears, not as judgment, but as information.",
+    weather: "shadow",
+  },
+  {
+    nodeId: "node-07",
+    cameraLabel: "Recovery bloom",
+    narrator: "This was the beginning of a recovery bloom.",
+    weather: "recovery",
+  },
+  {
+    nodeId: "node-11",
+    cameraLabel: "Dream field",
+    narrator: "The dream returned with the same symbol across seasons.",
+    weather: "dream",
+  },
+  {
+    nodeId: "node-18",
+    cameraLabel: "Mirror zoom-out",
+    narrator: "This is one of your hidden growth arcs.",
+    weather: "mirror",
+  },
 ];
 
 export const lifeMapModes: Array<{ id: LifeMapMode; label: string; helper: string }> = [
-  { id: "timeline", label: "Timeline", helper: "Chronological emotional flight" },
-  { id: "constellation", label: "Constellations", helper: "Related memories and arcs" },
-  { id: "weather", label: "Weather", helper: "Fog, rain, aurora, sunrise" },
-  { id: "recovery", label: "Recovery", helper: "Blooming rebound paths" },
-  { id: "shadow", label: "Shadow", helper: "Gentle difficult patterns" },
-  { id: "dream", label: "Dreams", helper: "Purple symbolic field" },
-  { id: "relationship", label: "Relations", helper: "Orbiting social stars" },
-  { id: "chapter", label: "Chapters", helper: "Life regions and portals" },
-  { id: "mirror", label: "Mirror", helper: "Full arc zoom-out" },
+  {
+    id: "timeline",
+    label: "Timeline",
+    helper: "Chronological emotional flight",
+  },
+  {
+    id: "constellation",
+    label: "Constellations",
+    helper: "Related memories and arcs",
+  },
+  {
+    id: "weather",
+    label: "Weather",
+    helper: "Fog, rain, aurora, sunrise",
+  },
+  {
+    id: "recovery",
+    label: "Recovery",
+    helper: "Blooming rebound paths",
+  },
+  {
+    id: "shadow",
+    label: "Shadow",
+    helper: "Gentle difficult patterns",
+  },
+  {
+    id: "dream",
+    label: "Dreams",
+    helper: "Purple symbolic field",
+  },
+  {
+    id: "relationship",
+    label: "Relations",
+    helper: "Orbiting social stars",
+  },
+  {
+    id: "chapter",
+    label: "Chapters",
+    helper: "Life regions and portals",
+  },
+  {
+    id: "mirror",
+    label: "Mirror",
+    helper: "Full arc zoom-out",
+  },
 ];
 
 export function narratorLineFor(nodeType: LifeMapNodeType, tone: EmotionalTone) {
@@ -253,29 +366,107 @@ export function narratorLineFor(nodeType: LifeMapNodeType, tone: EmotionalTone) 
   if (nodeType === "dream") return "A symbol surfaced before the conscious story was ready.";
   if (nodeType === "mirrorMoment") return "You were becoming someone new before you had language for it.";
   if (tone === "milestone" || tone === "purpose") return "This was not just a memory. It became a turning point.";
+
   return "Notice how this moment belongs to a larger pattern.";
 }
 
 export function filteredNodes(mode: LifeMapMode, nodes = lifeMapNodes) {
   if (mode === "recovery") return nodes.filter((node) => node.isRecovery || node.emotionalTone === "growth");
-  if (mode === "shadow") return nodes.filter((node) => node.isShadow || node.emotionalTone === "pain" || node.emotionalTone === "conflict");
+
+  if (mode === "shadow") {
+    return nodes.filter(
+      (node) => node.isShadow || node.emotionalTone === "pain" || node.emotionalTone === "conflict",
+    );
+  }
+
   if (mode === "dream") return nodes.filter((node) => node.isDream || node.chapterId === "chapter-dream");
+
   if (mode === "relationship") return nodes.filter((node) => node.isRelationship);
-  if (mode === "chapter") return nodes.filter((node) => node.isMilestone || node.nodeType === "chapter" || node.chapterId.includes("mirror"));
-  if (mode === "mirror") return nodes.filter((node) => node.isMilestone || node.nodeType === "mirrorMoment" || node.nodeType === "legacy");
+
+  if (mode === "chapter") {
+    return nodes.filter((node) => node.isMilestone || node.nodeType === "chapter" || node.chapterId.includes("mirror"));
+  }
+
+  if (mode === "mirror") {
+    return nodes.filter((node) => node.isMilestone || node.nodeType === "mirrorMoment" || node.nodeType === "legacy");
+  }
+
   return nodes;
 }
 
 export function edgeNodes(edge: LifeMapEdge, nodes = lifeMapNodes) {
-  return { from: nodes.find((node) => node.id === edge.from), to: nodes.find((node) => node.id === edge.to) };
+  return {
+    from: nodes.find((node) => node.id === edge.from),
+    to: nodes.find((node) => node.id === edge.to),
+  };
 }
 
-export async function fetchLifeMapNodes(userId: string): Promise<LifeMapNode[]> { void userId; return lifeMapNodes; }
-export async function fetchLifeMapEdges(userId: string): Promise<LifeMapEdge[]> { void userId; return lifeMapEdges; }
-export async function fetchLifeChapters(userId: string): Promise<LifeChapter[]> { void userId; return lifeChapters; }
-export async function saveLifeMapSettings(userId: string, settings: Record<string, unknown>) { return { userId, settings, savedAt: new Date().toISOString() }; }
-export async function createLifeMapNode(userId: string, node: Partial<LifeMapNode>) { return { ...lifeMapNodes[0], ...node, id: node.id ?? `node-${Date.now()}`, userId } as LifeMapNode; }
-export async function updateLifeMapNode(userId: string, nodeId: string, updates: Partial<LifeMapNode>) { return { userId, nodeId, updates, updatedAt: new Date().toISOString() }; }
-export async function generateLifeMapFromSignals(userId: string) { return { userId, nodes: lifeMapNodes, edges: lifeMapEdges, source: "demo-fallback" as const }; }
-export async function generateReplayPath(userId: string, nodeIds: string[]) { void userId; return nodeIds.map((nodeId, index) => ({ nodeId, cameraLabel: `Replay frame ${index + 1}`, narrator: lifeMapNodes.find((node) => node.id === nodeId)?.narratorLine ?? "The camera moves through this memory.", weather: "timeline" as LifeMapMode })); }
-export async function generateMirrorOfBecoming(userId: string) { return { userId, path: mirrorReplayPath, chapters: lifeChapters, generatedAt: new Date().toISOString() }; }
+export async function fetchLifeMapNodes(userId: string): Promise<LifeMapNode[]> {
+  void userId;
+  return lifeMapNodes;
+}
+
+export async function fetchLifeMapEdges(userId: string): Promise<LifeMapEdge[]> {
+  void userId;
+  return lifeMapEdges;
+}
+
+export async function fetchLifeChapters(userId: string): Promise<LifeChapter[]> {
+  void userId;
+  return lifeChapters;
+}
+
+export async function saveLifeMapSettings(userId: string, settings: Record<string, unknown>) {
+  return {
+    userId,
+    settings,
+    savedAt: new Date().toISOString(),
+  };
+}
+
+export async function createLifeMapNode(userId: string, node: Partial<LifeMapNode>) {
+  return {
+    ...lifeMapNodes[0],
+    ...node,
+    id: node.id ?? `node-${Date.now()}`,
+    userId,
+  } as LifeMapNode;
+}
+
+export async function updateLifeMapNode(userId: string, nodeId: string, updates: Partial<LifeMapNode>) {
+  return {
+    userId,
+    nodeId,
+    updates,
+    updatedAt: new Date().toISOString(),
+  };
+}
+
+export async function generateLifeMapFromSignals(userId: string) {
+  return {
+    userId,
+    nodes: lifeMapNodes,
+    edges: lifeMapEdges,
+    source: "demo-fallback" as const,
+  };
+}
+
+export async function generateReplayPath(userId: string, nodeIds: string[]) {
+  void userId;
+
+  return nodeIds.map((nodeId, index) => ({
+    nodeId,
+    cameraLabel: `Replay frame ${index + 1}`,
+    narrator: lifeMapNodes.find((node) => node.id === nodeId)?.narratorLine ?? "The camera moves through this memory.",
+    weather: "timeline" as LifeMapMode,
+  }));
+}
+
+export async function generateMirrorOfBecoming(userId: string) {
+  return {
+    userId,
+    path: mirrorReplayPath,
+    chapters: lifeChapters,
+    generatedAt: new Date().toISOString(),
+  };
+}

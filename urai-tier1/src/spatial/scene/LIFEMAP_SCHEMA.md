@@ -4,19 +4,19 @@ This document describes the Firestore shape and integration contract for the sym
 
 ## Collections
 
-All collections are scoped under `users/{userId}`:
+All collections are scoped under a user document:
 
-- `lifeMapNodes`
-- `lifeMapEdges`
-- `lifeChapters`
-- `memoryBlooms`
-- `rituals`
-- `relationshipNodes`
-- `dreamNodes`
-- `recoveryEvents`
-- `shadowEvents`
-- `narratorInsights`
-- `lifeMapSettings`
+- `users/{userId}/lifeMapNodes`
+- `users/{userId}/lifeMapEdges`
+- `users/{userId}/lifeChapters`
+- `users/{userId}/memoryBlooms`
+- `users/{userId}/rituals`
+- `users/{userId}/relationshipNodes`
+- `users/{userId}/dreamNodes`
+- `users/{userId}/recoveryEvents`
+- `users/{userId}/shadowEvents`
+- `users/{userId}/narratorInsights`
+- `users/{userId}/lifeMapSettings`
 
 ## `lifeMapNodes/{nodeId}`
 
@@ -29,15 +29,38 @@ All collections are scoped under `users/{userId}`:
   description: string;
   timestamp: string;
   nodeType:
-    | "memory" | "insight" | "ritual" | "dream" | "relationship"
-    | "recovery" | "shadow" | "milestone" | "chapter"
-    | "voiceMoment" | "locationMoment" | "emotionalShift"
-    | "habitPattern" | "socialPattern" | "threshold"
-    | "rebirth" | "legacy" | "mirrorMoment";
+    | "memory"
+    | "insight"
+    | "ritual"
+    | "dream"
+    | "relationship"
+    | "recovery"
+    | "shadow"
+    | "milestone"
+    | "chapter"
+    | "voiceMoment"
+    | "locationMoment"
+    | "emotionalShift"
+    | "habitPattern"
+    | "socialPattern"
+    | "threshold"
+    | "rebirth"
+    | "legacy"
+    | "mirrorMoment";
   emotionalTone:
-    | "calm" | "clarity" | "memory" | "milestone" | "purpose"
-    | "dream" | "mystery" | "pain" | "conflict" | "recovery"
-    | "growth" | "rebirth" | "shadow";
+    | "calm"
+    | "clarity"
+    | "memory"
+    | "milestone"
+    | "purpose"
+    | "dream"
+    | "mystery"
+    | "pain"
+    | "conflict"
+    | "recovery"
+    | "growth"
+    | "rebirth"
+    | "shadow";
   emotionalIntensity: number;
   auraColor: string;
   glyphType: string;
@@ -65,79 +88,3 @@ All collections are scoped under `users/{userId}`:
   createdAt: string;
   updatedAt: string;
 }
-```
-
-## `lifeMapEdges/{edgeId}`
-
-```ts
-{
-  id: string;
-  from: string;
-  to: string;
-  strength: number;
-  edgeType: "chapter" | "relationship" | "recovery" | "shadow" | "dream" | "ritual" | "mirror";
-  label: string;
-}
-```
-
-## `lifeChapters/{chapterId}`
-
-```ts
-{
-  id: string;
-  title: string;
-  summary: string;
-  dominantEmotions: EmotionalTone[];
-  coverGradient: string;
-  keyNodeIds: string[];
-  narratorVoiceover: string;
-}
-```
-
-## Visual meaning contract
-
-- Size = `importanceScore`
-- Brightness = `emotionalIntensity`
-- Pulse speed = recentness or unresolved charge
-- Aura radius = emotional impact
-- Line thickness = edge `strength`
-- Glow color = `emotionalTone` / `auraColor`
-- Orbit behavior = relationship or recurring pattern
-- Fog / broken lines = shadow or unresolved state
-- Blooming state = recovery arc
-
-## Current implementation
-
-Implemented in this branch:
-
-- Home sky entry to Life Map
-- Zoomable starfield with demo data
-- Symbolic nodes and constellation edges
-- Timeline, constellation, weather, recovery, shadow, dream, relationship, chapter, and Mirror modes
-- Memory detail card
-- Cinematic replay overlay with TTS hook button
-- Companion guide
-- Export panel shell for snapshot, memory scroll, and share card
-- Empty state / demo mode switch
-- Mobile safe layout and reduced-motion fallback
-- Typed demo fallback data and helper functions
-
-## Backend connection points
-
-The helper functions in `lifeMapModel.ts` currently return demo fallback data. Replace the function bodies with Firestore reads/writes when production Firebase config is ready:
-
-- `fetchLifeMapNodes(userId)`
-- `fetchLifeMapEdges(userId)`
-- `fetchLifeChapters(userId)`
-- `saveLifeMapSettings(userId, settings)`
-- `createLifeMapNode(userId, node)`
-- `updateLifeMapNode(userId, nodeId, updates)`
-- `generateLifeMapFromSignals(userId)`
-- `generateReplayPath(userId, nodeIds)`
-- `generateMirrorOfBecoming(userId)`
-
-## Firebase Studio integration prompt
-
-```text
-Connect the URAI Spatial Life Map scene to Firestore using the schema in urai-tier1/src/spatial/scene/LIFEMAP_SCHEMA.md. Replace the fallback helper bodies in lifeMapModel.ts with Firebase client reads/writes, preserving the exported types and function names. Keep demo fallback behavior when Firebase is unavailable. Add auth-aware userId resolution and keep all Life Map data private by default unless privacyLevel is set to shareable.
-```
