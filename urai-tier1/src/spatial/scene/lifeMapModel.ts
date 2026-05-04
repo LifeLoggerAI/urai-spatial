@@ -1,3 +1,18 @@
+import {
+  collection,
+  doc,
+  getDoc,
+  getDocs,
+  orderBy,
+  query,
+  serverTimestamp,
+  setDoc,
+  updateDoc,
+  writeBatch,
+  type DocumentData,
+} from "firebase/firestore";
+import { getFirebaseDb } from "@/lib/firebase/client";
+
 export type LifeMapPhase = "home" | "lifemap" | "focus" | "replay" | "mirror";
 
 export type LifeMapMode =
@@ -109,7 +124,16 @@ export type ReplayFrame = {
   weather: LifeMapMode;
 };
 
+type GeneratedLifeMap = {
+  userId: string;
+  nodes: LifeMapNode[];
+  edges: LifeMapEdge[];
+  source: "firestore" | "demo-fallback";
+};
+
 const now = "2026-05-04T12:00:00.000Z";
+const LIFE_MAP_SETTINGS_DOC_ID = "default";
+const MIRROR_DOC_ID = "mirrorOfBecoming";
 
 const toneColor: Record<EmotionalTone, string> = {
   calm: "#9bdcff",
@@ -312,52 +336,183 @@ export const mirrorReplayPath: ReplayFrame[] = [
 ];
 
 export const lifeMapModes: Array<{ id: LifeMapMode; label: string; helper: string }> = [
-  {
-    id: "timeline",
-    label: "Timeline",
-    helper: "Chronological emotional flight",
-  },
-  {
-    id: "constellation",
-    label: "Constellations",
-    helper: "Related memories and arcs",
-  },
-  {
-    id: "weather",
-    label: "Weather",
-    helper: "Fog, rain, aurora, sunrise",
-  },
-  {
-    id: "recovery",
-    label: "Recovery",
-    helper: "Blooming rebound paths",
-  },
-  {
-    id: "shadow",
-    label: "Shadow",
-    helper: "Gentle difficult patterns",
-  },
-  {
-    id: "dream",
-    label: "Dreams",
-    helper: "Purple symbolic field",
-  },
-  {
-    id: "relationship",
-    label: "Relations",
-    helper: "Orbiting social stars",
-  },
-  {
-    id: "chapter",
-    label: "Chapters",
-    helper: "Life regions and portals",
-  },
-  {
-    id: "mirror",
-    label: "Mirror",
-    helper: "Full arc zoom-out",
-  },
+  { id: "timeline", label: "Timeline", helper: "Chronological emotional flight" },
+  { id: "constellation", label: "Constellations", helper: "Related memories and arcs" },
+  { id: "weather", label: "Weather", helper: "Fog, rain, aurora, sunrise" },
+  { id: "recovery", label: "Recovery", helper: "Blooming rebound paths" },
+  { id: "shadow", label: "Shadow", helper: "Gentle difficult patterns" },
+  { id: "dream", label: "Dreams", helper: "Purple symbolic field" },
+  { id: "relationship", label: "Relations", helper: "Orbiting social stars" },
+  { id: "chapter", label: "Chapters", helper: "Life regions and portals" },
+  { id: "mirror", label: "Mirror", helper: "Full arc zoom-out" },
 ];
+
+function userSubcollection(userId: string, collectionName: string) {
+  return collection(getFirebaseDb(), "users", userId, collectionName);
+}
+
+function userSubdocument(userId: string, collectionName: string, documentId: string) {
+  return doc(getFirebaseDb(), "users", userId, collectionName, documentId);
+}
+
+function isConfiguredUser(userId: string) {
+  return Boolean(userId && userId !== "demo-user");
+}
+
+function getString(value: unknown, fallback: string) {
+  return typeof value === "string" && value.length > 0 ? value : fallback;
+}
+
+function getNumber(value: unknown, fallback: number) {
+  return typeof value === "number" && Number.isFinite(value) ? value : fallback;
+}
+
+function getBoolean(value: unknown, fallback: boolean) {
+  return typeof value === "boolean" ? value : fallback;
+}
+
+function getStringArray(value: unknown, fallback: string[]) {
+  return Array.isArray(value) ? value.filter((item): item is string => typeof item === "string") : fallback;
+}
+
+function getTone(value: unknown, fallback: EmotionalTone): EmotionalTone {
+  return Object.prototype.hasOwnProperty.call(toneColor, String(value)) ? (value as EmotionalTone) : fallback;
+}
+
+function getNodeType(value: unknown, fallback: LifeMapNodeType): LifeMapNodeType {
+  const allowed: LifeMapNodeType[] = [
+    "memory",
+    "insight",
+    "ritual",
+    "dream",
+    "relationship",
+    "recovery",
+    "shadow",
+    "milestone",
+    "chapter",
+    "voiceMoment",
+    "locationMoment",
+    "emotionalShift",
+    "habitPattern",
+    "socialPattern",
+    "threshold",
+    "rebirth",
+    "legacy",
+    "mirrorMoment",
+  ];
+  return allowed.includes(value as LifeMapNodeType) ? (value as LifeMapNodeType) : fallback;
+}
+
+function getVisualState(value: unknown, fallback: LifeMapNode["visualState"]): LifeMapNode["visualState"] {
+  const allowed: Array<LifeMapNode["visualState"]> = ["quiet", "glowing", "blooming", "fogged", "orbiting", "resolved"];
+  return allowed.includes(value as LifeMapNode["visualState"]) ? (value as LifeMapNode["visualState"]) : fallback;
+}
+
+function getPrivacyLevel(value: unknown, fallback: LifeMapNode["privacyLevel"]): LifeMapNode["privacyLevel"] {
+  const allowed: Array<LifeMapNode["privacyLevel"]> = ["private", "circle", "shareable"];
+  return allowed.includes(value as LifeMapNode["privacyLevel"]) ? (value as LifeMapNode["privacyLevel"]) : fallback;
+}
+
+function firestoreDate(value: unknown, fallback: string) {
+  if (typeof value === "string") return value;
+  if (value && typeof value === "object" && "toDate" in value && typeof value.toDate === "function") {
+    return value.toDate().toISOString();
+  }
+  return fallback;
+}
+
+function nodeFromFirestore(id: string, data: DocumentData, fallback: LifeMapNode): LifeMapNode {
+  const nodeType = getNodeType(data.nodeType, fallback.nodeType);
+  const emotionalTone = getTone(data.emotionalTone, fallback.emotionalTone);
+
+  return {
+    id: getString(data.id, id),
+    userId: getString(data.userId, fallback.userId),
+    title: getString(data.title, fallback.title),
+    subtitle: getString(data.subtitle, fallback.subtitle),
+    description: getString(data.description, fallback.description),
+    timestamp: firestoreDate(data.timestamp, fallback.timestamp),
+    nodeType,
+    emotionalTone,
+    emotionalIntensity: getNumber(data.emotionalIntensity, fallback.emotionalIntensity),
+    auraColor: getString(data.auraColor, toneColor[emotionalTone]),
+    glyphType: getString(data.glyphType, nodeType),
+    chapterId: getString(data.chapterId, fallback.chapterId),
+    season: getString(data.season, fallback.season),
+    importanceScore: getNumber(data.importanceScore, fallback.importanceScore),
+    privacyLevel: getPrivacyLevel(data.privacyLevel, fallback.privacyLevel),
+    x: getNumber(data.x, fallback.x),
+    y: getNumber(data.y, fallback.y),
+    z: getNumber(data.z, fallback.z),
+    clusterId: getString(data.clusterId, fallback.clusterId),
+    relatedPeople: getStringArray(data.relatedPeople, fallback.relatedPeople),
+    relatedLocations: getStringArray(data.relatedLocations, fallback.relatedLocations),
+    relatedTags: getStringArray(data.relatedTags, fallback.relatedTags),
+    sourceSignals: getStringArray(data.sourceSignals, fallback.sourceSignals),
+    replayScript: getStringArray(data.replayScript, fallback.replayScript),
+    narratorLine: getString(data.narratorLine, narratorLineFor(nodeType, emotionalTone)),
+    visualState: getVisualState(data.visualState, fallback.visualState),
+    isMilestone: getBoolean(data.isMilestone, fallback.isMilestone),
+    isShadow: getBoolean(data.isShadow, fallback.isShadow),
+    isRecovery: getBoolean(data.isRecovery, fallback.isRecovery),
+    isDream: getBoolean(data.isDream, fallback.isDream),
+    isRelationship: getBoolean(data.isRelationship, fallback.isRelationship),
+    isRitual: getBoolean(data.isRitual, fallback.isRitual),
+    createdAt: firestoreDate(data.createdAt, fallback.createdAt),
+    updatedAt: firestoreDate(data.updatedAt, fallback.updatedAt),
+  };
+}
+
+function edgeFromFirestore(id: string, data: DocumentData, fallback: LifeMapEdge): LifeMapEdge {
+  const edgeTypes: Array<LifeMapEdge["edgeType"]> = ["chapter", "relationship", "recovery", "shadow", "dream", "ritual", "mirror"];
+  const edgeType = edgeTypes.includes(data.edgeType as LifeMapEdge["edgeType"]) ? (data.edgeType as LifeMapEdge["edgeType"]) : fallback.edgeType;
+
+  return {
+    id: getString(data.id, id),
+    from: getString(data.from, fallback.from),
+    to: getString(data.to, fallback.to),
+    strength: getNumber(data.strength, fallback.strength),
+    edgeType,
+    label: getString(data.label, fallback.label),
+  };
+}
+
+function chapterFromFirestore(id: string, data: DocumentData, fallback: LifeChapter): LifeChapter {
+  return {
+    id: getString(data.id, id),
+    title: getString(data.title, fallback.title),
+    summary: getString(data.summary, fallback.summary),
+    dominantEmotions: getStringArray(data.dominantEmotions, fallback.dominantEmotions).map((tone) => getTone(tone, "memory")),
+    coverGradient: getString(data.coverGradient, fallback.coverGradient),
+    keyNodeIds: getStringArray(data.keyNodeIds, fallback.keyNodeIds),
+    narratorVoiceover: getString(data.narratorVoiceover, fallback.narratorVoiceover),
+  };
+}
+
+async function seedDemoLifeMap(userId: string) {
+  const batch = writeBatch(getFirebaseDb());
+  const stampedAt = new Date().toISOString();
+
+  lifeMapNodes.forEach((node) => {
+    batch.set(userSubdocument(userId, "lifeMapNodes", node.id), {
+      ...node,
+      userId,
+      seededFrom: "urai-spatial-demo",
+      updatedAt: stampedAt,
+      createdAt: node.createdAt || stampedAt,
+    });
+  });
+
+  lifeMapEdges.forEach((edge) => {
+    batch.set(userSubdocument(userId, "lifeMapEdges", edge.id), edge);
+  });
+
+  lifeChapters.forEach((chapter) => {
+    batch.set(userSubdocument(userId, "lifeChapters", chapter.id), chapter);
+  });
+
+  await batch.commit();
+}
 
 export function narratorLineFor(nodeType: LifeMapNodeType, tone: EmotionalTone) {
   if (nodeType === "recovery") return "This was the beginning of a recovery bloom.";
@@ -402,71 +557,252 @@ export function edgeNodes(edge: LifeMapEdge, nodes = lifeMapNodes) {
 }
 
 export async function fetchLifeMapNodes(userId: string): Promise<LifeMapNode[]> {
-  void userId;
-  return lifeMapNodes;
+  if (!isConfiguredUser(userId)) return lifeMapNodes;
+
+  try {
+    const snapshot = await getDocs(query(userSubcollection(userId, "lifeMapNodes"), orderBy("timestamp", "asc")));
+    if (snapshot.empty) return lifeMapNodes.map((node) => ({ ...node, userId }));
+
+    return snapshot.docs.map((document, index) =>
+      nodeFromFirestore(document.id, document.data(), {
+        ...lifeMapNodes[index % lifeMapNodes.length],
+        id: document.id,
+        userId,
+      }),
+    );
+  } catch (error) {
+    console.warn("[LifeMap] Falling back to demo nodes after Firestore read failed", error);
+    return lifeMapNodes.map((node) => ({ ...node, userId }));
+  }
 }
 
 export async function fetchLifeMapEdges(userId: string): Promise<LifeMapEdge[]> {
-  void userId;
-  return lifeMapEdges;
+  if (!isConfiguredUser(userId)) return lifeMapEdges;
+
+  try {
+    const snapshot = await getDocs(userSubcollection(userId, "lifeMapEdges"));
+    if (snapshot.empty) return lifeMapEdges;
+
+    return snapshot.docs.map((document, index) =>
+      edgeFromFirestore(document.id, document.data(), {
+        ...lifeMapEdges[index % lifeMapEdges.length],
+        id: document.id,
+      }),
+    );
+  } catch (error) {
+    console.warn("[LifeMap] Falling back to demo edges after Firestore read failed", error);
+    return lifeMapEdges;
+  }
 }
 
 export async function fetchLifeChapters(userId: string): Promise<LifeChapter[]> {
-  void userId;
-  return lifeChapters;
+  if (!isConfiguredUser(userId)) return lifeChapters;
+
+  try {
+    const snapshot = await getDocs(userSubcollection(userId, "lifeChapters"));
+    if (snapshot.empty) return lifeChapters;
+
+    return snapshot.docs.map((document, index) =>
+      chapterFromFirestore(document.id, document.data(), {
+        ...lifeChapters[index % lifeChapters.length],
+        id: document.id,
+      }),
+    );
+  } catch (error) {
+    console.warn("[LifeMap] Falling back to demo chapters after Firestore read failed", error);
+    return lifeChapters;
+  }
 }
 
 export async function saveLifeMapSettings(userId: string, settings: Record<string, unknown>) {
-  return {
+  const payload = {
+    ...settings,
     userId,
-    settings,
-    savedAt: new Date().toISOString(),
+    updatedAt: serverTimestamp(),
   };
+
+  if (!isConfiguredUser(userId)) {
+    return {
+      userId,
+      settings,
+      savedAt: new Date().toISOString(),
+      source: "demo-fallback" as const,
+    };
+  }
+
+  try {
+    await setDoc(userSubdocument(userId, "lifeMapSettings", LIFE_MAP_SETTINGS_DOC_ID), payload, { merge: true });
+
+    return {
+      userId,
+      settings,
+      savedAt: new Date().toISOString(),
+      source: "firestore" as const,
+    };
+  } catch (error) {
+    console.warn("[LifeMap] Failed to save settings", error);
+    return {
+      userId,
+      settings,
+      savedAt: new Date().toISOString(),
+      source: "demo-fallback" as const,
+    };
+  }
 }
 
 export async function createLifeMapNode(userId: string, node: Partial<LifeMapNode>) {
-  return {
+  const timestamp = new Date().toISOString();
+  const id = node.id ?? `node-${Date.now()}`;
+  const baseNode: LifeMapNode = {
     ...lifeMapNodes[0],
     ...node,
-    id: node.id ?? `node-${Date.now()}`,
+    id,
     userId,
+    timestamp: node.timestamp ?? timestamp,
+    createdAt: node.createdAt ?? timestamp,
+    updatedAt: timestamp,
+    privacyLevel: node.privacyLevel ?? "private",
   } as LifeMapNode;
+
+  if (!isConfiguredUser(userId)) return baseNode;
+
+  try {
+    await setDoc(userSubdocument(userId, "lifeMapNodes", id), {
+      ...baseNode,
+      createdAt: baseNode.createdAt,
+      updatedAt: serverTimestamp(),
+    });
+  } catch (error) {
+    console.warn("[LifeMap] Failed to create node; returning local node", error);
+  }
+
+  return baseNode;
 }
 
 export async function updateLifeMapNode(userId: string, nodeId: string, updates: Partial<LifeMapNode>) {
-  return {
+  const updatedAt = new Date().toISOString();
+  const payload = {
+    ...updates,
+    id: nodeId,
     userId,
-    nodeId,
-    updates,
-    updatedAt: new Date().toISOString(),
+    updatedAt: serverTimestamp(),
   };
+
+  if (!isConfiguredUser(userId)) {
+    return {
+      userId,
+      nodeId,
+      updates,
+      updatedAt,
+      source: "demo-fallback" as const,
+    };
+  }
+
+  try {
+    await updateDoc(userSubdocument(userId, "lifeMapNodes", nodeId), payload);
+
+    return {
+      userId,
+      nodeId,
+      updates,
+      updatedAt,
+      source: "firestore" as const,
+    };
+  } catch (error) {
+    console.warn("[LifeMap] Failed to update node", error);
+    return {
+      userId,
+      nodeId,
+      updates,
+      updatedAt,
+      source: "demo-fallback" as const,
+    };
+  }
 }
 
-export async function generateLifeMapFromSignals(userId: string) {
-  return {
-    userId,
-    nodes: lifeMapNodes,
-    edges: lifeMapEdges,
-    source: "demo-fallback" as const,
-  };
+export async function generateLifeMapFromSignals(userId: string): Promise<GeneratedLifeMap> {
+  if (!isConfiguredUser(userId)) {
+    return {
+      userId,
+      nodes: lifeMapNodes,
+      edges: lifeMapEdges,
+      source: "demo-fallback",
+    };
+  }
+
+  try {
+    let nodes = await fetchLifeMapNodes(userId);
+    let edges = await fetchLifeMapEdges(userId);
+
+    const isDemoOnly = nodes.length === lifeMapNodes.length && nodes.every((node) => node.userId === userId && node.id.startsWith("node-"));
+    if (isDemoOnly && edges.length === lifeMapEdges.length) {
+      await seedDemoLifeMap(userId);
+      nodes = await fetchLifeMapNodes(userId);
+      edges = await fetchLifeMapEdges(userId);
+    }
+
+    return {
+      userId,
+      nodes,
+      edges,
+      source: "firestore",
+    };
+  } catch (error) {
+    console.warn("[LifeMap] Failed to generate from Firestore signals", error);
+    return {
+      userId,
+      nodes: lifeMapNodes.map((node) => ({ ...node, userId })),
+      edges: lifeMapEdges,
+      source: "demo-fallback",
+    };
+  }
 }
 
 export async function generateReplayPath(userId: string, nodeIds: string[]) {
-  void userId;
+  const nodes = await fetchLifeMapNodes(userId);
 
   return nodeIds.map((nodeId, index) => ({
     nodeId,
-    cameraLabel: `Replay frame ${index + 1}`,
-    narrator: lifeMapNodes.find((node) => node.id === nodeId)?.narratorLine ?? "The camera moves through this memory.",
+    cameraLabel: nodes.find((node) => node.id === nodeId)?.title ?? `Replay frame ${index + 1}`,
+    narrator: nodes.find((node) => node.id === nodeId)?.narratorLine ?? "The camera moves through this memory.",
     weather: "timeline" as LifeMapMode,
   }));
 }
 
 export async function generateMirrorOfBecoming(userId: string) {
-  return {
+  const chapters = await fetchLifeChapters(userId);
+  const nodes = await fetchLifeMapNodes(userId);
+  const path = mirrorReplayPath.map((frame) => {
+    const node = nodes.find((candidate) => candidate.id === frame.nodeId);
+    return node
+      ? {
+          ...frame,
+          cameraLabel: node.title,
+          narrator: node.narratorLine,
+          weather: node.isShadow ? "shadow" : node.isRecovery ? "recovery" : node.isDream ? "dream" : frame.weather,
+        }
+      : frame;
+  });
+
+  const mirror = {
     userId,
-    path: mirrorReplayPath,
-    chapters: lifeChapters,
+    path,
+    chapters,
     generatedAt: new Date().toISOString(),
   };
+
+  if (!isConfiguredUser(userId)) return mirror;
+
+  try {
+    await setDoc(userSubdocument(userId, "narratorInsights", MIRROR_DOC_ID), {
+      ...mirror,
+      updatedAt: serverTimestamp(),
+      insightType: "mirrorOfBecoming",
+      privacyLevel: "private",
+    }, { merge: true });
+  } catch (error) {
+    console.warn("[LifeMap] Failed to persist Mirror of Becoming", error);
+  }
+
+  return mirror;
 }
