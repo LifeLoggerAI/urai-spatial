@@ -26,9 +26,11 @@ Audit, backup, archive, and quarantine folders are not production source of trut
 - Global CSS: `urai-tier1/src/app/globals.css`
 - Runtime TS scope: `urai-tier1/tsconfig.runtime.json`
 - Firebase deploy config: `firebase.json`
+- Firestore rules: `firebase/firestore.rules`
+- Firestore indexes: `firebase/firestore.indexes.json`
 - Functions source: `apps/functions`
-- E2E config: `playwright.config.ts`
-- E2E lock spec: `tests/spatial-lock.spec.ts`
+- Production-lock workflow: `.github/workflows/spatial-production-lock.yml`
+- E2E lock runner: `tests/spatial-lock.mjs`
 
 ## Locked architecture
 
@@ -96,6 +98,23 @@ If no history exists, ESC from any non-home stable state returns home. ESC is ig
 
 Route changes update the scene only when not in the transient `ascent` state. This avoids browser back/forward fighting the ascent timer. Deep links are normalized to a valid node and valid phase.
 
+## Automation lock
+
+The production lock is automated through `.github/workflows/spatial-production-lock.yml`. The workflow validates:
+
+- canonical source-of-truth paths,
+- frozen pnpm install,
+- app typecheck,
+- app build,
+- functions build,
+- functions tests,
+- app tests,
+- Chromium installation through `urai-tier1`'s existing Playwright dependency,
+- standalone E2E flow runner at `tests/spatial-lock.mjs`,
+- Firebase deploy target references.
+
+The E2E runner intentionally avoids adding a new root `@playwright/test` dependency. It uses the existing `playwright` dependency already declared by `urai-tier1`, which keeps `pnpm-lock.yaml` stable.
+
 ## Tier completion status
 
 ### Tier 1: Locked
@@ -104,7 +123,7 @@ Verified and represented by the canonical app shell, `/home`, `/life-map`, `/foc
 
 ### Tier 2: Locked
 
-Home -> ascent -> LifeMap, focus entry/exit, replay entry, and ESC unwind behavior are now explicitly represented in code and E2E tests.
+Home -> ascent -> LifeMap, focus entry/exit, replay entry, and ESC unwind behavior are now explicitly represented in code and E2E automation.
 
 ### Tier 3: Locked candidate
 
@@ -112,7 +131,7 @@ Scene continuity, deep-link safety, node interaction, mobile viewport coverage, 
 
 ### Tier 4: Locked candidate
 
-Timer cleanup, interval cleanup, transition guards, accessible labels, responsive controls, reduced-motion handling, and E2E harness fixes are implemented. Final CI run is required before merging.
+Timer cleanup, interval cleanup, transition guards, accessible labels, responsive controls, reduced-motion handling, Firebase deploy-path validation, and CI automation are implemented. Final CI run is required before merging.
 
 ### Tier 5: Locked candidate
 
@@ -122,28 +141,31 @@ The experience is visually premium and aligned with URAI's symbolic/spatial iden
 
 - Canonical app source identified as `urai-tier1`.
 - Firebase Hosting source aligned with `urai-tier1`.
+- Missing live Firestore indexes file restored.
 - Scene state ownership consolidated inside `SpatialScene`.
 - ESC unwind stack added.
 - Replay pause/resume and progress state added.
 - Home ascent transition added.
 - Deep-link node normalization added.
-- E2E Playwright web server added.
-- E2E production lock test added.
+- Standalone E2E production lock runner added.
+- GitHub Actions production-lock workflow added.
+- Firebase deploy-reference validation automated.
 
 ## Remaining risks before final production merge
 
-- Run `pnpm install --frozen-lockfile` to refresh lockfile after adding root `@playwright/test`.
-- Run `pnpm typecheck`, `pnpm build`, and `pnpm test:e2e` in CI/Firebase Studio.
+- Run the `URAI Spatial Production Lock` workflow and verify all steps pass.
 - Perform live visual review on desktop and mobile viewport.
 - Confirm Firebase project runtime supports framework-aware Hosting from `source: "urai-tier1"`.
 - Decide whether archived/audit folders should stay in git or be moved out to reduce source ambiguity.
 
 ## Final production checklist
 
-- [ ] Lockfile refreshed.
+- [ ] Frozen install passes.
 - [ ] Typecheck passes.
 - [ ] Next build passes.
+- [ ] Functions build and tests pass.
 - [ ] E2E flow passes.
+- [ ] Firebase deploy references validate.
 - [ ] Firebase deploy preview opens `/home`, `/life-map`, `/focus`, and `/replay`.
 - [ ] Visual review confirms no broken layout, z-index, clipping, overflow, or console noise.
 - [ ] Merge PR only after CI/preview verification.
