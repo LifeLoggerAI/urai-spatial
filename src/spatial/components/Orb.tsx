@@ -7,10 +7,14 @@ import * as THREE from "three";
 type OrbProps = {
   interactive?: boolean;
   active?: boolean;
+  busy?: boolean;
+  disabled?: boolean;
+  ariaLabel?: string;
   onClick?: () => void;
+  onFocus?: () => void;
 };
 
-export default function Orb({ interactive = true, active = false, onClick }: OrbProps) {
+export default function Orb({ interactive = true, active = false, busy = false, disabled = false, onClick, onFocus }: OrbProps) {
   const rootRef = useRef<THREE.Group>(null);
   const shellRef = useRef<THREE.Mesh>(null);
   const coreRef = useRef<THREE.Mesh>(null);
@@ -26,7 +30,9 @@ export default function Orb({ interactive = true, active = false, onClick }: Orb
 
   useFrame(({ clock }) => {
     const t = clock.getElapsedTime();
-    const boost = (active ? 1 : 0) + (hovered ? 1 : 0);
+    const canInteract = interactive && !disabled && !busy;
+    const hoverBoost = hovered && canInteract ? 1 : 0;
+    const boost = (active ? 1 : 0) + hoverBoost;
     const pulse = 1 + Math.sin(t * 1.15) * 0.025 + boost * 0.015;
 
     if (rootRef.current) {
@@ -36,7 +42,8 @@ export default function Orb({ interactive = true, active = false, onClick }: Orb
 
     if (shellRef.current) {
       const m = shellRef.current.material as THREE.MeshPhysicalMaterial;
-      m.emissiveIntensity = 5.2 + boost * 1.2;
+      const emissiveMode = disabled ? 3 : busy ? 7 : 5.2 + boost * 1.2;
+      m.emissiveIntensity = emissiveMode;
     }
 
     if (coreRef.current) {
@@ -69,7 +76,9 @@ export default function Orb({ interactive = true, active = false, onClick }: Orb
       position={[-0.52, 1.05, 0]}
       onPointerOver={(e) => {
         e.stopPropagation();
+        if (!interactive || disabled || busy) return;
         setHovered(true);
+        onFocus?.();
       }}
       onPointerOut={(e) => {
         e.stopPropagation();
@@ -77,8 +86,9 @@ export default function Orb({ interactive = true, active = false, onClick }: Orb
       }}
       onClick={(e) => {
         e.stopPropagation();
-        if (interactive && onClick) onClick();
+        if (interactive && !disabled && !busy && onClick) onClick();
       }}
+      userData={{ ariaLabel }}
     >
       <mesh ref={haloBRef}>
         <primitive object={haloBGeo} attach="geometry" />

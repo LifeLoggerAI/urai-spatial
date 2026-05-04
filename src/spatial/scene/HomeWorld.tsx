@@ -1,10 +1,27 @@
 "use client";
 
+import { Html } from "@react-three/drei";
 import Orb from "../components/Orb";
 import { useSceneStore } from "../state/sceneStore";
 
+function emitHomeOrbEvent(event: "home.orb.focus" | "home.orb.activate", source: "orb" | "overlay") {
+  if (typeof window === "undefined") return;
+  window.dispatchEvent(new CustomEvent("urai:narrator", { detail: { event, source, timestamp: Date.now() } }));
+}
+
 export default function HomeWorld() {
+  const phase = useSceneStore((s) => s.phase);
+  const isTransitioning = useSceneStore((s) => s.isTransitioning);
+  const inputLocked = useSceneStore((s) => s.inputLocked);
   const enterLifeMap = useSceneStore((s) => s.enterLifeMap);
+  const busy = phase === "ASCENT" || isTransitioning || inputLocked;
+  const disabled = phase !== "HOME";
+
+  const handleEnterLifeMap = (source: "orb" | "overlay") => {
+    if (busy || disabled) return;
+    emitHomeOrbEvent("home.orb.activate", source);
+    enterLifeMap();
+  };
 
   return (
     <group>
@@ -18,7 +35,34 @@ export default function HomeWorld() {
         <meshBasicMaterial color="#67c4ff" transparent opacity={0.08} depthWrite={false} />
       </mesh>
 
-      <Orb interactive active onClick={enterLifeMap} />
+      <Orb
+        interactive
+        active={!disabled}
+        busy={busy}
+        disabled={disabled}
+        ariaLabel="Enter Life Map"
+        onFocus={() => emitHomeOrbEvent("home.orb.focus", "orb")}
+        onClick={() => handleEnterLifeMap("orb")}
+      />
+
+      <Html position={[-0.52, 1.05, 0]} center>
+        <button
+          type="button"
+          aria-label="Enter Life Map"
+          disabled={busy || disabled}
+          onFocus={() => emitHomeOrbEvent("home.orb.focus", "overlay")}
+          onClick={() => handleEnterLifeMap("overlay")}
+          style={{
+            width: "8rem",
+            height: "8rem",
+            borderRadius: "9999px",
+            border: "none",
+            background: "transparent",
+            cursor: busy || disabled ? "not-allowed" : "pointer",
+            opacity: 0,
+          }}
+        />
+      </Html>
 
       <mesh position={[-4.2, 1.3, -3.2]} castShadow receiveShadow>
         <boxGeometry args={[0.36, 2.6, 0.36]} />
