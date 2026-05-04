@@ -104,6 +104,7 @@ export default function SpatialScene() {
   const [ascentProgress, setAscentProgress] = useState(0)
   const [homeReturnProgress, setHomeReturnProgress] = useState(0)
   const [debugOpen, setDebugOpen] = useState(false)
+  const isDebugEnabled = process.env.NEXT_PUBLIC_URAI_DEBUG_SPATIAL === 'true'
 
   const fogRef = useRef<THREE.Fog | null>(null)
   const ascentTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
@@ -303,21 +304,21 @@ export default function SpatialScene() {
     const onKey = (event: KeyboardEvent) => {
       if (event.key === 'Escape') esc()
 
-      if (event.key.toLowerCase() === 'd' || event.key === '`') {
+      if (isDebugEnabled && (event.key.toLowerCase() === 'd' || event.key === '`')) {
         setDebugOpen((value) => !value)
       }
     }
 
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
-  }, [esc])
+  }, [esc, isDebugEnabled])
 
   useEffect(() => {
     if (typeof window === 'undefined') return
 
     const queryParams = new URLSearchParams(window.location.search)
 
-    if (queryParams.get('debug') === 'true') {
+    if (isDebugEnabled && queryParams.get('debug') === 'true') {
       setDebugOpen(true)
     }
 
@@ -326,7 +327,7 @@ export default function SpatialScene() {
     if (phaseParam === 'lifemap') {
       actions.openLifeMap()
     }
-  }, [actions])
+  }, [actions, isDebugEnabled])
 
   useEffect(() => {
     if (phase === 'FOCUS') {
@@ -444,7 +445,7 @@ export default function SpatialScene() {
         </div>
       )}
 
-      {debugOpen && (
+      {isDebugEnabled && debugOpen && (
         <div
           style={{
             position: 'absolute',
