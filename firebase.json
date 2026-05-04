@@ -7,7 +7,7 @@
       "**/node_modules/**"
     ],
     "predeploy": [
-      "pnpm install --frozen-lockfile",
+      "pnpm install --no-frozen-lockfile --prefer-offline",
       "pnpm --filter urai-tier1 build"
     ]
   },
