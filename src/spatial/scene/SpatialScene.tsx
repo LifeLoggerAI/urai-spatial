@@ -13,7 +13,7 @@ import React, { useEffect, useMemo, useReducer, useRef, useState } from 'react'
 // 7. REPLAY LAW: Must be an immersive, memory-dominant environment. NOT a panel over the starfield.
 // 8. AUTHORITY LAW: Reducer owns phase. CameraDirector is the single camera writer. No illegal shortcuts.
 
-type Phase = 'HOME' | 'ASCENT' | 'LIFEMAP' | 'FOCUS' | 'REPLAY'
+type Phase = 'HOME' | 'ASCENT' | 'LIFEMAP' | 'FOCUS' | 'REPLAY' | 'REPLAY_COMPLETE'
 type TransitionKind = 'homeToLifemap' | 'lifemapToHome' | null
 
 type StarNode = {
@@ -37,11 +37,14 @@ type SceneAction =
 | { type: 'COMPLETE_ASCENT' }
 | { type: 'OPEN_FOCUS'; starId: string }
 | { type: 'OPEN_REPLAY' }
+| { type: 'REPLAY_RESOLVED' }
 | { type: 'ESC' }
 
 const ASCENT_MS = 2200
 const RETURN_HOME_MS = 1600
 const REPLAY_ENTER_MS = 750
+const REPLAY_COMPLETE_MS = 1100
+const REPLAY_AFTERGLOW_MS = 1500
 const FOCUS_ENTER_MS = 520
 
 // CANON COMPLIANCE: Star data now includes a 'z' index for depth layering.
@@ -64,8 +67,10 @@ case 'OPEN_FOCUS':
 return state.phase === 'LIFEMAP' && !!action.starId && !state.inputLocked
 case 'OPEN_REPLAY':
 return state.phase === 'FOCUS' && !!state.selectedStarId && !state.inputLocked
+case 'REPLAY_RESOLVED':
+return state.phase === 'REPLAY'
 case 'ESC':
-return state.phase === 'REPLAY' || state.phase === 'FOCUS' || state.phase === 'LIFEMAP'
+return state.phase === 'REPLAY' || state.phase === 'REPLAY_COMPLETE' || state.phase === 'FOCUS' || state.phase === 'LIFEMAP'
 default:
 return false
 }
@@ -83,8 +88,10 @@ case 'OPEN_FOCUS':
 return { ...state, phase: 'FOCUS', selectedStarId: action.starId, inputLocked: false }
 case 'OPEN_REPLAY':
 return { ...state, phase: 'REPLAY', inputLocked: true }
+case 'REPLAY_RESOLVED':
+return { ...state, phase: 'REPLAY_COMPLETE', inputLocked: true }
 case 'ESC':
-if (state.phase === 'REPLAY') return { ...state, phase: 'FOCUS', inputLocked: false }
+if (state.phase === 'REPLAY' || state.phase === 'REPLAY_COMPLETE') return { ...state, phase: 'FOCUS', inputLocked: false }
 if (state.phase === 'FOCUS') return { ...state, phase: 'LIFEMAP', selectedStarId: state.selectedStarId, inputLocked: false }
 return { phase: 'HOME', selectedStarId: null, inputLocked: false }
 default:
@@ -188,6 +195,8 @@ const [hoveredStarId, setHoveredStarId] = useState<string | null>(null)
 const [transitionKind, setTransitionKind] = useState<TransitionKind>(null)
 const [transitionProgress, setTransitionProgress] = useState(0)
 const [replayVisible, setReplayVisible] = useState(false)
+const [showReplayCompletion, setShowReplayCompletion] = useState(false)
+const [afterglowActive, setAfterglowActive] = useState(false)
 const [focusVisible, setFocusVisible] = useState(false)
 const transitionFrameRef = useRef<number | null>(null)
 
@@ -206,7 +215,8 @@ selectedStar
 
 useEffect(() => {
 const onKeyDown = (event: KeyboardEvent) => {
-if (event.key !== 'Escape' || state.inputLocked) return
+if (event.key !== 'Escape') return
+if (state.inputLocked && state.phase !== 'REPLAY' && state.phase !== 'REPLAY_COMPLETE') return
 
 if (state.phase === 'REPLAY') {
 setReplayVisible(false)
@@ -268,8 +278,24 @@ setTimeout(() => setFocusVisible(true), FOCUS_ENTER_MS)
 
 const openReplay = () => {
 if (state.phase !== 'FOCUS' || state.inputLocked || !selectedStar) return
+setReplayVisible(false)
+setShowReplayCompletion(false)
+setAfterglowActive(false)
 dispatch({ type: 'OPEN_REPLAY' })
-setTimeout(() => setReplayVisible(true), REPLAY_ENTER_MS)
+setTimeout(() => {
+  setReplayVisible(true)
+  setTimeout(() => {
+    dispatch({ type: 'REPLAY_RESOLVED' })
+    setShowReplayCompletion(true)
+    setAfterglowActive(true)
+    setTimeout(() => {
+      setReplayVisible(false)
+      setShowReplayCompletion(false)
+      setAfterglowActive(false)
+      dispatch({ type: 'ESC' })
+    }, REPLAY_AFTERGLOW_MS)
+  }, REPLAY_COMPLETE_MS)
+}, REPLAY_ENTER_MS)
 }
 
 const showHome = phaseForView === 'HOME' || phaseForView === 'ASCENT'
@@ -341,7 +367,7 @@ boxShadow: '0 0 0 1px rgba(255,255,255,0.02)',
 )}
 
 {/* REPLAY ENVIRONMENT: Reworked to be immersive, per REPLAY LAW */}
-{state.phase === 'REPLAY' && (
+{(state.phase === 'REPLAY' || state.phase === 'REPLAY_COMPLETE') && (
 <div
 aria-hidden={!replayVisible}
 style={{
@@ -368,11 +394,16 @@ transition: 'opacity 500ms ease-out',
 >
 <p style={{ letterSpacing: '0.16em', fontSize: '0.8rem', margin: 0, textTransform: 'uppercase', opacity: 0.65 }}>Memory Trace</p>
 <h2 style={{ margin: '0.45rem 0 0', fontWeight: 500, fontSize: '2rem', textShadow: '0 0 24px rgba(255,227,163,0.35)' }}>{selectedStar?.label}</h2>
+{showReplayCompletion && (
+  <p style={{ margin: '1.1rem 0 0', fontSize: '0.95rem', letterSpacing: '0.04em', opacity: 0.9 }}>
+    Replay complete. Pattern saved to your Life Map.
+  </p>
+)}
 </div>
 </div>
 )}
 
-{state.phase === 'FOCUS' && selectedStar && (
+{(state.phase === 'FOCUS' || state.phase === 'REPLAY_COMPLETE') && selectedStar && (
 <div
 aria-hidden={!focusVisible}
 style={{
@@ -382,7 +413,9 @@ pointerEvents: 'none',
 opacity: focusVisible ? 1 : 0,
 transition: 'opacity 500ms ease-out',
 background:
-'radial-gradient(circle at 50% 50%, rgba(137,177,255,0.2) 0%, rgba(66,98,177,0.1) 22%, rgba(0,0,0,0.45) 60%, rgba(0,0,0,0.75) 100%)',
+(afterglowActive
+  ? 'radial-gradient(circle at 50% 50%, rgba(255,224,147,0.36) 0%, rgba(140,180,255,0.2) 28%, rgba(0,0,0,0.45) 62%, rgba(0,0,0,0.75) 100%)'
+  : 'radial-gradient(circle at 50% 50%, rgba(137,177,255,0.2) 0%, rgba(66,98,177,0.1) 22%, rgba(0,0,0,0.45) 60%, rgba(0,0,0,0.75) 100%)'),
 }}
 />
 )}
