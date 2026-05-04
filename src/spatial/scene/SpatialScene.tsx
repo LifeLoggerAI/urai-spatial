@@ -24,6 +24,10 @@ z: number // Added for z-depth to enforce LifeMap depth canon
 size: number
 memoryRef: string
 label: string
+era?: string
+date?: string
+emotion: string
+narratorLine: string
 }
 
 type SceneState = {
@@ -46,11 +50,11 @@ const FOCUS_ENTER_MS = 520
 
 // CANON COMPLIANCE: Star data now includes a 'z' index for depth layering.
 const STAR_DATA: StarNode[] = [
-{ id: 'star_1', x: 24, y: 29, z: 0, size: 14, memoryRef: 'memory_ref_star_1', label: 'Threshold' },
-{ id: 'star_2', x: 40, y: 21, z: 1, size: 12, memoryRef: 'memory_ref_star_2', label: 'Signal' },
-{ id: 'star_3', x: 58, y: 34, z: 0, size: 13, memoryRef: 'memory_ref_star_3', label: 'Echo' },
-{ id: 'star_4', x: 70, y: 58, z: 2, size: 11, memoryRef: 'memory_ref_star_4', label: 'Memory' },
-{ id: 'star_5', x: 28, y: 60, z: 1, size: 12, memoryRef: 'memory_ref_star_5', label: 'Return' },
+{ id: 'star_1', x: 24, y: 29, z: 0, size: 14, memoryRef: 'memory_ref_star_1', label: 'Threshold', era: 'Early years', date: '2004', emotion: 'Curious', narratorLine: 'I first learned to look up from here.' },
+{ id: 'star_2', x: 40, y: 21, z: 1, size: 12, memoryRef: 'memory_ref_star_2', label: 'Signal', date: '2010-06', emotion: 'Alert', narratorLine: 'A small sign shifted the whole direction.' },
+{ id: 'star_3', x: 58, y: 34, z: 0, size: 13, memoryRef: 'memory_ref_star_3', label: 'Echo', era: 'Transition season', emotion: 'Tender', narratorLine: 'The same words sounded different this time.' },
+{ id: 'star_4', x: 70, y: 58, z: 2, size: 11, memoryRef: 'memory_ref_star_4', label: 'Memory', date: '2018-11-02', emotion: 'Grateful', narratorLine: 'I kept this moment because it softened me.' },
+{ id: 'star_5', x: 28, y: 60, z: 1, size: 12, memoryRef: 'memory_ref_star_5', label: 'Return', era: 'Recent', emotion: 'Grounded', narratorLine: 'Coming back felt like meeting myself again.' },
 ]
 
 // REDUCER: Single source of truth for phase state. Complies with AUTHORITY LAW.
@@ -275,6 +279,17 @@ setTimeout(() => setReplayVisible(true), REPLAY_ENTER_MS)
 const showHome = phaseForView === 'HOME' || phaseForView === 'ASCENT'
 const showField = phaseForView === 'LIFEMAP' || phaseForView === 'FOCUS' || phaseForView === 'ASCENT'
 
+
+const publicDemoMode = true
+const handleReflect = () => {
+if (!selectedStar) return
+console.info(`Reflect requested for ${selectedStar.id}`)
+}
+const handleSave = () => {
+if (!selectedStar) return
+console.info(`Save requested for ${selectedStar.id}`)
+}
+
 return (
 <div
 style={{ position: 'fixed', inset: 0, overflow: 'hidden', background: camera.background, color: '#fff' }}
@@ -335,6 +350,7 @@ boxShadow: '0 0 0 1px rgba(255,255,255,0.02)',
   <Starfield3D
     stars={STAR_DATA}
     phase={state.phase}
+    selectedStarId={state.selectedStarId}
     onSelect={(id) => dispatch({ type: 'OPEN_FOCUS', starId: id })}
   />
 </div>
@@ -387,6 +403,42 @@ background:
 />
 )}
 </div>
+
+
+{state.phase === 'FOCUS' && selectedStar && (
+<div
+style={{
+position: 'absolute',
+right: 24,
+top: 24,
+width: 320,
+border: '1px solid rgba(208,224,255,0.2)',
+borderRadius: 12,
+background: 'rgba(5, 10, 28, 0.78)',
+backdropFilter: 'blur(6px)',
+padding: 14,
+display: 'flex',
+flexDirection: 'column',
+gap: 10,
+}}
+>
+<div style={{ fontSize: '0.72rem', letterSpacing: '0.12em', opacity: 0.7, textTransform: 'uppercase' }}>Selected memory</div>
+<div style={{ fontSize: '1.2rem', fontWeight: 600 }}>{selectedStar.label}</div>
+{(selectedStar.era || selectedStar.date) && <div style={{ opacity: 0.78, fontSize: '0.86rem' }}>{selectedStar.era ?? selectedStar.date}</div>}
+<div style={{ fontSize: '0.82rem', color: '#a9c5ff' }}>Emotion: {selectedStar.emotion}</div>
+<div style={{ fontSize: '0.9rem', lineHeight: 1.35, opacity: 0.9 }}>“{selectedStar.narratorLine}”</div>
+<div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+<button onClick={openReplay} style={{ background: '#6ea2ff', color: '#03112f', border: 0, borderRadius: 8, padding: '8px 12px', fontWeight: 700, cursor: 'pointer' }}>Replay</button>
+{!publicDemoMode && (
+<>
+<button onClick={handleReflect} style={{ background: '#1b2540', color: '#d3ddf7', border: '1px solid rgba(212,225,255,0.2)', borderRadius: 8, padding: '8px 12px' }}>Reflect</button>
+<button onClick={handleSave} style={{ background: '#1b2540', color: '#d3ddf7', border: '1px solid rgba(212,225,255,0.2)', borderRadius: 8, padding: '8px 12px' }}>Save</button>
+</>
+)}
+</div>
+{publicDemoMode && <div style={{ fontSize: '0.75rem', opacity: 0.68 }}>Reflect and Save are hidden in public demo mode.</div>}
+</div>
+)}
 
 {/* Vignette Overlay */}
 <div

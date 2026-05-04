@@ -10,10 +10,12 @@ export default function Starfield3D({
   stars,
   phase,
   onSelect,
+  selectedStarId,
 }: {
   stars: Star[]
   phase: 'HOME' | 'ASCENT' | 'LIFEMAP' | 'FOCUS' | 'REPLAY'
   onSelect?: (id: string) => void
+  selectedStarId?: string | null
 }) {
   const group = useRef<THREE.Group>(null)
 
@@ -54,7 +56,7 @@ export default function Starfield3D({
           onClick={() => onSelect?.(n.id)}
         >
           <sphereGeometry args={[0.2, 8, 8]} />
-          <meshBasicMaterial color="#ffffff" />
+          <meshBasicMaterial color="#ffffff" transparent opacity={phase === 'FOCUS' && selectedStarId && selectedStarId !== n.id ? 0.25 : 1} />
         </mesh>
       ))}
     </group>
