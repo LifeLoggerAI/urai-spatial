@@ -1,11 +1,51 @@
 rules_version = '2';
+
 service cloud.firestore {
   match /databases/{database}/documents {
-    match /users/{userId} {
-      allow read, write: if request.auth != null && request.auth.uid == userId;
+    function signedIn() {
+      return request.auth != null;
     }
+
+    function isOwner(userId) {
+      return signedIn() && request.auth.uid == userId;
+    }
+
+    match /users/{userId}/spatialMemories/{memoryId} {
+      allow read, create, update, delete: if isOwner(userId);
+    }
+
+    match /users/{userId}/homeWorld/{docId} {
+      allow read, create, update, delete: if isOwner(userId);
+    }
+
+    match /users/{userId}/homeWorldExplainability/{docId} {
+      allow read, create, update, delete: if isOwner(userId);
+      match /history/{historyId} {
+        allow read, create, update, delete: if isOwner(userId);
+      }
+    }
+
+    match /users/{userId}/replayEvents/{eventId} {
+      allow read, create, update, delete: if isOwner(userId);
+    }
+
+    match /users/{userId}/exports/{exportId} {
+      allow read, create, update, delete: if isOwner(userId);
+    }
+
+    match /publicShares/{shareId} {
+      allow read: if resource.data.visibility == "public";
+      allow create: if signedIn()
+        && request.resource.data.ownerUid == request.auth.uid
+        && request.resource.data.visibility in ["public", "unlisted"]
+        && !("rawTranscript" in request.resource.data)
+        && !("rawPassiveSignals" in request.resource.data)
+        && !("privateNotes" in request.resource.data);
+      allow update, delete: if signedIn() && resource.data.ownerUid == request.auth.uid;
+    }
+
     match /{document=**} {
-      allow read, write: if request.auth != null;
+      allow read, write: if false;
     }
   }
 }

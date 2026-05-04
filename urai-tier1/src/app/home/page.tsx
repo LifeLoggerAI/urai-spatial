@@ -1,10 +1,6 @@
-import { Suspense } from "react";
-import Tier5ReplayScene from "@/spatial/scene/Tier5ReplayScene";
+import CognitiveMirror from "@/components/CognitiveMirror";
+import { SpatialShell } from "@/spatial/layout/SpatialShell";
 
 export default function HomeRoute() {
-  return (
-    <Suspense fallback={null}>
-      <Tier5ReplayScene />
-    </Suspense>
-  );
+  return <SpatialShell mode="overview" sourceBadge="demo"><CognitiveMirror /></SpatialShell>;
 }

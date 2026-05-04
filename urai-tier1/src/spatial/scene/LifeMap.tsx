@@ -1,9 +1,8 @@
 "use client";
 
-import { useMemo, useRef } from "react";
+import { useMemo, useRef, useEffect } from "react";
 import { useFrame, useThree } from "@react-three/fiber";
-import { Vector3 } from "three";
-import type { Group, Mesh, MeshBasicMaterial } from "three";
+import { Vector3, Group, Mesh, MeshBasicMaterial } from "three";
 
 import { URAI_SEED_MEMORIES } from "@/spatial/data/uraiSeedMemories";
 import type { ScenePhase, StarPoint } from "./sceneState";
@@ -15,6 +14,14 @@ type Props = {
   selectedStar: StarPoint | null;
   onSelectStar: (star: StarPoint) => void;
 };
+
+const GLOBAL_START = typeof window !== "undefined" ? performance.now() : 0;
+
+function getTime() {
+  return (performance.now() - GLOBAL_START) / 1000;
+}
+
+/* ------------------ HELPERS ------------------ */
 
 function hash(n: number) {
   const x = Math.sin(n * 127.1 + 311.7) * 43758.5453123;
@@ -31,6 +38,18 @@ function easeInOut(t: number) {
   return clamped * clamped * (3 - 2 * clamped);
 }
 
+/* ------------------ EVENTS ------------------ */
+
+function emitNarrator(event: string, detail?: any) {
+  window.dispatchEvent(new CustomEvent("urai:narrator", { detail: { event, ...detail } }));
+}
+
+function emitTimeline(event: string, detail?: any) {
+  window.dispatchEvent(new CustomEvent("urai:timeline", { detail: { event, ...detail } }));
+}
+
+/* ------------------ STAR GENERATION ------------------ */
+
 function makeStar(id: number, band: StarPoint["band"]): StarPoint {
   const a = hash(id + 1);
   const b = hash(id + 2);
@@ -41,6 +60,7 @@ function makeStar(id: number, band: StarPoint["band"]): StarPoint {
   let radius = 0.04;
   let alpha = 0.16;
   let clickable = false;
+
   const importance = mapRange(s, 0, 1, 0.2, 1);
 
   if (band === "foreground") {
@@ -99,58 +119,34 @@ export function useStarData() {
   }, []);
 }
 
-function setOpacity(mesh: Mesh | null, opacity: number) {
-  if (!mesh) return;
-
-  const material = mesh.material as MeshBasicMaterial | MeshBasicMaterial[];
-
-  if (Array.isArray(material)) {
-    material.forEach((m) => {
-      m.opacity = opacity;
-    });
-  } else {
-    material.opacity = opacity;
-  }
-}
+/* ------------------ CAMERA ------------------ */
 
 function LifeMapCamera({ phase, progress, selectedStar }: Pick<Props, "phase" | "progress" | "selectedStar">) {
   const { camera } = useThree();
-  const desiredPosition = useRef(new Vector3(0, 6, 24));
-  const desiredLookAt = useRef(new Vector3(0, 7, -70));
-  const currentLookAt = useRef(new Vector3(0, 7, -70));
+
+  const desiredPosition = useRef(new Vector3());
+  const desiredLookAt = useRef(new Vector3());
+  const currentLookAt = useRef(new Vector3());
 
   useFrame((state, delta) => {
     const t = state.clock.elapsedTime;
     const p = easeInOut(progress);
-    const replayDrift = phase === "REPLAY" ? Math.sin(t * 0.42) * 1.2 : 0;
-    const focusActive = !!selectedStar && ["focus_lock", "focus_travel", "focus_arrive", "REPLAY"].includes(phase);
+
+    const focusActive =
+      !!selectedStar &&
+      ["focus_lock", "focus_travel", "focus_arrive", "REPLAY"].includes(phase);
 
     if (focusActive && selectedStar) {
       const [x, y, z] = selectedStar.position;
-      const arrival = phase === "focus_arrive" || phase === "REPLAY" ? 1 : p;
-      const distance = phase === "REPLAY" ? 13.5 : 16.5;
 
-      desiredPosition.current.set(x * 0.64 + replayDrift, y * 0.58 + 1.8 + replayDrift * 0.35, z + distance);
+      desiredPosition.current.set(x * 0.6, y * 0.6 + 2, z + 15);
       desiredLookAt.current.set(x, y, z);
-
-      if (phase === "focus_travel") {
-        desiredPosition.current.lerp(new Vector3(x * 0.52, y * 0.52 + 2.2, z + 20), 1 - arrival);
-      }
-    } else if (phase === "enter_ascent") {
-      desiredPosition.current.set(0, 4 + p * 5, 28 - p * 8);
-      desiredLookAt.current.set(0, 8 + p * 2, -62);
-    } else if (phase === "enter_separation") {
-      desiredPosition.current.set(0, 8, 20 - p * 4);
-      desiredLookAt.current.set(0, 8, -78);
-    } else if (phase === "return_home_descent" || phase === "return_home_settle") {
-      desiredPosition.current.set(0, 6, 26 + p * 8);
-      desiredLookAt.current.set(0, 7, -56);
     } else {
-      desiredPosition.current.set(0, 7.2, 22);
-      desiredLookAt.current.set(0, 8, -76);
+      desiredPosition.current.set(0, 7, 22);
+      desiredLookAt.current.set(0, 8, -70);
     }
 
-    const smoothing = Math.min(1, delta * (phase === "REPLAY" ? 2.4 : 3.8));
+    const smoothing = Math.min(1, delta * 3.5);
     camera.position.lerp(desiredPosition.current, smoothing);
     currentLookAt.current.lerp(desiredLookAt.current, smoothing);
     camera.lookAt(currentLookAt.current);
@@ -159,6 +155,8 @@ function LifeMapCamera({ phase, progress, selectedStar }: Pick<Props, "phase" | 
   return null;
 }
 
+/* ------------------ STAR ------------------ */
+
 function StarMesh({
   star,
   sceneOpacity,
@@ -166,28 +164,26 @@ function StarMesh({
   selected,
   interactive,
   onSelectStar,
-}: {
-  star: StarPoint;
-  sceneOpacity: number;
-  dimmed: boolean;
-  selected: boolean;
-  interactive: boolean;
-  onSelectStar: (star: StarPoint) => void;
-}) {
+}: any) {
   const group = useRef<Group>(null);
   const core = useRef<Mesh>(null);
   const halo = useRef<Mesh>(null);
 
-  useFrame((state) => {
-    const t = state.clock.elapsedTime;
-    const pulse = 1 + Math.sin(t * (0.25 + star.importance * 0.15) + star.importance * 10) * 0.03;
-    const dim = dimmed ? 0.46 : 1;
-    const sel = selected ? 1.18 : 1;
+  useFrame(() => {
+    const t = getTime();
+
+    const pulse =
+      1 +
+      Math.sin(t * (0.25 + star.importance * 0.15) + star.importance * 10) * 0.03;
+
+    const dim = dimmed ? 0.45 : 1;
+    const sel = selected ? 1.2 : 1;
 
     group.current?.scale.setScalar(pulse * sel);
 
-    setOpacity(core.current, star.alpha * sceneOpacity * dim * (selected ? 1.12 : 1));
-    setOpacity(halo.current, star.alpha * 0.25 * sceneOpacity * dim * (selected ? 1.25 : 1));
+    setOpacity(core.current, star.alpha * sceneOpacity * dim);
+    setOpacity(halo.current, star.alpha * 0.25 * sceneOpacity * dim);
+
     halo.current?.scale.setScalar(selected ? 3.4 : 2.2);
   });
 
@@ -195,44 +191,80 @@ function StarMesh({
     <group
       ref={group}
       position={star.position}
-      onPointerDown={(event) => {
-        event.stopPropagation();
-        if (interactive && star.clickable) onSelectStar(star);
+      onPointerDown={(e) => {
+        e.stopPropagation();
+
+        if (interactive && star.clickable) {
+          emitNarrator("star.selected", { id: star.id });
+          emitTimeline("star_focus", { id: star.id });
+
+          onSelectStar(star);
+        }
       }}
     >
       <mesh ref={halo}>
         <sphereGeometry args={[star.radius * 2.2, 12, 12]} />
-        <meshBasicMaterial color={selected ? "#c9ddff" : "#8faeff"} transparent depthWrite={false} />
+        <meshBasicMaterial color={selected ? "#c9ddff" : "#8faeff"} transparent />
       </mesh>
 
       <mesh ref={core}>
         <sphereGeometry args={[star.radius, 14, 14]} />
-        <meshBasicMaterial color={selected ? "#eef5ff" : "#dce7ff"} transparent depthWrite={false} />
+        <meshBasicMaterial color={selected ? "#eef5ff" : "#dce7ff"} transparent />
       </mesh>
     </group>
   );
 }
 
-export default function LifeMap({ phase, progress, opacity, selectedStar, onSelectStar }: Props) {
+/* ------------------ MAIN ------------------ */
+
+export default function LifeMap({
+  phase,
+  progress,
+  opacity,
+  selectedStar,
+  onSelectStar,
+}: Props) {
   const stars = useStarData();
 
   const sceneOpacity = (() => {
-    const eased = easeInOut(progress);
+    const t = Math.min(1, Math.max(0, progress));
+    const eased = t * t * (3 - 2 * t);
 
-    if (phase === "enter_ascent") return 0.02 + 0.42 * eased;
-    if (phase === "enter_separation") return 0.44 + 0.36 * eased;
-    if (phase === "enter_arrival") return 0.8 + 0.2 * eased;
-    if (phase === "return_home_descent") return Math.max(0.12, 1 - progress * 0.78);
-    if (phase === "return_home_settle") return 0.12 * (1 - progress);
+    switch (phase) {
+      case "enter_ascent":
+        return 0.02 + 0.42 * eased;
 
-    return opacity;
+      case "enter_separation":
+        return 0.44 + 0.36 * eased;
+
+      case "enter_arrival":
+        return 0.8 + 0.2 * eased;
+
+      case "return_home_descent":
+        return Math.max(0.12, 1 - progress * 0.78);
+
+      case "return_home_settle":
+        return 0.12 * (1 - progress);
+
+      default:
+        return opacity;
+    }
   })();
 
   const interactive = phase === "LIFEMAP";
 
+  useEffect(() => {
+    emitTimeline("lifemap_phase", { phase, progress });
+
+    if (phase === "enter_arrival") emitNarrator("lifemap.arrival");
+    if (phase === "focus_lock") emitNarrator("focus.lock");
+    if (phase === "REPLAY") emitNarrator("replay.start");
+  }, [phase, progress]);
+
   return (
     <group visible={sceneOpacity > 0.001}>
       <LifeMapCamera phase={phase} progress={progress} selectedStar={selectedStar} />
+
       {stars.map((star) => {
         const dimmed =
           !!selectedStar &&
@@ -253,4 +285,18 @@ export default function LifeMap({ phase, progress, opacity, selectedStar, onSele
       })}
     </group>
   );
+}
+
+/* ------------------ UTIL ------------------ */
+
+function setOpacity(mesh: Mesh | null, opacity: number) {
+  if (!mesh) return;
+
+  const material = mesh.material as MeshBasicMaterial | MeshBasicMaterial[];
+
+  if (Array.isArray(material)) {
+    material.forEach((m) => (m.opacity = opacity));
+  } else {
+    material.opacity = opacity;
+  }
 }

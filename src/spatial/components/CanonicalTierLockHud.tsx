@@ -50,7 +50,8 @@ export function CanonicalTierLockHud() {
       </div>
 
       <div style={{ fontSize: 12, fontWeight: 700 }}>
-        Tier flow with ESC unwind is wired; Tier 3+ awaiting final CI + live visual signoff.
+        Tier flow with ESC unwind is wired; Tier 3+ awaiting final CI + live
+        visual signoff.
       </div>
 
       <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
