@@ -4,6 +4,7 @@ import type {
   ExplainableContribution,
   HomeMoodState,
   HomeRecoveryState,
+  HomeWorldConfidenceSnapshot,
   HomeWorldSignalKey,
   HomeWorldSignals,
   HomeWorldState,
@@ -146,10 +147,10 @@ export function applyHysteresis(score: number, previousTier: HomeWorldTier | und
   return score < threshold - DOWN_MARGIN ? directTier : previousTier;
 }
 
-function confidenceLabel(overall: number) {
-  if (overall >= 0.7) return "high" as const;
-  if (overall >= 0.45) return "medium" as const;
-  return "low" as const;
+function confidenceLabel(overall: number): HomeWorldConfidenceSnapshot["label"] {
+  if (overall >= 0.7) return "high";
+  if (overall >= 0.45) return "medium";
+  return "low";
 }
 
 function bucket(value: number): "low" | "medium" | "high" {
@@ -276,14 +277,14 @@ export function deriveHomeWorldStateFromSignals(input: HomeWorldSignals): Derive
     orb: roundScore(orb.rawScore),
     sky: roundScore(sky.rawScore),
   };
-  const confidence = {
+  const overall = clamp01((ground.confidence + orb.confidence + sky.confidence) / 3);
+  const confidence: HomeWorldConfidenceSnapshot = {
     ground: clamp01(ground.confidence),
     orb: clamp01(orb.confidence),
     sky: clamp01(sky.confidence),
-    overall: clamp01((ground.confidence + orb.confidence + sky.confidence) / 3),
-    label: "low" as const,
+    overall,
+    label: confidenceLabel(overall),
   };
-  confidence.label = confidenceLabel(confidence.overall);
   const alpha = previous ? clamp01(0.18 + 0.22 * confidence.overall) : 1;
   const smoothedScores = {
     ground: roundScore(ema(previous?.smoothedScores?.ground ?? previous?.rawScores?.ground, rawScores.ground, alpha)),
