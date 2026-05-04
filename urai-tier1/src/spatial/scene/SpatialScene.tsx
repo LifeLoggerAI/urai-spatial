@@ -1,29 +1,25 @@
-      {debugOpen && !runtimeFlags.publicDemoMode && !runtimeFlags.recordingMode && (
-        <div
-          style={{
-            position: 'absolute',
-            left: 16,
-            bottom: 16,
-            zIndex: 30,
-            padding: 10,
-            borderRadius: 12,
-            background: 'rgba(0,0,0,.65)',
-            fontSize: 12,
-            color: '#d2e8ff',
-            pointerEvents: 'auto',
-          }}
-        >
-          phase={phase}
-          <br />
-          selected={selectedStarId ?? 'none'}
-          <br />
-          starCount={lifeMap.stars.length}
-          <br />
-          camera={phase}
-          <br />
-          source={source}
-          <br />
-          gates={String(canUsePersonalLifeMap)}/{String(canUsePersonalMemoryStars)}/
-          {String(canUseAdvancedReplay)}
-        </div>
-      )}
+"use client";
+
+import HomeEnvironment from "./HomeEnvironment";
+import LifeMap from "./LifeMap";
+import SpatialHUD from "./SpatialHUD";
+
+export default function SpatialScene() {
+  return (
+    <main
+      style={{
+        position: "relative",
+        minHeight: "100vh",
+        width: "100%",
+        overflow: "hidden",
+        background:
+          "linear-gradient(180deg, #050714 0%, #101936 52%, #05060d 100%)",
+        color: "white",
+      }}
+    >
+      <HomeEnvironment />
+      <LifeMap />
+      <SpatialHUD />
+    </main>
+  );
+}
