@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 
 type Phase = "home" | "lifemap" | "focus" | "replay";
 
@@ -17,16 +17,17 @@ type MemoryStar = {
 const FEATURED_STAR: MemoryStar = {
   id: "signal",
   x: 50,
-  y: 46,
-  size: 18,
+  y: 52,
+  size: 26,
   opacity: 1,
   title: "Signal",
 };
 
-function normalizePhase(value: string | null): Phase {
-  if (value === "life-map" || value === "lifemap") return "lifemap";
-  if (value === "focus") return "focus";
-  if (value === "replay") return "replay";
+function normalizePhase(value: string | null, pathname: string | null): Phase {
+  const source = `${value ?? ""} ${pathname ?? ""}`.toLowerCase();
+  if (source.includes("replay")) return "replay";
+  if (source.includes("focus")) return "focus";
+  if (source.includes("life-map") || source.includes("lifemap")) return "lifemap";
   return "home";
 }
 
@@ -35,26 +36,37 @@ function fract(n: number) {
 }
 
 function makeStars(): MemoryStar[] {
-  return Array.from({ length: 148 }, (_, index) => {
+  const anchors: MemoryStar[] = [
+    { id: "anchor-left-low", x: 18, y: 72, size: 18, opacity: 0.82, title: "Recovery" },
+    { id: "anchor-right-low", x: 78, y: 68, size: 16, opacity: 0.76, title: "Threshold" },
+    { id: "anchor-left-mid", x: 28, y: 48, size: 15, opacity: 0.72, title: "Echo" },
+    { id: "anchor-right-mid", x: 68, y: 43, size: 14, opacity: 0.74, title: "Signal" },
+    { id: "anchor-bottom", x: 52, y: 82, size: 14, opacity: 0.68, title: "Return" },
+  ];
+
+  const generated = Array.from({ length: 170 }, (_, index) => {
     const randA = fract(Math.sin((index + 1) * 12.9898) * 43758.5453);
     const randB = fract(Math.sin((index + 7) * 78.233) * 24634.6345);
     const randC = fract(Math.sin((index + 17) * 37.719) * 19187.123);
 
     return {
       id: `star-${index}`,
-      x: 3 + randA * 94,
-      y: 7 + randB * 78,
-      size: 6 + randC * 8,
-      opacity: 0.38 + randC * 0.58,
+      x: 4 + randA * 92,
+      y: 8 + randB * 80,
+      size: 7 + randC * 8,
+      opacity: 0.42 + randC * 0.54,
       title: index % 9 === 0 ? "Memory" : "Echo",
     };
   });
+
+  return [...generated, ...anchors];
 }
 
 export default function SpatialScene() {
   const router = useRouter();
+  const pathname = usePathname();
   const searchParams = useSearchParams();
-  const phase = normalizePhase(searchParams.get("phase"));
+  const phase = normalizePhase(searchParams.get("phase"), pathname);
   const stars = useMemo(() => makeStars(), []);
 
   const goto = (next: Phase) => {
@@ -78,7 +90,14 @@ export default function SpatialScene() {
       <button className="quiet-orb" aria-label="URAI spatial status" />
 
       {isMap ? (
-        <section className="lifemap-layer" aria-label="URAI LifeMap starfield">
+        <section
+          className="lifemap-layer"
+          aria-label="URAI LifeMap starfield"
+          onClick={() => {
+            if (phase === "lifemap") goto("focus");
+          }}
+        >
+          <div className="lifemap-depth-grid" />
           {[...stars, FEATURED_STAR].map((star) => (
             <button
               key={star.id}
@@ -100,6 +119,20 @@ export default function SpatialScene() {
               }}
             />
           ))}
+          {phase === "lifemap" ? (
+            <button
+              type="button"
+              className="lifemap-click-shield"
+              aria-label="Open Signal focus"
+              onClick={(event) => {
+                event.preventDefault();
+                event.stopPropagation();
+                goto("focus");
+              }}
+            >
+              <span>Tap any star to focus</span>
+            </button>
+          ) : null}
         </section>
       ) : (
         <section className="home-layer" aria-label="URAI home world">
@@ -128,7 +161,7 @@ export default function SpatialScene() {
         </section>
       ) : null}
 
-      <nav className="bottom-dock" aria-label="Spatial actions">
+      <nav className="bottom-dock" aria-label="Spatial actions" onClick={(event) => event.stopPropagation()}>
         <button type="button" onClick={() => goto("lifemap")}>✦ LifeMap</button>
         <button type="button" onClick={() => goto("replay")}>⟳ Replay</button>
         <button type="button" onClick={() => goto("home")}>↺ Unwind</button>
@@ -164,9 +197,9 @@ export default function SpatialScene() {
         .sky-glow {
           pointer-events: none;
           background:
-            radial-gradient(circle at 50% 38%, rgba(115, 182, 239, 0.2), transparent 20%),
-            radial-gradient(circle at 18% 10%, rgba(100, 144, 208, 0.16), transparent 22%),
-            radial-gradient(circle at 82% 16%, rgba(91, 142, 191, 0.12), transparent 28%);
+            radial-gradient(circle at 50% 44%, rgba(115, 182, 239, 0.22), transparent 23%),
+            radial-gradient(circle at 18% 16%, rgba(100, 144, 208, 0.16), transparent 22%),
+            radial-gradient(circle at 82% 24%, rgba(91, 142, 191, 0.12), transparent 28%);
         }
 
         .constellation-lines {
@@ -177,7 +210,7 @@ export default function SpatialScene() {
             linear-gradient(140deg, transparent 0 26%, rgba(190, 225, 255, 0.18) 26.2%, transparent 26.5% 100%),
             linear-gradient(71deg, transparent 0 51%, rgba(190, 225, 255, 0.16) 51.2%, transparent 51.5% 100%);
           filter: blur(0.2px);
-          transform: translateY(-4vh) scale(1.08);
+          transform: translateY(0) scale(1.08);
         }
 
         .quiet-orb {
@@ -275,11 +308,50 @@ export default function SpatialScene() {
         .lifemap-layer {
           z-index: 12;
           pointer-events: auto;
+          cursor: crosshair;
           transition: opacity 260ms ease, transform 420ms ease;
+        }
+
+        .lifemap-depth-grid {
+          position: absolute;
+          inset: 0;
+          pointer-events: none;
+          background:
+            radial-gradient(circle at 50% 52%, rgba(199, 232, 255, 0.08), transparent 18%),
+            radial-gradient(circle at 25% 75%, rgba(161, 209, 255, 0.08), transparent 20%),
+            radial-gradient(circle at 78% 70%, rgba(161, 209, 255, 0.07), transparent 22%);
+        }
+
+        .lifemap-click-shield {
+          position: absolute;
+          inset: 0;
+          z-index: 1;
+          border: 0;
+          padding: 0;
+          background: transparent;
+          color: transparent;
+          cursor: crosshair;
+        }
+
+        .lifemap-click-shield span {
+          position: absolute;
+          left: 50%;
+          bottom: 88px;
+          transform: translateX(-50%);
+          padding: 7px 12px;
+          border-radius: 999px;
+          border: 1px solid rgba(190, 225, 255, 0.16);
+          background: rgba(4, 11, 24, 0.42);
+          color: rgba(232, 246, 255, 0.52);
+          font-size: 11px;
+          font-weight: 800;
+          letter-spacing: 0.08em;
+          text-transform: uppercase;
         }
 
         .memory-star {
           position: absolute;
+          z-index: 2;
           display: block;
           border: 0;
           border-radius: 999px;
@@ -295,7 +367,7 @@ export default function SpatialScene() {
         .memory-star::after {
           content: "";
           position: absolute;
-          inset: -14px;
+          inset: -18px;
           border-radius: 999px;
         }
 
@@ -321,6 +393,9 @@ export default function SpatialScene() {
           filter: blur(0.1px);
           pointer-events: none;
         }
+
+        .phase-focus .lifemap-click-shield,
+        .phase-replay .lifemap-click-shield { display: none; }
 
         .focus-card {
           position: absolute;
@@ -400,7 +475,7 @@ export default function SpatialScene() {
 
         .phase-lifemap .bottom-dock,
         .phase-focus .bottom-dock,
-        .phase-replay .bottom-dock { opacity: 0.72; }
+        .phase-replay .bottom-dock { opacity: 0.88; }
 
         @media (max-width: 720px) {
           .bottom-dock { bottom: 16px; }
