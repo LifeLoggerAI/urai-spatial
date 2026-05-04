@@ -1,0 +1,60 @@
+name: URAI Spatial Production Deploy
+
+on:
+  workflow_dispatch:
+    inputs:
+      confirm_launch_unlock:
+        description: "Type LAUNCH-UNLOCK to confirm signoffs are complete"
+        required: true
+        type: string
+
+jobs:
+  deploy:
+    name: Deploy URAI Spatial to Firebase
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Require explicit launch unlock
+        run: test "${{ github.event.inputs.confirm_launch_unlock }}" = "LAUNCH-UNLOCK"
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 8
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+      - name: Install
+        run: pnpm install --frozen-lockfile
+      - name: Verify signoffs complete
+        run: |
+          pnpm preflight
+          if grep -q "Status: PENDING" verification/signoffs.md; then
+            echo "Launch signoffs are still pending. Complete verification/signoffs.md before production deploy."
+            exit 1
+          fi
+      - name: Build app and functions
+        run: |
+          pnpm --filter urai-tier1 typecheck
+          pnpm --filter urai-tier1 build
+          pnpm --filter urai-functions build
+      - name: Install Firebase Tools
+        run: npm install -g firebase-tools
+      - name: Write Firebase service account
+        run: |
+          test -n "${{ secrets.FIREBASE_SERVICE_ACCOUNT_URAI_SPATIAL }}"
+          echo '${{ secrets.FIREBASE_SERVICE_ACCOUNT_URAI_SPATIAL }}' > "$RUNNER_TEMP/firebase-service-account.json"
+          echo "GOOGLE_APPLICATION_CREDENTIALS=$RUNNER_TEMP/firebase-service-account.json" >> "$GITHUB_ENV"
+      - name: Verify Firebase project secret
+        run: test -n "${{ secrets.URAI_SPATIAL_FIREBASE_PROJECT_ID }}"
+      - name: Deploy Firebase target
+        run: firebase deploy --project "${{ secrets.URAI_SPATIAL_FIREBASE_PROJECT_ID }}" --only firestore:rules,firestore:indexes,functions,hosting
+      - name: Production smoke
+        env:
+          URAI_SPATIAL_PRODUCTION_URL: ${{ vars.URAI_SPATIAL_PRODUCTION_URL }}
+        run: |
+          URL="${URAI_SPATIAL_PRODUCTION_URL:-https://urai-spatial.web.app}"
+          curl -fsS "$URL" | grep -qi "urai"
