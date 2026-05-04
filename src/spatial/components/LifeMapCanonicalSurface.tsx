@@ -123,6 +123,8 @@ export function LifeMapCanonicalSurface() {
   const [progress, setProgress] = useState(0);
   const [replayPaused, setReplayPaused] = useState(false);
   const [returnHeld, setReturnHeld] = useState(false);
+  const [isTransitioning, setIsTransitioning] = useState(false);
+  const [lastEscAt, setLastEscAt] = useState(0);
   const [reducedMotion, setReducedMotion] = useState(false);
   const stars = useMemo(() => Array.from({ length: 280 }, (_, index) => bgStar(index)), []);
 
@@ -162,20 +164,26 @@ export function LifeMapCanonicalSurface() {
     setProgress(0);
     setReplayPaused(false);
     setReturnHeld(false);
+  }, [mode, selectedId]);
+
+  useEffect(() => {
+    if (mode !== "replay" || replayPaused) return;
     const id = window.setInterval(() => {
-      setProgress((value) => {
-        if (replayPaused) return value;
-        return Math.min(100, value + 2);
-      });
+      setProgress((value) => Math.min(100, value + 2));
     }, 90);
     return () => window.clearInterval(id);
-  }, [mode, selectedId, replayPaused]);
+  }, [mode, replayPaused]);
 
   const navigate = (nextMode: Mode, nextNodeId: string | null = selectedId) => {
+    const normalizedSelected = nextMode === "home" || nextMode === "lifemap" ? null : nextNodeId;
+    if (isTransitioning) return;
+    if (nextMode === mode && normalizedSelected === selectedId) return;
+    setIsTransitioning(true);
     setMode(nextMode);
-    setSelectedId(nextMode === "home" || nextMode === "lifemap" ? null : nextNodeId);
+    setSelectedId(normalizedSelected);
     setPanel(null);
     router.push(routeForMode(nextMode, nextNodeId), { scroll: false });
+    window.setTimeout(() => setIsTransitioning(false), 240);
   };
 
   const focusNode = (node: LifeNode) => {
@@ -198,13 +206,17 @@ export function LifeMapCanonicalSurface() {
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => {
       if (event.key === "Escape" && mode !== "home") {
+        if (isTransitioning) return;
+        const now = Date.now();
+        if (now - lastEscAt < 160) return;
+        setLastEscAt(now);
         event.preventDefault();
         unwind();
       }
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  });
+  }, [mode, isTransitioning, lastEscAt]);
 
   if (mode === "home") return null;
 
