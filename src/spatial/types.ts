@@ -1,6 +1,6 @@
 export type Vec3 = [number, number, number];
 
-export type SceneMode = 'home' | 'lifemap' | 'focus' | 'replay';
+export type SceneMode = 'home' | 'ascent' | 'lifemap' | 'focus' | 'replay';
 
 export type SpatialStar = {
   id: string;
