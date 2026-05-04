@@ -1,0 +1,94 @@
+name: URAI Spatial Production Lock
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main, audit/production-spatial-lock]
+  workflow_dispatch:
+
+concurrency:
+  group: urai-spatial-production-lock-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verify:
+    name: Verify source, build, tests, and E2E flow
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9.15.9
+          run_install: false
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+
+      - name: Validate source-of-truth paths
+        run: |
+          test -f package.json
+          test -f pnpm-workspace.yaml
+          test -f firebase.json
+          test -f firebase/firestore.rules
+          test -f firebase/firestore.indexes.json
+          test -f urai-tier1/package.json
+          test -f urai-tier1/src/app/page.tsx
+          test -f urai-tier1/src/spatial/scene/SpatialScene.tsx
+          test -f docs/URAI_SPATIAL_SOURCE_OF_TRUTH_LOCK.md
+          test -f tests/spatial-lock.spec.ts
+
+      - name: Install dependencies with lockfile enforcement
+        run: pnpm install --frozen-lockfile
+
+      - name: Typecheck app
+        run: pnpm typecheck
+
+      - name: Build app
+        run: pnpm build
+
+      - name: Build functions
+        run: pnpm --filter urai-functions build
+
+      - name: Test functions
+        run: pnpm --filter urai-functions test
+
+      - name: Test app
+        run: pnpm --filter urai-tier1 test
+
+      - name: Install Playwright browser
+        run: pnpm exec playwright install --with-deps chromium
+
+      - name: Run spatial E2E lock flow
+        run: pnpm test:e2e
+
+      - name: Validate Firebase deploy references
+        run: |
+          node <<'NODE'
+          const fs = require('fs');
+          const path = require('path');
+          const firebase = JSON.parse(fs.readFileSync('firebase.json', 'utf8'));
+          const required = [
+            firebase.hosting?.source,
+            firebase.firestore?.rules,
+            firebase.firestore?.indexes,
+            firebase.functions?.[0]?.source,
+          ].filter(Boolean);
+          for (const target of required) {
+            if (!fs.existsSync(path.resolve(target))) {
+              throw new Error(`Missing Firebase target: ${target}`);
+            }
+          }
+          if (firebase.hosting?.source !== 'urai-tier1') {
+            throw new Error('Firebase Hosting must deploy canonical urai-tier1 source.');
+          }
+          console.log('Firebase deploy references validated.');
+          NODE
