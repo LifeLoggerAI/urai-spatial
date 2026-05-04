@@ -44,7 +44,7 @@ jobs:
           test -f urai-tier1/src/app/page.tsx
           test -f urai-tier1/src/spatial/scene/SpatialScene.tsx
           test -f docs/URAI_SPATIAL_SOURCE_OF_TRUTH_LOCK.md
-          test -f tests/spatial-lock.spec.ts
+          test -f tests/spatial-lock.mjs
 
       - name: Install dependencies with lockfile enforcement
         run: pnpm install --frozen-lockfile
@@ -65,7 +65,7 @@ jobs:
         run: pnpm --filter urai-tier1 test
 
       - name: Install Playwright browser
-        run: pnpm exec playwright install --with-deps chromium
+        run: pnpm --filter urai-tier1 exec playwright install --with-deps chromium
 
       - name: Run spatial E2E lock flow
         run: pnpm test:e2e
