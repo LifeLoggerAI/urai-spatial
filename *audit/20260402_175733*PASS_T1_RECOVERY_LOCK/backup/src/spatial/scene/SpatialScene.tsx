@@ -7,6 +7,9 @@ import * as THREE from 'three';
 
 type Phase = 'home' | 'lifemap' | 'focus' | 'replay' | 'ground';
 
+const publicDemoMode = true;
+const REPLAY_COMPLETE_MS = 1500;
+
 type StarBand = 'near' | 'mid' | 'far';
 
 type StarNode = {
@@ -59,11 +62,11 @@ function makeStars(): StarNode[] {
   for (const cluster of nearClusters) {
     for (let n = 0; n < cluster.count; n++) {
       const rx = (rand() - 0.5) * cluster.spread;
-      const 0 = (rand() - 0.5) * cluster.spread * 0.6;
+      const ry = (rand() - 0.5) * cluster.spread * 0.6;
       const rz = (rand() - 0.5) * cluster.spread;
       out.push({
         id: `memory-near-${++i}`,
-        position: [cluster.cx + rx, cluster.cy + 0, cluster.cz + rz],
+        position: [cluster.cx + rx, cluster.cy + ry, cluster.cz + rz],
         radius: 0.22 + rand() * 0.14,
         energy: 0.7 + rand() * 0.5,
         band: 'near',
@@ -74,11 +77,11 @@ function makeStars(): StarNode[] {
   for (const cluster of midClusters) {
     for (let n = 0; n < cluster.count; n++) {
       const rx = (rand() - 0.5) * cluster.spread;
-  const ref = useRef<THREE.Mesh | null>(null)
+      const ry = (rand() - 0.5) * cluster.spread * 0.5;
       const rz = (rand() - 0.5) * cluster.spread;
       out.push({
         id: `memory-mid-${++i}`,
-        position: [cluster.cx + rx, cluster.cy + 0, cluster.cz + rz],
+        position: [cluster.cx + rx, cluster.cy + ry, cluster.cz + rz],
         radius: 0.14 + rand() * 0.09,
         energy: 0.55 + rand() * 0.35,
         band: 'mid',
@@ -89,11 +92,11 @@ function makeStars(): StarNode[] {
   for (const cluster of farClusters) {
     for (let n = 0; n < cluster.count; n++) {
       const rx = (rand() - 0.5) * cluster.spread;
-      const 0 = (rand() - 0.5) * cluster.spread * 0.8;
+      const ry = (rand() - 0.5) * cluster.spread * 0.8;
       const rz = (rand() - 0.5) * cluster.spread;
       out.push({
         id: `memory-far-${++i}`,
-        position: [cluster.cx + rx, cluster.cy + 0, cluster.cz + rz],
+        position: [cluster.cx + rx, cluster.cy + ry, cluster.cz + rz],
         radius: 0.05 + rand() * 0.04,
         energy: 0.35 + rand() * 0.2,
         band: 'far',
@@ -522,8 +525,8 @@ function PromptHud({
 }) {
   let text = 'Click sky for LifeMap. Click ground to descend.';
   if (phase === 'lifemap') text = 'Click any near or mid star to enter Focus.';
-  if (phase === 'focus') text = inputLocked ? 'Stabilizing focus…' : 'Click the star again to enter Replay.';
-  if (phase === 'replay') text = 'Press ESC to return to Focus.';
+  if (phase === 'focus') text = inputLocked ? 'Stabilizing focus…' : 'Select Replay to continue.';
+  if (phase === 'replay') text = 'This replay is emotionally weighted. URAI will slow the pace.';
   if (phase === 'ground') text = 'Press ESC to return Home.';
 
   return (
@@ -561,6 +564,9 @@ function SceneCore() {
   const [transitionActive, setTransitionActive] = useState(true);
   const [inputLocked, setInputLocked] = useState(true);
   const [pointerHot, setPointerHot] = useState(false);
+  const [replayAfterglowUntil, setReplayAfterglowUntil] = useState(0);
+  const [showReplayComplete, setShowReplayComplete] = useState(false);
+  const [residualStarId, setResidualStarId] = useState<string | null>(null);
 
   useBodyCursor(pointerHot);
 
@@ -581,37 +587,47 @@ function SceneCore() {
     };
   }, []);
 
+
+  const unwindStep = (source: 'esc' | 'back') => {
+    if (inputLocked) return;
+
+    if (phase === 'replay') {
+      setReplayAfterglowUntil(Date.now() + REPLAY_COMPLETE_MS);
+      setShowReplayComplete(true);
+      if (selectedStar) setResidualStarId(selectedStar.id);
+      window.setTimeout(() => setShowReplayComplete(false), REPLAY_COMPLETE_MS);
+      setPhase('focus');
+      unlockAfter(780);
+      return;
+    }
+
+    if (phase === 'focus') {
+      setPhase('lifemap');
+      unlockAfter(860);
+      return;
+    }
+
+    if (phase === 'lifemap') {
+      setPhase('home');
+      unlockAfter(1080);
+      return;
+    }
+
+    if (phase === 'ground') {
+      setPhase('home');
+      unlockAfter(920);
+    }
+  };
+
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      if (e.key !== 'Escape' || inputLocked) return;
-
-      if (phase === 'replay') {
-        setPhase('focus');
-        unlockAfter(780);
-        return;
-      }
-
-      if (phase === 'focus') {
-        setPhase('lifemap');
-        unlockAfter(860);
-        return;
-      }
-
-      if (phase === 'lifemap') {
-        setPhase('home');
-        unlockAfter(1080);
-        return;
-      }
-
-      if (phase === 'ground') {
-        setPhase('home');
-        unlockAfter(920);
-      }
+      if (e.key !== 'Escape') return;
+      unwindStep('esc');
     };
 
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [phase, inputLocked]);
+  }, [phase, inputLocked, selectedStar]);
 
   const backgroundColor =
     phase === 'home'
@@ -630,6 +646,11 @@ function SceneCore() {
         replayReady={phase === 'focus' && !inputLocked}
       />
       <PromptHud phase={phase} inputLocked={inputLocked} />
+      {showReplayComplete && (
+        <div style={{ position: 'absolute', bottom: 54, left: '50%', transform: 'translateX(-50%)', zIndex: 25, padding: '8px 12px', borderRadius: 999, background: 'rgba(18,24,44,0.72)', border: '1px solid rgba(173,190,235,0.35)', color: '#e8eefc', fontSize: 12.5, letterSpacing: 0.12, pointerEvents: 'none' }}>
+          Replay complete. Pattern saved to your Life Map.
+        </div>
+      )}
 
       <Canvas
         camera={{ position: [HOME_POS.x, HOME_POS.y, HOME_POS.z], fov: 40, near: 0.1, far: 700 }}
@@ -656,7 +677,7 @@ function SceneCore() {
         />
 
         <HomeGround
-          enabled={phase === 'home'}
+          enabled={!publicDemoMode && phase === 'home'}
           setPointerHot={setPointerHot}
           onClick={() => {
             if (inputLocked) return;
@@ -697,6 +718,18 @@ function SceneCore() {
         <ReplayField phase={phase} selectedStar={selectedStar} />
         <GroundModeField phase={phase} />
       </Canvas>
+      {phase === 'focus' && selectedStar && !inputLocked && (
+        <button onClick={() => { setPhase('replay'); unlockAfter(760); }} style={{ position: 'absolute', right: 16, bottom: 16, zIndex: 30, borderRadius: 999, border: '1px solid rgba(173,190,235,0.4)', background: 'rgba(18,24,44,0.84)', color: '#e8eefc', padding: '8px 14px', fontSize: 12 }}>Replay</button>
+      )}
+      {phase !== 'home' && (
+        <button onClick={() => unwindStep('back')} style={{ position: 'absolute', left: 16, bottom: 16, zIndex: 30, borderRadius: 999, border: '1px solid rgba(173,190,235,0.35)', background: 'rgba(10,14,28,0.7)', color: '#d8def0', padding: '7px 12px', fontSize: 12 }}>Back</button>
+      )}
+      {Date.now() < replayAfterglowUntil && (
+        <div style={{ position: 'absolute', inset: 0, pointerEvents: 'none', background: 'radial-gradient(circle at 50% 52%, rgba(178,205,255,0.18) 0%, rgba(104,133,197,0.08) 24%, transparent 48%)', zIndex: 12 }} />
+      )}
+      {phase === 'lifemap' && residualStarId && (
+        <div style={{ position: 'absolute', top: 14, right: 14, zIndex: 24, color: '#c8d6ff', fontSize: 12, opacity: 0.8 }}>✦ Residual marker anchored</div>
+      )}
     </div>
   );
 }

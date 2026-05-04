@@ -13,12 +13,12 @@ type StarMeshProps = {
 export default function StarMesh({ id, position, color = "#ffffff", scale = 0.16 }: StarMeshProps) {
   const hoverStar = useSceneStore((s) => s.hoverStar);
   const selectStar = useSceneStore((s) => s.selectStar);
-  const selectedStar = useSceneStore((s) => s.selectedStar);
-  const hoveredStar = useSceneStore((s) => s.hoveredStar);
+  const selectedStarId = useSceneStore((s) => s.selectedStarId);
+  const hoveredStarId = useSceneStore((s) => s.hoveredStarId);
   const mode = useSceneStore((s) => s.mode);
 
-  const isSelected = selectedStar === id;
-  const isHovered = hoveredStar === id;
+  const isSelected = selectedStarId === id;
+  const isHovered = hoveredStarId === id;
   const size = isSelected ? scale * 1.3 : isHovered ? scale * 1.15 : scale;
   const interactive = mode === "lifemap" || mode === "replay";
 

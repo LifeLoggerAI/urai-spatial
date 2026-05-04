@@ -9,6 +9,7 @@ import { useSpatialCompareStore } from "@/spatial/compare/spatialCompareStore";
 import { useSpatialLensStore } from "@/spatial/lenses/spatialLensStore";
 import { buildSpatialNarratorExport } from "@/spatial/narrator/buildSpatialNarratorExport";
 import { readSpatialPersistenceSnapshot } from "@/spatial/persistence/spatialPersistenceIO";
+import { readSpatialRuntimeFlags } from "@/spatial/runtime/runtimeFlags";
 import { useSpatialSeasonalArcStore } from "@/spatial/seasonal/spatialSeasonalArcStore";
 import { toSpatialNarrativeArcs } from "@/spatial/narrative/toSpatialNarrativeArc";
 
@@ -46,6 +47,8 @@ export default function SpatialStoryBundlePanel() {
   const seasonalArcs = useSpatialSeasonalArcStore((s) => s.seasonalArcs);
 
   const [status, setStatus] = useState("idle");
+  const runtimeFlags = readSpatialRuntimeFlags();
+  if (runtimeFlags.publicDemoMode && !runtimeFlags.showDemoExportControls) return null;
 
   const snapshot = useMemo(() => readSpatialPersistenceSnapshot(), [
     activeAccountId,
@@ -148,9 +151,7 @@ export default function SpatialStoryBundlePanel() {
       bundle.narrator?.scriptText ?? "none",
     ].join("\n");
 
-    downloadText(
-      text,
-    );
+    downloadText("URAI-Tier-Lock-Bundle.txt", text);
     setStatus("story bundle txt exported");
   };
 
@@ -160,10 +161,8 @@ export default function SpatialStoryBundlePanel() {
       return;
     }
 
-    downloadJson(
-      bundle,
-    );
-    setStatus("story bundle json exported");
+    downloadJson("URAI-Tier-Lock-Bundle.zip", bundle);
+    setStatus("Tier lock bundle exported.");
   };
 
   return (

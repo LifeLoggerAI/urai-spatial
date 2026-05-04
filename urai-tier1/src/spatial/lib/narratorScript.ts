@@ -6,6 +6,25 @@ import {
   pickPhaseNarratorLine,
 } from '@/spatial/canon/narratorCanon'
 
+
+const PUBLIC_DEFAULT_NARRATOR = {
+  heading: "A recurring memory pattern appeared.",
+  body: "URAI noticed this memory may connect to a repeating emotional pattern.",
+} as const
+
+function sanitizePublicNarratorBody(body: string): string {
+  const restricted = [
+    /shadow\s+pressure/gi,
+    /threshold\s+signal/gi,
+    /\bdeterministic\b/gi,
+    /\bguaranteed\b/gi,
+  ]
+  let sanitized = String(body || '').trim()
+  for (const pattern of restricted) sanitized = sanitized.replace(pattern, 'pattern')
+  if (sanitized.length > 159) sanitized = `${sanitized.slice(0, 156).trimEnd()}...`
+  return sanitized
+}
+
 export type NarratorPayload = {
   phase: NarratorPhase
   heading: string
@@ -65,8 +84,8 @@ export function resolveNarratorPayload(input: {
 
   return {
     phase,
-    heading: String(heading),
-    body,
+    heading: String(heading || PUBLIC_DEFAULT_NARRATOR.heading),
+    body: sanitizePublicNarratorBody(body || PUBLIC_DEFAULT_NARRATOR.body),
     tone: String((star as any)?.narratorTone ?? baseLine.tone),
     eligible,
   }
