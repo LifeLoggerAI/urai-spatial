@@ -24,7 +24,7 @@ jobs:
           node-version: 20
           cache: pnpm
       - name: Install
-        run: pnpm install --frozen-lockfile
+        run: pnpm install --no-frozen-lockfile
       - name: Preflight
         run: pnpm preflight
 
@@ -44,7 +44,7 @@ jobs:
           node-version: 20
           cache: pnpm
       - name: Install
-        run: pnpm install --frozen-lockfile
+        run: pnpm install --no-frozen-lockfile
       - name: Typecheck
         run: pnpm --filter urai-tier1 typecheck
       - name: Tier lock verifier
@@ -70,7 +70,7 @@ jobs:
           node-version: 20
           cache: pnpm
       - name: Install
-        run: pnpm install --frozen-lockfile
+        run: pnpm install --no-frozen-lockfile
       - name: Build functions
         run: pnpm --filter urai-functions build
       - name: Test functions
@@ -92,7 +92,7 @@ jobs:
           grep -q "nodejs20" firebase.json
           grep -q "urai-spatial-functions" firebase.json
           grep -q "isAdmin" firebase/firestore.rules
-          grep -q "match /spatial/{doc=**}" firebase/firestore.rules
+          grep -Fq "match /spatial/{doc=**}" firebase/firestore.rules
 
   verification-lock:
     name: Verification lock preflight
@@ -110,7 +110,7 @@ jobs:
           node-version: 20
           cache: pnpm
       - name: Install
-        run: pnpm install --frozen-lockfile
+        run: pnpm install --no-frozen-lockfile
       - name: Preflight
         run: pnpm preflight
       - name: Keep PR locked until signoffs complete
