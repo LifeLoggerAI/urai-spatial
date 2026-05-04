@@ -17,6 +17,7 @@ import {
 } from "./lifeMapModel";
 
 type ScenePhase = LifeMapPhase | "ascent";
+type StarState = "idle" | "glowing" | "active" | "resolved";
 
 type Snapshot = {
   phase: LifeMapPhase;
@@ -105,10 +106,12 @@ function DetailCard({
   node,
   onReplay,
   onClose,
+  onResolve,
 }: {
   node: LifeMapNode;
   onReplay: () => void;
   onClose: () => void;
+  onResolve: () => void;
 }) {
   return (
     <section
@@ -176,8 +179,8 @@ function DetailCard({
         <button type="button" onClick={onReplay}>
           Replay
         </button>
-        <button type="button">Add ritual</button>
-        <button type="button">Export card</button>
+        <button type="button">Reflect</button>
+        <button type="button" onClick={onResolve}>Mark resolved</button>
       </div>
     </section>
   );
@@ -296,6 +299,10 @@ export default function SpatialScene() {
   const [zoom, setZoom] = useState(1);
   const [history, setHistory] = useState<Snapshot[]>([]);
   const [isTransitioning, setIsTransitioning] = useState(false);
+  const [companionOverride, setCompanionOverride] = useState<string | null>(null);
+  const [reducedMotion, setReducedMotion] = useState(false);
+  const [starStates, setStarStates] = useState<Record<string, StarState>>({});
+  const [lastActivatedAt, setLastActivatedAt] = useState<Record<string, number | null>>({});
 
   const timers = useRef<ReturnType<typeof setTimeout>[]>([]);
 
@@ -306,6 +313,10 @@ export default function SpatialScene() {
 
   const selectedNode =
     lifeMapNodes.find((node) => node.id === selectedNodeId) ?? null;
+
+  const selectedNodeWithOverride = selectedNode
+    ? { ...selectedNode, narratorLine: companionOverride ?? selectedNode.narratorLine }
+    : null;
 
   const visibleNodes = useMemo(
     () => (demoEnabled ? filteredNodes(mode) : []),
@@ -418,6 +429,11 @@ export default function SpatialScene() {
 
       pushSnapshot();
       setSelectedNodeId(node.id);
+      setStarStates((current) => ({ ...current, [node.id]: "active" }));
+      setLastActivatedAt((current) => ({ ...current, [node.id]: Date.now() }));
+      setCompanionOverride(node.narratorLine);
+      window.dispatchEvent(new CustomEvent("urai:narrator", { detail: { event: "lifemap.star.focus", starId: node.id, chapterId: node.chapterId, emotion: node.emotionalTone, timestamp: Date.now() } }));
+      window.dispatchEvent(new CustomEvent("urai:timeline-sync", { detail: { mode: "lifemap", phase: "focus", activeStarId: node.id, activeChapterId: node.chapterId, timestamp: Date.now() } }));
       setShowReplay(false);
       setPhase("focus");
       writeUrl("focus", node.id);
@@ -433,6 +449,11 @@ export default function SpatialScene() {
 
       if (node) {
         setSelectedNodeId(node.id);
+      setStarStates((current) => ({ ...current, [node.id]: "active" }));
+      setLastActivatedAt((current) => ({ ...current, [node.id]: Date.now() }));
+      setCompanionOverride(node.narratorLine);
+      window.dispatchEvent(new CustomEvent("urai:narrator", { detail: { event: "lifemap.star.focus", starId: node.id, chapterId: node.chapterId, emotion: node.emotionalTone, timestamp: Date.now() } }));
+      window.dispatchEvent(new CustomEvent("urai:timeline-sync", { detail: { mode: "lifemap", phase: "focus", activeStarId: node.id, activeChapterId: node.chapterId, timestamp: Date.now() } }));
       }
 
       setShowReplay(true);
@@ -460,6 +481,62 @@ export default function SpatialScene() {
     setZoom(previous.zoom);
     writeUrl(previous.phase, previous.nodeId);
   }, [goHome, history, isTransitioning, phase, writeUrl]);
+
+  useEffect(() => {
+    const query = window.matchMedia("(prefers-reduced-motion: reduce)");
+    const update = () => setReducedMotion(query.matches);
+    update();
+    query.addEventListener("change", update);
+    return () => query.removeEventListener("change", update);
+  }, []);
+
+  useEffect(() => {
+    const initStates: Record<string, StarState> = {};
+    const initTimes: Record<string, number | null> = {};
+    for (const node of lifeMapNodes) {
+      initStates[node.id] = "idle";
+      initTimes[node.id] = null;
+    }
+    setStarStates(initStates);
+    setLastActivatedAt(initTimes);
+  }, []);
+
+  useEffect(() => {
+    if (phase === "home" || phase === "ascent" || reducedMotion || !visibleNodes.length) return;
+    const messages = [
+      "Something is asking to be seen.",
+      "This memory is carrying weight.",
+      "A pattern is lighting up.",
+      "This moment connects to something older.",
+    ];
+    const roll = () => {
+      const unresolved = visibleNodes.filter((node) => starStates[node.id] !== "resolved");
+      const sorted = [...unresolved].sort((a,b) => {
+        const wa = (a.isRecovery ? 2 : 1) + (a.nodeType === "threshold" || a.isShadow ? 2 : 0) + (a.importanceScore / 100) + ((Date.now() - (lastActivatedAt[a.id] ?? 0)) / 120000);
+        const wb = (b.isRecovery ? 2 : 1) + (b.nodeType === "threshold" || b.isShadow ? 2 : 0) + (b.importanceScore / 100) + ((Date.now() - (lastActivatedAt[b.id] ?? 0)) / 120000);
+        return wb - wa;
+      });
+      const count = Math.max(1, Math.min(3, 1 + Math.floor(Math.random() * 3)));
+      const glowing = sorted.slice(0, count).map((n) => n.id);
+      setStarStates((current) => {
+        const next = { ...current };
+        for (const node of visibleNodes) {
+          if (current[node.id] === "active" || current[node.id] === "resolved") continue;
+          next[node.id] = glowing.includes(node.id) ? "glowing" : "idle";
+        }
+        return next;
+      });
+      const g = lifeMapNodes.find((n) => n.id === glowing[0]);
+      if (g) {
+        setCompanionOverride(messages[Math.floor(Math.random()*messages.length)]);
+        window.dispatchEvent(new CustomEvent("urai:narrator", { detail: { event: "lifemap.star.glow", starId: g.id, chapterId: g.chapterId, emotion: g.emotionalTone, timestamp: Date.now() } }));
+        window.dispatchEvent(new CustomEvent("urai:timeline-sync", { detail: { mode: "lifemap", phase: "living", activeStarId: g.id, activeChapterId: g.chapterId, timestamp: Date.now() } }));
+      }
+    };
+    const id = window.setInterval(roll, 8000 + Math.floor(Math.random() * 6000));
+    roll();
+    return () => clearInterval(id);
+  }, [lastActivatedAt, phase, reducedMotion, starStates, visibleNodes]);
 
   useEffect(() => () => clearTimers(), [clearTimers]);
 
@@ -655,9 +732,7 @@ export default function SpatialScene() {
                   <button
                     key={node.id}
                     type="button"
-                    className={`node ${node.visualState} ${
-                      selectedNodeId === node.id ? "selected" : ""
-                    }`}
+                    className={`node ${starStates[node.id] ?? "idle"} ${node.visualState} ${selectedNodeId === node.id ? "selected" : ""}`}
                     data-testid={`lifemap-node-${node.id}`}
                     aria-label={`${node.title} ${node.nodeType} star`}
                     aria-pressed={selectedNodeId === node.id}
@@ -671,6 +746,11 @@ export default function SpatialScene() {
                     onContextMenu={(event) => {
                       event.preventDefault();
                       setSelectedNodeId(node.id);
+      setStarStates((current) => ({ ...current, [node.id]: "active" }));
+      setLastActivatedAt((current) => ({ ...current, [node.id]: Date.now() }));
+      setCompanionOverride(node.narratorLine);
+      window.dispatchEvent(new CustomEvent("urai:narrator", { detail: { event: "lifemap.star.focus", starId: node.id, chapterId: node.chapterId, emotion: node.emotionalTone, timestamp: Date.now() } }));
+      window.dispatchEvent(new CustomEvent("urai:timeline-sync", { detail: { mode: "lifemap", phase: "focus", activeStarId: node.id, activeChapterId: node.chapterId, timestamp: Date.now() } }));
                       startReplay(node);
                     }}
                   >
@@ -686,16 +766,26 @@ export default function SpatialScene() {
 
           <div className="chapter-portals" data-testid="lifemap-chapter-layer">
             {lifeChapters.map((chapter, index) => (
-              <article
+              <button
                 key={chapter.id}
+                type="button"
                 style={{
                   left: `${14 + index * 18}%`,
                   background: chapter.coverGradient,
                 }}
+                onClick={() => {
+                  const first = visibleNodes.find((node) => node.chapterId === chapter.id) ?? null;
+                  if (first) {
+                    setSelectedNodeId(first.id);
+                    setZoom(1.32);
+                    window.dispatchEvent(new CustomEvent("urai:narrator", { detail: { event: "lifemap.cluster.focus", starId: first.id, chapterId: chapter.id, emotion: first.emotionalTone, timestamp: Date.now() } }));
+                    window.dispatchEvent(new CustomEvent("urai:timeline-sync", { detail: { mode: "lifemap", phase: "cluster", activeStarId: first.id, activeChapterId: chapter.id, timestamp: Date.now() } }));
+                  }
+                }}
               >
                 <b>{chapter.title}</b>
                 <span>{chapter.dominantEmotions.join(" / ")}</span>
-              </article>
+              </button>
             ))}
           </div>
 
@@ -711,13 +801,18 @@ export default function SpatialScene() {
             </span>
           </section>
 
-          <CompanionGuide mode={mode} selectedNode={selectedNode} />
+          <CompanionGuide mode={mode} selectedNode={selectedNodeWithOverride} />
           <ExportPanel />
 
           {selectedNode && !showReplay && phase === "focus" ? (
             <DetailCard
               node={selectedNode}
               onReplay={() => startReplay(selectedNode)}
+              onResolve={() => {
+                setCompanionOverride("This one has softened.");
+                setStarStates((current) => ({ ...current, [selectedNode.id]: "resolved" }));
+                window.dispatchEvent(new CustomEvent("urai:narrator", { detail: { event: "lifemap.star.resolved", starId: selectedNode.id, chapterId: selectedNode.chapterId, emotion: selectedNode.emotionalTone, timestamp: Date.now() } }));
+              }}
               onClose={() => {
                 setSelectedNodeId(null);
                 setShowReplay(false);
@@ -847,7 +942,7 @@ export default function SpatialScene() {
           opacity: 0;
           transform: translateY(20vh) scale(1.08);
           filter: blur(20px);
-          pointer-events: none;
+          pointer-events: auto;
         }
 
         .home-sky {
@@ -895,7 +990,9 @@ export default function SpatialScene() {
         .hill-a {
           bottom: 34vh;
           height: 24vh;
-          opacity: 0.42;
+          opacity: 0.62;
+          cursor: pointer;
+          text-align: left;
         }
 
         .hill-b {
@@ -995,7 +1092,7 @@ export default function SpatialScene() {
         }
 
         .map-bg {
-          pointer-events: none;
+          pointer-events: auto;
           background:
             radial-gradient(
               circle at 50% 36%,
@@ -1039,7 +1136,7 @@ export default function SpatialScene() {
         }
 
         .fog-layer {
-          pointer-events: none;
+          pointer-events: auto;
           background:
             radial-gradient(
               circle at 18% 60%,
@@ -1072,7 +1169,7 @@ export default function SpatialScene() {
         }
 
         .particle-layer {
-          pointer-events: none;
+          pointer-events: auto;
           background-image: radial-gradient(
             circle,
             rgba(255, 255, 255, 0.16) 0 1px,
@@ -1091,7 +1188,7 @@ export default function SpatialScene() {
         }
 
         .lines {
-          pointer-events: none;
+          pointer-events: auto;
           width: 100%;
           height: 100%;
         }
@@ -1157,7 +1254,7 @@ export default function SpatialScene() {
           font-size: 10px;
           font-style: normal;
           font-weight: 900;
-          pointer-events: none;
+          pointer-events: auto;
         }
 
         .node.fogged {
@@ -1190,11 +1287,11 @@ export default function SpatialScene() {
           position: absolute;
           inset: auto 0 104px 0;
           z-index: 7;
-          pointer-events: none;
+          pointer-events: auto;
           white-space: nowrap;
         }
 
-        .chapter-portals article {
+        .chapter-portals button {
           position: absolute;
           bottom: 0;
           width: 118px;
@@ -1203,7 +1300,9 @@ export default function SpatialScene() {
           border-radius: 18px;
           padding: 10px;
           box-shadow: 0 10px 44px rgba(0, 0, 0, 0.32);
-          opacity: 0.42;
+          opacity: 0.62;
+          cursor: pointer;
+          text-align: left;
         }
 
         .chapter-portals b,
@@ -1223,7 +1322,7 @@ export default function SpatialScene() {
           z-index: 18;
           display: grid;
           place-items: center;
-          pointer-events: none;
+          pointer-events: auto;
           background:
             radial-gradient(
               circle at 50% 20%,
@@ -1498,7 +1597,7 @@ export default function SpatialScene() {
           border-radius: 26px;
           padding: 18px;
           opacity: 0;
-          pointer-events: none;
+          pointer-events: auto;
           transition:
             opacity 320ms ease,
             transform 320ms ease;
@@ -1530,7 +1629,7 @@ export default function SpatialScene() {
           letter-spacing: 0.06em;
           text-align: center;
           text-transform: uppercase;
-          pointer-events: none;
+          pointer-events: auto;
         }
 
         .mode-ribbon {
