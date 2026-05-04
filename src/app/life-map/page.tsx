@@ -1,5 +1,5 @@
-import LifeMapView from '@/components/life-map/LifeMapView'
+import LifeMapCanonicalSurface from '@/spatial/components/LifeMapCanonicalSurface'
 
 export default function LifeMapPage() {
-  return <LifeMapView userId='demo-user' />
+  return <LifeMapCanonicalSurface />
 }
