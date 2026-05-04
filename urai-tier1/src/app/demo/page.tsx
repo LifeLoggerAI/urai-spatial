@@ -2,6 +2,7 @@
 
 import dynamic from "next/dynamic";
 import { useEffect, useRef, useState } from "react";
+import { isInternalUiVisible, recordingMode as recordingModeDefault, showDemoExportControls } from "@/spatial/config/presentationMode";
 
 const SpatialScene = dynamic(
   () => import("@/spatial/scene/SpatialScene"),
@@ -10,7 +11,7 @@ const SpatialScene = dynamic(
 
 export default function DemoPage() {
   const [showIntro, setShowIntro] = useState(true);
-  const [recordingMode, setRecordingMode] = useState(false);
+  const [recordingMode, setRecordingMode] = useState(recordingModeDefault);
   const [countdown, setCountdown] = useState<number | null>(null);
   /* URAI_DEMO_COMPLETE_STATE_V1 */
   const [demoComplete, setDemoComplete] = useState(false);
@@ -58,18 +59,20 @@ export default function DemoPage() {
     return () => window.clearTimeout(timer);
   }, [recordingMode, countdown]);
 
+  const internalUiVisible = isInternalUiVisible({ publicDemoMode: false, recordingMode });
+
   return (
     <div style={{ width: "100%", height: "100%" }}>
       <SpatialScene />
 
       {/* URAI_DEMO_HIDE_BRAND_RECORDING_V1 */}
-      {!recordingMode && (
+      {internalUiVisible && (
         <div style={brand}>
           URAI Spatial · Cinematic Demo
         </div>
       )}
 
-      {!recordingMode && (
+      {internalUiVisible && (
         <div style={controls}>
           <button onClick={() => window.location.reload()} style={btn}>
             Reset
@@ -83,6 +86,11 @@ export default function DemoPage() {
             Start cinematic demo
           </button>
         </div>
+      )}
+
+
+      {showDemoExportControls && internalUiVisible && (
+        <div style={exportHint}>Demo export controls enabled.</div>
       )}
 
       {recordingMode && (
@@ -126,6 +134,10 @@ export default function DemoPage() {
             <button onClick={startCinematicDemo} style={{ ...primaryBtn, marginTop: 18 }}>
               Start cinematic demo
             </button>
+
+            <p style={privacyMicrocopy}>
+              Your memories stay private. You control what is saved, replayed, or exported.
+            </p>
           </div>
         </div>
       )}
@@ -215,6 +227,17 @@ const scriptBox: React.CSSProperties = {
   opacity: 0.78,
 };
 
+const exportHint: React.CSSProperties = {
+  position: "absolute",
+  top: 20,
+  right: 20,
+  padding: "8px 12px",
+  borderRadius: 10,
+  border: "1px solid rgba(180,160,255,0.25)",
+  background: "rgba(8,4,18,0.6)",
+  fontSize: 12,
+};
+
 const recordingBadge: React.CSSProperties = {
   position: "absolute",
   top: 68,
@@ -250,4 +273,14 @@ const completeCard: React.CSSProperties = {
   border: "1px solid rgba(180,160,255,0.22)",
   backdropFilter: "blur(14px)",
   boxShadow: "0 28px 100px rgba(0,0,0,0.42)",
+};
+
+const privacyMicrocopy: React.CSSProperties = {
+  marginTop: 14,
+  marginBottom: 0,
+  fontSize: 12,
+  lineHeight: 1.5,
+  color: "rgba(242,246,255,0.9)",
+  textShadow: "0 1px 1px rgba(0,0,0,0.45)",
+  opacity: 0.9,
 };

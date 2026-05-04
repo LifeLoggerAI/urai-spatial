@@ -11,15 +11,22 @@ export const URAI_VOICE_CONFIG: Record<NarratorTone, VoiceConfig> = {
   neutral: { voiceId: process.env.NEXT_PUBLIC_URAI_ELEVENLABS_DEFAULT_VOICE_ID || "EXAVITQu4vr4xnSDxMaL", stability: 0.7, similarity_boost: 0.8, style: 0.14, speaking_rate: 0.88 },
 };
 
+
+export const PUBLIC_NARRATOR_DEFAULTS = {
+  headline: "A recurring memory pattern appeared.",
+  body: "URAI noticed this memory may connect to a repeating emotional pattern.",
+  action: "Replay gently",
+} as const
+
 const SCRIPT_LIBRARY: Record<NarratorMoment, string[]> = {
   home_idle: ["The field is quiet.", "Nothing needs to move yet."],
   ascent_begin: ["The ground is letting go.", "Rise when the field opens."],
   lifemap_arrival: ["The memories are visible now.", "The constellation has formed."],
   memory_selected: ["This one answered.", "Something marked this point."],
-  focus_arrival: ["You are close enough now.", "The signal is clearer here."],
-  replay_enter: ["The chamber is forming.", "Stay inside the signal."],
-  replay_hold: ["Let the silence work.", "Do not rush this part."],
-  replay_exit: ["Leave the chamber intact.", "The memory can close now."],
+  focus_arrival: ["You are close enough now.", "The pattern is clearer here."],
+  replay_enter: ["A recurring memory pattern appeared.", "URAI noticed this memory may connect to a repeating emotional pattern."],
+  replay_hold: ["Let this moment breathe.", "Stay present with what returns."],
+  replay_exit: ["Leave this space gently.", "The memory can settle now."],
   return_home: ["Return to the origin.", "The center is waiting."],
 };
 
@@ -53,7 +60,6 @@ function pickLine(moment: NarratorMoment): string {
 function normalizeTone(tone?: string): NarratorTone {
   if (tone === "charged" || tone === "shadow") return "tension";
   if (tone === "bright" || tone === "hope") return "recovery";
-  if (tone === "threshold") return "awe";
   if (["calm", "awe", "tension", "grief", "recovery", "neutral"].includes(String(tone))) return tone as NarratorTone;
   return "calm";
 }
