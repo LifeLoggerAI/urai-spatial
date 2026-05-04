@@ -98,7 +98,7 @@ export const evaluateSpatialTierLock = functions.https.onCall(async (data, conte
   }
 
   const uid = context.auth?.uid ?? null
-  const claims = context.auth?.token ?? {}
+  const claims = (context.auth?.token ?? {}) as Record<string, unknown>
   const isAdmin = claims.admin === true
   const isFounder = claims.founder === true
 

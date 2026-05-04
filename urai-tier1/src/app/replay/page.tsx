@@ -1,10 +1,10 @@
 import { Suspense } from "react";
-import SpatialScene from "@/spatial/scene/SpatialScene";
+import Tier5ReplayScene from "@/spatial/scene/Tier5ReplayScene";
 
 export default function ReplayRoute() {
   return (
     <Suspense fallback={null}>
-      <SpatialScene />
+      <Tier5ReplayScene />
     </Suspense>
   );
 }

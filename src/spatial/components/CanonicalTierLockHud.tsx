@@ -12,6 +12,9 @@ const URAI_SPATIAL_TIER_LOCKS = [
   { label: 'Tier 0', status: 'completed locked' },
   { label: 'Tier 1', status: 'completed locked' },
   { label: 'Tier 2', status: 'completed locked' },
+  { label: 'Tier 3', status: 'lock candidate — verify' },
+  { label: 'Tier 4', status: 'lock candidate — CI required' },
+  { label: 'Tier 5', status: 'lock candidate — live visual pass' },
 ] as const
 
 const shellStyle: CSSProperties = {
