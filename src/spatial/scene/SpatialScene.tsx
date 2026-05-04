@@ -100,6 +100,14 @@ function easeInOutCubic(t: number) {
 return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2
 }
 
+function getPhaseLabel(phase: Phase): string {
+if (phase === 'HOME') return 'Home / Life Orb'
+if (phase === 'ASCENT') return 'Opening Life Map'
+if (phase === 'LIFEMAP') return 'Life Map'
+if (phase === 'FOCUS') return 'Memory Focus'
+return 'Memory Replay'
+}
+
 // CAMERA_DIRECTOR: Single writer for camera state. Complies with AUTHORITY LAW.
 // Values updated to enforce visual canon for all phases.
 function getCameraDirector(progress: number, phase: Phase, selectedStarId: StarNode | null) {
@@ -274,6 +282,7 @@ setTimeout(() => setReplayVisible(true), REPLAY_ENTER_MS)
 
 const showHome = phaseForView === 'HOME' || phaseForView === 'ASCENT'
 const showField = phaseForView === 'LIFEMAP' || phaseForView === 'FOCUS' || phaseForView === 'ASCENT'
+const statusLabel = transitionKind === 'lifemapToHome' ? 'Returning Home' : getPhaseLabel(state.phase)
 
 return (
 <div
@@ -293,7 +302,7 @@ transition: transitionKind ? 'none' : 'transform 750ms ease-out, background 750m
 <>
 {/* Sky click target - HOME LAW */}
 <div
-aria-label="Enter spatial field via sky"
+aria-label="Open Life Map"
 onClick={startAscent}
 style={{
 position: 'absolute', left: 0, right: 0, top: 0, height: '60%',
@@ -367,6 +376,7 @@ transition: 'opacity 500ms ease-out',
 }}
 >
 <p style={{ letterSpacing: '0.16em', fontSize: '0.8rem', margin: 0, textTransform: 'uppercase', opacity: 0.65 }}>Memory Trace</p>
+<p style={{ letterSpacing: '0.12em', fontSize: '0.72rem', margin: '0.4rem 0 0', textTransform: 'uppercase', opacity: 0.55 }}>{statusLabel}</p>
 <h2 style={{ margin: '0.45rem 0 0', fontWeight: 500, fontSize: '2rem', textShadow: '0 0 24px rgba(255,227,163,0.35)' }}>{selectedStar?.label}</h2>
 </div>
 </div>
