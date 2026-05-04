@@ -127,12 +127,18 @@ function StarMesh({
 
   useFrame(() => {
     const t = (Date.now() - start.current) / 1000;
-    const pulse = 1 + Math.sin(t * (0.25 + star.importance * 0.15)) * 0.03;
 
-    group.current?.scale.setScalar(pulse * (selected ? 1.18 : 1));
+    const pulse =
+      1 +
+      Math.sin(t * (0.25 + star.importance * 0.15) + star.importance * 10) * 0.03;
 
-    setOpacity(core.current, star.alpha * sceneOpacity * (dimmed ? 0.46 : 1));
-    setOpacity(halo.current, star.alpha * 0.25 * sceneOpacity * (dimmed ? 0.46 : 1));
+    const dim = dimmed ? 0.46 : 1;
+    const sel = selected ? 1.18 : 1;
+
+    group.current?.scale.setScalar(pulse * sel);
+
+    setOpacity(core.current, star.alpha * sceneOpacity * dim * (selected ? 1.12 : 1));
+    setOpacity(halo.current, star.alpha * 0.25 * sceneOpacity * dim * (selected ? 1.25 : 1));
 
     halo.current?.scale.setScalar(selected ? 3.4 : 2.2);
   });
@@ -148,12 +154,20 @@ function StarMesh({
     >
       <mesh ref={halo}>
         <sphereGeometry args={[star.radius * 2.2, 12, 12]} />
-        <meshBasicMaterial transparent depthWrite={false} color="#8faeff" />
+        <meshBasicMaterial
+          color={selected ? "#c9ddff" : "#8faeff"}
+          transparent
+          depthWrite={false}
+        />
       </mesh>
 
       <mesh ref={core}>
         <sphereGeometry args={[star.radius, 14, 14]} />
-        <meshBasicMaterial transparent depthWrite={false} color="#dce7ff" />
+        <meshBasicMaterial
+          color={selected ? "#eef5ff" : "#dce7ff"}
+          transparent
+          depthWrite={false}
+        />
       </mesh>
     </group>
   );
@@ -162,21 +176,53 @@ function StarMesh({
 export default function LifeMap({ phase, progress, opacity, selectedStar, onSelectStar }: Props) {
   const stars = useStarData();
 
+  const sceneOpacity = (() => {
+    if (phase === "enter_ascent") {
+      const t = Math.min(1, Math.max(0, progress));
+      const eased = t * t * (3 - 2 * t);
+      return 0.02 + 0.42 * eased;
+    }
+
+    if (phase === "enter_separation") {
+      const t = Math.min(1, Math.max(0, progress));
+      const eased = t * t * (3 - 2 * t);
+      return 0.44 + 0.36 * eased;
+    }
+
+    if (phase === "enter_arrival") {
+      const t = Math.min(1, Math.max(0, progress));
+      const eased = t * t * (3 - 2 * t);
+      return 0.8 + 0.2 * eased;
+    }
+
+    if (phase === "return_home_descent") return Math.max(0.12, 1 - progress * 0.78);
+    if (phase === "return_home_settle") return 0.12 * (1 - progress);
+
+    return opacity;
+  })();
+
   const interactive = phase === "LIFEMAP";
 
   return (
-    <group visible={opacity > 0.001}>
-      {stars.map((star) => (
-        <StarMesh
-          key={star.id}
-          star={star}
-          sceneOpacity={opacity}
-          dimmed={!!selectedStar && selectedStar.id !== star.id}
-          selected={selectedStar?.id === star.id}
-          interactive={interactive}
-          onSelectStar={onSelectStar}
-        />
-      ))}
+    <group visible={sceneOpacity > 0.001}>
+      {stars.map((star) => {
+        const dimmed =
+          !!selectedStar &&
+          selectedStar.id !== star.id &&
+          ["focus_lock", "focus_travel", "focus_arrive", "REPLAY"].includes(phase);
+
+        return (
+          <StarMesh
+            key={star.id}
+            star={star}
+            sceneOpacity={sceneOpacity}
+            dimmed={dimmed}
+            selected={selectedStar?.id === star.id}
+            interactive={interactive}
+            onSelectStar={onSelectStar}
+          />
+        );
+      })}
     </group>
   );
 }
