@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useRef } from "react";
+import { useMemo, useRef, useEffect } from "react";
 import { useFrame } from "@react-three/fiber";
 import type { Group, Mesh, MeshBasicMaterial } from "three";
 
@@ -14,6 +14,14 @@ type Props = {
   selectedStar: StarPoint | null;
   onSelectStar: (star: StarPoint) => void;
 };
+
+const GLOBAL_START = typeof window !== "undefined" ? performance.now() : 0;
+
+function getTime() {
+  return (performance.now() - GLOBAL_START) / 1000;
+}
+
+/* ------------------ DETERMINISTIC STAR GEN ------------------ */
 
 function hash(n: number) {
   const x = Math.sin(n * 127.1 + 311.7) * 43758.5453123;
@@ -35,6 +43,7 @@ function makeStar(id: number, band: StarPoint["band"]): StarPoint {
   let radius = 0.04;
   let alpha = 0.16;
   let clickable = false;
+
   const importance = mapRange(s, 0, 1, 0.2, 1);
 
   if (band === "foreground") {
@@ -93,6 +102,8 @@ export function useStarData() {
   }, []);
 }
 
+/* ------------------ UTIL ------------------ */
+
 function setOpacity(mesh: Mesh | null, opacity: number) {
   if (!mesh) return;
 
@@ -105,6 +116,18 @@ function setOpacity(mesh: Mesh | null, opacity: number) {
   }
 }
 
+/* ------------------ NARRATOR + TIMELINE ------------------ */
+
+function emitNarrator(event: string, detail?: any) {
+  window.dispatchEvent(new CustomEvent("urai:narrator", { detail: { event, ...detail } }));
+}
+
+function emitTimeline(event: string, detail?: any) {
+  window.dispatchEvent(new CustomEvent("urai:timeline", { detail: { event, ...detail } }));
+}
+
+/* ------------------ STAR ------------------ */
+
 function StarMesh({
   star,
   sceneOpacity,
@@ -112,35 +135,27 @@ function StarMesh({
   selected,
   interactive,
   onSelectStar,
-}: {
-  star: StarPoint;
-  sceneOpacity: number;
-  dimmed: boolean;
-  selected: boolean;
-  interactive: boolean;
-  onSelectStar: (star: StarPoint) => void;
-}) {
+}: any) {
   const group = useRef<Group>(null);
   const core = useRef<Mesh>(null);
   const halo = useRef<Mesh>(null);
-  const start = useRef(Date.now());
 
   useFrame(() => {
-    const t = (Date.now() - start.current) / 1000;
+    const t = getTime();
 
     const pulse =
       1 +
       Math.sin(t * (0.25 + star.importance * 0.15) + star.importance * 10) * 0.03;
 
-    const dim = dimmed ? 0.46 : 1;
-    const sel = selected ? 1.18 : 1;
+    const dim = dimmed ? 0.4 : 1;
+    const sel = selected ? 1.25 : 1;
 
     group.current?.scale.setScalar(pulse * sel);
 
-    setOpacity(core.current, star.alpha * sceneOpacity * dim * (selected ? 1.12 : 1));
-    setOpacity(halo.current, star.alpha * 0.25 * sceneOpacity * dim * (selected ? 1.25 : 1));
+    setOpacity(core.current, star.alpha * sceneOpacity * dim);
+    setOpacity(halo.current, star.alpha * 0.25 * sceneOpacity * dim);
 
-    halo.current?.scale.setScalar(selected ? 3.4 : 2.2);
+    halo.current?.scale.setScalar(selected ? 3.6 : 2.2);
   });
 
   return (
@@ -149,59 +164,85 @@ function StarMesh({
       position={star.position}
       onPointerDown={(e) => {
         e.stopPropagation();
-        if (interactive && star.clickable) onSelectStar(star);
+
+        if (interactive && star.clickable) {
+          emitNarrator("star.selected", { id: star.id });
+          emitTimeline("star_focus", { id: star.id });
+
+          onSelectStar(star);
+        }
       }}
     >
       <mesh ref={halo}>
         <sphereGeometry args={[star.radius * 2.2, 12, 12]} />
-        <meshBasicMaterial
-          color={selected ? "#c9ddff" : "#8faeff"}
-          transparent
-          depthWrite={false}
-        />
+        <meshBasicMaterial color={selected ? "#c9ddff" : "#8faeff"} transparent />
       </mesh>
 
       <mesh ref={core}>
         <sphereGeometry args={[star.radius, 14, 14]} />
-        <meshBasicMaterial
-          color={selected ? "#eef5ff" : "#dce7ff"}
-          transparent
-          depthWrite={false}
-        />
+        <meshBasicMaterial color={selected ? "#eef5ff" : "#dce7ff"} transparent />
       </mesh>
     </group>
   );
 }
 
-export default function LifeMap({ phase, progress, opacity, selectedStar, onSelectStar }: Props) {
+/* ------------------ MAIN ------------------ */
+
+export default function LifeMap({
+  phase,
+  progress,
+  opacity,
+  selectedStar,
+  onSelectStar,
+}: Props) {
   const stars = useStarData();
 
+  /* --------- PHASE-DRIVEN OPACITY (SYNCED) --------- */
+
   const sceneOpacity = (() => {
-    if (phase === "enter_ascent") {
-      const t = Math.min(1, Math.max(0, progress));
-      const eased = t * t * (3 - 2 * t);
-      return 0.02 + 0.42 * eased;
+    const t = Math.min(1, Math.max(0, progress));
+    const eased = t * t * (3 - 2 * t);
+
+    switch (phase) {
+      case "enter_ascent":
+        return 0.02 + 0.42 * eased;
+
+      case "enter_separation":
+        return 0.44 + 0.36 * eased;
+
+      case "enter_arrival":
+        return 0.8 + 0.2 * eased;
+
+      case "return_home_descent":
+        return Math.max(0.12, 1 - progress * 0.78);
+
+      case "return_home_settle":
+        return 0.12 * (1 - progress);
+
+      default:
+        return opacity;
     }
-
-    if (phase === "enter_separation") {
-      const t = Math.min(1, Math.max(0, progress));
-      const eased = t * t * (3 - 2 * t);
-      return 0.44 + 0.36 * eased;
-    }
-
-    if (phase === "enter_arrival") {
-      const t = Math.min(1, Math.max(0, progress));
-      const eased = t * t * (3 - 2 * t);
-      return 0.8 + 0.2 * eased;
-    }
-
-    if (phase === "return_home_descent") return Math.max(0.12, 1 - progress * 0.78);
-    if (phase === "return_home_settle") return 0.12 * (1 - progress);
-
-    return opacity;
   })();
 
   const interactive = phase === "LIFEMAP";
+
+  /* --------- PHASE HOOKS --------- */
+
+  useEffect(() => {
+    emitTimeline("lifemap_phase", { phase, progress });
+
+    if (phase === "enter_arrival") {
+      emitNarrator("lifemap.arrival");
+    }
+
+    if (phase === "focus_lock") {
+      emitNarrator("focus.lock");
+    }
+
+    if (phase === "REPLAY") {
+      emitNarrator("replay.start");
+    }
+  }, [phase]);
 
   return (
     <group visible={sceneOpacity > 0.001}>
