@@ -11,7 +11,7 @@ function FocusRouteStage() {
   )
 }
 
-export default function FocusRoute() {
+export default function FocusPage() {
   return (
     <Suspense fallback={null}>
       <FocusRouteStage />
