@@ -1,10 +1,10 @@
 import { Suspense } from "react";
-import Tier5ReplayScene from "@/spatial/scene/Tier5ReplayScene";
+import FocusRouteStage from "@/spatial/scene/FocusRouteStage";
 
 export default function FocusRoute() {
   return (
     <Suspense fallback={null}>
-      <Tier5ReplayScene />
+      <FocusRouteStage />
     </Suspense>
   );
 }
