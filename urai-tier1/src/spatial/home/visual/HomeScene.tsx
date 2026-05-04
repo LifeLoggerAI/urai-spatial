@@ -72,6 +72,15 @@ function clamp(value: number | undefined, fallback: number, min = 0, max = 1) {
   return Math.max(min, Math.min(max, value));
 }
 
+function starStyle(index: number) {
+  return {
+    "--i": index,
+    "--x": `${(index * 37 + 11) % 100}%`,
+    "--y": `${(index * 53 + 17) % 62}%`,
+    "--s": `${1 + ((index * 3) % 3)}px`,
+  } as React.CSSProperties;
+}
+
 function mergeState(partial?: Partial<HomeWorldState>): HomeWorldState {
   return {
     ...fallbackState,
@@ -136,7 +145,7 @@ export default function HomeScene({ homeWorldState, state = "home", opening, ent
       <div className="urai-cloud cloud-a" aria-hidden="true" />
       <div className="urai-cloud cloud-b" aria-hidden="true" />
       <div className="urai-cloud cloud-c" aria-hidden="true" />
-      <div className="urai-stars" data-testid="home-layer-stars" aria-hidden="true">{Array.from({ length: 72 }, (_, index) => <i key={index} style={{ "--i": index } as React.CSSProperties} />)}</div>
+      <div className="urai-stars" data-testid="home-layer-stars" aria-hidden="true">{Array.from({ length: 72 }, (_, index) => <i key={index} style={starStyle(index)} />)}</div>
       <div className="urai-constellation" data-testid="home-layer-constellations" aria-hidden="true" />
       <button type="button" className="urai-sky-enter" onClick={enterLifeMap} disabled={mode === "enteringLifeMap"} aria-disabled={mode === "enteringLifeMap"} data-testid="enter-sky-button">
         {mode === "enteringLifeMap" ? "OPENING THE SKY" : "ENTER THE SKY"}
