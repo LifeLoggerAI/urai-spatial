@@ -1,5 +1,6 @@
 "use client";
 
+import type { CSSProperties } from "react";
 import { useRouter } from "next/navigation";
 import { HomeWorldLayerStack } from "./HomeWorldLayerStack";
 import { useHomeWorldState } from "./useHomeWorldState";
@@ -30,7 +31,7 @@ export default function SpatialHomeWorld({ userId = "demo-user" }: { userId?: st
         "--fog-density": fogDensity(state.moodState, state.skyTier),
         "--ground-bloom": `${state.groundGrowthIntensity}`,
         "--avatar-rim": `${Math.max(0.22, state.energyScore / 100)}`,
-      } as React.CSSProperties}
+      } as CSSProperties}
     >
       <HomeWorldLayerStack state={state} opening={opening} onEnter={enter} />
 
