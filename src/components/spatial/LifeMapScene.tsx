@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useReducer } from 'react';
+import { useEffect, useMemo, useReducer, useRef, type Dispatch } from 'react';
 
 type StarState = 'idle' | 'glowing' | 'active' | 'resolved';
 type MemoryEmotion = 'calm' | 'joy' | 'grief' | 'focus' | 'threshold' | 'recovery' | 'dream' | 'mirror' | 'shadow';
@@ -32,6 +32,7 @@ type LifeMapState = {
   companionLine: string;
   phase: LifeMapPhase;
   reducedMotion: boolean;
+  companionPriority: number;
 };
 
 type Action =
@@ -42,7 +43,7 @@ type Action =
   | { type: 'MARK_RESOLVED'; starId: string }
   | { type: 'SET_CAMERA'; camera: LifeMapCamera }
   | { type: 'CLEAR_FOCUS' }
-  | { type: 'SET_COMPANION_LINE'; line: string };
+  | { type: 'SET_COMPANION_LINE'; line: string; priority?: number };
 
 const CHAPTERS: Array<{ id: ChapterId; title: string; subtitle: string }> = [
   { id: 'season-of-becoming', title: 'The Season of Becoming', subtitle: 'memory / calm / clarity' },
@@ -66,6 +67,24 @@ const GLOW_LINES = [
   'A pattern is lighting up.',
   'This moment connects to something older.',
 ];
+const STAR_COOLDOWN_MS = 18_000;
+
+type NarratorEventName =
+  | 'lifemap.star.glow'
+  | 'lifemap.star.focus'
+  | 'lifemap.cluster.focus'
+  | 'lifemap.star.resolved';
+
+function setCompanionLineWithPriority(
+  dispatch: Dispatch<Action>,
+  currentPriority: number,
+  nextPriority: number,
+  line: string
+) {
+  if (nextPriority >= currentPriority) {
+    dispatch({ type: 'SET_COMPANION_LINE', line, priority: nextPriority });
+  }
+}
 
 const INITIAL_STARS: MemoryStar[] = [
   ['M', 16, 22, 'season-of-becoming', 'calm'], ['D', 28, 19, 'season-of-becoming', 'joy'], ['I', 22, 34, 'season-of-becoming', 'focus'], ['S', 37, 30, 'threshold', 'shadow'],
@@ -96,6 +115,16 @@ function emitNarratorEvent(detail: { event: 'lifemap.star.glow' | 'lifemap.star.
   window.dispatchEvent(new CustomEvent('urai:narrator', { detail: { ...detail, timestamp: Date.now() } }));
 }
 
+function emitLifeMapEvent(
+  event: NarratorEventName,
+  detail: { starId?: string | null; chapterId?: ChapterId | null; emotion?: MemoryEmotion | null; action?: 'replay' | 'reflect' | 'resolve' },
+  phase: LifeMapPhase,
+  sync: { activeStarId?: string | null; activeChapterId?: ChapterId | null }
+) {
+  emitNarratorEvent({ event, ...detail });
+  emitTimelineSync({ phase, ...sync });
+}
+
 function emitTimelineSync(detail: { phase: LifeMapPhase; activeStarId?: string | null; activeChapterId?: ChapterId | null }) {
   if (typeof window === 'undefined') return;
   window.dispatchEvent(new CustomEvent('urai:timeline-sync', { detail: { mode: 'lifemap', ...detail, timestamp: Date.now() } }));
@@ -119,16 +148,20 @@ function reducer(state: LifeMapState, action: Action): LifeMapState {
       };
     }
     case 'FOCUS_CLUSTER': return { ...state, phase: 'cluster', activeChapterId: action.chapterId, activeStarId: null, camera: action.camera, companionLine: action.companionLine };
-    case 'MARK_RESOLVED': return { ...state, stars: state.stars.map((s) => s.id === action.starId ? { ...s, state: 'resolved' } : s), companionLine: 'This one has softened.' };
+    case 'MARK_RESOLVED': return { ...state, stars: state.stars.map((s) => s.id === action.starId ? { ...s, state: 'resolved', lastActivatedAt: Date.now() } : s), companionLine: 'This one has softened.', companionPriority: 4 };
     case 'SET_CAMERA': return { ...state, camera: action.camera };
     case 'CLEAR_FOCUS': return { ...state, phase: 'living', activeStarId: null, activeChapterId: null, camera: { x: 50, y: 50, zoom: 1 }, stars: state.stars.map((s) => s.state === 'resolved' ? s : { ...s, state: 'idle' }) };
-    case 'SET_COMPANION_LINE': return { ...state, companionLine: action.line };
+    case 'SET_COMPANION_LINE': return { ...state, companionLine: action.line, companionPriority: action.priority ?? state.companionPriority };
     default: return state;
   }
 }
 
 export default function LifeMapScene() {
-  const [state, dispatch] = useReducer(reducer, { stars: INITIAL_STARS, activeStarId: null, activeChapterId: null, camera: { x: 50, y: 50, zoom: 1 }, companionLine: 'A recurring memory pattern appeared.', phase: 'living', reducedMotion: false });
+  const [state, dispatch] = useReducer(reducer, { stars: INITIAL_STARS, activeStarId: null, activeChapterId: null, camera: { x: 50, y: 50, zoom: 1 }, companionLine: 'A recurring memory pattern appeared.', phase: 'living', reducedMotion: false, companionPriority: 0 });
+  const stateRef = useRef(state);
+  useEffect(() => {
+    stateRef.current = state;
+  }, [state]);
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
@@ -144,25 +177,41 @@ export default function LifeMapScene() {
     let timer = 0;
     const emotionScore: Record<MemoryEmotion, number> = { threshold: 3, grief: 2.5, recovery: 2, shadow: 2, mirror: 1.5, dream: 1.25, calm: 1, joy: 1, focus: 1 };
     const run = () => {
-      const candidates = state.stars.filter((s) => s.id !== state.activeStarId);
+      const current = stateRef.current;
+      const candidates = current.stars.filter((s) => s.id !== current.activeStarId);
       const pickCount = 1 + Math.floor(Math.random() * 3);
+      const now = Date.now();
       const scored = [...candidates]
-        .map((s) => ({ s, score: 1 + s.recency * 2 + s.intensity * 2 + s.unresolvedWeight * 3 + emotionScore[s.emotion] - (s.state === 'resolved' ? 4 : 0) }))
+        .map((s) => {
+          const coolingDown = s.lastActivatedAt ? now - s.lastActivatedAt < STAR_COOLDOWN_MS : false;
+          const activationAgeBoost = s.lastActivatedAt ? Math.max(0, 1 - Math.min(1, (now - s.lastActivatedAt) / (1000 * 60 * 60 * 24 * 7))) : 0.8;
+          return {
+            s,
+            score:
+              1 +
+              s.recency * 2 +
+              s.intensity * 2 +
+              s.unresolvedWeight * 3 +
+              activationAgeBoost * 1.3 +
+              emotionScore[s.emotion] -
+              (s.state === 'resolved' ? 4 : 0) -
+              (coolingDown ? 3 : 0),
+          };
+        })
         .sort((a, b) => b.score - a.score)
         .slice(0, Math.max(3, pickCount * 2));
       const picked = scored.sort(() => Math.random() - 0.5).slice(0, pickCount).map((x) => x.s.id);
       dispatch({ type: 'SET_GLOWING_STARS', ids: picked });
-      dispatch({ type: 'SET_COMPANION_LINE', line: GLOW_LINES[Math.floor(Math.random() * GLOW_LINES.length)] });
+      setCompanionLineWithPriority(dispatch, stateRef.current.companionPriority, 1, GLOW_LINES[Math.floor(Math.random() * GLOW_LINES.length)]);
       picked.forEach((id) => {
-        const star = state.stars.find((s) => s.id === id);
-        emitNarratorEvent({ event: 'lifemap.star.glow', starId: id, chapterId: star?.chapterId ?? null, emotion: star?.emotion ?? null });
+        const star = current.stars.find((s) => s.id === id);
+        emitLifeMapEvent('lifemap.star.glow', { starId: id, chapterId: star?.chapterId ?? null, emotion: star?.emotion ?? null }, 'living', { activeStarId: current.activeStarId, activeChapterId: current.activeChapterId });
       });
-      emitTimelineSync({ phase: 'living', activeStarId: state.activeStarId, activeChapterId: state.activeChapterId });
-      timer = window.setTimeout(run, state.reducedMotion ? 14000 : 8000 + Math.floor(Math.random() * 6000));
+      timer = window.setTimeout(run, current.reducedMotion ? 14000 : 8000 + Math.floor(Math.random() * 6000));
     };
-    timer = window.setTimeout(run, state.reducedMotion ? 14000 : 9000);
+    timer = window.setTimeout(run, stateRef.current.reducedMotion ? 14000 : 9000);
     return () => window.clearTimeout(timer);
-  }, [state.stars, state.activeStarId, state.activeChapterId, state.reducedMotion]);
+  }, []);
 
   useEffect(() => {
     const onEsc = (e: KeyboardEvent) => e.key === 'Escape' && dispatch({ type: 'CLEAR_FOCUS' });
@@ -187,7 +236,7 @@ export default function LifeMapScene() {
           const connected = !!activeStar && activeStar.connectedTo.includes(star.id);
           const chapterFocused = state.phase === 'cluster' && state.activeChapterId === star.chapterId;
           const dimmed = !!state.activeStarId && !connected && state.activeStarId !== star.id;
-          return <button key={star.id} type="button" className={`memory-star state-${star.state} ${connected ? 'is-connected' : ''} ${dimmed ? 'is-dimmed' : ''} ${chapterFocused ? 'is-chapter-focused' : ''}`} style={{ left: `${star.x}%`, top: `${star.y}%`, width: `${star.size}px`, height: `${star.size}px` }} aria-label={`${star.title}, ${star.emotion}, ${star.state}`} onClick={() => { dispatch({ type: 'FOCUS_STAR', starId: star.id }); emitNarratorEvent({ event: 'lifemap.star.focus', starId: star.id, chapterId: star.chapterId, emotion: star.emotion }); emitTimelineSync({ phase: 'focus', activeStarId: star.id, activeChapterId: star.chapterId }); }}><span>{star.title}</span></button>;
+          return <button key={star.id} type="button" className={`memory-star state-${star.state} ${connected ? 'is-connected' : ''} ${dimmed ? 'is-dimmed' : ''} ${chapterFocused ? 'is-chapter-focused' : ''}`} style={{ left: `${star.x}%`, top: `${star.y}%`, width: `${star.size}px`, height: `${star.size}px` }} aria-label={`${star.title}, ${star.emotion}, ${star.state}`} onClick={() => { dispatch({ type: 'FOCUS_STAR', starId: star.id }); setCompanionLineWithPriority(dispatch, state.companionPriority, 5, star.narratorLine); emitLifeMapEvent('lifemap.star.focus', { starId: star.id, chapterId: star.chapterId, emotion: star.emotion }, 'focus', { activeStarId: star.id, activeChapterId: star.chapterId }); }}><span>{star.title}</span></button>;
         })}
       </div>
     </section>
@@ -195,9 +244,9 @@ export default function LifeMapScene() {
     <aside className="panel export-panel" aria-label="Export panel"><button type="button">Export snapshot</button><button type="button">Export arc</button></aside>
     <aside className="panel companion-panel" aria-label="Companion panel"><h2>Companion</h2><p>{state.companionLine}</p></aside>
 
-    {activeStar && <aside className="panel detail" aria-live="polite"><h3>{activeStar.title}</h3><p>{activeStar.emotion} · {CHAPTERS.find((c) => c.id === activeStar.chapterId)?.title}</p><p>{activeStar.narratorLine}</p><div className="actions"><button type="button" onClick={() => { dispatch({ type: 'SET_COMPANION_LINE', line: 'Replaying the emotional thread.' }); emitNarratorEvent({ event: 'lifemap.star.focus', starId: activeStar.id, chapterId: activeStar.chapterId, emotion: activeStar.emotion, action: 'replay' }); }}>Replay</button><button type="button" onClick={() => { dispatch({ type: 'SET_COMPANION_LINE', line: 'Reflection mode is open.' }); emitNarratorEvent({ event: 'lifemap.star.focus', starId: activeStar.id, chapterId: activeStar.chapterId, emotion: activeStar.emotion, action: 'reflect' }); }}>Reflect</button><button type="button" onClick={() => { dispatch({ type: 'MARK_RESOLVED', starId: activeStar.id }); emitNarratorEvent({ event: 'lifemap.star.resolved', starId: activeStar.id, chapterId: activeStar.chapterId, emotion: activeStar.emotion, action: 'resolve' }); emitTimelineSync({ phase: 'focus', activeStarId: activeStar.id, activeChapterId: activeStar.chapterId }); }}>Mark resolved</button></div></aside>}
+    {activeStar && <aside className="panel detail" aria-live="polite"><h3>{activeStar.title}</h3><p>{activeStar.emotion} · {CHAPTERS.find((c) => c.id === activeStar.chapterId)?.title}</p><p>{activeStar.narratorLine}</p><div className="actions"><button type="button" onClick={() => { setCompanionLineWithPriority(dispatch, state.companionPriority, 3, 'Replaying the emotional thread.'); emitLifeMapEvent('lifemap.star.focus', { starId: activeStar.id, chapterId: activeStar.chapterId, emotion: activeStar.emotion, action: 'replay' }, 'focus', { activeStarId: activeStar.id, activeChapterId: activeStar.chapterId }); }}>Replay</button><button type="button" onClick={() => { setCompanionLineWithPriority(dispatch, state.companionPriority, 2, 'Reflection mode is open.'); emitLifeMapEvent('lifemap.star.focus', { starId: activeStar.id, chapterId: activeStar.chapterId, emotion: activeStar.emotion, action: 'reflect' }, 'focus', { activeStarId: activeStar.id, activeChapterId: activeStar.chapterId }); }}>Reflect</button><button type="button" onClick={() => { dispatch({ type: 'MARK_RESOLVED', starId: activeStar.id }); emitLifeMapEvent('lifemap.star.resolved', { starId: activeStar.id, chapterId: activeStar.chapterId, emotion: activeStar.emotion, action: 'resolve' }, 'focus', { activeStarId: activeStar.id, activeChapterId: activeStar.chapterId }); }}>Mark resolved</button></div></aside>}
 
-    <nav className="chapter-row" aria-label="Chapter anchors">{CHAPTERS.map((c) => <button type="button" key={c.id} className={`chapter-pill ${state.activeChapterId === c.id ? 'active' : ''}`} onClick={() => { const stars = state.stars.filter((s) => s.chapterId === c.id); const camera = { x: stars.reduce((a, s) => a + s.x, 0) / stars.length, y: stars.reduce((a, s) => a + s.y, 0) / stars.length, zoom: 1.45 }; dispatch({ type: 'FOCUS_CLUSTER', chapterId: c.id, camera, companionLine: CHAPTER_LINES[c.id] }); emitNarratorEvent({ event: 'lifemap.cluster.focus', chapterId: c.id }); emitTimelineSync({ phase: 'cluster', activeChapterId: c.id }); }}><strong>{c.title}</strong><small>{c.subtitle}</small></button>)}</nav>
+    <nav className="chapter-row" aria-label="Chapter anchors">{CHAPTERS.map((c) => <button type="button" key={c.id} className={`chapter-pill ${state.activeChapterId === c.id ? 'active' : ''}`} onClick={() => { const stars = state.stars.filter((s) => s.chapterId === c.id); const camera = { x: stars.reduce((a, s) => a + s.x, 0) / stars.length, y: stars.reduce((a, s) => a + s.y, 0) / stars.length, zoom: 1.45 }; dispatch({ type: 'FOCUS_CLUSTER', chapterId: c.id, camera, companionLine: CHAPTER_LINES[c.id] }); setCompanionLineWithPriority(dispatch, state.companionPriority, 2, CHAPTER_LINES[c.id]); emitLifeMapEvent('lifemap.cluster.focus', { chapterId: c.id }, 'cluster', { activeChapterId: c.id }); }}><strong>{c.title}</strong><small>{c.subtitle}</small></button>)}</nav>
 
     <style jsx>{`
       .life-map-shell { min-height: 100vh; background: radial-gradient(circle at 50% 28%, #26366d, #0a0f20 58%, #05060f 100%); color: #eef3ff; position: relative; padding: 1rem; overflow: hidden; }
