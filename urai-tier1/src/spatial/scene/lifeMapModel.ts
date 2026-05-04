@@ -158,6 +158,7 @@ const nodeBlueprints: Array<[LifeMapNodeType, EmotionalTone, string, string, str
 export const lifeMapNodes: LifeMapNode[] = nodeBlueprints.map((item, index) => {
   const [nodeType, emotionalTone, title, subtitle, description, x, y, chapterId] = item;
   const id = `node-${String(index + 1).padStart(2, "0")}`;
+
   return {
     id,
     userId: "demo-user",
@@ -188,7 +189,14 @@ export const lifeMapNodes: LifeMapNode[] = nodeBlueprints.map((item, index) => {
       "The companion translates the pattern gently.",
     ],
     narratorLine: narratorLineFor(nodeType, emotionalTone),
-    visualState: nodeType === "shadow" ? "fogged" : nodeType === "recovery" ? "blooming" : nodeType === "relationship" ? "orbiting" : "glowing",
+    visualState:
+      nodeType === "shadow"
+        ? "fogged"
+        : nodeType === "recovery"
+          ? "blooming"
+          : nodeType === "relationship"
+            ? "orbiting"
+            : "glowing",
     isMilestone: nodeType === "milestone" || nodeType === "rebirth" || nodeType === "mirrorMoment",
     isShadow: nodeType === "shadow",
     isRecovery: nodeType === "recovery",
@@ -271,23 +279,84 @@ export const lifeChapters: LifeChapter[] = [
 ];
 
 export const mirrorReplayPath: ReplayFrame[] = [
-  { nodeId: "node-01", cameraLabel: "First signal", narrator: "The map begins where the first signal glows.", weather: "timeline" },
-  { nodeId: "node-05", cameraLabel: "Shadow loop", narrator: "A hidden loop appears, not as judgment, but as information.", weather: "shadow" },
-  { nodeId: "node-07", cameraLabel: "Recovery bloom", narrator: "This was the beginning of a recovery bloom.", weather: "recovery" },
-  { nodeId: "node-11", cameraLabel: "Dream field", narrator: "The dream returned with the same symbol across seasons.", weather: "dream" },
-  { nodeId: "node-18", cameraLabel: "Mirror zoom-out", narrator: "This is one of your hidden growth arcs.", weather: "mirror" },
+  {
+    nodeId: "node-01",
+    cameraLabel: "First signal",
+    narrator: "The map begins where the first signal glows.",
+    weather: "timeline",
+  },
+  {
+    nodeId: "node-05",
+    cameraLabel: "Shadow loop",
+    narrator: "A hidden loop appears, not as judgment, but as information.",
+    weather: "shadow",
+  },
+  {
+    nodeId: "node-07",
+    cameraLabel: "Recovery bloom",
+    narrator: "This was the beginning of a recovery bloom.",
+    weather: "recovery",
+  },
+  {
+    nodeId: "node-11",
+    cameraLabel: "Dream field",
+    narrator: "The dream returned with the same symbol across seasons.",
+    weather: "dream",
+  },
+  {
+    nodeId: "node-18",
+    cameraLabel: "Mirror zoom-out",
+    narrator: "This is one of your hidden growth arcs.",
+    weather: "mirror",
+  },
 ];
 
 export const lifeMapModes: Array<{ id: LifeMapMode; label: string; helper: string }> = [
-  { id: "timeline", label: "Timeline", helper: "Chronological emotional flight" },
-  { id: "constellation", label: "Constellations", helper: "Related memories and arcs" },
-  { id: "weather", label: "Weather", helper: "Fog, rain, aurora, sunrise" },
-  { id: "recovery", label: "Recovery", helper: "Blooming rebound paths" },
-  { id: "shadow", label: "Shadow", helper: "Gentle difficult patterns" },
-  { id: "dream", label: "Dreams", helper: "Purple symbolic field" },
-  { id: "relationship", label: "Relations", helper: "Orbiting social stars" },
-  { id: "chapter", label: "Chapters", helper: "Life regions and portals" },
-  { id: "mirror", label: "Mirror", helper: "Full arc zoom-out" },
+  {
+    id: "timeline",
+    label: "Timeline",
+    helper: "Chronological emotional flight",
+  },
+  {
+    id: "constellation",
+    label: "Constellations",
+    helper: "Related memories and arcs",
+  },
+  {
+    id: "weather",
+    label: "Weather",
+    helper: "Fog, rain, aurora, sunrise",
+  },
+  {
+    id: "recovery",
+    label: "Recovery",
+    helper: "Blooming rebound paths",
+  },
+  {
+    id: "shadow",
+    label: "Shadow",
+    helper: "Gentle difficult patterns",
+  },
+  {
+    id: "dream",
+    label: "Dreams",
+    helper: "Purple symbolic field",
+  },
+  {
+    id: "relationship",
+    label: "Relations",
+    helper: "Orbiting social stars",
+  },
+  {
+    id: "chapter",
+    label: "Chapters",
+    helper: "Life regions and portals",
+  },
+  {
+    id: "mirror",
+    label: "Mirror",
+    helper: "Full arc zoom-out",
+  },
 ];
 
 export function narratorLineFor(nodeType: LifeMapNodeType, tone: EmotionalTone) {
@@ -297,16 +366,31 @@ export function narratorLineFor(nodeType: LifeMapNodeType, tone: EmotionalTone) 
   if (nodeType === "dream") return "A symbol surfaced before the conscious story was ready.";
   if (nodeType === "mirrorMoment") return "You were becoming someone new before you had language for it.";
   if (tone === "milestone" || tone === "purpose") return "This was not just a memory. It became a turning point.";
+
   return "Notice how this moment belongs to a larger pattern.";
 }
 
 export function filteredNodes(mode: LifeMapMode, nodes = lifeMapNodes) {
   if (mode === "recovery") return nodes.filter((node) => node.isRecovery || node.emotionalTone === "growth");
-  if (mode === "shadow") return nodes.filter((node) => node.isShadow || node.emotionalTone === "pain" || node.emotionalTone === "conflict");
+
+  if (mode === "shadow") {
+    return nodes.filter(
+      (node) => node.isShadow || node.emotionalTone === "pain" || node.emotionalTone === "conflict",
+    );
+  }
+
   if (mode === "dream") return nodes.filter((node) => node.isDream || node.chapterId === "chapter-dream");
+
   if (mode === "relationship") return nodes.filter((node) => node.isRelationship);
-  if (mode === "chapter") return nodes.filter((node) => node.isMilestone || node.nodeType === "chapter" || node.chapterId.includes("mirror"));
-  if (mode === "mirror") return nodes.filter((node) => node.isMilestone || node.nodeType === "mirrorMoment" || node.nodeType === "legacy");
+
+  if (mode === "chapter") {
+    return nodes.filter((node) => node.isMilestone || node.nodeType === "chapter" || node.chapterId.includes("mirror"));
+  }
+
+  if (mode === "mirror") {
+    return nodes.filter((node) => node.isMilestone || node.nodeType === "mirrorMoment" || node.nodeType === "legacy");
+  }
+
   return nodes;
 }
 
@@ -333,23 +417,43 @@ export async function fetchLifeChapters(userId: string): Promise<LifeChapter[]> 
 }
 
 export async function saveLifeMapSettings(userId: string, settings: Record<string, unknown>) {
-  return { userId, settings, savedAt: new Date().toISOString() };
+  return {
+    userId,
+    settings,
+    savedAt: new Date().toISOString(),
+  };
 }
 
 export async function createLifeMapNode(userId: string, node: Partial<LifeMapNode>) {
-  return { ...lifeMapNodes[0], ...node, id: node.id ?? `node-${Date.now()}`, userId } as LifeMapNode;
+  return {
+    ...lifeMapNodes[0],
+    ...node,
+    id: node.id ?? `node-${Date.now()}`,
+    userId,
+  } as LifeMapNode;
 }
 
 export async function updateLifeMapNode(userId: string, nodeId: string, updates: Partial<LifeMapNode>) {
-  return { userId, nodeId, updates, updatedAt: new Date().toISOString() };
+  return {
+    userId,
+    nodeId,
+    updates,
+    updatedAt: new Date().toISOString(),
+  };
 }
 
 export async function generateLifeMapFromSignals(userId: string) {
-  return { userId, nodes: lifeMapNodes, edges: lifeMapEdges, source: "demo-fallback" as const };
+  return {
+    userId,
+    nodes: lifeMapNodes,
+    edges: lifeMapEdges,
+    source: "demo-fallback" as const,
+  };
 }
 
 export async function generateReplayPath(userId: string, nodeIds: string[]) {
   void userId;
+
   return nodeIds.map((nodeId, index) => ({
     nodeId,
     cameraLabel: `Replay frame ${index + 1}`,
@@ -359,5 +463,10 @@ export async function generateReplayPath(userId: string, nodeIds: string[]) {
 }
 
 export async function generateMirrorOfBecoming(userId: string) {
-  return { userId, path: mirrorReplayPath, chapters: lifeChapters, generatedAt: new Date().toISOString() };
+  return {
+    userId,
+    path: mirrorReplayPath,
+    chapters: lifeChapters,
+    generatedAt: new Date().toISOString(),
+  };
 }
