@@ -189,6 +189,9 @@ const [transitionKind, setTransitionKind] = useState<TransitionKind>(null)
 const [transitionProgress, setTransitionProgress] = useState(0)
 const [replayVisible, setReplayVisible] = useState(false)
 const [focusVisible, setFocusVisible] = useState(false)
+const [orbHovered, setOrbHovered] = useState(false)
+const [orbFocused, setOrbFocused] = useState(false)
+const [orbPriming, setOrbPriming] = useState(false)
 const transitionFrameRef = useRef<number | null>(null)
 
 const selectedStar = useMemo(
@@ -211,8 +214,10 @@ if (event.key !== 'Escape' || state.inputLocked) return
 if (state.phase === 'REPLAY') {
 setReplayVisible(false)
 dispatch({ type: 'ESC' })
+setOrbPriming(false)
 } else if (state.phase === 'FOCUS') {
 dispatch({ type: 'ESC' })
+setOrbPriming(false)
 } else if (state.phase === 'LIFEMAP') {
 setTransitionKind('lifemapToHome')
 const start = performance.now()
@@ -225,6 +230,7 @@ transitionFrameRef.current = requestAnimationFrame(tick)
 setTransitionKind(null)
 setTransitionProgress(0)
 dispatch({ type: 'ESC' })
+setOrbPriming(false)
 }
 }
 if (transitionFrameRef.current) cancelAnimationFrame(transitionFrameRef.current)
@@ -240,23 +246,27 @@ if (transitionFrameRef.current) cancelAnimationFrame(transitionFrameRef.current)
 }, [state.inputLocked, state.phase])
 
 const startAscent = () => {
-if (state.phase !== 'HOME' || state.inputLocked || transitionKind) return
-dispatch({ type: 'START_ASCENT' })
-setTransitionKind('homeToLifemap')
-const start = performance.now()
-const tick = (now: number) => {
-const t = clamp01((now - start) / ASCENT_MS)
-setTransitionProgress(t)
-if (t < 1) {
-transitionFrameRef.current = requestAnimationFrame(tick)
-} else {
-setTransitionKind(null)
-setTransitionProgress(0)
-dispatch({ type: 'COMPLETE_ASCENT' })
-}
-}
-if (transitionFrameRef.current) cancelAnimationFrame(transitionFrameRef.current)
-transitionFrameRef.current = requestAnimationFrame(tick)
+if (state.phase !== 'HOME' || state.inputLocked || transitionKind || orbPriming) return
+setOrbPriming(true)
+window.setTimeout(() => {
+  dispatch({ type: 'START_ASCENT' })
+  setTransitionKind('homeToLifemap')
+  const start = performance.now()
+  const tick = (now: number) => {
+    const t = clamp01((now - start) / ASCENT_MS)
+    setTransitionProgress(t)
+    if (t < 1) {
+      transitionFrameRef.current = requestAnimationFrame(tick)
+    } else {
+      setTransitionKind(null)
+      setTransitionProgress(0)
+      setOrbPriming(false)
+      dispatch({ type: 'COMPLETE_ASCENT' })
+    }
+  }
+  if (transitionFrameRef.current) cancelAnimationFrame(transitionFrameRef.current)
+  transitionFrameRef.current = requestAnimationFrame(tick)
+}, 380)
 }
 
 const openFocus = (star: StarNode) => {
@@ -296,37 +306,57 @@ transition: transitionKind ? 'none' : 'transform 750ms ease-out, background 750m
 aria-label="Enter spatial field via sky"
 onClick={startAscent}
 style={{
-position: 'absolute', left: 0, right: 0, top: 0, height: '60%',
+position: 'absolute', left: 0, right: 0, top: 0, height: '64%',
 cursor: state.phase === 'HOME' && !state.inputLocked ? 'pointer' : 'default',
-background: 'linear-gradient(to bottom, #010541 0%, #020748 100%)',
+background: 'radial-gradient(circle at 50% 0%, #2b1144 0%, #120819 45%, #05030a 100%)',
 opacity: camera.homeOpacity,
 transition: 'opacity 400ms linear',
 }}
 />
+<div aria-hidden="true" style={{position:'absolute',inset:0,opacity:camera.homeOpacity,background:'radial-gradient(circle at 50% 75%, rgba(128,88,255,0.14), transparent 45%)'}} />
+<div aria-hidden="true" style={{position:'absolute',inset:0,opacity:camera.homeOpacity,background:'radial-gradient(circle at 50% 35%, rgba(255,255,255,0.12) 0%, transparent 1.2%)',backgroundSize:'160px 160px'}} />
+<div aria-hidden="true" style={{position:'absolute',inset:0,opacity:camera.homeOpacity*0.9,background:'linear-gradient(to top, rgba(130,88,255,0.12) 0%, rgba(0,0,0,0) 28%)'}} />
 {/* Ground Plane - HOME LAW */}
 <div
 aria-hidden="true"
 style={{
-position: 'absolute', left: 0, right: 0, bottom: 0, height: '40%',
-background: 'linear-gradient(to top, #0a0a10, transparent)',
+position: 'absolute', left: 0, right: 0, bottom: 0, height: '42%',
+background: 'linear-gradient(to top, rgba(26,20,48,0.95), rgba(8,6,18,0.2) 55%, transparent)',
 opacity: camera.groundOpacity,
 transition: 'opacity 400ms linear',
 }}
 />
+<div aria-hidden="true" style={{position:'absolute',left:'50%',top:'84.5%',width:220,height:220,transform:'translate(-50%,-50%)',borderRadius:'50%',border:'1px solid rgba(172,132,255,0.2)',boxShadow:'0 0 24px rgba(138,91,255,0.25) inset'}}/>
+<div aria-hidden="true" style={{position:'absolute',left:'50%',top:'84.5%',width:160,height:160,transform:'translate(-50%,-50%)',borderRadius:'50%',border:'1px dashed rgba(136,220,255,0.28)',opacity:0.7}}/>
 {/* Anchored Orb - HOME LAW */}
 <div
-aria-hidden="true"
+role="button"
+tabIndex={0}
+aria-label="Open Life Map"
+onPointerEnter={() => setOrbHovered(true)}
+onPointerLeave={() => setOrbHovered(false)}
+onFocus={() => setOrbFocused(true)}
+onBlur={() => setOrbFocused(false)}
+onClick={startAscent}
+onKeyDown={(e) => (e.key === 'Enter' || e.key === ' ') && startAscent()}
 style={{
-position: 'absolute', left: '50%', top: '85%', // Lowered orb
-width: '100px', height: '100px', // Resized
+position: 'absolute', left: '50%', top: '84%',
+width: '112px', height: '112px',
 borderRadius: '50%',
-background: '#dddddf',
-transform: `translate(-50%, -50%) scale(${camera.orbScale})`,
+background: 'radial-gradient(circle at 35% 30%, #fcfdff 0%, #aee4ff 40%, #6bc0ff 100%)',
+transform: `translate(-50%, -50%) scale(${camera.orbScale * (orbPriming ? 1.1 : 1)})`,
 opacity: camera.homeOpacity,
-transition: 'opacity 400ms linear, transform 400ms ease-out',
-boxShadow: '0 0 0 1px rgba(255,255,255,0.02)',
+transition: 'opacity 400ms linear, transform 320ms ease-out, box-shadow 320ms ease-out, filter 320ms ease-out',
+boxShadow: orbPriming || orbHovered || orbFocused ? '0 0 38px 14px rgba(120,198,255,0.62), 0 0 96px 26px rgba(125,83,255,0.5)' : '0 0 24px 8px rgba(120,198,255,0.45), 0 0 72px 14px rgba(125,83,255,0.28)',
+filter: orbPriming ? 'brightness(1.2) saturate(1.2)' : 'none',
+outline: orbFocused ? '2px solid rgba(196,230,255,0.9)' : 'none',
+outlineOffset: '6px',
+cursor: state.phase === 'HOME' && !state.inputLocked && !orbPriming ? 'pointer' : 'default',
 }}
 />
+<div style={{position:'absolute',left:'50%',top:'93%',transform:'translateX(-50%)',fontSize:'0.9rem',letterSpacing:'0.06em',opacity:0.86,color:'#d5dbff',textShadow:'0 0 16px rgba(90,126,255,0.6)'}}>
+Open Life Map · Select a memory · Press Esc to return
+</div>
 </>
 )}
 {/* STARFIELD: Reworked for depth, per LIFEMAP LAW */}
