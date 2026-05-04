@@ -1,0 +1,36 @@
+name: URAI Spatial Firebase Preview
+
+on:
+  pull_request:
+    paths:
+      - "**"
+
+jobs:
+  preview:
+    name: Preview deploy guard
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 8
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+      - name: Install
+        run: pnpm install --frozen-lockfile
+      - name: Preflight
+        run: pnpm preflight
+      - name: Build app
+        run: pnpm --filter urai-tier1 build
+      - name: Preview deploy instructions
+        run: |
+          echo "To enable Firebase preview deploys, add FIREBASE_SERVICE_ACCOUNT_URAI_SPATIAL and URAI_SPATIAL_FIREBASE_PROJECT_ID secrets."
+          echo "Then replace this guard with firebase hosting:channel:deploy pr-${{ github.event.pull_request.number }} --project ${{ secrets.URAI_SPATIAL_FIREBASE_PROJECT_ID }} --expires 7d"
