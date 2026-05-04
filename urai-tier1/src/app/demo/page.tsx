@@ -134,6 +134,10 @@ export default function DemoPage() {
             <button onClick={startCinematicDemo} style={{ ...primaryBtn, marginTop: 18 }}>
               Start cinematic demo
             </button>
+
+            <p style={privacyMicrocopy}>
+              Your memories stay private. You control what is saved, replayed, or exported.
+            </p>
           </div>
         </div>
       )}
@@ -269,4 +273,14 @@ const completeCard: React.CSSProperties = {
   border: "1px solid rgba(180,160,255,0.22)",
   backdropFilter: "blur(14px)",
   boxShadow: "0 28px 100px rgba(0,0,0,0.42)",
+};
+
+const privacyMicrocopy: React.CSSProperties = {
+  marginTop: 14,
+  marginBottom: 0,
+  fontSize: 12,
+  lineHeight: 1.5,
+  color: "rgba(242,246,255,0.9)",
+  textShadow: "0 1px 1px rgba(0,0,0,0.45)",
+  opacity: 0.9,
 };
