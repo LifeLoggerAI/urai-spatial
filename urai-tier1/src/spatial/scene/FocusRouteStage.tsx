@@ -3,8 +3,45 @@
 import { useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import FocusChamber from "./FocusChamber";
-import { lifeMapEdges, lifeMapNodes } from "./lifeMapModel";
+import { lifeMapEdges, lifeMapNodes, type LifeMapNode } from "./lifeMapModel";
 import { buildFocusChamberNode } from "./focusTier5Model";
+
+const fallbackNode: LifeMapNode = {
+  id: "focus-fallback-node",
+  userId: "demo-user",
+  title: "Pattern Node",
+  subtitle: "Rhythm returning after static.",
+  description: "A safe fallback focus node used when the LifeMap has not hydrated yet.",
+  timestamp: "2026-05-04T12:00:00.000Z",
+  nodeType: "insight",
+  emotionalTone: "clarity",
+  emotionalIntensity: 0.62,
+  auraColor: "#9bdcff",
+  glyphType: "insight",
+  chapterId: "chapter-becoming",
+  season: "spring",
+  importanceScore: 72,
+  privacyLevel: "private",
+  x: 50,
+  y: 44,
+  z: 12,
+  clusterId: "cluster-focus-fallback",
+  relatedPeople: [],
+  relatedLocations: [],
+  relatedTags: ["focus", "pattern", "clarity"],
+  sourceSignals: ["focus route", "spatial fallback", "private pattern"],
+  replayScript: ["The camera slows near this point.", "The aura opens around the pattern.", "The companion names the signal gently."],
+  narratorLine: "Notice how this moment belongs to a larger pattern.",
+  visualState: "glowing",
+  isMilestone: false,
+  isShadow: false,
+  isRecovery: false,
+  isDream: false,
+  isRelationship: false,
+  isRitual: false,
+  createdAt: "2026-05-04T12:00:00.000Z",
+  updatedAt: "2026-05-04T12:00:00.000Z",
+};
 
 function backgroundStar(index: number) {
   return {
@@ -16,8 +53,8 @@ function backgroundStar(index: number) {
   };
 }
 
-function resolveNode(nodeId: string | null) {
-  return lifeMapNodes.find((node) => node.id === nodeId) ?? lifeMapNodes[0];
+function resolveNode(nodeId: string | null): LifeMapNode {
+  return lifeMapNodes.find((node) => node.id === nodeId) ?? lifeMapNodes[0] ?? fallbackNode;
 }
 
 export default function FocusRouteStage() {
@@ -27,6 +64,7 @@ export default function FocusRouteStage() {
   const [showReplay, setShowReplay] = useState(false);
   const stars = useMemo(() => Array.from({ length: 220 }, (_, index) => backgroundStar(index)), []);
   const chamber = useMemo(() => buildFocusChamberNode(node), [node]);
+  const mapNodes = lifeMapNodes.length > 0 ? lifeMapNodes : [fallbackNode];
 
   return (
     <main className="focus-route-stage" data-testid="urai-spatial-stage" data-mode={showReplay ? "replay" : "focus"}>
@@ -49,8 +87,8 @@ export default function FocusRouteStage() {
 
       <svg className="focus-route-stage__lines" aria-hidden="true">
         {lifeMapEdges.map((edge) => {
-          const from = lifeMapNodes.find((item) => item.id === edge.from);
-          const to = lifeMapNodes.find((item) => item.id === edge.to);
+          const from = mapNodes.find((item) => item.id === edge.from);
+          const to = mapNodes.find((item) => item.id === edge.to);
           if (!from || !to) return null;
           const active = from.id === node.id || to.id === node.id;
           return (
@@ -67,7 +105,7 @@ export default function FocusRouteStage() {
       </svg>
 
       <div className="focus-route-stage__nodes" aria-hidden="true">
-        {lifeMapNodes.map((item) => (
+        {mapNodes.map((item) => (
           <span
             key={item.id}
             data-selected={item.id === node.id ? "true" : "false"}
@@ -98,7 +136,7 @@ export default function FocusRouteStage() {
       ) : (
         <FocusChamber
           node={node}
-          nodes={lifeMapNodes}
+          nodes={mapNodes}
           edges={lifeMapEdges}
           onReplay={() => setShowReplay(true)}
           onUnwind={() => router.push("/life-map", { scroll: false })}
