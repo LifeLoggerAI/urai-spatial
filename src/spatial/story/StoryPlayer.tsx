@@ -1,11 +1,25 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { getStorySequence, type StorySequence, type StorySequenceId } from "./storySequences";
+import { type StorySequence, type StorySequenceId } from "./storySequences";
+import { createGenerativeNarrative } from "./generativeNarrative";
+import { requestGeneratedNarrative } from "./generativeNarrativeClient";
+import { getStoryLearningProfile } from "./storyReactionLearning";
 
 type StoryEventDetail = {
   storyId?: StorySequenceId;
 };
+
+type UraiRuntimeContext = {
+  companion?: unknown;
+  prediction?: unknown;
+  personality?: unknown;
+};
+
+function readRuntimeContext(): UraiRuntimeContext {
+  if (typeof window === "undefined") return {};
+  return ((window as Window & { __URAI_CONTEXT__?: UraiRuntimeContext }).__URAI_CONTEXT__ ?? {}) as UraiRuntimeContext;
+}
 
 export default function StoryPlayer() {
   const [activeStory, setActiveStory] = useState<StorySequence | null>(null);
@@ -19,18 +33,36 @@ export default function StoryPlayer() {
       const detail = (event as CustomEvent<StoryEventDetail>).detail;
       if (!detail?.storyId) return;
 
-      const sequence = getStorySequence(detail.storyId);
-      if (!sequence) return;
+      void (async () => {
+        const runtimeContext = readRuntimeContext();
+        const learning = getStoryLearningProfile();
 
-      startTime.current = performance.now();
-      triggeredBeats.current.clear();
-      setActiveStory(sequence);
+        const base = createGenerativeNarrative({
+          storyId: detail.storyId,
+          ...runtimeContext,
+          learning,
+        });
 
-      window.dispatchEvent(
-        new CustomEvent("urai:story-state", {
-          detail: { status: "started", storyId: sequence.id, title: sequence.title },
-        })
-      );
+        const result = await requestGeneratedNarrative(base);
+        const sequence = result.sequence;
+        if (!sequence) return;
+
+        startTime.current = performance.now();
+        triggeredBeats.current.clear();
+        setActiveStory(sequence);
+
+        window.dispatchEvent(
+          new CustomEvent("urai:story-state", {
+            detail: {
+              status: "started",
+              storyId: sequence.id,
+              title: sequence.title,
+              generationMode: result.mode,
+              learning,
+            },
+          })
+        );
+      })();
     };
 
     window.addEventListener("urai:story", handler);
