@@ -33,6 +33,7 @@ type LifeMapState = {
   phase: LifeMapPhase;
   reducedMotion: boolean;
 };
+type FocusVisualState = { blur: number; connectedBoost: number; dimOpacity: number };
 
 type Action =
   | { type: 'SET_REDUCED_MOTION'; value: boolean }
@@ -101,27 +102,38 @@ function emitTimelineSync(detail: { phase: LifeMapPhase; activeStarId?: string |
   window.dispatchEvent(new CustomEvent('urai:timeline-sync', { detail: { mode: 'lifemap', ...detail, timestamp: Date.now() } }));
 }
 
+function applyFocusCamera(state: LifeMapState, target: { type: 'star'; starId: string } | { type: 'cluster'; chapterId: ChapterId; companionLine: string } | { type: 'context'; companionLine: string } | { type: 'clear' }): LifeMapState {
+  if (target.type === 'clear') return { ...state, phase: 'living', activeStarId: null, activeChapterId: null, camera: { x: 50, y: 50, zoom: 1 }, stars: state.stars.map((s) => s.state === 'resolved' ? s : { ...s, state: 'idle' }) };
+  if (target.type === 'context') return { ...state, companionLine: target.companionLine };
+  if (target.type === 'cluster') {
+    const stars = state.stars.filter((s) => s.chapterId === target.chapterId);
+    const camera = { x: stars.reduce((a, s) => a + s.x, 0) / stars.length, y: stars.reduce((a, s) => a + s.y, 0) / stars.length, zoom: 1.45 };
+    return { ...state, phase: 'cluster', activeChapterId: target.chapterId, activeStarId: null, camera, companionLine: target.companionLine };
+  }
+  const targetStar = state.stars.find((s) => s.id === target.starId);
+  if (!targetStar) return state;
+  return {
+    ...state, phase: 'focus', activeStarId: targetStar.id, activeChapterId: targetStar.chapterId, camera: { x: targetStar.x, y: targetStar.y, zoom: 1.8 }, companionLine: targetStar.narratorLine,
+    stars: state.stars.map((s) => s.id === targetStar.id ? { ...s, state: 'active', lastActivatedAt: Date.now() } : (s.state === 'resolved' ? s : { ...s, state: targetStar.connectedTo.includes(s.id) ? s.state : 'idle' })),
+  };
+}
+
+function getFocusVisualState(state: LifeMapState): FocusVisualState {
+  if (state.phase === 'focus') return { blur: 0.45, connectedBoost: 0.12, dimOpacity: 0.25 };
+  if (state.phase === 'cluster') return { blur: 0.28, connectedBoost: 0.08, dimOpacity: 0.3 };
+  return { blur: 0, connectedBoost: 0, dimOpacity: 1 };
+}
+
 function reducer(state: LifeMapState, action: Action): LifeMapState {
   switch (action.type) {
     case 'SET_REDUCED_MOTION': return { ...state, reducedMotion: action.value };
     case 'SET_GLOWING_STARS':
       return { ...state, stars: state.stars.map((s) => s.id === state.activeStarId ? s : s.state === 'resolved' ? s : ({ ...s, state: action.ids.includes(s.id) ? 'glowing' : 'idle' })) };
-    case 'FOCUS_STAR': {
-      const target = state.stars.find((s) => s.id === action.starId);
-      if (!target) return state;
-      return {
-        ...state, phase: 'focus', activeStarId: target.id, activeChapterId: target.chapterId, camera: { x: target.x, y: target.y, zoom: 1.8 }, companionLine: target.narratorLine,
-        stars: state.stars.map((s) => {
-          if (s.id === target.id) return { ...s, state: 'active', lastActivatedAt: Date.now() };
-          if (target.connectedTo.includes(s.id) && s.state !== 'resolved') return { ...s, state: s.state === 'glowing' ? 'glowing' : 'idle' };
-          return s.state === 'resolved' ? s : { ...s, state: 'idle' };
-        }),
-      };
-    }
-    case 'FOCUS_CLUSTER': return { ...state, phase: 'cluster', activeChapterId: action.chapterId, activeStarId: null, camera: action.camera, companionLine: action.companionLine };
+    case 'FOCUS_STAR': return applyFocusCamera(state, { type: 'star', starId: action.starId });
+    case 'FOCUS_CLUSTER': return applyFocusCamera(state, { type: 'cluster', chapterId: action.chapterId, companionLine: action.companionLine });
     case 'MARK_RESOLVED': return { ...state, stars: state.stars.map((s) => s.id === action.starId ? { ...s, state: 'resolved' } : s), companionLine: 'This one has softened.' };
     case 'SET_CAMERA': return { ...state, camera: action.camera };
-    case 'CLEAR_FOCUS': return { ...state, phase: 'living', activeStarId: null, activeChapterId: null, camera: { x: 50, y: 50, zoom: 1 }, stars: state.stars.map((s) => s.state === 'resolved' ? s : { ...s, state: 'idle' }) };
+    case 'CLEAR_FOCUS': return applyFocusCamera(state, { type: 'clear' });
     case 'SET_COMPANION_LINE': return { ...state, companionLine: action.line };
     default: return state;
   }
@@ -171,10 +183,11 @@ export default function LifeMapScene() {
   }, []);
 
   const activeStar = state.stars.find((s) => s.id === state.activeStarId) ?? null;
+  const focusVisuals = getFocusVisualState(state);
   const starMap = useMemo(() => new Map(state.stars.map((s) => [s.id, s])), [state.stars]);
 
   return <main className="life-map-shell" aria-label="URAI Spatial Life Map scene">
-    <section className={`lifemap-space ${state.activeStarId ? 'is-focused' : ''}`}>
+    <section className={`lifemap-space ${state.phase !== 'living' ? 'is-focused' : ''}`} style={{ ['--scene-blur' as string]: `${focusVisuals.blur}px`, ['--dim-opacity' as string]: String(focusVisuals.dimOpacity), ['--connected-boost' as string]: String(focusVisuals.connectedBoost) }}>
       <div className="starfield" style={{ ['--camera-x' as string]: `${state.camera.x}%`, ['--camera-y' as string]: `${state.camera.y}%`, ['--camera-zoom' as string]: String(state.camera.zoom) }}>
         <svg className="connections" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden>
           {state.stars.flatMap((s) => s.connectedTo.map((to) => [s.id, to] as const)).filter(([a, b]) => a < b).map(([a, b]) => {
@@ -186,8 +199,11 @@ export default function LifeMapScene() {
         {state.stars.map((star) => {
           const connected = !!activeStar && activeStar.connectedTo.includes(star.id);
           const chapterFocused = state.phase === 'cluster' && state.activeChapterId === star.chapterId;
-          const dimmed = !!state.activeStarId && !connected && state.activeStarId !== star.id;
-          return <button key={star.id} type="button" className={`memory-star state-${star.state} ${connected ? 'is-connected' : ''} ${dimmed ? 'is-dimmed' : ''} ${chapterFocused ? 'is-chapter-focused' : ''}`} style={{ left: `${star.x}%`, top: `${star.y}%`, width: `${star.size}px`, height: `${star.size}px` }} aria-label={`${star.title}, ${star.emotion}, ${star.state}`} onClick={() => { dispatch({ type: 'FOCUS_STAR', starId: star.id }); emitNarratorEvent({ event: 'lifemap.star.focus', starId: star.id, chapterId: star.chapterId, emotion: star.emotion }); emitTimelineSync({ phase: 'focus', activeStarId: star.id, activeChapterId: star.chapterId }); }}><span>{star.title}</span></button>;
+          const isResolved = star.state === 'resolved';
+          const dimmedByStarFocus = !!state.activeStarId && !connected && state.activeStarId !== star.id && !isResolved;
+          const dimmedByCluster = state.phase === 'cluster' && state.activeChapterId !== star.chapterId && !isResolved;
+          const dimmed = dimmedByStarFocus || dimmedByCluster;
+          return <button key={star.id} type="button" className={`memory-star state-${star.state} ${connected ? 'is-connected' : ''} ${dimmed ? 'is-dimmed' : ''} ${chapterFocused ? 'is-chapter-focused' : ''} ${isResolved ? 'is-subdued' : ''}`} style={{ left: `${star.x}%`, top: `${star.y}%`, width: `${star.size}px`, height: `${star.size}px` }} aria-label={`${star.title}, ${star.emotion}, ${star.state}`} onClick={() => { dispatch({ type: 'FOCUS_STAR', starId: star.id }); emitNarratorEvent({ event: 'lifemap.star.focus', starId: star.id, chapterId: star.chapterId, emotion: star.emotion }); emitTimelineSync({ phase: 'focus', activeStarId: star.id, activeChapterId: star.chapterId }); }}><span>{star.title}</span></button>;
         })}
       </div>
     </section>
@@ -195,14 +211,14 @@ export default function LifeMapScene() {
     <aside className="panel export-panel" aria-label="Export panel"><button type="button">Export snapshot</button><button type="button">Export arc</button></aside>
     <aside className="panel companion-panel" aria-label="Companion panel"><h2>Companion</h2><p>{state.companionLine}</p></aside>
 
-    {activeStar && <aside className="panel detail" aria-live="polite"><h3>{activeStar.title}</h3><p>{activeStar.emotion} · {CHAPTERS.find((c) => c.id === activeStar.chapterId)?.title}</p><p>{activeStar.narratorLine}</p><div className="actions"><button type="button" onClick={() => { dispatch({ type: 'SET_COMPANION_LINE', line: 'Replaying the emotional thread.' }); emitNarratorEvent({ event: 'lifemap.star.focus', starId: activeStar.id, chapterId: activeStar.chapterId, emotion: activeStar.emotion, action: 'replay' }); }}>Replay</button><button type="button" onClick={() => { dispatch({ type: 'SET_COMPANION_LINE', line: 'Reflection mode is open.' }); emitNarratorEvent({ event: 'lifemap.star.focus', starId: activeStar.id, chapterId: activeStar.chapterId, emotion: activeStar.emotion, action: 'reflect' }); }}>Reflect</button><button type="button" onClick={() => { dispatch({ type: 'MARK_RESOLVED', starId: activeStar.id }); emitNarratorEvent({ event: 'lifemap.star.resolved', starId: activeStar.id, chapterId: activeStar.chapterId, emotion: activeStar.emotion, action: 'resolve' }); emitTimelineSync({ phase: 'focus', activeStarId: activeStar.id, activeChapterId: activeStar.chapterId }); }}>Mark resolved</button></div></aside>}
+    {activeStar && <aside className="panel detail" aria-live="polite"><h3>{activeStar.title}</h3><p>{activeStar.emotion} · {CHAPTERS.find((c) => c.id === activeStar.chapterId)?.title}</p><p>{activeStar.narratorLine}</p><div className="actions"><button type="button" onClick={() => { dispatch({ type: 'SET_COMPANION_LINE', line: applyFocusCamera(state, { type: 'context', companionLine: 'Replaying the emotional thread.' }).companionLine }); emitNarratorEvent({ event: 'lifemap.star.focus', starId: activeStar.id, chapterId: activeStar.chapterId, emotion: activeStar.emotion, action: 'replay' }); }}>Replay</button><button type="button" onClick={() => { dispatch({ type: 'SET_COMPANION_LINE', line: applyFocusCamera(state, { type: 'context', companionLine: 'Reflection mode is open.' }).companionLine }); emitNarratorEvent({ event: 'lifemap.star.focus', starId: activeStar.id, chapterId: activeStar.chapterId, emotion: activeStar.emotion, action: 'reflect' }); }}>Reflect</button><button type="button" onClick={() => { dispatch({ type: 'MARK_RESOLVED', starId: activeStar.id }); emitNarratorEvent({ event: 'lifemap.star.resolved', starId: activeStar.id, chapterId: activeStar.chapterId, emotion: activeStar.emotion, action: 'resolve' }); emitTimelineSync({ phase: 'focus', activeStarId: activeStar.id, activeChapterId: activeStar.chapterId }); }}>Mark resolved</button></div></aside>}
 
-    <nav className="chapter-row" aria-label="Chapter anchors">{CHAPTERS.map((c) => <button type="button" key={c.id} className={`chapter-pill ${state.activeChapterId === c.id ? 'active' : ''}`} onClick={() => { const stars = state.stars.filter((s) => s.chapterId === c.id); const camera = { x: stars.reduce((a, s) => a + s.x, 0) / stars.length, y: stars.reduce((a, s) => a + s.y, 0) / stars.length, zoom: 1.45 }; dispatch({ type: 'FOCUS_CLUSTER', chapterId: c.id, camera, companionLine: CHAPTER_LINES[c.id] }); emitNarratorEvent({ event: 'lifemap.cluster.focus', chapterId: c.id }); emitTimelineSync({ phase: 'cluster', activeChapterId: c.id }); }}><strong>{c.title}</strong><small>{c.subtitle}</small></button>)}</nav>
+    <nav className="chapter-row" aria-label="Chapter anchors">{CHAPTERS.map((c) => <button type="button" key={c.id} className={`chapter-pill ${state.activeChapterId === c.id ? 'active' : ''}`} onClick={() => { dispatch({ type: 'FOCUS_CLUSTER', chapterId: c.id, camera: { x: 50, y: 50, zoom: 1 }, companionLine: CHAPTER_LINES[c.id] }); emitNarratorEvent({ event: 'lifemap.cluster.focus', chapterId: c.id }); emitTimelineSync({ phase: 'cluster', activeChapterId: c.id }); }}><strong>{c.title}</strong><small>{c.subtitle}</small></button>)}</nav>
 
     <style jsx>{`
       .life-map-shell { min-height: 100vh; background: radial-gradient(circle at 50% 28%, #26366d, #0a0f20 58%, #05060f 100%); color: #eef3ff; position: relative; padding: 1rem; overflow: hidden; }
       .lifemap-space { position: absolute; inset: 0 0 120px; filter: none; }
-      .lifemap-space.is-focused { filter: blur(0.2px) saturate(1.05); }
+      .lifemap-space.is-focused { filter: blur(var(--scene-blur, 0px)) saturate(1.05); }
       .starfield { position: absolute; inset: 0; transform: translate(calc(50% - var(--camera-x)), calc(50% - var(--camera-y))) scale(var(--camera-zoom)); transition: transform 700ms cubic-bezier(0.22, 1, 0.36, 1), filter 700ms ease; }
       .connections { position: absolute; inset: 0; width: 100%; height: 100%; }
       .connection-line { stroke: rgba(190, 220, 255, 0.22); stroke-width: 0.2; stroke-dasharray: 1 1.8; }
@@ -213,11 +229,12 @@ export default function LifeMapScene() {
       .memory-star.state-glowing { animation: starPulse 2.8s ease-in-out infinite; }
       .memory-star.state-active { transform: translate(-50%, -50%) scale(1.22); z-index: 3; }
       .memory-star.state-resolved::after { content: ''; position: absolute; inset: -20px; border-radius: 999px; border: 1px solid rgba(190,255,235,.45); animation: bloomFade 1.8s ease-out; }
-      .memory-star.is-connected { opacity: .92; }
-      .memory-star.is-dimmed { opacity: .34; }
+      .memory-star.is-connected { opacity: calc(.85 + var(--connected-boost, 0)); }
+      .memory-star.is-dimmed { opacity: var(--dim-opacity, .34); }
+      .memory-star.is-subdued { opacity: .44; }
       .memory-star.is-chapter-focused { opacity: 1; }
       .panel { position: absolute; background: rgba(7, 10, 25, 0.75); border: 1px solid rgba(157, 196, 255, 0.32); border-radius: 12px; padding: .8rem; backdrop-filter: blur(6px); }
-      .export-panel { left: 1rem; top: 1rem; display: flex; gap: .5rem; }
+      .export-panel { left: 1rem; top: 1rem; display: flex; gap: .5rem; z-index: 30; }
       .companion-panel { right: 1rem; top: 1rem; width: 280px; }
       .detail { right: 1rem; top: 130px; width: 300px; }
       .actions { display: flex; gap: .5rem; flex-wrap: wrap; }
