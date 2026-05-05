@@ -1,6 +1,7 @@
 'use client'
 
 import dynamic from 'next/dynamic'
+import SpatialV2Overlay from '@/spatial/effects/SpatialV2Overlay'
 
 const SpatialScene = dynamic(
   () =>
@@ -15,5 +16,10 @@ const SpatialScene = dynamic(
 )
 
 export default function SpatialSceneClient() {
-  return <SpatialScene />
+  return (
+    <>
+      <SpatialV2Overlay />
+      <SpatialScene />
+    </>
+  )
 }
