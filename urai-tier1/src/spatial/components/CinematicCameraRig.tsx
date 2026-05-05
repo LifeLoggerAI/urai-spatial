@@ -25,11 +25,13 @@ const smooth = (value: number) => {
 const HOME_POS = new THREE.Vector3(0, 1.65, 8.8);
 const HOME_TARGET = new THREE.Vector3(0, 0.68, 0);
 
-const ASCENT_POS = new THREE.Vector3(0, 8.2, 10.8);
-const ASCENT_TARGET = new THREE.Vector3(0, 8.8, -36);
+const ASCENT_POS = new THREE.Vector3(0, 3.6, 9.2);
+const ASCENT_TARGET = new THREE.Vector3(0, 2.25, -11.5);
 
-const LIFEMAP_POS = new THREE.Vector3(0, 14.4, 22);
-const LIFEMAP_TARGET = new THREE.Vector3(0, 15.4, -70);
+// Final LifeMap lock: forward-facing, eye-level cinematic arrival. No overhead/top-down angle.
+const LIFEMAP_POS = new THREE.Vector3(0, 1.8, 6.5);
+const LIFEMAP_TARGET = new THREE.Vector3(0, 1.2, -6.5);
+const LIFEMAP_FOV = 48;
 
 function readPhase(props: CinematicCameraRigProps): CanonPhase {
   return props.phase ?? props.activePhase ?? props.scenePhase ?? "HOME";
@@ -57,7 +59,7 @@ function lifePathAt(progress: number) {
 
   const position = HOME_POS.clone().lerp(ASCENT_POS, liftT).lerp(LIFEMAP_POS, settleT);
   const target = HOME_TARGET.clone().lerp(ASCENT_TARGET, liftT).lerp(LIFEMAP_TARGET, settleT);
-  const fov = THREE.MathUtils.lerp(42, 56, t);
+  const fov = THREE.MathUtils.lerp(42, LIFEMAP_FOV, t);
 
   return { position, target, fov };
 }
@@ -98,16 +100,16 @@ export default function CinematicCameraRig(props: CinematicCameraRigProps) {
     if (phase === "LIFEMAP") {
       desiredPos = LIFEMAP_POS.clone();
       desiredTarget = LIFEMAP_TARGET.clone();
-      desiredFov = 56;
+      desiredFov = LIFEMAP_FOV;
     }
 
     const selected = finiteVector(
       props.selectedStarPosition ?? props.selectedStar?.position ?? null,
-      new THREE.Vector3(0, 15, -65),
+      new THREE.Vector3(0, 1.4, -8),
     );
 
     if (phase === "FOCUS" || phase === "REPLAY") {
-      desiredPos = new THREE.Vector3(selected.x * 0.24, selected.y + 4.2, selected.z + 23);
+      desiredPos = new THREE.Vector3(selected.x * 0.18, selected.y + 1.45, selected.z + 8.5);
       desiredTarget = selected.clone();
       desiredFov = 42;
     }
@@ -117,13 +119,13 @@ export default function CinematicCameraRig(props: CinematicCameraRigProps) {
       const orbit = replayOrbitRef.current;
 
       desiredPos = new THREE.Vector3(
-        selected.x * 0.18 + Math.sin(orbit * 0.42) * 2.6,
-        selected.y + 2.8 + Math.sin(orbit * 0.3) * 0.55,
-        selected.z + 12 + Math.cos(orbit * 0.42) * 2.2,
+        selected.x * 0.14 + Math.sin(orbit * 0.42) * 1.4,
+        selected.y + 1.25 + Math.sin(orbit * 0.3) * 0.3,
+        selected.z + 7 + Math.cos(orbit * 0.42) * 1.25,
       );
 
-      desiredTarget = new THREE.Vector3(selected.x, selected.y, selected.z - 1.2);
-      desiredFov = 38;
+      desiredTarget = new THREE.Vector3(selected.x, selected.y, selected.z - 0.8);
+      desiredFov = 40;
     } else {
       replayOrbitRef.current = 0;
     }
