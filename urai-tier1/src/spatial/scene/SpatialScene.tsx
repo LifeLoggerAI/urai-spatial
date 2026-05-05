@@ -15,6 +15,15 @@ import {
   type LifeMapNode,
   type LifeMapPhase,
 } from "./lifeMapModel";
+import {
+  buildClusterFocusPayload,
+  buildStarFocusPayload,
+  buildStarGlowPayload,
+  buildStarResolvedPayload,
+  buildTimelineSyncPayload,
+  emitLifemapNarrator,
+  emitLifemapTimelineSync,
+} from "./lifemapEventEmitters";
 
 type ScenePhase = LifeMapPhase | "ascent";
 type StarState = "idle" | "glowing" | "active" | "resolved";
@@ -432,8 +441,8 @@ export default function SpatialScene() {
       setStarStates((current) => ({ ...current, [node.id]: "active" }));
       setLastActivatedAt((current) => ({ ...current, [node.id]: Date.now() }));
       setCompanionOverride(node.narratorLine);
-      window.dispatchEvent(new CustomEvent("urai:narrator", { detail: { event: "lifemap.star.focus", starId: node.id, chapterId: node.chapterId, emotion: node.emotionalTone, timestamp: Date.now() } }));
-      window.dispatchEvent(new CustomEvent("urai:timeline-sync", { detail: { mode: "lifemap", phase: "focus", activeStarId: node.id, activeChapterId: node.chapterId, timestamp: Date.now() } }));
+      emitLifemapNarrator(buildStarFocusPayload({ starId: node.id, chapterId: node.chapterId, emotion: node.emotionalTone }));
+      emitLifemapTimelineSync(buildTimelineSyncPayload({ phase: "focus", activeStarId: node.id, activeChapterId: node.chapterId }));
       setShowReplay(false);
       setPhase("focus");
       writeUrl("focus", node.id);
@@ -452,8 +461,8 @@ export default function SpatialScene() {
       setStarStates((current) => ({ ...current, [node.id]: "active" }));
       setLastActivatedAt((current) => ({ ...current, [node.id]: Date.now() }));
       setCompanionOverride(node.narratorLine);
-      window.dispatchEvent(new CustomEvent("urai:narrator", { detail: { event: "lifemap.star.focus", starId: node.id, chapterId: node.chapterId, emotion: node.emotionalTone, timestamp: Date.now() } }));
-      window.dispatchEvent(new CustomEvent("urai:timeline-sync", { detail: { mode: "lifemap", phase: "focus", activeStarId: node.id, activeChapterId: node.chapterId, timestamp: Date.now() } }));
+      emitLifemapNarrator(buildStarFocusPayload({ starId: node.id, chapterId: node.chapterId, emotion: node.emotionalTone }));
+      emitLifemapTimelineSync(buildTimelineSyncPayload({ phase: "focus", activeStarId: node.id, activeChapterId: node.chapterId }));
       }
 
       setShowReplay(true);
@@ -529,8 +538,8 @@ export default function SpatialScene() {
       const g = lifeMapNodes.find((n) => n.id === glowing[0]);
       if (g) {
         setCompanionOverride(messages[Math.floor(Math.random()*messages.length)]);
-        window.dispatchEvent(new CustomEvent("urai:narrator", { detail: { event: "lifemap.star.glow", starId: g.id, chapterId: g.chapterId, emotion: g.emotionalTone, timestamp: Date.now() } }));
-        window.dispatchEvent(new CustomEvent("urai:timeline-sync", { detail: { mode: "lifemap", phase: "living", activeStarId: g.id, activeChapterId: g.chapterId, timestamp: Date.now() } }));
+        emitLifemapNarrator(buildStarGlowPayload({ starId: g.id, chapterId: g.chapterId, emotion: g.emotionalTone }));
+        emitLifemapTimelineSync(buildTimelineSyncPayload({ phase: "living", activeStarId: g.id, activeChapterId: g.chapterId }));
       }
     };
     const id = window.setInterval(roll, 8000 + Math.floor(Math.random() * 6000));
@@ -749,8 +758,8 @@ export default function SpatialScene() {
       setStarStates((current) => ({ ...current, [node.id]: "active" }));
       setLastActivatedAt((current) => ({ ...current, [node.id]: Date.now() }));
       setCompanionOverride(node.narratorLine);
-      window.dispatchEvent(new CustomEvent("urai:narrator", { detail: { event: "lifemap.star.focus", starId: node.id, chapterId: node.chapterId, emotion: node.emotionalTone, timestamp: Date.now() } }));
-      window.dispatchEvent(new CustomEvent("urai:timeline-sync", { detail: { mode: "lifemap", phase: "focus", activeStarId: node.id, activeChapterId: node.chapterId, timestamp: Date.now() } }));
+      emitLifemapNarrator(buildStarFocusPayload({ starId: node.id, chapterId: node.chapterId, emotion: node.emotionalTone }));
+      emitLifemapTimelineSync(buildTimelineSyncPayload({ phase: "focus", activeStarId: node.id, activeChapterId: node.chapterId }));
                       startReplay(node);
                     }}
                   >
@@ -778,8 +787,8 @@ export default function SpatialScene() {
                   if (first) {
                     setSelectedNodeId(first.id);
                     setZoom(1.32);
-                    window.dispatchEvent(new CustomEvent("urai:narrator", { detail: { event: "lifemap.cluster.focus", starId: first.id, chapterId: chapter.id, emotion: first.emotionalTone, timestamp: Date.now() } }));
-                    window.dispatchEvent(new CustomEvent("urai:timeline-sync", { detail: { mode: "lifemap", phase: "cluster", activeStarId: first.id, activeChapterId: chapter.id, timestamp: Date.now() } }));
+                    emitLifemapNarrator(buildClusterFocusPayload({ chapterId: chapter.id, starId: first.id, emotion: first.emotionalTone }));
+                    emitLifemapTimelineSync(buildTimelineSyncPayload({ phase: "cluster", activeStarId: first.id, activeChapterId: chapter.id }));
                   }
                 }}
               >
@@ -811,7 +820,7 @@ export default function SpatialScene() {
               onResolve={() => {
                 setCompanionOverride("This one has softened.");
                 setStarStates((current) => ({ ...current, [selectedNode.id]: "resolved" }));
-                window.dispatchEvent(new CustomEvent("urai:narrator", { detail: { event: "lifemap.star.resolved", starId: selectedNode.id, chapterId: selectedNode.chapterId, emotion: selectedNode.emotionalTone, timestamp: Date.now() } }));
+                emitLifemapNarrator(buildStarResolvedPayload({ starId: selectedNode.id, chapterId: selectedNode.chapterId, emotion: selectedNode.emotionalTone }));
               }}
               onClose={() => {
                 setSelectedNodeId(null);
