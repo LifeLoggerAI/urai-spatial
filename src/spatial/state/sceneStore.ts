@@ -4,20 +4,17 @@ export type ScenePhase = "HOME" | "ASCENT" | "LIFEMAP" | "FOCUS" | "REPLAY";
 export type SceneMode = Lowercase<ScenePhase>;
 export type AvatarState = "hidden" | "idle-home" | "entering-lifemap" | "returning-home";
 
+export type HomeSubstate =
+  | "home_idle"
+  | "home_orb_focus"
+  | "home_confirm_enter";
+
 const PHASE_TO_MODE: Record<ScenePhase, SceneMode> = {
   HOME: "home",
   ASCENT: "ascent",
   LIFEMAP: "lifemap",
   FOCUS: "focus",
   REPLAY: "replay",
-};
-
-const MODE_TO_PHASE: Record<SceneMode, ScenePhase> = {
-  home: "HOME",
-  ascent: "ASCENT",
-  lifemap: "LIFEMAP",
-  focus: "FOCUS",
-  replay: "REPLAY",
 };
 
 const LEGAL_FORWARD: Record<ScenePhase, ScenePhase | null> = {
@@ -36,248 +33,120 @@ const LEGAL_ESC: Record<ScenePhase, ScenePhase | null> = {
   HOME: null,
 };
 
-type TransitionAction =
-  | "START_ASCENT"
-  | "COMPLETE_ASCENT"
-  | "OPEN_FOCUS"
-  | "OPEN_REPLAY"
-  | "ESC";
+/* =========================
+   HELPERS
+   ========================= */
 
-type TransitionContext = {
-  inputLocked?: boolean;
-  starId?: string | null;
-};
-
-export type SceneState = {
-  phase: ScenePhase;
-  mode: SceneMode;
-  selectedStarId: string | null;
-  hoveredStarId: string | null;
-  isTransitioning: boolean;
-  inputLocked: boolean;
-  avatarState: AvatarState;
-  ascentSubstate: "IDLE" | "CAMERA_LIFT" | "GROUND_RECESS" | "STREAK_RAMP" | "NEBULA_REVEAL" | "COMPLETE";
-  cameraLookTarget: [number, number, number];
-
-  canTransition: (action: TransitionAction, context?: TransitionContext) => boolean;
-  applyTransition: (action: TransitionAction, context?: TransitionContext) => boolean;
-
-  hoverStar: (id: string | null) => void;
-  selectStar: (id: string | null) => void;
-  setTransitioning: (value: boolean) => void;
-
-  setMode: (mode: SceneMode) => void;
-  setPhase: (phase: ScenePhase) => void;
-  goHome: () => void;
-  returnHome: () => void;
-  enterHome: () => void;
-  enterLifemap: () => void;
-  enterLifeMap: () => void;
-  focusStar: (id: string | null) => void;
-  enterReplay: () => void;
-  exitReplay: () => void;
-  esc: () => void;
-  advance: () => void;
-  setSelectedStarId: (id: string | null) => void;
-  setHoveredStarId: (id: string | null) => void;
-  setAscentSubstate: (substate: SceneState["ascentSubstate"]) => void;
-  setCameraLookTarget: (target: [number, number, number]) => void;
-};
-
-const HOME_STATE = {
-  phase: "HOME" as ScenePhase,
-  mode: "home" as SceneMode,
-  selectedStarId: null,
-  hoveredStarId: null,
-  isTransitioning: false,
-  inputLocked: false,
-  avatarState: "idle-home" as AvatarState,
-  ascentSubstate: "IDLE" as SceneState["ascentSubstate"],
-  cameraLookTarget: [-0.6, 1.05, 0] as [number, number, number],
-};
-
-const deriveAvatarState = (phase: ScenePhase, ascentSubstate: SceneState["ascentSubstate"]): AvatarState => {
+const deriveAvatarState = (
+  phase: ScenePhase,
+  ascentSubstate: SceneState["ascentSubstate"]
+): AvatarState => {
   if (phase === "HOME") return ascentSubstate === "IDLE" ? "idle-home" : "returning-home";
   if (phase === "ASCENT") return "entering-lifemap";
   return "hidden";
 };
 
-const setPhaseState = (phase: ScenePhase, ascentSubstate: SceneState["ascentSubstate"] = "IDLE") => ({
+const setPhaseState = (
+  phase: ScenePhase,
+  ascentSubstate: SceneState["ascentSubstate"] = "IDLE"
+) => ({
   phase,
   mode: PHASE_TO_MODE[phase],
   avatarState: deriveAvatarState(phase, ascentSubstate),
+  homeSubstate: phase === "HOME" ? "home_idle" : "home_confirm_enter",
 });
 
-function canTransition(
-  state: Pick<SceneState, "phase" | "mode" | "selectedStarId">,
-  action: TransitionAction,
-  context?: TransitionContext
-): boolean {
-  const locked = context?.inputLocked ?? false;
+/* =========================
+   STATE
+   ========================= */
 
-  switch (action) {
-    case "START_ASCENT":
-      return state.phase === "HOME" && !locked;
+export type SceneState = {
+  phase: ScenePhase;
+  mode: SceneMode;
 
-    case "COMPLETE_ASCENT":
-      return state.phase === "ASCENT";
+  homeSubstate: HomeSubstate;
 
-    case "OPEN_FOCUS":
-      return state.phase === "LIFEMAP" && !!context?.starId && !locked;
+  selectedStarId: string | null;
+  hoveredStarId: string | null;
 
-    case "OPEN_REPLAY":
-      return state.phase === "FOCUS" && !!state.selectedStarId && !locked;
+  isTransitioning: boolean;
+  inputLocked: boolean;
 
-    case "ESC":
-      return state.phase === "REPLAY" || state.phase === "FOCUS" || state.phase === "LIFEMAP" || state.phase === "ASCENT";
+  avatarState: AvatarState;
 
-    default:
-      return false;
-  }
-}
+  ascentSubstate:
+    | "IDLE"
+    | "CAMERA_LIFT"
+    | "GROUND_RECESS"
+    | "STREAK_RAMP"
+    | "NEBULA_REVEAL"
+    | "COMPLETE";
+
+  cameraLookTarget: [number, number, number];
+
+  /* actions */
+  setPhase: (phase: ScenePhase) => void;
+  enterLifeMap: () => void;
+  focusHomeOrb: () => void;
+  confirmHomeEntry: () => void;
+  setHomeSubstate: (s: HomeSubstate) => void;
+};
+
+/* =========================
+   STORE
+   ========================= */
 
 export const useSceneStore = create<SceneState>((set, get) => ({
-  ...HOME_STATE,
+  ...setPhaseState("HOME"),
+  selectedStarId: null,
+  hoveredStarId: null,
+  isTransitioning: false,
+  inputLocked: false,
+  ascentSubstate: "IDLE",
+  cameraLookTarget: [-0.6, 1.05, 0],
 
-  canTransition: (action, context) => canTransition(get(), action, context),
+  /* ========================= */
 
-  applyTransition: (action, context) => {
-    const state = get();
-
-    if (!canTransition(state, action, context)) return false;
-
-    switch (action) {
-      case "START_ASCENT":
-        set({
-          ...setPhaseState("ASCENT"),
-          isTransitioning: true,
-          inputLocked: true,
-        });
-        return true;
-
-      case "COMPLETE_ASCENT":
-        set({
-          ...setPhaseState("LIFEMAP"),
-          isTransitioning: false,
-          inputLocked: false,
-        });
-        return true;
-
-      case "OPEN_FOCUS":
-        set({
-          ...setPhaseState("FOCUS"),
-          selectedStarId: context?.starId ?? null,
-          isTransitioning: false,
-          inputLocked: false,
-        });
-        return true;
-
-      case "OPEN_REPLAY":
-        set({
-          ...setPhaseState("REPLAY"),
-          isTransitioning: true,
-          inputLocked: true,
-        });
-        return true;
-
-      case "ESC": {
-        const next = LEGAL_ESC[state.phase];
-
-        if (!next) return false;
-
-        set({
-          ...setPhaseState(next),
-          selectedStarId: next === "HOME" ? null : state.selectedStarId,
-          isTransitioning: false,
-          inputLocked: false,
-        });
-
-        return true;
-      }
-
-      default:
-        return false;
-    }
-  },
-
-  hoverStar: (id) => set({ hoveredStarId: id }),
-  selectStar: (id) => set({ selectedStarId: id }),
-  setTransitioning: (value) => set({ isTransitioning: value }),
-
-  setMode: (mode) => set((state) => setPhaseState(MODE_TO_PHASE[mode], state.ascentSubstate)),
-  setPhase: (phase) => set((state) => setPhaseState(phase, state.ascentSubstate)),
-
-  goHome: () => set({ ...HOME_STATE }),
-  returnHome: () => set({ ...HOME_STATE }),
-  enterHome: () => set({ ...HOME_STATE }),
-
-  enterLifemap: () =>
-    set({
-      ...setPhaseState("LIFEMAP"),
-      isTransitioning: false,
-      inputLocked: false,
-    }),
+  setPhase: (phase) =>
+    set((state) => ({
+      ...setPhaseState(phase, state.ascentSubstate),
+    })),
 
   enterLifeMap: () =>
-    set({
-      ...setPhaseState("LIFEMAP"),
+    set((state) => ({
+      ...setPhaseState("LIFEMAP", state.ascentSubstate),
       isTransitioning: false,
       inputLocked: false,
-    }),
+      homeSubstate: "home_confirm_enter",
+    })),
 
-  focusStar: (id) =>
-    set({
-      ...setPhaseState(id ? "FOCUS" : "LIFEMAP"),
-      selectedStarId: id,
-      isTransitioning: false,
-      inputLocked: false,
-    }),
+  /* =========================
+     HOME ORB FLOW
+     ========================= */
 
-  enterReplay: () => {
-    const { selectedStarId, phase } = get();
-    if (phase !== "FOCUS" || !selectedStarId) return;
+  setHomeSubstate: (s) =>
+    set((state) =>
+      state.phase === "HOME" ? { homeSubstate: s } : state
+    ),
 
-    set({
-      ...setPhaseState("REPLAY"),
-      isTransitioning: true,
-      inputLocked: true,
-    });
-  },
+  focusHomeOrb: () =>
+    set((state) =>
+      state.phase === "HOME"
+        ? {
+            homeSubstate: "home_orb_focus",
+            isTransitioning: false,
+            inputLocked: false,
+          }
+        : state
+    ),
 
-  exitReplay: () =>
-    set({
-      ...setPhaseState("FOCUS"),
-      isTransitioning: false,
-      inputLocked: false,
-    }),
-
-  esc: () =>
-    set((state) => {
-      const next = LEGAL_ESC[state.phase];
-      if (!next) return state;
-
-      return {
-        ...setPhaseState(next),
-        inputLocked: false,
-        isTransitioning: false,
-        selectedStarId: next === "HOME" ? null : state.selectedStarId,
-      };
-    }),
-
-  advance: () =>
-    set((state) => {
-      const next = LEGAL_FORWARD[state.phase];
-      if (!next) return state;
-
-      return {
-        ...setPhaseState(next),
-        inputLocked: next === "ASCENT",
-        isTransitioning: next === "ASCENT",
-      };
-    }),
-
-  setSelectedStarId: (id) => set({ selectedStarId: id }),
-  setHoveredStarId: (id) => set({ hoveredStarId: id }),
-  setAscentSubstate: (substate) => set((state) => ({ ascentSubstate: substate, avatarState: deriveAvatarState(state.phase, substate) })),
-  setCameraLookTarget: (target) => set({ cameraLookTarget: target }),
+  confirmHomeEntry: () =>
+    set((state) =>
+      state.phase === "HOME"
+        ? {
+            homeSubstate: "home_confirm_enter",
+            isTransitioning: true,
+          }
+        : state
+    ),
 }));

@@ -1,6 +1,7 @@
 type OrbProps = {
   interactive?: boolean;
   active?: boolean;
+  visualIntensity?: number;
   busy?: boolean;
   disabled?: boolean;
   ariaLabel?: string;
@@ -11,11 +12,12 @@ type OrbProps = {
 export default function Orb({
   interactive = true,
   active = false,
+  visualIntensity = 0,
   busy = false,
   disabled = false,
   ariaLabel,
   onClick,
-  onFocus
+  onFocus,
 }: OrbProps) {
   const env = useEnvironmentSignal();
 
@@ -41,9 +43,12 @@ export default function Orb({
   useFrame(({ clock }) => {
     const t = clock.getElapsedTime();
 
+    const stateBoost = THREE.MathUtils.clamp(visualIntensity, 0, 1.6);
+
     const boost =
       (active ? 1 : 0) +
-      (hovered && canInteract ? 1 : 0);
+      (hovered && canInteract ? 1 : 0) +
+      stateBoost;
 
     const signalEnergy = env.scene.orbEnergy;
 
@@ -92,7 +97,7 @@ export default function Orb({
 
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
-  }, [focused, canInteract]);
+  }, [focused, canInteract, onClick]);
 
   return (
     <group
