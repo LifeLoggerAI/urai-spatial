@@ -47,9 +47,12 @@ type TransitionContext = {
   starId?: string | null;
 };
 
+export type HomeSubstate = "home_idle" | "home_orb_focus" | "home_confirm_enter";
+
 export type SceneState = {
   phase: ScenePhase;
   mode: SceneMode;
+  homeSubstate: HomeSubstate;
   selectedStarId: string | null;
   hoveredStarId: string | null;
   isTransitioning: boolean;
@@ -69,6 +72,9 @@ export type SceneState = {
   enterHome: () => void;
   enterLifemap: () => void;
   enterLifeMap: () => void;
+  setHomeSubstate: (substate: HomeSubstate) => void;
+  focusHomeOrb: () => void;
+  confirmHomeEntry: () => void;
   focusStar: (id: string | null) => void;
   enterReplay: () => void;
   exitReplay: () => void;
@@ -85,11 +91,13 @@ const HOME_STATE = {
   hoveredStarId: null,
   isTransitioning: false,
   inputLocked: false,
+  homeSubstate: "home_idle" as HomeSubstate,
 };
 
-const setPhaseState = (phase: ScenePhase) => ({
+const setPhaseState = (phase: ScenePhase): Pick<SceneState, "phase" | "mode" | "homeSubstate"> => ({
   phase,
   mode: PHASE_TO_MODE[phase],
+  homeSubstate: phase === "HOME" ? "home_idle" : "home_confirm_enter",
 });
 
 function canTransition(
@@ -200,6 +208,7 @@ export const useSceneStore = create<SceneState>((set, get) => ({
       ...setPhaseState("LIFEMAP"),
       isTransitioning: false,
       inputLocked: false,
+      homeSubstate: "home_confirm_enter",
     }),
 
   enterLifeMap: () =>
@@ -207,7 +216,26 @@ export const useSceneStore = create<SceneState>((set, get) => ({
       ...setPhaseState("LIFEMAP"),
       isTransitioning: false,
       inputLocked: false,
+      homeSubstate: "home_confirm_enter",
     }),
+
+
+  setHomeSubstate: (substate) =>
+    set((state) => (state.phase === "HOME" ? { homeSubstate: substate } : state)),
+
+  focusHomeOrb: () =>
+    set((state) =>
+      state.phase === "HOME"
+        ? { homeSubstate: "home_orb_focus", isTransitioning: false, inputLocked: false }
+        : state
+    ),
+
+  confirmHomeEntry: () =>
+    set((state) =>
+      state.phase === "HOME"
+        ? { homeSubstate: "home_confirm_enter", isTransitioning: true, inputLocked: false }
+        : state
+    ),
 
   focusStar: (id) =>
     set({

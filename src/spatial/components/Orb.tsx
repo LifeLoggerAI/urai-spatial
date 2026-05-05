@@ -7,10 +7,12 @@ import * as THREE from "three";
 type OrbProps = {
   interactive?: boolean;
   active?: boolean;
+  visualIntensity?: number;
+  onFocus?: () => void;
   onClick?: () => void;
 };
 
-export default function Orb({ interactive = true, active = false, onClick }: OrbProps) {
+export default function Orb({ interactive = true, active = false, visualIntensity = 0, onFocus, onClick }: OrbProps) {
   const rootRef = useRef<THREE.Group>(null);
   const shellRef = useRef<THREE.Mesh>(null);
   const coreRef = useRef<THREE.Mesh>(null);
@@ -26,7 +28,8 @@ export default function Orb({ interactive = true, active = false, onClick }: Orb
 
   useFrame(({ clock }) => {
     const t = clock.getElapsedTime();
-    const boost = (active ? 1 : 0) + (hovered ? 1 : 0);
+    const stateBoost = THREE.MathUtils.clamp(visualIntensity, 0, 1.6);
+    const boost = (active ? 1 : 0) + (hovered ? 1 : 0) + stateBoost;
     const pulse = 1 + Math.sin(t * 1.15) * 0.025 + boost * 0.015;
 
     if (rootRef.current) {
@@ -70,6 +73,7 @@ export default function Orb({ interactive = true, active = false, onClick }: Orb
       onPointerOver={(e) => {
         e.stopPropagation();
         setHovered(true);
+        onFocus?.();
       }}
       onPointerOut={(e) => {
         e.stopPropagation();
