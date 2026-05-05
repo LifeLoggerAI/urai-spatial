@@ -13,7 +13,11 @@
     "test": "pnpm --filter urai-functions build && pnpm --filter urai-functions test && pnpm --filter urai-tier1 test && pnpm test:e2e && pnpm test:replay-tier5",
     "test:e2e": "pnpm --filter urai-tier1 exec node ../tests/spatial-lock.mjs",
     "test:replay-tier5": "pnpm --filter urai-tier1 exec node ../tests/replay-tier5-lock.mjs",
-    "preflight": "node ./scripts/preflight.mjs"
+    "preflight": "node ./scripts/preflight.mjs",
+    "canon:check": "node scripts/canon-lock.mjs",
+    "canon:drift": "node scripts/canon-lock.mjs",
+    "hooks:install": "git config core.hooksPath .githooks",
+    "test:canon-lock": "node tests/canon-lock.mjs"
   },
   "devDependencies": {
     "@types/node": "^25.5.0",
