@@ -47,17 +47,17 @@ function nodePosition(clusterKey: ClusterKey, indexInCluster: number, clusterSiz
 function Node({ position, selected, dimmed, onSelect }: { position: ConstellationNodePosition; selected: boolean; dimmed: boolean; onSelect: (position: ConstellationNodePosition) => void }) {
   const ref = useRef<Mesh>(null)
   const opacity = dimmed ? 0.18 : 1
+  const baseScale = dimmed ? 0.72 : 1
 
   useFrame(({ clock }) => {
-    if (!ref.current) return
+    if (!ref.current || dimmed) return
     ref.current.rotation.y = clock.elapsedTime * 0.2
-    const baseScale = dimmed ? 0.72 : 1
     const scale = selected ? 1.8 + Math.sin(clock.elapsedTime * 3) * 0.08 : baseScale
     ref.current.scale.setScalar(scale)
   })
 
   return (
-    <mesh ref={ref} position={position} onClick={(event) => { event.stopPropagation(); onSelect(position) }}>
+    <mesh ref={ref} position={position} scale={baseScale} onClick={(event) => { event.stopPropagation(); onSelect(position) }}>
       <sphereGeometry args={[0.12, 16, 16]} />
       <meshStandardMaterial
         emissive={selected ? '#22d3ee' : '#8b5cf6'}
