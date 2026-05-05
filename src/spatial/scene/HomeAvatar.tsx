@@ -1,66 +1,60 @@
 "use client";
 
-import { useMemo, useRef } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useFrame } from "@react-three/fiber";
 import * as THREE from "three";
 
-import { useSceneStore } from "../state/sceneStore";
-
 type HomeAvatarProps = {
-  orbPosition?: [number, number, number];
+  interactive?: boolean;
+  focused?: boolean;
+  position?: [number, number, number];
   lowPoly?: boolean;
 };
 
-const DEFAULT_ORB_POSITION: [number, number, number] = [-0.52, 1.05, 0];
-
-export default function HomeAvatar({ orbPosition = DEFAULT_ORB_POSITION, lowPoly = false }: HomeAvatarProps) {
+export default function HomeAvatar({
+  interactive = true,
+  focused = false,
+  position = [-1.08, 0.62, 0.18],
+  lowPoly = false,
+}: HomeAvatarProps) {
   const rootRef = useRef<THREE.Group>(null);
+  const bodyRef = useRef<THREE.Mesh>(null);
   const headRef = useRef<THREE.Mesh>(null);
+  const [reducedMotion, setReducedMotion] = useState(false);
 
-  const avatarState = useSceneStore((s) => s.avatarState);
-  const setAvatarState = useSceneStore((s) => s.setAvatarState);
+  useEffect(() => {
+    if (typeof window === "undefined" || !window.matchMedia) return;
 
-  const bodyGeometry = useMemo(
-    () =>
-      lowPoly
-        ? new THREE.CapsuleGeometry(0.22, 0.6, 2, 6)
-        : new THREE.CapsuleGeometry(0.24, 0.72, 4, 14),
-    [lowPoly]
+    const media = window.matchMedia("(prefers-reduced-motion: reduce)");
+    const onChange = () => setReducedMotion(media.matches);
+
+    onChange();
+    media.addEventListener("change", onChange);
+
+    return () => media.removeEventListener("change", onChange);
+  }, []);
+
+  const bodyColor = useMemo(
+    () => new THREE.Color(focused ? "#eff8ff" : "#dbeafe"),
+    [focused]
   );
 
-  const headGeometry = useMemo(
-    () => (lowPoly ? new THREE.IcosahedronGeometry(0.18, 0) : new THREE.SphereGeometry(0.18, 20, 20)),
-    [lowPoly]
-  );
+  const auraColor = focused ? "#a7e3ff" : "#5fc7ff";
 
-  useFrame(({ clock }, delta) => {
+  useFrame(({ clock }) => {
     const root = rootRef.current;
     if (!root) return;
 
     const t = clock.getElapsedTime();
-    const bob = Math.sin(t * 1.8) * 0.025;
-    root.position.y = 0.96 + bob;
+    const amplitude = reducedMotion ? 0.01 : 0.035;
+    const sway = reducedMotion ? 0.015 : 0.06;
 
-    if (avatarState === "transitioning") {
-      root.rotation.y += delta * 2.8;
-      root.position.x = -1.9 + Math.sin(t * 4.4) * 0.06;
-      root.position.z = 0.72 + Math.cos(t * 3.6) * 0.06;
-      return;
-    }
+    root.position.y = position[1] + Math.sin(t * 1.3) * amplitude;
+    root.rotation.y = Math.sin(t * 0.6) * sway;
 
-    root.position.x = -1.9;
-    root.position.z = 0.72;
-
-    const lookAtOrb = avatarState === "lookAtOrb" || avatarState === "idle";
-    if (lookAtOrb) {
-      const target = new THREE.Vector3(...orbPosition);
-      const dir = target.sub(root.position);
-      const yaw = Math.atan2(dir.x, dir.z);
-      root.rotation.y = THREE.MathUtils.lerp(root.rotation.y, yaw, 0.12);
-    }
-
-    if (avatarState !== "lookAtOrb") {
-      setAvatarState("lookAtOrb");
+    if (bodyRef.current) {
+      const mat = bodyRef.current.material as THREE.MeshStandardMaterial;
+      mat.emissiveIntensity = focused ? 0.36 : interactive ? 0.18 : 0.1;
     }
 
     if (headRef.current) {
@@ -69,12 +63,46 @@ export default function HomeAvatar({ orbPosition = DEFAULT_ORB_POSITION, lowPoly
   });
 
   return (
-    <group ref={rootRef} position={[-1.9, 0.96, 0.72]}>
-      <mesh castShadow receiveShadow geometry={bodyGeometry}>
-        <meshStandardMaterial color={lowPoly ? "#86a3d6" : "#91b7ff"} roughness={0.55} metalness={0.08} />
+    <group ref={rootRef} position={position}>
+      <mesh ref={bodyRef} position={[0, 0.55, 0]} castShadow receiveShadow>
+        <capsuleGeometry args={lowPoly ? [0.12, 0.46, 3, 8] : [0.12, 0.5, 6, 12]} />
+        <meshStandardMaterial
+          color={bodyColor}
+          roughness={0.48}
+          metalness={0.08}
+          emissive={auraColor}
+          emissiveIntensity={0.18}
+        />
       </mesh>
-      <mesh ref={headRef} castShadow position={[0, 0.58, 0]} geometry={headGeometry}>
-        <meshStandardMaterial color={lowPoly ? "#d8e5ff" : "#edf3ff"} roughness={0.45} metalness={0.05} />
+
+      <mesh ref={headRef} position={[0, 0.95, 0.03]} castShadow>
+        {lowPoly ? (
+          <icosahedronGeometry args={[0.16, 0]} />
+        ) : (
+          <sphereGeometry args={[0.16, 20, 20]} />
+        )}
+        <meshStandardMaterial
+          color="#f8fbff"
+          roughness={0.35}
+          metalness={0.04}
+          emissive={auraColor}
+          emissiveIntensity={focused ? 0.42 : 0.22}
+        />
+      </mesh>
+
+      <mesh
+        position={[0, 0.03, 0]}
+        receiveShadow
+        rotation={[-Math.PI / 2, 0, 0]}
+        renderOrder={1}
+      >
+        <circleGeometry args={[0.22, 24]} />
+        <meshBasicMaterial
+          color="#6fd7ff"
+          transparent
+          opacity={focused ? 0.22 : 0.12}
+          depthWrite={false}
+        />
       </mesh>
     </group>
   );

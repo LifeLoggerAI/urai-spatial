@@ -14,7 +14,15 @@ export const demoNodes: LifeMapNode[] = [
   ...Array.from({length:3},(_,i)=>mkNode(i+46,'ritual','rebirth')),
 ]
 
-export const demoEdges: LifeMapEdge[] = demoNodes.slice(1,35).map((n,idx)=>({id:`e-${idx+1}`,sourceId:demoNodes[idx].id,targetId:n.id,strength:0.35+((idx%5)*0.12),type:(['constellation','recovery','dream','relationship','shadow'] as const)[idx%5]}))
+export const demoEdges: LifeMapEdge[] = demoNodes.slice(1,35).map((n,idx)=>({
+  id:`e-${idx+1}`,
+  sourceId:demoNodes[idx].id,
+  targetId:n.id,
+  strength:0.35+((idx%5)*0.12),
+  type:(['constellation','recovery','dream','relationship','shadow'] as const)[idx%5],
+  direction: idx % 2 === 0 ? 'sourceToTarget' : 'targetToSource',
+  progressionBasis: idx % 3 === 0 ? 'chapter' : 'emotional',
+}))
 
 export const demoChapters: LifeChapter[] = [1,2,3,4].map((n)=>({id:`c-${n}`,title:['The Season of Becoming','The Quiet Winter','The Breakthrough Year','The Return to Self'][n-1],summary:'A chapter where identity, resilience, and purpose took a visible shape.',dominantEmotions:['calm','purpose','healing'],keyNodeIds:demoNodes.filter(x=>x.chapterId===`c-${n}`).slice(0,5).map(x=>x.id),coverAura:['#60a5fa','#312e81','#f59e0b','#34d399'][n-1],eraStart:new Date(2010+(n-1)*3,0,1).toISOString(),eraEnd:new Date(2012+(n-1)*3,11,1).toISOString(),narratorVoiceover:'This chapter held both friction and emergence.'}))
 
