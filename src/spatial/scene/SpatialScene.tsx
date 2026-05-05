@@ -5,6 +5,9 @@ import GroundWorld from "./GroundWorld";
 import HomeWorld from "./HomeWorld";
 import LifeMapScene from "@/components/spatial/LifeMapScene";
 import { useSceneStore, type ScenePhase } from "../state/sceneStore";
+import { useEnvironmentSignal } from "../signals/environmentSignal";
+
+// ... unchanged types
 
 type LayerVisibility = {
   visible: boolean;
@@ -65,6 +68,8 @@ export default function SpatialScene() {
   const isTransitioning = useSceneStore((s) => s.isTransitioning);
   const { reducedMotion, fadeMsFor } = useReducedMotionPolicy();
 
+  const env = useEnvironmentSignal();
+
   const layers = useMemo(
     () => resolveLayerPack(phase, isTransitioning),
     [phase, isTransitioning]
@@ -81,7 +86,11 @@ export default function SpatialScene() {
           transition: `opacity ${fadeMs}ms ease`,
         }}
       >
-        <GroundWorld />
+        <GroundWorld
+          mood={env.mood}
+          presence={env.presence}
+          emotionalIntensity={env.emotionalIntensity}
+        />
       </div>
 
       <div
