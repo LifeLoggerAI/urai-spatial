@@ -51,6 +51,8 @@ jobs:
         run: pnpm --filter urai-tier1 verify:tier-lock
       - name: Unit tests
         run: pnpm --filter urai-tier1 test
+      - name: Lifemap focused tests
+        run: pnpm --filter urai-tier1 test:lifemap
       - name: Build
         run: pnpm --filter urai-tier1 build
 
