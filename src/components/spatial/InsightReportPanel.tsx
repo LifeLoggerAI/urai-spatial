@@ -12,16 +12,34 @@ import {
   getInsightStorageKey,
   parseInsightLedger,
 } from './persistentInsightEngine';
+import { useUserEntitlement } from '@/hooks/useUserEntitlement';
+import { canAccessPlan, getLockedPlanMessage } from './stripePlanGate';
 
 export default function InsightReportPanel({ planId = 'free' as InsightPlanId }: { planId?: InsightPlanId }) {
+  const { entitlement, status } = useUserEntitlement();
+
   const ledger = useMemo(() => {
     if (typeof window === 'undefined') return { insights: [], updatedAt: null };
     return parseInsightLedger(window.localStorage.getItem(getInsightStorageKey()));
   }, []);
 
-  const report = useMemo(() => buildInsightReport(ledger, planId), [ledger, planId]);
+  const allowed = canAccessPlan(entitlement, planId);
 
-  const markdown = useMemo(() => renderInsightReportMarkdown(report), [report]);
+  if (status === 'loading') {
+    return <div className="p-4 text-sm text-gray-500">Loading access…</div>;
+  }
+
+  if (!allowed) {
+    return (
+      <div className="p-4 border rounded-lg bg-gray-50">
+        <h3>🔒 Locked Feature</h3>
+        <p>{getLockedPlanMessage(planId)}</p>
+      </div>
+    );
+  }
+
+  const report = buildInsightReport(ledger, planId);
+  const markdown = renderInsightReportMarkdown(report);
 
   const plan = INSIGHT_PLANS.find((p) => p.id === planId);
 
@@ -54,19 +72,12 @@ export default function InsightReportPanel({ planId = 'free' as InsightPlanId }:
         </button>
       </div>
 
-      {report.upgradePrompt && (
-        <div className="upgrade">
-          <p>{report.upgradePrompt}</p>
-        </div>
-      )}
-
       <style jsx>{`
         .report-panel{border:1px solid rgba(157,196,255,.3);padding:1rem;border-radius:16px;background:#0b1228;color:#eef3ff}
         header h2{margin:0 0 .25rem}
         .totals{display:flex;gap:.75rem;margin:.5rem 0}
         .sections article{margin:.75rem 0}
         button{margin-top:1rem;padding:.5rem .75rem;border-radius:999px}
-        .upgrade{margin-top:1rem;color:#9fc5ff}
       `}</style>
     </section>
   );
