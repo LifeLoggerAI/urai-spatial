@@ -55,9 +55,30 @@ type PredictiveIntervention = {
   phrase: string;
 };
 
+type InterventionLearningState = {
+  intensity: number;
+  exposures: number;
+  lastSuggestion: PredictiveIntervention["suggestion"] | null;
+  lastPredictedDirection: PredictiveIntervention["predictedDirection"] | null;
+  lastTone: string | null;
+  lastScore: number | null;
+  lastSeenAt: number | null;
+  outcomes: Array<{
+    seenAt: number;
+    suggestion: PredictiveIntervention["suggestion"];
+    predictedDirection: PredictiveIntervention["predictedDirection"];
+    tone: string;
+    score: number;
+    outcome: "improved" | "worsened" | "looped" | "held" | "unknown";
+    intensity: number;
+  }>;
+};
+
 const STORAGE_KEY = "urai:lifemap:memory-history:v1";
 const PATH_STORAGE_KEY = "urai:lifemap:path-history:v1";
+const LEARNING_STORAGE_KEY = "urai:lifemap:intervention-learning:v1";
 const MAX_RECENT_PATH = 12;
+const MAX_OUTCOMES = 24;
 
 const TONE_SCORE: Record<string, number> = {
   grief: -3,
@@ -116,6 +137,31 @@ function writePathHistory(history: PathHistory) {
   writeJson(PATH_STORAGE_KEY, history);
 }
 
+function readLearning(): InterventionLearningState {
+  return readJson<InterventionLearningState>(LEARNING_STORAGE_KEY, {
+    intensity: 0.42,
+    exposures: 0,
+    lastSuggestion: null,
+    lastPredictedDirection: null,
+    lastTone: null,
+    lastScore: null,
+    lastSeenAt: null,
+    outcomes: [],
+  });
+}
+
+function writeLearning(state: InterventionLearningState) {
+  writeJson(LEARNING_STORAGE_KEY, state);
+}
+
+function clamp(value: number, min: number, max: number) {
+  return Math.max(min, Math.min(max, value));
+}
+
+function toneScore(tone: string) {
+  return TONE_SCORE[tone] ?? 0;
+}
+
 function updateMemory(cue: NarratorCue) {
   const id = cue.starId ?? cue.title ?? "unknown-star";
   const history = readHistory();
@@ -168,11 +214,15 @@ function updatePathMemory(cue: NarratorCue, starId: string) {
 
   const pattern = analyzePath(history, starId, tone);
   const trajectory = analyzeTrajectory(history);
+  const learning = updateLearning(tone, pattern, trajectory);
+  const baseIntervention = predictIntervention(history, pattern, trajectory, tone);
+  const intervention = applyAdaptiveIntensity(baseIntervention, learning);
 
   return {
     pattern,
     trajectory,
-    intervention: predictIntervention(history, pattern, trajectory, tone),
+    intervention,
+    learning,
   };
 }
 
@@ -191,7 +241,7 @@ function analyzeTrajectory(history: PathHistory): EmotionalTrajectory {
     };
   }
 
-  const scores = recent.map((step) => TONE_SCORE[step.tone] ?? 0);
+  const scores = recent.map((step) => toneScore(step.tone));
   const firstHalfLength = Math.ceil(scores.length / 2);
   const secondHalfLength = scores.length - Math.floor(scores.length / 2);
   const firstAvg = scores.slice(0, firstHalfLength).reduce((sum, score) => sum + score, 0) / firstHalfLength;
@@ -204,8 +254,8 @@ function analyzeTrajectory(history: PathHistory): EmotionalTrajectory {
   const stuckTone = Object.entries(toneCounts).find(([, count]) => count >= 4)?.[0] ?? null;
   const startTone = recent[0]?.tone ?? null;
   const endTone = recent[recent.length - 1]?.tone ?? null;
-  const recoveryArc = scoreDelta >= 1.25 || ((TONE_SCORE[startTone ?? "neutral"] ?? 0) < 0 && (TONE_SCORE[endTone ?? "neutral"] ?? 0) > 0);
-  const strainArc = scoreDelta <= -1.25 || ((TONE_SCORE[startTone ?? "neutral"] ?? 0) > 0 && (TONE_SCORE[endTone ?? "neutral"] ?? 0) < 0);
+  const recoveryArc = scoreDelta >= 1.25 || (toneScore(startTone ?? "neutral") < 0 && toneScore(endTone ?? "neutral") > 0);
+  const strainArc = scoreDelta <= -1.25 || (toneScore(startTone ?? "neutral") > 0 && toneScore(endTone ?? "neutral") < 0);
 
   return {
     scoreDelta,
@@ -246,6 +296,55 @@ function analyzePath(history: PathHistory, currentStarId: string, currentTone: s
   };
 }
 
+function classifyOutcome(previousScore: number | null, currentTone: string, pattern: ReturnType<typeof analyzePath>, trajectory: EmotionalTrajectory) {
+  if (previousScore == null) return "unknown" as const;
+
+  const delta = toneScore(currentTone) - previousScore;
+  if (trajectory.recoveryArc || delta >= 2) return "improved" as const;
+  if (trajectory.strainArc || delta <= -2) return "worsened" as const;
+  if (pattern.hasABAB || pattern.transitionCount >= 2) return "looped" as const;
+  return "held" as const;
+}
+
+function updateLearning(currentTone: string, pattern: ReturnType<typeof analyzePath>, trajectory: EmotionalTrajectory) {
+  const state = readLearning();
+  const currentScore = toneScore(currentTone);
+  const outcome = classifyOutcome(state.lastScore, currentTone, pattern, trajectory);
+
+  let intensity = state.intensity;
+  if (outcome === "improved") intensity -= 0.08;
+  if (outcome === "worsened") intensity += 0.1;
+  if (outcome === "looped") intensity += 0.07;
+  if (outcome === "held") intensity += 0.01;
+
+  intensity = clamp(intensity, 0.22, 0.88);
+
+  const next: InterventionLearningState = {
+    intensity,
+    exposures: state.exposures + 1,
+    lastSuggestion: state.lastSuggestion,
+    lastPredictedDirection: state.lastPredictedDirection,
+    lastTone: currentTone,
+    lastScore: currentScore,
+    lastSeenAt: now(),
+    outcomes: [
+      ...state.outcomes,
+      {
+        seenAt: now(),
+        suggestion: state.lastSuggestion ?? "notice",
+        predictedDirection: state.lastPredictedDirection ?? "uncertain",
+        tone: currentTone,
+        score: currentScore,
+        outcome,
+        intensity,
+      },
+    ].slice(-MAX_OUTCOMES),
+  };
+
+  writeLearning(next);
+  return next;
+}
+
 function predictIntervention(
   history: PathHistory,
   pattern: ReturnType<typeof analyzePath>,
@@ -253,7 +352,7 @@ function predictIntervention(
   currentTone: string,
 ): PredictiveIntervention {
   const recent = history.recent.slice(-5);
-  const recentScores = recent.map((step) => TONE_SCORE[step.tone] ?? 0);
+  const recentScores = recent.map((step) => toneScore(step.tone));
   const averageRecentScore = recentScores.length
     ? recentScores.reduce((sum, score) => sum + score, 0) / recentScores.length
     : 0;
@@ -309,6 +408,38 @@ function predictIntervention(
     suggestion: "notice",
     phrase: "notice what pulls your attention next.",
   };
+}
+
+function applyAdaptiveIntensity(intervention: PredictiveIntervention, learning: InterventionLearningState): PredictiveIntervention {
+  const intensity = learning.intensity;
+  let phrase = intervention.phrase;
+
+  if (intensity >= 0.72) {
+    if (intervention.suggestion === "pause") phrase = "pause here. do not rush past this point.";
+    if (intervention.suggestion === "stay") phrase = "stay with this one. stop chasing the next signal.";
+    if (intervention.suggestion === "notice") phrase = "notice the loop clearly before choosing again.";
+    if (intervention.suggestion === "soften") phrase = phrase.replace("soften", "soften more slowly");
+  } else if (intensity <= 0.34) {
+    if (intervention.suggestion === "continue") phrase = "keep going gently.";
+    if (intervention.suggestion === "notice") phrase = "just notice the next pull.";
+    if (intervention.suggestion === "pause") phrase = "take a small pause.";
+  }
+
+  const next = {
+    ...intervention,
+    confidence: clamp(intervention.confidence + (intensity - 0.42) * 0.18, 0.35, 0.92),
+    phrase,
+  };
+
+  const state = readLearning();
+  writeLearning({
+    ...state,
+    intensity,
+    lastSuggestion: next.suggestion,
+    lastPredictedDirection: next.predictedDirection,
+  });
+
+  return next;
 }
 
 function dominantKey(values: Record<string, number>) {
@@ -383,26 +514,32 @@ function innerScript(
   return `notice the return... ${tone}. ${intervention.phrase}`;
 }
 
-function voiceParams(cue: NarratorCue, previousVisits: number, trajectory: EmotionalTrajectory, intervention: PredictiveIntervention) {
+function voiceParams(
+  cue: NarratorCue,
+  previousVisits: number,
+  trajectory: EmotionalTrajectory,
+  intervention: PredictiveIntervention,
+  learning: InterventionLearningState,
+) {
   const tone = cue.tone ?? "neutral";
   const weight = cue.symbolicWeight ?? "light";
 
   let rate = 0.68;
   let pitch = 0.72;
-  let volume = 0.24;
+  let volume = 0.24 + learning.intensity * 0.08;
 
   if (tone === "grief") {
     rate = 0.58;
     pitch = 0.66;
-    volume = 0.2;
+    volume = 0.2 + learning.intensity * 0.08;
   } else if (tone === "hope" || tone === "recovery") {
     rate = 0.72;
     pitch = 0.82;
-    volume = 0.22;
+    volume = 0.22 + learning.intensity * 0.06;
   } else if (tone === "tension" || tone === "charged") {
     rate = 0.76;
     pitch = 0.7;
-    volume = 0.26;
+    volume = 0.26 + learning.intensity * 0.08;
   }
 
   if (weight === "threshold" || weight === "heavy") {
@@ -421,11 +558,15 @@ function voiceParams(cue: NarratorCue, previousVisits: number, trajectory: Emoti
   }
 
   if (trajectory.strainArc || intervention.suggestion === "pause") {
-    rate -= 0.05;
+    rate -= 0.05 + learning.intensity * 0.03;
     pitch -= 0.04;
   }
 
-  return { rate, pitch, volume };
+  return {
+    rate: clamp(rate, 0.52, 0.94),
+    pitch: clamp(pitch, 0.62, 0.92),
+    volume: clamp(volume, 0.18, 0.42),
+  };
 }
 
 export default function DualLayerNarratorBridge() {
@@ -441,13 +582,13 @@ export default function DualLayerNarratorBridge() {
       if (timeoutRef.current !== null) window.clearTimeout(timeoutRef.current);
 
       const { id, previousVisits, memory } = updateMemory(cue);
-      const { pattern, trajectory, intervention } = updatePathMemory(cue, id);
+      const { pattern, trajectory, intervention, learning } = updatePathMemory(cue, id);
       const script = innerScript(cue, previousVisits, memory, pattern, trajectory, intervention);
       const delay = Math.max(0, (cue.timing?.delayMs ?? 0) + 720);
 
       timeoutRef.current = window.setTimeout(() => {
         const whisper = new SpeechSynthesisUtterance(script);
-        const params = voiceParams(cue, previousVisits, trajectory, intervention);
+        const params = voiceParams(cue, previousVisits, trajectory, intervention, learning);
 
         whisper.rate = params.rate;
         whisper.pitch = params.pitch;
@@ -468,6 +609,7 @@ export default function DualLayerNarratorBridge() {
               pattern,
               trajectory,
               intervention,
+              learning,
               script,
             },
           }),
