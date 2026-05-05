@@ -1,0 +1,5 @@
+# Tier-1 canon must be founder/release-governance reviewed
+/docs/canon/TIER_1_CANON_STANDARDS.md @founder @release-governance
+/urai-tier1/src/canon/tier1.ts @founder @release-governance
+/CANON_MIGRATION_PROCESS.md @founder @release-governance
+/.canon-migration/ @founder @release-governance
