@@ -8,6 +8,7 @@ type ChapterId = 'season-of-becoming' | 'threshold' | 'recovery-arc' | 'purple-d
 type MemoryStar = { id: string; title: string; x: number; y: number; size: number; emotion: MemoryEmotion; chapterId: ChapterId; state: StarState; intensity: number; recency: number; unresolvedWeight: number; lastActivatedAt: number | null; narratorLine: string; connectedTo: string[] };
 type LifeMapPhase = 'living' | 'focus' | 'cluster';
 type LifeMapCamera = { x: number; y: number; zoom: number };
+type RandomFn = () => number;
 
 type NarratorDetail = { event: 'lifemap.star.glow' | 'lifemap.star.focus' | 'lifemap.cluster.focus' | 'lifemap.star.resolved'; starId?: string | null; chapterId?: ChapterId | null; emotion?: MemoryEmotion | null; action?: 'replay' | 'reflect' | 'resolve' };
 function emitNarratorEvent(detail: NarratorDetail) { if (typeof window === 'undefined') return; window.dispatchEvent(new CustomEvent('urai:narrator', { detail: { ...detail, timestamp: Date.now() } })); }
@@ -26,6 +27,38 @@ const CHAPTER_LINES: Record<ChapterId, string> = {
 };
 
 const GLOW_LINES = ['Something is asking to be seen.', 'This memory is carrying weight.', 'A pattern is lighting up.', 'This moment connects to something older.'];
+const GLOW_COOLDOWN_MS = 20_000;
+const RESOLVED_GLOW_MULTIPLIER = 0.03;
+const DEFAULT_GLOW_SEED = 1776;
+const EMOTION_SCORE: Record<MemoryEmotion, number> = { threshold: 3, grief: 2.5, recovery: 2, shadow: 2, mirror: 1.5, dream: 1.25, calm: 1, joy: 1, focus: 1 };
+
+export function createSeededRng(seed: number): RandomFn {
+  let t = seed >>> 0;
+  return () => {
+    t += 0x6D2B79F5;
+    let r = Math.imul(t ^ (t >>> 15), t | 1);
+    r ^= r + Math.imul(r ^ (r >>> 7), r | 61);
+    return ((r ^ (r >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+export function scoreStarForGlow(star: MemoryStar, nowMs: number, cooldownMs = GLOW_COOLDOWN_MS): number {
+  const base = 1 + star.recency * 2 + star.intensity * 2 + star.unresolvedWeight * 3 + EMOTION_SCORE[star.emotion];
+  const cooldownPenalty = star.lastActivatedAt !== null && nowMs - star.lastActivatedAt < cooldownMs ? 8 : 0;
+  const resolvedScale = star.state === 'resolved' ? RESOLVED_GLOW_MULTIPLIER : 1;
+  return Math.max(0, (base - cooldownPenalty) * resolvedScale);
+}
+
+export function pickGlowingStars(stars: MemoryStar[], activeStarId: string | null, rng: RandomFn, nowMs: number): string[] {
+  const candidates = stars.filter((s) => s.id !== activeStarId && s.state !== 'resolved');
+  if (candidates.length === 0) return [];
+  const count = Math.min(3, Math.max(1, 1 + Math.floor(rng() * 3)));
+  const ranked = candidates
+    .map((s) => ({ id: s.id, score: scoreStarForGlow(s, nowMs) }))
+    .sort((a, b) => b.score - a.score)
+    .slice(0, Math.max(4, count * 2));
+  return ranked.sort(() => rng() - 0.5).slice(0, Math.min(count, ranked.length)).map((s) => s.id);
+}
 
 const STAR_SEED: Array<[string, number, number, ChapterId, MemoryEmotion]> = [
   ['M', 16, 22, 'season-of-becoming', 'calm'], ['D', 28, 19, 'season-of-becoming', 'joy'], ['I', 22, 34, 'season-of-becoming', 'focus'], ['S', 37, 30, 'threshold', 'shadow'], ['R', 48, 24, 'threshold', 'grief'], ['T', 56, 31, 'threshold', 'threshold'], ['E', 65, 20, 'recovery-arc', 'recovery'], ['L', 72, 28, 'recovery-arc', 'focus'], ['V', 79, 37, 'recovery-arc', 'joy'], ['H', 68, 44, 'purple-dream-field', 'dream'], ['A', 58, 47, 'purple-dream-field', 'mirror'], ['N', 46, 43, 'purple-dream-field', 'dream'], ['K', 34, 45, 'threshold', 'shadow'], ['P', 24, 50, 'season-of-becoming', 'calm'], ['O', 14, 43, 'season-of-becoming', 'focus'], ['Y', 19, 63, 'mirror-of-becoming', 'mirror'], ['C', 31, 68, 'mirror-of-becoming', 'recovery'], ['B', 44, 66, 'mirror-of-becoming', 'joy'], ['F', 56, 63, 'mirror-of-becoming', 'focus'], ['G', 67, 66, 'mirror-of-becoming', 'mirror'], ['Q', 79, 61, 'recovery-arc', 'recovery'], ['U', 87, 50, 'recovery-arc', 'focus'], ['W', 86, 33, 'purple-dream-field', 'dream'], ['J', 10, 58, 'threshold', 'grief'],
@@ -44,7 +77,7 @@ function reducer(state: State, action: Action): State {
     case 'SET_GLOWING_STARS': return { ...state, stars: state.stars.map((s) => s.id === state.activeStarId || s.state === 'resolved' ? s : { ...s, state: action.ids.includes(s.id) ? 'glowing' : 'idle' }) };
     case 'FOCUS_STAR': { const t = state.stars.find((s) => s.id === action.starId); if (!t) return state; return { ...state, activeStarId: t.id, activeChapterId: t.chapterId, phase: 'focus', companionLine: t.narratorLine, camera: { x: t.x, y: t.y, zoom: 1.8 }, stars: state.stars.map((s) => s.id === t.id ? { ...s, state: 'active', lastActivatedAt: Date.now() } : s.state === 'resolved' ? s : t.connectedTo.includes(s.id) && s.state === 'glowing' ? s : { ...s, state: 'idle' }) }; }
     case 'FOCUS_CLUSTER': return { ...state, phase: 'cluster', activeStarId: null, activeChapterId: action.chapterId, camera: action.camera, companionLine: action.companionLine };
-    case 'MARK_RESOLVED': return { ...state, stars: state.stars.map((s) => s.id === action.starId ? { ...s, state: 'resolved' } : s), companionLine: 'This one has softened.' };
+    case 'MARK_RESOLVED': return { ...state, stars: state.stars.map((s) => s.id === action.starId ? { ...s, state: 'resolved', lastActivatedAt: Date.now() } : s), companionLine: 'This one has softened.' };
     case 'SET_CAMERA': return { ...state, camera: action.camera };
     case 'CLEAR_FOCUS': return { ...state, phase: 'living', activeStarId: null, activeChapterId: null, camera: { x: 50, y: 50, zoom: 1 }, stars: state.stars.map((s) => s.state === 'resolved' ? s : { ...s, state: 'idle' }) };
     case 'SET_COMPANION_LINE': return { ...state, companionLine: action.line };
@@ -55,7 +88,25 @@ export default function LifeMapScene() {
   const [state, dispatch] = useReducer(reducer, { stars: INITIAL_STARS, activeStarId: null, activeChapterId: null, camera: { x: 50, y: 50, zoom: 1 }, companionLine: 'A recurring memory pattern appeared.', phase: 'living', reducedMotion: false });
   useEffect(() => { if (typeof window === 'undefined') return; const mq = window.matchMedia('(prefers-reduced-motion: reduce)'); const onChange = () => dispatch({ type: 'SET_REDUCED_MOTION', value: mq.matches }); onChange(); mq.addEventListener('change', onChange); return () => mq.removeEventListener('change', onChange); }, []);
   useEffect(() => { if (typeof window === 'undefined') return; const onEsc = (e: KeyboardEvent) => e.key === 'Escape' && dispatch({ type: 'CLEAR_FOCUS' }); window.addEventListener('keydown', onEsc); return () => window.removeEventListener('keydown', onEsc); }, []);
-  useEffect(() => { if (typeof window === 'undefined') return; let timer = 0; const eScore: Record<MemoryEmotion, number> = { threshold: 3, grief: 2.5, recovery: 2, shadow: 2, mirror: 1.5, dream: 1.25, calm: 1, joy: 1, focus: 1 }; const run = () => { const pool = state.stars.filter((s) => s.id !== state.activeStarId); const count = 1 + Math.floor(Math.random() * 3); const top = pool.map((s) => ({ id: s.id, score: 1 + s.recency * 2 + s.intensity * 2 + s.unresolvedWeight * 3 + eScore[s.emotion] - (s.state === 'resolved' ? 4 : 0) })).sort((a, b) => b.score - a.score).slice(0, Math.max(4, count * 2)); const picked = top.sort(() => Math.random() - 0.5).slice(0, count).map((s) => s.id); dispatch({ type: 'SET_GLOWING_STARS', ids: picked }); dispatch({ type: 'SET_COMPANION_LINE', line: GLOW_LINES[Math.floor(Math.random() * GLOW_LINES.length)] }); picked.forEach((id) => { const star = state.stars.find((s) => s.id === id); emitNarratorEvent({ event: 'lifemap.star.glow', starId: id, chapterId: star?.chapterId ?? null, emotion: star?.emotion ?? null }); }); emitTimelineSync({ phase: 'living', activeStarId: state.activeStarId, activeChapterId: state.activeChapterId }); timer = window.setTimeout(run, state.reducedMotion ? 14000 : 8000 + Math.floor(Math.random() * 6000)); }; timer = window.setTimeout(run, state.reducedMotion ? 14000 : 9000); return () => window.clearTimeout(timer); }, [state.stars, state.activeStarId, state.activeChapterId, state.reducedMotion]);
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    let timer = 0;
+    const rng = createSeededRng(DEFAULT_GLOW_SEED);
+    const run = () => {
+      const now = Date.now();
+      const picked = pickGlowingStars(state.stars, state.activeStarId, rng, now);
+      dispatch({ type: 'SET_GLOWING_STARS', ids: picked });
+      dispatch({ type: 'SET_COMPANION_LINE', line: GLOW_LINES[Math.floor(rng() * GLOW_LINES.length)] });
+      picked.forEach((id) => {
+        const star = state.stars.find((s) => s.id === id);
+        emitNarratorEvent({ event: 'lifemap.star.glow', starId: id, chapterId: star?.chapterId ?? null, emotion: star?.emotion ?? null });
+      });
+      emitTimelineSync({ phase: 'living', activeStarId: state.activeStarId, activeChapterId: state.activeChapterId });
+      timer = window.setTimeout(run, state.reducedMotion ? 14000 : 8000 + Math.floor(rng() * 6000));
+    };
+    timer = window.setTimeout(run, state.reducedMotion ? 14000 : 9000);
+    return () => window.clearTimeout(timer);
+  }, [state.stars, state.activeStarId, state.activeChapterId, state.reducedMotion]);
 
   const activeStar = state.stars.find((s) => s.id === state.activeStarId) ?? null;
   const starById = useMemo(() => new Map(state.stars.map((s) => [s.id, s])), [state.stars]);
