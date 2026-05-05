@@ -7,11 +7,38 @@ const PRICE_ENV_BY_PLAN: Record<Exclude<InsightPlanId, 'free'>, string> = {
   founder: 'NEXT_PUBLIC_STRIPE_PRICE_FOUNDER',
 };
 
+async function verifyUser(request: Request): Promise<string | null> {
+  const authHeader = request.headers.get('authorization');
+  if (!authHeader) return null;
+
+  const token = authHeader.replace('Bearer ', '');
+
+  const adminAuth = await import('firebase-admin/auth');
+  const adminApp = await import('firebase-admin/app');
+
+  if (!adminApp.getApps().length) {
+    const raw = process.env.FIREBASE_SERVICE_ACCOUNT_JSON;
+    if (!raw) throw new Error('Missing FIREBASE_SERVICE_ACCOUNT_JSON');
+    adminApp.initializeApp({ credential: adminApp.cert(JSON.parse(raw)) });
+  }
+
+  try {
+    const decoded = await adminAuth.getAuth().verifyIdToken(token);
+    return decoded.uid;
+  } catch {
+    return null;
+  }
+}
+
 export async function POST(request: Request) {
-  const { planId, returnUrl, userId } = await request.json() as {
+  const uid = await verifyUser(request);
+  if (!uid) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+
+  const { planId, returnUrl } = await request.json() as {
     planId?: InsightPlanId;
     returnUrl?: string;
-    userId?: string;
   };
 
   if (!planId || planId === 'free') {
@@ -37,12 +64,12 @@ export async function POST(request: Request) {
     cancel_url: `${returnUrl ?? appUrl}?stripe=cancelled&plan=${planId}`,
     metadata: {
       planId,
-      userId: userId ?? 'local',
+      userId: uid,
     },
     subscription_data: planId === 'founder' ? undefined : {
       metadata: {
         planId,
-        userId: userId ?? 'local',
+        userId: uid,
       },
     },
   });
