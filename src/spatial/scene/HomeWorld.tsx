@@ -87,7 +87,7 @@ export default function HomeWorld() {
       {/* SKY */}
       <HomeSky />
 
-      {/* GROUND (animated recession system) */}
+      {/* GROUND */}
       <GroundWorld
         recession={groundVisual.recession}
         elevation={groundVisual.elevation}
@@ -104,13 +104,41 @@ export default function HomeWorld() {
         <shadowMaterial opacity={0.5} />
       </mesh>
 
-      {/* AURA GLOW RING */}
-      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[-0.48, 0.014, -0.08]}>
-        <circleGeometry args={[1.4, 40]} />
-        <meshBasicMaterial
-          color="#67c4ff"
+      {/* ENHANCED AURA STACK */}
+      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[-0.5, 0.0135, -0.06]}>
+        <circleGeometry args={[1.22, 44]} />
+        <meshStandardMaterial
+          color="#07142b"
+          emissive="#4cb5ff"
+          emissiveIntensity={0.09}
           transparent
-          opacity={0.08}
+          opacity={0.12}
+          roughness={0.95}
+          metalness={0}
+          depthWrite={false}
+        />
+      </mesh>
+
+      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[-0.48, 0.0155, -0.08]}>
+        <circleGeometry args={[1.4, 40]} />
+        <meshStandardMaterial
+          color="#081a36"
+          transparent
+          opacity={0.07}
+          roughness={0.97}
+          metalness={0.01}
+          depthWrite={false}
+        />
+      </mesh>
+
+      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[-0.46, 0.017, -0.1]}>
+        <ringGeometry args={[1.52, 1.72, 64]} />
+        <meshStandardMaterial
+          color="#6fc6ff"
+          transparent
+          opacity={0.045}
+          roughness={0.98}
+          metalness={0}
           depthWrite={false}
         />
       </mesh>
@@ -131,7 +159,7 @@ export default function HomeWorld() {
         onClick={handleEnterLifeMap}
       />
 
-      {/* INVISIBLE CLICK OVERLAY */}
+      {/* CLICK OVERLAY */}
       <Html position={[-0.52, 1.05, 0]} center>
         <button
           type="button"
@@ -156,7 +184,7 @@ export default function HomeWorld() {
         />
       </Html>
 
-      {/* CAMERA / PRESENCE */}
+      {/* CAMERA */}
       <PresenceRig
         visible
         phase={phase}
@@ -166,35 +194,17 @@ export default function HomeWorld() {
       {/* DEPTH SILHOUETTES */}
       <mesh position={[-4.2, 1.3, -3.2]} castShadow receiveShadow>
         <boxGeometry args={[0.36, 2.6, 0.36]} />
-        <meshStandardMaterial
-          color="#04060d"
-          transparent
-          opacity={0.2}
-          roughness={1}
-          metalness={0}
-        />
+        <meshStandardMaterial color="#04060d" transparent opacity={0.2} />
       </mesh>
 
       <mesh position={[-2.8, 1.6, -5.4]} castShadow receiveShadow>
         <boxGeometry args={[0.44, 3.2, 0.44]} />
-        <meshStandardMaterial
-          color="#04060d"
-          transparent
-          opacity={0.16}
-          roughness={1}
-          metalness={0}
-        />
+        <meshStandardMaterial color="#04060d" transparent opacity={0.16} />
       </mesh>
 
       <mesh position={[3.4, 1.4, -4.8]} castShadow receiveShadow>
         <boxGeometry args={[0.4, 2.8, 0.4]} />
-        <meshStandardMaterial
-          color="#04060d"
-          transparent
-          opacity={0.18}
-          roughness={1}
-          metalness={0}
-        />
+        <meshStandardMaterial color="#04060d" transparent opacity={0.18} />
       </mesh>
     </group>
   );
