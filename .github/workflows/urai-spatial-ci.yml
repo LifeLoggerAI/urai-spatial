@@ -31,6 +31,8 @@ jobs:
         run: pnpm canon:check
       - name: Tier-1 canon lock
         run: pnpm canon:lock
+      - name: LOCS and migration checks
+        run: pnpm test:canon
 
   lifemap-fast-gate:
     name: LifeMap targeted fast gate
@@ -77,6 +79,8 @@ jobs:
         run: pnpm canon:check
       - name: Tier-1 canon lock
         run: pnpm canon:lock
+      - name: LOCS and migration checks
+        run: pnpm test:canon
       - name: Unit tests
         run: pnpm --filter urai-tier1 test
       - name: Lifemap focused tests

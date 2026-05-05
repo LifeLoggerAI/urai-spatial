@@ -16,3 +16,6 @@
 ## migration requirements
 ## override rules
 ## examples from repo
+
+## Relationship to Tier-1
+This tier extends Tier-1 canon and may not redefine or weaken Tier-1.
