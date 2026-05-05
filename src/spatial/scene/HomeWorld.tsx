@@ -8,6 +8,10 @@ import GroundWorld from "./GroundWorld";
 import HomeSky from "./HomeSky";
 import { getGroundChannelsForPhase } from "./phaseMachine";
 
+/* =========================
+   ORB EVENT SYSTEM
+   ========================= */
+
 type HomeOrbEvent =
   | {
       event: "home.orb.activate";
@@ -33,8 +37,16 @@ function emitHomeOrbEvent(detail: Omit<HomeOrbEvent, "timestamp">) {
   );
 }
 
+/* =========================
+   UTIL
+   ========================= */
+
 const easeOutCubic = (t: number) =>
   1 - Math.pow(1 - Math.max(0, Math.min(1, t)), 3);
+
+/* =========================
+   MAIN
+   ========================= */
 
 export default function HomeWorld() {
   const phase = useSceneStore((s) => s.phase);
@@ -57,7 +69,9 @@ export default function HomeWorld() {
   const busy = phase === "ASCENT" || isTransitioning || inputLocked;
   const disabled = phase !== "HOME";
 
-  const handleEnterLifeMap = (source: "pointer" | "keyboard" | "overlay") => {
+  const handleEnterLifeMap = (
+    source: "pointer" | "keyboard" | "overlay"
+  ) => {
     if (busy || disabled) return;
 
     emitHomeOrbEvent({
@@ -70,14 +84,17 @@ export default function HomeWorld() {
 
   return (
     <group>
+      {/* SKY */}
       <HomeSky />
 
+      {/* GROUND (animated recession system) */}
       <GroundWorld
         recession={groundVisual.recession}
         elevation={groundVisual.elevation}
         opacity={groundVisual.opacity}
       />
 
+      {/* SHADOW BASE */}
       <mesh
         rotation={[-Math.PI / 2, 0, 0]}
         position={[-0.52, 0.012, -0.05]}
@@ -87,6 +104,7 @@ export default function HomeWorld() {
         <shadowMaterial opacity={0.5} />
       </mesh>
 
+      {/* AURA GLOW RING */}
       <mesh rotation={[-Math.PI / 2, 0, 0]} position={[-0.48, 0.014, -0.08]}>
         <circleGeometry args={[1.4, 40]} />
         <meshBasicMaterial
@@ -97,6 +115,7 @@ export default function HomeWorld() {
         />
       </mesh>
 
+      {/* ORB */}
       <Orb
         interactive
         active={!disabled}
@@ -112,6 +131,7 @@ export default function HomeWorld() {
         onClick={handleEnterLifeMap}
       />
 
+      {/* INVISIBLE CLICK OVERLAY */}
       <Html position={[-0.52, 1.05, 0]} center>
         <button
           type="button"
@@ -136,13 +156,14 @@ export default function HomeWorld() {
         />
       </Html>
 
+      {/* CAMERA / PRESENCE */}
       <PresenceRig
         visible
         phase={phase}
         focusTarget={[-0.52, 0.38, -0.05]}
       />
 
-      {/* Background depth silhouettes */}
+      {/* DEPTH SILHOUETTES */}
       <mesh position={[-4.2, 1.3, -3.2]} castShadow receiveShadow>
         <boxGeometry args={[0.36, 2.6, 0.36]} />
         <meshStandardMaterial
