@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Canvas } from '@react-three/fiber'
 import { PerspectiveCamera } from '@react-three/drei'
 import Ground from './Ground'
@@ -17,6 +17,7 @@ import CinematicParticles from '../spatial/cinematic/CinematicParticles'
 import NarratorVoice from '../spatial/narrator/NarratorVoice'
 import NarratorHud from '../spatial/narrator/NarratorHud'
 import ConstellationLayer, { ConstellationNodePosition } from '../spatial/constellation/ConstellationLayer'
+import { NarratorContext } from '../spatial/narrator/buildNarration'
 
 export default function HomeScene() {
   const params = useSearchParams()
@@ -26,6 +27,7 @@ export default function HomeScene() {
   const { manifest } = useManifest(manifestId)
   const [selectedManifest, setSelectedManifest] = useState<SpatialAssetManifest | null>(null)
   const [selectedPosition, setSelectedPosition] = useState<ConstellationNodePosition | null>(null)
+  const [narratorContext, setNarratorContext] = useState<NarratorContext>('arrival')
 
   const activeManifest = selectedManifest ?? manifest
 
@@ -33,6 +35,16 @@ export default function HomeScene() {
     setSelectedManifest(manifest)
     setSelectedPosition(position)
   }
+
+  useEffect(() => {
+    if (selectedManifest) {
+      setNarratorContext('return')
+    } else if (constellationMode) {
+      setNarratorContext('explore')
+    } else {
+      setNarratorContext('arrival')
+    }
+  }, [selectedManifest, constellationMode])
 
   return (
     <div style={{ width: '100%', height: '100%', position: 'relative' }}>
@@ -71,7 +83,7 @@ export default function HomeScene() {
         <CinematicParticles active={Boolean(activeManifest)} />
         <CinematicPostProcessing active={Boolean(activeManifest)} />
 
-        <NarratorVoice manifest={activeManifest} />
+        <NarratorVoice manifest={activeManifest} context={narratorContext} />
       </Canvas>
 
       <NarratorHud />
