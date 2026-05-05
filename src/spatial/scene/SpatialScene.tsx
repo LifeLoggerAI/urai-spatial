@@ -6,8 +6,7 @@ import HomeWorld from "./HomeWorld";
 import LifeMapScene from "@/components/spatial/LifeMapScene";
 import { useSceneStore, type ScenePhase } from "../state/sceneStore";
 import { useEnvironmentSignal } from "../signals/environmentSignal";
-
-// ... unchanged types
+import ConsciousEnvironmentBridge from "../consciousness/ConsciousEnvironmentBridge";
 
 type LayerVisibility = {
   visible: boolean;
@@ -79,6 +78,8 @@ export default function SpatialScene() {
 
   return (
     <section aria-label="Spatial scene composition" data-phase={phase}>
+      <ConsciousEnvironmentBridge />
+
       <div
         style={{
           opacity: layers.sky.opacity,
