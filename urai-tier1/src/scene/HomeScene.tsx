@@ -7,11 +7,15 @@ import Orb from './Orb'
 import Sky from './Sky'
 import Atmosphere from './Atmosphere'
 import ManifestRenderer from '../spatial/assets/ManifestRenderer'
-
-// TEMP: static manifest injection (replace with Firestore fetch later)
-const demoManifest = null
+import { useManifest } from '../spatial/assets/useManifest'
+import { useSearchParams } from 'next/navigation'
 
 export default function HomeScene() {
+  const params = useSearchParams()
+  const manifestId = params.get('manifestId')
+
+  const { manifest } = useManifest(manifestId)
+
   return (
     <Canvas shadows gl={{ antialias: true }}>
       <PerspectiveCamera makeDefault position={[0, 1.2, 4]} fov={45} />
@@ -30,7 +34,7 @@ export default function HomeScene() {
       <Ground />
       <Orb />
 
-      <ManifestRenderer manifest={demoManifest} />
+      <ManifestRenderer manifest={manifest} />
     </Canvas>
   )
 }
