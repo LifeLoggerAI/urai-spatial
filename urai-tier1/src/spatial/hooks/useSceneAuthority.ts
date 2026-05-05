@@ -1,8 +1,9 @@
 'use client'
 
 import { useCallback, useMemo, useRef, useState } from 'react'
+import type { Tier1Phase } from '@/canon/tier1'
 
-export type CanonPhase = 'HOME' | 'ASCENT' | 'LIFEMAP' | 'FOCUS' | 'REPLAY'
+export type CanonPhase = Tier1Phase
 
 type SceneAuthority = {
   phase: CanonPhase
