@@ -13,6 +13,7 @@ import CinematicCameraRig from '../spatial/cinematic/CinematicCameraRig'
 import CinematicPostProcessing from '../spatial/cinematic/CinematicPostProcessing'
 import CinematicParticles from '../spatial/cinematic/CinematicParticles'
 import NarratorVoice from '../spatial/narrator/NarratorVoice'
+import NarratorHud from '../spatial/narrator/NarratorHud'
 
 export default function HomeScene() {
   const params = useSearchParams()
@@ -21,31 +22,35 @@ export default function HomeScene() {
   const { manifest } = useManifest(manifestId)
 
   return (
-    <Canvas shadows gl={{ antialias: true }}>
-      <PerspectiveCamera makeDefault position={[0, 1.2, 4]} fov={45} />
+    <div style={{ width: '100%', height: '100%', position: 'relative' }}>
+      <Canvas shadows gl={{ antialias: true }}>
+        <PerspectiveCamera makeDefault position={[0, 1.2, 4]} fov={45} />
 
-      <CinematicCameraRig active={Boolean(manifest)} />
+        <CinematicCameraRig active={Boolean(manifest)} />
 
-      <ambientLight intensity={0.35} />
-      <directionalLight
-        position={[3, 5, 2]}
-        intensity={1.15}
-        castShadow
-        shadow-mapSize-width={1024}
-        shadow-mapSize-height={1024}
-      />
+        <ambientLight intensity={0.35} />
+        <directionalLight
+          position={[3, 5, 2]}
+          intensity={1.15}
+          castShadow
+          shadow-mapSize-width={1024}
+          shadow-mapSize-height={1024}
+        />
 
-      <Atmosphere />
-      <Sky />
-      <Ground />
-      <Orb />
+        <Atmosphere />
+        <Sky />
+        <Ground />
+        <Orb />
 
-      <ManifestRenderer manifest={manifest} />
+        <ManifestRenderer manifest={manifest} />
 
-      <CinematicParticles active={Boolean(manifest)} />
-      <CinematicPostProcessing active={Boolean(manifest)} />
+        <CinematicParticles active={Boolean(manifest)} />
+        <CinematicPostProcessing active={Boolean(manifest)} />
 
-      <NarratorVoice manifest={manifest} />
-    </Canvas>
+        <NarratorVoice manifest={manifest} />
+      </Canvas>
+
+      <NarratorHud />
+    </div>
   )
 }
