@@ -1,4 +1,4 @@
-# Tier-1 Canon Standards
+# Tier-4 Canon Standards
 
 ## id
 ## official label
@@ -16,15 +16,3 @@
 ## migration requirements
 ## override rules
 ## examples from repo
-
-## Home Invariant
-- no text
-- no buttons
-- no navigation
-- no onboarding
-- no narration
-- sky-primary
-- spatial-only
-- immersive
-- full-screen
-- founder-approved only for mutation

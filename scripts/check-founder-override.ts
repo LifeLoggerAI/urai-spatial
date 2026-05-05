@@ -1,0 +1,1 @@
+export const OVERRIDE_REGEX = /FOUNDER_CANON_OVERRIDE_APPROVED/[Symbol.match]
