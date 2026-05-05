@@ -4,12 +4,16 @@ export type RuntimeFlags = {
   publicDemoMode: boolean
   recordingMode: RecordingMode
   showDemoExportControls: boolean
+  enableHomeAvatar: boolean
+  forceLowPolyAvatar: boolean
 }
 
 const DEFAULT_RUNTIME_FLAGS: RuntimeFlags = {
   publicDemoMode: true,
   recordingMode: 'off',
   showDemoExportControls: false,
+  enableHomeAvatar: true,
+  forceLowPolyAvatar: false,
 }
 
 /**
@@ -39,6 +43,8 @@ export function getRuntimeFlags(): RuntimeFlags {
   const showDemoExportControlsOverride = window.localStorage.getItem(
     'spatial.showDemoExportControls'
   )
+  const enableHomeAvatarOverride = window.localStorage.getItem('spatial.enableHomeAvatar')
+  const forceLowPolyAvatarOverride = window.localStorage.getItem('spatial.forceLowPolyAvatar')
 
   const publicDemoMode =
     publicDemoOverride === null
@@ -55,10 +61,22 @@ export function getRuntimeFlags(): RuntimeFlags {
       ? DEFAULT_RUNTIME_FLAGS.showDemoExportControls
       : showDemoExportControlsOverride === 'true'
 
+  const enableHomeAvatar =
+    enableHomeAvatarOverride === null
+      ? DEFAULT_RUNTIME_FLAGS.enableHomeAvatar
+      : enableHomeAvatarOverride === 'true'
+
+  const forceLowPolyAvatar =
+    forceLowPolyAvatarOverride === null
+      ? DEFAULT_RUNTIME_FLAGS.forceLowPolyAvatar
+      : forceLowPolyAvatarOverride === 'true'
+
   return {
     publicDemoMode,
     recordingMode,
     showDemoExportControls,
+    enableHomeAvatar,
+    forceLowPolyAvatar,
   }
 }
 

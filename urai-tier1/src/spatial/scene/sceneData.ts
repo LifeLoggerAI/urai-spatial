@@ -63,6 +63,7 @@ export function generateStars(count = 42): MemoryStar[] {
     const baseScale = 0.32 + rand() * 0.56;
 
     stars.push({
+      id: `memory-${i}`,
       position: [x, y, z],
       color,
       baseScale,
