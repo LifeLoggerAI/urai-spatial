@@ -1,10 +1,15 @@
 'use client';
 
-import { useEffect, useMemo, useReducer } from 'react';
+import { useEffect, useMemo, useReducer, useState } from 'react';
 
 type StarState = 'idle' | 'glowing' | 'active' | 'resolved';
 type MemoryEmotion = 'calm' | 'joy' | 'grief' | 'focus' | 'threshold' | 'recovery' | 'dream' | 'mirror' | 'shadow';
 type ChapterId = 'season-of-becoming' | 'threshold' | 'recovery-arc' | 'purple-dream-field' | 'mirror-of-becoming';
+
+type PersistedStarState = {
+  resolvedAt: number | null;
+  lastActivatedAt: number | null;
+};
 
 type MemoryStar = {
   id: string;
@@ -19,6 +24,7 @@ type MemoryStar = {
   recency: number;
   unresolvedWeight: number;
   lastActivatedAt: number | null;
+  resolvedAt: number | null;
   narratorLine: string;
   connectedTo: string[];
 };
@@ -40,33 +46,16 @@ type Action =
   | { type: 'SET_REDUCED_MOTION'; value: boolean }
   | { type: 'SET_GLOWING_STARS'; ids: string[] }
   | { type: 'FOCUS_STAR'; starId: string }
-  | { type: 'FOCUS_CLUSTER'; chapterId: ChapterId; companionLine: string }
-  | { type: 'MARK_RESOLVED'; starId: string }
+  | { type: 'FOCUS_CLUSTER'; chapterId: ChapterId; camera: LifeMapCamera; companionLine: string }
+  | { type: 'MARK_RESOLVED'; starId: string; resolvedAt: number }
+  | { type: 'REHYDRATE_PERSISTENCE'; persisted: Record<string, PersistedStarState> }
+  | { type: 'SET_CAMERA'; camera: LifeMapCamera }
   | { type: 'CLEAR_FOCUS' }
   | { type: 'SET_COMPANION_LINE'; line: string };
 
-const CHAPTERS = [
-  { id: 'season-of-becoming', title: 'The Season of Becoming', subtitle: 'memory / calm / clarity' },
-  { id: 'threshold', title: 'The Threshold', subtitle: 'conflict / shadow / pain' },
-  { id: 'recovery-arc', title: 'The Recovery Arc', subtitle: 'recovery / growth / purpose' },
-  { id: 'purple-dream-field', title: 'The Purple Dream Field', subtitle: 'dream / mystery / milestone' },
-  { id: 'mirror-of-becoming', title: 'Mirror of Becoming', subtitle: 'rebirth / clarity / purpose' },
-] as const;
-
-const CHAPTER_LINES: Record<ChapterId, string> = {
-  threshold: 'The threshold is where the pattern became visible.',
-  'recovery-arc': 'The recovery arc is still growing.',
-  'mirror-of-becoming': 'The mirror is showing who you are becoming.',
-  'season-of-becoming': 'This season is asking to be understood.',
-  'purple-dream-field': 'The dream field is speaking in symbols.',
-};
-
-const GLOW_LINES = [
-  'Something is asking to be seen.',
-  'This memory is carrying weight.',
-  'A pattern is lighting up.',
-  'This moment connects to something older.',
-];
+/* =========================
+   INITIAL DATA
+   ========================= */
 
 const INITIAL_STARS: MemoryStar[] = [
   ['M', 16, 22, 'season-of-becoming', 'calm'],
@@ -91,9 +80,39 @@ const INITIAL_STARS: MemoryStar[] = [
   recency: 0.5,
   unresolvedWeight: 0.5,
   lastActivatedAt: null,
+  resolvedAt: null,
   narratorLine: `${s[0]} carries a thread that still matters.`,
   connectedTo: [],
 }));
+
+/* =========================
+   PERSISTENCE
+   ========================= */
+
+const PERSIST_KEY = 'urai.lifemap.star.persistence.v1';
+
+function loadPersistence(): Record<string, PersistedStarState> {
+  try {
+    const raw = localStorage.getItem(PERSIST_KEY);
+    return raw ? JSON.parse(raw) : {};
+  } catch {
+    return {};
+  }
+}
+
+function savePersistence(starId: string, values: Partial<PersistedStarState>) {
+  try {
+    const raw = localStorage.getItem(PERSIST_KEY);
+    const current = raw ? JSON.parse(raw) : {};
+    const prev = current[starId] ?? { resolvedAt: null, lastActivatedAt: null };
+    current[starId] = { ...prev, ...values };
+    localStorage.setItem(PERSIST_KEY, JSON.stringify(current));
+  } catch {}
+}
+
+/* =========================
+   REDUCER
+   ========================= */
 
 function reducer(state: LifeMapState, action: Action): LifeMapState {
   switch (action.type) {
@@ -110,9 +129,10 @@ function reducer(state: LifeMapState, action: Action): LifeMapState {
         ),
       };
 
-    case 'FOCUS_STAR':
+    case 'FOCUS_STAR': {
       const star = state.stars.find((s) => s.id === action.starId);
       if (!star) return state;
+
       return {
         ...state,
         activeStarId: star.id,
@@ -124,41 +144,41 @@ function reducer(state: LifeMapState, action: Action): LifeMapState {
           s.id === star.id ? { ...s, state: 'active' } : s
         ),
       };
-
-    case 'FOCUS_CLUSTER':
-      return {
-        ...state,
-        phase: 'cluster',
-        activeChapterId: action.chapterId,
-        activeStarId: null,
-        companionLine: action.companionLine,
-      };
+    }
 
     case 'MARK_RESOLVED':
       return {
         ...state,
         stars: state.stars.map((s) =>
-          s.id === action.starId ? { ...s, state: 'resolved' } : s
+          s.id === action.starId
+            ? { ...s, state: 'resolved', resolvedAt: action.resolvedAt }
+            : s
         ),
-        companionLine: 'This one has softened.',
       };
 
-    case 'CLEAR_FOCUS':
+    case 'REHYDRATE_PERSISTENCE':
       return {
         ...state,
-        phase: 'living',
-        activeStarId: null,
-        activeChapterId: null,
-        camera: { x: 50, y: 50, zoom: 1 },
+        stars: state.stars.map((s) => {
+          const p = action.persisted[s.id];
+          if (!p) return s;
+          return {
+            ...s,
+            lastActivatedAt: p.lastActivatedAt,
+            resolvedAt: p.resolvedAt,
+            state: p.resolvedAt ? 'resolved' : s.state,
+          };
+        }),
       };
-
-    case 'SET_COMPANION_LINE':
-      return { ...state, companionLine: action.line };
 
     default:
       return state;
   }
 }
+
+/* =========================
+   COMPONENT
+   ========================= */
 
 export default function LifeMapScene() {
   const [state, dispatch] = useReducer(reducer, {
@@ -172,15 +192,11 @@ export default function LifeMapScene() {
   });
 
   useEffect(() => {
-    const mq = window.matchMedia('(prefers-reduced-motion: reduce)');
-    const update = () =>
-      dispatch({ type: 'SET_REDUCED_MOTION', value: mq.matches });
-    update();
-    mq.addEventListener('change', update);
-    return () => mq.removeEventListener('change', update);
+    dispatch({
+      type: 'REHYDRATE_PERSISTENCE',
+      persisted: loadPersistence(),
+    });
   }, []);
-
-  const activeStar = state.stars.find((s) => s.id === state.activeStarId);
 
   return (
     <main className="life-map-shell">
@@ -188,21 +204,16 @@ export default function LifeMapScene() {
         {state.stars.map((star) => (
           <button
             key={star.id}
-            onClick={() => dispatch({ type: 'FOCUS_STAR', starId: star.id })}
+            onClick={() => {
+              const now = Date.now();
+              dispatch({ type: 'FOCUS_STAR', starId: star.id });
+              savePersistence(star.id, { lastActivatedAt: now });
+            }}
           >
             {star.title}
           </button>
         ))}
       </div>
-
-      {activeStar && (
-        <div>
-          <h3>{activeStar.title}</h3>
-          <button onClick={() => dispatch({ type: 'MARK_RESOLVED', starId: activeStar.id })}>
-            Resolve
-          </button>
-        </div>
-      )}
     </main>
   );
 }
