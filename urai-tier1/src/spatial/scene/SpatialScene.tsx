@@ -346,6 +346,31 @@ export default function SpatialScene() {
     timers.current.push(timer);
   }, []);
 
+
+
+  const emitNarrator = useCallback((detail: Record<string, unknown>) => {
+    window.dispatchEvent(
+      new CustomEvent("urai:narrator", {
+        detail: { ...detail, timestamp: Date.now() },
+      })
+    );
+  }, []);
+
+  const emitTimelineSync = useCallback((detail: Record<string, unknown>) => {
+    window.dispatchEvent(
+      new CustomEvent("urai:timeline-sync", {
+        detail: { mode: "lifemap", ...detail, timestamp: Date.now() },
+      })
+    );
+  }, []);
+
+  const activateNode = useCallback((node: LifeMapNode) => {
+    setSelectedNodeId(node.id);
+    setStarStates((current) => ({ ...current, [node.id]: "active" }));
+    setLastActivatedAt((current) => ({ ...current, [node.id]: Date.now() }));
+    setCompanionOverride(node.narratorLine);
+  }, []);
+
   const writeUrl = useCallback(
     (next: LifeMapPhase, nodeId: string | null = selectedNodeId) => {
       const base = PHASE_ROUTES[next];
@@ -428,17 +453,23 @@ export default function SpatialScene() {
       if (isTransitioning) return;
 
       pushSnapshot();
-      setSelectedNodeId(node.id);
-      setStarStates((current) => ({ ...current, [node.id]: "active" }));
-      setLastActivatedAt((current) => ({ ...current, [node.id]: Date.now() }));
-      setCompanionOverride(node.narratorLine);
-      window.dispatchEvent(new CustomEvent("urai:narrator", { detail: { event: "lifemap.star.focus", starId: node.id, chapterId: node.chapterId, emotion: node.emotionalTone, timestamp: Date.now() } }));
-      window.dispatchEvent(new CustomEvent("urai:timeline-sync", { detail: { mode: "lifemap", phase: "focus", activeStarId: node.id, activeChapterId: node.chapterId, timestamp: Date.now() } }));
+      activateNode(node);
+      emitNarrator({
+        event: "lifemap.star.focus",
+        starId: node.id,
+        chapterId: node.chapterId,
+        emotion: node.emotionalTone,
+      });
+      emitTimelineSync({
+        phase: "focus",
+        activeStarId: node.id,
+        activeChapterId: node.chapterId,
+      });
       setShowReplay(false);
       setPhase("focus");
       writeUrl("focus", node.id);
     },
-    [isTransitioning, pushSnapshot, writeUrl]
+    [activateNode, emitNarrator, emitTimelineSync, isTransitioning, pushSnapshot, writeUrl]
   );
 
   const startReplay = useCallback(
@@ -448,19 +479,25 @@ export default function SpatialScene() {
       pushSnapshot();
 
       if (node) {
-        setSelectedNodeId(node.id);
-      setStarStates((current) => ({ ...current, [node.id]: "active" }));
-      setLastActivatedAt((current) => ({ ...current, [node.id]: Date.now() }));
-      setCompanionOverride(node.narratorLine);
-      window.dispatchEvent(new CustomEvent("urai:narrator", { detail: { event: "lifemap.star.focus", starId: node.id, chapterId: node.chapterId, emotion: node.emotionalTone, timestamp: Date.now() } }));
-      window.dispatchEvent(new CustomEvent("urai:timeline-sync", { detail: { mode: "lifemap", phase: "focus", activeStarId: node.id, activeChapterId: node.chapterId, timestamp: Date.now() } }));
+        activateNode(node);
+      emitNarrator({
+        event: "lifemap.star.focus",
+        starId: node.id,
+        chapterId: node.chapterId,
+        emotion: node.emotionalTone,
+      });
+      emitTimelineSync({
+        phase: "focus",
+        activeStarId: node.id,
+        activeChapterId: node.chapterId,
+      });
       }
 
       setShowReplay(true);
       setPhase("replay");
       writeUrl("replay", node?.id ?? selectedNodeId);
     },
-    [isTransitioning, pushSnapshot, selectedNode, selectedNodeId, writeUrl]
+    [activateNode, emitNarrator, emitTimelineSync, isTransitioning, pushSnapshot, selectedNode, selectedNodeId, writeUrl]
   );
 
   const unwind = useCallback(() => {
@@ -529,14 +566,23 @@ export default function SpatialScene() {
       const g = lifeMapNodes.find((n) => n.id === glowing[0]);
       if (g) {
         setCompanionOverride(messages[Math.floor(Math.random()*messages.length)]);
-        window.dispatchEvent(new CustomEvent("urai:narrator", { detail: { event: "lifemap.star.glow", starId: g.id, chapterId: g.chapterId, emotion: g.emotionalTone, timestamp: Date.now() } }));
-        window.dispatchEvent(new CustomEvent("urai:timeline-sync", { detail: { mode: "lifemap", phase: "living", activeStarId: g.id, activeChapterId: g.chapterId, timestamp: Date.now() } }));
+        emitNarrator({
+          event: "lifemap.star.glow",
+          starId: g.id,
+          chapterId: g.chapterId,
+          emotion: g.emotionalTone,
+        });
+        emitTimelineSync({
+          phase: "living",
+          activeStarId: g.id,
+          activeChapterId: g.chapterId,
+        });
       }
     };
     const id = window.setInterval(roll, 8000 + Math.floor(Math.random() * 6000));
     roll();
     return () => clearInterval(id);
-  }, [lastActivatedAt, phase, reducedMotion, starStates, visibleNodes]);
+  }, [emitNarrator, emitTimelineSync, lastActivatedAt, phase, reducedMotion, starStates, visibleNodes]);
 
   useEffect(() => () => clearTimers(), [clearTimers]);
 
@@ -745,12 +791,18 @@ export default function SpatialScene() {
                     onDoubleClick={() => setZoom(1.35)}
                     onContextMenu={(event) => {
                       event.preventDefault();
-                      setSelectedNodeId(node.id);
-      setStarStates((current) => ({ ...current, [node.id]: "active" }));
-      setLastActivatedAt((current) => ({ ...current, [node.id]: Date.now() }));
-      setCompanionOverride(node.narratorLine);
-      window.dispatchEvent(new CustomEvent("urai:narrator", { detail: { event: "lifemap.star.focus", starId: node.id, chapterId: node.chapterId, emotion: node.emotionalTone, timestamp: Date.now() } }));
-      window.dispatchEvent(new CustomEvent("urai:timeline-sync", { detail: { mode: "lifemap", phase: "focus", activeStarId: node.id, activeChapterId: node.chapterId, timestamp: Date.now() } }));
+                      activateNode(node);
+      emitNarrator({
+        event: "lifemap.star.focus",
+        starId: node.id,
+        chapterId: node.chapterId,
+        emotion: node.emotionalTone,
+      });
+      emitTimelineSync({
+        phase: "focus",
+        activeStarId: node.id,
+        activeChapterId: node.chapterId,
+      });
                       startReplay(node);
                     }}
                   >
@@ -778,8 +830,17 @@ export default function SpatialScene() {
                   if (first) {
                     setSelectedNodeId(first.id);
                     setZoom(1.32);
-                    window.dispatchEvent(new CustomEvent("urai:narrator", { detail: { event: "lifemap.cluster.focus", starId: first.id, chapterId: chapter.id, emotion: first.emotionalTone, timestamp: Date.now() } }));
-                    window.dispatchEvent(new CustomEvent("urai:timeline-sync", { detail: { mode: "lifemap", phase: "cluster", activeStarId: first.id, activeChapterId: chapter.id, timestamp: Date.now() } }));
+                    emitNarrator({
+                      event: "lifemap.cluster.focus",
+                      starId: first.id,
+                      chapterId: chapter.id,
+                      emotion: first.emotionalTone,
+                    });
+                    emitTimelineSync({
+                      phase: "cluster",
+                      activeStarId: first.id,
+                      activeChapterId: chapter.id,
+                    });
                   }
                 }}
               >
@@ -811,7 +872,12 @@ export default function SpatialScene() {
               onResolve={() => {
                 setCompanionOverride("This one has softened.");
                 setStarStates((current) => ({ ...current, [selectedNode.id]: "resolved" }));
-                window.dispatchEvent(new CustomEvent("urai:narrator", { detail: { event: "lifemap.star.resolved", starId: selectedNode.id, chapterId: selectedNode.chapterId, emotion: selectedNode.emotionalTone, timestamp: Date.now() } }));
+                emitNarrator({
+                  event: "lifemap.star.resolved",
+                  starId: selectedNode.id,
+                  chapterId: selectedNode.chapterId,
+                  emotion: selectedNode.emotionalTone,
+                });
               }}
               onClose={() => {
                 setSelectedNodeId(null);
