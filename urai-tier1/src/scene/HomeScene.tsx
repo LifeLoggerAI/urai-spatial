@@ -16,7 +16,7 @@ import CinematicPostProcessing from '../spatial/cinematic/CinematicPostProcessin
 import CinematicParticles from '../spatial/cinematic/CinematicParticles'
 import NarratorVoice from '../spatial/narrator/NarratorVoice'
 import NarratorHud from '../spatial/narrator/NarratorHud'
-import ConstellationLayer from '../spatial/constellation/ConstellationLayer'
+import ConstellationLayer, { ConstellationNodePosition } from '../spatial/constellation/ConstellationLayer'
 
 export default function HomeScene() {
   const params = useSearchParams()
@@ -25,14 +25,24 @@ export default function HomeScene() {
 
   const { manifest } = useManifest(manifestId)
   const [selectedManifest, setSelectedManifest] = useState<SpatialAssetManifest | null>(null)
+  const [selectedPosition, setSelectedPosition] = useState<ConstellationNodePosition | null>(null)
+
   const activeManifest = selectedManifest ?? manifest
+
+  function handleSelect(manifest: SpatialAssetManifest, position: ConstellationNodePosition) {
+    setSelectedManifest(manifest)
+    setSelectedPosition(position)
+  }
 
   return (
     <div style={{ width: '100%', height: '100%', position: 'relative' }}>
       <Canvas shadows gl={{ antialias: true }}>
         <PerspectiveCamera makeDefault position={[0, 1.2, 4]} fov={45} />
 
-        <CinematicCameraRig active={Boolean(activeManifest)} />
+        <CinematicCameraRig
+          active={Boolean(activeManifest)}
+          focusPosition={selectedPosition}
+        />
 
         <ambientLight intensity={0.35} />
         <directionalLight
@@ -52,7 +62,7 @@ export default function HomeScene() {
           <ConstellationLayer
             enabled
             selectedManifestId={selectedManifest?.manifestId ?? null}
-            onSelect={setSelectedManifest}
+            onSelect={handleSelect}
           />
         ) : (
           <ManifestRenderer manifest={manifest} />
