@@ -41,54 +41,74 @@ function emotionalSettings(detail: NarratorVoiceDetail): VoiceSettings {
   let volume = intensity === "medium" ? 0.88 : 0.68;
 
   if (tone === "grief") {
-    rate -= 0.09;
-    pitch -= 0.08;
-    volume -= 0.08;
+    rate -= 0.11;
+    pitch -= 0.09;
+    volume -= 0.09;
   } else if (tone === "tension" || tone === "charged") {
-    rate += 0.03;
-    pitch -= 0.03;
-    volume += 0.05;
+    rate += 0.04;
+    pitch -= 0.04;
+    volume += 0.06;
   } else if (tone === "hope" || tone === "recovery") {
     rate += 0.02;
     pitch += 0.05;
     volume += 0.04;
   } else if (tone === "awe") {
-    rate -= 0.04;
+    rate -= 0.05;
     pitch += 0.02;
   } else if (tone === "calm") {
-    rate -= 0.03;
+    rate -= 0.04;
     volume -= 0.03;
   }
 
   if (weight === "threshold") {
-    rate -= 0.05;
+    rate -= 0.07;
     volume += 0.05;
   } else if (weight === "heavy") {
-    rate -= 0.04;
+    rate -= 0.05;
   }
 
   return {
-    rate: clamp(rate, 0.64, 1.04),
-    pitch: clamp(pitch, 0.72, 1.12),
-    volume: clamp(volume, 0.45, 0.95),
+    rate: clamp(rate, 0.6, 1.05),
+    pitch: clamp(pitch, 0.7, 1.12),
+    volume: clamp(volume, 0.42, 0.96),
   };
 }
 
-function addEmotionalPauses(script: string, detail: NarratorVoiceDetail) {
+function hesitationFor(detail: NarratorVoiceDetail) {
   const tone = detail.tone ?? "neutral";
   const weight = detail.symbolicWeight ?? "light";
 
-  let text = script.replace(/\.\s+/g, ". ... ").replace(/,\s+/g, ", ");
+  if (tone === "grief" || weight === "threshold") return "... ...";
+  if (tone === "awe" || weight === "heavy") return "...";
+  if (tone === "tension" || tone === "charged") return "...";
+  return "...";
+}
+
+function addSilenceAndHesitation(script: string, detail: NarratorVoiceDetail) {
+  const tone = detail.tone ?? "neutral";
+  const weight = detail.symbolicWeight ?? "light";
+  const hesitation = hesitationFor(detail);
+
+  let text = script.trim();
+
+  text = text.replace(/\.\s+/g, `. ${hesitation} `);
+  text = text.replace(/,\s+/g, `, ... `);
 
   if (tone === "grief" || weight === "threshold") {
-    text = text.replace(/Tone:/g, "... Tone:").replace(/Weight:/g, "... Weight:");
+    text = `${hesitation} ${text}`;
+    text = text.replace(/Tone:/g, `${hesitation} Tone:`).replace(/Weight:/g, `${hesitation} Weight:`);
+  }
+
+  if (tone === "awe") {
+    text = text.replace(/Let the memory arrive slowly\./g, `Let the memory ${hesitation} arrive slowly.`);
   }
 
   if (tone === "tension" || tone === "charged") {
-    text = text.replace(/\.\.\.\s+/g, ". ");
+    text = text.replace(/\.\.\.\s+\.\.\./g, "...");
+    text = text.replace(/,\.\.\./g, ", ...");
   }
 
-  return text;
+  return text.replace(/\s+/g, " ").trim();
 }
 
 function shouldSpeak(detail: NarratorVoiceDetail) {
@@ -104,7 +124,7 @@ function wordIndexFromCharIndex(text: string, charIndex: number) {
   const before = text.slice(0, Math.max(0, charIndex));
   const trimmed = before.trim();
   if (!trimmed) return 0;
-  return trimmed.split(/\s+/).length;
+  return trimmed.split(/\s+/).filter((word) => word !== "...").length;
 }
 
 export default function NarratorVoiceBridge() {
@@ -128,7 +148,7 @@ export default function NarratorVoiceBridge() {
 
       timeoutRef.current = window.setTimeout(() => {
         const originalScript = detail.script ?? "";
-        const spokenScript = addEmotionalPauses(originalScript, detail);
+        const spokenScript = addSilenceAndHesitation(originalScript, detail);
         const utterance = new SpeechSynthesisUtterance(spokenScript);
         const settings = emotionalSettings(detail);
 
@@ -136,6 +156,17 @@ export default function NarratorVoiceBridge() {
         utterance.pitch = settings.pitch;
         utterance.volume = settings.volume;
         utterance.lang = "en-US";
+
+        window.dispatchEvent(
+          new CustomEvent("urai:narrator-silence", {
+            detail: {
+              sourceEvent: detail.event,
+              tone: detail.tone ?? null,
+              symbolicWeight: detail.symbolicWeight ?? null,
+              script: spokenScript,
+            },
+          }),
+        );
 
         utterance.onboundary = (boundaryEvent) => {
           if (boundaryEvent.name && boundaryEvent.name !== "word") return;
