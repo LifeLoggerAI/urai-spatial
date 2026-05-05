@@ -1,315 +1,219 @@
-"use client";
+'use client';
 
-import type { CSSProperties } from "react";
-import { useEffect, useMemo, useState } from "react";
-import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { useEffect, useMemo, useReducer, useState } from 'react';
 
-/* ---------------- TYPES ---------------- */
+type StarState = 'idle' | 'glowing' | 'active' | 'resolved';
+type MemoryEmotion = 'calm' | 'joy' | 'grief' | 'focus' | 'threshold' | 'recovery' | 'dream' | 'mirror' | 'shadow';
+type ChapterId = 'season-of-becoming' | 'threshold' | 'recovery-arc' | 'purple-dream-field' | 'mirror-of-becoming';
 
-type NodeType =
-  | "signal"
-  | "threshold"
-  | "recovery"
-  | "pattern"
-  | "memory"
-  | "council"
-  | "return";
+type PersistedStarState = {
+  resolvedAt: number | null;
+  lastActivatedAt: number | null;
+};
 
-type Mode = "home" | "lifemap" | "focus" | "replay" | "mirror" | "rewind";
-type Filter = "all" | NodeType;
-
-type LifeNode = {
+type MemoryStar = {
   id: string;
-  type: NodeType;
   title: string;
-  subtitle: string;
-  description: string;
-  timestamp: string;
-  emotion: string;
-  intensity: number;
-  auraColor: string;
   x: number;
   y: number;
-  z: number;
-  constellationGroupId: string;
-  replayAvailable: boolean;
-  replayId?: string;
+  size: number;
+  emotion: MemoryEmotion;
+  chapterId: ChapterId;
+  state: StarState;
+  intensity: number;
+  recency: number;
+  unresolvedWeight: number;
+  lastActivatedAt: number | null;
+  resolvedAt: number | null;
   narratorLine: string;
-  replayScript: string[];
-  visited: boolean;
-  locked: boolean;
+  connectedTo: string[];
 };
 
-type LifeGroup = {
-  id: string;
-  label: string;
-  nodeIds: string[];
-  color: string;
+type LifeMapPhase = 'living' | 'focus' | 'cluster';
+type LifeMapCamera = { x: number; y: number; zoom: number };
+
+type LifeMapState = {
+  stars: MemoryStar[];
+  activeStarId: string | null;
+  activeChapterId: ChapterId | null;
+  camera: LifeMapCamera;
+  companionLine: string;
+  phase: LifeMapPhase;
+  reducedMotion: boolean;
 };
 
-/* ---------------- HELPERS ---------------- */
+type Action =
+  | { type: 'SET_REDUCED_MOTION'; value: boolean }
+  | { type: 'SET_GLOWING_STARS'; ids: string[] }
+  | { type: 'FOCUS_STAR'; starId: string }
+  | { type: 'FOCUS_CLUSTER'; chapterId: ChapterId; camera: LifeMapCamera; companionLine: string }
+  | { type: 'MARK_RESOLVED'; starId: string; resolvedAt: number }
+  | { type: 'REHYDRATE_PERSISTENCE'; persisted: Record<string, PersistedStarState> }
+  | { type: 'SET_CAMERA'; camera: LifeMapCamera }
+  | { type: 'CLEAR_FOCUS' }
+  | { type: 'SET_COMPANION_LINE'; line: string };
 
-function bgStar(i: number) {
-  return {
-    x: (i * 37 + 13) % 100,
-    y: (i * 61 + 7) % 100,
-    size: 1 + ((i * 11) % 4),
-    opacity: 0.2,
-  };
-}
+/* =========================
+   INITIAL DATA
+   ========================= */
 
-function routeForMode(mode: Mode, node?: string | null) {
-  const q = node ? `?node=${node}` : "";
-  switch (mode) {
-    case "lifemap":
-      return "/life-map";
-    case "focus":
-      return `/focus${q}`;
-    case "replay":
-      return `/replay${q}`;
-    case "mirror":
-      return `/mirror${q}`;
-    case "rewind":
-      return `/rewind${q}`;
-    default:
-      return "/home";
+const INITIAL_STARS: MemoryStar[] = [
+  ['M', 16, 22, 'season-of-becoming', 'calm'],
+  ['D', 28, 19, 'season-of-becoming', 'joy'],
+  ['I', 22, 34, 'season-of-becoming', 'focus'],
+  ['S', 37, 30, 'threshold', 'shadow'],
+  ['R', 48, 24, 'threshold', 'grief'],
+  ['T', 56, 31, 'threshold', 'threshold'],
+  ['E', 65, 20, 'recovery-arc', 'recovery'],
+  ['L', 72, 28, 'recovery-arc', 'focus'],
+  ['V', 79, 37, 'recovery-arc', 'joy'],
+].map((s, idx) => ({
+  id: `star-${s[0]}-${idx}`,
+  title: String(s[0]),
+  x: Number(s[1]),
+  y: Number(s[2]),
+  chapterId: s[3] as ChapterId,
+  emotion: s[4] as MemoryEmotion,
+  size: 16 + (idx % 5),
+  state: 'idle' as StarState,
+  intensity: 0.5,
+  recency: 0.5,
+  unresolvedWeight: 0.5,
+  lastActivatedAt: null,
+  resolvedAt: null,
+  narratorLine: `${s[0]} carries a thread that still matters.`,
+  connectedTo: [],
+}));
+
+/* =========================
+   PERSISTENCE
+   ========================= */
+
+const PERSIST_KEY = 'urai.lifemap.star.persistence.v1';
+
+function loadPersistence(): Record<string, PersistedStarState> {
+  try {
+    const raw = localStorage.getItem(PERSIST_KEY);
+    return raw ? JSON.parse(raw) : {};
+  } catch {
+    return {};
   }
 }
 
-/* ---------------- DATA (TRIMMED FOR STABILITY) ---------------- */
+function savePersistence(starId: string, values: Partial<PersistedStarState>) {
+  try {
+    const raw = localStorage.getItem(PERSIST_KEY);
+    const current = raw ? JSON.parse(raw) : {};
+    const prev = current[starId] ?? { resolvedAt: null, lastActivatedAt: null };
+    current[starId] = { ...prev, ...values };
+    localStorage.setItem(PERSIST_KEY, JSON.stringify(current));
+  } catch {}
+}
 
-const lifeNodes: LifeNode[] = [
-  {
-    id: "pattern-01",
-    type: "pattern",
-    title: "Pattern Recognition",
-    subtitle: "Loop became visible",
-    description: "Signals resolved into pattern",
-    timestamp: "2026-01-08",
-    emotion: "clarity",
-    intensity: 0.9,
-    auraColor: "#7dd3fc",
-    x: 50,
-    y: 40,
-    z: 2,
-    constellationGroupId: "core",
-    replayAvailable: true,
-    narratorLine: "This belongs to a larger pattern.",
-    replayScript: ["Pattern emerges", "Insight forms"],
-    visited: true,
-    locked: false,
-  },
-];
+/* =========================
+   REDUCER
+   ========================= */
 
-/* ---------------- COMPONENT ---------------- */
+function reducer(state: LifeMapState, action: Action): LifeMapState {
+  switch (action.type) {
+    case 'SET_REDUCED_MOTION':
+      return { ...state, reducedMotion: action.value };
 
-export default function LifeMapCanonicalSurface() {
-  const router = useRouter();
-  const pathname = usePathname();
-  const search = useSearchParams();
+    case 'SET_GLOWING_STARS':
+      return {
+        ...state,
+        stars: state.stars.map((s) =>
+          s.state === 'resolved'
+            ? s
+            : { ...s, state: action.ids.includes(s.id) ? 'glowing' : 'idle' }
+        ),
+      };
 
-  const routeNode = search.get("node");
+    case 'FOCUS_STAR': {
+      const star = state.stars.find((s) => s.id === action.starId);
+      if (!star) return state;
 
-  const [mode, setMode] = useState<Mode>("lifemap");
-  const [selectedId, setSelectedId] = useState<string | null>(routeNode);
-  const [progress, setProgress] = useState(0);
-  const [paused, setPaused] = useState(false);
+      return {
+        ...state,
+        activeStarId: star.id,
+        activeChapterId: star.chapterId,
+        phase: 'focus',
+        camera: { x: star.x, y: star.y, zoom: 1.8 },
+        companionLine: star.narratorLine,
+        stars: state.stars.map((s) =>
+          s.id === star.id ? { ...s, state: 'active' } : s
+        ),
+      };
+    }
 
-  const selected = lifeNodes.find((n) => n.id === selectedId) || null;
+    case 'MARK_RESOLVED':
+      return {
+        ...state,
+        stars: state.stars.map((s) =>
+          s.id === action.starId
+            ? { ...s, state: 'resolved', resolvedAt: action.resolvedAt }
+            : s
+        ),
+      };
 
-  const stars = useMemo(
-    () => Array.from({ length: 150 }, (_, i) => bgStar(i)),
-    []
-  );
+    case 'REHYDRATE_PERSISTENCE':
+      return {
+        ...state,
+        stars: state.stars.map((s) => {
+          const p = action.persisted[s.id];
+          if (!p) return s;
+          return {
+            ...s,
+            lastActivatedAt: p.lastActivatedAt,
+            resolvedAt: p.resolvedAt,
+            state: p.resolvedAt ? 'resolved' : s.state,
+          };
+        }),
+      };
 
-  /* ---------------- EFFECTS ---------------- */
+    default:
+      return state;
+  }
+}
+
+/* =========================
+   COMPONENT
+   ========================= */
+
+export default function LifeMapScene() {
+  const [state, dispatch] = useReducer(reducer, {
+    stars: INITIAL_STARS,
+    activeStarId: null,
+    activeChapterId: null,
+    camera: { x: 50, y: 50, zoom: 1 },
+    companionLine: 'A recurring memory pattern appeared.',
+    phase: 'living',
+    reducedMotion: false,
+  });
 
   useEffect(() => {
-    if (mode !== "replay" || paused) return;
-    const id = setInterval(() => {
-      setProgress((p) => Math.min(100, p + 2));
-    }, 80);
-    return () => clearInterval(id);
-  }, [mode, paused]);
-
-  /* ---------------- NAV ---------------- */
-
-  function navigate(next: Mode, node?: string | null) {
-    setMode(next);
-    setSelectedId(node ?? null);
-    router.push(routeForMode(next, node), { scroll: false });
-  }
-
-  function focus(node: LifeNode) {
-    navigate("focus", node.id);
-  }
-
-  function replay() {
-    if (!selected) return;
-    navigate("replay", selected.id);
-  }
-
-  /* ---------------- RENDER ---------------- */
-
-  if (mode === "home") return null;
+    dispatch({
+      type: 'REHYDRATE_PERSISTENCE',
+      persisted: loadPersistence(),
+    });
+  }, []);
 
   return (
-    <div className="lm-root">
-
-      {/* BACKGROUND */}
-      <div className="stars">
-        {stars.map((s, i) => (
-          <i
-            key={i}
-            style={{
-              left: `${s.x}%`,
-              top: `${s.y}%`,
-              width: s.size,
-              height: s.size,
-              opacity: s.opacity,
-            }}
-          />
-        ))}
-      </div>
-
-      {/* NODES */}
-      <div className="nodes">
-        {lifeNodes.map((n) => (
+    <main className="life-map-shell">
+      <div>
+        {state.stars.map((star) => (
           <button
-            key={n.id}
-            className={`node ${selectedId === n.id ? "active" : ""}`}
-            style={{
-              left: `${n.x}%`,
-              top: `${n.y}%`,
-              "--aura": n.auraColor,
-            } as CSSProperties}
-            onClick={() => focus(n)}
+            key={star.id}
+            onClick={() => {
+              const now = Date.now();
+              dispatch({ type: 'FOCUS_STAR', starId: star.id });
+              savePersistence(star.id, { lastActivatedAt: now });
+            }}
           >
-            <span />
+            {star.title}
           </button>
         ))}
       </div>
-
-      {/* FOCUS */}
-      {selected && mode === "focus" && (
-        <div className="panel">
-          <h1>{selected.title}</h1>
-          <p>{selected.description}</p>
-
-          <button onClick={replay}>Replay</button>
-          <button onClick={() => navigate("lifemap")}>Back</button>
-        </div>
-      )}
-
-      {/* REPLAY */}
-      {selected && mode === "replay" && (
-        <div className="panel">
-          <h1>{selected.title}</h1>
-
-          <div className="bar">
-            <i style={{ width: `${progress}%` }} />
-          </div>
-
-          <p>{selected.replayScript[0]}</p>
-
-          <button onClick={() => setPaused((v) => !v)}>
-            {paused ? "Resume" : "Pause"}
-          </button>
-          <button onClick={() => navigate("focus", selected.id)}>
-            Exit
-          </button>
-        </div>
-      )}
-
-      {/* NAV */}
-      <div className="nav">
-        <button onClick={() => navigate("lifemap")}>Map</button>
-        <button onClick={() => navigate("home")}>Home</button>
-      </div>
-
-      {/* STYLES */}
-      <style jsx>{`
-        .lm-root {
-          position: fixed;
-          inset: 0;
-          background: #020617;
-          color: white;
-          overflow: hidden;
-        }
-
-        .stars i {
-          position: absolute;
-          background: white;
-          border-radius: 50%;
-        }
-
-        .nodes {
-          position: absolute;
-          inset: 0;
-        }
-
-        .node {
-          position: absolute;
-          transform: translate(-50%, -50%);
-          width: 24px;
-          height: 24px;
-          border-radius: 50%;
-          border: none;
-          cursor: pointer;
-        }
-
-        .node span {
-          position: absolute;
-          inset: 0;
-          background: var(--aura);
-          border-radius: 50%;
-          box-shadow: 0 0 20px var(--aura);
-        }
-
-        .node.active {
-          transform: translate(-50%, -50%) scale(1.3);
-        }
-
-        .panel {
-          position: absolute;
-          right: 20px;
-          top: 50%;
-          transform: translateY(-50%);
-          background: rgba(0, 0, 0, 0.6);
-          padding: 20px;
-          border-radius: 20px;
-        }
-
-        .bar {
-          height: 6px;
-          background: rgba(255,255,255,0.1);
-          margin: 10px 0;
-        }
-
-        .bar i {
-          display: block;
-          height: 100%;
-          background: #7dd3fc;
-        }
-
-        .nav {
-          position: absolute;
-          bottom: 20px;
-          left: 50%;
-          transform: translateX(-50%);
-          display: flex;
-          gap: 10px;
-        }
-
-        button {
-          background: rgba(255,255,255,0.1);
-          border: none;
-          padding: 8px 12px;
-          border-radius: 999px;
-          color: white;
-          cursor: pointer;
-        }
-      `}</style>
-    </div>
+    </main>
   );
 }

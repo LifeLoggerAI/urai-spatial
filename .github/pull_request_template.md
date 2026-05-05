@@ -44,6 +44,24 @@ Canonical spatial files include:
 - [ ] E2E lock flow passed
 - [ ] Firebase deploy references validated
 
+### Check output matrix (required)
+
+| Command | Pass/Fail | Exact output summary | Legacy vs feature-specific |
+| --- | --- | --- | --- |
+| `pnpm typecheck` |  |  |  |
+| `pnpm build` |  |  |  |
+| `pnpm test` |  |  |  |
+
+### Life Map interaction matrix (required)
+
+| Area | Status | Evidence (test/log/manual) | Notes |
+| --- | --- | --- | --- |
+| `/life-map` route |  |  |  |
+| Focus interaction |  |  |  |
+| Chapter click interaction |  |  |  |
+| Resolve interaction |  |  |  |
+| Reduced-motion behavior |  |  |  |
+
 ## Visual review
 
 - [ ] Layout alignment checked
