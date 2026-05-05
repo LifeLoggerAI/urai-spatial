@@ -11,6 +11,34 @@ Run these commands from repo root and attach logs/screenshots to the sign-off se
 - `pnpm test`
 - `pnpm build`
 
+## Repo snapshot check outputs (2026-05-04)
+
+| Check | Status | Result summary | Classification |
+| --- | --- | --- | --- |
+| `pnpm typecheck` | ❌ Fail | TypeScript failures in HomeWorld explainability payload (`confidenceBucket` extra field), plus legacy compile blockers in `SpatialScene.broken.*` and missing `id` fields in star/scene data builders. | Mixed (1 Life Map-adjacent + legacy) |
+| `pnpm build` | ❌ Fail | Next build compiles JS bundles but fails in TypeScript at `src/spatial/home/explainHomeWorldState.ts` on `confidenceBucket`. | Legacy/non-Life Map |
+| `pnpm test` | ❌ Fail | `apps/functions` tests pass (2/2). `urai-tier1` tests fail due to unresolved ESM import for `homeWorldDefaults`; remaining Tier1 tests pass (18/19). | Legacy/non-Life Map |
+
+### Failure separation: legacy vs Life Map-specific
+
+- **Life Map-specific failures (current snapshot):**
+  - None observed in the failing automated checks. Life Map/focus interaction tests that executed completed successfully.
+- **Unrelated/legacy failures blocking green CI:**
+  - `src/spatial/home/explainHomeWorldState.ts` incompatible payload typing (`confidenceBucket`).
+  - `src/spatial/scene/SpatialScene.broken.1777854857.tsx` unresolved symbol references (orphaned broken file in compile path).
+  - `src/spatial/scene/sceneData.ts` and `src/spatial/scene/starData.ts` missing required `id` properties in typed objects.
+  - `urai-tier1` test runtime import failure: missing module resolution for `src/spatial/home/homeWorldDefaults`.
+
+## Route/interaction pass-fail matrix (repo snapshot)
+
+| Area | Automated evidence | Status | Notes |
+| --- | --- | --- | --- |
+| `/life-map` route rendering contract | `tests/home-world-cinematic-signal.test.mjs` asserts `aria-label="Enter Life Map"` | ⚠️ Not executed (blocked) | Test file aborts early due to import error before assertions can run. |
+| Focus interaction | `tests/phaseMachine.test.mjs` (`canEnterReplay requires focus + selected + focusReady`) | ✅ Pass | Focus gating behavior passes in executed tests. |
+| Chapter click interaction | `src/spatial/scene/SpatialScene.tsx` chapter portal button calls focus transition + narrator/timeline sync events | ⚠️ Code path present, no passing automated test in this snapshot | Requires browser/E2E validation once legacy blockers are fixed. |
+| Resolve interaction (`Mark resolved`) | `src/spatial/scene/SpatialScene.tsx` updates `starStates[node.id] = "resolved"` and emits `lifemap.star.resolved` event | ⚠️ Code path present, no passing automated test in this snapshot | Requires browser/E2E validation once legacy blockers are fixed. |
+| Reduced-motion handling | `tests/home-world-cinematic-signal.test.mjs` includes `prefers-reduced-motion` assertion; CSS in `SpatialScene.tsx` has reduced-motion media query | ⚠️ Not executed (blocked) | Assertion exists but did not run because of import failure in same test file. |
+
 ## Acceptance criteria matrix
 
 | ID | Acceptance criterion | Script command(s) | Manual browser verification |
