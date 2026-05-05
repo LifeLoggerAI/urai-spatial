@@ -15,7 +15,7 @@
     "audit:final": "npm run audit:final-visual && npm run audit:visual-lock",
     "test": "node --experimental-strip-types --test tests/*.test.mjs",
     "test:unit": "node --experimental-strip-types --test tests/*.test.mjs",
-    "test:lifemap": "node --experimental-strip-types --test tests/lifemap-scene-behavior.test.mjs"
+    "test:lifemap": "node --experimental-strip-types --test tests/lifemap-scene-behavior.test.mjs tests/lifemap*.test.mjs tests/lifemap-*.test.mjs"
   },
   "dependencies": {
     "@react-three/fiber": "^9.5.0",

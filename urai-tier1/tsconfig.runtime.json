@@ -18,6 +18,8 @@
     "src/**/*.corrupt.*.ts",
     "src/**/*.corrupt.*.tsx",
     "src/**/*.bak.*",
-    "src/**/*.backup.*"
+    "src/**/*.backup.*",
+    "src/**/*.broken.*.ts",
+    "src/**/*.broken.*.tsx"
   ]
 }
