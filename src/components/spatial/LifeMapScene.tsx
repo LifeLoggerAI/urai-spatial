@@ -30,6 +30,7 @@ import {
 } from './persistentInsightEngine';
 
 type NarratorChannel = 'visual' | 'voice' | 'haptic';
+
 type MessageSource =
   | 'focus'
   | 'resolved'
@@ -39,6 +40,7 @@ type MessageSource =
   | 'reflect'
   | 'pattern'
   | 'default';
+
 type HapticPattern = number | number[];
 
 type MessageEnvelope = {
@@ -287,7 +289,9 @@ function reducer(state: State, action: Action): State {
         activeStarId: null,
         activeChapterId: action.chapterId,
         camera: action.camera,
-        stars: state.stars.map((star) => (star.state === 'active' ? { ...star, state: 'idle' } : star)),
+        stars: state.stars.map((star) =>
+          star.state === 'active' ? { ...star, state: 'idle' } : star
+        ),
         messages: pushMessage(
           state.messages,
           createMessage('cluster', action.text, 18000, ['visual', 'voice', 'haptic'])
@@ -298,7 +302,9 @@ function reducer(state: State, action: Action): State {
       return {
         ...state,
         stars: state.stars.map((star) =>
-          star.id === action.starId ? { ...star, state: 'resolved', lastActivatedAt: Date.now() } : star
+          star.id === action.starId
+            ? { ...star, state: 'resolved', lastActivatedAt: Date.now() }
+            : star
         ),
         messages: pushMessage(
           state.messages,
@@ -313,7 +319,9 @@ function reducer(state: State, action: Action): State {
         activeStarId: null,
         activeChapterId: null,
         camera: { x: 50, y: 50, zoom: 1 },
-        stars: state.stars.map((star) => (star.state === 'active' ? { ...star, state: 'idle' } : star)),
+        stars: state.stars.map((star) =>
+          star.state === 'active' ? { ...star, state: 'idle' } : star
+        ),
       };
 
     case 'PUSH_MESSAGE':
@@ -342,6 +350,9 @@ function reducer(state: State, action: Action): State {
 
     case 'PRUNE_MESSAGES':
       return { ...state, messages: pruneMessages(state.messages) };
+
+    default:
+      return state;
   }
 }
 
