@@ -34,7 +34,6 @@ export default function HomeWorld() {
   const isTransitioning = useSceneStore((s) => s.isTransitioning);
   const inputLocked = useSceneStore((s) => s.inputLocked);
 
-  // 🔥 KEEP ADVANCED SYSTEM
   const homeSubstate = useSceneStore((s) => s.homeSubstate);
   const focusHomeOrb = useSceneStore((s) => s.focusHomeOrb);
   const confirmHomeEntry = useSceneStore((s) => s.confirmHomeEntry);
@@ -122,8 +121,10 @@ export default function HomeWorld() {
 
   return (
     <group>
+      {/* SKY */}
       <HomeSky />
 
+      {/* GROUND */}
       <GroundWorld
         recession={groundVisual.recession}
         elevation={groundVisual.elevation}
@@ -177,6 +178,7 @@ export default function HomeWorld() {
         />
       </Html>
 
+      {/* CAMERA */}
       <PresenceRig
         visible
         phase={phase}
