@@ -8,18 +8,13 @@ import { useSceneStore, type ScenePhase } from "../state/sceneStore";
 import { useEnvironmentSignal } from "../signals/environmentSignal";
 import ConsciousEnvironmentBridge from "../consciousness/ConsciousEnvironmentBridge";
 
-type LayerVisibility = {
-  visible: boolean;
-  opacity: number;
-};
+// 🔥 runtime systems
+import CinematicCameraController from "../animation/CinematicCameraController";
+import StoryPlayer from "../story/StoryPlayer";
+import AlphaMetricsDashboard from "../alpha/AlphaMetricsDashboard";
+import AlphaFeedbackUI from "../alpha/AlphaFeedbackUI";
 
-type LayerPack = {
-  sky: LayerVisibility;
-  orb: LayerVisibility;
-  ground: LayerVisibility;
-  avatar: LayerVisibility;
-  homeUiVisible: boolean;
-};
+const ENABLE_ALPHA_UI = true;
 
 const PHASE_FADE_MS: Record<ScenePhase, number> = {
   HOME: 280,
@@ -47,7 +42,7 @@ function useReducedMotionPolicy() {
   };
 }
 
-function resolveLayerPack(phase: ScenePhase, transitionActive: boolean): LayerPack {
+function resolveLayerPack(phase: ScenePhase, transitionActive: boolean) {
   const inHome = phase === "HOME";
   const inAscent = phase === "ASCENT";
 
@@ -78,8 +73,14 @@ export default function SpatialScene() {
 
   return (
     <section aria-label="Spatial scene composition" data-phase={phase}>
+      {/* core intelligence bridge */}
       <ConsciousEnvironmentBridge />
 
+      {/* 🔥 cinematic + story runtime */}
+      <CinematicCameraController />
+      <StoryPlayer />
+
+      {/* 🌌 environment layers */}
       <div
         style={{
           opacity: layers.sky.opacity,
@@ -122,11 +123,19 @@ export default function SpatialScene() {
             transition: reducedMotion ? "none" : `opacity ${fadeMs}ms ease`,
           }}
         >
-          <button type="button" aria-label="Enter Life Map" onClick={() => useSceneStore.getState().enterLifeMap()}>
+          <button type="button" onClick={() => useSceneStore.getState().enterLifeMap()}>
             Enter Life Map
           </button>
         </div>
       ) : null}
+
+      {/* 🔥 alpha UI overlay */}
+      {ENABLE_ALPHA_UI && (
+        <div className="fixed bottom-4 right-4 space-y-2 z-50">
+          <AlphaFeedbackUI />
+          <AlphaMetricsDashboard />
+        </div>
+      )}
 
       <div data-avatar-visible={layers.avatar.visible ? "true" : "false"} />
     </section>
