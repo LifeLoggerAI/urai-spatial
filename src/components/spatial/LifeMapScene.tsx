@@ -1,10 +1,15 @@
 'use client';
 
-import { useEffect, useMemo, useReducer } from 'react';
+import { useEffect, useMemo, useReducer, useState } from 'react';
 
 type StarState = 'idle' | 'glowing' | 'active' | 'resolved';
 type MemoryEmotion = 'calm' | 'joy' | 'grief' | 'focus' | 'threshold' | 'recovery' | 'dream' | 'mirror' | 'shadow';
 type ChapterId = 'season-of-becoming' | 'threshold' | 'recovery-arc' | 'purple-dream-field' | 'mirror-of-becoming';
+type PersistedStarState = {
+  resolvedAt: number | null;
+  lastActivatedAt: number | null;
+};
+
 type MemoryStar = {
   id: string;
   title: string;
@@ -18,6 +23,7 @@ type MemoryStar = {
   recency: number;
   unresolvedWeight: number;
   lastActivatedAt: number | null;
+  resolvedAt: number | null;
   narratorLine: string;
   connectedTo: string[];
 };
@@ -39,7 +45,8 @@ type Action =
   | { type: 'SET_GLOWING_STARS'; ids: string[] }
   | { type: 'FOCUS_STAR'; starId: string }
   | { type: 'FOCUS_CLUSTER'; chapterId: ChapterId; camera: LifeMapCamera; companionLine: string }
-  | { type: 'MARK_RESOLVED'; starId: string }
+  | { type: 'MARK_RESOLVED'; starId: string; resolvedAt: number }
+  | { type: 'REHYDRATE_PERSISTENCE'; persisted: Record<string, PersistedStarState> }
   | { type: 'SET_CAMERA'; camera: LifeMapCamera }
   | { type: 'CLEAR_FOCUS' }
   | { type: 'SET_COMPANION_LINE'; line: string };
@@ -87,11 +94,58 @@ const INITIAL_STARS: MemoryStar[] = [
   recency: 0.3 + ((idx * 3) % 7) / 10,
   unresolvedWeight: 0.2 + ((idx * 5) % 8) / 10,
   lastActivatedAt: null,
+  resolvedAt: null,
   narratorLine: `${s[0]} carries a thread that still matters.`,
   connectedTo: [arr[(idx + 1) % arr.length][0], arr[(idx + 5) % arr.length][0]].map((l) => `star-${l}-${arr.findIndex((x) => x[0] === l)}`),
 }));
 
-function emitNarratorEvent(detail: { event: 'lifemap.star.glow' | 'lifemap.star.focus' | 'lifemap.cluster.focus' | 'lifemap.star.resolved'; starId?: string | null; chapterId?: ChapterId | null; emotion?: MemoryEmotion | null; action?: 'replay' | 'reflect' | 'resolve' }) {
+
+const PERSIST_KEY = 'urai.lifemap.star.persistence.v1';
+
+type LifeMapDataMode = 'local' | 'firestore';
+
+type PersistenceAdapter = {
+  load: () => Promise<Record<string, PersistedStarState>>;
+  save: (starId: string, values: Partial<PersistedStarState>) => Promise<void>;
+};
+
+function getDataMode(): LifeMapDataMode {
+  if (typeof window === 'undefined') return 'local';
+  const value = window.localStorage.getItem('urai.lifemap.dataMode');
+  return value === 'firestore' ? 'firestore' : 'local';
+}
+
+function createPersistenceAdapter(): PersistenceAdapter {
+  if (typeof window === 'undefined') {
+    return { load: async () => ({}), save: async () => undefined };
+  }
+  const mode = getDataMode();
+  if (mode === 'firestore' && window.__URAI_LIFEMAP_FIRESTORE_PERSISTENCE__) {
+    return window.__URAI_LIFEMAP_FIRESTORE_PERSISTENCE__;
+  }
+  return {
+    load: async () => {
+      try {
+        const raw = window.localStorage.getItem(PERSIST_KEY);
+        if (!raw) return {};
+        return JSON.parse(raw) as Record<string, PersistedStarState>;
+      } catch {
+        return {};
+      }
+    },
+    save: async (starId, values) => {
+      try {
+        const raw = window.localStorage.getItem(PERSIST_KEY);
+        const current = raw ? JSON.parse(raw) as Record<string, PersistedStarState> : {};
+        const prev = current[starId] ?? { resolvedAt: null, lastActivatedAt: null };
+        current[starId] = { ...prev, ...values };
+        window.localStorage.setItem(PERSIST_KEY, JSON.stringify(current));
+      } catch {}
+    },
+  };
+}
+
+function emitNarratorEvent(detail: { event: 'lifemap.star.glow' | 'lifemap.star.focus' | 'lifemap.cluster.focus' | 'lifemap.star.resolved'; starId?: string | null; chapterId?: ChapterId | null; emotion?: MemoryEmotion | null; action?: 'replay' | 'reflect' | 'resolve'; resolvedAt?: number }) {
   if (typeof window === 'undefined') return;
   window.dispatchEvent(new CustomEvent('urai:narrator', { detail: { ...detail, timestamp: Date.now() } }));
 }
@@ -119,7 +173,8 @@ function reducer(state: LifeMapState, action: Action): LifeMapState {
       };
     }
     case 'FOCUS_CLUSTER': return { ...state, phase: 'cluster', activeChapterId: action.chapterId, activeStarId: null, camera: action.camera, companionLine: action.companionLine };
-    case 'MARK_RESOLVED': return { ...state, stars: state.stars.map((s) => s.id === action.starId ? { ...s, state: 'resolved' } : s), companionLine: 'This one has softened.' };
+    case 'MARK_RESOLVED': return { ...state, stars: state.stars.map((s) => s.id === action.starId ? { ...s, state: 'resolved', resolvedAt: action.resolvedAt } : s), companionLine: 'This one has softened.' };
+    case 'REHYDRATE_PERSISTENCE': return { ...state, stars: state.stars.map((s) => { const persisted = action.persisted[s.id]; if (!persisted) return s; return { ...s, lastActivatedAt: persisted.lastActivatedAt, resolvedAt: persisted.resolvedAt, state: persisted.resolvedAt ? 'resolved' : s.state }; }) };
     case 'SET_CAMERA': return { ...state, camera: action.camera };
     case 'CLEAR_FOCUS': return { ...state, phase: 'living', activeStarId: null, activeChapterId: null, camera: { x: 50, y: 50, zoom: 1 }, stars: state.stars.map((s) => s.state === 'resolved' ? s : { ...s, state: 'idle' }) };
     case 'SET_COMPANION_LINE': return { ...state, companionLine: action.line };
@@ -129,6 +184,7 @@ function reducer(state: LifeMapState, action: Action): LifeMapState {
 
 export default function LifeMapScene() {
   const [state, dispatch] = useReducer(reducer, { stars: INITIAL_STARS, activeStarId: null, activeChapterId: null, camera: { x: 50, y: 50, zoom: 1 }, companionLine: 'A recurring memory pattern appeared.', phase: 'living', reducedMotion: false });
+  const [isHydrated, setHydrated] = useState(false);
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
@@ -141,13 +197,30 @@ export default function LifeMapScene() {
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
+    let mounted = true;
+    createPersistenceAdapter().load().then((persisted) => {
+      if (!mounted) return;
+      dispatch({ type: 'REHYDRATE_PERSISTENCE', persisted });
+      setHydrated(true);
+    });
+    return () => { mounted = false; };
+  }, []);
+
+  useEffect(() => {
+    if (typeof window === 'undefined' || !isHydrated) return;
     let timer = 0;
     const emotionScore: Record<MemoryEmotion, number> = { threshold: 3, grief: 2.5, recovery: 2, shadow: 2, mirror: 1.5, dream: 1.25, calm: 1, joy: 1, focus: 1 };
     const run = () => {
       const candidates = state.stars.filter((s) => s.id !== state.activeStarId);
       const pickCount = 1 + Math.floor(Math.random() * 3);
       const scored = [...candidates]
-        .map((s) => ({ s, score: 1 + s.recency * 2 + s.intensity * 2 + s.unresolvedWeight * 3 + emotionScore[s.emotion] - (s.state === 'resolved' ? 4 : 0) }))
+        .map((s) => {
+          const now = Date.now();
+          const sinceActive = s.lastActivatedAt ? (now - s.lastActivatedAt) / (1000 * 60 * 60 * 24) : null;
+          const recencyPenalty = sinceActive === null ? 0 : Math.max(0, 2 - sinceActive / 3);
+          const resolvedPenalty = s.resolvedAt ? 6 : (s.state === 'resolved' ? 4 : 0);
+          return { s, score: 1 + s.recency * 2 + s.intensity * 2 + s.unresolvedWeight * 3 + emotionScore[s.emotion] - resolvedPenalty - recencyPenalty };
+        })
         .sort((a, b) => b.score - a.score)
         .slice(0, Math.max(3, pickCount * 2));
       const picked = scored.sort(() => Math.random() - 0.5).slice(0, pickCount).map((x) => x.s.id);
@@ -162,7 +235,7 @@ export default function LifeMapScene() {
     };
     timer = window.setTimeout(run, state.reducedMotion ? 14000 : 9000);
     return () => window.clearTimeout(timer);
-  }, [state.stars, state.activeStarId, state.activeChapterId, state.reducedMotion]);
+  }, [isHydrated, state.stars, state.activeStarId, state.activeChapterId, state.reducedMotion]);
 
   useEffect(() => {
     const onEsc = (e: KeyboardEvent) => e.key === 'Escape' && dispatch({ type: 'CLEAR_FOCUS' });
@@ -187,7 +260,7 @@ export default function LifeMapScene() {
           const connected = !!activeStar && activeStar.connectedTo.includes(star.id);
           const chapterFocused = state.phase === 'cluster' && state.activeChapterId === star.chapterId;
           const dimmed = !!state.activeStarId && !connected && state.activeStarId !== star.id;
-          return <button key={star.id} type="button" className={`memory-star state-${star.state} ${connected ? 'is-connected' : ''} ${dimmed ? 'is-dimmed' : ''} ${chapterFocused ? 'is-chapter-focused' : ''}`} style={{ left: `${star.x}%`, top: `${star.y}%`, width: `${star.size}px`, height: `${star.size}px` }} aria-label={`${star.title}, ${star.emotion}, ${star.state}`} onClick={() => { dispatch({ type: 'FOCUS_STAR', starId: star.id }); emitNarratorEvent({ event: 'lifemap.star.focus', starId: star.id, chapterId: star.chapterId, emotion: star.emotion }); emitTimelineSync({ phase: 'focus', activeStarId: star.id, activeChapterId: star.chapterId }); }}><span>{star.title}</span></button>;
+          return <button key={star.id} type="button" className={`memory-star state-${star.state} ${connected ? 'is-connected' : ''} ${dimmed ? 'is-dimmed' : ''} ${chapterFocused ? 'is-chapter-focused' : ''}`} style={{ left: `${star.x}%`, top: `${star.y}%`, width: `${star.size}px`, height: `${star.size}px` }} aria-label={`${star.title}, ${star.emotion}, ${star.state}`} onClick={() => { const activatedAt = Date.now(); dispatch({ type: 'FOCUS_STAR', starId: star.id }); void createPersistenceAdapter().save(star.id, { lastActivatedAt: activatedAt }); emitNarratorEvent({ event: 'lifemap.star.focus', starId: star.id, chapterId: star.chapterId, emotion: star.emotion }); emitTimelineSync({ phase: 'focus', activeStarId: star.id, activeChapterId: star.chapterId }); }}><span>{star.title}</span></button>;
         })}
       </div>
     </section>
@@ -195,7 +268,7 @@ export default function LifeMapScene() {
     <aside className="panel export-panel" aria-label="Export panel"><button type="button">Export snapshot</button><button type="button">Export arc</button></aside>
     <aside className="panel companion-panel" aria-label="Companion panel"><h2>Companion</h2><p>{state.companionLine}</p></aside>
 
-    {activeStar && <aside className="panel detail" aria-live="polite"><h3>{activeStar.title}</h3><p>{activeStar.emotion} · {CHAPTERS.find((c) => c.id === activeStar.chapterId)?.title}</p><p>{activeStar.narratorLine}</p><div className="actions"><button type="button" onClick={() => { dispatch({ type: 'SET_COMPANION_LINE', line: 'Replaying the emotional thread.' }); emitNarratorEvent({ event: 'lifemap.star.focus', starId: activeStar.id, chapterId: activeStar.chapterId, emotion: activeStar.emotion, action: 'replay' }); }}>Replay</button><button type="button" onClick={() => { dispatch({ type: 'SET_COMPANION_LINE', line: 'Reflection mode is open.' }); emitNarratorEvent({ event: 'lifemap.star.focus', starId: activeStar.id, chapterId: activeStar.chapterId, emotion: activeStar.emotion, action: 'reflect' }); }}>Reflect</button><button type="button" onClick={() => { dispatch({ type: 'MARK_RESOLVED', starId: activeStar.id }); emitNarratorEvent({ event: 'lifemap.star.resolved', starId: activeStar.id, chapterId: activeStar.chapterId, emotion: activeStar.emotion, action: 'resolve' }); emitTimelineSync({ phase: 'focus', activeStarId: activeStar.id, activeChapterId: activeStar.chapterId }); }}>Mark resolved</button></div></aside>}
+    {activeStar && <aside className="panel detail" aria-live="polite"><h3>{activeStar.title}</h3><p>{activeStar.emotion} · {CHAPTERS.find((c) => c.id === activeStar.chapterId)?.title}</p><p>{activeStar.narratorLine}</p><div className="actions"><button type="button" onClick={() => { dispatch({ type: 'SET_COMPANION_LINE', line: 'Replaying the emotional thread.' }); emitNarratorEvent({ event: 'lifemap.star.focus', starId: activeStar.id, chapterId: activeStar.chapterId, emotion: activeStar.emotion, action: 'replay' }); }}>Replay</button><button type="button" onClick={() => { dispatch({ type: 'SET_COMPANION_LINE', line: 'Reflection mode is open.' }); emitNarratorEvent({ event: 'lifemap.star.focus', starId: activeStar.id, chapterId: activeStar.chapterId, emotion: activeStar.emotion, action: 'reflect' }); }}>Reflect</button><button type="button" onClick={() => { const resolvedAt = Date.now(); dispatch({ type: 'MARK_RESOLVED', starId: activeStar.id, resolvedAt }); void createPersistenceAdapter().save(activeStar.id, { resolvedAt }); emitNarratorEvent({ event: 'lifemap.star.resolved', starId: activeStar.id, chapterId: activeStar.chapterId, emotion: activeStar.emotion, action: 'resolve', resolvedAt }); emitTimelineSync({ phase: 'focus', activeStarId: activeStar.id, activeChapterId: activeStar.chapterId }); }}>Mark resolved</button></div></aside>}
 
     <nav className="chapter-row" aria-label="Chapter anchors">{CHAPTERS.map((c) => <button type="button" key={c.id} className={`chapter-pill ${state.activeChapterId === c.id ? 'active' : ''}`} onClick={() => { const stars = state.stars.filter((s) => s.chapterId === c.id); const camera = { x: stars.reduce((a, s) => a + s.x, 0) / stars.length, y: stars.reduce((a, s) => a + s.y, 0) / stars.length, zoom: 1.45 }; dispatch({ type: 'FOCUS_CLUSTER', chapterId: c.id, camera, companionLine: CHAPTER_LINES[c.id] }); emitNarratorEvent({ event: 'lifemap.cluster.focus', chapterId: c.id }); emitTimelineSync({ phase: 'cluster', activeChapterId: c.id }); }}><strong>{c.title}</strong><small>{c.subtitle}</small></button>)}</nav>
 
@@ -231,4 +304,11 @@ export default function LifeMapScene() {
       @media (prefers-reduced-motion: reduce) { .memory-star, .connection-line, .lifemap-space { animation: none !important; transition-duration: 0.01ms !important; } .connection-line.is-flowing { animation: none; } }
     `}</style>
   </main>;
+}
+
+
+declare global {
+  interface Window {
+    __URAI_LIFEMAP_FIRESTORE_PERSISTENCE__?: PersistenceAdapter;
+  }
 }
