@@ -55,14 +55,24 @@ type PredictiveIntervention = {
   phrase: string;
 };
 
+type TrustDecision = {
+  shouldSpeak: boolean;
+  reason: "needed" | "low-confidence" | "user-improving" | "recently-spoke" | "quiet-mode";
+  silenceMs: number;
+  trustScore: number;
+};
+
 type InterventionLearningState = {
   intensity: number;
+  trustScore: number;
+  quietUntil: number | null;
   exposures: number;
   lastSuggestion: PredictiveIntervention["suggestion"] | null;
   lastPredictedDirection: PredictiveIntervention["predictedDirection"] | null;
   lastTone: string | null;
   lastScore: number | null;
   lastSeenAt: number | null;
+  lastSpokeAt: number | null;
   outcomes: Array<{
     seenAt: number;
     suggestion: PredictiveIntervention["suggestion"];
@@ -140,12 +150,15 @@ function writePathHistory(history: PathHistory) {
 function readLearning(): InterventionLearningState {
   return readJson<InterventionLearningState>(LEARNING_STORAGE_KEY, {
     intensity: 0.42,
+    trustScore: 0.62,
+    quietUntil: null,
     exposures: 0,
     lastSuggestion: null,
     lastPredictedDirection: null,
     lastTone: null,
     lastScore: null,
     lastSeenAt: null,
+    lastSpokeAt: null,
     outcomes: [],
   });
 }
@@ -217,12 +230,14 @@ function updatePathMemory(cue: NarratorCue, starId: string) {
   const learning = updateLearning(tone, pattern, trajectory);
   const baseIntervention = predictIntervention(history, pattern, trajectory, tone);
   const intervention = applyAdaptiveIntensity(baseIntervention, learning);
+  const trust = calibrateTrust(intervention, learning, trajectory, pattern);
 
   return {
     pattern,
     trajectory,
     intervention,
     learning,
+    trust,
   };
 }
 
@@ -312,21 +327,37 @@ function updateLearning(currentTone: string, pattern: ReturnType<typeof analyzeP
   const outcome = classifyOutcome(state.lastScore, currentTone, pattern, trajectory);
 
   let intensity = state.intensity;
-  if (outcome === "improved") intensity -= 0.08;
-  if (outcome === "worsened") intensity += 0.1;
-  if (outcome === "looped") intensity += 0.07;
+  let trustScore = state.trustScore ?? 0.62;
+  if (outcome === "improved") {
+    intensity -= 0.08;
+    trustScore += 0.08;
+  }
+  if (outcome === "worsened") {
+    intensity += 0.1;
+    trustScore -= 0.06;
+  }
+  if (outcome === "looped") {
+    intensity += 0.07;
+    trustScore -= 0.03;
+  }
   if (outcome === "held") intensity += 0.01;
 
   intensity = clamp(intensity, 0.22, 0.88);
+  trustScore = clamp(trustScore, 0.18, 0.92);
+
+  const quietUntil = outcome === "improved" && trustScore >= 0.72 ? now() + 45_000 : state.quietUntil;
 
   const next: InterventionLearningState = {
     intensity,
+    trustScore,
+    quietUntil,
     exposures: state.exposures + 1,
     lastSuggestion: state.lastSuggestion,
     lastPredictedDirection: state.lastPredictedDirection,
     lastTone: currentTone,
     lastScore: currentScore,
     lastSeenAt: now(),
+    lastSpokeAt: state.lastSpokeAt ?? null,
     outcomes: [
       ...state.outcomes,
       {
@@ -440,6 +471,58 @@ function applyAdaptiveIntensity(intervention: PredictiveIntervention, learning: 
   });
 
   return next;
+}
+
+function calibrateTrust(
+  intervention: PredictiveIntervention,
+  learning: InterventionLearningState,
+  trajectory: EmotionalTrajectory,
+  pattern: ReturnType<typeof analyzePath>,
+): TrustDecision {
+  const t = now();
+
+  if (learning.quietUntil && learning.quietUntil > t && !trajectory.strainArc && !pattern.hasABAB) {
+    return {
+      shouldSpeak: false,
+      reason: "quiet-mode",
+      silenceMs: learning.quietUntil - t,
+      trustScore: learning.trustScore,
+    };
+  }
+
+  if (learning.lastSpokeAt && t - learning.lastSpokeAt < 18_000 && !trajectory.strainArc && !pattern.hasABAB) {
+    return {
+      shouldSpeak: false,
+      reason: "recently-spoke",
+      silenceMs: 18_000 - (t - learning.lastSpokeAt),
+      trustScore: learning.trustScore,
+    };
+  }
+
+  if (trajectory.recoveryArc && learning.trustScore >= 0.68 && intervention.confidence < 0.82) {
+    return {
+      shouldSpeak: false,
+      reason: "user-improving",
+      silenceMs: 30_000,
+      trustScore: learning.trustScore,
+    };
+  }
+
+  if (intervention.predictedDirection === "uncertain" && intervention.confidence < 0.55) {
+    return {
+      shouldSpeak: false,
+      reason: "low-confidence",
+      silenceMs: 12_000,
+      trustScore: learning.trustScore,
+    };
+  }
+
+  return {
+    shouldSpeak: true,
+    reason: "needed",
+    silenceMs: 0,
+    trustScore: learning.trustScore,
+  };
 }
 
 function dominantKey(values: Record<string, number>) {
@@ -582,13 +665,35 @@ export default function DualLayerNarratorBridge() {
       if (timeoutRef.current !== null) window.clearTimeout(timeoutRef.current);
 
       const { id, previousVisits, memory } = updateMemory(cue);
-      const { pattern, trajectory, intervention, learning } = updatePathMemory(cue, id);
+      const { pattern, trajectory, intervention, learning, trust } = updatePathMemory(cue, id);
       const script = innerScript(cue, previousVisits, memory, pattern, trajectory, intervention);
       const delay = Math.max(0, (cue.timing?.delayMs ?? 0) + 720);
 
+      window.dispatchEvent(
+        new CustomEvent("urai:narrator-trust", {
+          detail: {
+            sourceEvent: cue.event,
+            starId: id,
+            trust,
+            intervention,
+            trajectory,
+            pattern,
+            learning,
+          },
+        }),
+      );
+
+      if (!trust.shouldSpeak) return;
+
+      const updatedLearning = {
+        ...learning,
+        lastSpokeAt: now(),
+      };
+      writeLearning(updatedLearning);
+
       timeoutRef.current = window.setTimeout(() => {
         const whisper = new SpeechSynthesisUtterance(script);
-        const params = voiceParams(cue, previousVisits, trajectory, intervention, learning);
+        const params = voiceParams(cue, previousVisits, trajectory, intervention, updatedLearning);
 
         whisper.rate = params.rate;
         whisper.pitch = params.pitch;
@@ -609,7 +714,8 @@ export default function DualLayerNarratorBridge() {
               pattern,
               trajectory,
               intervention,
-              learning,
+              trust,
+              learning: updatedLearning,
               script,
             },
           }),
