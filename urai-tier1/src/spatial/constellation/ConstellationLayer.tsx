@@ -7,13 +7,15 @@ import { useFrame } from '@react-three/fiber'
 import { SpatialAssetManifest } from '../assets/manifestTypes'
 import ManifestRenderer from '../assets/ManifestRenderer'
 
-function nodePosition(index: number) {
+export type ConstellationNodePosition = readonly [number, number, number]
+
+function nodePosition(index: number): ConstellationNodePosition {
   const angle = (index / 24) * Math.PI * 2
   const radius = 3.5 + Math.sin(index) * 0.6
   return [Math.cos(angle) * radius, 1.2 + Math.sin(index * 0.5) * 0.6, -Math.sin(angle) * radius] as const
 }
 
-function Node({ index, selected, onSelect }: { index: number; selected: boolean; onSelect: () => void }) {
+function Node({ index, selected, onSelect }: { index: number; selected: boolean; onSelect: (position: ConstellationNodePosition) => void }) {
   const ref = useRef<Mesh>(null)
   const position = useMemo(() => nodePosition(index), [index])
 
@@ -25,14 +27,14 @@ function Node({ index, selected, onSelect }: { index: number; selected: boolean;
   })
 
   return (
-    <mesh ref={ref} position={position} onClick={(event) => { event.stopPropagation(); onSelect() }}>
+    <mesh ref={ref} position={position} onClick={(event) => { event.stopPropagation(); onSelect(position) }}>
       <sphereGeometry args={[0.12, 16, 16]} />
       <meshStandardMaterial emissive={selected ? '#22d3ee' : '#8b5cf6'} emissiveIntensity={selected ? 2.2 : 1.2} color="#1f1b2e" />
     </mesh>
   )
 }
 
-export default function ConstellationLayer({ enabled, selectedManifestId, onSelect }: { enabled: boolean; selectedManifestId: string | null; onSelect: (manifest: SpatialAssetManifest) => void }) {
+export default function ConstellationLayer({ enabled, selectedManifestId, onSelect }: { enabled: boolean; selectedManifestId: string | null; onSelect: (manifest: SpatialAssetManifest, position: ConstellationNodePosition) => void }) {
   const manifests = useConstellationManifests(enabled)
   const selected = manifests.find((manifest) => manifest.manifestId === selectedManifestId) ?? null
 
@@ -45,7 +47,7 @@ export default function ConstellationLayer({ enabled, selectedManifestId, onSele
           key={manifest.manifestId}
           index={i}
           selected={manifest.manifestId === selectedManifestId}
-          onSelect={() => onSelect(manifest)}
+          onSelect={(position) => onSelect(manifest, position)}
         />
       ))}
 
