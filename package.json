@@ -9,6 +9,7 @@
     "next-export": "pnpm --filter urai-tier1 next export",
     "ship:check": "pnpm -r --if-present test",
     "typecheck": "pnpm --filter urai-tier1 typecheck",
+    "canon:lock": "node scripts/check-tier1-canon-lock.mjs",
     "test": "pnpm --filter urai-functions build && pnpm --filter urai-functions test && pnpm --filter urai-tier1 test && pnpm test:e2e && pnpm test:replay-tier5",
     "test:e2e": "pnpm --filter urai-tier1 exec node ../tests/spatial-lock.mjs",
     "test:replay-tier5": "pnpm --filter urai-tier1 exec node ../tests/replay-tier5-lock.mjs",
@@ -25,8 +26,10 @@
     "@react-three/drei": "^10.7.7",
     "@react-three/fiber": "^9.5.0",
     "@react-three/postprocessing": "^3.0.4",
+    "firebase": "^12.6.0",
     "firebase-admin": "^13.7.0",
     "postprocessing": "^6.38.3",
+    "stripe": "^19.3.0",
     "three": "^0.183.2",
     "zustand": "^5.0.11"
   }
