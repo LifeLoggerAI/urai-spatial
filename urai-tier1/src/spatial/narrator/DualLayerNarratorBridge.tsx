@@ -38,9 +38,30 @@ type PathHistory = {
   toneTransitions: Record<string, number>;
 };
 
+type EmotionalTrajectory = {
+  scoreDelta: number;
+  direction: "rising" | "falling" | "stable" | "mixed";
+  startTone: string | null;
+  endTone: string | null;
+  stuckTone: string | null;
+  recoveryArc: boolean;
+  strainArc: boolean;
+};
+
 const STORAGE_KEY = "urai:lifemap:memory-history:v1";
 const PATH_STORAGE_KEY = "urai:lifemap:path-history:v1";
 const MAX_RECENT_PATH = 12;
+
+const TONE_SCORE: Record<string, number> = {
+  grief: -3,
+  tension: -2,
+  charged: -2,
+  neutral: 0,
+  calm: 1,
+  awe: 1,
+  hope: 2,
+  recovery: 3,
+};
 
 function now() {
   return Date.now();
@@ -138,7 +159,50 @@ function updatePathMemory(cue: NarratorCue, starId: string) {
   history.recent = history.recent.slice(-MAX_RECENT_PATH);
   writePathHistory(history);
 
-  return analyzePath(history, starId, tone);
+  return {
+    pattern: analyzePath(history, starId, tone),
+    trajectory: analyzeTrajectory(history),
+  };
+}
+
+function analyzeTrajectory(history: PathHistory): EmotionalTrajectory {
+  const recent = history.recent.slice(-6);
+
+  if (recent.length < 3) {
+    return {
+      scoreDelta: 0,
+      direction: "stable",
+      startTone: recent[0]?.tone ?? null,
+      endTone: recent[recent.length - 1]?.tone ?? null,
+      stuckTone: null,
+      recoveryArc: false,
+      strainArc: false,
+    };
+  }
+
+  const scores = recent.map((step) => TONE_SCORE[step.tone] ?? 0);
+  const firstAvg = scores.slice(0, Math.ceil(scores.length / 2)).reduce((sum, score) => sum + score, 0) / Math.ceil(scores.length / 2);
+  const secondAvg = scores.slice(Math.floor(scores.length / 2)).reduce((sum, score) => sum + score, 0) / Math.ceil(scores.length / 2);
+  const scoreDelta = Number((secondAvg - firstAvg).toFixed(2));
+  const toneCounts = recent.reduce<Record<string, number>>((acc, step) => {
+    acc[step.tone] = (acc[step.tone] ?? 0) + 1;
+    return acc;
+  }, {});
+  const stuckTone = Object.entries(toneCounts).find(([, count]) => count >= 4)?.[0] ?? null;
+  const startTone = recent[0]?.tone ?? null;
+  const endTone = recent[recent.length - 1]?.tone ?? null;
+  const recoveryArc = scoreDelta >= 1.25 || ((TONE_SCORE[startTone ?? "neutral"] ?? 0) < 0 && (TONE_SCORE[endTone ?? "neutral"] ?? 0) > 0);
+  const strainArc = scoreDelta <= -1.25 || ((TONE_SCORE[startTone ?? "neutral"] ?? 0) > 0 && (TONE_SCORE[endTone ?? "neutral"] ?? 0) < 0);
+
+  return {
+    scoreDelta,
+    direction: recoveryArc ? "rising" : strainArc ? "falling" : stuckTone ? "stable" : "mixed",
+    startTone,
+    endTone,
+    stuckTone,
+    recoveryArc,
+    strainArc,
+  };
 }
 
 function analyzePath(history: PathHistory, currentStarId: string, currentTone: string) {
@@ -187,10 +251,23 @@ function innerScript(
   previousVisits: number,
   memory: StarMemory,
   pattern: ReturnType<typeof analyzePath>,
+  trajectory: EmotionalTrajectory,
 ) {
   const tone = cue.tone ?? dominantKey(memory.tones) ?? "quiet";
   const weight = cue.symbolicWeight ?? dominantKey(memory.weights) ?? "subtle";
   const title = cue.title ?? "this point";
+
+  if (trajectory.recoveryArc) {
+    return `the feeling is lifting... from ${trajectory.startTone} toward ${trajectory.endTone}. keep following that change.`;
+  }
+
+  if (trajectory.strainArc) {
+    return `the map is getting heavier... from ${trajectory.startTone} toward ${trajectory.endTone}. slow down here.`;
+  }
+
+  if (trajectory.stuckTone && trajectory.stuckTone === tone && pattern.toneFrequency >= 4) {
+    return `same ${tone} across different places... the feeling is holding its shape.`;
+  }
 
   if (pattern.hasABAB && pattern.previousStarId) {
     return `you are moving between them again... ${pattern.previousStarId} and ${title}. ${tone}. watch the loop.`;
@@ -227,7 +304,7 @@ function innerScript(
   return `notice the return... ${tone}. ${weight}.`;
 }
 
-function voiceParams(cue: NarratorCue, previousVisits: number) {
+function voiceParams(cue: NarratorCue, previousVisits: number, trajectory: EmotionalTrajectory) {
   const tone = cue.tone ?? "neutral";
   const weight = cue.symbolicWeight ?? "light";
 
@@ -259,6 +336,16 @@ function voiceParams(cue: NarratorCue, previousVisits: number) {
     volume += 0.03;
   }
 
+  if (trajectory.recoveryArc) {
+    pitch += 0.05;
+    volume += 0.02;
+  }
+
+  if (trajectory.strainArc) {
+    rate -= 0.05;
+    pitch -= 0.04;
+  }
+
   return { rate, pitch, volume };
 }
 
@@ -275,13 +362,13 @@ export default function DualLayerNarratorBridge() {
       if (timeoutRef.current !== null) window.clearTimeout(timeoutRef.current);
 
       const { id, previousVisits, memory } = updateMemory(cue);
-      const pattern = updatePathMemory(cue, id);
-      const script = innerScript(cue, previousVisits, memory, pattern);
+      const { pattern, trajectory } = updatePathMemory(cue, id);
+      const script = innerScript(cue, previousVisits, memory, pattern, trajectory);
       const delay = Math.max(0, (cue.timing?.delayMs ?? 0) + 720);
 
       timeoutRef.current = window.setTimeout(() => {
         const whisper = new SpeechSynthesisUtterance(script);
-        const params = voiceParams(cue, previousVisits);
+        const params = voiceParams(cue, previousVisits, trajectory);
 
         whisper.rate = params.rate;
         whisper.pitch = params.pitch;
@@ -300,6 +387,7 @@ export default function DualLayerNarratorBridge() {
               tone: cue.tone ?? dominantKey(memory.tones),
               symbolicWeight: cue.symbolicWeight ?? dominantKey(memory.weights),
               pattern,
+              trajectory,
               script,
             },
           }),
