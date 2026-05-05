@@ -22,6 +22,16 @@ type LifeNode3D = {
 
 type LifeEdge3D = { id: string; sourceId: string; targetId: string; color: string; strength: number };
 
+type EmotionalDirectorState = {
+  bloom: number;
+  chroma: number;
+  dof: number;
+  vignette: number;
+  fogNear: number;
+  fogFar: number;
+  label: string;
+};
+
 type CameraRigApi = {
   focus: (node: LifeNode3D) => void;
   reset: () => void;
@@ -44,6 +54,39 @@ const edges: LifeEdge3D[] = [
   { id: "e5", sourceId: "season-becoming", targetId: "mirror-becoming", color: "#93c5fd", strength: 0.42 },
 ];
 
+const defaultDirector: EmotionalDirectorState = { bloom: 1.25, chroma: 0.001, dof: 2.4, vignette: 0.7, fogNear: 28, fogFar: 96, label: "cinematic orbit" };
+
+function directorFor(node: LifeNode3D | null): EmotionalDirectorState {
+  if (!node) return defaultDirector;
+  switch (node.kind) {
+    case "threshold":
+      return { bloom: 1.05, chroma: 0.0018, dof: 3.5, vignette: 0.9, fogNear: 16, fogFar: 58, label: "threshold descent" };
+    case "recovery":
+      return { bloom: 1.75, chroma: 0.0007, dof: 2.1, vignette: 0.52, fogNear: 30, fogFar: 105, label: "recovery lift" };
+    case "dream":
+      return { bloom: 1.55, chroma: 0.0022, dof: 4.4, vignette: 0.78, fogNear: 22, fogFar: 76, label: "dream drift" };
+    case "mirror":
+      return { bloom: 2.05, chroma: 0.0012, dof: 1.7, vignette: 0.42, fogNear: 38, fogFar: 130, label: "mirror reveal" };
+    default:
+      return { bloom: 1.35, chroma: 0.001, dof: 2.6, vignette: 0.68, fogNear: 26, fogFar: 94, label: "memory glide" };
+  }
+}
+
+function cameraOffsetFor(node: LifeNode3D): THREE.Vector3 {
+  switch (node.kind) {
+    case "threshold":
+      return new THREE.Vector3(-1.2, 0.9, 5.4);
+    case "recovery":
+      return new THREE.Vector3(0.4, 4.8, 10.5);
+    case "dream":
+      return new THREE.Vector3(2.8, 2.2, 8.8);
+    case "mirror":
+      return new THREE.Vector3(0, 8.8, 24);
+    default:
+      return new THREE.Vector3(0, 2.4, 8.6);
+  }
+}
+
 function makeStarPositions(count: number) {
   const positions = new Float32Array(count * 3);
   const colors = new Float32Array(count * 3);
@@ -63,12 +106,12 @@ function makeStarPositions(count: number) {
   return { positions, colors };
 }
 
-function StarField() {
+function StarField({ intensity }: { intensity: number }) {
   const ref = useRef<THREE.Points>(null);
-  const { positions, colors } = useMemo(() => makeStarPositions(1800), []);
+  const { positions, colors } = useMemo(() => makeStarPositions(2200), []);
   useFrame((_, delta) => {
     if (!ref.current) return;
-    ref.current.rotation.y += delta * 0.006;
+    ref.current.rotation.y += delta * (0.006 + intensity * 0.004);
     ref.current.rotation.x += delta * 0.002;
   });
   return (
@@ -77,27 +120,43 @@ function StarField() {
         <bufferAttribute attach="attributes-position" args={[positions, 3]} />
         <bufferAttribute attach="attributes-color" args={[colors, 3]} />
       </bufferGeometry>
-      <pointsMaterial size={0.16} vertexColors transparent opacity={0.9} sizeAttenuation depthWrite={false} />
+      <pointsMaterial size={0.16 + intensity * 0.025} vertexColors transparent opacity={0.86 + intensity * 0.1} sizeAttenuation depthWrite={false} />
     </points>
   );
 }
 
 function EdgeLines() {
-  const map = useMemo(() => Object.fromEntries(nodes.map((node) => [node.id, node])), []);
+  const geometries = useMemo(() => {
+    const map = Object.fromEntries(nodes.map((node) => [node.id, node]));
+    return edges.map((edge) => {
+      const a = map[edge.sourceId];
+      const b = map[edge.targetId];
+      const curve = new THREE.CatmullRomCurve3([
+        new THREE.Vector3(...a.position),
+        new THREE.Vector3((a.position[0] + b.position[0]) / 2, (a.position[1] + b.position[1]) / 2 + edge.strength * 2.4, (a.position[2] + b.position[2]) / 2),
+        new THREE.Vector3(...b.position),
+      ]);
+      return { edge, geometry: new THREE.BufferGeometry().setFromPoints(curve.getPoints(48)) };
+    });
+  }, []);
   return (
     <group>
-      {edges.map((edge) => {
-        const a = map[edge.sourceId];
-        const b = map[edge.targetId];
-        const points = [new THREE.Vector3(...a.position), new THREE.Vector3(...b.position)];
-        const geometry = new THREE.BufferGeometry().setFromPoints(points);
-        return (
-          <line key={edge.id} geometry={geometry}>
-            <lineBasicMaterial color={edge.color} transparent opacity={0.35 + edge.strength * 0.35} />
-          </line>
-        );
-      })}
+      {geometries.map(({ edge, geometry }) => (
+        <line key={edge.id} geometry={geometry}>
+          <lineBasicMaterial color={edge.color} transparent opacity={0.35 + edge.strength * 0.35} />
+        </line>
+      ))}
     </group>
+  );
+}
+
+function GravityCluster({ node, active }: { node: LifeNode3D; active: boolean }) {
+  const color = useMemo(() => new THREE.Color(node.color), [node.color]);
+  return (
+    <mesh position={node.position}>
+      <sphereGeometry args={[3.2 + node.intensity * 2.2, 32, 32]} />
+      <meshBasicMaterial color={color} transparent opacity={active ? 0.055 : 0.026} depthWrite={false} blending={THREE.AdditiveBlending} />
+    </mesh>
   );
 }
 
@@ -107,6 +166,7 @@ function LifeStar({ node, active, onSelect }: { node: LifeNode3D; active: boolea
   useFrame((state, delta) => {
     if (!group.current) return;
     group.current.rotation.y += delta * (0.24 + node.intensity * 0.18);
+    group.current.rotation.z += delta * (node.kind === "dream" ? 0.18 : 0.06);
     const pulse = 1 + Math.sin(state.clock.elapsedTime * (1.8 + node.intensity) + node.position[0]) * 0.08;
     group.current.scale.lerp(new THREE.Vector3(active ? 1.65 : pulse, active ? 1.65 : pulse, active ? 1.65 : pulse), 0.08);
   });
@@ -114,76 +174,114 @@ function LifeStar({ node, active, onSelect }: { node: LifeNode3D; active: boolea
     <group ref={group} position={node.position} onClick={(event: ThreeEvent<MouseEvent>) => { event.stopPropagation(); onSelect(node); }}>
       <mesh>
         <sphereGeometry args={[0.42 + node.intensity * 0.28, 32, 32]} />
-        <meshStandardMaterial color={color} emissive={color} emissiveIntensity={active ? 3.2 : 1.7 + node.intensity} roughness={0.2} metalness={0.1} />
+        <meshStandardMaterial color={color} emissive={color} emissiveIntensity={active ? 3.5 : 1.7 + node.intensity} roughness={0.18} metalness={0.12} />
       </mesh>
       <mesh>
         <sphereGeometry args={[1.08 + node.intensity * 0.8, 32, 32]} />
-        <meshBasicMaterial color={color} transparent opacity={active ? 0.2 : 0.08} depthWrite={false} blending={THREE.AdditiveBlending} />
+        <meshBasicMaterial color={color} transparent opacity={active ? 0.22 : 0.08} depthWrite={false} blending={THREE.AdditiveBlending} />
       </mesh>
       <mesh rotation={[Math.PI / 2.4, 0, 0]}>
         <torusGeometry args={[1.2 + node.intensity * 0.7, 0.012, 8, 96]} />
-        <meshBasicMaterial color={color} transparent opacity={active ? 0.72 : 0.32} />
+        <meshBasicMaterial color={color} transparent opacity={active ? 0.76 : 0.32} />
+      </mesh>
+      <mesh rotation={[Math.PI / 1.8, Math.PI / 4, 0]}>
+        <torusGeometry args={[1.5 + node.intensity * 0.55, 0.008, 8, 96]} />
+        <meshBasicMaterial color={color} transparent opacity={active ? 0.48 : 0.18} />
       </mesh>
     </group>
   );
 }
 
-function CameraRig({ selected, onReady, onTourSelect }: { selected: LifeNode3D | null; onReady: (api: CameraRigApi) => void; onTourSelect: (node: LifeNode3D) => void }) {
+function CameraRig({ selected, onReady, onTourSelect, setDirector }: { selected: LifeNode3D | null; onReady: (api: CameraRigApi) => void; onTourSelect: (node: LifeNode3D) => void; setDirector: (state: EmotionalDirectorState) => void }) {
   const { camera } = useThree();
-  const target = useRef(new THREE.Vector3(0, 0, 0));
+  const lookTarget = useRef(new THREE.Vector3(0, 0, 0));
   const desired = useRef(new THREE.Vector3(0, 3, 24));
+  const velocity = useRef(new THREE.Vector3());
+  const roll = useRef(0);
   const tourIndex = useRef(0);
 
   useMemo(() => {
     onReady({
       focus: (node) => {
-        target.current.set(...node.position);
-        desired.current.copy(target.current).add(new THREE.Vector3(0, 1.8, 8.5));
+        const target = new THREE.Vector3(...node.position);
+        const offset = cameraOffsetFor(node);
+        const direction = new THREE.Vector3().subVectors(camera.position, target).normalize();
+        const overshoot = direction.multiplyScalar(node.kind === "threshold" ? 1.1 : node.kind === "mirror" ? -2.2 : 0.7);
+        lookTarget.current.copy(target);
+        desired.current.copy(target).add(offset).add(overshoot);
+        setDirector(directorFor(node));
       },
       reset: () => {
-        target.current.set(4, 0, -4);
+        lookTarget.current.set(4, 0, -4);
         desired.current.set(0, 4, 28);
+        setDirector(defaultDirector);
       },
       tour: () => {
         const node = nodes[tourIndex.current % nodes.length];
         tourIndex.current += 1;
         onTourSelect(node);
-        target.current.set(...node.position);
-        desired.current.copy(target.current).add(new THREE.Vector3(0, 2.2, 8.5));
+        const target = new THREE.Vector3(...node.position);
+        lookTarget.current.copy(target);
+        desired.current.copy(target).add(cameraOffsetFor(node));
+        setDirector(directorFor(node));
       },
     });
-  }, [onReady, onTourSelect]);
+  }, [camera.position, onReady, onTourSelect, setDirector]);
 
   useFrame((state, delta) => {
+    const elapsed = state.clock.elapsedTime;
     if (!selected) {
-      const t = state.clock.elapsedTime * 0.12;
-      desired.current.set(Math.sin(t) * 9, 4 + Math.cos(t * 0.7) * 1.5, 27 + Math.sin(t * 0.6) * 3);
-      target.current.set(4, 0, -4);
+      const t = elapsed * 0.1;
+      desired.current.set(Math.sin(t) * 12, 5 + Math.cos(t * 0.7) * 2.2, 29 + Math.sin(t * 0.6) * 4);
+      lookTarget.current.set(4 + Math.sin(t * 0.8) * 1.2, Math.cos(t * 0.6) * 0.7, -4);
+    } else if (selected.kind === "dream") {
+      desired.current.x += Math.sin(elapsed * 0.9) * 0.006;
+      desired.current.y += Math.cos(elapsed * 0.7) * 0.005;
+    } else if (selected.kind === "recovery") {
+      desired.current.y += Math.sin(elapsed * 0.45) * 0.004;
     }
-    camera.position.lerp(desired.current, 1 - Math.pow(0.02, delta));
-    camera.lookAt(target.current);
+
+    const gravity = new THREE.Vector3();
+    for (const node of nodes) {
+      const p = new THREE.Vector3(...node.position);
+      const dist = Math.max(camera.position.distanceTo(p), 1.2);
+      const pull = (node.intensity * node.intensity) / (dist * dist) * (selected?.id === node.id ? 0.018 : 0.006);
+      gravity.add(p.sub(camera.position).normalize().multiplyScalar(pull));
+    }
+
+    const targetPosition = desired.current.clone().add(gravity);
+    const spring = selected?.kind === "threshold" ? 0.55 : selected?.kind === "mirror" ? 0.82 : 0.7;
+    const damping = selected?.kind === "dream" ? 0.86 : 0.8;
+    velocity.current.add(targetPosition.sub(camera.position).multiplyScalar(spring * delta));
+    velocity.current.multiplyScalar(Math.pow(damping, delta * 60));
+    camera.position.add(velocity.current);
+
+    roll.current += ((velocity.current.x * -0.12) - roll.current) * 0.08;
+    camera.up.set(Math.sin(roll.current), 1, 0).normalize();
+    camera.lookAt(lookTarget.current);
   });
 
   return null;
 }
 
-function SceneWorld({ selected, setSelected, onCameraReady }: { selected: LifeNode3D | null; setSelected: (node: LifeNode3D | null) => void; onCameraReady: (api: CameraRigApi) => void }) {
+function SceneWorld({ selected, setSelected, onCameraReady, director, setDirector }: { selected: LifeNode3D | null; setSelected: (node: LifeNode3D | null) => void; onCameraReady: (api: CameraRigApi) => void; director: EmotionalDirectorState; setDirector: (state: EmotionalDirectorState) => void }) {
   return (
     <>
       <color attach="background" args={["#020617"]} />
-      <fog attach="fog" args={["#020617", 26, 94]} />
-      <ambientLight intensity={0.22} />
+      <fog attach="fog" args={["#020617", director.fogNear, director.fogFar]} />
+      <ambientLight intensity={selected?.kind === "threshold" ? 0.14 : 0.24} />
       <pointLight position={[0, 8, 12]} intensity={2.2} color="#93c5fd" />
-      <pointLight position={[15, -4, 12]} intensity={1.8} color="#a78bfa" />
-      <StarField />
+      <pointLight position={[15, -4, 12]} intensity={selected?.kind === "recovery" ? 2.5 : 1.8} color="#a78bfa" />
+      <StarField intensity={selected?.intensity ?? 0.4} />
       <EdgeLines />
+      {nodes.map((node) => <GravityCluster key={`${node.id}-gravity`} node={node} active={selected?.id === node.id} />)}
       {nodes.map((node) => <LifeStar key={node.id} node={node} active={selected?.id === node.id} onSelect={setSelected} />)}
-      <CameraRig selected={selected} onReady={onCameraReady} onTourSelect={setSelected} />
+      <CameraRig selected={selected} onReady={onCameraReady} onTourSelect={setSelected} setDirector={setDirector} />
       <EffectComposer>
-        <Bloom intensity={1.35} luminanceThreshold={0.12} luminanceSmoothing={0.75} />
-        <DepthOfField focusDistance={0.018} focalLength={0.035} bokehScale={2.6} />
-        <ChromaticAberration offset={[0.0008, 0.0012]} />
-        <Vignette eskil={false} offset={0.18} darkness={0.72} />
+        <Bloom intensity={director.bloom} luminanceThreshold={0.1} luminanceSmoothing={0.72} />
+        <DepthOfField focusDistance={0.018} focalLength={0.035} bokehScale={director.dof} />
+        <ChromaticAberration offset={[director.chroma, director.chroma * 1.35]} />
+        <Vignette eskil={false} offset={0.18} darkness={director.vignette} />
       </EffectComposer>
     </>
   );
@@ -191,20 +289,22 @@ function SceneWorld({ selected, setSelected, onCameraReady }: { selected: LifeNo
 
 export default function LifeMap3DScene() {
   const [selected, setSelected] = useState<LifeNode3D | null>(null);
+  const [director, setDirector] = useState<EmotionalDirectorState>(defaultDirector);
   const cameraApi = useRef<CameraRigApi | null>(null);
 
   function focus(node: LifeNode3D) {
     setSelected(node);
+    setDirector(directorFor(node));
     cameraApi.current?.focus(node);
   }
 
   return (
     <main className="lm3d-root">
       <Canvas camera={{ position: [0, 3, 26], fov: 55, near: 0.1, far: 220 }} dpr={[1, 1.8]} gl={{ antialias: true, alpha: false, powerPreference: "high-performance" }}>
-        <SceneWorld selected={selected} setSelected={focus} onCameraReady={(api) => { cameraApi.current = api; }} />
+        <SceneWorld selected={selected} setSelected={focus} onCameraReady={(api) => { cameraApi.current = api; }} director={director} setDirector={setDirector} />
       </Canvas>
       <section className="lm3d-hero" style={{ ["--aura" as string]: selected?.color ?? "#7dd3fc" } as CSSProperties}>
-        <p>MIRROR OF BECOMING</p>
+        <p>{director.label.toUpperCase()}</p>
         <h1>{selected ? selected.title : "The full arc is visible now."}</h1>
         <span>{selected ? selected.narratorLine : "A true 3D LifeMap is online. Tour the arc, enter a star, or let the camera orbit the memory field."}</span>
       </section>
@@ -216,12 +316,12 @@ export default function LifeMap3DScene() {
           <span>{selected.description}</span>
           <div>
             <button onClick={() => cameraApi.current?.tour()}>Next star</button>
-            <button onClick={() => { setSelected(null); cameraApi.current?.reset(); }}>Back to galaxy</button>
+            <button onClick={() => { setSelected(null); setDirector(defaultDirector); cameraApi.current?.reset(); }}>Back to galaxy</button>
           </div>
         </aside>
       ) : null}
       <nav className="lm3d-nav">
-        <button onClick={() => { setSelected(null); cameraApi.current?.reset(); }}>Life Map</button>
+        <button onClick={() => { setSelected(null); setDirector(defaultDirector); cameraApi.current?.reset(); }}>Life Map</button>
         <button onClick={() => cameraApi.current?.tour()}>Tour</button>
         <button onClick={() => window.location.assign("/home")}>Home</button>
       </nav>
