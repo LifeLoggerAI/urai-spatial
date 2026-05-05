@@ -1,27 +1,56 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
+import type { User } from 'firebase/auth';
 import { firebaseAuth } from '@/lib/firebaseClient';
+import type { UserEntitlement } from '@/components/spatial/stripePlanGate';
+
+export type EntitlementLoadState = 'loading' | 'authenticated' | 'anonymous' | 'error';
 
 export function useUserEntitlement() {
-  const [userId, setUserId] = useState<string>('local');
-  const [entitlement, setEntitlement] = useState<any>(null);
+  const [user, setUser] = useState<User | null>(null);
+  const [userId, setUserId] = useState<string | null>(null);
+  const [entitlement, setEntitlement] = useState<UserEntitlement | null>(null);
+  const [status, setStatus] = useState<EntitlementLoadState>('loading');
+  const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    const unsub = firebaseAuth.onAuthStateChanged((user) => {
-      if (user) setUserId(user.uid);
-    });
-    return () => unsub();
+  const refreshEntitlement = useCallback(async (currentUser = firebaseAuth.currentUser) => {
+    if (!currentUser) {
+      setUser(null);
+      setUserId(null);
+      setEntitlement(null);
+      setStatus('anonymous');
+      return;
+    }
+
+    setStatus('loading');
+    setError(null);
+
+    try {
+      const token = await currentUser.getIdToken();
+      const response = await fetch('/api/entitlement', {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      if (!response.ok) throw new Error(`Unable to fetch entitlement: ${response.status}`);
+
+      const data = await response.json();
+      setEntitlement(data.entitlement ?? null);
+      setStatus('authenticated');
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Unable to fetch entitlement.');
+      setStatus('error');
+    }
   }, []);
 
   useEffect(() => {
-    async function load() {
-      const res = await fetch(`/api/entitlement?userId=${userId}`);
-      const data = await res.json();
-      setEntitlement(data.entitlement);
-    }
-    load();
-  }, [userId]);
+    const unsub = firebaseAuth.onAuthStateChanged((currentUser) => {
+      setUser(currentUser);
+      setUserId(currentUser?.uid ?? null);
+      refreshEntitlement(currentUser);
+    });
+    return () => unsub();
+  }, [refreshEntitlement]);
 
-  return { userId, entitlement };
+  return { user, userId, entitlement, status, error, refreshEntitlement };
 }
