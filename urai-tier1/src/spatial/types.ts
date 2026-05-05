@@ -1,4 +1,6 @@
-export type Mode = "HOME" | "ASCENT" | "LIFEMAP" | "FOCUS" | "REPLAY";
+import type { Tier1Phase } from "@/canon/tier1";
+
+export type Mode = Tier1Phase;
 
 export type UnityRuntimePayload = Record<string, unknown>;
 export type XrState = Record<string, unknown>;

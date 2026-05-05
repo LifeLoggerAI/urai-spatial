@@ -1,61 +1,159 @@
 "use client";
 
-import { useMemo } from "react";
-import { BackSide } from "three";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { useFrame } from "@react-three/fiber";
+import type { Group, Mesh } from "three";
 
-import { useSceneStore } from "../state/sceneStore";
+import { useEnvironmentSignal } from "../signals/environmentSignal";
 
-type HomeSkyProps = {
-  hazeNear?: number;
-  hazeFar?: number;
-};
+/* =========================
+   REDUCED MOTION HOOK
+   ========================= */
 
-function hash(n: number) {
-  const x = Math.sin(n * 127.1 + 311.7) * 43758.5453123;
-  return x - Math.floor(x);
+function useReducedMotion() {
+  const [reducedMotion, setReducedMotion] = useState(false);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+
+    const media = window.matchMedia("(prefers-reduced-motion: reduce)");
+    const onChange = () => setReducedMotion(media.matches);
+
+    onChange();
+    media.addEventListener("change", onChange);
+
+    return () => media.removeEventListener("change", onChange);
+  }, []);
+
+  return reducedMotion;
 }
 
-export default function HomeSky({ hazeNear = 4.4, hazeFar = 16 }: HomeSkyProps) {
-  const mode = useSceneStore((s) => s.mode);
+/* =========================
+   SKY COMPONENT
+   ========================= */
+
+export default function HomeSky() {
+  const env = useEnvironmentSignal();
+  const reducedMotion = useReducedMotion();
+
+  const skyRoot = useRef<Group>(null);
+  const nebula = useRef<Mesh>(null);
 
   const stars = useMemo(
     () =>
-      Array.from({ length: 28 }, (_, i) => {
-        const a = hash(i + 1);
-        const b = hash(i + 2);
-        const c = hash(i + 3);
-        return {
-          id: `home-sky-star-${i}`,
-          position: [a * 18 - 9, b * 5 + 2.1, -(c * 6 + 5.5)] as [number, number, number],
-          scale: 0.007 + hash(i + 4) * 0.014,
-          opacity: 0.14 + hash(i + 5) * 0.2,
-        };
-      }),
+      Array.from({ length: 220 }, (_, i) => ({
+        key: `home-sky-star-${i}`,
+        x: (Math.sin(i * 17.13) * 0.5 + 0.5) * 52 - 26,
+        y: (Math.sin(i * 9.1 + 2.7) * 0.5 + 0.5) * 16 + 4,
+        z: -30 - (Math.sin(i * 21.77) * 0.5 + 0.5) * 120,
+        size:
+          0.01 +
+          (Math.sin(i * 4.77 + 7.2) * 0.5 + 0.5) * 0.03,
+        alpha:
+          0.1 +
+          (Math.sin(i * 6.31 + 4.2) * 0.5 + 0.5) * 0.3,
+        speed:
+          0.4 +
+          (Math.sin(i * 3.33 + 1.1) * 0.5 + 0.5) * 0.8,
+      })),
     []
   );
 
-  if (mode !== "home") return null;
+  const starMix = env.scene.starMix;
+  const opacity = env.scene.skyOpacity;
+
+  const nebulaOpacity =
+    0.06 + starMix * 0.05 + env.aliveness * 0.025;
+
+  useFrame(({ clock }) => {
+    if (!skyRoot.current || !nebula.current) return;
+
+    if (!reducedMotion) {
+      const t = clock.elapsedTime;
+
+      skyRoot.current.rotation.y =
+        Math.sin(t * env.motion.drift) * 0.04;
+
+      skyRoot.current.rotation.x =
+        Math.sin(t * env.motion.drift * 0.67) * 0.01;
+
+      nebula.current.rotation.z =
+        Math.sin(t * env.motion.drift * 1.35) * 0.06;
+    } else {
+      skyRoot.current.rotation.set(0, 0, 0);
+      nebula.current.rotation.set(0, 0, 0);
+    }
+  });
 
   return (
-    <group>
-      <fog attach="fog" color="#0b1026" near={hazeNear} far={hazeFar} />
-
-      <mesh position={[0, 2.8, -8.6]}>
-        <sphereGeometry args={[11, 42, 24, 0, Math.PI * 2, 0, Math.PI * 0.66]} />
-        <meshBasicMaterial color="#6eb7ff" transparent opacity={0.06} side={BackSide} depthWrite={false} />
+    <group
+      ref={skyRoot}
+      visible={opacity > 0.001}
+      userData={{
+        mood: env.mood,
+        aliveness: env.aliveness,
+      }}
+    >
+      {/* SKY DOME */}
+      <mesh scale={[1, 0.62, 1]} position={[0, -4.5, -48]}>
+        <sphereGeometry
+          args={[84, 64, 48, 0, Math.PI * 2, 0, Math.PI * 0.5]}
+        />
+        <meshBasicMaterial
+          color={env.palette.sky}
+          side={1}
+          transparent
+          opacity={0.98 * opacity}
+          depthWrite={false}
+        />
       </mesh>
 
-      <mesh position={[0, 3.1, -8.8]}>
-        <sphereGeometry args={[11.6, 42, 24, 0, Math.PI * 2, 0, Math.PI * 0.68]} />
-        <meshBasicMaterial color="#b7d4ff" transparent opacity={0.03} side={BackSide} depthWrite={false} />
+      {/* NEBULA */}
+      <mesh ref={nebula} position={[0, 11.4, -56]}>
+        <circleGeometry args={[42, 48]} />
+        <meshBasicMaterial
+          color={env.palette.nebula}
+          transparent
+          opacity={nebulaOpacity * opacity}
+          depthWrite={false}
+        />
       </mesh>
 
-      {stars.map((star) => (
-        <mesh key={star.id} position={star.position} scale={star.scale}>
-          <sphereGeometry args={[1, 8, 8]} />
-          <meshBasicMaterial color="#cfe0ff" transparent opacity={star.opacity} depthWrite={false} />
-        </mesh>
-      ))}
+      {/* STARS */}
+      {stars.map((star) => {
+        const twinkle = reducedMotion
+          ? 1
+          : 0.75 +
+            Math.sin(
+              Date.now() *
+                0.001 *
+                star.speed *
+                env.motion.pulseRate +
+                star.x
+            ) *
+              0.25;
+
+        return (
+          <mesh key={star.key} position={[star.x, star.y, star.z]}>
+            <sphereGeometry
+              args={[
+                star.size *
+                  (0.8 +
+                    starMix * 0.5 +
+                    env.aliveness * 0.08),
+                8,
+                8,
+              ]}
+            />
+            <meshBasicMaterial
+              color={env.palette.star}
+              transparent
+              opacity={star.alpha * starMix * opacity * twinkle}
+              depthWrite={false}
+            />
+          </mesh>
+        );
+      })}
     </group>
   );
 }
