@@ -12,6 +12,7 @@ import { useSearchParams } from 'next/navigation'
 import CinematicCameraRig from '../spatial/cinematic/CinematicCameraRig'
 import CinematicPostProcessing from '../spatial/cinematic/CinematicPostProcessing'
 import CinematicParticles from '../spatial/cinematic/CinematicParticles'
+import NarratorVoice from '../spatial/narrator/NarratorVoice'
 
 export default function HomeScene() {
   const params = useSearchParams()
@@ -43,6 +44,8 @@ export default function HomeScene() {
 
       <CinematicParticles active={Boolean(manifest)} />
       <CinematicPostProcessing active={Boolean(manifest)} />
+
+      <NarratorVoice manifest={manifest} />
     </Canvas>
   )
 }
