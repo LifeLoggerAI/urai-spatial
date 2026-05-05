@@ -7,6 +7,7 @@ import { evolveEnvironment, createEnvironmentSpeechCue } from "./environmentEvol
 import { createCompanionPresence } from "./companionPresence";
 import { createEmotionalPrediction } from "./emotionalPrediction";
 import { createPerfectMomentIntervention } from "./perfectMomentIntervention";
+import { createEnvironmentDirective } from "./environmentDirective";
 
 export default function ConsciousEnvironmentBridge() {
   const env = useEnvironmentSignal();
@@ -27,6 +28,7 @@ export default function ConsciousEnvironmentBridge() {
       speech,
       intensity: state.intensity,
     });
+    const directive = createEnvironmentDirective(intervention, prediction);
 
     const narratorEvent = new CustomEvent("urai:narrator", {
       detail: {
@@ -38,6 +40,7 @@ export default function ConsciousEnvironmentBridge() {
         companion,
         prediction,
         intervention,
+        directive,
       },
     });
 
@@ -50,6 +53,7 @@ export default function ConsciousEnvironmentBridge() {
         companion,
         prediction,
         intervention,
+        directive,
       },
     });
 
