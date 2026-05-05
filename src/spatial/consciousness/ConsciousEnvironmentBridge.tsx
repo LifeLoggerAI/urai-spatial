@@ -4,6 +4,7 @@ import { useEffect, useMemo } from "react";
 import { useEnvironmentSignal } from "../signals/environmentSignal";
 import { createConsciousEnvironmentState } from "./consciousEnvironment";
 import { evolveEnvironment, createEnvironmentSpeechCue } from "./environmentEvolution";
+import { createCompanionPresence } from "./companionPresence";
 
 export default function ConsciousEnvironmentBridge() {
   const env = useEnvironmentSignal();
@@ -15,6 +16,7 @@ export default function ConsciousEnvironmentBridge() {
 
     const evolution = evolveEnvironment(state);
     const speech = createEnvironmentSpeechCue(state, evolution);
+    const companion = createCompanionPresence(evolution, speech);
 
     const narratorEvent = new CustomEvent("urai:narrator", {
       detail: {
@@ -23,6 +25,7 @@ export default function ConsciousEnvironmentBridge() {
         intensity: state.intensity,
         speech,
         evolution,
+        companion,
       },
     });
 
@@ -32,6 +35,7 @@ export default function ConsciousEnvironmentBridge() {
         bloom: state.shouldBloom,
         whisper: state.shouldWhisper,
         evolution,
+        companion,
       },
     });
 
