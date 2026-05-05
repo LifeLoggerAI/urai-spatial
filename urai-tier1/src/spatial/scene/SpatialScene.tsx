@@ -12,6 +12,9 @@ import CompanionOrb from "../companion/CompanionOrb";
 import CompanionCard from "../companion/CompanionCard";
 import { runCompanionPipeline } from "../companion/CompanionPipeline";
 import { trimForLaunch } from "../companion/CompanionLaunchPolish";
+import FirstLightExperience from "../onboarding/FirstLightExperience";
+
+const FIRST_LIGHT_KEY = "urai:first-light-complete";
 
 export default function SpatialScene() {
   const phase = useSceneStore((s) => s.phase);
@@ -19,12 +22,18 @@ export default function SpatialScene() {
   const selectedStarPosition = useSceneStore((s) => s.selectedStarPosition);
   const focusStar = useSceneStore((s) => s.focusStar);
 
+  const [firstLightComplete, setFirstLightComplete] = useState(false);
   const [companionState, setCompanionState] = useState<any>(null);
   const [companionLine, setCompanionLine] = useState<string | null>(null);
   const [expression, setExpression] = useState<any>(null);
 
   useEffect(() => {
-    if (!phase) return;
+    if (typeof window === "undefined") return;
+    setFirstLightComplete(window.localStorage.getItem(FIRST_LIGHT_KEY) === "true");
+  }, []);
+
+  useEffect(() => {
+    if (!phase || !firstLightComplete) return;
 
     const result = runCompanionPipeline({
       phase,
@@ -42,7 +51,14 @@ export default function SpatialScene() {
     setCompanionLine(line);
     setCompanionState(result.state);
     setExpression(result.expression);
-  }, [phase, selectedStarId]);
+  }, [phase, selectedStarId, firstLightComplete]);
+
+  const completeFirstLight = () => {
+    if (typeof window !== "undefined") {
+      window.localStorage.setItem(FIRST_LIGHT_KEY, "true");
+    }
+    setFirstLightComplete(true);
+  };
 
   return (
     <>
@@ -58,13 +74,15 @@ export default function SpatialScene() {
         onSelectStar={(star) => focusStar(star.id, star.position ?? [0, 18, -220])}
       />
 
-      {expression && (
+      {!firstLightComplete && <FirstLightExperience onComplete={completeFirstLight} />}
+
+      {firstLightComplete && expression && (
         <div className="fixed bottom-6 right-6 z-50">
           <CompanionOrb expression={expression} muted />
         </div>
       )}
 
-      {companionLine && (
+      {firstLightComplete && companionLine && (
         <div className="fixed bottom-20 left-1/2 -translate-x-1/2 z-50">
           <CompanionCard text={companionLine} />
         </div>
