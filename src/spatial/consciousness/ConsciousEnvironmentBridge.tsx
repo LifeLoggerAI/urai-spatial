@@ -5,6 +5,7 @@ import { useEnvironmentSignal } from "../signals/environmentSignal";
 import { createConsciousEnvironmentState } from "./consciousEnvironment";
 import { evolveEnvironment, createEnvironmentSpeechCue } from "./environmentEvolution";
 import { createCompanionPresence } from "./companionPresence";
+import { createEmotionalPrediction } from "./emotionalPrediction";
 
 export default function ConsciousEnvironmentBridge() {
   const env = useEnvironmentSignal();
@@ -17,6 +18,7 @@ export default function ConsciousEnvironmentBridge() {
     const evolution = evolveEnvironment(state);
     const speech = createEnvironmentSpeechCue(state, evolution);
     const companion = createCompanionPresence(evolution, speech);
+    const prediction = createEmotionalPrediction(companion, evolution, speech, state.intensity);
 
     const narratorEvent = new CustomEvent("urai:narrator", {
       detail: {
@@ -26,6 +28,7 @@ export default function ConsciousEnvironmentBridge() {
         speech,
         evolution,
         companion,
+        prediction,
       },
     });
 
@@ -36,6 +39,7 @@ export default function ConsciousEnvironmentBridge() {
         whisper: state.shouldWhisper,
         evolution,
         companion,
+        prediction,
       },
     });
 
