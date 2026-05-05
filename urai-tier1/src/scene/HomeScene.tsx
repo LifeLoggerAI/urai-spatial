@@ -9,6 +9,7 @@ import Atmosphere from './Atmosphere'
 import ManifestRenderer from '../spatial/assets/ManifestRenderer'
 import { useManifest } from '../spatial/assets/useManifest'
 import { useSearchParams } from 'next/navigation'
+import CinematicCameraRig from '../spatial/cinematic/CinematicCameraRig'
 
 export default function HomeScene() {
   const params = useSearchParams()
@@ -19,6 +20,8 @@ export default function HomeScene() {
   return (
     <Canvas shadows gl={{ antialias: true }}>
       <PerspectiveCamera makeDefault position={[0, 1.2, 4]} fov={45} />
+
+      <CinematicCameraRig active={Boolean(manifest)} />
 
       <ambientLight intensity={0.35} />
       <directionalLight
