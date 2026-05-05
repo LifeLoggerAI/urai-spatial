@@ -9,9 +9,13 @@ function wait(ms: number) {
   return new Promise((resolve) => setTimeout(resolve, ms))
 }
 
+function canSpeak() {
+  return typeof window !== 'undefined' && 'speechSynthesis' in window && 'SpeechSynthesisUtterance' in window
+}
+
 function speakLine(line: NarrationLine, signal: AbortSignal) {
   return new Promise<void>((resolve) => {
-    if (signal.aborted) return resolve()
+    if (signal.aborted || !canSpeak()) return resolve()
 
     const utterance = new SpeechSynthesisUtterance(line.text)
     utterance.rate = line.rate
@@ -20,7 +24,7 @@ function speakLine(line: NarrationLine, signal: AbortSignal) {
     utterance.onend = () => resolve()
     utterance.onerror = () => resolve()
 
-    speechSynthesis.speak(utterance)
+    window.speechSynthesis.speak(utterance)
   })
 }
 
@@ -37,7 +41,7 @@ export default function NarratorVoice({ manifest, context = 'arrival' }: { manif
     const sequence = buildNarrationSequence(manifest, context)
 
     async function runSequence() {
-      speechSynthesis.cancel()
+      if (canSpeak()) window.speechSynthesis.cancel()
       setNarratorLine(null)
 
       for (const line of sequence) {
@@ -57,7 +61,7 @@ export default function NarratorVoice({ manifest, context = 'arrival' }: { manif
 
     return () => {
       controller.abort()
-      speechSynthesis.cancel()
+      if (canSpeak()) window.speechSynthesis.cancel()
       setNarratorLine(null)
     }
   }, [manifest, context])

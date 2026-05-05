@@ -5,6 +5,8 @@ import { collection, limit, onSnapshot, orderBy, query } from 'firebase/firestor
 import { getFirebaseDb } from '../../lib/firebase/client'
 import { SpatialAssetManifest, isSpatialAssetManifest } from '../assets/manifestTypes'
 
+export const CONSTELLATION_MANIFEST_LIMIT = 18
+
 export function useConstellationManifests(enabled: boolean) {
   const [manifests, setManifests] = useState<SpatialAssetManifest[]>([])
 
@@ -14,12 +16,13 @@ export function useConstellationManifests(enabled: boolean) {
       return
     }
 
-    const q = query(collection(getFirebaseDb(), 'assetManifests'), orderBy('createdAt', 'desc'), limit(24))
+    const q = query(collection(getFirebaseDb(), 'assetManifests'), orderBy('createdAt', 'desc'), limit(CONSTELLATION_MANIFEST_LIMIT))
     return onSnapshot(q, (snapshot) => {
       setManifests(
         snapshot.docs
           .map((doc) => ({ ...doc.data(), manifestId: doc.id }))
-          .filter(isSpatialAssetManifest),
+          .filter(isSpatialAssetManifest)
+          .slice(0, CONSTELLATION_MANIFEST_LIMIT),
       )
     })
   }, [enabled])
