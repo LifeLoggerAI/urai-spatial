@@ -1,19 +1,30 @@
 'use client'
 
 import dynamic from 'next/dynamic'
+import { Suspense } from 'react'
+import SpatialV2Overlay from '@/spatial/effects/SpatialV2Overlay'
 
 const SpatialScene = dynamic(
   () =>
     import('@/spatial/scene/SpatialScene').then((m: any) => {
       const resolved = m.default ?? m.SpatialScene
+
       if (!resolved) {
-        throw new Error('SpatialScene module has no default export and no named SpatialScene export')
+        throw new Error(
+          'SpatialScene module has no default export and no named SpatialScene export'
+        )
       }
+
       return resolved
     }),
   { ssr: false }
 )
 
 export default function SpatialSceneClient() {
-  return <SpatialScene />
+  return (
+    <Suspense fallback={<div style={{ color: '#fff' }}>Loading URAI...</div>}>
+      <SpatialV2Overlay />
+      <SpatialScene />
+    </Suspense>
+  )
 }

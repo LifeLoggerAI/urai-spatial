@@ -1,11 +1,5 @@
-import SpatialScene from '@/spatial/scene/SpatialScene'
-import LifeMapCanonicalSurface from '@/spatial/components/LifeMapCanonicalSurface'
+import LifeMap3DScene from '@/spatial/components/LifeMap3DScene'
 
 export default function LifeMapPage() {
-  return (
-    <>
-      <SpatialScene />
-      <LifeMapCanonicalSurface />
-    </>
-  )
+  return <LifeMap3DScene />
 }
