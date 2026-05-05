@@ -1,3 +1,6 @@
+import { doc, getDoc, serverTimestamp, setDoc } from "firebase/firestore";
+import { getFirebaseDb } from "../../lib/firebase/client";
+
 export type InviteAccessStatus = "pending" | "invited" | "accepted" | "expired";
 
 export type InviteAccessRecord = {
@@ -9,19 +12,10 @@ export type InviteAccessRecord = {
   acceptedAt?: string;
 };
 
-const INVITE_STORAGE_KEY = "urai:invite-access";
+const COLLECTION = "early_access_invites";
 
 export function normalizeInviteCode(code: string) {
   return code.trim().toUpperCase().replace(/[^A-Z0-9-]/g, "");
-}
-
-export function createInviteRecord(email: string, inviteCode: string): InviteAccessRecord {
-  return {
-    email: email.trim().toLowerCase(),
-    inviteCode: normalizeInviteCode(inviteCode),
-    status: "pending",
-    createdAt: new Date().toISOString(),
-  };
 }
 
 export async function acceptInvite(inviteCode: string, email?: string) {
@@ -31,21 +25,33 @@ export async function acceptInvite(inviteCode: string, email?: string) {
     throw new Error("Invite code is missing or invalid.");
   }
 
-  const record: InviteAccessRecord = {
-    email: (email ?? "").trim().toLowerCase(),
-    inviteCode: cleanCode,
+  const db = getFirebaseDb();
+  const ref = doc(db, COLLECTION, cleanCode);
+  const snapshot = await getDoc(ref);
+
+  if (!snapshot.exists()) {
+    throw new Error("Invite not found.");
+  }
+
+  const data = snapshot.data();
+
+  if (data.status === "accepted") {
+    return data;
+  }
+
+  const updated = {
+    ...data,
     status: "accepted",
-    createdAt: new Date().toISOString(),
-    acceptedAt: new Date().toISOString(),
+    email: email ?? data.email ?? "",
+    acceptedAt: serverTimestamp(),
+    updatedAt: serverTimestamp(),
   };
 
+  await setDoc(ref, updated, { merge: true });
+
   if (typeof window !== "undefined") {
-    const current = JSON.parse(window.localStorage.getItem(INVITE_STORAGE_KEY) ?? "[]") as InviteAccessRecord[];
-    window.localStorage.setItem(INVITE_STORAGE_KEY, JSON.stringify([record, ...current].slice(0, 250)));
     window.localStorage.setItem("urai:invite-accepted", cleanCode);
   }
 
-  // Firestore target collection: early_access_invites
-  // Replace local fallback with a lookup/update once Firebase client is available here.
-  return record;
+  return updated;
 }
