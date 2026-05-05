@@ -2,11 +2,34 @@
 
 import { Html } from "@react-three/drei";
 import Orb from "../components/Orb";
+import PresenceRig from "../components/PresenceRig";
 import { useSceneStore } from "../state/sceneStore";
+import GroundWorld from "./GroundWorld";
+import HomeSky from "./HomeSky";
 
-function emitHomeOrbEvent(event: "home.orb.focus" | "home.orb.activate", source: "orb" | "overlay") {
+type HomeOrbEvent =
+  | {
+      event: "home.orb.activate";
+      source: "pointer" | "keyboard" | "overlay";
+      timestamp: number;
+    }
+  | {
+      event: "home.orb.focus";
+      source: "orb" | "overlay";
+      timestamp: number;
+    };
+
+function emitHomeOrbEvent(detail: Omit<HomeOrbEvent, "timestamp">) {
   if (typeof window === "undefined") return;
-  window.dispatchEvent(new CustomEvent("urai:narrator", { detail: { event, source, timestamp: Date.now() } }));
+
+  window.dispatchEvent(
+    new CustomEvent<HomeOrbEvent>("urai:narrator", {
+      detail: {
+        ...detail,
+        timestamp: Date.now(),
+      } as HomeOrbEvent,
+    })
+  );
 }
 
 export default function HomeWorld() {
@@ -14,17 +37,26 @@ export default function HomeWorld() {
   const isTransitioning = useSceneStore((s) => s.isTransitioning);
   const inputLocked = useSceneStore((s) => s.inputLocked);
   const enterLifeMap = useSceneStore((s) => s.enterLifeMap);
+
   const busy = phase === "ASCENT" || isTransitioning || inputLocked;
   const disabled = phase !== "HOME";
 
-  const handleEnterLifeMap = (source: "orb" | "overlay") => {
+  const handleEnterLifeMap = (source: "pointer" | "keyboard" | "overlay") => {
     if (busy || disabled) return;
-    emitHomeOrbEvent("home.orb.activate", source);
+
+    emitHomeOrbEvent({
+      event: "home.orb.activate",
+      source,
+    });
+
     enterLifeMap();
   };
 
   return (
     <group>
+      <HomeSky />
+      <GroundWorld />
+
       <mesh rotation={[-Math.PI / 2, 0, 0]} position={[-0.52, 0.012, -0.05]} receiveShadow>
         <circleGeometry args={[1.1, 36]} />
         <shadowMaterial opacity={0.5} />
@@ -41,8 +73,13 @@ export default function HomeWorld() {
         busy={busy}
         disabled={disabled}
         ariaLabel="Enter Life Map"
-        onFocus={() => emitHomeOrbEvent("home.orb.focus", "orb")}
-        onClick={() => handleEnterLifeMap("orb")}
+        onFocus={() =>
+          emitHomeOrbEvent({
+            event: "home.orb.focus",
+            source: "orb",
+          })
+        }
+        onClick={handleEnterLifeMap}
       />
 
       <Html position={[-0.52, 1.05, 0]} center>
@@ -50,7 +87,12 @@ export default function HomeWorld() {
           type="button"
           aria-label="Enter Life Map"
           disabled={busy || disabled}
-          onFocus={() => emitHomeOrbEvent("home.orb.focus", "overlay")}
+          onFocus={() =>
+            emitHomeOrbEvent({
+              event: "home.orb.focus",
+              source: "overlay",
+            })
+          }
           onClick={() => handleEnterLifeMap("overlay")}
           style={{
             width: "8rem",
@@ -63,6 +105,8 @@ export default function HomeWorld() {
           }}
         />
       </Html>
+
+      <PresenceRig visible phase={phase} focusTarget={[-0.52, 0.38, -0.05]} />
 
       <mesh position={[-4.2, 1.3, -3.2]} castShadow receiveShadow>
         <boxGeometry args={[0.36, 2.6, 0.36]} />
