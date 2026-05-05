@@ -10,6 +10,7 @@ import ManifestRenderer from '../spatial/assets/ManifestRenderer'
 import { useManifest } from '../spatial/assets/useManifest'
 import { useSearchParams } from 'next/navigation'
 import CinematicCameraRig from '../spatial/cinematic/CinematicCameraRig'
+import CinematicPostProcessing from '../spatial/cinematic/CinematicPostProcessing'
 
 export default function HomeScene() {
   const params = useSearchParams()
@@ -38,6 +39,8 @@ export default function HomeScene() {
       <Orb />
 
       <ManifestRenderer manifest={manifest} />
+
+      <CinematicPostProcessing active={Boolean(manifest)} />
     </Canvas>
   )
 }
