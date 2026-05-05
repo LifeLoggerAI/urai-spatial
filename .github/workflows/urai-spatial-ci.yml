@@ -31,6 +31,12 @@ jobs:
         run: pnpm canon:check
       - name: Tier-1 canon lock
         run: pnpm canon:lock
+      - name: Tier-1 immutable diff lock
+        run: pnpm tier1:immutable:check
+      - name: Tier-1 redefinition lock
+        run: pnpm tier1:redefinition:check
+      - name: LOCS and migration checks
+        run: pnpm test:canon
 
   lifemap-fast-gate:
     name: LifeMap targeted fast gate
@@ -77,6 +83,12 @@ jobs:
         run: pnpm canon:check
       - name: Tier-1 canon lock
         run: pnpm canon:lock
+      - name: Tier-1 immutable diff lock
+        run: pnpm tier1:immutable:check
+      - name: Tier-1 redefinition lock
+        run: pnpm tier1:redefinition:check
+      - name: LOCS and migration checks
+        run: pnpm test:canon
       - name: Unit tests
         run: pnpm --filter urai-tier1 test
       - name: Lifemap focused tests

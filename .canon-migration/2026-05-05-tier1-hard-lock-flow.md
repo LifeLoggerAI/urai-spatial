@@ -1,0 +1,9 @@
+# Tier-1 Hard Lock Flow Approval
+
+CANON_MIGRATION_APPROVED
+LOCS_TIER_2_MIGRATION_APPROVED
+LOCS_TIER_3_MIGRATION_APPROVED
+LOCS_TIER_4_MIGRATION_APPROVED
+LOCS_TIER_5_MIGRATION_APPROVED
+
+Scope: Tier-1 immutability diff lock, redefinition lock, and CI enforcement flow.
