@@ -30,7 +30,15 @@ import {
 } from './persistentInsightEngine';
 
 type NarratorChannel = 'visual' | 'voice' | 'haptic';
-type MessageSource = 'focus' | 'resolved' | 'cluster' | 'glow' | 'replay' | 'reflect' | 'pattern' | 'default';
+type MessageSource =
+  | 'focus'
+  | 'resolved'
+  | 'cluster'
+  | 'glow'
+  | 'replay'
+  | 'reflect'
+  | 'pattern'
+  | 'default';
 type HapticPattern = number | number[];
 
 type MessageEnvelope = {
@@ -128,6 +136,7 @@ function pushMessage(state: MessageState, msg: MessageEnvelope): MessageState {
 
 function pruneMessages(state: MessageState): MessageState {
   const now = Date.now();
+
   return {
     ...state,
     queue: state.queue.filter((message) => !message.expiresAt || message.expiresAt > now),
@@ -238,9 +247,11 @@ function reducer(state: State, action: Action): State {
         ...state,
         stars: state.stars.map((star) => {
           if (star.id === state.activeStarId || star.state === 'resolved') return star;
+
           if (action.ids.includes(star.id)) {
             return { ...star, state: 'glowing', lastActivatedAt: Date.now() };
           }
+
           return { ...star, state: 'idle' };
         }),
       };
@@ -310,6 +321,7 @@ function reducer(state: State, action: Action): State {
 
     case 'PUSH_PATTERN_MESSAGES': {
       const unseen = action.insights.filter((insight) => !state.seenPatternIds.includes(insight.id));
+
       const messages = unseen.reduce(
         (acc, insight) =>
           pushMessage(
