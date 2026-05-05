@@ -75,11 +75,19 @@ type CompanionIdentity = {
   updatedAt: number;
 };
 
+type ContinuityMemory = {
+  chapter: "Opening" | "Return" | "Loop" | "Recovery" | "Threshold";
+  lastCallbackAt: number | null;
+  callbackCount: number;
+  longArc: "unknown" | "softening" | "tightening" | "circling" | "lifting";
+};
+
 type InterventionLearningState = {
   intensity: number;
   trustScore: number;
   quietUntil: number | null;
   companion: CompanionIdentity;
+  continuity: ContinuityMemory;
   exposures: number;
   lastSuggestion: PredictiveIntervention["suggestion"] | null;
   lastPredictedDirection: PredictiveIntervention["predictedDirection"] | null;
@@ -135,6 +143,15 @@ function defaultCompanion(): CompanionIdentity {
   };
 }
 
+function defaultContinuity(): ContinuityMemory {
+  return {
+    chapter: "Opening",
+    lastCallbackAt: null,
+    callbackCount: 0,
+    longArc: "unknown",
+  };
+}
+
 function readJson<T>(key: string, fallback: T): T {
   if (typeof window === "undefined") return fallback;
 
@@ -183,6 +200,7 @@ function readLearning(): InterventionLearningState {
     trustScore: 0.62,
     quietUntil: null,
     companion: defaultCompanion(),
+    continuity: defaultContinuity(),
     exposures: 0,
     lastSuggestion: null,
     lastPredictedDirection: null,
@@ -201,6 +219,10 @@ function readLearning(): InterventionLearningState {
       ...defaultCompanion(),
       ...(state as Partial<InterventionLearningState>).companion,
     },
+    continuity: {
+      ...defaultContinuity(),
+      ...(state as Partial<InterventionLearningState>).continuity,
+    },
   };
 }
 
@@ -214,6 +236,18 @@ function clamp(value: number, min: number, max: number) {
 
 function toneScore(tone: string) {
   return TONE_SCORE[tone] ?? 0;
+}
+
+function formatTimeSince(timestamp: number | null) {
+  if (!timestamp) return null;
+  const diff = now() - timestamp;
+  const minutes = Math.floor(diff / 60_000);
+  if (minutes < 1) return "a moment ago";
+  if (minutes < 60) return `${minutes} minute${minutes === 1 ? "" : "s"} ago`;
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) return `${hours} hour${hours === 1 ? "" : "s"} ago`;
+  const days = Math.floor(hours / 24);
+  return `${days} day${days === 1 ? "" : "s"} ago`;
 }
 
 function updateCompanion(
@@ -273,12 +307,83 @@ function updateCompanion(
   };
 }
 
+function updateContinuity(
+  continuity: ContinuityMemory,
+  outcome: "improved" | "worsened" | "looped" | "held" | "unknown",
+  trajectory: EmotionalTrajectory,
+  pattern: ReturnType<typeof analyzePath>,
+  previousVisits: number,
+  memory: StarMemory,
+): ContinuityMemory {
+  const chapter: ContinuityMemory["chapter"] = trajectory.recoveryArc
+    ? "Recovery"
+    : trajectory.strainArc || memory.weights.threshold
+      ? "Threshold"
+      : pattern.hasABAB || pattern.transitionCount >= 2
+        ? "Loop"
+        : previousVisits > 0
+          ? "Return"
+          : "Opening";
+
+  const longArc: ContinuityMemory["longArc"] = trajectory.recoveryArc
+    ? "lifting"
+    : trajectory.strainArc
+      ? "tightening"
+      : pattern.hasABAB || pattern.transitionCount >= 2
+        ? "circling"
+        : outcome === "improved"
+          ? "softening"
+          : continuity.longArc;
+
+  const shouldCallback = previousVisits > 0 || pattern.hasABAB || trajectory.recoveryArc || trajectory.strainArc;
+
+  return {
+    chapter,
+    longArc,
+    lastCallbackAt: shouldCallback ? now() : continuity.lastCallbackAt,
+    callbackCount: continuity.callbackCount + (shouldCallback ? 1 : 0),
+  };
+}
+
 function companionPrefix(companion: CompanionIdentity, trust: TrustDecision) {
   if (!trust.shouldSpeak) return "";
   if (companion.temperament === "quiet") return "";
   if (companion.temperament === "warm") return `${companion.name} stays near... `;
   if (companion.temperament === "direct") return `${companion.name} is clearer now... `;
   return `${companion.name} notices... `;
+}
+
+function continuityCallback(
+  previousVisits: number,
+  memory: StarMemory,
+  pattern: ReturnType<typeof analyzePath>,
+  trajectory: EmotionalTrajectory,
+  continuity: ContinuityMemory,
+  title: string,
+) {
+  const lastSeen = formatTimeSince(memory.lastSeenAt);
+
+  if (previousVisits > 0 && lastSeen) {
+    return `last time you came here was ${lastSeen}. `;
+  }
+
+  if (trajectory.recoveryArc && continuity.callbackCount > 1) {
+    return `this is becoming part of a longer recovery thread. `;
+  }
+
+  if (trajectory.strainArc && continuity.callbackCount > 1) {
+    return `this chapter has been tightening across visits. `;
+  }
+
+  if (pattern.hasABAB) {
+    return `this back-and-forth has appeared before. `;
+  }
+
+  if (continuity.chapter === "Return") {
+    return `this return belongs to the same thread. `;
+  }
+
+  return "";
 }
 
 function updateMemory(cue: NarratorCue) {
@@ -288,6 +393,9 @@ function updateMemory(cue: NarratorCue) {
   const t = now();
   const tone = cue.tone ?? "neutral";
   const weight = cue.symbolicWeight ?? "light";
+
+  const previousVisits = previous?.visits ?? 0;
+  const previousLastSeenAt = previous?.lastSeenAt ?? null;
 
   const next: StarMemory = previous ?? {
     visits: 0,
@@ -307,12 +415,17 @@ function updateMemory(cue: NarratorCue) {
 
   return {
     id,
-    previousVisits: previous?.visits ?? 0,
-    memory: next,
+    previousVisits,
+    previousLastSeenAt,
+    memory: {
+      ...next,
+      lastSeenAt: previousLastSeenAt ?? next.lastSeenAt,
+    },
+    updatedMemory: next,
   };
 }
 
-function updatePathMemory(cue: NarratorCue, starId: string) {
+function updatePathMemory(cue: NarratorCue, starId: string, previousVisits: number, memory: StarMemory) {
   const t = now();
   const tone = cue.tone ?? "neutral";
   const weight = cue.symbolicWeight ?? "light";
@@ -333,7 +446,7 @@ function updatePathMemory(cue: NarratorCue, starId: string) {
 
   const pattern = analyzePath(history, starId, tone);
   const trajectory = analyzeTrajectory(history);
-  const learning = updateLearning(tone, pattern, trajectory);
+  const learning = updateLearning(tone, pattern, trajectory, previousVisits, memory);
   const baseIntervention = predictIntervention(history, pattern, trajectory, tone);
   const intervention = applyAdaptiveIntensity(baseIntervention, learning);
   const trust = calibrateTrust(intervention, learning, trajectory, pattern);
@@ -427,7 +540,13 @@ function classifyOutcome(previousScore: number | null, currentTone: string, patt
   return "held" as const;
 }
 
-function updateLearning(currentTone: string, pattern: ReturnType<typeof analyzePath>, trajectory: EmotionalTrajectory) {
+function updateLearning(
+  currentTone: string,
+  pattern: ReturnType<typeof analyzePath>,
+  trajectory: EmotionalTrajectory,
+  previousVisits: number,
+  memory: StarMemory,
+) {
   const state = readLearning();
   const currentScore = toneScore(currentTone);
   const outcome = classifyOutcome(state.lastScore, currentTone, pattern, trajectory);
@@ -453,12 +572,14 @@ function updateLearning(currentTone: string, pattern: ReturnType<typeof analyzeP
 
   const quietUntil = outcome === "improved" && trustScore >= 0.72 ? now() + 45_000 : state.quietUntil;
   const companion = updateCompanion(state.companion, outcome, trajectory, intensity, trustScore);
+  const continuity = updateContinuity(state.continuity, outcome, trajectory, pattern, previousVisits, memory);
 
   const next: InterventionLearningState = {
     intensity,
     trustScore,
     quietUntil,
     companion,
+    continuity,
     exposures: state.exposures + 1,
     lastSuggestion: state.lastSuggestion,
     lastPredictedDirection: state.lastPredictedDirection,
@@ -655,57 +776,59 @@ function innerScript(
   intervention: PredictiveIntervention,
   companion: CompanionIdentity,
   trust: TrustDecision,
+  continuity: ContinuityMemory,
 ) {
   const tone = cue.tone ?? dominantKey(memory.tones) ?? "quiet";
   const weight = cue.symbolicWeight ?? dominantKey(memory.weights) ?? "subtle";
   const title = cue.title ?? "this point";
   const prefix = companionPrefix(companion, trust);
+  const callback = continuityCallback(previousVisits, memory, pattern, trajectory, continuity, title);
 
   if (trajectory.recoveryArc) {
-    return `${prefix}the feeling is lifting... from ${trajectory.startTone} toward ${trajectory.endTone}. ${intervention.phrase}`;
+    return `${prefix}${callback}the feeling is lifting... from ${trajectory.startTone} toward ${trajectory.endTone}. ${intervention.phrase}`;
   }
 
   if (trajectory.strainArc) {
-    return `${prefix}the map is getting heavier... from ${trajectory.startTone} toward ${trajectory.endTone}. ${intervention.phrase}`;
+    return `${prefix}${callback}the map is getting heavier... from ${trajectory.startTone} toward ${trajectory.endTone}. ${intervention.phrase}`;
   }
 
   if (trajectory.stuckTone && trajectory.stuckTone === tone && pattern.toneFrequency >= 4) {
-    return `${prefix}same ${tone} across different places... ${intervention.phrase}`;
+    return `${prefix}${callback}same ${tone} across different places... ${intervention.phrase}`;
   }
 
   if (pattern.hasABAB && pattern.previousStarId) {
-    return `${prefix}you are moving between them again... ${pattern.previousStarId} and ${title}. ${intervention.phrase}`;
+    return `${prefix}${callback}you are moving between them again... ${pattern.previousStarId} and ${title}. ${intervention.phrase}`;
   }
 
   if (pattern.transitionCount >= 2 && pattern.previousStarId) {
-    return `${prefix}this path repeats... from ${pattern.previousStarId} to ${title}. ${intervention.phrase}`;
+    return `${prefix}${callback}this path repeats... from ${pattern.previousStarId} to ${title}. ${intervention.phrase}`;
   }
 
   if (pattern.toneFrequency >= 4) {
-    return `${prefix}different stars... same ${tone}. ${intervention.phrase}`;
+    return `${prefix}${callback}different stars... same ${tone}. ${intervention.phrase}`;
   }
 
   if (previousVisits === 0) {
     if (cue.event === "narrator.replay.begin") {
-      return `${prefix}first time inside this one... ${tone}. ${weight}. ${intervention.phrase}`;
+      return `${prefix}${callback}first time inside this one... ${tone}. ${weight}. ${intervention.phrase}`;
     }
 
-    return `${prefix}new pull... ${title}. ${tone}. ${intervention.phrase}`;
+    return `${prefix}${callback}new pull... ${title}. ${tone}. ${intervention.phrase}`;
   }
 
   if (previousVisits === 1) {
-    return `${prefix}you came back... ${tone} again. ${intervention.phrase}`;
+    return `${prefix}${callback}you came back... ${tone} again. ${intervention.phrase}`;
   }
 
   if (previousVisits >= 3) {
-    return `${prefix}this pattern knows the way back to you... ${intervention.phrase}`;
+    return `${prefix}${callback}this pattern knows the way back to you... ${intervention.phrase}`;
   }
 
   if (cue.event === "narrator.replay.begin") {
-    return `${prefix}beneath it... ${tone}. ${weight}. ${intervention.phrase}`;
+    return `${prefix}${callback}beneath it... ${tone}. ${weight}. ${intervention.phrase}`;
   }
 
-  return `${prefix}notice the return... ${tone}. ${intervention.phrase}`;
+  return `${prefix}${callback}notice the return... ${tone}. ${intervention.phrase}`;
 }
 
 function voiceParams(
@@ -780,9 +903,19 @@ export default function DualLayerNarratorBridge() {
 
       if (timeoutRef.current !== null) window.clearTimeout(timeoutRef.current);
 
-      const { id, previousVisits, memory } = updateMemory(cue);
-      const { pattern, trajectory, intervention, learning, trust } = updatePathMemory(cue, id);
-      const script = innerScript(cue, previousVisits, memory, pattern, trajectory, intervention, learning.companion, trust);
+      const { id, previousVisits, memory, updatedMemory } = updateMemory(cue);
+      const { pattern, trajectory, intervention, learning, trust } = updatePathMemory(cue, id, previousVisits, memory);
+      const script = innerScript(
+        cue,
+        previousVisits,
+        memory,
+        pattern,
+        trajectory,
+        intervention,
+        learning.companion,
+        trust,
+        learning.continuity,
+      );
       const delay = Math.max(0, (cue.timing?.delayMs ?? 0) + 720);
 
       window.dispatchEvent(
@@ -796,6 +929,7 @@ export default function DualLayerNarratorBridge() {
             pattern,
             learning,
             companion: learning.companion,
+            continuity: learning.continuity,
           },
         }),
       );
@@ -825,14 +959,15 @@ export default function DualLayerNarratorBridge() {
               sourceEvent: cue.event,
               starId: id,
               previousVisits,
-              visits: memory.visits,
-              tone: cue.tone ?? dominantKey(memory.tones),
-              symbolicWeight: cue.symbolicWeight ?? dominantKey(memory.weights),
+              visits: updatedMemory.visits,
+              tone: cue.tone ?? dominantKey(updatedMemory.tones),
+              symbolicWeight: cue.symbolicWeight ?? dominantKey(updatedMemory.weights),
               pattern,
               trajectory,
               intervention,
               trust,
               companion: updatedLearning.companion,
+              continuity: updatedLearning.continuity,
               learning: updatedLearning,
               script,
             },
