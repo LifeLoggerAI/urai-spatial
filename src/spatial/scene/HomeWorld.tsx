@@ -1,6 +1,7 @@
 "use client";
 
 import Orb from "../components/Orb";
+import HomeSky from "./HomeSky";
 import { useSceneStore } from "../state/sceneStore";
 
 export default function HomeWorld() {
@@ -8,6 +9,7 @@ export default function HomeWorld() {
 
   return (
     <group>
+      <HomeSky />
       <mesh rotation={[-Math.PI / 2, 0, 0]} position={[-0.52, 0.012, -0.05]} receiveShadow>
         <circleGeometry args={[1.1, 36]} />
         <shadowMaterial opacity={0.5} />
