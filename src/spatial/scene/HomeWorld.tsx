@@ -3,13 +3,39 @@
 import Orb from "../components/Orb";
 import PresenceRig from "../components/PresenceRig";
 import { useSceneStore } from "../state/sceneStore";
+import GroundWorld from "./GroundWorld";
+import HomeSky from "./HomeSky";
+
+type HomeOrbEventDetail = {
+  event: "home.orb.activate";
+  source: "pointer" | "keyboard";
+  timestamp: number;
+};
+
+function emitHomeOrbEvent(source: HomeOrbEventDetail["source"]) {
+  if (typeof window === "undefined") return;
+  const detail: HomeOrbEventDetail = {
+    event: "home.orb.activate",
+    source,
+    timestamp: Date.now(),
+  };
+  window.dispatchEvent(new CustomEvent<HomeOrbEventDetail>("urai:narrator", { detail }));
+}
 
 export default function HomeWorld() {
   const enterLifeMap = useSceneStore((s) => s.enterLifeMap);
   const phase = useSceneStore((s) => s.phase);
 
+  const onActivateOrb = (source: "pointer" | "keyboard") => {
+    emitHomeOrbEvent(source);
+    enterLifeMap();
+  };
+
   return (
     <group>
+      <HomeSky />
+      <GroundWorld />
+
       <mesh rotation={[-Math.PI / 2, 0, 0]} position={[-0.52, 0.012, -0.05]} receiveShadow>
         <circleGeometry args={[1.1, 36]} />
         <shadowMaterial opacity={0.5} />
@@ -20,7 +46,7 @@ export default function HomeWorld() {
         <meshBasicMaterial color="#67c4ff" transparent opacity={0.08} depthWrite={false} />
       </mesh>
 
-      <Orb interactive active onClick={enterLifeMap} />
+      <Orb interactive active onClick={onActivateOrb} />
 
       <PresenceRig visible phase={phase} focusTarget={[-0.52, 0.38, -0.05]} />
 
