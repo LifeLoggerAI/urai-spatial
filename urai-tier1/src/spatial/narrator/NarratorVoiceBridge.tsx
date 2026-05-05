@@ -38,6 +38,13 @@ function shouldSpeak(detail: NarratorVoiceDetail) {
   );
 }
 
+function wordIndexFromCharIndex(text: string, charIndex: number) {
+  const before = text.slice(0, Math.max(0, charIndex));
+  const trimmed = before.trim();
+  if (!trimmed) return 0;
+  return trimmed.split(/\s+/).length;
+}
+
 export default function NarratorVoiceBridge() {
   const timeoutRef = useRef<number | null>(null);
 
@@ -58,13 +65,42 @@ export default function NarratorVoiceBridge() {
       const delayMs = Math.max(0, detail.timing?.delayMs ?? 0);
 
       timeoutRef.current = window.setTimeout(() => {
-        const utterance = new SpeechSynthesisUtterance(detail.script ?? "");
+        const script = detail.script ?? "";
+        const utterance = new SpeechSynthesisUtterance(script);
         const settings = voiceSettings(detail);
 
         utterance.rate = settings.rate;
         utterance.pitch = settings.pitch;
         utterance.volume = settings.volume;
         utterance.lang = "en-US";
+
+        utterance.onboundary = (boundaryEvent) => {
+          if (boundaryEvent.name && boundaryEvent.name !== "word") return;
+
+          window.dispatchEvent(
+            new CustomEvent("urai:narrator-boundary", {
+              detail: {
+                sourceEvent: detail.event,
+                charIndex: boundaryEvent.charIndex,
+                elapsedTime: boundaryEvent.elapsedTime,
+                wordIndex: wordIndexFromCharIndex(script, boundaryEvent.charIndex),
+                script,
+              },
+            }),
+          );
+        };
+
+        utterance.onend = () => {
+          window.dispatchEvent(
+            new CustomEvent("urai:narrator-boundary", {
+              detail: {
+                sourceEvent: detail.event,
+                completed: true,
+                script,
+              },
+            }),
+          );
+        };
 
         window.speechSynthesis.speak(utterance);
       }, delayMs);
