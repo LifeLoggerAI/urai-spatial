@@ -1,6 +1,7 @@
 'use client'
 
 import dynamic from 'next/dynamic'
+import { Suspense } from 'react'
 
 const SpatialScene = dynamic(
   () =>
@@ -15,5 +16,9 @@ const SpatialScene = dynamic(
 )
 
 export default function SpatialSceneClient() {
-  return <SpatialScene />
+  return (
+    <Suspense fallback={<div style={{color:'#fff'}}>Loading URAI...</div>}>
+      <SpatialScene />
+    </Suspense>
+  )
 }
