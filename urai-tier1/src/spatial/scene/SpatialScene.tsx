@@ -7,6 +7,8 @@ import LifeMapStarfield from "../components/LifeMapStarfield";
 import { CinematicCameraRig } from "../components/CinematicCameraRig";
 import NarratorVoiceBridge from "../narrator/NarratorVoiceBridge";
 import NarratorCaptionBridge from "../narrator/NarratorCaptionBridge";
+import SpatialAudioNarratorBridge from "../narrator/SpatialAudioNarratorBridge";
+import DualLayerNarratorBridge from "../narrator/DualLayerNarratorBridge";
 
 import CompanionOrb from "../companion/CompanionOrb";
 import CompanionCard from "../companion/CompanionCard";
@@ -76,6 +78,8 @@ export default function SpatialScene() {
     <>
       <NarratorVoiceBridge />
       <NarratorCaptionBridge />
+      <SpatialAudioNarratorBridge />
+      <DualLayerNarratorBridge />
 
       <CinematicCameraRig phase={phase} selectedStarPosition={selectedStarPosition} emotionalSync={expression} />
       <HomeWorld />
