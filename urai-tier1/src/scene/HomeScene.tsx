@@ -6,6 +6,10 @@ import Ground from './Ground'
 import Orb from './Orb'
 import Sky from './Sky'
 import Atmosphere from './Atmosphere'
+import ManifestRenderer from '../spatial/assets/ManifestRenderer'
+
+// TEMP: static manifest injection (replace with Firestore fetch later)
+const demoManifest = null
 
 export default function HomeScene() {
   return (
@@ -25,6 +29,8 @@ export default function HomeScene() {
       <Sky />
       <Ground />
       <Orb />
+
+      <ManifestRenderer manifest={demoManifest} />
     </Canvas>
   )
 }
