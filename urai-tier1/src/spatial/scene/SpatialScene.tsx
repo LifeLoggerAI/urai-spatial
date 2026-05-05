@@ -1,11 +1,11 @@
 "use client";
 
-import { useEffect, useMemo, useRef } from "react";
 import HomeWorld from "./HomeWorld";
 import { useSceneStore } from "../store/useSceneStore";
-import LifeMapStarfield, { LIFE_MAP_STARS, type LifeMapStar } from "../components/LifeMapStarfield";
+import LifeMapStarfield from "../components/LifeMapStarfield";
 import { CinematicCameraRig } from "../components/CinematicCameraRig";
 import NarratorVoiceBridge from "../narrator/NarratorVoiceBridge";
+import NarratorCaptionBridge from "../narrator/NarratorCaptionBridge";
 
 export default function SpatialScene() {
   const phase = useSceneStore((s) => s.phase);
@@ -16,6 +16,8 @@ export default function SpatialScene() {
   return (
     <>
       <NarratorVoiceBridge />
+      <NarratorCaptionBridge />
+
       <CinematicCameraRig phase={phase} selectedStarPosition={selectedStarPosition} />
       <HomeWorld />
       <LifeMapStarfield
