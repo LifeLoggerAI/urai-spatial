@@ -1,4 +1,6 @@
-export type ScenePhase = "HOME" | "ASCENT" | "LIFEMAP" | "FOCUS" | "REPLAY";
+import type { Tier1Phase } from "@/canon/tier1";
+
+export type ScenePhase = Tier1Phase;
 
 export type StarPoint = {
   id: string;
