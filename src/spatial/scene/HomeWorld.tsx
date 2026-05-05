@@ -1,33 +1,54 @@
 "use client";
 
+import { Html } from "@react-three/drei";
 import Orb from "../components/Orb";
 import PresenceRig from "../components/PresenceRig";
 import { useSceneStore } from "../state/sceneStore";
 import GroundWorld from "./GroundWorld";
 import HomeSky from "./HomeSky";
 
-type HomeOrbEventDetail = {
-  event: "home.orb.activate";
-  source: "pointer" | "keyboard";
-  timestamp: number;
-};
+type HomeOrbEvent =
+  | {
+      event: "home.orb.activate";
+      source: "pointer" | "keyboard" | "overlay";
+      timestamp: number;
+    }
+  | {
+      event: "home.orb.focus";
+      source: "orb" | "overlay";
+      timestamp: number;
+    };
 
-function emitHomeOrbEvent(source: HomeOrbEventDetail["source"]) {
+function emitHomeOrbEvent(detail: Omit<HomeOrbEvent, "timestamp">) {
   if (typeof window === "undefined") return;
-  const detail: HomeOrbEventDetail = {
-    event: "home.orb.activate",
-    source,
-    timestamp: Date.now(),
-  };
-  window.dispatchEvent(new CustomEvent<HomeOrbEventDetail>("urai:narrator", { detail }));
+
+  window.dispatchEvent(
+    new CustomEvent<HomeOrbEvent>("urai:narrator", {
+      detail: {
+        ...detail,
+        timestamp: Date.now(),
+      } as HomeOrbEvent,
+    })
+  );
 }
 
 export default function HomeWorld() {
-  const enterLifeMap = useSceneStore((s) => s.enterLifeMap);
   const phase = useSceneStore((s) => s.phase);
+  const isTransitioning = useSceneStore((s) => s.isTransitioning);
+  const inputLocked = useSceneStore((s) => s.inputLocked);
+  const enterLifeMap = useSceneStore((s) => s.enterLifeMap);
 
-  const onActivateOrb = (source: "pointer" | "keyboard") => {
-    emitHomeOrbEvent(source);
+  const busy = phase === "ASCENT" || isTransitioning || inputLocked;
+  const disabled = phase !== "HOME";
+
+  const handleEnterLifeMap = (source: "pointer" | "keyboard" | "overlay") => {
+    if (busy || disabled) return;
+
+    emitHomeOrbEvent({
+      event: "home.orb.activate",
+      source,
+    });
+
     enterLifeMap();
   };
 
@@ -46,7 +67,44 @@ export default function HomeWorld() {
         <meshBasicMaterial color="#67c4ff" transparent opacity={0.08} depthWrite={false} />
       </mesh>
 
-      <Orb interactive active onClick={onActivateOrb} />
+      <Orb
+        interactive
+        active={!disabled}
+        busy={busy}
+        disabled={disabled}
+        ariaLabel="Enter Life Map"
+        onFocus={() =>
+          emitHomeOrbEvent({
+            event: "home.orb.focus",
+            source: "orb",
+          })
+        }
+        onClick={handleEnterLifeMap}
+      />
+
+      <Html position={[-0.52, 1.05, 0]} center>
+        <button
+          type="button"
+          aria-label="Enter Life Map"
+          disabled={busy || disabled}
+          onFocus={() =>
+            emitHomeOrbEvent({
+              event: "home.orb.focus",
+              source: "overlay",
+            })
+          }
+          onClick={() => handleEnterLifeMap("overlay")}
+          style={{
+            width: "8rem",
+            height: "8rem",
+            borderRadius: "9999px",
+            border: "none",
+            background: "transparent",
+            cursor: busy || disabled ? "not-allowed" : "pointer",
+            opacity: 0,
+          }}
+        />
+      </Html>
 
       <PresenceRig visible phase={phase} focusTarget={[-0.52, 0.38, -0.05]} />
 
