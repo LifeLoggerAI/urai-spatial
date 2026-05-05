@@ -1,6 +1,7 @@
 "use client";
 
 import Orb from "../components/Orb";
+import HomeAvatar from "./HomeAvatar";
 import { useSceneStore } from "../state/sceneStore";
 
 export default function HomeWorld() {
@@ -19,6 +20,7 @@ export default function HomeWorld() {
       </mesh>
 
       <Orb interactive active onClick={enterLifeMap} />
+      <HomeAvatar interactive focused position={[-1.08, 0.62, 0.18]} />
 
       <mesh position={[-4.2, 1.3, -3.2]} castShadow receiveShadow>
         <boxGeometry args={[0.36, 2.6, 0.36]} />
