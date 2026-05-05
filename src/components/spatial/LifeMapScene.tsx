@@ -1,17 +1,43 @@
 'use client';
 
-import { useEffect, useMemo, useReducer } from 'react';
+import { useEffect, useMemo, useReducer, useRef } from 'react';
 import {
-  computeChapterCamera,
-  getStateClasses,
-  pickGlowingStars,
-  reducedMotionLoopDelay,
-  type ChapterId,
-  type LifeMapCamera,
-  type LifeMapPhase,
-  type MemoryEmotion,
-  type MemoryStar
-} from './lifemapSceneLogic';
+  chooseGlowingStars,
+  createSeededRandom,
+  type GlowHistoryEntry,
+  type StarState,
+  type MemoryEmotion
+} from './lifeMapGlowScheduler';
+
+/* -------------------- TYPES -------------------- */
+
+type ChapterId =
+  | 'season-of-becoming'
+  | 'threshold'
+  | 'recovery-arc'
+  | 'purple-dream-field'
+  | 'mirror-of-becoming';
+
+type MemoryStar = {
+  id: string;
+  title: string;
+  x: number;
+  y: number;
+  size: number;
+  emotion: MemoryEmotion;
+  chapterId: ChapterId;
+  state: StarState;
+  intensity: number;
+  recency: number;
+  unresolvedWeight: number;
+  lastActivatedAt: number | null;
+  narratorLine: string;
+  connectedTo: string[];
+};
+
+type LifeMapPhase = 'living' | 'focus' | 'cluster';
+
+type LifeMapCamera = { x: number; y: number; zoom: number };
 
 /* -------------------- MESSAGE SYSTEM -------------------- */
 
@@ -26,7 +52,7 @@ type MessageEnvelope = {
   expiresAt: number | null;
 };
 
-const SOURCE_PRIORITY: Record<MessageSource, number> = {
+const SOURCE_PRIORITY = {
   focus: 5,
   resolved: 4,
   cluster: 3,
@@ -34,7 +60,7 @@ const SOURCE_PRIORITY: Record<MessageSource, number> = {
   default: 1
 };
 
-const SOURCE_COOLDOWN: Record<MessageSource, number> = {
+const SOURCE_COOLDOWN = {
   focus: 0,
   resolved: 2000,
   cluster: 3000,
@@ -48,11 +74,7 @@ type MessageState = {
   lastText: string | null;
 };
 
-function createMessage(
-  source: MessageSource,
-  text: string,
-  ttl: number | null
-): MessageEnvelope {
+function createMessage(source: MessageSource, text: string, ttl: number | null): MessageEnvelope {
   const now = Date.now();
   return {
     id: `${source}-${now}-${Math.random()}`,
@@ -66,20 +88,17 @@ function createMessage(
 
 function pushMessage(state: MessageState, msg: MessageEnvelope): MessageState {
   const now = Date.now();
-
-  // cooldown check
   const last = state.lastBySource[msg.source] ?? 0;
-  if (now - last < SOURCE_COOLDOWN[msg.source]) return state;
 
-  // dedupe (avoid repeating same text)
+  if (now - last < SOURCE_COOLDOWN[msg.source]) return state;
   if (state.lastText === msg.text) return state;
 
-  const nextQueue = [...state.queue, msg].sort(
+  const queue = [...state.queue, msg].sort(
     (a, b) => b.priority - a.priority || b.createdAt - a.createdAt
   );
 
   return {
-    queue: nextQueue.slice(0, 5), // cap queue size
+    queue: queue.slice(0, 5),
     lastBySource: { ...state.lastBySource, [msg.source]: now },
     lastText: msg.text
   };
@@ -89,17 +108,25 @@ function pruneMessages(state: MessageState): MessageState {
   const now = Date.now();
   return {
     ...state,
-    queue: state.queue.filter(
-      (m) => m.expiresAt === null || m.expiresAt > now
-    )
+    queue: state.queue.filter(m => !m.expiresAt || m.expiresAt > now)
   };
 }
 
-function getActiveMessage(state: MessageState): string {
+function getActiveMessage(state: MessageState) {
   return state.queue[0]?.text ?? '';
 }
 
-/* -------------------- CORE -------------------- */
+/* -------------------- DATA -------------------- */
+
+const GLOW_LINES = [
+  'Something is asking to be seen.',
+  'A pattern is lighting up.',
+  'This moment connects to something older.',
+];
+
+const INITIAL_STARS: MemoryStar[] = []; // keep your existing seed here
+
+/* -------------------- STATE -------------------- */
 
 type State = {
   stars: MemoryStar[];
@@ -121,6 +148,8 @@ type Action =
   | { type: 'PUSH_MESSAGE'; msg: MessageEnvelope }
   | { type: 'PRUNE_MESSAGES' };
 
+/* -------------------- REDUCER -------------------- */
+
 function reducer(state: State, action: Action): State {
   switch (action.type) {
     case 'SET_REDUCED_MOTION':
@@ -129,7 +158,7 @@ function reducer(state: State, action: Action): State {
     case 'SET_GLOWING_STARS':
       return {
         ...state,
-        stars: state.stars.map((s) =>
+        stars: state.stars.map(s =>
           s.id === state.activeStarId || s.state === 'resolved'
             ? s
             : { ...s, state: action.ids.includes(s.id) ? 'glowing' : 'idle' }
@@ -137,7 +166,7 @@ function reducer(state: State, action: Action): State {
       };
 
     case 'FOCUS_STAR': {
-      const star = state.stars.find((s) => s.id === action.starId);
+      const star = state.stars.find(s => s.id === action.starId);
       if (!star) return state;
 
       return {
@@ -146,10 +175,7 @@ function reducer(state: State, action: Action): State {
         activeChapterId: star.chapterId,
         phase: 'focus',
         camera: { x: star.x, y: star.y, zoom: 1.8 },
-        messages: pushMessage(
-          state.messages,
-          createMessage('focus', star.narratorLine, null)
-        )
+        messages: pushMessage(state.messages, createMessage('focus', star.narratorLine, null))
       };
     }
 
@@ -157,25 +183,18 @@ function reducer(state: State, action: Action): State {
       return {
         ...state,
         phase: 'cluster',
-        activeStarId: null,
         activeChapterId: action.chapterId,
         camera: action.camera,
-        messages: pushMessage(
-          state.messages,
-          createMessage('cluster', action.text, 18000)
-        )
+        messages: pushMessage(state.messages, createMessage('cluster', action.text, 18000))
       };
 
     case 'MARK_RESOLVED':
       return {
         ...state,
-        stars: state.stars.map((s) =>
+        stars: state.stars.map(s =>
           s.id === action.starId ? { ...s, state: 'resolved' } : s
         ),
-        messages: pushMessage(
-          state.messages,
-          createMessage('resolved', 'This one has softened.', null)
-        )
+        messages: pushMessage(state.messages, createMessage('resolved', 'This one has softened.', null))
       };
 
     case 'CLEAR_FOCUS':
@@ -199,7 +218,7 @@ function reducer(state: State, action: Action): State {
 
 export default function LifeMapScene() {
   const [state, dispatch] = useReducer(reducer, {
-    stars: [],
+    stars: INITIAL_STARS,
     activeStarId: null,
     activeChapterId: null,
     camera: { x: 50, y: 50, zoom: 1 },
@@ -208,24 +227,25 @@ export default function LifeMapScene() {
     messages: { queue: [], lastBySource: {}, lastText: null }
   });
 
-  useEffect(() => {
-    const mq = window.matchMedia('(prefers-reduced-motion: reduce)');
-    const onChange = () =>
-      dispatch({ type: 'SET_REDUCED_MOTION', value: mq.matches });
-    onChange();
-    mq.addEventListener('change', onChange);
-    return () => mq.removeEventListener('change', onChange);
-  }, []);
+  const glowHistoryRef = useRef<GlowHistoryEntry[]>([]);
+  const tickRef = useRef(0);
+  const rngRef = useRef(createSeededRandom(90210));
 
-  /* glow loop */
   useEffect(() => {
     let timer = 0;
 
     const run = () => {
-      const picked = pickGlowingStars(
-        state.stars,
-        state.activeStarId,
-        Math.random
+      const picked = chooseGlowingStars(
+        state.stars.filter(s => s.id !== state.activeStarId),
+        glowHistoryRef.current,
+        {
+          count: 1 + Math.floor(rngRef.current() * 3),
+          tick: tickRef.current,
+          minTicksBetweenGlows: 2,
+          repeatWindowTicks: 6,
+          maxRepeatsPerWindow: 2
+        },
+        rngRef.current
       );
 
       dispatch({ type: 'SET_GLOWING_STARS', ids: picked });
@@ -234,17 +254,17 @@ export default function LifeMapScene() {
         type: 'PUSH_MESSAGE',
         msg: createMessage(
           'glow',
-          GLOW_LINES[Math.floor(Math.random() * GLOW_LINES.length)],
+          GLOW_LINES[Math.floor(rngRef.current() * GLOW_LINES.length)],
           12000
         )
       });
 
       dispatch({ type: 'PRUNE_MESSAGES' });
 
-      timer = window.setTimeout(
-        run,
-        reducedMotionLoopDelay(state.reducedMotion, Math.random)
-      );
+      glowHistoryRef.current = [...glowHistoryRef.current.slice(-20), { tick: tickRef.current, ids: picked }];
+      tickRef.current++;
+
+      timer = window.setTimeout(run, state.reducedMotion ? 14000 : 9000);
     };
 
     timer = window.setTimeout(run, 9000);
@@ -252,8 +272,6 @@ export default function LifeMapScene() {
   }, [state.stars, state.activeStarId, state.reducedMotion]);
 
   const activeMessage = getActiveMessage(state.messages);
-
-  /* -------------------- UI -------------------- */
 
   return (
     <main className="life-map-shell">
