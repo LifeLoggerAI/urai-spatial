@@ -23,34 +23,69 @@ type StarMemory = {
   weights: Record<string, number>;
 };
 
+type PathStep = {
+  starId: string;
+  tone: string;
+  weight: string;
+  seenAt: number;
+};
+
 type MemoryHistory = Record<string, StarMemory>;
 
+type PathHistory = {
+  recent: PathStep[];
+  transitions: Record<string, number>;
+  toneTransitions: Record<string, number>;
+};
+
 const STORAGE_KEY = "urai:lifemap:memory-history:v1";
+const PATH_STORAGE_KEY = "urai:lifemap:path-history:v1";
+const MAX_RECENT_PATH = 12;
 
 function now() {
   return Date.now();
 }
 
-function readHistory(): MemoryHistory {
-  if (typeof window === "undefined") return {};
+function readJson<T>(key: string, fallback: T): T {
+  if (typeof window === "undefined") return fallback;
 
   try {
-    const raw = window.localStorage.getItem(STORAGE_KEY);
-    if (!raw) return {};
-    return JSON.parse(raw) as MemoryHistory;
+    const raw = window.localStorage.getItem(key);
+    if (!raw) return fallback;
+    return JSON.parse(raw) as T;
   } catch {
-    return {};
+    return fallback;
   }
 }
 
-function writeHistory(history: MemoryHistory) {
+function writeJson<T>(key: string, value: T) {
   if (typeof window === "undefined") return;
 
   try {
-    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(history));
+    window.localStorage.setItem(key, JSON.stringify(value));
   } catch {
     // localStorage can fail in private browsing or quota pressure. Narration still works without persistence.
   }
+}
+
+function readHistory(): MemoryHistory {
+  return readJson<MemoryHistory>(STORAGE_KEY, {});
+}
+
+function writeHistory(history: MemoryHistory) {
+  writeJson(STORAGE_KEY, history);
+}
+
+function readPathHistory(): PathHistory {
+  return readJson<PathHistory>(PATH_STORAGE_KEY, {
+    recent: [],
+    transitions: {},
+    toneTransitions: {},
+  });
+}
+
+function writePathHistory(history: PathHistory) {
+  writeJson(PATH_STORAGE_KEY, history);
 }
 
 function updateMemory(cue: NarratorCue) {
@@ -84,6 +119,56 @@ function updateMemory(cue: NarratorCue) {
   };
 }
 
+function updatePathMemory(cue: NarratorCue, starId: string) {
+  const t = now();
+  const tone = cue.tone ?? "neutral";
+  const weight = cue.symbolicWeight ?? "light";
+  const history = readPathHistory();
+  const last = history.recent[history.recent.length - 1];
+
+  if (last && last.starId !== starId) {
+    const transitionKey = `${last.starId}->${starId}`;
+    const toneKey = `${last.tone}->${tone}`;
+
+    history.transitions[transitionKey] = (history.transitions[transitionKey] ?? 0) + 1;
+    history.toneTransitions[toneKey] = (history.toneTransitions[toneKey] ?? 0) + 1;
+  }
+
+  history.recent.push({ starId, tone, weight, seenAt: t });
+  history.recent = history.recent.slice(-MAX_RECENT_PATH);
+  writePathHistory(history);
+
+  return analyzePath(history, starId, tone);
+}
+
+function analyzePath(history: PathHistory, currentStarId: string, currentTone: string) {
+  const previous = history.recent[history.recent.length - 2];
+  const transitionKey = previous ? `${previous.starId}->${currentStarId}` : null;
+  const transitionCount = transitionKey ? history.transitions[transitionKey] ?? 0 : 0;
+  const starFrequency = history.recent.filter((step) => step.starId === currentStarId).length;
+  const toneFrequency = history.recent.filter((step) => step.tone === currentTone).length;
+  const alternatingLoop = history.recent.length >= 4
+    ? history.recent.slice(-4).map((step) => step.starId).join("|")
+    : "";
+  const hasABAB = history.recent.length >= 4
+    ? (() => {
+        const last4 = history.recent.slice(-4).map((step) => step.starId);
+        return last4[0] === last4[2] && last4[1] === last4[3] && last4[0] !== last4[1];
+      })()
+    : false;
+
+  return {
+    previousStarId: previous?.starId ?? null,
+    transitionKey,
+    transitionCount,
+    starFrequency,
+    toneFrequency,
+    hasABAB,
+    alternatingLoop,
+    recentLength: history.recent.length,
+  };
+}
+
 function dominantKey(values: Record<string, number>) {
   return Object.entries(values).sort((a, b) => b[1] - a[1])[0]?.[0] ?? null;
 }
@@ -97,10 +182,27 @@ function shouldWhisper(cue: NarratorCue) {
   );
 }
 
-function innerScript(cue: NarratorCue, previousVisits: number, memory: StarMemory) {
+function innerScript(
+  cue: NarratorCue,
+  previousVisits: number,
+  memory: StarMemory,
+  pattern: ReturnType<typeof analyzePath>,
+) {
   const tone = cue.tone ?? dominantKey(memory.tones) ?? "quiet";
   const weight = cue.symbolicWeight ?? dominantKey(memory.weights) ?? "subtle";
   const title = cue.title ?? "this point";
+
+  if (pattern.hasABAB && pattern.previousStarId) {
+    return `you are moving between them again... ${pattern.previousStarId} and ${title}. ${tone}. watch the loop.`;
+  }
+
+  if (pattern.transitionCount >= 2 && pattern.previousStarId) {
+    return `this path repeats... from ${pattern.previousStarId} to ${title}. ${tone}. ${weight}.`;
+  }
+
+  if (pattern.toneFrequency >= 4) {
+    return `different stars... same ${tone}. the map is circling one feeling.`;
+  }
 
   if (previousVisits === 0) {
     if (cue.event === "narrator.replay.begin") {
@@ -173,7 +275,8 @@ export default function DualLayerNarratorBridge() {
       if (timeoutRef.current !== null) window.clearTimeout(timeoutRef.current);
 
       const { id, previousVisits, memory } = updateMemory(cue);
-      const script = innerScript(cue, previousVisits, memory);
+      const pattern = updatePathMemory(cue, id);
+      const script = innerScript(cue, previousVisits, memory, pattern);
       const delay = Math.max(0, (cue.timing?.delayMs ?? 0) + 720);
 
       timeoutRef.current = window.setTimeout(() => {
@@ -196,6 +299,7 @@ export default function DualLayerNarratorBridge() {
               visits: memory.visits,
               tone: cue.tone ?? dominantKey(memory.tones),
               symbolicWeight: cue.symbolicWeight ?? dominantKey(memory.weights),
+              pattern,
               script,
             },
           }),
