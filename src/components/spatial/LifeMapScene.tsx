@@ -21,6 +21,13 @@ import {
   type MemoryStar,
 } from './lifemapSceneLogic';
 import { detectLifeMapPatterns, type PatternInsight } from './lifeMapPatternEngine';
+import {
+  getInsightStorageKey,
+  mergePatternInsights,
+  parseInsightLedger,
+  serializeInsightLedger,
+  shouldSurfacePersistentInsight,
+} from './persistentInsightEngine';
 
 /* -------------------- MULTI-CHANNEL NARRATOR SYSTEM -------------------- */
 
@@ -149,6 +156,21 @@ function emitNarratorEvent(detail: {
 function emitTimelineSync(detail: { phase: LifeMapPhase; activeStarId?: string | null; activeChapterId?: ChapterId | null }) {
   if (typeof window === 'undefined') return;
   window.dispatchEvent(new CustomEvent('urai:timeline-sync', { detail: { mode: 'lifemap', ...detail, timestamp: Date.now() } }));
+}
+
+function persistInsights(patterns: PatternInsight[], stars: MemoryStar[]) {
+  if (typeof window === 'undefined' || !patterns.length) return [];
+  try {
+    const key = getInsightStorageKey();
+    const current = parseInsightLedger(window.localStorage.getItem(key));
+    const emotionMap = Object.fromEntries(stars.map((star) => [star.id, star.emotion]));
+    const next = mergePatternInsights(current, patterns, emotionMap);
+    window.localStorage.setItem(key, serializeInsightLedger(next));
+    return next.insights.filter(shouldSurfacePersistentInsight);
+  } catch (error) {
+    console.warn('Unable to persist URAI Life Map insights', error);
+    return [];
+  }
 }
 
 /* -------------------- STATE -------------------- */
@@ -303,6 +325,7 @@ export default function LifeMapScene() {
       const nextHistory = [...glowHistoryRef.current.slice(-20), { tick: tickRef.current, ids: picked }];
       const insights = detectLifeMapPatterns(state.stars, nextHistory);
       if (insights.length) {
+        persistInsights(insights, state.stars);
         dispatch({ type: 'PUSH_PATTERN_MESSAGES', insights });
         insights.forEach((insight) => {
           const star = state.stars.find((s) => s.id === insight.starIds[0]);
