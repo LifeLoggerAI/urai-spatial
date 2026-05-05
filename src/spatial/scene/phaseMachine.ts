@@ -23,6 +23,12 @@ export type AscentChannels = {
   substate: AscentSubstate
 }
 
+export type GroundChannels = {
+  recession: number
+  elevation: number
+  opacity: number
+}
+
 export function validateTransition(state: SceneState, action: SceneAction): boolean {
   switch (action.type) {
     case 'START_ASCENT':
@@ -86,4 +92,40 @@ export function getAscentChannels(progress: number): AscentChannels {
   else if (p >= 0.2) substate = 'GROUND_RECESS'
 
   return { cameraLift, groundRecession, starStreak, nebulaReveal, substate }
+}
+
+export function getGroundChannelsForPhase(phase: string, progress: number): GroundChannels {
+  const p = clamp01(progress)
+  const eased = easeInOutCubic(p)
+
+  if (phase === 'ASCENT') {
+    const ascent = getAscentChannels(p)
+    return {
+      recession: ascent.groundRecession,
+      elevation: ascent.groundRecession,
+      opacity: 1 - ascent.groundRecession * 0.62,
+    }
+  }
+
+  if (phase === 'return_home_descent') {
+    return {
+      recession: 1 - eased,
+      elevation: 1 - eased,
+      opacity: 0.38 + eased * 0.62,
+    }
+  }
+
+  if (phase === 'return_home_settle') {
+    return {
+      recession: (1 - eased) * 0.08,
+      elevation: (1 - eased) * 0.08,
+      opacity: 0.92 + eased * 0.08,
+    }
+  }
+
+  if (phase === 'LIFEMAP' || phase === 'FOCUS' || phase === 'REPLAY') {
+    return { recession: 1, elevation: 1, opacity: 0.38 }
+  }
+
+  return { recession: 0, elevation: 0, opacity: 1 }
 }
