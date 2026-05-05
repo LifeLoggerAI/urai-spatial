@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useRef } from 'react'
-import { buildNarrationSequence, NarrationLine } from './buildNarration'
+import { buildNarrationSequence, NarrationLine, NarratorContext } from './buildNarration'
 import { SpatialAssetManifest } from '../assets/manifestTypes'
 import { setNarratorLine } from './narratorStore'
 
@@ -24,15 +24,17 @@ function speakLine(line: NarrationLine, signal: AbortSignal) {
   })
 }
 
-export default function NarratorVoice({ manifest }: { manifest: SpatialAssetManifest | null }) {
+export default function NarratorVoice({ manifest, context = 'arrival' }: { manifest: SpatialAssetManifest | null; context?: NarratorContext }) {
   const spokenRef = useRef<string | null>(null)
 
   useEffect(() => {
     if (!manifest) return
-    if (spokenRef.current === manifest.manifestId) return
+
+    const speechKey = `${manifest.manifestId}:${context}`
+    if (spokenRef.current === speechKey) return
 
     const controller = new AbortController()
-    const sequence = buildNarrationSequence(manifest)
+    const sequence = buildNarrationSequence(manifest, context)
 
     async function runSequence() {
       speechSynthesis.cancel()
@@ -51,14 +53,14 @@ export default function NarratorVoice({ manifest }: { manifest: SpatialAssetMani
     }
 
     void runSequence()
-    spokenRef.current = manifest.manifestId
+    spokenRef.current = speechKey
 
     return () => {
       controller.abort()
       speechSynthesis.cancel()
       setNarratorLine(null)
     }
-  }, [manifest])
+  }, [manifest, context])
 
   return null
 }
