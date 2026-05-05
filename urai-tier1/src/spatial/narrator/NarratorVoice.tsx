@@ -3,6 +3,7 @@
 import { useEffect, useRef } from 'react'
 import { buildNarrationSequence, NarrationLine } from './buildNarration'
 import { SpatialAssetManifest } from '../assets/manifestTypes'
+import { setNarratorLine } from './narratorStore'
 
 function wait(ms: number) {
   return new Promise((resolve) => setTimeout(resolve, ms))
@@ -35,13 +36,18 @@ export default function NarratorVoice({ manifest }: { manifest: SpatialAssetMani
 
     async function runSequence() {
       speechSynthesis.cancel()
+      setNarratorLine(null)
 
       for (const line of sequence) {
         if (controller.signal.aborted) break
         await wait(line.pauseMs)
         if (controller.signal.aborted) break
+
+        setNarratorLine(line.text)
         await speakLine(line, controller.signal)
       }
+
+      setNarratorLine(null)
     }
 
     void runSequence()
@@ -50,6 +56,7 @@ export default function NarratorVoice({ manifest }: { manifest: SpatialAssetMani
     return () => {
       controller.abort()
       speechSynthesis.cancel()
+      setNarratorLine(null)
     }
   }, [manifest])
 
