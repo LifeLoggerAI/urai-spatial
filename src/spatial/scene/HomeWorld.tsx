@@ -13,9 +13,28 @@ export default function HomeWorld() {
         <shadowMaterial opacity={0.5} />
       </mesh>
 
-      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[-0.48, 0.014, -0.08]}>
+      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[-0.5, 0.0135, -0.06]}>
+        <circleGeometry args={[1.22, 44]} />
+        <meshStandardMaterial
+          color="#07142b"
+          emissive="#4cb5ff"
+          emissiveIntensity={0.09}
+          transparent
+          opacity={0.12}
+          roughness={0.95}
+          metalness={0}
+          depthWrite={false}
+        />
+      </mesh>
+
+      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[-0.48, 0.0155, -0.08]}>
         <circleGeometry args={[1.4, 40]} />
-        <meshBasicMaterial color="#67c4ff" transparent opacity={0.08} depthWrite={false} />
+        <meshStandardMaterial color="#081a36" transparent opacity={0.07} roughness={0.97} metalness={0.01} depthWrite={false} />
+      </mesh>
+
+      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[-0.46, 0.017, -0.1]}>
+        <ringGeometry args={[1.52, 1.72, 64]} />
+        <meshStandardMaterial color="#6fc6ff" transparent opacity={0.045} roughness={0.98} metalness={0} depthWrite={false} />
       </mesh>
 
       <Orb interactive active onClick={enterLifeMap} />
