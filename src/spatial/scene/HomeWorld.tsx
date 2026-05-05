@@ -4,14 +4,13 @@ import { Html } from "@react-three/drei";
 import { useCallback } from "react";
 import Orb from "../components/Orb";
 import PresenceRig from "../components/PresenceRig";
+import HomeAvatar from "./HomeAvatar";
 import { useSceneStore } from "../state/sceneStore";
 import GroundWorld from "./GroundWorld";
 import HomeSky from "./HomeSky";
 import { getGroundChannelsForPhase } from "./phaseMachine";
 
-/* =========================
-   ORB EVENT SYSTEM
-   ========================= */
+/* ========================= */
 
 function emitHomeEvent(event: string, detail: Record<string, unknown> = {}) {
   if (typeof window === "undefined") return;
@@ -21,8 +20,6 @@ function emitHomeEvent(event: string, detail: Record<string, unknown> = {}) {
     })
   );
 }
-
-/* ========================= */
 
 const easeOutCubic = (t: number) =>
   1 - Math.pow(1 - Math.max(0, Math.min(1, t)), 3);
@@ -131,7 +128,7 @@ export default function HomeWorld() {
         opacity={groundVisual.opacity}
       />
 
-      {/* SHADOW BASE */}
+      {/* SHADOW */}
       <mesh rotation={[-Math.PI / 2, 0, 0]} position={[-0.52, 0.012, -0.05]}>
         <circleGeometry args={[1.1, 36]} />
         <shadowMaterial opacity={0.5} />
@@ -158,6 +155,13 @@ export default function HomeWorld() {
         visualIntensity={orbVisualIntensity}
         onFocus={handleFocusOrb}
         onClick={handleEnterOrb}
+      />
+
+      {/* AVATAR (clean integration) */}
+      <HomeAvatar
+        interactive={!disabled}
+        focused={homeSubstate !== "home_idle"}
+        position={[-1.08, 0.62, 0.18]}
       />
 
       {/* CLICK OVERLAY */}
