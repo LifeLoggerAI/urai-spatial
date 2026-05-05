@@ -1,7 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { saveEarlyAccessSignup } from "../../spatial/landing/earlyAccessSignup";
+import { trackLaunchEvent } from "../../spatial/analytics/track";
 import Link from "next/link";
 
 export default function EarlyAccessPage() {
@@ -9,13 +10,20 @@ export default function EarlyAccessPage() {
   const [status, setStatus] = useState<"idle" | "loading" | "success" | "error">("idle");
   const [message, setMessage] = useState<string | null>(null);
 
+  useEffect(() => {
+    trackLaunchEvent("landing_viewed");
+  }, []);
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setStatus("loading");
     setMessage(null);
 
+    trackLaunchEvent("early_access_signup_started");
+
     try {
       await saveEarlyAccessSignup(email);
+      trackLaunchEvent("early_access_signup_completed");
       setStatus("success");
       setEmail("");
       setMessage("You’re on the list. When the map opens, we’ll send you the first light.");
@@ -28,9 +36,7 @@ export default function EarlyAccessPage() {
   return (
     <main className="min-h-screen bg-slate-950 text-white flex flex-col items-center justify-center px-6 text-center">
       <div className="max-w-xl space-y-8">
-        <h1 className="text-3xl md:text-5xl font-light">
-          URAI
-        </h1>
+        <h1 className="text-3xl md:text-5xl font-light">URAI</h1>
 
         <p className="text-lg md:text-xl text-slate-300">
           A quiet AI life map for the patterns you carry.
@@ -40,7 +46,11 @@ export default function EarlyAccessPage() {
           Quiet launch. Limited early access.
         </p>
 
-        <Link href="/demo/life-map" className="text-cyan-300 underline">
+        <Link
+          href="/demo/life-map"
+          className="text-cyan-300 underline"
+          onClick={() => trackLaunchEvent("demo_cta_clicked")}
+        >
           Watch the Life Map demo
         </Link>
 
@@ -63,17 +73,11 @@ export default function EarlyAccessPage() {
           </button>
         </form>
 
-        {message && (
-          <p className="text-sm text-slate-300">{message}</p>
-        )}
+        {message && <p className="text-sm text-slate-300">{message}</p>}
 
         <div className="text-xs text-slate-500 pt-4 space-y-2">
-          <p>
-            URAI does not diagnose. URAI does not decide what your life means.
-          </p>
-          <p>
-            It helps you notice patterns you may want to reflect on.
-          </p>
+          <p>URAI does not diagnose. URAI does not decide what your life means.</p>
+          <p>It helps you notice patterns you may want to reflect on.</p>
         </div>
       </div>
     </main>
