@@ -2,17 +2,20 @@
 
 import { useEffect, useState } from "react";
 import { acceptInvite } from "../../../spatial/landing/inviteAccess";
-import { useRouter } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 
-export default function InvitePage({ params }: { params: { code: string } }) {
+export default function InvitePage() {
   const [status, setStatus] = useState<"loading" | "success" | "error">("loading");
   const [message, setMessage] = useState<string>("Checking your invite…");
   const router = useRouter();
+  const params = useParams<{ code: string }>();
+  const code = params?.code ?? "";
 
   useEffect(() => {
     async function run() {
       try {
-        await acceptInvite(params.code);
+        if (!code) throw new Error("Invalid invite.");
+        await acceptInvite(code);
         setStatus("success");
         setMessage("Invite accepted. Preparing your Life Map…");
 
@@ -26,7 +29,7 @@ export default function InvitePage({ params }: { params: { code: string } }) {
     }
 
     run();
-  }, [params.code, router]);
+  }, [code, router]);
 
   return (
     <main className="min-h-screen bg-slate-950 text-white flex items-center justify-center text-center px-6">
