@@ -7,6 +7,7 @@ import LifeMapStarfield from "../components/LifeMapStarfield";
 import { CinematicCameraRig } from "../components/CinematicCameraRig";
 import NarratorVoiceBridge from "../narrator/NarratorVoiceBridge";
 import NarratorCaptionBridge from "../narrator/NarratorCaptionBridge";
+import ThreeSceneRoot from "../effects/ThreeSceneRoot";
 
 import CompanionOrb from "../companion/CompanionOrb";
 import CompanionCard from "../companion/CompanionCard";
@@ -65,14 +66,15 @@ export default function SpatialScene() {
       <NarratorVoiceBridge />
       <NarratorCaptionBridge />
 
-      <CinematicCameraRig phase={phase} selectedStarPosition={selectedStarPosition} />
-      <HomeWorld />
-
-      <LifeMapStarfield
-        phase={phase}
-        selectedStarId={selectedStarId}
-        onSelectStar={(star) => focusStar(star.id, star.position ?? [0, 18, -220])}
-      />
+      <ThreeSceneRoot>
+        <CinematicCameraRig phase={phase} selectedStarPosition={selectedStarPosition} />
+        <HomeWorld />
+        <LifeMapStarfield
+          phase={phase}
+          selectedStarId={selectedStarId}
+          onSelectStar={(star) => focusStar(star.id, star.position ?? [0, 18, -220])}
+        />
+      </ThreeSceneRoot>
 
       {!firstLightComplete && <FirstLightExperience onComplete={completeFirstLight} />}
 
