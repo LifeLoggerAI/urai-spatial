@@ -1,5 +1,5 @@
-import CognitiveMirror from "@/components/CognitiveMirror";
+import SpatialSceneClient from "@/spatial/client/SpatialSceneClient";
 
 export default function Page() {
-  return <CognitiveMirror />;
+  return <SpatialSceneClient />;
 }
