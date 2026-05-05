@@ -20,8 +20,10 @@
     "test:canon-lock": "node tests/canon-lock.mjs",
     "locs:check": "node scripts/check-locs-hierarchy.mjs",
     "tier:check": "node scripts/check-tier-drift.mjs",
-    "test:canon": "pnpm canon:check && pnpm locs:check && pnpm tier:check && node scripts/check-canon-imports.mjs && pnpm migration:check",
-    "migration:check": "node scripts/check-migration-markers.mjs"
+    "test:canon": "pnpm tier1:immutable:check && pnpm tier1:redefinition:check && pnpm canon:check && pnpm locs:check && pnpm tier:check && node scripts/check-canon-imports.mjs && pnpm migration:check",
+    "migration:check": "node scripts/check-migration-markers.mjs",
+    "tier1:immutable:check": "node scripts/check-tier1-immutable-diff.mjs",
+    "tier1:redefinition:check": "node scripts/check-tier1-redefinition.mjs"
   },
   "devDependencies": {
     "@types/node": "^25.5.0",
