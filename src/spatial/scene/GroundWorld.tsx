@@ -124,8 +124,10 @@ function useReducedMotionPreference() {
 
     const media = window.matchMedia("(prefers-reduced-motion: reduce)");
     const sync = () => setReducedMotion(media.matches);
+
     sync();
     media.addEventListener("change", sync);
+
     return () => media.removeEventListener("change", sync);
   }, []);
 
@@ -142,7 +144,12 @@ export default function GroundWorld({
   const selectedStarId = useSceneStore((s) => s.selectedStarId);
 
   const safeIntensity = clamp01(emotionalIntensity);
-  const resolvedPresence: GroundPresence = selectedStarId ? "active" : hoveredStarId ? "near" : presence;
+  const resolvedPresence: GroundPresence = selectedStarId
+    ? "active"
+    : hoveredStarId
+      ? "near"
+      : presence;
+
   const presenceLift = PRESENCE_MULTIPLIER[resolvedPresence];
   const profile = MOOD_PROFILES[mood] ?? MOOD_PROFILES.calm;
   const reducedMotion = useReducedMotionPreference();
@@ -172,8 +179,13 @@ export default function GroundWorld({
   useEffect(() => {
     groundMaterialRef.current?.color.copy(colors.ground);
 
-    if (innerRingMaterialRef.current) innerRingMaterialRef.current.color.copy(colors.innerGlow);
-    if (outerRingMaterialRef.current) outerRingMaterialRef.current.color.copy(colors.outerGlow);
+    if (innerRingMaterialRef.current) {
+      innerRingMaterialRef.current.color.copy(colors.innerGlow);
+    }
+
+    if (outerRingMaterialRef.current) {
+      outerRingMaterialRef.current.color.copy(colors.outerGlow);
+    }
 
     if (horizonMaterialRef.current) {
       horizonMaterialRef.current.color.copy(colors.outerGlow);
@@ -185,69 +197,102 @@ export default function GroundWorld({
       shimmerMaterialRef.current.emissive.copy(colors.shimmer);
     }
 
-    if (orbGlowMaterialRef.current) orbGlowMaterialRef.current.color.copy(colors.innerGlow);
+    if (orbGlowMaterialRef.current) {
+      orbGlowMaterialRef.current.color.copy(colors.innerGlow);
+    }
   }, [colors]);
 
   useFrame((state) => {
     const t = state.clock.elapsedTime;
     const visibleOpacity = phaseOpacity(phase);
     const active = visibleOpacity > 0;
-    const breath = reducedMotion ? 0.5 : 0.5 + 0.5 * Math.sin(t * profile.breathRate);
-    const presencePulse = reducedMotion ? 0.5 : 0.5 + 0.5 * Math.sin(t * (1.05 + safeIntensity * 0.65));
+
+    const breath = reducedMotion
+      ? 0.5
+      : 0.5 + 0.5 * Math.sin(t * profile.breathRate);
+
+    const presencePulse = reducedMotion
+      ? 0.5
+      : 0.5 + 0.5 * Math.sin(t * (1.05 + safeIntensity * 0.65));
+
     const intensityLift = 0.68 + safeIntensity * 0.62;
-    const ringEnergy = visibleOpacity * presenceLift * intensityLift * profile.ringStrength;
-    const shimmerEnergy = visibleOpacity * intensityLift * profile.shimmerStrength;
+    const ringEnergy =
+      visibleOpacity * presenceLift * intensityLift * profile.ringStrength;
+    const shimmerEnergy =
+      visibleOpacity * intensityLift * profile.shimmerStrength;
 
     if (groundMaterialRef.current) {
       groundMaterialRef.current.opacity = 0.94 * visibleOpacity;
     }
 
     if (contactShadowRef.current) {
-      contactShadowRef.current.scale.setScalar(active && !reducedMotion ? 1 + presencePulse * 0.045 * presenceLift : 1);
+      contactShadowRef.current.scale.setScalar(
+        active && !reducedMotion ? 1 + presencePulse * 0.045 * presenceLift : 1
+      );
     }
 
     if (contactShadowMaterialRef.current) {
-      contactShadowMaterialRef.current.opacity = (0.18 + presencePulse * 0.08) * visibleOpacity;
+      contactShadowMaterialRef.current.opacity =
+        (0.18 + presencePulse * 0.08) * visibleOpacity;
     }
 
     if (innerRingRef.current) {
-      innerRingRef.current.scale.setScalar(active && !reducedMotion ? 1 + presencePulse * 0.028 * presenceLift : 1);
+      innerRingRef.current.scale.setScalar(
+        active && !reducedMotion ? 1 + presencePulse * 0.028 * presenceLift : 1
+      );
     }
 
     if (innerRingMaterialRef.current) {
-      innerRingMaterialRef.current.opacity = (0.055 + breath * 0.075) * ringEnergy;
+      innerRingMaterialRef.current.opacity =
+        (0.055 + breath * 0.075) * ringEnergy;
     }
 
     if (outerRingMaterialRef.current) {
-      outerRingMaterialRef.current.opacity = (0.028 + breath * 0.045) * ringEnergy;
+      outerRingMaterialRef.current.opacity =
+        (0.028 + breath * 0.045) * ringEnergy;
     }
 
     if (terrainVeilMaterialRef.current) {
-      terrainVeilMaterialRef.current.opacity = (0.045 + breath * 0.035) * shimmerEnergy;
-      terrainVeilMaterialRef.current.emissiveIntensity = 0.025 + breath * 0.055 * shimmerEnergy;
+      terrainVeilMaterialRef.current.opacity =
+        (0.045 + breath * 0.035) * shimmerEnergy;
+      terrainVeilMaterialRef.current.emissiveIntensity =
+        0.025 + breath * 0.055 * shimmerEnergy;
     }
 
     if (horizonMaterialRef.current) {
-      horizonMaterialRef.current.opacity = (0.035 + breath * 0.05) * shimmerEnergy;
-      horizonMaterialRef.current.emissiveIntensity = 0.045 + breath * 0.09 * shimmerEnergy;
+      horizonMaterialRef.current.opacity =
+        (0.035 + breath * 0.05) * shimmerEnergy;
+      horizonMaterialRef.current.emissiveIntensity =
+        0.045 + breath * 0.09 * shimmerEnergy;
     }
 
     if (shimmerMaterialRef.current) {
-      shimmerMaterialRef.current.opacity = (0.025 + breath * 0.065) * shimmerEnergy;
-      shimmerMaterialRef.current.emissiveIntensity = 0.04 + breath * 0.14 * shimmerEnergy;
+      shimmerMaterialRef.current.opacity =
+        (0.025 + breath * 0.065) * shimmerEnergy;
+      shimmerMaterialRef.current.emissiveIntensity =
+        0.04 + breath * 0.14 * shimmerEnergy;
     }
 
     if (orbShadowMaterialRef.current) {
-      orbShadowMaterialRef.current.opacity = (0.36 + safeIntensity * 0.18) * visibleOpacity;
+      orbShadowMaterialRef.current.opacity =
+        (0.36 + safeIntensity * 0.18) * visibleOpacity;
     }
 
     if (orbGlowMaterialRef.current) {
-      orbGlowMaterialRef.current.opacity = (0.055 + presencePulse * 0.075) * ringEnergy;
+      orbGlowMaterialRef.current.opacity =
+        (0.055 + presencePulse * 0.075) * ringEnergy;
     }
   });
 
   return (
-    <group name="living-ground-system" userData={{ mood, presence: resolvedPresence, emotionalIntensity: safeIntensity }}>
+    <group
+      name="living-ground-system"
+      userData={{
+        mood,
+        presence: resolvedPresence,
+        emotionalIntensity: safeIntensity,
+      }}
+    >
       <mesh rotation={[-Math.PI / 2, 0, 0]} receiveShadow renderOrder={0}>
         <circleGeometry args={[3.3, 64]} />
         <meshStandardMaterial
@@ -298,7 +343,11 @@ export default function GroundWorld({
         />
       </mesh>
 
-      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[-0.52, 0.012, 0]} renderOrder={5}>
+      <mesh
+        rotation={[-Math.PI / 2, 0, 0]}
+        position={[-0.52, 0.012, 0]}
+        renderOrder={5}
+      >
         <ringGeometry args={[1.46, 1.9, 96]} />
         <meshBasicMaterial
           ref={outerRingMaterialRef}
@@ -312,7 +361,12 @@ export default function GroundWorld({
         />
       </mesh>
 
-      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[-0.52, 0.007, 0]} receiveShadow renderOrder={1}>
+      <mesh
+        rotation={[-Math.PI / 2, 0, 0]}
+        position={[-0.52, 0.007, 0]}
+        receiveShadow
+        renderOrder={1}
+      >
         <ringGeometry args={[0.3, 3.2, 128]} />
         <meshStandardMaterial
           ref={terrainVeilMaterialRef}
@@ -329,12 +383,27 @@ export default function GroundWorld({
         />
       </mesh>
 
-      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.015, -0.45]} receiveShadow renderOrder={-1}>
+      <mesh
+        rotation={[-Math.PI / 2, 0, 0]}
+        position={[0, -0.015, -0.45]}
+        receiveShadow
+        renderOrder={-1}
+      >
         <circleGeometry args={[9, 64]} />
-        <meshStandardMaterial color="#03091a" roughness={1} metalness={0} transparent opacity={0.22} />
+        <meshStandardMaterial
+          color="#03091a"
+          roughness={1}
+          metalness={0}
+          transparent
+          opacity={0.22}
+        />
       </mesh>
 
-      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.013, -0.4]} receiveShadow>
+      <mesh
+        rotation={[-Math.PI / 2, 0, 0]}
+        position={[0, -0.013, -0.4]}
+        receiveShadow
+      >
         <ringGeometry args={[3.7, 5.1, 64]} />
         <meshStandardMaterial
           ref={horizonMaterialRef}
@@ -349,7 +418,11 @@ export default function GroundWorld({
         />
       </mesh>
 
-      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.014, -0.5]} receiveShadow>
+      <mesh
+        rotation={[-Math.PI / 2, 0, 0]}
+        position={[0, -0.014, -0.5]}
+        receiveShadow
+      >
         <ringGeometry args={[5.8, 7.5, 64]} />
         <meshStandardMaterial
           color="#355e95"
@@ -363,7 +436,11 @@ export default function GroundWorld({
         />
       </mesh>
 
-      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.016, -0.62]} receiveShadow>
+      <mesh
+        rotation={[-Math.PI / 2, 0, 0]}
+        position={[0, -0.016, -0.62]}
+        receiveShadow
+      >
         <ringGeometry args={[7.9, 9.6, 64]} />
         <meshStandardMaterial
           ref={shimmerMaterialRef}
@@ -378,14 +455,31 @@ export default function GroundWorld({
         />
       </mesh>
 
-      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[-0.52, 0.012, -0.05]} receiveShadow>
+      <mesh
+        rotation={[-Math.PI / 2, 0, 0]}
+        position={[-0.52, 0.012, -0.05]}
+        receiveShadow
+      >
         <circleGeometry args={[1.1, 36]} />
-        <meshBasicMaterial ref={orbShadowMaterialRef} color="#02040a" transparent opacity={0.5} depthWrite={false} />
+        <meshBasicMaterial
+          ref={orbShadowMaterialRef}
+          color="#02040a"
+          transparent
+          opacity={0.5}
+          depthWrite={false}
+        />
       </mesh>
 
       <mesh rotation={[-Math.PI / 2, 0, 0]} position={[-0.48, 0.014, -0.08]}>
         <circleGeometry args={[1.5, 40]} />
-        <meshBasicMaterial ref={orbGlowMaterialRef} color={profile.innerGlow} transparent opacity={0.1} depthWrite={false} blending={AdditiveBlending} />
+        <meshBasicMaterial
+          ref={orbGlowMaterialRef}
+          color={profile.innerGlow}
+          transparent
+          opacity={0.1}
+          depthWrite={false}
+          blending={AdditiveBlending}
+        />
       </mesh>
     </group>
   );
