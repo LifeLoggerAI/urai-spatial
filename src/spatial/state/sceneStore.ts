@@ -2,6 +2,7 @@ import { create } from "zustand";
 
 export type ScenePhase = "HOME" | "ASCENT" | "LIFEMAP" | "FOCUS" | "REPLAY";
 export type SceneMode = Lowercase<ScenePhase>;
+export type AvatarState = "hidden" | "idle-home" | "entering-lifemap" | "returning-home";
 
 const PHASE_TO_MODE: Record<ScenePhase, SceneMode> = {
   HOME: "home",
@@ -54,6 +55,9 @@ export type SceneState = {
   hoveredStarId: string | null;
   isTransitioning: boolean;
   inputLocked: boolean;
+  avatarState: AvatarState;
+  ascentSubstate: "IDLE" | "CAMERA_LIFT" | "GROUND_RECESS" | "STREAK_RAMP" | "NEBULA_REVEAL" | "COMPLETE";
+  cameraLookTarget: [number, number, number];
 
   canTransition: (action: TransitionAction, context?: TransitionContext) => boolean;
   applyTransition: (action: TransitionAction, context?: TransitionContext) => boolean;
@@ -76,6 +80,8 @@ export type SceneState = {
   advance: () => void;
   setSelectedStarId: (id: string | null) => void;
   setHoveredStarId: (id: string | null) => void;
+  setAscentSubstate: (substate: SceneState["ascentSubstate"]) => void;
+  setCameraLookTarget: (target: [number, number, number]) => void;
 };
 
 const HOME_STATE = {
@@ -85,11 +91,21 @@ const HOME_STATE = {
   hoveredStarId: null,
   isTransitioning: false,
   inputLocked: false,
+  avatarState: "idle-home" as AvatarState,
+  ascentSubstate: "IDLE" as SceneState["ascentSubstate"],
+  cameraLookTarget: [-0.6, 1.05, 0] as [number, number, number],
 };
 
-const setPhaseState = (phase: ScenePhase) => ({
+const deriveAvatarState = (phase: ScenePhase, ascentSubstate: SceneState["ascentSubstate"]): AvatarState => {
+  if (phase === "HOME") return ascentSubstate === "IDLE" ? "idle-home" : "returning-home";
+  if (phase === "ASCENT") return "entering-lifemap";
+  return "hidden";
+};
+
+const setPhaseState = (phase: ScenePhase, ascentSubstate: SceneState["ascentSubstate"] = "IDLE") => ({
   phase,
   mode: PHASE_TO_MODE[phase],
+  avatarState: deriveAvatarState(phase, ascentSubstate),
 });
 
 function canTransition(
@@ -188,8 +204,8 @@ export const useSceneStore = create<SceneState>((set, get) => ({
   selectStar: (id) => set({ selectedStarId: id }),
   setTransitioning: (value) => set({ isTransitioning: value }),
 
-  setMode: (mode) => set(setPhaseState(MODE_TO_PHASE[mode])),
-  setPhase: (phase) => set(setPhaseState(phase)),
+  setMode: (mode) => set((state) => setPhaseState(MODE_TO_PHASE[mode], state.ascentSubstate)),
+  setPhase: (phase) => set((state) => setPhaseState(phase, state.ascentSubstate)),
 
   goHome: () => set({ ...HOME_STATE }),
   returnHome: () => set({ ...HOME_STATE }),
@@ -262,4 +278,6 @@ export const useSceneStore = create<SceneState>((set, get) => ({
 
   setSelectedStarId: (id) => set({ selectedStarId: id }),
   setHoveredStarId: (id) => set({ hoveredStarId: id }),
+  setAscentSubstate: (substate) => set((state) => ({ ascentSubstate: substate, avatarState: deriveAvatarState(state.phase, substate) })),
+  setCameraLookTarget: (target) => set({ cameraLookTarget: target }),
 }));

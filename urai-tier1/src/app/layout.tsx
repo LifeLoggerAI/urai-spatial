@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from 'next'
 import './globals.css'
+import '@/spatial/home/visual/HomeScene.css'
 
 export const metadata: Metadata = {
   title: 'URAI Spatial',
