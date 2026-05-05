@@ -1,6 +1,6 @@
 import { describe, it } from 'node:test'
 import assert from 'node:assert/strict'
-import { getAscentChannels, sceneReducer, type SceneState } from './phaseMachine'
+import { getAscentChannels, getGroundChannelsForPhase, sceneReducer, type SceneState } from './phaseMachine'
 
 const base: SceneState = { phase: 'HOME', selectedStarId: null, inputLocked: false }
 
@@ -30,5 +30,18 @@ describe('phaseMachine ascent transitions', () => {
     assert.equal(getAscentChannels(0.55).substate, 'STREAK_RAMP')
     assert.equal(getAscentChannels(0.8).substate, 'NEBULA_REVEAL')
     assert.equal(getAscentChannels(1).substate, 'COMPLETE')
+  })
+
+  it('interpolates ground values back to home baseline during return-home phases', () => {
+    const descentStart = getGroundChannelsForPhase('return_home_descent', 0)
+    const descentEnd = getGroundChannelsForPhase('return_home_descent', 1)
+    assert.equal(descentStart.recession, 1)
+    assert.equal(descentEnd.recession, 0)
+
+    const settleStart = getGroundChannelsForPhase('return_home_settle', 0)
+    const settleEnd = getGroundChannelsForPhase('return_home_settle', 1)
+    assert.equal(settleStart.recession, 0.08)
+    assert.equal(settleEnd.recession, 0)
+    assert.equal(settleEnd.opacity, 1)
   })
 })

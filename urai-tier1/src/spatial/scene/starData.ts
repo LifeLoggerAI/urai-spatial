@@ -30,6 +30,7 @@ function makeStars(): StarDatum[] {
 
   for (let i = 0; i < 220; i += 1) {
     stars.push({
+      id: `far-${i}`,
       layer: "far",
       interactive: false,
       position: [
@@ -42,6 +43,7 @@ function makeStars(): StarDatum[] {
 
   for (let i = 0; i < 70; i += 1) {
     stars.push({
+      id: `mid-${i}`,
       layer: "mid",
       interactive: i < 18,
       position: [
@@ -54,6 +56,7 @@ function makeStars(): StarDatum[] {
 
   for (let i = 0; i < 20; i += 1) {
     stars.push({
+      id: `near-${i}`,
       layer: "near",
       interactive: i < 8,
       position: [
