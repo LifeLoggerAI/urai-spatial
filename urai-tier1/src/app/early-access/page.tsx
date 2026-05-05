@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { saveEarlyAccessSignup } from "../../spatial/landing/earlyAccessSignup";
+import Link from "next/link";
 
 export default function EarlyAccessPage() {
   const [email, setEmail] = useState("");
@@ -36,8 +37,12 @@ export default function EarlyAccessPage() {
         </p>
 
         <p className="text-sm text-slate-400">
-          URAI is opening quietly. Early users will help shape how the Life Map notices patterns and presents meaning without noise.
+          Quiet launch. Limited early access.
         </p>
+
+        <Link href="/demo/life-map" className="text-cyan-300 underline">
+          Watch the Life Map demo
+        </Link>
 
         <form onSubmit={handleSubmit} className="flex flex-col sm:flex-row gap-3 items-center justify-center">
           <input
@@ -62,8 +67,13 @@ export default function EarlyAccessPage() {
           <p className="text-sm text-slate-300">{message}</p>
         )}
 
-        <div className="text-xs text-slate-500 pt-4">
-          URAI does not diagnose. URAI does not decide what your life means.
+        <div className="text-xs text-slate-500 pt-4 space-y-2">
+          <p>
+            URAI does not diagnose. URAI does not decide what your life means.
+          </p>
+          <p>
+            It helps you notice patterns you may want to reflect on.
+          </p>
         </div>
       </div>
     </main>
