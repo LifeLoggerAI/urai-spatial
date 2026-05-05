@@ -24,12 +24,21 @@ type MemoryStar = {
 type LifeMapPhase = 'living' | 'focus' | 'cluster';
 type LifeMapCamera = { x: number; y: number; zoom: number };
 
+type MessagePriority = 'default' | 'glow' | 'cluster' | 'resolved' | 'focus';
+type MessageSource = 'default' | 'glow' | 'cluster' | 'resolved' | 'focus' | 'replay' | 'reflect' | 'escape';
+type ActiveMessage = {
+  line: string;
+  source: MessageSource;
+  priority: MessagePriority;
+  expiresAt: number | null;
+};
+
 type LifeMapState = {
   stars: MemoryStar[];
   activeStarId: string | null;
   activeChapterId: ChapterId | null;
   camera: LifeMapCamera;
-  companionLine: string;
+  activeMessage: ActiveMessage;
   phase: LifeMapPhase;
   reducedMotion: boolean;
 };
@@ -42,7 +51,21 @@ type Action =
   | { type: 'MARK_RESOLVED'; starId: string }
   | { type: 'SET_CAMERA'; camera: LifeMapCamera }
   | { type: 'CLEAR_FOCUS' }
-  | { type: 'SET_COMPANION_LINE'; line: string };
+  | { type: 'UPSERT_MESSAGE'; line: string; source: MessageSource; priority: MessagePriority; ttlMs?: number | null };
+
+const MESSAGE_PRIORITY_RANK: Record<MessagePriority, number> = { default: 0, glow: 1, cluster: 2, resolved: 3, focus: 4 };
+
+function upsertMessage(current: ActiveMessage, incoming: { line: string; source: MessageSource; priority: MessagePriority; ttlMs?: number | null }, now: number): ActiveMessage {
+  const currentExpired = current.expiresAt !== null && current.expiresAt <= now;
+  const incomingHigher = MESSAGE_PRIORITY_RANK[incoming.priority] > MESSAGE_PRIORITY_RANK[current.priority];
+  if (!currentExpired && !incomingHigher) return current;
+  return {
+    line: incoming.line,
+    source: incoming.source,
+    priority: incoming.priority,
+    expiresAt: incoming.ttlMs == null ? null : now + incoming.ttlMs,
+  };
+};
 
 const CHAPTERS: Array<{ id: ChapterId; title: string; subtitle: string }> = [
   { id: 'season-of-becoming', title: 'The Season of Becoming', subtitle: 'memory / calm / clarity' },
@@ -107,10 +130,12 @@ function reducer(state: LifeMapState, action: Action): LifeMapState {
     case 'SET_GLOWING_STARS':
       return { ...state, stars: state.stars.map((s) => s.id === state.activeStarId ? s : s.state === 'resolved' ? s : ({ ...s, state: action.ids.includes(s.id) ? 'glowing' : 'idle' })) };
     case 'FOCUS_STAR': {
+      const now = Date.now();
       const target = state.stars.find((s) => s.id === action.starId);
       if (!target) return state;
       return {
-        ...state, phase: 'focus', activeStarId: target.id, activeChapterId: target.chapterId, camera: { x: target.x, y: target.y, zoom: 1.8 }, companionLine: target.narratorLine,
+        ...state, phase: 'focus', activeStarId: target.id, activeChapterId: target.chapterId, camera: { x: target.x, y: target.y, zoom: 1.8 },
+        activeMessage: upsertMessage(state.activeMessage, { line: target.narratorLine, source: 'focus', priority: 'focus' }, now),
         stars: state.stars.map((s) => {
           if (s.id === target.id) return { ...s, state: 'active', lastActivatedAt: Date.now() };
           if (target.connectedTo.includes(s.id) && s.state !== 'resolved') return { ...s, state: s.state === 'glowing' ? 'glowing' : 'idle' };
@@ -118,17 +143,28 @@ function reducer(state: LifeMapState, action: Action): LifeMapState {
         }),
       };
     }
-    case 'FOCUS_CLUSTER': return { ...state, phase: 'cluster', activeChapterId: action.chapterId, activeStarId: null, camera: action.camera, companionLine: action.companionLine };
-    case 'MARK_RESOLVED': return { ...state, stars: state.stars.map((s) => s.id === action.starId ? { ...s, state: 'resolved' } : s), companionLine: 'This one has softened.' };
+    case 'FOCUS_CLUSTER': return {
+      ...state,
+      phase: 'cluster',
+      activeChapterId: action.chapterId,
+      activeStarId: null,
+      camera: action.camera,
+      activeMessage: upsertMessage(state.activeMessage, { line: action.companionLine, source: 'cluster', priority: 'cluster' }, Date.now()),
+    };
+    case 'MARK_RESOLVED': return {
+      ...state,
+      stars: state.stars.map((s) => s.id === action.starId ? { ...s, state: 'resolved' } : s),
+      activeMessage: upsertMessage(state.activeMessage, { line: 'This one has softened.', source: 'resolved', priority: 'resolved' }, Date.now()),
+    };
     case 'SET_CAMERA': return { ...state, camera: action.camera };
-    case 'CLEAR_FOCUS': return { ...state, phase: 'living', activeStarId: null, activeChapterId: null, camera: { x: 50, y: 50, zoom: 1 }, stars: state.stars.map((s) => s.state === 'resolved' ? s : { ...s, state: 'idle' }) };
-    case 'SET_COMPANION_LINE': return { ...state, companionLine: action.line };
+    case 'CLEAR_FOCUS': return { ...state, phase: 'living', activeStarId: null, activeChapterId: null, camera: { x: 50, y: 50, zoom: 1 }, stars: state.stars.map((s) => s.state === 'resolved' ? s : { ...s, state: 'idle' }), activeMessage: upsertMessage(state.activeMessage, { line: 'Field reset. You can choose a new thread.', source: 'escape', priority: 'default', ttlMs: 4000 }, Date.now()) };
+    case 'UPSERT_MESSAGE': return { ...state, activeMessage: upsertMessage(state.activeMessage, action, Date.now()) };
     default: return state;
   }
 }
 
 export default function LifeMapScene() {
-  const [state, dispatch] = useReducer(reducer, { stars: INITIAL_STARS, activeStarId: null, activeChapterId: null, camera: { x: 50, y: 50, zoom: 1 }, companionLine: 'A recurring memory pattern appeared.', phase: 'living', reducedMotion: false });
+  const [state, dispatch] = useReducer(reducer, { stars: INITIAL_STARS, activeStarId: null, activeChapterId: null, camera: { x: 50, y: 50, zoom: 1 }, activeMessage: { line: 'A recurring memory pattern appeared.', source: 'default', priority: 'default', expiresAt: null }, phase: 'living', reducedMotion: false });
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
@@ -152,7 +188,7 @@ export default function LifeMapScene() {
         .slice(0, Math.max(3, pickCount * 2));
       const picked = scored.sort(() => Math.random() - 0.5).slice(0, pickCount).map((x) => x.s.id);
       dispatch({ type: 'SET_GLOWING_STARS', ids: picked });
-      dispatch({ type: 'SET_COMPANION_LINE', line: GLOW_LINES[Math.floor(Math.random() * GLOW_LINES.length)] });
+      dispatch({ type: 'UPSERT_MESSAGE', line: GLOW_LINES[Math.floor(Math.random() * GLOW_LINES.length)], source: 'glow', priority: 'glow', ttlMs: state.reducedMotion ? 8000 : 5000 });
       picked.forEach((id) => {
         const star = state.stars.find((s) => s.id === id);
         emitNarratorEvent({ event: 'lifemap.star.glow', starId: id, chapterId: star?.chapterId ?? null, emotion: star?.emotion ?? null });
@@ -193,9 +229,9 @@ export default function LifeMapScene() {
     </section>
 
     <aside className="panel export-panel" aria-label="Export panel"><button type="button">Export snapshot</button><button type="button">Export arc</button></aside>
-    <aside className="panel companion-panel" aria-label="Companion panel"><h2>Companion</h2><p>{state.companionLine}</p></aside>
+    <aside className="panel companion-panel" aria-label="Companion panel"><h2>Companion</h2><p>{state.activeMessage.line}</p></aside>
 
-    {activeStar && <aside className="panel detail" aria-live="polite"><h3>{activeStar.title}</h3><p>{activeStar.emotion} · {CHAPTERS.find((c) => c.id === activeStar.chapterId)?.title}</p><p>{activeStar.narratorLine}</p><div className="actions"><button type="button" onClick={() => { dispatch({ type: 'SET_COMPANION_LINE', line: 'Replaying the emotional thread.' }); emitNarratorEvent({ event: 'lifemap.star.focus', starId: activeStar.id, chapterId: activeStar.chapterId, emotion: activeStar.emotion, action: 'replay' }); }}>Replay</button><button type="button" onClick={() => { dispatch({ type: 'SET_COMPANION_LINE', line: 'Reflection mode is open.' }); emitNarratorEvent({ event: 'lifemap.star.focus', starId: activeStar.id, chapterId: activeStar.chapterId, emotion: activeStar.emotion, action: 'reflect' }); }}>Reflect</button><button type="button" onClick={() => { dispatch({ type: 'MARK_RESOLVED', starId: activeStar.id }); emitNarratorEvent({ event: 'lifemap.star.resolved', starId: activeStar.id, chapterId: activeStar.chapterId, emotion: activeStar.emotion, action: 'resolve' }); emitTimelineSync({ phase: 'focus', activeStarId: activeStar.id, activeChapterId: activeStar.chapterId }); }}>Mark resolved</button></div></aside>}
+    {activeStar && <aside className="panel detail" aria-live="polite"><h3>{activeStar.title}</h3><p>{activeStar.emotion} · {CHAPTERS.find((c) => c.id === activeStar.chapterId)?.title}</p><p>{activeStar.narratorLine}</p><div className="actions"><button type="button" onClick={() => { dispatch({ type: 'UPSERT_MESSAGE', line: 'Replaying the emotional thread.', source: 'replay', priority: 'focus' }); emitNarratorEvent({ event: 'lifemap.star.focus', starId: activeStar.id, chapterId: activeStar.chapterId, emotion: activeStar.emotion, action: 'replay' }); }}>Replay</button><button type="button" onClick={() => { dispatch({ type: 'UPSERT_MESSAGE', line: 'Reflection mode is open.', source: 'reflect', priority: 'focus' }); emitNarratorEvent({ event: 'lifemap.star.focus', starId: activeStar.id, chapterId: activeStar.chapterId, emotion: activeStar.emotion, action: 'reflect' }); }}>Reflect</button><button type="button" onClick={() => { dispatch({ type: 'MARK_RESOLVED', starId: activeStar.id }); emitNarratorEvent({ event: 'lifemap.star.resolved', starId: activeStar.id, chapterId: activeStar.chapterId, emotion: activeStar.emotion, action: 'resolve' }); emitTimelineSync({ phase: 'focus', activeStarId: activeStar.id, activeChapterId: activeStar.chapterId }); }}>Mark resolved</button></div></aside>}
 
     <nav className="chapter-row" aria-label="Chapter anchors">{CHAPTERS.map((c) => <button type="button" key={c.id} className={`chapter-pill ${state.activeChapterId === c.id ? 'active' : ''}`} onClick={() => { const stars = state.stars.filter((s) => s.chapterId === c.id); const camera = { x: stars.reduce((a, s) => a + s.x, 0) / stars.length, y: stars.reduce((a, s) => a + s.y, 0) / stars.length, zoom: 1.45 }; dispatch({ type: 'FOCUS_CLUSTER', chapterId: c.id, camera, companionLine: CHAPTER_LINES[c.id] }); emitNarratorEvent({ event: 'lifemap.cluster.focus', chapterId: c.id }); emitTimelineSync({ phase: 'cluster', activeChapterId: c.id }); }}><strong>{c.title}</strong><small>{c.subtitle}</small></button>)}</nav>
 
