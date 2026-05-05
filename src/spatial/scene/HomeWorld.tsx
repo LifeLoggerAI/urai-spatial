@@ -136,8 +136,13 @@ export default function HomeWorld() {
         />
       </Html>
 
-      <PresenceRig visible phase={phase} focusTarget={[-0.52, 0.38, -0.05]} />
+      <PresenceRig
+        visible
+        phase={phase}
+        focusTarget={[-0.52, 0.38, -0.05]}
+      />
 
+      {/* Background depth silhouettes */}
       <mesh position={[-4.2, 1.3, -3.2]} castShadow receiveShadow>
         <boxGeometry args={[0.36, 2.6, 0.36]} />
         <meshStandardMaterial
