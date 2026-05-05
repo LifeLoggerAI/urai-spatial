@@ -5,7 +5,7 @@ import { SpatialLoadingState } from "@/spatial/components/states/SpatialStates";
 
 export default function LifeMapRoute() {
   return (
-    <SpatialShell mode="lifemap" sourceBadge="firestore" timeline={<span>Life Map</span>}>
+    <SpatialShell mode="overview" sourceBadge="firestore" timeline={<span>Life Map</span>}>
       <Suspense fallback={<SpatialLoadingState />}>
         <SpatialScene />
       </Suspense>

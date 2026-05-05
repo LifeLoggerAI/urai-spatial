@@ -17,6 +17,7 @@ import { trimForLaunch } from "../companion/CompanionLaunchPolish";
 import { speakCompanionPayload } from "../companion/CompanionVoiceEngine";
 import FirstLightExperience from "../onboarding/FirstLightExperience";
 import { trackLaunchEvent } from "../analytics/track";
+import type { CompanionMemorySignal } from "../companion/companionTypes";
 
 const FIRST_LIGHT_KEY = "urai:first-light-complete";
 
@@ -41,14 +42,28 @@ export default function SpatialScene() {
   useEffect(() => {
     if (!phase || !firstLightComplete) return;
 
+    const memorySignals: CompanionMemorySignal[] = selectedStarId
+      ? [
+          {
+            id: selectedStarId,
+            timestamp: new Date().toISOString(),
+            source: "interaction",
+            emotionalTone: "curious",
+            intensity: 0.55,
+            summary: "selected-star",
+            privacyLevel: "private",
+          },
+        ]
+      : [];
+
     const result = runCompanionPipeline({
-      phase,
+      phase: phase.toLowerCase() as "home" | "lifemap" | "focus" | "replay" | "mirror",
       mode: "timeline",
       selectedNode: null,
       visibleNodes: [],
       showReplay: false,
       state: companionState ?? undefined,
-      memorySignals: selectedStarId ? [{ id: selectedStarId, timestamp: new Date().toISOString(), intensity: 0.55, summary: "selected-star" }] : [],
+      memorySignals,
       voiceMode: "tapToSpeak",
       userGesture: false,
     });
@@ -88,7 +103,7 @@ export default function SpatialScene() {
         phase={phase}
         selectedStarId={selectedStarId}
         onSelectStar={(star) => {
-          trackLaunchEvent("star_clicked", { starId: star.id });
+          trackLaunchEvent("life_map_entered", { starId: star.id, action: "star_clicked" });
           focusStar(star.id, star.position ?? [0, 18, -220]);
         }}
       />

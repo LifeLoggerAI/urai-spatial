@@ -27,6 +27,8 @@ jobs:
         run: pnpm install --no-frozen-lockfile
       - name: Preflight
         run: pnpm preflight
+      - name: Tier-1 canon lock
+        run: pnpm canon:lock
 
   lifemap-fast-gate:
     name: LifeMap targeted fast gate
@@ -69,6 +71,8 @@ jobs:
         run: pnpm --filter urai-tier1 typecheck
       - name: Tier lock verifier
         run: pnpm --filter urai-tier1 verify:tier-lock
+      - name: Tier-1 canon lock
+        run: pnpm canon:lock
       - name: Unit tests
         run: pnpm --filter urai-tier1 test
       - name: Lifemap focused tests
