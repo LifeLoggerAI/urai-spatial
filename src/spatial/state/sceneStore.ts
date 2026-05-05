@@ -2,6 +2,7 @@ import { create } from "zustand";
 
 export type ScenePhase = "HOME" | "ASCENT" | "LIFEMAP" | "FOCUS" | "REPLAY";
 export type SceneMode = Lowercase<ScenePhase>;
+export type AvatarState = "idle" | "lookAtOrb" | "transitioning";
 
 const PHASE_TO_MODE: Record<ScenePhase, SceneMode> = {
   HOME: "home",
@@ -54,6 +55,7 @@ export type SceneState = {
   hoveredStarId: string | null;
   isTransitioning: boolean;
   inputLocked: boolean;
+  avatarState: AvatarState;
 
   canTransition: (action: TransitionAction, context?: TransitionContext) => boolean;
   applyTransition: (action: TransitionAction, context?: TransitionContext) => boolean;
@@ -61,6 +63,7 @@ export type SceneState = {
   hoverStar: (id: string | null) => void;
   selectStar: (id: string | null) => void;
   setTransitioning: (value: boolean) => void;
+  setAvatarState: (value: AvatarState) => void;
 
   setMode: (mode: SceneMode) => void;
   setPhase: (phase: ScenePhase) => void;
@@ -85,6 +88,7 @@ const HOME_STATE = {
   hoveredStarId: null,
   isTransitioning: false,
   inputLocked: false,
+  avatarState: "idle" as AvatarState,
 };
 
 const setPhaseState = (phase: ScenePhase) => ({
@@ -136,6 +140,7 @@ export const useSceneStore = create<SceneState>((set, get) => ({
           ...setPhaseState("ASCENT"),
           isTransitioning: true,
           inputLocked: true,
+          avatarState: "transitioning",
         });
         return true;
 
@@ -144,6 +149,7 @@ export const useSceneStore = create<SceneState>((set, get) => ({
           ...setPhaseState("LIFEMAP"),
           isTransitioning: false,
           inputLocked: false,
+          avatarState: "idle",
         });
         return true;
 
@@ -153,6 +159,7 @@ export const useSceneStore = create<SceneState>((set, get) => ({
           selectedStarId: context?.starId ?? null,
           isTransitioning: false,
           inputLocked: false,
+          avatarState: "idle",
         });
         return true;
 
@@ -161,6 +168,7 @@ export const useSceneStore = create<SceneState>((set, get) => ({
           ...setPhaseState("REPLAY"),
           isTransitioning: true,
           inputLocked: true,
+          avatarState: "transitioning",
         });
         return true;
 
@@ -174,6 +182,7 @@ export const useSceneStore = create<SceneState>((set, get) => ({
           selectedStarId: next === "HOME" ? null : state.selectedStarId,
           isTransitioning: false,
           inputLocked: false,
+          avatarState: next === "HOME" ? "idle" : state.avatarState,
         });
 
         return true;
@@ -187,6 +196,7 @@ export const useSceneStore = create<SceneState>((set, get) => ({
   hoverStar: (id) => set({ hoveredStarId: id }),
   selectStar: (id) => set({ selectedStarId: id }),
   setTransitioning: (value) => set({ isTransitioning: value }),
+  setAvatarState: (value) => set({ avatarState: value }),
 
   setMode: (mode) => set(setPhaseState(MODE_TO_PHASE[mode])),
   setPhase: (phase) => set(setPhaseState(phase)),
@@ -200,6 +210,7 @@ export const useSceneStore = create<SceneState>((set, get) => ({
       ...setPhaseState("LIFEMAP"),
       isTransitioning: false,
       inputLocked: false,
+      avatarState: "idle",
     }),
 
   enterLifeMap: () =>
@@ -207,6 +218,7 @@ export const useSceneStore = create<SceneState>((set, get) => ({
       ...setPhaseState("LIFEMAP"),
       isTransitioning: false,
       inputLocked: false,
+      avatarState: "idle",
     }),
 
   focusStar: (id) =>
@@ -215,6 +227,7 @@ export const useSceneStore = create<SceneState>((set, get) => ({
       selectedStarId: id,
       isTransitioning: false,
       inputLocked: false,
+      avatarState: "idle",
     }),
 
   enterReplay: () => {
@@ -225,6 +238,7 @@ export const useSceneStore = create<SceneState>((set, get) => ({
       ...setPhaseState("REPLAY"),
       isTransitioning: true,
       inputLocked: true,
+      avatarState: "transitioning",
     });
   },
 
@@ -233,6 +247,7 @@ export const useSceneStore = create<SceneState>((set, get) => ({
       ...setPhaseState("FOCUS"),
       isTransitioning: false,
       inputLocked: false,
+      avatarState: "idle",
     }),
 
   esc: () =>
@@ -245,6 +260,7 @@ export const useSceneStore = create<SceneState>((set, get) => ({
         inputLocked: false,
         isTransitioning: false,
         selectedStarId: next === "HOME" ? null : state.selectedStarId,
+        avatarState: next === "HOME" ? "idle" : state.avatarState,
       };
     }),
 
@@ -257,9 +273,13 @@ export const useSceneStore = create<SceneState>((set, get) => ({
         ...setPhaseState(next),
         inputLocked: next === "ASCENT",
         isTransitioning: next === "ASCENT",
+        avatarState: next === "ASCENT" ? "transitioning" : "idle",
       };
     }),
 
   setSelectedStarId: (id) => set({ selectedStarId: id }),
   setHoveredStarId: (id) => set({ hoveredStarId: id }),
 }));
+
+export const selectAvatarState = (state: SceneState) => state.avatarState;
+export const selectIsAvatarTransitioning = (state: SceneState) => state.avatarState === "transitioning";

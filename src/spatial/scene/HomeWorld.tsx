@@ -1,10 +1,24 @@
 "use client";
 
+import { useMemo } from "react";
+
+import { getRuntimeFlags } from "../config/runtimeFlags";
 import Orb from "../components/Orb";
 import { useSceneStore } from "../state/sceneStore";
+import HomeAvatar from "./HomeAvatar";
+
+const ORB_WORLD_POSITION: [number, number, number] = [-0.52, 1.05, 0];
 
 export default function HomeWorld() {
   const enterLifeMap = useSceneStore((s) => s.enterLifeMap);
+  const setAvatarState = useSceneStore((s) => s.setAvatarState);
+
+  const flags = useMemo(() => getRuntimeFlags(), []);
+
+  const onEnterLifeMap = () => {
+    setAvatarState("transitioning");
+    enterLifeMap();
+  };
 
   return (
     <group>
@@ -18,7 +32,11 @@ export default function HomeWorld() {
         <meshBasicMaterial color="#67c4ff" transparent opacity={0.08} depthWrite={false} />
       </mesh>
 
-      <Orb interactive active onClick={enterLifeMap} />
+      <Orb interactive active onClick={onEnterLifeMap} />
+
+      {flags.enableHomeAvatar ? (
+        <HomeAvatar orbPosition={ORB_WORLD_POSITION} lowPoly={flags.forceLowPolyAvatar} />
+      ) : null}
 
       <mesh position={[-4.2, 1.3, -3.2]} castShadow receiveShadow>
         <boxGeometry args={[0.36, 2.6, 0.36]} />
