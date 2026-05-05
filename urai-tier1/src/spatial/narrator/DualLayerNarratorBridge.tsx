@@ -5,6 +5,8 @@ import { useEffect, useRef } from "react";
 type NarratorCue = {
   event?: string;
   script?: string;
+  starId?: string | null;
+  title?: string | null;
   tone?: string | null;
   symbolicWeight?: string | null;
   timing?: {
@@ -12,6 +14,79 @@ type NarratorCue = {
     durationMs?: number;
   };
 };
+
+type StarMemory = {
+  visits: number;
+  firstSeenAt: number;
+  lastSeenAt: number;
+  tones: Record<string, number>;
+  weights: Record<string, number>;
+};
+
+type MemoryHistory = Record<string, StarMemory>;
+
+const STORAGE_KEY = "urai:lifemap:memory-history:v1";
+
+function now() {
+  return Date.now();
+}
+
+function readHistory(): MemoryHistory {
+  if (typeof window === "undefined") return {};
+
+  try {
+    const raw = window.localStorage.getItem(STORAGE_KEY);
+    if (!raw) return {};
+    return JSON.parse(raw) as MemoryHistory;
+  } catch {
+    return {};
+  }
+}
+
+function writeHistory(history: MemoryHistory) {
+  if (typeof window === "undefined") return;
+
+  try {
+    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(history));
+  } catch {
+    // localStorage can fail in private browsing or quota pressure. Narration still works without persistence.
+  }
+}
+
+function updateMemory(cue: NarratorCue) {
+  const id = cue.starId ?? cue.title ?? "unknown-star";
+  const history = readHistory();
+  const previous = history[id];
+  const t = now();
+  const tone = cue.tone ?? "neutral";
+  const weight = cue.symbolicWeight ?? "light";
+
+  const next: StarMemory = previous ?? {
+    visits: 0,
+    firstSeenAt: t,
+    lastSeenAt: t,
+    tones: {},
+    weights: {},
+  };
+
+  next.visits += 1;
+  next.lastSeenAt = t;
+  next.tones[tone] = (next.tones[tone] ?? 0) + 1;
+  next.weights[weight] = (next.weights[weight] ?? 0) + 1;
+
+  history[id] = next;
+  writeHistory(history);
+
+  return {
+    id,
+    previousVisits: previous?.visits ?? 0,
+    memory: next,
+  };
+}
+
+function dominantKey(values: Record<string, number>) {
+  return Object.entries(values).sort((a, b) => b[1] - a[1])[0]?.[0] ?? null;
+}
 
 function shouldWhisper(cue: NarratorCue) {
   return Boolean(
@@ -22,18 +97,35 @@ function shouldWhisper(cue: NarratorCue) {
   );
 }
 
-function innerScript(cue: NarratorCue) {
-  const tone = cue.tone ?? "quiet";
-  const weight = cue.symbolicWeight ?? "subtle";
+function innerScript(cue: NarratorCue, previousVisits: number, memory: StarMemory) {
+  const tone = cue.tone ?? dominantKey(memory.tones) ?? "quiet";
+  const weight = cue.symbolicWeight ?? dominantKey(memory.weights) ?? "subtle";
+  const title = cue.title ?? "this point";
 
-  if (cue.event === "narrator.replay.begin") {
-    return `beneath it... ${tone}. ${weight}. stay close.`;
+  if (previousVisits === 0) {
+    if (cue.event === "narrator.replay.begin") {
+      return `first time inside this one... ${tone}. ${weight}. stay close.`;
+    }
+
+    return `new pull... ${title}. ${tone}. ${weight}.`;
   }
 
-  return `notice the pull... ${tone}. ${weight}.`;
+  if (previousVisits === 1) {
+    return `you came back... ${tone} again. ${weight}. listen differently.`;
+  }
+
+  if (previousVisits >= 3) {
+    return `this pattern knows the way back to you... ${tone}. ${weight}.`;
+  }
+
+  if (cue.event === "narrator.replay.begin") {
+    return `beneath it... ${tone}. ${weight}. this is not the first return.`;
+  }
+
+  return `notice the return... ${tone}. ${weight}.`;
 }
 
-function voiceParams(cue: NarratorCue) {
+function voiceParams(cue: NarratorCue, previousVisits: number) {
   const tone = cue.tone ?? "neutral";
   const weight = cue.symbolicWeight ?? "light";
 
@@ -60,6 +152,11 @@ function voiceParams(cue: NarratorCue) {
     rate -= 0.04;
   }
 
+  if (previousVisits >= 2) {
+    rate -= 0.03;
+    volume += 0.03;
+  }
+
   return { rate, pitch, volume };
 }
 
@@ -75,11 +172,13 @@ export default function DualLayerNarratorBridge() {
 
       if (timeoutRef.current !== null) window.clearTimeout(timeoutRef.current);
 
+      const { id, previousVisits, memory } = updateMemory(cue);
+      const script = innerScript(cue, previousVisits, memory);
       const delay = Math.max(0, (cue.timing?.delayMs ?? 0) + 720);
 
       timeoutRef.current = window.setTimeout(() => {
-        const whisper = new SpeechSynthesisUtterance(innerScript(cue));
-        const params = voiceParams(cue);
+        const whisper = new SpeechSynthesisUtterance(script);
+        const params = voiceParams(cue, previousVisits);
 
         whisper.rate = params.rate;
         whisper.pitch = params.pitch;
@@ -92,9 +191,12 @@ export default function DualLayerNarratorBridge() {
           new CustomEvent("urai:narrator-inner-voice", {
             detail: {
               sourceEvent: cue.event,
-              tone: cue.tone ?? null,
-              symbolicWeight: cue.symbolicWeight ?? null,
-              script: innerScript(cue),
+              starId: id,
+              previousVisits,
+              visits: memory.visits,
+              tone: cue.tone ?? dominantKey(memory.tones),
+              symbolicWeight: cue.symbolicWeight ?? dominantKey(memory.weights),
+              script,
             },
           }),
         );
