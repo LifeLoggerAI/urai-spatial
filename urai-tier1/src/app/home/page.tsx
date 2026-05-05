@@ -1,6 +1,5 @@
-import CognitiveMirror from "@/components/CognitiveMirror";
-import { SpatialShell } from "@/spatial/layout/SpatialShell";
+import SpatialSceneClient from "@/spatial/client/SpatialSceneClient";
 
 export default function HomeRoute() {
-  return <SpatialShell mode="overview" sourceBadge="demo"><CognitiveMirror /></SpatialShell>;
+  return <SpatialSceneClient />;
 }
