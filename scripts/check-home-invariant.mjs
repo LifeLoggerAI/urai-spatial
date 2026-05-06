@@ -15,7 +15,10 @@ const forbiddenPatterns = [
   /sign\s*in/i,
   /log\s*in/i,
   /loading\s+urai\s+spatial/i,
-  />\s*[^<{][^<>{}]{2,}\s*</,
+  /CanonicalTierLockHud/i,
+  /<a\b/i,
+  /role\s*=\s*["']button["']/i,
+  /aria-label\s*=\s*["'][^"']*(sign|login|upgrade|onboard|narrat)/i,
 ]
 
 for (const file of homeFiles) {

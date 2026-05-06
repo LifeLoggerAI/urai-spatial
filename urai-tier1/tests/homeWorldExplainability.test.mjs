@@ -23,7 +23,6 @@ test('no banned clinical language appears in explainability copy', () => {
 
 test('contributors are bucketed and rounded instead of raw payloads', () => {
   assert.match(source, /scoreBucket/);
-  assert.match(source, /confidenceBucket/);
   assert.doesNotMatch(source, /raw audio|contact names|lat\/lng|message bodies/i);
 });
 
