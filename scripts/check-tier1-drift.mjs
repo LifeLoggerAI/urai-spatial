@@ -24,6 +24,8 @@ for (const file of requiredFiles) {
 }
 
 const tier1 = fs.readFileSync('src/canon/tier1.ts', 'utf8')
+const foundation = fs.readFileSync('src/canon/foundation.ts', 'utf8')
+const combinedTier1Canon = `${tier1}\n${foundation}`
 const index = fs.readFileSync('src/canon/index.ts', 'utf8')
 
 const requiredTier1Tokens = [
@@ -39,8 +41,8 @@ const requiredTier1Tokens = [
 ]
 
 for (const token of requiredTier1Tokens) {
-  if (!tier1.includes(token)) {
-    console.error(`Tier-1 drift: src/canon/tier1.ts missing ${token}`)
+  if (!combinedTier1Canon.includes(token)) {
+    console.error(`Tier-1 drift: Tier-1 canon surface missing ${token}`)
     process.exit(1)
   }
 }
