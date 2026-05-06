@@ -23,15 +23,12 @@ import { NarratorContext } from '../spatial/narrator/buildNarration'
 function orbStateForContext({
   context,
   hasSelectedManifest,
-  constellationMode,
 }: {
   context: NarratorContext
   hasSelectedManifest: boolean
-  constellationMode: boolean
 }): OrbState {
   if (hasSelectedManifest) return 'memoryBloom'
   if (context === 'return') return 'recovery'
-  if (context === 'explore' || constellationMode) return 'ritual'
   return 'idle'
 }
 
@@ -47,8 +44,8 @@ export default function HomeScene() {
 
   const activeManifest = selectedManifest ?? manifest
   const orbState = useMemo(
-    () => orbStateForContext({ context: narratorContext, hasSelectedManifest: Boolean(selectedManifest), constellationMode }),
-    [constellationMode, narratorContext, selectedManifest],
+    () => orbStateForContext({ context: narratorContext, hasSelectedManifest: Boolean(selectedManifest) }),
+    [narratorContext, selectedManifest],
   )
   const cameraPath = useMemo(
     () => cameraPathForState({ hasFocus: Boolean(selectedPosition), isNarrating: Boolean(activeManifest), orbState }),
