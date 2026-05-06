@@ -1,3 +1,4 @@
+import path from "node:path";
 import type { NextConfig } from "next";
 
 const uraiAllowedDevOrigins = [
@@ -5,6 +6,7 @@ const uraiAllowedDevOrigins = [
 ] as const;
 
 const nextConfig: NextConfig = {
+  outputFileTracingRoot: path.join(process.cwd()),
   allowedDevOrigins: uraiAllowedDevOrigins,
 };
 

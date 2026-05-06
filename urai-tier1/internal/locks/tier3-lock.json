@@ -1,0 +1,38 @@
+{
+  "tier": "tier-3",
+  "status": "locked_complete",
+  "lockedAt": "2026-05-06T00:00:00.000Z",
+  "branch": "tier-1-5-launch-lock",
+  "packageManager": "pnpm",
+  "requiredChecks": {
+    "routeAudit": "pass",
+    "consoleAudit": "pass",
+    "typecheck": "pass",
+    "unitTests": "pass",
+    "tierReport": "pass",
+    "tier3Verify": "pass",
+    "tier3Lock": "pass",
+    "uraiTier3": "pass"
+  },
+  "testSummary": {
+    "total": 51,
+    "pass": 51,
+    "fail": 0,
+    "cancelled": 0,
+    "skipped": 0,
+    "todo": 0
+  },
+  "notes": [
+    "Tier-3 scripts added.",
+    "Tier runner updated to use pnpm.",
+    "Node test scripts updated for Node 20 compatibility with tsx loader.",
+    "Route audit passed.",
+    "Console warning audit passed.",
+    "Typecheck passed.",
+    "Unit tests passed: 51/51.",
+    "Tier lock report generation passed.",
+    "tier3:verify passed.",
+    "tier3:lock passed.",
+    "urai:tier3 runner passed."
+  ]
+}

@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
+import { TierOneStaticShell } from "@/spatial/layout/TierOneStaticShell";
 import { acceptInvite } from "../../../spatial/landing/inviteAccess";
 
 export default function InvitePage() {
@@ -35,20 +36,20 @@ export default function InvitePage() {
   }, [code, router]);
 
   return (
-    <main className="min-h-screen bg-slate-950 text-white flex items-center justify-center text-center px-6">
-      <div className="space-y-4">
-        <h1 className="text-2xl">URAI</h1>
-        <p className="text-slate-300">{message}</p>
+    <TierOneStaticShell
+      eyebrow="URAI Invite"
+      title={status === "accepted" ? "The map is opening." : "Access check"}
+      description="Your private spatial layer is being prepared for the Tier-1 launch experience."
+    >
+      <p className={status === "accepted" ? "tier-one-static-shell__message" : "tier-one-static-shell__microcopy"}>
+        {message}
+      </p>
 
-        {status !== "accepted" && (
-          <button
-            onClick={() => router.push("/early-access")}
-            className="mt-4 px-4 py-2 border border-cyan-400/30 rounded-full"
-          >
-            Request Access
-          </button>
-        )}
-      </div>
-    </main>
+      {status !== "accepted" ? (
+        <button type="button" className="tier-one-route-card__button" onClick={() => router.push("/early-access")}>
+          Request Access
+        </button>
+      ) : null}
+    </TierOneStaticShell>
   );
 }

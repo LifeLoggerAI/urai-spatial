@@ -51,7 +51,6 @@ export function calendarTimeLabel(timestamp: number, nowMs = Date.now()) {
   const then = new Date(timestamp);
   const now = new Date(nowMs);
   const diffMs = Math.max(0, nowMs - timestamp);
-<<<<<<< HEAD
   const dayMs = 86_400_000;
 
   if (diffMs < 60_000) return "a moment ago";
@@ -61,17 +60,6 @@ export function calendarTimeLabel(timestamp: number, nowMs = Date.now()) {
   }
   if (diffMs < dayMs) {
     const hours = Math.floor(diffMs / 3_600_000);
-=======
-  const dayMs = 86400000;
-
-  if (diffMs < 60000) return "a moment ago";
-  if (diffMs < 3600000) {
-    const minutes = Math.floor(diffMs / 60000);
-    return `${minutes} minute${minutes === 1 ? "" : "s"} ago`;
-  }
-  if (diffMs < dayMs) {
-    const hours = Math.floor(diffMs / 3600000);
->>>>>>> 9f199f7 (Changes before Firebase Studio auto-run)
     return `${hours} hour${hours === 1 ? "" : "s"} ago`;
   }
   if (diffMs < dayMs * 2) return "yesterday";
@@ -80,19 +68,12 @@ export function calendarTimeLabel(timestamp: number, nowMs = Date.now()) {
     return `${days} days ago`;
   }
 
-<<<<<<< HEAD
   const sameYear = then.getFullYear() === now.getFullYear();
-=======
->>>>>>> 9f199f7 (Changes before Firebase Studio auto-run)
   const monthName = MONTHS[then.getMonth()];
   const monthDelta = (now.getFullYear() - then.getFullYear()) * 12 + now.getMonth() - then.getMonth();
 
   if (monthDelta === 1) return `last ${monthName}`;
-<<<<<<< HEAD
   if (sameYear) return `this past ${monthName}`;
-=======
-  if (then.getFullYear() === now.getFullYear()) return `this past ${monthName}`;
->>>>>>> 9f199f7 (Changes before Firebase Studio auto-run)
   return `${monthName} ${then.getFullYear()}`;
 }
 
@@ -127,7 +108,6 @@ export function upsertMemoryAnchor(args: {
 }) {
   const t = args.timestamp ?? Date.now();
   const existing = args.store[args.starId];
-<<<<<<< HEAD
   const label = existing?.label ?? chooseAnchorLabel({
     visits: args.visits,
     tone: args.tone,
@@ -153,34 +133,6 @@ export function upsertMemoryAnchor(args: {
   return {
     ...args.store,
     [args.starId]: anchor,
-=======
-
-  const label =
-    existing?.label ??
-    chooseAnchorLabel({
-      visits: args.visits,
-      tone: args.tone,
-      weight: args.weight,
-      recoveryArc: args.recoveryArc,
-      strainArc: args.strainArc,
-      looped: args.looped,
-      timestamp: t,
-    });
-
-  return {
-    ...args.store,
-    [args.starId]: {
-      id: existing?.id ?? `anchor:${args.starId}`,
-      label,
-      starId: args.starId,
-      title: args.title ?? existing?.title ?? null,
-      tone: args.tone,
-      weight: args.weight,
-      createdAt: existing?.createdAt ?? t,
-      lastSeenAt: t,
-      visits: (existing?.visits ?? 0) + 1,
-    },
->>>>>>> 9f199f7 (Changes before Firebase Studio auto-run)
   };
 }
 

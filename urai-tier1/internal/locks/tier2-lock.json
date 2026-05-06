@@ -1,0 +1,24 @@
+{
+  "tier": "tier-2",
+  "status": "locked_complete",
+  "lockedAt": "2026-05-06T00:00:00.000Z",
+  "branch": "tier-1-5-launch-lock",
+  "packageManager": "pnpm",
+  "requiredChecks": {
+    "routeAudit": "pass",
+    "consoleAudit": "pass",
+    "tierReport": "pass",
+    "tier2Verify": "pass",
+    "tier2Lock": "pass",
+    "uraiTier2": "pass"
+  },
+  "notes": [
+    "Tier-2 scripts added.",
+    "Route audit passed.",
+    "Console warning audit passed.",
+    "Tier lock report generation passed.",
+    "tier2:verify passed.",
+    "tier2:lock passed.",
+    "urai:tier2 runner passed."
+  ]
+}
