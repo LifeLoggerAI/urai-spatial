@@ -191,6 +191,65 @@ canvas {
   padding: 8px 12px;
 }
 
+.tier-one-loading {
+  color: white;
+  padding: 24px;
+}
+
+.tier-one-route-card {
+  position: absolute;
+  left: 22px;
+  top: 22px;
+  z-index: 5;
+  max-width: min(390px, calc(100vw - 44px));
+  padding: 18px 20px;
+  border: 1px solid rgba(180, 215, 255, 0.18);
+  border-radius: 24px;
+  background: linear-gradient(150deg, rgba(5, 9, 22, 0.58), rgba(16, 11, 35, 0.38));
+  box-shadow: 0 24px 90px rgba(0, 0, 0, 0.34);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  pointer-events: auto;
+}
+
+.tier-one-route-card__eyebrow {
+  font-size: 0.68rem;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: rgba(182, 226, 255, 0.76);
+}
+
+.tier-one-route-card h1 {
+  margin: 8px 0 8px;
+  font-size: clamp(1.35rem, 3vw, 2rem);
+  line-height: 1.05;
+}
+
+.tier-one-route-card p {
+  margin: 0;
+  color: rgba(235, 244, 255, 0.75);
+  font-size: 0.9rem;
+  line-height: 1.55;
+}
+
+.tier-one-route-card__cta {
+  margin-top: 14px;
+}
+
+.tier-one-route-card__button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 38px;
+  padding: 8px 14px;
+  border-radius: 999px;
+  border: 1px solid rgba(142, 220, 255, 0.32);
+  background: rgba(95, 125, 255, 0.18);
+  color: #edf7ff;
+  text-decoration: none;
+  font-size: 0.82rem;
+}
+
 .spatial-mode-frame {
   border: 1px solid rgba(200, 214, 255, 0.18);
   border-radius: 16px;
@@ -214,4 +273,18 @@ canvas {
 .spatial-mode-frame__body {
   margin-top: 12px;
   color: #dfe6ff;
+}
+
+@media (max-width: 640px) {
+  .tier-one-route-card {
+    left: 14px;
+    right: 14px;
+    top: 14px;
+    max-width: none;
+    padding: 14px 16px;
+  }
+
+  .tier-one-route-card p {
+    font-size: 0.78rem;
+  }
 }
