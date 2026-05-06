@@ -10,13 +10,13 @@ function easeInOutCubic(x: number) {
 
 export default function CinematicCameraRig({ active, focusPosition }: { active: boolean; focusPosition?: readonly [number, number, number] | null }) {
   const { camera } = useThree()
-  const defaultTarget = useMemo(() => new Vector3(0, 1.35, -1.9), [])
+  const defaultTarget = useMemo(() => new Vector3(0, -0.18, -2.85), [])
   const lookTarget = useRef(defaultTarget.clone())
-  const desiredPosition = useRef(new Vector3(0, 1.2, 4))
+  const desiredPosition = useRef(new Vector3(0, 0.72, 5.35))
   const transition = useRef({ key: 'idle', progress: 1 })
 
   useEffect(() => {
-    camera.position.set(0, 1.2, 4)
+    camera.position.set(0, 0.72, 5.35)
     camera.lookAt(defaultTarget)
   }, [camera, defaultTarget])
 
@@ -33,19 +33,20 @@ export default function CinematicCameraRig({ active, focusPosition }: { active: 
     const eased = easeInOutCubic(transition.current.progress)
 
     const target = focusPosition ? new Vector3(focusPosition[0], focusPosition[1], focusPosition[2]) : defaultTarget
-    const orbitalDrift = Math.sin(t * 0.22) * 0.18
-    const lift = Math.sin(t * 0.31) * 0.04
+    const orbitalDrift = Math.sin(t * 0.18) * 0.28
+    const sideBreath = Math.cos(t * 0.13) * 0.1
+    const lift = Math.sin(t * 0.27) * 0.055
     const settle = focusPosition ? Math.sin(eased * Math.PI) * 0.16 : 0
 
-    lookTarget.current.lerp(target, 0.035 + eased * 0.055)
+    lookTarget.current.lerp(target, 0.032 + eased * 0.052)
 
     if (focusPosition) {
-      desiredPosition.current.set(target.x * 0.72 + orbitalDrift, target.y + 0.62 + lift + settle, target.z + 2.18 - settle)
+      desiredPosition.current.set(target.x * 0.7 + orbitalDrift, target.y + 0.58 + lift + settle, target.z + 2.22 - settle)
     } else {
-      desiredPosition.current.set(orbitalDrift, 1.24 + lift, 3.72)
+      desiredPosition.current.set(orbitalDrift + sideBreath, 0.72 + lift, 5.35 + Math.sin(t * 0.11) * 0.18)
     }
 
-    camera.position.lerp(desiredPosition.current, focusPosition ? 0.032 + eased * 0.045 : 0.025)
+    camera.position.lerp(desiredPosition.current, focusPosition ? 0.032 + eased * 0.045 : 0.026)
     camera.lookAt(lookTarget.current)
   })
 
