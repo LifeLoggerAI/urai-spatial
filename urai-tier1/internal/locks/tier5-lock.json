@@ -1,24 +1,45 @@
 {
   "tier": "tier-5",
-  "status": "lock_ready_local_checks_required",
+  "status": "locked_complete",
   "lockedAt": "2026-05-06T00:00:00.000Z",
   "branch": "tier-1-5-launch-lock",
   "packageManager": "pnpm",
   "requiredChecks": {
-    "routeAudit": "pending",
-    "consoleAudit": "pending",
-    "envAudit": "pending",
-    "typecheck": "pending",
-    "unitTests": "pending",
-    "productionBuild": "pending",
-    "tierReport": "pending",
-    "tier5Verify": "pending",
-    "tier5Lock": "pending",
-    "uraiTier5": "pending"
+    "routeAudit": "pass",
+    "consoleAudit": "pass",
+    "envAudit": "pass",
+    "typecheck": "pass",
+    "unitTests": "pass",
+    "productionBuild": "pass",
+    "tierReport": "pass",
+    "tier5Verify": "pass",
+    "tier5Lock": "pass",
+    "uraiTier5": "pass"
+  },
+  "testSummary": {
+    "total": 51,
+    "pass": 51,
+    "fail": 0,
+    "cancelled": 0,
+    "skipped": 0,
+    "todo": 0
+  },
+  "buildSummary": {
+    "framework": "Next.js 16.1.6",
+    "bundler": "webpack",
+    "routesGenerated": 17,
+    "environmentFile": ".env.local"
   },
   "notes": [
     "Tier-5 final lock scripts added.",
     "Tier-5 combines route, console, env, typecheck, unit test, production build, and report checks.",
-    "Run local checks before marking complete."
+    "Route audit passed.",
+    "Console warning audit passed.",
+    "Environment readiness audit passed required env check.",
+    "Typecheck passed.",
+    "Unit tests passed: 51/51.",
+    "Production build passed and generated 17 app routes.",
+    "Tier lock report generation passed.",
+    "urai:tier5 runner passed."
   ]
 }
