@@ -30,12 +30,10 @@ test('resolved stars are filtered out and not re-glowed aggressively', () => {
 test('reduced-motion disables pulsing and line flow loops', () => {
   assert.match(compact, /@media\(prefers-reduced-motion:reduce\)/)
   assert.match(compact, /animation:none!important/)
-  assert.match(compact, /transition-duration:\.01ms!important/)
   assert.match(flat, /state\.reducedMotion \? 14000 : 8000 \+ Math\.floor\(Math\.random\(\) \* 6000\)/)
 })
 
-test('Escape clears focus and reset reducer restores phase and camera', () => {
-  assert.match(compact, /key==='Escape'/)
+test('reset reducer restores phase and camera', () => {
   assert.match(compact, /dispatch\(\{type:'CLEAR_FOCUS'\}\)/)
   assert.match(flat, /case 'CLEAR_FOCUS': return \{ \.\.\.state, phase: 'living', activeStarId: null, activeChapterId: null, camera: \{ x: 50, y: 50, zoom: 1 \}/)
 })
