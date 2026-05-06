@@ -7,7 +7,7 @@ import { SpatialShell } from "@/spatial/layout/SpatialShell";
 const HomePage: React.FC = () => {
   return (
     <SpatialShell mode="overview">
-      <Suspense fallback={<div style={{ color: "white", padding: 24 }}>Loading URAI Spatial...</div>}>
+      <Suspense fallback={null}>
         <HomeScene />
       </Suspense>
     </SpatialShell>

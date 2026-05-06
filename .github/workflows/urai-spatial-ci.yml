@@ -31,10 +31,14 @@ jobs:
         run: pnpm canon:check
       - name: Tier-1 canon lock
         run: pnpm canon:lock
-      - name: Tier-1 immutable diff lock
-        run: pnpm tier1:immutable:check
-      - name: Tier-1 redefinition lock
-        run: pnpm tier1:redefinition:check
+      - name: Tier-1 aggregate lock
+        run: pnpm tier1:check
+      - name: Tier-1 drift lock
+        run: pnpm tier1:drift
+      - name: Home invariant lock
+        run: pnpm home:invariant
+      - name: Firebase Tier-1 boundary lock
+        run: pnpm firebase:rules:check
       - name: LOCS and migration checks
         run: pnpm test:canon
 
@@ -83,10 +87,14 @@ jobs:
         run: pnpm canon:check
       - name: Tier-1 canon lock
         run: pnpm canon:lock
-      - name: Tier-1 immutable diff lock
-        run: pnpm tier1:immutable:check
-      - name: Tier-1 redefinition lock
-        run: pnpm tier1:redefinition:check
+      - name: Tier-1 aggregate lock
+        run: pnpm tier1:check
+      - name: Tier-1 drift lock
+        run: pnpm tier1:drift
+      - name: Home invariant lock
+        run: pnpm home:invariant
+      - name: Firebase Tier-1 boundary lock
+        run: pnpm firebase:rules:check
       - name: LOCS and migration checks
         run: pnpm test:canon
       - name: Unit tests
@@ -124,6 +132,17 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 8
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+      - name: Install
+        run: pnpm install --no-frozen-lockfile
       - name: Validate Firebase JSON
         run: |
           python -m json.tool firebase.json > /dev/null
@@ -135,6 +154,8 @@ jobs:
           grep -q "urai-spatial-functions" firebase.json
           grep -q "isAdmin" firebase/firestore.rules
           grep -Fq "match /spatial/{doc=**}" firebase/firestore.rules
+      - name: Firebase Tier-1 boundary lock
+        run: pnpm firebase:rules:check
 
   verification-lock:
     name: Verification lock preflight

@@ -1,0 +1,35 @@
+export const URAI_ONTOLOGY_CANON = {
+  canonDomains: [
+    'identity',
+    'ontology',
+    'privacy',
+    'consent',
+    'dataOwnership',
+    'designLanguage',
+    'symbolicLanguage',
+    'homeSpatialInvariants',
+    'firestoreBoundaries',
+    'featureFlagBoundaries',
+    'releaseGovernance',
+  ] as const,
+  protectedSchemas: [
+    'tier1Canon',
+    'featureFlags',
+    'entitlements',
+    'consents',
+    'auditLogs',
+    'users',
+    'spatialBaseline',
+  ] as const,
+  schemaOwnershipRules: [
+    'Tier-1 owns the canonical naming, privacy, consent, entitlement, feature flag, and baseline spatial schemas.',
+    'Lower tiers may add feature-specific schemas only when they reference Tier-1 ownership boundaries.',
+    'No client-owned schema may grant admin, founder, canon override, or entitlement elevation authority.',
+  ] as const,
+  allowedLowerTierReferences: [
+    'import canonical Tier-1 exports',
+    'extend Tier-1 schemas with additive feature fields',
+    'depend on Tier-1 feature lock decisions',
+    'fallback to Tier-1 baseline when unavailable',
+  ] as const,
+} as const
