@@ -51,22 +51,22 @@ export default function HomeScene() {
 
   return (
     <div style={{ width: '100%', height: '100%', position: 'relative' }}>
-      <Canvas shadows="basic" dpr={[1, 1.8]} gl={{ antialias: true, alpha: false }}>
-        <PerspectiveCamera makeDefault position={[0, 0.72, 5.35]} fov={53} />
+      <Canvas shadows dpr={[1, 1.75]} gl={{ antialias: true, alpha: false }}>
+        <PerspectiveCamera makeDefault position={[0, 2.55, 7.85]} fov={48} />
         <CinematicCameraRig active focusPosition={selectedPosition} path={cameraPath} />
-        <color attach="background" args={['#030711']} />
-        <ambientLight intensity={0.18} color="#6f7dff" />
-        <hemisphereLight args={['#8fb7ff', '#16091f', 0.72]} />
-        <directionalLight position={[-4.5, 6.5, 2.5]} intensity={1.55} color="#c9dcff" castShadow shadow-mapSize-width={2048} shadow-mapSize-height={2048} />
-        <pointLight position={[1.4, 0.8, 1.25]} intensity={1.25} color="#b88cff" distance={7} />
-        <pointLight position={[-2.2, 1.45, -1.5]} intensity={0.58} color="#6fe7ff" distance={8} />
+        <color attach="background" args={['#020611']} />
+        <ambientLight intensity={0.22} color="#8ea2ff" />
+        <hemisphereLight args={['#9fc3ff', '#12071e', 0.86]} />
+        <directionalLight position={[-5.4, 7.4, 3.8]} intensity={1.62} color="#d7e6ff" castShadow shadow-mapSize-width={2048} shadow-mapSize-height={2048} />
+        <pointLight position={[0.7, 0.55, -1.05]} intensity={1.72} color="#c9b0ff" distance={6.5} />
+        <pointLight position={[-3.2, 2.35, -3.8]} intensity={0.72} color="#62e5ff" distance={10} />
         <Atmosphere />
         <Sky />
         <Ground />
         <Orb state={orbState} />
         {constellationMode ? <ConstellationLayer enabled selectedManifestId={selectedManifest?.manifestId ?? null} onSelect={handleSelect} /> : <ManifestRenderer manifest={manifest} />}
         <CinematicParticles active />
-        <CinematicPostProcessing active={Boolean(activeManifest)} />
+        <CinematicPostProcessing active={Boolean(activeManifest) || constellationMode} />
         <NarratorVoice manifest={activeManifest} context={narratorContext} />
       </Canvas>
       <NarratorHud />
