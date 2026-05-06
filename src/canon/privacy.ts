@@ -1,0 +1,37 @@
+export const URAI_PRIVACY_CANON = {
+  protectedPrivacyPrinciples: [
+    'Derived data is preferred over raw private media.',
+    'No raw audio persistence unless explicitly consented and required.',
+    'No raw private text persistence unless explicitly consented and required.',
+    'No contact identity use unless explicitly consented and required.',
+    'No precise location persistence unless explicitly consented and required.',
+    'User data ownership must be preserved.',
+    'Data licensing or marketplace participation must be opt-in.',
+    'Consent must be revocable.',
+    'Sensitive operations must be auditable.',
+    'AI insight explanations must avoid pretending certainty.',
+  ] as const,
+  protectedConsentPrinciples: [
+    'Tier-1 baseline may run anonymously without collecting personal raw source signals.',
+    'Tier-2 and higher personalization requires explicit consent and server-side entitlement validation.',
+    'Consent state may not be self-elevated into admin, founder, or entitlement status by client writes.',
+  ] as const,
+  protectedDataOwnershipPrinciples: [
+    'Users own their personal URAI data.',
+    'Personal data licensing is opt-in only and revocable where technically possible.',
+    'Tier-1 state stores baseline or derived spatial state, not raw private source signals.',
+  ] as const,
+  rawPersistenceRiskFields: [
+    'rawAudio',
+    'audioBlob',
+    'transcript',
+    'messageBody',
+    'contactName',
+    'lat',
+    'lng',
+    'location',
+    'sourceSignals',
+    'privateMedia',
+    'dataLicense',
+  ] as const,
+} as const
