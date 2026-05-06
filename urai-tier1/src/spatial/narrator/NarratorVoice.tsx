@@ -3,7 +3,7 @@
 import { useEffect, useRef } from 'react'
 import { buildNarrationSequence, NarrationLine, NarratorContext } from './buildNarration'
 import { SpatialAssetManifest } from '../assets/manifestTypes'
-import { setNarratorLine } from './narratorStore'
+import { setNarratorLine, setNarratorSpeaking } from './narratorStore'
 
 function wait(ms: number) {
   return new Promise((resolve) => setTimeout(resolve, ms))
@@ -21,8 +21,15 @@ function speakLine(line: NarrationLine, signal: AbortSignal) {
     utterance.rate = line.rate
     utterance.pitch = line.pitch
     utterance.volume = line.volume
-    utterance.onend = () => resolve()
-    utterance.onerror = () => resolve()
+    utterance.onstart = () => setNarratorSpeaking(true)
+    utterance.onend = () => {
+      setNarratorSpeaking(false)
+      resolve()
+    }
+    utterance.onerror = () => {
+      setNarratorSpeaking(false)
+      resolve()
+    }
 
     window.speechSynthesis.speak(utterance)
   })
@@ -43,6 +50,7 @@ export default function NarratorVoice({ manifest, context = 'arrival' }: { manif
     async function runSequence() {
       if (canSpeak()) window.speechSynthesis.cancel()
       setNarratorLine(null)
+      setNarratorSpeaking(false)
 
       for (const line of sequence) {
         if (controller.signal.aborted) break
@@ -50,10 +58,13 @@ export default function NarratorVoice({ manifest, context = 'arrival' }: { manif
         if (controller.signal.aborted) break
 
         setNarratorLine(line.text)
+        if (!canSpeak()) setNarratorSpeaking(true)
         await speakLine(line, controller.signal)
+        if (!canSpeak()) setNarratorSpeaking(false)
       }
 
       setNarratorLine(null)
+      setNarratorSpeaking(false)
     }
 
     void runSequence()
@@ -63,6 +74,7 @@ export default function NarratorVoice({ manifest, context = 'arrival' }: { manif
       controller.abort()
       if (canSpeak()) window.speechSynthesis.cancel()
       setNarratorLine(null)
+      setNarratorSpeaking(false)
     }
   }, [manifest, context])
 
