@@ -3,12 +3,22 @@ export type NarratorSpeakingListener = (speaking: boolean) => void
 
 let currentLine: string | null = null
 let narratorSpeaking = false
-const listeners = new Set<NarratorListener>()
+
+const lineListeners = new Set<NarratorListener>()
 const speakingListeners = new Set<NarratorSpeakingListener>()
 
 export function setNarratorLine(line: string | null) {
   currentLine = line
-  listeners.forEach((listener) => listener(currentLine))
+  lineListeners.forEach((listener) => listener(currentLine))
+}
+
+export function subscribeNarratorLine(listener: NarratorListener) {
+  lineListeners.add(listener)
+  listener(currentLine)
+
+  return () => {
+    lineListeners.delete(listener)
+  }
 }
 
 export function setNarratorSpeaking(speaking: boolean) {
@@ -16,14 +26,11 @@ export function setNarratorSpeaking(speaking: boolean) {
   speakingListeners.forEach((listener) => listener(narratorSpeaking))
 }
 
-export function subscribeNarratorLine(listener: NarratorListener) {
-  listeners.add(listener)
-  listener(currentLine)
-  return () => listeners.delete(listener)
-}
-
 export function subscribeNarratorSpeaking(listener: NarratorSpeakingListener) {
   speakingListeners.add(listener)
   listener(narratorSpeaking)
-  return () => speakingListeners.delete(listener)
+
+  return () => {
+    speakingListeners.delete(listener)
+  }
 }

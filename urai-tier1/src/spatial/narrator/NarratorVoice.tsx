@@ -10,7 +10,11 @@ function wait(ms: number) {
 }
 
 function canSpeak() {
-  return typeof window !== 'undefined' && 'speechSynthesis' in window && 'SpeechSynthesisUtterance' in window
+  return (
+    typeof window !== 'undefined' &&
+    'speechSynthesis' in window &&
+    'SpeechSynthesisUtterance' in window
+  )
 }
 
 function speakLine(line: NarrationLine, signal: AbortSignal) {
@@ -18,14 +22,18 @@ function speakLine(line: NarrationLine, signal: AbortSignal) {
     if (signal.aborted || !canSpeak()) return resolve()
 
     const utterance = new SpeechSynthesisUtterance(line.text)
+
     utterance.rate = line.rate
     utterance.pitch = line.pitch
     utterance.volume = line.volume
+
     utterance.onstart = () => setNarratorSpeaking(true)
+
     utterance.onend = () => {
       setNarratorSpeaking(false)
       resolve()
     }
+
     utterance.onerror = () => {
       setNarratorSpeaking(false)
       resolve()
@@ -35,7 +43,13 @@ function speakLine(line: NarrationLine, signal: AbortSignal) {
   })
 }
 
-export default function NarratorVoice({ manifest, context = 'arrival' }: { manifest: SpatialAssetManifest | null; context?: NarratorContext }) {
+export default function NarratorVoice({
+  manifest,
+  context = 'arrival',
+}: {
+  manifest: SpatialAssetManifest | null
+  context?: NarratorContext
+}) {
   const spokenRef = useRef<string | null>(null)
 
   useEffect(() => {
@@ -49,17 +63,23 @@ export default function NarratorVoice({ manifest, context = 'arrival' }: { manif
 
     async function runSequence() {
       if (canSpeak()) window.speechSynthesis.cancel()
+
       setNarratorLine(null)
       setNarratorSpeaking(false)
 
       for (const line of sequence) {
         if (controller.signal.aborted) break
+
         await wait(line.pauseMs)
+
         if (controller.signal.aborted) break
 
         setNarratorLine(line.text)
+
         if (!canSpeak()) setNarratorSpeaking(true)
+
         await speakLine(line, controller.signal)
+
         if (!canSpeak()) setNarratorSpeaking(false)
       }
 
@@ -72,7 +92,9 @@ export default function NarratorVoice({ manifest, context = 'arrival' }: { manif
 
     return () => {
       controller.abort()
+
       if (canSpeak()) window.speechSynthesis.cancel()
+
       setNarratorLine(null)
       setNarratorSpeaking(false)
     }
