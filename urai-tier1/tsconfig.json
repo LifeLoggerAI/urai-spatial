@@ -21,7 +21,6 @@
   "include": [
     "next-env.d.ts",
     ".next/types/**/*.ts",
-    ".next/dev/types/**/*.ts",
     "src/**/*.d.ts",
     "src/app/**/*.ts",
     "src/app/**/*.tsx",
@@ -35,6 +34,7 @@
   ],
   "exclude": [
     "node_modules",
+    ".next/dev/**",
     "src/spatial/ui/**",
     "src/spatial/narrator/**",
     "src/spatial/vault/**",
