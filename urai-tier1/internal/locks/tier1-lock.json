@@ -1,32 +1,42 @@
 {
   "tier": "tier-1",
-  "status": "lock_ready_local_checks_required",
+  "status": "locked_complete",
   "lockedAt": "2026-05-06T00:00:00.000Z",
   "branch": "tier-1-5-launch-lock",
   "packageManager": "pnpm",
   "requiredChecks": {
-    "install": "pending_local_verification",
-    "typecheck": "pending_local_verification",
-    "build": "pending_local_verification"
+    "install": "pass",
+    "typecheck": "pass",
+    "build": "pass",
+    "checkBuild": "pass",
+    "tier1Verify": "pass",
+    "tier1Lock": "pass"
   },
   "routes": [
     "/",
-    "/home",
-    "/demo",
-    "/focus",
-    "/life-map",
-    "/mirror",
-    "/replay",
+    "/admin/invites",
+    "/api/urai/narrator/elevenlabs",
+    "/api/voice/elevenlabs",
     "/brand-system",
+    "/demo",
+    "/demo/life-map",
+    "/early-access",
+    "/focus",
+    "/home",
+    "/icon.svg",
     "/internal/locks",
     "/invite/[code]",
-    "/api/urai/narrator/elevenlabs",
-    "/api/voice/elevenlabs"
+    "/life-map",
+    "/mirror",
+    "/replay"
   ],
   "notes": [
     "Tier-1 repository lock changes applied.",
     "HomeScene runtime import and export state inspected.",
     "Tier-1 validation scripts added.",
-    "Local pnpm checks still need to be run in the development environment."
+    "CSS module global selector purity fixed.",
+    "Tier-1 lock script now avoids reinstall side effects.",
+    "Local pnpm install completed using pnpm 10.32.1.",
+    "Local check:types, build, check:build, tier1:verify, and tier1:lock passed."
   ]
 }
