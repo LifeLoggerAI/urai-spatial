@@ -10,7 +10,7 @@ export default function InvitePage() {
   const router = useRouter();
   const code = params?.code ?? "";
 
-  const [status, setStatus] = useState<"loading" | "accepted" | "missing" | "invalid">("loading");
+  const [status, setStatus] = useState<"loading" | "accepted" | "missing" | "invalid" | "offline">("loading");
   const [message, setMessage] = useState("Checking your invite...");
 
   useEffect(() => {
@@ -29,7 +29,13 @@ export default function InvitePage() {
       }
 
       setStatus(result.status);
-      setMessage(result.status === "missing" ? "Invite not found." : "Invite invalid.");
+      setMessage(
+        result.status === "missing"
+          ? "Invite not found."
+          : result.status === "offline"
+            ? "We could not reach the invite server. Your code was preserved locally — try again when the connection returns."
+            : "Invite invalid.",
+      );
     }
 
     run();
@@ -47,7 +53,7 @@ export default function InvitePage() {
 
       {status !== "accepted" ? (
         <button type="button" className="tier-one-route-card__button" onClick={() => router.push("/early-access")}>
-          Request Access
+          {status === "offline" ? "Join Early Access" : "Request Access"}
         </button>
       ) : null}
     </TierOneStaticShell>
