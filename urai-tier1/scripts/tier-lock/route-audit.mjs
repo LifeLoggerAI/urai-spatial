@@ -1,8 +1,10 @@
 import fs from 'node:fs'
+import path from 'node:path'
 import { legacySceneImports, requiredTierOneFiles, sceneRouteFiles, tierOneRoutes } from './tier-config.mjs'
 
 const failures = []
 const warnings = []
+const visited = new Set()
 
 function read(file) {
   if (!fs.existsSync(file)) {
@@ -12,8 +14,32 @@ function read(file) {
   return fs.readFileSync(file, 'utf8')
 }
 
+function resolveRelativeImport(fromFile, specifier) {
+  if (!specifier.startsWith('.')) return null
+  const base = path.dirname(fromFile)
+  const raw = path.normalize(path.join(base, specifier))
+  const candidates = [raw, `${raw}.tsx`, `${raw}.ts`, path.join(raw, 'page.tsx'), path.join(raw, 'index.tsx')]
+  return candidates.find((candidate) => fs.existsSync(candidate)) ?? null
+}
+
+function collectRouteText(file) {
+  if (visited.has(file)) return ''
+  visited.add(file)
+  const text = read(file)
+  if (!text) return ''
+
+  const imports = [...text.matchAll(/import\s+(?:[\w{}*,\s]+\s+from\s+)?["']([^"']+)["']/g)]
+    .map((match) => match[1])
+    .filter((specifier) => specifier.startsWith('.'))
+    .map((specifier) => resolveRelativeImport(file, specifier))
+    .filter(Boolean)
+
+  return [text, ...imports.map((importFile) => collectRouteText(importFile))].join('\n')
+}
+
 for (const route of tierOneRoutes) {
-  const text = read(route.file)
+  visited.clear()
+  const text = collectRouteText(route.file)
   if (!text) continue
 
   if (route.kind === 'scene' && route.route !== '/') {
@@ -37,7 +63,8 @@ for (const file of requiredTierOneFiles) {
 }
 
 for (const file of sceneRouteFiles) {
-  const text = read(file)
+  visited.clear()
+  const text = collectRouteText(file)
   for (const legacyImport of legacySceneImports) {
     if (text.includes(legacyImport)) failures.push(`${file} still imports legacy scene path ${legacyImport}`)
   }
