@@ -1,22 +1,35 @@
 {
   "tier": "tier-4",
-  "status": "lock_ready_local_checks_required",
+  "status": "locked_complete",
   "lockedAt": "2026-05-06T00:00:00.000Z",
   "branch": "tier-1-5-launch-lock",
   "packageManager": "pnpm",
   "requiredChecks": {
-    "routeAudit": "pending",
-    "consoleAudit": "pending",
-    "envAudit": "pending",
-    "productionBuild": "pending",
-    "tierReport": "pending",
-    "tier4Verify": "pending",
-    "tier4Lock": "pending",
-    "uraiTier4": "pending"
+    "routeAudit": "pass",
+    "consoleAudit": "pass",
+    "envAudit": "pass",
+    "productionBuild": "pass",
+    "tierReport": "pass",
+    "tier4Verify": "pass",
+    "tier4Lock": "pass",
+    "uraiTier4": "pass"
+  },
+  "buildSummary": {
+    "framework": "Next.js 16.1.6",
+    "bundler": "webpack",
+    "routesGenerated": 17,
+    "environmentFile": ".env.local"
   },
   "notes": [
     "Tier-4 scripts added.",
     "Tier-4 includes env readiness and production build.",
-    "Run local checks before marking complete."
+    "Route audit passed.",
+    "Console warning audit passed.",
+    "Environment readiness audit passed required Firebase env check.",
+    "Production build passed and generated 17 app routes.",
+    "Tier lock report generation passed.",
+    "tier4:verify passed.",
+    "tier4:lock passed.",
+    "urai:tier4 runner passed."
   ]
 }
