@@ -37,18 +37,18 @@ function emitHomeOrbEvent(detail: Omit<HomeOrbEvent, "timestamp">) {
   );
 }
 
-/* =========================
-   UTIL
-   ========================= */
-
 const easeOutCubic = (t: number) =>
   1 - Math.pow(1 - Math.max(0, Math.min(1, t)), 3);
 
-/* =========================
-   MAIN
-   ========================= */
+export type HomeWorldProps = {
+  audioLevel?: number;
+  bassLevel?: number;
+};
 
-export default function HomeWorld() {
+export default function HomeWorld({
+  audioLevel = 0,
+  bassLevel = 0,
+}: HomeWorldProps) {
   const phase = useSceneStore((s) => s.phase);
   const isTransitioning = useSceneStore((s) => s.isTransitioning);
   const inputLocked = useSceneStore((s) => s.inputLocked);
@@ -82,40 +82,38 @@ export default function HomeWorld() {
     enterLifeMap();
   };
 
+  const reactiveGlow = 0.08 + bassLevel * 0.18 + audioLevel * 0.12;
+  const reactiveScale = 1 + audioLevel * 0.08;
+
   return (
-    <group>
-      {/* SKY */}
+    <group scale={[reactiveScale, reactiveScale, reactiveScale]}>
       <HomeSky />
 
-      {/* GROUND (animated recession system) */}
       <GroundWorld
         recession={groundVisual.recession}
         elevation={groundVisual.elevation}
         opacity={groundVisual.opacity}
       />
 
-      {/* SHADOW BASE */}
       <mesh
         rotation={[-Math.PI / 2, 0, 0]}
         position={[-0.52, 0.012, -0.05]}
         receiveShadow
       >
         <circleGeometry args={[1.1, 36]} />
-        <shadowMaterial opacity={0.5} />
+        <shadowMaterial opacity={0.5 + audioLevel * 0.12} />
       </mesh>
 
-      {/* AURA GLOW RING */}
       <mesh rotation={[-Math.PI / 2, 0, 0]} position={[-0.48, 0.014, -0.08]}>
-        <circleGeometry args={[1.4, 40]} />
+        <circleGeometry args={[1.4 + audioLevel * 0.2, 40]} />
         <meshBasicMaterial
           color="#67c4ff"
           transparent
-          opacity={0.08}
+          opacity={reactiveGlow}
           depthWrite={false}
         />
       </mesh>
 
-      {/* ORB */}
       <Orb
         interactive
         active={!disabled}
@@ -131,7 +129,6 @@ export default function HomeWorld() {
         onClick={handleEnterLifeMap}
       />
 
-      {/* INVISIBLE CLICK OVERLAY */}
       <Html position={[-0.52, 1.05, 0]} center>
         <button
           type="button"
@@ -156,14 +153,12 @@ export default function HomeWorld() {
         />
       </Html>
 
-      {/* CAMERA / PRESENCE */}
       <PresenceRig
         visible
         phase={phase}
         focusTarget={[-0.52, 0.38, -0.05]}
       />
 
-      {/* DEPTH SILHOUETTES */}
       <mesh position={[-4.2, 1.3, -3.2]} castShadow receiveShadow>
         <boxGeometry args={[0.36, 2.6, 0.36]} />
         <meshStandardMaterial
