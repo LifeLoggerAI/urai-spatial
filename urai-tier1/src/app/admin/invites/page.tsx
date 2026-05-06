@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { TierOneStaticShell } from "@/spatial/layout/TierOneStaticShell";
-import { createAdminInvite, listAdminInvites, inviteLink } from "../../../spatial/landing/adminInvites";
+import { createAdminInvite, listAdminInvites, inviteLink, adminInviteMode } from "../../../spatial/landing/adminInvites";
 
 type InviteRow = {
   inviteCode: string;
@@ -16,6 +16,7 @@ export default function AdminInvitesPage() {
   const [loading, setLoading] = useState(false);
   const [copiedCode, setCopiedCode] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const mode = adminInviteMode();
 
   async function load() {
     setLoading(true);
@@ -65,6 +66,10 @@ export default function AdminInvitesPage() {
       description="Create and copy early-access links without leaving the Tier-1 launch system."
       align="top"
     >
+      <p className="tier-one-static-shell__microcopy">
+        Invite storage: {mode === "firestore" ? "Live Firestore" : "Local launch fallback"}
+      </p>
+
       <form onSubmit={handleCreate} className="tier-one-form">
         <input
           value={email}
