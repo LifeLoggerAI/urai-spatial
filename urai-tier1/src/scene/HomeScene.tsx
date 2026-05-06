@@ -48,22 +48,24 @@ export default function HomeScene() {
 
   return (
     <div style={{ width: '100%', height: '100%', position: 'relative' }}>
-      <Canvas shadows gl={{ antialias: true }}>
-        <PerspectiveCamera makeDefault position={[0, 1.2, 4]} fov={45} />
+      <Canvas shadows dpr={[1, 1.8]} gl={{ antialias: true, alpha: false }}>
+        <PerspectiveCamera makeDefault position={[0, 0.72, 5.35]} fov={53} />
 
-        <CinematicCameraRig
-          active={Boolean(activeManifest)}
-          focusPosition={selectedPosition}
-        />
+        <CinematicCameraRig active focusPosition={selectedPosition} />
 
-        <ambientLight intensity={0.35} />
+        <color attach="background" args={['#030711']} />
+        <ambientLight intensity={0.18} color="#6f7dff" />
+        <hemisphereLight args={['#8fb7ff', '#16091f', 0.72]} />
         <directionalLight
-          position={[3, 5, 2]}
-          intensity={1.15}
+          position={[-4.5, 6.5, 2.5]}
+          intensity={1.55}
+          color="#c9dcff"
           castShadow
-          shadow-mapSize-width={1024}
-          shadow-mapSize-height={1024}
+          shadow-mapSize-width={2048}
+          shadow-mapSize-height={2048}
         />
+        <pointLight position={[1.4, 0.8, 1.25]} intensity={1.25} color="#b88cff" distance={7} />
+        <pointLight position={[-2.2, 1.45, -1.5]} intensity={0.58} color="#6fe7ff" distance={8} />
 
         <Atmosphere />
         <Sky />
@@ -80,7 +82,7 @@ export default function HomeScene() {
           <ManifestRenderer manifest={manifest} />
         )}
 
-        <CinematicParticles active={Boolean(activeManifest)} />
+        <CinematicParticles active />
         <CinematicPostProcessing active={Boolean(activeManifest)} />
 
         <NarratorVoice manifest={activeManifest} context={narratorContext} />
