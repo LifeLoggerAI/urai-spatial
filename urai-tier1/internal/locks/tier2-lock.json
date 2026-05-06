@@ -1,17 +1,24 @@
 {
   "tier": "tier-2",
-  "status": "lock_ready_local_checks_required",
+  "status": "locked_complete",
   "lockedAt": "2026-05-06T00:00:00.000Z",
   "branch": "tier-1-5-launch-lock",
   "packageManager": "pnpm",
   "requiredChecks": {
-    "routeAudit": "pending",
-    "consoleAudit": "pending",
-    "tier2Verify": "pending",
-    "tier2Lock": "pending"
+    "routeAudit": "pass",
+    "consoleAudit": "pass",
+    "tierReport": "pass",
+    "tier2Verify": "pass",
+    "tier2Lock": "pass",
+    "uraiTier2": "pass"
   },
   "notes": [
     "Tier-2 scripts added.",
-    "Run local checks before marking complete."
+    "Route audit passed.",
+    "Console warning audit passed.",
+    "Tier lock report generation passed.",
+    "tier2:verify passed.",
+    "tier2:lock passed.",
+    "urai:tier2 runner passed."
   ]
 }
