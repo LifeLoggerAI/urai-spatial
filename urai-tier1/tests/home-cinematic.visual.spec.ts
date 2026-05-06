@@ -6,18 +6,29 @@ const viewports = [
   { name: 'mobile-430', width: 430, height: 932 },
 ]
 
-test.describe('URAI Spatial cinematic home launch-lock', () => {
-  for (const viewport of viewports) {
-    test(`captures cinematic home at ${viewport.name}`, async ({ page }) => {
-      await page.setViewportSize({ width: viewport.width, height: viewport.height })
-      await page.goto('/?mode=constellation', { waitUntil: 'networkidle' })
-      await page.locator('canvas').waitFor({ state: 'visible', timeout: 15000 })
-      await page.waitForTimeout(1800)
+const routes = [
+  { name: 'home', path: '/?mode=constellation' },
+  { name: 'life-map', path: '/life-map' },
+  { name: 'demo', path: '/demo' },
+  { name: 'demo-life-map', path: '/demo/life-map' },
+  { name: 'replay', path: '/replay' },
+  { name: 'focus', path: '/focus' },
+]
 
-      await expect(page.locator('.spatial-shell__viewport')).toHaveScreenshot(`home-cinematic-${viewport.name}.png`, {
-        animations: 'disabled',
-        maxDiffPixelRatio: 0.08,
+test.describe('URAI Spatial Tier-1 launch-lock visuals', () => {
+  for (const route of routes) {
+    for (const viewport of viewports) {
+      test(`captures ${route.name} at ${viewport.name}`, async ({ page }) => {
+        await page.setViewportSize({ width: viewport.width, height: viewport.height })
+        await page.goto(route.path, { waitUntil: 'networkidle' })
+        await page.locator('canvas').waitFor({ state: 'visible', timeout: 15000 })
+        await page.waitForTimeout(1800)
+
+        await expect(page.locator('.spatial-shell__viewport')).toHaveScreenshot(`${route.name}-${viewport.name}.png`, {
+          animations: 'disabled',
+          maxDiffPixelRatio: 0.08,
+        })
       })
-    })
+    }
   }
 })
