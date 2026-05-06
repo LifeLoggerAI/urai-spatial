@@ -13,6 +13,12 @@ const nextConfig: NextConfig = {
   turbopack: {
     root: projectRoot,
   },
+  webpack: (config) => {
+    // Cloud Workstations can fill /ephemeral during large webpack cache writes.
+    // Disable filesystem caching for launch/deploy builds to reduce disk pressure.
+    config.cache = false;
+    return config;
+  },
   allowedDevOrigins: uraiAllowedDevOrigins,
 };
 
