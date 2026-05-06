@@ -1,4 +1,6 @@
-export type SpatialPhase = "HOME" | "ASCENT" | "LIFEMAP" | "FOCUS" | "REPLAY";
+import type { Tier1Phase } from "@/canon/tier1";
+
+export type SpatialPhase = Tier1Phase;
 
 const clamp01 = (value: number) => Math.max(0, Math.min(1, value));
 const easeOutCubic = (value: number) => 1 - Math.pow(1 - clamp01(value), 3);

@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useRef } from 'react'
-import { buildNarrationSequence, NarrationLine } from './buildNarration'
+import { buildNarrationSequence, NarrationLine, NarratorContext } from './buildNarration'
 import { SpatialAssetManifest } from '../assets/manifestTypes'
 import { setNarratorLine } from './narratorStore'
 
@@ -9,9 +9,13 @@ function wait(ms: number) {
   return new Promise((resolve) => setTimeout(resolve, ms))
 }
 
+function canSpeak() {
+  return typeof window !== 'undefined' && 'speechSynthesis' in window && 'SpeechSynthesisUtterance' in window
+}
+
 function speakLine(line: NarrationLine, signal: AbortSignal) {
   return new Promise<void>((resolve) => {
-    if (signal.aborted) return resolve()
+    if (signal.aborted || !canSpeak()) return resolve()
 
     const utterance = new SpeechSynthesisUtterance(line.text)
     utterance.rate = line.rate
@@ -20,22 +24,24 @@ function speakLine(line: NarrationLine, signal: AbortSignal) {
     utterance.onend = () => resolve()
     utterance.onerror = () => resolve()
 
-    speechSynthesis.speak(utterance)
+    window.speechSynthesis.speak(utterance)
   })
 }
 
-export default function NarratorVoice({ manifest }: { manifest: SpatialAssetManifest | null }) {
+export default function NarratorVoice({ manifest, context = 'arrival' }: { manifest: SpatialAssetManifest | null; context?: NarratorContext }) {
   const spokenRef = useRef<string | null>(null)
 
   useEffect(() => {
     if (!manifest) return
-    if (spokenRef.current === manifest.manifestId) return
+
+    const speechKey = `${manifest.manifestId}:${context}`
+    if (spokenRef.current === speechKey) return
 
     const controller = new AbortController()
-    const sequence = buildNarrationSequence(manifest)
+    const sequence = buildNarrationSequence(manifest, context)
 
     async function runSequence() {
-      speechSynthesis.cancel()
+      if (canSpeak()) window.speechSynthesis.cancel()
       setNarratorLine(null)
 
       for (const line of sequence) {
@@ -51,14 +57,14 @@ export default function NarratorVoice({ manifest }: { manifest: SpatialAssetMani
     }
 
     void runSequence()
-    spokenRef.current = manifest.manifestId
+    spokenRef.current = speechKey
 
     return () => {
       controller.abort()
-      speechSynthesis.cancel()
+      if (canSpeak()) window.speechSynthesis.cancel()
       setNarratorLine(null)
     }
-  }, [manifest])
+  }, [manifest, context])
 
   return null
 }

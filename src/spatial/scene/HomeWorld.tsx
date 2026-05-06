@@ -1,57 +1,40 @@
 "use client";
 
 import { Html } from "@react-three/drei";
+import { useCallback } from "react";
 import Orb from "../components/Orb";
 import PresenceRig from "../components/PresenceRig";
+import HomeAvatar from "./HomeAvatar";
 import { useSceneStore } from "../state/sceneStore";
 import GroundWorld from "./GroundWorld";
 import HomeSky from "./HomeSky";
 import { getGroundChannelsForPhase } from "./phaseMachine";
 
-/* =========================
-   ORB EVENT SYSTEM
-   ========================= */
+/* ========================= */
 
-type HomeOrbEvent =
-  | {
-      event: "home.orb.activate";
-      source: "pointer" | "keyboard" | "overlay";
-      timestamp: number;
-    }
-  | {
-      event: "home.orb.focus";
-      source: "orb" | "overlay";
-      timestamp: number;
-    };
-
-function emitHomeOrbEvent(detail: Omit<HomeOrbEvent, "timestamp">) {
+function emitHomeEvent(event: string, detail: Record<string, unknown> = {}) {
   if (typeof window === "undefined") return;
-
   window.dispatchEvent(
-    new CustomEvent<HomeOrbEvent>("urai:narrator", {
-      detail: {
-        ...detail,
-        timestamp: Date.now(),
-      } as HomeOrbEvent,
+    new CustomEvent("urai:narrator", {
+      detail: { event, ...detail, timestamp: Date.now() },
     })
   );
 }
 
-/* =========================
-   UTIL
-   ========================= */
-
 const easeOutCubic = (t: number) =>
   1 - Math.pow(1 - Math.max(0, Math.min(1, t)), 3);
 
-/* =========================
-   MAIN
-   ========================= */
+/* ========================= */
 
 export default function HomeWorld() {
   const phase = useSceneStore((s) => s.phase);
   const isTransitioning = useSceneStore((s) => s.isTransitioning);
   const inputLocked = useSceneStore((s) => s.inputLocked);
+
+  const homeSubstate = useSceneStore((s) => s.homeSubstate);
+  const focusHomeOrb = useSceneStore((s) => s.focusHomeOrb);
+  const confirmHomeEntry = useSceneStore((s) => s.confirmHomeEntry);
+
   const enterLifeMap = useSceneStore((s) => s.enterLifeMap);
   const progress = useSceneStore((s) => s.progress ?? 0);
   const reducedMotion = useSceneStore((s) => s.reducedMotion ?? false);
@@ -69,48 +52,95 @@ export default function HomeWorld() {
   const busy = phase === "ASCENT" || isTransitioning || inputLocked;
   const disabled = phase !== "HOME";
 
-  const handleEnterLifeMap = (
-    source: "pointer" | "keyboard" | "overlay"
-  ) => {
-    if (busy || disabled) return;
+  /* =========================
+     ORB HANDLERS
+     ========================= */
 
-    emitHomeOrbEvent({
-      event: "home.orb.activate",
-      source,
+  const handleFocusOrb = useCallback(() => {
+    if (phase !== "HOME") return;
+
+    focusHomeOrb();
+
+    emitHomeEvent("home.orb.focus", {
+      substate: "home_orb_focus",
     });
 
-    enterLifeMap();
-  };
+    emitHomeEvent("home.entry.prompt", {
+      companionLine: "The orb is listening. Enter when you're ready.",
+    });
+  }, [focusHomeOrb, phase]);
+
+  const handleEnterOrb = useCallback(() => {
+    if (busy || disabled) return;
+
+    confirmHomeEntry();
+
+    emitHomeEvent("home.orb.confirm", {
+      substate: "home_confirm_enter",
+    });
+
+    emitHomeEvent("home.entry.prompt", {
+      companionLine: "Crossing into your LifeMap now.",
+    });
+
+    setTimeout(() => {
+      enterLifeMap();
+      emitHomeEvent("home.entry.commit", { nextPhase: "LIFEMAP" });
+    }, 260);
+  }, [confirmHomeEntry, enterLifeMap, busy, disabled]);
+
+  /* =========================
+     VISUAL STATE
+     ========================= */
+
+  const orbVisualIntensity =
+    homeSubstate === "home_orb_focus"
+      ? 0.5
+      : homeSubstate === "home_confirm_enter"
+      ? 1
+      : 0.18;
+
+  const skyOpacity =
+    homeSubstate === "home_confirm_enter"
+      ? 0.28
+      : homeSubstate === "home_orb_focus"
+      ? 0.2
+      : 0.12;
+
+  const avatarOpacity =
+    homeSubstate === "home_confirm_enter"
+      ? 0.36
+      : homeSubstate === "home_orb_focus"
+      ? 0.26
+      : 0.2;
+
+  /* ========================= */
 
   return (
     <group>
       {/* SKY */}
       <HomeSky />
 
-      {/* GROUND (animated recession system) */}
+      {/* GROUND */}
       <GroundWorld
         recession={groundVisual.recession}
         elevation={groundVisual.elevation}
         opacity={groundVisual.opacity}
       />
 
-      {/* SHADOW BASE */}
-      <mesh
-        rotation={[-Math.PI / 2, 0, 0]}
-        position={[-0.52, 0.012, -0.05]}
-        receiveShadow
-      >
+      {/* SHADOW */}
+      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[-0.52, 0.012, -0.05]}>
         <circleGeometry args={[1.1, 36]} />
         <shadowMaterial opacity={0.5} />
       </mesh>
 
-      {/* AURA GLOW RING */}
-      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[-0.48, 0.014, -0.08]}>
+      {/* AURA */}
+      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[-0.48, 0.0155, -0.08]}>
         <circleGeometry args={[1.4, 40]} />
         <meshBasicMaterial
           color="#67c4ff"
           transparent
-          opacity={0.08}
+          opacity={skyOpacity}
           depthWrite={false}
         />
       </mesh>
@@ -122,78 +152,50 @@ export default function HomeWorld() {
         busy={busy}
         disabled={disabled}
         ariaLabel="Enter Life Map"
-        onFocus={() =>
-          emitHomeOrbEvent({
-            event: "home.orb.focus",
-            source: "orb",
-          })
-        }
-        onClick={handleEnterLifeMap}
+        visualIntensity={orbVisualIntensity}
+        onFocus={handleFocusOrb}
+        onClick={handleEnterOrb}
       />
 
-      {/* INVISIBLE CLICK OVERLAY */}
+      {/* AVATAR (clean integration) */}
+      <HomeAvatar
+        interactive={!disabled}
+        focused={homeSubstate !== "home_idle"}
+        position={[-1.08, 0.62, 0.18]}
+      />
+
+      {/* CLICK OVERLAY */}
       <Html position={[-0.52, 1.05, 0]} center>
         <button
           type="button"
           aria-label="Enter Life Map"
           disabled={busy || disabled}
-          onFocus={() =>
-            emitHomeOrbEvent({
-              event: "home.orb.focus",
-              source: "overlay",
-            })
-          }
-          onClick={() => handleEnterLifeMap("overlay")}
+          onClick={() => handleEnterOrb()}
           style={{
             width: "8rem",
             height: "8rem",
             borderRadius: "9999px",
             border: "none",
             background: "transparent",
-            cursor: busy || disabled ? "not-allowed" : "pointer",
             opacity: 0,
           }}
         />
       </Html>
 
-      {/* CAMERA / PRESENCE */}
+      {/* CAMERA */}
       <PresenceRig
         visible
         phase={phase}
         focusTarget={[-0.52, 0.38, -0.05]}
       />
 
-      {/* DEPTH SILHOUETTES */}
-      <mesh position={[-4.2, 1.3, -3.2]} castShadow receiveShadow>
+      {/* DEPTH */}
+      <mesh position={[-4.2, 1.3, -3.2]}>
         <boxGeometry args={[0.36, 2.6, 0.36]} />
         <meshStandardMaterial
           color="#04060d"
           transparent
-          opacity={0.2}
-          roughness={1}
-          metalness={0}
-        />
-      </mesh>
-
-      <mesh position={[-2.8, 1.6, -5.4]} castShadow receiveShadow>
-        <boxGeometry args={[0.44, 3.2, 0.44]} />
-        <meshStandardMaterial
-          color="#04060d"
-          transparent
-          opacity={0.16}
-          roughness={1}
-          metalness={0}
-        />
-      </mesh>
-
-      <mesh position={[3.4, 1.4, -4.8]} castShadow receiveShadow>
-        <boxGeometry args={[0.4, 2.8, 0.4]} />
-        <meshStandardMaterial
-          color="#04060d"
-          transparent
-          opacity={0.18}
-          roughness={1}
-          metalness={0}
+          opacity={avatarOpacity}
         />
       </mesh>
     </group>

@@ -15,7 +15,11 @@ export interface LifeMapNode {
   createdAt: string; updatedAt: string;
 }
 
-export interface LifeMapEdge { id: string; sourceId: string; targetId: string; strength: number; type: 'constellation'|'recovery'|'dream'|'relationship'|'shadow'; }
+export interface LifeMapEdge {
+  id: string; sourceId: string; targetId: string; strength: number; type: 'constellation'|'recovery'|'dream'|'relationship'|'shadow';
+  direction: 'sourceToTarget' | 'targetToSource';
+  progressionBasis: 'emotional' | 'chapter';
+}
 export interface LifeChapter { id: string; title: string; summary: string; dominantEmotions: EmotionalTone[]; keyNodeIds: string[]; coverAura: string; eraStart: string; eraEnd: string; narratorVoiceover: string; }
 
 export interface LifeMapSettings {

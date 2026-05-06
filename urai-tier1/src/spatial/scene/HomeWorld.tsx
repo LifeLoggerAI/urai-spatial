@@ -8,27 +8,33 @@ import { useSceneStore } from "../store/useSceneStore";
 import GroundWorld from "./GroundWorld";
 import { getGroundChannelsForPhase } from "./phaseMachine";
 
-type HomeOrbEvent =
-  | {
-      event: "home.orb.activate";
-      source: "pointer" | "keyboard" | "overlay";
-      timestamp: number;
-    }
-  | {
-      event: "home.orb.focus";
-      source: "orb" | "overlay";
-      timestamp: number;
-    };
+type NarratorSource = "orb" | "overlay" | "pointer" | "keyboard" | "scene";
 
-function emitHomeOrbEvent(detail: Omit<HomeOrbEvent, "timestamp">) {
+type HomeNarratorEvent = {
+  event: "home.orb.activate" | "home.orb.focus" | "home.phase.context";
+  source: NarratorSource;
+  phase: string;
+  busy: boolean;
+  disabled: boolean;
+  progress: number;
+  context: {
+    surface: "home";
+    target: "lifemap";
+    inputLocked: boolean;
+    isTransitioning: boolean;
+  };
+  timestamp: number;
+};
+
+function emitHomeNarratorEvent(detail: Omit<HomeNarratorEvent, "timestamp">) {
   if (typeof window === "undefined") return;
 
   window.dispatchEvent(
-    new CustomEvent<HomeOrbEvent>("urai:narrator", {
+    new CustomEvent<HomeNarratorEvent>("urai:narrator", {
       detail: {
         ...detail,
         timestamp: Date.now(),
-      } as HomeOrbEvent,
+      },
     }),
   );
 }
@@ -44,12 +50,34 @@ export default function HomeWorld() {
   const busy = phase === "ASCENT" || isTransitioning || inputLocked;
   const disabled = phase !== "HOME";
 
+  const narratorBase = {
+    phase,
+    busy,
+    disabled,
+    progress,
+    context: {
+      surface: "home" as const,
+      target: "lifemap" as const,
+      inputLocked,
+      isTransitioning,
+    },
+  };
+
+  const handleOrbFocus = (source: "orb" | "overlay") => {
+    emitHomeNarratorEvent({
+      event: "home.orb.focus",
+      source,
+      ...narratorBase,
+    });
+  };
+
   const handleEnterLifeMap = (source: "pointer" | "keyboard" | "overlay") => {
     if (busy || disabled) return;
 
-    emitHomeOrbEvent({
+    emitHomeNarratorEvent({
       event: "home.orb.activate",
       source,
+      ...narratorBase,
     });
 
     enterLifeMap();
@@ -75,19 +103,22 @@ export default function HomeWorld() {
         <meshBasicMaterial color="#67c4ff" transparent opacity={0.08} depthWrite={false} />
       </mesh>
 
-      <Orb />
+      <Orb
+        interactive
+        active={!disabled}
+        busy={busy}
+        disabled={disabled}
+        ariaLabel="Enter Life Map"
+        onFocus={() => handleOrbFocus("orb")}
+        onClick={handleEnterLifeMap}
+      />
 
       <Html position={[-0.52, 1.05, 0]} center>
         <button
           type="button"
           aria-label="Enter Life Map"
           disabled={busy || disabled}
-          onFocus={() =>
-            emitHomeOrbEvent({
-              event: "home.orb.focus",
-              source: "overlay",
-            })
-          }
+          onFocus={() => handleOrbFocus("overlay")}
           onClick={() => handleEnterLifeMap("overlay")}
           style={{
             width: "8rem",
@@ -101,7 +132,7 @@ export default function HomeWorld() {
         />
       </Html>
 
-      <PresenceRig visible phase={phase} focusTarget={[-0.52, 0.38, -0.05]} />
+      <PresenceRig />
 
       <mesh position={[-4.2, 1.3, -3.2]} castShadow receiveShadow>
         <boxGeometry args={[0.36, 2.6, 0.36]} />

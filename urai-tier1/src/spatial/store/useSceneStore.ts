@@ -7,13 +7,16 @@ type SceneState = {
   sceneMode: CanonMode;
   phase: CanonMode;
   selectedStarId: string | null;
+  selectedStarPosition: [number, number, number] | null;
   isTransitioning: boolean;
   inputLocked: boolean;
   progress: number;
 
   setMode: (m: CanonMode) => void;
   setPhase: (p: CanonMode) => void;
-  setSelectedStar: (id: string | null) => void;
+  setSelectedStar: (id: string | null, position?: [number, number, number] | null) => void;
+  focusStar: (id: string, position: [number, number, number]) => void;
+  enterReplay: () => void;
   clearFocusedStar: () => void;
   enterLifeMap: () => void;
   setProgress: (p: number) => void;
@@ -27,14 +30,38 @@ export const useSceneStore = create<SceneState>((set) => ({
   sceneMode: "HOME",
   phase: "HOME",
   selectedStarId: null,
+  selectedStarPosition: null,
   isTransitioning: false,
   inputLocked: false,
   progress: 0,
 
   setMode: (m) => set({ mode: m, sceneMode: m, phase: m }),
   setPhase: (p) => set({ mode: p, sceneMode: p, phase: p }),
-  setSelectedStar: (id) => set({ selectedStarId: id }),
-  clearFocusedStar: () => set({ selectedStarId: null }),
+  setSelectedStar: (id, position = null) => set({ selectedStarId: id, selectedStarPosition: position }),
+  focusStar: (id, position) =>
+    set({
+      selectedStarId: id,
+      selectedStarPosition: position,
+      mode: "FOCUS",
+      sceneMode: "FOCUS",
+      phase: "FOCUS",
+      isTransitioning: false,
+      inputLocked: false,
+    }),
+  enterReplay: () =>
+    set((state) => ({
+      mode: state.selectedStarId ? "REPLAY" : state.mode,
+      sceneMode: state.selectedStarId ? "REPLAY" : state.sceneMode,
+      phase: state.selectedStarId ? "REPLAY" : state.phase,
+    })),
+  clearFocusedStar: () =>
+    set({
+      selectedStarId: null,
+      selectedStarPosition: null,
+      mode: "LIFEMAP",
+      sceneMode: "LIFEMAP",
+      phase: "LIFEMAP",
+    }),
 
   enterLifeMap: () =>
     set({
