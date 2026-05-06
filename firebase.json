@@ -25,11 +25,6 @@
           }
         ]
       }
-    ],
-    "predeploy": [
-      "pnpm install --no-frozen-lockfile --prefer-offline",
-      "pnpm --filter urai-tier1 typecheck",
-      "pnpm --filter urai-tier1 build"
     ]
   },
   "firestore": {
