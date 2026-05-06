@@ -8,7 +8,7 @@ export default function Atmosphere() {
   const { scene } = useThree()
 
   useEffect(() => {
-    scene.fog = new THREE.Fog('#061634', 6, 24)
+    scene.fog = new THREE.FogExp2('#071023', 0.038)
     return () => {
       scene.fog = null
     }
