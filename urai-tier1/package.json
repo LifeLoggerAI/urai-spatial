@@ -20,6 +20,8 @@
     "tier3:lock": "node scripts/tier-lock/route-audit.mjs && node scripts/tier-lock/console-warning-audit.mjs && pnpm run typecheck && pnpm run test:unit && node scripts/tier-lock/write-tier-report.mjs",
     "tier4:verify": "node scripts/tier-lock/route-audit.mjs && node scripts/tier-lock/console-warning-audit.mjs && node scripts/tier-lock/env-readiness-audit.mjs && pnpm run build && node scripts/tier-lock/write-tier-report.mjs",
     "tier4:lock": "node scripts/tier-lock/route-audit.mjs && node scripts/tier-lock/console-warning-audit.mjs && node scripts/tier-lock/env-readiness-audit.mjs && pnpm run build && node scripts/tier-lock/write-tier-report.mjs",
+    "tier5:verify": "node scripts/tier-lock/route-audit.mjs && node scripts/tier-lock/console-warning-audit.mjs && node scripts/tier-lock/env-readiness-audit.mjs && pnpm run typecheck && pnpm run test:unit && pnpm run build && node scripts/tier-lock/write-tier-report.mjs",
+    "tier5:lock": "node scripts/tier-lock/route-audit.mjs && node scripts/tier-lock/console-warning-audit.mjs && node scripts/tier-lock/env-readiness-audit.mjs && pnpm run typecheck && pnpm run test:unit && pnpm run build && node scripts/tier-lock/write-tier-report.mjs",
     "verify:tier-lock": "node scripts/verify-tier-lock.mjs",
     "urai:tier1": "node scripts/tier-lock/run-tier.mjs tier1",
     "urai:tier2": "node scripts/tier-lock/run-tier.mjs tier2",
