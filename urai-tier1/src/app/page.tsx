@@ -6,11 +6,9 @@ import { SpatialShell } from "@/spatial/layout/SpatialShell";
 
 const HomePage: React.FC = () => {
   return (
-    <main>
-      <SpatialShell>
-        <HomeScene />
-      </SpatialShell>
-    </main>
+    <SpatialShell mode="overview" sourceBadge="demo">
+      <HomeScene />
+    </SpatialShell>
   );
 };
 
