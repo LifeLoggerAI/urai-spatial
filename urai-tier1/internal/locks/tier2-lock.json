@@ -1,0 +1,17 @@
+{
+  "tier": "tier-2",
+  "status": "lock_ready_local_checks_required",
+  "lockedAt": "2026-05-06T00:00:00.000Z",
+  "branch": "tier-1-5-launch-lock",
+  "packageManager": "pnpm",
+  "requiredChecks": {
+    "routeAudit": "pending",
+    "consoleAudit": "pending",
+    "tier2Verify": "pending",
+    "tier2Lock": "pending"
+  },
+  "notes": [
+    "Tier-2 scripts added.",
+    "Run local checks before marking complete."
+  ]
+}
