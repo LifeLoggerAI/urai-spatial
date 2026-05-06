@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 import { doc, getDoc, serverTimestamp, setDoc } from "firebase/firestore";
 import { getFirebaseDb } from "../../lib/firebase/client";
 
@@ -13,17 +12,27 @@ export type InviteAccessRecord = {
   acceptedAt?: string;
 };
 
+export type InviteAccessResult = {
+  ok: boolean;
+  code: string;
+  status: "accepted" | "missing" | "invalid";
+};
+
 const COLLECTION = "early_access_invites";
 
 export function normalizeInviteCode(code: string) {
   return code.trim().toUpperCase().replace(/[^A-Z0-9-]/g, "");
 }
 
-export async function acceptInvite(inviteCode: string, email?: string) {
-  const cleanCode = normalizeInviteCode(inviteCode);
+export async function acceptInvite(code: string, email?: string): Promise<InviteAccessResult> {
+  const cleanCode = normalizeInviteCode(code);
 
   if (!cleanCode || cleanCode.length < 4) {
-    throw new Error("Invite code is missing or invalid.");
+    return {
+      ok: false,
+      code: cleanCode,
+      status: "invalid",
+    };
   }
 
   const db = getFirebaseDb();
@@ -31,43 +40,36 @@ export async function acceptInvite(inviteCode: string, email?: string) {
   const snapshot = await getDoc(ref);
 
   if (!snapshot.exists()) {
-    throw new Error("Invite not found.");
+    return {
+      ok: false,
+      code: cleanCode,
+      status: "missing",
+    };
   }
 
   const data = snapshot.data();
 
-  if (data.status === "accepted") {
-    return data;
+  if (data.status !== "accepted") {
+    await setDoc(
+      ref,
+      {
+        ...data,
+        status: "accepted",
+        email: email ?? data.email ?? "",
+        acceptedAt: serverTimestamp(),
+        updatedAt: serverTimestamp(),
+      },
+      { merge: true },
+    );
   }
-
-  const updated = {
-    ...data,
-    status: "accepted",
-    email: email ?? data.email ?? "",
-    acceptedAt: serverTimestamp(),
-    updatedAt: serverTimestamp(),
-  };
-
-  await setDoc(ref, updated, { merge: true });
 
   if (typeof window !== "undefined") {
     window.localStorage.setItem("urai:invite-accepted", cleanCode);
   }
 
-  return updated;
-=======
-export type InviteAccessResult = {
-  ok: boolean;
-  code: string;
-  status: "accepted" | "missing" | "invalid";
-};
-
-export async function acceptInvite(code: string): Promise<InviteAccessResult> {
-  const safeCode = typeof code === "string" && code.trim().length > 0 ? code.trim() : "";
   return {
-    ok: safeCode.length > 0,
-    code: safeCode,
-    status: safeCode.length > 0 ? "accepted" : "missing",
+    ok: true,
+    code: cleanCode,
+    status: "accepted",
   };
->>>>>>> 9f199f7 (Changes before Firebase Studio auto-run)
 }
