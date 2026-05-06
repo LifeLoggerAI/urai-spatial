@@ -31,9 +31,9 @@
     "audit:visual-lock": "pnpm run verify:tier-lock && pnpm run typecheck && pnpm run build",
     "audit:final-visual": "node scripts/audit-final-visual.mjs",
     "audit:final": "pnpm run audit:final-visual && pnpm run audit:visual-lock",
-    "test": "node --test tests/*.test.mjs",
-    "test:unit": "node --test tests/*.test.mjs",
-    "test:lifemap": "node --test tests/lifemap-scene-behavior.test.mjs tests/lifemap*.test.mjs tests/lifemap-*.test.mjs",
+    "test": "node --import tsx --test tests/*.test.mjs",
+    "test:unit": "node --import tsx --test tests/*.test.mjs",
+    "test:lifemap": "node --import tsx --test tests/lifemap-scene-behavior.test.mjs tests/lifemap*.test.mjs tests/lifemap-*.test.mjs",
     "test:visual:home": "playwright test tests/home-cinematic.visual.spec.ts --update-snapshots"
   },
   "dependencies": {
@@ -53,6 +53,7 @@
     "@types/react-dom": "^19.2.3",
     "@types/three": "^0.183.1",
     "playwright": "^1.57.0",
+    "tsx": "^4.21.0",
     "typescript": "^6.0.3"
   }
 }
