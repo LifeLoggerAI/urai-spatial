@@ -1,5 +1,7 @@
 # LOCS Migration Process
 
+All LOCS/canon changes must include a `.canon-migration/<timestamp>-<slug>.md` marker.
+
 ## Proposal authority
 - Tier-1 proposals: founder/release-governance only.
 - Tier-2 proposals: architecture owners.
