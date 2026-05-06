@@ -1,17 +1,7 @@
 "use client";
 
-import React, { Suspense } from "react";
-import HomeScene from "@/scene/HomeScene";
-import { SpatialShell } from "@/spatial/layout/SpatialShell";
+import { TierOneExperience } from "@/spatial/layout/TierOneExperience";
 
-const HomePage: React.FC = () => {
-  return (
-    <SpatialShell mode="overview">
-      <Suspense fallback={<div style={{ color: "white", padding: 24 }}>Loading URAI Spatial...</div>}>
-        <HomeScene />
-      </Suspense>
-    </SpatialShell>
-  );
-};
-
-export default HomePage;
+export default function HomePage() {
+  return <TierOneExperience mode="home" />;
+}
