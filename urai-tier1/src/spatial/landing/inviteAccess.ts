@@ -15,7 +15,7 @@ export type InviteAccessRecord = {
 export type InviteAccessResult = {
   ok: boolean;
   code: string;
-  status: "accepted" | "missing" | "invalid";
+  status: "accepted" | "missing" | "invalid" | "offline";
 };
 
 const COLLECTION = "early_access_invites";
@@ -35,41 +35,51 @@ export async function acceptInvite(code: string, email?: string): Promise<Invite
     };
   }
 
-  const db = getFirebaseDb();
-  const ref = doc(db, COLLECTION, cleanCode);
-  const snapshot = await getDoc(ref);
+  try {
+    const db = getFirebaseDb();
+    const ref = doc(db, COLLECTION, cleanCode);
+    const snapshot = await getDoc(ref);
 
-  if (!snapshot.exists()) {
+    if (!snapshot.exists()) {
+      return {
+        ok: false,
+        code: cleanCode,
+        status: "missing",
+      };
+    }
+
+    const data = snapshot.data();
+
+    if (data.status !== "accepted") {
+      await setDoc(
+        ref,
+        {
+          ...data,
+          status: "accepted",
+          email: email ?? data.email ?? "",
+          acceptedAt: serverTimestamp(),
+          updatedAt: serverTimestamp(),
+        },
+        { merge: true },
+      );
+    }
+
+    if (typeof window !== "undefined") {
+      window.localStorage.setItem("urai:invite-accepted", cleanCode);
+    }
+
+    return {
+      ok: true,
+      code: cleanCode,
+      status: "accepted",
+    };
+  } catch (error) {
+    console.warn("[URAI] Invite check failed; showing offline fallback.", error);
+
     return {
       ok: false,
       code: cleanCode,
-      status: "missing",
+      status: "offline",
     };
   }
-
-  const data = snapshot.data();
-
-  if (data.status !== "accepted") {
-    await setDoc(
-      ref,
-      {
-        ...data,
-        status: "accepted",
-        email: email ?? data.email ?? "",
-        acceptedAt: serverTimestamp(),
-        updatedAt: serverTimestamp(),
-      },
-      { merge: true },
-    );
-  }
-
-  if (typeof window !== "undefined") {
-    window.localStorage.setItem("urai:invite-accepted", cleanCode);
-  }
-
-  return {
-    ok: true,
-    code: cleanCode,
-    status: "accepted",
-  };
 }
