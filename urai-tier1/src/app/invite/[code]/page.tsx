@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 "use client";
 
 import { useEffect, useState } from "react";
@@ -45,6 +46,23 @@ export default function InvitePage() {
           </button>
         )}
       </div>
+=======
+import { acceptInvite } from "../../../spatial/landing/inviteAccess";
+
+type InvitePageProps = {
+  params: Promise<{ code: string }>;
+};
+
+export default async function InvitePage({ params }: InvitePageProps) {
+  const { code } = await params;
+  const invite = await acceptInvite(code);
+
+  return (
+    <main>
+      <h1>URAI Invite</h1>
+      <p>{invite.ok ? "Invite accepted." : "Invite missing or invalid."}</p>
+      <p>Code: {invite.code || "none"}</p>
+>>>>>>> 9f199f7 (Changes before Firebase Studio auto-run)
     </main>
   );
 }

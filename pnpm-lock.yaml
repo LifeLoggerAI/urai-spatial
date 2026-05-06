@@ -17,12 +17,18 @@ importers:
       '@react-three/postprocessing':
         specifier: ^3.0.4
         version: 3.0.4(@react-three/fiber@9.5.0(@types/react@19.2.14)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)(three@0.183.2))(@types/three@0.183.1)(react@19.2.4)(three@0.183.2)
+      firebase:
+        specifier: ^12.6.0
+        version: 12.11.0
       firebase-admin:
         specifier: ^13.7.0
         version: 13.7.0
       postprocessing:
         specifier: ^6.38.3
         version: 6.38.3(three@0.183.2)
+      stripe:
+        specifier: ^19.3.0
+        version: 19.3.1(@types/node@25.5.0)
       three:
         specifier: ^0.183.2
         version: 0.183.2
@@ -77,7 +83,7 @@ importers:
         version: 12.11.0
       next:
         specifier: ^16.1.6
-        version: 16.1.6(@opentelemetry/api@1.9.0)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
+        version: 16.1.6(@opentelemetry/api@1.9.0)(@playwright/test@1.59.1)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
       react:
         specifier: 19.2.4
         version: 19.2.4
@@ -91,6 +97,9 @@ importers:
         specifier: ^2.36.1
         version: 2.36.1(three@0.183.2)
     devDependencies:
+      '@playwright/test':
+        specifier: ^1.57.0
+        version: 1.59.1
       '@types/react':
         specifier: ^19.2.14
         version: 19.2.14
@@ -100,6 +109,9 @@ importers:
       '@types/three':
         specifier: ^0.183.1
         version: 0.183.1
+      playwright:
+        specifier: ^1.57.0
+        version: 1.59.1
       typescript:
         specifier: ^6.0.3
         version: 6.0.3
@@ -617,6 +629,11 @@ packages:
   '@pkgjs/parseargs@0.11.0':
     resolution: {integrity: sha512-+1VkjdD0QBLPodGrJUeqarH8VAIvQODIbwh9XpP5Syisf7YoQgsJKPNFoqqLQlu+VQ/tVSshMR6loPMn8U+dPg==}
     engines: {node: '>=14'}
+
+  '@playwright/test@1.59.1':
+    resolution: {integrity: sha512-PG6q63nQg5c9rIi4/Z5lR5IVF7yU5MqmKaPOe0HSc0O2cX1fPi96sUQu5j7eo4gKCkB2AnNGoWt7y4/Xx3Kcqg==}
+    engines: {node: '>=18'}
+    hasBin: true
 
   '@protobufjs/aspromise@1.1.2':
     resolution: {integrity: sha512-j+gKExEuLmKwvz3OgROXtrJ2UG2x8Ch2YZUxahh+s1F2HZ+wAceUNLkvy6zKCPVRkU++ZWQrdxsUeQXmcg4uoQ==}
@@ -1214,6 +1231,11 @@ packages:
     resolution: {integrity: sha512-zJ2mQYM18rEFOudeV4GShTGIQ7RbzA7ozbU9I/XBpm7kqgMywgmylMwXHxZJmkVoYkna9d2pVXVXPdYTP9ej8Q==}
     engines: {node: '>= 0.6'}
 
+  fsevents@2.3.2:
+    resolution: {integrity: sha512-xiqMQR4xAeHTuB9uWm+fFRcIOgKBMiOBP+eXiyT7jsgVCq1bkVygt00oASowB7EdtpOHaaPgKt812P9ab+DDKA==}
+    engines: {node: ^8.16.0 || ^10.6.0 || >=11.0.0}
+    os: [darwin]
+
   function-bind@1.1.2:
     resolution: {integrity: sha512-7XHNxH7qX9xG5mIwxkhumTox/MIRNcOgDrxWsMt2pAr23WHp6MrRlN7FBSFpCpr+oVO0F744iUgR82nJMfG2SA==}
 
@@ -1686,6 +1708,16 @@ packages:
   picocolors@1.1.1:
     resolution: {integrity: sha512-xceH2snhtb5M9liqDsmEw56le376mTZkEX/jEb/RxNFyegNul7eNslCXP9FDj/Lcu0X8KEyMceP2ntpaHrDEVA==}
 
+  playwright-core@1.59.1:
+    resolution: {integrity: sha512-HBV/RJg81z5BiiZ9yPzIiClYV/QMsDCKUyogwH9p3MCP6IYjUFu/MActgYAvK0oWyV9NlwM3GLBjADyWgydVyg==}
+    engines: {node: '>=18'}
+    hasBin: true
+
+  playwright@1.59.1:
+    resolution: {integrity: sha512-C8oWjPR3F81yljW9o5OxcWzfh6avkVwDD2VYdwIGqTkl+OGFISgypqzfu7dOe4QNLL2aqcWBmI3PMtLIK233lw==}
+    engines: {node: '>=18'}
+    hasBin: true
+
   pnpm@8.15.9:
     resolution: {integrity: sha512-SZQ0ydj90aJ5Tr9FUrOyXApjOrzuW7Fee13pDzL0e1E6ypjNXP0AHDHw20VLw4BO3M1XhQHkyik6aBYWa72fgQ==}
     engines: {node: '>=16.14'}
@@ -1878,6 +1910,16 @@ packages:
   strip-ansi@7.2.0:
     resolution: {integrity: sha512-yDPMNjp4WyfYBkHnjIRLfca1i6KMyGCtsVgoKe/z1+6vukgaENdgGBZt+ZmKPc4gavvEZ5OgHfHdrazhgNyG7w==}
     engines: {node: '>=12'}
+
+  stripe@19.3.1:
+    resolution: {integrity: sha512-5NXhLxTZ+4uO1wnsmNysILVuyeZ1Xia7niz/8ykBkGJkCcrY2WyQZwcfYuWZmZEJtWr2+0j49JXwNC6y9CHL7Q==}
+    engines: {node: '>=16'}
+    deprecated: This version has a major bug where the Files API times out. See issue 2538
+    peerDependencies:
+      '@types/node': '>=16'
+    peerDependenciesMeta:
+      '@types/node':
+        optional: true
 
   strnum@2.2.0:
     resolution: {integrity: sha512-Y7Bj8XyJxnPAORMZj/xltsfo55uOiyHcU2tnAVzHUnSJR/KsEX+9RoDeXEnsXtl/CX4fAcrt64gZ13aGaWPeBg==}
@@ -2675,6 +2717,10 @@ snapshots:
   '@pkgjs/parseargs@0.11.0':
     optional: true
 
+  '@playwright/test@1.59.1':
+    dependencies:
+      playwright: 1.59.1
+
   '@protobufjs/aspromise@1.1.2': {}
 
   '@protobufjs/base64@1.1.2': {}
@@ -3356,6 +3402,9 @@ snapshots:
 
   fresh@0.5.2: {}
 
+  fsevents@2.3.2:
+    optional: true
+
   function-bind@1.1.2: {}
 
   functional-red-black-tree@1.0.1:
@@ -3764,7 +3813,7 @@ snapshots:
 
   negotiator@0.6.3: {}
 
-  next@16.1.6(@opentelemetry/api@1.9.0)(react-dom@19.2.4(react@19.2.4))(react@19.2.4):
+  next@16.1.6(@opentelemetry/api@1.9.0)(@playwright/test@1.59.1)(react-dom@19.2.4(react@19.2.4))(react@19.2.4):
     dependencies:
       '@next/env': 16.1.6
       '@swc/helpers': 0.5.15
@@ -3784,6 +3833,7 @@ snapshots:
       '@next/swc-win32-arm64-msvc': 16.1.6
       '@next/swc-win32-x64-msvc': 16.1.6
       '@opentelemetry/api': 1.9.0
+      '@playwright/test': 1.59.1
       sharp: 0.34.5
     transitivePeerDependencies:
       - '@babel/core'
@@ -3842,6 +3892,14 @@ snapshots:
   path-to-regexp@0.1.13: {}
 
   picocolors@1.1.1: {}
+
+  playwright-core@1.59.1: {}
+
+  playwright@1.59.1:
+    dependencies:
+      playwright-core: 1.59.1
+    optionalDependencies:
+      fsevents: 2.3.2
 
   pnpm@8.15.9: {}
 
@@ -4099,6 +4157,12 @@ snapshots:
   strip-ansi@7.2.0:
     dependencies:
       ansi-regex: 6.2.2
+
+  stripe@19.3.1(@types/node@25.5.0):
+    dependencies:
+      qs: 6.15.1
+    optionalDependencies:
+      '@types/node': 25.5.0
 
   strnum@2.2.0:
     optional: true

@@ -85,7 +85,7 @@ export default function HomeWorld() {
 
   return (
     <group>
-      <HomeSkyDome visible />
+      <HomeSkyDome visible={true} />
 
       <GroundWorld
         recession={channels.recession}

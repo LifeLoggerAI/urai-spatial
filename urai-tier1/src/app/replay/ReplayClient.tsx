@@ -1,17 +1,13 @@
 "use client";
 
 import { useEffect, useState } from "react";
-<<<<<<< HEAD
-import SpatialSceneClient from "@/spatial/client/SpatialSceneClient";
-=======
 import dynamic from "next/dynamic";
 
 const SpatialSceneClient = dynamic(() => import("../../spatial/client/SpatialSceneClient"), {
   ssr: false,
 });
->>>>>>> 9f199f7 (Changes before Firebase Studio auto-run)
 
-export default function LifeMapClient() {
+export default function ReplayClient() {
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
@@ -21,8 +17,8 @@ export default function LifeMapClient() {
   if (!mounted) {
     return (
       <main>
-        <h1>Life Map</h1>
-        <p>Loading spatial scene...</p>
+        <h1>Replay</h1>
+        <p>Loading spatial replay...</p>
       </main>
     );
   }

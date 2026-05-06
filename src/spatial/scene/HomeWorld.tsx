@@ -184,7 +184,7 @@ export default function HomeWorld() {
 
       {/* CAMERA */}
       <PresenceRig
-        visible
+        visible={true}
         phase={phase}
         focusTarget={[-0.52, 0.38, -0.05]}
       />

@@ -1,5 +1,6 @@
 "use client";
 
+<<<<<<< HEAD
 import { useEffect, useRef } from "react";
 
 type NarratorCue = {
@@ -984,5 +985,8 @@ export default function DualLayerNarratorBridge() {
     };
   }, []);
 
+=======
+export default function DualLayerNarratorBridge() {
+>>>>>>> 9f199f7 (Changes before Firebase Studio auto-run)
   return null;
 }

@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 import { doc, getDoc, serverTimestamp, setDoc } from "firebase/firestore";
 import { getFirebaseDb } from "../../lib/firebase/client";
 
@@ -54,4 +55,19 @@ export async function acceptInvite(inviteCode: string, email?: string) {
   }
 
   return updated;
+=======
+export type InviteAccessResult = {
+  ok: boolean;
+  code: string;
+  status: "accepted" | "missing" | "invalid";
+};
+
+export async function acceptInvite(code: string): Promise<InviteAccessResult> {
+  const safeCode = typeof code === "string" && code.trim().length > 0 ? code.trim() : "";
+  return {
+    ok: safeCode.length > 0,
+    code: safeCode,
+    status: safeCode.length > 0 ? "accepted" : "missing",
+  };
+>>>>>>> 9f199f7 (Changes before Firebase Studio auto-run)
 }
