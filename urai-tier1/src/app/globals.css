@@ -64,12 +64,7 @@ canvas {
   height: 100dvh;
   overflow: hidden;
   background:
-    radial-gradient(
-      circle at 50% 20%,
-      #111a33 0%,
-      #050710 48%,
-      #010208 100%
-    );
+    radial-gradient(circle at 50% 20%, #111a33 0%, #050710 48%, #010208 100%);
 }
 
 .urai-spatial-canvas {
@@ -93,11 +88,7 @@ canvas {
 }
 
 .urai-hud-panel {
-  background: linear-gradient(
-    150deg,
-    rgba(17, 30, 55, 0.76),
-    rgba(16, 12, 36, 0.82)
-  );
+  background: linear-gradient(150deg, rgba(17, 30, 55, 0.76), rgba(16, 12, 36, 0.82));
   border: 1px solid rgba(159, 211, 255, 0.32);
   border-radius: 16px;
   backdrop-filter: blur(12px);
@@ -250,6 +241,60 @@ canvas {
   font-size: 0.82rem;
 }
 
+.tier-one-static-shell__message {
+  color: rgba(187, 247, 208, 0.92) !important;
+  font-size: 0.92rem;
+}
+
+.tier-one-static-shell__message--error {
+  color: rgba(252, 165, 165, 0.95) !important;
+}
+
+.tier-one-static-shell__microcopy {
+  color: rgba(226, 232, 240, 0.62);
+  font-size: 0.78rem;
+  line-height: 1.55;
+}
+
+.tier-one-admin-list {
+  width: min(680px, 100%);
+  display: grid;
+  gap: 12px;
+}
+
+.tier-one-admin-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  gap: 12px;
+  align-items: center;
+  padding: 14px;
+  border: 1px solid rgba(180, 215, 255, 0.14);
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.045);
+  text-align: left;
+}
+
+.tier-one-admin-row strong,
+.tier-one-admin-row span,
+.tier-one-admin-row small {
+  display: block;
+}
+
+.tier-one-admin-row span,
+.tier-one-admin-row small {
+  color: rgba(226, 232, 240, 0.58);
+  font-size: 0.78rem;
+}
+
+.tier-one-admin-row button {
+  min-height: 34px;
+  border-radius: 999px;
+  border: 1px solid rgba(142, 220, 255, 0.28);
+  background: rgba(95, 125, 255, 0.18);
+  color: #edf7ff;
+  padding: 0 12px;
+}
+
 .spatial-mode-frame {
   border: 1px solid rgba(200, 214, 255, 0.18);
   border-radius: 16px;
@@ -286,5 +331,10 @@ canvas {
 
   .tier-one-route-card p {
     font-size: 0.78rem;
+  }
+
+  .tier-one-admin-row {
+    grid-template-columns: 1fr;
+    text-align: center;
   }
 }
