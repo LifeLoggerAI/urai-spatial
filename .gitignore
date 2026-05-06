@@ -14,3 +14,9 @@ _audit/**/local_preview.log
 _audit/**/local_preview_home.html
 _audit/**/local_urls.txt
 _audit/**/local_preview_status.txt
+
+# Local workspace files
+.idx/
+
+# Generated tier audit output
+urai-tier1/audit/tier-lock/
