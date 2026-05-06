@@ -1,5 +1,5 @@
-import ReplayClient from "./ReplayClient";
+import { TierOneExperience } from "@/spatial/layout/TierOneExperience";
 
 export default function ReplayPage() {
-  return <ReplayClient />;
+  return <TierOneExperience mode="replay" />;
 }
