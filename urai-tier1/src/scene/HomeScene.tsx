@@ -1,10 +1,10 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Canvas } from '@react-three/fiber'
 import { PerspectiveCamera } from '@react-three/drei'
 import Ground from './Ground'
-import Orb from './Orb'
+import Orb, { OrbState } from './Orb'
 import Sky from './Sky'
 import Atmosphere from './Atmosphere'
 import ManifestRenderer from '../spatial/assets/ManifestRenderer'
@@ -14,10 +14,26 @@ import { useSearchParams } from 'next/navigation'
 import CinematicCameraRig from '../spatial/cinematic/CinematicCameraRig'
 import CinematicPostProcessing from '../spatial/cinematic/CinematicPostProcessing'
 import CinematicParticles from '../spatial/cinematic/CinematicParticles'
+import { cameraPathForState } from '../spatial/cinematic/cameraPaths'
 import NarratorVoice from '../spatial/narrator/NarratorVoice'
 import NarratorHud from '../spatial/narrator/NarratorHud'
 import ConstellationLayer, { ConstellationNodePosition } from '../spatial/constellation/ConstellationLayer'
 import { NarratorContext } from '../spatial/narrator/buildNarration'
+
+function orbStateForContext({
+  context,
+  hasSelectedManifest,
+  constellationMode,
+}: {
+  context: NarratorContext
+  hasSelectedManifest: boolean
+  constellationMode: boolean
+}): OrbState {
+  if (hasSelectedManifest) return 'memoryBloom'
+  if (context === 'return') return 'recovery'
+  if (context === 'explore' || constellationMode) return 'ritual'
+  return 'idle'
+}
 
 export default function HomeScene() {
   const params = useSearchParams()
@@ -30,6 +46,14 @@ export default function HomeScene() {
   const [narratorContext, setNarratorContext] = useState<NarratorContext>('arrival')
 
   const activeManifest = selectedManifest ?? manifest
+  const orbState = useMemo(
+    () => orbStateForContext({ context: narratorContext, hasSelectedManifest: Boolean(selectedManifest), constellationMode }),
+    [constellationMode, narratorContext, selectedManifest],
+  )
+  const cameraPath = useMemo(
+    () => cameraPathForState({ hasFocus: Boolean(selectedPosition), isNarrating: Boolean(activeManifest), orbState }),
+    [activeManifest, orbState, selectedPosition],
+  )
 
   function handleSelect(manifest: SpatialAssetManifest, position: ConstellationNodePosition) {
     setSelectedManifest(manifest)
@@ -51,7 +75,7 @@ export default function HomeScene() {
       <Canvas shadows dpr={[1, 1.8]} gl={{ antialias: true, alpha: false }}>
         <PerspectiveCamera makeDefault position={[0, 0.72, 5.35]} fov={53} />
 
-        <CinematicCameraRig active focusPosition={selectedPosition} />
+        <CinematicCameraRig active focusPosition={selectedPosition} path={cameraPath} />
 
         <color attach="background" args={['#030711']} />
         <ambientLight intensity={0.18} color="#6f7dff" />
@@ -70,7 +94,7 @@ export default function HomeScene() {
         <Atmosphere />
         <Sky />
         <Ground />
-        <Orb />
+        <Orb state={orbState} />
 
         {constellationMode ? (
           <ConstellationLayer
