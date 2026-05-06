@@ -1,5 +1,5 @@
 import LifeMapClient from "./LifeMapClient";
 
-export default function LifeMapRoute() {
+export default function LifeMapPage() {
   return <LifeMapClient />;
 }

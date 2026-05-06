@@ -1,5 +1,5 @@
-import SpatialSceneClient from "@/spatial/client/SpatialSceneClient";
+import { TierOneExperience } from "@/spatial/layout/TierOneExperience";
 
 export default function HomeRoute() {
-  return <SpatialSceneClient />;
+  return <TierOneExperience mode="home" />;
 }

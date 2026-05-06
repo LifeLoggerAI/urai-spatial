@@ -7,7 +7,11 @@ export default function NarratorHud() {
   const [line, setLine] = useState<string | null>(null)
 
   useEffect(() => {
-    return subscribeNarratorLine(setLine)
+    const unsubscribe = subscribeNarratorLine(setLine)
+
+    return () => {
+      unsubscribe()
+    }
   }, [])
 
   if (!line) return null

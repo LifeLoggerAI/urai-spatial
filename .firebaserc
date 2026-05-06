@@ -1,6 +1,7 @@
 {
   "projects": {
-    "spatial": "urai-4dc1d"
+    "spatial": "urai-4dc1d",
+    "urai-spatial": "urai-4dc1d"
   },
   "targets": {},
   "etags": {},
