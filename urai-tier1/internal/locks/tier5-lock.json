@@ -1,0 +1,24 @@
+{
+  "tier": "tier-5",
+  "status": "lock_ready_local_checks_required",
+  "lockedAt": "2026-05-06T00:00:00.000Z",
+  "branch": "tier-1-5-launch-lock",
+  "packageManager": "pnpm",
+  "requiredChecks": {
+    "routeAudit": "pending",
+    "consoleAudit": "pending",
+    "envAudit": "pending",
+    "typecheck": "pending",
+    "unitTests": "pending",
+    "productionBuild": "pending",
+    "tierReport": "pending",
+    "tier5Verify": "pending",
+    "tier5Lock": "pending",
+    "uraiTier5": "pending"
+  },
+  "notes": [
+    "Tier-5 final lock scripts added.",
+    "Tier-5 combines route, console, env, typecheck, unit test, production build, and report checks.",
+    "Run local checks before marking complete."
+  ]
+}
