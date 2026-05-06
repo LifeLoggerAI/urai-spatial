@@ -1,10 +1,19 @@
-# URAI Tier-2 Lock
+# URAI Tier-2 Lock Complete
 
 Date: 2026-05-06
 Branch: tier-1-5-launch-lock
 Package manager: pnpm
 
-Status: LOCK READY - LOCAL CHECKS REQUIRED
+Status: LOCKED COMPLETE
+
+## Validation
+
+- pnpm run audit:routes: PASS
+- pnpm run audit:console: PASS
+- pnpm run audit:tier-report: PASS
+- pnpm run tier2:verify: PASS
+- pnpm run tier2:lock: PASS
+- pnpm run urai:tier2: PASS
 
 ## Scope
 
@@ -13,13 +22,11 @@ Status: LOCK READY - LOCAL CHECKS REQUIRED
 - tier lock report generation
 - visual route coverage hooks
 
-## Required local checks
+## Notes
 
-- pnpm run audit:routes
-- pnpm run audit:console
-- pnpm run audit:tier-report
-- pnpm run tier2:verify
-- pnpm run tier2:lock
-- pnpm run urai:tier2
+- React DevTools notice is development-only and not a Tier lock blocker.
+- Cloud Workstations HMR websocket failures are tunnel/dev-environment warnings, not production app logic.
 
-After those pass, update this file to LOCKED COMPLETE.
+## Final Tier-2 status
+
+LOCKED COMPLETE
