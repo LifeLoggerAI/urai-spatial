@@ -1,15 +1,11 @@
 "use client";
 
-import { useEffect, useState } from "react";
-<<<<<<< HEAD
-import SpatialSceneClient from "@/spatial/client/SpatialSceneClient";
-=======
 import dynamic from "next/dynamic";
+import { useEffect, useState } from "react";
 
 const SpatialSceneClient = dynamic(() => import("../../spatial/client/SpatialSceneClient"), {
   ssr: false,
 });
->>>>>>> 9f199f7 (Changes before Firebase Studio auto-run)
 
 export default function LifeMapClient() {
   const [mounted, setMounted] = useState(false);
