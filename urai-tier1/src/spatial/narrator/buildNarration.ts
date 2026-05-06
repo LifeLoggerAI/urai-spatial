@@ -1,6 +1,7 @@
 import { SpatialAssetManifest } from '../assets/manifestTypes'
 
 export type NarratorTone = 'whisper' | 'calm' | 'intense'
+export type NarratorContext = 'arrival' | 'return' | 'explore'
 
 export interface NarrationLine {
   text: string
@@ -25,7 +26,19 @@ function voiceForTone(tone: NarratorTone) {
   return { rate: 0.84, pitch: 0.92, volume: 0.72 }
 }
 
-export function buildNarrationSequence(manifest: SpatialAssetManifest): NarrationLine[] {
+function openingForContext(context: NarratorContext, tone: NarratorTone) {
+  if (context === 'return') {
+    return tone === 'whisper' ? "You've returned to a quiet moment." : tone === 'intense' ? "You've returned to a charged moment." : "You've returned to this moment."
+  }
+
+  if (context === 'explore') {
+    return 'The constellation is open. Choose a signal to enter.'
+  }
+
+  return tone === 'whisper' ? 'Something quiet is entering the field.' : tone === 'intense' ? 'A charged signal has arrived.' : 'A new signal has entered the field.'
+}
+
+export function buildNarrationSequence(manifest: SpatialAssetManifest, context: NarratorContext = 'arrival'): NarrationLine[] {
   const prompt = manifest.promptPreview?.trim() || 'a new memory has arrived'
   const tone = inferTone(manifest)
   const voice = voiceForTone(tone)
@@ -34,8 +47,8 @@ export function buildNarrationSequence(manifest: SpatialAssetManifest): Narratio
     {
       ...voice,
       tone,
-      pauseMs: 150,
-      text: tone === 'whisper' ? 'Something quiet is entering the field.' : tone === 'intense' ? 'A charged signal has arrived.' : 'A new signal has entered the field.',
+      pauseMs: context === 'return' ? 100 : 150,
+      text: openingForContext(context, tone),
     },
     {
       ...voice,
@@ -54,6 +67,6 @@ export function buildNarrationSequence(manifest: SpatialAssetManifest): Narratio
   ]
 }
 
-export function buildNarration(manifest: SpatialAssetManifest): NarrationLine {
-  return buildNarrationSequence(manifest)[0]
+export function buildNarration(manifest: SpatialAssetManifest, context: NarratorContext = 'arrival'): NarrationLine {
+  return buildNarrationSequence(manifest, context)[0]
 }

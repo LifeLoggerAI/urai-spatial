@@ -17,7 +17,10 @@ class NarratorPlaybackController {
 
   subscribe(listener: Listener) {
     this.listeners.add(listener);
-    return () => this.listeners.delete(listener);
+
+    return () => {
+      this.listeners.delete(listener);
+    };
   }
 
   private emit(line: NarratorLine | null, visible: boolean) {

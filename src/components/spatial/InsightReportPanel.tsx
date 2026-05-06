@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import {
   buildInsightReport,
   renderInsightReportMarkdown,
@@ -13,10 +13,12 @@ import {
   parseInsightLedger,
 } from './persistentInsightEngine';
 import { useUserEntitlement } from '@/hooks/useUserEntitlement';
-import { canAccessPlan, getLockedPlanMessage } from './stripePlanGate';
+import { canAccessPlan, getLockedPlanMessage, requestStripeCheckout } from './stripePlanGate';
 
 export default function InsightReportPanel({ planId = 'free' as InsightPlanId }: { planId?: InsightPlanId }) {
-  const { entitlement, status } = useUserEntitlement();
+  const { entitlement, status, user } = useUserEntitlement();
+  const [upgradeError, setUpgradeError] = useState<string | null>(null);
+  const [upgrading, setUpgrading] = useState(false);
 
   const ledger = useMemo(() => {
     if (typeof window === 'undefined') return { insights: [], updatedAt: null };
@@ -34,6 +36,26 @@ export default function InsightReportPanel({ planId = 'free' as InsightPlanId }:
       <div className="p-4 border rounded-lg bg-gray-50">
         <h3>🔒 Locked Feature</h3>
         <p>{getLockedPlanMessage(planId)}</p>
+        {planId !== 'free' && (
+          <button
+            type="button"
+            disabled={upgrading || !user}
+            onClick={async () => {
+              setUpgradeError(null);
+              setUpgrading(true);
+              try {
+                await requestStripeCheckout(planId);
+              } catch (err) {
+                setUpgradeError(err instanceof Error ? err.message : 'Unable to start checkout.');
+              } finally {
+                setUpgrading(false);
+              }
+            }}
+          >
+            {!user ? 'Sign in to upgrade' : upgrading ? 'Opening checkout…' : `Upgrade to ${planId}`}
+          </button>
+        )}
+        {upgradeError && <small>{upgradeError}</small>}
       </div>
     );
   }

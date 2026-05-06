@@ -1,0 +1,113 @@
+.urai-companion-orb {
+  position: relative;
+  width: 72px;
+  height: 72px;
+  border: 0;
+  border-radius: 9999px;
+  background: transparent;
+  cursor: pointer;
+  transform: scale(var(--urai-companion-scale, 1)) rotate(var(--urai-companion-tilt, 0deg));
+  filter: drop-shadow(var(--urai-companion-glow, 0 0 24px rgba(125, 211, 252, 0.35)));
+  transition: transform 900ms ease, filter 1200ms ease, opacity 900ms ease;
+}
+
+.urai-companion-orb__core,
+.urai-companion-orb__halo {
+  position: absolute;
+  inset: 12px;
+  border-radius: 9999px;
+  pointer-events: none;
+}
+
+.urai-companion-orb__core {
+  background: radial-gradient(circle at 35% 30%, rgba(255,255,255,0.95), rgba(125,211,252,0.68) 34%, rgba(59,130,246,0.22) 70%, rgba(15,23,42,0.05));
+  animation: uraiCompanionBreath var(--urai-companion-breath, 5.8s) ease-in-out infinite;
+}
+
+.urai-companion-orb__halo {
+  inset: 0;
+  border: 1px solid rgba(186, 230, 253, 0.28);
+  background: radial-gradient(circle, rgba(125,211,252,0.18), transparent 66%);
+  animation: uraiCompanionHalo calc(var(--urai-companion-breath, 5.8s) * 1.15) ease-in-out infinite;
+}
+
+.urai-companion-orb__status {
+  position: absolute;
+  left: 50%;
+  top: 78px;
+  transform: translateX(-50%);
+  font-size: 10px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: rgba(224, 242, 254, 0.62);
+}
+
+.urai-companion-card {
+  max-width: min(620px, calc(100vw - 40px));
+  border: 1px solid rgba(186, 230, 253, 0.14);
+  border-radius: 9999px;
+  background: rgba(2, 6, 23, 0.46);
+  box-shadow: 0 18px 60px rgba(8, 47, 73, 0.24);
+  backdrop-filter: blur(18px);
+  padding: 12px 22px;
+  animation: uraiCompanionTextIn 760ms ease both;
+}
+
+.urai-companion-card__text {
+  margin: 0;
+  color: rgba(240, 249, 255, 0.92);
+  font-size: 14px;
+  line-height: 1.55;
+  text-align: center;
+}
+
+.urai-firstlight__line {
+  animation: uraiFirstLightLine 1100ms ease both;
+  text-shadow: 0 0 32px rgba(125, 211, 252, 0.14);
+}
+
+.urai-firstlight::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(circle at 50% 42%, rgba(125,211,252,0.08), transparent 34%),
+    radial-gradient(circle at 50% 100%, rgba(15,23,42,0.2), transparent 42%);
+  animation: uraiFirstLightDrift 12s ease-in-out infinite alternate;
+}
+
+@keyframes uraiCompanionBreath {
+  0%, 100% { transform: scale(0.965); opacity: 0.82; }
+  48% { transform: scale(1.035); opacity: 1; }
+}
+
+@keyframes uraiCompanionHalo {
+  0%, 100% { transform: scale(0.96); opacity: 0.28; }
+  50% { transform: scale(1.08); opacity: 0.46; }
+}
+
+@keyframes uraiCompanionTextIn {
+  from { opacity: 0; transform: translateY(8px) scale(0.985); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+@keyframes uraiFirstLightLine {
+  from { opacity: 0; transform: translateY(10px); filter: blur(2px); }
+  to { opacity: 1; transform: translateY(0); filter: blur(0); }
+}
+
+@keyframes uraiFirstLightDrift {
+  from { opacity: 0.7; transform: scale(1); }
+  to { opacity: 1; transform: scale(1.04); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .urai-companion-orb__core,
+  .urai-companion-orb__halo,
+  .urai-companion-card,
+  .urai-firstlight__line,
+  .urai-firstlight::before {
+    animation: none !important;
+  }
+}

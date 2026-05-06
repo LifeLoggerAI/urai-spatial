@@ -1,5 +1,17 @@
-import SpatialSceneClient from "@/spatial/client/SpatialSceneClient";
+"use client";
 
-export default function Page() {
-  return <SpatialSceneClient />;
-}
+import React, { Suspense } from "react";
+import HomeScene from "@/scene/HomeScene";
+import { SpatialShell } from "@/spatial/layout/SpatialShell";
+
+const HomePage: React.FC = () => {
+  return (
+    <SpatialShell mode="overview">
+      <Suspense fallback={<div style={{ color: "white", padding: 24 }}>Loading URAI Spatial...</div>}>
+        <HomeScene />
+      </Suspense>
+    </SpatialShell>
+  );
+};
+
+export default HomePage;

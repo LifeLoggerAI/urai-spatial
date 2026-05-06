@@ -9,10 +9,22 @@
     "next-export": "pnpm --filter urai-tier1 next export",
     "ship:check": "pnpm -r --if-present test",
     "typecheck": "pnpm --filter urai-tier1 typecheck",
+    "canon:lock": "node scripts/check-tier1-canon-lock.mjs",
     "test": "pnpm --filter urai-functions build && pnpm --filter urai-functions test && pnpm --filter urai-tier1 test && pnpm test:e2e && pnpm test:replay-tier5",
     "test:e2e": "pnpm --filter urai-tier1 exec node ../tests/spatial-lock.mjs",
     "test:replay-tier5": "pnpm --filter urai-tier1 exec node ../tests/replay-tier5-lock.mjs",
-    "preflight": "node ./scripts/preflight.mjs"
+    "preflight": "node ./scripts/preflight.mjs",
+    "canon:check": "node scripts/canon-lock.mjs",
+    "canon:drift": "node scripts/canon-lock.mjs",
+    "hooks:install": "git config core.hooksPath .githooks",
+    "test:canon-lock": "node tests/canon-lock.mjs",
+    "locs:check": "node scripts/check-locs-hierarchy.mjs",
+    "tier:check": "node scripts/check-tier-drift.mjs",
+    "test:canon": "pnpm tier1:immutable:check && pnpm tier1:redefinition:check && pnpm tier2:check && pnpm canon:check && pnpm locs:check && pnpm tier:check && node scripts/check-canon-imports.mjs && pnpm migration:check",
+    "migration:check": "node scripts/check-migration-markers.mjs",
+    "tier1:immutable:check": "node scripts/check-tier1-immutable-diff.mjs",
+    "tier1:redefinition:check": "node scripts/check-tier1-redefinition.mjs",
+    "tier2:check": "node scripts/check-tier2-governance.mjs"
   },
   "devDependencies": {
     "@types/node": "^25.5.0",

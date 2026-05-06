@@ -33,6 +33,27 @@ type Props = {
   onStarSelect?: (star: LifeMapStar) => void;
 };
 
+type LifeMapNarratorEvent = {
+  event: "lifemap.star.focus" | "lifemap.star.select";
+  source: "pointer" | "click";
+  phase: string;
+  starId: string;
+  title: string | null;
+  tone: string | null;
+  symbolicWeight: string | null;
+  selected: boolean;
+  position: [number, number, number];
+  context: {
+    surface: "lifemap";
+    target: "star";
+    visibleMode: "lifemap" | "focus" | "replay";
+    depth: number;
+    horizontalOffset: number;
+    verticalOffset: number;
+  };
+  timestamp: number;
+};
+
 const COLORS: Record<string, string> = {
   neutral: "#ffffff",
   calm: "#93c5fd",
@@ -43,6 +64,19 @@ const COLORS: Record<string, string> = {
   awe: "#67e8f9",
   recovery: "#86efac",
 };
+
+function emitLifeMapNarratorEvent(detail: Omit<LifeMapNarratorEvent, "timestamp">) {
+  if (typeof window === "undefined") return;
+
+  window.dispatchEvent(
+    new CustomEvent<LifeMapNarratorEvent>("urai:narrator", {
+      detail: {
+        ...detail,
+        timestamp: Date.now(),
+      },
+    }),
+  );
+}
 
 function makeDust(seedStart: number, count: number) {
   const out: Array<{
@@ -80,6 +114,12 @@ function starScale(weight?: string) {
   return 0.82;
 }
 
+function visibleModeForPhase(phase: string): "lifemap" | "focus" | "replay" {
+  if (phase === "REPLAY") return "replay";
+  if (phase === "FOCUS") return "focus";
+  return "lifemap";
+}
+
 export function LifeMapStarfield({
   active = true,
   phase = "HIDDEN",
@@ -94,17 +134,40 @@ export function LifeMapStarfield({
   const dust = useMemo(() => makeDust(991, 950), []);
   const visibleDust = isAscent ? dust.slice(0, 340) : dust;
 
-  const clickStar = (star: LifeMapStar, event: { stopPropagation?: () => void }) => {
+  const clickStar = (star: LifeMapStar, event: { stopPropagation?: () => void }, source: "pointer" | "click") => {
     event.stopPropagation?.();
     console.info("[URAI_STAR_CLICK]", star.id);
     onSelectStar?.(star);
     onStarSelect?.(star);
 
+    const p = star.position ?? [0, 18, -220];
+    const selected = selectedStarId === star.id;
+
+    emitLifeMapNarratorEvent({
+      event: source === "pointer" ? "lifemap.star.focus" : "lifemap.star.select",
+      source,
+      phase: phaseName,
+      starId: star.id,
+      title: star.title ?? null,
+      tone: star.tone ?? null,
+      symbolicWeight: star.symbolicWeight ?? null,
+      selected,
+      position: p,
+      context: {
+        surface: "lifemap",
+        target: "star",
+        visibleMode: visibleModeForPhase(phaseName),
+        depth: Math.abs(p[2]),
+        horizontalOffset: p[0],
+        verticalOffset: p[1],
+      },
+    });
+
     if (typeof window !== "undefined") {
       window.dispatchEvent(
         new CustomEvent("urai:lifemap-star-click", {
-          detail: { id: star.id, star },
-        })
+          detail: { id: star.id, star, phase: phaseName, selected },
+        }),
       );
     }
   };
@@ -142,18 +205,13 @@ export function LifeMapStarfield({
                 key={star.id}
                 position={p}
                 scale={scale}
-                userData={{ starId: star.id }}
-                onPointerDown={(event: any) => clickStar(star, event)}
-                onClick={(event: any) => clickStar(star, event)}
+                userData={{ starId: star.id, tone: star.tone, symbolicWeight: star.symbolicWeight }}
+                onPointerDown={(event: any) => clickStar(star, event, "pointer")}
+                onClick={(event: any) => clickStar(star, event, "click")}
               >
                 <mesh renderOrder={40}>
                   <sphereGeometry args={[3.4, 48, 48]} />
-                  <meshBasicMaterial
-                    color={color}
-                    transparent
-                    opacity={1}
-                    toneMapped={false}
-                  />
+                  <meshBasicMaterial color={color} transparent opacity={1} toneMapped={false} />
                 </mesh>
 
                 <mesh scale={2.0} renderOrder={39}>

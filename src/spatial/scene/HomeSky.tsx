@@ -6,6 +6,10 @@ import type { Group, Mesh } from "three";
 
 import { useEnvironmentSignal } from "../signals/environmentSignal";
 
+/* =========================
+   REDUCED MOTION HOOK
+   ========================= */
+
 function useReducedMotion() {
   const [reducedMotion, setReducedMotion] = useState(false);
 
@@ -23,6 +27,10 @@ function useReducedMotion() {
 
   return reducedMotion;
 }
+
+/* =========================
+   SKY COMPONENT
+   ========================= */
 
 export default function HomeSky() {
   const env = useEnvironmentSignal();
@@ -53,6 +61,7 @@ export default function HomeSky() {
 
   const starMix = env.scene.starMix;
   const opacity = env.scene.skyOpacity;
+
   const nebulaOpacity =
     0.06 + starMix * 0.05 + env.aliveness * 0.025;
 
@@ -85,7 +94,7 @@ export default function HomeSky() {
         aliveness: env.aliveness,
       }}
     >
-      {/* Sky Dome */}
+      {/* SKY DOME */}
       <mesh scale={[1, 0.62, 1]} position={[0, -4.5, -48]}>
         <sphereGeometry
           args={[84, 64, 48, 0, Math.PI * 2, 0, Math.PI * 0.5]}
@@ -99,7 +108,7 @@ export default function HomeSky() {
         />
       </mesh>
 
-      {/* Nebula Layer */}
+      {/* NEBULA */}
       <mesh ref={nebula} position={[0, 11.4, -56]}>
         <circleGeometry args={[42, 48]} />
         <meshBasicMaterial
@@ -110,7 +119,7 @@ export default function HomeSky() {
         />
       </mesh>
 
-      {/* Stars */}
+      {/* STARS */}
       {stars.map((star) => {
         const twinkle = reducedMotion
           ? 1

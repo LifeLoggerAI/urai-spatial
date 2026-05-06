@@ -1,155 +1,129 @@
-cd ~/urai-spatial/urai-tier1
+"use client";
 
-cat > /tmp/urai_lifemap_final_lock.sh <<'BASH'
-#!/usr/bin/env bash
-set -euo pipefail
+import { useEffect, useState } from "react";
+import HomeWorld from "./HomeWorld";
+import { useSceneStore } from "../store/useSceneStore";
+import LifeMapStarfield from "../components/LifeMapStarfield";
+import { CinematicCameraRig } from "../components/CinematicCameraRig";
+import NarratorVoiceBridge from "../narrator/NarratorVoiceBridge";
+import NarratorCaptionBridge from "../narrator/NarratorCaptionBridge";
+import ThreeSceneRoot from "../effects/ThreeSceneRoot";
+import SpatialAudioNarratorBridge from "../narrator/SpatialAudioNarratorBridge";
+import DualLayerNarratorBridge from "../narrator/DualLayerNarratorBridge";
 
-TS="$(date +%Y%m%d_%H%M%S)"
-AUDIT="_audit/${TS}_lifemap_final_lock"
-mkdir -p "$AUDIT"
+import CompanionOrb from "../companion/CompanionOrb";
+import CompanionCard from "../companion/CompanionCard";
+import { runCompanionPipeline } from "../companion/CompanionPipeline";
+import { trimForLaunch } from "../companion/CompanionLaunchPolish";
+import { speakCompanionPayload } from "../companion/CompanionVoiceEngine";
+import FirstLightExperience from "../onboarding/FirstLightExperience";
+import { trackLaunchEvent } from "../analytics/track";
+import type { CompanionMemorySignal } from "../companion/companionTypes";
 
-SCENE="src/spatial/scene/SpatialScene.tsx"
-CAMERA="src/spatial/components/CinematicCameraRig.tsx"
-STARS="src/spatial/components/LifeMapStarfield.tsx"
+const FIRST_LIGHT_KEY = "urai:first-light-complete";
 
-for f in "$SCENE" "$CAMERA" "$STARS"; do
-  [ -f "$f" ] || { echo "[FAIL] Missing $f"; exit 1; }
-  cp "$f" "$AUDIT/$(basename "$f").before"
-done
+export default function SpatialScene() {
+  const phase = useSceneStore((s) => s.phase);
+  const selectedStarId = useSceneStore((s) => s.selectedStarId);
+  const selectedStarPosition = useSceneStore((s) => s.selectedStarPosition);
+  const focusStar = useSceneStore((s) => s.focusStar);
 
-echo "[CHECK] Merge conflicts"
-if grep -R "<<<<<<<\|=======\|>>>>>>>" src/spatial; then
-  echo "[FAIL] Merge conflict markers still exist. Resolve them before final lock."
-  exit 1
-fi
+  const [firstLightComplete, setFirstLightComplete] = useState(false);
+  const [companionState, setCompanionState] = useState<any>(null);
+  const [companionLine, setCompanionLine] = useState<string | null>(null);
+  const [expression, setExpression] = useState<any>(null);
+  const [speechPayload, setSpeechPayload] = useState<any>(null);
 
-node <<'NODE'
-const fs = require("fs");
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    setFirstLightComplete(window.localStorage.getItem(FIRST_LIGHT_KEY) === "true");
+    trackLaunchEvent("life_map_entered");
+  }, []);
 
-function fail(msg) {
-  console.error("[FAIL]", msg);
-  process.exit(1);
-}
+  useEffect(() => {
+    if (!phase || !firstLightComplete) return;
 
-function write(file, text) {
-  fs.writeFileSync(file, text);
-}
+    const memorySignals: CompanionMemorySignal[] = selectedStarId
+      ? [
+          {
+            id: selectedStarId,
+            timestamp: new Date().toISOString(),
+            source: "interaction",
+            emotionalTone: "curious",
+            intensity: 0.55,
+            summary: "selected-star",
+            privacyLevel: "private",
+          },
+        ]
+      : [];
 
-/* =========================
-   CAMERA FIX: NO TOP-DOWN
-   ========================= */
+    const result = runCompanionPipeline({
+      phase: phase.toLowerCase() as "home" | "lifemap" | "focus" | "replay" | "mirror",
+      mode: "timeline",
+      selectedNode: null,
+      visibleNodes: [],
+      showReplay: false,
+      state: companionState ?? undefined,
+      memorySignals,
+      voiceMode: "tapToSpeak",
+      userGesture: false,
+    });
 
-const cameraFile = "src/spatial/components/CinematicCameraRig.tsx";
-let cam = fs.readFileSync(cameraFile, "utf8");
+    const line = trimForLaunch(result.line, result.decision.context);
 
-if (!cam.includes("LIFEMAP")) fail("No LIFEMAP camera block found");
+    setCompanionLine(line);
+    setCompanionState(result.state);
+    setExpression(result.expression);
+    setSpeechPayload(result.speechPayload);
+  }, [phase, selectedStarId, firstLightComplete]);
 
-cam = cam.replace(
-  /case\s+["']LIFEMAP["']\s*:\s*\{[\s\S]*?break;\s*\}/,
-  `case "LIFEMAP": {
-      // Final lock: forward-facing arrival, never top-down.
-      targetPos.set(0, 1.8, 6.5);
-      targetLook.set(0, 1.2, -6.5);
-      fovTarget = 48;
-      break;
-    }`
-);
-
-write(cameraFile, cam);
-console.log("[OK] Camera LIFEMAP forward-facing lock");
-
-/* =========================
-   ASCENT -> LIFEMAP SOFTENING
-   idempotent / no repeated nesting
-   ========================= */
-
-const sceneFile = "src/spatial/scene/SpatialScene.tsx";
-let scene = fs.readFileSync(sceneFile, "utf8");
-
-if (!scene.includes("ASCENT")) fail("No ASCENT logic found");
-
-if (!scene.includes("URAI_LIFEMAP_SOFT_TRANSITION_LOCK")) {
-  scene = scene.replace(
-    /setPhase\(["']LIFEMAP["']\);?/g,
-    `// URAI_LIFEMAP_SOFT_TRANSITION_LOCK
-      window.setTimeout(() => setPhase("LIFEMAP"), 80);`
-  );
-}
-
-write(sceneFile, scene);
-console.log("[OK] LIFEMAP transition softened");
-
-/* =========================
-   STARFIELD DEPTH + SCALE
-   idempotent
-   ========================= */
-
-const starsFile = "src/spatial/components/LifeMapStarfield.tsx";
-let stars = fs.readFileSync(starsFile, "utf8");
-
-if (!stars.includes("<mesh")) fail("Starfield mesh structure not detected");
-
-if (!stars.includes("URAI_STAR_DEPTH_LOCK")) {
-  stars = stars.replace(
-    /position=\{\[([^\]]+)\]\}/g,
-    (match, coords) => {
-      const parts = coords.split(",").map((p) => p.trim());
-      if (parts.length !== 3) return match;
-      return `position={[${parts[0]}, ${parts[1]}, (${parts[2]}) - 8]} /* URAI_STAR_DEPTH_LOCK */`;
+  const completeFirstLight = () => {
+    if (typeof window !== "undefined") {
+      window.localStorage.setItem(FIRST_LIGHT_KEY, "true");
     }
-  );
+    trackLaunchEvent("first_light_completed");
+    setFirstLightComplete(true);
+  };
 
-  stars = stars.replace(
-    /scale=\{([0-9.]+)\}/g,
-    (match, raw) => {
-      const val = Number.parseFloat(raw);
-      if (!Number.isFinite(val)) return match;
-      return `scale={${(val * 0.85).toFixed(4)}}`;
-    }
+  const speakOnTap = () => {
+    if (!speechPayload) return;
+    speakCompanionPayload({ ...speechPayload, canAutoPlay: true });
+  };
+
+  return (
+    <>
+      <NarratorVoiceBridge />
+      <NarratorCaptionBridge />
+      <SpatialAudioNarratorBridge />
+      <DualLayerNarratorBridge />
+
+      <ThreeSceneRoot>
+        <CinematicCameraRig phase={phase} selectedStarPosition={selectedStarPosition} emotionalSync={expression} />
+        <HomeWorld />
+
+        <LifeMapStarfield
+          phase={phase}
+          selectedStarId={selectedStarId}
+          onSelectStar={(star) => {
+            trackLaunchEvent("life_map_entered", { starId: star.id, action: "star_clicked" });
+            focusStar(star.id, star.position ?? [0, 18, -220]);
+          }}
+        />
+      </ThreeSceneRoot>
+
+      {!firstLightComplete && <FirstLightExperience onComplete={completeFirstLight} />}
+
+      {firstLightComplete && expression && (
+        <div className="fixed bottom-6 right-6 z-50">
+          <CompanionOrb expression={expression} muted={false} onClick={speakOnTap} />
+        </div>
+      )}
+
+      {firstLightComplete && companionLine && (
+        <div className="fixed bottom-20 left-1/2 -translate-x-1/2 z-50">
+          <CompanionCard text={companionLine} />
+        </div>
+      )}
+    </>
   );
 }
-
-write(starsFile, stars);
-console.log("[OK] Star depth + scale normalized");
-
-/* =========================
-   CLICK TARGET FIX
-   idempotent
-   ========================= */
-
-stars = fs.readFileSync(starsFile, "utf8");
-
-if (!stars.includes("URAI_STAR_SELECT")) {
-  stars = stars.replace(
-    /<mesh\b/g,
-    `<mesh
-      onClick={(e) => {
-        e.stopPropagation();
-        if (typeof window !== "undefined" && window.dispatchEvent) {
-          window.dispatchEvent(
-            new CustomEvent("URAI_STAR_SELECT", {
-              detail: e.object.uuid,
-            })
-          );
-        }
-      }}`
-  );
-
-  write(starsFile, stars);
-  console.log("[OK] Star click targeting added");
-} else {
-  console.log("[INFO] Star click targeting already exists");
-}
-NODE
-
-echo "[TYPECHECK]"
-pnpm typecheck
-
-echo "[BUILD]"
-pnpm build
-
-echo "[PASS] LIFEMAP FINAL LOCK COMPLETE"
-echo "[AUDIT] $AUDIT"
-BASH
-
-bash /tmp/urai_lifemap_final_lock.sh
