@@ -9,5 +9,5 @@ export default function DemoLifeMapPage() {
     window.localStorage.setItem("urai:demo-mode", "tier-one-life-map");
   }, []);
 
-  return <TierOneExperience mode="life-map" />;
+  return <TierOneExperience mode="demo" />;
 }
