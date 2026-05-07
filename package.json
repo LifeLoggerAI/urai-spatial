@@ -1,7 +1,6 @@
 {
   "name": "urai-spatial-monorepo",
   "private": true,
-  "packageManager": "pnpm@8.15.9",
   "scripts": {
     "dev": "pnpm --filter urai-tier1 dev",
     "build": "pnpm --filter urai-tier1 build",
@@ -9,7 +8,7 @@
     "lint": "pnpm --filter urai-tier1 lint",
     "next-export": "pnpm --filter urai-tier1 next export",
     "ship:check": "pnpm -r --if-present test",
-    "check:lockfile": "pnpm install --frozen-lockfile --ignore-scripts",
+    "check:lockfile": "node scripts/check-lockfile-present.mjs",
     "check:v1": "pnpm tier1:check",
     "check:types": "pnpm typecheck",
     "typecheck": "pnpm --filter urai-tier1 typecheck",
