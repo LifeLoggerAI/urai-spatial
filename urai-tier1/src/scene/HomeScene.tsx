@@ -20,13 +20,16 @@ import NarratorHud from '../spatial/narrator/NarratorHud'
 import ConstellationLayer, { ConstellationNodePosition } from '../spatial/constellation/ConstellationLayer'
 import { NarratorContext } from '../spatial/narrator/buildNarration'
 
-type SceneMode = 'home' | 'life-map' | 'demo' | 'replay' | 'focus' | 'mirror'
+type SceneMode = 'home' | 'ascent' | 'life-map' | 'demo' | 'replay' | 'focus' | 'mirror'
+
+const ASCENT_DURATION_MS = 1800
 
 function orbStateForContext({ context, hasSelectedManifest, sceneMode }: { context: NarratorContext; hasSelectedManifest: boolean; sceneMode: SceneMode }): OrbState {
   if (hasSelectedManifest) return 'memoryBloom'
   if (sceneMode === 'focus') return 'listening'
   if (sceneMode === 'replay') return 'ritual'
   if (sceneMode === 'mirror') return 'recovery'
+  if (sceneMode === 'ascent') return 'listening'
   if (context === 'return') return 'recovery'
   return 'idle'
 }
@@ -44,8 +47,17 @@ function ModeGuidance({ mode, onEnter, onUnwind }: { mode: SceneMode; onEnter: (
     return (
       <div className="urai-spatial-guidance urai-spatial-guidance--home" data-testid="urai-sky-guidance">
         <span className="urai-spatial-guidance__pulse" aria-hidden="true" />
-        <span>Click the sky to open your Life Map</span>
-        <button type="button" onClick={onEnter}>Enter Life Map</button>
+        <span>Click the sky to begin the ascent</span>
+        <button type="button" onClick={onEnter}>Begin Ascent</button>
+      </div>
+    )
+  }
+
+  if (mode === 'ascent') {
+    return (
+      <div className="urai-spatial-guidance urai-spatial-guidance--ascent" data-testid="urai-ascent-guidance" aria-live="polite">
+        <span className="urai-spatial-guidance__pulse" aria-hidden="true" />
+        <span>Ascending into your Life Map...</span>
       </div>
     )
   }
@@ -116,20 +128,21 @@ export default function HomeScene({ sceneMode = 'home' }: { sceneMode?: SceneMod
   const params = useSearchParams()
   const manifestId = params.get('manifestId')
   const isHomeMode = sceneMode === 'home'
+  const isAscentMode = sceneMode === 'ascent'
   const isConstellationRoute = sceneMode === 'life-map' || sceneMode === 'demo' || params.get('mode') === 'constellation'
-  const showHomeWorld = isHomeMode
+  const showHomeWorld = isHomeMode || isAscentMode
   const showConstellation = isConstellationRoute
-  const showOrb = isHomeMode || sceneMode === 'focus' || sceneMode === 'replay' || sceneMode === 'mirror'
+  const showOrb = isHomeMode || isAscentMode || sceneMode === 'focus' || sceneMode === 'replay' || sceneMode === 'mirror'
   const { manifest } = useManifest(manifestId)
   const [selectedManifest, setSelectedManifest] = useState<SpatialAssetManifest | null>(null)
   const [selectedPosition, setSelectedPosition] = useState<ConstellationNodePosition | null>(null)
   const [narratorContext, setNarratorContext] = useState<NarratorContext>('arrival')
   const activeManifest = selectedManifest ?? manifest
   const orbState = useMemo(() => orbStateForContext({ context: narratorContext, hasSelectedManifest: Boolean(selectedManifest) || sceneMode === 'focus' || sceneMode === 'replay', sceneMode }), [narratorContext, selectedManifest, sceneMode])
-  const cameraPath = useMemo(() => cameraPathForState({ hasFocus: Boolean(selectedPosition) || sceneMode === 'focus' || sceneMode === 'replay', isNarrating: Boolean(activeManifest) || sceneMode !== 'home', orbState }), [activeManifest, orbState, selectedPosition, sceneMode])
+  const cameraPath = useMemo(() => cameraPathForState({ hasFocus: Boolean(selectedPosition) || sceneMode === 'focus' || sceneMode === 'replay' || isAscentMode, isNarrating: Boolean(activeManifest) || sceneMode !== 'home', orbState }), [activeManifest, orbState, selectedPosition, sceneMode, isAscentMode])
 
   const enterLifeMap = useCallback(() => {
-    if (sceneMode === 'home') router.push('/life-map')
+    if (sceneMode === 'home') router.push('/ascent')
   }, [router, sceneMode])
 
   const unwind = useCallback(() => {
@@ -150,7 +163,7 @@ export default function HomeScene({ sceneMode = 'home' }: { sceneMode?: SceneMod
       return
     }
 
-    if (sceneMode === 'life-map') {
+    if (sceneMode === 'life-map' || sceneMode === 'ascent') {
       router.push('/home')
     }
   }, [manifestId, router, sceneMode, selectedManifest])
@@ -167,9 +180,20 @@ export default function HomeScene({ sceneMode = 'home' }: { sceneMode?: SceneMod
   }
 
   useEffect(() => {
+    if (!isAscentMode) return
+
+    const timeout = window.setTimeout(() => {
+      router.push('/life-map')
+    }, ASCENT_DURATION_MS)
+
+    return () => window.clearTimeout(timeout)
+  }, [isAscentMode, router])
+
+  useEffect(() => {
     if (selectedManifest) setNarratorContext('return')
     else if (sceneMode === 'focus') setNarratorContext('arrival')
     else if (sceneMode === 'replay') setNarratorContext('return')
+    else if (sceneMode === 'ascent') setNarratorContext('explore')
     else if (isConstellationRoute) setNarratorContext('explore')
     else setNarratorContext('arrival')
   }, [selectedManifest, isConstellationRoute, sceneMode])
@@ -192,7 +216,7 @@ export default function HomeScene({ sceneMode = 'home' }: { sceneMode?: SceneMod
           type="button"
           className="urai-sky-click-target"
           data-testid="urai-sky-click-target"
-          aria-label="Enter Life Map from sky"
+          aria-label="Begin ascent to Life Map"
           onClick={enterLifeMap}
         />
       ) : null}
@@ -211,7 +235,7 @@ export default function HomeScene({ sceneMode = 'home' }: { sceneMode?: SceneMod
         {showOrb ? <Orb state={orbState} /> : null}
         {showConstellation ? <ConstellationLayer enabled selectedManifestId={selectedManifest?.manifestId ?? null} onSelect={handleSelect} /> : activeManifest ? <ManifestRenderer manifest={activeManifest} /> : null}
         <CinematicParticles active />
-        <CinematicPostProcessing active={Boolean(activeManifest) || showConstellation} />
+        <CinematicPostProcessing active={Boolean(activeManifest) || showConstellation || isAscentMode} />
         <NarratorVoice manifest={activeManifest} context={narratorContext} />
       </Canvas>
       <ModeGuidance mode={sceneMode} onEnter={enterLifeMap} onUnwind={unwind} />
