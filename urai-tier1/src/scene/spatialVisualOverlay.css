@@ -14,7 +14,11 @@
 .urai-scene-stage[data-scene-mode='ascent'] canvas,
 .urai-scene-stage[data-scene-mode='life-map'] canvas,
 .urai-scene-stage[data-scene-mode='demo'] canvas {
-  opacity: 0.2;
+  opacity: 0.12;
+}
+
+.urai-scene-stage[data-scene-mode='home'] canvas {
+  opacity: 0.06;
 }
 
 .urai-visual-overlay {
@@ -40,8 +44,9 @@
 
 .urai-scene-stage[data-scene-mode='home'] {
   background:
-    radial-gradient(circle at 50% 44%, rgba(103, 232, 249, 0.18), transparent 22%),
-    linear-gradient(180deg, #142457 0%, #101944 48%, #030817 100%);
+    radial-gradient(circle at 50% 44%, rgba(103, 232, 249, 0.24), transparent 24%),
+    radial-gradient(circle at 50% 72%, rgba(139, 92, 246, 0.2), transparent 28%),
+    linear-gradient(180deg, #1a3475 0%, #111d50 48%, #030817 100%);
 }
 
 .urai-scene-stage[data-scene-mode='ascent'] {
@@ -57,6 +62,43 @@
     radial-gradient(circle at 50% 46%, rgba(103, 232, 249, 0.18), transparent 22%),
     radial-gradient(circle at 35% 44%, rgba(139, 92, 246, 0.18), transparent 30%),
     linear-gradient(180deg, #08112a 0%, #020817 100%);
+}
+
+.urai-scene-status {
+  position: absolute;
+  left: 50%;
+  bottom: 118px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  transform: translateX(-50%);
+  padding: 8px 12px;
+  border: 1px solid rgba(142, 220, 255, 0.22);
+  border-radius: 999px;
+  background: rgba(3, 7, 18, 0.34);
+  color: rgba(235, 244, 255, 0.78);
+  box-shadow: 0 18px 54px rgba(0, 0, 0, 0.22);
+  backdrop-filter: blur(14px);
+}
+
+.urai-scene-status__dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 999px;
+  background: #67e8f9;
+  box-shadow: 0 0 18px rgba(103, 232, 249, 0.85);
+}
+
+.urai-scene-status strong {
+  font-size: 0.7rem;
+  letter-spacing: 0.11em;
+  text-transform: uppercase;
+  color: #e0f7ff;
+}
+
+.urai-scene-status span:last-child {
+  font-size: 0.72rem;
+  color: rgba(235, 244, 255, 0.7);
 }
 
 .urai-visual-caption {
@@ -92,11 +134,34 @@
 
 .urai-home-sky-band {
   position: absolute;
-  inset: 0 0 34% 0;
+  inset: 0 0 30% 0;
   background:
-    radial-gradient(circle at 50% 44%, rgba(126, 205, 255, 0.34), transparent 26%),
-    radial-gradient(circle at 18% 26%, rgba(190, 172, 255, 0.2), transparent 22%),
-    linear-gradient(180deg, rgba(32, 62, 132, 0.98), rgba(12, 25, 70, 0.86) 58%, transparent 100%);
+    radial-gradient(circle at 50% 44%, rgba(126, 205, 255, 0.42), transparent 26%),
+    radial-gradient(circle at 18% 26%, rgba(190, 172, 255, 0.24), transparent 22%),
+    linear-gradient(180deg, rgba(36, 76, 162, 0.98), rgba(14, 32, 86, 0.9) 58%, transparent 100%);
+}
+
+.urai-home-stars {
+  position: absolute;
+  inset: 0 0 34% 0;
+  opacity: 0.56;
+  background-image:
+    radial-gradient(2px 2px at 18% 28%, rgba(255,255,255,0.72), transparent),
+    radial-gradient(1px 1px at 34% 18%, rgba(255,255,255,0.55), transparent),
+    radial-gradient(2px 2px at 68% 26%, rgba(199,229,255,0.68), transparent),
+    radial-gradient(1px 1px at 82% 46%, rgba(255,255,255,0.5), transparent),
+    radial-gradient(1px 1px at 52% 36%, rgba(167,139,250,0.62), transparent);
+}
+
+.urai-home-horizon {
+  position: absolute;
+  left: 10%;
+  right: 10%;
+  top: 57%;
+  height: 2px;
+  border-radius: 999px;
+  background: linear-gradient(90deg, transparent, rgba(103, 232, 249, 0.35), rgba(167, 139, 250, 0.24), transparent);
+  box-shadow: 0 0 24px rgba(103, 232, 249, 0.22);
 }
 
 .urai-home-cloud {
@@ -111,41 +176,43 @@
 
 .urai-home-cloud--one { left: -12vw; top: 24vh; }
 .urai-home-cloud--two { right: -10vw; top: 34vh; background: rgba(184, 164, 255, 0.34); }
+.urai-home-cloud--three { left: 32vw; top: 42vh; width: 42vw; opacity: 0.2; background: rgba(103, 232, 249, 0.36); }
 
 .urai-home-ground {
   position: absolute;
   left: -10%;
   right: -10%;
-  bottom: -11%;
-  height: 34%;
+  bottom: -10%;
+  height: 36%;
   border-radius: 50% 50% 0 0;
   background:
-    radial-gradient(ellipse at 50% 0%, rgba(103, 232, 249, 0.22), transparent 38%),
-    linear-gradient(180deg, rgba(39, 55, 91, 0.98), rgba(8, 11, 24, 1));
-  box-shadow: 0 -24px 90px rgba(103, 232, 249, 0.16);
+    radial-gradient(ellipse at 50% 0%, rgba(103, 232, 249, 0.28), transparent 38%),
+    linear-gradient(180deg, rgba(47, 68, 111, 0.98), rgba(8, 11, 24, 1));
+  box-shadow: 0 -24px 90px rgba(103, 232, 249, 0.18);
 }
 
 .urai-home-ground-glow {
   position: absolute;
   left: 18%;
   right: 18%;
-  bottom: 18%;
-  height: 8%;
+  bottom: 19%;
+  height: 9%;
   border-radius: 999px;
-  background: rgba(103, 232, 249, 0.24);
+  background: rgba(103, 232, 249, 0.3);
   filter: blur(28px);
 }
 
 .urai-home-orb {
   position: absolute;
   left: 50%;
-  top: 57%;
-  width: clamp(116px, 15vw, 190px);
+  top: 56%;
+  width: clamp(132px, 16vw, 210px);
   aspect-ratio: 1;
   transform: translate(-50%, -50%);
 }
 
 .urai-home-orb__halo,
+.urai-home-orb__ring,
 .urai-home-orb__core {
   position: absolute;
   inset: 0;
@@ -153,15 +220,36 @@
 }
 
 .urai-home-orb__halo {
-  background: radial-gradient(circle, rgba(139, 92, 246, 0.62), rgba(103, 232, 249, 0.22) 42%, transparent 72%);
+  background: radial-gradient(circle, rgba(139, 92, 246, 0.68), rgba(103, 232, 249, 0.24) 42%, transparent 72%);
   filter: blur(8px);
   animation: uraiOrbBreath 3.2s ease-in-out infinite;
+}
+
+.urai-home-orb__ring {
+  inset: -14%;
+  border: 1px solid rgba(103, 232, 249, 0.28);
+  box-shadow: inset 0 0 34px rgba(139, 92, 246, 0.16), 0 0 42px rgba(103, 232, 249, 0.14);
 }
 
 .urai-home-orb__core {
   inset: 24%;
   background: radial-gradient(circle at 35% 28%, #ffffff, #d6c7ff 22%, #8b5cf6 52%, #22d3ee 100%);
-  box-shadow: 0 0 64px rgba(139, 92, 246, 0.62), 0 0 130px rgba(34, 211, 238, 0.26);
+  box-shadow: 0 0 70px rgba(139, 92, 246, 0.66), 0 0 140px rgba(34, 211, 238, 0.3);
+}
+
+.urai-home-compass {
+  position: absolute;
+  left: 18px;
+  bottom: 18px;
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 999px;
+  border: 1px solid rgba(142, 220, 255, 0.2);
+  background: rgba(3, 7, 18, 0.42);
+  color: rgba(235, 244, 255, 0.82);
+  font-size: 0.78rem;
 }
 
 .urai-ascent-tunnel {
@@ -185,6 +273,7 @@
 .urai-ascent-tunnel span:nth-child(2) { inset: 22%; animation-delay: 0.25s; border-color: rgba(167, 139, 250, 0.38); }
 .urai-ascent-tunnel span:nth-child(3) { inset: 33%; animation-delay: 0.5s; border-color: rgba(125, 211, 252, 0.4); }
 .urai-ascent-tunnel span:nth-child(4) { inset: 44%; animation-delay: 0.75s; border-color: rgba(255, 255, 255, 0.34); }
+.urai-ascent-tunnel span:nth-child(5) { inset: 4%; animation-delay: 1s; border-color: rgba(103, 232, 249, 0.16); }
 
 .urai-ascent-portal-core {
   position: absolute;
@@ -210,6 +299,7 @@
 
 .urai-ascent-stream--one { left: 24%; }
 .urai-ascent-stream--two { right: 22%; background: linear-gradient(180deg, transparent, rgba(167, 139, 250, 0.22), transparent); }
+.urai-ascent-stream--three { left: 48%; width: 8%; opacity: 0.46; }
 
 .urai-life-map-nebula {
   position: absolute;
@@ -222,6 +312,16 @@
     radial-gradient(circle at 50% 50%, rgba(255, 255, 255, 0.1), transparent 46%);
   box-shadow: inset 0 0 120px rgba(103, 232, 249, 0.08);
 }
+
+.urai-life-map-orbit {
+  position: absolute;
+  border: 1px solid rgba(103, 232, 249, 0.13);
+  border-radius: 999px;
+  transform: rotate(-12deg);
+}
+
+.urai-life-map-orbit--one { left: 18%; top: 18%; right: 18%; bottom: 18%; }
+.urai-life-map-orbit--two { left: 30%; top: 9%; right: 30%; bottom: 9%; transform: rotate(22deg); border-color: rgba(167, 139, 250, 0.14); }
 
 .urai-life-map-lines {
   position: absolute;
@@ -279,6 +379,10 @@
   .urai-visual-caption--right {
     left: 14px;
     right: auto;
+  }
+
+  .urai-scene-status {
+    display: none;
   }
 
   .urai-life-map-star span {
