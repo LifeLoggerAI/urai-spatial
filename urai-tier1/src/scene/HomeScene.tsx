@@ -115,7 +115,11 @@ export default function HomeScene({ sceneMode = 'home' }: { sceneMode?: SceneMod
   const router = useRouter()
   const params = useSearchParams()
   const manifestId = params.get('manifestId')
-  const constellationMode = sceneMode === 'life-map' || sceneMode === 'demo' || params.get('mode') === 'constellation' || !manifestId
+  const isHomeMode = sceneMode === 'home'
+  const isConstellationRoute = sceneMode === 'life-map' || sceneMode === 'demo' || params.get('mode') === 'constellation'
+  const showHomeWorld = isHomeMode
+  const showConstellation = isConstellationRoute
+  const showOrb = isHomeMode || sceneMode === 'focus' || sceneMode === 'replay' || sceneMode === 'mirror'
   const { manifest } = useManifest(manifestId)
   const [selectedManifest, setSelectedManifest] = useState<SpatialAssetManifest | null>(null)
   const [selectedPosition, setSelectedPosition] = useState<ConstellationNodePosition | null>(null)
@@ -166,9 +170,9 @@ export default function HomeScene({ sceneMode = 'home' }: { sceneMode?: SceneMod
     if (selectedManifest) setNarratorContext('return')
     else if (sceneMode === 'focus') setNarratorContext('arrival')
     else if (sceneMode === 'replay') setNarratorContext('return')
-    else if (constellationMode) setNarratorContext('explore')
+    else if (isConstellationRoute) setNarratorContext('explore')
     else setNarratorContext('arrival')
-  }, [selectedManifest, constellationMode, sceneMode])
+  }, [selectedManifest, isConstellationRoute, sceneMode])
 
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => {
@@ -183,7 +187,7 @@ export default function HomeScene({ sceneMode = 'home' }: { sceneMode?: SceneMod
 
   return (
     <div className="urai-scene-stage" data-scene-mode={sceneMode}>
-      {sceneMode === 'home' ? (
+      {isHomeMode ? (
         <button
           type="button"
           className="urai-sky-click-target"
@@ -203,11 +207,11 @@ export default function HomeScene({ sceneMode = 'home' }: { sceneMode?: SceneMod
         <pointLight position={[-3.2, 2.35, -3.8]} intensity={0.8} color="#62e5ff" distance={11} />
         <Atmosphere />
         <Sky />
-        <Ground />
-        <Orb state={orbState} />
-        {constellationMode ? <ConstellationLayer enabled selectedManifestId={selectedManifest?.manifestId ?? null} onSelect={handleSelect} /> : <ManifestRenderer manifest={manifest} />}
+        {showHomeWorld ? <Ground /> : null}
+        {showOrb ? <Orb state={orbState} /> : null}
+        {showConstellation ? <ConstellationLayer enabled selectedManifestId={selectedManifest?.manifestId ?? null} onSelect={handleSelect} /> : activeManifest ? <ManifestRenderer manifest={activeManifest} /> : null}
         <CinematicParticles active />
-        <CinematicPostProcessing active={Boolean(activeManifest) || constellationMode} />
+        <CinematicPostProcessing active={Boolean(activeManifest) || showConstellation} />
         <NarratorVoice manifest={activeManifest} context={narratorContext} />
       </Canvas>
       <ModeGuidance mode={sceneMode} onEnter={enterLifeMap} onUnwind={unwind} />
