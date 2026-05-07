@@ -1,44 +1,56 @@
 import { test, expect } from '@playwright/test'
 
-test.describe('URAI Spatial smoke', () => {
-  test('root route is immersive and console-clean', async ({ page }) => {
+test.describe('URAI Spatial browser flow', () => {
+  test('home is visible and enters ascent before lifemap', async ({ page }) => {
     const consoleErrors: string[] = []
     page.on('console', (msg) => {
       if (msg.type() === 'error') consoleErrors.push(msg.text())
     })
     page.on('pageerror', (err) => consoleErrors.push(err.message))
 
-    const responses: string[] = []
-    page.on('response', (r) => {
-      if (r.status() >= 400) responses.push(`${r.status()} ${r.url()}`)
-    })
+    await page.goto('/home')
 
-    await page.goto('/')
     await expect(page.locator('canvas')).toBeVisible()
+    await expect(page.locator('[data-scene-mode="home"]')).toBeVisible()
+    await expect(page.getByRole('button', { name: /begin ascent/i })).toBeVisible()
+    await expect(page.getByTestId('urai-sky-guidance')).toContainText(/begin the ascent/i)
 
-    await expect(page.locator('button')).toHaveCount(0)
-    await expect(page.getByText(/HOME|ASCENT|LIFEMAP|FOCUS|REPLAY/)).toHaveCount(0)
+    await page.getByRole('button', { name: /begin ascent/i }).click()
+    await expect(page).toHaveURL(/\/ascent$/)
+    await expect(page.locator('[data-scene-mode="ascent"]')).toBeVisible()
+    await expect(page.getByTestId('urai-ascent-guidance')).toContainText(/ascending|ascent ready/i)
 
-    const textColor = await page.evaluate(() => getComputedStyle(document.body).color)
-    expect(textColor.toLowerCase()).not.toContain('rgb(0, 0, 0)')
+    await expect(page).toHaveURL(/\/life-map$/, { timeout: 5000 })
+    await expect(page.locator('[data-scene-mode="life-map"]')).toBeVisible()
+    await expect(page.getByTestId('urai-lifemap-guidance')).toContainText(/click a star/i)
 
-    expect(responses.filter((x) => x.includes('favicon')).length).toBe(0)
     expect(consoleErrors).toEqual([])
   })
 
-  test('spatial interaction path responds to clicks', async ({ page }) => {
-    await page.goto('/')
-    const canvas = page.locator('canvas')
-    await expect(canvas).toBeVisible()
-    const box = await canvas.boundingBox()
-    expect(box).not.toBeNull()
-    if (!box) return
+  test('focus and replay empty states are safe without manifestId', async ({ page }) => {
+    await page.goto('/focus')
+    await expect(page.locator('[data-scene-mode="focus"]')).toBeVisible()
+    await expect(page.getByTestId('urai-focus-empty-panel')).toBeVisible()
+    await expect(page.getByRole('button', { name: /open life map/i })).toBeVisible()
 
-    await page.mouse.click(box.x + box.width * 0.5, box.y + box.height * 0.2)
-    await page.waitForTimeout(1000)
-    await page.mouse.click(box.x + box.width * 0.5, box.y + box.height * 0.5)
-    await page.waitForTimeout(500)
+    await page.getByRole('button', { name: /open life map/i }).click()
+    await expect(page).toHaveURL(/\/life-map$/)
 
-    await expect(canvas).toBeVisible()
+    await page.goto('/replay')
+    await expect(page.locator('[data-scene-mode="replay"]')).toBeVisible()
+    await expect(page.getByTestId('urai-focus-empty-panel')).toBeVisible()
+    await expect(page.getByText(/replay needs a selected memory/i)).toBeVisible()
+  })
+
+  test('escape unwinds ascent and lifemap toward home', async ({ page }) => {
+    await page.goto('/ascent')
+    await expect(page.locator('[data-scene-mode="ascent"]')).toBeVisible()
+    await page.keyboard.press('Escape')
+    await expect(page).toHaveURL(/\/home$/)
+
+    await page.goto('/life-map')
+    await expect(page.locator('[data-scene-mode="life-map"]')).toBeVisible()
+    await page.keyboard.press('Escape')
+    await expect(page).toHaveURL(/\/home$/)
   })
 })
