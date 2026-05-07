@@ -100,6 +100,35 @@ jobs:
       - name: Build
         run: pnpm --filter urai-tier1 build
 
+  spatial-e2e-lock:
+    name: Spatial camera navigation and ESC lock
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 8
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+      - name: Install
+        run: pnpm install --no-frozen-lockfile
+      - name: Install Playwright browser and Linux dependencies
+        run: pnpm playwright:install-deps && pnpm playwright:install
+      - name: Run spatial E2E lock
+        run: pnpm test:e2e
+      - name: Upload spatial lock artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: spatial-lock-artifacts
+          path: artifacts/spatial-lock
+          if-no-files-found: ignore
+
   functions:
     name: Functions build and tests
     runs-on: ubuntu-latest
