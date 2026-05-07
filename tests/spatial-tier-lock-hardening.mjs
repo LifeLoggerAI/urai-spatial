@@ -100,6 +100,7 @@ async function assertNoBlankLoadingFlash(page) {
 
 async function gotoMode(page, stage, mode, path = `/${mode}`) {
   await page.goto(`${BASE_URL}${path}`);
+  await expectVisible(stage, 'spatial scene stage');
   await expectAttr(stage, 'data-scene-mode', mode);
   await assertNoBlankLoadingFlash(page);
 }
@@ -195,7 +196,8 @@ async function runDataStates(page, stage, report) {
 
   await gotoMode(page, stage, 'mirror', '/mirror');
   await expectText(page.locator('body'), 'Reflection begins with a stable field');
-  await page.keyboard.press('Escape');
+  await expectVisible(page.getByTestId('urai-mirror-guidance'), 'mirror return guidance');
+  await page.getByRole('button', { name: 'Return Home' }).click();
   await expectAttr(stage, 'data-scene-mode', 'home');
   await screenshot(page, report, 'data-states-mirror-return');
 }
@@ -228,7 +230,7 @@ async function run() {
     const browser = await chromium.launch();
     const page = await browser.newPage({ viewport: { width: 1440, height: 1000 } });
     collectConsole(page, report);
-    const stage = page.getByTestId('urai-scene-stage');
+    const stage = page.locator('.urai-scene-stage').first();
 
     const suites = {
       navigation: runNavigationStack,
