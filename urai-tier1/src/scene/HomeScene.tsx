@@ -126,6 +126,50 @@ function FocusActionPanel({
   )
 }
 
+function FocusEmptyPanel({
+  mode,
+  manifestId,
+  loading,
+  error,
+  onLifeMap,
+}: {
+  mode: SceneMode
+  manifestId: string | null
+  loading: boolean
+  error: string | null
+  onLifeMap: () => void
+}) {
+  const isReplay = mode === 'replay'
+  const title = loading
+    ? 'Loading memory star...'
+    : error
+      ? 'Memory star unavailable'
+      : manifestId
+        ? 'Memory star not ready'
+        : 'Choose a memory star first'
+
+  const body = loading
+    ? 'URAI is retrieving the selected spatial memory. The scene will open as soon as the manifest is available.'
+    : error
+      ? error
+      : manifestId
+        ? 'This memory link exists, but it does not have a valid spatial manifest yet.'
+        : isReplay
+          ? 'Replay needs a selected memory. Return to the Life Map and choose a star to begin the stream.'
+          : 'Focus opens after a Life Map star is selected. Return to the constellation and choose a memory.'
+
+  return (
+    <section className="urai-focus-action-panel urai-focus-action-panel--empty" data-testid="urai-focus-empty-panel" aria-label={isReplay ? 'Replay unavailable' : 'Focus unavailable'}>
+      <div className="urai-focus-action-panel__eyebrow">{isReplay ? 'Replay Pending' : 'Focus Pending'}</div>
+      <h2>{title}</h2>
+      <p>{body}</p>
+      <div className="urai-focus-action-panel__actions">
+        <button type="button" className="urai-focus-action-panel__primary" onClick={onLifeMap}>Open Life Map</button>
+      </div>
+    </section>
+  )
+}
+
 export default function HomeScene({ sceneMode = 'home' }: { sceneMode?: SceneMode }) {
   const router = useRouter()
   const params = useSearchParams()
@@ -138,7 +182,7 @@ export default function HomeScene({ sceneMode = 'home' }: { sceneMode?: SceneMod
   const showAscentPortal = isAscentMode
   const showConstellation = isConstellationRoute
   const showOrb = isHomeMode || sceneMode === 'focus' || sceneMode === 'replay' || sceneMode === 'mirror'
-  const { manifest } = useManifest(manifestId)
+  const { manifest, loading: manifestLoading, error: manifestError } = useManifest(manifestId)
   const [selectedManifest, setSelectedManifest] = useState<SpatialAssetManifest | null>(null)
   const [selectedPosition, setSelectedPosition] = useState<ConstellationNodePosition | null>(null)
   const [narratorContext, setNarratorContext] = useState<NarratorContext>('arrival')
@@ -150,6 +194,10 @@ export default function HomeScene({ sceneMode = 'home' }: { sceneMode?: SceneMod
     if (sceneMode === 'home') router.push('/ascent')
     if (sceneMode === 'ascent') router.push('/life-map')
   }, [router, sceneMode])
+
+  const openLifeMap = useCallback(() => {
+    router.push('/life-map')
+  }, [router])
 
   const unwind = useCallback(() => {
     if (selectedManifest) {
@@ -214,7 +262,9 @@ export default function HomeScene({ sceneMode = 'home' }: { sceneMode?: SceneMod
     return () => window.removeEventListener('keydown', onKey)
   }, [unwind])
 
-  const showFocusPanel = Boolean(activeManifest) && (Boolean(selectedManifest) || sceneMode === 'focus' || sceneMode === 'replay')
+  const modeNeedsManifest = sceneMode === 'focus' || sceneMode === 'replay'
+  const showFocusPanel = Boolean(activeManifest) && (Boolean(selectedManifest) || modeNeedsManifest)
+  const showEmptyFocusPanel = modeNeedsManifest && !activeManifest
 
   return (
     <div className="urai-scene-stage" data-scene-mode={sceneMode} data-reduced-motion={reducedMotion ? 'true' : 'false'}>
@@ -249,6 +299,7 @@ export default function HomeScene({ sceneMode = 'home' }: { sceneMode?: SceneMod
       </Canvas>
       <ModeGuidance mode={sceneMode} onEnter={enterLifeMap} onUnwind={unwind} reducedMotion={reducedMotion} />
       {showFocusPanel && activeManifest ? <FocusActionPanel manifest={activeManifest} mode={sceneMode} onReplay={startReplay} onUnwind={unwind} /> : null}
+      {showEmptyFocusPanel ? <FocusEmptyPanel mode={sceneMode} manifestId={manifestId} loading={manifestLoading} error={manifestError} onLifeMap={openLifeMap} /> : null}
       <NarratorHud />
     </div>
   )
