@@ -17,6 +17,7 @@ import CinematicPostProcessing from '../spatial/cinematic/CinematicPostProcessin
 import CinematicParticles from '../spatial/cinematic/CinematicParticles'
 import { cameraPathForState } from '../spatial/cinematic/cameraPaths'
 import { useReducedMotion } from '../spatial/hooks/useReducedMotion'
+import { SpatialFeatureId, useSpatialTierGate } from '../spatial/tier/useSpatialTierGate'
 import NarratorVoice from '../spatial/narrator/NarratorVoice'
 import NarratorHud from '../spatial/narrator/NarratorHud'
 import ConstellationLayer, { ConstellationNodePosition } from '../spatial/constellation/ConstellationLayer'
@@ -25,6 +26,13 @@ import { NarratorContext } from '../spatial/narrator/buildNarration'
 type SceneMode = 'home' | 'ascent' | 'life-map' | 'demo' | 'replay' | 'focus' | 'mirror'
 
 const ASCENT_DURATION_MS = 1800
+
+function gatedFeatureForMode(mode: SceneMode): SpatialFeatureId | null {
+  if (mode === 'life-map') return 'spatial.lifeMap.personal'
+  if (mode === 'focus') return 'spatial.memoryStars.personal'
+  if (mode === 'replay') return 'spatial.memoryStars.personal'
+  return null
+}
 
 function orbStateForContext({ context, hasSelectedManifest, sceneMode }: { context: NarratorContext; hasSelectedManifest: boolean; sceneMode: SceneMode }): OrbState {
   if (hasSelectedManifest) return 'memoryBloom'
@@ -170,23 +178,58 @@ function FocusEmptyPanel({
   )
 }
 
+function TierGatePanel({
+  featureId,
+  loading,
+  reasons,
+  requiredTier,
+  fallbackFeatureId,
+  onPreview,
+}: {
+  featureId: SpatialFeatureId
+  loading: boolean
+  reasons: string[]
+  requiredTier?: string
+  fallbackFeatureId?: SpatialFeatureId
+  onPreview: () => void
+}) {
+  const title = loading ? 'Checking spatial access...' : 'Personal Life Map is locked'
+  const body = loading
+    ? 'URAI is checking your tier, consent, and feature flags before opening this personal spatial layer.'
+    : `This feature (${featureId}) requires ${requiredTier ?? 'a higher tier'} or additional consent. Fallback: ${fallbackFeatureId ?? 'spatial.starfield.preview'}. ${reasons.length ? `Reason: ${reasons.join(', ')}.` : ''}`
+
+  return (
+    <section className="urai-focus-action-panel urai-focus-action-panel--locked" data-testid="urai-tier-gate-panel" aria-label="Spatial feature locked">
+      <div className="urai-focus-action-panel__eyebrow">Tier Gate</div>
+      <h2>{title}</h2>
+      <p>{body}</p>
+      <div className="urai-focus-action-panel__actions">
+        <button type="button" className="urai-focus-action-panel__primary" onClick={onPreview}>Open Preview Map</button>
+      </div>
+    </section>
+  )
+}
+
 export default function HomeScene({ sceneMode = 'home' }: { sceneMode?: SceneMode }) {
   const router = useRouter()
   const params = useSearchParams()
   const reducedMotion = useReducedMotion()
+  const gatedFeatureId = gatedFeatureForMode(sceneMode)
+  const gate = useSpatialTierGate(gatedFeatureId)
+  const gateBlocksMode = Boolean(gatedFeatureId) && (gate.loading || !gate.allowed)
   const manifestId = params.get('manifestId')
   const isHomeMode = sceneMode === 'home'
   const isAscentMode = sceneMode === 'ascent'
   const isConstellationRoute = sceneMode === 'life-map' || sceneMode === 'demo' || params.get('mode') === 'constellation'
   const showHomeWorld = isHomeMode
   const showAscentPortal = isAscentMode
-  const showConstellation = isConstellationRoute
+  const showConstellation = isConstellationRoute && !gateBlocksMode
   const showOrb = isHomeMode || sceneMode === 'focus' || sceneMode === 'replay' || sceneMode === 'mirror'
-  const { manifest, loading: manifestLoading, error: manifestError } = useManifest(manifestId)
+  const { manifest, loading: manifestLoading, error: manifestError } = useManifest(gateBlocksMode ? null : manifestId)
   const [selectedManifest, setSelectedManifest] = useState<SpatialAssetManifest | null>(null)
   const [selectedPosition, setSelectedPosition] = useState<ConstellationNodePosition | null>(null)
   const [narratorContext, setNarratorContext] = useState<NarratorContext>('arrival')
-  const activeManifest = selectedManifest ?? manifest
+  const activeManifest = gateBlocksMode ? null : selectedManifest ?? manifest
   const orbState = useMemo(() => orbStateForContext({ context: narratorContext, hasSelectedManifest: Boolean(selectedManifest) || sceneMode === 'focus' || sceneMode === 'replay', sceneMode }), [narratorContext, selectedManifest, sceneMode])
   const cameraPath = useMemo(() => cameraPathForState({ hasFocus: Boolean(selectedPosition) || sceneMode === 'focus' || sceneMode === 'replay' || isAscentMode, isNarrating: Boolean(activeManifest) || sceneMode !== 'home', orbState }), [activeManifest, orbState, selectedPosition, sceneMode, isAscentMode])
 
@@ -197,6 +240,10 @@ export default function HomeScene({ sceneMode = 'home' }: { sceneMode?: SceneMod
 
   const openLifeMap = useCallback(() => {
     router.push('/life-map')
+  }, [router])
+
+  const openPreviewMap = useCallback(() => {
+    router.push('/life-map?mode=constellation')
   }, [router])
 
   const unwind = useCallback(() => {
@@ -264,7 +311,7 @@ export default function HomeScene({ sceneMode = 'home' }: { sceneMode?: SceneMod
 
   const modeNeedsManifest = sceneMode === 'focus' || sceneMode === 'replay'
   const showFocusPanel = Boolean(activeManifest) && (Boolean(selectedManifest) || modeNeedsManifest)
-  const showEmptyFocusPanel = modeNeedsManifest && !activeManifest
+  const showEmptyFocusPanel = !gateBlocksMode && modeNeedsManifest && !activeManifest
 
   return (
     <div className="urai-scene-stage" data-scene-mode={sceneMode} data-reduced-motion={reducedMotion ? 'true' : 'false'}>
@@ -298,6 +345,7 @@ export default function HomeScene({ sceneMode = 'home' }: { sceneMode?: SceneMod
         <NarratorVoice manifest={activeManifest} context={narratorContext} />
       </Canvas>
       <ModeGuidance mode={sceneMode} onEnter={enterLifeMap} onUnwind={unwind} reducedMotion={reducedMotion} />
+      {gateBlocksMode && gatedFeatureId ? <TierGatePanel featureId={gatedFeatureId} loading={gate.loading} reasons={gate.reasons} requiredTier={gate.requiredTier} fallbackFeatureId={gate.fallbackFeatureId} onPreview={openPreviewMap} /> : null}
       {showFocusPanel && activeManifest ? <FocusActionPanel manifest={activeManifest} mode={sceneMode} onReplay={startReplay} onUnwind={unwind} /> : null}
       {showEmptyFocusPanel ? <FocusEmptyPanel mode={sceneMode} manifestId={manifestId} loading={manifestLoading} error={manifestError} onLifeMap={openLifeMap} /> : null}
       <NarratorHud />
