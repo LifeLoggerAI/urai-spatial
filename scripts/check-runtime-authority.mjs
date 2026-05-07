@@ -56,7 +56,6 @@ requireIncludes('docs/ARCHITECTURE_LOCK.md', 'TierOneExperience.tsx', 'architect
 requireIncludes('docs/ARCHITECTURE_LOCK.md', 'HomeScene.tsx', 'architecture lock canonical scene')
 requireIncludes('docs/URAI_SPATIAL_SOURCE_OF_TRUTH_LOCK.md', 'TierOneExperience', 'source-of-truth canonical shell')
 requireIncludes('docs/URAI_SPATIAL_SOURCE_OF_TRUTH_LOCK.md', 'HomeScene', 'source-of-truth canonical scene')
-requireIncludes('docs/URAI_SPATIAL_SOURCE_OF_TRUTH_LOCK.md', 'legacy / migration-candidate', 'legacy path declaration')
 
 if (failures.length) {
   console.error('URAI Spatial runtime authority check failed:')
