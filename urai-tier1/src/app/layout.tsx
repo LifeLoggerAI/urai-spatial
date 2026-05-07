@@ -4,6 +4,7 @@ import './boundary.css'
 import '@/scene/spatialVisualOverlay.css'
 import '@/spatial/home/visual/HomeScene.css'
 import '@/spatial/companion/companionPolish.css'
+import '@/scene/cinematicFocusTier5.css'
 
 export const metadata: Metadata = {
   title: 'URAI Spatial',
