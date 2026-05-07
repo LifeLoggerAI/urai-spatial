@@ -8,7 +8,7 @@ import Orb, { OrbState } from './Orb'
 import Sky from './Sky'
 import Atmosphere from './Atmosphere'
 import AscentPortal from './AscentPortal'
-import SpatialVisualOverlay from './SpatialVisualOverlay'
+import SpatialVisualOverlay from './SpatialVisualOverlayPremium'
 import ManifestRenderBoundary from '../spatial/assets/ManifestRenderBoundary'
 import { useManifest } from '../spatial/assets/useManifest'
 import { SpatialAssetManifest } from '../spatial/assets/manifestTypes'
@@ -23,11 +23,11 @@ import NarratorVoice from '../spatial/narrator/NarratorVoice'
 import NarratorHud from '../spatial/narrator/NarratorHud'
 import ConstellationLayer, { ConstellationNodePosition } from '../spatial/constellation/ConstellationLayer'
 import { NarratorContext } from '../spatial/narrator/buildNarration'
+import { DEMO_FOCUS_MANIFEST_ID } from '../spatial/demo/demoMemoryStars'
 
 type SceneMode = 'home' | 'ascent' | 'life-map' | 'demo' | 'replay' | 'focus' | 'mirror'
 
 const ASCENT_DURATION_MS = 1800
-const DEMO_FOCUS_MANIFEST_ID = 'demo-memory-star'
 
 function gatedFeatureForMode(mode: SceneMode): SpatialFeatureId | null {
   if (mode === 'life-map') return 'spatial.lifeMap.personal'
@@ -216,7 +216,7 @@ export default function HomeScene({ sceneMode = 'home' }: { sceneMode?: SceneMod
       router.push('/life-map')
       return
     }
-    if (sceneMode === 'life-map' || sceneMode === 'ascent') router.push('/home')
+    if (sceneMode === 'life-map' || sceneMode === 'ascent') router.push('/')
   }, [activeManifestId, resetCamera, router, sceneMode, selectedManifest])
 
   const startReplay = useCallback(() => {
