@@ -39,6 +39,47 @@ function manifestFocusHref(manifestId: string | null) {
   return manifestId ? `/focus?manifestId=${encodeURIComponent(manifestId)}` : '/focus'
 }
 
+function ModeGuidance({ mode, onEnter, onUnwind }: { mode: SceneMode; onEnter: () => void; onUnwind: () => void }) {
+  if (mode === 'home') {
+    return (
+      <div className="urai-spatial-guidance urai-spatial-guidance--home" data-testid="urai-sky-guidance">
+        <span className="urai-spatial-guidance__pulse" aria-hidden="true" />
+        <span>Click the sky to open your Life Map</span>
+        <button type="button" onClick={onEnter}>Enter Life Map</button>
+      </div>
+    )
+  }
+
+  if (mode === 'life-map' || mode === 'demo') {
+    return (
+      <div className="urai-spatial-guidance" data-testid="urai-lifemap-guidance">
+        <span>Click a star to open memory focus</span>
+        <button type="button" onClick={onUnwind}>ESC / Return Home</button>
+      </div>
+    )
+  }
+
+  if (mode === 'focus') {
+    return (
+      <div className="urai-spatial-guidance" data-testid="urai-focus-guidance">
+        <span>Focus open. Replay when ready.</span>
+        <button type="button" onClick={onUnwind}>ESC / Life Map</button>
+      </div>
+    )
+  }
+
+  if (mode === 'replay') {
+    return (
+      <div className="urai-spatial-guidance" data-testid="urai-replay-guidance">
+        <span>Replay active. ESC unwinds one layer.</span>
+        <button type="button" onClick={onUnwind}>Unwind</button>
+      </div>
+    )
+  }
+
+  return null
+}
+
 function FocusActionPanel({
   manifest,
   mode,
@@ -59,12 +100,12 @@ function FocusActionPanel({
       <h2>{title}</h2>
       <p>
         {isReplay
-          ? 'Replay is active. Press Escape to unwind back to focus, then Life Map, then Home.'
-          : 'This star is open. Start replay, or press Escape to unwind back to the Life Map.'}
+          ? 'The replay is running as a cinematic memory layer. Press Escape to unwind back to focus, then Life Map, then Home.'
+          : 'This star is open. Start replay to enter the memory stream, or press Escape to return to the constellation.'}
       </p>
       <div className="urai-focus-action-panel__actions">
-        {!isReplay ? <button type="button" onClick={onReplay}>Replay</button> : null}
-        <button type="button" onClick={onUnwind}>{isReplay ? 'Unwind to Focus' : 'Unwind'}</button>
+        {!isReplay ? <button type="button" className="urai-focus-action-panel__primary" onClick={onReplay}>Start Replay</button> : null}
+        <button type="button" onClick={onUnwind}>{isReplay ? 'Unwind to Focus' : 'Back to Life Map'}</button>
       </div>
     </section>
   )
@@ -141,7 +182,7 @@ export default function HomeScene({ sceneMode = 'home' }: { sceneMode?: SceneMod
   const showFocusPanel = Boolean(activeManifest) && (Boolean(selectedManifest) || sceneMode === 'focus' || sceneMode === 'replay')
 
   return (
-    <div style={{ width: '100%', height: '100%', position: 'relative' }}>
+    <div className="urai-scene-stage" data-scene-mode={sceneMode}>
       {sceneMode === 'home' ? (
         <button
           type="button"
@@ -169,6 +210,7 @@ export default function HomeScene({ sceneMode = 'home' }: { sceneMode?: SceneMod
         <CinematicPostProcessing active={Boolean(activeManifest) || constellationMode} />
         <NarratorVoice manifest={activeManifest} context={narratorContext} />
       </Canvas>
+      <ModeGuidance mode={sceneMode} onEnter={enterLifeMap} onUnwind={unwind} />
       {showFocusPanel && activeManifest ? <FocusActionPanel manifest={activeManifest} mode={sceneMode} onReplay={startReplay} onUnwind={unwind} /> : null}
       <NarratorHud />
     </div>
