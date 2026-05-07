@@ -12,6 +12,8 @@
     "canon:lock": "node scripts/check-tier1-canon-lock.mjs",
     "test": "pnpm --filter urai-functions build && pnpm --filter urai-functions test && pnpm --filter urai-tier1 test && pnpm test:e2e && pnpm test:replay-tier5",
     "test:e2e": "pnpm --filter urai-tier1 exec node ../tests/spatial-lock.mjs",
+    "test:playwright": "playwright test",
+    "test:firestore-rules": "node --test tests/firestore.assetManifests.rules.test.mjs",
     "test:replay-tier5": "pnpm --filter urai-tier1 exec node ../tests/replay-tier5-lock.mjs",
     "preflight": "node ./scripts/preflight.mjs",
     "canon:check": "node scripts/canon-lock.mjs",
@@ -31,6 +33,8 @@
     "tier2:check": "node scripts/check-tier2-governance.mjs"
   },
   "devDependencies": {
+    "@firebase/rules-unit-testing": "^4.0.1",
+    "@playwright/test": "^1.57.0",
     "@types/node": "^25.5.0",
     "@types/react": "^19.2.14",
     "@types/three": "^0.183.1",
