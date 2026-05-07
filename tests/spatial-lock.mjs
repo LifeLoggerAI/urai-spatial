@@ -1,6 +1,6 @@
 import playwright from '../urai-tier1/node_modules/playwright/index.js';
 const { chromium } = playwright;
-import { spawn } from 'node:child_process';
+import { spawn, spawnSync } from 'node:child_process';
 import { mkdirSync, writeFileSync } from 'node:fs';
 import process from 'node:process';
 
@@ -40,6 +40,38 @@ function startServer() {
     if (code && code !== 0) console.error(`URAI Spatial dev server exited with ${code}`);
   });
   return child;
+}
+
+function assertPlaywrightRuntimeReady() {
+  const result = spawnSync('pnpm', ['--filter', 'urai-tier1', 'exec', 'node', '-e', `
+    const { chromium } = require('playwright');
+    (async () => {
+      const browser = await chromium.launch({ headless: true });
+      await browser.close();
+    })().catch((error) => {
+      console.error(error && error.stack ? error.stack : error);
+      process.exit(1);
+    });
+  `], {
+    stdio: 'pipe',
+    shell: process.platform === 'win32',
+    encoding: 'utf8',
+  });
+
+  if (result.status === 0) return;
+
+  const output = `${result.stdout ?? ''}\n${result.stderr ?? ''}`.trim();
+  throw new Error([
+    'Playwright Chromium cannot launch because this environment is missing browser runtime dependencies.',
+    output,
+    'Fix:',
+    '  pnpm playwright:install',
+    '  pnpm playwright:install-deps',
+    'or run:',
+    '  pnpm exec playwright install chromium',
+    '  pnpm exec playwright install-deps chromium',
+    'The failing log commonly looks like: libglib-2.0.so.0: cannot open shared object file.',
+  ].filter(Boolean).join('\n'));
 }
 
 async function expectAttr(locator, name, value, timeout = 5000) {
@@ -90,6 +122,7 @@ function collectConsole(page) {
 }
 
 async function run() {
+  assertPlaywrightRuntimeReady();
   const server = startServer();
   const visualReport = { screenshots: [], console: [] };
   try {
