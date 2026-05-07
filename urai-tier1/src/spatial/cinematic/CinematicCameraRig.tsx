@@ -13,10 +13,12 @@ export default function CinematicCameraRig({
   active,
   focusPosition,
   path = 'arrival',
+  reducedMotion = false,
 }: {
   active: boolean
   focusPosition?: readonly [number, number, number] | null
   path?: CameraPathKey
+  reducedMotion?: boolean
 }) {
   const { camera, size } = useThree()
   const lookTarget = useRef(cameraPathPresets.arrival.target.clone())
@@ -40,21 +42,22 @@ export default function CinematicCameraRig({
     const preset = cameraPathPresets[path]
     const focusKey = focusPosition ? focusPosition.join(':') : path
     if (transition.current.key !== focusKey) {
-      transition.current = { key: focusKey, progress: 0 }
+      transition.current = { key: focusKey, progress: reducedMotion ? 1 : 0 }
     }
 
-    transition.current.progress = Math.min(1, transition.current.progress + delta * 0.62)
-    const eased = easeInOutCubic(transition.current.progress)
+    transition.current.progress = Math.min(1, transition.current.progress + delta * (reducedMotion ? 3.5 : 0.62))
+    const eased = reducedMotion ? 1 : easeInOutCubic(transition.current.progress)
     const mobileOffset = size.width <= 390 ? 0.36 : size.width <= 430 ? 0.22 : 0
 
     const target = focusPosition ? new Vector3(focusPosition[0], focusPosition[1], focusPosition[2]) : preset.target
-    const orbitalDrift = Math.sin(t * preset.drift.speed) * preset.drift.x
-    const sideBreath = Math.cos(t * preset.drift.speed * 0.72) * preset.drift.x * 0.36
-    const lift = Math.sin(t * preset.drift.speed * 1.5) * preset.drift.y
-    const depth = Math.sin(t * preset.drift.speed * 0.62) * preset.drift.z
-    const settle = focusPosition ? Math.sin(eased * Math.PI) * 0.16 : 0
+    const motionScale = reducedMotion ? 0 : 1
+    const orbitalDrift = Math.sin(t * preset.drift.speed) * preset.drift.x * motionScale
+    const sideBreath = Math.cos(t * preset.drift.speed * 0.72) * preset.drift.x * 0.36 * motionScale
+    const lift = Math.sin(t * preset.drift.speed * 1.5) * preset.drift.y * motionScale
+    const depth = Math.sin(t * preset.drift.speed * 0.62) * preset.drift.z * motionScale
+    const settle = focusPosition && !reducedMotion ? Math.sin(eased * Math.PI) * 0.16 : 0
 
-    lookTarget.current.lerp(target, 0.032 + eased * 0.052)
+    lookTarget.current.lerp(target, reducedMotion ? 0.18 : 0.032 + eased * 0.052)
 
     if (focusPosition) {
       desiredPosition.current.set(target.x * 0.7 + orbitalDrift, target.y + 0.58 + lift + settle, target.z + 2.22 - settle + mobileOffset)
@@ -68,11 +71,11 @@ export default function CinematicCameraRig({
 
     if (camera instanceof PerspectiveCamera) {
       const responsiveFov = size.width <= 430 ? Math.min(64, preset.fov + 6) : preset.fov
-      camera.fov += (responsiveFov - camera.fov) * 0.035
+      camera.fov += (responsiveFov - camera.fov) * (reducedMotion ? 0.12 : 0.035)
       camera.updateProjectionMatrix()
     }
 
-    camera.position.lerp(desiredPosition.current, focusPosition ? 0.032 + eased * 0.045 : 0.026)
+    camera.position.lerp(desiredPosition.current, reducedMotion ? 0.14 : focusPosition ? 0.032 + eased * 0.045 : 0.026)
     camera.lookAt(lookTarget.current)
   })
 
