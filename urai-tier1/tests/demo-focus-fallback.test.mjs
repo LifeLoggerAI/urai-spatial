@@ -16,7 +16,7 @@ function flat(code) {
 const homeScene = read('src/scene/HomeScene.tsx')
 const useManifest = read('src/spatial/assets/useManifest.ts')
 const demoStars = read('src/spatial/demo/demoMemoryStars.ts')
-const visualOverlay = read('src/scene/SpatialVisualOverlay.tsx')
+const visualOverlay = read('src/scene/SpatialVisualOverlayPremium.tsx')
 
 test('focus and replay default to a demo memory star', () => {
   const source = flat(homeScene)
@@ -44,10 +44,12 @@ test('manifest loader uses demo fallback instead of hard failing in preview', ()
   assert.match(source, /setError\(fallback \? null : `Invalid spatial manifest:/)
 })
 
-test('home, lifemap, ascent, and focus overlays expose stable visual test ids', () => {
+test('premium home, lifemap, ascent, and focus overlays expose stable visual test ids', () => {
   assert.match(visualOverlay, /data-testid="urai-home-scene"/)
   assert.match(visualOverlay, /data-testid="urai-ascent-scene"/)
   assert.match(visualOverlay, /data-testid="urai-lifemap-scene"/)
   assert.match(visualOverlay, /data-testid="lifemap-starfield"/)
   assert.match(visualOverlay, /data-testid="urai-focus-scene"/)
+  assert.match(visualOverlay, /DEMO_MEMORY_STARS/)
+  assert.match(visualOverlay, /urai-life-map-paths/)
 })
