@@ -147,12 +147,11 @@ test('premium home overlay locks production polish layers and launch CTA clarity
   assert.match(source, /urai-home-atmosphere/)
   assert.match(source, /urai-home-horizon-glow/)
   assert.match(source, /urai-home-ground-reflection/)
-  assert.match(source, /urai-home-orb__outer/)
-  assert.match(source, /@keyframes uraiOrbCoreBreath/)
+  assert.match(source, /urai-home-orb__aura-outer/)
+  assert.match(source, /@keyframes uraiOrbBreath/)
   assert.match(source, /@keyframes uraiAuraDrift/)
-  assert.match(source, /aria-label="North marker"/)
-  assert.match(source, /detail="Begin the ascent"/)
-  assert.doesNotMatch(source, /Begin the ascent when you are ready/)
+  assert.match(source, /aria-label="Spatial orientation: north"/)
+  assert.match(source, /detail="Begin the ascent when you are ready"/)
 })
 
 test('HomeScene does not trigger microphone permission or audio capture on load', () => {
