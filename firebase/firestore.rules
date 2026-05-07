@@ -18,11 +18,43 @@ service cloud.firestore {
         );
     }
 
+    function isLaunchDemoOwner(ownerId) {
+      return ownerId == 'launch-demo';
+    }
+
+    function isManifestOwner() {
+      return isSignedIn()
+        && resource.data.ownerId is string
+        && resource.data.ownerId == request.auth.uid;
+    }
+
+    function isValidSpatialManifestCreate() {
+      return request.resource.data.manifestId is string
+        && request.resource.data.manifestVersion == '1.0'
+        && request.resource.data.ownerId is string
+        && request.resource.data.projectId is string
+        && request.resource.data.assetType is string
+        && request.resource.data.artifacts is list
+        && request.resource.data.spatialCompatibility is map;
+    }
+
     // Feature flags are server/admin controlled.
     // Clients can read but cannot mutate.
     match /features/{flagId} {
       allow read: if true;
       allow write: if isAdmin();
+    }
+
+    // Public launch-demo manifests and user-owned manifests are readable by clients.
+    // Manifest writes stay trusted/admin-only so clients cannot forge private spatial assets.
+    match /assetManifests/{manifestId} {
+      allow get, list: if isAdmin()
+        || isManifestOwner()
+        || isLaunchDemoOwner(resource.data.ownerId);
+
+      allow create: if isAdmin() && isValidSpatialManifestCreate();
+      allow update: if isAdmin() && isValidSpatialManifestCreate();
+      allow delete: if isAdmin();
     }
 
     // Users may read their own profile summary.
