@@ -54,6 +54,22 @@ function collectConsole(page, report) {
   page.on('pageerror', (error) => report.console.push(`[pageerror] ${error.message}`));
 }
 
+function stageLocator(page) {
+  return page.locator('.urai-scene-stage');
+}
+
+async function expectOneStage(page, timeout = 6000) {
+  const stage = stageLocator(page);
+  const started = Date.now();
+  while (Date.now() - started < timeout) {
+    const count = await stage.count().catch(() => 0);
+    if (count === 1) return stage;
+    await sleep(100);
+  }
+  const count = await stage.count().catch(() => 0);
+  throw new Error(`Expected exactly one spatial scene stage, received ${count}`);
+}
+
 async function expectAttr(locator, name, value, timeout = 6000) {
   const started = Date.now();
   while (Date.now() - started < timeout) {
@@ -98,56 +114,69 @@ async function assertNoBlankLoadingFlash(page) {
   }
 }
 
-async function gotoMode(page, stage, mode, path = `/${mode}`) {
+async function gotoMode(page, mode, path = `/${mode}`) {
   await page.goto(`${BASE_URL}${path}`);
+  const stage = await expectOneStage(page);
   await expectVisible(stage, 'spatial scene stage');
   await expectAttr(stage, 'data-scene-mode', mode);
   await assertNoBlankLoadingFlash(page);
+  return stage;
 }
 
-async function chooseFirstMemory(page, stage) {
-  await gotoMode(page, stage, 'life-map', '/life-map');
+async function chooseFirstMemory(page) {
+  let stage = await gotoMode(page, 'life-map', '/life-map');
   const star = page.getByTestId('lifemap-node-seed-memory-bloom');
   await expectVisible(star, 'demo memory star');
   await star.click();
+  stage = await expectOneStage(page);
   await expectAttr(stage, 'data-scene-mode', 'focus');
   await expectText(page.getByTestId('urai-focus-action-panel'), 'Memory Bloom');
+  return stage;
 }
 
-async function runNavigationStack(page, stage, report) {
-  await gotoMode(page, stage, 'home', '/home');
+async function runNavigationStack(page, report) {
+  let stage = await gotoMode(page, 'home', '/home');
   await expectVisible(page.getByTestId('urai-sky-click-target'), 'home sky click target');
   await page.getByTestId('urai-sky-click-target').click({ position: { x: 700, y: 500 } });
+  stage = await expectOneStage(page);
   await expectAttr(stage, 'data-scene-mode', 'ascent');
   await expectVisible(page.getByTestId('urai-ascent-scene'), 'ascent scene');
   await expectAttr(stage, 'data-scene-mode', 'life-map', ASCENT_MAX_MS);
   await expectVisible(page.getByTestId('lifemap-node-seed-memory-bloom'), 'memory node after ascent');
 
   await page.getByTestId('lifemap-node-seed-memory-bloom').click();
+  stage = await expectOneStage(page);
   await expectAttr(stage, 'data-scene-mode', 'focus');
   await expectText(page.getByTestId('urai-focus-action-panel'), 'Memory Bloom');
   await page.getByRole('button', { name: 'Start Replay' }).click();
+  stage = await expectOneStage(page);
   await expectAttr(stage, 'data-scene-mode', 'replay');
   await expectText(page.getByTestId('urai-focus-action-panel'), 'Replay Stream');
 
   await page.keyboard.press('Escape');
+  stage = await expectOneStage(page);
   await expectAttr(stage, 'data-scene-mode', 'focus');
   await page.keyboard.press('Escape');
+  stage = await expectOneStage(page);
   await expectAttr(stage, 'data-scene-mode', 'life-map');
   await page.keyboard.press('Escape');
+  stage = await expectOneStage(page);
   await expectAttr(stage, 'data-scene-mode', 'home');
 
   await page.goBack();
+  stage = await expectOneStage(page);
   await expectAttr(stage, 'data-scene-mode', 'life-map');
   await page.goForward();
+  stage = await expectOneStage(page);
   await expectAttr(stage, 'data-scene-mode', 'home');
   await screenshot(page, report, 'navigation-stack-final-home');
 }
 
-async function runCameraTransitions(page, stage, report) {
-  await gotoMode(page, stage, 'home', '/home');
+async function runCameraTransitions(page, report) {
+  let stage = await gotoMode(page, 'home', '/home');
   const started = Date.now();
   await page.getByRole('button', { name: 'Begin Ascent' }).click();
+  stage = await expectOneStage(page);
   await expectAttr(stage, 'data-scene-mode', 'ascent');
   await expectVisible(page.getByTestId('urai-ascent-scene'), 'ascent active scene');
   await expectAttr(stage, 'data-scene-mode', 'life-map', ASCENT_MAX_MS);
@@ -156,53 +185,59 @@ async function runCameraTransitions(page, stage, report) {
     throw new Error(`Ascent timing outside lock window: ${elapsed}ms`);
   }
 
-  await chooseFirstMemory(page, stage);
+  stage = await chooseFirstMemory(page);
   await expectVisible(page.getByTestId('urai-focus-scene'), 'focus visual layer');
   await page.getByTestId('urai-camera-reset').click();
+  stage = await expectOneStage(page);
   await expectAttr(stage, 'data-scene-mode', 'focus');
   await screenshot(page, report, 'camera-focus-after-reset');
 }
 
-async function runRaceConditions(page, stage, report) {
-  await gotoMode(page, stage, 'home', '/home');
+async function runRaceConditions(page, report) {
+  let stage = await gotoMode(page, 'home', '/home');
   await Promise.allSettled([
     page.getByRole('button', { name: 'Begin Ascent' }).click(),
     page.getByRole('button', { name: 'Begin Ascent' }).click(),
     page.keyboard.press('Escape'),
   ]);
+  stage = await expectOneStage(page);
   await expectAttr(stage, 'data-scene-mode', 'ascent');
   await page.keyboard.press('Escape');
+  stage = await expectOneStage(page);
   await expectAttr(stage, 'data-scene-mode', 'home');
 
-  await chooseFirstMemory(page, stage);
+  stage = await chooseFirstMemory(page);
   await page.getByRole('button', { name: 'Start Replay' }).click();
+  stage = await expectOneStage(page);
   await expectAttr(stage, 'data-scene-mode', 'replay');
   await Promise.allSettled([
     page.keyboard.press('Escape'),
     page.keyboard.press('Escape'),
     page.keyboard.press('Escape'),
   ]);
+  stage = await expectOneStage(page);
   await expectAttr(stage, 'data-scene-mode', 'home');
   await screenshot(page, report, 'race-conditions-home');
 }
 
-async function runDataStates(page, stage, report) {
-  await gotoMode(page, stage, 'focus', '/focus?manifestId=missing-audit-manifest');
+async function runDataStates(page, report) {
+  let stage = await gotoMode(page, 'focus', '/focus?manifestId=missing-audit-manifest');
   await expectVisible(page.getByTestId('urai-focus-empty-panel').or(page.getByTestId('urai-focus-action-panel')), 'focus fallback or action panel');
   await expectText(page.locator('body'), 'memory star');
 
-  await gotoMode(page, stage, 'replay', '/replay?manifestId=missing-audit-manifest');
+  stage = await gotoMode(page, 'replay', '/replay?manifestId=missing-audit-manifest');
   await expectVisible(page.getByTestId('urai-focus-empty-panel').or(page.getByTestId('urai-focus-action-panel')), 'replay fallback or action panel');
 
-  await gotoMode(page, stage, 'mirror', '/mirror');
+  stage = await gotoMode(page, 'mirror', '/mirror');
   await expectText(page.locator('body'), 'Reflection begins with a stable field');
   await expectVisible(page.getByTestId('urai-mirror-guidance'), 'mirror return guidance');
   await page.getByRole('button', { name: 'Return Home' }).click();
+  stage = await expectOneStage(page);
   await expectAttr(stage, 'data-scene-mode', 'home');
   await screenshot(page, report, 'data-states-mirror-return');
 }
 
-async function runVisual(page, stage, report) {
+async function runVisual(page, report) {
   const routes = [
     ['home', '/home', 'visual-home-desktop'],
     ['ascent', '/ascent', 'visual-ascent-desktop'],
@@ -213,12 +248,12 @@ async function runVisual(page, stage, report) {
   ];
 
   for (const [mode, path, name] of routes) {
-    await gotoMode(page, stage, mode, path);
+    await gotoMode(page, mode, path);
     await screenshot(page, report, name);
   }
 
   await page.setViewportSize({ width: 390, height: 844 });
-  await gotoMode(page, stage, 'life-map', '/life-map');
+  await gotoMode(page, 'life-map', '/life-map');
   await screenshot(page, report, 'visual-lifemap-mobile');
 }
 
@@ -230,7 +265,6 @@ async function run() {
     const browser = await chromium.launch();
     const page = await browser.newPage({ viewport: { width: 1440, height: 1000 } });
     collectConsole(page, report);
-    const stage = page.locator('.urai-scene-stage').first();
 
     const suites = {
       navigation: runNavigationStack,
@@ -244,7 +278,7 @@ async function run() {
     if (!selected.length) throw new Error(`Unknown suite: ${SUITE}`);
 
     for (const [name, fn] of selected) {
-      await fn(page, stage, report);
+      await fn(page, report);
       report.checks.push({ name, status: 'passed' });
     }
 
