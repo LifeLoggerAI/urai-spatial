@@ -1,12 +1,28 @@
 'use client'
 
 import { useFrame, useThree } from '@react-three/fiber'
-import { useEffect, useRef } from 'react'
+import { useEffect, useMemo, useRef } from 'react'
 import { PerspectiveCamera, Vector3 } from 'three'
 import { CameraPathKey, cameraPathPresets } from './cameraPaths'
 
+const CAMERA_BOUNDS = {
+  minX: -7.5,
+  maxX: 7.5,
+  minY: 0.35,
+  maxY: 7.25,
+  minZ: -18,
+  maxZ: 10,
+}
+
 function easeInOutCubic(x: number) {
   return x < 0.5 ? 4 * x * x * x : 1 - Math.pow(-2 * x + 2, 3) / 2
+}
+
+function clampVectorToBounds(v: Vector3) {
+  v.x = Math.min(CAMERA_BOUNDS.maxX, Math.max(CAMERA_BOUNDS.minX, v.x))
+  v.y = Math.min(CAMERA_BOUNDS.maxY, Math.max(CAMERA_BOUNDS.minY, v.y))
+  v.z = Math.min(CAMERA_BOUNDS.maxZ, Math.max(CAMERA_BOUNDS.minZ, v.z))
+  return v
 }
 
 export default function CinematicCameraRig({
@@ -14,32 +30,45 @@ export default function CinematicCameraRig({
   focusPosition,
   path = 'arrival',
   reducedMotion = false,
+  resetSignal = 0,
 }: {
   active: boolean
   focusPosition?: readonly [number, number, number] | null
   path?: CameraPathKey
   reducedMotion?: boolean
+  resetSignal?: number
 }) {
   const { camera, size } = useThree()
   const lookTarget = useRef(cameraPathPresets.arrival.target.clone())
   const desiredPosition = useRef(cameraPathPresets.arrival.position.clone())
   const transition = useRef({ key: 'idle', progress: 1 })
 
-  useEffect(() => {
+  const responsivePreset = useMemo(() => {
     const preset = cameraPathPresets[path]
-    camera.position.copy(preset.position)
-    camera.lookAt(preset.target)
+    return {
+      ...preset,
+      fov: size.width <= 430 ? Math.min(64, preset.fov + 6) : preset.fov,
+    }
+  }, [path, size.width])
+
+  useEffect(() => {
+    camera.position.copy(clampVectorToBounds(responsivePreset.position.clone()))
+    camera.lookAt(responsivePreset.target)
+    lookTarget.current.copy(responsivePreset.target)
+    desiredPosition.current.copy(clampVectorToBounds(responsivePreset.position.clone()))
+    transition.current = { key: `reset:${resetSignal}:${path}`, progress: 1 }
+
     if (camera instanceof PerspectiveCamera) {
-      camera.fov = size.width <= 430 ? Math.min(64, preset.fov + 6) : preset.fov
+      camera.fov = responsivePreset.fov
       camera.updateProjectionMatrix()
     }
-  }, [camera, path, size.width])
+  }, [camera, path, resetSignal, responsivePreset])
 
   useFrame(({ clock }, delta) => {
     if (!active) return
 
     const t = clock.elapsedTime
-    const preset = cameraPathPresets[path]
+    const preset = responsivePreset
     const focusKey = focusPosition ? focusPosition.join(':') : path
     if (transition.current.key !== focusKey) {
       transition.current = { key: focusKey, progress: reducedMotion ? 1 : 0 }
@@ -69,13 +98,15 @@ export default function CinematicCameraRig({
       )
     }
 
+    clampVectorToBounds(desiredPosition.current)
+
     if (camera instanceof PerspectiveCamera) {
-      const responsiveFov = size.width <= 430 ? Math.min(64, preset.fov + 6) : preset.fov
-      camera.fov += (responsiveFov - camera.fov) * (reducedMotion ? 0.12 : 0.035)
+      camera.fov += (preset.fov - camera.fov) * (reducedMotion ? 0.12 : 0.035)
       camera.updateProjectionMatrix()
     }
 
     camera.position.lerp(desiredPosition.current, reducedMotion ? 0.14 : focusPosition ? 0.032 + eased * 0.045 : 0.026)
+    clampVectorToBounds(camera.position)
     camera.lookAt(lookTarget.current)
   })
 
