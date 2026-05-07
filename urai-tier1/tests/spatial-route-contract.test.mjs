@@ -38,6 +38,7 @@ const homeScene = read(['src/scene/HomeScene.tsx'])
 const globalsCss = read(['src/app/globals.css'])
 const firestoreRules = read(['../firebase/firestore.rules', 'firebase/firestore.rules'])
 const manifestRenderer = read(['src/spatial/assets/ManifestRenderer.tsx'])
+const constellationManifests = read(['src/spatial/constellation/useConstellationManifests.ts'])
 
 test('primary routes use the canonical TierOneExperience shell', () => {
   assert.match(compact(homePage), /<TierOneExperiencemode="home"\/>/)
@@ -107,6 +108,18 @@ test('HomeScene locks focus, replay, mirror, and unwind behavior', () => {
   assert.match(source, /router\.push\('\/home'\)/)
 })
 
+test('focus and replay have empty loading and error states', () => {
+  const source = flat(homeScene)
+  assert.match(source, /function FocusEmptyPanel/)
+  assert.match(source, /data-testid="urai-focus-empty-panel"/)
+  assert.match(source, /const modeNeedsManifest = sceneMode === 'focus' \|\| sceneMode === 'replay'/)
+  assert.match(source, /const showEmptyFocusPanel = modeNeedsManifest && !activeManifest/)
+  assert.match(source, /loading \? 'Loading memory star\.\.\.'/)
+  assert.match(source, /error \? 'Memory star unavailable'/)
+  assert.match(source, /manifestId \? 'Memory star not ready'/)
+  assert.match(source, /'Choose a memory star first'/)
+})
+
 test('HomeScene does not trigger microphone permission or audio capture on load', () => {
   const source = homeScene
   assert.doesNotMatch(source, /getUserMedia/i)
@@ -127,6 +140,15 @@ test('assetManifests are readable by owner admin or launch-demo and writes stay 
   assert.match(source, /allow create: if isAdmin\(\) && isValidSpatialManifestCreate\(\);/)
   assert.match(source, /allow update: if isAdmin\(\) && isValidSpatialManifestCreate\(\);/)
   assert.match(source, /allow delete: if isAdmin\(\);/)
+})
+
+test('constellation Firestore listener uses scoped owner queries that match rules', () => {
+  const source = flat(constellationManifests)
+  assert.match(source, /where\('ownerId', '==', ownerId\)/)
+  assert.match(source, /orderBy\('createdAt', 'desc'\)/)
+  assert.match(source, /NEXT_PUBLIC_URAI_MANIFEST_OWNER_ID/)
+  assert.match(source, /LAUNCH_DEMO_OWNER_ID = 'launch-demo'/)
+  assert.doesNotMatch(source, /query\(collection\(getFirebaseDb\(\), 'assetManifests'\), orderBy/)
 })
 
 test('manifest renderer has safe fallbacks for unavailable assets', () => {
