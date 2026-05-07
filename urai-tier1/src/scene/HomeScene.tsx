@@ -16,6 +16,7 @@ import CinematicCameraRig from '../spatial/cinematic/CinematicCameraRig'
 import CinematicPostProcessing from '../spatial/cinematic/CinematicPostProcessing'
 import CinematicParticles from '../spatial/cinematic/CinematicParticles'
 import { cameraPathForState } from '../spatial/cinematic/cameraPaths'
+import { useReducedMotion } from '../spatial/hooks/useReducedMotion'
 import NarratorVoice from '../spatial/narrator/NarratorVoice'
 import NarratorHud from '../spatial/narrator/NarratorHud'
 import ConstellationLayer, { ConstellationNodePosition } from '../spatial/constellation/ConstellationLayer'
@@ -43,7 +44,7 @@ function manifestFocusHref(manifestId: string | null) {
   return manifestId ? `/focus?manifestId=${encodeURIComponent(manifestId)}` : '/focus'
 }
 
-function ModeGuidance({ mode, onEnter, onUnwind }: { mode: SceneMode; onEnter: () => void; onUnwind: () => void }) {
+function ModeGuidance({ mode, onEnter, onUnwind, reducedMotion }: { mode: SceneMode; onEnter: () => void; onUnwind: () => void; reducedMotion: boolean }) {
   if (mode === 'home') {
     return (
       <div className="urai-spatial-guidance urai-spatial-guidance--home" data-testid="urai-sky-guidance">
@@ -58,7 +59,8 @@ function ModeGuidance({ mode, onEnter, onUnwind }: { mode: SceneMode; onEnter: (
     return (
       <div className="urai-spatial-guidance urai-spatial-guidance--ascent" data-testid="urai-ascent-guidance" aria-live="polite">
         <span className="urai-spatial-guidance__pulse" aria-hidden="true" />
-        <span>Ascending into your Life Map...</span>
+        <span>{reducedMotion ? 'Ascent ready. Continue into your Life Map.' : 'Ascending into your Life Map...'}</span>
+        {reducedMotion ? <button type="button" onClick={onEnter}>Enter Life Map</button> : null}
       </div>
     )
   }
@@ -127,6 +129,7 @@ function FocusActionPanel({
 export default function HomeScene({ sceneMode = 'home' }: { sceneMode?: SceneMode }) {
   const router = useRouter()
   const params = useSearchParams()
+  const reducedMotion = useReducedMotion()
   const manifestId = params.get('manifestId')
   const isHomeMode = sceneMode === 'home'
   const isAscentMode = sceneMode === 'ascent'
@@ -145,6 +148,7 @@ export default function HomeScene({ sceneMode = 'home' }: { sceneMode?: SceneMod
 
   const enterLifeMap = useCallback(() => {
     if (sceneMode === 'home') router.push('/ascent')
+    if (sceneMode === 'ascent') router.push('/life-map')
   }, [router, sceneMode])
 
   const unwind = useCallback(() => {
@@ -183,14 +187,14 @@ export default function HomeScene({ sceneMode = 'home' }: { sceneMode?: SceneMod
   }
 
   useEffect(() => {
-    if (!isAscentMode) return
+    if (!isAscentMode || reducedMotion) return
 
     const timeout = window.setTimeout(() => {
       router.push('/life-map')
     }, ASCENT_DURATION_MS)
 
     return () => window.clearTimeout(timeout)
-  }, [isAscentMode, router])
+  }, [isAscentMode, reducedMotion, router])
 
   useEffect(() => {
     if (selectedManifest) setNarratorContext('return')
@@ -213,7 +217,7 @@ export default function HomeScene({ sceneMode = 'home' }: { sceneMode?: SceneMod
   const showFocusPanel = Boolean(activeManifest) && (Boolean(selectedManifest) || sceneMode === 'focus' || sceneMode === 'replay')
 
   return (
-    <div className="urai-scene-stage" data-scene-mode={sceneMode}>
+    <div className="urai-scene-stage" data-scene-mode={sceneMode} data-reduced-motion={reducedMotion ? 'true' : 'false'}>
       <div className="urai-scene-stage__fallback" aria-hidden="true" />
       {isHomeMode ? (
         <button
@@ -226,7 +230,7 @@ export default function HomeScene({ sceneMode = 'home' }: { sceneMode?: SceneMod
       ) : null}
       <Canvas shadows dpr={[1, 1.75]} gl={{ antialias: true, alpha: false }} onPointerMissed={enterLifeMap}>
         <PerspectiveCamera makeDefault position={[0, 2.85, 8.35]} fov={48} />
-        <CinematicCameraRig active focusPosition={selectedPosition} path={cameraPath} />
+        <CinematicCameraRig active focusPosition={selectedPosition} path={cameraPath} reducedMotion={reducedMotion} />
         <color attach="background" args={[isAscentMode ? '#03071f' : '#020611']} />
         <ambientLight intensity={isHomeMode ? 0.72 : isAscentMode ? 0.5 : 0.28} color="#b8d7ff" />
         <hemisphereLight args={['#d3e7ff', '#12071e', isHomeMode ? 1.45 : 0.95]} />
@@ -239,11 +243,11 @@ export default function HomeScene({ sceneMode = 'home' }: { sceneMode?: SceneMod
         {showAscentPortal ? <AscentPortal /> : null}
         {showOrb ? <Orb state={orbState} /> : null}
         {showConstellation ? <ConstellationLayer enabled selectedManifestId={selectedManifest?.manifestId ?? null} onSelect={handleSelect} /> : activeManifest ? <ManifestRenderer manifest={activeManifest} /> : null}
-        <CinematicParticles active />
-        <CinematicPostProcessing active={Boolean(activeManifest) || showConstellation || isAscentMode} />
+        <CinematicParticles active reducedMotion={reducedMotion} />
+        <CinematicPostProcessing active={Boolean(activeManifest) || showConstellation || isAscentMode} reducedMotion={reducedMotion} />
         <NarratorVoice manifest={activeManifest} context={narratorContext} />
       </Canvas>
-      <ModeGuidance mode={sceneMode} onEnter={enterLifeMap} onUnwind={unwind} />
+      <ModeGuidance mode={sceneMode} onEnter={enterLifeMap} onUnwind={unwind} reducedMotion={reducedMotion} />
       {showFocusPanel && activeManifest ? <FocusActionPanel manifest={activeManifest} mode={sceneMode} onReplay={startReplay} onUnwind={unwind} /> : null}
       <NarratorHud />
     </div>
