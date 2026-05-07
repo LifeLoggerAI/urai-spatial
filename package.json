@@ -13,7 +13,7 @@
     "test": "pnpm --filter urai-functions build && pnpm --filter urai-functions test && pnpm --filter urai-tier1 test && pnpm test:e2e && pnpm test:replay-tier5",
     "test:e2e": "pnpm --filter urai-tier1 exec node ../tests/spatial-lock.mjs",
     "test:playwright": "playwright test",
-    "test:firestore-rules": "node --test tests/firestore.assetManifests.rules.test.mjs",
+    "test:firestore-rules": "firebase emulators:exec --only firestore \"node --test tests/firestore.assetManifests.rules.test.mjs\"",
     "test:replay-tier5": "pnpm --filter urai-tier1 exec node ../tests/replay-tier5-lock.mjs",
     "preflight": "node ./scripts/preflight.mjs",
     "canon:check": "node scripts/canon-lock.mjs",
@@ -38,6 +38,7 @@
     "@types/node": "^25.5.0",
     "@types/react": "^19.2.14",
     "@types/three": "^0.183.1",
+    "firebase-tools": "^14.27.0",
     "pnpm": "^8.0.0",
     "typescript": "^5.9.3"
   },
