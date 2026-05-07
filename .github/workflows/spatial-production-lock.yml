@@ -1,3 +1,27 @@
+name: URAI Spatial Production Lock
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+jobs:
+  production-lock:
+    name: Production lock validation
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+      - name: Install
+        run: pnpm install --no-frozen-lockfile
       - name: Validate source-of-truth paths
         run: |
           test -f package.json
@@ -25,3 +49,25 @@
           test -f docs/URAI_SPATIAL_SOURCE_OF_TRUTH_LOCK.md
           test -f tests/spatial-lock.mjs
           test -f tests/replay-tier5-lock.mjs
+      - name: Preflight
+        run: pnpm preflight
+      - name: Runtime authority
+        run: pnpm runtime:authority
+      - name: Canon lock
+        run: pnpm test:canon
+      - name: Typecheck app
+        run: pnpm --filter urai-tier1 typecheck
+      - name: Test app
+        run: pnpm --filter urai-tier1 test
+      - name: Build app
+        run: pnpm --filter urai-tier1 build
+      - name: Build functions
+        run: pnpm --filter urai-functions build
+      - name: Test functions
+        run: pnpm --filter urai-functions test
+      - name: Install Playwright browser and Linux dependencies
+        run: pnpm playwright:install-deps && pnpm playwright:install
+      - name: Spatial E2E lock
+        run: pnpm test:e2e
+      - name: Replay Tier 5 lock
+        run: pnpm test:replay-tier5
