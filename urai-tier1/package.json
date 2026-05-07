@@ -39,7 +39,13 @@
     "test:unit": "node --import tsx --test tests/*.test.mjs",
     "test:lifemap": "node --import tsx --test tests/lifemap-scene-behavior.test.mjs tests/lifemap*.test.mjs tests/lifemap-*.test.mjs",
     "test:visual:home": "playwright test tests/home-cinematic.visual.spec.ts --update-snapshots",
-    "test:visual:spatial-flow": "playwright test tests/spatial-flow.visual.spec.ts --update-snapshots"
+    "test:visual:spatial-flow": "playwright test tests/spatial-flow.visual.spec.ts --update-snapshots",
+    "test:visual:spatial": "node ../tests/spatial-tier-lock-hardening.mjs --suite=visual",
+    "test:e2e:navigation-stack": "node ../tests/spatial-tier-lock-hardening.mjs --suite=navigation",
+    "test:e2e:camera-transitions": "node ../tests/spatial-tier-lock-hardening.mjs --suite=camera",
+    "test:e2e:race-conditions": "node ../tests/spatial-tier-lock-hardening.mjs --suite=race",
+    "test:e2e:data-states": "node ../tests/spatial-tier-lock-hardening.mjs --suite=data",
+    "test:tier-lock-hardening": "node ../tests/spatial-tier-lock-hardening.mjs --suite=all"
   },
   "dependencies": {
     "@react-three/fiber": "^9.5.0",
