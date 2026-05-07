@@ -107,8 +107,8 @@ function ModeGuidance({ mode, onEnter, onUnwind, reducedMotion }: { mode: SceneM
 
 function CameraResetButton({ onReset }: { onReset: () => void }) {
   return (
-    <button type="button" className="urai-camera-reset" data-testid="urai-camera-reset" aria-label="Reset spatial camera" onClick={onReset}>
-      Reset View
+    <button type="button" className="urai-camera-reset" data-testid="urai-camera-reset" aria-label="Recenter Mirror field camera" onClick={onReset}>
+      Recenter Field
     </button>
   )
 }
