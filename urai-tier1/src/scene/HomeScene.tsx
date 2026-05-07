@@ -7,6 +7,7 @@ import Ground from './Ground'
 import Orb, { OrbState } from './Orb'
 import Sky from './Sky'
 import Atmosphere from './Atmosphere'
+import AscentPortal from './AscentPortal'
 import ManifestRenderer from '../spatial/assets/ManifestRenderer'
 import { useManifest } from '../spatial/assets/useManifest'
 import { SpatialAssetManifest } from '../spatial/assets/manifestTypes'
@@ -130,9 +131,10 @@ export default function HomeScene({ sceneMode = 'home' }: { sceneMode?: SceneMod
   const isHomeMode = sceneMode === 'home'
   const isAscentMode = sceneMode === 'ascent'
   const isConstellationRoute = sceneMode === 'life-map' || sceneMode === 'demo' || params.get('mode') === 'constellation'
-  const showHomeWorld = isHomeMode || isAscentMode
+  const showHomeWorld = isHomeMode
+  const showAscentPortal = isAscentMode
   const showConstellation = isConstellationRoute
-  const showOrb = isHomeMode || isAscentMode || sceneMode === 'focus' || sceneMode === 'replay' || sceneMode === 'mirror'
+  const showOrb = isHomeMode || sceneMode === 'focus' || sceneMode === 'replay' || sceneMode === 'mirror'
   const { manifest } = useManifest(manifestId)
   const [selectedManifest, setSelectedManifest] = useState<SpatialAssetManifest | null>(null)
   const [selectedPosition, setSelectedPosition] = useState<ConstellationNodePosition | null>(null)
@@ -174,6 +176,7 @@ export default function HomeScene({ sceneMode = 'home' }: { sceneMode?: SceneMod
   }, [manifestId, router, selectedManifest])
 
   function handleSelect(manifest: SpatialAssetManifest, position: ConstellationNodePosition) {
+    router.push(`/focus?manifestId=${encodeURIComponent(manifest.manifestId)}`)
     setSelectedManifest(manifest)
     setSelectedPosition(position)
     setNarratorContext('return')
@@ -211,6 +214,7 @@ export default function HomeScene({ sceneMode = 'home' }: { sceneMode?: SceneMod
 
   return (
     <div className="urai-scene-stage" data-scene-mode={sceneMode}>
+      <div className="urai-scene-stage__fallback" aria-hidden="true" />
       {isHomeMode ? (
         <button
           type="button"
@@ -223,15 +227,16 @@ export default function HomeScene({ sceneMode = 'home' }: { sceneMode?: SceneMod
       <Canvas shadows dpr={[1, 1.75]} gl={{ antialias: true, alpha: false }} onPointerMissed={enterLifeMap}>
         <PerspectiveCamera makeDefault position={[0, 2.85, 8.35]} fov={48} />
         <CinematicCameraRig active focusPosition={selectedPosition} path={cameraPath} />
-        <color attach="background" args={['#020611']} />
-        <ambientLight intensity={0.24} color="#8ea2ff" />
-        <hemisphereLight args={['#9fc3ff', '#12071e', 0.9]} />
-        <directionalLight position={[-5.4, 7.4, 3.8]} intensity={1.7} color="#d7e6ff" castShadow shadow-mapSize-width={2048} shadow-mapSize-height={2048} />
-        <pointLight position={[0.7, 0.55, -1.05]} intensity={1.88} color="#c9b0ff" distance={7.2} />
-        <pointLight position={[-3.2, 2.35, -3.8]} intensity={0.8} color="#62e5ff" distance={11} />
+        <color attach="background" args={[isAscentMode ? '#03071f' : '#020611']} />
+        <ambientLight intensity={isHomeMode ? 0.72 : isAscentMode ? 0.5 : 0.28} color="#b8d7ff" />
+        <hemisphereLight args={['#d3e7ff', '#12071e', isHomeMode ? 1.45 : 0.95]} />
+        <directionalLight position={[-5.4, 7.4, 3.8]} intensity={isHomeMode ? 2.45 : 1.85} color="#d7e6ff" castShadow shadow-mapSize-width={2048} shadow-mapSize-height={2048} />
+        <pointLight position={[0.7, 0.55, -1.05]} intensity={isHomeMode ? 2.8 : 2.05} color="#c9b0ff" distance={7.2} />
+        <pointLight position={[-3.2, 2.35, -3.8]} intensity={isHomeMode ? 1.35 : 0.9} color="#62e5ff" distance={11} />
         <Atmosphere />
         <Sky />
         {showHomeWorld ? <Ground /> : null}
+        {showAscentPortal ? <AscentPortal /> : null}
         {showOrb ? <Orb state={orbState} /> : null}
         {showConstellation ? <ConstellationLayer enabled selectedManifestId={selectedManifest?.manifestId ?? null} onSelect={handleSelect} /> : activeManifest ? <ManifestRenderer manifest={activeManifest} /> : null}
         <CinematicParticles active />
