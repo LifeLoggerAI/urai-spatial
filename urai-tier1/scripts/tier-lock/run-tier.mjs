@@ -1,30 +1,31 @@
 import { spawnSync } from 'node:child_process'
 
 const tier = process.argv[2] ?? 'tier5'
+const reportCommand = ['node', ['scripts/tier-lock/write-tier-report.mjs', tier]]
 
 const commands = {
   tier1: [
     ['node', ['scripts/tier-lock/route-audit.mjs']],
-    ['node', ['scripts/tier-lock/write-tier-report.mjs']],
+    reportCommand,
   ],
   tier2: [
     ['node', ['scripts/tier-lock/route-audit.mjs']],
     ['node', ['scripts/tier-lock/console-warning-audit.mjs']],
-    ['node', ['scripts/tier-lock/write-tier-report.mjs']],
+    reportCommand,
   ],
   tier3: [
     ['node', ['scripts/tier-lock/route-audit.mjs']],
     ['node', ['scripts/tier-lock/console-warning-audit.mjs']],
     ['pnpm', ['run', 'typecheck']],
     ['pnpm', ['run', 'test:unit']],
-    ['node', ['scripts/tier-lock/write-tier-report.mjs']],
+    reportCommand,
   ],
   tier4: [
     ['node', ['scripts/tier-lock/route-audit.mjs']],
     ['node', ['scripts/tier-lock/console-warning-audit.mjs']],
     ['node', ['scripts/tier-lock/env-readiness-audit.mjs']],
     ['pnpm', ['run', 'build']],
-    ['node', ['scripts/tier-lock/write-tier-report.mjs']],
+    reportCommand,
   ],
   tier5: [
     ['node', ['scripts/tier-lock/route-audit.mjs']],
@@ -33,7 +34,7 @@ const commands = {
     ['pnpm', ['run', 'typecheck']],
     ['pnpm', ['run', 'test:unit']],
     ['pnpm', ['run', 'build']],
-    ['node', ['scripts/tier-lock/write-tier-report.mjs']],
+    reportCommand,
   ],
 }
 
