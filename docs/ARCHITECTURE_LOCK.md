@@ -18,14 +18,32 @@ Next.js route
   -> cinematic camera, sky, ground, orb, constellation, manifest renderer, particles, postprocessing, narrator
 ```
 
+The canonical spatial sequence is:
+
+```txt
+Home -> Ascent -> Life Map -> Focus -> Replay -> Mirror
+```
+
+Route/state mapping:
+
+- `/` and `/home` render `mode="home"`.
+- `/ascent` renders `mode="ascent"` as a short cinematic transition state.
+- `/life-map` renders `mode="life-map"`.
+- `/focus` renders `mode="focus"`.
+- `/replay` renders `mode="replay"`.
+- `/mirror` renders `mode="mirror"`.
+
+`ascent` is a first-class canonical mode, but it is a transition layer rather than a destination. Home sky/orb activation routes to `/ascent`; the ascent state auto-advances to `/life-map` after the transition duration.
+
 This path is responsible for:
 
 - `/` and `/home` home atmosphere
+- `/ascent` cinematic rise into the Life Map
 - `/life-map` constellation view
 - `/focus` focused memory state
 - `/replay` cinematic replay state
 - `/mirror` launch-safe mirror/detail state
-- sky-click navigation into Life Map
+- sky-click navigation into Ascent, then Life Map
 - constellation node selection
 - focus panel and replay entry
 - Escape unwind behavior
@@ -48,7 +66,7 @@ Rules:
 1. Demo state must remain deterministic.
 2. Firestore-backed state must be optional at launch.
 3. `NEXT_PUBLIC_URAI_MANIFEST_FIRESTORE=true` enables live manifest loading.
-4. If Firestore is unavailable, the app must fall back to seed manifests without breaking Home, Life Map, Focus, or Replay.
+4. If Firestore is unavailable, the app must fall back to seed manifests without breaking Home, Ascent, Life Map, Focus, or Replay.
 5. Memory stars should be generated from manifest/memory objects, not duplicated as disconnected hardcoded systems.
 
 ## Legacy / migration-candidate path
@@ -80,11 +98,12 @@ Known contradiction in this path:
 ## Scene authority rules
 
 1. `HomeScene` owns routed runtime state for V1 launch.
-2. `ConstellationLayer` owns Life Map node layout and selection for V1 launch.
-3. `ManifestRenderer` owns selected asset/manifest rendering.
-4. `CinematicCameraRig` owns camera movement in the canonical path.
-5. Narrator UI/voice must attach to the canonical routed state, not to duplicate state stores.
-6. Zustand scene state in legacy modules must not become a second source of truth unless intentionally merged.
+2. `ascent` is the only canonical bridge between Home and Life Map.
+3. `ConstellationLayer` owns Life Map node layout and selection for V1 launch.
+4. `ManifestRenderer` owns selected asset/manifest rendering.
+5. `CinematicCameraRig` owns camera movement in the canonical path.
+6. Narrator UI/voice must attach to the canonical routed state, not to duplicate state stores.
+7. Zustand scene state in legacy modules must not become a second source of truth unless intentionally merged.
 
 ## V1 launch acceptance
 
@@ -92,11 +111,13 @@ URAI Spatial V1 is launch-locked when all of the following pass:
 
 - `/` renders Home.
 - `/home` renders Home.
+- `/ascent` renders the cinematic ascent transition.
+- `/ascent` auto-advances to `/life-map`.
 - `/life-map` renders the Life Map / constellation state.
 - `/focus` renders focused memory state.
 - `/replay` renders replay state.
 - `/mirror` renders the mirror/detail fallback without breaking spatial shell.
-- Sky click enters Life Map.
+- Sky click enters Ascent, then Life Map.
 - Constellation node click opens focus panel.
 - Focus panel can start replay.
 - Escape unwinds replay -> focus -> life-map -> home.
@@ -115,7 +136,7 @@ URAI Spatial V1 is launch-locked when all of the following pass:
 ### Phase 1: Canonicalize
 
 - Keep `TierOneExperience -> HomeScene` as V1 runtime authority.
-- Add route and interaction tests around canonical behavior.
+- Lock `Home -> Ascent -> Life Map -> Focus -> Replay -> Mirror` in route and interaction tests.
 - Mark legacy modules as migration candidates.
 
 ### Phase 2: Data lock
@@ -126,7 +147,7 @@ URAI Spatial V1 is launch-locked when all of the following pass:
 
 ### Phase 3: Interaction lock
 
-- Lock sky click, node click, focus panel, replay entry, and Escape unwind.
+- Lock sky click, ascent auto-advance, node click, focus panel, replay entry, and Escape unwind.
 - Ensure keyboard and reduced-motion paths remain accessible.
 
 ### Phase 4: Cinematic upgrade
@@ -145,4 +166,4 @@ URAI Spatial V1 is launch-locked when all of the following pass:
 
 ## Definition of done
 
-URAI Spatial is complete for V1 when it has one canonical runtime architecture, no duplicate scene authority, deterministic demo and optional Firestore-backed memory constellations, locked Home -> LifeMap -> Focus -> Replay navigation, no accessibility regressions, no unwanted microphone prompt, passing validation, and a clear split between V1 launch lock and V2/AAA expansion work.
+URAI Spatial is complete for V1 when it has one canonical runtime architecture, no duplicate scene authority, deterministic demo and optional Firestore-backed memory constellations, locked Home -> Ascent -> Life Map -> Focus -> Replay -> Mirror navigation, no accessibility regressions, no unwanted microphone prompt, passing validation, and a clear split between V1 launch lock and V2/AAA expansion work.
