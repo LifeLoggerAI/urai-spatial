@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from 'next'
 import './globals.css'
+import './boundary.css'
 import '@/scene/spatialVisualOverlay.css'
 import '@/spatial/home/visual/HomeScene.css'
 import '@/spatial/companion/companionPolish.css'
