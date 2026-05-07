@@ -52,10 +52,14 @@ const DEFAULT_LOADING: SpatialTierGateState = {
   reasons: [],
 }
 
+function strictTierGateEnabled() {
+  return process.env.NEXT_PUBLIC_URAI_REQUIRE_TIER_GATE === 'true'
+}
+
 export function useSpatialTierGate(featureId: SpatialFeatureId | null, options: { enabled?: boolean } = {}) {
-  const enabled = options.enabled !== false && Boolean(featureId)
+  const enabled = options.enabled !== false && strictTierGateEnabled() && Boolean(featureId)
   const [state, setState] = useState<SpatialTierGateState>(() => {
-    if (!featureId || PUBLIC_FEATURES.has(featureId)) return DEFAULT_ALLOWED
+    if (!enabled || !featureId || PUBLIC_FEATURES.has(featureId)) return DEFAULT_ALLOWED
     return DEFAULT_LOADING
   })
 
