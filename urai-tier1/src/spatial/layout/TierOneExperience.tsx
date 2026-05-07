@@ -2,6 +2,7 @@
 
 import React, { Suspense } from "react";
 import HomeScene from "@/scene/HomeScene";
+import { MirrorExperience } from "./MirrorExperience";
 import { SpatialShell } from "./SpatialShell";
 
 export type TierOneExperienceMode = "home" | "ascent" | "life-map" | "demo" | "replay" | "focus" | "mirror";
@@ -47,8 +48,8 @@ const fallbackCopy: Record<TierOneExperienceMode, { eyebrow: string; title: stri
   },
   mirror: {
     eyebrow: "Mirror",
-    title: "Reflection begins with a stable field.",
-    description: "The mirror route keeps the scene grounded while deeper pattern summaries and private data sync come online.",
+    title: "Your private reflection field",
+    description: "URAI turns today’s approved signals into a calm visual mirror — mood, rhythm, recovery, and patterns you can choose to explore.",
   },
 };
 
@@ -61,6 +62,7 @@ function shellModeFor(mode: TierOneExperienceMode) {
 
 export function TierOneExperience({ mode, title, eyebrow, description, cta }: Props) {
   const copy = fallbackCopy[mode];
+  const useMirrorLaunchOverlay = mode === "mirror" && !title && !eyebrow && !description && !cta;
 
   return (
     <SpatialShell mode={shellModeFor(mode)}>
@@ -68,12 +70,16 @@ export function TierOneExperience({ mode, title, eyebrow, description, cta }: Pr
         <HomeScene sceneMode={mode} />
       </Suspense>
 
-      <aside className="tier-one-route-card" data-route-mode={mode}>
-        <div className="tier-one-route-card__eyebrow">{eyebrow ?? copy.eyebrow}</div>
-        <h1>{title ?? copy.title}</h1>
-        <p>{description ?? copy.description}</p>
-        {cta ? <div className="tier-one-route-card__cta">{cta}</div> : null}
-      </aside>
+      {useMirrorLaunchOverlay ? (
+        <MirrorExperience />
+      ) : (
+        <aside className="tier-one-route-card" data-route-mode={mode}>
+          <div className="tier-one-route-card__eyebrow">{eyebrow ?? copy.eyebrow}</div>
+          <h1>{title ?? copy.title}</h1>
+          <p>{description ?? copy.description}</p>
+          {cta ? <div className="tier-one-route-card__cta">{cta}</div> : null}
+        </aside>
+      )}
     </SpatialShell>
   );
 }
