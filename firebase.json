@@ -37,7 +37,8 @@
       "codebase": "urai-spatial-functions",
       "runtime": "nodejs20",
       "predeploy": [
-        "npm --prefix \"$RESOURCE_DIR\" run build"
+        "pnpm --filter urai-tier1 typecheck",
+        "pnpm --filter urai-functions build"
       ],
       "ignore": [
         "node_modules",

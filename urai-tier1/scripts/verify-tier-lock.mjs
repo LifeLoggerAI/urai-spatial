@@ -4,6 +4,8 @@ const checks = [
   'src/spatial/canon/tierLockState.ts',
   'src/spatial/hud/CanonicalTierLockHud.tsx',
   'src/app/page.tsx',
+  'src/spatial/layout/TierOneExperience.tsx',
+  'src/scene/HomeScene.tsx',
   'docs/audits/TIER_LOCK_VISUAL_CLOSEOUT.md',
 ]
 
@@ -26,8 +28,18 @@ const fileNeedles = {
     'URAI_SPATIAL_TIER_LOCKS',
   ],
   'src/app/page.tsx': [
-    '<HomeScene />',
-    '<Suspense fallback={null}>',
+    'TierOneExperience',
+    'mode="home"',
+  ],
+  'src/spatial/layout/TierOneExperience.tsx': [
+    '@/scene/HomeScene',
+    '<HomeScene sceneMode={mode} />',
+  ],
+  'src/scene/HomeScene.tsx': [
+    "type SceneMode = 'home' | 'ascent' | 'life-map' | 'demo' | 'replay' | 'focus' | 'mirror'",
+    "router.push('/ascent')",
+    "router.push('/life-map')",
+    'data-scene-mode={sceneMode}',
   ],
   'docs/audits/TIER_LOCK_VISUAL_CLOSEOUT.md': [
     'Tier-1 locked',
@@ -58,7 +70,7 @@ for (const file of checks) {
 }
 
 const home = fs.existsSync('src/app/page.tsx') ? fs.readFileSync('src/app/page.tsx', 'utf8') : ''
-for (const forbidden of ['CanonicalTierLockHud', '<CanonicalTierLockHud />', 'Loading URAI Spatial']) {
+for (const forbidden of ['CanonicalTierLockHud', '<CanonicalTierLockHud />', 'Loading URAI Spatial', '@/spatial/scene/SpatialScene']) {
   if (home.includes(forbidden)) {
     console.error(`[tier-lock] home invariant violation: ${forbidden} should not render in src/app/page.tsx`)
     failed = true
@@ -73,4 +85,4 @@ if (!pkg.scripts || pkg.scripts['verify:tier-lock'] !== 'node scripts/verify-tie
 
 if (failed) process.exit(1)
 
-console.log('[tier-lock] verified: Tier locks preserved and Tier-1 home invariant remains no-HUD')
+console.log('[tier-lock] verified: Tier locks preserved and canonical TierOneExperience -> HomeScene runtime remains no-HUD')

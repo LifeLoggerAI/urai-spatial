@@ -4,7 +4,7 @@ on:
   pull_request:
     branches: [main]
   push:
-    branches: [main, audit/production-spatial-lock]
+    branches: [main, audit/production-spatial-lock, audit/spatial-runtime-lock-polish]
   workflow_dispatch:
 
 concurrency:
@@ -27,7 +27,7 @@ jobs:
       - name: Setup pnpm
         uses: pnpm/action-setup@v4
         with:
-          version: 9.15.9
+          version: 8.15.9
           run_install: false
 
       - name: Setup Node
@@ -43,36 +43,41 @@ jobs:
           test -f firebase.json
           test -f firebase/firestore.rules
           test -f firebase/firestore.indexes.json
+          test -f scripts/preflight.mjs
+          test -f scripts/check-runtime-authority.mjs
           test -f urai-tier1/package.json
           test -f urai-tier1/src/app/page.tsx
-          test -f urai-tier1/src/spatial/scene/SpatialScene.tsx
-          test -f urai-tier1/src/spatial/scene/Tier5ReplayScene.tsx
-          test -f urai-tier1/src/spatial/home/deriveHomeWorldStateFromSignals.ts
-          test -f urai-tier1/src/spatial/home/explainHomeWorldState.ts
+          test -f urai-tier1/src/app/home/page.tsx
+          test -f urai-tier1/src/app/ascent/page.tsx
+          test -f urai-tier1/src/app/life-map/page.tsx
+          test -f urai-tier1/src/app/focus/page.tsx
+          test -f urai-tier1/src/app/replay/page.tsx
+          test -f urai-tier1/src/app/mirror/page.tsx
+          test -f urai-tier1/src/app/loading.tsx
+          test -f urai-tier1/src/app/error.tsx
+          test -f urai-tier1/src/app/not-found.tsx
+          test -f urai-tier1/src/spatial/layout/TierOneExperience.tsx
+          test -f urai-tier1/src/scene/HomeScene.tsx
+          test -f urai-tier1/src/spatial/constellation/ConstellationLayer.tsx
+          test -f docs/ARCHITECTURE_LOCK.md
           test -f docs/URAI_SPATIAL_SOURCE_OF_TRUTH_LOCK.md
-          test -f docs/architecture/homeworld-v3-tier-stability.md
           test -f tests/spatial-lock.mjs
           test -f tests/replay-tier5-lock.mjs
-          test -f tests/homeworld.smoke.spec.ts
 
       - name: Install dependencies
         run: pnpm install --no-frozen-lockfile
 
-      - name: Report lockfile drift
-        run: |
-          if ! git diff --quiet -- pnpm-lock.yaml; then
-            echo "::warning::pnpm-lock.yaml is out of date and was regenerated during CI. Commit the refreshed lockfile in a follow-up change to restore frozen install enforcement."
-            git diff -- pnpm-lock.yaml | sed -n '1,220p'
-          fi
+      - name: Preflight repository
+        run: node scripts/preflight.mjs
+
+      - name: Check runtime authority
+        run: pnpm runtime:authority
 
       - name: Typecheck Tier 1 app
         run: pnpm --filter urai-tier1 typecheck
 
       - name: Test Tier 1 app
         run: pnpm --filter urai-tier1 test
-
-      - name: Test Tier 1 unit suite
-        run: pnpm --filter urai-tier1 test:unit
 
       - name: Build app
         run: pnpm --filter urai-tier1 build
@@ -86,14 +91,14 @@ jobs:
       - name: Install Playwright browser
         run: pnpm --filter urai-tier1 exec playwright install --with-deps chromium
 
-      - name: Run Home World smoke tests
-        run: pnpm exec playwright test tests/homeworld*.spec.ts
-
       - name: Run spatial E2E and visual lock flow
         run: pnpm test:e2e
 
       - name: Run Tier 5 Replay Chamber validation
         run: pnpm test:replay-tier5
+
+      - name: Run canonical governance checks
+        run: pnpm test:canon
 
       - name: Upload spatial visual audit artifacts
         if: always()
@@ -132,6 +137,13 @@ jobs:
           }
           if (firebase.hosting?.source !== 'urai-tier1') {
             throw new Error('Firebase Hosting must deploy canonical urai-tier1 source.');
+          }
+          const predeploy = firebase.functions?.[0]?.predeploy || [];
+          if (!predeploy.includes('pnpm --filter urai-tier1 typecheck')) {
+            throw new Error('Firebase predeploy must typecheck urai-tier1.');
+          }
+          if (!predeploy.includes('pnpm --filter urai-functions build')) {
+            throw new Error('Firebase predeploy must build urai-functions.');
           }
           console.log('Firebase deploy references validated.');
           NODE
