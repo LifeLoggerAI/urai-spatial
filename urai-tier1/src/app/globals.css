@@ -136,6 +136,234 @@ canvas {
   box-shadow: 0 0 12px rgba(103, 232, 249, 0.42);
 }
 
+.urai-visual-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+.urai-visual-caption {
+  position: absolute;
+  left: 24px;
+  bottom: 86px;
+  display: grid;
+  gap: 2px;
+  padding: 10px 14px;
+  border: 1px solid rgba(142, 220, 255, 0.24);
+  border-radius: 18px;
+  background: rgba(3, 7, 18, 0.36);
+  box-shadow: 0 18px 64px rgba(0, 0, 0, 0.22);
+  backdrop-filter: blur(16px);
+}
+
+.urai-visual-caption--right {
+  left: auto;
+  right: 24px;
+}
+
+.urai-visual-caption strong {
+  font-size: 0.76rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: #e0f7ff;
+}
+
+.urai-visual-caption span {
+  color: rgba(235, 244, 255, 0.68);
+  font-size: 0.74rem;
+}
+
+.urai-home-sky-band {
+  position: absolute;
+  inset: 0 0 34% 0;
+  background:
+    radial-gradient(circle at 50% 44%, rgba(126, 205, 255, 0.22), transparent 24%),
+    radial-gradient(circle at 18% 26%, rgba(190, 172, 255, 0.16), transparent 22%),
+    linear-gradient(180deg, rgba(20, 42, 93, 0.98), rgba(9, 18, 46, 0.72) 55%, transparent 100%);
+}
+
+.urai-home-cloud {
+  position: absolute;
+  width: 54vw;
+  height: 16vh;
+  border-radius: 999px;
+  filter: blur(22px);
+  opacity: 0.34;
+  background: rgba(174, 219, 255, 0.36);
+}
+
+.urai-home-cloud--one {
+  left: -12vw;
+  top: 25vh;
+}
+
+.urai-home-cloud--two {
+  right: -10vw;
+  top: 34vh;
+  background: rgba(184, 164, 255, 0.3);
+}
+
+.urai-home-ground {
+  position: absolute;
+  left: -10%;
+  right: -10%;
+  bottom: -11%;
+  height: 34%;
+  border-radius: 50% 50% 0 0;
+  background:
+    radial-gradient(ellipse at 50% 0%, rgba(103, 232, 249, 0.18), transparent 38%),
+    linear-gradient(180deg, rgba(36, 48, 78, 0.98), rgba(8, 11, 24, 1));
+  box-shadow: 0 -24px 90px rgba(103, 232, 249, 0.12);
+}
+
+.urai-home-ground-glow {
+  position: absolute;
+  left: 18%;
+  right: 18%;
+  bottom: 18%;
+  height: 8%;
+  border-radius: 999px;
+  background: rgba(103, 232, 249, 0.18);
+  filter: blur(28px);
+}
+
+.urai-home-orb {
+  position: absolute;
+  left: 50%;
+  top: 57%;
+  width: clamp(104px, 14vw, 178px);
+  aspect-ratio: 1;
+  transform: translate(-50%, -50%);
+}
+
+.urai-home-orb__halo,
+.urai-home-orb__core {
+  position: absolute;
+  inset: 0;
+  border-radius: 999px;
+}
+
+.urai-home-orb__halo {
+  background: radial-gradient(circle, rgba(139, 92, 246, 0.54), rgba(103, 232, 249, 0.16) 42%, transparent 70%);
+  filter: blur(8px);
+  animation: uraiOrbBreath 3.2s ease-in-out infinite;
+}
+
+.urai-home-orb__core {
+  inset: 24%;
+  background: radial-gradient(circle at 35% 28%, #ffffff, #d6c7ff 22%, #8b5cf6 52%, #22d3ee 100%);
+  box-shadow: 0 0 54px rgba(139, 92, 246, 0.55), 0 0 120px rgba(34, 211, 238, 0.18);
+}
+
+.urai-ascent-tunnel {
+  position: absolute;
+  left: 50%;
+  top: 48%;
+  width: min(72vw, 720px);
+  aspect-ratio: 1;
+  transform: translate(-50%, -50%);
+}
+
+.urai-ascent-tunnel span {
+  position: absolute;
+  inset: 12%;
+  border: 2px solid rgba(103, 232, 249, 0.22);
+  border-radius: 999px;
+  box-shadow: 0 0 42px rgba(103, 232, 249, 0.12), inset 0 0 44px rgba(139, 92, 246, 0.12);
+  animation: uraiAscentRing 2.8s ease-in-out infinite;
+}
+
+.urai-ascent-tunnel span:nth-child(2) { inset: 22%; animation-delay: 0.25s; border-color: rgba(167, 139, 250, 0.32); }
+.urai-ascent-tunnel span:nth-child(3) { inset: 33%; animation-delay: 0.5s; border-color: rgba(125, 211, 252, 0.34); }
+.urai-ascent-tunnel span:nth-child(4) { inset: 44%; animation-delay: 0.75s; border-color: rgba(255, 255, 255, 0.28); }
+
+.urai-ascent-portal-core {
+  position: absolute;
+  left: 50%;
+  top: 48%;
+  width: clamp(84px, 13vw, 150px);
+  aspect-ratio: 1;
+  border-radius: 999px;
+  transform: translate(-50%, -50%);
+  background: radial-gradient(circle, #ffffff, #67e8f9 22%, #8b5cf6 52%, transparent 72%);
+  filter: blur(0.5px);
+  box-shadow: 0 0 76px rgba(103, 232, 249, 0.55), 0 0 180px rgba(139, 92, 246, 0.36);
+}
+
+.urai-ascent-stream {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 16%;
+  background: linear-gradient(180deg, transparent, rgba(103, 232, 249, 0.18), transparent);
+  filter: blur(18px);
+  transform: skewX(-18deg);
+}
+
+.urai-ascent-stream--one { left: 24%; }
+.urai-ascent-stream--two { right: 22%; background: linear-gradient(180deg, transparent, rgba(167, 139, 250, 0.18), transparent); }
+
+.urai-life-map-nebula {
+  position: absolute;
+  inset: 8% 8% 10%;
+  border-radius: 44px;
+  background:
+    radial-gradient(circle at 48% 44%, rgba(103, 232, 249, 0.26), transparent 14%),
+    radial-gradient(circle at 24% 38%, rgba(139, 92, 246, 0.25), transparent 20%),
+    radial-gradient(circle at 72% 60%, rgba(244, 114, 182, 0.18), transparent 22%),
+    radial-gradient(circle at 50% 50%, rgba(255, 255, 255, 0.08), transparent 46%);
+  box-shadow: inset 0 0 120px rgba(103, 232, 249, 0.06);
+}
+
+.urai-life-map-lines {
+  position: absolute;
+  inset: 14% 12%;
+  opacity: 0.32;
+  background:
+    linear-gradient(28deg, transparent 0 23%, rgba(103, 232, 249, 0.35) 23.2% 23.6%, transparent 23.8% 100%),
+    linear-gradient(142deg, transparent 0 36%, rgba(167, 139, 250, 0.32) 36.2% 36.5%, transparent 36.7% 100%),
+    linear-gradient(86deg, transparent 0 52%, rgba(103, 232, 249, 0.28) 52.2% 52.5%, transparent 52.7% 100%);
+}
+
+.urai-life-map-star {
+  position: absolute;
+  border-radius: 999px;
+  background: #e0f7ff;
+  box-shadow: 0 0 18px rgba(103, 232, 249, 0.9), 0 0 46px rgba(139, 92, 246, 0.42);
+  animation: uraiStarPulse 2.4s ease-in-out infinite;
+}
+
+.urai-life-map-star span {
+  position: absolute;
+  left: 14px;
+  top: -7px;
+  padding: 4px 7px;
+  border-radius: 999px;
+  background: rgba(3, 7, 18, 0.44);
+  border: 1px solid rgba(142, 220, 255, 0.18);
+  color: rgba(235, 244, 255, 0.72);
+  font-size: 0.62rem;
+  white-space: nowrap;
+  backdrop-filter: blur(10px);
+}
+
+@keyframes uraiOrbBreath {
+  0%, 100% { transform: scale(0.96); opacity: 0.88; }
+  50% { transform: scale(1.08); opacity: 1; }
+}
+
+@keyframes uraiAscentRing {
+  0%, 100% { transform: scale(0.96); opacity: 0.5; }
+  50% { transform: scale(1.06); opacity: 1; }
+}
+
+@keyframes uraiStarPulse {
+  0%, 100% { transform: scale(0.92); opacity: 0.7; }
+  50% { transform: scale(1.35); opacity: 1; }
+}
+
 .urai-camera-reset {
   position: absolute;
   right: 22px;
@@ -558,6 +786,20 @@ canvas {
     transform: translateY(-54px);
   }
 
+  .urai-visual-caption {
+    left: 14px;
+    bottom: 74px;
+  }
+
+  .urai-visual-caption--right {
+    left: 14px;
+    right: auto;
+  }
+
+  .urai-life-map-star span {
+    display: none;
+  }
+
   .tier-one-admin-row {
     grid-template-columns: 1fr;
     text-align: center;
@@ -571,7 +813,10 @@ canvas {
     scroll-behavior: auto !important;
   }
 
-  .urai-spatial-guidance__pulse {
+  .urai-spatial-guidance__pulse,
+  .urai-home-orb__halo,
+  .urai-ascent-tunnel span,
+  .urai-life-map-star {
     animation: none !important;
   }
 }
