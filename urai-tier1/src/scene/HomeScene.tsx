@@ -8,7 +8,7 @@ import Orb, { OrbState } from './Orb'
 import Sky from './Sky'
 import Atmosphere from './Atmosphere'
 import AscentPortal from './AscentPortal'
-import SpatialVisualOverlay from './SpatialVisualOverlayPremium'
+import SpatialVisualOverlay from './SpatialVisualOverlayTier5'
 import ManifestRenderBoundary from '../spatial/assets/ManifestRenderBoundary'
 import { useManifest } from '../spatial/assets/useManifest'
 import { SpatialAssetManifest } from '../spatial/assets/manifestTypes'
@@ -96,7 +96,7 @@ function ModeGuidance({ mode, onEnter, onUnwind, reducedMotion }: { mode: SceneM
   if (mode === 'replay') {
     return (
       <div className="urai-spatial-guidance" data-testid="urai-replay-guidance">
-        <span>Replay active. ESC unwinds one layer.</span>
+        <span>Replay breathing. ESC unwinds one consciousness layer.</span>
         <button type="button" onClick={onUnwind}>Unwind</button>
       </div>
     )
@@ -120,8 +120,8 @@ function FocusActionPanel({ manifest, mode, onReplay, onUnwind }: { manifest: Sp
   return (
     <section className="urai-focus-action-panel" data-testid="urai-focus-action-panel" aria-label={isReplay ? 'Replay stream' : 'Selected memory star'}>
       <div className="urai-focus-action-panel__eyebrow">{isReplay ? 'Replay Stream' : 'Memory Star Open'}</div>
-      <h2>{title}</h2>
-      <p>{isReplay ? 'The replay is running as a cinematic memory layer. Press Escape to unwind back to focus, then Life Map, then Home.' : 'This star is open. Start replay to enter the memory stream, or press Escape to return to the constellation.'}</p>
+      <h2>{isReplay ? 'Memory is reconstructing as atmosphere.' : title}</h2>
+      <p>{isReplay ? 'The replay is breathing as a cinematic memory layer. Unwind returns to Focus, then Life Map, then Home.' : 'This star is open. Start replay to enter the memory stream, or press Escape to return to the constellation.'}</p>
       <div className="urai-focus-action-panel__actions">
         {!isReplay ? <button type="button" className="urai-focus-action-panel__primary" onClick={onReplay}>Start Replay</button> : null}
         <button type="button" onClick={onUnwind}>{isReplay ? 'Unwind to Focus' : 'Back to Life Map'}</button>
