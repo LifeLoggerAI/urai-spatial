@@ -1,0 +1,445 @@
+/*
+  URAI Tier-5 cinematic focus lock
+  Purpose: make Focus / Replay screenshots read as full-screen spatial cinema, not web UI.
+*/
+
+html,
+body {
+  min-height: 100%;
+  background: #020612;
+}
+
+body {
+  overflow: hidden;
+}
+
+.urai-scene-stage {
+  min-height: 100dvh !important;
+  width: 100vw !important;
+  overflow: hidden !important;
+  background: #020612 !important;
+}
+
+/* App-capture mode: remove anything that reads like debug chrome inside the product frame. */
+body:not([data-debug-spatial='true']) .tier-one-loading,
+body:not([data-debug-spatial='true']) [data-debug-only='true'] {
+  display: none !important;
+}
+
+/* Recenter replaces the utilitarian Reset View surface without touching keyboard reset behavior. */
+.urai-camera-reset {
+  top: 18px !important;
+  right: 18px !important;
+  min-width: 42px !important;
+  height: 34px !important;
+  padding: 0 13px !important;
+  border-radius: 999px !important;
+  border: 1px solid rgba(165, 220, 255, 0.2) !important;
+  background: rgba(7, 17, 39, 0.45) !important;
+  color: transparent !important;
+  font-size: 0 !important;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.08), 0 14px 40px rgba(0,0,0,0.22) !important;
+  backdrop-filter: blur(18px) saturate(1.15) !important;
+  -webkit-backdrop-filter: blur(18px) saturate(1.15) !important;
+}
+
+.urai-camera-reset::before {
+  content: 'Recenter';
+  color: rgba(232, 246, 255, 0.9);
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.urai-camera-reset:hover,
+.urai-camera-reset:focus-visible {
+  border-color: rgba(103, 232, 249, 0.44) !important;
+  box-shadow: 0 0 34px rgba(103, 232, 249, 0.16), 0 14px 40px rgba(0,0,0,0.22) !important;
+  outline: none !important;
+}
+
+/* Focus / Replay: one system state, no duplicate lower instruction strip. */
+.urai-scene-stage[data-scene-mode='focus'] .urai-spatial-guidance,
+.urai-scene-stage[data-scene-mode='replay'] .urai-spatial-guidance {
+  left: 50% !important;
+  bottom: 22px !important;
+  transform: translateX(-50%) !important;
+  padding: 8px 10px !important;
+  min-width: 0 !important;
+  background: rgba(7, 17, 39, 0.34) !important;
+  border: 1px solid rgba(165, 220, 255, 0.18) !important;
+  box-shadow: 0 10px 32px rgba(0,0,0,0.18) !important;
+}
+
+.urai-scene-stage[data-scene-mode='focus'] .urai-spatial-guidance > span,
+.urai-scene-stage[data-scene-mode='replay'] .urai-spatial-guidance > span {
+  display: none !important;
+}
+
+.urai-scene-stage[data-scene-mode='focus'] .urai-spatial-guidance button,
+.urai-scene-stage[data-scene-mode='replay'] .urai-spatial-guidance button {
+  border-radius: 999px !important;
+  border: 1px solid rgba(165, 220, 255, 0.22) !important;
+  background: rgba(40, 58, 120, 0.58) !important;
+  color: rgba(232, 246, 255, 0.88) !important;
+}
+
+/* URAI-native memory glass: softer, radial, less SaaS-card. */
+.urai-scene-stage[data-scene-mode='focus'] .tier-one-route-card,
+.urai-scene-stage[data-scene-mode='replay'] .tier-one-route-card,
+.urai-focus-action-panel,
+.urai-focus-memory-card {
+  border: 1px solid rgba(170, 225, 255, 0.2) !important;
+  background:
+    radial-gradient(circle at 18% 0%, rgba(165, 220, 255, 0.13), transparent 35%),
+    radial-gradient(circle at 88% 100%, rgba(168, 85, 247, 0.12), transparent 38%),
+    rgba(5, 13, 31, 0.46) !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,0.09),
+    inset 0 -22px 80px rgba(103, 232, 249, 0.04),
+    0 26px 90px rgba(0, 0, 0, 0.34) !important;
+  backdrop-filter: blur(26px) saturate(1.22) !important;
+  -webkit-backdrop-filter: blur(26px) saturate(1.22) !important;
+}
+
+.urai-scene-stage[data-scene-mode='focus'] .tier-one-route-card,
+.urai-scene-stage[data-scene-mode='replay'] .tier-one-route-card {
+  border-radius: 30px 30px 30px 12px !important;
+  max-width: min(390px, calc(100vw - 32px)) !important;
+}
+
+.urai-focus-action-panel {
+  border-radius: 12px 30px 30px 30px !important;
+}
+
+.urai-focus-action-panel__eyebrow,
+.urai-focus-memory-card strong,
+.urai-scene-status strong {
+  color: rgba(214, 246, 255, 0.96) !important;
+  text-shadow: 0 0 18px rgba(103, 232, 249, 0.24) !important;
+}
+
+/* Ritual CTA: hover pulls light from the memory star into the replay action. */
+.urai-focus-action-panel__primary {
+  position: relative !important;
+  isolation: isolate !important;
+  overflow: hidden !important;
+  border: 0 !important;
+  background:
+    linear-gradient(135deg, rgba(224, 247, 255, 0.96), rgba(103, 232, 249, 0.82) 42%, rgba(132, 96, 255, 0.88)) !important;
+  color: #04111f !important;
+  box-shadow: 0 0 28px rgba(103, 232, 249, 0.28), 0 12px 34px rgba(0,0,0,0.2) !important;
+}
+
+.urai-focus-action-panel__primary::before {
+  content: '';
+  position: absolute;
+  inset: -80% -35%;
+  z-index: -1;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.94), transparent);
+  transform: translateX(-72%) rotate(14deg);
+  transition: transform 0.55s cubic-bezier(.2,.9,.1,1);
+}
+
+.urai-focus-action-panel__primary:hover::before,
+.urai-focus-action-panel__primary:focus-visible::before {
+  transform: translateX(72%) rotate(14deg);
+}
+
+.urai-focus-action-panel__primary:hover,
+.urai-focus-action-panel__primary:focus-visible {
+  transform: translateY(-1px) scale(1.015) !important;
+  box-shadow: 0 0 44px rgba(103, 232, 249, 0.42), 0 16px 42px rgba(0,0,0,0.24) !important;
+}
+
+.urai-scene-stage[data-scene-mode='focus'] .urai-focus-action-panel:has(.urai-focus-action-panel__primary:hover)::before,
+.urai-scene-stage[data-scene-mode='focus'] .urai-focus-action-panel:focus-within::before {
+  content: '';
+  position: absolute;
+  left: -34vw;
+  top: 50%;
+  width: 34vw;
+  height: 1px;
+  pointer-events: none;
+  background: linear-gradient(90deg, transparent, rgba(103,232,249,0.48), rgba(255,255,255,0.86));
+  box-shadow: 0 0 22px rgba(103,232,249,0.36);
+  transform: translateY(-50%);
+}
+
+/* Environmental response: starfield bends toward the opened memory. */
+.urai-scene-stage[data-scene-mode='focus'] .urai-visual-overlay--focus::before,
+.urai-scene-stage[data-scene-mode='replay'] .urai-visual-overlay--focus::before {
+  opacity: 0.82 !important;
+  filter: url('#urai-memory-gravity') blur(0.1px);
+  transform-origin: 50% 52%;
+  animation: uraiMemoryStarBend 18s ease-in-out infinite !important;
+}
+
+.urai-visual-overlay--focus {
+  background:
+    radial-gradient(circle at 50% 52%, rgba(220, 232, 255, 0.22), transparent 16%),
+    radial-gradient(circle at 50% 52%, rgba(103, 232, 249, 0.18), transparent 27%),
+    radial-gradient(circle at 50% 52%, rgba(168, 85, 247, 0.18), transparent 45%),
+    linear-gradient(180deg, #050d22 0%, #020612 100%) !important;
+}
+
+.urai-visual-overlay--focus::after {
+  background:
+    radial-gradient(circle at 50% 52%, transparent 0 41%, rgba(0, 0, 0, 0.12) 62%, rgba(0, 0, 0, 0.38) 100%),
+    linear-gradient(180deg, rgba(1, 3, 12, 0.08), rgba(1, 3, 12, 0.42)) !important;
+}
+
+/* Meaningful rings: intensity, readiness, boundary, recovery. */
+.urai-focus-ripple {
+  border-color: rgba(103, 232, 249, 0.24) !important;
+  box-shadow: inset 0 0 90px rgba(103,232,249,0.07), 0 0 120px rgba(103,232,249,0.08) !important;
+  animation: uraiRecoveryBoundary 12s ease-in-out infinite !important;
+}
+
+.urai-focus-ripple::after {
+  content: 'memory boundary';
+  position: absolute;
+  right: 12%;
+  top: 22%;
+  color: rgba(201, 232, 255, 0.38);
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+
+.urai-focus-ripple--two {
+  border-color: rgba(168, 85, 247, 0.3) !important;
+  animation-delay: -3s !important;
+}
+
+.urai-focus-ripple--two::after {
+  content: 'replay readiness';
+  right: auto;
+  left: 10%;
+  top: 18%;
+}
+
+.urai-focus-ripple--three {
+  border-color: rgba(255, 255, 255, 0.24) !important;
+  animation-delay: -6s !important;
+}
+
+.urai-focus-ripple--three::after {
+  content: 'emotional intensity';
+  right: auto;
+  left: 50%;
+  top: -12px;
+  transform: translateX(-50%);
+}
+
+.urai-focus-orb {
+  z-index: 18 !important;
+  filter: drop-shadow(0 0 30px rgba(103,232,249,0.2));
+}
+
+.urai-focus-orb::before,
+.urai-focus-orb::after {
+  content: '';
+  position: absolute;
+  inset: -46%;
+  border-radius: 999px;
+  pointer-events: none;
+}
+
+.urai-focus-orb::before {
+  border: 1px dashed rgba(180, 225, 255, 0.2);
+  background:
+    conic-gradient(from 18deg, transparent 0 14%, rgba(103,232,249,0.32) 15% 17%, transparent 18% 36%, rgba(168,85,247,0.28) 37% 39%, transparent 40% 61%, rgba(255,255,255,0.28) 62% 63%, transparent 64% 100%);
+  mask: radial-gradient(circle, transparent 0 60%, #000 61% 63%, transparent 64%);
+  animation: uraiMemoryWaveform 16s linear infinite;
+}
+
+.urai-focus-orb::after {
+  inset: -72%;
+  background:
+    radial-gradient(4px 4px at 18% 54%, rgba(255,255,255,0.8), transparent),
+    radial-gradient(3px 3px at 72% 22%, rgba(103,232,249,0.78), transparent),
+    radial-gradient(2px 2px at 78% 70%, rgba(168,85,247,0.76), transparent),
+    radial-gradient(2px 2px at 32% 18%, rgba(230,245,255,0.64), transparent);
+  animation: uraiMemoryParticles 13s ease-in-out infinite;
+}
+
+.urai-focus-orb__halo {
+  background:
+    radial-gradient(circle, rgba(255,255,255,0.1), rgba(103,232,249,0.28) 28%, rgba(168,85,247,0.18) 45%, transparent 74%) !important;
+  animation: uraiMemoryBreath 9s ease-in-out infinite !important;
+}
+
+.urai-focus-orb__ring {
+  inset: -24% !important;
+  border-color: rgba(190, 230, 255, 0.36) !important;
+  box-shadow:
+    inset 0 0 46px rgba(103, 232, 249, 0.12),
+    0 0 70px rgba(103, 232, 249, 0.18),
+    0 0 130px rgba(168, 85, 247, 0.1) !important;
+}
+
+.urai-focus-orb__core {
+  inset: 29% !important;
+  background:
+    radial-gradient(circle at 34% 28%, rgba(255,255,255,0.98) 0 8%, rgba(230,213,255,0.82) 9% 21%, transparent 22%),
+    radial-gradient(circle at 58% 66%, rgba(103,232,249,0.9) 0 20%, transparent 21%),
+    conic-gradient(from 215deg, rgba(120,70,255,0.92), rgba(103,232,249,0.82), rgba(255,255,255,0.72), rgba(168,85,247,0.84), rgba(120,70,255,0.92)) !important;
+  box-shadow:
+    inset -18px -18px 36px rgba(20, 72, 180, 0.45),
+    inset 12px 10px 22px rgba(255,255,255,0.22),
+    0 0 76px rgba(168,85,247,0.72),
+    0 0 170px rgba(103,232,249,0.42) !important;
+}
+
+.urai-focus-orb__core::before,
+.urai-focus-orb__core::after {
+  content: '';
+  position: absolute;
+  inset: -20%;
+  border-radius: 999px;
+  pointer-events: none;
+}
+
+.urai-focus-orb__core::before {
+  background:
+    linear-gradient(62deg, transparent 0 39%, rgba(255,255,255,0.38) 40% 41%, transparent 42% 100%),
+    linear-gradient(122deg, transparent 0 54%, rgba(103,232,249,0.34) 55% 56%, transparent 57% 100%);
+  opacity: 0.65;
+  mix-blend-mode: screen;
+  transform: rotate(-9deg);
+}
+
+.urai-focus-orb__core::after {
+  inset: 16%;
+  border: 1px solid rgba(255,255,255,0.3);
+  border-left-color: rgba(103,232,249,0.66);
+  border-bottom-color: rgba(168,85,247,0.5);
+  animation: uraiInnerSceneFragment 10s ease-in-out infinite;
+}
+
+/* Replay launch: route state becomes a tunnel, not a normal panel swap. */
+.urai-scene-stage[data-scene-mode='replay'] .urai-focus-orb {
+  animation: uraiReplayTunnel 3.8s cubic-bezier(.18,.8,.2,1) infinite !important;
+}
+
+.urai-scene-stage[data-scene-mode='replay'] .urai-focus-ripple {
+  animation: uraiReplayRings 4.6s cubic-bezier(.18,.8,.2,1) infinite !important;
+}
+
+.urai-scene-stage[data-scene-mode='replay'] .urai-visual-overlay--focus {
+  background:
+    radial-gradient(circle at 50% 52%, rgba(255,255,255,0.34), transparent 10%),
+    radial-gradient(circle at 50% 52%, rgba(103,232,249,0.26), transparent 24%),
+    radial-gradient(circle at 50% 52%, rgba(168,85,247,0.26), transparent 45%),
+    linear-gradient(180deg, #040917 0%, #01030a 100%) !important;
+}
+
+/* State morphology legend: all key memory states become visually distinct in map/focus system. */
+.urai-life-map-star-button[data-tone='cyan']::after,
+.urai-life-map-star-button[data-tone='violet']::after,
+.urai-life-map-star-button[data-tone='pink']::after,
+.urai-life-map-star-button[data-tone='white']::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: calc(var(--star-size) * 3.2);
+  height: calc(var(--star-size) * 3.2);
+  transform: translate(-50%, -50%);
+  border-radius: 999px;
+  pointer-events: none;
+}
+
+.urai-life-map-star-button[data-tone='cyan']::after {
+  border: 1px solid rgba(103,232,249,0.36);
+  box-shadow: 0 0 34px rgba(103,232,249,0.18);
+}
+
+.urai-life-map-star-button[data-tone='violet']::after {
+  border: 1px dashed rgba(168,85,247,0.42);
+  box-shadow: 0 0 32px rgba(168,85,247,0.16);
+}
+
+.urai-life-map-star-button[data-tone='pink']::after {
+  border: 1px solid rgba(244,114,182,0.38);
+  box-shadow: 0 0 34px rgba(244,114,182,0.18);
+  clip-path: polygon(50% 0, 100% 50%, 50% 100%, 0 50%);
+}
+
+.urai-life-map-star-button[data-tone='white']::after {
+  border: 1px solid rgba(255,255,255,0.44);
+  box-shadow: 0 0 42px rgba(255,255,255,0.18), inset 0 0 24px rgba(103,232,249,0.08);
+  transform: translate(-50%, -50%) rotate(45deg);
+}
+
+@keyframes uraiMemoryBreath {
+  0%, 100% { transform: scale(0.985); opacity: 0.78; }
+  50% { transform: scale(1.065); opacity: 1; }
+}
+
+@keyframes uraiMemoryWaveform {
+  to { transform: rotate(360deg); }
+}
+
+@keyframes uraiMemoryParticles {
+  0%, 100% { transform: rotate(0deg) scale(0.98); opacity: 0.62; }
+  50% { transform: rotate(8deg) scale(1.04); opacity: 0.94; }
+}
+
+@keyframes uraiRecoveryBoundary {
+  0%, 100% { transform: translate(-50%, -50%) scale(0.99); opacity: 0.72; }
+  50% { transform: translate(-50%, -50%) scale(1.025); opacity: 0.96; }
+}
+
+@keyframes uraiMemoryStarBend {
+  0%, 100% { transform: scale(1) rotate(0deg); opacity: 0.7; }
+  50% { transform: scale(1.018) rotate(0.8deg); opacity: 0.9; }
+}
+
+@keyframes uraiInnerSceneFragment {
+  0%, 100% { transform: scale(0.92) rotate(0deg); opacity: 0.32; }
+  50% { transform: scale(1.08) rotate(12deg); opacity: 0.62; }
+}
+
+@keyframes uraiReplayTunnel {
+  0%, 100% { transform: translate(-50%, -50%) scale(1); filter: drop-shadow(0 0 34px rgba(103,232,249,0.22)); }
+  50% { transform: translate(-50%, -50%) scale(1.08); filter: drop-shadow(0 0 70px rgba(103,232,249,0.44)); }
+}
+
+@keyframes uraiReplayRings {
+  0% { opacity: 0.2; transform: translate(-50%, -50%) scale(0.72); }
+  55% { opacity: 0.85; transform: translate(-50%, -50%) scale(1.04); }
+  100% { opacity: 0.08; transform: translate(-50%, -50%) scale(1.34); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .urai-focus-ripple,
+  .urai-focus-orb,
+  .urai-focus-orb::before,
+  .urai-focus-orb::after,
+  .urai-focus-orb__halo,
+  .urai-focus-orb__core::after,
+  .urai-scene-stage[data-scene-mode='focus'] .urai-visual-overlay--focus::before,
+  .urai-scene-stage[data-scene-mode='replay'] .urai-visual-overlay--focus::before {
+    animation: none !important;
+  }
+}
+
+@media (max-width: 720px) {
+  .urai-scene-stage[data-scene-mode='focus'] .tier-one-route-card,
+  .urai-scene-stage[data-scene-mode='replay'] .tier-one-route-card {
+    left: 14px !important;
+    right: 14px !important;
+    top: 92px !important;
+    max-width: none !important;
+  }
+
+  .urai-focus-ripple::after,
+  .urai-focus-ripple--two::after,
+  .urai-focus-ripple--three::after {
+    display: none !important;
+  }
+}
