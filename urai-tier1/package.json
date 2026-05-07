@@ -48,6 +48,7 @@
     "test:tier-lock-hardening": "node ../tests/spatial-tier-lock-hardening.mjs --suite=all"
   },
   "dependencies": {
+    "@react-three/drei": "^10.7.7",
     "@react-three/fiber": "^9.5.0",
     "@react-three/postprocessing": "^3.0.4",
     "@tailwindcss/postcss": "^4.2.2",
