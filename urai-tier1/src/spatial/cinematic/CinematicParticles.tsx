@@ -9,11 +9,11 @@ function seeded(index: number) {
   return x - Math.floor(x)
 }
 
-export default function CinematicParticles({ active }: { active: boolean }) {
+export default function CinematicParticles({ active, reducedMotion = false }: { active: boolean; reducedMotion?: boolean }) {
   const ref = useRef<Points>(null)
 
   const geometry = useMemo(() => {
-    const count = 940
+    const count = reducedMotion ? 220 : 940
     const positions = new Float32Array(count * 3)
     const seed = new Float32Array(count)
 
@@ -32,22 +32,25 @@ export default function CinematicParticles({ active }: { active: boolean }) {
     g.setAttribute('position', new BufferAttribute(positions, 3))
     g.setAttribute('seed', new BufferAttribute(seed, 1))
     return g
-  }, [])
+  }, [reducedMotion])
 
   useFrame(({ clock }) => {
     if (!ref.current) return
     const t = clock.elapsedTime
     ref.current.visible = active
-    ref.current.rotation.y = t * 0.018
-    ref.current.rotation.z = Math.sin(t * 0.14) * 0.02
 
-    const scale = active ? 1 + Math.sin(t * 0.9) * 0.018 : 0.001
-    ref.current.scale.lerp(new Vector3(scale, scale, scale), 0.045)
+    if (!reducedMotion) {
+      ref.current.rotation.y = t * 0.018
+      ref.current.rotation.z = Math.sin(t * 0.14) * 0.02
+    }
+
+    const scale = active ? (reducedMotion ? 1 : 1 + Math.sin(t * 0.9) * 0.018) : 0.001
+    ref.current.scale.lerp(new Vector3(scale, scale, scale), reducedMotion ? 0.12 : 0.045)
   })
 
   return (
     <points ref={ref} geometry={geometry} position={[0, 0.3, -0.6]} frustumCulled={false}>
-      <pointsMaterial color="#b8ccff" size={0.014} transparent opacity={0.54} depthWrite={false} />
+      <pointsMaterial color="#b8ccff" size={reducedMotion ? 0.018 : 0.014} transparent opacity={reducedMotion ? 0.38 : 0.54} depthWrite={false} />
     </points>
   )
 }
