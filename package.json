@@ -1,6 +1,7 @@
 {
   "name": "urai-spatial-monorepo",
   "private": true,
+  "packageManager": "pnpm@8.15.9",
   "scripts": {
     "dev": "pnpm --filter urai-tier1 dev",
     "build": "pnpm --filter urai-tier1 build",
@@ -16,13 +17,14 @@
     "test:firestore-rules": "node scripts/run-firestore-rules-tests.mjs",
     "test:replay-tier5": "pnpm --filter urai-tier1 exec node ../tests/replay-tier5-lock.mjs",
     "preflight": "node ./scripts/preflight.mjs",
+    "runtime:authority": "node scripts/check-runtime-authority.mjs",
     "canon:check": "node scripts/canon-lock.mjs",
     "canon:drift": "node scripts/check-tier1-drift.mjs",
     "hooks:install": "git config core.hooksPath .githooks",
     "test:canon-lock": "node tests/canon-lock.mjs",
     "locs:check": "node scripts/check-locs-hierarchy.mjs",
     "tier:check": "node scripts/check-tier-drift.mjs",
-    "test:canon": "pnpm tier1:immutable:check && pnpm tier1:redefinition:check && pnpm tier2:check && pnpm canon:check && pnpm locs:check && pnpm tier:check && node scripts/check-canon-imports.mjs && pnpm migration:check && pnpm home:invariant && pnpm firebase:rules:check",
+    "test:canon": "pnpm tier1:immutable:check && pnpm tier1:redefinition:check && pnpm tier2:check && pnpm canon:check && pnpm locs:check && pnpm tier:check && node scripts/check-canon-imports.mjs && pnpm runtime:authority && pnpm migration:check && pnpm home:invariant && pnpm firebase:rules:check",
     "migration:check": "node scripts/check-migration-markers.mjs",
     "tier1:check": "pnpm canon:lock && pnpm tier1:immutable:check && pnpm tier1:redefinition:check && pnpm home:invariant && pnpm firebase:rules:check",
     "tier1:drift": "node scripts/check-tier1-drift.mjs",
