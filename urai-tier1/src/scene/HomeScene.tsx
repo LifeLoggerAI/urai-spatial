@@ -186,7 +186,7 @@ export default function HomeScene({ sceneMode = 'home' }: { sceneMode?: SceneMod
   const activeManifest = gateBlocksMode ? null : selectedManifest ?? manifest
   const activeManifestId = selectedManifest?.manifestId ?? activeManifest?.manifestId ?? effectiveManifestId
   const orbState = useMemo(() => orbStateForContext({ context: narratorContext, hasSelectedManifest: Boolean(activeManifest) || Boolean(selectedManifest) || sceneMode === 'focus' || sceneMode === 'replay', sceneMode }), [activeManifest, narratorContext, selectedManifest, sceneMode])
-  const cameraPath = useMemo(() => cameraPathForState({ hasFocus: Boolean(selectedPosition) || sceneMode === 'focus' || sceneMode === 'replay' || isAscentMode, isNarrating: Boolean(activeManifest) || sceneMode !== 'home', orbState }), [activeManifest, orbState, selectedPosition, sceneMode, isAscentMode])
+  const cameraPath = useMemo(() => cameraPathForState({ hasFocus: Boolean(selectedPosition) || sceneMode === 'focus' || sceneMode === 'replay' || isAscentMode, isNarrating: Boolean(activeManifest) || sceneMode !== 'home', orbState, sceneMode }), [activeManifest, orbState, selectedPosition, sceneMode, isAscentMode])
 
   const resetCamera = useCallback(() => {
     setCameraResetSignal((value) => value + 1)
