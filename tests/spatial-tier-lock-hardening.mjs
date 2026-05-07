@@ -194,7 +194,10 @@ async function runDataStates(page, stage, report) {
   await expectVisible(page.getByTestId('urai-focus-empty-panel').or(page.getByTestId('urai-focus-action-panel')), 'replay fallback or action panel');
 
   await gotoMode(page, stage, 'mirror', '/mirror');
-  await expectText(page.locator('body'), 'Reflection begins with a stable field');
+  await expectText(page.locator('body'), 'Your private reflection field');
+  await expectText(page.locator('body'), 'Private reflection');
+  await page.getByRole('button', { name: 'Begin Reflection' }).click();
+  await expectText(page.locator('body'), 'A gentle pattern may be emerging');
   await page.keyboard.press('Escape');
   await expectAttr(stage, 'data-scene-mode', 'home');
   await screenshot(page, report, 'data-states-mirror-return');
