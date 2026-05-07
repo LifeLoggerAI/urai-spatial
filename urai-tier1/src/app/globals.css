@@ -79,6 +79,61 @@ canvas {
   width: 100%;
   height: 100%;
   overflow: hidden;
+  background:
+    radial-gradient(circle at 50% 28%, rgba(73, 101, 199, 0.26), transparent 34%),
+    radial-gradient(circle at 50% 72%, rgba(104, 45, 146, 0.22), transparent 44%),
+    linear-gradient(180deg, #08112a 0%, #030713 56%, #010208 100%);
+}
+
+.urai-scene-stage__fallback {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(circle at 50% 36%, rgba(103, 232, 249, 0.16), transparent 22%),
+    radial-gradient(circle at 45% 62%, rgba(167, 139, 250, 0.18), transparent 36%),
+    linear-gradient(180deg, rgba(8, 17, 42, 0.88), rgba(2, 6, 17, 0.96));
+}
+
+.urai-scene-stage__fallback::before,
+.urai-scene-stage__fallback::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.urai-scene-stage__fallback::before {
+  background-image:
+    radial-gradient(2px 2px at 18% 24%, rgba(255, 255, 255, 0.55), transparent),
+    radial-gradient(1px 1px at 68% 14%, rgba(255, 255, 255, 0.45), transparent),
+    radial-gradient(2px 2px at 72% 74%, rgba(146, 166, 255, 0.5), transparent),
+    radial-gradient(1px 1px at 36% 58%, rgba(178, 224, 255, 0.46), transparent),
+    radial-gradient(1px 1px at 84% 42%, rgba(255, 255, 255, 0.42), transparent);
+  opacity: 0.72;
+}
+
+.urai-scene-stage__fallback::after {
+  background:
+    linear-gradient(180deg, rgba(255,255,255,0) 58%, rgba(103, 232, 249, 0.1) 72%, rgba(1, 2, 8, 0.82) 100%);
+}
+
+.urai-scene-stage[data-scene-mode='ascent'] .urai-scene-stage__fallback {
+  background:
+    radial-gradient(circle at 50% 42%, rgba(103, 232, 249, 0.34), transparent 20%),
+    radial-gradient(circle at 50% 44%, rgba(139, 92, 246, 0.32), transparent 38%),
+    linear-gradient(180deg, #040927 0%, #020617 72%, #010208 100%);
+}
+
+.urai-scene-stage canvas {
+  position: relative;
+  z-index: 1;
+}
+
+.urai-scene-stage[data-reduced-motion='true'] .urai-spatial-guidance__pulse {
+  animation: none;
+  box-shadow: 0 0 12px rgba(103, 232, 249, 0.42);
 }
 
 .urai-hud-layer {
@@ -478,5 +533,17 @@ canvas {
   .tier-one-admin-row {
     grid-template-columns: 1fr;
     text-align: center;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+  }
+
+  .urai-spatial-guidance__pulse {
+    animation: none !important;
   }
 }
