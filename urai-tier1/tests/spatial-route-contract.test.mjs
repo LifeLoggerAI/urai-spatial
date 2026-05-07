@@ -142,6 +142,19 @@ test('premium overlay uses centralized demo stars, product copy, and SVG constel
   assert.doesNotMatch(source, /Visible stars now open Focus/)
 })
 
+test('premium home overlay locks production polish layers and launch CTA clarity', () => {
+  const source = flat(premiumOverlay)
+  assert.match(source, /urai-home-atmosphere/)
+  assert.match(source, /urai-home-horizon-glow/)
+  assert.match(source, /urai-home-ground-reflection/)
+  assert.match(source, /urai-home-orb__outer/)
+  assert.match(source, /@keyframes uraiOrbCoreBreath/)
+  assert.match(source, /@keyframes uraiAuraDrift/)
+  assert.match(source, /aria-label="North marker"/)
+  assert.match(source, /detail="Begin the ascent"/)
+  assert.doesNotMatch(source, /Begin the ascent when you are ready/)
+})
+
 test('HomeScene does not trigger microphone permission or audio capture on load', () => {
   const source = homeScene
   assert.doesNotMatch(source, /getUserMedia/i)
