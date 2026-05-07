@@ -171,7 +171,6 @@ body:not([data-debug-spatial='true']) [data-debug-only='true'] {
 .urai-scene-stage[data-scene-mode='focus'] .urai-visual-overlay--focus::before,
 .urai-scene-stage[data-scene-mode='replay'] .urai-visual-overlay--focus::before {
   opacity: 0.82 !important;
-  filter: url('#urai-memory-gravity') blur(0.1px);
   transform-origin: 50% 52%;
   animation: uraiMemoryStarBend 18s ease-in-out infinite !important;
 }
