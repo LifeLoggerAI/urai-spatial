@@ -7,6 +7,8 @@ if (!admin.apps.length) admin.initializeApp()
 type SubscriptionStatus = 'active' | 'trialing' | 'past_due' | 'canceled' | 'incomplete' | 'unpaid' | 'none'
 type EntitlementTier = 'tier1' | 'tier2' | 'tier3'
 
+const STRIPE_API_VERSION: Stripe.LatestApiVersion = '2025-10-29.clover'
+
 function stripeSecretKey() {
   return process.env.STRIPE_SECRET_KEY || functions.config().stripe?.secret_key
 }
@@ -108,7 +110,7 @@ export const handleStripeWebhook = functions.https.onRequest(async (req, res) =>
     return
   }
 
-  const stripe = new Stripe(secretKey)
+  const stripe = new Stripe(secretKey, { apiVersion: STRIPE_API_VERSION })
   let event: Stripe.Event
 
   try {

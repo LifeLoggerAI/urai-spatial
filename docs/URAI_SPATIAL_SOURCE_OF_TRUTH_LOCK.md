@@ -1,7 +1,7 @@
 # URAI Spatial Source-of-Truth Production Lock
 
 Status: audit branch lock candidate
-Date: 2026-05-04
+Date: 2026-05-07
 Repo: LifeLoggerAI/urai-spatial
 Live app source: `urai-tier1`
 
@@ -15,157 +15,139 @@ Live app source: `urai-tier1`
 
 Audit, backup, archive, and quarantine folders are not production source of truth.
 
+## Canonical runtime path
+
+The V1 launch runtime authority is:
+
+```txt
+Next.js route
+  -> urai-tier1/src/spatial/layout/TierOneExperience.tsx
+  -> urai-tier1/src/scene/HomeScene.tsx
+```
+
+`TierOneExperience` is the route shell. `HomeScene` owns the routed launch scene state, including Home, Ascent, Life Map, Focus, Replay, and Mirror modes.
+
 ## Canonical runtime files
 
 - App entry: `urai-tier1/src/app/page.tsx`
 - Home route: `urai-tier1/src/app/home/page.tsx`
-- LifeMap route: `urai-tier1/src/app/life-map/page.tsx`
+- Ascent route: `urai-tier1/src/app/ascent/page.tsx`
+- Life Map route: `urai-tier1/src/app/life-map/page.tsx`
 - Focus route: `urai-tier1/src/app/focus/page.tsx`
-- Spatial scene/state machine: `urai-tier1/src/spatial/scene/SpatialScene.tsx`
+- Replay route: `urai-tier1/src/app/replay/page.tsx`
+- Mirror route: `urai-tier1/src/app/mirror/page.tsx`
+- Route shell: `urai-tier1/src/spatial/layout/TierOneExperience.tsx`
+- Canonical scene: `urai-tier1/src/scene/HomeScene.tsx`
 - Global shell/layout: `urai-tier1/src/app/layout.tsx`
 - Global CSS: `urai-tier1/src/app/globals.css`
-- Runtime TS scope: `urai-tier1/tsconfig.runtime.json`
+- App fallback styles: `urai-tier1/src/app/boundary.css`
 - Firebase deploy config: `firebase.json`
 - Firestore rules: `firebase/firestore.rules`
 - Firestore indexes: `firebase/firestore.indexes.json`
 - Functions source: `apps/functions`
 - Production-lock workflow: `.github/workflows/spatial-production-lock.yml`
 - E2E lock runner: `tests/spatial-lock.mjs`
+- Replay Tier 5 runner: `tests/replay-tier5-lock.mjs`
+- Runtime authority check: `scripts/check-runtime-authority.mjs`
 
-## Locked architecture
+## Legacy / migration-candidate path
 
-URAI Spatial is a single canonical cinematic runtime rendered by `SpatialScene`. Routes are thin entrypoints/deep links into the same runtime, not independent alternate implementations.
+The following path exists but is not V1 route authority:
 
-The runtime uses an explicit client-side scene state machine with these states:
+```txt
+urai-tier1/src/spatial/scene/SpatialScene.tsx
+```
 
-1. `home`
-2. `ascent`
-3. `lifemap`
-4. `focus`
-5. `replay`
-
-`ascent` is an intentional transient state between `home` and `lifemap`. It is not a standalone route.
+It may contain useful systems, but it must not compete with `TierOneExperience -> HomeScene`. New launch behavior should go into the canonical path unless a migration PR explicitly moves a system from the legacy path into canonical modules.
 
 ## Core routes
 
-- `/` renders the canonical scene.
-- `/home` deep-links to `home`.
-- `/life-map` deep-links to `lifemap`.
-- `/focus?node=<id>` deep-links to a focused node.
-- `/replay?node=<id>` deep-links to replay for a node.
-
-All stable routes keep the scene in one runtime so browser navigation and ESC unwind do not create competing scene ownership.
+- `/` renders Home.
+- `/home` renders Home.
+- `/ascent` renders the cinematic Ascent transition.
+- `/life-map` renders the Life Map constellation.
+- `/focus` renders focused memory state.
+- `/replay` renders Replay state.
+- `/mirror` renders the Mirror/detail state.
 
 ## Core state model
 
-`SpatialScene.tsx` owns the live state:
+`HomeScene.tsx` owns V1 routed scene state and interactions:
 
-- `phase`: current spatial state.
-- `activeNodeId`: selected LifeMap node.
-- `history`: ESC unwind stack.
-- `replayPaused`: replay pause/resume state.
-- `replayProgress`: replay progress meter.
-- `isTransitioning`: guard against duplicate ascent/focus/replay transitions.
-- `timers`: queued transition timers, cleaned on unmount.
+- `sceneMode`: current spatial mode.
+- `selectedManifest`: selected memory manifest.
+- `selectedPosition`: selected constellation position.
+- `narratorContext`: narrator mode.
+- `cameraResetSignal`: camera reset trigger.
+- `activeManifest`: manifest used by focus/replay renderers.
 
 ## Home ascent flow
 
-Home starts with the symbolic sky, orb, body shadow, and grounded hills. Activating the orb or LifeMap control pushes a `home` snapshot, enters `ascent`, shows the ascent cover, then settles into `lifemap`. Duplicate ascent activation is blocked by `isTransitioning`.
+Home sky activation routes to `/ascent`. Ascent auto-advances to `/life-map` unless reduced motion is enabled, in which case the user can explicitly enter the Life Map.
 
-## LifeMap flow
+## Life Map flow
 
-LifeMap shows a deterministic starfield, constellation lines, and interactive nodes. Node activation pushes a `lifemap` snapshot, sets `activeNodeId`, and enters `focus`.
+Life Map renders deterministic demo stars plus optional Firestore-backed manifests. Selecting a star routes to Focus with a `manifestId`.
 
-## Focus mode flow
+## Focus and replay flow
 
-Focus opens a premium card for the selected node, preserving the LifeMap behind it. Replay activation pushes a `focus` snapshot, resets replay progress, and enters `replay`.
-
-## Replay chain flow
-
-Replay shows a cinematic overlay, node-specific replay copy, progress meter, pause/resume control, and collapse/unwind control. Replay intervals are cleaned when the phase exits.
-
-## ESC unwind rules
-
-ESC always unwinds one state at a time from the history stack:
+Focus renders a selected memory panel and can start Replay. Escape unwinds one layer at a time:
 
 - `replay` -> `focus`
-- `focus` -> `lifemap`
-- `lifemap` -> `home`
-
-If no history exists, ESC from any non-home stable state returns home. ESC is ignored during active transitions.
-
-## Browser navigation rules
-
-Route changes update the scene only when not in the transient `ascent` state. This avoids browser back/forward fighting the ascent timer. Deep links are normalized to a valid node and valid phase.
+- `focus` -> `life-map`
+- `life-map` or `ascent` -> `/`
 
 ## Automation lock
 
 The production lock is automated through `.github/workflows/spatial-production-lock.yml`. The workflow validates:
 
-- canonical source-of-truth paths,
-- frozen pnpm install,
+- source-of-truth files,
+- install,
+- preflight,
+- runtime authority,
 - app typecheck,
 - app build,
-- functions build,
-- functions tests,
+- functions build/tests,
 - app tests,
-- Chromium installation through `urai-tier1`'s existing Playwright dependency,
-- standalone E2E flow runner at `tests/spatial-lock.mjs`,
-- Firebase deploy target references.
-
-The E2E runner intentionally avoids adding a new root `@playwright/test` dependency. It uses the existing `playwright` dependency already declared by `urai-tier1`, which keeps `pnpm-lock.yaml` stable.
+- E2E lock flow,
+- Replay Tier 5 flow,
+- canonical governance checks,
+- Firebase deploy references.
 
 ## Tier completion status
 
-### Tier 1: Locked
+### Tier 1: Locked candidate
 
-Verified and represented by the canonical app shell, `/home`, `/life-map`, `/focus`, and replay-capable route structure.
+Repo structure, canonical source files, Firebase config, package manager pin, and app boundaries are present.
 
-### Tier 2: Locked
+### Tier 2: Locked candidate
 
-Home -> ascent -> LifeMap, focus entry/exit, replay entry, and ESC unwind behavior are now explicitly represented in code and E2E automation.
+Home -> Ascent -> Life Map -> Focus -> Replay route contract is documented and covered by runtime governance.
 
 ### Tier 3: Locked candidate
 
-Scene continuity, deep-link safety, node interaction, mobile viewport coverage, and fallback node normalization are implemented. Final browser/device visual review should run in Firebase Studio or a deployed preview.
+Typecheck, tests, build, and E2E commands are wired in CI. Final result depends on GitHub Actions execution.
 
 ### Tier 4: Locked candidate
 
-Timer cleanup, interval cleanup, transition guards, accessible labels, responsive controls, reduced-motion handling, Firebase deploy-path validation, and CI automation are implemented. Final CI run is required before merging.
+Preflight, runtime authority, Firebase deploy checks, and CI validation are wired. Final result depends on CI and deployed preview.
 
-### Tier 5: Locked candidate
+### Tier 5: Partial
 
-The experience is visually premium and aligned with URAI's symbolic/spatial identity: home sky, ascent veil, LifeMap starfield, glowing nodes, focus card, replay stream, and cinematic unwind. Final approval should be based on a live visual pass.
-
-## Known completed items
-
-- Canonical app source identified as `urai-tier1`.
-- Firebase Hosting source aligned with `urai-tier1`.
-- Missing live Firestore indexes file restored.
-- Scene state ownership consolidated inside `SpatialScene`.
-- ESC unwind stack added.
-- Replay pause/resume and progress state added.
-- Home ascent transition added.
-- Deep-link node normalization added.
-- Standalone E2E production lock runner added.
-- GitHub Actions production-lock workflow added.
-- Firebase deploy-reference validation automated.
-
-## Remaining risks before final production merge
-
-- Run the `URAI Spatial Production Lock` workflow and verify all steps pass.
-- Perform live visual review on desktop and mobile viewport.
-- Confirm Firebase project runtime supports framework-aware Hosting from `source: "urai-tier1"`.
-- Decide whether archived/audit folders should stay in git or be moved out to reduce source ambiguity.
+Production handoff docs exist, but production lock remains blocked until automated checks pass and all manual signoffs in `verification/signoffs.md` are complete.
 
 ## Final production checklist
 
-- [ ] Frozen install passes.
+- [ ] Install passes.
+- [ ] Preflight passes.
+- [ ] Runtime authority check passes.
 - [ ] Typecheck passes.
-- [ ] Next build passes.
-- [ ] Functions build and tests pass.
+- [ ] App tests pass.
+- [ ] App build passes.
+- [ ] Functions build/tests pass.
 - [ ] E2E flow passes.
+- [ ] Replay Tier 5 flow passes.
 - [ ] Firebase deploy references validate.
-- [ ] Firebase deploy preview opens `/home`, `/life-map`, `/focus`, and `/replay`.
+- [ ] Preview deploy opens `/`, `/home`, `/ascent`, `/life-map`, `/focus`, `/replay`, and `/mirror`.
 - [ ] Visual review confirms no broken layout, z-index, clipping, overflow, or console noise.
-- [ ] Merge PR only after CI/preview verification.
+- [ ] `verification/signoffs.md` has no `Status: PENDING` entries.

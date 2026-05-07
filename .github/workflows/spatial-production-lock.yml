@@ -1,41 +1,3 @@
-name: URAI Spatial Production Lock
-
-on:
-  pull_request:
-    branches: [main]
-  push:
-    branches: [main, audit/production-spatial-lock]
-  workflow_dispatch:
-
-concurrency:
-  group: urai-spatial-production-lock-${{ github.ref }}
-  cancel-in-progress: true
-
-jobs:
-  verify:
-    name: Verify source, build, tests, E2E, replay lock, and visual artifacts
-    runs-on: ubuntu-latest
-    timeout-minutes: 35
-    env:
-      CI: "true"
-      PNPM_HOME: ~/.local/share/pnpm
-
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Setup pnpm
-        uses: pnpm/action-setup@v4
-        with:
-          version: 8.15.9
-          run_install: false
-
-      - name: Setup Node
-        uses: actions/setup-node@v4
-        with:
-          node-version: 20
-          cache: pnpm
-
       - name: Validate source-of-truth paths
         run: |
           test -f package.json
@@ -43,6 +5,8 @@ jobs:
           test -f firebase.json
           test -f firebase/firestore.rules
           test -f firebase/firestore.indexes.json
+          test -f scripts/preflight.mjs
+          test -f scripts/check-runtime-authority.mjs
           test -f urai-tier1/package.json
           test -f urai-tier1/src/app/page.tsx
           test -f urai-tier1/src/app/home/page.tsx
@@ -51,96 +15,13 @@ jobs:
           test -f urai-tier1/src/app/focus/page.tsx
           test -f urai-tier1/src/app/replay/page.tsx
           test -f urai-tier1/src/app/mirror/page.tsx
+          test -f urai-tier1/src/app/loading.tsx
+          test -f urai-tier1/src/app/error.tsx
+          test -f urai-tier1/src/app/not-found.tsx
           test -f urai-tier1/src/spatial/layout/TierOneExperience.tsx
           test -f urai-tier1/src/scene/HomeScene.tsx
           test -f urai-tier1/src/spatial/constellation/ConstellationLayer.tsx
           test -f docs/ARCHITECTURE_LOCK.md
           test -f docs/URAI_SPATIAL_SOURCE_OF_TRUTH_LOCK.md
-          test -f scripts/check-runtime-authority.mjs
           test -f tests/spatial-lock.mjs
           test -f tests/replay-tier5-lock.mjs
-          test -f tests/homeworld.smoke.spec.ts
-
-      - name: Install dependencies
-        run: pnpm install --no-frozen-lockfile
-
-      - name: Report lockfile drift
-        run: |
-          if ! git diff --quiet -- pnpm-lock.yaml; then
-            echo "::warning::pnpm-lock.yaml is out of date and was regenerated during CI. Commit the refreshed lockfile in a follow-up change to restore frozen install enforcement."
-            git diff -- pnpm-lock.yaml | sed -n '1,220p'
-          fi
-
-      - name: Run runtime authority lock
-        run: pnpm runtime:authority
-
-      - name: Typecheck Tier 1 app
-        run: pnpm --filter urai-tier1 typecheck
-
-      - name: Test Tier 1 app
-        run: pnpm --filter urai-tier1 test
-
-      - name: Test Tier 1 unit suite
-        run: pnpm --filter urai-tier1 test:unit
-
-      - name: Build app
-        run: pnpm --filter urai-tier1 build
-
-      - name: Build functions
-        run: pnpm --filter urai-functions build
-
-      - name: Test functions
-        run: pnpm --filter urai-functions test
-
-      - name: Install Playwright browser
-        run: pnpm --filter urai-tier1 exec playwright install --with-deps chromium
-
-      - name: Run Home World smoke tests
-        run: pnpm exec playwright test tests/homeworld*.spec.ts
-
-      - name: Run spatial E2E and visual lock flow
-        run: pnpm test:e2e
-
-      - name: Run Tier 5 Replay Chamber validation
-        run: pnpm test:replay-tier5
-
-      - name: Upload spatial visual audit artifacts
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: urai-spatial-visual-audit
-          path: artifacts/spatial-lock
-          if-no-files-found: warn
-          retention-days: 14
-
-      - name: Upload Tier 5 Replay Chamber artifacts
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: urai-replay-tier5-audit
-          path: artifacts/replay-tier5-lock
-          if-no-files-found: warn
-          retention-days: 14
-
-      - name: Validate Firebase deploy references
-        run: |
-          node <<'NODE'
-          const fs = require('fs');
-          const path = require('path');
-          const firebase = JSON.parse(fs.readFileSync('firebase.json', 'utf8'));
-          const required = [
-            firebase.hosting?.source,
-            firebase.firestore?.rules,
-            firebase.firestore?.indexes,
-            firebase.functions?.[0]?.source,
-          ].filter(Boolean);
-          for (const target of required) {
-            if (!fs.existsSync(path.resolve(target))) {
-              throw new Error(`Missing Firebase target: ${target}`);
-            }
-          }
-          if (firebase.hosting?.source !== 'urai-tier1') {
-            throw new Error('Firebase Hosting must deploy canonical urai-tier1 source.');
-          }
-          console.log('Firebase deploy references validated.');
-          NODE

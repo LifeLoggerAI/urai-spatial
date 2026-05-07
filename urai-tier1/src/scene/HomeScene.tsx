@@ -8,7 +8,7 @@ import Orb, { OrbState } from './Orb'
 import Sky from './Sky'
 import Atmosphere from './Atmosphere'
 import AscentPortal from './AscentPortal'
-import SpatialVisualOverlay from './SpatialVisualOverlay'
+import SpatialVisualOverlay from './SpatialVisualOverlayPremium'
 import ManifestRenderBoundary from '../spatial/assets/ManifestRenderBoundary'
 import { useManifest } from '../spatial/assets/useManifest'
 import { SpatialAssetManifest } from '../spatial/assets/manifestTypes'
@@ -23,6 +23,7 @@ import NarratorVoice from '../spatial/narrator/NarratorVoice'
 import NarratorHud from '../spatial/narrator/NarratorHud'
 import ConstellationLayer, { ConstellationNodePosition } from '../spatial/constellation/ConstellationLayer'
 import { NarratorContext } from '../spatial/narrator/buildNarration'
+import { DEMO_FOCUS_MANIFEST_ID } from '../spatial/demo/demoMemoryStars'
 
 type SceneMode = 'home' | 'ascent' | 'life-map' | 'demo' | 'replay' | 'focus' | 'mirror'
 
@@ -46,11 +47,11 @@ function orbStateForContext({ context, hasSelectedManifest, sceneMode }: { conte
 }
 
 function manifestReplayHref(manifestId: string | null) {
-  return manifestId ? `/replay?manifestId=${encodeURIComponent(manifestId)}` : '/replay'
+  return manifestId ? `/replay?manifestId=${encodeURIComponent(manifestId)}` : `/replay?manifestId=${encodeURIComponent(DEMO_FOCUS_MANIFEST_ID)}`
 }
 
 function manifestFocusHref(manifestId: string | null) {
-  return manifestId ? `/focus?manifestId=${encodeURIComponent(manifestId)}` : '/focus'
+  return manifestId ? `/focus?manifestId=${encodeURIComponent(manifestId)}` : `/focus?manifestId=${encodeURIComponent(DEMO_FOCUS_MANIFEST_ID)}`
 }
 
 function ModeGuidance({ mode, onEnter, onUnwind, reducedMotion }: { mode: SceneMode; onEnter: () => void; onUnwind: () => void; reducedMotion: boolean }) {
@@ -129,24 +130,14 @@ function FocusActionPanel({ manifest, mode, onReplay, onUnwind }: { manifest: Sp
   )
 }
 
-function FocusEmptyPanel({ mode, manifestId, loading, error, onLifeMap }: { mode: SceneMode; manifestId: string | null; loading: boolean; error: string | null; onLifeMap: () => void }) {
+function FocusEmptyPanel({ mode, loading, onLifeMap }: { mode: SceneMode; loading: boolean; onLifeMap: () => void }) {
   const isReplay = mode === 'replay'
-  const title = loading ? 'Loading memory star...' : error ? 'Memory star unavailable' : manifestId ? 'Memory star not ready' : 'Choose a memory star first'
-  const body = loading
-    ? 'URAI is retrieving the selected spatial memory. The scene will open as soon as the manifest is available.'
-    : error
-      ? error
-      : manifestId
-        ? 'This memory link exists, but it does not have a valid spatial manifest yet.'
-        : isReplay
-          ? 'Replay needs a selected memory. Return to the Life Map and choose a star to begin the stream.'
-          : 'Focus opens after a Life Map star is selected. Return to the constellation and choose a memory.'
 
   return (
-    <section className="urai-focus-action-panel urai-focus-action-panel--empty" data-testid="urai-focus-empty-panel" aria-label={isReplay ? 'Replay unavailable' : 'Focus unavailable'}>
-      <div className="urai-focus-action-panel__eyebrow">{isReplay ? 'Replay Pending' : 'Focus Pending'}</div>
-      <h2>{title}</h2>
-      <p>{body}</p>
+    <section className="urai-focus-action-panel urai-focus-action-panel--empty" data-testid="urai-focus-empty-panel" aria-label={isReplay ? 'Replay preparing' : 'Focus preparing'}>
+      <div className="urai-focus-action-panel__eyebrow">{isReplay ? 'Replay Preparing' : 'Focus Preparing'}</div>
+      <h2>{loading ? 'Opening memory star...' : 'Demo memory star ready'}</h2>
+      <p>{loading ? 'URAI is opening the selected spatial memory. If private data is unavailable, the demo star will remain visible.' : 'No private memory data was required. Return to the Life Map to choose another visible star.'}</p>
       <div className="urai-focus-action-panel__actions">
         <button type="button" className="urai-focus-action-panel__primary" onClick={onLifeMap}>Open Life Map</button>
       </div>
@@ -178,6 +169,8 @@ export default function HomeScene({ sceneMode = 'home' }: { sceneMode?: SceneMod
   const gate = useSpatialTierGate(gatedFeatureId)
   const gateBlocksMode = Boolean(gatedFeatureId) && (gate.loading || !gate.allowed)
   const manifestId = params.get('manifestId')
+  const modeNeedsManifest = sceneMode === 'focus' || sceneMode === 'replay'
+  const effectiveManifestId = modeNeedsManifest ? (manifestId ?? DEMO_FOCUS_MANIFEST_ID) : manifestId
   const isHomeMode = sceneMode === 'home'
   const isAscentMode = sceneMode === 'ascent'
   const isConstellationRoute = sceneMode === 'life-map' || sceneMode === 'demo' || params.get('mode') === 'constellation'
@@ -185,13 +178,14 @@ export default function HomeScene({ sceneMode = 'home' }: { sceneMode?: SceneMod
   const showAscentPortal = isAscentMode
   const showConstellation = isConstellationRoute && !gateBlocksMode
   const showOrb = isHomeMode || sceneMode === 'focus' || sceneMode === 'replay' || sceneMode === 'mirror'
-  const { manifest, loading: manifestLoading, error: manifestError } = useManifest(gateBlocksMode ? null : manifestId)
+  const { manifest, loading: manifestLoading } = useManifest(gateBlocksMode ? null : effectiveManifestId)
   const [selectedManifest, setSelectedManifest] = useState<SpatialAssetManifest | null>(null)
   const [selectedPosition, setSelectedPosition] = useState<ConstellationNodePosition | null>(null)
   const [narratorContext, setNarratorContext] = useState<NarratorContext>('arrival')
   const [cameraResetSignal, setCameraResetSignal] = useState(0)
   const activeManifest = gateBlocksMode ? null : selectedManifest ?? manifest
-  const orbState = useMemo(() => orbStateForContext({ context: narratorContext, hasSelectedManifest: Boolean(selectedManifest) || sceneMode === 'focus' || sceneMode === 'replay', sceneMode }), [narratorContext, selectedManifest, sceneMode])
+  const activeManifestId = selectedManifest?.manifestId ?? activeManifest?.manifestId ?? effectiveManifestId
+  const orbState = useMemo(() => orbStateForContext({ context: narratorContext, hasSelectedManifest: Boolean(activeManifest) || Boolean(selectedManifest) || sceneMode === 'focus' || sceneMode === 'replay', sceneMode }), [activeManifest, narratorContext, selectedManifest, sceneMode])
   const cameraPath = useMemo(() => cameraPathForState({ hasFocus: Boolean(selectedPosition) || sceneMode === 'focus' || sceneMode === 'replay' || isAscentMode, isNarrating: Boolean(activeManifest) || sceneMode !== 'home', orbState }), [activeManifest, orbState, selectedPosition, sceneMode, isAscentMode])
 
   const resetCamera = useCallback(() => {
@@ -215,20 +209,19 @@ export default function HomeScene({ sceneMode = 'home' }: { sceneMode?: SceneMod
       return
     }
     if (sceneMode === 'replay') {
-      router.push(manifestFocusHref(manifestId))
+      router.push(manifestFocusHref(activeManifestId))
       return
     }
     if (sceneMode === 'focus') {
       router.push('/life-map')
       return
     }
-    if (sceneMode === 'life-map' || sceneMode === 'ascent') router.push('/home')
-  }, [manifestId, resetCamera, router, sceneMode, selectedManifest])
+    if (sceneMode === 'life-map' || sceneMode === 'ascent') router.push('/')
+  }, [activeManifestId, resetCamera, router, sceneMode, selectedManifest])
 
   const startReplay = useCallback(() => {
-    const id = selectedManifest?.manifestId ?? manifestId
-    router.push(manifestReplayHref(id))
-  }, [manifestId, router, selectedManifest])
+    router.push(manifestReplayHref(activeManifestId))
+  }, [activeManifestId, router])
 
   function handleSelect(manifest: SpatialAssetManifest, position: ConstellationNodePosition) {
     router.push(`/focus?manifestId=${encodeURIComponent(manifest.manifestId)}`)
@@ -261,7 +254,6 @@ export default function HomeScene({ sceneMode = 'home' }: { sceneMode?: SceneMod
     return () => window.removeEventListener('keydown', onKey)
   }, [resetCamera, unwind])
 
-  const modeNeedsManifest = sceneMode === 'focus' || sceneMode === 'replay'
   const showFocusPanel = Boolean(activeManifest) && (Boolean(selectedManifest) || modeNeedsManifest)
   const showEmptyFocusPanel = !gateBlocksMode && modeNeedsManifest && !activeManifest
 
@@ -292,7 +284,7 @@ export default function HomeScene({ sceneMode = 'home' }: { sceneMode?: SceneMod
       <ModeGuidance mode={sceneMode} onEnter={enterLifeMap} onUnwind={unwind} reducedMotion={reducedMotion} />
       {gateBlocksMode && gatedFeatureId ? <TierGatePanel featureId={gatedFeatureId} loading={gate.loading} reasons={gate.reasons} requiredTier={gate.requiredTier} fallbackFeatureId={gate.fallbackFeatureId} onPreview={openPreviewMap} /> : null}
       {showFocusPanel && activeManifest ? <FocusActionPanel manifest={activeManifest} mode={sceneMode} onReplay={startReplay} onUnwind={unwind} /> : null}
-      {showEmptyFocusPanel ? <FocusEmptyPanel mode={sceneMode} manifestId={manifestId} loading={manifestLoading} error={manifestError} onLifeMap={openLifeMap} /> : null}
+      {showEmptyFocusPanel ? <FocusEmptyPanel mode={sceneMode} loading={manifestLoading} onLifeMap={openLifeMap} /> : null}
       <NarratorHud />
     </div>
   )

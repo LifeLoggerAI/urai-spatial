@@ -1,0 +1,63 @@
+.tier-one-boundary {
+  min-height: 100vh;
+  min-height: 100dvh;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  color: #eef3ff;
+  background:
+    radial-gradient(circle at 50% 26%, rgba(103, 232, 249, 0.2), transparent 28%),
+    radial-gradient(circle at 50% 62%, rgba(139, 92, 246, 0.2), transparent 40%),
+    #02030a;
+}
+
+.tier-one-boundary__card {
+  width: min(520px, 100%);
+  padding: 28px;
+  border: 1px solid rgba(142, 220, 255, 0.24);
+  border-radius: 28px;
+  background: linear-gradient(150deg, rgba(5, 9, 22, 0.82), rgba(16, 11, 35, 0.68));
+  box-shadow: 0 28px 120px rgba(0, 0, 0, 0.42);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+}
+
+.tier-one-boundary__eyebrow {
+  margin: 0 0 10px;
+  color: rgba(182, 226, 255, 0.8);
+  font-size: 0.72rem;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+}
+
+.tier-one-boundary h1 {
+  margin: 0 0 12px;
+  font-size: clamp(1.6rem, 4vw, 2.45rem);
+  line-height: 1.05;
+}
+
+.tier-one-boundary p {
+  margin: 0 0 18px;
+  color: rgba(235, 244, 255, 0.72);
+  line-height: 1.6;
+}
+
+.tier-one-boundary button,
+.tier-one-boundary__link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 42px;
+  padding: 10px 16px;
+  border: 1px solid rgba(142, 220, 255, 0.34);
+  border-radius: 999px;
+  background: rgba(95, 125, 255, 0.22);
+  color: #edf7ff;
+  text-decoration: none;
+}
+
+.tier-one-boundary button:focus-visible,
+.tier-one-boundary__link:focus-visible {
+  outline: 2px solid rgba(125, 211, 252, 0.9);
+  outline-offset: 3px;
+}

@@ -1,6 +1,7 @@
 export const tierOneRoutes = [
   { route: '/', file: 'src/app/page.tsx', kind: 'scene' },
   { route: '/home', file: 'src/app/home/page.tsx', kind: 'scene' },
+  { route: '/ascent', file: 'src/app/ascent/page.tsx', kind: 'scene' },
   { route: '/life-map', file: 'src/app/life-map/page.tsx', kind: 'scene' },
   { route: '/demo', file: 'src/app/demo/page.tsx', kind: 'scene' },
   { route: '/demo/life-map', file: 'src/app/demo/life-map/page.tsx', kind: 'scene' },
