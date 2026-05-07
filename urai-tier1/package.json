@@ -38,7 +38,8 @@
     "test": "node --import tsx --test tests/*.test.mjs",
     "test:unit": "node --import tsx --test tests/*.test.mjs",
     "test:lifemap": "node --import tsx --test tests/lifemap-scene-behavior.test.mjs tests/lifemap*.test.mjs tests/lifemap-*.test.mjs",
-    "test:visual:home": "playwright test tests/home-cinematic.visual.spec.ts --update-snapshots"
+    "test:visual:home": "playwright test tests/home-cinematic.visual.spec.ts --update-snapshots",
+    "test:visual:spatial-flow": "playwright test tests/spatial-flow.visual.spec.ts --update-snapshots"
   },
   "dependencies": {
     "@react-three/fiber": "^9.5.0",
