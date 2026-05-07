@@ -108,7 +108,7 @@ export const handleStripeWebhook = functions.https.onRequest(async (req, res) =>
     return
   }
 
-  const stripe = new Stripe(secretKey, { apiVersion: '2024-06-20' })
+  const stripe = new Stripe(secretKey)
   let event: Stripe.Event
 
   try {
