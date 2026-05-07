@@ -24,10 +24,13 @@ import NarratorHud from '../spatial/narrator/NarratorHud'
 import ConstellationLayer, { ConstellationNodePosition } from '../spatial/constellation/ConstellationLayer'
 import { NarratorContext } from '../spatial/narrator/buildNarration'
 import { DEMO_FOCUS_MANIFEST_ID } from '../spatial/demo/demoMemoryStars'
+import MemoryStarArtifact from '../spatial/memory/MemoryStarArtifact'
+import { buildMemoryMorphology, MemoryMorphology } from '../spatial/memory/memoryMorphology'
 
 type SceneMode = 'home' | 'ascent' | 'life-map' | 'demo' | 'replay' | 'focus' | 'mirror'
 
 const ASCENT_DURATION_MS = 1800
+const REPLAY_LAUNCH_DELAY_MS = 720
 
 function gatedFeatureForMode(mode: SceneMode): SpatialFeatureId | null {
   if (mode === 'life-map') return 'spatial.lifeMap.personal'
@@ -87,7 +90,7 @@ function ModeGuidance({ mode, onEnter, onUnwind, reducedMotion }: { mode: SceneM
   if (mode === 'focus') {
     return (
       <div className="urai-spatial-guidance" data-testid="urai-focus-guidance">
-        <span>Focus open. Replay when ready.</span>
+        <span>Focus stable. Replay can begin.</span>
         <button type="button" onClick={onUnwind}>ESC / Life Map</button>
       </div>
     )
@@ -107,23 +110,22 @@ function ModeGuidance({ mode, onEnter, onUnwind, reducedMotion }: { mode: SceneM
 
 function CameraResetButton({ onReset }: { onReset: () => void }) {
   return (
-    <button type="button" className="urai-camera-reset" data-testid="urai-camera-reset" aria-label="Reset spatial camera" onClick={onReset}>
-      Reset View
+    <button type="button" className="urai-camera-reset" data-testid="urai-camera-reset" aria-label="Recenter spatial camera" onClick={onReset}>
+      Recenter
     </button>
   )
 }
 
-function FocusActionPanel({ manifest, mode, onReplay, onUnwind }: { manifest: SpatialAssetManifest; mode: SceneMode; onReplay: () => void; onUnwind: () => void }) {
+function FocusActionPanel({ morphology, mode, onReplay, onUnwind, launching }: { morphology: MemoryMorphology; mode: SceneMode; onReplay: () => void; onUnwind: () => void; launching: boolean }) {
   const isReplay = mode === 'replay'
-  const title = manifest.promptPreview || manifest.assetType || 'Memory star'
 
   return (
     <section className="urai-focus-action-panel" data-testid="urai-focus-action-panel" aria-label={isReplay ? 'Replay stream' : 'Selected memory star'}>
-      <div className="urai-focus-action-panel__eyebrow">{isReplay ? 'Replay Stream' : 'Memory Star Open'}</div>
-      <h2>{isReplay ? 'Memory is reconstructing as atmosphere.' : title}</h2>
-      <p>{isReplay ? 'The replay is breathing as a cinematic memory layer. Unwind returns to Focus, then Life Map, then Home.' : 'This star is open. Start replay to enter the memory stream, or press Escape to return to the constellation.'}</p>
+      <div className="urai-focus-action-panel__eyebrow">{isReplay ? 'Replay Stream' : morphology.systemLabel}</div>
+      <h2>{isReplay ? 'Memory is reconstructing as atmosphere.' : morphology.title}</h2>
+      <p>{isReplay ? morphology.poeticLine : 'This memory star is generated from its emotional signal profile. Begin replay when the field feels stable.'}</p>
       <div className="urai-focus-action-panel__actions">
-        {!isReplay ? <button type="button" className="urai-focus-action-panel__primary" onClick={onReplay}>Start Replay</button> : null}
+        {!isReplay ? <button type="button" className="urai-focus-action-panel__primary" onClick={onReplay} disabled={launching}>{launching ? 'Opening Memory...' : 'Start Replay'}</button> : null}
         <button type="button" onClick={onUnwind}>{isReplay ? 'Unwind to Focus' : 'Back to Life Map'}</button>
       </div>
     </section>
@@ -183,8 +185,10 @@ export default function HomeScene({ sceneMode = 'home' }: { sceneMode?: SceneMod
   const [selectedPosition, setSelectedPosition] = useState<ConstellationNodePosition | null>(null)
   const [narratorContext, setNarratorContext] = useState<NarratorContext>('arrival')
   const [cameraResetSignal, setCameraResetSignal] = useState(0)
+  const [replayLaunching, setReplayLaunching] = useState(false)
   const activeManifest = gateBlocksMode ? null : selectedManifest ?? manifest
   const activeManifestId = selectedManifest?.manifestId ?? activeManifest?.manifestId ?? effectiveManifestId
+  const memoryMorphology = useMemo(() => buildMemoryMorphology(activeManifest, sceneMode === 'replay' ? 'focus' : 'recovery'), [activeManifest, sceneMode])
   const orbState = useMemo(() => orbStateForContext({ context: narratorContext, hasSelectedManifest: Boolean(activeManifest) || Boolean(selectedManifest) || sceneMode === 'focus' || sceneMode === 'replay', sceneMode }), [activeManifest, narratorContext, selectedManifest, sceneMode])
   const cameraPath = useMemo(() => cameraPathForState({ hasFocus: Boolean(selectedPosition) || sceneMode === 'focus' || sceneMode === 'replay' || isAscentMode, isNarrating: Boolean(activeManifest) || sceneMode !== 'home', orbState, sceneMode }), [activeManifest, orbState, selectedPosition, sceneMode, isAscentMode])
 
@@ -201,6 +205,7 @@ export default function HomeScene({ sceneMode = 'home' }: { sceneMode?: SceneMod
   const openPreviewMap = useCallback(() => router.push('/demo/life-map'), [router])
 
   const unwind = useCallback(() => {
+    setReplayLaunching(false)
     if (selectedManifest) {
       setSelectedManifest(null)
       setSelectedPosition(null)
@@ -220,11 +225,18 @@ export default function HomeScene({ sceneMode = 'home' }: { sceneMode?: SceneMod
   }, [activeManifestId, resetCamera, router, sceneMode, selectedManifest])
 
   const startReplay = useCallback(() => {
-    router.push(manifestReplayHref(activeManifestId))
-  }, [activeManifestId, router])
+    if (replayLaunching) return
+    setReplayLaunching(true)
+    if (reducedMotion) {
+      router.push(manifestReplayHref(activeManifestId))
+      return
+    }
+    window.setTimeout(() => router.push(manifestReplayHref(activeManifestId)), REPLAY_LAUNCH_DELAY_MS)
+  }, [activeManifestId, reducedMotion, replayLaunching, router])
 
   function handleSelect(manifest: SpatialAssetManifest, position: ConstellationNodePosition) {
     router.push(`/focus?manifestId=${encodeURIComponent(manifest.manifestId)}`)
+    setReplayLaunching(false)
     setSelectedManifest(manifest)
     setSelectedPosition(position)
     setNarratorContext('return')
@@ -237,6 +249,7 @@ export default function HomeScene({ sceneMode = 'home' }: { sceneMode?: SceneMod
   }, [isAscentMode, reducedMotion, router])
 
   useEffect(() => {
+    setReplayLaunching(false)
     if (selectedManifest) setNarratorContext('return')
     else if (sceneMode === 'focus') setNarratorContext('arrival')
     else if (sceneMode === 'replay') setNarratorContext('return')
@@ -256,9 +269,10 @@ export default function HomeScene({ sceneMode = 'home' }: { sceneMode?: SceneMod
 
   const showFocusPanel = Boolean(activeManifest) && (Boolean(selectedManifest) || modeNeedsManifest)
   const showEmptyFocusPanel = !gateBlocksMode && modeNeedsManifest && !activeManifest
+  const showMemoryArtifact = !gateBlocksMode && (sceneMode === 'focus' || sceneMode === 'replay')
 
   return (
-    <div className="urai-scene-stage" data-scene-mode={sceneMode} data-reduced-motion={reducedMotion ? 'true' : 'false'}>
+    <div className="urai-scene-stage" data-scene-mode={sceneMode} data-reduced-motion={reducedMotion ? 'true' : 'false'} data-replay-launching={replayLaunching ? 'true' : 'false'}>
       <div className="urai-scene-stage__fallback" aria-hidden="true" />
       <SpatialVisualOverlay mode={sceneMode} />
       {isHomeMode ? <button type="button" className="urai-sky-click-target" data-testid="urai-sky-click-target" aria-label="Begin ascent to Life Map" onClick={enterLifeMap} /> : null}
@@ -280,10 +294,11 @@ export default function HomeScene({ sceneMode = 'home' }: { sceneMode?: SceneMod
         <CinematicPostProcessing active={Boolean(activeManifest) || showConstellation || isAscentMode} reducedMotion={reducedMotion} />
         <NarratorVoice manifest={activeManifest} context={narratorContext} />
       </Canvas>
+      {showMemoryArtifact ? <MemoryStarArtifact morphology={memoryMorphology} replay={sceneMode === 'replay' || replayLaunching} /> : null}
       <CameraResetButton onReset={resetCamera} />
       <ModeGuidance mode={sceneMode} onEnter={enterLifeMap} onUnwind={unwind} reducedMotion={reducedMotion} />
       {gateBlocksMode && gatedFeatureId ? <TierGatePanel featureId={gatedFeatureId} loading={gate.loading} reasons={gate.reasons} requiredTier={gate.requiredTier} fallbackFeatureId={gate.fallbackFeatureId} onPreview={openPreviewMap} /> : null}
-      {showFocusPanel && activeManifest ? <FocusActionPanel manifest={activeManifest} mode={sceneMode} onReplay={startReplay} onUnwind={unwind} /> : null}
+      {showFocusPanel && activeManifest ? <FocusActionPanel morphology={memoryMorphology} mode={sceneMode} onReplay={startReplay} onUnwind={unwind} launching={replayLaunching} /> : null}
       {showEmptyFocusPanel ? <FocusEmptyPanel mode={sceneMode} loading={manifestLoading} onLifeMap={openLifeMap} /> : null}
       <NarratorHud />
     </div>
