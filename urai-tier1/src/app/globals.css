@@ -241,6 +241,70 @@ canvas {
   font-size: 0.82rem;
 }
 
+.urai-sky-click-target {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+}
+
+.urai-sky-click-target:focus-visible {
+  outline: 2px solid rgba(125, 211, 252, 0.85);
+  outline-offset: -8px;
+}
+
+.urai-focus-action-panel {
+  position: absolute;
+  right: 22px;
+  bottom: 22px;
+  z-index: 8;
+  width: min(360px, calc(100vw - 44px));
+  padding: 18px 20px;
+  border: 1px solid rgba(142, 220, 255, 0.25);
+  border-radius: 24px;
+  background: linear-gradient(150deg, rgba(4, 12, 28, 0.74), rgba(15, 10, 38, 0.62));
+  box-shadow: 0 24px 90px rgba(0, 0, 0, 0.38), 0 0 42px rgba(34, 211, 238, 0.1);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+}
+
+.urai-focus-action-panel__eyebrow {
+  color: rgba(182, 226, 255, 0.82);
+  font-size: 0.68rem;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+}
+
+.urai-focus-action-panel h2 {
+  margin: 8px 0;
+  font-size: 1.1rem;
+}
+
+.urai-focus-action-panel p {
+  margin: 0;
+  color: rgba(235, 244, 255, 0.72);
+  font-size: 0.84rem;
+  line-height: 1.5;
+}
+
+.urai-focus-action-panel__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 14px;
+}
+
+.urai-focus-action-panel__actions button {
+  border-radius: 999px;
+  border: 1px solid rgba(142, 220, 255, 0.32);
+  background: rgba(95, 125, 255, 0.18);
+  color: #edf7ff;
+  min-height: 38px;
+  padding: 8px 14px;
+}
+
 .tier-one-static-shell__message {
   color: rgba(187, 247, 208, 0.92) !important;
   font-size: 0.92rem;
@@ -331,6 +395,13 @@ canvas {
 
   .tier-one-route-card p {
     font-size: 0.78rem;
+  }
+
+  .urai-focus-action-panel {
+    left: 14px;
+    right: 14px;
+    bottom: 14px;
+    width: auto;
   }
 
   .tier-one-admin-row {
