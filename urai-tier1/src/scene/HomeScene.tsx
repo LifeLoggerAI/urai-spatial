@@ -8,6 +8,7 @@ import Orb, { OrbState } from './Orb'
 import Sky from './Sky'
 import Atmosphere from './Atmosphere'
 import AscentPortal from './AscentPortal'
+import SpatialVisualOverlay from './SpatialVisualOverlay'
 import ManifestRenderBoundary from '../spatial/assets/ManifestRenderBoundary'
 import { useManifest } from '../spatial/assets/useManifest'
 import { SpatialAssetManifest } from '../spatial/assets/manifestTypes'
@@ -267,11 +268,11 @@ export default function HomeScene({ sceneMode = 'home' }: { sceneMode?: SceneMod
   return (
     <div className="urai-scene-stage" data-scene-mode={sceneMode} data-reduced-motion={reducedMotion ? 'true' : 'false'}>
       <div className="urai-scene-stage__fallback" aria-hidden="true" />
+      <SpatialVisualOverlay mode={sceneMode} />
       {isHomeMode ? <button type="button" className="urai-sky-click-target" data-testid="urai-sky-click-target" aria-label="Begin ascent to Life Map" onClick={enterLifeMap} /> : null}
-      <Canvas shadows dpr={[1, 1.75]} gl={{ antialias: true, alpha: false }} onPointerMissed={enterLifeMap}>
+      <Canvas shadows dpr={[1, 1.75]} gl={{ antialias: true, alpha: true }} onPointerMissed={enterLifeMap}>
         <PerspectiveCamera makeDefault position={[0, 2.85, 8.35]} fov={48} />
         <CinematicCameraRig active focusPosition={selectedPosition} path={cameraPath} reducedMotion={reducedMotion} resetSignal={cameraResetSignal} />
-        <color attach="background" args={[isAscentMode ? '#03071f' : '#020611']} />
         <ambientLight intensity={isHomeMode ? 0.72 : isAscentMode ? 0.5 : 0.28} color="#b8d7ff" />
         <hemisphereLight args={['#d3e7ff', '#12071e', isHomeMode ? 1.45 : 0.95]} />
         <directionalLight position={[-5.4, 7.4, 3.8]} intensity={isHomeMode ? 2.45 : 1.85} color="#d7e6ff" castShadow shadow-mapSize-width={2048} shadow-mapSize-height={2048} />
