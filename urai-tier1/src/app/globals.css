@@ -136,6 +136,27 @@ canvas {
   box-shadow: 0 0 12px rgba(103, 232, 249, 0.42);
 }
 
+.urai-camera-reset {
+  position: absolute;
+  right: 22px;
+  top: 22px;
+  z-index: 9;
+  border: 1px solid rgba(142, 220, 255, 0.24);
+  border-radius: 999px;
+  background: rgba(5, 9, 22, 0.46);
+  color: rgba(235, 244, 255, 0.78);
+  padding: 8px 12px;
+  font-size: 0.74rem;
+  letter-spacing: 0.04em;
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+}
+
+.urai-camera-reset:focus-visible {
+  outline: 2px solid rgba(125, 211, 252, 0.9);
+  outline-offset: 3px;
+}
+
 .urai-hud-layer {
   position: absolute;
   inset: 0;
@@ -528,6 +549,13 @@ canvas {
     right: 14px;
     bottom: 78px;
     width: auto;
+  }
+
+  .urai-camera-reset {
+    right: 14px;
+    top: auto;
+    bottom: 14px;
+    transform: translateY(-54px);
   }
 
   .tier-one-admin-row {
