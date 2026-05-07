@@ -4,7 +4,7 @@ import React, { Suspense } from "react";
 import HomeScene from "@/scene/HomeScene";
 import { SpatialShell } from "./SpatialShell";
 
-export type TierOneExperienceMode = "home" | "life-map" | "demo" | "replay" | "focus" | "mirror";
+export type TierOneExperienceMode = "home" | "ascent" | "life-map" | "demo" | "replay" | "focus" | "mirror";
 
 type Props = {
   mode: TierOneExperienceMode;
@@ -19,6 +19,11 @@ const fallbackCopy: Record<TierOneExperienceMode, { eyebrow: string; title: stri
     eyebrow: "URAI Spatial",
     title: "Your life, rendered as atmosphere.",
     description: "A cinematic home layer where mood, memory, and focus begin as a living spatial scene.",
+  },
+  ascent: {
+    eyebrow: "Ascent",
+    title: "Rising from the sky into your Life Map.",
+    description: "A brief cinematic passage carries the home atmosphere into the constellation layer.",
   },
   "life-map": {
     eyebrow: "Life Map",
@@ -50,7 +55,7 @@ const fallbackCopy: Record<TierOneExperienceMode, { eyebrow: string; title: stri
 function shellModeFor(mode: TierOneExperienceMode) {
   if (mode === "replay") return "replay" as const;
   if (mode === "focus" || mode === "mirror") return "detail" as const;
-  if (mode === "life-map") return "sky" as const;
+  if (mode === "ascent" || mode === "life-map") return "sky" as const;
   return "overview" as const;
 }
 
