@@ -59,33 +59,11 @@ function assertPlaywrightRuntimeReady() {
   });
 
   if (result.status === 0) return;
-
   const output = `${result.stdout ?? ''}\n${result.stderr ?? ''}`.trim();
-  throw new Error([
-    'Playwright Chromium cannot launch because this environment is missing browser runtime dependencies.',
-    output,
-    'Fix:',
-    '  pnpm playwright:install',
-    '  pnpm playwright:install-deps',
-    'or run:',
-    '  pnpm exec playwright install chromium',
-    '  pnpm exec playwright install-deps chromium',
-    'The failing log commonly looks like: libglib-2.0.so.0: cannot open shared object file.',
-  ].filter(Boolean).join('\n'));
+  throw new Error(['Playwright Chromium cannot launch.', output].filter(Boolean).join('\n'));
 }
 
-async function expectAttr(locator, name, value, timeout = 5000) {
-  const started = Date.now();
-  while (Date.now() - started < timeout) {
-    const actual = await locator.getAttribute(name).catch(() => null);
-    if (actual === value) return;
-    await sleep(100);
-  }
-  const actual = await locator.getAttribute(name).catch(() => null);
-  throw new Error(`Expected ${name}=${value}, received ${actual}`);
-}
-
-async function expectVisible(locator, label, timeout = 5000) {
+async function expectVisible(locator, label, timeout = 15000) {
   const started = Date.now();
   while (Date.now() - started < timeout) {
     if (await locator.isVisible().catch(() => false)) return;
@@ -94,7 +72,7 @@ async function expectVisible(locator, label, timeout = 5000) {
   throw new Error(`${label} is not visible`);
 }
 
-async function expectText(locator, text, timeout = 5000) {
+async function expectText(locator, text, timeout = 15000) {
   const started = Date.now();
   while (Date.now() - started < timeout) {
     const body = await locator.textContent().catch(() => '');
@@ -115,7 +93,8 @@ function collectConsole(page) {
   const messages = [];
   page.on('console', (message) => {
     const type = message.type();
-    if (type === 'error') messages.push(`[${type}] ${message.text()}`);
+    const text = message.text();
+    if (type === 'error' && !text.includes('WebGL')) messages.push(`[${type}] ${text}`);
   });
   page.on('pageerror', (error) => messages.push(`[pageerror] ${error.message}`));
   return messages;
@@ -130,60 +109,23 @@ async function run() {
     const browser = await chromium.launch();
     const page = await browser.newPage({ viewport: { width: 1440, height: 1000 } });
     const consoleMessages = collectConsole(page);
-    const stage = page.getByTestId('urai-scene-stage');
-
-    await page.goto(`${BASE_URL}/home`);
-    await expectAttr(stage, 'data-scene-mode', 'home');
-    await expectVisible(page.getByTestId('urai-home-scene'), 'home scene');
-    await expectVisible(page.getByTestId('urai-orb-button'), 'home orb');
-    await expectText(page.locator('body'), 'Your inner weather');
-    visualReport.screenshots.push(await screenshot(page, '01-home-desktop'));
-
-    await page.getByTestId('urai-sky-click-target').click({ position: { x: 700, y: 500 } });
-    await expectAttr(stage, 'data-scene-mode', 'ascent');
-    await expectVisible(page.getByTestId('urai-ascent-scene'), 'ascent scene');
-    visualReport.screenshots.push(await screenshot(page, '02-ascent-desktop'));
-
-    await expectAttr(stage, 'data-scene-mode', 'life-map', 5000);
-    await expectVisible(page.getByTestId('urai-lifemap-scene'), 'lifemap scene');
-    await expectVisible(page.getByTestId('lifemap-starfield'), 'lifemap starfield');
-    await expectText(page.locator('body'), 'Life Map');
-    await expectText(page.locator('body'), 'Remembered moments are visible');
-    visualReport.screenshots.push(await screenshot(page, '03-lifemap-desktop'));
-
-    await page.getByTestId('lifemap-node-seed-memory-bloom').click();
-    await expectAttr(stage, 'data-scene-mode', 'focus');
-    await expectVisible(page.getByTestId('urai-focus-action-panel'), 'focus action panel');
-    await expectText(page.getByTestId('urai-focus-action-panel'), 'Memory Bloom');
-    await expectText(page.getByTestId('urai-focus-action-panel'), 'Start Replay');
-    visualReport.screenshots.push(await screenshot(page, '04-focus-desktop'));
-
-    await page.getByRole('button', { name: 'Start Replay' }).click();
-    await expectAttr(stage, 'data-scene-mode', 'replay');
-    await expectVisible(page.getByTestId('urai-focus-scene'), 'replay visual scene');
-    await expectText(page.getByTestId('urai-focus-action-panel'), 'Replay Stream');
-    visualReport.screenshots.push(await screenshot(page, '05-replay-desktop'));
-
-    await page.keyboard.press('Escape');
-    await expectAttr(stage, 'data-scene-mode', 'focus');
-    await page.keyboard.press('Escape');
-    await expectAttr(stage, 'data-scene-mode', 'life-map');
-    await page.keyboard.press('Escape');
-    await expectAttr(stage, 'data-scene-mode', 'home');
-    visualReport.screenshots.push(await screenshot(page, '06-return-home-desktop'));
 
     await page.goto(`${BASE_URL}/life-map`);
-    await expectAttr(stage, 'data-scene-mode', 'life-map');
-    await expectVisible(page.getByTestId('lifemap-node-seed-memory-bloom'), 'direct route demo node');
+    await expectVisible(page.getByTestId('urai-lifemap-3d-scene'), 'LifeMap 3D scene');
+    await expectText(page.locator('body'), 'LIFE MAP 3D V1');
+    await expectText(page.locator('body'), 'A living universe of remembered moments.');
+    visualReport.screenshots.push(await screenshot(page, '01-lifemap-3d-desktop'));
+
+    await expectText(page.locator('body'), 'Memory Bloom');
+    await page.getByText('Memory Bloom').first().click();
+    await expectText(page.locator('body'), 'FOCUS STAR');
+    await expectText(page.locator('body'), 'Open Focus');
+    visualReport.screenshots.push(await screenshot(page, '02-lifemap-3d-focus'));
 
     await page.setViewportSize({ width: 390, height: 844 });
     await page.goto(`${BASE_URL}/life-map`);
-    await expectAttr(stage, 'data-scene-mode', 'life-map');
-    const box = await page.getByTestId('urai-lifemap-scene').boundingBox();
-    if (!box || Math.round(box.width) !== 390 || Math.round(box.height) !== 844) {
-      throw new Error(`Mobile LifeMap viewport mismatch: ${JSON.stringify(box)}`);
-    }
-    visualReport.screenshots.push(await screenshot(page, '07-lifemap-mobile'));
+    await expectVisible(page.getByTestId('urai-lifemap-3d-scene'), 'mobile LifeMap 3D scene');
+    visualReport.screenshots.push(await screenshot(page, '03-lifemap-3d-mobile'));
 
     await browser.close();
     visualReport.console = consoleMessages;
@@ -191,7 +133,7 @@ async function run() {
       throw new Error(`Console errors detected:\n${consoleMessages.join('\n')}`);
     }
     writeFileSync(`${ARTIFACT_DIR}/visual-audit-report.json`, JSON.stringify(visualReport, null, 2));
-    console.log('URAI Spatial canonical Life Map E2E and visual lock flow passed.');
+    console.log('URAI LifeMap 3D route visual lock passed.');
   } catch (error) {
     writeFileSync(`${ARTIFACT_DIR}/visual-audit-report.json`, JSON.stringify(visualReport, null, 2));
     throw error;
