@@ -107,7 +107,7 @@ function ModeGuidance({ mode, onEnter, onUnwind, reducedMotion }: { mode: SceneM
 
 function CameraResetButton({ onReset }: { onReset: () => void }) {
   return (
-    <button type="button" className="urai-camera-reset" data-testid="urai-camera-reset" aria-label="Recenter Mirror field camera" onClick={onReset}>
+    <button type="button" className="urai-camera-reset" data-testid="urai-camera-reset" aria-label="Recenter spatial field camera" onClick={onReset}>
       Recenter Field
     </button>
   )
@@ -214,6 +214,10 @@ export default function HomeScene({ sceneMode = 'home' }: { sceneMode?: SceneMod
     }
     if (sceneMode === 'focus') {
       router.push('/life-map')
+      return
+    }
+    if (sceneMode === 'mirror') {
+      router.push('/home')
       return
     }
     if (sceneMode === 'life-map' || sceneMode === 'ascent') router.push('/')
