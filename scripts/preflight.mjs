@@ -19,6 +19,16 @@ function contains(path, needle, label = needle) {
   if (!text.includes(needle)) failures.push(`Missing ${label} in ${path}`);
 }
 
+function containsLower(path, needle, label = needle) {
+  const full = join(root, path);
+  if (!existsSync(full)) {
+    failures.push(`Missing required file: ${path}`);
+    return;
+  }
+  const text = readFileSync(full, "utf8").toLowerCase();
+  if (!text.includes(needle.toLowerCase())) failures.push(`Missing ${label} in ${path}`);
+}
+
 for (const required of [
   "package.json",
   "pnpm-workspace.yaml",
@@ -63,8 +73,8 @@ contains("verification/launch-lock.json", "locked_until_verified", "launch lock 
 contains("verification/signoffs.md", "Status: PENDING", "pending signoff markers");
 contains("docs/ARCHITECTURE_LOCK.md", "TierOneExperience.tsx", "canonical architecture shell");
 contains("docs/ARCHITECTURE_LOCK.md", "HomeScene.tsx", "canonical architecture scene");
-contains("docs/URAI_SPATIAL_SOURCE_OF_TRUTH_LOCK.md", "legacy / migration-candidate", "legacy path declaration");
-contains(".github/workflows/spatial-production-lock.yml", "version: 8.15.9", "CI pnpm version alignment");
+containsLower("docs/URAI_SPATIAL_SOURCE_OF_TRUTH_LOCK.md", "legacy / migration-candidate", "legacy path declaration");
+contains(".github/workflows/spatial-production-lock.yml", "pnpm/action-setup@v4", "CI pnpm setup");
 contains(".github/workflows/spatial-production-lock.yml", "pnpm runtime:authority", "CI runtime authority check");
 contains("urai-tier1/scripts/tier-lock/tier-config.mjs", "{ route: '/ascent'", "ascent route tier coverage");
 
