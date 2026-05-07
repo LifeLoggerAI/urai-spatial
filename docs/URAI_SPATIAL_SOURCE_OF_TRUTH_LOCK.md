@@ -50,7 +50,7 @@ Next.js route
 - Replay Tier 5 runner: `tests/replay-tier5-lock.mjs`
 - Runtime authority check: `scripts/check-runtime-authority.mjs`
 
-## Legacy / migration-candidate path
+## legacy / migration-candidate path
 
 The following path exists but is not V1 route authority:
 
