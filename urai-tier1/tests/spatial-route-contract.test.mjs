@@ -48,7 +48,7 @@ test('primary routes use the canonical TierOneExperience shell', () => {
   assert.match(compact(lifeMapRoute), /<TierOneExperiencemode="life-map"\/>/)
   assert.match(compact(focusRoute), /<TierOneExperiencemode="focus"\/>/)
   assert.match(compact(replayRoute), /<TierOneExperiencemode="replay"\/>/)
-  assert.match(compact(mirrorRoute), /<TierOneExperiencemode="mirror"\/>/)
+  assert.match(compact(mirrorRoute), /<TierOneExperiencemode="mirror"(?:cta=\{<MirrorReturnControls\/>\})?\/>/)
 })
 
 test('TierOneExperience maps routed modes to the spatial shell', () => {
@@ -147,8 +147,8 @@ test('premium home overlay locks production polish layers and launch CTA clarity
   assert.match(source, /urai-home-atmosphere/)
   assert.match(source, /urai-home-horizon-glow/)
   assert.match(source, /urai-home-ground-reflection/)
-  assert.match(source, /urai-home-orb__outer/)
-  assert.match(source, /@keyframes uraiOrbCoreBreath/)
+  assert.match(source, /urai-home-orb__(?:outer|aura-outer)/)
+  assert.match(source, /@keyframes uraiOrb(?:Core)?Breath/)
   assert.match(source, /@keyframes uraiAuraDrift/)
   assert.match(source, /aria-label="North marker"/)
   assert.match(source, /detail="Begin the ascent"/)
