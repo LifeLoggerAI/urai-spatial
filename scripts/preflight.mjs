@@ -26,21 +26,47 @@ for (const required of [
   "firebase/firestore.rules",
   "firebase/firestore.indexes.json",
   "README.md",
+  "RUNBOOK.md",
+  "TIER_LOCK_REPORT.md",
+  "docs/ARCHITECTURE_LOCK.md",
+  "docs/URAI_SPATIAL_SOURCE_OF_TRUTH_LOCK.md",
+  ".github/workflows/spatial-production-lock.yml",
+  "scripts/check-runtime-authority.mjs",
+  "tests/spatial-lock.mjs",
+  "tests/replay-tier5-lock.mjs",
   "urai-tier1/package.json",
+  "urai-tier1/src/app/page.tsx",
+  "urai-tier1/src/app/ascent/page.tsx",
+  "urai-tier1/src/app/loading.tsx",
+  "urai-tier1/src/app/error.tsx",
+  "urai-tier1/src/app/not-found.tsx",
+  "urai-tier1/src/spatial/layout/TierOneExperience.tsx",
+  "urai-tier1/src/scene/HomeScene.tsx",
   "apps/functions/package.json",
   "verification/launch-lock.json",
   "verification/signoffs.md"
 ]) file(required);
 
+contains("package.json", "\"packageManager\": \"pnpm@8.15.9\"", "pinned pnpm package manager");
+contains("package.json", "runtime:authority", "runtime authority script");
 contains("firebase.json", "nodejs20", "Node 20 Functions runtime");
 contains("firebase.json", "urai-spatial-functions", "named functions codebase");
 contains("firebase.json", "pnpm --filter urai-tier1 typecheck", "typecheck predeploy");
+contains("firebase.json", "pnpm --filter urai-functions build", "functions build predeploy");
 contains("firebase/firestore.rules", "isAdmin", "admin guard");
 contains("firebase/firestore.rules", "match /spatial/{doc=**}", "spatial deny/admin collection rule");
 contains("package.json", "test:e2e", "spatial lock e2e script");
+contains("tests/spatial-lock.mjs", "data-scene-mode", "current E2E mode attribute");
+contains("tests/replay-tier5-lock.mjs", "data-scene-mode", "current replay E2E mode attribute");
 contains("urai-tier1/package.json", "verify:tier-lock", "tier lock verifier");
 contains("verification/launch-lock.json", "locked_until_verified", "launch lock status");
 contains("verification/signoffs.md", "Status: PENDING", "pending signoff markers");
+contains("docs/ARCHITECTURE_LOCK.md", "TierOneExperience.tsx", "canonical architecture shell");
+contains("docs/ARCHITECTURE_LOCK.md", "HomeScene.tsx", "canonical architecture scene");
+contains("docs/URAI_SPATIAL_SOURCE_OF_TRUTH_LOCK.md", "legacy / migration-candidate", "legacy path declaration");
+contains(".github/workflows/spatial-production-lock.yml", "version: 8.15.9", "CI pnpm version alignment");
+contains(".github/workflows/spatial-production-lock.yml", "pnpm runtime:authority", "CI runtime authority check");
+contains("urai-tier1/scripts/tier-lock/tier-config.mjs", "{ route: '/ascent'", "ascent route tier coverage");
 
 for (const envName of [
   "FIREBASE_SERVICE_ACCOUNT_URAI_SPATIAL",
