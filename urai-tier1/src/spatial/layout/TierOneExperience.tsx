@@ -17,38 +17,38 @@ type Props = {
 const fallbackCopy: Record<TierOneExperienceMode, { eyebrow: string; title: string; description: string }> = {
   home: {
     eyebrow: "URAI Spatial",
-    title: "Your life, rendered as atmosphere.",
-    description: "A cinematic home layer where mood, memory, and focus begin as a living spatial scene.",
+    title: "Your inner weather, rendered as a world.",
+    description: "A calm cinematic home where the sky, ground, and companion orb become the entry point into memory, mood, and focus.",
   },
   ascent: {
     eyebrow: "Ascent",
-    title: "Rising from the sky into your Life Map.",
-    description: "A brief cinematic passage carries the home atmosphere into the constellation layer.",
+    title: "Rise from the home sky into your Life Map.",
+    description: "A short atmospheric passage shifts the scene from grounded presence into the constellation layer.",
   },
   "life-map": {
     eyebrow: "Life Map",
-    title: "A symbolic constellation of remembered moments.",
-    description: "Tap stars to move from the sky into memory bloom, emotional replay, and pattern recognition.",
+    title: "A constellation of remembered moments.",
+    description: "Stars become memory anchors. Tap one to move into focus, replay, and pattern recognition.",
   },
   demo: {
     eyebrow: "Demo",
     title: "A guided preview of the URAI Spatial engine.",
-    description: "This launch demo shows the emotional map, companion orb, and cinematic memory field without requiring private data.",
+    description: "Explore the emotional map, companion field, and cinematic memory layer without connecting private data.",
   },
   replay: {
     eyebrow: "Replay",
-    title: "Replay mode is ready for your first life chapter.",
-    description: "When memory data connects, this view becomes a cinematic walk back through moments, tone shifts, and recovery arcs.",
+    title: "Replay turns a memory into atmosphere.",
+    description: "This route becomes a cinematic return path through tone shifts, recovery arcs, and emotional context.",
   },
   focus: {
     eyebrow: "Focus",
-    title: "A calm attention field for returning to center.",
-    description: "The scene quiets into a focused companion state while deeper cognitive guidance comes online.",
+    title: "A memory star, opened gently.",
+    description: "Focus mode slows the scene down so one memory can become readable before replay begins.",
   },
   mirror: {
     eyebrow: "Mirror",
-    title: "Cognitive mirror fallback is live.",
-    description: "Tier-1 keeps the reflection route polished while richer pattern summaries and private data sync are connected.",
+    title: "Reflection begins with a stable field.",
+    description: "The mirror route keeps the scene grounded while deeper pattern summaries and private data sync come online.",
   },
 };
 
