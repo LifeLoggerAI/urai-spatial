@@ -25,6 +25,8 @@ jobs:
         run: pnpm install --frozen-lockfile
       - name: Source integrity
         run: pnpm check:source-integrity
+      - name: Production route exposure
+        run: pnpm check:production-routes
       - name: Preflight
         run: pnpm preflight
       - name: Runtime authority
@@ -79,6 +81,8 @@ jobs:
         run: pnpm install --frozen-lockfile
       - name: Source integrity
         run: pnpm check:source-integrity
+      - name: Production route exposure
+        run: pnpm check:production-routes
       - name: Typecheck
         run: pnpm --filter urai-tier1 typecheck
       - name: Tier lock verifier
