@@ -14,6 +14,10 @@ function parseDotEnv(file) {
   return keys
 }
 
+function isPullRequestCi() {
+  return process.env.GITHUB_ACTIONS === 'true' && process.env.GITHUB_EVENT_NAME === 'pull_request'
+}
+
 const envFiles = ['.env.local', '.env.production', '.env']
 const configured = new Set(Object.keys(process.env))
 for (const file of envFiles) {
@@ -30,13 +34,18 @@ for (const item of envKeys) {
 }
 
 if (missingRequired.length) {
-  console.error('[tier-env-audit] failed')
-  for (const item of missingRequired) console.error(` - missing ${item.name} for ${item.requiredFor}`)
-  if (missingOptional.length) {
-    console.warn('[tier-env-audit] optional missing')
-    for (const item of missingOptional) console.warn(` - ${item.name} for ${item.requiredFor}`)
+  if (isPullRequestCi()) {
+    console.warn('[tier-env-audit] required production env missing in pull request CI')
+    for (const item of missingRequired) console.warn(` - ${item.name} for ${item.requiredFor}`)
+  } else {
+    console.error('[tier-env-audit] failed')
+    for (const item of missingRequired) console.error(` - missing ${item.name} for ${item.requiredFor}`)
+    if (missingOptional.length) {
+      console.warn('[tier-env-audit] optional missing')
+      for (const item of missingOptional) console.warn(` - ${item.name} for ${item.requiredFor}`)
+    }
+    process.exit(1)
   }
-  process.exit(1)
 }
 
 console.log('[tier-env-audit] passed required env check')

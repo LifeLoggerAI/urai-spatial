@@ -81,6 +81,29 @@ service cloud.firestore {
         allow read: if isSelf(uid) || isAdmin();
         allow write: if false;
       }
+
+      // User-scoped personal spatial collections. These contain sensitive replay,
+      // memory, canon, focus, and transition state and are only available to the
+      // authenticated owner or an admin service context.
+      match /replayEvents/{eventId} {
+        allow read, write: if isSelf(uid) || isAdmin();
+      }
+
+      match /spatialMemories/{memoryId} {
+        allow read, write: if isSelf(uid) || isAdmin();
+      }
+
+      match /canonChains/{chainId} {
+        allow read, write: if isSelf(uid) || isAdmin();
+      }
+
+      match /focusStates/{stateId} {
+        allow read, write: if isSelf(uid) || isAdmin();
+      }
+
+      match /transitionStates/{transitionId} {
+        allow read, write: if isSelf(uid) || isAdmin();
+      }
     }
 
     // Default deny for sensitive spatial collections unless admin.

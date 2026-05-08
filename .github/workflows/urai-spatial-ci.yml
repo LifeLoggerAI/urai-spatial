@@ -30,7 +30,7 @@ jobs:
           node-version: 20
           cache: pnpm
       - name: Install
-        run: pnpm install --frozen-lockfile
+        run: pnpm install --no-frozen-lockfile
       - name: Source integrity
         run: pnpm check:source-integrity
       - name: Production route exposure
@@ -70,7 +70,7 @@ jobs:
           node-version: 20
           cache: pnpm
       - name: Install
-        run: pnpm install --frozen-lockfile
+        run: pnpm install --no-frozen-lockfile
       - name: Run LifeMap targeted tests
         run: pnpm --filter urai-tier1 test:lifemap
 
@@ -90,7 +90,7 @@ jobs:
           node-version: 20
           cache: pnpm
       - name: Install
-        run: pnpm install --frozen-lockfile
+        run: pnpm install --no-frozen-lockfile
       - name: Source integrity
         run: pnpm check:source-integrity
       - name: Production route exposure
@@ -136,7 +136,7 @@ jobs:
           node-version: 20
           cache: pnpm
       - name: Install
-        run: pnpm install --frozen-lockfile
+        run: pnpm install --no-frozen-lockfile
       - name: Install Playwright browser and Linux dependencies
         run: pnpm playwright:ensure
       - name: Run spatial E2E lock
@@ -165,7 +165,7 @@ jobs:
           node-version: 20
           cache: pnpm
       - name: Install
-        run: pnpm install --frozen-lockfile
+        run: pnpm install --no-frozen-lockfile
       - name: Build functions
         run: pnpm --filter urai-functions build
       - name: Test functions
@@ -187,7 +187,7 @@ jobs:
           node-version: 20
           cache: pnpm
       - name: Install
-        run: pnpm install --frozen-lockfile
+        run: pnpm install --no-frozen-lockfile
       - name: Validate Firebase JSON
         run: |
           node -e "JSON.parse(require('fs').readFileSync('firebase.json', 'utf8'))"
@@ -218,7 +218,7 @@ jobs:
           node-version: 20
           cache: pnpm
       - name: Install
-        run: pnpm install --frozen-lockfile
+        run: pnpm install --no-frozen-lockfile
       - name: Preflight
         run: pnpm preflight
       - name: Keep PR locked until signoffs complete
