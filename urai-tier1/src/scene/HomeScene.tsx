@@ -264,7 +264,7 @@ export default function HomeScene({ sceneMode = 'home' }: { sceneMode?: SceneMod
   const showMemoryArtifact = !gateBlocksMode && (sceneMode === 'focus' || sceneMode === 'replay')
 
   return (
-    <div className="urai-scene-stage" data-scene-mode={sceneMode} data-reduced-motion={reducedMotion ? 'true' : 'false'} data-replay-launching={replayLaunching ? 'true' : 'false'} onClick={isHomeMode ? enterLifeMap : undefined}>
+    <div className="urai-scene-stage" data-testid="urai-scene-stage" data-scene-mode={sceneMode} data-reduced-motion={reducedMotion ? 'true' : 'false'} data-replay-launching={replayLaunching ? 'true' : 'false'} onClick={isHomeMode ? enterLifeMap : undefined}>
       <div className="urai-scene-stage__fallback" aria-hidden="true" />
       <SpatialVisualOverlay mode={sceneMode} />
       <Canvas shadows dpr={[1, 1.75]} gl={{ antialias: true, alpha: true }} onPointerMissed={enterLifeMap}>
