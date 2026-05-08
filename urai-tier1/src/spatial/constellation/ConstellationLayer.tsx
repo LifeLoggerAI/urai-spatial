@@ -29,6 +29,32 @@ type LifeMapMotif = {
   points: ConstellationNodePosition[]
 }
 
+type NebulaCloud = {
+  id: string
+  color: string
+  opacity: number
+  position: ConstellationNodePosition
+  scale: readonly [number, number, number]
+  rotation: readonly [number, number, number]
+}
+
+type AnchorStar = {
+  id: string
+  tone: string
+  position: ConstellationNodePosition
+  scale: number
+  intensity: number
+}
+
+type EdgeConstellation = {
+  id: string
+  tone: string
+  opacity: number
+  position: ConstellationNodePosition
+  scale: number
+  points: ConstellationNodePosition[]
+}
+
 const clusterOffsets: Record<ClusterKey, ConstellationNodePosition> = {
   memory: [-5.6, 2.05, -3.4],
   intense: [5.45, 1.65, -2.1],
@@ -42,11 +68,34 @@ const fallbackLabels = ['Memory Bloom', 'Threshold', 'Mirror Focus', 'Ritual Ech
 const toneColors = ['#ffd0c7', '#8fb6ff', '#78f0ff', '#a78bfa', '#ff74c7', '#67e8f9', '#d946ef']
 const STARFIELD_SEED = 1947
 
+const nebulaClouds: NebulaCloud[] = [
+  { id: 'ember-left', color: '#ff9a3d', opacity: 0.13, position: [-6.8, -0.2, -8.9], scale: [7.8, 3.4, 1], rotation: [0.04, 0.24, -0.44] },
+  { id: 'rose-left', color: '#ff62c7', opacity: 0.12, position: [-4.9, 1.9, -9.4], scale: [8.4, 3.1, 1], rotation: [0.18, 0.08, -0.2] },
+  { id: 'blue-core', color: '#40d6ff', opacity: 0.15, position: [0.1, 1.2, -9.7], scale: [8.8, 3.6, 1], rotation: [-0.22, -0.02, 0.08] },
+  { id: 'violet-crown', color: '#a855f7', opacity: 0.13, position: [3.8, 2.4, -9.1], scale: [7.6, 3.3, 1], rotation: [0.16, -0.26, 0.3] },
+  { id: 'gold-right', color: '#ffbf68', opacity: 0.12, position: [6.2, -0.7, -8.7], scale: [6.5, 2.9, 1], rotation: [-0.08, -0.18, 0.42] },
+  { id: 'ice-veil', color: '#c7f7ff', opacity: 0.07, position: [1.2, -1.4, -7.4], scale: [10.8, 4.1, 1], rotation: [-0.38, 0.04, -0.04] },
+]
+
+const anchorStars: AnchorStar[] = [
+  { id: 'blue-center', tone: '#7dd3fc', position: [0.1, 1.05, -5.35], scale: 1.55, intensity: 2.2 },
+  { id: 'gold-memory', tone: '#ffd38a', position: [-4.75, 1.45, -5.85], scale: 1.25, intensity: 1.75 },
+  { id: 'magenta-dream', tone: '#ff7adf', position: [4.55, 2.0, -5.7], scale: 1.32, intensity: 1.85 },
+  { id: 'orange-return', tone: '#ff9f5f', position: [5.9, -1.05, -5.25], scale: 1.18, intensity: 1.65 },
+]
+
+const edgeConstellations: EdgeConstellation[] = [
+  { id: 'upper-left-frame', tone: '#95b8ff', opacity: 0.22, position: [-6.8, 2.9, -4.8], scale: 0.72, points: [[-1.4, 0.6, 0], [-0.42, 0.2, 0], [0.38, 0.52, 0], [1.25, -0.12, 0], [1.7, 0.54, 0]] },
+  { id: 'upper-right-frame', tone: '#8fb6ff', opacity: 0.2, position: [6.7, 2.75, -5.05], scale: 0.78, points: [[-1.3, 0.52, 0], [-0.45, 0.0, 0], [0.24, 0.42, 0], [0.95, -0.08, 0], [1.36, -0.84, 0]] },
+  { id: 'lower-left-frame', tone: '#b48cff', opacity: 0.17, position: [-7.1, -1.7, -4.65], scale: 0.8, points: [[-0.95, 0.62, 0], [-0.18, 0.04, 0], [0.62, 0.2, 0], [1.15, -0.72, 0], [1.75, -0.2, 0]] },
+  { id: 'lower-right-frame', tone: '#ff9edb', opacity: 0.18, position: [6.9, -1.75, -4.75], scale: 0.76, points: [[-1.65, -0.08, 0], [-0.88, 0.46, 0], [-0.12, 0.12, 0], [0.54, 0.74, 0], [1.34, 0.36, 0]] },
+]
+
 const lifeMapMotifs: LifeMapMotif[] = [
   {
     id: 'inner-profile',
     tone: '#5cc8ff',
-    opacity: 0.26,
+    opacity: 0.2,
     position: [-1.15, 1.2, -7.4],
     scale: 1.15,
     points: [
@@ -56,7 +105,7 @@ const lifeMapMotifs: LifeMapMotif[] = [
   {
     id: 'guardian-wolf',
     tone: '#7de7ff',
-    opacity: 0.2,
+    opacity: 0.15,
     position: [1.65, 0.7, -9.25],
     scale: 0.9,
     points: [
@@ -132,6 +181,21 @@ function lineGeometry(points: ConstellationNodePosition[]) {
   return new THREE.BufferGeometry().setFromPoints(points.map((point) => new THREE.Vector3(...point)))
 }
 
+function NebulaCloudMesh({ cloud }: { cloud: NebulaCloud }) {
+  return (
+    <group position={cloud.position} rotation={cloud.rotation} scale={cloud.scale}>
+      <mesh>
+        <circleGeometry args={[1, 64]} />
+        <meshBasicMaterial color={cloud.color} transparent opacity={cloud.opacity} depthWrite={false} blending={THREE.AdditiveBlending} side={THREE.DoubleSide} />
+      </mesh>
+      <mesh scale={[0.58, 0.42, 1]} position={[0.22, 0.08, 0.02]}>
+        <circleGeometry args={[1, 64]} />
+        <meshBasicMaterial color="#ffffff" transparent opacity={cloud.opacity * 0.18} depthWrite={false} blending={THREE.AdditiveBlending} side={THREE.DoubleSide} />
+      </mesh>
+    </group>
+  )
+}
+
 function NebulaField({ reducedMotion }: { reducedMotion: boolean }) {
   const ref = useRef<THREE.Group>(null)
 
@@ -143,17 +207,10 @@ function NebulaField({ reducedMotion }: { reducedMotion: boolean }) {
 
   return (
     <group ref={ref} data-testid="lifemap-nebula-field">
-      <mesh position={[-5.8, 2.4, -7.2]} rotation={[0.2, 0.08, -0.18]}>
-        <planeGeometry args={[8.8, 4.2, 12, 12]} />
-        <meshBasicMaterial color="#ff8bbd" transparent opacity={0.09} depthWrite={false} blending={THREE.AdditiveBlending} side={THREE.DoubleSide} />
-      </mesh>
-      <mesh position={[5.2, 1.55, -6.0]} rotation={[-0.1, -0.18, 0.24]}>
-        <planeGeometry args={[7.4, 3.6, 12, 12]} />
-        <meshBasicMaterial color="#9b5cff" transparent opacity={0.12} depthWrite={false} blending={THREE.AdditiveBlending} side={THREE.DoubleSide} />
-      </mesh>
-      <mesh position={[0.2, -0.1, -5.4]} rotation={[-0.34, 0.04, 0.02]}>
-        <planeGeometry args={[10.2, 3.8, 12, 12]} />
-        <meshBasicMaterial color="#4cc9ff" transparent opacity={0.08} depthWrite={false} blending={THREE.AdditiveBlending} side={THREE.DoubleSide} />
+      {nebulaClouds.map((cloud) => <NebulaCloudMesh key={cloud.id} cloud={cloud} />)}
+      <mesh position={[0.1, 0.2, -10.25]} rotation={[-0.22, 0.02, -0.08]}>
+        <planeGeometry args={[15.5, 5.4, 12, 12]} />
+        <meshBasicMaterial color="#6bdcff" transparent opacity={0.045} depthWrite={false} blending={THREE.AdditiveBlending} side={THREE.DoubleSide} />
       </mesh>
     </group>
   )
@@ -170,8 +227,8 @@ function LifeMapStarfield3D({ reducedMotion }: { reducedMotion: boolean }) {
 
   return (
     <group ref={ref} data-testid="lifemap-starfield-3d">
-      <Stars radius={54} depth={34} count={1400} factor={4.8} saturation={0.45} fade speed={reducedMotion ? 0 : 0.38} />
-      <Stars radius={26} depth={18} count={420} factor={7.5} saturation={0.75} fade speed={reducedMotion ? 0 : 0.18} />
+      <Stars radius={68} depth={44} count={2200} factor={5.2} saturation={0.5} fade speed={reducedMotion ? 0 : 0.34} />
+      <Stars radius={28} depth={20} count={620} factor={8.6} saturation={0.8} fade speed={reducedMotion ? 0 : 0.16} />
     </group>
   )
 }
@@ -183,6 +240,69 @@ function MotifLine({ motif }: { motif: LifeMapMotif }) {
     <line geometry={geometry} frustumCulled={false}>
       <lineBasicMaterial color={motif.tone} transparent opacity={motif.opacity} depthWrite={false} blending={THREE.AdditiveBlending} />
     </line>
+  )
+}
+
+function EdgeConstellationLine({ constellation }: { constellation: EdgeConstellation }) {
+  const geometry = useMemo(() => lineGeometry(constellation.points), [constellation.points])
+
+  return (
+    <line geometry={geometry} frustumCulled={false}>
+      <lineBasicMaterial color={constellation.tone} transparent opacity={constellation.opacity} depthWrite={false} blending={THREE.AdditiveBlending} />
+    </line>
+  )
+}
+
+function LifeMapEdgeConstellations({ reducedMotion }: { reducedMotion: boolean }) {
+  const ref = useRef<THREE.Group>(null)
+
+  useFrame(({ clock }) => {
+    if (!ref.current || reducedMotion) return
+    ref.current.rotation.z = Math.sin(clock.elapsedTime * 0.025) * 0.015
+  })
+
+  return (
+    <group ref={ref} data-testid="lifemap-edge-constellations">
+      {edgeConstellations.map((constellation) => (
+        <group key={constellation.id} position={constellation.position} scale={constellation.scale} data-testid={`lifemap-edge-constellation-${constellation.id}`}>
+          <EdgeConstellationLine constellation={constellation} />
+          {constellation.points.map((point, index) => (
+            <mesh key={`${constellation.id}-${index}`} position={point} scale={index % 2 === 0 ? 1.05 : 0.72}>
+              <sphereGeometry args={[0.045, 10, 10]} />
+              <meshBasicMaterial color={constellation.tone} transparent opacity={0.66} depthWrite={false} blending={THREE.AdditiveBlending} />
+            </mesh>
+          ))}
+        </group>
+      ))}
+    </group>
+  )
+}
+
+function LifeMapAnchorStars({ reducedMotion }: { reducedMotion: boolean }) {
+  const ref = useRef<THREE.Group>(null)
+
+  useFrame(({ clock }) => {
+    if (!ref.current || reducedMotion) return
+    ref.current.rotation.y = Math.sin(clock.elapsedTime * 0.035) * 0.018
+  })
+
+  return (
+    <group ref={ref} data-testid="lifemap-anchor-stars">
+      {anchorStars.map((star) => (
+        <group key={star.id} position={star.position} scale={star.scale}>
+          <mesh>
+            <sphereGeometry args={[0.12, 24, 24]} />
+            <meshBasicMaterial color={star.tone} transparent opacity={0.95} depthWrite={false} blending={THREE.AdditiveBlending} />
+          </mesh>
+          <mesh scale={2.4}>
+            <sphereGeometry args={[0.18, 24, 24]} />
+            <meshBasicMaterial color={star.tone} transparent opacity={0.18} depthWrite={false} blending={THREE.AdditiveBlending} />
+          </mesh>
+          <ringGeometry args={[0.24, 0.255, 48]} />
+          <pointLight color={star.tone} intensity={star.intensity} distance={6.5} />
+        </group>
+      ))}
+    </group>
   )
 }
 
@@ -330,8 +450,12 @@ export default function ConstellationLayer({ enabled, selectedManifestId, reduce
 
   return (
     <group ref={fieldRef} data-testid="lifemap-cosmic-constellation" position={[0, 0.08, -0.35]}>
+      <color attach="background" args={['#02030a']} />
+      <fog attach="fog" args={['#02030a', 7.5, 29]} />
       <LifeMapStarfield3D reducedMotion={reducedMotion} />
       <NebulaField reducedMotion={reducedMotion} />
+      <LifeMapAnchorStars reducedMotion={reducedMotion} />
+      <LifeMapEdgeConstellations reducedMotion={reducedMotion} />
       <LifeMapMythicMotifs reducedMotion={reducedMotion} />
       <ConstellationArcs nodes={positionedManifests} selectedManifestId={selectedManifestId} reducedMotion={reducedMotion} />
 
