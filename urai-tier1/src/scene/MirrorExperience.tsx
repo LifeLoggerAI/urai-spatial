@@ -1,5 +1,7 @@
 'use client'
 
+import type { CSSProperties } from 'react'
+
 const MIRROR_SHARDS = [
   { className: 'mirror-shard mirror-shard--one', label: 'Morning self', x: '23%', y: '22%' },
   { className: 'mirror-shard mirror-shard--two', label: 'Recovery self', x: '76%', y: '20%' },
@@ -14,6 +16,11 @@ const MIRROR_SIGNALS = [
   ['Privacy', 'Local-safe'],
 ]
 
+type MirrorShardStyle = CSSProperties & {
+  '--x': string
+  '--y': string
+}
+
 export default function MirrorExperience({ onLifeMap, onHome }: { onLifeMap: () => void; onHome: () => void }) {
   return (
     <section className="urai-mirror-experience" data-testid="urai-mirror-experience" aria-labelledby="urai-mirror-title">
@@ -27,7 +34,7 @@ export default function MirrorExperience({ onLifeMap, onHome }: { onLifeMap: () 
       <div className="urai-mirror-orbit urai-mirror-orbit--three" aria-hidden="true" />
 
       {MIRROR_SHARDS.map((shard) => (
-        <div key={shard.label} className={shard.className} style={{ '--x': shard.x, '--y': shard.y } as React.CSSProperties} aria-hidden="true">
+        <div key={shard.label} className={shard.className} style={{ '--x': shard.x, '--y': shard.y } as MirrorShardStyle} aria-hidden="true">
           <span>{shard.label}</span>
         </div>
       ))}
