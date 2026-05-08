@@ -27,8 +27,25 @@ function assert(condition, message) {
   if (!condition) throw new Error(message)
 }
 
+function isConnectionRefused(error) {
+  return error?.cause?.code === 'ECONNREFUSED' || error?.code === 'ECONNREFUSED'
+}
+
+async function request(route, init) {
+  try {
+    return await fetch(`${host}${route}`, init)
+  } catch (error) {
+    if (isConnectionRefused(error)) {
+      throw new Error(
+        `Smoke server is not reachable at ${host}. Start the app before running smoke, for example: pnpm start, then HOST=${host} pnpm smoke.`,
+      )
+    }
+    throw error
+  }
+}
+
 async function checkHtml(route) {
-  const response = await fetch(`${host}${route}`)
+  const response = await request(route)
   const body = await response.text()
   assert(response.status === 200, `${route} returned ${response.status}`)
   assert(body.trim().length > 0, `${route} returned an empty body`)
@@ -41,7 +58,7 @@ async function checkHtml(route) {
 
 async function checkJson(route, init) {
   const headers = init.method === 'POST' ? { 'content-type': 'application/json' } : undefined
-  const response = await fetch(`${host}${route}`, { ...init, headers })
+  const response = await request(route, { ...init, headers })
   const text = await response.text()
   assert(response.ok, `${route} returned ${response.status}: ${text.slice(0, 120)}`)
   assert(!text.includes('stack') && !text.includes('PRIVATE_KEY'), `${route} returned unsafe debug output`)
@@ -56,7 +73,7 @@ async function checkJson(route, init) {
 
 async function checkExpectedStatus(route, init) {
   const headers = init.method === 'POST' ? { 'content-type': 'application/json' } : undefined
-  const response = await fetch(`${host}${route}`, { ...init, headers })
+  const response = await request(route, { ...init, headers })
   const text = await response.text()
   assert(response.status === init.expectedStatus, `${route} returned ${response.status}, expected ${init.expectedStatus}: ${text.slice(0, 120)}`)
   assert(!text.includes('stack') && !text.includes('PRIVATE_KEY'), `${route} returned unsafe debug output`)
