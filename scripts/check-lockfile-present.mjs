@@ -16,25 +16,22 @@ function readJson(file) {
   try {
     return JSON.parse(readFileSync(file, 'utf8'))
   } catch (error) {
-    fail(`${file} is not valid JSON: ${error instanceof Error ? error.message : String(error)}`)
+    fail(file + ' is not valid JSON: ' + (error instanceof Error ? error.message : String(error)))
   }
 }
 
 function packageDirsFromWorkspace() {
   const dirs = new Set(['.'])
-  if (!existsSync(workspacePath)) return [...dirs]
-
-  const workspace = readFileSync(workspacePath, 'utf8')
-  for (const line of workspace.split(/\r?\n/)) {
-    const match = line.match(/^\s*-\s+['"]?([^'"#]+)['"]?\s*$/)
-    if (!match) continue
-    const pattern = match[1].trim()
-    if (pattern.endsWith('/*')) {
-      // Avoid directory glob expansion here. This check only needs known packages with package.json.
-      continue
+  if (existsSync(workspacePath)) {
+    const workspace = readFileSync(workspacePath, 'utf8')
+    for (const rawLine of workspace.split('\n')) {
+      const line = rawLine.trim()
+      if (!line.startsWith('- ')) continue
+      const pattern = line.slice(2).replaceAll('"', '').replaceAll("'", '').trim()
+      if (!pattern || pattern.endsWith('/*')) continue
+      const candidate = resolve(root, pattern, 'package.json')
+      if (existsSync(candidate)) dirs.add(relative(root, dirname(candidate)) || '.')
     }
-    const candidate = resolve(root, pattern, 'package.json')
-    if (existsSync(candidate)) dirs.add(relative(root, dirname(candidate)) || '.')
   }
 
   for (const known of ['apps/functions', 'packages/tier-locks', 'urai-tier1']) {
@@ -53,9 +50,27 @@ function collectPackageDeps(pkg) {
 }
 
 function importerBlock(lockfile, importerName) {
-  const escaped = importerName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
-  const pattern = new RegExp(`\\n  ${escaped}:\\n([\\s\\S]*?)(?=\\n  [^\\s][^\\n]*:\\n|\\npackages:\\n|$)`)
-  return lockfile.match(pattern)?.[1] ?? ''
+  const lines = lockfile.split('\n')
+  const header = '  ' + importerName + ':'
+  const inlineHeader = header + ' {}'
+  const start = lines.findIndex((line) => line === header || line === inlineHeader)
+  if (start === -1) return ''
+  if (lines[start] === inlineHeader) return '{}'
+
+  const block = []
+  for (let index = start + 1; index < lines.length; index += 1) {
+    const line = lines[index]
+    if (line === 'packages:') break
+    if (line.startsWith('  ') && !line.startsWith('    ')) break
+    block.push(line)
+  }
+  return block.join('\n')
+}
+
+function blockIncludesDependency(block, dependency) {
+  return block.includes('      ' + dependency + ':')
+    || block.includes("      '" + dependency + "':")
+    || block.includes('      "' + dependency + '":')
 }
 
 if (!existsSync(rootPackageJsonPath)) fail('package.json is missing from the repository root.')
@@ -76,18 +91,18 @@ for (const dir of packageDirsFromWorkspace()) {
   const block = importerBlock(lockfile, importerName)
 
   if (!block) {
-    failures.push(`lockfile missing importer for ${importerName}`)
+    failures.push('lockfile missing importer for ' + importerName)
     continue
   }
 
   for (const dependency of Object.keys(deps)) {
-    if (!block.includes(`      ${dependency}:`)) failures.push(`lockfile importer ${importerName} missing dependency ${dependency}`)
+    if (!blockIncludesDependency(block, dependency)) failures.push('lockfile importer ' + importerName + ' missing dependency ' + dependency)
   }
 }
 
 if (failures.length) {
   console.error('Lockfile dependency check failed.')
-  for (const failure of failures) console.error(` - ${failure}`)
+  for (const failure of failures) console.error(' - ' + failure)
   console.error('Run pnpm install and commit the updated pnpm-lock.yaml.')
   process.exit(1)
 }
