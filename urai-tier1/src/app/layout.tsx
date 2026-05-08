@@ -4,6 +4,8 @@ import './boundary.css'
 import '@/scene/spatialVisualOverlay.css'
 import '@/spatial/home/visual/HomeScene.css'
 import '@/spatial/companion/companionPolish.css'
+import '@/scene/cinematicFocusTier5.css'
+import '@/spatial/memory/memoryStarArtifact.css'
 
 export const metadata: Metadata = {
   title: 'URAI Spatial',
@@ -25,14 +27,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="en">
       <body
-        data-debug-spatial={
-          process.env.NEXT_PUBLIC_URAI_DEBUG_SPATIAL === 'true' ? 'true' : 'false'
-        }
-        style={{
-          margin: 0,
-          background: '#08030f',
-          overflowX: 'hidden',
-        }}
+        data-debug-spatial={process.env.NEXT_PUBLIC_URAI_DEBUG_SPATIAL === 'true' ? 'true' : 'false'}
+        style={{ margin: 0, background: '#08030f', overflowX: 'hidden' }}
       >
         {children}
       </body>
