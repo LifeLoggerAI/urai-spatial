@@ -9,6 +9,9 @@ import Sky from './Sky'
 import Atmosphere from './Atmosphere'
 import AscentPortal from './AscentPortal'
 import SpatialVisualOverlay from './SpatialVisualOverlayTier5'
+import RitualPlatform from './RitualPlatform'
+import Lanterns from './Lanterns'
+import CelestialSanctuary from './CelestialSanctuary'
 import ManifestRenderBoundary from '../spatial/assets/ManifestRenderBoundary'
 import { useManifest } from '../spatial/assets/useManifest'
 import { SpatialAssetManifest } from '../spatial/assets/manifestTypes'
@@ -60,10 +63,10 @@ function manifestFocusHref(manifestId: string | null) {
 function ModeGuidance({ mode, onEnter, onUnwind, reducedMotion }: { mode: SceneMode; onEnter: () => void; onUnwind: () => void; reducedMotion: boolean }) {
   if (mode === 'home') {
     return (
-      <div className="urai-spatial-guidance urai-spatial-guidance--home" data-testid="urai-sky-guidance">
+      <div className="urai-spatial-guidance urai-spatial-guidance--home" data-testid="urai-sky-guidance" aria-label="Home sanctuary guidance">
         <span className="urai-spatial-guidance__pulse" aria-hidden="true" />
-        <span>Click the sky to begin the ascent</span>
-        <button type="button" onClick={onEnter}>Begin Ascent</button>
+        <span>Enter the sanctuary. Begin ascent when ready.</span>
+        <button type="button" onClick={onEnter} aria-label="Begin ascent to your Life Map">Begin Ascent</button>
       </div>
     )
   }
@@ -279,19 +282,23 @@ export default function HomeScene({ sceneMode = 'home' }: { sceneMode?: SceneMod
       <Canvas shadows dpr={[1, 1.75]} gl={{ antialias: true, alpha: true }} onPointerMissed={enterLifeMap}>
         <PerspectiveCamera makeDefault position={[0, 2.85, 8.35]} fov={48} />
         <CinematicCameraRig active focusPosition={selectedPosition} path={cameraPath} reducedMotion={reducedMotion} resetSignal={cameraResetSignal} />
-        <ambientLight intensity={isHomeMode ? 0.72 : isAscentMode ? 0.5 : 0.28} color="#b8d7ff" />
-        <hemisphereLight args={['#d3e7ff', '#12071e', isHomeMode ? 1.45 : 0.95]} />
-        <directionalLight position={[-5.4, 7.4, 3.8]} intensity={isHomeMode ? 2.45 : 1.85} color="#d7e6ff" castShadow shadow-mapSize-width={2048} shadow-mapSize-height={2048} />
-        <pointLight position={[0.7, 0.55, -1.05]} intensity={isHomeMode ? 2.8 : 2.05} color="#c9b0ff" distance={7.2} />
-        <pointLight position={[-3.2, 2.35, -3.8]} intensity={isHomeMode ? 1.35 : 0.9} color="#62e5ff" distance={11} />
+        <ambientLight intensity={isHomeMode ? 0.82 : isAscentMode ? 0.5 : 0.28} color="#b8d7ff" />
+        <hemisphereLight args={['#d3e7ff', '#12071e', isHomeMode ? 1.58 : 0.95]} />
+        <directionalLight position={[-5.4, 7.4, 3.8]} intensity={isHomeMode ? 2.65 : 1.85} color="#d7e6ff" castShadow shadow-mapSize-width={2048} shadow-mapSize-height={2048} />
+        <pointLight position={[0.7, 0.55, -1.05]} intensity={isHomeMode ? 3.15 : 2.05} color="#c9b0ff" distance={7.8} />
+        <pointLight position={[-3.2, 2.35, -3.8]} intensity={isHomeMode ? 1.55 : 0.9} color="#62e5ff" distance={11} />
+        <pointLight position={[3.2, 1.1, -3.2]} intensity={isHomeMode ? 0.82 : 0.25} color="#ffbf7a" distance={8.4} />
         <Atmosphere />
         <Sky />
+        {isHomeMode ? <CelestialSanctuary reducedMotion={reducedMotion} /> : null}
         {showHomeWorld ? <Ground /> : null}
+        {isHomeMode ? <RitualPlatform reducedMotion={reducedMotion} /> : null}
+        {isHomeMode ? <Lanterns reducedMotion={reducedMotion} /> : null}
         {showAscentPortal ? <AscentPortal /> : null}
         {showOrb ? <Orb state={orbState} /> : null}
         {showConstellation ? <ConstellationLayer enabled selectedManifestId={selectedManifest?.manifestId ?? null} onSelect={handleSelect} /> : activeManifest ? <ManifestRenderBoundary manifest={activeManifest} /> : null}
         <CinematicParticles active reducedMotion={reducedMotion} />
-        <CinematicPostProcessing active={Boolean(activeManifest) || showConstellation || isAscentMode} reducedMotion={reducedMotion} />
+        <CinematicPostProcessing active={Boolean(activeManifest) || showConstellation || isAscentMode || isHomeMode} reducedMotion={reducedMotion} />
         <NarratorVoice manifest={activeManifest} context={narratorContext} />
       </Canvas>
       {showMemoryArtifact ? <MemoryStarArtifact morphology={memoryMorphology} replay={sceneMode === 'replay' || replayLaunching} /> : null}
