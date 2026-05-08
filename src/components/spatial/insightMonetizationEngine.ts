@@ -37,7 +37,7 @@ export const INSIGHT_PLANS: InsightPlan[] = [
   {
     id: 'free',
     title: 'Insight Snapshot',
-    priceLabel: 'Free',
+    priceLabel: 'Included',
     description: 'Basic pattern visibility for the current Life Map.',
     unlockedFeatures: ['Top active patterns', 'Basic evidence', 'Manual resolve/archive'],
     reportDepth: 'snapshot',
@@ -46,7 +46,7 @@ export const INSIGHT_PLANS: InsightPlan[] = [
   {
     id: 'pro',
     title: 'URAI Pro Insights',
-    priceLabel: '$9/mo placeholder',
+    priceLabel: 'Pro plan',
     description: 'Deeper weekly reflection reports with recurrence and severity tracking.',
     unlockedFeatures: ['Weekly report', 'Severity trends', 'Narrator summaries', 'Exportable markdown'],
     reportDepth: 'weekly',
@@ -55,7 +55,7 @@ export const INSIGHT_PLANS: InsightPlan[] = [
   {
     id: 'therapist',
     title: 'Therapist Replay Pack',
-    priceLabel: '$29/mo placeholder',
+    priceLabel: 'Care team plan',
     description: 'Structured evidence trails for coaching, therapy, and guided self-review.',
     unlockedFeatures: ['Clinical-style pattern report', 'Evidence trails', 'Resolution tracking', 'Replay prompts'],
     reportDepth: 'clinical-style',
@@ -64,7 +64,7 @@ export const INSIGHT_PLANS: InsightPlan[] = [
   {
     id: 'founder',
     title: 'Founder Archive',
-    priceLabel: 'Founder tier placeholder',
+    priceLabel: 'Founder access',
     description: 'Long-term archive for early adopters and high-signal personal intelligence.',
     unlockedFeatures: ['Full archive', 'Advanced exports', 'Priority future cloud sync', 'Legacy summaries'],
     reportDepth: 'founder-archive',
@@ -163,7 +163,7 @@ export function buildInsightReport(
       'Mark patterns resolved only when they feel genuinely softened or complete.',
       'Use evidence trails to understand why each insight appeared.',
     ],
-    upgradePrompt: plan.id === 'free' ? 'Upgrade placeholder: unlock weekly reports, deeper evidence trails, and therapist replay summaries.' : null,
+    upgradePrompt: plan.id === 'free' ? 'Upgrade to unlock weekly reports, deeper evidence trails, and therapist-ready replay summaries.' : null,
   };
 }
 

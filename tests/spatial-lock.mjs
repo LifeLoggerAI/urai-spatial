@@ -1,6 +1,6 @@
 import playwright from '../urai-tier1/node_modules/playwright/index.js';
 const { chromium } = playwright;
-import { spawn } from 'node:child_process';
+import { spawn, spawnSync } from 'node:child_process';
 import { mkdirSync, writeFileSync } from 'node:fs';
 import process from 'node:process';
 
@@ -42,6 +42,38 @@ function startServer() {
   return child;
 }
 
+function assertPlaywrightRuntimeReady() {
+  const result = spawnSync('pnpm', ['--filter', 'urai-tier1', 'exec', 'node', '-e', `
+    const { chromium } = require('playwright');
+    (async () => {
+      const browser = await chromium.launch({ headless: true });
+      await browser.close();
+    })().catch((error) => {
+      console.error(error && error.stack ? error.stack : error);
+      process.exit(1);
+    });
+  `], {
+    stdio: 'pipe',
+    shell: process.platform === 'win32',
+    encoding: 'utf8',
+  });
+
+  if (result.status === 0) return;
+
+  const output = `${result.stdout ?? ''}\n${result.stderr ?? ''}`.trim();
+  throw new Error([
+    'Playwright Chromium cannot launch because this environment is missing browser runtime dependencies.',
+    output,
+    'Fix:',
+    '  pnpm playwright:install',
+    '  pnpm playwright:install-deps',
+    'or run:',
+    '  pnpm exec playwright install chromium',
+    '  pnpm exec playwright install-deps chromium',
+    'The failing log commonly looks like: libglib-2.0.so.0: cannot open shared object file.',
+  ].filter(Boolean).join('\n'));
+}
+
 async function expectAttr(locator, name, value, timeout = 5000) {
   const started = Date.now();
   while (Date.now() - started < timeout) {
@@ -53,13 +85,39 @@ async function expectAttr(locator, name, value, timeout = 5000) {
   throw new Error(`Expected ${name}=${value}, received ${actual}`);
 }
 
-async function expectVisible(locator, label) {
-  if (!(await locator.isVisible())) throw new Error(`${label} is not visible`);
+async function expectVisible(locator, label, timeout = 5000) {
+  const started = Date.now();
+  while (Date.now() - started < timeout) {
+    if (await locator.isVisible().catch(() => false)) return;
+    await sleep(100);
+  }
+  throw new Error(`${label} is not visible`);
 }
 
-async function expectText(locator, text) {
-  const body = await locator.textContent();
-  if (!body || !body.includes(text)) throw new Error(`Expected text ${text}, received ${body}`);
+async function expectText(locator, text, timeout = 5000) {
+  const started = Date.now();
+  while (Date.now() - started < timeout) {
+    const body = await locator.textContent().catch(() => '');
+    if (body?.includes(text)) return;
+    await sleep(100);
+  }
+  const body = await locator.textContent().catch(() => '');
+  throw new Error(`Expected text ${text}, received ${body}`);
+}
+
+async function expectNoText(locator, text) {
+  const body = await locator.textContent().catch(() => '');
+  if (body?.includes(text)) {
+    throw new Error(`Unexpected Home text found: ${text}`);
+  }
+}
+
+async function expectHiddenOrMissing(locator, label) {
+  const count = await locator.count().catch(() => 0);
+  if (count === 0) return;
+  if (await locator.first().isVisible().catch(() => false)) {
+    throw new Error(`${label} must be hidden or absent on sky-only Home`);
+  }
 }
 
 async function screenshot(page, name) {
@@ -68,7 +126,7 @@ async function screenshot(page, name) {
   return path;
 }
 
-async function collectConsole(page) {
+function collectConsole(page) {
   const messages = [];
   page.on('console', (message) => {
     const type = message.type();
@@ -79,79 +137,66 @@ async function collectConsole(page) {
 }
 
 async function run() {
+  assertPlaywrightRuntimeReady();
   const server = startServer();
   const visualReport = { screenshots: [], console: [] };
   try {
     await waitForServer(BASE_URL);
     const browser = await chromium.launch();
     const page = await browser.newPage({ viewport: { width: 1440, height: 1000 } });
-    const consoleMessages = await collectConsole(page);
+    const consoleMessages = collectConsole(page);
+    const stage = page.getByTestId('urai-scene-stage');
 
     await page.goto(`${BASE_URL}/home`);
-    const stage = page.getByTestId('urai-spatial-stage');
-    await expectAttr(stage, 'data-mode', 'home');
-    await expectVisible(page.getByTestId('urai-home-scene'), 'home scene');
-    await expectVisible(page.getByTestId('urai-orb-button'), 'home orb');
-    await expectVisible(page.getByTestId('urai-home-body'), 'home body');
-    visualReport.screenshots.push(await screenshot(page, '01-home-desktop'));
+    await expectAttr(stage, 'data-scene-mode', 'home');
+    await expectVisible(stage, 'sky-only home stage');
+    await expectHiddenOrMissing(page.getByTestId('urai-orb-button'), 'home orb');
+    await expectHiddenOrMissing(page.getByTestId('urai-sky-guidance'), 'home guidance');
+    await expectHiddenOrMissing(page.getByTestId('urai-camera-reset'), 'home camera reset');
+    await expectNoText(page.locator('body'), 'Your inner weather');
+    await expectNoText(page.locator('body'), 'Begin Ascent');
+    visualReport.screenshots.push(await screenshot(page, '01-home-sky-only-desktop'));
 
-    await page.getByTestId('urai-orb-button').click();
-    await expectAttr(stage, 'data-mode', 'ascent');
-    await expectVisible(page.getByTestId('urai-ascent-cover'), 'ascent cover');
+    await stage.click({ position: { x: 700, y: 500 } });
+    await expectAttr(stage, 'data-scene-mode', 'ascent');
+    await expectVisible(page.getByTestId('urai-ascent-scene'), 'ascent scene');
     visualReport.screenshots.push(await screenshot(page, '02-ascent-desktop'));
-    await expectAttr(stage, 'data-mode', 'lifemap', 3000);
+
+    await expectAttr(stage, 'data-scene-mode', 'life-map', 5000);
     await expectVisible(page.getByTestId('urai-lifemap-scene'), 'lifemap scene');
     await expectVisible(page.getByTestId('lifemap-starfield'), 'lifemap starfield');
-    await expectText(page.locator('body'), 'LifeMap');
-    await expectText(page.locator('body'), 'Visible Stars');
-    await expectText(page.locator('body'), 'Private Spatial State');
+    await expectText(page.locator('body'), 'Life Map');
+    await expectText(page.locator('body'), 'Remembered moments are visible');
     visualReport.screenshots.push(await screenshot(page, '03-lifemap-desktop'));
 
-    await page.getByTestId('lifemap-node-pattern-01').click();
-    await expectAttr(stage, 'data-mode', 'focus');
-    await expectText(page.getByTestId('urai-focus-card'), 'Pattern Recognition');
-    await expectText(page.getByTestId('urai-focus-card'), 'Replay');
+    await page.getByTestId('lifemap-node-seed-memory-bloom').click();
+    await expectAttr(stage, 'data-scene-mode', 'focus');
+    await expectVisible(page.getByTestId('urai-focus-action-panel'), 'focus action panel');
+    await expectText(page.getByTestId('urai-focus-action-panel'), 'Memory Bloom');
+    await expectText(page.getByTestId('urai-focus-action-panel'), 'Start Replay');
     visualReport.screenshots.push(await screenshot(page, '04-focus-desktop'));
 
-    await page.getByRole('button', { name: /^Replay$/ }).first().click();
-    await expectAttr(stage, 'data-mode', 'replay');
-    await expectText(page.getByTestId('urai-replay-overlay'), 'REPLAY STREAM');
-    await expectText(page.getByTestId('urai-replay-overlay'), 'MEMORY');
+    await page.getByRole('button', { name: 'Start Replay' }).click();
+    await expectAttr(stage, 'data-scene-mode', 'replay');
+    await expectVisible(page.getByTestId('urai-focus-scene'), 'replay visual scene');
+    await expectText(page.getByTestId('urai-focus-action-panel'), 'Replay Stream');
     visualReport.screenshots.push(await screenshot(page, '05-replay-desktop'));
 
     await page.keyboard.press('Escape');
-    await expectAttr(stage, 'data-mode', 'focus');
+    await expectAttr(stage, 'data-scene-mode', 'focus');
     await page.keyboard.press('Escape');
-    await expectAttr(stage, 'data-mode', 'lifemap');
+    await expectAttr(stage, 'data-scene-mode', 'life-map');
     await page.keyboard.press('Escape');
-    await expectAttr(stage, 'data-mode', 'home');
+    await expectAttr(stage, 'data-scene-mode', 'home');
     visualReport.screenshots.push(await screenshot(page, '06-return-home-desktop'));
 
     await page.goto(`${BASE_URL}/life-map`);
-    await expectAttr(stage, 'data-mode', 'lifemap');
-    await expectVisible(page.getByTestId('lifemap-node-pattern-01'), 'pattern-01 direct route node');
-
-    await page.goto(`${BASE_URL}/?phase=lifemap`);
-    await expectAttr(stage, 'data-mode', 'lifemap');
-    await expectVisible(page.getByTestId('lifemap-starfield'), 'query phase starfield');
-
-    await page.getByRole('button', { name: 'Filter' }).click();
-    await expectVisible(page.getByTestId('lifemap-filter-panel'), 'filter panel');
-    await page.getByRole('button', { name: 'Memory' }).click();
-    await expectText(page.locator('body'), 'Visible Stars');
-
-    await page.getByRole('button', { name: 'Era' }).click();
-    await expectVisible(page.getByTestId('lifemap-era-panel'), 'era panel');
-    await page.getByRole('button', { name: 'Shadow to Return' }).click();
-    await expectText(page.locator('body'), 'Shadow to Return');
-
-    await page.getByTestId('lifemap-node-memory-03').click();
-    await expectAttr(stage, 'data-mode', 'focus');
-    await expectText(page.getByTestId('urai-focus-card'), 'This memory is still forming.');
+    await expectAttr(stage, 'data-scene-mode', 'life-map');
+    await expectVisible(page.getByTestId('lifemap-node-seed-memory-bloom'), 'direct route demo node');
 
     await page.setViewportSize({ width: 390, height: 844 });
     await page.goto(`${BASE_URL}/life-map`);
-    await expectAttr(stage, 'data-mode', 'lifemap');
+    await expectAttr(stage, 'data-scene-mode', 'life-map');
     const box = await page.getByTestId('urai-lifemap-scene').boundingBox();
     if (!box || Math.round(box.width) !== 390 || Math.round(box.height) !== 844) {
       throw new Error(`Mobile LifeMap viewport mismatch: ${JSON.stringify(box)}`);
@@ -164,7 +209,7 @@ async function run() {
       throw new Error(`Console errors detected:\n${consoleMessages.join('\n')}`);
     }
     writeFileSync(`${ARTIFACT_DIR}/visual-audit-report.json`, JSON.stringify(visualReport, null, 2));
-    console.log('URAI Spatial canonical LifeMap E2E and visual lock flow passed.');
+    console.log('URAI Spatial canonical Life Map E2E and visual lock flow passed.');
   } catch (error) {
     writeFileSync(`${ARTIFACT_DIR}/visual-audit-report.json`, JSON.stringify(visualReport, null, 2));
     throw error;

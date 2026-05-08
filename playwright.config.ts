@@ -12,7 +12,8 @@ export default defineConfig({
     trace: 'on-first-retry',
   },
   webServer: {
-    command: 'pnpm --filter urai-tier1 dev -- --port 3000',
+    command: 'pnpm exec next dev -p 3000',
+    cwd: './urai-tier1',
     url: 'http://localhost:3000',
     reuseExistingServer: !process.env.CI,
     timeout: 120000,

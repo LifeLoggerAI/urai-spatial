@@ -1,0 +1,259 @@
+.memory-star-artifact {
+  --memory-size: clamp(260px, 34vw, 520px);
+  --memory-intensity: 0.64;
+  --memory-readiness: 0.72;
+  --memory-recovery: 0.76;
+  --memory-boundary: 0.7;
+  --memory-pressure: 0.28;
+  --memory-waveform: 0.54;
+  --memory-particles: 0.58;
+  position: absolute;
+  left: 50%;
+  top: 52%;
+  z-index: 64;
+  width: var(--memory-size);
+  aspect-ratio: 1;
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+  color: rgba(232, 246, 255, 0.92);
+  isolation: isolate;
+}
+
+.memory-star-artifact--replay,
+.memory-star-artifact--launching {
+  z-index: 78;
+}
+
+.memory-star-artifact__gravity,
+.memory-star-artifact__ring,
+.memory-star-artifact__waveform,
+.memory-star-artifact__orb,
+.memory-star-artifact__halo,
+.memory-star-artifact__core,
+.memory-star-artifact__inner-scene,
+.memory-star-artifact__scar,
+.memory-star-artifact__particle {
+  position: absolute;
+  border-radius: 999px;
+}
+
+.memory-star-artifact__gravity {
+  inset: -42%;
+  z-index: 0;
+  background:
+    radial-gradient(circle at 50% 50%, rgba(103, 232, 249, calc(0.08 + var(--memory-recovery) * 0.12)), transparent 25%),
+    radial-gradient(circle at 50% 50%, rgba(168, 85, 247, calc(0.08 + var(--memory-intensity) * 0.14)), transparent 46%),
+    radial-gradient(circle at 50% 50%, rgba(0, 0, 0, 0.08), transparent 70%);
+  filter: blur(8px);
+  animation: memoryStarGravity 15s ease-in-out infinite;
+}
+
+.memory-star-artifact__ring {
+  left: 50%;
+  top: 50%;
+  z-index: 3;
+  aspect-ratio: 1;
+  transform: translate(-50%, -50%);
+  border: 1px solid rgba(170, 225, 255, 0.22);
+  box-shadow: inset 0 0 64px rgba(103, 232, 249, 0.06), 0 0 90px rgba(103, 232, 249, 0.08);
+}
+
+.memory-star-artifact__ring span {
+  position: absolute;
+  right: 5%;
+  top: 18%;
+  color: rgba(216, 242, 255, 0.44);
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  text-shadow: 0 0 14px rgba(103, 232, 249, 0.18);
+}
+
+.memory-star-artifact__ring--boundary {
+  width: calc(var(--memory-size) * (0.82 + var(--memory-boundary) * 0.58));
+  border-color: rgba(103, 232, 249, calc(0.12 + var(--memory-boundary) * 0.22));
+  animation: memoryBoundaryBreath 13s ease-in-out infinite;
+}
+
+.memory-star-artifact__ring--readiness {
+  width: calc(var(--memory-size) * (0.52 + var(--memory-readiness) * 0.38));
+  border-color: rgba(168, 85, 247, calc(0.12 + var(--memory-readiness) * 0.24));
+  animation: memoryReadinessSeal 9s ease-in-out infinite;
+}
+
+.memory-star-artifact__ring--readiness span {
+  left: 8%;
+  right: auto;
+  top: 16%;
+}
+
+.memory-star-artifact__ring--intensity {
+  width: calc(var(--memory-size) * (0.26 + var(--memory-intensity) * 0.28));
+  border-color: rgba(255, 255, 255, calc(0.14 + var(--memory-intensity) * 0.2));
+  animation: memoryIntensityPulse 7s ease-in-out infinite;
+}
+
+.memory-star-artifact__ring--intensity span {
+  left: 50%;
+  right: auto;
+  top: -11px;
+  transform: translateX(-50%);
+}
+
+.memory-star-artifact__waveform {
+  inset: 15%;
+  z-index: 5;
+  border: 1px dashed rgba(211, 238, 255, calc(0.1 + var(--memory-waveform) * 0.22));
+  background:
+    conic-gradient(from 22deg,
+      transparent 0 7%,
+      rgba(103, 232, 249, calc(0.16 + var(--memory-waveform) * 0.24)) 8% 9.5%,
+      transparent 10% 23%,
+      rgba(255, 255, 255, calc(0.1 + var(--memory-waveform) * 0.18)) 24% 25%,
+      transparent 26% 41%,
+      rgba(168, 85, 247, calc(0.14 + var(--memory-intensity) * 0.2)) 42% 44%,
+      transparent 45% 63%,
+      rgba(103, 232, 249, calc(0.14 + var(--memory-recovery) * 0.18)) 64% 65.5%,
+      transparent 66% 100%);
+  mask: radial-gradient(circle, transparent 0 52%, #000 53% 56%, transparent 57%);
+  animation: memoryWaveformRotate calc(24s - var(--memory-waveform) * 9s) linear infinite;
+}
+
+.memory-star-artifact__orb {
+  left: 50%;
+  top: 50%;
+  z-index: 8;
+  width: calc(var(--memory-size) * 0.34);
+  aspect-ratio: 1;
+  transform: translate(-50%, -50%);
+  filter: drop-shadow(0 0 34px rgba(103, 232, 249, 0.26));
+}
+
+.memory-star-artifact__halo {
+  inset: -56%;
+  background:
+    radial-gradient(circle, rgba(255, 255, 255, 0.1), rgba(103, 232, 249, calc(0.14 + var(--memory-recovery) * 0.18)) 30%, rgba(168, 85, 247, calc(0.12 + var(--memory-intensity) * 0.18)) 50%, transparent 76%);
+  filter: blur(9px);
+  animation: memoryHaloBreath 10s ease-in-out infinite;
+}
+
+.memory-star-artifact__core {
+  inset: 13%;
+  background:
+    radial-gradient(circle at 33% 28%, rgba(255,255,255,0.98) 0 8%, rgba(230,213,255,0.78) 9% 20%, transparent 21%),
+    radial-gradient(circle at 58% 66%, rgba(103,232,249,calc(0.45 + var(--memory-recovery) * 0.42)) 0 20%, transparent 21%),
+    conic-gradient(from 215deg,
+      rgba(120,70,255,calc(0.62 + var(--memory-intensity) * 0.22)),
+      rgba(103,232,249,calc(0.54 + var(--memory-recovery) * 0.28)),
+      rgba(255,255,255,0.72),
+      rgba(168,85,247,calc(0.58 + var(--memory-pressure) * 0.26)),
+      rgba(120,70,255,0.86));
+  box-shadow:
+    inset -18px -18px 36px rgba(20, 72, 180, 0.45),
+    inset 12px 10px 22px rgba(255,255,255,0.22),
+    0 0 calc(54px + var(--memory-intensity) * 42px) rgba(168,85,247,0.58),
+    0 0 calc(96px + var(--memory-recovery) * 92px) rgba(103,232,249,0.36);
+  animation: memoryCoreAlive 8s ease-in-out infinite;
+}
+
+.memory-star-artifact__inner-scene {
+  inset: 20%;
+  border: 1px solid rgba(255,255,255,0.28);
+  border-left-color: rgba(103,232,249,0.66);
+  border-bottom-color: rgba(168,85,247,0.5);
+  box-shadow: inset 0 0 18px rgba(255,255,255,0.1);
+  animation: memoryInnerScene 10s ease-in-out infinite;
+}
+
+.memory-star-artifact__scar {
+  z-index: 11;
+  inset: 10%;
+  background: linear-gradient(114deg, transparent 0 42%, rgba(255,255,255,calc(0.12 + var(--memory-pressure) * 0.36)) 44%, rgba(244,114,182,calc(0.08 + var(--memory-pressure) * 0.22)) 46%, transparent 49% 100%);
+  opacity: calc(0.2 + var(--memory-pressure) * 0.72);
+  filter: blur(0.2px);
+  animation: memoryPressureScar 6.5s ease-in-out infinite;
+}
+
+.memory-star-artifact__scar--two {
+  inset: 20%;
+  transform: rotate(68deg);
+  opacity: calc(0.12 + var(--memory-pressure) * 0.45);
+  animation-delay: -2s;
+}
+
+.memory-star-artifact__particle {
+  z-index: 12;
+  width: calc(2px + var(--memory-particles) * 3px);
+  height: calc(2px + var(--memory-particles) * 3px);
+  background: rgba(224,247,255,0.86);
+  box-shadow: 0 0 16px rgba(103,232,249,0.7);
+  animation: memoryParticleDrift calc(12s - var(--memory-particles) * 4s) ease-in-out infinite;
+}
+
+.memory-star-artifact__particle--one { left: 26%; top: 44%; animation-delay: -1s; }
+.memory-star-artifact__particle--two { right: 22%; top: 30%; animation-delay: -3s; }
+.memory-star-artifact__particle--three { right: 18%; bottom: 26%; animation-delay: -5s; }
+.memory-star-artifact__particle--four { left: 34%; bottom: 18%; animation-delay: -7s; }
+
+.memory-star-artifact--joy .memory-star-artifact__core,
+.memory-star-artifact--rebirth .memory-star-artifact__core {
+  filter: hue-rotate(22deg) saturate(1.16);
+}
+
+.memory-star-artifact--rupture .memory-star-artifact__ring--intensity,
+.memory-star-artifact--pressure .memory-star-artifact__ring--intensity {
+  border-style: dashed;
+}
+
+.memory-star-artifact--dream .memory-star-artifact__gravity {
+  filter: blur(14px) saturate(1.24);
+}
+
+.memory-star-artifact--replay .memory-star-artifact__ring,
+.memory-star-artifact--launching .memory-star-artifact__ring {
+  animation-duration: 4.5s;
+}
+
+.memory-star-artifact--replay .memory-star-artifact__orb,
+.memory-star-artifact--launching .memory-star-artifact__orb {
+  animation: memoryReplayTunnel 3.6s cubic-bezier(.18,.8,.2,1) infinite;
+}
+
+.urai-scene-stage[data-scene-mode='focus'] .urai-focus-orb,
+.urai-scene-stage[data-scene-mode='replay'] .urai-focus-orb,
+.urai-scene-stage[data-scene-mode='focus'] .urai-replay-orb,
+.urai-scene-stage[data-scene-mode='replay'] .urai-replay-orb {
+  opacity: 0 !important;
+}
+
+@keyframes memoryStarGravity { 0%,100%{transform:scale(.98);opacity:.76} 50%{transform:scale(1.04);opacity:1} }
+@keyframes memoryBoundaryBreath { 0%,100%{transform:translate(-50%,-50%) scale(.99)} 50%{transform:translate(-50%,-50%) scale(1.025)} }
+@keyframes memoryReadinessSeal { 0%,100%{transform:translate(-50%,-50%) rotate(-2deg) scale(.99)} 50%{transform:translate(-50%,-50%) rotate(2deg) scale(1.025)} }
+@keyframes memoryIntensityPulse { 0%,100%{transform:translate(-50%,-50%) scale(.96);opacity:.68} 50%{transform:translate(-50%,-50%) scale(1.04);opacity:1} }
+@keyframes memoryWaveformRotate { to{transform:rotate(360deg)} }
+@keyframes memoryHaloBreath { 0%,100%{transform:scale(.97);opacity:.76} 50%{transform:scale(1.08);opacity:1} }
+@keyframes memoryCoreAlive { 0%,100%{transform:scale(.985) rotate(-1deg)} 50%{transform:scale(1.035) rotate(1.5deg)} }
+@keyframes memoryInnerScene { 0%,100%{transform:scale(.92) rotate(0deg);opacity:.32} 50%{transform:scale(1.08) rotate(12deg);opacity:.62} }
+@keyframes memoryPressureScar { 0%,100%{transform:rotate(-8deg) scale(.96)} 50%{transform:rotate(3deg) scale(1.04)} }
+@keyframes memoryParticleDrift { 0%,100%{transform:translate3d(0,0,0) scale(.85);opacity:.24} 50%{transform:translate3d(2.4vw,-3vh,0) scale(1.22);opacity:.9} }
+@keyframes memoryReplayTunnel { 0%,100%{transform:translate(-50%,-50%) scale(1)} 50%{transform:translate(-50%,-50%) scale(1.13)} }
+
+@media (prefers-reduced-motion: reduce) {
+  .memory-star-artifact,
+  .memory-star-artifact * {
+    animation: none !important;
+    transition: none !important;
+  }
+}
+
+@media (max-width: 720px) {
+  .memory-star-artifact {
+    --memory-size: min(78vw, 360px);
+    top: 50%;
+  }
+
+  .memory-star-artifact__ring span {
+    display: none;
+  }
+}

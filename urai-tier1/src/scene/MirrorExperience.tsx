@@ -1,0 +1,71 @@
+'use client'
+
+import type { CSSProperties } from 'react'
+
+const MIRROR_SHARDS = [
+  { className: 'mirror-shard mirror-shard--one', label: 'Morning self', x: '23%', y: '22%' },
+  { className: 'mirror-shard mirror-shard--two', label: 'Recovery self', x: '76%', y: '20%' },
+  { className: 'mirror-shard mirror-shard--three', label: 'Focus self', x: '18%', y: '58%' },
+  { className: 'mirror-shard mirror-shard--four', label: 'Inner weather', x: '78%', y: '63%' },
+  { className: 'mirror-shard mirror-shard--five', label: 'Future path', x: '62%', y: '78%' },
+]
+
+const MIRROR_SIGNALS = [
+  ['Field', 'Stable'],
+  ['Breath', 'Slow'],
+  ['Privacy', 'Local-safe'],
+]
+
+type MirrorShardStyle = CSSProperties & {
+  '--x': string
+  '--y': string
+}
+
+export default function MirrorExperience({ onLifeMap, onHome }: { onLifeMap: () => void; onHome: () => void }) {
+  return (
+    <section className="urai-mirror-experience" data-testid="urai-mirror-experience" aria-labelledby="urai-mirror-title">
+      <style>{`
+        .urai-scene-stage[data-scene-mode='mirror'] .urai-visual-overlay{background:radial-gradient(circle at 50% 48%,rgba(251,191,36,.2),transparent 11%),radial-gradient(circle at 47% 50%,rgba(91,33,182,.34),transparent 38%),radial-gradient(circle at 82% 42%,rgba(59,130,246,.18),transparent 28%),linear-gradient(180deg,#050716 0%,#070b1d 54%,#01030b 100%)!important}.urai-scene-stage[data-scene-mode='mirror'] .urai-visual-overlay:after{background:radial-gradient(circle at 50% 52%,transparent 0 30%,rgba(2,4,15,.18) 56%,rgba(1,2,8,.78) 100%),linear-gradient(180deg,rgba(1,3,12,.08),rgba(1,3,12,.62))}.urai-scene-stage[data-scene-mode='mirror'] canvas{opacity:.54!important;filter:saturate(1.08) contrast(1.04)}.tier-one-route-card[data-route-mode='mirror']{left:clamp(16px,3vw,38px)!important;top:auto!important;bottom:clamp(18px,4vh,46px)!important;max-width:286px!important;opacity:.9}.urai-mirror-experience{position:absolute;inset:0;z-index:58;overflow:hidden;pointer-events:none;color:#f8fbff;font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif}.urai-mirror-experience:before{content:'';position:absolute;inset:-10%;background:radial-gradient(ellipse at 18% 40%,rgba(126,34,206,.36),transparent 34%),radial-gradient(ellipse at 84% 46%,rgba(59,130,246,.3),transparent 36%),radial-gradient(ellipse at 52% 54%,rgba(251,191,36,.08),transparent 34%);filter:blur(18px);animation:uraiMirrorNebula 18s ease-in-out infinite}.urai-mirror-constellation{position:absolute;inset:0;opacity:.68}.urai-mirror-constellation:before,.urai-mirror-constellation:after{content:'';position:absolute;inset:6% 4%;background-image:radial-gradient(2px 2px at 14% 22%,rgba(255,255,255,.86),transparent),radial-gradient(1px 1px at 24% 74%,rgba(199,210,254,.72),transparent),radial-gradient(2px 2px at 79% 28%,rgba(253,230,138,.8),transparent),radial-gradient(1px 1px at 86% 68%,rgba(147,197,253,.7),transparent),radial-gradient(1px 1px at 60% 15%,rgba(255,255,255,.68),transparent),radial-gradient(2px 2px at 42% 82%,rgba(196,181,253,.72),transparent);animation:uraiMirrorStars 12s ease-in-out infinite}.urai-mirror-constellation:after{inset:0;opacity:.42;transform:scaleX(-1);animation-delay:-5s}.urai-mirror-orbit{position:absolute;left:50%;top:51%;width:min(80vw,860px);aspect-ratio:1;transform:translate(-50%,-50%) rotate(var(--tilt));border:1px solid rgba(253,230,138,.18);border-radius:999px;box-shadow:0 0 80px rgba(168,85,247,.1),inset 0 0 60px rgba(96,165,250,.08);animation:uraiMirrorOrbit 38s linear infinite}.urai-mirror-orbit--two{width:min(58vw,620px);--tilt:18deg;animation-duration:29s;animation-direction:reverse;border-color:rgba(147,197,253,.2)}.urai-mirror-orbit--three{width:min(43vw,460px);--tilt:-26deg;animation-duration:24s;border-color:rgba(196,181,253,.22)}.urai-mirror-orbit--one{--tilt:-10deg}.urai-mirror-core{position:absolute;left:50%;top:50%;width:clamp(230px,26vw,380px);aspect-ratio:1;transform:translate(-50%,-50%);border-radius:999px;pointer-events:auto}.urai-mirror-core__halo{position:absolute;inset:-22%;border-radius:inherit;background:radial-gradient(circle,rgba(253,230,138,.18),rgba(168,85,247,.15) 42%,rgba(59,130,246,.06) 64%,transparent 74%);filter:blur(10px);animation:uraiMirrorBreath 7s ease-in-out infinite}.urai-mirror-core__glass{position:absolute;inset:0;border-radius:inherit;overflow:hidden;border:1px solid rgba(255,255,255,.24);background:radial-gradient(circle at 34% 20%,rgba(255,255,255,.38),transparent 15%),radial-gradient(circle at 50% 46%,rgba(253,186,116,.8),rgba(147,51,234,.32) 34%,rgba(15,23,42,.88) 76%);box-shadow:inset 18px 24px 50px rgba(255,255,255,.14),inset -38px -42px 68px rgba(5,8,22,.66),0 0 44px rgba(251,191,36,.2),0 0 130px rgba(129,140,248,.18)}.urai-mirror-core__glass:before{content:'';position:absolute;inset:14% 10% 36%;border-radius:50%;background:linear-gradient(180deg,rgba(255,220,160,.8),rgba(251,146,60,.32) 44%,rgba(67,56,202,.16));filter:blur(.2px)}.urai-mirror-core__glass:after{content:'';position:absolute;left:0;right:0;bottom:29%;height:2px;background:linear-gradient(90deg,transparent,rgba(255,237,213,.78),transparent);box-shadow:0 10px 30px rgba(251,191,36,.42)}.urai-mirror-horizon{position:absolute;left:13%;right:13%;bottom:25%;height:24%;border-radius:50% 50% 0 0;background:linear-gradient(180deg,rgba(30,41,59,.1),rgba(15,23,42,.72));box-shadow:inset 0 18px 38px rgba(251,191,36,.12)}.urai-mirror-figures{position:absolute;left:50%;bottom:22%;width:72px;height:76px;transform:translateX(-50%);opacity:.88}.urai-mirror-figures i{position:absolute;bottom:0;width:22px;height:48px;border-radius:14px 14px 8px 8px;background:linear-gradient(180deg,rgba(15,23,42,.42),rgba(2,6,23,.82));box-shadow:0 0 22px rgba(251,191,36,.22)}.urai-mirror-figures i:before{content:'';position:absolute;left:50%;top:-16px;width:18px;height:18px;transform:translateX(-50%);border-radius:999px;background:rgba(15,23,42,.72)}.urai-mirror-figures i:first-child{left:9px}.urai-mirror-figures i:last-child{right:9px;height:54px}.mirror-shard{position:absolute;left:var(--x);top:var(--y);width:clamp(44px,5vw,82px);height:clamp(76px,8vw,132px);transform:translate(-50%,-50%) rotate(var(--r));clip-path:polygon(42% 0,100% 22%,74% 100%,0 78%,12% 26%);border:1px solid rgba(255,255,255,.28);background:linear-gradient(145deg,rgba(255,255,255,.28),rgba(147,197,253,.12) 34%,rgba(251,191,36,.2) 62%,rgba(15,23,42,.58));box-shadow:inset 0 1px 0 rgba(255,255,255,.28),0 0 28px rgba(147,197,253,.14);opacity:.86;animation:uraiMirrorShard 8s ease-in-out infinite;pointer-events:auto}.mirror-shard--one{--r:18deg;animation-delay:-1s}.mirror-shard--two{--r:-28deg;animation-delay:-3s}.mirror-shard--three{--r:-14deg;animation-delay:-5s}.mirror-shard--four{--r:22deg;animation-delay:-2s}.mirror-shard--five{--r:76deg;animation-delay:-6s}.mirror-shard span{position:absolute;left:50%;bottom:-30px;transform:translateX(-50%);white-space:nowrap;font-size:.64rem;letter-spacing:.1em;text-transform:uppercase;color:rgba(226,232,240,.64)}.urai-mirror-title-card{position:absolute;left:50%;top:clamp(22px,7vh,78px);width:min(560px,calc(100vw - 36px));transform:translateX(-50%);text-align:center;pointer-events:auto}.urai-mirror-title-card__eyebrow{margin:0 0 10px;color:rgba(253,230,138,.82);font-size:.68rem;letter-spacing:.28em;text-transform:uppercase}.urai-mirror-title-card h1{margin:0;font-family:Georgia,'Times New Roman',serif;font-size:clamp(2.2rem,6vw,5.4rem);font-weight:500;letter-spacing:-.07em;line-height:.88;text-shadow:0 0 50px rgba(251,191,36,.2)}.urai-mirror-title-card p{width:min(430px,100%);margin:16px auto 0;color:rgba(226,232,240,.72);font-size:clamp(.86rem,1.4vw,1rem);line-height:1.62}.urai-mirror-control-card{position:absolute;right:clamp(16px,3vw,38px);bottom:clamp(20px,4vh,44px);display:grid;gap:14px;width:min(330px,calc(100vw - 32px));padding:18px;border:1px solid rgba(253,230,138,.18);border-radius:28px;background:linear-gradient(145deg,rgba(8,13,33,.58),rgba(30,18,58,.38));backdrop-filter:blur(24px);-webkit-backdrop-filter:blur(24px);box-shadow:0 26px 110px rgba(0,0,0,.34),inset 0 1px 0 rgba(255,255,255,.08);pointer-events:auto}.urai-mirror-signal-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}.urai-mirror-signal-grid div{padding:9px 8px;border-radius:16px;background:rgba(255,255,255,.045);border:1px solid rgba(255,255,255,.08)}.urai-mirror-signal-grid strong{display:block;margin-bottom:4px;color:rgba(253,230,138,.84);font-size:.62rem;letter-spacing:.18em;text-transform:uppercase}.urai-mirror-signal-grid span{color:rgba(241,245,249,.86);font-size:.76rem}.urai-mirror-actions{display:flex;gap:10px;flex-wrap:wrap}.urai-mirror-actions button{appearance:none;border:1px solid rgba(253,230,138,.22);border-radius:999px;padding:10px 13px;color:#f8fbff;background:rgba(255,255,255,.06);font-weight:700;font-size:.78rem;letter-spacing:.02em;cursor:pointer;transition:transform .22s ease,border-color .22s ease,background .22s ease,box-shadow .22s ease}.urai-mirror-actions button:first-child{background:linear-gradient(135deg,rgba(251,191,36,.28),rgba(139,92,246,.18));box-shadow:0 0 32px rgba(251,191,36,.14)}.urai-mirror-actions button:hover,.urai-mirror-actions button:focus-visible{transform:translateY(-1px);border-color:rgba(253,230,138,.56);box-shadow:0 0 34px rgba(147,197,253,.18);outline:none}.urai-mirror-shortcut{position:absolute;left:50%;bottom:clamp(22px,4vh,42px);transform:translateX(-50%);display:inline-flex;align-items:center;gap:10px;color:rgba(226,232,240,.66);font-family:Georgia,'Times New Roman',serif;font-size:.92rem;letter-spacing:.04em;pointer-events:none}.urai-mirror-shortcut:before,.urai-mirror-shortcut:after{content:'';width:70px;height:1px;background:linear-gradient(90deg,transparent,rgba(253,230,138,.48),transparent)}@keyframes uraiMirrorNebula{0%,100%{transform:translate3d(0,0,0) scale(1);opacity:.82}50%{transform:translate3d(.7vw,-.4vh,0) scale(1.04);opacity:1}}@keyframes uraiMirrorStars{0%,100%{opacity:.56;transform:translate3d(0,0,0)}50%{opacity:.88;transform:translate3d(.3vw,-.3vh,0)}}@keyframes uraiMirrorOrbit{to{transform:translate(-50%,-50%) rotate(calc(var(--tilt) + 360deg))}}@keyframes uraiMirrorBreath{0%,100%{transform:scale(.98);opacity:.74}50%{transform:scale(1.06);opacity:1}}@keyframes uraiMirrorShard{0%,100%{transform:translate(-50%,-50%) rotate(var(--r)) translateY(0)}50%{transform:translate(-50%,-50%) rotate(calc(var(--r) + 2deg)) translateY(-10px)}}@media(prefers-reduced-motion:reduce){.urai-mirror-experience:before,.urai-mirror-constellation:before,.urai-mirror-constellation:after,.urai-mirror-orbit,.urai-mirror-core__halo,.mirror-shard{animation:none!important}}@media(max-width:780px){.urai-scene-stage[data-scene-mode='mirror'] canvas{opacity:.4!important}.tier-one-route-card[data-route-mode='mirror']{display:none!important}.urai-mirror-title-card{top:calc(env(safe-area-inset-top,0px) + 18px)}.urai-mirror-title-card p{font-size:.82rem;line-height:1.45}.urai-mirror-core{width:min(62vw,300px);top:48%}.mirror-shard{width:38px;height:70px}.mirror-shard span{display:none}.urai-mirror-control-card{left:14px;right:14px;bottom:calc(env(safe-area-inset-bottom,0px) + 74px);width:auto;padding:14px;border-radius:22px}.urai-mirror-signal-grid{grid-template-columns:1fr 1fr 1fr}.urai-mirror-signal-grid div{padding:8px 7px}.urai-mirror-actions button{flex:1;min-width:120px}.urai-mirror-shortcut{bottom:calc(env(safe-area-inset-bottom,0px) + 24px);font-size:.82rem}.urai-mirror-shortcut:before,.urai-mirror-shortcut:after{width:36px}}@media(max-width:430px){.urai-mirror-title-card h1{font-size:2.2rem}.urai-mirror-title-card p{display:none}.urai-mirror-control-card{bottom:92px}.urai-mirror-signal-grid{display:none}.urai-mirror-core{width:68vw}.urai-mirror-actions{gap:8px}.urai-mirror-actions button{padding:10px 12px;font-size:.74rem}}
+      `}</style>
+
+      <div className="urai-mirror-constellation" aria-hidden="true" />
+      <div className="urai-mirror-orbit urai-mirror-orbit--one" aria-hidden="true" />
+      <div className="urai-mirror-orbit urai-mirror-orbit--two" aria-hidden="true" />
+      <div className="urai-mirror-orbit urai-mirror-orbit--three" aria-hidden="true" />
+
+      {MIRROR_SHARDS.map((shard) => (
+        <div key={shard.label} className={shard.className} style={{ '--x': shard.x, '--y': shard.y } as MirrorShardStyle} aria-hidden="true">
+          <span>{shard.label}</span>
+        </div>
+      ))}
+
+      <div className="urai-mirror-title-card">
+        <p className="urai-mirror-title-card__eyebrow">Mirror of Becoming</p>
+        <h1 id="urai-mirror-title">See the field clearly</h1>
+        <p>Pattern summaries stay calm, private, and symbolic while the full personal mirror comes online.</p>
+      </div>
+
+      <div className="urai-mirror-core" aria-hidden="true">
+        <div className="urai-mirror-core__halo" />
+        <div className="urai-mirror-core__glass">
+          <div className="urai-mirror-horizon" />
+          <div className="urai-mirror-figures"><i /><i /></div>
+        </div>
+      </div>
+
+      <aside className="urai-mirror-control-card" aria-label="Mirror controls and status" aria-live="polite">
+        <div className="urai-mirror-signal-grid">
+          {MIRROR_SIGNALS.map(([label, value]) => (
+            <div key={label}><strong>{label}</strong><span>{value}</span></div>
+          ))}
+        </div>
+        <div className="urai-mirror-actions">
+          <button type="button" onClick={onLifeMap}>Open Life Map</button>
+          <button type="button" onClick={onHome}>Return Home</button>
+        </div>
+      </aside>
+
+      <div className="urai-mirror-shortcut" aria-hidden="true">ESC / Life Map</div>
+    </section>
+  )
+}

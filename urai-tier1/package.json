@@ -1,39 +1,12 @@
-{
-  "name": "urai-tier1",
-  "version": "0.1.0",
-  "private": true,
-  "scripts": {
-    "dev": "next dev --webpack",
-    "build": "next build --webpack",
-    "start": "next start",
-    "lint": "tsc --noEmit -p tsconfig.runtime.json",
-    "typecheck": "tsc --noEmit -p tsconfig.runtime.json",
-    "typecheck:legacy": "tsc --noEmit -p tsconfig.legacy.json",
-    "verify:tier-lock": "node scripts/verify-tier-lock.mjs",
-    "audit:visual-lock": "npm run verify:tier-lock && npm run typecheck && npm run build",
-    "audit:final-visual": "node scripts/audit-final-visual.mjs",
-    "audit:final": "npm run audit:final-visual && npm run audit:visual-lock",
-    "test": "node --experimental-strip-types --experimental-specifier-resolution=node --test tests/*.test.mjs",
-    "test:unit": "node --experimental-strip-types --experimental-specifier-resolution=node --test tests/*.test.mjs",
-    "test:lifemap": "node --experimental-strip-types --experimental-specifier-resolution=node --test tests/lifemap-scene-behavior.test.mjs tests/lifemap*.test.mjs tests/lifemap-*.test.mjs"
-  },
-  "dependencies": {
-    "@react-three/fiber": "^9.5.0",
-    "@react-three/postprocessing": "^3.0.4",
-    "@tailwindcss/postcss": "^4.2.2",
-    "firebase": "^12.11.0",
-    "next": "^16.1.6",
-    "react": "19.2.4",
-    "react-dom": "^19.2.4",
-    "three": "^0.183.2",
-    "three-stdlib": "^2.36.1"
-  },
-  "devDependencies": {
-    "@playwright/test": "^1.57.0",
-    "@types/react": "^19.2.14",
-    "@types/react-dom": "^19.2.3",
-    "@types/three": "^0.183.1",
-    "playwright": "^1.57.0",
-    "typescript": "^6.0.3"
-  }
-}
+"audit:final": "pnpm run audit:final-visual && pnpm run audit:visual-lock",
+"test": "node --import tsx --test tests/*.test.mjs",
+"test:unit": "node --import tsx --test tests/*.test.mjs",
+"test:lifemap": "node --import tsx --test tests/lifemap-scene-behavior.test.mjs tests/lifemap*.test.mjs tests/lifemap-*.test.mjs",
+"test:visual:home": "playwright test tests/home-cinematic.visual.spec.ts --update-snapshots",
+"test:visual:spatial-flow": "playwright test tests/spatial-flow.visual.spec.ts --update-snapshots",
+"test:visual:spatial": "node ../tests/spatial-tier-lock-hardening.mjs --suite=visual",
+"test:e2e:navigation-stack": "node ../tests/spatial-tier-lock-hardening.mjs --suite=navigation",
+"test:e2e:camera-transitions": "node ../tests/spatial-tier-lock-hardening.mjs --suite=camera",
+"test:e2e:race-conditions": "node ../tests/spatial-tier-lock-hardening.mjs --suite=race",
+"test:e2e:data-states": "node ../tests/spatial-tier-lock-hardening.mjs --suite=data",
+"test:tier-lock-hardening": "node ../tests/spatial-tier-lock-hardening.mjs --suite=all"

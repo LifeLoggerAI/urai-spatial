@@ -1,5 +1,5 @@
-import CognitiveMirror from "@/components/CognitiveMirror";
+import { TierOneExperience } from "@/spatial/layout/TierOneExperience";
 
 export default function MirrorRoute() {
-  return <CognitiveMirror />;
+  return <TierOneExperience mode="mirror" />;
 }

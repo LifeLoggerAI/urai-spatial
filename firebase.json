@@ -25,11 +25,6 @@
           }
         ]
       }
-    ],
-    "predeploy": [
-      "pnpm install --no-frozen-lockfile --prefer-offline",
-      "pnpm --filter urai-tier1 typecheck",
-      "pnpm --filter urai-tier1 build"
     ]
   },
   "firestore": {
@@ -41,6 +36,10 @@
       "source": "apps/functions",
       "codebase": "urai-spatial-functions",
       "runtime": "nodejs20",
+      "predeploy": [
+        "pnpm --filter urai-tier1 typecheck",
+        "pnpm --filter urai-functions build"
+      ],
       "ignore": [
         "node_modules",
         ".git",

@@ -1,4 +1,5 @@
 import type { MemoryEmotion, StarState } from './lifeMapGlowScheduler';
+import { chooseGlowingStars, scoreGlowCandidate } from './lifeMapGlowScheduler';
 
 export type { MemoryEmotion, StarState } from './lifeMapGlowScheduler';
 
@@ -157,4 +158,19 @@ export function clampCamera(camera: LifeMapCamera): LifeMapCamera {
     y: Math.min(100, Math.max(0, camera.y)),
     zoom: Math.min(2.25, Math.max(0.8, camera.zoom))
   };
+}
+
+export function scoreStarForGlow(star: MemoryStar): number {
+  return scoreGlowCandidate(star, 0, {}, {});
+}
+
+export function pickGlowingStars(stars: MemoryStar[], activeStarId: string | null, rng: () => number = Math.random): string[] {
+  const candidates = stars.filter((star) => star.id !== activeStarId);
+  return chooseGlowingStars(candidates, [], {
+    count: Math.min(3, Math.max(1, candidates.filter((star) => star.state !== 'resolved').length)),
+    tick: 0,
+    minTicksBetweenGlows: 0,
+    repeatWindowTicks: 1,
+    maxRepeatsPerWindow: 3
+  }, rng);
 }

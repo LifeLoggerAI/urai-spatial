@@ -14,6 +14,7 @@ import { getGroundChannelsForPhase } from "./phaseMachine";
 
 function emitHomeEvent(event: string, detail: Record<string, unknown> = {}) {
   if (typeof window === "undefined") return;
+
   window.dispatchEvent(
     new CustomEvent("urai:narrator", {
       detail: { event, ...detail, timestamp: Date.now() },
@@ -24,9 +25,17 @@ function emitHomeEvent(event: string, detail: Record<string, unknown> = {}) {
 const easeOutCubic = (t: number) =>
   1 - Math.pow(1 - Math.max(0, Math.min(1, t)), 3);
 
+export type HomeWorldProps = {
+  audioLevel?: number;
+  bassLevel?: number;
+};
+
 /* ========================= */
 
-export default function HomeWorld() {
+export default function HomeWorld({
+  audioLevel = 0,
+  bassLevel = 0,
+}: HomeWorldProps) {
   const phase = useSceneStore((s) => s.phase);
   const isTransitioning = useSceneStore((s) => s.isTransitioning);
   const inputLocked = useSceneStore((s) => s.inputLocked);
@@ -114,11 +123,11 @@ export default function HomeWorld() {
       ? 0.26
       : 0.2;
 
-  /* ========================= */
+  const reactiveGlow = 0.08 + bassLevel * 0.18 + audioLevel * 0.12;
+  const reactiveScale = 1 + audioLevel * 0.08;
 
   return (
-    <group>
-      {/* SKY */}
+    <group scale={[reactiveScale, reactiveScale, reactiveScale]}>
       <HomeSky />
 
       {/* GROUND */}
@@ -129,23 +138,26 @@ export default function HomeWorld() {
       />
 
       {/* SHADOW */}
-      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[-0.52, 0.012, -0.05]}>
+      <mesh
+        rotation={[-Math.PI / 2, 0, 0]}
+        position={[-0.52, 0.012, -0.05]}
+        receiveShadow
+      >
         <circleGeometry args={[1.1, 36]} />
-        <shadowMaterial opacity={0.5} />
+        <shadowMaterial opacity={0.5 + audioLevel * 0.12} />
       </mesh>
 
       {/* AURA */}
-      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[-0.48, 0.0155, -0.08]}>
-        <circleGeometry args={[1.4, 40]} />
+      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[-0.48, 0.014, -0.08]}>
+        <circleGeometry args={[1.4 + audioLevel * 0.2, 40]} />
         <meshBasicMaterial
           color="#67c4ff"
           transparent
-          opacity={skyOpacity}
+          opacity={Math.max(skyOpacity, reactiveGlow)}
           depthWrite={false}
         />
       </mesh>
 
-      {/* ORB */}
       <Orb
         interactive
         active={!disabled}
@@ -157,7 +169,7 @@ export default function HomeWorld() {
         onClick={handleEnterOrb}
       />
 
-      {/* AVATAR (clean integration) */}
+      {/* AVATAR */}
       <HomeAvatar
         interactive={!disabled}
         focused={homeSubstate !== "home_idle"}
@@ -170,7 +182,7 @@ export default function HomeWorld() {
           type="button"
           aria-label="Enter Life Map"
           disabled={busy || disabled}
-          onClick={() => handleEnterOrb()}
+          onClick={handleEnterOrb}
           style={{
             width: "8rem",
             height: "8rem",
@@ -178,19 +190,20 @@ export default function HomeWorld() {
             border: "none",
             background: "transparent",
             opacity: 0,
+            cursor: busy || disabled ? "default" : "pointer",
           }}
         />
       </Html>
 
       {/* CAMERA */}
       <PresenceRig
-        visible
+        visible={true}
         phase={phase}
         focusTarget={[-0.52, 0.38, -0.05]}
       />
 
       {/* DEPTH */}
-      <mesh position={[-4.2, 1.3, -3.2]}>
+      <mesh position={[-4.2, 1.3, -3.2]} castShadow receiveShadow>
         <boxGeometry args={[0.36, 2.6, 0.36]} />
         <meshStandardMaterial
           color="#04060d"

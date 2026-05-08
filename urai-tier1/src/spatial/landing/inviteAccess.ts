@@ -12,46 +12,74 @@ export type InviteAccessRecord = {
   acceptedAt?: string;
 };
 
+export type InviteAccessResult = {
+  ok: boolean;
+  code: string;
+  status: "accepted" | "missing" | "invalid" | "offline";
+};
+
 const COLLECTION = "early_access_invites";
 
 export function normalizeInviteCode(code: string) {
   return code.trim().toUpperCase().replace(/[^A-Z0-9-]/g, "");
 }
 
-export async function acceptInvite(inviteCode: string, email?: string) {
-  const cleanCode = normalizeInviteCode(inviteCode);
+export async function acceptInvite(code: string, email?: string): Promise<InviteAccessResult> {
+  const cleanCode = normalizeInviteCode(code);
 
   if (!cleanCode || cleanCode.length < 4) {
-    throw new Error("Invite code is missing or invalid.");
+    return {
+      ok: false,
+      code: cleanCode,
+      status: "invalid",
+    };
   }
 
-  const db = getFirebaseDb();
-  const ref = doc(db, COLLECTION, cleanCode);
-  const snapshot = await getDoc(ref);
+  try {
+    const db = getFirebaseDb();
+    const ref = doc(db, COLLECTION, cleanCode);
+    const snapshot = await getDoc(ref);
 
-  if (!snapshot.exists()) {
-    throw new Error("Invite not found.");
+    if (!snapshot.exists()) {
+      return {
+        ok: false,
+        code: cleanCode,
+        status: "missing",
+      };
+    }
+
+    const data = snapshot.data();
+
+    if (data.status !== "accepted") {
+      await setDoc(
+        ref,
+        {
+          ...data,
+          status: "accepted",
+          email: email ?? data.email ?? "",
+          acceptedAt: serverTimestamp(),
+          updatedAt: serverTimestamp(),
+        },
+        { merge: true },
+      );
+    }
+
+    if (typeof window !== "undefined") {
+      window.localStorage.setItem("urai:invite-accepted", cleanCode);
+    }
+
+    return {
+      ok: true,
+      code: cleanCode,
+      status: "accepted",
+    };
+  } catch (error) {
+    console.warn("[URAI] Invite check failed; showing offline fallback.", error);
+
+    return {
+      ok: false,
+      code: cleanCode,
+      status: "offline",
+    };
   }
-
-  const data = snapshot.data();
-
-  if (data.status === "accepted") {
-    return data;
-  }
-
-  const updated = {
-    ...data,
-    status: "accepted",
-    email: email ?? data.email ?? "",
-    acceptedAt: serverTimestamp(),
-    updatedAt: serverTimestamp(),
-  };
-
-  await setDoc(ref, updated, { merge: true });
-
-  if (typeof window !== "undefined") {
-    window.localStorage.setItem("urai:invite-accepted", cleanCode);
-  }
-
-  return updated;
 }

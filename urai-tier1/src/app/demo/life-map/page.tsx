@@ -1,14 +1,13 @@
 "use client";
 
 import { useEffect } from "react";
-import LifeMapRoute from "../../life-map/page";
+import { TierOneExperience } from "@/spatial/layout/TierOneExperience";
 
 export default function DemoLifeMapPage() {
   useEffect(() => {
     if (typeof window === "undefined") return;
-    window.localStorage.removeItem("urai:first-light-complete");
-    window.localStorage.setItem("urai:demo-mode", "first-light");
+    window.localStorage.setItem("urai:demo-mode", "tier-one-life-map");
   }, []);
 
-  return <LifeMapRoute />;
+  return <TierOneExperience mode="demo" />;
 }

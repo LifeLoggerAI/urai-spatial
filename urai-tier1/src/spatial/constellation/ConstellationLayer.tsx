@@ -2,6 +2,7 @@
 
 import { useMemo, useRef } from 'react'
 import { useConstellationManifests } from './useConstellationManifests'
+import * as THREE from 'three'
 import { Mesh } from 'three'
 import { useFrame } from '@react-three/fiber'
 import { SpatialAssetManifest } from '../assets/manifestTypes'
@@ -44,6 +45,55 @@ function nodePosition(clusterKey: ClusterKey, indexInCluster: number, clusterSiz
   ] as const
 }
 
+function ConstellationLinks({
+  nodes,
+  selectedManifestId,
+}: {
+  nodes: Array<{ manifest: SpatialAssetManifest; clusterKey: ClusterKey; position: ConstellationNodePosition }>
+  selectedManifestId: string | null
+}) {
+  const ref = useRef<THREE.LineSegments>(null)
+
+  const geometry = useMemo(() => {
+    const positions: number[] = []
+    const byCluster = new Map<ClusterKey, Array<{ position: ConstellationNodePosition }>>()
+
+    nodes.forEach((node) => {
+      const list = byCluster.get(node.clusterKey) ?? []
+      list.push(node)
+      byCluster.set(node.clusterKey, list)
+    })
+
+    byCluster.forEach((clusterNodes, key) => {
+      const hub = clusterOffsets[key]
+      clusterNodes.forEach((node, index) => {
+        const next = clusterNodes[(index + 1) % clusterNodes.length]
+        positions.push(...node.position, ...hub)
+        if (clusterNodes.length > 2 && next) positions.push(...node.position, ...next.position)
+      })
+    })
+
+    const g = new THREE.BufferGeometry()
+    g.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3))
+    return g
+  }, [nodes])
+
+  useFrame(({ clock }) => {
+    if (!ref.current) return
+    ref.current.rotation.y = Math.sin(clock.elapsedTime * 0.06) * 0.012
+    const material = ref.current.material
+    if (material instanceof THREE.LineBasicMaterial) {
+      material.opacity = selectedManifestId ? 0.14 : 0.28 + Math.sin(clock.elapsedTime * 0.75) * 0.04
+    }
+  })
+
+  return (
+    <lineSegments ref={ref} geometry={geometry} frustumCulled={false}>
+      <lineBasicMaterial color="#8fdcff" transparent opacity={0.28} depthWrite={false} blending={THREE.AdditiveBlending} />
+    </lineSegments>
+  )
+}
+
 function Node({ position, selected, dimmed, onSelect }: { position: ConstellationNodePosition; selected: boolean; dimmed: boolean; onSelect: (position: ConstellationNodePosition) => void }) {
   const ref = useRef<Mesh>(null)
   const opacity = dimmed ? 0.18 : 1
@@ -52,7 +102,7 @@ function Node({ position, selected, dimmed, onSelect }: { position: Constellatio
   useFrame(({ clock }) => {
     if (!ref.current || dimmed) return
     ref.current.rotation.y = clock.elapsedTime * 0.2
-    const scale = selected ? 1.8 + Math.sin(clock.elapsedTime * 3) * 0.08 : baseScale
+    const scale = selected ? 1.8 + Math.sin(clock.elapsedTime * 3) * 0.08 : baseScale + Math.sin(clock.elapsedTime * 1.4 + position[0]) * 0.05
     ref.current.scale.setScalar(scale)
   })
 
@@ -100,6 +150,8 @@ export default function ConstellationLayer({ enabled, selectedManifestId, onSele
 
   return (
     <group>
+      <ConstellationLinks nodes={positionedManifests} selectedManifestId={selectedManifestId} />
+
       {positionedManifests.map(({ manifest, position }) => (
         <Node
           key={manifest.manifestId}

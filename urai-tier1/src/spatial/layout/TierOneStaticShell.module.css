@@ -1,0 +1,112 @@
+.shell {
+  position: relative;
+  min-height: 100vh;
+  min-height: 100dvh;
+  width: 100vw;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  color: #eef7ff;
+  background:
+    radial-gradient(circle at 50% 18%, rgba(89, 124, 255, 0.22), transparent 34%),
+    radial-gradient(circle at 18% 82%, rgba(168, 85, 247, 0.16), transparent 32%),
+    linear-gradient(180deg, #061022 0%, #02030a 100%);
+}
+
+.shell[data-align='top'] {
+  align-items: flex-start;
+  padding-top: 56px;
+}
+
+.stars {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0.7;
+  background-image:
+    radial-gradient(1px 1px at 12% 20%, rgba(255,255,255,.55), transparent),
+    radial-gradient(2px 2px at 78% 14%, rgba(142,220,255,.45), transparent),
+    radial-gradient(1px 1px at 42% 68%, rgba(255,255,255,.45), transparent),
+    radial-gradient(1px 1px at 64% 82%, rgba(196,181,253,.5), transparent);
+}
+
+.card {
+  position: relative;
+  z-index: 1;
+  width: min(760px, calc(100vw - 32px));
+  padding: clamp(22px, 4vw, 40px);
+  border: 1px solid rgba(180, 215, 255, 0.18);
+  border-radius: 30px;
+  background: linear-gradient(150deg, rgba(5, 9, 22, 0.72), rgba(16, 11, 35, 0.5));
+  box-shadow: 0 34px 120px rgba(0, 0, 0, 0.42);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+  text-align: center;
+}
+
+.card h1 {
+  margin: 10px 0 10px;
+  font-size: clamp(2rem, 6vw, 4.6rem);
+  line-height: 0.96;
+  letter-spacing: -0.06em;
+}
+
+.card p {
+  margin: 0 auto;
+  max-width: 620px;
+  color: rgba(235, 244, 255, 0.76);
+  line-height: 1.65;
+}
+
+.body {
+  margin-top: 22px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 18px;
+}
+
+.message {
+  color: rgba(187, 247, 208, 0.92) !important;
+  font-size: 0.92rem;
+}
+
+.microcopy {
+  margin-top: 8px;
+  color: rgba(226, 232, 240, 0.58);
+  font-size: 0.78rem;
+}
+
+.microcopy p + p {
+  margin-top: 6px;
+}
+
+.card :global(.tier-one-form) {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+  justify-content: center;
+}
+
+.card :global(.tier-one-form input) {
+  width: min(280px, 72vw);
+  min-height: 42px;
+  border-radius: 999px;
+  border: 1px solid rgba(180, 215, 255, 0.22);
+  background: rgba(4, 8, 20, 0.62);
+  color: #eef7ff;
+  padding: 0 16px;
+  outline: none;
+}
+
+.card :global(.tier-one-form button) {
+  min-height: 42px;
+  border-radius: 999px;
+  border: 1px solid rgba(142, 220, 255, 0.32);
+  background: rgba(95, 125, 255, 0.2);
+  color: #edf7ff;
+  padding: 0 16px;
+}

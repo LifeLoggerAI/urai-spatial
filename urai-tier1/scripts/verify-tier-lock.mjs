@@ -1,20 +1,55 @@
 import fs from 'node:fs'
 
-const requiredStrings = [
-  'Tier-1 locked',
-  'Tier-2 completed locked',
-  'Tier-3 locked',
-  'Tier-4 locked',
-  'Canon proof - Tier-1 locked / Tier-2 completed locked / Tier-3 locked / Tier-4 locked',
-  'Home -> Ascent -> LifeMap -> Focus -> Replay -> Esc unwind -> Focus -> LifeMap -> Home',
-]
-
 const checks = [
   'src/spatial/canon/tierLockState.ts',
   'src/spatial/hud/CanonicalTierLockHud.tsx',
   'src/app/page.tsx',
+  'src/spatial/layout/TierOneExperience.tsx',
+  'src/scene/HomeScene.tsx',
   'docs/audits/TIER_LOCK_VISUAL_CLOSEOUT.md',
 ]
+
+const fileNeedles = {
+  'src/spatial/canon/tierLockState.ts': [
+    'URAI_SPATIAL_TIER_LOCKS',
+    'CANON_TIER_LOCK_LINE',
+    'CANON_SEQUENCE_LINE',
+    "tier: 1",
+    "tier: 2",
+    "tier: 3",
+    "tier: 4",
+    "status: 'locked'",
+    "status: 'completed locked'",
+    'Home -> Ascent -> LifeMap -> Focus -> Replay -> Esc unwind -> Focus -> LifeMap -> Home',
+  ],
+  'src/spatial/hud/CanonicalTierLockHud.tsx': [
+    'data-urai-canon-tier-lock',
+    'CANON_TIER_LOCK_LINE',
+    'URAI_SPATIAL_TIER_LOCKS',
+  ],
+  'src/app/page.tsx': [
+    'TierOneExperience',
+    'mode="home"',
+  ],
+  'src/spatial/layout/TierOneExperience.tsx': [
+    '@/scene/HomeScene',
+    '<HomeScene sceneMode={mode} />',
+  ],
+  'src/scene/HomeScene.tsx': [
+    "type SceneMode = 'home' | 'ascent' | 'life-map' | 'demo' | 'replay' | 'focus' | 'mirror'",
+    "router.push('/ascent')",
+    "router.push('/life-map')",
+    'data-scene-mode={sceneMode}',
+  ],
+  'docs/audits/TIER_LOCK_VISUAL_CLOSEOUT.md': [
+    'Tier-1 locked',
+    'Tier-2 completed locked',
+    'Tier-3 locked',
+    'Tier-4 locked',
+    'Canon proof - Tier-1 locked / Tier-2 completed locked / Tier-3 locked / Tier-4 locked',
+    'Home -> Ascent -> LifeMap -> Focus -> Replay -> Esc unwind -> Focus -> LifeMap -> Home',
+  ],
+}
 
 let failed = false
 
@@ -26,32 +61,19 @@ for (const file of checks) {
   }
 
   const text = fs.readFileSync(file, 'utf8')
-
-  if (file === 'src/spatial/canon/tierLockState.ts' || file === 'docs/audits/TIER_LOCK_VISUAL_CLOSEOUT.md') {
-    for (const needle of requiredStrings) {
-      if (!text.includes(needle)) {
-        console.error(`[tier-lock] missing "${needle}" in ${file}`)
-        failed = true
-      }
+  for (const needle of fileNeedles[file] ?? []) {
+    if (!text.includes(needle)) {
+      console.error(`[tier-lock] missing "${needle}" in ${file}`)
+      failed = true
     }
   }
+}
 
-  if (file === 'src/spatial/hud/CanonicalTierLockHud.tsx') {
-    for (const needle of ['data-urai-canon-tier-lock', 'CANON_TIER_LOCK_LINE', 'URAI_SPATIAL_TIER_LOCKS']) {
-      if (!text.includes(needle)) {
-        console.error(`[tier-lock] missing "${needle}" in ${file}`)
-        failed = true
-      }
-    }
-  }
-
-  if (file === 'src/app/page.tsx') {
-    for (const needle of ['CanonicalTierLockHud', '<CanonicalTierLockHud />']) {
-      if (!text.includes(needle)) {
-        console.error(`[tier-lock] missing "${needle}" in ${file}`)
-        failed = true
-      }
-    }
+const home = fs.existsSync('src/app/page.tsx') ? fs.readFileSync('src/app/page.tsx', 'utf8') : ''
+for (const forbidden of ['CanonicalTierLockHud', '<CanonicalTierLockHud />', 'Loading URAI Spatial', '@/spatial/scene/SpatialScene']) {
+  if (home.includes(forbidden)) {
+    console.error(`[tier-lock] home invariant violation: ${forbidden} should not render in src/app/page.tsx`)
+    failed = true
   }
 }
 
@@ -63,4 +85,4 @@ if (!pkg.scripts || pkg.scripts['verify:tier-lock'] !== 'node scripts/verify-tie
 
 if (failed) process.exit(1)
 
-console.log('[tier-lock] verified: Tier-1 locked / Tier-2 completed locked / Tier-3 locked / Tier-4 locked')
+console.log('[tier-lock] verified: Tier locks preserved and canonical TierOneExperience -> HomeScene runtime remains no-HUD')

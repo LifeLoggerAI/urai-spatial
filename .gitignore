@@ -1,16 +1,37 @@
 node_modules
-node_modules
 .next
 apps/**/.next
-firebase-debug.log
 .firebase/
+firebase-debug.log
 .DS_Store
 *.bak
 *.bak.*
 
-# local preview transient files
+# Local environment and secrets
+.env
+.env.*
+!.env.example
+# Local workspace files
+.idx/
+.vscode/
+.idea/
+# Test and audit artifacts
+artifacts/
+playwright-report/
+test-results/
+coverage/
 _audit/**/local_preview.pid
 _audit/**/local_preview.log
 _audit/**/local_preview_home.html
 _audit/**/local_urls.txt
 _audit/**/local_preview_status.txt
+urai-tier1/audit/tier-lock/
+# Package-manager transient files
+.pnpm-store/
+npm-debug.log*
+pnpm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+node_modules/
+.next/
+*.log

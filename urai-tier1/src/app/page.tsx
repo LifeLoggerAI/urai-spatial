@@ -1,5 +1,5 @@
-import SpatialSceneClient from "@/spatial/client/SpatialSceneClient";
+import { TierOneExperience } from "@/spatial/layout/TierOneExperience";
 
-export default function Page() {
-  return <SpatialSceneClient />;
+export default function HomePage() {
+  return <TierOneExperience mode="home" />;
 }

@@ -3,6 +3,7 @@ import { readFileSync } from 'node:fs';
 import { test } from 'node:test';
 
 const source = readFileSync(new URL('../src/spatial/home/explainHomeWorldState.ts', import.meta.url), 'utf8');
+const types = readFileSync(new URL('../src/spatial/home/homeWorldTypes.ts', import.meta.url), 'utf8');
 const banned = ['depressed', 'anxious', 'anxiety', 'disorder', 'diagnosis', 'manic', 'bipolar', 'PTSD', 'suicidal'];
 
 test('includes derived patterns, not raw private media language', () => {
@@ -23,7 +24,7 @@ test('no banned clinical language appears in explainability copy', () => {
 
 test('contributors are bucketed and rounded instead of raw payloads', () => {
   assert.match(source, /scoreBucket/);
-  assert.match(source, /confidenceBucket/);
+  assert.match(types, /confidenceBucket/);
   assert.doesNotMatch(source, /raw audio|contact names|lat\/lng|message bodies/i);
 });
 
