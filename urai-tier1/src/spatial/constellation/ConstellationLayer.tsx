@@ -20,6 +20,15 @@ type PositionedManifest = {
   label: string
 }
 
+type LifeMapMotif = {
+  id: string
+  tone: string
+  opacity: number
+  position: ConstellationNodePosition
+  scale: number
+  points: ConstellationNodePosition[]
+}
+
 const clusterOffsets: Record<ClusterKey, ConstellationNodePosition> = {
   memory: [-5.6, 2.05, -3.4],
   intense: [5.45, 1.65, -2.1],
@@ -32,6 +41,29 @@ const clusterOffsets: Record<ClusterKey, ConstellationNodePosition> = {
 const fallbackLabels = ['Memory Bloom', 'Threshold', 'Mirror Focus', 'Ritual Echo', 'Dream Signal', 'Calm Return', 'Recovery Arc']
 const toneColors = ['#ffd0c7', '#8fb6ff', '#78f0ff', '#a78bfa', '#ff74c7', '#67e8f9', '#d946ef']
 const STARFIELD_SEED = 1947
+
+const lifeMapMotifs: LifeMapMotif[] = [
+  {
+    id: 'inner-profile',
+    tone: '#5cc8ff',
+    opacity: 0.26,
+    position: [-1.15, 1.2, -7.4],
+    scale: 1.15,
+    points: [
+      [-3.3, 1.7, 0], [-2.55, 2.75, 0], [-1.28, 3.35, 0], [0.12, 3.05, 0], [0.9, 2.18, 0], [1.05, 1.15, 0], [1.7, 0.72, 0], [1.28, 0.08, 0], [0.78, -0.42, 0], [0.48, -1.08, 0], [-0.15, -1.72, 0], [-1.04, -1.36, 0], [-1.8, -0.78, 0], [-2.74, -0.3, 0], [-3.1, 0.72, 0], [-3.3, 1.7, 0],
+    ],
+  },
+  {
+    id: 'guardian-wolf',
+    tone: '#7de7ff',
+    opacity: 0.2,
+    position: [1.65, 0.7, -9.25],
+    scale: 0.9,
+    points: [
+      [-3.7, -0.8, 0], [-2.95, -0.15, 0], [-2.1, 0.02, 0], [-1.15, 0.65, 0], [0.1, 0.88, 0], [1.0, 1.52, 0], [1.65, 2.35, 0], [2.08, 1.42, 0], [2.7, 0.9, 0], [2.0, 0.42, 0], [1.2, 0.18, 0], [0.72, -0.52, 0], [0.35, -1.7, 0], [-0.22, -0.66, 0], [-1.05, -1.45, 0], [-1.42, -0.48, 0], [-2.15, -0.72, 0], [-3.1, -1.2, 0], [-3.7, -0.8, 0],
+    ],
+  },
+]
 
 function seededValue(index: number, salt = 0) {
   const value = Math.sin((index + 1) * 127.1 + salt * 311.7 + STARFIELD_SEED) * 43758.5453123
@@ -96,6 +128,10 @@ function curveGeometry(from: ConstellationNodePosition, to: ConstellationNodePos
   return new THREE.BufferGeometry().setFromPoints(points)
 }
 
+function lineGeometry(points: ConstellationNodePosition[]) {
+  return new THREE.BufferGeometry().setFromPoints(points.map((point) => new THREE.Vector3(...point)))
+}
+
 function NebulaField({ reducedMotion }: { reducedMotion: boolean }) {
   const ref = useRef<THREE.Group>(null)
 
@@ -140,6 +176,42 @@ function LifeMapStarfield3D({ reducedMotion }: { reducedMotion: boolean }) {
   )
 }
 
+function MotifLine({ motif }: { motif: LifeMapMotif }) {
+  const geometry = useMemo(() => lineGeometry(motif.points), [motif.points])
+
+  return (
+    <line geometry={geometry} frustumCulled={false}>
+      <lineBasicMaterial color={motif.tone} transparent opacity={motif.opacity} depthWrite={false} blending={THREE.AdditiveBlending} />
+    </line>
+  )
+}
+
+function LifeMapMythicMotifs({ reducedMotion }: { reducedMotion: boolean }) {
+  const ref = useRef<THREE.Group>(null)
+
+  useFrame(({ clock }) => {
+    if (!ref.current || reducedMotion) return
+    ref.current.rotation.y = Math.sin(clock.elapsedTime * 0.035) * 0.025
+    ref.current.position.z = Math.sin(clock.elapsedTime * 0.07) * 0.12
+  })
+
+  return (
+    <group ref={ref} data-testid="lifemap-mythic-constellation-motifs">
+      {lifeMapMotifs.map((motif) => (
+        <group key={motif.id} position={motif.position} scale={motif.scale} data-testid={`lifemap-motif-${motif.id}`}>
+          <MotifLine motif={motif} />
+          {motif.points.map((point, index) => (
+            <mesh key={`${motif.id}-${index}`} position={point} scale={index % 3 === 0 ? 1.15 : 0.78}>
+              <sphereGeometry args={[0.035, 10, 10]} />
+              <meshBasicMaterial color={motif.tone} transparent opacity={0.72} depthWrite={false} blending={THREE.AdditiveBlending} />
+            </mesh>
+          ))}
+        </group>
+      ))}
+    </group>
+  )
+}
+
 function ConstellationArc({ from, to, tone, active, reducedMotion }: { from: ConstellationNodePosition; to: ConstellationNodePosition; tone: string; active: boolean; reducedMotion: boolean }) {
   const ref = useRef<THREE.Line>(null)
   const geometry = useMemo(() => curveGeometry(from, to, active ? 1.65 : 1.05), [active, from, to])
@@ -161,13 +233,15 @@ function ConstellationArc({ from, to, tone, active, reducedMotion }: { from: Con
 
 function ConstellationArcs({ nodes, selectedManifestId, reducedMotion }: { nodes: PositionedManifest[]; selectedManifestId: string | null; reducedMotion: boolean }) {
   const arcs = useMemo(() => {
+    if (nodes.length < 2) return []
     const ordered = [...nodes]
     return ordered.flatMap((node, index) => {
       const next = ordered[(index + 1) % ordered.length]
       const cross = ordered[(index + 3) % ordered.length]
+      const crossArc = ordered.length > 4 && index % 2 === 0 ? { id: `${node.manifest.manifestId}-cross`, from: node, to: cross } : null
       return [
         { id: `${node.manifest.manifestId}-next`, from: node, to: next },
-        index % 2 === 0 ? { id: `${node.manifest.manifestId}-cross`, from: node, to: cross } : null,
+        crossArc,
       ].filter(Boolean) as Array<{ id: string; from: PositionedManifest; to: PositionedManifest }>
     })
   }, [nodes])
@@ -258,6 +332,7 @@ export default function ConstellationLayer({ enabled, selectedManifestId, reduce
     <group ref={fieldRef} data-testid="lifemap-cosmic-constellation" position={[0, 0.08, -0.35]}>
       <LifeMapStarfield3D reducedMotion={reducedMotion} />
       <NebulaField reducedMotion={reducedMotion} />
+      <LifeMapMythicMotifs reducedMotion={reducedMotion} />
       <ConstellationArcs nodes={positionedManifests} selectedManifestId={selectedManifestId} reducedMotion={reducedMotion} />
 
       {positionedManifests.map((node) => (
