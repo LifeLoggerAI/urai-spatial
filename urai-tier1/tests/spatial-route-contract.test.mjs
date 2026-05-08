@@ -40,6 +40,7 @@ const globalsCss = read(['src/app/globals.css'])
 const firestoreRules = read(['../firebase/firestore.rules', 'firebase/firestore.rules'])
 const manifestRenderer = read(['src/spatial/assets/ManifestRenderer.tsx'])
 const constellationManifests = read(['src/spatial/constellation/useConstellationManifests.ts'])
+const constellationLayer = read(['src/spatial/constellation/ConstellationLayer.tsx'])
 
 test('primary routes use the canonical TierOneExperience shell', () => {
   assert.match(compact(homePage), /<TierOneExperiencemode="home"\/>/)
@@ -62,7 +63,7 @@ test('TierOneExperience maps routed modes to the spatial shell', () => {
 
 test('HomeScene keeps Home, Ascent, and Life Map visual authority separate', () => {
   const source = flat(homeScene)
-  assert.match(source, /import SpatialVisualOverlay from '\.\/SpatialVisualOverlayPremium'/)
+  assert.match(source, /import SpatialVisualOverlay from '\.\/SpatialVisualOverlay(?:Premium|Tier5)'/)
   assert.match(source, /type SceneMode = 'home' \| 'ascent' \| 'life-map' \| 'demo' \| 'replay' \| 'focus' \| 'mirror'/)
   assert.match(source, /const ASCENT_DURATION_MS = 1800/)
   assert.match(source, /const isHomeMode = sceneMode === 'home'/)
@@ -110,6 +111,32 @@ test('HomeScene locks focus, replay, mirror, and unwind behavior', () => {
   assert.match(source, /if \(sceneMode === 'life-map' \|\| sceneMode === 'ascent'\)/)
   assert.match(source, /router\.push\('\/'\)/)
   assert.doesNotMatch(source, /router\.push\('\/home'\)/)
+})
+
+test('canonical Life Map has a 3D cosmic constellation and travel controls', () => {
+  const scene = flat(homeScene)
+  const constellation = flat(constellationLayer)
+  assert.match(scene, /import \{ OrbitControls, PerspectiveCamera \} from '@react-three\/drei'/)
+  assert.match(scene, /<OrbitControls makeDefault enablePan enableZoom enableRotate/)
+  assert.match(scene, /active=\{!showConstellation\}/)
+  assert.match(scene, /reducedMotion=\{reducedMotion\}/)
+  assert.match(constellation, /function LifeMapStarfield3D/)
+  assert.match(constellation, /function NebulaField/)
+  assert.match(constellation, /function ConstellationArcs/)
+  assert.match(constellation, /data-testid="lifemap-starfield-3d"/)
+  assert.match(constellation, /data-testid="lifemap-cosmic-constellation"/)
+  assert.match(constellation, /data-testid="lifemap-constellation-arcs"/)
+  assert.match(constellation, /fallbackLabels = \['Memory Bloom', 'Threshold', 'Mirror Focus', 'Ritual Echo', 'Dream Signal', 'Calm Return', 'Recovery Arc'\]/)
+})
+
+test('Life Map starfield is deterministic and reduced-motion safe', () => {
+  const source = flat(constellationLayer)
+  assert.match(source, /const STARFIELD_SEED = 1947/)
+  assert.match(source, /function seededValue/)
+  assert.match(source, /speed=\{reducedMotion \? 0 : 0\.38\}/)
+  assert.match(source, /speed=\{reducedMotion \? 0 : 0\.18\}/)
+  assert.match(source, /if \(!fieldRef\.current \|\| reducedMotion\) return/)
+  assert.match(source, /if \(!ref\.current \|\| reducedMotion\) return/)
 })
 
 test('focus and replay use demo fallback instead of unavailable error copy', () => {
