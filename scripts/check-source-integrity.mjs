@@ -9,6 +9,7 @@ const ignoredDirectories = new Set([
   '.git',
   '.next',
   '.turbo',
+  '_quarantine',
   'coverage',
   'dist',
   'node_modules',
@@ -19,6 +20,7 @@ const ignoredPathFragments = [
   `${path.sep}_audit${path.sep}`,
   `${path.sep}*audit${path.sep}`,
   `${path.sep}.ai-backups${path.sep}`,
+  `${path.sep}_quarantine${path.sep}`,
 ]
 
 const checkedExtensions = new Set([
@@ -50,6 +52,7 @@ const suspiciousFileNamePattern = /(?:\.corrupt\.|\.bak\.|\.orig\.|\.rej$|~$)/i
 function isIgnoredPath(relativePath) {
   if (relativePath.startsWith('_audit')) return true
   if (relativePath.startsWith('*audit')) return true
+  if (relativePath.startsWith('_quarantine')) return true
   return ignoredPathFragments.some((fragment) => relativePath.includes(fragment))
 }
 
