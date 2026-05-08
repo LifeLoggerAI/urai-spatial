@@ -111,7 +111,7 @@ export async function POST(request: Request) {
 
   const stripeModule = await import('stripe');
   const StripeClient = stripeModule.default;
-  const stripe = new StripeClient(secretKey, { apiVersion: '2024-06-20' });
+  const stripe = new StripeClient(secretKey);
 
   const rawBody = await request.text();
 
