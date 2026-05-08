@@ -1,5 +1,5 @@
-import SpatialHomeShell from "./_spatial/SpatialHomeShell";
+import { TierOneExperience } from "@/spatial/layout/TierOneExperience";
 
 export default function HomePage() {
-  return <SpatialHomeShell />;
+  return <TierOneExperience mode="home" />;
 }
