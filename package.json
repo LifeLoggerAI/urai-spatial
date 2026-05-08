@@ -78,7 +78,6 @@
     "@types/react": "^19.2.14",
     "@types/three": "^0.183.1",
     "firebase-tools": "^14.27.0",
-    "pnpm": "^8.0.0",
     "typescript": "^5.9.3"
   },
   "dependencies": {
