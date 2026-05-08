@@ -58,15 +58,7 @@ function manifestFocusHref(manifestId: string | null) {
 }
 
 function ModeGuidance({ mode, onEnter, onUnwind, reducedMotion }: { mode: SceneMode; onEnter: () => void; onUnwind: () => void; reducedMotion: boolean }) {
-  if (mode === 'home') {
-    return (
-      <div className="urai-spatial-guidance urai-spatial-guidance--home" data-testid="urai-sky-guidance">
-        <span className="urai-spatial-guidance__pulse" aria-hidden="true" />
-        <span>Click the sky to begin the ascent</span>
-        <button type="button" onClick={onEnter}>Begin Ascent</button>
-      </div>
-    )
-  }
+  if (mode === 'home') return null
 
   if (mode === 'ascent') {
     return (
@@ -99,7 +91,7 @@ function ModeGuidance({ mode, onEnter, onUnwind, reducedMotion }: { mode: SceneM
   if (mode === 'replay') {
     return (
       <div className="urai-spatial-guidance" data-testid="urai-replay-guidance">
-        <span>Replay breathing. ESC unwinds one consciousness layer.</span>
+        <span>Replay breathing. ESC unwinds one layer.</span>
         <button type="button" onClick={onUnwind}>Unwind</button>
       </div>
     )
@@ -179,7 +171,7 @@ export default function HomeScene({ sceneMode = 'home' }: { sceneMode?: SceneMod
   const showHomeWorld = isHomeMode
   const showAscentPortal = isAscentMode
   const showConstellation = isConstellationRoute && !gateBlocksMode
-  const showOrb = isHomeMode || sceneMode === 'focus' || sceneMode === 'replay' || sceneMode === 'mirror'
+  const showOrb = sceneMode === 'focus' || sceneMode === 'replay' || sceneMode === 'mirror'
   const { manifest, loading: manifestLoading } = useManifest(gateBlocksMode ? null : effectiveManifestId)
   const [selectedManifest, setSelectedManifest] = useState<SpatialAssetManifest | null>(null)
   const [selectedPosition, setSelectedPosition] = useState<ConstellationNodePosition | null>(null)
@@ -261,21 +253,20 @@ export default function HomeScene({ sceneMode = 'home' }: { sceneMode?: SceneMod
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => {
       if (event.key === 'Escape') unwind()
-      if (event.key.toLowerCase() === 'r') resetCamera()
+      if (event.key.toLowerCase() === 'r' && !isHomeMode) resetCamera()
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
-  }, [resetCamera, unwind])
+  }, [isHomeMode, resetCamera, unwind])
 
   const showFocusPanel = Boolean(activeManifest) && (Boolean(selectedManifest) || modeNeedsManifest)
   const showEmptyFocusPanel = !gateBlocksMode && modeNeedsManifest && !activeManifest
   const showMemoryArtifact = !gateBlocksMode && (sceneMode === 'focus' || sceneMode === 'replay')
 
   return (
-    <div className="urai-scene-stage" data-scene-mode={sceneMode} data-reduced-motion={reducedMotion ? 'true' : 'false'} data-replay-launching={replayLaunching ? 'true' : 'false'}>
+    <div className="urai-scene-stage" data-scene-mode={sceneMode} data-reduced-motion={reducedMotion ? 'true' : 'false'} data-replay-launching={replayLaunching ? 'true' : 'false'} onClick={isHomeMode ? enterLifeMap : undefined}>
       <div className="urai-scene-stage__fallback" aria-hidden="true" />
       <SpatialVisualOverlay mode={sceneMode} />
-      {isHomeMode ? <button type="button" className="urai-sky-click-target" data-testid="urai-sky-click-target" aria-label="Begin ascent to Life Map" onClick={enterLifeMap} /> : null}
       <Canvas shadows dpr={[1, 1.75]} gl={{ antialias: true, alpha: true }} onPointerMissed={enterLifeMap}>
         <PerspectiveCamera makeDefault position={[0, 2.85, 8.35]} fov={48} />
         <CinematicCameraRig active focusPosition={selectedPosition} path={cameraPath} reducedMotion={reducedMotion} resetSignal={cameraResetSignal} />
@@ -292,15 +283,15 @@ export default function HomeScene({ sceneMode = 'home' }: { sceneMode?: SceneMod
         {showConstellation ? <ConstellationLayer enabled selectedManifestId={selectedManifest?.manifestId ?? null} onSelect={handleSelect} /> : activeManifest ? <ManifestRenderBoundary manifest={activeManifest} /> : null}
         <CinematicParticles active reducedMotion={reducedMotion} />
         <CinematicPostProcessing active={Boolean(activeManifest) || showConstellation || isAscentMode} reducedMotion={reducedMotion} />
-        <NarratorVoice manifest={activeManifest} context={narratorContext} />
+        {!isHomeMode ? <NarratorVoice manifest={activeManifest} context={narratorContext} /> : null}
       </Canvas>
       {showMemoryArtifact ? <MemoryStarArtifact morphology={memoryMorphology} replay={sceneMode === 'replay' || replayLaunching} /> : null}
-      <CameraResetButton onReset={resetCamera} />
+      {!isHomeMode ? <CameraResetButton onReset={resetCamera} /> : null}
       <ModeGuidance mode={sceneMode} onEnter={enterLifeMap} onUnwind={unwind} reducedMotion={reducedMotion} />
       {gateBlocksMode && gatedFeatureId ? <TierGatePanel featureId={gatedFeatureId} loading={gate.loading} reasons={gate.reasons} requiredTier={gate.requiredTier} fallbackFeatureId={gate.fallbackFeatureId} onPreview={openPreviewMap} /> : null}
       {showFocusPanel && activeManifest ? <FocusActionPanel morphology={memoryMorphology} mode={sceneMode} onReplay={startReplay} onUnwind={unwind} launching={replayLaunching} /> : null}
       {showEmptyFocusPanel ? <FocusEmptyPanel mode={sceneMode} loading={manifestLoading} onLifeMap={openLifeMap} /> : null}
-      <NarratorHud />
+      {!isHomeMode ? <NarratorHud /> : null}
     </div>
   )
 }
