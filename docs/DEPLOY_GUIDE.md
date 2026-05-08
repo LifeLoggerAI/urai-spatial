@@ -1,11 +1,50 @@
 # URAI Spatial Deploy Guide
 
-## 1. Local setup
+## 1. Runtime app root
+
+The deployed Next.js app is `urai-tier1`.
+
+Root scripts delegate to that package with `pnpm --filter urai-tier1 ...`, so production routes and environment files should be validated against `urai-tier1`, not the legacy root `src` tree.
+
+## 2. Local setup
 
 ```bash
-npm install
-npm run dev
+pnpm install
+pnpm --filter urai-tier1 dev
 ```
+
+Before release, run:
+
+```bash
+pnpm --filter urai-tier1 typecheck
+pnpm --filter urai-tier1 build
+pnpm --filter urai-tier1 test:unit
+```
+
+## 3. Environment setup
+
+Use `urai-tier1/.env.example` as the source of truth for required environment variables.
+
+Required production keys include:
+
+- `NEXT_PUBLIC_FIREBASE_API_KEY`
+- `NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN`
+- `NEXT_PUBLIC_FIREBASE_PROJECT_ID`
+- `NEXT_PUBLIC_FIREBASE_APP_ID`
+- `FIREBASE_SERVICE_ACCOUNT_JSON`
+- `NEXT_PUBLIC_APP_URL`
+- `STRIPE_SECRET_KEY`
+- `STRIPE_WEBHOOK_SECRET`
+- `NEXT_PUBLIC_STRIPE_PRICE_PRO`
+- `NEXT_PUBLIC_STRIPE_PRICE_THERAPIST`
+- `NEXT_PUBLIC_STRIPE_PRICE_FOUNDER`
+
+Optional narrator keys:
+
+- `ELEVENLABS_API_KEY`
+- `ELEVENLABS_VOICE_ID`
+
+## 4. Stripe local testing
 
 Test Stripe locally using Stripe CLI:
 
@@ -13,57 +52,69 @@ Test Stripe locally using Stripe CLI:
 stripe listen --forward-to localhost:3000/api/stripe/webhook-v2
 ```
 
-## 2. Production hosting
+The deployed app exposes both:
+
+- `/api/stripe/webhook`
+- `/api/stripe/webhook-v2`
+
+Use `/api/stripe/webhook-v2` for production configuration because it is the documented endpoint and aliases the hardened webhook handler.
+
+## 5. Production hosting
 
 Recommended:
+
 - Vercel
 - Firebase Hosting
 
-## 3. Environment setup (hosting dashboard)
+Make sure the hosting project builds `urai-tier1` or uses the root scripts that delegate to it.
 
-Add all required env variables from `.env.example`.
+## 6. Stripe production setup
 
-## 4. Stripe production setup
+- Switch to live mode.
+- Create live products/prices.
+- Set the price ID env values.
+- Recreate webhook endpoint for the production URL at `/api/stripe/webhook-v2`.
+- Verify checkout session metadata includes `planId` and authenticated `userId`.
 
-- Switch to live mode
-- Create live products/prices
-- Update env values
-- Recreate webhook endpoint for production URL
+## 7. Firebase production setup
 
-## 5. Firebase production setup
+- Confirm Auth providers.
+- Enable Email/Password if using the built-in auth flow.
+- Confirm Firestore is enabled.
+- Confirm Firestore rules match the launch posture.
+- Add `FIREBASE_SERVICE_ACCOUNT_JSON` as a production secret.
 
-- Confirm Auth providers
-- Confirm Firestore rules
-- Confirm service account is valid
+## 8. Post-deploy verification
 
-## 6. Post-deploy verification
+- `/spatial` renders.
+- `/api/entitlement` returns 401 without token.
+- Authenticated `/api/entitlement` returns the user's entitlement.
+- Checkout works for signed-in users.
+- Webhook fires.
+- Firestore updates `userEntitlements/{uid}`.
+- UI unlocks features after entitlement refresh.
 
-- Login works
-- Checkout works
-- Webhook fires
-- Firestore updates entitlement
-- UI unlocks features
+## 9. Monitoring
 
-## 7. Monitoring
+- Enable Stripe event logs.
+- Enable Firebase logs.
+- Add console/error monitoring such as Sentry if available.
 
-- Enable Stripe event logs
-- Enable Firebase logs
-- Add console/error monitoring (Sentry optional)
+## 10. Rollback plan
 
-## 8. Rollback plan
+- Keep previous deployment version.
+- Disable Stripe webhook if needed.
+- Revert env variables if misconfigured.
+- Roll back the hosting build to the last known-good `urai-tier1` deployment.
 
-- Keep previous deployment version
-- Disable Stripe webhook if needed
-- Revert env variables if misconfigured
+## 11. Performance notes
 
-## 9. Performance notes
+- Firestore entitlement reads are lightweight.
+- Entitlement calls should be cached client-side briefly.
+- Avoid refetch loops.
 
-- Firestore reads are lightweight
-- Entitlement calls should be cached client-side briefly
-- Avoid refetch loops
+## 12. Security reminders
 
-## 10. Security reminders
-
-- Never expose Stripe secret key
-- Never expose Firebase service account JSON
-- Only backend writes to Firestore entitlements
+- Never expose Stripe secret key.
+- Never expose Firebase service account JSON.
+- Only backend routes write Firestore entitlements.
