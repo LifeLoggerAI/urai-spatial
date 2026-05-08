@@ -5,6 +5,7 @@ import path from 'node:path'
 const root = process.cwd()
 
 const ignoredDirectories = new Set([
+  '.ai-backups',
   '.git',
   '.next',
   '.turbo',
@@ -13,6 +14,12 @@ const ignoredDirectories = new Set([
   'node_modules',
   'out',
 ])
+
+const ignoredPathFragments = [
+  `${path.sep}_audit${path.sep}`,
+  `${path.sep}*audit${path.sep}`,
+  `${path.sep}.ai-backups${path.sep}`,
+]
 
 const checkedExtensions = new Set([
   '.cjs',
@@ -40,6 +47,12 @@ const mergeMarkerPatterns = [
 
 const suspiciousFileNamePattern = /(?:\.corrupt\.|\.bak\.|\.orig\.|\.rej$|~$)/i
 
+function isIgnoredPath(relativePath) {
+  if (relativePath.startsWith('_audit')) return true
+  if (relativePath.startsWith('*audit')) return true
+  return ignoredPathFragments.some((fragment) => relativePath.includes(fragment))
+}
+
 function walk(directory) {
   const entries = fs.readdirSync(directory, { withFileTypes: true })
   const files = []
@@ -50,12 +63,13 @@ function walk(directory) {
 
     if (entry.isDirectory()) {
       if (ignoredDirectories.has(entry.name)) continue
-      if (relativePath.startsWith('_audit')) continue
+      if (isIgnoredPath(relativePath)) continue
       files.push(...walk(absolutePath))
       continue
     }
 
     if (!entry.isFile()) continue
+    if (isIgnoredPath(relativePath)) continue
     files.push(absolutePath)
   }
 
@@ -76,8 +90,6 @@ const failures = []
 for (const file of walk(root)) {
   const relativePath = path.relative(root, file)
   const extension = path.extname(file)
-
-  if (relativePath.includes(`${path.sep}_audit${path.sep}`)) continue
 
   if (suspiciousFileNamePattern.test(relativePath)) {
     failures.push(`${relativePath}: suspicious backup/corrupt filename in active repository surface`)
