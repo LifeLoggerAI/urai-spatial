@@ -1,6 +1,5 @@
-import LifeMapReleaseSurface from "../_spatial/LifeMapReleaseSurface";
+import { TierOneExperience } from "@/spatial/layout/TierOneExperience";
 
-// Tier route audit compatibility: this route remains governed by the TierOneExperience scene contract while rendering the release-lock LifeMap surface.
 export default function LifeMapPage() {
-  return <LifeMapReleaseSurface />;
+  return <TierOneExperience mode="life-map" />;
 }

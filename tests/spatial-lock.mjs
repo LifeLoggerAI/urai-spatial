@@ -105,6 +105,21 @@ async function expectText(locator, text, timeout = 5000) {
   throw new Error(`Expected text ${text}, received ${body}`);
 }
 
+async function expectNoText(locator, text) {
+  const body = await locator.textContent().catch(() => '');
+  if (body?.includes(text)) {
+    throw new Error(`Unexpected Home text found: ${text}`);
+  }
+}
+
+async function expectHiddenOrMissing(locator, label) {
+  const count = await locator.count().catch(() => 0);
+  if (count === 0) return;
+  if (await locator.first().isVisible().catch(() => false)) {
+    throw new Error(`${label} must be hidden or absent on sky-only Home`);
+  }
+}
+
 async function screenshot(page, name) {
   const path = `${ARTIFACT_DIR}/${name}.png`;
   await page.screenshot({ path, fullPage: true });
@@ -134,12 +149,15 @@ async function run() {
 
     await page.goto(`${BASE_URL}/home`);
     await expectAttr(stage, 'data-scene-mode', 'home');
-    await expectVisible(page.getByTestId('urai-home-scene'), 'home scene');
-    await expectVisible(page.getByTestId('urai-orb-button'), 'home orb');
-    await expectText(page.locator('body'), 'Your inner weather');
-    visualReport.screenshots.push(await screenshot(page, '01-home-desktop'));
+    await expectVisible(stage, 'sky-only home stage');
+    await expectHiddenOrMissing(page.getByTestId('urai-orb-button'), 'home orb');
+    await expectHiddenOrMissing(page.getByTestId('urai-sky-guidance'), 'home guidance');
+    await expectHiddenOrMissing(page.getByTestId('urai-camera-reset'), 'home camera reset');
+    await expectNoText(page.locator('body'), 'Your inner weather');
+    await expectNoText(page.locator('body'), 'Begin Ascent');
+    visualReport.screenshots.push(await screenshot(page, '01-home-sky-only-desktop'));
 
-    await page.getByTestId('urai-sky-click-target').click({ position: { x: 700, y: 500 } });
+    await stage.click({ position: { x: 700, y: 500 } });
     await expectAttr(stage, 'data-scene-mode', 'ascent');
     await expectVisible(page.getByTestId('urai-ascent-scene'), 'ascent scene');
     visualReport.screenshots.push(await screenshot(page, '02-ascent-desktop'));

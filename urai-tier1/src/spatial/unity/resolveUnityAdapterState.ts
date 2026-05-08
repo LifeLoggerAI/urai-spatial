@@ -1,54 +1,76 @@
 export type UnityAdapterState = {
   id: string;
   title: string;
+  summary: string;
   sceneProfile: string;
   adapterMode: string;
   readiness: number;
-  ready: boolean;
   rootAnchor: string;
   payload: string[];
-  summary: string;
+  label: string;
+  ready: boolean;
 };
 
-function normalizedMode(mode: string | null | undefined) {
-  return (mode ?? 'HOME').toUpperCase();
+const DEFAULT_SCENE_ID = "urai-spatial-demo-anchor";
+
+function normalizeSceneId(id: string | null | undefined) {
+  const normalized = id?.trim();
+  return normalized && normalized.length > 0 ? normalized : DEFAULT_SCENE_ID;
 }
 
-export function resolveUnityAdapterState(ready: boolean): Pick<UnityAdapterState, 'title' | 'ready'> {
-  return {
-    title: 'Unity Adapter',
-    ready,
-  };
+function normalizeMode(mode: string | null | undefined) {
+  const normalized = mode?.trim().toLowerCase();
+  return normalized && normalized.length > 0 ? normalized : "preview";
 }
 
 export function resolveUnityAdapterStateById(
   id: string | null | undefined,
-  mode: string | null | undefined,
-): UnityAdapterState | undefined {
-  const sceneId = id?.trim();
-  if (!sceneId) return undefined;
+  mode: string | null | undefined
+): UnityAdapterState {
+  const sceneId = normalizeSceneId(id);
+  const adapterMode = normalizeMode(mode);
 
-  const sceneMode = normalizedMode(mode);
-  const adapterMode = sceneMode === 'REPLAY' ? 'immersive-replay' : sceneMode === 'FOCUS' ? 'focused-memory' : 'spatial-preview';
-  const readiness = sceneMode === 'REPLAY' || sceneMode === 'FOCUS' ? 1 : 0.72;
+  const isReplay = adapterMode === "replay";
+  const isFocus = adapterMode === "focus";
 
   return {
     id: sceneId,
-    title: sceneMode === 'REPLAY' ? 'Replay bridge ready' : 'Unity bridge ready',
-    sceneProfile: sceneMode,
+    title: isReplay
+      ? "Replay bridge ready"
+      : isFocus
+        ? "Focus bridge ready"
+        : "URAI Spatial Unity Adapter",
+    summary: isReplay
+      ? "The selected memory has enough scene context to hand off replay anchors to a Unity client."
+      : isFocus
+        ? "The selected memory can be exported as a focused spatial manifest for Unity integration."
+        : "Exports the selected spatial scene anchor and tier-lock metadata for downstream XR review.",
+    sceneProfile: isReplay
+      ? "memory-replay"
+      : isFocus
+        ? "memory-focus"
+        : "spatial-preview",
     adapterMode,
-    readiness,
-    ready: readiness >= 1,
-    rootAnchor: `urai://${sceneMode.toLowerCase()}/${encodeURIComponent(sceneId)}`,
+    readiness: isReplay || isFocus ? 1 : 0.72,
+    rootAnchor: `urai://spatial/${encodeURIComponent(sceneId)}`,
     payload: [
-      'scene-profile',
-      'selected-star',
-      'camera-anchor',
-      'tier-boundary',
-      'replay-signal',
+      "scene-anchor",
+      "camera-path",
+      "spatial-tier-lock",
+      "selected-star",
+      "replay-signal",
     ],
-    summary: sceneMode === 'REPLAY'
-      ? 'The selected memory has enough scene context to hand off replay anchors to a Unity client.'
-      : 'The selected memory can be exported as a stable spatial manifest for Unity integration.',
+    label: "Unity Adapter",
+    ready: isReplay || isFocus,
+  };
+}
+
+export function resolveUnityAdapterState(ready: boolean): UnityAdapterState {
+  const state = resolveUnityAdapterStateById(DEFAULT_SCENE_ID, "preview");
+
+  return {
+    ...state,
+    readiness: ready ? 1 : 0,
+    ready,
   };
 }

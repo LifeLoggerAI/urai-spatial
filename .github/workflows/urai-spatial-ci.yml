@@ -1,6 +1,12 @@
 name: URAI Spatial CI
 
 on:
+  workflow_dispatch:
+    inputs:
+      verification_ref:
+        description: "Git ref to verify"
+        required: false
+        default: "fix/spatial-release-gate-guards"
   pull_request:
     paths:
       - "**"
@@ -14,6 +20,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.inputs.verification_ref || github.ref }}
       - name: Setup pnpm
         uses: pnpm/action-setup@v4
       - name: Setup Node
@@ -22,7 +30,11 @@ jobs:
           node-version: 20
           cache: pnpm
       - name: Install
-        run: pnpm install --no-frozen-lockfile
+        run: pnpm install --frozen-lockfile
+      - name: Source integrity
+        run: pnpm check:source-integrity
+      - name: Production route exposure
+        run: pnpm check:production-routes
       - name: Preflight
         run: pnpm preflight
       - name: Runtime authority
@@ -48,6 +60,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.inputs.verification_ref || github.ref }}
       - name: Setup pnpm
         uses: pnpm/action-setup@v4
       - name: Setup Node
@@ -56,7 +70,7 @@ jobs:
           node-version: 20
           cache: pnpm
       - name: Install
-        run: pnpm install --no-frozen-lockfile
+        run: pnpm install --frozen-lockfile
       - name: Run LifeMap targeted tests
         run: pnpm --filter urai-tier1 test:lifemap
 
@@ -66,6 +80,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.inputs.verification_ref || github.ref }}
       - name: Setup pnpm
         uses: pnpm/action-setup@v4
       - name: Setup Node
@@ -74,7 +90,11 @@ jobs:
           node-version: 20
           cache: pnpm
       - name: Install
-        run: pnpm install --no-frozen-lockfile
+        run: pnpm install --frozen-lockfile
+      - name: Source integrity
+        run: pnpm check:source-integrity
+      - name: Production route exposure
+        run: pnpm check:production-routes
       - name: Typecheck
         run: pnpm --filter urai-tier1 typecheck
       - name: Tier lock verifier
@@ -106,6 +126,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.inputs.verification_ref || github.ref }}
       - name: Setup pnpm
         uses: pnpm/action-setup@v4
       - name: Setup Node
@@ -114,9 +136,9 @@ jobs:
           node-version: 20
           cache: pnpm
       - name: Install
-        run: pnpm install --no-frozen-lockfile
+        run: pnpm install --frozen-lockfile
       - name: Install Playwright browser and Linux dependencies
-        run: pnpm playwright:install-deps && pnpm playwright:install
+        run: pnpm playwright:ensure
       - name: Run spatial E2E lock
         run: pnpm test:e2e
       - name: Upload spatial lock artifacts
@@ -133,6 +155,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.inputs.verification_ref || github.ref }}
       - name: Setup pnpm
         uses: pnpm/action-setup@v4
       - name: Setup Node
@@ -141,7 +165,7 @@ jobs:
           node-version: 20
           cache: pnpm
       - name: Install
-        run: pnpm install --no-frozen-lockfile
+        run: pnpm install --frozen-lockfile
       - name: Build functions
         run: pnpm --filter urai-functions build
       - name: Test functions
@@ -153,6 +177,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.inputs.verification_ref || github.ref }}
       - name: Setup pnpm
         uses: pnpm/action-setup@v4
       - name: Setup Node
@@ -161,7 +187,7 @@ jobs:
           node-version: 20
           cache: pnpm
       - name: Install
-        run: pnpm install --no-frozen-lockfile
+        run: pnpm install --frozen-lockfile
       - name: Validate Firebase JSON
         run: |
           node -e "JSON.parse(require('fs').readFileSync('firebase.json', 'utf8'))"
@@ -182,6 +208,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.inputs.verification_ref || github.ref }}
       - name: Setup pnpm
         uses: pnpm/action-setup@v4
       - name: Setup Node
@@ -190,7 +218,7 @@ jobs:
           node-version: 20
           cache: pnpm
       - name: Install
-        run: pnpm install --no-frozen-lockfile
+        run: pnpm install --frozen-lockfile
       - name: Preflight
         run: pnpm preflight
       - name: Keep PR locked until signoffs complete

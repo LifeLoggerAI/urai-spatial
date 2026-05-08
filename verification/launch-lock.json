@@ -1,16 +1,25 @@
 {
   "name": "URAI Spatial Launch Verification Lock",
-  "version": 1,
+  "version": 2,
   "status": "locked_until_verified",
   "requiredChecks": [
+    "source-integrity",
+    "production-route-exposure",
     "workspace-install",
+    "runtime-authority",
+    "home-invariant",
+    "tier1-canon-lock",
     "tier1-typecheck",
     "tier1-build",
     "tier1-tests",
+    "lifemap-targeted-tests",
     "functions-build",
+    "functions-tests",
     "spatial-lock-test",
     "firebase-config-smoke",
+    "firebase-tier1-boundary-lock",
     "preflight",
+    "verification-lock-preflight",
     "preview-deploy",
     "production-smoke"
   ],
@@ -33,6 +42,14 @@
     "domain_dns_ssl",
     "product_launch"
   ],
-  "unlockRule": "Do not mark the PR ready, merge, or production deploy until all required checks pass and signoffs.md has no Status: PENDING entries.",
-  "lastUpdated": "2026-05-04"
+  "manualVerificationCommand": "pnpm verify:release:full",
+  "manualWorkflow": {
+    "workflow": ".github/workflows/urai-spatial-ci.yml",
+    "event": "workflow_dispatch",
+    "input": {
+      "verification_ref": "fix/spatial-release-gate-guards"
+    }
+  },
+  "unlockRule": "Do not mark the PR ready, merge, update URAI_SPATIAL_TIER_LOCK_AUDIT.md to LOCKED, or production deploy until all required checks pass, workflow/manual evidence is attached to the PR, and signoffs.md has no Status: PENDING entries.",
+  "lastUpdated": "2026-05-08"
 }
