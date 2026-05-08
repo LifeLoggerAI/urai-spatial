@@ -1,7 +1,9 @@
 "use client";
 
-import React, { Suspense } from "react";
+import React, { Suspense, useCallback } from "react";
+import { useRouter } from "next/navigation";
 import HomeScene from "@/scene/HomeScene";
+import MirrorRouteLayer from "@/scene/MirrorRouteLayer";
 import { SpatialShell } from "./SpatialShell";
 
 export type TierOneExperienceMode = "home" | "ascent" | "life-map" | "demo" | "replay" | "focus" | "mirror";
@@ -61,11 +63,15 @@ function shellModeFor(mode: TierOneExperienceMode) {
 
 export function TierOneExperience({ mode, title, eyebrow, description, cta }: Props) {
   const copy = fallbackCopy[mode];
+  const router = useRouter();
+  const openLifeMap = useCallback(() => router.push("/life-map", { scroll: false }), [router]);
+  const openHome = useCallback(() => router.push("/", { scroll: false }), [router]);
 
   return (
     <SpatialShell mode={shellModeFor(mode)}>
       <Suspense fallback={<div className="tier-one-loading">Loading URAI Spatial...</div>}>
         <HomeScene sceneMode={mode} />
+        {mode === "mirror" ? <MirrorRouteLayer onLifeMap={openLifeMap} onHome={openHome} /> : null}
       </Suspense>
 
       <aside className="tier-one-route-card" data-route-mode={mode}>
