@@ -11,6 +11,16 @@ const apiRoutes = [
   ['/api/orb-companion', { method: 'POST', body: JSON.stringify({ message: '' }) }],
 ]
 
+const protectedApiRoutes = [
+  ['/api/entitlement', { method: 'GET', expectedStatus: 401 }],
+  ['/api/stripe/create-checkout-session', { method: 'POST', expectedStatus: 401, body: JSON.stringify({ planId: 'pro' }) }],
+]
+
+const webhookRoutes = [
+  ['/api/stripe/webhook', { method: 'POST', expectedStatus: 400, body: '{}' }],
+  ['/api/stripe/webhook-v2', { method: 'POST', expectedStatus: 400, body: '{}' }],
+]
+
 const forbidden = ['TODO', 'lorem ipsum', 'coming soon', 'undefined', '[object Object]']
 
 function assert(condition, message) {
@@ -44,6 +54,16 @@ async function checkJson(route, init) {
   if (route.includes('orb-companion')) assert(payload.mode, `${route} missing mode`)
 }
 
+async function checkExpectedStatus(route, init) {
+  const headers = init.method === 'POST' ? { 'content-type': 'application/json' } : undefined
+  const response = await fetch(`${host}${route}`, { ...init, headers })
+  const text = await response.text()
+  assert(response.status === init.expectedStatus, `${route} returned ${response.status}, expected ${init.expectedStatus}: ${text.slice(0, 120)}`)
+  assert(!text.includes('stack') && !text.includes('PRIVATE_KEY'), `${route} returned unsafe debug output`)
+}
+
 for (const route of htmlRoutes) await checkHtml(route)
 for (const [route, init] of apiRoutes) await checkJson(route, init)
-console.log(`URAI Spatial smoke passed for ${htmlRoutes.length} HTML routes and ${apiRoutes.length} API checks at ${host}`)
+for (const [route, init] of protectedApiRoutes) await checkExpectedStatus(route, init)
+for (const [route, init] of webhookRoutes) await checkExpectedStatus(route, init)
+console.log(`URAI Spatial smoke passed for ${htmlRoutes.length} HTML routes, ${apiRoutes.length} public API checks, ${protectedApiRoutes.length} protected API checks, and ${webhookRoutes.length} webhook checks at ${host}`)

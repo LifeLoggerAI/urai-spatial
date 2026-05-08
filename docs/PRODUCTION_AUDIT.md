@@ -1,53 +1,50 @@
 # URAI Spatial Production Audit
 
-Date: 2026-05-05
+Date: 2026-05-07
 Scope: Verification and correction pass only. No new product features.
 
 ## Summary
 
 Status: CONDITIONAL PASS
 
-The core SaaS pieces are present in the repository: Firebase auth UI, secure entitlement API, Stripe checkout, Stripe webhook, Firestore entitlement persistence, spatial page shell, and gated report panel. The repository is close to launch readiness, but production launch still depends on an external deployment smoke test with real Firebase, Stripe, and hosting environment variables.
+The core SaaS server pieces now exist in the deployed `urai-tier1` Next.js app: secure entitlement API, Stripe checkout, Stripe webhook, Stripe webhook-v2 alias, Firestore entitlement persistence, and package dependencies required by those routes. Production launch still depends on a deployment smoke test with real Firebase, Stripe, and hosting environment variables.
 
 ## Verified / Corrected in this pass
 
-### PASS: Root dependencies updated
+### PASS: Runtime app root confirmed
 
-Root `package.json` now includes:
+Root scripts build and run `urai-tier1` with `pnpm --filter urai-tier1 ...`, so production-facing Next.js routes must live under `urai-tier1/src/app` rather than root `src/app`.
+
+### PASS: Tier1 dependencies updated
+
+`urai-tier1/package.json` now includes:
 
 - `firebase`
 - `firebase-admin`
 - `stripe`
+- `@types/node`
 
-This addresses previous missing import/runtime risks for Firebase client, Firebase Admin, and Stripe routes.
+This addresses missing import/runtime risks for Firebase client, Firebase Admin, Stripe routes, and Node globals in server route typechecking.
 
-### PASS: Checkout identity binding hardened
+### PASS: Checkout identity binding hardened in deployed app
 
-`src/app/api/stripe/create-checkout-session/route.ts` now verifies a Firebase ID token server-side and derives the user ID from the decoded token. It no longer trusts a client-provided user ID for Stripe metadata.
+`urai-tier1/src/app/api/stripe/create-checkout-session/route.ts` verifies a Firebase ID token server-side and derives the user ID from the decoded token. It does not trust a client-provided user ID for Stripe metadata.
 
-### PASS: Entitlement API hardened
+### PASS: Entitlement API hardened in deployed app
 
-`src/app/api/entitlement/route.ts` requires an Authorization bearer token, verifies it with Firebase Admin, and returns only the authenticated user's entitlement.
+`urai-tier1/src/app/api/entitlement/route.ts` requires an Authorization bearer token, verifies it with Firebase Admin, and returns only the authenticated user's entitlement.
 
-### PASS: Stripe plan gate restored
+### PASS: Stripe webhook persistence exists in deployed app
 
-`src/components/spatial/stripePlanGate.ts` exports the plan config, entitlement type, `canAccessPlan`, lock messaging, local free fallback, and authenticated checkout helper.
+`urai-tier1/src/app/api/stripe/webhook/route.ts` verifies Stripe signatures, validates supported plan metadata, resolves user/customer identity, and writes Firestore entitlements through `urai-tier1/src/lib/entitlementStore.ts`.
 
-### PASS: Entitlement hook uses ID token
+### PASS: Documented webhook-v2 endpoint exists
 
-`src/hooks/useUserEntitlement.ts` now listens for Firebase auth state, fetches a Firebase ID token, calls `/api/entitlement` with `Authorization: Bearer <token>`, and exposes loading/error/anonymous/authenticated states.
+`urai-tier1/src/app/api/stripe/webhook-v2/route.ts` re-exports the hardened webhook handler, so the documented endpoint `/api/stripe/webhook-v2` resolves in the deployed app.
 
-### PASS: Report panel is gated
+### PASS: Root stale webhook-v2 route neutralized
 
-`src/components/spatial/InsightReportPanel.tsx` now blocks paid report rendering/export unless `canAccessPlan(entitlement, planId)` passes.
-
-### PASS: Auth UI exists
-
-`src/components/spatial/AuthPanel.tsx` provides email/password sign-up, sign-in, sign-out, and entitlement refresh after authentication.
-
-### PASS: Spatial shell exists
-
-`src/app/spatial/page.tsx` mounts the auth panel, Life Map scene, and report panels.
+Root `src/app/api/stripe/webhook-v2/route.ts` now delegates to the hardened root webhook implementation instead of retaining older unsafe defaults.
 
 ## Remaining external launch requirements
 
@@ -66,17 +63,17 @@ These cannot be completed inside the repository alone:
 
 ## Known risks to verify during deploy
 
-### RISK: App package placement
+### RISK: Lockfile must be regenerated
 
-The repository appears to use a monorepo/script structure (`pnpm --filter urai-tier1 ...`). The files added in `src/...` assume the root is the Next.js app root. If the true runtime app root is inside a package such as `urai-tier1`, these files may need to be moved under that package.
+`urai-tier1/package.json` was updated to include server billing dependencies. `pnpm-lock.yaml` must be regenerated with `pnpm install` before final merge/release if the current lockfile importer section is stale.
 
-### RISK: TypeScript/build not executed in this pass
+### RISK: TypeScript/build not executed in this connector pass
 
 This audit did not run a live `pnpm build` or `pnpm typecheck` against the repository. Final production readiness requires CI or local build verification.
 
-### RISK: Duplicate webhook route
+### RISK: Root `src` SaaS duplicate remains
 
-The production endpoint should be `/api/stripe/webhook-v2`. If an older `/api/stripe/webhook` route remains, do not configure Stripe to point to it. Prefer deleting or redirecting the old route in a future cleanup pass after confirming file SHA.
+Root `src/...` contains an older parallel SaaS surface. Runtime scripts currently build `urai-tier1`; future cleanup should either delete the root duplicate or explicitly mark it as non-runtime to avoid confusion.
 
 ### RISK: Service account env formatting
 
@@ -90,10 +87,10 @@ Life Map insight history is still stored in localStorage. This is acceptable for
 
 Production launch should proceed only after:
 
-- [ ] `pnpm install` succeeds.
-- [ ] `pnpm build` succeeds.
+- [ ] `pnpm install` succeeds and updates/verifies `pnpm-lock.yaml`.
+- [ ] `pnpm --filter urai-tier1 typecheck` succeeds.
+- [ ] `pnpm --filter urai-tier1 build` succeeds.
 - [ ] `/spatial` renders in the deployed app.
-- [ ] Email/password signup works.
 - [ ] `/api/entitlement` returns 401 without token.
 - [ ] `/api/entitlement` returns the authenticated user's entitlement with token.
 - [ ] Stripe checkout requires signed-in user.
@@ -105,4 +102,4 @@ Production launch should proceed only after:
 
 ## Final decision
 
-Conditional pass for repository-side implementation. Not yet a verified production launch until build, deployment, Stripe, Firebase, and entitlement smoke tests pass.
+Conditional pass for repository-side implementation. Not yet a verified production launch until install, typecheck, build, deployment, Stripe, Firebase, and entitlement smoke tests pass.

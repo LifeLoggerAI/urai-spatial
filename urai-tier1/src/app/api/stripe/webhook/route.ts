@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import type Stripe from 'stripe';
-import type { InsightPlanId } from '@/components/spatial/insightMonetizationEngine';
+import type { InsightPlanId } from '@/lib/entitlementStore';
 import {
   defaultEntitlement,
   findEntitlementByStripeCustomer,
@@ -148,7 +148,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ received: true, skipped: 'missing-plan' });
   }
 
-  const entitlement = {
+  await upsertEntitlement({
     ...defaultEntitlement(resolved.userId),
     userId: resolved.userId,
     planId: resolved.planId,
@@ -156,9 +156,7 @@ export async function POST(request: Request) {
     stripeSubscriptionId: resolved.subscriptionId,
     subscriptionStatus: resolved.subscriptionStatus,
     updatedAt: Date.now(),
-  };
-
-  await upsertEntitlement(entitlement);
+  });
 
   return NextResponse.json({ received: true });
 }

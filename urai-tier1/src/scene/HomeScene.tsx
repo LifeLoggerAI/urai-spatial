@@ -9,6 +9,9 @@ import Sky from './Sky'
 import Atmosphere from './Atmosphere'
 import AscentPortal from './AscentPortal'
 import SpatialVisualOverlay from './SpatialVisualOverlayTier5'
+import RitualPlatform from './RitualPlatform'
+import Lanterns from './Lanterns'
+import CelestialSanctuary from './CelestialSanctuary'
 import ManifestRenderBoundary from '../spatial/assets/ManifestRenderBoundary'
 import { useManifest } from '../spatial/assets/useManifest'
 import { SpatialAssetManifest } from '../spatial/assets/manifestTypes'
@@ -39,7 +42,15 @@ function gatedFeatureForMode(mode: SceneMode): SpatialFeatureId | null {
   return null
 }
 
-function orbStateForContext({ context, hasSelectedManifest, sceneMode }: { context: NarratorContext; hasSelectedManifest: boolean; sceneMode: SceneMode }): OrbState {
+function orbStateForContext({
+  context,
+  hasSelectedManifest,
+  sceneMode,
+}: {
+  context: NarratorContext
+  hasSelectedManifest: boolean
+  sceneMode: SceneMode
+}): OrbState {
   if (hasSelectedManifest) return 'memoryBloom'
   if (sceneMode === 'focus') return 'listening'
   if (sceneMode === 'replay') return 'ritual'
@@ -57,8 +68,32 @@ function manifestFocusHref(manifestId: string | null) {
   return manifestId ? `/focus?manifestId=${encodeURIComponent(manifestId)}` : `/focus?manifestId=${encodeURIComponent(DEMO_FOCUS_MANIFEST_ID)}`
 }
 
-function ModeGuidance({ mode, onEnter, onUnwind, reducedMotion }: { mode: SceneMode; onEnter: () => void; onUnwind: () => void; reducedMotion: boolean }) {
-  if (mode === 'home') return null
+function ModeGuidance({
+  mode,
+  onEnter,
+  onUnwind,
+  reducedMotion,
+}: {
+  mode: SceneMode
+  onEnter: () => void
+  onUnwind: () => void
+  reducedMotion: boolean
+}) {
+  if (mode === 'home') {
+    return (
+      <div
+        className="urai-spatial-guidance urai-spatial-guidance--home"
+        data-testid="urai-sky-guidance"
+        aria-label="Home sanctuary guidance"
+      >
+        <span className="urai-spatial-guidance__pulse" aria-hidden="true" />
+        <span>Enter the sanctuary. Begin ascent when ready.</span>
+        <button type="button" onClick={onEnter} aria-label="Begin ascent to your Life Map">
+          Begin Ascent
+        </button>
+      </div>
+    )
+  }
 
   if (mode === 'ascent') {
     return (
@@ -108,7 +143,19 @@ function CameraResetButton({ onReset }: { onReset: () => void }) {
   )
 }
 
-function FocusActionPanel({ morphology, mode, onReplay, onUnwind, launching }: { morphology: MemoryMorphology; mode: SceneMode; onReplay: () => void; onUnwind: () => void; launching: boolean }) {
+function FocusActionPanel({
+  morphology,
+  mode,
+  onReplay,
+  onUnwind,
+  launching,
+}: {
+  morphology: MemoryMorphology
+  mode: SceneMode
+  onReplay: () => void
+  onUnwind: () => void
+  launching: boolean
+}) {
   const isReplay = mode === 'replay'
 
   return (
@@ -117,7 +164,11 @@ function FocusActionPanel({ morphology, mode, onReplay, onUnwind, launching }: {
       <h2>{isReplay ? 'Memory is reconstructing as atmosphere.' : morphology.title}</h2>
       <p>{isReplay ? morphology.poeticLine : 'This memory star is generated from its emotional signal profile. Begin replay when the field feels stable.'}</p>
       <div className="urai-focus-action-panel__actions">
-        {!isReplay ? <button type="button" className="urai-focus-action-panel__primary" onClick={onReplay} disabled={launching}>{launching ? 'Opening Memory...' : 'Start Replay'}</button> : null}
+        {!isReplay ? (
+          <button type="button" className="urai-focus-action-panel__primary" onClick={onReplay} disabled={launching}>
+            {launching ? 'Opening Memory...' : 'Start Replay'}
+          </button>
+        ) : null}
         <button type="button" onClick={onUnwind}>{isReplay ? 'Unwind to Focus' : 'Back to Life Map'}</button>
       </div>
     </section>
@@ -131,7 +182,11 @@ function FocusEmptyPanel({ mode, loading, onLifeMap }: { mode: SceneMode; loadin
     <section className="urai-focus-action-panel urai-focus-action-panel--empty" data-testid="urai-focus-empty-panel" aria-label={isReplay ? 'Replay preparing' : 'Focus preparing'}>
       <div className="urai-focus-action-panel__eyebrow">{isReplay ? 'Replay Preparing' : 'Focus Preparing'}</div>
       <h2>{loading ? 'Opening memory star...' : 'Demo memory star ready'}</h2>
-      <p>{loading ? 'URAI is opening the selected spatial memory. If private data is unavailable, the demo star will remain visible.' : 'No private memory data was required. Return to the Life Map to choose another visible star.'}</p>
+      <p>
+        {loading
+          ? 'URAI is opening the selected spatial memory. If private data is unavailable, the demo star will remain visible.'
+          : 'No private memory data was required. Return to the Life Map to choose another visible star.'}
+      </p>
       <div className="urai-focus-action-panel__actions">
         <button type="button" className="urai-focus-action-panel__primary" onClick={onLifeMap}>Open Life Map</button>
       </div>
@@ -139,9 +194,27 @@ function FocusEmptyPanel({ mode, loading, onLifeMap }: { mode: SceneMode; loadin
   )
 }
 
-function TierGatePanel({ featureId, loading, reasons, requiredTier, fallbackFeatureId, onPreview }: { featureId: SpatialFeatureId; loading: boolean; reasons: string[]; requiredTier?: string; fallbackFeatureId?: SpatialFeatureId; onPreview: () => void }) {
+function TierGatePanel({
+  featureId,
+  loading,
+  reasons,
+  requiredTier,
+  fallbackFeatureId,
+  onPreview,
+}: {
+  featureId: SpatialFeatureId
+  loading: boolean
+  reasons: string[]
+  requiredTier?: string
+  fallbackFeatureId?: SpatialFeatureId
+  onPreview: () => void
+}) {
   const title = loading ? 'Checking spatial access...' : 'Personal Life Map is locked'
-  const body = loading ? 'URAI is checking your tier, consent, and feature flags before opening this personal spatial layer.' : `This feature (${featureId}) requires ${requiredTier ?? 'a higher tier'} or additional consent. Fallback: ${fallbackFeatureId ?? 'spatial.starfield.preview'}. ${reasons.length ? `Reason: ${reasons.join(', ')}.` : ''}`
+  const body = loading
+    ? 'URAI is checking your tier, consent, and feature flags before opening this personal spatial layer.'
+    : `This feature (${featureId}) requires ${requiredTier ?? 'a higher tier'} or additional consent. Fallback: ${fallbackFeatureId ?? 'spatial.starfield.preview'}. ${
+        reasons.length ? `Reason: ${reasons.join(', ')}.` : ''
+      }`
 
   return (
     <section className="urai-focus-action-panel urai-focus-action-panel--locked" data-testid="urai-tier-gate-panel" aria-label="Spatial feature locked">
@@ -180,9 +253,32 @@ export default function HomeScene({ sceneMode = 'home' }: { sceneMode?: SceneMod
   const [replayLaunching, setReplayLaunching] = useState(false)
   const activeManifest = gateBlocksMode ? null : selectedManifest ?? manifest
   const activeManifestId = selectedManifest?.manifestId ?? activeManifest?.manifestId ?? effectiveManifestId
-  const memoryMorphology = useMemo(() => buildMemoryMorphology(activeManifest, sceneMode === 'replay' ? 'focus' : 'recovery'), [activeManifest, sceneMode])
-  const orbState = useMemo(() => orbStateForContext({ context: narratorContext, hasSelectedManifest: Boolean(activeManifest) || Boolean(selectedManifest) || sceneMode === 'focus' || sceneMode === 'replay', sceneMode }), [activeManifest, narratorContext, selectedManifest, sceneMode])
-  const cameraPath = useMemo(() => cameraPathForState({ hasFocus: Boolean(selectedPosition) || sceneMode === 'focus' || sceneMode === 'replay' || isAscentMode, isNarrating: Boolean(activeManifest) || sceneMode !== 'home', orbState, sceneMode }), [activeManifest, orbState, selectedPosition, sceneMode, isAscentMode])
+
+  const memoryMorphology = useMemo(
+    () => buildMemoryMorphology(activeManifest, sceneMode === 'replay' ? 'focus' : 'recovery'),
+    [activeManifest, sceneMode],
+  )
+
+  const orbState = useMemo(
+    () =>
+      orbStateForContext({
+        context: narratorContext,
+        hasSelectedManifest: Boolean(activeManifest) || Boolean(selectedManifest) || sceneMode === 'focus' || sceneMode === 'replay',
+        sceneMode,
+      }),
+    [activeManifest, narratorContext, selectedManifest, sceneMode],
+  )
+
+  const cameraPath = useMemo(
+    () =>
+      cameraPathForState({
+        hasFocus: Boolean(selectedPosition) || sceneMode === 'focus' || sceneMode === 'replay' || isAscentMode,
+        isNarrating: Boolean(activeManifest) || sceneMode !== 'home',
+        orbState,
+        sceneMode,
+      }),
+    [activeManifest, orbState, selectedPosition, sceneMode, isAscentMode],
+  )
 
   const resetCamera = useCallback(() => {
     setCameraResetSignal((value) => value + 1)
@@ -198,6 +294,7 @@ export default function HomeScene({ sceneMode = 'home' }: { sceneMode?: SceneMod
 
   const unwind = useCallback(() => {
     setReplayLaunching(false)
+
     if (selectedManifest) {
       setSelectedManifest(null)
       setSelectedPosition(null)
@@ -205,24 +302,30 @@ export default function HomeScene({ sceneMode = 'home' }: { sceneMode?: SceneMod
       resetCamera()
       return
     }
+
     if (sceneMode === 'replay') {
       router.push(manifestFocusHref(activeManifestId))
       return
     }
+
     if (sceneMode === 'focus') {
       router.push('/life-map')
       return
     }
+
     if (sceneMode === 'life-map' || sceneMode === 'ascent') router.push('/')
   }, [activeManifestId, resetCamera, router, sceneMode, selectedManifest])
 
   const startReplay = useCallback(() => {
     if (replayLaunching) return
+
     setReplayLaunching(true)
+
     if (reducedMotion) {
       router.push(manifestReplayHref(activeManifestId))
       return
     }
+
     window.setTimeout(() => router.push(manifestReplayHref(activeManifestId)), REPLAY_LAUNCH_DELAY_MS)
   }, [activeManifestId, reducedMotion, replayLaunching, router])
 
@@ -236,12 +339,14 @@ export default function HomeScene({ sceneMode = 'home' }: { sceneMode?: SceneMod
 
   useEffect(() => {
     if (!isAscentMode || reducedMotion) return
+
     const timeout = window.setTimeout(() => router.push('/life-map'), ASCENT_DURATION_MS)
     return () => window.clearTimeout(timeout)
   }, [isAscentMode, reducedMotion, router])
 
   useEffect(() => {
     setReplayLaunching(false)
+
     if (selectedManifest) setNarratorContext('return')
     else if (sceneMode === 'focus') setNarratorContext('arrival')
     else if (sceneMode === 'replay') setNarratorContext('return')
@@ -255,6 +360,7 @@ export default function HomeScene({ sceneMode = 'home' }: { sceneMode?: SceneMod
       if (event.key === 'Escape') unwind()
       if (event.key.toLowerCase() === 'r' && !isHomeMode) resetCamera()
     }
+
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
   }, [isHomeMode, resetCamera, unwind])
@@ -264,32 +370,76 @@ export default function HomeScene({ sceneMode = 'home' }: { sceneMode?: SceneMod
   const showMemoryArtifact = !gateBlocksMode && (sceneMode === 'focus' || sceneMode === 'replay')
 
   return (
-    <div className="urai-scene-stage" data-testid="urai-scene-stage" data-scene-mode={sceneMode} data-reduced-motion={reducedMotion ? 'true' : 'false'} data-replay-launching={replayLaunching ? 'true' : 'false'} onClick={isHomeMode ? enterLifeMap : undefined}>
+    <div
+      className="urai-scene-stage"
+      data-testid="urai-scene-stage"
+      data-scene-mode={sceneMode}
+      data-reduced-motion={reducedMotion ? 'true' : 'false'}
+      data-replay-launching={replayLaunching ? 'true' : 'false'}
+      onClick={isHomeMode ? enterLifeMap : undefined}
+    >
       <div className="urai-scene-stage__fallback" aria-hidden="true" />
       <SpatialVisualOverlay mode={sceneMode} />
+
       <Canvas shadows dpr={[1, 1.75]} gl={{ antialias: true, alpha: true }} onPointerMissed={enterLifeMap}>
         <PerspectiveCamera makeDefault position={[0, 2.85, 8.35]} fov={48} />
         <CinematicCameraRig active focusPosition={selectedPosition} path={cameraPath} reducedMotion={reducedMotion} resetSignal={cameraResetSignal} />
-        <ambientLight intensity={isHomeMode ? 0.72 : isAscentMode ? 0.5 : 0.28} color="#b8d7ff" />
-        <hemisphereLight args={['#d3e7ff', '#12071e', isHomeMode ? 1.45 : 0.95]} />
-        <directionalLight position={[-5.4, 7.4, 3.8]} intensity={isHomeMode ? 2.45 : 1.85} color="#d7e6ff" castShadow shadow-mapSize-width={2048} shadow-mapSize-height={2048} />
-        <pointLight position={[0.7, 0.55, -1.05]} intensity={isHomeMode ? 2.8 : 2.05} color="#c9b0ff" distance={7.2} />
-        <pointLight position={[-3.2, 2.35, -3.8]} intensity={isHomeMode ? 1.35 : 0.9} color="#62e5ff" distance={11} />
+
+        <ambientLight intensity={isHomeMode ? 0.82 : isAscentMode ? 0.5 : 0.28} color="#b8d7ff" />
+        <hemisphereLight args={['#d3e7ff', '#12071e', isHomeMode ? 1.58 : 0.95]} />
+        <directionalLight
+          position={[-5.4, 7.4, 3.8]}
+          intensity={isHomeMode ? 2.65 : 1.85}
+          color="#d7e6ff"
+          castShadow
+          shadow-mapSize-width={2048}
+          shadow-mapSize-height={2048}
+        />
+        <pointLight position={[0.7, 0.55, -1.05]} intensity={isHomeMode ? 3.15 : 2.05} color="#c9b0ff" distance={7.8} />
+        <pointLight position={[-3.2, 2.35, -3.8]} intensity={isHomeMode ? 1.55 : 0.9} color="#62e5ff" distance={11} />
+        <pointLight position={[3.2, 1.1, -3.2]} intensity={isHomeMode ? 0.82 : 0.25} color="#ffbf7a" distance={8.4} />
+
         <Atmosphere />
         <Sky />
+
+        {isHomeMode ? <CelestialSanctuary reducedMotion={reducedMotion} /> : null}
         {showHomeWorld ? <Ground /> : null}
+        {isHomeMode ? <RitualPlatform reducedMotion={reducedMotion} /> : null}
+        {isHomeMode ? <Lanterns reducedMotion={reducedMotion} /> : null}
         {showAscentPortal ? <AscentPortal /> : null}
         {showOrb ? <Orb state={orbState} /> : null}
-        {showConstellation ? <ConstellationLayer enabled selectedManifestId={selectedManifest?.manifestId ?? null} onSelect={handleSelect} /> : activeManifest ? <ManifestRenderBoundary manifest={activeManifest} /> : null}
+
+        {showConstellation ? (
+          <ConstellationLayer enabled selectedManifestId={selectedManifest?.manifestId ?? null} onSelect={handleSelect} />
+        ) : activeManifest ? (
+          <ManifestRenderBoundary manifest={activeManifest} />
+        ) : null}
+
         <CinematicParticles active reducedMotion={reducedMotion} />
-        <CinematicPostProcessing active={Boolean(activeManifest) || showConstellation || isAscentMode} reducedMotion={reducedMotion} />
+        <CinematicPostProcessing active={Boolean(activeManifest) || showConstellation || isAscentMode || isHomeMode} reducedMotion={reducedMotion} />
         {!isHomeMode ? <NarratorVoice manifest={activeManifest} context={narratorContext} /> : null}
       </Canvas>
+
       {showMemoryArtifact ? <MemoryStarArtifact morphology={memoryMorphology} replay={sceneMode === 'replay' || replayLaunching} /> : null}
       {!isHomeMode ? <CameraResetButton onReset={resetCamera} /> : null}
+
       <ModeGuidance mode={sceneMode} onEnter={enterLifeMap} onUnwind={unwind} reducedMotion={reducedMotion} />
-      {gateBlocksMode && gatedFeatureId ? <TierGatePanel featureId={gatedFeatureId} loading={gate.loading} reasons={gate.reasons} requiredTier={gate.requiredTier} fallbackFeatureId={gate.fallbackFeatureId} onPreview={openPreviewMap} /> : null}
-      {showFocusPanel && activeManifest ? <FocusActionPanel morphology={memoryMorphology} mode={sceneMode} onReplay={startReplay} onUnwind={unwind} launching={replayLaunching} /> : null}
+
+      {gateBlocksMode && gatedFeatureId ? (
+        <TierGatePanel
+          featureId={gatedFeatureId}
+          loading={gate.loading}
+          reasons={gate.reasons}
+          requiredTier={gate.requiredTier}
+          fallbackFeatureId={gate.fallbackFeatureId}
+          onPreview={openPreviewMap}
+        />
+      ) : null}
+
+      {showFocusPanel && activeManifest ? (
+        <FocusActionPanel morphology={memoryMorphology} mode={sceneMode} onReplay={startReplay} onUnwind={unwind} launching={replayLaunching} />
+      ) : null}
+
       {showEmptyFocusPanel ? <FocusEmptyPanel mode={sceneMode} loading={manifestLoading} onLifeMap={openLifeMap} /> : null}
       {!isHomeMode ? <NarratorHud /> : null}
     </div>

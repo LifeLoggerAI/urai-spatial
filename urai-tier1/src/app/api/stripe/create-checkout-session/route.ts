@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import type { InsightPlanId } from '@/components/spatial/insightMonetizationEngine';
+import type { InsightPlanId } from '@/lib/entitlementStore';
 
 const PRICE_ENV_BY_PLAN: Record<Exclude<InsightPlanId, 'free'>, string> = {
   pro: 'NEXT_PUBLIC_STRIPE_PRICE_PRO',
