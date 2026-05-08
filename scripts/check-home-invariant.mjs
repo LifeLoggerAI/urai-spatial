@@ -24,7 +24,7 @@ for (const file of requiredHomeFiles) {
 }
 
 const rootRouteText = fs.existsSync('urai-tier1/src/app/page.tsx') ? fs.readFileSync('urai-tier1/src/app/page.tsx', 'utf8') : ''
-if (rootRouteText && !rootRouteText.includes('TierOneExperience') && !rootRouteText.includes('mode="home"')) {
+if (rootRouteText && (!rootRouteText.includes('TierOneExperience') || !rootRouteText.includes('mode="home"'))) {
   failures.push('urai-tier1/src/app/page.tsx must route through TierOneExperience mode="home"')
 }
 if (rootRouteText.includes('SpatialHomeShell')) {
@@ -51,13 +51,28 @@ for (const file of homeFiles) {
 
 const homeSceneText = fs.existsSync('urai-tier1/src/scene/HomeScene.tsx') ? fs.readFileSync('urai-tier1/src/scene/HomeScene.tsx', 'utf8') : ''
 if (homeSceneText) {
-  const visibleHomeOverlayPatterns = [
-    /mode === 'home'[\s\S]{0,800}<div className="urai-spatial-guidance/i,
-    /isHomeMode \? <button[\s\S]{0,200}data-testid="urai-sky-click-target"/i,
-    /<NarratorHud\s*\/>/i,
+  const requiredHomeSilencePatterns = [
+    /if \(mode === 'home'\) return null/,
+    /const showOrb = sceneMode === 'focus' \|\| sceneMode === 'replay' \|\| sceneMode === 'mirror'/,
+    /!isHomeMode \? <NarratorVoice[\s\S]{0,160}: null/,
+    /!isHomeMode \? <NarratorHud \/> : null/,
+    /!isHomeMode \? <CameraResetButton[\s\S]{0,160}: null/,
+    /event\.key\.toLowerCase\(\) === 'r' && !isHomeMode/,
   ]
 
-  for (const pattern of visibleHomeOverlayPatterns) {
+  for (const pattern of requiredHomeSilencePatterns) {
+    if (!pattern.test(homeSceneText)) {
+      failures.push(`Tier-1 home scene is missing required silent-home guard: ${pattern}`)
+    }
+  }
+
+  const forbiddenHomeOverlayPatterns = [
+    /mode === 'home'[\s\S]{0,800}<div className="urai-spatial-guidance/i,
+    /data-testid="urai-sky-click-target"/i,
+    /const showOrb = isHomeMode/i,
+  ]
+
+  for (const pattern of forbiddenHomeOverlayPatterns) {
     if (pattern.test(homeSceneText)) {
       failures.push(`Tier-1 home scene still exposes visible or narrated home UI: ${pattern}`)
     }
