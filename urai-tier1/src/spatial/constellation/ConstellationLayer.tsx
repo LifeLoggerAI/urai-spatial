@@ -34,8 +34,8 @@ type NebulaCloud = {
   color: string
   opacity: number
   position: ConstellationNodePosition
-  scale: readonly [number, number, number]
-  rotation: readonly [number, number, number]
+  scale: [number, number, number]
+  rotation: [number, number, number]
 }
 
 type AnchorStar = {
@@ -298,7 +298,6 @@ function LifeMapAnchorStars({ reducedMotion }: { reducedMotion: boolean }) {
             <sphereGeometry args={[0.18, 24, 24]} />
             <meshBasicMaterial color={star.tone} transparent opacity={0.18} depthWrite={false} blending={THREE.AdditiveBlending} />
           </mesh>
-          <ringGeometry args={[0.24, 0.255, 48]} />
           <pointLight color={star.tone} intensity={star.intensity} distance={6.5} />
         </group>
       ))}
