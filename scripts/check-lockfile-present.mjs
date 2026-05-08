@@ -30,7 +30,6 @@ function packageDirsFromWorkspace() {
     if (!match) continue
     const pattern = match[1].trim()
     if (pattern.endsWith('/*')) {
-      const base = pattern.slice(0, -2)
       // Avoid directory glob expansion here. This check only needs known packages with package.json.
       continue
     }
