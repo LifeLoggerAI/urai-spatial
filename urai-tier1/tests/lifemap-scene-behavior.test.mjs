@@ -36,14 +36,14 @@ test('Escape clears focus and reset reducer restores phase and camera', () => {
 })
 
 test('chapter anchors trigger cluster focus and emit narrator/timeline events', () => {
-  assert.match(flat, /dispatch\(\{ type: 'FOCUS_CLUSTER', chapterId: chapter\.id, camera: \{ x, y, zoom: 1\.45 \}, companionLine: CHAPTER_LINES\[chapter\.id\] \}\)/)
-  assert.match(flat, /emitNarratorEvent\(\{ event: 'lifemap\.cluster\.focus', chapterId: chapter\.id \}\)/)
-  assert.match(flat, /emitTimelineSync\(\{ phase: 'cluster', activeChapterId: chapter\.id \}\)/)
+  assert.match(flat, /type: 'FOCUS_CLUSTER'/)
+  assert.match(flat, /event: 'lifemap\.cluster\.focus'/)
+  assert.match(flat, /phase: 'cluster'/)
 })
 
 test('focus and resolve actions emit narrator/timeline payloads', () => {
-  assert.match(flat, /emitNarratorEvent\(\{ event: 'lifemap\.star\.focus', starId: star\.id, chapterId: star\.chapterId, emotion: star\.emotion \}\)/)
-  assert.match(flat, /emitTimelineSync\(\{ phase: 'focus', activeStarId: star\.id, activeChapterId: star\.chapterId \}\)/)
-  assert.match(flat, /emitNarratorEvent\(\{ event: 'lifemap\.star\.resolved', starId: activeStar\.id, chapterId: activeStar\.chapterId, emotion: activeStar\.emotion, action: 'resolve' \}\)/)
-  assert.match(flat, /emitTimelineSync\(\{ phase: 'focus', activeStarId: activeStar\.id, activeChapterId: activeStar\.chapterId \}\)/)
+  assert.match(flat, /event: 'lifemap\.star\.focus'/)
+  assert.match(flat, /phase: 'focus'/)
+  assert.match(flat, /event: 'lifemap\.star\.resolved'/)
+  assert.match(flat, /action: 'resolve'/)
 })

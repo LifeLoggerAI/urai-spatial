@@ -131,6 +131,26 @@ export function reducedMotionLoopDelay(reducedMotion: boolean, rng: () => number
   return reducedMotion ? 14000 : 8000 + Math.floor(rng() * 6000);
 }
 
+export function scoreStarForGlow(star: MemoryStar): number {
+  return (star.intensity * 0.35) + (star.recency * 0.45) + (star.unresolvedWeight * 0.2) - (star.state === 'resolved' ? 4 : 0);
+}
+
+export function pickGlowingStars(
+  stars: MemoryStar[],
+  activeStarId: string | null,
+  rng: () => number = Math.random
+): MemoryStar[] {
+  const candidates = stars
+    .filter((star) => star.id !== activeStarId)
+    .sort((a, b) => scoreStarForGlow(b) - scoreStarForGlow(a))
+    .slice(0, 10);
+
+  const count = Math.min(1 + Math.floor(rng() * 3), candidates.length);
+  return candidates
+    .sort(() => rng() - 0.5)
+    .slice(0, count);
+}
+
 export function clampCamera(camera: LifeMapCamera): LifeMapCamera {
   return {
     x: Math.min(100, Math.max(0, camera.x)),
