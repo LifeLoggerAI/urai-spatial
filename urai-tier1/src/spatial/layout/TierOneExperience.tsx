@@ -66,20 +66,23 @@ export function TierOneExperience({ mode, title, eyebrow, description, cta }: Pr
   const router = useRouter();
   const openLifeMap = useCallback(() => router.push("/life-map", { scroll: false }), [router]);
   const openHome = useCallback(() => router.push("/", { scroll: false }), [router]);
+  const showRouteCard = mode !== "home";
 
   return (
     <SpatialShell mode={shellModeFor(mode)}>
-      <Suspense fallback={<div className="tier-one-loading">Loading URAI Spatial...</div>}>
+      <Suspense fallback={null}>
         <HomeScene sceneMode={mode} />
         {mode === "mirror" ? <MirrorRouteLayer onLifeMap={openLifeMap} onHome={openHome} /> : null}
       </Suspense>
 
-      <aside className="tier-one-route-card" data-route-mode={mode}>
-        <div className="tier-one-route-card__eyebrow">{eyebrow ?? copy.eyebrow}</div>
-        <h1>{title ?? copy.title}</h1>
-        <p>{description ?? copy.description}</p>
-        {cta ? <div className="tier-one-route-card__cta">{cta}</div> : null}
-      </aside>
+      {showRouteCard ? (
+        <aside className="tier-one-route-card" data-route-mode={mode}>
+          <div className="tier-one-route-card__eyebrow">{eyebrow ?? copy.eyebrow}</div>
+          <h1>{title ?? copy.title}</h1>
+          <p>{description ?? copy.description}</p>
+          {cta ? <div className="tier-one-route-card__cta">{cta}</div> : null}
+        </aside>
+      ) : null}
     </SpatialShell>
   );
 }
