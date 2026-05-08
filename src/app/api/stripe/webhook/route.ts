@@ -5,6 +5,7 @@ import {
   defaultEntitlement,
   findEntitlementByStripeCustomer,
   mapStripeStatus,
+  type SubscriptionStatus,
   upsertEntitlement,
 } from '@/lib/entitlementStore';
 
@@ -45,7 +46,7 @@ async function resolveSubscription(
   planId: InsightPlanId | null;
   customerId: string | null;
   subscriptionId: string | null;
-  subscriptionStatus: ReturnType<typeof mapStripeStatus>;
+  subscriptionStatus: SubscriptionStatus;
 }> {
   let metadata: Stripe.Metadata | undefined;
   let customerId: string | null = null;
@@ -55,7 +56,7 @@ async function resolveSubscription(
   if (eventType === 'checkout.session.completed') {
     const session = payload as Stripe.Checkout.Session;
     metadata = session.metadata ?? undefined;
-    customerId = customerIdFrom(session.customer as Stripe.Checkout.Session.Customer | null);
+    customerId = customerIdFrom(session.customer as string | Stripe.Customer | Stripe.DeletedCustomer | null);
     subscriptionId = subscriptionIdFrom(session.subscription as string | Stripe.Subscription | null);
 
     if (subscriptionId) {
