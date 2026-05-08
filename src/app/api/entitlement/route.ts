@@ -1,11 +1,16 @@
 import { NextResponse } from 'next/server';
 import { readEntitlement } from '@/lib/entitlementStore';
 
-async function verifyUser(request: Request) {
+function bearerTokenFrom(request: Request): string | null {
   const authHeader = request.headers.get('authorization');
-  if (!authHeader) return null;
+  if (!authHeader?.startsWith('Bearer ')) return null;
+  const token = authHeader.slice('Bearer '.length).trim();
+  return token.length ? token : null;
+}
 
-  const token = authHeader.replace('Bearer ', '');
+async function verifyUser(request: Request) {
+  const token = bearerTokenFrom(request);
+  if (!token) return null;
 
   const admin = await import('firebase-admin/auth');
   const app = await import('firebase-admin/app');
