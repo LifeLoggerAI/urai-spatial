@@ -1,6 +1,15 @@
 import fs from 'node:fs'
 import path from 'node:path'
-import { legacySceneImports, requiredTierOneFiles, sceneRouteFiles, tierOneRoutes } from './tier-config.mjs'
+import {
+  legacySceneImports,
+  requiredServerFiles,
+  requiredTierOneDependencies,
+  requiredTierOneDevDependencies,
+  requiredTierOneFiles,
+  sceneRouteFiles,
+  serverApiRoutes,
+  tierOneRoutes,
+} from './tier-config.mjs'
 
 const failures = []
 const warnings = []
@@ -37,6 +46,17 @@ function collectRouteText(file) {
   return [text, ...imports.map((importFile) => collectRouteText(importFile))].join('\n')
 }
 
+function parsePackageJson() {
+  const text = read('package.json')
+  if (!text) return null
+  try {
+    return JSON.parse(text)
+  } catch (error) {
+    failures.push(`package.json is not valid JSON: ${error instanceof Error ? error.message : String(error)}`)
+    return null
+  }
+}
+
 for (const route of tierOneRoutes) {
   visited.clear()
   const text = collectRouteText(route.file)
@@ -58,8 +78,31 @@ for (const route of tierOneRoutes) {
   }
 }
 
+for (const route of serverApiRoutes) {
+  visited.clear()
+  const text = collectRouteText(route.file)
+  if (!text) continue
+  for (const token of route.mustInclude) {
+    if (!text.includes(token)) failures.push(`${route.route} must include ${token}`)
+  }
+}
+
 for (const file of requiredTierOneFiles) {
   if (!fs.existsSync(file)) failures.push(`missing Tier-1 component: ${file}`)
+}
+
+for (const file of requiredServerFiles) {
+  if (!fs.existsSync(file)) failures.push(`missing Tier-1 server file: ${file}`)
+}
+
+const pkg = parsePackageJson()
+if (pkg) {
+  for (const dependency of requiredTierOneDependencies) {
+    if (!pkg.dependencies?.[dependency]) failures.push(`missing Tier-1 dependency: ${dependency}`)
+  }
+  for (const dependency of requiredTierOneDevDependencies) {
+    if (!pkg.devDependencies?.[dependency]) failures.push(`missing Tier-1 devDependency: ${dependency}`)
+  }
 }
 
 for (const file of sceneRouteFiles) {
