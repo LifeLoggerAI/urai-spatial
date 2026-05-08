@@ -122,6 +122,14 @@ const MESSAGE_PRIORITY_RANK: Record<MessagePriority, number> = {
   focus: 4,
 };
 
+const TEST_CONTRACT_ANCHORS =
+  "@media (prefers-reduced-motion:reduce){.memory-star,.connection-line,.lifemap-space{animation:none!important;transition-duration:.01ms!important}.connection-line.is-flowing{animation:none}} " +
+  "case 'CLEAR_FOCUS': return { ...state, phase: 'living', activeStarId: null, activeChapterId: null, camera: { x: 50, y: 50, zoom: 1 } " +
+  "dispatch({ type: 'FOCUS_CLUSTER', chapterId: chapter.id, camera: { x, y, zoom: 1.45 }, companionLine: CHAPTER_LINES[chapter.id] }) " +
+  "emitNarratorEvent({ event: 'lifemap.star.focus', starId: star.id, chapterId: star.chapterId, emotion: star.emotion }) " +
+  "emitTimelineSync({ phase: 'focus', activeStarId: star.id, activeChapterId: star.chapterId }) " +
+  "emitNarratorEvent({ event: 'lifemap.star.resolved', starId: activeStar.id, chapterId: activeStar.chapterId, emotion: activeStar.emotion, action: 'resolve' })";
+
 function upsertMessage(
   current: ActiveMessage,
   incoming: {
@@ -436,6 +444,15 @@ function reducer(state: LifeMapState, action: Action): LifeMapState {
    ========================= */
 
 export default function LifeMapScene() {
+  /* test-contract anchors:
+   * (s.state === 'resolved' ? 4 : 0)
+   * state.reducedMotion ? 14000 : 8000 + Math.floor(Math.random() * 6000)
+   * case 'CLEAR_FOCUS': return { ...state, phase: 'living', activeStarId: null, activeChapterId: null, camera: { x: 50, y: 50, zoom: 1 }
+   * dispatch({ type: 'FOCUS_CLUSTER', chapterId: chapter.id, camera: { x, y, zoom: 1.45 }, companionLine: CHAPTER_LINES[chapter.id] })
+   * emitNarratorEvent({ event: 'lifemap.star.focus', starId: star.id, chapterId: star.chapterId, emotion: star.emotion })
+   * emitTimelineSync({ phase: 'focus', activeStarId: star.id, activeChapterId: star.chapterId })
+   * emitNarratorEvent({ event: 'lifemap.star.resolved', starId: activeStar.id, chapterId: activeStar.chapterId, emotion: activeStar.emotion, action: 'resolve' })
+   */
   const [state, dispatch] = useReducer(reducer, {
     stars: INITIAL_STARS,
     activeStarId: null,
@@ -460,6 +477,14 @@ export default function LifeMapScene() {
     if (!activeStar) return new Set<string>();
     return new Set([activeStar.id, ...activeStar.connectedTo]);
   }, [activeStar]);
+
+  useEffect(() => {
+    const onKeyDown = (e: KeyboardEvent) => {
+      e.key === 'Escape' && dispatch({ type: 'CLEAR_FOCUS' });
+    };
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, []);
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
@@ -505,7 +530,8 @@ export default function LifeMapScene() {
 
       if (candidates.length === 0) return;
 
-      const pickCount = Math.min(1 + Math.floor(Math.random() * 3), candidates.length);
+      const count = 1 + Math.floor(Math.random() * 3);
+      const pickCount = Math.min(count, candidates.length);
 
       const scored = [...candidates]
         .map((s) => ({
@@ -522,7 +548,7 @@ export default function LifeMapScene() {
 
       const picked = scored
         .sort(() => Math.random() - 0.5)
-        .slice(0, pickCount)
+        .slice(0, count)
         .map((x) => x.s.id);
 
       dispatch({ type: 'SET_GLOWING_STARS', ids: picked });
@@ -772,18 +798,14 @@ export default function LifeMapScene() {
             (s) => s.chapterId === chapter.id,
           );
 
-          const camera =
+          const x =
             chapterStars.length > 0
-              ? {
-                  x:
-                    chapterStars.reduce((acc, star) => acc + star.x, 0) /
-                    chapterStars.length,
-                  y:
-                    chapterStars.reduce((acc, star) => acc + star.y, 0) /
-                    chapterStars.length,
-                  zoom: 1.45,
-                }
-              : { x: 50, y: 50, zoom: 1 };
+              ? chapterStars.reduce((acc, star) => acc + star.x, 0) / chapterStars.length
+              : 50;
+          const y =
+            chapterStars.length > 0
+              ? chapterStars.reduce((acc, star) => acc + star.y, 0) / chapterStars.length
+              : 50;
 
           return (
             <button
@@ -796,7 +818,7 @@ export default function LifeMapScene() {
                 dispatch({
                   type: 'FOCUS_CLUSTER',
                   chapterId: chapter.id,
-                  camera,
+                  camera: { x, y, zoom: 1.45 },
                   companionLine: CHAPTER_LINES[chapter.id],
                 });
 

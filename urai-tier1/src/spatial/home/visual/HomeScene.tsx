@@ -148,8 +148,8 @@ export default function HomeScene({ homeWorldState, state = "home", opening, ent
       <div className="urai-cloud cloud-c" aria-hidden="true" />
       <div className="urai-stars" data-testid="home-layer-stars" aria-hidden="true">{Array.from({ length: 72 }, (_, index) => <i key={index} style={starStyle(index)} />)}</div>
       <div className="urai-constellation" data-testid="home-layer-constellations" aria-hidden="true" />
-      <button type="button" className="urai-sky-enter" onClick={enterLifeMap} disabled={skyDisabled} aria-disabled={skyDisabled} data-testid="enter-sky-button" aria-label="Enter Life Map through the sky">
-        <span className="sr-only">{skyDisabled ? "Opening the sky" : "Enter Life Map through the sky"}</span>
+      <button type="button" className="urai-sky-enter" onClick={enterLifeMap} disabled={skyDisabled} aria-disabled={skyDisabled} data-testid="enter-sky-button" aria-label="Enter Life Map">
+        <span className="sr-only">{skyDisabled ? "Opening the sky" : "Enter Life Map"}</span>
       </button>
       <section className="urai-horizon-system" data-testid="urai-home-horizon" aria-hidden="true"><div className="horizon-glow" /><div className="horizon-threshold" /><div className="terrain terrain-far" /><div className="mist mist-high" /><div className="terrain terrain-mid" /><div className="mist mist-mid" /><div className="terrain terrain-near" /><div className="mist mist-low" /></section>
       <section className="urai-ground" data-testid="urai-home-ground" aria-hidden="true"><div className="ground-plane ground-back" /><div className="ground-plane ground-mid" /><div className="root-network" data-testid="home-layer-root-network" /><div className="bloom-field" data-testid="home-layer-bloom-field" /><div className="ground-plane ground-front" /><div className="light-flecks" /></section>
