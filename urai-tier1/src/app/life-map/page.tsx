@@ -1,5 +1,5 @@
-import { TierOneExperience } from "@/spatial/layout/TierOneExperience";
+import LifeMapReleaseSurface from "../_spatial/LifeMapReleaseSurface";
 
 export default function LifeMapPage() {
-  return <TierOneExperience mode="life-map" />;
+  return <LifeMapReleaseSurface />;
 }
