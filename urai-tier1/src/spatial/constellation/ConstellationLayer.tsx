@@ -140,11 +140,12 @@ function LifeMapStarfield3D({ reducedMotion }: { reducedMotion: boolean }) {
   )
 }
 
-function ConstellationArc({ from, to, tone, active }: { from: ConstellationNodePosition; to: ConstellationNodePosition; tone: string; active: boolean }) {
+function ConstellationArc({ from, to, tone, active, reducedMotion }: { from: ConstellationNodePosition; to: ConstellationNodePosition; tone: string; active: boolean; reducedMotion: boolean }) {
   const ref = useRef<THREE.Line>(null)
   const geometry = useMemo(() => curveGeometry(from, to, active ? 1.65 : 1.05), [active, from, to])
 
   useFrame(({ clock }) => {
+    if (reducedMotion) return
     const material = ref.current?.material
     if (material instanceof THREE.LineBasicMaterial) {
       material.opacity = active ? 0.52 + Math.sin(clock.elapsedTime * 1.25) * 0.1 : 0.2
@@ -158,7 +159,7 @@ function ConstellationArc({ from, to, tone, active }: { from: ConstellationNodeP
   )
 }
 
-function ConstellationArcs({ nodes, selectedManifestId }: { nodes: PositionedManifest[]; selectedManifestId: string | null }) {
+function ConstellationArcs({ nodes, selectedManifestId, reducedMotion }: { nodes: PositionedManifest[]; selectedManifestId: string | null; reducedMotion: boolean }) {
   const arcs = useMemo(() => {
     const ordered = [...nodes]
     return ordered.flatMap((node, index) => {
@@ -175,20 +176,20 @@ function ConstellationArcs({ nodes, selectedManifestId }: { nodes: PositionedMan
     <group data-testid="lifemap-constellation-arcs">
       {arcs.map((arc) => {
         const active = selectedManifestId === null || arc.from.manifest.manifestId === selectedManifestId || arc.to.manifest.manifestId === selectedManifestId
-        return <ConstellationArc key={arc.id} from={arc.from.position} to={arc.to.position} tone={arc.from.tone} active={active} />
+        return <ConstellationArc key={arc.id} from={arc.from.position} to={arc.to.position} tone={arc.from.tone} active={active} reducedMotion={reducedMotion} />
       })}
     </group>
   )
 }
 
-function Node({ node, selected, dimmed, onSelect }: { node: PositionedManifest; selected: boolean; dimmed: boolean; onSelect: (position: ConstellationNodePosition) => void }) {
+function Node({ node, selected, dimmed, reducedMotion, onSelect }: { node: PositionedManifest; selected: boolean; dimmed: boolean; reducedMotion: boolean; onSelect: (position: ConstellationNodePosition) => void }) {
   const ref = useRef<Mesh>(null)
   const haloRef = useRef<Mesh>(null)
   const opacity = dimmed ? 0.2 : 1
   const baseScale = dimmed ? 0.74 : 1
 
   useFrame(({ clock }) => {
-    if (!ref.current) return
+    if (!ref.current || reducedMotion) return
     ref.current.rotation.y = clock.elapsedTime * 0.2
     const scale = selected ? 1.85 + Math.sin(clock.elapsedTime * 3) * 0.08 : baseScale + Math.sin(clock.elapsedTime * 1.4 + node.position[0]) * 0.06
     ref.current.scale.setScalar(scale)
@@ -216,7 +217,7 @@ function Node({ node, selected, dimmed, onSelect }: { node: PositionedManifest; 
   )
 }
 
-export default function ConstellationLayer({ enabled, selectedManifestId, onSelect }: { enabled: boolean; selectedManifestId: string | null; onSelect: (manifest: SpatialAssetManifest, position: ConstellationNodePosition) => void }) {
+export default function ConstellationLayer({ enabled, selectedManifestId, reducedMotion = false, onSelect }: { enabled: boolean; selectedManifestId: string | null; reducedMotion?: boolean; onSelect: (manifest: SpatialAssetManifest, position: ConstellationNodePosition) => void }) {
   const manifests = useConstellationManifests(enabled)
   const selected = manifests.find((manifest) => manifest.manifestId === selectedManifestId) ?? null
   const fieldRef = useRef<THREE.Group>(null)
@@ -246,7 +247,7 @@ export default function ConstellationLayer({ enabled, selectedManifestId, onSele
   }, [manifests])
 
   useFrame(({ clock }) => {
-    if (!fieldRef.current) return
+    if (!fieldRef.current || reducedMotion) return
     fieldRef.current.rotation.y = Math.sin(clock.elapsedTime * 0.05) * 0.022
     fieldRef.current.position.y = Math.sin(clock.elapsedTime * 0.17) * 0.05
   })
@@ -255,10 +256,9 @@ export default function ConstellationLayer({ enabled, selectedManifestId, onSele
 
   return (
     <group ref={fieldRef} data-testid="lifemap-cosmic-constellation" position={[0, 0.08, -0.35]}>
-      <LifeMapStarfield3D reducedMotion={false} />
-      <NebulaField reducedMotion={false} />
-      <fog attach="fog" args={['#02030b', 8, 28]} />
-      <ConstellationArcs nodes={positionedManifests} selectedManifestId={selectedManifestId} />
+      <LifeMapStarfield3D reducedMotion={reducedMotion} />
+      <NebulaField reducedMotion={reducedMotion} />
+      <ConstellationArcs nodes={positionedManifests} selectedManifestId={selectedManifestId} reducedMotion={reducedMotion} />
 
       {positionedManifests.map((node) => (
         <Node
@@ -266,6 +266,7 @@ export default function ConstellationLayer({ enabled, selectedManifestId, onSele
           node={node}
           selected={node.manifest.manifestId === selectedManifestId}
           dimmed={Boolean(selectedManifestId) && node.manifest.manifestId !== selectedManifestId}
+          reducedMotion={reducedMotion}
           onSelect={(nodePosition) => onSelect(node.manifest, nodePosition)}
         />
       ))}
