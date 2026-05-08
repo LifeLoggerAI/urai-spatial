@@ -9,6 +9,7 @@ const ignoredDirectories = new Set([
   '.git',
   '.next',
   '.turbo',
+  '_quarantine',
   'coverage',
   'dist',
   'node_modules',
