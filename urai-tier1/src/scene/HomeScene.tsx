@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Canvas } from '@react-three/fiber'
-import { PerspectiveCamera } from '@react-three/drei'
+import { OrbitControls, PerspectiveCamera } from '@react-three/drei'
 import Ground from './Ground'
 import Orb, { OrbState } from './Orb'
 import Sky from './Sky'
@@ -278,7 +278,8 @@ export default function HomeScene({ sceneMode = 'home' }: { sceneMode?: SceneMod
       {isHomeMode ? <button type="button" className="urai-sky-click-target" data-testid="urai-sky-click-target" aria-label="Begin ascent to Life Map" onClick={enterLifeMap} /> : null}
       <Canvas shadows dpr={[1, 1.75]} gl={{ antialias: true, alpha: true }} onPointerMissed={enterLifeMap}>
         <PerspectiveCamera makeDefault position={[0, 2.85, 8.35]} fov={48} />
-        <CinematicCameraRig active focusPosition={selectedPosition} path={cameraPath} reducedMotion={reducedMotion} resetSignal={cameraResetSignal} />
+        <CinematicCameraRig active={!showConstellation} focusPosition={selectedPosition} path={cameraPath} reducedMotion={reducedMotion} resetSignal={cameraResetSignal} />
+        {showConstellation ? <OrbitControls makeDefault enablePan enableZoom enableRotate enableDamping={!reducedMotion} dampingFactor={0.045} minDistance={4.6} maxDistance={16} minPolarAngle={0.55} maxPolarAngle={2.2} target={[0, 1.2, -1.2]} /> : null}
         <ambientLight intensity={isHomeMode ? 0.72 : isAscentMode ? 0.5 : 0.28} color="#b8d7ff" />
         <hemisphereLight args={['#d3e7ff', '#12071e', isHomeMode ? 1.45 : 0.95]} />
         <directionalLight position={[-5.4, 7.4, 3.8]} intensity={isHomeMode ? 2.45 : 1.85} color="#d7e6ff" castShadow shadow-mapSize-width={2048} shadow-mapSize-height={2048} />
@@ -289,7 +290,7 @@ export default function HomeScene({ sceneMode = 'home' }: { sceneMode?: SceneMod
         {showHomeWorld ? <Ground /> : null}
         {showAscentPortal ? <AscentPortal /> : null}
         {showOrb ? <Orb state={orbState} /> : null}
-        {showConstellation ? <ConstellationLayer enabled selectedManifestId={selectedManifest?.manifestId ?? null} onSelect={handleSelect} /> : activeManifest ? <ManifestRenderBoundary manifest={activeManifest} /> : null}
+        {showConstellation ? <ConstellationLayer enabled selectedManifestId={selectedManifest?.manifestId ?? null} reducedMotion={reducedMotion} onSelect={handleSelect} /> : activeManifest ? <ManifestRenderBoundary manifest={activeManifest} /> : null}
         <CinematicParticles active reducedMotion={reducedMotion} />
         <CinematicPostProcessing active={Boolean(activeManifest) || showConstellation || isAscentMode} reducedMotion={reducedMotion} />
         <NarratorVoice manifest={activeManifest} context={narratorContext} />
