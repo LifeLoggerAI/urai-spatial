@@ -6,7 +6,7 @@ import { resolveUnityAdapterStateById } from "@/spatial/unity/resolveUnityAdapte
 import { exportUnityManifestById } from "@/spatial/unity/exportUnityManifest";
 
 const PUBLIC_MANIFEST_FILENAME = "URAI-Spatial-Demo-Manifest.json";
-const PUBLIC_TIER_LOCK_BUNDLE_FILENAME = "URAI-Tier-Lock-Bundle.zip";
+const PUBLIC_TIER_LOCK_BUNDLE_FILENAME = "URAI-Tier-Lock-Bundle.json";
 
 function downloadBlob(filename: string, blob: Blob) {
   const url = URL.createObjectURL(blob);
@@ -47,12 +47,31 @@ export default function UnityAdapterOverlay() {
   }
 
   function handleExportTierLockBundle() {
-    const placeholder = "Tier lock bundle payload";
+    if (!manifest || !state) return;
+
+    const bundle = {
+      version: 1,
+      generatedAt: new Date().toISOString(),
+      sceneId: manifest.sceneId,
+      rootAnchor: manifest.rootAnchor,
+      adapterMode: manifest.adapterMode,
+      readiness: manifest.readiness,
+      sceneProfile: state.sceneProfile,
+      selectedStarId,
+      exportControlsHiddenInPublicDemo: shouldHideExportControls,
+      payload: manifest.payload,
+      policy: {
+        source: "URAI Spatial Tier Lock",
+        allowPublicDemoExport: !shouldHideExportControls,
+        requiresSelectedStar: true,
+      },
+    };
+
     downloadBlob(
       PUBLIC_TIER_LOCK_BUNDLE_FILENAME,
-      new Blob([placeholder], { type: "application/zip" })
+      new Blob([JSON.stringify(bundle, null, 2)], { type: "application/json" })
     );
-    setStatus("XR manifest exported.");
+    setStatus("Tier-lock bundle exported.");
   }
 
   if (!selectedStarId || !state || !manifest) return null;
