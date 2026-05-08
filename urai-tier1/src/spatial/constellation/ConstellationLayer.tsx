@@ -1,23 +1,41 @@
 'use client'
 
 import { useMemo, useRef } from 'react'
-import { useConstellationManifests } from './useConstellationManifests'
+import { Html, Stars } from '@react-three/drei'
+import { useFrame } from '@react-three/fiber'
 import * as THREE from 'three'
 import { Mesh } from 'three'
-import { useFrame } from '@react-three/fiber'
+import { useConstellationManifests } from './useConstellationManifests'
 import { SpatialAssetManifest } from '../assets/manifestTypes'
 import ManifestRenderer from '../assets/ManifestRenderer'
 
 export type ConstellationNodePosition = readonly [number, number, number]
 type ClusterKey = 'memory' | 'intense' | 'visual' | 'spatial' | 'motion' | 'general'
 
+type PositionedManifest = {
+  manifest: SpatialAssetManifest
+  clusterKey: ClusterKey
+  position: ConstellationNodePosition
+  tone: string
+  label: string
+}
+
 const clusterOffsets: Record<ClusterKey, ConstellationNodePosition> = {
-  memory: [-4.2, 1.55, -2.4],
-  intense: [3.8, 2.05, -2.8],
-  visual: [-2.5, 1.2, 2.6],
-  spatial: [3.2, 1.35, 2.2],
-  motion: [0.4, 2.4, -4.0],
-  general: [0, 1.45, 0],
+  memory: [-5.6, 2.05, -3.4],
+  intense: [5.45, 1.65, -2.1],
+  visual: [-3.25, 0.95, 2.85],
+  spatial: [3.45, 1.15, 2.45],
+  motion: [0.25, 2.8, -4.55],
+  general: [0.2, 0.62, 0.3],
+}
+
+const fallbackLabels = ['Memory Bloom', 'Threshold', 'Mirror Focus', 'Ritual Echo', 'Dream Signal', 'Calm Return', 'Recovery Arc']
+const toneColors = ['#ffd0c7', '#8fb6ff', '#78f0ff', '#a78bfa', '#ff74c7', '#67e8f9', '#d946ef']
+const STARFIELD_SEED = 1947
+
+function seededValue(index: number, salt = 0) {
+  const value = Math.sin((index + 1) * 127.1 + salt * 311.7 + STARFIELD_SEED) * 43758.5453123
+  return value - Math.floor(value)
 }
 
 function clusterForManifest(manifest: SpatialAssetManifest): ClusterKey {
@@ -32,97 +50,176 @@ function clusterForManifest(manifest: SpatialAssetManifest): ClusterKey {
   return 'general'
 }
 
+function labelForManifest(manifest: SpatialAssetManifest, index: number) {
+  const title = manifest.title ?? manifest.promptPreview ?? ''
+  const trimmed = title.replace(/\s+/g, ' ').trim()
+  if (trimmed) return trimmed.length > 22 ? `${trimmed.slice(0, 20)}...` : trimmed
+  return fallbackLabels[index % fallbackLabels.length]
+}
+
+function toneForNode(clusterKey: ClusterKey, index: number) {
+  const clusterIndex: Record<ClusterKey, number> = {
+    memory: 0,
+    intense: 4,
+    visual: 3,
+    spatial: 2,
+    motion: 1,
+    general: 5,
+  }
+
+  return toneColors[(clusterIndex[clusterKey] + index) % toneColors.length]
+}
+
 function nodePosition(clusterKey: ClusterKey, indexInCluster: number, clusterSize: number): ConstellationNodePosition {
   const base = clusterOffsets[clusterKey]
   const safeSize = Math.max(clusterSize, 1)
-  const angle = (indexInCluster / safeSize) * Math.PI * 2
-  const radius = 0.75 + Math.min(safeSize, 12) * 0.055 + Math.sin(indexInCluster + safeSize) * 0.12
+  const angle = (indexInCluster / safeSize) * Math.PI * 2 + seededValue(indexInCluster, safeSize) * 0.5
+  const radius = 1.0 + Math.min(safeSize, 14) * 0.08 + seededValue(indexInCluster, safeSize + 3) * 0.34
+  const depth = (seededValue(indexInCluster, safeSize + 7) - 0.5) * 1.2
 
   return [
     base[0] + Math.cos(angle) * radius,
-    base[1] + Math.sin(indexInCluster * 0.47) * 0.34,
-    base[2] - Math.sin(angle) * radius,
+    base[1] + Math.sin(indexInCluster * 0.47) * 0.42 + (seededValue(indexInCluster, 5) - 0.5) * 0.32,
+    base[2] - Math.sin(angle) * radius + depth,
   ] as const
 }
 
-function ConstellationLinks({
-  nodes,
-  selectedManifestId,
-}: {
-  nodes: Array<{ manifest: SpatialAssetManifest; clusterKey: ClusterKey; position: ConstellationNodePosition }>
-  selectedManifestId: string | null
-}) {
-  const ref = useRef<THREE.LineSegments>(null)
+function curveGeometry(from: ConstellationNodePosition, to: ConstellationNodePosition, lift = 1.25) {
+  const start = new THREE.Vector3(...from)
+  const end = new THREE.Vector3(...to)
+  const midpoint = start.clone().lerp(end, 0.5)
+  midpoint.y += lift + start.distanceTo(end) * 0.08
+  midpoint.z += Math.sin(start.x + end.z) * 0.55
 
-  const geometry = useMemo(() => {
-    const positions: number[] = []
-    const byCluster = new Map<ClusterKey, Array<{ position: ConstellationNodePosition }>>()
+  const curve = new THREE.QuadraticBezierCurve3(start, midpoint, end)
+  const points = curve.getPoints(32)
+  return new THREE.BufferGeometry().setFromPoints(points)
+}
 
-    nodes.forEach((node) => {
-      const list = byCluster.get(node.clusterKey) ?? []
-      list.push(node)
-      byCluster.set(node.clusterKey, list)
-    })
-
-    byCluster.forEach((clusterNodes, key) => {
-      const hub = clusterOffsets[key]
-      clusterNodes.forEach((node, index) => {
-        const next = clusterNodes[(index + 1) % clusterNodes.length]
-        positions.push(...node.position, ...hub)
-        if (clusterNodes.length > 2 && next) positions.push(...node.position, ...next.position)
-      })
-    })
-
-    const g = new THREE.BufferGeometry()
-    g.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3))
-    return g
-  }, [nodes])
+function NebulaField({ reducedMotion }: { reducedMotion: boolean }) {
+  const ref = useRef<THREE.Group>(null)
 
   useFrame(({ clock }) => {
-    if (!ref.current) return
-    ref.current.rotation.y = Math.sin(clock.elapsedTime * 0.06) * 0.012
-    const material = ref.current.material
+    if (!ref.current || reducedMotion) return
+    ref.current.rotation.y = Math.sin(clock.elapsedTime * 0.025) * 0.045
+    ref.current.rotation.x = Math.cos(clock.elapsedTime * 0.018) * 0.025
+  })
+
+  return (
+    <group ref={ref} data-testid="lifemap-nebula-field">
+      <mesh position={[-5.8, 2.4, -7.2]} rotation={[0.2, 0.08, -0.18]}>
+        <planeGeometry args={[8.8, 4.2, 12, 12]} />
+        <meshBasicMaterial color="#ff8bbd" transparent opacity={0.09} depthWrite={false} blending={THREE.AdditiveBlending} side={THREE.DoubleSide} />
+      </mesh>
+      <mesh position={[5.2, 1.55, -6.0]} rotation={[-0.1, -0.18, 0.24]}>
+        <planeGeometry args={[7.4, 3.6, 12, 12]} />
+        <meshBasicMaterial color="#9b5cff" transparent opacity={0.12} depthWrite={false} blending={THREE.AdditiveBlending} side={THREE.DoubleSide} />
+      </mesh>
+      <mesh position={[0.2, -0.1, -5.4]} rotation={[-0.34, 0.04, 0.02]}>
+        <planeGeometry args={[10.2, 3.8, 12, 12]} />
+        <meshBasicMaterial color="#4cc9ff" transparent opacity={0.08} depthWrite={false} blending={THREE.AdditiveBlending} side={THREE.DoubleSide} />
+      </mesh>
+    </group>
+  )
+}
+
+function LifeMapStarfield3D({ reducedMotion }: { reducedMotion: boolean }) {
+  const ref = useRef<THREE.Group>(null)
+
+  useFrame(({ clock }) => {
+    if (!ref.current || reducedMotion) return
+    ref.current.position.z = Math.sin(clock.elapsedTime * 0.11) * 0.18
+    ref.current.rotation.y = clock.elapsedTime * 0.006
+  })
+
+  return (
+    <group ref={ref} data-testid="lifemap-starfield-3d">
+      <Stars radius={54} depth={34} count={1400} factor={4.8} saturation={0.45} fade speed={reducedMotion ? 0 : 0.38} />
+      <Stars radius={26} depth={18} count={420} factor={7.5} saturation={0.75} fade speed={reducedMotion ? 0 : 0.18} />
+    </group>
+  )
+}
+
+function ConstellationArc({ from, to, tone, active }: { from: ConstellationNodePosition; to: ConstellationNodePosition; tone: string; active: boolean }) {
+  const ref = useRef<THREE.Line>(null)
+  const geometry = useMemo(() => curveGeometry(from, to, active ? 1.65 : 1.05), [active, from, to])
+
+  useFrame(({ clock }) => {
+    const material = ref.current?.material
     if (material instanceof THREE.LineBasicMaterial) {
-      material.opacity = selectedManifestId ? 0.14 : 0.28 + Math.sin(clock.elapsedTime * 0.75) * 0.04
+      material.opacity = active ? 0.52 + Math.sin(clock.elapsedTime * 1.25) * 0.1 : 0.2
     }
   })
 
   return (
-    <lineSegments ref={ref} geometry={geometry} frustumCulled={false}>
-      <lineBasicMaterial color="#8fdcff" transparent opacity={0.28} depthWrite={false} blending={THREE.AdditiveBlending} />
-    </lineSegments>
+    <line ref={ref} geometry={geometry} frustumCulled={false}>
+      <lineBasicMaterial color={tone} transparent opacity={active ? 0.55 : 0.2} depthWrite={false} blending={THREE.AdditiveBlending} />
+    </line>
   )
 }
 
-function Node({ position, selected, dimmed, onSelect }: { position: ConstellationNodePosition; selected: boolean; dimmed: boolean; onSelect: (position: ConstellationNodePosition) => void }) {
+function ConstellationArcs({ nodes, selectedManifestId }: { nodes: PositionedManifest[]; selectedManifestId: string | null }) {
+  const arcs = useMemo(() => {
+    const ordered = [...nodes]
+    return ordered.flatMap((node, index) => {
+      const next = ordered[(index + 1) % ordered.length]
+      const cross = ordered[(index + 3) % ordered.length]
+      return [
+        { id: `${node.manifest.manifestId}-next`, from: node, to: next },
+        index % 2 === 0 ? { id: `${node.manifest.manifestId}-cross`, from: node, to: cross } : null,
+      ].filter(Boolean) as Array<{ id: string; from: PositionedManifest; to: PositionedManifest }>
+    })
+  }, [nodes])
+
+  return (
+    <group data-testid="lifemap-constellation-arcs">
+      {arcs.map((arc) => {
+        const active = selectedManifestId === null || arc.from.manifest.manifestId === selectedManifestId || arc.to.manifest.manifestId === selectedManifestId
+        return <ConstellationArc key={arc.id} from={arc.from.position} to={arc.to.position} tone={arc.from.tone} active={active} />
+      })}
+    </group>
+  )
+}
+
+function Node({ node, selected, dimmed, onSelect }: { node: PositionedManifest; selected: boolean; dimmed: boolean; onSelect: (position: ConstellationNodePosition) => void }) {
   const ref = useRef<Mesh>(null)
-  const opacity = dimmed ? 0.18 : 1
-  const baseScale = dimmed ? 0.72 : 1
+  const haloRef = useRef<Mesh>(null)
+  const opacity = dimmed ? 0.2 : 1
+  const baseScale = dimmed ? 0.74 : 1
 
   useFrame(({ clock }) => {
-    if (!ref.current || dimmed) return
+    if (!ref.current) return
     ref.current.rotation.y = clock.elapsedTime * 0.2
-    const scale = selected ? 1.8 + Math.sin(clock.elapsedTime * 3) * 0.08 : baseScale + Math.sin(clock.elapsedTime * 1.4 + position[0]) * 0.05
+    const scale = selected ? 1.85 + Math.sin(clock.elapsedTime * 3) * 0.08 : baseScale + Math.sin(clock.elapsedTime * 1.4 + node.position[0]) * 0.06
     ref.current.scale.setScalar(scale)
+    if (haloRef.current) {
+      const haloScale = selected ? 2.8 + Math.sin(clock.elapsedTime * 2) * 0.18 : 1.9 + Math.sin(clock.elapsedTime * 1.1 + node.position[2]) * 0.12
+      haloRef.current.scale.setScalar(haloScale)
+    }
   })
 
   return (
-    <mesh ref={ref} position={position} scale={baseScale} onClick={(event) => { event.stopPropagation(); onSelect(position) }}>
-      <sphereGeometry args={[0.12, 16, 16]} />
-      <meshStandardMaterial
-        emissive={selected ? '#22d3ee' : '#8b5cf6'}
-        emissiveIntensity={selected ? 2.2 : dimmed ? 0.35 : 1.2}
-        color="#1f1b2e"
-        transparent
-        opacity={opacity}
-      />
-    </mesh>
+    <group position={node.position} data-testid={`lifemap-node-3d-${node.manifest.manifestId}`}>
+      <mesh ref={haloRef} scale={1.8} frustumCulled={false}>
+        <sphereGeometry args={[0.18, 20, 20]} />
+        <meshBasicMaterial color={node.tone} transparent opacity={dimmed ? 0.08 : 0.18} depthWrite={false} blending={THREE.AdditiveBlending} />
+      </mesh>
+      <mesh ref={ref} scale={baseScale} onClick={(event) => { event.stopPropagation(); onSelect(node.position) }}>
+        <sphereGeometry args={[0.135, 24, 24]} />
+        <meshStandardMaterial emissive={node.tone} emissiveIntensity={selected ? 4.2 : dimmed ? 0.55 : 2.35} color="#f7fbff" transparent opacity={opacity} />
+      </mesh>
+      <pointLight color={node.tone} intensity={dimmed ? 0.35 : selected ? 3.1 : 1.45} distance={selected ? 5.6 : 3.8} />
+      <Html position={[0.24, 0.12, 0]} center distanceFactor={7.5} style={{ pointerEvents: 'none' }}>
+        <span className="urai-life-map-3d-label">{node.label}</span>
+      </Html>
+    </group>
   )
 }
 
 export default function ConstellationLayer({ enabled, selectedManifestId, onSelect }: { enabled: boolean; selectedManifestId: string | null; onSelect: (manifest: SpatialAssetManifest, position: ConstellationNodePosition) => void }) {
   const manifests = useConstellationManifests(enabled)
   const selected = manifests.find((manifest) => manifest.manifestId === selectedManifestId) ?? null
+  const fieldRef = useRef<THREE.Group>(null)
 
   const positionedManifests = useMemo(() => {
     const clusterCounts = new Map<ClusterKey, number>()
@@ -133,7 +230,7 @@ export default function ConstellationLayer({ enabled, selectedManifestId, onSele
       clusterCounts.set(key, (clusterCounts.get(key) || 0) + 1)
     })
 
-    return manifests.map((manifest) => {
+    return manifests.map((manifest, index) => {
       const key = clusterForManifest(manifest)
       const indexInCluster = clusterIndexes.get(key) || 0
       clusterIndexes.set(key, indexInCluster + 1)
@@ -142,23 +239,34 @@ export default function ConstellationLayer({ enabled, selectedManifestId, onSele
         manifest,
         clusterKey: key,
         position: nodePosition(key, indexInCluster, clusterCounts.get(key) || 1),
+        tone: toneForNode(key, index),
+        label: labelForManifest(manifest, index),
       }
     })
   }, [manifests])
 
+  useFrame(({ clock }) => {
+    if (!fieldRef.current) return
+    fieldRef.current.rotation.y = Math.sin(clock.elapsedTime * 0.05) * 0.022
+    fieldRef.current.position.y = Math.sin(clock.elapsedTime * 0.17) * 0.05
+  })
+
   if (!enabled) return null
 
   return (
-    <group>
-      <ConstellationLinks nodes={positionedManifests} selectedManifestId={selectedManifestId} />
+    <group ref={fieldRef} data-testid="lifemap-cosmic-constellation" position={[0, 0.08, -0.35]}>
+      <LifeMapStarfield3D reducedMotion={false} />
+      <NebulaField reducedMotion={false} />
+      <fog attach="fog" args={['#02030b', 8, 28]} />
+      <ConstellationArcs nodes={positionedManifests} selectedManifestId={selectedManifestId} />
 
-      {positionedManifests.map(({ manifest, position }) => (
+      {positionedManifests.map((node) => (
         <Node
-          key={manifest.manifestId}
-          position={position}
-          selected={manifest.manifestId === selectedManifestId}
-          dimmed={Boolean(selectedManifestId) && manifest.manifestId !== selectedManifestId}
-          onSelect={(nodePosition) => onSelect(manifest, nodePosition)}
+          key={node.manifest.manifestId}
+          node={node}
+          selected={node.manifest.manifestId === selectedManifestId}
+          dimmed={Boolean(selectedManifestId) && node.manifest.manifestId !== selectedManifestId}
+          onSelect={(nodePosition) => onSelect(node.manifest, nodePosition)}
         />
       ))}
 
