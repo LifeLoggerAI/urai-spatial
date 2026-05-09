@@ -1,5 +1,5 @@
-import CinematicReplayClient from './CinematicReplayClient'
+import TierOneExperience from '../../spatial/layout/TierOneExperience'
 
 export default function ReplayPage() {
-  return <CinematicReplayClient />
+  return <TierOneExperience mode="replay" />
 }
