@@ -41,13 +41,23 @@ for (const [route, file, modeToken] of canonicalRoutes) {
   requireNotIncludes(file, 'src/spatial/scene/SpatialScene', `${route} legacy SpatialScene import`)
 }
 
+const homeScenePath = 'urai-tier1/src/scene/HomeScene.tsx'
+const homeScene = read(homeScenePath)
+
 requireIncludes('urai-tier1/src/spatial/layout/TierOneExperience.tsx', '@/scene/HomeScene', 'HomeScene canonical import')
 requireIncludes('urai-tier1/src/spatial/layout/TierOneExperience.tsx', '<HomeScene sceneMode={mode} />', 'HomeScene routed handoff')
-requireIncludes('urai-tier1/src/scene/HomeScene.tsx', "type SceneMode = 'home' | 'ascent' | 'life-map' | 'demo' | 'replay' | 'focus' | 'mirror'", 'canonical SceneMode union')
-requireIncludes('urai-tier1/src/scene/HomeScene.tsx', "router.push('/ascent')", 'Home to Ascent transition')
-requireIncludes('urai-tier1/src/scene/HomeScene.tsx', "router.push('/life-map')", 'Ascent/Focus to Life Map routing')
-requireIncludes('urai-tier1/src/scene/HomeScene.tsx', 'data-scene-mode={sceneMode}', 'current E2E mode attribute')
-requireIncludes('urai-tier1/src/scene/HomeScene.tsx', 'data-testid="urai-sky-click-target"', 'sky click target')
+requireIncludes(homeScenePath, "type SceneMode = 'home' | 'ascent' | 'life-map' | 'demo' | 'replay' | 'focus' | 'mirror'", 'canonical SceneMode union')
+requireIncludes(homeScenePath, "router.push('/ascent')", 'Home to Ascent transition')
+requireIncludes(homeScenePath, "router.push('/life-map')", 'Ascent/Focus to Life Map routing')
+requireIncludes(homeScenePath, 'data-scene-mode={sceneMode}', 'current E2E mode attribute')
+requireIncludes(homeScenePath, 'onClick={isHomeMode ? enterLifeMap : undefined}', 'silent root-stage home activation')
+requireIncludes(homeScenePath, "if (silentHomeInvariantProof(mode) === null) return null", 'silent home guidance guard')
+requireNotIncludes(homeScenePath, 'data-testid="urai-sky-click-target"', 'visible sky click target')
+requireNotIncludes(homeScenePath, 'data-testid="urai-sky-guidance"', 'visible sky guidance')
+requireNotIncludes(homeScenePath, 'const showOrb = isHomeMode', 'home orb visibility')
+if (homeScene && !homeScene.includes("const showOrb = sceneMode === 'focus' || sceneMode === 'replay' || sceneMode === 'mirror'")) {
+  failures.push(`${homeScenePath} missing silent home orb guard`)
+}
 requireIncludes('urai-tier1/src/scene/SpatialVisualOverlayPremium.tsx', 'data-testid={`lifemap-node-${star.manifestId}`}', 'deterministic LifeMap node test ids')
 requireIncludes('urai-tier1/scripts/tier-lock/tier-config.mjs', "{ route: '/ascent'", 'ascent route tier coverage')
 requireIncludes('tests/spatial-lock.mjs', 'data-scene-mode', 'current mode attribute in spatial E2E')
