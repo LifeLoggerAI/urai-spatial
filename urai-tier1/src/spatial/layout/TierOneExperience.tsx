@@ -4,6 +4,7 @@ import React, { Suspense, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import HomeScene from "@/scene/HomeScene";
 import MirrorRouteLayer from "@/scene/MirrorRouteLayer";
+import { HomeCohesionLayer } from "./HomeCohesionLayer";
 import { SpatialShell } from "./SpatialShell";
 
 export type TierOneExperienceMode = "home" | "ascent" | "life-map" | "demo" | "replay" | "focus" | "unwind" | "mirror";
@@ -80,6 +81,8 @@ export function TierOneExperience({ mode, title, eyebrow, description, cta }: Pr
         <HomeScene sceneMode={mode} />
         {mode === "mirror" ? <MirrorRouteLayer onLifeMap={openLifeMap} onHome={openHome} /> : null}
       </Suspense>
+
+      <HomeCohesionLayer enabled={mode === "home"} />
 
       {showRouteCard ? (
         <aside className="tier-one-route-card" data-route-mode={mode}>
