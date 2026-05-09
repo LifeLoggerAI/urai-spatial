@@ -81,6 +81,7 @@ if (!lockfile.includes('lockfileVersion:')) fail('pnpm-lock.yaml does not includ
 if (!lockfile.includes('importers:')) fail('pnpm-lock.yaml does not include an importers section.')
 
 const failures = []
+const rootBlock = importerBlock(lockfile, '.')
 
 for (const dir of packageDirsFromWorkspace()) {
   const packageJsonPath = resolve(root, dir, 'package.json')
@@ -96,7 +97,12 @@ for (const dir of packageDirsFromWorkspace()) {
   }
 
   for (const dependency of Object.keys(deps)) {
-    if (!blockIncludesDependency(block, dependency)) failures.push('lockfile importer ' + importerName + ' missing dependency ' + dependency)
+    const declaredInImporter = blockIncludesDependency(block, dependency)
+    const declaredAtRoot = importerName !== '.' && blockIncludesDependency(rootBlock, dependency)
+
+    if (!declaredInImporter && !declaredAtRoot) {
+      failures.push('lockfile importer ' + importerName + ' missing dependency ' + dependency)
+    }
   }
 }
 
