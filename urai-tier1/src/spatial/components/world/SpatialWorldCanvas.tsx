@@ -322,7 +322,7 @@ function SpatialHUD({ mode, selectedMemory, hoveredMemory, companionMessage, onC
         </section>
       ) : null}
 
-      <div className="spatial-truth-strip">Local demo data only · no live AR/VR/biometric/wearable/Firebase memory grounding active</div>
+      <div className="spatial-truth-strip">Local demo data only · deferred AR/WebXR, biometric, wearable, and Firebase memory providers are not active</div>
     </div>
   )
 }
