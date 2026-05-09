@@ -33,6 +33,8 @@ Tier-2 may extend Tier-1 but may not:
 
 ## Required checks
 
+These checks may be run from the monorepo root or from `urai-tier1`. The app workspace forwards the root-only lock aliases back to `..` so the command set is consistent from either location.
+
 ```bash
 pnpm tier2:check
 pnpm test:canon
