@@ -51,9 +51,11 @@ async function startServer() {
     stdio: 'inherit',
     shell: process.platform === 'win32',
   });
+
   child.on('exit', (code) => {
     if (code && code !== 0) console.error(`URAI Spatial dev server exited with ${code}`);
   });
+
   return { child, baseUrl };
 }
 
@@ -64,6 +66,7 @@ async function expectAttr(locator, name, value, timeout = 5000) {
     if (actual === value) return;
     await sleep(100);
   }
+
   const actual = await locator.getAttribute(name).catch(() => null);
   throw new Error(`Expected ${name}=${value}, received ${actual}`);
 }
@@ -74,6 +77,7 @@ async function expectVisible(locator, label, timeout = 5000) {
     if (await locator.isVisible().catch(() => false)) return;
     await sleep(100);
   }
+
   throw new Error(`${label} is not visible`);
 }
 
@@ -84,6 +88,7 @@ async function expectText(locator, text, timeout = 5000) {
     if (body?.includes(text)) return;
     await sleep(100);
   }
+
   const body = await locator.textContent().catch(() => '');
   throw new Error(`Expected text ${text}, received ${body}`);
 }
@@ -105,11 +110,14 @@ async function screenshot(page, name) {
 
 function collectConsole(page) {
   const messages = [];
+
   page.on('console', (message) => {
     const type = message.type();
     if (type === 'error') messages.push(`[${type}] ${message.text()}`);
   });
+
   page.on('pageerror', (error) => messages.push(`[pageerror] ${error.message}`));
+
   return messages;
 }
 
@@ -120,68 +128,92 @@ async function run() {
 
   try {
     await waitForServer(baseUrl);
+
     const browser = await chromium.launch();
     const page = await browser.newPage({ viewport: { width: 1440, height: 1000 } });
     const consoleMessages = collectConsole(page);
-    const stage = page.getByTestId('urai-scene-stage');
 
     await page.goto(`${baseUrl}/life-map`);
+
+    const stage = page.getByTestId('urai-scene-stage');
+
     await expectAttr(stage, 'data-scene-mode', 'life-map', 5000);
     await expectVisible(page.getByTestId('lifemap-node-seed-memory-bloom'), 'seed memory bloom node');
+
     await page.getByTestId('lifemap-node-seed-memory-bloom').click();
+
     await expectAttr(stage, 'data-scene-mode', 'focus');
     await expectVisible(page.getByTestId('urai-focus-action-panel'), 'focus action panel');
     await expectText(page.getByTestId('urai-focus-action-panel'), 'Start Replay');
+
     report.screenshots.push(await screenshot(page, '01-focus-memory-bloom'));
 
     await page.getByRole('button', { name: 'Start Replay' }).click();
     await page.waitForURL(/\/replay\?manifestId=seed-memory-bloom/);
-    await expectAttr(stage, 'data-scene-mode', 'replay');
-    await expectAttr(stage, 'data-replay-segment', 'memory');
+
+    const replay = page.getByTestId('cinematic-replay-client');
+
+    await expectVisible(replay, 'cinematic replay client');
+    await expectAttr(replay, 'data-replay-phase', 'replay_playing');
     await expectVisible(page.getByTestId('urai-replay-timeline'), 'replay timeline');
     await expectVisible(page.getByTestId('urai-replay-meta-panel'), 'replay meta panel');
-    await expectText(stage, 'Pattern Replay');
-    await expectText(stage, 'Pause');
-    await expectText(stage, 'Esc returns to Focus');
-    await expectText(stage, 'Return to Focus');
-    await expectText(stage, 'Why this appeared');
-    await expectText(stage, 'Private · Only visible to you');
-    await expectText(stage, 'Save');
-    await expectText(stage, 'Hide');
-    await expectText(stage, 'Correct');
-    await expectMissingText(stage, 'Unwind to Focus');
-    await expectMissingText(stage, 'ESC unwinds to focus');
-    await expectMissingText(stage, 'READINESS 87%');
-    await expectMissingText(stage, 'INTENSITY 88%');
-    await expectMissingText(stage, 'BOUNDARY 75%');
+    await expectVisible(page.getByTestId('urai-replay-phase-rings'), 'replay phase rings');
+
+    await expectText(replay, 'Pattern Replay');
+    await expectText(replay, 'Source: LifeMap · Seed Memory Bloom');
+    await expectText(replay, 'Center Replay');
+    await expectText(replay, 'Pause');
+    await expectText(replay, 'Esc returns to Focus');
+    await expectText(replay, 'Return to Focus');
+    await expectText(replay, 'Why this appeared');
+    await expectText(replay, 'Private · Only visible to you');
+    await expectText(replay, 'Save');
+    await expectText(replay, 'Hide');
+    await expectText(replay, 'Correct');
+
+    await expectMissingText(replay, 'Unwind');
+    await expectMissingText(replay, 'Unwind to Focus');
+    await expectMissingText(replay, 'ESC unwinds to focus');
+    await expectMissingText(replay, 'READINESS 87%');
+    await expectMissingText(replay, 'INTENSITY 88%');
+    await expectMissingText(replay, 'BOUNDARY 75%');
+
     report.screenshots.push(await screenshot(page, '02-memory-theater-replay'));
 
     await page.getByRole('button', { name: 'Pause replay' }).click();
-    await expectAttr(stage, 'data-replay-phase', 'replay_paused');
-    await expectText(stage, 'Play');
+
+    await expectAttr(replay, 'data-replay-phase', 'replay_paused');
+    await expectText(replay, 'Play');
+
     await page.keyboard.press('Escape');
-    await expectAttr(stage, 'data-scene-mode', 'focus');
-    await page.keyboard.press('Escape');
-    await expectAttr(stage, 'data-scene-mode', 'life-map');
-    await page.keyboard.press('Escape');
-    await expectAttr(stage, 'data-scene-mode', 'home');
-    report.screenshots.push(await screenshot(page, '03-replay-return-home'));
+    await page.waitForURL(/\/focus\?manifestId=seed-memory-bloom/);
 
     await page.setViewportSize({ width: 390, height: 844 });
     await page.goto(`${baseUrl}/replay?manifestId=seed-memory-bloom`);
-    await expectAttr(stage, 'data-scene-mode', 'replay');
+
+    const mobileReplay = page.getByTestId('cinematic-replay-client');
+
+    await expectVisible(mobileReplay, 'mobile cinematic replay client');
     await expectVisible(page.getByTestId('urai-replay-timeline'), 'mobile replay timeline');
     await expectVisible(page.getByTestId('urai-replay-meta-panel'), 'mobile replay meta panel');
-    await expectText(stage, 'Pattern Replay');
-    const box = await stage.boundingBox();
+    await expectText(mobileReplay, 'Pattern Replay');
+    await expectText(mobileReplay, 'Source: LifeMap · Seed Memory Bloom');
+
+    const box = await mobileReplay.boundingBox();
     if (!box || Math.round(box.width) !== 390 || Math.round(box.height) !== 844) {
       throw new Error(`Mobile replay viewport mismatch: ${JSON.stringify(box)}`);
     }
-    report.screenshots.push(await screenshot(page, '04-mobile-memory-theater-replay'));
+
+    report.screenshots.push(await screenshot(page, '03-mobile-memory-theater-replay'));
 
     await browser.close();
+
     report.console = consoleMessages;
-    if (consoleMessages.length) throw new Error(`Console errors detected:\n${consoleMessages.join('\n')}`);
+
+    if (consoleMessages.length) {
+      throw new Error(`Console errors detected:\n${consoleMessages.join('\n')}`);
+    }
+
     writeFileSync(`${ARTIFACT_DIR}/replay-tier5-report.json`, JSON.stringify(report, null, 2));
     console.log(`URAI Replay Tier 5 Memory Theater validation passed at ${baseUrl}.`);
   } catch (error) {

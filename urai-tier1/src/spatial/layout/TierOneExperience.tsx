@@ -24,13 +24,13 @@ const fallbackCopy: Record<TierOneExperienceMode, { eyebrow: string; title: stri
   },
   ascent: {
     eyebrow: "Opening Life Map",
-    title: "Preparing your memory map.",
-    description: "URAI is moving from the home view into the constellation of remembered moments.",
+    title: "Your Life Map is forming.",
+    description: "Memories are becoming constellations.",
   },
   "life-map": {
     eyebrow: "Life Map",
-    title: "Your memory map",
-    description: "Select a memory to review its replay, emotional pattern, and reflection summary.",
+    title: "Remembered moments are visible.",
+    description: "Select a memory star to review its replay, emotional pattern, and reflection summary.",
   },
   demo: {
     eyebrow: "Preview Map",
@@ -71,7 +71,7 @@ export function TierOneExperience({ mode, title, eyebrow, description, cta }: Pr
   const router = useRouter();
   const openLifeMap = useCallback(() => router.push("/life-map", { scroll: false }), [router]);
   const openHome = useCallback(() => router.push("/", { scroll: false }), [router]);
-  const showRouteCard = mode !== "home";
+  const showRouteCard = mode !== "home" && mode !== "life-map" && mode !== "ascent";
 
   return (
     <SpatialShell mode={shellModeFor(mode)}>

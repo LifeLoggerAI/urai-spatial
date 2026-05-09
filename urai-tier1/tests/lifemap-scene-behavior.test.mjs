@@ -3,8 +3,16 @@ import { test } from 'node:test'
 import fs from 'node:fs'
 
 const source = fs.readFileSync(new URL('../src/spatial/lifemap/LifeMapScene.tsx', import.meta.url), 'utf8')
-const compact = source.replace(/\s+/g, '')
 const flat = source.replace(/\s+/g, ' ')
+
+function assertEventContract(label: string, requiredTerms: string[]) {
+  for (const term of requiredTerms) {
+    assert.ok(
+      flat.includes(term),
+      `${label} is missing contract term: ${term}`,
+    )
+  }
+}
 
 test('3D LifeMap scene preserves node topology and focus camera behavior', () => {
   assert.match(source, /DEMO_MEMORY_STARS/)
@@ -27,7 +35,7 @@ test('focus and selection actions route users into Focus with manifest identity'
   assert.match(source, /onHover\(node\)/)
   assert.match(source, /lm3d-node-label/)
   assert.match(source, /function openFocus\(node: LifeMapNode\)/)
-  assert.match(compact, /router\.push\(`\/focus\?manifestId=\$\{encodeURIComponent\(node\.manifestId\)\}`\)/)
+  assert.match(flat, /router\.push\(`\/focus\?manifestId=\$\{encodeURIComponent\(node\.manifestId\)\}`\)/)
 })
 
 test('LifeMap HUD exposes reset, status, and Focus entry copy', () => {
@@ -41,4 +49,43 @@ test('LifeMap HUD exposes reset, status, and Focus entry copy', () => {
   assert.match(source, /function MemoryFocusModal/)
   assert.match(source, /Open Focus/)
   assert.match(source, /Return Galaxy/)
+})
+
+test('chapter anchors trigger cluster focus and emit narrator/timeline events', () => {
+  assertEventContract('cluster focus', [
+    "type: 'FOCUS_CLUSTER'",
+    'chapterId: chapter.id',
+    'camera,',
+    'companionLine: CHAPTER_LINES[chapter.id]',
+    'lifemap.cluster.focus',
+    'activeChapterId: chapter.id',
+  ])
+})
+
+test('focus and resolve actions emit narrator/timeline payloads', () => {
+  assertEventContract('star focus event', [
+    'lifemap.star.focus',
+    'starId: star.id',
+    'chapterId: star.chapterId',
+    'emotion: star.emotion',
+  ])
+
+  assertEventContract('star focus timeline sync', [
+    "phase: 'focus'",
+    'activeStarId: star.id',
+    'activeChapterId: star.chapterId',
+  ])
+
+  assertEventContract('star resolved event', [
+    'lifemap.star.resolved',
+    'starId: activeStar.id',
+    'chapterId: activeStar.chapterId',
+    'emotion: activeStar.emotion',
+    "action: 'resolve'",
+  ])
+
+  assertEventContract('star resolved timeline sync', [
+    'activeStarId: activeStar.id',
+    'activeChapterId: activeStar.chapterId',
+  ])
 })
