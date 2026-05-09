@@ -23,7 +23,7 @@ type LifeMapEventState = {
   usingSeedData: boolean;
 };
 
-const nodeTypes: readonly LifeMapNodeType[] = [
+const LIFE_MAP_NODE_TYPES = [
   "memory",
   "season",
   "ritual",
@@ -32,9 +32,9 @@ const nodeTypes: readonly LifeMapNodeType[] = [
   "relationship",
   "recovery",
   "legacy",
-];
+] as const satisfies readonly LifeMapNodeType[];
 
-const sourceTypes: readonly LifeMapEventSourceType[] = [
+const LIFE_MAP_EVENT_SOURCE_TYPES = [
   "audio",
   "conversation",
   "ritual",
@@ -44,9 +44,9 @@ const sourceTypes: readonly LifeMapEventSourceType[] = [
   "relationship",
   "recovery",
   "legacy",
-];
+] as const satisfies readonly LifeMapEventSourceType[];
 
-const eraTypes: readonly LifeMapEraType[] = [
+const LIFE_MAP_ERA_TYPES = [
   "all",
   "season",
   "relationship",
@@ -56,34 +56,34 @@ const eraTypes: readonly LifeMapEraType[] = [
   "threshold",
   "custom",
   "system_generated",
-];
+] as const satisfies readonly LifeMapEraType[];
 
-function asNodeType(value: unknown): LifeMapNodeType {
-  return typeof value === "string" && nodeTypes.includes(value as LifeMapNodeType)
+function asLifeMapNodeType(value: unknown): LifeMapNodeType {
+  return typeof value === "string" && LIFE_MAP_NODE_TYPES.includes(value as LifeMapNodeType)
     ? (value as LifeMapNodeType)
     : "memory";
 }
 
-function asSourceType(value: unknown): LifeMapEventSourceType {
-  return typeof value === "string" && sourceTypes.includes(value as LifeMapEventSourceType)
+function asLifeMapEventSourceType(value: unknown): LifeMapEventSourceType {
+  return typeof value === "string" && LIFE_MAP_EVENT_SOURCE_TYPES.includes(value as LifeMapEventSourceType)
     ? (value as LifeMapEventSourceType)
     : "system_generated";
 }
 
-function asEraType(value: unknown): LifeMapEraType {
-  return typeof value === "string" && eraTypes.includes(value as LifeMapEraType)
+function asLifeMapEraType(value: unknown): LifeMapEraType {
+  return typeof value === "string" && LIFE_MAP_ERA_TYPES.includes(value as LifeMapEraType)
     ? (value as LifeMapEraType)
     : "system_generated";
 }
 
-function asStringArray(value: unknown): string[] {
-  return Array.isArray(value) ? value.filter((item): item is string => typeof item === "string") : [];
-}
-
-function asPosition(value: unknown): [number, number, number] | undefined {
+function asLifeMapPosition(value: unknown): [number, number, number] | undefined {
   if (!Array.isArray(value) || value.length !== 3) return undefined;
   if (!value.every((item) => typeof item === "number" && Number.isFinite(item))) return undefined;
   return value as [number, number, number];
+}
+
+function asStringArray(value: unknown): string[] {
+  return Array.isArray(value) ? value.filter((item): item is string => typeof item === "string") : [];
 }
 
 function normalizeEvent(id: string, data: DocumentData): LifeMapEvent {
@@ -93,15 +93,15 @@ function normalizeEvent(id: string, data: DocumentData): LifeMapEvent {
     title: typeof data.title === "string" ? data.title : "Life Map Signal",
     subtitle: typeof data.subtitle === "string" ? data.subtitle : undefined,
     summary: typeof data.summary === "string" ? data.summary : "A private URAI Life Map signal ready for spatial rendering.",
-    type: asNodeType(data.type),
-    sourceType: asSourceType(data.sourceType),
+    type: asLifeMapNodeType(data.type),
+    sourceType: asLifeMapEventSourceType(data.sourceType),
     sourceId: typeof data.sourceId === "string" ? data.sourceId : undefined,
     occurredAt: data.occurredAt,
     createdAt: data.createdAt,
     updatedAt: data.updatedAt,
     intensity: typeof data.intensity === "number" ? data.intensity : 0.5,
     aura: typeof data.aura === "string" ? data.aura : undefined,
-    position: asPosition(data.position),
+    position: asLifeMapPosition(data.position),
     clusterId: typeof data.clusterId === "string" ? data.clusterId : undefined,
     eraId: typeof data.eraId === "string" ? data.eraId : undefined,
     replayAvailable: Boolean(data.replayAvailable),
@@ -119,10 +119,10 @@ function normalizeEra(id: string, data: DocumentData): LifeMapEra {
     userId: typeof data.userId === "string" ? data.userId : "demo-user",
     title: typeof data.title === "string" ? data.title : "Life Map Era",
     subtitle: typeof data.subtitle === "string" ? data.subtitle : undefined,
-    startLabel: typeof data.startLabel === "string" ? data.startLabel : "Open Arc",
+    startLabel: typeof data.startLabel === "string" ? data.startLabel : "Now",
     endLabel: typeof data.endLabel === "string" ? data.endLabel : undefined,
-    type: asEraType(data.type),
-    summary: typeof data.summary === "string" ? data.summary : "A generated Life Map era.",
+    type: asLifeMapEraType(data.type),
+    summary: typeof data.summary === "string" ? data.summary : "A private URAI Life Map era.",
     dominantAura: typeof data.dominantAura === "string" ? data.dominantAura : "#8adfff",
     nodeIds: asStringArray(data.nodeIds),
   };
@@ -243,3 +243,11 @@ export function useLifeMapEvents(userId?: string): LifeMapEventState {
     usingSeedData: usingSeedNodes || usingSeedEras,
   };
 }
+
+export const __lifeMapEventNormalizationForTests = {
+  asLifeMapNodeType,
+  asLifeMapEventSourceType,
+  asLifeMapEraType,
+  normalizeEvent,
+  normalizeEra,
+};
