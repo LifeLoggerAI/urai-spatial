@@ -136,13 +136,13 @@ function resolveUserId(explicitUserId?: string) {
 
 export function useLifeMapEvents(userId?: string): LifeMapEventState {
   const resolvedUserId = useMemo(() => resolveUserId(userId), [userId]);
-  const [state, setState] = useState<LifeMapEventState>({
-    nodes: lifeMapNodes,
-    eras: lifeMapEras,
-    loading: true,
-    error: null,
-    usingSeedData: true,
-  });
+  const [nodes, setNodes] = useState<LifeMapNode[]>(lifeMapNodes);
+  const [eras, setEras] = useState<LifeMapEra[]>(lifeMapEras);
+  const [eventsLoading, setEventsLoading] = useState(true);
+  const [erasLoading, setErasLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [usingSeedNodes, setUsingSeedNodes] = useState(true);
+  const [usingSeedEras, setUsingSeedEras] = useState(true);
 
   useEffect(() => {
     let cancelled = false;
@@ -156,24 +156,21 @@ export function useLifeMapEvents(userId?: string): LifeMapEventState {
         eventsQuery,
         (snapshot) => {
           if (cancelled) return;
-          const nodes = snapshot.docs.map((doc) => mapLifeMapEventToNode(normalizeEvent(doc.id, doc.data())));
-          setState({
-            nodes: nodes.length ? nodes : lifeMapNodes,
-            eras: lifeMapEras,
-            loading: false,
-            error: null,
-            usingSeedData: nodes.length === 0,
-          });
+
+          const nextNodes = snapshot.docs.map((doc) => mapLifeMapEventToNode(normalizeEvent(doc.id, doc.data())));
+
+          setNodes(nextNodes.length ? nextNodes : lifeMapNodes);
+          setUsingSeedNodes(nextNodes.length === 0);
+          setEventsLoading(false);
+          setError(null);
         },
         (error) => {
           if (cancelled) return;
-          setState({
-            nodes: lifeMapNodes,
-            eras: lifeMapEras,
-            loading: false,
-            error: error instanceof Error ? error.message : "Life Map events could not be loaded.",
-            usingSeedData: true,
-          });
+
+          setNodes(lifeMapNodes);
+          setUsingSeedNodes(true);
+          setEventsLoading(false);
+          setError(error instanceof Error ? error.message : "Life Map events could not be loaded.");
         },
       );
 
@@ -182,20 +179,69 @@ export function useLifeMapEvents(userId?: string): LifeMapEventState {
         unsubscribe();
       };
     } catch (error) {
-      setState({
-        nodes: lifeMapNodes,
-        eras: lifeMapEras,
-        loading: false,
-        error: error instanceof Error ? error.message : "Life Map events could not be loaded.",
-        usingSeedData: true,
-      });
+      setNodes(lifeMapNodes);
+      setUsingSeedNodes(true);
+      setEventsLoading(false);
+      setError(error instanceof Error ? error.message : "Life Map events could not be loaded.");
+
       return () => {
         cancelled = true;
       };
     }
   }, [resolvedUserId]);
 
-  return state;
+  useEffect(() => {
+    let cancelled = false;
+
+    try {
+      const db = getFirebaseDb();
+      const erasRef = collection(db, "users", resolvedUserId, "lifeMapEras");
+      const erasQuery = query(erasRef, limit(80));
+
+      const unsubscribe = onSnapshot(
+        erasQuery,
+        (snapshot) => {
+          if (cancelled) return;
+
+          const nextEras = snapshot.docs.map((doc) => normalizeEra(doc.id, doc.data()));
+
+          setEras(nextEras.length ? nextEras : lifeMapEras);
+          setUsingSeedEras(nextEras.length === 0);
+          setErasLoading(false);
+        },
+        (error) => {
+          if (cancelled) return;
+
+          setEras(lifeMapEras);
+          setUsingSeedEras(true);
+          setErasLoading(false);
+          setError(error instanceof Error ? error.message : "Life Map eras could not be loaded.");
+        },
+      );
+
+      return () => {
+        cancelled = true;
+        unsubscribe();
+      };
+    } catch (error) {
+      setEras(lifeMapEras);
+      setUsingSeedEras(true);
+      setErasLoading(false);
+      setError(error instanceof Error ? error.message : "Life Map eras could not be loaded.");
+
+      return () => {
+        cancelled = true;
+      };
+    }
+  }, [resolvedUserId]);
+
+  return {
+    nodes,
+    eras,
+    loading: eventsLoading || erasLoading,
+    error,
+    usingSeedData: usingSeedNodes || usingSeedEras,
+  };
 }
 
 export const __lifeMapEventNormalizationForTests = {
