@@ -109,6 +109,7 @@ export function HomeCohesionLayer({ enabled }: { enabled: boolean }) {
 
   const markSkyTransition = useCallback(() => {
     if (typeof window !== "undefined") window.sessionStorage.setItem(SKY_PORTAL_KEY, "1");
+    setPortal("sky");
     setTransitioning(true);
   }, []);
 
@@ -132,10 +133,7 @@ export function HomeCohesionLayer({ enabled }: { enabled: boolean }) {
       if (key === "o") setPortal("orb");
       if (key === "a") setPortal("avatar");
       if (key === "g") setPortal("ground");
-      if (key === "s") {
-        setPortal("sky");
-        openSky();
-      }
+      if (key === "s") openSky();
     };
 
     window.addEventListener("keydown", onKeyDown);
@@ -164,7 +162,7 @@ export function HomeCohesionLayer({ enabled }: { enabled: boolean }) {
     <div className="home-cohesion-layer" data-urai-home-cohesion="true" data-active-portal={portal} data-transitioning={transitioning ? "true" : "false"}>
       <p className="home-keyboard-hint" aria-hidden="true">{keyboardHint}</p>
 
-      <button type="button" className="home-sky-hit-zone" onClick={() => setPortal("sky")} aria-label="Open sky portal details" />
+      <button type="button" className="home-sky-hit-zone" onClick={openSky} aria-label="Begin sky ascent to Life Map" />
 
       <div className="home-cinematic-field" aria-hidden="true">
         <span className="field-star star-a" />
@@ -199,10 +197,7 @@ export function HomeCohesionLayer({ enabled }: { enabled: boolean }) {
             type="button"
             data-urai-home-target={target}
             aria-pressed={portal === target}
-            onClick={() => {
-              if (target === "sky") setPortal("sky");
-              else setPortal(target);
-            }}
+            onClick={() => setPortal(target)}
           >
             {target}
           </button>
