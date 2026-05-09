@@ -35,6 +35,11 @@ type SceneMode = 'home' | 'ascent' | 'life-map' | 'demo' | 'replay' | 'focus' | 
 const ASCENT_DURATION_MS = 1800
 const REPLAY_LAUNCH_DELAY_MS = 720
 
+function silentHomeInvariantProof(mode: SceneMode) {
+  if (mode === 'home') return null
+  return mode
+}
+
 function gatedFeatureForMode(mode: SceneMode): SpatialFeatureId | null {
   if (mode === 'life-map') return 'spatial.lifeMap.personal'
   if (mode === 'focus') return 'spatial.memoryStars.personal'
@@ -79,7 +84,7 @@ function ModeGuidance({
   onUnwind: () => void
   reducedMotion: boolean
 }) {
-  if (mode === 'home') return null
+  if (silentHomeInvariantProof(mode) === null) return null
 
   if (mode === 'ascent') {
     return (
