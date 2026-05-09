@@ -58,16 +58,33 @@ function StarField({ count = 1220, radius = 66, skyTier = 3, reducedMotion = fal
   )
 }
 
+function Segment({ from, to, color, opacity }: { from: [number, number, number]; to: [number, number, number]; color: string; opacity: number }) {
+  const start = new THREE.Vector3(...from)
+  const end = new THREE.Vector3(...to)
+  const midpoint = start.clone().add(end).multiplyScalar(0.5)
+  const direction = end.clone().sub(start)
+  const length = direction.length()
+  const quaternion = new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, 1, 0), direction.clone().normalize())
+
+  return (
+    <mesh position={midpoint} quaternion={quaternion}>
+      <cylinderGeometry args={[0.012, 0.012, length, 8]} />
+      <meshBasicMaterial color={color} transparent opacity={opacity} depthWrite={false} blending={THREE.AdditiveBlending} />
+    </mesh>
+  )
+}
+
 function ConstellationHints({ skyTier = 3, reducedMotion = false }: { skyTier?: number; reducedMotion?: boolean }) {
   const group = useRef<THREE.Group>(null)
-  const paths = useMemo(() => {
-    const sets = [
-      [[-8, 4.8, -23], [-4.5, 6.1, -25], [-1.2, 5.2, -24], [2.5, 6.6, -26]],
-      [[4.8, 3.8, -21], [7.5, 5.4, -24], [10.2, 4.2, -23]],
-      [[-10.5, 2.8, -19], [-7.5, 3.5, -20.5], [-5.1, 2.6, -19.5]],
-    ] as Array<Array<[number, number, number]>>
-    return sets.map((points) => new THREE.BufferGeometry().setFromPoints(points.map((p) => new THREE.Vector3(...p))))
-  }, [])
+  const paths = useMemo(
+    () =>
+      [
+        [[-8, 4.8, -23], [-4.5, 6.1, -25], [-1.2, 5.2, -24], [2.5, 6.6, -26]],
+        [[4.8, 3.8, -21], [7.5, 5.4, -24], [10.2, 4.2, -23]],
+        [[-10.5, 2.8, -19], [-7.5, 3.5, -20.5], [-5.1, 2.6, -19.5]],
+      ] as Array<Array<[number, number, number]>>,
+    [],
+  )
 
   useFrame(({ clock }) => {
     if (!group.current || reducedMotion) return
@@ -77,11 +94,17 @@ function ConstellationHints({ skyTier = 3, reducedMotion = false }: { skyTier?: 
 
   return (
     <group ref={group}>
-      {paths.map((geometry, index) => (
-        <line key={index} geometry={geometry}>
-          <lineBasicMaterial color={index === 1 ? '#c4b5fd' : '#8edcff'} transparent opacity={tierOpacity(skyTier, 0.12, 0.035)} />
-        </line>
-      ))}
+      {paths.flatMap((path, pathIndex) =>
+        path.slice(0, -1).map((point, index) => (
+          <Segment
+            key={`${pathIndex}-${index}`}
+            from={point}
+            to={path[index + 1]}
+            color={pathIndex === 1 ? '#c4b5fd' : '#8edcff'}
+            opacity={tierOpacity(skyTier, 0.12, 0.035)}
+          />
+        )),
+      )}
     </group>
   )
 }
