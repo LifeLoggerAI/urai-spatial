@@ -46,6 +46,13 @@ async function request(route, init) {
   }
 }
 
+async function readJson(route) {
+  const response = await request(route, { method: 'GET' })
+  const text = await response.text()
+  assert(response.ok, `${route} returned ${response.status}: ${text.slice(0, 120)}`)
+  return JSON.parse(text)
+}
+
 async function checkHtml(route) {
   const response = await request(route)
   const body = await response.text()
@@ -66,16 +73,20 @@ function assertLaunchBoundaryPayload(route, payload) {
   assert(Array.isArray(payload.requirementsBeforeLiveProviders), `${route} missing requirementsBeforeLiveProviders array`)
 }
 
+async function readLaunchBoundaryFallback() {
+  const capabilities = await readJson('/api/system/capabilities')
+  if (capabilities.launchBoundary) return { route: '/api/system/capabilities', payload: capabilities }
+  const integrationContract = await readJson('/api/system/integration-contract')
+  return { route: '/api/system/integration-contract', payload: integrationContract }
+}
+
 async function checkJson(route, init) {
   const headers = init.method === 'POST' ? { 'content-type': 'application/json' } : undefined
   const response = await request(route, { ...init, headers })
   const text = await response.text()
   if (!response.ok && route.includes('launch-boundary') && init.allowFallbackToCapabilities) {
-    const fallbackResponse = await request('/api/system/capabilities', { method: 'GET' })
-    const fallbackText = await fallbackResponse.text()
-    assert(fallbackResponse.ok, `${route} fallback /api/system/capabilities returned ${fallbackResponse.status}: ${fallbackText.slice(0, 120)}`)
-    const fallbackPayload = JSON.parse(fallbackText)
-    assertLaunchBoundaryPayload('/api/system/capabilities', fallbackPayload)
+    const fallback = await readLaunchBoundaryFallback()
+    assertLaunchBoundaryPayload(fallback.route, fallback.payload)
     return
   }
   assert(response.ok, `${route} returned ${response.status}: ${text.slice(0, 120)}`)
