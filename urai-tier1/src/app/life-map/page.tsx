@@ -1,7 +1,5 @@
-import LifeMapAscentGate from "@/spatial/components/world/LifeMapAscentGate";
+import LifeMapScene from "@/components/lifemap/LifeMapScene";
 
-// Canonical shell ownership is delegated inside LifeMapAscentGate:
-// <TierOneExperience mode="life-map" />
 export default function LifeMapPage() {
-  return <LifeMapAscentGate />;
+  return <LifeMapScene />;
 }
