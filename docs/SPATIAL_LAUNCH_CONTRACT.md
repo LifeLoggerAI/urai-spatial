@@ -36,16 +36,20 @@ The code contract lives in:
 urai-tier1/src/lib/spatial-launch-boundaries.ts
 ```
 
-The system contract API exposes the launch boundary through:
+The system APIs expose the launch boundary through:
 
 ```txt
+/api/system/launch-boundary
 /api/system/capabilities
 /api/system/integration-contract
 ```
 
+Use `/api/system/launch-boundary` when another URAI repo needs a focused provider-readiness check without parsing the full integration contract.
+
 The release lock checks the boundary through:
 
 ```txt
+pnpm check:spatial-copy
 pnpm check:spatial
 pnpm launch:check
 ```
