@@ -1,0 +1,67 @@
+/* URAI Spatial visual polish overrides */
+
+.urai-scene-stage[data-scene-mode='home'] .urai-home-orb,
+.urai-scene-stage[data-scene-mode='home'] .urai-scene-status,
+.urai-scene-stage[data-scene-mode='home'] .urai-visual-caption,
+.urai-scene-stage[data-scene-mode='home'] .urai-home-compass,
+.urai-scene-stage[data-scene-mode='home'] .urai-camera-reset,
+.urai-scene-stage[data-scene-mode='home'] .urai-spatial-guidance,
+.urai-scene-stage[data-scene-mode='home'] [data-testid='urai-orb-button'],
+.urai-scene-stage[data-scene-mode='home'] [data-testid='urai-sky-guidance'] {
+  display: none !important;
+}
+
+.urai-scene-stage[data-scene-mode='home'] {
+  background:
+    radial-gradient(circle at 50% 34%, rgba(84, 153, 255, 0.26), transparent 31%),
+    radial-gradient(circle at 50% 61%, rgba(125, 91, 255, 0.13), transparent 35%),
+    linear-gradient(180deg, #102754 0%, #06142e 45%, #020817 76%, #01030b 100%) !important;
+}
+
+.urai-scene-stage[data-scene-mode='life-map'] .tier-one-route-card,
+.urai-scene-stage[data-scene-mode='demo'] .tier-one-route-card,
+.urai-scene-stage[data-scene-mode='life-map'] .urai-visual-caption,
+.urai-scene-stage[data-scene-mode='demo'] .urai-visual-caption,
+.urai-scene-stage[data-scene-mode='life-map'] .urai-scene-status,
+.urai-scene-stage[data-scene-mode='demo'] .urai-scene-status,
+.urai-scene-stage[data-scene-mode='life-map'] .urai-spatial-guidance,
+.urai-scene-stage[data-scene-mode='demo'] .urai-spatial-guidance,
+.urai-scene-stage[data-scene-mode='life-map'] .urai-home-compass,
+.urai-scene-stage[data-scene-mode='demo'] .urai-home-compass {
+  display: none !important;
+}
+
+.urai-scene-stage[data-scene-mode='life-map'],
+.urai-scene-stage[data-scene-mode='demo'] {
+  background:
+    radial-gradient(circle at 50% 42%, rgba(56, 189, 248, 0.18), transparent 24%),
+    radial-gradient(circle at 42% 58%, rgba(124, 58, 237, 0.2), transparent 34%),
+    linear-gradient(180deg, #06122b 0%, #030817 58%, #01030a 100%) !important;
+}
+
+.urai-scene-stage[data-scene-mode='life-map'] .urai-life-map-paths path,
+.urai-scene-stage[data-scene-mode='demo'] .urai-life-map-paths path {
+  stroke-width: 0.8 !important;
+  stroke-opacity: 0.38 !important;
+}
+
+.urai-scene-stage[data-scene-mode='life-map'] .urai-life-map-orbit,
+.urai-scene-stage[data-scene-mode='demo'] .urai-life-map-orbit {
+  opacity: 0.22 !important;
+  box-shadow: none !important;
+}
+
+.urai-scene-stage[data-scene-mode='life-map'] .urai-life-map-star-button span,
+.urai-scene-stage[data-scene-mode='demo'] .urai-life-map-star-button span {
+  opacity: 0 !important;
+  transform: translateY(3px) scale(0.96) !important;
+  transition: opacity 180ms ease, transform 180ms ease !important;
+}
+
+.urai-scene-stage[data-scene-mode='life-map'] .urai-life-map-star-button:hover span,
+.urai-scene-stage[data-scene-mode='life-map'] .urai-life-map-star-button:focus-visible span,
+.urai-scene-stage[data-scene-mode='demo'] .urai-life-map-star-button:hover span,
+.urai-scene-stage[data-scene-mode='demo'] .urai-life-map-star-button:focus-visible span {
+  opacity: 1 !important;
+  transform: translateY(0) scale(1) !important;
+}
