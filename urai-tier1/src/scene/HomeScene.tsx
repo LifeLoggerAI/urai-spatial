@@ -34,6 +34,7 @@ type SceneMode = 'home' | 'ascent' | 'life-map' | 'demo' | 'replay' | 'focus' | 
 
 const ASCENT_DURATION_MS = 1800
 const REPLAY_LAUNCH_DELAY_MS = 720
+const HOME_VISUAL_TIERS = { ground: 3, orb: 3, sky: 3 } as const
 
 function gatedFeatureForMode(mode: SceneMode): SpatialFeatureId | null {
   if (mode === 'life-map') return 'spatial.lifeMap.personal'
@@ -139,31 +140,19 @@ function HomeActivationButton({ onEnter }: { onEnter: () => void }) {
       onClick={onEnter}
       style={{
         position: 'absolute',
-        left: '50%',
-        bottom: 'clamp(24px, 7vh, 72px)',
-        zIndex: 8,
-        transform: 'translateX(-50%)',
-        display: 'inline-flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        gap: 10,
-        minHeight: 48,
-        padding: '10px 18px',
-        borderRadius: 999,
-        border: '1px solid rgba(142, 220, 255, 0.42)',
-        background: 'linear-gradient(135deg, rgba(103, 232, 249, 0.92), rgba(139, 92, 246, 0.86))',
-        color: '#050713',
-        fontWeight: 800,
-        letterSpacing: '0.04em',
-        boxShadow: '0 18px 70px rgba(0, 0, 0, 0.34), 0 0 44px rgba(103, 232, 249, 0.26)',
-        backdropFilter: 'blur(16px)',
-        WebkitBackdropFilter: 'blur(16px)',
-        pointerEvents: 'auto',
+        inset: 0,
+        zIndex: 42,
+        display: 'block',
+        width: '100%',
+        height: '100%',
+        padding: 0,
+        border: 0,
+        background: 'transparent',
+        color: 'transparent',
+        opacity: 0,
+        cursor: 'pointer',
       }}
-    >
-      <span aria-hidden="true">✦</span>
-      <span>Open Life Map</span>
-    </button>
+    />
   )
 }
 
@@ -400,6 +389,9 @@ export default function HomeScene({ sceneMode = 'home' }: { sceneMode?: SceneMod
       data-scene-mode={sceneMode}
       data-reduced-motion={reducedMotion ? 'true' : 'false'}
       data-replay-launching={replayLaunching ? 'true' : 'false'}
+      data-ground-tier={HOME_VISUAL_TIERS.ground}
+      data-orb-tier={HOME_VISUAL_TIERS.orb}
+      data-sky-tier={HOME_VISUAL_TIERS.sky}
     >
       <div className="urai-scene-stage__fallback" aria-hidden="true" />
       <SpatialVisualOverlay mode={sceneMode} />
@@ -423,12 +415,13 @@ export default function HomeScene({ sceneMode = 'home' }: { sceneMode?: SceneMod
         <pointLight position={[3.2, 1.1, -3.2]} intensity={isHomeMode ? 0.82 : 0.25} color="#ffbf7a" distance={8.4} />
 
         <Atmosphere />
-        <Sky />
+        <Sky skyTier={HOME_VISUAL_TIERS.sky} reducedMotion={reducedMotion} />
 
         {isHomeMode ? <CelestialSanctuary reducedMotion={reducedMotion} /> : null}
-        {showHomeWorld ? <Ground /> : null}
+        {showHomeWorld ? <Ground groundTier={HOME_VISUAL_TIERS.ground} reducedMotion={reducedMotion} /> : null}
         {isHomeMode ? <RitualPlatform reducedMotion={reducedMotion} /> : null}
         {isHomeMode ? <Lanterns reducedMotion={reducedMotion} /> : null}
+        {isHomeMode ? <Orb state="idle" /> : null}
         {showAscentPortal ? <AscentPortal /> : null}
         {showOrb ? <Orb state={orbState} /> : null}
 
