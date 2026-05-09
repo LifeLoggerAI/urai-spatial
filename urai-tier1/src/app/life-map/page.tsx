@@ -1,5 +1,5 @@
-import LifeMapAscentGate from "@/spatial/components/world/LifeMapAscentGate";
+import { TierOneExperience } from "@/spatial/layout/TierOneExperience";
 
 export default function LifeMapPage() {
-  return <LifeMapAscentGate />;
+  return <TierOneExperience mode="life-map" />;
 }
