@@ -2,7 +2,7 @@
 
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import { Html, Stars } from "@react-three/drei";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type TouchEvent } from "react";
 import { useRouter } from "next/navigation";
 import * as THREE from "three";
 import { LifeMapHud, type LifeMapMode } from "./LifeMapHud";
@@ -436,7 +436,7 @@ export default function LifeMapScene() {
     setTtsEnabled((value) => !value);
   }, []);
 
-  const onTouchStart = useCallback((event: React.TouchEvent<HTMLElement>) => {
+  const onTouchStart = useCallback((event: TouchEvent<HTMLElement>) => {
     const first = event.touches[0];
     const second = event.touches[1];
     if (!first) return;
@@ -444,7 +444,7 @@ export default function LifeMapScene() {
     touchStart.current = { x: first.clientX, y: first.clientY, distance };
   }, []);
 
-  const onTouchEnd = useCallback((event: React.TouchEvent<HTMLElement>) => {
+  const onTouchEnd = useCallback((event: TouchEvent<HTMLElement>) => {
     const start = touchStart.current;
     touchStart.current = null;
     if (!start) return;
