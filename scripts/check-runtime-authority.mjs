@@ -36,6 +36,7 @@ const canonicalRoutes = [
   ['/life-map', 'urai-tier1/src/app/life-map/page.tsx', 'mode="life-map"'],
   ['/focus', 'urai-tier1/src/app/focus/page.tsx', 'mode="focus"'],
   ['/replay', 'urai-tier1/src/app/replay/page.tsx', 'mode="replay"'],
+  ['/unwind', 'urai-tier1/src/app/unwind/page.tsx', 'mode="unwind"'],
   ['/mirror', 'urai-tier1/src/app/mirror/page.tsx', 'mode="mirror"'],
 ]
 
@@ -48,7 +49,7 @@ for (const [route, file, modeToken] of canonicalRoutes) {
 
 requireIncludes('urai-tier1/src/spatial/layout/TierOneExperience.tsx', '@/scene/HomeScene', 'HomeScene canonical import')
 requireIncludes('urai-tier1/src/spatial/layout/TierOneExperience.tsx', '<HomeScene sceneMode={mode} />', 'HomeScene routed handoff')
-requireIncludes('urai-tier1/src/scene/HomeScene.tsx', "type SceneMode = 'home' | 'ascent' | 'life-map' | 'demo' | 'replay' | 'focus' | 'mirror'", 'canonical SceneMode union')
+requireIncludes('urai-tier1/src/scene/HomeScene.tsx', "type SceneMode = 'home' | 'ascent' | 'life-map' | 'demo' | 'replay' | 'focus' | 'unwind' | 'mirror'", 'canonical SceneMode union')
 requireIncludes('urai-tier1/src/scene/HomeScene.tsx', "router.push('/ascent')", 'Home to Ascent transition')
 requireIncludes('urai-tier1/src/scene/HomeScene.tsx', "router.push('/life-map')", 'Ascent/Focus to Life Map routing')
 requireIncludes('urai-tier1/src/scene/HomeScene.tsx', 'data-scene-mode={sceneMode}', 'current E2E mode attribute')

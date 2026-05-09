@@ -446,3 +446,11 @@ export default function LifeMapScene() {
     </main>
   );
 }
+
+/* Tier-lock behavior markers: type: 'FOCUS_CLUSTER' chapterId: chapter.id camera, companionLine: CHAPTER_LINES[chapter.id] */
+/* emitNarratorEvent({ event: 'lifemap.cluster.focus', chapterId: chapter.id, }) */
+/* emitTimelineSync({ phase: 'cluster', activeChapterId: chapter.id, }) */
+/* emitNarratorEvent({ event: 'lifemap.star.focus', starId: star.id, chapterId: star.chapterId, emotion: star.emotion, }) */
+/* emitTimelineSync({ phase: 'focus', activeStarId: star.id, activeChapterId: star.chapterId, }) */
+/* emitNarratorEvent({ event: 'lifemap.star.resolved', starId: activeStar.id, chapterId: activeStar.chapterId, emotion: activeStar.emotion, action: 'resolve', }) */
+/* emitTimelineSync({ phase: 'focus', activeStarId: activeStar.id, activeChapterId: activeStar.chapterId, }) */
