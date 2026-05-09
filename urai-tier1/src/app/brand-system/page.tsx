@@ -1,7 +1,29 @@
 import { UraiSymbol } from "@/brand/UraiSymbol";
 import { URAI_BRAND_REGISTRY, URAI_PRODUCT_KEYS } from "@/brand/urai-brand.registry";
 
+function publicDemoRoutesAllowed() {
+  return process.env.NEXT_PUBLIC_ALLOW_PUBLIC_DEMO_ROUTES === "true" || process.env.NODE_ENV !== "production";
+}
+
 export default function BrandSystemPage() {
+  if (!publicDemoRoutesAllowed()) {
+    return (
+      <main style={{ minHeight: "100vh", padding: 48, background: "#f7f8fb", color: "#0b0f1a" }}>
+        <section style={{ maxWidth: 720, margin: "0 auto" }}>
+          <p style={{ letterSpacing: "0.18em", textTransform: "uppercase", fontSize: 12, opacity: 0.6 }}>
+            URAI Brand System
+          </p>
+          <h1 style={{ fontSize: 48, lineHeight: 1.05, margin: "12px 0 14px" }}>
+            Brand system locked
+          </h1>
+          <p style={{ maxWidth: 760, fontSize: 18, lineHeight: 1.6, opacity: 0.72 }}>
+            This route is disabled in production unless NEXT_PUBLIC_ALLOW_PUBLIC_DEMO_ROUTES is explicitly enabled.
+          </p>
+        </section>
+      </main>
+    );
+  }
+
   return (
     <main style={{ minHeight: "100vh", padding: 48, background: "#f7f8fb", color: "#0b0f1a" }}>
       <section style={{ maxWidth: 1200, margin: "0 auto" }}>
