@@ -1,5 +1,10 @@
-import { LifeMapSkyPortalShell } from "@/components/lifemap/LifeMapSkyPortalShell";
+import { TierOneExperience } from "@/spatial/layout/TierOneExperience";
+import { LifeMapAscentGate } from "@/spatial/lifemap/LifeMapAscentGate";
 
 export default function LifeMapPage() {
-  return <LifeMapSkyPortalShell />;
+  return (
+    <LifeMapAscentGate>
+      <TierOneExperience mode="life-map" />
+    </LifeMapAscentGate>
+  );
 }
