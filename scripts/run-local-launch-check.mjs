@@ -1,3 +1,4 @@
+import fs from 'node:fs/promises'
 import { spawn } from 'node:child_process'
 import process from 'node:process'
 
@@ -68,6 +69,25 @@ async function waitForServer(url, timeoutMs = 20_000) {
   throw new Error(`Timed out waiting for ${url}: ${lastError?.message ?? 'no response'}`)
 }
 
+async function stopPort() {
+  const result = await runCapture('lsof', ['-ti', `:${port}`], { stdio: ['ignore', 'pipe', 'pipe'] })
+  const pids = result.output
+    .split(/\s+/)
+    .map((value) => value.trim())
+    .filter(Boolean)
+
+  if (!pids.length) return
+
+  console.log(`[URAI Spatial] Stopping existing process(es) on port ${port}: ${pids.join(', ')}`)
+  await runCapture('kill', pids)
+  await wait(1000)
+}
+
+async function cleanNextBuild() {
+  console.log('[URAI Spatial] Removing stale urai-tier1/.next build output')
+  await fs.rm('urai-tier1/.next', { recursive: true, force: true })
+}
+
 function startServer() {
   const child = spawn('pnpm', ['--filter', 'urai-tier1', 'exec', 'next', 'start', '-p', port], {
     stdio: ['ignore', 'pipe', 'pipe'],
@@ -96,12 +116,16 @@ try {
   console.log('[URAI Spatial] Local launch check starting')
   console.log(`[URAI Spatial] Smoke host: ${host}`)
 
+  await stopPort()
+  await cleanNextBuild()
+
   await run('pnpm', ['check:source-integrity'])
   await run('pnpm', ['check:production-routes'])
   await run('pnpm', ['check:spatial'])
   await run('pnpm', ['typecheck'])
   await run('pnpm', ['build'])
 
+  await stopPort()
   server = startServer()
   await waitForServer(`${host}/`)
   await run('pnpm', ['smoke'], { env: { HOST: host } })
