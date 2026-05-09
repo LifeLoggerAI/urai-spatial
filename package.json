@@ -1,7 +1,7 @@
 {
   "name": "urai-spatial-monorepo",
   "private": true,
-  "packageManager": "pnpm@8.15.9",
+  "packageManager": "pnpm@10.0.0",
   "scripts": {
     "dev": "pnpm --filter urai-tier1 dev",
     "build": "pnpm --filter urai-tier1 build",

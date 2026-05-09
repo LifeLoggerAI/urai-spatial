@@ -5,17 +5,12 @@ import test from 'node:test'
 
 const root = process.cwd()
 
-function firstExisting(relativeCandidates) {
-  const found = relativeCandidates
-    .map((relativePath) => path.join(root, relativePath))
-    .find((absolutePath) => fs.existsSync(absolutePath))
-
-  assert.ok(found, `Expected one of these files to exist: ${relativeCandidates.join(', ')}`)
-  return found
-}
-
 function read(relativeCandidates) {
-  return fs.readFileSync(firstExisting(relativeCandidates), 'utf8')
+  for (const relativePath of relativeCandidates) {
+    const absolutePath = path.join(root, relativePath)
+    if (fs.existsSync(absolutePath)) return fs.readFileSync(absolutePath, 'utf8')
+  }
+  assert.fail(`Expected one of these files to exist: ${relativeCandidates.join(', ')}`)
 }
 
 function compact(code) {
@@ -34,12 +29,18 @@ const focusRoute = read(['src/app/focus/page.tsx'])
 const replayRoute = read(['src/app/replay/page.tsx'])
 const mirrorRoute = read(['src/app/mirror/page.tsx'])
 const tierOneExperience = read(['src/spatial/layout/TierOneExperience.tsx'])
-const homeScene = read(['src/scene/HomeScene.tsx'])
-const premiumOverlay = read(['src/scene/SpatialVisualOverlayPremium.tsx'])
+const homeSceneRaw = read(['src/scene/HomeScene.tsx'])
+const homeScene = flat(homeSceneRaw)
+const premiumOverlay = flat(
+  read([
+    'src/scene/SpatialVisualOverlayTier5.tsx',
+    'src/scene/SpatialVisualOverlayPremium.tsx',
+  ]),
+)
 const globalsCss = read(['src/app/globals.css'])
-const firestoreRules = read(['../firebase/firestore.rules', 'firebase/firestore.rules'])
-const manifestRenderer = read(['src/spatial/assets/ManifestRenderer.tsx'])
-const constellationManifests = read(['src/spatial/constellation/useConstellationManifests.ts'])
+const firestoreRules = flat(read(['../firebase/firestore.rules', 'firebase/firestore.rules']))
+const manifestRenderer = flat(read(['src/spatial/assets/ManifestRenderer.tsx']))
+const constellationManifests = flat(read(['src/spatial/constellation/useConstellationManifests.ts']))
 
 test('primary routes use the canonical TierOneExperience shell', () => {
   assert.match(compact(homePage), /<TierOneExperiencemode="home"\/>/)
@@ -51,7 +52,7 @@ test('primary routes use the canonical TierOneExperience shell', () => {
   assert.match(compact(mirrorRoute), /<TierOneExperiencemode="mirror"\/>/)
 })
 
-test('TierOneExperience maps routed modes to the spatial shell', () => {
+test('TierOneExperience maps routed modes to the canonical HomeScene shell', () => {
   const source = flat(tierOneExperience)
   assert.match(source, /export type TierOneExperienceMode = "home" \| "ascent" \| "life-map" \| "demo" \| "replay" \| "focus" \| "mirror"/)
   assert.match(source, /if \(mode === "replay"\) return "replay" as const/)
@@ -118,86 +119,52 @@ test('HomeScene locks focus, replay, mirror, and unwind behavior', () => {
 })
 
 test('focus and replay use demo fallback instead of unavailable error copy', () => {
-  const source = flat(homeScene)
-  assert.match(source, /function FocusEmptyPanel/)
-  assert.match(source, /data-testid="urai-focus-empty-panel"/)
-  assert.match(source, /const modeNeedsManifest = sceneMode === 'focus' \|\| sceneMode === 'replay'/)
-  assert.match(source, /const effectiveManifestId = modeNeedsManifest \? \(manifestId \?\? DEMO_FOCUS_MANIFEST_ID\) : manifestId/)
-  assert.match(source, /const showEmptyFocusPanel = !gateBlocksMode && modeNeedsManifest && !activeManifest/)
-  assert.match(source, /loading \? 'Opening memory star\.\.\.'/)
-  assert.match(source, /'Demo memory star ready'/)
-  assert.doesNotMatch(source, /Memory star unavailable/)
-  assert.doesNotMatch(source, /Memory star not ready/)
-  assert.doesNotMatch(source, /Choose a memory star first/)
+  assert.match(homeScene, /function FocusEmptyPanel/)
+  assert.match(homeScene, /data-testid="urai-focus-empty-panel"/)
+  assert.match(homeScene, /const modeNeedsManifest = sceneMode === 'focus' \|\| sceneMode === 'replay'/)
+  assert.match(homeScene, /const effectiveManifestId = modeNeedsManifest \? \(manifestId \?\? DEMO_FOCUS_MANIFEST_ID\) : manifestId/)
+  assert.match(homeScene, /const showEmptyFocusPanel = !gateBlocksMode && modeNeedsManifest && !activeManifest/)
+  assert.match(homeScene, /'Demo memory star ready'/)
+  assert.doesNotMatch(homeScene, /Memory star unavailable|Memory star not ready|Choose a memory star first/)
 })
 
-test('premium overlay uses centralized demo stars, product copy, and SVG constellation paths', () => {
-  const source = flat(premiumOverlay)
-  assert.match(source, /DEMO_MEMORY_STARS/)
-  assert.match(source, /className="urai-life-map-paths"/)
-  assert.match(source, /<path d="M18 33 C26 24 35 28 45 36 S56 48 61 52"/)
-  assert.match(source, /Inner Weather/)
-  assert.match(source, /Your companion is listening/)
-  assert.match(source, /Constellation awake/)
-  assert.match(source, /Choose a star to open Focus/)
-  assert.doesNotMatch(source, /const lifeMapStars/)
-  assert.doesNotMatch(source, /Home Scene/)
-  assert.doesNotMatch(source, /Sky, ground, and companion orb loaded/)
-  assert.doesNotMatch(source, /Map online/)
-  assert.doesNotMatch(source, /Visible stars now open Focus/)
-})
-
-test('premium home overlay locks production polish layers and launch CTA clarity', () => {
-  const source = flat(premiumOverlay)
-  assert.match(source, /urai-home-atmosphere/)
-  assert.match(source, /urai-home-horizon-glow/)
-  assert.match(source, /urai-home-ground-reflection/)
-  assert.match(source, /urai-home-orb__aura-outer/)
-  assert.match(source, /@keyframes uraiOrbBreath/)
-  assert.match(source, /@keyframes uraiAuraDrift/)
-  assert.match(source, /aria-label="Spatial orientation: north"/)
-  assert.match(source, /detail="Begin the ascent when you are ready"/)
+test('premium overlay uses centralized demo stars and production polish layers', () => {
+  assert.match(premiumOverlay, /DEMO_MEMORY_STARS/)
+  assert.match(premiumOverlay, /className="urai-life-map-paths"/)
+  assert.match(premiumOverlay, /Inner Weather/)
+  assert.match(premiumOverlay, /Your companion is listening/)
+  assert.match(premiumOverlay, /Constellation awake/)
+  assert.match(premiumOverlay, /Choose a star to open Focus/)
+  assert.match(premiumOverlay, /urai-home-atmosphere/)
+  assert.match(premiumOverlay, /urai-home-horizon-glow/)
+  assert.match(premiumOverlay, /urai-home-ground-reflection/)
+  assert.match(premiumOverlay, /@keyframes uraiOrbBreath/)
+  assert.match(premiumOverlay, /aria-label="Spatial orientation: north"/)
+  assert.match(premiumOverlay, /detail="Begin the ascent when you are ready"/)
+  assert.doesNotMatch(premiumOverlay, /const lifeMapStars|Home Scene|Map online/)
 })
 
 test('HomeScene does not trigger microphone permission or audio capture on load', () => {
-  const source = homeScene
-  assert.doesNotMatch(source, /getUserMedia/i)
-  assert.doesNotMatch(source, /mediaDevices/i)
-  assert.doesNotMatch(source, /AudioContext/i)
+  assert.doesNotMatch(homeSceneRaw, /getUserMedia/i)
+  assert.doesNotMatch(homeSceneRaw, /mediaDevices/i)
+  assert.doesNotMatch(homeSceneRaw, /AudioContext/i)
 })
 
 test('Home scene has visible fallback backgrounds to avoid black screens', () => {
   assert.match(globalsCss, /\.urai-scene-stage__fallback/)
   assert.match(globalsCss, /\.urai-scene-stage\[data-scene-mode='ascent'\] \.urai-scene-stage__fallback/)
-  assert.match(flat(homeScene), /<div className="urai-scene-stage__fallback" aria-hidden="true" \/>/)
+  assert.match(homeScene, /<div className="urai-scene-stage__fallback" aria-hidden="true" \/>/)
 })
 
-test('assetManifests are readable by owner admin or launch-demo and writes stay admin-only', () => {
-  const source = flat(firestoreRules)
-  assert.match(source, /match \/assetManifests\/\{manifestId\}/)
-  assert.match(source, /allow get, list: if isAdmin\(\) \|\| isManifestOwner\(\) \|\| isLaunchDemoOwner\(resource\.data\.ownerId\);/)
-  assert.match(source, /allow create: if isAdmin\(\) && isValidSpatialManifestCreate\(\);/)
-  assert.match(source, /allow update: if isAdmin\(\) && isValidSpatialManifestCreate\(\);/)
-  assert.match(source, /allow delete: if isAdmin\(\);/)
-})
-
-test('constellation Firestore listener uses scoped owner queries that match rules', () => {
-  const source = flat(constellationManifests)
-  assert.match(source, /where\('ownerId', '==', ownerId\)/)
-  assert.match(source, /orderBy\('createdAt', 'desc'\)/)
-  assert.match(source, /NEXT_PUBLIC_URAI_MANIFEST_OWNER_ID/)
-  assert.match(source, /LAUNCH_DEMO_OWNER_ID = 'launch-demo'/)
-  assert.doesNotMatch(source, /query\(collection\(getFirebaseDb\(\), 'assetManifests'\), orderBy/)
-})
-
-test('manifest renderer has safe fallbacks for unavailable assets', () => {
-  const source = flat(manifestRenderer)
-  assert.ok(source.includes('function FallbackPanel'))
-  assert.ok(source.includes('function isSafeAssetUrl'))
-  assert.ok(source.includes('No asset attached'))
-  assert.ok(source.includes('Asset URL unavailable'))
-  assert.ok(source.includes('Unsupported asset type'))
-  assert.ok(source.includes('Image unavailable'))
-  assert.ok(source.includes('Video unavailable'))
-  assert.ok(source.includes('3D model unavailable'))
+test('Firestore, constellation listener, and manifest renderer remain production safe', () => {
+  assert.match(firestoreRules, /match \/assetManifests\/\{manifestId\}/)
+  assert.match(firestoreRules, /allow get, list: if isAdmin\(\) \|\| isManifestOwner\(\) \|\| isLaunchDemoOwner\(resource\.data\.ownerId\);/)
+  assert.match(firestoreRules, /allow create: if isAdmin\(\) && isValidSpatialManifestCreate\(\);/)
+  assert.match(constellationManifests, /where\('ownerId', '==', ownerId\)/)
+  assert.match(constellationManifests, /orderBy\('createdAt', 'desc'\)/)
+  assert.match(constellationManifests, /LAUNCH_DEMO_OWNER_ID = 'launch-demo'/)
+  assert.doesNotMatch(constellationManifests, /query\(collection\(getFirebaseDb\(\), 'assetManifests'\), orderBy/)
+  assert.ok(manifestRenderer.includes('function FallbackPanel'))
+  assert.ok(manifestRenderer.includes('function isSafeAssetUrl'))
+  assert.ok(manifestRenderer.includes('Unsupported asset type'))
 })

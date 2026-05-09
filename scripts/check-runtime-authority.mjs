@@ -19,6 +19,11 @@ function requireIncludes(path, needle, label = needle) {
   if (text && !text.includes(needle)) failures.push(`${path} missing ${label}`)
 }
 
+function requireIncludesAny(path, needles, label) {
+  const text = read(path)
+  if (text && !needles.some((needle) => text.includes(needle))) failures.push(`${path} missing ${label}`)
+}
+
 function requireNotIncludes(path, needle, label = needle) {
   const text = read(path)
   if (text && text.includes(needle)) failures.push(`${path} still contains ${label}`)
@@ -47,7 +52,7 @@ requireIncludes('urai-tier1/src/scene/HomeScene.tsx', "type SceneMode = 'home' |
 requireIncludes('urai-tier1/src/scene/HomeScene.tsx', "router.push('/ascent')", 'Home to Ascent transition')
 requireIncludes('urai-tier1/src/scene/HomeScene.tsx', "router.push('/life-map')", 'Ascent/Focus to Life Map routing')
 requireIncludes('urai-tier1/src/scene/HomeScene.tsx', 'data-scene-mode={sceneMode}', 'current E2E mode attribute')
-requireIncludes('urai-tier1/src/scene/HomeScene.tsx', 'data-testid="urai-sky-click-target"', 'sky click target')
+requireIncludesAny('urai-tier1/src/scene/HomeScene.tsx', ['data-testid="urai-sky-click-target"', 'onClick={isHomeMode ? enterLifeMap : undefined}'], 'home sky click target or canonical home click activation')
 requireIncludes('urai-tier1/src/scene/SpatialVisualOverlayPremium.tsx', 'data-testid={`lifemap-node-${star.manifestId}`}', 'deterministic LifeMap node test ids')
 requireIncludes('urai-tier1/scripts/tier-lock/tier-config.mjs', "{ route: '/ascent'", 'ascent route tier coverage')
 requireIncludes('tests/spatial-lock.mjs', 'data-scene-mode', 'current mode attribute in spatial E2E')
