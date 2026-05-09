@@ -1,0 +1,31 @@
+.sr-only {
+  position: absolute !important;
+  width: 1px !important;
+  height: 1px !important;
+  padding: 0 !important;
+  margin: -1px !important;
+  overflow: hidden !important;
+  clip: rect(0, 0, 0, 0) !important;
+  white-space: nowrap !important;
+  border: 0 !important;
+}
+
+.home-keyboard-hint {
+  top: calc(8px + var(--safe-area-top)) !important;
+  left: calc(12px + var(--safe-area-left)) !important;
+  right: calc(12px + var(--safe-area-right)) !important;
+  max-width: min(760px, calc(100vw - 24px - var(--safe-area-left) - var(--safe-area-right))) !important;
+  border-radius: 999px !important;
+  background: rgba(3, 8, 20, 0.18) !important;
+  backdrop-filter: blur(8px) !important;
+  -webkit-backdrop-filter: blur(8px) !important;
+}
+
+@media (max-width: 760px) {
+  .home-keyboard-hint {
+    top: calc(6px + var(--safe-area-top)) !important;
+    left: calc(8px + var(--safe-area-left)) !important;
+    right: calc(8px + var(--safe-area-right)) !important;
+    max-width: calc(100vw - 16px - var(--safe-area-left) - var(--safe-area-right)) !important;
+  }
+}
