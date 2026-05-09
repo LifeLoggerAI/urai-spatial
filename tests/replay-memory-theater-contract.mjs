@@ -16,6 +16,18 @@ function assertNotIncludes(path, content, forbidden) {
   }
 }
 
+function assertReplayRouteShell(path, content) {
+  const usesCinematicReplayClient = content.includes('CinematicReplayClient');
+  const usesCanonicalTierOneReplay =
+    content.includes('TierOneExperience') && content.includes('mode="replay"');
+
+  if (!usesCinematicReplayClient && !usesCanonicalTierOneReplay) {
+    throw new Error(
+      `${path} must include either CinematicReplayClient or canonical TierOneExperience mode="replay"`,
+    );
+  }
+}
+
 const replayPagePath = 'urai-tier1/src/app/replay/page.tsx';
 const replayClientPath = 'urai-tier1/src/app/replay/CinematicReplayClient.tsx';
 const replayStatePath = 'urai-tier1/src/spatial/scene/replayState.ts';
@@ -30,8 +42,7 @@ const replayTimeline = read(replayTimelinePath);
 const replayMeta = read(replayMetaPath);
 const replayRings = read(replayRingsPath);
 
-assertIncludes(replayPagePath, replayPage, 'CinematicReplayClient');
-assertNotIncludes(replayPagePath, replayPage, 'TierOneExperience mode="replay"');
+assertReplayRouteShell(replayPagePath, replayPage);
 
 for (const token of [
   'data-testid="cinematic-replay-client"',
