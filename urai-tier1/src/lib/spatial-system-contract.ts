@@ -1,3 +1,10 @@
+import {
+  assertSpatialFallbackMode,
+  spatialDeferredCapabilities,
+  spatialLaunchBoundary,
+  spatialLiveProviderRequirements,
+} from "./spatial-launch-boundaries";
+
 export const URAI_SPATIAL_SERVICE = "urai-spatial";
 export const URAI_SPATIAL_VERSION = "1.0.0-release-lock";
 export const URAI_SPATIAL_DOMAIN = process.env.NEXT_PUBLIC_URAI_SPATIAL_DOMAIN ?? "local-fallback";
@@ -45,6 +52,10 @@ export function buildSpatialSystemContract() {
     api: spatialApiRoutes,
     capabilities: spatialCapabilities,
     targets: spatialTargets,
+    launchBoundary: spatialLaunchBoundary,
+    fallbackMode: assertSpatialFallbackMode(),
+    deferredCapabilities: spatialDeferredCapabilities,
+    requirementsBeforeLiveProviders: spatialLiveProviderRequirements,
     auth: {
       mode: "fallback-or-user-context",
       userHeaders: ["x-urai-user-id", "x-urai-tenant-id"],
@@ -78,6 +89,7 @@ export function buildSpatialSystemContract() {
       "Fallback/demo mode is labeled explicitly.",
       "Biometric language is wellness-supportive and non-diagnostic.",
       "AR/WebXR seams are not described as live unless a provider is connected.",
+      "Live providers require explicit consent, tests, and deployment verification before launch claims.",
     ],
     smokeCoverage: ["/", "/life-map", "/privacy", "/terms", "/api/system/health", "/api/body-biometric", "/api/orb-companion"],
   };
