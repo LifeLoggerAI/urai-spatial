@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import HomeScene from "@/scene/HomeScene";
 import MirrorRouteLayer from "@/scene/MirrorRouteLayer";
 import { HomeCohesionLayer } from "./HomeCohesionLayer";
+import { SpatialCinematicContinuityLayer } from "./SpatialCinematicContinuityLayer";
 import { SpatialShell } from "./SpatialShell";
 
 export type TierOneExperienceMode = "home" | "ascent" | "life-map" | "demo" | "replay" | "focus" | "unwind" | "mirror";
@@ -67,13 +68,17 @@ function shellModeFor(mode: TierOneExperienceMode) {
   return "overview" as const;
 }
 
+function shouldShowRouteCard(mode: TierOneExperienceMode, hasCustomCopy: boolean) {
+  if (mode === "home" || mode === "ascent" || mode === "life-map" || mode === "focus" || mode === "replay" || mode === "mirror" || mode === "unwind") return false;
+  return hasCustomCopy;
+}
+
 export function TierOneExperience({ mode, title, eyebrow, description, cta }: Props) {
   const copy = fallbackCopy[mode];
   const router = useRouter();
   const openLifeMap = useCallback(() => router.push("/life-map", { scroll: false }), [router]);
   const openHome = useCallback(() => router.push("/", { scroll: false }), [router]);
-  // Life Map card suppression remains canonical: mode !== "home" && mode !== "life-map"
-  const showRouteCard = mode !== "home" && mode !== "ascent" && mode !== "life-map";
+  const showRouteCard = shouldShowRouteCard(mode, Boolean(title || eyebrow || description || cta));
 
   return (
     <SpatialShell mode={shellModeFor(mode)}>
@@ -82,6 +87,7 @@ export function TierOneExperience({ mode, title, eyebrow, description, cta }: Pr
         {mode === "mirror" ? <MirrorRouteLayer onLifeMap={openLifeMap} onHome={openHome} /> : null}
       </Suspense>
 
+      <SpatialCinematicContinuityLayer mode={mode} />
       <HomeCohesionLayer enabled={mode === "home"} />
 
       {showRouteCard ? (
