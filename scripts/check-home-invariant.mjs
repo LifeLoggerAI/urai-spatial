@@ -67,7 +67,9 @@ if (homeSceneText) {
   }
 
   const forbiddenHomeOverlayPatterns = [
-    /mode === 'home'[\s\S]{0,800}<div className="urai-spatial-guidance/i,
+    /if \(mode === 'home'\) \{[\s\S]{0,800}<div className="urai-spatial-guidance/i,
+    /if \(sceneMode === 'home'\) \{[\s\S]{0,800}<div className="urai-spatial-guidance/i,
+    /isHomeMode \? <ModeGuidance/i,
     /data-testid="urai-sky-click-target"/i,
     /const showOrb = isHomeMode/i,
   ]
