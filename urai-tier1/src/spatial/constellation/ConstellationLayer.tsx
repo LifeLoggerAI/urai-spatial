@@ -1,11 +1,12 @@
 'use client'
 
-import { useMemo, useRef } from 'react'
+import { useMemo, useRef, useState } from 'react'
+import { Html } from '@react-three/drei'
 import { useConstellationManifests } from './useConstellationManifests'
 import * as THREE from 'three'
 import { Mesh } from 'three'
 import { useFrame } from '@react-three/fiber'
-import { SpatialAssetManifest } from '../assets/manifestTypes'
+import { SpatialAssetManifest, memoryPrivacyState, memoryReplayReady, memorySourceType, memorySystemLabel, memoryTitle } from '../assets/manifestTypes'
 import ManifestRenderer from '../assets/ManifestRenderer'
 
 export type ConstellationNodePosition = readonly [number, number, number]
@@ -20,13 +21,26 @@ const clusterOffsets: Record<ClusterKey, ConstellationNodePosition> = {
   general: [0, 1.45, 0],
 }
 
+const memoryGlyphs: Record<string, string> = {
+  voice: '◌',
+  ritual: '✦',
+  person: '◇',
+  place: '⌖',
+  dream: '☾',
+  milestone: '◆',
+  recovery: '↺',
+  mirror: '◈',
+  shadow: '▾',
+  memory: '•',
+}
+
 function clusterForManifest(manifest: SpatialAssetManifest): ClusterKey {
-  const text = `${manifest.promptPreview || ''} ${manifest.assetType} ${manifest.spatialCompatibility?.type || ''}`.toLowerCase()
+  const text = `${manifest.promptPreview || ''} ${manifest.assetType} ${manifest.spatialCompatibility?.type || ''} ${manifest.memoryKind || ''} ${manifest.emotionalWeather || ''}`.toLowerCase()
 
   if (text.includes('dream') || text.includes('memory') || text.includes('grief') || text.includes('soft')) return 'memory'
-  if (text.includes('storm') || text.includes('battle') || text.includes('fire') || text.includes('launch')) return 'intense'
-  if (text.includes('video') || text.includes('motion') || text.includes('animation')) return 'motion'
-  if (text.includes('model') || text.includes('3d') || text.includes('spatial') || text.includes('glb')) return 'spatial'
+  if (text.includes('storm') || text.includes('battle') || text.includes('fire') || text.includes('launch') || text.includes('threshold') || text.includes('shadow')) return 'intense'
+  if (text.includes('video') || text.includes('motion') || text.includes('animation') || text.includes('recovery')) return 'motion'
+  if (text.includes('model') || text.includes('3d') || text.includes('spatial') || text.includes('glb') || text.includes('mirror')) return 'spatial'
   if (text.includes('image') || text.includes('portrait') || text.includes('visual')) return 'visual'
 
   return 'general'
@@ -78,12 +92,19 @@ function ConstellationLinks({
     return g
   }, [nodes])
 
+  const averageStrength = useMemo(() => {
+    if (!nodes.length) return 0.5
+    const total = nodes.reduce((sum, node) => sum + (node.manifest.relationshipArcStrength ?? 0.5), 0)
+    return total / nodes.length
+  }, [nodes])
+
   useFrame(({ clock }) => {
     if (!ref.current) return
     ref.current.rotation.y = Math.sin(clock.elapsedTime * 0.06) * 0.012
     const material = ref.current.material
     if (material instanceof THREE.LineBasicMaterial) {
-      material.opacity = selectedManifestId ? 0.14 : 0.28 + Math.sin(clock.elapsedTime * 0.75) * 0.04
+      material.opacity = selectedManifestId ? 0.14 : 0.22 + averageStrength * 0.18 + Math.sin(clock.elapsedTime * 0.75) * 0.04
+      material.linewidth = 1 + averageStrength * 2
     }
   })
 
@@ -94,29 +115,88 @@ function ConstellationLinks({
   )
 }
 
-function Node({ position, selected, dimmed, onSelect }: { position: ConstellationNodePosition; selected: boolean; dimmed: boolean; onSelect: (position: ConstellationNodePosition) => void }) {
+function Node({
+  manifest,
+  position,
+  selected,
+  dimmed,
+  onSelect,
+}: {
+  manifest: SpatialAssetManifest
+  position: ConstellationNodePosition
+  selected: boolean
+  dimmed: boolean
+  onSelect: (position: ConstellationNodePosition) => void
+}) {
   const ref = useRef<Mesh>(null)
-  const opacity = dimmed ? 0.18 : 1
-  const baseScale = dimmed ? 0.72 : 1
+  const [hovered, setHovered] = useState(false)
+  const importance = Math.max(0.2, Math.min(1, manifest.importanceScore ?? 0.5))
+  const opacity = dimmed ? 0.2 : 0.78 + importance * 0.22
+  const baseScale = dimmed ? 0.72 : 0.9 + importance * 0.5
+  const glyph = memoryGlyphs[manifest.memoryKind || 'memory'] || memoryGlyphs.memory
+  const ariaLabel = `${memoryTitle(manifest)}. ${memorySystemLabel(manifest)}. ${manifest.emotionalTone || 'unlabeled emotional tone'}. ${memoryReplayReady(manifest) ? 'Replay ready.' : 'Replay not ready.'}`
 
   useFrame(({ clock }) => {
     if (!ref.current || dimmed) return
     ref.current.rotation.y = clock.elapsedTime * 0.2
-    const scale = selected ? 1.8 + Math.sin(clock.elapsedTime * 3) * 0.08 : baseScale + Math.sin(clock.elapsedTime * 1.4 + position[0]) * 0.05
-    ref.current.scale.setScalar(scale)
+    const selectedPulse = selected || hovered ? 1.52 + Math.sin(clock.elapsedTime * 3) * 0.08 : baseScale + Math.sin(clock.elapsedTime * 1.4 + position[0]) * 0.05
+    ref.current.scale.setScalar(selectedPulse)
   })
 
   return (
-    <mesh ref={ref} position={position} scale={baseScale} onClick={(event) => { event.stopPropagation(); onSelect(position) }}>
-      <sphereGeometry args={[0.12, 16, 16]} />
-      <meshStandardMaterial
-        emissive={selected ? '#22d3ee' : '#8b5cf6'}
-        emissiveIntensity={selected ? 2.2 : dimmed ? 0.35 : 1.2}
-        color="#1f1b2e"
-        transparent
-        opacity={opacity}
-      />
-    </mesh>
+    <group position={position}>
+      <mesh
+        ref={ref}
+        scale={baseScale}
+        onClick={(event) => {
+          event.stopPropagation()
+          onSelect(position)
+        }}
+        onPointerOver={(event) => {
+          event.stopPropagation()
+          setHovered(true)
+          document.body.style.cursor = 'pointer'
+        }}
+        onPointerOut={() => {
+          setHovered(false)
+          document.body.style.cursor = ''
+        }}
+      >
+        <sphereGeometry args={[0.12, 20, 20]} />
+        <meshStandardMaterial
+          emissive={selected ? '#22d3ee' : hovered ? '#f0abfc' : '#8b5cf6'}
+          emissiveIntensity={selected ? 2.6 : hovered ? 2.1 : dimmed ? 0.35 : 1.2 + importance}
+          color="#1f1b2e"
+          transparent
+          opacity={opacity}
+        />
+      </mesh>
+      <Html center distanceFactor={8} zIndexRange={[40, 20]}>
+        <button
+          type="button"
+          className={`urai-life-map-node-button${selected ? ' urai-life-map-node-button--selected' : ''}`}
+          aria-label={ariaLabel}
+          data-testid="urai-life-map-node-button"
+          data-manifest-id={manifest.manifestId}
+          onClick={(event) => {
+            event.stopPropagation()
+            onSelect(position)
+          }}
+          onFocus={() => setHovered(true)}
+          onBlur={() => setHovered(false)}
+        >
+          <span aria-hidden="true">{glyph}</span>
+        </button>
+        {hovered || selected ? (
+          <aside className="urai-life-map-node-preview" data-testid="urai-life-map-node-preview">
+            <strong>{memoryTitle(manifest)}</strong>
+            <span>{memorySystemLabel(manifest)}</span>
+            <small>{manifest.season || 'Unsorted season'} · {manifest.emotionalTone || 'signal pending'}</small>
+            <small>{memoryPrivacyState(manifest)} · {memorySourceType(manifest)} · {memoryReplayReady(manifest) ? 'Replay ready' : 'Replay pending'}</small>
+          </aside>
+        ) : null}
+      </Html>
+    </group>
   )
 }
 
@@ -149,12 +229,13 @@ export default function ConstellationLayer({ enabled, selectedManifestId, onSele
   if (!enabled) return null
 
   return (
-    <group>
+    <group data-testid="urai-constellation-layer">
       <ConstellationLinks nodes={positionedManifests} selectedManifestId={selectedManifestId} />
 
       {positionedManifests.map(({ manifest, position }) => (
         <Node
           key={manifest.manifestId}
+          manifest={manifest}
           position={position}
           selected={manifest.manifestId === selectedManifestId}
           dimmed={Boolean(selectedManifestId) && manifest.manifestId !== selectedManifestId}
