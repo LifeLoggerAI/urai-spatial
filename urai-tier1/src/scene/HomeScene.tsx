@@ -29,6 +29,7 @@ import { NarratorContext } from '../spatial/narrator/buildNarration'
 import { DEMO_FOCUS_MANIFEST_ID } from '../spatial/demo/demoMemoryStars'
 import MemoryStarArtifact from '../spatial/memory/MemoryStarArtifact'
 import { buildMemoryMorphology, MemoryMorphology } from '../spatial/memory/memoryMorphology'
+import LifeMapTrustLoop from '../spatial/lifemap/LifeMapTrustLoop'
 
 type SceneMode = 'home' | 'ascent' | 'life-map' | 'demo' | 'replay' | 'focus' | 'unwind' | 'mirror'
 
@@ -250,6 +251,7 @@ export default function HomeScene({ sceneMode = 'home' }: { sceneMode?: SceneMod
   const showHomeWorld = isHomeMode
   const showAscentPortal = isAscentMode
   const showConstellation = isConstellationRoute && !gateBlocksMode
+  const showLifeMapTrustLoop = sceneMode === 'life-map' && !gateBlocksMode
   const showOrb = sceneMode === 'focus' || sceneMode === 'replay' || sceneMode === 'unwind' || sceneMode === 'mirror'
   const { manifest, loading: manifestLoading } = useManifest(gateBlocksMode ? null : effectiveManifestId)
   const [selectedManifest, setSelectedManifest] = useState<SpatialAssetManifest | null>(null)
@@ -437,6 +439,7 @@ export default function HomeScene({ sceneMode = 'home' }: { sceneMode?: SceneMod
         {!isHomeMode ? <NarratorVoice manifest={activeManifest} context={narratorContext} /> : null}
       </Canvas>
 
+      {showLifeMapTrustLoop ? <LifeMapTrustLoop /> : null}
       {showMemoryArtifact ? <MemoryStarArtifact morphology={memoryMorphology} replay={sceneMode === 'replay' || replayLaunching} /> : null}
       {!isHomeMode ? <CameraResetButton onReset={resetCamera} /> : null}
 
