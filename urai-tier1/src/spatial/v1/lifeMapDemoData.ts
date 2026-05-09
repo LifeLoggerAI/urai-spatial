@@ -157,7 +157,7 @@ export const lifeMapSeasons: LifeMapSeason[] = [
 ];
 
 export const narratorInsights: NarratorInsight[] = [
-  { id: 'insight-recovery-small', nodeId: 'first-signal-recovery', line: 'The first recovery signal was small because it was honest.', tone: 'warm', createdAt: now },
+  { id: 'insight-recovery-small', nodeId: 'first-signal-recovery', line: 'The first recovery signal was small because it was honest.', tone: 'gentle', createdAt: now },
   { id: 'insight-shadow-protective', nodeId: 'week-heavy-fog', line: 'The fog protected energy before the map could explain it.', tone: 'protective', createdAt: now },
   { id: 'insight-mirror-softened', nodeId: 'mirror-pattern-softened', line: 'This pattern is not proof of failure. It is proof of movement.', tone: 'gentle', createdAt: now },
 ];
