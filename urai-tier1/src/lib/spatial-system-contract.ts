@@ -22,6 +22,7 @@ export const spatialApiRoutes = {
   manifest: "/api/system/manifest",
   capabilities: "/api/system/capabilities",
   integrationContract: "/api/system/integration-contract",
+  launchBoundary: "/api/system/launch-boundary",
   bodyBiometric: "/api/body-biometric",
   orbCompanion: "/api/orb-companion",
 };
@@ -91,7 +92,7 @@ export function buildSpatialSystemContract() {
       "AR/WebXR seams are not described as live unless a provider is connected.",
       "Live providers require explicit consent, tests, and deployment verification before launch claims.",
     ],
-    smokeCoverage: ["/", "/life-map", "/privacy", "/terms", "/api/system/health", "/api/body-biometric", "/api/orb-companion"],
+    smokeCoverage: ["/", "/life-map", "/privacy", "/terms", "/api/system/health", "/api/system/launch-boundary", "/api/body-biometric", "/api/orb-companion"],
   };
 }
 
