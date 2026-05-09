@@ -8,7 +8,7 @@ import { LifeMapScene } from './LifeMapScene';
 import { MirrorOfBecomingView } from './MirrorOfBecomingView';
 import { demoHomeWorldState, lifeMapEdges, lifeMapNodes, mirrorStates, replayPaths } from './lifeMapDemoData';
 import { initialSpatialState, reduceSpatialState } from './spatialStateMachine';
-import './uraiSpatialV1.css';
+import './uraiSpatialV1.module.css';
 
 export function UraiSpatialStage() {
   const [state, dispatch] = useReducer(reduceSpatialState, initialSpatialState);
