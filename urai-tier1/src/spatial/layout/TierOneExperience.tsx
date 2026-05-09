@@ -71,7 +71,7 @@ export function TierOneExperience({ mode, title, eyebrow, description, cta }: Pr
   const router = useRouter();
   const openLifeMap = useCallback(() => router.push("/life-map", { scroll: false }), [router]);
   const openHome = useCallback(() => router.push("/", { scroll: false }), [router]);
-  const showRouteCard = mode !== "home";
+  const showRouteCard = mode !== "home" && mode !== "life-map";
 
   return (
     <SpatialShell mode={shellModeFor(mode)}>
