@@ -5,10 +5,17 @@ import { readFileSync } from 'node:fs'
 const dataSource = readFileSync(new URL('../src/spatial/lifemap/lifeMapTrustData.ts', import.meta.url), 'utf8')
 const loopSource = readFileSync(new URL('../src/spatial/lifemap/LifeMapTrustLoop.tsx', import.meta.url), 'utf8')
 const routeSource = readFileSync(new URL('../src/app/life-map/page.tsx', import.meta.url), 'utf8')
+const shellSource = readFileSync(new URL('../src/spatial/layout/TierOneExperience.tsx', import.meta.url), 'utf8')
 
-test('Life Map route mounts selected-node trust loop', () => {
+test('Life Map route preserves canonical shell and mounts selected-node trust loop', () => {
+  assert.ok(routeSource.includes('TierOneExperience'))
+  assert.ok(routeSource.includes('mode="life-map"'))
   assert.ok(routeSource.includes('LifeMapTrustLoop'))
   assert.ok(!routeSource.includes('SpatialWorldCanvas'))
+})
+
+test('canonical shell does not overlay route card on Life Map', () => {
+  assert.ok(shellSource.includes('mode !== "home" && mode !== "ascent" && mode !== "life-map"'))
 })
 
 test('Life Map uses typed deterministic trust-safe demo nodes', () => {
