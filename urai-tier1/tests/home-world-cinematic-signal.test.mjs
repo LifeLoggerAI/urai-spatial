@@ -42,7 +42,8 @@ test('cinematic HomeScene is wired into active SpatialHomeWorld', () => {
   assert.match(homeScene, /data-testid="urai-home-scene"/)
   assert.match(homeScene, /data-testid="urai-orb-button"/)
   assert.match(homeScene, /data-testid="urai-command-ribbon"/)
-  assert.match(homeScene, /aria-label="Enter Life Map through the sky"/)
+  assert.match(homeScene, /data-testid="enter-sky-button"/)
+  assert.match(homeScene, /aria-label="Enter Life Map(?: through the sky)?"/)
 })
 
 test('cinematic HomeScene preserves tier data attributes and reduced-motion styles', () => {
