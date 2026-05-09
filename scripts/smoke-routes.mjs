@@ -21,10 +21,17 @@ const webhookRoutes = [
   ['/api/stripe/webhook-v2', { method: 'POST', expectedStatus: 400, body: '{}' }],
 ]
 
-const forbidden = ['TODO', 'lorem ipsum', 'coming soon', 'undefined', '[object Object]']
+const forbiddenVisibleText = ['TODO', 'lorem ipsum', 'coming soon', 'undefined', '[object Object]']
 
 function assert(condition, message) {
   if (!condition) throw new Error(message)
+}
+
+function visibleHtml(body) {
+  return body
+    .replace(/<script\b[^>]*>[\s\S]*?<\/script>/gi, '')
+    .replace(/<style\b[^>]*>[\s\S]*?<\/style>/gi, '')
+    .replace(/<noscript\b[^>]*>[\s\S]*?<\/noscript>/gi, '')
 }
 
 function isConnectionRefused(error) {
@@ -47,11 +54,12 @@ async function request(route, init) {
 async function checkHtml(route) {
   const response = await request(route)
   const body = await response.text()
+  const visible = visibleHtml(body)
   assert(response.status === 200, `${route} returned ${response.status}`)
   assert(body.trim().length > 0, `${route} returned an empty body`)
   assert(/<title[^>]*>/.test(body), `${route} is missing a title`)
   assert(/name=["']viewport["']/.test(body), `${route} is missing viewport meta`)
-  for (const token of forbidden) assert(!body.includes(token), `${route} includes placeholder token ${token}`)
+  for (const token of forbiddenVisibleText) assert(!visible.includes(token), `${route} includes placeholder token ${token}`)
   if (route === '/') assert(body.includes('data-urai-home-spatial-shell') || body.includes('urai-home-shell'), '/ missing URAI home marker')
   if (route === '/life-map') assert(body.includes('urai-spatial-stage') || body.includes('lifemap-starfield'), '/life-map missing LifeMap marker')
 }
