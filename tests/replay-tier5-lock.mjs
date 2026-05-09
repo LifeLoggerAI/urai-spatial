@@ -13,22 +13,26 @@ function sleep(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
+async function serverResponds(url) {
+  try {
+    const response = await fetch(url);
+    return response.ok || response.status < 500;
+  } catch {
+    return false;
+  }
+}
+
 async function waitForServer(url, timeoutMs = 90000) {
   const started = Date.now();
   while (Date.now() - started < timeoutMs) {
-    try {
-      const response = await fetch(url);
-      if (response.ok || response.status < 500) return;
-    } catch {
-      // keep waiting
-    }
+    if (await serverResponds(url)) return;
     await sleep(1000);
   }
   throw new Error(`Timed out waiting for ${url}`);
 }
 
-function startServer() {
-  if (USE_EXISTING) return null;
+async function startServer() {
+  if (USE_EXISTING || (await serverResponds(BASE_URL))) return null;
   const child = spawn('pnpm', ['--filter', 'urai-tier1', 'dev', '--port', '3000'], {
     cwd: process.cwd(),
     env: { ...process.env, CI: '1' },
@@ -98,7 +102,7 @@ function collectConsole(page) {
 }
 
 async function run() {
-  const server = startServer();
+  const server = await startServer();
   const report = { screenshots: [], console: [], audits: [] };
 
   try {
