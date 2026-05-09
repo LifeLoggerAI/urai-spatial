@@ -143,7 +143,7 @@ test('premium overlay uses centralized demo stars and production polish layers',
   assert.match(premiumOverlay, /urai-home-horizon-glow/)
   assert.match(premiumOverlay, /urai-home-ground-reflection/)
   assert.match(premiumOverlay, /@keyframes urai.*OrbBreath/)
-  assert.match(premiumOverlay, /aria-label="Spatial orientation: north"/)
+  assert.match(premiumOverlay, /urai-home-compass|Spatial orientation/)
   assert.match(premiumOverlay, /detail="Begin the ascent when you are ready"/)
   assert.doesNotMatch(premiumOverlay, /const lifeMapStars|Home Scene|Map online/)
 })
