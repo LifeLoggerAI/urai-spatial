@@ -5,7 +5,7 @@ import fs from 'node:fs'
 const source = fs.readFileSync(new URL('../src/spatial/lifemap/LifeMapScene.tsx', import.meta.url), 'utf8')
 const flat = source.replace(/\s+/g, ' ')
 
-function assertEventContract(label: string, requiredTerms: string[]) {
+function assertEventContract(label, requiredTerms) {
   for (const term of requiredTerms) {
     assert.ok(
       flat.includes(term),
