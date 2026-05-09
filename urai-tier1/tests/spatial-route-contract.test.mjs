@@ -32,6 +32,7 @@ const files = {
   mirror: read(['src/app/mirror/page.tsx']),
   tierOne: read(['src/spatial/layout/TierOneExperience.tsx']),
   sceneRaw: read(['src/scene/HomeScene.tsx']),
+  focusStateRaw: read(['src/spatial/scene/focusState.ts']),
   overlayRaw: read(['src/scene/SpatialVisualOverlayPremium.tsx', 'src/scene/SpatialVisualOverlayTier5.tsx']),
   css: read(['src/app/globals.css']),
   rules: read(['../firebase/firestore.rules', 'firebase/firestore.rules']),
@@ -40,6 +41,7 @@ const files = {
 }
 
 const scene = flat(files.sceneRaw)
+const focusState = flat(files.focusStateRaw)
 const tierOne = flat(files.tierOne)
 const overlay = flat(files.overlayRaw)
 const rules = flat(files.rules)
@@ -76,8 +78,8 @@ test('HomeScene preserves silent home and spatial route authority', () => {
   assert.match(scene, /const isConstellationRoute = sceneMode === 'life-map' \|\| sceneMode === 'demo' \|\| params\.get\('mode'\) === 'constellation'/)
   assert.match(scene, /const showHomeWorld = isHomeMode/)
   assert.match(scene, /const showAscentPortal = isAscentMode/)
-  assert.match(scene, /const showConstellation = isConstellationRoute/)
-  assert.match(scene, /const showOrb = sceneMode === 'focus' \|\| sceneMode === 'replay' \|\| sceneMode === 'mirror'/)
+  assert.match(scene, /const showConstellation = isConstellationRoute && !gateBlocksMode/)
+  assert.match(scene, /const showOrb = sceneMode === 'focus' \|\| sceneMode === 'replay' \|\| sceneMode === 'mirror' \|\| sceneMode === 'unwind'/)
   assert.match(scene, /if \(silentHomeInvariantProof\(mode\) === null\) return null/)
   assert.match(scene, /onClick=\{isHomeMode \? enterLifeMap : undefined\}/)
   assert.ok(scene.includes('{showHomeWorld ? <Ground /> : null}'))
@@ -114,6 +116,27 @@ test('HomeScene routes Home to Ascent to Life Map and supports focus replay unwi
   assert.match(scene, /router\.push\('\/'\)/)
   assert.match(scene, /if \(sceneMode === 'life-map' \|\| sceneMode === 'ascent'\)/)
   assert.doesNotMatch(scene, /router\.push\('\/home'\)/)
+})
+
+test('Focus phase model is explicit and wired into HomeScene', () => {
+  assert.match(focusState, /export type FocusPhase =/)
+  assert.match(focusState, /'loading_focus_data'/)
+  assert.match(focusState, /'focus_ready'/)
+  assert.match(focusState, /'focus_detail_open'/)
+  assert.match(focusState, /'focus_empty'/)
+  assert.match(focusState, /'focus_error'/)
+  assert.match(focusState, /export function resolveFocusPhase\(input: FocusPhaseInput\): FocusPhase/)
+  assert.match(focusState, /if \(input\.mode !== 'focus' && input\.mode !== 'replay'\) return 'idle'/)
+  assert.match(focusState, /if \(input\.isGateBlocked && !input\.isGateLoading\) return 'focus_error'/)
+  assert.match(focusState, /if \(input\.isGateLoading \|\| \(input\.isManifestLoading && !input\.hasLoadedTarget\)\) return 'loading_focus_data'/)
+  assert.match(focusState, /if \(input\.isReplayLaunching\) return 'exiting_focus'/)
+  assert.match(scene, /import \{ FocusPhaseDefinition, getFocusPhaseDefinition, resolveFocusPhase \} from '\.\.\/spatial\/scene\/focusState'/)
+  assert.match(scene, /const focusPhase = useMemo\(/)
+  assert.match(scene, /resolveFocusPhase\(\{/)
+  assert.match(scene, /const focusDefinition = useMemo\(\(\) => getFocusPhaseDefinition\(focusPhase\), \[focusPhase\]\)/)
+  assert.match(scene, /data-focus-phase=\{focusPhase\}/)
+  assert.match(scene, /focusDefinition\.allowedActions\.includes\('start_replay'\)/)
+  assert.match(scene, /focusDefinition\.userVisibleUi/)
 })
 
 test('focus and replay use demo fallback instead of unavailable error copy', () => {
