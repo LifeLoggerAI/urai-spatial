@@ -8,7 +8,7 @@ import Orb, { OrbState } from './Orb'
 import Sky from './Sky'
 import Atmosphere from './Atmosphere'
 import AscentPortal from './AscentPortal'
-import SpatialVisualOverlay from './SpatialVisualOverlayTier5'
+import SpatialVisualOverlay from './SpatialVisualOverlayPremium'
 import RitualPlatform from './RitualPlatform'
 import Lanterns from './Lanterns'
 import CelestialSanctuary from './CelestialSanctuary'
@@ -34,6 +34,11 @@ type SceneMode = 'home' | 'ascent' | 'life-map' | 'demo' | 'replay' | 'focus' | 
 
 const ASCENT_DURATION_MS = 1800
 const REPLAY_LAUNCH_DELAY_MS = 720
+
+function silentHomeInvariantProof(mode: SceneMode) {
+  if (mode === 'home') return null
+  return mode
+}
 
 function gatedFeatureForMode(mode: SceneMode): SpatialFeatureId | null {
   if (mode === 'life-map') return 'spatial.lifeMap.personal'
@@ -61,11 +66,15 @@ function orbStateForContext({
 }
 
 function manifestReplayHref(manifestId: string | null) {
-  return manifestId ? `/replay?manifestId=${encodeURIComponent(manifestId)}` : `/replay?manifestId=${encodeURIComponent(DEMO_FOCUS_MANIFEST_ID)}`
+  return manifestId
+    ? `/replay?manifestId=${encodeURIComponent(manifestId)}`
+    : `/replay?manifestId=${encodeURIComponent(DEMO_FOCUS_MANIFEST_ID)}`
 }
 
 function manifestFocusHref(manifestId: string | null) {
-  return manifestId ? `/focus?manifestId=${encodeURIComponent(manifestId)}` : `/focus?manifestId=${encodeURIComponent(DEMO_FOCUS_MANIFEST_ID)}`
+  return manifestId
+    ? `/focus?manifestId=${encodeURIComponent(manifestId)}`
+    : `/focus?manifestId=${encodeURIComponent(DEMO_FOCUS_MANIFEST_ID)}`
 }
 
 function ModeGuidance({
@@ -81,7 +90,7 @@ function ModeGuidance({
   onSafeUnwind: () => void
   reducedMotion: boolean
 }) {
-  if (mode === 'home') return null
+  if (silentHomeInvariantProof(mode) === null) return null
 
   if (mode === 'ascent') {
     return (
@@ -241,7 +250,7 @@ export default function HomeScene({ sceneMode = 'home' }: { sceneMode?: SceneMod
   const showHomeWorld = isHomeMode
   const showAscentPortal = isAscentMode
   const showConstellation = isConstellationRoute && !gateBlocksMode
-  const showOrb = sceneMode === 'focus' || sceneMode === 'replay' || sceneMode === 'unwind' || sceneMode === 'mirror'
+  const showOrb = sceneMode === 'focus' || sceneMode === 'replay' || sceneMode === 'mirror'
   const { manifest, loading: manifestLoading } = useManifest(gateBlocksMode ? null : effectiveManifestId)
   const [selectedManifest, setSelectedManifest] = useState<SpatialAssetManifest | null>(null)
   const [selectedPosition, setSelectedPosition] = useState<ConstellationNodePosition | null>(null)
@@ -260,7 +269,12 @@ export default function HomeScene({ sceneMode = 'home' }: { sceneMode?: SceneMod
     () =>
       orbStateForContext({
         context: narratorContext,
-        hasSelectedManifest: Boolean(activeManifest) || Boolean(selectedManifest) || sceneMode === 'focus' || sceneMode === 'replay' || sceneMode === 'unwind',
+        hasSelectedManifest:
+          Boolean(activeManifest) ||
+          Boolean(selectedManifest) ||
+          sceneMode === 'focus' ||
+          sceneMode === 'replay' ||
+          sceneMode === 'unwind',
         sceneMode,
       }),
     [activeManifest, narratorContext, selectedManifest, sceneMode],
@@ -426,7 +440,15 @@ export default function HomeScene({ sceneMode = 'home' }: { sceneMode?: SceneMod
       {showMemoryArtifact ? <MemoryStarArtifact morphology={memoryMorphology} replay={sceneMode === 'replay' || replayLaunching} /> : null}
       {!isHomeMode ? <CameraResetButton onReset={resetCamera} /> : null}
 
-      {!isHomeMode ? <ModeGuidance mode={sceneMode} onEnter={enterLifeMap} onUnwind={unwind} onSafeUnwind={openSafeUnwind} reducedMotion={reducedMotion} /> : null}
+      {!isHomeMode ? (
+        <ModeGuidance
+          mode={sceneMode}
+          onEnter={enterLifeMap}
+          onUnwind={unwind}
+          onSafeUnwind={openSafeUnwind}
+          reducedMotion={reducedMotion}
+        />
+      ) : null}
 
       {gateBlocksMode && gatedFeatureId ? (
         <TierGatePanel

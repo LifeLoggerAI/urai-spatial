@@ -1,9 +1,0 @@
-import SpatialScene from '@/components/SpatialScene'
-import { CanonicalTierLockHud } from '@/components/CanonicalTierLockHud'
-
-export default function HomePage() {
-return (
-<> <SpatialScene /> <CanonicalTierLockHud />
-</>
-)
-}
