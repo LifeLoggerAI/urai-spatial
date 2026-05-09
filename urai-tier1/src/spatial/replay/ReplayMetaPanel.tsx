@@ -1,10 +1,20 @@
 'use client'
 
+import { useMemo, useState } from 'react'
 import { MemoryMorphology } from '../memory/memoryMorphology'
 import { ReplayPhase, ReplayPhaseDefinition, ReplaySegmentDefinition } from '../scene/replayState'
 
+type ReplayActionState = 'idle' | 'saved' | 'hidden' | 'correction_open'
+
 function percent(value: number) {
   return `${Math.round(Math.max(0, Math.min(1, value)) * 100)}%`
+}
+
+function actionMessageFor(state: ReplayActionState) {
+  if (state === 'saved') return 'Saved to your private replay space.'
+  if (state === 'hidden') return 'Hidden from this replay path.'
+  if (state === 'correction_open') return 'Correction mode opened. URAI will treat this reflection as user-adjusted.'
+  return 'Private replay controls are ready.'
 }
 
 const panelStyle = {
@@ -22,18 +32,13 @@ const panelStyle = {
   WebkitBackdropFilter: 'blur(18px)',
 } as const
 
-const eyebrowStyle = {
-  color: 'rgba(182, 226, 255, 0.84)',
-  fontSize: '0.68rem',
-  letterSpacing: '0.2em',
-  textTransform: 'uppercase',
-} as const
-
-const factGridStyle = {
-  display: 'grid',
-  gridTemplateColumns: '1fr 1fr',
-  gap: 10,
-  margin: '14px 0',
+const pillStyle = {
+  minHeight: 34,
+  borderRadius: 999,
+  border: '1px solid rgba(142, 220, 255, 0.28)',
+  background: 'rgba(95, 125, 255, 0.16)',
+  color: '#edf7ff',
+  padding: '6px 12px',
 } as const
 
 export function ReplayMetaPanel({
@@ -51,29 +56,23 @@ export function ReplayMetaPanel({
   sourceLabel: string
   onReturnToFocus: () => void
 }) {
+  const [actionState, setActionState] = useState<ReplayActionState>('idle')
+  const derivedSourceLabel = useMemo(() => {
+    if (sourceLabel && sourceLabel !== 'LifeMap · Pattern Node') return sourceLabel
+    return `LifeMap · ${morphology.systemLabel}`
+  }, [morphology.systemLabel, sourceLabel])
+
   return (
-    <section style={panelStyle} data-testid="urai-replay-meta-panel" data-replay-phase={phase} aria-label="Pattern replay details">
-      <div style={eyebrowStyle}>Pattern Replay</div>
+    <section style={panelStyle} data-testid="urai-replay-meta-panel" data-replay-phase={phase} data-replay-action-state={actionState} aria-label="Pattern replay details">
+      <div style={{ color: 'rgba(182, 226, 255, 0.84)', fontSize: '0.68rem', letterSpacing: '0.2em', textTransform: 'uppercase' }}>Pattern Replay</div>
       <h2 style={{ margin: '8px 0', fontSize: '1.08rem', lineHeight: 1.2 }}>{activeSegment.narratorLine}</h2>
       <p style={{ margin: 0, color: 'rgba(235, 244, 255, 0.72)', fontSize: '0.84rem', lineHeight: 1.5 }}>{phaseDefinition.userVisibleUi}</p>
 
-      <dl style={factGridStyle}>
-        <div>
-          <dt style={{ color: 'rgba(182, 226, 255, 0.66)', fontSize: '0.68rem', textTransform: 'uppercase', letterSpacing: '0.12em' }}>Phase</dt>
-          <dd style={{ margin: '4px 0 0', color: '#eef8ff', fontWeight: 700 }}>{activeSegment.label}</dd>
-        </div>
-        <div>
-          <dt style={{ color: 'rgba(182, 226, 255, 0.66)', fontSize: '0.68rem', textTransform: 'uppercase', letterSpacing: '0.12em' }}>Source</dt>
-          <dd style={{ margin: '4px 0 0', color: '#eef8ff', fontWeight: 700 }}>{sourceLabel}</dd>
-        </div>
-        <div>
-          <dt style={{ color: 'rgba(182, 226, 255, 0.66)', fontSize: '0.68rem', textTransform: 'uppercase', letterSpacing: '0.12em' }}>Signal</dt>
-          <dd style={{ margin: '4px 0 0', color: '#eef8ff', fontWeight: 700 }}>clarity · {percent(morphology.signals.replayReadiness)}</dd>
-        </div>
-        <div>
-          <dt style={{ color: 'rgba(182, 226, 255, 0.66)', fontSize: '0.68rem', textTransform: 'uppercase', letterSpacing: '0.12em' }}>Intensity</dt>
-          <dd style={{ margin: '4px 0 0', color: '#eef8ff', fontWeight: 700 }}>{percent(morphology.signals.emotionalIntensity)}</dd>
-        </div>
+      <dl style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, margin: '14px 0' }}>
+        <div><dt>Phase</dt><dd>{activeSegment.label}</dd></div>
+        <div><dt>Source</dt><dd>{derivedSourceLabel}</dd></div>
+        <div><dt>Signal</dt><dd>clarity · {percent(morphology.signals.replayReadiness)}</dd></div>
+        <div><dt>Intensity</dt><dd>{percent(morphology.signals.emotionalIntensity)}</dd></div>
       </dl>
 
       <div style={{ borderTop: '1px solid rgba(142, 220, 255, 0.14)', paddingTop: 12 }}>
@@ -87,10 +86,12 @@ export function ReplayMetaPanel({
       </div>
 
       <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginTop: 14 }} aria-label="Replay actions">
-        {['Save', 'Hide', 'Correct'].map((label) => (
-          <button key={label} type="button" style={{ minHeight: 34, borderRadius: 999, border: '1px solid rgba(142, 220, 255, 0.28)', background: 'rgba(95, 125, 255, 0.16)', color: '#edf7ff', padding: '6px 12px' }}>{label}</button>
-        ))}
+        <button type="button" data-testid="urai-replay-save" aria-pressed={actionState === 'saved'} onClick={() => setActionState('saved')} style={pillStyle}>Save</button>
+        <button type="button" data-testid="urai-replay-hide" aria-pressed={actionState === 'hidden'} onClick={() => setActionState('hidden')} style={pillStyle}>Hide</button>
+        <button type="button" data-testid="urai-replay-correct" aria-pressed={actionState === 'correction_open'} onClick={() => setActionState('correction_open')} style={pillStyle}>Correct</button>
       </div>
+
+      <p data-testid="urai-replay-action-message" aria-live="polite" style={{ margin: '10px 0 0', color: 'rgba(235, 244, 255, 0.68)', fontSize: '0.78rem', lineHeight: 1.42 }}>{actionMessageFor(actionState)}</p>
 
       <button
         type="button"
