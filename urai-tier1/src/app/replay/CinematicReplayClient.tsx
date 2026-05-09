@@ -170,6 +170,28 @@ export default function CinematicReplayClient() {
         Center Replay
       </button>
 
+      <button
+        type="button"
+        aria-label="Return to Focus"
+        onClick={returnToFocus}
+        style={{
+          position: 'absolute',
+          right: 22,
+          top: 68,
+          zIndex: 15,
+          border: '1px solid rgba(142, 220, 255, 0.24)',
+          borderRadius: 999,
+          background: 'rgba(5, 9, 22, 0.46)',
+          color: 'rgba(235, 244, 255, 0.78)',
+          padding: '8px 12px',
+          fontSize: '0.74rem',
+          letterSpacing: '0.04em',
+          backdropFilter: 'blur(14px)',
+        }}
+      >
+        Return to Focus
+      </button>
+
       <ReplayPhaseRings activeSegment={activeSegment} progressPercent={progressPercent} reducedMotion={reducedMotion} />
 
       <ReplayMetaPanel
