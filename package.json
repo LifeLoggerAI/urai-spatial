@@ -57,6 +57,7 @@
     "test:canon": "pnpm tier1:immutable:check && pnpm tier1:redefinition:check && pnpm tier2:check && pnpm runtime:authority && pnpm canon:check && pnpm locs:check && pnpm tier:check && node scripts/check-canon-imports.mjs && pnpm migration:check && pnpm home:invariant && pnpm firebase:rules:check",
     "migration:check": "node scripts/check-migration-markers.mjs",
     "tier1:check": "pnpm canon:lock && pnpm tier1:immutable:check && pnpm tier1:redefinition:check && pnpm runtime:authority && pnpm home:invariant && pnpm firebase:rules:check",
+    "audit:tier-one": "pnpm tier1:check && pnpm test:rules && pnpm typecheck && pnpm build",
     "tier1:drift": "node scripts/check-tier1-drift.mjs",
     "tier1:immutable:check": "node scripts/check-tier1-immutable-diff.mjs",
     "tier1:redefinition:check": "node scripts/check-tier1-redefinition.mjs",
