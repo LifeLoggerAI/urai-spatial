@@ -1,4 +1,4 @@
-import playwright from '../urai-tier1/node_modules/playwright/index.js';
+import playwright from 'playwright';
 const { chromium } = playwright;
 import { spawn, spawnSync } from 'node:child_process';
 import { mkdirSync, writeFileSync } from 'node:fs';
@@ -43,7 +43,7 @@ function startServer() {
 }
 
 function assertPlaywrightRuntimeReady() {
-  const result = spawnSync('pnpm', ['--filter', 'urai-tier1', 'exec', 'node', '-e', `
+  const result = spawnSync('pnpm', ['exec', 'node', '-e', `
     const { chromium } = require('playwright');
     (async () => {
       const browser = await chromium.launch({ headless: true });
