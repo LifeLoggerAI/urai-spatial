@@ -6,7 +6,8 @@ const pageFile = fs.readFileSync(new URL('../src/app/life-map/page.tsx', import.
 const gateFile = fs.readFileSync(new URL('../src/spatial/components/world/LifeMapAscentGate.tsx', import.meta.url), 'utf8')
 
 test('life-map route path and canonical naming are preserved', () => {
-  assert.match(pageFile, /LifeMapAscentGate/)
+  assert.match(pageFile, /TierOneExperience/)
+  assert.match(pageFile, /mode="life-map"/)
   assert.match(gateFile, /TierOneExperience/)
   assert.match(gateFile, /mode="life-map"/)
   assert.doesNotMatch(pageFile, /mode="lifemap"/)
