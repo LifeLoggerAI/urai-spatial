@@ -190,6 +190,7 @@ export default function CinematicReplayClient() {
         reducedMotion={reducedMotion}
         onPlayPause={togglePlay}
         onScrub={scrubTo}
+        onScrubbingChange={setScrubbing}
       />
     </main>
   )
