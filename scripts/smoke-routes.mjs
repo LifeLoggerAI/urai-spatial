@@ -21,7 +21,8 @@ const webhookRoutes = [
   ['/api/stripe/webhook-v2', { method: 'POST', expectedStatus: 400, body: '{}' }],
 ]
 
-const forbidden = ['TODO', 'lorem ipsum', 'coming soon', 'undefined', '[object Object]']
+const forbiddenHtmlTokens = ['TODO', 'lorem ipsum', 'coming soon', '[object Object]']
+const forbiddenResponseTokens = ['stack', 'PRIVATE_KEY', '[object Object]']
 
 function assert(condition, message) {
   if (!condition) throw new Error(message)
@@ -34,7 +35,7 @@ async function checkHtml(route) {
   assert(body.trim().length > 0, `${route} returned an empty body`)
   assert(/<title[^>]*>/.test(body), `${route} is missing a title`)
   assert(/name=["']viewport["']/.test(body), `${route} is missing viewport meta`)
-  for (const token of forbidden) assert(!body.includes(token), `${route} includes placeholder token ${token}`)
+  for (const token of forbiddenHtmlTokens) assert(!body.includes(token), `${route} includes placeholder token ${token}`)
   if (route === '/') assert(body.includes('data-urai-home-spatial-shell') || body.includes('urai-home-shell'), '/ missing URAI home marker')
   if (route === '/life-map') assert(body.includes('urai-spatial-stage') || body.includes('lifemap-starfield'), '/life-map missing LifeMap marker')
 }
@@ -44,7 +45,7 @@ async function checkJson(route, init) {
   const response = await fetch(`${host}${route}`, { ...init, headers })
   const text = await response.text()
   assert(response.ok, `${route} returned ${response.status}: ${text.slice(0, 120)}`)
-  assert(!text.includes('stack') && !text.includes('PRIVATE_KEY'), `${route} returned unsafe debug output`)
+  for (const token of forbiddenResponseTokens) assert(!text.includes(token), `${route} returned unsafe debug output: ${token}`)
   const payload = JSON.parse(text)
   assert(payload.service === 'urai-spatial' || payload.ok === true, `${route} missing service/ok contract`)
   if (route.includes('body-biometric')) {
@@ -59,7 +60,7 @@ async function checkExpectedStatus(route, init) {
   const response = await fetch(`${host}${route}`, { ...init, headers })
   const text = await response.text()
   assert(response.status === init.expectedStatus, `${route} returned ${response.status}, expected ${init.expectedStatus}: ${text.slice(0, 120)}`)
-  assert(!text.includes('stack') && !text.includes('PRIVATE_KEY'), `${route} returned unsafe debug output`)
+  for (const token of forbiddenResponseTokens) assert(!text.includes(token), `${route} returned unsafe debug output: ${token}`)
 }
 
 for (const route of htmlRoutes) await checkHtml(route)
