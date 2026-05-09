@@ -1,5 +1,4 @@
-import playwright from '../urai-tier1/node_modules/playwright/index.js';
-const { chromium } = playwright;
+import { chromium } from 'playwright';
 import { spawn } from 'node:child_process';
 import { mkdirSync, writeFileSync } from 'node:fs';
 import process from 'node:process';
