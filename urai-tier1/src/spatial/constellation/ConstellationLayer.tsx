@@ -1,24 +1,33 @@
 'use client'
 
-import { useMemo, useRef } from 'react'
+import { useMemo, useRef, type ReactNode } from 'react'
 import { useConstellationManifests } from './useConstellationManifests'
 import * as THREE from 'three'
 import { Mesh } from 'three'
 import { useFrame } from '@react-three/fiber'
 import { SpatialAssetManifest } from '../assets/manifestTypes'
 import ManifestRenderer from '../assets/ManifestRenderer'
+import type { LifeMapNavigationState } from '../interaction/LifeMapNavigationOverlay'
 
 export type ConstellationNodePosition = readonly [number, number, number]
 type ClusterKey = 'memory' | 'intense' | 'visual' | 'spatial' | 'motion' | 'general'
 
 const clusterOffsets: Record<ClusterKey, ConstellationNodePosition> = {
-  memory: [-4.2, 1.55, -2.4],
-  intense: [3.8, 2.05, -2.8],
-  visual: [-2.5, 1.2, 2.6],
-  spatial: [3.2, 1.35, 2.2],
-  motion: [0.4, 2.4, -4.0],
-  general: [0, 1.45, 0],
+  memory: [-5.2, 1.85, -3.6],
+  intense: [4.9, 2.55, -3.9],
+  visual: [-3.6, 1.35, 3.6],
+  spatial: [4.4, 1.72, 3.2],
+  motion: [0.5, 3.0, -5.6],
+  general: [0, 1.7, 0],
 }
+
+const syntheticLifeArcNodes: Array<{ id: string; clusterKey: ClusterKey; position: ConstellationNodePosition }> = [
+  { id: 'arc-root', clusterKey: 'general', position: [-6.6, 0.95, 0.4] },
+  { id: 'arc-threshold', clusterKey: 'intense', position: [-3.2, 2.62, -4.7] },
+  { id: 'arc-recovery', clusterKey: 'memory', position: [0.8, 1.24, 4.6] },
+  { id: 'arc-becoming', clusterKey: 'spatial', position: [4.8, 2.18, -1.2] },
+  { id: 'arc-mirror', clusterKey: 'visual', position: [6.4, 1.62, 3.9] },
+]
 
 function clusterForManifest(manifest: SpatialAssetManifest): ClusterKey {
   const text = `${manifest.promptPreview || ''} ${manifest.assetType} ${manifest.spatialCompatibility?.type || ''}`.toLowerCase()
@@ -36,11 +45,11 @@ function nodePosition(clusterKey: ClusterKey, indexInCluster: number, clusterSiz
   const base = clusterOffsets[clusterKey]
   const safeSize = Math.max(clusterSize, 1)
   const angle = (indexInCluster / safeSize) * Math.PI * 2
-  const radius = 0.75 + Math.min(safeSize, 12) * 0.055 + Math.sin(indexInCluster + safeSize) * 0.12
+  const radius = 0.95 + Math.min(safeSize, 12) * 0.085 + Math.sin(indexInCluster + safeSize) * 0.18
 
   return [
     base[0] + Math.cos(angle) * radius,
-    base[1] + Math.sin(indexInCluster * 0.47) * 0.34,
+    base[1] + Math.sin(indexInCluster * 0.47) * 0.46,
     base[2] - Math.sin(angle) * radius,
   ] as const
 }
@@ -49,7 +58,7 @@ function ConstellationLinks({
   nodes,
   selectedManifestId,
 }: {
-  nodes: Array<{ manifest: SpatialAssetManifest; clusterKey: ClusterKey; position: ConstellationNodePosition }>
+  nodes: Array<{ manifest?: SpatialAssetManifest; id?: string; clusterKey: ClusterKey; position: ConstellationNodePosition }>
   selectedManifestId: string | null
 }) {
   const ref = useRef<THREE.LineSegments>(null)
@@ -73,6 +82,11 @@ function ConstellationLinks({
       })
     })
 
+    syntheticLifeArcNodes.forEach((node, index) => {
+      const next = syntheticLifeArcNodes[index + 1]
+      if (next) positions.push(...node.position, ...next.position)
+    })
+
     const g = new THREE.BufferGeometry()
     g.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3))
     return g
@@ -80,16 +94,16 @@ function ConstellationLinks({
 
   useFrame(({ clock }) => {
     if (!ref.current) return
-    ref.current.rotation.y = Math.sin(clock.elapsedTime * 0.06) * 0.012
+    ref.current.rotation.y = Math.sin(clock.elapsedTime * 0.06) * 0.018
     const material = ref.current.material
     if (material instanceof THREE.LineBasicMaterial) {
-      material.opacity = selectedManifestId ? 0.14 : 0.28 + Math.sin(clock.elapsedTime * 0.75) * 0.04
+      material.opacity = selectedManifestId ? 0.18 : 0.36 + Math.sin(clock.elapsedTime * 0.75) * 0.07
     }
   })
 
   return (
     <lineSegments ref={ref} geometry={geometry} frustumCulled={false}>
-      <lineBasicMaterial color="#8fdcff" transparent opacity={0.28} depthWrite={false} blending={THREE.AdditiveBlending} />
+      <lineBasicMaterial color="#8fdcff" transparent opacity={0.36} depthWrite={false} blending={THREE.AdditiveBlending} />
     </lineSegments>
   )
 }
@@ -102,16 +116,16 @@ function Node({ position, selected, dimmed, onSelect }: { position: Constellatio
   useFrame(({ clock }) => {
     if (!ref.current || dimmed) return
     ref.current.rotation.y = clock.elapsedTime * 0.2
-    const scale = selected ? 1.8 + Math.sin(clock.elapsedTime * 3) * 0.08 : baseScale + Math.sin(clock.elapsedTime * 1.4 + position[0]) * 0.05
+    const scale = selected ? 2.25 + Math.sin(clock.elapsedTime * 3) * 0.12 : baseScale + Math.sin(clock.elapsedTime * 1.4 + position[0]) * 0.08
     ref.current.scale.setScalar(scale)
   })
 
   return (
     <mesh ref={ref} position={position} scale={baseScale} onClick={(event) => { event.stopPropagation(); onSelect(position) }}>
-      <sphereGeometry args={[0.12, 16, 16]} />
+      <sphereGeometry args={[0.145, 24, 24]} />
       <meshStandardMaterial
         emissive={selected ? '#22d3ee' : '#8b5cf6'}
-        emissiveIntensity={selected ? 2.2 : dimmed ? 0.35 : 1.2}
+        emissiveIntensity={selected ? 3.2 : dimmed ? 0.35 : 1.7}
         color="#1f1b2e"
         transparent
         opacity={opacity}
@@ -120,7 +134,46 @@ function Node({ position, selected, dimmed, onSelect }: { position: Constellatio
   )
 }
 
-export default function ConstellationLayer({ enabled, selectedManifestId, onSelect }: { enabled: boolean; selectedManifestId: string | null; onSelect: (manifest: SpatialAssetManifest, position: ConstellationNodePosition) => void }) {
+function LifeArcGhostStar({ node }: { node: { id: string; position: ConstellationNodePosition; clusterKey: ClusterKey } }) {
+  const ref = useRef<Mesh>(null)
+
+  useFrame(({ clock }) => {
+    if (!ref.current) return
+    ref.current.scale.setScalar(0.72 + Math.sin(clock.elapsedTime * 1.1 + node.position[0]) * 0.08)
+    ref.current.rotation.y = clock.elapsedTime * 0.08
+  })
+
+  return (
+    <mesh ref={ref} position={node.position}>
+      <sphereGeometry args={[0.075, 16, 16]} />
+      <meshStandardMaterial color="#08111f" emissive="#67e8f9" emissiveIntensity={0.72} transparent opacity={0.54} />
+    </mesh>
+  )
+}
+
+function NavigationDepthRig({ children, navigation }: { children: ReactNode; navigation?: LifeMapNavigationState | null }) {
+  const groupRef = useRef<THREE.Group>(null)
+  const zoom = navigation?.zoom ?? 1
+  const panX = navigation?.panX ?? 0
+  const panY = navigation?.panY ?? 0
+
+  useFrame(({ clock }, delta) => {
+    if (!groupRef.current) return
+    const targetScale = THREE.MathUtils.clamp(zoom, 0.82, 2.25)
+    const targetX = panX
+    const targetY = panY * 0.48
+    const targetZ = -(targetScale - 1) * 1.55
+    const lerp = Math.min(1, delta * 4.8)
+    groupRef.current.scale.lerp(new THREE.Vector3(targetScale, targetScale, targetScale), lerp)
+    groupRef.current.position.lerp(new THREE.Vector3(targetX, targetY, targetZ), lerp)
+    groupRef.current.rotation.y = Math.sin(clock.elapsedTime * 0.055) * 0.035 + panX * 0.025
+    groupRef.current.rotation.x = -panY * 0.018
+  })
+
+  return <group ref={groupRef}>{children}</group>
+}
+
+export default function ConstellationLayer({ enabled, selectedManifestId, navigation, onSelect }: { enabled: boolean; selectedManifestId: string | null; navigation?: LifeMapNavigationState | null; onSelect: (manifest: SpatialAssetManifest, position: ConstellationNodePosition) => void }) {
   const manifests = useConstellationManifests(enabled)
   const selected = manifests.find((manifest) => manifest.manifestId === selectedManifestId) ?? null
 
@@ -149,8 +202,10 @@ export default function ConstellationLayer({ enabled, selectedManifestId, onSele
   if (!enabled) return null
 
   return (
-    <group>
-      <ConstellationLinks nodes={positionedManifests} selectedManifestId={selectedManifestId} />
+    <NavigationDepthRig navigation={navigation}>
+      <ConstellationLinks nodes={[...positionedManifests, ...syntheticLifeArcNodes]} selectedManifestId={selectedManifestId} />
+
+      {syntheticLifeArcNodes.map((node) => <LifeArcGhostStar key={node.id} node={node} />)}
 
       {positionedManifests.map(({ manifest, position }) => (
         <Node
@@ -163,6 +218,6 @@ export default function ConstellationLayer({ enabled, selectedManifestId, onSele
       ))}
 
       {selected ? <ManifestRenderer manifest={selected} /> : null}
-    </group>
+    </NavigationDepthRig>
   )
 }
