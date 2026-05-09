@@ -23,6 +23,48 @@ const OVERVIEW_CAMERA: CameraIntent = {
   target: [0, 0, -0.8],
 };
 
+const CLUSTER_RINGS: Array<{
+  id: string;
+  label: string;
+  position: [number, number, number];
+  radius: number;
+  color: string;
+  rotation: [number, number, number];
+}> = [
+  {
+    id: "memory-cluster",
+    label: "memory cluster",
+    position: [-3.45, 0.55, 0.75],
+    radius: 1.42,
+    color: "#8adfff",
+    rotation: [Math.PI / 2.35, 0.24, -0.18],
+  },
+  {
+    id: "recovery-cluster",
+    label: "recovery cluster",
+    position: [-1.85, -1.55, 0.75],
+    radius: 0.96,
+    color: "#7ddcff",
+    rotation: [Math.PI / 2.25, -0.42, 0.26],
+  },
+  {
+    id: "relationship-cluster",
+    label: "relationship cluster",
+    position: [3.05, -0.6, -1.0],
+    radius: 1.58,
+    color: "#ff7bd6",
+    rotation: [Math.PI / 2.1, 0.15, 0.55],
+  },
+  {
+    id: "legacy-cluster",
+    label: "legacy cluster",
+    position: [2.25, -2.05, -3.05],
+    radius: 1.2,
+    color: "#d1f5ff",
+    rotation: [Math.PI / 2.55, -0.7, -0.14],
+  },
+];
+
 function prefersReducedMotion() {
   if (typeof window === "undefined") return false;
   return window.matchMedia("(prefers-reduced-motion: reduce)").matches;
@@ -32,6 +74,16 @@ function toVector3(position: [number, number, number]) {
   return new THREE.Vector3(position[0], position[1], position[2]);
 }
 
+function createLifeMapCurve(from: LifeMapNode, to: LifeMapNode) {
+  const start = toVector3(from.position);
+  const end = toVector3(to.position);
+  const mid = start
+    .clone()
+    .lerp(end, 0.5)
+    .add(new THREE.Vector3(0, 0.9 + Math.abs(start.x - end.x) * 0.08, -0.7));
+  return new THREE.CatmullRomCurve3([start, mid, end]);
+}
+
 function CameraRig({ intent, mode }: { intent: CameraIntent; mode: LifeMapMode }) {
   const { camera } = useThree();
   const target = useMemo(() => new THREE.Vector3(...intent.target), [intent.target]);
@@ -39,8 +91,11 @@ function CameraRig({ intent, mode }: { intent: CameraIntent; mode: LifeMapMode }
   const reducedMotion = useMemo(prefersReducedMotion, []);
 
   useFrame(({ clock }) => {
-    const drift = mode === "lifemap" && !reducedMotion ? Math.sin(clock.elapsedTime * 0.18) * 0.18 : 0;
-    const desiredWithDrift = desired.clone().add(new THREE.Vector3(drift, drift * 0.18, 0));
+    const shouldDrift = mode === "lifemap" && !reducedMotion;
+    const driftX = shouldDrift ? Math.sin(clock.elapsedTime * 0.16) * 0.2 : 0;
+    const driftY = shouldDrift ? Math.cos(clock.elapsedTime * 0.11) * 0.05 : 0;
+    const driftZ = shouldDrift ? Math.sin(clock.elapsedTime * 0.09) * 0.08 : 0;
+    const desiredWithDrift = desired.clone().add(new THREE.Vector3(driftX, driftY, driftZ));
     camera.position.lerp(desiredWithDrift, reducedMotion ? 1 : 0.055);
     camera.lookAt(target);
   });
@@ -48,36 +103,86 @@ function CameraRig({ intent, mode }: { intent: CameraIntent; mode: LifeMapMode }
   return null;
 }
 
+function DepthRing({
+  position,
+  radius,
+  color,
+  rotation,
+  active,
+}: {
+  position: [number, number, number];
+  radius: number;
+  color: string;
+  rotation: [number, number, number];
+  active: boolean;
+}) {
+  const ringRef = useRef<THREE.Mesh>(null);
+  const reducedMotion = useMemo(prefersReducedMotion, []);
+
+  useFrame(({ clock }) => {
+    if (!ringRef.current || reducedMotion) return;
+    ringRef.current.rotation.z = rotation[2] + Math.sin(clock.elapsedTime * 0.18) * 0.08;
+  });
+
+  return (
+    <mesh ref={ringRef} position={position} rotation={rotation}>
+      <torusGeometry args={[radius, 0.012, 16, 160]} />
+      <meshBasicMaterial color={color} transparent opacity={active ? 0.28 : 0.12} depthWrite={false} />
+    </mesh>
+  );
+}
+
 function LifeMapPath({
   from,
   to,
   active,
+  replaying,
 }: {
   from: LifeMapNode;
   to: LifeMapNode;
   active: boolean;
+  replaying: boolean;
 }) {
-  const geometry = useMemo(() => {
-    const start = toVector3(from.position);
-    const end = toVector3(to.position);
-    const mid = start
-      .clone()
-      .lerp(end, 0.5)
-      .add(new THREE.Vector3(0, 0.9 + Math.abs(start.x - end.x) * 0.08, -0.7));
-    const curve = new THREE.CatmullRomCurve3([start, mid, end]);
-    const points = curve.getPoints(64);
-    return new THREE.BufferGeometry().setFromPoints(points);
-  }, [from, to]);
+  const currentRef = useRef<THREE.Mesh>(null);
+  const replayPulseRef = useRef<THREE.Mesh>(null);
+  const reducedMotion = useMemo(prefersReducedMotion, []);
+  const curve = useMemo(() => createLifeMapCurve(from, to), [from, to]);
+  const geometry = useMemo(() => new THREE.BufferGeometry().setFromPoints(curve.getPoints(96)), [curve]);
+
+  useFrame(({ clock }) => {
+    if (!reducedMotion && currentRef.current) {
+      const t = (clock.elapsedTime * 0.08 + from.intensity * 0.13) % 1;
+      currentRef.current.position.copy(curve.getPointAt(t));
+    }
+
+    if (replayPulseRef.current) {
+      const t = reducedMotion ? 0.5 : (clock.elapsedTime * 0.32) % 1;
+      replayPulseRef.current.position.copy(curve.getPointAt(t));
+      replayPulseRef.current.visible = replaying;
+    }
+  });
 
   return (
-    <line geometry={geometry}>
-      <lineBasicMaterial
-        transparent
-        color={active ? "#8adfff" : "#496486"}
-        opacity={active ? 0.72 : 0.2}
-        linewidth={1}
-      />
-    </line>
+    <group>
+      <line geometry={geometry}>
+        <lineBasicMaterial
+          transparent
+          color={active ? "#8adfff" : "#496486"}
+          opacity={active ? 0.82 : 0.12}
+          linewidth={1}
+        />
+      </line>
+
+      <mesh ref={currentRef} visible={active}>
+        <sphereGeometry args={[active ? 0.045 : 0.025, 16, 16]} />
+        <meshBasicMaterial color={active ? "#d8f8ff" : "#66809a"} transparent opacity={active ? 0.9 : 0.18} />
+      </mesh>
+
+      <mesh ref={replayPulseRef} visible={replaying}>
+        <sphereGeometry args={[0.11, 24, 24]} />
+        <meshBasicMaterial color="#ffffff" transparent opacity={0.95} depthWrite={false} />
+      </mesh>
+    </group>
   );
 }
 
@@ -93,40 +198,59 @@ function LifeMapNodeMesh({
   onSelect: (node: LifeMapNode) => void;
 }) {
   const groupRef = useRef<THREE.Group>(null);
+  const auraRef = useRef<THREE.MeshBasicMaterial>(null);
+  const coreRef = useRef<THREE.MeshStandardMaterial>(null);
   const reducedMotion = useMemo(prefersReducedMotion, []);
   const scale = 0.22 + node.intensity * 0.2;
 
   useFrame(({ clock }) => {
     if (!groupRef.current) return;
-    const pulse = reducedMotion ? 1 : 1 + Math.sin(clock.elapsedTime * (1.2 + node.intensity)) * 0.045;
-    groupRef.current.scale.setScalar(selected ? pulse * 1.28 : pulse);
-    groupRef.current.rotation.y += reducedMotion ? 0 : 0.0025;
+    const breathSpeed = 0.55 + node.intensity * 1.55;
+    const breathAmp = 0.025 + node.intensity * 0.075;
+    const breath = reducedMotion ? 1 : 1 + Math.sin(clock.elapsedTime * breathSpeed) * breathAmp;
+    groupRef.current.scale.setScalar(selected ? breath * 1.28 : breath);
+    groupRef.current.rotation.y += reducedMotion ? 0 : 0.0015 + node.intensity * 0.0015;
+
+    if (auraRef.current) {
+      const auraPulse = reducedMotion ? 0 : Math.sin(clock.elapsedTime * breathSpeed) * 0.045;
+      auraRef.current.opacity = selected ? 0.24 + auraPulse : dimmed ? 0.025 : 0.09 + auraPulse * node.intensity;
+    }
+
+    if (coreRef.current) {
+      const emissionPulse = reducedMotion ? 0 : Math.sin(clock.elapsedTime * breathSpeed) * 0.32 * node.intensity;
+      coreRef.current.emissiveIntensity = selected ? 2.8 + emissionPulse : dimmed ? 0.32 : 1.25 + emissionPulse;
+      coreRef.current.opacity = dimmed ? 0.25 : 0.95;
+    }
   });
 
   return (
     <group ref={groupRef} position={node.position}>
-      <mesh onClick={(event) => {
-        event.stopPropagation();
-        onSelect(node);
-      }}>
+      <mesh
+        onClick={(event) => {
+          event.stopPropagation();
+          onSelect(node);
+        }}
+      >
         <sphereGeometry args={[scale, 40, 40]} />
         <meshStandardMaterial
+          ref={coreRef}
           color={node.aura}
           emissive={node.aura}
-          emissiveIntensity={selected ? 2.3 : dimmed ? 0.55 : 1.35}
+          emissiveIntensity={selected ? 2.8 : dimmed ? 0.32 : 1.35}
           roughness={0.22}
           metalness={0.12}
           transparent
-          opacity={dimmed ? 0.45 : 0.95}
+          opacity={dimmed ? 0.25 : 0.95}
         />
       </mesh>
 
       <mesh>
         <sphereGeometry args={[scale * 2.1, 40, 40]} />
         <meshBasicMaterial
+          ref={auraRef}
           color={node.aura}
           transparent
-          opacity={selected ? 0.18 : dimmed ? 0.035 : 0.1}
+          opacity={selected ? 0.24 : dimmed ? 0.025 : 0.1}
           depthWrite={false}
         />
       </mesh>
@@ -136,7 +260,7 @@ function LifeMapNodeMesh({
         <meshBasicMaterial
           color={node.aura}
           transparent
-          opacity={selected ? 0.56 : dimmed ? 0.08 : 0.2}
+          opacity={selected ? 0.62 : dimmed ? 0.05 : 0.2}
         />
       </mesh>
 
@@ -173,8 +297,12 @@ function LifeMapGalaxy({
   const nodeById = useMemo(() => new Map(nodes.map((node) => [node.id, node])), [nodes]);
   const selectedLinks = useMemo(() => {
     if (!selectedNode) return new Set<string>();
-    return new Set([selectedNode.id, ...selectedNode.connectedTo]);
-  }, [selectedNode]);
+    const linked = new Set<string>([selectedNode.id, ...selectedNode.connectedTo]);
+    nodes.forEach((node) => {
+      if (node.connectedTo.includes(selectedNode.id)) linked.add(node.id);
+    });
+    return linked;
+  }, [nodes, selectedNode]);
 
   return (
     <>
@@ -186,14 +314,39 @@ function LifeMapGalaxy({
       <pointLight position={[0, 3, -4]} color="#a980ff" intensity={0.9} />
       <Stars radius={80} depth={45} count={1600} factor={4} saturation={0.3} fade speed={0.25} />
 
+      {CLUSTER_RINGS.map((ring) => (
+        <DepthRing
+          key={ring.id}
+          position={ring.position}
+          radius={ring.radius}
+          color={ring.color}
+          rotation={ring.rotation}
+          active={mode === "lifemap" || ring.label.includes(selectedNode?.type ?? "")}
+        />
+      ))}
+
       <group>
         {nodes.flatMap((node) =>
           node.connectedTo
             .map((targetId) => nodeById.get(targetId))
             .filter((target): target is LifeMapNode => Boolean(target))
             .map((target) => {
-              const active = !selectedNode || selectedNode.id === node.id || selectedNode.id === target.id;
-              return <LifeMapPath key={`${node.id}-${target.id}`} from={node} to={target} active={active} />;
+              const active =
+                !selectedNode ||
+                selectedNode.id === node.id ||
+                selectedNode.id === target.id ||
+                selectedLinks.has(node.id) ||
+                selectedLinks.has(target.id);
+              const replaying = mode === "replay" && Boolean(selectedNode) && selectedNode.id === node.id;
+              return (
+                <LifeMapPath
+                  key={`${node.id}-${target.id}`}
+                  from={node}
+                  to={target}
+                  active={active}
+                  replaying={replaying}
+                />
+              );
             }),
         )}
       </group>
