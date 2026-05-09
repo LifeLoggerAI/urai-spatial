@@ -23,6 +23,7 @@
     "launch:check": "pnpm launch:local",
     "deploy:staging": "pnpm launch:check && firebase deploy --only hosting",
     "deploy:prod": "pnpm launch:check && firebase deploy --only hosting",
+    "frb": "pnpm deploy:staging",
     "release:check": "pnpm launch:check",
     "test:unit": "pnpm --filter urai-tier1 test:unit",
     "test:integration": "pnpm test:canon",
