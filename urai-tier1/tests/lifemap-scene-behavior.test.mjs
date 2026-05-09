@@ -6,18 +6,28 @@ const source = fs.readFileSync(new URL('../src/spatial/lifemap/LifeMapScene.tsx'
 const compact = source.replace(/\s+/g, '')
 const flat = source.replace(/\s+/g, ' ')
 
-test('chapter anchors trigger cluster focus and emit narrator/timeline events', () => {
-  assert.match(flat, /type: 'FOCUS_CLUSTER'/)
-  assert.match(flat, /chapterId: chapter\.id/)
-  assert.match(flat, /camera,/)
-  assert.match(flat, /companionLine: CHAPTER_LINES\[chapter\.id\]/)
-  assert.match(compact, /emitNarratorEvent\(\{event:'lifemap\.cluster\.focus',chapterId:chapter\.id,\}\)/)
-  assert.match(compact, /emitTimelineSync\(\{phase:'cluster',activeChapterId:chapter\.id,\}\)/)
+test('Life Map 3D scene is built from centralized demo memory stars', () => {
+  assert.match(flat, /import \{ DEMO_MEMORY_STARS \} from "\.\.\/demo\/demoMemoryStars"/)
+  assert.match(flat, /const LIFE_MAP_NODES: LifeMapNode\[\] = DEMO_MEMORY_STARS\.map/)
+  assert.match(flat, /id: star\.manifestId/)
+  assert.match(flat, /manifestId: star\.manifestId/)
+  assert.match(flat, /title: star\.label/)
+  assert.match(flat, /description: star\.description/)
 })
 
-test('focus and resolve actions emit narrator/timeline payloads', () => {
-  assert.match(compact, /emitNarratorEvent\(\{event:'lifemap\.star\.focus',starId:star\.id,chapterId:star\.chapterId,emotion:star\.emotion,\}\)/)
-  assert.match(compact, /emitTimelineSync\(\{phase:'focus',activeStarId:star\.id,activeChapterId:star\.chapterId,\}\)/)
-  assert.match(compact, /emitNarratorEvent\(\{event:'lifemap\.star\.resolved',starId:activeStar\.id,chapterId:activeStar\.chapterId,emotion:activeStar\.emotion,action:'resolve',\}\)/)
-  assert.match(compact, /emitTimelineSync\(\{phase:'focus',activeStarId:activeStar\.id,activeChapterId:activeStar\.chapterId,\}\)/)
+test('Life Map star selection opens focus state and camera lock', () => {
+  assert.match(flat, /function selectNode\(node: LifeMapNode\)/)
+  assert.match(compact, /setSelected\(node\);cameraApi\.current\?\.focus\(node\);/)
+  assert.match(flat, /selected \? "Memory focus open" : "Constellation awake"/)
+  assert.match(flat, /selected \? "Camera locked to selected star" : "Choose a star to open Focus"/)
+  assert.match(flat, /<MemoryFocusModal node=\{selected\} onOpenFocus=\{onOpenFocus\} onReset=\{onReset\} \/>/)
+})
+
+test('focus and reset actions preserve launch navigation contract', () => {
+  assert.match(flat, /function reset\(\)/)
+  assert.match(compact, /setSelected\(null\);setHovered\(null\);cameraApi\.current\?\.reset\(\);/)
+  assert.match(flat, /function openFocus\(node: LifeMapNode\)/)
+  assert.match(compact, /router\.push\(`\/focus\?manifestId=\$\{encodeURIComponent\(node\.manifestId\)\}`\);/)
+  assert.match(flat, /onPointerMissed=\{reset\}/)
+  assert.match(flat, /aria-label="Reset Life Map camera"/)
 })
