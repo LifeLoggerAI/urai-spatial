@@ -17,6 +17,7 @@
     "typecheck": "pnpm --filter urai-tier1 typecheck",
     "smoke": "node scripts/smoke-routes.mjs",
     "check:spatial": "node scripts/check-spatial-invariant.mjs",
+    "launch:local": "node scripts/run-local-launch-check.mjs",
     "launch:check": "pnpm check:source-integrity && pnpm check:production-routes && pnpm check:spatial && pnpm typecheck && pnpm build && pnpm smoke && pnpm test:e2e",
     "deploy:staging": "pnpm launch:check && firebase deploy --only hosting",
     "deploy:prod": "pnpm launch:check && firebase deploy --only hosting",
