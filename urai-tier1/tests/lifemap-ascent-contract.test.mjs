@@ -37,3 +37,11 @@ test('Life Map is only interactive after visual phase and data readiness agree',
   assert.match(compactGate, /dataIsReady\(lifeMapDataStatus\)/)
   assert.match(compactGate, /aria-busy=\{lifeMapInteractive\?'false':'true'\}/)
 })
+
+test('Ascent overlay has cinematic visual polish without changing state truth', () => {
+  assert.match(overlaySource, /PHASE_INTENSITY/)
+  assert.match(overlaySource, /buildParticles/)
+  assert.match(overlaySource, /viewBox="0 0 100 100"/)
+  assert.match(overlaySource, /radial-gradient\(circle at 35% 28%/)
+  assert.match(overlaySource, /reducedMotion \? 0\.94 : 1/)
+})
