@@ -20,6 +20,14 @@ test('home route mounts cohesion layer only on canonical home mode', () => {
   assert.match(tierOne, /<HomeCohesionLayer enabled=\{mode === "home"\} \/>/)
 })
 
+test('home cohesion layer exposes stable spatial selectors', () => {
+  assert.match(cohesion, /data-testid="urai-home-scene"/)
+  assert.match(cohesion, /data-testid="urai-home-sky-portal"/)
+  assert.match(cohesion, /data-testid="urai-orb-companion"/)
+  assert.match(cohesion, /data-testid="urai-avatar-body"/)
+  assert.match(cohesion, /data-testid="urai-ground-plane"/)
+})
+
 test('home cohesion layer preserves passive portal semantics without visible dashboard chrome', () => {
   assert.match(cohesion, /type HomePortal = "none" \| "orb" \| "avatar" \| "sky" \| "ground"/)
   assert.match(cohesion, /useState<HomePortal>\("orb"\)/)
