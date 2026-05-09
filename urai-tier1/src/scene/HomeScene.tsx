@@ -29,6 +29,7 @@ import { NarratorContext } from '../spatial/narrator/buildNarration'
 import { DEMO_FOCUS_MANIFEST_ID } from '../spatial/demo/demoMemoryStars'
 import MemoryStarArtifact from '../spatial/memory/MemoryStarArtifact'
 import { buildMemoryMorphology, MemoryMorphology } from '../spatial/memory/memoryMorphology'
+import LifeMapTrustLoop from '../spatial/lifemap/LifeMapTrustLoop'
 import { FocusPhaseDefinition, getFocusPhaseDefinition, resolveFocusPhase } from '../spatial/scene/focusState'
 import { REPLAY_DURATION_MS, clampReplayProgress, getReplayPhaseDefinition, getReplaySegmentAt, resolveReplayPhase } from '../spatial/scene/replayState'
 import { ReplayTimeline } from '../spatial/replay/ReplayTimeline'
@@ -413,7 +414,8 @@ export default function HomeScene({ sceneMode = 'home' }: { sceneMode?: SceneMod
   const showHomeWorld = isHomeMode
   const showAscentPortal = isAscentMode
   const showConstellation = isConstellationRoute && !gateBlocksMode
-  const showOrb = sceneMode === 'focus' || sceneMode === 'replay' || sceneMode === 'mirror' || sceneMode === 'unwind'
+  const showLifeMapTrustLoop = sceneMode === 'life-map' && !gateBlocksMode
+  const showOrb = sceneMode === 'focus' || sceneMode === 'replay' || sceneMode === 'unwind' || sceneMode === 'mirror'
   const { manifest, loading: manifestLoading } = useManifest(gateBlocksMode ? null : effectiveManifestId)
   const [selectedManifest, setSelectedManifest] = useState<SpatialAssetManifest | null>(null)
   const [selectedPosition, setSelectedPosition] = useState<ConstellationNodePosition | null>(null)
@@ -725,6 +727,7 @@ export default function HomeScene({ sceneMode = 'home' }: { sceneMode?: SceneMod
         {!isHomeMode ? <NarratorVoice manifest={activeManifest} context={narratorContext} /> : null}
       </Canvas>
 
+      {showLifeMapTrustLoop ? <LifeMapTrustLoop /> : null}
       {showMemoryArtifact ? <MemoryStarArtifact morphology={memoryMorphology} replay={sceneMode === 'replay' || replayLaunching} /> : null}
       {!isHomeMode ? <CameraResetButton onReset={resetCamera} disabled={sceneMode === 'focus' && !canRecenterFocus} /> : null}
 
