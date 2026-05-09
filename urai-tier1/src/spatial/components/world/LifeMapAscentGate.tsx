@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { TierOneExperience } from '@/spatial/layout/TierOneExperience'
 import AscentOverlay, { type AscentPhase, type LifeMapDataStatus } from './AscentOverlay'
+import LifeMapCinematicOverlay from './LifeMapCinematicOverlay'
 
 const NORMAL_PHASE_MS: Record<AscentPhase, number> = {
   idle: 0,
@@ -96,6 +97,7 @@ export default function LifeMapAscentGate() {
       aria-busy={lifeMapInteractive ? 'false' : 'true'}
     >
       <TierOneExperience mode="life-map" />
+      <LifeMapCinematicOverlay interactive={lifeMapInteractive} />
       <AscentOverlay phase={ascentPhase} dataStatus={lifeMapDataStatus} reducedMotion={reducedMotion} />
     </main>
   )
