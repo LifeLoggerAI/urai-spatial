@@ -1,14 +1,14 @@
 "use client";
 
-import { useCallback, useMemo, useState, type TouchEvent } from "react";
+import { useCallback, useEffect, useMemo, useState, type TouchEvent } from "react";
 import { useRouter } from "next/navigation";
 import { LifeMapHud, type LifeMapMode } from "./LifeMapHud";
 import { LifeMapMirrorPanel } from "./LifeMapMirrorPanel";
 import { LifeMapNodeCard } from "./LifeMapNodeCard";
 import { LifeMapReplayOverlay } from "./LifeMapReplayOverlay";
 import { useLifeMapEvents } from "./useLifeMapEvents";
+import { buildLifeMapReplaySequence, generateMirrorOfBecoming, replayCameraTarget, type LifeMapReplaySequence } from "./lifeMapReplay";
 import {
-  demoMirrorOfBecoming,
   lifeMapFilters,
   lifeMapTimeScopeLabels,
   lifeMapTypeLabels,
@@ -40,11 +40,13 @@ function isNodeInTimeScope(node: LifeMapNode, timeScope: LifeMapTimeScope, selec
 function LifeMapStaticGalaxy({
   nodes,
   selectedNode,
+  replaySequence,
   mode,
   onSelectNode,
 }: {
   nodes: LifeMapNode[];
   selectedNode: LifeMapNode | null;
+  replaySequence: LifeMapReplaySequence | null;
   mode: LifeMapMode;
   onSelectNode: (node: LifeMapNode) => void;
 }) {
@@ -57,15 +59,20 @@ function LifeMapStaticGalaxy({
     return linked;
   }, [nodes, selectedNode]);
 
+  const replayTarget = useMemo(() => (replaySequence ? replayCameraTarget(replaySequence, nodes) : null), [nodes, replaySequence]);
+
   return (
     <section className="absolute inset-0 flex items-center justify-center px-6" aria-label="Life Map galaxy preview">
-      <div className="relative h-[min(72vw,620px)] w-[min(72vw,620px)] rounded-full border border-cyan-100/10 bg-cyan-100/[0.02] shadow-[0_0_120px_rgba(34,211,238,0.12)]">
+      <div className={`relative h-[min(72vw,620px)] w-[min(72vw,620px)] rounded-full border border-cyan-100/10 bg-cyan-100/[0.02] shadow-[0_0_120px_rgba(34,211,238,0.12)] transition ${mode === "mirror" ? "scale-90 border-fuchsia-100/20 shadow-[0_0_160px_rgba(217,70,239,0.18)]" : ""}`}>
         <div className="absolute inset-[18%] rounded-full border border-fuchsia-200/10" />
         <div className="absolute inset-[30%] rounded-full border border-cyan-200/10" />
+        {mode === "mirror" ? <div className="absolute inset-[38%] rounded-full border border-fuchsia-100/25 bg-fuchsia-100/10 blur-[1px]" /> : null}
         {nodes.map((node) => {
           const [x, y] = node.position;
           const selected = selectedNode?.id === node.id;
           const dimmed = mode !== "lifemap" && mode !== "mirror" && selectedNode ? !selectedLinks.has(node.id) : false;
+          const replayActive = Boolean(replaySequence?.nodeSequence.includes(node.id));
+          const isReplayTarget = replayTarget ? replayTarget[0] === node.position[0] && replayTarget[1] === node.position[1] && replayTarget[2] === node.position[2] : false;
           const left = `${50 + x * 9}%`;
           const top = `${50 - y * 12}%`;
 
@@ -74,11 +81,13 @@ function LifeMapStaticGalaxy({
               key={node.id}
               type="button"
               className={`absolute -translate-x-1/2 -translate-y-1/2 rounded-full border text-left transition ${
-                selected
+                selected || isReplayTarget
                   ? "h-16 w-16 border-cyan-100/80 bg-cyan-200/25 shadow-[0_0_42px_rgba(125,220,255,0.55)]"
                   : dimmed
                     ? "h-8 w-8 border-white/10 bg-white/5 opacity-30"
-                    : "h-11 w-11 border-cyan-100/30 bg-cyan-200/10 shadow-[0_0_28px_rgba(125,220,255,0.25)] hover:border-cyan-100/70"
+                    : replayActive
+                      ? "h-12 w-12 border-fuchsia-100/60 bg-fuchsia-200/15 shadow-[0_0_34px_rgba(244,114,182,0.35)]"
+                      : "h-11 w-11 border-cyan-100/30 bg-cyan-200/10 shadow-[0_0_28px_rgba(125,220,255,0.25)] hover:border-cyan-100/70"
               }`}
               style={{ left, top }}
               onClick={() => onSelectNode(node)}
@@ -104,12 +113,14 @@ export default function LifeMapScene() {
   const [narratorText, setNarratorText] = useState("Your Life Map is open. Choose a star, an era, or the Mirror to move through the inner universe.");
   const [ttsEnabled, setTtsEnabled] = useState(false);
   const [touchStart, setTouchStart] = useState<{ x: number; y: number } | null>(null);
+  const [replaySequence, setReplaySequence] = useState<LifeMapReplaySequence | null>(null);
 
   const selectedEra = useMemo(() => eras.find((era) => era.id === selectedEraId) ?? null, [eras, selectedEraId]);
   const visibleNodes = useMemo(
     () => nodes.filter((node) => activeFilters.includes(node.type) && isNodeInTimeScope(node, timeScope, selectedEra)),
     [activeFilters, nodes, selectedEra, timeScope],
   );
+  const generatedMirror = useMemo(() => generateMirrorOfBecoming(visibleNodes.length ? visibleNodes : nodes, eras), [eras, nodes, visibleNodes]);
 
   const speak = useCallback((text: string) => {
     setNarratorText(text);
@@ -122,12 +133,14 @@ export default function LifeMapScene() {
   }, [ttsEnabled]);
 
   const selectNode = useCallback((node: LifeMapNode) => {
+    setReplaySequence(null);
     setSelectedNode(node);
     setMode("focus");
     speak(narrationForNode(node).text);
   }, [speak]);
 
   const recenter = useCallback(() => {
+    setReplaySequence(null);
     setSelectedNode(null);
     setMode("lifemap");
     speak("The galaxy has returned to overview. You can move by time, type, or memory cluster.");
@@ -140,18 +153,22 @@ export default function LifeMapScene() {
 
   const beginReplay = useCallback(() => {
     if (!selectedNode || !selectedNode.replayAvailable || selectedNode.locked) return;
+    const sequence = buildLifeMapReplaySequence(selectedNode, nodes, 0.58);
+    setReplaySequence(sequence);
     setMode("replay");
-    speak(`Opening replay stream. ${selectedNode.narratorHint ?? "URAI is threading this memory as symbolic atmosphere."}`);
-  }, [selectedNode, speak]);
+    speak(`${sequence.caption}. ${selectedNode.narratorHint ?? "URAI is threading this memory as symbolic atmosphere."}`);
+  }, [nodes, selectedNode, speak]);
 
   const openMirror = useCallback(() => {
+    setReplaySequence(null);
     setSelectedNode(null);
     setMode("mirror");
-    speak(demoMirrorOfBecoming.becomingStatement);
-  }, [speak]);
+    speak(generatedMirror.becomingStatement);
+  }, [generatedMirror.becomingStatement, speak]);
 
   const unwind = useCallback(() => {
     if (mode === "replay") {
+      setReplaySequence(null);
       setMode("focus");
       speak("Replay closed. You are back at the focused memory star.");
       return;
@@ -169,6 +186,20 @@ export default function LifeMapScene() {
     }
     returnHome();
   }, [mode, returnHome, speak]);
+
+  useEffect(() => {
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") unwind();
+      if (event.key.toLowerCase() === "r") recenter();
+      if (event.key.toLowerCase() === "m") openMirror();
+      if ((event.key === "Enter" || event.key === " ") && mode === "focus" && selectedNode?.replayAvailable && !selectedNode.locked) {
+        event.preventDefault();
+        beginReplay();
+      }
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [beginReplay, mode, openMirror, recenter, selectedNode, unwind]);
 
   const toggleFilter = useCallback((type: LifeMapNodeType) => {
     setActiveFilters((current) => {
@@ -224,7 +255,7 @@ export default function LifeMapScene() {
       <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_30%,rgba(87,63,190,0.24),transparent_34%),radial-gradient(circle_at_65%_50%,rgba(255,75,188,0.16),transparent_34%),radial-gradient(circle_at_50%_45%,rgba(62,189,222,0.18),transparent_26%)]" />
       <div className="absolute inset-x-6 top-8 bottom-8 rounded-[2.5rem] border border-cyan-100/5 bg-slate-950/10 shadow-[inset_0_0_80px_rgba(125,220,255,0.04)]" />
 
-      <LifeMapStaticGalaxy nodes={visibleNodes} selectedNode={selectedNode} mode={mode} onSelectNode={selectNode} />
+      <LifeMapStaticGalaxy nodes={visibleNodes} selectedNode={selectedNode} replaySequence={replaySequence} mode={mode} onSelectNode={selectNode} />
 
       <LifeMapHud
         mode={mode}
@@ -248,7 +279,7 @@ export default function LifeMapScene() {
 
       <LifeMapNodeCard node={mode === "mirror" ? null : selectedNode} onReplay={beginReplay} onClose={unwind} />
       <LifeMapReplayOverlay node={selectedNode} active={mode === "replay"} onClose={unwind} />
-      <LifeMapMirrorPanel mirror={demoMirrorOfBecoming} active={mode === "mirror"} onClose={unwind} />
+      <LifeMapMirrorPanel mirror={generatedMirror} active={mode === "mirror"} onClose={unwind} />
 
       <section className="sr-only" aria-label="Keyboard controls">
         Press Escape to unwind. Press R to recenter. Press M to open the Mirror of Becoming. Press Enter on a focused replay node to begin replay.
