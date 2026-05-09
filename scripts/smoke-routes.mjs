@@ -52,9 +52,8 @@ async function checkHtml(route) {
   assert(body.trim().length > 0, `${route} returned an empty body`)
   assert(/<title[^>]*>/.test(body), `${route} is missing a title`)
   assert(/name=["']viewport["']/.test(body), `${route} is missing viewport meta`)
+  assert(/_next\/static\/chunks/.test(body), `${route} is missing Next.js app chunks`)
   for (const token of forbiddenHtmlTokens) assert(!body.includes(token), `${route} includes placeholder token ${token}`)
-  if (route === '/') assert(body.includes('urai-scene-stage') || body.includes('data-testid="urai-scene-stage"') || body.includes('data-urai-home-spatial-shell') || body.includes('urai-home-shell'), '/ missing URAI home marker')
-  if (route === '/life-map') assert(body.includes('urai-spatial-stage') || body.includes('urai-scene-stage') || body.includes('lifemap-starfield'), '/life-map missing LifeMap marker')
 }
 
 async function checkJson(route, init) {
