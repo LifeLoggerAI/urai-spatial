@@ -40,7 +40,10 @@ const premiumOverlay = flat(
 const globalsCss = read(['src/app/globals.css'])
 const firestoreRules = flat(read(['../firebase/firestore.rules', 'firebase/firestore.rules']))
 const manifestRenderer = flat(read(['src/spatial/assets/ManifestRenderer.tsx']))
+const constellationLayer = flat(read(['src/spatial/constellation/ConstellationLayer.tsx']))
 const constellationManifests = flat(read(['src/spatial/constellation/useConstellationManifests.ts']))
+const manifestTypes = flat(read(['src/spatial/assets/manifestTypes.ts']))
+const narratorHud = flat(read(['src/spatial/narrator/NarratorHud.tsx']))
 
 test('primary routes use the canonical TierOneExperience shell', () => {
   assert.match(compact(homePage), /<TierOneExperiencemode="home"\/>/)
@@ -100,6 +103,11 @@ test('HomeScene locks silent home to ascent to lifemap routing', () => {
 test('Life Map star selection routes to focus with manifestId', () => {
   const source = flat(homeScene)
   assert.match(source, /router\.push\(`\/focus\?manifestId=\$\{encodeURIComponent\(manifest\.manifestId\)\}`\)/)
+  assert.match(constellationLayer, /data-testid="urai-life-map-node-button"/)
+  assert.match(constellationLayer, /aria-label=\{ariaLabel\}/)
+  assert.match(constellationLayer, /data-testid="urai-life-map-node-preview"/)
+  assert.match(constellationLayer, /memoryPrivacyState\(manifest\)/)
+  assert.match(constellationLayer, /memoryReplayReady\(manifest\)/)
 })
 
 test('HomeScene locks focus, replay, mirror, and unwind behavior', () => {
@@ -107,25 +115,62 @@ test('HomeScene locks focus, replay, mirror, and unwind behavior', () => {
   assert.match(source, /data-testid="urai-lifemap-guidance"/)
   assert.match(source, /Click a star to open memory focus/)
   assert.match(source, /router\.push\(manifestReplayHref\(activeManifestId\)\)/)
+  assert.match(source, /router\.push\(manifestMirrorHref\(activeManifestId\)\)/)
   assert.match(source, /if \(event\.key === 'Escape'\) unwind\(\)/)
   assert.match(source, /if \(event\.key\.toLowerCase\(\) === 'r' && !isHomeMode\) resetCamera\(\)/)
   assert.match(source, /if \(sceneMode === 'replay'\)/)
   assert.match(source, /router\.push\(manifestFocusHref\(activeManifestId\)\)/)
-  assert.match(source, /if \(sceneMode === 'focus'\)/)
+  assert.match(source, /if \(sceneMode === 'focus' \|\| sceneMode === 'mirror'\)/)
   assert.match(source, /router\.push\('\/life-map'\)/)
   assert.match(source, /if \(sceneMode === 'life-map' \|\| sceneMode === 'ascent'\)/)
   assert.match(source, /router\.push\('\/'\)/)
   assert.doesNotMatch(source, /router\.push\('\/home'\)/)
 })
 
-test('focus and replay use demo fallback instead of unavailable error copy', () => {
+test('focus, replay, and mirror use demo fallback instead of unavailable error copy', () => {
   assert.match(homeScene, /function FocusEmptyPanel/)
   assert.match(homeScene, /data-testid="urai-focus-empty-panel"/)
-  assert.match(homeScene, /const modeNeedsManifest = sceneMode === 'focus' \|\| sceneMode === 'replay'/)
+  assert.match(homeScene, /const modeNeedsManifest = sceneMode === 'focus' \|\| sceneMode === 'replay' \|\| sceneMode === 'mirror'/)
   assert.match(homeScene, /const effectiveManifestId = modeNeedsManifest \? \(manifestId \?\? DEMO_FOCUS_MANIFEST_ID\) : manifestId/)
   assert.match(homeScene, /const showEmptyFocusPanel = !gateBlocksMode && modeNeedsManifest && !activeManifest/)
   assert.match(homeScene, /'Demo memory star ready'/)
   assert.doesNotMatch(homeScene, /Memory star unavailable|Memory star not ready|Choose a memory star first/)
+})
+
+test('Life Map AAA HUD exposes filters, status, narrator fallback, replay shell, and mirror summary', () => {
+  assert.match(homeScene, /LIFE_MAP_FILTERS/)
+  assert.match(homeScene, /Timeline/)
+  assert.match(homeScene, /Seasons/)
+  assert.match(homeScene, /People/)
+  assert.match(homeScene, /Places/)
+  assert.match(homeScene, /Rituals/)
+  assert.match(homeScene, /Recovery/)
+  assert.match(homeScene, /Dreams/)
+  assert.match(homeScene, /Mirror/)
+  assert.match(homeScene, /data-testid="urai-life-map-controls"/)
+  assert.match(homeScene, /data-testid="urai-life-map-status"/)
+  assert.match(homeScene, /data-testid="urai-replay-shell"/)
+  assert.match(homeScene, /data-testid="urai-mirror-reflection-grid"/)
+  assert.match(narratorHud, /Voice off · Enable narration/)
+  assert.match(narratorHud, /aria-label="URAI narrator text fallback"/)
+})
+
+test('manifest schema includes AAA Life Map meaning fields and seed fallback normalizes them', () => {
+  assert.match(manifestTypes, /title\?: string/)
+  assert.match(manifestTypes, /systemLabel\?: string/)
+  assert.match(manifestTypes, /emotionalTone\?: string/)
+  assert.match(manifestTypes, /emotionalWeather\?: LifeMapEmotionalWeather/)
+  assert.match(manifestTypes, /privacyState\?: LifeMapPrivacyState/)
+  assert.match(manifestTypes, /narratorLine\?: string/)
+  assert.match(manifestTypes, /replayReady\?: boolean/)
+  assert.match(manifestTypes, /memoryKind\?: LifeMapMemoryKind/)
+  assert.match(manifestTypes, /whyThisAppeared\?: string/)
+  assert.match(constellationManifests, /function normalizeManifest/)
+  assert.match(constellationManifests, /title: 'Soft Memory Bloom'/)
+  assert.match(constellationManifests, /title: 'Recovery Arc'/)
+  assert.match(constellationManifests, /title: 'Threshold Storm'/)
+  assert.match(constellationManifests, /title: 'Mirror Focus'/)
+  assert.match(constellationManifests, /reflectionSummary/)
 })
 
 test('premium overlay uses centralized demo stars and production polish layers', () => {
@@ -144,10 +189,11 @@ test('premium overlay uses centralized demo stars and production polish layers',
   assert.doesNotMatch(premiumOverlay, /const lifeMapStars|Home Scene|Map online/)
 })
 
-test('HomeScene does not trigger microphone permission or audio capture on load', () => {
+test('HomeScene and narrator HUD do not trigger microphone permission or audio capture on load', () => {
   assert.doesNotMatch(homeSceneRaw, /getUserMedia/i)
   assert.doesNotMatch(homeSceneRaw, /mediaDevices/i)
   assert.doesNotMatch(homeSceneRaw, /AudioContext/i)
+  assert.doesNotMatch(narratorHud, /speechSynthesis\.speak/i)
 })
 
 test('Home scene has visible fallback backgrounds to avoid black screens', () => {
