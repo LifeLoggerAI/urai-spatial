@@ -28,6 +28,9 @@ for (const file of requiredFiles) {
 }
 
 const all = requiredFiles.map((file) => fs.readFileSync(file, 'utf8')).join('\n')
+const releaseSourceFiles = requiredFiles.filter((file) => !file.startsWith('scripts/'))
+const releaseSource = releaseSourceFiles.map((file) => fs.readFileSync(file, 'utf8')).join('\n')
+
 const tokens = [
   'data-urai-home-spatial-shell="true"',
   'data-urai-camera-target={cameraTarget}',
@@ -67,8 +70,14 @@ for (const token of tokens) {
   }
 }
 
-for (const forbidden of ['lorem ipsum', '[object Object]', 'GetUrAi']) {
-  if (all.includes(forbidden)) {
+const forbiddenTokens = [
+  ['lorem', 'ipsum'].join(' '),
+  ['[object', 'Object]'].join(' '),
+  ['Get', 'UrAi'].join(''),
+]
+
+for (const forbidden of forbiddenTokens) {
+  if (releaseSource.includes(forbidden)) {
     console.error(`URAI Spatial invariant failed. Forbidden token: ${forbidden}`)
     process.exit(1)
   }
