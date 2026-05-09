@@ -1,6 +1,6 @@
 import { Vector3 } from 'three'
 
-export type CameraPathKey = 'arrival' | 'skyTap' | 'memoryZoom' | 'narratorReveal' | 'orbFocus' | 'replayDive'
+export type CameraPathKey = 'arrival' | 'skyTap' | 'ascent' | 'memoryZoom' | 'narratorReveal' | 'orbFocus' | 'replayDive'
 
 export type CameraPathMotion = {
   transitionSpeed: number
@@ -54,6 +54,24 @@ export const cameraPathPresets: Record<CameraPathKey, CameraPathPreset> = {
     drift: { x: 0.28, y: 0.1, z: 0.18, speed: 0.14 },
     motion: { ...defaultMotion, transitionSpeed: 0.58, transitionImpulse: 0.18, depthImpulse: 0.16, roll: 0.004 },
   },
+  ascent: {
+    position: new Vector3(0, 5.55, 5.15),
+    target: new Vector3(0, 2.35, -6.6),
+    fov: 51,
+    drift: { x: 0.12, y: 0.045, z: 0.16, speed: 0.12 },
+    motion: {
+      ...defaultMotion,
+      transitionSpeed: 0.84,
+      positionLerp: 0.038,
+      targetLerp: 0.05,
+      fovLerp: 0.046,
+      transitionImpulse: 0.1,
+      depthImpulse: 0.22,
+      verticalImpulse: 0.08,
+      roll: 0.0015,
+      driftMultiplier: 0.34,
+    },
+  },
   memoryZoom: {
     position: new Vector3(0.25, 1.38, 3.85),
     target: new Vector3(0, -0.04, -1.65),
@@ -106,6 +124,7 @@ export function cameraPathForState({
   orbState: string
   sceneMode?: string
 }): CameraPathKey {
+  if (sceneMode === 'ascent') return 'ascent'
   if (sceneMode === 'replay') return 'replayDive'
   if (sceneMode === 'focus') return 'memoryZoom'
   if (hasFocus) return 'memoryZoom'
