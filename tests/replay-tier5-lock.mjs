@@ -73,6 +73,15 @@ async function expectText(locator, text, timeout = 5000) {
   throw new Error(`Expected text ${text}, received ${body}`);
 }
 
+async function expectMissingText(locator, text, timeout = 1200) {
+  const started = Date.now();
+  while (Date.now() - started < timeout) {
+    const body = await locator.textContent().catch(() => '');
+    if (body?.includes(text)) throw new Error(`Unexpected text ${text} found in ${body}`);
+    await sleep(100);
+  }
+}
+
 async function screenshot(page, name) {
   const path = `${ARTIFACT_DIR}/${name}.png`;
   await page.screenshot({ path, fullPage: true });
@@ -98,52 +107,69 @@ async function run() {
     const browser = await chromium.launch();
     const page = await browser.newPage({ viewport: { width: 1440, height: 1000 } });
     const consoleMessages = collectConsole(page);
-    const stage = page.getByTestId('urai-scene-stage');
 
     await page.goto(`${BASE_URL}/life-map`);
+    const stage = page.getByTestId('urai-scene-stage');
     await expectAttr(stage, 'data-scene-mode', 'life-map', 5000);
     await expectVisible(page.getByTestId('lifemap-node-seed-memory-bloom'), 'seed memory bloom node');
     await page.getByTestId('lifemap-node-seed-memory-bloom').click();
     await expectAttr(stage, 'data-scene-mode', 'focus');
     await expectVisible(page.getByTestId('urai-focus-action-panel'), 'focus action panel');
-    await expectText(page.getByTestId('urai-focus-action-panel'), 'Memory Bloom');
     await expectText(page.getByTestId('urai-focus-action-panel'), 'Start Replay');
     report.screenshots.push(await screenshot(page, '01-focus-memory-bloom'));
 
     await page.getByRole('button', { name: 'Start Replay' }).click();
-    await expectAttr(stage, 'data-scene-mode', 'replay');
-    await expectVisible(page.getByTestId('urai-focus-scene'), 'replay visual scene');
-    await expectVisible(page.getByTestId('urai-focus-action-panel'), 'replay action panel');
-    await expectText(page.getByTestId('urai-focus-action-panel'), 'Replay Stream');
-    await expectText(page.getByTestId('urai-focus-action-panel'), 'Unwind to Focus');
-    report.screenshots.push(await screenshot(page, '02-replay-memory-bloom'));
+    await page.waitForURL(/\/replay\?manifestId=seed-memory-bloom/);
+    const replay = page.getByTestId('cinematic-replay-client');
+    await expectVisible(replay, 'cinematic replay client');
+    await expectAttr(replay, 'data-replay-phase', 'replay_playing');
+    await expectVisible(page.getByTestId('urai-replay-timeline'), 'replay timeline');
+    await expectVisible(page.getByTestId('urai-replay-meta-panel'), 'replay meta panel');
+    await expectVisible(page.getByTestId('urai-replay-phase-rings'), 'replay phase rings');
+    await expectText(replay, 'Pattern Replay');
+    await expectText(replay, 'Source: LifeMap · Seed Memory Bloom');
+    await expectText(replay, 'Center Replay');
+    await expectText(replay, 'Pause');
+    await expectText(replay, 'Esc returns to Focus');
+    await expectText(replay, 'Return to Focus');
+    await expectText(replay, 'Why this appeared');
+    await expectText(replay, 'Private · Only visible to you');
+    await expectText(replay, 'Save');
+    await expectText(replay, 'Hide');
+    await expectText(replay, 'Correct');
+    await expectMissingText(replay, 'Unwind');
+    await expectMissingText(replay, 'Unwind to Focus');
+    await expectMissingText(replay, 'ESC unwinds to focus');
+    await expectMissingText(replay, 'READINESS 87%');
+    await expectMissingText(replay, 'INTENSITY 88%');
+    await expectMissingText(replay, 'BOUNDARY 75%');
+    report.screenshots.push(await screenshot(page, '02-memory-theater-replay'));
 
-    await page.keyboard.press('r');
-    await expectAttr(stage, 'data-scene-mode', 'replay');
+    await page.getByRole('button', { name: 'Pause replay' }).click();
+    await expectAttr(replay, 'data-replay-phase', 'replay_paused');
+    await expectText(replay, 'Play');
     await page.keyboard.press('Escape');
-    await expectAttr(stage, 'data-scene-mode', 'focus');
-    await page.keyboard.press('Escape');
-    await expectAttr(stage, 'data-scene-mode', 'life-map');
-    await page.keyboard.press('Escape');
-    await expectAttr(stage, 'data-scene-mode', 'home');
-    report.screenshots.push(await screenshot(page, '03-replay-unwind-home'));
+    await page.waitForURL(/\/focus\?manifestId=seed-memory-bloom/);
 
     await page.setViewportSize({ width: 390, height: 844 });
     await page.goto(`${BASE_URL}/replay?manifestId=seed-memory-bloom`);
-    await expectAttr(stage, 'data-scene-mode', 'replay');
-    await expectVisible(page.getByTestId('urai-focus-scene'), 'mobile replay visual scene');
-    await expectText(page.getByTestId('urai-focus-action-panel'), 'Replay Stream');
-    const box = await page.getByTestId('urai-focus-scene').boundingBox();
+    const mobileReplay = page.getByTestId('cinematic-replay-client');
+    await expectVisible(mobileReplay, 'mobile cinematic replay client');
+    await expectVisible(page.getByTestId('urai-replay-timeline'), 'mobile replay timeline');
+    await expectVisible(page.getByTestId('urai-replay-meta-panel'), 'mobile replay meta panel');
+    await expectText(mobileReplay, 'Pattern Replay');
+    await expectText(mobileReplay, 'Source: LifeMap · Seed Memory Bloom');
+    const box = await mobileReplay.boundingBox();
     if (!box || Math.round(box.width) !== 390 || Math.round(box.height) !== 844) {
       throw new Error(`Mobile replay viewport mismatch: ${JSON.stringify(box)}`);
     }
-    report.screenshots.push(await screenshot(page, '04-mobile-direct-replay'));
+    report.screenshots.push(await screenshot(page, '03-mobile-memory-theater-replay'));
 
     await browser.close();
     report.console = consoleMessages;
     if (consoleMessages.length) throw new Error(`Console errors detected:\n${consoleMessages.join('\n')}`);
     writeFileSync(`${ARTIFACT_DIR}/replay-tier5-report.json`, JSON.stringify(report, null, 2));
-    console.log('URAI Replay Tier 5 canonical validation passed.');
+    console.log('URAI Replay Tier 5 Memory Theater validation passed.');
   } catch (error) {
     writeFileSync(`${ARTIFACT_DIR}/replay-tier5-report.json`, JSON.stringify(report, null, 2));
     throw error;
