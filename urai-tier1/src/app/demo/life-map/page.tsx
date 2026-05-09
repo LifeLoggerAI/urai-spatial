@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
+import LifeMapAscentGate from "@/spatial/components/world/LifeMapAscentGate";
 import { TierOneExperience } from "@/spatial/layout/TierOneExperience";
 
 function publicDemoRoutesAllowed() {
@@ -12,11 +13,12 @@ export default function DemoLifeMapPage() {
     if (!publicDemoRoutesAllowed()) return;
     if (typeof window === "undefined") return;
     window.localStorage.setItem("urai:demo-mode", "tier-one-life-map");
+    window.sessionStorage.setItem("urai:transition:sky-to-life-map", "1");
   }, []);
 
   if (!publicDemoRoutesAllowed()) {
     return <TierOneExperience mode="home" />;
   }
 
-  return <TierOneExperience mode="demo" />;
+  return <LifeMapAscentGate />;
 }
