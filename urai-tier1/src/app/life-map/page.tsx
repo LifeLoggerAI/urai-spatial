@@ -1,5 +1,5 @@
-import { TierOneExperience } from "@/spatial/layout/TierOneExperience";
+import SpatialWorldCanvas from "@/spatial/components/world/SpatialWorldCanvas";
 
 export default function LifeMapPage() {
-  return <TierOneExperience mode="life-map" />;
+  return <SpatialWorldCanvas mode="life-map" />;
 }
