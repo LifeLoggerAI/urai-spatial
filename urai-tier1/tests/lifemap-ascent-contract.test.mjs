@@ -5,7 +5,9 @@ import fs from 'node:fs'
 const gateSource = fs.readFileSync(new URL('../src/spatial/components/world/LifeMapAscentGate.tsx', import.meta.url), 'utf8')
 const overlaySource = fs.readFileSync(new URL('../src/spatial/components/world/AscentOverlay.tsx', import.meta.url), 'utf8')
 const pageSource = fs.readFileSync(new URL('../src/app/life-map/page.tsx', import.meta.url), 'utf8')
+const tierOneSource = fs.readFileSync(new URL('../src/spatial/layout/TierOneExperience.tsx', import.meta.url), 'utf8')
 const compactGate = gateSource.replace(/\s+/g, '')
+const compactTierOne = tierOneSource.replace(/\s+/g, '')
 
 
 test('life map route is gated by the Ascent contract wrapper', () => {
@@ -28,8 +30,14 @@ test('Ascent copy avoids duplicate debug-style loading surfaces', () => {
   assert.doesNotMatch(overlaySource, /ASCENT ACTIVE/)
   assert.doesNotMatch(overlaySource, /Preparing your memory map/)
   assert.doesNotMatch(overlaySource, /home view/)
+  assert.doesNotMatch(tierOneSource, /URAI is moving from the home view/)
   assert.match(overlaySource, /Opening your Life Map\./)
   assert.match(overlaySource, /Memories are becoming constellations/)
+  assert.match(tierOneSource, /Your Life Map is forming\./)
+})
+
+test('Ascent route card is suppressed so the overlay owns the transition copy', () => {
+  assert.match(compactTierOne, /constshowRouteCard=mode!=="home"&&mode!=="ascent"/)
 })
 
 test('Life Map is only interactive after visual phase and data readiness agree', () => {
