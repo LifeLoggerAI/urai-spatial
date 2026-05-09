@@ -1,4 +1,5 @@
 import { URAI_SPATIAL_TIER_LOCK_VERSION } from "@/components/lifemap/uraiSpatialTierLockContract";
+import { assertUraiSpatial3DWorldModel } from "@/spatial/world/uraiSpatialWorldModel";
 import {
   assertSpatialFallbackMode,
   spatialDeferredCapabilities,
@@ -28,6 +29,7 @@ export const spatialApiRoutes = {
   launchBoundary: "/api/system/launch-boundary",
   tier2: "/api/system/tier2",
   uraiSpatialLock: "/api/system/urai-spatial-lock",
+  uraiSpatial3DWorld: "/api/system/urai-spatial-3d-world",
   bodyBiometric: "/api/body-biometric",
   orbCompanion: "/api/orb-companion",
 };
@@ -40,6 +42,10 @@ export const spatialCapabilities = [
   "sky-lifemap-preview",
   "ground-world-preview",
   "lifemap-starfield",
+  "3d-world-layer",
+  "3d-camera-presets",
+  "3d-star-depth-model",
+  "3d-replay-path-model",
   "replay-state-machine",
   "system-contract-api",
   "firebase-ready-fallback-mode",
@@ -49,6 +55,8 @@ export const spatialCapabilities = [
 export const spatialTargets = ["urai", "urai-studio", "asset-factory", "urai-jobs"];
 
 export function buildSpatialSystemContract() {
+  const world3D = assertUraiSpatial3DWorldModel();
+
   return {
     ok: true,
     service: URAI_SPATIAL_SERVICE,
@@ -68,6 +76,7 @@ export function buildSpatialSystemContract() {
         route: spatialApiRoutes.uraiSpatialLock,
       },
     },
+    world3D,
     launchBoundary: spatialLaunchBoundary,
     fallbackMode: assertSpatialFallbackMode(),
     deferredCapabilities: spatialDeferredCapabilities,
@@ -101,13 +110,14 @@ export function buildSpatialSystemContract() {
       ],
     },
     guarantees: [
+      "The primary URAI Spatial world layer is 3D; DOM is reserved for accessible controls, labels, and safe fallback.",
       "No secrets are returned by system APIs.",
       "Fallback/demo mode is labeled explicitly.",
       "Biometric language is wellness-supportive and non-diagnostic.",
       "AR/WebXR seams are not described as live unless a provider is connected.",
       "Live providers require explicit consent, tests, and deployment verification before launch claims.",
     ],
-    smokeCoverage: ["/", "/home", "/life-map", "/demo/life-map", "/privacy", "/terms", "/api/system/health", "/api/system/launch-boundary", "/api/system/urai-spatial-lock", "/api/body-biometric", "/api/orb-companion"],
+    smokeCoverage: ["/", "/home", "/life-map", "/demo/life-map", "/privacy", "/terms", "/api/system/health", "/api/system/launch-boundary", "/api/system/urai-spatial-lock", "/api/system/urai-spatial-3d-world", "/api/body-biometric", "/api/orb-companion"],
   };
 }
 
