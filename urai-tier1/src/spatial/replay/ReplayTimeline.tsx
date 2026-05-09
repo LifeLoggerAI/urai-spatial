@@ -19,6 +19,7 @@ export function ReplayTimeline({
   reducedMotion,
   onPlayPause,
   onScrub,
+  onScrubbingChange,
 }: {
   phase: ReplayPhase
   activeSegment: ReplaySegmentDefinition
@@ -28,6 +29,7 @@ export function ReplayTimeline({
   reducedMotion: boolean
   onPlayPause: () => void
   onScrub: (progressMs: number) => void
+  onScrubbingChange?: (scrubbing: boolean) => void
 }) {
   const safeDuration = Math.max(1, durationMs)
   const clampedProgress = clampReplayProgress(progressMs, safeDuration)
@@ -102,6 +104,10 @@ export function ReplayTimeline({
           step={100}
           value={clampedProgress}
           disabled={!canInteract}
+          onPointerDown={() => onScrubbingChange?.(true)}
+          onPointerUp={() => onScrubbingChange?.(false)}
+          onPointerCancel={() => onScrubbingChange?.(false)}
+          onBlur={() => onScrubbingChange?.(false)}
           onChange={(event) => onScrub(Number(event.currentTarget.value))}
           onKeyDown={handleKeyDown}
           aria-label={`Replay scrubber, ${activeSegment.label} phase, ${progressPercent} percent complete`}
