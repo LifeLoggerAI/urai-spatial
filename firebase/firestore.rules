@@ -93,7 +93,8 @@ service cloud.firestore {
         && request.resource.data.orbTier in [1, 2, 3, 4, 5]
         && request.resource.data.skyTier in [1, 2, 3, 4, 5]
         && request.resource.data.moodState in ['calm', 'low', 'recovery', 'dream', 'shadow', 'focused', 'joy']
-        && request.resource.data.recoveryState in ['dormant', 'recovering', 'stable', 'growing', 'awakened'];
+        && request.resource.data.recoveryState in ['dormant', 'recovering', 'stable', 'growing', 'awakened']
+        && request.resource.data.updatedAt == request.time;
     }
 
     function isValidHomeWorldExplanationWrite(uid) {
@@ -104,7 +105,8 @@ service cloud.firestore {
         && request.resource.data.privacy is map
         && request.resource.data.privacy.rawSignalsStored == false
         && request.resource.data.privacy.usedRawAudio == false
-        && request.resource.data.privacy.usedContactIdentity == false;
+        && request.resource.data.privacy.usedContactIdentity == false
+        && request.resource.data.updatedAt == request.time;
     }
 
     // Feature flags are server/admin controlled.
