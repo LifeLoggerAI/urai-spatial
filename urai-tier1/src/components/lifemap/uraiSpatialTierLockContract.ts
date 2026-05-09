@@ -18,7 +18,7 @@ export const uraiSpatialTierLocks: UraiSpatialTierLock[] = [
     assertions: [
       'Home renders before Life Map.',
       'Orb, body, sky, and ground scene are present.',
-      'No debug or placeholder UI is visible on the home entry.',
+      'No debug, placeholder, dashboard, or control-panel UI is visible on the home entry.',
       'Orb and sky can route toward Life Map.',
     ],
     tests: ['home:invariant', 'home-cohesion-contract', 'lock:static'],
@@ -80,6 +80,11 @@ export const uraiSpatialTierLocks: UraiSpatialTierLock[] = [
 ];
 
 export function buildUraiSpatialTierLockContract() {
+  const tiersComplete = uraiSpatialTierLocks.length === 5;
+  const versionLocked = URAI_SPATIAL_TIER_LOCK_VERSION === '2026-05-09.urai-spatial.locked.v1';
+  const acceptancePresent = uraiSpatialTierLocks.every((tier) => tier.assertions.length > 0);
+  const testsPresent = uraiSpatialTierLocks.every((tier) => tier.tests.length > 0);
+
   return {
     ok: true,
     service: 'urai-spatial',
@@ -87,6 +92,11 @@ export function buildUraiSpatialTierLockContract() {
     done: true,
     version: URAI_SPATIAL_TIER_LOCK_VERSION,
     tiers: uraiSpatialTierLocks,
-    assertions: uraiSpatialTierLocks.flatMap((tier) => tier.assertions),
+    assertions: {
+      tiersComplete,
+      versionLocked,
+      acceptancePresent,
+      testsPresent,
+    },
   };
 }
