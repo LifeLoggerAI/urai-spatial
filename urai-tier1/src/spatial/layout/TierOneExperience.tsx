@@ -1,9 +1,10 @@
 "use client";
 
-import React, { Suspense, useCallback } from "react";
+import React, { Suspense, useCallback, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import HomeScene from "@/scene/HomeScene";
 import MirrorRouteLayer from "@/scene/MirrorRouteLayer";
+import { modeFromRouteMode, URAI_CAMERA_PRESETS, type UraiSpatialWorldMode } from "@/spatial/world/uraiSpatialWorldModel";
 import { HomeCohesionLayer } from "./HomeCohesionLayer";
 import { SpatialCinematicContinuityLayer } from "./SpatialCinematicContinuityLayer";
 import { SpatialShell } from "./SpatialShell";
@@ -79,13 +80,26 @@ export function TierOneExperience({ mode, title, eyebrow, description, cta }: Pr
   const openLifeMap = useCallback(() => router.push("/life-map", { scroll: false }), [router]);
   const openHome = useCallback(() => router.push("/", { scroll: false }), [router]);
   const showRouteCard = shouldShowRouteCard(mode, Boolean(title || eyebrow || description || cta));
+  const worldMode = useMemo<UraiSpatialWorldMode>(() => modeFromRouteMode(mode), [mode]);
+  const cameraPreset = URAI_CAMERA_PRESETS[worldMode];
 
   return (
     <SpatialShell mode={shellModeFor(mode)}>
-      <Suspense fallback={null}>
-        <HomeScene sceneMode={mode} />
-        {mode === "mirror" ? <MirrorRouteLayer onLifeMap={openLifeMap} onHome={openHome} /> : null}
-      </Suspense>
+      <div
+        data-testid="urai-spatial-world-root"
+        data-urai-world-layer="3d"
+        data-urai-dom-role="accessible-control-overlay"
+        data-urai-world-mode={worldMode}
+        data-urai-camera-position={cameraPreset.position.join(",")}
+        data-urai-camera-target={cameraPreset.target.join(",")}
+        data-urai-camera-fov={cameraPreset.fov}
+        data-urai-fallback-mode="webgl"
+      >
+        <Suspense fallback={null}>
+          <HomeScene sceneMode={mode} />
+          {mode === "mirror" ? <MirrorRouteLayer onLifeMap={openLifeMap} onHome={openHome} /> : null}
+        </Suspense>
+      </div>
 
       <SpatialCinematicContinuityLayer mode={mode} />
       <HomeCohesionLayer enabled={mode === "home"} />
