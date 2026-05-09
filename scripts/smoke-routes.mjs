@@ -8,6 +8,7 @@ const apiRoutes = [
   ['/api/system/capabilities', { method: 'GET' }],
   ['/api/system/integration-contract', { method: 'GET' }],
   ['/api/system/launch-boundary', { method: 'GET', optional: true }],
+  ['/api/system/tier2', { method: 'GET', requiredTier: 'Tier-2' }],
   [
     '/api/body-biometric',
     {
@@ -150,6 +151,11 @@ async function checkJson(route, init) {
   const payload = JSON.parse(text)
 
   assert(payload.service === 'urai-spatial' || payload.ok === true, `${route} missing service/ok contract`)
+
+  if (init.requiredTier) {
+    assert(payload.tier === init.requiredTier, `${route} missing required tier ${init.requiredTier}`)
+    assert(Array.isArray(payload.systems) && payload.systems.length >= 6, `${route} missing Tier-2 systems`)
+  }
 
   if (route.includes('body-biometric')) {
     assert(payload.providerStatus, `${route} missing providerStatus`)
