@@ -2,7 +2,7 @@
 
 URAI Spatial is the immersive spatial interface layer of URAI: a cinematic, passive, privacy-aware web shell for Home, LifeMap, body/avatar zoom, sky, ground/world, orb companion navigation, biometric fallback panels, replay, and future AR/VR/WebXR expansion.
 
-The current release-lock branch keeps the existing spatial engine intact and adds a standalone release shell with stable smoke/E2E markers, typed fallback APIs, system contract routes, and launch documentation.
+The current release-lock branch keeps the existing spatial engine intact and adds a standalone release shell with stable smoke/E2E markers, typed fallback APIs, system contract routes, provider-boundary checks, and launch documentation.
 
 ## App root
 
@@ -31,6 +31,7 @@ http://127.0.0.1:3000/spatial
 ## Validation commands
 
 ```bash
+pnpm check:spatial-copy
 pnpm check:spatial
 pnpm typecheck
 pnpm build
@@ -39,7 +40,9 @@ pnpm test:e2e
 pnpm launch:check
 ```
 
-`pnpm launch:check` runs the spatial invariant check, typecheck, production build, smoke route checks, and E2E lock runner.
+`pnpm check:spatial-copy` verifies that public text and source copy do not imply live AR/WebXR, wearable, biometric, memory-grounded, asset-factory, or cross-repo sync providers are active without fallback/deferred/provider-connected language.
+
+`pnpm launch:check` runs source-integrity checks, production-route checks, the spatial copy guardrail, the spatial invariant check, typecheck, production build, smoke route checks, and E2E lock runner.
 
 ## Routes
 
@@ -57,8 +60,8 @@ pnpm launch:check
 | --- | --- | --- |
 | `/api/system/health` | GET | Service health and version |
 | `/api/system/manifest` | GET | Routes, APIs, capabilities |
-| `/api/system/capabilities` | GET | URAI Spatial capabilities and system targets |
-| `/api/system/integration-contract` | GET | Full system-of-systems contract |
+| `/api/system/capabilities` | GET | URAI Spatial capabilities and system targets plus launch-boundary contract |
+| `/api/system/integration-contract` | GET | Full system-of-systems contract plus deferred-provider requirements |
 | `/api/body-biometric` | POST | Privacy-safe body biometric fallback snapshots |
 | `/api/orb-companion` | POST | Orb route hints and local fallback replies |
 
