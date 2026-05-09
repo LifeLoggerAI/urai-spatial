@@ -6,7 +6,7 @@ import HomeScene from "@/scene/HomeScene";
 import MirrorRouteLayer from "@/scene/MirrorRouteLayer";
 import { SpatialShell } from "./SpatialShell";
 
-export type TierOneExperienceMode = "home" | "ascent" | "life-map" | "demo" | "replay" | "focus" | "mirror";
+export type TierOneExperienceMode = "home" | "ascent" | "life-map" | "demo" | "replay" | "focus" | "unwind" | "mirror";
 
 type Props = {
   mode: TierOneExperienceMode;
@@ -47,6 +47,11 @@ const fallbackCopy: Record<TierOneExperienceMode, { eyebrow: string; title: stri
     title: "Review this selected memory.",
     description: "Check the memory context, readiness, privacy state, and replay action before starting.",
   },
+  unwind: {
+    eyebrow: "Unwind",
+    title: "Return to a safe spatial state.",
+    description: "Pause the replay layer, settle the scene, and choose whether to revisit the Life Map or return home.",
+  },
   mirror: {
     eyebrow: "Reflection Summary",
     title: "This memory shows a calm recovery pattern.",
@@ -56,7 +61,7 @@ const fallbackCopy: Record<TierOneExperienceMode, { eyebrow: string; title: stri
 
 function shellModeFor(mode: TierOneExperienceMode) {
   if (mode === "replay") return "replay" as const;
-  if (mode === "focus" || mode === "mirror") return "detail" as const;
+  if (mode === "focus" || mode === "mirror" || mode === "unwind") return "detail" as const;
   if (mode === "ascent" || mode === "life-map") return "sky" as const;
   return "overview" as const;
 }

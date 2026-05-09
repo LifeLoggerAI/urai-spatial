@@ -57,7 +57,7 @@ for (const required of [
   "verification/signoffs.md"
 ]) file(required);
 
-contains("package.json", "\"packageManager\": \"pnpm@8.15.9\"", "pinned pnpm package manager");
+contains("package.json", "\"packageManager\": \"pnpm@10.0.0\"", "pinned pnpm package manager");
 contains("package.json", "runtime:authority", "runtime authority script");
 contains("firebase.json", "nodejs20", "Node 20 Functions runtime");
 contains("firebase.json", "urai-spatial-functions", "named functions codebase");

@@ -53,7 +53,7 @@ const homeSceneText = fs.existsSync('urai-tier1/src/scene/HomeScene.tsx') ? fs.r
 if (homeSceneText) {
   const requiredHomeSilencePatterns = [
     /if \(mode === 'home'\) return null/,
-    /const showOrb = sceneMode === 'focus' \|\| sceneMode === 'replay' \|\| sceneMode === 'mirror'/,
+    /const showOrb = sceneMode === 'focus' \|\| sceneMode === 'replay' \|\| sceneMode === 'unwind' \|\| sceneMode === 'mirror'/,
     /!isHomeMode \? <NarratorVoice[\s\S]{0,160}: null/,
     /!isHomeMode \? <NarratorHud \/> : null/,
     /!isHomeMode \? <CameraResetButton[\s\S]{0,160}: null/,

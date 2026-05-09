@@ -30,7 +30,7 @@ import { DEMO_FOCUS_MANIFEST_ID } from '../spatial/demo/demoMemoryStars'
 import MemoryStarArtifact from '../spatial/memory/MemoryStarArtifact'
 import { buildMemoryMorphology, MemoryMorphology } from '../spatial/memory/memoryMorphology'
 
-type SceneMode = 'home' | 'ascent' | 'life-map' | 'demo' | 'replay' | 'focus' | 'mirror'
+type SceneMode = 'home' | 'ascent' | 'life-map' | 'demo' | 'replay' | 'focus' | 'unwind' | 'mirror'
 
 const ASCENT_DURATION_MS = 1800
 const REPLAY_LAUNCH_DELAY_MS = 720
@@ -54,7 +54,7 @@ function orbStateForContext({
   if (hasSelectedManifest) return 'memoryBloom'
   if (sceneMode === 'focus') return 'listening'
   if (sceneMode === 'replay') return 'ritual'
-  if (sceneMode === 'mirror') return 'recovery'
+  if (sceneMode === 'mirror' || sceneMode === 'unwind') return 'recovery'
   if (sceneMode === 'ascent') return 'listening'
   if (context === 'return') return 'recovery'
   return 'idle'
@@ -72,11 +72,13 @@ function ModeGuidance({
   mode,
   onEnter,
   onUnwind,
+  onSafeUnwind,
   reducedMotion,
 }: {
   mode: SceneMode
   onEnter: () => void
   onUnwind: () => void
+  onSafeUnwind: () => void
   reducedMotion: boolean
 }) {
   if (mode === 'home') return null
@@ -113,7 +115,16 @@ function ModeGuidance({
     return (
       <div className="urai-spatial-guidance" data-testid="urai-replay-guidance">
         <span>Replay breathing. ESC unwinds one layer.</span>
-        <button type="button" onClick={onUnwind}>Unwind</button>
+        <button type="button" onClick={onSafeUnwind}>Unwind</button>
+      </div>
+    )
+  }
+
+  if (mode === 'unwind') {
+    return (
+      <div className="urai-spatial-guidance" data-testid="urai-unwind-guidance" aria-live="polite">
+        <span>Unwind complete. You are back in a safe spatial state.</span>
+        <button type="button" onClick={onUnwind}>Return Home</button>
       </div>
     )
   }
@@ -230,7 +241,7 @@ export default function HomeScene({ sceneMode = 'home' }: { sceneMode?: SceneMod
   const showHomeWorld = isHomeMode
   const showAscentPortal = isAscentMode
   const showConstellation = isConstellationRoute && !gateBlocksMode
-  const showOrb = sceneMode === 'focus' || sceneMode === 'replay' || sceneMode === 'mirror'
+  const showOrb = sceneMode === 'focus' || sceneMode === 'replay' || sceneMode === 'unwind' || sceneMode === 'mirror'
   const { manifest, loading: manifestLoading } = useManifest(gateBlocksMode ? null : effectiveManifestId)
   const [selectedManifest, setSelectedManifest] = useState<SpatialAssetManifest | null>(null)
   const [selectedPosition, setSelectedPosition] = useState<ConstellationNodePosition | null>(null)
@@ -249,7 +260,7 @@ export default function HomeScene({ sceneMode = 'home' }: { sceneMode?: SceneMod
     () =>
       orbStateForContext({
         context: narratorContext,
-        hasSelectedManifest: Boolean(activeManifest) || Boolean(selectedManifest) || sceneMode === 'focus' || sceneMode === 'replay',
+        hasSelectedManifest: Boolean(activeManifest) || Boolean(selectedManifest) || sceneMode === 'focus' || sceneMode === 'replay' || sceneMode === 'unwind',
         sceneMode,
       }),
     [activeManifest, narratorContext, selectedManifest, sceneMode],
@@ -258,7 +269,7 @@ export default function HomeScene({ sceneMode = 'home' }: { sceneMode?: SceneMod
   const cameraPath = useMemo(
     () =>
       cameraPathForState({
-        hasFocus: Boolean(selectedPosition) || sceneMode === 'focus' || sceneMode === 'replay' || isAscentMode,
+        hasFocus: Boolean(selectedPosition) || sceneMode === 'focus' || sceneMode === 'replay' || sceneMode === 'unwind' || isAscentMode,
         isNarrating: Boolean(activeManifest) || sceneMode !== 'home',
         orbState,
         sceneMode,
@@ -277,6 +288,7 @@ export default function HomeScene({ sceneMode = 'home' }: { sceneMode?: SceneMod
 
   const openLifeMap = useCallback(() => router.push('/life-map'), [router])
   const openPreviewMap = useCallback(() => router.push('/demo/life-map'), [router])
+  const openSafeUnwind = useCallback(() => router.push('/unwind'), [router])
 
   const unwind = useCallback(() => {
     setReplayLaunching(false)
@@ -296,6 +308,11 @@ export default function HomeScene({ sceneMode = 'home' }: { sceneMode?: SceneMod
 
     if (sceneMode === 'focus') {
       router.push('/life-map')
+      return
+    }
+
+    if (sceneMode === 'unwind') {
+      router.push('/')
       return
     }
 
@@ -335,7 +352,7 @@ export default function HomeScene({ sceneMode = 'home' }: { sceneMode?: SceneMod
 
     if (selectedManifest) setNarratorContext('return')
     else if (sceneMode === 'focus') setNarratorContext('arrival')
-    else if (sceneMode === 'replay') setNarratorContext('return')
+    else if (sceneMode === 'replay' || sceneMode === 'unwind') setNarratorContext('return')
     else if (sceneMode === 'ascent') setNarratorContext('explore')
     else if (isConstellationRoute) setNarratorContext('explore')
     else setNarratorContext('arrival')
@@ -409,7 +426,7 @@ export default function HomeScene({ sceneMode = 'home' }: { sceneMode?: SceneMod
       {showMemoryArtifact ? <MemoryStarArtifact morphology={memoryMorphology} replay={sceneMode === 'replay' || replayLaunching} /> : null}
       {!isHomeMode ? <CameraResetButton onReset={resetCamera} /> : null}
 
-      {!isHomeMode ? <ModeGuidance mode={sceneMode} onEnter={enterLifeMap} onUnwind={unwind} reducedMotion={reducedMotion} /> : null}
+      {!isHomeMode ? <ModeGuidance mode={sceneMode} onEnter={enterLifeMap} onUnwind={unwind} onSafeUnwind={openSafeUnwind} reducedMotion={reducedMotion} /> : null}
 
       {gateBlocksMode && gatedFeatureId ? (
         <TierGatePanel

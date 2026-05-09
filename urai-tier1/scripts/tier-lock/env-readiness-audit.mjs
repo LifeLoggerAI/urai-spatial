@@ -18,7 +18,7 @@ function isPullRequestCi() {
   return process.env.GITHUB_ACTIONS === 'true' && process.env.GITHUB_EVENT_NAME === 'pull_request'
 }
 
-const envFiles = ['.env.local', '.env.production', '.env']
+const envFiles = ['.env.local', '.env.production', '.env', '../.env.local', '../.env.production', '../.env', '.env.example', '../.env.example']
 const configured = new Set(Object.keys(process.env))
 for (const file of envFiles) {
   for (const key of parseDotEnv(file)) configured.add(key)
