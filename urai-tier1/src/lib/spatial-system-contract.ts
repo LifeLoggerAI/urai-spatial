@@ -1,3 +1,4 @@
+import { URAI_SPATIAL_TIER_LOCK_VERSION } from "@/components/lifemap/uraiSpatialTierLockContract";
 import {
   assertSpatialFallbackMode,
   spatialDeferredCapabilities,
@@ -11,8 +12,10 @@ export const URAI_SPATIAL_DOMAIN = process.env.NEXT_PUBLIC_URAI_SPATIAL_DOMAIN ?
 
 export const spatialRoutes = {
   home: "/",
+  homeAlias: "/home",
   spatial: "/spatial",
   lifeMap: "/life-map",
+  demoLifeMap: "/demo/life-map",
   privacy: "/privacy",
   terms: "/terms",
 };
@@ -23,6 +26,8 @@ export const spatialApiRoutes = {
   capabilities: "/api/system/capabilities",
   integrationContract: "/api/system/integration-contract",
   launchBoundary: "/api/system/launch-boundary",
+  tier2: "/api/system/tier2",
+  uraiSpatialLock: "/api/system/urai-spatial-lock",
   bodyBiometric: "/api/body-biometric",
   orbCompanion: "/api/orb-companion",
 };
@@ -53,6 +58,16 @@ export function buildSpatialSystemContract() {
     api: spatialApiRoutes,
     capabilities: spatialCapabilities,
     targets: spatialTargets,
+    locks: {
+      uraiSpatial: {
+        service: URAI_SPATIAL_SERVICE,
+        status: "locked",
+        done: true,
+        lockVersion: URAI_SPATIAL_TIER_LOCK_VERSION,
+        tierCount: 5,
+        route: spatialApiRoutes.uraiSpatialLock,
+      },
+    },
     launchBoundary: spatialLaunchBoundary,
     fallbackMode: assertSpatialFallbackMode(),
     deferredCapabilities: spatialDeferredCapabilities,
@@ -92,7 +107,7 @@ export function buildSpatialSystemContract() {
       "AR/WebXR seams are not described as live unless a provider is connected.",
       "Live providers require explicit consent, tests, and deployment verification before launch claims.",
     ],
-    smokeCoverage: ["/", "/life-map", "/privacy", "/terms", "/api/system/health", "/api/system/launch-boundary", "/api/body-biometric", "/api/orb-companion"],
+    smokeCoverage: ["/", "/home", "/life-map", "/demo/life-map", "/privacy", "/terms", "/api/system/health", "/api/system/launch-boundary", "/api/system/urai-spatial-lock", "/api/body-biometric", "/api/orb-companion"],
   };
 }
 
