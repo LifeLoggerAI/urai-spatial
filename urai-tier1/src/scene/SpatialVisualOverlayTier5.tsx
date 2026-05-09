@@ -36,7 +36,7 @@ function HomeOverlay() {
   return (
     <div className="urai-visual-overlay urai-visual-overlay--home" data-visual-layer="home" data-testid="urai-home-scene">
       <SceneOverlayStyles />
-      <div className="urai-home-sky-layer"/><div className="urai-home-atmosphere"/><div className="urai-home-cloud urai-home-cloud--one"/><div className="urai-home-cloud urai-home-cloud--two"/><div className="urai-home-cloud urai-home-cloud--three"/><div className="urai-home-horizon-mist"/><div className="urai-home-horizon-glow"/><div className="urai-home-horizon-line"/><div className="urai-home-ground"/><div className="urai-home-ground-reflection"/><div className="urai-home-ground-vignette"/><HomeOrb/><div className="urai-home-compass">N</div><Caption eyebrow="Inner Weather" body="Your companion is listening" detail="Still / receptive / clear"/><SceneStatus label="Home awake" detail="Begin the ascent when you are ready" />
+      <div className="urai-home-sky-layer"/><div className="urai-home-atmosphere"/><div className="urai-home-cloud urai-home-cloud--one"/><div className="urai-home-cloud urai-home-cloud--two"/><div className="urai-home-cloud urai-home-cloud--three"/><div className="urai-home-horizon-mist"/><div className="urai-home-horizon-glow"/><div className="urai-home-horizon-line"/><div className="urai-home-ground"/><div className="urai-home-ground-reflection"/><div className="urai-home-ground-vignette"/><HomeOrb/>
     </div>
   )
 }

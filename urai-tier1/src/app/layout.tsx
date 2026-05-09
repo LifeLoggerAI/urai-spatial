@@ -6,7 +6,6 @@ import '@/spatial/home/visual/HomeScene.css'
 import '@/spatial/companion/companionPolish.css'
 import '@/scene/cinematicFocusTier5.css'
 import '@/spatial/memory/memoryStarArtifact.css'
-import './spatial-polish.css'
 
 export const metadata: Metadata = {
   title: 'URAI Spatial',
