@@ -1,0 +1,111 @@
+name: Spatial Launch Boundary Check
+
+on:
+  pull_request:
+    branches:
+      - main
+    paths:
+      - 'README.md'
+      - 'docs/**'
+      - 'package.json'
+      - 'pnpm-lock.yaml'
+      - 'scripts/**'
+      - 'tests/**'
+      - 'urai-tier1/**'
+      - '.github/workflows/spatial-launch-boundary-check.yml'
+  workflow_dispatch:
+
+concurrency:
+  group: spatial-launch-boundary-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  static-contracts:
+    name: Static provider-boundary contracts
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9.15.9
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Check spatial copy boundaries
+        run: pnpm check:spatial-copy
+
+      - name: Check launch boundary contract shape
+        run: pnpm check:launch-boundary-contract
+
+      - name: Check spatial invariants
+        run: pnpm check:spatial
+
+      - name: Check Tier-2 governance
+        run: pnpm tier2:check
+
+      - name: Check canon suite
+        run: pnpm test:canon
+
+  build-and-smoke:
+    name: Build and smoke spatial shell
+    runs-on: ubuntu-latest
+    needs: static-contracts
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9.15.9
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Typecheck
+        run: pnpm typecheck
+
+      - name: Build
+        run: pnpm build
+
+      - name: Start app
+        run: pnpm start > /tmp/urai-spatial.log 2>&1 &
+
+      - name: Wait for app
+        shell: bash
+        run: |
+          for i in {1..30}; do
+            if curl -fsS http://127.0.0.1:3000/api/system/health > /dev/null; then
+              exit 0
+            fi
+            sleep 2
+          done
+          cat /tmp/urai-spatial.log || true
+          exit 1
+
+      - name: Smoke routes
+        run: HOST=http://127.0.0.1:3000 pnpm smoke
+
+      - name: Upload server log on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: urai-spatial-server-log
+          path: /tmp/urai-spatial.log
+          if-no-files-found: ignore
