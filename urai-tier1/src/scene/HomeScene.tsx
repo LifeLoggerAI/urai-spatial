@@ -129,6 +129,44 @@ function CameraResetButton({ onReset }: { onReset: () => void }) {
   )
 }
 
+function HomeActivationButton({ onEnter }: { onEnter: () => void }) {
+  return (
+    <button
+      type="button"
+      className="urai-home-activation"
+      data-testid="urai-home-activation"
+      aria-label="Open the URAI Life Map"
+      onClick={onEnter}
+      style={{
+        position: 'absolute',
+        left: '50%',
+        bottom: 'clamp(24px, 7vh, 72px)',
+        zIndex: 8,
+        transform: 'translateX(-50%)',
+        display: 'inline-flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: 10,
+        minHeight: 48,
+        padding: '10px 18px',
+        borderRadius: 999,
+        border: '1px solid rgba(142, 220, 255, 0.42)',
+        background: 'linear-gradient(135deg, rgba(103, 232, 249, 0.92), rgba(139, 92, 246, 0.86))',
+        color: '#050713',
+        fontWeight: 800,
+        letterSpacing: '0.04em',
+        boxShadow: '0 18px 70px rgba(0, 0, 0, 0.34), 0 0 44px rgba(103, 232, 249, 0.26)',
+        backdropFilter: 'blur(16px)',
+        WebkitBackdropFilter: 'blur(16px)',
+        pointerEvents: 'auto',
+      }}
+    >
+      <span aria-hidden="true">✦</span>
+      <span>Open Life Map</span>
+    </button>
+  )
+}
+
 function FocusActionPanel({
   morphology,
   mode,
@@ -362,12 +400,11 @@ export default function HomeScene({ sceneMode = 'home' }: { sceneMode?: SceneMod
       data-scene-mode={sceneMode}
       data-reduced-motion={reducedMotion ? 'true' : 'false'}
       data-replay-launching={replayLaunching ? 'true' : 'false'}
-      onClick={isHomeMode ? enterLifeMap : undefined}
     >
       <div className="urai-scene-stage__fallback" aria-hidden="true" />
       <SpatialVisualOverlay mode={sceneMode} />
 
-      <Canvas shadows dpr={[1, 1.75]} gl={{ antialias: true, alpha: true }} onPointerMissed={enterLifeMap}>
+      <Canvas shadows dpr={[1, 1.75]} gl={{ antialias: true, alpha: true }} onPointerMissed={!isHomeMode ? enterLifeMap : undefined}>
         <PerspectiveCamera makeDefault position={[0, 2.85, 8.35]} fov={48} />
         <CinematicCameraRig active focusPosition={selectedPosition} path={cameraPath} reducedMotion={reducedMotion} resetSignal={cameraResetSignal} />
 
@@ -406,6 +443,7 @@ export default function HomeScene({ sceneMode = 'home' }: { sceneMode?: SceneMod
         {!isHomeMode ? <NarratorVoice manifest={activeManifest} context={narratorContext} /> : null}
       </Canvas>
 
+      {isHomeMode ? <HomeActivationButton onEnter={enterLifeMap} /> : null}
       {showMemoryArtifact ? <MemoryStarArtifact morphology={memoryMorphology} replay={sceneMode === 'replay' || replayLaunching} /> : null}
       {!isHomeMode ? <CameraResetButton onReset={resetCamera} /> : null}
 
