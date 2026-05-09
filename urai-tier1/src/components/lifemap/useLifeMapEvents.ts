@@ -8,8 +8,11 @@ import {
   lifeMapNodes,
   mapLifeMapEventToNode,
   type LifeMapEra,
+  type LifeMapEraType,
   type LifeMapEvent,
+  type LifeMapEventSourceType,
   type LifeMapNode,
+  type LifeMapNodeType,
 } from "./lifeMapData";
 
 type LifeMapEventState = {
@@ -20,6 +23,32 @@ type LifeMapEventState = {
   usingSeedData: boolean;
 };
 
+const nodeTypes: readonly LifeMapNodeType[] = ["memory", "season", "ritual", "forecast", "threshold", "relationship", "recovery", "legacy"];
+const sourceTypes: readonly LifeMapEventSourceType[] = ["audio", "conversation", "ritual", "forecast", "manual_seed", "system_generated", "relationship", "recovery", "legacy"];
+const eraTypes: readonly LifeMapEraType[] = ["all", "season", "relationship", "recovery", "work", "family", "threshold", "custom", "system_generated"];
+
+function asNodeType(value: unknown): LifeMapNodeType {
+  return typeof value === "string" && nodeTypes.includes(value as LifeMapNodeType) ? (value as LifeMapNodeType) : "memory";
+}
+
+function asSourceType(value: unknown): LifeMapEventSourceType {
+  return typeof value === "string" && sourceTypes.includes(value as LifeMapEventSourceType) ? (value as LifeMapEventSourceType) : "system_generated";
+}
+
+function asEraType(value: unknown): LifeMapEraType {
+  return typeof value === "string" && eraTypes.includes(value as LifeMapEraType) ? (value as LifeMapEraType) : "system_generated";
+}
+
+function asStringArray(value: unknown): string[] {
+  return Array.isArray(value) ? value.filter((item): item is string => typeof item === "string") : [];
+}
+
+function asPosition(value: unknown): [number, number, number] | undefined {
+  if (!Array.isArray(value) || value.length !== 3) return undefined;
+  if (!value.every((item) => typeof item === "number" && Number.isFinite(item))) return undefined;
+  return value as [number, number, number];
+}
+
 function normalizeEvent(id: string, data: DocumentData): LifeMapEvent {
   return {
     id,
@@ -27,23 +56,23 @@ function normalizeEvent(id: string, data: DocumentData): LifeMapEvent {
     title: typeof data.title === "string" ? data.title : "Life Map Signal",
     subtitle: typeof data.subtitle === "string" ? data.subtitle : undefined,
     summary: typeof data.summary === "string" ? data.summary : "A private URAI Life Map signal ready for spatial rendering.",
-    type: typeof data.type === "string" ? data.type : "memory",
-    sourceType: typeof data.sourceType === "string" ? data.sourceType : "system_generated",
+    type: asNodeType(data.type),
+    sourceType: asSourceType(data.sourceType),
     sourceId: typeof data.sourceId === "string" ? data.sourceId : undefined,
     occurredAt: data.occurredAt,
     createdAt: data.createdAt,
     updatedAt: data.updatedAt,
     intensity: typeof data.intensity === "number" ? data.intensity : 0.5,
     aura: typeof data.aura === "string" ? data.aura : undefined,
-    position: Array.isArray(data.position) && data.position.length === 3 ? data.position as [number, number, number] : undefined,
+    position: asPosition(data.position),
     clusterId: typeof data.clusterId === "string" ? data.clusterId : undefined,
     eraId: typeof data.eraId === "string" ? data.eraId : undefined,
     replayAvailable: Boolean(data.replayAvailable),
     locked: Boolean(data.locked),
-    connectedTo: Array.isArray(data.connectedTo) ? data.connectedTo.filter((item: unknown) => typeof item === "string") : [],
+    connectedTo: asStringArray(data.connectedTo),
     privacyLevel: data.privacyLevel === "hidden" || data.privacyLevel === "shareable" ? data.privacyLevel : "private",
     narratorHint: typeof data.narratorHint === "string" ? data.narratorHint : undefined,
-    tags: Array.isArray(data.tags) ? data.tags.filter((item: unknown) => typeof item === "string") : undefined,
+    tags: Array.isArray(data.tags) ? asStringArray(data.tags) : undefined,
   };
 }
 
@@ -55,10 +84,10 @@ function normalizeEra(id: string, data: DocumentData): LifeMapEra {
     subtitle: typeof data.subtitle === "string" ? data.subtitle : undefined,
     startLabel: typeof data.startLabel === "string" ? data.startLabel : "Open Arc",
     endLabel: typeof data.endLabel === "string" ? data.endLabel : undefined,
-    type: typeof data.type === "string" ? data.type : "system_generated",
+    type: asEraType(data.type),
     summary: typeof data.summary === "string" ? data.summary : "A generated Life Map era.",
     dominantAura: typeof data.dominantAura === "string" ? data.dominantAura : "#8adfff",
-    nodeIds: Array.isArray(data.nodeIds) ? data.nodeIds.filter((item: unknown) => typeof item === "string") : [],
+    nodeIds: asStringArray(data.nodeIds),
   };
 }
 
