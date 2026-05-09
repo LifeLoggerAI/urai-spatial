@@ -33,6 +33,9 @@ const files = {
   tierOne: read(['src/spatial/layout/TierOneExperience.tsx']),
   sceneRaw: read(['src/scene/HomeScene.tsx']),
   focusStateRaw: read(['src/spatial/scene/focusState.ts']),
+  replayStateRaw: read(['src/spatial/scene/replayState.ts']),
+  replayTimelineRaw: read(['src/spatial/replay/ReplayTimeline.tsx']),
+  replayMetaPanelRaw: read(['src/spatial/replay/ReplayMetaPanel.tsx']),
   overlayRaw: read(['src/scene/SpatialVisualOverlayPremium.tsx', 'src/scene/SpatialVisualOverlayTier5.tsx']),
   css: read(['src/app/globals.css']),
   rules: read(['../firebase/firestore.rules', 'firebase/firestore.rules']),
@@ -42,6 +45,9 @@ const files = {
 
 const scene = flat(files.sceneRaw)
 const focusState = flat(files.focusStateRaw)
+const replayState = flat(files.replayStateRaw)
+const replayTimeline = flat(files.replayTimelineRaw)
+const replayMetaPanel = flat(files.replayMetaPanelRaw)
 const tierOne = flat(files.tierOne)
 const overlay = flat(files.overlayRaw)
 const rules = flat(files.rules)
@@ -154,6 +160,50 @@ test('Focus UI exposes related context, detail shell, keyboard navigation, and r
   assert.match(scene, /FOCUS_RECENTER_DURATION_MS = 520/)
   assert.match(scene, /Reduced motion keeps the field still/)
   assert.doesNotMatch(scene, /Mirror Pattern Active/)
+})
+
+test('Replay Memory Theater state, timeline, and meta panel are wired into active HomeScene', () => {
+  assert.match(replayState, /export type ReplayPhase =/)
+  assert.match(replayState, /export type ReplaySegmentId = 'memory' \| 'emotion' \| 'pattern' \| 'return'/)
+  assert.match(replayState, /export const REPLAY_SEGMENTS/)
+  assert.match(replayState, /memory/)
+  assert.match(replayState, /emotion/)
+  assert.match(replayState, /pattern/)
+  assert.match(replayState, /return/)
+  assert.match(replayState, /export function resolveReplayPhase\(input: ReplayPhaseInput\): ReplayPhase/)
+  assert.match(replayState, /export function getReplaySegmentAt\(progressMs: number\): ReplaySegmentDefinition/)
+
+  assert.match(replayTimeline, /export function ReplayTimeline/)
+  assert.match(replayTimeline, /data-testid="urai-replay-timeline"/)
+  assert.match(replayTimeline, /type="range"/)
+  assert.match(replayTimeline, /Pause/)
+  assert.match(replayTimeline, /Play/)
+  assert.match(replayTimeline, /Esc returns to Focus/)
+
+  assert.match(replayMetaPanel, /export function ReplayMetaPanel/)
+  assert.match(replayMetaPanel, /data-testid="urai-replay-meta-panel"/)
+  assert.match(replayMetaPanel, /Why this appeared/)
+  assert.match(replayMetaPanel, /Private to you/)
+  assert.match(replayMetaPanel, /Save/)
+  assert.match(replayMetaPanel, /Hide/)
+  assert.match(replayMetaPanel, /Correct/)
+  assert.match(replayMetaPanel, /Return to Focus/)
+
+  assert.match(scene, /from '\.\.\/spatial\/scene\/replayState'/)
+  assert.match(scene, /from '\.\.\/spatial\/replay\/ReplayTimeline'/)
+  assert.match(scene, /from '\.\.\/spatial\/replay\/ReplayMetaPanel'/)
+  assert.match(scene, /const replayPhase = useMemo\(/)
+  assert.match(scene, /resolveReplayPhase\(\{/)
+  assert.match(scene, /const replaySegment = useMemo\(\(\) => getReplaySegmentAt\(replayProgressMs\), \[replayProgressMs\]\)/)
+  assert.match(scene, /data-replay-phase=\{replayPhase\}/)
+  assert.match(scene, /data-replay-segment=\{replaySegment\.id\}/)
+  assert.match(scene, /<ReplayMetaPanel/)
+  assert.match(scene, /<ReplayTimeline/)
+  assert.match(scene, /const showReplayPanel = sceneMode === 'replay' && Boolean\(activeManifest\) && !gateBlocksMode/)
+  assert.match(scene, /setReplayProgressMs\(clampReplayProgress/)
+  assert.match(scene, /event\.key === ' ' && sceneMode === 'replay'/)
+  assert.match(scene, /Ready · Esc returns to Focus/)
+  assert.doesNotMatch(scene, /ESC unwinds to focus|Unwind to Focus|Replay breathing\. ESC unwinds one layer/)
 })
 
 test('focus and replay use state-driven fallback instead of unavailable error copy', () => {
