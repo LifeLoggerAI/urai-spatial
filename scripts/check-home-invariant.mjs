@@ -49,23 +49,49 @@ for (const file of homeFiles) {
   }
 }
 
+function requireHomeSceneGuard(description, passes) {
+  if (!passes) failures.push(`Tier-1 home scene is missing required silent-home guard: ${description}`)
+}
+
 const homeSceneText = fs.existsSync('urai-tier1/src/scene/HomeScene.tsx') ? fs.readFileSync('urai-tier1/src/scene/HomeScene.tsx', 'utf8') : ''
 if (homeSceneText) {
-  const requiredHomeSilencePatterns = [
-    /if \(mode === 'home'\) return null/,
-    /const showOrb = sceneMode === 'focus' \|\| sceneMode === 'replay' \|\| sceneMode === 'unwind' \|\| sceneMode === 'mirror'/,
-    /!isHomeMode \? <NarratorVoice[\s\S]{0,160}: null/,
-    /!isHomeMode \? <NarratorHud \/> : null/,
-    /!isHomeMode \? <CameraResetButton[\s\S]{0,160}: null/,
-    /!isHomeMode \? <ModeGuidance[\s\S]{0,180}: null/,
-    /event\.key\.toLowerCase\(\) === 'r' && !isHomeMode/,
-  ]
+  requireHomeSceneGuard(
+    "ModeGuidance returns null for mode === 'home'",
+    /if \(mode === 'home'\) return null/.test(homeSceneText),
+  )
 
-  for (const pattern of requiredHomeSilencePatterns) {
-    if (!pattern.test(homeSceneText)) {
-      failures.push(`Tier-1 home scene is missing required silent-home guard: ${pattern}`)
-    }
-  }
+  const showOrbDeclaration = homeSceneText.match(/const showOrb\s*=\s*([^\n;]+)/)?.[1] ?? ''
+  requireHomeSceneGuard(
+    'showOrb exists and does not include home mode',
+    Boolean(showOrbDeclaration) && !/isHomeMode|sceneMode\s*===\s*['"]home['"]/.test(showOrbDeclaration),
+  )
+
+  requireHomeSceneGuard(
+    'NarratorVoice is guarded away from home mode',
+    /!isHomeMode\s*\?\s*<NarratorVoice[\s\S]{0,220}:\s*null/.test(homeSceneText),
+  )
+
+  requireHomeSceneGuard(
+    'CameraResetButton is guarded away from home mode',
+    /!isHomeMode\s*\?\s*<CameraResetButton[\s\S]{0,220}:\s*null/.test(homeSceneText),
+  )
+
+  requireHomeSceneGuard(
+    'ModeGuidance is guarded away from home mode',
+    /!isHomeMode\s*\?\s*(?:\([\s\S]{0,80})?<ModeGuidance[\s\S]{0,280}:\s*null/.test(homeSceneText) ||
+      (/const showLifeMapHud\s*=\s*!isHomeMode/.test(homeSceneText) && /showLifeMapHud\s*&&[\s\S]{0,320}<ModeGuidance/.test(homeSceneText)),
+  )
+
+  requireHomeSceneGuard(
+    'NarratorHud or equivalent narrator HUD is guarded away from home mode',
+    /!isHomeMode\s*\?\s*<NarratorHud\s*\/?>\s*:\s*null/.test(homeSceneText) ||
+      (/const showLifeMapHud\s*=\s*!isHomeMode/.test(homeSceneText) && /(showLifeMapHud|!isHomeMode)[\s\S]{0,500}(NarratorHud|urai-narrator-hud)/.test(homeSceneText)),
+  )
+
+  requireHomeSceneGuard(
+    'keyboard recenter shortcut is disabled on home mode',
+    /event\.key\.toLowerCase\(\) === 'r' && !isHomeMode/.test(homeSceneText),
+  )
 
   const forbiddenHomeOverlayPatterns = [
     /if \(mode === 'home'\) \{[\s\S]{0,800}<div className="urai-spatial-guidance/i,
