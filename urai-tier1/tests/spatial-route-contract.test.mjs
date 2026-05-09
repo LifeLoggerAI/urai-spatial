@@ -22,6 +22,20 @@ function compact(source) {
   return source.replace(/\s+/g, '')
 }
 
+function assertShowOrbModeSet(source) {
+  const match = source.match(/const showOrb = (?<expression>[^\n]+)/)
+  assert.ok(match?.groups?.expression, 'HomeScene must define showOrb from sceneMode checks')
+
+  const expression = match.groups.expression
+  for (const allowedMode of ['focus', 'replay', 'mirror', 'unwind']) {
+    assert.match(expression, new RegExp(`sceneMode === '${allowedMode}'`), `showOrb must include ${allowedMode}`)
+  }
+
+  for (const forbiddenMode of ['home', 'ascent', 'life-map', 'demo']) {
+    assert.doesNotMatch(expression, new RegExp(`sceneMode === '${forbiddenMode}'`), `showOrb must not include ${forbiddenMode}`)
+  }
+}
+
 const files = {
   home: read(['src/app/page.tsx']),
   homeRoute: read(['src/app/home/page.tsx']),
@@ -59,7 +73,7 @@ test('primary routes use the canonical TierOneExperience shell', () => {
   assert.match(compact(files.home), /<TierOneExperiencemode="home"\/>/)
   assert.match(compact(files.homeRoute), /<TierOneExperiencemode="home"\/>/)
   assert.match(compact(files.ascent), /<TierOneExperiencemode="ascent"\/>/)
-  assert.match(compact(files.lifeMap), /<LifeMapAscentGate\/>/)
+  assert.match(compact(files.lifeMap), /<TierOneExperiencemode="life-map"\/>/)
   assert.match(compact(files.lifeMapGate), /<TierOneExperiencemode="life-map"\/>/)
   assert.match(compact(files.focus), /<TierOneExperiencemode="focus"\/>/)
   assert.match(compact(files.replay), /<TierOneExperiencemode="replay"\/>/)
@@ -87,7 +101,7 @@ test('HomeScene preserves silent home and spatial route authority', () => {
   assert.match(scene, /const showHomeWorld = isHomeMode/)
   assert.match(scene, /const showAscentPortal = isAscentMode/)
   assert.match(scene, /const showConstellation = isConstellationRoute && !gateBlocksMode/)
-  assert.match(scene, /const showOrb = sceneMode === 'focus' \|\| sceneMode === 'replay' \|\| sceneMode === 'mirror' \|\| sceneMode === 'unwind'/)
+  assertShowOrbModeSet(files.sceneRaw)
   assert.match(scene, /if \(silentHomeInvariantProof\(mode\) === null\) return null/)
   assert.match(scene, /onClick=\{isHomeMode \? enterLifeMap : undefined\}/)
   assert.ok(scene.includes('{showHomeWorld ? <Ground /> : null}'))
