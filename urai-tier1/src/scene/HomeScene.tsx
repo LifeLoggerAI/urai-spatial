@@ -30,6 +30,9 @@ import { DEMO_FOCUS_MANIFEST_ID } from '../spatial/demo/demoMemoryStars'
 import MemoryStarArtifact from '../spatial/memory/MemoryStarArtifact'
 import { buildMemoryMorphology, MemoryMorphology } from '../spatial/memory/memoryMorphology'
 import { FocusPhaseDefinition, getFocusPhaseDefinition, resolveFocusPhase } from '../spatial/scene/focusState'
+import { REPLAY_DURATION_MS, clampReplayProgress, getReplayPhaseDefinition, getReplaySegmentAt, resolveReplayPhase } from '../spatial/scene/replayState'
+import { ReplayTimeline } from '../spatial/replay/ReplayTimeline'
+import { ReplayMetaPanel } from '../spatial/replay/ReplayMetaPanel'
 
 type SceneMode = 'home' | 'ascent' | 'life-map' | 'demo' | 'replay' | 'focus' | 'unwind' | 'mirror'
 
@@ -43,6 +46,7 @@ type RelatedFocusNode = {
 const ASCENT_DURATION_MS = 1800
 const REPLAY_LAUNCH_DELAY_MS = 720
 const FOCUS_RECENTER_DURATION_MS = 520
+const REPLAY_TICK_MS = 100
 
 const RELATED_FOCUS_NODES: RelatedFocusNode[] = [
   {
@@ -162,8 +166,8 @@ function ModeGuidance({
   if (mode === 'replay') {
     return (
       <div className="urai-spatial-guidance" data-testid="urai-replay-guidance">
-        <span>{reducedMotion ? 'Replay opened without travel motion.' : 'Replay breathing. ESC unwinds one layer.'}</span>
-        <button type="button" onClick={onSafeUnwind}>Unwind</button>
+        <span>{reducedMotion ? 'Replay opened without travel motion.' : 'Ready · Esc returns to Focus'}</span>
+        <button type="button" onClick={onSafeUnwind}>Return to Focus</button>
       </div>
     )
   }
@@ -190,7 +194,7 @@ function CameraResetButton({ onReset, disabled }: { onReset: () => void; disable
       onClick={onReset}
       disabled={disabled}
     >
-      Recenter
+      Recenter memory
     </button>
   )
 }
@@ -322,7 +326,7 @@ function FocusActionPanel({
         {!isReplay ? (
           <button type="button" onClick={onDetail} disabled={!canOpenDetail}>Open Detail</button>
         ) : null}
-        <button type="button" onClick={onUnwind}>{isReplay ? 'Unwind to Focus' : 'Back to Life Map'}</button>
+        <button type="button" onClick={onUnwind}>{isReplay ? 'Return to Focus' : 'Back to Life Map'}</button>
       </div>
     </section>
   )
@@ -420,6 +424,9 @@ export default function HomeScene({ sceneMode = 'home' }: { sceneMode?: SceneMod
   const [hoveredRelatedNodeId, setHoveredRelatedNodeId] = useState<string | null>(null)
   const [selectedRelatedNodeId, setSelectedRelatedNodeId] = useState<string | null>(RELATED_FOCUS_NODES[0]?.id ?? null)
   const [focusDetailOpen, setFocusDetailOpen] = useState(false)
+  const [replayPlaying, setReplayPlaying] = useState(false)
+  const [replayProgressMs, setReplayProgressMs] = useState(0)
+  const [replayScrubbing, setReplayScrubbing] = useState(false)
   const activeManifest = gateBlocksMode ? null : selectedManifest ?? manifest
   const activeManifestId = selectedManifest?.manifestId ?? activeManifest?.manifestId ?? effectiveManifestId
 
@@ -447,6 +454,25 @@ export default function HomeScene({ sceneMode = 'home' }: { sceneMode?: SceneMod
 
   const focusDefinition = useMemo(() => getFocusPhaseDefinition(focusPhase), [focusPhase])
   const canRecenterFocus = focusDefinition.allowedActions.includes('recenter_focus')
+
+  const replayPhase = useMemo(
+    () =>
+      resolveReplayPhase({
+        mode: sceneMode,
+        hasReplayTarget: Boolean(activeManifest),
+        isManifestLoading: manifestLoading,
+        isGateLoading: gate.loading,
+        isGateBlocked: Boolean(gatedFeatureId) && !gate.allowed,
+        isPlaying: replayPlaying,
+        isScrubbing: replayScrubbing,
+        progressMs: replayProgressMs,
+        durationMs: REPLAY_DURATION_MS,
+      }),
+    [activeManifest, gatedFeatureId, gate.allowed, gate.loading, manifestLoading, replayPlaying, replayProgressMs, replayScrubbing, sceneMode],
+  )
+
+  const replayDefinition = useMemo(() => getReplayPhaseDefinition(replayPhase), [replayPhase])
+  const replaySegment = useMemo(() => getReplaySegmentAt(replayProgressMs), [replayProgressMs])
 
   const memoryMorphology = useMemo(
     () => buildMemoryMorphology(activeManifest, sceneMode === 'replay' ? 'focus' : 'recovery'),
@@ -504,6 +530,8 @@ export default function HomeScene({ sceneMode = 'home' }: { sceneMode?: SceneMod
 
   const unwind = useCallback(() => {
     setReplayLaunching(false)
+    setReplayPlaying(false)
+    setReplayScrubbing(false)
 
     if (focusDetailOpen) {
       setFocusDetailOpen(false)
@@ -556,9 +584,23 @@ export default function HomeScene({ sceneMode = 'home' }: { sceneMode?: SceneMod
     setFocusDetailOpen(true)
   }, [focusDefinition.allowedActions])
 
+  const toggleReplayPlayback = useCallback(() => {
+    if (replayPhase === 'loading_replay' || replayPhase === 'replay_empty' || replayPhase === 'replay_error') return
+    if (replayPhase === 'replay_complete') setReplayProgressMs(0)
+    setReplayPlaying((value) => !value)
+  }, [replayPhase])
+
+  const scrubReplay = useCallback((nextProgressMs: number) => {
+    setReplayScrubbing(true)
+    setReplayProgressMs(clampReplayProgress(nextProgressMs, REPLAY_DURATION_MS))
+    window.setTimeout(() => setReplayScrubbing(false), reducedMotion ? 0 : 120)
+  }, [reducedMotion])
+
   function handleSelect(manifest: SpatialAssetManifest, position: ConstellationNodePosition) {
     router.push(`/focus?manifestId=${encodeURIComponent(manifest.manifestId)}`)
     setReplayLaunching(false)
+    setReplayPlaying(false)
+    setReplayProgressMs(0)
     setFocusDetailOpen(false)
     setSelectedRelatedNodeId(RELATED_FOCUS_NODES[0]?.id ?? null)
     setSelectedManifest(manifest)
@@ -587,16 +629,43 @@ export default function HomeScene({ sceneMode = 'home' }: { sceneMode?: SceneMod
   }, [selectedManifest, isConstellationRoute, sceneMode])
 
   useEffect(() => {
+    if (sceneMode !== 'replay') {
+      setReplayPlaying(false)
+      setReplayProgressMs(0)
+      setReplayScrubbing(false)
+    }
+  }, [sceneMode])
+
+  useEffect(() => {
+    if (sceneMode !== 'replay' || !replayPlaying || reducedMotion) return
+
+    const interval = window.setInterval(() => {
+      setReplayProgressMs((value) => {
+        const nextValue = clampReplayProgress(value + REPLAY_TICK_MS, REPLAY_DURATION_MS)
+        if (nextValue >= REPLAY_DURATION_MS) setReplayPlaying(false)
+        return nextValue
+      })
+    }, REPLAY_TICK_MS)
+
+    return () => window.clearInterval(interval)
+  }, [reducedMotion, replayPlaying, sceneMode])
+
+  useEffect(() => {
     const onKey = (event: KeyboardEvent) => {
       if (event.key === 'Escape') unwind()
       if (event.key.toLowerCase() === 'r' && !isHomeMode) resetCamera()
+      if (event.key === ' ' && sceneMode === 'replay') {
+        event.preventDefault()
+        toggleReplayPlayback()
+      }
     }
 
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
-  }, [isHomeMode, resetCamera, unwind])
+  }, [isHomeMode, resetCamera, sceneMode, toggleReplayPlayback, unwind])
 
-  const showFocusPanel = Boolean(activeManifest) && (Boolean(selectedManifest) || modeNeedsManifest)
+  const showFocusPanel = sceneMode !== 'replay' && Boolean(activeManifest) && (Boolean(selectedManifest) || modeNeedsManifest)
+  const showReplayPanel = sceneMode === 'replay' && Boolean(activeManifest) && !gateBlocksMode
   const showEmptyFocusPanel = !gateBlocksMode && modeNeedsManifest && !activeManifest
   const showMemoryArtifact = !gateBlocksMode && (sceneMode === 'focus' || sceneMode === 'replay')
   const showFocusContextRail = sceneMode === 'focus' && showFocusPanel && activeManifest && !focusDetailOpen
@@ -607,6 +676,8 @@ export default function HomeScene({ sceneMode = 'home' }: { sceneMode?: SceneMod
       data-testid="urai-scene-stage"
       data-scene-mode={sceneMode}
       data-focus-phase={focusPhase}
+      data-replay-phase={replayPhase}
+      data-replay-segment={replaySegment.id}
       data-focus-motion={reducedMotion ? 'reduced' : 'cinematic'}
       data-reduced-motion={reducedMotion ? 'true' : 'false'}
       data-replay-launching={replayLaunching ? 'true' : 'false'}
@@ -657,7 +728,7 @@ export default function HomeScene({ sceneMode = 'home' }: { sceneMode?: SceneMod
       {showMemoryArtifact ? <MemoryStarArtifact morphology={memoryMorphology} replay={sceneMode === 'replay' || replayLaunching} /> : null}
       {!isHomeMode ? <CameraResetButton onReset={resetCamera} disabled={sceneMode === 'focus' && !canRecenterFocus} /> : null}
 
-      {!isHomeMode ? <ModeGuidance mode={sceneMode} onEnter={enterLifeMap} onUnwind={unwind} onSafeUnwind={openSafeUnwind} reducedMotion={reducedMotion} focusDefinition={focusDefinition} /> : null}
+      {!isHomeMode ? <ModeGuidance mode={sceneMode} onEnter={enterLifeMap} onUnwind={unwind} onSafeUnwind={unwind} reducedMotion={reducedMotion} focusDefinition={focusDefinition} /> : null}
 
       {gateBlocksMode && gatedFeatureId ? (
         <TierGatePanel
@@ -690,6 +761,30 @@ export default function HomeScene({ sceneMode = 'home' }: { sceneMode?: SceneMod
           onUnwind={unwind}
           launching={replayLaunching}
           focusDefinition={focusDefinition}
+        />
+      ) : null}
+
+      {showReplayPanel ? (
+        <ReplayMetaPanel
+          morphology={memoryMorphology}
+          phase={replayPhase}
+          phaseDefinition={replayDefinition}
+          activeSegment={replaySegment}
+          sourceLabel="LifeMap · Pattern Node"
+          onReturnToFocus={unwind}
+        />
+      ) : null}
+
+      {showReplayPanel ? (
+        <ReplayTimeline
+          phase={replayPhase}
+          activeSegment={replaySegment}
+          progressMs={replayProgressMs}
+          durationMs={REPLAY_DURATION_MS}
+          playing={replayPlaying}
+          reducedMotion={reducedMotion}
+          onPlayPause={toggleReplayPlayback}
+          onScrub={scrubReplay}
         />
       ) : null}
 
