@@ -1,5 +1,4 @@
-import playwright from '../urai-tier1/node_modules/playwright/index.js';
-const { chromium } = playwright;
+import { chromium } from '@playwright/test';
 import { spawn } from 'node:child_process';
 import { mkdirSync, writeFileSync } from 'node:fs';
 import process from 'node:process';
@@ -73,6 +72,15 @@ async function expectText(locator, text, timeout = 5000) {
   throw new Error(`Expected text ${text}, received ${body}`);
 }
 
+async function expectMissingText(locator, text, timeout = 1200) {
+  const started = Date.now();
+  while (Date.now() - started < timeout) {
+    const body = await locator.textContent().catch(() => '');
+    if (body?.includes(text)) throw new Error(`Unexpected text ${text} found in ${body}`);
+    await sleep(100);
+  }
+}
+
 async function screenshot(page, name) {
   const path = `${ARTIFACT_DIR}/${name}.png`;
   await page.screenshot({ path, fullPage: true });
@@ -106,44 +114,59 @@ async function run() {
     await page.getByTestId('lifemap-node-seed-memory-bloom').click();
     await expectAttr(stage, 'data-scene-mode', 'focus');
     await expectVisible(page.getByTestId('urai-focus-action-panel'), 'focus action panel');
-    await expectText(page.getByTestId('urai-focus-action-panel'), 'Memory Bloom');
     await expectText(page.getByTestId('urai-focus-action-panel'), 'Start Replay');
     report.screenshots.push(await screenshot(page, '01-focus-memory-bloom'));
 
     await page.getByRole('button', { name: 'Start Replay' }).click();
+    await page.waitForURL(/\/replay\?manifestId=seed-memory-bloom/);
     await expectAttr(stage, 'data-scene-mode', 'replay');
-    await expectVisible(page.getByTestId('urai-focus-scene'), 'replay visual scene');
-    await expectVisible(page.getByTestId('urai-focus-action-panel'), 'replay action panel');
-    await expectText(page.getByTestId('urai-focus-action-panel'), 'Replay Stream');
-    await expectText(page.getByTestId('urai-focus-action-panel'), 'Unwind to Focus');
-    report.screenshots.push(await screenshot(page, '02-replay-memory-bloom'));
+    await expectAttr(stage, 'data-replay-segment', 'memory');
+    await expectVisible(page.getByTestId('urai-replay-timeline'), 'replay timeline');
+    await expectVisible(page.getByTestId('urai-replay-meta-panel'), 'replay meta panel');
+    await expectText(stage, 'Pattern Replay');
+    await expectText(stage, 'Pause');
+    await expectText(stage, 'Esc returns to Focus');
+    await expectText(stage, 'Return to Focus');
+    await expectText(stage, 'Why this appeared');
+    await expectText(stage, 'Private · Only visible to you');
+    await expectText(stage, 'Save');
+    await expectText(stage, 'Hide');
+    await expectText(stage, 'Correct');
+    await expectMissingText(stage, 'Unwind to Focus');
+    await expectMissingText(stage, 'ESC unwinds to focus');
+    await expectMissingText(stage, 'READINESS 87%');
+    await expectMissingText(stage, 'INTENSITY 88%');
+    await expectMissingText(stage, 'BOUNDARY 75%');
+    report.screenshots.push(await screenshot(page, '02-memory-theater-replay'));
 
-    await page.keyboard.press('r');
-    await expectAttr(stage, 'data-scene-mode', 'replay');
+    await page.getByRole('button', { name: 'Pause replay' }).click();
+    await expectAttr(stage, 'data-replay-phase', 'replay_paused');
+    await expectText(stage, 'Play');
     await page.keyboard.press('Escape');
     await expectAttr(stage, 'data-scene-mode', 'focus');
     await page.keyboard.press('Escape');
     await expectAttr(stage, 'data-scene-mode', 'life-map');
     await page.keyboard.press('Escape');
     await expectAttr(stage, 'data-scene-mode', 'home');
-    report.screenshots.push(await screenshot(page, '03-replay-unwind-home'));
+    report.screenshots.push(await screenshot(page, '03-replay-return-home'));
 
     await page.setViewportSize({ width: 390, height: 844 });
     await page.goto(`${BASE_URL}/replay?manifestId=seed-memory-bloom`);
     await expectAttr(stage, 'data-scene-mode', 'replay');
-    await expectVisible(page.getByTestId('urai-focus-scene'), 'mobile replay visual scene');
-    await expectText(page.getByTestId('urai-focus-action-panel'), 'Replay Stream');
-    const box = await page.getByTestId('urai-focus-scene').boundingBox();
+    await expectVisible(page.getByTestId('urai-replay-timeline'), 'mobile replay timeline');
+    await expectVisible(page.getByTestId('urai-replay-meta-panel'), 'mobile replay meta panel');
+    await expectText(stage, 'Pattern Replay');
+    const box = await stage.boundingBox();
     if (!box || Math.round(box.width) !== 390 || Math.round(box.height) !== 844) {
       throw new Error(`Mobile replay viewport mismatch: ${JSON.stringify(box)}`);
     }
-    report.screenshots.push(await screenshot(page, '04-mobile-direct-replay'));
+    report.screenshots.push(await screenshot(page, '04-mobile-memory-theater-replay'));
 
     await browser.close();
     report.console = consoleMessages;
     if (consoleMessages.length) throw new Error(`Console errors detected:\n${consoleMessages.join('\n')}`);
     writeFileSync(`${ARTIFACT_DIR}/replay-tier5-report.json`, JSON.stringify(report, null, 2));
-    console.log('URAI Replay Tier 5 canonical validation passed.');
+    console.log('URAI Replay Tier 5 Memory Theater validation passed.');
   } catch (error) {
     writeFileSync(`${ARTIFACT_DIR}/replay-tier5-report.json`, JSON.stringify(report, null, 2));
     throw error;
