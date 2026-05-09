@@ -3,7 +3,7 @@
 import { useRouter } from 'next/navigation'
 import { DEMO_MEMORY_STARS } from '../spatial/demo/demoMemoryStars'
 
-type SceneMode = 'home' | 'ascent' | 'life-map' | 'demo' | 'replay' | 'focus' | 'mirror'
+type SceneMode = 'home' | 'ascent' | 'life-map' | 'demo' | 'replay' | 'focus' | 'mirror' | 'unwind'
 
 function SceneOverlayStyles() {
   return (
