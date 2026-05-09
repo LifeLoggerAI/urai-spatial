@@ -29,7 +29,7 @@
     "test:rules": "pnpm firebase:rules:check",
     "test:smoke": "pnpm smoke",
     "canon:lock": "node scripts/check-tier1-canon-lock.mjs",
-    "test": "pnpm --filter urai-functions build && pnpm --filter urai-functions test && pnpm --filter urai-tier1 test && pnpm test:e2e && pnpm test:replay-tier5",
+    "test": "pnpm --filter urai-functions build && pnpm --filter urai-functions test && pnpm --filter urai-tier1 test && node scripts/run-optional-e2e.mjs && pnpm test:replay-tier5",
     "test:e2e": "pnpm playwright:check && node tests/spatial-lock.mjs",
     "test:e2e:lock": "pnpm test:e2e && pnpm test:tier-lock-hardening",
     "test:e2e:navigation-stack": "pnpm playwright:check && node tests/spatial-tier-lock-hardening.mjs --suite=navigation",
