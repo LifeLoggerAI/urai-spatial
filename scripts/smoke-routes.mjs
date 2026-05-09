@@ -6,6 +6,7 @@ const apiRoutes = [
   ['/api/system/manifest', { method: 'GET' }],
   ['/api/system/capabilities', { method: 'GET' }],
   ['/api/system/integration-contract', { method: 'GET' }],
+  ['/api/system/launch-boundary', { method: 'GET' }],
   ['/api/body-biometric', { method: 'POST', body: JSON.stringify({ userId: 'adamclamp', portal: 'chest-heart', source: 'live-device' }) }],
   ['/api/body-biometric', { method: 'POST', body: JSON.stringify({ portal: 'brain-synapses', source: 'mock' }) }],
   ['/api/orb-companion', { method: 'POST', body: JSON.stringify({ message: '' }) }],
@@ -69,6 +70,14 @@ async function checkJson(route, init) {
     assert(payload.snapshot, `${route} missing snapshot`)
   }
   if (route.includes('orb-companion')) assert(payload.mode, `${route} missing mode`)
+  if (route.includes('launch-boundary')) {
+    assert(payload.launchBoundary, `${route} missing launchBoundary`)
+    assert(payload.launchBoundary.liveProviderConnected === false, `${route} must report liveProviderConnected=false in fallback mode`)
+    assert(payload.launchBoundary.userConsentRequiredBeforeLiveProviders === true, `${route} must require consent before live providers`)
+    assert(Array.isArray(payload.deferredCapabilities), `${route} missing deferredCapabilities array`)
+    assert(payload.deferredCapabilities.includes('live-ar-webxr-session'), `${route} missing live-ar-webxr-session deferred capability`)
+    assert(Array.isArray(payload.requirementsBeforeLiveProviders), `${route} missing requirementsBeforeLiveProviders array`)
+  }
 }
 
 async function checkExpectedStatus(route, init) {
