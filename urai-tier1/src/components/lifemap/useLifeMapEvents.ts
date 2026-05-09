@@ -23,20 +23,57 @@ type LifeMapEventState = {
   usingSeedData: boolean;
 };
 
-const nodeTypes: readonly LifeMapNodeType[] = ["memory", "season", "ritual", "forecast", "threshold", "relationship", "recovery", "legacy"];
-const sourceTypes: readonly LifeMapEventSourceType[] = ["audio", "conversation", "ritual", "forecast", "manual_seed", "system_generated", "relationship", "recovery", "legacy"];
-const eraTypes: readonly LifeMapEraType[] = ["all", "season", "relationship", "recovery", "work", "family", "threshold", "custom", "system_generated"];
+const nodeTypes: readonly LifeMapNodeType[] = [
+  "memory",
+  "season",
+  "ritual",
+  "forecast",
+  "threshold",
+  "relationship",
+  "recovery",
+  "legacy",
+];
+
+const sourceTypes: readonly LifeMapEventSourceType[] = [
+  "audio",
+  "conversation",
+  "ritual",
+  "forecast",
+  "manual_seed",
+  "system_generated",
+  "relationship",
+  "recovery",
+  "legacy",
+];
+
+const eraTypes: readonly LifeMapEraType[] = [
+  "all",
+  "season",
+  "relationship",
+  "recovery",
+  "work",
+  "family",
+  "threshold",
+  "custom",
+  "system_generated",
+];
 
 function asNodeType(value: unknown): LifeMapNodeType {
-  return typeof value === "string" && nodeTypes.includes(value as LifeMapNodeType) ? (value as LifeMapNodeType) : "memory";
+  return typeof value === "string" && nodeTypes.includes(value as LifeMapNodeType)
+    ? (value as LifeMapNodeType)
+    : "memory";
 }
 
 function asSourceType(value: unknown): LifeMapEventSourceType {
-  return typeof value === "string" && sourceTypes.includes(value as LifeMapEventSourceType) ? (value as LifeMapEventSourceType) : "system_generated";
+  return typeof value === "string" && sourceTypes.includes(value as LifeMapEventSourceType)
+    ? (value as LifeMapEventSourceType)
+    : "system_generated";
 }
 
 function asEraType(value: unknown): LifeMapEraType {
-  return typeof value === "string" && eraTypes.includes(value as LifeMapEraType) ? (value as LifeMapEraType) : "system_generated";
+  return typeof value === "string" && eraTypes.includes(value as LifeMapEraType)
+    ? (value as LifeMapEraType)
+    : "system_generated";
 }
 
 function asStringArray(value: unknown): string[] {
@@ -119,7 +156,9 @@ export function useLifeMapEvents(userId?: string): LifeMapEventState {
         eventsQuery,
         (snapshot) => {
           if (cancelled) return;
+
           const nextNodes = snapshot.docs.map((doc) => mapLifeMapEventToNode(normalizeEvent(doc.id, doc.data())));
+
           setNodes(nextNodes.length ? nextNodes : lifeMapNodes);
           setUsingSeedNodes(nextNodes.length === 0);
           setEventsLoading(false);
@@ -127,6 +166,7 @@ export function useLifeMapEvents(userId?: string): LifeMapEventState {
         },
         (error) => {
           if (cancelled) return;
+
           setNodes(lifeMapNodes);
           setUsingSeedNodes(true);
           setEventsLoading(false);
@@ -143,6 +183,7 @@ export function useLifeMapEvents(userId?: string): LifeMapEventState {
       setUsingSeedNodes(true);
       setEventsLoading(false);
       setError(error instanceof Error ? error.message : "Life Map events could not be loaded.");
+
       return () => {
         cancelled = true;
       };
@@ -161,13 +202,16 @@ export function useLifeMapEvents(userId?: string): LifeMapEventState {
         erasQuery,
         (snapshot) => {
           if (cancelled) return;
+
           const nextEras = snapshot.docs.map((doc) => normalizeEra(doc.id, doc.data()));
+
           setEras(nextEras.length ? nextEras : lifeMapEras);
           setUsingSeedEras(nextEras.length === 0);
           setErasLoading(false);
         },
         (error) => {
           if (cancelled) return;
+
           setEras(lifeMapEras);
           setUsingSeedEras(true);
           setErasLoading(false);
@@ -184,6 +228,7 @@ export function useLifeMapEvents(userId?: string): LifeMapEventState {
       setUsingSeedEras(true);
       setErasLoading(false);
       setError(error instanceof Error ? error.message : "Life Map eras could not be loaded.");
+
       return () => {
         cancelled = true;
       };
