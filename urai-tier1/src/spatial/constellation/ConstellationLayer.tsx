@@ -1,6 +1,6 @@
 'use client'
 
-import { useMemo, useRef } from 'react'
+import { useMemo, useRef, type ReactNode } from 'react'
 import { useConstellationManifests } from './useConstellationManifests'
 import * as THREE from 'three'
 import { Mesh } from 'three'
@@ -151,7 +151,7 @@ function LifeArcGhostStar({ node }: { node: { id: string; position: Constellatio
   )
 }
 
-function NavigationDepthRig({ children, navigation }: { children: React.ReactNode; navigation?: LifeMapNavigationState | null }) {
+function NavigationDepthRig({ children, navigation }: { children: ReactNode; navigation?: LifeMapNavigationState | null }) {
   const groupRef = useRef<THREE.Group>(null)
   const zoom = navigation?.zoom ?? 1
   const panX = navigation?.panX ?? 0
