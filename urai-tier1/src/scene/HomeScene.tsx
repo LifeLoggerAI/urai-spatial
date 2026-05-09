@@ -33,8 +33,37 @@ import { FocusPhaseDefinition, getFocusPhaseDefinition, resolveFocusPhase } from
 
 type SceneMode = 'home' | 'ascent' | 'life-map' | 'demo' | 'replay' | 'focus' | 'unwind' | 'mirror'
 
+type RelatedFocusNode = {
+  id: string
+  label: string
+  detail: string
+  cue: string
+}
+
 const ASCENT_DURATION_MS = 1800
 const REPLAY_LAUNCH_DELAY_MS = 720
+const FOCUS_RECENTER_DURATION_MS = 520
+
+const RELATED_FOCUS_NODES: RelatedFocusNode[] = [
+  {
+    id: 'boundary-context',
+    label: 'Boundary context',
+    detail: 'Shows where this memory sits against the outer privacy and readiness boundary.',
+    cue: 'Boundary 75%',
+  },
+  {
+    id: 'readiness-context',
+    label: 'Replay readiness',
+    detail: 'Confirms whether the selected memory is stable enough to become replay atmosphere.',
+    cue: 'Readiness 87%',
+  },
+  {
+    id: 'emotion-context',
+    label: 'Emotional signal',
+    detail: 'Keeps the strongest emotional signal visible without turning Focus into full detail reading.',
+    cue: 'Intensity 68%',
+  },
+]
 
 function silentHomeInvariantProof(mode: SceneMode) {
   if (mode === 'home') return null
@@ -116,10 +145,15 @@ function ModeGuidance({
 
   if (mode === 'focus') {
     const canReplay = focusDefinition?.allowedActions.includes('start_replay')
+    const guidance = canReplay
+      ? reducedMotion
+        ? 'Focus ready. Reduced motion keeps the field still.'
+        : 'Focus stable. Replay can begin.'
+      : focusDefinition?.userVisibleUi ?? 'Focus is preparing.'
 
     return (
       <div className="urai-spatial-guidance" data-testid="urai-focus-guidance" aria-live="polite">
-        <span>{canReplay ? 'Focus stable. Replay can begin.' : focusDefinition?.userVisibleUi ?? 'Focus is preparing.'}</span>
+        <span>{guidance}</span>
         <button type="button" onClick={onUnwind}>ESC / Life Map</button>
       </div>
     )
@@ -128,7 +162,7 @@ function ModeGuidance({
   if (mode === 'replay') {
     return (
       <div className="urai-spatial-guidance" data-testid="urai-replay-guidance">
-        <span>Replay breathing. ESC unwinds one layer.</span>
+        <span>{reducedMotion ? 'Replay opened without travel motion.' : 'Replay breathing. ESC unwinds one layer.'}</span>
         <button type="button" onClick={onSafeUnwind}>Unwind</button>
       </div>
     )
@@ -146,11 +180,110 @@ function ModeGuidance({
   return null
 }
 
-function CameraResetButton({ onReset }: { onReset: () => void }) {
+function CameraResetButton({ onReset, disabled }: { onReset: () => void; disabled: boolean }) {
   return (
-    <button type="button" className="urai-camera-reset" data-testid="urai-camera-reset" aria-label="Recenter spatial camera" onClick={onReset}>
+    <button
+      type="button"
+      className="urai-camera-reset"
+      data-testid="urai-camera-reset"
+      aria-label="Recenter spatial camera"
+      onClick={onReset}
+      disabled={disabled}
+    >
       Recenter
     </button>
+  )
+}
+
+function FocusContextRail({
+  nodes,
+  activeNodeId,
+  selectedNodeId,
+  onPreview,
+  onSelect,
+}: {
+  nodes: RelatedFocusNode[]
+  activeNodeId: string | null
+  selectedNodeId: string | null
+  onPreview: (nodeId: string | null) => void
+  onSelect: (nodeId: string) => void
+}) {
+  const activeNode = nodes.find((node) => node.id === activeNodeId || node.id === selectedNodeId) ?? nodes[0]
+
+  return (
+    <section
+      className="urai-focus-action-panel urai-focus-context-rail"
+      data-testid="urai-focus-context-rail"
+      aria-label="Related memory context"
+      style={{ left: 22, right: 'auto', bottom: 82, width: 'min(330px, calc(100vw - 44px))' }}
+    >
+      <div className="urai-focus-action-panel__eyebrow">Related Memory Context</div>
+      <h2>{activeNode.label}</h2>
+      <p>{activeNode.detail}</p>
+      <div className="urai-focus-action-panel__actions" role="list" aria-label="Preview related memory nodes">
+        {nodes.map((node, index) => {
+          const isActive = node.id === activeNodeId || node.id === selectedNodeId
+
+          return (
+            <button
+              key={node.id}
+              type="button"
+              role="listitem"
+              data-testid={`urai-focus-related-node-${node.id}`}
+              aria-pressed={isActive}
+              aria-label={`${node.label}: ${node.detail}`}
+              onPointerEnter={() => onPreview(node.id)}
+              onFocus={() => onPreview(node.id)}
+              onPointerLeave={() => onPreview(null)}
+              onBlur={() => onPreview(null)}
+              onClick={() => onSelect(node.id)}
+              onKeyDown={(event) => {
+                if (event.key !== 'ArrowRight' && event.key !== 'ArrowLeft') return
+
+                event.preventDefault()
+                const offset = event.key === 'ArrowRight' ? 1 : -1
+                const nextIndex = (index + offset + nodes.length) % nodes.length
+                const next = document.querySelector<HTMLButtonElement>(`[data-testid="urai-focus-related-node-${nodes[nextIndex].id}"]`)
+                next?.focus()
+              }}
+            >
+              {node.cue}
+            </button>
+          )
+        })}
+      </div>
+    </section>
+  )
+}
+
+function FocusDetailPanel({
+  morphology,
+  selectedContext,
+  onClose,
+  onReplay,
+}: {
+  morphology: MemoryMorphology
+  selectedContext: RelatedFocusNode | null
+  onClose: () => void
+  onReplay: () => void
+}) {
+  return (
+    <section
+      className="urai-focus-action-panel urai-focus-detail-panel"
+      data-testid="urai-focus-detail-panel"
+      aria-label="Selected memory detail"
+      aria-modal="false"
+      style={{ right: 22, top: 92, bottom: 'auto', width: 'min(420px, calc(100vw - 44px))' }}
+    >
+      <div className="urai-focus-action-panel__eyebrow">Selected Memory Detail</div>
+      <h2>{morphology.title}</h2>
+      <p>{morphology.poeticLine}</p>
+      {selectedContext ? <p>{selectedContext.label}: {selectedContext.detail}</p> : null}
+      <div className="urai-focus-action-panel__actions">
+        <button type="button" className="urai-focus-action-panel__primary" onClick={onReplay}>Start Replay</button>
+        <button type="button" onClick={onClose}>Close Detail</button>
+      </div>
+    </section>
   )
 }
 
@@ -158,6 +291,7 @@ function FocusActionPanel({
   morphology,
   mode,
   onReplay,
+  onDetail,
   onUnwind,
   launching,
   focusDefinition,
@@ -165,15 +299,17 @@ function FocusActionPanel({
   morphology: MemoryMorphology
   mode: SceneMode
   onReplay: () => void
+  onDetail: () => void
   onUnwind: () => void
   launching: boolean
   focusDefinition: FocusPhaseDefinition
 }) {
   const isReplay = mode === 'replay'
   const canStartReplay = !isReplay && focusDefinition.allowedActions.includes('start_replay')
+  const canOpenDetail = !isReplay && focusDefinition.allowedActions.includes('open_detail')
 
   return (
-    <section className="urai-focus-action-panel" data-testid="urai-focus-action-panel" aria-label={isReplay ? 'Replay stream' : 'Selected memory star'}>
+    <section className="urai-focus-action-panel" data-testid="urai-focus-action-panel" aria-label={isReplay ? 'Replay stream' : 'Selected memory focus'}>
       <div className="urai-focus-action-panel__eyebrow">{isReplay ? 'Replay Stream' : focusDefinition.label}</div>
       <h2>{isReplay ? 'Memory is reconstructing as atmosphere.' : morphology.title}</h2>
       <p>{isReplay ? morphology.poeticLine : focusDefinition.userVisibleUi}</p>
@@ -182,6 +318,9 @@ function FocusActionPanel({
           <button type="button" className="urai-focus-action-panel__primary" onClick={onReplay} disabled={launching || !canStartReplay}>
             {launching ? 'Opening Memory...' : 'Start Replay'}
           </button>
+        ) : null}
+        {!isReplay ? (
+          <button type="button" onClick={onDetail} disabled={!canOpenDetail}>Open Detail</button>
         ) : null}
         <button type="button" onClick={onUnwind}>{isReplay ? 'Unwind to Focus' : 'Back to Life Map'}</button>
       </div>
@@ -205,11 +344,11 @@ function FocusEmptyPanel({
   return (
     <section className="urai-focus-action-panel urai-focus-action-panel--empty" data-testid="urai-focus-empty-panel" aria-label={isReplay ? 'Replay preparing' : 'Focus preparing'}>
       <div className="urai-focus-action-panel__eyebrow">{isReplay ? 'Replay Preparing' : focusDefinition.label}</div>
-      <h2>{loading ? 'Opening memory star...' : 'Demo memory star ready'}</h2>
+      <h2>{loading ? 'Opening memory star...' : 'No memory selected'}</h2>
       <p>
         {loading
           ? focusDefinition.userVisibleUi
-          : 'No private memory data was required. Return to the Life Map to choose another visible star.'}
+          : 'Focus needs a selected memory. Return to the Life Map to choose one visible star.'}
       </p>
       <div className="urai-focus-action-panel__actions">
         <button type="button" className="urai-focus-action-panel__primary" onClick={onLifeMap}>Open Life Map</button>
@@ -225,6 +364,7 @@ function TierGatePanel({
   requiredTier,
   fallbackFeatureId,
   onPreview,
+  focusDefinition,
 }: {
   featureId: SpatialFeatureId
   loading: boolean
@@ -232,17 +372,18 @@ function TierGatePanel({
   requiredTier?: string
   fallbackFeatureId?: SpatialFeatureId
   onPreview: () => void
+  focusDefinition?: FocusPhaseDefinition
 }) {
-  const title = loading ? 'Checking spatial access...' : 'Personal Life Map is locked'
+  const title = loading ? 'Checking spatial access...' : focusDefinition?.label ?? 'Personal Life Map is locked'
   const body = loading
-    ? 'URAI is checking your tier, consent, and feature flags before opening this personal spatial layer.'
+    ? focusDefinition?.userVisibleUi ?? 'URAI is checking your tier, consent, and feature flags before opening this personal spatial layer.'
     : `This feature (${featureId}) requires ${requiredTier ?? 'a higher tier'} or additional consent. Fallback: ${fallbackFeatureId ?? 'spatial.starfield.preview'}. ${
         reasons.length ? `Reason: ${reasons.join(', ')}.` : ''
       }`
 
   return (
     <section className="urai-focus-action-panel urai-focus-action-panel--locked" data-testid="urai-tier-gate-panel" aria-label="Spatial feature locked">
-      <div className="urai-focus-action-panel__eyebrow">Tier Gate</div>
+      <div className="urai-focus-action-panel__eyebrow">Focus Access</div>
       <h2>{title}</h2>
       <p>{body}</p>
       <div className="urai-focus-action-panel__actions">
@@ -275,8 +416,17 @@ export default function HomeScene({ sceneMode = 'home' }: { sceneMode?: SceneMod
   const [narratorContext, setNarratorContext] = useState<NarratorContext>('arrival')
   const [cameraResetSignal, setCameraResetSignal] = useState(0)
   const [replayLaunching, setReplayLaunching] = useState(false)
+  const [focusRecentering, setFocusRecentering] = useState(false)
+  const [hoveredRelatedNodeId, setHoveredRelatedNodeId] = useState<string | null>(null)
+  const [selectedRelatedNodeId, setSelectedRelatedNodeId] = useState<string | null>(RELATED_FOCUS_NODES[0]?.id ?? null)
+  const [focusDetailOpen, setFocusDetailOpen] = useState(false)
   const activeManifest = gateBlocksMode ? null : selectedManifest ?? manifest
   const activeManifestId = selectedManifest?.manifestId ?? activeManifest?.manifestId ?? effectiveManifestId
+
+  const selectedRelatedNode = useMemo(
+    () => RELATED_FOCUS_NODES.find((node) => node.id === selectedRelatedNodeId) ?? null,
+    [selectedRelatedNodeId],
+  )
 
   const focusPhase = useMemo(
     () =>
@@ -288,11 +438,15 @@ export default function HomeScene({ sceneMode = 'home' }: { sceneMode?: SceneMod
         isGateLoading: gate.loading,
         isGateBlocked: Boolean(gatedFeatureId) && !gate.allowed,
         isReplayLaunching: replayLaunching,
+        isRecentering: focusRecentering,
+        isHoveringNode: Boolean(hoveredRelatedNodeId),
+        isDetailOpen: focusDetailOpen,
       }),
-    [activeManifest, gatedFeatureId, gate.allowed, gate.loading, manifestLoading, replayLaunching, sceneMode, selectedManifest],
+    [activeManifest, focusDetailOpen, focusRecentering, gatedFeatureId, gate.allowed, gate.loading, hoveredRelatedNodeId, manifestLoading, replayLaunching, sceneMode, selectedManifest],
   )
 
   const focusDefinition = useMemo(() => getFocusPhaseDefinition(focusPhase), [focusPhase])
+  const canRecenterFocus = focusDefinition.allowedActions.includes('recenter_focus')
 
   const memoryMorphology = useMemo(
     () => buildMemoryMorphology(activeManifest, sceneMode === 'replay' ? 'focus' : 'recovery'),
@@ -326,8 +480,18 @@ export default function HomeScene({ sceneMode = 'home' }: { sceneMode?: SceneMod
   )
 
   const resetCamera = useCallback(() => {
+    if (!canRecenterFocus && sceneMode === 'focus') return
+
+    setFocusRecentering(true)
     setCameraResetSignal((value) => value + 1)
-  }, [])
+
+    if (reducedMotion) {
+      setFocusRecentering(false)
+      return
+    }
+
+    window.setTimeout(() => setFocusRecentering(false), FOCUS_RECENTER_DURATION_MS)
+  }, [canRecenterFocus, reducedMotion, sceneMode])
 
   const enterLifeMap = useCallback(() => {
     if (sceneMode === 'home') router.push('/ascent')
@@ -341,9 +505,16 @@ export default function HomeScene({ sceneMode = 'home' }: { sceneMode?: SceneMod
   const unwind = useCallback(() => {
     setReplayLaunching(false)
 
+    if (focusDetailOpen) {
+      setFocusDetailOpen(false)
+      return
+    }
+
     if (selectedManifest) {
       setSelectedManifest(null)
       setSelectedPosition(null)
+      setSelectedRelatedNodeId(RELATED_FOCUS_NODES[0]?.id ?? null)
+      setHoveredRelatedNodeId(null)
       setNarratorContext('explore')
       resetCamera()
       return
@@ -365,7 +536,7 @@ export default function HomeScene({ sceneMode = 'home' }: { sceneMode?: SceneMod
     }
 
     if (sceneMode === 'life-map' || sceneMode === 'ascent') router.push('/')
-  }, [activeManifestId, resetCamera, router, sceneMode, selectedManifest])
+  }, [activeManifestId, focusDetailOpen, resetCamera, router, sceneMode, selectedManifest])
 
   const startReplay = useCallback(() => {
     if (replayLaunching || !focusDefinition.allowedActions.includes('start_replay')) return
@@ -380,9 +551,16 @@ export default function HomeScene({ sceneMode = 'home' }: { sceneMode?: SceneMod
     window.setTimeout(() => router.push(manifestReplayHref(activeManifestId)), REPLAY_LAUNCH_DELAY_MS)
   }, [activeManifestId, focusDefinition.allowedActions, reducedMotion, replayLaunching, router])
 
+  const openFocusDetail = useCallback(() => {
+    if (!focusDefinition.allowedActions.includes('open_detail')) return
+    setFocusDetailOpen(true)
+  }, [focusDefinition.allowedActions])
+
   function handleSelect(manifest: SpatialAssetManifest, position: ConstellationNodePosition) {
     router.push(`/focus?manifestId=${encodeURIComponent(manifest.manifestId)}`)
     setReplayLaunching(false)
+    setFocusDetailOpen(false)
+    setSelectedRelatedNodeId(RELATED_FOCUS_NODES[0]?.id ?? null)
     setSelectedManifest(manifest)
     setSelectedPosition(position)
     setNarratorContext('return')
@@ -397,6 +575,8 @@ export default function HomeScene({ sceneMode = 'home' }: { sceneMode?: SceneMod
 
   useEffect(() => {
     setReplayLaunching(false)
+    setFocusDetailOpen(false)
+    setHoveredRelatedNodeId(null)
 
     if (selectedManifest) setNarratorContext('return')
     else if (sceneMode === 'focus') setNarratorContext('arrival')
@@ -419,6 +599,7 @@ export default function HomeScene({ sceneMode = 'home' }: { sceneMode?: SceneMod
   const showFocusPanel = Boolean(activeManifest) && (Boolean(selectedManifest) || modeNeedsManifest)
   const showEmptyFocusPanel = !gateBlocksMode && modeNeedsManifest && !activeManifest
   const showMemoryArtifact = !gateBlocksMode && (sceneMode === 'focus' || sceneMode === 'replay')
+  const showFocusContextRail = sceneMode === 'focus' && showFocusPanel && activeManifest && !focusDetailOpen
 
   return (
     <div
@@ -426,6 +607,7 @@ export default function HomeScene({ sceneMode = 'home' }: { sceneMode?: SceneMod
       data-testid="urai-scene-stage"
       data-scene-mode={sceneMode}
       data-focus-phase={focusPhase}
+      data-focus-motion={reducedMotion ? 'reduced' : 'cinematic'}
       data-reduced-motion={reducedMotion ? 'true' : 'false'}
       data-replay-launching={replayLaunching ? 'true' : 'false'}
       onClick={isHomeMode ? enterLifeMap : undefined}
@@ -437,17 +619,17 @@ export default function HomeScene({ sceneMode = 'home' }: { sceneMode?: SceneMod
         <PerspectiveCamera makeDefault position={[0, 2.85, 8.35]} fov={48} />
         <CinematicCameraRig active focusPosition={selectedPosition} path={cameraPath} reducedMotion={reducedMotion} resetSignal={cameraResetSignal} />
 
-        <ambientLight intensity={isHomeMode ? 0.82 : isAscentMode ? 0.5 : 0.28} color="#b8d7ff" />
+        <ambientLight intensity={isHomeMode ? 0.82 : isAscentMode ? 0.5 : sceneMode === 'focus' ? 0.22 : 0.28} color="#b8d7ff" />
         <hemisphereLight args={['#d3e7ff', '#12071e', isHomeMode ? 1.58 : 0.95]} />
         <directionalLight
           position={[-5.4, 7.4, 3.8]}
-          intensity={isHomeMode ? 2.65 : 1.85}
+          intensity={isHomeMode ? 2.65 : sceneMode === 'focus' ? 1.55 : 1.85}
           color="#d7e6ff"
           castShadow
           shadow-mapSize-width={2048}
           shadow-mapSize-height={2048}
         />
-        <pointLight position={[0.7, 0.55, -1.05]} intensity={isHomeMode ? 3.15 : 2.05} color="#c9b0ff" distance={7.8} />
+        <pointLight position={[0.7, 0.55, -1.05]} intensity={isHomeMode ? 3.15 : sceneMode === 'focus' ? 1.7 : 2.05} color="#c9b0ff" distance={7.8} />
         <pointLight position={[-3.2, 2.35, -3.8]} intensity={isHomeMode ? 1.55 : 0.9} color="#62e5ff" distance={11} />
         <pointLight position={[3.2, 1.1, -3.2]} intensity={isHomeMode ? 0.82 : 0.25} color="#ffbf7a" distance={8.4} />
 
@@ -473,7 +655,7 @@ export default function HomeScene({ sceneMode = 'home' }: { sceneMode?: SceneMod
       </Canvas>
 
       {showMemoryArtifact ? <MemoryStarArtifact morphology={memoryMorphology} replay={sceneMode === 'replay' || replayLaunching} /> : null}
-      {!isHomeMode ? <CameraResetButton onReset={resetCamera} /> : null}
+      {!isHomeMode ? <CameraResetButton onReset={resetCamera} disabled={sceneMode === 'focus' && !canRecenterFocus} /> : null}
 
       {!isHomeMode ? <ModeGuidance mode={sceneMode} onEnter={enterLifeMap} onUnwind={unwind} onSafeUnwind={openSafeUnwind} reducedMotion={reducedMotion} focusDefinition={focusDefinition} /> : null}
 
@@ -485,11 +667,39 @@ export default function HomeScene({ sceneMode = 'home' }: { sceneMode?: SceneMod
           requiredTier={gate.requiredTier}
           fallbackFeatureId={gate.fallbackFeatureId}
           onPreview={openPreviewMap}
+          focusDefinition={sceneMode === 'focus' || sceneMode === 'replay' ? focusDefinition : undefined}
+        />
+      ) : null}
+
+      {showFocusContextRail ? (
+        <FocusContextRail
+          nodes={RELATED_FOCUS_NODES}
+          activeNodeId={hoveredRelatedNodeId}
+          selectedNodeId={selectedRelatedNodeId}
+          onPreview={setHoveredRelatedNodeId}
+          onSelect={setSelectedRelatedNodeId}
         />
       ) : null}
 
       {showFocusPanel && activeManifest ? (
-        <FocusActionPanel morphology={memoryMorphology} mode={sceneMode} onReplay={startReplay} onUnwind={unwind} launching={replayLaunching} focusDefinition={focusDefinition} />
+        <FocusActionPanel
+          morphology={memoryMorphology}
+          mode={sceneMode}
+          onReplay={startReplay}
+          onDetail={openFocusDetail}
+          onUnwind={unwind}
+          launching={replayLaunching}
+          focusDefinition={focusDefinition}
+        />
+      ) : null}
+
+      {focusDetailOpen && activeManifest ? (
+        <FocusDetailPanel
+          morphology={memoryMorphology}
+          selectedContext={selectedRelatedNode}
+          onClose={() => setFocusDetailOpen(false)}
+          onReplay={startReplay}
+        />
       ) : null}
 
       {showEmptyFocusPanel ? <FocusEmptyPanel mode={sceneMode} loading={manifestLoading} onLifeMap={openLifeMap} focusDefinition={focusDefinition} /> : null}
