@@ -48,6 +48,12 @@ function confidenceReasons(state: HomeWorldState) {
   return reasons;
 }
 
+function confidenceBucket(value: number): "low" | "medium" | "high" {
+  if (value < 0.45) return "low";
+  if (value < 0.7) return "medium";
+  return "high";
+}
+
 function enabledSourceSummary(input: HomeWorldSignals | undefined) {
   const enabled = Object.entries(input?.enabledSources ?? {})
     .filter(([, value]) => value !== false)
@@ -71,6 +77,7 @@ export function explainHomeWorldState(
   const updatedAt = state.lastDerivedAt ?? state.updatedAt ?? new Date().toISOString();
   const enabled = enabledSourceSummary(input);
   const confidenceLabel = state.confidence?.label ?? "low";
+  const confidenceBand = confidenceBucket(state.confidence?.overall ?? 0.25);
 
   return {
     version: 3,
@@ -101,6 +108,7 @@ export function explainHomeWorldState(
     confidence: {
       label: confidenceLabel,
       reasons: confidenceReasons(state),
+      confidenceBucket: confidenceBand,
     },
     dataSources: {
       enabled,

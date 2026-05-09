@@ -55,11 +55,13 @@
     "firebase": "^12.11.0",
     "firebase-admin": "^13.7.0",
     "next": "15.5.7",
+    "postprocessing": "^6.38.3",
     "react": "19.2.4",
     "react-dom": "19.2.4",
     "stripe": "^19.3.0",
     "three": "^0.183.2",
-    "three-stdlib": "^2.36.1"
+    "three-stdlib": "^2.36.1",
+    "zustand": "^5.0.11"
   },
   "devDependencies": {
     "@playwright/test": "^1.57.0",
@@ -72,5 +74,6 @@
     "playwright": "^1.57.0",
     "tsx": "^4.21.0",
     "typescript": "^6.0.3"
-  }
+  },
+  "type": "module"
 }

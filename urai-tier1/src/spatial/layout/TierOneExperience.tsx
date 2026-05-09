@@ -6,7 +6,7 @@ import HomeScene from "@/scene/HomeScene";
 import MirrorRouteLayer from "@/scene/MirrorRouteLayer";
 import { SpatialShell } from "./SpatialShell";
 
-export type TierOneExperienceMode = "home" | "ascent" | "life-map" | "demo" | "replay" | "focus" | "mirror";
+export type TierOneExperienceMode = "home" | "ascent" | "life-map" | "demo" | "replay" | "focus" | "unwind" | "mirror";
 
 type Props = {
   mode: TierOneExperienceMode;
@@ -19,44 +19,49 @@ type Props = {
 const fallbackCopy: Record<TierOneExperienceMode, { eyebrow: string; title: string; description: string }> = {
   home: {
     eyebrow: "URAI Spatial",
-    title: "Your inner weather, rendered as a world.",
-    description: "A calm cinematic home where the sky, ground, and companion orb become the entry point into memory, mood, and focus.",
+    title: "Review your remembered moments in a spatial map.",
+    description: "Open a private memory space, choose a remembered moment, replay its emotional pattern, and review the reflection summary.",
   },
   ascent: {
-    eyebrow: "Ascent",
-    title: "Rise from the home sky into your Life Map.",
-    description: "A short atmospheric passage shifts the scene from grounded presence into the constellation layer.",
+    eyebrow: "Opening Life Map",
+    title: "Preparing your memory map.",
+    description: "URAI is moving from the home view into the constellation of remembered moments.",
   },
   "life-map": {
     eyebrow: "Life Map",
-    title: "A constellation of remembered moments.",
-    description: "Stars become memory anchors. Tap one to move into focus, replay, and pattern recognition.",
+    title: "Your memory map",
+    description: "Select a memory to review its replay, emotional pattern, and reflection summary.",
   },
   demo: {
-    eyebrow: "Demo",
-    title: "A guided preview of the URAI Spatial engine.",
-    description: "Explore the emotional map, companion field, and cinematic memory layer without connecting private data.",
+    eyebrow: "Preview Map",
+    title: "Preview remembered moments without private data.",
+    description: "Explore the memory map, focus view, and replay flow with local sample moments.",
   },
   replay: {
-    eyebrow: "Replay",
-    title: "Replay turns a memory into atmosphere.",
-    description: "This route becomes a cinematic return path through tone shifts, recovery arcs, and emotional context.",
+    eyebrow: "Memory Replay",
+    title: "Watch the memory pattern replay.",
+    description: "Replay reconstructs this moment as a short guided sequence with progress, controls, and a clear exit path.",
   },
   focus: {
-    eyebrow: "Focus",
-    title: "A memory star, opened gently.",
-    description: "Focus mode slows the scene down so one memory can become readable before replay begins.",
+    eyebrow: "Memory Focus",
+    title: "Review this selected memory.",
+    description: "Check the memory context, readiness, privacy state, and replay action before starting.",
+  },
+  unwind: {
+    eyebrow: "Unwind",
+    title: "Return to a safe spatial state.",
+    description: "Pause the replay layer, settle the scene, and choose whether to revisit the Life Map or return home.",
   },
   mirror: {
-    eyebrow: "Mirror",
-    title: "Reflection begins with a stable field.",
-    description: "The mirror route keeps the scene grounded while deeper pattern summaries and private data sync come online.",
+    eyebrow: "Reflection Summary",
+    title: "This memory shows a calm recovery pattern.",
+    description: "Review the concrete pattern summary, privacy status, and recommended next memory.",
   },
 };
 
 function shellModeFor(mode: TierOneExperienceMode) {
   if (mode === "replay") return "replay" as const;
-  if (mode === "focus" || mode === "mirror") return "detail" as const;
+  if (mode === "focus" || mode === "mirror" || mode === "unwind") return "detail" as const;
   if (mode === "ascent" || mode === "life-map") return "sky" as const;
   return "overview" as const;
 }

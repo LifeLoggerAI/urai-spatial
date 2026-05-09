@@ -1,3 +1,29 @@
+name: Spatial Production Lock
+
+on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - "**"
+  push:
+    branches: [main]
+
+jobs:
+  production-lock:
+    name: Validate production spatial lock
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+      - name: Install
+        run: pnpm install --no-frozen-lockfile
       - name: Validate source-of-truth paths
         run: |
           test -f package.json
@@ -25,3 +51,9 @@
           test -f docs/URAI_SPATIAL_SOURCE_OF_TRUTH_LOCK.md
           test -f tests/spatial-lock.mjs
           test -f tests/replay-tier5-lock.mjs
+      - name: Preflight
+        run: pnpm preflight
+      - name: Runtime authority
+        run: pnpm runtime:authority
+      - name: Firebase boundary lock
+        run: pnpm firebase:rules:check

@@ -138,6 +138,7 @@ export type HomeWorldExplanation = {
   recovery: string;
   confidence: {
     label: HomeWorldConfidenceSnapshot["label"];
+    confidenceBucket?: "low" | "medium" | "high";
     reasons: string[];
   };
   dataSources: {
