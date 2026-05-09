@@ -8,8 +8,9 @@ const apiRoutes = [
   ['/api/system/health', { method: 'GET' }],
   ['/api/system/manifest', { method: 'GET' }],
   ['/api/system/capabilities', { method: 'GET' }],
-  ['/api/system/integration-contract', { method: 'GET', requiredIntegrationLock: true }],
+  ['/api/system/integration-contract', { method: 'GET', requiredIntegrationLock: true, required3DWorld: true }],
   ['/api/system/urai-spatial-lock', { method: 'GET', requiredLockVersion: LOCK_VERSION }],
+  ['/api/system/urai-spatial-3d-world', { method: 'GET', requiredStandalone3DWorld: true }],
   ['/api/system/launch-boundary', { method: 'GET', optional: true }],
   ['/api/system/tier2', { method: 'GET', requiredTier: 'Tier-2' }],
   [
@@ -83,6 +84,28 @@ function isConnectionRefused(error) {
 function devServerHint(route, status, body) {
   const snippet = body.replace(/\s+/g, ' ').slice(0, 260)
   return `${route} returned ${status}. Smoke is checking ${host}. If Next dev moved to another port, re-run with HOST=http://127.0.0.1:<port> pnpm smoke. If the response mentions routes-manifest.json or ENOSPC, stop dev, run pnpm clean:next, free disk space, then restart with pnpm dev:3001. Response: ${snippet}`
+}
+
+function assert3DWorldPayload(payload, route) {
+  const world = payload.world3D ?? payload
+  assert(world.worldLayer === '3d', `${route} missing 3D worldLayer`)
+  assert(world.domRole === 'accessible-control-overlay', `${route} missing DOM overlay role`)
+  assert(world.starsHave3DPositions === true, `${route} missing 3D star position assertion`)
+  assert(world.pathsUse3DPositions === true, `${route} missing 3D path assertion`)
+  assert(world.replayPathExists === true, `${route} missing 3D replay path assertion`)
+  assert(Array.isArray(world.cameraPresets) || payload.cameraPresets, `${route} missing camera presets`)
+  if (payload.lockVersion) assert(payload.lockVersion === LOCK_VERSION, `${route} 3D lock version mismatch`)
+  if (payload.stars) {
+    assert(payload.stars.length >= 5, `${route} expected at least five 3D stars`)
+    for (const star of payload.stars) {
+      assert(Number.isFinite(star.position?.x), `${route} star ${star.id} missing x`)
+      assert(Number.isFinite(star.position?.y), `${route} star ${star.id} missing y`)
+      assert(Number.isFinite(star.position?.z), `${route} star ${star.id} missing z`)
+    }
+  }
+  if (payload.paths) {
+    assert(payload.paths.some((path) => path.kind === 'replay' && path.points.length >= 3), `${route} missing replay path with 3D points`)
+  }
 }
 
 async function request(route, init) {
@@ -168,6 +191,10 @@ async function checkJson(route, init) {
     assert(lock.lockVersion === LOCK_VERSION, `${route} lock version mismatch`)
     assert(lock.tierCount === 5, `${route} lock tier count mismatch`)
     assert(lock.route === '/api/system/urai-spatial-lock', `${route} lock route mismatch`)
+  }
+
+  if (init.required3DWorld || init.requiredStandalone3DWorld) {
+    assert3DWorldPayload(payload, route)
   }
 
   if (init.requiredTier) {
