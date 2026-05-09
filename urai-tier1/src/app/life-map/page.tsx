@@ -1,5 +1,5 @@
-import LifeMapScene from "@/components/lifemap/LifeMapScene";
+import { LifeMapSkyPortalShell } from "@/components/lifemap/LifeMapSkyPortalShell";
 
 export default function LifeMapPage() {
-  return <LifeMapScene />;
+  return <LifeMapSkyPortalShell />;
 }
