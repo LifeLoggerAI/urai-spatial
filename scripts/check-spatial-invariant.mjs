@@ -17,6 +17,7 @@ const requiredFiles = [
   'urai-tier1/src/lib/body-biometric-contract.ts',
   'urai-tier1/src/lib/orb-companion-contract.ts',
   'urai-tier1/src/lib/spatial-system-contract.ts',
+  'urai-tier1/src/lib/spatial-launch-boundaries.ts',
   'scripts/smoke-routes.mjs',
 ]
 
@@ -58,6 +59,15 @@ const tokens = [
   'buildSpatialSystemContract',
   'spatialCapabilities',
   'future-webxr-ar-seam',
+  'spatialLaunchBoundary',
+  'spatialDeferredCapabilities',
+  'spatialLiveProviderRequirements',
+  'liveProviderConnected: false',
+  'liveArWebXrEnabled: false',
+  'liveBiometricProviderEnabled: false',
+  'liveWearableProviderEnabled: false',
+  'liveMemoryGroundingEnabled: false',
+  'userConsentRequiredBeforeLiveProviders: true',
 ]
 
 for (const token of tokens) {
