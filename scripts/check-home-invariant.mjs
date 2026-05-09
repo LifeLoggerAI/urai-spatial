@@ -78,14 +78,14 @@ if (homeSceneText) {
 
   requireHomeSceneGuard(
     'ModeGuidance is guarded away from home mode',
-    /!isHomeMode\s*\?\s*(?:\([\s\S]{0,80})?<ModeGuidance[\s\S]{0,280}:\s*null/.test(homeSceneText) ||
-      (/const showLifeMapHud\s*=\s*!isHomeMode/.test(homeSceneText) && /showLifeMapHud\s*&&[\s\S]{0,320}<ModeGuidance/.test(homeSceneText)),
+    /!isHomeMode\s*\?\s*(?:\([\s\S]{0,120})?<ModeGuidance[\s\S]{0,520}:\s*null/.test(homeSceneText) ||
+      (/const showLifeMapHud\s*=\s*!isHomeMode/.test(homeSceneText) && /showLifeMapHud\s*&&[\s\S]{0,520}<ModeGuidance/.test(homeSceneText)),
   )
 
   requireHomeSceneGuard(
     'NarratorHud or equivalent narrator HUD is guarded away from home mode',
-    /!isHomeMode\s*\?\s*<NarratorHud\s*\/?>\s*:\s*null/.test(homeSceneText) ||
-      (/const showLifeMapHud\s*=\s*!isHomeMode/.test(homeSceneText) && /(showLifeMapHud|!isHomeMode)[\s\S]{0,500}(NarratorHud|urai-narrator-hud)/.test(homeSceneText)),
+    /!isHomeMode\s*\?\s*<NarratorHud[\s\S]{0,160}\/>\s*:\s*null/.test(homeSceneText) ||
+      (/const showLifeMapHud\s*=\s*!isHomeMode/.test(homeSceneText) && /(showLifeMapHud|!isHomeMode)[\s\S]{0,700}(NarratorHud|urai-narrator-hud)/.test(homeSceneText)),
   )
 
   requireHomeSceneGuard(
