@@ -8,7 +8,7 @@ import Orb, { OrbState } from './Orb'
 import Sky from './Sky'
 import Atmosphere from './Atmosphere'
 import AscentPortal from './AscentPortal'
-import SpatialVisualOverlay from './SpatialVisualOverlayTier5'
+import SpatialVisualOverlay from './SpatialVisualOverlayPremium'
 import RitualPlatform from './RitualPlatform'
 import Lanterns from './Lanterns'
 import CelestialSanctuary from './CelestialSanctuary'
@@ -244,7 +244,7 @@ export default function HomeScene({ sceneMode = 'home' }: { sceneMode?: SceneMod
   const showHomeWorld = isHomeMode
   const showAscentPortal = isAscentMode
   const showConstellation = isConstellationRoute && !gateBlocksMode
-  const showOrb = sceneMode === 'focus' || sceneMode === 'replay' || sceneMode === 'mirror'
+  const showOrb = isHomeMode || sceneMode === 'focus' || sceneMode === 'replay' || sceneMode === 'mirror'
   const { manifest, loading: manifestLoading } = useManifest(gateBlocksMode ? null : effectiveManifestId)
   const [selectedManifest, setSelectedManifest] = useState<SpatialAssetManifest | null>(null)
   const [selectedPosition, setSelectedPosition] = useState<ConstellationNodePosition | null>(null)
@@ -379,6 +379,18 @@ export default function HomeScene({ sceneMode = 'home' }: { sceneMode?: SceneMod
       onClick={isHomeMode ? enterLifeMap : undefined}
     >
       <div className="urai-scene-stage__fallback" aria-hidden="true" />
+      {isHomeMode ? (
+        <button
+          type="button"
+          className="urai-home-activation"
+          data-testid="urai-sky-click-target"
+          aria-label="Begin ascent to Life Map"
+          onClick={(event) => {
+            event.stopPropagation()
+            enterLifeMap()
+          }}
+        />
+      ) : null}
       <SpatialVisualOverlay mode={sceneMode} />
 
       <Canvas shadows dpr={[1, 1.75]} gl={{ antialias: true, alpha: true }} onPointerMissed={enterLifeMap}>
