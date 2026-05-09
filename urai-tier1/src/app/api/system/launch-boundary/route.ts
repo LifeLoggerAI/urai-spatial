@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
-import { URAI_SPATIAL_SERVICE, spatialCapabilities, spatialTargets } from "@/lib/spatial-system-contract";
+import { URAI_SPATIAL_SERVICE, URAI_SPATIAL_VERSION } from "@/lib/spatial-system-contract";
 import {
+  assertSpatialFallbackMode,
   spatialDeferredCapabilities,
   spatialLaunchBoundary,
   spatialLiveProviderRequirements,
@@ -10,10 +11,9 @@ export async function GET() {
   return NextResponse.json({
     ok: true,
     service: URAI_SPATIAL_SERVICE,
-    capabilities: spatialCapabilities,
-    targets: spatialTargets,
-    fallbackMode: true,
+    version: URAI_SPATIAL_VERSION,
     launchBoundary: spatialLaunchBoundary,
+    fallbackMode: assertSpatialFallbackMode(),
     deferredCapabilities: spatialDeferredCapabilities,
     requirementsBeforeLiveProviders: spatialLiveProviderRequirements,
   });

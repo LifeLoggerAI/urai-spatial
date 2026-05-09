@@ -79,21 +79,7 @@ function ModeGuidance({
   onUnwind: () => void
   reducedMotion: boolean
 }) {
-  if (mode === 'home') {
-    return (
-      <div
-        className="urai-spatial-guidance urai-spatial-guidance--home"
-        data-testid="urai-sky-guidance"
-        aria-label="Home sanctuary guidance"
-      >
-        <span className="urai-spatial-guidance__pulse" aria-hidden="true" />
-        <span>Enter the sanctuary. Begin ascent when ready.</span>
-        <button type="button" onClick={onEnter} aria-label="Begin ascent to your Life Map">
-          Begin Ascent
-        </button>
-      </div>
-    )
-  }
+  if (mode === 'home') return null
 
   if (mode === 'ascent') {
     return (
@@ -423,7 +409,7 @@ export default function HomeScene({ sceneMode = 'home' }: { sceneMode?: SceneMod
       {showMemoryArtifact ? <MemoryStarArtifact morphology={memoryMorphology} replay={sceneMode === 'replay' || replayLaunching} /> : null}
       {!isHomeMode ? <CameraResetButton onReset={resetCamera} /> : null}
 
-      <ModeGuidance mode={sceneMode} onEnter={enterLifeMap} onUnwind={unwind} reducedMotion={reducedMotion} />
+      {!isHomeMode ? <ModeGuidance mode={sceneMode} onEnter={enterLifeMap} onUnwind={unwind} reducedMotion={reducedMotion} /> : null}
 
       {gateBlocksMode && gatedFeatureId ? (
         <TierGatePanel
