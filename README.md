@@ -15,6 +15,8 @@ The current release-lock branch keeps the existing spatial engine intact and add
 
 ## Local setup
 
+Use pnpm for this monorepo. npm is tolerated for workstation bootstrap compatibility, but pnpm is the locked installer and script runner.
+
 ```bash
 pnpm install
 pnpm dev
@@ -24,6 +26,7 @@ Open:
 
 ```txt
 http://127.0.0.1:3000
+http://127.0.0.1:3000/u/adamclamp
 http://127.0.0.1:3000/life-map
 http://127.0.0.1:3000/spatial
 ```
@@ -37,6 +40,7 @@ pnpm build
 HOST=http://127.0.0.1:3000 pnpm smoke
 pnpm test:e2e
 pnpm launch:check
+pnpm audit:tier-one
 ```
 
 `pnpm launch:check` runs the spatial invariant check, typecheck, production build, smoke route checks, and E2E lock runner.
@@ -46,6 +50,7 @@ pnpm launch:check
 | Route | Purpose |
 | --- | --- |
 | `/` | Polished URAI Spatial home shell |
+| `/u/adamclamp` | Public-safe V1 demo handle route |
 | `/spatial` | Standalone spatial shell alias |
 | `/life-map` | Full-screen LifeMap starfield, focus, replay, and ESC unwind surface |
 | `/privacy` | Privacy-safe fallback and provider language |
@@ -71,6 +76,7 @@ URAI Spatial runs without live Firebase or biometric providers in local fallback
 Firebase Hosting/App Hosting may be used once the project config is selected. Deployment scripts intentionally run `pnpm launch:check` first:
 
 ```bash
+pnpm frb
 pnpm deploy:staging
 pnpm deploy:prod
 ```
