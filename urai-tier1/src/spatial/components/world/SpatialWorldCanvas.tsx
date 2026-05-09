@@ -17,11 +17,6 @@ type SpatialWorldProps = {
   embedded?: boolean
 }
 
-type CameraFocus = {
-  memory: SpatialMemory | null
-  companionMessage: string
-}
-
 function useReducedMotionPreference() {
   const [reduced, setReduced] = useState(false)
 
@@ -34,6 +29,22 @@ function useReducedMotionPreference() {
   }, [])
 
   return reduced
+}
+
+function useWebGLAvailable() {
+  const [available, setAvailable] = useState(true)
+
+  useEffect(() => {
+    try {
+      const canvas = document.createElement('canvas')
+      const context = canvas.getContext('webgl2') ?? canvas.getContext('webgl')
+      setAvailable(Boolean(context))
+    } catch {
+      setAvailable(false)
+    }
+  }, [])
+
+  return available
 }
 
 function SkyDome({ reducedMotion }: { reducedMotion: boolean }) {
@@ -222,8 +233,8 @@ function OrbCompanion3D({ onGuide }: { onGuide: () => void }) {
         <sphereGeometry args={[0.7, 32, 32]} />
         <meshBasicMaterial color="#8b5cf6" transparent opacity={0.08} blending={THREE.AdditiveBlending} depthWrite={false} />
       </mesh>
-      <Html position={[0.55, 0.18, 0]} distanceFactor={7} className="orb-companion-button">
-        <button type="button" aria-label="Ask orb companion for guidance" onClick={onGuide}>Guide</button>
+      <Html position={[0.55, 0.18, 0]} distanceFactor={7}>
+        <button type="button" className="orb-companion-button" aria-label="Ask orb companion for guidance" onClick={onGuide}>Guide</button>
       </Html>
     </group>
   )
@@ -318,10 +329,10 @@ function SpatialHUD({ mode, selectedMemory, hoveredMemory, companionMessage, onC
 
 function SpatialWorldCanvasImpl({ mode = 'spatial', embedded = false }: SpatialWorldProps) {
   const reducedMotion = useReducedMotionPreference()
+  const webglAvailable = useWebGLAvailable()
   const [selectedMemory, setSelectedMemory] = useState<SpatialMemory | null>(null)
   const [hoveredMemory, setHoveredMemory] = useState<SpatialMemory | null>(null)
   const [companionMessage, setCompanionMessage] = useState('The orb is ready. Choose a star, or drag the world gently to look around.')
-  const [webglFailed, setWebglFailed] = useState(false)
 
   const closeFocus = useCallback(() => setSelectedMemory(null), [])
   const guide = useCallback(() => {
@@ -339,11 +350,11 @@ function SpatialWorldCanvasImpl({ mode = 'spatial', embedded = false }: SpatialW
   return (
     <main className="spatial-world-root" data-mode={mode} data-embed={embedded ? 'true' : 'false'}>
       <SpatialWorldStyles />
-      {webglFailed ? (
-        <SpatialFallbackPanel reason="WebGL failed to initialize, so URAI is showing the deterministic fallback panel." />
+      {!webglAvailable ? (
+        <SpatialFallbackPanel reason="WebGL is unavailable, so URAI is showing the deterministic fallback panel." />
       ) : (
         <Suspense fallback={<div className="spatial-world-loading"><SpatialFallbackPanel reason="Loading the local 3D memory world." /></div>}>
-          <Canvas data-testid="spatial-world-canvas" shadows dpr={[1, 1.7]} gl={{ antialias: true, alpha: false, powerPreference: 'high-performance' }} onCreated={({ gl }) => { gl.setPixelRatio(Math.min(window.devicePixelRatio, 1.7)) }} onError={() => setWebglFailed(true)}>
+          <Canvas data-testid="spatial-world-canvas" shadows dpr={[1, 1.7]} gl={{ antialias: true, alpha: false, powerPreference: 'high-performance' }} onCreated={({ gl }) => { gl.setPixelRatio(Math.min(window.devicePixelRatio, 1.7)) }}>
             <SpatialScene mode={mode} selectedMemory={selectedMemory} onHover={setHoveredMemory} onSelect={setSelectedMemory} onGuide={guide} reducedMotion={reducedMotion} />
           </Canvas>
         </Suspense>
