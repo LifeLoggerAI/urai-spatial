@@ -1,13 +1,15 @@
 const host = process.env.HOST ?? 'http://127.0.0.1:3000'
 
+const LOCK_VERSION = '2026-05-09.urai-spatial.locked.v1'
+
 const htmlRoutes = ['/', '/u/adamclamp', '/life-map', '/demo/life-map', '/privacy', '/terms', '/spatial']
 
 const apiRoutes = [
   ['/api/system/health', { method: 'GET' }],
   ['/api/system/manifest', { method: 'GET' }],
   ['/api/system/capabilities', { method: 'GET' }],
-  ['/api/system/integration-contract', { method: 'GET' }],
-  ['/api/system/urai-spatial-lock', { method: 'GET', requiredLockVersion: '2026-05-09.urai-spatial.locked.v1' }],
+  ['/api/system/integration-contract', { method: 'GET', requiredIntegrationLock: true }],
+  ['/api/system/urai-spatial-lock', { method: 'GET', requiredLockVersion: LOCK_VERSION }],
   ['/api/system/launch-boundary', { method: 'GET', optional: true }],
   ['/api/system/tier2', { method: 'GET', requiredTier: 'Tier-2' }],
   [
@@ -158,6 +160,16 @@ async function checkJson(route, init) {
 
   assert(payload.service === 'urai-spatial' || payload.ok === true, `${route} missing service/ok contract`)
 
+  if (init.requiredIntegrationLock) {
+    const lock = payload.locks?.uraiSpatial
+    assert(lock, `${route} missing locks.uraiSpatial`)
+    assert(lock.status === 'locked', `${route} lock status is not locked`)
+    assert(lock.done === true, `${route} lock done is not true`)
+    assert(lock.lockVersion === LOCK_VERSION, `${route} lock version mismatch`)
+    assert(lock.tierCount === 5, `${route} lock tier count mismatch`)
+    assert(lock.route === '/api/system/urai-spatial-lock', `${route} lock route mismatch`)
+  }
+
   if (init.requiredTier) {
     assert(payload.tier === init.requiredTier, `${route} missing required tier ${init.requiredTier}`)
     assert(Array.isArray(payload.systems) && payload.systems.length >= 6, `${route} missing Tier-2 systems`)
@@ -167,6 +179,10 @@ async function checkJson(route, init) {
     assert(payload.status === 'locked', `${route} missing locked status`)
     assert(payload.done === true, `${route} missing done=true`)
     assert(payload.version === init.requiredLockVersion, `${route} missing lock version ${init.requiredLockVersion}`)
+    assert(payload.assertions?.tiersComplete === true, `${route} missing tiersComplete assertion`)
+    assert(payload.assertions?.versionLocked === true, `${route} missing versionLocked assertion`)
+    assert(payload.assertions?.acceptancePresent === true, `${route} missing acceptancePresent assertion`)
+    assert(payload.assertions?.testsPresent === true, `${route} missing testsPresent assertion`)
     assert(Array.isArray(payload.tiers) && payload.tiers.length === 5, `${route} missing five tier locks`)
     for (const tier of payload.tiers) {
       assert(tier.status === 'locked', `${route} tier ${tier.id} is not locked`)
