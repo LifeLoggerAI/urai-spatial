@@ -30,6 +30,7 @@ const files = {
   focus: read(['src/app/focus/page.tsx']),
   replay: read(['src/app/replay/page.tsx']),
   mirror: read(['src/app/mirror/page.tsx']),
+  lifeMapGate: read(['src/spatial/components/world/LifeMapAscentGate.tsx']),
   tierOne: read(['src/spatial/layout/TierOneExperience.tsx']),
   sceneRaw: read(['src/scene/HomeScene.tsx']),
   focusStateRaw: read(['src/spatial/scene/focusState.ts']),
@@ -58,7 +59,8 @@ test('primary routes use the canonical TierOneExperience shell', () => {
   assert.match(compact(files.home), /<TierOneExperiencemode="home"\/>/)
   assert.match(compact(files.homeRoute), /<TierOneExperiencemode="home"\/>/)
   assert.match(compact(files.ascent), /<TierOneExperiencemode="ascent"\/>/)
-  assert.match(compact(files.lifeMap), /<TierOneExperiencemode="life-map"\/>/)
+  assert.match(compact(files.lifeMap), /<LifeMapAscentGate\/>/)
+  assert.match(compact(files.lifeMapGate), /<TierOneExperiencemode="life-map"\/>/)
   assert.match(compact(files.focus), /<TierOneExperiencemode="focus"\/>/)
   assert.match(compact(files.replay), /<TierOneExperiencemode="replay"\/>/)
   assert.match(compact(files.mirror), /<TierOneExperiencemode="mirror"\/>/)
