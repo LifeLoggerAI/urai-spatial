@@ -71,7 +71,9 @@ export default function AdminInvitesPage() {
         title="Admin route locked"
         description="This route is disabled in production unless NEXT_PUBLIC_ALLOW_ADMIN_ROUTES is explicitly enabled."
         align="top"
-      />
+      >
+        <p className="tier-one-static-shell__microcopy">Admin access is unavailable in this production build.</p>
+      </TierOneStaticShell>
     );
   }
 
