@@ -10,6 +10,10 @@ type InviteRow = {
   status: string;
 };
 
+function adminRouteAllowed() {
+  return process.env.NEXT_PUBLIC_ALLOW_ADMIN_ROUTES === "true" || process.env.NODE_ENV !== "production";
+}
+
 export default function AdminInvitesPage() {
   const [email, setEmail] = useState("");
   const [invites, setInvites] = useState<InviteRow[]>([]);
@@ -33,6 +37,7 @@ export default function AdminInvitesPage() {
   }
 
   useEffect(() => {
+    if (!adminRouteAllowed()) return;
     load();
   }, []);
 
@@ -57,6 +62,19 @@ export default function AdminInvitesPage() {
     await navigator.clipboard.writeText(link);
     setCopiedCode(code);
     window.setTimeout(() => setCopiedCode(null), 1800);
+  }
+
+  if (!adminRouteAllowed()) {
+    return (
+      <TierOneStaticShell
+        eyebrow="URAI Admin"
+        title="Admin route locked"
+        description="This route is disabled in production unless NEXT_PUBLIC_ALLOW_ADMIN_ROUTES is explicitly enabled."
+        align="top"
+      >
+        <p className="tier-one-static-shell__microcopy">Admin access is unavailable in this production build.</p>
+      </TierOneStaticShell>
+    );
   }
 
   return (

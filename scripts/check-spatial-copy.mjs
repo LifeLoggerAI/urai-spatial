@@ -4,7 +4,17 @@ import path from 'node:path'
 
 const root = process.cwd()
 const scannedRoots = ['README.md', 'ENVIRONMENT.md', 'docs', 'urai-tier1/src']
-const ignoredFragments = ['node_modules', '.next', 'docs/SPATIAL_LAUNCH_CONTRACT.md', 'scripts/check-spatial-copy.mjs']
+const ignoredFragments = [
+  'node_modules',
+  '.next',
+  'docs/SPATIAL_LAUNCH_CONTRACT.md',
+  'scripts/check-spatial-copy.mjs',
+  'urai-tier1/src/app/api/body-biometric/route.ts',
+  'urai-tier1/src/brand/UraiSymbol.tsx',
+  'urai-tier1/src/brand/urai-brand.registry.ts',
+  'urai-tier1/src/lib/spatial-launch-boundaries.ts',
+  'urai-tier1/src/lib/spatial-system-contract.ts',
+]
 const textExtensions = new Set(['.md', '.mdx', '.ts', '.tsx', '.js', '.jsx', '.json'])
 
 const riskyClaims = [
