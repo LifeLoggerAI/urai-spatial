@@ -72,7 +72,10 @@
     "lock:static": "pnpm check:source-integrity && pnpm check:production-routes && pnpm check:spatial-copy && pnpm check:launch-boundary-contract && pnpm tier:check && pnpm migration:check && pnpm home:invariant && pnpm firebase:rules:check",
     "lock:build": "pnpm typecheck && pnpm build",
     "lock:e2e": "pnpm test:e2e",
-    "lock:all": "pnpm lock:static && pnpm lock:build && pnpm lock:e2e"
+    "lock:all": "pnpm lock:static && pnpm lock:build && pnpm lock:e2e",
+    "tier3:check": "node scripts/check-tier3-governance.mjs",
+    "tier4:check": "node scripts/check-tier4-governance.mjs",
+    "tier5:check": "node scripts/check-tier5-governance.mjs"
   },
   "devDependencies": {
     "@firebase/rules-unit-testing": "^4.0.1",
@@ -94,5 +97,6 @@
     "stripe": "^19.3.0",
     "three": "^0.183.2",
     "zustand": "^5.0.11"
-  }
+  },
+  "type": "module"
 }

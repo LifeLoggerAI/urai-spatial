@@ -182,6 +182,15 @@ async function run() {
     await expectText(page.getByTestId('urai-focus-action-panel'), 'Replay Stream');
     visualReport.screenshots.push(await screenshot(page, '05-replay-desktop'));
 
+    await page.getByRole('button', { name: 'Unwind' }).click();
+    await expectAttr(stage, 'data-scene-mode', 'unwind');
+    await expectVisible(page.getByTestId('urai-unwind-scene'), 'unwind recovery scene');
+    visualReport.screenshots.push(await screenshot(page, '05b-unwind-desktop'));
+    await page.keyboard.press('Escape');
+    await expectAttr(stage, 'data-scene-mode', 'home');
+
+    await page.goto(`${BASE_URL}/replay`);
+    await expectAttr(stage, 'data-scene-mode', 'replay');
     await page.keyboard.press('Escape');
     await expectAttr(stage, 'data-scene-mode', 'focus');
     await page.keyboard.press('Escape');
@@ -189,6 +198,12 @@ async function run() {
     await page.keyboard.press('Escape');
     await expectAttr(stage, 'data-scene-mode', 'home');
     visualReport.screenshots.push(await screenshot(page, '06-return-home-desktop'));
+
+
+    for (const route of ['/focus', '/replay', '/unwind']) {
+      await page.goto(`${BASE_URL}${route}`);
+      await expectAttr(stage, 'data-scene-mode', route.slice(1));
+    }
 
     await page.goto(`${BASE_URL}/life-map`);
     await expectAttr(stage, 'data-scene-mode', 'life-map');
