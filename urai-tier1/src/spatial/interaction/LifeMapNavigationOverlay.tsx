@@ -47,9 +47,9 @@ export default function LifeMapNavigationOverlay({ enabled, sceneMode, selected,
 
   const hint = useMemo(() => {
     if (!live) return ''
-    if (state.activeDepth === 'memory') return 'Memory depth: drag to orbit, pinch or scroll to pull back.'
-    if (state.activeDepth === 'chapter') return 'Chapter depth: pan through arcs and tap a star.'
-    return 'Life overview: pinch, scroll, or drag the galaxy.'
+    if (state.activeDepth === 'memory') return 'Memory bloom: the nearest star is ready for focus, replay, and reflection.'
+    if (state.activeDepth === 'chapter') return 'Chapter field: constellation arcs show recovery, ritual, threshold, relationship, and Council guide lights.'
+    return 'Life horizon: your current region glows first, with softer stars held in the surrounding memory atmosphere.'
   }, [live, state.activeDepth])
 
   if (!live) return null
@@ -72,11 +72,11 @@ export default function LifeMapNavigationOverlay({ enabled, sceneMode, selected,
   }
 
   return (
-    <div className="urai-lifemap-navigation" data-testid="urai-lifemap-navigation" data-depth={state.activeDepth}>
+    <div className="urai-lifemap-navigation" data-testid="urai-lifemap-navigation" data-depth={state.activeDepth} aria-label="Life Map time lens and memory explanation">
       <div
         className="urai-lifemap-navigation__gesture"
         role="application"
-        aria-label="Life Map zoom and pan surface"
+        aria-label="Life Map zoom and pan surface. Use arrow keys to move, plus and minus to zoom, R to reset, and Escape to unwind."
         tabIndex={0}
         onWheel={(event) => {
           event.preventDefault()
@@ -122,13 +122,17 @@ export default function LifeMapNavigationOverlay({ enabled, sceneMode, selected,
       />
 
       <div className="urai-lifemap-navigation__hud" aria-live="polite">
-        <strong>{state.activeDepth === 'overview' ? 'Whole Life Map' : state.activeDepth === 'chapter' ? 'Chapter Zoom' : 'Memory Bloom'}</strong>
+        <strong>{state.activeDepth === 'overview' ? 'Life Horizon' : state.activeDepth === 'chapter' ? 'Chapter Constellation' : 'Memory Bloom'}</strong>
         <span>{hint}</span>
-        <div className="urai-lifemap-navigation__controls">
-          <button type="button" onClick={() => commit({ zoom: state.zoom - 0.16 })}>−</button>
-          <output>{Math.round(state.zoom * 100)}%</output>
-          <button type="button" onClick={() => commit({ zoom: state.zoom + 0.16 })}>+</button>
-          <button type="button" onClick={reset}>Reset</button>
+        <p className="urai-lifemap-navigation__why">
+          <span>Why am I seeing this?</span>
+          URAI is showing a public-safe local memory galaxy: emotional nebulae, recovery paths, ritual and threshold markers, relationship clusters, and Council guide lights are weighted around the current region first.
+        </p>
+        <div className="urai-lifemap-navigation__controls" aria-label="Minimal Life Map time lens">
+          <button type="button" onClick={() => commit({ zoom: state.zoom - 0.16 })} aria-label="Pull back in the Life Map">−</button>
+          <output aria-label="Life Map zoom level">{Math.round(state.zoom * 100)}%</output>
+          <button type="button" onClick={() => commit({ zoom: state.zoom + 0.16 })} aria-label="Move closer in the Life Map">+</button>
+          <button type="button" onClick={reset}>Return horizon</button>
         </div>
       </div>
     </div>
