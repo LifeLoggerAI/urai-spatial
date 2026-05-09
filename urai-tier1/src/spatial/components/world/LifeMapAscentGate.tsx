@@ -1,8 +1,8 @@
 'use client'
 
 import { useEffect, useMemo, useRef, useState } from 'react'
+import { TierOneExperience } from '@/spatial/layout/TierOneExperience'
 import AscentOverlay, { type AscentPhase, type LifeMapDataStatus } from './AscentOverlay'
-import SpatialWorldCanvas from './SpatialWorldCanvas'
 
 const NORMAL_PHASE_MS: Record<AscentPhase, number> = {
   idle: 0,
@@ -38,12 +38,16 @@ function useReducedMotionPreference() {
   return reduced
 }
 
+function dataIsReady(dataStatus: LifeMapDataStatus) {
+  return dataStatus === 'ready' || dataStatus === 'empty'
+}
+
 function nextPhase(phase: AscentPhase, dataStatus: LifeMapDataStatus): AscentPhase {
   if (phase === 'idle') return 'homeExiting'
   if (phase === 'homeExiting') return 'ascentOpening'
   if (phase === 'ascentOpening') return 'ascentRevealing'
-  if (phase === 'ascentRevealing') return dataStatus === 'ready' || dataStatus === 'empty' ? 'lifemapReady' : 'waitingForLifeMap'
-  if (phase === 'waitingForLifeMap') return dataStatus === 'ready' || dataStatus === 'empty' ? 'lifemapReady' : 'waitingForLifeMap'
+  if (phase === 'ascentRevealing') return dataIsReady(dataStatus) ? 'lifemapReady' : 'waitingForLifeMap'
+  if (phase === 'waitingForLifeMap') return dataIsReady(dataStatus) ? 'lifemapReady' : 'waitingForLifeMap'
   return phase
 }
 
@@ -54,7 +58,7 @@ export default function LifeMapAscentGate() {
   const timers = useRef<number[]>([])
 
   const phaseDurations = reducedMotion ? REDUCED_PHASE_MS : NORMAL_PHASE_MS
-  const lifeMapInteractive = ascentPhase === 'lifemapReady' && (lifeMapDataStatus === 'ready' || lifeMapDataStatus === 'empty')
+  const lifeMapInteractive = ascentPhase === 'lifemapReady' && dataIsReady(lifeMapDataStatus)
 
   useEffect(() => {
     const dataTimer = window.setTimeout(() => setLifeMapDataStatus('ready'), reducedMotion ? 60 : 220)
@@ -91,7 +95,7 @@ export default function LifeMapAscentGate() {
       data-lifemap-gate-mode={gateMode}
       aria-busy={lifeMapInteractive ? 'false' : 'true'}
     >
-      <SpatialWorldCanvas mode="life-map" />
+      <TierOneExperience mode="life-map" />
       <AscentOverlay phase={ascentPhase} dataStatus={lifeMapDataStatus} reducedMotion={reducedMotion} />
     </main>
   )

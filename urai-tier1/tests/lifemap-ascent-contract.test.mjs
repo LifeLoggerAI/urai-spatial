@@ -6,11 +6,12 @@ const gateSource = fs.readFileSync(new URL('../src/spatial/components/world/Life
 const overlaySource = fs.readFileSync(new URL('../src/spatial/components/world/AscentOverlay.tsx', import.meta.url), 'utf8')
 const pageSource = fs.readFileSync(new URL('../src/app/life-map/page.tsx', import.meta.url), 'utf8')
 const compactGate = gateSource.replace(/\s+/g, '')
-const compactOverlay = overlaySource.replace(/\s+/g, '')
+
 
 test('life map route is gated by the Ascent contract wrapper', () => {
   assert.match(pageSource, /LifeMapAscentGate/)
-  assert.match(gateSource, /<SpatialWorldCanvas mode="life-map" \/>/)
+  assert.match(gateSource, /TierOneExperience/)
+  assert.match(gateSource, /<TierOneExperience mode="life-map" \/>/)
   assert.match(gateSource, /<AscentOverlay/)
 })
 
@@ -33,6 +34,6 @@ test('Ascent copy avoids duplicate debug-style loading surfaces', () => {
 
 test('Life Map is only interactive after visual phase and data readiness agree', () => {
   assert.match(compactGate, /ascentPhase==='lifemapReady'/)
-  assert.match(compactGate, /lifeMapDataStatus==='ready'\|\|lifeMapDataStatus==='empty'/)
+  assert.match(compactGate, /dataIsReady\(lifeMapDataStatus\)/)
   assert.match(compactGate, /aria-busy=\{lifeMapInteractive\?'false':'true'\}/)
 })
