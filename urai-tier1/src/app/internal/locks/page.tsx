@@ -13,10 +13,41 @@ const LOCKS = [
   { tier: 'Tier-5', status: 'LOCKED COMPLETE', scope: 'final route, console, env, typecheck, tests, build, report' },
 ] as const
 
+function internalRoutesAllowed() {
+  return process.env.NEXT_PUBLIC_ALLOW_INTERNAL_ROUTES === 'true' || process.env.NODE_ENV !== 'production'
+}
+
 export default function LockInspectorPage() {
   const [feature, setFeature] = useState<typeof FEATURES[number]>('spatial.lifeMap.personal')
   const decision = useSpatialTierLock(feature)
   const debugEnabled = process.env.NEXT_PUBLIC_URAI_DEBUG_SPATIAL === 'true'
+
+  if (!internalRoutesAllowed()) {
+    return (
+      <main
+        style={{
+          minHeight: '100vh',
+          padding: 'clamp(24px, 5vw, 72px)',
+          color: '#eaf2ff',
+          background:
+            'radial-gradient(circle at 50% 10%, rgba(80, 120, 255, 0.18), transparent 34%), linear-gradient(180deg, #020617 0%, #05000b 100%)',
+          fontFamily: 'Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
+        }}
+      >
+        <section style={{ maxWidth: 720, margin: '0 auto' }}>
+          <p style={{ margin: 0, letterSpacing: '.24em', textTransform: 'uppercase', color: '#93c5fd', fontSize: 12, fontWeight: 800 }}>
+            URAI Internal Locks
+          </p>
+          <h1 style={{ margin: '14px 0 10px', fontSize: 'clamp(2.5rem, 7vw, 5rem)', lineHeight: .92, letterSpacing: '-.06em' }}>
+            Internal route locked.
+          </h1>
+          <p style={{ margin: '0 0 28px', maxWidth: 720, color: 'rgba(226, 232, 240, .74)', fontSize: 18, lineHeight: 1.6 }}>
+            This route is disabled in production unless NEXT_PUBLIC_ALLOW_INTERNAL_ROUTES is explicitly enabled.
+          </p>
+        </section>
+      </main>
+    )
+  }
 
   return (
     <main
