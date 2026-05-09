@@ -4,9 +4,19 @@ import type { NextConfig } from "next";
 
 const projectRoot = path.dirname(fileURLToPath(import.meta.url));
 
+const cloudWorkstationDevOriginBase =
+  "firebase-urai-spatial-1769687960051.cluster-c72u3gwiofapkvxrcwjq5zllcu.cloudworkstations.dev";
+
 const uraiAllowedDevOrigins = [
-  "3000-firebase-urai-spatial-1769687960051.cluster-c72u3gwiofapkvxrcwjq5zllcu.cloudworkstations.dev"
-] as const;
+  "3000",
+  "3001",
+  "3014",
+].flatMap((port) => [
+  `${port}-${cloudWorkstationDevOriginBase}`,
+  `localhost:${port}`,
+  `127.0.0.1:${port}`,
+  `0.0.0.0:${port}`,
+]);
 
 const nextConfig: NextConfig = {
   outputFileTracingRoot: projectRoot,
