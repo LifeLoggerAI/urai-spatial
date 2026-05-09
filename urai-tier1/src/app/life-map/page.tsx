@@ -1,9 +1,10 @@
+import { LifeMapSkyPortalShell } from "@/components/lifemap/LifeMapSkyPortalShell";
 import { TierOneExperience } from "@/spatial/layout/TierOneExperience";
 import LifeMapAscentGate from "@/spatial/components/world/LifeMapAscentGate";
 
-const canonicalLifeMapRouteAuthority = <TierOneExperience mode="life-map" />;
+export const canonicalLifeMapRouteAuthority = <TierOneExperience mode="life-map" />;
+export const lifeMapSkyPortalShell = LifeMapSkyPortalShell;
 
 export default function LifeMapPage() {
-  void canonicalLifeMapRouteAuthority;
   return <LifeMapAscentGate />;
 }
