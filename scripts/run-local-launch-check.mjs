@@ -121,6 +121,8 @@ try {
 
   await run('pnpm', ['check:source-integrity'])
   await run('pnpm', ['check:production-routes'])
+  await run('pnpm', ['check:spatial-copy'])
+  await run('pnpm', ['check:launch-boundary-contract'])
   await run('pnpm', ['check:spatial'])
   await run('pnpm', ['typecheck'])
   await run('pnpm', ['build'])
