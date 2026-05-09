@@ -79,21 +79,7 @@ function ModeGuidance({
   onUnwind: () => void
   reducedMotion: boolean
 }) {
-  if (mode === 'home') {
-    return (
-      <div
-        className="urai-spatial-guidance urai-spatial-guidance--home"
-        data-testid="urai-sky-guidance"
-        aria-label="Home sanctuary guidance"
-      >
-        <span className="urai-spatial-guidance__pulse" aria-hidden="true" />
-        <span>Enter the sanctuary. Begin ascent when ready.</span>
-        <button type="button" onClick={onEnter} aria-label="Begin ascent to your Life Map">
-          Begin Ascent
-        </button>
-      </div>
-    )
-  }
+  if (mode === 'home') return null
 
   if (mode === 'ascent') {
     return (
@@ -244,7 +230,7 @@ export default function HomeScene({ sceneMode = 'home' }: { sceneMode?: SceneMod
   const showHomeWorld = isHomeMode
   const showAscentPortal = isAscentMode
   const showConstellation = isConstellationRoute && !gateBlocksMode
-  const showOrb = isHomeMode || sceneMode === 'focus' || sceneMode === 'replay' || sceneMode === 'mirror'
+  const showOrb = sceneMode === 'focus' || sceneMode === 'replay' || sceneMode === 'mirror'
   const { manifest, loading: manifestLoading } = useManifest(gateBlocksMode ? null : effectiveManifestId)
   const [selectedManifest, setSelectedManifest] = useState<SpatialAssetManifest | null>(null)
   const [selectedPosition, setSelectedPosition] = useState<ConstellationNodePosition | null>(null)
@@ -379,18 +365,6 @@ export default function HomeScene({ sceneMode = 'home' }: { sceneMode?: SceneMod
       onClick={isHomeMode ? enterLifeMap : undefined}
     >
       <div className="urai-scene-stage__fallback" aria-hidden="true" />
-      {isHomeMode ? (
-        <button
-          type="button"
-          className="urai-home-activation"
-          data-testid="urai-sky-click-target"
-          aria-label="Begin ascent to Life Map"
-          onClick={(event) => {
-            event.stopPropagation()
-            enterLifeMap()
-          }}
-        />
-      ) : null}
       <SpatialVisualOverlay mode={sceneMode} />
 
       <Canvas shadows dpr={[1, 1.75]} gl={{ antialias: true, alpha: true }} onPointerMissed={enterLifeMap}>
