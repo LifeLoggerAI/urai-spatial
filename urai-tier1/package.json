@@ -35,6 +35,7 @@
     "audit:visual-lock": "pnpm run verify:tier-lock && pnpm run typecheck && pnpm run build",
     "audit:final-visual": "node scripts/audit-final-visual.mjs",
     "audit:final": "pnpm run audit:final-visual && pnpm run audit:visual-lock",
+    "seed:lifemap": "node scripts/seed-life-map.mjs",
     "test": "node --import tsx --test tests/*.test.mjs",
     "test:unit": "node --import tsx --test tests/*.test.mjs",
     "test:lifemap": "node --import tsx --test tests/lifemap-scene-behavior.test.mjs tests/lifemap*.test.mjs tests/lifemap-*.test.mjs",
