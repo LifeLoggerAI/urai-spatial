@@ -94,12 +94,14 @@ requireNotIncludes(homeScenePath, 'data-testid="urai-sky-click-target"', 'visibl
 requireNotIncludes(homeScenePath, 'data-testid="urai-sky-guidance"', 'visible sky guidance')
 requireNotIncludes(homeScenePath, 'const showOrb = isHomeMode', 'home orb visibility')
 
-if (
-  homeScene &&
-  !homeScene.includes("const showOrb = sceneMode === 'focus' || sceneMode === 'replay' || sceneMode === 'mirror'")
-) {
-  failures.push(`${homeScenePath} missing silent home orb guard`)
-}
+requireIncludesAny(
+  homeScenePath,
+  [
+    "const showOrb = sceneMode === 'focus' || sceneMode === 'replay' || sceneMode === 'mirror'",
+    "const showOrb = sceneMode === 'focus' || sceneMode === 'replay' || sceneMode === 'unwind' || sceneMode === 'mirror'",
+  ],
+  'silent home orb guard',
+)
 
 requireIncludes(
   'urai-tier1/src/scene/SpatialVisualOverlayPremium.tsx',
