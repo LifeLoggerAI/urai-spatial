@@ -8,6 +8,10 @@ const REQUIRED_PUBLIC_FIREBASE_ENV = [
   'NEXT_PUBLIC_FIREBASE_PROJECT_ID',
 ] as const
 
+function isBrowserRuntime() {
+  return typeof window !== 'undefined'
+}
+
 function isProductionRuntime() {
   return process.env.NODE_ENV === 'production'
 }
@@ -15,7 +19,10 @@ function isProductionRuntime() {
 function requireFirebaseEnv(name: (typeof REQUIRED_PUBLIC_FIREBASE_ENV)[number]) {
   const value = process.env[name]
 
-  if (!value && isProductionRuntime()) {
+  // Next.js evaluates client-module dependency graphs during production builds.
+  // Fail closed in real browser/runtime production, but do not break static page
+  // collection before hosting env injection is available.
+  if (!value && isProductionRuntime() && isBrowserRuntime()) {
     throw new Error(`Missing required Firebase public env: ${name}`)
   }
 
