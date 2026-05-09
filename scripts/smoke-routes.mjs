@@ -77,13 +77,18 @@ function isConnectionRefused(error) {
   return error?.cause?.code === 'ECONNREFUSED' || error?.code === 'ECONNREFUSED'
 }
 
+function devServerHint(route, status, body) {
+  const snippet = body.replace(/\s+/g, ' ').slice(0, 260)
+  return `${route} returned ${status}. Smoke is checking ${host}. If Next dev moved to another port, re-run with HOST=http://127.0.0.1:<port> pnpm smoke. If the response mentions routes-manifest.json or ENOSPC, stop dev, run pnpm clean:next, free disk space, then restart with pnpm dev:3001. Response: ${snippet}`
+}
+
 async function request(route, init) {
   try {
     return await fetch(`${host}${route}`, init)
   } catch (error) {
     if (isConnectionRefused(error)) {
       throw new Error(
-        `Smoke server is not reachable at ${host}. Start the app before running smoke, for example: pnpm start, then HOST=${host} pnpm smoke.`,
+        `Smoke server is not reachable at ${host}. Start the app before running smoke. For Cloud Workstations, use pnpm dev:3001 then HOST=http://127.0.0.1:3001 pnpm smoke.`,
       )
     }
 
@@ -96,7 +101,7 @@ async function checkHtml(route) {
   const body = await response.text()
   const visible = visibleHtml(body)
 
-  assert(response.status === 200, `${route} returned ${response.status}`)
+  assert(response.status === 200, devServerHint(route, response.status, body))
   assert(body.trim().length > 0, `${route} returned an empty body`)
   assert(/<title[^>]*>/.test(body), `${route} is missing a title`)
   assert(/name=["']viewport["']/.test(body), `${route} is missing viewport meta`)
