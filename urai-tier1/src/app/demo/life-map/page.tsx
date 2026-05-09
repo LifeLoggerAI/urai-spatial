@@ -2,6 +2,7 @@
 
 import { useEffect } from "react";
 import { TierOneExperience } from "@/spatial/layout/TierOneExperience";
+import LifeMapCinematicOverlay from "@/spatial/components/world/LifeMapCinematicOverlay";
 
 function publicDemoRoutesAllowed() {
   return process.env.NEXT_PUBLIC_ALLOW_PUBLIC_DEMO_ROUTES === "true" || process.env.NODE_ENV !== "production";
@@ -18,5 +19,10 @@ export default function DemoLifeMapPage() {
     return <TierOneExperience mode="home" />;
   }
 
-  return <TierOneExperience mode="demo" />;
+  return (
+    <main data-testid="urai-spatial-stage" data-urai-spatial-stage="demo-life-map" data-lifemap-interactive="true" aria-busy="false">
+      <TierOneExperience mode="demo" />
+      <LifeMapCinematicOverlay interactive />
+    </main>
+  );
 }
