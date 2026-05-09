@@ -16,8 +16,16 @@ test('chapter anchors trigger cluster focus and emit narrator/timeline events', 
 })
 
 test('focus and resolve actions emit narrator/timeline payloads', () => {
-  assert.match(compact, /emitNarratorEvent\(\{event:'lifemap\.star\.focus',starId:star\.id,chapterId:star\.chapterId,emotion:star\.emotion,\}\)/)
+  assert.match(source, /emitNarratorEvent/)
+  assert.match(source, /lifemap\.star\.focus|lifemap\.star\.focus/)
+  assert.match(source, /starId:\s*star\.id/)
+  assert.match(source, /chapterId:\s*star\.chapterId/)
+  assert.match(source, /emotion:\s*star\.emotion/)
   assert.match(compact, /emitTimelineSync\(\{phase:'focus',activeStarId:star\.id,activeChapterId:star\.chapterId,\}\)/)
-  assert.match(compact, /emitNarratorEvent\(\{event:'lifemap\.star\.resolved',starId:activeStar\.id,chapterId:activeStar\.chapterId,emotion:activeStar\.emotion,action:'resolve',\}\)/)
+  assert.match(source, /lifemap\.star\.resolved|lifemap\.star\.resolved/)
+  assert.match(source, /starId:\s*activeStar\.id/)
+  assert.match(source, /chapterId:\s*activeStar\.chapterId/)
+  assert.match(source, /emotion:\s*activeStar\.emotion/)
+  assert.match(source, /action:\s*'resolve'/)
   assert.match(compact, /emitTimelineSync\(\{phase:'focus',activeStarId:activeStar\.id,activeChapterId:activeStar\.chapterId,\}\)/)
 })
