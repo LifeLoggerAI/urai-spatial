@@ -82,6 +82,7 @@ export function HomeCohesionLayer({ enabled }: { enabled: boolean }) {
   return (
     <div
       className="home-cohesion-layer"
+      data-testid="urai-home-scene"
       data-urai-home-cohesion="true"
       data-active-portal={portal}
       data-avatar-region={avatarRegion}
@@ -91,6 +92,7 @@ export function HomeCohesionLayer({ enabled }: { enabled: boolean }) {
       <button
         type="button"
         className="home-sky-hit-zone"
+        data-testid="urai-home-sky-portal"
         data-urai-home-target="sky"
         onClick={openSky}
         onKeyDown={(event) => {
@@ -110,16 +112,17 @@ export function HomeCohesionLayer({ enabled }: { enabled: boolean }) {
         <span className="field-star star-e" />
         <span className="field-star star-f" />
         <span className="horizon-line" />
+        <span className="ground-line" data-testid="urai-ground-plane" />
         <span className="ground-curve" />
         <span className="ground-aura" />
         <span className="aura-column" />
-        <span className="avatar-presence avatar-head" />
+        <span className="avatar-presence avatar-head" data-testid="urai-avatar-body" />
         <span className="avatar-presence avatar-core" />
         <span className="avatar-presence avatar-arm-left" />
         <span className="avatar-presence avatar-arm-right" />
         <span className="avatar-presence avatar-leg-left" />
         <span className="avatar-presence avatar-leg-right" />
-        <span className="center-orb" />
+        <span className="center-orb" data-testid="urai-orb-companion" />
         <span className="orb-upward-reflection" />
         <span className="sky-portal-bloom" />
       </div>
@@ -222,6 +225,15 @@ export function HomeCohesionLayer({ enabled }: { enabled: boolean }) {
           height: 1px;
           background: linear-gradient(90deg, transparent, rgba(125, 239, 255, 0.27), rgba(255, 255, 255, 0.14), transparent);
           box-shadow: 0 0 24px rgba(125, 239, 255, 0.14);
+        }
+
+        .ground-line {
+          position: absolute;
+          left: 0;
+          right: 0;
+          bottom: 0;
+          height: 34%;
+          opacity: 0;
         }
 
         .ground-curve {
