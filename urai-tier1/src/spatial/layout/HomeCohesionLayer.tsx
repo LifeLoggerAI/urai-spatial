@@ -300,7 +300,7 @@ export function HomeCohesionLayer({ enabled }: { enabled: boolean }) {
           border: 0;
           background: transparent;
           cursor: zoom-in;
-          pointer-events: auto;
+          pointer-events: none;
         }
 
         .home-cinematic-field {
