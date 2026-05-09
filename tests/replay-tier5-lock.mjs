@@ -3,14 +3,22 @@ import { spawn } from 'node:child_process';
 import { mkdirSync, writeFileSync } from 'node:fs';
 import process from 'node:process';
 
-const BASE_URL = process.env.URAI_SPATIAL_BASE_URL || 'http://127.0.0.1:3000';
+const REQUESTED_BASE_URL = process.env.URAI_SPATIAL_BASE_URL || 'http://127.0.0.1:3000';
 const USE_EXISTING = process.env.URAI_SPATIAL_USE_EXISTING_SERVER === 'true';
 const ARTIFACT_DIR = process.env.URAI_SPATIAL_ARTIFACT_DIR || 'artifacts/replay-tier5-lock';
+const REQUESTED_PORT = Number(new URL(REQUESTED_BASE_URL).port || 3000);
+const FALLBACK_PORT = Number(process.env.URAI_SPATIAL_TEST_PORT || REQUESTED_PORT + 1);
 
 mkdirSync(ARTIFACT_DIR, { recursive: true });
 
 function sleep(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+function baseUrlForPort(port) {
+  const url = new URL(REQUESTED_BASE_URL);
+  url.port = String(port);
+  return url.toString().replace(/\/$/, '');
 }
 
 async function serverResponds(url) {
@@ -32,8 +40,12 @@ async function waitForServer(url, timeoutMs = 90000) {
 }
 
 async function startServer() {
-  if (USE_EXISTING || (await serverResponds(BASE_URL))) return null;
-  const child = spawn('pnpm', ['--filter', 'urai-tier1', 'dev', '--port', '3000'], {
+  if (USE_EXISTING || (await serverResponds(REQUESTED_BASE_URL))) {
+    return { child: null, baseUrl: REQUESTED_BASE_URL.replace(/\/$/, '') };
+  }
+
+  const baseUrl = baseUrlForPort(FALLBACK_PORT);
+  const child = spawn('pnpm', ['--filter', 'urai-tier1', 'dev', '--port', String(FALLBACK_PORT)], {
     cwd: process.cwd(),
     env: { ...process.env, CI: '1' },
     stdio: 'inherit',
@@ -42,7 +54,7 @@ async function startServer() {
   child.on('exit', (code) => {
     if (code && code !== 0) console.error(`URAI Spatial dev server exited with ${code}`);
   });
-  return child;
+  return { child, baseUrl };
 }
 
 async function expectAttr(locator, name, value, timeout = 5000) {
@@ -103,16 +115,17 @@ function collectConsole(page) {
 
 async function run() {
   const server = await startServer();
-  const report = { screenshots: [], console: [], audits: [] };
+  const baseUrl = server.baseUrl;
+  const report = { screenshots: [], console: [], audits: [], baseUrl };
 
   try {
-    await waitForServer(BASE_URL);
+    await waitForServer(baseUrl);
     const browser = await chromium.launch();
     const page = await browser.newPage({ viewport: { width: 1440, height: 1000 } });
     const consoleMessages = collectConsole(page);
     const stage = page.getByTestId('urai-scene-stage');
 
-    await page.goto(`${BASE_URL}/life-map`);
+    await page.goto(`${baseUrl}/life-map`);
     await expectAttr(stage, 'data-scene-mode', 'life-map', 5000);
     await expectVisible(page.getByTestId('lifemap-node-seed-memory-bloom'), 'seed memory bloom node');
     await page.getByTestId('lifemap-node-seed-memory-bloom').click();
@@ -155,7 +168,7 @@ async function run() {
     report.screenshots.push(await screenshot(page, '03-replay-return-home'));
 
     await page.setViewportSize({ width: 390, height: 844 });
-    await page.goto(`${BASE_URL}/replay?manifestId=seed-memory-bloom`);
+    await page.goto(`${baseUrl}/replay?manifestId=seed-memory-bloom`);
     await expectAttr(stage, 'data-scene-mode', 'replay');
     await expectVisible(page.getByTestId('urai-replay-timeline'), 'mobile replay timeline');
     await expectVisible(page.getByTestId('urai-replay-meta-panel'), 'mobile replay meta panel');
@@ -170,12 +183,12 @@ async function run() {
     report.console = consoleMessages;
     if (consoleMessages.length) throw new Error(`Console errors detected:\n${consoleMessages.join('\n')}`);
     writeFileSync(`${ARTIFACT_DIR}/replay-tier5-report.json`, JSON.stringify(report, null, 2));
-    console.log('URAI Replay Tier 5 Memory Theater validation passed.');
+    console.log(`URAI Replay Tier 5 Memory Theater validation passed at ${baseUrl}.`);
   } catch (error) {
     writeFileSync(`${ARTIFACT_DIR}/replay-tier5-report.json`, JSON.stringify(report, null, 2));
     throw error;
   } finally {
-    if (server) server.kill('SIGTERM');
+    if (server.child) server.child.kill('SIGTERM');
   }
 }
 
