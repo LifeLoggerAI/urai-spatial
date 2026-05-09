@@ -49,17 +49,28 @@ for (const file of homeFiles) {
   }
 }
 
+function hasSilentOrbGuard(homeSceneText) {
+  const match = homeSceneText.match(/const showOrb = ([^\n]+)/)
+  if (!match) return false
+
+  const expression = match[1]
+  return ['focus', 'replay', 'unwind', 'mirror'].every((mode) => expression.includes(`sceneMode === '${mode}'`)) && !expression.includes('home')
+}
+
 const homeSceneText = fs.existsSync('urai-tier1/src/scene/HomeScene.tsx') ? fs.readFileSync('urai-tier1/src/scene/HomeScene.tsx', 'utf8') : ''
 if (homeSceneText) {
   const requiredHomeSilencePatterns = [
     /if \(mode === 'home'\) return null/,
-    /const showOrb = sceneMode === 'focus' \|\| sceneMode === 'replay' \|\| sceneMode === 'unwind' \|\| sceneMode === 'mirror'/,
     /!isHomeMode \? <NarratorVoice[\s\S]{0,160}: null/,
     /!isHomeMode \? <NarratorHud \/> : null/,
     /!isHomeMode \? <CameraResetButton[\s\S]{0,160}: null/,
     /!isHomeMode \? <ModeGuidance[\s\S]{0,180}: null/,
     /event\.key\.toLowerCase\(\) === 'r' && !isHomeMode/,
   ]
+
+  if (!hasSilentOrbGuard(homeSceneText)) {
+    failures.push('Tier-1 home scene is missing required silent-home orb guard for focus/replay/unwind/mirror only')
+  }
 
   for (const pattern of requiredHomeSilencePatterns) {
     if (!pattern.test(homeSceneText)) {
