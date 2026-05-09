@@ -32,6 +32,10 @@ const files = {
   mirror: read(['src/app/mirror/page.tsx']),
   tierOne: read(['src/spatial/layout/TierOneExperience.tsx']),
   sceneRaw: read(['src/scene/HomeScene.tsx']),
+  focusStateRaw: read(['src/spatial/scene/focusState.ts']),
+  replayStateRaw: read(['src/spatial/scene/replayState.ts']),
+  replayTimelineRaw: read(['src/spatial/replay/ReplayTimeline.tsx']),
+  replayMetaPanelRaw: read(['src/spatial/replay/ReplayMetaPanel.tsx']),
   overlayRaw: read(['src/scene/SpatialVisualOverlayPremium.tsx', 'src/scene/SpatialVisualOverlayTier5.tsx']),
   css: read(['src/app/globals.css']),
   rules: read(['../firebase/firestore.rules', 'firebase/firestore.rules']),
@@ -40,6 +44,10 @@ const files = {
 }
 
 const scene = flat(files.sceneRaw)
+const focusState = flat(files.focusStateRaw)
+const replayState = flat(files.replayStateRaw)
+const replayTimeline = flat(files.replayTimelineRaw)
+const replayMetaPanel = flat(files.replayMetaPanelRaw)
 const tierOne = flat(files.tierOne)
 const overlay = flat(files.overlayRaw)
 const rules = flat(files.rules)
@@ -76,8 +84,8 @@ test('HomeScene preserves silent home and spatial route authority', () => {
   assert.match(scene, /const isConstellationRoute = sceneMode === 'life-map' \|\| sceneMode === 'demo' \|\| params\.get\('mode'\) === 'constellation'/)
   assert.match(scene, /const showHomeWorld = isHomeMode/)
   assert.match(scene, /const showAscentPortal = isAscentMode/)
-  assert.match(scene, /const showConstellation = isConstellationRoute/)
-  assert.match(scene, /const showOrb = sceneMode === 'focus' \|\| sceneMode === 'replay' \|\| sceneMode === 'mirror'/)
+  assert.match(scene, /const showConstellation = isConstellationRoute && !gateBlocksMode/)
+  assert.match(scene, /const showOrb = sceneMode === 'focus' \|\| sceneMode === 'replay' \|\| sceneMode === 'mirror' \|\| sceneMode === 'unwind'/)
   assert.match(scene, /if \(silentHomeInvariantProof\(mode\) === null\) return null/)
   assert.match(scene, /onClick=\{isHomeMode \? enterLifeMap : undefined\}/)
   assert.ok(scene.includes('{showHomeWorld ? <Ground /> : null}'))
@@ -116,14 +124,96 @@ test('HomeScene routes Home to Ascent to Life Map and supports focus replay unwi
   assert.doesNotMatch(scene, /router\.push\('\/home'\)/)
 })
 
-test('focus and replay use demo fallback instead of unavailable error copy', () => {
+test('Focus phase model is explicit and wired into HomeScene', () => {
+  assert.match(focusState, /export type FocusPhase =/)
+  assert.match(focusState, /'loading_focus_data'/)
+  assert.match(focusState, /'focus_ready'/)
+  assert.match(focusState, /'focus_node_hovered'/)
+  assert.match(focusState, /'focus_node_selected'/)
+  assert.match(focusState, /'focus_detail_open'/)
+  assert.match(focusState, /'focus_empty'/)
+  assert.match(focusState, /'focus_error'/)
+  assert.match(focusState, /export function resolveFocusPhase\(input: FocusPhaseInput\): FocusPhase/)
+  assert.match(scene, /import \{ FocusPhaseDefinition, getFocusPhaseDefinition, resolveFocusPhase \} from '\.\.\/spatial\/scene\/focusState'/)
+  assert.match(scene, /const focusPhase = useMemo\(/)
+  assert.match(scene, /resolveFocusPhase\(\{/)
+  assert.match(scene, /isRecentering: focusRecentering/)
+  assert.match(scene, /isHoveringNode: Boolean\(hoveredRelatedNodeId\)/)
+  assert.match(scene, /isDetailOpen: focusDetailOpen/)
+  assert.match(scene, /const focusDefinition = useMemo\(\(\) => getFocusPhaseDefinition\(focusPhase\), \[focusPhase\]\)/)
+  assert.match(scene, /data-focus-phase=\{focusPhase\}/)
+  assert.match(scene, /focusDefinition\.allowedActions\.includes\('start_replay'\)/)
+  assert.match(scene, /focusDefinition\.allowedActions\.includes\('open_detail'\)/)
+  assert.match(scene, /focusDefinition\.userVisibleUi/)
+})
+
+test('Focus UI exposes related context, detail shell, keyboard navigation, and reduced-motion state', () => {
+  assert.match(scene, /const RELATED_FOCUS_NODES: RelatedFocusNode\[\] = \[/)
+  assert.match(scene, /function FocusContextRail/)
+  assert.match(scene, /data-testid="urai-focus-context-rail"/)
+  assert.match(scene, /onKeyDown=\{\(event\) => \{/)
+  assert.match(scene, /event\.key !== 'ArrowRight' && event\.key !== 'ArrowLeft'/)
+  assert.match(scene, /function FocusDetailPanel/)
+  assert.match(scene, /data-testid="urai-focus-detail-panel"/)
+  assert.match(scene, /Selected Memory Detail/)
+  assert.match(scene, /data-focus-motion=\{reducedMotion \? 'reduced' : 'cinematic'\}/)
+  assert.match(scene, /FOCUS_RECENTER_DURATION_MS = 520/)
+  assert.match(scene, /Reduced motion keeps the field still/)
+  assert.doesNotMatch(scene, /Mirror Pattern Active/)
+})
+
+test('Replay Memory Theater state, timeline, and meta panel are wired into active HomeScene', () => {
+  assert.match(replayState, /export type ReplayPhase =/)
+  assert.match(replayState, /export type ReplaySegmentId = 'memory' \| 'emotion' \| 'pattern' \| 'return'/)
+  assert.match(replayState, /export const REPLAY_SEGMENTS/)
+  assert.match(replayState, /memory/)
+  assert.match(replayState, /emotion/)
+  assert.match(replayState, /pattern/)
+  assert.match(replayState, /return/)
+  assert.match(replayState, /export function resolveReplayPhase\(input: ReplayPhaseInput\): ReplayPhase/)
+  assert.match(replayState, /export function getReplaySegmentAt\(progressMs: number\): ReplaySegmentDefinition/)
+
+  assert.match(replayTimeline, /export function ReplayTimeline/)
+  assert.match(replayTimeline, /data-testid="urai-replay-timeline"/)
+  assert.match(replayTimeline, /type="range"/)
+  assert.match(replayTimeline, /Pause/)
+  assert.match(replayTimeline, /Play/)
+  assert.match(replayTimeline, /Esc returns to Focus/)
+
+  assert.match(replayMetaPanel, /export function ReplayMetaPanel/)
+  assert.match(replayMetaPanel, /data-testid="urai-replay-meta-panel"/)
+  assert.match(replayMetaPanel, /Why this appeared/)
+  assert.match(replayMetaPanel, /Private to you/)
+  assert.match(replayMetaPanel, /Save/)
+  assert.match(replayMetaPanel, /Hide/)
+  assert.match(replayMetaPanel, /Correct/)
+  assert.match(replayMetaPanel, /Return to Focus/)
+
+  assert.match(scene, /from '\.\.\/spatial\/scene\/replayState'/)
+  assert.match(scene, /from '\.\.\/spatial\/replay\/ReplayTimeline'/)
+  assert.match(scene, /from '\.\.\/spatial\/replay\/ReplayMetaPanel'/)
+  assert.match(scene, /const replayPhase = useMemo\(/)
+  assert.match(scene, /resolveReplayPhase\(\{/)
+  assert.match(scene, /const replaySegment = useMemo\(\(\) => getReplaySegmentAt\(replayProgressMs\), \[replayProgressMs\]\)/)
+  assert.match(scene, /data-replay-phase=\{replayPhase\}/)
+  assert.match(scene, /data-replay-segment=\{replaySegment\.id\}/)
+  assert.match(scene, /<ReplayMetaPanel/)
+  assert.match(scene, /<ReplayTimeline/)
+  assert.match(scene, /const showReplayPanel = sceneMode === 'replay' && Boolean\(activeManifest\) && !gateBlocksMode/)
+  assert.match(scene, /setReplayProgressMs\(clampReplayProgress/)
+  assert.match(scene, /event\.key === ' ' && sceneMode === 'replay'/)
+  assert.match(scene, /Ready · Esc returns to Focus/)
+  assert.doesNotMatch(scene, /ESC unwinds to focus|Unwind to Focus|Replay breathing\. ESC unwinds one layer/)
+})
+
+test('focus and replay use state-driven fallback instead of unavailable error copy', () => {
   assert.match(scene, /function FocusEmptyPanel/)
   assert.match(scene, /data-testid="urai-focus-empty-panel"/)
   assert.match(scene, /const modeNeedsManifest = sceneMode === 'focus' \|\| sceneMode === 'replay'/)
   assert.match(scene, /const effectiveManifestId = modeNeedsManifest \? \(manifestId \?\? DEMO_FOCUS_MANIFEST_ID\) : manifestId/)
   assert.match(scene, /const showEmptyFocusPanel = !gateBlocksMode && modeNeedsManifest && !activeManifest/)
-  assert.match(scene, /'Demo memory star ready'/)
-  assert.doesNotMatch(scene, /Memory star unavailable|Memory star not ready|Choose a memory star first/)
+  assert.match(scene, /No memory selected/)
+  assert.doesNotMatch(scene, /Memory star unavailable|Memory star not ready|Choose a memory star first|Demo memory star ready/)
 })
 
 test('premium overlay uses centralized demo stars and production polish layers', () => {

@@ -5,12 +5,15 @@ import fs from 'node:fs'
 const gateSource = fs.readFileSync(new URL('../src/spatial/components/world/LifeMapAscentGate.tsx', import.meta.url), 'utf8')
 const overlaySource = fs.readFileSync(new URL('../src/spatial/components/world/AscentOverlay.tsx', import.meta.url), 'utf8')
 const pageSource = fs.readFileSync(new URL('../src/app/life-map/page.tsx', import.meta.url), 'utf8')
+const tierOneSource = fs.readFileSync(new URL('../src/spatial/layout/TierOneExperience.tsx', import.meta.url), 'utf8')
 const compactGate = gateSource.replace(/\s+/g, '')
-const compactOverlay = overlaySource.replace(/\s+/g, '')
+const compactTierOne = tierOneSource.replace(/\s+/g, '')
+
 
 test('life map route is gated by the Ascent contract wrapper', () => {
   assert.match(pageSource, /LifeMapAscentGate/)
-  assert.match(gateSource, /<SpatialWorldCanvas mode="life-map" \/>/)
+  assert.match(gateSource, /TierOneExperience/)
+  assert.match(gateSource, /<TierOneExperience mode="life-map" \/>/)
   assert.match(gateSource, /<AscentOverlay/)
 })
 
@@ -27,12 +30,26 @@ test('Ascent copy avoids duplicate debug-style loading surfaces', () => {
   assert.doesNotMatch(overlaySource, /ASCENT ACTIVE/)
   assert.doesNotMatch(overlaySource, /Preparing your memory map/)
   assert.doesNotMatch(overlaySource, /home view/)
+  assert.doesNotMatch(tierOneSource, /URAI is moving from the home view/)
   assert.match(overlaySource, /Opening your Life Map\./)
   assert.match(overlaySource, /Memories are becoming constellations/)
+  assert.match(tierOneSource, /Your Life Map is forming\./)
+})
+
+test('Ascent route card is suppressed so the overlay owns the transition copy', () => {
+  assert.match(compactTierOne, /constshowRouteCard=mode!=="home"&&mode!=="ascent"/)
 })
 
 test('Life Map is only interactive after visual phase and data readiness agree', () => {
   assert.match(compactGate, /ascentPhase==='lifemapReady'/)
-  assert.match(compactGate, /lifeMapDataStatus==='ready'\|\|lifeMapDataStatus==='empty'/)
+  assert.match(compactGate, /dataIsReady\(lifeMapDataStatus\)/)
   assert.match(compactGate, /aria-busy=\{lifeMapInteractive\?'false':'true'\}/)
+})
+
+test('Ascent overlay has cinematic visual polish without changing state truth', () => {
+  assert.match(overlaySource, /PHASE_INTENSITY/)
+  assert.match(overlaySource, /buildParticles/)
+  assert.match(overlaySource, /viewBox="0 0 100 100"/)
+  assert.match(overlaySource, /radial-gradient\(circle at 35% 28%/)
+  assert.match(overlaySource, /reducedMotion \? 0\.94 : 1/)
 })

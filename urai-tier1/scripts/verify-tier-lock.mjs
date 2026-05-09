@@ -36,7 +36,7 @@ const fileNeedles = {
     '<HomeScene sceneMode={mode} />',
   ],
   'src/scene/HomeScene.tsx': [
-    "type SceneMode = 'home' | 'ascent' | 'life-map' | 'demo' | 'replay' | 'focus' | 'mirror'",
+    "type SceneMode = 'home' | 'ascent' | 'life-map' | 'demo' | 'replay' | 'focus' | 'unwind' | 'mirror'",
     "router.push('/ascent')",
     "router.push('/life-map')",
     'data-scene-mode={sceneMode}',
