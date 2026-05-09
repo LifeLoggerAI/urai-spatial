@@ -57,6 +57,7 @@ if (homeSceneText) {
     /!isHomeMode \? <NarratorVoice[\s\S]{0,160}: null/,
     /!isHomeMode \? <NarratorHud \/> : null/,
     /!isHomeMode \? <CameraResetButton[\s\S]{0,160}: null/,
+    /!isHomeMode \? <ModeGuidance[\s\S]{0,180}: null/,
     /event\.key\.toLowerCase\(\) === 'r' && !isHomeMode/,
   ]
 
@@ -69,7 +70,7 @@ if (homeSceneText) {
   const forbiddenHomeOverlayPatterns = [
     /if \(mode === 'home'\) \{[\s\S]{0,800}<div className="urai-spatial-guidance/i,
     /if \(sceneMode === 'home'\) \{[\s\S]{0,800}<div className="urai-spatial-guidance/i,
-    /isHomeMode \? <ModeGuidance/i,
+    /(?<!!)isHomeMode \? <ModeGuidance/i,
     /data-testid="urai-sky-click-target"/i,
     /const showOrb = isHomeMode/i,
   ]
