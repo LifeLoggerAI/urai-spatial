@@ -1,7 +1,6 @@
 const host = process.env.HOST ?? 'http://127.0.0.1:3000'
 
-const htmlRoutes = ['/', '/life-map', '/privacy', '/terms', '/spatial']
-const redirectRoutes = [['/u/adamclamp', '/demo/life-map']]
+const htmlRoutes = ['/', '/u/adamclamp', '/life-map', '/privacy', '/terms', '/spatial']
 
 const apiRoutes = [
   ['/api/system/health', { method: 'GET' }],
@@ -117,26 +116,19 @@ async function checkHtml(route) {
     )
   }
 
+  if (route === '/u/adamclamp') {
+    assert(
+      body.includes('Public URAI Spatial Demo') || body.includes('public Life Map preview'),
+      '/u/adamclamp missing public demo marker',
+    )
+  }
+
   if (route === '/life-map') {
     assert(
       body.includes('urai-spatial-stage') || body.includes('lifemap-starfield'),
       '/life-map missing LifeMap marker',
     )
   }
-}
-
-async function checkRedirect(route, expectedDestination) {
-  const response = await request(route, { redirect: 'manual' })
-  const location = response.headers.get('location') ?? ''
-
-  assert(
-    [307, 308].includes(response.status),
-    `${route} returned ${response.status}, expected a Next.js redirect`,
-  )
-  assert(
-    location === expectedDestination || location.endsWith(expectedDestination),
-    `${route} redirects to ${location || '<missing location>'}, expected ${expectedDestination}`,
-  )
 }
 
 async function checkJson(route, init) {
@@ -188,10 +180,6 @@ for (const route of htmlRoutes) {
   await checkHtml(route)
 }
 
-for (const [route, expectedDestination] of redirectRoutes) {
-  await checkRedirect(route, expectedDestination)
-}
-
 for (const [route, init] of apiRoutes) {
   await checkJson(route, init)
 }
@@ -205,5 +193,5 @@ for (const [route, init] of webhookRoutes) {
 }
 
 console.log(
-  `URAI Spatial smoke passed for ${htmlRoutes.length} HTML routes, ${redirectRoutes.length} redirect routes, ${apiRoutes.length} public API checks, ${protectedApiRoutes.length} protected API checks, and ${webhookRoutes.length} webhook checks at ${host}`,
+  `URAI Spatial smoke passed for ${htmlRoutes.length} HTML routes, ${apiRoutes.length} public API checks, ${protectedApiRoutes.length} protected API checks, and ${webhookRoutes.length} webhook checks at ${host}`,
 )
