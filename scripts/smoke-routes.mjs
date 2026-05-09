@@ -1,12 +1,13 @@
 const host = process.env.HOST ?? 'http://127.0.0.1:3000'
 
-const htmlRoutes = ['/', '/u/adamclamp', '/life-map', '/privacy', '/terms', '/spatial']
+const htmlRoutes = ['/', '/u/adamclamp', '/life-map', '/demo/life-map', '/privacy', '/terms', '/spatial']
 
 const apiRoutes = [
   ['/api/system/health', { method: 'GET' }],
   ['/api/system/manifest', { method: 'GET' }],
   ['/api/system/capabilities', { method: 'GET' }],
   ['/api/system/integration-contract', { method: 'GET' }],
+  ['/api/system/urai-spatial-lock', { method: 'GET', requiredLockVersion: '2026-05-09.urai-spatial.locked.v1' }],
   ['/api/system/launch-boundary', { method: 'GET', optional: true }],
   ['/api/system/tier2', { method: 'GET', requiredTier: 'Tier-2' }],
   [
@@ -129,10 +130,10 @@ async function checkHtml(route) {
     )
   }
 
-  if (route === '/life-map') {
+  if (route === '/life-map' || route === '/demo/life-map') {
     assert(
       body.includes('urai-spatial-stage') || body.includes('lifemap-starfield'),
-      '/life-map missing LifeMap marker',
+      `${route} missing LifeMap marker`,
     )
   }
 }
@@ -160,6 +161,19 @@ async function checkJson(route, init) {
   if (init.requiredTier) {
     assert(payload.tier === init.requiredTier, `${route} missing required tier ${init.requiredTier}`)
     assert(Array.isArray(payload.systems) && payload.systems.length >= 6, `${route} missing Tier-2 systems`)
+  }
+
+  if (init.requiredLockVersion) {
+    assert(payload.status === 'locked', `${route} missing locked status`)
+    assert(payload.done === true, `${route} missing done=true`)
+    assert(payload.version === init.requiredLockVersion, `${route} missing lock version ${init.requiredLockVersion}`)
+    assert(Array.isArray(payload.tiers) && payload.tiers.length === 5, `${route} missing five tier locks`)
+    for (const tier of payload.tiers) {
+      assert(tier.status === 'locked', `${route} tier ${tier.id} is not locked`)
+      assert(tier.done === true, `${route} tier ${tier.id} is not done`)
+      assert(Array.isArray(tier.assertions) && tier.assertions.length > 0, `${route} tier ${tier.id} missing assertions`)
+      assert(Array.isArray(tier.tests) && tier.tests.length > 0, `${route} tier ${tier.id} missing tests`)
+    }
   }
 
   if (route.includes('body-biometric')) {
