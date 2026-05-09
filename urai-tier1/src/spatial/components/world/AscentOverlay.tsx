@@ -151,7 +151,8 @@ export function AscentOverlay({ phase, dataStatus, reducedMotion }: AscentOverla
       aria-label="Life Map opening transition"
       aria-live="polite"
       role="status"
-      data-testid="urai-ascent-cover"
+      data-testid="urai-ascent-transition"
+      data-ascent-legacy-testid="urai-ascent-cover"
       data-ascent-phase={phase}
       data-lifemap-data-status={dataStatus}
       data-reduced-motion={reducedMotion ? 'true' : 'false'}
