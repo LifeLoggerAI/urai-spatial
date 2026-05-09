@@ -164,11 +164,21 @@ function DepthRing({ position, radius, color, rotation, active }: { position: [n
 function LifeMapPath({ from, to, active, replaying }: { from: LifeMapNode; to: LifeMapNode; active: boolean; replaying: boolean }) {
   const currentRef = useRef<THREE.Mesh>(null);
   const replayPulseRef = useRef<THREE.Mesh>(null);
+  const pathRef = useRef<THREE.Line>(null);
+  const materialRef = useRef<THREE.LineBasicMaterial>(null);
   const reducedMotion = useMemo(prefersReducedMotion, []);
   const curve = useMemo(() => createLifeMapCurve(from, to), [from, to]);
   const geometry = useMemo(() => new THREE.BufferGeometry().setFromPoints(curve.getPoints(96)), [curve]);
 
+  useEffect(() => {
+    if (pathRef.current) pathRef.current.geometry = geometry;
+  }, [geometry]);
+
   useFrame(({ clock }) => {
+    if (materialRef.current) {
+      materialRef.current.color.set(active ? "#8adfff" : "#496486");
+      materialRef.current.opacity = active ? 0.82 : 0.12;
+    }
     if (!reducedMotion && currentRef.current) {
       const t = (clock.elapsedTime * 0.08 + from.intensity * 0.13) % 1;
       currentRef.current.position.copy(curve.getPointAt(t));
@@ -182,9 +192,9 @@ function LifeMapPath({ from, to, active, replaying }: { from: LifeMapNode; to: L
 
   return (
     <group>
-      <line geometry={geometry}>
-        <lineBasicMaterial transparent color={active ? "#8adfff" : "#496486"} opacity={active ? 0.82 : 0.12} />
-      </line>
+      <primitive ref={pathRef} object={new THREE.Line(geometry)}>
+        <lineBasicMaterial ref={materialRef} transparent color={active ? "#8adfff" : "#496486"} opacity={active ? 0.82 : 0.12} />
+      </primitive>
       <mesh ref={currentRef} visible={active}>
         <sphereGeometry args={[active ? 0.045 : 0.025, 16, 16]} />
         <meshBasicMaterial color={active ? "#d8f8ff" : "#66809a"} transparent opacity={active ? 0.9 : 0.18} />
