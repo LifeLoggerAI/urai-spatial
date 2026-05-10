@@ -14,6 +14,15 @@ export type DemoMemoryStar = {
 
 export const DEMO_FOCUS_MANIFEST_ID = 'demo-memory-star'
 
+export const demoArtifactByTone: Record<DemoMemoryStar['emotionalTone'], string> = {
+  recovery: '/demo/memories/recovery-bloom.svg',
+  threshold: '/demo/memories/threshold-storm.svg',
+  mirror: '/demo/memories/mirror-focus.svg',
+  ritual: '/demo/memories/ritual-echo.svg',
+  dream: '/demo/memories/dream-signal.svg',
+  calm: '/demo/memories/calm-return.svg',
+} as const
+
 export const DEMO_MEMORY_STARS: DemoMemoryStar[] = [
   {
     manifestId: 'seed-memory-bloom',
@@ -99,6 +108,7 @@ export const DEMO_MEMORY_STAR_BY_ID = Object.fromEntries(DEMO_MEMORY_STARS.map((
 export function createDemoSpatialManifest(manifestId: string | null | undefined): SpatialAssetManifest {
   const star = manifestId ? DEMO_MEMORY_STAR_BY_ID[manifestId] : undefined
   const resolvedId = manifestId || DEMO_FOCUS_MANIFEST_ID
+  const artifactUrl = star ? demoArtifactByTone[star.emotionalTone] : demoArtifactByTone.recovery
 
   return {
     manifestId: resolvedId,
@@ -110,7 +120,17 @@ export function createDemoSpatialManifest(manifestId: string | null | undefined)
     provider: 'urai-demo',
     model: 'css-svg-preview',
     promptPreview: star?.description ?? 'A sample local memory used to preview focus, replay, and reflection.',
-    artifacts: [],
+    artifacts: [
+      {
+        artifactId: `${resolvedId}-primary-demo-image`,
+        type: 'image',
+        mimeType: 'image/svg+xml',
+        url: artifactUrl,
+        storageUri: artifactUrl,
+        width: 1440,
+        height: 1440,
+      },
+    ],
     spatialCompatibility: {
       supported: true,
       type: 'image_overlay',

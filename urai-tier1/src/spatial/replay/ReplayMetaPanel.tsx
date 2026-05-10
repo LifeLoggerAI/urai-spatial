@@ -1,6 +1,7 @@
 'use client'
 
 import { useMemo, useState } from 'react'
+import { useRouter } from 'next/navigation'
 import { MemoryMorphology } from '../memory/memoryMorphology'
 import { ReplayPhase, ReplayPhaseDefinition, ReplaySegmentDefinition } from '../scene/replayState'
 
@@ -47,6 +48,7 @@ export function ReplayMetaPanel({
   phaseDefinition,
   activeSegment,
   sourceLabel,
+  manifestId,
   onReturnToFocus,
 }: {
   morphology: MemoryMorphology
@@ -54,13 +56,20 @@ export function ReplayMetaPanel({
   phaseDefinition: ReplayPhaseDefinition
   activeSegment: ReplaySegmentDefinition
   sourceLabel: string
+  manifestId?: string | null
   onReturnToFocus: () => void
 }) {
+  const router = useRouter()
   const [actionState, setActionState] = useState<ReplayActionState>('idle')
   const derivedSourceLabel = useMemo(() => {
     if (sourceLabel && sourceLabel !== 'LifeMap · Pattern Node') return sourceLabel
     return `LifeMap · ${morphology.systemLabel}`
   }, [morphology.systemLabel, sourceLabel])
+
+  function openMirror() {
+    if (!manifestId) return
+    router.push(`/mirror?manifestId=${encodeURIComponent(manifestId)}&source=replay`)
+  }
 
   return (
     <section style={panelStyle} data-testid="urai-replay-meta-panel" data-replay-phase={phase} data-replay-action-state={actionState} aria-label="Pattern replay details">
@@ -89,6 +98,7 @@ export function ReplayMetaPanel({
         <button type="button" data-testid="urai-replay-save" aria-pressed={actionState === 'saved'} onClick={() => setActionState('saved')} style={pillStyle}>Save</button>
         <button type="button" data-testid="urai-replay-hide" aria-pressed={actionState === 'hidden'} onClick={() => setActionState('hidden')} style={pillStyle}>Hide</button>
         <button type="button" data-testid="urai-replay-correct" aria-pressed={actionState === 'correction_open'} onClick={() => setActionState('correction_open')} style={pillStyle}>Correct</button>
+        {manifestId ? <button type="button" data-testid="urai-replay-open-mirror" onClick={openMirror} style={pillStyle}>Open Mirror</button> : null}
       </div>
 
       <p data-testid="urai-replay-action-message" aria-live="polite" style={{ margin: '10px 0 0', color: 'rgba(235, 244, 255, 0.68)', fontSize: '0.78rem', lineHeight: 1.42 }}>{actionMessageFor(actionState)}</p>
