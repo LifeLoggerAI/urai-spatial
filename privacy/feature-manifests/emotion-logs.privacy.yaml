@@ -1,0 +1,64 @@
+feature: emotion-logs
+repo: LifeLoggerAI/urai-spatial
+owner: TBD
+privacyGovernanceVersion: 0.1.0-draft
+status: blocked_stubbed_from_repo_audit
+lastReviewed: 2026-05-09
+sourceEvidence:
+  - URAI_ECOSYSTEM_AUDIT.md
+
+summary:
+  purpose: Log user emotional states over time.
+  userBenefit: Supports emotional reflection, trend visibility, and consented emotional insight features.
+  implementationStatus: stubbed_per_repo_audit
+
+dataProcessing:
+  collectedFields:
+    - name: emotion_log
+      collectionOrTable: emotionLogs
+      dataClass: L4
+      source: user_provided_or_model_inferred
+      purpose: record emotional states over time
+      consentTier: C4
+      retentionClass: R3
+      exportable: true
+      deletable: true
+      auditRequired: true
+  derivedFields:
+    - name: emotion_trend
+      collectionOrTable: emotionLogs
+      dataClass: L4
+      sourceFields:
+        - emotion_log
+      purpose: user-facing emotional trend or pattern summary
+      consentTier: C4
+      retentionClass: R3
+      exportable: true
+      deletable: true
+      explainabilityRequired: true
+
+userRights:
+  exportSupported: true
+  deletionSupported: true
+  consentRevocationSupported: true
+  explanationSupported: true
+
+adminAccess:
+  allowed: false
+  roles: []
+  auditEventTypes:
+    - emotion_log.created
+    - emotion_trend.generated
+    - emotion_log.deleted
+    - emotion_trend.explanation_requested
+
+monetization:
+  participatesInDataSharing: false
+  requiresC8Consent: false
+  anonymizationBatchRequired: false
+  minimumCohortSize: 100
+
+review:
+  reviewer: TBD
+  decision: blocked_until_implemented_and_reviewed
+  notes: Repo audit marks emotionLogs as stubbed. Emotional state data is sensitive and must not launch until explicit consent, explanation, export, deletion, revocation, and audit behavior are implemented and tested.
