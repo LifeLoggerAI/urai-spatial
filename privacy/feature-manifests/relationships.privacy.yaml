@@ -1,0 +1,65 @@
+feature: relationships
+repo: LifeLoggerAI/urai-spatial
+owner: TBD
+privacyGovernanceVersion: 0.1.0-draft
+status: blocked_stubbed_from_repo_audit
+lastReviewed: 2026-05-09
+sourceEvidence:
+  - URAI_ECOSYSTEM_AUDIT.md
+
+summary:
+  purpose: Model relationships between users and user-described people or entities.
+  userBenefit: Helps users organize memories around meaningful connections and relationship context.
+  implementationStatus: stubbed_per_repo_audit
+
+dataProcessing:
+  collectedFields:
+    - name: relationship_record
+      collectionOrTable: relationships
+      dataClass: L4
+      source: user_provided_or_model_inferred
+      purpose: store relationship context and user-described connections
+      consentTier: C4
+      retentionClass: R3
+      exportable: true
+      deletable: true
+      auditRequired: true
+  derivedFields:
+    - name: relationship_context_summary
+      collectionOrTable: relationships
+      dataClass: L4
+      sourceFields:
+        - relationship_record
+      purpose: user-facing relationship organization and context summaries
+      consentTier: C4
+      retentionClass: R3
+      exportable: true
+      deletable: true
+      explainabilityRequired: true
+
+userRights:
+  exportSupported: true
+  deletionSupported: true
+  consentRevocationSupported: true
+  explanationSupported: true
+
+adminAccess:
+  allowed: false
+  roles: []
+  auditEventTypes:
+    - relationship.created
+    - relationship.updated
+    - relationship.summary_generated
+    - relationship.deleted
+    - relationship.explanation_requested
+
+monetization:
+  participatesInDataSharing: false
+  requiresC8Consent: false
+  anonymizationBatchRequired: false
+  minimumCohortSize: 100
+
+review:
+  reviewer: TBD
+  decision: blocked_until_implemented_and_reviewed
+  notes: Repo audit marks relationships as stubbed. Relationship data and inferences are sensitive and require explicit consent, explanation, export, deletion, revocation, and audit behavior before launch.
