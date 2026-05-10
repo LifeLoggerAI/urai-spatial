@@ -94,17 +94,19 @@ function ConstellationCurves({ nodes, selectedManifestId }: { nodes: PositionedL
 
   return (
     <group ref={groupRef} data-testid="lifemap-constellation-paths">
-      {curves.map(({ edge, geometry, active }) => (
-        <line key={edge.id} geometry={geometry} frustumCulled={false}>
-          <lineBasicMaterial
-            color={edge.glow}
-            transparent
-            opacity={active ? 0.46 + edge.strength * 0.22 : 0.08}
-            depthWrite={false}
-            blending={THREE.AdditiveBlending}
-          />
-        </line>
-      ))}
+      {curves.map(({ edge, geometry, active }) => {
+        const material = new THREE.LineBasicMaterial({
+          color: edge.glow,
+          transparent: true,
+          opacity: active ? 0.46 + edge.strength * 0.22 : 0.08,
+          depthWrite: false,
+          blending: THREE.AdditiveBlending,
+        })
+        const line = new THREE.Line(geometry, material)
+        line.frustumCulled = false
+
+        return <primitive key={edge.id} object={line} />
+      })}
     </group>
   )
 }
