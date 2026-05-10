@@ -1,0 +1,151 @@
+repo: LifeLoggerAI/urai-spatial
+privacyGovernanceVersion: 0.1.0-draft
+owner: TBD
+lastReviewed: 2026-05-09
+status: draft_real_inventory_from_repo_audit
+sourceEvidence:
+  - URAI_ECOSYSTEM_AUDIT.md
+
+fields:
+  - name: user_profile
+    collectionOrTable: users
+    source: user_account
+    dataClass: L2
+    purpose: manage user identity and profile context
+    consentTier: C1
+    retentionClass: R2
+    exportable: true
+    deletable: true
+    monetizable: false
+    aiTrainingAllowed: false
+    adminAccessible: false
+    auditRequired: true
+    implementationStatus: complete_per_repo_audit
+
+  - name: memory_text
+    collectionOrTable: memories
+    source: user_provided
+    dataClass: L3
+    purpose: store user-created memory text
+    consentTier: C2
+    retentionClass: R3
+    exportable: true
+    deletable: true
+    monetizable: false
+    aiTrainingAllowed: false
+    adminAccessible: false
+    auditRequired: true
+    implementationStatus: complete_per_repo_audit
+
+  - name: memory_media
+    collectionOrTable: memories/storage
+    source: user_upload
+    dataClass: L4
+    purpose: store user-created audio and image memories
+    consentTier: C4
+    retentionClass: R3
+    exportable: true
+    deletable: true
+    monetizable: false
+    aiTrainingAllowed: false
+    adminAccessible: false
+    auditRequired: true
+    implementationStatus: complete_per_repo_audit
+
+  - name: memory_star_visualization
+    collectionOrTable: stars
+    source: system_derived
+    dataClass: L2
+    purpose: represent memories visually in the spatial galaxy
+    consentTier: C2
+    retentionClass: R3
+    exportable: true
+    deletable: true
+    monetizable: false
+    aiTrainingAllowed: false
+    adminAccessible: false
+    auditRequired: true
+    implementationStatus: complete_per_repo_audit
+
+  - name: insight_record
+    collectionOrTable: insights
+    source: model
+    dataClass: L4
+    purpose: store user-facing AI-generated insights
+    consentTier: C4
+    retentionClass: R3
+    exportable: true
+    deletable: true
+    monetizable: false
+    aiTrainingAllowed: false
+    adminAccessible: false
+    auditRequired: true
+    implementationStatus: partial_per_repo_audit
+
+  - name: voice_event
+    collectionOrTable: voiceEvents
+    source: user_voice_interaction
+    dataClass: L5
+    purpose: planned voice interaction storage
+    consentTier: C5
+    retentionClass: R6
+    exportable: true
+    deletable: true
+    monetizable: false
+    aiTrainingAllowed: false
+    adminAccessible: false
+    auditRequired: true
+    implementationStatus: stubbed_per_repo_audit
+
+  - name: behavior_signal
+    collectionOrTable: behaviorSignals
+    source: system_collected
+    dataClass: L4
+    purpose: planned behavioral signal capture for AI analysis
+    consentTier: C4
+    retentionClass: R3
+    exportable: true
+    deletable: true
+    monetizable: false
+    aiTrainingAllowed: false
+    adminAccessible: false
+    auditRequired: true
+    implementationStatus: stubbed_per_repo_audit
+
+  - name: location_record
+    collectionOrTable: locations
+    source: device_or_user_provided
+    dataClass: L4
+    purpose: planned location context associated with memories
+    consentTier: C4
+    retentionClass: R3
+    exportable: true
+    deletable: true
+    monetizable: false
+    aiTrainingAllowed: false
+    adminAccessible: false
+    auditRequired: true
+    implementationStatus: stubbed_per_repo_audit
+
+processors:
+  - name: Firebase Authentication
+    role: authentication
+    status: complete_per_repo_audit
+    reviewStatus: needs_privacy_review
+  - name: Firestore
+    role: primary_database
+    status: mixed_complete_partial_stubbed_per_repo_audit
+    reviewStatus: needs_privacy_review
+  - name: Firebase Storage
+    role: media_storage
+    status: complete_per_repo_audit
+    reviewStatus: needs_privacy_review
+  - name: Firebase Hosting
+    role: frontend_hosting
+    status: complete_per_repo_audit
+    reviewStatus: needs_privacy_review
+
+review:
+  status: blocked_until_reviewed
+  reviewer: TBD
+  notes: Derived from URAI_ECOSYSTEM_AUDIT.md. Must be reviewed against actual production schema, rules, and runtime behavior before launch approval.
