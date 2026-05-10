@@ -18,11 +18,11 @@ on:
           - "false"
           - "true"
       firebase_project_id:
-        description: Firebase project ID for manual deploy
+        description: Optional Firebase project ID override. Defaults to repository variable URAI_SPATIAL_FIREBASE_PROJECT_ID.
         required: false
         type: string
       live_url:
-        description: Optional live URL to smoke and record after deploy
+        description: Optional live URL override. Defaults to repository variable URAI_SPATIAL_PRODUCTION_URL.
         required: false
         type: string
 
@@ -73,6 +73,11 @@ jobs:
     permissions:
       contents: write
 
+    env:
+      RESOLVED_FIREBASE_PROJECT_ID: ${{ inputs.firebase_project_id || vars.URAI_SPATIAL_FIREBASE_PROJECT_ID }}
+      RESOLVED_LIVE_URL: ${{ inputs.live_url || vars.URAI_SPATIAL_PRODUCTION_URL }}
+      RESOLVED_FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT || secrets.FIREBASE_SERVICE_ACCOUNT_URAI_SPATIAL }}
+
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -93,54 +98,52 @@ jobs:
 
       - name: Validate deploy input
         run: |
-          if [ -z "${{ inputs.firebase_project_id }}" ]; then
-            echo "firebase_project_id is required when deploy=true" >&2
+          if [ -z "$RESOLVED_FIREBASE_PROJECT_ID" ]; then
+            echo "Set input firebase_project_id or repository variable URAI_SPATIAL_FIREBASE_PROJECT_ID before deploying." >&2
             exit 1
           fi
-          if [ -z "${{ secrets.FIREBASE_SERVICE_ACCOUNT }}" ] && [ -z "${{ secrets.FIREBASE_TOKEN }}" ]; then
-            echo "Set FIREBASE_SERVICE_ACCOUNT or FIREBASE_TOKEN before deploying." >&2
+          if [ -z "$RESOLVED_FIREBASE_SERVICE_ACCOUNT" ] && [ -z "${{ secrets.FIREBASE_TOKEN }}" ]; then
+            echo "Set FIREBASE_SERVICE_ACCOUNT, FIREBASE_SERVICE_ACCOUNT_URAI_SPATIAL, or FIREBASE_TOKEN before deploying." >&2
             exit 1
           fi
 
       - name: Write Firebase service account
-        if: secrets.FIREBASE_SERVICE_ACCOUNT != ''
-        env:
-          FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+        if: env.RESOLVED_FIREBASE_SERVICE_ACCOUNT != ''
         run: |
-          printf '%s' "$FIREBASE_SERVICE_ACCOUNT" > "$RUNNER_TEMP/firebase-service-account.json"
+          printf '%s' "$RESOLVED_FIREBASE_SERVICE_ACCOUNT" > "$RUNNER_TEMP/firebase-service-account.json"
 
       - name: Deploy to Firebase with service account
-        if: secrets.FIREBASE_SERVICE_ACCOUNT != ''
+        if: env.RESOLVED_FIREBASE_SERVICE_ACCOUNT != ''
         env:
           GOOGLE_APPLICATION_CREDENTIALS: ${{ runner.temp }}/firebase-service-account.json
-          FIREBASE_PROJECT_ID: ${{ inputs.firebase_project_id }}
+          FIREBASE_PROJECT_ID: ${{ env.RESOLVED_FIREBASE_PROJECT_ID }}
         run: pnpm live:deploy
 
       - name: Deploy to Firebase with token
-        if: secrets.FIREBASE_SERVICE_ACCOUNT == '' && secrets.FIREBASE_TOKEN != ''
+        if: env.RESOLVED_FIREBASE_SERVICE_ACCOUNT == '' && secrets.FIREBASE_TOKEN != ''
         env:
           FIREBASE_TOKEN: ${{ secrets.FIREBASE_TOKEN }}
-          FIREBASE_PROJECT_ID: ${{ inputs.firebase_project_id }}
+          FIREBASE_PROJECT_ID: ${{ env.RESOLVED_FIREBASE_PROJECT_ID }}
         run: pnpm live:deploy
 
       - name: Smoke live URL
-        if: inputs.live_url != ''
+        if: env.RESOLVED_LIVE_URL != ''
         env:
-          HOST: ${{ inputs.live_url }}
+          HOST: ${{ env.RESOLVED_LIVE_URL }}
         run: pnpm smoke
 
       - name: Record live status
-        if: inputs.live_url != ''
+        if: env.RESOLVED_LIVE_URL != ''
         env:
-          LIVE_URL: ${{ inputs.live_url }}
-          FIREBASE_PROJECT_ID: ${{ inputs.firebase_project_id }}
+          LIVE_URL: ${{ env.RESOLVED_LIVE_URL }}
+          FIREBASE_PROJECT_ID: ${{ env.RESOLVED_FIREBASE_PROJECT_ID }}
           RELEASE_GATE_RESULT: passed
           LIVE_SMOKE_RESULT: passed
           DEPLOY_METHOD: github-actions
         run: pnpm live:record
 
       - name: Commit live status ledger
-        if: inputs.live_url != ''
+        if: env.RESOLVED_LIVE_URL != ''
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
