@@ -20,6 +20,18 @@ const requiredSnippets = [
   'founderOverride',
   'match /tierLockAudit/{auditId}',
   'allow write: if false;',
+  'function hasOnlyHomeWorldStateFields()',
+  'function hasOnlyHomeWorldExplanationFields()',
+  'function isValidHomeWorldStateWrite(uid)',
+  'function isValidHomeWorldExplanationWrite(uid)',
+  'match /homeWorld/{docId}',
+  "docId == 'state'",
+  'match /homeWorldExplainability/{docId}',
+  "docId == 'latest'",
+  'match /history/{historyId}',
+  'rawSignalsStored == false',
+  'usedRawAudio == false',
+  'usedContactIdentity == false',
   'match /spatial/{doc=**}',
 ]
 
