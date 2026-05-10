@@ -1,0 +1,101 @@
+name: URAI Spatial Live Release Gate
+
+on:
+  pull_request:
+    branches:
+      - main
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+    inputs:
+      deploy:
+        description: Deploy after release gate passes
+        required: true
+        default: "false"
+        type: choice
+        options:
+          - "false"
+          - "true"
+      firebase_project_id:
+        description: Firebase project ID for manual deploy
+        required: false
+        type: string
+
+concurrency:
+  group: urai-spatial-live-release-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  live-check:
+    name: Live release check
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10.0.0
+
+      - name: Install Playwright OS dependencies
+        run: pnpm exec playwright install-deps chromium
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Install Playwright browser
+        run: pnpm exec playwright install chromium
+
+      - name: Run live release gate
+        run: pnpm live:check
+
+  manual-deploy:
+    name: Manual Firebase deploy
+    needs: live-check
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    if: github.event_name == 'workflow_dispatch' && inputs.deploy == 'true'
+
+    permissions:
+      contents: read
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10.0.0
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Validate deploy input
+        run: |
+          if [ -z "${{ inputs.firebase_project_id }}" ]; then
+            echo "firebase_project_id is required when deploy=true" >&2
+            exit 1
+          fi
+
+      - name: Deploy to Firebase
+        env:
+          FIREBASE_TOKEN: ${{ secrets.FIREBASE_TOKEN }}
+          FIREBASE_PROJECT_ID: ${{ inputs.firebase_project_id }}
+        run: pnpm live:deploy
