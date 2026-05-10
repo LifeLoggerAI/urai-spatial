@@ -110,6 +110,7 @@ export default function HomeWorld({
 
   const reactiveGlow = 0.1 + bassLevel * 0.2 + audioLevel * 0.14;
   const reactiveScale = 1 + audioLevel * 0.055;
+  const groundEnergy = 0.46 + Math.min(0.32, bassLevel * 0.32 + audioLevel * 0.2) + groundVisual.elevation * 0.1;
 
   return (
     <group scale={[reactiveScale, reactiveScale, reactiveScale]}>
@@ -118,10 +119,7 @@ export default function HomeWorld({
       <GroundWorld
         mood="calm"
         presence={homeSubstate === "home_idle" ? "idle" : "near"}
-        emotionalIntensity={0.46 + Math.min(0.28, bassLevel * 0.32 + audioLevel * 0.2)}
-        recession={groundVisual.recession}
-        elevation={groundVisual.elevation}
-        opacity={groundVisual.opacity}
+        emotionalIntensity={groundEnergy}
       />
 
       <mesh
@@ -129,16 +127,16 @@ export default function HomeWorld({
         position={[-0.52, 0.016, -0.05]}
         receiveShadow
       >
-        <circleGeometry args={[0.94, 56]} />
-        <shadowMaterial opacity={0.42 + audioLevel * 0.1} />
+        <circleGeometry args={[0.94 + groundVisual.recession * 0.12, 56]} />
+        <shadowMaterial opacity={(0.42 + audioLevel * 0.1) * groundVisual.opacity} />
       </mesh>
 
-      <mesh position={[-0.52, 0.61, -0.07]} renderOrder={4}>
+      <mesh position={[-0.52, 0.61 + groundVisual.elevation * 0.02, -0.07]} renderOrder={4}>
         <cylinderGeometry args={[0.18, 0.5, 1.22, 48, 1, true]} />
         <meshBasicMaterial
           color="#88ddff"
           transparent
-          opacity={Math.max(skyOpacity, reactiveGlow) * 0.3}
+          opacity={Math.max(skyOpacity, reactiveGlow) * 0.3 * groundVisual.opacity}
           depthWrite={false}
         />
       </mesh>
