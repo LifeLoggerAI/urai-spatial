@@ -57,6 +57,7 @@ function assertReleaseManifest() {
     system: 'urai-spatial',
     appPackage: 'urai-tier1',
     releaseGate: 'pnpm live:check',
+    liveStatusFile: 'release/LIVE_STATUS.md',
   }
 
   for (const [key, expected] of Object.entries(expectedScalars)) {
@@ -85,6 +86,8 @@ function assertReleaseManifest() {
     throw new Error('Release manifest must keep WebXR live claim disabled until provider validation.')
   }
 
+  requireFile(manifest.liveStatusFile)
+
   return manifest
 }
 
@@ -92,6 +95,7 @@ function assertReleaseFiles() {
   const required = [
     'REPO_PURPOSE.md',
     'LIVE_RELEASE.md',
+    'release/LIVE_STATUS.md',
     manifestPath,
     'README.md',
     'firebase.json',
