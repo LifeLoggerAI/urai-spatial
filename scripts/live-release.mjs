@@ -4,6 +4,7 @@ import process from 'node:process'
 
 const mode = process.argv.includes('--deploy') ? 'deploy' : 'check'
 const deployProject = process.env.FIREBASE_PROJECT_ID || process.env.FIREBASE_PROJECT || process.env.GCLOUD_PROJECT
+const manifestPath = 'release/urai-spatial-live-manifest.json'
 
 function run(command, args, options = {}) {
   return new Promise((resolve, reject) => {
@@ -29,11 +30,72 @@ function requireFile(path) {
   }
 }
 
+function readJson(path) {
+  requireFile(path)
+  try {
+    return JSON.parse(fs.readFileSync(path, 'utf8'))
+  } catch (error) {
+    throw new Error(`Invalid JSON in ${path}: ${error.message}`)
+  }
+}
+
+function assertArrayIncludes(manifest, key, expectedValues) {
+  if (!Array.isArray(manifest[key])) {
+    throw new Error(`Release manifest field ${key} must be an array.`)
+  }
+  const missing = expectedValues.filter((value) => !manifest[key].includes(value))
+  if (missing.length) {
+    throw new Error(`Release manifest field ${key} is missing: ${missing.join(', ')}`)
+  }
+}
+
+function assertReleaseManifest() {
+  const manifest = readJson(manifestPath)
+
+  const expectedScalars = {
+    repository: 'LifeLoggerAI/urai-spatial',
+    system: 'urai-spatial',
+    appPackage: 'urai-tier1',
+    releaseGate: 'pnpm live:check',
+  }
+
+  for (const [key, expected] of Object.entries(expectedScalars)) {
+    if (manifest[key] !== expected) {
+      throw new Error(`Release manifest field ${key} must be ${expected}.`)
+    }
+  }
+
+  assertArrayIncludes(manifest, 'routes', ['/', '/u/adamclamp', '/spatial', '/life-map', '/privacy', '/terms'])
+  assertArrayIncludes(manifest, 'apiRoutes', [
+    '/api/system/health',
+    '/api/system/manifest',
+    '/api/system/capabilities',
+    '/api/system/integration-contract',
+    '/api/body-biometric',
+    '/api/orb-companion',
+  ])
+  assertArrayIncludes(manifest, 'requiredExternalInputsBeforeLive', [
+    'firebase_project_id',
+    'firebase_service_account_or_token',
+    'deployed_live_url',
+    'passing_live_smoke_result',
+  ])
+
+  if (!manifest.liveClaims || manifest.liveClaims.webxr !== 'disabled-until-provider-validated') {
+    throw new Error('Release manifest must keep WebXR live claim disabled until provider validation.')
+  }
+
+  return manifest
+}
+
 function assertReleaseFiles() {
   const required = [
     'REPO_PURPOSE.md',
+    'LIVE_RELEASE.md',
+    manifestPath,
     'README.md',
     'firebase.json',
+    '.firebaserc.example',
     'package.json',
     'pnpm-lock.yaml',
     'urai-tier1/package.json',
@@ -49,6 +111,10 @@ async function main() {
   console.log(`[URAI Spatial Live] Mode: ${mode}`)
   console.log('[URAI Spatial Live] Validating release file surface.')
   assertReleaseFiles()
+
+  console.log('[URAI Spatial Live] Validating release manifest.')
+  const manifest = assertReleaseManifest()
+  console.log(`[URAI Spatial Live] Manifest: ${manifest.name} (${manifest.canonicalStatus})`)
 
   console.log('[URAI Spatial Live] Running full release verification.')
   await run('pnpm', ['verify:release:full'])
