@@ -2,7 +2,7 @@
 
 URAI Spatial is the immersive spatial interface layer of URAI: a cinematic, passive, privacy-aware web shell for Home, LifeMap, body/avatar zoom, sky, ground/world, orb companion navigation, biometric fallback panels, replay, and future AR/VR/WebXR expansion.
 
-See `REPO_PURPOSE.md` for this repository's source-of-truth boundary, ownership rules, and confusion guards.
+See `REPO_PURPOSE.md` for this repository's source-of-truth boundary, ownership rules, and confusion guards. See `LIVE_RELEASE.md` for the gated live-release and Firebase publish path.
 
 The current release-lock branch keeps the existing spatial engine intact and adds a standalone release shell with stable smoke/E2E markers, typed fallback APIs, system contract routes, and launch documentation.
 
@@ -43,9 +43,10 @@ HOST=http://127.0.0.1:3000 pnpm smoke
 pnpm test:e2e
 pnpm launch:check
 pnpm audit:tier-one
+pnpm live:check
 ```
 
-`pnpm launch:check` runs the spatial invariant check, typecheck, production build, smoke route checks, and E2E lock runner.
+`pnpm launch:check` runs the spatial invariant check, typecheck, production build, smoke route checks, and E2E lock runner. `pnpm live:check` runs the full live-release gate without deploying.
 
 ## Routes
 
@@ -75,12 +76,13 @@ URAI Spatial runs without live Firebase or biometric providers in local fallback
 
 ## Deployment notes
 
-Firebase Hosting/App Hosting may be used once the project config is selected. Deployment scripts intentionally run `pnpm launch:check` first:
+Firebase Hosting/App Hosting may be used once the project config is selected. Deployment scripts intentionally run release gates first:
 
 ```bash
 pnpm frb
 pnpm deploy:staging
 pnpm deploy:prod
+FIREBASE_PROJECT_ID=<project-id> pnpm live:deploy
 ```
 
 Do not claim live AR, WebXR, wearable, biometric, or memory-grounded providers are active unless those providers are connected, consented, and validated.
