@@ -1,0 +1,9 @@
+{
+  "projects": {
+    "default": "REPLACE_WITH_URAI_SPATIAL_STAGING_PROJECT_ID",
+    "staging": "REPLACE_WITH_URAI_SPATIAL_STAGING_PROJECT_ID",
+    "production": "REPLACE_WITH_URAI_SPATIAL_PRODUCTION_PROJECT_ID"
+  },
+  "targets": {},
+  "etags": {}
+}
