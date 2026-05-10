@@ -9,6 +9,7 @@
   "releaseGate": "pnpm live:check",
   "deployCommand": "FIREBASE_PROJECT_ID=<project-id> pnpm live:deploy",
   "postDeploySmoke": "HOST=https://<live-host> pnpm smoke",
+  "liveStatusFile": "release/LIVE_STATUS.md",
   "routes": [
     "/",
     "/u/adamclamp",
