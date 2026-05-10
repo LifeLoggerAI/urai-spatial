@@ -1,0 +1,75 @@
+feature: process-new-memory
+repo: LifeLoggerAI/urai-spatial
+owner: TBD
+privacyGovernanceVersion: 0.1.0-draft
+status: draft_from_repo_audit
+lastReviewed: 2026-05-09
+sourceEvidence:
+  - URAI_ECOSYSTEM_AUDIT.md
+
+summary:
+  purpose: Process newly created memories, enrich memory metadata, and create spatial star visualizations.
+  userBenefit: Turns user memories into visible spatial galaxy objects.
+  implementationStatus: complete_per_repo_audit
+
+dataProcessing:
+  collectedFields:
+    - name: memory_text
+      collectionOrTable: memories
+      dataClass: L3
+      source: user_provided
+      purpose: create and display user memory content
+      consentTier: C2
+      retentionClass: R3
+      exportable: true
+      deletable: true
+      auditRequired: true
+    - name: memory_media
+      collectionOrTable: memories/storage
+      dataClass: L4
+      source: user_upload
+      purpose: attach user-uploaded audio and image media to memories
+      consentTier: C4
+      retentionClass: R3
+      exportable: true
+      deletable: true
+      auditRequired: true
+  derivedFields:
+    - name: memory_star_visualization
+      collectionOrTable: stars
+      dataClass: L2
+      sourceFields:
+        - memory_text
+        - memory_media
+      purpose: represent memories visually in the spatial galaxy
+      consentTier: C2
+      retentionClass: R3
+      exportable: true
+      deletable: true
+      explainabilityRequired: false
+
+userRights:
+  exportSupported: true
+  deletionSupported: true
+  consentRevocationSupported: true
+  explanationSupported: false
+
+adminAccess:
+  allowed: false
+  roles: []
+  auditEventTypes:
+    - memory.created
+    - star.created
+    - memory.deleted
+    - star.deleted
+
+monetization:
+  participatesInDataSharing: false
+  requiresC8Consent: false
+  anonymizationBatchRequired: false
+  minimumCohortSize: 100
+
+review:
+  reviewer: TBD
+  decision: blocked_until_reviewed
+  notes: Repo audit marks processNewMemory complete. Manifest still requires review against actual function code, Firestore rules, export behavior, and deletion behavior before production privacy approval.
