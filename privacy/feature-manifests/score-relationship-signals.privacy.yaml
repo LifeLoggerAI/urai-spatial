@@ -1,0 +1,75 @@
+feature: score-relationship-signals
+repo: LifeLoggerAI/urai-spatial
+owner: TBD
+privacyGovernanceVersion: 0.1.0-draft
+status: blocked_stubbed_from_repo_audit
+lastReviewed: 2026-05-09
+sourceEvidence:
+  - URAI_ECOSYSTEM_AUDIT.md
+
+summary:
+  purpose: Score relationship strength based on user interactions and relationship context.
+  userBenefit: Helps users understand meaningful connections and relationship patterns.
+  implementationStatus: stubbed_per_repo_audit
+
+dataProcessing:
+  collectedFields:
+    - name: relationship_signal
+      collectionOrTable: relationships
+      dataClass: L4
+      source: user_provided_or_model_inferred
+      purpose: source material for relationship-strength scoring
+      consentTier: C4
+      retentionClass: R3
+      exportable: true
+      deletable: true
+      auditRequired: true
+    - name: behavior_signal
+      collectionOrTable: behaviorSignals
+      dataClass: L4
+      source: system_collected
+      purpose: optional behavioral context for relationship scoring
+      consentTier: C4
+      retentionClass: R3
+      exportable: true
+      deletable: true
+      auditRequired: true
+  derivedFields:
+    - name: relationship_score
+      collectionOrTable: relationships
+      dataClass: L4
+      sourceFields:
+        - relationship_signal
+        - behavior_signal
+      purpose: user-facing relationship-strength inference
+      consentTier: C4
+      retentionClass: R3
+      exportable: true
+      deletable: true
+      explainabilityRequired: true
+
+userRights:
+  exportSupported: true
+  deletionSupported: true
+  consentRevocationSupported: true
+  explanationSupported: true
+
+adminAccess:
+  allowed: false
+  roles: []
+  auditEventTypes:
+    - relationship_score.generated
+    - relationship_score.viewed
+    - relationship_score.explanation_requested
+    - relationship_score.deleted
+
+monetization:
+  participatesInDataSharing: false
+  requiresC8Consent: false
+  anonymizationBatchRequired: false
+  minimumCohortSize: 100
+
+review:
+  reviewer: TBD
+  decision: blocked_until_implemented_and_reviewed
+  notes: Repo audit marks scoreRelationshipSignals as stubbed. Relationship inference is sensitive and must not launch until explicit consent, explanation, export, deletion, and audit events are implemented and tested.

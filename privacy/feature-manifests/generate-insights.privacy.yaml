@@ -1,0 +1,75 @@
+feature: generate-insights
+repo: LifeLoggerAI/urai-spatial
+owner: TBD
+privacyGovernanceVersion: 0.1.0-draft
+status: blocked_partial_from_repo_audit
+lastReviewed: 2026-05-09
+sourceEvidence:
+  - URAI_ECOSYSTEM_AUDIT.md
+
+summary:
+  purpose: Generate user-facing AI insights from memories and context signals.
+  userBenefit: Helps users understand patterns and meaning across their memories and life context.
+  implementationStatus: partial_data_model_defined_generation_stubbed_per_repo_audit
+
+dataProcessing:
+  collectedFields:
+    - name: memory_text
+      collectionOrTable: memories
+      dataClass: L3
+      source: user_provided
+      purpose: source material for user-facing insight generation
+      consentTier: C2
+      retentionClass: R3
+      exportable: true
+      deletable: true
+      auditRequired: true
+    - name: memory_media
+      collectionOrTable: memories/storage
+      dataClass: L4
+      source: user_upload
+      purpose: optional source material for user-facing insight generation
+      consentTier: C4
+      retentionClass: R3
+      exportable: true
+      deletable: true
+      auditRequired: true
+  derivedFields:
+    - name: insight_record
+      collectionOrTable: insights
+      dataClass: L4
+      sourceFields:
+        - memory_text
+        - memory_media
+      purpose: user-facing AI-generated insight
+      consentTier: C4
+      retentionClass: R3
+      exportable: true
+      deletable: true
+      explainabilityRequired: true
+
+userRights:
+  exportSupported: true
+  deletionSupported: true
+  consentRevocationSupported: true
+  explanationSupported: true
+
+adminAccess:
+  allowed: false
+  roles: []
+  auditEventTypes:
+    - insight.generated
+    - insight.viewed
+    - insight.explanation_requested
+    - insight.deleted
+
+monetization:
+  participatesInDataSharing: false
+  requiresC8Consent: false
+  anonymizationBatchRequired: false
+  minimumCohortSize: 100
+
+review:
+  reviewer: TBD
+  decision: blocked_until_implementation_and_review
+  notes: Repo audit marks insights partial and generateInsights stubbed. This feature must not launch until generation logic, consent checks, explanation behavior, export, deletion, and audit events are implemented and tested.

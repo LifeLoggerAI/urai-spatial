@@ -21,6 +21,10 @@ on:
         description: Firebase project ID for manual deploy
         required: false
         type: string
+      live_url:
+        description: Optional live URL to smoke and record after deploy
+        required: false
+        type: string
 
 concurrency:
   group: urai-spatial-live-release-${{ github.ref }}
@@ -67,7 +71,7 @@ jobs:
     if: github.event_name == 'workflow_dispatch' && inputs.deploy == 'true'
 
     permissions:
-      contents: read
+      contents: write
 
     steps:
       - name: Checkout
@@ -118,3 +122,28 @@ jobs:
           FIREBASE_TOKEN: ${{ secrets.FIREBASE_TOKEN }}
           FIREBASE_PROJECT_ID: ${{ inputs.firebase_project_id }}
         run: pnpm live:deploy
+
+      - name: Smoke live URL
+        if: inputs.live_url != ''
+        env:
+          HOST: ${{ inputs.live_url }}
+        run: pnpm smoke
+
+      - name: Record live status
+        if: inputs.live_url != ''
+        env:
+          LIVE_URL: ${{ inputs.live_url }}
+          FIREBASE_PROJECT_ID: ${{ inputs.firebase_project_id }}
+          RELEASE_GATE_RESULT: passed
+          LIVE_SMOKE_RESULT: passed
+          DEPLOY_METHOD: github-actions
+        run: pnpm live:record
+
+      - name: Commit live status ledger
+        if: inputs.live_url != ''
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add release/LIVE_STATUS.md
+          git commit -m "Record verified URAI Spatial live status" || echo "No live status changes to commit"
+          git push
