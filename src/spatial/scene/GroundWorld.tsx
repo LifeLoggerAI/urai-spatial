@@ -5,6 +5,7 @@ import { useFrame } from "@react-three/fiber";
 import {
   AdditiveBlending,
   Color,
+  type Group,
   type Mesh,
   type MeshBasicMaterial,
   type MeshStandardMaterial,
@@ -25,6 +26,9 @@ type GroundWorldProps = {
   mood?: GroundMood;
   presence?: GroundPresence;
   emotionalIntensity?: number;
+  recession?: number;
+  elevation?: number;
+  opacity?: number;
 };
 
 type MoodProfile = {
@@ -138,12 +142,18 @@ export default function GroundWorld({
   mood = "calm",
   presence = "idle",
   emotionalIntensity = 0.42,
+  recession = 0,
+  elevation = 0,
+  opacity = 1,
 }: GroundWorldProps) {
   const phase = useSceneStore((s) => s.phase);
   const hoveredStarId = useSceneStore((s) => s.hoveredStarId);
   const selectedStarId = useSceneStore((s) => s.selectedStarId);
 
   const safeIntensity = clamp01(emotionalIntensity);
+  const safeRecession = clamp01(recession);
+  const safeElevation = clamp01(elevation);
+  const safeOpacity = clamp01(opacity);
   const resolvedPresence: GroundPresence = selectedStarId
     ? "active"
     : hoveredStarId
@@ -154,6 +164,7 @@ export default function GroundWorld({
   const profile = MOOD_PROFILES[mood] ?? MOOD_PROFILES.calm;
   const reducedMotion = useReducedMotionPreference();
 
+  const rootRef = useRef<Group>(null);
   const groundMaterialRef = useRef<MeshStandardMaterial | null>(null);
   const contactShadowRef = useRef<Mesh>(null);
   const contactShadowMaterialRef = useRef<MeshBasicMaterial | null>(null);
@@ -204,8 +215,13 @@ export default function GroundWorld({
 
   useFrame((state) => {
     const t = state.clock.elapsedTime;
-    const visibleOpacity = phaseOpacity(phase);
+    const visibleOpacity = phaseOpacity(phase) * safeOpacity;
     const active = visibleOpacity > 0;
+
+    if (rootRef.current) {
+      rootRef.current.position.y = safeElevation * 0.035;
+      rootRef.current.scale.setScalar(1 + safeRecession * 0.018);
+    }
 
     const breath = reducedMotion
       ? 0.5
@@ -286,11 +302,14 @@ export default function GroundWorld({
 
   return (
     <group
+      ref={rootRef}
       name="living-ground-system"
       userData={{
         mood,
         presence: resolvedPresence,
         emotionalIntensity: safeIntensity,
+        recession: safeRecession,
+        elevation: safeElevation,
       }}
     >
       <mesh rotation={[-Math.PI / 2, 0, 0]} receiveShadow renderOrder={0}>

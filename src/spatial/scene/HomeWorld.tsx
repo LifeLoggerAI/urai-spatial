@@ -110,7 +110,10 @@ export default function HomeWorld({
 
   const reactiveGlow = 0.1 + bassLevel * 0.2 + audioLevel * 0.14;
   const reactiveScale = 1 + audioLevel * 0.055;
-  const groundEnergy = 0.46 + Math.min(0.32, bassLevel * 0.32 + audioLevel * 0.2) + groundVisual.elevation * 0.1;
+  const groundEnergy =
+    0.46 +
+    Math.min(0.32, bassLevel * 0.32 + audioLevel * 0.2) +
+    groundVisual.elevation * 0.1;
 
   return (
     <group scale={[reactiveScale, reactiveScale, reactiveScale]}>
@@ -120,18 +123,28 @@ export default function HomeWorld({
         mood="calm"
         presence={homeSubstate === "home_idle" ? "idle" : "near"}
         emotionalIntensity={groundEnergy}
+        recession={groundVisual.recession}
+        elevation={groundVisual.elevation}
+        opacity={groundVisual.opacity}
       />
 
+      {/* Orb contact shadow: locked to the same altar center as the orb. */}
       <mesh
         rotation={[-Math.PI / 2, 0, 0]}
         position={[-0.52, 0.016, -0.05]}
         receiveShadow
       >
         <circleGeometry args={[0.94 + groundVisual.recession * 0.12, 56]} />
-        <shadowMaterial opacity={(0.42 + audioLevel * 0.1) * groundVisual.opacity} />
+        <shadowMaterial
+          opacity={(0.42 + audioLevel * 0.1) * groundVisual.opacity}
+        />
       </mesh>
 
-      <mesh position={[-0.52, 0.61 + groundVisual.elevation * 0.02, -0.07]} renderOrder={4}>
+      {/* Sacred beam from the glass-stone ground up into the orb. */}
+      <mesh
+        position={[-0.52, 0.61 + groundVisual.elevation * 0.02, -0.07]}
+        renderOrder={4}
+      >
         <cylinderGeometry args={[0.18, 0.5, 1.22, 48, 1, true]} />
         <meshBasicMaterial
           color="#88ddff"

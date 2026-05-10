@@ -159,42 +159,98 @@ export default function Orb({
     >
       <mesh ref={outerHaloRef} renderOrder={8}>
         <sphereGeometry args={[0.86, 48, 48]} />
-        <meshBasicMaterial color="#74d9ff" transparent opacity={0.12} depthWrite={false} blending={THREE.AdditiveBlending} />
+        <meshBasicMaterial
+          color="#74d9ff"
+          transparent
+          opacity={0.12}
+          depthWrite={false}
+          blending={THREE.AdditiveBlending}
+        />
       </mesh>
 
       <mesh ref={innerHaloRef} renderOrder={9}>
         <sphereGeometry args={[0.58, 48, 48]} />
-        <meshBasicMaterial color="#b8f0ff" transparent opacity={0.2} depthWrite={false} blending={THREE.AdditiveBlending} />
+        <meshBasicMaterial
+          color="#b8f0ff"
+          transparent
+          opacity={0.2}
+          depthWrite={false}
+          blending={THREE.AdditiveBlending}
+        />
       </mesh>
 
       <mesh ref={shellRef} renderOrder={12} castShadow>
         <sphereGeometry args={[0.34, 64, 64]} />
-        <meshPhysicalMaterial color="#8fdcff" emissive="#58cfff" emissiveIntensity={4} roughness={0.18} metalness={0.02} transmission={0.15} thickness={0.72} clearcoat={1} clearcoatRoughness={0.12} transparent opacity={0.88} />
+        <meshPhysicalMaterial
+          color="#8fdcff"
+          emissive="#58cfff"
+          emissiveIntensity={4}
+          roughness={0.18}
+          metalness={0.02}
+          transmission={0.15}
+          thickness={0.72}
+          clearcoat={1}
+          clearcoatRoughness={0.12}
+          transparent
+          opacity={0.88}
+        />
       </mesh>
 
       <mesh ref={coreRef} renderOrder={13}>
         <sphereGeometry args={[0.18, 40, 40]} />
-        <meshBasicMaterial color="#f6fdff" transparent opacity={0.82} depthWrite={false} blending={THREE.AdditiveBlending} />
+        <meshBasicMaterial
+          color="#f6fdff"
+          transparent
+          opacity={0.82}
+          depthWrite={false}
+          blending={THREE.AdditiveBlending}
+        />
       </mesh>
 
       <mesh ref={lureRef} renderOrder={10} rotation={[Math.PI / 2, 0, 0]}>
         <ringGeometry args={[0.48, 0.51, 96]} />
-        <meshBasicMaterial color="#d7f8ff" transparent opacity={0.13} depthWrite={false} blending={THREE.AdditiveBlending} side={THREE.DoubleSide} />
+        <meshBasicMaterial
+          color="#d7f8ff"
+          transparent
+          opacity={0.13}
+          depthWrite={false}
+          blending={THREE.AdditiveBlending}
+          side={THREE.DoubleSide}
+        />
       </mesh>
 
       <mesh ref={ringARef} renderOrder={11}>
         <torusGeometry args={[0.46, 0.006, 8, 112]} />
-        <meshBasicMaterial color="#d9f6ff" transparent opacity={0.28} depthWrite={false} blending={THREE.AdditiveBlending} />
+        <meshBasicMaterial
+          color="#d9f6ff"
+          transparent
+          opacity={0.28}
+          depthWrite={false}
+          blending={THREE.AdditiveBlending}
+        />
       </mesh>
 
       <mesh ref={ringBRef} renderOrder={11}>
         <torusGeometry args={[0.62, 0.0045, 8, 112]} />
-        <meshBasicMaterial color="#a9d8ff" transparent opacity={0.18} depthWrite={false} blending={THREE.AdditiveBlending} />
+        <meshBasicMaterial
+          color="#a9d8ff"
+          transparent
+          opacity={0.18}
+          depthWrite={false}
+          blending={THREE.AdditiveBlending}
+        />
       </mesh>
 
       <mesh ref={focusRingRef} renderOrder={14} rotation={[Math.PI / 2, 0, 0]}>
         <ringGeometry args={[0.76, 0.79, 96]} />
-        <meshBasicMaterial color="#ffffff" transparent opacity={0} depthWrite={false} blending={THREE.AdditiveBlending} side={THREE.DoubleSide} />
+        <meshBasicMaterial
+          color="#ffffff"
+          transparent
+          opacity={0}
+          depthWrite={false}
+          blending={THREE.AdditiveBlending}
+          side={THREE.DoubleSide}
+        />
       </mesh>
 
       <mesh visible={canInteract}>
