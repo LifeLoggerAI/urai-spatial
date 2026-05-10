@@ -38,6 +38,77 @@ service cloud.firestore {
         && request.resource.data.spatialCompatibility is map;
     }
 
+    function hasOnlyHomeWorldStateFields() {
+      return request.resource.data.keys().hasOnly([
+        'version',
+        'userId',
+        'groundTier',
+        'orbTier',
+        'skyTier',
+        'moodState',
+        'recoveryState',
+        'energyScore',
+        'narratorSpeaking',
+        'skyWeatherIntensity',
+        'groundGrowthIntensity',
+        'orbPulseIntensity',
+        'rawScores',
+        'smoothedScores',
+        'confidence',
+        'sourceCoverage',
+        'lastDerivedAt',
+        'lastMoodShiftAt',
+        'lastRecoveryBloomAt',
+        'lastTierUpgradeAt',
+        'createdAt',
+        'updatedAt'
+      ]);
+    }
+
+    function hasOnlyHomeWorldExplanationFields() {
+      return request.resource.data.keys().hasOnly([
+        'version',
+        'userId',
+        'headline',
+        'summary',
+        'whyAmISeeingThis',
+        'ground',
+        'orb',
+        'sky',
+        'mood',
+        'recovery',
+        'confidence',
+        'dataSources',
+        'contributors',
+        'privacy',
+        'updatedAt'
+      ]);
+    }
+
+    function isValidHomeWorldStateWrite(uid) {
+      return isSelf(uid)
+        && request.resource.data.userId == uid
+        && hasOnlyHomeWorldStateFields()
+        && request.resource.data.groundTier in [1, 2, 3, 4, 5]
+        && request.resource.data.orbTier in [1, 2, 3, 4, 5]
+        && request.resource.data.skyTier in [1, 2, 3, 4, 5]
+        && request.resource.data.moodState in ['calm', 'low', 'recovery', 'dream', 'shadow', 'focused', 'joy']
+        && request.resource.data.recoveryState in ['dormant', 'recovering', 'stable', 'growing', 'awakened']
+        && request.resource.data.updatedAt == request.time;
+    }
+
+    function isValidHomeWorldExplanationWrite(uid) {
+      return isSelf(uid)
+        && request.resource.data.userId == uid
+        && hasOnlyHomeWorldExplanationFields()
+        && request.resource.data.version == 3
+        && request.resource.data.privacy is map
+        && request.resource.data.privacy.rawSignalsStored == false
+        && request.resource.data.privacy.usedRawAudio == false
+        && request.resource.data.privacy.usedContactIdentity == false
+        && request.resource.data.updatedAt == request.time;
+    }
+
     // Feature flags are server/admin controlled.
     // Clients can read but cannot mutate.
     match /features/{flagId} {
@@ -80,6 +151,29 @@ service cloud.firestore {
       match /tierLockAudit/{auditId} {
         allow read: if isSelf(uid) || isAdmin();
         allow write: if false;
+      }
+
+      // Home World is derived, client-visible spatial state. Clients may read
+      // their own state and write only the allowlisted derived envelope. Admins
+      // keep override access for server-side repair and migration jobs.
+      match /homeWorld/{docId} {
+        allow read: if isSelf(uid) || isAdmin();
+        allow create, update: if isAdmin() || (docId == 'state' && isValidHomeWorldStateWrite(uid));
+        allow delete: if isAdmin();
+      }
+
+      // Explainability mirrors Home World state and must never contain raw media,
+      // raw signals, contact identity, or elevated entitlement fields.
+      match /homeWorldExplainability/{docId} {
+        allow read: if isSelf(uid) || isAdmin();
+        allow create, update: if isAdmin() || (docId == 'latest' && isValidHomeWorldExplanationWrite(uid));
+        allow delete: if isAdmin();
+
+        match /history/{historyId} {
+          allow read: if isSelf(uid) || isAdmin();
+          allow create: if isAdmin() || isValidHomeWorldExplanationWrite(uid);
+          allow update, delete: if isAdmin();
+        }
       }
 
       // User-scoped personal spatial collections. These contain sensitive replay,
