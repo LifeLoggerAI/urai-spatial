@@ -171,7 +171,7 @@ async function run() {
     await page.getByTestId('lifemap-node-seed-memory-bloom').click();
     await expectAttr(stage, 'data-scene-mode', 'focus');
     await expectVisible(page.getByTestId('urai-focus-action-panel'), 'focus action panel');
-    await expectText(page.getByTestId('urai-focus-action-panel'), 'Memory Bloom');
+    await expectText(page.getByTestId('urai-focus-action-panel'), 'Memory Selected');
     await expectText(page.getByTestId('urai-focus-action-panel'), 'Start Replay');
     visualReport.screenshots.push(await screenshot(page, '04-focus-desktop'));
 
