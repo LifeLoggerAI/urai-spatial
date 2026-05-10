@@ -1,0 +1,147 @@
+:root {
+  --urai-deep-navy: #030816;
+  --urai-blue-violet: #161a46;
+  --urai-moon-silver: #dbeafe;
+  --urai-pale-cyan: #9be8ff;
+  --urai-soft-gold: #e7d59d;
+  --urai-black-stone: #05070d;
+}
+
+.urai-scene-stage {
+  background:
+    radial-gradient(circle at 50% 30%, rgba(155, 232, 255, 0.14), transparent 32%),
+    radial-gradient(circle at 50% 72%, rgba(22, 26, 70, 0.38), transparent 48%),
+    linear-gradient(180deg, var(--urai-deep-navy) 0%, #02050f 58%, #010208 100%) !important;
+}
+
+.urai-visual-overlay--home {
+  background:
+    radial-gradient(circle at 50% 50%, rgba(155, 232, 255, 0.14), transparent 22%),
+    radial-gradient(circle at 50% 64%, rgba(231, 213, 157, 0.08), transparent 28%),
+    radial-gradient(circle at 50% 10%, rgba(219, 234, 254, 0.1), transparent 18%),
+    linear-gradient(180deg, #030816 0%, #071126 45%, #02050f 100%) !important;
+}
+
+.urai-visual-overlay--home::before {
+  content: '' !important;
+  position: absolute !important;
+  inset: 0 !important;
+  z-index: 4 !important;
+  background-image:
+    radial-gradient(1px 1px at 19% 28%, rgba(219, 234, 254, 0.68), transparent),
+    radial-gradient(1px 1px at 33% 17%, rgba(219, 234, 254, 0.42), transparent),
+    radial-gradient(2px 2px at 56% 22%, rgba(155, 232, 255, 0.5), transparent),
+    radial-gradient(1px 1px at 71% 18%, rgba(231, 213, 157, 0.46), transparent),
+    radial-gradient(1px 1px at 82% 42%, rgba(219, 234, 254, 0.42), transparent),
+    radial-gradient(1px 1px at 43% 38%, rgba(155, 232, 255, 0.36), transparent);
+  opacity: 0.66 !important;
+}
+
+.urai-visual-overlay--home::after {
+  background:
+    radial-gradient(circle at 50% 50%, transparent 0 42%, rgba(1, 2, 8, 0.36) 100%),
+    linear-gradient(180deg, rgba(1, 2, 8, 0) 54%, rgba(1, 2, 8, 0.66) 100%) !important;
+}
+
+.urai-home-sky-layer {
+  background:
+    radial-gradient(circle at 50% 24%, rgba(219, 234, 254, 0.12), transparent 17%),
+    radial-gradient(circle at 50% 42%, rgba(155, 232, 255, 0.14), transparent 28%),
+    linear-gradient(180deg, rgba(3, 8, 22, 0.92), rgba(7, 17, 38, 0.34) 70%, transparent 100%) !important;
+}
+
+.urai-home-horizon-glow {
+  background: linear-gradient(180deg, rgba(155, 232, 255, 0.18), rgba(231, 213, 157, 0.05) 40%, transparent 100%) !important;
+  opacity: 0.52 !important;
+}
+
+.urai-home-ground {
+  background:
+    radial-gradient(ellipse at 50% 0%, rgba(155, 232, 255, 0.2) 0%, rgba(22, 26, 70, 0.16) 26%, rgba(5, 7, 13, 0.92) 68%, rgba(1, 2, 8, 1) 100%) !important;
+  box-shadow: 0 -34px 120px rgba(155, 232, 255, 0.08) !important;
+}
+
+.urai-home-orb__core {
+  background:
+    radial-gradient(circle at 35% 28%, rgba(255, 255, 255, 0.94) 0%, rgba(219, 234, 254, 0.76) 13%, rgba(155, 232, 255, 0.78) 40%, rgba(22, 26, 70, 0.92) 100%) !important;
+  box-shadow:
+    inset -18px -22px 38px rgba(3, 8, 22, 0.5),
+    inset 16px 14px 26px rgba(255, 255, 255, 0.14),
+    0 0 38px rgba(155, 232, 255, 0.4),
+    0 0 78px rgba(231, 213, 157, 0.14) !important;
+}
+
+.urai-home-orb__aura-inner {
+  border-color: rgba(231, 213, 157, 0.24) !important;
+  box-shadow: 0 0 42px rgba(155, 232, 255, 0.14), inset 0 0 54px rgba(219, 234, 254, 0.08) !important;
+}
+
+.urai-home-orb__aura-inner::before,
+.urai-home-orb__aura-inner::after {
+  content: '';
+  position: absolute;
+  border-radius: 999px;
+  pointer-events: none;
+}
+
+.urai-home-orb__aura-inner::before {
+  inset: 22%;
+  border: 1px solid rgba(219, 234, 254, 0.18);
+  transform: rotate(-16deg) scaleX(1.46);
+}
+
+.urai-home-orb__aura-inner::after {
+  inset: 30%;
+  background-image:
+    radial-gradient(2px 2px at 20% 48%, rgba(231, 213, 157, 0.82), transparent),
+    radial-gradient(2px 2px at 44% 32%, rgba(155, 232, 255, 0.82), transparent),
+    radial-gradient(1px 1px at 56% 58%, rgba(219, 234, 254, 0.74), transparent),
+    radial-gradient(1px 1px at 70% 42%, rgba(231, 213, 157, 0.72), transparent);
+  opacity: 0.72;
+}
+
+.urai-visual-overlay--ascent {
+  background:
+    radial-gradient(circle at 50% 48%, rgba(219, 234, 254, 0.16), transparent 21%),
+    radial-gradient(circle at 50% 58%, rgba(155, 232, 255, 0.1), transparent 38%),
+    linear-gradient(180deg, #030816 0%, #071126 60%, #010208 100%) !important;
+}
+
+.urai-ascent-rift,
+.urai-ascent-tunnel,
+.urai-ascent-portal-core,
+.urai-ascent-stream {
+  display: none !important;
+}
+
+.urai-visual-overlay--ascent::before {
+  content: '';
+  position: absolute;
+  left: 50%;
+  top: -12%;
+  width: min(28vw, 320px);
+  height: 124%;
+  transform: translateX(-50%);
+  background: linear-gradient(180deg, transparent, rgba(219, 234, 254, 0.11) 34%, rgba(155, 232, 255, 0.08) 56%, transparent);
+  filter: blur(20px);
+  opacity: 0.82;
+}
+
+.urai-life-map-nebula {
+  background:
+    radial-gradient(circle at 50% 48%, rgba(231, 213, 157, 0.18), transparent 12%),
+    radial-gradient(circle at 30% 42%, rgba(155, 232, 255, 0.16), transparent 22%),
+    radial-gradient(circle at 72% 60%, rgba(22, 26, 70, 0.4), transparent 26%),
+    radial-gradient(circle at 50% 50%, rgba(219, 234, 254, 0.06), transparent 48%) !important;
+  box-shadow: inset 0 0 130px rgba(155, 232, 255, 0.06), 0 0 90px rgba(231, 213, 157, 0.04) !important;
+}
+
+.urai-life-map-paths path {
+  stroke: rgba(219, 234, 254, 0.22) !important;
+  filter: drop-shadow(0 0 8px rgba(155, 232, 255, 0.18)) !important;
+}
+
+.urai-life-map-star-button::before {
+  background: var(--urai-moon-silver) !important;
+  box-shadow: 0 0 18px rgba(155, 232, 255, 0.7), 0 0 42px rgba(231, 213, 157, 0.28) !important;
+}
