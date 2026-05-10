@@ -157,7 +157,9 @@ async function run() {
     await expectNoText(page.locator('body'), 'Begin Ascent');
     visualReport.screenshots.push(await screenshot(page, '01-home-sky-only-desktop'));
 
-    await stage.click({ position: { x: 700, y: 500 } });
+    const skyPortal = page.locator('[data-urai-portal="sky"]');
+    await expectVisible(skyPortal, 'home sky portal');
+    await skyPortal.click();
     await expectAttr(stage, 'data-scene-mode', 'ascent');
     await expectVisible(page.getByTestId('urai-ascent-scene'), 'ascent scene');
     visualReport.screenshots.push(await screenshot(page, '02-ascent-desktop'));
