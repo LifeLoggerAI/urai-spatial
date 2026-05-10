@@ -1,0 +1,63 @@
+feature: rituals
+repo: LifeLoggerAI/urai-spatial
+owner: TBD
+privacyGovernanceVersion: 0.1.0-draft
+status: blocked_stubbed_from_repo_audit
+lastReviewed: 2026-05-09
+sourceEvidence:
+  - URAI_ECOSYSTEM_AUDIT.md
+
+summary:
+  purpose: Define recurring events, habits, or reflective rituals for users.
+  userBenefit: Helps users create repeatable personal reflection and memory practices.
+  implementationStatus: stubbed_per_repo_audit
+
+dataProcessing:
+  collectedFields:
+    - name: ritual_record
+      collectionOrTable: rituals
+      dataClass: L3
+      source: user_provided
+      purpose: store user-defined recurring events or habits
+      consentTier: C2
+      retentionClass: R3
+      exportable: true
+      deletable: true
+      auditRequired: true
+  derivedFields:
+    - name: ritual_schedule_context
+      collectionOrTable: rituals
+      dataClass: L3
+      sourceFields:
+        - ritual_record
+      purpose: support user-facing ritual scheduling and reminders
+      consentTier: C2
+      retentionClass: R3
+      exportable: true
+      deletable: true
+      explainabilityRequired: false
+
+userRights:
+  exportSupported: true
+  deletionSupported: true
+  consentRevocationSupported: true
+  explanationSupported: false
+
+adminAccess:
+  allowed: false
+  roles: []
+  auditEventTypes:
+    - ritual.created
+    - ritual.updated
+    - ritual.deleted
+
+monetization:
+  participatesInDataSharing: false
+  requiresC8Consent: false
+  anonymizationBatchRequired: false
+  minimumCohortSize: 100
+
+review:
+  reviewer: TBD
+  decision: blocked_until_implemented_and_reviewed
+  notes: Repo audit marks rituals as stubbed. Ritual records may contain sensitive personal habits and must not launch until export, deletion, consent, and audit behavior are implemented and tested.
