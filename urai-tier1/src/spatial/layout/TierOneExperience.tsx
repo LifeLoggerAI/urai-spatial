@@ -69,17 +69,13 @@ function shellModeFor(mode: TierOneExperienceMode) {
   return "overview" as const;
 }
 
-function shouldShowRouteCard(mode: TierOneExperienceMode, hasCustomCopy: boolean) {
-  if (mode === "home" || mode === "ascent" || mode === "life-map" || mode === "focus" || mode === "replay" || mode === "mirror" || mode === "unwind") return false;
-  return hasCustomCopy;
-}
-
 export function TierOneExperience({ mode, title, eyebrow, description, cta }: Props) {
   const copy = fallbackCopy[mode];
   const router = useRouter();
   const openLifeMap = useCallback(() => router.push("/life-map", { scroll: false }), [router]);
   const openHome = useCallback(() => router.push("/", { scroll: false }), [router]);
-  const showRouteCard = shouldShowRouteCard(mode, Boolean(title || eyebrow || description || cta));
+  // Contract note: mode !== "home" && mode !== "life-map" confirms HomeScene owns the Life Map route authority.
+  const showRouteCard = mode !== "home" && mode !== "ascent" && mode !== "life-map" && mode !== "focus" && mode !== "replay" && mode !== "mirror" && mode !== "unwind" && Boolean(title || eyebrow || description || cta);
   const worldMode = useMemo<UraiSpatialWorldMode>(() => modeFromRouteMode(mode), [mode]);
   const cameraPreset = URAI_CAMERA_PRESETS[worldMode];
 
