@@ -156,6 +156,7 @@ function ManifestHud({ manifest }: { manifest: SpatialAssetManifest }) {
 function isSafeAssetUrl(url: string) {
   if (!url) return false
   if (url.startsWith('gs://')) return false
+  if (url.startsWith('/demo/')) return true
   try {
     const parsed = new URL(url)
     return parsed.protocol === 'https:' || parsed.protocol === 'http:'
