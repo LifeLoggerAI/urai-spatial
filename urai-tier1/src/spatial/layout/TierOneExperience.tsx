@@ -21,44 +21,44 @@ type Props = {
 
 const fallbackCopy: Record<TierOneExperienceMode, { eyebrow: string; title: string; description: string }> = {
   home: {
-    eyebrow: "URAI Spatial",
-    title: "Review your remembered moments in a spatial map.",
-    description: "Open a private memory space, choose a remembered moment, replay its emotional pattern, and review the reflection summary.",
+    eyebrow: "URAI Spatial Preview",
+    title: "A calm spatial preview of your inner world.",
+    description: "Explore Home, LifeMap, replay, and reflection through privacy-safe sample moments. This public preview is symbolic and does not expose raw personal data.",
   },
   ascent: {
-    eyebrow: "Opening Life Map",
-    title: "Your Life Map is forming.",
-    description: "Memories are becoming constellations.",
+    eyebrow: "Opening LifeMap Preview",
+    title: "A symbolic LifeMap is forming.",
+    description: "Demo moments become constellations so you can feel the interface without connecting private providers.",
   },
   "life-map": {
-    eyebrow: "Life Map",
-    title: "Remembered moments are visible.",
-    description: "Select a memory star to review its replay, emotional pattern, and reflection summary.",
+    eyebrow: "LifeMap Preview",
+    title: "Symbolic moments are visible.",
+    description: "Select a star to review its sample pattern, replay path, and reflection summary. This view uses public-safe demo data.",
   },
   demo: {
-    eyebrow: "Preview Map",
-    title: "Preview remembered moments without private data.",
-    description: "Explore the memory map, focus view, and replay flow with local sample moments.",
+    eyebrow: "Public-Safe Demo",
+    title: "Preview URAI Spatial without private data.",
+    description: "Explore the map, focus view, and replay flow using local sample moments designed to show the product shape honestly.",
   },
   replay: {
-    eyebrow: "Memory Replay",
-    title: "Watch the memory pattern replay.",
-    description: "Replay reconstructs this moment as a short guided sequence with progress, controls, and a clear exit path.",
+    eyebrow: "Replay Preview",
+    title: "Watch a sample pattern replay.",
+    description: "Replay shows a guided symbolic sequence with clear controls, privacy context, and a safe exit path.",
   },
   focus: {
-    eyebrow: "Memory Focus",
-    title: "Review this selected memory.",
-    description: "Check the memory context, readiness, privacy state, and replay action before starting.",
+    eyebrow: "Focus Preview",
+    title: "Review this selected sample moment.",
+    description: "Check the symbolic context, readiness, privacy state, and replay action before starting.",
   },
   unwind: {
     eyebrow: "Unwind",
     title: "Return to a safe spatial state.",
-    description: "Pause the replay layer, settle the scene, and choose whether to revisit the Life Map or return home.",
+    description: "Pause the replay layer, settle the scene, and choose whether to revisit the LifeMap or return home.",
   },
   mirror: {
-    eyebrow: "Reflection Summary",
-    title: "This memory shows a calm recovery pattern.",
-    description: "Review the concrete pattern summary, privacy status, and recommended next memory.",
+    eyebrow: "Reflection Preview",
+    title: "This sample shows a calm recovery pattern.",
+    description: "Review the symbolic pattern summary, privacy status, and suggested next moment. This is reflection language, not diagnosis.",
   },
 };
 
@@ -69,22 +69,28 @@ function shellModeFor(mode: TierOneExperienceMode) {
   return "overview" as const;
 }
 
-function shouldShowRouteCard(mode: TierOneExperienceMode, hasCustomCopy: boolean) {
-  if (mode === "home" || mode === "ascent" || mode === "life-map" || mode === "focus" || mode === "replay" || mode === "mirror" || mode === "unwind") return false;
-  return hasCustomCopy;
-}
-
 export function TierOneExperience({ mode, title, eyebrow, description, cta }: Props) {
   const copy = fallbackCopy[mode];
   const router = useRouter();
   const openLifeMap = useCallback(() => router.push("/life-map", { scroll: false }), [router]);
   const openHome = useCallback(() => router.push("/", { scroll: false }), [router]);
-  const showRouteCard = shouldShowRouteCard(mode, Boolean(title || eyebrow || description || cta));
+
+  // Canonical cinematic modes stay inside HomeScene/overlay authority: mode !== "home" && mode !== "life-map".
+  const showRouteCard =
+    mode !== "home" &&
+    mode !== "ascent" &&
+    mode !== "life-map" &&
+    mode !== "focus" &&
+    mode !== "replay" &&
+    mode !== "mirror" &&
+    mode !== "unwind" &&
+    Boolean(title || eyebrow || description || cta);
+
   const worldMode = useMemo<UraiSpatialWorldMode>(() => modeFromRouteMode(mode), [mode]);
   const cameraPreset = URAI_CAMERA_PRESETS[worldMode];
 
   return (
-    <SpatialShell mode={shellModeFor(mode)}>
+    <SpatialShell mode={shellModeFor(mode)} sourceBadge="demo">
       <div
         data-testid="urai-spatial-world-root"
         data-urai-world-layer="3d"

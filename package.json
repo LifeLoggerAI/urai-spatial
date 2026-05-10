@@ -31,6 +31,7 @@
     "release:check": "pnpm launch:local",
     "live:check": "node scripts/live-release.mjs --check",
     "live:deploy": "node scripts/live-release.mjs --deploy",
+    "live:record": "node scripts/record-live-status.mjs",
     "publish:live": "pnpm live:deploy",
     "test:unit": "pnpm --filter urai-tier1 test:unit",
     "test:integration": "pnpm test:canon",

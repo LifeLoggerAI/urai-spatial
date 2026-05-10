@@ -141,6 +141,7 @@ export default function HomeScene({ homeWorldState, state = "home", opening, ent
     >
       <div className="urai-sky-deep" data-testid="home-layer-deep-sky" />
       <div className="urai-sky-vault" data-testid="home-layer-sky-vault" />
+      <div className="urai-moon-system" data-testid="home-layer-moon" aria-hidden="true"><div className="urai-moon-halo" /><div className="urai-moon-disc" /><div className="urai-moon-cut" /></div>
       <div className="urai-aurora aurora-a" data-testid="home-layer-aurora" />
       <div className="urai-aurora aurora-b" aria-hidden="true" />
       <div className="urai-cloud cloud-a" aria-hidden="true" />

@@ -1,0 +1,58 @@
+{
+  "name": "URAI Spatial Live",
+  "repository": "LifeLoggerAI/urai-spatial",
+  "canonicalStatus": "active-release-candidate",
+  "system": "urai-spatial",
+  "appPackage": "urai-tier1",
+  "packageManager": "pnpm@10.0.0",
+  "runtimeTarget": "node>=22",
+  "releaseGate": "pnpm live:check",
+  "deployCommand": "FIREBASE_PROJECT_ID=<project-id> pnpm live:deploy",
+  "postDeploySmoke": "HOST=https://<live-host> pnpm smoke",
+  "liveStatusFile": "release/LIVE_STATUS.md",
+  "routes": [
+    "/",
+    "/u/adamclamp",
+    "/spatial",
+    "/life-map",
+    "/privacy",
+    "/terms"
+  ],
+  "apiRoutes": [
+    "/api/system/health",
+    "/api/system/manifest",
+    "/api/system/capabilities",
+    "/api/system/integration-contract",
+    "/api/body-biometric",
+    "/api/orb-companion"
+  ],
+  "releaseGuards": [
+    "source-integrity",
+    "production-routes",
+    "spatial-copy",
+    "launch-boundary-contract",
+    "tier-drift",
+    "migration-markers",
+    "home-invariant",
+    "firestore-tier1-boundaries",
+    "typecheck",
+    "production-build",
+    "e2e-lock",
+    "functions-build-and-test",
+    "tier1-unit-tests",
+    "replay-contract"
+  ],
+  "liveClaims": {
+    "ar": "disabled-until-provider-validated",
+    "webxr": "disabled-until-provider-validated",
+    "wearables": "disabled-until-provider-validated",
+    "biometrics": "privacy-safe-fallback-until-provider-validated",
+    "memoryGrounding": "demo-or-fallback-until-provider-validated"
+  },
+  "requiredExternalInputsBeforeLive": [
+    "firebase_project_id",
+    "firebase_service_account_or_token",
+    "deployed_live_url",
+    "passing_live_smoke_result"
+  ]
+}

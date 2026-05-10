@@ -10,8 +10,6 @@ import GroundWorld from "./GroundWorld";
 import HomeSky from "./HomeSky";
 import { getGroundChannelsForPhase } from "./phaseMachine";
 
-/* ========================= */
-
 function emitHomeEvent(event: string, detail: Record<string, unknown> = {}) {
   if (typeof window === "undefined") return;
 
@@ -33,8 +31,6 @@ export type HomeWorldProps = {
 const HOME_ORB_POSITION: [number, number, number] = [-0.52, 1.22, -0.08];
 const HOME_AVATAR_POSITION: [number, number, number] = [-0.52, 0.17, 0.34];
 const HOME_FOCUS_TARGET: [number, number, number] = [-0.52, 0.82, -0.04];
-
-/* ========================= */
 
 export default function HomeWorld({
   audioLevel = 0,
@@ -64,10 +60,6 @@ export default function HomeWorld({
 
   const busy = phase === "ASCENT" || isTransitioning || inputLocked;
   const disabled = phase !== "HOME";
-
-  /* =========================
-     ORB HANDLERS
-     ========================= */
 
   const handleFocusOrb = useCallback(() => {
     if (phase !== "HOME") return;
@@ -102,10 +94,6 @@ export default function HomeWorld({
     }, 260);
   }, [confirmHomeEntry, enterLifeMap, busy, disabled]);
 
-  /* =========================
-     VISUAL STATE
-     ========================= */
-
   const orbVisualIntensity =
     homeSubstate === "home_orb_focus"
       ? 0.64
@@ -122,6 +110,10 @@ export default function HomeWorld({
 
   const reactiveGlow = 0.1 + bassLevel * 0.2 + audioLevel * 0.14;
   const reactiveScale = 1 + audioLevel * 0.055;
+  const groundEnergy =
+    0.46 +
+    Math.min(0.32, bassLevel * 0.32 + audioLevel * 0.2) +
+    groundVisual.elevation * 0.1;
 
   return (
     <group scale={[reactiveScale, reactiveScale, reactiveScale]}>
@@ -130,7 +122,7 @@ export default function HomeWorld({
       <GroundWorld
         mood="calm"
         presence={homeSubstate === "home_idle" ? "idle" : "near"}
-        emotionalIntensity={0.46 + Math.min(0.28, bassLevel * 0.32 + audioLevel * 0.2)}
+        emotionalIntensity={groundEnergy}
         recession={groundVisual.recession}
         elevation={groundVisual.elevation}
         opacity={groundVisual.opacity}
@@ -142,17 +134,22 @@ export default function HomeWorld({
         position={[-0.52, 0.016, -0.05]}
         receiveShadow
       >
-        <circleGeometry args={[0.94, 56]} />
-        <shadowMaterial opacity={0.42 + audioLevel * 0.1} />
+        <circleGeometry args={[0.94 + groundVisual.recession * 0.12, 56]} />
+        <shadowMaterial
+          opacity={(0.42 + audioLevel * 0.1) * groundVisual.opacity}
+        />
       </mesh>
 
       {/* Sacred beam from the glass-stone ground up into the orb. */}
-      <mesh position={[-0.52, 0.61, -0.07]} renderOrder={4}>
+      <mesh
+        position={[-0.52, 0.61 + groundVisual.elevation * 0.02, -0.07]}
+        renderOrder={4}
+      >
         <cylinderGeometry args={[0.18, 0.5, 1.22, 48, 1, true]} />
         <meshBasicMaterial
           color="#88ddff"
           transparent
-          opacity={Math.max(skyOpacity, reactiveGlow) * 0.3}
+          opacity={Math.max(skyOpacity, reactiveGlow) * 0.3 * groundVisual.opacity}
           depthWrite={false}
         />
       </mesh>

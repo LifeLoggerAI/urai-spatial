@@ -1,12 +1,21 @@
 import type { ReactNode } from 'react'
 
+type SourceBadge = 'demo' | 'local' | 'firestore' | 'error'
+
 type SpatialShellProps = {
   mode: 'overview' | 'sky' | 'replay' | 'detail' | 'export' | 'fallback'
-  sourceBadge?: 'demo' | 'local' | 'firestore' | 'error'
+  sourceBadge?: SourceBadge
   companion?: ReactNode
   exportPanel?: ReactNode
   timeline?: ReactNode
   children: ReactNode
+}
+
+const sourceBadgeCopy: Record<SourceBadge, string> = {
+  demo: 'Public-safe preview · sample data',
+  local: 'Local fallback · not synced',
+  firestore: 'Connected data · access controlled',
+  error: 'Fallback mode · provider unavailable',
 }
 
 export function SpatialShell({ mode, sourceBadge, companion, exportPanel, timeline, children }: SpatialShellProps) {
@@ -25,8 +34,10 @@ export function SpatialShell({ mode, sourceBadge, companion, exportPanel, timeli
       {companion ? <aside className="spatial-shell__companion">{companion}</aside> : null}
       {exportPanel ? <aside className="spatial-shell__export">{exportPanel}</aside> : null}
       {timeline ? <footer className="spatial-shell__timeline">{timeline}</footer> : null}
-      {process.env.NODE_ENV !== 'production' && sourceBadge ? (
-        <div className="spatial-shell__badge">source: {sourceBadge}</div>
+      {sourceBadge ? (
+        <div className="spatial-shell__badge" aria-label={`URAI Spatial data source: ${sourceBadgeCopy[sourceBadge]}`}>
+          {sourceBadgeCopy[sourceBadge]}
+        </div>
       ) : null}
     </main>
   )

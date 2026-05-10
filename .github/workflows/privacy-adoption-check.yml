@@ -1,0 +1,48 @@
+name: Privacy adoption check
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+
+jobs:
+  privacy-adoption:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Check required privacy files
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -f privacy/PRIVACY_VERSION.md
+          test -f privacy/adoption-report.md
+          test -f privacy/feature-manifests/README.md
+          if [ ! -f privacy/data-inventory.yaml ] && [ ! -f privacy/data-inventory.md ]; then
+            echo "Missing privacy data inventory"
+            exit 1
+          fi
+          echo "Required privacy adoption files exist."
+
+      - name: Require launch decision status
+        shell: bash
+        run: |
+          set -euo pipefail
+          if ! grep -Eiq "Status: (blocked|draft|approved|approved_with_conditions)" privacy/adoption-report.md; then
+            echo "privacy/adoption-report.md must include an explicit launch decision status."
+            exit 1
+          fi
+          echo "Launch decision status found."
+
+      - name: Run privacy runtime tests
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m unittest discover -s tests -p 'test_*.py'

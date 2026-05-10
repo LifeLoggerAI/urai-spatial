@@ -39,16 +39,19 @@ test('cinematic HomeScene is wired into active SpatialHomeWorld', () => {
   assert.match(spatial, /HomeScene/)
   assert.match(spatial, /data-testid="urai-spatial-stage"/)
   assert.match(layout, /HomeScene\.css/)
+  assert.match(layout, /HomeSceneFinalPass\.css/)
   assert.match(homeScene, /data-testid="urai-home-scene"/)
   assert.match(homeScene, /data-testid="urai-orb-button"/)
   assert.match(homeScene, /data-testid="urai-command-ribbon"/)
   assert.match(homeScene, /data-testid="enter-sky-button"/)
+  assert.match(homeScene, /data-testid="home-layer-moon"/)
   assert.match(homeScene, /aria-label="Enter Life Map(?: through the sky)?"/)
 })
 
 test('cinematic HomeScene preserves tier data attributes and reduced-motion styles', () => {
   const homeScene = read('src/spatial/home/visual/HomeScene.tsx')
   const css = read('src/spatial/home/visual/HomeScene.css')
+  const finalCss = read('src/spatial/home/visual/HomeSceneFinalPass.css')
 
   for (const attr of ['data-ground-tier', 'data-orb-tier', 'data-sky-tier', 'data-mood', 'data-recovery', 'data-energy', 'data-narrator-speaking']) {
     assert.match(homeScene, new RegExp(attr))
@@ -58,6 +61,10 @@ test('cinematic HomeScene preserves tier data attributes and reduced-motion styl
   assert.match(css, /orb-companion/)
   assert.match(css, /urai-horizon-system/)
   assert.match(css, /avatar-chest-glow/)
+  assert.match(finalCss, /urai-moon-system/)
+  assert.match(finalCss, /ground-front/)
+  assert.match(finalCss, /orb-reflection/)
+  assert.match(finalCss, /foreground-vignette/)
 })
 
 test('stable derivation upgrades gradually when confidence and signals are strong', () => {
