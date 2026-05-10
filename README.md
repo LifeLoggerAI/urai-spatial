@@ -2,6 +2,8 @@
 
 URAI Spatial is the immersive spatial interface layer of URAI: a cinematic, passive, privacy-aware web shell for Home, LifeMap, body/avatar zoom, sky, ground/world, orb companion navigation, biometric fallback panels, replay, and future AR/VR/WebXR expansion.
 
+See `REPO_PURPOSE.md` for this repository's source-of-truth boundary, ownership rules, and confusion guards.
+
 The current release-lock branch keeps the existing spatial engine intact and adds a standalone release shell with stable smoke/E2E markers, typed fallback APIs, system contract routes, and launch documentation.
 
 ## App root
