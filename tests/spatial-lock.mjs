@@ -157,9 +157,9 @@ async function run() {
     await expectNoText(page.locator('body'), 'Begin Ascent');
     visualReport.screenshots.push(await screenshot(page, '01-home-sky-only-desktop'));
 
-    const skyPortal = page.locator('[data-urai-portal="sky"]');
-    await expectVisible(skyPortal, 'home sky portal');
-    await skyPortal.click();
+    const lifeMapControl = page.getByTestId('home-control-lifemap');
+    await expectVisible(lifeMapControl, 'home LifeMap control');
+    await lifeMapControl.click();
     await expectAttr(stage, 'data-scene-mode', 'ascent');
     await expectVisible(page.getByTestId('urai-ascent-scene'), 'ascent scene');
     visualReport.screenshots.push(await screenshot(page, '02-ascent-desktop'));
