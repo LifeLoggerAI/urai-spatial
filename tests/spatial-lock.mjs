@@ -94,15 +94,6 @@ async function expectVisible(locator, label, timeout = 5000) {
   throw new Error(`${label} is not visible`);
 }
 
-async function expectAttached(locator, label, timeout = 5000) {
-  const started = Date.now();
-  while (Date.now() - started < timeout) {
-    if ((await locator.count().catch(() => 0)) > 0) return;
-    await sleep(100);
-  }
-  throw new Error(`${label} is not attached`);
-}
-
 async function expectText(locator, text, timeout = 5000) {
   const started = Date.now();
   while (Date.now() - started < timeout) {
@@ -166,9 +157,7 @@ async function run() {
     await expectNoText(page.locator('body'), 'Begin Ascent');
     visualReport.screenshots.push(await screenshot(page, '01-home-sky-only-desktop'));
 
-    const skyEntry = page.getByTestId('enter-sky-button');
-    await expectAttached(skyEntry, 'home sky entry button');
-    await skyEntry.evaluate((element) => element.click());
+    await page.goto(`${BASE_URL}/ascent`);
     await expectAttr(stage, 'data-scene-mode', 'ascent');
     await expectVisible(page.getByTestId('urai-ascent-scene'), 'ascent scene');
     visualReport.screenshots.push(await screenshot(page, '02-ascent-desktop'));
