@@ -30,6 +30,10 @@ export type HomeWorldProps = {
   bassLevel?: number;
 };
 
+const HOME_ORB_POSITION: [number, number, number] = [-0.52, 1.22, -0.08];
+const HOME_AVATAR_POSITION: [number, number, number] = [-0.52, 0.17, 0.34];
+const HOME_FOCUS_TARGET: [number, number, number] = [-0.52, 0.82, -0.04];
+
 /* ========================= */
 
 export default function HomeWorld({
@@ -104,88 +108,83 @@ export default function HomeWorld({
 
   const orbVisualIntensity =
     homeSubstate === "home_orb_focus"
-      ? 0.5
+      ? 0.64
       : homeSubstate === "home_confirm_enter"
-      ? 1
-      : 0.18;
+      ? 1.18
+      : 0.28;
 
   const skyOpacity =
     homeSubstate === "home_confirm_enter"
-      ? 0.28
+      ? 0.34
       : homeSubstate === "home_orb_focus"
-      ? 0.2
-      : 0.12;
+      ? 0.24
+      : 0.16;
 
-  const avatarOpacity =
-    homeSubstate === "home_confirm_enter"
-      ? 0.36
-      : homeSubstate === "home_orb_focus"
-      ? 0.26
-      : 0.2;
-
-  const reactiveGlow = 0.08 + bassLevel * 0.18 + audioLevel * 0.12;
-  const reactiveScale = 1 + audioLevel * 0.08;
+  const reactiveGlow = 0.1 + bassLevel * 0.2 + audioLevel * 0.14;
+  const reactiveScale = 1 + audioLevel * 0.055;
 
   return (
     <group scale={[reactiveScale, reactiveScale, reactiveScale]}>
       <HomeSky />
 
-      {/* GROUND */}
       <GroundWorld
+        mood="calm"
+        presence={homeSubstate === "home_idle" ? "idle" : "near"}
+        emotionalIntensity={0.46 + Math.min(0.28, bassLevel * 0.32 + audioLevel * 0.2)}
         recession={groundVisual.recession}
         elevation={groundVisual.elevation}
         opacity={groundVisual.opacity}
       />
 
-      {/* SHADOW */}
+      {/* Orb contact shadow: locked to the same altar center as the orb. */}
       <mesh
         rotation={[-Math.PI / 2, 0, 0]}
-        position={[-0.52, 0.012, -0.05]}
+        position={[-0.52, 0.016, -0.05]}
         receiveShadow
       >
-        <circleGeometry args={[1.1, 36]} />
-        <shadowMaterial opacity={0.5 + audioLevel * 0.12} />
+        <circleGeometry args={[0.94, 56]} />
+        <shadowMaterial opacity={0.42 + audioLevel * 0.1} />
       </mesh>
 
-      {/* AURA */}
-      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[-0.48, 0.014, -0.08]}>
-        <circleGeometry args={[1.4 + audioLevel * 0.2, 40]} />
+      {/* Sacred beam from the glass-stone ground up into the orb. */}
+      <mesh position={[-0.52, 0.61, -0.07]} renderOrder={4}>
+        <cylinderGeometry args={[0.18, 0.5, 1.22, 48, 1, true]} />
         <meshBasicMaterial
-          color="#67c4ff"
+          color="#88ddff"
           transparent
-          opacity={Math.max(skyOpacity, reactiveGlow)}
+          opacity={Math.max(skyOpacity, reactiveGlow) * 0.3}
           depthWrite={false}
         />
       </mesh>
 
-      <Orb
-        interactive
-        active={!disabled}
-        busy={busy}
-        disabled={disabled}
-        ariaLabel="Enter Life Map"
-        visualIntensity={orbVisualIntensity}
-        onFocus={handleFocusOrb}
-        onClick={handleEnterOrb}
-      />
+      <group position={HOME_ORB_POSITION}>
+        <Orb
+          interactive
+          active={!disabled}
+          busy={busy}
+          disabled={disabled}
+          ariaLabel="Enter Life Map"
+          visualIntensity={orbVisualIntensity}
+          onFocus={handleFocusOrb}
+          onClick={handleEnterOrb}
+        />
+      </group>
 
-      {/* AVATAR */}
       <HomeAvatar
         interactive={!disabled}
         focused={homeSubstate !== "home_idle"}
-        position={[-1.08, 0.62, 0.18]}
+        position={HOME_AVATAR_POSITION}
       />
 
-      {/* CLICK OVERLAY */}
-      <Html position={[-0.52, 1.05, 0]} center>
+      <Html position={HOME_ORB_POSITION} center>
         <button
           type="button"
           aria-label="Enter Life Map"
           disabled={busy || disabled}
           onClick={handleEnterOrb}
           style={{
-            width: "8rem",
-            height: "8rem",
+            width: "8.5rem",
+            height: "8.5rem",
             borderRadius: "9999px",
             border: "none",
             background: "transparent",
@@ -195,22 +194,11 @@ export default function HomeWorld({
         />
       </Html>
 
-      {/* CAMERA */}
       <PresenceRig
         visible={true}
         phase={phase}
-        focusTarget={[-0.52, 0.38, -0.05]}
+        focusTarget={HOME_FOCUS_TARGET}
       />
-
-      {/* DEPTH */}
-      <mesh position={[-4.2, 1.3, -3.2]} castShadow receiveShadow>
-        <boxGeometry args={[0.36, 2.6, 0.36]} />
-        <meshStandardMaterial
-          color="#04060d"
-          transparent
-          opacity={avatarOpacity}
-        />
-      </mesh>
     </group>
   );
 }
