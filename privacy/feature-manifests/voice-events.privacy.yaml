@@ -1,0 +1,65 @@
+feature: voice-events
+repo: LifeLoggerAI/urai-spatial
+owner: TBD
+privacyGovernanceVersion: 0.1.0-draft
+status: blocked_stubbed_from_repo_audit
+lastReviewed: 2026-05-09
+sourceEvidence:
+  - URAI_ECOSYSTEM_AUDIT.md
+
+summary:
+  purpose: Store and process voice interactions with the system.
+  userBenefit: Enables voice-based memory capture and interaction flows.
+  implementationStatus: stubbed_per_repo_audit
+
+dataProcessing:
+  collectedFields:
+    - name: voice_event
+      collectionOrTable: voiceEvents
+      dataClass: L5
+      source: user_voice_interaction
+      purpose: store voice interactions with the system
+      consentTier: C5
+      retentionClass: R6
+      exportable: true
+      deletable: true
+      auditRequired: true
+  derivedFields:
+    - name: voice_interaction_metadata
+      collectionOrTable: voiceEvents
+      dataClass: L4
+      sourceFields:
+        - voice_event
+      purpose: support user-facing voice interaction history and processing state
+      consentTier: C5
+      retentionClass: R6
+      exportable: true
+      deletable: true
+      explainabilityRequired: true
+
+userRights:
+  exportSupported: true
+  deletionSupported: true
+  consentRevocationSupported: true
+  explanationSupported: true
+  biometricDeletionSupported: true
+
+adminAccess:
+  allowed: false
+  roles: []
+  auditEventTypes:
+    - voice_event.created
+    - voice_event.processed
+    - voice_event.deleted
+    - voice_event.biometric_deleted
+
+monetization:
+  participatesInDataSharing: false
+  requiresC8Consent: false
+  anonymizationBatchRequired: false
+  minimumCohortSize: 100
+
+review:
+  reviewer: TBD
+  decision: blocked_until_implemented_and_reviewed
+  notes: Repo audit marks voiceEvents as stubbed. Voice interactions must be treated as biometric or identity-linked until reviewed; explicit consent, biometric deletion, export, deletion, and audit behavior are required before launch.
