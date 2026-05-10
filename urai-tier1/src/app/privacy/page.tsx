@@ -21,8 +21,8 @@ export default function PrivacyPage() {
           <ul>
             <li>No raw private memory data is shown in the public preview.</li>
             <li>No raw biometric stream is shown in the public preview.</li>
-            <li>No wearable provider is considered live unless explicitly connected and validated.</li>
-            <li>No AR, WebXR, or camera-based provider is considered live unless explicitly activated after review.</li>
+            <li>Wearable integrations remain fallback-only until explicit consent, deployment review, and runtime validation are complete.</li>
+            <li>AR, WebXR, and camera-based integrations remain fallback-only until explicit consent, deployment review, and runtime validation are complete.</li>
           </ul>
         </div>
 
