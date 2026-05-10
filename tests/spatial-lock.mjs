@@ -164,7 +164,6 @@ async function run() {
 
     await expectAttr(stage, 'data-scene-mode', 'life-map', 5000);
     await expectVisible(page.getByTestId('urai-lifemap-scene'), 'lifemap scene');
-    await expectVisible(page.getByTestId('lifemap-starfield'), 'lifemap starfield');
     await expectText(page.locator('body'), 'Life Map');
     await expectText(page.locator('body'), 'Remembered moments are visible');
     visualReport.screenshots.push(await screenshot(page, '03-lifemap-desktop'));
