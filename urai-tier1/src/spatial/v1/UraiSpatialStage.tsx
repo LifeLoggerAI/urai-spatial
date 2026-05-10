@@ -8,7 +8,7 @@ import { LifeMapScene } from './LifeMapScene';
 import { MirrorOfBecomingView } from './MirrorOfBecomingView';
 import { demoHomeWorldState, lifeMapEdges, lifeMapNodes, mirrorStates, replayPaths } from './lifeMapDemoData';
 import { initialSpatialState, reduceSpatialState } from './spatialStateMachine';
-import './uraiSpatialV1.module.css';
+import styles from './uraiSpatialV1.module.css';
 
 export function UraiSpatialStage() {
   const [state, dispatch] = useReducer(reduceSpatialState, initialSpatialState);
@@ -28,7 +28,7 @@ export function UraiSpatialStage() {
   }, [reducedMotion, state.mode]);
 
   return (
-    <main className="urai-v1-stage" data-testid="urai-v1-spatial-stage" data-mode={state.mode} aria-label="URAI Spatial V1 emotional world">
+    <main className={`${styles.stage} urai-v1-stage`} data-testid="urai-v1-spatial-stage" data-mode={state.mode} aria-label="URAI Spatial V1 emotional world">
       <EscapeUnwindController dispatch={dispatch} />
       {state.mode === 'home' || state.mode === 'returning' ? (
         <HomeWorldScene state={demoHomeWorldState} onOpenSky={() => dispatch({ type: 'OPEN_SKY' })} />
