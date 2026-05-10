@@ -27,7 +27,7 @@ const fallbackCopy: Record<TierOneExperienceMode, { eyebrow: string; title: stri
   },
   ascent: {
     eyebrow: "Opening LifeMap Preview",
-    title: "A symbolic LifeMap is forming.",
+    title: "Your Life Map is forming.",
     description: "Demo moments become constellations so you can feel the interface without connecting private providers.",
   },
   "life-map": {
