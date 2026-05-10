@@ -1,0 +1,82 @@
+import fs from 'node:fs'
+import { spawn } from 'node:child_process'
+import process from 'node:process'
+
+const mode = process.argv.includes('--deploy') ? 'deploy' : 'check'
+const deployProject = process.env.FIREBASE_PROJECT_ID || process.env.FIREBASE_PROJECT || process.env.GCLOUD_PROJECT
+
+function run(command, args, options = {}) {
+  return new Promise((resolve, reject) => {
+    console.log(`\n[URAI Spatial Live] $ ${command} ${args.join(' ')}`)
+    const child = spawn(command, args, {
+      stdio: 'inherit',
+      shell: false,
+      env: { ...process.env, ...(options.env ?? {}) },
+      cwd: options.cwd ?? process.cwd(),
+    })
+
+    child.on('error', reject)
+    child.on('exit', (code, signal) => {
+      if (code === 0) resolve({ code, signal })
+      else reject(new Error(`${command} ${args.join(' ')} failed with code ${code ?? signal}`))
+    })
+  })
+}
+
+function requireFile(path) {
+  if (!fs.existsSync(path)) {
+    throw new Error(`Required release file missing: ${path}`)
+  }
+}
+
+function assertReleaseFiles() {
+  const required = [
+    'REPO_PURPOSE.md',
+    'README.md',
+    'firebase.json',
+    'package.json',
+    'pnpm-lock.yaml',
+    'urai-tier1/package.json',
+    'urai-tier1/src/app/page.tsx',
+    'urai-tier1/src/app/home/page.tsx',
+    'urai-tier1/src/spatial/v1/UraiSpatialStage.tsx',
+  ]
+
+  for (const file of required) requireFile(file)
+}
+
+async function main() {
+  console.log(`[URAI Spatial Live] Mode: ${mode}`)
+  console.log('[URAI Spatial Live] Validating release file surface.')
+  assertReleaseFiles()
+
+  console.log('[URAI Spatial Live] Running full release verification.')
+  await run('pnpm', ['verify:release:full'])
+
+  if (mode !== 'deploy') {
+    console.log('\n[URAI Spatial Live] Live check passed. No deploy requested.')
+    console.log('[URAI Spatial Live] To deploy, set FIREBASE_PROJECT_ID and run: pnpm live:deploy')
+    return
+  }
+
+  if (!deployProject) {
+    throw new Error('FIREBASE_PROJECT_ID, FIREBASE_PROJECT, or GCLOUD_PROJECT must be set before live deploy.')
+  }
+
+  console.log(`[URAI Spatial Live] Deploying to Firebase project: ${deployProject}`)
+  await run('firebase', [
+    'deploy',
+    '--project',
+    deployProject,
+    '--only',
+    'hosting,firestore:rules,firestore:indexes,functions',
+  ])
+
+  console.log('\n[URAI Spatial Live] Deploy completed.')
+  console.log('[URAI Spatial Live] Run live smoke against the deployed URL with: HOST=https://<your-host> pnpm smoke')
+}
+
+main().catch((error) => {
+  console.error(`\n[URAI Spatial Live] ${error.message}`)
+  process.exit(1)
+})
