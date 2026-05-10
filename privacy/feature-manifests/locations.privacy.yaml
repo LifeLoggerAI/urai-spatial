@@ -1,0 +1,63 @@
+feature: locations
+repo: LifeLoggerAI/urai-spatial
+owner: TBD
+privacyGovernanceVersion: 0.1.0-draft
+status: blocked_stubbed_from_repo_audit
+lastReviewed: 2026-05-09
+sourceEvidence:
+  - URAI_ECOSYSTEM_AUDIT.md
+
+summary:
+  purpose: Store location context associated with memories.
+  userBenefit: Helps users organize and revisit memories by place.
+  implementationStatus: stubbed_per_repo_audit
+
+dataProcessing:
+  collectedFields:
+    - name: location_record
+      collectionOrTable: locations
+      dataClass: L4
+      source: device_or_user_provided
+      purpose: associate memories with places or location context
+      consentTier: C4
+      retentionClass: R3
+      exportable: true
+      deletable: true
+      auditRequired: true
+  derivedFields:
+    - name: location_memory_context
+      collectionOrTable: locations
+      dataClass: L4
+      sourceFields:
+        - location_record
+      purpose: user-facing place-based memory organization
+      consentTier: C4
+      retentionClass: R3
+      exportable: true
+      deletable: true
+      explainabilityRequired: false
+
+userRights:
+  exportSupported: true
+  deletionSupported: true
+  consentRevocationSupported: true
+  explanationSupported: false
+
+adminAccess:
+  allowed: false
+  roles: []
+  auditEventTypes:
+    - location.created
+    - location.linked_to_memory
+    - location.deleted
+
+monetization:
+  participatesInDataSharing: false
+  requiresC8Consent: false
+  anonymizationBatchRequired: false
+  minimumCohortSize: 100
+
+review:
+  reviewer: TBD
+  decision: blocked_until_implemented_and_reviewed
+  notes: Repo audit marks locations as stubbed. Location data is sensitive context and must not launch until explicit consent, revocation, export, deletion, and audit behavior are implemented and tested.
