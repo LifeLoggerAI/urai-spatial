@@ -8,9 +8,12 @@ import { useFrame } from '@react-three/fiber'
 import { SpatialAssetManifest } from '../assets/manifestTypes'
 import ManifestRenderer from '../assets/ManifestRenderer'
 import type { LifeMapNavigationState } from '../interaction/LifeMapNavigationOverlay'
+import type { AscentPhase } from '../scene/ascentState'
 
 export type ConstellationNodePosition = readonly [number, number, number]
 type ClusterKey = 'memory' | 'intense' | 'visual' | 'spatial' | 'motion' | 'general'
+
+type RevealPhase = AscentPhase | 'idle'
 
 const clusterOffsets: Record<ClusterKey, ConstellationNodePosition> = {
   memory: [-5.2, 1.85, -3.6],
@@ -54,14 +57,24 @@ function nodePosition(clusterKey: ClusterKey, indexInCluster: number, clusterSiz
   ] as const
 }
 
+function revealOpacity(phase: RevealPhase, layer: 'links' | 'ghosts' | 'nodes') {
+  if (phase === 'ascentRevealing') return layer === 'nodes' ? 0.54 : layer === 'links' ? 0.18 : 0.24
+  if (phase === 'lifemapHydrating') return layer === 'nodes' ? 0.68 : layer === 'links' ? 0.24 : 0.34
+  if (phase === 'lifemapReady' || phase === 'idle') return 1
+  return layer === 'nodes' ? 0.36 : 0.12
+}
+
 function ConstellationLinks({
   nodes,
   selectedManifestId,
+  revealPhase,
 }: {
   nodes: Array<{ manifest?: SpatialAssetManifest; id?: string; clusterKey: ClusterKey; position: ConstellationNodePosition }>
   selectedManifestId: string | null
+  revealPhase: RevealPhase
 }) {
   const ref = useRef<THREE.LineSegments>(null)
+  const layerOpacity = revealOpacity(revealPhase, 'links')
 
   const geometry = useMemo(() => {
     const positions: number[] = []
@@ -97,36 +110,61 @@ function ConstellationLinks({
     ref.current.rotation.y = Math.sin(clock.elapsedTime * 0.06) * 0.018
     const material = ref.current.material
     if (material instanceof THREE.LineBasicMaterial) {
-      material.opacity = selectedManifestId ? 0.18 : 0.36 + Math.sin(clock.elapsedTime * 0.75) * 0.07
+      const selectedOpacity = selectedManifestId ? 0.16 : 0.3 + Math.sin(clock.elapsedTime * 0.75) * 0.05
+      material.opacity = selectedOpacity * layerOpacity
     }
   })
 
   return (
     <lineSegments ref={ref} geometry={geometry} frustumCulled={false}>
-      <lineBasicMaterial color="#8fdcff" transparent opacity={0.36} depthWrite={false} blending={THREE.AdditiveBlending} />
+      <lineBasicMaterial color="#dbeafe" transparent opacity={0.28 * layerOpacity} depthWrite={false} blending={THREE.AdditiveBlending} />
     </lineSegments>
   )
 }
 
-function Node({ position, selected, dimmed, onSelect }: { position: ConstellationNodePosition; selected: boolean; dimmed: boolean; onSelect: (position: ConstellationNodePosition) => void }) {
+function Node({
+  position,
+  selected,
+  dimmed,
+  controlsEnabled,
+  revealPhase,
+  onSelect,
+}: {
+  position: ConstellationNodePosition
+  selected: boolean
+  dimmed: boolean
+  controlsEnabled: boolean
+  revealPhase: RevealPhase
+  onSelect: (position: ConstellationNodePosition) => void
+}) {
   const ref = useRef<Mesh>(null)
-  const opacity = dimmed ? 0.18 : 1
-  const baseScale = dimmed ? 0.72 : 1
+  const reveal = revealOpacity(revealPhase, 'nodes')
+  const opacity = (dimmed ? 0.18 : 1) * reveal
+  const baseScale = dimmed ? 0.72 : revealPhase === 'ascentRevealing' ? 0.78 : 1
 
   useFrame(({ clock }) => {
     if (!ref.current || dimmed) return
-    ref.current.rotation.y = clock.elapsedTime * 0.2
-    const scale = selected ? 2.25 + Math.sin(clock.elapsedTime * 3) * 0.12 : baseScale + Math.sin(clock.elapsedTime * 1.4 + position[0]) * 0.08
+    ref.current.rotation.y = clock.elapsedTime * 0.16
+    const scale = selected ? 2.18 + Math.sin(clock.elapsedTime * 2.2) * 0.1 : baseScale + Math.sin(clock.elapsedTime * 1.05 + position[0]) * 0.055
     ref.current.scale.setScalar(scale)
   })
 
   return (
-    <mesh ref={ref} position={position} scale={baseScale} onClick={(event) => { event.stopPropagation(); onSelect(position) }}>
+    <mesh
+      ref={ref}
+      position={position}
+      scale={baseScale}
+      onClick={(event) => {
+        event.stopPropagation()
+        if (!controlsEnabled) return
+        onSelect(position)
+      }}
+    >
       <sphereGeometry args={[0.145, 24, 24]} />
       <meshStandardMaterial
-        emissive={selected ? '#22d3ee' : '#8b5cf6'}
-        emissiveIntensity={selected ? 3.2 : dimmed ? 0.35 : 1.7}
-        color="#1f1b2e"
+        emissive={selected ? '#9be8ff' : '#e7d59d'}
+        emissiveIntensity={selected ? 2.6 : dimmed ? 0.28 : 1.12}
+        color="#071126"
         transparent
         opacity={opacity}
       />
@@ -134,19 +172,20 @@ function Node({ position, selected, dimmed, onSelect }: { position: Constellatio
   )
 }
 
-function LifeArcGhostStar({ node }: { node: { id: string; position: ConstellationNodePosition; clusterKey: ClusterKey } }) {
+function LifeArcGhostStar({ node, revealPhase }: { node: { id: string; position: ConstellationNodePosition; clusterKey: ClusterKey }; revealPhase: RevealPhase }) {
   const ref = useRef<Mesh>(null)
+  const opacity = 0.44 * revealOpacity(revealPhase, 'ghosts')
 
   useFrame(({ clock }) => {
     if (!ref.current) return
-    ref.current.scale.setScalar(0.72 + Math.sin(clock.elapsedTime * 1.1 + node.position[0]) * 0.08)
-    ref.current.rotation.y = clock.elapsedTime * 0.08
+    ref.current.scale.setScalar(0.7 + Math.sin(clock.elapsedTime * 0.95 + node.position[0]) * 0.055)
+    ref.current.rotation.y = clock.elapsedTime * 0.06
   })
 
   return (
     <mesh ref={ref} position={node.position}>
       <sphereGeometry args={[0.075, 16, 16]} />
-      <meshStandardMaterial color="#08111f" emissive="#67e8f9" emissiveIntensity={0.72} transparent opacity={0.54} />
+      <meshStandardMaterial color="#05070d" emissive="#9be8ff" emissiveIntensity={0.55} transparent opacity={opacity} />
     </mesh>
   )
 }
@@ -173,7 +212,21 @@ function NavigationDepthRig({ children, navigation }: { children: ReactNode; nav
   return <group ref={groupRef}>{children}</group>
 }
 
-export default function ConstellationLayer({ enabled, selectedManifestId, navigation, onSelect }: { enabled: boolean; selectedManifestId: string | null; navigation?: LifeMapNavigationState | null; onSelect: (manifest: SpatialAssetManifest, position: ConstellationNodePosition) => void }) {
+export default function ConstellationLayer({
+  enabled,
+  selectedManifestId,
+  navigation,
+  controlsEnabled = true,
+  revealPhase = 'idle',
+  onSelect,
+}: {
+  enabled: boolean
+  selectedManifestId: string | null
+  navigation?: LifeMapNavigationState | null
+  controlsEnabled?: boolean
+  revealPhase?: RevealPhase
+  onSelect: (manifest: SpatialAssetManifest, position: ConstellationNodePosition) => void
+}) {
   const manifests = useConstellationManifests(enabled)
   const selected = manifests.find((manifest) => manifest.manifestId === selectedManifestId) ?? null
 
@@ -203,9 +256,9 @@ export default function ConstellationLayer({ enabled, selectedManifestId, naviga
 
   return (
     <NavigationDepthRig navigation={navigation}>
-      <ConstellationLinks nodes={[...positionedManifests, ...syntheticLifeArcNodes]} selectedManifestId={selectedManifestId} />
+      <ConstellationLinks nodes={[...positionedManifests, ...syntheticLifeArcNodes]} selectedManifestId={selectedManifestId} revealPhase={revealPhase} />
 
-      {syntheticLifeArcNodes.map((node) => <LifeArcGhostStar key={node.id} node={node} />)}
+      {syntheticLifeArcNodes.map((node) => <LifeArcGhostStar key={node.id} node={node} revealPhase={revealPhase} />)}
 
       {positionedManifests.map(({ manifest, position }) => (
         <Node
@@ -213,6 +266,8 @@ export default function ConstellationLayer({ enabled, selectedManifestId, naviga
           position={position}
           selected={manifest.manifestId === selectedManifestId}
           dimmed={Boolean(selectedManifestId) && manifest.manifestId !== selectedManifestId}
+          controlsEnabled={controlsEnabled}
+          revealPhase={revealPhase}
           onSelect={(nodePosition) => onSelect(manifest, nodePosition)}
         />
       ))}
