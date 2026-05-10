@@ -69,22 +69,26 @@ function shellModeFor(mode: TierOneExperienceMode) {
   return "overview" as const;
 }
 
+function shouldShowRouteCard(mode: TierOneExperienceMode, hasCustomRouteContent: boolean) {
+  if (mode === "home") return false;
+  if (mode === "ascent") return false;
+  if (mode === "life-map") return false;
+  if (mode === "focus") return false;
+  if (mode === "replay") return false;
+  if (mode === "mirror") return false;
+  if (mode === "unwind") return false;
+
+  return hasCustomRouteContent;
+}
+
 export function TierOneExperience({ mode, title, eyebrow, description, cta }: Props) {
   const copy = fallbackCopy[mode];
   const router = useRouter();
   const openLifeMap = useCallback(() => router.push("/life-map", { scroll: false }), [router]);
   const openHome = useCallback(() => router.push("/", { scroll: false }), [router]);
 
-  // Canonical cinematic modes stay inside HomeScene/overlay authority: mode !== "home" && mode !== "life-map".
-  const showRouteCard =
-    mode !== "home" &&
-    mode !== "ascent" &&
-    mode !== "life-map" &&
-    mode !== "focus" &&
-    mode !== "replay" &&
-    mode !== "mirror" &&
-    mode !== "unwind" &&
-    Boolean(title || eyebrow || description || cta);
+  // Canonical cinematic modes stay inside HomeScene/overlay authority.
+  const showRouteCard = shouldShowRouteCard(mode, Boolean(title || eyebrow || description || cta));
 
   const worldMode = useMemo<UraiSpatialWorldMode>(() => modeFromRouteMode(mode), [mode]);
   const cameraPreset = URAI_CAMERA_PRESETS[worldMode];
