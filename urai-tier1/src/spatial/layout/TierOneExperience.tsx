@@ -90,7 +90,7 @@ export function TierOneExperience({ mode, title, eyebrow, description, cta }: Pr
   const cameraPreset = URAI_CAMERA_PRESETS[worldMode];
 
   return (
-    <SpatialShell mode={shellModeFor(mode)}>
+    <SpatialShell mode={shellModeFor(mode)} sourceBadge="demo">
       <div
         data-testid="urai-spatial-world-root"
         data-urai-world-layer="3d"
