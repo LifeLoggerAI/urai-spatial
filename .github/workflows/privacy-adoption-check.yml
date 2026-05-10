@@ -19,6 +19,7 @@ jobs:
           set -euo pipefail
           test -f privacy/PRIVACY_VERSION.md
           test -f privacy/adoption-report.md
+          test -f privacy/feature-manifests/README.md
           if [ ! -f privacy/data-inventory.yaml ] && [ ! -f privacy/data-inventory.md ]; then
             echo "Missing privacy data inventory"
             exit 1
