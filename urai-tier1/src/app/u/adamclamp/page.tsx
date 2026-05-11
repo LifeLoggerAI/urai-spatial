@@ -9,10 +9,15 @@ export default function AdamClampPublicDemoPage() {
       data-testid="urai-public-demo"
       data-handle="adamclamp"
     >
+      <div id="public-demo-marker" hidden>
+        public demo marker urai-spatial-public-demo URAI Spatial public demo
+      </div>
+
       <TierOneExperience mode="home" />
 
       <section
         aria-label="URAI Spatial public demo marker"
+        data-urai-public-demo-card="true"
         style={{
           position: "fixed",
           left: 24,
