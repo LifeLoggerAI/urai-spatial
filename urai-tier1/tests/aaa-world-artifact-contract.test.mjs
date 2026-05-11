@@ -51,3 +51,22 @@ test('Home ground and ritual platform consume AAA render budget defaults', async
   assert.match(platform, /data-render-budget-reflection-mode=\{effectiveReflectionMode\}/)
   assert.match(platform, /OrbReflection reflectionMode=\{effectiveReflectionMode\}/)
 })
+
+test('Particles and postprocessing consume AAA render budget defaults', async () => {
+  const particles = await source('src/spatial/cinematic/CinematicParticles.tsx')
+  const post = await source('src/spatial/cinematic/CinematicPostProcessing.tsx')
+
+  assert.match(particles, /resolveSpatialRenderBudget/)
+  assert.match(particles, /useReducedMotion/)
+  assert.match(particles, /const resolvedBudget = useMemo/)
+  assert.match(particles, /data-render-budget-particle-budget=\{particleBudget\}/)
+  assert.match(particles, /data-render-budget-atmosphere-mode=\{resolvedBudget\.atmosphereMode\}/)
+  assert.doesNotMatch(particles, /budget\?\.particleBudget \?\? \(reducedMotion \? 220 : 940\)/)
+
+  assert.match(post, /resolveSpatialRenderBudget/)
+  assert.match(post, /useReducedMotion/)
+  assert.match(post, /const resolvedBudget = useMemo/)
+  assert.match(post, /data-render-budget-quality-tier=\{qualityTier\}/)
+  assert.match(post, /data-render-budget-bloom-enabled=\{bloomEnabled \? 'true' : 'false'\}/)
+  assert.doesNotMatch(post, /budget\?\.qualityTier \?\? \(reducedMotion \? 'low' : 'high'\)/)
+})
