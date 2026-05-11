@@ -8,6 +8,7 @@ import ReplayTemporalField from './ReplayTemporalField'
 import { useReducedMotion } from '../spatial/hooks/useReducedMotion'
 import { REPLAY_DURATION_MS } from '../spatial/scene/replayState'
 import { resolveHomeSceneVisualBudget } from './homeSceneVisualBudget'
+import { HomeSceneVisualBudgetProvider } from './homeSceneVisualBudgetContext'
 
 export type IntegratedSceneMode = 'home' | 'ascent' | 'life-map' | 'demo' | 'replay' | 'focus' | 'unwind' | 'mirror'
 
@@ -66,8 +67,10 @@ export default function UraiIntegratedHomeScene({ sceneMode = 'home' }: { sceneM
       data-integrated-particle-budget={budget.particleBudget}
       style={{ position: 'relative', minHeight: '100svh' }}
     >
-      <HomeScene sceneMode={sceneMode} />
-      <AaaModeWorldOverlay sceneMode={sceneMode} />
+      <HomeSceneVisualBudgetProvider value={visualBudget}>
+        <HomeScene sceneMode={sceneMode} />
+        <AaaModeWorldOverlay sceneMode={sceneMode} />
+      </HomeSceneVisualBudgetProvider>
     </div>
   )
 }
