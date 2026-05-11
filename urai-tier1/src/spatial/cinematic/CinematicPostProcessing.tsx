@@ -6,6 +6,7 @@ import { Vector2 } from 'three'
 import { useMemo } from 'react'
 import { SpatialRenderBudget, resolveSpatialRenderBudget } from '../visual/aaaMaterials'
 import { useReducedMotion } from '../hooks/useReducedMotion'
+import { useSharedHomeSceneVisualBudget } from '../../scene/homeSceneVisualBudgetContext'
 
 export default function CinematicPostProcessing({
   active,
@@ -16,11 +17,12 @@ export default function CinematicPostProcessing({
   reducedMotion?: boolean
   budget?: SpatialRenderBudget
 }) {
+  const sharedVisualBudget = useSharedHomeSceneVisualBudget()
   const prefersReducedMotion = useReducedMotion()
   const effectiveReducedMotion = reducedMotion ?? prefersReducedMotion
   const resolvedBudget = useMemo(
-    () => budget ?? resolveSpatialRenderBudget({ reducedMotion: effectiveReducedMotion, qualityTier: effectiveReducedMotion ? 'low' : 'high' }),
-    [budget, effectiveReducedMotion],
+    () => budget ?? sharedVisualBudget?.budget ?? resolveSpatialRenderBudget({ reducedMotion: effectiveReducedMotion, qualityTier: effectiveReducedMotion ? 'low' : 'high' }),
+    [budget, sharedVisualBudget, effectiveReducedMotion],
   )
 
   if (!active) return null
