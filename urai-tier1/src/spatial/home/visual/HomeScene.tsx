@@ -5,6 +5,15 @@ import type { HomeMoodState, HomeRecoveryState, HomeWorldState, HomeWorldTier } 
 
 export type HomeSceneMode = "loading" | "home" | "exitingHome" | "enteringLifeMap" | "lifemap" | "focus" | "replay" | "unwind";
 
+export type HomeSceneXrRuntime = {
+  enabled: boolean;
+  connected: boolean;
+  roomId: string;
+  peerId: string;
+  navmeshUrl: string;
+  peerCount?: number;
+};
+
 type HomeSceneProps = {
   homeWorldState?: Partial<HomeWorldState>;
   state?: HomeSceneMode;
@@ -15,6 +24,7 @@ type HomeSceneProps = {
   onFocus?: () => void;
   narratorText?: string;
   className?: string;
+  xrRuntime?: HomeSceneXrRuntime;
 };
 
 const fallbackState: HomeWorldState = {
@@ -116,7 +126,9 @@ function mergeState(partial?: Partial<HomeWorldState>): HomeWorldState {
   };
 }
 
-function defaultNarrator(state: HomeWorldState) {
+function defaultNarrator(state: HomeWorldState, xrRuntime?: HomeSceneXrRuntime) {
+  if (xrRuntime?.enabled && xrRuntime.connected) return "XR room connected. The orb remains centered while the shared world synchronizes quietly.";
+  if (xrRuntime?.enabled) return "XR mode is preparing. The home world stays cinematic if headset services fall back.";
   if (state.narratorSpeaking) return "The orb is speaking softly. Your world is listening.";
   if (state.moodState === "shadow") return "The world is dimmer to make room for heavier weather without judgment.";
   if (state.moodState === "recovery") return "The ground is brighter because growth signals are active.";
@@ -124,7 +136,7 @@ function defaultNarrator(state: HomeWorldState) {
   return "The home world reflects recent energy, mood, recovery, ritual, memory, and rhythm signals.";
 }
 
-export default function HomeScene({ homeWorldState, state = "home", opening, enterLifeMap, onReplay, onUnwind, onFocus, narratorText, className }: HomeSceneProps) {
+export default function HomeScene({ homeWorldState, state = "home", opening, enterLifeMap, onReplay, onUnwind, onFocus, narratorText, className, xrRuntime }: HomeSceneProps) {
   const world = useMemo(() => mergeState(homeWorldState), [homeWorldState]);
   const mode = opening || state === "enteringLifeMap" || state === "exitingHome" ? "enteringLifeMap" : state;
   const orbColor = moodRgb[world.moodState] ?? moodRgb.calm;
@@ -144,6 +156,12 @@ export default function HomeScene({ homeWorldState, state = "home", opening, ent
       data-recovery={world.recoveryState}
       data-energy={Math.round(world.energyScore)}
       data-narrator-speaking={world.narratorSpeaking}
+      data-xr-enabled={xrRuntime?.enabled ? "true" : "false"}
+      data-xr-connected={xrRuntime?.connected ? "true" : "false"}
+      data-xr-room={xrRuntime?.roomId ?? "none"}
+      data-xr-peer={xrRuntime?.peerId ?? "none"}
+      data-xr-navmesh={xrRuntime?.navmeshUrl ?? "none"}
+      data-xr-peer-count={xrRuntime?.peerCount ?? 0}
       style={{
         "--urai-orb-rgb": orbColor,
         "--urai-sky-rgb": ambientColor,
@@ -174,7 +192,7 @@ export default function HomeScene({ homeWorldState, state = "home", opening, ent
       <section className="urai-horizon-system" data-testid="urai-home-horizon" aria-hidden="true"><div className="horizon-glow" /><div className="horizon-threshold" /><div className="terrain terrain-far" /><div className="mist mist-high" /><div className="terrain terrain-mid" /><div className="mist mist-mid" /><div className="terrain terrain-near" /><div className="mist mist-low" /></section>
       <section className="urai-ground" data-testid="urai-home-ground" aria-hidden="true"><div className="ground-plane ground-back" /><div className="ground-plane ground-mid" /><div className="root-network" data-testid="home-layer-root-network" /><div className="bloom-field" data-testid="home-layer-bloom-field" /><div className="ground-plane ground-front" /><div className="light-flecks" /></section>
       <section className="urai-hero" aria-label="Your symbolic avatar and orb companion"><div className="avatar-shadow" aria-hidden="true" /><div className="avatar-aura" aria-hidden="true" /><div className="avatar" data-testid="urai-home-avatar" role="img" aria-label="A calm symbolic avatar standing beneath the living orb"><div className="avatar-head" /><div className="avatar-neck" /><div className="avatar-shoulders" /><div className="avatar-body" /><div className="avatar-chest-glow" /><div className="avatar-leg leg-left" /><div className="avatar-leg leg-right" /></div><div className="orb-reflection" aria-hidden="true" /><button type="button" className="orb-companion" onClick={onFocus} disabled={mode === "enteringLifeMap" || !onFocus} aria-disabled={mode === "enteringLifeMap" || !onFocus} aria-label="Focus companion" data-testid="urai-orb-button"><span className="orb-halo" aria-hidden="true" /><span className="orb-core" aria-hidden="true" /><span className="orb-shine" aria-hidden="true" /><span className="orb-ring ring-a" aria-hidden="true" /><span className="orb-ring ring-b" aria-hidden="true" /><span className="orb-particles" aria-hidden="true">{Array.from({ length: 12 }, (_, index) => <i key={index} style={{ "--i": index } as React.CSSProperties} />)}</span></button></section>
-      <aside className="narrator-whisper" data-testid="home-layer-narrator-shimmer" aria-live="polite"><span className="narrator-dot" aria-hidden="true" /><span>{narratorText ?? defaultNarrator(world)}</span></aside>
+      <aside className="narrator-whisper" data-testid="home-layer-narrator-shimmer" aria-live="polite"><span className="narrator-dot" aria-hidden="true" /><span>{narratorText ?? defaultNarrator(world, xrRuntime)}</span></aside>
       <nav className="command-ribbon" data-testid="urai-command-ribbon" aria-label="Home World controls" style={homeRibbonStyle}><button type="button" onClick={enterLifeMap} disabled={mode === "enteringLifeMap"} aria-disabled={mode === "enteringLifeMap"} data-testid="home-control-lifemap" style={homeControlStyle}>LifeMap</button><button type="button" onClick={onReplay} disabled={mode === "enteringLifeMap"} aria-disabled={mode === "enteringLifeMap"} data-testid="home-control-replay">Replay</button><button type="button" onClick={onUnwind} disabled={mode === "enteringLifeMap"} aria-disabled={mode === "enteringLifeMap"} data-testid="home-control-unwind">Mirror</button>{onFocus ? <button type="button" onClick={onFocus} disabled={mode === "enteringLifeMap"} aria-disabled={mode === "enteringLifeMap"} data-testid="home-control-focus">Focus</button> : null}</nav>
       <div className="foreground-vignette" data-testid="home-layer-foreground-vignette" aria-hidden="true" />
     </main>
