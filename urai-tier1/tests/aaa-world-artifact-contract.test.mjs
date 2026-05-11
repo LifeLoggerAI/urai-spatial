@@ -112,6 +112,9 @@ test('HomeScene visual budget utility resolves synchronized render settings', as
 
   assert.match(visualBudget, /export type HomeSceneVisualBudget/)
   assert.match(visualBudget, /resolveHomeSceneVisualBudget/)
+  assert.match(visualBudget, /type HomeSceneVisualBudgetInput/)
+  assert.match(visualBudget, /sceneMode: HomeSceneMode/)
+  assert.match(visualBudget, /const mode = 'sceneMode' in input \? input\.sceneMode : input\.mode/)
   assert.match(visualBudget, /qualityTierForMode/)
   assert.match(visualBudget, /if \(reducedMotion\) return 'low'/)
   assert.match(visualBudget, /mode === 'demo' \|\| mode === 'life-map' \|\| mode === 'ascent'/)
