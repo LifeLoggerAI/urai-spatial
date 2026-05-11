@@ -32,7 +32,7 @@ test('Focus and Replay have world-layer components wired through canonical exper
   assert.match(wrapper, /<HomeScene sceneMode=\{sceneMode\}/)
   assert.match(wrapper, /<FocusChamber active/)
   assert.match(wrapper, /<ReplayTemporalField active/)
-  assert.match(wrapper, /resolveSpatialRenderBudget/)
+  assert.match(wrapper, /resolveHomeSceneVisualBudget/)
   assert.match(tierOne, /UraiIntegratedHomeScene/)
   assert.doesNotMatch(tierOne, /import HomeScene from/)
 })
@@ -120,4 +120,16 @@ test('HomeScene visual budget utility resolves synchronized render settings', as
   assert.match(visualBudget, /'data-render-budget-quality-tier': budget\.qualityTier/)
   assert.match(visualBudget, /'data-render-budget-atmosphere-mode': budget\.atmosphereMode/)
   assert.match(visualBudget, /'data-render-budget-reflection-mode': budget\.reflectionMode/)
+})
+
+test('Integrated runtime wrapper consumes synchronized HomeScene visual budget', async () => {
+  const wrapper = await source('src/scene/UraiIntegratedHomeScene.tsx')
+
+  assert.match(wrapper, /resolveHomeSceneVisualBudget/)
+  assert.match(wrapper, /const visualBudget = resolveHomeSceneVisualBudget\(\{ mode: sceneMode, reducedMotion \}\)/)
+  assert.match(wrapper, /dpr=\{visualBudget\.canvasDpr\}/)
+  assert.match(wrapper, /shadows=\{visualBudget\.shadowMapSize >= 1536\}/)
+  assert.match(wrapper, /data-integrated-max-dpr=\{budget\.maxDpr\}/)
+  assert.match(wrapper, /data-integrated-particle-budget=\{budget\.particleBudget\}/)
+  assert.doesNotMatch(wrapper, /resolveSpatialRenderBudget/)
 })
