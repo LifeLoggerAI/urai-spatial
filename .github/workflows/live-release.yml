@@ -1,9 +1,6 @@
 name: URAI Spatial Live Release Gate
 
 on:
-  pull_request:
-    branches:
-      - main
   workflow_dispatch:
     inputs:
       deploy:
