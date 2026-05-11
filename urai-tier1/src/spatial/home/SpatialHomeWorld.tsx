@@ -1,16 +1,35 @@
 "use client";
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useMemo, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useHomeWorldState } from "./useHomeWorldState";
 import { useAscentTransition } from "./motion/useAscentTransition";
 import HomeScene from "./visual/HomeScene";
+import { useUraiXrRoom } from "../xr/useUraiXrRoom";
 
 export default function SpatialHomeWorld({ userId = "demo-user" }: { userId?: string }) {
   const router = useRouter();
+  const params = useSearchParams();
   const { state, loading, explanation, source, refresh } = useHomeWorldState(userId);
   const { opening, enter } = useAscentTransition("/life-map");
   const [showExplanation, setShowExplanation] = useState(false);
+  const xrEnabled = params.get("xr") === "1" || params.get("mode") === "xr" || params.get("mode") === "vr";
+  const xrRoomId = params.get("xrRoom") ?? "home";
+  const xrPeerId = params.get("xrPeer") ?? userId;
+  const xrToken = params.get("xrToken") ?? undefined;
+  const xrNavmeshUrl = "/xr/navmeshes/home-platform-v1.json";
+  const xrRoom = useUraiXrRoom({ enabled: xrEnabled, roomId: xrRoomId, peerId: xrPeerId, token: xrToken, navmeshUrl: xrNavmeshUrl });
+  const xrRuntime = useMemo(
+    () => ({
+      enabled: xrEnabled,
+      connected: xrRoom.connected,
+      roomId: xrRoom.roomId,
+      peerId: xrRoom.peerId,
+      navmeshUrl: xrRoom.navmeshUrl,
+      peerCount: xrRoom.peerSnapshot ? Object.keys(xrRoom.peerSnapshot.peers).length : 0,
+    }),
+    [xrEnabled, xrRoom.connected, xrRoom.navmeshUrl, xrRoom.peerId, xrRoom.peerSnapshot, xrRoom.roomId],
+  );
 
   return (
     <div
@@ -27,6 +46,11 @@ export default function SpatialHomeWorld({ userId = "demo-user" }: { userId?: st
       data-recovery={state.recoveryState}
       data-energy={Math.round(state.energyScore)}
       data-narrator-speaking={state.narratorSpeaking}
+      data-xr-enabled={xrEnabled ? "true" : "false"}
+      data-xr-connected={xrRoom.connected ? "true" : "false"}
+      data-xr-room={xrRoom.roomId}
+      data-xr-peer={xrRoom.peerId}
+      data-xr-navmesh={xrRoom.navmeshUrl}
     >
       <HomeScene
         homeWorldState={state}
@@ -36,6 +60,7 @@ export default function SpatialHomeWorld({ userId = "demo-user" }: { userId?: st
         onReplay={() => router.push("/replay", { scroll: false })}
         onUnwind={() => router.push("/mirror", { scroll: false })}
         onFocus={() => router.push("/focus", { scroll: false })}
+        xrRuntime={xrRuntime}
       />
 
       <nav className="dock" data-testid="urai-command-ribbon" aria-label="Home World controls">
@@ -80,6 +105,7 @@ export default function SpatialHomeWorld({ userId = "demo-user" }: { userId?: st
             <span>{explanation.confidence.label} confidence</span>
             <span>Derived only · no raw audio stored</span>
             {source === "local" ? <span>Local-only</span> : null}
+            {xrEnabled ? <span>XR room: {xrRoom.roomId}</span> : null}
           </div>
 
           <ul>
