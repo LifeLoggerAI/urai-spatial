@@ -5,6 +5,7 @@ import { useFrame, useThree } from '@react-three/fiber'
 import { useEffect, useMemo, useRef } from 'react'
 import { SpatialRenderBudget, resolveSpatialRenderBudget } from '../spatial/visual/aaaMaterials'
 import { useReducedMotion } from '../spatial/hooks/useReducedMotion'
+import { useSharedHomeSceneVisualBudget } from './homeSceneVisualBudgetContext'
 
 type AtmosphereMode = 'home' | 'life-map' | 'focus' | 'replay' | 'mirror' | 'unwind' | 'ascent' | 'demo'
 
@@ -103,13 +104,15 @@ export default function Atmosphere({
   budget?: SpatialRenderBudget
 }) {
   const { scene } = useThree()
+  const sharedVisualBudget = useSharedHomeSceneVisualBudget()
   const prefersReducedMotion = useReducedMotion()
   const effectiveReducedMotion = reducedMotion ?? prefersReducedMotion
   const resolvedBudget = useMemo(
-    () => budget ?? resolveSpatialRenderBudget({ reducedMotion: effectiveReducedMotion, qualityTier: effectiveReducedMotion ? 'low' : 'high' }),
-    [budget, effectiveReducedMotion],
+    () => budget ?? sharedVisualBudget?.budget ?? resolveSpatialRenderBudget({ reducedMotion: effectiveReducedMotion, qualityTier: effectiveReducedMotion ? 'low' : 'high' }),
+    [budget, sharedVisualBudget, effectiveReducedMotion],
   )
-  const density = fogDensityFor(mode, resolvedBudget, effectiveReducedMotion)
+  const effectiveMode = mode ?? sharedVisualBudget?.mode ?? 'home'
+  const density = fogDensityFor(effectiveMode, resolvedBudget, effectiveReducedMotion)
   const richAtmosphere = resolvedBudget.atmosphereMode !== 'minimal'
 
   useEffect(() => {
@@ -122,7 +125,7 @@ export default function Atmosphere({
   return (
     <group
       data-testid="urai-volumetric-look-atmosphere"
-      data-atmosphere-mode={mode}
+      data-atmosphere-mode={effectiveMode}
       data-render-budget-atmosphere-mode={resolvedBudget.atmosphereMode}
       data-render-budget-fog-density={density}
     >
