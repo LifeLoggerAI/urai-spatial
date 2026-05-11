@@ -2,12 +2,12 @@
 
 import { useMemo, useRef, type ReactNode } from 'react'
 import * as THREE from 'three'
-import { Mesh } from 'three'
 import { useFrame } from '@react-three/fiber'
 import type { SpatialAssetManifest } from '../assets/manifestTypes'
 import ManifestRenderer from '../assets/ManifestRenderer'
 import type { LifeMapNavigationState } from '../interaction/LifeMapNavigationOverlay'
 import { LIFE_MAP_UNIVERSE_EDGES, LIFE_MAP_UNIVERSE_NODES, lifeMapNodeToManifest, type LifeMapUniverseNode } from '../lifemap/lifeMapUniverseData'
+import MemoryArtifactNode, { type MemoryArtifactRarity } from '../artifacts/MemoryArtifactNode'
 
 export type ConstellationNodePosition = readonly [number, number, number]
 
@@ -22,6 +22,12 @@ const seasonZones: Array<{ id: string; position: ConstellationNodePosition; scal
 
 function selectedRelated(selectedManifestId: string | null, node: LifeMapUniverseNode) {
   return !selectedManifestId || node.id === selectedManifestId || node.relatedNodeIds.includes(selectedManifestId) || node.connectedTo.includes(selectedManifestId)
+}
+
+function rarityForNode(node: LifeMapUniverseNode): MemoryArtifactRarity {
+  if (node.locked || node.type === 'threshold' || node.emotionalIntensity >= 0.8) return 'mythic'
+  if (node.type === 'ritual' || node.type === 'recovery' || node.emotionalIntensity >= 0.62) return 'rare'
+  return 'common'
 }
 
 function UniverseAtmosphere() {
@@ -89,25 +95,22 @@ function ConstellationCurves({ nodes, selectedManifestId }: { nodes: PositionedL
 }
 
 function LifeMapUniverseStar({ entry, selected, dimmed, onSelect }: { entry: PositionedLifeMapNode; selected: boolean; dimmed: boolean; onSelect: (manifest: SpatialAssetManifest, position: ConstellationNodePosition) => void }) {
-  const ref = useRef<Mesh>(null)
-  const auraRef = useRef<Mesh>(null)
   const { node, manifest, position } = entry
-  useFrame(({ clock }) => {
-    const pulse = Math.sin(clock.elapsedTime * node.pulseSpeed * 2.2 + position[0])
-    ref.current?.scale.setScalar((selected ? 1.65 : dimmed ? 0.72 : 1) * node.size * (1 + pulse * 0.055))
-    if (ref.current) ref.current.rotation.y = clock.elapsedTime * 0.16
-    auraRef.current?.scale.setScalar((selected ? 2.4 : dimmed ? 1.1 : 1.75) * node.size * (1 + pulse * 0.08))
-  })
   return (
-    <group position={position} name={`lifemap-node-${node.id}`} userData={{ lifemapNodeType: node.type, lifemapEmotionalTone: node.emotionalTone }}>
-      <mesh ref={auraRef}>
-        <sphereGeometry args={[0.22, 24, 24]} />
-        <meshBasicMaterial color={node.auraColor} transparent opacity={dimmed ? 0.045 : selected ? 0.28 : 0.13} depthWrite={false} blending={THREE.AdditiveBlending} />
-      </mesh>
-      <mesh ref={ref} onClick={(event) => { event.stopPropagation(); if (!node.locked) onSelect(manifest, position) }} onPointerOver={(event) => event.stopPropagation()} aria-label={`${node.title}: ${node.subtitle}`}>
-        <sphereGeometry args={[0.14, 32, 32]} />
-        <meshStandardMaterial emissive={node.color} emissiveIntensity={selected ? 4.2 : dimmed ? 0.45 : 1.8 + node.emotionalIntensity * 1.4} color={node.emotionalTone === 'shadow' ? '#090014' : '#10192b'} transparent opacity={dimmed ? 0.22 : 0.96} />
-      </mesh>
+    <group position={position} name={`lifemap-node-${node.id}`} userData={{ lifemapNodeType: node.type, lifemapEmotionalTone: node.emotionalTone, artifactRarity: rarityForNode(node) }}>
+      <MemoryArtifactNode
+        id={node.id}
+        title={node.title}
+        selected={selected}
+        dimmed={dimmed}
+        locked={node.locked}
+        rarity={rarityForNode(node)}
+        tone={node.emotionalTone}
+        color={node.color}
+        auraColor={node.auraColor}
+        size={node.size}
+        onSelect={() => onSelect(manifest, position)}
+      />
     </group>
   )
 }
