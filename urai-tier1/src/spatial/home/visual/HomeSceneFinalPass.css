@@ -1,7 +1,7 @@
 /* Final Home staging pass: orb anchored lower, avatar grounded, platform visible, sky gains Life Map hierarchy. */
 .urai-home-scene {
   background: #020613;
-  --home-platform-y: 72%;
+  --home-platform-y: 79%;
 }
 
 .urai-home-scene::before {
@@ -11,25 +11,25 @@
   z-index: 0;
   pointer-events: none;
   background:
-    radial-gradient(circle at 50% 33%, rgb(134 219 255 / 0.12), transparent 16%),
-    radial-gradient(circle at 50% 76%, rgb(var(--urai-orb-rgb) / 0.14), transparent 30%),
-    linear-gradient(180deg, #020819 0%, #071633 42%, #020812 76%, #01030a 100%);
+    radial-gradient(circle at 50% 41%, rgb(134 219 255 / 0.17), transparent 20%),
+    radial-gradient(circle at 50% 79%, rgb(var(--urai-orb-rgb) / 0.12), transparent 27%),
+    linear-gradient(180deg, #020819 0%, #071633 45%, #04101d 58%, #020812 78%, #01030a 100%);
 }
 
 .urai-sky-deep {
   background:
-    radial-gradient(circle at 76% 16%, rgb(220 246 255 / 0.18), transparent 12%),
-    radial-gradient(circle at 50% 24%, rgb(196 236 255 / 0.14), transparent 18%),
-    radial-gradient(circle at 50% 42%, rgb(var(--urai-horizon-rgb) / 0.18), transparent 30%),
-    radial-gradient(circle at 66% 22%, rgb(176 150 255 / 0.13), transparent 24%),
-    linear-gradient(180deg, #030716 0%, rgb(var(--urai-sky-rgb) / 0.9) 43%, #050d19 73%, #01040b 100%);
+    radial-gradient(circle at 76% 16%, rgb(220 246 255 / 0.11), transparent 10%),
+    radial-gradient(circle at 50% 41%, rgb(196 236 255 / 0.2), transparent 20%),
+    radial-gradient(circle at 50% 56%, rgb(var(--urai-horizon-rgb) / 0.14), transparent 32%),
+    radial-gradient(circle at 66% 22%, rgb(176 150 255 / 0.11), transparent 24%),
+    linear-gradient(180deg, #030716 0%, rgb(var(--urai-sky-rgb) / 0.9) 44%, #071629 58%, #050d19 76%, #01040b 100%);
 }
 
 .urai-sky-vault {
   background:
-    radial-gradient(ellipse at 50% 5%, rgb(255 255 255 / 0.09), transparent 34%),
-    radial-gradient(ellipse at 50% 48%, rgb(142 220 255 / 0.06), transparent 42%),
-    linear-gradient(180deg, rgb(255 255 255 / 0.055), transparent 30%, rgb(0 0 0 / 0.48) 100%);
+    radial-gradient(ellipse at 50% 10%, rgb(255 255 255 / 0.055), transparent 34%),
+    radial-gradient(ellipse at 50% 43%, rgb(142 220 255 / 0.08), transparent 42%),
+    linear-gradient(180deg, rgb(255 255 255 / 0.045), transparent 31%, rgb(0 0 0 / 0.46) 100%);
 }
 
 .urai-moon-system {
@@ -71,105 +71,118 @@
 }
 
 .urai-stars {
-  opacity: 0.66;
+  opacity: 0.52;
+}
+
+.urai-stars i {
+  opacity: 0.58;
+}
+
+.urai-stars i:nth-child(4n + 1) {
+  transform: translateY(4vh);
+}
+
+.urai-stars i:nth-child(5n + 2) {
+  transform: translateX(18vw);
 }
 
 .urai-home-scene[data-sky-tier='5'] .urai-stars {
-  opacity: 0.88;
+  opacity: 0.74;
 }
 
 .urai-constellation {
   inset: 7% 14% 48%;
-  opacity: 0.22;
+  opacity: 0.16;
   background:
     radial-gradient(circle at 42% 28%, rgb(230 250 255 / 0.5) 0 2px, transparent 3px),
     radial-gradient(circle at 48% 38%, rgb(155 232 255 / 0.42) 0 2px, transparent 3px),
     radial-gradient(circle at 57% 30%, rgb(231 213 157 / 0.44) 0 2px, transparent 3px),
     linear-gradient(115deg, transparent 0 44%, rgb(155 232 255 / 0.22) 44.2%, transparent 44.55%),
     linear-gradient(28deg, transparent 0 55%, rgb(255 255 255 / 0.14) 55.2%, transparent 55.55%);
-  mask-image: radial-gradient(circle at 50% 36%, black, transparent 70%);
+  mask-image: radial-gradient(circle at 50% 36%, transparent 0 24%, black 44%, transparent 74%);
 }
 
 .urai-home-scene[data-sky-tier='4'] .urai-constellation,
 .urai-home-scene[data-sky-tier='5'] .urai-constellation {
-  opacity: 0.58;
+  opacity: 0.42;
 }
 
 .urai-cloud {
-  opacity: 0.38;
+  opacity: 0.26;
 }
 
 .urai-horizon-system {
-  bottom: 14vh;
-  height: 36vh;
+  bottom: 15vh;
+  height: 43vh;
 }
 
 .horizon-glow {
-  background: radial-gradient(ellipse at 50% 100%, rgb(210 243 255 / 0.32), rgb(var(--urai-horizon-rgb) / 0.12) 38%, transparent 72%);
-  filter: blur(28px);
+  background: radial-gradient(ellipse at 50% 100%, rgb(210 243 255 / 0.22), rgb(var(--urai-horizon-rgb) / 0.1) 38%, transparent 72%);
+  filter: blur(30px);
 }
 
 .horizon-threshold {
-  bottom: 10vh;
+  bottom: 12vh;
   width: clamp(150px, 18vw, 270px);
   height: clamp(150px, 23vh, 290px);
-  border-color: rgb(226 248 255 / 0.16);
-  box-shadow: 0 0 48px rgb(var(--urai-horizon-rgb) / 0.1), inset 0 0 54px rgb(216 244 255 / 0.055);
-  opacity: 0.24;
+  border-color: rgb(226 248 255 / 0.12);
+  box-shadow: 0 0 48px rgb(var(--urai-horizon-rgb) / 0.08), inset 0 0 54px rgb(216 244 255 / 0.045);
+  opacity: 0.2;
 }
 
 .terrain {
-  background: linear-gradient(180deg, rgb(28 58 84 / 0.22), rgb(4 13 24 / 0.78));
+  background: linear-gradient(180deg, rgb(28 58 84 / 0.18), rgb(4 13 24 / 0.74));
 }
 
 .mist {
-  background: linear-gradient(90deg, transparent, rgb(231 250 255 / 0.12), rgb(var(--urai-horizon-rgb) / 0.08), transparent);
+  background: linear-gradient(90deg, transparent, rgb(231 250 255 / 0.1), rgb(var(--urai-horizon-rgb) / 0.07), transparent);
 }
 
 .urai-ground {
-  height: 43vh;
+  height: 30vh;
   bottom: -5vh;
 }
 
 .ground-back {
   bottom: 17vh;
-  height: 16vh;
-  background: rgb(11 36 52 / 0.34);
+  height: 9vh;
+  background: rgb(11 36 52 / 0.3);
 }
 
 .ground-mid {
-  bottom: 9vh;
-  height: 23vh;
-  background: linear-gradient(180deg, rgb(14 45 60 / 0.56), rgb(4 18 29 / 0.9));
+  bottom: 7vh;
+  height: 17vh;
+  background: linear-gradient(180deg, rgb(14 45 60 / 0.48), rgb(4 18 29 / 0.88));
 }
 
 .ground-front {
-  bottom: 1vh;
-  height: 27vh;
+  bottom: 0;
+  height: 24vh;
   background:
-    radial-gradient(ellipse at 50% 6%, rgb(177 235 255 / 0.24), transparent 42%),
-    radial-gradient(ellipse at 50% 18%, rgb(231 213 157 / 0.08), transparent 34%),
-    linear-gradient(180deg, rgb(4 28 38 / 0.96), #01050b 86%);
-  box-shadow: 0 -26px 90px rgb(116 215 255 / 0.08);
+    radial-gradient(ellipse at 50% 5%, rgb(177 235 255 / 0.2), transparent 42%),
+    radial-gradient(ellipse at 50% 18%, rgb(231 213 157 / 0.06), transparent 34%),
+    linear-gradient(180deg, rgb(4 28 38 / 0.94), #01050b 86%);
+  box-shadow: 0 -24px 84px rgb(116 215 255 / 0.07);
 }
 
 .root-network {
-  bottom: 12vh;
+  bottom: 10vh;
   width: min(760px, 72vw);
-  height: 18vh;
-  opacity: 0.24;
+  height: 14vh;
+  opacity: 0.18;
   background-image:
-    radial-gradient(circle, rgb(191 244 255 / 0.26) 0 1px, transparent 2px),
-    linear-gradient(90deg, transparent 0 48%, rgb(231 213 157 / 0.12) 50%, transparent 52%);
+    radial-gradient(circle, rgb(191 244 255 / 0.22) 0 1px, transparent 2px),
+    linear-gradient(90deg, transparent 0 48%, rgb(231 213 157 / 0.1) 50%, transparent 52%);
 }
 
 .bloom-field {
-  bottom: 16vh;
-  opacity: 0.1;
+  bottom: 13vh;
+  opacity: 0.08;
 }
 
 .urai-hero {
-  bottom: clamp(58px, 9vh, 94px);
+  left: 50%;
+  bottom: clamp(48px, 7.5vh, 76px);
   width: clamp(300px, 34vw, 450px);
   height: clamp(430px, 60vh, 620px);
 }
@@ -189,19 +202,19 @@
   bottom: 42px;
   width: min(560px, 58vw);
   height: 210px;
-  border: 1px solid rgb(219 234 254 / 0.2);
+  border: 1px solid rgb(219 234 254 / 0.18);
   background:
-    radial-gradient(ellipse at 50% 50%, rgb(155 232 255 / 0.12), transparent 30%),
-    repeating-radial-gradient(ellipse at 50% 50%, transparent 0 34px, rgb(231 213 157 / 0.11) 35px 36px, transparent 37px 70px);
-  box-shadow: inset 0 0 42px rgb(155 232 255 / 0.07), 0 0 52px rgb(0 0 0 / 0.34);
+    radial-gradient(ellipse at 50% 50%, rgb(155 232 255 / 0.1), transparent 30%),
+    repeating-radial-gradient(ellipse at 50% 50%, transparent 0 34px, rgb(231 213 157 / 0.09) 35px 36px, transparent 37px 70px);
+  box-shadow: inset 0 0 42px rgb(155 232 255 / 0.06), 0 0 52px rgb(0 0 0 / 0.34);
 }
 
 .urai-hero::after {
   bottom: 92px;
   width: min(300px, 34vw);
   height: 108px;
-  border: 1px solid rgb(231 213 157 / 0.22);
-  background: radial-gradient(ellipse at 50% 50%, rgb(231 213 157 / 0.11), transparent 56%);
+  border: 1px solid rgb(231 213 157 / 0.18);
+  background: radial-gradient(ellipse at 50% 50%, rgb(231 213 157 / 0.09), transparent 56%);
   filter: blur(0.2px);
 }
 
@@ -209,7 +222,7 @@
   bottom: 28px;
   width: 126px;
   height: 218px;
-  opacity: 0.78;
+  opacity: 0.56;
   filter: drop-shadow(0 24px 36px rgb(0 0 0 / 0.68));
 }
 
@@ -217,16 +230,16 @@
   bottom: 34px;
   width: 172px;
   height: 246px;
-  opacity: 0.42;
-  background: radial-gradient(ellipse at 50% 25%, rgb(var(--urai-orb-rgb) / 0.16), rgb(var(--urai-horizon-rgb) / 0.06), transparent 72%);
+  opacity: 0.3;
+  background: radial-gradient(ellipse at 50% 25%, rgb(var(--urai-orb-rgb) / 0.13), rgb(var(--urai-horizon-rgb) / 0.05), transparent 72%);
 }
 
 .avatar-head {
   top: 24px;
   width: 50px;
   height: 54px;
-  background: radial-gradient(circle at 42% 24%, rgb(255 255 255 / 0.58), rgb(var(--urai-orb-rgb) / 0.3) 28%, rgb(5 15 28 / 0.98) 78%);
-  box-shadow: 0 0 18px rgb(var(--urai-orb-rgb) / 0.2), inset 0 0 18px rgb(255 255 255 / 0.1);
+  background: radial-gradient(circle at 42% 24%, rgb(255 255 255 / 0.5), rgb(var(--urai-orb-rgb) / 0.24) 28%, rgb(5 15 28 / 0.96) 78%);
+  box-shadow: 0 0 18px rgb(var(--urai-orb-rgb) / 0.18), inset 0 0 18px rgb(255 255 255 / 0.09);
 }
 
 .avatar-neck {
@@ -239,21 +252,21 @@
   top: 94px;
   width: 112px;
   height: 42px;
-  background: radial-gradient(ellipse at 50% 0%, rgb(var(--urai-orb-rgb) / 0.18), rgb(5 15 28 / 0.98) 70%);
+  background: radial-gradient(ellipse at 50% 0%, rgb(var(--urai-orb-rgb) / 0.14), rgb(5 15 28 / 0.96) 70%);
 }
 
 .avatar-body {
   top: 112px;
   width: 66px;
   height: 82px;
-  background: linear-gradient(180deg, rgb(var(--urai-orb-rgb) / 0.14), rgb(3 11 22 / 0.99));
+  background: linear-gradient(180deg, rgb(var(--urai-orb-rgb) / 0.11), rgb(3 11 22 / 0.98));
 }
 
 .avatar-chest-glow {
   top: 136px;
   width: 22px;
   height: 28px;
-  opacity: 0.34;
+  opacity: 0.24;
 }
 
 .avatar-leg {
@@ -276,11 +289,12 @@
   width: 230px;
   height: 38px;
   bottom: 16px;
-  background: radial-gradient(ellipse, rgb(0 0 0 / 0.74), transparent 72%);
+  background: radial-gradient(ellipse, rgb(0 0 0 / 0.7), transparent 72%);
 }
 
 .orb-companion {
-  top: clamp(106px, 17vh, 142px);
+  left: 50%;
+  top: clamp(86px, 13vh, 118px);
   width: clamp(118px, 11.2vw, 150px);
   height: clamp(118px, 11.2vw, 150px);
   filter: saturate(1.04);
@@ -297,9 +311,9 @@
 }
 
 .orb-halo {
-  inset: -42%;
-  background: radial-gradient(circle, rgb(220 248 255 / 0.2), rgb(var(--urai-orb-rgb) / 0.055) 38%, transparent 70%);
-  filter: blur(11px);
+  inset: -165%;
+  background: radial-gradient(circle, rgb(220 248 255 / 0.24), rgb(var(--urai-orb-rgb) / 0.13) 25%, rgb(var(--urai-orb-rgb) / 0.045) 46%, transparent 70%);
+  filter: blur(18px);
 }
 
 .orb-core {
@@ -307,14 +321,15 @@
     radial-gradient(circle at 34% 24%, #fff 0 8%, rgb(255 255 255 / 0.44) 10% 17%, transparent 22%),
     radial-gradient(circle at 50% 54%, rgb(255 255 255 / 0.96), rgb(153 225 255 / 0.9) 30%, rgb(58 126 194 / 0.86) 58%, rgb(8 30 69 / 0.95) 100%);
   box-shadow:
-    0 0 28px rgb(208 246 255 / 0.68),
-    0 0 62px rgb(var(--urai-orb-rgb) / 0.28),
+    0 0 28px rgb(208 246 255 / 0.7),
+    0 0 78px rgb(var(--urai-orb-rgb) / 0.34),
+    0 0 24vw rgb(var(--urai-orb-rgb) / 0.16),
     0 22px 90px rgb(177 235 255 / 0.08),
     inset 0 0 34px rgb(255 255 255 / 0.3);
 }
 
 .orb-ring {
-  border-color: rgb(236 250 255 / 0.24);
+  border-color: rgb(236 250 255 / 0.2);
 }
 
 .orb-reflection {
@@ -322,8 +337,8 @@
   width: 108px;
   height: 190px;
   background:
-    radial-gradient(ellipse at 50% 0%, rgb(231 213 157 / 0.16), transparent 34%),
-    linear-gradient(180deg, rgb(194 239 255 / 0.18), rgb(var(--urai-orb-rgb) / 0.075), transparent 72%);
+    radial-gradient(ellipse at 50% 0%, rgb(231 213 157 / 0.12), transparent 34%),
+    linear-gradient(180deg, rgb(194 239 255 / 0.14), rgb(var(--urai-orb-rgb) / 0.055), transparent 72%);
 }
 
 .narrator-whisper {
@@ -339,6 +354,7 @@
   visibility: visible;
   pointer-events: auto;
   z-index: 30;
+  bottom: calc(18px + env(safe-area-inset-bottom, 0px)) !important;
   background: linear-gradient(180deg, rgb(255 255 255 / 0.1), rgb(255 255 255 / 0.04));
   border-color: rgb(225 245 255 / 0.14);
 }
@@ -349,8 +365,8 @@
 
 .foreground-vignette {
   background:
-    radial-gradient(circle at 50% 45%, transparent 0 48%, rgb(0 0 0 / 0.42) 100%),
-    linear-gradient(180deg, rgb(0 0 0 / 0.06), transparent 36%, rgb(0 0 0 / 0.28) 100%);
+    radial-gradient(circle at 50% 43%, transparent 0 47%, rgb(0 0 0 / 0.42) 100%),
+    linear-gradient(180deg, rgb(0 0 0 / 0.05), transparent 35%, rgb(0 0 0 / 0.32) 100%);
 }
 
 @media (max-width: 720px) {
@@ -361,16 +377,16 @@
   }
 
   .urai-hero {
-    bottom: 12vh;
+    bottom: 9vh;
     transform: translateX(-50%) scale(0.82);
   }
 
   .orb-companion {
-    top: 118px;
+    top: 106px;
   }
 
   .avatar {
-    opacity: 0.68;
+    opacity: 0.48;
   }
 
   .narrator-whisper {
