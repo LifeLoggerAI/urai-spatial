@@ -5,6 +5,7 @@ import { useMemo, useRef } from 'react'
 import { AdditiveBlending, BufferAttribute, BufferGeometry, Points, Vector3 } from 'three'
 import { SpatialRenderBudget, resolveSpatialRenderBudget } from '../visual/aaaMaterials'
 import { useReducedMotion } from '../hooks/useReducedMotion'
+import { useSharedHomeSceneVisualBudget } from '../../scene/homeSceneVisualBudgetContext'
 
 function seeded(index: number) {
   const x = Math.sin(index * 127.13) * 10000
@@ -139,11 +140,12 @@ export default function CinematicParticles({
   reducedMotion?: boolean
   budget?: SpatialRenderBudget
 }) {
+  const sharedVisualBudget = useSharedHomeSceneVisualBudget()
   const prefersReducedMotion = useReducedMotion()
   const effectiveReducedMotion = reducedMotion ?? prefersReducedMotion
   const resolvedBudget = useMemo(
-    () => budget ?? resolveSpatialRenderBudget({ reducedMotion: effectiveReducedMotion, qualityTier: effectiveReducedMotion ? 'low' : 'high' }),
-    [budget, effectiveReducedMotion],
+    () => budget ?? sharedVisualBudget?.budget ?? resolveSpatialRenderBudget({ reducedMotion: effectiveReducedMotion, qualityTier: effectiveReducedMotion ? 'low' : 'high' }),
+    [budget, sharedVisualBudget, effectiveReducedMotion],
   )
   const particleBudget = resolvedBudget.particleBudget
   const layers = resolvedBudget.atmosphereMode === 'minimal' ? ATMOSPHERIC_LAYERS.slice(0, 1) : ATMOSPHERIC_LAYERS
