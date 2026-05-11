@@ -3,7 +3,8 @@
 import { useFrame } from '@react-three/fiber'
 import { useMemo, useRef } from 'react'
 import { AdditiveBlending, BufferAttribute, BufferGeometry, Points, Vector3 } from 'three'
-import { SpatialRenderBudget } from '../visual/aaaMaterials'
+import { SpatialRenderBudget, resolveSpatialRenderBudget } from '../visual/aaaMaterials'
+import { useReducedMotion } from '../hooks/useReducedMotion'
 
 function seeded(index: number) {
   const x = Math.sin(index * 127.13) * 10000
@@ -131,23 +132,34 @@ function AtmosphericPoints({
 
 export default function CinematicParticles({
   active,
-  reducedMotion = false,
+  reducedMotion,
   budget,
 }: {
   active: boolean
   reducedMotion?: boolean
   budget?: SpatialRenderBudget
 }) {
-  const particleBudget = budget?.particleBudget ?? (reducedMotion ? 220 : 940)
-  const layers = budget?.atmosphereMode === 'minimal' ? ATMOSPHERIC_LAYERS.slice(0, 1) : ATMOSPHERIC_LAYERS
+  const prefersReducedMotion = useReducedMotion()
+  const effectiveReducedMotion = reducedMotion ?? prefersReducedMotion
+  const resolvedBudget = useMemo(
+    () => budget ?? resolveSpatialRenderBudget({ reducedMotion: effectiveReducedMotion, qualityTier: effectiveReducedMotion ? 'low' : 'high' }),
+    [budget, effectiveReducedMotion],
+  )
+  const particleBudget = resolvedBudget.particleBudget
+  const layers = resolvedBudget.atmosphereMode === 'minimal' ? ATMOSPHERIC_LAYERS.slice(0, 1) : ATMOSPHERIC_LAYERS
 
   return (
-    <group data-testid="urai-atmospheric-field">
+    <group
+      data-testid="urai-atmospheric-field"
+      data-render-budget-particle-budget={particleBudget}
+      data-render-budget-atmosphere-mode={resolvedBudget.atmosphereMode}
+      data-render-budget-quality-tier={resolvedBudget.qualityTier}
+    >
       {layers.map((layer, index) => (
         <AtmosphericPoints
           key={layer.name}
           active={active}
-          reducedMotion={reducedMotion}
+          reducedMotion={effectiveReducedMotion}
           layer={layer}
           layerIndex={index}
           totalBudget={particleBudget}
