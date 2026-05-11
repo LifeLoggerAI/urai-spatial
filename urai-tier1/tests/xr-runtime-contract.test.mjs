@@ -12,43 +12,47 @@ function signed(roomId, peerId, scopes = ['room:join', 'room:signal', 'room:publ
 }
 
 test('XR room join validates token and creates authoritative room state', async () => {
+  const roomId = 'home-join-contract'
   const runtime = createUraiXrRoomRuntime({ persistence: createMemoryPersistence(), requireToken: true, now: () => 2000 })
-  const token = signed('home', 'peer-a')
-  const result = await runtime.handle({ type: 'join', roomId: 'home', peerId: 'peer-a', token })
+  const token = signed(roomId, 'peer-a')
+  const result = await runtime.handle({ type: 'join', roomId, peerId: 'peer-a', token })
   assert.equal(result.ok, true)
-  assert.equal(result.snapshot?.roomId, 'home')
+  assert.equal(result.snapshot?.roomId, roomId)
   assert.equal(result.snapshot?.version, 2)
   assert.equal(result.sfuRoom?.peers['peer-a'].peerId, 'peer-a')
   assert.ok(result.events.some((event) => event.type === 'room.joined'))
 })
 
 test('XR room signaling fails closed on missing or under-scoped token', async () => {
+  const roomId = 'home-security-contract'
   const runtime = createUraiXrRoomRuntime({ persistence: createMemoryPersistence(), requireToken: true, now: () => 2000 })
-  const missing = await runtime.handle({ type: 'join', roomId: 'home', peerId: 'peer-a' })
+  const missing = await runtime.handle({ type: 'join', roomId, peerId: 'peer-a' })
   assert.equal(missing.ok, false)
-  const observeOnly = signed('home', 'peer-a', ['room:observe'])
-  const rejected = await runtime.handle({ type: 'presence', roomId: 'home', peerId: 'peer-a', token: observeOnly, pose: { position: [0, 1.6, 0], rotation: [0, 0, 0, 1], updatedAt: 1 } })
+  const observeOnly = signed(roomId, 'peer-a', ['room:observe'])
+  const rejected = await runtime.handle({ type: 'presence', roomId, peerId: 'peer-a', token: observeOnly, pose: { position: [0, 1.6, 0], rotation: [0, 0, 0, 1], updatedAt: 1 } })
   assert.equal(rejected.ok, false)
   assert.equal(rejected.error, 'missing_scope')
 })
 
 test('presence, telemetry and voice messages reduce into one coherent snapshot', () => {
-  const base = createEmptyWorldSnapshot('home')
-  const withPresence = reduceWorldSnapshot(base, { type: 'presence', roomId: 'home', peerId: 'peer-a', pose: { position: [0, 1.6, -1], rotation: [0, 0, 0, 1], updatedAt: 1 } })
-  const withTelemetry = reduceWorldSnapshot(withPresence, { type: 'telemetry', roomId: 'home', peerId: 'peer-a', gpu: { frameMs: 13.8, fps: 72, droppedFrames: 0, dpr: 1, device: 'quest-3', sampledAt: 2 } })
-  const withVoice = reduceWorldSnapshot(withTelemetry, { type: 'voice', roomId: 'home', from: 'peer-a', position: [0, 1.6, -1], speaking: true, level: 0.7 })
+  const roomId = 'home-reducer-contract'
+  const base = createEmptyWorldSnapshot(roomId)
+  const withPresence = reduceWorldSnapshot(base, { type: 'presence', roomId, peerId: 'peer-a', pose: { position: [0, 1.6, -1], rotation: [0, 0, 0, 1], updatedAt: 1 } })
+  const withTelemetry = reduceWorldSnapshot(withPresence, { type: 'telemetry', roomId, peerId: 'peer-a', gpu: { frameMs: 13.8, fps: 72, droppedFrames: 0, dpr: 1, device: 'quest-3', sampledAt: 2 } })
+  const withVoice = reduceWorldSnapshot(withTelemetry, { type: 'voice', roomId, from: 'peer-a', position: [0, 1.6, -1], speaking: true, level: 0.7 })
   assert.deepEqual(withVoice.peers['peer-a'].position, [0, 1.6, -1])
   assert.equal(withVoice.telemetry['peer-a'].fps, 72)
   assert.equal(withVoice.voice['peer-a'].speaking, true)
 })
 
 test('SDP and ICE signaling messages round-trip through runtime transport contract', async () => {
+  const roomId = 'home-sdp-contract'
   const runtime = createUraiXrRoomRuntime({ persistence: createMemoryPersistence(), requireToken: false, now: () => 2000 })
-  await runtime.handle({ type: 'join', roomId: 'home', peerId: 'peer-a' })
-  await runtime.handle({ type: 'join', roomId: 'home', peerId: 'peer-b' })
-  const offer = await runtime.handle({ type: 'offer', roomId: 'home', from: 'peer-a', to: 'peer-b', sdp: 'v=0' })
-  const answer = await runtime.handle({ type: 'answer', roomId: 'home', from: 'peer-b', to: 'peer-a', sdp: 'v=0' })
-  const ice = await runtime.handle({ type: 'ice', roomId: 'home', from: 'peer-a', to: 'peer-b', candidate: '{"candidate":"candidate:1"}' })
+  await runtime.handle({ type: 'join', roomId, peerId: 'peer-a' })
+  await runtime.handle({ type: 'join', roomId, peerId: 'peer-b' })
+  const offer = await runtime.handle({ type: 'offer', roomId, from: 'peer-a', to: 'peer-b', sdp: 'v=0' })
+  const answer = await runtime.handle({ type: 'answer', roomId, from: 'peer-b', to: 'peer-a', sdp: 'v=0' })
+  const ice = await runtime.handle({ type: 'ice', roomId, from: 'peer-a', to: 'peer-b', candidate: '{"candidate":"candidate:1"}' })
   assert.equal(offer.ok, true)
   assert.equal(answer.ok, true)
   assert.equal(ice.ok, true)
@@ -56,18 +60,20 @@ test('SDP and ICE signaling messages round-trip through runtime transport contra
 })
 
 test('persistence snapshots, journals, hydrates and recovers room state', async () => {
+  const roomId = 'home-persistence-contract'
   const persistence = createMemoryPersistence()
-  const snapshot = await getOrCreateXrSnapshot(persistence, 'home')
-  const next = reduceWorldSnapshot(snapshot, { type: 'presence', roomId: 'home', peerId: 'peer-a', pose: { position: [1, 1, 1], rotation: [0, 0, 0, 1], updatedAt: 1 } })
-  await persistence.append('home', { type: 'join', roomId: 'home', peerId: 'peer-a' })
-  await persistence.set('home', next)
-  const recovered = await persistence.get('home')
+  const snapshot = await getOrCreateXrSnapshot(persistence, roomId)
+  const next = reduceWorldSnapshot(snapshot, { type: 'presence', roomId, peerId: 'peer-a', pose: { position: [1, 1, 1], rotation: [0, 0, 0, 1], updatedAt: 1 } })
+  await persistence.append(roomId, { type: 'join', roomId, peerId: 'peer-a' })
+  await persistence.set(roomId, next)
+  const recovered = await persistence.get(roomId)
   assert.equal(recovered?.peers['peer-a'].position[0], 1)
   assert.equal(recovered?.version, 2)
 })
 
 test('replication optimizer prunes large-room snapshots deterministically', () => {
-  const snapshot = createEmptyWorldSnapshot('home')
+  const roomId = 'home-replication-contract'
+  const snapshot = createEmptyWorldSnapshot(roomId)
   for (let index = 0; index < 30; index += 1) {
     const peerId = `peer-${index}`
     snapshot.peers[peerId] = { position: [index * 10, 1.6, -index], rotation: [0, 0, 0, 1], updatedAt: index }
@@ -81,14 +87,15 @@ test('replication optimizer prunes large-room snapshots deterministically', () =
 })
 
 test('SFU adapter creates rooms, peers, tracks and subscriptions coherently', async () => {
+  const roomId = 'home-sfu-contract'
   const sfu = createInMemoryUraiXrSfuAdapter()
-  await sfu.createRoom('home', { region: 'iad', maxPeers: 4 })
-  await sfu.joinPeer('home', 'peer-a', { region: 'iad', now: 1 })
-  await sfu.joinPeer('home', 'peer-b', { region: 'iad', now: 2 })
-  const track = await sfu.publishTrack({ roomId: 'home', peerId: 'peer-a', kind: 'audio', purpose: 'spatial-voice', priority: 'critical', spatialPosition: [0, 1.6, -1] })
-  const room = await sfu.getRoom('home')
+  await sfu.createRoom(roomId, { region: 'iad', maxPeers: 4 })
+  await sfu.joinPeer(roomId, 'peer-a', { region: 'iad', now: 1 })
+  await sfu.joinPeer(roomId, 'peer-b', { region: 'iad', now: 2 })
+  const track = await sfu.publishTrack({ roomId, peerId: 'peer-a', kind: 'audio', purpose: 'spatial-voice', priority: 'critical', spatialPosition: [0, 1.6, -1] })
+  const room = await sfu.getRoom(roomId)
   const selected = selectUraiXrSfuTracksForPeer(room, 'peer-b')
-  const subscribed = await sfu.subscribe('peer-b', 'home', selected.map((entry) => entry.trackId))
+  const subscribed = await sfu.subscribe('peer-b', roomId, selected.map((entry) => entry.trackId))
   assert.equal(track.purpose, 'spatial-voice')
   assert.equal(selected[0].trackId, track.trackId)
   assert.ok(subscribed.subscribedTrackIds.includes(track.trackId))
