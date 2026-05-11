@@ -6,14 +6,15 @@ import HomeScene from './HomeScene'
 import FocusChamber from './FocusChamber'
 import ReplayTemporalField from './ReplayTemporalField'
 import { useReducedMotion } from '../spatial/hooks/useReducedMotion'
-import { resolveSpatialRenderBudget } from '../spatial/visual/aaaMaterials'
 import { REPLAY_DURATION_MS } from '../spatial/scene/replayState'
+import { resolveHomeSceneVisualBudget } from './homeSceneVisualBudget'
 
 export type IntegratedSceneMode = 'home' | 'ascent' | 'life-map' | 'demo' | 'replay' | 'focus' | 'unwind' | 'mirror'
 
 function AaaModeWorldOverlay({ sceneMode }: { sceneMode: IntegratedSceneMode }) {
   const reducedMotion = useReducedMotion()
-  const budget = resolveSpatialRenderBudget({ reducedMotion, qualityTier: reducedMotion ? 'low' : 'high' })
+  const visualBudget = resolveHomeSceneVisualBudget({ mode: sceneMode, reducedMotion })
+  const { budget } = visualBudget
   const showFocus = sceneMode === 'focus'
   const showReplay = sceneMode === 'replay'
 
@@ -26,13 +27,14 @@ function AaaModeWorldOverlay({ sceneMode }: { sceneMode: IntegratedSceneMode }) 
       data-aaa-scene-mode={sceneMode}
       data-aaa-quality-tier={budget.qualityTier}
       data-aaa-reflection-mode={budget.reflectionMode}
+      data-aaa-atmosphere-mode={budget.atmosphereMode}
       data-aaa-particle-budget={budget.particleBudget}
       data-aaa-max-dpr={budget.maxDpr}
       aria-hidden="true"
     >
       <Canvas
-        shadows={budget.shadowMapSize >= 1536}
-        dpr={[1, budget.maxDpr]}
+        shadows={visualBudget.shadowMapSize >= 1536}
+        dpr={visualBudget.canvasDpr}
         gl={{ antialias: true, alpha: true, powerPreference: 'high-performance' }}
         style={{ position: 'absolute', inset: 0, pointerEvents: 'none' }}
       >
@@ -48,7 +50,8 @@ function AaaModeWorldOverlay({ sceneMode }: { sceneMode: IntegratedSceneMode }) 
 
 export default function UraiIntegratedHomeScene({ sceneMode = 'home' }: { sceneMode?: IntegratedSceneMode }) {
   const reducedMotion = useReducedMotion()
-  const budget = resolveSpatialRenderBudget({ reducedMotion, qualityTier: reducedMotion ? 'low' : 'high' })
+  const visualBudget = resolveHomeSceneVisualBudget({ mode: sceneMode, reducedMotion })
+  const { budget } = visualBudget
 
   return (
     <div
@@ -57,8 +60,10 @@ export default function UraiIntegratedHomeScene({ sceneMode = 'home' }: { sceneM
       data-integrated-scene-mode={sceneMode}
       data-integrated-quality-tier={budget.qualityTier}
       data-integrated-reflection-mode={budget.reflectionMode}
-      data-integrated-shadow-map-size={budget.shadowMapSize}
+      data-integrated-shadow-map-size={visualBudget.shadowMapSize}
       data-integrated-atmosphere-mode={budget.atmosphereMode}
+      data-integrated-max-dpr={budget.maxDpr}
+      data-integrated-particle-budget={budget.particleBudget}
       style={{ position: 'relative', minHeight: '100svh' }}
     >
       <HomeScene sceneMode={sceneMode} />
