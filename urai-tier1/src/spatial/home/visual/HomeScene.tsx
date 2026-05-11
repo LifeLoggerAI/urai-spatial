@@ -33,6 +33,25 @@ const fallbackState: HomeWorldState = {
   updatedAt: new Date(0).toISOString(),
 };
 
+const homeRibbonStyle: React.CSSProperties = {
+  display: "flex",
+  visibility: "visible",
+  opacity: 1,
+  pointerEvents: "auto",
+  position: "absolute",
+  left: "50%",
+  bottom: "calc(28px + env(safe-area-inset-bottom, 0px))",
+  transform: "translateX(-50%)",
+  zIndex: 80,
+};
+
+const homeControlStyle: React.CSSProperties = {
+  display: "inline-flex",
+  visibility: "visible",
+  opacity: 1,
+  pointerEvents: "auto",
+};
+
 const moodRgb: Record<HomeMoodState, string> = {
   calm: "114 211 255",
   low: "88 127 172",
@@ -156,7 +175,7 @@ export default function HomeScene({ homeWorldState, state = "home", opening, ent
       <section className="urai-ground" data-testid="urai-home-ground" aria-hidden="true"><div className="ground-plane ground-back" /><div className="ground-plane ground-mid" /><div className="root-network" data-testid="home-layer-root-network" /><div className="bloom-field" data-testid="home-layer-bloom-field" /><div className="ground-plane ground-front" /><div className="light-flecks" /></section>
       <section className="urai-hero" aria-label="Your symbolic avatar and orb companion"><div className="avatar-shadow" aria-hidden="true" /><div className="avatar-aura" aria-hidden="true" /><div className="avatar" data-testid="urai-home-avatar" role="img" aria-label="A calm symbolic avatar standing beneath the living orb"><div className="avatar-head" /><div className="avatar-neck" /><div className="avatar-shoulders" /><div className="avatar-body" /><div className="avatar-chest-glow" /><div className="avatar-leg leg-left" /><div className="avatar-leg leg-right" /></div><div className="orb-reflection" aria-hidden="true" /><button type="button" className="orb-companion" onClick={onFocus} disabled={mode === "enteringLifeMap" || !onFocus} aria-disabled={mode === "enteringLifeMap" || !onFocus} aria-label="Focus companion" data-testid="urai-orb-button"><span className="orb-halo" aria-hidden="true" /><span className="orb-core" aria-hidden="true" /><span className="orb-shine" aria-hidden="true" /><span className="orb-ring ring-a" aria-hidden="true" /><span className="orb-ring ring-b" aria-hidden="true" /><span className="orb-particles" aria-hidden="true">{Array.from({ length: 12 }, (_, index) => <i key={index} style={{ "--i": index } as React.CSSProperties} />)}</span></button></section>
       <aside className="narrator-whisper" data-testid="home-layer-narrator-shimmer" aria-live="polite"><span className="narrator-dot" aria-hidden="true" /><span>{narratorText ?? defaultNarrator(world)}</span></aside>
-      <nav className="command-ribbon" data-testid="urai-command-ribbon" aria-label="Home World controls"><button type="button" onClick={enterLifeMap} disabled={mode === "enteringLifeMap"} aria-disabled={mode === "enteringLifeMap"} data-testid="home-control-lifemap">LifeMap</button><button type="button" onClick={onReplay} disabled={mode === "enteringLifeMap"} aria-disabled={mode === "enteringLifeMap"} data-testid="home-control-replay">Replay</button><button type="button" onClick={onUnwind} disabled={mode === "enteringLifeMap"} aria-disabled={mode === "enteringLifeMap"} data-testid="home-control-unwind">Mirror</button>{onFocus ? <button type="button" onClick={onFocus} disabled={mode === "enteringLifeMap"} aria-disabled={mode === "enteringLifeMap"} data-testid="home-control-focus">Focus</button> : null}</nav>
+      <nav className="command-ribbon" data-testid="urai-command-ribbon" aria-label="Home World controls" style={homeRibbonStyle}><button type="button" onClick={enterLifeMap} disabled={mode === "enteringLifeMap"} aria-disabled={mode === "enteringLifeMap"} data-testid="home-control-lifemap" style={homeControlStyle}>LifeMap</button><button type="button" onClick={onReplay} disabled={mode === "enteringLifeMap"} aria-disabled={mode === "enteringLifeMap"} data-testid="home-control-replay">Replay</button><button type="button" onClick={onUnwind} disabled={mode === "enteringLifeMap"} aria-disabled={mode === "enteringLifeMap"} data-testid="home-control-unwind">Mirror</button>{onFocus ? <button type="button" onClick={onFocus} disabled={mode === "enteringLifeMap"} aria-disabled={mode === "enteringLifeMap"} data-testid="home-control-focus">Focus</button> : null}</nav>
       <div className="foreground-vignette" data-testid="home-layer-foreground-vignette" aria-hidden="true" />
     </main>
   );

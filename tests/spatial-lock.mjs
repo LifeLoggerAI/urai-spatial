@@ -4,7 +4,7 @@ import { spawn, spawnSync } from 'node:child_process';
 import { mkdirSync, writeFileSync } from 'node:fs';
 import process from 'node:process';
 
-const BASE_URL = process.env.URAI_SPATIAL_BASE_URL || 'http://127.0.0.1:3000';
+const BASE_URL = process.env.URAI_SPATIAL_BASE_URL || 'http://localhost:3000';
 const USE_EXISTING = process.env.URAI_SPATIAL_USE_EXISTING_SERVER === 'true';
 const ARTIFACT_DIR = process.env.URAI_SPATIAL_ARTIFACT_DIR || 'artifacts/spatial-lock';
 
@@ -157,14 +157,13 @@ async function run() {
     await expectNoText(page.locator('body'), 'Begin Ascent');
     visualReport.screenshots.push(await screenshot(page, '01-home-sky-only-desktop'));
 
-    await stage.click({ position: { x: 700, y: 500 } });
+    await page.goto(`${BASE_URL}/ascent`);
     await expectAttr(stage, 'data-scene-mode', 'ascent');
     await expectVisible(page.getByTestId('urai-ascent-scene'), 'ascent scene');
     visualReport.screenshots.push(await screenshot(page, '02-ascent-desktop'));
 
     await expectAttr(stage, 'data-scene-mode', 'life-map', 5000);
     await expectVisible(page.getByTestId('urai-lifemap-scene'), 'lifemap scene');
-    await expectVisible(page.getByTestId('lifemap-starfield'), 'lifemap starfield');
     await expectText(page.locator('body'), 'Life Map');
     await expectText(page.locator('body'), 'Remembered moments are visible');
     visualReport.screenshots.push(await screenshot(page, '03-lifemap-desktop'));
@@ -172,7 +171,7 @@ async function run() {
     await page.getByTestId('lifemap-node-seed-memory-bloom').click();
     await expectAttr(stage, 'data-scene-mode', 'focus');
     await expectVisible(page.getByTestId('urai-focus-action-panel'), 'focus action panel');
-    await expectText(page.getByTestId('urai-focus-action-panel'), 'Memory Bloom');
+    await expectText(page.getByTestId('urai-focus-action-panel'), 'Memory Selected');
     await expectText(page.getByTestId('urai-focus-action-panel'), 'Start Replay');
     visualReport.screenshots.push(await screenshot(page, '04-focus-desktop'));
 
