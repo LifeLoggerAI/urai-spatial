@@ -106,3 +106,18 @@ test('Orb is a layered sacred-tech artifact with stable state API', async () => 
   assert.match(orb, /resolveSpatialRenderBudget/)
   assert.match(orb, /ringEnabled = budget\.atmosphereMode !== 'minimal'/)
 })
+
+test('HomeScene visual budget utility resolves synchronized render settings', async () => {
+  const visualBudget = await source('src/scene/homeSceneVisualBudget.ts')
+
+  assert.match(visualBudget, /export type HomeSceneVisualBudget/)
+  assert.match(visualBudget, /resolveHomeSceneVisualBudget/)
+  assert.match(visualBudget, /qualityTierForMode/)
+  assert.match(visualBudget, /if \(reducedMotion\) return 'low'/)
+  assert.match(visualBudget, /mode === 'demo' \|\| mode === 'life-map' \|\| mode === 'ascent'/)
+  assert.match(visualBudget, /canvasDpr: \[1, budget\.maxDpr\]/)
+  assert.match(visualBudget, /shadowMapSize: budget\.shadowMapSize/)
+  assert.match(visualBudget, /'data-render-budget-quality-tier': budget\.qualityTier/)
+  assert.match(visualBudget, /'data-render-budget-atmosphere-mode': budget\.atmosphereMode/)
+  assert.match(visualBudget, /'data-render-budget-reflection-mode': budget\.reflectionMode/)
+})
