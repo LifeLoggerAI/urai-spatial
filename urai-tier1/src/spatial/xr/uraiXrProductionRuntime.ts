@@ -1,12 +1,12 @@
 export type UraiXrSignalMessage =
   | { type: 'join'; roomId: string; peerId: string; token?: string }
-  | { type: 'offer'; roomId: string; from: string; to: string; sdp: string }
-  | { type: 'answer'; roomId: string; from: string; to: string; sdp: string }
-  | { type: 'ice'; roomId: string; from: string; to: string; candidate: string }
-  | { type: 'presence'; roomId: string; peerId: string; pose: UraiXrPoseSnapshot }
-  | { type: 'voice'; roomId: string; from: string; position: [number, number, number]; speaking: boolean; level: number }
-  | { type: 'telemetry'; roomId: string; peerId: string; gpu: UraiXrFrameTelemetry }
-  | { type: 'leave'; roomId: string; peerId: string }
+  | { type: 'offer'; roomId: string; from: string; to: string; sdp: string; token?: string }
+  | { type: 'answer'; roomId: string; from: string; to: string; sdp: string; token?: string }
+  | { type: 'ice'; roomId: string; from: string; to: string; candidate: string; token?: string }
+  | { type: 'presence'; roomId: string; peerId: string; pose: UraiXrPoseSnapshot; token?: string }
+  | { type: 'voice'; roomId: string; from: string; position: [number, number, number]; speaking: boolean; level: number; token?: string }
+  | { type: 'telemetry'; roomId: string; peerId: string; gpu: UraiXrFrameTelemetry; token?: string }
+  | { type: 'leave'; roomId: string; peerId: string; token?: string }
 
 export type UraiXrPoseSnapshot = {
   position: [number, number, number]
@@ -117,6 +117,11 @@ export function createEmptyWorldSnapshot(roomId: string, navmeshId = 'home-platf
     navmeshId,
     updatedAt: Date.now(),
   }
+}
+
+export function getUraiXrSignalPeerId(message: UraiXrSignalMessage) {
+  if (message.type === 'offer' || message.type === 'answer' || message.type === 'ice' || message.type === 'voice') return message.from
+  return message.peerId
 }
 
 export function reduceWorldSnapshot(snapshot: UraiXrWorldSnapshot, message: UraiXrSignalMessage): UraiXrWorldSnapshot {
