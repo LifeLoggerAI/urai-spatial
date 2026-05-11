@@ -10,11 +10,12 @@ export function ReplayUnwindButton() {
     function handleKeyDown(event: KeyboardEvent) {
       if (event.key !== 'Escape') return
       event.preventDefault()
+      event.stopPropagation()
       router.push('/focus')
     }
 
-    window.addEventListener('keydown', handleKeyDown)
-    return () => window.removeEventListener('keydown', handleKeyDown)
+    window.addEventListener('keydown', handleKeyDown, { capture: true })
+    return () => window.removeEventListener('keydown', handleKeyDown, { capture: true })
   }, [router])
 
   return (
