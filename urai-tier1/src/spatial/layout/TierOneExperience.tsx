@@ -2,7 +2,7 @@
 
 import React, { Suspense, useCallback, useMemo } from "react";
 import { useRouter } from "next/navigation";
-import HomeScene from "@/scene/HomeScene";
+import UraiIntegratedHomeScene from "@/scene/UraiIntegratedHomeScene";
 import MirrorRouteLayer from "@/scene/MirrorRouteLayer";
 import { modeFromRouteMode, URAI_CAMERA_PRESETS, type UraiSpatialWorldMode } from "@/spatial/world/uraiSpatialWorldModel";
 import { HomeCohesionLayer } from "./HomeCohesionLayer";
@@ -87,7 +87,6 @@ export function TierOneExperience({ mode, title, eyebrow, description, cta }: Pr
   const openLifeMap = useCallback(() => router.push("/life-map", { scroll: false }), [router]);
   const openHome = useCallback(() => router.push("/", { scroll: false }), [router]);
 
-  // Canonical cinematic modes stay inside HomeScene/overlay authority: mode !== "home" && mode !== "life-map".
   const showRouteCard =
     mode !== "home" &&
     mode !== "ascent" &&
@@ -114,7 +113,7 @@ export function TierOneExperience({ mode, title, eyebrow, description, cta }: Pr
         data-urai-fallback-mode="webgl"
       >
         <Suspense fallback={null}>
-          <HomeScene sceneMode={mode} />
+          <UraiIntegratedHomeScene sceneMode={mode} />
           {mode === "mirror" ? <MirrorRouteLayer onLifeMap={openLifeMap} onHome={openHome} /> : null}
         </Suspense>
       </div>
