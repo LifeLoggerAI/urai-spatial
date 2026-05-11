@@ -1,0 +1,12 @@
+{
+  "hosting": {
+    "public": "urai-tier1/out",
+    "ignore": ["firebase.json", "firebase.static.json", "**/.*", "**/node_modules/**"],
+    "rewrites": [
+      {
+        "source": "**",
+        "destination": "/index.html"
+      }
+    ]
+  }
+}
