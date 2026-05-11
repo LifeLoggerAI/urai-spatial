@@ -89,3 +89,20 @@ test('Sky and atmosphere preserve moonlit observatory composition with budget aw
   assert.match(atmosphere, /data-render-budget-fog-density=\{density\}/)
   assert.match(atmosphere, /scene\.fog = new THREE\.FogExp2\('#071023', density\)/)
 })
+
+test('Orb is a layered sacred-tech artifact with stable state API', async () => {
+  const orb = await source('src/scene/Orb.tsx')
+
+  assert.match(orb, /export type OrbState = 'idle' \| 'listening' \| 'memoryBloom' \| 'ritual' \| 'recovery'/)
+  assert.match(orb, /data-testid="urai-sacred-tech-orb"/)
+  assert.match(orb, /data-orb-layered-artifact="true"/)
+  assert.match(orb, /data-orb-state=\{activeState\}/)
+  assert.match(orb, /data-testid="urai-orb-layered-core"/)
+  assert.match(orb, /data-testid="urai-orb-glass-shell"/)
+  assert.match(orb, /data-testid="urai-orb-gyroscopic-rings"/)
+  assert.match(orb, /data-testid="urai-orb-state-runes"/)
+  assert.match(orb, /SacredGlassMaterial/)
+  assert.match(orb, /SealedProgressionMaterial/)
+  assert.match(orb, /resolveSpatialRenderBudget/)
+  assert.match(orb, /ringEnabled = budget\.atmosphereMode !== 'minimal'/)
+})
