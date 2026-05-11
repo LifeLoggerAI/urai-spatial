@@ -1,6 +1,10 @@
-export type UraiSpatialWorldMode = 'home' | 'ascent' | 'lifeMap' | 'focus' | 'replay' | 'mirror' | 'unwinding';
+export type UraiSpatialWorldMode = 'home' | 'ascent' | 'lifeMap' | 'focus' | 'replay' | 'mirror' | 'unwinding' | 'xr';
 
 export type UraiSpatialFallbackMode = 'webgl' | 'canvas' | 'dom';
+
+export type UraiSpatialXRSessionMode = 'none' | 'vr' | 'ar';
+
+export type UraiSpatialXRInputMode = 'gaze' | 'controller' | 'hand';
 
 export type UraiSpatialCameraSnapshot = {
   position: [number, number, number];
@@ -18,6 +22,17 @@ export type UraiSpatialNavigationFrame = {
   activeMirrorContextId?: string;
 };
 
+export type UraiSpatialXRState = {
+  enabled: boolean;
+  available: boolean;
+  sessionMode: UraiSpatialXRSessionMode;
+  inputModes: UraiSpatialXRInputMode[];
+  comfortMode: boolean;
+  handTrackingAvailable: boolean;
+  controllerAvailable: boolean;
+  headsetSafeOverlay: boolean;
+};
+
 export type UraiSpatialWorldState = {
   mode: UraiSpatialWorldMode;
   camera: UraiSpatialCameraSnapshot;
@@ -30,6 +45,7 @@ export type UraiSpatialWorldState = {
   webglAvailable: boolean;
   fallbackMode: UraiSpatialFallbackMode;
   navigationStack: UraiSpatialNavigationFrame[];
+  xr: UraiSpatialXRState;
 };
 
 export type UraiSpatialStar3D = {
@@ -89,7 +105,23 @@ export const URAI_CAMERA_PRESETS = {
     target: [0, 1.2, 0],
     fov: 44,
   },
+  xr: {
+    position: [0, 1.65, 3.2],
+    target: [0, 1.45, -2.8],
+    fov: 70,
+  },
 } as const satisfies Record<UraiSpatialWorldMode, UraiSpatialCameraSnapshot>;
+
+export const URAI_XR_DEFAULT_STATE: UraiSpatialXRState = {
+  enabled: false,
+  available: false,
+  sessionMode: 'none',
+  inputModes: ['gaze'],
+  comfortMode: true,
+  handTrackingAvailable: false,
+  controllerAvailable: false,
+  headsetSafeOverlay: true,
+};
 
 export const URAI_SPATIAL_STARS_3D: UraiSpatialStar3D[] = [
   {
@@ -197,6 +229,7 @@ export const URAI_SPATIAL_CONSTELLATION_PATHS_3D: UraiSpatialConstellationPath3D
 export function modeFromRouteMode(routeMode: string): UraiSpatialWorldMode {
   if (routeMode === 'life-map' || routeMode === 'demo') return 'lifeMap';
   if (routeMode === 'unwind') return 'unwinding';
+  if (routeMode === 'vr' || routeMode === 'ar' || routeMode === 'xr') return 'xr';
   if (routeMode === 'focus' || routeMode === 'replay' || routeMode === 'mirror' || routeMode === 'ascent' || routeMode === 'home') return routeMode;
   return 'home';
 }
@@ -212,8 +245,15 @@ export function buildUraiSpatialWorldState(input: {
   transitionPhase?: string;
   fallbackMode?: UraiSpatialFallbackMode;
   navigationStack?: UraiSpatialNavigationFrame[];
+  xr?: Partial<UraiSpatialXRState>;
 }): UraiSpatialWorldState {
   const fallbackMode = input.fallbackMode ?? (input.webglAvailable === false ? 'dom' : 'webgl');
+  const xr = {
+    ...URAI_XR_DEFAULT_STATE,
+    ...input.xr,
+    enabled: input.mode === 'xr' || input.xr?.enabled === true,
+    sessionMode: input.xr?.sessionMode ?? (input.mode === 'xr' ? 'vr' : 'none'),
+  } satisfies UraiSpatialXRState;
 
   return {
     mode: input.mode,
@@ -227,6 +267,7 @@ export function buildUraiSpatialWorldState(input: {
     webglAvailable: input.webglAvailable ?? true,
     fallbackMode,
     navigationStack: input.navigationStack ?? [],
+    xr,
   };
 }
 
@@ -249,5 +290,12 @@ export function assertUraiSpatial3DWorldModel() {
     replayPathExists,
     cameraPresets: Object.keys(URAI_CAMERA_PRESETS) as UraiSpatialWorldMode[],
     fallbackModes: ['webgl', 'canvas', 'dom'] as UraiSpatialFallbackMode[],
+    xr: {
+      supportedMode: 'xr' as UraiSpatialWorldMode,
+      sessionModes: ['none', 'vr', 'ar'] as UraiSpatialXRSessionMode[],
+      inputModes: ['gaze', 'controller', 'hand'] as UraiSpatialXRInputMode[],
+      headsetSafeOverlay: URAI_XR_DEFAULT_STATE.headsetSafeOverlay,
+      comfortMode: URAI_XR_DEFAULT_STATE.comfortMode,
+    },
   };
 }
