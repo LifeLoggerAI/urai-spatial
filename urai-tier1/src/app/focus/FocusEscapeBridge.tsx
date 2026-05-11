@@ -21,9 +21,13 @@ export function FocusEscapeBridge() {
       routeToLifeMap()
     }
 
+    const directFocusFallback = window.location.pathname === '/focus' && !window.location.search.includes('manifestId=')
+    const fallbackTimer = directFocusFallback ? window.setTimeout(routeToLifeMap, 800) : undefined
+
     window.addEventListener('keydown', handleKeyDown, { capture: true })
     document.addEventListener('keydown', handleKeyDown, { capture: true })
     return () => {
+      if (fallbackTimer) window.clearTimeout(fallbackTimer)
       window.removeEventListener('keydown', handleKeyDown, { capture: true })
       document.removeEventListener('keydown', handleKeyDown, { capture: true })
     }
