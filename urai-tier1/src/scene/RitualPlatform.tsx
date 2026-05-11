@@ -9,10 +9,12 @@ import {
   MoonlitBlackStoneMaterial,
   SacredGlassMaterial,
   SealedProgressionMaterial,
+  SpatialRenderBudget,
   UraiReflectionMode,
   resolveSpatialRenderBudget,
 } from '../spatial/visual/aaaMaterials'
 import { useReducedMotion } from '../spatial/hooks/useReducedMotion'
+import { useSharedHomeSceneVisualBudget } from './homeSceneVisualBudgetContext'
 
 const PLATFORM_CENTER: [number, number, number] = [0, -0.57, -1.2]
 const PALETTE = {
@@ -122,17 +124,20 @@ function EngravedStoneVeins({ reducedMotion }: { reducedMotion: boolean }) {
 export default function RitualPlatform({
   reducedMotion,
   reflectionMode,
+  budget,
 }: {
   reducedMotion?: boolean
   reflectionMode?: UraiReflectionMode
+  budget?: SpatialRenderBudget
 }) {
+  const sharedVisualBudget = useSharedHomeSceneVisualBudget()
   const prefersReducedMotion = useReducedMotion()
   const effectiveReducedMotion = reducedMotion ?? prefersReducedMotion
-  const budget = useMemo(
-    () => resolveSpatialRenderBudget({ reducedMotion: effectiveReducedMotion, qualityTier: effectiveReducedMotion ? 'low' : 'high' }),
-    [effectiveReducedMotion],
+  const resolvedBudget = useMemo(
+    () => budget ?? sharedVisualBudget?.budget ?? resolveSpatialRenderBudget({ reducedMotion: effectiveReducedMotion, qualityTier: effectiveReducedMotion ? 'low' : 'high' }),
+    [budget, sharedVisualBudget, effectiveReducedMotion],
   )
-  const effectiveReflectionMode = reflectionMode ?? budget.reflectionMode
+  const effectiveReflectionMode = reflectionMode ?? resolvedBudget.reflectionMode
   const platformRef = useRef<THREE.Group>(null)
   const normalMap = useMemo(() => makeProceduralStoneNormalTexture(), [])
 
@@ -147,7 +152,8 @@ export default function RitualPlatform({
       position={[0, 0, 0]}
       data-testid="urai-aaa-ritual-platform"
       data-render-budget-reflection-mode={effectiveReflectionMode}
-      data-render-budget-shadow-map-size={budget.shadowMapSize}
+      data-render-budget-shadow-map-size={resolvedBudget.shadowMapSize}
+      data-render-budget-quality-tier={resolvedBudget.qualityTier}
     >
       <mesh position={[0, -0.7, -1.2]} receiveShadow castShadow>
         <cylinderGeometry args={[2.48, 2.72, 0.28, 192, 2]} />
