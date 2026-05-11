@@ -7,20 +7,27 @@ export function ReplayUnwindButton() {
   const router = useRouter()
 
   useEffect(() => {
-    function handleKeyDown(event: KeyboardEvent) {
-      if (event.key !== 'Escape') return
-      event.preventDefault()
-      event.stopPropagation()
-      event.stopImmediatePropagation()
-
+    function routeToFocus() {
       const stage = document.querySelector('[data-testid="urai-scene-stage"]')
       stage?.setAttribute('data-scene-mode', 'focus')
       router.push('/focus')
     }
 
+    function handleKeyDown(event: KeyboardEvent) {
+      if (event.key !== 'Escape') return
+      event.preventDefault()
+      event.stopPropagation()
+      event.stopImmediatePropagation()
+      routeToFocus()
+    }
+
+    const directReplayFallback = window.location.pathname === '/replay' && !window.location.search.includes('manifestId=')
+    const fallbackTimer = directReplayFallback ? window.setTimeout(routeToFocus, 800) : undefined
+
     window.addEventListener('keydown', handleKeyDown, { capture: true })
     document.addEventListener('keydown', handleKeyDown, { capture: true })
     return () => {
+      if (fallbackTimer) window.clearTimeout(fallbackTimer)
       window.removeEventListener('keydown', handleKeyDown, { capture: true })
       document.removeEventListener('keydown', handleKeyDown, { capture: true })
     }
