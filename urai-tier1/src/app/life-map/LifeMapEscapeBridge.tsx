@@ -21,13 +21,9 @@ export function LifeMapEscapeBridge() {
       routeToHome()
     }
 
-    const directLifeMapFallback = window.location.pathname === '/life-map' && !window.location.search.includes('manifestId=')
-    const fallbackTimer = directLifeMapFallback ? window.setTimeout(routeToHome, 800) : undefined
-
     window.addEventListener('keydown', handleKeyDown, { capture: true })
     document.addEventListener('keydown', handleKeyDown, { capture: true })
     return () => {
-      if (fallbackTimer) window.clearTimeout(fallbackTimer)
       window.removeEventListener('keydown', handleKeyDown, { capture: true })
       document.removeEventListener('keydown', handleKeyDown, { capture: true })
     }
