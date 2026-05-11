@@ -10,6 +10,7 @@ export function FocusEscapeBridge() {
     function routeToLifeMap() {
       const stage = document.querySelector('[data-testid="urai-scene-stage"]')
       stage?.setAttribute('data-scene-mode', 'life-map')
+      window.sessionStorage.setItem('urai-spatial-escape-stack-return-home', '1')
       router.push('/life-map')
     }
 
