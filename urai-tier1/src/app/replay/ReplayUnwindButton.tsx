@@ -11,11 +11,19 @@ export function ReplayUnwindButton() {
       if (event.key !== 'Escape') return
       event.preventDefault()
       event.stopPropagation()
+      event.stopImmediatePropagation()
+
+      const stage = document.querySelector('[data-testid="urai-scene-stage"]')
+      stage?.setAttribute('data-scene-mode', 'focus')
       router.push('/focus')
     }
 
     window.addEventListener('keydown', handleKeyDown, { capture: true })
-    return () => window.removeEventListener('keydown', handleKeyDown, { capture: true })
+    document.addEventListener('keydown', handleKeyDown, { capture: true })
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown, { capture: true })
+      document.removeEventListener('keydown', handleKeyDown, { capture: true })
+    }
   }, [router])
 
   return (
