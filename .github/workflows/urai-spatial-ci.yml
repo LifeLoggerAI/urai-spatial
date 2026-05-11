@@ -6,7 +6,7 @@ on:
       verification_ref:
         description: "Git ref to verify"
         required: false
-        default: "fix/spatial-release-gate-guards"
+        default: "main"
   pull_request:
     paths:
       - "**"
