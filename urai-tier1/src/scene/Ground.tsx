@@ -8,10 +8,12 @@ import {
   MistLightMaterial,
   MoonlitBlackStoneMaterial,
   SacredGlassMaterial,
+  SpatialRenderBudget,
   UraiReflectionMode,
   resolveSpatialRenderBudget,
 } from '../spatial/visual/aaaMaterials'
 import { useReducedMotion } from '../spatial/hooks/useReducedMotion'
+import { useSharedHomeSceneVisualBudget } from './homeSceneVisualBudgetContext'
 
 function HorizonMist({ reducedMotion }: { reducedMotion: boolean }) {
   const bands = reducedMotion ? 2 : 4
@@ -88,24 +90,28 @@ function ReflectionPool({ reflectionMode }: { reflectionMode: UraiReflectionMode
 export default function Ground({
   reducedMotion,
   reflectionMode,
+  budget,
 }: {
   reducedMotion?: boolean
   reflectionMode?: UraiReflectionMode
+  budget?: SpatialRenderBudget
 }) {
+  const sharedVisualBudget = useSharedHomeSceneVisualBudget()
   const prefersReducedMotion = useReducedMotion()
   const effectiveReducedMotion = reducedMotion ?? prefersReducedMotion
-  const budget = useMemo(
-    () => resolveSpatialRenderBudget({ reducedMotion: effectiveReducedMotion, qualityTier: effectiveReducedMotion ? 'low' : 'high' }),
-    [effectiveReducedMotion],
+  const resolvedBudget = useMemo(
+    () => budget ?? sharedVisualBudget?.budget ?? resolveSpatialRenderBudget({ reducedMotion: effectiveReducedMotion, qualityTier: effectiveReducedMotion ? 'low' : 'high' }),
+    [budget, sharedVisualBudget, effectiveReducedMotion],
   )
-  const effectiveReflectionMode = reflectionMode ?? budget.reflectionMode
+  const effectiveReflectionMode = reflectionMode ?? resolvedBudget.reflectionMode
   const normalMap = useMemo(() => makeProceduralStoneNormalTexture(), [])
 
   return (
     <group
       data-testid="urai-reflective-black-stone-ground"
       data-render-budget-reflection-mode={effectiveReflectionMode}
-      data-render-budget-atmosphere-mode={budget.atmosphereMode}
+      data-render-budget-atmosphere-mode={resolvedBudget.atmosphereMode}
+      data-render-budget-quality-tier={resolvedBudget.qualityTier}
     >
       <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -1.04, -4.8]} receiveShadow>
         <planeGeometry args={[96, 96, 1, 1]} />
