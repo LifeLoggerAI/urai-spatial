@@ -36,3 +36,18 @@ test('Focus and Replay have world-layer components wired through canonical exper
   assert.match(tierOne, /UraiIntegratedHomeScene/)
   assert.doesNotMatch(tierOne, /import HomeScene from/)
 })
+
+test('Home ground and ritual platform consume AAA render budget defaults', async () => {
+  const ground = await source('src/scene/Ground.tsx')
+  const platform = await source('src/scene/RitualPlatform.tsx')
+
+  assert.match(ground, /resolveSpatialRenderBudget/)
+  assert.match(ground, /useReducedMotion/)
+  assert.match(ground, /data-render-budget-reflection-mode=\{effectiveReflectionMode\}/)
+  assert.match(ground, /ReflectionPool reflectionMode=\{effectiveReflectionMode\}/)
+
+  assert.match(platform, /resolveSpatialRenderBudget/)
+  assert.match(platform, /useReducedMotion/)
+  assert.match(platform, /data-render-budget-reflection-mode=\{effectiveReflectionMode\}/)
+  assert.match(platform, /OrbReflection reflectionMode=\{effectiveReflectionMode\}/)
+})
