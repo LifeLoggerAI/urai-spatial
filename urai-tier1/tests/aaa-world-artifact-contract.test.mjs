@@ -70,3 +70,22 @@ test('Particles and postprocessing consume AAA render budget defaults', async ()
   assert.match(post, /data-render-budget-bloom-enabled=\{bloomEnabled \? 'true' : 'false'\}/)
   assert.doesNotMatch(post, /budget\?\.qualityTier \?\? \(reducedMotion \? 'low' : 'high'\)/)
 })
+
+test('Sky and atmosphere preserve moonlit observatory composition with budget awareness', async () => {
+  const sky = await source('src/scene/Sky.tsx')
+  const atmosphere = await source('src/scene/Atmosphere.tsx')
+
+  assert.match(sky, /resolveSpatialRenderBudget/)
+  assert.match(sky, /data-testid="urai-moonlit-observatory-sky"/)
+  assert.match(sky, /data-testid="urai-crescent-moon"/)
+  assert.match(sky, /data-testid="urai-horizon-moon-haze"/)
+  assert.match(sky, /data-orb-safe-center="true"/)
+  assert.match(sky, /data-render-budget-atmosphere-mode=\{resolvedBudget\.atmosphereMode\}/)
+
+  assert.match(atmosphere, /resolveSpatialRenderBudget/)
+  assert.match(atmosphere, /fogDensityFor/)
+  assert.match(atmosphere, /data-testid="urai-volumetric-look-atmosphere"/)
+  assert.match(atmosphere, /data-testid="urai-moonlight-shaft"/)
+  assert.match(atmosphere, /data-render-budget-fog-density=\{density\}/)
+  assert.match(atmosphere, /scene\.fog = new THREE\.FogExp2\('#071023', density\)/)
+})
