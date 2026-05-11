@@ -17,9 +17,11 @@ test('Life Map uses authored memory artifacts instead of final sphere-only nodes
   assert.match(artifact, /SealedProgressionMaterial/)
 })
 
-test('Focus and Replay now have world-layer components ready for canonical HomeScene wiring', async () => {
+test('Focus and Replay have world-layer components wired through canonical experience', async () => {
   const focus = await source('src/scene/FocusChamber.tsx')
   const replay = await source('src/scene/ReplayTemporalField.tsx')
+  const wrapper = await source('src/scene/UraiIntegratedHomeScene.tsx')
+  const tierOne = await source('src/spatial/layout/TierOneExperience.tsx')
 
   assert.match(focus, /data-testid="urai-focus-chamber"/)
   assert.match(focus, /SacredGlassMaterial/)
@@ -27,4 +29,10 @@ test('Focus and Replay now have world-layer components ready for canonical HomeS
   assert.match(replay, /data-testid="urai-replay-temporal-field"/)
   assert.match(replay, /CatmullRomCurve3/)
   assert.match(replay, /replayProgress/)
+  assert.match(wrapper, /<HomeScene sceneMode=\{sceneMode\}/)
+  assert.match(wrapper, /<FocusChamber active/)
+  assert.match(wrapper, /<ReplayTemporalField active/)
+  assert.match(wrapper, /resolveSpatialRenderBudget/)
+  assert.match(tierOne, /UraiIntegratedHomeScene/)
+  assert.doesNotMatch(tierOne, /import HomeScene from/)
 })
