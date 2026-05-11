@@ -1,0 +1,4 @@
+URAI Spatial post-smoke CI validation trigger.
+
+Last requested: 2026-05-11
+Purpose: trigger GitHub Actions lock/all validation in CI where Playwright browser dependencies can be installed.
