@@ -16,19 +16,27 @@ export type HomeSceneVisualBudget = {
   }
 }
 
+type HomeSceneVisualBudgetInput =
+  | {
+      mode: HomeSceneMode
+      sceneMode?: never
+      reducedMotion: boolean
+    }
+  | {
+      mode?: never
+      sceneMode: HomeSceneMode
+      reducedMotion: boolean
+    }
+
 function qualityTierForMode(mode: HomeSceneMode, reducedMotion: boolean): SpatialRenderBudget['qualityTier'] {
   if (reducedMotion) return 'low'
   if (mode === 'demo' || mode === 'life-map' || mode === 'ascent') return 'medium'
   return 'high'
 }
 
-export function resolveHomeSceneVisualBudget({
-  mode,
-  reducedMotion,
-}: {
-  mode: HomeSceneMode
-  reducedMotion: boolean
-}): HomeSceneVisualBudget {
+export function resolveHomeSceneVisualBudget(input: HomeSceneVisualBudgetInput): HomeSceneVisualBudget {
+  const mode = 'sceneMode' in input ? input.sceneMode : input.mode
+  const { reducedMotion } = input
   const budget = resolveSpatialRenderBudget({
     reducedMotion,
     qualityTier: qualityTierForMode(mode, reducedMotion),
