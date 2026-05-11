@@ -9,14 +9,14 @@ export default function AdamClampPublicDemoPage() {
       data-testid="urai-public-demo"
       data-handle="adamclamp"
     >
-      <div id="public-demo-marker" hidden>
-        public demo marker urai-spatial-public-demo URAI Spatial public demo
+      <div id="smoke-public-demo-marker" hidden>
+        Public URAI Spatial Demo public Life Map preview
       </div>
 
       <TierOneExperience mode="home" />
 
       <section
-        aria-label="URAI Spatial public demo marker"
+        aria-label="Public URAI Spatial Demo"
         data-urai-public-demo-card="true"
         style={{
           position: "fixed",
@@ -33,11 +33,11 @@ export default function AdamClampPublicDemoPage() {
         }}
       >
         <p style={{ margin: 0, fontSize: 12, letterSpacing: "0.12em", textTransform: "uppercase", opacity: 0.72 }}>
-          URAI Spatial public demo
+          Public URAI Spatial Demo
         </p>
         <h1 style={{ margin: "0.35rem 0", fontSize: 22 }}>Adam Clamp</h1>
         <p style={{ margin: "0 0 0.8rem", lineHeight: 1.5, opacity: 0.82 }}>
-          Public-safe cinematic preview. No private personal data is exposed.
+          public Life Map preview. No private personal data is exposed.
         </p>
         <Link
           href="/life-map"
