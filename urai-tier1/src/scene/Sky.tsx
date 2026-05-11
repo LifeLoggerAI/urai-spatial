@@ -5,6 +5,7 @@ import { useFrame, useThree } from '@react-three/fiber'
 import { useEffect, useMemo, useRef } from 'react'
 import { SpatialRenderBudget, resolveSpatialRenderBudget } from '../spatial/visual/aaaMaterials'
 import { useReducedMotion } from '../spatial/hooks/useReducedMotion'
+import { useSharedHomeSceneVisualBudget } from './homeSceneVisualBudgetContext'
 
 function seededNoise(index: number) {
   const x = Math.sin(index * 9283.33) * 43758.5453
@@ -119,11 +120,12 @@ export default function Sky({
   budget?: SpatialRenderBudget
 }) {
   const { scene } = useThree()
+  const sharedVisualBudget = useSharedHomeSceneVisualBudget()
   const prefersReducedMotion = useReducedMotion()
   const effectiveReducedMotion = reducedMotion ?? prefersReducedMotion
   const resolvedBudget = useMemo(
-    () => budget ?? resolveSpatialRenderBudget({ reducedMotion: effectiveReducedMotion, qualityTier: effectiveReducedMotion ? 'low' : 'high' }),
-    [budget, effectiveReducedMotion],
+    () => budget ?? sharedVisualBudget?.budget ?? resolveSpatialRenderBudget({ reducedMotion: effectiveReducedMotion, qualityTier: effectiveReducedMotion ? 'low' : 'high' }),
+    [budget, sharedVisualBudget, effectiveReducedMotion],
   )
   const starCount = resolvedBudget.atmosphereMode === 'minimal' ? 260 : resolvedBudget.qualityTier === 'medium' ? 520 : 760
 
