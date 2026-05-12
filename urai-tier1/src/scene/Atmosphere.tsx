@@ -67,7 +67,9 @@ function MoonlightShaft({
 
   useFrame(({ clock }) => {
     if (!ref.current || reducedMotion) return
-    ref.current.material.opacity = opacity + Math.sin(clock.elapsedTime * 0.18 + position[0]) * 0.01
+    const material = ref.current.material
+    if (Array.isArray(material)) return
+    material.opacity = opacity + Math.sin(clock.elapsedTime * 0.18 + position[0]) * 0.01
   })
 
   return (
