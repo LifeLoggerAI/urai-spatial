@@ -67,6 +67,8 @@ export type UraiXrPersistenceAdapter = {
   append(roomId: string, message: UraiXrSignalMessage): Promise<void>
 }
 
+type UraiXrEnv = Record<string, string | undefined>
+
 export const URAI_XR_SIGNALING_PROTOCOL = {
   version: 1,
   path: '/api/xr/signaling',
@@ -88,7 +90,7 @@ export const URAI_XR_VOICE_CONFIG: UraiXrVoiceConfig = {
   spatialized: true,
 }
 
-export function getUraiXrIceServers(env = process.env) {
+export function getUraiXrIceServers(env: UraiXrEnv = process.env) {
   const raw = env.URAI_XR_ICE_SERVERS_JSON
   if (raw) {
     try {
@@ -214,9 +216,9 @@ export function validateXrSignalRequest(input: { roomId?: string; peerId?: strin
   const roomId = input.roomId ?? ''
   const peerId = input.peerId ?? ''
   const token = input.token ?? ''
+  const tokenRequired = process.env.URAI_XR_SIGNALING_TOKEN
   const roomOk = /^[a-zA-Z0-9_-]{1,64}$/.test(roomId)
   const peerOk = /^[a-zA-Z0-9_-]{1,96}$/.test(peerId)
-  const tokenRequired = process.env.URAI_XR_SIGNALING_TOKEN
   const tokenOk = tokenRequired ? token === tokenRequired : true
   return { ok: roomOk && peerOk && tokenOk, roomOk, peerOk, tokenOk, now: input.now ?? Date.now() }
 }

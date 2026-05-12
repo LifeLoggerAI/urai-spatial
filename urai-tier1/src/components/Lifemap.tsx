@@ -8,7 +8,7 @@ export const Lifemap = ({ userId }: { userId: string }) => {
     const handleUnwind = async (e: KeyboardEvent) => {
       if (e.key === 'Escape' && !isLocked) {
         setIsLocked(true);
-        await CodexService.escUnwind(userId);
+        await CodexService.executeEscUnwind(userId);
         setIsLocked(false);
       }
     };
@@ -18,7 +18,7 @@ export const Lifemap = ({ userId }: { userId: string }) => {
 
   return (
     <div style={{ opacity: isLocked ? 0.5 : 1, pointerEvents: isLocked ? 'none' : 'auto' }}>
-      <button onClick={() => CodexService.homeAscent(userId)}>Home Ascent</button>
+      <button onClick={() => CodexService.performCameraAscent(userId, 'home')}>Home Ascent</button>
       {isLocked && <div>[TIER-1 LOCKED: PROCESSING CANON CHAIN]</div>}
     </div>
   );
