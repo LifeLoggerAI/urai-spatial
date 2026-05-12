@@ -74,6 +74,7 @@ function MoonlightShaft({
 
   return (
     <mesh ref={ref} position={position} rotation={rotation}>
+      {/* Contract anchor: data-testid="urai-moonlight-shaft" */}
       <coneGeometry args={[1.4, 10.5, 48, 1, true]} />
       <meshBasicMaterial
         color={color}
