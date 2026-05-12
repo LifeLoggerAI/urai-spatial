@@ -1,5 +1,5 @@
-import SpatialWorldCanvas from "@/spatial/components/world/SpatialWorldCanvas";
+import { SpatialHome } from "@/components/spatial/spatial-home";
 
 export default function SpatialPage() {
-  return <SpatialWorldCanvas mode="spatial" />;
+  return <SpatialHome />;
 }
