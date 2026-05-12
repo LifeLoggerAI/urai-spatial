@@ -5,7 +5,6 @@ const nextConfig = {
         output: 'export',
         images: { unoptimized: true },
         trailingSlash: true,
-        pageExtensions: ['page.tsx', 'page.ts', 'page.jsx', 'page.js'],
       }
     : {}),
 }
