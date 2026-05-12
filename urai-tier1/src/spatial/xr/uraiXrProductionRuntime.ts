@@ -67,7 +67,7 @@ export type UraiXrPersistenceAdapter = {
   append(roomId: string, message: UraiXrSignalMessage): Promise<void>
 }
 
-type UraiXrEnv = Partial<Record<'URAI_XR_ICE_SERVERS_JSON' | 'URAI_XR_SIGNALING_TOKEN', string | undefined>>
+type UraiXrEnv = Record<string, string | undefined>
 
 export const URAI_XR_SIGNALING_PROTOCOL = {
   version: 1,
