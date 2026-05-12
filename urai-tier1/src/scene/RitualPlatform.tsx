@@ -19,7 +19,7 @@ import { useSharedHomeSceneVisualBudget } from './homeSceneVisualBudgetContext'
 const PLATFORM_CENTER: [number, number, number] = [0, -0.57, -1.2]
 const PALETTE = {
   blackStone: '#05070d',
-  moonSilver: AAA_MOONLIT_PALETTE.moonSilver,
+  moonSilver: '#dbeafe',
   paleCyan: AAA_MOONLIT_PALETTE.paleCyan,
   softGold: AAA_MOONLIT_PALETTE.sacredGold,
   blueViolet: AAA_MOONLIT_PALETTE.blueViolet,
