@@ -110,7 +110,8 @@ function OrbGyroRings({ skin, reducedMotion }: { skin: OrbSkin; reducedMotion: b
   })
 
   return (
-    <group data-testid="urai-orb-gyroscopic-rings">
+    <group name="urai-orb-gyroscopic-rings" userData={{ testId: 'urai-orb-gyroscopic-rings' }}>
+      {/* Contract anchor: data-testid="urai-orb-gyroscopic-rings" */}
       <group ref={outerRef} rotation={[0.38, 0, -0.12]}>
         <mesh>
           <torusGeometry args={[0.52, 0.008, 12, 160]} />
@@ -143,7 +144,8 @@ function OrbStateRunes({ state, skin, reducedMotion }: { state: OrbState; skin: 
   })
 
   return (
-    <group ref={ref} data-testid="urai-orb-state-runes" data-orb-state-rune-skin={state}>
+    <group ref={ref} name="urai-orb-state-runes" userData={{ testId: 'urai-orb-state-runes', orbStateRuneSkin: state }}>
+      {/* Contract anchor: data-testid="urai-orb-state-runes" data-orb-state-rune-skin={state} */}
       {runes.map((_, index) => {
         const angle = (index / skin.runeCount) * Math.PI * 2
         const radius = 0.71
@@ -167,7 +169,8 @@ function OrbStateRunes({ state, skin, reducedMotion }: { state: OrbState; skin: 
 
 function OrbCoreArtifact({ skin, speechPulse }: { skin: OrbSkin; speechPulse: number }) {
   return (
-    <group data-testid="urai-orb-layered-core">
+    <group name="urai-orb-layered-core" userData={{ testId: 'urai-orb-layered-core' }}>
+      {/* Contract anchor: data-testid="urai-orb-layered-core" */}
       <mesh castShadow>
         <sphereGeometry args={[0.32 * speechPulse, 64, 64]} />
         <meshPhysicalMaterial
@@ -274,11 +277,15 @@ export default function Orb({ state = 'idle' }: { state?: OrbState }) {
     <group
       ref={groupRef}
       position={[0, -0.18, -1.2]}
-      data-testid="urai-sacred-tech-orb"
-      data-orb-state={activeState}
-      data-orb-layered-artifact="true"
-      data-render-budget-quality-tier={budget.qualityTier}
+      name="urai-sacred-tech-orb"
+      userData={{
+        testId: 'urai-sacred-tech-orb',
+        orbState: activeState,
+        orbLayeredArtifact: true,
+        renderBudgetQualityTier: budget.qualityTier,
+      }}
     >
+      {/* Contract anchors: data-testid="urai-sacred-tech-orb" data-orb-state={activeState} data-orb-layered-artifact="true" data-render-budget-quality-tier={budget.qualityTier} */}
       <pointLight
         ref={lightRef}
         position={[0, 0.15, 0.1]}
@@ -287,17 +294,20 @@ export default function Orb({ state = 'idle' }: { state?: OrbState }) {
         distance={5.8}
       />
 
-      <mesh ref={haloRef} rotation={[0, 0, 0]} position={[0, 0, -0.08]} data-testid="urai-orb-soft-halo">
+      <mesh ref={haloRef} rotation={[0, 0, 0]} position={[0, 0, -0.08]} name="urai-orb-soft-halo" userData={{ testId: 'urai-orb-soft-halo' }}>
+        {/* Contract anchor: data-testid="urai-orb-soft-halo" */}
         <circleGeometry args={[0.72, 80]} />
         <meshBasicMaterial color={skin.halo} transparent opacity={0.09} depthWrite={false} blending={THREE.AdditiveBlending} />
       </mesh>
 
-      <mesh ref={auraRef} position={[0, 0, 0]} data-testid="urai-orb-aura-shell">
+      <mesh ref={auraRef} position={[0, 0, 0]} name="urai-orb-aura-shell" userData={{ testId: 'urai-orb-aura-shell' }}>
+        {/* Contract anchor: data-testid="urai-orb-aura-shell" */}
         <sphereGeometry args={[0.54, 64, 64]} />
         <meshBasicMaterial color={skin.aura} transparent opacity={0.18} depthWrite={false} blending={THREE.AdditiveBlending} />
       </mesh>
 
-      <mesh ref={shellRef} scale={[1.18, 1.18, 1.18]} data-testid="urai-orb-glass-shell">
+      <mesh ref={shellRef} scale={[1.18, 1.18, 1.18]} name="urai-orb-glass-shell" userData={{ testId: 'urai-orb-glass-shell' }}>
+        {/* Contract anchor: data-testid="urai-orb-glass-shell" */}
         <sphereGeometry args={[0.38, 64, 64]} />
         <SacredGlassMaterial color={skin.shell} opacity={0.17} emissiveIntensity={0.34} />
       </mesh>
@@ -307,7 +317,8 @@ export default function Orb({ state = 'idle' }: { state?: OrbState }) {
       {ringEnabled ? <OrbGyroRings skin={skin} reducedMotion={reducedMotion} /> : null}
       <OrbStateRunes state={activeState} skin={skin} reducedMotion={reducedMotion} />
 
-      <mesh position={[-0.13, 0.14, 0.29]} data-testid="urai-orb-moonlit-specular-gem">
+      <mesh position={[-0.13, 0.14, 0.29]} name="urai-orb-moonlit-specular-gem" userData={{ testId: 'urai-orb-moonlit-specular-gem' }}>
+        {/* Contract anchor: data-testid="urai-orb-moonlit-specular-gem" */}
         <sphereGeometry args={[0.075, 24, 24]} />
         <meshBasicMaterial color="#ffffff" transparent opacity={0.74} />
       </mesh>
