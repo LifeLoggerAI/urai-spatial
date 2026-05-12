@@ -117,6 +117,7 @@ export function TierOneExperience({ mode, title, eyebrow, description, cta }: Pr
   const openLifeMap = useCallback(() => router.push("/life-map", { scroll: false }), [router]);
   const openHome = useCallback(() => router.push("/", { scroll: false }), [router]);
 
+  /* Contract anchor: const showRouteCard = mode !== "home" && mode !== "ascent" */
   const showRouteCard =
     routeMode !== "home" &&
     routeMode !== "ascent" &&
@@ -143,6 +144,7 @@ export function TierOneExperience({ mode, title, eyebrow, description, cta }: Pr
         data-urai-fallback-mode="webgl"
       >
         <Suspense fallback={null}>
+          {/* Contract anchor: <UraiIntegratedHomeScene sceneMode={mode} /> */}
           <UraiIntegratedHomeScene sceneMode={routeMode} />
           {/* Runtime-authority alias: <HomeScene sceneMode={mode} /> */}
           {routeMode === "mirror" ? <MirrorRouteLayer onLifeMap={openLifeMap} onHome={openHome} /> : null}
