@@ -3,6 +3,9 @@ import { type UraiXrSignalMessage } from '../../../../src/spatial/xr/uraiXrProdu
 import { createMemoryPersistence } from '../../../../src/spatial/xr/uraiXrPersistence'
 import { createUraiXrRoomRuntime } from '../../../../src/spatial/xr/uraiXrRoomRuntime'
 
+export const dynamic = 'force-static'
+export const revalidate = false
+
 const runtime = createUraiXrRoomRuntime({
   persistence: createMemoryPersistence(),
   requireToken: process.env.URAI_XR_REQUIRE_SIGNED_ROOM_TOKEN === 'true',
