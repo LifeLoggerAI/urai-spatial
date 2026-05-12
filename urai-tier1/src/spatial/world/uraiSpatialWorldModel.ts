@@ -6,11 +6,41 @@ export type UraiSpatialXRSessionMode = 'none' | 'vr' | 'ar';
 
 export type UraiSpatialXRInputMode = 'gaze' | 'controller' | 'hand';
 
+export type UraiSpatialQualityTier = 'low' | 'medium' | 'high';
+
+export type UraiReflectionMode = 'off' | 'faked' | 'planar';
+
+export type UraiAtmosphereMode = 'minimal' | 'layered' | 'volumetric-look';
+
+export type UraiArtifactRarity = 'common' | 'rare' | 'mythic';
+
+export type UraiWorldRegion = 'home-platform' | 'life-map-depth' | 'focus-orbit' | 'replay-atmosphere' | 'safe-return';
+
 export type UraiSpatialCameraSnapshot = {
   position: [number, number, number];
   target: [number, number, number];
   fov: number;
   zoom?: number;
+};
+
+export type UraiSpatialRenderBudget = {
+  qualityTier: UraiSpatialQualityTier;
+  maxDpr: number;
+  particleBudget: number;
+  shadowMapSize: 1024 | 1536 | 2048;
+  bloomEnabled: boolean;
+  chromaticAberrationEnabled: boolean;
+  reflectionMode: UraiReflectionMode;
+  atmosphereMode: UraiAtmosphereMode;
+  maxHtmlLabels: number;
+};
+
+export type UraiProgressionLock = {
+  id: string;
+  label: string;
+  state: 'sealed' | 'preview' | 'unlocked';
+  ringIndex: number;
+  artifactRarity: UraiArtifactRarity;
 };
 
 export type UraiSpatialNavigationFrame = {
@@ -40,7 +70,13 @@ export type UraiSpatialWorldState = {
   activeConstellationId?: string;
   activeReplayId?: string;
   activeMirrorContextId?: string;
+  selectedArtifactId?: string;
   transitionPhase?: string;
+  cinematicTransitionState?: 'idle' | 'approach' | 'orbit' | 'reveal' | 'safe-return';
+  artifactRarity?: UraiArtifactRarity;
+  worldRegion: UraiWorldRegion;
+  progressionLocks: UraiProgressionLock[];
+  renderBudget: UraiSpatialRenderBudget;
   reducedMotion: boolean;
   webglAvailable: boolean;
   fallbackMode: UraiSpatialFallbackMode;
@@ -81,9 +117,9 @@ export const URAI_CAMERA_PRESETS = {
     fov: 46,
   },
   lifeMap: {
-    position: [0, 0, 900],
-    target: [0, 0, 0],
-    fov: 42,
+    position: [0, 18, 128],
+    target: [0, 4, -120],
+    fov: 38,
   },
   focus: {
     position: [18, 10, 86],
@@ -111,6 +147,49 @@ export const URAI_CAMERA_PRESETS = {
     fov: 70,
   },
 } as const satisfies Record<UraiSpatialWorldMode, UraiSpatialCameraSnapshot>;
+
+export const URAI_SPATIAL_RENDER_BUDGETS = {
+  low: {
+    qualityTier: 'low',
+    maxDpr: 1.15,
+    particleBudget: 240,
+    shadowMapSize: 1024,
+    bloomEnabled: false,
+    chromaticAberrationEnabled: false,
+    reflectionMode: 'faked',
+    atmosphereMode: 'minimal',
+    maxHtmlLabels: 3,
+  },
+  medium: {
+    qualityTier: 'medium',
+    maxDpr: 1.45,
+    particleBudget: 720,
+    shadowMapSize: 1536,
+    bloomEnabled: true,
+    chromaticAberrationEnabled: false,
+    reflectionMode: 'faked',
+    atmosphereMode: 'layered',
+    maxHtmlLabels: 6,
+  },
+  high: {
+    qualityTier: 'high',
+    maxDpr: 1.75,
+    particleBudget: 1280,
+    shadowMapSize: 2048,
+    bloomEnabled: true,
+    chromaticAberrationEnabled: false,
+    reflectionMode: 'planar',
+    atmosphereMode: 'volumetric-look',
+    maxHtmlLabels: 8,
+  },
+} as const satisfies Record<UraiSpatialQualityTier, UraiSpatialRenderBudget>;
+
+export const URAI_PROGRESSION_LOCKS: UraiProgressionLock[] = [
+  { id: 'first-orb', label: 'First Orb', state: 'unlocked', ringIndex: 0, artifactRarity: 'rare' },
+  { id: 'life-map-depth', label: 'Life Map Depth', state: 'preview', ringIndex: 1, artifactRarity: 'rare' },
+  { id: 'replay-atmosphere', label: 'Replay Atmosphere', state: 'sealed', ringIndex: 2, artifactRarity: 'mythic' },
+  { id: 'mirror-council', label: 'Mirror Council', state: 'sealed', ringIndex: 3, artifactRarity: 'mythic' },
+];
 
 export const URAI_XR_DEFAULT_STATE: UraiSpatialXRState = {
   enabled: false,
@@ -234,6 +313,23 @@ export function modeFromRouteMode(routeMode: string): UraiSpatialWorldMode {
   return 'home';
 }
 
+function regionForMode(mode: UraiSpatialWorldMode): UraiWorldRegion {
+  if (mode === 'lifeMap') return 'life-map-depth';
+  if (mode === 'focus') return 'focus-orbit';
+  if (mode === 'replay') return 'replay-atmosphere';
+  if (mode === 'unwinding' || mode === 'mirror') return 'safe-return';
+  return 'home-platform';
+}
+
+function cinematicStateForMode(mode: UraiSpatialWorldMode): UraiSpatialWorldState['cinematicTransitionState'] {
+  if (mode === 'ascent') return 'approach';
+  if (mode === 'lifeMap') return 'reveal';
+  if (mode === 'focus') return 'orbit';
+  if (mode === 'replay') return 'reveal';
+  if (mode === 'unwinding') return 'safe-return';
+  return 'idle';
+}
+
 export function buildUraiSpatialWorldState(input: {
   mode: UraiSpatialWorldMode;
   reducedMotion?: boolean;
@@ -242,12 +338,26 @@ export function buildUraiSpatialWorldState(input: {
   activeConstellationId?: string;
   activeReplayId?: string;
   activeMirrorContextId?: string;
+  selectedArtifactId?: string;
+  artifactRarity?: UraiArtifactRarity;
+  worldRegion?: UraiWorldRegion;
   transitionPhase?: string;
+  cinematicTransitionState?: UraiSpatialWorldState['cinematicTransitionState'];
+  progressionLocks?: UraiProgressionLock[];
+  qualityTier?: UraiSpatialQualityTier;
+  renderBudget?: Partial<UraiSpatialRenderBudget>;
   fallbackMode?: UraiSpatialFallbackMode;
   navigationStack?: UraiSpatialNavigationFrame[];
   xr?: Partial<UraiSpatialXRState>;
 }): UraiSpatialWorldState {
   const fallbackMode = input.fallbackMode ?? (input.webglAvailable === false ? 'dom' : 'webgl');
+  const requestedQualityTier = input.qualityTier ?? (input.reducedMotion ? 'low' : 'high');
+  const baseBudget = URAI_SPATIAL_RENDER_BUDGETS[requestedQualityTier];
+  const renderBudget = {
+    ...baseBudget,
+    ...input.renderBudget,
+    qualityTier: input.renderBudget?.qualityTier ?? requestedQualityTier,
+  } satisfies UraiSpatialRenderBudget;
   const xr = {
     ...URAI_XR_DEFAULT_STATE,
     ...input.xr,
@@ -262,7 +372,13 @@ export function buildUraiSpatialWorldState(input: {
     activeConstellationId: input.activeConstellationId,
     activeReplayId: input.activeReplayId,
     activeMirrorContextId: input.activeMirrorContextId,
+    selectedArtifactId: input.selectedArtifactId,
+    artifactRarity: input.artifactRarity,
+    worldRegion: input.worldRegion ?? regionForMode(input.mode),
     transitionPhase: input.transitionPhase,
+    cinematicTransitionState: input.cinematicTransitionState ?? cinematicStateForMode(input.mode),
+    progressionLocks: input.progressionLocks ?? URAI_PROGRESSION_LOCKS,
+    renderBudget,
     reducedMotion: input.reducedMotion ?? false,
     webglAvailable: input.webglAvailable ?? true,
     fallbackMode,
@@ -279,6 +395,8 @@ export function assertUraiSpatial3DWorldModel() {
     path.points.length >= 2 && path.points.every((point) => Number.isFinite(point.x) && Number.isFinite(point.y) && Number.isFinite(point.z)),
   );
   const replayPathExists = URAI_SPATIAL_CONSTELLATION_PATHS_3D.some((path) => path.kind === 'replay' && path.points.length >= 3);
+  const renderBudgetsCoverQualityTiers = ['low', 'medium', 'high'].every((tier) => tier in URAI_SPATIAL_RENDER_BUDGETS);
+  const locksAreWorldNative = URAI_PROGRESSION_LOCKS.every((lock) => Number.isInteger(lock.ringIndex) && lock.artifactRarity.length > 0);
 
   return {
     ok: true,
@@ -288,8 +406,12 @@ export function assertUraiSpatial3DWorldModel() {
     starsHave3DPositions,
     pathsUse3DPositions,
     replayPathExists,
+    renderBudgetsCoverQualityTiers,
+    locksAreWorldNative,
     cameraPresets: Object.keys(URAI_CAMERA_PRESETS) as UraiSpatialWorldMode[],
     fallbackModes: ['webgl', 'canvas', 'dom'] as UraiSpatialFallbackMode[],
+    renderBudgets: URAI_SPATIAL_RENDER_BUDGETS,
+    progressionLocks: URAI_PROGRESSION_LOCKS,
     xr: {
       supportedMode: 'xr' as UraiSpatialWorldMode,
       sessionModes: ['none', 'vr', 'ar'] as UraiSpatialXRSessionMode[],

@@ -246,7 +246,7 @@ export function assertUraiXrProductionRuntime() {
   return {
     ok: true,
     signaling: URAI_XR_SIGNALING_PROTOCOL,
-    iceServers: getUraiXrIceServers({}),
+    iceServers: getUraiXrIceServers(process.env),
     voice: URAI_XR_VOICE_CONFIG,
     persistence: 'server-authoritative-world-snapshot',
     worldSnapshotUpdates: telemetry.version === 4 && Boolean(telemetry.peers['local-device']) && Boolean(telemetry.voice['local-device']) && Boolean(telemetry.telemetry['local-device']),

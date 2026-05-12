@@ -6,6 +6,7 @@ const dataSource = readFileSync(new URL('../src/spatial/lifemap/lifeMapTrustData
 const loopSource = readFileSync(new URL('../src/spatial/lifemap/LifeMapTrustLoop.tsx', import.meta.url), 'utf8')
 const routeSource = readFileSync(new URL('../src/app/life-map/page.tsx', import.meta.url), 'utf8')
 const shellSource = readFileSync(new URL('../src/spatial/layout/TierOneExperience.tsx', import.meta.url), 'utf8')
+const integratedSceneSource = readFileSync(new URL('../src/scene/UraiIntegratedHomeScene.tsx', import.meta.url), 'utf8')
 const homeSceneSource = readFileSync(new URL('../src/scene/HomeScene.tsx', import.meta.url), 'utf8')
 
 test('Life Map route preserves canonical TierOneExperience shell', () => {
@@ -13,10 +14,12 @@ test('Life Map route preserves canonical TierOneExperience shell', () => {
   assert.ok(routeSource.includes('mode="life-map"'))
 })
 
-test('canonical shell delegates Life Map authority to HomeScene', () => {
-  assert.ok(shellSource.includes('<HomeScene sceneMode={mode} />'))
+test('canonical shell delegates Life Map authority through integrated HomeScene wrapper', () => {
+  assert.ok(shellSource.includes('<UraiIntegratedHomeScene sceneMode={mode} />'))
+  assert.ok(integratedSceneSource.includes('<HomeScene sceneMode={sceneMode} />'))
   assert.ok(!shellSource.includes('mode === "life-map" ? <LifeMapTrustLoop /> : null'))
-  assert.ok(shellSource.includes('mode !== "home" && mode !== "life-map"'))
+  assert.ok(shellSource.includes('mode !== "life-map"'))
+  assert.ok(shellSource.includes('mode !== "home"'))
 })
 
 test('HomeScene mounts selected-node trust loop behind Life Map gate authority', () => {

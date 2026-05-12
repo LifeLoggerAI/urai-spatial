@@ -12,6 +12,7 @@
     "typecheck:legacy": "tsc --noEmit -p tsconfig.legacy.json",
     "check": "tsc --noEmit -p tsconfig.runtime.json && next build",
     "check:build": "next build",
+    "verify:aaa-world": "pnpm run typecheck && node --import tsx --test tests/aaa-world-artifact-contract.test.mjs && pnpm run test:unit && pnpm run build",
     "xr:contract": "node --import tsx --test tests/xr-runtime-contract.test.mjs",
     "xr:quest:validate": "node scripts/xr/quest-device-validation.mjs",
     "xr:navmesh:bake": "node scripts/xr/bake-navmesh.mjs",

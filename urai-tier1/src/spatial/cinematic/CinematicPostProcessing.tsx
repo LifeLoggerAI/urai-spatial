@@ -1,22 +1,62 @@
 'use client'
 
-import { EffectComposer, Bloom, Vignette, ChromaticAberration } from '@react-three/postprocessing'
+import { EffectComposer, Bloom, Vignette, ChromaticAberration, DepthOfField } from '@react-three/postprocessing'
 import { BlendFunction } from 'postprocessing'
 import { Vector2 } from 'three'
+import { useMemo } from 'react'
+import { SpatialRenderBudget, resolveSpatialRenderBudget } from '../visual/aaaMaterials'
+import { useReducedMotion } from '../hooks/useReducedMotion'
+import { useSharedHomeSceneVisualBudget } from '../../scene/homeSceneVisualBudgetContext'
 
-export default function CinematicPostProcessing({ active, reducedMotion = false }: { active: boolean; reducedMotion?: boolean }) {
+export default function CinematicPostProcessing({
+  active,
+  reducedMotion,
+  budget,
+}: {
+  active: boolean
+  reducedMotion?: boolean
+  budget?: SpatialRenderBudget
+}) {
+  const sharedVisualBudget = useSharedHomeSceneVisualBudget()
+  const prefersReducedMotion = useReducedMotion()
+  const effectiveReducedMotion = reducedMotion ?? prefersReducedMotion
+  const resolvedBudget = useMemo(
+    () => budget ?? sharedVisualBudget?.budget ?? resolveSpatialRenderBudget({ reducedMotion: effectiveReducedMotion, qualityTier: effectiveReducedMotion ? 'low' : 'high' }),
+    [budget, sharedVisualBudget, effectiveReducedMotion],
+  )
+
   if (!active) return null
 
+  const qualityTier = resolvedBudget.qualityTier
+  const bloomEnabled = resolvedBudget.bloomEnabled
+  const chromaticAberrationEnabled = resolvedBudget.chromaticAberrationEnabled
+  const highQuality = qualityTier === 'high' && !effectiveReducedMotion
+
   return (
-    <EffectComposer multisampling={0} enabled={active}>
-      <Bloom
-        intensity={reducedMotion ? 0.38 : 0.82}
-        luminanceThreshold={reducedMotion ? 0.24 : 0.16}
-        luminanceSmoothing={0.62}
-        mipmapBlur={!reducedMotion}
-      />
-      {!reducedMotion ? <ChromaticAberration blendFunction={BlendFunction.NORMAL} offset={new Vector2(0.0008, 0.0006)} /> : null}
-      <Vignette eskil={false} offset={0.18} darkness={reducedMotion ? 0.5 : 0.72} />
-    </EffectComposer>
+    <group
+      data-testid="urai-cinematic-postprocessing-budget"
+      data-render-budget-quality-tier={qualityTier}
+      data-render-budget-bloom-enabled={bloomEnabled ? 'true' : 'false'}
+      data-render-budget-chromatic-aberration-enabled={chromaticAberrationEnabled ? 'true' : 'false'}
+    >
+      <EffectComposer multisampling={0} enabled={active}>
+        {bloomEnabled ? (
+          <Bloom
+            intensity={qualityTier === 'low' ? 0.32 : qualityTier === 'medium' ? 0.62 : 0.78}
+            luminanceThreshold={qualityTier === 'low' ? 0.28 : 0.18}
+            luminanceSmoothing={0.64}
+            mipmapBlur={qualityTier !== 'low'}
+          />
+        ) : null}
+
+        {highQuality ? <DepthOfField focusDistance={0.025} focalLength={0.034} bokehScale={1.15} height={360} /> : null}
+
+        {chromaticAberrationEnabled && !effectiveReducedMotion ? (
+          <ChromaticAberration blendFunction={BlendFunction.NORMAL} offset={new Vector2(0.00045, 0.00035)} />
+        ) : null}
+
+        <Vignette eskil={false} offset={0.16} darkness={qualityTier === 'low' ? 0.5 : highQuality ? 0.78 : 0.66} />
+      </EffectComposer>
+    </group>
   )
 }
