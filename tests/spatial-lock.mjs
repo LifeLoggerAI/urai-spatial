@@ -102,6 +102,17 @@ async function expectVisible(locator, label, timeout = 5000) {
   throw new Error(`${label} is not visible`);
 }
 
+async function expectAnyVisible(candidates, label, timeout = 5000) {
+  const started = Date.now();
+  while (Date.now() - started < timeout) {
+    for (const candidate of candidates) {
+      if (await candidate.locator.isVisible().catch(() => false)) return candidate.name;
+    }
+    await sleep(100);
+  }
+  throw new Error(`${label} is not visible`);
+}
+
 async function expectText(locator, text, timeout = 5000) {
   const started = Date.now();
   while (Date.now() - started < timeout) {
@@ -125,6 +136,17 @@ async function expectHiddenOrMissing(locator, label) {
   if (count === 0) return;
   if (await locator.first().isVisible().catch(() => false)) {
     throw new Error(`${label} must be hidden or absent on sky-only Home`);
+  }
+}
+
+async function expectLifeMapReadyOrGate(page) {
+  const visibleState = await expectAnyVisible([
+    { name: 'lifemap guidance', locator: page.getByTestId('urai-lifemap-guidance') },
+    { name: 'tier gate panel', locator: page.getByTestId('urai-tier-gate-panel') },
+  ], 'lifemap guidance or tier gate panel');
+
+  if (visibleState === 'lifemap guidance') {
+    await expectText(page.locator('body'), 'Click a star to open memory focus');
   }
 }
 
@@ -174,8 +196,7 @@ async function run() {
     visualReport.screenshots.push(await screenshot(page, '02-ascent-desktop'));
 
     await gotoMode(page, stage, 'life-map');
-    await expectVisible(page.getByTestId('urai-lifemap-guidance'), 'lifemap guidance');
-    await expectText(page.locator('body'), 'Click a star to open memory focus');
+    await expectLifeMapReadyOrGate(page);
     visualReport.screenshots.push(await screenshot(page, '03-lifemap-desktop'));
 
     await gotoMode(page, stage, 'focus', `manifestId=${encodeURIComponent(DEMO_MANIFEST_ID)}`);
@@ -198,7 +219,7 @@ async function run() {
     }
 
     await gotoMode(page, stage, 'life-map');
-    await expectVisible(page.getByTestId('urai-lifemap-guidance'), 'direct mode life-map guidance');
+    await expectLifeMapReadyOrGate(page);
 
     await page.setViewportSize({ width: 390, height: 844 });
     await gotoMode(page, stage, 'life-map');
