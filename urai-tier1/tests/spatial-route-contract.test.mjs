@@ -46,6 +46,7 @@ const files = {
   mirror: read(['src/app/mirror/page.tsx']),
   lifeMapGate: read(['src/spatial/components/world/LifeMapAscentGate.tsx']),
   tierOne: read(['src/spatial/layout/TierOneExperience.tsx']),
+  integratedSceneRaw: read(['src/scene/UraiIntegratedHomeScene.tsx']),
   sceneRaw: read(['src/scene/HomeScene.tsx']),
   focusStateRaw: read(['src/spatial/scene/focusState.ts']),
   replayStateRaw: read(['src/spatial/scene/replayState.ts']),
@@ -59,6 +60,7 @@ const files = {
 }
 
 const scene = flat(files.sceneRaw)
+const integratedScene = flat(files.integratedSceneRaw)
 const focusState = flat(files.focusStateRaw)
 const replayState = flat(files.replayStateRaw)
 const replayTimeline = flat(files.replayTimelineRaw)
@@ -80,7 +82,7 @@ test('primary routes use the canonical TierOneExperience shell', () => {
   assert.match(compact(files.mirror), /<TierOneExperiencemode="mirror"\/>/)
 })
 
-test('TierOneExperience maps routed modes to the canonical HomeScene shell', () => {
+test('TierOneExperience maps routed modes through the integrated canonical HomeScene shell', () => {
   assert.match(
     tierOne,
     /export type TierOneExperienceMode = "home" \| "ascent" \| "life-map" \| "demo" \| "replay" \| "focus" \| "unwind" \| "mirror"/,
@@ -88,7 +90,8 @@ test('TierOneExperience maps routed modes to the canonical HomeScene shell', () 
   assert.match(tierOne, /if \(mode === "replay"\) return "replay" as const/)
   assert.match(tierOne, /if \(mode === "focus" \|\| mode === "mirror" \|\| mode === "unwind"\) return "detail" as const/)
   assert.match(tierOne, /if \(mode === "ascent" \|\| mode === "life-map"\) return "sky" as const/)
-  assert.match(tierOne, /<HomeScene sceneMode=\{mode\} \/>/)
+  assert.match(tierOne, /<UraiIntegratedHomeScene sceneMode=\{mode\} \/>/)
+  assert.match(integratedScene, /<HomeScene sceneMode=\{sceneMode\} \/>/)
 })
 
 test('HomeScene preserves silent home and spatial route authority', () => {
