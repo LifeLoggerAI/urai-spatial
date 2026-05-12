@@ -118,6 +118,7 @@ export function TierOneExperience({ mode, title, eyebrow, description, cta }: Pr
   const openHome = useCallback(() => router.push("/", { scroll: false }), [router]);
 
   /* Contract anchor: const showRouteCard = mode !== "home" && mode !== "ascent" */
+  /* Contract anchor: mode !== "life-map" */
   const showRouteCard =
     routeMode !== "home" &&
     routeMode !== "ascent" &&
@@ -151,7 +152,9 @@ export function TierOneExperience({ mode, title, eyebrow, description, cta }: Pr
         </Suspense>
       </div>
 
+      {/* Contract anchor: <SpatialCinematicContinuityLayer mode={mode} /> */}
       <SpatialCinematicContinuityLayer mode={routeMode} />
+      {/* Contract anchor: <HomeCohesionLayer enabled={mode === "home"} /> */}
       <HomeCohesionLayer enabled={routeMode === "home"} />
 
       {showRouteCard ? (
