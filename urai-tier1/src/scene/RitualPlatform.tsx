@@ -160,7 +160,7 @@ export default function RitualPlatform({
         <meshPhysicalMaterial
           color={PALETTE.blackStone}
           roughness={0.18}
-          metalness={0.54}
+          metalness={0.62}
           clearcoat={0.78}
           clearcoatRoughness={0.14}
           reflectivity={0.7}
