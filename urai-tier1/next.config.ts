@@ -24,10 +24,11 @@ const nextConfig: NextConfig = {
     root: projectRoot,
   },
   webpack: (config) => {
-    // Cloud Workstations can fill /ephemeral during large webpack cache writes.
-    // Disable filesystem caching for launch/deploy builds to reduce disk pressure.
     config.cache = false;
     return config;
+  },
+  async rewrites() {
+    return [{ source: "/home", destination: "/" }];
   },
   allowedDevOrigins: uraiAllowedDevOrigins,
 };

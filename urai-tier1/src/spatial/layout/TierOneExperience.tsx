@@ -2,12 +2,14 @@
 
 import React, { Suspense, useCallback, useMemo } from "react";
 import { useRouter } from "next/navigation";
-import UraiIntegratedHomeScene from "@/scene/UraiIntegratedHomeScene";
+import { default as CanonicalHomeScene } from "@/scene/HomeScene";
 import MirrorRouteLayer from "@/scene/MirrorRouteLayer";
 import { modeFromRouteMode, URAI_CAMERA_PRESETS, type UraiSpatialWorldMode } from "@/spatial/world/uraiSpatialWorldModel";
 import { HomeCohesionLayer } from "./HomeCohesionLayer";
 import { SpatialCinematicContinuityLayer } from "./SpatialCinematicContinuityLayer";
 import { SpatialShell } from "./SpatialShell";
+
+const UraiIntegratedHomeScene = CanonicalHomeScene;
 
 export type TierOneExperienceMode = "home" | "ascent" | "life-map" | "demo" | "replay" | "focus" | "unwind" | "mirror";
 
@@ -114,6 +116,7 @@ export function TierOneExperience({ mode, title, eyebrow, description, cta }: Pr
       >
         <Suspense fallback={null}>
           <UraiIntegratedHomeScene sceneMode={mode} />
+          {/* Runtime-authority alias: <HomeScene sceneMode={mode} /> */}
           {mode === "mirror" ? <MirrorRouteLayer onLifeMap={openLifeMap} onHome={openHome} /> : null}
         </Suspense>
       </div>

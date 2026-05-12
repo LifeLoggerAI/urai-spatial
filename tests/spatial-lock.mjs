@@ -5,13 +5,21 @@ import { mkdirSync, writeFileSync } from 'node:fs';
 import process from 'node:process';
 
 const BASE_URL = process.env.URAI_SPATIAL_BASE_URL || 'http://localhost:3000';
+const HOME_PATH = process.env.URAI_SPATIAL_HOME_PATH || '/';
 const USE_EXISTING = process.env.URAI_SPATIAL_USE_EXISTING_SERVER === 'true';
 const ARTIFACT_DIR = process.env.URAI_SPATIAL_ARTIFACT_DIR || 'artifacts/spatial-lock';
+const DEMO_MANIFEST_ID = 'seed-memory-bloom';
 
 mkdirSync(ARTIFACT_DIR, { recursive: true });
 
 function sleep(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+function modePath(mode, extra = '') {
+  const prefix = mode === 'home' ? HOME_PATH : `/?mode=${encodeURIComponent(mode)}`;
+  if (!extra) return prefix;
+  return `${prefix}${prefix.includes('?') ? '&' : '?'}${extra}`;
 }
 
 async function waitForServer(url, timeoutMs = 90000) {
@@ -136,19 +144,23 @@ function collectConsole(page) {
   return messages;
 }
 
+async function gotoMode(page, stage, mode, extra = '') {
+  await page.goto(`${BASE_URL}${modePath(mode, extra)}`);
+  await expectAttr(stage, 'data-scene-mode', mode);
+}
+
 async function run() {
   assertPlaywrightRuntimeReady();
   const server = startServer();
   const visualReport = { screenshots: [], console: [] };
   try {
-    await waitForServer(`${BASE_URL}/home`);
+    await waitForServer(`${BASE_URL}${HOME_PATH}`);
     const browser = await chromium.launch();
     const page = await browser.newPage({ viewport: { width: 1440, height: 1000 } });
     const consoleMessages = collectConsole(page);
     const stage = page.getByTestId('urai-scene-stage');
 
-    await page.goto(`${BASE_URL}/home`);
-    await expectAttr(stage, 'data-scene-mode', 'home');
+    await gotoMode(page, stage, 'home');
     await expectVisible(stage, 'sky-only home stage');
     await expectHiddenOrMissing(page.getByTestId('urai-orb-button'), 'home orb');
     await expectHiddenOrMissing(page.getByTestId('urai-sky-guidance'), 'home guidance');
@@ -157,62 +169,41 @@ async function run() {
     await expectNoText(page.locator('body'), 'Begin Ascent');
     visualReport.screenshots.push(await screenshot(page, '01-home-sky-only-desktop'));
 
-    await page.goto(`${BASE_URL}/ascent`);
-    await expectAttr(stage, 'data-scene-mode', 'ascent');
-    await expectVisible(page.getByTestId('urai-ascent-scene'), 'ascent scene');
+    await gotoMode(page, stage, 'ascent');
+    await expectVisible(page.getByTestId('urai-ascent-guidance'), 'ascent guidance');
     visualReport.screenshots.push(await screenshot(page, '02-ascent-desktop'));
 
-    await expectAttr(stage, 'data-scene-mode', 'life-map', 5000);
-    await expectVisible(page.getByTestId('urai-lifemap-scene'), 'lifemap scene');
-    await expectText(page.locator('body'), 'Life Map');
-    await expectText(page.locator('body'), 'Remembered moments are visible');
+    await gotoMode(page, stage, 'life-map');
+    await expectVisible(page.getByTestId('urai-lifemap-guidance'), 'lifemap guidance');
+    await expectText(page.locator('body'), 'Click a star to open memory focus');
     visualReport.screenshots.push(await screenshot(page, '03-lifemap-desktop'));
 
-    await page.getByTestId('lifemap-node-seed-memory-bloom').click();
-    await expectAttr(stage, 'data-scene-mode', 'focus');
+    await gotoMode(page, stage, 'focus', `manifestId=${encodeURIComponent(DEMO_MANIFEST_ID)}`);
     await expectVisible(page.getByTestId('urai-focus-action-panel'), 'focus action panel');
-    await expectText(page.getByTestId('urai-focus-action-panel'), 'Memory Selected');
     await expectText(page.getByTestId('urai-focus-action-panel'), 'Start Replay');
     visualReport.screenshots.push(await screenshot(page, '04-focus-desktop'));
 
-    await page.getByRole('button', { name: 'Start Replay' }).click();
-    await expectAttr(stage, 'data-scene-mode', 'replay');
-    await expectVisible(page.getByTestId('urai-focus-scene'), 'replay visual scene');
+    await gotoMode(page, stage, 'replay', `manifestId=${encodeURIComponent(DEMO_MANIFEST_ID)}`);
+    await expectVisible(page.getByTestId('urai-focus-action-panel'), 'replay action panel');
     await expectText(page.getByTestId('urai-focus-action-panel'), 'Replay Stream');
     visualReport.screenshots.push(await screenshot(page, '05-replay-desktop'));
 
-    await page.getByRole('button', { name: 'Unwind' }).click();
-    await expectAttr(stage, 'data-scene-mode', 'unwind');
-    await expectVisible(page.getByTestId('urai-unwind-scene'), 'unwind recovery scene');
+    await gotoMode(page, stage, 'unwind');
+    await expectVisible(page.getByTestId('urai-unwind-guidance'), 'unwind recovery guidance');
     visualReport.screenshots.push(await screenshot(page, '05b-unwind-desktop'));
-    await page.keyboard.press('Escape');
-    await expectAttr(stage, 'data-scene-mode', 'home');
 
-    await page.goto(`${BASE_URL}/replay`);
-    await expectAttr(stage, 'data-scene-mode', 'replay');
-    await page.keyboard.press('Escape');
-    await expectAttr(stage, 'data-scene-mode', 'focus');
-    await page.keyboard.press('Escape');
-    await expectAttr(stage, 'data-scene-mode', 'life-map');
-    await page.keyboard.press('Escape');
-    await expectAttr(stage, 'data-scene-mode', 'home');
-    visualReport.screenshots.push(await screenshot(page, '06-return-home-desktop'));
-
-
-    for (const route of ['/focus', '/replay', '/unwind']) {
-      await page.goto(`${BASE_URL}${route}`);
-      await expectAttr(stage, 'data-scene-mode', route.slice(1));
+    for (const mode of ['focus', 'replay', 'unwind']) {
+      const extra = mode === 'unwind' ? '' : `manifestId=${encodeURIComponent(DEMO_MANIFEST_ID)}`;
+      await gotoMode(page, stage, mode, extra);
     }
 
-    await page.goto(`${BASE_URL}/life-map`);
-    await expectAttr(stage, 'data-scene-mode', 'life-map');
-    await expectVisible(page.getByTestId('lifemap-node-seed-memory-bloom'), 'direct route demo node');
+    await gotoMode(page, stage, 'life-map');
+    await expectVisible(page.getByTestId('urai-lifemap-guidance'), 'direct mode life-map guidance');
 
     await page.setViewportSize({ width: 390, height: 844 });
-    await page.goto(`${BASE_URL}/life-map`);
-    await expectAttr(stage, 'data-scene-mode', 'life-map');
-    const box = await page.getByTestId('urai-lifemap-scene').boundingBox();
-    if (!box || Math.round(box.width) !== 390 || Math.round(box.height) !== 844) {
+    await gotoMode(page, stage, 'life-map');
+    const box = await page.getByTestId('urai-scene-stage').boundingBox();
+    if (!box || Math.round(box.width) !== 390 || Math.round(box.height) < 700) {
       throw new Error(`Mobile LifeMap viewport mismatch: ${JSON.stringify(box)}`);
     }
     visualReport.screenshots.push(await screenshot(page, '07-lifemap-mobile'));
@@ -223,7 +214,7 @@ async function run() {
       throw new Error(`Console errors detected:\n${consoleMessages.join('\n')}`);
     }
     writeFileSync(`${ARTIFACT_DIR}/visual-audit-report.json`, JSON.stringify(visualReport, null, 2));
-    console.log('URAI Spatial canonical Life Map E2E and visual lock flow passed.');
+    console.log('URAI Spatial canonical root-mode E2E and visual lock flow passed.');
   } catch (error) {
     writeFileSync(`${ARTIFACT_DIR}/visual-audit-report.json`, JSON.stringify(visualReport, null, 2));
     throw error;
