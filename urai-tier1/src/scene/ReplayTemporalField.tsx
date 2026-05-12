@@ -46,9 +46,9 @@ export default function ReplayTemporalField({ active = true, reducedMotion = fal
 
   return (
     <group ref={groupRef} name="urai-replay-temporal-field" data-testid="urai-replay-temporal-field" userData={{ replayProgress: progress, replaySegmentId: segmentId ?? 'unknown' }}>
-      <line geometry={trailGeometry} frustumCulled={false}>
+      <primitive object={new THREE.Line(trailGeometry)} frustumCulled={false}>
         <lineBasicMaterial color={AAA_MOONLIT_PALETTE.paleCyan} transparent opacity={reducedMotion ? 0.16 : 0.34} depthWrite={false} blending={THREE.AdditiveBlending} />
-      </line>
+      </primitive>
 
       {WAYPOINTS.map((position, index) => {
         const revealed = index < visibleWaypoints
