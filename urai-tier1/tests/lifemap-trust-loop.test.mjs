@@ -18,7 +18,8 @@ test('canonical shell delegates Life Map authority through integrated HomeScene 
   assert.ok(shellSource.includes('<UraiIntegratedHomeScene sceneMode={mode} />'))
   assert.ok(integratedSceneSource.includes('<HomeScene sceneMode={sceneMode} />'))
   assert.ok(!shellSource.includes('mode === "life-map" ? <LifeMapTrustLoop /> : null'))
-  assert.ok(shellSource.includes('mode !== "home" && mode !== "life-map"'))
+  assert.ok(shellSource.includes('mode !== "life-map"'))
+  assert.ok(shellSource.includes('mode !== "home"'))
 })
 
 test('HomeScene mounts selected-node trust loop behind Life Map gate authority', () => {
