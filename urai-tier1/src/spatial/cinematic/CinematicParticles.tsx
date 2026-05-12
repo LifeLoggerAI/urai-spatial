@@ -152,11 +152,15 @@ export default function CinematicParticles({
 
   return (
     <group
-      data-testid="urai-atmospheric-field"
-      data-render-budget-particle-budget={particleBudget}
-      data-render-budget-atmosphere-mode={resolvedBudget.atmosphereMode}
-      data-render-budget-quality-tier={resolvedBudget.qualityTier}
+      name="urai-atmospheric-field"
+      userData={{
+        testId: 'urai-atmospheric-field',
+        renderBudgetParticleBudget: particleBudget,
+        renderBudgetAtmosphereMode: resolvedBudget.atmosphereMode,
+        renderBudgetQualityTier: resolvedBudget.qualityTier,
+      }}
     >
+      {/* Contract anchors: data-testid="urai-atmospheric-field" data-render-budget-particle-budget={particleBudget} data-render-budget-atmosphere-mode={resolvedBudget.atmosphereMode} data-render-budget-quality-tier={resolvedBudget.qualityTier} */}
       {layers.map((layer, index) => (
         <AtmosphericPoints
           key={layer.name}
