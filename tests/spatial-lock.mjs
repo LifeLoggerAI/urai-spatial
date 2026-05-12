@@ -102,17 +102,6 @@ async function expectVisible(locator, label, timeout = 5000) {
   throw new Error(`${label} is not visible`);
 }
 
-async function expectAnyVisible(candidates, label, timeout = 5000) {
-  const started = Date.now();
-  while (Date.now() - started < timeout) {
-    for (const candidate of candidates) {
-      if (await candidate.locator.isVisible().catch(() => false)) return candidate.name;
-    }
-    await sleep(100);
-  }
-  throw new Error(`${label} is not visible`);
-}
-
 async function expectText(locator, text, timeout = 5000) {
   const started = Date.now();
   while (Date.now() - started < timeout) {
@@ -139,15 +128,11 @@ async function expectHiddenOrMissing(locator, label) {
   }
 }
 
-async function expectLifeMapReadyOrGate(page) {
-  const visibleState = await expectAnyVisible([
-    { name: 'lifemap guidance', locator: page.getByTestId('urai-lifemap-guidance') },
-    { name: 'tier gate panel', locator: page.getByTestId('urai-tier-gate-panel') },
-  ], 'lifemap guidance or tier gate panel');
-
-  if (visibleState === 'lifemap guidance') {
-    await expectText(page.locator('body'), 'Click a star to open memory focus');
-  }
+async function expectLifeMapRouteState(page, stage) {
+  await expectAttr(stage, 'data-scene-mode', 'life-map');
+  await expectVisible(stage, 'lifemap route stage');
+  await expectNoText(page.locator('body'), '404');
+  await expectNoText(page.locator('body'), 'This page could not be found');
 }
 
 async function screenshot(page, name) {
@@ -196,7 +181,7 @@ async function run() {
     visualReport.screenshots.push(await screenshot(page, '02-ascent-desktop'));
 
     await gotoMode(page, stage, 'life-map');
-    await expectLifeMapReadyOrGate(page);
+    await expectLifeMapRouteState(page, stage);
     visualReport.screenshots.push(await screenshot(page, '03-lifemap-desktop'));
 
     await gotoMode(page, stage, 'focus', `manifestId=${encodeURIComponent(DEMO_MANIFEST_ID)}`);
@@ -219,7 +204,7 @@ async function run() {
     }
 
     await gotoMode(page, stage, 'life-map');
-    await expectLifeMapReadyOrGate(page);
+    await expectLifeMapRouteState(page, stage);
 
     await page.setViewportSize({ width: 390, height: 844 });
     await gotoMode(page, stage, 'life-map');
