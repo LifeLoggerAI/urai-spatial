@@ -2,14 +2,14 @@
 
 import React, { Suspense, useCallback, useMemo } from "react";
 import { useRouter } from "next/navigation";
-import HomeScene from "@/scene/HomeScene";
+import { default as CanonicalHomeScene } from "@/scene/HomeScene";
 import MirrorRouteLayer from "@/scene/MirrorRouteLayer";
 import { modeFromRouteMode, URAI_CAMERA_PRESETS, type UraiSpatialWorldMode } from "@/spatial/world/uraiSpatialWorldModel";
 import { HomeCohesionLayer } from "./HomeCohesionLayer";
 import { SpatialCinematicContinuityLayer } from "./SpatialCinematicContinuityLayer";
 import { SpatialShell } from "./SpatialShell";
 
-const UraiIntegratedHomeScene = HomeScene;
+const UraiIntegratedHomeScene = CanonicalHomeScene;
 
 export type TierOneExperienceMode = "home" | "ascent" | "life-map" | "demo" | "replay" | "focus" | "unwind" | "mirror";
 
