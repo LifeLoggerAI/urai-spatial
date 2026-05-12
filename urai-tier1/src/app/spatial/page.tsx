@@ -1,5 +1,5 @@
-import SpatialWorldCanvas from "@/spatial/components/world/SpatialWorldCanvas";
+import { TierOneExperience } from '../../spatial/layout/TierOneExperience';
 
 export default function SpatialPage() {
-  return <SpatialWorldCanvas mode="spatial" />;
+  return <TierOneExperience mode="home" />;
 }
