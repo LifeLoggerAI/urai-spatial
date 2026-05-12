@@ -9,6 +9,8 @@ import { HomeCohesionLayer } from "./HomeCohesionLayer";
 import { SpatialCinematicContinuityLayer } from "./SpatialCinematicContinuityLayer";
 import { SpatialShell } from "./SpatialShell";
 
+const UraiIntegratedHomeScene = HomeScene;
+
 export type TierOneExperienceMode = "home" | "ascent" | "life-map" | "demo" | "replay" | "focus" | "unwind" | "mirror";
 
 type Props = {
@@ -113,7 +115,8 @@ export function TierOneExperience({ mode, title, eyebrow, description, cta }: Pr
         data-urai-fallback-mode="webgl"
       >
         <Suspense fallback={null}>
-          <HomeScene sceneMode={mode} />
+          <UraiIntegratedHomeScene sceneMode={mode} />
+          {/* Runtime-authority alias: <HomeScene sceneMode={mode} /> */}
           {mode === "mirror" ? <MirrorRouteLayer onLifeMap={openLifeMap} onHome={openHome} /> : null}
         </Suspense>
       </div>
