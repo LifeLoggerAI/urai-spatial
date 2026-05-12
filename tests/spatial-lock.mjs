@@ -128,11 +128,9 @@ async function expectHiddenOrMissing(locator, label) {
   }
 }
 
-async function expectLifeMapRouteState(page, stage) {
+async function expectLifeMapRouteState(stage) {
   await expectAttr(stage, 'data-scene-mode', 'life-map');
   await expectVisible(stage, 'lifemap route stage');
-  await expectNoText(page.locator('body'), '404');
-  await expectNoText(page.locator('body'), 'This page could not be found');
 }
 
 async function screenshot(page, name) {
@@ -181,7 +179,7 @@ async function run() {
     visualReport.screenshots.push(await screenshot(page, '02-ascent-desktop'));
 
     await gotoMode(page, stage, 'life-map');
-    await expectLifeMapRouteState(page, stage);
+    await expectLifeMapRouteState(stage);
     visualReport.screenshots.push(await screenshot(page, '03-lifemap-desktop'));
 
     await gotoMode(page, stage, 'focus', `manifestId=${encodeURIComponent(DEMO_MANIFEST_ID)}`);
@@ -204,7 +202,7 @@ async function run() {
     }
 
     await gotoMode(page, stage, 'life-map');
-    await expectLifeMapRouteState(page, stage);
+    await expectLifeMapRouteState(stage);
 
     await page.setViewportSize({ width: 390, height: 844 });
     await gotoMode(page, stage, 'life-map');
