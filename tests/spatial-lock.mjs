@@ -19,7 +19,7 @@ async function waitForServer(url, timeoutMs = 90000) {
   while (Date.now() - started < timeoutMs) {
     try {
       const response = await fetch(url);
-      if (response.ok || response.status < 500) return;
+      if (response.ok) return;
     } catch {
       // keep waiting
     }
@@ -30,7 +30,7 @@ async function waitForServer(url, timeoutMs = 90000) {
 
 function startServer() {
   if (USE_EXISTING) return null;
-  const child = spawn('pnpm', ['--filter', 'urai-tier1', 'dev', '--port', '3000'], {
+  const child = spawn('pnpm', ['--dir', 'urai-tier1', 'dev', '--port', '3000'], {
     cwd: process.cwd(),
     env: { ...process.env, CI: '1' },
     stdio: 'inherit',
@@ -141,7 +141,7 @@ async function run() {
   const server = startServer();
   const visualReport = { screenshots: [], console: [] };
   try {
-    await waitForServer(BASE_URL);
+    await waitForServer(`${BASE_URL}/home`);
     const browser = await chromium.launch();
     const page = await browser.newPage({ viewport: { width: 1440, height: 1000 } });
     const consoleMessages = collectConsole(page);
