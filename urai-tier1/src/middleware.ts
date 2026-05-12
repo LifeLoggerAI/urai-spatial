@@ -23,11 +23,15 @@ function routeAllowed(pathname: string) {
 }
 
 export function middleware(request: NextRequest) {
+  if (request.nextUrl.pathname === '/home') {
+    return NextResponse.rewrite(new URL('/', request.url))
+  }
+
   if (routeAllowed(request.nextUrl.pathname)) return NextResponse.next()
 
   return NextResponse.rewrite(new URL('/_not-found', request.url), { status: 404 })
 }
 
 export const config = {
-  matcher: ['/admin/:path*', '/brand-system/:path*', '/demo/:path*', '/internal/:path*'],
+  matcher: ['/home', '/admin/:path*', '/brand-system/:path*', '/demo/:path*', '/internal/:path*'],
 }
