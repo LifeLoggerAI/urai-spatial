@@ -20,7 +20,7 @@ const PLATFORM_CENTER: [number, number, number] = [0, -0.57, -1.2]
 const PALETTE = {
   blackStone: '#05070d',
   moonSilver: '#dbeafe',
-  paleCyan: AAA_MOONLIT_PALETTE.paleCyan,
+  paleCyan: '#9be8ff',
   softGold: AAA_MOONLIT_PALETTE.sacredGold,
   blueViolet: AAA_MOONLIT_PALETTE.blueViolet,
 }
