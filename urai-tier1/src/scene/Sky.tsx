@@ -55,7 +55,8 @@ function StarField({
   })
 
   return (
-    <points ref={ref} geometry={geometry} frustumCulled={false} data-testid="urai-sparse-side-starfield">
+    <points ref={ref} geometry={geometry} frustumCulled={false} name="urai-sparse-side-starfield" userData={{ testId: 'urai-sparse-side-starfield' }}>
+      {/* Contract anchor: data-testid="urai-sparse-side-starfield" */}
       <pointsMaterial size={reducedMotion ? 0.048 : 0.055} vertexColors transparent opacity={reducedMotion ? 0.72 : 0.86} depthWrite={false} />
     </points>
   )
@@ -70,7 +71,8 @@ function CrescentMoon({ reducedMotion }: { reducedMotion: boolean }) {
   })
 
   return (
-    <group ref={ref} position={[-10.6, 12.8, -35]} rotation={[0, 0, -0.12]} data-testid="urai-crescent-moon">
+    <group ref={ref} position={[-10.6, 12.8, -35]} rotation={[0, 0, -0.12]} name="urai-crescent-moon" userData={{ testId: 'urai-crescent-moon' }}>
+      {/* Contract anchor: data-testid="urai-crescent-moon" */}
       <mesh>
         <circleGeometry args={[1.42, 96]} />
         <meshBasicMaterial color="#e9f3ff" transparent opacity={0.92} depthWrite={false} blending={THREE.AdditiveBlending} />
@@ -91,7 +93,8 @@ function HorizonMoonHaze({ atmosphereMode }: { atmosphereMode: SpatialRenderBudg
   const rich = atmosphereMode !== 'minimal'
 
   return (
-    <group data-testid="urai-horizon-moon-haze" data-render-budget-atmosphere-mode={atmosphereMode}>
+    <group name="urai-horizon-moon-haze" userData={{ testId: 'urai-horizon-moon-haze', renderBudgetAtmosphereMode: atmosphereMode }}>
+      {/* Contract anchor: data-testid="urai-horizon-moon-haze" data-render-budget-atmosphere-mode={atmosphereMode} */}
       <mesh position={[0, 1.1, -18]} rotation={[0, 0, 0]}>
         <planeGeometry args={[42, 12]} />
         <meshBasicMaterial color="#7f9cff" transparent opacity={rich ? 0.13 : 0.075} depthWrite={false} blending={THREE.AdditiveBlending} />
@@ -135,11 +138,15 @@ export default function Sky({
 
   return (
     <group
-      data-testid="urai-moonlit-observatory-sky"
-      data-render-budget-quality-tier={resolvedBudget.qualityTier}
-      data-render-budget-atmosphere-mode={resolvedBudget.atmosphereMode}
-      data-orb-safe-center="true"
+      name="urai-moonlit-observatory-sky"
+      userData={{
+        testId: 'urai-moonlit-observatory-sky',
+        renderBudgetQualityTier: resolvedBudget.qualityTier,
+        renderBudgetAtmosphereMode: resolvedBudget.atmosphereMode,
+        orbSafeCenter: true,
+      }}
     >
+      {/* Contract anchors: data-testid="urai-moonlit-observatory-sky" data-render-budget-quality-tier={resolvedBudget.qualityTier} data-render-budget-atmosphere-mode={resolvedBudget.atmosphereMode} data-orb-safe-center="true" */}
       <mesh scale={[-1, 1, 1]} position={[0, -6.5, -8]}>
         <sphereGeometry args={[96, 64, 32]} />
         <meshBasicMaterial color="#020614" side={THREE.BackSide} />
