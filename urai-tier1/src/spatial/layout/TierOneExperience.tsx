@@ -30,7 +30,7 @@ function resolveBrowserMode(fallbackMode: TierOneExperienceMode): TierOneExperie
 }
 
 function useBrowserRouteMode(mode: TierOneExperienceMode) {
-  const [routeMode, setRouteMode] = useState<TierOneExperienceMode>(() => resolveBrowserMode(mode));
+  const [routeMode, setRouteMode] = useState<TierOneExperienceMode>(mode);
 
   useEffect(() => {
     const syncMode = () => setRouteMode(resolveBrowserMode(mode));
@@ -162,7 +162,7 @@ export function TierOneExperience({ mode, title, eyebrow, description, cta }: Pr
           <div className="tier-one-route-card__eyebrow">{eyebrow ?? copy.eyebrow}</div>
           <h1>{title ?? copy.title}</h1>
           <p>{description ?? copy.description}</p>
-          {cta ? <div className="tier-one-route-card__cta">{cta}</div> : null}
+          {cta ? <div className="tier-one-route-card__cta">{cta}</div>
         </aside>
       ) : null}
     </SpatialShell>
