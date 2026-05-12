@@ -162,7 +162,7 @@ export function TierOneExperience({ mode, title, eyebrow, description, cta }: Pr
           <div className="tier-one-route-card__eyebrow">{eyebrow ?? copy.eyebrow}</div>
           <h1>{title ?? copy.title}</h1>
           <p>{description ?? copy.description}</p>
-          {cta ? <div className="tier-one-route-card__cta">{cta}</div>
+          {cta ? <div className="tier-one-route-card__cta">{cta}</div> : null}
         </aside>
       ) : null}
     </SpatialShell>
