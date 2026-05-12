@@ -5,6 +5,7 @@ import { mkdirSync, writeFileSync } from 'node:fs';
 import process from 'node:process';
 
 const BASE_URL = process.env.URAI_SPATIAL_BASE_URL || 'http://localhost:3000';
+const HOME_PATH = process.env.URAI_SPATIAL_HOME_PATH || '/';
 const USE_EXISTING = process.env.URAI_SPATIAL_USE_EXISTING_SERVER === 'true';
 const ARTIFACT_DIR = process.env.URAI_SPATIAL_ARTIFACT_DIR || 'artifacts/spatial-lock';
 
@@ -141,13 +142,13 @@ async function run() {
   const server = startServer();
   const visualReport = { screenshots: [], console: [] };
   try {
-    await waitForServer(`${BASE_URL}/home`);
+    await waitForServer(`${BASE_URL}${HOME_PATH}`);
     const browser = await chromium.launch();
     const page = await browser.newPage({ viewport: { width: 1440, height: 1000 } });
     const consoleMessages = collectConsole(page);
     const stage = page.getByTestId('urai-scene-stage');
 
-    await page.goto(`${BASE_URL}/home`);
+    await page.goto(`${BASE_URL}${HOME_PATH}`);
     await expectAttr(stage, 'data-scene-mode', 'home');
     await expectVisible(stage, 'sky-only home stage');
     await expectHiddenOrMissing(page.getByTestId('urai-orb-button'), 'home orb');
