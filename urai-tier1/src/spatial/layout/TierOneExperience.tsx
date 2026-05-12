@@ -2,7 +2,7 @@
 
 import React, { Suspense, useCallback, useMemo } from "react";
 import { useRouter } from "next/navigation";
-import UraiIntegratedHomeScene from "@/scene/UraiIntegratedHomeScene";
+import HomeScene from "@/scene/HomeScene";
 import MirrorRouteLayer from "@/scene/MirrorRouteLayer";
 import { modeFromRouteMode, URAI_CAMERA_PRESETS, type UraiSpatialWorldMode } from "@/spatial/world/uraiSpatialWorldModel";
 import { HomeCohesionLayer } from "./HomeCohesionLayer";
@@ -113,7 +113,7 @@ export function TierOneExperience({ mode, title, eyebrow, description, cta }: Pr
         data-urai-fallback-mode="webgl"
       >
         <Suspense fallback={null}>
-          <UraiIntegratedHomeScene sceneMode={mode} />
+          <HomeScene sceneMode={mode} />
           {mode === "mirror" ? <MirrorRouteLayer onLifeMap={openLifeMap} onHome={openHome} /> : null}
         </Suspense>
       </div>
