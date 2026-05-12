@@ -21,7 +21,7 @@ const PALETTE = {
   blackStone: '#05070d',
   moonSilver: '#dbeafe',
   paleCyan: '#9be8ff',
-  softGold: AAA_MOONLIT_PALETTE.sacredGold,
+  softGold: '#e7d59d',
   blueViolet: AAA_MOONLIT_PALETTE.blueViolet,
 }
 
