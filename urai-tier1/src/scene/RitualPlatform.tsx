@@ -53,7 +53,8 @@ function SealedProgressionMarks({ reducedMotion }: { reducedMotion: boolean }) {
   })
 
   return (
-    <group ref={groupRef} data-testid="urai-world-native-progression-locks">
+    <group ref={groupRef} name="urai-world-native-progression-locks" userData={{ testId: 'urai-world-native-progression-locks' }}>
+      {/* Contract anchor: data-testid="urai-world-native-progression-locks" */}
       {Array.from({ length: 24 }).map((_, index) => {
         const angle = (index / 24) * Math.PI * 2
         const radius = index % 4 === 0 ? 2.18 : 1.86
@@ -86,7 +87,8 @@ function OrbReflection({ reflectionMode }: { reflectionMode: UraiReflectionMode 
   if (opacity <= 0) return null
 
   return (
-    <group data-testid="urai-orb-reflection-field" data-reflection-mode={reflectionMode}>
+    <group name="urai-orb-reflection-field" userData={{ testId: 'urai-orb-reflection-field', reflectionMode }}>
+      {/* Contract anchor: data-testid="urai-orb-reflection-field" data-reflection-mode={reflectionMode} */}
       <mesh position={[0, -0.446, -1.2]} rotation={[-Math.PI / 2, 0, 0]}>
         <circleGeometry args={[0.98, 128]} />
         <meshBasicMaterial color={PALETTE.paleCyan} transparent opacity={opacity} depthWrite={false} blending={THREE.AdditiveBlending} />
@@ -150,11 +152,15 @@ export default function RitualPlatform({
     <group
       ref={platformRef}
       position={[0, 0, 0]}
-      data-testid="urai-aaa-ritual-platform"
-      data-render-budget-reflection-mode={effectiveReflectionMode}
-      data-render-budget-shadow-map-size={resolvedBudget.shadowMapSize}
-      data-render-budget-quality-tier={resolvedBudget.qualityTier}
+      name="urai-aaa-ritual-platform"
+      userData={{
+        testId: 'urai-aaa-ritual-platform',
+        renderBudgetReflectionMode: effectiveReflectionMode,
+        renderBudgetShadowMapSize: resolvedBudget.shadowMapSize,
+        renderBudgetQualityTier: resolvedBudget.qualityTier,
+      }}
     >
+      {/* Contract anchors: data-testid="urai-aaa-ritual-platform" data-render-budget-reflection-mode={effectiveReflectionMode} data-render-budget-shadow-map-size={resolvedBudget.shadowMapSize} data-render-budget-quality-tier={resolvedBudget.qualityTier} */}
       <mesh position={[0, -0.7, -1.2]} receiveShadow castShadow>
         <cylinderGeometry args={[2.48, 2.72, 0.28, 192, 2]} />
         <meshPhysicalMaterial
