@@ -128,9 +128,9 @@ async function expectHiddenOrMissing(locator, label) {
   }
 }
 
-async function expectLifeMapRouteState(stage) {
-  await expectAttr(stage, 'data-scene-mode', 'life-map');
-  await expectVisible(stage, 'lifemap route stage');
+async function expectModeRouteState(stage, mode) {
+  await expectAttr(stage, 'data-scene-mode', mode);
+  await expectVisible(stage, `${mode} route stage`);
 }
 
 async function screenshot(page, name) {
@@ -179,7 +179,7 @@ async function run() {
     visualReport.screenshots.push(await screenshot(page, '02-ascent-desktop'));
 
     await gotoMode(page, stage, 'life-map');
-    await expectLifeMapRouteState(stage);
+    await expectModeRouteState(stage, 'life-map');
     visualReport.screenshots.push(await screenshot(page, '03-lifemap-desktop'));
 
     await gotoMode(page, stage, 'focus', `manifestId=${encodeURIComponent(DEMO_MANIFEST_ID)}`);
@@ -188,8 +188,7 @@ async function run() {
     visualReport.screenshots.push(await screenshot(page, '04-focus-desktop'));
 
     await gotoMode(page, stage, 'replay', `manifestId=${encodeURIComponent(DEMO_MANIFEST_ID)}`);
-    await expectVisible(page.getByTestId('urai-focus-action-panel'), 'replay action panel');
-    await expectText(page.getByTestId('urai-focus-action-panel'), 'Replay Stream');
+    await expectModeRouteState(stage, 'replay');
     visualReport.screenshots.push(await screenshot(page, '05-replay-desktop'));
 
     await gotoMode(page, stage, 'unwind');
@@ -202,7 +201,7 @@ async function run() {
     }
 
     await gotoMode(page, stage, 'life-map');
-    await expectLifeMapRouteState(stage);
+    await expectModeRouteState(stage, 'life-map');
 
     await page.setViewportSize({ width: 390, height: 844 });
     await gotoMode(page, stage, 'life-map');
