@@ -1,5 +1,5 @@
-import { SpatialHome } from "@/components/spatial/spatial-home";
+import { TierOneExperience } from '../../spatial/layout/TierOneExperience';
 
 export default function SpatialPage() {
-  return <SpatialHome />;
+  return <TierOneExperience mode="home" />;
 }
