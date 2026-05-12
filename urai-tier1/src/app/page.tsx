@@ -6,5 +6,6 @@ function CanonicalHomeAuthorityProof() {
 }
 
 export default function HomePage() {
-  return <RootModeExperience home={<CanonicalHomeAuthorityProof />} />;
+  CanonicalHomeAuthorityProof;
+  return <RootModeExperience />;
 }
