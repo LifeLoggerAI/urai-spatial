@@ -1,10 +1,14 @@
 import playwright from 'playwright';
 const { chromium } = playwright;
 import { spawn, spawnSync } from 'node:child_process';
-import { existsSync, readdirSync, mkdirSync, writeFileSync } from 'node:fs';
-import { homedir } from 'node:os';
-import path from 'node:path';
+import { mkdirSync, writeFileSync } from 'node:fs';
 import process from 'node:process';
+import {
+  addPortableBrowserLibraries,
+  chromiumLaunchOptions,
+  chromiumLaunchOptionsLiteral,
+  findFullChromiumExecutable,
+} from '../scripts/playwright-runtime-helpers.mjs';
 
 const BASE_URL = process.env.URAI_SPATIAL_BASE_URL || 'http://localhost:3000';
 const HOME_PATH = process.env.URAI_SPATIAL_HOME_PATH || '/';
@@ -14,82 +18,9 @@ const DEMO_MANIFEST_ID = 'seed-memory-bloom';
 
 mkdirSync(ARTIFACT_DIR, { recursive: true });
 
-function commandExists(command) {
-  const result = spawnSync('sh', ['-lc', `command -v ${command}`], {
-    stdio: 'ignore',
-    shell: false,
-  });
-  return result.status === 0;
-}
-
-function prependLdLibraryPath(libDir) {
-  if (!libDir || !existsSync(libDir)) return false;
-  const current = process.env.LD_LIBRARY_PATH || '';
-  const parts = current.split(':').filter(Boolean);
-  if (!parts.includes(libDir)) {
-    process.env.LD_LIBRARY_PATH = [libDir, ...parts].join(':');
-  }
-  return true;
-}
-
-function addNixBrowserLibraries() {
-  if (process.platform !== 'linux' || process.env.URAI_DISABLE_NIX_BROWSER_LIBS === 'true' || !commandExists('nix')) return [];
-
-  const added = [];
-  const packages = [
-    ['expat', 'libexpat.so.1'],
-  ];
-
-  for (const [pkg, marker] of packages) {
-    const result = spawnSync('nix', ['eval', '--raw', `nixpkgs#${pkg}.outPath`], {
-      stdio: ['ignore', 'pipe', 'ignore'],
-      shell: false,
-      encoding: 'utf8',
-    });
-    if (result.status !== 0 || !result.stdout) continue;
-    const outPath = result.stdout.trim();
-    const libDir = path.join(outPath, 'lib');
-    if (existsSync(path.join(libDir, marker)) && prependLdLibraryPath(libDir)) {
-      added.push(`${pkg}:${libDir}`);
-    }
-  }
-
-  return added;
-}
-
-const addedNixLibs = addNixBrowserLibraries();
-if (addedNixLibs.length) {
-  console.log(`[URAI Spatial] Added Nix browser library path(s): ${addedNixLibs.join(', ')}`);
-}
-
-function findFullChromiumExecutable() {
-  const browsersDir = process.env.PLAYWRIGHT_BROWSERS_PATH || path.join(homedir(), '.cache', 'ms-playwright');
-  if (!existsSync(browsersDir)) return null;
-
-  const entries = readdirSync(browsersDir, { withFileTypes: true })
-    .filter((entry) => entry.isDirectory() && /^chromium-\d+$/.test(entry.name))
-    .map((entry) => entry.name)
-    .sort()
-    .reverse();
-
-  for (const entry of entries) {
-    const candidates = [
-      path.join(browsersDir, entry, 'chrome-linux64', 'chrome'),
-      path.join(browsersDir, entry, 'chrome-linux', 'chrome'),
-      path.join(browsersDir, entry, 'chrome-mac', 'Chromium.app', 'Contents', 'MacOS', 'Chromium'),
-      path.join(browsersDir, entry, 'chrome-win', 'chrome.exe'),
-    ];
-    for (const candidate of candidates) {
-      if (existsSync(candidate)) return candidate;
-    }
-  }
-
-  return null;
-}
-
-function chromiumLaunchOptions() {
-  const executablePath = process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH || findFullChromiumExecutable();
-  return executablePath ? { executablePath } : {};
+const addedPortableLibs = addPortableBrowserLibraries();
+if (addedPortableLibs.length) {
+  console.log(`[URAI Spatial] Added portable browser library path(s): ${addedPortableLibs.join(', ')}`);
 }
 
 function sleep(ms) {
@@ -131,12 +62,10 @@ function startServer() {
 }
 
 function assertPlaywrightRuntimeReady() {
-  const executablePath = process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH || findFullChromiumExecutable();
-  const launchOptions = executablePath ? `{ headless: true, executablePath: ${JSON.stringify(executablePath)} }` : '{ headless: true }';
   const result = spawnSync('pnpm', ['exec', 'node', '-e', `
     const { chromium } = require('playwright');
     (async () => {
-      const browser = await chromium.launch(${launchOptions});
+      const browser = await chromium.launch(${chromiumLaunchOptionsLiteral()});
       await browser.close();
     })().catch((error) => {
       console.error(error && error.stack ? error.stack : error);
@@ -151,20 +80,15 @@ function assertPlaywrightRuntimeReady() {
 
   if (result.status === 0) return;
 
+  const executablePath = process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH || findFullChromiumExecutable();
   const output = `${result.stdout ?? ''}\n${result.stderr ?? ''}`.trim();
   throw new Error([
     'Playwright Chromium cannot launch because this environment is missing browser runtime dependencies or browser binaries.',
     output,
     executablePath ? `Full Chromium fallback attempted at: ${executablePath}` : '',
-    addedNixLibs.length ? `Injected Nix browser libraries: ${addedNixLibs.join(', ')}` : '',
-    'Fix:',
-    '  pnpm playwright:install',
-    '  pnpm playwright:install-deps',
-    'or run:',
-    '  pnpm exec playwright install chromium',
-    '  pnpm exec playwright install-deps chromium',
-    'Low-disk fallback is supported when chrome-linux64/chrome or chrome-linux/chrome exists under ~/.cache/ms-playwright/chromium-* or PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH is set.',
-    'Nix fallback auto-injects nixpkgs#expat when nix is available. Disable with URAI_DISABLE_NIX_BROWSER_LIBS=true.',
+    addedPortableLibs.length ? `Injected portable browser libraries: ${addedPortableLibs.join(', ')}` : '',
+    'No-sudo fallback tried: Nix expat, then local apt .deb extraction for libexpat1.',
+    'If another shared library appears after libexpat, add it to scripts/playwright-runtime-helpers.mjs.',
   ].filter(Boolean).join('\n'));
 }
 
