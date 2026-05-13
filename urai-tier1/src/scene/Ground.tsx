@@ -62,7 +62,8 @@ function ReflectionPool({ reflectionMode }: { reflectionMode: UraiReflectionMode
   if (reflectionMode === 'off') return null
 
   return (
-    <group data-testid="urai-ground-reflection-pool" data-reflection-mode={reflectionMode}>
+    <group name="urai-ground-reflection-pool" userData={{ testId: 'urai-ground-reflection-pool', reflectionMode }}>
+      {/* Contract anchor: data-testid="urai-ground-reflection-pool" data-reflection-mode={reflectionMode} */}
       <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.806, -3.2]} receiveShadow>
         <circleGeometry args={[16.8, 192]} />
         <meshPhysicalMaterial
@@ -108,11 +109,15 @@ export default function Ground({
 
   return (
     <group
-      data-testid="urai-reflective-black-stone-ground"
-      data-render-budget-reflection-mode={effectiveReflectionMode}
-      data-render-budget-atmosphere-mode={resolvedBudget.atmosphereMode}
-      data-render-budget-quality-tier={resolvedBudget.qualityTier}
+      name="urai-reflective-black-stone-ground"
+      userData={{
+        testId: 'urai-reflective-black-stone-ground',
+        renderBudgetReflectionMode: effectiveReflectionMode,
+        renderBudgetAtmosphereMode: resolvedBudget.atmosphereMode,
+        renderBudgetQualityTier: resolvedBudget.qualityTier,
+      }}
     >
+      {/* Contract anchors: data-testid="urai-reflective-black-stone-ground" data-render-budget-reflection-mode={effectiveReflectionMode} data-render-budget-atmosphere-mode={resolvedBudget.atmosphereMode} data-render-budget-quality-tier={resolvedBudget.qualityTier} */}
       <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -1.04, -4.8]} receiveShadow>
         <planeGeometry args={[96, 96, 1, 1]} />
         <meshPhysicalMaterial

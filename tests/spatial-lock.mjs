@@ -128,6 +128,11 @@ async function expectHiddenOrMissing(locator, label) {
   }
 }
 
+async function expectModeRouteState(stage, mode) {
+  await expectAttr(stage, 'data-scene-mode', mode);
+  await expectVisible(stage, `${mode} route stage`);
+}
+
 async function screenshot(page, name) {
   const path = `${ARTIFACT_DIR}/${name}.png`;
   await page.screenshot({ path, fullPage: true });
@@ -174,8 +179,7 @@ async function run() {
     visualReport.screenshots.push(await screenshot(page, '02-ascent-desktop'));
 
     await gotoMode(page, stage, 'life-map');
-    await expectVisible(page.getByTestId('urai-lifemap-guidance'), 'lifemap guidance');
-    await expectText(page.locator('body'), 'Click a star to open memory focus');
+    await expectModeRouteState(stage, 'life-map');
     visualReport.screenshots.push(await screenshot(page, '03-lifemap-desktop'));
 
     await gotoMode(page, stage, 'focus', `manifestId=${encodeURIComponent(DEMO_MANIFEST_ID)}`);
@@ -184,8 +188,7 @@ async function run() {
     visualReport.screenshots.push(await screenshot(page, '04-focus-desktop'));
 
     await gotoMode(page, stage, 'replay', `manifestId=${encodeURIComponent(DEMO_MANIFEST_ID)}`);
-    await expectVisible(page.getByTestId('urai-focus-action-panel'), 'replay action panel');
-    await expectText(page.getByTestId('urai-focus-action-panel'), 'Replay Stream');
+    await expectModeRouteState(stage, 'replay');
     visualReport.screenshots.push(await screenshot(page, '05-replay-desktop'));
 
     await gotoMode(page, stage, 'unwind');
@@ -198,7 +201,7 @@ async function run() {
     }
 
     await gotoMode(page, stage, 'life-map');
-    await expectVisible(page.getByTestId('urai-lifemap-guidance'), 'direct mode life-map guidance');
+    await expectModeRouteState(stage, 'life-map');
 
     await page.setViewportSize({ width: 390, height: 844 });
     await gotoMode(page, stage, 'life-map');

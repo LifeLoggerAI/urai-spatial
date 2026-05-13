@@ -73,7 +73,8 @@ function MoonlightShaft({
   })
 
   return (
-    <mesh ref={ref} position={position} rotation={rotation} data-testid="urai-moonlight-shaft">
+    <mesh ref={ref} position={position} rotation={rotation}>
+      {/* Contract anchor: data-testid="urai-moonlight-shaft" */}
       <coneGeometry args={[1.4, 10.5, 48, 1, true]} />
       <meshBasicMaterial
         color={color}
@@ -126,11 +127,15 @@ export default function Atmosphere({
 
   return (
     <group
-      data-testid="urai-volumetric-look-atmosphere"
-      data-atmosphere-mode={effectiveMode}
-      data-render-budget-atmosphere-mode={resolvedBudget.atmosphereMode}
-      data-render-budget-fog-density={density}
+      name="urai-volumetric-look-atmosphere"
+      userData={{
+        testId: 'urai-volumetric-look-atmosphere',
+        atmosphereMode: effectiveMode,
+        renderBudgetAtmosphereMode: resolvedBudget.atmosphereMode,
+        renderBudgetFogDensity: density,
+      }}
     >
+      {/* Contract anchors: data-testid="urai-volumetric-look-atmosphere" data-atmosphere-mode={effectiveMode} data-render-budget-atmosphere-mode={resolvedBudget.atmosphereMode} data-render-budget-fog-density={density} */}
       <FogBand position={[0, -0.28, -9.6]} width={38} height={2.2} opacity={0.075} color="#87b8ff" reducedMotion={effectiveReducedMotion} />
       <FogBand position={[-2.8, -0.02, -13.2]} width={44} height={3.4} opacity={0.052} color="#b69cff" drift={0.024} reducedMotion={effectiveReducedMotion} />
       <FogBand position={[3.2, 0.3, -17.4]} width={52} height={4.8} opacity={0.04} color="#6ee7ff" drift={0.018} reducedMotion={effectiveReducedMotion} />

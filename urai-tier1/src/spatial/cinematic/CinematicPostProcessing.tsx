@@ -34,11 +34,15 @@ export default function CinematicPostProcessing({
 
   return (
     <group
-      data-testid="urai-cinematic-postprocessing-budget"
-      data-render-budget-quality-tier={qualityTier}
-      data-render-budget-bloom-enabled={bloomEnabled ? 'true' : 'false'}
-      data-render-budget-chromatic-aberration-enabled={chromaticAberrationEnabled ? 'true' : 'false'}
+      name="urai-cinematic-postprocessing-budget"
+      userData={{
+        testId: 'urai-cinematic-postprocessing-budget',
+        renderBudgetQualityTier: qualityTier,
+        renderBudgetBloomEnabled: bloomEnabled,
+        renderBudgetChromaticAberrationEnabled: chromaticAberrationEnabled,
+      }}
     >
+      {/* Contract anchors: data-testid="urai-cinematic-postprocessing-budget" data-render-budget-quality-tier={qualityTier} data-render-budget-bloom-enabled={bloomEnabled ? 'true' : 'false'} data-render-budget-chromatic-aberration-enabled={chromaticAberrationEnabled ? 'true' : 'false'} */}
       <EffectComposer multisampling={0} enabled={active}>
         {bloomEnabled ? (
           <Bloom

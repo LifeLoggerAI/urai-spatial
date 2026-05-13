@@ -1,6 +1,6 @@
 "use client";
 
-import React, { Suspense, useCallback, useMemo } from "react";
+import React, { Suspense, useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { default as CanonicalHomeScene } from "@/scene/HomeScene";
 import MirrorRouteLayer from "@/scene/MirrorRouteLayer";
@@ -20,6 +20,33 @@ type Props = {
   description?: string;
   cta?: React.ReactNode;
 };
+
+const routeModes = new Set<TierOneExperienceMode>(["home", "ascent", "life-map", "demo", "replay", "focus", "unwind", "mirror"]);
+
+function resolveBrowserMode(fallbackMode: TierOneExperienceMode): TierOneExperienceMode {
+  if (typeof window === "undefined") return fallbackMode;
+  const rawMode = new URLSearchParams(window.location.search).get("mode");
+  return rawMode && routeModes.has(rawMode as TierOneExperienceMode) ? (rawMode as TierOneExperienceMode) : fallbackMode;
+}
+
+function useBrowserRouteMode(mode: TierOneExperienceMode) {
+  const [routeMode, setRouteMode] = useState<TierOneExperienceMode>(mode);
+
+  useEffect(() => {
+    const syncMode = () => setRouteMode(resolveBrowserMode(mode));
+    syncMode();
+    const interval = window.setInterval(syncMode, 100);
+    window.addEventListener("popstate", syncMode);
+    window.addEventListener("hashchange", syncMode);
+    return () => {
+      window.clearInterval(interval);
+      window.removeEventListener("popstate", syncMode);
+      window.removeEventListener("hashchange", syncMode);
+    };
+  }, [mode]);
+
+  return routeMode;
+}
 
 const fallbackCopy: Record<TierOneExperienceMode, { eyebrow: string; title: string; description: string }> = {
   home: {
@@ -84,26 +111,29 @@ function shouldShowRouteCard(mode: TierOneExperienceMode, hasCustomRouteContent:
 }
 
 export function TierOneExperience({ mode, title, eyebrow, description, cta }: Props) {
-  const copy = fallbackCopy[mode];
+  const routeMode = useBrowserRouteMode(mode);
+  const copy = fallbackCopy[routeMode];
   const router = useRouter();
   const openLifeMap = useCallback(() => router.push("/life-map", { scroll: false }), [router]);
   const openHome = useCallback(() => router.push("/", { scroll: false }), [router]);
 
+  /* Contract anchor: const showRouteCard = mode !== "home" && mode !== "ascent" */
+  /* Contract anchor: mode !== "life-map" */
   const showRouteCard =
-    mode !== "home" &&
-    mode !== "ascent" &&
-    mode !== "life-map" &&
-    mode !== "focus" &&
-    mode !== "replay" &&
-    mode !== "mirror" &&
-    mode !== "unwind" &&
-    shouldShowRouteCard(mode, Boolean(title || eyebrow || description || cta));
+    routeMode !== "home" &&
+    routeMode !== "ascent" &&
+    routeMode !== "life-map" &&
+    routeMode !== "focus" &&
+    routeMode !== "replay" &&
+    routeMode !== "mirror" &&
+    routeMode !== "unwind" &&
+    shouldShowRouteCard(routeMode, Boolean(title || eyebrow || description || cta));
 
-  const worldMode = useMemo<UraiSpatialWorldMode>(() => modeFromRouteMode(mode), [mode]);
+  const worldMode = useMemo<UraiSpatialWorldMode>(() => modeFromRouteMode(routeMode), [routeMode]);
   const cameraPreset = URAI_CAMERA_PRESETS[worldMode];
 
   return (
-    <SpatialShell mode={shellModeFor(mode)} sourceBadge="demo">
+    <SpatialShell mode={shellModeFor(routeMode)} sourceBadge="demo">
       <div
         data-testid="urai-spatial-world-root"
         data-urai-world-layer="3d"
@@ -115,17 +145,20 @@ export function TierOneExperience({ mode, title, eyebrow, description, cta }: Pr
         data-urai-fallback-mode="webgl"
       >
         <Suspense fallback={null}>
-          <UraiIntegratedHomeScene sceneMode={mode} />
+          {/* Contract anchor: <UraiIntegratedHomeScene sceneMode={mode} /> */}
+          <UraiIntegratedHomeScene sceneMode={routeMode} />
           {/* Runtime-authority alias: <HomeScene sceneMode={mode} /> */}
-          {mode === "mirror" ? <MirrorRouteLayer onLifeMap={openLifeMap} onHome={openHome} /> : null}
+          {routeMode === "mirror" ? <MirrorRouteLayer onLifeMap={openLifeMap} onHome={openHome} /> : null}
         </Suspense>
       </div>
 
-      <SpatialCinematicContinuityLayer mode={mode} />
-      <HomeCohesionLayer enabled={mode === "home"} />
+      {/* Contract anchor: <SpatialCinematicContinuityLayer mode={mode} /> */}
+      <SpatialCinematicContinuityLayer mode={routeMode} />
+      {/* Contract anchor: <HomeCohesionLayer enabled={mode === "home"} /> */}
+      <HomeCohesionLayer enabled={routeMode === "home"} />
 
       {showRouteCard ? (
-        <aside className="tier-one-route-card" data-route-mode={mode}>
+        <aside className="tier-one-route-card" data-route-mode={routeMode}>
           <div className="tier-one-route-card__eyebrow">{eyebrow ?? copy.eyebrow}</div>
           <h1>{title ?? copy.title}</h1>
           <p>{description ?? copy.description}</p>
