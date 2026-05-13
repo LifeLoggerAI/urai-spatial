@@ -41,10 +41,13 @@ function findFullChromiumExecutable() {
     .reverse();
 
   for (const entry of entries) {
-    const linuxCandidate = path.join(browsersDir, entry, 'chrome-linux', 'chrome');
-    const macCandidate = path.join(browsersDir, entry, 'chrome-mac', 'Chromium.app', 'Contents', 'MacOS', 'Chromium');
-    const winCandidate = path.join(browsersDir, entry, 'chrome-win', 'chrome.exe');
-    for (const candidate of [linuxCandidate, macCandidate, winCandidate]) {
+    const candidates = [
+      path.join(browsersDir, entry, 'chrome-linux64', 'chrome'),
+      path.join(browsersDir, entry, 'chrome-linux', 'chrome'),
+      path.join(browsersDir, entry, 'chrome-mac', 'Chromium.app', 'Contents', 'MacOS', 'Chromium'),
+      path.join(browsersDir, entry, 'chrome-win', 'chrome.exe'),
+    ];
+    for (const candidate of candidates) {
       if (existsSync(candidate)) return candidate;
     }
   }
@@ -95,7 +98,7 @@ function printHelp(probe) {
   console.error('  pnpm playwright:install-deps');
   console.error('  pnpm exec playwright install-deps chromium');
   console.error('  pnpm exec playwright install chromium');
-  console.error('\nFor low-disk preview sandboxes, a full Chromium install without chromium-headless-shell is supported when chrome-linux/chrome exists under ~/.cache/ms-playwright/chromium-* or when PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH is set.');
+  console.error('\nFor low-disk preview sandboxes, a full Chromium install without chromium-headless-shell is supported when chrome-linux64/chrome or chrome-linux/chrome exists under ~/.cache/ms-playwright/chromium-* or when PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH is set.');
   console.error('\nFor Debian/Ubuntu containers, Playwright installs packages such as libglib2.0-0, libnss3, libx11-6, libxext6, libxkbcommon0, libgtk-3-0, and related Chromium runtime libraries.');
   console.error('\nIf this is a non-root sandbox without sudo, run E2E in CI or a container image where those libraries are preinstalled. Do not bypass lock:e2e for production certification.');
   console.error('\nIn CI, run:');
