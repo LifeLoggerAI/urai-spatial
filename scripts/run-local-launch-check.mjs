@@ -4,13 +4,17 @@ import process from 'node:process'
 
 const port = process.env.PORT ?? '3015'
 const host = process.env.HOST ?? `http://127.0.0.1:${port}`
+const launchEnv = {
+  NEXT_PUBLIC_ALLOW_PUBLIC_DEMO_ROUTES: process.env.NEXT_PUBLIC_ALLOW_PUBLIC_DEMO_ROUTES ?? 'true',
+  URAI_ALLOW_PUBLIC_DEMO_ROUTES: process.env.URAI_ALLOW_PUBLIC_DEMO_ROUTES ?? 'true',
+}
 
 function run(command, args, options = {}) {
   return new Promise((resolve, reject) => {
     const child = spawn(command, args, {
       stdio: options.stdio ?? 'inherit',
       shell: false,
-      env: { ...process.env, ...(options.env ?? {}) },
+      env: { ...process.env, ...launchEnv, ...(options.env ?? {}) },
       cwd: options.cwd ?? process.cwd(),
     })
 
@@ -28,7 +32,7 @@ function runCapture(command, args, options = {}) {
     const child = spawn(command, args, {
       stdio: ['ignore', 'pipe', 'pipe'],
       shell: false,
-      env: { ...process.env, ...(options.env ?? {}) },
+      env: { ...process.env, ...launchEnv, ...(options.env ?? {}) },
       cwd: options.cwd ?? process.cwd(),
     })
 
@@ -92,7 +96,7 @@ function startServer() {
   const child = spawn('pnpm', ['--filter', 'urai-tier1', 'exec', 'next', 'start', '-p', port], {
     stdio: ['ignore', 'pipe', 'pipe'],
     shell: false,
-    env: process.env,
+    env: { ...process.env, ...launchEnv },
   })
 
   child.stdout.on('data', (chunk) => process.stdout.write(chunk))
@@ -115,6 +119,7 @@ let server = null
 try {
   console.log('[URAI Spatial] Local launch check starting')
   console.log(`[URAI Spatial] Smoke host: ${host}`)
+  console.log('[URAI Spatial] Public demo routes enabled for local smoke only')
 
   await stopPort()
   await cleanNextBuild()
