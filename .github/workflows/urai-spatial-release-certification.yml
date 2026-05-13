@@ -1,0 +1,91 @@
+name: URAI Spatial release certification
+
+on:
+  workflow_dispatch:
+  pull_request:
+    branches:
+      - main
+  push:
+    branches:
+      - main
+
+jobs:
+  certify:
+    name: Build, smoke, and E2E certify URAI Spatial
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+
+    env:
+      CI: true
+      NEXT_PUBLIC_ALLOW_PUBLIC_DEMO_ROUTES: "true"
+      URAI_ALLOW_PUBLIC_DEMO_ROUTES: "true"
+      PLAYWRIGHT_BROWSERS_PATH: ~/.cache/ms-playwright
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: "10.0.0"
+
+      - name: Get pnpm store path
+        id: pnpm-store
+        shell: bash
+        run: echo "path=$(pnpm store path)" >> "$GITHUB_OUTPUT"
+
+      - name: Cache pnpm store
+        uses: actions/cache@v4
+        with:
+          path: ${{ steps.pnpm-store.outputs.path }}
+          key: ${{ runner.os }}-pnpm-${{ hashFiles('pnpm-lock.yaml') }}
+          restore-keys: |
+            ${{ runner.os }}-pnpm-
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Install Playwright system dependencies and Chromium
+        run: pnpm exec playwright install --with-deps chromium
+
+      - name: Clean Next state
+        run: pnpm clean:next
+
+      - name: Static/source gates
+        run: |
+          pnpm check:source-integrity
+          pnpm check:production-routes
+          pnpm check:spatial-copy
+          pnpm check:launch-boundary-contract
+          pnpm check:spatial
+
+      - name: Typecheck
+        run: pnpm typecheck
+
+      - name: Build
+        run: pnpm build
+
+      - name: Smoke routes
+        run: |
+          pnpm --filter urai-tier1 exec next start -p 3015 > /tmp/urai-spatial-next.log 2>&1 &
+          echo $! > /tmp/urai-spatial-next.pid
+          for i in {1..40}; do
+            if curl -fsS http://127.0.0.1:3015/ >/dev/null; then
+              break
+            fi
+            sleep 1
+          done
+          HOST=http://127.0.0.1:3015 pnpm smoke
+          kill $(cat /tmp/urai-spatial-next.pid)
+
+      - name: Browser E2E
+        run: pnpm test:e2e
+
+      - name: Full launch check
+        run: pnpm launch:check
