@@ -14,6 +14,54 @@ const DEMO_MANIFEST_ID = 'seed-memory-bloom';
 
 mkdirSync(ARTIFACT_DIR, { recursive: true });
 
+function commandExists(command) {
+  const result = spawnSync('sh', ['-lc', `command -v ${command}`], {
+    stdio: 'ignore',
+    shell: false,
+  });
+  return result.status === 0;
+}
+
+function prependLdLibraryPath(libDir) {
+  if (!libDir || !existsSync(libDir)) return false;
+  const current = process.env.LD_LIBRARY_PATH || '';
+  const parts = current.split(':').filter(Boolean);
+  if (!parts.includes(libDir)) {
+    process.env.LD_LIBRARY_PATH = [libDir, ...parts].join(':');
+  }
+  return true;
+}
+
+function addNixBrowserLibraries() {
+  if (process.platform !== 'linux' || process.env.URAI_DISABLE_NIX_BROWSER_LIBS === 'true' || !commandExists('nix')) return [];
+
+  const added = [];
+  const packages = [
+    ['expat', 'libexpat.so.1'],
+  ];
+
+  for (const [pkg, marker] of packages) {
+    const result = spawnSync('nix', ['eval', '--raw', `nixpkgs#${pkg}.outPath`], {
+      stdio: ['ignore', 'pipe', 'ignore'],
+      shell: false,
+      encoding: 'utf8',
+    });
+    if (result.status !== 0 || !result.stdout) continue;
+    const outPath = result.stdout.trim();
+    const libDir = path.join(outPath, 'lib');
+    if (existsSync(path.join(libDir, marker)) && prependLdLibraryPath(libDir)) {
+      added.push(`${pkg}:${libDir}`);
+    }
+  }
+
+  return added;
+}
+
+const addedNixLibs = addNixBrowserLibraries();
+if (addedNixLibs.length) {
+  console.log(`[URAI Spatial] Added Nix browser library path(s): ${addedNixLibs.join(', ')}`);
+}
+
 function findFullChromiumExecutable() {
   const browsersDir = process.env.PLAYWRIGHT_BROWSERS_PATH || path.join(homedir(), '.cache', 'ms-playwright');
   if (!existsSync(browsersDir)) return null;
@@ -72,7 +120,7 @@ function startServer() {
   if (USE_EXISTING) return null;
   const child = spawn('pnpm', ['--dir', 'urai-tier1', 'dev', '--port', '3000'], {
     cwd: process.cwd(),
-    env: { ...process.env, CI: '1' },
+    env: { ...process.env, CI: '1', LD_LIBRARY_PATH: process.env.LD_LIBRARY_PATH || '' },
     stdio: 'inherit',
     shell: process.platform === 'win32',
   });
@@ -98,6 +146,7 @@ function assertPlaywrightRuntimeReady() {
     stdio: 'pipe',
     shell: process.platform === 'win32',
     encoding: 'utf8',
+    env: process.env,
   });
 
   if (result.status === 0) return;
@@ -107,6 +156,7 @@ function assertPlaywrightRuntimeReady() {
     'Playwright Chromium cannot launch because this environment is missing browser runtime dependencies or browser binaries.',
     output,
     executablePath ? `Full Chromium fallback attempted at: ${executablePath}` : '',
+    addedNixLibs.length ? `Injected Nix browser libraries: ${addedNixLibs.join(', ')}` : '',
     'Fix:',
     '  pnpm playwright:install',
     '  pnpm playwright:install-deps',
@@ -114,6 +164,7 @@ function assertPlaywrightRuntimeReady() {
     '  pnpm exec playwright install chromium',
     '  pnpm exec playwright install-deps chromium',
     'Low-disk fallback is supported when chrome-linux64/chrome or chrome-linux/chrome exists under ~/.cache/ms-playwright/chromium-* or PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH is set.',
+    'Nix fallback auto-injects nixpkgs#expat when nix is available. Disable with URAI_DISABLE_NIX_BROWSER_LIBS=true.',
   ].filter(Boolean).join('\n'));
 }
 
