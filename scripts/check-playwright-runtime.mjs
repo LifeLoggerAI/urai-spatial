@@ -1,8 +1,11 @@
 import { spawnSync } from 'node:child_process';
-import { existsSync, readdirSync } from 'node:fs';
-import { homedir } from 'node:os';
-import path from 'node:path';
 import process from 'node:process';
+import {
+  addPortableBrowserLibraries,
+  chromiumLaunchOptionsLiteral,
+  commandExists,
+  findFullChromiumExecutable,
+} from './playwright-runtime-helpers.mjs';
 
 const AUTO_INSTALL = process.argv.includes('--auto-install');
 const IS_LINUX = process.platform === 'linux';
@@ -16,88 +19,17 @@ function run(command, args, options = {}) {
   });
 }
 
-function commandExists(command) {
-  const result = spawnSync('sh', ['-lc', `command -v ${command}`], {
-    stdio: 'ignore',
-    shell: false,
-  });
-  return result.status === 0;
-}
-
 function canAttemptSystemInstall() {
   if (!IS_LINUX) return false;
   if (IS_ROOT) return true;
   return commandExists('sudo');
 }
 
-function prependLdLibraryPath(libDir) {
-  if (!libDir || !existsSync(libDir)) return false;
-  const current = process.env.LD_LIBRARY_PATH || '';
-  const parts = current.split(':').filter(Boolean);
-  if (!parts.includes(libDir)) {
-    process.env.LD_LIBRARY_PATH = [libDir, ...parts].join(':');
-  }
-  return true;
-}
-
-function addNixBrowserLibraries() {
-  if (!IS_LINUX || process.env.URAI_DISABLE_NIX_BROWSER_LIBS === 'true' || !commandExists('nix')) return [];
-
-  const added = [];
-  const packages = [
-    ['expat', 'libexpat.so.1'],
-  ];
-
-  for (const [pkg, marker] of packages) {
-    const result = spawnSync('nix', ['eval', '--raw', `nixpkgs#${pkg}.outPath`], {
-      stdio: ['ignore', 'pipe', 'ignore'],
-      shell: false,
-      encoding: 'utf8',
-    });
-    if (result.status !== 0 || !result.stdout) continue;
-    const outPath = result.stdout.trim();
-    const libDir = path.join(outPath, 'lib');
-    if (existsSync(path.join(libDir, marker)) && prependLdLibraryPath(libDir)) {
-      added.push(`${pkg}:${libDir}`);
-    }
-  }
-
-  return added;
-}
-
-function findFullChromiumExecutable() {
-  const browsersDir = process.env.PLAYWRIGHT_BROWSERS_PATH || path.join(homedir(), '.cache', 'ms-playwright');
-  if (!existsSync(browsersDir)) return null;
-
-  const entries = readdirSync(browsersDir, { withFileTypes: true })
-    .filter((entry) => entry.isDirectory() && /^chromium-\d+$/.test(entry.name))
-    .map((entry) => entry.name)
-    .sort()
-    .reverse();
-
-  for (const entry of entries) {
-    const candidates = [
-      path.join(browsersDir, entry, 'chrome-linux64', 'chrome'),
-      path.join(browsersDir, entry, 'chrome-linux', 'chrome'),
-      path.join(browsersDir, entry, 'chrome-mac', 'Chromium.app', 'Contents', 'MacOS', 'Chromium'),
-      path.join(browsersDir, entry, 'chrome-win', 'chrome.exe'),
-    ];
-    for (const candidate of candidates) {
-      if (existsSync(candidate)) return candidate;
-    }
-  }
-
-  return null;
-}
-
 function probeChromium() {
-  const executablePath = process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH || findFullChromiumExecutable();
-  const launchOptions = executablePath ? `{ headless: true, executablePath: ${JSON.stringify(executablePath)} }` : '{ headless: true }';
-
   return spawnSync('pnpm', ['--filter', 'urai-tier1', 'exec', 'node', '-e', `
     const { chromium } = require('playwright');
     (async () => {
-      const browser = await chromium.launch(${launchOptions});
+      const browser = await chromium.launch(${chromiumLaunchOptionsLiteral()});
       await browser.close();
     })().catch((error) => {
       console.error(error && error.stack ? error.stack : error);
@@ -116,15 +48,15 @@ function extractMissingLibraries(output) {
   return [...new Set(matches.map((match) => match[1]))];
 }
 
-function printHelp(probe, addedNixLibs = []) {
+function printHelp(probe, addedPortableLibs = []) {
   const combined = `${probe.stdout ?? ''}\n${probe.stderr ?? ''}`.trim();
   const missingLibraries = extractMissingLibraries(combined);
   const fullChromium = findFullChromiumExecutable();
 
   console.error('\n[URAI Spatial] Playwright Chromium cannot launch in this environment.');
   if (combined) console.error(`\nLaunch probe output:\n${combined}\n`);
-  if (addedNixLibs.length) {
-    console.error(`[URAI Spatial] Injected Nix browser libraries: ${addedNixLibs.join(', ')}`);
+  if (addedPortableLibs.length) {
+    console.error(`[URAI Spatial] Injected portable browser libraries: ${addedPortableLibs.join(', ')}`);
   }
   if (missingLibraries.length) {
     console.error(`[URAI Spatial] Missing browser runtime libraries: ${missingLibraries.join(', ')}`);
@@ -133,13 +65,11 @@ function printHelp(probe, addedNixLibs = []) {
     console.error(`\n[URAI Spatial] Full Chromium exists at ${fullChromium}, but launch still failed.`);
   }
   console.error('This usually means Linux browser system libraries are missing or the Playwright browser install is incomplete.');
-  console.error('Run one of the following before pnpm test:e2e in an environment with root/sudo access:');
-  console.error('  pnpm playwright:install-deps');
-  console.error('  pnpm exec playwright install-deps chromium');
-  console.error('  pnpm exec playwright install chromium');
-  console.error('\nFor Nix preview sandboxes without sudo, the repo auto-injects nixpkgs#expat when nix is available. Disable with URAI_DISABLE_NIX_BROWSER_LIBS=true.');
-  console.error('\nFor low-disk preview sandboxes, a full Chromium install without chromium-headless-shell is supported when chrome-linux64/chrome or chrome-linux/chrome exists under ~/.cache/ms-playwright/chromium-* or when PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH is set.');
-  console.error('\nIf this is a non-root sandbox and another shared library appears after libexpat, run E2E in CI or add that package to scripts/check-playwright-runtime.mjs and tests/spatial-lock.mjs.');
+  console.error('The repo now tries no-sudo fallbacks first: Nix expat, then local apt .deb extraction for libexpat1.');
+  console.error('If another shared library appears after libexpat, add it to scripts/playwright-runtime-helpers.mjs.');
+  console.error('\nFor a clean CI environment, run:');
+  console.error('  pnpm playwright:ensure');
+  console.error('  pnpm lock:all');
 }
 
 function maybeInstall() {
@@ -163,9 +93,9 @@ function maybeInstall() {
   return installDeps.status === 0;
 }
 
-const addedNixLibs = addNixBrowserLibraries();
-if (addedNixLibs.length) {
-  console.log(`[URAI Spatial] Added Nix browser library path(s): ${addedNixLibs.join(', ')}`);
+const addedPortableLibs = addPortableBrowserLibraries();
+if (addedPortableLibs.length) {
+  console.log(`[URAI Spatial] Added portable browser library path(s): ${addedPortableLibs.join(', ')}`);
 }
 
 let probe = probeChromium();
@@ -182,5 +112,5 @@ if (maybeInstall()) {
   }
 }
 
-printHelp(probe, addedNixLibs);
+printHelp(probe, addedPortableLibs);
 process.exit(1);
