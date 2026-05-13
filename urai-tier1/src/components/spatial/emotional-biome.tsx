@@ -1,3 +1,5 @@
+"use client";
+
 import { demoEmotionalBiome } from "@/lib/spatial/publicSafeSpatialData";
 
 export function EmotionalBiome() {

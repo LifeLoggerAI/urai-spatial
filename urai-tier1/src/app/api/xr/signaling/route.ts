@@ -1,7 +1,7 @@
 import { NextRequest } from 'next/server'
-import { type UraiXrSignalMessage } from '../../../../src/spatial/xr/uraiXrProductionRuntime'
-import { createMemoryPersistence } from '../../../../src/spatial/xr/uraiXrPersistence'
-import { createUraiXrRoomRuntime } from '../../../../src/spatial/xr/uraiXrRoomRuntime'
+import { type UraiXrSignalMessage } from '@/spatial/xr/uraiXrProductionRuntime'
+import { createMemoryPersistence } from '@/spatial/xr/uraiXrPersistence'
+import { createUraiXrRoomRuntime } from '@/spatial/xr/uraiXrRoomRuntime'
 
 export const dynamic = 'force-static'
 export const revalidate = false

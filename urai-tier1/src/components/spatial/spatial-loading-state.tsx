@@ -1,3 +1,5 @@
+"use client";
+
 export function SpatialLoadingState({ label = "Loading spatial world" }: { label?: string }) {
   return (
     <main className="spatialLoading" aria-busy="true" aria-live="polite">
