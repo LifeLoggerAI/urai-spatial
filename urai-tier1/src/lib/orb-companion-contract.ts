@@ -23,10 +23,12 @@ export type OrbCompanionResponse = {
 
 const DEFAULT_USER_ID = "adamclamp";
 
+const HOME_ROUTE_COMMANDS = ["go home", "back home", "wind back", "close chat", "close orb", "return home", "take me home"];
+
 function inferRouteHint(message: string): OrbRouteHint | undefined {
   const text = message.toLowerCase();
   if (!text.trim()) return undefined;
-  if (text.includes("home") || text.includes("back")) return "home";
+  if (HOME_ROUTE_COMMANDS.some((command) => text.includes(command)) || text === "home" || text === "back") return "home";
   if (text.includes("brain") || text.includes("head") || text.includes("focus")) return "brain-synapses";
   if (text.includes("heart") || text.includes("chest") || text.includes("breath")) return "chest-heart";
   if (text.includes("arm") || text.includes("device") || text.includes("strain")) return "arms-device";
@@ -38,7 +40,7 @@ function inferRouteHint(message: string): OrbRouteHint | undefined {
 }
 
 function replyFor(routeHint?: OrbRouteHint) {
-  if (routeHint === "home") return "I can wind us back home and keep the orb passive.";
+  if (routeHint === "home") return "I can wind us back home, close the chat layer, and keep the orb passive.";
   if (routeHint === "brain-synapses") return "That belongs in the head layer. I can open brain synapses and focus load.";
   if (routeHint === "chest-heart") return "That belongs in the chest-heart layer. I can open the torso signals.";
   if (routeHint === "arms-device") return "That belongs in the arms/device layer. I can open device strain.";
@@ -62,6 +64,6 @@ export function buildOrbCompanionResponse(input: { userId?: unknown; message?: u
     routeHint,
     confidenceLabel: routeHint ? "routed" : "fallback",
     isDemoFallback: !(typeof input.userId === "string" && input.userId.trim()),
-    sources: [],
+    sources: routeHint ? ["local-route-intent"] : [],
   };
 }
