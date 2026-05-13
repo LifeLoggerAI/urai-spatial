@@ -1,7 +1,9 @@
 import playwright from 'playwright';
 const { chromium } = playwright;
 import { spawn, spawnSync } from 'node:child_process';
-import { mkdirSync, writeFileSync } from 'node:fs';
+import { existsSync, readdirSync, mkdirSync, writeFileSync } from 'node:fs';
+import { homedir } from 'node:os';
+import path from 'node:path';
 import process from 'node:process';
 
 const BASE_URL = process.env.URAI_SPATIAL_BASE_URL || 'http://localhost:3000';
@@ -11,6 +13,33 @@ const ARTIFACT_DIR = process.env.URAI_SPATIAL_ARTIFACT_DIR || 'artifacts/spatial
 const DEMO_MANIFEST_ID = 'seed-memory-bloom';
 
 mkdirSync(ARTIFACT_DIR, { recursive: true });
+
+function findFullChromiumExecutable() {
+  const browsersDir = process.env.PLAYWRIGHT_BROWSERS_PATH || path.join(homedir(), '.cache', 'ms-playwright');
+  if (!existsSync(browsersDir)) return null;
+
+  const entries = readdirSync(browsersDir, { withFileTypes: true })
+    .filter((entry) => entry.isDirectory() && /^chromium-\d+$/.test(entry.name))
+    .map((entry) => entry.name)
+    .sort()
+    .reverse();
+
+  for (const entry of entries) {
+    const linuxCandidate = path.join(browsersDir, entry, 'chrome-linux', 'chrome');
+    const macCandidate = path.join(browsersDir, entry, 'chrome-mac', 'Chromium.app', 'Contents', 'MacOS', 'Chromium');
+    const winCandidate = path.join(browsersDir, entry, 'chrome-win', 'chrome.exe');
+    for (const candidate of [linuxCandidate, macCandidate, winCandidate]) {
+      if (existsSync(candidate)) return candidate;
+    }
+  }
+
+  return null;
+}
+
+function chromiumLaunchOptions() {
+  const executablePath = process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH || findFullChromiumExecutable();
+  return executablePath ? { executablePath } : {};
+}
 
 function sleep(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
@@ -51,10 +80,12 @@ function startServer() {
 }
 
 function assertPlaywrightRuntimeReady() {
+  const executablePath = process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH || findFullChromiumExecutable();
+  const launchOptions = executablePath ? `{ headless: true, executablePath: ${JSON.stringify(executablePath)} }` : '{ headless: true }';
   const result = spawnSync('pnpm', ['exec', 'node', '-e', `
     const { chromium } = require('playwright');
     (async () => {
-      const browser = await chromium.launch({ headless: true });
+      const browser = await chromium.launch(${launchOptions});
       await browser.close();
     })().catch((error) => {
       console.error(error && error.stack ? error.stack : error);
@@ -70,15 +101,16 @@ function assertPlaywrightRuntimeReady() {
 
   const output = `${result.stdout ?? ''}\n${result.stderr ?? ''}`.trim();
   throw new Error([
-    'Playwright Chromium cannot launch because this environment is missing browser runtime dependencies.',
+    'Playwright Chromium cannot launch because this environment is missing browser runtime dependencies or browser binaries.',
     output,
+    executablePath ? `Full Chromium fallback attempted at: ${executablePath}` : '',
     'Fix:',
     '  pnpm playwright:install',
     '  pnpm playwright:install-deps',
     'or run:',
     '  pnpm exec playwright install chromium',
     '  pnpm exec playwright install-deps chromium',
-    'The failing log commonly looks like: libglib-2.0.so.0: cannot open shared object file.',
+    'Low-disk fallback is supported when chrome-linux/chrome exists under ~/.cache/ms-playwright/chromium-* or PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH is set.',
   ].filter(Boolean).join('\n'));
 }
 
@@ -160,7 +192,7 @@ async function run() {
   const visualReport = { screenshots: [], console: [] };
   try {
     await waitForServer(`${BASE_URL}${HOME_PATH}`);
-    const browser = await chromium.launch();
+    const browser = await chromium.launch(chromiumLaunchOptions());
     const page = await browser.newPage({ viewport: { width: 1440, height: 1000 } });
     const consoleMessages = collectConsole(page);
     const stage = page.getByTestId('urai-scene-stage');
