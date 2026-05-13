@@ -25,10 +25,13 @@ function findFullChromiumExecutable() {
     .reverse();
 
   for (const entry of entries) {
-    const linuxCandidate = path.join(browsersDir, entry, 'chrome-linux', 'chrome');
-    const macCandidate = path.join(browsersDir, entry, 'chrome-mac', 'Chromium.app', 'Contents', 'MacOS', 'Chromium');
-    const winCandidate = path.join(browsersDir, entry, 'chrome-win', 'chrome.exe');
-    for (const candidate of [linuxCandidate, macCandidate, winCandidate]) {
+    const candidates = [
+      path.join(browsersDir, entry, 'chrome-linux64', 'chrome'),
+      path.join(browsersDir, entry, 'chrome-linux', 'chrome'),
+      path.join(browsersDir, entry, 'chrome-mac', 'Chromium.app', 'Contents', 'MacOS', 'Chromium'),
+      path.join(browsersDir, entry, 'chrome-win', 'chrome.exe'),
+    ];
+    for (const candidate of candidates) {
       if (existsSync(candidate)) return candidate;
     }
   }
@@ -110,7 +113,7 @@ function assertPlaywrightRuntimeReady() {
     'or run:',
     '  pnpm exec playwright install chromium',
     '  pnpm exec playwright install-deps chromium',
-    'Low-disk fallback is supported when chrome-linux/chrome exists under ~/.cache/ms-playwright/chromium-* or PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH is set.',
+    'Low-disk fallback is supported when chrome-linux64/chrome or chrome-linux/chrome exists under ~/.cache/ms-playwright/chromium-* or PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH is set.',
   ].filter(Boolean).join('\n'));
 }
 
