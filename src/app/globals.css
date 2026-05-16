@@ -1,6 +1,6 @@
 html, body, #__next {
   width: 100%;
-  height: 100%;
+  min-height: 100%;
   margin: 0;
   padding: 0;
 }
@@ -9,7 +9,430 @@ html, body, #__next {
   box-sizing: border-box;
 }
 
+:root {
+  color-scheme: dark;
+  --urai-bg: #05070b;
+  --urai-panel: rgba(10, 14, 28, 0.78);
+  --urai-line: rgba(198, 211, 255, 0.18);
+  --urai-text: #f4f7ff;
+  --urai-muted: rgba(244, 247, 255, 0.68);
+  --urai-gold: #f7d36b;
+  --urai-violet: #a68cff;
+  --urai-blue: #81d4ff;
+}
+
 body {
+  overflow-x: hidden;
+  overflow-y: auto;
+  background:
+    radial-gradient(circle at 20% 0%, rgba(126, 91, 255, 0.32), transparent 34rem),
+    radial-gradient(circle at 80% 16%, rgba(62, 200, 255, 0.2), transparent 28rem),
+    linear-gradient(180deg, #070817 0%, var(--urai-bg) 62%, #02030a 100%);
+  color: var(--urai-text);
+  font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+
+button {
+  font: inherit;
+}
+
+.life-map-shell {
+  position: relative;
+  min-height: 100vh;
+  padding: 32px;
+  isolation: isolate;
+}
+
+.life-map-shell::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  background-image:
+    radial-gradient(circle, rgba(255, 255, 255, 0.72) 0 1px, transparent 1.5px),
+    radial-gradient(circle, rgba(166, 140, 255, 0.5) 0 1px, transparent 1.5px);
+  background-position: 0 0, 42px 56px;
+  background-size: 110px 110px, 160px 160px;
+  opacity: 0.22;
+  z-index: -1;
+}
+
+.life-map-hero {
+  display: grid;
+  grid-template-columns: minmax(0, 1.25fr) minmax(280px, 0.75fr);
+  gap: 24px;
+  align-items: end;
+  max-width: 1280px;
+  margin: 0 auto 24px;
+}
+
+.life-map-copy,
+.life-map-status-grid,
+.life-map-panel,
+.life-map-chapters button {
+  border: 1px solid var(--urai-line);
+  background: linear-gradient(180deg, rgba(18, 24, 48, 0.84), rgba(9, 12, 25, 0.7));
+  box-shadow: 0 24px 80px rgba(0, 0, 0, 0.32);
+  backdrop-filter: blur(18px);
+}
+
+.life-map-copy {
+  border-radius: 28px;
+  padding: 28px;
+}
+
+.life-map-eyebrow {
+  margin: 0 0 10px;
+  color: var(--urai-gold);
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+}
+
+.life-map-copy h1 {
+  max-width: 760px;
+  margin: 0;
+  font-size: clamp(2.1rem, 5vw, 4.9rem);
+  line-height: 0.94;
+  letter-spacing: -0.06em;
+}
+
+.life-map-copy p:last-child {
+  max-width: 760px;
+  margin: 18px 0 0;
+  color: var(--urai-muted);
+  font-size: 1rem;
+  line-height: 1.7;
+}
+
+.life-map-status-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1px;
   overflow: hidden;
-  background: #05070b;
+  border-radius: 28px;
+}
+
+.life-map-status-grid div {
+  min-height: 116px;
+  padding: 22px;
+  background: rgba(255, 255, 255, 0.035);
+}
+
+.life-map-status-grid strong {
+  display: block;
+  color: #fff;
+  font-size: clamp(1.5rem, 4vw, 2.4rem);
+  line-height: 1;
+  text-transform: capitalize;
+}
+
+.life-map-status-grid span {
+  display: block;
+  margin-top: 10px;
+  color: var(--urai-muted);
+  font-size: 0.8rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.life-map-stage {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(320px, 420px);
+  gap: 24px;
+  max-width: 1280px;
+  margin: 0 auto;
+}
+
+.life-map-sky {
+  position: relative;
+  min-height: 580px;
+  overflow: hidden;
+  border: 1px solid var(--urai-line);
+  border-radius: 34px;
+  background:
+    radial-gradient(circle at var(--camera-x) var(--camera-y), rgba(255, 255, 255, 0.16), transparent calc(9rem / var(--camera-zoom))),
+    radial-gradient(circle at 50% 100%, rgba(27, 190, 255, 0.2), transparent 24rem),
+    linear-gradient(160deg, rgba(7, 10, 28, 0.92), rgba(26, 10, 54, 0.74) 46%, rgba(2, 6, 20, 0.96));
+  box-shadow: inset 0 0 80px rgba(137, 111, 255, 0.18), 0 32px 90px rgba(0, 0, 0, 0.38);
+  transform-origin: var(--camera-x) var(--camera-y);
+}
+
+.life-map-constellation {
+  position: absolute;
+  inset: 8%;
+  opacity: 0.52;
+  background:
+    linear-gradient(108deg, transparent 11%, rgba(174, 214, 255, 0.18) 11.2%, transparent 11.6%),
+    linear-gradient(23deg, transparent 28%, rgba(247, 211, 107, 0.16) 28.2%, transparent 28.7%),
+    linear-gradient(147deg, transparent 48%, rgba(166, 140, 255, 0.16) 48.2%, transparent 48.6%);
+  filter: blur(0.2px);
+}
+
+.life-map-star {
+  position: absolute;
+  display: grid;
+  place-items: center;
+  border: 0;
+  border-radius: 999px;
+  color: #09101f;
+  cursor: pointer;
+  transform: translate(-50%, -50%) scale(calc(0.9 + var(--star-intensity) * 0.22));
+  transition: transform 220ms ease, box-shadow 220ms ease, opacity 220ms ease;
+}
+
+.life-map-star span {
+  font-size: 0.65rem;
+  font-weight: 900;
+}
+
+.life-map-star--calm,
+.life-map-star--focus {
+  background: var(--urai-blue);
+  box-shadow: 0 0 22px rgba(129, 212, 255, 0.75);
+}
+
+.life-map-star--joy,
+.life-map-star--recovery {
+  background: var(--urai-gold);
+  box-shadow: 0 0 26px rgba(247, 211, 107, 0.8);
+}
+
+.life-map-star--shadow,
+.life-map-star--threshold,
+.life-map-star--grief,
+.life-map-star--mirror,
+.life-map-star--dream {
+  background: var(--urai-violet);
+  box-shadow: 0 0 26px rgba(166, 140, 255, 0.78);
+}
+
+.life-map-star--idle {
+  opacity: 0.62;
+}
+
+.life-map-star--glowing,
+.life-map-star--active {
+  opacity: 1;
+  animation: uraiPulse 2.8s ease-in-out infinite;
+}
+
+.life-map-star--active {
+  outline: 2px solid rgba(255, 255, 255, 0.9);
+  outline-offset: 6px;
+  transform: translate(-50%, -50%) scale(1.38);
+}
+
+.life-map-star--resolved {
+  opacity: 0.42;
+  background: rgba(255, 255, 255, 0.62);
+  box-shadow: 0 0 14px rgba(255, 255, 255, 0.34);
+}
+
+.life-map-star:hover,
+.life-map-star:focus-visible {
+  transform: translate(-50%, -50%) scale(1.46);
+  outline: 2px solid #fff;
+  outline-offset: 5px;
+}
+
+.life-map-panel {
+  display: flex;
+  min-height: 580px;
+  flex-direction: column;
+  gap: 18px;
+  border-radius: 34px;
+  padding: 22px;
+}
+
+.life-map-companion {
+  display: grid;
+  grid-template-columns: 46px 1fr;
+  gap: 14px;
+  align-items: center;
+  padding: 16px;
+  border: 1px solid var(--urai-line);
+  border-radius: 22px;
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.life-map-companion p {
+  margin: 0;
+  color: var(--urai-muted);
+  line-height: 1.55;
+}
+
+.life-map-orb {
+  width: 44px;
+  height: 44px;
+  border-radius: 999px;
+  background: radial-gradient(circle at 35% 28%, #fff, var(--urai-gold) 22%, var(--urai-violet) 64%, #21124d);
+  box-shadow: 0 0 28px rgba(166, 140, 255, 0.85);
+}
+
+.life-map-bloom-card {
+  flex: 1;
+  padding: 22px;
+  border: 1px solid var(--urai-line);
+  border-radius: 26px;
+  background: radial-gradient(circle at 20% 0%, rgba(247, 211, 107, 0.12), transparent 18rem), rgba(255, 255, 255, 0.035);
+}
+
+.life-map-bloom-card h2 {
+  margin: 0;
+  font-size: 2.2rem;
+  letter-spacing: -0.05em;
+}
+
+.life-map-bloom-card h3 {
+  margin: 6px 0 18px;
+  color: var(--urai-blue);
+  font-size: 0.95rem;
+  font-weight: 700;
+}
+
+.life-map-bloom-card p {
+  color: var(--urai-muted);
+  line-height: 1.68;
+}
+
+.life-map-bloom-card dl {
+  display: grid;
+  gap: 10px;
+  margin: 24px 0;
+}
+
+.life-map-bloom-card dl div {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--urai-line);
+}
+
+.life-map-bloom-card dt {
+  color: var(--urai-muted);
+}
+
+.life-map-bloom-card dd {
+  margin: 0;
+  font-weight: 800;
+  text-transform: capitalize;
+}
+
+.life-map-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.life-map-actions button,
+.life-map-chapters button {
+  cursor: pointer;
+}
+
+.life-map-actions button {
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  border-radius: 999px;
+  padding: 11px 16px;
+  color: var(--urai-text);
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.life-map-actions button:first-child {
+  color: #140e05;
+  background: var(--urai-gold);
+}
+
+.life-map-chapters {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 14px;
+  max-width: 1280px;
+  margin: 24px auto 0;
+}
+
+.life-map-chapters button {
+  min-height: 142px;
+  border-radius: 24px;
+  padding: 18px;
+  color: var(--urai-text);
+  text-align: left;
+}
+
+.life-map-chapters button.is-active {
+  border-color: rgba(247, 211, 107, 0.72);
+  box-shadow: 0 0 36px rgba(247, 211, 107, 0.18);
+}
+
+.life-map-chapters span {
+  display: block;
+  margin-bottom: 10px;
+  font-weight: 900;
+}
+
+.life-map-chapters small {
+  display: block;
+  color: var(--urai-muted);
+  line-height: 1.5;
+}
+
+@keyframes uraiPulse {
+  0%, 100% {
+    box-shadow: 0 0 20px rgba(255, 255, 255, 0.42), 0 0 38px rgba(166, 140, 255, 0.32);
+  }
+  50% {
+    box-shadow: 0 0 32px rgba(255, 255, 255, 0.72), 0 0 70px rgba(247, 211, 107, 0.46);
+  }
+}
+
+.life-map-shell--reduced-motion *,
+.life-map-shell--reduced-motion *::before,
+.life-map-shell--reduced-motion *::after {
+  animation: none !important;
+  transition: none !important;
+}
+
+@media (max-width: 980px) {
+  .life-map-shell {
+    padding: 18px;
+  }
+
+  .life-map-hero,
+  .life-map-stage,
+  .life-map-chapters {
+    grid-template-columns: 1fr;
+  }
+
+  .life-map-sky,
+  .life-map-panel {
+    min-height: 520px;
+  }
+
+  .life-map-chapters {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 560px) {
+  .life-map-shell {
+    padding: 12px;
+  }
+
+  .life-map-copy,
+  .life-map-panel,
+  .life-map-status-grid div {
+    padding: 18px;
+  }
+
+  .life-map-status-grid,
+  .life-map-chapters {
+    grid-template-columns: 1fr;
+  }
+
+  .life-map-sky,
+  .life-map-panel {
+    min-height: 440px;
+  }
 }
