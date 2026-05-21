@@ -30,7 +30,7 @@ corepack pnpm bootstrap:check
 corepack pnpm dev
 ```
 
-If you do not use nvm, select Node 22+ with your preferred version manager before enabling Corepack.
+If you do not use nvm, select Node 22+ with your preferred version manager before enabling Corepack. The repo includes both `.nvmrc` and `.node-version` so common Node version managers can select the same runtime.
 
 If `bootstrap:check`, `typecheck`, `lint`, `build`, or `test:unit` says dependencies are missing, run the install sequence above before debugging source files. Missing dependencies can otherwise look like `next/link`, `next/server`, `next/navigation`, `tsx`, or styled-jsx TypeScript failures.
 
