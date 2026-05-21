@@ -2,7 +2,6 @@
   "extends": "./tsconfig.json",
   "include": [
     "next-env.d.ts",
-    ".next/types/**/*.ts",
     "src/**/*.d.ts",
     "src/app/**/*.ts",
     "src/app/**/*.tsx",
@@ -15,6 +14,8 @@
     "src/spatial/scene/**/*.tsx"
   ],
   "exclude": [
+    ".next/**",
+    "node_modules",
     "src/**/*.corrupt.*.ts",
     "src/**/*.corrupt.*.tsx",
     "src/**/*.bak.*",
