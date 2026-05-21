@@ -95,17 +95,28 @@ async function waitForServer(url, timeoutMs = 20_000) {
   throw new Error(`Timed out waiting for ${url}: ${lastError?.message ?? 'no response'}`)
 }
 
-async function stopPort() {
-  const result = await runCapture('lsof', ['-ti', `:${port}`], { stdio: ['ignore', 'pipe', 'pipe'] })
-  const pids = result.output
+function parsePidList(output) {
+  return output
     .split(/\s+/)
     .map((value) => value.trim())
-    .filter(Boolean)
+    .filter((value) => /^\d+$/.test(value))
+}
 
+async function stopPort() {
+  const result = await runCapture('lsof', ['-ti', `:${port}`], { stdio: ['ignore', 'pipe', 'pipe'] })
+  if (result.code !== 0) {
+    console.warn(`[URAI Spatial] Could not inspect port ${port} with lsof; continuing without port cleanup.`)
+    return
+  }
+
+  const pids = parsePidList(result.output)
   if (!pids.length) return
 
   console.log(`[URAI Spatial] Stopping existing process(es) on port ${port}: ${pids.join(', ')}`)
-  await runCapture('kill', pids)
+  const killResult = await runCapture('kill', pids)
+  if (killResult.code !== 0) {
+    console.warn(`[URAI Spatial] Could not stop all processes on port ${port}; continuing and letting Next report any bind error.`)
+  }
   await wait(1000)
 }
 
