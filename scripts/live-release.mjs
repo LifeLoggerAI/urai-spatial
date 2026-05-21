@@ -24,6 +24,24 @@ function run(command, args, options = {}) {
   })
 }
 
+function resolvePnpmCommand() {
+  const npmExecPath = process.env.npm_execpath
+  if (npmExecPath && /pnpm/i.test(npmExecPath) && fs.existsSync(npmExecPath)) {
+    return { command: process.execPath, argsPrefix: [npmExecPath], displayCommand: 'pnpm' }
+  }
+
+  return { command: 'pnpm', argsPrefix: [], displayCommand: 'pnpm' }
+}
+
+function runPnpm(args, options = {}) {
+  const pnpm = resolvePnpmCommand()
+  if (pnpm.argsPrefix.length > 0) {
+    console.log(`\n[URAI Spatial Live] $ ${pnpm.displayCommand} ${args.join(' ')}`)
+    return run(pnpm.command, [...pnpm.argsPrefix, ...args], { ...options, quietDisplay: true })
+  }
+  return run(pnpm.command, args, options)
+}
+
 function requireFile(path) {
   if (!fs.existsSync(path)) {
     throw new Error(`Required release file missing: ${path}`)
@@ -130,11 +148,11 @@ async function main() {
   console.log(`[URAI Spatial Live] Manifest: ${manifest.name} (${manifest.canonicalStatus})`)
 
   console.log('[URAI Spatial Live] Running full release verification.')
-  await run('pnpm', ['verify:release:full'])
+  await runPnpm(['verify:release:full'])
 
   if (mode !== 'deploy') {
     console.log('\n[URAI Spatial Live] Live check passed. No deploy requested.')
-    console.log('[URAI Spatial Live] To deploy, set FIREBASE_PROJECT_ID and run: pnpm live:deploy')
+    console.log('[URAI Spatial Live] To deploy, set FIREBASE_PROJECT_ID and run: corepack pnpm live:deploy')
     return
   }
 
@@ -148,7 +166,7 @@ async function main() {
   ])
 
   console.log('\n[URAI Spatial Live] Deploy completed.')
-  console.log('[URAI Spatial Live] Run live smoke against the deployed URL with: HOST=https://<your-host> pnpm smoke')
+  console.log('[URAI Spatial Live] Run live smoke against the deployed URL with: HOST=https://<your-host> corepack pnpm smoke')
 }
 
 main().catch((error) => {
