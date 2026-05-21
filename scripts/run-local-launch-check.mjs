@@ -1,9 +1,12 @@
-import fs from 'node:fs/promises'
+import fs from 'node:fs'
+import fsp from 'node:fs/promises'
+import path from 'node:path'
 import { spawn } from 'node:child_process'
 import process from 'node:process'
 
 const port = process.env.PORT ?? '3015'
 const host = process.env.HOST ?? `http://127.0.0.1:${port}`
+const root = process.cwd()
 const launchEnv = {
   NEXT_PUBLIC_ALLOW_PUBLIC_DEMO_ROUTES: process.env.NEXT_PUBLIC_ALLOW_PUBLIC_DEMO_ROUTES ?? 'true',
   URAI_ALLOW_PUBLIC_DEMO_ROUTES: process.env.URAI_ALLOW_PUBLIC_DEMO_ROUTES ?? 'true',
@@ -31,8 +34,34 @@ function printRecentServerLogs() {
   for (const line of serverLogLines) console.error(line)
 }
 
+function candidatePnpmEntrypoints() {
+  const candidates = []
+  const npmExecPath = process.env.npm_execpath
+
+  if (npmExecPath && /pnpm/i.test(npmExecPath)) {
+    candidates.push(npmExecPath)
+  }
+
+  candidates.push(path.join(root, 'node_modules', 'pnpm', 'bin', 'pnpm.cjs'))
+  candidates.push(path.join(root, 'node_modules', '.pnpm', 'pnpm@10.0.0', 'node_modules', 'pnpm', 'bin', 'pnpm.cjs'))
+
+  return candidates.filter(Boolean)
+}
+
+function resolvePnpmCommand() {
+  for (const entrypoint of candidatePnpmEntrypoints()) {
+    if (fs.existsSync(entrypoint)) {
+      return { command: process.execPath, argsPrefix: [entrypoint], displayCommand: 'pnpm' }
+    }
+  }
+
+  return { command: 'pnpm', argsPrefix: [], displayCommand: 'pnpm' }
+}
+
 function run(command, args, options = {}) {
   return new Promise((resolve, reject) => {
+    const displayCommand = options.displayCommand ?? command
+    const displayArgs = options.displayArgs ?? args
     const child = spawn(command, args, {
       stdio: options.stdio ?? 'inherit',
       shell: false,
@@ -43,8 +72,18 @@ function run(command, args, options = {}) {
     child.on('error', reject)
     child.on('exit', (code, signal) => {
       if (code === 0) resolve({ code, signal })
-      else reject(new Error(`${command} ${args.join(' ')} failed with code ${code ?? signal}`))
+      else reject(new Error(`${displayCommand} ${displayArgs.join(' ')} failed with code ${code ?? signal}`))
     })
+  })
+}
+
+function runPnpm(args, options = {}) {
+  const pnpm = resolvePnpmCommand()
+  console.log(`[URAI Spatial] $ ${pnpm.displayCommand} ${args.join(' ')}`)
+  return run(pnpm.command, [...pnpm.argsPrefix, ...args], {
+    ...options,
+    displayCommand: pnpm.displayCommand,
+    displayArgs: args,
   })
 }
 
@@ -71,6 +110,12 @@ function runCapture(command, args, options = {}) {
     child.on('error', (error) => resolve({ code: 1, output: String(error) }))
     child.on('exit', (code) => resolve({ code: code ?? 1, output }))
   })
+}
+
+function runPnpmCapture(args, options = {}) {
+  const pnpm = resolvePnpmCommand()
+  console.log(`[URAI Spatial] $ ${pnpm.displayCommand} ${args.join(' ')}`)
+  return runCapture(pnpm.command, [...pnpm.argsPrefix, ...args], options)
 }
 
 function wait(ms) {
@@ -122,11 +167,12 @@ async function stopPort() {
 
 async function cleanNextBuild() {
   console.log('[URAI Spatial] Removing stale urai-tier1/.next build output')
-  await fs.rm('urai-tier1/.next', { recursive: true, force: true })
+  await fsp.rm('urai-tier1/.next', { recursive: true, force: true })
 }
 
 function startServer() {
-  const child = spawn('pnpm', ['--filter', 'urai-tier1', 'exec', 'next', 'start', '-p', port], {
+  const pnpm = resolvePnpmCommand()
+  const child = spawn(pnpm.command, [...pnpm.argsPrefix, '--filter', 'urai-tier1', 'exec', 'next', 'start', '-p', port], {
     stdio: ['ignore', 'pipe', 'pipe'],
     shell: false,
     env: { ...process.env, ...launchEnv },
@@ -163,20 +209,20 @@ try {
   await stopPort()
   await cleanNextBuild()
 
-  await run('pnpm', ['check:source-integrity'])
-  await run('pnpm', ['check:production-routes'])
-  await run('pnpm', ['check:spatial-copy'])
-  await run('pnpm', ['check:launch-boundary-contract'])
-  await run('pnpm', ['check:spatial'])
-  await run('pnpm', ['typecheck'])
-  await run('pnpm', ['build'])
+  await runPnpm(['check:source-integrity'])
+  await runPnpm(['check:production-routes'])
+  await runPnpm(['check:spatial-copy'])
+  await runPnpm(['check:launch-boundary-contract'])
+  await runPnpm(['check:spatial'])
+  await runPnpm(['typecheck'])
+  await runPnpm(['build'])
 
   await stopPort()
   server = startServer()
   await waitForServer(`${host}/`)
-  await run('pnpm', ['smoke'], { env: { HOST: host } })
+  await runPnpm(['smoke'], { env: { HOST: host } })
 
-  const e2e = await runCapture('pnpm', ['test:e2e'])
+  const e2e = await runPnpmCapture(['test:e2e'])
   if (e2e.code !== 0) {
     if (isPlaywrightInfraBlock(e2e.output)) {
       console.warn('\n[URAI Spatial] Browser E2E blocked by local workstation Playwright/OS dependencies.')
