@@ -1,4 +1,5 @@
 import { SpatialAssetManifest } from '../assets/manifestTypes'
+import { UraiSpatialAssetPackage, createSpatialAssetPackageFromManifest } from '../assets/assetPackage'
 
 export type DemoMemoryStar = {
   manifestId: string
@@ -143,3 +144,16 @@ export const DEMO_SPATIAL_MANIFESTS: Record<string, SpatialAssetManifest> = {
   ...Object.fromEntries(DEMO_MEMORY_STARS.map((star) => [star.manifestId, createDemoSpatialManifest(star.manifestId)])),
   [DEMO_FOCUS_MANIFEST_ID]: createDemoSpatialManifest(DEMO_FOCUS_MANIFEST_ID),
 }
+
+export const DEMO_SPATIAL_ASSET_PACKAGES: Record<string, UraiSpatialAssetPackage> = Object.fromEntries(
+  Object.entries(DEMO_SPATIAL_MANIFESTS).map(([manifestId, manifest]) => [
+    manifestId,
+    createSpatialAssetPackageFromManifest(manifest, {
+      scope: 'public-demo',
+      createdAt: '2026-05-21T00:00:00.000Z',
+      reviewState: 'approved',
+      license: 'urai-demo',
+      surfaces: ['focus-artifact', 'lifemap-star', 'replay-scene'],
+    }),
+  ]),
+) as Record<string, UraiSpatialAssetPackage>
