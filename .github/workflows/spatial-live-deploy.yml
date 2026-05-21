@@ -1,0 +1,144 @@
+name: URAI Spatial Live Deploy
+
+on:
+  workflow_dispatch:
+    inputs:
+      deploy:
+        description: "Type DEPLOY to publish after live checks pass"
+        required: true
+        default: "CHECK_ONLY"
+        type: string
+      live_url:
+        description: "Live URL to smoke after deploy"
+        required: false
+        default: ""
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: urai-spatial-live-deploy-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  verify:
+    name: Verify Spatial release gates
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    env:
+      NEXT_PUBLIC_URAI_SPATIAL_DOMAIN: ${{ vars.NEXT_PUBLIC_URAI_SPATIAL_DOMAIN }}
+      NEXT_PUBLIC_URAI_DEBUG_SPATIAL: ${{ vars.NEXT_PUBLIC_URAI_DEBUG_SPATIAL }}
+      NEXT_PUBLIC_FIREBASE_API_KEY: ${{ secrets.NEXT_PUBLIC_FIREBASE_API_KEY }}
+      NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN: ${{ secrets.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN }}
+      NEXT_PUBLIC_FIREBASE_PROJECT_ID: ${{ secrets.NEXT_PUBLIC_FIREBASE_PROJECT_ID }}
+      NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET: ${{ secrets.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET }}
+      NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID: ${{ secrets.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID }}
+      NEXT_PUBLIC_FIREBASE_APP_ID: ${{ secrets.NEXT_PUBLIC_FIREBASE_APP_ID }}
+      FIREBASE_PROJECT_ID: ${{ secrets.FIREBASE_PROJECT_ID }}
+      FIREBASE_CLIENT_EMAIL: ${{ secrets.FIREBASE_CLIENT_EMAIL }}
+      FIREBASE_PRIVATE_KEY: ${{ secrets.FIREBASE_PRIVATE_KEY }}
+      URAI_CORE_BASE_URL: ${{ vars.URAI_CORE_BASE_URL }}
+      URAI_STUDIO_BASE_URL: ${{ vars.URAI_STUDIO_BASE_URL }}
+      ASSET_FACTORY_BASE_URL: ${{ vars.ASSET_FACTORY_BASE_URL }}
+      URAI_JOBS_BASE_URL: ${{ vars.URAI_JOBS_BASE_URL }}
+      GOOGLE_APPLICATION_CREDENTIALS: ${{ github.workspace }}/firebase-service-account.json
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Enable pnpm
+        run: |
+          corepack enable
+          corepack prepare pnpm@10.0.0 --activate
+          pnpm --version
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Run Spatial live release check
+        run: pnpm live:check
+
+      - name: Upload verification evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: urai-spatial-live-check-evidence
+          path: |
+            EVIDENCE.md
+            STATUS.md
+            LIVE_RELEASE.md
+            DEPLOYMENT.md
+            docs/decisions/runtime-authority.md
+            test-results
+            playwright-report
+          if-no-files-found: warn
+          retention-days: 30
+
+  deploy:
+    name: Deploy Spatial to Firebase
+    needs: verify
+    if: github.event.inputs.deploy == 'DEPLOY'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      FIREBASE_PROJECT_ID: ${{ secrets.FIREBASE_PROJECT_ID }}
+      GOOGLE_APPLICATION_CREDENTIALS: ${{ github.workspace }}/firebase-service-account.json
+      LIVE_URL: ${{ github.event.inputs.live_url }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Enable pnpm
+        run: |
+          corepack enable
+          corepack prepare pnpm@10.0.0 --activate
+          pnpm --version
+
+      - name: Verify deploy inputs
+        run: |
+          test -n "$FIREBASE_PROJECT_ID"
+          test -n '${{ secrets.FIREBASE_SERVICE_ACCOUNT_JSON }}'
+
+      - name: Write Firebase service account
+        run: |
+          cat > "$GOOGLE_APPLICATION_CREDENTIALS" <<'JSON'
+          ${{ secrets.FIREBASE_SERVICE_ACCOUNT_JSON }}
+          JSON
+          python -m json.tool "$GOOGLE_APPLICATION_CREDENTIALS" > /dev/null
+          chmod 600 "$GOOGLE_APPLICATION_CREDENTIALS"
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Install Firebase CLI
+        run: npm install -g firebase-tools
+
+      - name: Deploy Spatial live
+        run: pnpm live:deploy
+
+      - name: Smoke live URL
+        if: github.event.inputs.live_url != ''
+        run: HOST="$LIVE_URL" pnpm smoke
+
+      - name: Write deployment summary
+        if: always()
+        run: |
+          {
+            echo "# URAI Spatial live deploy"
+            echo ""
+            echo "- Commit: $GITHUB_SHA"
+            echo "- Firebase project: $FIREBASE_PROJECT_ID"
+            echo "- Live URL: ${LIVE_URL:-not provided}"
+            echo "- Workflow run: $GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID"
+          } >> "$GITHUB_STEP_SUMMARY"
