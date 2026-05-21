@@ -10,6 +10,7 @@ This file is the evidence ledger for URAI Spatial. Do not mark the repository pr
 - Production-live status: not verified.
 - Deployment automation: `.github/workflows/spatial-live-deploy.yml` verifies `pnpm live:check` on configured `main` push paths and can deploy only after verification when manually dispatched with `deploy=DEPLOY` or when repo variable `URAI_SPATIAL_AUTO_DEPLOY=true` is configured.
 - Automation trigger scope: `urai-tier1/**`, `apps/functions/**`, `packages/**`, `scripts/**`, `tests/**`, Firebase config/rules files, root package/lock/workspace files, `.nvmrc`, release/deployment/status/evidence docs, and the workflow file itself.
+- Known automation gap: `README.md` is not currently included in the workflow path filter even though it contains setup, validation, route, environment, and deployment instructions. Track and resolve this in issue #251 before considering documentation-trigger coverage complete.
 
 ## Local verification
 
