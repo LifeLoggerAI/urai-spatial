@@ -8,6 +8,7 @@ const requireFromTier1 = createRequire(path.join(root, 'urai-tier1', 'package.js
 
 const requiredRootFiles = ['package.json', 'pnpm-workspace.yaml', 'urai-tier1/package.json']
 const requiredTier1Packages = ['next', 'react', 'react-dom', 'typescript', 'tsx']
+const requiredNodeMajor = 22
 
 function fail(message) {
   console.error('\n[URAI Spatial workspace] ' + message + '\n')
@@ -22,6 +23,11 @@ function fail(message) {
   console.error('  corepack pnpm release:p1')
   console.error('')
   process.exit(1)
+}
+
+const nodeMajor = Number.parseInt(process.versions.node.split('.')[0] ?? '0', 10)
+if (!Number.isFinite(nodeMajor) || nodeMajor < requiredNodeMajor) {
+  fail(`Expected Node ${requiredNodeMajor}+ but found ${process.version}. Use .nvmrc or another version manager to select Node ${requiredNodeMajor}.`)
 }
 
 for (const file of requiredRootFiles) {
