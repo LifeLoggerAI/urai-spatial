@@ -8,7 +8,9 @@ const manifestPath = 'release/urai-spatial-live-manifest.json'
 
 function run(command, args, options = {}) {
   return new Promise((resolve, reject) => {
-    console.log(`\n[URAI Spatial Live] $ ${command} ${args.join(' ')}`)
+    const displayCommand = options.displayCommand ?? command
+    const displayArgs = options.displayArgs ?? args
+    console.log(`\n[URAI Spatial Live] $ ${displayCommand} ${displayArgs.join(' ')}`)
     const child = spawn(command, args, {
       stdio: 'inherit',
       shell: false,
@@ -19,7 +21,7 @@ function run(command, args, options = {}) {
     child.on('error', reject)
     child.on('exit', (code, signal) => {
       if (code === 0) resolve({ code, signal })
-      else reject(new Error(`${command} ${args.join(' ')} failed with code ${code ?? signal}`))
+      else reject(new Error(`${displayCommand} ${displayArgs.join(' ')} failed with code ${code ?? signal}`))
     })
   })
 }
@@ -35,11 +37,11 @@ function resolvePnpmCommand() {
 
 function runPnpm(args, options = {}) {
   const pnpm = resolvePnpmCommand()
-  if (pnpm.argsPrefix.length > 0) {
-    console.log(`\n[URAI Spatial Live] $ ${pnpm.displayCommand} ${args.join(' ')}`)
-    return run(pnpm.command, [...pnpm.argsPrefix, ...args], { ...options, quietDisplay: true })
-  }
-  return run(pnpm.command, args, options)
+  return run(pnpm.command, [...pnpm.argsPrefix, ...args], {
+    ...options,
+    displayCommand: pnpm.displayCommand,
+    displayArgs: args,
+  })
 }
 
 function requireFile(path) {
