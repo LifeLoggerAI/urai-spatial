@@ -1,18 +1,40 @@
 #!/usr/bin/env node
 import fs from 'node:fs'
 
-const rulesPath = 'firebase/firestore.rules'
+const firebaseJsonPath = 'firebase.json'
+if (!fs.existsSync(firebaseJsonPath)) {
+  console.error('Missing firebase.json')
+  process.exit(1)
+}
+
+const firebaseConfig = JSON.parse(fs.readFileSync(firebaseJsonPath, 'utf8'))
+const rulesPath = firebaseConfig.firestore?.rules ?? 'firebase/firestore.rules'
+if (rulesPath !== 'firebase/firestore.rules') {
+  console.error(`Firebase deploy must use firebase/firestore.rules, found: ${rulesPath}`)
+  process.exit(1)
+}
+
 if (!fs.existsSync(rulesPath)) {
-  console.error('Missing firebase/firestore.rules')
+  console.error(`Missing ${rulesPath}`)
   process.exit(1)
 }
 
 const rules = fs.readFileSync(rulesPath, 'utf8')
+const contractPath = 'firebase/spatial-collection-contract.json'
+if (!fs.existsSync(contractPath)) {
+  console.error(`Missing ${contractPath}`)
+  process.exit(1)
+}
+
+const spatialContract = JSON.parse(fs.readFileSync(contractPath, 'utf8'))
 
 const requiredSnippets = [
   'function isSignedIn()',
   'function isSelf(uid)',
   'function isAdmin()',
+  'function isUserOwnedCreate(uid)',
+  'function isUserOwnedUpdate(uid)',
+  'function isPrivateSpatialPayloadSafe()',
   'match /features/{flagId}',
   'allow write: if isAdmin();',
   'match /users/{uid}',
@@ -32,6 +54,7 @@ const requiredSnippets = [
   'rawSignalsStored == false',
   'usedRawAudio == false',
   'usedContactIdentity == false',
+  'match /assetManifests/{manifestId}',
   'match /spatial/{doc=**}',
 ]
 
@@ -42,6 +65,7 @@ const forbiddenPatterns = [
   /request\.resource\.data\.entitlementTier\s*==/i,
   /request\.resource\.data\.isAdmin\s*==\s*true/i,
   /request\.resource\.data\.founderOverride\s*==\s*true/i,
+  /rawAudioUrl'\s*in\s*request\.resource\.data\)\s*\{\s*allow/i,
 ]
 
 for (const snippet of requiredSnippets) {
@@ -58,4 +82,19 @@ for (const pattern of forbiddenPatterns) {
   }
 }
 
-console.log('Firestore Tier-1 boundaries passed.')
+for (const collection of spatialContract.collections ?? []) {
+  const anchors = collection.rulesAnchors ?? []
+  const equivalent = collection.runtimeEquivalent
+  const hasAnchor = anchors.some((anchor) => rules.includes(anchor))
+  const hasEquivalent = typeof equivalent === 'string' && rules.includes(`match /${equivalent.split('/').slice(-2).join('/')}`)
+  const hasAssetManifestEquivalent = equivalent === 'assetManifests/{manifestId}' && rules.includes('match /assetManifests/{manifestId}')
+
+  if (!hasAnchor && !hasEquivalent && !hasAssetManifestEquivalent) {
+    console.error(
+      `Spatial contract collection ${collection.canonical} lacks explicit rule coverage. Expected one of: ${anchors.join(', ')} or runtime equivalent ${equivalent}`,
+    )
+    process.exit(1)
+  }
+}
+
+console.log('Firestore Tier-1 and Spatial contract boundaries passed.')
