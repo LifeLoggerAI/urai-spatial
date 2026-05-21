@@ -48,3 +48,10 @@ test('body biometric provider fallbacks stay permissioned and non-diagnostic', (
   assert.ok(source.includes('Not medical telemetry.'), 'torso signal copy must avoid diagnostic framing')
   assert.ok(source.includes('not a clinical sleep assessment'), 'sleep copy must avoid diagnostic framing')
 })
+
+test('body biometric treats client user ids as public demo labels only', () => {
+  assert.ok(source.includes('identityMode: "public-demo"'), 'body response must declare public-demo identity mode')
+  assert.ok(source.includes('userIdSource: "default-demo" | "client-demo"'), 'body response must expose identity source')
+  assert.ok(source.includes('PUBLIC_DEMO_USER_ID_PATTERN'), 'body response must validate public demo user ids')
+  assert.ok(source.includes('isDemoFallback: identity.userIdSource === "default-demo"'), 'fallback identity must be derived from normalized identity source')
+})
