@@ -31,6 +31,8 @@
     "lock:all": "corepack pnpm --dir .. lock:all",
     "audit:tier-one": "corepack pnpm --dir .. audit:tier-one",
     "launch:check": "corepack pnpm --dir .. launch:check",
+    "release:check": "corepack pnpm --dir .. release:check",
+    "release:p1": "corepack pnpm --dir .. release:p1",
     "smoke": "corepack pnpm --dir .. smoke",
     "tier3:verify": "node scripts/tier-lock/route-audit.mjs && node scripts/tier-lock/console-warning-audit.mjs && corepack pnpm run typecheck && corepack pnpm run test:unit && node scripts/tier-lock/write-tier-report.mjs",
     "tier3:lock": "node scripts/tier-lock/route-audit.mjs && node scripts/tier-lock/console-warning-audit.mjs && corepack pnpm run typecheck && corepack pnpm run test:unit && node scripts/tier-lock/write-tier-report.mjs",
