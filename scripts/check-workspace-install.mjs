@@ -9,10 +9,12 @@ const requireFromTier1 = createRequire(path.join(root, 'urai-tier1', 'package.js
 const requiredRootFiles = ['package.json', 'pnpm-workspace.yaml', 'urai-tier1/package.json']
 const requiredTier1Packages = ['next', 'react', 'react-dom', 'typescript', 'tsx']
 const requiredNodeMajor = 22
+const nodeVersionPinFiles = ['.nvmrc', '.node-version']
 
 function fail(message) {
   console.error('\n[URAI Spatial workspace] ' + message + '\n')
   console.error('Run from the monorepo root:')
+  console.error('  nvm use')
   console.error('  corepack enable')
   console.error('  corepack prepare pnpm@10.0.0 --activate')
   console.error('  corepack pnpm install')
@@ -25,14 +27,29 @@ function fail(message) {
   process.exit(1)
 }
 
+function readRequiredTextFile(file) {
+  const fullPath = path.join(root, file)
+  if (!fs.existsSync(fullPath)) {
+    fail('Missing expected monorepo file: ' + file)
+  }
+  return fs.readFileSync(fullPath, 'utf8').trim()
+}
+
 const nodeMajor = Number.parseInt(process.versions.node.split('.')[0] ?? '0', 10)
 if (!Number.isFinite(nodeMajor) || nodeMajor < requiredNodeMajor) {
-  fail(`Expected Node ${requiredNodeMajor}+ but found ${process.version}. Use .nvmrc or another version manager to select Node ${requiredNodeMajor}.`)
+  fail(`Expected Node ${requiredNodeMajor}+ but found ${process.version}. Use .nvmrc, .node-version, or another version manager to select Node ${requiredNodeMajor}.`)
 }
 
 for (const file of requiredRootFiles) {
   if (!fs.existsSync(path.join(root, file))) {
     fail('Missing expected monorepo file: ' + file)
+  }
+}
+
+for (const file of nodeVersionPinFiles) {
+  const pinnedVersion = readRequiredTextFile(file)
+  if (pinnedVersion !== String(requiredNodeMajor)) {
+    fail(`Expected ${file} to pin Node ${requiredNodeMajor}, found: ${pinnedVersion}`)
   }
 }
 
