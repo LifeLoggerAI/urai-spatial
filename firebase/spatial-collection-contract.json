@@ -1,0 +1,69 @@
+{
+  "version": "2026-05-phase2",
+  "rulesFile": "firebase/firestore.rules",
+  "canonicalNaming": "snake_case_contract_with_camelCase_runtime_equivalents",
+  "notes": [
+    "spatial-system-contract.ts exposes snake_case collection names as live-rollout contract names.",
+    "Current runtime rules also include camelCase user-scoped equivalents for existing app surfaces.",
+    "Both forms must remain explicitly covered or intentionally mapped before production-live claims."
+  ],
+  "collections": [
+    {
+      "canonical": "spatial_sessions",
+      "rulesAnchors": ["match /spatial_sessions/{sessionId}", "match /spatialSessions/{sessionId}"],
+      "runtimeEquivalent": "users/{uid}/transitionStates/{transitionId}",
+      "ownerScoped": true
+    },
+    {
+      "canonical": "spatial_nodes",
+      "rulesAnchors": ["match /spatial_nodes/{nodeId}", "match /spatialNodes/{nodeId}"],
+      "runtimeEquivalent": "users/{uid}/spatialMemories/{memoryId}",
+      "ownerScoped": true
+    },
+    {
+      "canonical": "lifemap_nodes",
+      "rulesAnchors": ["match /lifemap_nodes/{nodeId}", "match /lifemapNodes/{nodeId}"],
+      "runtimeEquivalent": "users/{uid}/spatialMemories/{memoryId}",
+      "ownerScoped": true
+    },
+    {
+      "canonical": "lifemap_replays",
+      "rulesAnchors": ["match /lifemap_replays/{replayId}", "match /lifemapReplays/{replayId}"],
+      "runtimeEquivalent": "users/{uid}/replayEvents/{eventId}",
+      "ownerScoped": true
+    },
+    {
+      "canonical": "body_biometric_snapshots",
+      "rulesAnchors": ["match /body_biometric_snapshots/{snapshotId}", "match /bodyBiometricSnapshots/{snapshotId}"],
+      "runtimeEquivalent": "users/{uid}/bodyBiometricSnapshots/{snapshotId}",
+      "ownerScoped": true,
+      "sensitive": true
+    },
+    {
+      "canonical": "orb_companion_events",
+      "rulesAnchors": ["match /orb_companion_events/{eventId}", "match /orbCompanionEvents/{eventId}"],
+      "runtimeEquivalent": "users/{uid}/orbCompanionEvents/{eventId}",
+      "ownerScoped": true,
+      "sensitive": true
+    },
+    {
+      "canonical": "spatial_assets",
+      "rulesAnchors": ["match /spatial_assets/{assetId}", "match /spatialAssets/{assetId}", "match /assetManifests/{manifestId}"],
+      "runtimeEquivalent": "assetManifests/{manifestId}",
+      "ownerScoped": true
+    },
+    {
+      "canonical": "spatial_anchors",
+      "rulesAnchors": ["match /spatial_anchors/{anchorId}", "match /spatialAnchors/{anchorId}"],
+      "runtimeEquivalent": "users/{uid}/spatialAnchors/{anchorId}",
+      "ownerScoped": true,
+      "sensitive": true
+    },
+    {
+      "canonical": "user_spatial_preferences",
+      "rulesAnchors": ["match /user_spatial_preferences/{preferenceId}", "match /userSpatialPreferences/{preferenceId}"],
+      "runtimeEquivalent": "users/{uid}/userSpatialPreferences/{preferenceId}",
+      "ownerScoped": true
+    }
+  ]
+}
