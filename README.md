@@ -22,12 +22,15 @@ Use pnpm for this monorepo. npm is tolerated only for workstation bootstrap comp
 Run from the monorepo root:
 
 ```bash
+nvm use
 corepack enable
 corepack prepare pnpm@10.0.0 --activate
 corepack pnpm install
 corepack pnpm bootstrap:check
 corepack pnpm dev
 ```
+
+If you do not use nvm, select Node 22+ with your preferred version manager before enabling Corepack.
 
 If `bootstrap:check`, `typecheck`, `lint`, `build`, or `test:unit` says dependencies are missing, run the install sequence above before debugging source files. Missing dependencies can otherwise look like `next/link`, `next/server`, `next/navigation`, `tsx`, or styled-jsx TypeScript failures.
 
