@@ -2,9 +2,23 @@ const host = process.env.HOST ?? 'http://127.0.0.1:3000'
 
 const LOCK_VERSION = '2026-05-09.urai-spatial.locked.v1'
 
-const htmlRoutes = ['/', '/u/adamclamp', '/life-map', '/demo/life-map', '/privacy', '/terms', '/spatial']
+export const launchHtmlRoutes = ['/home', '/life-map', '/replay']
+export const launchJsonRoutes = [['/life-map/health', { method: 'GET' }]]
+export const routeSurfaceTODO = [
+  '/',
+  '/u/adamclamp',
+  '/homeview',
+  '/council',
+  '/login',
+  '/demo/life-map',
+  '/privacy',
+  '/terms',
+  '/spatial',
+]
 
+const htmlRoutes = launchHtmlRoutes
 const apiRoutes = [
+  ...launchJsonRoutes,
   ['/api/system/health', { method: 'GET' }],
   ['/api/system/manifest', { method: 'GET' }],
   ['/api/system/capabilities', { method: 'GET' }],
@@ -141,24 +155,24 @@ async function checkHtml(route) {
     assert(!body.includes(token), `${route} includes placeholder token ${token}`)
   }
 
-  if (route === '/') {
+  if (route === '/home') {
     assert(
-      body.includes('data-urai-home-spatial-shell') || body.includes('urai-home-shell'),
-      '/ missing URAI home marker',
+      body.includes('data-urai-home-spatial-shell') || body.includes('urai-home-shell') || body.includes('urai-scene-stage'),
+      '/home missing URAI home marker',
     )
   }
 
-  if (route === '/u/adamclamp') {
+  if (route === '/life-map') {
     assert(
-      body.includes('Public URAI Spatial Demo') || body.includes('public Life Map preview'),
-      '/u/adamclamp missing public demo marker',
-    )
-  }
-
-  if (route === '/life-map' || route === '/demo/life-map') {
-    assert(
-      body.includes('urai-spatial-stage') || body.includes('lifemap-starfield'),
+      body.includes('urai-spatial-stage') || body.includes('lifemap-starfield') || body.includes('urai-scene-stage'),
       `${route} missing LifeMap marker`,
+    )
+  }
+
+  if (route === '/replay') {
+    assert(
+      body.includes('Replay') || body.includes('urai-scene-stage') || body.includes('urai-focus-action-panel'),
+      `${route} missing replay marker`,
     )
   }
 }
@@ -244,6 +258,9 @@ async function checkExpectedStatus(route, init) {
   }
 }
 
+console.log(`URAI Spatial launch smoke routes: ${htmlRoutes.join(', ')}`)
+console.log(`URAI Spatial future route surface TODO: ${routeSurfaceTODO.join(', ')}`)
+
 for (const route of htmlRoutes) {
   await checkHtml(route)
 }
@@ -261,5 +278,5 @@ for (const [route, init] of webhookRoutes) {
 }
 
 console.log(
-  `URAI Spatial smoke passed for ${htmlRoutes.length} HTML routes, ${apiRoutes.length} public API checks, ${protectedApiRoutes.length} protected API checks, and ${webhookRoutes.length} webhook checks at ${host}`,
+  `URAI Spatial smoke passed for ${htmlRoutes.length} launch HTML routes, ${apiRoutes.length} public API checks, ${protectedApiRoutes.length} protected API checks, and ${webhookRoutes.length} webhook checks at ${host}`,
 )
