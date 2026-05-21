@@ -8,7 +8,8 @@ This file is the evidence ledger for URAI Spatial. Do not mark the repository pr
 - Runtime app root: `urai-tier1`.
 - Current release mode: `fallback-demo`.
 - Production-live status: not verified.
-- Deployment automation: `.github/workflows/spatial-live-deploy.yml` verifies `pnpm live:check` on relevant `main` pushes and can deploy only after verification when manually dispatched with `deploy=DEPLOY` or when repo variable `URAI_SPATIAL_AUTO_DEPLOY=true` is configured.
+- Deployment automation: `.github/workflows/spatial-live-deploy.yml` verifies `pnpm live:check` on configured `main` push paths and can deploy only after verification when manually dispatched with `deploy=DEPLOY` or when repo variable `URAI_SPATIAL_AUTO_DEPLOY=true` is configured.
+- Automation trigger scope: `urai-tier1/**`, `apps/functions/**`, `packages/**`, `scripts/**`, `tests/**`, Firebase config/rules files, root package/lock/workspace files, release/deployment/status/evidence docs, and the workflow file itself. Tooling-only files outside those paths, such as `.nvmrc`, may not trigger this workflow unless the workflow path list is expanded.
 
 ## Local verification
 
@@ -30,7 +31,7 @@ Record the exact command, date/time, commit SHA, operator, and result.
 
 | Gate | Command | Result | Evidence / notes |
 | --- | --- | --- | --- |
-| Full release check | `pnpm live:check` | Not recorded | Automated by `.github/workflows/spatial-live-deploy.yml` on relevant main pushes. |
+| Full release check | `pnpm live:check` | Not recorded | Automated by `.github/workflows/spatial-live-deploy.yml` on configured main push paths and manual dispatch. |
 | Full release deploy dry gate | `pnpm verify:release:full` | Not recorded |  |
 | Replay contract | `pnpm test:replay-tier5` | Not recorded |  |
 | Firestore boundary check | `pnpm firebase:rules:check` | Not recorded |  |
