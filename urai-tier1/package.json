@@ -73,6 +73,7 @@
     "@react-three/postprocessing": "^3.0.4",
     "@react-three/xr": "^6.6.28",
     "@tailwindcss/postcss": "^4.2.2",
+    "@urai/release-tools": "workspace:*",
     "firebase": "^12.11.0",
     "firebase-admin": "^13.7.0",
     "next": "15.5.7",
