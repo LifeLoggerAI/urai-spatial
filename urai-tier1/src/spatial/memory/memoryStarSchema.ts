@@ -1,4 +1,4 @@
-import { DEMO_MEMORY_STAR_BY_ID, DEMO_MEMORY_STARS, DemoMemoryStar } from '../demo/demoMemoryStars'
+import { DEMO_MEMORY_STARS, DemoMemoryStar } from '../demo/demoMemoryStars'
 
 export type MemoryStarPrivacyState = 'demo' | 'public' | 'private' | 'locked' | 'archived' | 'deleted' | 'vaulted'
 export type MemoryStarSourceType = 'demo' | 'audio' | 'location' | 'journal' | 'relationship' | 'system' | 'unknown'
