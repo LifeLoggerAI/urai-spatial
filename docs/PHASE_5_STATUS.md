@@ -28,7 +28,7 @@ This is a V1 field abstraction, not a claim that native 3D Gaussian rendering is
 - Production-live native 3D splat renderer.
 - Live private user field reconstruction.
 - XR field rendering.
-- Asset Factory scene materialization.
+- Asset Factory scene materialization is deferred and not live.
 - Provider-driven signal ingestion.
 
 ## Blocked write
