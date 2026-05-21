@@ -11,6 +11,7 @@ const focusedContractTests = [
   'tests/orb-companion-contract.test.mjs',
   'tests/replay-memory-theater-contract.test.mjs',
   'tests/spatial-launch-boundaries.test.mjs',
+  'tests/unit-runner-coverage.test.mjs',
   'tests/xr-runtime-contract.test.mjs',
 ]
 
