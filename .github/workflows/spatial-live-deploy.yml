@@ -1,6 +1,27 @@
 name: URAI Spatial Live Deploy
 
 on:
+  push:
+    branches:
+      - main
+    paths:
+      - "urai-tier1/**"
+      - "apps/functions/**"
+      - "packages/**"
+      - "scripts/**"
+      - "tests/**"
+      - "firebase.json"
+      - "firebase.static.json"
+      - "firestore.rules"
+      - "firestore.indexes.json"
+      - "package.json"
+      - "pnpm-lock.yaml"
+      - "pnpm-workspace.yaml"
+      - "LIVE_RELEASE.md"
+      - "DEPLOYMENT.md"
+      - "STATUS.md"
+      - "EVIDENCE.md"
+      - ".github/workflows/spatial-live-deploy.yml"
   workflow_dispatch:
     inputs:
       deploy:
@@ -83,7 +104,7 @@ jobs:
   deploy:
     name: Deploy Spatial to Firebase
     needs: verify
-    if: github.event.inputs.deploy == 'DEPLOY'
+    if: github.event_name == 'workflow_dispatch' && github.event.inputs.deploy == 'DEPLOY'
     runs-on: ubuntu-latest
     timeout-minutes: 30
     env:
