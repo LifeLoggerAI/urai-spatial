@@ -13,6 +13,8 @@ export type OrbCompanionResponse = {
   ok: true;
   service: "urai-spatial";
   userId: string;
+  userIdSource: "default-demo" | "client-demo";
+  identityMode: "public-demo";
   reply: string;
   mode: "local-fallback" | "memory-grounded";
   routeHint?: OrbRouteHint;
@@ -22,6 +24,7 @@ export type OrbCompanionResponse = {
 };
 
 const DEFAULT_USER_ID = "adamclamp";
+const PUBLIC_DEMO_USER_ID_PATTERN = /^[a-z0-9_-]{1,64}$/i;
 
 const HOME_ROUTE_COMMANDS = ["go home", "back home", "wind back", "close chat", "close orb", "return home", "take me home"];
 
@@ -51,19 +54,28 @@ function replyFor(routeHint?: OrbRouteHint) {
   return "URAI Spatial is listening in local fallback mode. Ask for home, brain, heart, arms, legs, sky, ground, or LifeMap.";
 }
 
+function normalizePublicDemoUserId(userId: unknown) {
+  if (typeof userId !== "string") return { userId: DEFAULT_USER_ID, userIdSource: "default-demo" as const };
+  const trimmed = userId.trim();
+  if (!PUBLIC_DEMO_USER_ID_PATTERN.test(trimmed)) return { userId: DEFAULT_USER_ID, userIdSource: "default-demo" as const };
+  return { userId: trimmed, userIdSource: "client-demo" as const };
+}
+
 export function buildOrbCompanionResponse(input: { userId?: unknown; message?: unknown }): OrbCompanionResponse {
-  const userId = typeof input.userId === "string" && input.userId.trim() ? input.userId.trim() : DEFAULT_USER_ID;
-  const message = typeof input.message === "string" ? input.message : "";
+  const identity = normalizePublicDemoUserId(input.userId);
+  const message = typeof input.message === "string" ? input.message.slice(0, 500) : "";
   const routeHint = inferRouteHint(message);
   return {
     ok: true,
     service: "urai-spatial",
-    userId,
+    userId: identity.userId,
+    userIdSource: identity.userIdSource,
+    identityMode: "public-demo",
     reply: replyFor(routeHint),
     mode: "local-fallback",
     routeHint,
     confidenceLabel: routeHint ? "routed" : "fallback",
-    isDemoFallback: !(typeof input.userId === "string" && input.userId.trim()),
+    isDemoFallback: identity.userIdSource === "default-demo",
     sources: routeHint ? ["local-route-intent"] : [],
   };
 }
