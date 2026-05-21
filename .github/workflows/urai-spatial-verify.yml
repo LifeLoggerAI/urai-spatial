@@ -1,0 +1,50 @@
+name: URAI Spatial Verify
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  verify:
+    name: Verify URAI Spatial
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Enable Corepack
+        run: corepack enable
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+
+      - name: Install dependencies
+        run: corepack pnpm install --frozen-lockfile
+
+      - name: Check public copy
+        run: corepack pnpm check:public-copy
+
+      - name: Check Firestore boundaries
+        run: corepack pnpm test:rules
+
+      - name: Typecheck
+        run: corepack pnpm check:types
+
+      - name: Unit tests
+        run: corepack pnpm test:unit
+
+      - name: Build
+        run: corepack pnpm build
+
+      - name: Release gate
+        run: corepack pnpm release:p1
