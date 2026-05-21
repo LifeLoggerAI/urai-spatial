@@ -39,6 +39,8 @@ export type BodyBiometricResponse = {
   ok: true;
   service: "urai-spatial";
   userId: string;
+  userIdSource: "default-demo" | "client-demo";
+  identityMode: "public-demo";
   source: BodyBiometricSource;
   providerStatus: "ready" | "fallback";
   providerMessage: string;
@@ -56,6 +58,8 @@ export const AVAILABLE_BODY_BIOMETRIC_SOURCES: BodyBiometricSource[] = [
   "google-fit",
   "wearable",
 ];
+
+const PUBLIC_DEMO_USER_ID_PATTERN = /^[a-z0-9_-]{1,64}$/i;
 
 const normalizedFallbackReadings: NormalizedBiometricReadings = {
   heartRateBpm: 74,
@@ -123,6 +127,13 @@ export function normalizeBodySource(source: unknown): BodyBiometricSource {
   return AVAILABLE_BODY_BIOMETRIC_SOURCES.includes(source as BodyBiometricSource) ? (source as BodyBiometricSource) : "mock";
 }
 
+function normalizePublicDemoUserId(userId: unknown) {
+  if (typeof userId !== "string") return { userId: DEFAULT_SPATIAL_USER_ID, userIdSource: "default-demo" as const };
+  const trimmed = userId.trim();
+  if (!PUBLIC_DEMO_USER_ID_PATTERN.test(trimmed)) return { userId: DEFAULT_SPATIAL_USER_ID, userIdSource: "default-demo" as const };
+  return { userId: trimmed, userIdSource: "client-demo" as const };
+}
+
 function providerMessageFor(source: BodyBiometricSource) {
   if (source === "mock") return "Mock provider is active for deterministic local fallback validation.";
   if (source === "live-device") return "Live-device provider seam is not connected in this environment; privacy-safe fallback snapshot returned.";
@@ -133,19 +144,20 @@ function providerMessageFor(source: BodyBiometricSource) {
 }
 
 export function buildBodyBiometricResponse(input: { userId?: unknown; portal?: unknown; source?: unknown }): BodyBiometricResponse {
-  const userId = typeof input.userId === "string" && input.userId.trim() ? input.userId.trim() : DEFAULT_SPATIAL_USER_ID;
-  const isDemoFallback = !(typeof input.userId === "string" && input.userId.trim());
+  const identity = normalizePublicDemoUserId(input.userId);
   const source = normalizeBodySource(input.source);
   const region = regionForPortal(input.portal);
 
   return {
     ok: true,
     service: "urai-spatial",
-    userId,
+    userId: identity.userId,
+    userIdSource: identity.userIdSource,
+    identityMode: "public-demo",
     source,
     providerStatus: source === "mock" ? "ready" : "fallback",
     providerMessage: providerMessageFor(source),
-    isDemoFallback,
+    isDemoFallback: identity.userIdSource === "default-demo",
     snapshot: snapshots[region],
     availableSources: AVAILABLE_BODY_BIOMETRIC_SOURCES,
   };
