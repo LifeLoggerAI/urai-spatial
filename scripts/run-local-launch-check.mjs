@@ -9,6 +9,28 @@ const launchEnv = {
   URAI_ALLOW_PUBLIC_DEMO_ROUTES: process.env.URAI_ALLOW_PUBLIC_DEMO_ROUTES ?? 'true',
 }
 
+const serverLogLines = []
+const MAX_SERVER_LOG_LINES = 200
+
+function rememberServerLog(chunk) {
+  const lines = chunk.toString().split(/\r?\n/)
+  for (const line of lines) {
+    if (!line.trim()) continue
+    serverLogLines.push(line)
+    if (serverLogLines.length > MAX_SERVER_LOG_LINES) serverLogLines.shift()
+  }
+}
+
+function printRecentServerLogs() {
+  if (!serverLogLines.length) {
+    console.error('\n[URAI Spatial] No Next server logs captured before failure.')
+    return
+  }
+
+  console.error(`\n[URAI Spatial] Last ${Math.min(serverLogLines.length, MAX_SERVER_LOG_LINES)} Next server log lines:`)
+  for (const line of serverLogLines) console.error(line)
+}
+
 function run(command, args, options = {}) {
   return new Promise((resolve, reject) => {
     const child = spawn(command, args, {
@@ -99,8 +121,14 @@ function startServer() {
     env: { ...process.env, ...launchEnv },
   })
 
-  child.stdout.on('data', (chunk) => process.stdout.write(chunk))
-  child.stderr.on('data', (chunk) => process.stderr.write(chunk))
+  child.stdout.on('data', (chunk) => {
+    rememberServerLog(chunk)
+    process.stdout.write(chunk)
+  })
+  child.stderr.on('data', (chunk) => {
+    rememberServerLog(chunk)
+    process.stderr.write(chunk)
+  })
   return child
 }
 
@@ -151,6 +179,9 @@ try {
   }
 
   console.log('\n[URAI Spatial] Local launch check complete.')
+} catch (error) {
+  printRecentServerLogs()
+  throw error
 } finally {
   if (server && !server.killed) server.kill('SIGTERM')
 }
