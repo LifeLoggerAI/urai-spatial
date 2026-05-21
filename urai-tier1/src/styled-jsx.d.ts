@@ -1,7 +1,7 @@
-import type * as React from "react";
+import "react";
 
 declare module "react" {
-  interface StyleHTMLAttributes<T> extends React.HTMLAttributes<T> {
+  interface StyleHTMLAttributes<T> {
     jsx?: boolean;
     global?: boolean;
   }
