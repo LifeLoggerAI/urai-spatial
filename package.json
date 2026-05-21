@@ -2,6 +2,9 @@
   "name": "urai-spatial-monorepo",
   "private": true,
   "packageManager": "pnpm@10.0.0",
+  "bin": {
+    "release:p1": "./scripts/release-p1-bin.mjs"
+  },
   "workspaces": [
     "urai-tier1",
     "apps/functions",
