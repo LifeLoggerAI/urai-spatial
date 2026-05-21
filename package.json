@@ -27,6 +27,7 @@
     "lint": "node scripts/run-pnpm.mjs bootstrap:check && node scripts/run-pnpm.mjs --filter urai-tier1 lint",
     "next-export": "node scripts/run-pnpm.mjs bootstrap:check && node scripts/prepare-low-disk-build.mjs && URAI_FIREBASE_STATIC_EXPORT=true node scripts/run-pnpm.mjs --dir urai-tier1 exec next build",
     "clean:next": "node scripts/clean-next-state.mjs",
+    "clean:install": "node scripts/clean-install-artifacts.mjs",
     "fresh:dev": "node scripts/run-pnpm.mjs clean:next && node scripts/run-pnpm.mjs dev:3001",
     "smoke:3001": "HOST=http://127.0.0.1:3001 node scripts/run-pnpm.mjs smoke",
     "ship:check": "node scripts/run-pnpm.mjs bootstrap:check && node scripts/run-pnpm.mjs -r --if-present test",
