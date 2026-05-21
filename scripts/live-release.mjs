@@ -111,8 +111,17 @@ function assertReleaseFiles() {
   for (const file of required) requireFile(file)
 }
 
+function assertDeployInputs() {
+  if (mode !== 'deploy') return
+  if (!deployProject) {
+    throw new Error('FIREBASE_PROJECT_ID, FIREBASE_PROJECT, or GCLOUD_PROJECT must be set before live deploy.')
+  }
+}
+
 async function main() {
   console.log(`[URAI Spatial Live] Mode: ${mode}`)
+  assertDeployInputs()
+
   console.log('[URAI Spatial Live] Validating release file surface.')
   assertReleaseFiles()
 
@@ -127,10 +136,6 @@ async function main() {
     console.log('\n[URAI Spatial Live] Live check passed. No deploy requested.')
     console.log('[URAI Spatial Live] To deploy, set FIREBASE_PROJECT_ID and run: pnpm live:deploy')
     return
-  }
-
-  if (!deployProject) {
-    throw new Error('FIREBASE_PROJECT_ID, FIREBASE_PROJECT, or GCLOUD_PROJECT must be set before live deploy.')
   }
 
   console.log(`[URAI Spatial Live] Deploying to Firebase project: ${deployProject}`)
