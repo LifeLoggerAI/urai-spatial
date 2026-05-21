@@ -2,10 +2,14 @@
   "name": "urai-spatial-monorepo",
   "private": true,
   "packageManager": "pnpm@10.0.0",
+  "bin": {
+    "release:p1": "./scripts/release-p1-bin.mjs"
+  },
   "workspaces": [
     "urai-tier1",
     "apps/functions",
-    "packages/tier-locks"
+    "packages/tier-locks",
+    "packages/release-tools"
   ],
   "scripts": {
     "bootstrap:check": "node scripts/check-workspace-install.mjs",
@@ -55,14 +59,14 @@
     "test:smoke": "pnpm smoke",
     "canon:lock": "node scripts/check-tier1-canon-lock.mjs",
     "test": "pnpm bootstrap:check && pnpm --filter urai-functions build && pnpm --filter urai-functions test && pnpm --filter urai-tier1 test && node scripts/run-optional-e2e.mjs && pnpm test:replay-tier5",
-    "test:e2e": "pnpm playwright:check && node tests/spatial-lock.mjs",
+    "test:e2e": "pnpm playwright:ensure && node tests/spatial-lock.mjs",
     "test:e2e:lock": "pnpm test:e2e && pnpm test:tier-lock-hardening",
-    "test:e2e:navigation-stack": "pnpm playwright:check && node tests/spatial-tier-lock-hardening.mjs --suite=navigation",
-    "test:e2e:camera-transitions": "pnpm playwright:check && node tests/spatial-tier-lock-hardening.mjs --suite=camera",
-    "test:e2e:race-conditions": "pnpm playwright:check && node tests/spatial-tier-lock-hardening.mjs --suite=race",
-    "test:e2e:data-states": "pnpm playwright:check && node tests/spatial-tier-lock-hardening.mjs --suite=data",
-    "test:visual:spatial": "pnpm playwright:check && node tests/spatial-tier-lock-hardening.mjs --suite=visual",
-    "test:tier-lock-hardening": "pnpm playwright:check && node tests/spatial-tier-lock-hardening.mjs --suite=all",
+    "test:e2e:navigation-stack": "pnpm playwright:ensure && node tests/spatial-tier-lock-hardening.mjs --suite=navigation",
+    "test:e2e:camera-transitions": "pnpm playwright:ensure && node tests/spatial-tier-lock-hardening.mjs --suite=camera",
+    "test:e2e:race-conditions": "pnpm playwright:ensure && node tests/spatial-tier-lock-hardening.mjs --suite=race",
+    "test:e2e:data-states": "pnpm playwright:ensure && node tests/spatial-tier-lock-hardening.mjs --suite=data",
+    "test:visual:spatial": "pnpm playwright:ensure && node tests/spatial-tier-lock-hardening.mjs --suite=visual",
+    "test:tier-lock-hardening": "pnpm playwright:ensure && node tests/spatial-tier-lock-hardening.mjs --suite=all",
     "audit:video-frames": "node scripts/audit-video-frames.mjs",
     "test:playwright": "node scripts/run-playwright-tests.mjs",
     "test:firestore-rules": "node scripts/run-firestore-rules-tests.mjs",
@@ -99,7 +103,7 @@
     "verify:release:full": "pnpm lock:all && pnpm test",
     "lock:static": "pnpm check:runtime-boundary && pnpm check:source-integrity && pnpm check:production-routes && pnpm check:spatial-copy && pnpm check:launch-boundary-contract && pnpm tier:check && pnpm migration:check && pnpm home:invariant && pnpm firebase:rules:check",
     "lock:build": "pnpm check:types && pnpm build",
-    "lock:e2e": "pnpm test:e2e",
+    "lock:e2e": "pnpm playwright:ensure && pnpm test:e2e",
     "lock:all": "pnpm lock:static && pnpm lock:build && pnpm lock:e2e",
     "tier3:check": "node scripts/check-tier3-governance.mjs",
     "tier4:check": "node scripts/check-tier4-governance.mjs",

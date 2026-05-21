@@ -27,7 +27,7 @@ Phase 4 direct routes resolve only launch-safe demo identifiers. Unknown or non-
 - Live provider memory grounding is not claimed.
 - Full replay theater maturity is not claimed.
 - XR/AR/VR is not claimed.
-- Asset Factory live materialization is not claimed.
+- Asset Factory materialization is not live and is not claimed.
 
 ## Known follow-up
 
