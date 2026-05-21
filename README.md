@@ -54,6 +54,7 @@ corepack pnpm test:unit
 corepack pnpm test:rules
 corepack pnpm build
 corepack pnpm release:p1
+corepack pnpm live:check
 ```
 
 Full local launch gate:
