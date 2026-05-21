@@ -2,6 +2,11 @@
   "name": "urai-spatial-monorepo",
   "private": true,
   "packageManager": "pnpm@10.0.0",
+  "workspaces": [
+    "urai-tier1",
+    "apps/functions",
+    "packages/tier-locks"
+  ],
   "scripts": {
     "dev": "pnpm --filter urai-tier1 dev",
     "dev:3001": "pnpm --dir urai-tier1 exec next dev --hostname 0.0.0.0 --port 3001",
