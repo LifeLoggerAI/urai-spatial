@@ -17,6 +17,7 @@ on:
       - "package.json"
       - "pnpm-lock.yaml"
       - "pnpm-workspace.yaml"
+      - ".nvmrc"
       - "LIVE_RELEASE.md"
       - "DEPLOYMENT.md"
       - "STATUS.md"
