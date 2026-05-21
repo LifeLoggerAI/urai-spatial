@@ -104,13 +104,13 @@ jobs:
   deploy:
     name: Deploy Spatial to Firebase
     needs: verify
-    if: github.event_name == 'workflow_dispatch' && github.event.inputs.deploy == 'DEPLOY'
+    if: (github.event_name == 'workflow_dispatch' && github.event.inputs.deploy == 'DEPLOY') || (github.event_name == 'push' && vars.URAI_SPATIAL_AUTO_DEPLOY == 'true')
     runs-on: ubuntu-latest
     timeout-minutes: 30
     env:
       FIREBASE_PROJECT_ID: ${{ secrets.FIREBASE_PROJECT_ID }}
       GOOGLE_APPLICATION_CREDENTIALS: ${{ github.workspace }}/firebase-service-account.json
-      LIVE_URL: ${{ github.event.inputs.live_url }}
+      LIVE_URL: ${{ github.event.inputs.live_url || vars.URAI_SPATIAL_LIVE_URL }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -149,7 +149,7 @@ jobs:
         run: pnpm live:deploy
 
       - name: Smoke live URL
-        if: github.event.inputs.live_url != ''
+        if: env.LIVE_URL != ''
         run: HOST="$LIVE_URL" pnpm smoke
 
       - name: Write deployment summary
