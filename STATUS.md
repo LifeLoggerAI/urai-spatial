@@ -71,4 +71,4 @@ Use these labels consistently:
 
 ## Copy boundary
 
-All public copy must clearly distinguish fallback/demo capability from future provider seams. Do not imply live body-signal, wearable, AR/WebXR, memory-grounded, Asset Factory, Stripe, or cross-device persistence behavior until the matching provider row in `PROVIDER_MATRIX.md` is verified.
+All public copy must clearly distinguish fallback/demo capability from future provider seams. Do not imply live body-signal, wearable, AR/WebXR, memory-grounded, Asset Factory, Stripe, or cross-device persistence behavior until the matching provider row in `EVIDENCE.md` is verified.
