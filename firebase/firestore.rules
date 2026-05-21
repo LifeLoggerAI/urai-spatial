@@ -109,6 +109,30 @@ service cloud.firestore {
         && request.resource.data.updatedAt == request.time;
     }
 
+    function isUserOwnedCreate(uid) {
+      return isSelf(uid)
+        && (!('userId' in request.resource.data) || request.resource.data.userId == uid)
+        && (!('uid' in request.resource.data) || request.resource.data.uid == uid)
+        && (!('ownerId' in request.resource.data) || request.resource.data.ownerId == uid);
+    }
+
+    function isUserOwnedUpdate(uid) {
+      return isSelf(uid)
+        && (!('userId' in resource.data) || resource.data.userId == uid)
+        && (!('uid' in resource.data) || resource.data.uid == uid)
+        && (!('ownerId' in resource.data) || resource.data.ownerId == uid)
+        && (!('userId' in request.resource.data) || request.resource.data.userId == uid)
+        && (!('uid' in request.resource.data) || request.resource.data.uid == uid)
+        && (!('ownerId' in request.resource.data) || request.resource.data.ownerId == uid);
+    }
+
+    function isPrivateSpatialPayloadSafe() {
+      return !('rawAudioUrl' in request.resource.data)
+        && !('privateMediaUrl' in request.resource.data)
+        && !('providerSecret' in request.resource.data)
+        && !('apiKey' in request.resource.data);
+    }
+
     // Feature flags are server/admin controlled.
     // Clients can read but cannot mutate.
     match /features/{flagId} {
@@ -180,23 +204,96 @@ service cloud.firestore {
       // memory, canon, focus, and transition state and are only available to the
       // authenticated owner or an admin service context.
       match /replayEvents/{eventId} {
-        allow read, write: if isSelf(uid) || isAdmin();
+        allow read: if isSelf(uid) || isAdmin();
+        allow create: if isAdmin() || (isUserOwnedCreate(uid) && isPrivateSpatialPayloadSafe());
+        allow update: if isAdmin() || (isUserOwnedUpdate(uid) && isPrivateSpatialPayloadSafe());
+        allow delete: if isAdmin() || isSelf(uid);
       }
 
       match /spatialMemories/{memoryId} {
-        allow read, write: if isSelf(uid) || isAdmin();
+        allow read: if isSelf(uid) || isAdmin();
+        allow create: if isAdmin() || (isUserOwnedCreate(uid) && isPrivateSpatialPayloadSafe());
+        allow update: if isAdmin() || (isUserOwnedUpdate(uid) && isPrivateSpatialPayloadSafe());
+        allow delete: if isAdmin() || isSelf(uid);
       }
 
       match /canonChains/{chainId} {
-        allow read, write: if isSelf(uid) || isAdmin();
+        allow read: if isSelf(uid) || isAdmin();
+        allow create: if isAdmin() || (isUserOwnedCreate(uid) && isPrivateSpatialPayloadSafe());
+        allow update: if isAdmin() || (isUserOwnedUpdate(uid) && isPrivateSpatialPayloadSafe());
+        allow delete: if isAdmin() || isSelf(uid);
       }
 
       match /focusStates/{stateId} {
-        allow read, write: if isSelf(uid) || isAdmin();
+        allow read: if isSelf(uid) || isAdmin();
+        allow create: if isAdmin() || (isUserOwnedCreate(uid) && isPrivateSpatialPayloadSafe());
+        allow update: if isAdmin() || (isUserOwnedUpdate(uid) && isPrivateSpatialPayloadSafe());
+        allow delete: if isAdmin() || isSelf(uid);
       }
 
       match /transitionStates/{transitionId} {
-        allow read, write: if isSelf(uid) || isAdmin();
+        allow read: if isSelf(uid) || isAdmin();
+        allow create: if isAdmin() || (isUserOwnedCreate(uid) && isPrivateSpatialPayloadSafe());
+        allow update: if isAdmin() || (isUserOwnedUpdate(uid) && isPrivateSpatialPayloadSafe());
+        allow delete: if isAdmin() || isSelf(uid);
+      }
+
+      // Explicit Phase-2 Spatial runtime equivalents for the snake_case contract
+      // collections exported by spatial-system-contract.ts.
+      match /bodyBiometricSnapshots/{snapshotId} {
+        allow read: if isSelf(uid) || isAdmin();
+        allow create: if isAdmin() || (isUserOwnedCreate(uid) && isPrivateSpatialPayloadSafe());
+        allow update: if isAdmin() || (isUserOwnedUpdate(uid) && isPrivateSpatialPayloadSafe());
+        allow delete: if isAdmin() || isSelf(uid);
+      }
+
+      match /orbCompanionEvents/{eventId} {
+        allow read: if isSelf(uid) || isAdmin();
+        allow create: if isAdmin() || (isUserOwnedCreate(uid) && isPrivateSpatialPayloadSafe());
+        allow update: if isAdmin() || (isUserOwnedUpdate(uid) && isPrivateSpatialPayloadSafe());
+        allow delete: if isAdmin() || isSelf(uid);
+      }
+
+      match /spatialAnchors/{anchorId} {
+        allow read: if isSelf(uid) || isAdmin();
+        allow create: if isAdmin() || (isUserOwnedCreate(uid) && isPrivateSpatialPayloadSafe());
+        allow update: if isAdmin() || (isUserOwnedUpdate(uid) && isPrivateSpatialPayloadSafe());
+        allow delete: if isAdmin() || isSelf(uid);
+      }
+
+      match /userSpatialPreferences/{preferenceId} {
+        allow read: if isSelf(uid) || isAdmin();
+        allow create: if isAdmin() || isUserOwnedCreate(uid);
+        allow update: if isAdmin() || isUserOwnedUpdate(uid);
+        allow delete: if isAdmin() || isSelf(uid);
+      }
+
+      match /spatialSessions/{sessionId} {
+        allow read: if isSelf(uid) || isAdmin();
+        allow create: if isAdmin() || (isUserOwnedCreate(uid) && isPrivateSpatialPayloadSafe());
+        allow update: if isAdmin() || (isUserOwnedUpdate(uid) && isPrivateSpatialPayloadSafe());
+        allow delete: if isAdmin() || isSelf(uid);
+      }
+
+      match /spatialNodes/{nodeId} {
+        allow read: if isSelf(uid) || isAdmin();
+        allow create: if isAdmin() || (isUserOwnedCreate(uid) && isPrivateSpatialPayloadSafe());
+        allow update: if isAdmin() || (isUserOwnedUpdate(uid) && isPrivateSpatialPayloadSafe());
+        allow delete: if isAdmin() || isSelf(uid);
+      }
+
+      match /lifemapNodes/{nodeId} {
+        allow read: if isSelf(uid) || isAdmin();
+        allow create: if isAdmin() || (isUserOwnedCreate(uid) && isPrivateSpatialPayloadSafe());
+        allow update: if isAdmin() || (isUserOwnedUpdate(uid) && isPrivateSpatialPayloadSafe());
+        allow delete: if isAdmin() || isSelf(uid);
+      }
+
+      match /lifemapReplays/{replayId} {
+        allow read: if isSelf(uid) || isAdmin();
+        allow create: if isAdmin() || (isUserOwnedCreate(uid) && isPrivateSpatialPayloadSafe());
+        allow update: if isAdmin() || (isUserOwnedUpdate(uid) && isPrivateSpatialPayloadSafe());
+        allow delete: if isAdmin() || isSelf(uid);
       }
     }
 
