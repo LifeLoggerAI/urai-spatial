@@ -4,10 +4,11 @@ This file is the evidence ledger for URAI Spatial. Do not mark the repository pr
 
 ## Current status
 
-- Evidence status: not yet recorded for this branch.
+- Evidence status: automation wiring recorded; live release evidence not yet recorded.
 - Runtime app root: `urai-tier1`.
 - Current release mode: `fallback-demo`.
 - Production-live status: not verified.
+- Deployment automation: `.github/workflows/spatial-live-deploy.yml` verifies `pnpm live:check` on relevant `main` pushes and can deploy only after verification when manually dispatched with `deploy=DEPLOY` or when repo variable `URAI_SPATIAL_AUTO_DEPLOY=true` is configured.
 
 ## Local verification
 
@@ -29,7 +30,7 @@ Record the exact command, date/time, commit SHA, operator, and result.
 
 | Gate | Command | Result | Evidence / notes |
 | --- | --- | --- | --- |
-| Full release check | `pnpm live:check` | Not recorded |  |
+| Full release check | `pnpm live:check` | Not recorded | Automated by `.github/workflows/spatial-live-deploy.yml` on relevant main pushes. |
 | Full release deploy dry gate | `pnpm verify:release:full` | Not recorded |  |
 | Replay contract | `pnpm test:replay-tier5` | Not recorded |  |
 | Firestore boundary check | `pnpm firebase:rules:check` | Not recorded |  |
@@ -47,6 +48,9 @@ Record the exact command, date/time, commit SHA, operator, and result.
 | Deploy date/time | Not recorded |
 | Operator | Not recorded |
 | Rollback reference | Not recorded |
+| Automation workflow | `.github/workflows/spatial-live-deploy.yml` |
+| Auto-deploy switch | Repo variable `URAI_SPATIAL_AUTO_DEPLOY=true` required for push-triggered deploy |
+| Live smoke URL switch | Repo variable `URAI_SPATIAL_LIVE_URL` or manual workflow input `live_url` |
 
 ## Live smoke evidence
 
@@ -102,6 +106,6 @@ Provider rows must remain `Not recorded` until the provider has been configured,
 
 Do not change this to `production-live` until the applicable local, release, deploy, live smoke, and provider sections are filled in.
 
-- Current release decision: `fallback-demo / evidence pending`.
+- Current release decision: `fallback-demo / automation wired / evidence pending`.
 - Decision date: not recorded.
 - Approver: not recorded.
