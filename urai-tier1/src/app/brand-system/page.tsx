@@ -34,8 +34,9 @@ export default function BrandSystemPage() {
           Master Symbol System
         </h1>
         <p style={{ maxWidth: 760, fontSize: 18, lineHeight: 1.6, opacity: 0.72 }}>
-          One core symbol architecture with product-specific modifiers for Labs, Foundation, Studio,
-          Analytics, Content, Communications, Marketing, Jobs, Privacy, Investors, Asset Factory, and Spatial.
+          One core symbol architecture with product-specific modifiers across the URAI family: Labs,
+          Foundation, Studio, Analytics, Content, Communications, Marketing, Jobs, Privacy, Investors,
+          spatial tools, and package tooling.
         </p>
 
         <div style={{
