@@ -1,0 +1,3 @@
+// Non-runtime placeholder.
+// Firebase deploy uses firebase/firestore.rules as configured in firebase.json.
+// Do not add production rules here unless firebase.json is intentionally changed in the same commit.
