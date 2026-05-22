@@ -9,6 +9,10 @@ type ReplayDirectRouteProps = {
 
 type UnavailableMemoryStarResolution = Extract<MemoryStarResolution, { ok: false }>
 
+function isUnavailableMemoryStarResolution(resolution: MemoryStarResolution): resolution is UnavailableMemoryStarResolution {
+  return resolution.ok === false
+}
+
 function UnavailableReplay({ resolution }: { resolution: UnavailableMemoryStarResolution }) {
   return (
     <main data-testid="urai-replay-direct-route" data-status={resolution.status} data-reason={resolution.reason}>
@@ -23,7 +27,7 @@ export default async function ReplayDirectRoute({ params }: ReplayDirectRoutePro
   const { replayId } = await params
   const resolution = resolveDemoReplay(replayId)
 
-  if (!resolution.ok) {
+  if (isUnavailableMemoryStarResolution(resolution)) {
     return <UnavailableReplay resolution={resolution} />
   }
 
