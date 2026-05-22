@@ -9,6 +9,10 @@ type FocusSessionRouteProps = {
 
 type UnavailableMemoryStarResolution = Extract<MemoryStarResolution, { ok: false }>
 
+function isUnavailableMemoryStarResolution(resolution: MemoryStarResolution): resolution is UnavailableMemoryStarResolution {
+  return resolution.ok === false
+}
+
 function UnavailableFocusSession({ resolution }: { resolution: UnavailableMemoryStarResolution }) {
   return (
     <main data-testid="urai-focus-session-direct-route" data-status={resolution.status} data-reason={resolution.reason}>
@@ -23,7 +27,7 @@ export default async function FocusSessionRoute({ params }: FocusSessionRoutePro
   const { sessionId } = await params
   const resolution = resolveDemoMemoryStar(sessionId)
 
-  if (!resolution.ok) {
+  if (isUnavailableMemoryStarResolution(resolution)) {
     return <UnavailableFocusSession resolution={resolution} />
   }
 
