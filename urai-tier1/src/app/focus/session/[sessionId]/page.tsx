@@ -1,10 +1,22 @@
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
 
-import { resolveDemoMemoryStar } from '@/spatial/memory/memoryStarSchema'
+import { resolveDemoMemoryStar, type MemoryStarResolution } from '@/spatial/memory/memoryStarSchema'
 
 type FocusSessionRouteProps = {
   params: Promise<{ sessionId: string }>
+}
+
+type UnavailableMemoryStarResolution = Extract<MemoryStarResolution, { ok: false }>
+
+function UnavailableFocusSession({ resolution }: { resolution: UnavailableMemoryStarResolution }) {
+  return (
+    <main data-testid="urai-focus-session-direct-route" data-status={resolution.status} data-reason={resolution.reason}>
+      <h1>Focus session unavailable</h1>
+      <p>This focus session is unavailable, private, locked, deleted, or not part of the launch-safe demo set.</p>
+      <Link href={resolution.safeHref}>Return to Life Map</Link>
+    </main>
+  )
 }
 
 export default async function FocusSessionRoute({ params }: FocusSessionRouteProps) {
@@ -12,13 +24,7 @@ export default async function FocusSessionRoute({ params }: FocusSessionRoutePro
   const resolution = resolveDemoMemoryStar(sessionId)
 
   if (!resolution.ok) {
-    return (
-      <main data-testid="urai-focus-session-direct-route" data-status={resolution.status} data-reason={resolution.reason}>
-        <h1>Focus session unavailable</h1>
-        <p>This focus session is unavailable, private, locked, deleted, or not part of the launch-safe demo set.</p>
-        <Link href={resolution.safeHref}>Return to Life Map</Link>
-      </main>
-    )
+    return <UnavailableFocusSession resolution={resolution} />
   }
 
   redirect(resolution.star.focusHref)
