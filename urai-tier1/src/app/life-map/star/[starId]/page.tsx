@@ -9,6 +9,10 @@ type MemoryStarRouteProps = {
 
 type UnavailableMemoryStarResolution = Extract<MemoryStarResolution, { ok: false }>
 
+function isUnavailableMemoryStarResolution(resolution: MemoryStarResolution): resolution is UnavailableMemoryStarResolution {
+  return resolution.ok === false
+}
+
 function UnavailableMemoryStar({ resolution }: { resolution: UnavailableMemoryStarResolution }) {
   return (
     <main data-testid="urai-memory-star-direct-route" data-status={resolution.status} data-reason={resolution.reason}>
@@ -23,7 +27,7 @@ export default async function MemoryStarRoute({ params }: MemoryStarRouteProps) 
   const { starId } = await params
   const resolution = resolveDemoMemoryStar(starId)
 
-  if (!resolution.ok) {
+  if (isUnavailableMemoryStarResolution(resolution)) {
     return <UnavailableMemoryStar resolution={resolution} />
   }
 
