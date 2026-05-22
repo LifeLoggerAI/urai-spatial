@@ -9,6 +9,7 @@ export interface SpatialManifestArtifact {
   width?: number;
   height?: number;
   durationMs?: number;
+  checksum?: string;
 }
 
 export interface SpatialAssetManifest {
