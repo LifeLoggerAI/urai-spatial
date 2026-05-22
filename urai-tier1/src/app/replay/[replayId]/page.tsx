@@ -1,10 +1,22 @@
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
 
-import { resolveDemoReplay } from '@/spatial/memory/memoryStarSchema'
+import { resolveDemoReplay, type MemoryStarResolution } from '@/spatial/memory/memoryStarSchema'
 
 type ReplayDirectRouteProps = {
   params: Promise<{ replayId: string }>
+}
+
+type UnavailableMemoryStarResolution = Extract<MemoryStarResolution, { ok: false }>
+
+function UnavailableReplay({ resolution }: { resolution: UnavailableMemoryStarResolution }) {
+  return (
+    <main data-testid="urai-replay-direct-route" data-status={resolution.status} data-reason={resolution.reason}>
+      <h1>Replay unavailable</h1>
+      <p>This replay is unavailable, private, locked, deleted, or not part of the launch-safe demo set.</p>
+      <Link href={resolution.safeHref}>Return to Life Map</Link>
+    </main>
+  )
 }
 
 export default async function ReplayDirectRoute({ params }: ReplayDirectRouteProps) {
@@ -12,13 +24,7 @@ export default async function ReplayDirectRoute({ params }: ReplayDirectRoutePro
   const resolution = resolveDemoReplay(replayId)
 
   if (!resolution.ok) {
-    return (
-      <main data-testid="urai-replay-direct-route" data-status={resolution.status} data-reason={resolution.reason}>
-        <h1>Replay unavailable</h1>
-        <p>This replay is unavailable, private, locked, deleted, or not part of the launch-safe demo set.</p>
-        <Link href={resolution.safeHref}>Return to Life Map</Link>
-      </main>
-    )
+    return <UnavailableReplay resolution={resolution} />
   }
 
   redirect(resolution.star.replayHref)
