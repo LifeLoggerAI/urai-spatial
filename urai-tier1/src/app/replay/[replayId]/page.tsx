@@ -11,15 +11,15 @@ export default async function ReplayDirectRoute({ params }: ReplayDirectRoutePro
   const { replayId } = await params
   const resolution = resolveDemoReplay(replayId)
 
-  if (resolution.ok) {
-    redirect(resolution.star.replayHref)
+  if (!resolution.ok) {
+    return (
+      <main data-testid="urai-replay-direct-route" data-status={resolution.status} data-reason={resolution.reason}>
+        <h1>Replay unavailable</h1>
+        <p>This replay is unavailable, private, locked, deleted, or not part of the launch-safe demo set.</p>
+        <Link href={resolution.safeHref}>Return to Life Map</Link>
+      </main>
+    )
   }
 
-  return (
-    <main data-testid="urai-replay-direct-route" data-status={resolution.status} data-reason={resolution.reason}>
-      <h1>Replay unavailable</h1>
-      <p>This replay is unavailable, private, locked, deleted, or not part of the launch-safe demo set.</p>
-      <Link href={resolution.safeHref}>Return to Life Map</Link>
-    </main>
-  )
+  redirect(resolution.star.replayHref)
 }
