@@ -6,12 +6,12 @@ on:
       verification_ref:
         description: "Git ref to verify"
         required: false
-        default: "main"
+        default: "tier-1-5-final-lock"
   pull_request:
     paths:
       - "**"
   push:
-    branches: [main]
+    branches: [main, tier-1-5-final-lock]
 
 jobs:
   workspace:
@@ -43,8 +43,8 @@ jobs:
         run: pnpm canon:check
       - name: Tier-1 canon lock
         run: pnpm canon:lock
-      - name: Tier-1 aggregate lock
-        run: pnpm tier1:check
+      - name: Tier governance checks
+        run: pnpm tier1:check && pnpm tier2:check && pnpm tier3:check && pnpm tier4:check && pnpm tier5:check
       - name: Tier-1 drift lock
         run: pnpm tier1:drift
       - name: Home invariant lock
@@ -103,8 +103,8 @@ jobs:
         run: pnpm canon:check
       - name: Tier-1 canon lock
         run: pnpm canon:lock
-      - name: Tier-1 aggregate lock
-        run: pnpm tier1:check
+      - name: Tier governance checks
+        run: pnpm tier1:check && pnpm tier2:check && pnpm tier3:check && pnpm tier4:check && pnpm tier5:check
       - name: Tier-1 drift lock
         run: pnpm tier1:drift
       - name: Home invariant lock
