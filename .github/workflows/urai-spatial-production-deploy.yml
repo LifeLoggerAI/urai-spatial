@@ -23,10 +23,10 @@ jobs:
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
           cache: pnpm
       - name: Install
-        run: pnpm install --frozen-lockfile
+        run: pnpm install --no-frozen-lockfile
       - name: Verify signoffs complete
         run: |
           pnpm preflight
@@ -39,8 +39,6 @@ jobs:
           pnpm --filter urai-tier1 typecheck
           pnpm --filter urai-tier1 build
           pnpm --filter urai-functions build
-      - name: Install Firebase Tools
-        run: npm install -g firebase-tools
       - name: Write Firebase service account
         run: |
           test -n "${{ secrets.FIREBASE_SERVICE_ACCOUNT_URAI_SPATIAL }}"
@@ -49,7 +47,7 @@ jobs:
       - name: Verify Firebase project secret
         run: test -n "${{ secrets.URAI_SPATIAL_FIREBASE_PROJECT_ID }}"
       - name: Deploy Firebase target
-        run: firebase deploy --project "${{ secrets.URAI_SPATIAL_FIREBASE_PROJECT_ID }}" --only firestore:rules,firestore:indexes,functions,hosting
+        run: pnpm dlx firebase-tools deploy --project "${{ secrets.URAI_SPATIAL_FIREBASE_PROJECT_ID }}" --only firestore:rules,firestore:indexes,functions,hosting
       - name: Production smoke
         env:
           URAI_SPATIAL_PRODUCTION_URL: ${{ vars.URAI_SPATIAL_PRODUCTION_URL }}

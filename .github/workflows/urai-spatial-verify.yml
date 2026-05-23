@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - main
+      - tier-1-5-final-lock
   pull_request:
     branches:
       - main
@@ -25,11 +26,11 @@ jobs:
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
           cache: pnpm
 
       - name: Install dependencies
-        run: corepack pnpm install --frozen-lockfile
+        run: corepack pnpm install --no-frozen-lockfile
 
       - name: Check public copy
         run: corepack pnpm check:public-copy

@@ -3,7 +3,7 @@ name: URAI Tier 1-5 Launch Pipeline
 on:
   workflow_dispatch:
   push:
-    branches: ["main", "tier-1-5-launch-lock"]
+    branches: ["main", "tier-1-5-launch-lock", "tier-1-5-final-lock"]
   pull_request:
     branches: ["main"]
 
@@ -27,7 +27,7 @@ jobs:
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
           cache: pnpm
 
       - name: Install deps
@@ -51,6 +51,9 @@ jobs:
       - name: Firebase boundary lock
         run: pnpm firebase:rules:check
 
+      - name: Tier governance checks
+        run: pnpm tier1:check && pnpm tier2:check && pnpm tier3:check && pnpm tier4:check && pnpm tier5:check
+
       - name: Tier 1 lock
         run: pnpm urai:tier1
 
@@ -71,6 +74,9 @@ jobs:
 
       - name: Spatial E2E browser lock
         run: pnpm lock:e2e
+
+      - name: Full release verifier
+        run: pnpm verify:release
 
       - name: Upload spatial artifacts
         if: always()
