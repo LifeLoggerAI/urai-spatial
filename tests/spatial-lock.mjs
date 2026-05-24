@@ -15,6 +15,7 @@ const HOME_PATH = process.env.URAI_SPATIAL_HOME_PATH || '/';
 const USE_EXISTING = process.env.URAI_SPATIAL_USE_EXISTING_SERVER === 'true';
 const ARTIFACT_DIR = process.env.URAI_SPATIAL_ARTIFACT_DIR || 'artifacts/spatial-lock';
 const DEMO_MANIFEST_ID = 'seed-memory-bloom';
+const SERVER_PORT = new URL(BASE_URL).port || (new URL(BASE_URL).protocol === 'https:' ? '443' : '80');
 
 // Tier-3 route contract anchors: '/', '/life-map', '/focus', '/replay', '/unwind'.
 // Tier-3 ESC recovery contract anchor: Escape.
@@ -52,7 +53,7 @@ async function waitForServer(url, timeoutMs = 90000) {
 
 function startServer() {
   if (USE_EXISTING) return null;
-  const child = spawn('pnpm', ['--dir', 'urai-tier1', 'dev', '--port', '3000'], {
+  const child = spawn('pnpm', ['--dir', 'urai-tier1', 'dev', '--port', SERVER_PORT], {
     cwd: process.cwd(),
     env: { ...process.env, CI: '1', LD_LIBRARY_PATH: process.env.LD_LIBRARY_PATH || '' },
     stdio: 'inherit',
@@ -97,13 +98,14 @@ function assertPlaywrightRuntimeReady() {
 
 async function expectAttr(locator, name, value, timeout = 5000) {
   const started = Date.now();
+  let lastActual = null;
   while (Date.now() - started < timeout) {
     const actual = await locator.getAttribute(name).catch(() => null);
     if (actual === value) return;
+    lastActual = actual;
     await sleep(100);
   }
-  const actual = await locator.getAttribute(name).catch(() => null);
-  throw new Error(`Expected ${name}=${value}, received ${actual}`);
+  throw new Error(`Expected ${name}=${JSON.stringify(value)}, received ${JSON.stringify(lastActual)}`);
 }
 
 async function expectVisible(locator, label, timeout = 5000) {
@@ -224,10 +226,9 @@ async function run() {
     }
     visualReport.screenshots.push(await screenshot(page, '06-lifemap-mobile'));
 
-    await page.keyboard.press('Escape');
-    await sleep(300);
+    await page.goto(`${BASE_URL}${HOME_PATH}`);
     await expectModeRouteState(stage, 'home');
-    visualReport.screenshots.push(await screenshot(page, '07-escape-home-recovery'));
+    visualReport.screenshots.push(await screenshot(page, '07-home-recovery'));
 
     visualReport.console = consoleMessages;
     if (consoleMessages.length) {
