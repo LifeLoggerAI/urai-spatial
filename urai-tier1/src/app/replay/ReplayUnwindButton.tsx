@@ -1,16 +1,19 @@
 'use client'
 
 import { useEffect } from 'react'
+import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 
 export function ReplayUnwindButton() {
   const router = useRouter()
+  const [escapeReady, setEscapeReady] = useState(false)
 
   useEffect(() => {
     function routeToFocus() {
       const stage = document.querySelector('[data-testid="urai-scene-stage"]')
+      const manifestId = new URLSearchParams(window.location.search).get('manifestId')
       stage?.setAttribute('data-scene-mode', 'focus')
-      router.push('/focus')
+      router.push(manifestId ? `/focus?manifestId=${encodeURIComponent(manifestId)}` : '/focus')
     }
 
     function handleKeyDown(event: KeyboardEvent) {
@@ -26,17 +29,21 @@ export function ReplayUnwindButton() {
 
     window.addEventListener('keydown', handleKeyDown, { capture: true })
     document.addEventListener('keydown', handleKeyDown, { capture: true })
+    setEscapeReady(true)
     return () => {
       if (fallbackTimer) window.clearTimeout(fallbackTimer)
       window.removeEventListener('keydown', handleKeyDown, { capture: true })
       document.removeEventListener('keydown', handleKeyDown, { capture: true })
+      setEscapeReady(false)
     }
   }, [router])
 
   return (
     <button
       type="button"
-      data-testid="replay-unwind-route-action"
+      data-testid="replay-unwind-button"
+      data-escape-ready={escapeReady ? 'true' : 'false'}
+      aria-label="Unwind replay safely"
       onClick={() => router.push('/unwind')}
       style={{
         position: 'fixed',
