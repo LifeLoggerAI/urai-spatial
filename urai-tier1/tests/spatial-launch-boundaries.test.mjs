@@ -15,6 +15,7 @@ const launchBoundary = read('src/lib/spatial-launch-boundaries.ts')
 const launchRoute = read('src/app/api/system/launch-boundary/route.ts')
 const capabilitiesRoute = read('src/app/api/system/capabilities/route.ts')
 const integrationRoute = read('src/app/api/system/integration-contract/route.ts')
+const systemContract = read('src/lib/spatial-system-contract.ts')
 const contractDoc = read('../docs/SPATIAL_LAUNCH_CONTRACT.md')
 
 test('spatial launch boundary remains fallback-demo until providers are verified', () => {
@@ -62,7 +63,10 @@ test('system routes expose launch boundaries without secret/provider activation'
   assert.match(launchRoute, /requirementsBeforeLiveProviders/)
 
   assert.match(capabilitiesRoute, /spatialLaunchBoundary/)
-  assert.match(integrationRoute, /spatialLaunchBoundary/)
+  assert.match(integrationRoute, /buildSpatialSystemContract/)
+  assert.match(systemContract, /launchBoundary: spatialLaunchBoundary/)
+  assert.match(systemContract, /fallbackMode: assertSpatialFallbackMode\(\)/)
+  assert.match(systemContract, /deferredCapabilities: spatialDeferredCapabilities/)
   assert.doesNotMatch(launchRoute, /process\.env\.[A-Z0-9_]*(SECRET|PRIVATE|TOKEN|KEY)/)
 })
 
