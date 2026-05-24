@@ -105,11 +105,11 @@ if (homeSceneText) {
 if (overlayText) {
   const requiredSilentHomeVisuals = [
     'function HomeOverlay()',
-    '<SkyLayer />',
-    '<GroundLayer />',
-    '<LifeMapPreviewLayer />',
-    '<BodyAvatarLayer />',
-    '<Orb />',
+    'className="urai-home-sky-layer"',
+    'className="urai-home-ground"',
+    'className="urai-home-lifemap-preview"',
+    'className="urai-home-silhouette"',
+    'className="urai-home-orb"',
     'data-testid="urai-home-orb"',
     'data-testid="urai-home-body-avatar"',
     'data-testid="urai-home-lifemap-preview"',
