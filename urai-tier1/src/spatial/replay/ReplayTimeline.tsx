@@ -113,7 +113,6 @@ export function ReplayTimeline({
           aria-label={`Replay scrubber, ${activeSegment.label} phase, ${progressPercent} percent complete`}
           style={{
             width: '100%',
-            accentColor: '#67e8f9',
             cursor: canInteract ? 'pointer' : 'not-allowed',
           }}
         />
