@@ -11,6 +11,12 @@ const launchEnv = {
   NEXT_PUBLIC_ALLOW_PUBLIC_DEMO_ROUTES: process.env.NEXT_PUBLIC_ALLOW_PUBLIC_DEMO_ROUTES ?? 'true',
   URAI_ALLOW_PUBLIC_DEMO_ROUTES: process.env.URAI_ALLOW_PUBLIC_DEMO_ROUTES ?? 'true',
 }
+const browserE2eEnv = {
+  ...launchEnv,
+  URAI_SPATIAL_BASE_URL: host,
+  URAI_SPATIAL_USE_EXISTING_SERVER: 'true',
+  URAI_SPATIAL_ARTIFACT_DIR: process.env.URAI_SPATIAL_ARTIFACT_DIR ?? 'artifacts/local-launch-spatial-lock',
+}
 
 const serverLogLines = []
 const MAX_SERVER_LOG_LINES = 200
@@ -222,7 +228,7 @@ try {
   await waitForServer(`${host}/`)
   await runPnpm(['smoke'], { env: { HOST: host } })
 
-  const e2e = await runPnpmCapture(['test:e2e'])
+  const e2e = await runPnpmCapture(['test:e2e'], { env: browserE2eEnv })
   if (e2e.code !== 0) {
     if (isPlaywrightInfraBlock(e2e.output)) {
       console.warn('\n[URAI Spatial] Browser E2E blocked by local workstation Playwright/OS dependencies.')
