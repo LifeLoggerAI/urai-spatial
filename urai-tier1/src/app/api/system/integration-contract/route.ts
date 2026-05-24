@@ -1,6 +1,12 @@
 import { NextResponse } from "next/server";
 import { buildSpatialSystemContract } from "@/lib/spatial-system-contract";
+import {
+  spatialLaunchBoundary,
+} from "@/lib/spatial-launch-boundaries";
 
 export async function GET() {
-  return NextResponse.json(buildSpatialSystemContract());
+  return NextResponse.json({
+    ...buildSpatialSystemContract(),
+    launchBoundary: spatialLaunchBoundary,
+  });
 }
