@@ -61,7 +61,7 @@ export function issueUraiXrRoomSession(input: {
     rotateAfter: now + (input.rotationMs ?? 5 * 60 * 1000),
     shardId: input.shardId,
   }
-  const secret = input.secret ?? process.env.URAI_XR_SESSION_SECRET ?? 'local-xr-dev-secret'
+  const secret = input.secret || process.env.URAI_XR_SESSION_SECRET || 'local-xr-dev-secret'
   return { ...session, signature: sign(canonicalSessionPayload(session), secret) }
 }
 
@@ -92,7 +92,7 @@ export function validateUraiXrRoomSession(input: {
   const now = input.now ?? Date.now()
   if (now >= session.expiresAt) return { ok: false, reason: 'expired', session }
   if (now >= session.rotateAfter) return { ok: false, reason: 'rotation_required', session }
-  const secret = input.secret ?? process.env.URAI_XR_SESSION_SECRET ?? 'local-xr-dev-secret'
+  const secret = input.secret || process.env.URAI_XR_SESSION_SECRET || 'local-xr-dev-secret'
   const expected = sign(canonicalSessionPayload(session), secret)
   const actualBuffer = Buffer.from(session.signature)
   const expectedBuffer = Buffer.from(expected)
