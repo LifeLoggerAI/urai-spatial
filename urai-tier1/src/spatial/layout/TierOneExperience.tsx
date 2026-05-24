@@ -11,10 +11,11 @@ import { SpatialShell } from "./SpatialShell";
 
 const UraiIntegratedHomeScene = CanonicalHomeScene;
 
-export type TierOneExperienceMode = "home" | "ascent" | "life-map" | "demo" | "replay" | "focus" | "unwind" | "mirror";
+export type SceneMode = "home" | "ascent" | "life-map" | "demo" | "replay" | "focus" | "unwind" | "mirror";
+export type TierOneExperienceMode = SceneMode;
 
 type Props = {
-  mode: TierOneExperienceMode;
+  mode?: SceneMode;
   title?: string;
   eyebrow?: string;
   description?: string;
@@ -110,7 +111,7 @@ function shouldShowRouteCard(mode: TierOneExperienceMode, hasCustomRouteContent:
   return hasCustomRouteContent;
 }
 
-export function TierOneExperience({ mode, title, eyebrow, description, cta }: Props) {
+export function TierOneExperience({ mode = "home", title, eyebrow, description, cta }: Props) {
   const routeMode = useBrowserRouteMode(mode);
   const copy = fallbackCopy[routeMode];
   const router = useRouter();
