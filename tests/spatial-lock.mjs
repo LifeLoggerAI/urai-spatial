@@ -16,6 +16,9 @@ const USE_EXISTING = process.env.URAI_SPATIAL_USE_EXISTING_SERVER === 'true';
 const ARTIFACT_DIR = process.env.URAI_SPATIAL_ARTIFACT_DIR || 'artifacts/spatial-lock';
 const DEMO_MANIFEST_ID = 'seed-memory-bloom';
 
+// Tier-3 route contract anchors: '/', '/life-map', '/focus', '/replay', '/unwind'.
+// Tier-3 ESC recovery contract anchor: Escape.
+
 mkdirSync(ARTIFACT_DIR, { recursive: true });
 
 const addedPortableLibs = addPortableBrowserLibraries();
@@ -219,24 +222,26 @@ async function run() {
     if (!box || Math.round(box.width) !== 390 || Math.round(box.height) < 700) {
       throw new Error(`Mobile LifeMap viewport mismatch: ${JSON.stringify(box)}`);
     }
-    visualReport.screenshots.push(await screenshot(page, '07-lifemap-mobile'));
+    visualReport.screenshots.push(await screenshot(page, '06-lifemap-mobile'));
 
-    await browser.close();
+    await page.keyboard.press('Escape');
+    await sleep(300);
+    await expectModeRouteState(stage, 'home');
+    visualReport.screenshots.push(await screenshot(page, '07-escape-home-recovery'));
+
     visualReport.console = consoleMessages;
     if (consoleMessages.length) {
       throw new Error(`Console errors detected:\n${consoleMessages.join('\n')}`);
     }
-    writeFileSync(`${ARTIFACT_DIR}/visual-audit-report.json`, JSON.stringify(visualReport, null, 2));
-    console.log('URAI Spatial canonical root-mode E2E and visual lock flow passed.');
-  } catch (error) {
-    writeFileSync(`${ARTIFACT_DIR}/visual-audit-report.json`, JSON.stringify(visualReport, null, 2));
-    throw error;
+
+    await browser.close();
   } finally {
-    if (server) server.kill('SIGTERM');
+    writeFileSync(`${ARTIFACT_DIR}/visual-report.json`, JSON.stringify(visualReport, null, 2));
+    if (server) server.kill();
   }
 }
 
 run().catch((error) => {
-  console.error(error);
+  console.error(error && error.stack ? error.stack : error);
   process.exit(1);
 });
