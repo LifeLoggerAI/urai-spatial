@@ -1,7 +1,8 @@
 import playwright from 'playwright';
 const { chromium } = playwright;
 import { spawn, spawnSync } from 'node:child_process';
-import { mkdirSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, writeFileSync } from 'node:fs';
+import path from 'node:path';
 import process from 'node:process';
 import {
   addPortableBrowserLibraries,
@@ -15,6 +16,14 @@ const HOME_PATH = process.env.URAI_SPATIAL_HOME_PATH || '/';
 const USE_EXISTING = process.env.URAI_SPATIAL_USE_EXISTING_SERVER === 'true';
 const ARTIFACT_DIR = process.env.URAI_SPATIAL_ARTIFACT_DIR || 'artifacts/spatial-lock';
 const DEMO_MANIFEST_ID = 'seed-memory-bloom';
+const ROUTE_PATHS = {
+  home: HOME_PATH,
+  ascent: '/ascent',
+  'life-map': '/life-map',
+  focus: '/focus',
+  replay: '/replay',
+  unwind: '/unwind',
+};
 
 mkdirSync(ARTIFACT_DIR, { recursive: true });
 
@@ -28,9 +37,21 @@ function sleep(ms) {
 }
 
 function modePath(mode, extra = '') {
-  const prefix = mode === 'home' ? HOME_PATH : `/?mode=${encodeURIComponent(mode)}`;
+  const prefix = ROUTE_PATHS[mode] || `/?mode=${encodeURIComponent(mode)}`;
   if (!extra) return prefix;
   return `${prefix}${prefix.includes('?') ? '&' : '?'}${extra}`;
+}
+
+function pnpmInvocation(args) {
+  const candidates = [
+    process.env.npm_execpath && /pnpm/i.test(process.env.npm_execpath) ? process.env.npm_execpath : null,
+    path.join(process.cwd(), 'node_modules', 'pnpm', 'bin', 'pnpm.cjs'),
+    path.join(process.cwd(), 'node_modules', '.pnpm', 'pnpm@10.0.0', 'node_modules', 'pnpm', 'bin', 'pnpm.cjs'),
+  ].filter(Boolean);
+
+  const entrypoint = candidates.find((candidate) => existsSync(candidate));
+  if (entrypoint) return { command: process.execPath, args: [entrypoint, ...args], shell: false };
+  return { command: 'pnpm', args, shell: process.platform === 'win32' };
 }
 
 async function waitForServer(url, timeoutMs = 90000) {
@@ -49,11 +70,12 @@ async function waitForServer(url, timeoutMs = 90000) {
 
 function startServer() {
   if (USE_EXISTING) return null;
-  const child = spawn('pnpm', ['--dir', 'urai-tier1', 'dev', '--port', '3000'], {
+  const pnpm = pnpmInvocation(['--dir', 'urai-tier1', 'dev', '--port', '3000']);
+  const child = spawn(pnpm.command, pnpm.args, {
     cwd: process.cwd(),
     env: { ...process.env, CI: '1', LD_LIBRARY_PATH: process.env.LD_LIBRARY_PATH || '' },
     stdio: 'inherit',
-    shell: process.platform === 'win32',
+    shell: pnpm.shell,
   });
   child.on('exit', (code) => {
     if (code && code !== 0) console.error(`URAI Spatial dev server exited with ${code}`);
@@ -62,18 +84,18 @@ function startServer() {
 }
 
 function assertPlaywrightRuntimeReady() {
-  const result = spawnSync('pnpm', ['exec', 'node', '-e', `
-    const { chromium } = require('playwright');
-    (async () => {
+  const result = spawnSync(process.execPath, ['--input-type=module', '-e', `
+    import { chromium } from 'playwright';
+    try {
       const browser = await chromium.launch(${chromiumLaunchOptionsLiteral()});
       await browser.close();
-    })().catch((error) => {
+    } catch (error) {
       console.error(error && error.stack ? error.stack : error);
       process.exit(1);
-    });
+    }
   `], {
     stdio: 'pipe',
-    shell: process.platform === 'win32',
+    shell: false,
     encoding: 'utf8',
     env: process.env,
   });
@@ -145,8 +167,17 @@ async function expectModeRouteState(stage, mode) {
 
 async function screenshot(page, name) {
   const path = `${ARTIFACT_DIR}/${name}.png`;
-  await page.screenshot({ path, fullPage: true });
+  await page.screenshot({ path, animations: 'disabled', fullPage: false, timeout: 60000 });
   return path;
+}
+
+function stopServer(server) {
+  if (!server) return;
+  if (process.platform === 'win32' && server.pid) {
+    spawnSync('taskkill', ['/PID', String(server.pid), '/T', '/F'], { stdio: 'ignore' });
+    return;
+  }
+  server.kill('SIGTERM');
 }
 
 function collectConsole(page) {
@@ -160,7 +191,7 @@ function collectConsole(page) {
 }
 
 async function gotoMode(page, stage, mode, extra = '') {
-  await page.goto(`${BASE_URL}${modePath(mode, extra)}`);
+  await page.goto(`${BASE_URL}${modePath(mode, extra)}`, { waitUntil: 'domcontentloaded', timeout: 120000 });
   await expectAttr(stage, 'data-scene-mode', mode);
 }
 
@@ -199,7 +230,13 @@ async function run() {
 
     await gotoMode(page, stage, 'replay', `manifestId=${encodeURIComponent(DEMO_MANIFEST_ID)}`);
     await expectModeRouteState(stage, 'replay');
+    await expectAttr(page.getByTestId('replay-unwind-button'), 'data-escape-ready', 'true');
     visualReport.screenshots.push(await screenshot(page, '05-replay-desktop'));
+
+    await page.keyboard.press('Escape');
+    await expectModeRouteState(stage, 'focus');
+    await expectVisible(page.getByTestId('urai-focus-action-panel'), 'focus action panel after Escape recovery');
+    visualReport.screenshots.push(await screenshot(page, '05a-escape-recovery-focus-desktop'));
 
     await gotoMode(page, stage, 'unwind');
     await expectVisible(page.getByTestId('urai-unwind-guidance'), 'unwind recovery guidance');
@@ -232,7 +269,7 @@ async function run() {
     writeFileSync(`${ARTIFACT_DIR}/visual-audit-report.json`, JSON.stringify(visualReport, null, 2));
     throw error;
   } finally {
-    if (server) server.kill('SIGTERM');
+    stopServer(server);
   }
 }
 
