@@ -36,13 +36,18 @@ test('replay direct route resolves only demo-safe replay ids and fails closed', 
 test('replay unwind affordance preserves safe return behavior', () => {
   assert.match(replayUnwindButton, /'use client'/)
   assert.match(replayUnwindButton, /useRouter/)
-  assert.match(replayUnwindButton, /router\.push\('\/focus'\)/)
+  assert.match(replayUnwindButton, /manifestId/)
+  assert.match(replayUnwindButton, /router\.push\(manifestId \? `\/focus\?manifestId=\$\{encodeURIComponent\(manifestId\)\}` : '\/focus'\)/)
+  assert.match(replayUnwindButton, /router\.push\('\/unwind'\)/)
   assert.match(replayUnwindButton, /data-testid="replay-unwind-button"/)
-  assert.match(replayUnwindButton, /Return to Focus/)
+  assert.match(replayUnwindButton, /data-escape-ready=\{escapeReady \? 'true' : 'false'\}/)
+  assert.match(replayUnwindButton, /Unwind/)
 })
 
 test('TierOneExperience preserves replay mode as a first-class scene state', () => {
-  assert.match(tierOneExperience, /mode\?: SceneMode/)
-  assert.match(tierOneExperience, /'replay'/)
-  assert.match(tierOneExperience, /data-mode=\{mode\}/)
+  assert.match(tierOneExperience, /export type TierOneExperienceMode = [\s\S]*"replay"/)
+  assert.match(tierOneExperience, /routeModes = new Set<TierOneExperienceMode>\([\s\S]*"replay"/)
+  assert.match(tierOneExperience, /if \(mode === "replay"\) return "replay" as const/)
+  assert.match(tierOneExperience, /<UraiIntegratedHomeScene sceneMode=\{routeMode\} \/>/)
+  assert.match(tierOneExperience, /data-route-mode=\{routeMode\}/)
 })
