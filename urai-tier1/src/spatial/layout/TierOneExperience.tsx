@@ -137,6 +137,8 @@ export function TierOneExperience({ mode = "home", title, eyebrow, description, 
     <SpatialShell mode={shellModeFor(routeMode)} sourceBadge="demo">
       <div
         data-testid="urai-spatial-world-root"
+        data-mode={mode}
+        data-route-mode={routeMode}
         data-urai-world-layer="3d"
         data-urai-dom-role="accessible-control-overlay"
         data-urai-world-mode={worldMode}
