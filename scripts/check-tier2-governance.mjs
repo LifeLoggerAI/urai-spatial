@@ -17,7 +17,7 @@ const pathHints = [
   'src/components/life-map',
   'src/spatial',
   'firebase/firestore.rules',
-  'src/app/api',
+  'urai-tier1/src/app/api',
 ]
 for (const p of pathHints) {
   if (!fs.existsSync(path.resolve(p))) {
