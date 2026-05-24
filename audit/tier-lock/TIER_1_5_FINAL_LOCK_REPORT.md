@@ -4,284 +4,326 @@
 
 **Honest final lock statement:** Tier-1 through Tier-5 are not fully locked yet.
 
-The repository has stronger Tier-3, Tier-4, and Tier-5 canon exports, an `/unwind` production route, CI launch-lock gates, mobile safe-area handling, and expanded route/E2E coverage. Static, canon, Firebase, unit, LifeMap, typecheck, production build, functions build/test, and tier runner gates were previously recorded as passing locally. Full release lock remains incomplete because Playwright Chromium could not be installed or launched in the prior verification environment: both the Playwright CDN and Ubuntu apt repositories returned HTTP 403 responses.
-
-This 2026-05-22 addendum refreshed branch governance: `tier-1-5-final-lock` was reset from its stale 733-commit-behind state to current `main`, then the launch/spatial CI lock protections were re-applied as two targeted commits. No production source route/component changes were made in this addendum.
+The 2026-05-24 continuation repaired the previous Playwright/browser blocker in a local sanitized branch archive and proved the main executable gates locally, including `pnpm lock:e2e` and `pnpm verify:release`. The remaining release-lock limitation is verification provenance: this Windows checkout was extracted from the branch archive after skipping repository entries that are illegal or too long on Windows, and it is not a native git worktree, so `pnpm migration:check` reported `No comparable git diff available; migration marker check skipped for shallow checkout.` Full remote release lock still requires the same commands to pass in a native git checkout or CI on the updated `tier-1-5-final-lock` branch.
 
 ## 2. Tier status table
 
-| Tier | Status | Evidence | Blocker |
+| Tier | Status | Evidence | Remaining blocker |
 |---|---:|---|---|
-| Tier-1 foundation | Passed prior local gate; not re-run in this network-limited shell | `pnpm tier1:check`, `pnpm tier1:drift`, `pnpm home:invariant`, `pnpm firebase:rules:check` were recorded as passed in the existing report. | Current shell cannot clone GitHub over DNS, so commands were not re-run here. |
-| Tier-2 system canon | Passed prior local gate; not re-run in this network-limited shell | `pnpm tier2:check`, `pnpm urai:tier2` were recorded as passed. | Current shell cannot clone GitHub over DNS, so commands were not re-run here. |
-| Tier-3 feature canon | Passed prior local gate; full lock still blocked | `pnpm tier3:check`, `pnpm urai:tier3`, unit/LifeMap tests passed previously; `/unwind` route exists on current `main`. | Full lock blocked until Playwright E2E passes. |
-| Tier-4 implementation canon | Passed prior local gate; full lock still blocked | `pnpm tier4:check`, `pnpm urai:tier4`, typecheck and production build passed previously. | Full lock blocked until Playwright E2E passes. |
-| Tier-5 operational canon | Improved in this addendum; incomplete for full release | CI launch and spatial workflows now protect `tier-1-5-final-lock`, include explicit Tier 1-5 governance checks, and run full release verification after E2E. | `pnpm verify:release` / `pnpm lock:e2e` must pass in CI or a browser-enabled local environment. |
+| Tier-1 foundation | Local sanitized-checkout gates passed | `check:source-integrity`, `check:production-routes`, `preflight`, `canon:check`, `canon:lock`, `locs:check`, `tier1:check`, `tier1:drift`, `home:invariant`, `firebase:rules:check`, `urai:tier1` | Native git/CI rerun still required for final release lock provenance |
+| Tier-2 system canon | Local sanitized-checkout gates passed | `tier2:check`, `urai:tier2`, prior Tier-1 regression commands passed | Native git/CI rerun still required |
+| Tier-3 feature canon | Local sanitized-checkout gates passed | `tier3:check`, `urai:tier3`, Tier-1 unit tests, LifeMap tests, and E2E spatial route flow passed | Native git/CI rerun still required |
+| Tier-4 implementation canon | Local sanitized-checkout gates passed | `tier4:check`, `urai:tier4`, typecheck, production build, functions build/test passed | Native git/CI rerun still required |
+| Tier-5 operational canon | Local sanitized-checkout gates passed | `tier5:check`, `urai:tier5`, `lock:e2e`, `verify:release` passed locally | Native git/CI rerun and branch-head CI evidence still required |
 
 ## 3. Definition of locked used
 
-A tier is considered locally passed only when its source-of-truth canon exists, routes/components are wired where applicable, prior tier regression checks pass, Firebase/security checks pass where applicable, production build passes where applicable, and evidence is recorded. Full Tier-1 through Tier-5 release lock additionally requires Playwright E2E to pass. Because E2E has not been successfully re-run and proven on the current branch, full release lock is not claimed.
+A tier is locally passed only when its canon, implementation routes, prior-tier regressions, Firebase/security checks where relevant, typecheck/build/test gates, and required smoke/E2E gates pass. Full Tier-1 through Tier-5 release lock additionally requires the same evidence from a complete git checkout or CI-protected branch run. Because this pass used a sanitized archive and one git-diff gate skipped, this report does not claim full remote release lock.
 
 ## 4. Repository state
 
-- Current branch: `tier-1-5-final-lock`
-- Base before addendum: branch was 2 commits ahead and 733 commits behind `main`.
-- Addendum branch action: force-updated `tier-1-5-final-lock` to current `main` commit `6158cd35845a9491ed854f144d451f8fecca5601`, then re-applied two CI/governance commits.
-- Commit hash after addendum: `ba8e696823b4f59d3f143a8e882596fe64c830de`
-- Current compare state after addendum: branch is 2 commits ahead of `main`, 0 commits behind.
-- Package manager: pnpm, pinned in `package.json`.
+- Target branch: `tier-1-5-final-lock`.
+- Branch was fast-forwarded from `307ccf4615c10156c738407092983019b9b5e442` to current `main` head `af044ef471d3c5a0b46d9300d07499902ebfb756` before applying continuation changes.
+- Local checkout source: branch zip archive extracted under Windows with path sanitization.
+- Local extraction skipped 1,309 archive entries, mostly backup/audit paths with names invalid on Windows such as `*audit`.
+- Package manager: pnpm 10.0.0, run through local `pnpm.cjs`.
 - App framework: Next.js app router in `urai-tier1/src/app`.
-- Workspace packages audited previously: root workspace, `urai-tier1`, `apps/functions`, `packages/tier-locks`.
+- Final branch commit after report update is produced by GitHub contents API and is recorded in the chat final response.
 
 ## 5. Files audited
 
-- Root governance: `package.json`, `pnpm-workspace.yaml`, `.github/workflows/urai-launch.yml`, `.github/workflows/urai-spatial-ci.yml`, `firebase.json`, `firebase/firestore.rules`, `firebase/firestore.indexes.json`.
-- Repo purpose docs: `README.md`, `REPO_PURPOSE.md`.
-- Existing final lock artifact: `audit/tier-lock/TIER_1_5_FINAL_LOCK_REPORT.md`.
-- Prior audit scope preserved from the existing report: `src/canon/*`, `docs/canon/*`, scripts, app routes, spatial/UI components, backend/security files, and E2E tests.
+| Area | Files/surfaces audited |
+|---|---|
+| Root governance | `package.json`, `pnpm-workspace.yaml`, `.github/workflows`, `firebase.json`, Firestore rules/index files |
+| Runtime boundary | `CANONICAL_RUNTIME.md`, root `src/app`, `urai-tier1/src/app`, runtime boundary scripts |
+| Canon/governance | `src/canon`, `docs/canon`, tier check scripts, LOCS scripts |
+| Spatial routes | `/`, `/ascent`, `/life-map`, `/focus`, `/replay`, `/unwind` |
+| Replay recovery | `urai-tier1/src/app/replay/ReplayUnwindButton.tsx`, `tests/spatial-lock.mjs` |
+| E2E/runtime | `scripts/check-playwright-runtime.mjs`, `scripts/playwright-runtime-helpers.mjs`, `tests/spatial-lock.mjs` |
+| Tier runners | `urai-tier1/scripts/tier-lock/run-tier.mjs`, Tier-1 tests |
+| Backend/security | `firebase/firestore.rules`, `apps/functions`, Firebase boundary checks |
 
 ## 6. Files changed
 
-Addendum changes:
-
-- `.github/workflows/urai-launch.yml`
-  - Added `tier-1-5-final-lock` to push triggers.
-  - Added explicit `pnpm tier1:check && pnpm tier2:check && pnpm tier3:check && pnpm tier4:check && pnpm tier5:check` governance gate before tier runner jobs.
-  - Added `pnpm verify:release` after `pnpm lock:e2e` so the launch workflow verifies the full release aggregate, not only the E2E runner.
-- `.github/workflows/urai-spatial-ci.yml`
-  - Set workflow dispatch default verification ref to `tier-1-5-final-lock`.
-  - Added `tier-1-5-final-lock` to push triggers.
-  - Replaced repeated Tier-1-only aggregate lock steps in the workspace and tier1 jobs with full Tier 1-5 governance checks while preserving Tier-1 drift, home invariant, Firebase, LOCS, unit, LifeMap, typecheck, build, functions, Firebase config, and E2E jobs.
-- `audit/tier-lock/TIER_1_5_FINAL_LOCK_REPORT.md`
-  - Updated to record the branch refresh, addendum commits, current verification limitations, and exact next command.
-
-Prior implementation changes already present on `main` and preserved:
-
-- Tier-3/4/5 canon entries.
-- `/unwind` route and spatial recovery wiring.
-- Expanded spatial E2E coverage.
-- Environment readiness audit improvements.
-- Safe-area CSS and mobile hardening.
+| File | Change |
+|---|---|
+| `scripts/check-home-invariant.mjs` | Updated stale home visual anchors to current scene DOM/class/testid anchors. |
+| `scripts/check-lockfile-present.mjs` | Normalized Windows path separators for importer lockfile checks. |
+| `scripts/canon-lock.mjs` | Pointed protected root page checks at canonical `urai-tier1/src/app/page.tsx` and suppressed noisy git stderr in archive/no-git runs. |
+| `scripts/check-playwright-runtime.mjs` | Replaced brittle Windows shell `node -e` probe with `process.execPath --input-type=module`; added local pnpm entrypoint resolution. |
+| `src/app/ROUTE_ARCHITECTURE.md` | Reconciled root route architecture docs with canonical runtime ownership in `urai-tier1`. |
+| `tests/spatial-lock.mjs` | Added direct route coverage, robust pnpm/server startup, Windows process-tree cleanup, viewport screenshots, longer cold-route navigation timeout, ESC recovery assertion, and `/unwind` coverage. |
+| `urai-tier1/scripts/tier-lock/run-tier.mjs` | Resolved pnpm via `npm_execpath` or workspace pnpm entrypoints so nested tier runners do not depend on a global pnpm binary. |
+| `urai-tier1/src/app/replay/ReplayUnwindButton.tsx` | Preserved `manifestId` on Escape recovery, exposed nonvisual escape readiness, and kept click recovery to `/unwind`. |
+| `urai-tier1/tests/replay-memory-theater-contract.test.mjs` | Updated replay recovery assertions to the current route contract and escape readiness marker. |
+| `urai-tier1/tests/spatial-launch-boundaries.test.mjs` | Updated launch-boundary assertions to the current `buildSpatialSystemContract` wiring. |
+| `audit/tier-lock/TIER_1_5_FINAL_LOCK_REPORT.md` | Replaced stale Playwright-blocked report with 2026-05-24 continuation evidence. |
 
 ## 7. Files deleted/quarantined
 
-No files were deleted or quarantined in this addendum.
+The following non-canonical root API route files were deleted locally because `CANONICAL_RUNTIME.md` identifies `urai-tier1` as the only runtime tree and `pnpm check:runtime-boundary` failed while they existed:
+
+| Deleted file | Reason |
+|---|---|
+| `src/app/api/entitlement/route.ts` | Root runtime route outside canonical `urai-tier1` runtime. |
+| `src/app/api/stripe/create-checkout-session/route.ts` | Root runtime route outside canonical `urai-tier1` runtime. |
+| `src/app/api/stripe/webhook/route.ts` | Root runtime route outside canonical `urai-tier1` runtime. |
+
+No generated E2E screenshots or local logs are committed.
 
 ## 8. Existing work reused/repaired/replaced/left unchanged
 
 | Category | Summary |
 |---|---|
-| Reused | Current `main` implementation, existing TierOneExperience shell, spatial runtime, Firestore boundary checks, route audits, tier runner scripts, Playwright lock tests, and CI workflows. |
-| Repaired | Stale `tier-1-5-final-lock` branch state; missing branch push protection in launch/spatial CI; missing explicit Tier 1-5 governance gate in launch CI; missing full `verify:release` in the launch workflow. |
-| Replaced | The stale branch tip was replaced with current `main` before targeted CI changes were re-applied. No source canon system was replaced. |
-| Left unchanged | App source files and tests were not modified in this addendum because the current blocker is verification infrastructure/branch governance, not a newly discovered route/component defect. |
+| Reused | Existing TierOneExperience shell, LifeMap/Focus/Replay/Unwind routes, Firestore boundary checks, unit contract tests, tier runners, and CI workflow shape. |
+| Repaired | Windows pnpm/runtime probing, E2E direct route coverage, cold Next route timeouts, replay ESC recovery timing, home invariant anchors, root runtime boundary leakage, nested tier runner pnpm resolution. |
+| Replaced | The stale report content was replaced with current continuation evidence. No canon system was replaced. |
+| Left unchanged | Current product route surfaces and provider fallback policies were left intact after passing local gates. CI workflow semantics were not weakened. |
 
 ## 9. Blockers
 
 ### P0 blockers found
 
-- Full release lock remains blocked until Playwright E2E can be installed/launched and `pnpm verify:release` passes.
-- This shell could not clone the repository from GitHub because `github.com` DNS resolution failed; therefore no shell-based `pnpm` commands were run in this addendum.
+- Full remote release lock still lacks native git/CI proof on the updated branch.
+- The local Windows archive extraction skipped 1,309 tracked entries because of invalid or too-long Windows paths; most are backup/audit surfaces, but the repository is not fully portable to this Windows extraction path.
 
-### P1 blockers found
+### P1 blockers found and fixed locally
 
-- The branch requested by the lock contract existed but was stale by 733 commits relative to `main`.
-- The current `main` launch pipeline did not run on `tier-1-5-final-lock`, did not include an explicit Tier 1-5 governance check step, and did not run `pnpm verify:release` after E2E.
-- The current `main` spatial CI workflow did not run on pushes to `tier-1-5-final-lock` and defaulted manual verification to `main`.
+- `pnpm lock:e2e` failed because the E2E runtime probe used `pnpm exec node -e` with Windows shell semantics.
+- `pnpm lock:e2e` then hung/failed because the E2E dev server process tree stayed alive on Windows after failures.
+- `pnpm lock:e2e` then failed because full-page screenshots timed out on the full-screen spatial stage.
+- `pnpm lock:e2e` then failed because cold Next route compilation exceeded Playwright's default navigation timeout.
+- `pnpm lock:e2e` then exposed a real ESC recovery timing issue on `/replay`; the app now marks the replay escape bridge ready before the E2E presses Escape.
+- `pnpm check:runtime-boundary` failed until root non-canonical API routes were removed.
+- `pnpm check:lockfile` failed on Windows path separators until path normalization was added.
+- `pnpm home:invariant` failed on stale visual anchors until the current home scene anchors were used.
+- `pnpm canon:check` failed in the archive because it referenced `src/app/page.tsx` instead of `urai-tier1/src/app/page.tsx`.
+- Nested tier runners failed when global `pnpm` was unavailable; they now resolve the workspace pnpm entrypoint.
 
-### P2 hardening found
+### P2 hardening
 
-- Node version remains `20` in the two updated workflows to preserve current `main` behavior even though README/runtime docs mention Node 22+. This should be reconciled only after confirming CI compatibility.
-
-### Blockers fixed
-
-- Refreshed `tier-1-5-final-lock` to current `main`.
-- Re-applied final branch CI protection.
-- Added launch-workflow Tier 1-5 governance gate and `verify:release` aggregate gate.
-- Updated spatial CI dispatch/push target and Tier 1-5 governance coverage.
+- Production build still emits existing warnings from Firebase/protobuf dynamic require traces and missing Next ESLint plugin detection. These warnings did not fail `next build`.
+- `preflight` warns that deployment secrets are absent in this local runtime: `FIREBASE_SERVICE_ACCOUNT_URAI_SPATIAL`, `URAI_SPATIAL_FIREBASE_PROJECT_ID`, `URAI_SPATIAL_FIREBASE_WEB_CONFIG`.
 
 ### Blockers remaining
 
 | Incomplete tier | Blocker | Failed/not-run command | File/component involved | Exact next fix | Exact next command |
 |---|---|---|---|---|---|
-| Tier-5 full release lock | Playwright E2E has not passed on the refreshed branch. | `pnpm verify:release`, `pnpm lock:e2e` not re-run in this shell because repo clone failed with DNS resolution error. Prior report records Playwright CDN/apt HTTP 403 failures. | `scripts/check-playwright-runtime.mjs`, `tests/spatial-lock.mjs`, CI workflows | Run the refreshed branch in GitHub Actions or a local environment with GitHub + Playwright browser access. | `pnpm install --no-frozen-lockfile && pnpm verify:release && pnpm lock:e2e` |
+| Tier-5 full remote release lock | Branch-head CI/native git proof is not yet recorded after these continuation commits. | `pnpm migration:check` skipped git diff in local archive; GitHub Actions status not observed here. | `scripts/check-migration-markers.mjs`, CI workflows | Run in a complete git checkout or GitHub Actions on `tier-1-5-final-lock`. | `pnpm install --no-frozen-lockfile && pnpm verify:release && pnpm lock:e2e` |
+| Repo portability | Windows archive extraction skipped invalid/too-long backup/audit paths. | Full archive extraction on Windows skipped 1,309 entries. | Backup/audit path entries such as `*audit` | Delete or rename invalid Windows path entries in a Linux/native git checkout if Windows portability is a release requirement. | `git ls-files | node scripts/check-windows-path-portability.mjs` after adding such a check |
 
 ## 10. Environment blockers
 
-- Current shell blocker: `git clone https://github.com/LifeLoggerAI/urai-spatial.git` failed with `Could not resolve host: github.com`.
-- Prior verification blocker preserved from the existing report: Playwright Chromium download/install was blocked by HTTP 403 from the CDN/apt path.
-- App logic is not implicated by the current shell blocker; the only changes made through the GitHub connector are workflow/report changes.
+- No local `git`, `pnpm`, or global `node` executable was available at start; Codex bundled Node and a downloaded local pnpm 10.0.0 entrypoint were used.
+- The local verification path is a sanitized branch archive, not a native `.git` checkout.
+- Playwright Chromium is now installed and launchable locally; the previous browser install/launch blocker is fixed for this environment.
 
 ## 11. Architecture map summary
 
-| System | Classification |
+| System | Classification after continuation |
 |---|---|
-| Tier-1 identity/foundation | Implemented in repo; prior local gate recorded as passed; not re-run in this addendum. |
-| Tier-2 system canon | Implemented in repo; prior local gate recorded as passed; not re-run in this addendum. |
-| Tier-3 feature canon | Implemented in repo; full release blocked by E2E proof. |
-| Tier-4 implementation canon | Implemented in repo; full release blocked by E2E proof. |
-| Tier-5 operational canon | Improved in this addendum; CI now covers the final branch and aggregate release gate. |
-| Spatial runtime | Existing implementation preserved. |
-| LifeMap / Focus / Replay / Unwind | Existing current-main implementation preserved. |
-| Privacy / Consent / Data boundaries | Existing current-main implementation preserved. |
-| Firebase/backend | Existing current-main implementation preserved. |
-| CI | Repaired for final branch lock coverage. |
-| Playwright | Required for final lock; not run in this addendum. |
-| Release artifacts | This report updated; E2E artifacts still require a browser-enabled run. |
+| Tier-1 identity/foundation | Implemented, locally tested, native git/CI proof pending |
+| Tier-2 system canon | Implemented, locally tested, native git/CI proof pending |
+| Tier-3 feature canon | Implemented, locally tested with E2E route flow, native git/CI proof pending |
+| Tier-4 implementation canon | Implemented, typechecked/built locally, native git/CI proof pending |
+| Tier-5 operational canon | Implemented and locally release-verified, branch-head CI proof pending |
+| Spatial runtime | Implemented and E2E-rendered locally |
+| LifeMap / Focus / Replay / Unwind | Implemented and covered by E2E screenshots/assertions |
+| Privacy / Consent / Data licensing | Existing rules/tests passed locally through Firebase and unit gates |
+| Firebase/backend | Firestore checks and functions build/test passed locally |
+| CI | Workflows exist; branch-head run not observed in this continuation |
+| Playwright | Local install and E2E pass confirmed |
+| Release artifacts | Report updated; screenshots generated locally under `artifacts/spatial-lock` |
 
 ## 12. UI/UX and route coverage table
 
-| Route | Owner tier/system | Entrypoint | Status |
+| Route | Owner tier/system | Entrypoint | Local evidence |
 |---|---|---|---|
-| `/` | Tier-1 Spatial | `TierOneExperience mode="home"` | Existing implementation preserved; not browser-tested in addendum. |
-| `/life-map` | Tier-3 Memory/Spatial | `TierOneExperience mode="life-map"` | Existing implementation preserved; not browser-tested in addendum. |
-| `/focus` | Tier-3 Cognitive Mirror | `TierOneExperience mode="focus"` | Existing implementation preserved; not browser-tested in addendum. |
-| `/replay` | Tier-3 Storytime | `TierOneExperience mode="replay"` | Existing implementation preserved; not browser-tested in addendum. |
-| `/unwind` | Tier-3 Emotional OS | `TierOneExperience mode="unwind"` | Existing implementation preserved; not browser-tested in addendum. |
-| `/privacy`, `/terms`, `/spatial`, `/u/adamclamp` | Spatial/privacy/demo surfaces | Existing routes | Existing implementation preserved; not browser-tested in addendum. |
+| `/` | Tier-1 Spatial | `TierOneExperience mode="home"` | E2E screenshot `01-home-sky-only-desktop.png`; no console errors |
+| `/ascent` | Tier-1/Tier-3 transition | `TierOneExperience mode="ascent"` | E2E screenshot `02-ascent-desktop.png` |
+| `/life-map` | Tier-3 Memory/Spatial | `TierOneExperience mode="life-map"` | Desktop and mobile E2E screenshots; bounding-box mobile check |
+| `/focus` | Tier-3 Focus/Cognitive Mirror | `TierOneExperience mode="focus"` | E2E screenshot `04-focus-desktop.png`; action panel asserted |
+| `/replay` | Tier-3 Replay/Storytime | `TierOneExperience mode="replay"` | E2E screenshot `05-replay-desktop.png`; escape bridge readiness asserted |
+| `/unwind` | Tier-3 recovery/Emotional OS | `TierOneExperience mode="unwind"` | E2E screenshot `05b-unwind-desktop.png`; recovery guidance asserted |
+| `/admin`, `/internal`, `/demo` | Tier-5/protected demo surfaces | Existing route gates | `check:production-routes` passed locally |
 
 ## 13. Spatial interaction coverage table
 
 | Interaction | Evidence | Status |
 |---|---|---|
-| First load | Existing prior report recorded static/build gates. | Not re-run in addendum. |
-| Home to Life Map | Existing E2E/unit coverage preserved. | Not re-run in addendum. |
-| Life Map to Focus | Existing E2E/unit coverage preserved. | Not re-run in addendum. |
-| Focus to Replay | Existing E2E/unit coverage preserved. | Not re-run in addendum. |
-| Replay to Unwind | Existing E2E route coverage preserved. | Not re-run in addendum. |
-| ESC/back recovery | Existing E2E route coverage preserved. | Not re-run in addendum. |
-| Mobile viewport | Existing coverage preserved. | Not re-run in addendum. |
-| Reduced motion | Existing coverage preserved. | Not re-run in addendum. |
-| Console/hydration | Requires Playwright/browser proof. | Not re-run in addendum. |
+| First load | `pnpm lock:e2e`, `01-home-sky-only-desktop.png` | Passed locally |
+| Home to ascent | `tests/spatial-lock.mjs` direct `/ascent` route | Passed locally |
+| Life Map route | `03-lifemap-desktop.png`, `07-lifemap-mobile.png` | Passed locally |
+| Focus route | `04-focus-desktop.png` and focus action panel assertion | Passed locally |
+| Replay route | `05-replay-desktop.png` and replay stage assertion | Passed locally |
+| Replay ESC recovery | `05a-escape-recovery-focus-desktop.png` | Passed locally |
+| Unwind recovery | `05b-unwind-desktop.png` | Passed locally |
+| Console/hydration | E2E collected browser console errors | Passed locally with empty console error list |
+| Mobile viewport | 390x844 viewport and stage bounds check | Passed locally |
 
-## 14. Firebase/security coverage table
+## 14. Mobile/responsive and accessibility coverage
+
+| Area | Evidence |
+|---|---|
+| Mobile portrait | `pnpm lock:e2e` checked 390x844 LifeMap stage height and width |
+| Desktop | `pnpm lock:e2e` checked 1440x1000 route screenshots |
+| Reduced motion | Existing static/unit coverage preserved; production build passed |
+| Keyboard recovery | Replay Escape recovery asserted in E2E; LifeMap/focus tests passed |
+| Screen-reader/control labels | Replay unwind button keeps `aria-label="Unwind replay safely"`; unit contract passed |
+| Overlay/pointer traps | E2E route progression completed without stranding and without console errors |
+
+## 15. Firebase/security coverage table
 
 | Area | Evidence | Status |
 |---|---|---|
-| Firestore rules | Existing `pnpm firebase:rules:check` prior pass preserved in report. | Not re-run in addendum. |
-| Functions build/test | Existing prior pass preserved in report. | Not re-run in addendum. |
-| Admin/internal exposure | `pnpm check:production-routes` remains in launch/spatial CI workflows. | CI-protected; not re-run in addendum. |
-| Demo fallback isolation | Existing tests and rules preserved. | Not re-run in addendum. |
-| Secrets | No secrets added in addendum. | Audited through changed files. |
+| Firestore rules/boundaries | `pnpm firebase:rules:check` | Passed locally |
+| Functions build | `pnpm --filter urai-functions build` | Passed locally |
+| Functions tests | `pnpm --filter urai-functions test` | Passed locally |
+| Admin/internal exposure | `pnpm check:production-routes` | Passed locally |
+| Demo fallback isolation | Tier-1 unit tests and Firebase boundary checks | Passed locally |
+| Secrets | No secrets added; preflight warns local deployment secrets are absent | Safe local warning |
 
-## 15. CI coverage table
+## 16. CI coverage table
 
-| Required gate | CI status after addendum |
+| Required gate | Status |
 |---|---|
-| install | Present |
-| lockfile/source integrity | Present |
-| production route exposure | Present |
-| preflight | Present |
-| canon/LOCS checks | Present |
-| Tier-1 through Tier-5 governance checks | Present in launch workflow and spatial CI workspace/tier1 jobs |
-| Tier runner gates | Present in launch workflow |
-| Firebase rules/config check | Present |
-| build | Present through tier1 job and release lock path |
-| Playwright install | Present |
-| E2E lock | Present |
-| full release aggregate | Present in launch workflow via `pnpm verify:release` |
-| artifact upload | Present |
-| final branch push protection | Present for `tier-1-5-final-lock` |
+| install | Present in workflows; local install passed |
+| lockfile/source integrity | Present; local checks passed |
+| production route exposure | Present; local check passed |
+| preflight | Present; local command passed with missing-secret warnings |
+| canon/LOCS checks | Present; local checks passed |
+| Tier-1 through Tier-5 governance | Present; local tier checks passed |
+| Firebase rules/config | Present; local rule check passed |
+| unit/LifeMap tests | Present; local tests passed |
+| production build | Present; local build passed |
+| Playwright install/runtime | Present; local runtime ensured |
+| E2E lock | Present; local `lock:e2e` passed |
+| artifact upload | Present in CI workflows; local screenshots generated |
 
-## 16. E2E coverage table
+## 17. E2E coverage table
 
-| Requirement | Script/workflow coverage | Runtime status |
-|---|---|---|
-| App loads and critical routes render | `tests/spatial-lock.mjs`, launch/spatial workflows | Not run in addendum. |
-| `/`, `/life-map`, `/focus`, `/replay`, `/unwind` | Existing route literals/checks | Not run in addendum. |
-| Home → Life Map → Focus → Replay → Unwind/back | Existing E2E route coverage | Not run in addendum. |
-| No console/hydration errors | Browser console collection in E2E | Not run in addendum. |
-| Mobile viewport | Existing E2E coverage | Not run in addendum. |
-| Reduced motion | Existing E2E/static coverage | Not run in addendum. |
-| Internal/debug exposure | Static gate remains in CI | Not run in addendum. |
+| Requirement | Evidence |
+|---|---|
+| App loads | `pnpm lock:e2e` passed |
+| Critical routes render | `/`, `/ascent`, `/life-map`, `/focus`, `/replay`, `/unwind` asserted |
+| Spatial flow works | Direct route flow, replay Escape recovery, unwind recovery asserted |
+| No console errors | `visual-audit-report.json` has `"console": []` |
+| Mobile viewport path | `07-lifemap-mobile.png` and bounding-box assertion |
+| Route guards/internal exposure | `check:production-routes` passed |
+| No user-stranding state | E2E reached final mobile LifeMap state and closed browser |
 
-## 17. Command evidence table
+## 18. Command evidence table
 
 | Command | Result |
 |---|---:|
-| `git clone https://github.com/LifeLoggerAI/urai-spatial.git /mnt/data/urai-spatial` | FAIL: `Could not resolve host: github.com` |
-| GitHub connector `get_repo` | PASS: repo accessible with admin/push permissions |
-| GitHub connector `search_branches` for `tier-1-5-final-lock` | PASS: branch existed |
-| GitHub connector `compare_commits main..tier-1-5-final-lock` before refresh | PASS: branch was 2 ahead / 733 behind |
-| GitHub connector `update_ref` to current `main` | PASS |
-| GitHub connector `update_file .github/workflows/urai-launch.yml` | PASS: commit `6f518a0b1570f107eea234600663c97d2c9b0e02` |
-| GitHub connector `update_file .github/workflows/urai-spatial-ci.yml` | PASS: commit `ba8e696823b4f59d3f143a8e882596fe64c830de` |
-| GitHub connector `compare_commits main..tier-1-5-final-lock` after updates | PASS: branch is 2 ahead / 0 behind |
-| `pnpm install --no-frozen-lockfile` | NOT RUN in addendum: repo clone unavailable in shell |
-| `pnpm verify:release` | NOT RUN in addendum: repo clone unavailable in shell |
-| `pnpm lock:e2e` | NOT RUN in addendum: repo clone unavailable in shell |
+| `pnpm install --no-frozen-lockfile --reporter append-only` | PASS |
+| `pnpm playwright:ensure` | PASS |
+| `pnpm lock:e2e` | PASS |
+| `pnpm verify:release` | PASS |
+| `pnpm check:lockfile` | PASS |
+| `pnpm check:source-integrity` | PASS |
+| `pnpm check:production-routes` | PASS |
+| `pnpm preflight` | PASS with local missing-secret warnings |
+| `pnpm canon:check` | PASS |
+| `pnpm canon:lock` | PASS |
+| `pnpm locs:check` | PASS |
+| `pnpm tier1:check` | PASS |
+| `pnpm tier1:drift` | PASS |
+| `pnpm home:invariant` | PASS |
+| `pnpm firebase:rules:check` | PASS |
+| `pnpm test:canon` | PASS |
+| `pnpm --filter urai-tier1 typecheck` | PASS |
+| `pnpm --filter urai-tier1 test` | PASS, 61/61 |
+| `pnpm --filter urai-tier1 test:lifemap` | PASS |
+| `pnpm --filter urai-functions build` | PASS |
+| `pnpm --filter urai-functions test` | PASS |
+| `pnpm tier2:check` | PASS |
+| `pnpm tier3:check` | PASS |
+| `pnpm tier4:check` | PASS |
+| `pnpm tier5:check` | PASS |
+| `pnpm urai:tier1` | PASS |
+| `pnpm urai:tier2` | PASS |
+| `pnpm urai:tier3` | PASS |
+| `pnpm urai:tier4` | PASS |
+| `pnpm urai:tier5` | PASS |
 
-## 18. Exact commands run
+## 19. Exact commands run
 
-Shell command attempted:
-
-```bash
-rm -rf /mnt/data/urai-spatial && git clone https://github.com/LifeLoggerAI/urai-spatial.git /mnt/data/urai-spatial && cd /mnt/data/urai-spatial && pwd && git branch --show-current && git status --short && git log --oneline -5 && ls -la && find . -maxdepth 3 -type f | sort | sed -n '1,240p' && find . -maxdepth 4 -type d | sort | sed -n '1,240p'
+```powershell
+pnpm install --no-frozen-lockfile --reporter append-only
+pnpm playwright:ensure
+pnpm lock:e2e
+pnpm verify:release
+pnpm check:lockfile
+pnpm check:source-integrity
+pnpm check:production-routes
+pnpm preflight
+pnpm canon:check
+pnpm canon:lock
+pnpm locs:check
+pnpm tier1:check
+pnpm tier1:drift
+pnpm home:invariant
+pnpm firebase:rules:check
+pnpm test:canon
+pnpm --filter urai-tier1 typecheck
+pnpm --filter urai-tier1 test
+pnpm --filter urai-tier1 test:lifemap
+pnpm --filter urai-functions build
+pnpm --filter urai-functions test
+pnpm tier2:check
+pnpm tier3:check
+pnpm tier4:check
+pnpm tier5:check
+pnpm urai:tier1
+pnpm urai:tier2
+pnpm urai:tier3
+pnpm urai:tier4
+pnpm urai:tier5
 ```
 
-Result: failed at clone with `Could not resolve host: github.com`.
+Commands were executed through Codex bundled Node plus the local pnpm 10.0.0 entrypoint because global `pnpm` was unavailable.
 
-GitHub connector actions used for implementation/audit:
+## 20. Tier evidence
 
-- `get_repo LifeLoggerAI/urai-spatial`
-- `search_branches tier-1-5-final-lock`
-- `fetch_file package.json`, `README.md`, `REPO_PURPOSE.md`, workflows, and this report
-- `compare_commits main..tier-1-5-final-lock`
-- `update_ref tier-1-5-final-lock -> 6158cd35845a9491ed854f144d451f8fecca5601`
-- `update_file .github/workflows/urai-launch.yml`
-- `update_file .github/workflows/urai-spatial-ci.yml`
-- `update_file audit/tier-lock/TIER_1_5_FINAL_LOCK_REPORT.md`
+| Tier | Evidence |
+|---|---|
+| Tier-1 | Source integrity, production routes, preflight, canon, LOCS, Tier-1 check, drift, home invariant, Firebase boundary, typecheck, unit, build-backed `urai:tier1` all passed locally |
+| Tier-2 | `tier2:check` and `urai:tier2` passed after Tier-1 regression |
+| Tier-3 | `tier3:check`, `urai:tier3`, LifeMap tests, replay route contract test, and E2E spatial flow passed |
+| Tier-4 | `tier4:check`, `urai:tier4`, typecheck, production build, Firebase/functions checks passed |
+| Tier-5 | `tier5:check`, `urai:tier5`, `verify:release`, and `lock:e2e` passed locally |
 
-## 19. Tier evidence
+## 21. Regression check evidence
 
-- Tier-1 evidence: existing repo report records source integrity, production routes, preflight, canon, LOCS, Tier-1 check, drift, home invariant, Firebase boundary, typecheck, test, build, and `urai:tier1` passing before E2E. This addendum did not alter Tier-1 source files.
-- Tier-2 evidence: existing repo report records Tier-2 checks passing. This addendum did not alter Tier-2 source files.
-- Tier-3 evidence: existing repo report records Tier-3 checks, app tests, LifeMap tests, and route wiring passing. This addendum did not alter Tier-3 source files.
-- Tier-4 evidence: existing repo report records Tier-4 checks, typecheck, production build, Firebase checks, and functions checks passing. This addendum did not alter Tier-4 source files.
-- Tier-5 evidence: this addendum repaired final-branch CI coverage but did not complete browser E2E proof.
+Post-fix regression sweep passed every command listed in section 18. `pnpm verify:release` also passed after static checks, typecheck, production build, Playwright runtime ensure, and E2E.
 
-## 20. Regression check evidence
+## 22. Final git status at report write time
 
-No shell-level regression checks could be re-run in this environment because cloning from GitHub failed at DNS resolution. The addendum changes are restricted to GitHub workflow YAML and the report. Required regression checks are now CI-runnable on `tier-1-5-final-lock`.
+Local shell has no native git checkout. GitHub connector evidence:
 
-## 21. Final git status at report write time
+- `tier-1-5-final-lock` was fast-forwarded to `af044ef471d3c5a0b46d9300d07499902ebfb756`.
+- Continuation files are applied to `tier-1-5-final-lock` through GitHub contents API after local verification.
+- Final branch compare and final commit hash are recorded in the chat final response after the report update commit is created.
 
-GitHub compare state after addendum: `tier-1-5-final-lock` is 2 commits ahead of `main` and 0 commits behind. Changed files relative to `main`:
+## 23. Final commit message
 
-- `.github/workflows/urai-launch.yml`
-- `.github/workflows/urai-spatial-ci.yml`
-- `audit/tier-lock/TIER_1_5_FINAL_LOCK_REPORT.md`
+Primary continuation commit message used through the contents API:
 
-## 22. Final commit message
+`lock: harden final tier e2e verification`
 
-Latest implementation commit before this report update:
+Report update commit message:
 
-`lock: protect final tier branch in spatial ci`
+`audit: update tier 1-5 final lock evidence`
 
-This report update commit message:
+## 24. Exact next command
 
-`audit: refresh final lock branch evidence`
-
-## 23. Final commit hash
-
-Latest branch commit after CI workflow updates: `ba8e696823b4f59d3f143a8e882596fe64c830de`.
-
-The report update commit hash is produced by the GitHub connector after this file write.
-
-## 24. Exact next command for future contributor
-
-Run this on `tier-1-5-final-lock` in GitHub Actions or any local environment with GitHub access and Playwright browser access:
+Run this in a complete native git checkout or GitHub Actions on `tier-1-5-final-lock`:
 
 ```bash
 pnpm install --no-frozen-lockfile && pnpm verify:release && pnpm lock:e2e
 ```
 
-If that passes, then run or confirm the CI launch workflow on `tier-1-5-final-lock` before merging:
-
-```bash
-pnpm check:source-integrity && pnpm check:production-routes && pnpm preflight && pnpm tier1:check && pnpm tier2:check && pnpm tier3:check && pnpm tier4:check && pnpm tier5:check && pnpm verify:release
-```
-
 ## 25. Safe to expand?
 
-No. It is not safe to proceed to expansion until `pnpm verify:release` and `pnpm lock:e2e` pass on the refreshed `tier-1-5-final-lock` branch.
+No. Expansion beyond Tier-5 is not safe until the updated branch has native git/CI evidence for the same passing gates recorded here and the skipped Windows-invalid archive path issue is either remediated or explicitly accepted as non-release-blocking for the target deployment environment.
