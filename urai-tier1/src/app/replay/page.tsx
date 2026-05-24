@@ -1,5 +1,6 @@
 import { TierOneExperience } from '../../spatial/layout/TierOneExperience'
 import CinematicReplayClient from './CinematicReplayClient'
+import { ReplayUnwindButton } from './ReplayUnwindButton'
 
 export default function ReplayPage() {
   return (
@@ -14,6 +15,7 @@ export default function ReplayPage() {
         Replay Stream
       </section>
       <CinematicReplayClient />
+      <ReplayUnwindButton />
     </>
   )
 }
