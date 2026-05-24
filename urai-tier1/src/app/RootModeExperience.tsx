@@ -9,16 +9,16 @@ function resolveRouteMode(rawMode: string | null): TierOneExperienceMode {
   return rawMode && allowedModes.has(rawMode as TierOneExperienceMode) ? (rawMode as TierOneExperienceMode) : "home";
 }
 
-function modeFromBrowserUrl(): TierOneExperienceMode {
-  if (typeof window === "undefined") return "home";
+function modeFromBrowserUrl(fallbackMode: TierOneExperienceMode): TierOneExperienceMode {
+  if (typeof window === "undefined") return fallbackMode;
   return resolveRouteMode(new URLSearchParams(window.location.search).get("mode"));
 }
 
-export function RootModeExperience() {
-  const [mode, setMode] = useState<TierOneExperienceMode>(() => modeFromBrowserUrl());
+export function RootModeExperience({ initialMode = "home" }: { initialMode?: TierOneExperienceMode }) {
+  const [mode, setMode] = useState<TierOneExperienceMode>(initialMode);
 
   useEffect(() => {
-    const syncMode = () => setMode(modeFromBrowserUrl());
+    const syncMode = () => setMode(modeFromBrowserUrl(initialMode));
     syncMode();
     const interval = window.setInterval(syncMode, 100);
     window.addEventListener("popstate", syncMode);
@@ -30,7 +30,7 @@ export function RootModeExperience() {
       window.removeEventListener("hashchange", syncMode);
       window.removeEventListener("urai:sync-route-mode", syncMode);
     };
-  }, []);
+  }, [initialMode]);
 
   return <TierOneExperience mode={mode} />;
 }
