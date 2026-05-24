@@ -36,7 +36,10 @@ function packageDirsFromWorkspace() {
       const pattern = line.slice(2).replaceAll('"', '').replaceAll("'", '').trim()
       if (!pattern || pattern.endsWith('/*')) continue
       const candidate = resolve(root, pattern, 'package.json')
-      if (existsSync(candidate)) dirs.add(relative(root, dirname(candidate)) || '.')
+      if (existsSync(candidate)) {
+        const packageDir = relative(root, dirname(candidate)).replaceAll('\\', '/') || '.'
+        dirs.add(packageDir)
+      }
     }
   }
 
