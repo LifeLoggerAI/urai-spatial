@@ -11,7 +11,7 @@ import {
 } from '../scripts/playwright-runtime-helpers.mjs';
 
 const BASE_URL = process.env.URAI_SPATIAL_BASE_URL || 'http://localhost:3000';
-const HOME_PATH = process.env.URAI_SPATIAL_HOME_PATH || '/';
+const HOME_PATH = process.env.URAI_SPATIAL_HOME_PATH || '/home';
 const USE_EXISTING = process.env.URAI_SPATIAL_USE_EXISTING_SERVER === 'true';
 const ARTIFACT_DIR = process.env.URAI_SPATIAL_ARTIFACT_DIR || 'artifacts/spatial-lock';
 const DEMO_MANIFEST_ID = 'seed-memory-bloom';
