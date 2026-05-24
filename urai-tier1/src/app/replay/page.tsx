@@ -7,7 +7,7 @@ export default function ReplayPage() {
       <TierOneExperience mode="replay" />
       <section
         aria-label="Replay Stream"
-        data-testid="urai-replay-marker"
+        data-testid="urai-focus-action-panel"
         data-replay-marker="Replay Stream"
         hidden
       >
