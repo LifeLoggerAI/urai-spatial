@@ -2,7 +2,7 @@
 
 Spatial runtime consumes jobs/content/asset outputs and must preserve canonical chain compatibility.
 
-Launch chain:
+Deferred launch chain contract for future provider-gated compatibility (not live studio export):
 `UrAi -> urai-jobs -> urai-content -> asset-factory -> urai-spatial -> urai-studio -> B2Bportal`
 
 See `URAI_ECOSYSTEM_SCHEMA_V1.json` for shared entities and field names.
