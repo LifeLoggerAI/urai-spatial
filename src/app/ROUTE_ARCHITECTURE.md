@@ -6,9 +6,9 @@
 - `/` is the single canonical spatial entry route and is owned by `urai-tier1/src/app/page.tsx`.
 - Root-level `src/app` is not a production runtime surface. Keep this note aligned with `CANONICAL_RUNTIME.md` and do not add `page.tsx`, `layout.tsx`, or `route.ts` files here.
 
-## Alias Routes (Intentional Redirects)
+## Canonical Mode Routes
 
-The following routes are maintained only as compatibility aliases and must redirect to `/`:
+The following routes are maintained as canonical mode entries and must render through the shared `TierOneExperience` shell:
 
 - `/home`
 - `/life-map`
@@ -16,7 +16,7 @@ The following routes are maintained only as compatibility aliases and must redir
 - `/ascent`
 - `/unwind`
 
-These aliases live under `urai-tier1/src/app` and should not mount independent scene systems outside the canonical `TierOneExperience` shell. This prevents route drift where multiple pages evolve different rendering trees.
+These mode routes live under `urai-tier1/src/app` and should not mount independent scene systems outside the canonical `TierOneExperience` shell. This prevents route drift where multiple pages evolve different rendering trees.
 
 ## Ownership Rule
 
