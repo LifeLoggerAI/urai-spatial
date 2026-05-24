@@ -15,11 +15,10 @@ function modeFromBrowserUrl(fallbackMode: TierOneExperienceMode): TierOneExperie
 }
 
 export function RootModeExperience({ initialMode = "home" }: { initialMode?: TierOneExperienceMode }) {
-  const [mode, setMode] = useState<TierOneExperienceMode>(initialMode);
+  const [mode, setMode] = useState<TierOneExperienceMode>(() => initialMode);
 
   useEffect(() => {
     const syncMode = () => setMode(modeFromBrowserUrl(initialMode));
-    syncMode();
     const interval = window.setInterval(syncMode, 100);
     window.addEventListener("popstate", syncMode);
     window.addEventListener("hashchange", syncMode);
