@@ -36,7 +36,8 @@ export function ReplayUnwindButton() {
   return (
     <button
       type="button"
-      data-testid="replay-unwind-route-action"
+      data-testid="replay-unwind-button"
+      data-route-action="replay-unwind-route-action"
       onClick={() => router.push('/unwind')}
       style={{
         position: 'fixed',
