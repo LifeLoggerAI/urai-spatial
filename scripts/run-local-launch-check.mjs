@@ -14,6 +14,7 @@ const launchEnv = {
 const browserE2eEnv = {
   ...launchEnv,
   URAI_SPATIAL_BASE_URL: host,
+  URAI_SPATIAL_HOME_PATH: process.env.URAI_SPATIAL_HOME_PATH ?? '/home',
   URAI_SPATIAL_USE_EXISTING_SERVER: 'true',
   URAI_SPATIAL_ARTIFACT_DIR: process.env.URAI_SPATIAL_ARTIFACT_DIR ?? 'artifacts/local-launch-spatial-lock',
 }
