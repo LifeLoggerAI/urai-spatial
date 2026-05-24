@@ -12,6 +12,13 @@ export function commandExists(command) {
   return result.status === 0;
 }
 
+function expandHomePath(input) {
+  if (!input) return input;
+  if (input === '~') return homedir();
+  if (input.startsWith('~/')) return path.join(homedir(), input.slice(2));
+  return input;
+}
+
 export function prependLdLibraryPath(libDir) {
   if (!libDir || !existsSync(libDir)) return false;
   const current = process.env.LD_LIBRARY_PATH || '';
@@ -130,7 +137,7 @@ export function addPortableBrowserLibraries() {
 }
 
 export function findFullChromiumExecutable() {
-  const browsersDir = process.env.PLAYWRIGHT_BROWSERS_PATH || path.join(homedir(), '.cache', 'ms-playwright');
+  const browsersDir = expandHomePath(process.env.PLAYWRIGHT_BROWSERS_PATH) || path.join(homedir(), '.cache', 'ms-playwright');
   if (!existsSync(browsersDir)) return null;
 
   const entries = readdirSync(browsersDir, { withFileTypes: true })
@@ -155,11 +162,13 @@ export function findFullChromiumExecutable() {
 }
 
 export function chromiumLaunchOptions() {
-  const executablePath = process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH || findFullChromiumExecutable();
+  const configuredPath = expandHomePath(process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH);
+  const executablePath = configuredPath || findFullChromiumExecutable();
   return executablePath ? { executablePath } : {};
 }
 
 export function chromiumLaunchOptionsLiteral() {
-  const executablePath = process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH || findFullChromiumExecutable();
+  const configuredPath = expandHomePath(process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH);
+  const executablePath = configuredPath || findFullChromiumExecutable();
   return executablePath ? `{ headless: true, executablePath: ${JSON.stringify(executablePath)} }` : '{ headless: true }';
 }
