@@ -1,4 +1,6 @@
 import { spawnSync } from 'node:child_process';
+import fs from 'node:fs';
+import path from 'node:path';
 import process from 'node:process';
 import {
   addPortableBrowserLibraries,
@@ -14,9 +16,26 @@ const IS_ROOT = typeof process.getuid === 'function' ? process.getuid() === 0 : 
 function run(command, args, options = {}) {
   return spawnSync(command, args, {
     stdio: options.stdio ?? 'inherit',
-    shell: process.platform === 'win32',
+    shell: options.shell ?? false,
     ...options,
   });
+}
+
+function pnpmInvocation(args) {
+  const candidates = [
+    process.env.npm_execpath && /pnpm/i.test(process.env.npm_execpath) ? process.env.npm_execpath : null,
+    path.join(process.cwd(), 'node_modules', 'pnpm', 'bin', 'pnpm.cjs'),
+    path.join(process.cwd(), 'node_modules', '.pnpm', 'pnpm@10.0.0', 'node_modules', 'pnpm', 'bin', 'pnpm.cjs'),
+  ].filter(Boolean);
+
+  const entrypoint = candidates.find((candidate) => fs.existsSync(candidate));
+  if (entrypoint) return { command: process.execPath, args: [entrypoint, ...args] };
+  return { command: 'pnpm', args };
+}
+
+function runPnpm(args, options = {}) {
+  const pnpm = pnpmInvocation(args);
+  return run(pnpm.command, pnpm.args, options);
 }
 
 function canAttemptSystemInstall() {
@@ -26,18 +45,18 @@ function canAttemptSystemInstall() {
 }
 
 function probeChromium() {
-  return spawnSync('pnpm', ['--filter', 'urai-tier1', 'exec', 'node', '-e', `
-    const { chromium } = require('playwright');
-    (async () => {
+  return spawnSync(process.execPath, ['--input-type=module', '-e', `
+    import { chromium } from 'playwright';
+    try {
       const browser = await chromium.launch(${chromiumLaunchOptionsLiteral()});
       await browser.close();
-    })().catch((error) => {
+    } catch (error) {
       console.error(error && error.stack ? error.stack : error);
       process.exit(1);
-    });
+    }
   `], {
     stdio: 'pipe',
-    shell: process.platform === 'win32',
+    shell: false,
     encoding: 'utf8',
     env: process.env,
   });
@@ -74,14 +93,15 @@ function printHelp(probe, addedPortableLibs = []) {
 
 function maybeInstall() {
   if (!AUTO_INSTALL) return false;
-  if (!IS_LINUX) return false;
 
   const hasChromium = Boolean(findFullChromiumExecutable());
   if (!hasChromium) {
     console.log('[URAI Spatial] Installing Playwright Chromium...');
-    const installBrowser = run('pnpm', ['--filter', 'urai-tier1', 'exec', 'playwright', 'install', 'chromium']);
+    const installBrowser = runPnpm(['--filter', 'urai-tier1', 'exec', 'playwright', 'install', 'chromium']);
     if (installBrowser.status !== 0 && !findFullChromiumExecutable()) return false;
   }
+
+  if (!IS_LINUX) return true;
 
   if (!canAttemptSystemInstall()) {
     console.warn('[URAI Spatial] Skipping install-deps because this process is not root and sudo is unavailable.');
@@ -89,7 +109,7 @@ function maybeInstall() {
   }
 
   console.log('[URAI Spatial] Installing Playwright Linux runtime dependencies...');
-  const installDeps = run('pnpm', ['--filter', 'urai-tier1', 'exec', 'playwright', 'install-deps', 'chromium']);
+  const installDeps = runPnpm(['--filter', 'urai-tier1', 'exec', 'playwright', 'install-deps', 'chromium']);
   return installDeps.status === 0;
 }
 
