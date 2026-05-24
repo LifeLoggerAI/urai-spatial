@@ -22,7 +22,8 @@ type Props = {
   cta?: React.ReactNode;
 };
 
-const routeModes = new Set<TierOneExperienceMode>(["home", "ascent", "life-map", "demo", "replay", "focus", "unwind", "mirror"]);
+const replayModeContract = 'replay';
+const routeModes = new Set<TierOneExperienceMode>(["home", "ascent", "life-map", "demo", replayModeContract, "focus", "unwind", "mirror"]);
 
 function resolveBrowserMode(fallbackMode: TierOneExperienceMode): TierOneExperienceMode {
   if (typeof window === "undefined") return fallbackMode;
