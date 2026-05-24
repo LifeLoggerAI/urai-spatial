@@ -98,6 +98,7 @@ export function ReplayTimeline({
 
       <div style={{ position: 'relative', marginTop: 12, paddingBottom: 22 }}>
         <input
+          suppressHydrationWarning
           type="range"
           min={0}
           max={safeDuration}
