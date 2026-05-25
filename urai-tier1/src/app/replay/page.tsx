@@ -1,5 +1,5 @@
-import UraiV1Experience from "@/components/urai/UraiV1Experience";
+import { TierOneExperience } from '@/spatial/layout/TierOneExperience'
 
 export default function ReplayPage() {
-  return <UraiV1Experience mode="replay" />;
+  return <TierOneExperience mode="replay" />
 }
