@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { FormEvent, useEffect, useMemo, useState } from 'react'
-import { demoCouncilMembers, demoMemoryStars, demoPassportStatus, demoPrivacyPrinciples, demoReplayScenes, type DemoMemoryStar } from '@/lib/urai-demo-data'
+import { demoCouncilMembers, demoMemoryStars, demoPassportStatus, demoPrivacyPrinciples, demoReplayScenes } from '@/lib/urai-demo-data'
 
 type UraiV1Mode = 'home' | 'life-map' | 'replay' | 'demo' | 'privacy'
 
@@ -43,7 +43,7 @@ function FloatingMemoryStars() {
 
 function UraiShell({ children, profileLabel, privacyNotice }: { children: React.ReactNode; profileLabel?: string; privacyNotice?: boolean }) {
   return (
-    <main className="urai-v1-shell">
+    <main className="urai-v1-shell urai-home-shell" data-urai-home-spatial-shell="true">
       <div className="urai-cosmic-bg" />
       <FloatingMemoryStars />
       <div className="urai-ground-horizon" />
@@ -167,7 +167,7 @@ function MemoryGalaxy() {
         <h1>Memory Galaxy</h1>
         <span>15 memory stars • 8 timeline constellations • demo field</span>
       </section>
-      <section className="urai-life-map-layout">
+      <section className="urai-life-map-layout urai-spatial-stage lifemap-starfield">
         <GlassPanel className="urai-selected-memory">
           <p className="urai-kicker">Selected star</p>
           <h2>{selected.title}</h2>
