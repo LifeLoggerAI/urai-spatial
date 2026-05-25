@@ -11,6 +11,7 @@ import '@/scene/cinematicFocusTier5.css'
 import '@/spatial/memory/memoryStarArtifact.css'
 import './spatial-polish.css'
 import './spatial-audit-hardening.css'
+import './urai-v1.css'
 
 export const metadata: Metadata = {
   title: 'URAI Spatial',
