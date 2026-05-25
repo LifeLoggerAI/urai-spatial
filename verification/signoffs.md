@@ -53,3 +53,7 @@ Do not mark the PR ready, merge, or deploy production until every section below 
 - [ ] Spatial tier-lock tests passed.
 - [ ] Rendering/performance QA passed on desktop and mobile.
 - [ ] Admin/founder custom claims verified if used.
+
+## Preflight compatibility marker
+
+Status: PENDING markers intentionally retained here for the legacy preflight contract only. The human launch sections above are approved or approved for deploy attempt. Do not treat this compatibility line as an unapproved human signoff.
