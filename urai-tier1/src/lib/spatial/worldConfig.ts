@@ -17,7 +17,7 @@ export const SPATIAL_WORLD_CONFIG = {
   sceneName: "Spatial Home",
   sceneSubtitle: "Sky View",
   primaryCta: "Enter Life Map",
-  publicPreviewBadge: "PUBLIC-SAFE PREVIEW · SAMPLE DATA",
+  publicPreviewBadge: "URAI V1 · LOCAL DEV",
   maxDpr: 1.5,
   mobileParticleBudget: 32,
   desktopParticleBudget: 96,
