@@ -1,5 +1,5 @@
-import UraiV1Experience from '@/components/urai/UraiV1Experience'
+import { TierOneExperience } from '@/spatial/layout/TierOneExperience'
 
 export default function HomeRoute() {
-  return <UraiV1Experience mode="home" />
+  return <TierOneExperience mode="home" />
 }
