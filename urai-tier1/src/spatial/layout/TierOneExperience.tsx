@@ -135,7 +135,7 @@ export function TierOneExperience({ mode = "home", title, eyebrow, description, 
   const cameraPreset = URAI_CAMERA_PRESETS[worldMode];
 
   return (
-    <SpatialShell mode={shellModeFor(routeMode)} sourceBadge="demo">
+    <SpatialShell mode={shellModeFor(routeMode)} sourceBadge="local">
       <div
         data-testid="urai-spatial-world-root"
         data-mode={mode}
