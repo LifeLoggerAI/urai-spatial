@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>URAI</title>
+  <style>
+    html,body{margin:0;min-height:100%;background:#030712;color:white;font-family:Inter,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
+    body{display:grid;place-items:center;overflow:hidden}
+    body:before{content:"";position:fixed;inset:-20%;background:
+      radial-gradient(circle at 50% 20%,rgba(103,232,249,.28),transparent 28%),
+      radial-gradient(circle at 20% 70%,rgba(34,197,94,.22),transparent 34%),
+      radial-gradient(circle at 80% 35%,rgba(168,85,247,.28),transparent 34%),
+      linear-gradient(180deg,#071126,#030712)}
+    main{position:relative;width:min(880px,calc(100% - 40px));padding:42px;border:1px solid rgba(186,230,253,.2);border-radius:32px;background:rgba(2,6,23,.66);box-shadow:0 30px 120px rgba(0,0,0,.45);backdrop-filter:blur(18px)}
+    p.kicker{margin:0 0 12px;color:#67e8f9;font-size:12px;letter-spacing:.22em;text-transform:uppercase;font-weight:800}
+    h1{margin:0;font-size:clamp(48px,9vw,104px);line-height:.86;letter-spacing:-.08em}
+    p{color:rgba(240,249,255,.78);font-size:18px;line-height:1.6;max-width:680px}
+    .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-top:26px}
+    .card{border:1px solid rgba(186,230,253,.16);border-radius:18px;padding:16px;background:rgba(15,23,42,.58)}
+    .card strong{display:block}
+    .card span{display:block;margin-top:6px;color:rgba(240,249,255,.62);font-size:13px}
+  </style>
+</head>
+<body>
+  <main>
+    <p class="kicker">URAI FULL-SYSTEM LAUNCH V1.0</p>
+    <h1>Your life becomes a living map.</h1>
+    <p>URAI is live in launch mode. The full spatial field, Memory Galaxy, Replay, Orb Companion, Council, Privacy, and Passport foundation are being published from the validated build.</p>
+    <div class="grid">
+      <div class="card"><strong>Home Field</strong><span>Orb + ground layer online</span></div>
+      <div class="card"><strong>Memory Galaxy</strong><span>Life Map activation ready</span></div>
+      <div class="card"><strong>Symbolic Replay</strong><span>Timeline replay prepared</span></div>
+      <div class="card"><strong>Private by default</strong><span>Seeded public data only</span></div>
+    </div>
+  </main>
+</body>
+</html>
