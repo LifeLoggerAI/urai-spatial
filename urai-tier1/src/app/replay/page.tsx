@@ -1,21 +1,5 @@
-import { TierOneExperience } from '../../spatial/layout/TierOneExperience'
-import CinematicReplayClient from './CinematicReplayClient'
-import { ReplayUnwindButton } from './ReplayUnwindButton'
+import UraiV1Experience from "@/components/urai/UraiV1Experience";
 
 export default function ReplayPage() {
-  return (
-    <>
-      <TierOneExperience mode="replay" />
-      <section
-        aria-label="Replay Stream"
-        data-testid="urai-focus-action-panel"
-        data-replay-marker="Replay Stream"
-        hidden
-      >
-        Replay Stream
-      </section>
-      <CinematicReplayClient />
-      <ReplayUnwindButton />
-    </>
-  )
+  return <UraiV1Experience mode="replay" />;
 }
