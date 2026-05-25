@@ -1,5 +1,5 @@
-import SpatialWorldCanvas from "@/spatial/components/world/SpatialWorldCanvas";
+import UraiV1Experience from '@/components/urai/UraiV1Experience'
 
 export default function HomePage() {
-  return <SpatialWorldCanvas mode="home" />;
+  return <UraiV1Experience mode="home" />
 }
