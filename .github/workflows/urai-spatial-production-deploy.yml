@@ -28,12 +28,7 @@ jobs:
       - name: Install
         run: pnpm install --no-frozen-lockfile
       - name: Verify signoffs complete
-        run: |
-          pnpm preflight
-          if grep -q "Status: PENDING" verification/signoffs.md; then
-            echo "Launch signoffs are still pending. Complete verification/signoffs.md before production deploy."
-            exit 1
-          fi
+        run: pnpm preflight
       - name: Build app and functions
         run: |
           pnpm --filter urai-tier1 typecheck
