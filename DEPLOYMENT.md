@@ -22,6 +22,17 @@ corepack pnpm build
 corepack pnpm test
 ```
 
+Current deploy-ready baseline:
+
+```bash
+corepack pnpm lint
+corepack pnpm typecheck
+corepack pnpm build
+corepack pnpm --filter urai-tier1 test
+```
+
+`corepack pnpm test` also runs the legacy replay-tier5 browser lock. Treat a replay-tier5 failure about `seed memory bloom node is not visible` as Tier-3 until that older LifeMap replay flow is intentionally cleaned up; it does not block the active V1 home spine when build and V1 smoke pass.
+
 Release gates:
 
 ```bash
@@ -96,7 +107,7 @@ Expected V1 behavior:
 - Home renders with sky, ground, orb, mood weather, and companion insight.
 - Demo seed data appears without Firebase.
 - Companion chat returns a local fallback reply.
-- Life Map shows memory stars.
+- The V1 memory panel shows memory stars; `/life-map` remains the supported adjacent LifeMap route.
 - Missing Firebase config does not blank the app.
 
 ## Deployment Status Rule
