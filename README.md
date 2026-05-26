@@ -1,105 +1,130 @@
 # URAI Spatial
 
-URAI Spatial is the immersive spatial interface layer of URAI: a cinematic, passive, privacy-aware web shell for Home, LifeMap, body/avatar zoom, sky, ground/world, orb companion navigation, fallback panels, replay, and future spatial expansion.
+URAI-Spatial V1 is the deployable demo spine for URAI: a calm magical home screen that renders without production data, shows demo mood weather, presents a companion reflection, and lets the user open companion chat or the symbolic memory map.
 
-See `REPO_PURPOSE.md` for this repository's source-of-truth boundary, ownership rules, and confusion guards. See `LIVE_RELEASE.md` for the gated live-release and Firebase publish path.
+The V1 scope is intentionally narrow. It proves the loop: open URAI, see the living home, read the current mood/reflection, open chat, open memory stars, and deploy.
 
-The current release-lock branch keeps the existing spatial engine intact and adds a standalone release shell with stable smoke/E2E markers, typed fallback APIs, system contract routes, and launch documentation.
-
-## App root
+## App Root
 
 - Monorepo root: `.`
 - App root: `urai-tier1`
 - Package manager: `pnpm@10.0.0`
-- Framework: Next.js / React / TypeScript
-- Spatial stack: React Three Fiber, Three.js, deterministic fallback UI layers
+- Framework: Next.js App Router, React, TypeScript
 - Runtime target: Node 22+
+- Deploy target: Firebase Hosting / App Hosting, configured by `firebase.json`
 
-## Local setup
+## V1 Demo Loop
 
-Use pnpm for this monorepo. npm is tolerated only for workstation bootstrap compatibility; pnpm is the locked installer and script runner.
+1. Open `/`, `/home`, or `/spatial`.
+2. The URAI home renders with sky, ground, orb, mood weather, and seeded demo state.
+3. The companion insight appears.
+4. Open companion chat from the orb or CTA.
+5. Open `/life-map` or the memory map panel to see memory stars.
+6. Build and deploy through the documented pnpm/Firebase path.
+
+The app works in demo mode when Firebase is not configured. If valid Firebase public env vars and readable user-scoped documents exist, V1 can read:
+
+- `users/{userId}/moodStates/current`
+- `users/{userId}/companionInsights/latest`
+- `users/{userId}/memoryStars/{starId}`
+
+## Local Setup
 
 Run from the monorepo root:
 
 ```bash
-nvm use
 corepack enable
 corepack prepare pnpm@10.0.0 --activate
 corepack pnpm install
-corepack pnpm bootstrap:check
-corepack pnpm dev
 ```
 
-If you do not use nvm, select Node 22+ with your preferred version manager before enabling Corepack. The repo includes both `.nvmrc` and `.node-version` so common Node version managers can select the same runtime.
+Run locally:
 
-If `bootstrap:check`, `typecheck`, `lint`, `build`, or `test:unit` says dependencies are missing, run the install sequence above before debugging source files. Missing dependencies can otherwise look like `next/link`, `next/server`, `next/navigation`, `tsx`, or styled-jsx TypeScript failures.
+```bash
+corepack pnpm dev
+```
 
 Open:
 
 ```txt
 http://127.0.0.1:3000
-http://127.0.0.1:3000/u/adamclamp
-http://127.0.0.1:3000/life-map
+http://127.0.0.1:3000/home
 http://127.0.0.1:3000/spatial
+http://127.0.0.1:3000/life-map
+http://127.0.0.1:3000/u/adamclamp
 ```
 
-## Validation commands
+## Verification
+
+Use the repo scripts:
 
 ```bash
-corepack pnpm bootstrap:check
-corepack pnpm check:spatial
-corepack pnpm check:types
 corepack pnpm lint
-corepack pnpm test:unit
-corepack pnpm test:rules
+corepack pnpm typecheck
 corepack pnpm build
-corepack pnpm release:p1
-corepack pnpm live:check
+corepack pnpm test
 ```
 
-Full local launch gate:
+For the full release gate:
 
 ```bash
 corepack pnpm launch:check
+corepack pnpm live:check
 ```
 
-`pnpm launch:check` runs the spatial invariant check, typecheck, production build, smoke route checks, and E2E lock runner. `pnpm live:check` runs the full live-release gate without deploying.
+## Environment Variables
 
-## Routes
+Copy `.env.example` to `.env.local` for local work. Do not commit `.env.local`.
 
-| Route | Purpose |
-| --- | --- |
-| `/` | Polished URAI Spatial home shell |
-| `/u/adamclamp` | Public-safe V1 demo handle route |
-| `/spatial` | Standalone spatial shell alias |
-| `/life-map` | Full-screen LifeMap starfield, focus, replay, and ESC unwind surface |
-| `/privacy` | Privacy-safe fallback and provider language |
-| `/terms` | Demo/fallback and provider terms language |
-
-## API routes
-
-| Route | Method | Purpose |
-| --- | --- | --- |
-| `/api/system/health` | GET | Service health and version |
-| `/api/system/manifest` | GET | Routes, APIs, capabilities |
-| `/api/system/capabilities` | GET | URAI Spatial capabilities and system targets |
-| `/api/system/integration-contract` | GET | Full system-of-systems contract |
-| `/api/body-biometric` | POST | Privacy-safe body fallback snapshots |
-| `/api/orb-companion` | POST | Orb route hints and local fallback replies |
-
-## Environment
-
-URAI Spatial runs without live providers in local fallback mode. Optional variables are documented in `ENVIRONMENT.md`.
-
-## Deployment notes
-
-Firebase Hosting/App Hosting may be used once the project config is selected. Deployment scripts intentionally run release gates first:
+Public Firebase config, required only for live Firebase-backed reads:
 
 ```bash
-corepack pnpm frb
+NEXT_PUBLIC_FIREBASE_API_KEY=
+NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=
+NEXT_PUBLIC_FIREBASE_PROJECT_ID=
+NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET=
+NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=
+NEXT_PUBLIC_FIREBASE_APP_ID=
+NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID=
+NEXT_PUBLIC_URAI_DEMO_USER_ID=demo-user
+```
+
+Server-only secrets, if using admin routes or providers:
+
+```bash
+FIREBASE_SERVICE_ACCOUNT_JSON=
+STRIPE_SECRET_KEY=
+STRIPE_WEBHOOK_SECRET=
+ELEVENLABS_API_KEY=
+ELEVENLABS_VOICE_ID=
+```
+
+Never expose server-only secrets through `NEXT_PUBLIC_` variables.
+
+## Deployment
+
+Firebase config is present in `firebase.json` and `.firebaserc`.
+
+Deploy after verification passes:
+
+```bash
 corepack pnpm deploy:staging
+```
+
+or:
+
+```bash
 corepack pnpm deploy:prod
+```
+
+Explicit project deploy:
+
+```bash
 FIREBASE_PROJECT_ID=<project-id> corepack pnpm live:deploy
 ```
 
-Do not claim future provider features are active unless those providers are connected, consented, and validated.
+If credentials are not available, run `corepack pnpm build` and deploy from a machine or CI environment with Firebase CLI access.
+
+## Privacy Boundary
+
+URAI-Spatial V1 does not require live passive ingestion, raw audio, camera capture, private media, ads, or third-party tracking for the demo. The home experience falls back to typed local demo data when Firebase is absent, empty, or unavailable.

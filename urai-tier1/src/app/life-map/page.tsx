@@ -1,5 +1,5 @@
-import { TierOneExperience } from '@/spatial/layout/TierOneExperience'
+import UraiV1Experience from "@/components/urai/UraiV1Experience";
 
 export default function LifeMapPage() {
-  return <TierOneExperience mode="life-map" />
+  return <UraiV1Experience mode="life-map" />;
 }

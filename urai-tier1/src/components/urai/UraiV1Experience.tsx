@@ -1,276 +1,276 @@
-'use client'
+"use client";
 
-import Link from 'next/link'
-import { FormEvent, useEffect, useMemo, useState } from 'react'
-import { demoCouncilMembers, demoMemoryStars, demoPassportStatus, demoPrivacyPrinciples, demoReplayScenes } from '@/lib/urai-demo-data'
+import Link from "next/link";
+import { type CSSProperties, type FormEvent, useEffect, useMemo, useState } from "react";
+import { loadUraiV1Profile } from "@/lib/urai-v1-profile-store";
+import { uraiV1DemoProfile, type UraiDemoProfile, type UraiV1ProfileSource } from "@/lib/urai-v1-demo-profile";
 
-type UraiV1Mode = 'home' | 'life-map' | 'replay' | 'demo' | 'privacy'
+type UraiV1Mode = "home" | "life-map" | "replay" | "demo" | "privacy" | "focus" | "unwind" | "mirror" | "ascent";
+type ActivePanel = "home" | "chat" | "memory" | "privacy";
 
 type UraiV1ExperienceProps = {
-  mode?: UraiV1Mode
-  profileLabel?: string
+  mode?: UraiV1Mode;
+  profileLabel?: string;
+};
+
+type ChatMessage = {
+  role: "user" | "assistant";
+  text: string;
+};
+
+const sourceCopy: Record<UraiV1ProfileSource, string> = {
+  demo: "Demo seed active",
+  firestore: "Firestore profile active",
+  "firestore-fallback": "Firestore empty, demo seed active",
+  error: "Firestore unavailable, demo seed active",
+};
+
+function panelForMode(mode: UraiV1Mode): ActivePanel {
+  if (mode === "life-map" || mode === "ascent") return "memory";
+  if (mode === "privacy") return "privacy";
+  if (mode === "focus" || mode === "mirror" || mode === "unwind") return "chat";
+  return "home";
 }
 
-const navItems = [
-  { label: 'Life Map', href: '/life-map' },
-  { label: 'Replay', href: '/replay' },
-  { label: 'Demo', href: '/demo' }
-]
-
-function GlassPanel({ children, className = '' }: { children: React.ReactNode; className?: string }) {
-  return <section className={`urai-glass ${className}`}>{children}</section>
+function starWeight(weight?: number) {
+  return `${Math.round((weight ?? 0.5) * 100)}%`;
 }
 
-function FloatingMemoryStars() {
-  return (
-    <div className="urai-floating-stars" aria-hidden="true">
-      {demoMemoryStars.slice(0, 9).map((star, index) => (
-        <span
-          key={star.id}
-          style={{
-            left: `${8 + ((star.x + index * 7) % 84)}%`,
-            top: `${10 + ((star.y + index * 5) % 64)}%`,
-            width: `${Math.max(5, star.size - 4)}px`,
-            height: `${Math.max(5, star.size - 4)}px`,
-            background: star.color,
-            animationDelay: `${index * 0.34}s`
-          }}
-        />
-      ))}
-    </div>
-  )
-}
+export default function UraiV1Experience({ mode = "home", profileLabel }: UraiV1ExperienceProps) {
+  const [profile, setProfile] = useState<UraiDemoProfile>(uraiV1DemoProfile);
+  const [source, setSource] = useState<UraiV1ProfileSource>("demo");
+  const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [activePanel, setActivePanel] = useState<ActivePanel>(() => panelForMode(mode));
+  const [chatInput, setChatInput] = useState("");
+  const [chatMessages, setChatMessages] = useState<ChatMessage[]>([
+    { role: "assistant", text: uraiV1DemoProfile.companionInsight.message },
+  ]);
 
-function UraiShell({ children, profileLabel, privacyNotice }: { children: React.ReactNode; profileLabel?: string; privacyNotice?: boolean }) {
-  return (
-    <main className="urai-v1-shell urai-home-shell" data-urai-home-spatial-shell="true">
-      <div className="urai-cosmic-bg" />
-      <FloatingMemoryStars />
-      <div className="urai-ground-horizon" />
-      <header className="urai-v1-header">
-        <div>
-          <p>URAI FULL-SYSTEM LAUNCH V1.0</p>
-          <h2>{profileLabel ?? 'Home Field'}</h2>
-        </div>
-        <nav aria-label="URAI launch navigation">
-          {navItems.map((item) => <Link key={item.href} href={item.href}>{item.label}</Link>)}
-        </nav>
-      </header>
-      {privacyNotice ? <div className="urai-demo-notice">This public field uses seeded demo data. No private user data is shown.</div> : null}
-      <div className="urai-v1-content">{children}</div>
-    </main>
-  )
-}
-
-function OrbCompanion() {
-  return (
-    <div className="urai-orb-row">
-      <div className="urai-orb" aria-hidden="true"><span /><b /></div>
-      <div>
-        <p className="urai-kicker">Orb Companion</p>
-        <h3>Council online</h3>
-        <span>Your first signals are forming. Private by default.</span>
-      </div>
-    </div>
-  )
-}
-
-function CouncilPanel() {
-  return (
-    <GlassPanel className="urai-council-panel">
-      <p className="urai-kicker">Council online</p>
-      <div className="urai-council-grid">
-        {demoCouncilMembers.map((member) => <span key={member}>{member}</span>)}
-      </div>
-    </GlassPanel>
-  )
-}
-
-function NarratorWhisper() {
-  return (
-    <GlassPanel className="urai-whisper-panel">
-      <strong>Narrator whisper</strong>
-      <p>Your sky is quiet, but the field is beginning to brighten. This demo uses seeded symbolic data only.</p>
-    </GlassPanel>
-  )
-}
-
-function CouncilChatDemo() {
-  const [value, setValue] = useState('')
-  const [reply, setReply] = useState('')
-  function submit(event: FormEvent) {
-    event.preventDefault()
-    if (!value.trim()) return
-    setReply('In the full URAI experience, the Council reflects on your private patterns with consent. This public demo uses symbolic seed data only.')
-    setValue('')
-  }
-  return (
-    <GlassPanel className="urai-chat-panel">
-      <strong>Ask the Council</strong>
-      <form onSubmit={submit}>
-        <input value={value} onChange={(event) => setValue(event.target.value)} placeholder="Ask what your field is noticing…" aria-label="Ask the Council" />
-        <button type="submit">Ask</button>
-      </form>
-      {reply ? <p>{reply}</p> : null}
-    </GlassPanel>
-  )
-}
-
-function HomeField({ profileLabel, demo = false }: { profileLabel?: string; demo?: boolean }) {
-  const cards = [
-    ['Life Map', 'Memory stars, fields, and chapters', '/life-map'],
-    ['Replay', 'Cinematic emotional timeline', '/replay'],
-    ['Privacy', 'Export, delete, opt out', '/privacy'],
-    ['Public Demo', 'Seeded launch surface', '/demo']
-  ]
-
-  return (
-    <UraiShell profileLabel={profileLabel} privacyNotice={demo}>
-      <section className="urai-home-grid">
-        <GlassPanel className="urai-hero-card">
-          <p className="urai-kicker">Passive Emotional Intelligence</p>
-          <h1>Your life becomes a living map.</h1>
-          <p>URAI turns private signals into mood weather, memory stars, recovery blooms, symbolic replay, and an orb companion that reflects patterns with care.</p>
-          <Link href="/life-map" className="urai-sky-panel" aria-label="Tap the sky to open your life map">
-            <small>Tap the sky to open your life map</small>
-            {demoMemoryStars.slice(0, 7).map((star) => <i key={star.id} style={{ left: `${star.x}%`, top: `${star.y}%`, background: star.color }} />)}
-          </Link>
-        </GlassPanel>
-        <aside className="urai-side-stack">
-          <GlassPanel><OrbCompanion /></GlassPanel>
-          <NarratorWhisper />
-          <div className="urai-card-grid">
-            {cards.map(([title, text, href]) => (
-              <Link key={title} href={href} className="urai-nav-card"><strong>{title}</strong><span>{text}</span></Link>
-            ))}
-          </div>
-          <CouncilPanel />
-          <CouncilChatDemo />
-        </aside>
-      </section>
-    </UraiShell>
-  )
-}
-
-function MemoryGalaxy() {
-  const [selectedId, setSelectedId] = useState(demoMemoryStars[0]?.id)
-  const selected = demoMemoryStars.find((star) => star.id === selectedId) ?? demoMemoryStars[0]
-  const chapterCounts = useMemo(() => demoMemoryStars.reduce<Record<string, number>>((acc, star) => {
-    acc[star.chapter] = (acc[star.chapter] ?? 0) + 1
-    return acc
-  }, {}), [])
-
-  return (
-    <UraiShell>
-      <section className="urai-page-title">
-        <p className="urai-kicker">URAI Life Map</p>
-        <h1>Memory Galaxy</h1>
-        <span>15 memory stars • 8 timeline constellations • demo field</span>
-      </section>
-      <section className="urai-life-map-layout urai-spatial-stage lifemap-starfield">
-        <GlassPanel className="urai-selected-memory">
-          <p className="urai-kicker">Selected star</p>
-          <h2>{selected.title}</h2>
-          <dl>
-            <div><dt>Tone</dt><dd>{selected.emotionalTone}</dd></div>
-            <div><dt>Archetype</dt><dd>{selected.archetype}</dd></div>
-            <div><dt>Chapter</dt><dd>{selected.chapter}</dd></div>
-          </dl>
-          <p>{selected.summary}</p>
-          <Link href="/replay">Open Replay</Link>
-        </GlassPanel>
-        <GlassPanel className="urai-galaxy-panel">
-          <svg className="urai-constellation-lines" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
-            {demoMemoryStars.flatMap((star) => star.relatedIds.map((relatedId) => {
-              const related = demoMemoryStars.find((item) => item.id === relatedId)
-              if (!related) return null
-              return <line key={`${star.id}-${related.id}`} x1={star.x} y1={star.y} x2={related.x} y2={related.y} />
-            }))}
-          </svg>
-          {demoMemoryStars.map((star) => (
-            <button
-              type="button"
-              key={star.id}
-              className={`urai-memory-star ${selected.id === star.id ? 'is-selected' : ''}`}
-              onClick={() => setSelectedId(star.id)}
-              style={{ left: `${star.x}%`, top: `${star.y}%`, width: `${star.size + 8}px`, height: `${star.size + 8}px`, background: star.color, boxShadow: `0 0 ${24 + star.intensity * 50}px ${star.color}` }}
-              aria-label={`Select ${star.title}`}
-            ><span>{star.title}</span></button>
-          ))}
-        </GlassPanel>
-        <GlassPanel className="urai-chapter-panel">
-          <p className="urai-kicker">Constellations</p>
-          <h2>Timeline chapters</h2>
-          {Object.entries(chapterCounts).map(([chapter, count]) => <div key={chapter} className="urai-chapter-row"><span>{chapter}</span><b>{count}</b></div>)}
-        </GlassPanel>
-      </section>
-    </UraiShell>
-  )
-}
-
-function ReplayPage() {
-  const [playing, setPlaying] = useState(false)
-  const [active, setActive] = useState(0)
   useEffect(() => {
-    if (!playing) return
-    const timer = window.setInterval(() => setActive((value) => (value + 1) % demoReplayScenes.length), 2000)
-    return () => window.clearInterval(timer)
-  }, [playing])
+    setActivePanel(panelForMode(mode));
+  }, [mode]);
+
+  useEffect(() => {
+    let mounted = true;
+    const userId = process.env.NEXT_PUBLIC_URAI_DEMO_USER_ID || "demo-user";
+
+    async function load() {
+      setLoading(true);
+      const bundle = await loadUraiV1Profile(userId);
+      if (!mounted) return;
+      setProfile(bundle.profile);
+      setSource(bundle.source);
+      setError(bundle.error ?? null);
+      setChatMessages([{ role: "assistant", text: bundle.profile.companionInsight.message }]);
+      setLoading(false);
+    }
+
+    void load();
+
+    return () => {
+      mounted = false;
+    };
+  }, []);
+
+  const memoryStars = useMemo(() => profile.memoryStars.slice(0, 8), [profile.memoryStars]);
+  const displayName = profileLabel ?? profile.displayName;
+  const auraColor = profile.currentMood.auraColor ?? "#9be7d8";
+  const moodPercent = Math.max(0, Math.min(100, Math.round(profile.currentMood.intensity)));
+
+  async function sendChat(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const message = chatInput.trim();
+    if (!message) return;
+
+    setChatInput("");
+    setChatMessages((messages) => [...messages, { role: "user", text: message }]);
+
+    try {
+      const response = await fetch("/api/orb-companion", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ userId: profile.id, message }),
+      });
+      const payload = (await response.json()) as { reply?: string };
+      setChatMessages((messages) => [
+        ...messages,
+        { role: "assistant", text: payload.reply || profile.companionInsight.message },
+      ]);
+    } catch {
+      setChatMessages((messages) => [
+        ...messages,
+        { role: "assistant", text: "The live route is quiet, so I am staying with the local demo reflection." },
+      ]);
+    }
+  }
+
   return (
-    <UraiShell>
-      <section className="urai-page-title">
-        <p className="urai-kicker">Cinematic Timeline</p>
-        <h1>Symbolic Replay</h1>
-        <span>A cinematic timeline of emotional weather, memory stars, and recovery blooms.</span>
-        <button type="button" onClick={() => setPlaying((value) => !value)}>{playing ? 'Pause Demo Replay' : 'Play Demo Replay'}</button>
-      </section>
-      <section className="urai-replay-scenes">
-        {demoReplayScenes.map((scene, index) => (
-          <GlassPanel key={scene.id} className={`urai-replay-card ${active === index ? 'is-active' : ''}`}>
-            <div className="urai-aura-card"><span>{scene.aura}</span></div>
-            <small>{scene.timestamp}</small>
-            <h2>{scene.title}</h2>
-            <p className="urai-kicker">{scene.mood}</p>
-            <p>{scene.narratorLine}</p>
-          </GlassPanel>
+    <main
+      className={`urai-v1-spine weather-${profile.currentMood.weather}`}
+      data-urai-v1-spine="true"
+      data-urai-source={source}
+      data-urai-weather={profile.currentMood.weather}
+      style={{ "--urai-aura": auraColor } as CSSProperties}
+    >
+      <section className="v1-sky" aria-hidden="true">
+        {memoryStars.map((star, index) => (
+          <span
+            key={star.id}
+            className="v1-star"
+            style={{
+              left: `${12 + ((index * 17) % 76)}%`,
+              top: `${12 + ((index * 23) % 46)}%`,
+              opacity: 0.45 + (star.emotionalWeight ?? 0.5) * 0.45,
+            }}
+          />
         ))}
       </section>
-    </UraiShell>
-  )
-}
+      <section className="v1-ground" aria-hidden="true" />
 
-function PrivacyPage() {
-  return (
-    <UraiShell>
-      <section className="urai-page-title">
-        <p className="urai-kicker">Privacy foundation</p>
-        <h1>Private by default. User-owned by design.</h1>
-        <span>URAI’s public launch field uses seeded demo data only. Private signals stay consented, exportable, and removable.</span>
+      <header className="v1-header">
+        <Link href="/" className="v1-brand" aria-label="URAI Spatial home">URAI Spatial</Link>
+        <nav aria-label="URAI V1 routes">
+          <Link href="/">Home</Link>
+          <Link href="/life-map">Life Map</Link>
+          <Link href="/privacy">Privacy</Link>
+        </nav>
+      </header>
+
+      <section className="v1-center" aria-label="URAI Spatial V1 home">
+        <div className="v1-orb-shell">
+          <button type="button" className="v1-orb" onClick={() => setActivePanel("chat")} aria-label="Open companion chat">
+            <span />
+          </button>
+          <div className="v1-orb-caption">Companion present</div>
+        </div>
+
+        <div className="v1-home-copy">
+          <p className="v1-kicker">{displayName}</p>
+          <h1>{profile.currentMood.label}</h1>
+          <p className="v1-weather">{profile.currentMood.weather} weather</p>
+          <p className="v1-reflection">{profile.companionInsight.message}</p>
+
+          <div className="v1-actions">
+            <button type="button" onClick={() => setActivePanel("chat")}>Open companion</button>
+            <button type="button" onClick={() => setActivePanel("memory")}>Open memory map</button>
+          </div>
+
+          <div className="v1-status-row" role="status">
+            <span>{loading ? "Warming the home field" : sourceCopy[source]}</span>
+            <span>Mood intensity {moodPercent}%</span>
+          </div>
+          {error ? <p className="v1-error">Firestore fallback: {error}</p> : null}
+        </div>
       </section>
-      <section className="urai-privacy-grid">
-        {demoPrivacyPrinciples.map((principle) => <GlassPanel key={principle}><h2>{principle}</h2><p>{privacyCopy(principle)}</p></GlassPanel>)}
-        <GlassPanel className="urai-passport-card"><p className="urai-kicker">{demoPassportStatus.status}</p><h2>{demoPassportStatus.title}</h2><p>{demoPassportStatus.description}</p></GlassPanel>
-      </section>
-    </UraiShell>
-  )
-}
 
-function privacyCopy(principle: string) {
-  const copy: Record<string, string> = {
-    'Private by default': 'The launch surface is designed to show the magic without exposing private user patterns.',
-    'Exportable data': 'URAI’s V1 direction keeps user memory and signal records portable.',
-    'Delete controls': 'Users must be able to remove data and opt out of public sharing surfaces.',
-    'Opt-in public demo': 'Public fields should be intentional, seeded, or explicitly approved.',
-    'No ads inside URAI': 'URAI remains an emotional operating system, not an advertising surface.',
-    'User-owned data philosophy': 'Future data access belongs behind permission layers like URAI Passport.'
-  }
-  return copy[principle] ?? 'A calm, consent-aware foundation for symbolic memory.'
-}
+      <aside className="v1-panel" aria-label="URAI active panel">
+        {activePanel === "home" ? (
+          <section>
+            <p className="v1-kicker">Companion insight</p>
+            <h2>{profile.companionInsight.title}</h2>
+            <p>{profile.companionInsight.message}</p>
+          </section>
+        ) : null}
 
-export default function UraiV1Experience({ mode = 'home', profileLabel }: UraiV1ExperienceProps) {
-  if (mode === 'life-map') return <MemoryGalaxy />
-  if (mode === 'replay') return <ReplayPage />
-  if (mode === 'privacy') return <PrivacyPage />
-  if (mode === 'demo') return <HomeField profileLabel={profileLabel ?? 'Public Demo Field'} demo />
-  return <HomeField profileLabel={profileLabel} />
+        {activePanel === "chat" ? (
+          <section>
+            <p className="v1-kicker">Companion</p>
+            <h2>Ask the orb</h2>
+            <div className="v1-chat-log" aria-live="polite">
+              {chatMessages.map((message, index) => (
+                <p key={`${message.role}-${index}`} data-role={message.role}>{message.text}</p>
+              ))}
+            </div>
+            <form className="v1-chat-form" onSubmit={sendChat}>
+              <input
+                value={chatInput}
+                onChange={(event) => setChatInput(event.target.value)}
+                placeholder="Ask what URAI is noticing"
+                aria-label="Message URAI companion"
+              />
+              <button type="submit">Send</button>
+            </form>
+          </section>
+        ) : null}
+
+        {activePanel === "memory" ? (
+          <section>
+            <p className="v1-kicker">Memory stars</p>
+            <h2>Spatial life map</h2>
+            {memoryStars.length ? (
+              <div className="v1-memory-list">
+                {memoryStars.map((star) => (
+                  <article key={star.id}>
+                    <strong>{star.title}</strong>
+                    <span>{star.moodLabel ?? "memory"} - {starWeight(star.emotionalWeight)}</span>
+                    <p>{star.summary}</p>
+                  </article>
+                ))}
+              </div>
+            ) : (
+              <p className="v1-empty">No memory stars yet. Demo seed data keeps the home field visible.</p>
+            )}
+          </section>
+        ) : null}
+
+        {activePanel === "privacy" ? (
+          <section>
+            <p className="v1-kicker">Data boundary</p>
+            <h2>Private by default</h2>
+            <p>URAI V1 renders from demo data when Firebase is missing. Live Firestore data is optional and user-scoped.</p>
+          </section>
+        ) : null}
+      </aside>
+
+      <style jsx>{`
+        .urai-v1-spine {
+          position: relative;
+          min-height: 100dvh;
+          overflow: hidden;
+          color: #eef8f6;
+          background: radial-gradient(circle at 50% 36%, rgba(155, 231, 216, 0.2), transparent 22rem), linear-gradient(180deg, #071225 0%, #10172a 46%, #07150f 100%);
+          font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+        }
+        .urai-v1-spine * { box-sizing: border-box; }
+        .weather-aurora { background: radial-gradient(circle at 48% 28%, rgba(107, 255, 214, 0.24), transparent 20rem), linear-gradient(180deg, #06142a 0%, #1a1740 48%, #07150f 100%); }
+        .weather-night, .weather-fog { background: radial-gradient(circle at 50% 34%, rgba(165, 180, 252, 0.18), transparent 20rem), linear-gradient(180deg, #030815 0%, #111827 52%, #06100d 100%); }
+        .v1-sky, .v1-ground { position: absolute; inset: 0; pointer-events: none; }
+        .v1-sky { background: radial-gradient(circle at 18% 18%, rgba(255, 255, 255, 0.16), transparent 11rem), radial-gradient(circle at 78% 20%, rgba(251, 191, 36, 0.13), transparent 10rem), linear-gradient(180deg, rgba(160, 217, 255, 0.1), transparent 58%); }
+        .v1-star { position: absolute; width: 0.42rem; height: 0.42rem; border-radius: 999px; background: #f8fbff; box-shadow: 0 0 1rem rgba(180, 245, 255, 0.86), 0 0 2.4rem var(--urai-aura); }
+        .v1-ground { top: auto; height: 38dvh; bottom: -8dvh; background: radial-gradient(ellipse at 50% 0%, rgba(155, 231, 216, 0.18), transparent 38%), linear-gradient(180deg, rgba(56, 102, 76, 0.55), #020706 72%); border-radius: 50% 50% 0 0; }
+        .v1-header { position: relative; z-index: 5; display: flex; justify-content: space-between; align-items: center; gap: 1rem; padding: 1rem 1.25rem; }
+        .v1-brand, .v1-header a { color: #eef8f6; text-decoration: none; font-weight: 750; }
+        .v1-header nav { display: flex; gap: 0.75rem; flex-wrap: wrap; justify-content: flex-end; font-size: 0.92rem; }
+        .v1-center { position: relative; z-index: 4; min-height: calc(100dvh - 5rem); display: grid; grid-template-columns: minmax(12rem, 20rem) minmax(18rem, 34rem); align-items: center; justify-content: center; gap: 3rem; padding: 2rem 1.25rem 12rem; }
+        .v1-orb-shell { display: grid; justify-items: center; gap: 0.85rem; }
+        .v1-orb { width: 10rem; height: 10rem; border: 1px solid rgba(224, 255, 250, 0.34); border-radius: 999px; background: radial-gradient(circle at 36% 26%, #ffffff 0 8%, rgba(255, 255, 255, 0.55) 9% 18%, transparent 19%), radial-gradient(circle at 50% 55%, #f3fffb 0 8%, var(--urai-aura) 34%, #366bc7 72%, rgba(12, 24, 48, 0.92) 100%); box-shadow: 0 0 2.5rem rgba(155, 231, 216, 0.64), 0 0 8rem rgba(100, 180, 255, 0.26); cursor: pointer; }
+        .v1-orb span { display: block; width: 100%; height: 100%; border-radius: inherit; background: radial-gradient(circle, rgba(255, 255, 255, 0.18), transparent 60%); }
+        .v1-orb-caption, .v1-kicker, .v1-status-row { color: rgba(238, 248, 246, 0.72); font-size: 0.82rem; font-weight: 750; }
+        .v1-kicker { margin: 0 0 0.5rem; }
+        .v1-home-copy h1 { margin: 0; font-size: 4.4rem; line-height: 0.92; font-weight: 820; letter-spacing: 0; text-transform: lowercase; }
+        .v1-weather { margin: 0.8rem 0 0; color: var(--urai-aura); font-weight: 780; }
+        .v1-reflection { max-width: 34rem; margin: 1rem 0 0; color: rgba(238, 248, 246, 0.86); font-size: 1.1rem; line-height: 1.6; }
+        .v1-actions, .v1-status-row, .v1-chat-form { display: flex; gap: 0.75rem; flex-wrap: wrap; align-items: center; }
+        .v1-actions { margin-top: 1.35rem; }
+        .v1-actions button, .v1-chat-form button { min-height: 2.75rem; border: 1px solid rgba(225, 255, 250, 0.3); border-radius: 8px; padding: 0 1rem; background: rgba(238, 248, 246, 0.13); color: #eef8f6; font-weight: 780; cursor: pointer; }
+        .v1-status-row { margin-top: 1rem; }
+        .v1-error { width: fit-content; max-width: 100%; margin: 0.75rem 0 0; border: 1px solid rgba(251, 191, 36, 0.34); border-radius: 8px; padding: 0.55rem 0.7rem; background: rgba(73, 50, 7, 0.28); color: #fde68a; }
+        .v1-panel { position: absolute; right: 1.25rem; bottom: 1.25rem; z-index: 6; width: min(31rem, calc(100vw - 2.5rem)); border: 1px solid rgba(225, 255, 250, 0.2); border-radius: 8px; padding: 1rem; background: rgba(4, 10, 22, 0.72); backdrop-filter: blur(18px); box-shadow: 0 1.25rem 4rem rgba(0, 0, 0, 0.32); }
+        .v1-panel h2 { margin: 0 0 0.6rem; font-size: 1.15rem; letter-spacing: 0; }
+        .v1-panel p { color: rgba(238, 248, 246, 0.78); line-height: 1.5; }
+        .v1-chat-log { display: grid; gap: 0.55rem; max-height: 12rem; overflow: auto; margin-bottom: 0.75rem; }
+        .v1-chat-log p { margin: 0; border-radius: 8px; padding: 0.65rem 0.75rem; background: rgba(238, 248, 246, 0.08); }
+        .v1-chat-log p[data-role="user"] { background: rgba(155, 231, 216, 0.16); }
+        .v1-chat-form input { min-width: 0; flex: 1 1 14rem; min-height: 2.75rem; border: 1px solid rgba(225, 255, 250, 0.24); border-radius: 8px; padding: 0 0.85rem; background: rgba(2, 8, 18, 0.7); color: #eef8f6; }
+        .v1-memory-list { display: grid; gap: 0.65rem; }
+        .v1-memory-list article { border-left: 2px solid var(--urai-aura); padding-left: 0.75rem; }
+        .v1-memory-list strong, .v1-memory-list span { display: block; }
+        .v1-memory-list span { color: rgba(155, 231, 216, 0.82); font-size: 0.82rem; font-weight: 720; }
+        .v1-memory-list p { margin: 0.25rem 0 0; }
+        .v1-empty { border: 1px solid rgba(225, 255, 250, 0.18); border-radius: 8px; padding: 0.75rem; background: rgba(238, 248, 246, 0.07); }
+        @media (max-width: 760px) { .v1-header { align-items: flex-start; } .v1-center { min-height: auto; grid-template-columns: 1fr; gap: 1.5rem; justify-items: center; padding: 2rem 1rem 23rem; text-align: center; } .v1-home-copy h1 { font-size: 3rem; } .v1-reflection { font-size: 1rem; } .v1-actions, .v1-status-row { justify-content: center; } .v1-panel { left: 1rem; right: 1rem; bottom: 1rem; width: auto; } }
+      `}</style>
+    </main>
+  );
 }
