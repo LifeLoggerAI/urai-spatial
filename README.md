@@ -1,8 +1,14 @@
 # URAI Spatial
 
-URAI-Spatial V1 is the deployable demo spine for URAI: a calm magical home screen that renders without production data, shows demo mood weather, presents a companion reflection, and lets the user open companion chat or the symbolic memory map.
+URAI-Spatial V1 is the deployable spatial experience layer for URAI: a calm magical home screen that renders without production data, shows mood weather, presents a companion reflection, and lets the user open companion chat or the symbolic memory map.
 
 The V1 scope is intentionally narrow. It proves the loop: open URAI, see the living home, read the current mood/reflection, open chat, open memory stars, and deploy.
+
+## Public spatial visibility note
+
+This repository is currently public and contains product architecture, spatial UI structure, Firebase deployment notes, and environment guidance. Before Genesis or production launch, confirm whether the repository should remain public. If it remains public, keep it limited to launch-safe spatial shell code, public documentation, examples, and non-sensitive configuration only.
+
+Do not commit private user data, raw passive signals, raw audio, camera captures, private media, proprietary unreleased scene assets, service-account files, provider secrets, production screenshots with identifiers, or internal inference datasets. Public spatial surfaces should use local fallback data or approved synthetic preview data only.
 
 ## App Root
 
@@ -15,20 +21,20 @@ The V1 scope is intentionally narrow. It proves the loop: open URAI, see the liv
 
 ## Tier Readiness
 
-- Tier-1 Launch Spine: `/`, `/home`, and `/spatial` render `UraiV1Experience` with demo-first mood weather, orb companion, chat, memory panel, loading state, empty state, and Firestore fallback.
+- Tier-1 Launch Spine: `/`, `/home`, and `/spatial` render `UraiV1Experience` with launch-safe mood weather, orb companion, chat, memory panel, loading state, empty state, and Firestore fallback.
 - Tier-2 Supported Adjacent Layer: `/life-map`, `/replay`, `/focus`, direct memory/replay routes, and shared spatial contracts remain buildable and isolated from the active V1 home.
 - Tier-3 Legacy / Experimental / Roadmap: XR, replay-tier5 browser locks, advanced LifeMap scenes, marketplace/monetization, and deeper provider systems are not required for the V1 spine and must not block Tier-1.
 
-## V1 Demo Loop
+## V1 Preview Loop
 
 1. Open `/`, `/home`, or `/spatial`.
-2. The URAI home renders with sky, ground, orb, mood weather, and seeded demo state.
+2. The URAI home renders with sky, ground, orb, mood weather, and launch-safe fallback state.
 3. The companion insight appears.
 4. Open companion chat from the orb or CTA.
 5. Open `/life-map` or the memory map panel to see memory stars.
 6. Build and deploy through the documented pnpm/Firebase path.
 
-The app works in demo mode when Firebase is not configured. If valid Firebase public env vars and readable user-scoped documents exist, V1 can read:
+The app works in local fallback mode when Firebase is not configured. If valid Firebase public env vars and readable user-scoped documents exist, V1 can read:
 
 - `users/{userId}/moodStates/current`
 - `users/{userId}/companionInsights/latest`
@@ -94,7 +100,7 @@ NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET=
 NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=
 NEXT_PUBLIC_FIREBASE_APP_ID=
 NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID=
-NEXT_PUBLIC_URAI_DEMO_USER_ID=demo-user
+NEXT_PUBLIC_URAI_PREVIEW_USER_ID=preview-user
 ```
 
 Server-only secrets, if using admin routes or providers:
@@ -135,4 +141,4 @@ If credentials are not available, run `corepack pnpm build` and deploy from a ma
 
 ## Privacy Boundary
 
-URAI-Spatial V1 does not require live passive ingestion, raw audio, camera capture, private media, ads, or third-party tracking for the demo. The home experience falls back to typed local demo data when Firebase is absent, empty, or unavailable.
+URAI-Spatial V1 does not require live passive ingestion, raw audio, camera capture, private media, ads, or third-party tracking for the launch-safe preview. The home experience falls back to typed local preview data when Firebase is absent, empty, or unavailable.
