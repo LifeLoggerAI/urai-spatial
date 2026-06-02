@@ -10,6 +10,7 @@
   "deployCommand": "FIREBASE_PROJECT_ID=<project-id> pnpm live:deploy",
   "postDeploySmoke": "HOST=https://<live-host> pnpm smoke",
   "liveStatusFile": "release/LIVE_STATUS.md",
+  "tierXrReleaseMatrix": "release/tier-xr-release-matrix.json",
   "routes": [
     "/",
     "/u/adamclamp",
@@ -26,6 +27,20 @@
     "/api/body-biometric",
     "/api/orb-companion"
   ],
+  "tierReleaseScope": [
+    "tier-1-runtime-authority",
+    "tier-2-system-governance",
+    "tier-3-feature-route-governance",
+    "tier-4-implementation-governance",
+    "tier-5-operational-release-governance"
+  ],
+  "xrReleaseScope": [
+    "web-spatial",
+    "webxr",
+    "quest-vr",
+    "visionos",
+    "ar-handheld"
+  ],
   "releaseGuards": [
     "source-integrity",
     "production-routes",
@@ -40,11 +55,19 @@
     "e2e-lock",
     "functions-build-and-test",
     "tier1-unit-tests",
-    "replay-contract"
+    "replay-contract",
+    "xr-contract",
+    "xr-navmesh-bake",
+    "xr-firebase-preflight",
+    "tier-xr-release-evidence"
   ],
   "liveClaims": {
     "ar": "disabled-until-provider-validated",
+    "vr": "disabled-until-device-validated",
+    "xr": "disabled-until-provider-and-device-validated",
     "webxr": "disabled-until-provider-validated",
+    "questVr": "disabled-until-device-validated",
+    "visionOs": "disabled-until-platform-target-validated",
     "wearables": "disabled-until-provider-validated",
     "biometrics": "privacy-safe-fallback-until-provider-validated",
     "memoryGrounding": "demo-or-fallback-until-provider-validated"
@@ -53,6 +76,13 @@
     "firebase_project_id",
     "firebase_service_account_or_token",
     "deployed_live_url",
-    "passing_live_smoke_result"
+    "passing_live_smoke_result",
+    "tier_1_5_release_gate_artifact",
+    "webxr_provider_validation",
+    "quest_device_lab_evidence",
+    "visionos_device_or_simulator_evidence",
+    "handheld_ar_privacy_review",
+    "store_or_distribution_packet_when_applicable",
+    "privacy_compliance_signoff"
   ]
 }
