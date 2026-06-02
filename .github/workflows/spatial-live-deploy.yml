@@ -84,7 +84,7 @@ jobs:
           pnpm --version
 
       - name: Install dependencies
-        run: pnpm install --no-frozen-lockfile
+        run: pnpm install --frozen-lockfile
 
       - name: Run Spatial live release check
         run: pnpm live:check
@@ -144,7 +144,7 @@ jobs:
           chmod 600 "$GOOGLE_APPLICATION_CREDENTIALS"
 
       - name: Install dependencies
-        run: pnpm install --no-frozen-lockfile
+        run: pnpm install --frozen-lockfile
 
       - name: Deploy Spatial live
         run: pnpm live:deploy
