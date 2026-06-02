@@ -166,7 +166,7 @@ function HomeHud({ onLifeMap, onFocus, onReplay }: { onLifeMap: () => void; onFo
     <section className="urai-home-canon-hud" data-testid="urai-home-canon-hud" aria-label="URAI home sanctuary controls">
       <div className="urai-home-canon-hud__kicker">URAI V1 · Home Field</div>
       <h1>Private emotional universe online.</h1>
-      <p>Sky, ground, orb, avatar mirror, memory stars, and Passport foundation are live as seeded public demo data. URAI remains private by default with no ads inside URAI.</p>
+      <p>Sky, ground, avatar mirror, memory stars, and Passport foundation are live as seeded public demo data. URAI remains private by default with no ads inside URAI.</p>
       <div className="urai-home-canon-hud__actions">
         <button type="button" onClick={(event) => { event.stopPropagation(); onLifeMap() }}>Ascend to Life Map</button>
         <button type="button" onClick={(event) => { event.stopPropagation(); onFocus() }}>Open Focus Chamber</button>
@@ -177,7 +177,11 @@ function HomeHud({ onLifeMap, onFocus, onReplay }: { onLifeMap: () => void; onFo
   )
 }
 
-function SpatialGuidance({ sceneMode, onUnwind, onLifeMap, onFocus, onReplay }: { sceneMode: SceneMode; onUnwind: () => void; onLifeMap: () => void; onFocus: () => void; onReplay: () => void }) {
+function CameraResetButton({ onReset }: { onReset: () => void }) {
+  return <button type="button" className="urai-camera-reset" onClick={onReset}>Reset camera</button>
+}
+
+function ModeGuidance({ sceneMode, onUnwind, onLifeMap, onFocus, onReplay }: { sceneMode: SceneMode; onUnwind: () => void; onLifeMap: () => void; onFocus: () => void; onReplay: () => void }) {
   if (sceneMode === 'home') return null
 
   const copy = sceneMode === 'life-map'
@@ -306,6 +310,7 @@ export default function HomeScene({ sceneMode = 'home' }: { sceneMode?: SceneMod
   const manifestId = params.get('manifestId') ?? DEMO_FOCUS_MANIFEST_ID
   const { manifest, loading } = useManifest(sceneMode === 'focus' || sceneMode === 'replay' ? manifestId : null)
   const [selectedPosition, setSelectedPosition] = useState<ConstellationNodePosition | null>(null)
+  const [cameraResetSignal, setCameraResetSignal] = useState(0)
   const [replayPlaying, setReplayPlaying] = useState(sceneMode === 'replay')
   const [replayProgressMs, setReplayProgressMs] = useState(0)
   const activeManifestId = manifest?.manifestId ?? manifestId
@@ -314,11 +319,16 @@ export default function HomeScene({ sceneMode = 'home' }: { sceneMode?: SceneMod
   const isFocusMode = sceneMode === 'focus'
   const isReplayMode = sceneMode === 'replay'
   const isAscentMode = sceneMode === 'ascent'
+  const showOrb = sceneMode === 'focus' || sceneMode === 'replay' || sceneMode === 'unwind' || sceneMode === 'mirror'
   const unwind = useEscUnwind(sceneMode, activeManifestId)
 
   const openLifeMap = useCallback(() => router.push(isHomeMode && !reducedMotion ? '/ascent' : '/life-map'), [isHomeMode, reducedMotion, router])
   const openFocus = useCallback(() => router.push(`/focus?manifestId=${encodeURIComponent(activeManifestId)}`), [activeManifestId, router])
   const openReplay = useCallback(() => router.push(`/replay?manifestId=${encodeURIComponent(activeManifestId)}`), [activeManifestId, router])
+  const resetCamera = useCallback(() => {
+    setSelectedPosition(null)
+    setCameraResetSignal((value) => value + 1)
+  }, [])
 
   const cameraPath = useMemo(
     () => cameraPathForState({
@@ -358,6 +368,10 @@ export default function HomeScene({ sceneMode = 'home' }: { sceneMode?: SceneMod
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => {
       if (event.key === 'Escape') unwind()
+      if (event.key.toLowerCase() === 'r' && !isHomeMode) {
+        event.preventDefault()
+        openReplay()
+      }
       if (event.key === ' ' && isReplayMode) {
         event.preventDefault()
         setReplayPlaying((value) => !value)
@@ -365,7 +379,7 @@ export default function HomeScene({ sceneMode = 'home' }: { sceneMode?: SceneMod
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
-  }, [isReplayMode, unwind])
+  }, [isHomeMode, isReplayMode, openReplay, unwind])
 
   useEffect(() => {
     if (!isReplayMode || !replayPlaying || reducedMotion) return
@@ -387,7 +401,7 @@ export default function HomeScene({ sceneMode = 'home' }: { sceneMode?: SceneMod
       <div className="urai-scene-stage__fallback" aria-hidden="true" />
       <Canvas shadows dpr={[1, 1.75]} gl={{ antialias: true, alpha: true }} onPointerMissed={isHomeMode ? openLifeMap : undefined}>
         <PerspectiveCamera makeDefault position={[0, 2.85, 8.35]} fov={48} />
-        <CinematicCameraRig active focusPosition={selectedPosition} path={cameraPath} reducedMotion={reducedMotion} resetSignal={0} />
+        <CinematicCameraRig active focusPosition={selectedPosition} path={cameraPath} reducedMotion={reducedMotion} resetSignal={cameraResetSignal} />
 
         <ambientLight intensity={isHomeMode ? 0.9 : 0.38} color="#b8d7ff" />
         <hemisphereLight args={['#d3e7ff', '#12071e', isHomeMode ? 1.55 : 0.9]} />
@@ -406,13 +420,14 @@ export default function HomeScene({ sceneMode = 'home' }: { sceneMode?: SceneMod
         {isLifeMapMode ? <ConstellationLayer enabled selectedManifestId={manifestId} onSelect={(selectedManifest, position) => { setSelectedPosition(position); router.push(`/focus?manifestId=${encodeURIComponent(selectedManifest.manifestId)}`) }} /> : null}
         {isFocusMode || isReplayMode ? <FocusChamber active /> : null}
         {manifest ? <ManifestRenderBoundary manifest={manifest} /> : null}
-        <Orb state={isReplayMode ? 'ritual' : isFocusMode ? 'listening' : 'idle'} />
+        {showOrb ? <Orb state={isReplayMode ? 'ritual' : isFocusMode ? 'listening' : 'idle'} /> : null}
         <CinematicParticles active reducedMotion={reducedMotion} />
         <CinematicPostProcessing active reducedMotion={reducedMotion} />
       </Canvas>
 
       {isHomeMode ? <HomeHud onLifeMap={openLifeMap} onFocus={openFocus} onReplay={openReplay} /> : null}
-      <SpatialGuidance sceneMode={sceneMode} onUnwind={unwind} onLifeMap={() => router.push('/life-map')} onFocus={openFocus} onReplay={openReplay} />
+      {!isHomeMode ? <CameraResetButton onReset={resetCamera} /> : null}
+      {!isHomeMode ? <ModeGuidance sceneMode={sceneMode} onUnwind={unwind} onLifeMap={() => router.push('/life-map')} onFocus={openFocus} onReplay={openReplay} /> : null}
 
       {isFocusMode ? (
         <section className="urai-focus-action-panel" data-testid="urai-focus-action-panel" aria-label="Selected memory focus">
