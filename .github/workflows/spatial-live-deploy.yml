@@ -25,7 +25,7 @@ on:
       - "STATUS.md"
       - "EVIDENCE.md"
       - "docs/decisions/**"
-      - ".github/workflows/spatial-live-deploy.yml"
+      - ".github/workflows/**"
   workflow_dispatch:
     inputs:
       deploy:
