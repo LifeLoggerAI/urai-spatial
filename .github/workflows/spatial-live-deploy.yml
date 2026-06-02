@@ -10,21 +10,29 @@ on:
       - "packages/**"
       - "scripts/**"
       - "tests/**"
+      - "src/canon/**"
+      - "docs/canon/**"
+      - "docs/decisions/**"
+      - "release/**"
+      - "audit/**"
+      - "firebase/**"
       - "firebase.json"
       - "firebase.static.json"
-      - "firestore.rules"
-      - "firestore.indexes.json"
-      - "package.json"
-      - "pnpm-lock.yaml"
-      - "pnpm-workspace.yaml"
-      - ".nvmrc"
-      - ".node-version"
+      - ".firebaserc.example"
+      - "CANONICAL_RUNTIME.md"
+      - "SYSTEM_MAP.md"
+      - "REPO_PURPOSE.md"
+      - "RUNBOOK.md"
       - "README.md"
       - "LIVE_RELEASE.md"
       - "DEPLOYMENT.md"
       - "STATUS.md"
       - "EVIDENCE.md"
-      - "docs/decisions/**"
+      - "package.json"
+      - "pnpm-lock.yaml"
+      - "pnpm-workspace.yaml"
+      - ".nvmrc"
+      - ".node-version"
       - ".github/workflows/**"
   workflow_dispatch:
     inputs:
@@ -99,7 +107,19 @@ jobs:
             STATUS.md
             LIVE_RELEASE.md
             DEPLOYMENT.md
+            RUNBOOK.md
+            REPO_PURPOSE.md
+            release
+            audit/tier-lock
+            docs/canon
             docs/decisions/runtime-authority.md
+            src/canon
+            firebase/firestore.rules
+            firebase/firestore.indexes.json
+            firebase/spatial-collection-contract.json
+            urai-tier1/src/spatial/xr
+            urai-tier1/tests/xr-runtime-contract.test.mjs
+            urai-tier1/scripts/xr
             test-results
             playwright-report
           if-no-files-found: warn
