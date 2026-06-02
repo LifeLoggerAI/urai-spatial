@@ -9,8 +9,8 @@ This file is the evidence ledger for URAI Spatial. Do not mark the repository pr
 - Current release mode: `fallback-demo`.
 - Production-live status: not verified.
 - Deployment automation: `.github/workflows/spatial-live-deploy.yml` verifies `pnpm live:check` on configured `main` push paths and can deploy only after verification when manually dispatched with `deploy=DEPLOY` or when repo variable `URAI_SPATIAL_AUTO_DEPLOY=true` is configured.
-- Automation trigger scope: `urai-tier1/**`, `apps/functions/**`, `packages/**`, `scripts/**`, `tests/**`, Firebase config/rules files, root package/lock/workspace files, `.nvmrc`, release/deployment/status/evidence docs, and the workflow file itself.
-- Known automation gap: `README.md` is not currently included in the workflow path filter even though it contains setup, validation, route, environment, and deployment instructions. `.node-version` is also not currently included even though it is a portable Node 22 pin alongside `.nvmrc`. Track and resolve both in issue #251 before considering documentation/runtime-pin trigger coverage complete.
+- Automation trigger scope: `urai-tier1/**`, `apps/functions/**`, `packages/**`, `scripts/**`, `tests/**`, Firebase config/rules files, root package/lock/workspace files, `.nvmrc`, `.node-version`, `README.md`, release/deployment/status/evidence docs, `docs/decisions/**`, and the workflow file itself.
+- Automation trigger coverage: README, portable Node runtime pin, and decision-record coverage added in commit `878d66b5eba02c3aefb45715d717f473312044ff`. No documentation/runtime-pin trigger gap is currently recorded.
 
 ## Local verification
 
