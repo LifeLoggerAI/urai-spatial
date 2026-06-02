@@ -5,6 +5,7 @@ import process from 'node:process'
 const mode = process.argv.includes('--deploy') ? 'deploy' : 'check'
 const deployProject = process.env.FIREBASE_PROJECT_ID || process.env.FIREBASE_PROJECT || process.env.GCLOUD_PROJECT
 const manifestPath = 'release/urai-spatial-live-manifest.json'
+const tierXrMatrixPath = 'release/tier-xr-release-matrix.json'
 
 function run(command, args, options = {}) {
   return new Promise((resolve, reject) => {
@@ -59,13 +60,58 @@ function readJson(path) {
   }
 }
 
-function assertArrayIncludes(manifest, key, expectedValues) {
-  if (!Array.isArray(manifest[key])) {
-    throw new Error(`Release manifest field ${key} must be an array.`)
+function assertArrayIncludes(source, key, expectedValues, label = key) {
+  if (!Array.isArray(source[key])) {
+    throw new Error(`Release manifest field ${label} must be an array.`)
   }
-  const missing = expectedValues.filter((value) => !manifest[key].includes(value))
+  const missing = expectedValues.filter((value) => !source[key].includes(value))
   if (missing.length) {
-    throw new Error(`Release manifest field ${key} is missing: ${missing.join(', ')}`)
+    throw new Error(`Release manifest field ${label} is missing: ${missing.join(', ')}`)
+  }
+}
+
+function assertTierXrMatrix(manifest) {
+  if (manifest.tierXrReleaseMatrix !== tierXrMatrixPath) {
+    throw new Error(`Release manifest field tierXrReleaseMatrix must be ${tierXrMatrixPath}.`)
+  }
+
+  const matrix = readJson(tierXrMatrixPath)
+  if (matrix.repository !== 'LifeLoggerAI/urai-spatial') throw new Error('Tier/XR matrix repository mismatch.')
+  if (matrix.runtimeRoot !== 'urai-tier1') throw new Error('Tier/XR matrix runtimeRoot must be urai-tier1.')
+  if (matrix.releaseGate !== 'pnpm live:check') throw new Error('Tier/XR matrix releaseGate must be pnpm live:check.')
+
+  const tiers = Array.isArray(matrix.tiers) ? matrix.tiers : []
+  const xrTargets = Array.isArray(matrix.xrTargets) ? matrix.xrTargets : []
+  for (const id of ['tier-1', 'tier-2', 'tier-3', 'tier-4', 'tier-5']) {
+    if (!tiers.some((entry) => entry.id === id)) throw new Error(`Tier/XR matrix missing tier: ${id}`)
+  }
+  for (const id of ['web-spatial', 'webxr', 'quest-vr', 'visionos', 'ar-handheld']) {
+    if (!xrTargets.some((entry) => entry.id === id)) throw new Error(`Tier/XR matrix missing XR target: ${id}`)
+  }
+
+  for (const target of xrTargets.filter((entry) => entry.id !== 'web-spatial')) {
+    if (target.currentEvidenceStatus !== 'not-validated') {
+      throw new Error(`XR target ${target.id} must remain not-validated until provider/device evidence exists.`)
+    }
+  }
+
+  return matrix
+}
+
+function assertBlockedXrClaims(manifest) {
+  const expectedClaims = {
+    ar: 'disabled-until-provider-validated',
+    vr: 'disabled-until-device-validated',
+    xr: 'disabled-until-provider-and-device-validated',
+    webxr: 'disabled-until-provider-validated',
+    questVr: 'disabled-until-device-validated',
+    visionOs: 'disabled-until-platform-target-validated',
+  }
+
+  for (const [claim, expected] of Object.entries(expectedClaims)) {
+    if (manifest.liveClaims?.[claim] !== expected) {
+      throw new Error(`Release manifest live claim ${claim} must be ${expected}.`)
+    }
   }
 }
 
@@ -95,17 +141,31 @@ function assertReleaseManifest() {
     '/api/body-biometric',
     '/api/orb-companion',
   ])
+  assertArrayIncludes(manifest, 'tierReleaseScope', [
+    'tier-1-runtime-authority',
+    'tier-2-system-governance',
+    'tier-3-feature-route-governance',
+    'tier-4-implementation-governance',
+    'tier-5-operational-release-governance',
+  ])
+  assertArrayIncludes(manifest, 'xrReleaseScope', ['web-spatial', 'webxr', 'quest-vr', 'visionos', 'ar-handheld'])
+  assertArrayIncludes(manifest, 'releaseGuards', ['xr-contract', 'xr-navmesh-bake', 'xr-firebase-preflight', 'tier-xr-release-evidence'])
   assertArrayIncludes(manifest, 'requiredExternalInputsBeforeLive', [
     'firebase_project_id',
     'firebase_service_account_or_token',
     'deployed_live_url',
     'passing_live_smoke_result',
+    'tier_1_5_release_gate_artifact',
+    'webxr_provider_validation',
+    'quest_device_lab_evidence',
+    'visionos_device_or_simulator_evidence',
+    'handheld_ar_privacy_review',
+    'store_or_distribution_packet_when_applicable',
+    'privacy_compliance_signoff',
   ])
 
-  if (!manifest.liveClaims || manifest.liveClaims.webxr !== 'disabled-until-provider-validated') {
-    throw new Error('Release manifest must keep WebXR live claim disabled until provider validation.')
-  }
-
+  assertBlockedXrClaims(manifest)
+  assertTierXrMatrix(manifest)
   requireFile(manifest.liveStatusFile)
 
   return manifest
@@ -117,6 +177,7 @@ function assertReleaseFiles() {
     'LIVE_RELEASE.md',
     'release/LIVE_STATUS.md',
     manifestPath,
+    tierXrMatrixPath,
     'README.md',
     'firebase.json',
     '.firebaserc.example',
@@ -126,6 +187,11 @@ function assertReleaseFiles() {
     'urai-tier1/src/app/page.tsx',
     'urai-tier1/src/app/home/page.tsx',
     'urai-tier1/src/spatial/v1/UraiSpatialStage.tsx',
+    'urai-tier1/src/spatial/xr/uraiXrRoomRuntime.ts',
+    'urai-tier1/src/spatial/xr/useUraiXrRoom.ts',
+    'urai-tier1/tests/xr-runtime-contract.test.mjs',
+    'urai-tier1/scripts/xr/bake-navmesh.mjs',
+    'urai-tier1/scripts/xr/quest-device-validation.mjs',
   ]
 
   for (const file of required) requireFile(file)
@@ -145,7 +211,7 @@ async function main() {
   console.log('[URAI Spatial Live] Validating release file surface.')
   assertReleaseFiles()
 
-  console.log('[URAI Spatial Live] Validating release manifest.')
+  console.log('[URAI Spatial Live] Validating release manifest and Tier/XR matrix.')
   const manifest = assertReleaseManifest()
   console.log(`[URAI Spatial Live] Manifest: ${manifest.name} (${manifest.canonicalStatus})`)
 
