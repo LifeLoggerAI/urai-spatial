@@ -13,6 +13,7 @@ This file is the evidence ledger for URAI Spatial. Do not mark the repository pr
 - Automation trigger scope: `urai-tier1/**`, `apps/functions/**`, `packages/**`, `scripts/**`, `tests/**`, `src/canon/**`, `docs/canon/**`, `docs/decisions/**`, `release/**`, `audit/**`, `firebase/**`, Firebase config files, root package/lock/workspace files, `.nvmrc`, `.node-version`, README/status/deployment/evidence docs, runtime authority docs, and all workflow files under `.github/workflows/**`.
 - Automation trigger coverage: README, portable Node runtime pin, and decision-record coverage added in commit `878d66b5eba02c3aefb45715d717f473312044ff`. Full workflow guardrail coverage added in commit `42ccdf1a8b39200cd69d2650e72f768031f30093`. Frozen-lockfile verification hardening added in commit `d1c256d26807dc3260dc3683dd30e6b8fb8e2247`. All-tier/XR trigger and artifact coverage added in commit `62aeb71bb4b259127ddd97eea58f05e39fb51478`.
 - Tier/XR release enforcement: `scripts/check-tier-xr-release-matrix.mjs` added in commit `ceda0b7f69bf13cfcb5028c99acfda0bccf6cc99`. Root release scripts now run `check:tier-xr-release-matrix` during `lock:static` and run `xr:verify` during `verify:release:full` in commit `723deaca998973ac1bf16ea0c7856e26a4ef75aa`. The `pnpm live:check` wrapper now validates Tier/XR manifest scope, matrix presence, required files, and blocked AR/VR/XR live claims before full verification in commit `bb2d7d88143c6329c3a7348da16aa376594e6956`.
+- Cross-repo dependency gates: Asset Factory XR dependency gate added in `LifeLoggerAI/asset-factory` commit `99096224d54a2849731e58de514c3fe07ec5918c`; content/schema XR dependency gate added in `LifeLoggerAI/urai-content` commit `797aee018b901053263d0f4b37f25a82dcfbb289`; staging release-train gate added in `LifeLoggerAI/urai-staging` commit `545c48855f05325a16f28721058fec3b1672a03a`.
 - Latest release-gate observation: workflow run `26812805807` for commit `b5922c6d428c7cb80e1954e6032678152a70652e` triggered successfully and uploaded artifact `7354762010`, but failed in `pnpm live:check` because `urai-tier1/src/app/page.tsx` still routed home through `UraiV1Experience` instead of `TierOneExperience mode="home"`. Commits `2844163dffeec8ad83cacdc6f5805e5f4412be91` and `e9c7ad3d3af231b55049d0de1e4f593410815095` route `/` and `/home` through `TierOneExperience mode="home"`. Later commits expand and enforce the all-tier/XR evidence surface; the connector/web listing has not exposed a newer run id yet.
 
 ## Local verification
@@ -109,7 +110,9 @@ Provider rows must remain `Not recorded` or `Not validated` until the target has
 | Wearable provider | Provider configuration, consent, fallback behavior, smoke tests | Not recorded |  |
 | Body-signal provider | Provider configuration, privacy review, raw-signal exclusion evidence | Not recorded |  |
 | Memory-grounded orb | Provider/data grounding evidence, fallback boundaries, copy review | Not recorded |  |
-| Asset Factory integration | Live endpoint/config evidence, deterministic asset proof, approval flow | Not recorded |  |
+| Asset Factory integration | Cross-repo gate exists; production evidence not recorded | `LifeLoggerAI/asset-factory` commit `99096224d54a2849731e58de514c3fe07ec5918c` adds `docs/release-evidence/urai-spatial-xr-dependency.md`. Still requires provider-backed generation, cross-tenant denial, queue/DLQ, webhook/idempotency, redaction, approval-manifest, rollback, and owner approval evidence. |
+| Content/schema integration | Cross-repo gate exists; production evidence not recorded | `LifeLoggerAI/urai-content` commit `797aee018b901053263d0f4b37f25a82dcfbb289` adds `docs/evidence/urai-spatial-xr-schema-dependency.md`. Still requires package/runtime/deployed smoke, observability, rollback, versioned schema pinning, moderation, entitlement, and release logging evidence. |
+| Staging release train | Cross-repo gate exists; staging evidence not recorded | `LifeLoggerAI/urai-staging` commit `545c48855f05325a16f28721058fec3b1672a03a` adds `URAI_XR_RELEASE_TRAIN_GATE.md`. Still requires deploy readiness, full repo check, rules/E2E, locked staging deploy, live staging smoke, rollback, and public-repo safety evidence. |
 | Studio integration | Live endpoint/config evidence, export safety, workflow smoke | Not recorded |  |
 | Jobs integration | Live endpoint/config evidence, queue/worker smoke, retry/idempotency evidence | Not recorded |  |
 | Cross-repo memory sync | Contract evidence, privacy review, rollback plan | Not recorded |  |
@@ -132,7 +135,9 @@ Provider rows must remain `Not recorded` until the provider has been configured,
 | Wearable provider | Not recorded |  |
 | Body-signal provider | Not recorded |  |
 | Memory-grounded orb | Not recorded |  |
-| Asset Factory integration | Not recorded |  |
+| Asset Factory integration | Cross-repo gate exists; evidence not complete | See AR / VR / XR evidence section. |
+| Content/schema integration | Cross-repo gate exists; evidence not complete | See AR / VR / XR evidence section. |
+| Staging release train | Cross-repo gate exists; evidence not complete | See AR / VR / XR evidence section. |
 | Studio integration | Not recorded |  |
 | Jobs integration | Not recorded |  |
 | Cross-repo memory sync | Not recorded |  |
