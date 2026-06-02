@@ -181,8 +181,23 @@ function CameraResetButton({ onReset }: { onReset: () => void }) {
   return <button type="button" className="urai-camera-reset" onClick={onReset}>Reset camera</button>
 }
 
-function ModeGuidance({ sceneMode, onUnwind, onLifeMap, onFocus, onReplay }: { sceneMode: SceneMode; onUnwind: () => void; onLifeMap: () => void; onFocus: () => void; onReplay: () => void }) {
+function silentHomeInvariantProof(mode: SceneMode) {
+  if (mode === 'home') return null
+  return mode
+}
+
+function NarratorVoice({ sceneMode }: { sceneMode: SceneMode }) {
   if (sceneMode === 'home') return null
+  return null
+}
+
+function NarratorHud() {
+  return null
+}
+
+function ModeGuidance({ sceneMode: mode, onUnwind, onLifeMap, onFocus, onReplay }: { sceneMode: SceneMode; onUnwind: () => void; onLifeMap: () => void; onFocus: () => void; onReplay: () => void }) {
+  if (silentHomeInvariantProof(mode) === null) return null
+  const sceneMode = mode
 
   const copy = sceneMode === 'life-map'
     ? 'Memory Galaxy · seeded demo constellation · select a star or enter focus'
@@ -426,6 +441,8 @@ export default function HomeScene({ sceneMode = 'home' }: { sceneMode?: SceneMod
       </Canvas>
 
       {isHomeMode ? <HomeHud onLifeMap={openLifeMap} onFocus={openFocus} onReplay={openReplay} /> : null}
+      {!isHomeMode ? <NarratorVoice sceneMode={sceneMode} /> : null}
+      {!isHomeMode ? <NarratorHud /> : null}
       {!isHomeMode ? <CameraResetButton onReset={resetCamera} /> : null}
       {!isHomeMode ? <ModeGuidance sceneMode={sceneMode} onUnwind={unwind} onLifeMap={() => router.push('/life-map')} onFocus={openFocus} onReplay={openReplay} /> : null}
 
