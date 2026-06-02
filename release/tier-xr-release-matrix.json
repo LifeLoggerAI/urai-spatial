@@ -1,0 +1,98 @@
+{
+  "schemaVersion": 1,
+  "repository": "LifeLoggerAI/urai-spatial",
+  "status": "release-candidate-evidence-pending",
+  "runtimeRoot": "urai-tier1",
+  "releaseGate": "pnpm live:check",
+  "tiers": [
+    {
+      "id": "tier-1",
+      "label": "Runtime authority",
+      "requiredChecks": ["pnpm urai:tier1", "pnpm home:invariant", "pnpm firebase:rules:check"],
+      "evidenceSources": ["docs/decisions/runtime-authority.md", "src/canon/tier1.ts", "urai-tier1/src/spatial/layout/TierOneExperience.tsx", "urai-tier1/src/scene/HomeScene.tsx"],
+      "completionPolicy": "Complete only after canonical runtime, home silence, Firebase boundaries, and release-gate output are recorded in EVIDENCE.md.",
+      "currentEvidenceStatus": "in-progress"
+    },
+    {
+      "id": "tier-2",
+      "label": "System governance",
+      "requiredChecks": ["pnpm urai:tier2", "pnpm tier2:check"],
+      "evidenceSources": ["docs/canon/TIER_2_CANON_STANDARDS.md", "src/canon/tier2Systems.ts"],
+      "completionPolicy": "Complete only after required systems and mapped runtime paths are checked in CI and captured as artifact evidence.",
+      "currentEvidenceStatus": "in-progress"
+    },
+    {
+      "id": "tier-3",
+      "label": "Feature and route governance",
+      "requiredChecks": ["pnpm urai:tier3", "pnpm tier3:check", "pnpm lock:e2e"],
+      "evidenceSources": ["docs/canon/TIER_3_CANON_STANDARDS.md", "src/canon/tier3.ts", "tests/spatial-lock.mjs"],
+      "completionPolicy": "Complete only after route, feature, interaction, accessibility, and recovery coverage are checked in CI and captured as artifact evidence.",
+      "currentEvidenceStatus": "in-progress"
+    },
+    {
+      "id": "tier-4",
+      "label": "Implementation governance",
+      "requiredChecks": ["pnpm urai:tier4", "pnpm tier4:check", "pnpm --filter urai-tier1 build"],
+      "evidenceSources": ["docs/canon/TIER_4_CANON_STANDARDS.md", "src/canon/tier4.ts", "firebase/firestore.rules", "urai-tier1/src/app/globals.css"],
+      "completionPolicy": "Complete only after route integrity, reduced motion, Firebase boundaries, env readiness, typecheck, and build evidence are captured.",
+      "currentEvidenceStatus": "in-progress"
+    },
+    {
+      "id": "tier-5",
+      "label": "Operational release governance",
+      "requiredChecks": ["pnpm urai:tier5", "pnpm tier5:check", "pnpm verify:release", "pnpm live:check"],
+      "evidenceSources": ["docs/canon/TIER_5_CANON_STANDARDS.md", "src/canon/tier5.ts", ".github/workflows/urai-launch.yml", ".github/workflows/spatial-live-deploy.yml", "audit/tier-lock/TIER_1_5_FINAL_LOCK_REPORT.md"],
+      "completionPolicy": "Complete only after CI, artifact upload, rollback/incident readiness, release reporting, and live-check evidence are all recorded.",
+      "currentEvidenceStatus": "in-progress"
+    }
+  ],
+  "xrTargets": [
+    {
+      "id": "web-spatial",
+      "label": "Web spatial runtime",
+      "requiredChecks": ["pnpm live:check", "pnpm smoke"],
+      "requiredEvidence": ["route smoke", "browser E2E", "reduced-motion", "production build", "live URL smoke"],
+      "claimPolicy": "May be claimed live only after deployed URL smoke and EVIDENCE.md route/API rows are filled.",
+      "currentEvidenceStatus": "in-progress"
+    },
+    {
+      "id": "webxr",
+      "label": "WebXR handheld/browser immersive surface",
+      "requiredChecks": ["pnpm xr:contract", "pnpm xr:verify"],
+      "requiredEvidence": ["permission-safe WebXR session behavior", "runtime contract test", "navmesh bake", "provider validation", "device/browser matrix"],
+      "claimPolicy": "Must remain disabled-until-provider-validated until permission, device, and smoke evidence are recorded.",
+      "currentEvidenceStatus": "not-validated"
+    },
+    {
+      "id": "quest-vr",
+      "label": "Meta Quest VR target",
+      "requiredChecks": ["pnpm xr:verify"],
+      "requiredEvidence": ["Quest device run", "input/controller or hand tracking validation", "thermal/performance run", "comfort/reduced-motion review", "store/VRC readiness"],
+      "claimPolicy": "Cannot be claimed production-ready from web CI alone; requires device-lab evidence and release packet.",
+      "currentEvidenceStatus": "not-validated"
+    },
+    {
+      "id": "visionos",
+      "label": "Apple visionOS spatial target",
+      "requiredChecks": ["pnpm xr:verify"],
+      "requiredEvidence": ["visionOS simulator or device run", "shared-space/immersive-space safety review", "accessibility review", "build artifact or app target evidence", "store readiness"],
+      "claimPolicy": "Cannot be claimed production-ready until a visionOS target exists and device/simulator evidence is recorded.",
+      "currentEvidenceStatus": "not-validated"
+    },
+    {
+      "id": "ar-handheld",
+      "label": "Handheld AR target",
+      "requiredChecks": ["pnpm xr:verify"],
+      "requiredEvidence": ["AR permission review", "camera/session privacy review", "mobile route smoke", "device matrix", "fallback behavior"],
+      "claimPolicy": "Cannot be claimed production-ready until camera/session provider behavior is validated and privacy-reviewed.",
+      "currentEvidenceStatus": "not-validated"
+    }
+  ],
+  "externalReleaseBlockers": [
+    "Firebase project and service-account evidence",
+    "Deployed live URL and smoke evidence",
+    "XR provider/device-lab evidence for WebXR, Quest, visionOS, and handheld AR",
+    "Store/distribution packet where applicable",
+    "Privacy/compliance signoff for provider-backed data flows"
+  ]
+}
