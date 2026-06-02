@@ -11,19 +11,13 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: '20'
-      - run: corepack enable
-      - name: Install dependencies
+          node-version: '22'
+      - name: Enable pnpm
         run: |
-          if [ -f pnpm-lock.yaml ]; then
-            corepack prepare pnpm@latest --activate
-            pnpm install --frozen-lockfile
-          elif [ -f package-lock.json ]; then
-            npm ci
-          elif [ -f package.json ]; then
-            npm install
-          else
-            echo "No package.json found; skipping install."
-          fi
+          corepack enable
+          corepack prepare pnpm@10.0.0 --activate
+          pnpm --version
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
       - name: Verify
         run: node scripts/urai-production-verify.mjs
