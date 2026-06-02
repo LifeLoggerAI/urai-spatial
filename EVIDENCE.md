@@ -4,13 +4,14 @@ This file is the evidence ledger for URAI Spatial. Do not mark the repository pr
 
 ## Current status
 
-- Evidence status: automation wiring recorded; live release evidence not yet recorded.
+- Evidence status: automation wiring recorded; live release evidence in progress.
 - Runtime app root: `urai-tier1`.
 - Current release mode: `fallback-demo`.
 - Production-live status: not verified.
 - Deployment automation: `.github/workflows/spatial-live-deploy.yml` verifies `pnpm live:check` on configured `main` push paths and can deploy only after verification when manually dispatched with `deploy=DEPLOY` or when repo variable `URAI_SPATIAL_AUTO_DEPLOY=true` is configured.
 - Automation trigger scope: `urai-tier1/**`, `apps/functions/**`, `packages/**`, `scripts/**`, `tests/**`, Firebase config/rules files, root package/lock/workspace files, `.nvmrc`, `.node-version`, `README.md`, release/deployment/status/evidence docs, `docs/decisions/**`, and the workflow file itself.
 - Automation trigger coverage: README, portable Node runtime pin, and decision-record coverage added in commit `878d66b5eba02c3aefb45715d717f473312044ff`. No documentation/runtime-pin trigger gap is currently recorded.
+- Latest release-gate observation: workflow run `26812240951` for commit `f0020863c7e58ac03a6ab399bf3cc036bd5b963b` triggered successfully but failed in `pnpm live:check` because `.github/workflows/urai-production-verify.yml` still used npm fallback commands inside the pnpm workspace. Commit `5dd9613aa64883b1a3f04bff766d2b9e0c4b3c36` changed that workflow to strict pnpm.
 
 ## Local verification
 
@@ -32,8 +33,8 @@ Record the exact command, date/time, commit SHA, operator, and result.
 
 | Gate | Command | Result | Evidence / notes |
 | --- | --- | --- | --- |
-| Full release check | `pnpm live:check` | Not recorded | Automated by `.github/workflows/spatial-live-deploy.yml` on configured main push paths and manual dispatch. |
-| Full release deploy dry gate | `pnpm verify:release:full` | Not recorded |  |
+| Full release check | `pnpm live:check` | Failed once; rerun pending | Run `26812240951` failed in runtime boundary check: `.github/workflows/urai-production-verify.yml uses npm in a pnpm workspace`. Fixed by commit `5dd9613aa64883b1a3f04bff766d2b9e0c4b3c36`; this ledger update intentionally retriggers the release gate. |
+| Full release deploy dry gate | `pnpm verify:release:full` | Failed once; rerun pending | Same runtime boundary failure as above. |
 | Replay contract | `pnpm test:replay-tier5` | Not recorded |  |
 | Firestore boundary check | `pnpm firebase:rules:check` | Not recorded |  |
 | XR verification | `pnpm xr:verify` | Not recorded | Required only before XR/WebXR provider claims. |
@@ -86,7 +87,7 @@ HOST=https://<live-host> pnpm smoke
 Provider rows must remain `Not recorded` until the provider has been configured, smoke-tested, and copy-reviewed.
 
 | Provider / capability | Result | Evidence / notes |
-| --- | --- | --- |
+| --- | --- |
 | Firebase Hosting or App Hosting | Not recorded |  |
 | Firebase Auth | Not recorded |  |
 | Firestore rules and indexes | Not recorded |  |
