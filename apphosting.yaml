@@ -1,0 +1,15 @@
+runConfig:
+  runtime: nodejs22
+  minInstances: 0
+  maxInstances: 1
+  concurrency: 80
+  cpu: 1
+  memoryMiB: 1024
+
+env:
+  - variable: NEXT_PUBLIC_URAI_LAUNCH_STATUS
+    value: public_demo
+  - variable: NEXT_PUBLIC_URAI_PUBLIC_DEMO_ENABLED
+    value: "true"
+  - variable: NEXT_PUBLIC_URAI_WAITLIST_ENABLED
+    value: "true"
