@@ -16,9 +16,12 @@ Run this checklist before every Genesis V1 patch.
 - Verify Shadow/Legacy/Export off by default.
 - Update changelog.
 - Update version if needed.
+- Review `docs/prelaunch/launch-decision.md` before public launch.
+- Do not launch while final decision is `NO-GO`.
 
 ## Notes
 
 - Use `pnpm patch:check` as the lightweight default check.
 - Add targeted tests when the patch touches auth, Passport, AI, exports, or Firestore rules.
 - Do not ship when a P0 privacy or safety issue remains unresolved.
+- For the final public demo launch, complete the full prelaunch package in `docs/prelaunch/` before changing the decision to GO.
