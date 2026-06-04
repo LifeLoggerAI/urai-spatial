@@ -35,6 +35,9 @@ export type MemoryStarNode = {
   replayId: string
   focusHref: string
   replayHref: string
+  memoryPlaceId?: string
+  canEnterPlace: boolean
+  enterPlaceHref?: string
   deletedAt?: string
   archivedAt?: string
   lockedReason?: string
@@ -78,8 +81,13 @@ function emotionalSignature(star: DemoMemoryStar): MemoryStarEmotionalSignature 
   }
 }
 
+function demoMemoryPlaceIdForStar(star: DemoMemoryStar) {
+  return `place-${star.manifestId}`
+}
+
 export function demoMemoryStarToNode(star: DemoMemoryStar): MemoryStarNode {
   const id = star.manifestId
+  const memoryPlaceId = demoMemoryPlaceIdForStar(star)
   return {
     id,
     userId: null,
@@ -103,6 +111,9 @@ export function demoMemoryStarToNode(star: DemoMemoryStar): MemoryStarNode {
     replayId: id,
     focusHref: `/focus?manifestId=${encodeURIComponent(id)}`,
     replayHref: `/replay?manifestId=${encodeURIComponent(id)}`,
+    memoryPlaceId,
+    canEnterPlace: true,
+    enterPlaceHref: `/place/${encodeURIComponent(memoryPlaceId)}`,
   }
 }
 
@@ -113,6 +124,10 @@ export const DEMO_MEMORY_STAR_NODE_BY_ID: Record<string, MemoryStarNode> = Objec
 
 export function canRenderMemoryStar(star: Pick<MemoryStarNode, 'privacyState'>) {
   return star.privacyState === 'demo' || star.privacyState === 'public' || star.privacyState === 'private'
+}
+
+export function canEnterMemoryPlace(star: Pick<MemoryStarNode, 'canEnterPlace' | 'memoryPlaceId' | 'privacyState'>) {
+  return Boolean(star.canEnterPlace && star.memoryPlaceId && canRenderMemoryStar(star))
 }
 
 export function resolveDemoMemoryStar(starId: string | undefined | null): MemoryStarResolution {
@@ -135,6 +150,9 @@ export function redactMemoryStarForPublic(star: MemoryStarNode): MemoryStarNode 
     sourceId: 'redacted',
     provenanceSummary: 'Private provenance redacted for public/fallback rendering.',
     description: 'Private memory details are hidden until authenticated access and consent are verified.',
+    memoryPlaceId: undefined,
+    canEnterPlace: false,
+    enterPlaceHref: undefined,
   }
 }
 
