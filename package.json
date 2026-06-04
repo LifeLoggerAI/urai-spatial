@@ -16,6 +16,7 @@
   ],
   "scripts": {
     "preinstall": "node scripts/check-install-disk-space.mjs",
+    "patch:check": "node scripts/run-patch-checks.mjs",
     "install:check": "node scripts/check-install-disk-space.mjs",
     "bootstrap:check": "node scripts/check-workspace-install.mjs",
     "pnpm:local": "node scripts/run-pnpm.mjs",
