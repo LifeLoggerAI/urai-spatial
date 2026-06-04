@@ -116,28 +116,7 @@
     "lock:all": "node scripts/run-pnpm.mjs lock:static && node scripts/run-pnpm.mjs lock:build && node scripts/run-pnpm.mjs lock:e2e",
     "tier3:check": "node scripts/check-tier3-governance.mjs",
     "tier4:check": "node scripts/check-tier4-governance.mjs",
-    "tier5:check": "node scripts/check-tier5-governance.mjs"
-  },
-  "devDependencies": {
-    "@firebase/rules-unit-testing": "^4.0.1",
-    "@playwright/test": "^1.57.0",
-    "@types/node": "^25.5.0",
-    "@types/react": "^19.2.14",
-    "@types/three": "^0.183.1",
-    "firebase-tools": "^14.27.0",
-    "pnpm": "^10.0.0",
-    "typescript": "^5.9.3"
-  },
-  "dependencies": {
-    "@react-three/drei": "^10.7.7",
-    "@react-three/fiber": "^9.5.0",
-    "@react-three/postprocessing": "^3.0.4",
-    "firebase": "^12.6.0",
-    "firebase-admin": "^13.7.0",
-    "postprocessing": "^6.38.3",
-    "stripe": "^19.3.0",
-    "three": "^0.183.2",
-    "zustand": "^5.0.11"
-  },
-  "type": "module"
+    "tier5:check": "node scripts/check-tier5-governance.mjs",
+    "urai:guardian": "node urai-tier1/tests/guardian/route-canon.test.mjs && node urai-tier1/tests/guardian/location-privacy-canon.test.mjs && node urai-tier1/tests/guardian/no-debug-copy-canon.test.mjs"
+  }
 }
