@@ -60,6 +60,7 @@ export function MemoryPlaceScene({ place, objects }: { place: MemoryPlace; objec
     () => objects.find((object) => object.id === selectedObjectId) ?? objects[0],
     [objects, selectedObjectId],
   );
+  const placeReplayHref = `/place/${encodeURIComponent(place.id)}/replay`;
 
   return (
     <main className="min-h-screen bg-slate-950 text-white">
@@ -99,6 +100,11 @@ export function MemoryPlaceScene({ place, objects }: { place: MemoryPlace; objec
                 {selectedObject ? `${selectedObject.objectType} · ${selectedObject.interactionType} · ${selectedObject.privacyLevel}` : 'Choose an object to inspect this place.'}
               </p>
               {selectedObject?.emotionalMeaning ? <p className="mt-2 text-sm text-slate-400">{selectedObject.emotionalMeaning}</p> : null}
+              <div className="mt-3 flex flex-wrap gap-2">
+                <Link className="rounded-full bg-white px-3 py-1.5 text-xs font-semibold text-slate-950 hover:bg-cyan-100" href={placeReplayHref}>
+                  Replay Place
+                </Link>
+              </div>
             </div>
           </div>
           <div className="flex gap-3">
