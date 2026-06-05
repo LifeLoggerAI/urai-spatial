@@ -10,6 +10,8 @@
     "src/spatial/components/**/*.ts",
     "src/spatial/components/**/*.tsx",
     "src/spatial/hooks/useSceneAuthority.ts",
+    "src/spatial/places/**/*.ts",
+    "src/spatial/places/**/*.tsx",
     "src/spatial/scene/**/*.ts",
     "src/spatial/scene/**/*.tsx"
   ],
