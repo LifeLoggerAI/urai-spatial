@@ -1,6 +1,5 @@
-import { RealmShell } from '@/spatial/realms/RealmShell'
-import { getSceneDefinition } from '@/spatial/realms/sceneRegistry'
+import { CouncilRealm } from '@/spatial/council/CouncilRealm'
 
 export default function CouncilRealmPage() {
-  return <RealmShell scene={getSceneDefinition('council')} summary="A private guidance realm where the orb and Council presence can later explain places, patterns, and next steps." />
+  return <CouncilRealm />
 }
