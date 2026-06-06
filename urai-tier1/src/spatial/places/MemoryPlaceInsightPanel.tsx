@@ -1,5 +1,6 @@
 import { explainMemoryPlace } from '@/spatial/explanations/spatialExplanationSchema'
 import { filterSpatialExport } from '@/spatial/exports/exportPrivacyFilter'
+import { getSpatialCueMetadata } from '@/spatial/runtime/spatialCueMetadata'
 import { MemoryPlace } from './memoryPlaceSchema'
 import { PlaceObject } from './placeObjectSchema'
 
@@ -18,6 +19,8 @@ export function MemoryPlaceInsightPanel({ place, selectedObject }: { place: Memo
     includePeopleNames: false,
   })
 
+  const cue = getSpatialCueMetadata('select-object', 'select-object')
+
   return (
     <div className="mt-3 grid gap-2 text-xs text-slate-300">
       {explanation ? (
@@ -31,6 +34,11 @@ export function MemoryPlaceInsightPanel({ place, selectedObject }: { place: Memo
         <p className="font-semibold text-slate-100">Export status</p>
         <p className="mt-1">{exportDecision.allowed ? 'Safe redacted export available.' : 'Export requires review or confirmation.'}</p>
         <p className="mt-1">Mode: {exportDecision.privacyMode}</p>
+      </div>
+      <div className="rounded-2xl border border-white/10 bg-white/5 p-3">
+        <p className="font-semibold text-slate-100">Sensory cues</p>
+        <p className="mt-1">Sound: {cue.soundLabel} · Haptic: {cue.hapticLabel}</p>
+        <p className="mt-1">Reduced-motion safe: {cue.reducedMotionSafe ? 'yes' : 'no'} · Privacy-safe: {cue.privacySafe ? 'yes' : 'no'}</p>
       </div>
     </div>
   )
