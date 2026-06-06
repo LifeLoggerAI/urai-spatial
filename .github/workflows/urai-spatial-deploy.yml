@@ -16,6 +16,11 @@ on:
         required: true
         default: false
         type: boolean
+      deploy_url:
+        description: Optional deployed base URL for smoke route output
+        required: false
+        default: ''
+        type: string
 
 jobs:
   deploy:
@@ -73,3 +78,9 @@ jobs:
           test -n "$FIREBASE_TOKEN"
           test -n "$FIREBASE_PROJECT_ID"
           npx firebase-tools deploy --config firebase.static.json --only hosting --project "$FIREBASE_PROJECT_ID" --token "$FIREBASE_TOKEN"
+
+      - name: Print smoke routes
+        if: ${{ inputs.deploy_url != '' }}
+        env:
+          URAI_DEPLOY_URL: ${{ inputs.deploy_url }}
+        run: corepack pnpm smoke:deployed
