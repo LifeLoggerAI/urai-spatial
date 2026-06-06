@@ -17,6 +17,7 @@ const tests = [
   'urai-tier1/tests/guardian/static-route-smoke-canon.test.mjs',
   'urai-tier1/tests/guardian/live-data-validation-canon.test.mjs',
   'urai-tier1/tests/guardian/release-script-canon.test.mjs',
+  'urai-tier1/tests/guardian/deploy-workflow-canon.test.mjs',
 ]
 
 for (const test of tests) {
