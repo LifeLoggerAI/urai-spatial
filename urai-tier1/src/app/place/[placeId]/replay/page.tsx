@@ -1,7 +1,6 @@
 import Link from 'next/link'
 import { PlaceReplayScene } from '@/spatial/places/PlaceReplayScene'
-import { getDemoPlaceObjects } from '@/spatial/places/demoPlaceObjects'
-import { resolveDemoMemoryPlace } from '@/spatial/places/demoMemoryPlaces'
+import { listMemoryPlaceObjects, resolveMemoryPlace } from '@/spatial/places/memoryPlaceRepository'
 
 type PlaceReplayPageProps = {
   params: Promise<{
@@ -11,7 +10,7 @@ type PlaceReplayPageProps = {
 
 export default async function PlaceReplayPage({ params }: PlaceReplayPageProps) {
   const { placeId } = await params
-  const resolved = resolveDemoMemoryPlace(placeId)
+  const resolved = await resolveMemoryPlace(placeId)
 
   if (!resolved.ok) {
     return (
@@ -28,5 +27,5 @@ export default async function PlaceReplayPage({ params }: PlaceReplayPageProps) 
     )
   }
 
-  return <PlaceReplayScene place={resolved.place} objects={getDemoPlaceObjects(resolved.place.id)} />
+  return <PlaceReplayScene place={resolved.place} objects={await listMemoryPlaceObjects(resolved.place.id)} />
 }
