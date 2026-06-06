@@ -78,6 +78,5 @@ jobs:
       - name: Verify live smoke
         if: ${{ github.event_name == 'workflow_dispatch' && inputs.live_url != '' }}
         env:
-          URAI_LIVE_URL: ${{ inputs.live_url }}
-          BASE_URL: ${{ inputs.live_url }}
+          URAI_DEPLOY_URL: ${{ inputs.live_url }}
         run: pnpm smoke:live
