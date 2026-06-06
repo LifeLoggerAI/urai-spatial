@@ -1,0 +1,75 @@
+name: URAI Spatial Deploy
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: Deploy environment
+        required: true
+        default: staging
+        type: choice
+        options:
+          - staging
+          - production
+      static_export:
+        description: Use static Firebase hosting config
+        required: true
+        default: false
+        type: boolean
+
+jobs:
+  deploy:
+    name: Deploy URAI Spatial
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    environment: ${{ inputs.environment }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Enable Corepack
+        run: corepack enable
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install dependencies
+        run: corepack pnpm install --no-frozen-lockfile
+
+      - name: Guardian
+        run: corepack pnpm urai:guardian
+
+      - name: Typecheck
+        run: corepack pnpm check:types
+
+      - name: Build
+        if: ${{ !inputs.static_export }}
+        run: corepack pnpm build
+
+      - name: Build static export
+        if: ${{ inputs.static_export }}
+        run: corepack pnpm build:static
+
+      - name: Firebase deploy hosting
+        if: ${{ !inputs.static_export }}
+        env:
+          FIREBASE_TOKEN: ${{ secrets.FIREBASE_TOKEN }}
+          FIREBASE_PROJECT_ID: ${{ secrets.FIREBASE_PROJECT_ID }}
+        run: |
+          test -n "$FIREBASE_TOKEN"
+          test -n "$FIREBASE_PROJECT_ID"
+          npx firebase-tools deploy --only hosting --project "$FIREBASE_PROJECT_ID" --token "$FIREBASE_TOKEN"
+
+      - name: Firebase deploy static hosting
+        if: ${{ inputs.static_export }}
+        env:
+          FIREBASE_TOKEN: ${{ secrets.FIREBASE_TOKEN }}
+          FIREBASE_PROJECT_ID: ${{ secrets.FIREBASE_PROJECT_ID }}
+        run: |
+          test -n "$FIREBASE_TOKEN"
+          test -n "$FIREBASE_PROJECT_ID"
+          npx firebase-tools deploy --config firebase.static.json --only hosting --project "$FIREBASE_PROJECT_ID" --token "$FIREBASE_TOKEN"
