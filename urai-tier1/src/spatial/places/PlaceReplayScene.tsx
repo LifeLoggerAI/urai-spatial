@@ -1,9 +1,10 @@
 import Link from 'next/link'
+import { makeDemoPlaceReplayBeats } from '@/spatial/replay/placeReplayBeatSchema'
 import { MemoryPlace } from './memoryPlaceSchema'
 import { PlaceObject } from './placeObjectSchema'
 
 export function PlaceReplayScene({ place, objects }: { place: MemoryPlace; objects: PlaceObject[] }) {
-  const firstObject = objects[0]
+  const beats = makeDemoPlaceReplayBeats(place.id, objects.map((object) => object.id))
 
   return (
     <main className="min-h-screen bg-slate-950 text-white">
@@ -13,25 +14,23 @@ export function PlaceReplayScene({ place, objects }: { place: MemoryPlace; objec
           <p className="text-xs uppercase tracking-[0.45em] text-cyan-100/70">Place Replay</p>
           <h1 className="mt-3 text-3xl font-semibold md:text-5xl">{place.title}</h1>
           <p className="mt-4 leading-7 text-slate-200">
-            This first replay pass uses safe symbolic beats from the place scene. Object-targeted camera movement and animation can build on this route next.
+            This replay uses safe symbolic beats from the place scene. Future passes can drive camera movement, sound, haptics, and object animation from the same beat contract.
           </p>
 
           <div className="mt-6 grid gap-3">
-            <div className="rounded-2xl border border-white/10 bg-slate-950/45 p-4">
-              <p className="text-xs uppercase tracking-[0.3em] text-slate-400">Beat 1</p>
-              <h2 className="mt-2 font-semibold">Enter the place</h2>
-              <p className="mt-2 text-sm text-slate-300">The scene opens at {place.reconstruction.scenePreset} with {place.locationPrivacy} location precision.</p>
-            </div>
-            <div className="rounded-2xl border border-white/10 bg-slate-950/45 p-4">
-              <p className="text-xs uppercase tracking-[0.3em] text-slate-400">Beat 2</p>
-              <h2 className="mt-2 font-semibold">Focus an object</h2>
-              <p className="mt-2 text-sm text-slate-300">{firstObject ? `${firstObject.label} is the first replay anchor.` : 'No object anchor is available yet.'}</p>
-            </div>
-            <div className="rounded-2xl border border-white/10 bg-slate-950/45 p-4">
-              <p className="text-xs uppercase tracking-[0.3em] text-slate-400">Beat 3</p>
-              <h2 className="mt-2 font-semibold">Return safely</h2>
-              <p className="mt-2 text-sm text-slate-300">Replay exits back to the place, LifeMap, or Home.</p>
-            </div>
+            {beats.map((beat, index) => {
+              const targetObject = beat.targetPlaceObjectId ? objects.find((object) => object.id === beat.targetPlaceObjectId) : undefined
+              return (
+                <div key={beat.id} className="rounded-2xl border border-white/10 bg-slate-950/45 p-4">
+                  <p className="text-xs uppercase tracking-[0.3em] text-slate-400">Beat {index + 1}</p>
+                  <h2 className="mt-2 font-semibold">{beat.title}</h2>
+                  <p className="mt-2 text-sm text-slate-300">{beat.narratorText}</p>
+                  <p className="mt-2 text-xs text-slate-500">
+                    {beat.durationMs}ms · {beat.objectAnimation}{targetObject ? ` · ${targetObject.label}` : ''}
+                  </p>
+                </div>
+              )
+            })}
           </div>
 
           <div className="mt-8 flex flex-wrap gap-3">
