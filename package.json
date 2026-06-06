@@ -56,7 +56,7 @@
     "deploy:staging": "node scripts/run-pnpm.mjs launch:check && firebase deploy --only hosting",
     "deploy:prod": "node scripts/run-pnpm.mjs launch:check && firebase deploy --only hosting",
     "frb": "node scripts/run-pnpm.mjs deploy:staging",
-    "release:check": "node scripts/run-pnpm.mjs launch:local",
+    "release:check": "node scripts/run-pnpm.mjs release:check",
     "release:p1": "node scripts/run-pnpm.mjs release:check",
     "live:check": "node scripts/live-release.mjs --check",
     "live:deploy": "node scripts/live-release.mjs --deploy",
@@ -110,13 +110,13 @@
     "verify:launch": "node scripts/run-pnpm.mjs lock:static && node scripts/run-pnpm.mjs lock:build && node scripts/run-pnpm.mjs launch:check",
     "verify:release": "node scripts/run-pnpm.mjs lock:all",
     "verify:release:full": "node scripts/run-pnpm.mjs lock:all && node scripts/run-pnpm.mjs test && node scripts/run-pnpm.mjs xr:verify",
-    "lock:static": "node scripts/run-pnpm.mjs check:runtime-boundary && node scripts/run-pnpm.mjs check:source-integrity && node scripts/run-pnpm.mjs check:production-routes && node scripts/run-pnpm.mjs check:spatial-copy && node scripts/run-pnpm.mjs check:launch-boundary-contract && node scripts/run-pnpm.mjs check:tier-xr-release-matrix && node scripts/run-pnpm.mjs tier:check && node scripts/run-pnpm.mjs migration:check && node scripts/run-pnpm.mjs home:invariant && node scripts/run-pnpm.mjs firebase:rules:check",
+    "lock:static": "node scripts/run-pnpm.mjs urai:guardian && node scripts/run-pnpm.mjs check:runtime-boundary && node scripts/run-pnpm.mjs check:source-integrity && node scripts/run-pnpm.mjs check:production-routes && node scripts/run-pnpm.mjs check:spatial-copy && node scripts/run-pnpm.mjs check:launch-boundary-contract && node scripts/run-pnpm.mjs check:tier-xr-release-matrix && node scripts/run-pnpm.mjs tier:check && node scripts/run-pnpm.mjs migration:check && node scripts/run-pnpm.mjs home:invariant && node scripts/run-pnpm.mjs firebase:rules:check",
     "lock:build": "node scripts/run-pnpm.mjs check:types && node scripts/run-pnpm.mjs build",
     "lock:e2e": "node scripts/run-pnpm.mjs playwright:ensure && node scripts/run-pnpm.mjs test:e2e",
     "lock:all": "node scripts/run-pnpm.mjs lock:static && node scripts/run-pnpm.mjs lock:build && node scripts/run-pnpm.mjs lock:e2e",
     "tier3:check": "node scripts/check-tier3-governance.mjs",
     "tier4:check": "node scripts/check-tier4-governance.mjs",
     "tier5:check": "node scripts/check-tier5-governance.mjs",
-    "urai:guardian": "node urai-tier1/tests/guardian/route-canon.test.mjs && node urai-tier1/tests/guardian/location-privacy-canon.test.mjs && node urai-tier1/tests/guardian/no-debug-copy-canon.test.mjs && node urai-tier1/tests/guardian/focus-place-door-canon.test.mjs && node urai-tier1/tests/guardian/place-routes-canon.test.mjs && node urai-tier1/tests/guardian/place-safety-continuity-canon.test.mjs && node urai-tier1/tests/guardian/place-repository-canon.test.mjs && node urai-tier1/tests/guardian/replay-explanation-export-canon.test.mjs && node urai-tier1/tests/guardian/place-layer-insight-canon.test.mjs"
+    "urai:guardian": "node scripts/urai-guardian.mjs"
   }
 }
