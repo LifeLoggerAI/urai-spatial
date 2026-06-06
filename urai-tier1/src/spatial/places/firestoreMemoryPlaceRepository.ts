@@ -1,4 +1,5 @@
 import { MemoryPlaceRepository, fallbackMemoryPlaceRepository } from './memoryPlaceRepository'
+import { validateMemoryPlace, validatePlaceObject } from './memoryPlaceValidation'
 
 export type FirestoreMemoryPlaceRepositoryOptions = {
   enabled: boolean
@@ -12,18 +13,30 @@ export function createFirestoreMemoryPlaceRepository(options: FirestoreMemoryPla
     async resolvePlace(placeId, context) {
       // Firestore wiring point:
       // users/{userId}/memoryPlaces/{placeId}
-      // Fallback remains active until the live adapter is connected.
-      return fallbackMemoryPlaceRepository.resolvePlace(placeId, { ...context, userId: options.userId, source: 'fallback' })
+      // The live adapter must validate every loaded record with validateMemoryPlace.
+      const resolved = await fallbackMemoryPlaceRepository.resolvePlace(placeId, { ...context, userId: options.userId, source: 'fallback' })
+      if (!resolved.ok) return resolved
+      const validation = validateMemoryPlace(resolved.place)
+      if (!validation.ok) return { ok: false, status: 404, reason: validation.reason, safeHref: '/life-map' }
+      return { ...resolved, place: validation.value }
     },
     async listPlaceObjects(placeId, context) {
       // Firestore wiring point:
       // users/{userId}/placeObjects where memoryPlaceId == placeId
-      return fallbackMemoryPlaceRepository.listPlaceObjects(placeId, { ...context, userId: options.userId, source: 'fallback' })
+      const objects = await fallbackMemoryPlaceRepository.listPlaceObjects(placeId, { ...context, userId: options.userId, source: 'fallback' })
+      return objects.flatMap((object) => {
+        const validation = validatePlaceObject(object)
+        return validation.ok ? [validation.value] : []
+      })
     },
     async listPlaces(context) {
       // Firestore wiring point:
       // users/{userId}/memoryPlaces
-      return fallbackMemoryPlaceRepository.listPlaces({ ...context, userId: options.userId, source: 'fallback' })
+      const places = await fallbackMemoryPlaceRepository.listPlaces({ ...context, userId: options.userId, source: 'fallback' })
+      return places.flatMap((place) => {
+        const validation = validateMemoryPlace(place)
+        return validation.ok ? [validation.value] : []
+      })
     },
   }
 }
