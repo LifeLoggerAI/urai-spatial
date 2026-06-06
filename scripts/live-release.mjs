@@ -6,6 +6,7 @@ const mode = process.argv.includes('--deploy') ? 'deploy' : 'check'
 const deployProject = process.env.FIREBASE_PROJECT_ID || process.env.FIREBASE_PROJECT || process.env.GCLOUD_PROJECT
 const manifestPath = 'release/urai-spatial-live-manifest.json'
 const tierXrMatrixPath = 'release/tier-xr-release-matrix.json'
+const doneDoneLockPath = 'docs/URAI_SPATIAL_DONE_DONE_LOCK.md'
 
 function run(command, args, options = {}) {
   return new Promise((resolve, reject) => {
@@ -57,6 +58,19 @@ function readJson(path) {
     return JSON.parse(fs.readFileSync(path, 'utf8'))
   } catch (error) {
     throw new Error(`Invalid JSON in ${path}: ${error.message}`)
+  }
+}
+
+function readText(path) {
+  requireFile(path)
+  return fs.readFileSync(path, 'utf8')
+}
+
+function assertTextIncludes(path, expectedValues) {
+  const text = readText(path)
+  const missing = expectedValues.filter((value) => !text.includes(value))
+  if (missing.length) {
+    throw new Error(`${path} is missing required done-done terms: ${missing.join(', ')}`)
   }
 }
 
@@ -113,6 +127,19 @@ function assertBlockedXrClaims(manifest) {
       throw new Error(`Release manifest live claim ${claim} must be ${expected}.`)
     }
   }
+}
+
+function assertDoneDoneLock() {
+  assertTextIncludes(doneDoneLockPath, [
+    'Canonical runtime root: `urai-tier1`',
+    'V1 Genesis spatial home',
+    'V2 mirror, memory, and timeline surface',
+    'V3 relationship, shadow, and pattern surfaces',
+    'V4 WebXR / AR / VR pathway',
+    'V5 Mirror of Becoming / legacy spatial release',
+    'disabled until provider/browser validation exists',
+    'live-working verified',
+  ])
 }
 
 function assertReleaseManifest() {
@@ -178,6 +205,7 @@ function assertReleaseFiles() {
     'release/LIVE_STATUS.md',
     manifestPath,
     tierXrMatrixPath,
+    doneDoneLockPath,
     'README.md',
     'firebase.json',
     '.firebaserc.example',
@@ -210,6 +238,9 @@ async function main() {
 
   console.log('[URAI Spatial Live] Validating release file surface.')
   assertReleaseFiles()
+
+  console.log('[URAI Spatial Live] Validating done-done lock.')
+  assertDoneDoneLock()
 
   console.log('[URAI Spatial Live] Validating release manifest and Tier/XR matrix.')
   const manifest = assertReleaseManifest()
