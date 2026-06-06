@@ -56,7 +56,7 @@
     "deploy:staging": "node scripts/run-pnpm.mjs launch:check && firebase deploy --only hosting",
     "deploy:prod": "node scripts/run-pnpm.mjs launch:check && firebase deploy --only hosting",
     "frb": "node scripts/run-pnpm.mjs deploy:staging",
-    "release:check": "node scripts/run-pnpm.mjs release:check",
+    "release:check": "node scripts/run-pnpm.mjs launch:local",
     "release:p1": "node scripts/run-pnpm.mjs release:check",
     "live:check": "node scripts/live-release.mjs --check",
     "live:deploy": "node scripts/live-release.mjs --deploy",
