@@ -46,6 +46,7 @@
     "typecheck": "node scripts/run-pnpm.mjs --filter urai-tier1 typecheck",
     "smoke": "node scripts/smoke-routes.mjs",
     "smoke:deployed": "node scripts/urai-post-deploy-smoke.mjs",
+    "smoke:live": "node scripts/urai-live-smoke.mjs",
     "check:spatial": "node scripts/check-spatial-invariant.mjs",
     "launch:local": "node scripts/run-pnpm.mjs bootstrap:check && node scripts/run-local-launch-check.mjs",
     "launch:check": "node scripts/run-pnpm.mjs launch:local",
