@@ -10,6 +10,7 @@
   "deployCommand": "FIREBASE_PROJECT_ID=<project-id> pnpm live:deploy",
   "postDeploySmoke": "HOST=https://<live-host> pnpm smoke",
   "liveStatusFile": "release/LIVE_STATUS.md",
+  "doneDoneLock": "docs/URAI_SPATIAL_DONE_DONE_LOCK.md",
   "tierXrReleaseMatrix": "release/tier-xr-release-matrix.json",
   "routes": [
     "/",
@@ -42,6 +43,7 @@
     "ar-handheld"
   ],
   "releaseGuards": [
+    "done-done-lock",
     "source-integrity",
     "production-routes",
     "spatial-copy",
