@@ -17,7 +17,7 @@ on:
         default: false
         type: boolean
       deploy_url:
-        description: Optional deployed base URL for smoke route output
+        description: Optional deployed base URL for smoke route output and HTTP smoke validation
         required: false
         default: ''
         type: string
@@ -84,3 +84,9 @@ jobs:
         env:
           URAI_DEPLOY_URL: ${{ inputs.deploy_url }}
         run: corepack pnpm smoke:deployed
+
+      - name: Validate live routes
+        if: ${{ inputs.deploy_url != '' }}
+        env:
+          URAI_DEPLOY_URL: ${{ inputs.deploy_url }}
+        run: corepack pnpm smoke:live
