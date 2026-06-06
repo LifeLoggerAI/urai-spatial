@@ -1,10 +1,12 @@
 import Link from 'next/link'
 import { makeDemoPlaceReplayBeats } from '@/spatial/replay/placeReplayBeatSchema'
+import { getSpatialCueMetadata } from '@/spatial/runtime/spatialCueMetadata'
 import { MemoryPlace } from './memoryPlaceSchema'
 import { PlaceObject } from './placeObjectSchema'
 
 export function PlaceReplayScene({ place, objects }: { place: MemoryPlace; objects: PlaceObject[] }) {
   const beats = makeDemoPlaceReplayBeats(place.id, objects.map((object) => object.id))
+  const cue = getSpatialCueMetadata('start-replay', 'start-replay')
 
   return (
     <main className="min-h-screen bg-slate-950 text-white">
@@ -16,6 +18,11 @@ export function PlaceReplayScene({ place, objects }: { place: MemoryPlace; objec
           <p className="mt-4 leading-7 text-slate-200">
             This replay uses safe symbolic beats from the place scene. Future passes can drive camera movement, sound, haptics, and object animation from the same beat contract.
           </p>
+          <div className="mt-4 rounded-2xl border border-white/10 bg-white/5 p-3 text-xs text-slate-300">
+            <p className="font-semibold text-slate-100">Replay sensory cue</p>
+            <p className="mt-1">Sound: {cue.soundLabel} · Haptic: {cue.hapticLabel}</p>
+            <p className="mt-1">Reduced-motion safe: {cue.reducedMotionSafe ? 'yes' : 'no'} · Privacy-safe: {cue.privacySafe ? 'yes' : 'no'}</p>
+          </div>
 
           <div className="mt-6 grid gap-3">
             {beats.map((beat, index) => {
