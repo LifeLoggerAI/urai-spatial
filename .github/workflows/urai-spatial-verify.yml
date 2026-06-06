@@ -32,6 +32,9 @@ jobs:
       - name: Install dependencies
         run: corepack pnpm install --no-frozen-lockfile
 
+      - name: URAI Guardian
+        run: corepack pnpm urai:guardian
+
       - name: Check public copy
         run: corepack pnpm check:public-copy
 
