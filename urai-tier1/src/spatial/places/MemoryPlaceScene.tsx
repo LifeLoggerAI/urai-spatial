@@ -4,6 +4,7 @@ import { useMemo, useState } from 'react';
 import Link from 'next/link';
 import { Canvas } from '@react-three/fiber';
 import { OrbitControls, PerspectiveCamera } from '@react-three/drei';
+import { MemoryPlaceInsightPanel } from './MemoryPlaceInsightPanel';
 import { MemoryPlace } from './memoryPlaceSchema';
 import { PlaceObject } from './placeObjectSchema';
 
@@ -100,6 +101,7 @@ export function MemoryPlaceScene({ place, objects }: { place: MemoryPlace; objec
                 {selectedObject ? `${selectedObject.objectType} · ${selectedObject.interactionType} · ${selectedObject.privacyLevel}` : 'Choose an object to inspect this place.'}
               </p>
               {selectedObject?.emotionalMeaning ? <p className="mt-2 text-sm text-slate-400">{selectedObject.emotionalMeaning}</p> : null}
+              <MemoryPlaceInsightPanel place={place} selectedObject={selectedObject} />
               <div className="mt-3 flex flex-wrap gap-2">
                 <Link className="rounded-full bg-white px-3 py-1.5 text-xs font-semibold text-slate-950 hover:bg-cyan-100" href={placeReplayHref}>
                   Replay Place
