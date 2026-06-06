@@ -13,6 +13,7 @@ const tests = [
   'urai-tier1/tests/guardian/place-layer-insight-canon.test.mjs',
   'urai-tier1/tests/guardian/realm-routes-canon.test.mjs',
   'urai-tier1/tests/guardian/passport-council-runtime-canon.test.mjs',
+  'urai-tier1/tests/guardian/accessibility-cues-canon.test.mjs',
 ]
 
 for (const test of tests) {
