@@ -1,9 +1,8 @@
 import Link from 'next/link';
 import { MemoryPlaceGatePanel } from '@/spatial/places/MemoryPlaceGatePanel';
 import { MemoryPlaceScene } from '@/spatial/places/MemoryPlaceScene';
-import { getDemoPlaceObjects } from '@/spatial/places/demoPlaceObjects';
-import { resolveDemoMemoryPlace } from '@/spatial/places/demoMemoryPlaces';
 import { gateForMemoryPlace } from '@/spatial/places/memoryPlaceSafetyGate';
+import { listMemoryPlaceObjects, resolveMemoryPlace } from '@/spatial/places/memoryPlaceRepository';
 
 type MemoryPlacePageProps = {
   params: Promise<{
@@ -13,7 +12,7 @@ type MemoryPlacePageProps = {
 
 export default async function MemoryPlacePage({ params }: MemoryPlacePageProps) {
   const { placeId } = await params;
-  const resolved = resolveDemoMemoryPlace(placeId);
+  const resolved = await resolveMemoryPlace(placeId);
 
   if (!resolved.ok) {
     return (
@@ -35,5 +34,5 @@ export default async function MemoryPlacePage({ params }: MemoryPlacePageProps) 
   const gate = gateForMemoryPlace(resolved.place);
   if (gate.required) return <MemoryPlaceGatePanel place={resolved.place} gate={gate} />;
 
-  return <MemoryPlaceScene place={resolved.place} objects={getDemoPlaceObjects(resolved.place.id)} />;
+  return <MemoryPlaceScene place={resolved.place} objects={await listMemoryPlaceObjects(resolved.place.id)} />;
 }
