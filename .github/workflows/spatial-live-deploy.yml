@@ -11,8 +11,39 @@ on:
       - "scripts/**"
       - "tests/**"
       - "src/canon/**"
-      - "docs/canon/**"
-      - "docs/decisions/**"
+      - "docs/**"
+      - "release/**"
+      - "audit/**"
+      - "firebase/**"
+      - "firebase.json"
+      - "firebase.static.json"
+      - ".firebaserc.example"
+      - "CANONICAL_RUNTIME.md"
+      - "SYSTEM_MAP.md"
+      - "REPO_PURPOSE.md"
+      - "RUNBOOK.md"
+      - "README.md"
+      - "LIVE_RELEASE.md"
+      - "DEPLOYMENT.md"
+      - "STATUS.md"
+      - "EVIDENCE.md"
+      - "package.json"
+      - "pnpm-lock.yaml"
+      - "pnpm-workspace.yaml"
+      - ".nvmrc"
+      - ".node-version"
+      - ".github/workflows/**"
+  pull_request:
+    branches:
+      - main
+    paths:
+      - "urai-tier1/**"
+      - "apps/functions/**"
+      - "packages/**"
+      - "scripts/**"
+      - "tests/**"
+      - "src/canon/**"
+      - "docs/**"
       - "release/**"
       - "audit/**"
       - "firebase/**"
@@ -109,10 +140,12 @@ jobs:
             DEPLOYMENT.md
             RUNBOOK.md
             REPO_PURPOSE.md
-            release
-            audit/tier-lock
+            docs/URAI_SPATIAL_DONE_DONE_LOCK.md
             docs/canon
             docs/decisions/runtime-authority.md
+            docs/release
+            release
+            audit/tier-lock
             src/canon
             firebase/firestore.rules
             firebase/firestore.indexes.json
