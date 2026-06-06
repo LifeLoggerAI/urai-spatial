@@ -1,7 +1,9 @@
 import Link from 'next/link';
+import { MemoryPlaceGatePanel } from '@/spatial/places/MemoryPlaceGatePanel';
 import { MemoryPlaceScene } from '@/spatial/places/MemoryPlaceScene';
 import { getDemoPlaceObjects } from '@/spatial/places/demoPlaceObjects';
 import { resolveDemoMemoryPlace } from '@/spatial/places/demoMemoryPlaces';
+import { gateForMemoryPlace } from '@/spatial/places/memoryPlaceSafetyGate';
 
 type MemoryPlacePageProps = {
   params: Promise<{
@@ -29,6 +31,9 @@ export default async function MemoryPlacePage({ params }: MemoryPlacePageProps) 
       </main>
     );
   }
+
+  const gate = gateForMemoryPlace(resolved.place);
+  if (gate.required) return <MemoryPlaceGatePanel place={resolved.place} gate={gate} />;
 
   return <MemoryPlaceScene place={resolved.place} objects={getDemoPlaceObjects(resolved.place.id)} />;
 }
