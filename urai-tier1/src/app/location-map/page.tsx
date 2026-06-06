@@ -1,6 +1,6 @@
 import { LocationMapScene } from '@/spatial/places/LocationMapScene'
-import { DEMO_MEMORY_PLACES } from '@/spatial/places/demoMemoryPlaces'
+import { listMemoryPlaces } from '@/spatial/places/memoryPlaceRepository'
 
-export default function LocationMapPage() {
-  return <LocationMapScene places={DEMO_MEMORY_PLACES} />
+export default async function LocationMapPage() {
+  return <LocationMapScene places={await listMemoryPlaces()} />
 }
