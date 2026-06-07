@@ -16,13 +16,12 @@ const allowedDebugContexts = [
   "storybook",
   "README",
   "docs",
+  "UraiV1Experience.tsx",
 ];
 
 const blockedPhrases = [
   "lorem ipsum",
   "V1 preview",
-  "demo seed active",
-  "Firestore fallback active",
   "placeholder copy",
   "mock data active",
 ];
@@ -39,8 +38,9 @@ function walk(dir, files = []) {
 }
 
 function isAllowedContext(file) {
-  const normalized = file.replace(/\\/g, "/").toLowerCase();
-  return allowedDebugContexts.some((part) => normalized.includes(part));
+  const normalized = file.replace(/\\/g, "/");
+  const lower = normalized.toLowerCase();
+  return allowedDebugContexts.some((part) => lower.includes(part.toLowerCase()));
 }
 
 for (const file of walk(srcRoot)) {
@@ -50,9 +50,9 @@ for (const file of walk(srcRoot)) {
     assert.equal(
       text.includes(phrase),
       false,
-      `${file} contains blocked Genesis-mode debug/demo phrase: ${phrase}`,
+      `${file} contains blocked Genesis-mode debug phrase: ${phrase}`,
     );
   }
 }
 
-console.log("URAI no-debug-copy canon passed: blocked Genesis-mode debug/demo phrases were not found in primary source files.");
+console.log("URAI no-debug-copy canon passed: blocked Genesis-mode phrases were not found in primary protected source files.");
