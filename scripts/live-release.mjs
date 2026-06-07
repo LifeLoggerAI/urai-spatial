@@ -7,6 +7,7 @@ const deployProject = process.env.FIREBASE_PROJECT_ID || process.env.FIREBASE_PR
 const manifestPath = 'release/urai-spatial-live-manifest.json'
 const tierXrMatrixPath = 'release/tier-xr-release-matrix.json'
 const doneDoneLockPath = 'docs/URAI_SPATIAL_DONE_DONE_LOCK.md'
+const studioSpatialHandoffPath = 'docs/contracts/URAI_STUDIO_SPATIAL_HANDOFF.md'
 
 function run(command, args, options = {}) {
   return new Promise((resolve, reject) => {
@@ -66,11 +67,11 @@ function readText(path) {
   return fs.readFileSync(path, 'utf8')
 }
 
-function assertTextIncludes(path, expectedValues) {
+function assertTextIncludes(path, expectedValues, label = path) {
   const text = readText(path)
   const missing = expectedValues.filter((value) => !text.includes(value))
   if (missing.length) {
-    throw new Error(`${path} is missing required done-done terms: ${missing.join(', ')}`)
+    throw new Error(`${label} is missing required terms: ${missing.join(', ')}`)
   }
 }
 
@@ -139,7 +140,24 @@ function assertDoneDoneLock() {
     'V5 Mirror of Becoming / legacy spatial release',
     'disabled until provider/browser validation exists',
     'live-working verified',
-  ])
+  ], 'URAI Spatial done-done lock')
+}
+
+function assertStudioSpatialHandoffContract() {
+  assertTextIncludes(studioSpatialHandoffPath, [
+    'StudioSpatialExport',
+    'producer: \'urai-studio\'',
+    'consumer: \'urai-spatial\'',
+    'web-spatial',
+    'webxr-disabled',
+    'quest-vr-disabled',
+    'visionos-disabled',
+    'ar-handheld-disabled',
+    'consentReceipt',
+    'safetyBoundaries',
+    'pattern_support_not_diagnosis',
+    'UraiSpatialHandoffValidation',
+  ], 'URAI Studio Spatial handoff contract')
 }
 
 function assertReleaseManifest() {
@@ -152,6 +170,7 @@ function assertReleaseManifest() {
     releaseGate: 'pnpm live:check',
     liveStatusFile: 'release/LIVE_STATUS.md',
     doneDoneLock: doneDoneLockPath,
+    studioSpatialHandoffContract: studioSpatialHandoffPath,
   }
 
   for (const [key, expected] of Object.entries(expectedScalars)) {
@@ -177,7 +196,7 @@ function assertReleaseManifest() {
     'tier-5-operational-release-governance',
   ])
   assertArrayIncludes(manifest, 'xrReleaseScope', ['web-spatial', 'webxr', 'quest-vr', 'visionos', 'ar-handheld'])
-  assertArrayIncludes(manifest, 'releaseGuards', ['done-done-lock', 'xr-contract', 'xr-navmesh-bake', 'xr-firebase-preflight', 'tier-xr-release-evidence'])
+  assertArrayIncludes(manifest, 'releaseGuards', ['done-done-lock', 'studio-spatial-handoff-contract', 'xr-contract', 'xr-navmesh-bake', 'xr-firebase-preflight', 'tier-xr-release-evidence'])
   assertArrayIncludes(manifest, 'requiredExternalInputsBeforeLive', [
     'firebase_project_id',
     'firebase_service_account_or_token',
@@ -196,6 +215,7 @@ function assertReleaseManifest() {
   assertTierXrMatrix(manifest)
   requireFile(manifest.liveStatusFile)
   requireFile(manifest.doneDoneLock)
+  requireFile(manifest.studioSpatialHandoffContract)
 
   return manifest
 }
@@ -208,6 +228,7 @@ function assertReleaseFiles() {
     manifestPath,
     tierXrMatrixPath,
     doneDoneLockPath,
+    studioSpatialHandoffPath,
     'README.md',
     'firebase.json',
     '.firebaserc.example',
@@ -243,6 +264,9 @@ async function main() {
 
   console.log('[URAI Spatial Live] Validating done-done lock.')
   assertDoneDoneLock()
+
+  console.log('[URAI Spatial Live] Validating Studio to Spatial handoff contract.')
+  assertStudioSpatialHandoffContract()
 
   console.log('[URAI Spatial Live] Validating release manifest and Tier/XR matrix.')
   const manifest = assertReleaseManifest()
