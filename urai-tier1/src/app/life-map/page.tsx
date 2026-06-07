@@ -1,5 +1,5 @@
-import TimelineView from "@/components/TimelineView";
+import LifeMapScene from "@/components/spatial/LifeMapScene";
 
 export default function LifeMapRoute() {
-  return <TimelineView />;
+  return <LifeMapScene />;
 }

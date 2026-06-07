@@ -30,7 +30,7 @@ function topSummary(derived: DerivedHomeWorldState, channel: "ground" | "orb" | 
   if (!contributors.length) return "still gathering signal";
   return contributors
     .slice(0, 3)
-    .map((item) => `${SIGNAL_LABELS[item.signal] ?? item.signal} (${item.scoreBucket})`)
+    .map((item) => `${SIGNAL_LABELS[item.signal] ?? item.signal} (${item.scoreBucket}, confidence ${item.confidenceBucket})`)
     .join(", ");
 }
 
