@@ -8,6 +8,8 @@ const manifestPath = 'release/urai-spatial-live-manifest.json'
 const tierXrMatrixPath = 'release/tier-xr-release-matrix.json'
 const doneDoneLockPath = 'docs/URAI_SPATIAL_DONE_DONE_LOCK.md'
 const studioSpatialHandoffPath = 'docs/contracts/URAI_STUDIO_SPATIAL_HANDOFF.md'
+const studioSpatialValidatorPath = 'urai-tier1/src/lib/studio-spatial-handoff.ts'
+const studioSpatialValidatorTestPath = 'urai-tier1/tests/studio-spatial-handoff.test.mjs'
 
 function run(command, args, options = {}) {
   return new Promise((resolve, reject) => {
@@ -160,6 +162,29 @@ function assertStudioSpatialHandoffContract() {
   ], 'URAI Studio Spatial handoff contract')
 }
 
+function assertStudioSpatialRuntimeValidator() {
+  assertTextIncludes(studioSpatialValidatorPath, [
+    'StudioSpatialExport',
+    'validateStudioSpatialExport',
+    'UraiSpatialHandoffValidation',
+    'web-spatial',
+    'webxr-disabled',
+    'quest-vr-disabled',
+    'visionos-disabled',
+    'ar-handheld-disabled',
+    'consentReceipt',
+    'safetyBoundaries',
+    'pattern_support_not_diagnosis',
+  ], 'URAI Studio Spatial runtime validator')
+  assertTextIncludes(studioSpatialValidatorTestPath, [
+    'validateStudioSpatialExport',
+    'accepts launch-safe web-spatial exports',
+    'rejects unsupported live XR targets',
+    'rejects missing consent receipt',
+    'rejects unsafe asset uri and mime type',
+  ], 'URAI Studio Spatial runtime validator tests')
+}
+
 function assertReleaseManifest() {
   const manifest = readJson(manifestPath)
 
@@ -229,6 +254,8 @@ function assertReleaseFiles() {
     tierXrMatrixPath,
     doneDoneLockPath,
     studioSpatialHandoffPath,
+    studioSpatialValidatorPath,
+    studioSpatialValidatorTestPath,
     'README.md',
     'firebase.json',
     '.firebaserc.example',
@@ -267,6 +294,9 @@ async function main() {
 
   console.log('[URAI Spatial Live] Validating Studio to Spatial handoff contract.')
   assertStudioSpatialHandoffContract()
+
+  console.log('[URAI Spatial Live] Validating Studio to Spatial runtime validator.')
+  assertStudioSpatialRuntimeValidator()
 
   console.log('[URAI Spatial Live] Validating release manifest and Tier/XR matrix.')
   const manifest = assertReleaseManifest()
