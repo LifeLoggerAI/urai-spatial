@@ -1,6 +1,7 @@
 'use client'
 
 import dynamic from 'next/dynamic'
+import { Suspense } from 'react'
 import SpatialV2Overlay from '@/spatial/effects/SpatialV2Overlay'
 
 const SpatialScene = dynamic(
@@ -18,7 +19,9 @@ const SpatialScene = dynamic(
 export default function SpatialSceneClient() {
   return (
     <>
-      <SpatialV2Overlay />
+      <Suspense fallback={null}>
+        <SpatialV2Overlay />
+      </Suspense>
       <SpatialScene />
     </>
   )
