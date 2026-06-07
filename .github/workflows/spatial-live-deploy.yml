@@ -141,6 +141,7 @@ jobs:
             RUNBOOK.md
             REPO_PURPOSE.md
             docs/URAI_SPATIAL_DONE_DONE_LOCK.md
+            docs/contracts/URAI_STUDIO_SPATIAL_HANDOFF.md
             docs/canon
             docs/decisions/runtime-authority.md
             docs/release
