@@ -60,6 +60,7 @@
     "frb": "node scripts/run-pnpm.mjs deploy:staging",
     "release:check": "node scripts/run-pnpm.mjs launch:local",
     "release:p1": "node scripts/run-pnpm.mjs release:check",
+    "done-done:guard": "node scripts/live-release.mjs --check",
     "live:check": "node scripts/live-release.mjs --check",
     "live:deploy": "node scripts/live-release.mjs --deploy",
     "live:record": "node scripts/record-live-status.mjs",
