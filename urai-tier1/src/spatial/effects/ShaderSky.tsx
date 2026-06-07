@@ -3,11 +3,16 @@
 import { useFrame } from "@react-three/fiber";
 import { useRef } from "react";
 import * as THREE from "three";
-import useDepthParallax from "./useDepthParallax";
+import useDepthParallax, { type DepthParallax } from "./useDepthParallax";
 
-export default function ShaderSky() {
+type ShaderSkyProps = {
+  parallax?: DepthParallax;
+};
+
+export default function ShaderSky({ parallax }: ShaderSkyProps) {
   const materialRef = useRef<THREE.ShaderMaterial>(null);
-  const { x, y } = useDepthParallax();
+  const fallbackParallax = useDepthParallax();
+  const { x, y } = parallax ?? fallbackParallax;
 
   useFrame(({ clock }) => {
     if (materialRef.current) {
