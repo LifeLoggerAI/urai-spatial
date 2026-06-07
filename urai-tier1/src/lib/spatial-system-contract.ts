@@ -26,6 +26,7 @@ export const spatialApiRoutes = {
   manifest: "/api/system/manifest",
   capabilities: "/api/system/capabilities",
   integrationContract: "/api/system/integration-contract",
+  studioSpatialHandoff: "/api/system/studio-spatial-handoff",
   launchBoundary: "/api/system/launch-boundary",
   tier2: "/api/system/tier2",
   uraiSpatialLock: "/api/system/urai-spatial-lock",
@@ -48,6 +49,7 @@ export const spatialCapabilities = [
   "3d-replay-path-model",
   "replay-state-machine",
   "system-contract-api",
+  "studio-spatial-handoff-validation",
   "firebase-ready-fallback-mode",
   "future-webxr-ar-seam",
 ];
@@ -75,6 +77,16 @@ export function buildSpatialSystemContract() {
         tierCount: 5,
         route: spatialApiRoutes.uraiSpatialLock,
       },
+      studioSpatialHandoff: {
+        service: URAI_SPATIAL_SERVICE,
+        status: "locked",
+        done: true,
+        contractVersion: "0.1.0",
+        route: spatialApiRoutes.studioSpatialHandoff,
+        producer: "urai-studio",
+        consumer: "urai-spatial",
+        requiredRuntimeTarget: "web-spatial",
+      },
     },
     world3D,
     launchBoundary: spatialLaunchBoundary,
@@ -88,6 +100,14 @@ export function buildSpatialSystemContract() {
       notes: "Privileged mutation routes should be protected before live provider rollout.",
     },
     dataContracts: {
+      studioSpatialHandoff: {
+        route: spatialApiRoutes.studioSpatialHandoff,
+        producer: "urai-studio",
+        consumer: "urai-spatial",
+        validator: "validateStudioSpatialExport",
+        runtimeTargets: ["web-spatial", "webxr-disabled", "quest-vr-disabled", "visionos-disabled", "ar-handheld-disabled"],
+        requiredFields: ["sceneManifest", "assetManifest", "consentReceipt", "safetyBoundaries", "runtimeTargets"],
+      },
       bodyBiometricSnapshot: {
         regions: ["head", "torso", "arms", "legs"],
         sources: ["mock", "live-device", "passive-inference"],
@@ -115,9 +135,10 @@ export function buildSpatialSystemContract() {
       "Fallback/demo mode is labeled explicitly.",
       "Biometric language is wellness-supportive and non-diagnostic.",
       "AR/WebXR seams are not described as live unless a provider is connected.",
+      "Studio exports must pass the Studio Spatial handoff validator before rendering.",
       "Live providers require explicit consent, tests, and deployment verification before launch claims.",
     ],
-    smokeCoverage: ["/", "/home", "/life-map", "/demo/life-map", "/privacy", "/terms", "/api/system/health", "/api/system/launch-boundary", "/api/system/urai-spatial-lock", "/api/system/urai-spatial-3d-world", "/api/body-biometric", "/api/orb-companion"],
+    smokeCoverage: ["/", "/home", "/life-map", "/demo/life-map", "/privacy", "/terms", "/api/system/health", "/api/system/studio-spatial-handoff", "/api/system/launch-boundary", "/api/system/urai-spatial-lock", "/api/system/urai-spatial-3d-world", "/api/body-biometric", "/api/orb-companion"],
   };
 }
 
