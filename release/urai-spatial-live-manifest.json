@@ -11,6 +11,7 @@
   "postDeploySmoke": "HOST=https://<live-host> pnpm smoke",
   "liveStatusFile": "release/LIVE_STATUS.md",
   "doneDoneLock": "docs/URAI_SPATIAL_DONE_DONE_LOCK.md",
+  "studioSpatialHandoffContract": "docs/contracts/URAI_STUDIO_SPATIAL_HANDOFF.md",
   "tierXrReleaseMatrix": "release/tier-xr-release-matrix.json",
   "routes": [
     "/",
@@ -44,6 +45,7 @@
   ],
   "releaseGuards": [
     "done-done-lock",
+    "studio-spatial-handoff-contract",
     "source-integrity",
     "production-routes",
     "spatial-copy",
