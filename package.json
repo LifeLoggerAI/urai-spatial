@@ -16,6 +16,7 @@
   ],
   "scripts": {
     "doctor": "node scripts/urai-local-doctor.mjs",
+    "studio:deploy:static": "node scripts/urai-firebase-studio-static-release.mjs",
     "preinstall": "node scripts/check-install-disk-space.mjs",
     "patch:check": "node scripts/run-patch-checks.mjs",
     "install:check": "node scripts/check-install-disk-space.mjs",
