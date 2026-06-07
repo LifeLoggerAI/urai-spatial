@@ -1,0 +1,69 @@
+name: URAI Spatial Live Smoke
+
+on:
+  workflow_dispatch:
+    inputs:
+      live_url:
+        description: "Live URL to smoke"
+        required: true
+        default: "https://urai-4dc1d.web.app"
+        type: string
+      expect_ready:
+        description: "Whether the live deployment should be fully ready"
+        required: true
+        default: "true"
+        type: choice
+        options:
+          - "true"
+          - "false"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: urai-spatial-live-smoke-${{ github.event.inputs.live_url }}
+  cancel-in-progress: false
+
+jobs:
+  live-smoke:
+    name: Smoke deployed Spatial URL
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Enable pnpm
+        run: |
+          corepack enable
+          corepack prepare pnpm@10.0.0 --activate
+          pnpm --version
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Verify done-done guard before live smoke
+        run: pnpm done-done:guard
+
+      - name: Smoke live URL
+        env:
+          HOST: ${{ inputs.live_url }}
+          EXPECT_READY: ${{ inputs.expect_ready }}
+        run: pnpm smoke
+
+      - name: Write live smoke summary
+        if: always()
+        run: |
+          {
+            echo "# URAI Spatial live smoke"
+            echo ""
+            echo "- Commit: $GITHUB_SHA"
+            echo "- Live URL: ${{ inputs.live_url }}"
+            echo "- Expect ready: ${{ inputs.expect_ready }}"
+            echo "- Workflow run: $GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID"
+          } >> "$GITHUB_STEP_SUMMARY"
