@@ -20,6 +20,7 @@ for (const file of requiredFiles) {
 
 const locationMap = readFileSync(join(app, "src/app/location-map/page.tsx"), "utf8");
 assert.match(locationMap, /LocationMapScene/, "Location Map route must render LocationMapScene.");
+assert.match(locationMap, /listMemoryPlaces/, "Location Map route must load places through repository.");
 
 const place = readFileSync(join(app, "src/spatial/places/MemoryPlaceScene.tsx"), "utf8");
 assert.match(place, /Replay Place/, "MemoryPlaceScene must link to place replay.");
@@ -27,6 +28,8 @@ assert.match(place, /Location Map/, "MemoryPlaceScene must link to Location Map.
 
 const replay = readFileSync(join(app, "src/app/place/[placeId]/replay/page.tsx"), "utf8");
 assert.match(replay, /PlaceReplayScene/, "Place replay route must render PlaceReplayScene.");
-assert.match(replay, /resolveDemoMemoryPlace/, "Place replay route must resolve place safely.");
+assert.match(replay, /resolveMemoryPlace/, "Place replay route must resolve place through repository.");
+assert.match(replay, /listMemoryPlaceObjects/, "Place replay route must load place objects through repository.");
+assert.doesNotMatch(replay, /resolveDemoMemoryPlace/, "Place replay route must not bypass repository with demo resolver.");
 
 console.log("URAI place routes canon passed.");
