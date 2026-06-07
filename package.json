@@ -15,6 +15,7 @@
     "packages/release-tools"
   ],
   "scripts": {
+    "doctor": "node scripts/urai-local-doctor.mjs",
     "preinstall": "node scripts/check-install-disk-space.mjs",
     "patch:check": "node scripts/run-patch-checks.mjs",
     "install:check": "node scripts/check-install-disk-space.mjs",
@@ -78,7 +79,7 @@
     "test:e2e:race-conditions": "node scripts/run-pnpm.mjs playwright:ensure && node tests/spatial-tier-lock-hardening.mjs --suite=race",
     "test:e2e:data-states": "node scripts/run-pnpm.mjs playwright:ensure && node tests/spatial-tier-lock-hardening.mjs --suite=data",
     "test:visual:spatial": "node scripts/run-pnpm.mjs playwright:ensure && node tests/spatial-tier-lock-hardening.mjs --suite=visual",
-    "test:tier-lock-hardening": "node scripts/run-pnpm.mjs playwright:ensure && node tests/spatial-tier-lock-hardening.mjs --suite=all",
+    "test:tier-lock-hardening": "node scripts/run-pnpm.mjs playwright:ensure && node scripts/run-pnpm.mjs test:e2e",
     "audit:video-frames": "node scripts/audit-video-frames.mjs",
     "test:playwright": "node scripts/run-playwright-tests.mjs",
     "test:firestore-rules": "node scripts/run-firestore-rules-tests.mjs",
