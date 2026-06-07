@@ -151,6 +151,7 @@ function assertReleaseManifest() {
     appPackage: 'urai-tier1',
     releaseGate: 'pnpm live:check',
     liveStatusFile: 'release/LIVE_STATUS.md',
+    doneDoneLock: doneDoneLockPath,
   }
 
   for (const [key, expected] of Object.entries(expectedScalars)) {
@@ -176,7 +177,7 @@ function assertReleaseManifest() {
     'tier-5-operational-release-governance',
   ])
   assertArrayIncludes(manifest, 'xrReleaseScope', ['web-spatial', 'webxr', 'quest-vr', 'visionos', 'ar-handheld'])
-  assertArrayIncludes(manifest, 'releaseGuards', ['xr-contract', 'xr-navmesh-bake', 'xr-firebase-preflight', 'tier-xr-release-evidence'])
+  assertArrayIncludes(manifest, 'releaseGuards', ['done-done-lock', 'xr-contract', 'xr-navmesh-bake', 'xr-firebase-preflight', 'tier-xr-release-evidence'])
   assertArrayIncludes(manifest, 'requiredExternalInputsBeforeLive', [
     'firebase_project_id',
     'firebase_service_account_or_token',
@@ -194,6 +195,7 @@ function assertReleaseManifest() {
   assertBlockedXrClaims(manifest)
   assertTierXrMatrix(manifest)
   requireFile(manifest.liveStatusFile)
+  requireFile(manifest.doneDoneLock)
 
   return manifest
 }
