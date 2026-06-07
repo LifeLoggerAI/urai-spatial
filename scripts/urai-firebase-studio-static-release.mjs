@@ -40,6 +40,7 @@ if (Number.isNaN(major) || major < requiredMajor) {
 console.log(`[URAI Spatial Studio Release] Node ${process.version}`)
 console.log(`[URAI Spatial Studio Release] Firebase project: ${projectId}`)
 console.log(`[URAI Spatial Studio Release] Live smoke URL: ${deployUrl}`)
+console.log('[URAI Spatial Studio Release] Firebase Studio mode uses --no-frozen-lockfile so a stale local lockfile can refresh after repo script changes.')
 
 for (const path of [
   'node_modules',
@@ -56,7 +57,7 @@ for (const path of [
 }
 
 run('pnpm', ['store', 'prune'])
-run('pnpm', ['install', '--frozen-lockfile'])
+run('pnpm', ['install', '--no-frozen-lockfile'])
 run('pnpm', ['lock:static'])
 run('pnpm', ['lock:build'])
 run('pnpm', ['xr:verify'])
