@@ -23,7 +23,7 @@ export default async function MemoryPlacePage({ params }: MemoryPlacePageProps) 
           <p className="mt-3 text-sm text-slate-200">
             This place could not be opened safely. Return to the LifeMap and choose another memory door.
           </p>
-          <Link className="mt-6 inline-flex rounded-full bg-white px-5 py-2 text-sm font-semibold text-slate-950" href={resolved.safeHref}>
+          <Link className="mt-6 inline-flex rounded-full bg-white px-5 py-2 text-sm font-semibold text-slate-950" href="/life-map">
             Back to LifeMap
           </Link>
         </section>

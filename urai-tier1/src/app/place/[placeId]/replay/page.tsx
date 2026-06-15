@@ -19,7 +19,7 @@ export default async function PlaceReplayPage({ params }: PlaceReplayPageProps) 
           <p className="text-xs uppercase tracking-[0.4em] text-cyan-100/70">Place Replay</p>
           <h1 className="mt-3 text-3xl font-semibold">Replay unavailable</h1>
           <p className="mt-3 text-sm text-slate-200">This place replay could not be opened safely.</p>
-          <Link className="mt-6 inline-flex rounded-full bg-white px-5 py-2 text-sm font-semibold text-slate-950" href={resolved.safeHref}>
+          <Link className="mt-6 inline-flex rounded-full bg-white px-5 py-2 text-sm font-semibold text-slate-950" href="/life-map">
             Back to LifeMap
           </Link>
         </section>
