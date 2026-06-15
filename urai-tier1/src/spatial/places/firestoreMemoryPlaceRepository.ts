@@ -17,7 +17,7 @@ export function createFirestoreMemoryPlaceRepository(options: FirestoreMemoryPla
       const resolved = await fallbackMemoryPlaceRepository.resolvePlace(placeId, { ...context, userId: options.userId, source: 'fallback' })
       if (!resolved.ok) return resolved
       const validation = validateMemoryPlace(resolved.place)
-      if (!validation.ok) return { ok: false, status: 404, reason: validation.reason, safeHref: '/life-map' }
+      if (!validation.ok) return { ok: false, status: 404, reason: 'invalid-memory-place', safeHref: '/life-map' }
       return { ...resolved, place: validation.value }
     },
     async listPlaceObjects(placeId, context) {
