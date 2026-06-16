@@ -35,3 +35,10 @@ yarn-error.log*
 node_modules/
 .next/
 *.log
+.ms-playwright/
+**/.ms-playwright/
+blob-report/
+
+# Local Firebase Studio / Playwright runtime repair artifacts
+.playwright-runtime-libs/
+result-*
