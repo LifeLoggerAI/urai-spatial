@@ -38,3 +38,7 @@ node_modules/
 .ms-playwright/
 **/.ms-playwright/
 blob-report/
+
+# Local Firebase Studio / Playwright runtime repair artifacts
+.playwright-runtime-libs/
+result-*
