@@ -33,7 +33,7 @@ function findLibraryDir(root, marker) {
   if (!root || !existsSync(root)) return null;
   const stack = [root];
   let visited = 0;
-  while (stack.length && visited < 12000) {
+  while (stack.length && visited < 25000) {
     visited += 1;
     const current = stack.pop();
     let entries = [];
@@ -49,6 +49,17 @@ function findLibraryDir(root, marker) {
     }
   }
   return null;
+}
+
+function findNixStoreLibraryDir(marker) {
+  if (process.platform !== 'linux' || process.env.URAI_DISABLE_NIX_BROWSER_LIBS === 'true') return null;
+  const result = spawnSync('find', ['/nix/store', '-type', 'f', '-name', marker, '-print', '-quit'], {
+    stdio: ['ignore', 'pipe', 'ignore'],
+    shell: false,
+    encoding: 'utf8',
+  });
+  if (result.status !== 0 || !result.stdout?.trim()) return null;
+  return path.dirname(result.stdout.trim().split('\n')[0]);
 }
 
 function nixOutPath(pkg) {
@@ -77,6 +88,10 @@ function nixOutPath(pkg) {
 
 function addNixLibrary(pkg, marker) {
   if (process.platform !== 'linux' || process.env.URAI_DISABLE_NIX_BROWSER_LIBS === 'true') return null;
+
+  const directLibDir = findNixStoreLibraryDir(marker);
+  if (directLibDir && prependLdLibraryPath(directLibDir)) return `nix-store:${marker}:${directLibDir}`;
+
   const outPath = nixOutPath(pkg);
   if (!outPath) return null;
   const libDir = findLibraryDir(outPath, marker);
@@ -121,6 +136,9 @@ export function addPortableBrowserLibraries() {
   const added = [];
   const specs = [
     { nix: 'expat', apt: 'libexpat1', marker: 'libexpat.so.1' },
+    { nix: 'xorg.libxcb', apt: 'libxcb1', marker: 'libxcb.so.1' },
+    { nix: 'xorg.libXext', apt: 'libxext6', marker: 'libXext.so.6' },
+    { nix: 'systemdLibs', apt: 'libudev1', marker: 'libudev.so.1' },
   ];
 
   for (const spec of specs) {
