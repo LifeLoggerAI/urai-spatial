@@ -35,3 +35,6 @@ yarn-error.log*
 node_modules/
 .next/
 *.log
+.ms-playwright/
+**/.ms-playwright/
+blob-report/
