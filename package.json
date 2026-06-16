@@ -122,6 +122,7 @@
     "tier3:check": "node scripts/check-tier3-governance.mjs",
     "tier4:check": "node scripts/check-tier4-governance.mjs",
     "tier5:check": "node scripts/check-tier5-governance.mjs",
-    "urai:guardian": "node scripts/urai-guardian.mjs"
+    "urai:guardian": "node scripts/urai-guardian.mjs",
+    "tier4:production:check": "node urai-tier1/tests/tier4-production-contract.test.mjs && node scripts/run-pnpm.mjs tier4:check && node scripts/run-pnpm.mjs urai:tier4"
   }
 }
