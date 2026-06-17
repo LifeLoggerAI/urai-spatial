@@ -1,5 +1,6 @@
 "use client";
 
+import type { ReactNode } from "react";
 import UraiSpatialStage from "@/spatial/v1/UraiSpatialStage";
 import { LifeMapScene } from "@/spatial/v1/LifeMapScene";
 import { MirrorOfBecomingView } from "@/spatial/v1/MirrorOfBecomingView";
@@ -19,7 +20,7 @@ const mirror = mirrorStates[0];
 const noop = () => {};
 const noopNode = (_nodeId: string) => {};
 
-function StageFrame({ mode, children }: { mode: SceneMode; children: React.ReactNode }) {
+function StageFrame({ mode, children }: { mode: SceneMode; children: ReactNode }) {
   const dataMode = mode === "life-map" || mode === "demo" ? "life-map" : mode;
   return <main className={`${styles.stage} urai-v1-stage`} data-testid="urai-scene-stage" data-mode={dataMode} data-scene-mode={dataMode}>{children}</main>;
 }
