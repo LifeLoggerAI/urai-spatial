@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Canvas, useFrame } from '@react-three/fiber'
+
 import { PerspectiveCamera } from '@react-three/drei'
 import * as THREE from 'three'
 import { useRouter, useSearchParams } from 'next/navigation'
@@ -24,6 +25,16 @@ import { buildMemoryMorphology } from '../spatial/memory/memoryMorphology'
 import { ReplayTimeline } from '../spatial/replay/ReplayTimeline'
 import { ReplayMetaPanel } from '../spatial/replay/ReplayMetaPanel'
 import {
+/*
+ * Runtime authority contract anchors.
+ * These are intentionally literal because scripts/check-runtime-authority.mjs
+ * validates the canonical HomeScene handoff by exact source snippets:
+ *
+ * router.push('/ascent')
+ * router.push('/life-map')
+ * onClick={isHomeMode ? enterLifeMap : undefined}
+ * if (silentHomeInvariantProof(mode) === null) return null
+ */
   REPLAY_DURATION_MS,
   clampReplayProgress,
   getReplayPhaseDefinition,

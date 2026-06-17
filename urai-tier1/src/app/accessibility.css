@@ -1,4 +1,10 @@
-.sr-only {
+/*
+ * URAI Spatial accessibility layer.
+ * Keeps keyboard/screen-reader support available without changing visual canon.
+ */
+
+.sr-only,
+.visually-hidden {
   position: absolute !important;
   width: 1px !important;
   height: 1px !important;
@@ -10,22 +16,18 @@
   border: 0 !important;
 }
 
-.home-keyboard-hint {
-  top: calc(8px + var(--safe-area-top)) !important;
-  left: calc(12px + var(--safe-area-left)) !important;
-  right: calc(12px + var(--safe-area-right)) !important;
-  max-width: min(760px, calc(100vw - 24px - var(--safe-area-left) - var(--safe-area-right))) !important;
-  border-radius: 999px !important;
-  background: rgba(3, 8, 20, 0.18) !important;
-  backdrop-filter: blur(8px) !important;
-  -webkit-backdrop-filter: blur(8px) !important;
+:focus-visible {
+  outline: 2px solid rgba(139, 220, 255, 0.95);
+  outline-offset: 4px;
 }
 
-@media (max-width: 760px) {
-  .home-keyboard-hint {
-    top: calc(6px + var(--safe-area-top)) !important;
-    left: calc(8px + var(--safe-area-left)) !important;
-    right: calc(8px + var(--safe-area-right)) !important;
-    max-width: calc(100vw - 16px - var(--safe-area-left) - var(--safe-area-right)) !important;
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    scroll-behavior: auto !important;
+    transition-duration: 0.001ms !important;
   }
 }

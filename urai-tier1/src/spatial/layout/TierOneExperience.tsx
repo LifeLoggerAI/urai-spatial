@@ -159,7 +159,7 @@ export function TierOneExperience({ mode = "home", title, eyebrow, description, 
       {/* Contract anchor: <SpatialCinematicContinuityLayer mode={mode} /> */}
       <SpatialCinematicContinuityLayer mode={routeMode} />
       {/* Contract anchor: <HomeCohesionLayer enabled={mode === "home"} /> */}
-      <HomeCohesionLayer enabled={routeMode === "home"} />
+      <HomeCohesionLayer enabled={mode === "home"} />
 
       {showRouteCard ? (
         <aside className="tier-one-route-card" data-route-mode={routeMode}>
