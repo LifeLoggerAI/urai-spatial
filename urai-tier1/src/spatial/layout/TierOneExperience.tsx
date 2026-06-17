@@ -4,6 +4,7 @@ import UraiSpatialStage from "@/spatial/v1/UraiSpatialStage";
 import { LifeMapScene } from "@/spatial/v1/LifeMapScene";
 import { MirrorOfBecomingView } from "@/spatial/v1/MirrorOfBecomingView";
 import { lifeMapEdges, lifeMapNodes, mirrorStates, replayPaths } from "@/spatial/v1/lifeMapDemoData";
+import styles from "@/spatial/v1/uraiSpatialV1.module.css";
 
 export type SceneMode = "home" | "ascent" | "life-map" | "demo" | "replay" | "focus" | "unwind" | "mirror";
 export type TierOneExperienceMode = SceneMode;
@@ -18,21 +19,26 @@ const mirror = mirrorStates[0];
 const noop = () => {};
 const noopNode = (_nodeId: string) => {};
 
+function StageFrame({ mode, children }: { mode: SceneMode; children: React.ReactNode }) {
+  const dataMode = mode === "life-map" || mode === "demo" ? "life-map" : mode;
+  return <main className={`${styles.stage} urai-v1-stage`} data-testid="urai-scene-stage" data-mode={dataMode} data-scene-mode={dataMode}>{children}</main>;
+}
+
 export function TierOneExperience({ mode = "home" }: Props) {
   if (mode === "life-map" || mode === "demo") {
-    return <LifeMapScene nodes={lifeMapNodes} edges={lifeMapEdges} replayPath={replayPath} replayActive={false} onSelectNode={noopNode} onCloseNode={noop} onStartReplay={noop} onOpenMirror={noop} onReturnHome={noop} />;
+    return <StageFrame mode={mode}><LifeMapScene nodes={lifeMapNodes} edges={lifeMapEdges} replayPath={replayPath} replayActive={false} onSelectNode={noopNode} onCloseNode={noop} onStartReplay={noop} onOpenMirror={noop} onReturnHome={noop} /></StageFrame>;
   }
 
   if (mode === "focus") {
-    return <LifeMapScene nodes={lifeMapNodes} edges={lifeMapEdges} replayPath={replayPath} selectedNodeId={firstNodeId} replayActive={false} onSelectNode={noopNode} onCloseNode={noop} onStartReplay={noop} onOpenMirror={noop} onReturnHome={noop} />;
+    return <StageFrame mode={mode}><LifeMapScene nodes={lifeMapNodes} edges={lifeMapEdges} replayPath={replayPath} selectedNodeId={firstNodeId} replayActive={false} onSelectNode={noopNode} onCloseNode={noop} onStartReplay={noop} onOpenMirror={noop} onReturnHome={noop} /></StageFrame>;
   }
 
   if (mode === "replay") {
-    return <LifeMapScene nodes={lifeMapNodes} edges={lifeMapEdges} replayPath={replayPath} selectedNodeId={firstNodeId} replayActive onSelectNode={noopNode} onCloseNode={noop} onStartReplay={noop} onOpenMirror={noop} onReturnHome={noop} />;
+    return <StageFrame mode={mode}><LifeMapScene nodes={lifeMapNodes} edges={lifeMapEdges} replayPath={replayPath} selectedNodeId={firstNodeId} replayActive onSelectNode={noopNode} onCloseNode={noop} onStartReplay={noop} onOpenMirror={noop} onReturnHome={noop} /></StageFrame>;
   }
 
   if (mode === "mirror") {
-    return <MirrorOfBecomingView mirror={mirror} onClose={noop} onHome={noop} />;
+    return <StageFrame mode={mode}><MirrorOfBecomingView mirror={mirror} onClose={noop} onHome={noop} /></StageFrame>;
   }
 
   return <UraiSpatialStage />;
