@@ -36,7 +36,11 @@ test('replay direct route resolves only demo-safe replay ids and fails closed', 
 test('replay unwind affordance preserves safe return behavior', () => {
   assert.match(replayUnwindButton, /'use client'/)
   assert.match(replayUnwindButton, /useRouter/)
-  assert.match(replayUnwindButton, /router\.push\('\/focus'\)/)
+  assert.match(replayUnwindButton, /useSearchParams/)
+  assert.match(replayUnwindButton, /DEFAULT_REPLAY_MANIFEST_ID/)
+  assert.match(replayUnwindButton, /focusUrlForManifest\(manifestId\)/)
+  assert.match(replayUnwindButton, /sessionStorage\.setItem\('urai-replay-return-manifest-id', manifestId\)/)
+  assert.match(replayUnwindButton, /router\.push\(focusUrlForManifest\(manifestId\)\)/)
   assert.match(replayUnwindButton, /data-testid="replay-unwind-button"/)
   assert.match(replayUnwindButton, /Return to Focus/)
 })
