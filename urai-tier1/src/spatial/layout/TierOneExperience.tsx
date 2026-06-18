@@ -29,6 +29,7 @@ const startReplayFromFocus = () => {
 // Tier lock source markers retained for the legacy verifier while runtime uses UraiIntegratedHomeScene.
 // @/scene/HomeScene
 // <HomeScene sceneMode={mode} />
+// mode !== "life-map"
 
 function StageFrame({ mode, children }: { mode: SceneMode; children: ReactNode }) {
   const dataMode = mode === "life-map" || mode === "demo" ? "life-map" : mode;
