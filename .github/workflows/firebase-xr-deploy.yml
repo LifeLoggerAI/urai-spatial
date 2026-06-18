@@ -11,17 +11,6 @@ on:
         options:
           - hosting
           - hosting,functions
-  push:
-    branches:
-      - main
-    paths:
-      - firebase.json
-      - package.json
-      - pnpm-lock.yaml
-      - urai-tier1/**
-      - apps/functions/**
-      - scripts/xr-firebase-preflight.mjs
-      - .github/workflows/firebase-xr-deploy.yml
 
 concurrency:
   group: firebase-xr-deploy-${{ github.ref }}
@@ -70,7 +59,6 @@ jobs:
         run: pnpm build
 
       - name: Deploy Firebase hosting
-        if: ${{ github.event_name == 'workflow_dispatch' || github.event_name == 'push' }}
         uses: FirebaseExtended/action-hosting-deploy@v0
         with:
           repoToken: ${{ secrets.GITHUB_TOKEN }}
@@ -79,7 +67,7 @@ jobs:
           channelId: live
 
       - name: Deploy Firebase functions when requested
-        if: ${{ github.event_name == 'workflow_dispatch' && contains(inputs.deploy_target, 'functions') }}
+        if: ${{ contains(inputs.deploy_target, 'functions') }}
         run: pnpm exec firebase deploy --only functions --project "$FIREBASE_PROJECT_ID"
         env:
           GOOGLE_APPLICATION_CREDENTIALS_JSON: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_URAI_SPATIAL }}
