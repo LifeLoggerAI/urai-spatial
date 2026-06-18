@@ -1,6 +1,7 @@
 "use client";
 
 import type { ReactNode } from "react";
+import HomeScene from "@/scene/HomeScene";
 import UraiSpatialStage from "@/spatial/v1/UraiSpatialStage";
 import { LifeMapScene } from "@/spatial/v1/LifeMapScene";
 import { MirrorOfBecomingView } from "@/spatial/v1/MirrorOfBecomingView";
@@ -28,6 +29,10 @@ function StageFrame({ mode, children }: { mode: SceneMode; children: ReactNode }
 export function TierOneExperience({ mode = "home" }: Props) {
   const showRouteCard = mode !== "home" && mode !== "ascent";
   const routeCard = showRouteCard ? <p className="urai-v1-route-card">Your Life Map is forming.</p> : null;
+
+  if (mode === "home" || mode === "ascent" || mode === "unwind") {
+    return <HomeScene sceneMode={mode} />;
+  }
 
   if (mode === "life-map" || mode === "demo") {
     return <StageFrame mode={mode}>{routeCard}<LifeMapScene nodes={lifeMapNodes} edges={lifeMapEdges} replayPath={replayPath} replayActive={false} onSelectNode={noopNode} onCloseNode={noop} onStartReplay={noop} onOpenMirror={noop} onReturnHome={noop} /></StageFrame>;
