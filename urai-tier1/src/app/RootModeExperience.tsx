@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useSyncExternalStore } from "react";
 import { TierOneExperience, type TierOneExperienceMode } from "@/spatial/layout/TierOneExperience";
 
 const allowedModes = new Set<TierOneExperienceMode>(["home", "ascent", "life-map", "demo", "replay", "focus", "unwind", "mirror"]);
@@ -14,23 +14,27 @@ function modeFromBrowserUrl(fallbackMode: TierOneExperienceMode): TierOneExperie
   return resolveRouteMode(new URLSearchParams(window.location.search).get("mode"));
 }
 
-export function RootModeExperience({ initialMode = "home" }: { initialMode?: TierOneExperienceMode }) {
-  const [mode, setMode] = useState<TierOneExperienceMode>(() => modeFromBrowserUrl(initialMode));
+function subscribeToRouteMode(onStoreChange: () => void): () => void {
+  if (typeof window === "undefined") return () => {};
+  const interval = window.setInterval(onStoreChange, 50);
+  window.addEventListener("popstate", onStoreChange);
+  window.addEventListener("hashchange", onStoreChange);
+  window.addEventListener("urai:sync-route-mode", onStoreChange);
+  queueMicrotask(onStoreChange);
+  return () => {
+    window.clearInterval(interval);
+    window.removeEventListener("popstate", onStoreChange);
+    window.removeEventListener("hashchange", onStoreChange);
+    window.removeEventListener("urai:sync-route-mode", onStoreChange);
+  };
+}
 
-  useEffect(() => {
-    const syncMode = () => setMode(modeFromBrowserUrl(initialMode));
-    syncMode();
-    const interval = window.setInterval(syncMode, 100);
-    window.addEventListener("popstate", syncMode);
-    window.addEventListener("hashchange", syncMode);
-    window.addEventListener("urai:sync-route-mode", syncMode);
-    return () => {
-      window.clearInterval(interval);
-      window.removeEventListener("popstate", syncMode);
-      window.removeEventListener("hashchange", syncMode);
-      window.removeEventListener("urai:sync-route-mode", syncMode);
-    };
-  }, [initialMode]);
+export function RootModeExperience({ initialMode = "home" }: { initialMode?: TierOneExperienceMode }) {
+  const mode = useSyncExternalStore(
+    subscribeToRouteMode,
+    () => modeFromBrowserUrl(initialMode),
+    () => initialMode,
+  );
 
   return <TierOneExperience mode={mode} />;
 }
