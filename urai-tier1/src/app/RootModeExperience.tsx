@@ -36,5 +36,15 @@ export function RootModeExperience({ initialMode = "home" }: { initialMode?: Tie
     () => initialMode,
   );
 
-  return <TierOneExperience mode={mode} />;
+  return (
+    <div
+      data-testid="urai-root-mode-stage"
+      data-mode={mode}
+      data-scene-mode={mode}
+      data-root-route-mode={mode}
+      style={{ position: "relative", minHeight: "100svh" }}
+    >
+      <TierOneExperience mode={mode} />
+    </div>
+  );
 }
