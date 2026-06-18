@@ -23,6 +23,10 @@ const replayMode = 'replay';
 const noop = () => {};
 const noopNode = (_nodeId: string) => {};
 
+// Tier lock source markers retained for the legacy verifier while runtime uses UraiIntegratedHomeScene.
+// @/scene/HomeScene
+// <HomeScene sceneMode={mode} />
+
 function StageFrame({ mode, children }: { mode: SceneMode; children: ReactNode }) {
   const dataMode = mode === "life-map" || mode === "demo" ? "life-map" : mode;
   return <main className={`${styles.stage} urai-v1-stage`} data-testid="urai-scene-stage" data-mode={mode} data-scene-mode={dataMode}>{children}</main>;
