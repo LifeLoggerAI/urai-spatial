@@ -22,6 +22,9 @@ const mirror = mirrorStates[0];
 const replayMode = 'replay';
 const noop = () => {};
 const noopNode = (_nodeId: string) => {};
+const startReplayFromFocus = () => {
+  window.location.href = "/replay?manifestId=seed-memory-bloom";
+};
 
 // Tier lock source markers retained for the legacy verifier while runtime uses UraiIntegratedHomeScene.
 // @/scene/HomeScene
@@ -36,9 +39,9 @@ export function TierOneExperience({ mode = "home" }: Props) {
   const showRouteCard = mode !== "home" && mode !== "ascent";
   const routeCard = showRouteCard ? <p className="urai-v1-route-card">Your Life Map is forming.</p> : null;
   const focusActionPanel = (
-    <section className="urai-v1-focus-action-panel" data-testid="urai-focus-action-panel" aria-label="Focus action panel">
+    <section className="urai-v1-focus-action-panel" data-testid="urai-focus-action-panel" aria-label="Focus action panel" style={{ position: "relative", zIndex: 50, pointerEvents: "auto" }}>
       <p>Seed memory bloom is ready for review.</p>
-      <button type="button" onClick={noop}>Start Replay</button>
+      <button type="button" onClick={startReplayFromFocus}>Start Replay</button>
     </section>
   );
 
@@ -51,7 +54,7 @@ export function TierOneExperience({ mode = "home" }: Props) {
   }
 
   if (mode === "focus") {
-    return <StageFrame mode={mode}>{routeCard}{focusActionPanel}<LifeMapScene nodes={lifeMapNodes} edges={lifeMapEdges} replayPath={replayPath} selectedNodeId={firstNodeId} replayActive={false} onSelectNode={noopNode} onCloseNode={noop} onStartReplay={noop} onOpenMirror={noop} onReturnHome={noop} /></StageFrame>;
+    return <StageFrame mode={mode}>{routeCard}<LifeMapScene nodes={lifeMapNodes} edges={lifeMapEdges} replayPath={replayPath} selectedNodeId={firstNodeId} replayActive={false} onSelectNode={noopNode} onCloseNode={noop} onStartReplay={startReplayFromFocus} onOpenMirror={noop} onReturnHome={noop} />{focusActionPanel}</StageFrame>;
   }
 
   if (mode === replayMode) {
