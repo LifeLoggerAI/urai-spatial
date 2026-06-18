@@ -7,6 +7,9 @@ import {
 } from '@/spatial/world/uraiSpatialWorldModel';
 import { URAI_SPATIAL_TIER_LOCK_VERSION } from '@/components/lifemap/uraiSpatialTierLockContract';
 
+export const dynamic = 'force-static';
+export const revalidate = false;
+
 export async function GET() {
   return NextResponse.json({
     ...assertUraiSpatial3DWorldModel(),
