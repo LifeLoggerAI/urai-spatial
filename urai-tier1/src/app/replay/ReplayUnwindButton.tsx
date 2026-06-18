@@ -1,44 +1,27 @@
 'use client'
 
-import { useEffect } from 'react'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
+
+const DEFAULT_REPLAY_MANIFEST_ID = 'seed-memory-bloom'
+
+function focusUrlForManifest(manifestId: string) {
+  return `/focus?manifestId=${encodeURIComponent(manifestId)}`
+}
 
 export function ReplayUnwindButton() {
   const router = useRouter()
-
-  useEffect(() => {
-    function routeToFocus() {
-      const stage = document.querySelector('[data-testid="urai-scene-stage"]')
-      stage?.setAttribute('data-scene-mode', 'focus')
-      router.push('/focus')
-    }
-
-    function handleKeyDown(event: KeyboardEvent) {
-      if (event.key !== 'Escape') return
-      event.preventDefault()
-      event.stopPropagation()
-      event.stopImmediatePropagation()
-      routeToFocus()
-    }
-
-    const directReplayFallback = window.location.pathname === '/replay' && !window.location.search.includes('manifestId=')
-    const fallbackTimer = directReplayFallback ? window.setTimeout(routeToFocus, 800) : undefined
-
-    window.addEventListener('keydown', handleKeyDown, { capture: true })
-    document.addEventListener('keydown', handleKeyDown, { capture: true })
-    return () => {
-      if (fallbackTimer) window.clearTimeout(fallbackTimer)
-      window.removeEventListener('keydown', handleKeyDown, { capture: true })
-      document.removeEventListener('keydown', handleKeyDown, { capture: true })
-    }
-  }, [router])
+  const params = useSearchParams()
+  const manifestId = params.get('manifestId') || DEFAULT_REPLAY_MANIFEST_ID
 
   return (
     <button
       type="button"
       data-testid="replay-unwind-button"
       data-route-action="replay-unwind-route-action"
-      onClick={() => router.push('/unwind')}
+      onClick={() => {
+        window.sessionStorage.setItem('urai-replay-return-manifest-id', manifestId)
+        router.push(focusUrlForManifest(manifestId))
+      }}
       style={{
         position: 'fixed',
         right: 24,
