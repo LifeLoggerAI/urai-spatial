@@ -34,9 +34,6 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="en">
       <body
-        data-testid="urai-scene-stage"
-        data-mode="home"
-        data-scene-mode="home"
         data-debug-spatial={process.env.NEXT_PUBLIC_URAI_DEBUG_SPATIAL === 'true' ? 'true' : 'false'}
         data-urai-home-spatial-shell="true"
         style={{ margin: 0, background: '#08030f', overflowX: 'hidden' }}
