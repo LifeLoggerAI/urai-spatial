@@ -11,10 +11,10 @@ type FocusRouteProps = {
 export default async function FocusRoute({ searchParams }: FocusRouteProps) {
   const params = await searchParams;
   return (
-    <>
+    <main data-testid="urai-scene-stage" data-mode="focus" data-scene-mode="focus">
       <TierOneExperience mode="focus" />
       <FocusEscapeBridge />
       <FocusPlaceDoor manifestId={params?.manifestId} />
-    </>
+    </main>
   );
 }
