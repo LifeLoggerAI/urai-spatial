@@ -15,6 +15,8 @@ import {
   clampReplayProgress,
 } from '@/spatial/scene/replayState'
 
+const DEFAULT_REPLAY_MANIFEST_ID = 'seed-memory-bloom'
+
 function nodeNameFromParams(value: string | null) {
   if (!value) return 'Evening Pattern'
   return value
@@ -32,7 +34,7 @@ export default function CinematicReplayClient() {
   const [scrubbing, setScrubbing] = useState(false)
   const [progressMs, setProgressMs] = useState(0)
 
-  const manifestId = params.get('manifestId')
+  const manifestId = params.get('manifestId') ?? DEFAULT_REPLAY_MANIFEST_ID
   const nodeName = nodeNameFromParams(params.get('node') ?? manifestId)
   const morphology = useMemo(() => buildMemoryMorphology(null, 'mirror'), [])
   const activeSegment = getReplaySegmentAt(progressMs)
@@ -50,8 +52,7 @@ export default function CinematicReplayClient() {
   const progressPercent = (clampReplayProgress(progressMs) / REPLAY_DURATION_MS) * 100
 
   const returnToFocus = useCallback(() => {
-    const target = manifestId ? `/focus?manifestId=${encodeURIComponent(manifestId)}` : '/focus'
-    router.push(target)
+    router.push(`/focus?manifestId=${encodeURIComponent(manifestId)}`)
   }, [manifestId, router])
 
   const scrubTo = useCallback((nextProgressMs: number) => {
