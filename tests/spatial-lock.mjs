@@ -31,8 +31,19 @@ function sleep(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
+const MODE_ROUTE_PATHS = new Map([
+  ['home', HOME_PATH],
+  ['ascent', '/ascent'],
+  ['life-map', '/life-map'],
+  ['focus', '/focus'],
+  ['replay', '/replay'],
+  ['unwind', '/unwind'],
+  ['mirror', '/mirror'],
+  ['demo', '/demo'],
+]);
+
 function modePath(mode, extra = '') {
-  const prefix = mode === 'home' ? HOME_PATH : `/?mode=${encodeURIComponent(mode)}`;
+  const prefix = MODE_ROUTE_PATHS.get(mode) || `/?mode=${encodeURIComponent(mode)}`;
   if (!extra) return prefix;
   return `${prefix}${prefix.includes('?') ? '&' : '?'}${extra}`;
 }
