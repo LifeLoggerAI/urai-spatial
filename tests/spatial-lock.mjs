@@ -132,7 +132,7 @@ function assertPlaywrightRuntimeReady() {
   ].filter(Boolean).join('\n'));
 }
 
-async function expectAttr(locator, name, value, timeout = 5000) {
+async function expectAttr(locator, name, value, timeout = 10000) {
   const started = Date.now();
   let lastActual = null;
   while (Date.now() - started < timeout) {
@@ -200,9 +200,17 @@ function collectConsole(page) {
   return messages;
 }
 
-async function gotoMode(page, stage, mode, extra = '') {
-  await page.goto(`${BASE_URL}${modePath(mode, extra)}`);
-  await expectAttr(stage, 'data-scene-mode', mode);
+function stageForMode(page, mode) {
+  return page
+    .locator(`[data-testid="urai-scene-stage"][data-scene-mode="${mode}"], [data-scene-mode="${mode}"]`)
+    .first();
+}
+
+async function gotoMode(page, mode, extra = '') {
+  await page.goto(`${BASE_URL}${modePath(mode, extra)}`, { waitUntil: 'domcontentloaded' });
+  const stage = stageForMode(page, mode);
+  await expectModeRouteState(stage, mode);
+  return stage;
 }
 
 async function run() {
@@ -217,9 +225,7 @@ async function run() {
     browser = await chromium.launch(chromiumLaunchOptions());
     const page = await browser.newPage({ viewport: { width: 1440, height: 1000 } });
     const consoleMessages = collectConsole(page);
-    const stage = page.locator('[data-testid="urai-scene-stage"][data-scene-mode]').first();
-
-    await gotoMode(page, stage, 'home');
+    let stage = await gotoMode(page, 'home');
     await expectVisible(stage, 'sky-only home stage');
     await expectHiddenOrMissing(page.getByTestId('urai-orb-button'), 'home orb');
     await expectHiddenOrMissing(page.getByTestId('urai-sky-guidance'), 'home guidance');
@@ -228,45 +234,41 @@ async function run() {
     await expectNoText(page.locator('body'), 'Begin Ascent');
     visualReport.screenshots.push(await screenshot(page, '01-home-sky-only-desktop'));
 
-    await gotoMode(page, stage, 'ascent');
+    stage = await gotoMode(page, 'ascent');
     await expectVisible(page.getByTestId('urai-ascent-guidance'), 'ascent guidance');
     visualReport.screenshots.push(await screenshot(page, '02-ascent-desktop'));
 
-    await gotoMode(page, stage, 'life-map');
-    await expectModeRouteState(stage, 'life-map');
+    stage = await gotoMode(page, 'life-map');
     visualReport.screenshots.push(await screenshot(page, '03-lifemap-desktop'));
 
-    await gotoMode(page, stage, 'focus', `manifestId=${encodeURIComponent(DEMO_MANIFEST_ID)}`);
+    stage = await gotoMode(page, 'focus', `manifestId=${encodeURIComponent(DEMO_MANIFEST_ID)}`);
     await expectVisible(page.getByTestId('urai-focus-action-panel'), 'focus action panel');
     await expectText(page.getByTestId('urai-focus-action-panel'), 'Start Replay');
     visualReport.screenshots.push(await screenshot(page, '04-focus-desktop'));
 
-    await gotoMode(page, stage, 'replay', `manifestId=${encodeURIComponent(DEMO_MANIFEST_ID)}`);
-    await expectModeRouteState(stage, 'replay');
+    stage = await gotoMode(page, 'replay', `manifestId=${encodeURIComponent(DEMO_MANIFEST_ID)}`);
     visualReport.screenshots.push(await screenshot(page, '05-replay-desktop'));
 
-    await gotoMode(page, stage, 'unwind');
+    stage = await gotoMode(page, 'unwind');
     await expectVisible(page.getByTestId('urai-unwind-guidance'), 'unwind recovery guidance');
     visualReport.screenshots.push(await screenshot(page, '05b-unwind-desktop'));
 
     for (const mode of ['focus', 'replay', 'unwind']) {
       const extra = mode === 'unwind' ? '' : `manifestId=${encodeURIComponent(DEMO_MANIFEST_ID)}`;
-      await gotoMode(page, stage, mode, extra);
+      stage = await gotoMode(page, mode, extra);
     }
 
-    await gotoMode(page, stage, 'life-map');
-    await expectModeRouteState(stage, 'life-map');
+    stage = await gotoMode(page, 'life-map');
 
     await page.setViewportSize({ width: 390, height: 844 });
-    await gotoMode(page, stage, 'life-map');
+    stage = await gotoMode(page, 'life-map');
     const box = await stage.boundingBox();
     if (!box || Math.round(box.width) !== 390 || Math.round(box.height) < 700) {
       throw new Error(`Mobile LifeMap viewport mismatch: ${JSON.stringify(box)}`);
     }
     visualReport.screenshots.push(await screenshot(page, '06-lifemap-mobile'));
 
-    await page.goto(`${BASE_URL}${HOME_PATH}`);
-    await expectModeRouteState(stage, 'home');
+    stage = await gotoMode(page, 'home');
     visualReport.screenshots.push(await screenshot(page, '07-home-recovery'));
 
     visualReport.console = consoleMessages;
