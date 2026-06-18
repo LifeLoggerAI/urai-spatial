@@ -16,6 +16,7 @@ export function UraiSpatialStage() {
   const replayPath = replayPaths[0];
   const mirror = mirrorStates[0];
   const reducedMotion = state.preferences.motionMode !== 'full';
+  const sceneMode = state.mode === 'returning' ? 'home' : state.mode === 'lifeMap' ? 'life-map' : state.mode;
 
   useEffect(() => {
     if (state.mode !== 'ascent') return;
@@ -33,6 +34,7 @@ export function UraiSpatialStage() {
       data-testid="urai-v1-spatial-stage"
       data-urai-home-spatial-shell="true"
       data-mode={state.mode}
+      data-scene-mode={sceneMode}
       aria-label="URAI Spatial V1 emotional world"
     >
       <EscapeUnwindController dispatch={dispatch} />
