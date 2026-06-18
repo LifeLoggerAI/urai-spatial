@@ -6,6 +6,8 @@ import {
   spatialLiveProviderRequirements,
 } from "@/lib/spatial-launch-boundaries";
 
+export const dynamic = "force-static";
+
 export async function GET() {
   return NextResponse.json({
     ok: true,
