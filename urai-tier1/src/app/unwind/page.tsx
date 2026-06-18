@@ -2,7 +2,7 @@ import { TierOneExperience } from "@/spatial/layout/TierOneExperience";
 
 export default function UnwindPage() {
   return (
-    <>
+    <main data-testid="urai-scene-stage" data-mode="unwind" data-scene-mode="unwind">
       <TierOneExperience mode="unwind" />
       <section
         data-testid="urai-unwind-scene"
@@ -14,6 +14,6 @@ export default function UnwindPage() {
           opacity: 0.001,
         }}
       />
-    </>
+    </main>
   );
 }
