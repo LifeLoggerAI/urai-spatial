@@ -1,6 +1,8 @@
 import { NextResponse } from 'next/server';
 import { readEntitlement } from '@/lib/entitlementStore';
 
+export const dynamic = 'force-static';
+
 function bearerTokenFrom(request: Request): string | null {
   const authHeader = request.headers.get('authorization');
   if (!authHeader?.startsWith('Bearer ')) return null;
