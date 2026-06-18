@@ -217,7 +217,7 @@ async function run() {
     browser = await chromium.launch(chromiumLaunchOptions());
     const page = await browser.newPage({ viewport: { width: 1440, height: 1000 } });
     const consoleMessages = collectConsole(page);
-    const stage = page.getByTestId('urai-scene-stage');
+    const stage = page.locator('[data-testid="urai-scene-stage"][data-scene-mode]').first();
 
     await gotoMode(page, stage, 'home');
     await expectVisible(stage, 'sky-only home stage');
@@ -259,7 +259,7 @@ async function run() {
 
     await page.setViewportSize({ width: 390, height: 844 });
     await gotoMode(page, stage, 'life-map');
-    const box = await page.getByTestId('urai-scene-stage').boundingBox();
+    const box = await stage.boundingBox();
     if (!box || Math.round(box.width) !== 390 || Math.round(box.height) < 700) {
       throw new Error(`Mobile LifeMap viewport mismatch: ${JSON.stringify(box)}`);
     }
