@@ -3,6 +3,21 @@ import fsp from 'node:fs/promises'
 import path from 'node:path'
 import { spawn } from 'node:child_process'
 import process from 'node:process'
+const LOCAL_LAUNCH_FIREBASE_PUBLIC_ENV = {
+  NEXT_PUBLIC_FIREBASE_API_KEY: 'urai-local-demo-api-key',
+  NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN: 'urai-local-demo.firebaseapp.com',
+  NEXT_PUBLIC_FIREBASE_PROJECT_ID: 'urai-local-demo',
+  NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET: 'urai-local-demo.appspot.com',
+  NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID: '000000000000',
+  NEXT_PUBLIC_FIREBASE_APP_ID: '1:000000000000:web:urai-local-demo',
+}
+
+for (const [key, value] of Object.entries(LOCAL_LAUNCH_FIREBASE_PUBLIC_ENV)) {
+  if (!process.env[key]) {
+    process.env[key] = value
+  }
+}
+
 
 const port = process.env.PORT ?? '3015'
 const host = process.env.HOST ?? `http://127.0.0.1:${port}`
