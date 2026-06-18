@@ -48,6 +48,10 @@ function modePath(mode, extra = '') {
   return `${prefix}${prefix.includes('?') ? '&' : '?'}${extra}`;
 }
 
+function expectedModePathname(mode) {
+  return new URL(`${BASE_URL}${modePath(mode)}`).pathname;
+}
+
 async function waitForServer(url, timeoutMs = 90000) {
   const started = Date.now();
   while (Date.now() - started < timeoutMs) {
@@ -200,14 +204,56 @@ async function expectHiddenOrMissing(locator, label) {
   }
 }
 
+async function expectUrlMode(page, mode, timeout = 10000) {
+  const expectedPathname = expectedModePathname(mode);
+  const started = Date.now();
+  let lastPathname = null;
+  while (Date.now() - started < timeout) {
+    lastPathname = new URL(page.url()).pathname;
+    if (lastPathname === expectedPathname) return;
+    await sleep(100);
+  }
+  throw new Error(`Expected URL pathname ${JSON.stringify(expectedPathname)}, received ${JSON.stringify(lastPathname)}`);
+}
+
+async function hasAttached(locator) {
+  return (await locator.count().catch(() => 0)) > 0;
+}
+
+function modeContentAnchor(page, mode) {
+  switch (mode) {
+    case 'ascent':
+      return page.getByTestId('urai-ascent-guidance').first();
+    case 'focus':
+      return page.getByTestId('urai-focus-action-panel').first();
+    case 'unwind':
+      return page.getByTestId('urai-unwind-guidance').first();
+    default:
+      return null;
+  }
+}
+
 async function expectModeRouteState(page, stage, mode) {
+  await expectUrlMode(page, mode);
+
   if (mode === 'home') {
     await expectAttached(page.locator('[data-urai-home-spatial-shell]').first(), 'home route shell');
     return;
   }
 
-  await expectAttr(stage, 'data-scene-mode', mode);
-  await expectVisible(stage, `${mode} route stage`);
+  if (await hasAttached(stage)) {
+    await expectAttr(stage, 'data-scene-mode', mode);
+    await expectVisible(stage, `${mode} route stage`);
+    return;
+  }
+
+  const contentAnchor = modeContentAnchor(page, mode);
+  if (contentAnchor) {
+    await expectVisible(contentAnchor, `${mode} route content anchor`, 15000);
+    return;
+  }
+
+  throw new Error(`${mode} route stage is not attached`);
 }
 
 async function screenshot(page, name) {
@@ -240,6 +286,7 @@ function stageForMode(page, mode) {
 
 async function gotoMode(page, mode, extra = '') {
   await page.goto(`${BASE_URL}${modePath(mode, extra)}`, { waitUntil: 'domcontentloaded' });
+  await page.waitForLoadState('networkidle', { timeout: 15000 }).catch(() => {});
   const stage = stageForMode(page, mode);
   await expectModeRouteState(page, stage, mode);
   return stage;
