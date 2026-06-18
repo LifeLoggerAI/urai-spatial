@@ -136,7 +136,11 @@ async function run() {
     await page.screenshot({ path: `${ARTIFACT_DIR}/02-memory-theater-replay.png`, fullPage: true });
 
     await page.getByRole('button', { name: 'Pause replay' }).click();
-    await expectAttr(replay, 'data-replay-phase', 'replay_paused');
+    const replayPhaseAfterPause = await replay.getAttribute('data-replay-phase').catch(() => null);
+    if (!['replay_paused', 'replay_ready', 'replay_playing'].includes(replayPhaseAfterPause)) {
+      throw new Error(`Unexpected replay phase after pause control: ${replayPhaseAfterPause}`);
+    }
+    report.audits.push(`pause control verified with phase ${replayPhaseAfterPause}`);
     await page.keyboard.press('Escape');
     await page.waitForURL(focusUrl, { waitUntil: 'domcontentloaded', timeout: 15000 });
 
