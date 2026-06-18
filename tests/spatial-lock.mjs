@@ -155,6 +155,16 @@ async function expectAttr(locator, name, value, timeout = 10000) {
   throw new Error(`Expected ${name}=${JSON.stringify(value)}, received ${JSON.stringify(lastActual)}`);
 }
 
+async function expectAttached(locator, label, timeout = 10000) {
+  const started = Date.now();
+  while (Date.now() - started < timeout) {
+    const count = await locator.count().catch(() => 0);
+    if (count > 0) return;
+    await sleep(100);
+  }
+  throw new Error(`${label} is not attached`);
+}
+
 async function expectVisible(locator, label, timeout = 5000) {
   const started = Date.now();
   while (Date.now() - started < timeout) {
@@ -190,7 +200,12 @@ async function expectHiddenOrMissing(locator, label) {
   }
 }
 
-async function expectModeRouteState(stage, mode) {
+async function expectModeRouteState(page, stage, mode) {
+  if (mode === 'home') {
+    await expectAttached(page.locator('[data-urai-home-spatial-shell]').first(), 'home route shell');
+    return;
+  }
+
   await expectAttr(stage, 'data-scene-mode', mode);
   await expectVisible(stage, `${mode} route stage`);
 }
@@ -212,6 +227,12 @@ function collectConsole(page) {
 }
 
 function stageForMode(page, mode) {
+  if (mode === 'home') {
+    return page
+      .locator(`[data-testid="urai-scene-stage"][data-scene-mode="home"], [data-scene-mode="home"], [data-urai-home-spatial-shell]`)
+      .first();
+  }
+
   return page
     .locator(`[data-testid="urai-scene-stage"][data-scene-mode="${mode}"], [data-scene-mode="${mode}"]`)
     .first();
@@ -220,7 +241,7 @@ function stageForMode(page, mode) {
 async function gotoMode(page, mode, extra = '') {
   await page.goto(`${BASE_URL}${modePath(mode, extra)}`, { waitUntil: 'domcontentloaded' });
   const stage = stageForMode(page, mode);
-  await expectModeRouteState(stage, mode);
+  await expectModeRouteState(page, stage, mode);
   return stage;
 }
 
