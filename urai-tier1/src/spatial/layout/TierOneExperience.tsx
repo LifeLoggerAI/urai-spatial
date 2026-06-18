@@ -30,6 +30,7 @@ const startReplayFromFocus = () => {
 // @/scene/HomeScene
 // <HomeScene sceneMode={mode} />
 // mode !== "life-map"
+// mode !== "home"
 
 function StageFrame({ mode, children }: { mode: SceneMode; children: ReactNode }) {
   const dataMode = mode === "life-map" || mode === "demo" ? "life-map" : mode;
