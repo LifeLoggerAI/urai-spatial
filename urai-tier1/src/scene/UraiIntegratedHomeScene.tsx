@@ -56,9 +56,11 @@ export default function UraiIntegratedHomeScene({ sceneMode = 'home' }: { sceneM
 
   return (
     <div
-      className="urai-integrated-home-scene"
+      className="urai-integrated-home-scene urai-home-shell"
       data-testid="urai-integrated-home-scene"
+      data-urai-home-spatial-shell="true"
       data-integrated-scene-mode={sceneMode}
+      data-scene-mode={sceneMode}
       data-integrated-quality-tier={budget.qualityTier}
       data-integrated-reflection-mode={budget.reflectionMode}
       data-integrated-shadow-map-size={visualBudget.shadowMapSize}
