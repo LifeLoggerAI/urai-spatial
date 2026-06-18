@@ -51,18 +51,54 @@ async function waitForServer(url, timeoutMs = 90000) {
   throw new Error(`Timed out waiting for ${url}`);
 }
 
+function killServerPort(signal = 'TERM') {
+  if (USE_EXISTING || SERVER_PORT === '80' || SERVER_PORT === '443') return;
+  if (process.platform === 'win32') return;
+
+  const script = [
+    'set +e',
+    `if command -v fuser >/dev/null 2>&1; then fuser -k ${SERVER_PORT}/tcp >/dev/null 2>&1 || true; fi`,
+    `if command -v lsof >/dev/null 2>&1; then lsof -ti tcp:${SERVER_PORT} | xargs -r kill -${signal} >/dev/null 2>&1 || true; fi`,
+  ].join('\n');
+
+  spawnSync('bash', ['-lc', script], { stdio: 'ignore' });
+}
+
+async function releaseServerPort() {
+  killServerPort('TERM');
+  await sleep(750);
+  killServerPort('KILL');
+  await sleep(250);
+}
+
 function startServer() {
   if (USE_EXISTING) return null;
   const child = spawn('pnpm', ['--dir', 'urai-tier1', 'dev', '--port', SERVER_PORT], {
     cwd: process.cwd(),
     env: { ...process.env, CI: '1', LD_LIBRARY_PATH: process.env.LD_LIBRARY_PATH || '' },
     stdio: 'inherit',
+    detached: process.platform !== 'win32',
     shell: process.platform === 'win32',
   });
   child.on('exit', (code) => {
     if (code && code !== 0) console.error(`URAI Spatial dev server exited with ${code}`);
   });
   return child;
+}
+
+function stopServer(server) {
+  if (!server) return;
+
+  try {
+    if (process.platform === 'win32') server.kill('SIGTERM');
+    else process.kill(-server.pid, 'SIGTERM');
+  } catch {
+    try {
+      server.kill('SIGTERM');
+    } catch {
+      // already stopped
+    }
+  }
 }
 
 function assertPlaywrightRuntimeReady() {
@@ -171,11 +207,14 @@ async function gotoMode(page, stage, mode, extra = '') {
 
 async function run() {
   assertPlaywrightRuntimeReady();
+  await releaseServerPort();
   const server = startServer();
   const visualReport = { screenshots: [], console: [] };
+  let browser = null;
+
   try {
     await waitForServer(`${BASE_URL}${HOME_PATH}`);
-    const browser = await chromium.launch(chromiumLaunchOptions());
+    browser = await chromium.launch(chromiumLaunchOptions());
     const page = await browser.newPage({ viewport: { width: 1440, height: 1000 } });
     const consoleMessages = collectConsole(page);
     const stage = page.getByTestId('urai-scene-stage');
@@ -234,11 +273,11 @@ async function run() {
     if (consoleMessages.length) {
       throw new Error(`Console errors detected:\n${consoleMessages.join('\n')}`);
     }
-
-    await browser.close();
   } finally {
+    if (browser) await browser.close().catch(() => {});
     writeFileSync(`${ARTIFACT_DIR}/visual-report.json`, JSON.stringify(visualReport, null, 2));
-    if (server) server.kill();
+    stopServer(server);
+    await releaseServerPort();
   }
 }
 
