@@ -12,6 +12,8 @@ if (existsSync(runtimeLibs)) {
 
 const timeoutMs = Number(process.env.URAI_PLAYWRIGHT_CHECK_TIMEOUT_MS || 30000);
 const autoInstall = process.argv.includes('--auto-install');
+const installAttempts = Number(process.env.URAI_PLAYWRIGHT_INSTALL_ATTEMPTS || 3);
+const installRetryDelayMs = Number(process.env.URAI_PLAYWRIGHT_INSTALL_RETRY_DELAY_MS || 5000);
 
 function fail(message, error) {
   console.error(`playwright-runtime: FAIL: ${message}`);
@@ -19,6 +21,10 @@ function fail(message, error) {
     console.error(error?.stack || String(error));
   }
   process.exit(1);
+}
+
+function sleepSync(ms) {
+  Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, ms);
 }
 
 function looksLikeMissingBrowser(error) {
@@ -33,20 +39,43 @@ function looksLikeMissingBrowser(error) {
 function installChromium() {
   console.log('playwright-runtime: Chromium missing; installing Playwright chromium browser');
 
-  const install = spawnSync('pnpm', ['exec', 'playwright', 'install', 'chromium'], {
-    cwd: process.cwd(),
-    env: process.env,
-    stdio: 'inherit',
-    shell: process.platform === 'win32',
-  });
+  let lastError;
+  let lastStatus = 0;
 
-  if (install.error) {
-    fail('failed to run Playwright chromium installer', install.error);
+  for (let attempt = 1; attempt <= installAttempts; attempt += 1) {
+    console.log(`playwright-runtime: Playwright chromium install attempt ${attempt}/${installAttempts}`);
+
+    const install = spawnSync('pnpm', ['exec', 'playwright', 'install', 'chromium'], {
+      cwd: process.cwd(),
+      env: {
+        ...process.env,
+        PLAYWRIGHT_DOWNLOAD_CONNECTION_TIMEOUT:
+          process.env.PLAYWRIGHT_DOWNLOAD_CONNECTION_TIMEOUT || '120000',
+      },
+      stdio: 'inherit',
+      shell: process.platform === 'win32',
+    });
+
+    lastError = install.error;
+    lastStatus = install.status ?? 0;
+
+    if (!install.error && install.status === 0) {
+      return;
+    }
+
+    if (attempt < installAttempts) {
+      console.warn(
+        `playwright-runtime: Playwright chromium install attempt ${attempt} failed; retrying in ${installRetryDelayMs}ms`,
+      );
+      sleepSync(installRetryDelayMs);
+    }
   }
 
-  if (install.status !== 0) {
-    fail(`Playwright chromium installer exited with code ${install.status}`);
+  if (lastError) {
+    fail('failed to run Playwright chromium installer', lastError);
   }
+
+  fail(`Playwright chromium installer exited with code ${lastStatus}`);
 }
 
 async function checkRuntime() {
