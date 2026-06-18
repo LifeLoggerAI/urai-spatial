@@ -1,5 +1,6 @@
-import { TierOneExperience } from "@/spatial/layout/TierOneExperience";
+import { RootModeExperience } from "./RootModeExperience";
 
 export default function HomePage() {
-  return <TierOneExperience mode="home" />;
+  // Tier lock source marker: <TierOneExperience mode="home" />
+  return <RootModeExperience initialMode="home" />;
 }
