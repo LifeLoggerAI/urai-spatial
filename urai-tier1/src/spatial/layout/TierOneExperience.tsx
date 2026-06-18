@@ -1,7 +1,7 @@
 "use client";
 
 import type { ReactNode } from "react";
-import HomeScene from "@/scene/HomeScene";
+import UraiIntegratedHomeScene from "@/scene/UraiIntegratedHomeScene";
 import UraiSpatialStage from "@/spatial/v1/UraiSpatialStage";
 import { HomeCohesionLayer } from "./HomeCohesionLayer";
 import { LifeMapScene } from "@/spatial/v1/LifeMapScene";
@@ -33,7 +33,7 @@ export function TierOneExperience({ mode = "home" }: Props) {
   const routeCard = showRouteCard ? <p className="urai-v1-route-card">Your Life Map is forming.</p> : null;
 
   if (mode === "home" || mode === "ascent" || mode === "unwind") {
-    return <><HomeScene sceneMode={mode} /><HomeCohesionLayer enabled={mode === "home"} /></>;
+    return <><UraiIntegratedHomeScene sceneMode={mode} /><HomeCohesionLayer enabled={mode === "home"} /></>;
   }
 
   if (mode === "life-map" || mode === "demo") {
