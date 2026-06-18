@@ -1,7 +1,7 @@
 'use client'
 
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { useRouter, useSearchParams } from 'next/navigation'
+import { useSearchParams } from 'next/navigation'
 import { buildMemoryMorphology } from '@/spatial/memory/memoryMorphology'
 import { useReducedMotion } from '@/spatial/hooks/useReducedMotion'
 import { ReplayMetaPanel } from '@/spatial/replay/ReplayMetaPanel'
@@ -26,8 +26,11 @@ function nodeNameFromParams(value: string | null) {
     .replace(/\b\w/g, (letter) => letter.toUpperCase())
 }
 
+function focusReturnUrl(manifestId: string) {
+  return `/focus?manifestId=${encodeURIComponent(manifestId)}`
+}
+
 export default function CinematicReplayClient() {
-  const router = useRouter()
   const params = useSearchParams()
   const reducedMotion = useReducedMotion()
   const [playing, setPlaying] = useState(true)
@@ -52,8 +55,16 @@ export default function CinematicReplayClient() {
   const progressPercent = (clampReplayProgress(progressMs) / REPLAY_DURATION_MS) * 100
 
   const returnToFocus = useCallback(() => {
-    router.push(`/focus?manifestId=${encodeURIComponent(manifestId)}`)
-  }, [manifestId, router])
+    const target = focusReturnUrl(manifestId)
+    window.sessionStorage.setItem('urai-replay-return-manifest-id', manifestId)
+    window.history.pushState(null, '', target)
+    window.dispatchEvent(new PopStateEvent('popstate'))
+    window.setTimeout(() => {
+      if (window.location.pathname !== '/focus' || window.location.search !== `?manifestId=${encodeURIComponent(manifestId)}`) {
+        window.location.assign(target)
+      }
+    }, 80)
+  }, [manifestId])
 
   const scrubTo = useCallback((nextProgressMs: number) => {
     const next = clampReplayProgress(nextProgressMs)
@@ -87,15 +98,26 @@ export default function CinematicReplayClient() {
 
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') returnToFocus()
+      if (event.key === 'Escape') {
+        event.preventDefault()
+        event.stopPropagation()
+        event.stopImmediatePropagation()
+        returnToFocus()
+        return
+      }
+
       if (event.key === ' ' || event.key === 'Enter') {
         event.preventDefault()
         togglePlay()
       }
     }
 
-    window.addEventListener('keydown', onKey)
-    return () => window.removeEventListener('keydown', onKey)
+    window.addEventListener('keydown', onKey, { capture: true })
+    document.addEventListener('keydown', onKey, { capture: true })
+    return () => {
+      window.removeEventListener('keydown', onKey, { capture: true })
+      document.removeEventListener('keydown', onKey, { capture: true })
+    }
   }, [returnToFocus, togglePlay])
 
   return (
