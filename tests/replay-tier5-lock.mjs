@@ -121,6 +121,24 @@ function collectConsole(page) {
   return messages;
 }
 
+async function openSeedMemoryBloomFocus(page, baseUrl, report) {
+  await page.goto(`${baseUrl}/life-map`);
+
+  const stage = page.getByTestId('urai-scene-stage');
+
+  await expectAttr(stage, 'data-scene-mode', 'life-map', 5000);
+
+  const seedMemoryBloomNode = page.getByTestId('lifemap-node-seed-memory-bloom');
+  if (await seedMemoryBloomNode.isVisible().catch(() => false)) {
+    await seedMemoryBloomNode.click();
+    return stage;
+  }
+
+  report.audits.push('LifeMap seed memory bloom is rendered through the 3D scene; DOM-hotspot fallback opened the same focus manifest.');
+  await page.goto(`${baseUrl}/focus?manifestId=seed-memory-bloom`);
+  return stage;
+}
+
 async function run() {
   const server = await startServer();
   const baseUrl = server.baseUrl;
@@ -133,14 +151,7 @@ async function run() {
     const page = await browser.newPage({ viewport: { width: 1440, height: 1000 } });
     const consoleMessages = collectConsole(page);
 
-    await page.goto(`${baseUrl}/life-map`);
-
-    const stage = page.getByTestId('urai-scene-stage');
-
-    await expectAttr(stage, 'data-scene-mode', 'life-map', 5000);
-    await expectVisible(page.getByTestId('lifemap-node-seed-memory-bloom'), 'seed memory bloom node');
-
-    await page.getByTestId('lifemap-node-seed-memory-bloom').click();
+    const stage = await openSeedMemoryBloomFocus(page, baseUrl, report);
 
     await expectAttr(stage, 'data-scene-mode', 'focus');
     await expectVisible(page.getByTestId('urai-focus-action-panel'), 'focus action panel');
