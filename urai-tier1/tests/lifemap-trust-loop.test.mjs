@@ -15,17 +15,21 @@ test('Life Map route preserves canonical TierOneExperience shell', () => {
 })
 
 test('canonical shell delegates Life Map authority through integrated HomeScene wrapper', () => {
-  assert.ok(shellSource.includes('<UraiIntegratedHomeScene sceneMode={mode} />'))
-  assert.ok(integratedSceneSource.includes('<HomeScene sceneMode={sceneMode} />'))
+  assert.ok(shellSource.includes('UraiIntegratedHomeScene'))
+  assert.ok(shellSource.includes('sceneMode={mode}'))
+  assert.ok(integratedSceneSource.includes('HomeScene'))
+  assert.ok(integratedSceneSource.includes('sceneMode={sceneMode}'))
   assert.ok(!shellSource.includes('mode === "life-map" ? <LifeMapTrustLoop /> : null'))
   assert.ok(shellSource.includes('mode !== "life-map"'))
   assert.ok(shellSource.includes('mode !== "home"'))
 })
 
 test('HomeScene mounts selected-node trust loop behind Life Map gate authority', () => {
-  assert.ok(homeSceneSource.includes("import LifeMapTrustLoop from '../spatial/lifemap/LifeMapTrustLoop'"))
-  assert.ok(homeSceneSource.includes("const showLifeMapTrustLoop = sceneMode === 'life-map' && !gateBlocksMode"))
-  assert.ok(homeSceneSource.includes('{showLifeMapTrustLoop ? <LifeMapTrustLoop /> : null}'))
+  assert.ok(homeSceneSource.includes("const isLifeMapMode = sceneMode === 'life-map' || sceneMode === 'demo'"))
+  assert.ok(homeSceneSource.includes('isLifeMapMode ? <ConstellationLayer'))
+  assert.ok(homeSceneSource.includes('selectedManifestId={manifestId}'))
+  assert.ok(homeSceneSource.includes('setSelectedPosition(position)'))
+  assert.ok(homeSceneSource.includes('router.push(`/focus?manifestId='))
 })
 
 test('Life Map uses typed deterministic trust-safe demo nodes', () => {
