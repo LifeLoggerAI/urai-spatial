@@ -7,6 +7,8 @@ import { MemoryScroll } from './MemoryScroll';
 import { ReplayPathEngine } from './ReplayPathEngine';
 import { WhyThisDrawer } from './WhyThisDrawer';
 
+const decorativeLayerStyle = { pointerEvents: 'none' } as const;
+
 export function LifeMapScene({
   nodes,
   edges,
@@ -34,10 +36,10 @@ export function LifeMapScene({
 
   return (
     <section className="urai-v1-lifemap" data-testid="urai-v1-lifemap-scene" aria-label="URAI Life Map galaxy">
-      <div className="urai-v1-lifemap__depth" aria-hidden="true" />
-      <div className="urai-v1-lifemap__nebula urai-v1-lifemap__nebula--recovery" data-testid="urai-v1-lifemap-nebula" aria-hidden="true" />
-      <div className="urai-v1-lifemap__nebula urai-v1-lifemap__nebula--relationship" aria-hidden="true" />
-      <div className="urai-v1-lifemap__nebula urai-v1-lifemap__nebula--threshold" aria-hidden="true" />
+      <div className="urai-v1-lifemap__depth" aria-hidden="true" style={decorativeLayerStyle} />
+      <div className="urai-v1-lifemap__nebula urai-v1-lifemap__nebula--recovery" data-testid="urai-v1-lifemap-nebula" aria-hidden="true" style={decorativeLayerStyle} />
+      <div className="urai-v1-lifemap__nebula urai-v1-lifemap__nebula--relationship" aria-hidden="true" style={decorativeLayerStyle} />
+      <div className="urai-v1-lifemap__nebula urai-v1-lifemap__nebula--threshold" aria-hidden="true" style={decorativeLayerStyle} />
       <div className="urai-v1-lifemap__you" aria-label="You are here">You are here</div>
       <ConstellationLayer nodes={nodes} edges={edges} />
       <div className="urai-v1-lifemap__nodes">
