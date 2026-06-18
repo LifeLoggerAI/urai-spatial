@@ -1,7 +1,10 @@
 import LifeMapAscentGate from "@/spatial/components/world/LifeMapAscentGate";
 
 export default function LifeMapPage() {
-  // Canonical V1 Life Map entry: Ascent gate owns the transition, TierOneExperience owns runtime.
   // Source contract marker: <TierOneExperience mode="life-map" />
-  return <LifeMapAscentGate />;
+  return (
+    <main data-testid="urai-scene-stage" data-mode="life-map" data-scene-mode="life-map">
+      <LifeMapAscentGate />
+    </main>
+  );
 }
