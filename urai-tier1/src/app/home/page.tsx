@@ -10,7 +10,13 @@ export const metadata = {
 
 export default function HomeRoutePage() {
   return (
-    <div className="urai-home-shell" data-urai-home-spatial-shell>
+    <div
+      className="urai-home-shell"
+      data-testid="urai-scene-stage"
+      data-mode="home"
+      data-scene-mode="home"
+      data-urai-home-spatial-shell
+    >
       <TierOneExperience mode="home" />
     </div>
   );
