@@ -35,6 +35,12 @@ function StageFrame({ mode, children }: { mode: SceneMode; children: ReactNode }
 export function TierOneExperience({ mode = "home" }: Props) {
   const showRouteCard = mode !== "home" && mode !== "ascent";
   const routeCard = showRouteCard ? <p className="urai-v1-route-card">Your Life Map is forming.</p> : null;
+  const focusActionPanel = (
+    <section className="urai-v1-focus-action-panel" data-testid="urai-focus-action-panel" aria-label="Focus action panel">
+      <p>Seed memory bloom is ready for review.</p>
+      <button type="button" onClick={noop}>Start Replay</button>
+    </section>
+  );
 
   if (mode === "home" || mode === "ascent" || mode === "unwind") {
     return <><UraiIntegratedHomeScene sceneMode={mode} /><HomeCohesionLayer enabled={mode === "home"} /></>;
@@ -45,7 +51,7 @@ export function TierOneExperience({ mode = "home" }: Props) {
   }
 
   if (mode === "focus") {
-    return <StageFrame mode={mode}>{routeCard}<LifeMapScene nodes={lifeMapNodes} edges={lifeMapEdges} replayPath={replayPath} selectedNodeId={firstNodeId} replayActive={false} onSelectNode={noopNode} onCloseNode={noop} onStartReplay={noop} onOpenMirror={noop} onReturnHome={noop} /></StageFrame>;
+    return <StageFrame mode={mode}>{routeCard}{focusActionPanel}<LifeMapScene nodes={lifeMapNodes} edges={lifeMapEdges} replayPath={replayPath} selectedNodeId={firstNodeId} replayActive={false} onSelectNode={noopNode} onCloseNode={noop} onStartReplay={noop} onOpenMirror={noop} onReturnHome={noop} /></StageFrame>;
   }
 
   if (mode === replayMode) {
