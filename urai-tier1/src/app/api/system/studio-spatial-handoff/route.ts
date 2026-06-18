@@ -7,8 +7,10 @@ import {
 } from '@/lib/studio-spatial-handoff'
 import { jsonHeaders, URAI_SPATIAL_SERVICE } from '@/lib/spatial-system-contract'
 
-export const dynamic = 'force-dynamic'
+export const dynamic = 'force-static'
+export const revalidate = false
 
+const GENERATED_AT = '2026-06-07T00:00:00.000Z'
 const sampleRuntimeTargets = ['web-spatial', 'webxr-disabled', 'quest-vr-disabled', 'visionos-disabled', 'ar-handheld-disabled'] as const
 
 const sampleExport: StudioSpatialExport = {
@@ -18,7 +20,7 @@ const sampleExport: StudioSpatialExport = {
   exportId: 'sample-export',
   projectId: 'sample-project',
   tenantId: 'sample-tenant',
-  createdAt: '2026-06-07T00:00:00.000Z',
+  createdAt: GENERATED_AT,
   runtimeTargets: [...sampleRuntimeTargets],
   sceneManifest: {
     sceneId: 'sample-scene',
@@ -50,7 +52,7 @@ const sampleExport: StudioSpatialExport = {
     userId: 'sample-user',
     purpose: 'Render a tenant-scoped URAI Studio spatial export.',
     grantedCategories: ['generated_assets'],
-    createdAt: '2026-06-07T00:00:00.000Z',
+    createdAt: GENERATED_AT,
     retentionPolicyId: 'generated_assets_standard_retention',
   },
   safetyBoundaries: [
@@ -62,48 +64,49 @@ const sampleExport: StudioSpatialExport = {
   ],
 }
 
-export async function GET() {
-  const validation = validateStudioSpatialExport(sampleExport)
+const validation = validateStudioSpatialExport(sampleExport)
+const handoffPayload = {
+  ok: validation.ok,
+  service: URAI_SPATIAL_SERVICE,
+  endpoint: '/api/system/studio-spatial-handoff',
+  contractVersion: STUDIO_SPATIAL_HANDOFF_CONTRACT_VERSION,
+  producer: 'urai-studio',
+  consumer: 'urai-spatial',
+  acceptedRuntimeTargets: validation.acceptedRuntimeTargets,
+  rejectedRuntimeTargets: validation.rejectedRuntimeTargets,
+  requiredRuntimeTarget: 'web-spatial',
+  disabledRuntimeTargets: ['webxr-disabled', 'quest-vr-disabled', 'visionos-disabled', 'ar-handheld-disabled'],
+  requiredFields: [
+    'contractVersion',
+    'producer',
+    'consumer',
+    'exportId',
+    'projectId',
+    'tenantId',
+    'createdAt',
+    'sceneManifest',
+    'assetManifest',
+    'consentReceipt',
+    'safetyBoundaries',
+    'runtimeTargets',
+  ],
+  validator: {
+    source: 'urai-tier1/src/lib/studio-spatial-handoff.ts',
+    functionName: 'validateStudioSpatialExport',
+    validation,
+  },
+  liveClaimBoundary:
+    'Only web-spatial is assumed live by default. WebXR, Quest VR, VisionOS, and handheld AR must remain disabled until release evidence validates them.',
+  generatedAt: GENERATED_AT,
+}
 
+export async function GET() {
   return NextResponse.json(
-    {
-      ok: validation.ok,
-      service: URAI_SPATIAL_SERVICE,
-      endpoint: '/api/system/studio-spatial-handoff',
-      contractVersion: STUDIO_SPATIAL_HANDOFF_CONTRACT_VERSION,
-      producer: 'urai-studio',
-      consumer: 'urai-spatial',
-      acceptedRuntimeTargets: validation.acceptedRuntimeTargets,
-      rejectedRuntimeTargets: validation.rejectedRuntimeTargets,
-      requiredRuntimeTarget: 'web-spatial',
-      disabledRuntimeTargets: ['webxr-disabled', 'quest-vr-disabled', 'visionos-disabled', 'ar-handheld-disabled'],
-      requiredFields: [
-        'contractVersion',
-        'producer',
-        'consumer',
-        'exportId',
-        'projectId',
-        'tenantId',
-        'createdAt',
-        'sceneManifest',
-        'assetManifest',
-        'consentReceipt',
-        'safetyBoundaries',
-        'runtimeTargets',
-      ],
-      validator: {
-        source: 'urai-tier1/src/lib/studio-spatial-handoff.ts',
-        functionName: 'validateStudioSpatialExport',
-        validation,
-      },
-      liveClaimBoundary:
-        'Only web-spatial is assumed live by default. WebXR, Quest VR, VisionOS, and handheld AR must remain disabled until release evidence validates them.',
-      generatedAt: new Date().toISOString(),
-    },
+    handoffPayload,
     {
       headers: {
         ...jsonHeaders(),
-        'Cache-Control': 'no-store, max-age=0',
+        'Cache-Control': 'public, max-age=300, s-maxage=300',
       },
     },
   )
