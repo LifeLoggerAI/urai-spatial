@@ -3,6 +3,7 @@
 import type { ReactNode } from "react";
 import HomeScene from "@/scene/HomeScene";
 import UraiSpatialStage from "@/spatial/v1/UraiSpatialStage";
+import { HomeCohesionLayer } from "./HomeCohesionLayer";
 import { LifeMapScene } from "@/spatial/v1/LifeMapScene";
 import { MirrorOfBecomingView } from "@/spatial/v1/MirrorOfBecomingView";
 import { lifeMapEdges, lifeMapNodes, mirrorStates, replayPaths } from "@/spatial/v1/lifeMapDemoData";
@@ -18,6 +19,7 @@ type Props = {
 const firstNodeId = lifeMapNodes[0]?.id;
 const replayPath = replayPaths[0];
 const mirror = mirrorStates[0];
+const replayMode = 'replay';
 const noop = () => {};
 const noopNode = (_nodeId: string) => {};
 
@@ -31,7 +33,7 @@ export function TierOneExperience({ mode = "home" }: Props) {
   const routeCard = showRouteCard ? <p className="urai-v1-route-card">Your Life Map is forming.</p> : null;
 
   if (mode === "home" || mode === "ascent" || mode === "unwind") {
-    return <HomeScene sceneMode={mode} />;
+    return <><HomeScene sceneMode={mode} /><HomeCohesionLayer enabled={mode === "home"} /></>;
   }
 
   if (mode === "life-map" || mode === "demo") {
@@ -42,7 +44,7 @@ export function TierOneExperience({ mode = "home" }: Props) {
     return <StageFrame mode={mode}>{routeCard}<LifeMapScene nodes={lifeMapNodes} edges={lifeMapEdges} replayPath={replayPath} selectedNodeId={firstNodeId} replayActive={false} onSelectNode={noopNode} onCloseNode={noop} onStartReplay={noop} onOpenMirror={noop} onReturnHome={noop} /></StageFrame>;
   }
 
-  if (mode === "replay") {
+  if (mode === replayMode) {
     return <StageFrame mode={mode}>{routeCard}<LifeMapScene nodes={lifeMapNodes} edges={lifeMapEdges} replayPath={replayPath} selectedNodeId={firstNodeId} replayActive onSelectNode={noopNode} onCloseNode={noop} onStartReplay={noop} onOpenMirror={noop} onReturnHome={noop} /></StageFrame>;
   }
 
