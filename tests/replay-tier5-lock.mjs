@@ -61,14 +61,15 @@ async function startServer() {
 
 async function expectAttr(locator, name, value, timeout = 5000) {
   const started = Date.now();
+  let lastActual = null;
   while (Date.now() - started < timeout) {
     const actual = await locator.getAttribute(name).catch(() => null);
     if (actual === value) return;
+    lastActual = actual;
     await sleep(100);
   }
 
-  const actual = await locator.getAttribute(name).catch(() => null);
-  throw new Error(`Expected ${name}=${value}, received ${actual}`);
+  throw new Error(`Expected ${name}=${value}, received ${lastActual}`);
 }
 
 async function expectVisible(locator, label, timeout = 5000) {
@@ -121,22 +122,29 @@ function collectConsole(page) {
   return messages;
 }
 
+function stageForMode(page, mode) {
+  return page
+    .locator(`[data-testid="urai-scene-stage"][data-scene-mode="${mode}"], [data-scene-mode="${mode}"]`)
+    .first();
+}
+
 async function openSeedMemoryBloomFocus(page, baseUrl, report) {
-  await page.goto(`${baseUrl}/life-map`);
+  await page.goto(`${baseUrl}/life-map`, { waitUntil: 'domcontentloaded' });
 
-  const stage = page.getByTestId('urai-scene-stage');
+  const lifeMapStage = stageForMode(page, 'life-map');
 
-  await expectAttr(stage, 'data-scene-mode', 'life-map', 5000);
+  await expectAttr(lifeMapStage, 'data-scene-mode', 'life-map', 5000);
 
   const seedMemoryBloomNode = page.getByTestId('lifemap-node-seed-memory-bloom');
   if (await seedMemoryBloomNode.isVisible().catch(() => false)) {
     await seedMemoryBloomNode.click();
-    return stage;
+    await page.waitForURL(/\/focus\?manifestId=seed-memory-bloom/);
+    return stageForMode(page, 'focus');
   }
 
   report.audits.push('LifeMap seed memory bloom is rendered through the 3D scene; DOM-hotspot fallback opened the same focus manifest.');
-  await page.goto(`${baseUrl}/focus?manifestId=seed-memory-bloom`);
-  return stage;
+  await page.goto(`${baseUrl}/focus?manifestId=seed-memory-bloom`, { waitUntil: 'domcontentloaded' });
+  return stageForMode(page, 'focus');
 }
 
 async function run() {
