@@ -1,4 +1,7 @@
+'use client'
+
 import Link from 'next/link'
+import { useSearchParams } from 'next/navigation'
 import { canEnterMemoryPlace, resolveDemoMemoryStar } from '@/spatial/memory/memoryStarSchema'
 
 type FocusPlaceDoorProps = {
@@ -6,7 +9,9 @@ type FocusPlaceDoorProps = {
 }
 
 export function FocusPlaceDoor({ manifestId }: FocusPlaceDoorProps) {
-  const resolution = resolveDemoMemoryStar(manifestId)
+  const searchParams = useSearchParams()
+  const resolvedManifestId = manifestId ?? searchParams.get('manifestId')
+  const resolution = resolveDemoMemoryStar(resolvedManifestId)
   if (!resolution.ok) return null
 
   const star = resolution.star

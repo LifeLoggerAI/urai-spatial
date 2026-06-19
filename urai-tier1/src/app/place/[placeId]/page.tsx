@@ -2,8 +2,15 @@ import Link from 'next/link';
 import { MemoryPlaceGatePanel } from '@/spatial/places/MemoryPlaceGatePanel';
 import { MemoryPlaceScene } from '@/spatial/places/MemoryPlaceScene';
 import { gateForMemoryPlace } from '@/spatial/places/memoryPlaceSafetyGate';
+import { DEMO_MEMORY_PLACES } from '@/spatial/places/demoMemoryPlaces';
 import { listMemoryPlaceObjects, resolveMemoryPlace } from '@/spatial/places/memoryPlaceRepository';
 
+
+export function generateStaticParams() {
+  return DEMO_MEMORY_PLACES.map((place) => ({
+    placeId: place.id,
+  }));
+}
 type MemoryPlacePageProps = {
   params: Promise<{
     placeId: string;

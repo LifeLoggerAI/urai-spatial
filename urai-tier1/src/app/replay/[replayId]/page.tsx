@@ -2,6 +2,7 @@ import Link from 'next/link'
 import { redirect } from 'next/navigation'
 
 import { resolveDemoReplay, type MemoryStarResolution } from '@/spatial/memory/memoryStarSchema'
+import { DEMO_MEMORY_STAR_NODES } from '@/spatial/memory/memoryStarSchema'
 
 type ReplayDirectRouteProps = {
   params: Promise<{ replayId: string }>
@@ -21,6 +22,12 @@ function UnavailableReplay({ resolution }: { resolution: UnavailableMemoryStarRe
       <Link href={resolution.safeHref}>Return to Life Map</Link>
     </main>
   )
+}
+
+export function generateStaticParams() {
+  return DEMO_MEMORY_STAR_NODES.map((star) => ({
+    replayId: star.id,
+  }))
 }
 
 export default async function ReplayDirectRoute({ params }: ReplayDirectRouteProps) {

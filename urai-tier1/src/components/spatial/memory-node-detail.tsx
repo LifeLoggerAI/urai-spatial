@@ -5,8 +5,34 @@ import type { LifeMapNode } from "@/lib/firebase/firebaseSpatialSchema";
 
 type Props = { node: LifeMapNode & { id: string }; onClose?: () => void; compact?: boolean };
 
+function formatNodeTimestamp(timestamp: LifeMapNode["timestamp"]) {
+  const value = timestamp as unknown;
+
+  let date: Date;
+  if (
+    value &&
+    typeof value === "object" &&
+    "toDate" in value &&
+    typeof (value as { toDate?: unknown }).toDate === "function"
+  ) {
+    date = (value as { toDate: () => Date }).toDate();
+  } else if (value instanceof Date) {
+    date = value;
+  } else if (typeof value === "string" || typeof value === "number") {
+    date = new Date(value);
+  } else {
+    date = new Date();
+  }
+
+  if (Number.isNaN(date.getTime())) {
+    date = new Date();
+  }
+
+  return date.toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" });
+}
+
 export function MemoryNodeDetail({ node, onClose, compact = false }: Props) {
-  const date = node.timestamp.toDate().toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" });
+  const date = formatNodeTimestamp(node.timestamp);
   return (
     <section className={`nodeDetail ${compact ? "nodeDetail--compact" : ""}`} aria-label={`Memory detail for ${node.title}`}>
       <div className="nodeDetail__top"><span>{node.type}</span>{onClose ? <button type="button" onClick={onClose} aria-label="Close memory detail">×</button> : null}</div>

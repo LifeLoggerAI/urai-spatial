@@ -1,7 +1,14 @@
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
 
-import { resolveDemoMemoryStar, type MemoryStarResolution } from '@/spatial/memory/memoryStarSchema'
+import { DEMO_MEMORY_STAR_NODES, resolveDemoMemoryStar, type MemoryStarResolution } from '@/spatial/memory/memoryStarSchema'
+
+
+export function generateStaticParams() {
+  return DEMO_MEMORY_STAR_NODES.map((star) => ({
+    sessionId: star.id,
+  }))
+}
 
 type FocusSessionRouteProps = {
   params: Promise<{ sessionId: string }>

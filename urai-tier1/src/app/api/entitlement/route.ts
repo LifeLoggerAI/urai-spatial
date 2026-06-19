@@ -32,6 +32,16 @@ async function verifyUser(request: Request) {
 }
 
 export async function GET(request: Request) {
+  if (process.env.URAI_FIREBASE_STATIC_EXPORT === 'true') {
+    return NextResponse.json({
+      entitlement: {
+        tier: 'static-export',
+        source: 'public-build',
+        enabled: true,
+      },
+    });
+  }
+
   const uid = await verifyUser(request);
   if (!uid) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });

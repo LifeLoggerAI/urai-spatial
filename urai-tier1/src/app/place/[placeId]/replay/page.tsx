@@ -1,7 +1,14 @@
 import Link from 'next/link'
 import { PlaceReplayScene } from '@/spatial/places/PlaceReplayScene'
+import { DEMO_MEMORY_PLACES } from '@/spatial/places/demoMemoryPlaces'
 import { listMemoryPlaceObjects, resolveMemoryPlace } from '@/spatial/places/memoryPlaceRepository'
 
+
+export function generateStaticParams() {
+  return DEMO_MEMORY_PLACES.map((place) => ({
+    placeId: place.id,
+  }))
+}
 type PlaceReplayPageProps = {
   params: Promise<{
     placeId: string

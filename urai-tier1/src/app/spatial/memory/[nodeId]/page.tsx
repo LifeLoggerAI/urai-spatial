@@ -1,9 +1,16 @@
 import { MemoryNodeDetail } from "@/components/spatial/memory-node-detail";
 import { demoLifeMapNodes } from "@/lib/spatial/publicSafeSpatialData";
+import { DEMO_MEMORY_STAR_NODES } from '@/spatial/memory/memoryStarSchema'
 
 type SpatialMemoryPageProps = {
   params: Promise<{ nodeId: string }>;
 };
+
+export function generateStaticParams() {
+  return DEMO_MEMORY_STAR_NODES.map((star) => ({
+    nodeId: star.id,
+  }))
+}
 
 export default async function SpatialMemoryPage({ params }: SpatialMemoryPageProps) {
   const { nodeId } = await params;

@@ -1,7 +1,14 @@
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
 
-import { resolveDemoMemoryStar, type MemoryStarResolution } from '@/spatial/memory/memoryStarSchema'
+import { DEMO_MEMORY_STAR_NODES, resolveDemoMemoryStar, type MemoryStarResolution } from '@/spatial/memory/memoryStarSchema'
+
+
+export function generateStaticParams() {
+  return DEMO_MEMORY_STAR_NODES.map((star) => ({
+    starId: star.id,
+  }))
+}
 
 type MemoryStarRouteProps = {
   params: Promise<{ starId: string }>
