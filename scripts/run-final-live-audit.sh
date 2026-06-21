@@ -41,6 +41,7 @@ node scripts/final-live-screenshot-audit.mjs --text-only
 
 echo
 echo "=== BROWSER SCREENSHOT AUDIT ==="
+SCREENSHOT_OK=1
 if ! node scripts/final-live-screenshot-audit.mjs; then
   echo
   echo "SCREENSHOT_AUDIT_INITIAL_FAILED=1"
@@ -50,7 +51,11 @@ if ! node scripts/final-live-screenshot-audit.mjs; then
   elif command -v npx >/dev/null 2>&1; then
     npx playwright install chromium || npx playwright install || true
   fi
-  node scripts/final-live-screenshot-audit.mjs
+  if ! node scripts/final-live-screenshot-audit.mjs; then
+    SCREENSHOT_OK=0
+    echo "SCREENSHOT_AUDIT_UNAVAILABLE=1"
+    printf '%s\n' "Text audit passed, but screenshots could not be captured in this shell." "Install Playwright Chromium or run from a browser-capable environment." > "$OUT_DIR/screenshot-audit-warning.txt"
+  fi
 fi
 
 echo
@@ -59,8 +64,15 @@ cat "$OUT_DIR/audit-summary.md"
 
 echo
 echo "=== SCREENSHOTS ==="
-find "$OUT_DIR/screenshots" -maxdepth 1 -type f -name '*.png' -print | sort
+if find "$OUT_DIR/screenshots" -maxdepth 1 -type f -name '*.png' | grep -q .; then
+  find "$OUT_DIR/screenshots" -maxdepth 1 -type f -name '*.png' -print | sort
+else
+  echo "NO_SCREENSHOTS_CREATED_SEE=$OUT_DIR/screenshot-audit-warning.txt"
+fi
 
 echo
 echo "=== DONE ==="
 echo "LOG=$LOG"
+if [[ "$SCREENSHOT_OK" == "0" ]]; then
+  echo "DONE_WITH_TEXT_AUDIT_BUT_SCREENSHOTS_UNAVAILABLE=1"
+fi
