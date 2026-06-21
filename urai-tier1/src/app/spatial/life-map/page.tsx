@@ -1,5 +1,10 @@
-import { LifeMap } from "@/components/spatial/life-map";
+import { ProductionLifeMap } from '../../../life-map/ProductionLifeMap'
+
+export const metadata = {
+  title: 'URAI Life Map',
+  description: 'The unified three dimensional URAI Life Map experience.',
+}
 
 export default function SpatialLifeMapPage() {
-  return <LifeMap />;
+  return <ProductionLifeMap surface="spatial" />
 }

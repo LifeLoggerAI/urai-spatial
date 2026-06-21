@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from 'next'
 import './globals.css'
 import './launch-home-polish.css'
+import './life-map-production-3d.css'
 import './accessibility.css'
 import './boundary.css'
 import '@/scene/spatialVisualOverlay.css'

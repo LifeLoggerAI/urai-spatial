@@ -1,10 +1,10 @@
-import { RootModeExperience } from '../RootModeExperience'
+import { ProductionLifeMap } from '../../life-map/ProductionLifeMap'
 
 export const metadata = {
   title: 'URAI Life Map',
-  description: 'A seeded private-by-default life map shell.',
+  description: 'A cinematic three dimensional emotional memory constellation.',
 }
 
-export default function LifeMapRoutePage() {
-  return <RootModeExperience initialMode="life-map" />
+export default function LifeMapPage() {
+  return <ProductionLifeMap surface="canonical" />
 }
