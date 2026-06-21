@@ -1,0 +1,1861 @@
+{
+  "createdAt": "2026-06-21T18:08:56.393Z",
+  "baseUrl": "https://urai.app",
+  "routes": [
+    {
+      "name": "tier1-root",
+      "route": "/",
+      "url": "https://urai.app/",
+      "status": 200,
+      "ms": 14236,
+      "title": "URAI Spatial",
+      "oldDemoCopyPresent": false,
+      "productionCopyPresent": true,
+      "linkCount": 37,
+      "links": [
+        {
+          "tag": "a",
+          "text": "Tier OneHome WorldGround, orb, sky, avatar, camera, and route actions.",
+          "href": "/home"
+        },
+        {
+          "tag": "a",
+          "text": "Tier TwoLife MapExplorable memory constellation wired into Focus.",
+          "href": "/life-map"
+        },
+        {
+          "tag": "a",
+          "text": "Tier TwoFocusSelected memory review from the constellation.",
+          "href": "/focus?memoryId=quiet-reset"
+        },
+        {
+          "tag": "a",
+          "text": "Tier TwoReplayGuided replay path and return flow.",
+          "href": "/replay?manifestId=replay-recovery-thread"
+        },
+        {
+          "tag": "a",
+          "text": "Tier ThreeMirrorReflection surface connected to the spatial runtime.",
+          "href": "/mirror"
+        },
+        {
+          "tag": "a",
+          "text": "TrustPassportIdentity, provenance, consent, and access.",
+          "href": "/passport"
+        },
+        {
+          "tag": "a",
+          "text": "OpsStatusStatic export, route readiness, and launch proof.",
+          "href": "/status"
+        },
+        {
+          "tag": "button",
+          "text": "URAI Spatial",
+          "href": ""
+        },
+        {
+          "tag": "button",
+          "text": "Life Map",
+          "href": ""
+        },
+        {
+          "tag": "button",
+          "text": "Replay",
+          "href": ""
+        },
+        {
+          "tag": "button",
+          "text": "Passport",
+          "href": ""
+        },
+        {
+          "tag": "button",
+          "text": "Status",
+          "href": ""
+        },
+        {
+          "tag": "button",
+          "text": "Open My World Enter the Life Map from the sky field.",
+          "href": ""
+        },
+        {
+          "tag": "button",
+          "text": "Preview Spark Step into the focused memory chamber.",
+          "href": ""
+        },
+        {
+          "tag": "button",
+          "text": "Replay Theater Open a private cinematic memory pass.",
+          "href": ""
+        },
+        {
+          "tag": "button",
+          "text": "Life Map Memory constellation and seeded demo paths. READY",
+          "href": ""
+        },
+        {
+          "tag": "button",
+          "text": "Replay Private cinematic theater shell. READY",
+          "href": ""
+        },
+        {
+          "tag": "button",
+          "text": "Focus Stable chamber for one memory signal. READY",
+          "href": ""
+        },
+        {
+          "tag": "button",
+          "text": "Mirror Reflection and becoming surface. READY",
+          "href": ""
+        },
+        {
+          "tag": "button",
+          "text": "Passport Permission and provenance foundation. SHELL",
+          "href": ""
+        },
+        {
+          "tag": "button",
+          "text": "Status Launch route and system readiness. LIVE",
+          "href": ""
+        },
+        {
+          "tag": "button",
+          "text": "Open Life Map through the sky",
+          "href": ""
+        },
+        {
+          "tag": "button",
+          "text": "Orb companion presence",
+          "href": ""
+        },
+        {
+          "tag": "button",
+          "text": "Head layer",
+          "href": ""
+        },
+        {
+          "tag": "button",
+          "text": "Heart layer",
+          "href": ""
+        },
+        {
+          "tag": "button",
+          "text": "Arms layer",
+          "href": ""
+        },
+        {
+          "tag": "button",
+          "text": "Legs layer",
+          "href": ""
+        },
+        {
+          "tag": "button",
+          "text": "Room ground anchor",
+          "href": ""
+        },
+        {
+          "tag": "button",
+          "text": "Object ground anchor",
+          "href": ""
+        },
+        {
+          "tag": "button",
+          "text": "Routine ground anchor",
+          "href": ""
+        },
+        {
+          "tag": "button",
+          "text": "Place ground anchor",
+          "href": ""
+        },
+        {
+          "tag": "button",
+          "text": "LIFE MAP",
+          "href": ""
+        },
+        {
+          "tag": "a",
+          "text": "Open Life Map",
+          "href": "/life-map"
+        },
+        {
+          "tag": "a",
+          "text": "Focus",
+          "href": "/focus?memoryId=quiet-reset"
+        },
+        {
+          "tag": "a",
+          "text": "Replay",
+          "href": "/replay?manifestId=replay-recovery-thread"
+        },
+        {
+          "tag": "a",
+          "text": "Passport",
+          "href": "/passport"
+        },
+        {
+          "tag": "a",
+          "text": "Status",
+          "href": "/status"
+        }
+      ],
+      "screenshot": "live-visual-audit/screenshots/tier1-root.png",
+      "error": "",
+      "textSample": "URAI\nSpatial\nLife Map\nReplay\nPassport\nStatus\nURAI V1 · PRIVATE WORLD ONLINE\nStep inside yourself.\n\nURAI turns memories, moods, places, and reflections into a private emotional universe you can enter. This launch home is seeded with public demo data, so the world feels alive without exposing anyone's private life.\n\nOpen My World\nEnter the Life Map from the sky field.\nPreview Spark\nStep into the focused memory chamber.\nReplay Theater\nOpen a private cinematic memory pass.\nPrivate by default · User-controlled access · No ads inside URAI · Seeded demo state only\nURAI Orb Companion\n\nPresent, quiet, and ready to guide the first path without taking ownership of the user's story.\n\nLife Map\nMemory constellation and seeded demo paths.\nREADY\nReplay\nPrivate cinematic theater shell.\nREADY\nFocus\nStable chamber for one memory signal.\nREADY\nMirror\nReflection and becoming surface.\nREADY\nPassport\nPermission and provenance foundation.\nSHELL\nStatus\nLaunch route and system readiness.\nLIVE\nLIFE MAP\n\nOrb companion present\n\nKeyboard shortcuts: O focuses the orb, A focuses the avatar, S opens the sky ascent, G focuses the ground, and Escape settles the portal state.\n\nTIER ONE · HOME WORLD LIVE\n\nOwn your lif"
+    },
+    {
+      "name": "tier1-home",
+      "route": "/home",
+      "url": "https://urai.app/home",
+      "status": 200,
+      "ms": 16138,
+      "title": "URAI Home",
+      "oldDemoCopyPresent": false,
+      "productionCopyPresent": true,
+      "linkCount": 37,
+      "links": [
+        {
+          "tag": "a",
+          "text": "Tier OneHome WorldGround, orb, sky, avatar, camera, and route actions.",
+          "href": "/home"
+        },
+        {
+          "tag": "a",
+          "text": "Tier TwoLife MapExplorable memory constellation wired into Focus.",
+          "href": "/life-map"
+        },
+        {
+          "tag": "a",
+          "text": "Tier TwoFocusSelected memory review from the constellation.",
+          "href": "/focus?memoryId=quiet-reset"
+        },
+        {
+          "tag": "a",
+          "text": "Tier TwoReplayGuided replay path and return flow.",
+          "href": "/replay?manifestId=replay-recovery-thread"
+        },
+        {
+          "tag": "a",
+          "text": "Tier ThreeMirrorReflection surface connected to the spatial runtime.",
+          "href": "/mirror"
+        },
+        {
+          "tag": "a",
+          "text": "TrustPassportIdentity, provenance, consent, and access.",
+          "href": "/passport"
+        },
+        {
+          "tag": "a",
+          "text": "OpsStatusStatic export, route readiness, and launch proof.",
+          "href": "/status"
+        },
+        {
+          "tag": "button",
+          "text": "URAI Spatial",
+          "href": ""
+        },
+        {
+          "tag": "button",
+          "text": "Life Map",
+          "href": ""
+        },
+        {
+          "tag": "button",
+          "text": "Replay",
+          "href": ""
+        },
+        {
+          "tag": "button",
+          "text": "Passport",
+          "href": ""
+        },
+        {
+          "tag": "button",
+          "text": "Status",
+          "href": ""
+        },
+        {
+          "tag": "button",
+          "text": "Open My World Enter the Life Map from the sky field.",
+          "href": ""
+        },
+        {
+          "tag": "button",
+          "text": "Preview Spark Step into the focused memory chamber.",
+          "href": ""
+        },
+        {
+          "tag": "button",
+          "text": "Replay Theater Open a private cinematic memory pass.",
+          "href": ""
+        },
+        {
+          "tag": "button",
+          "text": "Life Map Memory constellation and seeded demo paths. READY",
+          "href": ""
+        },
+        {
+          "tag": "button",
+          "text": "Replay Private cinematic theater shell. READY",
+          "href": ""
+        },
+        {
+          "tag": "button",
+          "text": "Focus Stable chamber for one memory signal. READY",
+          "href": ""
+        },
+        {
+          "tag": "button",
+          "text": "Mirror Reflection and becoming surface. READY",
+          "href": ""
+        },
+        {
+          "tag": "button",
+          "text": "Passport Permission and provenance foundation. SHELL",
+          "href": ""
+        },
+        {
+          "tag": "button",
+          "text": "Status Launch route and system readiness. LIVE",
+          "href": ""
+        },
+        {
+          "tag": "button",
+          "text": "Open Life Map through the sky",
+          "href": ""
+        },
+        {
+          "tag": "button",
+          "text": "Orb companion presence",
+          "href": ""
+        },
+        {
+          "tag": "button",
+          "text": "Head layer",
+          "href": ""
+        },
+        {
+          "tag": "button",
+          "text": "Heart layer",
+          "href": ""
+        },
+        {
+          "tag": "button",
+          "text": "Arms layer",
+          "href": ""
+        },
+        {
+          "tag": "button",
+          "text": "Legs layer",
+          "href": ""
+        },
+        {
+          "tag": "button",
+          "text": "Room ground anchor",
+          "href": ""
+        },
+        {
+          "tag": "button",
+          "text": "Object ground anchor",
+          "href": ""
+        },
+        {
+          "tag": "button",
+          "text": "Routine ground anchor",
+          "href": ""
+        },
+        {
+          "tag": "button",
+          "text": "Place ground anchor",
+          "href": ""
+        },
+        {
+          "tag": "button",
+          "text": "LIFE MAP",
+          "href": ""
+        },
+        {
+          "tag": "a",
+          "text": "Open Life Map",
+          "href": "/life-map"
+        },
+        {
+          "tag": "a",
+          "text": "Focus",
+          "href": "/focus?memoryId=quiet-reset"
+        },
+        {
+          "tag": "a",
+          "text": "Replay",
+          "href": "/replay?manifestId=replay-recovery-thread"
+        },
+        {
+          "tag": "a",
+          "text": "Passport",
+          "href": "/passport"
+        },
+        {
+          "tag": "a",
+          "text": "Status",
+          "href": "/status"
+        }
+      ],
+      "screenshot": "live-visual-audit/screenshots/tier1-home.png",
+      "error": "",
+      "textSample": "URAI\nSpatial\nLife Map\nReplay\nPassport\nStatus\nURAI V1 · PRIVATE WORLD ONLINE\nStep inside yourself.\n\nURAI turns memories, moods, places, and reflections into a private emotional universe you can enter. This launch home is seeded with public demo data, so the world feels alive without exposing anyone's private life.\n\nOpen My World\nEnter the Life Map from the sky field.\nPreview Spark\nStep into the focused memory chamber.\nReplay Theater\nOpen a private cinematic memory pass.\nPrivate by default · User-controlled access · No ads inside URAI · Seeded demo state only\nURAI Orb Companion\n\nPresent, quiet, and ready to guide the first path without taking ownership of the user's story.\n\nLife Map\nMemory constellation and seeded demo paths.\nREADY\nReplay\nPrivate cinematic theater shell.\nREADY\nFocus\nStable chamber for one memory signal.\nREADY\nMirror\nReflection and becoming surface.\nREADY\nPassport\nPermission and provenance foundation.\nSHELL\nStatus\nLaunch route and system readiness.\nLIVE\nLIFE MAP\n\nOrb companion present\n\nKeyboard shortcuts: O focuses the orb, A focuses the avatar, S opens the sky ascent, G focuses the ground, and Escape settles the portal state.\n\nTIER ONE · HOME WORLD LIVE\n\nOwn your lif"
+    },
+    {
+      "name": "tier1-spatial",
+      "route": "/spatial",
+      "url": "https://urai.app/spatial",
+      "status": 200,
+      "ms": 18804,
+      "title": "URAI Spatial",
+      "oldDemoCopyPresent": false,
+      "productionCopyPresent": true,
+      "linkCount": 25,
+      "links": [
+        {
+          "tag": "button",
+          "text": "URAI Spatial",
+          "href": ""
+        },
+        {
+          "tag": "button",
+          "text": "Life Map",
+          "href": ""
+        },
+        {
+          "tag": "button",
+          "text": "Replay",
+          "href": ""
+        },
+        {
+          "tag": "button",
+          "text": "Passport",
+          "href": ""
+        },
+        {
+          "tag": "button",
+          "text": "Status",
+          "href": ""
+        },
+        {
+          "tag": "button",
+          "text": "Open My World Enter the Life Map from the sky field.",
+          "href": ""
+        },
+        {
+          "tag": "button",
+          "text": "Preview Spark Step into the focused memory chamber.",
+          "href": ""
+        },
+        {
+          "tag": "button",
+          "text": "Replay Theater Open a private cinematic memory pass.",
+          "href": ""
+        },
+        {
+          "tag": "button",
+          "text": "Life Map Memory constellation and seeded demo paths. READY",
+          "href": ""
+        },
+        {
+          "tag": "button",
+          "text": "Replay Private cinematic theater shell. READY",
+          "href": ""
+        },
+        {
+          "tag": "button",
+          "text": "Focus Stable chamber for one memory signal. READY",
+          "href": ""
+        },
+        {
+          "tag": "button",
+          "text": "Mirror Reflection and becoming surface. READY",
+          "href": ""
+        },
+        {
+          "tag": "button",
+          "text": "Passport Permission and provenance foundation. SHELL",
+          "href": ""
+        },
+        {
+          "tag": "button",
+          "text": "Status Launch route and system readiness. LIVE",
+          "href": ""
+        },
+        {
+          "tag": "button",
+          "text": "Open Life Map through the sky",
+          "href": ""
+        },
+        {
+          "tag": "button",
+          "text": "Orb companion presence",
+          "href": ""
+        },
+        {
+          "tag": "button",
+          "text": "Head layer",
+          "href": ""
+        },
+        {
+          "tag": "button",
+          "text": "Heart layer",
+          "href": ""
+        },
+        {
+          "tag": "button",
+          "text": "Arms layer",
+          "href": ""
+        },
+        {
+          "tag": "button",
+          "text": "Legs layer",
+          "href": ""
+        },
+        {
+          "tag": "button",
+          "text": "Room ground anchor",
+          "href": ""
+        },
+        {
+          "tag": "button",
+          "text": "Object ground anchor",
+          "href": ""
+        },
+        {
+          "tag": "button",
+          "text": "Routine ground anchor",
+          "href": ""
+        },
+        {
+          "tag": "button",
+          "text": "Place ground anchor",
+          "href": ""
+        },
+        {
+          "tag": "button",
+          "text": "LIFE MAP",
+          "href": ""
+        }
+      ],
+      "screenshot": "live-visual-audit/screenshots/tier1-spatial.png",
+      "error": "",
+      "textSample": "URAI\nSpatial\nLife Map\nReplay\nPassport\nStatus\nURAI V1 · PRIVATE WORLD ONLINE\nStep inside yourself.\n\nURAI turns memories, moods, places, and reflections into a private emotional universe you can enter. This launch home is seeded with public demo data, so the world feels alive without exposing anyone's private life.\n\nOpen My World\nEnter the Life Map from the sky field.\nPreview Spark\nStep into the focused memory chamber.\nReplay Theater\nOpen a private cinematic memory pass.\nPrivate by default · User-controlled access · No ads inside URAI · Seeded demo state only\nURAI Orb Companion\n\nPresent, quiet, and ready to guide the first path without taking ownership of the user's story.\n\nLife Map\nMemory constellation and seeded demo paths.\nREADY\nReplay\nPrivate cinematic theater shell.\nREADY\nFocus\nStable chamber for one memory signal.\nREADY\nMirror\nReflection and becoming surface.\nREADY\nPassport\nPermission and provenance foundation.\nSHELL\nStatus\nLaunch route and system readiness.\nLIVE\nLIFE MAP\n\nOrb companion present\n\nKeyboard shortcuts: O focuses the orb, A focuses the avatar, S opens the sky ascent, G focuses the ground, and Escape settles the portal state."
+    },
+    {
+      "name": "tier2-life-map",
+      "route": "/life-map",
+      "url": "https://urai.app/life-map",
+      "status": 200,
+      "ms": 8775,
+      "title": "URAI Spatial",
+      "oldDemoCopyPresent": false,
+      "productionCopyPresent": true,
+      "linkCount": 49,
+      "links": [
+        {
+          "tag": "button",
+          "text": "◌ The Quiet Reset Winter Repair",
+          "href": ""
+        },
+        {
+          "tag": "button",
+          "text": "◒ A Week of Heavy Fog Winter Repair",
+          "href": ""
+        },
+        {
+          "tag": "button",
+          "text": "✦ First Signal of Recovery Winter Repair",
+          "href": ""
+        },
+        {
+          "tag": "button",
+          "text": "∞ The Conversation That Stayed Rose Orbit",
+          "href": ""
+        },
+        {
+          "tag": "button",
+          "text": "↻ Pattern Returned Again Shadow Fog",
+          "href": ""
+        },
+        {
+          "tag": "button",
+          "text": "✺ A Small Morning Win Winter Repair",
+          "href": ""
+        },
+        {
+          "tag": "button",
+          "text": "◇ The Doorway Season Threshold",
+          "href": ""
+        },
+        {
+          "tag": "button",
+          "text": "○ Social Orbit Dimmed Rose Orbit",
+          "href": ""
+        },
+        {
+          "tag": "button",
+          "text": "⌁ Energy Came Back Slowly Green Return",
+          "href": ""
+        },
+        {
+          "tag": "button",
+          "text": "✧ A Memory Became a Thread Green Return",
+          "href": ""
+        },
+        {
+          "tag": "button",
+          "text": "✧ The Dream Door Opened Rose Orbit",
+          "href": ""
+        },
+        {
+          "tag": "button",
+          "text": "◍ A Voice Moment Softened Rose Orbit",
+          "href": ""
+        },
+        {
+          "tag": "button",
+          "text": "⌂ The Old Room Glowed Rose Orbit",
+          "href": ""
+        },
+        {
+          "tag": "button",
+          "text": "↺ The Loop Softened Rose Orbit",
+          "href": ""
+        },
+        {
+          "tag": "button",
+          "text": "∞ Paired Glow of Repair Rose Orbit",
+          "href": ""
+        },
+        {
+          "tag": "button",
+          "text": "✺ Threshold Became Rebirth Rose Orbit",
+          "href": ""
+        },
+        {
+          "tag": "button",
+          "text": "⌁ Purpose Thread Became Visible Rose Orbit",
+          "href": ""
+        },
+        {
+          "tag": "button",
+          "text": "◒ A Protected Grief Season Rose Orbit",
+          "href": ""
+        },
+        {
+          "tag": "button",
+          "text": "≋ The Water Ritual Helped Green Return",
+          "href": ""
+        },
+        {
+          "tag": "button",
+          "text": "☼ Morning Light Returned Green Return",
+          "href": ""
+        },
+        {
+          "tag": "button",
+          "text": "✦ Council Whisper North Green Return",
+          "href": ""
+        },
+        {
+          "tag": "button",
+          "text": "◇ A Faint Legacy Thread Green Return",
+          "href": ""
+        },
+        {
+          "tag": "button",
+          "text": "▱ Chapter of Repair Green Return",
+          "href": ""
+        },
+        {
+          "tag": "button",
+          "text": "◓ A Season of Pressure Green Return",
+          "href": ""
+        },
+        {
+          "tag": "button",
+          "text": "○ Social Warmth Returning Green Return",
+          "href": ""
+        },
+        {
+          "tag": "button",
+          "text": "✷ A Hidden Pattern Lit Up Green Return",
+          "href": ""
+        },
+        {
+          "tag": "button",
+          "text": "☾ A Dream Became Memory Threshold",
+          "href": ""
+        },
+        {
+          "tag": "button",
+          "text": "⌁ The Root System Glowed Threshold",
+          "href": ""
+        },
+        {
+          "tag": "button",
+          "text": "◌ Conflict Particles Settled Threshold",
+          "href": ""
+        },
+        {
+          "tag": "button",
+          "text": "◇ The Pattern Softened Threshold",
+          "href": ""
+        },
+        {
+          "tag": "button",
+          "text": "✧ The Small Clear Signal Threshold",
+          "href": ""
+        },
+        {
+          "tag": "button",
+          "text": "✺ Sprout and Root Glow Threshold",
+          "href": ""
+        },
+        {
+          "tag": "button",
+          "text": "✦ Night Sky Reset Threshold",
+          "href": ""
+        },
+        {
+          "tag": "button",
+          "text": "◎ Chapter of Becoming Threshold",
+          "href": ""
+        },
+        {
+          "tag": "button",
+          "text": "Reset view",
+          "href": ""
+        },
+        {
+          "tag": "a",
+          "text": "Open Focus",
+          "href": "/focus/?memoryId=quiet-reset"
+        },
+        {
+          "tag": "a",
+          "text": "Focus",
+          "href": "/focus/?memoryId=quiet-reset"
+        },
+        {
+          "tag": "a",
+          "text": "Replay",
+          "href": "/replay/?manifestId=replay-recovery-thread"
+        },
+        {
+          "tag": "a",
+          "text": "Mirror",
+          "href": "/mirror/"
+        },
+        {
+          "tag": "a",
+          "text": "Passport",
+          "href": "/passport/"
+        },
+        {
+          "tag": "a",
+          "text": "Status",
+          "href": "/status/"
+        },
+        {
+          "tag": "button",
+          "text": "Open this memory",
+          "href": ""
+        },
+        {
+          "tag": "button",
+          "text": "Return home",
+          "href": ""
+        },
+        {
+          "tag": "button",
+          "text": "Start replay path",
+          "href": ""
+        },
+        {
+          "tag": "a",
+          "text": "Open selected memory",
+          "href": "/focus?memoryId=quiet-reset"
+        },
+        {
+          "tag": "a",
+          "text": "Focus",
+          "href": "/focus?memoryId=quiet-reset"
+        },
+        {
+          "tag": "a",
+          "text": "Replay",
+          "href": "/replay?manifestId=replay-recovery-thread"
+        },
+        {
+          "tag": "a",
+          "text": "Passport",
+          "href": "/passport"
+        },
+        {
+          "tag": "a",
+          "text": "Status",
+          "href": "/status"
+        }
+      ],
+      "screenshot": "live-visual-audit/screenshots/tier2-life-map.png",
+      "error": "",
+      "textSample": "WINTER REPAIR\n4 memories\nROSE ORBIT\n10 memories\nSHADOW FOG\n1 memories\nTHRESHOLD\n9 memories\nGREEN RETURN\n10 memories\n◌\nThe Quiet Reset\nWinter Repair\n◒\nA Week of Heavy Fog\nWinter Repair\n✦\nFirst Signal of Recovery\nWinter Repair\n∞\nThe Conversation That Stayed\nRose Orbit\n↻\nPattern Returned Again\nShadow Fog\n✺\nA Small Morning Win\nWinter Repair\n◇\nThe Doorway Season\nThreshold\n○\nSocial Orbit Dimmed\nRose Orbit\n⌁\nEnergy Came Back Slowly\nGreen Return\n✧\nA Memory Became a Thread\nGreen Return\n✧\nThe Dream Door Opened\nRose Orbit\n◍\nA Voice Moment Softened\nRose Orbit\n⌂\nThe Old Room Glowed\nRose Orbit\n↺\nThe Loop Softened\nRose Orbit\n∞\nPaired Glow of Repair\nRose Orbit\n✺\nThreshold Became Rebirth\nRose Orbit\n⌁\nPurpose Thread Became Visible\nRose Orbit\n◒\nA Protected Grief Season\nRose Orbit\n≋\nThe Water Ritual Helped\nGreen Return\n☼\nMorning Light Returned\nGreen Return\n✦\nCouncil Whisper North\nGreen Return\n◇\nA Faint Legacy Thread\nGreen Return\n▱\nChapter of Repair\nGreen Return\n◓\nA Season of Pressure\nGreen Return\n○\nSocial Warmth Returning\nGreen Return\n✷\nA Hidden Pattern Lit Up\nGreen Return\n☾\nA Dream Became Memory\nThreshold\n⌁\nThe Root System Glowed\nThreshold\n◌\nConflict Particles Settled\nThreshold\n◇\nThe Pattern Softened"
+    },
+    {
+      "name": "tier2-life-map-blue-fog",
+      "route": "/life-map?star=blue-fog",
+      "url": "https://urai.app/life-map?star=blue-fog",
+      "status": 200,
+      "ms": 5472,
+      "title": "URAI Spatial",
+      "oldDemoCopyPresent": false,
+      "productionCopyPresent": true,
+      "linkCount": 52,
+      "links": [
+        {
+          "tag": "button",
+          "text": "◌ The Quiet Reset Winter Repair",
+          "href": ""
+        },
+        {
+          "tag": "button",
+          "text": "◒ A Week of Heavy Fog Winter Repair",
+          "href": ""
+        },
+        {
+          "tag": "button",
+          "text": "✦ First Signal of Recovery Winter Repair",
+          "href": ""
+        },
+        {
+          "tag": "button",
+          "text": "∞ The Conversation That Stayed Rose Orbit",
+          "href": ""
+        },
+        {
+          "tag": "button",
+          "text": "↻ Pattern Returned Again Shadow Fog",
+          "href": ""
+        },
+        {
+          "tag": "button",
+          "text": "✺ A Small Morning Win Winter Repair",
+          "href": ""
+        },
+        {
+          "tag": "button",
+          "text": "◇ The Doorway Season Threshold",
+          "href": ""
+        },
+        {
+          "tag": "button",
+          "text": "○ Social Orbit Dimmed Rose Orbit",
+          "href": ""
+        },
+        {
+          "tag": "button",
+          "text": "⌁ Energy Came Back Slowly Green Return",
+          "href": ""
+        },
+        {
+          "tag": "button",
+          "text": "✧ A Memory Became a Thread Green Return",
+          "href": ""
+        },
+        {
+          "tag": "button",
+          "text": "✧ The Dream Door Opened Rose Orbit",
+          "href": ""
+        },
+        {
+          "tag": "button",
+          "text": "◍ A Voice Moment Softened Rose Orbit",
+          "href": ""
+        },
+        {
+          "tag": "button",
+          "text": "⌂ The Old Room Glowed Rose Orbit",
+          "href": ""
+        },
+        {
+          "tag": "button",
+          "text": "↺ The Loop Softened Rose Orbit",
+          "href": ""
+        },
+        {
+          "tag": "button",
+          "text": "∞ Paired Glow of Repair Rose Orbit",
+          "href": ""
+        },
+        {
+          "tag": "button",
+          "text": "✺ Threshold Became Rebirth Rose Orbit",
+          "href": ""
+        },
+        {
+          "tag": "button",
+          "text": "⌁ Purpose Thread Became Visible Rose Orbit",
+          "href": ""
+        },
+        {
+          "tag": "button",
+          "text": "◒ A Protected Grief Season Rose Orbit",
+          "href": ""
+        },
+        {
+          "tag": "button",
+          "text": "≋ The Water Ritual Helped Green Return",
+          "href": ""
+        },
+        {
+          "tag": "button",
+          "text": "☼ Morning Light Returned Green Return",
+          "href": ""
+        },
+        {
+          "tag": "button",
+          "text": "✦ Council Whisper North Green Return",
+          "href": ""
+        },
+        {
+          "tag": "button",
+          "text": "◇ A Faint Legacy Thread Green Return",
+          "href": ""
+        },
+        {
+          "tag": "button",
+          "text": "▱ Chapter of Repair Green Return",
+          "href": ""
+        },
+        {
+          "tag": "button",
+          "text": "◓ A Season of Pressure Green Return",
+          "href": ""
+        },
+        {
+          "tag": "button",
+          "text": "○ Social Warmth Returning Green Return",
+          "href": ""
+        },
+        {
+          "tag": "button",
+          "text": "✷ A Hidden Pattern Lit Up Green Return",
+          "href": ""
+        },
+        {
+          "tag": "button",
+          "text": "☾ A Dream Became Memory Threshold",
+          "href": ""
+        },
+        {
+          "tag": "button",
+          "text": "⌁ The Root System Glowed Threshold",
+          "href": ""
+        },
+        {
+          "tag": "button",
+          "text": "◌ Conflict Particles Settled Threshold",
+          "href": ""
+        },
+        {
+          "tag": "button",
+          "text": "◇ The Pattern Softened Threshold",
+          "href": ""
+        },
+        {
+          "tag": "button",
+          "text": "✧ The Small Clear Signal Threshold",
+          "href": ""
+        },
+        {
+          "tag": "button",
+          "text": "✺ Sprout and Root Glow Threshold",
+          "href": ""
+        },
+        {
+          "tag": "button",
+          "text": "✦ Night Sky Reset Threshold",
+          "href": ""
+        },
+        {
+          "tag": "button",
+          "text": "◎ Chapter of Becoming Threshold",
+          "href": ""
+        },
+        {
+          "tag": "button",
+          "text": "Reset view",
+          "href": ""
+        },
+        {
+          "tag": "a",
+          "text": "Open Focus",
+          "href": "/focus/?memoryId=week-heavy-fog"
+        },
+        {
+          "tag": "a",
+          "text": "Focus",
+          "href": "/focus/?memoryId=week-heavy-fog"
+        },
+        {
+          "tag": "a",
+          "text": "Replay",
+          "href": "/replay/?manifestId=replay-recovery-thread"
+        },
+        {
+          "tag": "a",
+          "text": "Mirror",
+          "href": "/mirror/"
+        },
+        {
+          "tag": "a",
+          "text": "Passport",
+          "href": "/passport/"
+        },
+        {
+          "tag": "a",
+          "text": "Status",
+          "href": "/status/"
+        },
+        {
+          "tag": "button",
+          "text": "Open this memory",
+          "href": ""
+        },
+        {
+          "tag": "button",
+          "text": "Replay thread",
+          "href": ""
+        },
+        {
+          "tag": "button",
+          "text": "Return to galaxy",
+          "href": ""
+        },
+        {
+          "tag": "button",
+          "text": "Return home",
+          "href": ""
+        },
+        {
+          "tag": "button",
+          "text": "Start replay path",
+          "href": ""
+        },
+        {
+          "tag": "button",
+          "text": "Start Replay",
+          "href": ""
+        },
+        {
+          "tag": "a",
+          "text": "Open selected memory",
+          "href": "/focus?memoryId=quiet-reset"
+        },
+        {
+          "tag": "a",
+          "text": "Focus",
+          "href": "/focus?memoryId=quiet-reset"
+        },
+        {
+          "tag": "a",
+          "text": "Replay",
+          "href": "/replay?manifestId=replay-recovery-thread"
+        },
+        {
+          "tag": "a",
+          "text": "Passport",
+          "href": "/passport"
+        },
+        {
+          "tag": "a",
+          "text": "Status",
+          "href": "/status"
+        }
+      ],
+      "screenshot": "live-visual-audit/screenshots/tier2-life-map-blue-fog.png",
+      "error": "",
+      "textSample": "WINTER REPAIR\n4 memories\nROSE ORBIT\n10 memories\nSHADOW FOG\n1 memories\nTHRESHOLD\n9 memories\nGREEN RETURN\n10 memories\n◌\nThe Quiet Reset\nWinter Repair\n◒\nA Week of Heavy Fog\nWinter Repair\n✦\nFirst Signal of Recovery\nWinter Repair\n∞\nThe Conversation That Stayed\nRose Orbit\n↻\nPattern Returned Again\nShadow Fog\n✺\nA Small Morning Win\nWinter Repair\n◇\nThe Doorway Season\nThreshold\n○\nSocial Orbit Dimmed\nRose Orbit\n⌁\nEnergy Came Back Slowly\nGreen Return\n✧\nA Memory Became a Thread\nGreen Return\n✧\nThe Dream Door Opened\nRose Orbit\n◍\nA Voice Moment Softened\nRose Orbit\n⌂\nThe Old Room Glowed\nRose Orbit\n↺\nThe Loop Softened\nRose Orbit\n∞\nPaired Glow of Repair\nRose Orbit\n✺\nThreshold Became Rebirth\nRose Orbit\n⌁\nPurpose Thread Became Visible\nRose Orbit\n◒\nA Protected Grief Season\nRose Orbit\n≋\nThe Water Ritual Helped\nGreen Return\n☼\nMorning Light Returned\nGreen Return\n✦\nCouncil Whisper North\nGreen Return\n◇\nA Faint Legacy Thread\nGreen Return\n▱\nChapter of Repair\nGreen Return\n◓\nA Season of Pressure\nGreen Return\n○\nSocial Warmth Returning\nGreen Return\n✷\nA Hidden Pattern Lit Up\nGreen Return\n☾\nA Dream Became Memory\nThreshold\n⌁\nThe Root System Glowed\nThreshold\n◌\nConflict Particles Settled\nThreshold\n◇\nThe Pattern Softened"
+    },
+    {
+      "name": "tier2-focus",
+      "route": "/focus?memoryId=quiet-reset",
+      "url": "https://urai.app/focus?memoryId=quiet-reset",
+      "status": 200,
+      "ms": 5560,
+      "title": "URAI Focus",
+      "oldDemoCopyPresent": false,
+      "productionCopyPresent": true,
+      "linkCount": 54,
+      "links": [
+        {
+          "tag": "a",
+          "text": "Tier OneHome WorldGround, orb, sky, avatar, camera, and route actions.",
+          "href": "/home"
+        },
+        {
+          "tag": "a",
+          "text": "Tier TwoLife MapExplorable memory constellation wired into Focus.",
+          "href": "/life-map"
+        },
+        {
+          "tag": "a",
+          "text": "Tier TwoFocusSelected memory review from the constellation.",
+          "href": "/focus?memoryId=quiet-reset"
+        },
+        {
+          "tag": "a",
+          "text": "Tier TwoReplayGuided replay path and return flow.",
+          "href": "/replay?manifestId=replay-recovery-thread"
+        },
+        {
+          "tag": "a",
+          "text": "Tier ThreeMirrorReflection surface connected to the spatial runtime.",
+          "href": "/mirror"
+        },
+        {
+          "tag": "a",
+          "text": "TrustPassportIdentity, provenance, consent, and access.",
+          "href": "/passport"
+        },
+        {
+          "tag": "a",
+          "text": "OpsStatusStatic export, route readiness, and launch proof.",
+          "href": "/status"
+        },
+        {
+          "tag": "button",
+          "text": "◌ The Quiet Reset Winter Repair",
+          "href": ""
+        },
+        {
+          "tag": "button",
+          "text": "◒ A Week of Heavy Fog Winter Repair",
+          "href": ""
+        },
+        {
+          "tag": "button",
+          "text": "✦ First Signal of Recovery Winter Repair",
+          "href": ""
+        },
+        {
+          "tag": "button",
+          "text": "∞ The Conversation That Stayed Rose Orbit",
+          "href": ""
+        },
+        {
+          "tag": "button",
+          "text": "↻ Pattern Returned Again Shadow Fog",
+          "href": ""
+        },
+        {
+          "tag": "button",
+          "text": "✺ A Small Morning Win Winter Repair",
+          "href": ""
+        },
+        {
+          "tag": "button",
+          "text": "◇ The Doorway Season Threshold",
+          "href": ""
+        },
+        {
+          "tag": "button",
+          "text": "○ Social Orbit Dimmed Rose Orbit",
+          "href": ""
+        },
+        {
+          "tag": "button",
+          "text": "⌁ Energy Came Back Slowly Green Return",
+          "href": ""
+        },
+        {
+          "tag": "button",
+          "text": "✧ A Memory Became a Thread Green Return",
+          "href": ""
+        },
+        {
+          "tag": "button",
+          "text": "✧ The Dream Door Opened Rose Orbit",
+          "href": ""
+        },
+        {
+          "tag": "button",
+          "text": "◍ A Voice Moment Softened Rose Orbit",
+          "href": ""
+        },
+        {
+          "tag": "button",
+          "text": "⌂ The Old Room Glowed Rose Orbit",
+          "href": ""
+        },
+        {
+          "tag": "button",
+          "text": "↺ The Loop Softened Rose Orbit",
+          "href": ""
+        },
+        {
+          "tag": "button",
+          "text": "∞ Paired Glow of Repair Rose Orbit",
+          "href": ""
+        },
+        {
+          "tag": "button",
+          "text": "✺ Threshold Became Rebirth Rose Orbit",
+          "href": ""
+        },
+        {
+          "tag": "button",
+          "text": "⌁ Purpose Thread Became Visible Rose Orbit",
+          "href": ""
+        },
+        {
+          "tag": "button",
+          "text": "◒ A Protected Grief Season Rose Orbit",
+          "href": ""
+        },
+        {
+          "tag": "button",
+          "text": "≋ The Water Ritual Helped Green Return",
+          "href": ""
+        },
+        {
+          "tag": "button",
+          "text": "☼ Morning Light Returned Green Return",
+          "href": ""
+        },
+        {
+          "tag": "button",
+          "text": "✦ Council Whisper North Green Return",
+          "href": ""
+        },
+        {
+          "tag": "button",
+          "text": "◇ A Faint Legacy Thread Green Return",
+          "href": ""
+        },
+        {
+          "tag": "button",
+          "text": "▱ Chapter of Repair Green Return",
+          "href": ""
+        },
+        {
+          "tag": "button",
+          "text": "◓ A Season of Pressure Green Return",
+          "href": ""
+        },
+        {
+          "tag": "button",
+          "text": "○ Social Warmth Returning Green Return",
+          "href": ""
+        },
+        {
+          "tag": "button",
+          "text": "✷ A Hidden Pattern Lit Up Green Return",
+          "href": ""
+        },
+        {
+          "tag": "button",
+          "text": "☾ A Dream Became Memory Threshold",
+          "href": ""
+        },
+        {
+          "tag": "button",
+          "text": "⌁ The Root System Glowed Threshold",
+          "href": ""
+        },
+        {
+          "tag": "button",
+          "text": "◌ Conflict Particles Settled Threshold",
+          "href": ""
+        },
+        {
+          "tag": "button",
+          "text": "◇ The Pattern Softened Threshold",
+          "href": ""
+        },
+        {
+          "tag": "button",
+          "text": "✧ The Small Clear Signal Threshold",
+          "href": ""
+        },
+        {
+          "tag": "button",
+          "text": "✺ Sprout and Root Glow Threshold",
+          "href": ""
+        },
+        {
+          "tag": "button",
+          "text": "✦ Night Sky Reset Threshold",
+          "href": ""
+        },
+        {
+          "tag": "button",
+          "text": "◎ Chapter of Becoming Threshold",
+          "href": ""
+        },
+        {
+          "tag": "button",
+          "text": "Reset view",
+          "href": ""
+        },
+        {
+          "tag": "a",
+          "text": "Open Focus",
+          "href": "/focus/?memoryId=quiet-reset"
+        },
+        {
+          "tag": "a",
+          "text": "Focus",
+          "href": "/focus/?memoryId=quiet-reset"
+        },
+        {
+          "tag": "a",
+          "text": "Replay",
+          "href": "/replay/?manifestId=replay-recovery-thread"
+        },
+        {
+          "tag": "a",
+          "text": "Mirror",
+          "href": "/mirror/"
+        },
+        {
+          "tag": "a",
+          "text": "Passport",
+          "href": "/passport/"
+        },
+        {
+          "tag": "a",
+          "text": "Status",
+          "href": "/status/"
+        },
+        {
+          "tag": "button",
+          "text": "Open this memory",
+          "href": ""
+        },
+        {
+          "tag": "button",
+          "text": "Replay thread",
+          "href": ""
+        },
+        {
+          "tag": "button",
+          "text": "Return to galaxy",
+          "href": ""
+        },
+        {
+          "tag": "button",
+          "text": "Return home",
+          "href": ""
+        },
+        {
+          "tag": "button",
+          "text": "Start replay path",
+          "href": ""
+        },
+        {
+          "tag": "button",
+          "text": "Start Replay",
+          "href": ""
+        }
+      ],
+      "screenshot": "live-visual-audit/screenshots/tier2-focus.png",
+      "error": "",
+      "textSample": "WINTER REPAIR\n4 memories\nROSE ORBIT\n10 memories\nSHADOW FOG\n1 memories\nTHRESHOLD\n9 memories\nGREEN RETURN\n10 memories\n◌\nThe Quiet Reset\nWinter Repair\n◒\nA Week of Heavy Fog\nWinter Repair\n✦\nFirst Signal of Recovery\nWinter Repair\n∞\nThe Conversation That Stayed\nRose Orbit\n↻\nPattern Returned Again\nShadow Fog\n✺\nA Small Morning Win\nWinter Repair\n◇\nThe Doorway Season\nThreshold\n○\nSocial Orbit Dimmed\nRose Orbit\n⌁\nEnergy Came Back Slowly\nGreen Return\n✧\nA Memory Became a Thread\nGreen Return\n✧\nThe Dream Door Opened\nRose Orbit\n◍\nA Voice Moment Softened\nRose Orbit\n⌂\nThe Old Room Glowed\nRose Orbit\n↺\nThe Loop Softened\nRose Orbit\n∞\nPaired Glow of Repair\nRose Orbit\n✺\nThreshold Became Rebirth\nRose Orbit\n⌁\nPurpose Thread Became Visible\nRose Orbit\n◒\nA Protected Grief Season\nRose Orbit\n≋\nThe Water Ritual Helped\nGreen Return\n☼\nMorning Light Returned\nGreen Return\n✦\nCouncil Whisper North\nGreen Return\n◇\nA Faint Legacy Thread\nGreen Return\n▱\nChapter of Repair\nGreen Return\n◓\nA Season of Pressure\nGreen Return\n○\nSocial Warmth Returning\nGreen Return\n✷\nA Hidden Pattern Lit Up\nGreen Return\n☾\nA Dream Became Memory\nThreshold\n⌁\nThe Root System Glowed\nThreshold\n◌\nConflict Particles Settled\nThreshold\n◇\nThe Pattern Softened"
+    },
+    {
+      "name": "tier2-replay",
+      "route": "/replay?manifestId=replay-recovery-thread",
+      "url": "https://urai.app/replay?manifestId=replay-recovery-thread",
+      "status": 200,
+      "ms": 5555,
+      "title": "URAI Replay",
+      "oldDemoCopyPresent": false,
+      "productionCopyPresent": true,
+      "linkCount": 53,
+      "links": [
+        {
+          "tag": "a",
+          "text": "Tier OneHome WorldGround, orb, sky, avatar, camera, and route actions.",
+          "href": "/home"
+        },
+        {
+          "tag": "a",
+          "text": "Tier TwoLife MapExplorable memory constellation wired into Focus.",
+          "href": "/life-map"
+        },
+        {
+          "tag": "a",
+          "text": "Tier TwoFocusSelected memory review from the constellation.",
+          "href": "/focus?memoryId=quiet-reset"
+        },
+        {
+          "tag": "a",
+          "text": "Tier TwoReplayGuided replay path and return flow.",
+          "href": "/replay?manifestId=replay-recovery-thread"
+        },
+        {
+          "tag": "a",
+          "text": "Tier ThreeMirrorReflection surface connected to the spatial runtime.",
+          "href": "/mirror"
+        },
+        {
+          "tag": "a",
+          "text": "TrustPassportIdentity, provenance, consent, and access.",
+          "href": "/passport"
+        },
+        {
+          "tag": "a",
+          "text": "OpsStatusStatic export, route readiness, and launch proof.",
+          "href": "/status"
+        },
+        {
+          "tag": "button",
+          "text": "◌ The Quiet Reset Winter Repair",
+          "href": ""
+        },
+        {
+          "tag": "button",
+          "text": "◒ A Week of Heavy Fog Winter Repair",
+          "href": ""
+        },
+        {
+          "tag": "button",
+          "text": "✦ First Signal of Recovery Winter Repair",
+          "href": ""
+        },
+        {
+          "tag": "button",
+          "text": "∞ The Conversation That Stayed Rose Orbit",
+          "href": ""
+        },
+        {
+          "tag": "button",
+          "text": "↻ Pattern Returned Again Shadow Fog",
+          "href": ""
+        },
+        {
+          "tag": "button",
+          "text": "✺ A Small Morning Win Winter Repair",
+          "href": ""
+        },
+        {
+          "tag": "button",
+          "text": "◇ The Doorway Season Threshold",
+          "href": ""
+        },
+        {
+          "tag": "button",
+          "text": "○ Social Orbit Dimmed Rose Orbit",
+          "href": ""
+        },
+        {
+          "tag": "button",
+          "text": "⌁ Energy Came Back Slowly Green Return",
+          "href": ""
+        },
+        {
+          "tag": "button",
+          "text": "✧ A Memory Became a Thread Green Return",
+          "href": ""
+        },
+        {
+          "tag": "button",
+          "text": "✧ The Dream Door Opened Rose Orbit",
+          "href": ""
+        },
+        {
+          "tag": "button",
+          "text": "◍ A Voice Moment Softened Rose Orbit",
+          "href": ""
+        },
+        {
+          "tag": "button",
+          "text": "⌂ The Old Room Glowed Rose Orbit",
+          "href": ""
+        },
+        {
+          "tag": "button",
+          "text": "↺ The Loop Softened Rose Orbit",
+          "href": ""
+        },
+        {
+          "tag": "button",
+          "text": "∞ Paired Glow of Repair Rose Orbit",
+          "href": ""
+        },
+        {
+          "tag": "button",
+          "text": "✺ Threshold Became Rebirth Rose Orbit",
+          "href": ""
+        },
+        {
+          "tag": "button",
+          "text": "⌁ Purpose Thread Became Visible Rose Orbit",
+          "href": ""
+        },
+        {
+          "tag": "button",
+          "text": "◒ A Protected Grief Season Rose Orbit",
+          "href": ""
+        },
+        {
+          "tag": "button",
+          "text": "≋ The Water Ritual Helped Green Return",
+          "href": ""
+        },
+        {
+          "tag": "button",
+          "text": "☼ Morning Light Returned Green Return",
+          "href": ""
+        },
+        {
+          "tag": "button",
+          "text": "✦ Council Whisper North Green Return",
+          "href": ""
+        },
+        {
+          "tag": "button",
+          "text": "◇ A Faint Legacy Thread Green Return",
+          "href": ""
+        },
+        {
+          "tag": "button",
+          "text": "▱ Chapter of Repair Green Return",
+          "href": ""
+        },
+        {
+          "tag": "button",
+          "text": "◓ A Season of Pressure Green Return",
+          "href": ""
+        },
+        {
+          "tag": "button",
+          "text": "○ Social Warmth Returning Green Return",
+          "href": ""
+        },
+        {
+          "tag": "button",
+          "text": "✷ A Hidden Pattern Lit Up Green Return",
+          "href": ""
+        },
+        {
+          "tag": "button",
+          "text": "☾ A Dream Became Memory Threshold",
+          "href": ""
+        },
+        {
+          "tag": "button",
+          "text": "⌁ The Root System Glowed Threshold",
+          "href": ""
+        },
+        {
+          "tag": "button",
+          "text": "◌ Conflict Particles Settled Threshold",
+          "href": ""
+        },
+        {
+          "tag": "button",
+          "text": "◇ The Pattern Softened Threshold",
+          "href": ""
+        },
+        {
+          "tag": "button",
+          "text": "✧ The Small Clear Signal Threshold",
+          "href": ""
+        },
+        {
+          "tag": "button",
+          "text": "✺ Sprout and Root Glow Threshold",
+          "href": ""
+        },
+        {
+          "tag": "button",
+          "text": "✦ Night Sky Reset Threshold",
+          "href": ""
+        },
+        {
+          "tag": "button",
+          "text": "◎ Chapter of Becoming Threshold",
+          "href": ""
+        },
+        {
+          "tag": "button",
+          "text": "Reset view",
+          "href": ""
+        },
+        {
+          "tag": "a",
+          "text": "Open Focus",
+          "href": "/focus/?memoryId=quiet-reset"
+        },
+        {
+          "tag": "a",
+          "text": "Focus",
+          "href": "/focus/?memoryId=quiet-reset"
+        },
+        {
+          "tag": "a",
+          "text": "Replay",
+          "href": "/replay/?manifestId=replay-recovery-thread"
+        },
+        {
+          "tag": "a",
+          "text": "Mirror",
+          "href": "/mirror/"
+        },
+        {
+          "tag": "a",
+          "text": "Passport",
+          "href": "/passport/"
+        },
+        {
+          "tag": "a",
+          "text": "Status",
+          "href": "/status/"
+        },
+        {
+          "tag": "button",
+          "text": "Open this memory",
+          "href": ""
+        },
+        {
+          "tag": "button",
+          "text": "Replay thread",
+          "href": ""
+        },
+        {
+          "tag": "button",
+          "text": "Return to galaxy",
+          "href": ""
+        },
+        {
+          "tag": "button",
+          "text": "Return home",
+          "href": ""
+        },
+        {
+          "tag": "button",
+          "text": "Start replay path",
+          "href": ""
+        }
+      ],
+      "screenshot": "live-visual-audit/screenshots/tier2-replay.png",
+      "error": "",
+      "textSample": "WINTER REPAIR\n4 memories\nROSE ORBIT\n10 memories\nSHADOW FOG\n1 memories\nTHRESHOLD\n9 memories\nGREEN RETURN\n10 memories\n◌\nThe Quiet Reset\nWinter Repair\n◒\nA Week of Heavy Fog\nWinter Repair\n✦\nFirst Signal of Recovery\nWinter Repair\n∞\nThe Conversation That Stayed\nRose Orbit\n↻\nPattern Returned Again\nShadow Fog\n✺\nA Small Morning Win\nWinter Repair\n◇\nThe Doorway Season\nThreshold\n○\nSocial Orbit Dimmed\nRose Orbit\n⌁\nEnergy Came Back Slowly\nGreen Return\n✧\nA Memory Became a Thread\nGreen Return\n✧\nThe Dream Door Opened\nRose Orbit\n◍\nA Voice Moment Softened\nRose Orbit\n⌂\nThe Old Room Glowed\nRose Orbit\n↺\nThe Loop Softened\nRose Orbit\n∞\nPaired Glow of Repair\nRose Orbit\n✺\nThreshold Became Rebirth\nRose Orbit\n⌁\nPurpose Thread Became Visible\nRose Orbit\n◒\nA Protected Grief Season\nRose Orbit\n≋\nThe Water Ritual Helped\nGreen Return\n☼\nMorning Light Returned\nGreen Return\n✦\nCouncil Whisper North\nGreen Return\n◇\nA Faint Legacy Thread\nGreen Return\n▱\nChapter of Repair\nGreen Return\n◓\nA Season of Pressure\nGreen Return\n○\nSocial Warmth Returning\nGreen Return\n✷\nA Hidden Pattern Lit Up\nGreen Return\n☾\nA Dream Became Memory\nThreshold\n⌁\nThe Root System Glowed\nThreshold\n◌\nConflict Particles Settled\nThreshold\n◇\nThe Pattern Softened"
+    },
+    {
+      "name": "tier3-mirror",
+      "route": "/mirror",
+      "url": "https://urai.app/mirror",
+      "status": 200,
+      "ms": 2925,
+      "title": "URAI Mirror",
+      "oldDemoCopyPresent": false,
+      "productionCopyPresent": true,
+      "linkCount": 2,
+      "links": [
+        {
+          "tag": "button",
+          "text": "Return to Life Map",
+          "href": ""
+        },
+        {
+          "tag": "button",
+          "text": "Return home",
+          "href": ""
+        }
+      ],
+      "screenshot": "live-visual-audit/screenshots/tier3-mirror.png",
+      "error": "",
+      "textSample": "◇⌁✦\n\nMIRROR OF BECOMING\n\nThe Pattern Softened\n\nYou are not repeating the old shape exactly. The return has more softness than before.\n\nReturn to Life Map\nReturn home"
+    },
+    {
+      "name": "passport",
+      "route": "/passport",
+      "url": "https://urai.app/passport",
+      "status": 200,
+      "ms": 3003,
+      "title": "URAI Passport",
+      "oldDemoCopyPresent": false,
+      "productionCopyPresent": true,
+      "linkCount": 4,
+      "links": [
+        {
+          "tag": "a",
+          "text": "Return Home",
+          "href": "/home"
+        },
+        {
+          "tag": "a",
+          "text": "Open Life Map",
+          "href": "/life-map"
+        },
+        {
+          "tag": "a",
+          "text": "Open Focus",
+          "href": "/focus?memoryId=purpose-thread-visible"
+        },
+        {
+          "tag": "a",
+          "text": "View Status",
+          "href": "/status"
+        }
+      ],
+      "screenshot": "live-visual-audit/screenshots/passport.png",
+      "error": "",
+      "textSample": "URAI PASSPORT · ACCESS LAYER\nOwn your life. Live your world.\n\nPassport is the trust layer underneath URAI Spatial: identity, consent, provenance, and access all stay visible. It is built so the Life Map can feel alive without turning a person's private life into someone else's asset.\n\nReturn Home\nOpen Life Map\nOpen Focus\nView Status\nPRIVATE BY DEFAULT\nIdentity\n\nYour world has an owner: you. URAI treats identity as permission, not extraction.\n\nProvenance\n\nEvery memory surface keeps a clear trail back to where it came from and why it appears.\n\nControl\n\nLife Map, Focus, Replay, and Mirror stay connected through user-controlled access gates."
+    },
+    {
+      "name": "status",
+      "route": "/status",
+      "url": "https://urai.app/status",
+      "status": 200,
+      "ms": 3095,
+      "title": "URAI Status",
+      "oldDemoCopyPresent": false,
+      "productionCopyPresent": true,
+      "linkCount": 4,
+      "links": [
+        {
+          "tag": "a",
+          "text": "Open Home",
+          "href": "/home"
+        },
+        {
+          "tag": "a",
+          "text": "Open Life Map",
+          "href": "/life-map"
+        },
+        {
+          "tag": "a",
+          "text": "Open Focus",
+          "href": "/focus?memoryId=quiet-reset"
+        },
+        {
+          "tag": "a",
+          "text": "Open Passport",
+          "href": "/passport"
+        }
+      ],
+      "screenshot": "live-visual-audit/screenshots/status.png",
+      "error": "",
+      "textSample": "URAI STATUS · LAUNCH SURFACE\nRoutes wired. World online.\n\nHome, Life Map, Focus, Replay, Mirror, Passport, and Status now resolve as launch-ready spatial surfaces. The public build stays static-export safe while the experience feels like one connected emotional universe.\n\nOpen Home\nOpen Life Map\nOpen Focus\nOpen Passport\nREADINESS\nHome /\nReady\nLife Map\nReady\nFocus\nReady\nReplay\nReady\nMirror\nReady\nPassport\nReady\nStatic export\nReady"
+    },
+    {
+      "name": "privacy-controls",
+      "route": "/privacy-controls",
+      "url": "https://urai.app/privacy-controls",
+      "status": 200,
+      "ms": 2655,
+      "title": "URAI Passport Controls",
+      "oldDemoCopyPresent": false,
+      "productionCopyPresent": true,
+      "linkCount": 1,
+      "links": [
+        {
+          "tag": "a",
+          "text": "Open Passport",
+          "href": "/passport"
+        }
+      ],
+      "screenshot": "live-visual-audit/screenshots/privacy-controls.png",
+      "error": "",
+      "textSample": "URAI PASSPORT CONTROLS\n\nPrivacy routes through Passport.\n\nThis legacy privacy-controls URL is connected to URAI Passport, the access, consent, identity, and provenance layer.\n\nOpen Passport"
+    }
+  ],
+  "interactions": [
+    {
+      "name": "home-to-life-map",
+      "ok": false,
+      "startUrl": "https://urai.app/home",
+      "expected": "/life-map",
+      "currentUrl": "",
+      "selector": "a[href=\"/life-map\"]",
+      "ms": 13672,
+      "screenshot": "live-visual-audit/screenshots/interaction-home-to-life-map.png",
+      "error": "locator.click: Timeout 10000ms exceeded.\nCall log:\n  - waiting for locator('a[href=\"/life-map\"]').first()\n    - locator resolved to <a href=\"/life-map\">…</a>\n  - attempting click action\n    2 × waiting for element to be visible, enabled and stable\n      - element is not visible\n    - retrying click action\n    - waiting 20ms\n    - waiting for element to be visible, enabled and stable\n"
+    },
+    {
+      "name": "life-map-to-focus",
+      "ok": true,
+      "startUrl": "https://urai.app/life-map",
+      "expected": "/focus",
+      "currentUrl": "https://urai.app/focus/?memoryId=quiet-reset",
+      "selector": "a[href*=\"/focus\"]",
+      "ms": 8124,
+      "screenshot": "live-visual-audit/screenshots/interaction-life-map-to-focus.png",
+      "error": ""
+    },
+    {
+      "name": "focus-to-replay",
+      "ok": false,
+      "startUrl": "https://urai.app/focus?memoryId=quiet-reset",
+      "expected": "/replay",
+      "currentUrl": "",
+      "selector": "a[href*=\"/replay\"]",
+      "ms": 12247,
+      "screenshot": "live-visual-audit/screenshots/interaction-focus-to-replay.png",
+      "error": "locator.click: Timeout 10000ms exceeded.\nCall log:\n  - waiting for locator('a[href*=\"/replay\"]').first()\n    - locator resolved to <a href=\"/replay?manifestId=replay-recovery-thread\">…</a>\n  - attempting click action\n    2 × waiting for element to be visible, enabled and stable\n      - element is not visible\n    - retrying click action\n    - waiting 20ms\n    2 × waiting for element to be visible, enabled and stable\n      - element is not visible\n    - retrying click action\n      - waiting 100ms\n    5 × waiting for element to be visible, enabled and stable\n      - element is not visible\n    - retrying click action\n      - waiting 500ms\n    - waiting for element to be visible, enabled and stable\n"
+    },
+    {
+      "name": "passport-to-status",
+      "ok": true,
+      "startUrl": "https://urai.app/passport",
+      "expected": "/status",
+      "currentUrl": "https://urai.app/status",
+      "selector": "a[href=\"/status\"]",
+      "ms": 4128,
+      "screenshot": "live-visual-audit/screenshots/interaction-passport-to-status.png",
+      "error": ""
+    }
+  ],
+  "summary": {
+    "routeCount": 11,
+    "screenshotCount": 11,
+    "oldDemoCopyRoutes": [],
+    "productionCopyRoutes": [
+      "/",
+      "/home",
+      "/spatial",
+      "/life-map",
+      "/life-map?star=blue-fog",
+      "/focus?memoryId=quiet-reset",
+      "/replay?manifestId=replay-recovery-thread",
+      "/mirror",
+      "/passport",
+      "/status",
+      "/privacy-controls"
+    ],
+    "failedRoutes": [],
+    "failedInteractions": [
+      {
+        "name": "home-to-life-map",
+        "ok": false,
+        "startUrl": "https://urai.app/home",
+        "expected": "/life-map",
+        "currentUrl": "",
+        "selector": "a[href=\"/life-map\"]",
+        "ms": 13672,
+        "screenshot": "live-visual-audit/screenshots/interaction-home-to-life-map.png",
+        "error": "locator.click: Timeout 10000ms exceeded.\nCall log:\n  - waiting for locator('a[href=\"/life-map\"]').first()\n    - locator resolved to <a href=\"/life-map\">…</a>\n  - attempting click action\n    2 × waiting for element to be visible, enabled and stable\n      - element is not visible\n    - retrying click action\n    - waiting 20ms\n    - waiting for element to be visible, enabled and stable\n"
+      },
+      {
+        "name": "focus-to-replay",
+        "ok": false,
+        "startUrl": "https://urai.app/focus?memoryId=quiet-reset",
+        "expected": "/replay",
+        "currentUrl": "",
+        "selector": "a[href*=\"/replay\"]",
+        "ms": 12247,
+        "screenshot": "live-visual-audit/screenshots/interaction-focus-to-replay.png",
+        "error": "locator.click: Timeout 10000ms exceeded.\nCall log:\n  - waiting for locator('a[href*=\"/replay\"]').first()\n    - locator resolved to <a href=\"/replay?manifestId=replay-recovery-thread\">…</a>\n  - attempting click action\n    2 × waiting for element to be visible, enabled and stable\n      - element is not visible\n    - retrying click action\n    - waiting 20ms\n    2 × waiting for element to be visible, enabled and stable\n      - element is not visible\n    - retrying click action\n      - waiting 100ms\n    5 × waiting for element to be visible, enabled and stable\n      - element is not visible\n    - retrying click action\n      - waiting 500ms\n    - waiting for element to be visible, enabled and stable\n"
+      }
+    ]
+  }
+}

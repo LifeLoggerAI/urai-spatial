@@ -1,0 +1,11 @@
+tier1-root.png
+tier1-home.png
+tier1-spatial.png
+tier2-life-map.png
+tier2-life-map-blue-fog.png
+tier2-focus.png
+tier2-replay.png
+tier3-mirror.png
+passport.png
+status.png
+privacy-controls.png
