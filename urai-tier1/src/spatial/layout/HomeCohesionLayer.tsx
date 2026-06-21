@@ -161,7 +161,7 @@ export function HomeCohesionLayer({ enabled }: { enabled: boolean }) {
         .home-cohesion-layer {
           position: fixed;
           inset: 0;
-          z-index: 32;
+          z-index: 24;
           pointer-events: none;
           color: white;
           font-family: Inter, ui-sans-serif, system-ui, sans-serif;
@@ -181,7 +181,7 @@ export function HomeCohesionLayer({ enabled }: { enabled: boolean }) {
         }
 
         .home-sky-hit-zone {
-          inset: 0 0 30% 0;
+          inset: 0 0 38% 0;
           cursor: zoom-in;
         }
 

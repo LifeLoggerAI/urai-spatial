@@ -172,19 +172,116 @@ function FocusChamber({ active }: { active: boolean }) {
   )
 }
 
-function HomeHud({ onLifeMap, onFocus, onReplay }: { onLifeMap: () => void; onFocus: () => void; onReplay: () => void }) {
+function HomeHud({
+  onLifeMap,
+  onFocus,
+  onReplay,
+  onMirror,
+  onPassport,
+  onStatus,
+}: {
+  onLifeMap: () => void
+  onFocus: () => void
+  onReplay: () => void
+  onMirror: () => void
+  onPassport: () => void
+  onStatus: () => void
+}) {
+  const primaryActions = [
+    { label: 'Open My World', detail: 'Enter the Life Map from the sky field.', action: onLifeMap, tone: 'primary' },
+    { label: 'Preview Spark', detail: 'Step into the focused memory chamber.', action: onFocus, tone: 'secondary' },
+    { label: 'Replay Theater', detail: 'Open a private cinematic memory pass.', action: onReplay, tone: 'secondary' },
+  ]
+
+  const entryPoints = [
+    { label: 'Life Map', detail: 'Memory constellation and seeded demo paths.', action: onLifeMap, status: 'Ready' },
+    { label: 'Replay', detail: 'Private cinematic theater shell.', action: onReplay, status: 'Ready' },
+    { label: 'Focus', detail: 'Stable chamber for one memory signal.', action: onFocus, status: 'Ready' },
+    { label: 'Mirror', detail: 'Reflection and becoming surface.', action: onMirror, status: 'Ready' },
+    { label: 'Passport', detail: 'Permission and provenance foundation.', action: onPassport, status: 'Shell' },
+    { label: 'Status', detail: 'Launch route and system readiness.', action: onStatus, status: 'Live' },
+  ]
+
   return (
-    <section className="urai-home-canon-hud" data-testid="urai-home-canon-hud" aria-label="URAI home sanctuary controls">
-      <div className="urai-home-canon-hud__kicker">URAI V1 · Home Field</div>
-      <h1>Private emotional universe online.</h1>
-      <p>Sky, ground, avatar mirror, memory stars, and Passport foundation are live as seeded public demo data. URAI remains private by default with no ads inside URAI.</p>
-      <div className="urai-home-canon-hud__actions">
-        <button type="button" onClick={(event) => { event.stopPropagation(); onLifeMap() }}>Ascend to Life Map</button>
-        <button type="button" onClick={(event) => { event.stopPropagation(); onFocus() }}>Open Focus Chamber</button>
-        <button type="button" onClick={(event) => { event.stopPropagation(); onReplay() }}>Enter Replay Theater</button>
-      </div>
-      <div className="urai-home-canon-hud__privacy">Private by default · User-controlled data access · URAI Passport foundation · No ads</div>
-    </section>
+    <>
+      <header className="urai-home-topbar" data-urai-home-hud="true" aria-label="URAI Spatial launch navigation">
+        <button type="button" className="urai-home-topbar__mark" onClick={(event) => { event.stopPropagation(); onStatus() }} aria-label="Open URAI status">
+          <span className="urai-home-topbar__sigil" aria-hidden="true" />
+          <span>
+            <strong>URAI</strong>
+            <em>Spatial</em>
+          </span>
+        </button>
+        <nav className="urai-home-topbar__nav" aria-label="Primary URAI routes">
+          <button type="button" onClick={(event) => { event.stopPropagation(); onLifeMap() }}>Life Map</button>
+          <button type="button" onClick={(event) => { event.stopPropagation(); onReplay() }}>Replay</button>
+          <button type="button" onClick={(event) => { event.stopPropagation(); onPassport() }}>Passport</button>
+          <button type="button" onClick={(event) => { event.stopPropagation(); onStatus() }}>Status</button>
+        </nav>
+      </header>
+
+      <section className="urai-home-canon-hud" data-testid="urai-home-canon-hud" data-urai-home-hud="true" aria-label="URAI launch home">
+        <div className="urai-home-canon-hud__hero">
+          <div className="urai-home-canon-hud__kicker">URAI V1 · Private world online</div>
+          <h1>Step inside yourself.</h1>
+          <p className="urai-home-canon-hud__lead">
+            URAI turns memories, moods, places, and reflections into a private emotional universe you can enter.
+            This launch home is seeded with public demo data, so the world feels alive without exposing anyone&apos;s private life.
+          </p>
+
+          <div className="urai-home-canon-hud__actions" aria-label="Primary actions">
+            {primaryActions.map((action) => (
+              <button
+                key={action.label}
+                type="button"
+                className={`urai-home-canon-hud__action urai-home-canon-hud__action--${action.tone}`}
+                onClick={(event) => {
+                  event.stopPropagation()
+                  action.action()
+                }}
+              >
+                <span>{action.label}</span>
+                <small>{action.detail}</small>
+              </button>
+            ))}
+          </div>
+
+          <div className="urai-home-canon-hud__privacy">
+            Private by default · User-controlled access · No ads inside URAI · Seeded demo state only
+          </div>
+        </div>
+
+        <aside className="urai-home-canon-hud__panel" aria-label="URAI launch entry points">
+          <div className="urai-home-canon-hud__orb-card">
+            <span className="urai-home-canon-hud__orb" aria-hidden="true" />
+            <div>
+              <strong>URAI Orb Companion</strong>
+              <p>Present, quiet, and ready to guide the first path without taking ownership of the user&apos;s story.</p>
+            </div>
+          </div>
+
+          <div className="urai-home-canon-hud__entry-grid">
+            {entryPoints.map((entry) => (
+              <button
+                key={entry.label}
+                type="button"
+                className="urai-home-canon-hud__entry"
+                onClick={(event) => {
+                  event.stopPropagation()
+                  entry.action()
+                }}
+              >
+                <span>
+                  <strong>{entry.label}</strong>
+                  <small>{entry.detail}</small>
+                </span>
+                <em>{entry.status}</em>
+              </button>
+            ))}
+          </div>
+        </aside>
+      </section>
+    </>
   )
 }
 
@@ -320,6 +417,22 @@ function CanonicalStyle() {
       }
       .urai-focus-action-panel h2 { margin: 8px 0; font-size: 1.2rem; }
       .urai-focus-action-panel p { color: rgba(234, 244, 255, 0.74); line-height: 1.45; }
+
+      /* URAI Firebase Studio live polish override */
+      .urai-home-canon-hud {
+        left: clamp(18px, 5vw, 72px);
+        bottom: clamp(24px, 8vh, 86px);
+        width: min(560px, calc(100vw - 36px));
+        padding: clamp(20px, 3vw, 34px);
+        border-radius: 30px;
+        border-color: rgba(186, 230, 253, 0.34);
+        background: radial-gradient(circle at 16% 14%, rgba(103, 232, 249, 0.16), transparent 34%), linear-gradient(145deg, rgba(2, 8, 23, 0.78), rgba(15, 23, 42, 0.54));
+      }
+      .urai-home-canon-hud h1 { max-width: 12ch; margin: 12px 0 14px; font-size: clamp(3.1rem, 6.8vw, 6.6rem); line-height: 0.9; letter-spacing: -0.085em; color: rgba(238, 248, 255, 0.96); text-shadow: 0 18px 80px rgba(103, 232, 249, 0.22); }
+      .urai-home-canon-hud p { max-width: 48ch; margin-bottom: 20px; color: rgba(234, 244, 255, 0.82); font-size: clamp(0.95rem, 1.3vw, 1.08rem); }
+      .urai-home-canon-hud__actions { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+      .urai-home-canon-hud button { min-height: 44px; padding: 11px 15px; }
+
       @media (max-width: 760px) {
         .urai-home-canon-hud { left: 12px; right: 12px; bottom: 12px; width: auto; padding: 16px; }
         .urai-home-canon-hud h1 { font-size: 2.35rem; }
@@ -348,9 +461,12 @@ export default function HomeScene({ sceneMode = 'home' }: { sceneMode?: SceneMod
   const showOrb = sceneMode === 'focus' || sceneMode === 'replay' || sceneMode === 'unwind' || sceneMode === 'mirror'
   const unwind = useEscUnwind(sceneMode, activeManifestId)
 
-  const openLifeMap = useCallback(() => router.push(isHomeMode && !reducedMotion ? '/ascent' : '/life-map'), [isHomeMode, reducedMotion, router])
+  const openLifeMap = useCallback(() => router.push('/life-map'), [router])
   const openFocus = useCallback(() => router.push(`/focus?manifestId=${encodeURIComponent(activeManifestId)}`), [activeManifestId, router])
   const openReplay = useCallback(() => router.push(`/replay?manifestId=${encodeURIComponent(activeManifestId)}`), [activeManifestId, router])
+  const openMirror = useCallback(() => router.push('/mirror'), [router])
+  const openPassport = useCallback(() => router.push('/passport'), [router])
+  const openStatus = useCallback(() => router.push('/status'), [router])
   const resetCamera = useCallback(() => {
     setSelectedPosition(null)
     setCameraResetSignal((value) => value + 1)
@@ -451,7 +567,7 @@ export default function HomeScene({ sceneMode = 'home' }: { sceneMode?: SceneMod
         <CinematicPostProcessing active reducedMotion={reducedMotion} />
       </Canvas>
 
-      {isHomeMode ? <HomeHud onLifeMap={openLifeMap} onFocus={openFocus} onReplay={openReplay} /> : null}
+      {isHomeMode ? <HomeHud onLifeMap={openLifeMap} onFocus={openFocus} onReplay={openReplay} onMirror={openMirror} onPassport={openPassport} onStatus={openStatus} /> : null}
       {!isHomeMode ? <NarratorVoice sceneMode={sceneMode} /> : null}
       {!isHomeMode ? <NarratorHud /> : null}
       {!isHomeMode ? <CameraResetButton onReset={resetCamera} /> : null}

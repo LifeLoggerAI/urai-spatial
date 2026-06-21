@@ -1,10 +1,4 @@
-/*
- * URAI Spatial accessibility layer.
- * Keeps keyboard/screen-reader support available without changing visual canon.
- */
-
-.sr-only,
-.visually-hidden {
+.sr-only {
   position: absolute !important;
   width: 1px !important;
   height: 1px !important;
@@ -17,8 +11,13 @@
 }
 
 :focus-visible {
-  outline: 2px solid rgba(139, 220, 255, 0.95);
+  outline: 2px solid rgba(103, 232, 249, 0.95);
   outline-offset: 4px;
+}
+
+button,
+a {
+  -webkit-tap-highlight-color: transparent;
 }
 
 @media (prefers-reduced-motion: reduce) {

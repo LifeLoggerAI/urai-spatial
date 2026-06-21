@@ -1,10 +1,10 @@
-import LifeMapAscentGate from "@/spatial/components/world/LifeMapAscentGate";
+import { RootModeExperience } from '../RootModeExperience'
 
-export default function LifeMapPage() {
-  // Source contract marker: <TierOneExperience mode="life-map" />
-  return (
-    <main data-testid="urai-scene-stage" data-mode="life-map" data-scene-mode="life-map">
-      <LifeMapAscentGate />
-    </main>
-  );
+export const metadata = {
+  title: 'URAI Life Map',
+  description: 'A seeded private-by-default life map shell.',
+}
+
+export default function LifeMapRoutePage() {
+  return <RootModeExperience initialMode="life-map" />
 }

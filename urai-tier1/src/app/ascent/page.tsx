@@ -1,9 +1,10 @@
-import { TierOneExperience } from "@/spatial/layout/TierOneExperience";
+import { RootModeExperience } from '../RootModeExperience'
 
-export default function AscentRoute() {
-  return (
-    <main data-testid="urai-scene-stage" data-mode="ascent" data-scene-mode="ascent">
-      <TierOneExperience mode="ascent" />
-    </main>
-  );
+export const metadata = {
+  title: 'URAI Ascent',
+  description: 'The cinematic transition into the URAI Life Map.',
+}
+
+export default function AscentRoutePage() {
+  return <RootModeExperience initialMode="ascent" />
 }

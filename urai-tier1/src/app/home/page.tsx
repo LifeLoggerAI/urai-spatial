@@ -1,23 +1,10 @@
-import { TierOneExperience } from "@/spatial/layout/TierOneExperience";
+import { RootModeExperience } from '../RootModeExperience'
 
 export const metadata = {
-  title: "URAI Home — data-urai-home-spatial-shell",
-  description: "data-urai-home-spatial-shell",
-  other: {
-    "data-urai-home-spatial-shell": "true",
-  },
-};
+  title: 'URAI Home',
+  description: 'The private-by-default URAI launch home field.',
+}
 
 export default function HomeRoutePage() {
-  return (
-    <div
-      className="urai-home-shell"
-      data-testid="urai-scene-stage"
-      data-mode="home"
-      data-scene-mode="home"
-      data-urai-home-spatial-shell
-    >
-      <TierOneExperience mode="home" />
-    </div>
-  );
+  return <RootModeExperience initialMode="home" />
 }

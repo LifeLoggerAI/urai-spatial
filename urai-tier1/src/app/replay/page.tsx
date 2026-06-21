@@ -1,15 +1,10 @@
-import CinematicReplayClient from './CinematicReplayClient'
-import { ReplayUnwindButton } from './ReplayUnwindButton'
+import { RootModeExperience } from '../RootModeExperience'
 
-export default function ReplayPage() {
-  return (
-    <main data-testid="urai-scene-stage" data-mode="replay" data-scene-mode="replay">
-      {/* Canonical replay source marker retained for static lock tests: <TierOneExperience mode="replay" /> */}
-      <CinematicReplayClient />
-      <section data-testid="urai-focus-action-panel" hidden>
-        Replay Stream
-      </section>
-      <ReplayUnwindButton />
-    </main>
-  )
+export const metadata = {
+  title: 'URAI Replay',
+  description: 'A private cinematic replay theater shell.',
+}
+
+export default function ReplayRoutePage() {
+  return <RootModeExperience initialMode="replay" />
 }

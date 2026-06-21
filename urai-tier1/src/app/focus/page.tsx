@@ -1,20 +1,10 @@
-import { Suspense } from "react";
-import { FocusEscapeBridge } from "./FocusEscapeBridge";
-import { FocusLifeMapStage } from "./FocusLifeMapStage";
-import { FocusPlaceDoor } from "./FocusPlaceDoor";
+import { RootModeExperience } from '../RootModeExperience'
 
-export default function FocusRoute() {
-  const manifestId = undefined;
+export const metadata = {
+  title: 'URAI Focus',
+  description: 'A stable focus chamber for selected memory review.',
+}
 
-  return (
-    <main data-testid="urai-scene-stage" data-mode="focus" data-scene-mode="focus">
-      <FocusEscapeBridge />
-      <Suspense fallback={<div data-testid="urai-focus-loading" aria-label="Loading focus memory" />}>
-        <FocusLifeMapStage />
-      </Suspense>
-      <Suspense fallback={null}>
-        <FocusPlaceDoor manifestId={manifestId} />
-      </Suspense>
-    </main>
-  );
+export default function FocusRoutePage() {
+  return <RootModeExperience initialMode="focus" />
 }

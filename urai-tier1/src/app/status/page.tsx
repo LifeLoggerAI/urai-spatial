@@ -1,51 +1,92 @@
-const checks = [
-  ['Public app shell', 'Live'],
-  ['Home world', 'Live'],
-  ['Life Map', 'Live'],
-  ['Replay', 'Live'],
-  ['Focus', 'Live'],
-  ['Mirror', 'Live'],
-  ['Passport', 'Live'],
-]
+import type { CSSProperties } from 'react'
 
-const routes = [
-  ['Home', '/home'],
-  ['Life-map', '/life-map'],
-  ['Replay', '/replay'],
-  ['Focus', '/focus'],
-  ['Mirror', '/mirror'],
-  ['Passport', '/passport'],
-]
+const shell: CSSProperties = {
+  minHeight: '100svh',
+  display: 'grid',
+  placeItems: 'center',
+  padding: '24px',
+  color: '#eaf4ff',
+  background: 'radial-gradient(circle at 50% 18%, rgba(125,211,252,.24), transparent 30%), radial-gradient(circle at 80% 10%, rgba(168,85,247,.16), transparent 28%), linear-gradient(160deg, #020617 0%, #071126 52%, #0f172a 100%)',
+  fontFamily: 'Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, Segoe UI, sans-serif',
+}
+
+const card: CSSProperties = {
+  width: 'min(920px, 100%)',
+  border: '1px solid rgba(147,197,253,.26)',
+  borderRadius: '32px',
+  padding: 'clamp(24px, 5vw, 56px)',
+  background: 'linear-gradient(145deg, rgba(2,6,23,.82), rgba(15,23,42,.58))',
+  boxShadow: '0 30px 120px rgba(0,0,0,.5), inset 0 1px 0 rgba(255,255,255,.08)',
+  backdropFilter: 'blur(22px)',
+}
+
+const eyebrow: CSSProperties = {
+  color: '#67e8f9',
+  letterSpacing: '.22em',
+  textTransform: 'uppercase',
+  fontSize: '.76rem',
+  fontWeight: 900,
+}
+
+const title: CSSProperties = {
+  margin: '14px 0 12px',
+  fontSize: 'clamp(2.3rem, 7vw, 5.6rem)',
+  lineHeight: .9,
+  letterSpacing: '-.075em',
+  maxWidth: '10ch',
+}
+
+const copy: CSSProperties = {
+  color: 'rgba(234,244,255,.78)',
+  fontSize: '1.04rem',
+  lineHeight: 1.65,
+  maxWidth: '68ch',
+}
+
+const actions: CSSProperties = {
+  display: 'flex',
+  flexWrap: 'wrap',
+  gap: '12px',
+  marginTop: '24px',
+}
+
+const link: CSSProperties = {
+  border: '1px solid rgba(147,197,253,.32)',
+  borderRadius: '999px',
+  padding: '12px 16px',
+  color: '#eaf4ff',
+  textDecoration: 'none',
+  background: 'rgba(15,23,42,.68)',
+  fontWeight: 850,
+}
+
+const primary: CSSProperties = {
+  ...link,
+  color: '#02111d',
+  background: 'linear-gradient(135deg, #a7f3d0, #67e8f9)',
+  borderColor: 'rgba(103,232,249,.7)',
+}
 
 export const metadata = {
   title: 'URAI Status',
-  description: 'Public launch status for the URAI Inner Sky Shrine app shell.',
+  description: 'The URAI launch status route shell.',
 }
 
-export default function StatusPage() {
+export default function StatusRoutePage() {
   return (
-    <main className="urai-status-page" data-testid="urai-status-page">
-      <section className="urai-status-card" aria-labelledby="urai-status-title">
-        <p className="urai-status-kicker">URAI public app status</p>
-        <h1 id="urai-status-title">All public launch routes are online.</h1>
-        <p className="urai-status-copy">
-          This page verifies the public entry points for the Inner Sky Shrine shell: /, /home, /life-map, /replay, /focus, /mirror, /passport, and /status.
+    <main style={shell}>
+      <section style={card}>
+        <div style={eyebrow}>URAI Status</div>
+        <h1 style={title}>Launch shell online.</h1>
+        <p style={copy}>
+          Home, Life Map, Focus, Replay, Mirror, Passport, and Status routes are wired as static-safe launch surfaces.
+          The experience is seeded-demo-first, privacy-first, and ready for Firebase static verification.
         </p>
-
-        <div className="urai-status-grid" aria-label="Route status checks">
-          {checks.map(([label, status]) => (
-            <div key={label} className="urai-status-pill">
-              <span>{label}</span>
-              <strong>{status}</strong>
-            </div>
-          ))}
+        <div style={actions}>
+          <a style={primary} href="/home">Open Home</a>
+          <a style={link} href="/passport">Open Passport</a>
+          <a style={link} href="/replay">Open Replay</a>
         </div>
-
-        <nav className="urai-status-nav" aria-label="Public URAI routes">
-          {routes.map(([label, href]) => (
-            <a key={href} href={href}>{label}</a>
-          ))}
-        </nav>
       </section>
     </main>
   )
