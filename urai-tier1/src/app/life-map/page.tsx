@@ -1,11 +1,10 @@
-import { LaunchRoutePanel } from '../LaunchRoutePanel'
 import { RootModeExperience } from '../RootModeExperience'
 
+export const metadata = {
+  title: 'URAI Life Map',
+  description: 'The URAI Spatial Life Map opens the explorable memory constellation directly and routes selected stars into Focus.',
+}
+
 export default function LifeMapPage() {
-  return (
-    <>
-      <LaunchRoutePanel variant="life-map" />
-      <RootModeExperience initialMode="life-map" />
-    </>
-  )
+  return <RootModeExperience initialMode="life-map" />
 }
