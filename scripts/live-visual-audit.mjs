@@ -6,7 +6,7 @@ const baseUrl = process.env.URAI_AUDIT_BASE_URL || 'https://urai.app'
 const outDir = process.env.URAI_AUDIT_OUT_DIR || 'live-visual-audit'
 const shotDir = path.join(outDir, 'screenshots')
 
-// Fresh persisted report trigger: 2026-06-21T1800Z.
+// Audit trigger after route panel expansion: 2026-06-21T18:30Z.
 const routes = [
   ['tier1-root', '/'],
   ['tier1-home', '/home'],
