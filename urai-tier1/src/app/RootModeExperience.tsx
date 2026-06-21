@@ -1,6 +1,6 @@
 "use client";
 
-import { useSyncExternalStore } from "react";
+import { useEffect, useSyncExternalStore } from "react";
 import { TierOneExperience, type TierOneExperienceMode } from "@/spatial/layout/TierOneExperience";
 
 const allowedModes = new Set<TierOneExperienceMode>(["home", "ascent", "life-map", "demo", "replay", "focus", "unwind", "mirror"]);
@@ -94,6 +94,13 @@ function subscribeToRouteMode(onStoreChange: () => void): () => void {
 }
 
 export function RootModeExperience({ initialMode = "home" }: { initialMode?: TierOneExperienceMode }) {
+  useEffect(() => {
+    document.documentElement.dataset.uraiRuntimeReady = "true";
+    return () => {
+      delete document.documentElement.dataset.uraiRuntimeReady;
+    };
+  }, []);
+
   const routeKey = useSyncExternalStore(
     subscribeToRouteMode,
     () => routeKeyFromSnapshot(routeSnapshotFromBrowserUrl(initialMode)),
