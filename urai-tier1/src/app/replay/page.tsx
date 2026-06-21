@@ -2,7 +2,7 @@ import { RootModeExperience } from '../RootModeExperience'
 
 export const metadata = {
   title: 'URAI Replay',
-  description: 'A private cinematic replay theater shell.',
+  description: 'URAI Replay is connected to Life Map and Focus.',
 }
 
 export default function ReplayRoutePage() {
