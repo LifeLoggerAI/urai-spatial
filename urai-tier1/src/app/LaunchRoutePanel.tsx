@@ -11,63 +11,122 @@ type RoutePanelCopy = {
   primaryAction: string
 }
 
+type LaunchRoute = {
+  label: string
+  href: string
+  action: string
+  detail: string
+}
+
 const copyByVariant: Record<LaunchRouteVariant, RoutePanelCopy> = {
   home: {
-    eyebrow: 'Tier One · Home World live',
+    eyebrow: 'Home World · launch surface live',
     title: 'Own your life. Step inside yourself.',
-    lead: 'Enter the URAI home world with Life Map, Focus, Replay, Passport, and Status ready.',
+    lead: 'URAI turns memory, mood, place, replay, and reflection into one private spatial world you can enter. Start in the Life Map, focus a star, replay the thread, then keep ownership through Passport and Status.',
     primaryHref: '/life-map',
     primaryLabel: 'Open Life Map',
     primaryAction: 'home-life-map',
   },
   'life-map': {
-    eyebrow: 'Tier Two · Life Map live',
-    title: 'The constellation is the product surface.',
-    lead: 'Explore the memory constellation, open a selected star in Focus, and continue into Replay.',
+    eyebrow: 'Life Map · constellation live',
+    title: 'Stars are doors into your world.',
+    lead: 'Explore the memory constellation, open a selected star in Focus, and continue into Replay without losing the thread or landing on a dead route.',
     primaryHref: '/focus?memoryId=quiet-reset',
     primaryLabel: 'Open selected memory',
     primaryAction: 'life-map-focus',
   },
   focus: {
-    eyebrow: 'Tier Two · Focus live',
-    title: 'Focus is the bridge into Replay.',
-    lead: 'Stay with one memory, then continue into the replay thread without hitting a hidden or dead route.',
+    eyebrow: 'Focus · selected memory live',
+    title: 'Stay with one signal.',
+    lead: 'Focus keeps one memory stable, readable, and ready to replay while privacy, exit paths, and route controls stay visible.',
     primaryHref: '/replay?manifestId=replay-recovery-thread',
     primaryLabel: 'Continue into Replay',
     primaryAction: 'focus-replay',
   },
   replay: {
-    eyebrow: 'Tier Two · Replay live',
-    title: 'Replay turns memory into a guided thread.',
-    lead: 'Move through a cinematic replay path, then return to Focus, Life Map, or Home without losing the thread.',
+    eyebrow: 'Replay · cinematic thread live',
+    title: 'Replay turns memory into motion.',
+    lead: 'Move through a guided replay path, then return to Focus, Life Map, Passport, or Home without breaking the spatial thread.',
     primaryHref: '/focus?memoryId=quiet-reset',
     primaryLabel: 'Back to Focus',
     primaryAction: 'replay-focus',
   },
 }
 
+const launchRoutes: LaunchRoute[] = [
+  { label: 'Life Map', href: '/life-map', action: 'open-life-map', detail: 'Explore the living memory constellation.' },
+  { label: 'Focus', href: '/focus?memoryId=quiet-reset', action: 'open-focus', detail: 'Open one stable memory chamber.' },
+  { label: 'Replay', href: '/replay?manifestId=replay-recovery-thread', action: 'open-replay', detail: 'Enter the cinematic memory thread.' },
+  { label: 'Mirror', href: '/mirror', action: 'open-mirror', detail: 'Reflect without leaving the world.' },
+  { label: 'Passport', href: '/passport', action: 'open-passport', detail: 'Review identity, consent, and provenance.' },
+  { label: 'Status', href: '/status', action: 'open-status', detail: 'See launch readiness and route health.' },
+  { label: 'Privacy', href: '/privacy-controls', action: 'open-privacy-controls', detail: 'Control what is private before anything expands.' },
+]
+
+const proofPills = ['Private by default', 'Every route exits', 'Static-export safe']
+
+const worldSignals = [
+  { label: 'Life Map', copy: 'Stars open into Focus, Replay, and place-based meaning layers.' },
+  { label: 'Focus', copy: 'One selected memory remains stable across the route chain.' },
+  { label: 'Passport', copy: 'Identity, provenance, and consent stay visible at the surface.' },
+]
+
 export function LaunchRoutePanel({ variant }: { variant: LaunchRouteVariant }) {
   const copy = copyByVariant[variant]
 
   return (
-    <section className={styles.panel} aria-label="URAI live route controls">
+    <section className={styles.panel} data-route-panel-variant={variant} aria-label="URAI Spatial launch route controls">
       <article className={styles.hero}>
-        <p className={styles.eyebrow}>{copy.eyebrow}</p>
-        <h1>{copy.title}</h1>
-        <p>{copy.lead}</p>
-        <nav className={styles.actions} aria-label="Primary route actions">
-          <a data-urai-audit-action={copy.primaryAction} href={copy.primaryHref}>{copy.primaryLabel}</a>
-          <a data-urai-audit-action="open-life-map" href="/life-map">Life Map</a>
-          <a data-urai-audit-action="open-focus" href="/focus?memoryId=quiet-reset">Focus</a>
-          <a data-urai-audit-action="open-replay" href="/replay?manifestId=replay-recovery-thread">Replay</a>
-          <a data-urai-audit-action="open-passport" href="/passport">Passport</a>
-          <a data-urai-audit-action="open-status" href="/status">Status</a>
-        </nav>
+        <div className={styles.copyColumn}>
+          <p className={styles.eyebrow}>{copy.eyebrow}</p>
+          <h1>{copy.title}</h1>
+          <p className={styles.lead}>{copy.lead}</p>
+
+          <div className={styles.proofStrip} role="list" aria-label="Launch guarantees">
+            {proofPills.map((pill) => (
+              <span key={pill} role="listitem">{pill}</span>
+            ))}
+          </div>
+
+          <nav className={styles.actions} aria-label="Primary URAI routes">
+            <a className={styles.primaryAction} data-urai-audit-action={copy.primaryAction} href={copy.primaryHref}>
+              {copy.primaryLabel}
+            </a>
+            {launchRoutes.map((route) => (
+              <a key={route.action} data-urai-audit-action={route.action} href={route.href}>
+                {route.label}
+              </a>
+            ))}
+          </nav>
+        </div>
+
+        <aside className={styles.worldColumn} aria-label="URAI world readiness">
+          <div className={styles.orbCard}>
+            <span className={styles.orb} aria-hidden="true" />
+            <div>
+              <strong>URAI Orb Companion</strong>
+              <p>Present, quiet, and routed into the world without taking ownership of the user&apos;s story.</p>
+            </div>
+          </div>
+
+          <div className={styles.signalGrid}>
+            {worldSignals.map((signal) => (
+              <div key={signal.label} className={styles.signalCard}>
+                <strong>{signal.label}</strong>
+                <p>{signal.copy}</p>
+              </div>
+            ))}
+          </div>
+        </aside>
       </article>
+
       <aside className={styles.rail} aria-label="Route readiness notes">
-        <p><strong>Live route</strong><br />Controls stay usable before and after the 3D canvas hydrates.</p>
-        <p><strong>No dead end</strong><br />Every primary action moves into another real URAI route.</p>
-        <p><strong>Public-safe</strong><br />The surface explains the product without exposing private user data.</p>
+        {launchRoutes.slice(0, 6).map((route) => (
+          <a key={route.action} href={route.href} data-urai-audit-action={`${route.action}-rail`}>
+            <strong>{route.label}</strong>
+            <span>{route.detail}</span>
+          </a>
+        ))}
       </aside>
     </section>
   )
