@@ -1,3 +1,4 @@
+import { LaunchSeo } from '../LaunchSeo'
 import { RootModeExperience } from '../RootModeExperience'
 
 export const metadata = {
@@ -6,5 +7,10 @@ export const metadata = {
 }
 
 export default function ReplayRoutePage() {
-  return <RootModeExperience initialMode="replay" />
+  return (
+    <>
+      <LaunchSeo label="URAI Replay is connected to Life Map and Focus." />
+      <RootModeExperience initialMode="replay" />
+    </>
+  )
 }
