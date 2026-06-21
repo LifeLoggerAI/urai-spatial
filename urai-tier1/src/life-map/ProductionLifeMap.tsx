@@ -4,6 +4,15 @@ import type { CSSProperties, PointerEvent as ReactPointerEvent, WheelEvent as Re
 import { useMemo, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 
+type Camera = {
+  rx: number
+  ry: number
+  zoom: number
+  tx: number
+  ty: number
+  tz: number
+}
+
 type Star = {
   id: string
   title: string
@@ -30,6 +39,26 @@ const stars: Star[] = [
   { id: 'mirror-focus', title: 'Mirror Focus', kind: 'mirror', era: 'self', x: 20, y: 70, z: 245, hue: 198, intensity: 81, summary: 'The self looking back without flinching.' },
   { id: 'calm-return', title: 'Calm Return', kind: 'grounding', era: 'body', x: 260, y: -135, z: 65, hue: 338, intensity: 68, summary: 'A grounded node. The nervous system finding a way back.' },
 ]
+
+const defaultCamera: Camera = {
+  rx: -22,
+  ry: 28,
+  zoom: 1.08,
+  tx: 0,
+  ty: 0,
+  tz: 0,
+}
+
+function cameraFor(star: Star): Camera {
+  return {
+    rx: clamp(-20 + star.y * 0.018, -48, 28),
+    ry: clamp(26 - star.x * 0.028, -42, 58),
+    zoom: 1.34,
+    tx: clamp(-star.x * 0.78, -320, 320),
+    ty: clamp(-star.y * 0.7, -210, 210),
+    tz: clamp(-star.z * 0.28, -110, 120),
+  }
+}
 
 const links: Array<[string, string]> = [
   ['dream-symbol-blue-door', 'quiet-evening-reflection'],
@@ -62,11 +91,20 @@ function linkStyle(a: Star, b: Star): CSSProperties {
 export function ProductionLifeMap({ surface = 'canonical' }: { surface?: 'canonical' | 'spatial' }) {
   const router = useRouter()
   const [selectedId, setSelectedId] = useState('legacy-thread-becoming')
-  const [camera, setCamera] = useState({ rx: -18, ry: 24, zoom: 1 })
+  const [camera, setCamera] = useState<Camera>(cameraFor(stars.find((star) => star.id === 'legacy-thread-becoming') ?? stars[0]))
   const drag = useRef<{ x: number; y: number; rx: number; ry: number } | null>(null)
 
   const byId = useMemo(() => new Map(stars.map((star) => [star.id, star])), [])
   const selected = byId.get(selectedId) ?? stars[0]
+
+  function focusStar(star: Star) {
+    setSelectedId(star.id)
+    setCamera(cameraFor(star))
+  }
+
+  function openFocus(star = selected) {
+    router.push(`/focus?memory=${encodeURIComponent(star.id)}`)
+  }
 
   function down(event: ReactPointerEvent<HTMLElement>) {
     drag.current = { x: event.clientX, y: event.clientY, rx: camera.rx, ry: camera.ry }
@@ -104,7 +142,8 @@ export function ProductionLifeMap({ surface = 'canonical' }: { surface?: 'canoni
       <header className="lm3d-top">
         <button type="button" onClick={() => router.push('/home')}>Return home</button>
         <button type="button" onClick={() => router.push('/mirror')}>Mirror</button>
-        <button type="button" onClick={() => setCamera({ rx: -18, ry: 24, zoom: 1 })}>Reset camera</button>
+        <button type="button" onClick={() => setCamera(defaultCamera)}>Reset camera</button>
+        <button type="button" onClick={() => setCamera(cameraFor(selected))}>Focus camera</button>
         <span>Present → Becoming</span>
       </header>
 
@@ -123,7 +162,10 @@ export function ProductionLifeMap({ surface = 'canonical' }: { surface?: 'canoni
             style={{
               '--lm-rx': `${camera.rx}deg`,
               '--lm-ry': `${camera.ry}deg`,
-              '--lm-zoom': camera.zoom,
+              '--lm-zoom': String(camera.zoom),
+              '--lm-tx': `${camera.tx}px`,
+              '--lm-ty': `${camera.ty}px`,
+              '--lm-tz': `${camera.tz}px`,
             } as CSSProperties}
           >
             <div className="lm3d-depth lm3d-depth-a" />
@@ -152,7 +194,7 @@ export function ProductionLifeMap({ surface = 'canonical' }: { surface?: 'canoni
                   } as CSSProperties}
                   onClick={(event) => {
                     event.stopPropagation()
-                    setSelectedId(star.id)
+                    focusStar(star)
                   }}
                 >
                   <span className="lm3d-orb" />
@@ -168,7 +210,7 @@ export function ProductionLifeMap({ surface = 'canonical' }: { surface?: 'canoni
           </div>
         </div>
 
-        <p className="lm3d-help">Drag to orbit · Wheel to zoom · Click a star · Open in Focus</p>
+        <p className="lm3d-help">Drag empty space to orbit · Wheel to zoom · Click a star to focus · Double-click to open Focus</p>
       </section>
 
       <aside className="lm3d-panel">
@@ -185,6 +227,9 @@ export function ProductionLifeMap({ surface = 'canonical' }: { surface?: 'canoni
 
         <button type="button" className="lm3d-primary" onClick={() => router.push(`/focus?memory=${encodeURIComponent(selected.id)}`)}>
           Open selected memory in Focus
+        </button>
+        <button type="button" className="lm3d-secondary" onClick={() => setCamera(cameraFor(selected))}>
+          Move camera to selected star
         </button>
         <button type="button" className="lm3d-secondary" onClick={() => router.push('/replay')}>
           Replay this thread

@@ -14,3 +14,43 @@
 @keyframes lm3d-pulse{0%,100%{transform:scale(1);opacity:.92}50%{transform:scale(1.18);opacity:1}}@keyframes lm3d-drift{from{transform:translate3d(0,0,0)}to{transform:translate3d(-108px,108px,0)}}
 @media(max-width:900px){.lm3d-top{right:1rem;flex-wrap:wrap;border-radius:1.2rem}.lm3d-perspective{inset:7.6rem .5rem 15rem .5rem;perspective:900px}.lm3d-panel{top:auto;left:.7rem;right:.7rem;bottom:.7rem;width:auto;max-height:13.4rem;overflow:auto;border-radius:1.25rem}.lm3d-panel h1{font-size:1.35rem}.lm3d-help{display:none}.lm3d-label{min-width:7rem}}
 @media(prefers-reduced-motion:reduce){.lm3d-space:before,.lm3d-orb{animation:none}}
+
+/* URAI interaction hardening */
+.lm3d-universe {
+  transform: scale(var(--lm-zoom)) rotateX(var(--lm-rx)) rotateY(var(--lm-ry)) translate3d(var(--lm-tx, 0px), var(--lm-ty, 0px), var(--lm-tz, 0px)) !important;
+  transition: transform .45s cubic-bezier(.18,.88,.18,1) !important;
+}
+
+.lm3d-star::before {
+  content: "";
+  position: absolute;
+  inset: -34px;
+  border-radius: 999px;
+  background: transparent;
+}
+
+.lm3d-star {
+  pointer-events: auto;
+  z-index: 12;
+}
+
+.lm3d-star[data-active="true"] {
+  z-index: 30;
+}
+
+.lm3d-star[data-active="true"] .lm3d-orb {
+  transform: scale(1.35);
+  box-shadow: 0 0 22px white, 0 0 58px currentColor, 0 0 150px rgba(154, 236, 255, .48);
+}
+
+.lm3d-star[data-active="true"] .lm3d-label,
+.lm3d-star:hover .lm3d-label,
+.lm3d-star:focus-visible .lm3d-label {
+  opacity: 1;
+  scale: 1;
+}
+
+.lm3d-label {
+  opacity: .72;
+}
+
