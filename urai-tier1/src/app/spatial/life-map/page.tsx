@@ -1,4 +1,4 @@
-import { ProductionLifeMap } from '../../../life-map/ProductionLifeMap'
+import { RootModeExperience } from '@/app/RootModeExperience'
 
 export const metadata = {
   title: 'URAI Life Map',
@@ -6,5 +6,5 @@ export const metadata = {
 }
 
 export default function SpatialLifeMapPage() {
-  return <ProductionLifeMap surface="spatial" />
+  return <RootModeExperience initialMode="life-map" />
 }
