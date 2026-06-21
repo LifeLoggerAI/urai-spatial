@@ -1,0 +1,61 @@
+name: URAI Live Visual Audit
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+    paths:
+      - '.github/workflows/live-visual-audit.yml'
+      - 'urai-tier1/src/app/**'
+      - 'urai-tier1/src/spatial/**'
+      - 'urai-tier1/scripts/**'
+      - 'package.json'
+      - 'pnpm-lock.yaml'
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  live-visual-audit:
+    name: Screenshot and link audit
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Enable pnpm
+        run: |
+          corepack enable
+          corepack prepare pnpm@10.0.0 --activate
+          pnpm --version
+
+      - name: Install workspace
+        env:
+          URAI_MIN_INSTALL_FREE_MB: '256'
+        run: pnpm install --frozen-lockfile
+
+      - name: Install Playwright Chromium
+        run: pnpm exec playwright install --with-deps chromium
+
+      - name: Run live visual audit
+        env:
+          URAI_AUDIT_BASE_URL: https://urai.app
+          URAI_AUDIT_OUT_DIR: live-visual-audit
+        run: node scripts/live-visual-audit.mjs
+
+      - name: Upload screenshots and report
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: urai-live-visual-audit
+          path: live-visual-audit
+          if-no-files-found: error
