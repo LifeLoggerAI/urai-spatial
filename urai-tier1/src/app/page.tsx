@@ -8,12 +8,12 @@ export const metadata = {
 }
 
 export default function HomePage() {
-  // TierOneExperience remains the canonical 3D surface through RootModeExperience.
+  // Keep visible route controls first so audits, keyboard users, and no-pointer users land on real production actions.
   return (
     <>
+      <LaunchRoutePanel variant="home" />
       <LaunchSeo label="URAI Spatial is live as a production 3D world." />
       <RootModeExperience initialMode="home" />
-      <LaunchRoutePanel variant="home" />
     </>
   )
 }
