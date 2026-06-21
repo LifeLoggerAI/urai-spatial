@@ -222,7 +222,7 @@ function ConnectionArcs({
             positions,
           };
         })
-        .filter((arc): arc is { id: string; color: string; opacity: number; positions: Float32Array } => Boolean(arc)),
+        .filter((arc): arc is NonNullable<typeof arc> => Boolean(arc)),
     [edges, highlightedNodeId, nodeLookup, replayNodeIds],
   );
 
