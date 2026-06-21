@@ -45,15 +45,16 @@ export function FocusEscapeBridge() {
       routeToLifeMap()
     }
 
-    const directFocusFallback = window.location.pathname === '/focus' && !window.location.search.includes('manifestId=')
-    const fallbackTimer = directFocusFallback
-      ? window.setTimeout(() => {
-          if (window.sessionStorage.getItem('urai-replay-return-manifest-id')) {
-            routeToSeedFocus()
-            return
-          }
+    const searchParams = new URLSearchParams(window.location.search)
+    const hasFocusTarget = searchParams.has('manifestId') || searchParams.has('memoryId') || searchParams.has('nodeId')
+    const shouldRestoreReplayFocus =
+      window.location.pathname === '/focus' &&
+      !hasFocusTarget &&
+      Boolean(window.sessionStorage.getItem('urai-replay-return-manifest-id'))
 
-          routeToLifeMap()
+    const fallbackTimer = shouldRestoreReplayFocus
+      ? window.setTimeout(() => {
+          routeToSeedFocus()
         }, 800)
       : undefined
 
