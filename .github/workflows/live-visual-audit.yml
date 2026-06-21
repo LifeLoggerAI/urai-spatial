@@ -7,6 +7,8 @@ on:
       - main
     paths:
       - '.github/workflows/live-visual-audit.yml'
+      - 'scripts/live-visual-audit.mjs'
+      - 'scripts/**'
       - 'urai-tier1/src/app/**'
       - 'urai-tier1/src/spatial/**'
       - 'urai-tier1/scripts/**'
