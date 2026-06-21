@@ -2,49 +2,36 @@ import { getApp, getApps, initializeApp, type FirebaseOptions } from 'firebase/a
 import { getFirestore } from 'firebase/firestore'
 import { getFunctions } from 'firebase/functions'
 
-const REQUIRED_PUBLIC_FIREBASE_ENV = [
-  'NEXT_PUBLIC_FIREBASE_API_KEY',
-  'NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN',
-  'NEXT_PUBLIC_FIREBASE_PROJECT_ID',
-] as const
+const PUBLIC_FIREBASE_ENV = {
+  NEXT_PUBLIC_FIREBASE_API_KEY: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
+  NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,
+  NEXT_PUBLIC_FIREBASE_PROJECT_ID: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
+  NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET,
+  NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
+  NEXT_PUBLIC_FIREBASE_APP_ID: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
+  NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID: process.env.NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID,
+} as const
 
-type RequiredFirebaseEnvName = (typeof REQUIRED_PUBLIC_FIREBASE_ENV)[number]
+export const firebasePublicEnvReady = Boolean(
+  PUBLIC_FIREBASE_ENV.NEXT_PUBLIC_FIREBASE_API_KEY &&
+    PUBLIC_FIREBASE_ENV.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN &&
+    PUBLIC_FIREBASE_ENV.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
+)
 
-function isBrowserRuntime() {
-  return typeof window !== 'undefined'
-}
+const fallbackProjectId = 'urai-local'
+const projectId = PUBLIC_FIREBASE_ENV.NEXT_PUBLIC_FIREBASE_PROJECT_ID ?? fallbackProjectId
 
-function isProductionRuntime() {
-  return process.env.NODE_ENV === 'production'
-}
-
-function envValue(name: RequiredFirebaseEnvName) {
-  const envMap: Record<RequiredFirebaseEnvName, string | undefined> = {
-    NEXT_PUBLIC_FIREBASE_API_KEY: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
-    NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,
-    NEXT_PUBLIC_FIREBASE_PROJECT_ID: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
-  }
-
-  return envMap[name]
-}
-
-function requireFirebaseEnv(name: RequiredFirebaseEnvName) {
-  const value = envValue(name)
-
-  // Next.js replaces only literal NEXT_PUBLIC env references in browser bundles.
-  // Fail closed only in real production browser/runtime execution so static page
-  // collection can still complete before deployment env injection.
-  if (!value && isProductionRuntime() && isBrowserRuntime()) {
-    throw new Error(`Missing required Firebase public env: ${name}`)
-  }
-
-  return value
-}
-
+// Public Firebase keys are optional for the public demo shell. Downstream
+// providers already fall back to seeded/demo data, so this module must never
+// throw in the browser and blank the whole spatial field.
 const firebaseConfig: FirebaseOptions = {
-  apiKey: requireFirebaseEnv('NEXT_PUBLIC_FIREBASE_API_KEY') ?? 'dev',
-  authDomain: requireFirebaseEnv('NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN') ?? 'dev.localhost',
-  projectId: requireFirebaseEnv('NEXT_PUBLIC_FIREBASE_PROJECT_ID') ?? 'urai-local',
+  apiKey: PUBLIC_FIREBASE_ENV.NEXT_PUBLIC_FIREBASE_API_KEY ?? 'demo-api-key',
+  authDomain: PUBLIC_FIREBASE_ENV.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN ?? `${projectId}.firebaseapp.com`,
+  projectId,
+  storageBucket: PUBLIC_FIREBASE_ENV.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET,
+  messagingSenderId: PUBLIC_FIREBASE_ENV.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
+  appId: PUBLIC_FIREBASE_ENV.NEXT_PUBLIC_FIREBASE_APP_ID,
+  measurementId: PUBLIC_FIREBASE_ENV.NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID,
 }
 
 export const app = getApps().length ? getApp() : initializeApp(firebaseConfig)
