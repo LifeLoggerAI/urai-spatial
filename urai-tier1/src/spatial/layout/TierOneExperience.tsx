@@ -23,8 +23,10 @@ const mirror = mirrorStates[0];
 const replayMode = 'replay';
 const noop = () => {};
 const noopNode = (_nodeId: string) => {};
+const replayUrlForNode = (nodeId?: string) => `/replay?memoryId=${encodeURIComponent(nodeId || firstNodeId || 'quiet-reset')}&manifestId=${encodeURIComponent(replayPath?.id ?? 'replay-recovery-thread')}`;
 const startReplayFromFocus = () => {
-  window.location.href = "/replay?manifestId=replay-recovery-thread";
+  const memoryId = typeof window !== 'undefined' ? window.sessionStorage.getItem('urai-lifemap-selected-memory-id') : undefined;
+  window.location.href = replayUrlForNode(memoryId ?? firstNodeId);
 };
 
 // Tier lock source markers retained for the legacy verifier while runtime uses UraiIntegratedHomeScene.
@@ -43,10 +45,16 @@ export function TierOneExperience({ mode = "home", selectedNodeId }: Props) {
   const routeCard = showRouteCard ? <p className="urai-v1-route-card">Your Life Map is ready.</p> : null;
   const activeFocusNode = lifeMapNodes.find((node) => node.id === selectedNodeId) ?? lifeMapNodes[0];
   const activeFocusNodeId = activeFocusNode?.id ?? firstNodeId;
+  const startActiveReplay = () => {
+    if (activeFocusNodeId && typeof window !== 'undefined') {
+      window.sessionStorage.setItem('urai-lifemap-selected-memory-id', activeFocusNodeId);
+    }
+    window.location.href = replayUrlForNode(activeFocusNodeId);
+  };
   const focusActionPanel = (
     <section className="urai-v1-focus-action-panel" data-testid="urai-focus-action-panel" aria-label="Focus action panel" style={{ position: "relative", zIndex: 50, pointerEvents: "auto" }}>
       <p>{activeFocusNode?.title ?? "Selected memory"} is ready for review.</p>
-      <button type="button" onClick={startReplayFromFocus}>Start Replay</button>
+      <button type="button" onClick={startActiveReplay}>Start Replay</button>
     </section>
   );
 
@@ -59,7 +67,7 @@ export function TierOneExperience({ mode = "home", selectedNodeId }: Props) {
   }
 
   if (mode === "focus") {
-    return <StageFrame mode={mode}>{routeCard}<LifeMapScene nodes={lifeMapNodes} edges={lifeMapEdges} replayPath={replayPath} selectedNodeId={activeFocusNodeId} replayActive={false} onSelectNode={noopNode} onCloseNode={noop} onStartReplay={startReplayFromFocus} onOpenMirror={noop} onReturnHome={noop} />{focusActionPanel}</StageFrame>;
+    return <StageFrame mode={mode}>{routeCard}<LifeMapScene nodes={lifeMapNodes} edges={lifeMapEdges} replayPath={replayPath} selectedNodeId={activeFocusNodeId} replayActive={false} onSelectNode={noopNode} onCloseNode={noop} onStartReplay={startActiveReplay} onOpenMirror={noop} onReturnHome={noop} />{focusActionPanel}</StageFrame>;
   }
 
   if (mode === replayMode) {
