@@ -32,7 +32,7 @@ jobs:
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
-          node-version: 22
+          node-version: 24
 
       - name: Enable pnpm
         run: |
@@ -49,10 +49,22 @@ jobs:
         run: pnpm exec playwright install --with-deps chromium
 
       - name: Run live visual audit
+        id: audit
+        continue-on-error: true
         env:
           URAI_AUDIT_BASE_URL: https://urai.app
           URAI_AUDIT_OUT_DIR: live-visual-audit
         run: node scripts/live-visual-audit.mjs
+
+      - name: Print audit summary
+        if: always()
+        run: |
+          if [ -f live-visual-audit/visual-audit-summary.md ]; then
+            cat live-visual-audit/visual-audit-summary.md
+            cat live-visual-audit/visual-audit-summary.md >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "visual-audit-summary.md was not created" | tee -a "$GITHUB_STEP_SUMMARY"
+          fi
 
       - name: Upload screenshots and report
         uses: actions/upload-artifact@v4
@@ -61,3 +73,10 @@ jobs:
           name: urai-live-visual-audit
           path: live-visual-audit
           if-no-files-found: error
+
+      - name: Require audit report artifact files
+        if: always()
+        run: |
+          test -f live-visual-audit/visual-audit.json
+          test -f live-visual-audit/visual-audit-summary.md
+          test -d live-visual-audit/screenshots
