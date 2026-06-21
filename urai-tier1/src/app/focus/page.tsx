@@ -1,3 +1,4 @@
+import { LaunchRoutePanel } from '../LaunchRoutePanel'
 import { LaunchSeo } from '../LaunchSeo'
 import { RootModeExperience } from '../RootModeExperience'
 
@@ -11,6 +12,7 @@ export default function FocusRoutePage() {
     <>
       <LaunchSeo label="URAI Focus is wired to Life Map and Replay." />
       <RootModeExperience initialMode="focus" />
+      <LaunchRoutePanel variant="focus" />
     </>
   )
 }
