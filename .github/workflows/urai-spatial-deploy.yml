@@ -21,13 +21,24 @@ on:
         required: false
         default: ''
         type: string
+  push:
+    branches:
+      - main
+    paths:
+      - '.github/workflows/urai-spatial-deploy.yml'
+      - 'firebase.static.json'
+      - 'package.json'
+      - 'pnpm-lock.yaml'
+      - 'scripts/**'
+      - 'urai-tier1/src/app/**'
+      - 'urai-tier1/src/spatial/**'
 
 jobs:
   deploy:
     name: Deploy URAI Spatial
     runs-on: ubuntu-latest
     timeout-minutes: 45
-    environment: ${{ inputs.environment }}
+    environment: ${{ github.event_name == 'workflow_dispatch' && inputs.environment || 'production' }}
 
     steps:
       - name: Checkout
@@ -39,7 +50,7 @@ jobs:
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
-          node-version: 22
+          node-version: 24
           cache: pnpm
 
       - name: Install dependencies
@@ -52,15 +63,15 @@ jobs:
         run: corepack pnpm check:types
 
       - name: Build
-        if: ${{ !inputs.static_export }}
+        if: ${{ github.event_name == 'workflow_dispatch' && !inputs.static_export }}
         run: corepack pnpm build
 
       - name: Build static export
-        if: ${{ inputs.static_export }}
+        if: ${{ github.event_name == 'push' || inputs.static_export }}
         run: corepack pnpm build:static
 
       - name: Firebase deploy hosting
-        if: ${{ !inputs.static_export }}
+        if: ${{ github.event_name == 'workflow_dispatch' && !inputs.static_export }}
         env:
           FIREBASE_TOKEN: ${{ secrets.FIREBASE_TOKEN }}
           FIREBASE_PROJECT_ID: ${{ secrets.FIREBASE_PROJECT_ID }}
@@ -70,7 +81,7 @@ jobs:
           npx firebase-tools deploy --only hosting --project "$FIREBASE_PROJECT_ID" --token "$FIREBASE_TOKEN"
 
       - name: Firebase deploy static hosting
-        if: ${{ inputs.static_export }}
+        if: ${{ github.event_name == 'push' || inputs.static_export }}
         env:
           FIREBASE_TOKEN: ${{ secrets.FIREBASE_TOKEN }}
           FIREBASE_PROJECT_ID: ${{ secrets.FIREBASE_PROJECT_ID }}
@@ -80,13 +91,13 @@ jobs:
           npx firebase-tools deploy --config firebase.static.json --only hosting --project "$FIREBASE_PROJECT_ID" --token "$FIREBASE_TOKEN"
 
       - name: Print smoke routes
-        if: ${{ inputs.deploy_url != '' }}
+        if: ${{ github.event_name == 'push' || inputs.deploy_url != '' }}
         env:
-          URAI_DEPLOY_URL: ${{ inputs.deploy_url }}
+          URAI_DEPLOY_URL: ${{ inputs.deploy_url || 'https://urai.app' }}
         run: corepack pnpm smoke:deployed
 
       - name: Validate live routes
-        if: ${{ inputs.deploy_url != '' }}
+        if: ${{ github.event_name == 'push' || inputs.deploy_url != '' }}
         env:
-          URAI_DEPLOY_URL: ${{ inputs.deploy_url }}
+          URAI_DEPLOY_URL: ${{ inputs.deploy_url || 'https://urai.app' }}
         run: corepack pnpm smoke:live
