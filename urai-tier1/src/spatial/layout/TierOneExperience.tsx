@@ -24,7 +24,7 @@ const replayMode = 'replay';
 const noop = () => {};
 const noopNode = (_nodeId: string) => {};
 const startReplayFromFocus = () => {
-  window.location.href = "/replay?manifestId=seed-memory-bloom";
+  window.location.href = "/replay?manifestId=replay-recovery-thread";
 };
 
 // Tier lock source markers retained for the legacy verifier while runtime uses UraiIntegratedHomeScene.
