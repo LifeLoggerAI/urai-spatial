@@ -1,3 +1,4 @@
+import { LaunchSeo } from '../LaunchSeo'
 import { RootModeExperience } from '../RootModeExperience'
 
 export const metadata = {
@@ -6,5 +7,10 @@ export const metadata = {
 }
 
 export default function LifeMapPage() {
-  return <RootModeExperience initialMode="life-map" />
+  return (
+    <>
+      <LaunchSeo label="URAI Life Map opens the explorable memory constellation with star doors into Focus." />
+      <RootModeExperience initialMode="life-map" />
+    </>
+  )
 }
