@@ -1,3 +1,4 @@
+import { LaunchRoutePanel } from '../LaunchRoutePanel'
 import { LaunchSeo } from '../LaunchSeo'
 import { RootModeExperience } from '../RootModeExperience'
 
@@ -11,6 +12,7 @@ export default function HomeRoutePage() {
     <>
       <LaunchSeo label="URAI Home renders the production 3D world and primary route actions." />
       <RootModeExperience initialMode="home" />
+      <LaunchRoutePanel variant="home" />
     </>
   )
 }
