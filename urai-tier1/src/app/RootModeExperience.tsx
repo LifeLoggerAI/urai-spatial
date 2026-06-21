@@ -4,23 +4,62 @@ import { useSyncExternalStore } from "react";
 import { TierOneExperience, type TierOneExperienceMode } from "@/spatial/layout/TierOneExperience";
 
 const allowedModes = new Set<TierOneExperienceMode>(["home", "ascent", "life-map", "demo", "replay", "focus", "unwind", "mirror"]);
+const emptySelectedNodeId = "";
 
-function resolveRouteMode(rawMode: string | null): TierOneExperienceMode {
-  return rawMode && allowedModes.has(rawMode as TierOneExperienceMode) ? (rawMode as TierOneExperienceMode) : "home";
+type RouteSnapshot = {
+  mode: TierOneExperienceMode;
+  selectedNodeId?: string;
+};
+
+function resolveRouteMode(rawMode: string | null | undefined, fallbackMode: TierOneExperienceMode = "home"): TierOneExperienceMode {
+  return rawMode && allowedModes.has(rawMode as TierOneExperienceMode) ? (rawMode as TierOneExperienceMode) : fallbackMode;
 }
 
-function modeFromBrowserUrl(fallbackMode: TierOneExperienceMode): TierOneExperienceMode {
-  if (typeof window === "undefined") return fallbackMode;
-  return resolveRouteMode(new URLSearchParams(window.location.search).get("mode"));
+function modeFromPathname(pathname: string): TierOneExperienceMode | undefined {
+  const [firstSegment, secondSegment] = pathname.split("/").filter(Boolean);
+  const pathMode = firstSegment === "spatial" ? secondSegment : firstSegment;
+
+  if (!pathMode || pathMode === "home") return "home";
+  return allowedModes.has(pathMode as TierOneExperienceMode) ? (pathMode as TierOneExperienceMode) : undefined;
+}
+
+function selectedNodeIdFromParams(params: URLSearchParams): string | undefined {
+  return params.get("memoryId") || params.get("memory") || params.get("nodeId") || undefined;
+}
+
+function routeKeyFromSnapshot(snapshot: RouteSnapshot): string {
+  return `${snapshot.mode}::${snapshot.selectedNodeId ?? emptySelectedNodeId}`;
+}
+
+function routeSnapshotFromKey(key: string): RouteSnapshot {
+  const [rawMode, selectedNodeId = emptySelectedNodeId] = key.split("::");
+  return {
+    mode: resolveRouteMode(rawMode, "home"),
+    selectedNodeId: selectedNodeId || undefined,
+  };
+}
+
+function routeSnapshotFromBrowserUrl(fallbackMode: TierOneExperienceMode): RouteSnapshot {
+  if (typeof window === "undefined") return { mode: fallbackMode };
+
+  const params = new URLSearchParams(window.location.search);
+  const pathMode = modeFromPathname(window.location.pathname);
+
+  return {
+    mode: resolveRouteMode(params.get("mode"), pathMode ?? fallbackMode),
+    selectedNodeId: selectedNodeIdFromParams(params),
+  };
 }
 
 function subscribeToRouteMode(onStoreChange: () => void): () => void {
   if (typeof window === "undefined") return () => {};
-  const interval = window.setInterval(onStoreChange, 50);
+
+  const interval = window.setInterval(onStoreChange, 150);
   window.addEventListener("popstate", onStoreChange);
   window.addEventListener("hashchange", onStoreChange);
   window.addEventListener("urai:sync-route-mode", onStoreChange);
   queueMicrotask(onStoreChange);
+
   return () => {
     window.clearInterval(interval);
     window.removeEventListener("popstate", onStoreChange);
@@ -30,11 +69,12 @@ function subscribeToRouteMode(onStoreChange: () => void): () => void {
 }
 
 export function RootModeExperience({ initialMode = "home" }: { initialMode?: TierOneExperienceMode }) {
-  const mode = useSyncExternalStore(
+  const routeKey = useSyncExternalStore(
     subscribeToRouteMode,
-    () => modeFromBrowserUrl(initialMode),
-    () => initialMode,
+    () => routeKeyFromSnapshot(routeSnapshotFromBrowserUrl(initialMode)),
+    () => routeKeyFromSnapshot({ mode: initialMode }),
   );
+  const { mode, selectedNodeId } = routeSnapshotFromKey(routeKey);
 
   return (
     <div
@@ -42,9 +82,10 @@ export function RootModeExperience({ initialMode = "home" }: { initialMode?: Tie
       data-mode={mode}
       data-scene-mode={mode}
       data-root-route-mode={mode}
+      data-selected-node-id={selectedNodeId ?? ""}
       style={{ position: "relative", minHeight: "100svh" }}
     >
-      <TierOneExperience mode={mode} />
+      <TierOneExperience mode={mode} selectedNodeId={selectedNodeId} />
     </div>
   );
 }
