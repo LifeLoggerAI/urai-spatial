@@ -36,6 +36,10 @@ for route in "${routes[@]}"; do
 done
 
 echo
+echo "=== STRICT LIVE TEXT GATES ==="
+node scripts/final-live-text-gates.mjs
+
+echo
 echo "=== TEXT AUDIT GATES ==="
 node scripts/final-live-screenshot-audit.mjs --text-only
 
@@ -54,7 +58,6 @@ if ! node scripts/final-live-screenshot-audit.mjs; then
   if ! node scripts/final-live-screenshot-audit.mjs; then
     SCREENSHOT_OK=0
     echo "SCREENSHOT_AUDIT_UNAVAILABLE=1"
-    printf '%s\n' "Text audit passed, but screenshots could not be captured in this shell." "Install Playwright Chromium or run from a browser-capable environment." > "$OUT_DIR/screenshot-audit-warning.txt"
   fi
 fi
 
@@ -64,11 +67,7 @@ cat "$OUT_DIR/audit-summary.md"
 
 echo
 echo "=== SCREENSHOTS ==="
-if find "$OUT_DIR/screenshots" -maxdepth 1 -type f -name '*.png' | grep -q .; then
-  find "$OUT_DIR/screenshots" -maxdepth 1 -type f -name '*.png' -print | sort
-else
-  echo "NO_SCREENSHOTS_CREATED_SEE=$OUT_DIR/screenshot-audit-warning.txt"
-fi
+find "$OUT_DIR/screenshots" -maxdepth 1 -type f -name '*.png' -print | sort || true
 
 echo
 echo "=== DONE ==="
