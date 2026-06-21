@@ -1,14 +1,28 @@
 export default function LifeMapLoading() {
   return (
-    <main className="flex min-h-screen items-center justify-center bg-[#020815] text-cyan-50">
-      <div className="rounded-3xl border border-cyan-100/15 bg-slate-950/45 px-6 py-5 text-center shadow-2xl shadow-cyan-950/40 backdrop-blur-xl">
-        <p className="text-xs font-bold uppercase tracking-[0.36em] text-cyan-100/60">
-          URAI Spatial
+    <main className="tier-one-boundary tier-one-boundary--loading" aria-live="polite" aria-busy="true">
+      <section className="tier-one-boundary__card tier-one-boundary__card--loading" role="status" aria-label="URAI Life Map is becoming interactive">
+        <div className="tier-one-boundary__orb" aria-hidden="true">
+          <span />
+          <span />
+          <span />
+        </div>
+        <p className="tier-one-boundary__eyebrow">URAI Spatial · Life Map</p>
+        <h1>Your memory constellation is online.</h1>
+        <p>
+          Thirty-four public-safe stars are staged as an explorable emotional universe. Click any star to open Focus, then move the same thread through Replay, Mirror, Passport, and Status.
         </p>
-        <h1 className="mt-2 text-2xl font-semibold tracking-[-0.04em]">
-          Opening Life Map
-        </h1>
-      </div>
+        <nav className="tier-one-boundary__actions" aria-label="URAI Life Map route shortcuts">
+          <a href="/focus?memoryId=quiet-reset">Open Focus</a>
+          <a href="/replay?manifestId=replay-recovery-thread">Start Replay</a>
+          <a href="/mirror">Mirror</a>
+          <a href="/passport">Passport</a>
+          <a href="/status">Status</a>
+        </nav>
+        <p className="tier-one-boundary__microcopy">
+          Drag to orbit, wheel to zoom, arrow keys to step stars, and keep a safe return path visible.
+        </p>
+      </section>
     </main>
-  );
+  )
 }
