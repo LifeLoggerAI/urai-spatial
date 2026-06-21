@@ -25,25 +25,50 @@ const interactionChecks = [
   {
     name: 'home-to-life-map',
     start: '/home',
-    selectors: ['a[href="/life-map"]', 'a[href*="/life-map"]', 'button:has-text("Life Map")', 'button:has-text("Open My World")'],
+    selectors: [
+      'a[data-urai-audit-action="home-life-map"]',
+      'a[data-urai-audit-action="open-life-map"]',
+      'a[href="/life-map"]',
+      'a[href*="/life-map"]',
+      'button:has-text("Life Map")',
+      'button:has-text("Open My World")',
+    ],
     expected: '/life-map',
   },
   {
     name: 'life-map-to-focus',
     start: '/life-map',
-    selectors: ['a[href*="/focus"]', 'button:has-text("Focus")', 'button:has-text("Open selected memory")', 'button:has-text("Open")'],
+    selectors: [
+      'a[data-urai-audit-action="life-map-focus"]',
+      'a[data-urai-audit-action="open-focus"]',
+      'a[href*="/focus"]',
+      'button:has-text("Focus")',
+      'button:has-text("Open selected memory")',
+      'button:has-text("Open")',
+    ],
     expected: '/focus',
   },
   {
     name: 'focus-to-replay',
     start: '/focus?memoryId=quiet-reset',
-    selectors: ['a[href*="/replay"]', 'button:has-text("Replay")', 'button:has-text("Start Replay")'],
+    selectors: [
+      'a[data-urai-audit-action="focus-replay"]',
+      'a[data-urai-audit-action="open-replay"]',
+      'a[href*="/replay"]',
+      'button:has-text("Replay")',
+      'button:has-text("Start Replay")',
+    ],
     expected: '/replay',
   },
   {
     name: 'passport-to-status',
     start: '/passport',
-    selectors: ['a[href="/status"]', 'a:has-text("Status")', 'button:has-text("Status")'],
+    selectors: [
+      'a[data-urai-audit-action="open-status"]',
+      'a[href="/status"]',
+      'a:has-text("Status")',
+      'button:has-text("Status")',
+    ],
     expected: '/status',
   },
 ]
@@ -52,11 +77,15 @@ function absolute(route) {
   return new URL(route, baseUrl).toString()
 }
 
-async function firstExisting(page, selectors) {
+async function firstVisible(page, selectors) {
   for (const selector of selectors) {
-    const locator = page.locator(selector).first()
-    const count = await locator.count().catch(() => 0)
-    if (count > 0) return { locator, selector }
+    const candidates = page.locator(selector)
+    const count = await candidates.count().catch(() => 0)
+    for (let index = 0; index < count; index += 1) {
+      const locator = candidates.nth(index)
+      const visible = await locator.isVisible({ timeout: 1200 }).catch(() => false)
+      if (visible) return { locator, selector }
+    }
   }
   return null
 }
@@ -134,16 +163,17 @@ async function main() {
     let currentUrl = ''
     let selector = ''
     let ok = false
-    let screenshot = path.join(shotDir, `interaction-${check.name}.png`)
+    const screenshot = path.join(shotDir, `interaction-${check.name}.png`)
 
     try {
       await page.goto(startUrl, { waitUntil: 'networkidle', timeout: 60000 })
-      await page.waitForTimeout(1600)
-      const found = await firstExisting(page, check.selectors)
+      await page.waitForTimeout(2000)
+      const found = await firstVisible(page, check.selectors)
       if (!found) {
-        error = `selector not found: ${check.selectors.join(' | ')}`
+        error = `visible selector not found: ${check.selectors.join(' | ')}`
       } else {
         selector = found.selector
+        await found.locator.scrollIntoViewIfNeeded({ timeout: 5000 }).catch(() => {})
         await found.locator.click({ timeout: 10000 })
         await page.waitForTimeout(1400)
         currentUrl = page.url()
