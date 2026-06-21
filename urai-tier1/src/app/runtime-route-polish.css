@@ -1,0 +1,62 @@
+[data-testid="urai-root-mode-stage"],
+.urai-integrated-home-scene,
+.urai-scene-stage,
+.urai-v1-stage {
+  min-height: 100svh;
+  width: 100%;
+}
+
+[data-testid="urai-root-mode-stage"] {
+  overflow: hidden;
+  background: radial-gradient(circle at 50% 18%, rgba(125, 211, 252, 0.22), transparent 28rem), #020617;
+}
+
+.urai-v1-stage {
+  position: relative;
+  overflow: hidden;
+  isolation: isolate;
+  background: radial-gradient(circle at 18% 16%, rgba(125, 211, 252, 0.18), transparent 34rem), #020617;
+}
+
+.urai-scene-stage canvas,
+.urai-v1-stage canvas,
+.urai-integrated-home-scene canvas {
+  max-width: 100%;
+  outline: none;
+}
+
+.urai-home-topbar,
+.urai-home-canon-hud,
+.urai-v1-focus-action-panel,
+.urai-v1-route-card {
+  pointer-events: auto;
+}
+
+.urai-v1-focus-action-panel {
+  margin: clamp(1rem, 3vw, 2rem);
+  width: min(26rem, calc(100vw - 2rem));
+  border: 1px solid rgba(226, 232, 240, 0.16);
+  border-radius: 1.5rem;
+  padding: 1rem;
+  background: rgba(8, 16, 34, 0.86);
+  box-shadow: 0 24px 80px rgba(0, 0, 0, 0.42);
+  color: #f8fbff;
+  backdrop-filter: blur(22px);
+}
+
+.urai-v1-focus-action-panel p {
+  margin: 0 0 0.8rem;
+  color: rgba(226, 232, 240, 0.82);
+  line-height: 1.45;
+}
+
+.urai-v1-focus-action-panel button {
+  border: 1px solid rgba(226, 232, 240, 0.22);
+  border-radius: 999px;
+  background: linear-gradient(135deg, rgba(125, 211, 252, 0.9), rgba(192, 132, 252, 0.82));
+  color: #020617;
+  cursor: pointer;
+  font: inherit;
+  font-weight: 900;
+  padding: 0.76rem 1rem;
+}
