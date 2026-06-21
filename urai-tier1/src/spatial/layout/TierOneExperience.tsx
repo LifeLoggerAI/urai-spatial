@@ -24,6 +24,7 @@ const mirror = mirrorStates[0];
 const replayMode = "replay";
 const noop = () => {};
 const noopNode = (_nodeId: string) => {};
+void noopNode;
 
 function readRememberedMemoryId() {
   if (typeof window === "undefined") return undefined;
