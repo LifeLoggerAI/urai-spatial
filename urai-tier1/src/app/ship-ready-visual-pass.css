@@ -161,7 +161,7 @@ body {
   top: calc(28px + var(--safe-area-top, 0px)) !important;
   left: calc(28px + var(--safe-area-left, 0px)) !important;
   bottom: auto !important;
-  z-index: 30 !important;
+  z-index: 60 !important;
   width: min(560px, calc(100vw - 56px)) !important;
   padding: clamp(22px, 2.5vw, 34px) !important;
   border: 1px solid rgba(180, 226, 255, 0.30) !important;
@@ -264,6 +264,143 @@ body {
   border-color: rgba(180, 226, 255, 0.32) !important;
   background: linear-gradient(135deg, rgba(3, 12, 26, 0.76), rgba(18, 14, 48, 0.68)) !important;
   color: rgba(244, 251, 255, 0.90) !important;
+}
+
+/* Keep home overlay portals clickable without stealing the nav and CTA layer. */
+.home-cohesion-layer {
+  z-index: 20 !important;
+}
+
+.home-sky-hit-zone {
+  inset: 22% 0 34% 54% !important;
+}
+
+.home-life-map-affordance,
+.home-orb-presence,
+.home-avatar-region,
+.home-ground-anchor {
+  z-index: 36 !important;
+}
+
+.urai-home-canon-hud,
+.urai-home-canon-hud *,
+.urai-public-nav,
+.urai-public-nav *,
+.urai-bottom-nav,
+.urai-bottom-nav * {
+  pointer-events: auto !important;
+}
+
+/* /status launch route */
+.urai-status-page {
+  min-height: 100svh;
+  display: grid;
+  place-items: center;
+  padding: clamp(24px, 5vw, 72px);
+  color: #f8fbff;
+  background:
+    radial-gradient(circle at 50% 25%, rgba(125, 211, 252, 0.28), transparent 30%),
+    radial-gradient(circle at 82% 15%, rgba(167, 139, 250, 0.24), transparent 34%),
+    radial-gradient(circle at 12% 78%, rgba(134, 239, 172, 0.16), transparent 32%),
+    linear-gradient(180deg, #07152d 0%, #020712 100%);
+  overflow: hidden;
+}
+
+.urai-status-card {
+  width: min(980px, 100%);
+  border: 1px solid rgba(186, 230, 253, 0.26);
+  border-radius: 34px;
+  padding: clamp(24px, 4vw, 46px);
+  background: linear-gradient(145deg, rgba(6, 18, 38, 0.82), rgba(13, 16, 45, 0.70));
+  box-shadow: 0 34px 140px rgba(0, 0, 0, 0.44), inset 0 1px 0 rgba(255,255,255,0.10);
+  backdrop-filter: blur(24px) saturate(1.22);
+  -webkit-backdrop-filter: blur(24px) saturate(1.22);
+}
+
+.urai-status-kicker {
+  display: inline-flex;
+  width: fit-content;
+  margin: 0 0 14px;
+  border: 1px solid rgba(134, 239, 172, 0.28);
+  border-radius: 999px;
+  padding: 8px 12px;
+  color: rgba(194, 255, 218, 0.94);
+  background: rgba(6, 39, 28, 0.48);
+  font-size: 0.78rem;
+  font-weight: 900;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.urai-status-card h1 {
+  max-width: 12ch;
+  margin: 0 0 18px;
+  font-size: clamp(2.5rem, 7vw, 6.2rem);
+  line-height: 0.88;
+  letter-spacing: -0.08em;
+}
+
+.urai-status-copy {
+  max-width: 62ch;
+  margin: 0 0 26px;
+  color: rgba(226, 241, 255, 0.86);
+  font-size: clamp(1rem, 1.2vw, 1.12rem);
+  line-height: 1.65;
+}
+
+.urai-status-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+  gap: 12px;
+  margin: 0 0 26px;
+}
+
+.urai-status-pill {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  border: 1px solid rgba(186, 230, 253, 0.18);
+  border-radius: 18px;
+  padding: 14px 16px;
+  background: rgba(2, 8, 23, 0.42);
+}
+
+.urai-status-pill span {
+  color: rgba(226, 241, 255, 0.82);
+  font-weight: 800;
+}
+
+.urai-status-pill strong {
+  color: rgba(194, 255, 218, 0.96);
+  font-size: 0.82rem;
+  text-transform: uppercase;
+  letter-spacing: 0.10em;
+}
+
+.urai-status-nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.urai-status-nav a {
+  min-height: 42px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid rgba(186, 230, 253, 0.25);
+  border-radius: 999px;
+  padding: 0 16px;
+  color: #f8fbff;
+  background: rgba(2, 8, 23, 0.42);
+  text-decoration: none;
+  font-weight: 900;
+}
+
+.urai-status-nav a:first-child {
+  color: #04111f;
+  background: linear-gradient(135deg, rgba(126, 240, 255, 0.98), rgba(167, 139, 250, 0.92));
 }
 
 /* /spatial/v1 launch polish */
