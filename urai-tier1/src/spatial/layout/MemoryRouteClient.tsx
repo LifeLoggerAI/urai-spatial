@@ -10,11 +10,17 @@ type Props = {
 
 const aliases: Record<string, string> = {
   'blue-fog': 'week-heavy-fog',
+  'blue-fog-memory': 'week-heavy-fog',
   galaxy: 'quiet-reset',
   spark: 'first-signal-recovery',
   recovery: 'first-signal-recovery',
   passport: 'purpose-thread-visible',
 };
+
+function normalizeNodeId(value?: string | null) {
+  const decoded = decodeURIComponent(value ?? '').trim();
+  return aliases[decoded] ?? decoded;
+}
 
 function selectedNodeFromUrl() {
   if (typeof window === 'undefined') return lifeMapNodes[0];
@@ -26,12 +32,13 @@ function selectedNodeFromUrl() {
     params.get('nodeId') ||
     params.get('star') ||
     params.get('spark') ||
+    window.sessionStorage.getItem('urai-lifemap-selected-memory-id') ||
     '';
 
-  const decoded = decodeURIComponent(raw).trim();
-  const nodeId = aliases[decoded] ?? decoded;
-
-  return lifeMapNodes.find((node) => node.id === nodeId) ?? lifeMapNodes[0];
+  const nodeId = normalizeNodeId(raw);
+  const node = lifeMapNodes.find((candidate) => candidate.id === nodeId) ?? lifeMapNodes[0];
+  window.sessionStorage.setItem('urai-lifemap-selected-memory-id', node.id);
+  return node;
 }
 
 export function MemoryRouteClient({ mode }: Props) {
@@ -39,7 +46,16 @@ export function MemoryRouteClient({ mode }: Props) {
   const replayPath = replayPaths[0];
 
   useEffect(() => {
-    setNode(selectedNodeFromUrl());
+    const syncNode = () => setNode(selectedNodeFromUrl());
+    syncNode();
+    window.addEventListener('popstate', syncNode);
+    window.addEventListener('hashchange', syncNode);
+    window.addEventListener('urai:sync-route-mode', syncNode);
+    return () => {
+      window.removeEventListener('popstate', syncNode);
+      window.removeEventListener('hashchange', syncNode);
+      window.removeEventListener('urai:sync-route-mode', syncNode);
+    };
   }, []);
 
   return <MemoryModeSurfaceV2 mode={mode} node={node} replayPath={replayPath} />;
