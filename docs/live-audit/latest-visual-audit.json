@@ -1,5 +1,5 @@
 {
-  "createdAt": "2026-06-21T18:08:56.393Z",
+  "createdAt": "2026-06-21T19:02:01.722Z",
   "baseUrl": "https://urai.app",
   "routes": [
     {
@@ -7,7 +7,7 @@
       "route": "/",
       "url": "https://urai.app/",
       "status": 200,
-      "ms": 14236,
+      "ms": 15701,
       "title": "URAI Spatial",
       "oldDemoCopyPresent": false,
       "productionCopyPresent": true,
@@ -208,7 +208,7 @@
       "route": "/home",
       "url": "https://urai.app/home",
       "status": 200,
-      "ms": 16138,
+      "ms": 13028,
       "title": "URAI Home",
       "oldDemoCopyPresent": false,
       "productionCopyPresent": true,
@@ -409,7 +409,7 @@
       "route": "/spatial",
       "url": "https://urai.app/spatial",
       "status": 200,
-      "ms": 18804,
+      "ms": 17694,
       "title": "URAI Spatial",
       "oldDemoCopyPresent": false,
       "productionCopyPresent": true,
@@ -550,7 +550,7 @@
       "route": "/life-map",
       "url": "https://urai.app/life-map",
       "status": 200,
-      "ms": 8775,
+      "ms": 3666,
       "title": "URAI Spatial",
       "oldDemoCopyPresent": false,
       "productionCopyPresent": true,
@@ -811,7 +811,7 @@
       "route": "/life-map?star=blue-fog",
       "url": "https://urai.app/life-map?star=blue-fog",
       "status": 200,
-      "ms": 5472,
+      "ms": 3721,
       "title": "URAI Spatial",
       "oldDemoCopyPresent": false,
       "productionCopyPresent": true,
@@ -1087,7 +1087,7 @@
       "route": "/focus?memoryId=quiet-reset",
       "url": "https://urai.app/focus?memoryId=quiet-reset",
       "status": 200,
-      "ms": 5560,
+      "ms": 4067,
       "title": "URAI Focus",
       "oldDemoCopyPresent": false,
       "productionCopyPresent": true,
@@ -1373,7 +1373,7 @@
       "route": "/replay?manifestId=replay-recovery-thread",
       "url": "https://urai.app/replay?manifestId=replay-recovery-thread",
       "status": 200,
-      "ms": 5555,
+      "ms": 3849,
       "title": "URAI Replay",
       "oldDemoCopyPresent": false,
       "productionCopyPresent": true,
@@ -1654,7 +1654,7 @@
       "route": "/mirror",
       "url": "https://urai.app/mirror",
       "status": 200,
-      "ms": 2925,
+      "ms": 2933,
       "title": "URAI Mirror",
       "oldDemoCopyPresent": false,
       "productionCopyPresent": true,
@@ -1680,7 +1680,7 @@
       "route": "/passport",
       "url": "https://urai.app/passport",
       "status": 200,
-      "ms": 3003,
+      "ms": 2721,
       "title": "URAI Passport",
       "oldDemoCopyPresent": false,
       "productionCopyPresent": true,
@@ -1716,7 +1716,7 @@
       "route": "/status",
       "url": "https://urai.app/status",
       "status": 200,
-      "ms": 3095,
+      "ms": 2684,
       "title": "URAI Status",
       "oldDemoCopyPresent": false,
       "productionCopyPresent": true,
@@ -1752,7 +1752,7 @@
       "route": "/privacy-controls",
       "url": "https://urai.app/privacy-controls",
       "status": 200,
-      "ms": 2655,
+      "ms": 2578,
       "title": "URAI Passport Controls",
       "oldDemoCopyPresent": false,
       "productionCopyPresent": true,
@@ -1772,14 +1772,14 @@
   "interactions": [
     {
       "name": "home-to-life-map",
-      "ok": false,
+      "ok": true,
       "startUrl": "https://urai.app/home",
       "expected": "/life-map",
-      "currentUrl": "",
+      "currentUrl": "https://urai.app/life-map",
       "selector": "a[href=\"/life-map\"]",
-      "ms": 13672,
+      "ms": 20397,
       "screenshot": "live-visual-audit/screenshots/interaction-home-to-life-map.png",
-      "error": "locator.click: Timeout 10000ms exceeded.\nCall log:\n  - waiting for locator('a[href=\"/life-map\"]').first()\n    - locator resolved to <a href=\"/life-map\">…</a>\n  - attempting click action\n    2 × waiting for element to be visible, enabled and stable\n      - element is not visible\n    - retrying click action\n    - waiting 20ms\n    - waiting for element to be visible, enabled and stable\n"
+      "error": ""
     },
     {
       "name": "life-map-to-focus",
@@ -1788,20 +1788,20 @@
       "expected": "/focus",
       "currentUrl": "https://urai.app/focus/?memoryId=quiet-reset",
       "selector": "a[href*=\"/focus\"]",
-      "ms": 8124,
+      "ms": 8162,
       "screenshot": "live-visual-audit/screenshots/interaction-life-map-to-focus.png",
       "error": ""
     },
     {
       "name": "focus-to-replay",
-      "ok": false,
+      "ok": true,
       "startUrl": "https://urai.app/focus?memoryId=quiet-reset",
       "expected": "/replay",
-      "currentUrl": "",
+      "currentUrl": "https://urai.app/replay/?manifestId=replay-recovery-thread",
       "selector": "a[href*=\"/replay\"]",
-      "ms": 12247,
+      "ms": 7060,
       "screenshot": "live-visual-audit/screenshots/interaction-focus-to-replay.png",
-      "error": "locator.click: Timeout 10000ms exceeded.\nCall log:\n  - waiting for locator('a[href*=\"/replay\"]').first()\n    - locator resolved to <a href=\"/replay?manifestId=replay-recovery-thread\">…</a>\n  - attempting click action\n    2 × waiting for element to be visible, enabled and stable\n      - element is not visible\n    - retrying click action\n    - waiting 20ms\n    2 × waiting for element to be visible, enabled and stable\n      - element is not visible\n    - retrying click action\n      - waiting 100ms\n    5 × waiting for element to be visible, enabled and stable\n      - element is not visible\n    - retrying click action\n      - waiting 500ms\n    - waiting for element to be visible, enabled and stable\n"
+      "error": ""
     },
     {
       "name": "passport-to-status",
@@ -1810,7 +1810,7 @@
       "expected": "/status",
       "currentUrl": "https://urai.app/status",
       "selector": "a[href=\"/status\"]",
-      "ms": 4128,
+      "ms": 4382,
       "screenshot": "live-visual-audit/screenshots/interaction-passport-to-status.png",
       "error": ""
     }
@@ -1833,29 +1833,6 @@
       "/privacy-controls"
     ],
     "failedRoutes": [],
-    "failedInteractions": [
-      {
-        "name": "home-to-life-map",
-        "ok": false,
-        "startUrl": "https://urai.app/home",
-        "expected": "/life-map",
-        "currentUrl": "",
-        "selector": "a[href=\"/life-map\"]",
-        "ms": 13672,
-        "screenshot": "live-visual-audit/screenshots/interaction-home-to-life-map.png",
-        "error": "locator.click: Timeout 10000ms exceeded.\nCall log:\n  - waiting for locator('a[href=\"/life-map\"]').first()\n    - locator resolved to <a href=\"/life-map\">…</a>\n  - attempting click action\n    2 × waiting for element to be visible, enabled and stable\n      - element is not visible\n    - retrying click action\n    - waiting 20ms\n    - waiting for element to be visible, enabled and stable\n"
-      },
-      {
-        "name": "focus-to-replay",
-        "ok": false,
-        "startUrl": "https://urai.app/focus?memoryId=quiet-reset",
-        "expected": "/replay",
-        "currentUrl": "",
-        "selector": "a[href*=\"/replay\"]",
-        "ms": 12247,
-        "screenshot": "live-visual-audit/screenshots/interaction-focus-to-replay.png",
-        "error": "locator.click: Timeout 10000ms exceeded.\nCall log:\n  - waiting for locator('a[href*=\"/replay\"]').first()\n    - locator resolved to <a href=\"/replay?manifestId=replay-recovery-thread\">…</a>\n  - attempting click action\n    2 × waiting for element to be visible, enabled and stable\n      - element is not visible\n    - retrying click action\n    - waiting 20ms\n    2 × waiting for element to be visible, enabled and stable\n      - element is not visible\n    - retrying click action\n      - waiting 100ms\n    5 × waiting for element to be visible, enabled and stable\n      - element is not visible\n    - retrying click action\n      - waiting 500ms\n    - waiting for element to be visible, enabled and stable\n"
-      }
-    ]
+    "failedInteractions": []
   }
 }
