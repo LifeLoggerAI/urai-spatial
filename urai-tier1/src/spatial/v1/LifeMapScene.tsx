@@ -175,7 +175,6 @@ function LifeMapCameraRig({
       rotateSpeed={0.58}
       zoomSpeed={0.74}
       panSpeed={0.45}
-      touches={{ ONE: THREE.TOUCH.ROTATE, TWO: THREE.TOUCH.DOLLY_PAN }}
     />
   );
 }
