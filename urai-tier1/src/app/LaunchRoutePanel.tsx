@@ -24,7 +24,7 @@ const copyByVariant: Record<LaunchRouteVariant, RoutePanelCopy> = {
   home: {
     eyebrow: 'Home World · live spatial surface',
     title: 'Own your life. Step inside yourself.',
-    lead: 'URAI opens as a living world: your memories become stars, Focus holds one signal steady, Replay turns a thread cinematic, and Passport keeps identity, consent, and provenance visible without taking ownership of your story.',
+    lead: 'URAI opens like a private world, not a feed. Memories become stars, Focus steadies one signal, Replay turns a thread cinematic, and Passport keeps identity, consent, and provenance visible.',
     primaryHref: '/life-map',
     primaryLabel: 'Enter Life Map',
     primaryAction: 'home-life-map',
@@ -69,81 +69,72 @@ const launchRoutes: LaunchRoute[] = [
   { label: 'Privacy', href: '/privacy-controls', action: 'open-privacy-controls', kicker: 'Control', detail: 'Choose what stays private before anything expands.' },
 ]
 
-const proofSignals = ['Private by default', 'Real route chain', 'Static-export safe']
-const orbitStats = [
-  { value: '01', label: 'World entry' },
-  { value: '07', label: 'Live paths' },
-  { value: '∞', label: 'Memory space' },
-]
+const proofSignals = ['Private by default', 'No dead routes', 'Static-export safe']
 
 export function LaunchRoutePanel({ variant }: { variant: LaunchRouteVariant }) {
   const copy = copyByVariant[variant]
-  const [lifeMap, focus, replay, mirror, passport, status, privacy] = launchRoutes
+  const primaryRoutes = launchRoutes.slice(0, 6)
+  const privacy = launchRoutes[6]
 
   return (
     <section className={styles.shell} data-route-panel-variant={variant} aria-label="URAI Spatial home world launch controls">
-      <div className={styles.atmosphere} aria-hidden="true" />
-      <div className={styles.constellation} aria-hidden="true">
+      <div className={styles.depthField} aria-hidden="true" />
+      <div className={styles.starfield} aria-hidden="true">
+        <span />
+        <span />
+        <span />
         <span />
         <span />
         <span />
         <span />
         <span />
       </div>
+      <div className={styles.horizon} aria-hidden="true" />
 
-      <article className={styles.heroStage}>
-        <div className={styles.heroCopy}>
-          <p className={styles.eyebrow}>{copy.eyebrow}</p>
-          <h1>{copy.title}</h1>
-          <p className={styles.lead}>{copy.lead}</p>
-
-          <div className={styles.signature} aria-label="URAI spatial layers">
-            {copy.signature}
-          </div>
-
-          <div className={styles.proofStrip} role="list" aria-label="Launch guarantees">
-            {proofSignals.map((signal) => (
-              <span key={signal} role="listitem">{signal}</span>
-            ))}
-          </div>
+      <div className={styles.heroCopy}>
+        <p className={styles.eyebrow}>{copy.eyebrow}</p>
+        <h1>{copy.title}</h1>
+        <p className={styles.lead}>{copy.lead}</p>
+        <p className={styles.signature}>{copy.signature}</p>
+        <div className={styles.proofStrip} role="list" aria-label="Launch guarantees">
+          {proofSignals.map((signal) => (
+            <span key={signal} role="listitem">{signal}</span>
+          ))}
         </div>
+      </div>
 
-        <a className={styles.orbGateway} href={copy.primaryHref} data-urai-audit-action={copy.primaryAction} aria-label={`${copy.primaryLabel}: ${lifeMap.detail}`}>
-          <span className={styles.orbHalo} aria-hidden="true" />
-          <span className={styles.orbCore} aria-hidden="true" />
-          <span className={styles.orbText}>
-            <strong>{copy.primaryLabel}</strong>
-            <span>{lifeMap.detail}</span>
-          </span>
-        </a>
-      </article>
+      <a className={styles.worldPortal} href={copy.primaryHref} data-urai-audit-action={copy.primaryAction} aria-label={`${copy.primaryLabel}: open URAI's living memory constellation`}>
+        <span className={styles.portalRings} aria-hidden="true" />
+        <span className={styles.portalCore} aria-hidden="true" />
+        <span className={styles.portalLabel}>
+          <strong>{copy.primaryLabel}</strong>
+          <span>Open the living constellation</span>
+        </span>
+      </a>
 
-      <nav className={styles.routeDock} aria-label="Primary URAI routes">
-        {[lifeMap, focus, replay, mirror, passport, status].map((route) => (
+      <nav className={styles.orbitNav} aria-label="Primary URAI routes">
+        {primaryRoutes.map((route, index) => (
           <a key={route.action} href={route.href} data-urai-audit-action={route.action}>
-            <span>{route.kicker}</span>
+            <span>{String(index + 1).padStart(2, '0')}</span>
             <strong>{route.label}</strong>
-            <em>{route.detail}</em>
+            <em>{route.kicker}</em>
           </a>
         ))}
       </nav>
 
-      <aside className={styles.worldPanel} aria-label="URAI world state">
-        <div className={styles.panelHeader}>
-          <span>URAI Spatial</span>
-          <strong>Home world online</strong>
-        </div>
-        <div className={styles.orbitStats} aria-label="Launch surface summary">
-          {orbitStats.map((stat) => (
-            <div key={stat.label}>
-              <strong>{stat.value}</strong>
-              <span>{stat.label}</span>
-            </div>
-          ))}
-        </div>
-        <p>Start in Life Map, open Focus, continue Replay, then keep consent and route health visible through Passport and Status.</p>
-        <a href={privacy.href} data-urai-audit-action={privacy.action}>{privacy.detail}</a>
-      </aside>
+      <div className={styles.companionLine} aria-label="URAI companion state">
+        <span>URAI Orb Companion</span>
+        <strong>present, quiet, public-safe</strong>
+      </div>
+
+      <nav className={styles.routeRail} aria-label="Launch route rail">
+        {primaryRoutes.map((route) => (
+          <a key={route.action} href={route.href} data-urai-audit-action={`${route.action}-rail`}>
+            {route.label}
+          </a>
+        ))}
+        <a href={privacy.href} data-urai-audit-action={privacy.action}>{privacy.label}</a>
+      </nav>
     </section>
   )
 }
