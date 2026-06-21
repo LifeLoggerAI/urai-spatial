@@ -6,6 +6,15 @@ import { TierOneExperience, type TierOneExperienceMode } from "@/spatial/layout/
 const allowedModes = new Set<TierOneExperienceMode>(["home", "ascent", "life-map", "demo", "replay", "focus", "unwind", "mirror"]);
 const emptySelectedNodeId = "";
 
+const launchMemoryAliases: Record<string, string> = {
+  "blue-fog": "week-heavy-fog",
+  "blue-fog-memory": "week-heavy-fog",
+  galaxy: "quiet-reset",
+  spark: "first-signal-recovery",
+  recovery: "first-signal-recovery",
+  passport: "purpose-thread-visible",
+};
+
 type RouteSnapshot = {
   mode: TierOneExperienceMode;
   selectedNodeId?: string;
@@ -20,11 +29,24 @@ function modeFromPathname(pathname: string): TierOneExperienceMode | undefined {
   const pathMode = firstSegment === "spatial" ? secondSegment : firstSegment;
 
   if (!pathMode || pathMode === "home") return "home";
+  if (pathMode === "privacy-controls") return "mirror";
   return allowedModes.has(pathMode as TierOneExperienceMode) ? (pathMode as TierOneExperienceMode) : undefined;
 }
 
+function normalizeSelectedNodeId(value: string | null | undefined): string | undefined {
+  if (!value) return undefined;
+  const decoded = decodeURIComponent(value).trim();
+  return launchMemoryAliases[decoded] ?? decoded;
+}
+
 function selectedNodeIdFromParams(params: URLSearchParams): string | undefined {
-  return params.get("memoryId") || params.get("memory") || params.get("nodeId") || undefined;
+  return normalizeSelectedNodeId(
+    params.get("memoryId") ||
+      params.get("memory") ||
+      params.get("nodeId") ||
+      params.get("star") ||
+      params.get("spark"),
+  );
 }
 
 function routeKeyFromSnapshot(snapshot: RouteSnapshot): string {
