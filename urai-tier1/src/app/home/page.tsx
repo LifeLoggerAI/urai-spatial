@@ -8,11 +8,12 @@ export const metadata = {
 }
 
 export default function HomeRoutePage() {
+  // Keep visible route controls first so audits, keyboard users, and no-pointer users land on real production actions.
   return (
     <>
+      <LaunchRoutePanel variant="home" />
       <LaunchSeo label="URAI Home renders the production 3D world and primary route actions." />
       <RootModeExperience initialMode="home" />
-      <LaunchRoutePanel variant="home" />
     </>
   )
 }
