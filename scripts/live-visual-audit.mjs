@@ -6,7 +6,7 @@ const baseUrl = process.env.URAI_AUDIT_BASE_URL || 'https://urai.app'
 const outDir = process.env.URAI_AUDIT_OUT_DIR || 'live-visual-audit'
 const shotDir = path.join(outDir, 'screenshots')
 
-// Touch this audit script when a fresh GitHub Actions screenshot run is needed.
+// Fresh persisted report trigger: 2026-06-21T1800Z.
 const routes = [
   ['tier1-root', '/'],
   ['tier1-home', '/home'],
