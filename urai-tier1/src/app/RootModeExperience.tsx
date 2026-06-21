@@ -66,10 +66,13 @@ function routeSnapshotFromBrowserUrl(fallbackMode: TierOneExperienceMode): Route
 
   const params = new URLSearchParams(window.location.search);
   const pathMode = modeFromPathname(window.location.pathname);
+  const selectedNodeId = selectedNodeIdFromParams(params);
+  const explicitMode = resolveRouteMode(params.get("mode"), pathMode ?? fallbackMode);
+  const legacyStarShouldOpenFocus = Boolean(selectedNodeId && (params.has("star") || params.has("spark")));
 
   return {
-    mode: resolveRouteMode(params.get("mode"), pathMode ?? fallbackMode),
-    selectedNodeId: selectedNodeIdFromParams(params),
+    mode: legacyStarShouldOpenFocus ? "focus" : explicitMode,
+    selectedNodeId,
   };
 }
 
