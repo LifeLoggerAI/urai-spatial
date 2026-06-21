@@ -96,8 +96,22 @@ function subscribeToRouteMode(onStoreChange: () => void): () => void {
 export function RootModeExperience({ initialMode = "home" }: { initialMode?: TierOneExperienceMode }) {
   useEffect(() => {
     document.documentElement.dataset.uraiRuntimeReady = "true";
+    const fallbackLinks = Array.from(document.querySelectorAll<HTMLAnchorElement>(".urai-launch-fallback a[href]"));
+    fallbackLinks.forEach((link) => {
+      link.dataset.uraiOriginalHref = link.getAttribute("href") ?? "";
+      link.removeAttribute("href");
+      link.setAttribute("aria-hidden", "true");
+      link.tabIndex = -1;
+    });
+
     return () => {
       delete document.documentElement.dataset.uraiRuntimeReady;
+      fallbackLinks.forEach((link) => {
+        const href = link.dataset.uraiOriginalHref;
+        if (href) link.setAttribute("href", href);
+        link.removeAttribute("aria-hidden");
+        link.removeAttribute("tabindex");
+      });
     };
   }, []);
 
