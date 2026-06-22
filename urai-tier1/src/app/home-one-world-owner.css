@@ -1,0 +1,206 @@
+/* =========================================================
+   URAI HOME ONE WORLD OWNER
+   HomeSpatialWorldFinal owns visible sky/horizon/terrain.
+   Legacy home world layers become quiet support, not competing scenes.
+   ========================================================= */
+
+/* Base Home routes: remove the old gradient-wall/dash-floor feeling. */
+body:has(.urai-home-spatial-world-final) {
+  background: #050914 !important;
+}
+
+body:has(.urai-home-spatial-world-final) .urai-launch-home,
+body:has(.urai-home-spatial-world-final) .urai-launch-home__shell,
+body:has(.urai-home-spatial-world-final) .urai-launch-home__scene {
+  background:
+    radial-gradient(circle at 68% 18%, rgba(118, 176, 255, .08), transparent 24rem),
+    linear-gradient(180deg, #0b1427 0%, #07101f 46%, #040711 100%) !important;
+}
+
+/* Kill legacy decorative sky/ground pseudo layers that create doubled fog. */
+body:has(.urai-home-spatial-world-final) .urai-launch-home__scene::before,
+body:has(.urai-home-spatial-world-final) .urai-launch-home__scene::after,
+body:has(.urai-home-spatial-world-final) .urai-home-ground-world::before,
+body:has(.urai-home-spatial-world-final) .urai-home-ground-world::after,
+body:has(.urai-home-spatial-world-final) .urai-home-ground-objects::before,
+body:has(.urai-home-spatial-world-final) .urai-home-ground-objects::after {
+  opacity: 0 !important;
+  display: none !important;
+}
+
+/* Neutralize old HUD floor. Keep only tiny route/contact lights if present. */
+body:has(.urai-home-spatial-world-final) .urai-launch-home__ground,
+body:has(.urai-home-spatial-world-final) .urai-home-ground-world {
+  background: transparent !important;
+  box-shadow: none !important;
+  filter: none !important;
+  opacity: .18 !important;
+}
+
+body:has(.urai-home-spatial-world-final) .urai-home-ground-world [class*="grid"],
+body:has(.urai-home-spatial-world-final) .urai-home-ground-world [class*="ring"],
+body:has(.urai-home-spatial-world-final) .urai-launch-home__ground [class*="grid"],
+body:has(.urai-home-spatial-world-final) .urai-launch-home__ground [class*="ring"] {
+  opacity: .08 !important;
+}
+
+/* Hide legacy pasted orb/avatar objects so the final authored world owns them. */
+body:has(.urai-home-spatial-world-final) .urai-launch-home__orb,
+body:has(.urai-home-spatial-world-final) .urai-launch-home__world-orb,
+body:has(.urai-home-spatial-world-final) [class*="world-orb"],
+body:has(.urai-home-spatial-world-final) [class*="companion-orb"] {
+  opacity: 0 !important;
+  pointer-events: none !important;
+  filter: none !important;
+}
+
+/* Old ground route objects should not be giant cards or second navigation. */
+body:has(.urai-home-spatial-world-final) .urai-home-ground-objects,
+body:has(.urai-home-spatial-world-final) .urai-ground-stone,
+body:has(.urai-home-spatial-world-final) .urai-ground-station,
+body:has(.urai-home-spatial-world-final) .urai-home-ground-world__stone {
+  opacity: .18 !important;
+  transform: scale(.62) !important;
+  filter: blur(.2px) saturate(.72) !important;
+  pointer-events: none !important;
+}
+
+/* The final world is now the actual visible scene. */
+.urai-home-spatial-world-final {
+  z-index: 3 !important;
+  opacity: 1 !important;
+  mix-blend-mode: normal !important;
+}
+
+.urai-home-spatial-world-final__sky {
+  background:
+    radial-gradient(ellipse at 58% 18%, rgba(227, 238, 255, .16), transparent 22rem),
+    radial-gradient(ellipse at 72% 20%, rgba(111, 157, 255, .12), transparent 30rem),
+    linear-gradient(180deg, #15223f 0%, #0e1930 28%, #091426 58%, #050a15 100%) !important;
+}
+
+/* Real horizon ridge + atmosphere. */
+.urai-home-spatial-world-final__haze {
+  bottom: 30vh !important;
+  height: 20vh !important;
+  opacity: 1 !important;
+  background:
+    radial-gradient(ellipse at 55% 45%, rgba(178, 222, 255, .17), transparent 54%),
+    linear-gradient(180deg, transparent, rgba(98, 126, 160, .10), rgba(5, 10, 18, .24)) !important;
+}
+
+.urai-home-spatial-world-final__horizon {
+  bottom: 31vh !important;
+  height: 3px !important;
+  opacity: .95 !important;
+  background: linear-gradient(90deg, transparent, rgba(122, 183, 224, .18), rgba(226, 242, 255, .50), rgba(122, 183, 224, .18), transparent) !important;
+  box-shadow: 0 0 28px rgba(142, 210, 255, .16) !important;
+}
+
+/* Make terrain feel like mass, not a black pill. */
+.urai-home-spatial-world-final__terrain {
+  bottom: 8vh !important;
+  height: 31vh !important;
+  border-radius: 48% 52% 0 0 / 82% 88% 0 0 !important;
+  background:
+    radial-gradient(ellipse at 50% 2%, rgba(132, 203, 255, .10), transparent 30%),
+    linear-gradient(180deg, rgba(13, 24, 42, .30), rgba(5, 10, 20, .92) 52%, rgba(2, 5, 12, .98)) !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.06),
+    0 -42px 120px rgba(0,0,0,.34),
+    0 -20px 80px rgba(88, 155, 255, .06) !important;
+}
+
+/* Pedestal/platform is now physically placed in terrain. */
+.urai-home-spatial-world-final__shelf {
+  left: 39% !important;
+  width: 28% !important;
+  min-width: 320px !important;
+  max-width: 520px !important;
+  bottom: 22vh !important;
+  height: 10vh !important;
+  border-radius: 50% !important;
+  background:
+    radial-gradient(ellipse at 50% 28%, rgba(244,250,255,.16), transparent 26%),
+    radial-gradient(ellipse at 50% 54%, rgba(95, 195, 255, .08), transparent 50%),
+    linear-gradient(180deg, rgba(19, 31, 52, .78), rgba(3, 7, 15, .96)) !important;
+  box-shadow:
+    0 28px 80px rgba(0,0,0,.46),
+    0 0 100px rgba(103,232,249,.10),
+    inset 0 1px 0 rgba(255,255,255,.10),
+    inset 0 -18px 36px rgba(0,0,0,.36) !important;
+}
+
+.urai-home-spatial-world-final__pedestal {
+  left: 43.5% !important;
+  width: 18% !important;
+  min-width: 190px !important;
+  bottom: 16.5vh !important;
+  height: 3.4vh !important;
+  opacity: .96 !important;
+}
+
+/* Avatar/orb becomes the central world object. */
+.urai-home-spatial-world-final__avatar {
+  left: 47.5% !important;
+  bottom: 28vh !important;
+  width: min(11vw, 150px) !important;
+  height: min(28vh, 260px) !important;
+  opacity: .70 !important;
+}
+
+.urai-home-spatial-world-final__avatar-core {
+  box-shadow:
+    0 0 34px rgba(163, 235, 255, .44),
+    0 0 110px rgba(80, 183, 255, .28),
+    0 22px 70px rgba(0,0,0,.28) !important;
+}
+
+.urai-home-spatial-world-final__avatar-body {
+  opacity: .76 !important;
+}
+
+/* Beacons as world lights, not UI nav. */
+.urai-home-spatial-world-final__beacon {
+  width: 6px !important;
+  height: 6px !important;
+  opacity: .78 !important;
+  box-shadow: 0 0 12px currentColor, 0 0 28px currentColor !important;
+}
+
+.urai-home-spatial-world-final__beacon--one { left: 40% !important; bottom: 28vh !important; }
+.urai-home-spatial-world-final__beacon--two { left: 44% !important; bottom: 25vh !important; }
+.urai-home-spatial-world-final__beacon--three { left: 51% !important; bottom: 28.5vh !important; }
+.urai-home-spatial-world-final__beacon--four { left: 58% !important; bottom: 25.5vh !important; }
+.urai-home-spatial-world-final__beacon--five { left: 63% !important; bottom: 29vh !important; }
+.urai-home-spatial-world-final__beacon--six { left: 47% !important; bottom: 22.5vh !important; }
+
+/* Foreground dark shelf for cinematic depth. */
+.urai-home-spatial-world-final__foreground {
+  height: 30vh !important;
+  background:
+    radial-gradient(ellipse at 50% 20%, rgba(0,0,0,0), rgba(0,0,0,.20) 62%, rgba(0,0,0,.52) 100%),
+    linear-gradient(180deg, rgba(4,8,18,0), rgba(3,6,14,.72)) !important;
+}
+
+/* Keep UI readable, but less dashboard-heavy. */
+body:has(.urai-home-spatial-world-final) .urai-launch-home__panel,
+body:has(.urai-home-spatial-world-final) .urai-launch-home__copy,
+body:has(.urai-home-spatial-world-final) .urai-launch-home__hero,
+body:has(.urai-home-spatial-world-final) [data-route-panel-variant="home"] {
+  position: relative !important;
+  z-index: 18 !important;
+}
+
+body:has(.urai-home-spatial-world-final) .urai-launch-home__dock,
+body:has(.urai-home-spatial-world-final) .urai-launch-home__route-dock {
+  position: relative !important;
+  z-index: 19 !important;
+}
+
+/* On desktop, let the scenic world breathe in the center/right. */
+@media (min-width: 900px) {
+  body:has(.urai-home-spatial-world-final) [data-route-panel-variant="home"] {
+    max-width: min(44rem, 42vw) !important;
+  }
+}

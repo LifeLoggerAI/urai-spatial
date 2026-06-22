@@ -1,5 +1,6 @@
 import "./home-spatial-world-final.css"
 import HomeSpatialWorldFinal from "./HomeSpatialWorldFinal"
+import "./home-one-world-owner.css"
 import type { Metadata, Viewport } from 'next'
 import './globals.css'
 import './launch-home-polish.css'
