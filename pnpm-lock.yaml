@@ -10,9 +10,6 @@ importers:
 
   apps/functions:
     dependencies:
-      '@urai/release-tools':
-        specifier: workspace:*
-        version: link:../../packages/release-tools
       firebase-admin:
         specifier: ^13.7.0
         version: 13.10.0
@@ -52,9 +49,6 @@ importers:
       '@tailwindcss/postcss':
         specifier: ^4.2.2
         version: 4.3.0
-      '@urai/release-tools':
-        specifier: workspace:*
-        version: link:../packages/release-tools
       firebase:
         specifier: ^12.11.0
         version: 12.13.0
