@@ -35,13 +35,17 @@
 [data-testid="urai-replay-surface"] button[aria-label*="Pause"] > span:nth-of-type(3) > img,
 [data-testid="urai-replay-surface"] button[aria-label*="play"] > span:nth-of-type(3) > img {
   position: absolute !important;
-  inset: 0 !important;
-  width: 100% !important;
-  height: 100% !important;
-  object-fit: cover !important;
+  inset: clamp(10px, 1.4vw, 18px) !important;
+  width: calc(100% - clamp(20px, 2.8vw, 36px)) !important;
+  height: calc(100% - clamp(20px, 2.8vw, 36px)) !important;
+  object-fit: contain !important;
+  object-position: center center !important;
+  border-radius: 24px !important;
   opacity: .98 !important;
-  filter: saturate(1.12) contrast(1.08) brightness(.95) !important;
-  transform: scale(1.012) !important;
+  filter: saturate(1.14) contrast(1.08) brightness(.96) !important;
+  transform: none !important;
+  background: radial-gradient(circle at 50% 45%, rgba(56,189,248,.14), transparent 44%), #020617 !important;
+  box-shadow: 0 0 70px rgba(103,232,249,.10), inset 0 0 48px rgba(255,255,255,.04) !important;
 }
 
 [data-testid="urai-focus-surface"] button[aria-label*="Open"] > span:nth-of-type(3)::after,
@@ -51,9 +55,9 @@
   position: absolute;
   inset: 0;
   pointer-events: none;
-  background: linear-gradient(180deg, rgba(255,255,255,.10), transparent 24%, rgba(2,6,23,.42) 100%), repeating-linear-gradient(90deg, rgba(255,255,255,.026) 0 1px, transparent 1px 8px);
+  background: linear-gradient(180deg, rgba(255,255,255,.08), transparent 22%, rgba(2,6,23,.22) 100%), repeating-linear-gradient(90deg, rgba(255,255,255,.018) 0 1px, transparent 1px 8px);
   mix-blend-mode: screen;
-  opacity: .72;
+  opacity: .52;
 }
 
 [data-testid="urai-focus-surface"] button[aria-label*="Open"] > span:nth-of-type(2),
