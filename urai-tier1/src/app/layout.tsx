@@ -17,6 +17,7 @@ import './urai-v1.css'
 import './ship-ready-visual-pass.css'
 import './home-ground-production.css'
 import './home-ground-shipping-world.css'
+import './home-ground-final-object-visibility.css'
 import HomeGroundWorldObjects from './HomeGroundWorldObjects'
 
 export const metadata: Metadata = {
