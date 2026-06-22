@@ -75,3 +75,77 @@
     top: 55% !important;
   }
 }
+
+/* URAI final visual polish: make memory image read as scene, not title card */
+[data-testid="urai-focus-surface"] button[aria-label*="Open"] > span:nth-of-type(3),
+[data-testid="urai-replay-surface"] button[aria-label*="Pause"] > span:nth-of-type(3),
+[data-testid="urai-replay-surface"] button[aria-label*="play"] > span:nth-of-type(3) {
+  inset: 7% 7% 19% !important;
+  overflow: hidden !important;
+  background: #020617 !important;
+}
+
+[data-testid="urai-focus-surface"] button[aria-label*="Open"] > span:nth-of-type(3) > img,
+[data-testid="urai-replay-surface"] button[aria-label*="Pause"] > span:nth-of-type(3) > img,
+[data-testid="urai-replay-surface"] button[aria-label*="play"] > span:nth-of-type(3) > img {
+  inset: 0 !important;
+  width: 100% !important;
+  height: 100% !important;
+  object-fit: cover !important;
+  object-position: center 35% !important;
+  transform: scale(1.1) !important;
+  border-radius: 30px !important;
+  filter: saturate(1.2) contrast(1.12) brightness(.93) !important;
+}
+
+/* hide the generated poster title zone so the real UI title/caption owns the frame */
+[data-testid="urai-focus-surface"] button[aria-label*="Open"] > span:nth-of-type(3)::before,
+[data-testid="urai-replay-surface"] button[aria-label*="Pause"] > span:nth-of-type(3)::before,
+[data-testid="urai-replay-surface"] button[aria-label*="play"] > span:nth-of-type(3)::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 32%;
+  z-index: 4;
+  pointer-events: none;
+  background: linear-gradient(180deg, transparent, rgba(2,6,23,.82) 72%, rgba(2,6,23,.98));
+}
+
+[data-testid="urai-focus-surface"] button[aria-label*="Open"] > span:nth-of-type(3)::after,
+[data-testid="urai-replay-surface"] button[aria-label*="Pause"] > span:nth-of-type(3)::after,
+[data-testid="urai-replay-surface"] button[aria-label*="play"] > span:nth-of-type(3)::after {
+  z-index: 5 !important;
+  opacity: .42 !important;
+}
+
+[data-testid="urai-focus-surface"] button[aria-label*="Open"] > span:last-child,
+[data-testid="urai-replay-surface"] button[aria-label*="Pause"] > span:last-child,
+[data-testid="urai-replay-surface"] button[aria-label*="play"] > span:last-child {
+  z-index: 8 !important;
+  bottom: clamp(20px, 2.2vw, 30px) !important;
+  text-shadow: 0 12px 38px rgba(0,0,0,.9) !important;
+}
+
+/* give Home a cleaner launch-final composition without changing routing */
+.urai-launch-home__scene,
+.urai-launch-home__shell {
+  background:
+    radial-gradient(circle at 54% 28%, rgba(125,211,252,.18), transparent 17rem),
+    radial-gradient(circle at 73% 22%, rgba(129,140,248,.18), transparent 32rem),
+    linear-gradient(180deg, #111c35 0%, #0b172c 38%, #060b18 100%) !important;
+}
+
+.urai-launch-home__ground,
+.urai-home-ground-world {
+  opacity: .78 !important;
+  filter: saturate(1.08) contrast(1.06) !important;
+}
+
+.urai-home-ground-objects,
+.urai-ground-stone,
+.urai-ground-station {
+  pointer-events: auto !important;
+}
+
