@@ -1,0 +1,169 @@
+/* URAI Home Ground Production Pass */
+.urai-launch-home,
+.home-cohesion-layer {
+  --ground-cyan: rgba(125, 239, 255, 0.9);
+  --ground-violet: rgba(167, 139, 250, 0.32);
+}
+
+.urai-launch-home {
+  background:
+    radial-gradient(circle at 52% 38%, rgba(132, 229, 255, 0.24), transparent 20rem),
+    radial-gradient(circle at 82% 18%, rgba(167, 139, 250, 0.26), transparent 36rem),
+    radial-gradient(ellipse at 48% 105%, rgba(61, 214, 193, 0.24), transparent 42rem),
+    linear-gradient(155deg, #030817 0%, #08162f 46%, #1b1346 100%) !important;
+}
+
+.urai-launch-home__ground,
+.ground-curve {
+  left: -16% !important;
+  right: -16% !important;
+  bottom: -18% !important;
+  height: 50% !important;
+  border-radius: 50% 50% 0 0 / 34% 34% 0 0 !important;
+  background:
+    radial-gradient(ellipse at 50% 0%, rgba(151, 221, 255, 0.26), transparent 26%),
+    radial-gradient(ellipse at 36% 18%, rgba(134, 239, 172, 0.12), transparent 22%),
+    radial-gradient(ellipse at 66% 14%, rgba(167, 139, 250, 0.12), transparent 24%),
+    repeating-linear-gradient(92deg, rgba(186, 230, 253, 0.07) 0 1px, transparent 1px 72px),
+    repeating-radial-gradient(ellipse at 50% 4%, rgba(186, 230, 253, 0.11) 0 1px, transparent 1px 56px),
+    linear-gradient(180deg, rgba(10, 34, 58, 0.82), rgba(2, 7, 18, 0.30) 70%) !important;
+  border-top: 1px solid rgba(186, 230, 253, 0.30) !important;
+  box-shadow:
+    inset 0 40px 88px rgba(125, 211, 252, 0.08),
+    inset 0 -60px 140px rgba(0,0,0,0.56),
+    0 -32px 110px rgba(103, 232, 249, 0.12) !important;
+}
+
+.urai-launch-home__ground {
+  transform: perspective(900px) rotateX(61deg) translateY(4vh);
+  transform-origin: 50% 100%;
+}
+
+.urai-launch-home__ground::before,
+.ground-curve::before,
+.urai-launch-home__ground::after,
+.ground-curve::after {
+  content: "";
+  position: absolute;
+  pointer-events: none;
+}
+
+.urai-launch-home__ground::before,
+.ground-curve::before {
+  left: 50%;
+  top: 2%;
+  width: min(540px, 35vw);
+  height: min(156px, 10vw);
+  transform: translateX(-50%);
+  border-radius: 999px;
+  background: radial-gradient(ellipse, rgba(216, 248, 255, 0.18), rgba(125, 239, 255, 0.16), rgba(167,139,250,0.08) 58%, transparent 78%);
+  border: 1px solid rgba(186,230,253,0.14);
+  box-shadow: 0 0 86px rgba(103, 232, 249, 0.16), inset 0 0 44px rgba(255,255,255,0.05);
+}
+
+.urai-launch-home__ground::after,
+.ground-curve::after {
+  left: 50%;
+  top: 9%;
+  width: 8px;
+  height: 8px;
+  border-radius: 999px;
+  background: rgba(255,255,255,0.92);
+  box-shadow:
+    -340px 52px 0 1px rgba(125, 239, 255, 0.74),
+    -220px 10px 0 0 rgba(134, 239, 172, 0.70),
+    -94px 72px 0 1px rgba(216, 180, 254, 0.68),
+    92px 34px 0 1px rgba(125, 239, 255, 0.82),
+    222px 82px 0 0 rgba(134, 239, 172, 0.70),
+    348px 18px 0 1px rgba(216, 180, 254, 0.70),
+    -340px 52px 28px 7px rgba(125, 239, 255, 0.24),
+    92px 34px 44px 10px rgba(125, 239, 255, 0.28),
+    348px 18px 40px 8px rgba(167, 139, 250, 0.22);
+}
+
+.home-cinematic-field::before,
+.home-cinematic-field::after {
+  content: "";
+  position: absolute;
+  pointer-events: none;
+  z-index: 1;
+}
+
+.home-cinematic-field::before {
+  left: -10%;
+  right: -10%;
+  bottom: -2%;
+  height: 32%;
+  background:
+    radial-gradient(ellipse at 48% 40%, rgba(186, 230, 253, 0.16), transparent 45%),
+    linear-gradient(180deg, transparent, rgba(2, 6, 23, 0.62));
+  filter: blur(12px);
+  opacity: 0.82;
+}
+
+.home-cinematic-field::after {
+  left: 19%;
+  bottom: 15.5%;
+  width: 52%;
+  height: 1px;
+  background: linear-gradient(90deg, rgba(125, 239, 255, 0), rgba(125, 239, 255, 0.68), rgba(167,139,250,0.36), transparent);
+  box-shadow: 0 0 42px rgba(125, 239, 255, 0.28);
+  transform: rotate(-7deg);
+}
+
+.horizon-line {
+  top: 64% !important;
+  height: 2px !important;
+  background: linear-gradient(90deg, transparent, rgba(186,230,253,0.50), rgba(255,255,255,0.24), transparent) !important;
+  box-shadow: 0 0 44px rgba(125, 239, 255, 0.24) !important;
+}
+
+.ground-aura {
+  left: 26% !important;
+  right: 26% !important;
+  bottom: 10.5% !important;
+  height: 12% !important;
+  opacity: 0.94 !important;
+}
+
+.center-orb,
+.urai-launch-home__orb {
+  filter: drop-shadow(0 0 52px rgba(103, 232, 249, 0.38)) !important;
+}
+
+.center-orb::after,
+.urai-launch-home__orb::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 118%;
+  width: 185%;
+  height: 34%;
+  transform: translateX(-50%);
+  border-radius: 999px;
+  background: radial-gradient(ellipse, rgba(0,0,0,0.54), rgba(3, 10, 24, 0.24), transparent 72%);
+  filter: blur(8px);
+  pointer-events: none;
+}
+
+.urai-launch-home__content {
+  padding-bottom: clamp(80px, 14vh, 150px) !important;
+}
+
+@media (max-width: 760px) {
+  .urai-launch-home__ground,
+  .ground-curve {
+    height: 38% !important;
+    bottom: -18% !important;
+    transform: none;
+  }
+
+  .home-cinematic-field::after {
+    display: none;
+  }
+
+  .ground-curve::after,
+  .urai-launch-home__ground::after {
+    transform: translateX(-50%) scale(0.58);
+  }
+}
