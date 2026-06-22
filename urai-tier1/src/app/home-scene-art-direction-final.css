@@ -1,0 +1,209 @@
+/* =========================================================
+   URAI HOME SCENE ART DIRECTION FINAL
+   Make Home feel like a real scenic world, not a HUD page.
+   ========================================================= */
+
+.urai-launch-home,
+.urai-launch-home__shell,
+.urai-launch-home__scene {
+  background:
+    radial-gradient(circle at 70% 14%, rgba(170, 205, 255, 0.18), transparent 18rem),
+    radial-gradient(circle at 56% 36%, rgba(92, 214, 255, 0.12), transparent 28rem),
+    radial-gradient(circle at 82% 24%, rgba(126, 132, 255, 0.12), transparent 34rem),
+    linear-gradient(180deg, #16223e 0%, #0f1c36 22%, #0a1530 44%, #091326 66%, #070d18 100%) !important;
+  position: relative;
+  overflow: hidden;
+}
+
+/* atmospheric dome */
+.urai-launch-home__scene::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(ellipse at 54% 18%, rgba(220, 235, 255, 0.18), transparent 20rem),
+    radial-gradient(ellipse at 60% 42%, rgba(148, 227, 255, 0.10), transparent 26rem),
+    linear-gradient(180deg, transparent 0%, transparent 56%, rgba(5, 10, 20, 0.10) 74%, rgba(4, 8, 18, 0.34) 100%);
+  z-index: 0;
+  opacity: 1;
+}
+
+/* horizon haze */
+.urai-launch-home__scene::after {
+  content: "";
+  position: absolute;
+  left: -6%;
+  right: -6%;
+  bottom: 23vh;
+  height: 15vh;
+  pointer-events: none;
+  background:
+    radial-gradient(ellipse at 50% 50%, rgba(170, 214, 255, 0.12), transparent 52%),
+    linear-gradient(180deg, rgba(140, 169, 200, 0.03), rgba(140, 169, 200, 0.10), rgba(7, 12, 22, 0.28));
+  filter: blur(18px);
+  opacity: 0.95;
+  z-index: 1;
+}
+
+/* far terrain silhouette */
+.urai-home-ground-world::before {
+  content: "";
+  position: absolute;
+  left: -5%;
+  right: -5%;
+  bottom: 16vh;
+  height: 10vh;
+  border-radius: 50% 50% 0 0 / 100% 100% 0 0;
+  background:
+    linear-gradient(180deg, rgba(9, 15, 28, 0.12), rgba(4, 8, 18, 0.88)),
+    radial-gradient(ellipse at 50% 8%, rgba(112, 193, 255, 0.06), transparent 35%);
+  filter: blur(1px);
+  box-shadow:
+    0 -24px 80px rgba(0,0,0,0.28),
+    inset 0 1px 0 rgba(255,255,255,0.05);
+  pointer-events: none;
+  z-index: 1;
+}
+
+/* physical world floor */
+.urai-launch-home__ground,
+.urai-home-ground-world {
+  background:
+    radial-gradient(ellipse at 50% -6%, rgba(189, 227, 255, 0.18), transparent 22%),
+    radial-gradient(ellipse at 50% 20%, rgba(125, 211, 252, 0.08), transparent 40%),
+    linear-gradient(180deg, rgba(10, 18, 34, 0.88), rgba(4, 8, 18, 0.98)) !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,0.08),
+    inset 0 14px 46px rgba(190, 230, 255, 0.06),
+    0 -22px 82px rgba(0,0,0,0.28);
+  opacity: 0.88 !important;
+  filter: saturate(0.9) contrast(1.04);
+}
+
+/* reduce dashboard grid feel */
+.urai-home-ground-world,
+.urai-launch-home__ground,
+.urai-home-ground-objects {
+  backdrop-filter: none !important;
+}
+
+.urai-home-ground-world [class*="grid"],
+.urai-home-ground-world [class*="ring"],
+.urai-launch-home__ground [class*="grid"],
+.urai-launch-home__ground [class*="ring"] {
+  opacity: 0.36 !important;
+}
+
+/* central threshold platform */
+.urai-ground-plinth,
+.urai-home-ground-world__plinth,
+.urai-home-ground-world__platform {
+  background:
+    linear-gradient(180deg, rgba(255,255,255,0.10), transparent 16%),
+    radial-gradient(circle at 50% 40%, rgba(255,255,255,0.14), transparent 38%),
+    linear-gradient(180deg, rgba(18, 28, 48, 0.84), rgba(5, 10, 18, 0.98)) !important;
+  box-shadow:
+    0 28px 88px rgba(0,0,0,0.50),
+    0 0 90px rgba(103,232,249,0.10),
+    inset 0 1px 0 rgba(255,255,255,0.12),
+    inset 0 -18px 40px rgba(0,0,0,0.32) !important;
+  opacity: 0.92 !important;
+}
+
+/* make route stones subtle embedded beacons, not UI blocks */
+.urai-ground-stone,
+.urai-ground-station,
+.urai-home-ground-world__stone {
+  background:
+    linear-gradient(180deg, rgba(255,255,255,0.08), rgba(255,255,255,0.01)),
+    linear-gradient(180deg, rgba(8, 16, 30, 0.84), rgba(3, 7, 15, 0.98)) !important;
+  border: 1px solid rgba(180, 225, 255, 0.12) !important;
+  box-shadow:
+    0 14px 36px rgba(0,0,0,0.28),
+    inset 0 1px 0 rgba(255,255,255,0.08),
+    0 0 16px rgba(103,232,249,0.06);
+  opacity: 0.92 !important;
+}
+
+/* orb/avatar grounding */
+.urai-launch-home__orb,
+.urai-launch-home__world-orb {
+  box-shadow:
+    0 0 28px rgba(125, 211, 252, 0.30),
+    0 0 110px rgba(96, 165, 250, 0.16),
+    0 42px 90px rgba(0,0,0,0.26) !important;
+  filter: saturate(1.06) brightness(1.02);
+}
+
+/* orb contact shadow */
+.urai-launch-home__orb::after,
+.urai-launch-home__world-orb::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  bottom: -8vh;
+  width: clamp(140px, 12vw, 220px);
+  height: clamp(28px, 3vw, 48px);
+  transform: translateX(-50%);
+  background: radial-gradient(ellipse at center, rgba(0,0,0,0.42), transparent 72%);
+  filter: blur(8px);
+  pointer-events: none;
+  z-index: -1;
+}
+
+/* cleaner hero surface */
+.urai-launch-home__panel,
+.urai-launch-home__copy,
+.urai-launch-home__hero {
+  position: relative;
+  z-index: 12 !important;
+}
+
+.urai-launch-home__title,
+.urai-launch-home h1 {
+  text-shadow:
+    0 16px 52px rgba(0,0,0,0.28),
+    0 28px 84px rgba(17, 24, 39, 0.24);
+}
+
+.urai-launch-home__lede,
+.urai-launch-home p {
+  color: rgba(233, 242, 255, 0.88) !important;
+}
+
+/* keep left route list useful but less heavy */
+.urai-launch-home [class*="route"],
+.urai-launch-home [class*="list"] {
+  z-index: 13;
+}
+
+/* bottom dock */
+.urai-launch-home__dock,
+.urai-launch-home__route-dock {
+  z-index: 14 !important;
+}
+
+/* responsive softening */
+@media (max-width: 980px) {
+  .urai-launch-home__scene::after {
+    bottom: 18vh;
+    height: 12vh;
+  }
+
+  .urai-home-ground-world::before {
+    bottom: 12vh;
+    height: 8vh;
+  }
+
+  .urai-launch-home__ground,
+  .urai-home-ground-world {
+    opacity: 0.82 !important;
+  }
+}
+
+@media (max-width: 780px) {
+  .urai-home-ground-objects {
+    opacity: 0.58 !important;
+  }
+}

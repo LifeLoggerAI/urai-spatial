@@ -19,6 +19,7 @@ import './home-ground-production.css'
 import './home-ground-shipping-world.css'
 import './home-ground-final-object-visibility.css'
 import './memory-surfaces-production-final.css'
+import './home-scene-art-direction-final.css'
 import HomeGroundWorldObjects from './HomeGroundWorldObjects'
 
 export const metadata: Metadata = {
