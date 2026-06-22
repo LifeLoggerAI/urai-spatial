@@ -16,3 +16,7 @@ Current screenshots show `/` and `/home` still reading as a left-heavy landing p
 ## Production bar
 
 Home must feel like Genesis: sky, horizon, ground, avatar presence, orb companion, and route portals all belonging to one cinematic spatial world. It must remain static-export safe, keyboard accessible, reduced-motion aware, and route-complete.
+
+## Verification notes
+
+The live HTML fallback was checked, but this connector runtime could not render an interactive Chromium screenshot. The user-provided screenshots are the visual evidence for this audit pass.
