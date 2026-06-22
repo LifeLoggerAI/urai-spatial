@@ -16,14 +16,18 @@ const routeLinks: LaunchRoute[] = [
   { label: 'Life Map', href: '/life-map', action: 'open-life-map' },
   { label: 'Focus', href: focusHref, action: 'open-focus' },
   { label: 'Replay', href: replayHref, action: 'open-replay' },
+  { label: 'Mirror', href: '/mirror', action: 'open-mirror' },
   { label: 'Passport', href: '/passport', action: 'open-passport' },
   { label: 'Status', href: '/status', action: 'open-status' },
+  { label: 'Unwind', href: '/unwind', action: 'open-unwind' },
+  { label: 'Ascent', href: '/ascent', action: 'open-ascent' },
+  { label: 'Privacy', href: '/privacy-controls', action: 'open-privacy-controls' },
 ]
 
 const pathSteps = [
-  ['01', 'Life Map', 'open the constellation'],
-  ['02', 'Focus', 'hold one selected star'],
-  ['03', 'Replay', 'move the thread'],
+  ['01', 'Life Map', 'open the constellation', '/life-map'],
+  ['02', 'Focus', 'hold one selected star', focusHref],
+  ['03', 'Replay', 'move the thread', replayHref],
 ]
 
 export function LaunchRoutePanel({ variant }: { variant: LaunchRouteVariant }) {
@@ -38,12 +42,13 @@ export function LaunchRoutePanel({ variant }: { variant: LaunchRouteVariant }) {
         <p className={styles.eyebrow}>URAI Spatial · Home World</p>
         <h1>Own your life. Step inside yourself.</h1>
         <p className={styles.lead}>
-          A private spatial world for memory, focus, replay, identity, and consent. Start in the Life Map, open one star, then keep the same thread alive through Focus, Replay, Passport, and Status.
+          A private spatial world for memory, focus, replay, identity, and consent. Open the Life Map, choose one star, then carry that same thread through Focus, Replay, Passport, and Status.
         </p>
         <div className={styles.commandRow} aria-label="Primary launch actions">
-          <a className={styles.primaryCta} href="/life-map" data-urai-audit-action="home-life-map">Enter Life Map</a>
+          <a className={styles.primaryCta} href="/life-map" data-urai-audit-action="home-life-map">Open my world</a>
           <a href={focusHref} data-urai-audit-action="home-focus">Open Focus</a>
           <a href={replayHref} data-urai-audit-action="home-replay">Start Replay</a>
+          <a href="/focus?memoryId=quiet-reset&orb=open" data-urai-audit-action="home-orb-companion">Open URAI orb companion</a>
         </div>
       </div>
 
@@ -54,8 +59,8 @@ export function LaunchRoutePanel({ variant }: { variant: LaunchRouteVariant }) {
       </a>
 
       <div className={styles.pathThread} aria-label="Canonical URAI route path">
-        {pathSteps.map(([index, label, detail]) => (
-          <a key={label} href={label === 'Life Map' ? '/life-map' : label === 'Focus' ? focusHref : replayHref}>
+        {pathSteps.map(([index, label, detail, href]) => (
+          <a key={label} href={href}>
             <span>{index}</span>
             <strong>{label}</strong>
             <small>{detail}</small>
@@ -69,7 +74,6 @@ export function LaunchRoutePanel({ variant }: { variant: LaunchRouteVariant }) {
             {route.label}
           </a>
         ))}
-        <a href="/privacy-controls" data-urai-audit-action="open-privacy-controls-dock">Privacy</a>
       </nav>
     </section>
   )
