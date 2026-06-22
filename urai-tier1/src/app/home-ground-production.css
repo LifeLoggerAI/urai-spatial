@@ -3,39 +3,102 @@
 .home-cohesion-layer {
   --ground-cyan: rgba(125, 239, 255, 0.9);
   --ground-violet: rgba(167, 139, 250, 0.32);
+  --ground-glass: rgba(11, 29, 50, 0.74);
+  --ground-ink: #020617;
 }
 
 .urai-launch-home {
   background:
-    radial-gradient(circle at 52% 38%, rgba(132, 229, 255, 0.24), transparent 20rem),
-    radial-gradient(circle at 82% 18%, rgba(167, 139, 250, 0.26), transparent 36rem),
-    radial-gradient(ellipse at 48% 105%, rgba(61, 214, 193, 0.24), transparent 42rem),
-    linear-gradient(155deg, #030817 0%, #08162f 46%, #1b1346 100%) !important;
+    radial-gradient(circle at 50% 31%, rgba(132, 229, 255, 0.25), transparent 18rem),
+    radial-gradient(circle at 80% 18%, rgba(167, 139, 250, 0.28), transparent 34rem),
+    radial-gradient(circle at 25% 76%, rgba(45, 212, 191, 0.13), transparent 28rem),
+    radial-gradient(ellipse at 50% 107%, rgba(61, 214, 193, 0.31), transparent 44rem),
+    linear-gradient(155deg, #030817 0%, #07142a 46%, #1b1346 100%) !important;
+}
+
+.urai-launch-home::before,
+.urai-launch-home::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 2;
+}
+
+.urai-launch-home::before {
+  background:
+    radial-gradient(ellipse at 52% 69%, rgba(210, 248, 255, 0.08), transparent 16%),
+    linear-gradient(180deg, transparent 0 54%, rgba(2, 6, 23, 0.18) 64%, rgba(1, 5, 14, 0.64) 100%);
+  mix-blend-mode: screen;
+  opacity: 0.92;
+}
+
+.urai-launch-home::after {
+  background:
+    linear-gradient(90deg, rgba(2, 6, 23, 0.45), transparent 18%, transparent 76%, rgba(2, 6, 23, 0.42)),
+    radial-gradient(ellipse at 50% 106%, rgba(0, 0, 0, 0.62), transparent 45%);
+  z-index: 3;
+}
+
+.urai-launch-home__sky::before,
+.urai-launch-home__sky::after {
+  content: "";
+  position: absolute;
+  pointer-events: none;
+}
+
+.urai-launch-home__sky::before {
+  left: 28%;
+  right: 8%;
+  bottom: 27%;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, rgba(209, 250, 255, 0.44), rgba(125, 239, 255, 0.22), transparent);
+  box-shadow: 0 0 48px rgba(125, 239, 255, 0.22);
+  transform: rotate(-3deg);
+  opacity: 0.84;
+}
+
+.urai-launch-home__sky::after {
+  left: 41%;
+  bottom: 22.6%;
+  width: min(410px, 30vw);
+  height: min(118px, 8.6vw);
+  border-radius: 999px;
+  background:
+    radial-gradient(ellipse at 50% 50%, rgba(236, 254, 255, 0.32), rgba(125, 239, 255, 0.16) 36%, rgba(167, 139, 250, 0.10) 62%, transparent 76%);
+  border: 1px solid rgba(218, 249, 255, 0.18);
+  box-shadow:
+    0 0 92px rgba(125, 239, 255, 0.23),
+    inset 0 0 42px rgba(255, 255, 255, 0.07);
+  transform: perspective(700px) rotateX(66deg) rotateZ(-2deg);
+  opacity: 0.95;
 }
 
 .urai-launch-home__ground,
 .ground-curve {
-  left: -16% !important;
-  right: -16% !important;
-  bottom: -18% !important;
-  height: 50% !important;
-  border-radius: 50% 50% 0 0 / 34% 34% 0 0 !important;
+  left: -20% !important;
+  right: -20% !important;
+  bottom: -22% !important;
+  height: 58% !important;
+  border-radius: 50% 50% 0 0 / 36% 36% 0 0 !important;
   background:
-    radial-gradient(ellipse at 50% 0%, rgba(151, 221, 255, 0.26), transparent 26%),
-    radial-gradient(ellipse at 36% 18%, rgba(134, 239, 172, 0.12), transparent 22%),
-    radial-gradient(ellipse at 66% 14%, rgba(167, 139, 250, 0.12), transparent 24%),
-    repeating-linear-gradient(92deg, rgba(186, 230, 253, 0.07) 0 1px, transparent 1px 72px),
-    repeating-radial-gradient(ellipse at 50% 4%, rgba(186, 230, 253, 0.11) 0 1px, transparent 1px 56px),
-    linear-gradient(180deg, rgba(10, 34, 58, 0.82), rgba(2, 7, 18, 0.30) 70%) !important;
-  border-top: 1px solid rgba(186, 230, 253, 0.30) !important;
+    radial-gradient(ellipse at 50% 2%, rgba(222, 252, 255, 0.23), transparent 22%),
+    radial-gradient(ellipse at 49% 11%, rgba(125, 239, 255, 0.18), transparent 30%),
+    radial-gradient(ellipse at 36% 22%, rgba(134, 239, 172, 0.12), transparent 21%),
+    radial-gradient(ellipse at 67% 20%, rgba(167, 139, 250, 0.14), transparent 25%),
+    repeating-linear-gradient(93deg, rgba(186, 230, 253, 0.095) 0 1px, transparent 1px 76px),
+    repeating-linear-gradient(2deg, rgba(186, 230, 253, 0.052) 0 1px, transparent 1px 42px),
+    repeating-radial-gradient(ellipse at 50% 1%, rgba(186, 230, 253, 0.14) 0 1px, transparent 1px 62px),
+    linear-gradient(180deg, rgba(11, 40, 68, 0.94), rgba(5, 16, 31, 0.68) 56%, rgba(1, 4, 12, 0.16) 100%) !important;
+  border-top: 1px solid rgba(218, 249, 255, 0.34) !important;
   box-shadow:
-    inset 0 40px 88px rgba(125, 211, 252, 0.08),
-    inset 0 -60px 140px rgba(0,0,0,0.56),
-    0 -32px 110px rgba(103, 232, 249, 0.12) !important;
+    inset 0 58px 115px rgba(125, 211, 252, 0.11),
+    inset 0 -80px 180px rgba(0,0,0,0.66),
+    0 -34px 128px rgba(103, 232, 249, 0.15) !important;
 }
 
 .urai-launch-home__ground {
-  transform: perspective(900px) rotateX(61deg) translateY(4vh);
+  transform: perspective(980px) rotateX(62deg) translateY(5vh);
   transform-origin: 50% 100%;
 }
 
@@ -51,64 +114,112 @@
 .urai-launch-home__ground::before,
 .ground-curve::before {
   left: 50%;
-  top: 2%;
-  width: min(540px, 35vw);
-  height: min(156px, 10vw);
+  top: -1%;
+  width: min(640px, 40vw);
+  height: min(178px, 11vw);
   transform: translateX(-50%);
   border-radius: 999px;
-  background: radial-gradient(ellipse, rgba(216, 248, 255, 0.18), rgba(125, 239, 255, 0.16), rgba(167,139,250,0.08) 58%, transparent 78%);
-  border: 1px solid rgba(186,230,253,0.14);
-  box-shadow: 0 0 86px rgba(103, 232, 249, 0.16), inset 0 0 44px rgba(255,255,255,0.05);
+  background:
+    radial-gradient(ellipse, rgba(238, 254, 255, 0.22), rgba(125, 239, 255, 0.19), rgba(167,139,250,0.10) 58%, transparent 80%);
+  border: 1px solid rgba(218,249,255,0.18);
+  box-shadow:
+    0 0 105px rgba(103, 232, 249, 0.20),
+    inset 0 0 50px rgba(255,255,255,0.06);
 }
 
 .urai-launch-home__ground::after,
 .ground-curve::after {
   left: 50%;
-  top: 9%;
-  width: 8px;
-  height: 8px;
+  top: 8%;
+  width: 9px;
+  height: 9px;
   border-radius: 999px;
-  background: rgba(255,255,255,0.92);
+  background: rgba(255,255,255,0.96);
   box-shadow:
-    -340px 52px 0 1px rgba(125, 239, 255, 0.74),
-    -220px 10px 0 0 rgba(134, 239, 172, 0.70),
-    -94px 72px 0 1px rgba(216, 180, 254, 0.68),
-    92px 34px 0 1px rgba(125, 239, 255, 0.82),
-    222px 82px 0 0 rgba(134, 239, 172, 0.70),
-    348px 18px 0 1px rgba(216, 180, 254, 0.70),
-    -340px 52px 28px 7px rgba(125, 239, 255, 0.24),
-    92px 34px 44px 10px rgba(125, 239, 255, 0.28),
-    348px 18px 40px 8px rgba(167, 139, 250, 0.22);
+    -390px 58px 0 1px rgba(125, 239, 255, 0.72),
+    -280px 28px 0 0 rgba(134, 239, 172, 0.76),
+    -164px 92px 0 1px rgba(216, 180, 254, 0.72),
+    -42px 44px 0 0 rgba(255, 255, 255, 0.82),
+    112px 38px 0 1px rgba(125, 239, 255, 0.84),
+    246px 92px 0 0 rgba(134, 239, 172, 0.76),
+    390px 24px 0 1px rgba(216, 180, 254, 0.74),
+    -390px 58px 32px 9px rgba(125, 239, 255, 0.28),
+    -164px 92px 38px 9px rgba(167, 139, 250, 0.23),
+    112px 38px 48px 12px rgba(125, 239, 255, 0.31),
+    390px 24px 44px 10px rgba(167, 139, 250, 0.25);
 }
 
-.home-cinematic-field::before,
-.home-cinematic-field::after {
+.urai-launch-home__orb {
+  bottom: 21% !important;
+  filter: drop-shadow(0 0 56px rgba(103, 232, 249, 0.45)) !important;
+  z-index: 4;
+}
+
+.center-orb::after,
+.urai-launch-home__orb::after {
   content: "";
   position: absolute;
-  pointer-events: none;
-  z-index: 1;
-}
-
-.home-cinematic-field::before {
-  left: -10%;
-  right: -10%;
-  bottom: -2%;
-  height: 32%;
+  left: 50%;
+  top: 115%;
+  width: 220%;
+  height: 42%;
+  transform: translateX(-50%);
+  border-radius: 999px;
   background:
-    radial-gradient(ellipse at 48% 40%, rgba(186, 230, 253, 0.16), transparent 45%),
-    linear-gradient(180deg, transparent, rgba(2, 6, 23, 0.62));
-  filter: blur(12px);
-  opacity: 0.82;
+    radial-gradient(ellipse, rgba(0,0,0,0.62), rgba(3, 10, 24, 0.34), transparent 72%);
+  filter: blur(10px);
+  pointer-events: none;
 }
 
-.home-cinematic-field::after {
-  left: 19%;
-  bottom: 15.5%;
-  width: 52%;
-  height: 1px;
-  background: linear-gradient(90deg, rgba(125, 239, 255, 0), rgba(125, 239, 255, 0.68), rgba(167,139,250,0.36), transparent);
-  box-shadow: 0 0 42px rgba(125, 239, 255, 0.28);
-  transform: rotate(-7deg);
+.urai-launch-home__content,
+.urai-launch-home__topbar,
+.urai-launch-home__footer {
+  position: relative;
+  z-index: 40;
+}
+
+.urai-launch-home__content {
+  padding-bottom: clamp(130px, 18vh, 210px) !important;
+}
+
+.urai-launch-home__actions::after {
+  content: "world path armed";
+  display: inline-flex;
+  align-items: center;
+  height: 34px;
+  padding: 0 12px;
+  border: 1px solid rgba(125, 239, 255, 0.18);
+  border-radius: 999px;
+  background: rgba(2, 6, 23, 0.34);
+  color: rgba(190, 242, 255, 0.78);
+  font-size: 0.68rem;
+  font-weight: 900;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.urai-launch-home__primary {
+  box-shadow:
+    0 0 0 1px rgba(125, 239, 255, 0.12),
+    0 0 44px rgba(103, 232, 249, 0.24),
+    inset 0 1px 0 rgba(255,255,255,0.16) !important;
+}
+
+.urai-launch-home__panel {
+  background:
+    linear-gradient(145deg, rgba(2, 6, 23, 0.74), rgba(15, 23, 42, 0.42)) !important;
+  border-color: rgba(218, 249, 255, 0.18) !important;
+}
+
+.urai-launch-home__route-card:hover,
+.urai-launch-home__topbar nav a:hover,
+.urai-launch-home__actions a:hover {
+  border-color: rgba(125, 239, 255, 0.58) !important;
+  box-shadow:
+    0 22px 70px rgba(0,0,0,0.28),
+    0 0 54px rgba(103, 232, 249, 0.18),
+    inset 0 1px 0 rgba(255,255,255,0.14) !important;
+  transform: translateY(-1px);
 }
 
 .horizon-line {
@@ -119,51 +230,45 @@
 }
 
 .ground-aura {
-  left: 26% !important;
-  right: 26% !important;
+  left: 24% !important;
+  right: 24% !important;
   bottom: 10.5% !important;
-  height: 12% !important;
-  opacity: 0.94 !important;
+  height: 14% !important;
+  opacity: 0.96 !important;
 }
 
-.center-orb,
-.urai-launch-home__orb {
-  filter: drop-shadow(0 0 52px rgba(103, 232, 249, 0.38)) !important;
-}
+@media (max-width: 1080px) {
+  .urai-launch-home__ground,
+  .ground-curve {
+    height: 52% !important;
+  }
 
-.center-orb::after,
-.urai-launch-home__orb::after {
-  content: "";
-  position: absolute;
-  left: 50%;
-  top: 118%;
-  width: 185%;
-  height: 34%;
-  transform: translateX(-50%);
-  border-radius: 999px;
-  background: radial-gradient(ellipse, rgba(0,0,0,0.54), rgba(3, 10, 24, 0.24), transparent 72%);
-  filter: blur(8px);
-  pointer-events: none;
-}
-
-.urai-launch-home__content {
-  padding-bottom: clamp(80px, 14vh, 150px) !important;
+  .urai-launch-home__sky::after {
+    left: 33%;
+    width: 42vw;
+  }
 }
 
 @media (max-width: 760px) {
   .urai-launch-home__ground,
   .ground-curve {
-    height: 38% !important;
+    height: 40% !important;
     bottom: -18% !important;
-    transform: none;
+    transform: none !important;
   }
 
-  .home-cinematic-field::after {
-    display: none;
+  .urai-launch-home__sky::before,
+  .urai-launch-home__sky::after,
+  .urai-launch-home__actions::after {
+    display: none !important;
   }
 
   .ground-curve::after,
   .urai-launch-home__ground::after {
-    transform: translateX(-50%) scale(0.58);
+    transform: translateX(-50%) scale(0.56);
+  }
+
+  .urai-launch-home__content {
+    padding-bottom: 92px !important;
   }
 }
