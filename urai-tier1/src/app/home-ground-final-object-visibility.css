@@ -174,3 +174,167 @@ body:has(.urai-home-ground-objects) {
   .stone-privacy,
   .station-privacy { display: none !important; }
 }
+
+/* URAI HOME GROUND SIGHTLINE FIX */
+.urai-home-ground-objects {
+  z-index: 7 !important;
+  height: min(38vh, 360px) !important;
+  pointer-events: none !important;
+}
+
+.urai-home-ground-objects::before {
+  top: 30% !important;
+  height: 26% !important;
+  opacity: 0.72 !important;
+}
+
+.urai-home-ground-objects::after {
+  height: 132px !important;
+  bottom: -46px !important;
+  opacity: 0.76 !important;
+}
+
+.urai-ground-plinth {
+  top: 78% !important;
+  width: min(460px, 34vw) !important;
+  height: min(92px, 7vw) !important;
+  z-index: 3 !important;
+  opacity: 0.82 !important;
+}
+
+.urai-ground-trail {
+  top: 72% !important;
+  left: 35% !important;
+  right: 28% !important;
+  opacity: 0.48 !important;
+  z-index: 2 !important;
+}
+
+.urai-ground-stones,
+.urai-ground-stations {
+  z-index: 5 !important;
+  pointer-events: auto !important;
+}
+
+.urai-ground-stone,
+.urai-ground-station {
+  min-width: 92px !important;
+  max-width: 118px !important;
+  padding: 7px 8px !important;
+  border-radius: 14px !important;
+  opacity: 0.72 !important;
+  transform: perspective(900px) rotateX(34deg) rotateZ(-1deg) scale(0.68) !important;
+  box-shadow:
+    0 14px 34px rgba(0,0,0,0.32),
+    0 0 24px rgba(103,232,249,0.08),
+    inset 0 1px 0 rgba(255,255,255,0.08) !important;
+}
+
+.urai-ground-stone:hover,
+.urai-ground-station:hover,
+.urai-ground-stone:focus-visible,
+.urai-ground-station:focus-visible {
+  opacity: 1 !important;
+  transform: perspective(900px) rotateX(28deg) rotateZ(-1deg) translateY(-4px) scale(0.76) !important;
+}
+
+.urai-ground-stone strong,
+.urai-ground-station strong {
+  width: 22px !important;
+  height: 22px !important;
+  font-size: 0.62rem !important;
+}
+
+.urai-ground-stone span,
+.urai-ground-station span {
+  font-size: 0.66rem !important;
+  white-space: nowrap !important;
+}
+
+.urai-ground-stone small,
+.urai-ground-station small {
+  display: none !important;
+}
+
+.stone-life,
+.station-life {
+  left: 39% !important;
+  top: 84% !important;
+}
+
+.stone-focus,
+.station-focus {
+  left: 49% !important;
+  top: 76% !important;
+}
+
+.stone-replay,
+.station-replay {
+  left: 59% !important;
+  top: 84% !important;
+}
+
+.stone-privacy,
+.station-privacy {
+  left: 69% !important;
+  top: 76% !important;
+  opacity: 0.38 !important;
+}
+
+.urai-ground-foreground {
+  z-index: 6 !important;
+  height: 112px !important;
+  bottom: -44px !important;
+  opacity: 0.64 !important;
+  pointer-events: none !important;
+}
+
+.urai-launch-home__dock,
+.urai-launch-home__route-dock,
+nav {
+  z-index: 80 !important;
+}
+
+@media (max-width: 1368px) {
+  .urai-home-ground-objects {
+    height: min(34vh, 320px) !important;
+  }
+
+  .urai-ground-stone,
+  .urai-ground-station {
+    min-width: 78px !important;
+    max-width: 100px !important;
+    padding: 6px 7px !important;
+    transform: perspective(900px) rotateX(34deg) rotateZ(-1deg) scale(0.60) !important;
+  }
+
+  .stone-life,
+  .station-life {
+    left: 40% !important;
+    top: 86% !important;
+  }
+
+  .stone-focus,
+  .station-focus {
+    left: 50% !important;
+    top: 79% !important;
+  }
+
+  .stone-replay,
+  .station-replay {
+    left: 60% !important;
+    top: 86% !important;
+  }
+
+  .stone-privacy,
+  .station-privacy {
+    display: none !important;
+  }
+}
+
+@media (max-width: 780px) {
+  .urai-home-ground-objects {
+    display: none !important;
+  }
+}
+
