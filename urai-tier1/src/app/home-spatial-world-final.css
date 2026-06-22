@@ -1,0 +1,255 @@
+.urai-home-spatial-world-final {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 2;
+  overflow: hidden;
+}
+
+.urai-home-spatial-world-final__sky {
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(circle at 76% 14%, rgba(185, 205, 255, 0.14), transparent 18rem),
+    radial-gradient(circle at 54% 36%, rgba(90, 212, 255, 0.10), transparent 26rem),
+    linear-gradient(180deg, rgba(20, 35, 64, 0.00) 0%, rgba(11, 22, 42, 0.12) 40%, rgba(6, 13, 25, 0.26) 100%);
+}
+
+.urai-home-spatial-world-final__skyband {
+  position: absolute;
+  border-radius: 999px;
+  filter: blur(10px);
+  opacity: 0.9;
+}
+
+.urai-home-spatial-world-final__skyband--one {
+  width: min(34vw, 500px);
+  height: min(42vh, 520px);
+  left: 44%;
+  top: 14%;
+  background: radial-gradient(circle at 50% 40%, rgba(212, 225, 243, 0.20), rgba(160, 205, 255, 0.08) 42%, transparent 72%);
+}
+
+.urai-home-spatial-world-final__skyband--two {
+  width: min(26vw, 380px);
+  height: min(34vh, 360px);
+  left: 39%;
+  top: 52%;
+  background: radial-gradient(circle at 50% 44%, rgba(146, 224, 255, 0.12), rgba(98, 179, 255, 0.06) 44%, transparent 70%);
+}
+
+.urai-home-spatial-world-final__skyband--three {
+  width: min(24vw, 360px);
+  height: min(46vh, 520px);
+  right: 9%;
+  top: 16%;
+  background: radial-gradient(circle at 50% 46%, rgba(112, 132, 255, 0.10), rgba(67, 87, 190, 0.04) 46%, transparent 74%);
+}
+
+.urai-home-spatial-world-final__haze {
+  position: absolute;
+  left: -8%;
+  right: -8%;
+  bottom: 25vh;
+  height: 18vh;
+  background:
+    radial-gradient(ellipse at 50% 45%, rgba(165, 209, 255, 0.12), transparent 55%),
+    linear-gradient(180deg, rgba(170, 190, 210, 0.02), rgba(120, 145, 170, 0.08), rgba(6, 12, 22, 0.20));
+  filter: blur(16px);
+  opacity: 0.92;
+}
+
+.urai-home-spatial-world-final__horizon {
+  position: absolute;
+  left: -6%;
+  right: -6%;
+  bottom: 22vh;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, rgba(184, 226, 255, 0.28), rgba(235, 244, 255, 0.34), rgba(184, 226, 255, 0.24), transparent);
+  box-shadow: 0 0 20px rgba(136, 203, 255, 0.12);
+  opacity: 0.88;
+}
+
+.urai-home-spatial-world-final__terrain {
+  position: absolute;
+  left: -4%;
+  right: -4%;
+  bottom: 9vh;
+  height: 24vh;
+  border-radius: 50% 50% 0 0 / 100% 100% 0 0;
+  background:
+    linear-gradient(180deg, rgba(11, 20, 36, 0.12), rgba(4, 8, 18, 0.90)),
+    radial-gradient(ellipse at 50% 0%, rgba(94, 182, 255, 0.06), transparent 34%);
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,0.04),
+    0 -36px 110px rgba(0,0,0,0.28);
+}
+
+.urai-home-spatial-world-final__shelf {
+  position: absolute;
+  left: 34%;
+  width: 34%;
+  min-width: 360px;
+  max-width: 620px;
+  bottom: 18vh;
+  height: 13vh;
+  border-radius: 999px;
+  background:
+    radial-gradient(circle at 50% 34%, rgba(226, 241, 255, 0.14), transparent 28%),
+    linear-gradient(180deg, rgba(255,255,255,0.06), rgba(255,255,255,0.01)),
+    linear-gradient(180deg, rgba(17, 28, 48, 0.84), rgba(5, 10, 18, 0.96));
+  box-shadow:
+    0 18px 54px rgba(0,0,0,0.32),
+    0 0 80px rgba(93, 194, 255, 0.08),
+    inset 0 1px 0 rgba(255,255,255,0.08),
+    inset 0 -14px 30px rgba(0,0,0,0.26);
+  opacity: 0.96;
+}
+
+.urai-home-spatial-world-final__pedestal {
+  position: absolute;
+  left: 39.5%;
+  width: 23%;
+  min-width: 220px;
+  max-width: 420px;
+  bottom: 5.8vh;
+  height: 4.2vh;
+  min-height: 28px;
+  border-radius: 999px;
+  background:
+    radial-gradient(circle at 50% 42%, rgba(255,255,255,0.12), transparent 28%),
+    linear-gradient(180deg, rgba(18, 29, 48, 0.92), rgba(4, 8, 18, 0.98));
+  box-shadow:
+    0 12px 32px rgba(0,0,0,0.42),
+    0 0 36px rgba(103,232,249,0.10),
+    inset 0 1px 0 rgba(255,255,255,0.08);
+  opacity: 0.90;
+}
+
+.urai-home-spatial-world-final__path {
+  position: absolute;
+  left: 41%;
+  right: 27%;
+  bottom: 16.5vh;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, rgba(103,232,249,0.24), rgba(191,239,255,0.30), rgba(103,232,249,0.18), transparent);
+  opacity: 0.76;
+}
+
+.urai-home-spatial-world-final__avatar {
+  position: absolute;
+  left: 44.5%;
+  width: min(14vw, 180px);
+  height: min(34vh, 320px);
+  bottom: 16vh;
+  opacity: 0.42;
+}
+
+.urai-home-spatial-world-final__avatar-body {
+  position: absolute;
+  left: 50%;
+  top: 18%;
+  width: 56%;
+  height: 70%;
+  transform: translateX(-50%);
+  border-radius: 45% 45% 20% 20% / 26% 26% 16% 16%;
+  background:
+    linear-gradient(180deg, rgba(170, 220, 255, 0.10), rgba(110, 182, 255, 0.04) 44%, rgba(4, 8, 18, 0.0));
+  border: 1px solid rgba(186, 230, 255, 0.08);
+}
+
+.urai-home-spatial-world-final__avatar-core {
+  position: absolute;
+  left: 50%;
+  top: 0;
+  width: clamp(54px, 4.4vw, 86px);
+  height: clamp(54px, 4.4vw, 86px);
+  transform: translateX(-50%);
+  border-radius: 50%;
+  background: radial-gradient(circle at 40% 35%, rgba(244, 252, 255, 0.96), rgba(109, 222, 255, 0.84) 48%, rgba(56, 174, 255, 0.48) 76%, transparent 100%);
+  box-shadow:
+    0 0 28px rgba(143, 230, 255, 0.32),
+    0 0 80px rgba(74, 180, 255, 0.22);
+}
+
+.urai-home-spatial-world-final__avatar-glow {
+  position: absolute;
+  left: 50%;
+  top: -4%;
+  width: clamp(120px, 10vw, 190px);
+  height: clamp(120px, 10vw, 190px);
+  transform: translateX(-50%);
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(136, 229, 255, 0.16), transparent 70%);
+  filter: blur(8px);
+}
+
+.urai-home-spatial-world-final__beacon {
+  position: absolute;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  box-shadow: 0 0 16px currentColor, 0 0 34px currentColor;
+  opacity: 0.86;
+}
+
+.urai-home-spatial-world-final__beacon--one { left: 36.5%; bottom: 22vh; color: #78dfff; }
+.urai-home-spatial-world-final__beacon--two { left: 43.8%; bottom: 19vh; color: #f4f7ff; }
+.urai-home-spatial-world-final__beacon--three { left: 49.8%; bottom: 22.3vh; color: #6ce6ff; }
+.urai-home-spatial-world-final__beacon--four { left: 56.5%; bottom: 19.2vh; color: #7be591; }
+.urai-home-spatial-world-final__beacon--five { left: 63.8%; bottom: 22.7vh; color: #cfa2ff; }
+.urai-home-spatial-world-final__beacon--six { left: 42%; bottom: 16.2vh; color: #b387ff; }
+
+.urai-home-spatial-world-final__foreground {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 22vh;
+  background: linear-gradient(180deg, rgba(4,8,18,0.00), rgba(4,8,18,0.34) 50%, rgba(3,6,13,0.86) 100%);
+}
+
+.urai-launch-home__ground,
+.urai-home-ground-world {
+  opacity: 0.54 !important;
+  filter: saturate(0.88) contrast(1.02) !important;
+}
+
+.urai-ground-stone,
+.urai-ground-station,
+.urai-home-ground-world__stone {
+  opacity: 0.74 !important;
+  transform: perspective(900px) rotateX(30deg) scale(0.78) !important;
+}
+
+.urai-home-ground-objects::before,
+.urai-home-ground-objects::after {
+  opacity: 0.40 !important;
+}
+
+.urai-launch-home__orb,
+.urai-launch-home__world-orb {
+  box-shadow:
+    0 0 26px rgba(124, 223, 255, 0.30),
+    0 0 96px rgba(84, 166, 255, 0.18),
+    0 38px 72px rgba(0,0,0,0.26) !important;
+}
+
+.urai-launch-home__panel,
+.urai-launch-home__copy,
+.urai-launch-home__hero {
+  position: relative;
+  z-index: 12 !important;
+}
+
+.urai-launch-home__dock,
+.urai-launch-home__route-dock {
+  position: relative;
+  z-index: 14 !important;
+}
+
+@media (max-width: 780px) {
+  .urai-home-spatial-world-final {
+    display: none !important;
+  }
+}
