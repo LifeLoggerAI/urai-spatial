@@ -6,8 +6,9 @@ export const metadata = {
   description: 'The URAI Spatial Life Map opens the explorable memory constellation directly and routes selected stars into Focus.',
 }
 
-// Legacy canonical shell marker retained for source-string Phase 4 locks while
+// Legacy canonical shell markers retained for source-string Phase 4/ascent locks while
 // RootModeExperience resolves query/session state for the static-safe route.
+// LifeMapAscentGate
 // <TierOneExperience mode="life-map" />
 
 export default function LifeMapPage() {
