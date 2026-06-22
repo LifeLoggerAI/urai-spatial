@@ -1,0 +1,17 @@
+/* Keeps the final orb hover motion active even when older transforms are important. */
+
+.urai-genesis-home__orb {
+  animation-name: uraiHomeOrbFinalHoverTranslate !important;
+}
+
+@keyframes uraiHomeOrbFinalHoverTranslate {
+  0%, 100% { translate: 0 0; }
+  50% { translate: 0 -8px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .urai-genesis-home__orb {
+    animation: none !important;
+    translate: 0 0 !important;
+  }
+}
