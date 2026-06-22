@@ -1,15 +1,19 @@
 {
   "hosting": {
-    "public": "firebase-hosting-static",
+    "source": "urai-tier1",
     "ignore": [
       "firebase.json",
       "**/.*",
       "**/node_modules/**"
     ],
     "cleanUrls": true,
-    "trailingSlash": false,
-    "rewrites": [
-      { "source": "**", "destination": "/index.html" }
-    ]
+    "trailingSlash": false
+  },
+  "firestore": {
+    "rules": "firebase/firestore.rules",
+    "indexes": "firebase/firestore.indexes.json"
+  },
+  "functions": {
+    "source": "apps/functions"
   }
 }
