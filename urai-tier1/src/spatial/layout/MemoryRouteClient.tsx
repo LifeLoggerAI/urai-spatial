@@ -15,6 +15,10 @@ const aliases: Record<string, string> = {
   spark: 'first-signal-recovery',
   recovery: 'first-signal-recovery',
   passport: 'purpose-thread-visible',
+  'seed-memory-bloom': 'memory-became-thread',
+  'seed-recovery-arc': 'first-signal-recovery',
+  'seed-threshold-storm': 'doorway-season',
+  'chapter-becoming': 'chapter-becoming',
 };
 
 function normalizeNodeId(value?: string | null) {
