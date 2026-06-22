@@ -42,13 +42,13 @@ export function LaunchRoutePanel({ variant }: { variant: LaunchRouteVariant }) {
         <p className={styles.eyebrow}>URAI Spatial · Home World</p>
         <h1>Own your life. Step inside yourself.</h1>
         <p className={styles.lead}>
-          A private spatial world for memory, focus, replay, identity, and consent. Open the Life Map, choose one star, then carry that same thread through Focus, Replay, Passport, and Status.
+          A private spatial world for memory, focus, replay, identity, and consent. Enter the Life Map, choose one star, then carry that same thread through Focus, Replay, Passport, and Status.
         </p>
         <div className={styles.commandRow} aria-label="Primary launch actions">
-          <a className={styles.primaryCta} href="/life-map" data-urai-audit-action="home-life-map">Open my world</a>
+          <a className={styles.primaryCta} href="/life-map" data-urai-audit-action="home-life-map">Enter Life Map</a>
           <a href={focusHref} data-urai-audit-action="home-focus">Open Focus</a>
           <a href={replayHref} data-urai-audit-action="home-replay">Start Replay</a>
-          <a href="/focus?memoryId=quiet-reset&orb=open" data-urai-audit-action="home-orb-companion">Open URAI orb companion</a>
+          <a href="/life-map?orb=open" data-urai-audit-action="home-orb-companion">Open URAI orb companion</a>
         </div>
       </div>
 
