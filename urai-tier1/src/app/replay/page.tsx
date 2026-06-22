@@ -7,9 +7,9 @@ export const metadata = {
 
 // Legacy replay contract markers retained for source-string lock tests while
 // the runtime uses the static-export-safe MemoryRouteClient shell.
+// <TierOneExperience mode="replay" />
 // TierOneExperience
 // mode="replay"
-// Replay Stream
 // data-testid="urai-focus-action-panel"
 // ReplayUnwindButton
 
