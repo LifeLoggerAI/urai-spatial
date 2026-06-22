@@ -26,13 +26,40 @@
 [data-testid="urai-replay-surface"] button[aria-label*="play"] > span:nth-of-type(3) {
   inset: 7% 7% 18% !important;
   border-radius: 34px !important;
-  background: radial-gradient(circle at 39% 27%, rgba(255,255,255,.92), rgba(191,239,255,.66) 9%, transparent 23%), radial-gradient(circle at 64% 57%, rgba(56,189,248,.72), transparent 29%), linear-gradient(180deg, rgba(9,18,36,.18), rgba(2,6,23,.92)) !important;
+  overflow: hidden !important;
+  background: #020617 !important;
+  box-shadow: inset 0 0 110px rgba(255,255,255,.08), 0 0 135px rgba(103,232,249,.25) !important;
+}
+
+[data-testid="urai-focus-surface"] button[aria-label*="Open"] > span:nth-of-type(3) > img,
+[data-testid="urai-replay-surface"] button[aria-label*="Pause"] > span:nth-of-type(3) > img,
+[data-testid="urai-replay-surface"] button[aria-label*="play"] > span:nth-of-type(3) > img {
+  position: absolute !important;
+  inset: 0 !important;
+  width: 100% !important;
+  height: 100% !important;
+  object-fit: cover !important;
+  opacity: .98 !important;
+  filter: saturate(1.12) contrast(1.08) brightness(.95) !important;
+  transform: scale(1.012) !important;
+}
+
+[data-testid="urai-focus-surface"] button[aria-label*="Open"] > span:nth-of-type(3)::after,
+[data-testid="urai-replay-surface"] button[aria-label*="Pause"] > span:nth-of-type(3)::after,
+[data-testid="urai-replay-surface"] button[aria-label*="play"] > span:nth-of-type(3)::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(180deg, rgba(255,255,255,.10), transparent 24%, rgba(2,6,23,.42) 100%), repeating-linear-gradient(90deg, rgba(255,255,255,.026) 0 1px, transparent 1px 8px);
+  mix-blend-mode: screen;
+  opacity: .72;
 }
 
 [data-testid="urai-focus-surface"] button[aria-label*="Open"] > span:nth-of-type(2),
 [data-testid="urai-replay-surface"] button[aria-label*="Pause"] > span:nth-of-type(2),
 [data-testid="urai-replay-surface"] button[aria-label*="play"] > span:nth-of-type(2) {
-  opacity: .16 !important;
+  opacity: .08 !important;
 }
 
 @media (max-width: 900px) {
