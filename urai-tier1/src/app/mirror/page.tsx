@@ -1,5 +1,4 @@
-import { Suspense } from 'react';
-import { MirrorRealm } from './MirrorRealm';
+import { TierOneExperience } from '@/spatial/layout/TierOneExperience';
 
 export const metadata = {
   title: 'URAI Mirror',
@@ -8,9 +7,5 @@ export const metadata = {
 };
 
 export default function MirrorRoutePage() {
-  return (
-    <Suspense fallback={null}>
-      <MirrorRealm />
-    </Suspense>
-  );
+  return <TierOneExperience mode="mirror" />;
 }
