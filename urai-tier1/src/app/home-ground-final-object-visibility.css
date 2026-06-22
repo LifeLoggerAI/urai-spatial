@@ -1,0 +1,176 @@
+/* URAI HOME FINAL OBJECT VISIBILITY PASS
+   Forces the Home ground to read as a physical entry scene instead of a soft HUD grid. */
+
+body:has(.urai-home-ground-objects) {
+  background:
+    radial-gradient(circle at 55% 17%, rgba(203, 213, 225, 0.18), transparent 15rem),
+    radial-gradient(circle at 78% 16%, rgba(96, 165, 250, 0.16), transparent 28rem),
+    linear-gradient(180deg, #101a33 0%, #081226 45%, #030712 100%) !important;
+}
+
+.urai-home-ground-objects {
+  height: min(56vh, 540px) !important;
+  z-index: 68 !important;
+  overflow: visible !important;
+}
+
+.urai-home-ground-objects::before {
+  content: "";
+  position: absolute;
+  left: -6%;
+  right: -6%;
+  top: 3%;
+  height: 42%;
+  pointer-events: none;
+  border-radius: 50% 50% 0 0;
+  background:
+    radial-gradient(ellipse at 50% 15%, rgba(191, 219, 254, 0.18), transparent 38%),
+    linear-gradient(180deg, transparent 0%, rgba(8, 16, 32, 0.52) 58%, rgba(3, 7, 18, 0.90) 100%);
+  border-top: 1px solid rgba(226, 246, 255, 0.22);
+  box-shadow: 0 -22px 90px rgba(125, 211, 252, 0.09), inset 0 1px 0 rgba(255, 255, 255, 0.07);
+  z-index: 1;
+}
+
+.urai-home-ground-objects::after {
+  content: "";
+  position: absolute;
+  left: -7%;
+  right: -7%;
+  bottom: -42px;
+  height: 190px;
+  pointer-events: none;
+  background:
+    linear-gradient(180deg, transparent, rgba(1, 4, 12, 0.74) 66%, rgba(1, 4, 12, 0.96)),
+    radial-gradient(ellipse at 50% 0%, rgba(103, 232, 249, 0.10), transparent 58%);
+  z-index: 30;
+}
+
+.urai-ground-plinth {
+  top: 50% !important;
+  width: min(660px, 46vw) !important;
+  height: min(220px, 16vw) !important;
+  z-index: 12 !important;
+  opacity: 1 !important;
+  filter: saturate(1.15) contrast(1.08) !important;
+}
+
+.urai-ground-plinth::before {
+  content: "";
+  position: absolute;
+  inset: -8% -10%;
+  border-radius: 999px;
+  background: radial-gradient(ellipse, rgba(103, 232, 249, 0.19), transparent 68%);
+  filter: blur(18px);
+  z-index: -1;
+}
+
+.plinth-core {
+  width: 24px !important;
+  height: 24px !important;
+  box-shadow:
+    0 0 46px rgba(255,255,255,0.94),
+    0 0 110px rgba(103,232,249,0.82),
+    138px 24px 0 -4px rgba(125,211,252,0.96),
+    -150px 30px 0 -5px rgba(167,139,250,0.94),
+    228px 52px 0 -6px rgba(134,239,172,0.90),
+    -252px 58px 0 -6px rgba(125,211,252,0.90) !important;
+}
+
+.urai-ground-trail {
+  top: 38% !important;
+  left: 18% !important;
+  right: 14% !important;
+  z-index: 9 !important;
+  opacity: 0.96 !important;
+}
+
+.urai-ground-trail span {
+  height: 2px !important;
+  background: linear-gradient(90deg, transparent, rgba(236,254,255,0.88), rgba(103,232,249,0.62), rgba(167,139,250,0.38), transparent) !important;
+  box-shadow: 0 0 36px rgba(103,232,249,0.35), 0 0 84px rgba(59,130,246,0.22) !important;
+}
+
+.urai-ground-stones,
+.urai-ground-stations {
+  z-index: 24 !important;
+}
+
+.urai-ground-stone,
+.urai-ground-station {
+  min-width: 168px !important;
+  padding: 13px 15px !important;
+  border-radius: 22px !important;
+  color: #f4fbff !important;
+  border-color: rgba(229,252,255,0.34) !important;
+  background:
+    linear-gradient(180deg, rgba(255,255,255,0.10), transparent 30%),
+    linear-gradient(145deg, rgba(3,12,28,0.96), rgba(15,23,42,0.76)) !important;
+  box-shadow:
+    0 24px 90px rgba(0,0,0,0.50),
+    0 0 58px rgba(103,232,249,0.20),
+    inset 0 1px 0 rgba(255,255,255,0.16) !important;
+  opacity: 1 !important;
+  transform: perspective(900px) rotateX(22deg) rotateZ(-1deg) !important;
+  text-shadow: 0 0 14px rgba(103,232,249,0.18) !important;
+}
+
+.urai-ground-stone::after,
+.urai-ground-station::after {
+  content: "";
+  position: absolute;
+  left: 14%;
+  right: 14%;
+  bottom: -14px;
+  height: 18px;
+  border-radius: 999px;
+  background: radial-gradient(ellipse, rgba(0,0,0,0.50), transparent 70%);
+  filter: blur(7px);
+  z-index: -1;
+}
+
+.urai-ground-stone strong,
+.urai-ground-station strong {
+  width: 36px !important;
+  height: 36px !important;
+  background: rgba(103,232,249,0.22) !important;
+  color: #67e8f9 !important;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.18), 0 0 34px rgba(103,232,249,0.24) !important;
+}
+
+.urai-ground-stone small,
+.urai-ground-station small {
+  color: rgba(218,244,255,0.78) !important;
+}
+
+.stone-life,
+.station-life { left: 28% !important; top: 51% !important; }
+.stone-focus,
+.station-focus { left: 41% !important; top: 35% !important; }
+.stone-replay,
+.station-replay { left: 56% !important; top: 51% !important; }
+.stone-privacy,
+.station-privacy { left: 70% !important; top: 35% !important; }
+
+.urai-ground-foreground {
+  height: 145px !important;
+  bottom: -38px !important;
+  z-index: 32 !important;
+  opacity: 0.72 !important;
+}
+
+@media (max-width: 1120px) {
+  .urai-ground-stone,
+  .urai-ground-station {
+    min-width: 130px !important;
+    padding: 9px 10px !important;
+  }
+
+  .stone-life,
+  .station-life { left: 23% !important; top: 55% !important; }
+  .stone-focus,
+  .station-focus { left: 41% !important; top: 40% !important; }
+  .stone-replay,
+  .station-replay { left: 59% !important; top: 55% !important; }
+  .stone-privacy,
+  .station-privacy { display: none !important; }
+}
