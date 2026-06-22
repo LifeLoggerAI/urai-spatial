@@ -11,7 +11,7 @@ export default function HomeSpatialWorldFinal() {
   if (!pathname || !HOME_PATHS.has(pathname)) return null;
 
   return (
-    <div className="urai-home-spatial-world-final" aria-hidden="true">
+    <section className="urai-home-spatial-world-final" data-home-world-owner="HomeSpatialWorldFinal" aria-label="URAI Spatial Genesis Home World">
       <div className="urai-home-spatial-world-final__sky" />
       <div className="urai-home-spatial-world-final__skyband urai-home-spatial-world-final__skyband--one" />
       <div className="urai-home-spatial-world-final__skyband urai-home-spatial-world-final__skyband--two" />
@@ -36,6 +36,6 @@ export default function HomeSpatialWorldFinal() {
         ))}
       </div>
       <div className="urai-home-spatial-world-final__foreground" />
-    </div>
+    </section>
   );
 }
