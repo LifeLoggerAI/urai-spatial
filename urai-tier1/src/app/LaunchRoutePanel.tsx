@@ -48,7 +48,6 @@ export function LaunchRoutePanel({ variant }: { variant: LaunchRouteVariant }) {
           <a className={styles.primaryCta} href="/life-map" data-urai-audit-action="home-life-map">Enter Life Map</a>
           <a href={focusHref} data-urai-audit-action="home-focus">Open Focus</a>
           <a href={replayHref} data-urai-audit-action="home-replay">Start Replay</a>
-          <a href="/life-map?orb=open" data-urai-audit-action="home-orb-companion">Open URAI orb companion</a>
         </div>
       </div>
 
