@@ -1,0 +1,180 @@
+/*
+ * URAI Home World screenshot hotfix.
+ * Keeps the Home World as one readable shipped screen on 1366x768 desktop previews:
+ * - route portals no longer collide with the hero copy
+ * - hero owns the left read lane
+ * - orb/platform/portals sit in the right spatial field
+ * - route transition layers stay below the active page content
+ */
+
+body:has(.urai-genesis-home) {
+  background: #020611 !important;
+}
+
+.urai-genesis-home {
+  isolation: isolate !important;
+}
+
+.urai-genesis-home__world {
+  z-index: 0 !important;
+}
+
+@media (min-width: 980px) {
+  .urai-genesis-home__hero {
+    z-index: 40 !important;
+    left: clamp(3rem, 7vw, 6.25rem) !important;
+    top: clamp(5.1rem, 14vh, 7.25rem) !important;
+    width: min(24rem, calc(100vw - 2.5rem)) !important;
+  }
+
+  .urai-genesis-home__hero h1 {
+    max-width: 9.6ch !important;
+    font-size: clamp(3rem, 6.2vh, 4.8rem) !important;
+    line-height: 0.91 !important;
+    letter-spacing: -0.08em !important;
+  }
+
+  .urai-genesis-home__copy {
+    max-width: 20.8rem !important;
+    font-size: clamp(0.86rem, 1.45vh, 0.98rem) !important;
+    line-height: 1.38 !important;
+  }
+
+  .urai-genesis-home__actions {
+    gap: 0.72rem !important;
+  }
+
+  .urai-genesis-home__cta {
+    min-height: 2.35rem !important;
+    padding: 0.68rem 0.95rem !important;
+  }
+
+  .urai-genesis-home__memory-orbit {
+    z-index: 22 !important;
+    left: 53.5% !important;
+    top: 28.5vh !important;
+    opacity: 0.72 !important;
+  }
+
+  .urai-genesis-home__orb {
+    z-index: 26 !important;
+    left: 55.2% !important;
+    top: 42.5% !important;
+    width: clamp(5.2rem, 7vw, 6.6rem) !important;
+    height: clamp(5.2rem, 7vw, 6.6rem) !important;
+  }
+
+  .urai-genesis-home__body {
+    z-index: 16 !important;
+    left: 55.5% !important;
+    top: 61.5% !important;
+    width: clamp(12rem, 23vw, 19rem) !important;
+    height: clamp(6.5rem, 14vh, 9.5rem) !important;
+  }
+
+  .urai-genesis-home__route-path {
+    z-index: 14 !important;
+    opacity: 0.62 !important;
+  }
+
+  .urai-genesis-home__portals {
+    z-index: 24 !important;
+    left: 70% !important;
+    top: 62.5% !important;
+    width: min(39rem, 40vw) !important;
+    height: min(18rem, 32vh) !important;
+    transform: translate3d(-50%, -50%, 0) perspective(900px) rotateX(52deg) !important;
+  }
+
+  .urai-genesis-home__portal {
+    width: clamp(6.7rem, 8.3vw, 8.8rem) !important;
+    min-height: 3.5rem !important;
+    padding: 0.55rem 0.68rem !important;
+    opacity: 0.9 !important;
+  }
+
+  .urai-genesis-home__portal small {
+    font-size: 0.52rem !important;
+  }
+
+  .urai-genesis-home__portal strong {
+    font-size: 0.9rem !important;
+  }
+
+  .urai-genesis-home__portal em {
+    font-size: 0.62rem !important;
+  }
+
+  .urai-genesis-home__portal--life {
+    left: 8% !important;
+    top: 20% !important;
+  }
+
+  .urai-genesis-home__portal--focus {
+    left: 43% !important;
+    top: 11% !important;
+  }
+
+  .urai-genesis-home__portal--replay {
+    left: 72% !important;
+    top: 28% !important;
+  }
+
+  .urai-genesis-home__portal--mirror {
+    left: 92% !important;
+    top: 8% !important;
+  }
+
+  .urai-genesis-home__portal--passport {
+    left: 28% !important;
+    top: 79% !important;
+  }
+
+  .urai-genesis-home__portal--status {
+    left: 64% !important;
+    top: 77% !important;
+  }
+
+  .urai-genesis-home__bottom-dock {
+    z-index: 45 !important;
+  }
+}
+
+@media (min-width: 980px) and (max-height: 780px) {
+  .urai-genesis-home__hero {
+    top: 5.25rem !important;
+  }
+
+  .urai-genesis-home__hero h1 {
+    font-size: clamp(2.82rem, 5.95vh, 4.15rem) !important;
+  }
+
+  .urai-genesis-home__copy {
+    max-width: 19.5rem !important;
+    font-size: 0.84rem !important;
+  }
+
+  .urai-genesis-home__actions {
+    margin-top: 0.75rem !important;
+  }
+
+  .urai-genesis-home__orb {
+    top: 41% !important;
+  }
+
+  .urai-genesis-home__body {
+    top: 62% !important;
+  }
+
+  .urai-genesis-home__portals {
+    left: 71% !important;
+    top: 62.5% !important;
+    width: min(36rem, 38vw) !important;
+  }
+}
+
+@media (max-width: 720px) {
+  .urai-genesis-home__portals {
+    z-index: 26 !important;
+  }
+}
