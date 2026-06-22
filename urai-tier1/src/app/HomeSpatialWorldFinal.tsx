@@ -1,10 +1,20 @@
 "use client";
 
+import Link from "next/link";
 import { usePathname } from "next/navigation";
 
 const HOME_PATHS = new Set(["/", "/home", "/ascent"]);
-
+const focusHref = "/focus?memoryId=quiet-reset";
+const replayHref = "/replay?memoryId=quiet-reset&manifestId=replay-recovery-thread";
 const beacons = ["one", "two", "three", "four", "five", "six"];
+const portals = [
+  ["life", "/life-map", "Open my world", "Life Map", "34 stars awake"],
+  ["focus", focusHref, "Hold one star", "Focus", "quiet-reset ready"],
+  ["replay", replayHref, "Move the thread", "Replay", "embodied path online"],
+  ["mirror", "/mirror", "Reflect", "Mirror", "identity lens"],
+  ["passport", "/passport", "Carry consent", "Passport", "private by default"],
+  ["status", "/status", "Check field", "Status", "systems alive"],
+] as const;
 
 export default function HomeSpatialWorldFinal() {
   const pathname = usePathname();
@@ -35,6 +45,16 @@ export default function HomeSpatialWorldFinal() {
           />
         ))}
       </div>
+      <nav className="urai-home-spatial-world-final__portals" aria-label="URAI Home World route portals">
+        {portals.map(([id, href, eyebrow, label, detail]) => (
+          <Link key={id} href={href} className={`urai-home-spatial-world-final__portal urai-home-spatial-world-final__portal--${id}`} data-urai-audit-action={`home-world-portal-${id}`}>
+            <span className="urai-home-spatial-world-final__portal-light" aria-hidden="true" />
+            <small>{eyebrow}</small>
+            <strong>{label}</strong>
+            <em>{detail}</em>
+          </Link>
+        ))}
+      </nav>
       <div className="urai-home-spatial-world-final__foreground" />
     </section>
   );
