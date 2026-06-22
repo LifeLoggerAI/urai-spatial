@@ -36,7 +36,7 @@
     radial-gradient(circle, rgba(125, 211, 252, 0.55) 0 1px, transparent 1.6px),
     radial-gradient(circle, rgba(216, 180, 254, 0.7) 0 1px, transparent 1.8px);
   background-size: 134px 134px, 217px 217px, 311px 311px;
-  background-position: calc(50% + var(--camera-ry) * 0.8) calc(50% + var(--camera-rx) * 0.8), 20% 38%, 80% 18%;
+  background-position: 50% 50%, 20% 38%, 80% 18%;
   opacity: 0.34;
   filter: drop-shadow(0 0 8px rgba(125, 211, 252, 0.18));
   transform: translateZ(-280px) scale(1.22);
@@ -51,7 +51,7 @@
     conic-gradient(from 210deg at 55% 48%, transparent, rgba(125, 211, 252, 0.11), transparent, rgba(192, 132, 252, 0.14), transparent);
   filter: blur(20px) saturate(1.34);
   opacity: 0.86;
-  transform: rotateX(calc(var(--camera-rx) * 0.16)) rotateY(calc(var(--camera-ry) * -0.12)) scale(calc(1.04 + (var(--camera-zoom) - 1) * 0.18));
+  transform: rotateX(var(--camera-rx)) rotateY(var(--camera-ry)) scale(var(--camera-zoom));
   animation: uraiLifeMapNebula 18s ease-in-out infinite alternate;
 }
 
@@ -73,7 +73,7 @@
     radial-gradient(ellipse at 50% 52%, transparent 0 72%, rgba(190, 242, 100, 0.08) 72.2% 72.6%, transparent 72.9%);
   filter: blur(0.2px);
   opacity: 0.72;
-  transform: rotateX(64deg) rotateZ(calc(var(--camera-ry) * 0.22));
+  transform: rotateX(64deg);
   transform-origin: center;
 }
 
@@ -82,7 +82,7 @@
   inset: -5% -4% -4%;
   z-index: 1;
   transform-style: preserve-3d;
-  transform: rotateX(calc(var(--camera-rx) * 0.18)) rotateY(calc(var(--camera-ry) * 0.16));
+  transform: rotateX(var(--camera-rx)) rotateY(var(--camera-ry));
   transition: transform 420ms cubic-bezier(0.2, 0.8, 0.2, 1);
 }
 
@@ -98,18 +98,17 @@
 
 .routeLine {
   --edge-color: #7dd3fc;
-  --edge-strength: 0.5;
   stroke: var(--edge-color);
-  stroke-width: calc(0.06 + var(--edge-strength) * 0.13);
+  stroke-width: 0.12;
   stroke-linecap: round;
-  opacity: calc(0.12 + var(--edge-strength) * 0.2);
+  opacity: 0.24;
   vector-effect: non-scaling-stroke;
   transition: opacity 220ms ease, stroke-width 220ms ease, filter 220ms ease;
 }
 
 .routeLineActive {
   opacity: 0.86;
-  stroke-width: calc(0.12 + var(--edge-strength) * 0.22);
+  stroke-width: 0.25;
   filter: drop-shadow(0 0 11px var(--edge-color));
 }
 
@@ -367,7 +366,6 @@
   --node-color: #7dd3fc;
   --node-aura: #bae6fd;
   --node-opacity: 0.7;
-  --node-depth: 0.5;
   position: absolute;
   display: inline-grid;
   grid-template-columns: auto minmax(0, 1fr);
@@ -392,8 +390,8 @@
   position: absolute;
   left: 1.42rem;
   top: 50%;
-  width: calc(2rem + var(--node-depth) * 3.3rem);
-  height: calc(2rem + var(--node-depth) * 3.3rem);
+  width: 4.4rem;
+  height: 4.4rem;
   border-radius: 50%;
   background: radial-gradient(circle, color-mix(in srgb, var(--node-aura) 25%, transparent), transparent 66%);
   transform: translate(-50%, -50%);
@@ -405,8 +403,8 @@
 .starGlyph {
   position: relative;
   z-index: 2;
-  width: calc(1.55rem + var(--node-depth) * 0.85rem);
-  height: calc(1.55rem + var(--node-depth) * 0.85rem);
+  width: 2.12rem;
+  height: 2.12rem;
   display: grid;
   place-items: center;
   border: 1px solid color-mix(in srgb, var(--node-aura) 52%, transparent);
@@ -416,9 +414,9 @@
     radial-gradient(circle, var(--node-color), rgba(15, 23, 42, 0.58) 68%);
   box-shadow:
     0 0 18px color-mix(in srgb, var(--node-aura) 68%, transparent),
-    0 0 calc(18px + var(--node-depth) * 34px) color-mix(in srgb, var(--node-color) 38%, transparent);
+    0 0 44px color-mix(in srgb, var(--node-color) 38%, transparent);
   color: #020617;
-  font-size: calc(0.74rem + var(--node-depth) * 0.28rem);
+  font-size: 0.9rem;
   font-weight: 950;
   text-shadow: 0 1px 10px rgba(255, 255, 255, 0.52);
 }
@@ -623,11 +621,11 @@
 
 @keyframes uraiLifeMapReplayPulse {
   0%, 100% {
-    scale: 1;
+    transform: scale(1);
   }
 
   50% {
-    scale: 1.16;
+    transform: scale(1.16);
   }
 }
 
