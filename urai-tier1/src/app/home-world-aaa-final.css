@@ -1,0 +1,350 @@
+/* URAI HOME WORLD AAA FINAL
+   Final late-loaded art direction for / and /home. */
+
+body:has(.urai-home-spatial-world-final) {
+  background: #020612 !important;
+}
+
+.urai-home-spatial-world-final {
+  z-index: 4 !important;
+  pointer-events: none;
+  isolation: isolate;
+}
+
+.urai-home-spatial-world-final__sky {
+  background:
+    radial-gradient(ellipse at 57% 28%, rgba(224, 240, 255, .18), transparent 23rem),
+    radial-gradient(ellipse at 70% 18%, rgba(95, 135, 255, .14), transparent 31rem),
+    radial-gradient(ellipse at 50% 105%, rgba(90, 210, 255, .12), transparent 36rem),
+    linear-gradient(180deg, #15223e 0%, #0b172d 40%, #061020 66%, #020713 100%) !important;
+}
+
+.urai-home-spatial-world-final__sky::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background-image:
+    radial-gradient(circle at 10% 12%, rgba(255,255,255,.7) 0 1px, transparent 2px),
+    radial-gradient(circle at 29% 18%, rgba(170,235,255,.55) 0 1px, transparent 2px),
+    radial-gradient(circle at 76% 23%, rgba(255,255,255,.52) 0 1px, transparent 2px),
+    radial-gradient(circle at 86% 52%, rgba(136,220,255,.38) 0 1px, transparent 2px);
+  opacity: .72;
+}
+
+.urai-home-spatial-world-final__horizon {
+  bottom: 31vh !important;
+  height: 2px !important;
+  background: linear-gradient(90deg, transparent, rgba(104, 180, 230, .22), rgba(240, 250, 255, .58), rgba(104, 180, 230, .20), transparent) !important;
+  box-shadow: 0 0 34px rgba(142, 220, 255, .22) !important;
+}
+
+.urai-home-spatial-world-final__haze {
+  bottom: 28vh !important;
+  height: 24vh !important;
+  background:
+    radial-gradient(ellipse at 55% 48%, rgba(190, 230, 255, .18), transparent 58%),
+    linear-gradient(180deg, transparent, rgba(95, 140, 180, .12), rgba(2, 7, 18, .22)) !important;
+}
+
+.urai-home-spatial-world-final__terrain {
+  bottom: 7vh !important;
+  height: 34vh !important;
+  border-radius: 48% 52% 0 0 / 82% 86% 0 0 !important;
+  background:
+    radial-gradient(ellipse at 50% 0%, rgba(150, 220, 255, .13), transparent 31%),
+    radial-gradient(ellipse at 52% 25%, rgba(70, 120, 180, .12), transparent 55%),
+    linear-gradient(180deg, rgba(15, 27, 48, .42), rgba(3, 8, 18, .94) 58%, rgba(1, 4, 12, .99)) !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.07),
+    0 -46px 130px rgba(0,0,0,.38),
+    0 -16px 95px rgba(95, 210, 255, .08) !important;
+}
+
+.urai-home-spatial-world-final__shelf {
+  left: 39% !important;
+  width: 29% !important;
+  bottom: 22.5vh !important;
+  background:
+    radial-gradient(ellipse at 50% 30%, rgba(255,255,255,.18), transparent 26%),
+    radial-gradient(ellipse at 50% 58%, rgba(95,210,255,.11), transparent 58%),
+    linear-gradient(180deg, rgba(18, 32, 56, .82), rgba(2, 6, 15, .97)) !important;
+  box-shadow:
+    0 32px 90px rgba(0,0,0,.48),
+    0 0 110px rgba(103,232,249,.12),
+    inset 0 1px 0 rgba(255,255,255,.12),
+    inset 0 -20px 42px rgba(0,0,0,.40) !important;
+}
+
+.urai-home-spatial-world-final__pedestal {
+  bottom: 16.5vh !important;
+  left: 43.4% !important;
+  width: 18.5% !important;
+}
+
+.urai-home-spatial-world-final__avatar {
+  left: 47.35% !important;
+  bottom: 28.2vh !important;
+  opacity: .82 !important;
+  animation: uraiHomeBreath 6s ease-in-out infinite;
+}
+
+.urai-home-spatial-world-final__avatar-core {
+  box-shadow: 0 0 38px rgba(175, 238, 255, .55), 0 0 120px rgba(80, 183, 255, .32) !important;
+}
+
+.urai-home-spatial-world-final__portals {
+  position: fixed;
+  inset: 0;
+  z-index: 28;
+  pointer-events: none;
+  perspective: 1000px;
+}
+
+.urai-home-spatial-world-final__portal {
+  position: absolute;
+  display: grid;
+  gap: 2px;
+  min-width: 132px;
+  padding: 10px 12px;
+  pointer-events: auto;
+  color: #f3fbff;
+  text-decoration: none;
+  border: 1px solid rgba(220, 248, 255, .22);
+  border-radius: 18px;
+  background: linear-gradient(145deg, rgba(2, 8, 22, .72), rgba(15, 25, 48, .48));
+  box-shadow: 0 26px 90px rgba(0,0,0,.34), 0 0 42px rgba(103,232,249,.11), inset 0 1px 0 rgba(255,255,255,.10);
+  backdrop-filter: blur(16px);
+  transform: perspective(760px) rotateX(54deg) rotateZ(-2deg);
+  transition: transform .18s ease, border-color .18s ease, box-shadow .18s ease;
+}
+
+.urai-home-spatial-world-final__portal:hover,
+.urai-home-spatial-world-final__portal:focus-visible {
+  outline: none;
+  transform: perspective(760px) rotateX(47deg) rotateZ(-1deg) translateY(-8px) scale(1.045);
+  border-color: rgba(240, 253, 255, .62);
+  box-shadow: 0 34px 120px rgba(0,0,0,.46), 0 0 90px rgba(103,232,249,.26), inset 0 1px 0 rgba(255,255,255,.20);
+}
+
+.urai-home-spatial-world-final__portal small {
+  color: #92f6ff;
+  font-size: .58rem;
+  font-weight: 950;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+}
+
+.urai-home-spatial-world-final__portal strong {
+  font-size: .9rem;
+  letter-spacing: -.03em;
+}
+
+.urai-home-spatial-world-final__portal em {
+  color: rgba(230, 247, 255, .66);
+  font-size: .64rem;
+  font-style: normal;
+  font-weight: 800;
+}
+
+.urai-home-spatial-world-final__portal-light {
+  position: absolute;
+  width: 7px;
+  height: 7px;
+  border-radius: 999px;
+  right: 10px;
+  top: 10px;
+  background: #bff8ff;
+  box-shadow: 0 0 16px #67e8f9, 0 0 34px rgba(103,232,249,.72);
+}
+
+.urai-home-spatial-world-final__portal--life { left: 32%; bottom: 24vh; }
+.urai-home-spatial-world-final__portal--focus { left: 44%; bottom: 29vh; }
+.urai-home-spatial-world-final__portal--replay { left: 58%; bottom: 24vh; }
+.urai-home-spatial-world-final__portal--mirror { left: 69%; bottom: 30vh; }
+.urai-home-spatial-world-final__portal--passport { left: 39%; bottom: 13vh; }
+.urai-home-spatial-world-final__portal--status { left: 53%; bottom: 13vh; }
+
+.urai-home-spatial-world-final__orb-button {
+  position: fixed;
+  left: 49.8%;
+  bottom: 40vh;
+  z-index: 42;
+  width: clamp(74px, 7vw, 112px);
+  height: clamp(74px, 7vw, 112px);
+  border: 0;
+  border-radius: 999px;
+  padding: 0;
+  pointer-events: auto;
+  color: #effcff;
+  background: transparent;
+  transform: translateX(-50%);
+  cursor: pointer;
+}
+
+.urai-home-spatial-world-final__orb-shell {
+  position: absolute;
+  inset: 10%;
+  border-radius: 999px;
+  background: radial-gradient(circle at 38% 28%, #ffffff, #baf7ff 18%, #67e8f9 48%, rgba(35, 112, 220, .72) 78%, rgba(5, 15, 36, .1));
+  box-shadow: 0 0 46px rgba(160, 240, 255, .58), 0 0 130px rgba(80, 170, 255, .30), inset -12px -16px 30px rgba(7, 38, 85, .30);
+  animation: uraiHomeOrbBreath 5.5s ease-in-out infinite;
+}
+
+.urai-home-spatial-world-final__orb-label {
+  position: absolute;
+  left: 50%;
+  top: calc(100% + 12px);
+  width: max-content;
+  max-width: 210px;
+  padding: 7px 10px;
+  border: 1px solid rgba(210, 245, 255, .18);
+  border-radius: 999px;
+  background: rgba(2, 8, 22, .58);
+  font-size: .68rem;
+  font-weight: 900;
+  letter-spacing: .04em;
+  transform: translateX(-50%);
+  opacity: .82;
+}
+
+.urai-home-spatial-world-final__orb-button:hover .urai-home-spatial-world-final__orb-shell,
+.urai-home-spatial-world-final__orb-button:focus-visible .urai-home-spatial-world-final__orb-shell {
+  box-shadow: 0 0 54px rgba(226, 252, 255, .75), 0 0 160px rgba(103,232,249,.40), inset -12px -16px 30px rgba(7, 38, 85, .26);
+}
+
+.urai-home-spatial-world-final__orb-button:focus-visible {
+  outline: 2px solid rgba(220, 252, 255, .72);
+  outline-offset: 8px;
+}
+
+.urai-home-spatial-world-final__orb-panel {
+  position: fixed;
+  left: min(62vw, 920px);
+  bottom: 31vh;
+  z-index: 41;
+  width: min(330px, calc(100vw - 40px));
+  padding: 18px;
+  pointer-events: auto;
+  color: #f6fcff;
+  border: 1px solid rgba(215, 247, 255, .18);
+  border-radius: 24px;
+  background: linear-gradient(145deg, rgba(2, 8, 22, .78), rgba(16, 28, 55, .52));
+  box-shadow: 0 26px 90px rgba(0,0,0,.40), 0 0 80px rgba(103,232,249,.13);
+  backdrop-filter: blur(22px);
+  opacity: 0;
+  transform: translateY(14px) scale(.98);
+  visibility: hidden;
+  transition: opacity .18s ease, transform .18s ease, visibility .18s ease;
+}
+
+.urai-home-spatial-world-final__orb-panel[data-open="true"] {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+  visibility: visible;
+}
+
+.urai-home-spatial-world-final__orb-panel p {
+  margin: 0 0 6px;
+  color: #9ff6ff;
+  font-size: .7rem;
+  font-weight: 950;
+  letter-spacing: .14em;
+  text-transform: uppercase;
+}
+
+.urai-home-spatial-world-final__orb-panel strong {
+  display: block;
+  margin-bottom: 12px;
+  font-size: 1rem;
+}
+
+.urai-home-spatial-world-final__orb-panel div {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.urai-home-spatial-world-final__orb-panel a {
+  color: #07111f;
+  background: #67e8f9;
+  border-radius: 999px;
+  padding: 8px 10px;
+  text-decoration: none;
+  font-size: .72rem;
+  font-weight: 950;
+}
+
+@keyframes uraiHomeBreath {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-6px); }
+}
+
+@keyframes uraiHomeOrbBreath {
+  0%, 100% { transform: scale(1); filter: saturate(1); }
+  50% { transform: scale(1.055); filter: saturate(1.15); }
+}
+
+body:has(.urai-home-spatial-world-final) [data-route-panel-variant="home"] {
+  z-index: 52 !important;
+}
+
+@media (max-width: 1120px) {
+  .urai-home-spatial-world-final__portal--mirror,
+  .urai-home-spatial-world-final__portal--passport,
+  .urai-home-spatial-world-final__portal--status {
+    display: none;
+  }
+
+  .urai-home-spatial-world-final__portal--life { left: 46%; bottom: 18vh; }
+  .urai-home-spatial-world-final__portal--focus { left: 60%; bottom: 20vh; }
+  .urai-home-spatial-world-final__portal--replay { left: 74%; bottom: 18vh; }
+}
+
+@media (max-width: 760px) {
+  .urai-home-spatial-world-final {
+    display: block !important;
+  }
+
+  .urai-home-spatial-world-final__avatar {
+    left: 50% !important;
+    bottom: 38vh !important;
+    opacity: .58 !important;
+  }
+
+  .urai-home-spatial-world-final__shelf {
+    left: 18% !important;
+    width: 64% !important;
+    min-width: 0 !important;
+  }
+
+  .urai-home-spatial-world-final__orb-button {
+    left: 50%;
+    bottom: 45vh;
+    width: 78px;
+    height: 78px;
+  }
+
+  .urai-home-spatial-world-final__orb-label {
+    display: none;
+  }
+
+  .urai-home-spatial-world-final__portals {
+    display: none;
+  }
+
+  .urai-home-spatial-world-final__orb-panel {
+    left: 16px;
+    right: 16px;
+    bottom: 104px;
+    width: auto;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .urai-home-spatial-world-final *,
+  .urai-home-spatial-world-final *::before,
+  .urai-home-spatial-world-final *::after {
+    animation: none !important;
+    transition: none !important;
+  }
+}
