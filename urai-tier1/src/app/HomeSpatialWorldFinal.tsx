@@ -57,7 +57,7 @@ export default function HomeSpatialWorldFinal() {
           </Link>
         ))}
       </nav>
-      <button type="button" className="urai-home-spatial-world-final__orb-button" aria-expanded={orbOpen} aria-controls="urai-orb-companion-panel" onClick={() => setOrbOpen((open) => !open)}>
+      <button type="button" accessKey="o" className="urai-home-spatial-world-final__orb-button" aria-expanded={orbOpen} aria-controls="urai-orb-companion-panel" onClick={() => setOrbOpen((open) => !open)}>
         <span className="urai-home-spatial-world-final__orb-shell" aria-hidden="true" />
         <span className="urai-home-spatial-world-final__orb-label">Open URAI orb companion</span>
       </button>
