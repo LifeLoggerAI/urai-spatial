@@ -3,6 +3,7 @@
 import type { ReactNode } from "react";
 import { useRouter } from "next/navigation";
 import LaunchHomeScene from "./LaunchHomeScene";
+import HomeSpatialWorldFinal from "@/app/HomeSpatialWorldFinal";
 import UraiSpatialStage from "@/spatial/v1/UraiSpatialStage";
 import { HomeCohesionLayer } from "./HomeCohesionLayer";
 import { CinematicLifeMapScene } from "@/spatial/v1/CinematicLifeMapScene";
@@ -71,8 +72,12 @@ export function TierOneExperience({ mode = "home", selectedNodeId }: Props) {
     </section>
   );
 
-  if (mode === "home" || mode === "ascent" || mode === "unwind") {
-    return <><LaunchHomeScene sceneMode={mode} /><HomeCohesionLayer enabled={mode === "home"} /></>;
+  if (mode === "home") {
+    return <><HomeSpatialWorldFinal /><HomeCohesionLayer enabled={true} /></>;
+  }
+
+  if (mode === "ascent" || mode === "unwind") {
+    return <><LaunchHomeScene sceneMode={mode} /><HomeCohesionLayer enabled={false} /></>;
   }
 
   if (mode === "life-map" || mode === "demo") {
