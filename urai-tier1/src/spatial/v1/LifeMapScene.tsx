@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import type { CSSProperties } from 'react';
+import type { CSSProperties, PointerEvent as ReactPointerEvent, WheelEvent as ReactWheelEvent } from 'react';
 
 import type { LifeMapEdge, LifeMapNode as LifeMapNodeModel, ReplayPath } from './lifeMapTypes';
 import { MemoryScroll } from './MemoryScroll';
@@ -30,8 +30,34 @@ type ClusterModel = {
   count: number;
 };
 
-const TRAVEL_MS = 880;
-const REDUCED_TRAVEL_MS = 180;
+type CameraState = {
+  rx: number;
+  ry: number;
+  tx: number;
+  ty: number;
+  zoom: number;
+};
+
+type ProjectedNode = {
+  node: LifeMapNodeModel;
+  x: number;
+  y: number;
+  scale: number;
+  depth: number;
+  screenZ: number;
+  opacity: number;
+  active: boolean;
+  neighbor: boolean;
+  replay: boolean;
+};
+
+const TRAVEL_MS = 760;
+const REDUCED_TRAVEL_MS = 140;
+const DEFAULT_CAMERA: CameraState = { rx: -8, ry: 12, tx: 0, ty: 0, zoom: 1 };
+
+function clamp(min: number, max: number, value: number) {
+  return Math.min(max, Math.max(min, value));
+}
 
 function prettyToken(value?: string) {
   if (!value) return 'Constellation';
@@ -87,12 +113,38 @@ function buildClusters(nodes: LifeMapNodeModel[]) {
   return Array.from(groups.values());
 }
 
+function cameraForNode(node: LifeMapNodeModel, zoom = 1.18): CameraState {
+  return {
+    rx: clamp(-20, 16, -8 - node.position.y * 0.055),
+    ry: clamp(-26, 28, 12 + node.position.x * 0.075),
+    tx: clamp(-34, 34, -node.position.x * 0.24),
+    ty: clamp(-30, 30, node.position.y * 0.16),
+    zoom,
+  };
+}
+
+function projectNode(node: LifeMapNodeModel, camera: CameraState): Pick<ProjectedNode, 'x' | 'y' | 'scale' | 'depth' | 'screenZ' | 'opacity'> {
+  const rx = (camera.rx * Math.PI) / 180;
+  const ry = (camera.ry * Math.PI) / 180;
+  const rotatedX = node.position.x * Math.cos(ry) + node.position.z * Math.sin(ry) * 0.18;
+  const rotatedY = node.position.y * Math.cos(rx) - node.position.z * Math.sin(rx) * 0.14;
+  const rotatedZ = node.position.z * Math.cos(ry) - node.position.x * Math.sin(ry) * 0.42;
+  const depth = clamp(0, 1, (rotatedZ + 560) / 650);
+  const parallax = 0.34 + depth * 0.28;
+  const x = clamp(4, 96, 50 + (rotatedX + camera.tx) * parallax * camera.zoom);
+  const y = clamp(6, 91, 50 - (rotatedY + camera.ty) * (0.47 + depth * 0.13) * camera.zoom - rotatedZ * 0.012);
+  const scale = clamp(0.58, 1.72, (0.72 + depth * 0.5 + node.size * 0.12) * Math.pow(camera.zoom, 0.22));
+  const opacity = clamp(0.22, 1, 0.32 + depth * 0.68);
+
+  return { x, y, scale, depth, screenZ: Math.round(depth * 800), opacity };
+}
+
 function LifeMapFallback({ nodes, onOpen }: { nodes: LifeMapNodeModel[]; onOpen: (nodeId: string) => void }) {
   return (
     <section className={styles.fallback} aria-label="Life Map fallback">
-      <p className={styles.eyebrow}>Production safe fallback</p>
+      <p className={styles.eyebrow}>Accessible constellation</p>
       <h2>Your Life Map is still open.</h2>
-      <p>The renderer could not start here, so every memory remains available as a launch-safe constellation list.</p>
+      <p>Every memory remains reachable as a keyboard-safe constellation list.</p>
       <div className={styles.fallbackGrid}>
         {nodes.slice(0, 12).map((node) => (
           <button key={node.id} type="button" onClick={() => onOpen(node.id)}>
@@ -125,46 +177,80 @@ export function LifeMapScene({
   const [cameraNodeId, setCameraNodeId] = useState<string | undefined>(validSelectedId);
   const [hoveredNodeId, setHoveredNodeId] = useState<string | undefined>();
   const [travelNodeId, setTravelNodeId] = useState<string | undefined>();
+  const [camera, setCamera] = useState<CameraState>(DEFAULT_CAMERA);
+  const [isDragging, setIsDragging] = useState(false);
   const travelTimeoutRef = useRef<number | null>(null);
-
-  useEffect(() => {
-    setActiveNodeId(validSelectedId);
-    setCameraNodeId(validSelectedId);
-  }, [validSelectedId]);
-
-  useEffect(() => () => {
-    if (travelTimeoutRef.current) window.clearTimeout(travelTimeoutRef.current);
-  }, []);
+  const dragRef = useRef<{ pointerId: number; startX: number; startY: number; startCamera: CameraState } | null>(null);
 
   const clusters = useMemo(() => buildClusters(nodes), [nodes]);
   const selectedNode = useMemo(() => nodes.find((node) => node.id === activeNodeId), [activeNodeId, nodes]);
   const cameraNode = useMemo(() => nodes.find((node) => node.id === cameraNodeId), [cameraNodeId, nodes]);
   const hoveredNode = useMemo(() => nodes.find((node) => node.id === hoveredNodeId), [hoveredNodeId, nodes]);
   const travelingNode = useMemo(() => nodes.find((node) => node.id === travelNodeId), [travelNodeId, nodes]);
-  const featuredNode = hoveredNode || travelingNode || selectedNode || nodes[0];
-  const focusNodeId = selectedNode?.id || nodes[0]?.id || 'quiet-reset';
+  const featuredNode = hoveredNode || travelingNode || selectedNode || cameraNode || nodes[0];
+  const focusNodeId = selectedNode?.id || hoveredNode?.id || nodes[0]?.id || 'quiet-reset';
   const selectedCluster = selectedNode ? clusterLabelForNode(selectedNode) : hoveredNode ? clusterLabelForNode(hoveredNode) : 'Whole constellation';
-  const cameraFocus = travelingNode || cameraNode;
   const averageIntensity = nodes.length ? nodes.reduce((total, node) => total + node.emotionalIntensity, 0) / nodes.length : 0;
+
+  useEffect(() => {
+    setActiveNodeId(validSelectedId);
+    setCameraNodeId(validSelectedId);
+    const target = nodes.find((node) => node.id === validSelectedId);
+    setCamera(target ? cameraForNode(target, 1.08) : DEFAULT_CAMERA);
+  }, [validSelectedId, nodes]);
+
+  useEffect(() => () => {
+    if (travelTimeoutRef.current) window.clearTimeout(travelTimeoutRef.current);
+  }, []);
+
+  const neighborIds = useMemo(() => {
+    const ids = new Set<string>();
+    if (!featuredNode) return ids;
+    featuredNode.relatedNodeIds.forEach((id) => ids.add(id));
+    edges.forEach((edge) => {
+      if (edge.fromNodeId === featuredNode.id) ids.add(edge.toNodeId);
+      if (edge.toNodeId === featuredNode.id) ids.add(edge.fromNodeId);
+    });
+    return ids;
+  }, [edges, featuredNode]);
+
+  const projectedNodes = useMemo<ProjectedNode[]>(() => {
+    const replayIds = new Set(replayActive ? replayPath.nodeIds : []);
+    return nodes
+      .map((node) => {
+        const projection = projectNode(node, camera);
+        const active = node.id === activeNodeId || node.id === hoveredNodeId || node.id === travelNodeId;
+        return {
+          node,
+          ...projection,
+          active,
+          neighbor: neighborIds.has(node.id),
+          replay: replayIds.has(node.id),
+        };
+      })
+      .sort((a, b) => a.depth - b.depth);
+  }, [activeNodeId, camera, hoveredNodeId, neighborIds, nodes, replayActive, replayPath.nodeIds, travelNodeId]);
+
+  const projectionById = useMemo(() => new Map(projectedNodes.map((projected) => [projected.node.id, projected])), [projectedNodes]);
 
   const openMemory = useCallback(
     (nodeId: string) => {
+      const target = nodes.find((node) => node.id === nodeId);
+      if (!target) return;
       setActiveNodeId(nodeId);
       setCameraNodeId(nodeId);
+      setHoveredNodeId(undefined);
       setTravelNodeId(nodeId);
+      setCamera(cameraForNode(target, 1.34));
       onSelectNode(nodeId);
       rememberMemoryId(nodeId);
       if (travelTimeoutRef.current) window.clearTimeout(travelTimeoutRef.current);
-      if (typeof window === 'undefined') {
-        router.push(focusUrlForNode(nodeId));
-        return;
-      }
       travelTimeoutRef.current = window.setTimeout(() => {
         setTravelNodeId(undefined);
         router.push(focusUrlForNode(nodeId));
       }, reducedMotion ? REDUCED_TRAVEL_MS : TRAVEL_MS);
     },
-    [onSelectNode, reducedMotion, router],
+    [nodes, onSelectNode, reducedMotion, router],
   );
 
   const startReplay = useCallback(() => {
@@ -178,11 +264,14 @@ export function LifeMapScene({
     setActiveNodeId(undefined);
     setCameraNodeId(undefined);
     setTravelNodeId(undefined);
+    setHoveredNodeId(undefined);
+    setCamera(DEFAULT_CAMERA);
     onCloseNode();
     router.push('/life-map');
   }, [onCloseNode, router]);
 
   const resetView = useCallback(() => {
+    setCamera(DEFAULT_CAMERA);
     setCameraNodeId(undefined);
     setHoveredNodeId(undefined);
     setTravelNodeId(undefined);
@@ -191,16 +280,50 @@ export function LifeMapScene({
   const moveSelection = useCallback(
     (direction: 1 | -1) => {
       if (!nodes.length) return;
-      const currentIndex = Math.max(0, nodes.findIndex((node) => node.id === (activeNodeId || hoveredNodeId || nodes[0]?.id)));
+      const currentIndex = Math.max(0, nodes.findIndex((node) => node.id === (activeNodeId || hoveredNodeId || cameraNodeId || nodes[0]?.id)));
       const nextNode = nodes[(currentIndex + direction + nodes.length) % nodes.length];
       setActiveNodeId(nextNode.id);
       setCameraNodeId(nextNode.id);
       setTravelNodeId(undefined);
+      setCamera(cameraForNode(nextNode, 1.08));
       onSelectNode(nextNode.id);
       rememberMemoryId(nextNode.id);
     },
-    [activeNodeId, hoveredNodeId, nodes, onSelectNode],
+    [activeNodeId, cameraNodeId, hoveredNodeId, nodes, onSelectNode],
   );
+
+  const handlePointerDown = useCallback((event: ReactPointerEvent<HTMLElement>) => {
+    const target = event.target as HTMLElement;
+    if (target.closest('button, a, [role="button"]')) return;
+    dragRef.current = { pointerId: event.pointerId, startX: event.clientX, startY: event.clientY, startCamera: camera };
+    event.currentTarget.setPointerCapture(event.pointerId);
+    setIsDragging(true);
+  }, [camera]);
+
+  const handlePointerMove = useCallback((event: ReactPointerEvent<HTMLElement>) => {
+    const drag = dragRef.current;
+    if (!drag || drag.pointerId !== event.pointerId) return;
+    const dx = event.clientX - drag.startX;
+    const dy = event.clientY - drag.startY;
+    setCamera({
+      rx: clamp(-28, 24, drag.startCamera.rx - dy * 0.045),
+      ry: clamp(-36, 38, drag.startCamera.ry + dx * 0.065),
+      tx: clamp(-46, 46, drag.startCamera.tx + dx * 0.045),
+      ty: clamp(-38, 38, drag.startCamera.ty - dy * 0.035),
+      zoom: drag.startCamera.zoom,
+    });
+  }, []);
+
+  const endDrag = useCallback((event: ReactPointerEvent<HTMLElement>) => {
+    if (dragRef.current?.pointerId === event.pointerId) dragRef.current = null;
+    if (event.currentTarget.hasPointerCapture(event.pointerId)) event.currentTarget.releasePointerCapture(event.pointerId);
+    setIsDragging(false);
+  }, []);
+
+  const handleWheel = useCallback((event: ReactWheelEvent<HTMLElement>) => {
+    event.preventDefault();
+    setCamera((current) => ({ ...current, zoom: clamp(0.78, 1.54, current.zoom - event.deltaY * 0.0012) }));
+  }, []);
 
   if (!nodes.length) {
     return (
@@ -210,105 +333,121 @@ export function LifeMapScene({
     );
   }
 
-  const cameraStyle = {
-    '--camera-x': `${cameraFocus ? -cameraFocus.position.x * 2.2 : 0}px`,
-    '--camera-y': `${cameraFocus ? cameraFocus.position.y * -1.2 : 0}px`,
-    '--camera-scale': travelingNode ? '1.72' : cameraFocus ? '1.16' : '1',
+  const shellStyle = {
+    '--camera-rx': `${camera.rx}deg`,
+    '--camera-ry': `${camera.ry}deg`,
+    '--camera-zoom': camera.zoom,
   } as CSSProperties;
 
   return (
     <section
-      className={styles.shell}
+      className={`${styles.shell} ${isDragging ? styles.shellDragging : ''}`}
       data-testid="urai-v1-lifemap-scene"
       aria-label="URAI Life Map galaxy"
       tabIndex={0}
+      style={shellStyle}
+      onPointerDown={handlePointerDown}
+      onPointerMove={handlePointerMove}
+      onPointerUp={endDrag}
+      onPointerCancel={endDrag}
+      onWheel={handleWheel}
       onKeyDown={(event) => {
-        if (event.key === 'ArrowRight') moveSelection(1);
-        if (event.key === 'ArrowLeft') moveSelection(-1);
-        if (event.key === 'Enter' && (activeNodeId || hoveredNodeId)) openMemory(activeNodeId || hoveredNodeId || focusNodeId);
+        if (event.key === 'ArrowRight' || event.key === 'ArrowDown') moveSelection(1);
+        if (event.key === 'ArrowLeft' || event.key === 'ArrowUp') moveSelection(-1);
+        if (event.key === 'Enter' && (activeNodeId || hoveredNodeId || cameraNodeId)) openMemory(activeNodeId || hoveredNodeId || cameraNodeId || focusNodeId);
         if (event.key === 'Escape') router.push('/unwind');
-        if (event.key.toLowerCase() === 'r') resetView();
+        if (event.key.toLowerCase() === 'r' || event.key === '0') resetView();
+        if (event.key === '+' || event.key === '=') setCamera((current) => ({ ...current, zoom: clamp(0.78, 1.54, current.zoom + 0.08) }));
+        if (event.key === '-' || event.key === '_') setCamera((current) => ({ ...current, zoom: clamp(0.78, 1.54, current.zoom - 0.08) }));
       }}
     >
       <div className={styles.background} aria-hidden="true" />
       <div className={styles.nebula} data-testid="urai-v1-lifemap-nebula" aria-hidden="true" />
+      <div className={styles.depthFog} aria-hidden="true" />
+      <div className={styles.orbitRings} aria-hidden="true" />
 
-      <div className={styles.canvasShell} data-testid="urai-lifemap-camera" style={{ perspective: 900 }}>
-        <div
-          aria-label="Memory star field"
-          style={{
-            position: 'absolute',
-            inset: 0,
-            transform: 'translate3d(var(--camera-x), var(--camera-y), 0) scale(var(--camera-scale))',
-            transformOrigin: '50% 50%',
-            transition: reducedMotion ? 'none' : 'transform 820ms cubic-bezier(.2,.8,.2,1)',
-            ...cameraStyle,
-          }}
-        >
-          {edges.slice(0, 12).map((edge, index) => (
-            <span
-              key={edge.id}
-              aria-hidden="true"
-              style={{
-                position: 'absolute',
-                left: `${12 + (index * 7) % 78}%`,
-                top: `${22 + (index * 11) % 58}%`,
-                width: `${80 + edge.strength * 120}px`,
-                height: 1,
-                background: `linear-gradient(90deg, transparent, ${edge.color}99, transparent)`,
-                transform: `rotate(${(index % 6) * 18 - 42}deg)`,
-                opacity: replayActive ? 0.72 : 0.34,
-                boxShadow: `0 0 28px ${edge.color}66`,
-              }}
-            />
-          ))}
-          {nodes.map((node, index) => {
-            const active = node.id === activeNodeId || node.id === hoveredNodeId || node.id === travelNodeId || (replayActive && replayPath.nodeIds.includes(node.id));
-            const x = 50 + node.position.x * 0.33;
-            const y = 50 - node.position.y * 0.48 + node.position.z * 0.015;
-            const nodeStyle = {
-              '--node-color': node.color,
-              '--node-aura': node.auraColor,
-              position: 'absolute',
-              left: `${Math.max(5, Math.min(92, x))}%`,
-              top: `${Math.max(8, Math.min(88, y))}%`,
-              transform: `translate3d(-50%, -50%, ${node.position.z}px) scale(${active ? 1.08 : 0.88 + node.size * 0.08})`,
-              zIndex: active ? 4 : 2,
-              animationDelay: `${index * -0.24}s`,
-            } as CSSProperties;
+      <div className={styles.canvasShell} data-testid="urai-lifemap-camera" aria-label="Drag empty space to orbit the Life Map. Use wheel or plus and minus keys to zoom.">
+        <svg className={styles.edgeLayer} viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
+          {edges.map((edge) => {
+            const from = projectionById.get(edge.fromNodeId);
+            const to = projectionById.get(edge.toNodeId);
+            if (!from || !to) return null;
+            const activeEdge = Boolean(
+              (activeNodeId && (edge.fromNodeId === activeNodeId || edge.toNodeId === activeNodeId)) ||
+                (hoveredNodeId && (edge.fromNodeId === hoveredNodeId || edge.toNodeId === hoveredNodeId)) ||
+                (replayActive && replayPath.edgeIds.includes(edge.id)),
+            );
             return (
-              <button
-                key={node.id}
-                type="button"
-                className={`${styles.starLabel} ${active ? styles.starLabelActive : ''}`}
-                style={nodeStyle}
-                onMouseEnter={() => setHoveredNodeId(node.id)}
-                onMouseLeave={() => setHoveredNodeId(undefined)}
-                onFocus={() => setHoveredNodeId(node.id)}
-                onBlur={() => setHoveredNodeId(undefined)}
-                onClick={() => openMemory(node.id)}
-                aria-label={`Open memory ${node.title} in Focus`}
-              >
-                <span className={styles.starGlyph}>{node.glyph}</span>
-                <span className={styles.starTitle}>{node.title}</span>
-                <span className={styles.starMeta}>{clusterLabelForNode(node)}</span>
-              </button>
+              <line
+                key={edge.id}
+                className={`${styles.routeLine} ${activeEdge ? styles.routeLineActive : ''}`}
+                x1={from.x}
+                y1={from.y}
+                x2={to.x}
+                y2={to.y}
+                style={{ '--edge-color': edge.color, '--edge-strength': edge.strength } as CSSProperties}
+              />
             );
           })}
-        </div>
+        </svg>
+
+        {projectedNodes.map((projected, index) => {
+          const { node } = projected;
+          const nodeStyle = {
+            '--node-color': node.color,
+            '--node-aura': node.auraColor,
+            '--node-opacity': projected.opacity,
+            '--node-depth': projected.depth,
+            left: `${projected.x}%`,
+            top: `${projected.y}%`,
+            transform: `translate3d(-50%, -50%, ${projected.screenZ}px) scale(${projected.scale})`,
+            zIndex: Math.round(20 + projected.depth * 80 + (projected.active ? 120 : projected.neighbor ? 40 : 0)),
+            animationDelay: `${index * -0.18}s`,
+          } as CSSProperties;
+
+          return (
+            <button
+              key={node.id}
+              type="button"
+              className={`${styles.starLabel} ${projected.active ? styles.starLabelActive : ''} ${projected.neighbor ? styles.starLabelNeighbor : ''} ${projected.replay ? styles.starLabelReplay : ''} ${node.importance > 0.84 ? styles.starLabelImportant : ''}`}
+              style={nodeStyle}
+              onMouseEnter={() => setHoveredNodeId(node.id)}
+              onMouseLeave={() => setHoveredNodeId(undefined)}
+              onFocus={() => setHoveredNodeId(node.id)}
+              onBlur={() => setHoveredNodeId(undefined)}
+              onClick={(event) => {
+                event.stopPropagation();
+                openMemory(node.id);
+              }}
+              onDoubleClick={(event) => {
+                event.stopPropagation();
+                rememberMemoryId(node.id);
+                router.push(focusUrlForNode(node.id));
+              }}
+              aria-label={`Open memory ${node.title} in Focus. ${node.subtitle}`}
+            >
+              <span className={styles.starHalo} aria-hidden="true" />
+              <span className={styles.starGlyph} aria-hidden="true">{node.glyph}</span>
+              <span className={styles.starText}>
+                <span className={styles.starTitle}>{node.title}</span>
+                <span className={styles.starMeta}>{clusterLabelForNode(node)}</span>
+              </span>
+            </button>
+          );
+        })}
       </div>
 
       <header className={styles.heroPanel}>
         <p className={styles.eyebrow}>URAI Spatial · Life Map</p>
         <h1>Life Map</h1>
-        <p>Your emotional universe — alive, explorable, and wired into Focus.</p>
+        <p>Step inside yourself. Your memories are a living constellation, not a timeline.</p>
       </header>
 
       <aside className={styles.hudPanel} data-testid="urai-v1-time-lens" aria-label="Life Map controls">
-        <div><span>Selected zone</span><strong>{selectedCluster}</strong></div>
-        <div><span>Memories</span><strong>{nodes.length}</strong></div>
-        <div><span>Emotional weather</span><strong>{Math.round(averageIntensity * 100)}% active</strong></div>
-        <p>Drag routes stay open · arrow keys step stars · click any star to pan the camera into Focus.</p>
+        <div><span>Zone</span><strong>{selectedCluster}</strong></div>
+        <div><span>Stars</span><strong>{nodes.length}</strong></div>
+        <div><span>Weather</span><strong>{Math.round(averageIntensity * 100)}% awake</strong></div>
+        <p>Drag empty space to orbit and pan. Wheel or +/- zooms. Arrow keys step stars. Enter opens Focus. Esc unwinds.</p>
         <div className={styles.controlRow}>
           <button type="button" onClick={resetView}>Reset view</button>
           <Link href={focusUrlForNode(focusNodeId)}>Open Focus</Link>
@@ -331,14 +470,17 @@ export function LifeMapScene({
 
       {featuredNode ? (
         <aside className={styles.previewPanel} aria-live="polite">
-          <span className={styles.previewGlyph}>{featuredNode.glyph}</span>
+          <span className={styles.previewGlyph} style={{ '--preview-color': featuredNode.auraColor } as CSSProperties}>{featuredNode.glyph}</span>
           <div>
             <p className={styles.eyebrow}>{clusterLabelForNode(featuredNode)}</p>
             <h2>{featuredNode.title}</h2>
             <p>{featuredNode.subtitle}</p>
-            <small>{travelingNode ? 'Camera is moving into this memory star before Focus opens.' : featuredNode.narratorLine}</small>
+            <small>{travelingNode ? 'Camera is entering this memory star before Focus opens.' : featuredNode.narratorLine}</small>
           </div>
-          <button type="button" onClick={() => openMemory(featuredNode.id)}>{travelingNode ? 'Opening Focus…' : 'Open this memory'}</button>
+          <div className={styles.previewActions}>
+            <button type="button" onClick={() => openMemory(featuredNode.id)}>{travelingNode ? 'Opening Focus…' : 'Open this memory'}</button>
+            <button type="button" onClick={startReplay}>Replay path</button>
+          </div>
         </aside>
       ) : null}
 
@@ -350,11 +492,11 @@ export function LifeMapScene({
       ) : null}
 
       {travelingNode ? (
-        <div data-testid="urai-lifemap-star-travel" aria-live="polite" style={{ position: 'absolute', inset: 0, zIndex: 8, display: 'grid', placeItems: 'center', pointerEvents: 'none', background: `radial-gradient(circle at 50% 48%, ${travelingNode.auraColor}33, transparent 32%)` }}>
-          <div style={{ border: `1px solid ${travelingNode.auraColor}66`, borderRadius: 28, padding: '18px 22px', color: '#f8fbff', background: 'rgba(2,6,23,.72)', boxShadow: `0 0 90px ${travelingNode.auraColor}44`, textAlign: 'center' }}>
+        <div data-testid="urai-lifemap-star-travel" aria-live="polite" className={styles.travelGate} style={{ '--travel-color': travelingNode.auraColor } as CSSProperties}>
+          <div>
             <p className={styles.eyebrow}>Entering memory star</p>
             <strong>{travelingNode.title}</strong>
-            <small style={{ display: 'block', marginTop: 6, color: 'rgba(226,232,240,.72)' }}>Focus opens with this image memory</small>
+            <small>Focus opens with this memory selected.</small>
           </div>
         </div>
       ) : null}
