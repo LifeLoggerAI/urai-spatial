@@ -15,6 +15,7 @@ import './spatial-polish.css'
 import './spatial-audit-hardening.css'
 import './urai-v1.css'
 import './ship-ready-visual-pass.css'
+import './home-ground-production.css'
 
 export const metadata: Metadata = {
   title: 'URAI Spatial',
@@ -36,7 +37,6 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="en">
       <body
-        data-debug-spatial={process.env.NEXT_PUBLIC_URAI_DEBUG_SPATIAL === 'true' ? 'true' : 'false'}
         data-urai-home-spatial-shell="true"
         style={{ margin: 0, background: '#08030f', overflowX: 'hidden' }}
       >
