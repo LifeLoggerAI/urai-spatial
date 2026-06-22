@@ -1,335 +1,286 @@
-/* URAI HOME FINAL OBJECT VISIBILITY PASS
-   Forces the Home ground to read as a physical entry scene instead of a soft HUD grid. */
+/* URAI HOME PRODUCTION COMPOSITION RESET
+   Final pass for / and /home: one hero, one world, no duplicate copy, no route labels crossing the headline. */
 
-body:has(.urai-home-ground-objects) {
+body:has([data-route-panel-variant="home"]),
+body:has([data-route-panel-variant="home"]) .urai-launch-home,
+body:has([data-route-panel-variant="home"]) .urai-launch-home__scene,
+body:has([data-route-panel-variant="home"]) .urai-launch-home__shell {
   background:
-    radial-gradient(circle at 55% 17%, rgba(203, 213, 225, 0.18), transparent 15rem),
-    radial-gradient(circle at 78% 16%, rgba(96, 165, 250, 0.16), transparent 28rem),
-    linear-gradient(180deg, #101a33 0%, #081226 45%, #030712 100%) !important;
+    radial-gradient(circle at 51% 22%, rgba(203, 213, 225, 0.20), transparent 15rem),
+    radial-gradient(circle at 55% 43%, rgba(103, 232, 249, 0.15), transparent 18rem),
+    radial-gradient(circle at 78% 18%, rgba(96, 165, 250, 0.18), transparent 30rem),
+    radial-gradient(circle at 82% 48%, rgba(59, 130, 246, 0.16), transparent 26rem),
+    linear-gradient(180deg, #101b35 0%, #09152d 36%, #07101f 62%, #030712 100%) !important;
 }
 
-.urai-home-ground-objects {
-  height: min(56vh, 540px) !important;
-  z-index: 68 !important;
-  overflow: visible !important;
-}
-
-.urai-home-ground-objects::before {
-  content: "";
-  position: absolute;
-  left: -6%;
-  right: -6%;
-  top: 3%;
-  height: 42%;
-  pointer-events: none;
-  border-radius: 50% 50% 0 0;
-  background:
-    radial-gradient(ellipse at 50% 15%, rgba(191, 219, 254, 0.18), transparent 38%),
-    linear-gradient(180deg, transparent 0%, rgba(8, 16, 32, 0.52) 58%, rgba(3, 7, 18, 0.90) 100%);
-  border-top: 1px solid rgba(226, 246, 255, 0.22);
-  box-shadow: 0 -22px 90px rgba(125, 211, 252, 0.09), inset 0 1px 0 rgba(255, 255, 255, 0.07);
-  z-index: 1;
-}
-
-.urai-home-ground-objects::after {
-  content: "";
-  position: absolute;
-  left: -7%;
-  right: -7%;
-  bottom: -42px;
-  height: 190px;
-  pointer-events: none;
-  background:
-    linear-gradient(180deg, transparent, rgba(1, 4, 12, 0.74) 66%, rgba(1, 4, 12, 0.96)),
-    radial-gradient(ellipse at 50% 0%, rgba(103, 232, 249, 0.10), transparent 58%);
-  z-index: 30;
-}
-
-.urai-ground-plinth {
-  top: 50% !important;
-  width: min(660px, 46vw) !important;
-  height: min(220px, 16vw) !important;
-  z-index: 12 !important;
-  opacity: 1 !important;
-  filter: saturate(1.15) contrast(1.08) !important;
-}
-
-.urai-ground-plinth::before {
-  content: "";
-  position: absolute;
-  inset: -8% -10%;
-  border-radius: 999px;
-  background: radial-gradient(ellipse, rgba(103, 232, 249, 0.19), transparent 68%);
-  filter: blur(18px);
-  z-index: -1;
-}
-
-.plinth-core {
-  width: 24px !important;
-  height: 24px !important;
-  box-shadow:
-    0 0 46px rgba(255,255,255,0.94),
-    0 0 110px rgba(103,232,249,0.82),
-    138px 24px 0 -4px rgba(125,211,252,0.96),
-    -150px 30px 0 -5px rgba(167,139,250,0.94),
-    228px 52px 0 -6px rgba(134,239,172,0.90),
-    -252px 58px 0 -6px rgba(125,211,252,0.90) !important;
-}
-
-.urai-ground-trail {
-  top: 38% !important;
-  left: 18% !important;
-  right: 14% !important;
-  z-index: 9 !important;
-  opacity: 0.96 !important;
-}
-
-.urai-ground-trail span {
-  height: 2px !important;
-  background: linear-gradient(90deg, transparent, rgba(236,254,255,0.88), rgba(103,232,249,0.62), rgba(167,139,250,0.38), transparent) !important;
-  box-shadow: 0 0 36px rgba(103,232,249,0.35), 0 0 84px rgba(59,130,246,0.22) !important;
-}
-
-.urai-ground-stones,
-.urai-ground-stations {
-  z-index: 24 !important;
-}
-
-.urai-ground-stone,
-.urai-ground-station {
-  min-width: 168px !important;
-  padding: 13px 15px !important;
-  border-radius: 22px !important;
-  color: #f4fbff !important;
-  border-color: rgba(229,252,255,0.34) !important;
-  background:
-    linear-gradient(180deg, rgba(255,255,255,0.10), transparent 30%),
-    linear-gradient(145deg, rgba(3,12,28,0.96), rgba(15,23,42,0.76)) !important;
-  box-shadow:
-    0 24px 90px rgba(0,0,0,0.50),
-    0 0 58px rgba(103,232,249,0.20),
-    inset 0 1px 0 rgba(255,255,255,0.16) !important;
-  opacity: 1 !important;
-  transform: perspective(900px) rotateX(22deg) rotateZ(-1deg) !important;
-  text-shadow: 0 0 14px rgba(103,232,249,0.18) !important;
-}
-
-.urai-ground-stone::after,
-.urai-ground-station::after {
-  content: "";
-  position: absolute;
-  left: 14%;
-  right: 14%;
-  bottom: -14px;
-  height: 18px;
-  border-radius: 999px;
-  background: radial-gradient(ellipse, rgba(0,0,0,0.50), transparent 70%);
-  filter: blur(7px);
-  z-index: -1;
-}
-
-.urai-ground-stone strong,
-.urai-ground-station strong {
-  width: 36px !important;
-  height: 36px !important;
-  background: rgba(103,232,249,0.22) !important;
-  color: #67e8f9 !important;
-  box-shadow: inset 0 1px 0 rgba(255,255,255,0.18), 0 0 34px rgba(103,232,249,0.24) !important;
-}
-
-.urai-ground-stone small,
-.urai-ground-station small {
-  color: rgba(218,244,255,0.78) !important;
-}
-
-.stone-life,
-.station-life { left: 28% !important; top: 51% !important; }
-.stone-focus,
-.station-focus { left: 41% !important; top: 35% !important; }
-.stone-replay,
-.station-replay { left: 56% !important; top: 51% !important; }
-.stone-privacy,
-.station-privacy { left: 70% !important; top: 35% !important; }
-
-.urai-ground-foreground {
-  height: 145px !important;
-  bottom: -38px !important;
-  z-index: 32 !important;
-  opacity: 0.72 !important;
-}
-
-@media (max-width: 1120px) {
-  .urai-ground-stone,
-  .urai-ground-station {
-    min-width: 130px !important;
-    padding: 9px 10px !important;
-  }
-
-  .stone-life,
-  .station-life { left: 23% !important; top: 55% !important; }
-  .stone-focus,
-  .station-focus { left: 41% !important; top: 40% !important; }
-  .stone-replay,
-  .station-replay { left: 59% !important; top: 55% !important; }
-  .stone-privacy,
-  .station-privacy { display: none !important; }
-}
-
-/* URAI HOME GROUND SIGHTLINE FIX */
-.urai-home-ground-objects {
-  z-index: 7 !important;
-  height: min(38vh, 360px) !important;
+/* The launch page was rendering two home surfaces at once. Keep the underlying scene as atmosphere only. */
+body:has([data-route-panel-variant="home"]) .urai-launch-home__content,
+body:has([data-route-panel-variant="home"]) .urai-launch-home__topbar,
+body:has([data-route-panel-variant="home"]) .urai-launch-home__footer,
+body:has([data-route-panel-variant="home"]) .urai-launch-home__panel,
+body:has([data-route-panel-variant="home"]) .urai-v1-focus-action-panel,
+body:has([data-route-panel-variant="home"]) .urai-launch-fallback {
+  display: none !important;
+  visibility: hidden !important;
   pointer-events: none !important;
 }
 
+body:has([data-route-panel-variant="home"]) [data-testid="urai-root-mode-stage"],
+body:has([data-route-panel-variant="home"]) .urai-launch-home {
+  position: fixed !important;
+  inset: 0 !important;
+  min-height: 100svh !important;
+  overflow: hidden !important;
+  z-index: 0 !important;
+}
+
+body:has([data-route-panel-variant="home"]) .urai-launch-home__sky {
+  opacity: 1 !important;
+  filter: saturate(1.08) contrast(1.04) !important;
+}
+
+body:has([data-route-panel-variant="home"]) .urai-launch-home__moon {
+  top: 13% !important;
+  left: 51% !important;
+  width: clamp(170px, 22vw, 300px) !important;
+  opacity: 0.52 !important;
+  filter: blur(0.6px) drop-shadow(0 0 88px rgba(125, 211, 252, 0.30)) !important;
+}
+
+body:has([data-route-panel-variant="home"]) .urai-launch-home__ring {
+  opacity: 0.28 !important;
+  border-color: rgba(186, 230, 253, 0.12) !important;
+}
+
+body:has([data-route-panel-variant="home"]) .urai-launch-home__constellation {
+  opacity: 0.44 !important;
+}
+
+/* One clean, grounded avatar glow. */
+body:has([data-route-panel-variant="home"]) .urai-launch-home__orb {
+  left: 50% !important;
+  bottom: 23vh !important;
+  width: clamp(130px, 16vw, 220px) !important;
+  opacity: 0.78 !important;
+  filter: saturate(1.12) brightness(1.04) blur(0.15px) !important;
+  box-shadow:
+    0 0 68px rgba(103, 232, 249, 0.26),
+    0 80px 118px rgba(0, 0, 0, 0.42),
+    inset 0 0 70px rgba(255, 255, 255, 0.12) !important;
+}
+
+/* Real horizon shelf without turning into a HUD wall. */
+body:has([data-route-panel-variant="home"]) .urai-launch-home__ground {
+  inset: auto -8% -15% -8% !important;
+  height: 43vh !important;
+  border-radius: 50% 50% 0 0 !important;
+  border-top: 1px solid rgba(226, 246, 255, 0.22) !important;
+  background:
+    radial-gradient(ellipse at 50% -4%, rgba(191, 219, 254, 0.18), transparent 23%),
+    radial-gradient(ellipse at 50% 16%, rgba(125, 211, 252, 0.10), transparent 38%),
+    repeating-linear-gradient(90deg, rgba(255,255,255,0.035) 0 1px, transparent 1px 38px),
+    repeating-radial-gradient(ellipse at 50% 0%, rgba(186,230,253,0.055) 0 1px, transparent 1px 30px),
+    linear-gradient(180deg, rgba(11, 22, 42, 0.78), rgba(3, 7, 18, 0.96)) !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,0.10),
+    inset 0 22px 78px rgba(186, 230, 253, 0.07),
+    0 -24px 110px rgba(37, 99, 235, 0.08),
+    0 -44px 150px rgba(0,0,0,0.32) !important;
+}
+
+/* Foreground object layer: keep physical hints, not billboard labels. */
+.urai-home-ground-objects {
+  position: fixed !important;
+  inset: auto 0 0 0 !important;
+  height: min(30vh, 275px) !important;
+  z-index: 8 !important;
+  overflow: hidden !important;
+  pointer-events: none !important;
+  perspective: 1100px !important;
+}
+
 .urai-home-ground-objects::before {
-  top: 30% !important;
-  height: 26% !important;
-  opacity: 0.72 !important;
+  content: "" !important;
+  position: absolute !important;
+  left: -8% !important;
+  right: -8% !important;
+  top: 24% !important;
+  height: 40% !important;
+  border-radius: 999px 999px 0 0 !important;
+  border-top: 1px solid rgba(226, 246, 255, 0.14) !important;
+  background:
+    radial-gradient(ellipse at 50% 0%, rgba(203, 213, 225, 0.16), transparent 30%),
+    linear-gradient(180deg, rgba(10, 18, 34, 0.10), rgba(2, 6, 23, 0.62)) !important;
+  filter: blur(0.2px) !important;
+  z-index: 1 !important;
 }
 
 .urai-home-ground-objects::after {
-  height: 132px !important;
-  bottom: -46px !important;
-  opacity: 0.76 !important;
+  content: "" !important;
+  position: absolute !important;
+  left: -8% !important;
+  right: -8% !important;
+  bottom: -60px !important;
+  height: 142px !important;
+  background:
+    linear-gradient(180deg, transparent, rgba(1, 4, 12, 0.78) 62%, rgba(1, 4, 12, 0.97)),
+    radial-gradient(ellipse at 50% 0%, rgba(103, 232, 249, 0.08), transparent 56%) !important;
+  z-index: 6 !important;
+  pointer-events: none !important;
 }
 
 .urai-ground-plinth {
-  top: 78% !important;
-  width: min(460px, 34vw) !important;
-  height: min(92px, 7vw) !important;
+  left: 50% !important;
+  top: 64% !important;
+  width: min(430px, 32vw) !important;
+  height: min(96px, 7vw) !important;
+  transform: translateX(-50%) rotateX(66deg) rotateZ(-1deg) !important;
+  opacity: 0.72 !important;
   z-index: 3 !important;
-  opacity: 0.82 !important;
+  border-color: rgba(229, 252, 255, 0.18) !important;
+  box-shadow:
+    0 22px 80px rgba(0, 0, 0, 0.46),
+    0 0 74px rgba(103, 232, 249, 0.12),
+    inset 0 1px 0 rgba(255, 255, 255, 0.10) !important;
+}
+
+.plinth-core {
+  width: 12px !important;
+  height: 12px !important;
+  box-shadow:
+    0 0 38px rgba(255,255,255,0.86),
+    0 0 82px rgba(103,232,249,0.52),
+    92px 15px 0 -4px rgba(125,211,252,0.72),
+    -98px 20px 0 -5px rgba(167,139,250,0.70),
+    170px 32px 0 -6px rgba(134,239,172,0.66),
+    -180px 38px 0 -6px rgba(125,211,252,0.66) !important;
 }
 
 .urai-ground-trail {
-  top: 72% !important;
-  left: 35% !important;
-  right: 28% !important;
-  opacity: 0.48 !important;
+  left: 36% !important;
+  right: 30% !important;
+  top: 62% !important;
+  height: 42px !important;
+  opacity: 0.36 !important;
   z-index: 2 !important;
+}
+
+.urai-ground-trail span {
+  height: 1px !important;
+  background: linear-gradient(90deg, transparent, rgba(236,254,255,0.48), rgba(103,232,249,0.26), transparent) !important;
+  box-shadow: 0 0 28px rgba(103,232,249,0.14) !important;
 }
 
 .urai-ground-stones,
 .urai-ground-stations {
   z-index: 5 !important;
-  pointer-events: auto !important;
+  pointer-events: none !important;
 }
 
 .urai-ground-stone,
 .urai-ground-station {
-  min-width: 92px !important;
-  max-width: 118px !important;
-  padding: 7px 8px !important;
-  border-radius: 14px !important;
+  min-width: 0 !important;
+  width: 34px !important;
+  height: 34px !important;
+  padding: 0 !important;
+  display: grid !important;
+  place-items: center !important;
+  border-radius: 999px !important;
   opacity: 0.72 !important;
-  transform: perspective(900px) rotateX(34deg) rotateZ(-1deg) scale(0.68) !important;
+  pointer-events: auto !important;
+  overflow: visible !important;
+  color: transparent !important;
+  background:
+    radial-gradient(circle at 35% 28%, #f8fdff, rgba(103,232,249,0.92) 38%, rgba(37,99,235,0.42) 100%) !important;
+  border: 1px solid rgba(226, 246, 255, 0.22) !important;
   box-shadow:
-    0 14px 34px rgba(0,0,0,0.32),
-    0 0 24px rgba(103,232,249,0.08),
-    inset 0 1px 0 rgba(255,255,255,0.08) !important;
-}
-
-.urai-ground-stone:hover,
-.urai-ground-station:hover,
-.urai-ground-stone:focus-visible,
-.urai-ground-station:focus-visible {
-  opacity: 1 !important;
-  transform: perspective(900px) rotateX(28deg) rotateZ(-1deg) translateY(-4px) scale(0.76) !important;
+    0 16px 34px rgba(0,0,0,0.30),
+    0 0 34px rgba(103,232,249,0.22),
+    inset 0 1px 0 rgba(255,255,255,0.26) !important;
+  transform: perspective(900px) rotateX(50deg) rotateZ(-1deg) scale(0.82) !important;
 }
 
 .urai-ground-stone strong,
-.urai-ground-station strong {
-  width: 22px !important;
-  height: 22px !important;
-  font-size: 0.62rem !important;
-}
-
 .urai-ground-stone span,
-.urai-ground-station span {
-  font-size: 0.66rem !important;
-  white-space: nowrap !important;
-}
-
 .urai-ground-stone small,
+.urai-ground-station strong,
+.urai-ground-station span,
 .urai-ground-station small {
   display: none !important;
 }
 
+.urai-ground-stone:hover,
+.urai-ground-stone:focus-visible,
+.urai-ground-station:hover,
+.urai-ground-station:focus-visible {
+  opacity: 1 !important;
+  outline: none !important;
+  transform: perspective(900px) rotateX(40deg) rotateZ(-1deg) translateY(-3px) scale(1.02) !important;
+  box-shadow:
+    0 18px 46px rgba(0,0,0,0.38),
+    0 0 58px rgba(103,232,249,0.38),
+    inset 0 1px 0 rgba(255,255,255,0.32) !important;
+}
+
 .stone-life,
-.station-life {
-  left: 39% !important;
-  top: 84% !important;
-}
-
+.station-life { left: 42% !important; top: 78% !important; }
 .stone-focus,
-.station-focus {
-  left: 49% !important;
-  top: 76% !important;
-}
-
+.station-focus { left: 50% !important; top: 70% !important; }
 .stone-replay,
-.station-replay {
-  left: 59% !important;
-  top: 84% !important;
-}
-
+.station-replay { left: 58% !important; top: 78% !important; }
 .stone-privacy,
-.station-privacy {
-  left: 69% !important;
-  top: 76% !important;
-  opacity: 0.38 !important;
-}
+.station-privacy { left: 66% !important; top: 70% !important; opacity: 0.42 !important; }
 
 .urai-ground-foreground {
   z-index: 6 !important;
   height: 112px !important;
-  bottom: -44px !important;
+  bottom: -54px !important;
   opacity: 0.64 !important;
   pointer-events: none !important;
 }
 
-.urai-launch-home__dock,
-.urai-launch-home__route-dock,
-nav {
-  z-index: 80 !important;
+/* Keep the launch panel as the only readable interface. */
+[data-route-panel-variant="home"] {
+  z-index: 60 !important;
+  pointer-events: none !important;
+}
+
+[data-route-panel-variant="home"] a,
+[data-route-panel-variant="home"] button {
+  pointer-events: auto !important;
+}
+
+[data-route-panel-variant="home"] h1 {
+  max-width: 10.4ch !important;
+  font-size: clamp(4rem, 5.4vw, 5.95rem) !important;
+  line-height: 0.88 !important;
+  letter-spacing: -0.08em !important;
+  text-shadow: 0 22px 100px rgba(103, 232, 249, 0.24) !important;
 }
 
 @media (max-width: 1368px) {
-  .urai-home-ground-objects {
-    height: min(34vh, 320px) !important;
+  [data-route-panel-variant="home"] h1 {
+    font-size: clamp(3.8rem, 5.1vw, 5.35rem) !important;
   }
 
-  .urai-ground-stone,
-  .urai-ground-station {
-    min-width: 78px !important;
-    max-width: 100px !important;
-    padding: 6px 7px !important;
-    transform: perspective(900px) rotateX(34deg) rotateZ(-1deg) scale(0.60) !important;
+  .urai-home-ground-objects {
+    height: min(26vh, 245px) !important;
+  }
+
+  .urai-ground-plinth {
+    top: 68% !important;
+    width: min(380px, 30vw) !important;
+    height: min(78px, 6vw) !important;
   }
 
   .stone-life,
-  .station-life {
-    left: 40% !important;
-    top: 86% !important;
-  }
-
+  .station-life { left: 43% !important; top: 82% !important; }
   .stone-focus,
-  .station-focus {
-    left: 50% !important;
-    top: 79% !important;
-  }
-
+  .station-focus { left: 51% !important; top: 74% !important; }
   .stone-replay,
-  .station-replay {
-    left: 60% !important;
-    top: 86% !important;
-  }
-
+  .station-replay { left: 59% !important; top: 82% !important; }
   .stone-privacy,
-  .station-privacy {
-    display: none !important;
-  }
+  .station-privacy { display: none !important; }
 }
 
 @media (max-width: 780px) {
@@ -337,4 +288,3 @@ nav {
     display: none !important;
   }
 }
-
