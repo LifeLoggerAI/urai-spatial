@@ -1,19 +1,11 @@
-import { LaunchRoutePanel } from '../LaunchRoutePanel'
-import { LaunchSeo } from '../LaunchSeo'
-import { RootModeExperience } from '../RootModeExperience'
+import HomeSpatialWorldFinal from '../HomeSpatialWorldFinal'
 
 export const metadata = {
   title: 'URAI Home',
-  description: 'The private-by-default URAI launch home field with ground, orb, sky, avatar, horizon, camera motion, and route actions.',
+  description:
+    'The URAI Spatial Genesis Home World: sky, horizon, ground, embodied presence, orb companion, and connected Life Map routes.',
 }
 
 export default function HomeRoutePage() {
-  // Keep visible route controls first so audits, keyboard users, and no-pointer users land on real production actions.
-  return (
-    <>
-      <LaunchRoutePanel variant="home" />
-      <LaunchSeo label="URAI Home renders the production 3D world and primary route actions." />
-      <RootModeExperience initialMode="home" />
-    </>
-  )
+  return <HomeSpatialWorldFinal />
 }

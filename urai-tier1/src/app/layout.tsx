@@ -1,5 +1,4 @@
 import './home-spatial-world-final.css'
-import HomeSpatialWorldFinal from './HomeSpatialWorldFinal'
 import './home-one-world-owner.css'
 import type { Metadata, Viewport } from 'next'
 import './globals.css'
@@ -47,8 +46,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         style={{ margin: 0, background: '#08030f', overflowX: 'hidden' }}
       >
         {children}
-        <HomeSpatialWorldFinal />
-      </body>
+</body>
     </html>
   )
 }
