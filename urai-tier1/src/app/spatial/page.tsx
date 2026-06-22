@@ -1,18 +1,11 @@
-import { LaunchRoutePanel } from '../LaunchRoutePanel';
-import { LaunchSeo } from '../LaunchSeo';
-import { RootModeExperience } from '../RootModeExperience';
+import { TierOneExperience } from '@/spatial/layout/TierOneExperience';
 
 export const metadata = {
   title: 'URAI Spatial',
-  description: 'URAI Spatial opens the connected route surface.',
+  description:
+    'URAI Spatial opens the canonical true 3D Genesis surface with connected navigation.',
 };
 
 export default function SpatialPage() {
-  return (
-    <>
-      <LaunchSeo label="URAI Spatial route is live with connected navigation." />
-      <LaunchRoutePanel variant="home" />
-      <RootModeExperience initialMode="home" />
-    </>
-  );
+  return <TierOneExperience mode="home" />;
 }
