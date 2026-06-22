@@ -9,25 +9,19 @@ if (!baseUrl) {
 const routes = [
   '/',
   '/home',
+  '/ascent',
   '/life-map',
-  '/replay',
-  '/focus?manifestId=seed-memory-bloom',
+  '/focus?memoryId=quiet-reset',
+  '/replay?memoryId=quiet-reset&manifestId=replay-recovery-thread',
+  '/unwind',
   '/mirror',
   '/passport',
   '/status',
-  '/spatial',
-  '/spatial-fallback',
-  '/location-map',
-  '/place/place-seed-memory-bloom',
-  '/place/place-seed-memory-bloom/replay',
-  '/council',
-  '/legacy',
-  '/dream',
-  '/ground',
+  '/privacy-controls',
 ]
 
 for (const route of routes) {
   console.log(`${baseUrl.replace(/\/$/, '')}${route}`)
 }
 
-console.log('Open each URL after deploy and verify it renders without a fatal error. Browser-based Playwright verification can replace this checklist once deployed runtime access is available.')
+console.log('Open each URL after deploy and verify it renders the launch surface, not the old static fallback. Browser-based Playwright verification can replace this checklist once deployed runtime access is available.')
