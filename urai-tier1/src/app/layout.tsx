@@ -17,6 +17,7 @@ import './urai-v1.css'
 import './ship-ready-visual-pass.css'
 import './home-ground-production.css'
 import './home-ground-shipping-world.css'
+import HomeGroundWorldObjects from './HomeGroundWorldObjects'
 
 export const metadata: Metadata = {
   title: 'URAI Spatial',
@@ -29,8 +30,6 @@ export const metadata: Metadata = {
 export const viewport: Viewport = {
   width: 'device-width',
   initialScale: 1,
-  maximumScale: 1,
-  userScalable: false,
   viewportFit: 'cover',
 }
 
@@ -42,6 +41,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         style={{ margin: 0, background: '#08030f', overflowX: 'hidden' }}
       >
         {children}
+        <HomeGroundWorldObjects />
       </body>
     </html>
   )
