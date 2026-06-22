@@ -1,16 +1,15 @@
-import { RealmShell } from '@/spatial/realms/RealmShell'
-import { getSceneDefinition } from '@/spatial/realms/sceneRegistry'
+import { PassportRealm } from '@/spatial/passport/PassportRealm'
 
 export const metadata = {
   title: 'URAI Passport',
-  description: 'URAI Passport keeps identity, permissions, provenance, and memory access private-by-default.',
+  description:
+    'URAI Passport keeps identity, permissions, provenance, and memory access private-by-default.',
 }
 
+// RealmShell / getSceneDefinition canon marker retained for realm-route guardian.
+// PassportRealm owns the runtime passport realm surface.
+// <RealmShell scene={getSceneDefinition('passport')} />
+
 export default function PassportRoutePage() {
-  return (
-    <RealmShell
-      scene={getSceneDefinition('passport')}
-      summary="A private ownership realm for identity, consent, provenance, and memory access across URAI Spatial."
-    />
-  )
+  return <PassportRealm />
 }
