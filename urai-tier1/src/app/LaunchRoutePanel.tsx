@@ -8,10 +8,14 @@ type LaunchRoute = {
   action: string
 }
 
+const launchMemoryId = 'quiet-reset'
+const focusHref = `/focus?memoryId=${launchMemoryId}`
+const replayHref = `/replay?memoryId=${launchMemoryId}&manifestId=replay-recovery-thread`
+
 const routeLinks: LaunchRoute[] = [
   { label: 'Life Map', href: '/life-map', action: 'open-life-map' },
-  { label: 'Focus', href: '/focus?memoryId=quiet-reset', action: 'open-focus' },
-  { label: 'Replay', href: '/replay?manifestId=replay-recovery-thread', action: 'open-replay' },
+  { label: 'Focus', href: focusHref, action: 'open-focus' },
+  { label: 'Replay', href: replayHref, action: 'open-replay' },
   { label: 'Passport', href: '/passport', action: 'open-passport' },
   { label: 'Status', href: '/status', action: 'open-status' },
 ]
@@ -38,8 +42,8 @@ export function LaunchRoutePanel({ variant }: { variant: LaunchRouteVariant }) {
         </p>
         <div className={styles.commandRow} aria-label="Primary launch actions">
           <a className={styles.primaryCta} href="/life-map" data-urai-audit-action="home-life-map">Enter Life Map</a>
-          <a href="/focus?memoryId=quiet-reset" data-urai-audit-action="home-focus">Open Focus</a>
-          <a href="/replay?manifestId=replay-recovery-thread" data-urai-audit-action="home-replay">Start Replay</a>
+          <a href={focusHref} data-urai-audit-action="home-focus">Open Focus</a>
+          <a href={replayHref} data-urai-audit-action="home-replay">Start Replay</a>
         </div>
       </div>
 
@@ -51,7 +55,7 @@ export function LaunchRoutePanel({ variant }: { variant: LaunchRouteVariant }) {
 
       <div className={styles.pathThread} aria-label="Canonical URAI route path">
         {pathSteps.map(([index, label, detail]) => (
-          <a key={label} href={label === 'Life Map' ? '/life-map' : label === 'Focus' ? '/focus?memoryId=quiet-reset' : '/replay?manifestId=replay-recovery-thread'}>
+          <a key={label} href={label === 'Life Map' ? '/life-map' : label === 'Focus' ? focusHref : replayHref}>
             <span>{index}</span>
             <strong>{label}</strong>
             <small>{detail}</small>
