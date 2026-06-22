@@ -14,14 +14,20 @@ function read(relativePath) {
 const replayPage = read('src/app/replay/page.tsx')
 const replayUnwindButton = read('src/app/replay/ReplayUnwindButton.tsx')
 const replayRoute = read('src/app/replay/[replayId]/page.tsx')
+const memoryRouteClient = read('src/spatial/layout/MemoryRouteClient.tsx')
+const memoryModeSurface = read('src/spatial/layout/MemoryModeSurfaceV2.tsx')
 const tierOneExperience = read('src/spatial/layout/TierOneExperience.tsx')
 
-test('replay route remains wired to the canonical TierOneExperience replay shell', () => {
-  assert.match(replayPage, /TierOneExperience/)
+test('replay route remains wired to the static-safe cinematic replay shell', () => {
+  assert.match(replayPage, /MemoryRouteClient/)
   assert.match(replayPage, /mode="replay"/)
-  assert.match(replayPage, /Replay Stream/)
-  assert.match(replayPage, /data-testid="urai-focus-action-panel"/)
-  assert.match(replayPage, /ReplayUnwindButton/)
+  assert.match(memoryRouteClient, /MemoryModeSurfaceV2/)
+  assert.match(memoryRouteClient, /mode: 'focus' \| 'replay'/)
+  assert.match(memoryModeSurface, /URAI Replay · cinematic memory scene/)
+  assert.match(memoryModeSurface, /CINEMATIC REPLAY/)
+  assert.match(memoryModeSurface, /Replay progress/)
+  assert.match(memoryModeSurface, /Replay controls/)
+  assert.match(memoryModeSurface, /Return Focus/)
 })
 
 test('replay direct route resolves only demo-safe replay ids and fails closed', () => {
@@ -45,8 +51,11 @@ test('replay unwind affordance preserves safe return behavior', () => {
   assert.match(replayUnwindButton, /Return to Focus/)
 })
 
-test('TierOneExperience preserves replay mode as a first-class scene state', () => {
+test('TierOneExperience preserves replay mode as a first-class fallback scene state', () => {
   assert.match(tierOneExperience, /mode\?: SceneMode/)
-  assert.match(tierOneExperience, /'replay'/)
+  assert.match(tierOneExperience, /const replayMode = "replay"/)
+  assert.match(tierOneExperience, /mode !== replayMode/)
+  assert.match(tierOneExperience, /mode === replayMode/)
+  assert.match(tierOneExperience, /replayActive/)
   assert.match(tierOneExperience, /data-mode=\{mode\}/)
 })
