@@ -31,7 +31,7 @@ const railLinks: LinkSpec[] = [
   { label: 'Home', href: '/home' },
   { label: 'Life Map', href: '/life-map' },
   { label: 'Focus', href: '/focus?memoryId=quiet-reset' },
-  { label: 'Replay', href: '/replay?manifestId=replay-recovery-thread' },
+  { label: 'Replay', href: '/replay?memoryId=quiet-reset&manifestId=replay-recovery-thread' },
   { label: 'Passport', href: '/passport' },
   { label: 'Status', href: '/status' },
 ];
@@ -45,7 +45,7 @@ export function CinematicRouteSurface({
   secondary,
   signals,
   panels,
-  phrase = 'Step inside yourself with ownership intact.',
+  phrase = 'Memory ownership stays visible.',
 }: Props) {
   return (
     <main className={`${styles.shell} ${styles[tone]}`}>
