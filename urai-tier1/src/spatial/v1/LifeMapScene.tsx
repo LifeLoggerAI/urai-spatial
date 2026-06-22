@@ -125,7 +125,7 @@ export function LifeMapScene({
   const [cameraNodeId, setCameraNodeId] = useState<string | undefined>(validSelectedId);
   const [hoveredNodeId, setHoveredNodeId] = useState<string | undefined>();
   const [travelNodeId, setTravelNodeId] = useState<string | undefined>();
-  const travelTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const travelTimeoutRef = useRef<number | null>(null);
 
   useEffect(() => {
     setActiveNodeId(validSelectedId);
@@ -133,7 +133,7 @@ export function LifeMapScene({
   }, [validSelectedId]);
 
   useEffect(() => () => {
-    if (travelTimeoutRef.current) clearTimeout(travelTimeoutRef.current);
+    if (travelTimeoutRef.current) window.clearTimeout(travelTimeoutRef.current);
   }, []);
 
   const clusters = useMemo(() => buildClusters(nodes), [nodes]);
@@ -154,7 +154,7 @@ export function LifeMapScene({
       setTravelNodeId(nodeId);
       onSelectNode(nodeId);
       rememberMemoryId(nodeId);
-      if (travelTimeoutRef.current) clearTimeout(travelTimeoutRef.current);
+      if (travelTimeoutRef.current) window.clearTimeout(travelTimeoutRef.current);
       if (typeof window === 'undefined') {
         router.push(focusUrlForNode(nodeId));
         return;
