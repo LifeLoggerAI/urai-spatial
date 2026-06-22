@@ -87,7 +87,7 @@ export function LaunchSeo({ label }: { label: string }) {
           <a href="/home"><span>Tier One</span><strong>Home World</strong><small>Ground, orb, sky, avatar, camera, and route actions.</small></a>
           <a href="/life-map"><span>Tier Two</span><strong>Life Map</strong><small>Explorable memory constellation wired into Focus.</small></a>
           <a href="/focus?memoryId=quiet-reset"><span>Tier Two</span><strong>Focus</strong><small>Selected memory review from the constellation.</small></a>
-          <a href="/replay?manifestId=replay-recovery-thread"><span>Tier Two</span><strong>Replay</strong><small>Guided replay path and return flow.</small></a>
+          <a href="/replay?memoryId=quiet-reset&manifestId=replay-recovery-thread"><span>Tier Two</span><strong>Replay</strong><small>Guided replay path and return flow.</small></a>
           <a href="/mirror"><span>Tier Three</span><strong>Mirror</strong><small>Reflection surface connected to the spatial runtime.</small></a>
           <a href="/passport"><span>Trust</span><strong>Passport</strong><small>Identity, provenance, consent, and access.</small></a>
           <a href="/status"><span>Ops</span><strong>Status</strong><small>Static export, route readiness, and launch proof.</small></a>
