@@ -16,6 +16,7 @@ import './spatial-audit-hardening.css'
 import './urai-v1.css'
 import './ship-ready-visual-pass.css'
 import './home-ground-production.css'
+import './home-ground-shipping-world.css'
 
 export const metadata: Metadata = {
   title: 'URAI Spatial',
