@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useState } from "react";
 import { usePathname } from "next/navigation";
 
 const HOME_PATHS = new Set(["/", "/home", "/ascent"]);
@@ -18,6 +19,7 @@ const portals = [
 
 export default function HomeSpatialWorldFinal() {
   const pathname = usePathname();
+  const [orbOpen, setOrbOpen] = useState(false);
   if (!pathname || !HOME_PATHS.has(pathname)) return null;
 
   return (
@@ -32,12 +34,12 @@ export default function HomeSpatialWorldFinal() {
       <div className="urai-home-spatial-world-final__shelf" />
       <div className="urai-home-spatial-world-final__pedestal" />
       <div className="urai-home-spatial-world-final__path" />
-      <div className="urai-home-spatial-world-final__avatar">
+      <div className="urai-home-spatial-world-final__avatar" aria-hidden="true">
         <span className="urai-home-spatial-world-final__avatar-core" />
         <span className="urai-home-spatial-world-final__avatar-body" />
         <span className="urai-home-spatial-world-final__avatar-glow" />
       </div>
-      <div className="urai-home-spatial-world-final__beacons">
+      <div className="urai-home-spatial-world-final__beacons" aria-hidden="true">
         {beacons.map((name) => (
           <span
             key={name}
@@ -55,6 +57,15 @@ export default function HomeSpatialWorldFinal() {
           </Link>
         ))}
       </nav>
+      <button type="button" className="urai-home-spatial-world-final__orb-button" aria-expanded={orbOpen} aria-controls="urai-orb-companion-panel" onClick={() => setOrbOpen((open) => !open)}>
+        <span className="urai-home-spatial-world-final__orb-shell" aria-hidden="true" />
+        <span className="urai-home-spatial-world-final__orb-label">Open URAI orb companion</span>
+      </button>
+      <aside id="urai-orb-companion-panel" className="urai-home-spatial-world-final__orb-panel" data-open={orbOpen ? "true" : "false"} aria-live="polite">
+        <p>URAI orb companion</p>
+        <strong>Choose a path without leaving the world.</strong>
+        <div><Link href="/life-map">Open Life Map</Link><Link href={focusHref}>Open Focus</Link><Link href="/privacy-controls">Privacy controls</Link></div>
+      </aside>
       <div className="urai-home-spatial-world-final__foreground" />
     </section>
   );
