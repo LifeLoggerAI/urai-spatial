@@ -1,4 +1,4 @@
-import HomeSpatialWorldFinal from './HomeSpatialWorldFinal'
+import { TierOneExperience } from '@/spatial/layout/TierOneExperience'
 
 export const metadata = {
   title: 'URAI Spatial',
@@ -7,5 +7,5 @@ export const metadata = {
 }
 
 export default function HomePage() {
-  return <HomeSpatialWorldFinal />
+  return <TierOneExperience mode="home" />
 }
