@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import LaunchHomeScene from "./LaunchHomeScene";
 import UraiSpatialStage from "@/spatial/v1/UraiSpatialStage";
 import { HomeCohesionLayer } from "./HomeCohesionLayer";
+import { CinematicLifeMapScene } from "@/spatial/v1/CinematicLifeMapScene";
 import { LifeMapScene } from "@/spatial/v1/LifeMapScene";
 import { MirrorOfBecomingView } from "@/spatial/v1/MirrorOfBecomingView";
 import { lifeMapEdges, lifeMapNodes, mirrorStates, replayPaths } from "@/spatial/v1/lifeMapDemoData";
@@ -74,7 +75,19 @@ export function TierOneExperience({ mode = "home", selectedNodeId }: Props) {
   }
 
   if (mode === "life-map" || mode === "demo") {
-    return <StageFrame mode={mode}>{routeCard}<LifeMapScene nodes={lifeMapNodes} edges={lifeMapEdges} replayPath={replayPath} replayActive={false} onSelectNode={rememberMemoryId} onCloseNode={noop} onStartReplay={noop} onOpenMirror={noop} onReturnHome={noop} /></StageFrame>;
+    return (
+      <StageFrame mode={mode}>
+        {routeCard}
+        <CinematicLifeMapScene
+          nodes={lifeMapNodes}
+          edges={lifeMapEdges}
+          replayPath={replayPath}
+          selectedNodeId={selectedNodeId}
+          onSelectNode={rememberMemoryId}
+          onReturnHome={noop}
+        />
+      </StageFrame>
+    );
   }
 
   if (mode === "focus") {
