@@ -269,6 +269,7 @@ export function LifeMapScene({
             const nodeStyle = {
               '--node-color': node.color,
               '--node-aura': node.auraColor,
+              position: 'absolute',
               left: `${Math.max(5, Math.min(92, x))}%`,
               top: `${Math.max(8, Math.min(88, y))}%`,
               transform: `translate3d(-50%, -50%, ${node.position.z}px) scale(${active ? 1.08 : 0.88 + node.size * 0.08})`,
