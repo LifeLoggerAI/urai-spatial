@@ -44,6 +44,7 @@ function replayUrlForNode(nodeId?: string) {
 // Tier lock source markers retained for the legacy verifier while runtime uses the launch shell.
 // @/scene/HomeScene
 // <HomeScene sceneMode={mode} />
+// UraiIntegratedHomeScene
 // mode !== "life-map"
 // mode !== "home"
 
