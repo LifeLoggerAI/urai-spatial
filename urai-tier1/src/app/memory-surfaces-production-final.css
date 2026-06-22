@@ -1,131 +1,22 @@
-/* URAI final Focus/Replay polish */
+/* URAI final Focus/Replay safety polish
+   Keep this file intentionally light: the selected-memory chamber is owned by
+   MemoryModeSurface.module.css so late global CSS cannot flatten it back into a dashboard card. */
 [data-testid="urai-focus-surface"],
 [data-testid="urai-replay-surface"] {
-  background: radial-gradient(circle at 52% 35%, rgba(191,239,255,.22), transparent 18rem), radial-gradient(circle at 72% 22%, rgba(167,139,250,.20), transparent 30rem), linear-gradient(145deg, #030712 0%, #071226 48%, #030617 100%) !important;
+  min-height: 100svh;
 }
 
-[data-testid="urai-focus-surface"] > article,
-[data-testid="urai-replay-surface"] > article {
-  width: min(650px, 40vw) !important;
-}
-
-[data-testid="urai-focus-surface"] button[aria-label*="Open"],
+[data-testid="urai-focus-surface"] button[aria-label*="Replay"],
 [data-testid="urai-replay-surface"] button[aria-label*="Pause"],
 [data-testid="urai-replay-surface"] button[aria-label*="play"] {
-  width: clamp(520px, 43vw, 760px) !important;
-  aspect-ratio: 1.16 !important;
-  left: 57% !important;
-  top: 52% !important;
-  border-radius: 50px !important;
-  border-color: rgba(191,239,255,.44) !important;
-  box-shadow: 0 68px 220px rgba(0,0,0,.64), 0 0 210px rgba(103,232,249,.26), inset 0 1px 0 rgba(255,255,255,.16) !important;
+  -webkit-tap-highlight-color: transparent;
 }
 
-[data-testid="urai-focus-surface"] button[aria-label*="Open"] > span:nth-of-type(3),
-[data-testid="urai-replay-surface"] button[aria-label*="Pause"] > span:nth-of-type(3),
-[data-testid="urai-replay-surface"] button[aria-label*="play"] > span:nth-of-type(3) {
-  inset: 7% 7% 18% !important;
-  border-radius: 34px !important;
-  overflow: hidden !important;
-  background: #020617 !important;
-  box-shadow: inset 0 0 110px rgba(255,255,255,.08), 0 0 135px rgba(103,232,249,.25) !important;
-}
-
-[data-testid="urai-focus-surface"] button[aria-label*="Open"] > span:nth-of-type(3) > img,
-[data-testid="urai-replay-surface"] button[aria-label*="Pause"] > span:nth-of-type(3) > img,
-[data-testid="urai-replay-surface"] button[aria-label*="play"] > span:nth-of-type(3) > img {
-  position: absolute !important;
-  inset: clamp(10px, 1.4vw, 18px) !important;
-  width: calc(100% - clamp(20px, 2.8vw, 36px)) !important;
-  height: calc(100% - clamp(20px, 2.8vw, 36px)) !important;
-  object-fit: contain !important;
-  object-position: center center !important;
-  border-radius: 24px !important;
-  opacity: .98 !important;
-  filter: saturate(1.14) contrast(1.08) brightness(.96) !important;
-  transform: none !important;
-  background: radial-gradient(circle at 50% 45%, rgba(56,189,248,.14), transparent 44%), #020617 !important;
-  box-shadow: 0 0 70px rgba(103,232,249,.10), inset 0 0 48px rgba(255,255,255,.04) !important;
-}
-
-[data-testid="urai-focus-surface"] button[aria-label*="Open"] > span:nth-of-type(3)::after,
-[data-testid="urai-replay-surface"] button[aria-label*="Pause"] > span:nth-of-type(3)::after,
-[data-testid="urai-replay-surface"] button[aria-label*="play"] > span:nth-of-type(3)::after {
-  content: "";
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-  background: linear-gradient(180deg, rgba(255,255,255,.08), transparent 22%, rgba(2,6,23,.22) 100%), repeating-linear-gradient(90deg, rgba(255,255,255,.018) 0 1px, transparent 1px 8px);
-  mix-blend-mode: screen;
-  opacity: .52;
-}
-
-[data-testid="urai-focus-surface"] button[aria-label*="Open"] > span:nth-of-type(2),
-[data-testid="urai-replay-surface"] button[aria-label*="Pause"] > span:nth-of-type(2),
-[data-testid="urai-replay-surface"] button[aria-label*="play"] > span:nth-of-type(2) {
-  opacity: .08 !important;
-}
-
-@media (max-width: 900px) {
-  [data-testid="urai-focus-surface"] button[aria-label*="Open"],
-  [data-testid="urai-replay-surface"] button[aria-label*="Pause"],
-  [data-testid="urai-replay-surface"] button[aria-label*="play"] {
-    width: min(88vw, 560px) !important;
-    left: 50% !important;
-    top: 55% !important;
-  }
-}
-
-/* URAI final visual polish: make memory image read as scene, not title card */
-[data-testid="urai-focus-surface"] button[aria-label*="Open"] > span:nth-of-type(3),
-[data-testid="urai-replay-surface"] button[aria-label*="Pause"] > span:nth-of-type(3),
-[data-testid="urai-replay-surface"] button[aria-label*="play"] > span:nth-of-type(3) {
-  inset: 7% 7% 19% !important;
-  overflow: hidden !important;
-  background: #020617 !important;
-}
-
-[data-testid="urai-focus-surface"] button[aria-label*="Open"] > span:nth-of-type(3) > img,
-[data-testid="urai-replay-surface"] button[aria-label*="Pause"] > span:nth-of-type(3) > img,
-[data-testid="urai-replay-surface"] button[aria-label*="play"] > span:nth-of-type(3) > img {
-  inset: 0 !important;
-  width: 100% !important;
-  height: 100% !important;
-  object-fit: cover !important;
-  object-position: center 35% !important;
-  transform: scale(1.1) !important;
-  border-radius: 30px !important;
-  filter: saturate(1.2) contrast(1.12) brightness(.93) !important;
-}
-
-/* hide the generated poster title zone so the real UI title/caption owns the frame */
-[data-testid="urai-focus-surface"] button[aria-label*="Open"] > span:nth-of-type(3)::before,
-[data-testid="urai-replay-surface"] button[aria-label*="Pause"] > span:nth-of-type(3)::before,
-[data-testid="urai-replay-surface"] button[aria-label*="play"] > span:nth-of-type(3)::before {
-  content: "";
-  position: absolute;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  height: 32%;
-  z-index: 4;
-  pointer-events: none;
-  background: linear-gradient(180deg, transparent, rgba(2,6,23,.82) 72%, rgba(2,6,23,.98));
-}
-
-[data-testid="urai-focus-surface"] button[aria-label*="Open"] > span:nth-of-type(3)::after,
-[data-testid="urai-replay-surface"] button[aria-label*="Pause"] > span:nth-of-type(3)::after,
-[data-testid="urai-replay-surface"] button[aria-label*="play"] > span:nth-of-type(3)::after {
-  z-index: 5 !important;
-  opacity: .42 !important;
-}
-
-[data-testid="urai-focus-surface"] button[aria-label*="Open"] > span:last-child,
-[data-testid="urai-replay-surface"] button[aria-label*="Pause"] > span:last-child,
-[data-testid="urai-replay-surface"] button[aria-label*="play"] > span:last-child {
-  z-index: 8 !important;
-  bottom: clamp(20px, 2.2vw, 30px) !important;
-  text-shadow: 0 12px 38px rgba(0,0,0,.9) !important;
+[data-testid="urai-focus-surface"] a:focus-visible,
+[data-testid="urai-focus-surface"] button:focus-visible,
+[data-testid="urai-replay-surface"] a:focus-visible,
+[data-testid="urai-replay-surface"] button:focus-visible {
+  scroll-margin: 24px;
 }
 
 /* give Home a cleaner launch-final composition without changing routing */
@@ -148,4 +39,3 @@
 .urai-ground-station {
   pointer-events: auto !important;
 }
-
