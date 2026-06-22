@@ -23,6 +23,7 @@ import './home-ground-final-object-visibility.css'
 import './memory-surfaces-production-final.css'
 import './home-scene-art-direction-final.css'
 import './home-world-aaa-final.css'
+import './home-orb-final-positioning.css'
 
 export const metadata: Metadata = {
   title: 'URAI Spatial',
