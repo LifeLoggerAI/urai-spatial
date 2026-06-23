@@ -1,0 +1,157 @@
+{
+  "project": "URAI First Replay Film",
+  "cut": "Cut One",
+  "runtime_seconds": 120,
+  "working_title": "Your Life Is a World",
+  "primary_cta": "Create your world",
+  "core_line": "URAI handles the noise. You live the life.",
+  "source_intent": "Cinematic onboarding film for /focus → Replay → login/create-world CTA.",
+  "scenes": [
+    {
+      "id": "scene_01_pressure",
+      "time_start": 0,
+      "time_end": 8,
+      "title": "Real Life Pressure",
+      "visual": "Real person under pressure with alerts, reminders, unfinished tasks, and a meaningful photo/object nearby.",
+      "on_screen_text": "Life moves fast.",
+      "voiceover": "Life does not wait for you to organize it.",
+      "asset_type": "human footage or cinematic plate",
+      "safety": "No fear-mongering. Human pressure only."
+    },
+    {
+      "id": "scene_02_open_urai",
+      "time_start": 8,
+      "time_end": 14,
+      "title": "Open URAI",
+      "visual": "Tap URAI app, /home opens, camera pushes through phone into Home World.",
+      "on_screen_text": "Enter your private world.",
+      "voiceover": "So URAI gives your life a world.",
+      "asset_type": "app capture + transition"
+    },
+    {
+      "id": "scene_03_orb_chat",
+      "time_start": 14,
+      "time_end": 22,
+      "title": "Orb Chat Doorway",
+      "visual": "Tap orb. Orb unfolds into chat.",
+      "on_screen_text": "Chat is the doorway. Your world is the interface.",
+      "voiceover": "You can chat with URAI like normal AI — but chat is only the doorway.",
+      "ui_copy": {
+        "user": "Help me get my day under control.",
+        "assistant": "I organized your signals. One needs your decision. Two can be handled quietly. One connects to a pattern from last month.",
+        "buttons": ["Review", "Approve", "Open Life Map"]
+      },
+      "asset_type": "app capture or motion mock"
+    },
+    {
+      "id": "scene_04_self_avatar",
+      "time_start": 22,
+      "time_end": 31,
+      "title": "Self Avatar / Body State",
+      "visual": "Tap self-avatar. Body/life-state layer appears with permission ring.",
+      "on_screen_text": "Private body and life signals, controlled by you.",
+      "voiceover": "With permission, URAI reflects your state so your world can respond.",
+      "ui_copy": {
+        "signals": ["Energy low", "Stress load rising", "Sleep debt high", "Focus window forty minutes", "Mood weather heavy", "Body check-in suggested", "Stress spikes before major decisions"],
+        "action": "Adjust today"
+      },
+      "safety": "No diagnosis. State reflection only."
+    },
+    {
+      "id": "scene_05_ground_workforce",
+      "time_start": 31,
+      "time_end": 45,
+      "title": "Ground World / Private AI Workforce",
+      "visual": "Walkable ground layer with council agents and real-life objects activating.",
+      "on_screen_text": "Less managing. More living.",
+      "voiceover": "On the ground, your private AI workforce helps handle the noise of real life.",
+      "objects": ["Calendar tower", "Inbox stream", "Decision table", "Task forge", "Privacy vault", "Status beacon", "Memory archive tree", "Passport gate", "Relationship thread table", "Focus door", "Replay projector"],
+      "agents": ["Planner", "Memory", "Operator", "Privacy", "Strategy", "Creative", "Body/state", "Mirror", "Relationship", "Legacy"],
+      "safety": "World prepares; user approves."
+    },
+    {
+      "id": "scene_06_council_models",
+      "time_start": 45,
+      "time_end": 55,
+      "title": "Council / Models With Roles",
+      "visual": "Council table, role badges, permission rings.",
+      "on_screen_text": "Models with roles. Access with permission.",
+      "voiceover": "Different models work together, each with a role, a boundary, and a purpose.",
+      "asset_type": "app capture or motion mock"
+    },
+    {
+      "id": "scene_07_sky_ascent",
+      "time_start": 55,
+      "time_end": 64,
+      "title": "Sky Ascent",
+      "visual": "Orb rises, camera ascends through clouds, tasks become paths and memories become stars.",
+      "on_screen_text": "Above the work of life is the meaning of life.",
+      "voiceover": "Above the work of life is the meaning of life.",
+      "asset_type": "transition plate"
+    },
+    {
+      "id": "scene_08_life_map",
+      "time_start": 64,
+      "time_end": 76,
+      "title": "Life Map",
+      "visual": "Living galaxy with memories, chapters, people, places, and patterns.",
+      "on_screen_text": "Your memories become a Life Map.",
+      "voiceover": "Your memories, people, places, and patterns become a living map.",
+      "asset_type": "app capture + cinematic plate"
+    },
+    {
+      "id": "scene_09_relationship_legacy",
+      "time_start": 76,
+      "time_end": 88,
+      "title": "Relationship / Legacy Constellation",
+      "visual": "Present friends, past friends, family, mentors, and protected legacy memory-presence nodes.",
+      "on_screen_text": "Past, present, people, and legacy — connected inside your private world.",
+      "voiceover": "Past, present, people, and legacy connect inside your private world. Legacy stays protected. Presence requires permission.",
+      "ui_copy": {
+        "relationship_node": "This person appears in nine memories, two places, and one turning point.",
+        "legacy_node": "Legacy preserved: voice note, photo, story, place, lesson."
+      },
+      "safety": "No fake resurrection. Use artifacts, silhouettes, initials, places, lessons, and consent rings."
+    },
+    {
+      "id": "scene_10_focus_seed",
+      "time_start": 88,
+      "time_end": 97,
+      "title": "Focus Memory Seed",
+      "visual": "Forest equation image becomes a living memory seed with Replay Memory button.",
+      "on_screen_text": "One moment can hold an entire world.",
+      "voiceover": "One moment can hold an entire world.",
+      "ui_copy": {"button": "Replay Memory"}
+    },
+    {
+      "id": "scene_11_replay",
+      "time_start": 97,
+      "time_end": 110,
+      "title": "Replay Opens",
+      "visual": "Still image becomes motion, camera enters memory, layers appear.",
+      "on_screen_text": "Replay is not just watching. It is entering.",
+      "voiceover": "Replay lets you step inside a memory, explore who and what shaped it, and understand what it meant.",
+      "layers": ["What happened", "Who was there", "What it meant", "What changed after", "What remains"]
+    },
+    {
+      "id": "scene_12_mirror_passport",
+      "time_start": 110,
+      "time_end": 116,
+      "title": "Mirror + Passport Trust Montage",
+      "visual": "Patterns become visible, then Passport Vault proves control and consent.",
+      "on_screen_text": "Your life data belongs to you.",
+      "voiceover": "Mirror shows the patterns your life keeps trying to tell you. Your world is private. Your data belongs to you. Every model needs permission.",
+      "controls": ["Private", "Shared", "Exportable", "Delete anytime", "Model access controlled", "Consent required"]
+    },
+    {
+      "id": "scene_13_cta",
+      "time_start": 116,
+      "time_end": 120,
+      "title": "Final CTA",
+      "visual": "Return to phone. Person calm. CTA screen.",
+      "on_screen_text": "Create your world. Step inside yourself.",
+      "voiceover": "URAI handles the noise. You live the life. URAI is your private world for real life. Create yours. Step inside yourself.",
+      "buttons": ["Create your world", "Log in", "Explore deeper replays"]
+    }
+  ]
+}
