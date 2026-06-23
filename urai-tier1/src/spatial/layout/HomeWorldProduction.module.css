@@ -5,9 +5,12 @@
   isolation: isolate;
   color: #f8efe2;
   background:
+    var(--home-threshold-stack),
     radial-gradient(circle at 50% -8%, rgba(255, 223, 177, 0.34), transparent 23rem),
     radial-gradient(circle at 50% 34%, rgba(139, 177, 255, 0.22), transparent 32rem),
     linear-gradient(180deg, #070d19 0%, #111d31 48%, #080f18 72%, #020407 100%);
+  background-size: cover, auto, auto, auto;
+  background-position: center, center, center, center;
 }
 
 .world::after {
@@ -17,8 +20,21 @@
   z-index: 80;
   pointer-events: none;
   background:
-    linear-gradient(90deg, rgba(0,0,0,.52), transparent 23%, transparent 77%, rgba(0,0,0,.54)),
-    linear-gradient(180deg, rgba(0,0,0,.06), transparent 48%, rgba(0,0,0,.45));
+    linear-gradient(90deg, rgba(0,0,0,.56), transparent 21%, transparent 78%, rgba(0,0,0,.58)),
+    linear-gradient(180deg, rgba(0,0,0,.08), transparent 44%, rgba(0,0,0,.48));
+}
+
+.assetBackdrop {
+  position: absolute;
+  inset: 0;
+  z-index: -10;
+  opacity: .28;
+  background:
+    var(--home-ground-portal-stack),
+    radial-gradient(ellipse at 50% 82%, rgba(255, 196, 114, .18), transparent 36rem);
+  background-size: cover;
+  background-position: center bottom;
+  filter: saturate(1.12) contrast(1.02);
 }
 
 .stars {
@@ -122,26 +138,35 @@
 .skyZone:focus-visible::after {
   opacity: 1;
   border-color: rgba(137,223,255,.24);
-  background: radial-gradient(circle at 50% 8%, rgba(125,211,252,.12), transparent 30rem);
+  background:
+    var(--home-sky-ascent-stack),
+    radial-gradient(circle at 50% 8%, rgba(125,211,252,.14), transparent 30rem);
+  background-size: cover;
+  background-position: center top;
+  mix-blend-mode: screen;
 }
 .groundZone:hover::after,
 .groundZone:focus-visible::after {
   opacity: 1;
   border-color: rgba(255,218,153,.22);
-  background: radial-gradient(circle at 50% 92%, rgba(255,196,114,.12), transparent 30rem);
+  background:
+    var(--home-ground-portal-stack),
+    radial-gradient(circle at 50% 92%, rgba(255,196,114,.16), transparent 30rem);
+  background-size: cover;
+  background-position: center bottom;
 }
 .skyZone > span,
 .groundZone > span {
   position: absolute;
   z-index: 116;
   display: grid;
-  max-width: 17rem;
+  max-width: 18rem;
   gap: .3rem;
   padding: .95rem 1rem;
   color: rgba(255,244,228,.92);
   border: 1px solid rgba(255,232,190,.15);
   border-radius: 1.25rem;
-  background: rgba(4, 8, 15, .52);
+  background: rgba(4, 8, 15, .54);
   box-shadow: 0 20px 70px rgba(0,0,0,.28), inset 0 0 20px rgba(255,255,255,.035);
   backdrop-filter: blur(16px);
   pointer-events: none;
@@ -182,7 +207,7 @@
   text-shadow: 0 0 28px rgba(255,228,184,.16), 0 18px 58px rgba(0,0,0,.68);
 }
 .subhead {
-  max-width: 40rem;
+  max-width: 42rem;
   margin: 1rem auto 0;
   color: rgba(255,246,231,.78);
   font-size: 1rem;
@@ -263,14 +288,20 @@
 }
 .horizon { position: absolute; left: 0; right: 0; top: 5%; height: 1px; background: linear-gradient(90deg, transparent, rgba(255,226,178,.35), transparent); box-shadow: 0 -42px 150px rgba(122,159,231,.28), 0 18px 90px rgba(255,210,153,.10); }
 .terrace { position: absolute; left: 50%; bottom: -20%; width: min(82rem, 88vw); height: 32rem; transform: translateX(-50%) rotateX(67deg); transform-origin: center bottom; border-radius: 50%; background: repeating-radial-gradient(ellipse at center, transparent 0 3.25rem, rgba(255,226,174,.18) 3.31rem 3.39rem), repeating-linear-gradient(92deg, transparent 0 4.7rem, rgba(255,232,190,.08) 4.75rem 4.8rem), radial-gradient(ellipse at center, rgba(255,225,172,.23), rgba(74,90,117,.14) 44%, rgba(5,9,13,.94) 74%); border: 1px solid rgba(255,232,190,.14); box-shadow: 0 -30px 100px rgba(120,159,234,.26), 0 40px 120px rgba(0,0,0,.70); }
+.groundPortalArt { position: absolute; left: 50%; bottom: -1%; width: min(58rem, 72vw); height: 23rem; transform: translateX(-50%); opacity: .18; background: var(--home-ground-portal-stack); background-size: cover; background-position: center bottom; filter: blur(.2px) saturate(1.2); border-radius: 2rem 2rem 0 0; mask-image: linear-gradient(180deg, transparent, black 28%, black 72%, transparent); }
+.skyAscentArt { position: absolute; left: 50%; top: -86%; width: min(54rem, 72vw); height: 32rem; transform: translateX(-50%); opacity: .18; background: var(--home-sky-ascent-stack); background-size: cover; background-position: center top; filter: saturate(1.35); mask-image: radial-gradient(ellipse at center, black, transparent 72%); }
 .portalRay { position: absolute; z-index: 52; left: 50%; bottom: 48%; width: 5.2rem; height: 38rem; transform: translateX(-50%); background: linear-gradient(180deg, rgba(255,245,218,.62), rgba(255,216,152,.18), transparent); clip-path: polygon(45% 0, 55% 0, 100% 100%, 0 100%); filter: blur(10px); opacity: .74; }
 .portalRing { position: absolute; z-index: 54; left: 50%; bottom: 24%; width: 15.5rem; height: 15.5rem; transform: translateX(-50%) scale(.92); border-radius: 999px; border: 1px solid rgba(255,226,175,.58); background: radial-gradient(circle, transparent 43%, rgba(255,219,158,.30) 44%, transparent 58%), conic-gradient(from 20deg, rgba(255,241,211,.6), rgba(255,184,107,.18), rgba(160,190,255,.45), rgba(255,241,211,.6)); box-shadow: 0 0 74px rgba(255,214,151,.48), inset 0 0 58px rgba(255,214,151,.26); }
-.portalOrb { position: absolute; z-index: 55; left: 50%; bottom: 35%; width: 8.8rem; height: 8.8rem; transform: translateX(-50%) scale(.92); border-radius: 999px; background: radial-gradient(circle at 48% 46%, rgba(255,249,227,.98) 0 .7rem, rgba(255,211,138,.9) 1.2rem, rgba(62,80,147,.62) 4rem, rgba(9,11,21,.95) 100%); box-shadow: 0 0 54px rgba(255,211,142,.64); }
+.portalOrb { position: absolute; z-index: 55; left: 50%; bottom: 35%; width: 8.8rem; height: 8.8rem; transform: translateX(-50%) scale(.92); border-radius: 999px; background: var(--orb-listening-stack), radial-gradient(circle at 48% 46%, rgba(255,249,227,.98) 0 .7rem, rgba(255,211,138,.9) 1.2rem, rgba(62,80,147,.62) 4rem, rgba(9,11,21,.95) 100%); background-size: cover; box-shadow: 0 0 54px rgba(255,211,142,.64); }
 .centerPerson { position: absolute; z-index: 60; left: 50%; bottom: 29%; height: 4.2rem; width: .75rem; transform: translateX(-50%); border-radius: 999px 999px .2rem .2rem; background: linear-gradient(180deg, #fff4df 0 .42rem, rgba(17,22,31,.96) .45rem); }
 .memoryCase,
 .statusCase { position: absolute; z-index: 58; bottom: 7.5%; width: 9.2rem; height: 9.5rem; border-radius: .55rem; border: 1px solid rgba(255,222,174,.46); background: linear-gradient(180deg, rgba(255,255,255,.08), rgba(255,255,255,.02)); box-shadow: inset 0 0 26px rgba(255,255,255,.05), 0 0 34px rgba(255,198,116,.15); opacity: .88; }
 .memoryCase { left: 11.5%; }
 .statusCase { right: 11.5%; }
+.workforceFigure { position: absolute; z-index: 61; width: .95rem; height: 3.6rem; border-radius: 999px 999px .25rem .25rem; background: linear-gradient(180deg, #fff4d9 0 .5rem, rgba(170, 235, 255, .55) .55rem, rgba(11,18,28,.92)); box-shadow: 0 0 22px rgba(143,246,255,.24); opacity: .75; }
+.workforceReception { left: 58%; bottom: 24%; }
+.workforcePrivacy { left: 27%; bottom: 13%; }
+.workforceLogistics { right: 27%; bottom: 13%; }
 .routeRail { left: 50%; bottom: 1.2rem; transform: translateX(-50%); z-index: 150; display: flex; flex-wrap: wrap; justify-content: center; gap: .45rem; width: min(48rem, calc(100vw - 2rem)); padding: .45rem; border: 1px solid rgba(186,230,253,.13); border-radius: 999px; background: rgba(2,8,20,.7); box-shadow: 0 22px 70px rgba(0,0,0,.35), inset 0 0 22px rgba(255,255,255,.04); backdrop-filter: blur(18px); }
 .routeRail a { color: rgba(241,248,255,.82); text-decoration: none; border-radius: 999px; padding: .7rem .95rem; font-size: .76rem; font-weight: 900; }
 .routeRail a[data-active="true"] { color: #06111f; background: #a5f3fc; }
@@ -287,7 +318,8 @@
   .subhead::before,
   .subhead::after,
   .memoryCase,
-  .statusCase { display: none; }
+  .statusCase,
+  .workforceFigure { display: none; }
 }
 
 @media (max-width: 640px) {
