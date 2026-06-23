@@ -1,4 +1,5 @@
 import GroundWorldExperience from "@/spatial/ground/GroundWorldExperience";
+import "@/spatial/ground/GroundWorldExperience.module.css";
 
 export const metadata = {
   title: "Ground World · URAI Spatial",
