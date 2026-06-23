@@ -1,0 +1,71 @@
+name: URAI Spatial Launch Verification
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - 'urai-tier1/**'
+      - 'scripts/**'
+      - 'package.json'
+      - 'pnpm-lock.yaml'
+      - '_audit/20260623_launch_route_chain/**'
+      - '.github/workflows/launch-verification.yml'
+
+jobs:
+  verify-spatial-launch:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: '10.0.0'
+
+      - name: Install
+        run: pnpm install --no-frozen-lockfile
+
+      - name: Typecheck
+        run: pnpm run typecheck
+
+      - name: Build
+        run: pnpm run build
+
+      - name: Start local server
+        run: |
+          pnpm run dev:3001 > /tmp/urai-spatial-dev.log 2>&1 &
+          echo $! > /tmp/urai-spatial-dev.pid
+          for attempt in $(seq 1 90); do
+            if curl -fsS http://127.0.0.1:3001/ >/dev/null; then
+              exit 0
+            fi
+            sleep 2
+          done
+          cat /tmp/urai-spatial-dev.log
+          exit 1
+
+      - name: Smoke launch route chain
+        run: |
+          mkdir -p _audit/20260623_launch_route_chain
+          : > _audit/20260623_launch_route_chain/route-smoke.tsv
+          for route in / /home /ground /life-map /focus /replay /mirror /passport /status; do
+            code=$(curl -sS -o /tmp/urai-route.html -w '%{http_code}' "http://127.0.0.1:3001${route}")
+            printf '%s\t%s\n' "$route" "$code" | tee -a _audit/20260623_launch_route_chain/route-smoke.tsv
+            test "$code" = "200"
+          done
+
+      - name: Upload route evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: urai-spatial-launch-evidence
+          path: |
+            _audit/20260623_launch_route_chain/**
+            /tmp/urai-spatial-dev.log
