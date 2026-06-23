@@ -4,6 +4,7 @@ import Link from "next/link";
 import type { CSSProperties } from "react";
 import { assetCssStack, homeAssets, uiAssets } from "@/spatial/assets/uraiAssets";
 import styles from "./HomeWorldProduction.module.css";
+import hoverFix from "./HomeWorldProductionHoverFix.module.css";
 
 const routeRail = [
   ["Home", "/home"],
@@ -29,7 +30,7 @@ export function HomeWorldProduction() {
       className={styles.world}
       style={worldStyle}
       data-urai-home-production
-      data-urai-launch-revision="2026-06-23-assetized-threshold-world"
+      data-urai-launch-revision="2026-06-23-final-route-consolidation"
     >
       <div className={styles.assetBackdrop} aria-hidden="true" />
       <div className={styles.stars} aria-hidden="true" />
@@ -42,14 +43,14 @@ export function HomeWorldProduction() {
         <span>SPATIAL</span>
       </header>
 
-      <Link className={styles.skyZone} href="/life-map" aria-label="Click the sky to enter your Life Map">
+      <Link className={`${styles.skyZone} ${hoverFix.skyZone}`} href="/life-map" aria-label="Click the sky to enter your Life Map">
         <span>
           <b>Click the sky</b>
           <small>Ascend into the memory galaxy above this place.</small>
         </span>
       </Link>
 
-      <Link className={styles.groundZone} href="/ground" aria-label="Click the ground to enter your private workforce">
+      <Link className={`${styles.groundZone} ${hoverFix.groundZone}`} href="/ground" aria-label="Click the ground to enter your private workforce">
         <span>
           <b>Click the ground</b>
           <small>Enter your real-life world, private workforce, and permission layer.</small>
