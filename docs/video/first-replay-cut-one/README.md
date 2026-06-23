@@ -8,6 +8,15 @@
 
 **Placement:** `/focus` → Replay → login/create-world CTA
 
+## Source files
+
+- `production_plan.md` — practical production plan and core sequence.
+- `storyboard.json` — machine-readable shot timing, UI copy, layers, controls, and scene metadata.
+- `script.md` — short launch narration.
+- `scene_plate_prompts.md` — image/video plate prompts for the asset pipeline.
+- `scene_plate_prompts.csv` — prompt spreadsheet source.
+- `guardrails.md` — respectful visual and language rules.
+
 ## Core line
 
 URAI handles the noise. You live the life.
@@ -19,12 +28,6 @@ pressure → open URAI → orb chat → self-avatar state → private AI workfor
 ## Product truth
 
 URAI is your private world for real life. Chat is the doorway. Your world is the interface. Your AI workforce helps organize real-life signals. Your memories, people, places, and patterns become a Life Map. Replay lets you step inside memory. Passport keeps ownership and permissions with the user.
-
-## Safety rules
-
-- Body/state language must be framed as user-controlled reflection, not diagnosis.
-- Legacy language must be framed as protected memory-presence, not imitation or replacement.
-- AI workforce language must show preparation, review, approval, and permission, not takeover.
 
 ## Must show
 
@@ -53,4 +56,4 @@ Log in
 
 Explore deeper replays
 
-Step inside yourself.
+Step inside your world.
