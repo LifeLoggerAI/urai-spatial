@@ -84,6 +84,12 @@ export function TierOneExperience({ mode = "home", selectedNodeId }: Props) {
     rememberMemoryId(activeFocusNodeId);
     router.push(replayUrlForNode(activeFocusNodeId));
   };
+  const returnHome = () => {
+    router.push("/home");
+  };
+  const returnLifeMap = () => {
+    router.push("/life-map");
+  };
   const focusActionPanel = (
     <section className="urai-v1-focus-action-panel" data-testid="urai-focus-action-panel" aria-label="Focus action panel" style={{ position: "relative", zIndex: 50, pointerEvents: "auto" }}>
       <p>{activeFocusNode?.title ?? "Selected memory"} is ready for review.</p>
@@ -124,7 +130,7 @@ export function TierOneExperience({ mode = "home", selectedNodeId }: Props) {
   }
 
   if (mode === "mirror") {
-    return <StageFrame mode={mode}>{routeCard}<MirrorOfBecomingView mirror={mirror} onClose={noop} onHome={noop} /></StageFrame>;
+    return <StageFrame mode={mode}>{routeCard}<MirrorOfBecomingView mirror={mirror} onClose={returnLifeMap} onHome={returnHome} /></StageFrame>;
   }
 
   return <UraiSpatialStage />;
