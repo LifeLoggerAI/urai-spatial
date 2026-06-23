@@ -130,15 +130,7 @@ export function RootModeExperience({ initialMode = "home" }: { initialMode?: Tie
       data-selected-node-id={selectedNodeId ?? ""}
       style={{ position: "relative", minHeight: "100svh" }}
     >
-      <div
-        data-testid="urai-scene-stage"
-        data-scene-mode={mode}
-        data-root-route-mode={mode}
-        data-selected-node-id={selectedNodeId ?? ""}
-        style={{ position: "relative", minHeight: "inherit", width: "100%" }}
-      >
-        <TierOneExperience mode={mode} selectedNodeId={selectedNodeId} />
-      </div>
+      <TierOneExperience mode={mode} selectedNodeId={selectedNodeId} />
     </div>
   );
 }
