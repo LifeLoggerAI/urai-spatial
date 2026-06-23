@@ -4,56 +4,90 @@ Date: 2026-06-23
 Repository: LifeLoggerAI/urai-spatial
 Canonical app: urai-tier1
 
-## Commits confirmed from previous execution
+## Launch finish pass
 
-- f68524381f76a78f9ade6091a83a6ab91d822f63 — added Home World controls
-- 6cc264743135fdfc5e02ef3e99691472c48bfefa — added Home launch CSS module
-- 9aabc442fe10ff93cd6f109a725f1d4735490635 — created initial launch evidence
+Target route chain:
 
-## Commits from this execution
+`Home threshold -> Ground real-life world -> Life Map galaxy -> Focus memory chamber -> Replay living memory film`
 
-- 0dd42d61e729035f85187d18830da2b80183b8ed — wired Home launch CSS module into HomeWorldProduction
-- 5a685657d411419fbdb6a8fd41aa653ce15a6060 — expanded Ground World workforce roles and inspectable real-life objects
-- d14386b668855f8d0d823ad9dbf501787efc2b7f — added Replay proof layers and protected legacy safety copy
+## Files inspected / changed
 
-## Source inspection
+- `urai-tier1/src/spatial/layout/HomeWorldProduction.tsx`
+- `urai-tier1/src/spatial/layout/HomeWorldProduction.module.css`
+- `urai-tier1/src/app/ground/page.tsx`
+- `urai-tier1/src/app/ground/GroundWorld.module.css`
+- `urai-tier1/src/spatial/layout/ReplayChamber.module.css`
+- `urai-tier1/src/app/life-map/LifeMapAaaUniverse.tsx` inspected
+- `urai-tier1/src/spatial/layout/MemoryModeSurfaceV2.tsx` inspected
 
-The canonical public app is `urai-tier1`.
+## Completed source work
 
-Primary routes inspected in source:
+### Home
 
-- `/`
-- `/home`
-- `/ground`
-- `/life-map`
-- `/focus`
-- `/replay`
-- `/mirror`
-- `/passport`
-- `/status`
+- Removed the separate launch CSS dependency from `HomeWorldProduction.tsx`.
+- Moved the launch HUD, route previews, and route rail into `HomeWorldProduction.module.css`.
+- Added clear ground and sky route language.
+- Added clean Orb companion and Self state HUD cards.
+- Added Ground and Life Map route preview cards.
+- Added a consistent bottom route rail.
 
-## Source updates
+### Ground
 
-- Wired `HomeWorldProductionLaunch.module.css` into `HomeWorldProduction.tsx`.
-- Home controls now use `launchStyles` for orb panel, self/avatar panel, companion panel, links, and council/workforce hint.
-- Ground World now includes eight visible role presences: Guide, Builder, Archivist, Operator, Strategist, Protector, Mirror, and Legacy.
-- Ground World now includes nine inspectable operational objects: Calendar tower, Inbox lantern, Task forge, Decision table, Privacy vault, Memory archive, Health/status beacon, Relationship thread, and Replay projector.
-- Ground route includes the required message: “This is where your private AI workforce helps organize real life.”
-- Replay proof now includes explicit cinematic route language, play/pause/restart controls retained, required layers, and safe legacy copy: “Legacy stays protected. Presence requires permission.”
+- Rebuilt `/ground` around a full-screen embodied operating layer.
+- Kept the hidden `RealmShell` guardian contract.
+- Added a central orb companion, beam, spatial floor, grid, role cards, inspectable objects, object panel, and route rail.
+- Replaced raw/fallback visual behavior with `GroundWorld.module.css` styling.
 
-## Public checks
+### Focus and Replay
 
-Browser tool checks that loaded during this execution:
+- Replaced the cramped chamber CSS with a readable launch-polish layout.
+- Enlarged the central memory/replay stage.
+- Made the right signal rail scroll-safe.
+- Moved replay controls above the route rail to reduce overlap.
+- Preserved existing test-facing attributes from `MemoryModeSurfaceV2`.
+
+## Route proof observed before this visual patch
+
+The latest user shell context showed HTTP 200 for:
 
 - `https://urai.app/`
-- `/life-map` via root link
-- `/focus` via root link
-- `/replay` via root link
-- `/mirror` via root link
-- `/passport` via root link
-- `/status` via root link
+- `https://urai.app/home`
+- `https://urai.app/life-map`
+- `https://urai.app/focus`
+- `https://urai.app/replay`
+- `https://urai.app/mirror`
+- `https://urai.app/passport`
+- `https://urai.app/status`
+- `https://urai.app/demo/replay-film`
 
-Container curl route loop was attempted for:
+## Build / release status observed before this visual patch
+
+- GitHub Actions run `28005021230` passed the `Live release check` job at commit `945ec80a`.
+- The separate deploy job failed because the repo had no Firebase deploy secret configured.
+- Local full deploy failed before deploy because the shell runtime was missing a Playwright system library.
+- Direct Firebase framework deploy then failed from low disk during the generated Cloud Function build.
+
+## Required verification after this patch
+
+Run from a repo checkout with working package manager state and enough disk:
+
+```bash
+pnpm urai:guardian
+pnpm check:source-integrity
+pnpm check:types
+pnpm build
+node tests/replay-memory-theater-contract.mjs
+```
+
+Capture visual proof after local start or deploy:
+
+- `/home`
+- `/ground`
+- `/life-map`
+- `/focus`
+- `/replay`
+
+Verify public routes after deploy:
 
 - `/`
 - `/home`
@@ -65,37 +99,12 @@ Container curl route loop was attempted for:
 - `/passport`
 - `/status`
 
-Result: all returned `000` from this container network, so curl verification could not be trusted from this environment.
+## Remaining blockers
 
-## Local commands / checks
+- This connector run patched GitHub source but could not run repo-local pnpm checks.
+- User shell needs disk cleanup or static deploy path.
+- GitHub deploy needs one of: `FIREBASE_SERVICE_ACCOUNT`, `FIREBASE_SERVICE_ACCOUNT_URAI_SPATIAL`, or `FIREBASE_TOKEN`.
 
-Attempted:
+## Done standard
 
-- `pwd; ls -la; find . -maxdepth 3 -type d -name urai-spatial -o -name urai-tier1 | head -20`
-- `for p in / /home /ground /life-map /focus /replay /mirror /passport /status; do curl -L ... https://urai.app$p; done`
-
-Could not run repo-local `pnpm` checks because this execution environment does not contain a checked-out `urai-spatial` repository. The repo was available through the GitHub connector only.
-
-Not run in this environment:
-
-- install/workspace check
-- lint
-- typecheck
-- unit tests
-- build
-- static export
-- route smoke checks
-
-## Deploy result
-
-Deploy was not run. Firebase/project deploy credentials and a local repo checkout were not available in this execution environment.
-
-## Known limitations
-
-- GitHub contents API commits file updates one file at a time, so this run produced multiple connector commits instead of one multi-file commit.
-- Direct browser opens for `/home` and `/ground` were blocked by the browser tool safety/open rule unless reached from a discovered link.
-- Fresh live `/ground` verification remains pending from a networked shell or browser session.
-
-## Next blocker
-
-Run the repo-local checks and live deploy from an environment with the repository checkout, package install, Firebase credentials, and working outbound network access.
+Not complete until the patched routes are built, visually verified, committed, deploy-attempted, and the latest public route chain is verified.
