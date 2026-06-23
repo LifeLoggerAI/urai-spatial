@@ -127,4 +127,55 @@ export function MemoryModeSurfaceV2({ mode, node, replayPath }: Props) {
     }), 160);
     return () => window.clearInterval(interval);
   }, [duration, playing, replay]);
+
+  const jumpToBeat = (index: number) => { setProgress(beatProgress(index, beats.length)); if (replay) setPlaying(true); };
+  const restartReplay = () => { setProgress(0); setPlaying(true); };
+
+  return (
+    <section className={`${styles.shell} ${!playing ? styles.paused : ''}`} data-testid={`urai-${mode}-surface`} data-mode={mode} data-playing={playing ? 'true' : 'false'} aria-label={replay ? 'URAI cinematic memory replay chamber' : 'URAI selected memory focus chamber'} style={surfaceStyle}>
+      <div className={styles.chamberBg} aria-hidden="true" /><div className={styles.fog} aria-hidden="true" /><div className={styles.particles} aria-hidden="true"><i /><i /><i /><i /><i /><i /><i /></div>
+
+      <article className={styles.identity}>
+        <p className={styles.kicker}>{replay ? 'URAI Replay · cinematic proof route' : 'URAI Focus · selected memory object'}</p>
+        <h1>{selected.title}</h1>
+        <p className={styles.subtitle}>{replay ? `Replay is not just watching. It is entering ${sceneName(active?.tone)} from the selected Life Map star.` : selected.subtitle ?? 'One selected star is waiting to open.'}</p>
+        <div className={styles.signalRow}><span>{selected.emotionalTone}</span><span>{timeLabel(selected.timestamp)}</span><span>{privacy(selected.privacyLevel)}</span><span>{replay ? (playing ? 'playing' : 'paused') : 'ready to replay'}</span></div>
+      </article>
+
+      {replay && <ol className={styles.beatReel} aria-label="Replay beat sequence">{beats.map((beat, index) => <li key={beat.id} data-active={index === activeIndex ? 'true' : 'false'}><button type="button" onClick={() => jumpToBeat(index)}><span>{String(index + 1).padStart(2, '0')}</span><p>{beat.title}</p></button></li>)}</ol>}
+
+      <button type="button" className={styles.stage} onClick={() => replay ? setPlaying((value) => !value) : router.push(replayHref)} aria-label={replay ? (playing ? 'Pause this memory replay' : 'Play this memory replay') : `Open ${selected.title} in Replay`}>
+        <span className={styles.stageShadow} aria-hidden="true" />
+        <span className={styles.frame}><span className={styles.scene}>
+          <span className={styles.path} aria-hidden="true" />
+          {beats.map((beat, index) => <span key={`${beat.id}-star`} className={styles.star} data-active={index === activeIndex ? 'true' : 'false'} style={{ '--x': `${16 + index * 17}%`, '--y': `${34 + ((index * 13) % 32)}%`, '--size': `${8 + Math.round(beat.importance * 10)}px` } as CSSProperties} aria-hidden="true" />)}
+          <span className={styles.glyph} aria-hidden="true">{active?.glyph ?? selected.glyph}</span>
+          <span className={styles.caption}><small>{replay ? 'Current beat' : 'Selected memory'}</small><strong>{replay ? active?.title : selected.title}</strong><em>{replay ? active?.line : selected.narratorLine}</em></span>
+        </span></span>
+        <span className={styles.stageStatus}>{replay ? (playing ? 'playing cinematic replay' : 'replay paused') : 'click memory image to replay'}</span>
+      </button>
+
+      <aside className={styles.narrator} aria-label="Replay narrator panel">
+        <p className={styles.kicker}>{replay ? 'Now Playing' : prettyType(selected.type)}</p>
+        <h2>{replay ? active?.title : selected.title}</h2>
+        <p>{replay ? active?.line : selected.whyThis}</p>
+        {replay && <p>Legacy stays protected. Presence requires permission.</p>}
+        <dl className={styles.details}>
+          <div><dt>Why this matters</dt><dd>{selected.whyThis}</dd></div>
+          <div><dt>Pattern detected</dt><dd>{active?.tone ?? selected.emotionalTone} · {pct(active?.intensity)} intensity</dd></div>
+          <div><dt>Life Map origin</dt><dd>{active?.origin ?? 'selected Life Map star'}</dd></div>
+          <div><dt>Replay state</dt><dd>{replay ? `${playing ? 'Playing' : 'Paused'} · ${progressPercent}% complete` : 'Focus object ready'}</dd></div>
+          <div><dt>Current beat</dt><dd>{String(activeIndex + 1).padStart(2, '0')} of {beats.length}</dd></div>
+          {replay && replayLayers.map(([label, value]) => <div key={label}><dt>{label}</dt><dd>{value}</dd></div>)}
+        </dl>
+        <div className={styles.chips}>{beats.map((beat, index) => <button key={`${beat.id}-chip`} type="button" onClick={() => jumpToBeat(index)} data-active={index === activeIndex ? 'true' : 'false'}>{beat.title}</button>)}</div>
+      </aside>
+
+      <section className={styles.meters} aria-label="Replay mood meters"><div style={{ '--meter': pct(active?.intensity) } as CSSProperties}><span>Intensity</span><strong>{pct(active?.intensity)}</strong></div><div style={{ '--meter': pct(active?.importance) } as CSSProperties}><span>Importance</span><strong>{pct(active?.importance)}</strong></div><div style={{ '--meter': pct(active?.open) } as CSSProperties}><span>Unresolved</span><strong>{pct(active?.open)}</strong></div></section>
+
+      {replay && <section className={styles.transport} aria-label="Replay playback controls"><div className={styles.scrub}><span style={{ width: `${progressPercent}%` }} />{beats.map((beat, index) => <button key={`${beat.id}-marker`} type="button" className={styles.marker} style={{ left: `${beatProgress(index, beats.length) * 100}%` }} data-active={index === activeIndex ? 'true' : 'false'} onClick={() => jumpToBeat(index)} aria-label={`Move replay to ${beat.title}`} />)}</div><div className={styles.controls}><button type="button" onClick={() => setPlaying((value) => !value)}>{playing ? 'Pause' : 'Play'}</button><button type="button" onClick={restartReplay}>Restart</button><button type="button" onClick={() => router.push(focusHref)}>Return Focus</button><button type="button" className={styles.safe} onClick={() => router.push(unwindHref)}>ESC / Unwind</button></div></section>}
+
+      <nav className={styles.routeRail} aria-label="Spatial return paths"><a href={lifeMapHref}>Life Map</a><a href={focusHref}>Focus</a><a href={replayHref}>Replay</a><a href={unwindHref} className={styles.safe}>ESC / Unwind</a><a href="/mirror">Mirror</a><a href="/passport">Passport</a><a href="/status">Status</a></nav>
+    </section>
+  );
 }
