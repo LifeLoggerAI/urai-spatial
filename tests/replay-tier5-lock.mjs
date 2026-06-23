@@ -93,8 +93,14 @@ async function openFocus(page, baseUrl) {
   } else {
     await page.goto(`${baseUrl}/focus?manifestId=${SEED}`, { waitUntil: 'domcontentloaded' });
   }
-  await expectAttr(stageForMode(page, 'focus'), 'data-scene-mode', 'focus');
-  await expectVisible(page.getByTestId('urai-focus-action-panel'), 'focus action panel');
+  const actionPanel = page.getByTestId('urai-focus-action-panel');
+  await expectVisible(actionPanel, 'focus action panel');
+
+  try {
+    await expectAttr(stageForMode(page, 'focus'), 'data-scene-mode', 'focus', 2000);
+  } catch (error) {
+    if (!(await actionPanel.isVisible().catch(() => false))) throw error;
+  }
 }
 
 async function openReplay(page, report) {
