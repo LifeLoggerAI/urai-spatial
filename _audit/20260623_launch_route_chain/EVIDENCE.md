@@ -38,9 +38,15 @@ Checked current deployed public routes from the web fetch layer.
 | `/passport` | resolved | Passport ownership route text present. |
 | `/status` | resolved | Status/proof route text present. |
 
-## Local commands still required
+## Repo-native verification workflow
 
-These commands could not be run from this chat runtime because the repository workspace is not mounted and direct GitHub clone failed DNS resolution here. Run from Cloud Shell:
+Added `.github/workflows/launch-verification.yml`.
+
+The workflow runs on `workflow_dispatch` and launch-route source changes. It installs pnpm, runs typecheck, runs the production build, starts the local Spatial server on port 3001, checks `/`, `/home`, `/ground`, `/life-map`, `/focus`, `/replay`, `/mirror`, `/passport`, and `/status`, and uploads route evidence/logs as a GitHub Actions artifact.
+
+Workflow commit: `4d28b986ea5eefedf90916c5dca2f49a4006a2e5`.
+
+## Local commands still required when Cloud Shell is available
 
 ```bash
 cd ~/urai-spatial
@@ -64,6 +70,7 @@ pnpm run live:deploy
 
 - Public `/ground` was not visible from `https://urai.app/ground` during web verification.
 - Deploy was not attempted from this runtime because Firebase credentials/project environment and repository workspace are unavailable here.
+- Commit status lookup for the workflow commit returned no status contexts yet, so this evidence does not claim that the workflow completed.
 
 ## Next command
 
