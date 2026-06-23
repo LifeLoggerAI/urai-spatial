@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import type { CSSProperties } from 'react';
 import type { MirrorOfBecomingState } from './lifeMapTypes';
 
 const patternConstellation = [
@@ -45,7 +46,7 @@ export function MirrorOfBecomingView({ mirror, onClose, onHome }: { mirror: Mirr
 
       <section className="urai-v1-mirror__constellation" aria-label="Pattern constellation">
         {patternConstellation.map((item, index) => (
-          <article key={item.label} style={{ '--mirror-delay': `${index * 90}ms` } as React.CSSProperties}>
+          <article key={item.label} style={{ '--mirror-delay': `${index * 90}ms` } as CSSProperties}>
             <span>{item.label}</span>
             <strong>{item.value}</strong>
             <small>{item.tone}</small>
