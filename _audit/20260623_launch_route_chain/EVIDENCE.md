@@ -46,6 +46,12 @@ The workflow runs on `workflow_dispatch` and launch-route source changes. It ins
 
 Workflow commit: `4d28b986ea5eefedf90916c5dca2f49a4006a2e5`.
 
+## Push-trigger attempt
+
+A push-trigger evidence update was committed from the repo connector to start the launch verification workflow through its configured push paths.
+
+Trigger commit requested: 2026-06-23 UTC.
+
 ## Local commands still required when Cloud Shell is available
 
 ```bash
