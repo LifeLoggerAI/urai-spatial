@@ -6,7 +6,11 @@ import launchStyles from "./HomeWorldProductionLaunch.module.css";
 
 export function HomeWorldProduction() {
   return (
-    <main className={styles.world} data-urai-home-production>
+    <main
+      className={styles.world}
+      data-urai-home-production
+      data-urai-launch-revision="2026-06-23-ground-replay-home"
+    >
       <div className={styles.stars} aria-hidden="true" />
       <div className={styles.galaxy} aria-hidden="true" />
       <div className={styles.cloudLeft} aria-hidden="true" />
