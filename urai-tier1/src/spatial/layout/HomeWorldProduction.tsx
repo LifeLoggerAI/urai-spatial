@@ -25,7 +25,49 @@ export function HomeWorldProduction() {
 
       <section className={styles.hero}>
         <h1>Own your life.<br />Step inside yourself.</h1>
-        <p>Ground below. Memory above. Your world begins here.</p>
+        <p>Chat is the doorway. Your world is the interface.</p>
+      </section>
+
+      <section className={styles.controlStack} aria-label="URAI threshold controls">
+        <details className={styles.orbPanel}>
+          <summary aria-label="Click the orb to open the URAI companion panel">
+            <span>Orb</span>
+            <strong>Open companion</strong>
+          </summary>
+          <div className={styles.panel}>
+            <p className={styles.panelEyebrow}>Companion online</p>
+            <h2>Chat opens the doorway.</h2>
+            <p>With permission, URAI reflects your state so your world can respond.</p>
+            <p>URAI handles the noise. You live the life.</p>
+            <div className={styles.panelLinks}>
+              <Link href="/life-map">Ascend to Life Map</Link>
+              <Link href="/ground">Enter Ground</Link>
+            </div>
+          </div>
+        </details>
+
+        <details className={styles.avatarPanel}>
+          <summary aria-label="Click the self avatar to open the life state panel">
+            <span>Self</span>
+            <strong>Open state</strong>
+          </summary>
+          <div className={styles.panel}>
+            <p className={styles.panelEyebrow}>Private state panel</p>
+            <h2>Your life signals stay yours.</h2>
+            <p>Body, focus, recovery, and pressure signals are reflected as context only, never diagnosis.</p>
+            <p>Your data belongs to you. Model access stays permissioned.</p>
+            <div className={styles.panelLinks}>
+              <Link href="/mirror">Open Mirror</Link>
+              <Link href="/passport">Open Passport</Link>
+            </div>
+          </div>
+        </details>
+      </section>
+
+      <section className={styles.councilHint} aria-label="Council workforce presence">
+        <span>Visible Council</span>
+        <strong>Models with roles. Access with permission.</strong>
+        <Link href="/ground">Meet workforce</Link>
       </section>
 
       <Link className={styles.groundZone} href="/ground" aria-label="Click the ground to enter your embodied world">
