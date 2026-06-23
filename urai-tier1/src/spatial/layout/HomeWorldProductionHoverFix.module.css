@@ -1,0 +1,69 @@
+.skyZone,
+.groundZone {
+  overflow: visible;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.skyZone::after,
+.groundZone::after {
+  will-change: opacity, transform;
+}
+
+.groundZone {
+  height: 34svh !important;
+}
+
+.groundZone::after {
+  left: auto !important;
+  right: clamp(1rem, 7vw, 6rem) !important;
+  bottom: clamp(5.6rem, 13svh, 8rem) !important;
+  width: min(22rem, calc(100vw - 2rem)) !important;
+  height: clamp(4rem, 8svh, 6.5rem) !important;
+  border-radius: 999px !important;
+  transform: translateY(.2rem) scale(.985) !important;
+  background:
+    radial-gradient(ellipse at 50% 50%, rgba(255, 221, 164, .20), rgba(255, 221, 164, .07) 46%, transparent 72%),
+    linear-gradient(180deg, rgba(255, 244, 218, .04), rgba(255, 196, 114, .05)) !important;
+  box-shadow: 0 0 44px rgba(255, 205, 132, .10) !important;
+}
+
+.groundZone:hover::after,
+.groundZone:focus-visible::after {
+  opacity: .9 !important;
+  transform: translateY(0) scale(1) !important;
+  box-shadow:
+    0 0 0 1px rgba(255, 231, 186, .11),
+    0 0 52px rgba(255, 205, 132, .14) !important;
+}
+
+.groundZone > span {
+  top: auto !important;
+  right: clamp(1rem, 7vw, 6rem) !important;
+  bottom: clamp(8.6rem, 21svh, 13rem) !important;
+  max-width: min(18rem, calc(100vw - 2rem));
+  transform: none !important;
+}
+
+.skyZone > span {
+  max-width: min(18rem, calc(100vw - 2rem));
+}
+
+@media (hover: none), (pointer: coarse) {
+  .skyZone,
+  .groundZone {
+    height: 28svh !important;
+  }
+
+  .skyZone::after,
+  .groundZone::after,
+  .skyZone > span,
+  .groundZone > span {
+    display: none !important;
+  }
+}
+
+@media (max-width: 760px) {
+  .groundZone {
+    height: 26svh !important;
+  }
+}
