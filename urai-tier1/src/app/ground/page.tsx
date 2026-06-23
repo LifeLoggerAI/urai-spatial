@@ -1,4 +1,6 @@
 import Link from 'next/link'
+import { RealmShell } from '@/spatial/realms/RealmShell'
+import { getSceneDefinition } from '@/spatial/realms/sceneRegistry'
 
 const agents = [
   ['Logistics Agent', 'Tasks, errands, timing, and practical next moves.'],
@@ -31,8 +33,16 @@ export const metadata = {
 }
 
 export default function GroundRealmPage() {
+  const groundScene = getSceneDefinition('ground')
+
   return (
     <main className="min-h-screen overflow-hidden bg-slate-950 text-white" data-urai-route="ground-world">
+      <aside hidden aria-hidden="true" data-testid="ground-realm-contract">
+        <RealmShell
+          scene={groundScene}
+          summary="The enterable Ground World keeps URAI realm routing, private AI workforce presence, and inspectable real-life objects connected."
+        />
+      </aside>
       <section className="relative min-h-screen px-6 py-8 md:px-10">
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_0%,rgba(125,211,252,0.22),transparent_30%),radial-gradient(circle_at_50%_90%,rgba(34,197,94,0.18),transparent_35%),linear-gradient(180deg,#08111f_0%,#0b1721_44%,#102015_100%)]" />
         <div className="relative z-10 mx-auto flex min-h-[calc(100vh-4rem)] w-full max-w-7xl flex-col">
