@@ -1,33 +1,24 @@
 "use client";
 
 import Link from "next/link";
+import "@/spatial/ground/GroundWorldExperience.module.css";
 import type { PointerEvent } from "react";
 import { useCallback, useEffect, useRef, useState } from "react";
 
-const focusHref = "/focus?memoryId=chapter-becoming";
-const replayHref = "/replay?memoryId=chapter-becoming&manifestId=replay-chamber-thread";
-
 const portals = [
+  {
+    id: "world",
+    href: "/world",
+    eyebrow: "Enter the ground",
+    label: "World",
+    detail: "council and objects live here",
+  },
   {
     id: "life",
     href: "/life-map",
-    eyebrow: "Open your constellation",
+    eyebrow: "Ascend through sky",
     label: "Life Map",
-    detail: "enter the living map",
-  },
-  {
-    id: "focus",
-    href: focusHref,
-    eyebrow: "Hold one memory",
-    label: "Focus",
-    detail: "selected star waiting",
-  },
-  {
-    id: "replay",
-    href: replayHref,
-    eyebrow: "Step through time",
-    label: "Replay",
-    detail: "memory chamber ready",
+    detail: "memory constellation above",
   },
   {
     id: "mirror",
@@ -110,7 +101,7 @@ export default function HomeSpatialWorldFinal() {
     <main
       ref={homeRef}
       className="urai-genesis-home"
-      aria-label="URAI Home World"
+      aria-label="URAI Home World threshold"
       onPointerMove={handlePointerMove}
       onPointerLeave={resetPointer}
     >
@@ -184,13 +175,23 @@ export default function HomeSpatialWorldFinal() {
         <div className="urai-genesis-home__world-vignette" />
       </div>
 
+      <Link className="urai-genesis-home__threshold-gate urai-genesis-home__threshold-gate--ground" href="/world">
+        <span>Click the ground</span>
+        <strong>Enter the living world where council avatars and real-life objects exist.</strong>
+      </Link>
+
+      <Link className="urai-genesis-home__threshold-gate urai-genesis-home__threshold-gate--sky" href="/life-map">
+        <span>Click the sky</span>
+        <strong>Ascend through the clouds into your Life Map.</strong>
+      </Link>
+
       <section className="urai-genesis-home__hero" aria-labelledby="urai-home-title">
         <div className="urai-genesis-home__status-pill">
           <span />
           URAI · HOME WORLD
         </div>
 
-        <p className="urai-genesis-home__micro">Private spatial memory sanctuary</p>
+        <p className="urai-genesis-home__micro">Ground life below · sky memory above</p>
 
         <h1 id="urai-home-title">
           Own your life.
@@ -198,26 +199,23 @@ export default function HomeSpatialWorldFinal() {
         </h1>
 
         <p className="urai-genesis-home__copy">
-          Start in your Life Map, open one star, and carry the same living thread through
-          Focus, Replay, Mirror, Passport, and Status.
+          The ground holds your living world: council, objects, places, tools, and routines.
+          The sky opens your Life Map, where memory becomes constellation.
         </p>
 
-        <div className="urai-genesis-home__actions" aria-label="Primary URAI actions">
-          <Link className="urai-genesis-home__cta urai-genesis-home__cta--primary" href="/life-map">
-            Open my world
+        <div className="urai-genesis-home__actions" aria-label="Primary URAI threshold actions">
+          <Link className="urai-genesis-home__cta urai-genesis-home__cta--primary" href="/world">
+            Enter Ground World
           </Link>
-          <Link className="urai-genesis-home__cta" href={focusHref}>
-            Open Focus
-          </Link>
-          <Link className="urai-genesis-home__cta" href={replayHref}>
-            Start Replay
+          <Link className="urai-genesis-home__cta" href="/life-map">
+            Ascend to Life Map
           </Link>
         </div>
       </section>
 
-      <div className="urai-genesis-home__memory-orbit" aria-label="Life Map status">
-        <strong>Life Map online</strong>
-        <span>selected star ready</span>
+      <div className="urai-genesis-home__memory-orbit" aria-label="Home threshold status">
+        <strong>Threshold online</strong>
+        <span>ground life · sky memory</span>
       </div>
 
       <button
@@ -242,11 +240,10 @@ export default function HomeSpatialWorldFinal() {
         aria-live="polite"
       >
         <p>URAI orb guide</p>
-        <strong>Choose a path and stay inside the same world.</strong>
+        <strong>The ground is your embodied life. The sky is your memory constellation.</strong>
         <div>
+          <Link href="/world">Ground World</Link>
           <Link href="/life-map">Life Map</Link>
-          <Link href={focusHref}>Focus</Link>
-          <Link href={replayHref}>Replay</Link>
           <Link href="/mirror">Mirror</Link>
           <Link href="/passport">Passport</Link>
           <Link href="/status">Status</Link>
