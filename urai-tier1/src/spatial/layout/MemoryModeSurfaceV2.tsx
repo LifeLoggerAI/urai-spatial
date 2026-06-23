@@ -85,6 +85,13 @@ export function MemoryModeSurfaceV2({ mode, node, replayPath }: Props) {
   const activeIndex = replay ? Math.min(beats.length - 1, Math.floor(progress * beats.length)) : 0;
   const active = beats[activeIndex] ?? beats[0];
   const progressPercent = Math.round(progress * 100);
+  const replayLayers = [
+    ['What happened', active?.title ?? selected.title],
+    ['Who was there', selected.peopleIds?.length ? `${selected.peopleIds.length} protected people signal(s)` : 'People stay protected until permission is granted.'],
+    ['What it meant', selected.whyThis],
+    ['What changed after', active?.line ?? selected.narratorLine],
+    ['What remains', selected.unresolvedness > 0.45 ? 'A still-open thread for Mirror, Focus, or care.' : 'A protected memory-presence that can be revisited.'],
+  ];
   const surfaceStyle = {
     '--memory-color': active?.color ?? selected.auraColor ?? '#67e8f9',
     '--memory-core': selected.color ?? '#38bdf8',
@@ -129,9 +136,9 @@ export function MemoryModeSurfaceV2({ mode, node, replayPath }: Props) {
       <div className={styles.chamberBg} aria-hidden="true" /><div className={styles.fog} aria-hidden="true" /><div className={styles.particles} aria-hidden="true"><i /><i /><i /><i /><i /><i /><i /></div>
 
       <article className={styles.identity}>
-        <p className={styles.kicker}>{replay ? 'URAI Replay · living memory chamber' : 'URAI Focus · selected memory object'}</p>
+        <p className={styles.kicker}>{replay ? 'URAI Replay · cinematic proof route' : 'URAI Focus · selected memory object'}</p>
         <h1>{selected.title}</h1>
-        <p className={styles.subtitle}>{replay ? `A living pass through ${sceneName(active?.tone)}, opened from the selected Life Map star.` : selected.subtitle ?? 'One selected star is waiting to open.'}</p>
+        <p className={styles.subtitle}>{replay ? `Replay is not just watching. It is entering ${sceneName(active?.tone)} from the selected Life Map star.` : selected.subtitle ?? 'One selected star is waiting to open.'}</p>
         <div className={styles.signalRow}><span>{selected.emotionalTone}</span><span>{timeLabel(selected.timestamp)}</span><span>{privacy(selected.privacyLevel)}</span><span>{replay ? (playing ? 'playing' : 'paused') : 'ready to replay'}</span></div>
       </article>
 
@@ -152,7 +159,15 @@ export function MemoryModeSurfaceV2({ mode, node, replayPath }: Props) {
         <p className={styles.kicker}>{replay ? 'Now Playing' : prettyType(selected.type)}</p>
         <h2>{replay ? active?.title : selected.title}</h2>
         <p>{replay ? active?.line : selected.whyThis}</p>
-        <dl className={styles.details}><div><dt>Why this matters</dt><dd>{selected.whyThis}</dd></div><div><dt>Pattern detected</dt><dd>{active?.tone ?? selected.emotionalTone} · {pct(active?.intensity)} intensity</dd></div><div><dt>Life Map origin</dt><dd>{active?.origin ?? 'selected Life Map star'}</dd></div><div><dt>Replay state</dt><dd>{replay ? `${playing ? 'Playing' : 'Paused'} · ${progressPercent}% complete` : 'Focus object ready'}</dd></div><div><dt>Current beat</dt><dd>{String(activeIndex + 1).padStart(2, '0')} of {beats.length}</dd></div></dl>
+        {replay && <p>Legacy stays protected. Presence requires permission.</p>}
+        <dl className={styles.details}>
+          <div><dt>Why this matters</dt><dd>{selected.whyThis}</dd></div>
+          <div><dt>Pattern detected</dt><dd>{active?.tone ?? selected.emotionalTone} · {pct(active?.intensity)} intensity</dd></div>
+          <div><dt>Life Map origin</dt><dd>{active?.origin ?? 'selected Life Map star'}</dd></div>
+          <div><dt>Replay state</dt><dd>{replay ? `${playing ? 'Playing' : 'Paused'} · ${progressPercent}% complete` : 'Focus object ready'}</dd></div>
+          <div><dt>Current beat</dt><dd>{String(activeIndex + 1).padStart(2, '0')} of {beats.length}</dd></div>
+          {replay && replayLayers.map(([label, value]) => <div key={label}><dt>{label}</dt><dd>{value}</dd></div>)}
+        </dl>
         <div className={styles.chips}>{beats.map((beat, index) => <button key={`${beat.id}-chip`} type="button" onClick={() => jumpToBeat(index)} data-active={index === activeIndex ? 'true' : 'false'}>{beat.title}</button>)}</div>
       </aside>
 
