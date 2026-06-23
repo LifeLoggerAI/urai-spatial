@@ -19,6 +19,8 @@ Target route chain:
 - `urai-tier1/src/spatial/layout/ReplayChamber.module.css`
 - `urai-tier1/src/app/life-map/LifeMapAaaUniverse.tsx` inspected
 - `urai-tier1/src/spatial/layout/MemoryModeSurfaceV2.tsx` inspected
+- `firebase.static.json` inspected as the launch-safe hosting-only deploy config
+- `package.json` updated with `live:deploy:static` and `publish:live:static`
 
 ## Completed source work
 
@@ -46,6 +48,12 @@ Target route chain:
 - Moved replay controls above the route rail to reduce overlap.
 - Preserved existing test-facing attributes from `MemoryModeSurfaceV2`.
 
+### Static hosting deploy lane
+
+- Added `live:deploy:static` for the current Cloud Shell and Firebase state.
+- The command builds with `URAI_FIREBASE_STATIC_EXPORT=true` through the existing `build:static` script and deploys `firebase.static.json` hosting only.
+- This avoids the Firebase Next framework Cloud Function build path that previously ran out of disk.
+
 ## Route proof observed before this visual patch
 
 The latest user shell context showed HTTP 200 for:
@@ -63,7 +71,7 @@ The latest user shell context showed HTTP 200 for:
 ## Build / release status observed before this visual patch
 
 - GitHub Actions run `28005021230` passed the `Live release check` job at commit `945ec80a`.
-- The separate deploy job failed because the repo had no Firebase deploy secret configured.
+- The separate deploy job failed because the repo had no Firebase deployment credential configured.
 - Local full deploy failed before deploy because the shell runtime was missing a Playwright system library.
 - Direct Firebase framework deploy then failed from low disk during the generated Cloud Function build.
 
@@ -77,6 +85,12 @@ pnpm check:source-integrity
 pnpm check:types
 pnpm build
 node tests/replay-memory-theater-contract.mjs
+```
+
+For low-disk deploy, prefer:
+
+```bash
+pnpm live:deploy:static
 ```
 
 Capture visual proof after local start or deploy:
@@ -101,9 +115,9 @@ Verify public routes after deploy:
 
 ## Remaining blockers
 
-- This connector run patched GitHub source but could not run repo-local pnpm checks.
-- User shell needs disk cleanup or static deploy path.
-- GitHub deploy needs one of: `FIREBASE_SERVICE_ACCOUNT`, `FIREBASE_SERVICE_ACCOUNT_URAI_SPATIAL`, or `FIREBASE_TOKEN`.
+- This connector run patched GitHub source but cannot execute the user's Firebase-authenticated deploy session.
+- User shell showed Firebase access is available, but local disk pressure hit the framework deploy path.
+- GitHub deploy needs a repository deployment credential before the deploy job can publish.
 
 ## Done standard
 
