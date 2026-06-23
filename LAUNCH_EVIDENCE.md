@@ -12,6 +12,144 @@ Target route chain:
 
 `Home threshold -> Ground real-life world -> Life Map galaxy -> Focus memory chamber -> Replay living memory film`
 
+## Assetized world pass - 2026-06-23
+
+### Asset audit result
+
+The current public screenshots showed the route structure live but the visual layer still depended mostly on CSS-generated worlds and text/card surfaces. The missing production finish layer was centralized route art, avatar slots, orb states, and fallback-safe asset wiring.
+
+### Asset manifest created
+
+Created:
+
+- `urai-tier1/src/spatial/assets/uraiAssets.ts`
+
+The manifest now exports typed route asset objects for:
+
+- `homeAssets`
+- `groundAssets`
+- `lifeMapAssets`
+- `focusAssets`
+- `replayAssets`
+- `avatarAssets`
+- `uiAssets`
+
+It also exports:
+
+- `assetCssUrl(path)`
+- `assetCssStack(asset)`
+
+The route code can now reference one canonical manifest instead of hardcoded scattered paths.
+
+### Asset folder scaffold
+
+Created asset-pack documentation and initial fallback slots under:
+
+- `urai-tier1/public/urai/assets/`
+- `urai-tier1/public/urai/assets/home/`
+- `urai-tier1/public/urai/assets/life-map/`
+
+Note: some deeper fallback SVG create calls were blocked by the connector safety layer for paths containing the Ground route folder. The code remains fallback-safe because every route keeps CSS/gradient fallbacks under the asset stack, and final `.webp` drops can still be placed at the manifest paths without code rewrites.
+
+### Routes wired during this pass
+
+#### Home
+
+Patched:
+
+- `urai-tier1/src/spatial/layout/HomeWorldProduction.tsx`
+- `urai-tier1/src/spatial/layout/HomeWorldProduction.module.css`
+
+Home now imports `homeAssets` and `uiAssets` from the manifest and sets route-level CSS asset variables for:
+
+- threshold world background
+- ground portal art stack
+- sky ascent art stack
+- listening orb stack
+
+The Home surface now distinguishes the clickable sky and ground as two embodied portals: Ground opens the real-life world; Sky opens the Life Map galaxy.
+
+#### Ground
+
+Patched:
+
+- `urai-tier1/src/app/ground/page.tsx`
+- `urai-tier1/src/app/ground/GroundWorld.module.css`
+
+Ground now imports `groundAssets`, `avatarAssets`, and `uiAssets` from the manifest and sets route-level CSS asset variables for:
+
+- Ground World background
+- reception
+- privacy sanctuary
+- logistics
+- wellness
+- memory archive
+- active orb
+
+Ground now includes explicit explorable zones and embodied support roles:
+
+- Welcome Guide / Reception
+- Schedule Steward / Planning table
+- Wellness Guide / Wellness corner
+- Relationship Liaison / Connections desk
+- Logistics Helper / Errands bay
+- Privacy Steward / Privacy sanctuary
+- Archivist / Memory archive
+- Operator / Work console
+
+Ground also keeps inspectable real-life objects:
+
+- Keys by the door
+- Kitchen table
+- Work console
+- Memory case
+- Calendar tower
+- Health signal
+
+#### Focus and Replay
+
+Patched:
+
+- `urai-tier1/src/spatial/layout/MemoryModeSurfaceV2.tsx`
+
+Focus and Replay now import `focusAssets`, `replayAssets`, and orb UI assets from the manifest and expose route-level CSS variables for:
+
+- selected memory chamber asset stack
+- living memory film asset stack
+- orb state stack
+
+The existing `ReplayChamber.module.css` update was attempted but blocked by the connector safety layer. The TSX route wiring is committed; the existing CSS chamber still renders safely until the CSS asset-background layer is applied in a follow-up terminal/working-tree pass.
+
+### Build / deploy / verification status for this asset pass
+
+This asset pass was performed through the GitHub connector because the repo was not mounted in the execution container and external `git clone` failed with DNS resolution unavailable. Therefore:
+
+- Source inspection: completed through GitHub connector.
+- Source patches: committed directly to `main` through GitHub contents API.
+- Local build: not executed in this container.
+- Browser screenshots: not captured from this container.
+- Firebase deploy: not executed from this connector-only environment.
+
+Required next command in Cloud Shell:
+
+```bash
+cd ~/urai-spatial
+git pull --ff-only
+pnpm --dir urai-tier1 build
+pnpm live:deploy:static
+for path in / /home /ground /life-map /focus /replay /mirror /passport /status; do
+  code=$(curl -L -s -o /dev/null -w "%{http_code}" "https://urai.app$path")
+  printf "%s %s\n" "$code" "$path"
+done
+```
+
+### Honest blockers from this connector pass
+
+- The route/source patch commits are real.
+- Full build/deploy/live verification still must be run from a terminal that has the repo, dependencies, and Firebase credentials.
+- Final high-fidelity `.webp` art files are still asset slots, not final binary art drops.
+- The manifest/fallback structure is ready for final generated images without code rewrites.
+
 ## Files inspected / changed
 
 - `urai-tier1/src/spatial/layout/HomeWorldProduction.tsx`
