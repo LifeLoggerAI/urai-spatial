@@ -1,11 +1,50 @@
-# Cut One route implementation
+# Spatial Route Implementation — Cut One
 
-Route added: `/demo/replay-film`.
+Route added:
 
-Implementation file: `urai-tier1/src/app/demo/[slug]/page.tsx`.
+- `/demo/replay-film`
 
-The page includes the scene rail, product proof beats, route-chain links, trust copy, and Create Your World CTA.
+Implementation file:
 
-Verification: source confirmed on `main` through GitHub. Local pnpm and browser checks could not run in this sandbox because no checkout exists and GitHub DNS fails from terminal.
+- `urai-tier1/src/app/demo/replay-film/page.tsx`
 
-Stale PR note: PR #278 was opened while testing branch writes. It is not the source of truth; main now contains the route and this report.
+Included proof beats:
+
+- pressure
+- open URAI
+- orb chat
+- self-avatar state
+- ground workforce
+- council
+- sky ascent
+- Life Map
+- protected legacy node
+- Focus seed
+- Replay layers
+- Mirror
+- Passport
+- AR / XR / VR
+- Create Your World CTA
+
+Route links:
+
+- `/home`
+- `/life-map`
+- `/focus`
+- `/replay`
+- `/mirror`
+- `/passport`
+- `/status`
+
+Trust language:
+
+- no diagnosis claims
+- legacy stays protected
+- presence requires permission
+- data belongs to the user
+- models prepare, suggest, and organize
+- user reviews, approves, and controls
+
+Verification:
+
+- Requires local typecheck, build, deploy, and live route check from Cloud Shell.
