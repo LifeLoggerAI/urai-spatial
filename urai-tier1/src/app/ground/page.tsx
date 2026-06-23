@@ -46,7 +46,13 @@ const artifacts = [
   },
 ];
 
-const council = ["Memory Guide", "Focus Coach", "Mirror Witness", "Grounding Ally", "Replay Director"];
+const council = [
+  "Memory Guide",
+  "Focus Coach",
+  "Mirror Witness",
+  "Grounding Ally",
+  "Replay Director",
+];
 
 export default function GroundPage() {
   return (
@@ -56,6 +62,7 @@ export default function GroundPage() {
 
       <header className={styles.topbar}>
         <Link href="/home">URAI · GROUND WORLD</Link>
+
         <nav aria-label="Ground navigation">
           <Link href="/home">Home</Link>
           <Link href="/life-map">Ascend</Link>
@@ -66,12 +73,18 @@ export default function GroundPage() {
       <section className={styles.caption} aria-label="Ground layer introduction">
         <p>GROUND LAYER</p>
         <h1>Walk your living world.</h1>
-        <span>Objects and council members live on the ground, not on Home.</span>
+        <span>
+          Objects and council members live on the ground, not on Home.
+        </span>
       </section>
 
       <section className={styles.scene} aria-label="Embodied ground layer">
         {artifacts.map((artifact) => (
-          <Link key={artifact.name} href={artifact.href} className={`${styles.object} ${artifact.className}`}>
+          <Link
+            key={artifact.name}
+            href={artifact.href}
+            className={`${styles.object} ${artifact.className}`}
+          >
             <i className={artifact.propClassName} aria-hidden="true" />
             <strong>{artifact.name}</strong>
             <small>{artifact.detail}</small>
@@ -79,7 +92,11 @@ export default function GroundPage() {
         ))}
 
         {council.map((name, index) => (
-          <Link key={name} href="/council" className={`${styles.avatar} ${styles[`avatar${index + 1}`]}`}>
+          <Link
+            key={name}
+            href="/council"
+            className={`${styles.avatar} ${styles[`avatar${index + 1}`]}`}
+          >
             <i aria-hidden="true" />
             <strong>{name}</strong>
             <small>Talk</small>
