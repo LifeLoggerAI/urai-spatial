@@ -45,7 +45,7 @@ export default function GroundRealmPage() {
   const groundScene = getSceneDefinition('ground')
 
   return (
-    <main className="min-h-screen overflow-hidden bg-slate-950 text-white" data-urai-route="ground-world">
+    <main className="min-h-screen overflow-hidden bg-slate-950 text-white" data-urai-route="ground-world" data-launch-surface="embodied-ground-world">
       <aside hidden aria-hidden="true" data-testid="ground-realm-contract">
         <RealmShell
           scene={groundScene}
@@ -68,7 +68,7 @@ export default function GroundRealmPage() {
 
           <div className="grid flex-1 items-center gap-8 py-10 lg:grid-cols-[0.95fr_1.05fr]">
             <section className="max-w-2xl">
-              <p className="text-xs uppercase tracking-[0.45em] text-emerald-200/70">Enterable life layer</p>
+              <p className="text-xs uppercase tracking-[0.45em] text-emerald-200/70">Enterable life layer · launch source refreshed</p>
               <h1 className="mt-5 text-5xl font-semibold tracking-[-0.06em] md:text-7xl">Your private world helps your real life.</h1>
               <p className="mt-6 max-w-xl text-base leading-8 text-slate-200 md:text-lg">
                 This is where your private AI workforce helps organize real life: objects, routines, pressure, work, relationships, and permissioned context before you ascend into the Life Map.
