@@ -178,3 +178,23 @@ body:has(.urai-genesis-home) {
     z-index: 26 !important;
   }
 }
+
+/* FINAL HOME SAFETY FIX:
+   /home must never show Life Map / ascent / loading-screen overlays on top of Home.
+   The Home World should render as one clean scene only. */
+body:has(.urai-genesis-home) .home-cohesion-layer,
+body:has(.urai-genesis-home) .urai-home-cohesion-layer,
+body:has(.urai-genesis-home) .urai-ascent-layer,
+body:has(.urai-genesis-home) .urai-ascent-overlay,
+body:has(.urai-genesis-home) .life-map-loading,
+body:has(.urai-genesis-home) .life-map-transition,
+body:has(.urai-genesis-home) .life-map-ascent,
+body:has(.urai-genesis-home) [data-layer="ascent"],
+body:has(.urai-genesis-home) [data-layer="life-map"],
+body:has(.urai-genesis-home) [data-testid="ascent-layer"],
+body:has(.urai-genesis-home) [data-testid="life-map-loading"] {
+  display: none !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
+  visibility: hidden !important;
+}
