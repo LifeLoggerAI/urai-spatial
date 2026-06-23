@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState, type CSSProperties } from 'react';
 import { useRouter } from 'next/navigation';
+import { assetCssStack, focusAssets, replayAssets, uiAssets } from '@/spatial/assets/uraiAssets';
 import { lifeMapNodes } from '@/spatial/v1/lifeMapDemoData';
 import type { LifeMapNode, ReplayPath } from '@/spatial/v1/lifeMapTypes';
 import styles from './ReplayChamber.module.css';
@@ -92,12 +93,15 @@ export function MemoryModeSurfaceV2({ mode, node, replayPath }: Props) {
     ['What changed after', active?.line ?? selected.narratorLine],
     ['What remains', selected.unresolvedness > 0.45 ? 'A still-open thread for Mirror, Focus, or care.' : 'A protected memory-presence that can be revisited.'],
   ];
+  const routeAsset = replay ? replayAssets.primary : focusAssets.primary;
   const surfaceStyle = {
     '--memory-color': active?.color ?? selected.auraColor ?? '#67e8f9',
     '--memory-core': selected.color ?? '#38bdf8',
     '--memory-progress': `${progressPercent}%`,
     '--beat-intensity': String(active?.intensity ?? selected.emotionalIntensity ?? 0.5),
     '--beat-open': String(active?.open ?? selected.unresolvedness ?? 0.35),
+    '--memory-world-stack': assetCssStack(routeAsset),
+    '--memory-orb-stack': assetCssStack(replay ? uiAssets.orbActive : uiAssets.orbIdle),
   } as CSSProperties;
 
   useEffect(() => {
@@ -133,10 +137,13 @@ export function MemoryModeSurfaceV2({ mode, node, replayPath }: Props) {
 
   return (
     <section className={`${styles.shell} ${!playing ? styles.paused : ''}`} data-testid={`urai-${mode}-surface`} data-mode={mode} data-playing={playing ? 'true' : 'false'} aria-label={replay ? 'URAI cinematic memory replay chamber' : 'URAI selected memory focus chamber'} style={surfaceStyle}>
-      <div className={styles.chamberBg} aria-hidden="true" /><div className={styles.fog} aria-hidden="true" /><div className={styles.particles} aria-hidden="true"><i /><i /><i /><i /><i /><i /><i /></div>
+      <div className={styles.chamberBg} aria-hidden="true" />
+      <div className={styles.fog} aria-hidden="true" />
+      <div className={styles.assetScene} aria-hidden="true" />
+      <div className={styles.particles} aria-hidden="true"><i /><i /><i /><i /><i /><i /><i /></div>
 
       <article className={styles.identity}>
-        <p className={styles.kicker}>{replay ? 'URAI Replay · cinematic proof route' : 'URAI Focus · selected memory object'}</p>
+        <p className={styles.kicker}>{replay ? 'URAI Replay · living memory film' : 'URAI Focus · selected memory chamber'}</p>
         <h1>{selected.title}</h1>
         <p className={styles.subtitle}>{replay ? `Replay is not just watching. It is entering ${sceneName(active?.tone)} from the selected Life Map star.` : selected.subtitle ?? 'One selected star is waiting to open.'}</p>
         <div className={styles.signalRow}><span>{selected.emotionalTone}</span><span>{timeLabel(selected.timestamp)}</span><span>{privacy(selected.privacyLevel)}</span><span>{replay ? (playing ? 'playing' : 'paused') : 'ready to replay'}</span></div>
