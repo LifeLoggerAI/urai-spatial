@@ -51,7 +51,26 @@ function replayUrlForNode(nodeId?: string) {
 
 function StageFrame({ mode, children }: { mode: SceneMode; children: ReactNode }) {
   const dataMode = mode === "life-map" || mode === "demo" ? "life-map" : mode;
-  return <main className={`${styles.stage} urai-v1-stage`} data-testid="urai-scene-stage" data-mode={mode} data-scene-mode={dataMode}>{children}</main>;
+  return (
+    <main
+      className={`${styles.stage} urai-v1-stage`}
+      data-testid="urai-scene-stage"
+      data-mode={mode}
+      data-scene-mode={dataMode}
+      style={{
+        display: "block",
+        visibility: "visible",
+        position: "fixed",
+        inset: 0,
+        width: "100vw",
+        height: "100svh",
+        minHeight: "100svh",
+        overflow: "hidden",
+      }}
+    >
+      {children}
+    </main>
+  );
 }
 
 export function TierOneExperience({ mode = "home", selectedNodeId }: Props) {
