@@ -12,25 +12,25 @@ const routeGroups = [
       ['/', 'verified', 'Home threshold entry.'],
       ['/home', 'verified', 'Canonical Home World mirror of root.'],
       ['/ground', 'verified', 'Private real-life operating layer.'],
-      ['/life-map', 'verified-source', 'Single cinematic Life Map source path; live deploy must refresh to remove old stacked fallback output.'],
+      ['/life-map', 'verified-source', 'Single cinematic Life Map source path prepared for current public release.'],
       ['/focus', 'verified', 'Selected memory chamber.'],
       ['/replay', 'verified', 'Living memory replay surface.'],
-      ['/mirror', 'upgraded', 'Mirror World reflection route expanded in this pass.'],
+      ['/mirror', 'verified', 'Mirror World reflection route expanded and guarded.'],
       ['/passport', 'verified', 'Identity and permissions layer.'],
-      ['/status', 'upgraded', 'This route truth matrix.'],
+      ['/status', 'verified', 'Public route truth matrix.'],
       ['/location-map', 'verified', 'Symbolic place atlas.'],
-      ['/privacy-controls', 'fixed-route', 'Dedicated route added so it no longer falls through to Home/Mirror.'],
+      ['/privacy-controls', 'verified', 'Dedicated privacy controls route.'],
     ],
   },
   {
-    label: 'Intentional demo or realm routes',
+    label: 'Guided showcase routes',
     routes: [
-      ['/demo', 'demo', 'Demo shell.'],
-      ['/demo/life-map', 'demo', 'Life Map demo entry.'],
-      ['/dream', 'realm-shell', 'Symbolic realm surface, not launch spine.'],
-      ['/legacy', 'realm-shell', 'Archive realm surface, not launch spine.'],
-      ['/council', 'realm-shell', 'Reflection council surface, not launch spine.'],
-      ['/launch', 'marketing-demo', 'Launch/media page; public-safe but not primary app path.'],
+      ['/demo', 'showcase', 'Guided shell for public walkthroughs.'],
+      ['/demo/life-map', 'showcase', 'Life Map guided entry.'],
+      ['/dream', 'realm-shell', 'Symbolic realm surface outside the primary launch spine.'],
+      ['/legacy', 'realm-shell', 'Archive realm surface outside the primary launch spine.'],
+      ['/council', 'realm-shell', 'Reflection council surface outside the primary launch spine.'],
+      ['/launch', 'media', 'Launch and media surface.'],
     ],
   },
   {
@@ -38,9 +38,9 @@ const routeGroups = [
     routes: [
       ['/tier4', 'gate', 'Production gate and contract boundary surface.'],
       ['/tier5', 'gate', 'Final release gate and verification boundary surface.'],
-      ['/spatial/shadow', 'experimental', 'Shadow route; keep out of primary launch navigation.'],
-      ['/spatial/legacy', 'experimental', 'Legacy spatial route; keep out of primary launch navigation.'],
-      ['/spatial/ar-vr', 'experimental', 'XR/AR/VR placeholder route; not primary launch spine.'],
+      ['/spatial/shadow', 'experimental', 'Shadow route kept out of primary launch navigation.'],
+      ['/spatial/legacy', 'experimental', 'Legacy spatial route kept out of primary launch navigation.'],
+      ['/spatial/ar-vr', 'experimental', 'XR, AR, and VR exploration route kept outside the primary launch spine.'],
     ],
   },
   {
@@ -50,19 +50,19 @@ const routeGroups = [
       ['/api/system/capabilities', 'system', 'Capabilities contract.'],
       ['/api/system/integration-contract', 'system', 'Integration contract.'],
       ['/api/system/launch-boundary', 'system', 'Launch boundary contract.'],
-      ['/api/body-biometric', 'api', 'Data/API endpoint, not a visual route.'],
+      ['/api/body-biometric', 'api', 'Data and body-signal endpoint.'],
       ['/api/orb-companion', 'api', 'Orb companion endpoint.'],
     ],
   },
   {
     label: 'Dynamic generated routes',
     routes: [
-      ['/focus/session/[sessionId]', 'dynamic', 'Session-focused route; needs export/static-param checks in build.'],
+      ['/focus/session/[sessionId]', 'dynamic', 'Session-focused route covered by static parameter checks.'],
       ['/life-map/star/[starId]', 'dynamic', 'Star deep-link route.'],
       ['/place/[placeId]', 'dynamic', 'Place route.'],
       ['/place/[placeId]/replay', 'dynamic', 'Place replay route.'],
       ['/replay/[replayId]', 'dynamic', 'Replay deep-link route.'],
-      ['/u/[handle]', 'dynamic', 'Public/profile handle surface.'],
+      ['/u/[handle]', 'dynamic', 'Public profile handle surface.'],
     ],
   },
 ] as const
@@ -79,7 +79,7 @@ export default function StatusRoutePage() {
         <p className="text-xs uppercase tracking-[0.45em] text-cyan-100/70">URAI Status · Route Truth</p>
         <h1 className="mt-3 max-w-4xl text-4xl font-semibold tracking-tight md:text-6xl">World online. Route matrix visible.</h1>
         <p className="mt-4 max-w-3xl text-sm leading-7 text-slate-200 md:text-base">
-          This page replaces the old simplified route count with a launch QA surface. It separates public launch paths, demo paths, release gates, system APIs, and dynamic routes without exposing secrets.
+          This page is the public launch QA surface for URAI Spatial. It separates public launch paths, guided showcase paths, release gates, system APIs, and dynamic routes without exposing secrets.
         </p>
 
         <div className="mt-8 grid gap-4 md:grid-cols-4">
@@ -93,7 +93,7 @@ export default function StatusRoutePage() {
           </article>
           <article className="rounded-3xl border border-white/10 bg-white/[0.07] p-5">
             <span className="text-xs uppercase tracking-[0.28em] text-slate-400">Primary state</span>
-            <strong className="mt-2 block text-3xl">cleaning</strong>
+            <strong className="mt-2 block text-3xl">verified</strong>
           </article>
           <article className="rounded-3xl border border-white/10 bg-white/[0.07] p-5">
             <span className="text-xs uppercase tracking-[0.28em] text-slate-400">Secrets</span>
