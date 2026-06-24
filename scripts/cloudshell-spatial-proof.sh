@@ -11,6 +11,9 @@ export URAI_DEPLOY_URL="${URAI_DEPLOY_URL:-$LIVE_URL}"
 export NEXT_TELEMETRY_DISABLED=1
 export CI=1
 
+MIN_FREE_MB="${URAI_SPATIAL_MIN_FREE_MB:-4096}"
+PROOF_BASE="${URAI_SPATIAL_PROOF_BASE:-urai-proof}"
+
 free_mb_for() {
   df -Pm "$1" | awk 'NR==2 { print $4 }'
 }
@@ -24,7 +27,7 @@ print_home_top() {
 }
 
 print_mounts() {
-  df -h . "$HOME" /mnt 2>/dev/null || df -h . "$HOME" || true
+  df -h . "$HOME" /mnt /tmp /var/tmp 2>/dev/null || df -h . "$HOME" || true
 }
 
 cleanup_common() {
@@ -44,10 +47,29 @@ cleanup_common() {
   npm cache clean --force || true
 }
 
+maybe_delete_clean_urai_repo() {
+  if [ "${URAI_SPATIAL_DELETE_CLEAN_URAI_REPO:-0}" != "1" ]; then
+    return 0
+  fi
+
+  local old_repo="$HOME/UrAi"
+  if [ ! -d "$old_repo/.git" ]; then
+    return 0
+  fi
+
+  if [ -n "$(git -C "$old_repo" status --porcelain 2>/dev/null || true)" ]; then
+    echo "== not deleting $old_repo because it has uncommitted changes =="
+    return 0
+  fi
+
+  echo "== deleting clean rebuildable repo clone $old_repo to free proof space =="
+  rm -rf "$old_repo"
+}
+
 cleanup_deep_if_needed() {
   local free_mb
   free_mb="$(free_home_mb)"
-  if [ "${free_mb:-0}" -lt 4096 ]; then
+  if [ "${free_mb:-0}" -lt "$MIN_FREE_MB" ]; then
     echo "== deep cleanup: /home has ${free_mb} MB free; removing rebuildable emulator/runtime caches =="
     rm -rf \
       "$HOME/.emu" \
@@ -58,31 +80,75 @@ cleanup_deep_if_needed() {
       "$HOME/.pnpm-store/v10/tmp" \
       /tmp/next-* /tmp/playwright-* /tmp/npm-* 2>/dev/null || true
   fi
+
+  free_mb="$(free_home_mb)"
+  if [ "${free_mb:-0}" -lt "$MIN_FREE_MB" ]; then
+    echo "== still tight: deleting rebuildable npm/pnpm caches from /home =="
+    rm -rf "$HOME/.pnpm-store" "$HOME/.npm" 2>/dev/null || true
+  fi
+
+  maybe_delete_clean_urai_repo
 }
 
-maybe_relocate_to_mnt() {
+candidate_workdirs() {
+  if [ -n "${URAI_SPATIAL_PROOF_WORKDIR:-}" ]; then
+    printf '%s\n' "$URAI_SPATIAL_PROOF_WORKDIR"
+  fi
+
+  printf '%s\n' \
+    "/mnt/$PROOF_BASE/urai-spatial" \
+    "/mnt/data/$PROOF_BASE/urai-spatial" \
+    "/mnt/tmp/$PROOF_BASE/urai-spatial" \
+    "/mnt/workspace/$PROOF_BASE/urai-spatial" \
+    "/mnt/disks/$PROOF_BASE/urai-spatial" \
+    "/tmp/$PROOF_BASE/urai-spatial" \
+    "/var/tmp/$PROOF_BASE/urai-spatial"
+}
+
+choose_relocation_workdir() {
+  local candidate parent mount_free test_dir
+
+  while IFS= read -r candidate; do
+    [ -n "$candidate" ] || continue
+    parent="$(dirname "$candidate")"
+    test_dir="$parent/.write-test-$$"
+
+    mkdir -p "$parent" 2>/dev/null || continue
+    mkdir "$test_dir" 2>/dev/null || continue
+    rmdir "$test_dir" 2>/dev/null || true
+
+    mount_free="$(free_mb_for "$parent" 2>/dev/null || echo 0)"
+    if [ "${mount_free:-0}" -ge "$MIN_FREE_MB" ]; then
+      printf '%s\n' "$candidate"
+      return 0
+    fi
+  done < <(candidate_workdirs)
+
+  return 1
+}
+
+maybe_relocate_to_scratch() {
   if [ "${URAI_SPATIAL_PROOF_RELOCATED:-0}" = "1" ] || [ "${URAI_SPATIAL_FORCE_HOME_PROOF:-0}" = "1" ]; then
     return 0
   fi
 
-  local root_free mnt_free dest parent
+  local root_free dest parent dest_free
   root_free="$(free_mb_for "$ROOT")"
-  mnt_free="$(free_mb_for /mnt 2>/dev/null || echo 0)"
 
-  if [ "${root_free:-0}" -ge 4096 ]; then
+  if [ "${root_free:-0}" -ge "$MIN_FREE_MB" ]; then
     return 0
   fi
 
-  if [ "${mnt_free:-0}" -lt 4096 ]; then
+  if ! dest="$(choose_relocation_workdir)"; then
     return 0
   fi
 
-  dest="${URAI_SPATIAL_PROOF_WORKDIR:-/mnt/urai-proof/urai-spatial}"
   parent="$(dirname "$dest")"
+  dest_free="$(free_mb_for "$parent" 2>/dev/null || echo 0)"
 
-  echo "== /home is too small for build proof (${root_free} MB free); relocating proof to $dest on /mnt (${mnt_free} MB free) =="
+  echo "== /home is too small for build proof (${root_free} MB free); relocating proof to $dest (${dest_free} MB free) =="
   rm -rf "$dest"
-  mkdir -p "$parent" "$dest"
+  mkdir -p "$dest"
 
   if command -v git >/dev/null 2>&1 && git -C "$ROOT" rev-parse --is-inside-work-tree >/dev/null 2>&1; then
     git -C "$ROOT" archive --format=tar HEAD | tar -C "$dest" -xf -
@@ -105,22 +171,24 @@ maybe_relocate_to_mnt() {
     URAI_DEPLOY_URL="$URAI_DEPLOY_URL" \
     NEXT_TELEMETRY_DISABLED=1 \
     CI=1 \
-    COREPACK_HOME="/mnt/urai-proof/.corepack" \
-    XDG_CACHE_HOME="/mnt/urai-proof/.cache" \
-    NPM_CONFIG_CACHE="/mnt/urai-proof/.npm-cache" \
-    npm_config_store_dir="/mnt/urai-proof/.pnpm-store" \
-    PNPM_HOME="/mnt/urai-proof/.pnpm-home" \
+    URAI_SPATIAL_MIN_FREE_MB="$MIN_FREE_MB" \
+    COREPACK_HOME="$parent/.corepack" \
+    XDG_CACHE_HOME="$parent/.cache" \
+    NPM_CONFIG_CACHE="$parent/.npm-cache" \
+    npm_config_store_dir="$parent/.pnpm-store" \
+    PNPM_HOME="$parent/.pnpm-home" \
     bash "$dest/scripts/cloudshell-spatial-proof.sh"
 }
 
 require_space() {
   local free_mb
   free_mb="$(free_mb_for "$ROOT")"
-  if [ "${free_mb:-0}" -lt 4096 ]; then
+  if [ "${free_mb:-0}" -lt "$MIN_FREE_MB" ]; then
     echo "ERROR: still only ${free_mb} MB free at repo mount after cleanup."
     echo "Largest /home directories:"
     print_home_top
-    echo "Either free at least 4 GB or run from /mnt with URAI_SPATIAL_PROOF_WORKDIR."
+    echo "No writable scratch mount with ${MIN_FREE_MB} MB was found."
+    echo "Fallback: rerun with URAI_SPATIAL_DELETE_CLEAN_URAI_REPO=1 to delete the clean ~/UrAi clone if it has no uncommitted changes."
     exit 1
   fi
 }
@@ -128,6 +196,7 @@ require_space() {
 echo "== URAI Spatial Cloud Shell proof =="
 echo "repo: $ROOT"
 echo "live url: $LIVE_URL"
+echo "minimum free space: ${MIN_FREE_MB} MB"
 
 echo "== disk before cleanup =="
 print_mounts
@@ -136,7 +205,7 @@ print_home_top
 echo "== cleanup low-disk build/cache artifacts =="
 cleanup_common
 cleanup_deep_if_needed
-maybe_relocate_to_mnt
+maybe_relocate_to_scratch
 
 echo "== disk after cleanup =="
 print_mounts
