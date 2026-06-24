@@ -10,6 +10,7 @@ const normalizedBase = baseUrl.replace(/\/$/, '')
 const routes = [
   { route: '/', markers: [/URAI/i, /Life Map|Step inside|Own your life/i] },
   { route: '/home', markers: [/URAI/i, /Life Map|Step inside|Own your life/i] },
+  { route: '/ground', markers: [/Ground|real-life|operating/i, /Privacy|Schedule|Wellness|Life Map/i] },
   { route: '/ascent', markers: [/Ascent|Life Map|Portal/i, /URAI/i] },
   { route: '/life-map', markers: [/Life Map/i, /Focus|constellation|memory/i] },
   { route: '/focus?memoryId=quiet-reset', markers: [/URAI Focus|Focus/i, /memory|Replay|quiet/i] },
@@ -17,8 +18,9 @@ const routes = [
   { route: '/unwind', markers: [/Unwind|return/i, /URAI|Life Map/i] },
   { route: '/mirror', markers: [/Mirror/i, /Life Map|Focus|Replay/i] },
   { route: '/passport', markers: [/Passport/i, /Privacy|Life Map|identity/i] },
-  { route: '/status', markers: [/Status/i, /Life Map|Home|Routes/i] },
   { route: '/privacy-controls', markers: [/Privacy|Choose what the world can hold/i, /Passport|Life Map/i] },
+  { route: '/location-map', markers: [/Location|Places|atlas|map/i, /Life Map|Home|place/i] },
+  { route: '/status', markers: [/Status/i, /Life Map|Home|Routes/i] },
 ]
 
 const staleFallbackPatterns = [
@@ -35,7 +37,7 @@ for (const { route, markers } of routes) {
     const response = await fetch(url, {
       method: 'GET',
       headers: {
-        'user-agent': 'urai-live-smoke/2.0',
+        'user-agent': 'urai-live-smoke/2.1',
         accept: 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
       },
     })
