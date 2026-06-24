@@ -6,25 +6,36 @@ import process from 'node:process'
 const root = process.cwd()
 const args = process.argv.slice(2)
 
+function isExecutableFile(candidate) {
+  if (!candidate) {
+    return false
+  }
+
+  try {
+    const stat = fs.statSync(candidate)
+    return stat.isFile()
+  } catch {
+    return false
+  }
+}
+
 function candidatePnpmEntrypoints() {
   const candidates = []
   const npmExecPath = process.env.npm_execpath
 
-  if (npmExecPath && /pnpm/i.test(npmExecPath)) {
+  if (npmExecPath && /pnpm/i.test(npmExecPath) && isExecutableFile(npmExecPath)) {
     candidates.push(npmExecPath)
   }
 
   candidates.push(path.join(root, 'node_modules', 'pnpm', 'bin', 'pnpm.cjs'))
   candidates.push(path.join(root, 'node_modules', '.pnpm', 'pnpm@10.0.0', 'node_modules', 'pnpm', 'bin', 'pnpm.cjs'))
 
-  return candidates.filter(Boolean)
+  return candidates.filter(isExecutableFile)
 }
 
 function resolvePnpm() {
   for (const entrypoint of candidatePnpmEntrypoints()) {
-    if (fs.existsSync(entrypoint)) {
-      return { command: process.execPath, argsPrefix: [entrypoint], displayCommand: 'pnpm' }
-    }
+    return { command: process.execPath, argsPrefix: [entrypoint], displayCommand: 'pnpm' }
   }
 
   return { command: 'pnpm', argsPrefix: [], displayCommand: 'pnpm' }
