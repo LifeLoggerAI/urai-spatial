@@ -193,6 +193,12 @@ require_space() {
   fi
 }
 
+run_pnpm_script() {
+  local script_name="$1"
+  shift || true
+  pnpm run "$script_name" "$@"
+}
+
 echo "== URAI Spatial Cloud Shell proof =="
 echo "repo: $ROOT"
 echo "live url: $LIVE_URL"
@@ -219,21 +225,21 @@ export npm_config_store_dir="${npm_config_store_dir:-$ROOT/.pnpm-store}"
 export PNPM_HOME="${PNPM_HOME:-$ROOT/.pnpm-home}"
 mkdir -p "$COREPACK_HOME" "$XDG_CACHE_HOME" "$NPM_CONFIG_CACHE" "$npm_config_store_dir" "$PNPM_HOME"
 
-PNPM=(pnpm --store-dir "$npm_config_store_dir")
+unset npm_execpath npm_lifecycle_script npm_lifecycle_event
 
 echo "== install check =="
-"${PNPM[@]}" install --frozen-lockfile --prefer-offline
+pnpm install --frozen-lockfile --prefer-offline
 
 echo "== static lock =="
-"${PNPM[@]}" lock:static
+run_pnpm_script lock:static
 
 echo "== static build =="
-"${PNPM[@]}" build:static
+run_pnpm_script build:static
 
 echo "== live smoke =="
-"${PNPM[@]}" smoke:live
+run_pnpm_script smoke:live
 
 echo "== live record =="
-"${PNPM[@]}" live:record
+run_pnpm_script live:record
 
 echo "URAI Spatial Cloud Shell proof complete."
