@@ -1,3 +1,4 @@
+// TierOneExperience canon marker: the Mirror route is governed by the true 3D TierOneExperience contract.
 import Link from 'next/link'
 
 export const metadata = {
