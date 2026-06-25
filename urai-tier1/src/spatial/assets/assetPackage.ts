@@ -3,7 +3,19 @@ import { isSpatialAssetManifest } from './manifestTypes'
 
 export type SpatialPackageScope = 'public-demo' | 'private-user' | 'team' | 'system'
 export type SpatialPackageReviewState = 'approved' | 'pending' | 'fallback-only'
-export type SpatialPackageSurface = 'home-sky' | 'ground' | 'orb' | 'avatar-body' | 'lifemap-star' | 'replay-scene' | 'focus-artifact'
+export type SpatialPackageSurface =
+  | 'home-sky'
+  | 'ground'
+  | 'orb'
+  | 'avatar-body'
+  | 'lifemap-star'
+  | 'replay-scene'
+  | 'focus-artifact'
+  | 'mirror'
+  | 'passport'
+  | 'privacy-controls'
+  | 'location-map'
+  | 'status'
 
 export type UraiSpatialAssetPackage = {
   packageId: string
