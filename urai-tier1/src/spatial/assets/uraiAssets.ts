@@ -16,6 +16,10 @@ const image = (src: string, fallback: string, alt: string): ImageAsset => ({ src
 const webp = (path: string) => `${root}${path}`;
 const fallback = (path: string) => `${root}${path}`;
 
+const mirrorFallback = fallback("/mirror/mirror-reflection-fallback.svg");
+const passportFallback = fallback("/passport/passport-vault-fallback.svg");
+const privacyFallback = fallback("/privacy-controls/privacy-controls-fallback.svg");
+
 export function assetCssUrl(path: string) {
   return `url("${path}")`;
 }
@@ -68,43 +72,43 @@ export const replayAssets = {
 } satisfies RouteAssetSet;
 
 export const mirrorAssets = {
-  primary: image(webp("/mirror/mirror-reflection-main.webp"), fallback("/mirror/mirror-reflection-fallback.svg"), "Mirror reflection realm background"),
-  mobile: image(webp("/mirror/mirror-reflection-mobile.webp"), fallback("/mirror/mirror-reflection-fallback.svg"), "Mirror reflection mobile crop"),
+  primary: image(webp("/mirror/mirror-reflection-main.webp"), mirrorFallback, "Mirror reflection realm background"),
+  mobile: image(webp("/mirror/mirror-reflection-mobile.webp"), mirrorFallback, "Mirror reflection mobile crop"),
   accents: {
     pattern: image(webp("/mirror/mirror-pattern-glyph.webp"), fallback("/mirror/mirror-pattern-fallback.svg"), "Mirror pattern glyph layer"),
   },
 } satisfies RouteAssetSet;
 
 export const passportAssets = {
-  primary: image(webp("/passport/passport-vault-main.webp"), fallback("/passport/passport-vault-fallback.svg"), "Passport identity and consent vault"),
-  mobile: image(webp("/passport/passport-vault-mobile.webp"), fallback("/passport/passport-vault-fallback.svg"), "Passport vault mobile crop"),
+  primary: image(webp("/passport/passport-vault-main.webp"), passportFallback, "Passport identity and consent vault"),
+  mobile: image(webp("/passport/passport-vault-mobile.webp"), passportFallback, "Passport vault mobile crop"),
   accents: {
-    ownershipSeal: image(webp("/passport/passport-ownership-seal.webp"), fallback("/passport/passport-seal-fallback.svg"), "Ownership and provenance seal"),
+    ownershipSeal: image(webp("/passport/passport-ownership-seal.webp"), passportFallback, "Ownership and provenance seal"),
   },
 } satisfies RouteAssetSet;
 
 export const privacyControlsAssets = {
-  primary: image(webp("/privacy-controls/privacy-controls-main.webp"), fallback("/privacy-controls/privacy-controls-fallback.svg"), "Privacy controls consent console"),
-  mobile: image(webp("/privacy-controls/privacy-controls-mobile.webp"), fallback("/privacy-controls/privacy-controls-fallback.svg"), "Privacy controls mobile crop"),
+  primary: image(webp("/privacy-controls/privacy-controls-main.webp"), privacyFallback, "Privacy controls consent console"),
+  mobile: image(webp("/privacy-controls/privacy-controls-mobile.webp"), privacyFallback, "Privacy controls mobile crop"),
   accents: {
-    modelAccess: image(webp("/privacy-controls/privacy-model-access.webp"), fallback("/privacy-controls/privacy-model-access-fallback.svg"), "Model access permission state"),
-    locationPrecision: image(webp("/privacy-controls/privacy-location-precision.webp"), fallback("/privacy-controls/privacy-location-precision-fallback.svg"), "Location precision privacy state"),
+    modelAccess: image(webp("/privacy-controls/privacy-model-access.webp"), privacyFallback, "Model access permission state"),
+    locationPrecision: image(webp("/privacy-controls/privacy-location-precision.webp"), privacyFallback, "Location precision privacy state"),
   },
 } satisfies RouteAssetSet;
 
 export const locationMapAssets = {
-  primary: image(webp("/location-map/location-emotional-weather-main.webp"), fallback("/location-map/location-emotional-weather-fallback.svg"), "Location Map emotional weather atlas"),
-  mobile: image(webp("/location-map/location-emotional-weather-mobile.webp"), fallback("/location-map/location-emotional-weather-fallback.svg"), "Location Map mobile crop"),
+  primary: image(webp("/location-map/location-emotional-weather-main.webp"), privacyFallback, "Location Map emotional weather atlas"),
+  mobile: image(webp("/location-map/location-emotional-weather-mobile.webp"), privacyFallback, "Location Map mobile crop"),
   accents: {
-    placeNode: image(webp("/location-map/location-place-node.webp"), fallback("/location-map/location-place-node-fallback.svg"), "Symbolic place memory node"),
+    placeNode: image(webp("/location-map/location-place-node.webp"), privacyFallback, "Symbolic place memory node"),
   },
 } satisfies RouteAssetSet;
 
 export const statusAssets = {
-  primary: image(webp("/status/status-route-matrix-main.webp"), fallback("/status/status-route-matrix-fallback.svg"), "Status route matrix and launch health"),
-  mobile: image(webp("/status/status-route-matrix-mobile.webp"), fallback("/status/status-route-matrix-fallback.svg"), "Status route matrix mobile crop"),
+  primary: image(webp("/status/status-route-matrix-main.webp"), privacyFallback, "Status route matrix and launch health"),
+  mobile: image(webp("/status/status-route-matrix-mobile.webp"), privacyFallback, "Status route matrix mobile crop"),
   accents: {
-    healthPill: image(webp("/status/status-health-pill.webp"), fallback("/status/status-health-pill-fallback.svg"), "Launch health indicator"),
+    healthPill: image(webp("/status/status-health-pill.webp"), privacyFallback, "Launch health indicator"),
   },
 } satisfies RouteAssetSet;
 
