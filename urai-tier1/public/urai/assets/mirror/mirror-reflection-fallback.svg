@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 900" role="img" aria-label="URAI Mirror reflection realm fallback asset">
+  <defs>
+    <radialGradient id="g" cx="50%" cy="42%" r="70%"><stop offset="0" stop-color="#7dd3fc" stop-opacity="0.34"/><stop offset="0.42" stop-color="#7c3aed" stop-opacity="0.18"/><stop offset="1" stop-color="#020617"/></radialGradient>
+    <linearGradient id="line" x1="0" x2="1"><stop stop-color="#a5f3fc" stop-opacity="0"/><stop offset="0.5" stop-color="#e0f2fe" stop-opacity="0.6"/><stop offset="1" stop-color="#a5f3fc" stop-opacity="0"/></linearGradient>
+  </defs>
+  <rect width="1600" height="900" fill="url(#g)"/>
+  <ellipse cx="800" cy="470" rx="360" ry="250" fill="none" stroke="#bae6fd" stroke-opacity="0.28" stroke-width="3"/>
+  <ellipse cx="800" cy="470" rx="235" ry="165" fill="none" stroke="#c4b5fd" stroke-opacity="0.30" stroke-width="2"/>
+  <path d="M310 455 C520 300,1080 300,1290 455 C1080 640,520 640,310 455Z" fill="none" stroke="url(#line)" stroke-width="4"/>
+  <circle cx="800" cy="455" r="58" fill="#e0f2fe" fill-opacity="0.14" stroke="#bae6fd" stroke-opacity="0.5"/>
+  <text x="800" y="790" fill="#e0f2fe" font-family="Inter,Arial,sans-serif" font-size="44" text-anchor="middle" letter-spacing="8">MIRROR REALM</text>
+</svg>
