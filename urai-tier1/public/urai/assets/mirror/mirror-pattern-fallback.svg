@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 900" role="img" aria-label="URAI Mirror pattern fallback asset">
+  <rect width="1200" height="900" fill="#020617"/>
+  <circle cx="600" cy="450" r="300" fill="none" stroke="#a78bfa" stroke-opacity="0.28" stroke-width="4"/>
+  <circle cx="600" cy="450" r="190" fill="none" stroke="#67e8f9" stroke-opacity="0.24" stroke-width="3"/>
+  <circle cx="600" cy="450" r="84" fill="#22d3ee" fill-opacity="0.12"/>
+  <line x1="220" y1="450" x2="980" y2="450" stroke="#e0f2fe" stroke-opacity="0.26"/>
+  <line x1="600" y1="170" x2="600" y2="730" stroke="#e0f2fe" stroke-opacity="0.18"/>
+</svg>
