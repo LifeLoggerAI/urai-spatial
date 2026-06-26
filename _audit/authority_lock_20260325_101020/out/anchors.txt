@@ -1,3 +1,0 @@
-105:function useSceneController(stars: StarNode[]) {
-652:export default function SpatialScene() {
-6:export default function SceneController() {

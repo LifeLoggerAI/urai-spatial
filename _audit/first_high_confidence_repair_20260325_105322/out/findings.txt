@@ -1,4 +1,0 @@
-scene_target=/home/user/urai-spatial/urai-tier1/src/spatial/scene/SpatialScene.tsx
-esc_owner=scene
-esc_file=/home/user/urai-spatial/urai-tier1/src/spatial/scene/SpatialScene.tsx
-replay_gating_proven=partial
