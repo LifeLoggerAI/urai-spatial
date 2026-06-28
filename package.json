@@ -129,5 +129,8 @@
     "tier5:production:check": "node scripts/check-tier5-local-production.mjs",
     "tier5:browser:check": "pnpm playwright:ensure && node tests/replay-tier5-lock.mjs",
     "tier5:full:check": "pnpm tier5:production:check && pnpm tier5:browser:check && pnpm live:check"
+  },
+  "devDependencies": {
+    "firebase-tools": "^15.22.3"
   }
 }
