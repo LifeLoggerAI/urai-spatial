@@ -318,7 +318,11 @@ async function main() {
     deployProject,
     '--only',
     'hosting,firestore:rules,firestore:indexes,functions',
-  ])
+  ], {
+    env: {
+      FIREBASE_CLI_EXPERIMENTS: process.env.FIREBASE_CLI_EXPERIMENTS || 'webframeworks',
+    },
+  })
 
   console.log('\n[URAI Spatial Live] Deploy completed.')
   console.log('[URAI Spatial Live] Run live smoke against the deployed URL with: HOST=https://<your-host> corepack pnpm smoke')
