@@ -11,6 +11,15 @@ const checks = [
   { route: '/api/system/urai-spatial-3d-world', markers: [/urai|spatial|world|ok/i] },
 ]
 
+const forbiddenPatterns = [
+  /Launch build is compiling successfully/i,
+  /Full app deployment is being finalized/i,
+  /Opening your spatial field/i,
+  /Preparing the scene/i,
+  /prototype/i,
+  /placeholder/i,
+]
+
 const failures = []
 
 for (const check of checks) {
@@ -18,14 +27,15 @@ for (const check of checks) {
   try {
     const response = await fetch(url, {
       headers: {
-        'user-agent': 'urai-spatial-live-smoke/1.0',
+        'user-agent': 'urai-spatial-live-smoke/1.1',
         accept: 'text/html,application/json,*/*;q=0.8',
       },
     })
     const body = await response.text()
     const missingMarker = check.markers.find((marker) => !marker.test(body))
-    if (!response.ok || missingMarker) {
-      failures.push(`${url} status=${response.status} missing=${missingMarker?.source || 'none'}`)
+    const forbidden = forbiddenPatterns.find((marker) => marker.test(body))
+    if (!response.ok || missingMarker || forbidden) {
+      failures.push(`${url} status=${response.status} missing=${missingMarker?.source || 'none'} forbidden=${forbidden?.source || 'none'}`)
       continue
     }
     console.log(`OK ${response.status} ${url}`)
