@@ -15,6 +15,6 @@
   },
   "functions": {
     "source": "apps/functions",
-    "runtime": "nodejs24"
+    "runtime": "nodejs22"
   }
 }
