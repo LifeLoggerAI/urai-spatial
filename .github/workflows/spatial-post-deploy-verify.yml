@@ -1,0 +1,58 @@
+name: URAI Spatial Post Deploy Verify
+
+on:
+  workflow_dispatch:
+    inputs:
+      live_url:
+        description: Live URL to verify
+        required: true
+        default: https://urai-4dc1d.web.app
+        type: string
+
+concurrency:
+  group: spatial-post-deploy-verify-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  verify-live:
+    name: Verify live Spatial deployment
+    runs-on: ubuntu-latest
+    env:
+      URAI_DEPLOY_URL: ${{ inputs.live_url }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10.0.0
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --no-frozen-lockfile
+
+      - name: Static proof checks
+        run: |
+          pnpm verify:routes
+          pnpm verify:assets
+          pnpm check:production-claims
+          pnpm check:firebase
+          pnpm check:system-registry
+          node scripts/check-home-xr-lock.mjs
+          node scripts/check-home-xr-proof-manifest.mjs
+
+      - name: XR runtime verification
+        run: pnpm xr:verify
+
+      - name: Live smoke checks
+        run: |
+          echo "Smoking $URAI_DEPLOY_URL"
+          pnpm smoke:home-xr:live
+          pnpm smoke:live
+          node scripts/check-home-xr-live-deploy-proof.mjs
