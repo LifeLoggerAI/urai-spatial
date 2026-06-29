@@ -11,6 +11,11 @@ on:
         options:
           - hosting
           - hosting,functions
+      live_url:
+        description: Live URL to smoke after deploy
+        required: true
+        default: https://urai-4dc1d.web.app
+        type: string
 
 concurrency:
   group: firebase-xr-deploy-${{ github.ref }}
@@ -28,6 +33,7 @@ jobs:
       URAI_XR_SESSION_SECRET: ${{ secrets.URAI_XR_SESSION_SECRET }}
       URAI_XR_ICE_SERVERS_JSON: ${{ secrets.URAI_XR_ICE_SERVERS_JSON }}
       URAI_XR_REQUIRE_SIGNED_ROOM_TOKEN: "true"
+      URAI_DEPLOY_URL: ${{ inputs.live_url }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -45,6 +51,16 @@ jobs:
 
       - name: Install dependencies
         run: pnpm install --no-frozen-lockfile
+
+      - name: Static release gates
+        run: |
+          pnpm verify:routes
+          pnpm verify:assets
+          pnpm check:production-claims
+          pnpm check:firebase
+          pnpm check:system-registry
+          node scripts/check-home-xr-lock.mjs
+          node scripts/check-home-xr-proof-manifest.mjs
 
       - name: Bake XR navmesh
         run: pnpm xr:navmesh:bake
@@ -69,5 +85,10 @@ jobs:
       - name: Deploy Firebase functions when requested
         if: ${{ contains(inputs.deploy_target, 'functions') }}
         run: pnpm exec firebase deploy --only functions --project "$FIREBASE_PROJECT_ID"
-        env:
-          GOOGLE_APPLICATION_CREDENTIALS_JSON: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_URAI_SPATIAL }}
+
+      - name: Live smoke and proof checks
+        run: |
+          echo "Smoking $URAI_DEPLOY_URL"
+          pnpm smoke:home-xr:live
+          pnpm smoke:live
+          node scripts/check-home-xr-live-deploy-proof.mjs
