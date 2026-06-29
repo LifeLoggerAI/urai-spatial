@@ -41,6 +41,7 @@ This evidence file records what is verified, what was fixed, and what still requ
   - `scripts/check-home-xr-live-deploy-proof.mjs`
 - `.github/workflows/firebase-xr-deploy.yml` now runs static gates, XR verification, deploy, then live smoke/proof checks.
 - `.github/workflows/spatial-post-deploy-verify.yml` can rerun static proof, XR verification, and live smoke/proof checks without redeploying.
+- Live smoke scripts now fail on transitional launch/build-finalizing copy, prototype language, and placeholder language.
 
 ## Required final commands
 
@@ -77,6 +78,16 @@ Preferred final verification path:
    - optional Firebase functions deploy when selected,
    - live smoke/proof checks.
 3. Rerun `URAI Spatial Post Deploy Verify` any time live verification is needed without redeployment.
+
+## Current live observation
+
+The live root URL is reachable, but the current root response still includes transitional copy:
+
+```text
+Launch build is compiling successfully. Full app deployment is being finalized.
+```
+
+That copy is now a hard live-smoke blocker. The project must redeploy a non-transitional public surface and pass live smoke before this evidence can be upgraded to `LIVE VERIFIED`.
 
 ## Go/no-go status
 
