@@ -21,6 +21,24 @@ Tier One and Tier Two may ship when these gates pass:
 - Firebase deploy
 - live smoke test
 
+A completed Firebase deploy is not enough by itself. The deployed URL must render the current committed public surface and pass strict live smoke/proof checks.
+
+## Current live blocker
+
+As of the 2026-06-29 evidence pass, the known Firebase URL is reachable, but the live root has returned transitional launch copy instead of the current `HomeWorldProduction` surface.
+
+Blocked transitional copy includes:
+
+```text
+Launch build is compiling successfully. Full app deployment is being finalized.
+```
+
+Until a latest-main deploy removes that copy and live smoke passes, the public surface must remain classified as:
+
+```text
+DEPLOYED BUT FINAL LIVE SMOKE REQUIRED
+```
+
 ## Canon rule
 
 Docs, UI copy, route metadata, and release notes must only claim what the release evidence proves.
@@ -46,6 +64,7 @@ Release interpretation:
 
 - `live-working verified` means code gates, production build, route smoke, API smoke, and release checks have passing evidence for the fallback-safe product surface.
 - It does not claim Firebase production deployment unless deploy output, a live URL, and live smoke evidence are recorded.
+- It does not claim the public URL is current when live smoke detects transitional launch/build-finalizing copy.
 - V4 WebXR / AR / VR pathway remains disabled until provider/browser validation exists.
 - V5 Mirror of Becoming / legacy spatial release remains production-gated until implementation, privacy boundaries, fallback behavior, tests, deployment evidence, and live smoke prove the claim.
 
