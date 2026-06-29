@@ -21,9 +21,12 @@ const routes = [
   { route: '/privacy-controls', markers: [/Privacy|Choose what the world can hold/i, /Passport|Life Map/i] },
   { route: '/location-map', markers: [/Location|Places|atlas|map/i, /Life Map|Home|place/i] },
   { route: '/status', markers: [/Status/i, /Life Map|Home|Routes/i] },
+  { route: '/api/system/deploy-proof', markers: [/urai-spatial-deploy-proof/i, /urai-spatial-public-surface-2026-06-29-homeworldproduction/i] },
 ]
 
 const staleFallbackPatterns = [
+  /Launch build is compiling successfully/i,
+  /Full app deployment is being finalized/i,
   /Opening your spatial field/i,
   /Preparing the scene/i,
   /bullshit|prototype|placeholder/i,
@@ -37,18 +40,18 @@ for (const { route, markers } of routes) {
     const response = await fetch(url, {
       method: 'GET',
       headers: {
-        'user-agent': 'urai-live-smoke/2.1',
-        accept: 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+        'user-agent': 'urai-live-smoke/2.2',
+        accept: 'text/html,application/xhtml+xml,application/json,application/xml;q=0.9,*/*;q=0.8',
       },
     })
 
     const body = await response.text()
-    const hasHtml = /<html|<body|__next|URAI|Urai/i.test(body)
+    const hasExpectedContent = /<html|<body|__next|URAI|Urai|urai-spatial-deploy-proof/i.test(body)
     const stale = staleFallbackPatterns.find((pattern) => pattern.test(body))
     const missingMarker = markers.find((pattern) => !pattern.test(body))
 
-    if (!response.ok || !hasHtml || stale || missingMarker) {
-      failures.push(`${url} returned ${response.status} html=${hasHtml} stale=${stale?.source ?? 'no'} missing=${missingMarker?.source ?? 'none'}`)
+    if (!response.ok || !hasExpectedContent || stale || missingMarker) {
+      failures.push(`${url} returned ${response.status} expectedContent=${hasExpectedContent} stale=${stale?.source ?? 'no'} missing=${missingMarker?.source ?? 'none'}`)
     } else {
       console.log(`OK ${response.status} ${url}`)
     }
@@ -63,4 +66,4 @@ if (failures.length > 0) {
   process.exit(1)
 }
 
-console.log('URAI live smoke passed.')
+console.log('URAI live smoke passed with deploy proof marker.')
