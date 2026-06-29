@@ -39,6 +39,8 @@ This evidence file records what is verified, what was fixed, and what still requ
   - `scripts/check-home-xr-lock.mjs`
   - `scripts/check-home-xr-proof-manifest.mjs`
   - `scripts/check-home-xr-live-deploy-proof.mjs`
+- `.github/workflows/firebase-xr-deploy.yml` now runs static gates, XR verification, deploy, then live smoke/proof checks.
+- `.github/workflows/spatial-post-deploy-verify.yml` can rerun static proof, XR verification, and live smoke/proof checks without redeploying.
 
 ## Required final commands
 
@@ -61,11 +63,26 @@ node scripts/check-home-xr-proof-manifest.mjs
 URAI_DEPLOY_URL=https://urai-4dc1d.web.app node scripts/check-home-xr-live-deploy-proof.mjs
 ```
 
+## CI verification path
+
+Preferred final verification path:
+
+1. Run `Firebase XR Deploy` from GitHub Actions with `live_url=https://urai-4dc1d.web.app`.
+2. Confirm the workflow passes through:
+   - static release gates,
+   - XR runtime verification,
+   - typecheck,
+   - production build,
+   - Firebase hosting deploy,
+   - optional Firebase functions deploy when selected,
+   - live smoke/proof checks.
+3. Rerun `URAI Spatial Post Deploy Verify` any time live verification is needed without redeployment.
+
 ## Go/no-go status
 
 Current status: `DEPLOYED BUT FINAL LIVE SMOKE REQUIRED`.
 
-The deploy log proves Firebase Hosting and the SSR function released successfully. The repo now contains the missing verification compatibility layer. However, do not claim the public user surface is fully finished until the final live smoke commands pass against the live URL and the root/public routes no longer present transitional deployment copy.
+The deploy log proves Firebase Hosting and the SSR function released successfully. The repo now contains the missing verification compatibility layer and a GitHub Actions post-deploy verification path. However, do not claim the public user surface is fully finished until the final live smoke workflow passes against the live URL and the root/public routes no longer present transitional deployment copy.
 
 ## Known warnings to track
 
