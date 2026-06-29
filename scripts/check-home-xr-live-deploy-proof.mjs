@@ -7,6 +7,7 @@ const endpoints = [
   '/spatial',
   '/spatial/ar-vr',
   '/api/system/urai-spatial-lock',
+  '/api/system/deploy-proof',
 ]
 
 const forbiddenPatterns = [
@@ -26,16 +27,17 @@ for (const endpoint of endpoints) {
   try {
     const response = await fetch(url, {
       headers: {
-        'user-agent': 'urai-home-xr-live-deploy-proof/1.1',
+        'user-agent': 'urai-home-xr-live-deploy-proof/1.2',
         accept: 'text/html,application/json,*/*;q=0.8',
       },
     })
     const body = await response.text()
-    const hasUraiMarker = /urai|spatial|life map|xr|home/i.test(body)
+    const hasUraiMarker = /urai|spatial|life map|xr|home|deploy-proof/i.test(body)
     const forbidden = forbiddenPatterns.find((marker) => marker.test(body))
-    results.push({ endpoint, status: response.status, ok: response.ok, hasUraiMarker, forbidden: forbidden?.source || null })
-    if (!response.ok || !hasUraiMarker || forbidden) {
-      failures.push(`${url} status=${response.status} marker=${hasUraiMarker} forbidden=${forbidden?.source || 'none'}`)
+    const deployProofMissing = endpoint === '/api/system/deploy-proof' && !/urai-spatial-public-surface-2026-06-29-homeworldproduction/i.test(body)
+    results.push({ endpoint, status: response.status, ok: response.ok, hasUraiMarker, deployProofMissing, forbidden: forbidden?.source || null })
+    if (!response.ok || !hasUraiMarker || forbidden || deployProofMissing) {
+      failures.push(`${url} status=${response.status} marker=${hasUraiMarker} deployProofMissing=${deployProofMissing} forbidden=${forbidden?.source || 'none'}`)
     }
   } catch (error) {
     failures.push(`${url} failed: ${error instanceof Error ? error.message : String(error)}`)
