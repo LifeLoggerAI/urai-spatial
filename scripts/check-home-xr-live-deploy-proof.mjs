@@ -9,6 +9,15 @@ const endpoints = [
   '/api/system/urai-spatial-lock',
 ]
 
+const forbiddenPatterns = [
+  /Launch build is compiling successfully/i,
+  /Full app deployment is being finalized/i,
+  /Opening your spatial field/i,
+  /Preparing the scene/i,
+  /prototype/i,
+  /placeholder/i,
+]
+
 const results = []
 const failures = []
 
@@ -17,15 +26,16 @@ for (const endpoint of endpoints) {
   try {
     const response = await fetch(url, {
       headers: {
-        'user-agent': 'urai-home-xr-live-deploy-proof/1.0',
+        'user-agent': 'urai-home-xr-live-deploy-proof/1.1',
         accept: 'text/html,application/json,*/*;q=0.8',
       },
     })
     const body = await response.text()
     const hasUraiMarker = /urai|spatial|life map|xr|home/i.test(body)
-    results.push({ endpoint, status: response.status, ok: response.ok, hasUraiMarker })
-    if (!response.ok || !hasUraiMarker) {
-      failures.push(`${url} status=${response.status} marker=${hasUraiMarker}`)
+    const forbidden = forbiddenPatterns.find((marker) => marker.test(body))
+    results.push({ endpoint, status: response.status, ok: response.ok, hasUraiMarker, forbidden: forbidden?.source || null })
+    if (!response.ok || !hasUraiMarker || forbidden) {
+      failures.push(`${url} status=${response.status} marker=${hasUraiMarker} forbidden=${forbidden?.source || 'none'}`)
     }
   } catch (error) {
     failures.push(`${url} failed: ${error instanceof Error ? error.message : String(error)}`)
