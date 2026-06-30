@@ -36,7 +36,7 @@ jobs:
           cache: pnpm
 
       - name: Install dependencies
-        run: pnpm install --no-frozen-lockfile
+        run: pnpm install --frozen-lockfile
 
       - name: Static proof checks
         run: |
@@ -53,7 +53,7 @@ jobs:
 
       - name: Live smoke checks
         run: |
-          echo "Smoking $URAI_DEPLOY_URL"
+          echo "Smoking target"
           pnpm smoke:home-xr:live
           pnpm smoke:live
           node scripts/check-home-xr-live-deploy-proof.mjs
