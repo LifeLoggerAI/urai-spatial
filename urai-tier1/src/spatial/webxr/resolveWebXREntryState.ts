@@ -10,10 +10,10 @@ export type WebXREntryState = {
   summary: string;
   readiness: number;
   targetMode: WebXREntryTargetMode;
-  features: XRSessionFeature[];
+  features: string[];
 };
 
-const DEFAULT_FEATURES: XRSessionFeature[] = ["local-floor", "bounded-floor", "hand-tracking"];
+const DEFAULT_FEATURES = ["local-floor", "bounded-floor", "hand-tracking"] as const;
 
 function clamp(value: number, min: number, max: number): number {
   return Math.max(min, Math.min(max, value));
