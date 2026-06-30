@@ -1,4 +1,3 @@
-import { LaunchSeo } from '../LaunchSeo'
 import SpatialLifeMapCanonical from '@/spatial/lifemap/SpatialLifeMapCanonical'
 
 export const metadata = {
@@ -8,10 +7,5 @@ export const metadata = {
 }
 
 export default function LifeMapPage() {
-  return (
-    <>
-      <LaunchSeo label="URAI Life Map opens the explorable spatial memory constellation with wheel zoom, orbit, and star doors into Focus." />
-      <SpatialLifeMapCanonical />
-    </>
-  )
+  return <SpatialLifeMapCanonical />
 }
