@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 const baseUrl = process.env.URAI_DEPLOY_URL
+const requireLiveCommitSha = process.env.REQUIRE_LIVE_COMMIT_SHA === 'true'
 
 if (!baseUrl) {
   console.error('URAI_DEPLOY_URL is required, for example https://your-hosting-url.web.app')
@@ -21,7 +22,15 @@ const routes = [
   { route: '/privacy-controls', markers: [/Privacy|Choose what the world can hold/i, /Passport|Life Map/i] },
   { route: '/location-map', markers: [/Location|Places|atlas|map/i, /Life Map|Home|place/i] },
   { route: '/status', markers: [/Status/i, /Life Map|Home|Routes/i] },
-  { route: '/api/system/deploy-proof', markers: [/urai-spatial-deploy-proof/i, /urai-spatial-public-surface-2026-06-29-homeworldproduction/i] },
+  {
+    route: '/api/system/deploy-proof',
+    markers: [
+      /urai-spatial-deploy-proof/i,
+      /urai-spatial-public-surface-2026-06-29-homeworldproduction/i,
+      /urai-spatial-deploy-proof-v2-2026-06-30/i,
+      /commitShaKnown/i,
+    ],
+  },
 ]
 
 const staleFallbackPatterns = [
@@ -40,7 +49,7 @@ for (const { route, markers } of routes) {
     const response = await fetch(url, {
       method: 'GET',
       headers: {
-        'user-agent': 'urai-live-smoke/2.2',
+        'user-agent': 'urai-live-smoke/2.3',
         accept: 'text/html,application/xhtml+xml,application/json,application/xml;q=0.9,*/*;q=0.8',
       },
     })
@@ -49,9 +58,13 @@ for (const { route, markers } of routes) {
     const hasExpectedContent = /<html|<body|__next|URAI|Urai|urai-spatial-deploy-proof/i.test(body)
     const stale = staleFallbackPatterns.find((pattern) => pattern.test(body))
     const missingMarker = markers.find((pattern) => !pattern.test(body))
+    const liveCommitShaMissing =
+      route === '/api/system/deploy-proof' &&
+      requireLiveCommitSha &&
+      /"commitSha"\s*:\s*"unknown"/i.test(body)
 
-    if (!response.ok || !hasExpectedContent || stale || missingMarker) {
-      failures.push(`${url} returned ${response.status} expectedContent=${hasExpectedContent} stale=${stale?.source ?? 'no'} missing=${missingMarker?.source ?? 'none'}`)
+    if (!response.ok || !hasExpectedContent || stale || missingMarker || liveCommitShaMissing) {
+      failures.push(`${url} returned ${response.status} expectedContent=${hasExpectedContent} stale=${stale?.source ?? 'no'} missing=${missingMarker?.source ?? 'none'} liveCommitShaMissing=${liveCommitShaMissing}`)
     } else {
       console.log(`OK ${response.status} ${url}`)
     }
@@ -66,4 +79,4 @@ if (failures.length > 0) {
   process.exit(1)
 }
 
-console.log('URAI live smoke passed with deploy proof marker.')
+console.log(`URAI live smoke passed with deploy proof marker. requireLiveCommitSha=${requireLiveCommitSha}`)
