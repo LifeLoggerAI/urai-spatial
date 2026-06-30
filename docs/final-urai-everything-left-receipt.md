@@ -4,9 +4,11 @@ Date: 2026-06-30
 
 ## Current repository changes pushed
 
-- Home root and `/home` now route to `FinalHomeThreshold`, a hard replacement cinematic threshold with tap/click sky and ground zones.
+- Home root and `/home` now route through `FinalHomeThreshold` into `HomeSpatialWorldFinal`, the authored Genesis Home world with sky, ground, orb, body, and portals.
+- Home route portals now point to the canonical launch spine: `/ground`, `/life-map`, Focus, Replay, Mirror, Passport, and Status.
 - Life Map R3F scene was replaced with a more explorable 3D galaxy layer.
 - Life Map now includes wheel movement, drag movement, star selection, Focus and Replay route actions, and procedural interior star textures.
+- Life Map production CSS hides reused horizon and ground layers so the Life Map stays a private galaxy surface.
 - Ground route was moved to a premium private-world staging module.
 - Ground now uses a darker embodied room/floor/grid/horizon treatment with private workforce, zones, objects, and inspector affordances.
 - Focus route now uses `FinalFocusChamber`, a selected memory chamber surface with clear Replay entry.
@@ -15,7 +17,8 @@ Date: 2026-06-30
 - Passport route now uses `FinalPassportVault`, a premium identity, consent, and ownership vault surface.
 - Status route was upgraded to a premium live route control room.
 - XR portal now includes Quest/WebXR fallback language and manual Quest proof steps.
-- Asset receipt audit tooling was added at `scripts/final-asset-receipt.mjs`.
+- Live smoke now includes `/spatial/ar-vr` in the required deployed route set.
+- Asset receipt audit tooling now checks the full route, mobile, orb, Life Map node, Ground zone, and avatar/workforce asset pack.
 - Final launch checklist and security dependency notes were added under `docs/`.
 
 ## Requires live deployment proof
@@ -33,8 +36,8 @@ The newest repo commits require Cloud Shell build, Firebase deploy, route checks
 - /home
 - /ground
 - /life-map
-- /focus
-- /replay
+- /focus?memoryId=quiet-reset
+- /replay?memoryId=quiet-reset&manifestId=replay-recovery-thread
 - /mirror
 - /passport
 - /status
@@ -50,8 +53,8 @@ The newest repo commits require Cloud Shell build, Firebase deploy, route checks
 
 ## Expected live markers after deploy
 
-- `/` and `/home`: `urai-final-home-threshold`, `Your world is open`, `Ascend to Life Map`, `Descend to Ground`
-- `/life-map`: `urai-true-3d-life-map`, `3D camera unlocked`, `Image stars`, `Wheel / drag / select`
+- `/` and `/home`: `aaa-final-home-sky-ground-orb-body-portals`, `Own your life`, `Enter Ground World`, `Ascend to Life Map`
+- `/life-map`: `Life Map`, `constellation`, `memory`, `Focus`
 - `/ground`: `premium-embodied-ground-world`, `Your real life has a place`, `Object inspector`
 - `/focus`: `urai-final-focus-chamber`, `The Quiet Reset`, `Enter Replay`
 - `/replay`: `urai-final-replay-film`, `Replay the thread`, `Film beats`
