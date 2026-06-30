@@ -5,7 +5,7 @@ import type { CSSProperties, PointerEvent } from "react";
 import { useCallback, useEffect, useRef, useState } from "react";
 
 const portals = [
-  { id: "ground", href: "/ground", eyebrow: "Enter the ground", label: "Ground", detail: "private workforce and real-life objects" },
+  { id: "world", href: "/ground", eyebrow: "Enter the ground", label: "Ground", detail: "private workforce and real-life objects" },
   { id: "life", href: "/life-map", eyebrow: "Ascend through sky", label: "Life Map", detail: "memory constellation above" },
   { id: "focus", href: "/focus?memoryId=quiet-reset", eyebrow: "Select a star", label: "Focus", detail: "memory chamber" },
   { id: "replay", href: "/replay?memoryId=quiet-reset&manifestId=replay-recovery-thread", eyebrow: "Enter the film", label: "Replay", detail: "cinematic memory space" },
@@ -208,7 +208,7 @@ export default function HomeSpatialWorldFinal() {
 
       <nav id="home-routes" className="urai-genesis-home__portals" aria-label="URAI Home World route portals">
         {portals.map((portal) => (
-          <Link key={portal.id} href={portal.href} className={`urai-genesis-home__portal urai-genesis-home__portal--${portal.id}`}>
+          <Link key={portal.href} href={portal.href} className={`urai-genesis-home__portal urai-genesis-home__portal--${portal.id}`}>
             <span className="urai-genesis-home__portal-light" aria-hidden="true" />
             <small>{portal.eyebrow}</small>
             <strong>{portal.label}</strong>
