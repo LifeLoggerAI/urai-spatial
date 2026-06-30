@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import XrCapabilitySignal from './XrCapabilitySignal'
 import './xr-portal.css'
 
 export const metadata = {
@@ -8,7 +9,7 @@ export const metadata = {
 
 const checks = [
   ['Quest Browser', 'Open urai.app/spatial/life-map and urai.app/spatial/ar-vr from the headset browser.'],
-  ['Capability check', 'WebXR support is browser and device dependent; unsupported browsers keep the spatial fallback visible.'],
+  ['Capability check', 'This route now checks navigator.xr on the current browser and keeps fallback instructions visible when immersive support is absent.'],
   ['Manual proof', 'Do not mark Quest verified until the route is loaded and interacted with on actual Quest hardware.'],
 ] as const
 
@@ -20,7 +21,7 @@ export default function SpatialArVrPage() {
         <p className="urai-xr-portal__kicker">AR / VR / XR PORTAL</p>
         <h1>Step inside the Life Map.</h1>
         <p className="urai-xr-portal__lede">
-          URAI&apos;s spatial layer is live with a Quest-ready entry path, WebXR fallback language, and manual headset proof steps. Hardware verification still requires an actual Quest Browser session.
+          URAI&apos;s spatial layer is live with a Quest-ready entry path, WebXR fallback language, browser capability detection, and manual headset proof steps. Hardware verification still requires an actual Quest Browser session.
         </p>
 
         <div className="urai-xr-portal__actions">
@@ -44,6 +45,8 @@ export default function SpatialArVrPage() {
           </article>
         ))}
       </section>
+
+      <XrCapabilitySignal />
 
       <aside className="fixed bottom-24 right-4 z-30 w-[min(390px,calc(100vw-2rem))] rounded-3xl border border-cyan-100/15 bg-slate-950/75 p-4 text-white shadow-2xl shadow-black/40 backdrop-blur-2xl">
         <p className="text-[10px] font-black uppercase tracking-[0.24em] text-cyan-200">Quest 2 manual test</p>
