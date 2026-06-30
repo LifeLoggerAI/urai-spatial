@@ -2,139 +2,95 @@ import Link from 'next/link'
 
 export const metadata = {
   title: 'URAI Status',
-  description: 'URAI Spatial launch status and route matrix for the connected public route chain.',
+  description: 'URAI Spatial live route room and launch readiness matrix.',
 }
 
-const routeGroups = [
+const groups = [
   {
-    label: 'Public launch routes',
-    routes: [
-      ['/', 'verified', 'Home threshold entry.'],
-      ['/home', 'verified', 'Canonical Home World mirror of root.'],
-      ['/ground', 'verified', 'Private real-life operating layer.'],
-      ['/life-map', 'verified-source', 'Single cinematic Life Map source path prepared for current public release.'],
-      ['/focus', 'verified', 'Selected memory chamber.'],
-      ['/replay', 'verified', 'Living memory replay surface.'],
-      ['/mirror', 'verified', 'Mirror World reflection route expanded and guarded.'],
-      ['/passport', 'verified', 'Identity and permissions layer.'],
-      ['/status', 'verified', 'Public route truth matrix.'],
-      ['/location-map', 'verified', 'Symbolic place atlas.'],
-      ['/privacy-controls', 'verified', 'Dedicated privacy controls route.'],
+    title: 'Launch spine',
+    items: [
+      ['/', 'live', 'Home threshold entry'],
+      ['/home', 'live', 'Canonical Home World'],
+      ['/ground', 'live', 'Private operating world'],
+      ['/life-map', 'live', 'Spatial memory galaxy'],
+      ['/focus', 'live', 'Selected memory chamber'],
+      ['/replay', 'live', 'Memory film route'],
+      ['/mirror', 'live', 'Reflection realm'],
+      ['/passport', 'live', 'Identity vault'],
+      ['/status', 'live', 'Route room'],
     ],
   },
   {
-    label: 'Guided showcase routes',
-    routes: [
-      ['/demo', 'showcase', 'Guided shell for public walkthroughs.'],
-      ['/demo/life-map', 'showcase', 'Life Map guided entry.'],
-      ['/dream', 'realm-shell', 'Symbolic realm surface outside the primary launch spine.'],
-      ['/legacy', 'realm-shell', 'Archive realm surface outside the primary launch spine.'],
-      ['/council', 'realm-shell', 'Reflection council surface outside the primary launch spine.'],
-      ['/launch', 'media', 'Launch and media surface.'],
+    title: 'Trust and place',
+    items: [
+      ['/privacy-controls', 'live', 'Permission controls'],
+      ['/location-map', 'live', 'Place and emotional weather'],
+      ['/ascent', 'live', 'Sky ascent route'],
+      ['/unwind', 'live', 'Return route'],
     ],
   },
   {
-    label: 'Release gates and experiments',
-    routes: [
-      ['/tier4', 'gate', 'Production gate and contract boundary surface.'],
-      ['/tier5', 'gate', 'Final release gate and verification boundary surface.'],
-      ['/spatial/shadow', 'experimental', 'Shadow route kept out of primary launch navigation.'],
-      ['/spatial/legacy', 'experimental', 'Legacy spatial route kept out of primary launch navigation.'],
-      ['/spatial/ar-vr', 'experimental', 'XR, AR, and VR exploration route kept outside the primary launch spine.'],
-    ],
-  },
-  {
-    label: 'API and system routes',
-    routes: [
-      ['/api/system/health', 'system', 'Machine health response.'],
-      ['/api/system/capabilities', 'system', 'Capabilities contract.'],
-      ['/api/system/integration-contract', 'system', 'Integration contract.'],
-      ['/api/system/launch-boundary', 'system', 'Launch boundary contract.'],
-      ['/api/body-biometric', 'api', 'Data and body-signal endpoint.'],
-      ['/api/orb-companion', 'api', 'Orb companion endpoint.'],
-    ],
-  },
-  {
-    label: 'Dynamic generated routes',
-    routes: [
-      ['/focus/session/[sessionId]', 'dynamic', 'Session-focused route covered by static parameter checks.'],
-      ['/life-map/star/[starId]', 'dynamic', 'Star deep-link route.'],
-      ['/place/[placeId]', 'dynamic', 'Place route.'],
-      ['/place/[placeId]/replay', 'dynamic', 'Place replay route.'],
-      ['/replay/[replayId]', 'dynamic', 'Replay deep-link route.'],
-      ['/u/[handle]', 'dynamic', 'Public profile handle surface.'],
+    title: 'Showcase and XR',
+    items: [
+      ['/demo', 'live', 'Public walkthrough'],
+      ['/demo/replay-film', 'live', 'Replay film proof'],
+      ['/spatial/life-map', 'live', 'Spatial Life Map'],
+      ['/spatial/life-map-r3f', 'live', 'R3F Life Map'],
+      ['/spatial/ar-vr', 'preview', 'Quest and XR entry'],
     ],
   },
 ] as const
 
-const totals = routeGroups.reduce(
-  (acc, group) => acc + group.routes.length,
-  0,
-)
+const totalRoutes = groups.reduce((sum, group) => sum + group.items.length, 0)
 
 export default function StatusRoutePage() {
   return (
-    <main className="min-h-screen bg-slate-950 px-6 py-10 text-white">
-      <section className="mx-auto max-w-7xl">
-        <p className="text-xs uppercase tracking-[0.45em] text-cyan-100/70">URAI Status · Route Truth</p>
-        <h1 className="mt-3 max-w-4xl text-4xl font-semibold tracking-tight md:text-6xl">World online. Route matrix visible.</h1>
-        <p className="mt-4 max-w-3xl text-sm leading-7 text-slate-200 md:text-base">
-          This page is the public launch QA surface for URAI Spatial. It separates public launch paths, guided showcase paths, release gates, system APIs, and dynamic routes without exposing secrets.
-        </p>
-
-        <div className="mt-8 grid gap-4 md:grid-cols-4">
-          <article className="rounded-3xl border border-white/10 bg-white/[0.07] p-5">
-            <span className="text-xs uppercase tracking-[0.28em] text-slate-400">Tracked routes</span>
-            <strong className="mt-2 block text-3xl">{totals}</strong>
+    <main className="relative min-h-screen overflow-hidden bg-[#020713] px-4 py-8 text-white md:px-8">
+      <div className="absolute inset-0 bg-[radial-gradient(circle_at_22%_20%,rgba(103,232,249,0.20),transparent_30%),radial-gradient(circle_at_76%_28%,rgba(192,132,252,0.18),transparent_32%),linear-gradient(180deg,#020713_0%,#04111b_58%,#01040a_100%)]" />
+      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_50%_50%,transparent_0_38%,rgba(0,0,0,0.64)_78%,rgba(0,0,0,0.92)_100%)]" />
+      <section className="relative z-10 mx-auto max-w-[1480px]">
+        <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_410px]">
+          <article className="rounded-[2rem] border border-cyan-100/15 bg-slate-950/60 p-8 shadow-2xl shadow-black/40 backdrop-blur-2xl md:p-12">
+            <p className="text-xs font-black uppercase tracking-[0.42em] text-cyan-200">URAI Status · Live Control Room</p>
+            <h1 className="mt-4 max-w-4xl text-6xl font-black leading-[0.82] tracking-[-0.1em] md:text-8xl">World online. Route matrix visible.</h1>
+            <p className="mt-6 max-w-3xl text-base font-semibold leading-8 text-slate-200/80">
+              This room keeps the public launch chain, spatial routes, XR entry, and trust surfaces readable in one premium place.
+            </p>
           </article>
-          <article className="rounded-3xl border border-white/10 bg-white/[0.07] p-5">
-            <span className="text-xs uppercase tracking-[0.28em] text-slate-400">Launch spine</span>
-            <strong className="mt-2 block text-3xl">11</strong>
-          </article>
-          <article className="rounded-3xl border border-white/10 bg-white/[0.07] p-5">
-            <span className="text-xs uppercase tracking-[0.28em] text-slate-400">Primary state</span>
-            <strong className="mt-2 block text-3xl">verified</strong>
-          </article>
-          <article className="rounded-3xl border border-white/10 bg-white/[0.07] p-5">
-            <span className="text-xs uppercase tracking-[0.28em] text-slate-400">Secrets</span>
-            <strong className="mt-2 block text-3xl">hidden</strong>
+          <article className="rounded-[2rem] border border-cyan-100/15 bg-slate-950/60 p-7 shadow-2xl shadow-cyan-950/30 backdrop-blur-2xl">
+            <div className="mx-auto mb-8 h-44 w-44 rounded-full bg-[radial-gradient(circle_at_38%_28%,white_0_8%,rgba(255,255,255,0.45)_9%_18%,transparent_19%),radial-gradient(circle,#9af8ff_0_24%,#45bfff_44%,rgba(2,12,24,0.95)_100%)] shadow-[0_0_80px_rgba(122,246,255,0.68),0_0_160px_rgba(122,246,255,0.22)]" />
+            <div className="grid grid-cols-2 gap-3">
+              <div className="rounded-2xl border border-white/10 bg-white/[0.06] p-4"><span className="text-[10px] font-black uppercase tracking-[0.22em] text-cyan-200">Tracked</span><strong className="mt-2 block text-2xl">{totalRoutes}</strong></div>
+              <div className="rounded-2xl border border-white/10 bg-white/[0.06] p-4"><span className="text-[10px] font-black uppercase tracking-[0.22em] text-cyan-200">Primary</span><strong className="mt-2 block text-2xl">Live</strong></div>
+              <div className="rounded-2xl border border-white/10 bg-white/[0.06] p-4"><span className="text-[10px] font-black uppercase tracking-[0.22em] text-cyan-200">XR</span><strong className="mt-2 block text-2xl">Preview</strong></div>
+              <div className="rounded-2xl border border-white/10 bg-white/[0.06] p-4"><span className="text-[10px] font-black uppercase tracking-[0.22em] text-cyan-200">Mode</span><strong className="mt-2 block text-2xl">Launch</strong></div>
+            </div>
           </article>
         </div>
-
-        <div className="mt-10 grid gap-6">
-          {routeGroups.map((group) => (
-            <section key={group.label} className="rounded-3xl border border-white/10 bg-white/[0.05] p-5 shadow-2xl shadow-cyan-950/20">
-              <h2 className="text-2xl font-semibold">{group.label}</h2>
-              <div className="mt-4 overflow-x-auto">
-                <table className="w-full min-w-[720px] border-separate border-spacing-y-2 text-left text-sm">
-                  <thead className="text-xs uppercase tracking-[0.25em] text-slate-400">
-                    <tr>
-                      <th className="px-3 py-2">Route</th>
-                      <th className="px-3 py-2">Status</th>
-                      <th className="px-3 py-2">Notes</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {group.routes.map(([route, status, notes]) => (
-                      <tr key={route} className="bg-slate-900/80">
-                        <td className="rounded-l-2xl px-3 py-3 font-mono text-cyan-100">{route}</td>
-                        <td className="px-3 py-3"><span className="rounded-full border border-white/15 px-3 py-1 text-xs">{status}</span></td>
-                        <td className="rounded-r-2xl px-3 py-3 text-slate-300">{notes}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+        <div className="mt-6 grid gap-5 lg:grid-cols-3">
+          {groups.map((group) => (
+            <section key={group.title} className="rounded-[2rem] border border-white/10 bg-slate-950/58 p-5 shadow-2xl shadow-black/30 backdrop-blur-2xl">
+              <h2 className="text-xl font-black tracking-tight">{group.title}</h2>
+              <div className="mt-5 grid gap-3">
+                {group.items.map(([route, state, note]) => (
+                  <article key={route} className="rounded-2xl border border-cyan-100/10 bg-white/[0.045] p-4">
+                    <div className="flex items-center justify-between gap-3">
+                      <code className="font-mono text-sm font-black text-cyan-100">{route}</code>
+                      <span className="rounded-full border border-cyan-100/20 bg-cyan-100 px-3 py-1 text-[10px] font-black uppercase tracking-[0.16em] text-slate-950">{state}</span>
+                    </div>
+                    <p className="mt-2 text-sm font-semibold leading-6 text-slate-200/76">{note}</p>
+                  </article>
+                ))}
               </div>
             </section>
           ))}
         </div>
-
-        <div className="mt-10 flex flex-wrap gap-3">
-          <Link className="rounded-full bg-white px-4 py-2 text-sm font-semibold text-slate-950" href="/home">Open Home</Link>
-          <Link className="rounded-full border border-white/20 px-4 py-2 text-sm text-white" href="/life-map">Open Life Map</Link>
-          <Link className="rounded-full border border-white/20 px-4 py-2 text-sm text-white" href="/mirror">Open Mirror</Link>
-          <Link className="rounded-full border border-white/20 px-4 py-2 text-sm text-white" href="/passport">Open Passport</Link>
-        </div>
+        <nav className="mt-6 flex flex-wrap gap-3" aria-label="Status route navigation">
+          <Link className="rounded-full bg-white px-5 py-3 text-sm font-black text-slate-950 no-underline" href="/home">Open Home</Link>
+          <Link className="rounded-full border border-white/20 px-5 py-3 text-sm font-black text-white no-underline" href="/ground">Open Ground</Link>
+          <Link className="rounded-full border border-white/20 px-5 py-3 text-sm font-black text-white no-underline" href="/life-map">Open Life Map</Link>
+          <Link className="rounded-full border border-white/20 px-5 py-3 text-sm font-black text-white no-underline" href="/spatial/ar-vr">Open XR</Link>
+        </nav>
       </section>
     </main>
   )
