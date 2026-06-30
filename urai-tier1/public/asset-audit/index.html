@@ -1,0 +1,788 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8" />
+<title>URAI Asset Audit</title>
+<style>
+body {
+  margin: 0;
+  background: radial-gradient(circle at 50% 0%, #12223d, #04070f 58%, #000);
+  color: #eefbff;
+  font-family: Inter, system-ui, sans-serif;
+}
+header {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  padding: 22px 28px;
+  background: rgba(2, 6, 16, .82);
+  backdrop-filter: blur(18px);
+  border-bottom: 1px solid rgba(255,255,255,.1);
+}
+h1 { margin: 0; font-size: 34px; letter-spacing: -.04em; }
+.summary { color: #9eddf0; margin-top: 6px; font-weight: 800; }
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(360px, 1fr));
+  gap: 18px;
+  padding: 24px;
+}
+.card {
+  border: 1px solid rgba(255,255,255,.12);
+  border-radius: 24px;
+  padding: 14px;
+  background: rgba(8, 15, 32, .72);
+  box-shadow: 0 24px 80px rgba(0,0,0,.35);
+}
+.card.green { border-color: rgba(60,247,162,.55); }
+.card.yellow { border-color: rgba(255,209,102,.65); }
+.card.red { border-color: rgba(255,77,109,.75); }
+.card img {
+  width: 100%;
+  height: 230px;
+  object-fit: contain;
+  background: #050914;
+  border-radius: 16px;
+}
+.meta {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  margin-bottom: 10px;
+  font-size: 12px;
+}
+.meta strong {
+  letter-spacing: .14em;
+}
+.meta span {
+  opacity: .75;
+  word-break: break-all;
+}
+p { color: #d4ecf6; font-weight: 800; }
+small { color: #7e9aad; }
+</style>
+</head>
+<body>
+<header>
+  <h1>URAI Asset Audit Room</h1>
+  <div class="summary">GREEN=26 · YELLOW=55 · RED=21 · TOTAL=102</div>
+</header>
+<main class="grid">
+
+    <article class="card yellow">
+      <div class="meta"><strong>YELLOW</strong><span>avatars/archivist.webp</span></div>
+      <img src="/assets/urai/avatars/archivist.webp" alt="avatars/archivist.webp" />
+      <p>SOFT/FLAT</p>
+      <small>900x1200 · contrast 87.43 · saturation 177.38 · edge 4.42</small>
+    </article>
+    
+    <article class="card green">
+      <div class="meta"><strong>GREEN</strong><span>avatars/avatar-fallback.svg</span></div>
+      <img src="/assets/urai/avatars/avatar-fallback.svg" alt="avatars/avatar-fallback.svg" />
+      <p>OK</p>
+      <small>x · contrast  · saturation  · edge </small>
+    </article>
+    
+    <article class="card yellow">
+      <div class="meta"><strong>YELLOW</strong><span>avatars/builder.webp</span></div>
+      <img src="/assets/urai/avatars/builder.webp" alt="avatars/builder.webp" />
+      <p>SOFT/FLAT</p>
+      <small>900x1200 · contrast 89.06 · saturation 179.33 · edge 4.12</small>
+    </article>
+    
+    <article class="card yellow">
+      <div class="meta"><strong>YELLOW</strong><span>avatars/guide.webp</span></div>
+      <img src="/assets/urai/avatars/guide.webp" alt="avatars/guide.webp" />
+      <p>SOFT/FLAT</p>
+      <small>900x1200 · contrast 87.52 · saturation 177.59 · edge 4.37</small>
+    </article>
+    
+    <article class="card yellow">
+      <div class="meta"><strong>YELLOW</strong><span>avatars/logistics-helper.webp</span></div>
+      <img src="/assets/urai/avatars/logistics-helper.webp" alt="avatars/logistics-helper.webp" />
+      <p>SOFT/FLAT</p>
+      <small>900x1200 · contrast 88.19 · saturation 178.09 · edge 4.55</small>
+    </article>
+    
+    <article class="card yellow">
+      <div class="meta"><strong>YELLOW</strong><span>avatars/mirror.webp</span></div>
+      <img src="/assets/urai/avatars/mirror.webp" alt="avatars/mirror.webp" />
+      <p>SOFT/FLAT</p>
+      <small>900x1200 · contrast 85.88 · saturation 175.57 · edge 3.99</small>
+    </article>
+    
+    <article class="card yellow">
+      <div class="meta"><strong>YELLOW</strong><span>avatars/operator.webp</span></div>
+      <img src="/assets/urai/avatars/operator.webp" alt="avatars/operator.webp" />
+      <p>SOFT/FLAT</p>
+      <small>900x1200 · contrast 85.18 · saturation 174.37 · edge 3.98</small>
+    </article>
+    
+    <article class="card yellow">
+      <div class="meta"><strong>YELLOW</strong><span>avatars/privacy-steward.webp</span></div>
+      <img src="/assets/urai/avatars/privacy-steward.webp" alt="avatars/privacy-steward.webp" />
+      <p>SOFT/FLAT</p>
+      <small>900x1200 · contrast 86.39 · saturation 176.13 · edge 4.21</small>
+    </article>
+    
+    <article class="card yellow">
+      <div class="meta"><strong>YELLOW</strong><span>avatars/protector.webp</span></div>
+      <img src="/assets/urai/avatars/protector.webp" alt="avatars/protector.webp" />
+      <p>SOFT/FLAT</p>
+      <small>900x1200 · contrast 87.31 · saturation 176.93 · edge 4.27</small>
+    </article>
+    
+    <article class="card yellow">
+      <div class="meta"><strong>YELLOW</strong><span>avatars/receptionist.webp</span></div>
+      <img src="/assets/urai/avatars/receptionist.webp" alt="avatars/receptionist.webp" />
+      <p>SOFT/FLAT</p>
+      <small>900x1200 · contrast 86.47 · saturation 176.1 · edge 4.41</small>
+    </article>
+    
+    <article class="card yellow">
+      <div class="meta"><strong>YELLOW</strong><span>avatars/relationship-liaison.webp</span></div>
+      <img src="/assets/urai/avatars/relationship-liaison.webp" alt="avatars/relationship-liaison.webp" />
+      <p>SOFT/FLAT</p>
+      <small>900x1200 · contrast 87.78 · saturation 177.67 · edge 4.98</small>
+    </article>
+    
+    <article class="card yellow">
+      <div class="meta"><strong>YELLOW</strong><span>avatars/schedule-steward.webp</span></div>
+      <img src="/assets/urai/avatars/schedule-steward.webp" alt="avatars/schedule-steward.webp" />
+      <p>SOFT/FLAT</p>
+      <small>900x1200 · contrast 88.64 · saturation 177.52 · edge 4.22</small>
+    </article>
+    
+    <article class="card yellow">
+      <div class="meta"><strong>YELLOW</strong><span>avatars/wellness-guide.webp</span></div>
+      <img src="/assets/urai/avatars/wellness-guide.webp" alt="avatars/wellness-guide.webp" />
+      <p>SOFT/FLAT</p>
+      <small>900x1200 · contrast 86.14 · saturation 175.45 · edge 4.62</small>
+    </article>
+    
+    <article class="card red">
+      <div class="meta"><strong>RED</strong><span>chambers/chamber-calm.png</span></div>
+      <img src="/assets/urai/chambers/chamber-calm.png" alt="chambers/chamber-calm.png" />
+      <p>LOW_RES, LOW_CONTRAST, LOW_SATURATION, TOO_BRIGHT</p>
+      <small>1x1 · contrast 0.0 · saturation 0.0 · edge 255.0</small>
+    </article>
+    
+    <article class="card red">
+      <div class="meta"><strong>RED</strong><span>chambers/chamber-dream.png</span></div>
+      <img src="/assets/urai/chambers/chamber-dream.png" alt="chambers/chamber-dream.png" />
+      <p>LOW_RES, LOW_CONTRAST, LOW_SATURATION, TOO_BRIGHT</p>
+      <small>1x1 · contrast 0.0 · saturation 0.0 · edge 255.0</small>
+    </article>
+    
+    <article class="card red">
+      <div class="meta"><strong>RED</strong><span>chambers/chamber-grief.png</span></div>
+      <img src="/assets/urai/chambers/chamber-grief.png" alt="chambers/chamber-grief.png" />
+      <p>LOW_RES, LOW_CONTRAST, LOW_SATURATION, TOO_BRIGHT</p>
+      <small>1x1 · contrast 0.0 · saturation 0.0 · edge 255.0</small>
+    </article>
+    
+    <article class="card red">
+      <div class="meta"><strong>RED</strong><span>chambers/chamber-recovery.png</span></div>
+      <img src="/assets/urai/chambers/chamber-recovery.png" alt="chambers/chamber-recovery.png" />
+      <p>LOW_RES, LOW_CONTRAST, LOW_SATURATION, TOO_BRIGHT</p>
+      <small>1x1 · contrast 0.0 · saturation 0.0 · edge 255.0</small>
+    </article>
+    
+    <article class="card red">
+      <div class="meta"><strong>RED</strong><span>chambers/chamber-tension.png</span></div>
+      <img src="/assets/urai/chambers/chamber-tension.png" alt="chambers/chamber-tension.png" />
+      <p>LOW_RES, LOW_CONTRAST, LOW_SATURATION, TOO_BRIGHT</p>
+      <small>1x1 · contrast 0.0 · saturation 0.0 · edge 255.0</small>
+    </article>
+    
+    <article class="card red">
+      <div class="meta"><strong>RED</strong><span>chambers/chamber-threshold.png</span></div>
+      <img src="/assets/urai/chambers/chamber-threshold.png" alt="chambers/chamber-threshold.png" />
+      <p>LOW_RES, LOW_CONTRAST, LOW_SATURATION, TOO_BRIGHT</p>
+      <small>1x1 · contrast 0.0 · saturation 0.0 · edge 255.0</small>
+    </article>
+    
+    <article class="card green">
+      <div class="meta"><strong>GREEN</strong><span>focus/focus-memory-chamber-fallback.svg</span></div>
+      <img src="/assets/urai/focus/focus-memory-chamber-fallback.svg" alt="focus/focus-memory-chamber-fallback.svg" />
+      <p>OK</p>
+      <small>x · contrast  · saturation  · edge </small>
+    </article>
+    
+    <article class="card yellow">
+      <div class="meta"><strong>YELLOW</strong><span>focus/focus-memory-chamber-main.webp</span></div>
+      <img src="/assets/urai/focus/focus-memory-chamber-main.webp" alt="focus/focus-memory-chamber-main.webp" />
+      <p>SOFT/FLAT</p>
+      <small>1600x1000 · contrast 91.73 · saturation 159.45 · edge 3.92</small>
+    </article>
+    
+    <article class="card yellow">
+      <div class="meta"><strong>YELLOW</strong><span>focus/focus-memory-chamber-mobile.webp</span></div>
+      <img src="/assets/urai/focus/focus-memory-chamber-mobile.webp" alt="focus/focus-memory-chamber-mobile.webp" />
+      <p>SOFT/FLAT</p>
+      <small>900x1200 · contrast 89.87 · saturation 156.0 · edge 4.35</small>
+    </article>
+    
+    <article class="card red">
+      <div class="meta"><strong>RED</strong><span>focus-aura.png</span></div>
+      <img src="/assets/urai/focus-aura.png" alt="focus-aura.png" />
+      <p>LOW_CONTRAST, LOW_SATURATION, SOFT/FLAT, TOO_BRIGHT</p>
+      <small>1024x1024 · contrast 0.0 · saturation 37.0 · edge 0.92</small>
+    </article>
+    
+    <article class="card green">
+      <div class="meta"><strong>GREEN</strong><span>ground/ground-logistics-fallback.svg</span></div>
+      <img src="/assets/urai/ground/ground-logistics-fallback.svg" alt="ground/ground-logistics-fallback.svg" />
+      <p>OK</p>
+      <small>x · contrast  · saturation  · edge </small>
+    </article>
+    
+    <article class="card yellow">
+      <div class="meta"><strong>YELLOW</strong><span>ground/ground-logistics.webp</span></div>
+      <img src="/assets/urai/ground/ground-logistics.webp" alt="ground/ground-logistics.webp" />
+      <p>SOFT/FLAT</p>
+      <small>1600x1000 · contrast 83.99 · saturation 120.46 · edge 4.43</small>
+    </article>
+    
+    <article class="card green">
+      <div class="meta"><strong>GREEN</strong><span>ground/ground-memory-archive-fallback.svg</span></div>
+      <img src="/assets/urai/ground/ground-memory-archive-fallback.svg" alt="ground/ground-memory-archive-fallback.svg" />
+      <p>OK</p>
+      <small>x · contrast  · saturation  · edge </small>
+    </article>
+    
+    <article class="card yellow">
+      <div class="meta"><strong>YELLOW</strong><span>ground/ground-memory-archive.webp</span></div>
+      <img src="/assets/urai/ground/ground-memory-archive.webp" alt="ground/ground-memory-archive.webp" />
+      <p>SOFT/FLAT</p>
+      <small>1600x1000 · contrast 93.38 · saturation 165.38 · edge 4.25</small>
+    </article>
+    
+    <article class="card green">
+      <div class="meta"><strong>GREEN</strong><span>ground/ground-privacy-fallback.svg</span></div>
+      <img src="/assets/urai/ground/ground-privacy-fallback.svg" alt="ground/ground-privacy-fallback.svg" />
+      <p>OK</p>
+      <small>x · contrast  · saturation  · edge </small>
+    </article>
+    
+    <article class="card yellow">
+      <div class="meta"><strong>YELLOW</strong><span>ground/ground-privacy-sanctuary.webp</span></div>
+      <img src="/assets/urai/ground/ground-privacy-sanctuary.webp" alt="ground/ground-privacy-sanctuary.webp" />
+      <p>SOFT/FLAT</p>
+      <small>1600x1000 · contrast 91.3 · saturation 166.26 · edge 3.98</small>
+    </article>
+    
+    <article class="card green">
+      <div class="meta"><strong>GREEN</strong><span>ground/ground-reception-fallback.svg</span></div>
+      <img src="/assets/urai/ground/ground-reception-fallback.svg" alt="ground/ground-reception-fallback.svg" />
+      <p>OK</p>
+      <small>x · contrast  · saturation  · edge </small>
+    </article>
+    
+    <article class="card yellow">
+      <div class="meta"><strong>YELLOW</strong><span>ground/ground-reception.webp</span></div>
+      <img src="/assets/urai/ground/ground-reception.webp" alt="ground/ground-reception.webp" />
+      <p>SOFT/FLAT</p>
+      <small>1600x1000 · contrast 84.11 · saturation 120.61 · edge 4.52</small>
+    </article>
+    
+    <article class="card green">
+      <div class="meta"><strong>GREEN</strong><span>ground/ground-wellness-fallback.svg</span></div>
+      <img src="/assets/urai/ground/ground-wellness-fallback.svg" alt="ground/ground-wellness-fallback.svg" />
+      <p>OK</p>
+      <small>x · contrast  · saturation  · edge </small>
+    </article>
+    
+    <article class="card yellow">
+      <div class="meta"><strong>YELLOW</strong><span>ground/ground-wellness.webp</span></div>
+      <img src="/assets/urai/ground/ground-wellness.webp" alt="ground/ground-wellness.webp" />
+      <p>SOFT/FLAT</p>
+      <small>1600x1000 · contrast 83.32 · saturation 117.63 · edge 4.38</small>
+    </article>
+    
+    <article class="card green">
+      <div class="meta"><strong>GREEN</strong><span>ground/ground-world-fallback.svg</span></div>
+      <img src="/assets/urai/ground/ground-world-fallback.svg" alt="ground/ground-world-fallback.svg" />
+      <p>OK</p>
+      <small>x · contrast  · saturation  · edge </small>
+    </article>
+    
+    <article class="card yellow">
+      <div class="meta"><strong>YELLOW</strong><span>ground/ground-world-main.webp</span></div>
+      <img src="/assets/urai/ground/ground-world-main.webp" alt="ground/ground-world-main.webp" />
+      <p>SOFT/FLAT</p>
+      <small>1600x1000 · contrast 83.92 · saturation 121.88 · edge 4.23</small>
+    </article>
+    
+    <article class="card yellow">
+      <div class="meta"><strong>YELLOW</strong><span>ground/ground-world-mobile.webp</span></div>
+      <img src="/assets/urai/ground/ground-world-mobile.webp" alt="ground/ground-world-mobile.webp" />
+      <p>SOFT/FLAT</p>
+      <small>900x1200 · contrast 82.29 · saturation 129.78 · edge 4.02</small>
+    </article>
+    
+    <article class="card green">
+      <div class="meta"><strong>GREEN</strong><span>home/home-ground-portal-fallback.svg</span></div>
+      <img src="/assets/urai/home/home-ground-portal-fallback.svg" alt="home/home-ground-portal-fallback.svg" />
+      <p>OK</p>
+      <small>x · contrast  · saturation  · edge </small>
+    </article>
+    
+    <article class="card yellow">
+      <div class="meta"><strong>YELLOW</strong><span>home/home-ground-portal.webp</span></div>
+      <img src="/assets/urai/home/home-ground-portal.webp" alt="home/home-ground-portal.webp" />
+      <p>SOFT/FLAT</p>
+      <small>1600x1000 · contrast 84.24 · saturation 121.14 · edge 4.21</small>
+    </article>
+    
+    <article class="card green">
+      <div class="meta"><strong>GREEN</strong><span>home/home-sky-ascent-fallback.svg</span></div>
+      <img src="/assets/urai/home/home-sky-ascent-fallback.svg" alt="home/home-sky-ascent-fallback.svg" />
+      <p>OK</p>
+      <small>x · contrast  · saturation  · edge </small>
+    </article>
+    
+    <article class="card yellow">
+      <div class="meta"><strong>YELLOW</strong><span>home/home-sky-ascent.webp</span></div>
+      <img src="/assets/urai/home/home-sky-ascent.webp" alt="home/home-sky-ascent.webp" />
+      <p>SOFT/FLAT</p>
+      <small>1600x1000 · contrast 78.26 · saturation 156.79 · edge 4.45</small>
+    </article>
+    
+    <article class="card green">
+      <div class="meta"><strong>GREEN</strong><span>home/home-threshold-fallback.svg</span></div>
+      <img src="/assets/urai/home/home-threshold-fallback.svg" alt="home/home-threshold-fallback.svg" />
+      <p>OK</p>
+      <small>x · contrast  · saturation  · edge </small>
+    </article>
+    
+    <article class="card yellow">
+      <div class="meta"><strong>YELLOW</strong><span>home/home-threshold-main.webp</span></div>
+      <img src="/assets/urai/home/home-threshold-main.webp" alt="home/home-threshold-main.webp" />
+      <p>SOFT/FLAT</p>
+      <small>1600x1000 · contrast 84.48 · saturation 184.38 · edge 3.89</small>
+    </article>
+    
+    <article class="card yellow">
+      <div class="meta"><strong>YELLOW</strong><span>home/home-threshold-mobile.webp</span></div>
+      <img src="/assets/urai/home/home-threshold-mobile.webp" alt="home/home-threshold-mobile.webp" />
+      <p>SOFT/FLAT</p>
+      <small>900x1200 · contrast 83.49 · saturation 189.14 · edge 3.78</small>
+    </article>
+    
+    <article class="card yellow">
+      <div class="meta"><strong>YELLOW</strong><span>home-aura.png</span></div>
+      <img src="/assets/urai/home-aura.png" alt="home-aura.png" />
+      <p>LOW_CONTRAST, SOFT/FLAT</p>
+      <small>1024x1024 · contrast 0.0 · saturation 150.0 · edge 0.66</small>
+    </article>
+    
+    <article class="card green">
+      <div class="meta"><strong>GREEN</strong><span>life-map/life-map-galaxy-fallback.svg</span></div>
+      <img src="/assets/urai/life-map/life-map-galaxy-fallback.svg" alt="life-map/life-map-galaxy-fallback.svg" />
+      <p>OK</p>
+      <small>x · contrast  · saturation  · edge </small>
+    </article>
+    
+    <article class="card yellow">
+      <div class="meta"><strong>YELLOW</strong><span>life-map/life-map-galaxy-main.webp</span></div>
+      <img src="/assets/urai/life-map/life-map-galaxy-main.webp" alt="life-map/life-map-galaxy-main.webp" />
+      <p>SOFT/FLAT</p>
+      <small>1600x1000 · contrast 74.67 · saturation 153.57 · edge 4.15</small>
+    </article>
+    
+    <article class="card yellow">
+      <div class="meta"><strong>YELLOW</strong><span>life-map/life-map-galaxy-mobile.webp</span></div>
+      <img src="/assets/urai/life-map/life-map-galaxy-mobile.webp" alt="life-map/life-map-galaxy-mobile.webp" />
+      <p>SOFT/FLAT</p>
+      <small>900x1200 · contrast 72.89 · saturation 153.62 · edge 4.2</small>
+    </article>
+    
+    <article class="card yellow">
+      <div class="meta"><strong>YELLOW</strong><span>life-map/life-map-node-becoming.webp</span></div>
+      <img src="/assets/urai/life-map/life-map-node-becoming.webp" alt="life-map/life-map-node-becoming.webp" />
+      <p>SOFT/FLAT</p>
+      <small>1600x1000 · contrast 77.26 · saturation 155.71 · edge 4.26</small>
+    </article>
+    
+    <article class="card green">
+      <div class="meta"><strong>GREEN</strong><span>life-map/life-map-node-fallback.svg</span></div>
+      <img src="/assets/urai/life-map/life-map-node-fallback.svg" alt="life-map/life-map-node-fallback.svg" />
+      <p>OK</p>
+      <small>x · contrast  · saturation  · edge </small>
+    </article>
+    
+    <article class="card yellow">
+      <div class="meta"><strong>YELLOW</strong><span>life-map/life-map-node-studio.webp</span></div>
+      <img src="/assets/urai/life-map/life-map-node-studio.webp" alt="life-map/life-map-node-studio.webp" />
+      <p>SOFT/FLAT</p>
+      <small>1600x1000 · contrast 84.03 · saturation 162.99 · edge 4.64</small>
+    </article>
+    
+    <article class="card yellow">
+      <div class="meta"><strong>YELLOW</strong><span>life-map/life-map-node-threshold.webp</span></div>
+      <img src="/assets/urai/life-map/life-map-node-threshold.webp" alt="life-map/life-map-node-threshold.webp" />
+      <p>SOFT/FLAT</p>
+      <small>1600x1000 · contrast 77.42 · saturation 155.82 · edge 4.29</small>
+    </article>
+    
+    <article class="card yellow">
+      <div class="meta"><strong>YELLOW</strong><span>lifemap/surgical-depth-fog.svg</span></div>
+      <img src="/assets/urai/lifemap/surgical-depth-fog.svg" alt="lifemap/surgical-depth-fog.svg" />
+      <p>TOO_SIMPLE</p>
+      <small>x · contrast  · saturation  · edge </small>
+    </article>
+    
+    <article class="card yellow">
+      <div class="meta"><strong>YELLOW</strong><span>lifemap/surgical-nebula-veil.svg</span></div>
+      <img src="/assets/urai/lifemap/surgical-nebula-veil.svg" alt="lifemap/surgical-nebula-veil.svg" />
+      <p>TOO_SIMPLE</p>
+      <small>x · contrast  · saturation  · edge </small>
+    </article>
+    
+    <article class="card yellow">
+      <div class="meta"><strong>YELLOW</strong><span>lifemap/surgical-star-glow.svg</span></div>
+      <img src="/assets/urai/lifemap/surgical-star-glow.svg" alt="lifemap/surgical-star-glow.svg" />
+      <p>TOO_SIMPLE</p>
+      <small>x · contrast  · saturation  · edge </small>
+    </article>
+    
+    <article class="card red">
+      <div class="meta"><strong>RED</strong><span>lifemap-aura.png</span></div>
+      <img src="/assets/urai/lifemap-aura.png" alt="lifemap-aura.png" />
+      <p>LOW_CONTRAST, SOFT/FLAT, TOO_BRIGHT</p>
+      <small>1024x1024 · contrast 0.0 · saturation 95.0 · edge 0.77</small>
+    </article>
+    
+    <article class="card green">
+      <div class="meta"><strong>GREEN</strong><span>location-map/location-emotional-weather-fallback.svg</span></div>
+      <img src="/assets/urai/location-map/location-emotional-weather-fallback.svg" alt="location-map/location-emotional-weather-fallback.svg" />
+      <p>OK</p>
+      <small>x · contrast  · saturation  · edge </small>
+    </article>
+    
+    <article class="card yellow">
+      <div class="meta"><strong>YELLOW</strong><span>location-map/location-emotional-weather-main.webp</span></div>
+      <img src="/assets/urai/location-map/location-emotional-weather-main.webp" alt="location-map/location-emotional-weather-main.webp" />
+      <p>SOFT/FLAT</p>
+      <small>1600x1000 · contrast 84.26 · saturation 182.59 · edge 4.51</small>
+    </article>
+    
+    <article class="card yellow">
+      <div class="meta"><strong>YELLOW</strong><span>location-map/location-emotional-weather-mobile.webp</span></div>
+      <img src="/assets/urai/location-map/location-emotional-weather-mobile.webp" alt="location-map/location-emotional-weather-mobile.webp" />
+      <p>SOFT/FLAT</p>
+      <small>900x1200 · contrast 73.76 · saturation 177.49 · edge 2.99</small>
+    </article>
+    
+    <article class="card yellow">
+      <div class="meta"><strong>YELLOW</strong><span>location-map/location-place-node.webp</span></div>
+      <img src="/assets/urai/location-map/location-place-node.webp" alt="location-map/location-place-node.webp" />
+      <p>SOFT/FLAT</p>
+      <small>1600x1000 · contrast 77.36 · saturation 177.89 · edge 3.9</small>
+    </article>
+    
+    <article class="card red">
+      <div class="meta"><strong>RED</strong><span>memories/focus-dream-water.png</span></div>
+      <img src="/assets/urai/memories/focus-dream-water.png" alt="memories/focus-dream-water.png" />
+      <p>LOW_RES, LOW_CONTRAST, LOW_SATURATION, TOO_BRIGHT</p>
+      <small>1x1 · contrast 0.0 · saturation 0.0 · edge 255.0</small>
+    </article>
+    
+    <article class="card red">
+      <div class="meta"><strong>RED</strong><span>memories/focus-first-light.png</span></div>
+      <img src="/assets/urai/memories/focus-first-light.png" alt="memories/focus-first-light.png" />
+      <p>LOW_RES, LOW_CONTRAST, LOW_SATURATION, TOO_BRIGHT</p>
+      <small>1x1 · contrast 0.0 · saturation 0.0 · edge 255.0</small>
+    </article>
+    
+    <article class="card red">
+      <div class="meta"><strong>RED</strong><span>memories/focus-heavy-room.png</span></div>
+      <img src="/assets/urai/memories/focus-heavy-room.png" alt="memories/focus-heavy-room.png" />
+      <p>LOW_RES, LOW_CONTRAST, LOW_SATURATION, TOO_BRIGHT</p>
+      <small>1x1 · contrast 0.0 · saturation 0.0 · edge 255.0</small>
+    </article>
+    
+    <article class="card red">
+      <div class="meta"><strong>RED</strong><span>memories/focus-recovery-bloom.png</span></div>
+      <img src="/assets/urai/memories/focus-recovery-bloom.png" alt="memories/focus-recovery-bloom.png" />
+      <p>LOW_RES, LOW_CONTRAST, LOW_SATURATION, TOO_BRIGHT</p>
+      <small>1x1 · contrast 0.0 · saturation 0.0 · edge 255.0</small>
+    </article>
+    
+    <article class="card red">
+      <div class="meta"><strong>RED</strong><span>memories/focus-relationship-echo.png</span></div>
+      <img src="/assets/urai/memories/focus-relationship-echo.png" alt="memories/focus-relationship-echo.png" />
+      <p>LOW_RES, LOW_CONTRAST, LOW_SATURATION, TOO_BRIGHT</p>
+      <small>1x1 · contrast 0.0 · saturation 0.0 · edge 255.0</small>
+    </article>
+    
+    <article class="card red">
+      <div class="meta"><strong>RED</strong><span>memories/focus-threshold-door.png</span></div>
+      <img src="/assets/urai/memories/focus-threshold-door.png" alt="memories/focus-threshold-door.png" />
+      <p>LOW_RES, LOW_CONTRAST, LOW_SATURATION, TOO_BRIGHT</p>
+      <small>1x1 · contrast 0.0 · saturation 0.0 · edge 255.0</small>
+    </article>
+    
+    <article class="card red">
+      <div class="meta"><strong>RED</strong><span>memories/replay-dream-water.png</span></div>
+      <img src="/assets/urai/memories/replay-dream-water.png" alt="memories/replay-dream-water.png" />
+      <p>LOW_RES, LOW_CONTRAST, LOW_SATURATION, TOO_BRIGHT</p>
+      <small>1x1 · contrast 0.0 · saturation 0.0 · edge 255.0</small>
+    </article>
+    
+    <article class="card red">
+      <div class="meta"><strong>RED</strong><span>memories/replay-first-light.png</span></div>
+      <img src="/assets/urai/memories/replay-first-light.png" alt="memories/replay-first-light.png" />
+      <p>LOW_RES, LOW_CONTRAST, LOW_SATURATION, TOO_BRIGHT</p>
+      <small>1x1 · contrast 0.0 · saturation 0.0 · edge 255.0</small>
+    </article>
+    
+    <article class="card red">
+      <div class="meta"><strong>RED</strong><span>memories/replay-heavy-room.png</span></div>
+      <img src="/assets/urai/memories/replay-heavy-room.png" alt="memories/replay-heavy-room.png" />
+      <p>LOW_RES, LOW_CONTRAST, LOW_SATURATION, TOO_BRIGHT</p>
+      <small>1x1 · contrast 0.0 · saturation 0.0 · edge 255.0</small>
+    </article>
+    
+    <article class="card red">
+      <div class="meta"><strong>RED</strong><span>memories/replay-recovery-bloom.png</span></div>
+      <img src="/assets/urai/memories/replay-recovery-bloom.png" alt="memories/replay-recovery-bloom.png" />
+      <p>LOW_RES, LOW_CONTRAST, LOW_SATURATION, TOO_BRIGHT</p>
+      <small>1x1 · contrast 0.0 · saturation 0.0 · edge 255.0</small>
+    </article>
+    
+    <article class="card red">
+      <div class="meta"><strong>RED</strong><span>memories/replay-relationship-echo.png</span></div>
+      <img src="/assets/urai/memories/replay-relationship-echo.png" alt="memories/replay-relationship-echo.png" />
+      <p>LOW_RES, LOW_CONTRAST, LOW_SATURATION, TOO_BRIGHT</p>
+      <small>1x1 · contrast 0.0 · saturation 0.0 · edge 255.0</small>
+    </article>
+    
+    <article class="card red">
+      <div class="meta"><strong>RED</strong><span>memories/replay-threshold-door.png</span></div>
+      <img src="/assets/urai/memories/replay-threshold-door.png" alt="memories/replay-threshold-door.png" />
+      <p>LOW_RES, LOW_CONTRAST, LOW_SATURATION, TOO_BRIGHT</p>
+      <small>1x1 · contrast 0.0 · saturation 0.0 · edge 255.0</small>
+    </article>
+    
+    <article class="card green">
+      <div class="meta"><strong>GREEN</strong><span>mirror/mirror-pattern-fallback.svg</span></div>
+      <img src="/assets/urai/mirror/mirror-pattern-fallback.svg" alt="mirror/mirror-pattern-fallback.svg" />
+      <p>OK</p>
+      <small>x · contrast  · saturation  · edge </small>
+    </article>
+    
+    <article class="card yellow">
+      <div class="meta"><strong>YELLOW</strong><span>mirror/mirror-pattern-glyph.webp</span></div>
+      <img src="/assets/urai/mirror/mirror-pattern-glyph.webp" alt="mirror/mirror-pattern-glyph.webp" />
+      <p>SOFT/FLAT</p>
+      <small>1600x1000 · contrast 82.44 · saturation 124.39 · edge 4.16</small>
+    </article>
+    
+    <article class="card green">
+      <div class="meta"><strong>GREEN</strong><span>mirror/mirror-reflection-fallback.svg</span></div>
+      <img src="/assets/urai/mirror/mirror-reflection-fallback.svg" alt="mirror/mirror-reflection-fallback.svg" />
+      <p>OK</p>
+      <small>x · contrast  · saturation  · edge </small>
+    </article>
+    
+    <article class="card yellow">
+      <div class="meta"><strong>YELLOW</strong><span>mirror/mirror-reflection-main.webp</span></div>
+      <img src="/assets/urai/mirror/mirror-reflection-main.webp" alt="mirror/mirror-reflection-main.webp" />
+      <p>SOFT/FLAT</p>
+      <small>1600x1000 · contrast 87.43 · saturation 128.56 · edge 3.8</small>
+    </article>
+    
+    <article class="card yellow">
+      <div class="meta"><strong>YELLOW</strong><span>mirror/mirror-reflection-mobile.webp</span></div>
+      <img src="/assets/urai/mirror/mirror-reflection-mobile.webp" alt="mirror/mirror-reflection-mobile.webp" />
+      <p>SOFT/FLAT</p>
+      <small>900x1200 · contrast 85.48 · saturation 126.2 · edge 3.75</small>
+    </article>
+    
+    <article class="card yellow">
+      <div class="meta"><strong>YELLOW</strong><span>passport/passport-ownership-seal.webp</span></div>
+      <img src="/assets/urai/passport/passport-ownership-seal.webp" alt="passport/passport-ownership-seal.webp" />
+      <p>SOFT/FLAT</p>
+      <small>1600x1000 · contrast 89.02 · saturation 153.72 · edge 4.3</small>
+    </article>
+    
+    <article class="card green">
+      <div class="meta"><strong>GREEN</strong><span>passport/passport-vault-fallback.svg</span></div>
+      <img src="/assets/urai/passport/passport-vault-fallback.svg" alt="passport/passport-vault-fallback.svg" />
+      <p>OK</p>
+      <small>x · contrast  · saturation  · edge </small>
+    </article>
+    
+    <article class="card yellow">
+      <div class="meta"><strong>YELLOW</strong><span>passport/passport-vault-main.webp</span></div>
+      <img src="/assets/urai/passport/passport-vault-main.webp" alt="passport/passport-vault-main.webp" />
+      <p>SOFT/FLAT</p>
+      <small>1600x1000 · contrast 89.36 · saturation 154.21 · edge 4.24</small>
+    </article>
+    
+    <article class="card yellow">
+      <div class="meta"><strong>YELLOW</strong><span>passport/passport-vault-mobile.webp</span></div>
+      <img src="/assets/urai/passport/passport-vault-mobile.webp" alt="passport/passport-vault-mobile.webp" />
+      <p>SOFT/FLAT</p>
+      <small>900x1200 · contrast 86.23 · saturation 151.83 · edge 4.08</small>
+    </article>
+    
+    <article class="card green">
+      <div class="meta"><strong>GREEN</strong><span>privacy-controls/privacy-controls-fallback.svg</span></div>
+      <img src="/assets/urai/privacy-controls/privacy-controls-fallback.svg" alt="privacy-controls/privacy-controls-fallback.svg" />
+      <p>OK</p>
+      <small>x · contrast  · saturation  · edge </small>
+    </article>
+    
+    <article class="card yellow">
+      <div class="meta"><strong>YELLOW</strong><span>privacy-controls/privacy-controls-main.webp</span></div>
+      <img src="/assets/urai/privacy-controls/privacy-controls-main.webp" alt="privacy-controls/privacy-controls-main.webp" />
+      <p>SOFT/FLAT</p>
+      <small>1600x1000 · contrast 91.65 · saturation 168.49 · edge 3.74</small>
+    </article>
+    
+    <article class="card yellow">
+      <div class="meta"><strong>YELLOW</strong><span>privacy-controls/privacy-controls-mobile.webp</span></div>
+      <img src="/assets/urai/privacy-controls/privacy-controls-mobile.webp" alt="privacy-controls/privacy-controls-mobile.webp" />
+      <p>SOFT/FLAT</p>
+      <small>900x1200 · contrast 90.26 · saturation 163.41 · edge 3.67</small>
+    </article>
+    
+    <article class="card yellow">
+      <div class="meta"><strong>YELLOW</strong><span>privacy-controls/privacy-location-precision.webp</span></div>
+      <img src="/assets/urai/privacy-controls/privacy-location-precision.webp" alt="privacy-controls/privacy-location-precision.webp" />
+      <p>SOFT/FLAT</p>
+      <small>1600x1000 · contrast 92.37 · saturation 173.03 · edge 4.43</small>
+    </article>
+    
+    <article class="card yellow">
+      <div class="meta"><strong>YELLOW</strong><span>privacy-controls/privacy-model-access.webp</span></div>
+      <img src="/assets/urai/privacy-controls/privacy-model-access.webp" alt="privacy-controls/privacy-model-access.webp" />
+      <p>SOFT/FLAT</p>
+      <small>1600x1000 · contrast 91.09 · saturation 166.12 · edge 3.7</small>
+    </article>
+    
+    <article class="card green">
+      <div class="meta"><strong>GREEN</strong><span>replay/replay-memory-film-fallback.svg</span></div>
+      <img src="/assets/urai/replay/replay-memory-film-fallback.svg" alt="replay/replay-memory-film-fallback.svg" />
+      <p>OK</p>
+      <small>x · contrast  · saturation  · edge </small>
+    </article>
+    
+    <article class="card yellow">
+      <div class="meta"><strong>YELLOW</strong><span>replay/replay-memory-film-main.webp</span></div>
+      <img src="/assets/urai/replay/replay-memory-film-main.webp" alt="replay/replay-memory-film-main.webp" />
+      <p>SOFT/FLAT</p>
+      <small>1600x1000 · contrast 88.42 · saturation 161.81 · edge 4.98</small>
+    </article>
+    
+    <article class="card yellow">
+      <div class="meta"><strong>YELLOW</strong><span>replay/replay-memory-film-mobile.webp</span></div>
+      <img src="/assets/urai/replay/replay-memory-film-mobile.webp" alt="replay/replay-memory-film-mobile.webp" />
+      <p>SOFT/FLAT</p>
+      <small>900x1200 · contrast 85.59 · saturation 157.75 · edge 5.17</small>
+    </article>
+    
+    <article class="card red">
+      <div class="meta"><strong>RED</strong><span>replay-chamber.png</span></div>
+      <img src="/assets/urai/replay-chamber.png" alt="replay-chamber.png" />
+      <p>LOW_CONTRAST, SOFT/FLAT, TOO_DARK</p>
+      <small>1024x1024 · contrast 0.0 · saturation 200.0 · edge 0.05</small>
+    </article>
+    
+    <article class="card yellow">
+      <div class="meta"><strong>YELLOW</strong><span>status/status-health-pill.webp</span></div>
+      <img src="/assets/urai/status/status-health-pill.webp" alt="status/status-health-pill.webp" />
+      <p>SOFT/FLAT</p>
+      <small>1600x1000 · contrast 75.73 · saturation 157.2 · edge 4.46</small>
+    </article>
+    
+    <article class="card green">
+      <div class="meta"><strong>GREEN</strong><span>status/status-route-matrix-fallback.svg</span></div>
+      <img src="/assets/urai/status/status-route-matrix-fallback.svg" alt="status/status-route-matrix-fallback.svg" />
+      <p>OK</p>
+      <small>x · contrast  · saturation  · edge </small>
+    </article>
+    
+    <article class="card yellow">
+      <div class="meta"><strong>YELLOW</strong><span>status/status-route-matrix-main.webp</span></div>
+      <img src="/assets/urai/status/status-route-matrix-main.webp" alt="status/status-route-matrix-main.webp" />
+      <p>SOFT/FLAT</p>
+      <small>1600x1000 · contrast 81.42 · saturation 161.68 · edge 4.63</small>
+    </article>
+    
+    <article class="card yellow">
+      <div class="meta"><strong>YELLOW</strong><span>status/status-route-matrix-mobile.webp</span></div>
+      <img src="/assets/urai/status/status-route-matrix-mobile.webp" alt="status/status-route-matrix-mobile.webp" />
+      <p>SOFT/FLAT</p>
+      <small>900x1200 · contrast 73.75 · saturation 154.67 · edge 4.14</small>
+    </article>
+    
+    <article class="card green">
+      <div class="meta"><strong>GREEN</strong><span>ui/consent-key.svg</span></div>
+      <img src="/assets/urai/ui/consent-key.svg" alt="ui/consent-key.svg" />
+      <p>OK</p>
+      <small>x · contrast  · saturation  · edge </small>
+    </article>
+    
+    <article class="card yellow">
+      <div class="meta"><strong>YELLOW</strong><span>ui/orb-active.webp</span></div>
+      <img src="/assets/urai/ui/orb-active.webp" alt="ui/orb-active.webp" />
+      <p>SOFT/FLAT</p>
+      <small>1600x1000 · contrast 80.76 · saturation 159.24 · edge 4.43</small>
+    </article>
+    
+    <article class="card green">
+      <div class="meta"><strong>GREEN</strong><span>ui/orb-fallback.svg</span></div>
+      <img src="/assets/urai/ui/orb-fallback.svg" alt="ui/orb-fallback.svg" />
+      <p>OK</p>
+      <small>x · contrast  · saturation  · edge </small>
+    </article>
+    
+    <article class="card yellow">
+      <div class="meta"><strong>YELLOW</strong><span>ui/orb-idle.webp</span></div>
+      <img src="/assets/urai/ui/orb-idle.webp" alt="ui/orb-idle.webp" />
+      <p>SOFT/FLAT</p>
+      <small>1600x1000 · contrast 83.57 · saturation 184.02 · edge 3.0</small>
+    </article>
+    
+    <article class="card yellow">
+      <div class="meta"><strong>YELLOW</strong><span>ui/orb-listening.webp</span></div>
+      <img src="/assets/urai/ui/orb-listening.webp" alt="ui/orb-listening.webp" />
+      <p>SOFT/FLAT</p>
+      <small>1600x1000 · contrast 93.51 · saturation 164.26 · edge 4.39</small>
+    </article>
+    
+    <article class="card green">
+      <div class="meta"><strong>GREEN</strong><span>ui/portal-ground.svg</span></div>
+      <img src="/assets/urai/ui/portal-ground.svg" alt="ui/portal-ground.svg" />
+      <p>OK</p>
+      <small>x · contrast  · saturation  · edge </small>
+    </article>
+    
+    <article class="card green">
+      <div class="meta"><strong>GREEN</strong><span>ui/portal-sky.svg</span></div>
+      <img src="/assets/urai/ui/portal-sky.svg" alt="ui/portal-sky.svg" />
+      <p>OK</p>
+      <small>x · contrast  · saturation  · edge </small>
+    </article>
+    
+    <article class="card green">
+      <div class="meta"><strong>GREEN</strong><span>ui/privacy-lock.svg</span></div>
+      <img src="/assets/urai/ui/privacy-lock.svg" alt="ui/privacy-lock.svg" />
+      <p>OK</p>
+      <small>x · contrast  · saturation  · edge </small>
+    </article>
+    
+    <article class="card green">
+      <div class="meta"><strong>GREEN</strong><span>ui/route-arrow.svg</span></div>
+      <img src="/assets/urai/ui/route-arrow.svg" alt="ui/route-arrow.svg" />
+      <p>OK</p>
+      <small>x · contrast  · saturation  · edge </small>
+    </article>
+    
+</main>
+</body>
+</html>
