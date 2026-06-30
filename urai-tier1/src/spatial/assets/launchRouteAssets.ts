@@ -6,7 +6,7 @@ export type LaunchRouteAsset = {
   readonly mobileWebp: string
 }
 
-const assetRoot = '/urai/assets'
+const assetRoot = '/assets/urai'
 
 export const launchRouteAssets: LaunchRouteAsset[] = [
   {
