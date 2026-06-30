@@ -1,0 +1,243 @@
+/* URAI AAA+++ launch candidate final pass: cinematic route polish + mobile hardening. */
+:root {
+  --urai-safe-bottom: max(1rem, env(safe-area-inset-bottom));
+  --urai-panel-bg: rgba(2, 8, 20, 0.62);
+  --urai-panel-border: rgba(226, 250, 255, 0.16);
+  --urai-panel-shadow: 0 28px 90px rgba(0, 0, 0, 0.38), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+}
+
+html,
+body {
+  overflow-x: hidden;
+  background: #02050d;
+  text-size-adjust: 100%;
+}
+
+a,
+button,
+summary {
+  touch-action: manipulation;
+}
+
+a:focus-visible,
+button:focus-visible,
+summary:focus-visible {
+  outline: 2px solid rgba(210, 250, 255, 0.92);
+  outline-offset: 4px;
+}
+
+[aria-label*="route" i],
+[aria-label*="navigation" i] {
+  scrollbar-width: thin;
+}
+
+[aria-label*="route" i]::-webkit-scrollbar,
+[aria-label*="navigation" i]::-webkit-scrollbar {
+  height: 4px;
+}
+
+[aria-label*="route" i]::-webkit-scrollbar-thumb,
+[aria-label*="navigation" i]::-webkit-scrollbar-thumb {
+  border-radius: 999px;
+  background: rgba(210, 250, 255, 0.34);
+}
+
+.urai-genesis-home__hero,
+.urai-genesis-home__portals,
+.urai-genesis-home__orb-panel,
+.urai-genesis-home__bottom-dock,
+.urai-genesis-home__memory-orbit,
+[data-urai-route="ground-world"] article,
+[data-urai-route="ground-world"] details,
+[data-urai-route="ground-world"] aside,
+[data-testid="urai-true-3d-life-map"] header,
+[data-testid="urai-true-3d-life-map"] aside,
+[data-testid="urai-r3f-canonical-lifemap"] header,
+[data-testid="urai-r3f-canonical-lifemap"] aside {
+  border-color: var(--urai-panel-border) !important;
+  background-color: var(--urai-panel-bg) !important;
+  box-shadow: var(--urai-panel-shadow) !important;
+  backdrop-filter: blur(18px) saturate(1.2) !important;
+}
+
+.urai-genesis-home__portal,
+.urai-genesis-home__threshold-gate,
+.urai-genesis-home__cta,
+[data-urai-route="ground-world"] details summary {
+  min-height: 44px;
+}
+
+.urai-genesis-home__hero h1,
+[data-urai-route="ground-world"] h1,
+[data-testid="urai-true-3d-life-map"] h1,
+[data-testid="urai-r3f-canonical-lifemap"] h1,
+[data-route-polish] h1 {
+  text-wrap: balance;
+}
+
+[data-testid="urai-true-3d-life-map"] canvas {
+  touch-action: none;
+}
+
+[data-route-polish="selected-memory-chamber"],
+[data-route-polish="cinematic-memory-film"],
+[data-route-polish="reflection-realm"],
+[data-route-polish="identity-consent-vault"] {
+  isolation: isolate;
+}
+
+[data-route-polish="selected-memory-chamber"]::before,
+[data-route-polish="reflection-realm"]::before,
+[data-route-polish="identity-consent-vault"]::before {
+  content: "";
+  position: absolute;
+  inset: 8% 6% 14%;
+  z-index: 1;
+  pointer-events: none;
+  border: 1px solid rgba(210, 250, 255, 0.08);
+  border-radius: 50%;
+  background: repeating-radial-gradient(ellipse at 50% 52%, transparent 0 58px, rgba(210, 250, 255, 0.055) 60px 62px, transparent 64px 112px);
+  opacity: 0.78;
+  transform: rotateX(58deg) rotateZ(-7deg);
+}
+
+[data-route-polish="cinematic-memory-film"]::before {
+  content: "";
+  position: absolute;
+  inset: 12% 7% 10%;
+  z-index: 1;
+  pointer-events: none;
+  border: 1px solid rgba(210, 250, 255, 0.08);
+  border-radius: 2.4rem;
+  background: repeating-linear-gradient(90deg, rgba(255,255,255,0.08) 0 1px, transparent 1px 4.8rem);
+  opacity: 0.72;
+}
+
+[data-route-polish] section,
+[data-route-polish] nav {
+  position: relative;
+  z-index: 5;
+}
+
+.urai-xr-portal [data-xr-capability-signal="true"] {
+  position: fixed;
+  right: 1rem;
+  bottom: 17.5rem;
+  z-index: 31;
+  width: min(390px, calc(100vw - 2rem));
+  border: 1px solid rgba(210, 248, 255, 0.16);
+  border-radius: 1.4rem;
+  padding: 0.95rem 1rem;
+  color: #eefcff;
+  background: rgba(2, 8, 22, 0.74);
+  box-shadow: var(--urai-panel-shadow);
+  backdrop-filter: blur(18px) saturate(1.2);
+}
+
+.urai-xr-portal [data-xr-capability-signal="true"] span {
+  display: block;
+  color: #8ff6ff;
+  font-size: 0.62rem;
+  font-weight: 950;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+}
+
+.urai-xr-portal [data-xr-capability-signal="true"] strong {
+  display: block;
+  margin-top: 0.4rem;
+  font-size: 1rem;
+}
+
+.urai-xr-portal [data-xr-capability-signal="true"] p {
+  margin: 0.45rem 0 0;
+  color: rgba(230, 248, 255, 0.72);
+  font-size: 0.82rem;
+  font-weight: 700;
+  line-height: 1.45;
+}
+
+@media (max-width: 900px) {
+  main {
+    min-height: 100dvh;
+  }
+
+  .urai-genesis-home__hero {
+    max-width: calc(100vw - 1.5rem) !important;
+  }
+
+  .urai-genesis-home__hero h1 {
+    font-size: clamp(3.3rem, 16vw, 5.7rem) !important;
+    line-height: 0.82 !important;
+  }
+
+  .urai-genesis-home__threshold-gate {
+    max-width: min(330px, calc(100vw - 24px)) !important;
+    padding: 0.8rem 0.9rem !important;
+  }
+
+  .urai-genesis-home__threshold-gate--sky {
+    top: clamp(5.25rem, 12svh, 8rem) !important;
+    right: 0.75rem !important;
+  }
+
+  .urai-genesis-home__threshold-gate--ground {
+    left: 0.75rem !important;
+    bottom: clamp(5.8rem, 13svh, 8.5rem) !important;
+  }
+
+  .urai-genesis-home__portals,
+  .urai-genesis-home__bottom-dock,
+  [data-testid="urai-true-3d-life-map"] nav,
+  [data-testid="urai-r3f-canonical-lifemap"] nav,
+  [data-route-polish] nav {
+    left: 0.75rem !important;
+    right: 0.75rem !important;
+    bottom: var(--urai-safe-bottom) !important;
+    max-width: none !important;
+    transform: none !important;
+    justify-content: flex-start !important;
+    overflow-x: auto !important;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  [data-testid="urai-true-3d-life-map"] header,
+  [data-testid="urai-r3f-canonical-lifemap"] header {
+    width: calc(100vw - 1.5rem) !important;
+    max-width: none !important;
+    padding: 1rem !important;
+  }
+
+  [data-testid="urai-true-3d-life-map"] h1,
+  [data-testid="urai-r3f-canonical-lifemap"] h1,
+  [data-route-polish] h1 {
+    font-size: clamp(3rem, 16vw, 5.4rem) !important;
+  }
+
+  [data-route-polish] section {
+    display: grid !important;
+    grid-template-columns: minmax(0, 1fr) !important;
+    align-items: start !important;
+    padding-top: 5.4rem !important;
+  }
+
+  .urai-xr-portal [data-xr-capability-signal="true"] {
+    position: relative;
+    right: auto;
+    bottom: auto;
+    width: auto;
+    margin: 1rem 0 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .urai-genesis-home *,
+  [data-urai-route="ground-world"] *,
+  [data-testid="urai-true-3d-life-map"] *,
+  [data-route-polish] *,
+  .urai-xr-portal * {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+  }
+}
