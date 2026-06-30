@@ -19,6 +19,7 @@ jobs:
     runs-on: ubuntu-latest
     env:
       URAI_DEPLOY_URL: ${{ inputs.live_url }}
+      REQUIRE_LIVE_COMMIT_SHA: "true"
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
