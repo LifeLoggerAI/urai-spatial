@@ -81,6 +81,24 @@ export const launchRouteAssets: LaunchRouteAsset[] = [
   },
 ]
 
+function normalizeLaunchAssetRoute(route: string) {
+  const clean = route.split('?')[0]?.replace(/\/$/, '') || '/'
+
+  if (clean === '' || clean === '/' || clean === '/home' || clean === '/spatial') return '/'
+  if (clean.startsWith('/ground')) return '/ground'
+  if (clean.startsWith('/life-map') || clean.startsWith('/spatial/life-map')) return '/life-map'
+  if (clean.startsWith('/focus')) return '/focus'
+  if (clean.startsWith('/replay') || clean.includes('/replay')) return '/replay'
+  if (clean.startsWith('/mirror')) return '/mirror'
+  if (clean.startsWith('/passport')) return '/passport'
+  if (clean.startsWith('/privacy')) return '/privacy-controls'
+  if (clean.startsWith('/location-map') || clean.startsWith('/place')) return '/location-map'
+  if (clean.startsWith('/status')) return '/status'
+
+  return clean
+}
+
 export function getLaunchRouteAsset(route: string) {
-  return launchRouteAssets.find((asset) => asset.route === route)
+  const normalizedRoute = normalizeLaunchAssetRoute(route)
+  return launchRouteAssets.find((asset) => asset.route === normalizedRoute)
 }
