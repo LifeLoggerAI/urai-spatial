@@ -21,6 +21,7 @@ const routes = [
   { route: '/passport', markers: [/Passport/i, /Privacy|Life Map|identity/i] },
   { route: '/privacy-controls', markers: [/Privacy|Choose what the world can hold/i, /Passport|Life Map/i] },
   { route: '/location-map', markers: [/Location|Places|atlas|map/i, /Life Map|Home|place/i] },
+  { route: '/spatial/ar-vr', markers: [/AR|VR|XR|Quest|spatial/i, /Life Map|device|browser|fallback/i] },
   { route: '/status', markers: [/Status/i, /Life Map|Home|Routes/i] },
   {
     route: '/api/system/deploy-proof',
@@ -49,7 +50,7 @@ for (const { route, markers } of routes) {
     const response = await fetch(url, {
       method: 'GET',
       headers: {
-        'user-agent': 'urai-live-smoke/2.3',
+        'user-agent': 'urai-live-smoke/2.4',
         accept: 'text/html,application/xhtml+xml,application/json,application/xml;q=0.9,*/*;q=0.8',
       },
     })
