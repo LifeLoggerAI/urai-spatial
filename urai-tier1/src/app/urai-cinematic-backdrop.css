@@ -5,40 +5,89 @@
   pointer-events: none;
   overflow: hidden;
   isolation: isolate;
+  contain: paint;
+  background: #02040b;
+}
+
+.urai-cinematic-backdrop__image,
+.urai-cinematic-backdrop__depth,
+.urai-cinematic-backdrop__atmosphere,
+.urai-cinematic-backdrop__grade,
+.urai-cinematic-backdrop__grain {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
 }
 
 .urai-cinematic-backdrop__image {
-  position: absolute;
-  inset: -5%;
+  inset: -6%;
   background-image: var(--urai-cinematic-image);
   background-size: cover;
   background-position: center;
-  opacity: .62;
-  filter: saturate(1.55) contrast(1.18) brightness(.86);
-  transform: scale(1.03);
+  opacity: .58;
+  filter: saturate(1.72) contrast(1.24) brightness(.76);
+  transform: scale(1.045);
   mix-blend-mode: soft-light;
+  animation: uraiBackdropDrift 18s ease-in-out infinite alternate;
+  will-change: transform, opacity;
 }
 
 .urai-cinematic-backdrop__depth {
-  position: absolute;
-  inset: 0;
   background:
-    radial-gradient(circle at 50% 35%, rgba(180,245,255,.16), transparent 24%),
-    radial-gradient(circle at 18% 72%, rgba(90,220,255,.13), transparent 20%),
-    radial-gradient(circle at 82% 65%, rgba(255,210,140,.11), transparent 18%),
-    linear-gradient(180deg, rgba(0,0,0,.24), rgba(0,0,0,.08) 42%, rgba(0,0,0,.58));
-  opacity: .95;
+    radial-gradient(circle at 50% 32%, rgba(190, 246, 255, .22), transparent 20%),
+    radial-gradient(circle at 18% 72%, rgba(90, 220, 255, .13), transparent 20%),
+    radial-gradient(circle at 82% 65%, rgba(255, 210, 140, .12), transparent 18%),
+    linear-gradient(180deg, rgba(0,0,0,.26), rgba(0,0,0,.08) 42%, rgba(0,0,0,.64));
+  opacity: .98;
+}
+
+.urai-cinematic-backdrop__atmosphere {
+  inset: -18%;
+  background:
+    conic-gradient(from 180deg at 50% 45%, transparent 0deg, rgba(116,255,226,.12) 55deg, transparent 120deg, rgba(180,220,255,.10) 220deg, transparent 360deg),
+    radial-gradient(ellipse at 50% 54%, rgba(255,255,255,.11), transparent 22rem);
+  filter: blur(22px);
+  opacity: .72;
+  mix-blend-mode: screen;
+  animation: uraiAtmosphereTurn 34s linear infinite;
 }
 
 .urai-cinematic-backdrop__grade {
-  position: absolute;
-  inset: 0;
   background:
-    radial-gradient(ellipse at 50% 48%, transparent 0 34%, rgba(0,0,0,.30) 70%, rgba(0,0,0,.70) 100%),
-    linear-gradient(90deg, rgba(0,0,0,.42), transparent 24%, transparent 74%, rgba(0,0,0,.42));
+    radial-gradient(ellipse at 50% 48%, transparent 0 31%, rgba(0,0,0,.34) 68%, rgba(0,0,0,.82) 100%),
+    linear-gradient(90deg, rgba(0,0,0,.56), transparent 26%, transparent 74%, rgba(0,0,0,.56));
 }
 
-/* Kill the washed-out old gray fog without breaking the scene. */
+.urai-cinematic-backdrop__grain {
+  opacity: .16;
+  mix-blend-mode: overlay;
+  background-image:
+    repeating-radial-gradient(circle at 20% 30%, rgba(255,255,255,.22) 0 1px, transparent 1px 7px),
+    repeating-linear-gradient(115deg, rgba(255,255,255,.035) 0 1px, transparent 1px 9px);
+  mask-image: radial-gradient(ellipse at 50% 45%, black 0 58%, transparent 88%);
+}
+
+.urai-cinematic-backdrop::after {
+  content: attr(data-label);
+  position: absolute;
+  right: clamp(18px, 3vw, 44px);
+  bottom: clamp(18px, 3.5vh, 42px);
+  z-index: 3;
+  max-width: min(19rem, calc(100vw - 36px));
+  border: 1px solid rgba(219, 250, 255, .18);
+  border-radius: 999px;
+  padding: .7rem .95rem;
+  color: rgba(245, 253, 255, .78);
+  background: rgba(2, 7, 18, .46);
+  box-shadow: 0 18px 70px rgba(0,0,0,.36), inset 0 1px 0 rgba(255,255,255,.08);
+  font-size: .62rem;
+  font-weight: 950;
+  letter-spacing: .2em;
+  text-transform: uppercase;
+  backdrop-filter: blur(16px);
+}
+
+/* Home must feel like a threshold, not a gray landing page. */
 .urai-home-scene,
 .urai-home-scene .urai-sky-deep,
 .urai-home-scene .urai-sky-vault {
@@ -66,35 +115,118 @@
   z-index: 50 !important;
 }
 
-/* Ground was reading flat. Make it feel less gray, more like an embodied room. */
-body:has(a[href="/ground"][data-active="true"]) .urai-cinematic-backdrop__image,
-.urai-cinematic-backdrop[data-route="ground"] .urai-cinematic-backdrop__image {
-  opacity: .72;
-  filter: saturate(1.65) contrast(1.2) brightness(.82);
-}
-
-/* Life Map was the strongest. Keep it sharp, don't cover it. */
-.urai-cinematic-backdrop[data-route="life-map"] .urai-cinematic-backdrop__image {
-  opacity: .34;
+.urai-cinematic-backdrop[data-route='home'] .urai-cinematic-backdrop__image {
+  opacity: .70;
+  filter: saturate(1.86) contrast(1.28) brightness(.74);
   mix-blend-mode: screen;
-  filter: saturate(1.45) contrast(1.1) brightness(.9);
 }
 
-.urai-cinematic-backdrop[data-route="life-map"] .urai-cinematic-backdrop__depth {
-  opacity: .46;
+.urai-cinematic-backdrop[data-route='home'] .urai-cinematic-backdrop__depth {
+  background:
+    radial-gradient(circle at 50% 18%, rgba(255, 244, 204, .26), transparent 15%),
+    radial-gradient(ellipse at 50% 72%, rgba(98, 255, 222, .18), transparent 30%),
+    linear-gradient(180deg, rgba(0,0,0,.34), rgba(0,0,0,.08) 38%, rgba(0,0,0,.72));
 }
 
-.urai-cinematic-backdrop[data-route="focus"] .urai-cinematic-backdrop__image,
-.urai-cinematic-backdrop[data-route="replay"] .urai-cinematic-backdrop__image,
-.urai-cinematic-backdrop[data-route="mirror"] .urai-cinematic-backdrop__image,
-.urai-cinematic-backdrop[data-route="passport"] .urai-cinematic-backdrop__image {
+/* Ground should read as a private room / ops floor, not sky reuse. */
+.urai-cinematic-backdrop[data-route='ground'] .urai-cinematic-backdrop__image {
+  opacity: .76;
+  filter: saturate(1.95) contrast(1.42) brightness(.64);
+  mix-blend-mode: overlay;
+}
+
+.urai-cinematic-backdrop[data-route='ground'] .urai-cinematic-backdrop__depth {
+  background:
+    radial-gradient(ellipse at 50% 68%, rgba(255, 231, 178, .25), transparent 28%),
+    radial-gradient(circle at 62% 46%, rgba(108,255,221,.18), transparent 20%),
+    linear-gradient(180deg, rgba(0,0,0,.62), rgba(0,0,0,.12) 46%, rgba(0,0,0,.82));
+}
+
+/* Life Map owns its own 3D scene; keep backdrop subtle so stars stay alive. */
+.urai-cinematic-backdrop[data-route='life-map'] .urai-cinematic-backdrop__image {
+  opacity: .14;
+  mix-blend-mode: screen;
+  filter: saturate(1.18) contrast(1.08) brightness(.84);
+}
+
+.urai-cinematic-backdrop[data-route='life-map'] .urai-cinematic-backdrop__depth,
+.urai-cinematic-backdrop[data-route='life-map'] .urai-cinematic-backdrop__atmosphere {
+  opacity: .34;
+}
+
+.urai-cinematic-backdrop[data-route='focus'] .urai-cinematic-backdrop__image,
+.urai-cinematic-backdrop[data-route='replay'] .urai-cinematic-backdrop__image,
+.urai-cinematic-backdrop[data-route='mirror'] .urai-cinematic-backdrop__image,
+.urai-cinematic-backdrop[data-route='passport'] .urai-cinematic-backdrop__image {
   opacity: .68;
   mix-blend-mode: soft-light;
 }
 
+.urai-cinematic-backdrop[data-route='focus'] .urai-cinematic-backdrop__depth {
+  background:
+    radial-gradient(circle at 50% 45%, rgba(255,255,255,.18), transparent 16%),
+    radial-gradient(ellipse at 50% 58%, rgba(111,245,255,.20), transparent 28%),
+    linear-gradient(180deg, rgba(0,0,0,.50), rgba(0,0,0,.10) 42%, rgba(0,0,0,.82));
+}
+
+.urai-cinematic-backdrop[data-route='replay'] .urai-cinematic-backdrop__grade {
+  background:
+    linear-gradient(180deg, rgba(0,0,0,.78), transparent 22%, transparent 76%, rgba(0,0,0,.86)),
+    linear-gradient(90deg, rgba(0,0,0,.70), transparent 28%, transparent 72%, rgba(0,0,0,.70));
+}
+
+.urai-cinematic-backdrop[data-route='mirror'] .urai-cinematic-backdrop__atmosphere {
+  opacity: .92;
+  filter: blur(18px) hue-rotate(12deg);
+}
+
+.urai-cinematic-backdrop[data-route='passport'] .urai-cinematic-backdrop__image,
+.urai-cinematic-backdrop[data-route='status'] .urai-cinematic-backdrop__image {
+  opacity: .72;
+  filter: saturate(1.45) contrast(1.32) brightness(.68);
+}
+
+.urai-cinematic-backdrop[data-route='privacy'] .urai-cinematic-backdrop__image,
+.urai-cinematic-backdrop[data-route='location-map'] .urai-cinematic-backdrop__image {
+  opacity: .62;
+  filter: saturate(1.55) contrast(1.22) brightness(.72);
+}
+
+@keyframes uraiBackdropDrift {
+  from { transform: scale(1.04) translate3d(-.4%, -.2%, 0); }
+  to { transform: scale(1.075) translate3d(.45%, .28%, 0); }
+}
+
+@keyframes uraiAtmosphereTurn {
+  from { transform: rotate(0deg) scale(1.02); }
+  to { transform: rotate(360deg) scale(1.02); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .urai-cinematic-backdrop__image,
+  .urai-cinematic-backdrop__atmosphere {
+    animation: none;
+  }
+}
+
 @media (max-width: 760px) {
   .urai-cinematic-backdrop__image {
-    opacity: .48;
+    background-image: var(--urai-cinematic-mobile-image);
+    opacity: .46;
     background-position: center;
+    transform: scale(1.02);
+  }
+
+  .urai-cinematic-backdrop::after {
+    right: 12px;
+    bottom: 12px;
+    max-width: calc(100vw - 24px);
+    padding: .55rem .72rem;
+    font-size: .54rem;
+    letter-spacing: .15em;
+  }
+
+  .urai-cinematic-backdrop[data-route='life-map'] .urai-cinematic-backdrop__image {
+    opacity: .18;
   }
 }
