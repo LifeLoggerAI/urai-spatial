@@ -1,10 +1,11 @@
-import { RootModeExperience } from '@/app/RootModeExperience'
+import SpatialLifeMapCanonical from '@/spatial/lifemap/SpatialLifeMapCanonical'
 
 export const metadata = {
-  title: 'URAI Life Map',
-  description: 'The unified three dimensional URAI Life Map experience.',
+  title: 'URAI Spatial Life Map',
+  description:
+    'The canonical URAI Spatial Life Map with React Three Fiber camera movement, wheel zoom, orbit, memory stars, and XR-ready spatial behavior.',
 }
 
 export default function SpatialLifeMapPage() {
-  return <RootModeExperience initialMode="life-map" />
+  return <SpatialLifeMapCanonical />
 }

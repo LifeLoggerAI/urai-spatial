@@ -2,7 +2,7 @@ import LifeMapScene from '@/spatial/lifemap/LifeMapScene'
 
 export const metadata = {
   title: 'URAI Orbit Life Map',
-  description: 'The OrbitControls React Three Fiber URAI Life Map candidate.',
+  description: 'OrbitControls React Three Fiber URAI Life Map candidate for comparison.',
 }
 
 export default function SpatialLifeMapOrbitPage() {

@@ -1,0 +1,215 @@
+.shell {
+  position: relative;
+  min-height: 100svh;
+  overflow: hidden;
+  isolation: isolate;
+  background:
+    radial-gradient(circle at 18% 18%, rgba(92, 225, 255, .16), transparent 28%),
+    radial-gradient(circle at 72% 34%, rgba(173, 97, 255, .18), transparent 34%),
+    radial-gradient(circle at 50% 70%, rgba(130, 255, 203, .10), transparent 34%),
+    linear-gradient(180deg, #06132b 0%, #020715 56%, #01030a 100%);
+  color: #f5fbff;
+}
+
+.scene {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+}
+
+.scene :global(main) {
+  min-height: 100svh !important;
+  background:
+    radial-gradient(circle at 26% 28%, rgba(96, 225, 255, .13), transparent 24%),
+    radial-gradient(circle at 66% 42%, rgba(205, 116, 255, .14), transparent 28%),
+    linear-gradient(180deg, #030916 0%, #020714 62%, #01040b 100%) !important;
+  filter: saturate(1.25) contrast(1.08) brightness(.92);
+}
+
+.scene :global(canvas) {
+  filter: saturate(1.25) contrast(1.12) brightness(.95);
+}
+
+.atmosphere,
+.depthField,
+.vignette {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  pointer-events: none;
+}
+
+.atmosphere {
+  background:
+    radial-gradient(ellipse at 34% 35%, rgba(114, 238, 255, .18), transparent 38%),
+    radial-gradient(ellipse at 72% 42%, rgba(213, 122, 255, .16), transparent 36%),
+    radial-gradient(circle at 50% 46%, rgba(255,255,255,.045), transparent 26%);
+  mix-blend-mode: screen;
+  opacity: .88;
+}
+
+.depthField {
+  background-image:
+    radial-gradient(circle, rgba(255,255,255,.72) 0 1px, transparent 1.8px),
+    linear-gradient(105deg, transparent 0 46%, rgba(115, 236, 255, .08) 47%, transparent 49%),
+    linear-gradient(18deg, transparent 0 57%, rgba(204, 115, 255, .08) 58%, transparent 60%);
+  background-size: 82px 82px, 100% 100%, 100% 100%;
+  opacity: .24;
+}
+
+.vignette {
+  background:
+    radial-gradient(ellipse at 50% 48%, transparent 0 35%, rgba(0,0,0,.36) 68%, rgba(0,0,0,.88) 100%),
+    linear-gradient(90deg, rgba(0,0,0,.72), transparent 24%, transparent 76%, rgba(0,0,0,.72));
+}
+
+.titlePanel,
+.controlPanel,
+.orbPanel,
+.rail {
+  position: absolute;
+  z-index: 8;
+  border: 1px solid rgba(210, 246, 255, .16);
+  background: rgba(3, 10, 24, .62);
+  box-shadow: 0 26px 90px rgba(0,0,0,.34), inset 0 1px 0 rgba(255,255,255,.08);
+  backdrop-filter: blur(18px);
+}
+
+.titlePanel {
+  left: 16px;
+  top: 16px;
+  width: min(360px, calc(100vw - 32px));
+  border-radius: 22px;
+  padding: 18px 20px;
+}
+
+.titlePanel p,
+.controlPanel p,
+.orbPanel p {
+  margin: 0 0 6px;
+  color: #8df4ff;
+  font-size: .66rem;
+  font-weight: 950;
+  letter-spacing: .22em;
+  text-transform: uppercase;
+}
+
+.titlePanel h1 {
+  margin: 0;
+  font-size: clamp(3.8rem, 7vw, 7.6rem);
+  line-height: .82;
+  letter-spacing: -.09em;
+  text-shadow: 0 28px 90px rgba(0,0,0,.66), 0 0 48px rgba(116,235,255,.18);
+}
+
+.titlePanel span,
+.controlPanel span,
+.orbPanel span {
+  display: block;
+  color: rgba(230, 247, 255, .76);
+  font-size: .82rem;
+  font-weight: 720;
+  line-height: 1.45;
+}
+
+.controlPanel {
+  right: 16px;
+  top: 16px;
+  width: min(320px, calc(100vw - 32px));
+  border-radius: 20px;
+  padding: 16px 18px;
+}
+
+.controlPanel strong {
+  display: block;
+  margin-bottom: 8px;
+  color: white;
+  font-size: 1.05rem;
+}
+
+.orbPanel {
+  right: 18px;
+  bottom: 78px;
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  width: min(360px, calc(100vw - 36px));
+  border-radius: 20px;
+  padding: 12px 14px;
+}
+
+.orb {
+  flex: 0 0 auto;
+  width: 48px;
+  height: 48px;
+  border-radius: 999px;
+  background:
+    radial-gradient(circle at 36% 28%, white 0 12%, rgba(255,255,255,.5) 13% 24%, transparent 25%),
+    radial-gradient(circle, #9ff8ff 0 24%, #52bfff 42%, rgba(32, 77, 160, .26) 72%);
+  box-shadow: 0 0 34px rgba(120,235,255,.72), 0 0 88px rgba(120,235,255,.26);
+}
+
+.rail {
+  left: 50%;
+  bottom: 18px;
+  display: flex;
+  gap: 6px;
+  max-width: calc(100vw - 32px);
+  overflow-x: auto;
+  transform: translateX(-50%);
+  border-radius: 999px;
+  padding: 8px;
+}
+
+.rail a {
+  display: inline-flex;
+  min-height: 34px;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid rgba(220, 250, 255, .16);
+  border-radius: 999px;
+  padding: 0 14px;
+  color: rgba(242, 252, 255, .88);
+  background: rgba(5, 16, 36, .72);
+  font-size: .68rem;
+  font-weight: 950;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.rail a:hover,
+.rail a:focus-visible {
+  color: #04101c;
+  background: linear-gradient(180deg, #eaffff, #8feaff);
+}
+
+@media (max-width: 820px) {
+  .titlePanel {
+    width: calc(100vw - 24px);
+    left: 12px;
+    top: 12px;
+    padding: 14px 16px;
+  }
+
+  .titlePanel h1 {
+    font-size: clamp(3rem, 15vw, 5rem);
+  }
+
+  .controlPanel {
+    display: none;
+  }
+
+  .orbPanel {
+    left: 12px;
+    right: 12px;
+    bottom: 76px;
+    width: auto;
+  }
+
+  .rail {
+    left: 12px;
+    right: 12px;
+    bottom: 14px;
+    transform: none;
+  }
+}
