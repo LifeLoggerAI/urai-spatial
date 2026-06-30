@@ -26,6 +26,7 @@ import './home-world-aaa-final.css'
 import './home-orb-final-positioning.css'
 import './home-orb-final-motion-fix.css'
 import './home-world-screenshot-hotfix.css'
+import './launch-candidate-final-pass.css'
 import UraiCinematicBackdrop from './UraiCinematicBackdrop'
 
 export const metadata: Metadata = {
