@@ -14,5 +14,5 @@
   <path d="M240 720 C520 560 760 820 1360 640" fill="none" stroke="#7beafe" stroke-width="6" opacity=".45"/>
   <rect x="120" y="760" width="1360" height="150" rx="42" fill="#030b1d" opacity=".78" stroke="#7beafe" stroke-opacity=".32"/>
   <text x="170" y="830" font-family="Inter,Arial,sans-serif" font-size="54" font-weight="800" fill="#f8fcff">Location Emotional Weather</text>
-  <text x="170" y="875" font-family="Inter,Arial,sans-serif" font-size="24" font-weight="700" fill="#b9f3ff">URAI generated route visual • private by default</text>
+  <text x="170" y="875" font-family="Inter,Arial,sans-serif" font-size="24" font-weight="700" fill="#b9f3ff">URAI generated route visual - private by default</text>
 </svg>
