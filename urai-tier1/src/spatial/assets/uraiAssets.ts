@@ -10,7 +10,7 @@ export type RouteAssetSet = {
   readonly accents: Record<string, ImageAsset>;
 };
 
-const root = "/urai/assets" as const;
+const root = "/assets/urai" as const;
 
 const image = (src: string, fallback: string, alt: string): ImageAsset => ({ src, fallback, alt });
 const webp = (path: string) => `${root}${path}`;
@@ -97,18 +97,18 @@ export const privacyControlsAssets = {
 } satisfies RouteAssetSet;
 
 export const locationMapAssets = {
-  primary: image(webp("/location-map/location-emotional-weather-main.webp"), privacyFallback, "Location Map emotional weather atlas"),
-  mobile: image(webp("/location-map/location-emotional-weather-mobile.webp"), privacyFallback, "Location Map mobile crop"),
+  primary: image(webp("/location-map/location-emotional-weather-main.webp"), fallback("/location-map/location-emotional-weather-fallback.svg"), "Location Map emotional weather atlas"),
+  mobile: image(webp("/location-map/location-emotional-weather-mobile.webp"), fallback("/location-map/location-emotional-weather-fallback.svg"), "Location Map mobile crop"),
   accents: {
-    placeNode: image(webp("/location-map/location-place-node.webp"), privacyFallback, "Symbolic place memory node"),
+    placeNode: image(webp("/location-map/location-place-node.webp"), fallback("/location-map/location-emotional-weather-fallback.svg"), "Symbolic place memory node"),
   },
 } satisfies RouteAssetSet;
 
 export const statusAssets = {
-  primary: image(webp("/status/status-route-matrix-main.webp"), privacyFallback, "Status route matrix and launch health"),
-  mobile: image(webp("/status/status-route-matrix-mobile.webp"), privacyFallback, "Status route matrix mobile crop"),
+  primary: image(webp("/status/status-route-matrix-main.webp"), fallback("/status/status-route-matrix-fallback.svg"), "Status route matrix and launch health"),
+  mobile: image(webp("/status/status-route-matrix-mobile.webp"), fallback("/status/status-route-matrix-fallback.svg"), "Status route matrix mobile crop"),
   accents: {
-    healthPill: image(webp("/status/status-health-pill.webp"), privacyFallback, "Launch health indicator"),
+    healthPill: image(webp("/status/status-health-pill.webp"), fallback("/status/status-route-matrix-fallback.svg"), "Launch health indicator"),
   },
 } satisfies RouteAssetSet;
 
