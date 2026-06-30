@@ -34,6 +34,9 @@ jobs:
       URAI_XR_ICE_SERVERS_JSON: ${{ secrets.URAI_XR_ICE_SERVERS_JSON }}
       URAI_XR_REQUIRE_SIGNED_ROOM_TOKEN: "true"
       URAI_DEPLOY_URL: ${{ inputs.live_url }}
+      NEXT_PUBLIC_GIT_SHA: ${{ github.sha }}
+      SOURCE_VERSION: ${{ github.sha }}
+      REQUIRE_LIVE_COMMIT_SHA: "true"
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
