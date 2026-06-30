@@ -13,6 +13,7 @@
     "typecheck:legacy": "node scripts/require-runtime-deps.mjs && tsc --noEmit -p tsconfig.legacy.json",
     "check": "node scripts/require-runtime-deps.mjs && tsc --noEmit -p tsconfig.runtime.json && next build",
     "check:build": "node scripts/require-runtime-deps.mjs && next build",
+    "receipt:assets": "node ../scripts/final-asset-receipt.mjs",
     "verify:aaa-world": "corepack pnpm run typecheck && node scripts/require-test-bootstrap.mjs && node --import tsx --test tests/aaa-world-artifact-contract.test.mjs && corepack pnpm run test:unit && corepack pnpm run build",
     "studio-spatial:contract": "node scripts/require-test-bootstrap.mjs && node --import tsx --test tests/studio-spatial-handoff.test.mjs",
     "xr:contract": "node scripts/require-test-bootstrap.mjs && node --import tsx --test tests/xr-runtime-contract.test.mjs tests/studio-spatial-handoff.test.mjs",
