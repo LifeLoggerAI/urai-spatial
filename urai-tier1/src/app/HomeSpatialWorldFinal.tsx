@@ -5,8 +5,10 @@ import type { CSSProperties, PointerEvent } from "react";
 import { useCallback, useEffect, useRef, useState } from "react";
 
 const portals = [
-  { id: "world", href: "/world", eyebrow: "Enter the ground", label: "World", detail: "council and objects live here" },
+  { id: "ground", href: "/ground", eyebrow: "Enter the ground", label: "Ground", detail: "private workforce and real-life objects" },
   { id: "life", href: "/life-map", eyebrow: "Ascend through sky", label: "Life Map", detail: "memory constellation above" },
+  { id: "focus", href: "/focus?memoryId=quiet-reset", eyebrow: "Select a star", label: "Focus", detail: "memory chamber" },
+  { id: "replay", href: "/replay?memoryId=quiet-reset&manifestId=replay-recovery-thread", eyebrow: "Enter the film", label: "Replay", detail: "cinematic memory space" },
   { id: "mirror", href: "/mirror", eyebrow: "See the pattern", label: "Mirror", detail: "reflection realm" },
   { id: "passport", href: "/passport", eyebrow: "Carry consent", label: "Passport", detail: "private by default" },
   { id: "status", href: "/status", eyebrow: "Check the field", label: "Status", detail: "systems alive" },
@@ -105,6 +107,8 @@ export default function HomeSpatialWorldFinal() {
       ref={homeRef}
       className="urai-genesis-home"
       aria-label="URAI Home World threshold"
+      data-urai-route="genesis-home-world"
+      data-launch-surface="aaa-final-home-sky-ground-orb-body-portals"
       onPointerMove={handlePointerMove}
       onPointerLeave={resetPointer}
     >
@@ -155,7 +159,7 @@ export default function HomeSpatialWorldFinal() {
         <div className="urai-genesis-home__world-vignette" />
       </div>
 
-      <Link className="urai-genesis-home__threshold-gate urai-genesis-home__threshold-gate--ground" href="/world" style={thresholdGroundStyle}>
+      <Link className="urai-genesis-home__threshold-gate urai-genesis-home__threshold-gate--ground" href="/ground" style={thresholdGroundStyle}>
         <span style={thresholdEyebrowStyle}>Click the ground</span>
         <strong style={thresholdLabelStyle}>Enter the living world where council avatars and real-life objects exist.</strong>
       </Link>
@@ -173,7 +177,7 @@ export default function HomeSpatialWorldFinal() {
           The ground holds your living world: council, objects, places, tools, and routines. The sky opens your Life Map, where memory becomes constellation.
         </p>
         <div className="urai-genesis-home__actions" aria-label="Primary URAI threshold actions">
-          <Link className="urai-genesis-home__cta urai-genesis-home__cta--primary" href="/world">Enter Ground World</Link>
+          <Link className="urai-genesis-home__cta urai-genesis-home__cta--primary" href="/ground">Enter Ground World</Link>
           <Link className="urai-genesis-home__cta" href="/life-map">Ascend to Life Map</Link>
         </div>
       </section>
@@ -192,8 +196,10 @@ export default function HomeSpatialWorldFinal() {
         <p>URAI orb guide</p>
         <strong>The ground is your embodied life. The sky is your memory constellation.</strong>
         <div>
-          <Link href="/world">Ground World</Link>
+          <Link href="/ground">Ground World</Link>
           <Link href="/life-map">Life Map</Link>
+          <Link href="/focus?memoryId=quiet-reset">Focus</Link>
+          <Link href="/replay?memoryId=quiet-reset&manifestId=replay-recovery-thread">Replay</Link>
           <Link href="/mirror">Mirror</Link>
           <Link href="/passport">Passport</Link>
           <Link href="/status">Status</Link>
@@ -214,7 +220,7 @@ export default function HomeSpatialWorldFinal() {
       <div className="urai-genesis-home__bottom-dock" aria-label="Secondary routes">
         <Link href="/unwind">Unwind</Link>
         <Link href="/ascent">Ascent</Link>
-        <Link href="/privacy">Privacy</Link>
+        <Link href="/privacy-controls">Privacy</Link>
       </div>
     </main>
   );
