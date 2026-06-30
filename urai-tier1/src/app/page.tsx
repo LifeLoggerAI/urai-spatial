@@ -1,4 +1,4 @@
-import { TierOneExperience } from '@/spatial/layout/TierOneExperience'
+import FinalHomeThreshold from './FinalHomeThreshold'
 
 export const metadata = {
   title: 'URAI Spatial',
@@ -7,5 +7,5 @@ export const metadata = {
 }
 
 export default function HomePage() {
-  return <TierOneExperience mode="home" />
+  return <FinalHomeThreshold />
 }
