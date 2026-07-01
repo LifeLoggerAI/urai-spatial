@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import type { CSSProperties, PointerEvent } from "react";
+import type { CSSProperties, MouseEvent, PointerEvent } from "react";
 import { useCallback, useEffect, useRef, useState } from "react";
 
 const portals = [
@@ -15,6 +15,10 @@ const portals = [
 const stars = Array.from({ length: 72 }, (_, index) => index);
 const memoryDust = Array.from({ length: 20 }, (_, index) => index);
 const portalRings = Array.from({ length: 4 }, (_, index) => index);
+const HOME_CAMERA_ASCENT_MS = 760;
+const HOME_GROUND_DESCENT_MS = 620;
+
+type HomeTransitionTarget = 'ground' | 'sky' | 'orb';
 
 const thresholdBaseStyle: CSSProperties = {
   position: "absolute",
@@ -60,8 +64,9 @@ const thresholdLabelStyle: CSSProperties = {
 
 export default function HomeSpatialWorldFinal() {
   const homeRef = useRef<HTMLElement | null>(null);
+  const navigationTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [orbOpen, setOrbOpen] = useState(false);
-  const [transitionTarget, setTransitionTarget] = useState<'ground' | 'sky' | 'orb' | null>(null);
+  const [transitionTarget, setTransitionTarget] = useState<HomeTransitionTarget | null>(null);
 
   const handlePointerMove = useCallback((event: PointerEvent<HTMLElement>) => {
     const element = homeRef.current;
@@ -97,16 +102,39 @@ export default function HomeSpatialWorldFinal() {
         setOrbOpen((open) => !open);
       }
       if (event.key === "Escape") {
+        if (navigationTimerRef.current) {
+          clearTimeout(navigationTimerRef.current);
+          navigationTimerRef.current = null;
+        }
         setOrbOpen(false);
         setTransitionTarget(null);
       }
     };
     window.addEventListener("keydown", onKeyDown);
-    return () => window.removeEventListener("keydown", onKeyDown);
+    return () => {
+      window.removeEventListener("keydown", onKeyDown);
+      if (navigationTimerRef.current) clearTimeout(navigationTimerRef.current);
+    };
   }, [resetPointer]);
 
-  function primeTransition(target: 'ground' | 'sky' | 'orb') {
+  function primeTransition(target: HomeTransitionTarget) {
     setTransitionTarget(target);
+  }
+
+  function navigateThroughThreshold(event: MouseEvent<HTMLAnchorElement>, target: Exclude<HomeTransitionTarget, 'orb'>, href: string) {
+    if (event.defaultPrevented || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey || event.button !== 0) return;
+
+    primeTransition(target);
+    setOrbOpen(false);
+
+    const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (prefersReducedMotion) return;
+
+    event.preventDefault();
+    if (navigationTimerRef.current) clearTimeout(navigationTimerRef.current);
+    navigationTimerRef.current = setTimeout(() => {
+      window.location.assign(href);
+    }, target === 'sky' ? HOME_CAMERA_ASCENT_MS : HOME_GROUND_DESCENT_MS);
   }
 
   return (
@@ -167,12 +195,31 @@ export default function HomeSpatialWorldFinal() {
         <div className="urai-genesis-home__world-vignette" />
       </div>
 
-      <Link className="urai-genesis-home__threshold-gate urai-genesis-home__threshold-gate--ground" href="/ground?from=home" style={thresholdGroundStyle} onPointerDown={() => primeTransition('ground')}>
+      {transitionTarget === 'sky' ? (
+        <div className="urai-genesis-home__camera-ascent-signal" aria-hidden="true">
+          <span />
+          <strong>camera ascending</strong>
+        </div>
+      ) : null}
+
+      <Link
+        className="urai-genesis-home__threshold-gate urai-genesis-home__threshold-gate--ground"
+        href="/ground?from=home"
+        style={thresholdGroundStyle}
+        onPointerDown={() => primeTransition('ground')}
+        onClick={(event) => navigateThroughThreshold(event, 'ground', '/ground?from=home')}
+      >
         <span style={thresholdEyebrowStyle}>Click the ground</span>
         <strong style={thresholdLabelStyle}>Descend into the grounded life layer where council avatars and real-life objects exist.</strong>
       </Link>
 
-      <Link className="urai-genesis-home__threshold-gate urai-genesis-home__threshold-gate--sky" href="/life-map?from=home-sky" style={thresholdSkyStyle} onPointerDown={() => primeTransition('sky')}>
+      <Link
+        className="urai-genesis-home__threshold-gate urai-genesis-home__threshold-gate--sky"
+        href="/life-map?from=home-sky"
+        style={thresholdSkyStyle}
+        onPointerDown={() => primeTransition('sky')}
+        onClick={(event) => navigateThroughThreshold(event, 'sky', '/life-map?from=home-sky')}
+      >
         <span style={thresholdEyebrowStyle}>Click the sky</span>
         <strong style={thresholdLabelStyle}>Camera ascends into your Life Map. Avatar and orb stay anchored in Home/Ground.</strong>
       </Link>
@@ -185,8 +232,8 @@ export default function HomeSpatialWorldFinal() {
           The ground holds your embodied life: council, objects, places, tools, and routines. The sky opens the camera into your Life Map, where memory becomes constellation.
         </p>
         <div className="urai-genesis-home__actions" aria-label="Primary URAI threshold actions">
-          <Link className="urai-genesis-home__cta urai-genesis-home__cta--primary" href="/ground?from=home" onPointerDown={() => primeTransition('ground')}>Descend to Ground</Link>
-          <Link className="urai-genesis-home__cta" href="/life-map?from=home-sky" onPointerDown={() => primeTransition('sky')}>Ascend Camera to Life Map</Link>
+          <Link className="urai-genesis-home__cta urai-genesis-home__cta--primary" href="/ground?from=home" onPointerDown={() => primeTransition('ground')} onClick={(event) => navigateThroughThreshold(event, 'ground', '/ground?from=home')}>Descend to Ground</Link>
+          <Link className="urai-genesis-home__cta" href="/life-map?from=home-sky" onPointerDown={() => primeTransition('sky')} onClick={(event) => navigateThroughThreshold(event, 'sky', '/life-map?from=home-sky')}>Ascend Camera to Life Map</Link>
         </div>
       </section>
 
@@ -214,7 +261,13 @@ export default function HomeSpatialWorldFinal() {
 
       <nav id="home-routes" className="urai-genesis-home__portals" aria-label="URAI Home World route portals">
         {portals.map((portal) => (
-          <Link key={portal.href} href={portal.href} className={`urai-genesis-home__portal urai-genesis-home__portal--${portal.id}`} onPointerDown={() => portal.id === 'world' ? primeTransition('ground') : portal.id === 'life' ? primeTransition('sky') : undefined}>
+          <Link
+            key={portal.href}
+            href={portal.href}
+            className={`urai-genesis-home__portal urai-genesis-home__portal--${portal.id}`}
+            onPointerDown={() => portal.id === 'world' ? primeTransition('ground') : portal.id === 'life' ? primeTransition('sky') : undefined}
+            onClick={(event) => portal.id === 'world' ? navigateThroughThreshold(event, 'ground', portal.href) : portal.id === 'life' ? navigateThroughThreshold(event, 'sky', portal.href) : undefined}
+          >
             <span className="urai-genesis-home__portal-light" aria-hidden="true" />
             <small>{portal.eyebrow}</small>
             <strong>{portal.label}</strong>
