@@ -31,9 +31,9 @@ const routeArt = {
   },
   focus: {
     surface: 'focus',
-    label: 'Focus chamber',
-    primary: '/assets/urai/focus/focus-memory-chamber-main.webp',
-    mobile: '/assets/urai/focus/focus-memory-chamber-mobile.webp',
+    label: 'Focus chamber bespoke final',
+    primary: '/assets/urai/bespoke/focus/focus-memory-chamber-bespoke-final.svg',
+    mobile: '/assets/urai/bespoke/focus/focus-memory-chamber-bespoke-final-mobile.svg',
   },
   replay: {
     surface: 'replay',
