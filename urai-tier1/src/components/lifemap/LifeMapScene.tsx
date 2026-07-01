@@ -28,14 +28,14 @@ type CameraIntent = {
 };
 
 const OVERVIEW_CAMERA: CameraIntent = {
-  position: [0, 1.05, 10.8],
-  target: [0, 0, -0.85],
+  position: [0.72, 2.18, 9.65],
+  target: [0.05, 0.06, -1.25],
 };
 
 const LIFE_MAP_STATE_KEY = "urai:spatial:lifeMapState";
 
 const MEMORY_TEXTURES: Record<LifeMapNodeType, { accent: string; deep: string; warm: string }> = {
-  memory: { accent: "#8adfff", deep: "#061a36", warm: "#d8f8ff" },
+  memory: { accent: "#8adfff", deep: "#061a36", warm: "#e5fbff" },
   season: { accent: "#73e4ff", deep: "#071e2f", warm: "#e5fbff" },
   ritual: { accent: "#a980ff", deep: "#180d3f", warm: "#f2e7ff" },
   forecast: { accent: "#b68cff", deep: "#160d3c", warm: "#efe5ff" },
@@ -53,57 +53,101 @@ function toVector3(position: [number, number, number]) {
   return new THREE.Vector3(position[0], position[1], position[2]);
 }
 
+function drawLens(ctx: CanvasRenderingContext2D, cx: number, cy: number, rx: number, ry: number, color: string, alpha: string) {
+  ctx.strokeStyle = `${color}${alpha}`;
+  ctx.lineWidth = 5;
+  ctx.beginPath();
+  ctx.ellipse(cx, cy, rx, ry, -0.18, 0, Math.PI * 2);
+  ctx.stroke();
+}
+
 function createMemoryTexture(node: LifeMapNode) {
   if (typeof document === "undefined") return null;
 
   const palette = MEMORY_TEXTURES[node.type];
   const canvas = document.createElement("canvas");
-  canvas.width = 512;
-  canvas.height = 512;
+  canvas.width = 768;
+  canvas.height = 768;
   const ctx = canvas.getContext("2d");
   if (!ctx) return null;
 
-  const gradient = ctx.createRadialGradient(180, 150, 20, 256, 256, 360);
+  const gradient = ctx.createRadialGradient(235, 195, 10, 384, 384, 520);
   gradient.addColorStop(0, palette.warm);
-  gradient.addColorStop(0.18, node.aura || palette.accent);
-  gradient.addColorStop(0.52, palette.deep);
+  gradient.addColorStop(0.16, node.aura || palette.accent);
+  gradient.addColorStop(0.46, palette.deep);
   gradient.addColorStop(1, "#01040b");
   ctx.fillStyle = gradient;
-  ctx.fillRect(0, 0, 512, 512);
+  ctx.fillRect(0, 0, 768, 768);
 
   ctx.globalCompositeOperation = "screen";
-  for (let i = 0; i < 38; i += 1) {
-    const x = (Math.sin(i * 31.17 + node.id.length) * 0.5 + 0.5) * 512;
-    const y = (Math.cos(i * 17.83 + node.title.length) * 0.5 + 0.5) * 512;
-    const r = 8 + ((i * 13) % 42);
-    ctx.fillStyle = i % 3 === 0 ? `${palette.accent}55` : `${palette.warm}33`;
+  for (let i = 0; i < 64; i += 1) {
+    const x = (Math.sin(i * 31.17 + node.id.length) * 0.5 + 0.5) * 768;
+    const y = (Math.cos(i * 17.83 + node.title.length) * 0.5 + 0.5) * 768;
+    const r = 8 + ((i * 19) % 56);
+    ctx.fillStyle = i % 4 === 0 ? `${palette.accent}44` : `${palette.warm}22`;
     ctx.beginPath();
     ctx.arc(x, y, r, 0, Math.PI * 2);
     ctx.fill();
   }
 
   ctx.globalCompositeOperation = "source-over";
-  ctx.strokeStyle = `${palette.accent}cc`;
-  ctx.lineWidth = 4;
+  ctx.fillStyle = "rgba(255,255,255,.22)";
   ctx.beginPath();
-  ctx.ellipse(256, 270, 190, 70, -0.23, 0, Math.PI * 2);
-  ctx.stroke();
-  ctx.beginPath();
-  ctx.ellipse(256, 270, 158, 48, 0.34, 0, Math.PI * 2);
-  ctx.stroke();
-
-  ctx.fillStyle = "rgba(2, 7, 18, .62)";
-  ctx.roundRect(54, 340, 404, 98, 28);
+  ctx.arc(274, 214, 76, 0, Math.PI * 2);
   ctx.fill();
-  ctx.fillStyle = palette.warm;
-  ctx.font = "900 34px Inter, Arial, sans-serif";
-  ctx.fillText(node.title.slice(0, 18), 78, 386);
-  ctx.fillStyle = `${palette.accent}`;
-  ctx.font = "800 20px Inter, Arial, sans-serif";
-  ctx.fillText(lifeMapTypeLabels[node.type].toUpperCase(), 78, 418);
 
+  ctx.globalCompositeOperation = "screen";
+  ctx.strokeStyle = `${palette.warm}AA`;
+  ctx.lineWidth = 10;
+  ctx.beginPath();
+  ctx.moveTo(148, 460);
+  ctx.bezierCurveTo(254, 388, 318, 526, 430, 438);
+  ctx.bezierCurveTo(520, 368, 570, 402, 634, 336);
+  ctx.stroke();
+
+  drawLens(ctx, 384, 396, 258, 74, palette.accent, "CC");
+  drawLens(ctx, 390, 398, 196, 46, palette.warm, "66");
+
+  if (node.type === "relationship") {
+    ctx.fillStyle = "rgba(255,255,255,.68)";
+    ctx.beginPath();
+    ctx.arc(282, 394, 48, 0, Math.PI * 2);
+    ctx.arc(496, 354, 54, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.strokeStyle = `${palette.accent}88`;
+    ctx.lineWidth = 4;
+    ctx.beginPath();
+    ctx.moveTo(318, 382);
+    ctx.bezierCurveTo(370, 318, 435, 446, 460, 374);
+    ctx.stroke();
+  }
+
+  if (node.type === "recovery") {
+    ctx.strokeStyle = `${palette.accent}99`;
+    ctx.lineWidth = 7;
+    for (let i = 0; i < 5; i += 1) {
+      ctx.beginPath();
+      ctx.ellipse(390, 468, 82 + i * 62, 20 + i * 17, 0.08, 0, Math.PI * 2);
+      ctx.stroke();
+    }
+  }
+
+  if (node.type === "threshold") {
+    ctx.fillStyle = `${palette.accent}66`;
+    ctx.beginPath();
+    ctx.moveTo(372, 160);
+    ctx.lineTo(518, 462);
+    ctx.lineTo(250, 462);
+    ctx.closePath();
+    ctx.fill();
+    ctx.fillStyle = "rgba(255,255,255,.46)";
+    ctx.fillRect(356, 272, 34, 190);
+  }
+
+  ctx.globalCompositeOperation = "source-over";
   const texture = new THREE.CanvasTexture(canvas);
   texture.colorSpace = THREE.SRGBColorSpace;
+  texture.anisotropy = 8;
   texture.needsUpdate = true;
   return texture;
 }
@@ -114,14 +158,14 @@ function createLifeMapCurve(from: LifeMapNode, to: LifeMapNode) {
   const mid = start
     .clone()
     .lerp(end, 0.5)
-    .add(new THREE.Vector3(0, 1.05 + Math.abs(start.x - end.x) * 0.1, -1.05));
+    .add(new THREE.Vector3(0, 1.25 + Math.abs(start.x - end.x) * 0.14, -1.2 - Math.abs(start.z - end.z) * 0.08));
   return new THREE.CatmullRomCurve3([start, mid, end]);
 }
 
 function cameraForNode(node: LifeMapNode): CameraIntent {
   return {
-    position: [node.position[0] + 0.9, node.position[1] + 0.52, node.position[2] + 2.7],
-    target: node.position,
+    position: [node.position[0] + 0.78, node.position[1] + 0.72, node.position[2] + 2.9],
+    target: [node.position[0], node.position[1] + 0.02, node.position[2]],
   };
 }
 
@@ -131,33 +175,88 @@ function CameraRig({ intent, exploring }: { intent: CameraIntent; exploring: boo
   const desired = useMemo(() => new THREE.Vector3(...intent.position), [intent.position]);
 
   useFrame(({ clock }) => {
-    const drift = exploring ? new THREE.Vector3(Math.sin(clock.elapsedTime * 0.22) * 0.18, Math.cos(clock.elapsedTime * 0.17) * 0.07, Math.sin(clock.elapsedTime * 0.13) * 0.1) : new THREE.Vector3();
-    camera.position.lerp(desired.clone().add(drift), 0.085);
+    const drift = exploring
+      ? new THREE.Vector3(Math.sin(clock.elapsedTime * 0.17) * 0.34, Math.cos(clock.elapsedTime * 0.14) * 0.12, Math.sin(clock.elapsedTime * 0.11) * 0.18)
+      : new THREE.Vector3(Math.sin(clock.elapsedTime * 0.24) * 0.04, Math.cos(clock.elapsedTime * 0.18) * 0.03, 0);
+    camera.position.lerp(desired.clone().add(drift), exploring ? 0.045 : 0.095);
     camera.lookAt(target);
   });
 
   return null;
 }
 
-function GalaxyPlane() {
+function GalaxySpiral() {
+  const groupRef = useRef<THREE.Group>(null);
+  const geometry = useMemo(() => {
+    const count = 1450;
+    const positions = new Float32Array(count * 3);
+    const colors = new Float32Array(count * 3);
+    const color = new THREE.Color();
+
+    for (let i = 0; i < count; i += 1) {
+      const arm = i % 5;
+      const t = i / count;
+      const radius = 0.55 + Math.sqrt(t) * 7.6;
+      const angle = t * 13.8 + arm * ((Math.PI * 2) / 5);
+      const jitter = Math.sin(i * 12.9898) * 0.18;
+      positions[i * 3] = Math.cos(angle) * radius + jitter;
+      positions[i * 3 + 1] = Math.sin(i * 0.43) * 0.6 + (arm - 2) * 0.025;
+      positions[i * 3 + 2] = Math.sin(angle) * radius * 0.62 - 2.15 + Math.cos(i * 0.31) * 0.25;
+      color.setHSL(0.52 + (arm * 0.025), 0.88, 0.68 + Math.sin(i) * 0.1);
+      colors[i * 3] = color.r;
+      colors[i * 3 + 1] = color.g;
+      colors[i * 3 + 2] = color.b;
+    }
+
+    const points = new THREE.BufferGeometry();
+    points.setAttribute("position", new THREE.BufferAttribute(positions, 3));
+    points.setAttribute("color", new THREE.BufferAttribute(colors, 3));
+    return points;
+  }, []);
+
+  useEffect(() => () => geometry.dispose(), [geometry]);
+
+  useFrame(({ clock }) => {
+    if (!groupRef.current) return;
+    groupRef.current.rotation.y = -0.12 + Math.sin(clock.elapsedTime * 0.08) * 0.055;
+    groupRef.current.rotation.z = -0.08 + Math.cos(clock.elapsedTime * 0.06) * 0.025;
+  });
+
   return (
-    <group>
-      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -2.72, -0.8]}>
-        <planeGeometry args={[16, 9, 1, 1]} />
-        <meshBasicMaterial color="#092033" transparent opacity={0.2} depthWrite={false} />
+    <group ref={groupRef} rotation={[-0.18, -0.12, -0.06]} position={[0.1, -0.15, -1.25]}>
+      <points geometry={geometry} frustumCulled={false}>
+        <pointsMaterial size={0.038} vertexColors transparent opacity={0.54} sizeAttenuation depthWrite={false} blending={THREE.AdditiveBlending} />
+      </points>
+    </group>
+  );
+}
+
+function GalaxyDepthVolumes() {
+  const groupRef = useRef<THREE.Group>(null);
+
+  useFrame(({ clock }) => {
+    if (!groupRef.current) return;
+    groupRef.current.rotation.z = Math.sin(clock.elapsedTime * 0.07) * 0.025;
+  });
+
+  return (
+    <group ref={groupRef} position={[0, 0, -1.6]}>
+      <mesh position={[-2.8, 0.35, -4.6]} rotation={[0.2, -0.42, 0.28]}>
+        <planeGeometry args={[8.6, 5.1, 1, 1]} />
+        <meshBasicMaterial color="#50e6ff" transparent opacity={0.05} depthWrite={false} blending={THREE.AdditiveBlending} />
       </mesh>
-      {[-5.5, -3.5, -1.5, 0.5, 2.5, 4.5].map((x) => (
-        <mesh key={x} rotation={[-Math.PI / 2, 0, 0]} position={[x, -2.65, -0.8]}>
-          <planeGeometry args={[0.012, 9]} />
-          <meshBasicMaterial color="#7df8ff" transparent opacity={0.08} depthWrite={false} />
-        </mesh>
-      ))}
-      {[-3.8, -2.2, -0.6, 1, 2.6].map((z) => (
-        <mesh key={z} rotation={[-Math.PI / 2, 0, 0]} position={[0, -2.64, z]}>
-          <planeGeometry args={[16, 0.012]} />
-          <meshBasicMaterial color="#b87cff" transparent opacity={0.07} depthWrite={false} />
-        </mesh>
-      ))}
+      <mesh position={[3.8, -0.1, -3.2]} rotation={[0.1, 0.36, -0.32]}>
+        <planeGeometry args={[9.6, 6.2, 1, 1]} />
+        <meshBasicMaterial color="#c06cff" transparent opacity={0.06} depthWrite={false} blending={THREE.AdditiveBlending} />
+      </mesh>
+      <mesh position={[0.8, -1.55, -1.15]} rotation={[-Math.PI / 2.28, 0, 0.18]}>
+        <ringGeometry args={[2.9, 3.02, 180]} />
+        <meshBasicMaterial color="#7df8ff" transparent opacity={0.12} depthWrite={false} blending={THREE.AdditiveBlending} />
+      </mesh>
+      <mesh position={[0.8, -1.57, -1.15]} rotation={[-Math.PI / 2.28, 0, 0.18]}>
+        <ringGeometry args={[4.45, 4.52, 180]} />
+        <meshBasicMaterial color="#b87cff" transparent opacity={0.08} depthWrite={false} blending={THREE.AdditiveBlending} />
+      </mesh>
     </group>
   );
 }
@@ -165,21 +264,24 @@ function GalaxyPlane() {
 function LifeMapPath({ from, to, active }: { from: LifeMapNode; to: LifeMapNode; active: boolean }) {
   const pulseRef = useRef<THREE.Mesh>(null);
   const curve = useMemo(() => createLifeMapCurve(from, to), [from, to]);
-  const points = useMemo(() => curve.getPoints(88), [curve]);
-  const geometry = useMemo(() => new THREE.BufferGeometry().setFromPoints(points), [points]);
+  const tube = useMemo(() => new THREE.TubeGeometry(curve, 96, active ? 0.013 : 0.006, 8, false), [curve, active]);
+
+  useEffect(() => () => tube.dispose(), [tube]);
 
   useFrame(({ clock }) => {
     if (!pulseRef.current) return;
-    const t = (clock.elapsedTime * 0.12 + from.intensity * 0.1) % 1;
+    const t = (clock.elapsedTime * 0.1 + from.intensity * 0.1) % 1;
     pulseRef.current.position.copy(curve.getPointAt(t));
   });
 
   return (
     <group>
-      <primitive object={new THREE.Line(geometry, new THREE.LineBasicMaterial({ color: active ? "#86f4ff" : "#334761", transparent: true, opacity: active ? 0.66 : 0.12 }))} />
+      <mesh geometry={tube}>
+        <meshBasicMaterial color={active ? "#9ef8ff" : "#334761"} transparent opacity={active ? 0.48 : 0.075} depthWrite={false} blending={THREE.AdditiveBlending} />
+      </mesh>
       <mesh ref={pulseRef} visible={active}>
-        <sphereGeometry args={[0.048, 16, 16]} />
-        <meshBasicMaterial color="#eaffff" transparent opacity={0.82} depthWrite={false} />
+        <sphereGeometry args={[0.042, 16, 16]} />
+        <meshBasicMaterial color="#eaffff" transparent opacity={0.78} depthWrite={false} blending={THREE.AdditiveBlending} />
       </mesh>
     </group>
   );
@@ -189,17 +291,18 @@ function LifeMapStar({ node, selected, related, onSelect }: { node: LifeMapNode;
   const groupRef = useRef<THREE.Group>(null);
   const shellRef = useRef<THREE.MeshBasicMaterial>(null);
   const texture = useMemo(() => createMemoryTexture(node), [node]);
-  const scale = 0.32 + node.intensity * 0.28;
+  const color = useMemo(() => new THREE.Color(node.aura), [node.aura]);
+  const scale = 0.38 + node.intensity * 0.33;
 
   useEffect(() => () => texture?.dispose(), [texture]);
 
   useFrame(({ clock }) => {
     if (!groupRef.current) return;
-    const breath = 1 + Math.sin(clock.elapsedTime * (0.72 + node.intensity)) * 0.055;
-    groupRef.current.scale.setScalar(selected ? breath * 1.18 : breath);
-    groupRef.current.rotation.y += selected ? 0.006 : 0.0024;
-    groupRef.current.rotation.x = Math.sin(clock.elapsedTime * 0.18 + node.intensity) * 0.05;
-    if (shellRef.current) shellRef.current.opacity = selected ? 0.22 : related ? 0.13 : 0.065;
+    const breath = 1 + Math.sin(clock.elapsedTime * (0.62 + node.intensity) + node.position[0]) * 0.045;
+    groupRef.current.scale.setScalar(selected ? breath * 1.34 : related ? breath : breath * 0.88);
+    groupRef.current.rotation.y += selected ? 0.005 : 0.0018;
+    groupRef.current.rotation.x = Math.sin(clock.elapsedTime * 0.16 + node.intensity) * 0.055;
+    if (shellRef.current) shellRef.current.opacity = selected ? 0.24 : related ? 0.105 : 0.032;
   });
 
   const choose = (event?: { stopPropagation: () => void }) => {
@@ -210,30 +313,32 @@ function LifeMapStar({ node, selected, related, onSelect }: { node: LifeMapNode;
   return (
     <group ref={groupRef} position={node.position}>
       <mesh onClick={choose} onPointerOver={() => { document.body.style.cursor = "pointer"; }} onPointerOut={() => { document.body.style.cursor = ""; }}>
-        <sphereGeometry args={[scale, 64, 64]} />
-        <meshStandardMaterial color="#ffffff" map={texture ?? undefined} emissive={node.aura} emissiveIntensity={selected ? 1.35 : 0.62} roughness={0.18} metalness={0.16} />
+        <sphereGeometry args={[scale, 96, 96]} />
+        <meshStandardMaterial color="#ffffff" map={texture ?? undefined} emissive={color} emissiveIntensity={selected ? 1.6 : related ? 0.74 : 0.3} roughness={0.16} metalness={0.18} />
       </mesh>
       <mesh>
-        <sphereGeometry args={[scale * 1.82, 48, 48]} />
-        <meshBasicMaterial ref={shellRef} color={node.aura} transparent opacity={selected ? 0.22 : 0.08} depthWrite={false} />
+        <sphereGeometry args={[scale * 2.05, 64, 64]} />
+        <meshBasicMaterial ref={shellRef} color={node.aura} transparent opacity={selected ? 0.24 : 0.08} depthWrite={false} blending={THREE.AdditiveBlending} />
       </mesh>
       <mesh rotation={[Math.PI / 2.05, 0, 0]}>
-        <torusGeometry args={[scale * 1.75, 0.014, 16, 140]} />
-        <meshBasicMaterial color={node.aura} transparent opacity={selected ? 0.72 : 0.24} depthWrite={false} />
+        <torusGeometry args={[scale * 1.92, 0.012, 16, 150]} />
+        <meshBasicMaterial color={node.aura} transparent opacity={selected ? 0.76 : related ? 0.2 : 0.07} depthWrite={false} blending={THREE.AdditiveBlending} />
       </mesh>
       <mesh rotation={[Math.PI / 2.55, 0, Math.PI / 8]}>
-        <torusGeometry args={[scale * 2.15, 0.007, 12, 130]} />
-        <meshBasicMaterial color="#e9fbff" transparent opacity={selected ? 0.34 : 0.1} depthWrite={false} />
+        <torusGeometry args={[scale * 2.36, 0.006, 12, 140]} />
+        <meshBasicMaterial color="#e9fbff" transparent opacity={selected ? 0.32 : 0.075} depthWrite={false} blending={THREE.AdditiveBlending} />
       </mesh>
-      <Html distanceFactor={9.4} position={[0, scale * 2.15, 0]} center>
-        <button
-          type="button"
-          onClick={() => onSelect(node)}
-          className={`rounded-full border px-3 py-1 text-[10px] font-black uppercase tracking-[0.18em] backdrop-blur-xl transition ${selected ? "border-white/70 bg-white/18 text-white shadow-2xl shadow-cyan-300/20" : "border-cyan-100/20 bg-slate-950/45 text-cyan-50/80 hover:border-cyan-100/60"}`}
-        >
-          {lifeMapTypeLabels[node.type]}
-        </button>
-      </Html>
+      {selected ? (
+        <Html distanceFactor={8.2} position={[0, scale * 2.1, 0]} center zIndexRange={[80, 20]}>
+          <button
+            type="button"
+            onClick={() => onSelect(node)}
+            className="rounded-full border border-white/30 bg-slate-950/55 px-3 py-1 text-[10px] font-black uppercase tracking-[0.18em] text-white shadow-2xl shadow-cyan-300/20 backdrop-blur-xl"
+          >
+            {lifeMapTypeLabels[node.type]}
+          </button>
+        </Html>
+      ) : null}
     </group>
   );
 }
@@ -251,23 +356,26 @@ function LifeMapGalaxy({ nodes, selectedNode, onSelectNode }: { nodes: LifeMapNo
 
   return (
     <>
-      <color attach="background" args={["#01050d"]} />
-      <fog attach="fog" args={["#01050d", 8, 24]} />
-      <ambientLight intensity={0.55} />
-      <pointLight position={[-4, 3, 5]} color="#7df8ff" intensity={2.1} />
-      <pointLight position={[4, 1.4, 2]} color="#ff7bd6" intensity={1.7} />
-      <pointLight position={[0, -2, 4]} color="#fff0c2" intensity={0.72} />
-      <Stars radius={92} depth={62} count={3200} factor={5} saturation={0.5} fade speed={0.35} />
-      <GalaxyPlane />
+      <color attach="background" args={["#01030a"]} />
+      <fog attach="fog" args={["#01030a", selectedNode ? 5 : 7, selectedNode ? 20 : 28]} />
+      <ambientLight intensity={0.42} />
+      <pointLight position={[-4, 3, 5]} color="#7df8ff" intensity={2.4} />
+      <pointLight position={[4, 1.4, 2]} color="#ff7bd6" intensity={1.8} />
+      <pointLight position={[0, -2, 4]} color="#fff0c2" intensity={0.7} />
+      <Stars radius={104} depth={72} count={4200} factor={4.8} saturation={0.5} fade speed={0.22} />
+      <GalaxySpiral />
+      <GalaxyDepthVolumes />
 
-      {nodes.flatMap((node) =>
-        node.connectedTo
-          .map((targetId) => nodeById.get(targetId))
-          .filter((target): target is LifeMapNode => Boolean(target))
-          .map((target) => <LifeMapPath key={`${node.id}-${target.id}`} from={node} to={target} active={!selectedNode || related.has(node.id) || related.has(target.id)} />),
-      )}
+      <group rotation={[-0.13, 0.08, -0.025]} position={[0, -0.08, 0]}>
+        {nodes.flatMap((node) =>
+          node.connectedTo
+            .map((targetId) => nodeById.get(targetId))
+            .filter((target): target is LifeMapNode => Boolean(target))
+            .map((target) => <LifeMapPath key={`${node.id}-${target.id}`} from={node} to={target} active={!selectedNode || related.has(node.id) || related.has(target.id)} />),
+        )}
 
-      {nodes.map((node) => <LifeMapStar key={node.id} node={node} selected={selectedNode?.id === node.id} related={related.has(node.id)} onSelect={onSelectNode} />)}
+        {nodes.map((node) => <LifeMapStar key={node.id} node={node} selected={selectedNode?.id === node.id} related={related.has(node.id)} onSelect={onSelectNode} />)}
+      </group>
     </>
   );
 }
@@ -277,7 +385,7 @@ export default function LifeMapScene() {
   const { nodes, loading, error, usingSeedData } = useLifeMapEvents();
   const [selectedNode, setSelectedNode] = useState<LifeMapNode | null>(null);
   const [cameraIntent, setCameraIntent] = useState<CameraIntent>(OVERVIEW_CAMERA);
-  const [narratorText, setNarratorText] = useState("3D Life Map open. Drag to pan, wheel to fly, choose a memory star, then enter Focus or Replay.");
+  const [narratorText, setNarratorText] = useState("The Life Map is open. Select a star to move inside the memory field.");
   const dragRef = useRef<{ x: number; y: number; camera: CameraIntent } | null>(null);
 
   useEffect(() => {
@@ -297,13 +405,13 @@ export default function LifeMapScene() {
   const recenter = useCallback(() => {
     setSelectedNode(null);
     setCameraIntent(OVERVIEW_CAMERA);
-    setNarratorText("The Life Map returned to galaxy overview. Drag to pan, wheel to fly, select a memory star.");
+    setNarratorText("Back to the whole private constellation. Select any star to enter it.");
   }, []);
 
   const onWheel = useCallback((event: WheelEvent<HTMLElement>) => {
     event.preventDefault();
     setCameraIntent((current) => ({
-      position: [current.position[0], current.position[1], clamp(current.position[2] + event.deltaY * 0.006, 4.2, 14.2)],
+      position: [current.position[0], current.position[1], clamp(current.position[2] + event.deltaY * 0.005, 3.7, 12.4)],
       target: current.target,
     }));
   }, []);
@@ -318,11 +426,11 @@ export default function LifeMapScene() {
     const dx = event.clientX - dragRef.current.x;
     const dy = event.clientY - dragRef.current.y;
     const base = dragRef.current.camera;
-    const shiftX = dx * -0.010;
-    const shiftY = dy * 0.006;
+    const shiftX = dx * -0.008;
+    const shiftY = dy * 0.005;
     setCameraIntent({
-      position: [clamp(base.position[0] + shiftX, -4.8, 4.8), clamp(base.position[1] + shiftY, -1.4, 3.4), base.position[2]],
-      target: [clamp(base.target[0] + shiftX * 0.7, -3.8, 3.8), clamp(base.target[1] + shiftY * 0.45, -1.7, 2.3), base.target[2]],
+      position: [clamp(base.position[0] + shiftX, -4.8, 4.8), clamp(base.position[1] + shiftY, -0.9, 3.2), base.position[2]],
+      target: [clamp(base.target[0] + shiftX * 0.7, -3.8, 3.8), clamp(base.target[1] + shiftY * 0.45, -1.2, 2.1), base.target[2]],
     });
   }, [selectedNode]);
 
@@ -345,7 +453,7 @@ export default function LifeMapScene() {
 
   return (
     <main
-      className="relative min-h-screen overflow-hidden bg-[#01050d] text-white"
+      className="relative min-h-screen overflow-hidden bg-[#01030a] text-white"
       data-testid="urai-true-3d-life-map"
       onWheel={onWheel}
       onPointerDown={onPointerDown}
@@ -353,45 +461,45 @@ export default function LifeMapScene() {
       onPointerUp={onPointerUp}
       onPointerCancel={onPointerUp}
     >
-      <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_35%,rgba(74,222,255,0.18),transparent_30%),radial-gradient(circle_at_68%_44%,rgba(255,80,210,0.16),transparent_32%),linear-gradient(180deg,#01050d_0%,#040817_55%,#01030a_100%)]" />
-      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_50%_50%,transparent_0_42%,rgba(0,0,0,0.82)_100%)] pointer-events-none" />
+      <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_34%,rgba(74,222,255,0.14),transparent_28%),radial-gradient(circle_at_71%_43%,rgba(255,80,210,0.13),transparent_30%),linear-gradient(180deg,#01030a_0%,#030712_55%,#010208_100%)]" />
+      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_50%_50%,transparent_0_40%,rgba(0,0,0,0.74)_100%)]" />
 
-      <Canvas className="absolute inset-0" camera={{ position: OVERVIEW_CAMERA.position, fov: 48, near: 0.1, far: 120 }} dpr={[1, 1.75]}>
+      <Canvas className="absolute inset-0" camera={{ position: OVERVIEW_CAMERA.position, fov: 42, near: 0.1, far: 140 }} dpr={[1, 1.85]} gl={{ antialias: true, alpha: false, powerPreference: "high-performance" }}>
         <CameraRig intent={cameraIntent} exploring={!selectedNode} />
         <LifeMapGalaxy nodes={nodes} selectedNode={selectedNode} onSelectNode={selectNode} />
       </Canvas>
 
-      <header className="absolute left-4 top-4 z-20 w-[min(360px,calc(100vw-32px))] rounded-3xl border border-cyan-100/15 bg-slate-950/55 p-5 shadow-2xl shadow-cyan-950/30 backdrop-blur-2xl">
-        <p className="text-[10px] font-black uppercase tracking-[0.28em] text-cyan-200">URAI Spatial · True 3D Life Map</p>
-        <h1 className="mt-2 text-6xl font-black leading-[0.78] tracking-[-0.1em] md:text-8xl">Life<br />Map</h1>
-        <p className="mt-4 text-sm font-semibold leading-6 text-cyan-50/78">Drag to pan through memory space. Wheel to fly closer. Stars now carry symbolic interior image textures.</p>
-        <div className="mt-4 flex flex-wrap gap-2 text-[10px] font-black uppercase tracking-[0.16em] text-cyan-50/80">
-          <span className="rounded-full border border-cyan-100/15 bg-cyan-100/10 px-3 py-1">3D camera unlocked</span>
-          <span className="rounded-full border border-cyan-100/15 bg-cyan-100/10 px-3 py-1">Image stars</span>
-        </div>
+      <header className="pointer-events-none absolute left-5 top-5 z-20 max-w-[min(330px,calc(100vw-40px))] text-white drop-shadow-[0_24px_70px_rgba(0,0,0,.62)]">
+        <p className="m-0 text-[10px] font-black uppercase tracking-[0.28em] text-cyan-200/90">URAI · Life Map</p>
+        <h1 className="mt-1 text-[clamp(2.15rem,4.8vw,4.9rem)] font-black leading-[0.82] tracking-[-0.09em]">Step inside the map.</h1>
+        <span className="mt-3 block max-w-[260px] text-xs font-bold leading-5 text-cyan-50/70">Private memory stars. Camera flies. Focus opens from the star, not a dashboard.</span>
       </header>
 
-      <aside className="absolute right-4 top-4 z-20 w-[min(320px,calc(100vw-32px))] rounded-3xl border border-white/10 bg-slate-950/55 p-4 shadow-2xl shadow-fuchsia-950/30 backdrop-blur-2xl">
-        <p className="text-[10px] font-black uppercase tracking-[0.24em] text-cyan-200">Spatial controls</p>
-        <strong className="mt-2 block text-lg">Wheel / drag / select</strong>
-        <span className="mt-1 block text-xs font-semibold leading-5 text-slate-200">{loading ? "Loading memory galaxy…" : error ? "Seed galaxy fallback active." : usingSeedData ? "Seed memory galaxy online." : "Live memory galaxy online."}</span>
+      <aside className="pointer-events-none absolute right-5 top-5 z-20 hidden max-w-[250px] rounded-2xl border border-white/10 bg-black/22 p-3 text-cyan-50/75 shadow-2xl shadow-black/40 backdrop-blur-xl md:block">
+        <p className="m-0 text-[9px] font-black uppercase tracking-[0.22em] text-cyan-200/80">Spatial controls</p>
+        <span className="mt-1 block text-[11px] font-bold leading-4">Drag / wheel / select. {loading ? "Opening galaxy…" : error ? "Seed galaxy active." : usingSeedData ? "Seed memories awake." : "Live memories awake."}</span>
       </aside>
 
-      <section className="absolute bottom-20 right-4 z-20 w-[min(390px,calc(100vw-32px))] rounded-3xl border border-cyan-100/15 bg-slate-950/62 p-4 shadow-2xl shadow-cyan-950/30 backdrop-blur-2xl" aria-live="polite">
-        <p className="text-[10px] font-black uppercase tracking-[0.24em] text-cyan-200">Orb companion</p>
-        <p className="mt-2 text-sm font-semibold leading-6 text-slate-100">{narratorText}</p>
-        {selectedNode ? (
-          <div className="mt-4 flex flex-wrap gap-2">
-            <button type="button" onClick={openFocus} className="rounded-full bg-cyan-100 px-4 py-2 text-xs font-black text-slate-950">Enter Focus</button>
-            <button type="button" onClick={openReplay} disabled={!selectedNode.replayAvailable || selectedNode.locked} className="rounded-full border border-white/20 px-4 py-2 text-xs font-black text-white disabled:opacity-35">Replay</button>
-            <button type="button" onClick={recenter} className="rounded-full border border-white/20 px-4 py-2 text-xs font-black text-white">Overview</button>
+      <section className="pointer-events-auto absolute bottom-20 left-1/2 z-30 w-[min(520px,calc(100vw-34px))] -translate-x-1/2 rounded-[28px] border border-cyan-100/15 bg-slate-950/54 p-4 shadow-[0_0_110px_rgba(80,230,255,.16)] backdrop-blur-2xl" aria-live="polite">
+        <div className="flex items-start gap-3">
+          <div className="mt-1 h-10 w-10 shrink-0 rounded-full bg-[radial-gradient(circle_at_35%_30%,white_0_12%,rgba(255,255,255,.55)_13%_24%,transparent_25%),radial-gradient(circle,#9ff8ff_0_24%,#52bfff_44%,rgba(32,77,160,.28)_74%)] shadow-[0_0_36px_rgba(120,235,255,.75),0_0_90px_rgba(120,235,255,.28)]" />
+          <div className="min-w-0 flex-1">
+            <p className="m-0 text-[10px] font-black uppercase tracking-[0.24em] text-cyan-200/85">{selectedNode ? selectedNode.title : "Orb companion"}</p>
+            <p className="mt-1 line-clamp-2 text-sm font-semibold leading-5 text-slate-100/86">{narratorText}</p>
+            {selectedNode ? (
+              <div className="mt-3 flex flex-wrap gap-2">
+                <button type="button" onClick={openFocus} className="rounded-full bg-cyan-100 px-4 py-2 text-xs font-black text-slate-950 shadow-[0_0_34px_rgba(103,232,249,.24)]">Enter Focus</button>
+                <button type="button" onClick={openReplay} disabled={!selectedNode.replayAvailable || selectedNode.locked} className="rounded-full border border-white/20 bg-white/5 px-4 py-2 text-xs font-black text-white disabled:opacity-35">Replay</button>
+                <button type="button" onClick={recenter} className="rounded-full border border-white/20 bg-white/5 px-4 py-2 text-xs font-black text-white">Overview</button>
+              </div>
+            ) : null}
           </div>
-        ) : null}
+        </div>
       </section>
 
-      <nav className="absolute bottom-4 left-1/2 z-20 flex max-w-[calc(100vw-24px)] -translate-x-1/2 gap-2 overflow-x-auto rounded-full border border-white/10 bg-slate-950/65 p-2 shadow-2xl shadow-black/40 backdrop-blur-2xl" aria-label="URAI Life Map route portals">
+      <nav className="absolute bottom-4 left-1/2 z-20 flex max-w-[calc(100vw-24px)] -translate-x-1/2 gap-1 overflow-x-auto rounded-full border border-white/10 bg-black/28 p-1.5 shadow-2xl shadow-black/50 backdrop-blur-2xl" aria-label="URAI Life Map route portals">
         {[["Home", "/home"], ["Ground", "/ground"], ["Focus", "/focus"], ["Replay", "/replay"], ["Mirror", "/mirror"], ["Passport", "/passport"], ["XR", "/spatial/ar-vr"]].map(([label, href]) => (
-          <Link key={href} href={href} className="rounded-full border border-cyan-100/15 px-4 py-2 text-[11px] font-black text-cyan-50 no-underline hover:bg-cyan-100 hover:text-slate-950">{label}</Link>
+          <Link key={href} href={href} className="rounded-full border border-cyan-100/10 px-3 py-1.5 text-[10px] font-black text-cyan-50/78 no-underline hover:bg-cyan-100 hover:text-slate-950">{label}</Link>
         ))}
       </nav>
     </main>
