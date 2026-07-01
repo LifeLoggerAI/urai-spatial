@@ -38,6 +38,13 @@ const zones = [
   ['Garden passage', 'A calmer path for breath, return, and reset.', 'zoneGarden'],
 ] as const
 
+const mobileProof = [
+  ['Reception', 'Welcome Guide is active'],
+  ['Privacy', 'Consent sanctuary visible'],
+  ['Objects', 'Keys, table, work, body'],
+  ['Helpers', 'Schedule, wellness, logistics'],
+] as const
+
 const rail = [
   ['Home', '/home'],
   ['Ground', '/ground'],
@@ -126,6 +133,15 @@ export default function GroundRealmPage() {
           <strong>Open any station, object, or helper.</strong>
           <p>Ground turns real-life pressure into staged context: what matters, what can wait, what needs a human choice.</p>
         </aside>
+      </section>
+
+      <section className="urai-ground-mobile-proof" aria-label="Mobile Ground World proof tray">
+        {mobileProof.map(([title, copy]) => (
+          <article key={title}>
+            <span>{title}</span>
+            <strong>{copy}</strong>
+          </article>
+        ))}
       </section>
 
       <nav className={styles.routeRail} aria-label="URAI launch route chain">
