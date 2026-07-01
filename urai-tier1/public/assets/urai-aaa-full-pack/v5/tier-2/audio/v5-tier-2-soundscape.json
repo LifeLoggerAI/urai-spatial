@@ -1,0 +1,14 @@
+{
+  "schema": "urai.soundscape.v1",
+  "version": "v5",
+  "tier": "tier-2",
+  "ambient": "/assets/urai-aaa-full-pack/v5/tier-2/audio/v5-tier-2-ambient.wav",
+  "chime": "/assets/urai-aaa-full-pack/v5/tier-2/audio/v5-tier-2-ui-chime.wav",
+  "intention": "Life Map, Focus, Replay, Mirror, Passport, Status, Location Map.",
+  "mix": {
+    "ambientDb": -18,
+    "chimeDb": -10,
+    "spatialWidth": "cinematic",
+    "loopSafe": true
+  }
+}

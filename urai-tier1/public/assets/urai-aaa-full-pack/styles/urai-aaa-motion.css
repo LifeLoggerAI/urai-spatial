@@ -1,0 +1,36 @@
+/*
+URAI AAA Full Asset Motion Layer
+Generated 2026-07-01T00:15:39.163Z
+*/
+:root {
+  --urai-aaa-orb-breath-ms: 4800ms;
+  --urai-aaa-world-drift-ms: 12000ms;
+  --urai-aaa-portal-pulse-ms: 6200ms;
+}
+
+@keyframes uraiAaaOrbBreath {
+  0%, 100% { transform: scale(0.96); filter: drop-shadow(0 0 18px rgba(110, 231, 255, 0.24)); }
+  50% { transform: scale(1.045); filter: drop-shadow(0 0 42px rgba(192, 132, 252, 0.52)); }
+}
+
+@keyframes uraiAaaWorldDrift {
+  0%, 100% { transform: translate3d(-8px, 2px, 0) scale(1.01); }
+  50% { transform: translate3d(8px, -2px, 0) scale(1.025); }
+}
+
+@keyframes uraiAaaPortalPulse {
+  0%, 100% { opacity: 0.72; filter: saturate(1); }
+  50% { opacity: 1; filter: saturate(1.35) brightness(1.08); }
+}
+
+.urai-aaa-orb-motion { animation: uraiAaaOrbBreath var(--urai-aaa-orb-breath-ms) ease-in-out infinite; transform-origin: center; }
+.urai-aaa-world-motion { animation: uraiAaaWorldDrift var(--urai-aaa-world-drift-ms) ease-in-out infinite; will-change: transform; }
+.urai-aaa-portal-motion { animation: uraiAaaPortalPulse var(--urai-aaa-portal-pulse-ms) ease-in-out infinite; }
+
+@media (prefers-reduced-motion: reduce) {
+  .urai-aaa-orb-motion,
+  .urai-aaa-world-motion,
+  .urai-aaa-portal-motion {
+    animation: none;
+  }
+}

@@ -1,0 +1,14 @@
+{
+  "schema": "urai.soundscape.v1",
+  "version": "v1",
+  "tier": "tier-3",
+  "ambient": "/assets/urai-aaa-full-pack/v1/tier-3/audio/v1-tier-3-ambient.wav",
+  "chime": "/assets/urai-aaa-full-pack/v1/tier-3/audio/v1-tier-3-ui-chime.wav",
+  "intention": "Quest Browser proof layer, WebXR fallback, AR/VR readiness.",
+  "mix": {
+    "ambientDb": -18,
+    "chimeDb": -10,
+    "spatialWidth": "wide-xr",
+    "loopSafe": true
+  }
+}

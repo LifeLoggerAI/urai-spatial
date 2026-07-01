@@ -1,0 +1,14 @@
+{
+  "schema": "urai.soundscape.v1",
+  "version": "v3",
+  "tier": "tier-5",
+  "ambient": "/assets/urai-aaa-full-pack/v3/tier-5/audio/v3-tier-5-ambient.wav",
+  "chime": "/assets/urai-aaa-full-pack/v3/tier-5/audio/v3-tier-5-ui-chime.wav",
+  "intention": "Consent, provenance, private-by-default, legacy, audit layer.",
+  "mix": {
+    "ambientDb": -18,
+    "chimeDb": -10,
+    "spatialWidth": "cinematic",
+    "loopSafe": true
+  }
+}

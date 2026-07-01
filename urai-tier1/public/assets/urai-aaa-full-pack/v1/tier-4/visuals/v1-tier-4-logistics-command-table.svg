@@ -1,0 +1,206 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="1600" height="900" viewBox="0 0 1280 720" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="title desc">
+<title id="title">V1 TIER-4 v1-tier-4-logistics-command-table</title>
+<desc id="desc">Logistics command table. V1 Public Preview. Tier 4 — Autonomous Council.</desc>
+<defs>
+  <radialGradient id="orb" cx="50%" cy="50%" r="50%">
+    <stop offset="0%" stop-color="#ffffff"/>
+    <stop offset="32%" stop-color="#fff7ad"/>
+    <stop offset="62%" stop-color="#6ee7ff"/>
+    <stop offset="100%" stop-color="#21183f" stop-opacity="0.15"/>
+  </radialGradient>
+  <linearGradient id="sky" x1="0" y1="0" x2="1" y2="1">
+    <stop offset="0%" stop-color="#090b16"/>
+    <stop offset="46%" stop-color="#21183f"/>
+    <stop offset="100%" stop-color="#090b16"/>
+  </linearGradient>
+  <linearGradient id="ground" x1="0" y1="0" x2="1" y2="0">
+    <stop offset="0%" stop-color="#21183f" stop-opacity="0.12"/>
+    <stop offset="52%" stop-color="#6ee7ff" stop-opacity="0.24"/>
+    <stop offset="100%" stop-color="#21183f" stop-opacity="0.12"/>
+  </linearGradient>
+  <filter id="softGlow" x="-50%" y="-50%" width="200%" height="200%">
+    <feGaussianBlur stdDeviation="10" result="blur"/>
+    <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+  </filter>
+</defs>
+<rect width="1280" height="720" fill="url(#sky)"/>
+<path d="M0 472 C155 430 272 493 430 456 C596 417 701 490 852 451 C1008 411 1122 437 1280 392 V720 H0 Z" fill="url(#ground)" opacity="0.88"/>
+<circle cx="865" cy="215" r="2.5" fill="#fff7ad" opacity="0.35">
+      <animate attributeName="opacity" values="0.35;1;0.35" dur="3s" repeatCount="indefinite"/>
+    </circle>
+<circle cx="962" cy="268" r="3.5" fill="#6ee7ff" opacity="0.45">
+      <animate attributeName="opacity" values="0.45;1;0.45" dur="4s" repeatCount="indefinite"/>
+    </circle>
+<circle cx="1059" cy="321" r="4.5" fill="#6ee7ff" opacity="0.55">
+      <animate attributeName="opacity" values="0.55;1;0.55" dur="5s" repeatCount="indefinite"/>
+    </circle>
+<circle cx="1156" cy="374" r="1.5" fill="#fff7ad" opacity="0.65">
+      <animate attributeName="opacity" values="0.65;1;0.65" dur="6s" repeatCount="indefinite"/>
+    </circle>
+<circle cx="153" cy="427" r="2.5" fill="#6ee7ff" opacity="0.75">
+      <animate attributeName="opacity" values="0.75;1;0.75" dur="7s" repeatCount="indefinite"/>
+    </circle>
+<circle cx="250" cy="480" r="3.5" fill="#6ee7ff" opacity="0.85">
+      <animate attributeName="opacity" values="0.85;1;0.85" dur="8s" repeatCount="indefinite"/>
+    </circle>
+<circle cx="347" cy="533" r="4.5" fill="#fff7ad" opacity="0.95">
+      <animate attributeName="opacity" values="0.95;1;0.95" dur="3s" repeatCount="indefinite"/>
+    </circle>
+<circle cx="444" cy="586" r="1.5" fill="#6ee7ff" opacity="0.35">
+      <animate attributeName="opacity" values="0.35;1;0.35" dur="4s" repeatCount="indefinite"/>
+    </circle>
+<circle cx="541" cy="119" r="2.5" fill="#6ee7ff" opacity="0.45">
+      <animate attributeName="opacity" values="0.45;1;0.45" dur="5s" repeatCount="indefinite"/>
+    </circle>
+<circle cx="638" cy="172" r="3.5" fill="#fff7ad" opacity="0.55">
+      <animate attributeName="opacity" values="0.55;1;0.55" dur="6s" repeatCount="indefinite"/>
+    </circle>
+<circle cx="735" cy="225" r="4.5" fill="#6ee7ff" opacity="0.65">
+      <animate attributeName="opacity" values="0.65;1;0.65" dur="7s" repeatCount="indefinite"/>
+    </circle>
+<circle cx="832" cy="278" r="1.5" fill="#6ee7ff" opacity="0.75">
+      <animate attributeName="opacity" values="0.75;1;0.75" dur="8s" repeatCount="indefinite"/>
+    </circle>
+<circle cx="929" cy="331" r="2.5" fill="#fff7ad" opacity="0.85">
+      <animate attributeName="opacity" values="0.85;1;0.85" dur="3s" repeatCount="indefinite"/>
+    </circle>
+<circle cx="1026" cy="384" r="3.5" fill="#6ee7ff" opacity="0.95">
+      <animate attributeName="opacity" values="0.95;1;0.95" dur="4s" repeatCount="indefinite"/>
+    </circle>
+<circle cx="1123" cy="437" r="4.5" fill="#6ee7ff" opacity="0.35">
+      <animate attributeName="opacity" values="0.35;1;0.35" dur="5s" repeatCount="indefinite"/>
+    </circle>
+<circle cx="120" cy="490" r="1.5" fill="#fff7ad" opacity="0.45">
+      <animate attributeName="opacity" values="0.45;1;0.45" dur="6s" repeatCount="indefinite"/>
+    </circle>
+<circle cx="217" cy="543" r="2.5" fill="#6ee7ff" opacity="0.55">
+      <animate attributeName="opacity" values="0.55;1;0.55" dur="7s" repeatCount="indefinite"/>
+    </circle>
+<circle cx="314" cy="596" r="3.5" fill="#6ee7ff" opacity="0.65">
+      <animate attributeName="opacity" values="0.65;1;0.65" dur="8s" repeatCount="indefinite"/>
+    </circle>
+<circle cx="411" cy="129" r="4.5" fill="#fff7ad" opacity="0.75">
+      <animate attributeName="opacity" values="0.75;1;0.75" dur="3s" repeatCount="indefinite"/>
+    </circle>
+<circle cx="508" cy="182" r="1.5" fill="#6ee7ff" opacity="0.85">
+      <animate attributeName="opacity" values="0.85;1;0.85" dur="4s" repeatCount="indefinite"/>
+    </circle>
+<circle cx="605" cy="235" r="2.5" fill="#6ee7ff" opacity="0.95">
+      <animate attributeName="opacity" values="0.95;1;0.95" dur="5s" repeatCount="indefinite"/>
+    </circle>
+<circle cx="702" cy="288" r="3.5" fill="#fff7ad" opacity="0.35">
+      <animate attributeName="opacity" values="0.35;1;0.35" dur="6s" repeatCount="indefinite"/>
+    </circle>
+<circle cx="799" cy="341" r="4.5" fill="#6ee7ff" opacity="0.45">
+      <animate attributeName="opacity" values="0.45;1;0.45" dur="7s" repeatCount="indefinite"/>
+    </circle>
+<circle cx="896" cy="394" r="1.5" fill="#6ee7ff" opacity="0.55">
+      <animate attributeName="opacity" values="0.55;1;0.55" dur="8s" repeatCount="indefinite"/>
+    </circle>
+<circle cx="993" cy="447" r="2.5" fill="#fff7ad" opacity="0.65">
+      <animate attributeName="opacity" values="0.65;1;0.65" dur="3s" repeatCount="indefinite"/>
+    </circle>
+<circle cx="1090" cy="500" r="3.5" fill="#6ee7ff" opacity="0.75">
+      <animate attributeName="opacity" values="0.75;1;0.75" dur="4s" repeatCount="indefinite"/>
+    </circle>
+<circle cx="1187" cy="553" r="4.5" fill="#6ee7ff" opacity="0.85">
+      <animate attributeName="opacity" values="0.85;1;0.85" dur="5s" repeatCount="indefinite"/>
+    </circle>
+<circle cx="184" cy="86" r="1.5" fill="#fff7ad" opacity="0.95">
+      <animate attributeName="opacity" values="0.95;1;0.95" dur="6s" repeatCount="indefinite"/>
+    </circle>
+<circle cx="281" cy="139" r="2.5" fill="#6ee7ff" opacity="0.35">
+      <animate attributeName="opacity" values="0.35;1;0.35" dur="7s" repeatCount="indefinite"/>
+    </circle>
+<circle cx="378" cy="192" r="3.5" fill="#6ee7ff" opacity="0.45">
+      <animate attributeName="opacity" values="0.45;1;0.45" dur="8s" repeatCount="indefinite"/>
+    </circle>
+<circle cx="475" cy="245" r="4.5" fill="#fff7ad" opacity="0.55">
+      <animate attributeName="opacity" values="0.55;1;0.55" dur="3s" repeatCount="indefinite"/>
+    </circle>
+<circle cx="572" cy="298" r="1.5" fill="#6ee7ff" opacity="0.65">
+      <animate attributeName="opacity" values="0.65;1;0.65" dur="4s" repeatCount="indefinite"/>
+    </circle>
+<circle cx="669" cy="351" r="2.5" fill="#6ee7ff" opacity="0.75">
+      <animate attributeName="opacity" values="0.75;1;0.75" dur="5s" repeatCount="indefinite"/>
+    </circle>
+<circle cx="766" cy="404" r="3.5" fill="#fff7ad" opacity="0.85">
+      <animate attributeName="opacity" values="0.85;1;0.85" dur="6s" repeatCount="indefinite"/>
+    </circle>
+<g transform="translate(0 6)">
+<ellipse cx="640" cy="360" rx="155" ry="49.6" fill="none" stroke="#6ee7ff" stroke-width="1.5" opacity="0.160">
+      <animate attributeName="rx" values="155;173;155" dur="7s" repeatCount="indefinite"/>
+      <animate attributeName="opacity" values="0.160;0.24;0.160" dur="6s" repeatCount="indefinite"/>
+    </ellipse>
+<ellipse cx="640" cy="360" rx="209" ry="66.88" fill="none" stroke="#c084fc" stroke-width="1.5" opacity="0.148">
+      <animate attributeName="rx" values="209;227;209" dur="8s" repeatCount="indefinite"/>
+      <animate attributeName="opacity" values="0.148;0.22799999999999998;0.148" dur="7s" repeatCount="indefinite"/>
+    </ellipse>
+<ellipse cx="640" cy="360" rx="263" ry="84.16" fill="none" stroke="#6ee7ff" stroke-width="1.5" opacity="0.136">
+      <animate attributeName="rx" values="263;281;263" dur="9s" repeatCount="indefinite"/>
+      <animate attributeName="opacity" values="0.136;0.21600000000000003;0.136" dur="8s" repeatCount="indefinite"/>
+    </ellipse>
+<ellipse cx="640" cy="360" rx="317" ry="101.44" fill="none" stroke="#c084fc" stroke-width="1.5" opacity="0.124">
+      <animate attributeName="rx" values="317;335;317" dur="10s" repeatCount="indefinite"/>
+      <animate attributeName="opacity" values="0.124;0.20400000000000001;0.124" dur="9s" repeatCount="indefinite"/>
+    </ellipse>
+<ellipse cx="640" cy="360" rx="371" ry="118.72" fill="none" stroke="#6ee7ff" stroke-width="1.5" opacity="0.112">
+      <animate attributeName="rx" values="371;389;371" dur="11s" repeatCount="indefinite"/>
+      <animate attributeName="opacity" values="0.112;0.192;0.112" dur="10s" repeatCount="indefinite"/>
+    </ellipse>
+<ellipse cx="640" cy="360" rx="425" ry="136" fill="none" stroke="#c084fc" stroke-width="1.5" opacity="0.100">
+      <animate attributeName="rx" values="425;443;425" dur="12s" repeatCount="indefinite"/>
+      <animate attributeName="opacity" values="0.100;0.18;0.100" dur="11s" repeatCount="indefinite"/>
+    </ellipse>
+<ellipse cx="640" cy="360" rx="479" ry="153.28" fill="none" stroke="#6ee7ff" stroke-width="1.5" opacity="0.088">
+      <animate attributeName="rx" values="479;497;479" dur="13s" repeatCount="indefinite"/>
+      <animate attributeName="opacity" values="0.088;0.16799999999999998;0.088" dur="12s" repeatCount="indefinite"/>
+    </ellipse>
+<ellipse cx="640" cy="360" rx="533" ry="170.56" fill="none" stroke="#c084fc" stroke-width="1.5" opacity="0.076">
+      <animate attributeName="rx" values="533;551;533" dur="14s" repeatCount="indefinite"/>
+      <animate attributeName="opacity" values="0.076;0.156;0.076" dur="13s" repeatCount="indefinite"/>
+    </ellipse>
+</g>
+<circle cx="640" cy="330" r="74" fill="url(#orb)" filter="url(#softGlow)" opacity="0.94">
+  <animate attributeName="r" values="68;78;68" dur="4.8s" repeatCount="indefinite"/>
+</circle>
+<circle cx="640" cy="330" r="106" fill="none" stroke="#6ee7ff" stroke-width="2" opacity="0.32">
+  <animate attributeName="r" values="96;122;96" dur="5.6s" repeatCount="indefinite"/>
+  <animate attributeName="opacity" values="0.22;0.48;0.22" dur="5.6s" repeatCount="indefinite"/>
+</circle>
+<path d="M560 603 C583 533 610 492 640 492 C670 492 697 533 720 603" stroke="#fff7ad" stroke-width="8" stroke-linecap="round" opacity="0.48"/>
+<circle cx="640" cy="466" r="31" fill="#fff7ad" opacity="0.23"/>
+<g opacity="0.82">
+      <rect x="160" y="485" width="150" height="68" rx="22" fill="#21183f" stroke="#6ee7ff" stroke-width="1.2" opacity="0.58"/>
+      <circle cx="192" cy="519" r="12" fill="#c084fc" opacity="0.72"/>
+      <path d="M218 517 H288" stroke="#fff7ad" stroke-width="3" stroke-linecap="round" opacity="0.55"/>
+    </g>
+<g opacity="0.82">
+      <rect x="365" y="443" width="150" height="68" rx="22" fill="#21183f" stroke="#6ee7ff" stroke-width="1.2" opacity="0.58"/>
+      <circle cx="397" cy="477" r="12" fill="#c084fc" opacity="0.72"/>
+      <path d="M423 475 H493" stroke="#fff7ad" stroke-width="3" stroke-linecap="round" opacity="0.55"/>
+    </g>
+<g opacity="0.82">
+      <rect x="570" y="485" width="150" height="68" rx="22" fill="#21183f" stroke="#6ee7ff" stroke-width="1.2" opacity="0.58"/>
+      <circle cx="602" cy="519" r="12" fill="#c084fc" opacity="0.72"/>
+      <path d="M628 517 H698" stroke="#fff7ad" stroke-width="3" stroke-linecap="round" opacity="0.55"/>
+    </g>
+<g opacity="0.82">
+      <rect x="775" y="443" width="150" height="68" rx="22" fill="#21183f" stroke="#6ee7ff" stroke-width="1.2" opacity="0.58"/>
+      <circle cx="807" cy="477" r="12" fill="#c084fc" opacity="0.72"/>
+      <path d="M833 475 H903" stroke="#fff7ad" stroke-width="3" stroke-linecap="round" opacity="0.55"/>
+    </g>
+<g opacity="0.82">
+      <rect x="980" y="485" width="150" height="68" rx="22" fill="#21183f" stroke="#6ee7ff" stroke-width="1.2" opacity="0.58"/>
+      <circle cx="1012" cy="519" r="12" fill="#c084fc" opacity="0.72"/>
+      <path d="M1038 517 H1108" stroke="#fff7ad" stroke-width="3" stroke-linecap="round" opacity="0.55"/>
+    </g>
+<g opacity="0.9">
+  <rect x="68" y="58" width="468" height="112" rx="34" fill="#020617" opacity="0.42" stroke="#6ee7ff" stroke-opacity="0.32"/>
+  <text x="96" y="103" fill="#ffffff" font-family="Inter, Arial, sans-serif" font-size="24" font-weight="800" letter-spacing="1.5">V1 Public Preview</text>
+  <text x="96" y="139" fill="#fff7ad" font-family="Inter, Arial, sans-serif" font-size="18" font-weight="600">Tier 4 — Autonomous Council</text>
+</g>
+<text x="96" y="650" fill="#ffffff" font-family="Inter, Arial, sans-serif" font-size="30" font-weight="900" opacity="0.92">v1 tier 4 logistics command table</text>
+<text x="96" y="682" fill="#6ee7ff" font-family="Inter, Arial, sans-serif" font-size="16" font-weight="700" opacity="0.76">Logistics command table</text>
+</svg>

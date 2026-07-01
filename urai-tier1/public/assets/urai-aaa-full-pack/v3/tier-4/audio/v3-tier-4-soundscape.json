@@ -1,0 +1,14 @@
+{
+  "schema": "urai.soundscape.v1",
+  "version": "v3",
+  "tier": "tier-4",
+  "ambient": "/assets/urai-aaa-full-pack/v3/tier-4/audio/v3-tier-4-ambient.wav",
+  "chime": "/assets/urai-aaa-full-pack/v3/tier-4/audio/v3-tier-4-ui-chime.wav",
+  "intention": "Private AI workforce, council floor, life operations, agents.",
+  "mix": {
+    "ambientDb": -18,
+    "chimeDb": -10,
+    "spatialWidth": "cinematic",
+    "loopSafe": true
+  }
+}

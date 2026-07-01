@@ -1,0 +1,61 @@
+{
+  "schema": "urai.motion.v1",
+  "asset": "v3-tier-3-quest-entry-lobby",
+  "version": "v3",
+  "tier": "tier-3",
+  "loops": [
+    {
+      "target": "orb",
+      "property": "scale",
+      "keyframes": [
+        0.96,
+        1.04,
+        0.96
+      ],
+      "durationMs": 4800,
+      "easing": "breath"
+    },
+    {
+      "target": "depth-rings",
+      "property": "opacity",
+      "keyframes": [
+        0.22,
+        0.48,
+        0.22
+      ],
+      "durationMs": 5600,
+      "easing": "sine"
+    },
+    {
+      "target": "world",
+      "property": "parallax",
+      "keyframes": [
+        -8,
+        0,
+        8,
+        0,
+        -8
+      ],
+      "durationMs": 12000,
+      "easing": "cinematic"
+    },
+    {
+      "target": "portal",
+      "property": "glow",
+      "keyframes": [
+        0.3,
+        0.72,
+        0.3
+      ],
+      "durationMs": 6200,
+      "easing": "soft-pulse"
+    }
+  ],
+  "interactionStates": {
+    "idle": "ambient living world",
+    "hover": "increase glow and ring density",
+    "selected": "move camera inward and reveal memory/council/vault detail",
+    "mobile": "reduce panel spread, preserve orb and primary portal",
+    "xrFallback": "show Quest/WebXR instructions without claiming physical proof"
+  }
+}

@@ -1,0 +1,14 @@
+{
+  "schema": "urai.soundscape.v1",
+  "version": "v4",
+  "tier": "tier-1",
+  "ambient": "/assets/urai-aaa-full-pack/v4/tier-1/audio/v4-tier-1-ambient.wav",
+  "chime": "/assets/urai-aaa-full-pack/v4/tier-1/audio/v4-tier-1-ui-chime.wav",
+  "intention": "Home, world entry, sky/ground threshold, orb, avatar, first impression.",
+  "mix": {
+    "ambientDb": -18,
+    "chimeDb": -10,
+    "spatialWidth": "cinematic",
+    "loopSafe": true
+  }
+}
