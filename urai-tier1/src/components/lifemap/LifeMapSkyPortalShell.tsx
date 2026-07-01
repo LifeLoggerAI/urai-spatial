@@ -6,7 +6,11 @@ import LifeMapScene from "./LifeMapScene";
 
 const SKY_PORTAL_KEY = "urai:transition:sky-to-life-map";
 
-function shouldPlaySkyPortal(searchParams: URLSearchParams | ReadonlyURLSearchParams | null) {
+type SkyPortalSearchParams = {
+  get(name: string): string | null;
+};
+
+function shouldPlaySkyPortal(searchParams: SkyPortalSearchParams | null) {
   if (searchParams?.get("transition") === "none") return false;
   if (searchParams?.get("transition") === "sky") return true;
   if (typeof window === "undefined") return true;
