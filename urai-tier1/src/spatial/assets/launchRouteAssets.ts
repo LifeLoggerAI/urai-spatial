@@ -7,14 +7,15 @@ export type LaunchRouteAsset = {
 }
 
 const assetRoot = '/assets/urai'
+const bespokeRoot = `${assetRoot}/bespoke`
 
 export const launchRouteAssets: LaunchRouteAsset[] = [
   {
     route: '/',
     surface: 'home',
-    webp: `${assetRoot}/home/home-threshold-main.webp`,
+    webp: `${bespokeRoot}/home/home-threshold-bespoke-final.svg`,
     fallback: `${assetRoot}/home/home-threshold-fallback.svg`,
-    mobileWebp: `${assetRoot}/home/home-threshold-mobile.webp`,
+    mobileWebp: `${bespokeRoot}/home/home-threshold-bespoke-final-mobile.svg`,
   },
   {
     route: '/ground',
