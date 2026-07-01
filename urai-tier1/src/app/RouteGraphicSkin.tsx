@@ -17,6 +17,7 @@ const visuals: RouteVisual[] = [
   { key: 'replay', label: 'Replay memory film bespoke final', image: '/assets/urai/bespoke/replay/replay-memory-film-bespoke-final.svg' },
   { key: 'mirror', label: 'Mirror reflection realm bespoke final', image: '/assets/urai/bespoke/mirror/mirror-reflection-bespoke-final.svg' },
   { key: 'passport', label: 'Passport vault bespoke final', image: '/assets/urai/bespoke/passport/passport-vault-bespoke-final.svg' },
+  { key: 'spatial-ar-vr', label: 'XR entry chamber bespoke final', image: '/assets/urai/bespoke/xr/xr-entry-chamber-bespoke-final.svg' },
   { key: 'privacy-controls', label: 'Privacy controls', image: '/assets/urai/privacy-controls/privacy-controls-main.webp' },
   { key: 'location-map', label: 'Location emotional weather', image: '/assets/urai/location-map/location-emotional-weather-main.webp' },
   { key: 'status', label: 'Status route matrix', image: '/assets/urai/status/status-route-matrix-main.webp' },
@@ -25,6 +26,7 @@ const visuals: RouteVisual[] = [
 function resolveVisual(pathname: string | null): RouteVisual {
   const path = pathname || '/'
 
+  if (path.startsWith('/spatial/ar-vr')) return visuals[7]
   if (path === '/' || path === '/home' || path === '/spatial') return visuals[0]
   if (path.startsWith('/ground')) return visuals[1]
   if (path.startsWith('/life-map') || path.startsWith('/spatial/life-map')) return visuals[2]
@@ -32,9 +34,9 @@ function resolveVisual(pathname: string | null): RouteVisual {
   if (path.startsWith('/replay') || path.includes('/replay')) return visuals[4]
   if (path.startsWith('/mirror')) return visuals[5]
   if (path.startsWith('/passport')) return visuals[6]
-  if (path.startsWith('/privacy-controls') || path.startsWith('/privacy')) return visuals[7]
-  if (path.startsWith('/location-map') || path.startsWith('/place')) return visuals[8]
-  if (path.startsWith('/status')) return visuals[9]
+  if (path.startsWith('/privacy-controls') || path.startsWith('/privacy')) return visuals[8]
+  if (path.startsWith('/location-map') || path.startsWith('/place')) return visuals[9]
+  if (path.startsWith('/status')) return visuals[10]
 
   return visuals[0]
 }
