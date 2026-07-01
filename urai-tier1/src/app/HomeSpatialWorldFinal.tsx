@@ -105,7 +105,7 @@ export default function HomeSpatialWorldFinal() {
   return (
     <main
       ref={homeRef}
-      className="urai-genesis-home"
+      className="urai-genesis-home urai-home-spatial-world-final"
       aria-label="URAI Home World threshold"
       data-urai-route="genesis-home-world"
       data-launch-surface="aaa-final-home-sky-ground-orb-body-portals"
