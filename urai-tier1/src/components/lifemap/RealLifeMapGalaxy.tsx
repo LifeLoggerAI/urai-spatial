@@ -4,78 +4,76 @@ import Link from 'next/link'
 import { useMemo, useState, type CSSProperties } from 'react'
 import { useRouter } from 'next/navigation'
 
-type GalaxyStar = {
+type MemoryNode = {
   id: string
   title: string
-  subtitle: string
+  type: string
+  era: string
   x: number
   y: number
   z: number
   size: number
-  aura: string
+  hue: string
   replay: boolean
-  family: string
-  era: string
 }
 
-const titles = [
-  ['quiet-reset', 'The Quiet Reset', 'Recovery memory', 'Recovery', 'Today'],
-  ['threshold-moment', 'Threshold Moment', 'Turning point', 'Threshold', 'March'],
-  ['memory-thread', 'Memory Thread', 'Recent signal', 'Memory', 'Now'],
-  ['recovery-bloom', 'Recovery Bloom', 'Return path', 'Recovery', 'Afterward'],
-  ['relationship-echo', 'Relationship Echo', 'Social orbit', 'Relationship', 'Social'],
-  ['legacy-thread', 'Legacy Thread', 'Deep time', 'Legacy', 'Long arc'],
-  ['seasonal-arc', 'Seasonal Arc', 'Life weather', 'Season', 'Spring'],
-  ['ritual-marker', 'Ritual Marker', 'Grounding ritual', 'Ritual', 'Weekly'],
-  ['forecast-path', 'Forecast Path', 'Ahead', 'Forecast', 'Ahead'],
-  ['first-light', 'First Light', 'Opening memory', 'Memory', 'Origin'],
-  ['body-signal', 'Body Signal', 'Nervous system', 'Body', 'Signal'],
-  ['home-anchor', 'Home Anchor', 'Safe place', 'Ground', 'Home'],
+const seed = [
+  ['quiet-reset', 'The Quiet Reset', 'Recovery', 'Today'],
+  ['threshold-moment', 'Threshold Moment', 'Threshold', 'March'],
+  ['memory-thread', 'Memory Thread', 'Memory', 'Now'],
+  ['recovery-bloom', 'Recovery Bloom', 'Recovery', 'Afterward'],
+  ['relationship-echo', 'Relationship Echo', 'Relationship', 'Social'],
+  ['legacy-thread', 'Legacy Thread', 'Legacy', 'Long arc'],
+  ['seasonal-arc', 'Seasonal Arc', 'Season', 'Spring'],
+  ['ritual-marker', 'Ritual Marker', 'Ritual', 'Weekly'],
+  ['forecast-path', 'Forecast Path', 'Forecast', 'Ahead'],
+  ['first-light', 'First Light', 'Origin', 'Origin'],
+  ['body-signal', 'Body Signal', 'Body', 'Signal'],
+  ['home-anchor', 'Home Anchor', 'Ground', 'Home'],
 ] as const
 
-const auras = ['#9ff7ff', '#d7b4ff', '#ff7bd6', '#cfeaff', '#7ddcff', '#f7e7b7', '#b68cff', '#66f2c4']
+const hues = ['#9ff7ff', '#d7b4ff', '#ff7bd6', '#cfeaff', '#7ddcff', '#f7e7b7', '#b68cff', '#66f2c4']
 
-function makeStars(): GalaxyStar[] {
+function buildNodes(): MemoryNode[] {
   return Array.from({ length: 34 }, (_, index) => {
-    const base = titles[index % titles.length]
-    const ring = Math.floor(index / 6)
-    const angle = index * 2.399963 + ring * 0.43
-    const radius = 9 + Math.sqrt(index + 2) * 6.9
-    const x = 50 + Math.cos(angle) * radius * (index % 3 === 0 ? 1.28 : 1)
-    const y = 50 + Math.sin(angle) * radius * 0.46 + Math.sin(index * 0.9) * 8.5
-    const z = (index % 9) - 4
+    const item = seed[index % seed.length]
+    const ring = Math.floor(index / 7)
+    const angle = index * 2.399963 + ring * 0.58
+    const radius = 10 + Math.sqrt(index + 1) * 7.2
+    const wide = index % 4 === 0 ? 1.34 : 1
+    const x = 50 + Math.cos(angle) * radius * wide
+    const y = 50 + Math.sin(angle) * radius * 0.46 + Math.sin(index * 0.74) * 7.4
 
     return {
-      id: index === 0 ? 'quiet-reset' : `${base[0]}-${index}`,
-      title: index === 0 ? 'The Quiet Reset' : base[1],
-      subtitle: base[2],
-      family: base[3],
-      era: base[4],
-      x: Math.max(8, Math.min(92, x)),
-      y: Math.max(13, Math.min(82, y)),
-      z,
-      size: 0.78 + ((index * 17) % 44) / 100,
-      aura: auras[index % auras.length],
-      replay: index % 4 !== 2,
+      id: index === 0 ? 'quiet-reset' : `${item[0]}-${index}`,
+      title: index === 0 ? 'The Quiet Reset' : item[1],
+      type: item[2],
+      era: item[3],
+      x: Math.max(6, Math.min(94, x)),
+      y: Math.max(10, Math.min(84, y)),
+      z: (index % 11) - 5,
+      size: 0.82 + ((index * 19) % 48) / 100,
+      hue: hues[index % hues.length],
+      replay: index % 5 !== 2,
     }
   })
 }
 
-function starStyle(star: GalaxyStar, selected: boolean): CSSProperties {
+function nodeStyle(node: MemoryNode, active: boolean): CSSProperties {
   return {
-    '--x': `${star.x}%`,
-    '--y': `${star.y}%`,
-    '--z': star.z,
-    '--s': selected ? star.size * 1.2 : star.size,
-    '--aura': star.aura,
-    '--delay': `${Math.abs(star.z) * -0.31}s`,
+    '--x': `${node.x}%`,
+    '--y': `${node.y}%`,
+    '--z': `${node.z}`,
+    '--s': `${active ? node.size * 1.18 : node.size}`,
+    '--hue': node.hue,
+    '--delay': `${Math.abs(node.z) * -0.27}s`,
   } as CSSProperties
 }
 
 export default function RealLifeMapGalaxy() {
   const router = useRouter()
-  const stars = useMemo(() => makeStars(), [])
-  const [selected, setSelected] = useState<GalaxyStar>(stars[0])
+  const nodes = useMemo(() => buildNodes(), [])
+  const [selected, setSelected] = useState<MemoryNode>(nodes[0])
   const [tilt, setTilt] = useState({ x: 0, y: 0 })
 
   const openFocus = () => router.push(`/focus?memoryId=${encodeURIComponent(selected.id)}`)
@@ -84,103 +82,102 @@ export default function RealLifeMapGalaxy() {
   const sceneStyle = {
     '--rx': `${tilt.y}deg`,
     '--ry': `${tilt.x}deg`,
+    '--pull-x': `${(50 - selected.x) * 0.18}vw`,
+    '--pull-y': `${(50 - selected.y) * 0.12}vh`,
     '--selected-x': `${selected.x}%`,
     '--selected-y': `${selected.y}%`,
-    '--selected-aura': selected.aura,
+    '--selected-hue': selected.hue,
   } as CSSProperties
 
   return (
     <main
       className="lifeGalaxy"
-      aria-label="URAI Life Map memory galaxy"
+      aria-label="URAI Life Map spatial memory constellation"
       onPointerMove={(event) => {
         const rect = event.currentTarget.getBoundingClientRect()
         const px = (event.clientX - rect.left) / rect.width - 0.5
         const py = (event.clientY - rect.top) / rect.height - 0.5
-        setTilt({ x: px * 9, y: py * -6 })
+        setTilt({ x: px * 7.5, y: py * -5 })
       }}
       onPointerLeave={() => setTilt({ x: 0, y: 0 })}
     >
-      <div className="void" />
-      <div className="cosmicNoise" />
-      <div className="starDust dustA" />
-      <div className="starDust dustB" />
+      <div className="deepSpace" />
+      <div className="organicDust dustOne" />
+      <div className="organicDust dustTwo" />
+      <div className="edgeVignette" />
 
-      <section className="galaxyScene" style={sceneStyle} aria-label="Spatial memory star field">
-        <div className="galaxyDisc" />
-        <div className="galaxyArm armA" />
-        <div className="galaxyArm armB" />
-        <div className="galaxyArm armC" />
-        <div className="coreGlow" />
-        <div className="selectedAura" />
+      <section className="constellation" style={sceneStyle} aria-label="Private memory constellation">
+        <div className="galaxyBody" />
+        <div className="galaxyVeil veilA" />
+        <div className="galaxyVeil veilB" />
+        <div className="nucleus" />
+        <div className="selectedBeam" />
+        <div className="orbitPlane planeA" />
+        <div className="orbitPlane planeB" />
+        <div className="orbitPlane planeC" />
 
-        <svg className="filaments" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
-          {stars.slice(0, 25).map((star, index) => {
-            const target = stars[(index * 3 + 7) % stars.length]
-            const active = selected.id === star.id || selected.id === target.id
+        <svg className="connectionWeb" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
+          {nodes.slice(0, 22).map((node, index) => {
+            const target = nodes[(index * 5 + 8) % nodes.length]
+            const active = selected.id === node.id || selected.id === target.id
             return (
               <path
-                key={`${star.id}-${target.id}`}
-                d={`M ${star.x} ${star.y} C ${(star.x + target.x) / 2} ${Math.min(star.y, target.y) - 12}, ${(star.x + target.x) / 2} ${Math.max(star.y, target.y) + 8}, ${target.x} ${target.y}`}
-                className={active ? 'filament active' : 'filament'}
+                key={`${node.id}-${target.id}`}
+                className={active ? 'connection active' : 'connection'}
+                d={`M ${node.x} ${node.y} C ${(node.x + target.x) / 2} ${Math.min(node.y, target.y) - 11}, ${(node.x + target.x) / 2} ${Math.max(node.y, target.y) + 8}, ${target.x} ${target.y}`}
               />
             )
           })}
         </svg>
 
-        <div className="depthRings" aria-hidden="true">
-          <span />
-          <span />
-          <span />
-        </div>
-
-        <section className="field" aria-label="Memory stars">
-          {stars.map((star) => {
-            const active = star.id === selected.id
+        <section className="nodeField" aria-label="Memory stars">
+          {nodes.map((node) => {
+            const active = selected.id === node.id
             return (
               <button
-                key={star.id}
+                key={node.id}
                 type="button"
-                className={active ? 'memoryStar selected' : 'memoryStar'}
-                style={starStyle(star, active)}
-                onClick={() => setSelected(star)}
-                onDoubleClick={() => router.push(`/focus?memoryId=${encodeURIComponent(star.id)}`)}
-                aria-label={`Select ${star.title}`}
+                className={active ? 'memoryNode active' : 'memoryNode'}
+                style={nodeStyle(node, active)}
+                onClick={() => setSelected(node)}
+                onDoubleClick={() => router.push(`/focus?memoryId=${encodeURIComponent(node.id)}`)}
+                aria-label={`Select ${node.title}`}
               >
-                <span className="starHit" />
-                <span className="starHalo" />
-                <span className="starCore" />
-                <span className="starSpike spikeA" />
-                <span className="starSpike spikeB" />
-                <span className="starLabel">{star.title}</span>
+                <span className="hit" />
+                <span className="glow" />
+                <span className="core" />
+                <span className="ray rayA" />
+                <span className="ray rayB" />
+                <span className="nodeLabel">
+                  <strong>{node.title}</strong>
+                  {active ? <em>Double click / Enter Focus</em> : null}
+                </span>
               </button>
             )
           })}
         </section>
       </section>
 
-      <header className="titlePlate">
-        <p>URAI · Life Map</p>
-        <h1>Spatial memory galaxy.</h1>
-        <span>34 private stars awake. Drag across the field to feel depth. Select a light to move inside the memory.</span>
+      <header className="mapHud">
+        <p>URAI · LIFE MAP</p>
+        <h1>Inside your memory field.</h1>
+        <span>Thirty-four private stars. Select one and the galaxy moves around it.</span>
       </header>
 
-      <aside className="controlPlate">
-        <p>Selected memory star</p>
+      <aside className="starDock">
+        <p>Selected star</p>
         <h2>{selected.title}</h2>
-        <span>{selected.subtitle}. {selected.family} · {selected.era}. Focus opens from the star. Replay becomes the memory film.</span>
-        <div className="actions">
+        <span>{selected.type} · {selected.era}. Focus enters the star. Replay opens the film thread.</span>
+        <div className="dockActions">
           <button type="button" onClick={openFocus}>Enter Focus</button>
           <button type="button" onClick={openReplay} disabled={!selected.replay}>Replay</button>
-          <button type="button" onClick={() => setSelected(stars[0])}>Recenter</button>
+          <button type="button" onClick={() => setSelected(nodes[0])}>Recenter</button>
         </div>
       </aside>
 
-      <div className="companionOrb" aria-hidden="true">
-        <span />
-      </div>
+      <div className="companionOrb" aria-hidden="true"><span /></div>
 
-      <nav className="routeBar" aria-label="URAI route portals">
+      <nav className="portalRail" aria-label="URAI route portals">
         {[
           ['Home', '/home'],
           ['Ground', '/ground'],
@@ -189,9 +186,7 @@ export default function RealLifeMapGalaxy() {
           ['Mirror', '/mirror'],
           ['Passport', '/passport'],
           ['XR', '/spatial/ar-vr'],
-        ].map(([label, href]) => (
-          <Link key={href} href={href}>{label}</Link>
-        ))}
+        ].map(([label, href]) => <Link key={href} href={href}>{label}</Link>)}
       </nav>
 
       <style jsx>{`
@@ -202,191 +197,171 @@ export default function RealLifeMapGalaxy() {
           color: white;
           background: #000107;
           isolation: isolate;
-          cursor: crosshair;
+          cursor: default;
         }
 
-        .void {
+        .deepSpace {
           position: absolute;
           inset: 0;
-          background:
-            radial-gradient(circle at 50% 46%, rgba(240, 255, 255, 0.1), transparent 9%),
-            radial-gradient(circle at 30% 42%, rgba(72, 232, 255, 0.14), transparent 28%),
-            radial-gradient(circle at 72% 46%, rgba(175, 94, 255, 0.16), transparent 31%),
-            radial-gradient(circle at 55% 72%, rgba(90, 245, 210, 0.08), transparent 24%),
-            linear-gradient(180deg, #00020a 0%, #02030d 50%, #000106 100%);
           z-index: 0;
+          background:
+            radial-gradient(circle at 50% 44%, rgba(255,255,255,0.08), transparent 8%),
+            radial-gradient(circle at 34% 45%, rgba(77,224,255,0.13), transparent 30%),
+            radial-gradient(circle at 73% 40%, rgba(185,101,255,0.15), transparent 31%),
+            radial-gradient(circle at 48% 80%, rgba(102,242,196,0.06), transparent 26%),
+            linear-gradient(180deg,#00020a 0%,#02030d 54%,#000106 100%);
         }
 
-        .cosmicNoise {
-          position: absolute;
-          inset: 0;
-          z-index: 1;
-          opacity: 0.16;
-          background-image:
-            linear-gradient(115deg, transparent 0 48%, rgba(255,255,255,0.07) 49%, transparent 50% 100%),
-            linear-gradient(65deg, transparent 0 48%, rgba(125,240,255,0.05) 49%, transparent 50% 100%);
-          background-size: 34px 34px, 55px 55px;
-          mask-image: radial-gradient(ellipse at center, black 0 44%, transparent 76%);
-        }
-
-        .starDust {
+        .organicDust {
           position: absolute;
           inset: -12%;
+          z-index: 1;
           background-image:
-            radial-gradient(circle, rgba(255,255,255,0.92) 0 1px, transparent 1.35px),
-            radial-gradient(circle, rgba(140,232,255,0.72) 0 1px, transparent 1.25px),
-            radial-gradient(circle, rgba(220,190,255,0.62) 0 1px, transparent 1.2px);
-          background-size: 97px 97px, 151px 151px, 239px 239px;
-          background-position: 0 0, 31px 57px, 81px 13px;
-          opacity: 0.5;
-          z-index: 2;
+            radial-gradient(circle, rgba(255,255,255,0.82) 0 1px, transparent 1.28px),
+            radial-gradient(circle, rgba(125,238,255,0.62) 0 1px, transparent 1.2px),
+            radial-gradient(circle, rgba(218,187,255,0.52) 0 1px, transparent 1.18px);
+          background-size: 113px 113px, 181px 181px, 277px 277px;
+          background-position: 0 0, 43px 61px, 109px 23px;
+          opacity: 0.44;
         }
 
-        .dustB {
-          transform: scale(1.2) rotate(4deg);
-          opacity: 0.32;
-          filter: blur(0.45px);
+        .dustTwo {
+          transform: scale(1.22) rotate(-5deg);
+          opacity: 0.24;
+          filter: blur(0.7px);
         }
 
-        .galaxyScene {
-          position: absolute;
-          inset: -8vh -8vw;
-          z-index: 4;
-          transform-style: preserve-3d;
-          transform: perspective(1200px) rotateX(var(--rx)) rotateY(var(--ry));
-          transition: transform 180ms ease-out;
-        }
-
-        .galaxyDisc {
-          position: absolute;
-          left: 50%;
-          top: 52%;
-          width: 126vw;
-          height: 44vh;
-          transform: translate(-50%, -50%) rotate(-7deg) translateZ(-120px);
-          border-radius: 999px;
-          background:
-            radial-gradient(ellipse at 50% 50%, rgba(248,255,255,0.58), rgba(137,235,255,0.24) 9%, rgba(139,99,255,0.14) 28%, rgba(255,255,255,0.035) 48%, transparent 72%),
-            radial-gradient(ellipse at 42% 48%, rgba(92, 243, 255, 0.22), transparent 34%),
-            radial-gradient(ellipse at 62% 48%, rgba(204, 128, 255, 0.24), transparent 36%);
-          filter: blur(0.3px);
-          opacity: 0.78;
-          mask-image: radial-gradient(ellipse at center, black 0 48%, transparent 76%);
-          animation: galaxyDrift 20s ease-in-out infinite alternate;
-        }
-
-        .galaxyArm {
-          position: absolute;
-          left: 50%;
-          top: 52%;
-          width: 82vw;
-          height: 24vh;
-          border: 1px solid rgba(210, 250, 255, 0.12);
-          border-left-color: transparent;
-          border-bottom-color: rgba(180, 140, 255, 0.1);
-          border-radius: 50%;
-          transform: translate(-50%, -50%) rotate(-8deg) translateZ(-30px);
-          filter: blur(0.2px) drop-shadow(0 0 28px rgba(119, 230, 255, 0.12));
-          opacity: 0.52;
-        }
-
-        .armB {
-          width: 98vw;
-          height: 30vh;
-          transform: translate(-50%, -50%) rotate(7deg) translateZ(-80px);
-          opacity: 0.36;
-        }
-
-        .armC {
-          width: 58vw;
-          height: 18vh;
-          transform: translate(-50%, -50%) rotate(-31deg) translateZ(20px);
-          opacity: 0.26;
-        }
-
-        .coreGlow {
-          position: absolute;
-          left: 50%;
-          top: 52%;
-          width: 22vw;
-          height: 14vh;
-          transform: translate(-50%, -50%) translateZ(40px);
-          border-radius: 999px;
-          background: radial-gradient(ellipse, rgba(255,255,255,0.82), rgba(166,236,255,0.34) 24%, rgba(185,124,255,0.15) 46%, transparent 70%);
-          filter: blur(6px);
-          opacity: 0.7;
-          pointer-events: none;
-        }
-
-        .selectedAura {
-          position: absolute;
-          left: var(--selected-x);
-          top: var(--selected-y);
-          width: 190px;
-          height: 190px;
-          transform: translate(-50%, -50%) translateZ(90px);
-          border-radius: 999px;
-          background: radial-gradient(circle, color-mix(in srgb, var(--selected-aura) 42%, white) 0 4%, var(--selected-aura) 18%, rgba(255,255,255,0.05) 32%, transparent 70%);
-          opacity: 0.48;
-          filter: blur(10px);
-          pointer-events: none;
-          transition: left 460ms cubic-bezier(.2,.8,.2,1), top 460ms cubic-bezier(.2,.8,.2,1), background 460ms ease;
-        }
-
-        .filaments {
+        .edgeVignette {
           position: absolute;
           inset: 0;
-          z-index: 6;
+          z-index: 30;
           pointer-events: none;
-          transform: translateZ(40px);
+          background: radial-gradient(ellipse at center, transparent 0 48%, rgba(0,0,0,0.58) 78%, rgba(0,0,0,0.92) 100%);
         }
 
-        .filament {
+        .constellation {
+          position: absolute;
+          inset: -9vh -8vw;
+          z-index: 5;
+          transform-style: preserve-3d;
+          transform: perspective(1300px) translate3d(var(--pull-x), var(--pull-y), 0) rotateX(var(--rx)) rotateY(var(--ry)) scale(1.035);
+          transition: transform 620ms cubic-bezier(.16,.84,.22,1);
+        }
+
+        .galaxyBody {
+          position: absolute;
+          left: 50%;
+          top: 52%;
+          width: 114vw;
+          height: 42vh;
+          transform: translate(-50%, -50%) rotate(-7deg) translateZ(-160px);
+          border-radius: 999px;
+          background:
+            radial-gradient(ellipse at 50% 50%, rgba(255,255,255,0.48), rgba(137,235,255,0.24) 10%, rgba(139,99,255,0.13) 31%, rgba(255,255,255,0.028) 52%, transparent 74%),
+            radial-gradient(ellipse at 43% 56%, rgba(77,224,255,0.25), transparent 41%),
+            radial-gradient(ellipse at 66% 43%, rgba(204,128,255,0.22), transparent 42%);
+          filter: blur(1.2px) saturate(1.08);
+          opacity: 0.82;
+          mask-image: radial-gradient(ellipse at center, black 0 50%, transparent 77%);
+          animation: slowDrift 22s ease-in-out infinite alternate;
+        }
+
+        .galaxyVeil {
+          position: absolute;
+          left: 50%;
+          top: 52%;
+          width: 76vw;
+          height: 26vh;
+          transform: translate(-50%, -50%) rotate(-18deg) translateZ(-70px);
+          border-radius: 999px;
+          background: radial-gradient(ellipse, rgba(255,255,255,0.08), rgba(125,238,255,0.08) 24%, transparent 70%);
+          filter: blur(18px);
+          opacity: 0.8;
+        }
+
+        .veilB {
+          width: 58vw;
+          height: 22vh;
+          transform: translate(-50%, -50%) rotate(19deg) translateZ(20px);
+          background: radial-gradient(ellipse, rgba(255,255,255,0.07), rgba(255,123,214,0.12) 26%, transparent 72%);
+          opacity: 0.7;
+        }
+
+        .nucleus,
+        .selectedBeam {
+          position: absolute;
+          pointer-events: none;
+          border-radius: 999px;
+        }
+
+        .nucleus {
+          left: 50%;
+          top: 52%;
+          width: 26vw;
+          height: 14vh;
+          transform: translate(-50%, -50%) translateZ(80px);
+          background: radial-gradient(ellipse, rgba(255,255,255,0.72), rgba(165,243,252,0.28) 25%, rgba(185,124,255,0.14) 48%, transparent 72%);
+          filter: blur(9px);
+          opacity: 0.72;
+        }
+
+        .selectedBeam {
+          left: var(--selected-x);
+          top: var(--selected-y);
+          width: 240px;
+          height: 240px;
+          transform: translate(-50%, -50%) translateZ(140px);
+          background: radial-gradient(circle, rgba(255,255,255,0.38) 0 5%, var(--selected-hue) 16%, rgba(255,255,255,0.05) 35%, transparent 72%);
+          filter: blur(14px);
+          opacity: 0.62;
+          transition: left 620ms cubic-bezier(.16,.84,.22,1), top 620ms cubic-bezier(.16,.84,.22,1), background 420ms ease;
+        }
+
+        .orbitPlane {
+          position: absolute;
+          left: 50%;
+          top: 52%;
+          border: 1px solid rgba(196,245,255,0.1);
+          border-left-color: transparent;
+          border-radius: 50%;
+          filter: drop-shadow(0 0 38px rgba(103,232,249,0.11));
+          pointer-events: none;
+        }
+
+        .planeA { width: 78vw; height: 31vh; transform: translate(-50%, -50%) rotate(-8deg) translateZ(-20px); }
+        .planeB { width: 106vw; height: 43vh; transform: translate(-50%, -50%) rotate(7deg) translateZ(-95px); opacity: 0.5; }
+        .planeC { width: 52vw; height: 20vh; transform: translate(-50%, -50%) rotate(-31deg) translateZ(80px); opacity: 0.34; }
+
+        .connectionWeb {
+          position: absolute;
+          inset: 0;
+          z-index: 7;
+          transform: translateZ(65px);
+          pointer-events: none;
+        }
+
+        .connection {
           fill: none;
-          stroke: rgba(180, 242, 255, 0.11);
-          stroke-width: 0.075;
-          stroke-dasharray: 0.45 1.65;
-          filter: drop-shadow(0 0 5px rgba(126, 239, 255, 0.12));
+          stroke: rgba(190,245,255,0.09);
+          stroke-width: 0.07;
+          stroke-dasharray: 0.45 1.6;
+          filter: drop-shadow(0 0 6px rgba(125,238,255,0.1));
         }
 
-        .filament.active {
-          stroke: rgba(238, 255, 255, 0.54);
-          stroke-width: 0.13;
+        .connection.active {
+          stroke: rgba(245,255,255,0.54);
+          stroke-width: 0.14;
           stroke-dasharray: 0.9 1.1;
         }
 
-        .depthRings {
-          position: absolute;
-          left: 50%;
-          top: 52%;
-          z-index: 5;
-          transform: translate(-50%, -50%) rotateX(68deg) rotateZ(-7deg) translateZ(-40px);
-          transform-style: preserve-3d;
-          pointer-events: none;
-        }
-
-        .depthRings span {
-          position: absolute;
-          inset: 50%;
-          width: 36vw;
-          height: 36vw;
-          transform: translate(-50%, -50%);
-          border: 1px solid rgba(190, 244, 255, 0.11);
-          border-radius: 999px;
-          box-shadow: 0 0 44px rgba(125, 240, 255, 0.08);
-        }
-
-        .depthRings span:nth-child(2) { width: 56vw; height: 56vw; opacity: 0.62; }
-        .depthRings span:nth-child(3) { width: 76vw; height: 76vw; opacity: 0.36; }
-
-        .field {
+        .nodeField {
           position: absolute;
           inset: 0;
-          z-index: 8;
+          z-index: 10;
           transform-style: preserve-3d;
         }
 
-        .memoryStar {
+        .memoryNode {
           position: absolute;
           left: var(--x);
           top: var(--y);
@@ -396,213 +371,187 @@ export default function RealLifeMapGalaxy() {
           border: 0;
           border-radius: 999px;
           background: transparent;
-          transform: translate(-50%, -50%) translateZ(calc(var(--z) * 26px));
+          transform: translate(-50%, -50%) translateZ(calc(var(--z) * 28px));
           transform-style: preserve-3d;
           cursor: pointer;
-          transition: transform 420ms cubic-bezier(.2,.8,.2,1), filter 260ms ease;
+          transition: transform 620ms cubic-bezier(.16,.84,.22,1), filter 240ms ease;
         }
 
-        .memoryStar:hover,
-        .memoryStar.selected {
-          filter: saturate(1.3) brightness(1.15);
-          z-index: 9;
+        .memoryNode.active {
+          transform: translate(-50%, -50%) translateZ(calc(var(--z) * 28px + 150px)) scale(1.22);
+          filter: brightness(1.24) saturate(1.25);
+          z-index: 20;
         }
 
-        .starHit,
-        .starHalo,
-        .starCore,
-        .starSpike,
-        .starLabel {
+        .hit,
+        .glow,
+        .core,
+        .ray,
+        .nodeLabel {
           position: absolute;
           pointer-events: none;
         }
 
-        .starHit {
-          inset: -22px;
-          border-radius: 999px;
-        }
+        .hit { inset: -28px; border-radius: 999px; }
 
-        .starHalo {
+        .glow {
           left: 50%;
           top: 50%;
-          width: calc(82px * var(--s));
-          height: calc(82px * var(--s));
+          width: calc(92px * var(--s));
+          height: calc(92px * var(--s));
           transform: translate(-50%, -50%);
           border-radius: 999px;
-          background: radial-gradient(circle, color-mix(in srgb, var(--aura) 62%, white) 0 3%, var(--aura) 8%, rgba(255,255,255,0.08) 24%, transparent 68%);
-          opacity: 0.52;
-          filter: blur(1px);
-          animation: breathe 4.2s ease-in-out infinite alternate;
+          background: radial-gradient(circle, rgba(255,255,255,0.82) 0 3%, var(--hue) 10%, rgba(255,255,255,0.08) 27%, transparent 70%);
+          opacity: 0.58;
+          filter: blur(1.2px);
+          animation: pulse 4.4s ease-in-out infinite alternate;
           animation-delay: var(--delay);
         }
 
-        .starCore {
+        .core {
           left: 50%;
           top: 50%;
           width: calc(9px * var(--s));
           height: calc(9px * var(--s));
           transform: translate(-50%, -50%);
           border-radius: 999px;
-          background: radial-gradient(circle, white 0 18%, color-mix(in srgb, var(--aura) 70%, white) 19% 44%, var(--aura) 45% 66%, transparent 67%);
-          box-shadow:
-            0 0 12px color-mix(in srgb, var(--aura) 85%, white),
-            0 0 36px var(--aura),
-            0 0 94px color-mix(in srgb, var(--aura) 70%, transparent);
+          background: radial-gradient(circle, white 0 18%, #eaffff 20% 40%, var(--hue) 43% 70%, transparent 72%);
+          box-shadow: 0 0 14px white, 0 0 42px var(--hue), 0 0 96px var(--hue);
         }
 
-        .starSpike {
+        .ray {
           left: 50%;
           top: 50%;
           width: calc(2px * var(--s));
-          height: calc(38px * var(--s));
+          height: calc(42px * var(--s));
           transform: translate(-50%, -50%);
           border-radius: 999px;
-          background: linear-gradient(180deg, transparent, rgba(255,255,255,0.75), transparent);
-          opacity: 0.38;
+          background: linear-gradient(180deg, transparent, rgba(255,255,255,0.74), transparent);
+          opacity: 0.36;
         }
 
-        .spikeB {
-          transform: translate(-50%, -50%) rotate(90deg);
-          height: calc(31px * var(--s));
-          opacity: 0.25;
-        }
+        .rayB { transform: translate(-50%, -50%) rotate(90deg); opacity: 0.24; }
 
-        .starLabel {
+        .memoryNode.active .glow { width: calc(145px * var(--s)); height: calc(145px * var(--s)); opacity: 0.88; }
+        .memoryNode.active .core { width: calc(15px * var(--s)); height: calc(15px * var(--s)); }
+
+        .nodeLabel {
           left: 50%;
-          top: calc(50% + 22px);
-          transform: translateX(-50%) translateZ(80px);
+          bottom: calc(100% + 18px);
           width: max-content;
-          max-width: 160px;
-          border: 1px solid rgba(255,255,255,0.12);
-          border-radius: 999px;
-          background: rgba(0, 0, 0, 0.42);
-          padding: 0.22rem 0.48rem;
-          color: rgba(236, 254, 255, 0.92);
-          font-size: 10px;
-          font-weight: 900;
-          letter-spacing: 0.02em;
+          max-width: 190px;
+          transform: translateX(-50%) translateZ(120px);
+          border: 1px solid rgba(255,255,255,0.15);
+          border-radius: 18px;
+          background: rgba(0,0,0,0.6);
+          box-shadow: 0 20px 60px rgba(0,0,0,0.5), 0 0 46px rgba(165,243,252,0.14);
+          padding: 0.45rem 0.58rem;
+          color: rgba(236,254,255,0.94);
+          font-size: 0.7rem;
+          line-height: 1.1;
           opacity: 0;
-          backdrop-filter: blur(12px);
-          transition: opacity 180ms ease, transform 180ms ease;
+          backdrop-filter: blur(16px);
+          transition: opacity 170ms ease, transform 170ms ease;
         }
 
-        .memoryStar:hover .starLabel,
-        .memoryStar.selected .starLabel {
-          opacity: 1;
-          transform: translateX(-50%) translateY(2px) translateZ(80px);
-        }
+        .nodeLabel strong { display: block; font-weight: 950; }
+        .nodeLabel em { display: block; margin-top: 0.25rem; color: rgba(165,243,252,0.94); font-size: 0.56rem; font-style: normal; font-weight: 950; letter-spacing: 0.08em; text-transform: uppercase; }
+        .memoryNode:hover .nodeLabel,
+        .memoryNode.active .nodeLabel { opacity: 1; transform: translateX(-50%) translateY(-4px) translateZ(120px); }
 
-        .memoryStar.selected .starHalo {
-          width: calc(128px * var(--s));
-          height: calc(128px * var(--s));
-          opacity: 0.88;
-        }
-
-        .memoryStar.selected .starCore {
-          width: calc(15px * var(--s));
-          height: calc(15px * var(--s));
-        }
-
-        .titlePlate,
-        .controlPlate {
+        .mapHud,
+        .starDock {
           position: absolute;
-          z-index: 20;
+          z-index: 40;
           border: 1px solid rgba(255,255,255,0.12);
-          background: linear-gradient(145deg, rgba(0, 0, 0, 0.42), rgba(8, 16, 30, 0.26));
-          box-shadow: 0 24px 90px rgba(0,0,0,0.46), inset 0 1px 0 rgba(255,255,255,0.08);
+          background: linear-gradient(145deg, rgba(0,0,0,0.54), rgba(8,16,30,0.32));
+          box-shadow: 0 24px 80px rgba(0,0,0,0.44), inset 0 1px 0 rgba(255,255,255,0.08);
           backdrop-filter: blur(20px);
         }
 
-        .titlePlate {
+        .mapHud {
           left: 1rem;
           top: 1rem;
-          max-width: 335px;
-          border-radius: 26px;
-          padding: 1rem;
+          width: min(285px, calc(100vw - 2rem));
+          border-radius: 24px;
+          padding: 0.9rem;
         }
 
-        .titlePlate p,
-        .controlPlate p {
+        .mapHud p,
+        .starDock p {
           margin: 0;
-          color: rgba(165, 243, 252, 0.88);
+          color: rgba(165,243,252,0.9);
           font-size: 10px;
-          font-weight: 900;
+          font-weight: 950;
           letter-spacing: 0.25em;
           text-transform: uppercase;
         }
 
-        .titlePlate h1 {
-          margin: 0.38rem 0 0;
-          font-size: clamp(2rem, 4.2vw, 4.1rem);
+        .mapHud h1 {
+          margin: 0.4rem 0 0;
+          max-width: 8.8ch;
+          font-size: clamp(2rem, 3.4vw, 3.45rem);
           line-height: 0.84;
           letter-spacing: -0.08em;
         }
 
-        .titlePlate span,
-        .controlPlate span {
+        .mapHud span,
+        .starDock span {
           display: block;
-          margin-top: 0.65rem;
-          color: rgba(235, 252, 255, 0.76);
-          font-size: 13px;
+          margin-top: 0.58rem;
+          color: rgba(235,252,255,0.74);
+          font-size: 0.78rem;
           font-weight: 750;
-          line-height: 1.45;
+          line-height: 1.36;
         }
 
-        .controlPlate {
-          right: 1.15rem;
-          bottom: 5rem;
-          width: min(410px, calc(100vw - 2rem));
-          border-radius: 30px;
-          padding: 1.08rem;
+        .starDock {
+          right: 1rem;
+          bottom: 4.9rem;
+          width: min(330px, calc(100vw - 2rem));
+          border-radius: 24px;
+          padding: 0.9rem;
         }
 
-        .controlPlate h2 {
+        .starDock h2 {
           margin: 0.35rem 0 0;
-          font-size: clamp(1.7rem, 3vw, 2.35rem);
-          line-height: 0.95;
+          font-size: clamp(1.45rem, 2.5vw, 2rem);
+          line-height: 0.94;
           letter-spacing: -0.055em;
         }
 
-        .actions {
+        .dockActions {
           display: flex;
           flex-wrap: wrap;
-          gap: 0.55rem;
-          margin-top: 0.95rem;
+          gap: 0.5rem;
+          margin-top: 0.85rem;
         }
 
-        .controlPlate button {
+        .dockActions button {
           border: 1px solid rgba(255,255,255,0.16);
           border-radius: 999px;
-          padding: 0.72rem 1rem;
+          padding: 0.58rem 0.82rem;
           background: rgba(255,255,255,0.06);
           color: white;
-          font-size: 12px;
+          font-size: 0.72rem;
           font-weight: 950;
           cursor: pointer;
         }
 
-        .controlPlate button:first-child {
-          background: rgba(207, 250, 254, 0.96);
-          color: #020617;
-          box-shadow: 0 0 36px rgba(103, 232, 249, 0.26);
-        }
-
-        .controlPlate button:disabled {
-          opacity: 0.35;
-          cursor: not-allowed;
-        }
+        .dockActions button:first-child { background: rgba(207,250,254,0.96); color: #020617; box-shadow: 0 0 34px rgba(103,232,249,0.22); }
+        .dockActions button:disabled { opacity: 0.35; cursor: not-allowed; }
 
         .companionOrb {
           position: absolute;
-          right: 1.2rem;
+          right: 1rem;
           top: 1rem;
-          z-index: 19;
+          z-index: 42;
           width: 54px;
           height: 54px;
+          border: 1px solid rgba(165,243,252,0.2);
           border-radius: 999px;
-          border: 1px solid rgba(165, 243, 252, 0.2);
           background: rgba(0,0,0,0.28);
-          box-shadow: 0 0 52px rgba(103,232,249,0.18);
+          box-shadow: 0 0 56px rgba(103,232,249,0.2);
           backdrop-filter: blur(14px);
         }
 
@@ -610,65 +559,53 @@ export default function RealLifeMapGalaxy() {
           position: absolute;
           inset: 10px;
           border-radius: 999px;
-          background: radial-gradient(circle at 35% 28%, white 0 10%, rgba(255,255,255,0.48) 11% 20%, transparent 21%), radial-gradient(circle, #a7fbff 0 22%, #52bfff 46%, rgba(32,77,160,.22) 76%);
-          box-shadow: 0 0 32px rgba(125,240,255,0.7);
+          background: radial-gradient(circle at 35% 28%, white 0 10%, rgba(255,255,255,0.5) 11% 20%, transparent 21%), radial-gradient(circle, #a7fbff 0 22%, #52bfff 46%, rgba(32,77,160,0.22) 76%);
+          box-shadow: 0 0 34px rgba(125,240,255,0.7);
         }
 
-        .routeBar {
+        .portalRail {
           position: absolute;
           left: 50%;
           bottom: 1rem;
-          z-index: 22;
+          z-index: 45;
           display: flex;
           max-width: calc(100vw - 1.5rem);
-          gap: 0.28rem;
-          overflow-x: auto;
           transform: translateX(-50%);
+          gap: 0.35rem;
+          overflow-x: auto;
           border: 1px solid rgba(255,255,255,0.12);
           border-radius: 999px;
-          background: rgba(0,0,0,0.46);
+          background: rgba(0,0,0,0.52);
           padding: 0.42rem;
           backdrop-filter: blur(18px);
         }
 
-        .routeBar a {
+        .portalRail a {
           border: 1px solid rgba(207,250,254,0.12);
           border-radius: 999px;
-          padding: 0.52rem 0.82rem;
-          color: rgba(236,254,255,0.86);
-          font-size: 11px;
+          padding: 0.5rem 0.76rem;
+          color: rgba(236,254,255,0.88);
+          font-size: 0.72rem;
           font-weight: 950;
+          line-height: 1;
           text-decoration: none;
           white-space: nowrap;
         }
 
-        .routeBar a:hover {
-          background: rgba(207,250,254,0.95);
-          color: #020617;
-        }
+        .portalRail a:hover { background: rgba(207,250,254,0.96); color: #020617; }
 
-        @keyframes breathe {
-          from { transform: translate(-50%, -50%) scale(0.86); opacity: 0.42; }
-          to { transform: translate(-50%, -50%) scale(1.14); opacity: 0.72; }
-        }
-
-        @keyframes galaxyDrift {
-          from { transform: translate(-50%, -50%) rotate(-9deg) translateZ(-120px) scale(0.98); }
-          to { transform: translate(-50%, -50%) rotate(-4deg) translateZ(-120px) scale(1.04); }
-        }
+        @keyframes pulse { from { transform: translate(-50%, -50%) scale(0.86); opacity: 0.42; } to { transform: translate(-50%, -50%) scale(1.14); opacity: 0.75; } }
+        @keyframes slowDrift { from { transform: translate(-50%, -50%) rotate(-9deg) translateZ(-160px) scale(0.98); } to { transform: translate(-50%, -50%) rotate(-4deg) translateZ(-160px) scale(1.04); } }
 
         @media (max-width: 760px) {
-          .galaxyScene { inset: -10vh -32vw; }
-          .titlePlate { max-width: 230px; padding: 0.85rem; }
-          .titlePlate h1 { font-size: 1.85rem; }
-          .controlPlate {
-            left: 50%;
-            right: auto;
-            bottom: 4.8rem;
-            transform: translateX(-50%);
-          }
-          .galaxyDisc { width: 170vw; height: 36vh; }
+          .constellation { inset: -10vh -32vw; }
+          .mapHud { left: 0.5rem; top: 0.5rem; width: min(226px, calc(100vw - 1rem)); padding: 0.72rem; }
+          .mapHud h1 { font-size: 1.68rem; }
+          .mapHud span { font-size: 0.7rem; }
           .companionOrb { display: none; }
+          .starDock { left: 50%; right: auto; bottom: 5.7rem; width: min(350px, calc(100vw - 1rem)); transform: translateX(-50%); }
+          .portalRail { bottom: 0.75rem; width: calc(100vw - 1rem); justify-content: flex-start; }
+          .galaxyBody { width: 170vw; height: 36vh; }
         }
       `}</style>
     </main>
