@@ -1,8 +1,8 @@
 #!/usr/bin/env node
 
-import { appendFileSync, existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { homedir } from 'node:os';
-import { dirname, join } from 'node:path';
+import { join } from 'node:path';
 import { spawnSync } from 'node:child_process';
 import { resolve4, resolve6, resolveCname } from 'node:dns/promises';
 
@@ -14,7 +14,7 @@ const getArg = (name, fallback) => {
 };
 
 if (args.has('--help') || args.has('-h')) {
-  console.log(`URAI AAA launch proof runner\n\nUsage:\n  node scripts/aaa-launch-proof.mjs [--deploy] [--screenshots] [--skip-install] [--skip-test] [--skip-build] [--base=https://urai.app]\n\nWhat it does:\n  - Creates a receipt folder under $HOME/urai-final-receipts\n  - Records git state\n  - Runs install/typecheck/test/build unless skipped\n  - Deploys only when --deploy is passed\n  - Curls the live route matrix\n  - Checks foundation DNS/HTTPS without claiming success unless it resolves\n  - Optionally captures screenshots if Playwright is available\n  - Writes final-report.md\n`);
+  console.log(`URAI AAA launch proof runner\n\nUsage:\n  node scripts/aaa-launch-proof.mjs [--deploy] [--screenshots] [--skip-install] [--skip-test] [--skip-build] [--base=https://urai.app]\n\nWhat it does:\n  - Creates a receipt folder under $HOME/urai-final-receipts\n  - Records git state\n  - Runs install/typecheck/test/build unless skipped\n  - Deploys only when --deploy is passed\n  - Curls the live route matrix and checks route-specific copy fingerprints\n  - Checks foundation DNS/HTTPS without claiming success unless it resolves\n  - Optionally captures screenshots if Playwright is available\n  - Writes final-report.md\n`);
   process.exit(0);
 }
 
@@ -28,26 +28,32 @@ const skipBuild = args.has('--skip-build');
 const skipTypecheck = args.has('--skip-typecheck');
 const projectId = process.env.FIREBASE_PROJECT_ID || 'urai-4dc1d';
 
-const launchRoutes = [
-  '/',
-  '/home',
-  '/ground',
-  '/life-map',
-  '/focus',
-  '/replay',
-  '/mirror',
-  '/passport',
-  '/status',
-  '/privacy-controls',
-  '/location-map',
-  '/spatial/ar-vr',
-  '/demo',
-  '/demo/replay-film',
-  '/asset-audit',
-  '/tier3',
-  '/tier4',
-  '/tier5',
+const routeExpectations = [
+  { route: '/', required: ['Own your life', 'Step inside yourself'] },
+  { route: '/home', required: ['Own your life', 'Step inside yourself'] },
+  { route: '/ground', required: ['Ground', 'private operating world'] },
+  { route: '/life-map', required: ['Life Map', 'memory star'] },
+  { route: '/focus', required: ['The Quiet Reset', 'Selected memory chamber'] },
+  { route: '/replay', required: ['Replay the thread', 'Film beats'] },
+  { route: '/mirror', required: ['Mirror', 'pattern'] },
+  { route: '/passport', required: ['Passport', 'Your life stays yours'] },
+  { route: '/status', required: ['URAI Status', 'Route matrix'] },
+  {
+    route: '/privacy-controls',
+    required: ['URAI Privacy Controls', 'Choose what the world can hold'],
+    forbidden: ['Home threshold', 'Click the sky', 'Click the ground'],
+  },
+  { route: '/location-map', required: ['Location', 'Place'] },
+  { route: '/spatial/ar-vr', required: ['AR / VR / XR', 'Quest'] },
+  { route: '/demo', required: ['URAI'] },
+  { route: '/demo/replay-film', required: ['Replay'] },
+  { route: '/asset-audit', required: ['Asset'] },
+  { route: '/tier3', required: ['Tier'] },
+  { route: '/tier4', required: ['Tier'] },
+  { route: '/tier5', required: ['Tier'] },
 ];
+
+const launchRoutes = routeExpectations.map((entry) => entry.route);
 
 const screenshotRoutes = [
   ['/home', 'home'],
@@ -70,7 +76,7 @@ function sh(command, opts = {}) {
     cwd: process.cwd(),
     encoding: 'utf8',
     env: { ...process.env, FORCE_COLOR: '0', CI: process.env.CI || '1' },
-    maxBuffer: 1024 * 1024 * 24,
+    maxBuffer: 1024 * 1024 * 48,
     ...opts,
   });
 
@@ -87,6 +93,24 @@ function safeName(name) {
   return name.replace(/[^a-z0-9._-]+/gi, '-').replace(/^-+|-+$/g, '').toLowerCase();
 }
 
+function textIncludes(text, needle) {
+  return text.toLowerCase().includes(String(needle).toLowerCase());
+}
+
+function evaluateFingerprint(text, expectation) {
+  const required = expectation.required || [];
+  const forbidden = expectation.forbidden || [];
+  const missingRequired = required.filter((needle) => !textIncludes(text, needle));
+  const presentForbidden = forbidden.filter((needle) => textIncludes(text, needle));
+  return {
+    fingerprintOk: missingRequired.length === 0 && presentForbidden.length === 0,
+    required,
+    forbidden,
+    missingRequired,
+    presentForbidden,
+  };
+}
+
 const gitHead = sh('git rev-parse HEAD').stdout.trim() || 'unknown';
 const shortHead = gitHead === 'unknown' ? 'unknown' : gitHead.slice(0, 8);
 const stamp = new Date().toISOString().replace(/[:.]/g, '-');
@@ -100,6 +124,10 @@ const steps = [];
 
 function writeJson(name, value) {
   writeFileSync(join(receiptDir, name), `${JSON.stringify(value, null, 2)}\n`);
+}
+
+function pushSkippedStep(name, command) {
+  steps.push({ name, command, status: 0, startedAt: new Date().toISOString(), endedAt: new Date().toISOString(), durationMs: 0 });
 }
 
 function logStep(name, command, options = {}) {
@@ -151,33 +179,50 @@ function readAssetReceipt() {
 
 async function smokeRoutes() {
   const rows = [];
-  for (const route of launchRoutes) {
+  for (const expectation of routeExpectations) {
+    const route = expectation.route;
     const url = `${baseUrl}${route}`;
     const started = Date.now();
     try {
       const res = await fetch(url, { redirect: 'follow' });
       const text = await res.text().catch(() => '');
+      const fingerprint = evaluateFingerprint(text, expectation);
+      const httpOk = res.ok;
+      const ok = httpOk && fingerprint.fingerprintOk;
       rows.push({
         route,
         url,
         status: res.status,
-        ok: res.ok,
+        httpOk,
+        fingerprintOk: fingerprint.fingerprintOk,
+        ok,
         finalUrl: res.url,
         ms: Date.now() - started,
         title: (text.match(/<title>(.*?)<\/title>/i)?.[1] || '').trim(),
         bytes: text.length,
         hasUrai: /urai/i.test(text),
+        missingRequired: fingerprint.missingRequired,
+        presentForbidden: fingerprint.presentForbidden,
       });
-      console.log(`${res.status} ${route}`);
+      console.log(`${ok ? 'OK' : 'REVIEW'} ${res.status} ${route}${fingerprint.fingerprintOk ? '' : ' fingerprint-mismatch'}`);
     } catch (error) {
-      rows.push({ route, url, status: 0, ok: false, finalUrl: '', ms: Date.now() - started, error: String(error?.message || error) });
+      rows.push({ route, url, status: 0, httpOk: false, fingerprintOk: false, ok: false, finalUrl: '', ms: Date.now() - started, error: String(error?.message || error) });
       console.log(`ERR ${route}`);
     }
   }
   writeJson('route-matrix.json', rows);
   writeFileSync(
     join(receiptDir, 'route-matrix.md'),
-    ['# URAI live route matrix', '', `Base: ${baseUrl}`, '', '| Route | HTTP | OK | Final URL | ms | Title |', '| --- | ---: | --- | --- | ---: | --- |', ...rows.map((row) => `| ${row.route} | ${row.status} | ${row.ok ? 'yes' : 'no'} | ${row.finalUrl || ''} | ${row.ms} | ${String(row.title || '').replace(/\|/g, '/') } |`), ''].join('\n'),
+    [
+      '# URAI live route matrix',
+      '',
+      `Base: ${baseUrl}`,
+      '',
+      '| Route | HTTP | HTTP OK | Fingerprint OK | Overall | Final URL | ms | Missing required | Forbidden present | Title |',
+      '| --- | ---: | --- | --- | --- | --- | ---: | --- | --- | --- |',
+      ...rows.map((row) => `| ${row.route} | ${row.status} | ${row.httpOk ? 'yes' : 'no'} | ${row.fingerprintOk ? 'yes' : 'no'} | ${row.ok ? 'yes' : 'no'} | ${row.finalUrl || ''} | ${row.ms} | ${(row.missingRequired || []).join(', ')} | ${(row.presentForbidden || []).join(', ')} | ${String(row.title || '').replace(/\|/g, '/') } |`),
+      '',
+    ].join('\n'),
   );
   return rows;
 }
@@ -269,6 +314,7 @@ async function captureScreenshots() {
 function writeReport({ routeRows, dnsResult, screenshotsResult, assetReceipt }) {
   const failedSteps = steps.filter((step) => step.status !== 0);
   const failedRoutes = routeRows.filter((row) => !row.ok);
+  const fingerprintFailures = routeRows.filter((row) => row.httpOk && !row.fingerprintOk);
   const status = failedSteps.length === 0 && failedRoutes.length === 0 ? 'GREEN' : 'YELLOW_OR_RED_REVIEW_REQUIRED';
   const gitStatus = sh('git status --short').stdout.trim();
   const branch = sh('git branch --show-current').stdout.trim();
@@ -308,9 +354,12 @@ function writeReport({ routeRows, dnsResult, screenshotsResult, assetReceipt }) 
     '',
     `Routes checked: ${routeRows.length}`,
     `Routes OK: ${routeRows.filter((row) => row.ok).length}`,
-    `Routes failed: ${failedRoutes.length}`,
+    `Routes needing review: ${failedRoutes.length}`,
+    `Fingerprint failures with HTTP 200: ${fingerprintFailures.length}`,
     '',
-    failedRoutes.length ? failedRoutes.map((row) => `- ${row.route}: ${row.status || row.error}`).join('\n') : 'All checked routes returned successful HTTP status.',
+    failedRoutes.length
+      ? failedRoutes.map((row) => `- ${row.route}: HTTP=${row.status}; fingerprint=${row.fingerprintOk ? 'ok' : 'fail'}; missing=${(row.missingRequired || []).join(', ') || 'none'}; forbidden=${(row.presentForbidden || []).join(', ') || 'none'}; error=${row.error || 'none'}`).join('\n')
+      : 'All checked routes returned successful HTTP status and expected route fingerprints.',
     '',
     '## Screenshots',
     '',
@@ -358,21 +407,21 @@ writeJson('repo-state.json', {
 logStep('git-status', 'git status --short && git rev-parse HEAD && git branch --show-current');
 
 if (!skipInstall) logStep('pnpm-install', 'pnpm install --frozen-lockfile');
-else steps.push({ name: 'pnpm-install', command: 'skipped by --skip-install', status: 0, startedAt: new Date().toISOString(), endedAt: new Date().toISOString(), durationMs: 0 });
+else pushSkippedStep('pnpm-install', 'skipped by --skip-install');
 
 if (!skipTypecheck) logStep('pnpm-typecheck', 'pnpm typecheck');
-else steps.push({ name: 'pnpm-typecheck', command: 'skipped by --skip-typecheck', status: 0, startedAt: new Date().toISOString(), endedAt: new Date().toISOString(), durationMs: 0 });
+else pushSkippedStep('pnpm-typecheck', 'skipped by --skip-typecheck');
 
 if (!skipTest) logStep('pnpm-test-if-present', 'pnpm run --if-present test');
-else steps.push({ name: 'pnpm-test-if-present', command: 'skipped by --skip-test', status: 0, startedAt: new Date().toISOString(), endedAt: new Date().toISOString(), durationMs: 0 });
+else pushSkippedStep('pnpm-test-if-present', 'skipped by --skip-test');
 
 if (!skipBuild) logStep('pnpm-build-static', 'pnpm build:static');
-else steps.push({ name: 'pnpm-build-static', command: 'skipped by --skip-build', status: 0, startedAt: new Date().toISOString(), endedAt: new Date().toISOString(), durationMs: 0 });
+else pushSkippedStep('pnpm-build-static', 'skipped by --skip-build');
 
 if (shouldDeploy) {
   logStep('firebase-deploy-static', `firebase deploy --config firebase.static.json --only hosting --project ${projectId}`);
 } else {
-  steps.push({ name: 'firebase-deploy-static', command: 'skipped; pass --deploy to run', status: 0, startedAt: new Date().toISOString(), endedAt: new Date().toISOString(), durationMs: 0 });
+  pushSkippedStep('firebase-deploy-static', 'skipped; pass --deploy to run');
   writeFileSync(join(logDir, 'firebase-deploy-static.log'), 'Skipped. Pass --deploy to run Firebase hosting deploy.\n');
 }
 
