@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import QuestVrEntryButton from './QuestVrEntryButton'
 import XrCapabilitySignal from './XrCapabilitySignal'
 import './xr-portal.css'
 
@@ -8,9 +9,9 @@ export const metadata = {
 }
 
 const checks = [
-  ['Quest Browser', 'Open urai.app/spatial/life-map and urai.app/spatial/ar-vr from the headset browser.'],
-  ['Capability check', 'This route now checks navigator.xr on the current browser and keeps fallback instructions visible when immersive support is absent.'],
-  ['Manual proof', 'Do not mark Quest verified until the route is loaded and interacted with on actual Quest hardware.'],
+  ['Quest Browser', 'Open urai.app/spatial/ar-vr in the headset, press Enter VR in Quest, then open the Spatial Life Map from the same portal.'],
+  ['Capability check', 'This route checks navigator.xr, exposes an explicit immersive-vr request button, and keeps fallback instructions visible when support is absent.'],
+  ['Manual proof', 'Do not mark Quest verified until the route is loaded, the VR button is tested, and the Life Map is interacted with on actual Quest hardware.'],
 ] as const
 
 export default function SpatialArVrPage() {
@@ -21,10 +22,11 @@ export default function SpatialArVrPage() {
         <p className="urai-xr-portal__kicker">AR / VR / XR PORTAL</p>
         <h1>Step inside the Life Map.</h1>
         <p className="urai-xr-portal__lede">
-          URAI&apos;s spatial layer is live with a Quest-ready entry path, WebXR fallback language, browser capability detection, and manual headset proof steps. Hardware verification still requires an actual Quest Browser session.
+          URAI&apos;s spatial layer is live with a Quest-ready entry path, an explicit VR button for Quest Browser, WebXR fallback language, browser capability detection, and manual headset proof steps. Hardware verification still requires an actual Quest Browser session.
         </p>
 
         <div className="urai-xr-portal__actions">
+          <QuestVrEntryButton />
           <Link href="/spatial/life-map">Open Spatial Life Map</Link>
           <Link href="/life-map">Open Life Map</Link>
           <Link href="/ground">Return to Ground</Link>
@@ -40,7 +42,7 @@ export default function SpatialArVrPage() {
         {checks.map(([title, copy], index) => (
           <article key={title} className={`urai-xr-portal__card ${index === 0 ? 'urai-xr-portal__card--quest' : index === 1 ? 'urai-xr-portal__card--webxr' : 'urai-xr-portal__card--life'}`}>
             <span>{title}</span>
-            <strong>{index === 0 ? 'Manual proof required' : index === 1 ? 'Fallback ready' : 'Record honestly'}</strong>
+            <strong>{index === 0 ? 'Enter VR is visible' : index === 1 ? 'Fallback ready' : 'Record honestly'}</strong>
             <p>{copy}</p>
           </article>
         ))}
@@ -52,9 +54,9 @@ export default function SpatialArVrPage() {
         <p className="text-[10px] font-black uppercase tracking-[0.24em] text-cyan-200">Quest 2 manual test</p>
         <ol className="mt-3 list-decimal space-y-2 pl-5 text-sm font-semibold leading-6 text-slate-100/80">
           <li>Open Quest Browser.</li>
-          <li>Visit urai.app/spatial/life-map.</li>
-          <li>Confirm drag, zoom, star select, Focus and Replay buttons.</li>
-          <li>Visit urai.app/spatial/ar-vr and confirm this portal is readable.</li>
+          <li>Visit urai.app/spatial/ar-vr.</li>
+          <li>Press Enter VR in Quest and record whether the browser allows immersive mode.</li>
+          <li>Open Spatial Life Map and confirm drag, zoom, star select, Focus and Replay buttons.</li>
         </ol>
       </aside>
 
