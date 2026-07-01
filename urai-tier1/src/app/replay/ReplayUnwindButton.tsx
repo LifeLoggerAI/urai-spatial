@@ -11,7 +11,7 @@ function focusUrlForManifest(manifestId: string) {
 export function ReplayUnwindButton() {
   const router = useRouter()
   const params = useSearchParams()
-  const manifestId = params.get('manifestId') || DEFAULT_REPLAY_MANIFEST_ID
+  const manifestId = params?.get('manifestId') || DEFAULT_REPLAY_MANIFEST_ID
 
   return (
     <button
