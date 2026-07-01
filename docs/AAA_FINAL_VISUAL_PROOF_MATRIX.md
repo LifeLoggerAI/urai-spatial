@@ -10,6 +10,7 @@ This document is the final launch wall for the public spatial app. It separates 
 - Focus is the selected-memory camera chamber with one dominant memory and one Replay doorway.
 - Replay is the cinematic memory film surface with beat progression.
 - Mirror, Passport, Status, Privacy Controls, Location Map, demo, and XR routes expose launch-surface markers.
+- The Quest chamber now has a repo-side contract for the visible `QUEST CHAMBER LIVE` badge, huge-orb chamber copy, Life Map door, Ground door, visible Enter VR path, and the honest manual proof checklist.
 - Quest proof language is bounded: the route can say the XR path exists and the button is present, but physical Quest proof remains manual until a headset recording exists.
 
 ## Required route screenshot set
@@ -26,7 +27,7 @@ This document is the final launch wall for the public spatial app. It separates 
 | `/status` | Does it feel like launch control room? | Route matrix, launch spine, trust/place, XR preview state. |
 | `/privacy-controls` | Does it feel like consent console? | Permission states, model access, location precision, user control. |
 | `/location-map` | Does it feel like emotional weather atlas? | Place memory, symbolic weather, route to real-world context. |
-| `/spatial/ar-vr` | Does it honestly frame XR? | Enter VR button visible, WebXR fallback, Quest manual proof steps, no fake hardware claim. |
+| `/spatial/ar-vr` | Does it honestly frame XR? | Enter VR button visible, `QUEST CHAMBER LIVE` badge, huge orb, Life Map door, Ground door, WebXR fallback, Quest manual proof steps, no fake hardware claim. |
 | `/demo` | Does it feel like public preview walkthrough? | Clear product arc and public demo framing. |
 | `/demo/replay-film` | Does it feel like film proof? | Replay/story arc that can be recorded for launch. |
 
