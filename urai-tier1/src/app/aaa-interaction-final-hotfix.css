@@ -1,0 +1,64 @@
+/* =========================================================
+   URAI AAA+++ FINAL INTERACTION HOTFIX
+   Additive only. Keeps cinematic layers non-blocking and route portals clickable.
+   ========================================================= */
+
+.urai-cinematic-backdrop,
+.urai-cinematic-backdrop *,
+.urai-genesis-home::before,
+.urai-genesis-home::after,
+[data-testid="urai-r3f-canonical-lifemap"] [class*="atmosphere"],
+[data-testid="urai-r3f-canonical-lifemap"] [class*="depthField"],
+[data-testid="urai-r3f-canonical-lifemap"] [class*="vignette"] {
+  pointer-events: none !important;
+}
+
+.urai-genesis-home__threshold-gate,
+.urai-genesis-home__threshold-gate *,
+.urai-genesis-home__cta,
+.urai-genesis-home__cta *,
+.urai-genesis-home__portal,
+.urai-genesis-home__portal *,
+.urai-genesis-home__bottom-dock,
+.urai-genesis-home__bottom-dock *,
+[data-testid="urai-r3f-canonical-lifemap"] [class*="rail"],
+[data-testid="urai-r3f-canonical-lifemap"] [class*="rail"] *,
+[data-route-polish] a,
+[data-route-polish] button {
+  pointer-events: auto !important;
+}
+
+.urai-genesis-home__threshold-gate {
+  z-index: 80 !important;
+  touch-action: manipulation;
+}
+
+.urai-genesis-home__portals,
+.urai-genesis-home__bottom-dock,
+.urai-genesis-home__orb-panel {
+  z-index: 82 !important;
+}
+
+[data-testid="urai-r3f-canonical-lifemap"] [class*="rail"] {
+  z-index: 80 !important;
+  isolation: isolate;
+}
+
+[data-testid="urai-r3f-canonical-lifemap"] [class*="rail"] a {
+  position: relative;
+  z-index: 2;
+  flex: 0 0 auto;
+  touch-action: manipulation;
+}
+
+@media (max-width: 620px) {
+  .urai-genesis-home__threshold-gate {
+    min-height: 44px !important;
+  }
+
+  [data-testid="urai-r3f-canonical-lifemap"] [class*="rail"] {
+    max-width: calc(100vw - 24px) !important;
+    overflow-x: auto !important;
+    overflow-y: hidden !important;
+  }
+}
