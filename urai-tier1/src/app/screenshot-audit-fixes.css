@@ -1,0 +1,66 @@
+/* URAI final screenshot audit fixes.
+   Additive only: keeps existing route owners while correcting screenshot-proven polish gaps. */
+
+/* The last visual pass showed the Home headline was getting too compressed after stacked polish layers. */
+.urai-genesis-home__hero h1 {
+  letter-spacing: -.085em !important;
+}
+
+.urai-ground-mobile-proof {
+  display: none;
+}
+
+@media (max-width: 900px) {
+  .urai-genesis-home__hero h1 {
+    letter-spacing: -.072em !important;
+  }
+
+  [data-urai-route="ground-world"] .urai-ground-mobile-proof {
+    position: absolute;
+    left: .75rem;
+    right: .75rem;
+    bottom: calc(var(--urai-safe-bottom, 1rem) + 4.75rem);
+    z-index: 7;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: .55rem;
+    pointer-events: auto;
+  }
+
+  [data-urai-route="ground-world"] .urai-ground-mobile-proof article {
+    min-height: 4.25rem;
+    border: 1px solid rgba(255, 235, 190, .16);
+    border-radius: 1.15rem;
+    padding: .72rem;
+    color: #fff7e8;
+    background: linear-gradient(145deg, rgba(5, 9, 12, .78), rgba(10, 28, 24, .58));
+    box-shadow: 0 18px 64px rgba(0,0,0,.38), inset 0 1px 0 rgba(255,255,255,.08);
+    backdrop-filter: blur(16px) saturate(1.14);
+  }
+
+  [data-urai-route="ground-world"] .urai-ground-mobile-proof span {
+    display: block;
+    margin-bottom: .35rem;
+    color: #8ff6ff;
+    font-size: .58rem;
+    font-weight: 950;
+    letter-spacing: .16em;
+    text-transform: uppercase;
+  }
+
+  [data-urai-route="ground-world"] .urai-ground-mobile-proof strong {
+    display: block;
+    color: #fff;
+    font-size: .8rem;
+    line-height: 1.25;
+  }
+}
+
+@media (max-width: 420px) {
+  [data-urai-route="ground-world"] .urai-ground-mobile-proof {
+    max-height: 28svh;
+    overflow: auto;
+    grid-template-columns: 1fr;
+    -webkit-overflow-scrolling: touch;
+  }
+}
