@@ -37,9 +37,9 @@ const routeArt = {
   },
   replay: {
     surface: 'replay',
-    label: 'Replay film',
-    primary: '/assets/urai/replay/replay-memory-film-main.webp',
-    mobile: '/assets/urai/replay/replay-memory-film-mobile.webp',
+    label: 'Replay film bespoke final',
+    primary: '/assets/urai/bespoke/replay/replay-memory-film-bespoke-final.svg',
+    mobile: '/assets/urai/bespoke/replay/replay-memory-film-bespoke-final-mobile.svg',
   },
   mirror: {
     surface: 'mirror',
