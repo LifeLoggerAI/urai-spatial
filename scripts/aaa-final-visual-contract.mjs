@@ -66,6 +66,11 @@ mustInclude('privacy', 'urai-tier1/src/app/privacy-controls/page.tsx', 'privacy 
 mustInclude('location', 'urai-tier1/src/app/location-map/page.tsx', 'emotional weather marker', 'premium-emotional-weather-atlas');
 mustInclude('xr', 'urai-tier1/src/app/spatial/ar-vr/page.tsx', 'Quest manual proof boundary', 'manual-device-required');
 mustInclude('xr', 'urai-tier1/src/app/spatial/ar-vr/page.tsx', 'Enter VR button present', 'QuestVrEntryButton');
+mustInclude('xr', 'urai-tier1/src/app/spatial/ar-vr/page.tsx', 'Quest chamber live badge', 'QUEST CHAMBER LIVE');
+mustInclude('xr', 'urai-tier1/src/app/spatial/ar-vr/page.tsx', 'huge orb chamber copy', 'a huge orb in front');
+mustInclude('xr', 'urai-tier1/src/app/spatial/ar-vr/page.tsx', 'Life Map chamber door', 'Life Map opens ahead');
+mustInclude('xr', 'urai-tier1/src/app/spatial/ar-vr/page.tsx', 'Ground chamber door', 'Ground below you');
+mustInclude('xr', 'urai-tier1/src/app/spatial/ar-vr/page.tsx', 'manual visual confirmation checklist', 'Confirm the huge orb, Life Map door, and Ground door are visible');
 
 for (const [label, path] of [
   ['home asset', 'urai-tier1/public/assets/urai/home/home-threshold-main.webp'],
