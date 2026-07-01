@@ -43,15 +43,15 @@ const routeArt = {
   },
   mirror: {
     surface: 'mirror',
-    label: 'Mirror realm',
-    primary: '/assets/urai/mirror/mirror-reflection-main.webp',
-    mobile: '/assets/urai/mirror/mirror-reflection-mobile.webp',
+    label: 'Mirror realm bespoke final',
+    primary: '/assets/urai/bespoke/mirror/mirror-reflection-bespoke-final.svg',
+    mobile: '/assets/urai/bespoke/mirror/mirror-reflection-bespoke-final-mobile.svg',
   },
   passport: {
     surface: 'passport',
-    label: 'Passport vault',
-    primary: '/assets/urai/passport/passport-vault-main.webp',
-    mobile: '/assets/urai/passport/passport-vault-mobile.webp',
+    label: 'Passport vault bespoke final',
+    primary: '/assets/urai/bespoke/passport/passport-vault-bespoke-final.svg',
+    mobile: '/assets/urai/bespoke/passport/passport-vault-bespoke-final-mobile.svg',
   },
   privacy: {
     surface: 'privacy',
