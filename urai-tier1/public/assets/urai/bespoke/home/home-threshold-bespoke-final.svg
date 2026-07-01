@@ -1,0 +1,78 @@
+<svg width="1920" height="1080" viewBox="0 0 1920 1080" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="title desc">
+  <title id="title">URAI Home bespoke final threshold</title>
+  <desc id="desc">A cinematic URAI Home threshold with real sky, grounded floor, living orb, avatar presence, sky ascent and ground descent portals.</desc>
+  <defs>
+    <radialGradient id="skyGlow" cx="50%" cy="28%" r="58%">
+      <stop offset="0" stop-color="#B8F7FF" stop-opacity="0.95"/>
+      <stop offset="0.28" stop-color="#6EE7FF" stop-opacity="0.44"/>
+      <stop offset="0.62" stop-color="#25356D" stop-opacity="0.78"/>
+      <stop offset="1" stop-color="#050711"/>
+    </radialGradient>
+    <linearGradient id="horizon" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#0B1022"/>
+      <stop offset="0.5" stop-color="#F8DFA5" stop-opacity="0.78"/>
+      <stop offset="1" stop-color="#0B1022"/>
+    </linearGradient>
+    <linearGradient id="floor" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#20313D"/>
+      <stop offset="0.58" stop-color="#071019"/>
+      <stop offset="1" stop-color="#020306"/>
+    </linearGradient>
+    <radialGradient id="orb" cx="38%" cy="26%" r="64%">
+      <stop offset="0" stop-color="#FFFFFF"/>
+      <stop offset="0.18" stop-color="#EFFFFF"/>
+      <stop offset="0.42" stop-color="#7CF4FF"/>
+      <stop offset="0.76" stop-color="#378CFF" stop-opacity="0.68"/>
+      <stop offset="1" stop-color="#081024" stop-opacity="0.28"/>
+    </radialGradient>
+    <filter id="soft" x="-40%" y="-40%" width="180%" height="180%">
+      <feGaussianBlur stdDeviation="18"/>
+    </filter>
+  </defs>
+  <rect width="1920" height="1080" fill="url(#skyGlow)"/>
+  <g opacity="0.75">
+    <circle cx="220" cy="160" r="2.3" fill="#FFFFFF"/><circle cx="402" cy="110" r="1.7" fill="#BDFBFF"/><circle cx="1510" cy="140" r="2.4" fill="#FFFFFF"/><circle cx="1690" cy="250" r="1.6" fill="#E9D5FF"/><circle cx="1180" cy="96" r="1.9" fill="#FFFFFF"/>
+    <path d="M1450 164 L1695 80" stroke="#A9F5FF" stroke-width="3" stroke-linecap="round" opacity="0.38"/>
+    <path d="M1320 260 L1535 198" stroke="#FFE9B0" stroke-width="2" stroke-linecap="round" opacity="0.22"/>
+  </g>
+  <path d="M0 565 C260 515 438 542 675 520 C902 499 1030 546 1252 514 C1495 478 1680 500 1920 448 V1080 H0 Z" fill="url(#floor)"/>
+  <path d="M0 553 C313 500 533 530 790 512 C1039 494 1255 508 1510 476 C1678 456 1818 454 1920 432" stroke="url(#horizon)" stroke-width="5" opacity="0.72"/>
+  <g opacity="0.74">
+    <path d="M310 1080 L812 564 L1108 564 L1610 1080" fill="#101923" opacity="0.82"/>
+    <path d="M812 564 L1108 564" stroke="#DFFBFF" stroke-width="2" opacity="0.35"/>
+    <path d="M960 575 L960 1080" stroke="#9DEEFF" stroke-width="2" opacity="0.18"/>
+    <path d="M648 742 H1272" stroke="#FFE4A3" stroke-width="2" opacity="0.12"/>
+    <path d="M520 880 H1400" stroke="#8BEFFF" stroke-width="2" opacity="0.12"/>
+  </g>
+  <g transform="translate(960 440)">
+    <ellipse rx="338" ry="98" fill="#79F2FF" opacity="0.08"/>
+    <ellipse rx="250" ry="72" fill="none" stroke="#C9FBFF" stroke-width="2" opacity="0.32"/>
+    <ellipse rx="370" ry="118" fill="none" stroke="#B995FF" stroke-width="2" opacity="0.18"/>
+    <circle r="116" fill="url(#orb)"/>
+    <circle r="154" fill="#72F4FF" opacity="0.18" filter="url(#soft)"/>
+    <text y="9" text-anchor="middle" font-family="Inter, Arial, sans-serif" font-size="36" font-weight="900" letter-spacing="7" fill="#FFFFFF">URAI</text>
+  </g>
+  <g transform="translate(960 705)" opacity="0.72">
+    <path d="M-74 254 C-48 166 -28 96 0 96 C28 96 48 166 74 254" stroke="#FFE5AB" stroke-width="12" stroke-linecap="round"/>
+    <circle cy="42" r="42" fill="#FFE7B2" opacity="0.26"/>
+    <path d="M-105 168 C-55 134 55 134 105 168" stroke="#A6F5FF" stroke-width="5" stroke-linecap="round" opacity="0.42"/>
+  </g>
+  <a href="/life-map">
+    <g transform="translate(1235 350)">
+      <rect x="0" y="0" width="310" height="156" rx="42" fill="#071629" opacity="0.76" stroke="#8FF6FF" stroke-width="2"/>
+      <text x="32" y="54" font-family="Inter, Arial" font-size="18" font-weight="900" letter-spacing="4" fill="#8FF6FF">SKY ASCENT</text>
+      <text x="32" y="96" font-family="Inter, Arial" font-size="34" font-weight="900" fill="#FFFFFF">Life Map</text>
+      <text x="32" y="128" font-family="Inter, Arial" font-size="18" font-weight="700" fill="#FFE5AB">Open the constellation above.</text>
+    </g>
+  </a>
+  <a href="/ground">
+    <g transform="translate(375 700)">
+      <rect x="0" y="0" width="340" height="156" rx="42" fill="#091118" opacity="0.82" stroke="#FFE1A3" stroke-width="2"/>
+      <text x="32" y="54" font-family="Inter, Arial" font-size="18" font-weight="900" letter-spacing="4" fill="#FFE1A3">GROUND DESCENT</text>
+      <text x="32" y="96" font-family="Inter, Arial" font-size="34" font-weight="900" fill="#FFFFFF">Private World</text>
+      <text x="32" y="128" font-family="Inter, Arial" font-size="18" font-weight="700" fill="#9DEEFF">Step into real-life operations.</text>
+    </g>
+  </a>
+  <text x="90" y="118" font-family="Inter, Arial" font-size="26" font-weight="900" letter-spacing="6" fill="#8FF6FF">URAI HOME FINAL ART</text>
+  <text x="90" y="165" font-family="Inter, Arial" font-size="58" font-weight="900" fill="#FFFFFF">Own your life. Step inside yourself.</text>
+</svg>
