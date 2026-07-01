@@ -25,9 +25,9 @@ const routeArt = {
   },
   lifeMap: {
     surface: 'life-map',
-    label: 'Life Map galaxy',
-    primary: '/assets/urai/life-map/life-map-galaxy-main.webp',
-    mobile: '/assets/urai/life-map/life-map-galaxy-mobile.webp',
+    label: 'Life Map galaxy bespoke final',
+    primary: '/assets/urai/bespoke/life-map/life-map-galaxy-bespoke-final.svg',
+    mobile: '/assets/urai/bespoke/life-map/life-map-galaxy-bespoke-final-mobile.svg',
   },
   focus: {
     surface: 'focus',
