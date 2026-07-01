@@ -29,6 +29,7 @@ import './home-world-screenshot-hotfix.css'
 import './launch-candidate-final-pass.css'
 import './urai-cinematic-backdrop.css'
 import './aaa-launch-polish-final.css'
+import './aaa-final-finishing-wall.css'
 import UraiCinematicBackdrop from './UraiCinematicBackdrop'
 
 export const metadata: Metadata = {
