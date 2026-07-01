@@ -33,6 +33,7 @@ for (const [surface, path] of [
   ['privacy', 'urai-tier1/src/app/privacy-controls/page.tsx'],
   ['location', 'urai-tier1/src/app/location-map/page.tsx'],
   ['xr', 'urai-tier1/src/app/spatial/ar-vr/page.tsx'],
+  ['static-build', 'urai-tier1/src/pages/404.tsx'],
 ]) mustExist(surface, path, 'source present');
 
 mustInclude('root', 'urai-tier1/src/app/page.tsx', '/ route renders final Home threshold', 'FinalHomeThreshold');
@@ -81,6 +82,8 @@ mustInclude('xr', 'urai-tier1/src/app/spatial/ar-vr/page.tsx', 'huge orb chamber
 mustInclude('xr', 'urai-tier1/src/app/spatial/ar-vr/page.tsx', 'Life Map chamber door', 'Life Map opens ahead');
 mustInclude('xr', 'urai-tier1/src/app/spatial/ar-vr/page.tsx', 'Ground chamber door', 'Ground below you');
 mustInclude('xr', 'urai-tier1/src/app/spatial/ar-vr/page.tsx', 'manual visual confirmation checklist', 'Confirm the huge orb, Life Map door, and Ground door are visible');
+mustInclude('static-build', 'urai-tier1/src/pages/404.tsx', 'Pages Router manifest shim exists', 'PagesRouterNotFoundShim');
+mustInclude('static-build', 'urai-tier1/src/pages/404.tsx', 'shim truth boundary copy', 'canonical not-found surface remains in the App Router');
 
 for (const [label, path] of [
   ['home asset', 'urai-tier1/public/assets/urai/home/home-threshold-main.webp'],
@@ -109,7 +112,7 @@ const lines = [
   `Checks: ${checks.length}`,
   `Failures: ${failures.length}`,
   '',
-  'This guard catches route-owner drift, missing proof assets, route-chain regressions, Home sky-ascent drift, and false Quest proof language before launch.',
+  'This guard catches route-owner drift, missing proof assets, route-chain regressions, Home sky-ascent drift, static-build manifest drift, and false Quest proof language before launch.',
   '',
   '| State | Surface | Check | File |',
   '| --- | --- | --- | --- |',
