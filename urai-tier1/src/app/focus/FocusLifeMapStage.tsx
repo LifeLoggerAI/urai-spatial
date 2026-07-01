@@ -7,7 +7,7 @@ import { lifeMapNodes } from "@/spatial/v1/lifeMapDemoData";
 
 const DEFAULT_MEMORY_ID = lifeMapNodes[0]?.id;
 
-function normalizeMemoryId(value: string | null) {
+function normalizeMemoryId(value: string | null | undefined) {
   if (!value) return undefined;
   return lifeMapNodes.some((node) => node.id === value) ? value : undefined;
 }
@@ -17,9 +17,9 @@ export function FocusLifeMapStage() {
 
   const selectedNodeId = useMemo(() => {
     return (
-      normalizeMemoryId(searchParams.get("memoryId")) ||
-      normalizeMemoryId(searchParams.get("nodeId")) ||
-      normalizeMemoryId(searchParams.get("manifestId")) ||
+      normalizeMemoryId(searchParams?.get("memoryId")) ||
+      normalizeMemoryId(searchParams?.get("nodeId")) ||
+      normalizeMemoryId(searchParams?.get("manifestId")) ||
       DEFAULT_MEMORY_ID
     );
   }, [searchParams]);
