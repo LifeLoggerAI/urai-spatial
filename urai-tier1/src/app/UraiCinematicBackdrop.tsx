@@ -53,6 +53,12 @@ const routeArt = {
     primary: '/assets/urai/bespoke/passport/passport-vault-bespoke-final.svg',
     mobile: '/assets/urai/bespoke/passport/passport-vault-bespoke-final-mobile.svg',
   },
+  xr: {
+    surface: 'spatial-ar-vr',
+    label: 'XR entry chamber bespoke final',
+    primary: '/assets/urai/bespoke/xr/xr-entry-chamber-bespoke-final.svg',
+    mobile: '/assets/urai/bespoke/xr/xr-entry-chamber-bespoke-final-mobile.svg',
+  },
   privacy: {
     surface: 'privacy',
     label: 'Privacy controls',
@@ -76,6 +82,7 @@ const routeArt = {
 function resolve(pathname: string | null): CinematicRouteArt {
   const path = pathname || '/'
 
+  if (path.startsWith('/spatial/ar-vr')) return routeArt.xr
   if (path === '/' || path === '/home' || path === '/spatial') return routeArt.home
   if (path.startsWith('/ground')) return routeArt.ground
   if (path.startsWith('/life-map') || path.startsWith('/spatial/life-map')) return routeArt.lifeMap
