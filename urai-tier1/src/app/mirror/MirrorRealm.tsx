@@ -103,7 +103,7 @@ const PORTALS = [
   { label: 'Status', href: '/status' },
 ];
 
-function normalizeState(value: string | null): keyof typeof STATE_COPY {
+function normalizeState(value: string | null | undefined): keyof typeof STATE_COPY {
   if (!value) return 'softened';
 
   const normalized = value.toLowerCase().replace(/[\s_]+/g, '-');
@@ -116,7 +116,7 @@ function normalizeState(value: string | null): keyof typeof STATE_COPY {
   return 'softened';
 }
 
-function normalizeThread(value: string | null): ThreadSpec {
+function normalizeThread(value: string | null | undefined): ThreadSpec {
   const id = value?.trim() || 'seed-memory-bloom';
   const known = THREADS[id];
 
@@ -144,7 +144,7 @@ function normalizeThread(value: string | null): ThreadSpec {
   };
 }
 
-function normalizeSource(value: string | null) {
+function normalizeSource(value: string | null | undefined) {
   if (!value) return 'Safe default';
 
   return value
@@ -156,9 +156,9 @@ function normalizeSource(value: string | null) {
 
 export function MirrorRealm() {
   const searchParams = useSearchParams();
-  const rawThread = searchParams.get('thread') ?? searchParams.get('memoryId');
-  const stateKey = normalizeState(searchParams.get('state'));
-  const fromLabel = normalizeSource(searchParams.get('from'));
+  const rawThread = searchParams?.get('thread') ?? searchParams?.get('memoryId');
+  const stateKey = normalizeState(searchParams?.get('state'));
+  const fromLabel = normalizeSource(searchParams?.get('from'));
   const thread = useMemo(() => normalizeThread(rawThread), [rawThread]);
   const state = STATE_COPY[stateKey];
   const [interactionMode, setInteractionMode] = useState<OrbMode | null>(null);
@@ -228,24 +228,20 @@ export function MirrorRealm() {
         </section>
 
         <aside className={styles.statusPanel} aria-label="Mirror chamber status">
-          <p className={styles.statusIntro}>Memory ownership stays visible.</p>
-          <div className={styles.statusGrid}>
-            <span><small>State</small><strong>{state.label}</strong></span>
-            <span><small>Route</small><strong>Open</strong></span>
-            <span><small>Privacy</small><strong>Held</strong></span>
-          </div>
-          <div className={styles.routeLinks} aria-label="Open route pathways">
-            <Link href={lifeMapHref}>Life Map</Link>
-            <Link href={focusHref}>Focus</Link>
-            <Link href={replayHref}>Replay</Link>
-          </div>
-          <p className={styles.privacyNote}>Private shield active. Raw memory detail remains behind the Passport layer.</p>
+          <p className={styles.eyebrow}>Current reflection</p>
+          <h2>{state.label}</h2>
+          <p>{state.description}</p>
+          <dl>
+            <div><dt>Source</dt><dd>{thread.sourceLabel}</dd></div>
+            <div><dt>Pattern</dt><dd>{thread.patternLabel}</dd></div>
+            <div><dt>Privacy</dt><dd>Raw memory sealed</dd></div>
+          </dl>
         </aside>
       </div>
 
-      <section className={styles.lensDeck} aria-label="Mirror reflection lenses">
+      <section className={styles.lensGrid} aria-label="Mirror interpretation lenses">
         {lenses.map((lens) => (
-          <article key={lens.title} className={styles.lensCard}>
+          <article key={lens.title}>
             <p>{lens.kicker}</p>
             <h2>{lens.title}</h2>
             <span>{lens.body}</span>
@@ -254,14 +250,16 @@ export function MirrorRealm() {
         ))}
       </section>
 
-      <nav className={styles.portalRail} aria-label="URAI realm portals">
+      <nav className={styles.portalRail} aria-label="URAI route rail">
         {PORTALS.map((portal) => (
-          <Link key={portal.label} href={portal.active ? mirrorHref : portal.href} aria-current={portal.active ? 'page' : undefined}>
+          <Link key={portal.href} href={portal.href} aria-current={portal.active ? 'page' : undefined}>
             {portal.label}
           </Link>
         ))}
-        <Link href={statusHref}>Trust</Link>
+        <Link href={mirrorHref}>Refresh Mirror</Link>
       </nav>
     </main>
   );
 }
+
+export default MirrorRealm;
