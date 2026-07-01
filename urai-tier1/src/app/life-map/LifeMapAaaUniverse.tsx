@@ -342,8 +342,8 @@ export default function LifeMapAaaUniverse() {
   const [entered, setEntered] = useState(false)
   const index = Math.max(0, memoryStars.findIndex((star) => star.id === selectedId))
   const selected = memoryStars[index] ?? memoryStars[0]
-  const focusHref = `/focus?memoryId=${selected.id}`
-  const replayHref = `/replay?memoryId=${selected.id}&manifestId=replay-recovery-thread`
+  const focusHref = `/focus?memoryId=${selected.id}&from=life-map-camera`
+  const replayHref = `/replay?memoryId=${selected.id}&manifestId=replay-recovery-thread&from=life-map-camera`
 
   const related = useMemo(
     () =>
@@ -383,6 +383,7 @@ export default function LifeMapAaaUniverse() {
     <main
       className="urai-life-map-aaa"
       data-entered={entered ? 'true' : 'false'}
+      data-canon="camera-only-life-map-avatar-orb-grounded"
       style={style}
       aria-labelledby="urai-life-map-title"
       onKeyDown={onKeyDown}
@@ -406,14 +407,14 @@ export default function LifeMapAaaUniverse() {
       </div>
 
       <section className="urai-life-map-aaa__inscription" aria-label="Life Map introduction">
-        <p>URAI Spatial · private life galaxy</p>
+        <p>URAI Spatial · camera inside private life galaxy</p>
         <h1 id="urai-life-map-title">Life Map</h1>
         <span>
-          Memories are stars. Relationships carry gravity. Emotional weather moves through the sky.
+          The avatar and orb remain grounded. The camera enters memory: stars, gravity, emotional weather, and selected routes.
         </span>
       </section>
 
-      <div className="urai-life-map-aaa__camera" aria-label="Navigable Life Map universe">
+      <div className="urai-life-map-aaa__camera" aria-label="Navigable Life Map camera universe">
         <section className="urai-life-map-aaa__era-fields" aria-label="Life era regions">
           {eraRegions.map((era) => (
             <article
@@ -576,32 +577,17 @@ export default function LifeMapAaaUniverse() {
               </div>
             </dl>
             <nav aria-label={`Enter ${selected.title}`}>
-              <Link href={focusHref}>Enter Focus</Link>
-              <Link href={replayHref}>Enter Replay</Link>
+              <Link href={focusHref}>Camera into Focus</Link>
+              <Link href={replayHref}>Camera into Replay</Link>
             </nav>
           </div>
-        </aside>
-
-        <aside
-          className="urai-life-map-aaa__orb"
-          aria-label="URAI orb companion"
-          style={vars({
-            '--orb-x': `${Math.min(Math.max(selected.x + 24, 44), 85)}%`,
-            '--orb-y': `${Math.min(Math.max(selected.y + 17, 38), 76)}%`,
-          })}
-        >
-          <span />
-          <p>
-            <strong>Orb companion</strong>
-            <em>{selected.title} is open. The world is showing its links, weather, and private helper activity.</em>
-          </p>
         </aside>
       </div>
 
       <aside className="urai-life-map-aaa__ownership" aria-label="Ownership and privacy readout">
         <p>Owned by you</p>
         <strong>Private galaxy locked</strong>
-        <span>Consent rings visible · replay access user-controlled · legacy layer sealed by default</span>
+        <span>Avatar and orb stay grounded · camera-only memory ascent · replay access user-controlled</span>
       </aside>
 
       <aside className="urai-life-map-aaa__readout" aria-label="Life Map readout">
@@ -619,7 +605,7 @@ export default function LifeMapAaaUniverse() {
         </span>
       </aside>
 
-      <nav id="life-map-command-rail" className="urai-life-map-aaa__rail" aria-label="Spatial command rail">
+      <nav id="life-map-command-rail" className="urai-life-map-aaa__rail" aria-label="URAI route chain">
         {rail.map(([label, href]) => (
           <Link key={href} href={href} data-active={label === 'Life Map' ? 'true' : 'false'}>
             {label}
