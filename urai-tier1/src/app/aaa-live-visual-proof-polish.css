@@ -1,0 +1,218 @@
+/* Final live screenshot polish after Home/Ground/XR proof.
+   Keep canon intact: Home owns avatar/orb, Ground is first-person, XR proof stays manual. */
+
+/* 1) HOME: scene first, card second. */
+.urai-genesis-home .urai-genesis-home__hero {
+  left: clamp(18px, 3vw, 44px) !important;
+  top: clamp(72px, 9vh, 108px) !important;
+  width: min(430px, 31vw) !important;
+  max-width: min(430px, calc(100vw - 34px)) !important;
+  padding: clamp(14px, 1.5vw, 20px) !important;
+  border-radius: 28px !important;
+  border-color: rgba(235, 252, 255, .14) !important;
+  background: linear-gradient(135deg, rgba(3, 9, 20, .58), rgba(5, 13, 28, .30)) !important;
+  box-shadow: 0 24px 86px rgba(0, 0, 0, .30), inset 0 1px 0 rgba(255,255,255,.08) !important;
+  backdrop-filter: blur(14px) saturate(1.04) !important;
+}
+
+.urai-genesis-home .urai-genesis-home__status-pill,
+.urai-genesis-home .urai-genesis-home__micro,
+.urai-genesis-home .urai-genesis-home__copy {
+  opacity: .76 !important;
+}
+
+.urai-genesis-home .urai-genesis-home__hero h1 {
+  max-width: 9.2ch !important;
+  font-size: clamp(3.1rem, 5.7vw, 6.8rem) !important;
+  line-height: .84 !important;
+  letter-spacing: -.105em !important;
+}
+
+.urai-genesis-home .urai-genesis-home__hero h1 span {
+  margin-top: .08em !important;
+}
+
+.urai-genesis-home .urai-genesis-home__copy {
+  max-width: 28ch !important;
+  margin-top: 14px !important;
+  font-size: .92rem !important;
+  line-height: 1.55 !important;
+}
+
+.urai-genesis-home .urai-genesis-home__actions {
+  margin-top: 16px !important;
+}
+
+.urai-genesis-home .urai-genesis-home__cta {
+  min-height: 38px !important;
+  padding: 0 14px !important;
+  font-size: .72rem !important;
+}
+
+.urai-genesis-home .urai-genesis-home__threshold-gate {
+  opacity: .88 !important;
+  transform: scale(.94) !important;
+}
+
+.urai-genesis-home .urai-genesis-home__memory-orbit {
+  left: clamp(16px, 3vw, 46px) !important;
+  bottom: clamp(18px, 3.5vh, 34px) !important;
+  opacity: .72 !important;
+  transform: scale(.86) !important;
+  transform-origin: left bottom !important;
+}
+
+.urai-genesis-home .urai-genesis-home__portals {
+  opacity: .76 !important;
+  transform: scale(.92) !important;
+  transform-origin: right bottom !important;
+}
+
+.urai-genesis-home .urai-genesis-home__portal {
+  background: rgba(2, 8, 20, .34) !important;
+  border-color: rgba(220, 250, 255, .13) !important;
+  box-shadow: 0 18px 54px rgba(0,0,0,.22) !important;
+}
+
+.urai-genesis-home .urai-genesis-home__bottom-dock {
+  opacity: .62 !important;
+}
+
+/* Hide oversized proof/watermark-style labels without removing semantic route markers. */
+.urai-genesis-home [class*="ghost"],
+.urai-genesis-home [class*="watermark"],
+.urai-genesis-home [class*="mega"],
+.urai-genesis-home [class*="massive"] {
+  opacity: .08 !important;
+  pointer-events: none !important;
+}
+
+@media (max-width: 900px) {
+  .urai-genesis-home .urai-genesis-home__hero {
+    width: min(380px, calc(100vw - 28px)) !important;
+    top: auto !important;
+    bottom: clamp(116px, 17vh, 168px) !important;
+  }
+
+  .urai-genesis-home .urai-genesis-home__hero h1 {
+    font-size: clamp(2.7rem, 12vw, 4.8rem) !important;
+  }
+}
+
+/* 2) XR: stop top-edge collision and make it read as a chamber. */
+.urai-xr-portal .urai-xr-portal__hero {
+  left: clamp(18px, 3.4vw, 54px) !important;
+  top: clamp(58px, 8vh, 92px) !important;
+  width: min(520px, 36vw) !important;
+  max-width: min(520px, calc(100vw - 36px)) !important;
+  padding: clamp(16px, 1.7vw, 24px) !important;
+}
+
+.urai-xr-portal h1 {
+  max-width: 10ch !important;
+  font-size: clamp(3.25rem, 6.7vw, 7.2rem) !important;
+  line-height: .84 !important;
+}
+
+.urai-xr-portal .urai-xr-portal__lede {
+  max-width: 46ch !important;
+  margin-top: 16px !important;
+  font-size: .95rem !important;
+  line-height: 1.55 !important;
+}
+
+.urai-xr-portal .urai-xr-portal__portal-door {
+  z-index: 10 !important;
+  width: min(280px, 21vw) !important;
+  min-width: 220px !important;
+  padding: 14px 16px !important;
+  border-radius: 24px !important;
+  background: linear-gradient(180deg, rgba(5, 14, 26, .82), rgba(2, 7, 14, .62)) !important;
+  box-shadow: 0 28px 92px rgba(0,0,0,.40), inset 0 1px 0 rgba(255,255,255,.10) !important;
+}
+
+.urai-xr-portal .urai-xr-portal__portal-door--life {
+  left: auto !important;
+  right: clamp(24px, 6vw, 92px) !important;
+  top: clamp(130px, 20vh, 210px) !important;
+  transform: none !important;
+}
+
+.urai-xr-portal .urai-xr-portal__portal-door--ground {
+  left: auto !important;
+  right: clamp(24px, 6vw, 92px) !important;
+  bottom: clamp(220px, 31vh, 310px) !important;
+  transform: none !important;
+}
+
+.urai-xr-portal .urai-xr-portal__ring {
+  left: 58% !important;
+  top: 55% !important;
+  opacity: .38 !important;
+}
+
+.urai-xr-portal .urai-xr-portal__ring--one { width: 30vw !important; height: 12vw !important; }
+.urai-xr-portal .urai-xr-portal__ring--two { width: 42vw !important; height: 18vw !important; }
+.urai-xr-portal .urai-xr-portal__ring--three { width: 56vw !important; height: 24vw !important; opacity: .22 !important; }
+
+.urai-xr-portal .urai-xr-portal__world::before,
+.urai-xr-portal .urai-xr-portal__world::after {
+  filter: brightness(.82) saturate(.92) !important;
+}
+
+.urai-xr-portal .urai-xr-portal__card--quest {
+  top: auto !important;
+  right: clamp(18px, 4vw, 54px) !important;
+  bottom: clamp(94px, 12vh, 128px) !important;
+}
+
+.urai-xr-portal .urai-xr-portal__card--webxr,
+.urai-xr-portal .urai-xr-portal__card--life {
+  display: none !important;
+}
+
+.urai-xr-portal aside.fixed {
+  right: auto !important;
+  left: clamp(18px, 3.4vw, 54px) !important;
+  bottom: clamp(82px, 9vh, 112px) !important;
+  max-height: 34vh !important;
+  overflow: auto !important;
+}
+
+@media (max-width: 900px) {
+  .urai-xr-portal .urai-xr-portal__hero {
+    width: min(430px, calc(100vw - 28px)) !important;
+    top: clamp(38px, 6vh, 64px) !important;
+  }
+
+  .urai-xr-portal .urai-xr-portal__portal-door {
+    position: absolute !important;
+    width: min(330px, calc(100vw - 32px)) !important;
+    min-width: 0 !important;
+  }
+
+  .urai-xr-portal .urai-xr-portal__portal-door--life {
+    right: 16px !important;
+    top: clamp(360px, 52vh, 460px) !important;
+  }
+
+  .urai-xr-portal .urai-xr-portal__portal-door--ground {
+    right: 16px !important;
+    bottom: clamp(140px, 19vh, 190px) !important;
+  }
+
+  .urai-xr-portal aside.fixed {
+    display: none !important;
+  }
+}
+
+/* 3) GROUND: winner pass. Preserve it; only give it breathing room on small screens. */
+.urai-ground-mobile-proof {
+  backdrop-filter: blur(18px) saturate(1.05) !important;
+}
+
+@media (min-width: 901px) {
+  main[data-urai-route="ground-world"] .urai-ground-mobile-proof {
+    opacity: .88 !important;
+  }
+}
