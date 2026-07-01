@@ -83,11 +83,13 @@ summary:focus-visible,
   box-shadow: 0 28px 110px rgba(0,0,0,.42), 0 0 70px rgba(103,232,249,.10) !important;
 }
 
-[data-route-polish="selected-memory-chamber"] aside > div:first-child {
+[data-route-polish="selected-memory-chamber"] aside > div:first-child,
+[data-route-polish="selected-memory-camera-chamber"] aside > div:first-child {
   animation: uraiProofCameraIn 9s ease-in-out infinite alternate;
 }
 
-[data-route-polish="cinematic-memory-film"]::after {
+[data-route-polish="cinematic-memory-film"]::after,
+[data-route-polish="cinematic-memory-camera-film"]::after {
   content: "";
   position: absolute;
   inset: 0;
