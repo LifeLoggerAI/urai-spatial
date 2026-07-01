@@ -5,11 +5,11 @@ import type { CSSProperties, MouseEvent, PointerEvent } from "react";
 import { useCallback, useEffect, useRef, useState } from "react";
 
 const portals = [
-  { id: "world", href: "/ground?from=home", eyebrow: "Descend through ground", label: "Ground", detail: "private workforce and real-life objects" },
-  { id: "life", href: "/life-map?from=home-sky", eyebrow: "Ascend through sky", label: "Life Map", detail: "camera enters memory constellation above" },
-  { id: "mirror", href: "/mirror", eyebrow: "See the pattern", label: "Mirror", detail: "reflection realm" },
-  { id: "passport", href: "/passport", eyebrow: "Carry consent", label: "Passport", detail: "private by default" },
-  { id: "status", href: "/status", eyebrow: "Check the field", label: "Status", detail: "systems alive" },
+  { id: "world", href: "/ground?from=home", eyebrow: "Below", label: "Ground", detail: "walk the lower layer" },
+  { id: "life", href: "/life-map?from=home-sky", eyebrow: "Above", label: "Life Map", detail: "enter memory sky" },
+  { id: "mirror", href: "/mirror", eyebrow: "Reflect", label: "Mirror", detail: "private patterns" },
+  { id: "passport", href: "/passport", eyebrow: "Own", label: "Passport", detail: "consent vault" },
+  { id: "status", href: "/status", eyebrow: "Live", label: "Status", detail: "system field" },
 ] as const;
 
 const stars = Array.from({ length: 72 }, (_, index) => index);
@@ -24,42 +24,42 @@ const thresholdBaseStyle: CSSProperties = {
   position: "absolute",
   zIndex: 6,
   display: "grid",
-  gap: 6,
+  gap: 5,
   width: "max-content",
-  maxWidth: "min(340px, calc(100vw - 40px))",
-  padding: "13px 15px",
-  border: "1px solid rgba(220, 250, 255, .2)",
-  borderRadius: 22,
-  color: "rgba(248, 253, 255, .95)",
-  background: "rgba(2, 8, 20, .48)",
-  boxShadow: "0 22px 70px rgba(0,0,0,.28), 0 0 48px rgba(103,232,249,.08)",
-  backdropFilter: "blur(20px)",
+  maxWidth: "min(210px, calc(100vw - 40px))",
+  padding: "10px 12px",
+  border: "1px solid rgba(220, 250, 255, .16)",
+  borderRadius: 18,
+  color: "rgba(248, 253, 255, .92)",
+  background: "rgba(2, 8, 20, .34)",
+  boxShadow: "0 18px 54px rgba(0,0,0,.22), 0 0 34px rgba(103,232,249,.06)",
+  backdropFilter: "blur(16px)",
   textDecoration: "none",
 };
 
 const thresholdGroundStyle: CSSProperties = {
   ...thresholdBaseStyle,
-  left: "clamp(18px, 6vw, 92px)",
-  bottom: "clamp(90px, 16svh, 150px)",
+  left: "clamp(18px, 5vw, 76px)",
+  bottom: "clamp(86px, 14svh, 128px)",
 };
 
 const thresholdSkyStyle: CSSProperties = {
   ...thresholdBaseStyle,
-  right: "clamp(18px, 6vw, 92px)",
-  top: "clamp(118px, 22svh, 210px)",
+  right: "clamp(18px, 5vw, 76px)",
+  top: "clamp(108px, 20svh, 184px)",
 };
 
 const thresholdEyebrowStyle: CSSProperties = {
-  color: "rgba(154, 238, 255, .92)",
-  fontSize: ".68rem",
+  color: "rgba(154, 238, 255, .88)",
+  fontSize: ".62rem",
   fontWeight: 950,
-  letterSpacing: ".12em",
+  letterSpacing: ".14em",
   textTransform: "uppercase",
 };
 
 const thresholdLabelStyle: CSSProperties = {
-  fontSize: ".96rem",
-  lineHeight: 1.2,
+  fontSize: ".9rem",
+  lineHeight: 1.1,
 };
 
 export default function HomeSpatialWorldFinal() {
@@ -145,6 +145,7 @@ export default function HomeSpatialWorldFinal() {
       data-urai-route="genesis-home-world"
       data-launch-surface="aaa-final-home-sky-ground-orb-body-portals"
       data-transition-target={transitionTarget ?? 'idle'}
+      data-home-avatar-orb="anchored-at-home"
       onPointerMove={handlePointerMove}
       onPointerLeave={resetPointer}
     >
@@ -209,8 +210,8 @@ export default function HomeSpatialWorldFinal() {
         onPointerDown={() => primeTransition('ground')}
         onClick={(event) => navigateThroughThreshold(event, 'ground', '/ground?from=home')}
       >
-        <span style={thresholdEyebrowStyle}>Click the ground</span>
-        <strong style={thresholdLabelStyle}>Descend into the grounded life layer where council avatars and real-life objects exist.</strong>
+        <span style={thresholdEyebrowStyle}>Ground</span>
+        <strong style={thresholdLabelStyle}>Descend</strong>
       </Link>
 
       <Link
@@ -220,39 +221,37 @@ export default function HomeSpatialWorldFinal() {
         onPointerDown={() => primeTransition('sky')}
         onClick={(event) => navigateThroughThreshold(event, 'sky', '/life-map?from=home-sky')}
       >
-        <span style={thresholdEyebrowStyle}>Click the sky</span>
-        <strong style={thresholdLabelStyle}>Camera ascends into your Life Map. Avatar and orb stay anchored in Home/Ground.</strong>
+        <span style={thresholdEyebrowStyle}>Sky</span>
+        <strong style={thresholdLabelStyle}>Ascend</strong>
       </Link>
 
       <section className="urai-genesis-home__hero" aria-labelledby="urai-home-title">
-        <div className="urai-genesis-home__status-pill"><span />URAI · HOME WORLD</div>
-        <p className="urai-genesis-home__micro">Ground body below · memory camera above</p>
+        <div className="urai-genesis-home__status-pill"><span />URAI · HOME</div>
+        <p className="urai-genesis-home__micro">Ground below · memory above</p>
         <h1 id="urai-home-title">Own your life.<span>Step inside yourself.</span></h1>
-        <p className="urai-genesis-home__copy">
-          The ground holds your embodied life: council, objects, places, tools, and routines. The sky opens the camera into your Life Map, where memory becomes constellation.
-        </p>
+        <p className="urai-genesis-home__copy">You are standing at the threshold.</p>
         <div className="urai-genesis-home__actions" aria-label="Primary URAI threshold actions">
-          <Link className="urai-genesis-home__cta urai-genesis-home__cta--primary" href="/ground?from=home" onPointerDown={() => primeTransition('ground')} onClick={(event) => navigateThroughThreshold(event, 'ground', '/ground?from=home')}>Descend to Ground</Link>
-          <Link className="urai-genesis-home__cta" href="/life-map?from=home-sky" onPointerDown={() => primeTransition('sky')} onClick={(event) => navigateThroughThreshold(event, 'sky', '/life-map?from=home-sky')}>Ascend Camera to Life Map</Link>
+          <Link className="urai-genesis-home__cta urai-genesis-home__cta--primary" href="/ground?from=home" onPointerDown={() => primeTransition('ground')} onClick={(event) => navigateThroughThreshold(event, 'ground', '/ground?from=home')}>Ground</Link>
+          <Link className="urai-genesis-home__cta" href="/life-map?from=home-sky" onPointerDown={() => primeTransition('sky')} onClick={(event) => navigateThroughThreshold(event, 'sky', '/life-map?from=home-sky')}>Life Map</Link>
         </div>
       </section>
 
-      <div className="urai-genesis-home__memory-orbit" aria-label="Home threshold status"><strong>Threshold online</strong><span>body grounded · camera ascends</span></div>
+      <div className="urai-genesis-home__memory-orbit" aria-label="Home threshold status"><strong>Threshold online</strong><span>body grounded · camera travels</span></div>
 
       <button type="button" className="urai-genesis-home__orb" aria-label="Open URAI orb companion" aria-expanded={orbOpen} aria-controls="urai-orb-companion-panel" onClick={() => { primeTransition('orb'); setOrbOpen((open) => !open); }}>
         <span className="urai-genesis-home__orb-aura" />
         <span className="urai-genesis-home__orb-shell" />
         <span className="urai-genesis-home__orb-ring urai-genesis-home__orb-ring--outer" />
         <span className="urai-genesis-home__orb-ring urai-genesis-home__orb-ring--inner" />
-        <span className="urai-genesis-home__orb-label">Orb guide · press O</span>
+        <span className="urai-genesis-home__orb-label">Orb · O</span>
       </button>
 
       <aside id="urai-orb-companion-panel" className="urai-genesis-home__orb-panel" data-open={orbOpen ? "true" : "false"} aria-live="polite">
-        <p>URAI orb guide</p>
-        <strong>The orb stays grounded here. It opens in place; the memory camera ascends separately.</strong>
+        <p>URAI orb</p>
+        <strong>The orb stays anchored at Home. Ground and Life Map are camera moves.</strong>
         <div>
-          <Link href="/ground?from=orb">Ground World</Link>
-          <Link href="/life-map?from=orb-sky">Life Map Camera</Link>
+          <Link href="/ground?from=orb">Ground</Link>
+          <Link href="/life-map?from=orb-sky">Life Map</Link>
           <Link href="/mirror">Mirror</Link>
           <Link href="/passport">Passport</Link>
           <Link href="/status">Status</Link>
