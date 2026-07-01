@@ -13,9 +13,9 @@ type CinematicRouteArt = {
 const routeArt = {
   home: {
     surface: 'home',
-    label: 'Home threshold',
-    primary: '/assets/urai/home/home-threshold-main.webp',
-    mobile: '/assets/urai/home/home-threshold-mobile.webp',
+    label: 'Home threshold bespoke final',
+    primary: '/assets/urai/bespoke/home/home-threshold-bespoke-final.svg',
+    mobile: '/assets/urai/bespoke/home/home-threshold-bespoke-final-mobile.svg',
   },
   ground: {
     surface: 'ground',
