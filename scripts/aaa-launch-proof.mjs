@@ -53,8 +53,6 @@ const routeExpectations = [
   { route: '/tier5', required: ['Tier'] },
 ];
 
-const launchRoutes = routeExpectations.map((entry) => entry.route);
-
 const screenshotRoutes = [
   ['/home', 'home'],
   ['/ground', 'ground'],
@@ -79,7 +77,6 @@ function sh(command, opts = {}) {
     maxBuffer: 1024 * 1024 * 48,
     ...opts,
   });
-
   return {
     command,
     status: typeof result.status === 'number' ? result.status : 1,
@@ -102,13 +99,7 @@ function evaluateFingerprint(text, expectation) {
   const forbidden = expectation.forbidden || [];
   const missingRequired = required.filter((needle) => !textIncludes(text, needle));
   const presentForbidden = forbidden.filter((needle) => textIncludes(text, needle));
-  return {
-    fingerprintOk: missingRequired.length === 0 && presentForbidden.length === 0,
-    required,
-    forbidden,
-    missingRequired,
-    presentForbidden,
-  };
+  return { fingerprintOk: missingRequired.length === 0 && presentForbidden.length === 0, required, forbidden, missingRequired, presentForbidden };
 }
 
 const gitHead = sh('git rev-parse HEAD').stdout.trim() || 'unknown';
@@ -189,21 +180,7 @@ async function smokeRoutes() {
       const fingerprint = evaluateFingerprint(text, expectation);
       const httpOk = res.ok;
       const ok = httpOk && fingerprint.fingerprintOk;
-      rows.push({
-        route,
-        url,
-        status: res.status,
-        httpOk,
-        fingerprintOk: fingerprint.fingerprintOk,
-        ok,
-        finalUrl: res.url,
-        ms: Date.now() - started,
-        title: (text.match(/<title>(.*?)<\/title>/i)?.[1] || '').trim(),
-        bytes: text.length,
-        hasUrai: /urai/i.test(text),
-        missingRequired: fingerprint.missingRequired,
-        presentForbidden: fingerprint.presentForbidden,
-      });
+      rows.push({ route, url, status: res.status, httpOk, fingerprintOk: fingerprint.fingerprintOk, ok, finalUrl: res.url, ms: Date.now() - started, title: (text.match(/<title>(.*?)<\/title>/i)?.[1] || '').trim(), bytes: text.length, hasUrai: /urai/i.test(text), missingRequired: fingerprint.missingRequired, presentForbidden: fingerprint.presentForbidden });
       console.log(`${ok ? 'OK' : 'REVIEW'} ${res.status} ${route}${fingerprint.fingerprintOk ? '' : ' fingerprint-mismatch'}`);
     } catch (error) {
       rows.push({ route, url, status: 0, httpOk: false, fingerprintOk: false, ok: false, finalUrl: '', ms: Date.now() - started, error: String(error?.message || error) });
@@ -211,19 +188,7 @@ async function smokeRoutes() {
     }
   }
   writeJson('route-matrix.json', rows);
-  writeFileSync(
-    join(receiptDir, 'route-matrix.md'),
-    [
-      '# URAI live route matrix',
-      '',
-      `Base: ${baseUrl}`,
-      '',
-      '| Route | HTTP | HTTP OK | Fingerprint OK | Overall | Final URL | ms | Missing required | Forbidden present | Title |',
-      '| --- | ---: | --- | --- | --- | --- | ---: | --- | --- | --- |',
-      ...rows.map((row) => `| ${row.route} | ${row.status} | ${row.httpOk ? 'yes' : 'no'} | ${row.fingerprintOk ? 'yes' : 'no'} | ${row.ok ? 'yes' : 'no'} | ${row.finalUrl || ''} | ${row.ms} | ${(row.missingRequired || []).join(', ')} | ${(row.presentForbidden || []).join(', ')} | ${String(row.title || '').replace(/\|/g, '/') } |`),
-      '',
-    ].join('\n'),
-  );
+  writeFileSync(join(receiptDir, 'route-matrix.md'), ['# URAI live route matrix', '', `Base: ${baseUrl}`, '', '| Route | HTTP | HTTP OK | Fingerprint OK | Overall | Final URL | ms | Missing required | Forbidden present | Title |', '| --- | ---: | --- | --- | --- | --- | ---: | --- | --- | --- |', ...rows.map((row) => `| ${row.route} | ${row.status} | ${row.httpOk ? 'yes' : 'no'} | ${row.fingerprintOk ? 'yes' : 'no'} | ${row.ok ? 'yes' : 'no'} | ${row.finalUrl || ''} | ${row.ms} | ${(row.missingRequired || []).join(', ')} | ${(row.presentForbidden || []).join(', ')} | ${String(row.title || '').replace(/\|/g, '/') } |`), ''].join('\n'));
   return rows;
 }
 
@@ -232,7 +197,6 @@ async function checkDns() {
   const www = 'www.uraifoundation.org';
   const expectedGithubPagesIpv4 = new Set(['185.199.108.153', '185.199.109.153', '185.199.110.153', '185.199.111.153']);
   const result = { apex, www, expectedGithubPagesIpv4: [...expectedGithubPagesIpv4], checks: {} };
-
   async function maybe(label, fn) {
     try {
       result.checks[label] = { ok: true, value: await fn() };
@@ -240,7 +204,6 @@ async function checkDns() {
       result.checks[label] = { ok: false, error: String(error?.message || error) };
     }
   }
-
   await maybe('apexA', () => resolve4(apex));
   await maybe('apexAAAA', () => resolve6(apex));
   await maybe('wwwCNAME', () => resolveCname(www));
@@ -253,11 +216,11 @@ async function checkDns() {
     const res = await fetch(`https://${apex}/sitemap.xml`, { method: 'HEAD', redirect: 'follow' });
     return { status: res.status, ok: res.ok, url: res.url, server: res.headers.get('server') || '' };
   });
-
   const apexA = result.checks.apexA?.value || [];
   result.githubPagesApex = apexA.length > 0 && apexA.every((ip) => expectedGithubPagesIpv4.has(ip));
   result.httpsWorks = Boolean(result.checks.httpsApex?.value?.ok && result.checks.httpsSitemap?.value?.ok);
   result.complete = Boolean(result.githubPagesApex && result.httpsWorks);
+  return result;
 }
 
 async function captureScreenshots() {
@@ -267,7 +230,6 @@ async function captureScreenshots() {
     writeJson('screenshots.json', result);
     return result;
   }
-
   let chromium;
   try {
     ({ chromium } = await import('playwright'));
@@ -276,15 +238,11 @@ async function captureScreenshots() {
     writeJson('screenshots.json', result);
     return result;
   }
-
   let browser;
   try {
     browser = await chromium.launch({ headless: true });
     for (const [route, name] of screenshotRoutes) {
-      for (const [label, viewport] of [
-        ['desktop', { width: 1440, height: 1100 }],
-        ['mobile', { width: 390, height: 844 }],
-      ]) {
+      for (const [label, viewport] of [['desktop', { width: 1440, height: 1100 }], ['mobile', { width: 390, height: 844 }]]) {
         const page = await browser.newPage({ viewport });
         const path = join(screenshotDir, `${name}-${label}.png`);
         try {
@@ -304,7 +262,6 @@ async function captureScreenshots() {
   } finally {
     if (browser) await browser.close().catch(() => {});
   }
-
   writeJson('screenshots.json', result);
   return result;
 }
@@ -316,120 +273,34 @@ function writeReport({ routeRows, dnsResult, screenshotsResult, assetReceipt }) 
   const status = failedSteps.length === 0 && failedRoutes.length === 0 ? 'GREEN' : 'YELLOW_OR_RED_REVIEW_REQUIRED';
   const gitStatus = sh('git status --short').stdout.trim();
   const branch = sh('git branch --show-current').stdout.trim();
-
-  const report = [
-    '# URAI AAA launch proof receipt',
-    '',
-    `Generated: ${new Date().toISOString()}`,
-    `Repo: ${process.cwd()}`,
-    `Branch: ${branch || 'unknown'}`,
-    `Commit: ${gitHead}`,
-    `Base URL: ${baseUrl}`,
-    `Receipt: ${receiptDir}`,
-    `Overall receipt status: ${status}`,
-    '',
-    '## Git state',
-    '',
-    gitStatus ? 'Working tree has local changes:' : 'Working tree clean at receipt start/end check:',
-    '',
-    '```text',
-    gitStatus || 'clean',
-    '```',
-    '',
-    '## Command steps',
-    '',
-    '| Step | Exit | Duration ms |',
-    '| --- | ---: | ---: |',
-    ...steps.map((step) => `| ${step.name} | ${step.status} | ${step.durationMs} |`),
-    '',
-    '## Asset receipt',
-    '',
-    assetReceipt.present
-      ? `Result=${assetReceipt.result}; TOTAL_ASSETS=${assetReceipt.totalAssets}; CORE_MISSING=${assetReceipt.coreMissing}; EXPANSION_MISSING=${assetReceipt.expansionMissing}`
-      : 'docs/final-asset-receipt.md not found in this checkout.',
-    '',
-    '## Route matrix summary',
-    '',
-    `Routes checked: ${routeRows.length}`,
-    `Routes OK: ${routeRows.filter((row) => row.ok).length}`,
-    `Routes needing review: ${failedRoutes.length}`,
-    `Fingerprint failures with HTTP 200: ${fingerprintFailures.length}`,
-    '',
-    failedRoutes.length
-      ? failedRoutes.map((row) => `- ${row.route}: HTTP=${row.status}; fingerprint=${row.fingerprintOk ? 'ok' : 'fail'}; missing=${(row.missingRequired || []).join(', ') || 'none'}; forbidden=${(row.presentForbidden || []).join(', ') || 'none'}; error=${row.error || 'none'}`).join('\n')
-      : 'All checked routes returned successful HTTP status and expected route fingerprints.',
-    '',
-    '## Screenshots',
-    '',
-    `Requested: ${screenshotsResult.requested ? 'yes' : 'no'}`,
-    `Captured: ${screenshotsResult.captured.length}`,
-    screenshotsResult.skipped.length ? `Skipped/notes:\n${screenshotsResult.skipped.map((item) => `- ${item}`).join('\n')}` : 'No screenshot notes.',
-    '',
-    '## Quest / WebXR proof state',
-    '',
-    'XR preview may be live if `/spatial/ar-vr` is green. Physical Quest 2 proof is NOT complete from this script. Record actual Quest Browser proof separately.',
-    '',
-    '## Foundation DNS state',
-    '',
-    `Complete: ${dnsResult.complete ? 'yes' : 'no'}`,
-    `GitHub Pages apex A records: ${dnsResult.githubPagesApex ? 'yes' : 'no'}`,
-    `HTTPS works: ${dnsResult.httpsWorks ? 'yes' : 'no'}`,
-    '',
-    '## Remaining honest gates',
-    '',
-    '- Capture/review desktop and mobile screenshots if not already captured.',
-    '- Do not claim Quest 2 proof until actual Quest Browser testing is recorded.',
-    '- Do not claim `uraifoundation.org` DNS complete unless this receipt says DNS/HTTPS complete and manual browser verification agrees.',
-    '- Do not claim bespoke final art while core art remains placeholder-final.',
-    '- Do not claim production backend/provider automation until real auth/data/actions are wired and tested.',
-    '',
-  ].join('\n');
-
+  const report = ['# URAI AAA launch proof receipt', '', `Generated: ${new Date().toISOString()}`, `Repo: ${process.cwd()}`, `Branch: ${branch || 'unknown'}`, `Commit: ${gitHead}`, `Base URL: ${baseUrl}`, `Receipt: ${receiptDir}`, `Overall receipt status: ${status}`, '', '## Git state', '', gitStatus ? 'Working tree has local changes:' : 'Working tree clean at receipt start/end check:', '', '```text', gitStatus || 'clean', '```', '', '## Command steps', '', '| Step | Exit | Duration ms |', '| --- | ---: | ---: |', ...steps.map((step) => `| ${step.name} | ${step.status} | ${step.durationMs} |`), '', '## Asset receipt', '', assetReceipt.present ? `Result=${assetReceipt.result}; TOTAL_ASSETS=${assetReceipt.totalAssets}; CORE_MISSING=${assetReceipt.coreMissing}; EXPANSION_MISSING=${assetReceipt.expansionMissing}` : 'docs/final-asset-receipt.md not found in this checkout.', '', '## Route matrix summary', '', `Routes checked: ${routeRows.length}`, `Routes OK: ${routeRows.filter((row) => row.ok).length}`, `Routes needing review: ${failedRoutes.length}`, `Fingerprint failures with HTTP 200: ${fingerprintFailures.length}`, '', failedRoutes.length ? failedRoutes.map((row) => `- ${row.route}: HTTP=${row.status}; fingerprint=${row.fingerprintOk ? 'ok' : 'fail'}; missing=${(row.missingRequired || []).join(', ') || 'none'}; forbidden=${(row.presentForbidden || []).join(', ') || 'none'}; error=${row.error || 'none'}`).join('\n') : 'All checked routes returned successful HTTP status and expected route fingerprints.', '', '## Screenshots', '', `Requested: ${screenshotsResult.requested ? 'yes' : 'no'}`, `Captured: ${screenshotsResult.captured.length}`, screenshotsResult.skipped.length ? `Skipped/notes:\n${screenshotsResult.skipped.map((item) => `- ${item}`).join('\n')}` : 'No screenshot notes.', '', '## Quest / WebXR proof state', '', 'XR preview may be live if `/spatial/ar-vr` is green. Physical Quest 2 proof is NOT complete from this script. Record actual Quest Browser proof separately.', '', '## Foundation DNS state', '', `Complete: ${dnsResult.complete ? 'yes' : 'no'}`, `GitHub Pages apex A records: ${dnsResult.githubPagesApex ? 'yes' : 'no'}`, `HTTPS works: ${dnsResult.httpsWorks ? 'yes' : 'no'}`, '', '## Remaining honest gates', '', '- Capture/review desktop and mobile screenshots if not already captured.', '- Do not claim Quest 2 proof until actual Quest Browser testing is recorded.', '- Do not claim `uraifoundation.org` DNS complete unless this receipt says DNS/HTTPS complete and manual browser verification agrees.', '- Do not claim bespoke final art while core art remains placeholder-final.', '- Do not claim production backend/provider automation until real auth/data/actions are wired and tested.', ''].join('\n');
   writeFileSync(join(receiptDir, 'final-report.md'), report);
   writeJson('summary.json', { status, gitHead, branch, receiptDir, steps, assetReceipt, routeRows, dnsResult, screenshotsResult });
 }
 
 console.log(`Receipt: ${receiptDir}`);
-
-writeJson('repo-state.json', {
-  generatedAt: new Date().toISOString(),
-  cwd: process.cwd(),
-  gitHead,
-  branch: sh('git branch --show-current').stdout.trim(),
-  statusShort: sh('git status --short').stdout.trim(),
-  baseUrl,
-  shouldDeploy,
-  shouldScreenshots,
-});
-
+writeJson('repo-state.json', { generatedAt: new Date().toISOString(), cwd: process.cwd(), gitHead, branch: sh('git branch --show-current').stdout.trim(), statusShort: sh('git status --short').stdout.trim(), baseUrl, shouldDeploy, shouldScreenshots });
 logStep('git-status', 'git status --short && git rev-parse HEAD && git branch --show-current');
-
 if (!skipInstall) logStep('pnpm-install', 'pnpm install --frozen-lockfile');
 else pushSkippedStep('pnpm-install', 'skipped by --skip-install');
-
 if (!skipTypecheck) logStep('pnpm-typecheck', 'pnpm typecheck');
 else pushSkippedStep('pnpm-typecheck', 'skipped by --skip-typecheck');
-
 if (!skipTest) logStep('pnpm-test-if-present', 'pnpm run --if-present test');
 else pushSkippedStep('pnpm-test-if-present', 'skipped by --skip-test');
-
 if (!skipBuild) logStep('pnpm-build-static', 'pnpm build:static');
 else pushSkippedStep('pnpm-build-static', 'skipped by --skip-build');
-
 if (shouldDeploy) {
   logStep('firebase-deploy-static', `firebase deploy --config firebase.static.json --only hosting --project ${projectId}`);
 } else {
   pushSkippedStep('firebase-deploy-static', 'skipped; pass --deploy to run');
   writeFileSync(join(logDir, 'firebase-deploy-static.log'), 'Skipped. Pass --deploy to run Firebase hosting deploy.\n');
 }
-
 const assetReceipt = readAssetReceipt();
 writeJson('asset-receipt-summary.json', assetReceipt);
 const routeRows = await smokeRoutes();
 const dnsResult = await checkDns();
 const screenshotsResult = await captureScreenshots();
 writeReport({ routeRows, dnsResult, screenshotsResult, assetReceipt });
-
 console.log('\nFINAL RECEIPT WRITTEN');
 console.log(join(receiptDir, 'final-report.md'));
 console.log('Quest proof remains manual until tested on actual Quest Browser.');
