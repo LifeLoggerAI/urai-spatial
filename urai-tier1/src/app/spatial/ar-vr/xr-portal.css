@@ -229,6 +229,51 @@
   font-size: .66rem;
 }
 
+.urai-xr-portal__quest-entry {
+  flex: 1 1 100%;
+  max-width: 520px;
+  padding: 12px;
+  border: 1px solid rgba(160, 245, 255, .26);
+  border-radius: 24px;
+  background:
+    radial-gradient(circle at 18% 0%, rgba(140, 245, 255, .24), transparent 45%),
+    rgba(2, 12, 28, .70);
+  box-shadow: 0 26px 90px rgba(0,0,0,.34), inset 0 1px 0 rgba(255,255,255,.12);
+  backdrop-filter: blur(22px);
+}
+
+.urai-xr-portal__quest-entry button {
+  display: inline-flex;
+  min-height: 54px;
+  width: 100%;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid rgba(240, 255, 255, .52);
+  border-radius: 999px;
+  padding: 0 22px;
+  color: #03111a;
+  background: linear-gradient(180deg, #ffffff 0%, #a4f3ff 44%, #66d7ff 100%);
+  box-shadow: 0 0 34px rgba(130, 236, 255, .42), 0 24px 70px rgba(0,0,0,.28);
+  cursor: pointer;
+  font-size: .9rem;
+  font-weight: 1000;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+}
+
+.urai-xr-portal__quest-entry button:disabled {
+  cursor: wait;
+  opacity: .72;
+}
+
+.urai-xr-portal__quest-entry p {
+  margin: 10px 4px 0;
+  color: rgba(230, 250, 255, .76);
+  font-size: .78rem;
+  font-weight: 750;
+  line-height: 1.45;
+}
+
 @media (max-width: 860px) {
   .urai-xr-portal {
     min-height: 100dvh;
@@ -270,6 +315,16 @@
 
   .urai-xr-portal__card {
     margin: 12px 0;
+  }
+
+  .urai-xr-portal__quest-entry {
+    max-width: none;
+    padding: 10px;
+  }
+
+  .urai-xr-portal__quest-entry button {
+    min-height: 58px;
+    font-size: .82rem;
   }
 
   .urai-xr-portal__rail {
