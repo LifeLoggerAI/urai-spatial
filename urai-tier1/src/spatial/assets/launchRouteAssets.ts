@@ -34,9 +34,9 @@ export const launchRouteAssets: LaunchRouteAsset[] = [
   {
     route: '/focus',
     surface: 'focus-artifact',
-    webp: `${assetRoot}/focus/focus-memory-chamber-main.webp`,
+    webp: `${bespokeRoot}/focus/focus-memory-chamber-bespoke-final.svg`,
     fallback: `${assetRoot}/focus/focus-memory-chamber-fallback.svg`,
-    mobileWebp: `${assetRoot}/focus/focus-memory-chamber-mobile.webp`,
+    mobileWebp: `${bespokeRoot}/focus/focus-memory-chamber-bespoke-final-mobile.svg`,
   },
   {
     route: '/replay',
