@@ -71,76 +71,32 @@ export default function FocusRouteStage() {
       <div className="focus-route-stage__bg" />
       <div className="focus-route-stage__stars" data-testid="lifemap-starfield">
         {stars.map((star, index) => (
-          <i
-            key={index}
-            style={{
-              left: `${star.x}%`,
-              top: `${star.y}%`,
-              width: star.size,
-              height: star.size,
-              opacity: star.opacity,
-              animationDelay: `${star.delay}s`,
-            }}
-          />
+          <i key={index} style={{ left: `${star.x}%`, top: `${star.y}%`, width: star.size, height: star.size, opacity: star.opacity, animationDelay: `${star.delay}s` }} />
         ))}
       </div>
-
       <svg className="focus-route-stage__lines" aria-hidden="true">
         {lifeMapEdges.map((edge) => {
           const from = mapNodes.find((item) => item.id === edge.from);
           const to = mapNodes.find((item) => item.id === edge.to);
           if (!from || !to) return null;
           const active = from.id === node.id || to.id === node.id;
-          return (
-            <line
-              key={edge.id}
-              x1={`${from.x}%`}
-              y1={`${from.y}%`}
-              x2={`${to.x}%`}
-              y2={`${to.y}%`}
-              data-active={active ? "true" : "false"}
-            />
-          );
+          return <line key={edge.id} x1={`${from.x}%`} y1={`${from.y}%`} x2={`${to.x}%`} y2={`${to.y}%`} data-active={active ? "true" : "false"} />;
         })}
       </svg>
-
       <div className="focus-route-stage__nodes" aria-hidden="true">
         {mapNodes.map((item) => (
-          <span
-            key={item.id}
-            data-selected={item.id === node.id ? "true" : "false"}
-            style={{
-              left: `${item.x}%`,
-              top: `${item.y}%`,
-              background: item.id === node.id ? "white" : item.auraColor,
-              boxShadow: `0 0 ${item.id === node.id ? 72 : 28}px ${item.auraColor}`,
-            }}
-          />
+          <span key={item.id} data-selected={item.id === node.id ? "true" : "false"} style={{ left: `${item.x}%`, top: `${item.y}%`, background: item.id === node.id ? "white" : item.auraColor, boxShadow: `0 0 ${item.id === node.id ? 72 : 28}px ${item.auraColor}` }} />
         ))}
       </div>
-
       {showReplay ? (
         <section className="focus-route-stage__replay" data-testid="urai-replay-overlay" role="dialog" aria-label={`${node.title} replay`}>
           <p>REPLAY STREAM</p>
           <h1>{chamber.replay.title}</h1>
-          <ol>
-            {chamber.replay.phases.map((phase) => (
-              <li key={phase.id}>
-                <b>{phase.label}</b>
-                <span>{phase.text}</span>
-              </li>
-            ))}
-          </ol>
-          <button type="button" onClick={() => setShowReplay(false)}>Collapse Replay / Unwind</button>
+          <ol>{chamber.replay.phases.map((phase) => <li key={phase.id}><b>{phase.label}</b><span>{phase.text}</span></li>)}</ol>
+          <button type="button" onClick={() => setShowReplay(false)}>Collapse Replay / Return</button>
         </section>
       ) : (
-        <FocusChamber
-          node={node}
-          nodes={mapNodes}
-          edges={lifeMapEdges}
-          onReplay={() => setShowReplay(true)}
-          onReturn={() => router.push("/life-map")}
-        />
+        <FocusChamber node={node} nodes={mapNodes} edges={lifeMapEdges} onReplay={() => setShowReplay(true)} onUnwind={() => router.push("/life-map")} />
       )}
     </main>
   );
