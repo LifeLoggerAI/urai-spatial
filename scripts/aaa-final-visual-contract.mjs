@@ -21,6 +21,8 @@ function mustInclude(surface, path, label, text) {
 }
 
 for (const [surface, path] of [
+  ['root', 'urai-tier1/src/app/page.tsx'],
+  ['home-wrapper', 'urai-tier1/src/app/FinalHomeThreshold.tsx'],
   ['home', 'urai-tier1/src/app/HomeSpatialWorldFinal.tsx'],
   ['ground', 'urai-tier1/src/app/ground/page.tsx'],
   ['life-map', 'urai-tier1/src/components/lifemap/LifeMapScene.tsx'],
@@ -33,10 +35,18 @@ for (const [surface, path] of [
   ['xr', 'urai-tier1/src/app/spatial/ar-vr/page.tsx'],
 ]) mustExist(surface, path, 'source present');
 
+mustInclude('root', 'urai-tier1/src/app/page.tsx', '/ route renders final Home threshold', 'FinalHomeThreshold');
+mustInclude('home-wrapper', 'urai-tier1/src/app/FinalHomeThreshold.tsx', 'Home wrapper renders final Home world', 'HomeSpatialWorldFinal');
 mustInclude('home', 'urai-tier1/src/app/HomeSpatialWorldFinal.tsx', 'final Home world owner', 'HomeSpatialWorldFinal');
 mustInclude('home', 'urai-tier1/src/app/HomeSpatialWorldFinal.tsx', 'sky/ground/orb/body marker', 'aaa-final-home-sky-ground-orb-body-portals');
 mustInclude('home', 'urai-tier1/src/app/HomeSpatialWorldFinal.tsx', 'ground descent link', '/ground?from=home');
 mustInclude('home', 'urai-tier1/src/app/HomeSpatialWorldFinal.tsx', 'sky ascent link', '/life-map?from=home-sky');
+mustInclude('home', 'urai-tier1/src/app/HomeSpatialWorldFinal.tsx', 'sky click instruction', 'Click the sky');
+mustInclude('home', 'urai-tier1/src/app/HomeSpatialWorldFinal.tsx', 'Life Map camera ascent copy', 'Camera ascends into your Life Map');
+mustInclude('home', 'urai-tier1/src/app/HomeSpatialWorldFinal.tsx', 'avatar and orb stay anchored', 'Avatar and orb stay anchored in Home/Ground');
+mustInclude('home', 'urai-tier1/src/app/HomeSpatialWorldFinal.tsx', 'delayed cinematic sky navigation', 'HOME_CAMERA_ASCENT_MS');
+mustInclude('home', 'urai-tier1/src/app/HomeSpatialWorldFinal.tsx', 'threshold navigation handler', 'navigateThroughThreshold');
+mustInclude('home', 'urai-tier1/src/app/HomeSpatialWorldFinal.tsx', 'ascent signal markup', 'urai-genesis-home__camera-ascent-signal');
 mustInclude('home', 'urai-tier1/src/app/HomeSpatialWorldFinal.tsx', 'orb companion opens in place', 'Open URAI orb companion');
 
 mustInclude('ground', 'urai-tier1/src/app/ground/page.tsx', 'embodied Ground marker', 'premium-embodied-ground-world');
@@ -86,6 +96,9 @@ for (const [label, path] of [
 
 mustInclude('css', 'urai-tier1/src/app/aaa-launch-proof-layer.css', 'Focus polish selector matches current marker', 'selected-memory-camera-chamber');
 mustInclude('css', 'urai-tier1/src/app/aaa-launch-proof-layer.css', 'Replay polish selector matches current marker', 'cinematic-memory-camera-film');
+mustInclude('css', 'urai-tier1/src/app/urai-canon-camera-transitions.css', 'Home sky ascent signal styled', 'urai-genesis-home__camera-ascent-signal');
+mustInclude('css', 'urai-tier1/src/app/urai-canon-camera-transitions.css', 'Home sky ascent keyframe exists', 'uraiCanonHomeAscendToLifeMap');
+mustInclude('css', 'urai-tier1/src/app/urai-canon-camera-transitions.css', 'Home sky gate ignition exists', 'uraiCanonSkyGateIgnites');
 
 const failures = checks.filter((check) => !check.ok);
 const lines = [
@@ -96,7 +109,7 @@ const lines = [
   `Checks: ${checks.length}`,
   `Failures: ${failures.length}`,
   '',
-  'This guard catches route-owner drift, missing proof assets, route-chain regressions, and false Quest proof language before launch.',
+  'This guard catches route-owner drift, missing proof assets, route-chain regressions, Home sky-ascent drift, and false Quest proof language before launch.',
   '',
   '| State | Surface | Check | File |',
   '| --- | --- | --- | --- |',
