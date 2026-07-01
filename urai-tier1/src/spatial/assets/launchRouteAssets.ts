@@ -60,6 +60,13 @@ export const launchRouteAssets: LaunchRouteAsset[] = [
     mobileWebp: `${bespokeRoot}/passport/passport-vault-bespoke-final-mobile.svg`,
   },
   {
+    route: '/spatial/ar-vr',
+    surface: 'spatial-ar-vr',
+    webp: `${bespokeRoot}/xr/xr-entry-chamber-bespoke-final.svg`,
+    fallback: `${assetRoot}/xr/xr-entry-fallback.svg`,
+    mobileWebp: `${bespokeRoot}/xr/xr-entry-chamber-bespoke-final-mobile.svg`,
+  },
+  {
     route: '/privacy-controls',
     surface: 'privacy-controls',
     webp: `${assetRoot}/privacy-controls/privacy-controls-main.webp`,
@@ -85,6 +92,7 @@ export const launchRouteAssets: LaunchRouteAsset[] = [
 function normalizeLaunchAssetRoute(route: string) {
   const clean = route.split('?')[0]?.replace(/\/$/, '') || '/'
 
+  if (clean.startsWith('/spatial/ar-vr')) return '/spatial/ar-vr'
   if (clean === '' || clean === '/' || clean === '/home' || clean === '/spatial') return '/'
   if (clean.startsWith('/ground')) return '/ground'
   if (clean.startsWith('/life-map') || clean.startsWith('/spatial/life-map')) return '/life-map'
