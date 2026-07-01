@@ -1,5 +1,5 @@
-import { FinalReplayFilm } from '@/app/FinalMemorySurfaces'
+import CinematicReplayClient from './CinematicReplayClient'
 
 export default function ReplayRoutePage() {
-  return <FinalReplayFilm />
+  return <CinematicReplayClient />
 }
