@@ -22,7 +22,7 @@ export default function SpatialArVrPage() {
         <p className="urai-xr-portal__kicker">AR / VR / XR PORTAL</p>
         <h1>Step inside the Life Map.</h1>
         <p className="urai-xr-portal__lede">
-          URAI&apos;s spatial layer is live with a Quest-ready entry path, an explicit VR button for Quest Browser, WebXR fallback language, browser capability detection, and manual headset proof steps. Hardware verification still requires an actual Quest Browser session.
+          URAI opens here as a headset entry chamber: orb in front, Ground below, Life Map ahead, and clear WebXR proof controls for Quest Browser.
         </p>
 
         <div className="urai-xr-portal__actions">
