@@ -10,7 +10,7 @@ type FocusPlaceDoorProps = {
 
 export function FocusPlaceDoor({ manifestId }: FocusPlaceDoorProps) {
   const searchParams = useSearchParams()
-  const resolvedManifestId = manifestId ?? searchParams.get('manifestId')
+  const resolvedManifestId = manifestId ?? searchParams?.get('manifestId')
   const resolution = resolveDemoMemoryStar(resolvedManifestId)
   if (!resolution.ok) return null
 
