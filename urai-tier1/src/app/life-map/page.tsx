@@ -1,4 +1,4 @@
-import LifeMapScene from '@/components/lifemap/LifeMapScene'
+import LifeMapClientScene from '@/components/lifemap/LifeMapClientScene'
 
 export const metadata = {
   title: 'URAI Life Map',
@@ -7,5 +7,5 @@ export const metadata = {
 }
 
 export default function LifeMapPage() {
-  return <LifeMapScene />
+  return <LifeMapClientScene />
 }
