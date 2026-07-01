@@ -20,9 +20,9 @@ export const launchRouteAssets: LaunchRouteAsset[] = [
   {
     route: '/ground',
     surface: 'ground',
-    webp: `${assetRoot}/ground/ground-world-main.webp`,
+    webp: `${bespokeRoot}/ground/ground-world-bespoke-final.svg`,
     fallback: `${assetRoot}/ground/ground-world-fallback.svg`,
-    mobileWebp: `${assetRoot}/ground/ground-world-mobile.webp`,
+    mobileWebp: `${bespokeRoot}/ground/ground-world-bespoke-final-mobile.svg`,
   },
   {
     route: '/life-map',
