@@ -4,14 +4,10 @@ import { useState } from 'react'
 
 type XrMode = 'immersive-vr'
 
-type QuestSession = {
-  end?: () => Promise<void>
-}
-
 type QuestXrNavigator = Navigator & {
   xr?: {
     isSessionSupported?: (mode: XrMode) => Promise<boolean>
-    requestSession?: (mode: XrMode, init?: { optionalFeatures?: string[] }) => Promise<QuestSession>
+    requestSession?: (mode: XrMode, init?: { optionalFeatures?: string[] }) => Promise<unknown>
   }
 }
 
@@ -42,12 +38,11 @@ export default function QuestVrEntryButton() {
         return
       }
 
-      const session = await xr.requestSession('immersive-vr', {
+      await xr.requestSession('immersive-vr', {
         optionalFeatures: ['local-floor', 'bounded-floor', 'hand-tracking', 'layers'],
       })
 
       setCopy('Immersive VR session requested. Confirm readability, Life Map entry, Focus, Replay, and then record Quest proof honestly.')
-      await session.end?.().catch(() => undefined)
     } catch {
       setCopy('VR request was blocked or cancelled. In Quest Browser, allow immersive mode and try again from this button.')
     } finally {
