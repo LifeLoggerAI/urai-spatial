@@ -6,19 +6,111 @@ const baseUrl = process.env.URAI_AUDIT_BASE_URL || 'https://urai.app'
 const outDir = process.env.URAI_AUDIT_OUT_DIR || 'live-visual-audit'
 const shotDir = path.join(outDir, 'screenshots')
 
-// Audit trigger after route panel expansion: 2026-06-21T18:30Z.
 const routes = [
-  ['tier1-root', '/'],
-  ['tier1-home', '/home'],
-  ['tier1-spatial', '/spatial'],
-  ['tier2-life-map', '/life-map'],
-  ['tier2-life-map-blue-fog', '/life-map?star=blue-fog'],
-  ['tier2-focus', '/focus?memoryId=quiet-reset'],
-  ['tier2-replay', '/replay?manifestId=replay-recovery-thread'],
-  ['tier3-mirror', '/mirror'],
-  ['passport', '/passport'],
-  ['status', '/status'],
-  ['privacy-controls', '/privacy-controls'],
+  {
+    name: 'root',
+    route: '/',
+    markers: ['Own your life', 'Step inside yourself'],
+    visualPrompt: 'Home should feel like a threshold world: sky above, ground below, orb/body/portals visible, not a generic landing page.',
+  },
+  {
+    name: 'home',
+    route: '/home',
+    markers: ['Own your life', 'Step inside yourself'],
+    visualPrompt: 'Home should feel cinematic with clear sky-to-Life-Map and ground-to-Ground affordances.',
+  },
+  {
+    name: 'ground',
+    route: '/ground',
+    markers: ['Your real life has a place', 'Object inspector', 'Privacy sanctuary'],
+    visualPrompt: 'Ground should read as a private operating world with zones, helpers, objects, and inspectable life surfaces.',
+  },
+  {
+    name: 'life-map',
+    route: '/life-map',
+    markers: ['Life Map', 'Wheel', 'Drag', 'memory star'],
+    visualPrompt: 'Life Map should feel like a private galaxy with depth/parallax, not a flat dashboard or wallpaper.',
+  },
+  {
+    name: 'focus-quiet-reset',
+    route: '/focus?memoryId=quiet-reset',
+    markers: ['The Quiet Reset', 'Selected memory chamber', 'Enter Replay'],
+    visualPrompt: 'Focus should feel like one selected memory chamber with one obvious Replay doorway.',
+  },
+  {
+    name: 'replay-recovery-thread',
+    route: '/replay?memoryId=quiet-reset&manifestId=replay-recovery-thread',
+    markers: ['Replay the thread', 'Cinematic memory film', 'Film beats'],
+    visualPrompt: 'Replay should feel like a cinematic memory film space, not a static poster.',
+  },
+  {
+    name: 'mirror',
+    route: '/mirror',
+    markers: ['See the pattern clearly', 'Reflection stack', 'Mirror'],
+    visualPrompt: 'Mirror should feel like a reflection realm with orb/pattern intelligence, not a normal content page.',
+  },
+  {
+    name: 'passport',
+    route: '/passport',
+    markers: ['Your life stays yours', 'Vault layers', 'Passport'],
+    visualPrompt: 'Passport should feel like a premium identity, consent, provenance, and ownership vault.',
+  },
+  {
+    name: 'status',
+    route: '/status',
+    markers: ['World online', 'Route matrix', 'Tracked'],
+    visualPrompt: 'Status should feel like a live control room / launch proof room, not a plain status table.',
+  },
+  {
+    name: 'privacy-controls',
+    route: '/privacy-controls',
+    markers: ['Choose what the world can hold', 'Privacy Controls', 'Private by default'],
+    staleMarkers: ['Home threshold', 'Click the sky', 'Click the ground'],
+    visualPrompt: 'Privacy Controls should be its own premium consent control room. It must not render Home threshold content.',
+  },
+  {
+    name: 'location-map',
+    route: '/location-map',
+    markers: ['Places below the stars', 'symbolic atlas', 'symbolic-only'],
+    visualPrompt: 'Location Map should feel like a symbolic emotional atlas/place layer, not a bare list.',
+  },
+  {
+    name: 'spatial-ar-vr',
+    route: '/spatial/ar-vr',
+    markers: ['Step inside the Life Map', 'Quest', 'manual'],
+    visualPrompt: 'XR portal should honestly show Quest/WebXR capability and manual-device-required proof steps.',
+  },
+  {
+    name: 'demo',
+    route: '/demo',
+    markers: ['URAI', 'demo'],
+    visualPrompt: 'Demo should feel like a public walkthrough, not a placeholder route.',
+  },
+  {
+    name: 'demo-replay-film',
+    route: '/demo/replay-film',
+    markers: ['Replay', 'film'],
+    visualPrompt: 'Replay film demo should feel like a launch-film proof surface with clear sequence and CTA.',
+  },
+]
+
+const devices = [
+  {
+    name: 'desktop',
+    viewport: { width: 1440, height: 1100 },
+    deviceScaleFactor: 1,
+    isMobile: false,
+    hasTouch: false,
+  },
+  {
+    name: 'mobile',
+    viewport: { width: 390, height: 844 },
+    deviceScaleFactor: 2,
+    isMobile: true,
+    hasTouch: true,
+    userAgent:
+      'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1',
+  },
 ]
 
 const interactionChecks = [
@@ -34,6 +126,18 @@ const interactionChecks = [
       'button:has-text("Open My World")',
     ],
     expected: '/life-map',
+  },
+  {
+    name: 'home-to-ground',
+    start: '/home',
+    selectors: [
+      'a[data-urai-audit-action="home-ground"]',
+      'a[data-urai-audit-action="open-ground"]',
+      'a[href="/ground"]',
+      'a[href*="/ground"]',
+      'button:has-text("Ground")',
+    ],
+    expected: '/ground',
   },
   {
     name: 'life-map-to-focus',
@@ -77,6 +181,15 @@ function absolute(route) {
   return new URL(route, baseUrl).toString()
 }
 
+function normalizeText(value) {
+  return String(value || '').replace(/\s+/g, ' ').trim()
+}
+
+function markerResults(text, markers = []) {
+  const haystack = normalizeText(text).toLowerCase()
+  return markers.map((marker) => ({ marker, present: haystack.includes(String(marker).toLowerCase()) }))
+}
+
 async function firstVisible(page, selectors) {
   for (const selector of selectors) {
     const candidates = page.locator(selector)
@@ -90,6 +203,143 @@ async function firstVisible(page, selectors) {
   return null
 }
 
+async function settle(page) {
+  await page.waitForLoadState('networkidle', { timeout: 12000 }).catch(() => {})
+  await page.waitForTimeout(1400)
+}
+
+async function captureRoute({ browser, routeConfig, device }) {
+  const context = await browser.newContext({
+    viewport: device.viewport,
+    deviceScaleFactor: device.deviceScaleFactor,
+    isMobile: device.isMobile,
+    hasTouch: device.hasTouch,
+    userAgent: device.userAgent,
+  })
+
+  const page = await context.newPage()
+  page.setDefaultTimeout(30000)
+
+  const url = absolute(routeConfig.route)
+  const startedAt = Date.now()
+  let status = 'unknown'
+  let error = ''
+  let finalUrl = url
+
+  try {
+    const response = await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 60000 })
+    status = response ? response.status() : 'unknown'
+    await settle(page)
+    finalUrl = page.url()
+  } catch (caught) {
+    error = String(caught?.message || caught)
+  }
+
+  const title = await page.title().catch(() => '')
+  const text = await page.locator('body').innerText({ timeout: 7000 }).catch(() => '')
+  const links = await page
+    .locator('a, button')
+    .evaluateAll((elements) =>
+      elements.slice(0, 140).map((element) => ({
+        tag: element.tagName.toLowerCase(),
+        text: (element.innerText || element.getAttribute('aria-label') || '').replace(/\s+/g, ' ').trim(),
+        href: element.getAttribute('href') || '',
+      })),
+    )
+    .catch(() => [])
+
+  const screenshotRelative = path.join('screenshots', `${device.name}-${routeConfig.name}.png`)
+  const screenshot = path.join(outDir, screenshotRelative)
+  await page.screenshot({ path: screenshot, fullPage: false, animations: 'disabled' }).catch((caught) => {
+    error = `${error} screenshot:${String(caught?.message || caught)}`.trim()
+  })
+
+  await context.close()
+
+  const markers = markerResults(text, routeConfig.markers)
+  const staleMarkers = markerResults(text, routeConfig.staleMarkers)
+  const missingMarkers = markers.filter((item) => !item.present).map((item) => item.marker)
+  const presentStaleMarkers = staleMarkers.filter((item) => item.present).map((item) => item.marker)
+
+  return {
+    name: routeConfig.name,
+    route: routeConfig.route,
+    url,
+    finalUrl,
+    device: device.name,
+    viewport: device.viewport,
+    status,
+    ms: Date.now() - startedAt,
+    title,
+    markerStatus: missingMarkers.length === 0 ? 'pass' : 'missing-marker',
+    staleStatus: presentStaleMarkers.length === 0 ? 'pass' : 'stale-content',
+    missingMarkers,
+    presentStaleMarkers,
+    linkCount: links.length,
+    links,
+    screenshot: screenshotRelative,
+    visualPrompt: routeConfig.visualPrompt,
+    error,
+    textSample: text.slice(0, 1400),
+  }
+}
+
+async function captureInteraction({ browser, check, device }) {
+  const context = await browser.newContext({
+    viewport: device.viewport,
+    deviceScaleFactor: device.deviceScaleFactor,
+    isMobile: device.isMobile,
+    hasTouch: device.hasTouch,
+    userAgent: device.userAgent,
+  })
+
+  const page = await context.newPage()
+  page.setDefaultTimeout(30000)
+
+  const startUrl = absolute(check.start)
+  const startedAt = Date.now()
+  let error = ''
+  let currentUrl = ''
+  let selector = ''
+  let ok = false
+  const screenshotRelative = path.join('screenshots', `interaction-${device.name}-${check.name}.png`)
+  const screenshot = path.join(outDir, screenshotRelative)
+
+  try {
+    await page.goto(startUrl, { waitUntil: 'domcontentloaded', timeout: 60000 })
+    await settle(page)
+    const found = await firstVisible(page, check.selectors)
+    if (!found) {
+      error = `visible selector not found: ${check.selectors.join(' | ')}`
+    } else {
+      selector = found.selector
+      await found.locator.scrollIntoViewIfNeeded({ timeout: 5000 }).catch(() => {})
+      await found.locator.click({ timeout: 10000 })
+      await page.waitForTimeout(1500)
+      currentUrl = page.url()
+      ok = currentUrl.includes(check.expected)
+      await page.screenshot({ path: screenshot, fullPage: false, animations: 'disabled' }).catch(() => {})
+    }
+  } catch (caught) {
+    error = String(caught?.message || caught)
+  }
+
+  await context.close()
+
+  return {
+    name: check.name,
+    device: device.name,
+    ok,
+    startUrl,
+    expected: check.expected,
+    currentUrl,
+    selector,
+    ms: Date.now() - startedAt,
+    screenshot: screenshotRelative,
+    error,
+  }
+}
+
 async function main() {
   await fs.mkdir(shotDir, { recursive: true })
 
@@ -98,148 +348,95 @@ async function main() {
     args: ['--no-sandbox', '--disable-dev-shm-usage', '--disable-gpu'],
   })
 
-  const page = await browser.newPage({
-    viewport: { width: 1440, height: 1000 },
-    deviceScaleFactor: 1,
-  })
-
   const routeResults = []
 
-  for (const [name, route] of routes) {
-    const url = absolute(route)
-    const startedAt = Date.now()
-    let status = 'unknown'
-    let error = ''
-
-    try {
-      const response = await page.goto(url, { waitUntil: 'networkidle', timeout: 60000 })
-      status = response ? response.status() : 'unknown'
-      await page.waitForTimeout(1800)
-    } catch (caught) {
-      error = String(caught?.message || caught)
+  for (const routeConfig of routes) {
+    for (const device of devices) {
+      const result = await captureRoute({ browser, routeConfig, device })
+      routeResults.push(result)
+      console.log(
+        `AUDIT ${result.device} ${result.name}: status=${result.status} markers=${result.markerStatus} stale=${result.staleStatus} screenshot=${result.screenshot}${result.error ? ` error=${result.error}` : ''}`,
+      )
     }
-
-    const title = await page.title().catch(() => '')
-    const text = await page.locator('body').innerText({ timeout: 7000 }).catch(() => '')
-    const links = await page.locator('a, button').evaluateAll((elements) =>
-      elements.slice(0, 120).map((element) => ({
-        tag: element.tagName.toLowerCase(),
-        text: (element.innerText || element.getAttribute('aria-label') || '').replace(/\s+/g, ' ').trim(),
-        href: element.getAttribute('href') || '',
-      })),
-    ).catch(() => [])
-
-    const screenshot = path.join(shotDir, `${name}.png`)
-    await page.screenshot({ path: screenshot, fullPage: true }).catch((caught) => {
-      error = `${error} screenshot:${String(caught?.message || caught)}`.trim()
-    })
-
-    const result = {
-      name,
-      route,
-      url,
-      status,
-      ms: Date.now() - startedAt,
-      title,
-      oldDemoCopyPresent: /Private Field|tap the sky|quiet blue weather/i.test(text),
-      productionCopyPresent: /Production live surface|Tier One|Tier Two|Tier Three|Life Map|Focus|Replay|Mirror|Passport|Status|Routes wired|Own your life|Step inside yourself|URAI Passport Controls/i.test(text),
-      linkCount: links.length,
-      links,
-      screenshot,
-      error,
-      textSample: text.slice(0, 1200),
-    }
-
-    routeResults.push(result)
-    console.log(`AUDIT ${name}: status=${status} links=${links.length} oldDemo=${result.oldDemoCopyPresent} production=${result.productionCopyPresent} screenshot=${screenshot}`)
   }
 
   const interactions = []
-
   for (const check of interactionChecks) {
-    const startUrl = absolute(check.start)
-    const startedAt = Date.now()
-    let error = ''
-    let currentUrl = ''
-    let selector = ''
-    let ok = false
-    const screenshot = path.join(shotDir, `interaction-${check.name}.png`)
-
-    try {
-      await page.goto(startUrl, { waitUntil: 'networkidle', timeout: 60000 })
-      await page.waitForTimeout(2000)
-      const found = await firstVisible(page, check.selectors)
-      if (!found) {
-        error = `visible selector not found: ${check.selectors.join(' | ')}`
-      } else {
-        selector = found.selector
-        await found.locator.scrollIntoViewIfNeeded({ timeout: 5000 }).catch(() => {})
-        await found.locator.click({ timeout: 10000 })
-        await page.waitForTimeout(1400)
-        currentUrl = page.url()
-        ok = currentUrl.includes(check.expected)
-        await page.screenshot({ path: screenshot, fullPage: true }).catch(() => {})
-      }
-    } catch (caught) {
-      error = String(caught?.message || caught)
+    for (const device of devices) {
+      const result = await captureInteraction({ browser, check, device })
+      interactions.push(result)
+      console.log(
+        `INTERACTION ${result.device} ${result.name}: ok=${result.ok} selector=${result.selector || 'none'} current=${result.currentUrl || 'none'}${result.error ? ` error=${result.error}` : ''}`,
+      )
     }
-
-    interactions.push({
-      name: check.name,
-      ok,
-      startUrl,
-      expected: check.expected,
-      currentUrl,
-      selector,
-      ms: Date.now() - startedAt,
-      screenshot,
-      error,
-    })
-
-    console.log(`INTERACTION ${check.name}: ok=${ok} selector=${selector || 'none'} current=${currentUrl || 'none'}`)
   }
 
   await browser.close()
 
+  const failedRoutes = routeResults.filter((result) => result.status !== 200 || result.error)
+  const missingMarkerRoutes = routeResults.filter((result) => result.missingMarkers.length > 0)
+  const staleContentRoutes = routeResults.filter((result) => result.presentStaleMarkers.length > 0)
+  const failedInteractions = interactions.filter((result) => !result.ok)
+
   const summary = {
-    routeCount: routeResults.length,
+    routeCount: routes.length,
+    deviceCount: devices.length,
     screenshotCount: routeResults.filter((result) => result.screenshot).length,
-    oldDemoCopyRoutes: routeResults.filter((result) => result.oldDemoCopyPresent).map((result) => result.route),
-    productionCopyRoutes: routeResults.filter((result) => result.productionCopyPresent).map((result) => result.route),
-    failedRoutes: routeResults.filter((result) => result.status !== 200 || result.error).map((result) => ({ route: result.route, status: result.status, error: result.error })),
-    failedInteractions: interactions.filter((result) => !result.ok),
+    expectedScreenshotCount: routes.length * devices.length,
+    failedRoutes: failedRoutes.map((result) => ({ route: result.route, device: result.device, status: result.status, error: result.error })),
+    missingMarkerRoutes: missingMarkerRoutes.map((result) => ({ route: result.route, device: result.device, missingMarkers: result.missingMarkers })),
+    staleContentRoutes: staleContentRoutes.map((result) => ({ route: result.route, device: result.device, staleMarkers: result.presentStaleMarkers })),
+    failedInteractions,
   }
 
   const payload = {
     createdAt: new Date().toISOString(),
     baseUrl,
+    devices,
     routes: routeResults,
     interactions,
     summary,
   }
 
   await fs.writeFile(path.join(outDir, 'visual-audit.json'), JSON.stringify(payload, null, 2))
-  await fs.writeFile(path.join(outDir, 'visual-audit-summary.md'), [
-    '# URAI live visual audit',
-    '',
-    `Base URL: ${baseUrl}`,
-    `Created: ${payload.createdAt}`,
-    '',
-    '## Summary',
-    '',
-    `- Routes audited: ${summary.routeCount}`,
-    `- Screenshots expected: ${summary.screenshotCount}`,
-    `- Old demo copy routes: ${summary.oldDemoCopyRoutes.length ? summary.oldDemoCopyRoutes.join(', ') : 'none'}`,
-    `- Production copy routes: ${summary.productionCopyRoutes.length ? summary.productionCopyRoutes.join(', ') : 'none'}`,
-    `- Failed interactions: ${summary.failedInteractions.length}`,
-    '',
-    '## Interactions',
-    '',
-    ...interactions.map((item) => `- ${item.ok ? 'PASS' : 'FAIL'} ${item.name}: ${item.currentUrl || item.error || 'no result'}`),
-    '',
-  ].join('\n'))
+  await fs.writeFile(path.join(outDir, 'latest-screenshots.txt'), routeResults.map((result) => result.screenshot).join('\n') + '\n')
+  await fs.writeFile(
+    path.join(outDir, 'visual-audit-summary.md'),
+    [
+      '# URAI live visual audit',
+      '',
+      `Base URL: ${baseUrl}`,
+      `Created: ${payload.createdAt}`,
+      '',
+      '## Summary',
+      '',
+      `- Routes audited: ${summary.routeCount}`,
+      `- Devices audited: ${summary.deviceCount}`,
+      `- Screenshots captured: ${summary.screenshotCount}/${summary.expectedScreenshotCount}`,
+      `- Failed routes: ${summary.failedRoutes.length}`,
+      `- Missing marker route/device pairs: ${summary.missingMarkerRoutes.length}`,
+      `- Stale-content route/device pairs: ${summary.staleContentRoutes.length}`,
+      `- Failed interactions: ${summary.failedInteractions.length}`,
+      '',
+      '## Human visual judgment checklist',
+      '',
+      ...routes.map((route) => `- ${route.route}: ${route.visualPrompt}`),
+      '',
+      '## Route results',
+      '',
+      ...routeResults.map(
+        (result) =>
+          `- ${result.device} ${result.route}: status=${result.status}; markers=${result.markerStatus}; stale=${result.staleStatus}; screenshot=${result.screenshot}${result.error ? `; error=${result.error}` : ''}`,
+      ),
+      '',
+      '## Interactions',
+      '',
+      ...interactions.map((item) => `- ${item.ok ? 'PASS' : 'FAIL'} ${item.device} ${item.name}: ${item.currentUrl || item.error || 'no result'}`),
+      '',
+    ].join('\n'),
+  )
 
-  if (summary.oldDemoCopyRoutes.length > 0 || summary.failedRoutes.length > 0 || summary.failedInteractions.length > 0) {
+  if (failedRoutes.length > 0 || staleContentRoutes.length > 0 || failedInteractions.length > 0) {
     console.error('LIVE_VISUAL_AUDIT_FAILED')
     console.error(JSON.stringify(summary, null, 2))
     process.exitCode = 1
