@@ -57,7 +57,7 @@ const routeRail = [
 
 export default function PrivacyControlsRoutePage() {
   return (
-    <main className="relative min-h-screen overflow-hidden bg-[#020617] text-white">
+    <main className="relative min-h-screen overflow-hidden bg-[#020617] text-white" data-route-polish="privacy-consent-console" data-launch-surface="premium-privacy-consent-console">
       <div className="absolute inset-0 bg-[radial-gradient(circle_at_48%_18%,rgba(103,232,249,.2),transparent_28rem),radial-gradient(circle_at_18%_78%,rgba(251,191,36,.12),transparent_26rem),linear-gradient(180deg,rgba(2,6,23,.15),rgba(0,0,0,.74))]" />
       <div className="absolute left-1/2 top-[44%] h-[34rem] w-[min(52rem,82vw)] -translate-x-1/2 -translate-y-1/2 rounded-[3rem] border border-cyan-100/20 bg-white/[.035] shadow-[0_0_140px_rgba(103,232,249,.14),inset_0_0_100px_rgba(255,255,255,.04)]" />
 

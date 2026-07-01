@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="800" viewBox="0 0 1200 800" role="img" aria-labelledby="t d">
+<title id="t">URAI Quest XR proof frame</title>
+<desc id="d">Manual Quest Browser proof frame that does not claim physical verification until headset evidence is captured.</desc>
+<rect width="1200" height="800" fill="#020617"/>
+<circle cx="600" cy="360" r="150" fill="#67e8f9" opacity=".16"/>
+<circle cx="600" cy="360" r="82" fill="#cffafe"/>
+<ellipse cx="600" cy="360" rx="430" ry="118" fill="none" stroke="#67e8f9" stroke-opacity=".3"/>
+<ellipse cx="600" cy="360" rx="560" ry="170" fill="none" stroke="#c4b5fd" stroke-opacity=".18"/>
+<text x="80" y="96" fill="#a5f3fc" font-family="Inter,Arial,sans-serif" font-size="22" font-weight="900" letter-spacing="6">TIER 3 XR PREVIEW</text>
+<text x="80" y="170" fill="#fff" font-family="Inter,Arial,sans-serif" font-size="58" font-weight="950">Quest proof requires hardware.</text>
+<text x="80" y="710" fill="#e2e8f0" font-family="Inter,Arial,sans-serif" font-size="26" font-weight="800">Open Quest Browser → urai.app/spatial/ar-vr → record device evidence.</text>
+</svg>

@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630" role="img" aria-labelledby="t d">
+<title id="t">URAI Spatial launch image</title>
+<desc id="d">URAI world with sky, ground, orb, memory galaxy, replay film, passport vault, and XR preview.</desc>
+<defs>
+<radialGradient id="orb"><stop offset="0" stop-color="#fff"/><stop offset=".36" stop-color="#cffafe"/><stop offset=".7" stop-color="#67e8f9"/><stop offset="1" stop-color="#0f172a"/></radialGradient>
+<linearGradient id="sky" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#08111f"/><stop offset=".48" stop-color="#102a4a"/><stop offset="1" stop-color="#020617"/></linearGradient>
+</defs>
+<rect width="1200" height="630" fill="url(#sky)"/>
+<g opacity=".75">
+<circle cx="205" cy="130" r="2" fill="#fff"/><circle cx="328" cy="95" r="1.8" fill="#a5f3fc"/><circle cx="520" cy="150" r="2.4" fill="#fde68a"/><circle cx="760" cy="110" r="2" fill="#fff"/><circle cx="965" cy="150" r="2.2" fill="#c4b5fd"/>
+</g>
+<path d="M0 440 C180 374 302 465 496 410 C694 354 835 452 1200 344 V630 H0 Z" fill="#031014"/>
+<ellipse cx="600" cy="418" rx="430" ry="92" fill="none" stroke="#67e8f9" stroke-opacity=".24"/>
+<ellipse cx="600" cy="418" rx="310" ry="56" fill="none" stroke="#fde68a" stroke-opacity=".24"/>
+<circle cx="600" cy="315" r="86" fill="url(#orb)"/>
+<circle cx="600" cy="315" r="132" fill="none" stroke="#a5f3fc" stroke-opacity=".28"/>
+<text x="74" y="118" fill="#a5f3fc" font-family="Inter,Arial,sans-serif" font-size="22" font-weight="900" letter-spacing="7">URAI SPATIAL</text>
+<text x="72" y="212" fill="#fff7ed" font-family="Inter,Arial,sans-serif" font-size="78" font-weight="950" letter-spacing="-5">Own your life.</text>
+<text x="74" y="288" fill="#fff" font-family="Inter,Arial,sans-serif" font-size="68" font-weight="950" letter-spacing="-4">Step inside yourself.</text>
+<text x="78" y="548" fill="#cffafe" font-family="Inter,Arial,sans-serif" font-size="22" font-weight="800">Ground · Life Map · Focus · Replay · Mirror · Passport · XR preview</text>
+</svg>

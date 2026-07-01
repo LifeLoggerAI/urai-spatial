@@ -1,0 +1,207 @@
+/* URAI AAA+++ launch proof layer: final route polish, accessibility, motion, and mobile hardening. */
+
+:root {
+  --urai-aaa-tap-target: 44px;
+}
+
+a[href],
+button,
+summary {
+  touch-action: manipulation;
+}
+
+a:focus-visible,
+button:focus-visible,
+summary:focus-visible,
+[tabindex]:focus-visible {
+  outline: 3px solid rgba(147, 245, 255, .92);
+  outline-offset: 4px;
+}
+
+[data-route-polish],
+[data-launch-surface],
+[data-testid="urai-r3f-canonical-lifemap"],
+[data-urai-route="ground-world"],
+.urai-xr-portal {
+  text-rendering: geometricPrecision;
+  -webkit-font-smoothing: antialiased;
+}
+
+[data-route-polish] {
+  isolation: isolate;
+}
+
+[data-route-polish]::before {
+  content: "";
+  position: absolute;
+  inset: -12%;
+  z-index: 1;
+  pointer-events: none;
+  background:
+    radial-gradient(circle at 50% 42%, rgba(125, 211, 252, .16), transparent 20rem),
+    radial-gradient(circle at 72% 38%, rgba(216, 180, 254, .10), transparent 24rem),
+    radial-gradient(circle at 22% 78%, rgba(253, 224, 171, .08), transparent 22rem);
+  opacity: .72;
+  mix-blend-mode: screen;
+  animation: uraiProofDrift 16s ease-in-out infinite alternate;
+}
+
+[data-route-polish] > section,
+[data-route-polish] > nav,
+[data-route-polish] > aside {
+  position: relative;
+  z-index: 5;
+}
+
+.urai-genesis-home__orb-shell,
+.urai-genesis-home__orb-aura,
+.urai-genesis-home__orb-ring,
+[data-urai-route="ground-world"] [class*="orbCore"],
+[data-testid="urai-r3f-canonical-lifemap"] [class*="orb"],
+.urai-xr-portal__orb {
+  animation: uraiProofOrbBreath 5.8s ease-in-out infinite alternate;
+  transform-origin: center;
+}
+
+.urai-genesis-home__threshold-gate,
+[data-urai-route="ground-world"] details,
+[data-route-polish] article,
+[data-route-polish] aside,
+[data-testid="urai-r3f-canonical-lifemap"] aside,
+.urai-xr-portal__card {
+  transition: transform .24s ease, border-color .24s ease, background-color .24s ease, box-shadow .24s ease;
+}
+
+.urai-genesis-home__threshold-gate:hover,
+[data-urai-route="ground-world"] details:hover,
+[data-route-polish] article:hover,
+[data-route-polish] aside:hover,
+[data-testid="urai-r3f-canonical-lifemap"] aside:hover,
+.urai-xr-portal__card:hover {
+  transform: translate3d(0, -3px, 0);
+  border-color: rgba(165, 243, 252, .34) !important;
+  box-shadow: 0 28px 110px rgba(0,0,0,.42), 0 0 70px rgba(103,232,249,.10) !important;
+}
+
+[data-route-polish="selected-memory-chamber"] aside > div:first-child {
+  animation: uraiProofCameraIn 9s ease-in-out infinite alternate;
+}
+
+[data-route-polish="cinematic-memory-film"]::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  pointer-events: none;
+  background:
+    repeating-linear-gradient(90deg, rgba(255,255,255,.035) 0 1px, transparent 1px 9vw),
+    linear-gradient(180deg, rgba(255,255,255,.06), transparent 16%, transparent 84%, rgba(255,255,255,.05));
+  opacity: .22;
+  mix-blend-mode: screen;
+  animation: uraiProofFilmScan 7s linear infinite;
+}
+
+[data-route-polish="reflection-realm"] aside {
+  background:
+    radial-gradient(circle at 50% 0%, rgba(125, 211, 252, .12), transparent 14rem),
+    rgba(2, 6, 23, .68) !important;
+}
+
+[data-testid="urai-r3f-canonical-lifemap"] [class*="depthField"] {
+  animation: uraiProofStarPulse 12s ease-in-out infinite alternate;
+}
+
+[data-urai-route="ground-world"] details summary {
+  min-height: var(--urai-aaa-tap-target);
+  display: grid;
+  align-content: center;
+}
+
+[data-launch-surface="premium-emotional-weather-atlas"] a,
+[data-launch-surface="premium-privacy-consent-console"] a,
+[data-launch-surface="premium-status-control-room"] a,
+[data-route-polish] a,
+.urai-xr-portal a {
+  min-height: var(--urai-aaa-tap-target);
+}
+
+@keyframes uraiProofOrbBreath {
+  from { filter: saturate(1.02) brightness(.98) drop-shadow(0 0 16px rgba(103,232,249,.26)); }
+  to { filter: saturate(1.24) brightness(1.08) drop-shadow(0 0 42px rgba(103,232,249,.48)); }
+}
+
+@keyframes uraiProofDrift {
+  from { transform: translate3d(-10px, 6px, 0) scale(1.01); opacity: .58; }
+  to { transform: translate3d(10px, -6px, 0) scale(1.025); opacity: .84; }
+}
+
+@keyframes uraiProofCameraIn {
+  from { transform: scale(.985); filter: saturate(1.05) brightness(.94); }
+  to { transform: scale(1.025); filter: saturate(1.22) brightness(1.04); }
+}
+
+@keyframes uraiProofFilmScan {
+  from { background-position: 0 0, 0 0; }
+  to { background-position: 9vw 0, 0 0; }
+}
+
+@keyframes uraiProofStarPulse {
+  from { opacity: .18; transform: scale(1); }
+  to { opacity: .32; transform: scale(1.018); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    scroll-behavior: auto !important;
+    animation-duration: .001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: .001ms !important;
+  }
+}
+
+@media (max-width: 760px) {
+  [data-route-polish] section {
+    padding-top: max(4.5rem, env(safe-area-inset-top)) !important;
+    padding-bottom: max(7.5rem, env(safe-area-inset-bottom)) !important;
+  }
+
+  [data-route-polish] h1,
+  [data-launch-surface="premium-status-control-room"] h1,
+  [data-launch-surface="premium-privacy-consent-console"] h1,
+  [data-launch-surface="premium-emotional-weather-atlas"] h1 {
+    max-width: 11ch !important;
+    font-size: clamp(3.05rem, 17vw, 5.65rem) !important;
+    line-height: .84 !important;
+    letter-spacing: -.10em !important;
+  }
+
+  [data-route-polish] nav.fixed,
+  [data-testid="urai-final-passport-vault"] nav,
+  [data-testid="urai-final-mirror-realm"] nav {
+    left: .75rem !important;
+    right: .75rem !important;
+    bottom: .75rem !important;
+    max-width: none !important;
+    transform: none !important;
+    justify-content: flex-start !important;
+  }
+
+  [data-testid="urai-r3f-canonical-lifemap"] [class*="titlePanel"] {
+    max-height: 38svh;
+    overflow: auto;
+  }
+
+  [data-testid="urai-r3f-canonical-lifemap"] [class*="orbPanel"] {
+    bottom: 4.9rem !important;
+  }
+
+  .urai-genesis-home__threshold-gate {
+    max-width: min(18rem, calc(100vw - 1.5rem)) !important;
+    padding: .75rem .85rem !important;
+  }
+
+  .urai-genesis-home__portal em,
+  .urai-genesis-home__memory-orbit {
+    display: none !important;
+  }
+}

@@ -7,7 +7,7 @@ function placeTone(place: MemoryPlace) {
 
 export function LocationMapScene({ places }: { places: MemoryPlace[] }) {
   return (
-    <main className="relative min-h-screen overflow-hidden bg-[#020617] text-white">
+    <main className="relative min-h-screen overflow-hidden bg-[#020617] text-white" data-launch-surface="premium-emotional-weather-atlas">
       <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_20%,rgba(103,232,249,0.16),transparent_28rem),radial-gradient(circle_at_20%_76%,rgba(167,139,250,0.14),transparent_28rem),radial-gradient(circle_at_78%_78%,rgba(251,191,36,.10),transparent_26rem)]" />
       <div className="absolute left-1/2 top-[56%] h-[min(42rem,82vw)] w-[min(42rem,82vw)] -translate-x-1/2 -translate-y-1/2 rounded-full border border-cyan-100/20 bg-[radial-gradient(circle,rgba(103,232,249,.08),rgba(2,6,23,.1)_55%,rgba(0,0,0,.48))] shadow-[0_0_140px_rgba(103,232,249,.12),inset_0_0_90px_rgba(255,255,255,.035)]" />
 

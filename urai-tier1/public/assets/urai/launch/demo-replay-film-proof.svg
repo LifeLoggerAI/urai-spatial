@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="800" viewBox="0 0 1200 800" role="img" aria-labelledby="t d">
+<title id="t">URAI demo replay film proof</title>
+<desc id="d">Cinematic URAI interaction arc from Ground to Life Map, Focus, Replay, Mirror, and Passport.</desc>
+<rect width="1200" height="800" fill="#05010a"/>
+<path d="M0 640 C220 530 412 665 640 548 C830 452 1010 535 1200 440 V800 H0 Z" fill="#061313"/>
+<rect x="105" y="190" width="990" height="370" rx="42" fill="#0f172a" stroke="#67e8f9" stroke-opacity=".26"/>
+<circle cx="600" cy="375" r="86" fill="#cffafe"/>
+<g fill="#fff" opacity=".82"><circle cx="220" cy="260" r="4"/><circle cx="360" cy="230" r="3"/><circle cx="840" cy="250" r="4"/><circle cx="980" cy="315" r="3"/></g>
+<text x="92" y="100" fill="#a5f3fc" font-family="Inter,Arial,sans-serif" font-size="22" font-weight="900" letter-spacing="6">URAI DEMO FILM</text>
+<text x="92" y="660" fill="#fff" font-family="Inter,Arial,sans-serif" font-size="56" font-weight="950">The world opens, the memory plays.</text>
+<text x="94" y="716" fill="#cbd5e1" font-family="Inter,Arial,sans-serif" font-size="24" font-weight="800">Ground → Life Map → Focus → Replay → Mirror → Passport</text>
+</svg>
