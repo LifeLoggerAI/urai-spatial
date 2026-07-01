@@ -14,7 +14,7 @@ const visuals: RouteVisual[] = [
   { key: 'ground', label: 'Ground world bespoke final', image: '/assets/urai/bespoke/ground/ground-world-bespoke-final.svg' },
   { key: 'life-map', label: 'Life Map galaxy bespoke final', image: '/assets/urai/bespoke/life-map/life-map-galaxy-bespoke-final.svg' },
   { key: 'focus', label: 'Focus memory chamber bespoke final', image: '/assets/urai/bespoke/focus/focus-memory-chamber-bespoke-final.svg' },
-  { key: 'replay', label: 'Replay memory film', image: '/assets/urai/replay/replay-memory-film-main.webp' },
+  { key: 'replay', label: 'Replay memory film bespoke final', image: '/assets/urai/bespoke/replay/replay-memory-film-bespoke-final.svg' },
   { key: 'mirror', label: 'Mirror reflection realm', image: '/assets/urai/mirror/mirror-reflection-main.webp' },
   { key: 'passport', label: 'Passport vault', image: '/assets/urai/passport/passport-vault-main.webp' },
   { key: 'privacy-controls', label: 'Privacy controls', image: '/assets/urai/privacy-controls/privacy-controls-main.webp' },
