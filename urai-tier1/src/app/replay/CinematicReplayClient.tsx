@@ -163,26 +163,28 @@ export default function CinematicReplayClient() {
       >
         <p style={{ margin: '0 0 6px', color: '#9be7ff', letterSpacing: '0.18em', textTransform: 'uppercase', fontSize: 11 }}>Replay chamber</p>
         <h1 style={{ margin: 0, fontSize: 'clamp(1.45rem, 4vw, 2.5rem)' }}>{nodeName}</h1>
-        <p style={{ margin: '8px 0 0', color: 'rgba(238,243,255,0.72)', lineHeight: 1.45 }}>{phaseDefinition.title}</p>
+        <p style={{ margin: '8px 0 0', color: 'rgba(238,243,255,0.72)', lineHeight: 1.45 }}>{phaseDefinition.userVisibleUi}</p>
       </section>
 
-      <ReplayPhaseRings replayPhase={replayPhase} morphology={morphology} />
+      <ReplayPhaseRings activeSegment={activeSegment} progressPercent={progressPercent} reducedMotion={reducedMotion} />
       <ReplayTimeline
+        phase={replayPhase}
+        activeSegment={activeSegment}
         progressMs={progressMs}
+        durationMs={REPLAY_DURATION_MS}
         playing={playing}
-        scrubbing={scrubbing}
-        onScrubStart={() => setScrubbing(true)}
-        onScrubEnd={() => setScrubbing(false)}
+        reducedMotion={reducedMotion}
+        onPlayPause={togglePlay}
         onScrub={scrubTo}
-        onTogglePlay={togglePlay}
+        onScrubbingChange={setScrubbing}
       />
       <ReplayMetaPanel
-        manifestId={manifestId}
-        nodeName={nodeName}
-        replayPhase={replayPhase}
+        morphology={morphology}
+        phase={replayPhase}
         phaseDefinition={phaseDefinition}
-        progressPercent={progressPercent}
         activeSegment={activeSegment}
+        sourceLabel={`Replay · ${nodeName}`}
+        manifestId={manifestId}
         onReturnToFocus={returnToFocus}
       />
     </main>
