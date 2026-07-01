@@ -10,7 +10,7 @@ type RouteVisual = {
 }
 
 const visuals: RouteVisual[] = [
-  { key: 'home', label: 'Home threshold', image: '/assets/urai/home/home-threshold-main.webp' },
+  { key: 'home', label: 'Home threshold bespoke final', image: '/assets/urai/bespoke/home/home-threshold-bespoke-final.svg' },
   { key: 'ground', label: 'Ground world', image: '/assets/urai/ground/ground-world-main.webp' },
   { key: 'life-map', label: 'Life Map galaxy', image: '/assets/urai/life-map/life-map-galaxy-main.webp' },
   { key: 'focus', label: 'Focus memory chamber', image: '/assets/urai/focus/focus-memory-chamber-main.webp' },
