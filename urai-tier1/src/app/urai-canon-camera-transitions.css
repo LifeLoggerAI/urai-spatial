@@ -1,0 +1,133 @@
+/* URAI canon camera transitions
+   Home owns avatar/orb/ground. Life Map, Focus, and Replay are camera/memory layers.
+   This file adds visible pan/zoom/descend intent without moving the canon anchor objects into memory routes. */
+
+.urai-genesis-home,
+.urai-genesis-home__world,
+.urai-genesis-home__sky,
+.urai-genesis-home__ground,
+.urai-genesis-home__orb,
+.urai-genesis-home__body {
+  will-change: transform, filter, opacity;
+}
+
+.urai-genesis-home[data-transition-target="ground"] .urai-genesis-home__world {
+  animation: uraiCanonHomeDescendToGround 720ms cubic-bezier(.16, 1, .3, 1) both;
+}
+
+.urai-genesis-home[data-transition-target="ground"] .urai-genesis-home__sky {
+  animation: uraiCanonSkyRecedeForGround 720ms cubic-bezier(.16, 1, .3, 1) both;
+}
+
+.urai-genesis-home[data-transition-target="sky"] .urai-genesis-home__world {
+  animation: uraiCanonHomeAscendToLifeMap 760ms cubic-bezier(.16, 1, .3, 1) both;
+}
+
+.urai-genesis-home[data-transition-target="sky"] .urai-genesis-home__ground,
+.urai-genesis-home[data-transition-target="sky"] .urai-genesis-home__body,
+.urai-genesis-home[data-transition-target="sky"] .urai-genesis-home__orb {
+  animation: uraiCanonGroundAnchorFallsAway 760ms cubic-bezier(.16, 1, .3, 1) both;
+}
+
+.urai-genesis-home[data-transition-target="orb"] .urai-genesis-home__orb {
+  animation: uraiCanonOrbOpensInPlace 560ms cubic-bezier(.16, 1, .3, 1) both !important;
+}
+
+.urai-genesis-home[data-transition-target="orb"] .urai-genesis-home__world {
+  animation: uraiCanonWorldBreathesForOrb 560ms cubic-bezier(.16, 1, .3, 1) both;
+}
+
+.urai-genesis-home__orb-panel[data-open="true"] {
+  transform-origin: left center;
+  animation: uraiCanonOrbPanelOpen 340ms cubic-bezier(.16, 1, .3, 1) both;
+}
+
+.urai-life-map-aaa[data-canon="camera-only-life-map-avatar-orb-grounded"] {
+  animation: uraiCanonCameraAscendsIntoLifeMap 780ms cubic-bezier(.16, 1, .3, 1) both;
+}
+
+.urai-life-map-aaa[data-canon="camera-only-life-map-avatar-orb-grounded"] .urai-life-map-aaa__camera {
+  animation: uraiCanonLifeMapCameraSettle 920ms cubic-bezier(.16, 1, .3, 1) both;
+}
+
+[data-canon="camera-from-life-map-no-avatar-orb"] {
+  animation: uraiCanonCameraPushIntoFocus 720ms cubic-bezier(.16, 1, .3, 1) both;
+}
+
+[data-canon="camera-from-focus-no-avatar-orb"] {
+  animation: uraiCanonCameraPushIntoReplay 760ms cubic-bezier(.16, 1, .3, 1) both;
+}
+
+@keyframes uraiCanonHomeDescendToGround {
+  0% { transform: translate3d(0, 0, 0) scale(1); filter: saturate(1); }
+  42% { transform: translate3d(0, 3.6svh, 0) scale(1.035); filter: saturate(1.08) contrast(1.03); }
+  100% { transform: translate3d(0, 8svh, 0) scale(1.09); filter: saturate(1.12) contrast(1.07) brightness(.86); }
+}
+
+@keyframes uraiCanonSkyRecedeForGround {
+  0% { transform: translateY(0) scale(1); opacity: 1; }
+  100% { transform: translateY(-4svh) scale(.98); opacity: .48; }
+}
+
+@keyframes uraiCanonHomeAscendToLifeMap {
+  0% { transform: translate3d(0, 0, 0) scale(1); filter: saturate(1); }
+  46% { transform: translate3d(0, -3.2svh, 0) scale(1.035); filter: saturate(1.12) brightness(1.06); }
+  100% { transform: translate3d(0, -8svh, 0) scale(1.11); filter: saturate(1.18) brightness(1.14); }
+}
+
+@keyframes uraiCanonGroundAnchorFallsAway {
+  0% { transform: translate3d(0, 0, 0) scale(1); opacity: 1; }
+  100% { transform: translate3d(0, 7svh, 0) scale(.92); opacity: .32; }
+}
+
+@keyframes uraiCanonOrbOpensInPlace {
+  0% { transform: translate3d(-50%, -50%, 0) scale(1); filter: drop-shadow(0 0 44px rgba(91,226,255,.48)) drop-shadow(0 28px 70px rgba(0,0,0,.62)); }
+  100% { transform: translate3d(-50%, -50%, 0) scale(1.42); filter: drop-shadow(0 0 78px rgba(196,248,255,.76)) drop-shadow(0 34px 96px rgba(0,0,0,.72)); }
+}
+
+@keyframes uraiCanonWorldBreathesForOrb {
+  0% { transform: scale(1); filter: blur(0) brightness(1); }
+  100% { transform: scale(1.018); filter: blur(1.2px) brightness(.72); }
+}
+
+@keyframes uraiCanonOrbPanelOpen {
+  0% { opacity: 0; transform: translate3d(-18px, 8px, 0) scale(.94); }
+  100% { opacity: 1; transform: translate3d(0, 0, 0) scale(1); }
+}
+
+@keyframes uraiCanonCameraAscendsIntoLifeMap {
+  0% { opacity: .74; transform: translate3d(0, 6svh, 0) scale(.96); filter: blur(2px) brightness(.74); }
+  100% { opacity: 1; transform: translate3d(0, 0, 0) scale(1); filter: blur(0) brightness(1); }
+}
+
+@keyframes uraiCanonLifeMapCameraSettle {
+  0% { transform: translate3d(0, 6svh, 0) scale(1.08); opacity: .58; }
+  100% { transform: translate3d(var(--camera-x, 0), var(--camera-y, 0), 0) scale(1); opacity: 1; }
+}
+
+@keyframes uraiCanonCameraPushIntoFocus {
+  0% { opacity: .78; transform: scale(1.09) translateY(2svh); filter: blur(1.4px) brightness(.8); }
+  100% { opacity: 1; transform: scale(1) translateY(0); filter: blur(0) brightness(1); }
+}
+
+@keyframes uraiCanonCameraPushIntoReplay {
+  0% { opacity: .68; transform: scale(1.12); filter: blur(2px) brightness(.72); }
+  100% { opacity: 1; transform: scale(1); filter: blur(0) brightness(1); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .urai-genesis-home[data-transition-target] .urai-genesis-home__world,
+  .urai-genesis-home[data-transition-target] .urai-genesis-home__sky,
+  .urai-genesis-home[data-transition-target] .urai-genesis-home__ground,
+  .urai-genesis-home[data-transition-target] .urai-genesis-home__body,
+  .urai-genesis-home[data-transition-target] .urai-genesis-home__orb,
+  .urai-genesis-home__orb-panel[data-open="true"],
+  .urai-life-map-aaa[data-canon="camera-only-life-map-avatar-orb-grounded"],
+  .urai-life-map-aaa[data-canon="camera-only-life-map-avatar-orb-grounded"] .urai-life-map-aaa__camera,
+  [data-canon="camera-from-life-map-no-avatar-orb"],
+  [data-canon="camera-from-focus-no-avatar-orb"] {
+    animation: none !important;
+    transform: none !important;
+    filter: none !important;
+  }
+}
