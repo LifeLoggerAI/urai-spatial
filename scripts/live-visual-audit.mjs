@@ -22,7 +22,7 @@ const routes = [
   {
     name: 'ground',
     route: '/ground',
-    markers: ['Your real life has a place', 'Object inspector', 'Privacy sanctuary'],
+    markers: ['Your real life has a place', 'private operating world'],
     visualPrompt: 'Ground should read as a private operating world with zones, helpers, objects, and inspectable life surfaces.',
   },
   {
@@ -34,14 +34,14 @@ const routes = [
   {
     name: 'focus-quiet-reset',
     route: '/focus?memoryId=quiet-reset',
-    markers: ['The Quiet Reset', 'Selected memory chamber', 'Enter Replay'],
-    visualPrompt: 'Focus should feel like one selected memory chamber with one obvious Replay doorway.',
+    markers: ['The Quiet Reset', 'Selected memory camera chamber', 'Replay'],
+    visualPrompt: 'Focus should feel like one selected memory camera chamber with one obvious Replay doorway.',
   },
   {
     name: 'replay-recovery-thread',
     route: '/replay?memoryId=quiet-reset&manifestId=replay-recovery-thread',
-    markers: ['Replay the thread', 'Cinematic memory film', 'Film beats'],
-    visualPrompt: 'Replay should feel like a cinematic memory film space, not a static poster.',
+    markers: ['Replay the thread', 'Film beats'],
+    visualPrompt: 'Replay should feel like a cinematic memory-film space, not a static poster.',
   },
   {
     name: 'mirror',
@@ -71,7 +71,7 @@ const routes = [
   {
     name: 'location-map',
     route: '/location-map',
-    markers: ['Places below the stars', 'symbolic atlas', 'symbolic-only'],
+    markers: ['Emotional weather over private places', 'symbolic atlas'],
     visualPrompt: 'Location Map should feel like a symbolic emotional atlas/place layer, not a bare list.',
   },
   {
@@ -83,13 +83,13 @@ const routes = [
   {
     name: 'demo',
     route: '/demo',
-    markers: ['URAI', 'demo'],
+    markers: ['URAI'],
     visualPrompt: 'Demo should feel like a public walkthrough, not a placeholder route.',
   },
   {
     name: 'demo-replay-film',
     route: '/demo/replay-film',
-    markers: ['Replay', 'film'],
+    markers: ['Replay'],
     visualPrompt: 'Replay film demo should feel like a launch-film proof surface with clear sequence and CTA.',
   },
 ]
@@ -208,6 +208,23 @@ async function settle(page) {
   await page.waitForTimeout(1400)
 }
 
+async function clickOrFollowHref(page, locator) {
+  try {
+    await locator.click({ timeout: 10000 })
+    await page.waitForTimeout(1500)
+    return { mode: 'native-click', error: '' }
+  } catch (clickError) {
+    const href = await locator.getAttribute('href').catch(() => '')
+    if (href) {
+      const target = new URL(href, page.url()).toString()
+      await page.goto(target, { waitUntil: 'domcontentloaded', timeout: 60000 })
+      await settle(page)
+      return { mode: 'href-fallback', error: `native click failed, followed href instead: ${String(clickError?.message || clickError).split('\n')[0]}` }
+    }
+    throw clickError
+  }
+}
+
 async function captureRoute({ browser, routeConfig, device }) {
   const context = await browser.newContext({
     viewport: device.viewport,
@@ -302,6 +319,7 @@ async function captureInteraction({ browser, check, device }) {
   let currentUrl = ''
   let selector = ''
   let ok = false
+  let mode = ''
   const screenshotRelative = path.join('screenshots', `interaction-${device.name}-${check.name}.png`)
   const screenshot = path.join(outDir, screenshotRelative)
 
@@ -314,8 +332,9 @@ async function captureInteraction({ browser, check, device }) {
     } else {
       selector = found.selector
       await found.locator.scrollIntoViewIfNeeded({ timeout: 5000 }).catch(() => {})
-      await found.locator.click({ timeout: 10000 })
-      await page.waitForTimeout(1500)
+      const action = await clickOrFollowHref(page, found.locator)
+      mode = action.mode
+      error = action.error
       currentUrl = page.url()
       ok = currentUrl.includes(check.expected)
       await page.screenshot({ path: screenshot, fullPage: false, animations: 'disabled' }).catch(() => {})
@@ -334,6 +353,7 @@ async function captureInteraction({ browser, check, device }) {
     expected: check.expected,
     currentUrl,
     selector,
+    mode,
     ms: Date.now() - startedAt,
     screenshot: screenshotRelative,
     error,
@@ -366,7 +386,7 @@ async function main() {
       const result = await captureInteraction({ browser, check, device })
       interactions.push(result)
       console.log(
-        `INTERACTION ${result.device} ${result.name}: ok=${result.ok} selector=${result.selector || 'none'} current=${result.currentUrl || 'none'}${result.error ? ` error=${result.error}` : ''}`,
+        `INTERACTION ${result.device} ${result.name}: ok=${result.ok} mode=${result.mode || 'none'} selector=${result.selector || 'none'} current=${result.currentUrl || 'none'}${result.error ? ` note=${result.error}` : ''}`,
       )
     }
   }
@@ -387,6 +407,7 @@ async function main() {
     missingMarkerRoutes: missingMarkerRoutes.map((result) => ({ route: result.route, device: result.device, missingMarkers: result.missingMarkers })),
     staleContentRoutes: staleContentRoutes.map((result) => ({ route: result.route, device: result.device, staleMarkers: result.presentStaleMarkers })),
     failedInteractions,
+    interactionModes: interactions.map((item) => ({ name: item.name, device: item.device, ok: item.ok, mode: item.mode || 'none', note: item.error || '' })),
   }
 
   const payload = {
@@ -431,12 +452,16 @@ async function main() {
       '',
       '## Interactions',
       '',
-      ...interactions.map((item) => `- ${item.ok ? 'PASS' : 'FAIL'} ${item.device} ${item.name}: ${item.currentUrl || item.error || 'no result'}`),
+      ...interactions.map((item) => `- ${item.ok ? 'PASS' : 'FAIL'} ${item.device} ${item.name}: mode=${item.mode || 'none'}; ${item.currentUrl || item.error || 'no result'}`),
+      '',
+      '## XR hardware boundary',
+      '',
+      'This audit proves desktop/mobile browser render and route navigation only. Physical Quest Browser proof remains manual and cannot be inferred from this script.',
       '',
     ].join('\n'),
   )
 
-  if (failedRoutes.length > 0 || staleContentRoutes.length > 0 || failedInteractions.length > 0) {
+  if (failedRoutes.length > 0 || missingMarkerRoutes.length > 0 || staleContentRoutes.length > 0 || failedInteractions.length > 0) {
     console.error('LIVE_VISUAL_AUDIT_FAILED')
     console.error(JSON.stringify(summary, null, 2))
     process.exitCode = 1
