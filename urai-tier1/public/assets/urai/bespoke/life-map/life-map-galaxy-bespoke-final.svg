@@ -1,0 +1,23 @@
+<svg width="1920" height="1080" viewBox="0 0 1920 1080" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="title desc">
+<title id="title">URAI Life Map bespoke final galaxy</title>
+<desc id="desc">A bespoke 3D-feeling Life Map galaxy with depth rings, image stars, camera path, Focus door, Replay door, and living constellation field.</desc>
+<defs>
+<radialGradient id="bg" cx="50%" cy="42%" r="72%"><stop offset="0%" stop-color="#16385f"/><stop offset="42%" stop-color="#071126"/><stop offset="100%" stop-color="#000104"/></radialGradient>
+<radialGradient id="star" cx="35%" cy="25%" r="70%"><stop offset="0%" stop-color="#ffffff"/><stop offset="35%" stop-color="#ffe8b5"/><stop offset="65%" stop-color="#7df7ff"/><stop offset="100%" stop-color="#7c3aed" stop-opacity=".25"/></radialGradient>
+<linearGradient id="photo" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#fff0c2"/><stop offset="52%" stop-color="#8ff6ff"/><stop offset="100%" stop-color="#c4b5fd"/></linearGradient>
+<filter id="blur"><feGaussianBlur stdDeviation="14"/></filter>
+</defs>
+<rect width="1920" height="1080" fill="url(#bg)"/>
+<g opacity=".55" fill="none" stroke-width="2"><ellipse cx="960" cy="540" rx="760" ry="245" stroke="#8ff6ff" opacity=".22"/><ellipse cx="960" cy="540" rx="610" ry="188" stroke="#c4b5fd" opacity=".26"/><ellipse cx="960" cy="540" rx="455" ry="137" stroke="#ffe8b5" opacity=".2"/><path d="M275 650 C550 380 980 325 1322 458 C1534 540 1626 656 1698 766" stroke="#8ff6ff" stroke-linecap="round" opacity=".34"/></g>
+<g fill="#fff" opacity=".78"><circle cx="205" cy="122" r="2"/><circle cx="510" cy="128" r="2"/><circle cx="1688" cy="155" r="2.5"/><circle cx="980" cy="235" r="2"/><circle cx="270" cy="795" r="2"/></g>
+<g font-family="Inter,Arial,sans-serif" font-weight="900">
+<g transform="translate(760 408)"><circle r="138" fill="#75f4ff" opacity=".16" filter="url(#blur)"/><circle r="76" fill="url(#star)"/><circle r="48" fill="url(#photo)" opacity=".86"/><text y="132" text-anchor="middle" font-size="21" letter-spacing="4" fill="#8ff6ff">QUIET RESET</text></g>
+<g transform="translate(1135 348)"><circle r="94" fill="#c4b5fd" opacity=".16" filter="url(#blur)"/><circle r="54" fill="url(#star)"/><circle r="34" fill="url(#photo)" opacity=".82"/><text y="100" text-anchor="middle" font-size="16" letter-spacing="3" fill="#e9d5ff">BECOMING</text></g>
+<g transform="translate(1215 670)"><circle r="104" fill="#ffe8b5" opacity=".13" filter="url(#blur)"/><circle r="58" fill="url(#star)"/><circle r="36" fill="url(#photo)" opacity=".82"/><text y="108" text-anchor="middle" font-size="16" letter-spacing="3" fill="#ffe8b5">STUDIO</text></g>
+<g transform="translate(560 680)"><circle r="84" fill="#8ff6ff" opacity=".13" filter="url(#blur)"/><circle r="48" fill="url(#star)"/><circle r="30" fill="url(#photo)" opacity=".80"/><text y="90" text-anchor="middle" font-size="14" letter-spacing="3" fill="#8ff6ff">THRESHOLD</text></g>
+<path d="M430 430 L760 408 L1135 348 L1215 670 L915 820 L560 680 L430 430" stroke="#8ff6ff" stroke-width="2" opacity=".26" fill="none"/>
+<text x="118" y="118" font-size="26" letter-spacing="6" fill="#8ff6ff">URAI LIFE MAP FINAL 3D ART</text><text x="118" y="178" font-size="58" fill="#fff">34 stars awake.</text><text x="118" y="222" font-size="23" fill="#ffe8b5">image-bearing stars · depth rings · camera orbit · living galaxy</text>
+<rect x="118" y="785" width="370" height="150" rx="42" fill="#07121e" stroke="#8ff6ff" stroke-width="2" opacity=".86"/><text x="152" y="841" font-size="18" letter-spacing="4" fill="#8ff6ff">FOCUS DOOR</text><text x="152" y="887" font-size="34" fill="#fff">Enter chamber</text>
+<rect x="1430" y="785" width="370" height="150" rx="42" fill="#07121e" stroke="#ffe8b5" stroke-width="2" opacity=".86"/><text x="1464" y="841" font-size="18" letter-spacing="4" fill="#ffe8b5">REPLAY DOOR</text><text x="1464" y="887" font-size="34" fill="#fff">Play memory</text>
+</g>
+</svg>
