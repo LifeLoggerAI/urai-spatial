@@ -1,0 +1,309 @@
+html.urai-route-life-map,
+html.urai-route-focus,
+html.urai-route-replay {
+  background: #01030a !important;
+}
+
+html.urai-route-life-map body,
+html.urai-route-focus body,
+html.urai-route-replay body {
+  background:
+    radial-gradient(circle at 50% 50%, rgba(56,124,160,.16), transparent 34%),
+    radial-gradient(circle at 72% 42%, rgba(124,76,190,.13), transparent 30%),
+    linear-gradient(180deg,#01030a 0%,#020712 52%,#010209 100%) !important;
+  color: rgba(242,250,255,.96) !important;
+  isolation: isolate;
+  overflow-x: hidden;
+}
+
+html.urai-route-life-map body::before,
+html.urai-route-focus body::before,
+html.urai-route-replay body::before {
+  content: "";
+  position: fixed;
+  inset: -18vh -16vw;
+  z-index: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(ellipse at 43% 52%, rgba(182,241,236,.34) 0%, rgba(73,164,196,.20) 12%, rgba(31,74,104,.08) 24%, transparent 43%),
+    radial-gradient(ellipse at 62% 47%, rgba(163,111,231,.30) 0%, rgba(117,70,184,.16) 18%, transparent 43%),
+    radial-gradient(ellipse at 48% 58%, rgba(255,255,255,.11) 0%, transparent 19%),
+    conic-gradient(from 218deg at 51% 52%, transparent 0deg, rgba(99,194,223,.16) 46deg, rgba(174,122,239,.13) 95deg, transparent 150deg, rgba(109,211,195,.08) 236deg, transparent 320deg);
+  filter: blur(18px) saturate(1.2);
+  opacity: .96;
+  mix-blend-mode: screen;
+  animation: uraiOrganicDustBreath 18s ease-in-out infinite;
+}
+
+html.urai-route-life-map body::after,
+html.urai-route-focus body::after,
+html.urai-route-replay body::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  background-image:
+    radial-gradient(circle at 18% 24%, rgba(174,230,255,.22) 0 1px, transparent 2px),
+    radial-gradient(circle at 74% 30%, rgba(215,194,255,.20) 0 1px, transparent 2px),
+    radial-gradient(circle at 53% 74%, rgba(160,255,226,.18) 0 1px, transparent 2px),
+    linear-gradient(110deg, transparent 0%, rgba(255,255,255,.032) 48%, transparent 54%);
+  background-size: 120px 120px, 180px 180px, 150px 150px, 100% 100%;
+  opacity: .42;
+  mix-blend-mode: screen;
+  animation: uraiFineStarDrift 36s linear infinite;
+}
+
+html.urai-route-life-map body > *:not(.urai-focus-cue),
+html.urai-route-focus body > *:not(.urai-focus-cue),
+html.urai-route-replay body > *:not(.urai-focus-cue) {
+  position: relative;
+  z-index: 2;
+}
+
+html.urai-route-life-map.urai-life-selected body > *:not(.urai-focus-cue) {
+  transform: translate3d(var(--urai-pull-x,0px), var(--urai-pull-y,0px), 0) scale(1.012);
+  transform-origin: var(--urai-selected-x,50vw) var(--urai-selected-y,50vh);
+  transition: transform 760ms cubic-bezier(.18,.88,.22,1);
+}
+
+html.urai-route-life-map :is(a,button,[role="button"]),
+html.urai-route-focus :is(a,button,[role="button"]),
+html.urai-route-replay :is(a,button,[role="button"]) {
+  transition: transform 220ms ease, box-shadow 220ms ease, border-color 220ms ease, background 220ms ease, filter 220ms ease !important;
+}
+
+html.urai-route-life-map :is(a,button,[role="button"]):hover,
+html.urai-route-focus :is(a,button,[role="button"]):hover,
+html.urai-route-replay :is(a,button,[role="button"]):hover {
+  transform: translateY(-1px) scale(1.025);
+  filter: saturate(1.15) brightness(1.08);
+}
+
+.urai-lifemap-title-card,
+.urai-lifemap-selected-card,
+.urai-lifemap-bottom-nav {
+  background:
+    linear-gradient(145deg, rgba(5,12,23,.78), rgba(8,15,27,.48)),
+    radial-gradient(circle at 18% 12%, rgba(163,231,255,.12), transparent 46%) !important;
+  border: 1px solid rgba(184,233,255,.20) !important;
+  box-shadow:
+    0 24px 80px rgba(0,0,0,.52),
+    0 0 0 1px rgba(255,255,255,.035) inset,
+    0 0 44px rgba(87,187,225,.13) !important;
+  backdrop-filter: blur(22px) saturate(1.28) !important;
+  -webkit-backdrop-filter: blur(22px) saturate(1.28) !important;
+}
+
+.urai-lifemap-title-card {
+  max-width: min(390px, calc(100vw - 28px)) !important;
+}
+
+.urai-lifemap-title-card :is(h1,h2) {
+  letter-spacing: -.075em !important;
+  line-height: .86 !important;
+  text-wrap: balance;
+}
+
+.urai-lifemap-selected-card {
+  overflow: hidden !important;
+}
+
+.urai-lifemap-selected-card::before {
+  content: "";
+  position: absolute;
+  inset: -1px;
+  pointer-events: none;
+  background:
+    radial-gradient(circle at 18% 20%, rgba(151,227,255,.18), transparent 34%),
+    linear-gradient(90deg, rgba(114,233,255,.10), transparent 34%, rgba(191,139,255,.11));
+  opacity: .72;
+}
+
+.urai-lifemap-selected-node {
+  position: relative !important;
+  z-index: 7 !important;
+  border-radius: 999px !important;
+  background:
+    radial-gradient(circle at 22% 20%, rgba(255,255,255,.92), rgba(170,235,255,.40) 18%, rgba(12,24,35,.54) 56%),
+    linear-gradient(135deg, rgba(13,30,44,.78), rgba(10,16,31,.76)) !important;
+  border: 1px solid rgba(202,248,255,.52) !important;
+  box-shadow:
+    0 0 0 1px rgba(255,255,255,.08) inset,
+    0 0 24px rgba(134,237,255,.72),
+    0 0 62px rgba(120,174,255,.48),
+    0 0 110px rgba(170,118,255,.28) !important;
+  filter: saturate(1.28) brightness(1.12);
+  transform: translateZ(0) scale(1.09) !important;
+  animation: uraiSelectedStarPulse 2.8s ease-in-out infinite;
+}
+
+.urai-lifemap-selected-node::after {
+  content: "";
+  position: absolute;
+  inset: -20px -26px;
+  z-index: -1;
+  border-radius: 999px;
+  background:
+    radial-gradient(circle, rgba(167,237,255,.34), transparent 58%),
+    radial-gradient(circle, rgba(190,139,255,.24), transparent 70%);
+  filter: blur(12px);
+  opacity: .9;
+  pointer-events: none;
+}
+
+.urai-focus-cue {
+  position: fixed;
+  left: var(--urai-cue-x,50vw);
+  top: var(--urai-cue-y,50vh);
+  z-index: 9999;
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+  padding: 7px 11px;
+  border-radius: 999px;
+  border: 1px solid rgba(192,242,255,.36);
+  background:
+    linear-gradient(135deg, rgba(3,10,19,.78), rgba(12,22,37,.62)),
+    radial-gradient(circle at 18% 20%, rgba(151,236,255,.18), transparent 50%);
+  color: rgba(238,251,255,.92);
+  font-size: 11px;
+  font-weight: 760;
+  letter-spacing: .045em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  box-shadow: 0 16px 44px rgba(0,0,0,.44), 0 0 34px rgba(125,223,255,.22);
+  backdrop-filter: blur(18px) saturate(1.25);
+  -webkit-backdrop-filter: blur(18px) saturate(1.25);
+  animation: uraiCueFloat 2.6s ease-in-out infinite;
+}
+
+html:not(.urai-route-life-map) .urai-focus-cue {
+  display: none !important;
+}
+
+.urai-lifemap-bottom-nav {
+  padding: 7px 10px !important;
+  border-radius: 999px !important;
+  box-shadow: 0 18px 60px rgba(0,0,0,.44), 0 0 28px rgba(134,220,255,.13) !important;
+}
+
+html.urai-route-focus main,
+html.urai-route-replay main {
+  min-height: 100svh;
+}
+
+html.urai-route-focus :is(section,article,aside,nav),
+html.urai-route-replay :is(section,article,aside,nav) {
+  border-color: rgba(185,233,255,.18) !important;
+  box-shadow: 0 24px 88px rgba(0,0,0,.42), 0 0 46px rgba(92,190,229,.10) !important;
+  backdrop-filter: blur(20px) saturate(1.22);
+  -webkit-backdrop-filter: blur(20px) saturate(1.22);
+}
+
+html.urai-route-focus img,
+html.urai-route-replay img,
+html.urai-route-focus video,
+html.urai-route-replay video {
+  border-radius: 28px !important;
+  box-shadow: 0 30px 110px rgba(0,0,0,.55), 0 0 72px rgba(116,220,255,.16) !important;
+}
+
+@keyframes uraiOrganicDustBreath {
+  0%,100% { transform: translate3d(-1.2vw,.2vh,0) rotate(-.4deg) scale(1); opacity: .84; }
+  50% { transform: translate3d(1.1vw,-.8vh,0) rotate(.35deg) scale(1.035); opacity: 1; }
+}
+
+@keyframes uraiFineStarDrift {
+  from { background-position: 0 0,0 0,0 0,0 0; }
+  to { background-position: 120px 80px,-180px 120px,150px -90px,0 0; }
+}
+
+@keyframes uraiSelectedStarPulse {
+  0%,100% {
+    box-shadow:
+      0 0 0 1px rgba(255,255,255,.08) inset,
+      0 0 24px rgba(134,237,255,.62),
+      0 0 62px rgba(120,174,255,.42),
+      0 0 110px rgba(170,118,255,.24);
+  }
+  50% {
+    box-shadow:
+      0 0 0 1px rgba(255,255,255,.12) inset,
+      0 0 34px rgba(169,247,255,.90),
+      0 0 84px rgba(137,188,255,.62),
+      0 0 142px rgba(190,133,255,.36);
+  }
+}
+
+@keyframes uraiCueFloat {
+  0%,100% { transform: translate(-50%,-50%) translateY(0); opacity: .82; }
+  50% { transform: translate(-50%,-50%) translateY(-4px); opacity: 1; }
+}
+
+@media (max-width: 760px) {
+  html.urai-route-life-map body {
+    padding-bottom: calc(env(safe-area-inset-bottom) + 148px) !important;
+  }
+
+  .urai-lifemap-title-card {
+    position: fixed !important;
+    top: calc(env(safe-area-inset-top) + 10px) !important;
+    left: 10px !important;
+    right: 10px !important;
+    max-width: none !important;
+    max-height: 25svh !important;
+    overflow: hidden !important;
+    z-index: 42 !important;
+  }
+
+  .urai-lifemap-title-card :is(h1,h2) {
+    font-size: clamp(2rem, 12vw, 4.25rem) !important;
+  }
+
+  .urai-lifemap-selected-card {
+    position: fixed !important;
+    left: 12px !important;
+    right: 12px !important;
+    bottom: calc(env(safe-area-inset-bottom) + 78px) !important;
+    top: auto !important;
+    max-height: 31svh !important;
+    overflow: auto !important;
+    z-index: 44 !important;
+  }
+
+  .urai-lifemap-bottom-nav {
+    position: fixed !important;
+    left: 50% !important;
+    right: auto !important;
+    bottom: calc(env(safe-area-inset-bottom) + 14px) !important;
+    transform: translateX(-50%) !important;
+    max-width: calc(100vw - 22px) !important;
+    overflow-x: auto !important;
+    z-index: 48 !important;
+  }
+
+  .urai-focus-cue {
+    display: none !important;
+  }
+
+  html.urai-route-life-map.urai-life-selected body > *:not(.urai-focus-cue) {
+    transform: none !important;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html.urai-route-life-map body::before,
+  html.urai-route-life-map body::after,
+  html.urai-route-focus body::before,
+  html.urai-route-focus body::after,
+  html.urai-route-replay body::before,
+  html.urai-route-replay body::after,
+  .urai-lifemap-selected-node,
+  .urai-focus-cue {
+    animation: none !important;
+  }
+
+  html.urai-route-life-map.urai-life-selected body > *:not(.urai-focus-cue) {
+    transition: none !important;
+  }
+}

@@ -37,6 +37,8 @@ import './urai-canon-camera-transitions.css'
 import './aaa-interaction-final-hotfix.css'
 import './aaa-live-visual-proof-polish.css'
 import UraiCinematicBackdrop from './UraiCinematicBackdrop'
+import UraiAAAARoutePolish from "./UraiAAAARoutePolish";
+import "./urai-aaaa-final-pass.css";
 
 export const metadata: Metadata = {
   title: 'URAI Spatial',
@@ -59,6 +61,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         data-urai-home-spatial-shell="true"
         style={{ margin: 0, background: '#08030f', overflowX: 'hidden' }}
       >
+        <UraiAAAARoutePolish />
         <UraiCinematicBackdrop />
         {children}
       </body>
