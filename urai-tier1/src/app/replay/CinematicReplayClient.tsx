@@ -17,7 +17,7 @@ import {
 
 const DEFAULT_REPLAY_MANIFEST_ID = 'seed-memory-bloom'
 
-function nodeNameFromParams(value: string | null) {
+function nodeNameFromParams(value: string | null | undefined) {
   if (!value) return 'Evening Pattern'
   return value
     .replace(/[-_]+/g, ' ')
@@ -37,8 +37,8 @@ export default function CinematicReplayClient() {
   const [scrubbing, setScrubbing] = useState(false)
   const [progressMs, setProgressMs] = useState(0)
 
-  const manifestId = params.get('manifestId') ?? DEFAULT_REPLAY_MANIFEST_ID
-  const nodeName = nodeNameFromParams(params.get('node') ?? manifestId)
+  const manifestId = params?.get('manifestId') ?? DEFAULT_REPLAY_MANIFEST_ID
+  const nodeName = nodeNameFromParams(params?.get('node') ?? manifestId)
   const morphology = useMemo(() => buildMemoryMorphology(null, 'mirror'), [])
   const activeSegment = getReplaySegmentAt(progressMs)
   const replayPhase = resolveReplayPhase({
@@ -158,84 +158,32 @@ export default function CinematicReplayClient() {
           border: '1px solid rgba(180, 215, 255, 0.18)',
           borderRadius: 24,
           background: 'linear-gradient(150deg, rgba(5, 9, 22, 0.62), rgba(16, 11, 35, 0.42))',
-          boxShadow: '0 24px 90px rgba(0, 0, 0, 0.34)',
           backdropFilter: 'blur(16px)',
-          WebkitBackdropFilter: 'blur(16px)',
         }}
       >
-        <div style={{ fontSize: '0.68rem', letterSpacing: '0.22em', textTransform: 'uppercase', color: 'rgba(182, 226, 255, 0.76)' }}>
-          Pattern Replay
-        </div>
-        <h1 style={{ margin: '8px 0 8px', fontSize: 'clamp(1.35rem, 3vw, 2rem)', lineHeight: 1.05 }}>A rhythm is returning after static.</h1>
-        <p style={{ margin: 0, color: 'rgba(235, 244, 255, 0.75)', fontSize: '0.9rem', lineHeight: 1.55 }}>
-          Source: LifeMap · {nodeName}
-        </p>
+        <p style={{ margin: '0 0 6px', color: '#9be7ff', letterSpacing: '0.18em', textTransform: 'uppercase', fontSize: 11 }}>Replay chamber</p>
+        <h1 style={{ margin: 0, fontSize: 'clamp(1.45rem, 4vw, 2.5rem)' }}>{nodeName}</h1>
+        <p style={{ margin: '8px 0 0', color: 'rgba(238,243,255,0.72)', lineHeight: 1.45 }}>{phaseDefinition.title}</p>
       </section>
 
-      <button
-        type="button"
-        aria-label="Center replay"
-        style={{
-          position: 'absolute',
-          right: 22,
-          top: 22,
-          zIndex: 15,
-          border: '1px solid rgba(142, 220, 255, 0.24)',
-          borderRadius: 999,
-          background: 'rgba(5, 9, 22, 0.46)',
-          color: 'rgba(235, 244, 255, 0.78)',
-          padding: '8px 12px',
-          fontSize: '0.74rem',
-          letterSpacing: '0.04em',
-          backdropFilter: 'blur(14px)',
-        }}
-      >
-        Center Replay
-      </button>
-
-      <button
-        type="button"
-        aria-label="Return to Focus"
-        onClick={returnToFocus}
-        style={{
-          position: 'absolute',
-          right: 22,
-          top: 68,
-          zIndex: 15,
-          border: '1px solid rgba(142, 220, 255, 0.24)',
-          borderRadius: 999,
-          background: 'rgba(5, 9, 22, 0.46)',
-          color: 'rgba(235, 244, 255, 0.78)',
-          padding: '8px 12px',
-          fontSize: '0.74rem',
-          letterSpacing: '0.04em',
-          backdropFilter: 'blur(14px)',
-        }}
-      >
-        Return to Focus
-      </button>
-
-      <ReplayPhaseRings activeSegment={activeSegment} progressPercent={progressPercent} reducedMotion={reducedMotion} />
-
-      <ReplayMetaPanel
-        morphology={morphology}
-        phase={replayPhase}
-        phaseDefinition={phaseDefinition}
-        activeSegment={activeSegment}
-        sourceLabel={`LifeMap · ${nodeName}`}
-        onReturnToFocus={returnToFocus}
-      />
-
+      <ReplayPhaseRings replayPhase={replayPhase} morphology={morphology} />
       <ReplayTimeline
-        phase={replayPhase}
-        activeSegment={activeSegment}
         progressMs={progressMs}
-        durationMs={REPLAY_DURATION_MS}
         playing={playing}
-        reducedMotion={reducedMotion}
-        onPlayPause={togglePlay}
+        scrubbing={scrubbing}
+        onScrubStart={() => setScrubbing(true)}
+        onScrubEnd={() => setScrubbing(false)}
         onScrub={scrubTo}
-        onScrubbingChange={setScrubbing}
+        onTogglePlay={togglePlay}
+      />
+      <ReplayMetaPanel
+        manifestId={manifestId}
+        nodeName={nodeName}
+        replayPhase={replayPhase}
+        phaseDefinition={phaseDefinition}
+        progressPercent={progressPercent}
+        activeSegment={activeSegment}
+        onReturnToFocus={returnToFocus}
       />
     </main>
   )
