@@ -6,11 +6,11 @@ import LifeMapScene from "./LifeMapScene";
 
 const SKY_PORTAL_KEY = "urai:transition:sky-to-life-map";
 
-function shouldPlaySkyPortal(searchParams: URLSearchParams) {
-  if (searchParams.get("transition") === "none") return false;
-  if (searchParams.get("transition") === "sky") return true;
+function shouldPlaySkyPortal(searchParams: URLSearchParams | ReadonlyURLSearchParams | null) {
+  if (searchParams?.get("transition") === "none") return false;
+  if (searchParams?.get("transition") === "sky") return true;
   if (typeof window === "undefined") return true;
-  return window.sessionStorage.getItem(SKY_PORTAL_KEY) === "1" || searchParams.get("from") === "ascent" || true;
+  return window.sessionStorage.getItem(SKY_PORTAL_KEY) === "1" || searchParams?.get("from") === "ascent" || true;
 }
 
 export function LifeMapSkyPortalShell() {
