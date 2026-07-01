@@ -41,9 +41,9 @@ export const launchRouteAssets: LaunchRouteAsset[] = [
   {
     route: '/replay',
     surface: 'replay-scene',
-    webp: `${assetRoot}/replay/replay-memory-film-main.webp`,
+    webp: `${bespokeRoot}/replay/replay-memory-film-bespoke-final.svg`,
     fallback: `${assetRoot}/replay/replay-memory-film-fallback.svg`,
-    mobileWebp: `${assetRoot}/replay/replay-memory-film-mobile.webp`,
+    mobileWebp: `${bespokeRoot}/replay/replay-memory-film-bespoke-final-mobile.svg`,
   },
   {
     route: '/mirror',
