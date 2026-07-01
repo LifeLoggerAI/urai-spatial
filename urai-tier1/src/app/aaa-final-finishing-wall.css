@@ -1,0 +1,219 @@
+/* URAI AAA+++ final finishing wall.
+   Additive only: polishes canonical route owners without replacing routes/components. */
+
+:root {
+  --urai-aaa-cyan: #8df4ff;
+  --urai-aaa-gold: #ffe7a8;
+  --urai-aaa-green: #98ffd8;
+  --urai-aaa-shadow: 0 28px 110px rgba(0, 0, 0, 0.52), 0 0 90px rgba(103, 232, 249, 0.10);
+}
+
+a:focus-visible,
+button:focus-visible,
+summary:focus-visible {
+  outline: 3px solid rgba(141, 244, 255, 0.82);
+  outline-offset: 4px;
+}
+
+.urai-genesis-home {
+  background:
+    radial-gradient(circle at var(--glow-x, 50%) var(--glow-y, 35%), rgba(177, 245, 255, 0.18), transparent 24rem),
+    linear-gradient(180deg, #020617 0%, #061827 44%, #071513 68%, #020504 100%) !important;
+}
+
+.urai-genesis-home__world::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  pointer-events: none;
+  background-image:
+    linear-gradient(180deg, rgba(0, 0, 0, 0.08), transparent 34%, rgba(0, 0, 0, 0.42) 74%, rgba(0, 0, 0, 0.82)),
+    url("/assets/urai/home/home-threshold-main.webp");
+  background-size: cover;
+  background-position: center;
+  opacity: 0.28;
+  mix-blend-mode: screen;
+  filter: saturate(1.35) contrast(1.08);
+}
+
+.urai-genesis-home__body { filter: drop-shadow(0 0 36px rgba(141, 244, 255, 0.38)); }
+
+.urai-genesis-home__body::after {
+  content: "You are here";
+  position: absolute;
+  left: 50%;
+  top: -2.4rem;
+  min-width: max-content;
+  transform: translateX(-50%);
+  color: rgba(238, 252, 255, 0.88);
+  font-size: 0.68rem;
+  font-weight: 950;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  text-shadow: 0 12px 40px rgba(0, 0, 0, 0.82);
+}
+
+.urai-genesis-home__orb { box-shadow: 0 0 84px rgba(141, 244, 255, 0.66), 0 0 190px rgba(141, 244, 255, 0.2) !important; }
+.urai-genesis-home__threshold-gate { min-height: 68px; transition: transform 220ms ease, border-color 220ms ease, background 220ms ease; }
+.urai-genesis-home__threshold-gate:hover,
+.urai-genesis-home__threshold-gate:focus-visible { border-color: rgba(230, 253, 255, 0.46) !important; }
+.urai-genesis-home__hero { max-width: min(560px, calc(100vw - 2rem)) !important; padding: clamp(1rem, 2vw, 1.4rem) !important; }
+.urai-genesis-home__copy { max-width: 46ch !important; }
+.urai-genesis-home__portals { max-width: min(980px, calc(100vw - 2rem)) !important; }
+
+[data-urai-route="ground-world"]::before { opacity: 0.44 !important; mix-blend-mode: luminosity !important; }
+[data-urai-route="ground-world"] :is([class*="ceiling"], [class*="horizon"]) { opacity: 0.26 !important; filter: saturate(0.5) blur(1.5px) !important; }
+[data-urai-route="ground-world"] :is([class*="floor"], [class*="grid"]) { filter: saturate(1.35) brightness(0.88); }
+[data-urai-route="ground-world"] [class*="stage"]::before {
+  content: "";
+  position: absolute;
+  left: 10%;
+  right: 8%;
+  bottom: 11%;
+  height: 18%;
+  pointer-events: none;
+  border: 1px solid rgba(255, 231, 168, 0.12);
+  border-radius: 50%;
+  background:
+    radial-gradient(ellipse at 20% 50%, rgba(255, 231, 168, 0.14), transparent 18%),
+    radial-gradient(ellipse at 54% 44%, rgba(152, 255, 216, 0.12), transparent 22%),
+    radial-gradient(ellipse at 82% 52%, rgba(141, 244, 255, 0.12), transparent 20%);
+  transform: perspective(760px) rotateX(62deg);
+}
+[data-urai-route="ground-world"] details[open] { border-color: rgba(152, 255, 216, 0.52) !important; box-shadow: 0 30px 110px rgba(0, 0, 0, 0.58), 0 0 52px rgba(152, 255, 216, 0.16) !important; }
+[data-urai-route="ground-world"] summary { min-height: 44px; }
+
+[data-testid="urai-r3f-canonical-lifemap"]::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  pointer-events: none;
+  background: radial-gradient(circle at 50% 42%, rgba(255, 255, 255, 0.04), transparent 16rem), url("/assets/urai/life-map/life-map-galaxy-main.webp");
+  background-size: cover;
+  background-position: center;
+  opacity: 0.19;
+  mix-blend-mode: screen;
+  filter: saturate(1.28) contrast(1.08);
+}
+[data-testid="urai-r3f-canonical-lifemap"] button { min-height: 36px; border-radius: 999px !important; box-shadow: 0 12px 38px rgba(0, 0, 0, 0.34); }
+[data-testid="urai-r3f-canonical-lifemap"] header::after {
+  content: "Private seed constellation · image-textured stars · Focus opens selection";
+  display: block;
+  margin-top: 0.75rem;
+  color: rgba(226, 252, 255, 0.68);
+  font-size: 0.74rem;
+  font-weight: 800;
+  line-height: 1.35;
+}
+
+[data-route-polish="selected-memory-chamber"]::before,
+[data-route-polish="cinematic-memory-film"]::before,
+[data-route-polish="reflection-realm"]::before,
+[data-route-polish="identity-consent-vault"]::before,
+[data-route-polish="privacy-control-room"]::before,
+[data-route-polish="emotional-weather-atlas"]::before,
+[data-route-polish="status-proof-room"]::before {
+  content: "";
+  position: absolute;
+  inset: 7% 7% 9%;
+  z-index: 1;
+  pointer-events: none;
+  border: 1px solid rgba(226, 252, 255, 0.11);
+  border-radius: clamp(2rem, 5vw, 4rem);
+  background: radial-gradient(ellipse at 50% 50%, rgba(226, 252, 255, 0.055), transparent 58%);
+  box-shadow: inset 0 0 120px rgba(255, 255, 255, 0.035), 0 0 160px rgba(103, 232, 249, 0.08);
+}
+
+[data-route-polish="selected-memory-chamber"] aside > div:first-child { position: relative; overflow: hidden; }
+[data-route-polish="selected-memory-chamber"] aside > div:first-child::after {
+  content: "Replay doorway";
+  position: absolute;
+  left: 1rem;
+  bottom: 1rem;
+  border: 1px solid rgba(226, 252, 255, 0.22);
+  border-radius: 999px;
+  padding: 0.55rem 0.75rem;
+  color: rgba(248, 253, 255, 0.92);
+  background: rgba(2, 8, 20, 0.66);
+  font-size: 0.66rem;
+  font-weight: 950;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+[data-route-polish="cinematic-memory-film"]::after {
+  content: "";
+  position: absolute;
+  inset: 5% 2%;
+  z-index: 2;
+  pointer-events: none;
+  background: repeating-linear-gradient(90deg, rgba(255,255,255,0.08) 0 1px, transparent 1px 7.2vw), linear-gradient(90deg, rgba(0,0,0,0.72), transparent 18%, transparent 82%, rgba(0,0,0,0.72));
+  opacity: 0.28;
+}
+[data-route-polish="reflection-realm"] aside article p::after { content: " Mirror does not judge."; color: rgba(141, 244, 255, 0.86); }
+[data-route-polish="identity-consent-vault"] aside article { position: relative; }
+[data-route-polish="identity-consent-vault"] aside article::after {
+  content: "owner gated";
+  position: absolute;
+  right: 1rem;
+  bottom: 0.9rem;
+  color: rgba(255, 231, 168, 0.66);
+  font-size: 0.58rem;
+  font-weight: 950;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+
+.urai-status-receipts,
+.urai-status-blockers { position: relative; z-index: 10; margin-top: 1.25rem; display: grid; gap: 0.75rem; }
+.urai-status-receipts article,
+.urai-status-blockers article { border: 1px solid rgba(226, 252, 255, 0.12); border-radius: 1.2rem; background: rgba(2, 8, 20, 0.5); padding: 1rem; box-shadow: var(--urai-aaa-shadow); backdrop-filter: blur(18px); }
+.urai-status-receipts span,
+.urai-status-blockers span { display: block; margin-bottom: 0.35rem; color: var(--urai-aaa-cyan); font-size: 0.62rem; font-weight: 950; letter-spacing: 0.22em; text-transform: uppercase; }
+.urai-status-receipts strong,
+.urai-status-blockers strong { display: block; color: white; font-size: 1rem; }
+
+[data-route-polish="privacy-control-room"] article,
+[data-route-polish="emotional-weather-atlas"] article { box-shadow: var(--urai-aaa-shadow); }
+[data-route-polish="emotional-weather-atlas"] a { min-height: 44px; }
+
+.urai-xr-portal { background: radial-gradient(circle at 50% 28%, rgba(141, 244, 255, 0.22), transparent 20rem), url("/assets/urai/xr/quest-entry-main.webp"), linear-gradient(180deg, #020617 0%, #071225 60%, #01030a 100%) !important; background-size: cover; background-position: center; }
+.urai-xr-portal::after {
+  content: "Quest proof state: manual hardware verification required";
+  position: fixed;
+  left: 1rem;
+  top: 1rem;
+  z-index: 40;
+  max-width: min(430px, calc(100vw - 2rem));
+  border: 1px solid rgba(255, 231, 168, 0.2);
+  border-radius: 999px;
+  padding: 0.7rem 1rem;
+  color: #fff7e8;
+  background: rgba(2, 8, 20, 0.66);
+  box-shadow: var(--urai-aaa-shadow);
+  font-size: 0.7rem;
+  font-weight: 950;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  backdrop-filter: blur(18px);
+}
+
+@media (max-width: 820px) {
+  .urai-genesis-home__world::before { background-image: linear-gradient(180deg, transparent 0 38%, rgba(0, 0, 0, 0.55) 78%, rgba(0, 0, 0, 0.88)), url("/assets/urai/home/home-threshold-mobile.webp"); opacity: 0.32; }
+  .urai-genesis-home__threshold-gate { min-height: 54px; max-width: calc(100vw - 1.5rem) !important; font-size: 0.82rem; }
+  .urai-genesis-home__body::after { display: none; }
+  [data-route-polish="selected-memory-chamber"] section,
+  [data-route-polish="cinematic-memory-film"] section,
+  [data-route-polish="reflection-realm"] section,
+  [data-route-polish="identity-consent-vault"] section { align-items: start !important; padding-top: 5.2rem !important; }
+  [data-route-polish="selected-memory-chamber"] h1,
+  [data-route-polish="cinematic-memory-film"] h1,
+  [data-route-polish="reflection-realm"] h1,
+  [data-route-polish="identity-consent-vault"] h1 { font-size: clamp(3.2rem, 17vw, 5rem) !important; }
+  .urai-xr-portal::after { position: relative; display: block; margin: 0.75rem; left: auto; top: auto; border-radius: 1rem; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: 0.001ms !important; animation-iteration-count: 1 !important; scroll-behavior: auto !important; transition-duration: 0.001ms !important; }
+}
