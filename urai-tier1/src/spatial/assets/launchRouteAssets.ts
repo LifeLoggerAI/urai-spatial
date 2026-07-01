@@ -27,9 +27,9 @@ export const launchRouteAssets: LaunchRouteAsset[] = [
   {
     route: '/life-map',
     surface: 'lifemap-star',
-    webp: `${assetRoot}/life-map/life-map-galaxy-main.webp`,
+    webp: `${bespokeRoot}/life-map/life-map-galaxy-bespoke-final.svg`,
     fallback: `${assetRoot}/life-map/life-map-galaxy-fallback.svg`,
-    mobileWebp: `${assetRoot}/life-map/life-map-galaxy-mobile.webp`,
+    mobileWebp: `${bespokeRoot}/life-map/life-map-galaxy-bespoke-final-mobile.svg`,
   },
   {
     route: '/focus',
