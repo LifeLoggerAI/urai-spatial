@@ -1,14 +1,20 @@
-import { uraiNow, uraiRandom, uraiTime } from "@/lib/uraiDeterminism";
 "use client";
 
 import { useRef } from "react";
 import { useFrame } from "@react-three/fiber";
 import * as THREE from "three";
+import { uraiRandom } from "@/lib/uraiDeterminism";
+
+type Star = {
+  id: number;
+  position: [number, number, number];
+  size: number;
+};
 
 export default function Starfield({ visible = true }) {
   const group = useRef<THREE.Group>(null);
 
-  const stars = [];
+  const stars: Star[] = [];
   const COUNT = 120;
 
   for (let i = 0; i < COUNT; i++) {
@@ -35,10 +41,7 @@ export default function Starfield({ visible = true }) {
       {stars.map((s) => (
         <mesh key={s.id} position={s.position}>
           <sphereGeometry args={[s.size, 8, 8]} />
-          <meshBasicMaterial
-            color="#dbe7ff"
-            toneMapped={false}
-          />
+          <meshBasicMaterial color="#dbe7ff" toneMapped={false} />
         </mesh>
       ))}
     </group>
