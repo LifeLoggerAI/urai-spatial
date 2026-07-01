@@ -19,9 +19,9 @@ const routeArt = {
   },
   ground: {
     surface: 'ground',
-    label: 'Ground World',
-    primary: '/assets/urai/ground/ground-world-main.webp',
-    mobile: '/assets/urai/ground/ground-world-mobile.webp',
+    label: 'Ground World bespoke final',
+    primary: '/assets/urai/bespoke/ground/ground-world-bespoke-final.svg',
+    mobile: '/assets/urai/bespoke/ground/ground-world-bespoke-final-mobile.svg',
   },
   lifeMap: {
     surface: 'life-map',
