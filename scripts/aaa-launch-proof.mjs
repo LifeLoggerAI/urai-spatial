@@ -31,7 +31,7 @@ const projectId = process.env.FIREBASE_PROJECT_ID || 'urai-4dc1d';
 const routeExpectations = [
   { route: '/', required: ['Own your life', 'Step inside yourself'] },
   { route: '/home', required: ['Own your life', 'Step inside yourself'] },
-  { route: '/ground', required: ['Ground', 'private operating world'] },
+  { route: '/ground', required: ['Ground', 'walkable-first-person-ground-layer'] },
   { route: '/life-map', required: ['Life Map', 'memory star'] },
   { route: '/focus', required: ['The Quiet Reset', 'Selected memory camera chamber'] },
   { route: '/replay', required: ['Replay the thread', 'Film beats'] },
@@ -258,8 +258,6 @@ async function checkDns() {
   result.githubPagesApex = apexA.length > 0 && apexA.every((ip) => expectedGithubPagesIpv4.has(ip));
   result.httpsWorks = Boolean(result.checks.httpsApex?.value?.ok && result.checks.httpsSitemap?.value?.ok);
   result.complete = Boolean(result.githubPagesApex && result.httpsWorks);
-  writeJson('foundation-dns.json', result);
-  return result;
 }
 
 async function captureScreenshots() {
