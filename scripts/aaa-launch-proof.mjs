@@ -33,7 +33,7 @@ const routeExpectations = [
   { route: '/home', required: ['Own your life', 'Step inside yourself'] },
   { route: '/ground', required: ['Ground', 'private operating world'] },
   { route: '/life-map', required: ['Life Map', 'memory star'] },
-  { route: '/focus', required: ['The Quiet Reset', 'Selected memory chamber'] },
+  { route: '/focus', required: ['The Quiet Reset', 'Selected memory camera chamber'] },
   { route: '/replay', required: ['Replay the thread', 'Film beats'] },
   { route: '/mirror', required: ['Mirror', 'pattern'] },
   { route: '/passport', required: ['Passport', 'Your life stays yours'] },
