@@ -48,16 +48,16 @@ export const launchRouteAssets: LaunchRouteAsset[] = [
   {
     route: '/mirror',
     surface: 'mirror',
-    webp: `${assetRoot}/mirror/mirror-reflection-main.webp`,
+    webp: `${bespokeRoot}/mirror/mirror-reflection-bespoke-final.svg`,
     fallback: `${assetRoot}/mirror/mirror-reflection-fallback.svg`,
-    mobileWebp: `${assetRoot}/mirror/mirror-reflection-mobile.webp`,
+    mobileWebp: `${bespokeRoot}/mirror/mirror-reflection-bespoke-final-mobile.svg`,
   },
   {
     route: '/passport',
     surface: 'passport',
-    webp: `${assetRoot}/passport/passport-vault-main.webp`,
+    webp: `${bespokeRoot}/passport/passport-vault-bespoke-final.svg`,
     fallback: `${assetRoot}/passport/passport-vault-fallback.svg`,
-    mobileWebp: `${assetRoot}/passport/passport-vault-mobile.webp`,
+    mobileWebp: `${bespokeRoot}/passport/passport-vault-bespoke-final-mobile.svg`,
   },
   {
     route: '/privacy-controls',
