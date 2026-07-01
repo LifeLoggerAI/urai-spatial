@@ -33,6 +33,11 @@ export default function LifeMapPage() {
         .lifeGalaxy .memoryStar.selected {
           transform: translate(-50%, -50%) translateZ(calc(var(--z) * 26px + 110px)) scale(1.08) !important;
         }
+        .lifeGalaxy .memoryStar.selected .starLabel {
+          top: calc(50% - 2.55rem) !important;
+          background: rgba(0, 0, 0, 0.58) !important;
+          box-shadow: 0 18px 52px rgba(0, 0, 0, 0.42), 0 0 42px rgba(165, 243, 252, 0.16) !important;
+        }
         .lifeGalaxy .memoryStar.selected .starLabel::after {
           content: 'Double click / Enter Focus';
           display: block;
@@ -59,10 +64,10 @@ export default function LifeMapPage() {
         }
         .lifeGalaxy .controlPlate {
           display: block !important;
-          right: 1rem !important;
+          right: 0.75rem !important;
           bottom: 4.85rem !important;
           left: auto !important;
-          width: min(360px, calc(100vw - 2rem)) !important;
+          width: min(330px, calc(100vw - 2rem)) !important;
           padding: 0.92rem !important;
           z-index: 60 !important;
         }
@@ -88,6 +93,9 @@ export default function LifeMapPage() {
           }
           .lifeGalaxy .titlePlate h1 {
             font-size: 1.55rem !important;
+          }
+          .lifeGalaxy .memoryStar.selected .starLabel {
+            top: calc(50% - 2.25rem) !important;
           }
           .lifeGalaxy .controlPlate {
             left: 50% !important;
