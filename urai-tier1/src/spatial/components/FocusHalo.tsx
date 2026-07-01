@@ -9,12 +9,14 @@ export default function FocusHalo(props: {
 }) {
   if (!props.visible || !props.star) return null
 
+  const intensity = props.star.intensity ?? 0.5
+
   return (
     <mesh
       position={props.star.position}
       scale={[3.6, 3.6, 3.6]}
     >
-      <sphereGeometry args={[0.2 + props.star.intensity * 0.14, 24, 24]} />
+      <sphereGeometry args={[0.2 + intensity * 0.14, 24, 24]} />
       <meshBasicMaterial
         color="#9cb8ff"
         transparent
