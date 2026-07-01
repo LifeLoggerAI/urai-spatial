@@ -4,7 +4,9 @@ This document is the final launch wall for the public spatial app. It separates 
 
 ## Repo-side proof now covered
 
+- `/` renders `FinalHomeThreshold`, which renders the same `HomeSpatialWorldFinal` world used by Home.
 - Home is owned by `HomeSpatialWorldFinal` and keeps one sky/ground/orb/body threshold.
+- Home canon is locked: clicking the sky ascends the camera into `/life-map?from=home-sky`; clicking the ground descends into `/ground?from=home`; the avatar/body/orb stay anchored in the Home/Ground world while the memory camera moves upward.
 - Ground is an embodied private operating world with reception, privacy, work, memory, wellness, helpers, objects, and a mobile proof tray.
 - Life Map uses the canonical R3F route with 3D camera motion, image-textured memory stars, Focus entry, and Replay entry.
 - Focus is the selected-memory camera chamber with one dominant memory and one Replay doorway.
@@ -17,7 +19,8 @@ This document is the final launch wall for the public spatial app. It separates 
 
 | Route | Human visual question | Expected AAA signal |
 | --- | --- | --- |
-| `/home` | Does it feel like a real threshold world, not a landing hero? | Sky above, ground below, orb alive, body/avatar presence, clear ground/sky portals. |
+| `/` | Does the root land inside the same Home threshold world? | Same sky/ground/orb/body threshold as `/home`; sky click opens Life Map. |
+| `/home` | Does it feel like a real threshold world, not a landing hero? | Sky above, ground below, orb alive, body/avatar presence, ground descent, sky ascent into `/life-map`. |
 | `/ground` | Does it feel like a place? | Reception, privacy sanctuary, work/logistics/wellness/archive zones, helpers, objects, inspector, no memory-galaxy confusion. |
 | `/life-map` | Does it feel like a spatial private galaxy? | 3D camera, parallax, image stars, selectable memory star, Focus/Replay route movement. |
 | `/focus` | Does it feel like selected-memory chamber? | One dominant memory, image readout, clear Replay doorway, no extra avatar/orb. |
