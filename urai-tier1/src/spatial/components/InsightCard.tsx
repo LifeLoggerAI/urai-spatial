@@ -15,13 +15,28 @@ type ProofDrawer = {
   evidence?: string[];
 };
 
-type SafeInsight = UraiInsight & {
+type SafeInsight = Omit<UraiInsight, "proofDrawer"> & {
   id: string;
   title?: string;
   summary?: string;
   confidence?: number;
   proofDrawer?: ProofDrawer;
 };
+
+function normalizeEvidence(value: unknown): string[] {
+  if (!Array.isArray(value)) return ["Memory signal", "Pattern signal", "Replay signal"];
+
+  return value.map((item) => {
+    if (typeof item === "string") return item;
+    if (item && typeof item === "object") {
+      const record = item as Record<string, unknown>;
+      return [record.label, record.observed, record.baseline]
+        .filter((part): part is string => typeof part === "string" && part.length > 0)
+        .join(" — ") || "Evidence signal";
+    }
+    return String(item ?? "Evidence signal");
+  });
+}
 
 export function InsightCard({ insight, onFeedback }: InsightCardProps) {
   const [open, setOpen] = useState(false);
@@ -30,19 +45,18 @@ export function InsightCard({ insight, onFeedback }: InsightCardProps) {
     const source = (insight ?? {}) as any;
 
     return {
+      ...source,
       id: String(source.id ?? "demo-insight"),
       title: String(source.title ?? "Insight ready"),
       summary: String(source.summary ?? "URAI found a pattern worth reviewing."),
       confidence: typeof source.confidence === "number" ? source.confidence : 0.72,
       proofDrawer: {
         why:
-          source.proofDrawer?.why ??
-          "This insight is based on available memory, mood, and pattern signals.",
-        evidence: Array.isArray(source.proofDrawer?.evidence)
-          ? source.proofDrawer.evidence
-          : ["Memory signal", "Pattern signal", "Replay signal"],
+          typeof source.proofDrawer?.why === "string"
+            ? source.proofDrawer.why
+            : "This insight is based on available memory, mood, and pattern signals.",
+        evidence: normalizeEvidence(source.proofDrawer?.evidence),
       },
-      ...source,
     };
   }, [insight]);
 
