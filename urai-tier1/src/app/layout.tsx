@@ -34,6 +34,7 @@ import './aaa-launch-proof-layer.css'
 import './screenshot-audit-fixes.css'
 import './aaa-real-world-final-pass.css'
 import './urai-canon-camera-transitions.css'
+import './aaa-interaction-final-hotfix.css'
 import UraiCinematicBackdrop from './UraiCinematicBackdrop'
 
 export const metadata: Metadata = {
