@@ -12,7 +12,7 @@ type RouteVisual = {
 const visuals: RouteVisual[] = [
   { key: 'home', label: 'Home threshold bespoke final', image: '/assets/urai/bespoke/home/home-threshold-bespoke-final.svg' },
   { key: 'ground', label: 'Ground world bespoke final', image: '/assets/urai/bespoke/ground/ground-world-bespoke-final.svg' },
-  { key: 'life-map', label: 'Life Map galaxy', image: '/assets/urai/life-map/life-map-galaxy-main.webp' },
+  { key: 'life-map', label: 'Life Map galaxy bespoke final', image: '/assets/urai/bespoke/life-map/life-map-galaxy-bespoke-final.svg' },
   { key: 'focus', label: 'Focus memory chamber', image: '/assets/urai/focus/focus-memory-chamber-main.webp' },
   { key: 'replay', label: 'Replay memory film', image: '/assets/urai/replay/replay-memory-film-main.webp' },
   { key: 'mirror', label: 'Mirror reflection realm', image: '/assets/urai/mirror/mirror-reflection-main.webp' },
