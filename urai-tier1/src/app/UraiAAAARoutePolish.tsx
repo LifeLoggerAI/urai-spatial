@@ -9,227 +9,238 @@ const ROUTE_CLASSES = [
   "urai-route-replay",
 ];
 
-function cleanText(value: string | null | undefined): string {
-  return (value || "").replace(/\s+/g, " ").trim();
+function txt(el: Element | null): string {
+  return (el?.textContent || "").replace(/\s+/g, " ").trim();
 }
 
-function removeRuntimeNodes() {
-  document.querySelector<HTMLElement>(".urai-spatial-focus-cue")?.remove();
-  document.querySelector<HTMLElement>(".urai-spatial-reticle")?.remove();
-  document.querySelector<HTMLElement>(".urai-spatial-depth-halo")?.remove();
-}
-
-function clearMarkers(root: HTMLElement) {
-  ROUTE_CLASSES.forEach((className) => root.classList.remove(className));
-  root.classList.remove("urai-life-selected", "urai-spatial-dragging", "urai-spatial-warping");
+function cleanup(root: HTMLElement) {
+  ROUTE_CLASSES.forEach((c) => root.classList.remove(c));
+  root.classList.remove("urai-spatial-dragging", "urai-spatial-warping", "urai-spatial-hotspot-hover");
 
   document
-    .querySelectorAll<HTMLElement>(".urai-spatial-memory-node")
+    .querySelectorAll<HTMLElement>(
+      ".urai-spatial-world-stage,.urai-spatial-memory-node,.urai-spatial-memory-armed"
+    )
     .forEach((el) => {
-      el.classList.remove("urai-spatial-memory-node", "urai-spatial-memory-armed");
+      el.classList.remove("urai-spatial-world-stage", "urai-spatial-memory-node", "urai-spatial-memory-armed");
       el.removeAttribute("data-urai-spatial-node");
     });
+
+  document
+    .querySelectorAll<HTMLElement>(
+      ".urai-spatial-hotspot,.urai-spatial-hud,.urai-spatial-depth-meter,.urai-spatial-reticle,.urai-spatial-warp-flash"
+    )
+    .forEach((el) => el.remove());
 }
 
-function ensureRuntimeNode(className: string, text?: string): HTMLElement {
-  let node = document.querySelector<HTMLElement>(`.${className}`);
-  if (!node) {
-    node = document.createElement("div");
-    node.className = className;
-    if (text) node.textContent = text;
-    document.body.appendChild(node);
+function node(className: string, text?: string): HTMLElement {
+  let el = document.querySelector<HTMLElement>(`.${className}`);
+  if (!el) {
+    el = document.createElement("div");
+    el.className = className;
+    if (text) el.textContent = text;
+    document.body.appendChild(el);
   }
-  return node;
+  return el;
 }
 
-function findQuietResetNode(): HTMLElement | null {
+function findWorldStage(): HTMLElement | null {
+  const candidates = Array.from(document.querySelectorAll<HTMLElement>("main, [data-testid], section, article, body > div"))
+    .map((el) => ({ el, r: el.getBoundingClientRect() }))
+    .filter(({ el, r }) => {
+      if (el.closest(".urai-spatial-hud,.urai-spatial-hotspot,.urai-spatial-depth-meter")) return false;
+      return r.width > window.innerWidth * 0.55 && r.height > window.innerHeight * 0.55;
+    })
+    .sort((a, b) => b.r.width * b.r.height - a.r.width * a.r.height);
+
+  return candidates[0]?.el || document.querySelector<HTMLElement>("main");
+}
+
+function findQuietResetAnchor(): { x: number; y: number } {
   const all = Array.from(document.querySelectorAll<HTMLElement>("a,button,[role='button'],div,span,article,section"));
-  const selectedPanel = all.find((el) => cleanText(el.textContent).includes("SELECTED STAR"));
+  const selectedPanel = all.find((el) => txt(el).includes("SELECTED STAR"));
 
   const candidates = all
-    .filter((el) => cleanText(el.textContent).includes("The Quiet Reset"))
+    .filter((el) => txt(el).includes("The Quiet Reset"))
     .filter((el) => !selectedPanel || !selectedPanel.contains(el))
-    .map((el) => {
-      const rect = el.getBoundingClientRect();
-      return { el, rect };
-    })
-    .filter(({ rect }) => {
-      return (
-        rect.width >= 12 &&
-        rect.height >= 8 &&
-        rect.width < 380 &&
-        rect.height < 190 &&
-        rect.left > -20 &&
-        rect.top > -20 &&
-        rect.left < window.innerWidth - 20 &&
-        rect.top < window.innerHeight - 20
-      );
+    .map((el) => ({ el, r: el.getBoundingClientRect() }))
+    .filter(({ r }) => {
+      return r.width > 8 && r.height > 8 && r.width < 420 && r.height < 220 &&
+        r.left > 0 && r.top > 0 && r.left < window.innerWidth && r.top < window.innerHeight;
     })
     .sort((a, b) => {
-      const ax = a.rect.left + a.rect.width / 2;
-      const ay = a.rect.top + a.rect.height / 2;
-      const bx = b.rect.left + b.rect.width / 2;
-      const by = b.rect.top + b.rect.height / 2;
-      const ad = Math.hypot(ax - window.innerWidth * 0.72, ay - window.innerHeight * 0.48);
-      const bd = Math.hypot(bx - window.innerWidth * 0.72, by - window.innerHeight * 0.48);
-      return ad - bd;
+      const ax = a.r.left + a.r.width / 2;
+      const ay = a.r.top + a.r.height / 2;
+      const bx = b.r.left + b.r.width / 2;
+      const by = b.r.top + b.r.height / 2;
+      return (
+        Math.hypot(ax - window.innerWidth * 0.74, ay - window.innerHeight * 0.50) -
+        Math.hypot(bx - window.innerWidth * 0.74, by - window.innerHeight * 0.50)
+      );
     });
 
-  return candidates[0]?.el || null;
+  const best = candidates[0]?.r;
+  if (best) {
+    return { x: best.left + best.width / 2, y: best.top + best.height / 2 };
+  }
+
+  return { x: window.innerWidth * 0.74, y: window.innerHeight * 0.50 };
 }
 
 function wireLifeMap(root: HTMLElement, signal: AbortSignal) {
+  const stage = findWorldStage();
+  if (stage) stage.classList.add("urai-spatial-world-stage");
+
+  const hud = node("urai-spatial-hud");
+  hud.innerHTML = `
+    <b>SPATIAL ACTIVE</b>
+    <span>Drag = orbit</span>
+    <span>Scroll = depth</span>
+    <span>Hover star = magnetic</span>
+    <span>Double-click = Focus</span>
+  `;
+
+  const meter = node("urai-spatial-depth-meter");
+  meter.innerHTML = `<b>DEPTH</b><span>1.00x</span>`;
+
+  const hotspot = node("urai-spatial-hotspot");
+  hotspot.setAttribute("role", "button");
+  hotspot.setAttribute("tabindex", "0");
+  hotspot.setAttribute("aria-label", "The Quiet Reset. Hover, double click, or press Enter to enter Focus.");
+  hotspot.innerHTML = `
+    <i></i>
+    <b>The Quiet Reset</b>
+    <span>Hover / double-click</span>
+  `;
+
+  node("urai-spatial-reticle");
+  node("urai-spatial-warp-flash");
+
   let pointerX = 0;
   let pointerY = 0;
   let orbitX = 0;
   let orbitY = 0;
-  let depth = 1;
+  let panX = 0;
+  let panY = 0;
+  let zoom = 1;
   let dragging = false;
   let lastX = 0;
   let lastY = 0;
   let raf = 0;
 
-  const reticle = ensureRuntimeNode("urai-spatial-reticle");
-  const halo = ensureRuntimeNode("urai-spatial-depth-halo");
-  const cue = ensureRuntimeNode("urai-spatial-focus-cue", "Double click / Enter Focus");
+  const placeHotspot = () => {
+    const pos = findQuietResetAnchor();
+    root.style.setProperty("--urai-hotspot-x", `${pos.x}px`);
+    root.style.setProperty("--urai-hotspot-y", `${pos.y}px`);
+  };
 
-  const writeVars = () => {
+  const write = () => {
     raf = 0;
 
-    const parallaxX = pointerX * 18 + orbitX * 1.8;
-    const parallaxY = pointerY * 12 + orbitY * 1.2;
-    const twist = orbitX * 0.025;
-
-    root.style.setProperty("--urai-parallax-x", `${parallaxX.toFixed(2)}px`);
-    root.style.setProperty("--urai-parallax-y", `${parallaxY.toFixed(2)}px`);
+    root.style.setProperty("--urai-pointer-x", `${pointerX}px`);
+    root.style.setProperty("--urai-pointer-y", `${pointerY}px`);
     root.style.setProperty("--urai-orbit-x", `${orbitX.toFixed(2)}deg`);
     root.style.setProperty("--urai-orbit-y", `${orbitY.toFixed(2)}deg`);
-    root.style.setProperty("--urai-depth-scale", depth.toFixed(3));
-    root.style.setProperty("--urai-twist", `${twist.toFixed(2)}deg`);
-    root.style.setProperty("--urai-pointer-screen-x", `${((pointerX + 1) * 50).toFixed(2)}vw`);
-    root.style.setProperty("--urai-pointer-screen-y", `${((pointerY + 1) * 50).toFixed(2)}vh`);
+    root.style.setProperty("--urai-pan-x", `${panX.toFixed(2)}px`);
+    root.style.setProperty("--urai-pan-y", `${panY.toFixed(2)}px`);
+    root.style.setProperty("--urai-zoom", zoom.toFixed(3));
+    root.style.setProperty("--urai-dust-x", `${(pointerX / Math.max(1, window.innerWidth) - 0.5) * 34}px`);
+    root.style.setProperty("--urai-dust-y", `${(pointerY / Math.max(1, window.innerHeight) - 0.5) * 24}px`);
+
+    const span = meter.querySelector("span");
+    if (span) span.textContent = `${zoom.toFixed(2)}x`;
   };
 
   const schedule = () => {
-    if (!raf) raf = window.requestAnimationFrame(writeVars);
-  };
-
-  const markSelected = () => {
-    const node = findQuietResetNode();
-    if (!node) return;
-
-    node.classList.add("urai-spatial-memory-node");
-    node.dataset.uraiSpatialNode = "quiet-reset";
-    node.setAttribute("tabindex", node.getAttribute("tabindex") || "0");
-    node.setAttribute("role", node.getAttribute("role") || "button");
-    node.setAttribute("aria-label", "The Quiet Reset. Double click or press Enter to enter Focus.");
-
-    const rect = node.getBoundingClientRect();
-    const x = rect.left + rect.width / 2;
-    const y = rect.top + rect.height / 2;
-
-    root.classList.add("urai-life-selected");
-    root.style.setProperty("--urai-selected-x", `${x}px`);
-    root.style.setProperty("--urai-selected-y", `${y}px`);
-    root.style.setProperty("--urai-cue-x", `${Math.max(130, Math.min(window.innerWidth - 170, x + 102))}px`);
-    root.style.setProperty("--urai-cue-y", `${Math.max(88, Math.min(window.innerHeight - 110, y - 44))}px`);
+    if (!raf) raf = window.requestAnimationFrame(write);
   };
 
   const enterFocus = () => {
     root.classList.add("urai-spatial-warping");
     window.setTimeout(() => {
       window.location.assign("/focus?memoryId=quiet-reset&from=life-map-star");
-    }, 260);
+    }, 280);
   };
 
-  const onPointerMove = (event: PointerEvent) => {
-    const nx = event.clientX / Math.max(1, window.innerWidth);
-    const ny = event.clientY / Math.max(1, window.innerHeight);
-
-    pointerX = nx * 2 - 1;
-    pointerY = ny * 2 - 1;
-
-    root.style.setProperty("--urai-cursor-x", `${event.clientX}px`);
-    root.style.setProperty("--urai-cursor-y", `${event.clientY}px`);
+  const pointerMove = (e: PointerEvent) => {
+    pointerX = e.clientX;
+    pointerY = e.clientY;
 
     if (dragging) {
-      const dx = event.clientX - lastX;
-      const dy = event.clientY - lastY;
+      const dx = e.clientX - lastX;
+      const dy = e.clientY - lastY;
 
-      orbitX = Math.max(-18, Math.min(18, orbitX + dx * 0.035));
-      orbitY = Math.max(-12, Math.min(12, orbitY - dy * 0.03));
+      orbitX = Math.max(-18, Math.min(18, orbitX + dx * 0.055));
+      orbitY = Math.max(-12, Math.min(12, orbitY - dy * 0.05));
+      panX = Math.max(-38, Math.min(38, panX + dx * 0.12));
+      panY = Math.max(-26, Math.min(26, panY + dy * 0.10));
 
-      lastX = event.clientX;
-      lastY = event.clientY;
+      lastX = e.clientX;
+      lastY = e.clientY;
     }
 
     schedule();
   };
 
-  const onPointerDown = (event: PointerEvent) => {
+  const pointerDown = (e: PointerEvent) => {
+    if ((e.target as HTMLElement | null)?.closest("a,button,.urai-spatial-hotspot")) return;
     dragging = true;
-    lastX = event.clientX;
-    lastY = event.clientY;
+    lastX = e.clientX;
+    lastY = e.clientY;
     root.classList.add("urai-spatial-dragging");
   };
 
-  const onPointerUp = () => {
+  const pointerUp = () => {
     dragging = false;
     root.classList.remove("urai-spatial-dragging");
   };
 
-  const onWheel = (event: WheelEvent) => {
-    if (!root.classList.contains("urai-route-life-map")) return;
+  const wheel = (e: WheelEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
 
-    depth = Math.max(0.92, Math.min(1.13, depth + (event.deltaY < 0 ? 0.018 : -0.018)));
+    const next = zoom + (e.deltaY < 0 ? 0.055 : -0.055);
+    zoom = Math.max(0.72, Math.min(1.42, next));
+
+    root.classList.add("urai-spatial-depth-pulse");
+    window.setTimeout(() => root.classList.remove("urai-spatial-depth-pulse"), 180);
+
     schedule();
   };
 
-  const onDoubleClick = (event: MouseEvent) => {
-    const target = event.target as HTMLElement | null;
-    if (!target) return;
-    const node = target.closest<HTMLElement>(".urai-spatial-memory-node");
-    if (node) enterFocus();
+  const resize = () => {
+    placeHotspot();
+    schedule();
   };
 
-  const onKeyDown = (event: KeyboardEvent) => {
-    if (event.key !== "Enter") return;
-    const active = document.activeElement as HTMLElement | null;
-    if (active?.closest(".urai-spatial-memory-node")) enterFocus();
-  };
+  hotspot.addEventListener("mouseenter", () => root.classList.add("urai-spatial-hotspot-hover"), { signal });
+  hotspot.addEventListener("mouseleave", () => root.classList.remove("urai-spatial-hotspot-hover"), { signal });
+  hotspot.addEventListener("dblclick", enterFocus, { signal });
+  hotspot.addEventListener("click", () => {
+    hotspot.classList.add("urai-spatial-hotspot-tap");
+    window.setTimeout(() => hotspot.classList.remove("urai-spatial-hotspot-tap"), 220);
+  }, { signal });
+  hotspot.addEventListener("keydown", (e) => {
+    if ((e as KeyboardEvent).key === "Enter") enterFocus();
+  }, { signal });
 
-  const onMouseOver = (event: MouseEvent) => {
-    const target = event.target as HTMLElement | null;
-    const node = target?.closest<HTMLElement>(".urai-spatial-memory-node");
-    if (node) node.classList.add("urai-spatial-memory-armed");
-  };
+  window.addEventListener("pointermove", pointerMove, { signal });
+  window.addEventListener("pointerdown", pointerDown, { signal });
+  window.addEventListener("pointerup", pointerUp, { signal });
+  window.addEventListener("pointercancel", pointerUp, { signal });
+  window.addEventListener("resize", resize, { signal });
 
-  const onMouseOut = (event: MouseEvent) => {
-    const target = event.target as HTMLElement | null;
-    const node = target?.closest<HTMLElement>(".urai-spatial-memory-node");
-    if (node) node.classList.remove("urai-spatial-memory-armed");
-  };
+  // Capture phase + passive false is the important fix for scroll-wheel depth.
+  window.addEventListener("wheel", wheel, { signal, passive: false, capture: true });
+  document.addEventListener("wheel", wheel, { signal, passive: false, capture: true });
 
-  window.addEventListener("pointermove", onPointerMove, { signal });
-  window.addEventListener("pointerdown", onPointerDown, { signal });
-  window.addEventListener("pointerup", onPointerUp, { signal });
-  window.addEventListener("pointercancel", onPointerUp, { signal });
-  window.addEventListener("wheel", onWheel, { signal, passive: true });
-  window.addEventListener("dblclick", onDoubleClick, { signal });
-  window.addEventListener("keydown", onKeyDown, { signal });
-  document.body.addEventListener("mouseover", onMouseOver, { signal });
-  document.body.addEventListener("mouseout", onMouseOut, { signal });
+  placeHotspot();
+  write();
 
-  writeVars();
-  markSelected();
-
-  const timers = [120, 400, 900, 1600].map((delay) => window.setTimeout(markSelected, delay));
+  const timers = [150, 500, 1200].map((ms) => window.setTimeout(placeHotspot, ms));
   signal.addEventListener("abort", () => {
     timers.forEach(window.clearTimeout);
     if (raf) window.cancelAnimationFrame(raf);
-    reticle.remove();
-    halo.remove();
-    cue.remove();
   });
 }
 
@@ -240,8 +251,7 @@ export default function UraiAAAARoutePolish() {
     const root = document.documentElement;
     const controller = new AbortController();
 
-    clearMarkers(root);
-    removeRuntimeNodes();
+    cleanup(root);
 
     if (pathname.startsWith("/life-map")) {
       root.classList.add("urai-route-life-map");
@@ -254,8 +264,7 @@ export default function UraiAAAARoutePolish() {
 
     return () => {
       controller.abort();
-      clearMarkers(root);
-      removeRuntimeNodes();
+      cleanup(root);
     };
   }, [pathname]);
 
