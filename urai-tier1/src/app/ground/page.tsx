@@ -178,7 +178,7 @@ export default function GroundRealmPage() {
         </aside>
       </section>
 
-      <section className={styles.mobileProof} aria-label="Mobile Ground World proof tray">
+      <section className={styles.uraiGroundMobileProof} aria-label="Mobile Ground World proof tray">
         {mobileProof.map(([title, copy]) => (
           <article key={title}>
             <span>{title}</span>

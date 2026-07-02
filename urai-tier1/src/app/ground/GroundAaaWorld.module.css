@@ -438,3 +438,571 @@
   .viewportReticle,
   .walkHint { display: none; }
 }
+
+
+/* === URAI GROUND AAA PHYSICAL FLOOR RESCUE PASS === */
+
+.world {
+  background:
+    radial-gradient(circle at 50% -12%, rgba(255, 223, 167, .2), transparent 20rem),
+    radial-gradient(circle at 50% 46%, rgba(255, 189, 109, .08), transparent 32rem),
+    linear-gradient(180deg, #050505 0%, #0e0d09 46%, #030303 100%);
+}
+
+.world::before {
+  opacity: .9;
+  filter: saturate(1.06) contrast(1.14) brightness(.66);
+}
+
+.world::after {
+  background:
+    radial-gradient(ellipse at 50% 56%, transparent 0 24%, rgba(0,0,0,.3) 62%, rgba(0,0,0,.9) 100%),
+    linear-gradient(90deg, rgba(0,0,0,.64), transparent 24%, transparent 76%, rgba(0,0,0,.68));
+}
+
+.floor {
+  left: -26%;
+  right: -26%;
+  bottom: -37vh;
+  height: 86vh;
+  transform: perspective(920px) rotateX(63deg);
+  background:
+    radial-gradient(ellipse at 50% 9%, rgba(255, 222, 172, .3), transparent 13rem),
+    radial-gradient(ellipse at 50% 42%, rgba(126, 84, 44, .32), transparent 34rem),
+    repeating-linear-gradient(90deg, rgba(255,255,255,.034) 0 1px, transparent 1px 9rem),
+    linear-gradient(180deg, rgba(96, 68, 39, .74), rgba(4, 5, 4, .99));
+  box-shadow:
+    inset 0 0 130px rgba(255,255,255,.045),
+    0 -36px 120px rgba(255,185,111,.15);
+}
+
+.grid {
+  opacity: .34;
+}
+
+.stage::before {
+  content: '';
+  position: absolute;
+  z-index: 2;
+  left: 50%;
+  bottom: -25vh;
+  width: min(34rem, 42vw);
+  height: 72vh;
+  transform: translateX(-50%) perspective(840px) rotateX(66deg);
+  transform-origin: 50% 100%;
+  border-radius: 999px 999px 0 0;
+  pointer-events: none;
+  background:
+    radial-gradient(ellipse at 50% 9%, rgba(255, 231, 189, .28), transparent 10rem),
+    linear-gradient(180deg, rgba(255, 221, 174, .16), rgba(255, 221, 174, .035) 48%, transparent);
+  box-shadow: 0 -30px 90px rgba(255, 198, 126, .12);
+  opacity: .88;
+  mask-image: linear-gradient(180deg, black, black 62%, transparent);
+}
+
+.stage::after {
+  content: '';
+  position: absolute;
+  z-index: 4;
+  left: 50%;
+  top: 34%;
+  width: clamp(13rem, 16vw, 17rem);
+  height: clamp(8.5rem, 11vw, 11rem);
+  transform: translateX(-50%);
+  border: 1px solid rgba(255,235,190,.18);
+  border-radius: 1.25rem;
+  pointer-events: none;
+  background:
+    linear-gradient(180deg, rgba(0,0,0,.12), rgba(0,0,0,.62)),
+    var(--station-reception);
+  background-size: cover;
+  background-position: center;
+  box-shadow:
+    0 38px 100px rgba(0,0,0,.54),
+    0 0 70px rgba(255,198,126,.16),
+    inset 0 1px 0 rgba(255,255,255,.08);
+}
+
+.viewportReticle {
+  top: 49%;
+  box-shadow: 0 0 76px rgba(255,202,139,.24), inset 0 0 24px rgba(255,255,255,.05);
+}
+
+.walkHint {
+  bottom: 5.95rem;
+}
+
+.cameraEntry {
+  bottom: clamp(96px, 17vh, 172px);
+  background: linear-gradient(145deg, rgba(8, 9, 8, .5), rgba(29, 22, 15, .36));
+}
+
+.cameraEntry h1 {
+  font-size: clamp(2.15rem, 4vw, 5.2rem);
+  letter-spacing: -.075em;
+}
+
+.zone {
+  width: clamp(9.4rem, 12vw, 13rem);
+  min-height: 5.8rem;
+  border-radius: 1.1rem;
+  padding: .72rem .78rem;
+  background:
+    linear-gradient(180deg, rgba(0,0,0,.16), rgba(0,0,0,.66)),
+    var(--zone-art, linear-gradient(145deg, rgba(9,10,9,.58), rgba(38,28,17,.42)));
+  background-size: cover;
+  background-position: center;
+  box-shadow:
+    0 30px 84px rgba(0,0,0,.48),
+    0 0 52px rgba(255,201,132,.09),
+    inset 0 1px 0 rgba(255,255,255,.08);
+  opacity: .92;
+  transform: translateZ(0);
+}
+
+.zone::after {
+  content: '';
+  position: absolute;
+  left: 18%;
+  right: 18%;
+  bottom: -1.1rem;
+  height: 1.4rem;
+  border-radius: 999px;
+  background: rgba(0,0,0,.5);
+  filter: blur(12px);
+  z-index: -1;
+}
+
+.zoneReception {
+  --zone-art: var(--station-reception);
+  left: 45%;
+  top: 19%;
+  transform: translateX(-50%) scale(.9);
+}
+
+.zonePrivacy {
+  --zone-art: var(--station-privacy);
+  left: 14%;
+  top: 31%;
+}
+
+.zoneWork {
+  --zone-art: var(--station-logistics);
+  right: 12%;
+  top: 34%;
+}
+
+.zoneArchive {
+  --zone-art: var(--station-archive);
+  right: 15%;
+  bottom: 24%;
+}
+
+.zoneWellness {
+  --zone-art: var(--station-wellness);
+  left: 28%;
+  bottom: 24%;
+}
+
+.zoneGarden {
+  left: 55%;
+  bottom: 18%;
+  min-height: auto;
+  border-radius: 999px;
+  background: rgba(5,7,8,.42);
+}
+
+.agent {
+  width: 9.6rem;
+  min-height: 3.1rem;
+  padding: .58rem .64rem .6rem 3.15rem;
+  opacity: .88;
+}
+
+.avatar {
+  position: absolute;
+  left: .58rem;
+  top: .58rem;
+  width: 34px;
+  height: 34px;
+  box-shadow: 0 0 24px rgba(255,218,158,.3), 0 0 0 1px rgba(255,235,190,.16);
+}
+
+.agent small,
+.agent h2 {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.agent h2 {
+  font-size: .76rem;
+}
+
+.agent p {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: calc(100% + .38rem);
+  margin: 0;
+  padding: .62rem .68rem;
+  border: 1px solid rgba(255,235,190,.14);
+  border-radius: .9rem;
+  background: rgba(5,7,8,.74);
+  opacity: 0;
+  transform: translateY(-6px);
+  pointer-events: none;
+  transition: opacity .18s ease, transform .18s ease;
+}
+
+.agent:hover p,
+.agent:focus-within p {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.agentReception { left: 43%; top: 52%; }
+.agentSchedule { left: 20%; bottom: 32%; }
+.agentWellness { left: 33%; top: 67%; }
+.agentRelationship { right: 33%; top: 50%; }
+.agentLogistics { right: 10%; bottom: 45%; }
+.agentPrivacy { left: 16%; top: 55%; }
+.agentArchive { right: 18%; bottom: 11%; }
+.agentOperator { right: 26%; top: 62%; }
+
+.object {
+  width: 10.8rem;
+  padding: .62rem .72rem;
+  opacity: .82;
+}
+
+.objectWork { right: 7%; top: 58%; }
+
+.inspector {
+  bottom: 5.8rem;
+}
+
+.uraiGroundMobileProof {
+  position: absolute;
+  z-index: 5;
+  left: 50%;
+  bottom: 4.2rem;
+  display: none;
+  width: min(760px, calc(100vw - 2rem));
+  transform: translateX(-50%);
+  gap: .5rem;
+  overflow-x: auto;
+  padding-bottom: .1rem;
+}
+
+.uraiGroundMobileProof article {
+  min-width: 10rem;
+  border: 1px solid rgba(255,235,190,.14);
+  border-radius: .95rem;
+  padding: .65rem .7rem;
+  background: rgba(5,7,8,.58);
+  box-shadow: 0 18px 60px rgba(0,0,0,.34);
+  backdrop-filter: blur(16px);
+}
+
+.uraiGroundMobileProof span {
+  display: block;
+  margin: 0 0 .35rem;
+  color: #ffe5b4;
+  font-size: .56rem;
+  font-weight: 950;
+  letter-spacing: .16em;
+  text-transform: uppercase;
+}
+
+.uraiGroundMobileProof strong {
+  display: block;
+  color: #fff;
+  font-size: .72rem;
+}
+
+@media (max-width: 1180px) {
+  .agentRelationship,
+  .agentOperator,
+  .objectCalendar,
+  .objectBody,
+  .zoneGarden {
+    display: none;
+  }
+}
+
+@media (max-width: 900px) {
+  .cameraEntry {
+    bottom: 10.2rem;
+    padding: .85rem .9rem;
+  }
+
+  .cameraEntry h1 {
+    font-size: clamp(2.15rem, 12vw, 3.9rem);
+  }
+
+  .cameraEntry span {
+    font-size: .78rem;
+  }
+
+  .stage::after {
+    top: 30%;
+    width: min(16rem, 76vw);
+    height: 7.8rem;
+  }
+
+  .zone {
+    display: none;
+  }
+
+  .zoneReception,
+  .zonePrivacy,
+  .zoneWork {
+    display: block;
+  }
+
+  .zoneReception {
+    left: 50%;
+    top: 20%;
+    width: min(14rem, 70vw);
+  }
+
+  .zonePrivacy {
+    left: .85rem;
+    top: 49%;
+    width: min(11rem, 42vw);
+  }
+
+  .zoneWork {
+    right: .85rem;
+    top: 49%;
+    width: min(11rem, 42vw);
+  }
+
+  .agent,
+  .object,
+  .inspector,
+  .viewportReticle,
+  .walkHint {
+    display: none;
+  }
+
+  .uraiGroundMobileProof {
+    display: flex;
+  }
+
+  .routeRail {
+    bottom: .7rem;
+    max-width: calc(100vw - 1rem);
+  }
+}
+
+
+/* === URAI GROUND PHYSICAL FLOOR RECOVERY === */
+
+.stage::before {
+  content: '';
+  position: absolute;
+  z-index: 2;
+  left: 50%;
+  bottom: -25vh;
+  width: min(34rem, 42vw);
+  height: 72vh;
+  transform: translateX(-50%) perspective(840px) rotateX(66deg);
+  transform-origin: 50% 100%;
+  border-radius: 999px 999px 0 0;
+  pointer-events: none;
+  background:
+    radial-gradient(ellipse at 50% 9%, rgba(255, 231, 189, .28), transparent 10rem),
+    linear-gradient(180deg, rgba(255, 221, 174, .16), rgba(255, 221, 174, .035) 48%, transparent);
+  box-shadow: 0 -30px 90px rgba(255, 198, 126, .12);
+  opacity: .88;
+  mask-image: linear-gradient(180deg, black, black 62%, transparent);
+}
+
+.stage::after {
+  content: '';
+  position: absolute;
+  z-index: 4;
+  left: 50%;
+  top: 34%;
+  width: clamp(13rem, 16vw, 17rem);
+  height: clamp(8.5rem, 11vw, 11rem);
+  transform: translateX(-50%);
+  border: 1px solid rgba(255,235,190,.18);
+  border-radius: 1.25rem;
+  pointer-events: none;
+  background:
+    linear-gradient(180deg, rgba(0,0,0,.12), rgba(0,0,0,.62)),
+    var(--station-reception);
+  background-size: cover;
+  background-position: center;
+  box-shadow:
+    0 38px 100px rgba(0,0,0,.54),
+    0 0 70px rgba(255,198,126,.16),
+    inset 0 1px 0 rgba(255,255,255,.08);
+}
+
+.cameraEntry h1 {
+  font-size: clamp(2.15rem, 4vw, 5.2rem);
+  letter-spacing: -.075em;
+}
+
+.floor {
+  left: -26%;
+  right: -26%;
+  bottom: -37vh;
+  height: 86vh;
+  transform: perspective(920px) rotateX(63deg);
+  background:
+    radial-gradient(ellipse at 50% 9%, rgba(255, 222, 172, .3), transparent 13rem),
+    radial-gradient(ellipse at 50% 42%, rgba(126, 84, 44, .32), transparent 34rem),
+    repeating-linear-gradient(90deg, rgba(255,255,255,.034) 0 1px, transparent 1px 9rem),
+    linear-gradient(180deg, rgba(96, 68, 39, .74), rgba(4, 5, 4, .99));
+  box-shadow:
+    inset 0 0 130px rgba(255,255,255,.045),
+    0 -36px 120px rgba(255,185,111,.15);
+}
+
+.grid {
+  opacity: .34;
+}
+
+.zone {
+  width: clamp(9.4rem, 12vw, 13rem);
+  min-height: 5.8rem;
+  border-radius: 1.1rem;
+  padding: .72rem .78rem;
+  background:
+    linear-gradient(180deg, rgba(0,0,0,.16), rgba(0,0,0,.66)),
+    var(--zone-art, linear-gradient(145deg, rgba(9,10,9,.58), rgba(38,28,17,.42)));
+  background-size: cover;
+  background-position: center;
+  box-shadow:
+    0 30px 84px rgba(0,0,0,.48),
+    0 0 52px rgba(255,201,132,.09),
+    inset 0 1px 0 rgba(255,255,255,.08);
+  opacity: .92;
+}
+
+.zoneReception {
+  --zone-art: var(--station-reception);
+  left: 45%;
+  top: 19%;
+  transform: translateX(-50%) scale(.9);
+}
+
+.zonePrivacy {
+  --zone-art: var(--station-privacy);
+  left: 14%;
+  top: 31%;
+}
+
+.zoneWork {
+  --zone-art: var(--station-logistics);
+  right: 12%;
+  top: 34%;
+}
+
+.zoneArchive {
+  --zone-art: var(--station-archive);
+  right: 15%;
+  bottom: 24%;
+}
+
+.zoneWellness {
+  --zone-art: var(--station-wellness);
+  left: 28%;
+  bottom: 24%;
+}
+
+.agent {
+  width: 9.6rem;
+  min-height: 3.1rem;
+  padding: .58rem .64rem .6rem 3.15rem;
+  opacity: .88;
+}
+
+.avatar {
+  position: absolute;
+  left: .58rem;
+  top: .58rem;
+  width: 34px;
+  height: 34px;
+}
+
+.agent p {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: calc(100% + .38rem);
+  margin: 0;
+  padding: .62rem .68rem;
+  border: 1px solid rgba(255,235,190,.14);
+  border-radius: .9rem;
+  background: rgba(5,7,8,.74);
+  opacity: 0;
+  transform: translateY(-6px);
+  pointer-events: none;
+  transition: opacity .18s ease, transform .18s ease;
+}
+
+.agent:hover p,
+.agent:focus-within p {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.agentReception { left: 43%; top: 52%; }
+.agentSchedule { left: 20%; bottom: 32%; }
+.agentWellness { left: 33%; top: 67%; }
+.agentRelationship { right: 33%; top: 50%; }
+.agentLogistics { right: 10%; bottom: 45%; }
+.agentPrivacy { left: 16%; top: 55%; }
+.agentArchive { right: 18%; bottom: 11%; }
+.agentOperator { right: 26%; top: 62%; }
+
+.inspector {
+  bottom: 5.8rem;
+}
+
+@media (max-width: 900px) {
+  .stage::after {
+    top: 30%;
+    width: min(16rem, 76vw);
+    height: 7.8rem;
+  }
+
+  .zone,
+  .agent,
+  .object,
+  .inspector,
+  .viewportReticle,
+  .walkHint {
+    display: none;
+  }
+
+  .zoneReception,
+  .zonePrivacy,
+  .zoneWork {
+    display: block;
+  }
+
+  .zoneReception {
+    left: 50%;
+    top: 20%;
+    width: min(14rem, 70vw);
+  }
+
+  .zonePrivacy {
+    left: .85rem;
+    top: 49%;
+    width: min(11rem, 42vw);
+  }
+
+  .zoneWork {
+    right: .85rem;
+    top: 49%;
+    width: min(11rem, 42vw);
+  }
+}
