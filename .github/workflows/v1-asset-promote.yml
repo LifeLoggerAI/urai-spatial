@@ -6,7 +6,7 @@ on:
       live_url:
         description: Live URL to verify
         required: true
-        default: https://urai.app
+        default: https://urai-4dc1d.web.app
         type: string
   repository_dispatch:
     types: [urai-v1-assets-ready]
@@ -14,6 +14,7 @@ on:
     branches: [main]
     paths:
       - urai-tier1/public/assets/urai/**
+      - .github/workflows/v1-asset-promote.yml
 
 concurrency:
   group: urai-v1-asset-promote
@@ -28,7 +29,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 120
     env:
-      LIVE_URL: ${{ inputs.live_url || 'https://urai.app' }}
+      LIVE_URL: ${{ inputs.live_url || 'https://urai-4dc1d.web.app' }}
       FIREBASE_PROJECT_ID: ${{ secrets.FIREBASE_PROJECT_ID }}
     steps:
       - name: Checkout Spatial
@@ -59,6 +60,14 @@ jobs:
 
       - name: Build static production source
         run: pnpm build:static
+
+      - name: Activate static Firebase hosting config
+        shell: bash
+        run: |
+          test -d urai-tier1/out
+          test -f urai-tier1/out/index.html
+          cp firebase.static.json firebase.json
+          node -e "const f=require('./firebase.json'); if(f.hosting.public!=='urai-tier1/out') process.exit(1)"
 
       - name: Deploy Firebase hosting
         uses: FirebaseExtended/action-hosting-deploy@v0
