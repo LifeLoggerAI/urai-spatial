@@ -130,6 +130,17 @@ function FocusWorld() {
         href="/replay?memoryId=quiet-reset&manifestId=replay-recovery-thread&from=focus-chamber"
         aria-label="Enter Replay for The Quiet Reset"
       >
+        <picture className="uraiFocusMemoryImage" aria-hidden="true">
+          <source
+            media="(max-width: 760px)"
+            srcSet="/assets/urai/focus/focus-memory-chamber-mobile.webp"
+          />
+          <img
+            src="/assets/urai/focus/focus-memory-chamber-main.webp"
+            alt=""
+            draggable="false"
+          />
+        </picture>
         <div className="uraiFocusMemoryRings" aria-hidden="true"><i /><i /><i /></div>
         <span>ENTER REPLAY</span>
       </a>
