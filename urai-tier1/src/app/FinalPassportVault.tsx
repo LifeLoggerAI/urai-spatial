@@ -1,4 +1,6 @@
 import Link from 'next/link'
+import type { CSSProperties } from 'react'
+import { assetCssStack, passportAssets } from '@/spatial/assets/uraiAssets'
 
 const vaultRows = [
   ['Identity', 'Private profile, owner, and device context stay under user control.'],
@@ -9,9 +11,14 @@ const vaultRows = [
 
 export default function FinalPassportVault() {
   return (
-    <main className="relative min-h-screen overflow-hidden bg-[#03040a] text-white" data-testid="urai-final-passport-vault" data-route-polish="identity-consent-vault">
+    <main
+      className="relative min-h-screen overflow-hidden bg-[#03040a] text-white"
+      data-testid="urai-final-passport-vault"
+      data-route-polish="identity-consent-vault"
+      style={{ '--passport-vault-art': assetCssStack(passportAssets.primary) } as CSSProperties}
+    >
       <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_20%,rgba(255,236,190,0.2),transparent_26%),radial-gradient(circle_at_72%_60%,rgba(125,211,252,0.16),transparent_28%),linear-gradient(180deg,#03040a_0%,#101015_55%,#020307_100%)]" />
-      <div className="absolute inset-0 bg-[url('/assets/urai/final/tier2/passport/passport-vault-desktop.svg')] bg-cover bg-center opacity-50 mix-blend-screen brightness-75 contrast-125 saturate-150" />
+      <div className="absolute inset-0 bg-[image:var(--passport-vault-art)] bg-cover bg-center opacity-50 mix-blend-screen brightness-75 contrast-125 saturate-150" />
       <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_50%_50%,transparent_0_32%,rgba(0,0,0,0.62)_76%,rgba(0,0,0,0.96)_100%)]" />
 
       <section className="relative z-10 grid min-h-screen items-center gap-8 px-5 pb-28 pt-20 lg:grid-cols-[minmax(0,1fr)_460px] lg:px-10">
