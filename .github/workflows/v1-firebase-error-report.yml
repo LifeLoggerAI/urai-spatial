@@ -31,19 +31,12 @@ jobs:
             else if (text instanceof ArrayBuffer) text = Buffer.from(text).toString('utf8');
             else if (ArrayBuffer.isView(text)) text = Buffer.from(text.buffer, text.byteOffset, text.byteLength).toString('utf8');
             else if (typeof text !== 'string') text = JSON.stringify(text);
-            const lines = text.split(/\r?\n/);
-            const selected = [];
-            const pattern = /machine|visual|structural|realm|audit|verdict|error|failed|failure|missing|duplicate|route|score|threshold/i;
-            for (let index = 0; index < lines.length; index += 1) {
-              if (!pattern.test(lines[index])) continue;
-              const start = Math.max(0, index - 3);
-              const end = Math.min(lines.length, index + 4);
-              selected.push(...lines.slice(start, end));
-            }
-            const concise = [...new Set(selected)].slice(-220).join('\n');
+            const marker = 'Machine image and structural gates';
+            const index = text.lastIndexOf(marker);
+            const section = (index >= 0 ? text.slice(index) : text.slice(-9000)).slice(0, 9000);
             await github.rest.issues.create({
               owner,
               repo,
-              title: `V1 machine audit error ${jobId}`,
-              body: ['```text', concise || 'No matching audit error lines found.', '```'].join('\n')
+              title: `V1 final machine gate ${jobId}`,
+              body: ['```text', section, '```'].join('\n')
             });
