@@ -15,7 +15,13 @@ function txt(el: Element | null): string {
 
 function cleanup(root: HTMLElement) {
   ROUTE_CLASSES.forEach((c) => root.classList.remove(c));
-  root.classList.remove("urai-spatial-dragging", "urai-spatial-warping", "urai-spatial-hotspot-hover");
+  root.classList.remove(
+    "urai-spatial-dragging",
+    "urai-spatial-warping",
+    "urai-spatial-hotspot-hover",
+    "urai-spatial-focus-hover",
+    "urai-spatial-replay-pulse",
+  );
 
   document
     .querySelectorAll<HTMLElement>(
@@ -28,7 +34,7 @@ function cleanup(root: HTMLElement) {
 
   document
     .querySelectorAll<HTMLElement>(
-      ".urai-spatial-hotspot,.urai-spatial-hud,.urai-spatial-depth-meter,.urai-spatial-reticle,.urai-spatial-warp-flash"
+      ".urai-spatial-hotspot,.urai-spatial-hud,.urai-spatial-depth-meter,.urai-spatial-reticle,.urai-spatial-warp-flash,.urai-spatial-route-backdrop,.urai-spatial-focus-aperture,.urai-spatial-focus-cue,.urai-spatial-replay-cinema,.urai-spatial-film-beats"
     )
     .forEach((el) => el.remove());
 }
@@ -244,6 +250,75 @@ function wireLifeMap(root: HTMLElement, signal: AbortSignal) {
   });
 }
 
+function wireFocus(root: HTMLElement, signal: AbortSignal) {
+  const stage = findWorldStage();
+  if (stage) stage.classList.add("urai-spatial-world-stage");
+
+  node("urai-spatial-route-backdrop");
+
+  const hud = node("urai-spatial-focus-cue");
+  hud.innerHTML = `
+    <b>SELECTED MEMORY CAMERA CHAMBER</b>
+    <span>The Quiet Reset</span>
+    <span>Enter Replay = open the living thread</span>
+  `;
+
+  const aperture = node("urai-spatial-focus-aperture");
+  aperture.setAttribute("role", "button");
+  aperture.setAttribute("tabindex", "0");
+  aperture.setAttribute("aria-label", "The Quiet Reset. Press Enter or double click to open Replay.");
+  aperture.innerHTML = `
+    <i></i>
+    <b>The Quiet Reset</b>
+    <span>Double-click / Enter Replay</span>
+  `;
+
+  const enterReplay = () => {
+    root.classList.add("urai-spatial-warping");
+    window.setTimeout(() => {
+      window.location.assign("/replay?memoryId=quiet-reset&manifestId=replay-recovery-thread&from=focus-chamber");
+    }, 260);
+  };
+
+  aperture.addEventListener("mouseenter", () => root.classList.add("urai-spatial-focus-hover"), { signal });
+  aperture.addEventListener("mouseleave", () => root.classList.remove("urai-spatial-focus-hover"), { signal });
+  aperture.addEventListener("dblclick", enterReplay, { signal });
+  aperture.addEventListener("keydown", (e) => {
+    if ((e as KeyboardEvent).key === "Enter") enterReplay();
+  }, { signal });
+}
+
+function wireReplay(root: HTMLElement, signal: AbortSignal) {
+  const stage = findWorldStage();
+  if (stage) stage.classList.add("urai-spatial-world-stage");
+
+  node("urai-spatial-route-backdrop");
+
+  const cinema = node("urai-spatial-replay-cinema");
+  cinema.innerHTML = `
+    <b>REPLAY THE THREAD</b>
+    <span>Memory film active</span>
+    <span>Pause / return / unwind</span>
+  `;
+
+  const beats = node("urai-spatial-film-beats");
+  beats.innerHTML = `
+    <b>FILM BEATS</b>
+    <span>Pressure</span>
+    <span>Signal</span>
+    <span>Reset</span>
+    <span>Return</span>
+  `;
+
+  const pulse = () => {
+    root.classList.add("urai-spatial-replay-pulse");
+    window.setTimeout(() => root.classList.remove("urai-spatial-replay-pulse"), 420);
+  };
+
+  beats.addEventListener("mouseenter", pulse, { signal });
+  beats.addEventListener("focusin", pulse, { signal });
+}
+
 export default function UraiAAAARoutePolish() {
   const pathname = usePathname() ?? "";
 
@@ -258,8 +333,10 @@ export default function UraiAAAARoutePolish() {
       wireLifeMap(root, controller.signal);
     } else if (pathname.startsWith("/focus")) {
       root.classList.add("urai-route-focus");
+      wireFocus(root, controller.signal);
     } else if (pathname.startsWith("/replay")) {
       root.classList.add("urai-route-replay");
+      wireReplay(root, controller.signal);
     }
 
     return () => {
