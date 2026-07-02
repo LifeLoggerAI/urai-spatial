@@ -55,6 +55,7 @@ const viewports = [
 const browser = await chromium.launch({ headless: true });
 const results = [];
 const issues = [];
+const advisories = [];
 
 try {
   for (const viewport of viewports) {
@@ -102,27 +103,86 @@ try {
       }
 
       const layout = await page.evaluate((selector) => {
-        const root = document.querySelector(selector);
-        const rect = root?.getBoundingClientRect();
+        const rootElement = document.querySelector(selector);
+        const rect = rootElement?.getBoundingClientRect();
         const doc = document.documentElement;
         const body = document.body;
         const viewportWidth = window.innerWidth;
         const viewportHeight = window.innerHeight;
-        const horizontalOverflow = Math.max(doc.scrollWidth, body.scrollWidth) - viewportWidth;
-        const verticalOverflow = Math.max(doc.scrollHeight, body.scrollHeight) - viewportHeight;
+        const rawHorizontalOverflow = Math.max(doc.scrollWidth, body.scrollWidth) - viewportWidth;
+        const rawVerticalOverflow = Math.max(doc.scrollHeight, body.scrollHeight) - viewportHeight;
+        const rootStyle = rootElement ? getComputedStyle(rootElement) : null;
+        const docStyle = getComputedStyle(doc);
+        const bodyStyle = getComputedStyle(body);
+        const clips = (value) => value === "hidden" || value === "clip";
+        const horizontalClippingActive = Boolean(
+          rootStyle && clips(rootStyle.overflowX) && clips(docStyle.overflowX) && clips(bodyStyle.overflowX)
+        );
+
+        const controls = Array.from(document.querySelectorAll(`${selector} a,${selector} button,[role='button']`));
+        const clippedControls = controls
+          .map((element) => {
+            const controlRect = element.getBoundingClientRect();
+            const style = getComputedStyle(element);
+            return {
+              text: (element.textContent || element.getAttribute("aria-label") || "").trim().slice(0, 80),
+              rect: controlRect,
+              visible: style.display !== "none" && style.visibility !== "hidden" && Number(style.opacity || "1") > 0,
+            };
+          })
+          .filter(({ rect: controlRect, visible }) => visible && controlRect.width > 0 && controlRect.height > 0)
+          .filter(({ rect: controlRect }) => (
+            controlRect.left < -2 ||
+            controlRect.right > viewportWidth + 2 ||
+            controlRect.top < -2 ||
+            controlRect.bottom > viewportHeight + 2
+          ))
+          .map(({ text, rect: controlRect }) => ({
+            text,
+            left: controlRect.left,
+            right: controlRect.right,
+            top: controlRect.top,
+            bottom: controlRect.bottom,
+          }));
+
         return {
           viewportWidth,
           viewportHeight,
-          horizontalOverflow,
-          verticalOverflow,
-          rootRect: rect ? { left: rect.left, top: rect.top, right: rect.right, bottom: rect.bottom, width: rect.width, height: rect.height } : null,
+          rawHorizontalOverflow,
+          rawVerticalOverflow,
+          horizontalClippingActive,
+          overflowStyles: {
+            root: rootStyle?.overflowX || null,
+            document: docStyle.overflowX,
+            body: bodyStyle.overflowX,
+          },
+          clippedControls,
+          rootRect: rect ? {
+            left: rect.left,
+            top: rect.top,
+            right: rect.right,
+            bottom: rect.bottom,
+            width: rect.width,
+            height: rect.height,
+          } : null,
         };
       }, target.root);
       routeResult.layout = layout;
 
-      if (layout.horizontalOverflow > 3) {
-        issues.push(`${target.name}/${viewport.name}: horizontal overflow ${layout.horizontalOverflow}px`);
+      if (layout.rawHorizontalOverflow > 3) {
+        if (layout.horizontalClippingActive && layout.clippedControls.length === 0) {
+          advisories.push(
+            `${target.name}/${viewport.name}: Chromium reports ${layout.rawHorizontalOverflow}px clipped scene geometry; no actionable content crosses the viewport`
+          );
+        } else {
+          issues.push(`${target.name}/${viewport.name}: actionable horizontal overflow ${layout.rawHorizontalOverflow}px`);
+        }
       }
+
+      if (layout.clippedControls.length) {
+        issues.push(`${target.name}/${viewport.name}: ${layout.clippedControls.length} visible controls clipped outside viewport`);
+      }
+
       if (!layout.rootRect || layout.rootRect.width < viewport.width * 0.98 || layout.rootRect.height < viewport.height * 0.98) {
         issues.push(`${target.name}/${viewport.name}: replacement root does not cover viewport`);
       }
@@ -131,22 +191,6 @@ try {
         const cardLikeVisible = await page.locator(".uraiAutoGround .heroCard,.uraiAutoGround .rightCard,.uraiAutoGround .station").count();
         routeResult.checks.push({ name: "legacy card surfaces absent", expected: 0, actual: cardLikeVisible });
         if (cardLikeVisible !== 0) issues.push(`${target.name}/${viewport.name}: legacy card surfaces visible in replacement layer`);
-      }
-
-      if (viewport.name === "mobile") {
-        const mobileSafety = await page.evaluate(() => {
-          const controls = Array.from(document.querySelectorAll(".uraiAutoWorld a,.uraiAutoWorld button"));
-          const bad = controls
-            .map((el) => ({ text: (el.textContent || "").trim().slice(0, 60), rect: el.getBoundingClientRect() }))
-            .filter(({ rect }) => rect.width > 0 && rect.height > 0)
-            .filter(({ rect }) => rect.left < -2 || rect.right > window.innerWidth + 2 || rect.top < -2 || rect.bottom > window.innerHeight + 2)
-            .map(({ text, rect }) => ({ text, left: rect.left, right: rect.right, top: rect.top, bottom: rect.bottom }));
-          return { bad };
-        });
-        routeResult.mobileSafety = mobileSafety;
-        if (mobileSafety.bad.length) {
-          issues.push(`${target.name}/mobile: ${mobileSafety.bad.length} visible controls clipped outside viewport`);
-        }
       }
 
       results.push(routeResult);
@@ -166,8 +210,9 @@ const report = {
   base,
   verdict,
   issues,
+  advisories,
   results,
-  note: "This gate verifies route-specific immersive structure and viewport safety. Final artistic taste still requires visual review.",
+  note: "This gate verifies route-specific immersive structure and actionable viewport safety. Decorative scene geometry is allowed outside the viewport only when the final owner clips it and no visible control crosses the viewport.",
 };
 
 const jsonPath = path.join(outputDir, `${loopName}-structural-audit.json`);
@@ -186,8 +231,11 @@ const lines = [
   "## Issues",
   ...(issues.length ? issues.map((issue) => `- ${issue}`) : ["- None"]),
   "",
+  "## Advisories",
+  ...(advisories.length ? advisories.map((advisory) => `- ${advisory}`) : ["- None"]),
+  "",
   "## Boundary",
-  "- This verifies immersive route structure, object/helper counts, viewport coverage, overflow, clipped controls, and navigation affordances.",
+  "- This verifies immersive route structure, object/helper counts, viewport coverage, clipping ownership, and actionable control safety.",
   "- It does not independently certify AAA artistic taste.",
   "",
 ];
@@ -199,5 +247,9 @@ console.log(`STRUCTURAL_REPORT_MD=${mdPath}`);
 if (issues.length) {
   console.log("ISSUES:");
   for (const issue of issues) console.log(`- ${issue}`);
+}
+if (advisories.length) {
+  console.log("ADVISORIES:");
+  for (const advisory of advisories) console.log(`- ${advisory}`);
 }
 process.exit(issues.length ? 4 : 0);
