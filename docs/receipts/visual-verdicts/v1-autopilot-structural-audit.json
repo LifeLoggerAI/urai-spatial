@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-07-02T06:37:19.543Z",
+  "generatedAt": "2026-07-02T06:38:34.188Z",
   "loopName": "v1-autopilot",
   "base": "https://urai.app",
   "verdict": "MACHINE_PASS",
@@ -12,7 +12,7 @@
     {
       "route": "ground",
       "viewport": "desktop",
-      "url": "https://urai.app/ground?structural=1782974228718",
+      "url": "https://urai.app/ground?structural=1782974303707",
       "status": 200,
       "checks": [
         {
@@ -72,7 +72,7 @@
     {
       "route": "focus",
       "viewport": "desktop",
-      "url": "https://urai.app/focus?memoryId=quiet-reset&structural=1782974230612",
+      "url": "https://urai.app/focus?memoryId=quiet-reset&structural=1782974305489",
       "status": 200,
       "checks": [
         {
@@ -127,7 +127,7 @@
     {
       "route": "replay",
       "viewport": "desktop",
-      "url": "https://urai.app/replay?memoryId=quiet-reset&manifestId=replay-recovery-thread&structural=1782974232575",
+      "url": "https://urai.app/replay?memoryId=quiet-reset&manifestId=replay-recovery-thread&structural=1782974307204",
       "status": 200,
       "checks": [
         {
@@ -182,7 +182,7 @@
     {
       "route": "ground",
       "viewport": "mobile",
-      "url": "https://urai.app/ground?structural=1782974234447",
+      "url": "https://urai.app/ground?structural=1782974308935",
       "status": 200,
       "checks": [
         {
@@ -242,7 +242,7 @@
     {
       "route": "focus",
       "viewport": "mobile",
-      "url": "https://urai.app/focus?memoryId=quiet-reset&structural=1782974236151",
+      "url": "https://urai.app/focus?memoryId=quiet-reset&structural=1782974310687",
       "status": 200,
       "checks": [
         {
@@ -297,7 +297,7 @@
     {
       "route": "replay",
       "viewport": "mobile",
-      "url": "https://urai.app/replay?memoryId=quiet-reset&manifestId=replay-recovery-thread&structural=1782974237872",
+      "url": "https://urai.app/replay?memoryId=quiet-reset&manifestId=replay-recovery-thread&structural=1782974312566",
       "status": 200,
       "checks": [
         {
