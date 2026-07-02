@@ -88,6 +88,8 @@ jobs:
             python3 scripts/urai-machine-visual-verdict.py
           LOOP_NAME="v1-provider-assets" BASE_URL="$LIVE_URL" \
             node scripts/urai-v1-structural-audit.mjs
+          LOOP_NAME="v1-provider-assets" BASE_URL="$LIVE_URL" \
+            node scripts/urai-v1-realm-audit.mjs
 
       - name: Package promoted proof
         run: |
@@ -101,6 +103,7 @@ jobs:
             "$PROOF_DIR/summary.json"
           cp docs/receipts/visual-verdicts/v1-provider-assets-machine-visual-verdict.* artifacts/ || true
           cp docs/receipts/visual-verdicts/v1-provider-assets-structural-audit.* artifacts/ || true
+          cp docs/receipts/visual-verdicts/v1-provider-assets-realm-audit.* artifacts/ || true
           cp urai-tier1/public/assets/urai/final/manifests/asset-factory-spatial-handoff.json artifacts/
 
       - name: Upload proof artifact
