@@ -53,13 +53,24 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       - name: Install Playwright OS dependencies
+        if: github.event_name == 'workflow_dispatch'
         run: pnpm exec playwright install-deps chromium
 
       - name: Install Playwright browser
+        if: github.event_name == 'workflow_dispatch'
         run: pnpm exec playwright install chromium
 
-      - name: Run live release gate
+      - name: Run full live release gate
+        if: github.event_name == 'workflow_dispatch'
         run: pnpm live:check
+
+      - name: Run scoped V1 provider asset release gate
+        if: github.event_name == 'push'
+        run: |
+          node scripts/verify-asset-factory-handoff.mjs
+          node scripts/audit-v123-asset-wall.mjs
+          pnpm typecheck
+          pnpm build:static
 
   manual-deploy:
     name: Manual Firebase deploy
