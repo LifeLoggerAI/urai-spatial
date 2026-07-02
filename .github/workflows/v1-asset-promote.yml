@@ -10,6 +10,10 @@ on:
         type: string
   repository_dispatch:
     types: [urai-v1-assets-ready]
+  push:
+    branches: [main]
+    paths:
+      - urai-tier1/public/assets/urai/**
 
 concurrency:
   group: urai-v1-asset-promote
