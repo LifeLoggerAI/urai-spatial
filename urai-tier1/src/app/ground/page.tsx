@@ -39,10 +39,10 @@ const zones = [
 ] as const
 
 const mobileProof = [
-  ['Camera mode', 'Avatar and orb remain at Home'],
-  ['Walkable zones', 'Reception, privacy, work, archive'],
-  ['XR ready', 'Quest/AR enters as first-person camera'],
-  ['Objects', 'Keys, table, calendar, body signal'],
+  ['Private floor', 'Reception, privacy, work, archive'],
+  ['Quiet helpers', 'Planning, wellness, logistics, memory'],
+  ['Inspectable objects', 'Keys, table, calendar, body signal'],
+  ['XR ready', 'First-person walk path stays clear'],
 ] as const
 
 const rail = [
@@ -58,11 +58,16 @@ const rail = [
 
 const worldStyle = {
   '--ground-world-stack': assetCssStack(groundAssets.primary),
+  '--station-reception': assetCssStack(groundAssets.accents.reception),
+  '--station-privacy': assetCssStack(groundAssets.accents.privacySanctuary),
+  '--station-logistics': assetCssStack(groundAssets.accents.logistics),
+  '--station-wellness': assetCssStack(groundAssets.accents.wellness),
+  '--station-archive': assetCssStack(groundAssets.accents.memoryArchive),
 } as CSSProperties
 
 export const metadata = {
   title: 'URAI Ground World',
-  description: 'A first-person, enterable Ground layer. Avatar and orb remain anchored at Home while the camera walks the private operating floor.',
+  description: 'A first-person, enterable Ground layer where private helpers, real-life objects, and useful zones form a calm operations floor.',
 }
 
 export default function GroundRealmPage() {
@@ -77,22 +82,61 @@ export default function GroundRealmPage() {
       <div className={styles.ceiling} aria-hidden="true" />
       <div className={styles.horizon} aria-hidden="true" />
       <div className={styles.floor} aria-hidden="true" />
+      <div className={styles.walkPath} aria-hidden="true" />
       <div className={styles.grid} aria-hidden="true" />
 
       <header className={styles.header}>
         <Link href="/home">URAI Ground</Link>
-        <p>First-person life floor · avatar and orb stay at Home</p>
+        <p>Private operations floor · first-person camera</p>
       </header>
 
       <section className={styles.cameraEntry} aria-label="Ground entry camera state">
         <p>Camera descended</p>
-        <h1>You are inside the lower layer.</h1>
-        <span>Walk the floor. Inspect objects. Enter zones.</span>
+        <h1>Your private floor is open.</h1>
+        <span>Walk the room. Inspect real objects. Approve what helpers prepare.</span>
       </section>
 
       <section className={styles.stage} aria-label="Walkable private operating floor">
         <div className={styles.viewportReticle} aria-hidden="true" />
-        <div className={styles.walkHint} aria-hidden="true">drag · tap · teleport in XR</div>
+        <div className={styles.walkHint} aria-hidden="true">look · tap · inspect · teleport in XR</div>
+
+        <div className={styles.physicalStations} aria-label="Physical Ground stations">
+          <article className={`${styles.station} ${styles.stationReception}`}>
+            <span>Entry</span>
+            <strong>Reception desk</strong>
+            <p>Your Welcome Guide orients the day before anything moves.</p>
+          </article>
+
+          <article className={`${styles.station} ${styles.stationPrivacy}`}>
+            <span>Consent</span>
+            <strong>Privacy sanctuary</strong>
+            <p>Permissions, exports, boundaries, and model access stay visible.</p>
+          </article>
+
+          <article className={`${styles.station} ${styles.stationWork}`}>
+            <span>Priority</span>
+            <strong>Work console</strong>
+            <p>Inbox, files, unfinished decisions, and timing route here first.</p>
+          </article>
+
+          <article className={`${styles.station} ${styles.stationWellness}`}>
+            <span>Recovery</span>
+            <strong>Wellness corner</strong>
+            <p>Body signal, pressure, rhythm, and focus remain private context.</p>
+          </article>
+
+          <article className={`${styles.station} ${styles.stationArchive}`}>
+            <span>Meaning</span>
+            <strong>Memory archive</strong>
+            <p>Objects connect to places, memories, relationships, and consent gates.</p>
+          </article>
+
+          <article className={`${styles.station} ${styles.stationLogistics}`}>
+            <span>Errands</span>
+            <strong>Logistics bay</strong>
+            <p>Returns, deliveries, appointments, and home tasks wait for approval.</p>
+          </article>
+        </div>
 
         <div className={styles.zonesRail} aria-label="Ground walkable zones">
           {zones.map(([name, detail, className]) => (
@@ -126,15 +170,15 @@ export default function GroundRealmPage() {
           ))}
         </div>
 
-        <aside className={styles.inspector} aria-label="Ground canon">
-          <span>Canon lock</span>
-          <strong>No Home avatar. No Home orb.</strong>
-          <p>Ground is entered by camera. Home keeps the body/orb anchor; this layer is walked from the user point of view.</p>
+        <aside className={styles.inspector} aria-label="Private floor status">
+          <span>Private floor</span>
+          <strong>Helpers are preparing the day quietly.</strong>
+          <p>Nothing leaves your world without approval. Walk the stations, inspect objects, then ascend when you are ready.</p>
           <Link href="/spatial/ar-vr">Open XR entry</Link>
         </aside>
       </section>
 
-      <section className="urai-ground-mobile-proof" aria-label="Mobile Ground World proof tray">
+      <section className={styles.mobileProof} aria-label="Mobile Ground World proof tray">
         {mobileProof.map(([title, copy]) => (
           <article key={title}>
             <span>{title}</span>
