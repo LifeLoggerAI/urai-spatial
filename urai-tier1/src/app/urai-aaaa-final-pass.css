@@ -1,5 +1,5 @@
-/* URAI AAAA safe final polish.
-   Critical rule: never constrain, max-width, transform, or re-parent the Life Map world.
+/* URAI AAAA safe interactive spatial polish.
+   Critical rule: no width clamps, no body transforms, no full-app squeeze.
 */
 
 html.urai-route-life-map,
@@ -9,6 +9,21 @@ html.urai-route-replay {
   min-width: 100%;
   min-height: 100%;
   background: #01030a !important;
+
+  --urai-parallax-x: 0px;
+  --urai-parallax-y: 0px;
+  --urai-orbit-x: 0deg;
+  --urai-orbit-y: 0deg;
+  --urai-depth-scale: 1;
+  --urai-twist: 0deg;
+  --urai-cursor-x: 50vw;
+  --urai-cursor-y: 50vh;
+  --urai-pointer-screen-x: 50vw;
+  --urai-pointer-screen-y: 50vh;
+  --urai-selected-x: 72vw;
+  --urai-selected-y: 48vh;
+  --urai-cue-x: 78vw;
+  --urai-cue-y: 38vh;
 }
 
 html.urai-route-life-map body,
@@ -25,9 +40,14 @@ html.urai-route-replay body {
     radial-gradient(ellipse at 47% 56%, rgba(245, 255, 255, 0.08), transparent 21%),
     linear-gradient(180deg, #01030a 0%, #030713 52%, #01030a 100%) !important;
   color: rgba(242, 250, 255, 0.96) !important;
+  cursor: grab;
 }
 
-/* Force the actual app/world containers back to full viewport after the bad left-strip deploy. */
+html.urai-spatial-dragging body {
+  cursor: grabbing !important;
+}
+
+/* Full-width repair guard. */
 html.urai-route-life-map body > *,
 html.urai-route-life-map main,
 html.urai-route-life-map [id="__next"],
@@ -43,7 +63,6 @@ html.urai-route-life-map [class*="Stage"],
 html.urai-route-life-map [class*="scene"],
 html.urai-route-life-map [class*="Scene"] {
   max-width: none !important;
-  width: auto;
 }
 
 html.urai-route-life-map main,
@@ -54,22 +73,28 @@ html.urai-route-life-map [class*="Scene"] {
   min-width: 100vw !important;
 }
 
-/* Atmospheric polish sits behind/over the world but never controls layout. */
+/* Spatial atmosphere responds to pointer/drag/wheel without touching layout. */
 html.urai-route-life-map body::before,
 html.urai-route-focus body::before,
 html.urai-route-replay body::before {
   content: "";
   position: fixed;
-  inset: -16vh -12vw;
+  inset: -18vh -14vw;
   z-index: 0;
   pointer-events: none;
   background:
-    radial-gradient(ellipse at 38% 50%, rgba(184, 245, 238, 0.22) 0%, rgba(75, 167, 205, 0.13) 16%, transparent 44%),
-    radial-gradient(ellipse at 66% 45%, rgba(177, 118, 255, 0.22) 0%, rgba(96, 63, 163, 0.12) 20%, transparent 48%),
-    conic-gradient(from 220deg at 52% 52%, transparent 0deg, rgba(96, 210, 235, 0.10) 46deg, rgba(181, 128, 255, 0.10) 98deg, transparent 166deg, rgba(118, 229, 206, 0.07) 236deg, transparent 320deg);
+    radial-gradient(ellipse at 38% 50%, rgba(184, 245, 238, 0.26) 0%, rgba(75, 167, 205, 0.15) 16%, transparent 44%),
+    radial-gradient(ellipse at 66% 45%, rgba(177, 118, 255, 0.24) 0%, rgba(96, 63, 163, 0.13) 20%, transparent 48%),
+    radial-gradient(circle at var(--urai-pointer-screen-x) var(--urai-pointer-screen-y), rgba(182, 245, 255, 0.12), transparent 22%),
+    conic-gradient(from 220deg at 52% 52%, transparent 0deg, rgba(96, 210, 235, 0.11) 46deg, rgba(181, 128, 255, 0.11) 98deg, transparent 166deg, rgba(118, 229, 206, 0.07) 236deg, transparent 320deg);
   filter: blur(18px) saturate(1.18);
-  opacity: 0.82;
+  opacity: 0.86;
   mix-blend-mode: screen;
+  transform:
+    translate3d(var(--urai-parallax-x), var(--urai-parallax-y), 0)
+    scale(var(--urai-depth-scale))
+    rotate(var(--urai-twist));
+  transition: transform 120ms ease-out;
   animation: uraiSafeDustBreath 20s ease-in-out infinite;
 }
 
@@ -82,10 +107,144 @@ html.urai-route-replay body::after {
   z-index: 999;
   pointer-events: none;
   background:
+    radial-gradient(circle at var(--urai-cursor-x) var(--urai-cursor-y), rgba(190, 245, 255, 0.08), transparent 16rem),
     radial-gradient(circle at 50% 50%, transparent 0%, transparent 58%, rgba(0, 0, 0, 0.34) 100%),
-    linear-gradient(110deg, transparent 0%, rgba(255, 255, 255, 0.025) 47%, transparent 55%);
-  opacity: 0.7;
+    linear-gradient(110deg, transparent 0%, rgba(255, 255, 255, 0.026) 47%, transparent 55%);
+  opacity: 0.78;
   mix-blend-mode: screen;
+}
+
+/* Depth halo and reticle are fixed overlays. They never affect layout. */
+.urai-spatial-depth-halo {
+  position: fixed;
+  left: var(--urai-selected-x);
+  top: var(--urai-selected-y);
+  width: 220px;
+  height: 220px;
+  z-index: 1001;
+  pointer-events: none;
+  border-radius: 999px;
+  transform:
+    translate(-50%, -50%)
+    perspective(900px)
+    rotateX(var(--urai-orbit-y))
+    rotateY(var(--urai-orbit-x))
+    scale(var(--urai-depth-scale));
+  background:
+    radial-gradient(circle, rgba(163, 242, 255, 0.22), transparent 42%),
+    radial-gradient(circle, rgba(178, 123, 255, 0.18), transparent 68%);
+  box-shadow:
+    0 0 42px rgba(127, 229, 255, 0.20),
+    0 0 110px rgba(160, 120, 255, 0.18);
+  filter: blur(2px);
+  opacity: 0.86;
+  mix-blend-mode: screen;
+  animation: uraiHaloBreath 3.4s ease-in-out infinite;
+}
+
+.urai-spatial-reticle {
+  position: fixed;
+  left: var(--urai-cursor-x);
+  top: var(--urai-cursor-y);
+  width: 18px;
+  height: 18px;
+  z-index: 10002;
+  pointer-events: none;
+  border-radius: 999px;
+  transform: translate(-50%, -50%);
+  border: 1px solid rgba(193, 247, 255, 0.26);
+  box-shadow:
+    0 0 14px rgba(135, 231, 255, 0.22),
+    inset 0 0 10px rgba(170, 241, 255, 0.12);
+  opacity: 0.52;
+}
+
+.urai-spatial-focus-cue {
+  position: fixed;
+  left: var(--urai-cue-x);
+  top: var(--urai-cue-y);
+  z-index: 10003;
+  pointer-events: none;
+  padding: 7px 11px;
+  border-radius: 999px;
+  border: 1px solid rgba(194, 244, 255, 0.38);
+  background:
+    linear-gradient(135deg, rgba(3, 10, 19, 0.78), rgba(12, 22, 37, 0.62)),
+    radial-gradient(circle at 18% 20%, rgba(151, 236, 255, 0.18), transparent 50%);
+  color: rgba(238, 251, 255, 0.92);
+  font-size: 10px;
+  font-weight: 760;
+  letter-spacing: 0.045em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  box-shadow:
+    0 16px 44px rgba(0, 0, 0, 0.44),
+    0 0 34px rgba(125, 223, 255, 0.22);
+  backdrop-filter: blur(18px) saturate(1.25);
+  -webkit-backdrop-filter: blur(18px) saturate(1.25);
+  animation: uraiSafeCueFloat 2.8s ease-in-out infinite;
+}
+
+/* The selected star becomes magnetic, not a static label. */
+.urai-spatial-memory-node {
+  position: relative !important;
+  z-index: 10004 !important;
+  border-radius: 999px !important;
+  outline: none !important;
+  transform:
+    translate3d(
+      calc(var(--urai-parallax-x) * 0.08),
+      calc(var(--urai-parallax-y) * 0.08),
+      0
+    )
+    scale(1.055) !important;
+  transform-origin: center center !important;
+  filter: saturate(1.18) brightness(1.08);
+  box-shadow:
+    0 0 20px rgba(140, 235, 255, 0.34),
+    0 0 52px rgba(155, 139, 255, 0.20) !important;
+  transition:
+    transform 180ms ease,
+    filter 180ms ease,
+    box-shadow 180ms ease !important;
+}
+
+.urai-spatial-memory-node::after {
+  content: "";
+  position: absolute;
+  inset: -20px -28px;
+  z-index: -1;
+  pointer-events: none;
+  border-radius: 999px;
+  background:
+    radial-gradient(circle, rgba(169, 244, 255, 0.28), transparent 54%),
+    radial-gradient(circle, rgba(186, 133, 255, 0.20), transparent 72%);
+  filter: blur(10px);
+  opacity: 0.88;
+}
+
+.urai-spatial-memory-node.urai-spatial-memory-armed,
+.urai-spatial-memory-node:hover,
+.urai-spatial-memory-node:focus-visible {
+  transform:
+    translate3d(
+      calc(var(--urai-parallax-x) * 0.12),
+      calc(var(--urai-parallax-y) * 0.12),
+      0
+    )
+    scale(1.12) !important;
+  filter: saturate(1.32) brightness(1.16);
+  box-shadow:
+    0 0 28px rgba(154, 245, 255, 0.58),
+    0 0 82px rgba(170, 134, 255, 0.34) !important;
+}
+
+html.urai-spatial-warping body {
+  filter: saturate(1.25) brightness(1.10);
+}
+
+html.urai-spatial-warping .urai-spatial-depth-halo {
+  animation: uraiWarpOpen 260ms ease-out forwards;
 }
 
 html.urai-route-life-map :is(a, button, [role="button"]),
@@ -104,44 +263,19 @@ html.urai-route-replay :is(a, button, [role="button"]):hover {
   filter: saturate(1.12) brightness(1.06);
 }
 
-.urai-focus-cue {
-  position: fixed;
-  left: min(78vw, calc(100vw - 180px));
-  top: 38vh;
-  z-index: 10000;
-  pointer-events: none;
-  padding: 7px 11px;
-  border-radius: 999px;
-  border: 1px solid rgba(194, 244, 255, 0.38);
-  background:
-    linear-gradient(135deg, rgba(3, 10, 19, 0.78), rgba(12, 22, 37, 0.62)),
-    radial-gradient(circle at 18% 20%, rgba(151, 236, 255, 0.18), transparent 50%);
-  color: rgba(238, 251, 255, 0.92);
-  font-size: 11px;
-  font-weight: 760;
-  letter-spacing: 0.045em;
-  text-transform: uppercase;
-  white-space: nowrap;
-  box-shadow:
-    0 16px 44px rgba(0, 0, 0, 0.44),
-    0 0 34px rgba(125, 223, 255, 0.22);
-  backdrop-filter: blur(18px) saturate(1.25);
-  -webkit-backdrop-filter: blur(18px) saturate(1.25);
-  animation: uraiSafeCueFloat 2.8s ease-in-out infinite;
-}
-
-html:not(.urai-route-life-map) .urai-focus-cue {
-  display: none !important;
-}
-
-/* Mobile-safe: do not let cards/nav eat the world. */
 @media (max-width: 760px) {
   html.urai-route-life-map body {
     padding-bottom: calc(env(safe-area-inset-bottom) + 92px) !important;
   }
 
-  .urai-focus-cue {
+  .urai-spatial-focus-cue,
+  .urai-spatial-reticle {
     display: none !important;
+  }
+
+  .urai-spatial-depth-halo {
+    width: 150px;
+    height: 150px;
   }
 
   html.urai-route-life-map nav,
@@ -154,12 +288,21 @@ html:not(.urai-route-life-map) .urai-focus-cue {
 
 @keyframes uraiSafeDustBreath {
   0%, 100% {
-    transform: translate3d(-0.8vw, 0.2vh, 0) scale(1);
     opacity: 0.74;
   }
   50% {
-    transform: translate3d(0.9vw, -0.5vh, 0) scale(1.035);
     opacity: 0.94;
+  }
+}
+
+@keyframes uraiHaloBreath {
+  0%, 100% {
+    opacity: 0.56;
+    filter: blur(3px) saturate(1.05);
+  }
+  50% {
+    opacity: 0.94;
+    filter: blur(1px) saturate(1.24);
   }
 }
 
@@ -174,11 +317,38 @@ html:not(.urai-route-life-map) .urai-focus-cue {
   }
 }
 
+@keyframes uraiWarpOpen {
+  from {
+    opacity: 0.92;
+    transform:
+      translate(-50%, -50%)
+      perspective(900px)
+      rotateX(var(--urai-orbit-y))
+      rotateY(var(--urai-orbit-x))
+      scale(var(--urai-depth-scale));
+  }
+  to {
+    opacity: 0;
+    transform:
+      translate(-50%, -50%)
+      perspective(900px)
+      rotateX(var(--urai-orbit-y))
+      rotateY(var(--urai-orbit-x))
+      scale(2.4);
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   html.urai-route-life-map body::before,
   html.urai-route-focus body::before,
   html.urai-route-replay body::before,
-  .urai-focus-cue {
+  .urai-spatial-depth-halo,
+  .urai-spatial-focus-cue {
     animation: none !important;
+    transition: none !important;
+  }
+
+  .urai-spatial-reticle {
+    display: none !important;
   }
 }
