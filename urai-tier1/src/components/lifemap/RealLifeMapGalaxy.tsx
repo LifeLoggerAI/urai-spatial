@@ -192,12 +192,15 @@ export default function RealLifeMapGalaxy() {
       <style jsx>{`
         .lifeGalaxy {
           position: relative;
-          min-height: 100vh;
+          height: 100svh;
+          min-height: 100svh;
+          max-height: 100svh;
           overflow: hidden;
           color: white;
           background: #000107;
           isolation: isolate;
           cursor: default;
+          overscroll-behavior: none;
         }
 
         .deepSpace {
@@ -598,12 +601,12 @@ export default function RealLifeMapGalaxy() {
         @keyframes slowDrift { from { transform: translate(-50%, -50%) rotate(-9deg) translateZ(-160px) scale(0.98); } to { transform: translate(-50%, -50%) rotate(-4deg) translateZ(-160px) scale(1.04); } }
 
         @media (max-width: 760px) {
-          .constellation { inset: -10vh -32vw; }
+          .constellation { inset: -11vh -34vw; }
           .mapHud { left: 0.5rem; top: 0.5rem; width: min(226px, calc(100vw - 1rem)); padding: 0.72rem; }
           .mapHud h1 { font-size: 1.68rem; }
           .mapHud span { font-size: 0.7rem; }
           .companionOrb { display: none; }
-          .starDock { left: 50%; right: auto; bottom: 5.7rem; width: min(350px, calc(100vw - 1rem)); transform: translateX(-50%); }
+          .starDock { left: 50%; right: auto; bottom: 5.7rem; width: min(350px, calc(100vw - 1rem)); max-height: 34svh; overflow: auto; transform: translateX(-50%); }
           .portalRail { bottom: 0.75rem; width: calc(100vw - 1rem); justify-content: flex-start; }
           .galaxyBody { width: 170vw; height: 36vh; }
         }
