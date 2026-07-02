@@ -9,12 +9,26 @@ function readAppFile(relativePath) {
   return readFileSync(join(appRoot, relativePath), "utf8");
 }
 
-function assertPrimaryRouteUses3D(relativePath) {
+function assertHomeRouteUsesFinalOwner(relativePath) {
+  const content = readAppFile(relativePath);
+  assert.match(
+    content,
+    /FinalHomeThreshold/,
+    `${relativePath} must render FinalHomeThreshold as the canonical Genesis Home owner.`,
+  );
+  assert.doesNotMatch(
+    content,
+    /UraiV1Experience/,
+    `${relativePath} must not import or render UraiV1Experience. 2.5D is fallback only.`,
+  );
+}
+
+function assertSpatialRouteUses3D(relativePath) {
   const content = readAppFile(relativePath);
   assert.match(
     content,
     /TierOneExperience/,
-    `${relativePath} must render TierOneExperience as the canonical true 3D Genesis surface.`,
+    `${relativePath} must render TierOneExperience as the canonical spatial route shell.`,
   );
   assert.doesNotMatch(
     content,
@@ -34,9 +48,9 @@ function assertFallbackRouteUses2D(relativePath) {
   );
 }
 
-assertPrimaryRouteUses3D("src/app/page.tsx");
-assertPrimaryRouteUses3D("src/app/home/page.tsx");
-assertPrimaryRouteUses3D("src/app/spatial/page.tsx");
+assertHomeRouteUsesFinalOwner("src/app/page.tsx");
+assertHomeRouteUsesFinalOwner("src/app/home/page.tsx");
+assertSpatialRouteUses3D("src/app/spatial/page.tsx");
 assertFallbackRouteUses2D("src/app/spatial-fallback/page.tsx");
 
-console.log("URAI route canon passed: /, /home, /spatial are true 3D; /spatial-fallback is 2.5D fallback.");
+console.log("URAI route canon passed: / and /home use FinalHomeThreshold; /spatial is true 3D; /spatial-fallback is 2.5D fallback.");
