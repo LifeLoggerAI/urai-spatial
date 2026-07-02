@@ -57,7 +57,14 @@ jobs:
         run: corepack pnpm install --no-frozen-lockfile
 
       - name: Guardian
+        if: github.event_name == 'workflow_dispatch'
         run: corepack pnpm urai:guardian
+
+      - name: Verify finalized V1 provider assets
+        if: github.event_name == 'push'
+        run: |
+          node scripts/verify-asset-factory-handoff.mjs
+          node scripts/audit-v123-asset-wall.mjs
 
       - name: Typecheck
         run: corepack pnpm check:types
@@ -102,4 +109,4 @@ jobs:
           URAI_DEPLOY_URL: ${{ inputs.deploy_url || 'https://urai.app' }}
         run: corepack pnpm smoke:live
 
-# Finalized V1 provider asset production deploy trigger.
+# Finalized V1 provider asset production deploy trigger, scoped to V1 web gates on push.
