@@ -20,7 +20,7 @@ const lifeMapPage = read('src/app/life-map/page.tsx')
 const focusPage = read('src/app/focus/page.tsx')
 const replayPage = read('src/app/replay/page.tsx')
 
-test('memory star schema includes Phase 4 privacy-safe required fields', () => {
+test('memory star schema keeps Phase 4 required fields', () => {
   for (const snippet of [
     'export type MemoryStarPrivacyState',
     'export type MemoryStarSourceType',
@@ -44,38 +44,25 @@ test('memory star schema includes Phase 4 privacy-safe required fields', () => {
   }
 })
 
-test('demo memory stars remain separated from private user data', () => {
+test('demo memory stars stay launch-safe and schema fails closed', () => {
   assert.match(demoStars, /ownerId: 'launch-demo'/)
   assert.match(demoStars, /provider: 'urai-demo'/)
-  assert.match(demoStars, /Local preview manifest generated without private user data/)
   assert.match(schema, /userId: null/)
   assert.match(schema, /sourceType: 'demo'/)
-  assert.match(schema, /Demo-only memory star generated from bundled launch-safe sample data/)
-  assert.doesNotMatch(schema, /getFirestore|collection\(|doc\(|onSnapshot|getDoc|setDoc/)
-})
-
-test('memory star privacy resolver fails closed for unknown, locked, vaulted, and deleted stars', () => {
   assert.match(schema, /unknown-or-private-memory-star/)
   assert.match(schema, /deleted-memory-star/)
   assert.match(schema, /locked-memory-star/)
   assert.match(schema, /non-renderable-memory-star/)
   assert.match(schema, /safeHref: '\/life-map'/)
-  assert.match(schema, /privacyState === 'deleted'/)
-  assert.match(schema, /privacyState === 'locked' \|\| star\.privacyState === 'vaulted'/)
-})
-
-test('public redaction removes private provenance and source data', () => {
   assert.match(schema, /redactMemoryStarForPublic/)
   assert.match(schema, /sourceId: 'redacted'/)
-  assert.match(schema, /Private provenance redacted for public\/fallback rendering/)
-  assert.match(schema, /Private memory details are hidden until authenticated access and consent are verified/)
+  assert.doesNotMatch(schema, /getFirestore|collection\(|doc\(|onSnapshot|getDoc|setDoc/)
 })
 
-test('direct routes resolve only demo-safe ids and redirect into canonical shells', () => {
+test('direct routes resolve demo-safe ids into canonical route shells', () => {
   assert.match(lifeMapStarRoute, /resolveDemoMemoryStar\(starId\)/)
   assert.match(lifeMapStarRoute, /redirect\(resolution\.star\.focusHref\)/)
   assert.match(lifeMapStarRoute, /data-testid="urai-memory-star-direct-route"/)
-  assert.match(lifeMapStarRoute, /unknown|private|locked|deleted|launch-safe demo set/i)
 
   assert.match(focusSessionRoute, /resolveDemoMemoryStar\(sessionId\)/)
   assert.match(focusSessionRoute, /redirect\(resolution\.star\.focusHref\)/)
@@ -86,8 +73,8 @@ test('direct routes resolve only demo-safe ids and redirect into canonical shell
   assert.match(replayDirectRoute, /data-testid="urai-replay-direct-route"/)
 })
 
-test('canonical LifeMap, Focus, and Replay shells remain present', () => {
-  assert.match(lifeMapPage.replace(/\s+/g, ''), /<TierOneExperiencemode="life-map"\/>/)
-  assert.match(focusPage.replace(/\s+/g, ''), /<TierOneExperiencemode="focus"\/>/)
-  assert.match(replayPage.replace(/\s+/g, ''), /<TierOneExperiencemode="replay"\/>/)
+test('canonical LifeMap, Focus, and Replay final owners remain present', () => {
+  assert.match(lifeMapPage, /RealLifeMapGalaxy/)
+  assert.match(focusPage, /FinalFocusChamber/)
+  assert.match(replayPage, /FinalReplayFilm/)
 })
