@@ -12,6 +12,7 @@ COMMIT_RECEIPT="${COMMIT_RECEIPT:-0}"
 SKIP_DEPLOY="${SKIP_DEPLOY:-0}"
 SKIP_BUILD="${SKIP_BUILD:-0}"
 MAX_DEPLOY_ATTEMPTS="${MAX_DEPLOY_ATTEMPTS:-6}"
+EXPECTED_PNG_COUNT="${EXPECTED_PNG_COUNT:-24}"
 STAMP="$(date -u +%Y%m%dT%H%M%SZ)"
 
 if [ -d "$HOME/urai-spatial/.git" ]; then
@@ -144,7 +145,14 @@ if [ -n "$LATEST_PROOF" ] && [ -d "$LATEST_PROOF/screenshots" ]; then
   cd - >/dev/null || exit 1
 fi
 
+if [ "$PNG_COUNT" = "$EXPECTED_PNG_COUNT" ]; then
+  SCREENSHOT_EXIT=0
+else
+  SCREENSHOT_EXIT=1
+fi
+
 echo "PNG_COUNT=$PNG_COUNT" | tee -a "$OUT/summary.txt"
+echo "SCREENSHOT_EXIT=$SCREENSHOT_EXIT" | tee -a "$OUT/summary.txt"
 echo "ZIP=$ZIP" | tee -a "$OUT/summary.txt"
 
 cat > "$OUT/${LOOP_NAME}-receipt.md" <<EOF
@@ -182,8 +190,16 @@ $ZIP
 EOF
 
 if [ "$COMMIT_RECEIPT" = "1" ]; then
-  echo
-  echo "=== COMMIT RECEIPT TO REPO ==="
+  if [ "$SCREENSHOT_EXIT" != "0" ]; then
+    echo
+    echo "=== SKIP RECEIPT COMMIT: expected $EXPECTED_PNG_COUNT screenshots, got $PNG_COUNT ==="
+    COMMIT_EXIT=0
+    PUSH_EXIT=0
+    echo "COMMIT_EXIT=$COMMIT_EXIT" | tee -a "$OUT/summary.txt"
+    echo "PUSH_EXIT=$PUSH_EXIT" | tee -a "$OUT/summary.txt"
+  else
+    echo
+    echo "=== COMMIT RECEIPT TO REPO ==="
   mkdir -p docs/receipts/screenshots docs/receipts/loops
   RECEIPT_DST="docs/receipts/loops/${LOOP_NAME}-${GIT_HEAD}-${STAMP}.md"
   cp "$OUT/${LOOP_NAME}-receipt.md" "$RECEIPT_DST"
@@ -199,6 +215,7 @@ if [ "$COMMIT_RECEIPT" = "1" ]; then
   git push origin main
   PUSH_EXIT=$?
   echo "PUSH_EXIT=$PUSH_EXIT" | tee -a "$OUT/summary.txt"
+  fi
 fi
 
 echo
@@ -210,3 +227,7 @@ echo "=== DONE ==="
 cat "$OUT/summary.txt"
 echo "OUT=$OUT"
 if [ -n "$ZIP" ]; then echo "UPLOAD_ZIP=$ZIP"; fi
+
+if [ "${SCREENSHOT_EXIT:-0}" != "0" ]; then
+  exit 2
+fi
