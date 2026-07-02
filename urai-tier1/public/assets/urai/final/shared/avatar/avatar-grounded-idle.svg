@@ -1,0 +1,109 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="1920" height="1080" viewBox="0 0 1920 1080" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Avatar Presence / avatar-grounded-idle">
+  <defs>
+    <radialGradient id="core" cx="50%" cy="46%" r="64%">
+      <stop offset="0%" stop-color="hsl(121, 88%, 76%)" stop-opacity="0.84"/>
+      <stop offset="28%" stop-color="hsl(79, 74%, 46%)" stop-opacity="0.42"/>
+      <stop offset="67%" stop-color="hsl(289, 68%, 18%)" stop-opacity="0.88"/>
+      <stop offset="100%" stop-color="#03050A"/>
+    </radialGradient>
+    <linearGradient id="floor" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="rgba(255,255,255,0.28)"/>
+      <stop offset="50%" stop-color="rgba(120,170,255,0.14)"/>
+      <stop offset="100%" stop-color="rgba(255,255,255,0.04)"/>
+    </linearGradient>
+    <filter id="blur">
+      <feGaussianBlur stdDeviation="18"/>
+    </filter>
+    <filter id="soft">
+      <feGaussianBlur stdDeviation="2"/>
+    </filter>
+  </defs>
+
+  <rect width="1920" height="1080" fill="url(#core)"/>
+  <rect width="1920" height="1080" fill="#03050A" opacity="0.30"/>
+
+  <g opacity="0.50" filter="url(#blur)">
+    <ellipse cx="960" cy="540" rx="520" ry="220" fill="hsl(121, 90%, 70%)" opacity="0.24"/>
+    <ellipse cx="820" cy="610" rx="620" ry="180" fill="hsl(289, 90%, 55%)" opacity="0.16"/>
+    <ellipse cx="1120" cy="430" rx="380" ry="160" fill="hsl(79, 100%, 68%)" opacity="0.22"/>
+  </g>
+
+  <g opacity="0.55">
+    <path d="M0 850 C330 740 520 915 825 804 C1100 704 1390 785 1920 642 L1920 1080 L0 1080 Z" fill="url(#floor)" opacity="0.30"/>
+    <path d="M0 910 C420 790 680 1010 1000 870 C1300 738 1540 888 1920 760" stroke="rgba(255,255,255,0.30)" stroke-width="2"/>
+  </g>
+
+  <g opacity="0.78">
+    <circle cx="1116" cy="726" r="2.2" fill="white" opacity="0.58"/>
+<circle cx="752" cy="710" r="2.4" fill="white" opacity="0.42"/>
+<circle cx="1104" cy="230" r="3.8" fill="white" opacity="0.50"/>
+<circle cx="1392" cy="710" r="2.8" fill="white" opacity="0.34"/>
+<circle cx="592" cy="758" r="4.2" fill="white" opacity="0.18"/>
+<circle cx="528" cy="406" r="3.8" fill="white" opacity="0.26"/>
+<circle cx="1168" cy="454" r="4.8" fill="white" opacity="0.42"/>
+<circle cx="400" cy="438" r="3.4" fill="white" opacity="0.34"/>
+<circle cx="1776" cy="406" r="4.0" fill="white" opacity="0.46"/>
+<circle cx="1136" cy="774" r="4.4" fill="white" opacity="0.38"/>
+<circle cx="624" cy="598" r="4.0" fill="white" opacity="0.46"/>
+<circle cx="1296" cy="198" r="4.6" fill="white" opacity="0.34"/>
+<circle cx="720" cy="726" r="3.4" fill="white" opacity="0.70"/>
+<circle cx="144" cy="342" r="2.0" fill="white" opacity="0.62"/>
+<circle cx="688" cy="486" r="1.8" fill="white" opacity="0.54"/>
+<circle cx="176" cy="534" r="2.2" fill="white" opacity="0.46"/>
+<circle cx="208" cy="86" r="5.0" fill="white" opacity="0.74"/>
+<circle cx="1648" cy="374" r="4.8" fill="white" opacity="0.42"/>
+<circle cx="912" cy="726" r="1.8" fill="white" opacity="0.42"/>
+<circle cx="368" cy="534" r="2.6" fill="white" opacity="0.50"/>
+<circle cx="112" cy="134" r="3.6" fill="white" opacity="0.66"/>
+<circle cx="1104" cy="582" r="2.4" fill="white" opacity="0.18"/>
+<circle cx="1456" cy="182" r="2.0" fill="white" opacity="0.62"/>
+<circle cx="1808" cy="406" r="2.2" fill="white" opacity="0.58"/>
+<circle cx="1552" cy="446" r="4.0" fill="white" opacity="0.46"/>
+<circle cx="1468" cy="582" r="3.0" fill="white" opacity="0.54"/>
+<circle cx="1456" cy="646" r="2.8" fill="white" opacity="0.34"/>
+<circle cx="1296" cy="214" r="2.8" fill="white" opacity="0.22"/>
+<circle cx="752" cy="422" r="1.2" fill="white" opacity="0.30"/>
+<circle cx="1136" cy="566" r="2.4" fill="white" opacity="0.30"/>
+<circle cx="304" cy="326" r="4.0" fill="white" opacity="0.46"/>
+<circle cx="464" cy="182" r="1.6" fill="white" opacity="0.22"/>
+<circle cx="1232" cy="518" r="4.6" fill="white" opacity="0.34"/>
+<circle cx="1552" cy="614" r="4.2" fill="white" opacity="0.54"/>
+<circle cx="1136" cy="710" r="1.6" fill="white" opacity="0.22"/>
+<circle cx="1424" cy="390" r="4.8" fill="white" opacity="0.18"/>
+<circle cx="1648" cy="326" r="2.4" fill="white" opacity="0.54"/>
+<circle cx="1680" cy="310" r="1.8" fill="white" opacity="0.42"/>
+<circle cx="1200" cy="758" r="3.0" fill="white" opacity="0.54"/>
+<circle cx="1360" cy="470" r="2.4" fill="white" opacity="0.18"/>
+<circle cx="976" cy="614" r="1.4" fill="white" opacity="0.62"/>
+<circle cx="272" cy="566" r="1.8" fill="white" opacity="0.66"/>
+<circle cx="272" cy="390" r="2.4" fill="white" opacity="0.18"/>
+<circle cx="624" cy="278" r="1.2" fill="white" opacity="0.18"/>
+<circle cx="1584" cy="102" r="3.0" fill="white" opacity="0.54"/>
+<circle cx="176" cy="662" r="1.8" fill="white" opacity="0.66"/>
+<circle cx="112" cy="638" r="5.0" fill="white" opacity="0.26"/>
+<circle cx="784" cy="246" r="3.2" fill="white" opacity="0.38"/>
+<circle cx="1296" cy="342" r="5.0" fill="white" opacity="0.50"/>
+<circle cx="1648" cy="486" r="2.0" fill="white" opacity="0.62"/>
+<circle cx="400" cy="607" r="3.4" fill="white" opacity="0.22"/>
+<circle cx="1456" cy="566" r="4.8" fill="white" opacity="0.30"/>
+
+  </g>
+
+  <g transform="translate(960 500)">
+    <circle r="132" fill="rgba(255,255,255,0.06)" stroke="rgba(255,255,255,0.28)" stroke-width="1.5"/>
+    <circle r="82" fill="rgba(255,255,255,0.10)" stroke="rgba(255,255,255,0.36)" stroke-width="1"/>
+    <circle r="34" fill="hsl(121, 100%, 78%)" opacity="0.82"/>
+    <circle r="168" fill="none" stroke="rgba(255,255,255,0.12)" stroke-width="1"/>
+    <path d="M-260 120 C-120 20 120 20 260 120" stroke="rgba(255,255,255,0.23)" stroke-width="2" fill="none"/>
+  </g>
+
+  <g transform="translate(120 805)">
+    <rect x="0" y="0" width="820" height="150" rx="28" fill="rgba(3,8,18,0.58)" stroke="rgba(255,255,255,0.18)"/>
+    <text x="36" y="55" fill="rgba(255,255,255,0.92)" font-family="Inter, Arial, sans-serif" font-size="31" font-weight="700">Avatar Presence</text>
+    <text x="36" y="96" fill="rgba(255,255,255,0.70)" font-family="Inter, Arial, sans-serif" font-size="21">avatar-grounded-idle</text>
+    <text x="36" y="126" fill="rgba(255,255,255,0.50)" font-family="Inter, Arial, sans-serif" font-size="17">shared • shared/avatar • grounded body presence, not cartoon</text>
+  </g>
+
+  <text x="1780" y="1012" text-anchor="end" fill="rgba(255,255,255,0.38)" font-family="Inter, Arial, sans-serif" font-size="18">URAI final asset spine fallback</text>
+</svg>

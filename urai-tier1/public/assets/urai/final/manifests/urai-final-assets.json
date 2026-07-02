@@ -1,0 +1,707 @@
+{
+  "generatedAt": "2026-07-02T00:42:34.930Z",
+  "canon": "URAI final asset spine",
+  "warning": "These are structured fallback/source assets. Replace SVGs with bespoke final WEBP/AVIF as art arrives while preserving ids and manifest paths.",
+  "basePath": "/assets/urai/final",
+  "routes": {
+    "home": {
+      "tier": "tier1",
+      "canon": "Home Threshold",
+      "mood": "real sky, horizon, orb companion, user world threshold",
+      "assets": {
+        "home-threshold-desktop": {
+          "id": "home-threshold-desktop",
+          "fallbackSvg": "/assets/urai/final/tier1/home/home-threshold-desktop.svg",
+          "preferredWebp": "/assets/urai/final/tier1/home/home-threshold-desktop.webp",
+          "status": "fallback-svg-ready"
+        },
+        "home-threshold-mobile": {
+          "id": "home-threshold-mobile",
+          "fallbackSvg": "/assets/urai/final/tier1/home/home-threshold-mobile.svg",
+          "preferredWebp": "/assets/urai/final/tier1/home/home-threshold-mobile.webp",
+          "status": "fallback-svg-ready"
+        },
+        "home-threshold-og": {
+          "id": "home-threshold-og",
+          "fallbackSvg": "/assets/urai/final/tier1/home/home-threshold-og.svg",
+          "preferredWebp": "/assets/urai/final/tier1/home/home-threshold-og.webp",
+          "status": "fallback-svg-ready"
+        },
+        "home-sky-ascent-portal": {
+          "id": "home-sky-ascent-portal",
+          "fallbackSvg": "/assets/urai/final/tier1/home/home-sky-ascent-portal.svg",
+          "preferredWebp": "/assets/urai/final/tier1/home/home-sky-ascent-portal.webp",
+          "status": "fallback-svg-ready"
+        },
+        "home-ground-descent-portal": {
+          "id": "home-ground-descent-portal",
+          "fallbackSvg": "/assets/urai/final/tier1/home/home-ground-descent-portal.svg",
+          "preferredWebp": "/assets/urai/final/tier1/home/home-ground-descent-portal.webp",
+          "status": "fallback-svg-ready"
+        },
+        "home-orb-presence": {
+          "id": "home-orb-presence",
+          "fallbackSvg": "/assets/urai/final/tier1/home/home-orb-presence.svg",
+          "preferredWebp": "/assets/urai/final/tier1/home/home-orb-presence.webp",
+          "status": "fallback-svg-ready"
+        },
+        "home-avatar-grounded": {
+          "id": "home-avatar-grounded",
+          "fallbackSvg": "/assets/urai/final/tier1/home/home-avatar-grounded.svg",
+          "preferredWebp": "/assets/urai/final/tier1/home/home-avatar-grounded.webp",
+          "status": "fallback-svg-ready"
+        }
+      }
+    },
+    "ground": {
+      "tier": "tier1",
+      "canon": "Ground Realm",
+      "mood": "private real-world operations layer, walkable support world",
+      "assets": {
+        "ground-realm-desktop": {
+          "id": "ground-realm-desktop",
+          "fallbackSvg": "/assets/urai/final/tier1/ground/ground-realm-desktop.svg",
+          "preferredWebp": "/assets/urai/final/tier1/ground/ground-realm-desktop.webp",
+          "status": "fallback-svg-ready"
+        },
+        "ground-realm-mobile": {
+          "id": "ground-realm-mobile",
+          "fallbackSvg": "/assets/urai/final/tier1/ground/ground-realm-mobile.svg",
+          "preferredWebp": "/assets/urai/final/tier1/ground/ground-realm-mobile.webp",
+          "status": "fallback-svg-ready"
+        },
+        "ground-reception": {
+          "id": "ground-reception",
+          "fallbackSvg": "/assets/urai/final/tier1/ground/ground-reception.svg",
+          "preferredWebp": "/assets/urai/final/tier1/ground/ground-reception.webp",
+          "status": "fallback-svg-ready"
+        },
+        "ground-privacy-sanctuary": {
+          "id": "ground-privacy-sanctuary",
+          "fallbackSvg": "/assets/urai/final/tier1/ground/ground-privacy-sanctuary.svg",
+          "preferredWebp": "/assets/urai/final/tier1/ground/ground-privacy-sanctuary.webp",
+          "status": "fallback-svg-ready"
+        },
+        "ground-work-table": {
+          "id": "ground-work-table",
+          "fallbackSvg": "/assets/urai/final/tier1/ground/ground-work-table.svg",
+          "preferredWebp": "/assets/urai/final/tier1/ground/ground-work-table.webp",
+          "status": "fallback-svg-ready"
+        },
+        "ground-logistics-bay": {
+          "id": "ground-logistics-bay",
+          "fallbackSvg": "/assets/urai/final/tier1/ground/ground-logistics-bay.svg",
+          "preferredWebp": "/assets/urai/final/tier1/ground/ground-logistics-bay.webp",
+          "status": "fallback-svg-ready"
+        },
+        "ground-wellness-pool": {
+          "id": "ground-wellness-pool",
+          "fallbackSvg": "/assets/urai/final/tier1/ground/ground-wellness-pool.svg",
+          "preferredWebp": "/assets/urai/final/tier1/ground/ground-wellness-pool.webp",
+          "status": "fallback-svg-ready"
+        },
+        "ground-memory-archive": {
+          "id": "ground-memory-archive",
+          "fallbackSvg": "/assets/urai/final/tier1/ground/ground-memory-archive.svg",
+          "preferredWebp": "/assets/urai/final/tier1/ground/ground-memory-archive.webp",
+          "status": "fallback-svg-ready"
+        },
+        "ground-workforce-council": {
+          "id": "ground-workforce-council",
+          "fallbackSvg": "/assets/urai/final/tier1/ground/ground-workforce-council.svg",
+          "preferredWebp": "/assets/urai/final/tier1/ground/ground-workforce-council.webp",
+          "status": "fallback-svg-ready"
+        },
+        "ground-og": {
+          "id": "ground-og",
+          "fallbackSvg": "/assets/urai/final/tier1/ground/ground-og.svg",
+          "preferredWebp": "/assets/urai/final/tier1/ground/ground-og.webp",
+          "status": "fallback-svg-ready"
+        }
+      }
+    },
+    "life-map": {
+      "tier": "tier2",
+      "canon": "Life Map",
+      "mood": "private galaxy, organic dust cloud, memory constellations, camera pull",
+      "assets": {
+        "lifemap-galaxy-field-desktop": {
+          "id": "lifemap-galaxy-field-desktop",
+          "fallbackSvg": "/assets/urai/final/tier2/life-map/lifemap-galaxy-field-desktop.svg",
+          "preferredWebp": "/assets/urai/final/tier2/life-map/lifemap-galaxy-field-desktop.webp",
+          "status": "fallback-svg-ready"
+        },
+        "lifemap-galaxy-field-mobile": {
+          "id": "lifemap-galaxy-field-mobile",
+          "fallbackSvg": "/assets/urai/final/tier2/life-map/lifemap-galaxy-field-mobile.svg",
+          "preferredWebp": "/assets/urai/final/tier2/life-map/lifemap-galaxy-field-mobile.webp",
+          "status": "fallback-svg-ready"
+        },
+        "lifemap-organic-dust-core": {
+          "id": "lifemap-organic-dust-core",
+          "fallbackSvg": "/assets/urai/final/tier2/life-map/lifemap-organic-dust-core.svg",
+          "preferredWebp": "/assets/urai/final/tier2/life-map/lifemap-organic-dust-core.webp",
+          "status": "fallback-svg-ready"
+        },
+        "lifemap-selected-star": {
+          "id": "lifemap-selected-star",
+          "fallbackSvg": "/assets/urai/final/tier2/life-map/lifemap-selected-star.svg",
+          "preferredWebp": "/assets/urai/final/tier2/life-map/lifemap-selected-star.webp",
+          "status": "fallback-svg-ready"
+        },
+        "lifemap-memory-star": {
+          "id": "lifemap-memory-star",
+          "fallbackSvg": "/assets/urai/final/tier2/life-map/lifemap-memory-star.svg",
+          "preferredWebp": "/assets/urai/final/tier2/life-map/lifemap-memory-star.webp",
+          "status": "fallback-svg-ready"
+        },
+        "lifemap-camera-pull-cue": {
+          "id": "lifemap-camera-pull-cue",
+          "fallbackSvg": "/assets/urai/final/tier2/life-map/lifemap-camera-pull-cue.svg",
+          "preferredWebp": "/assets/urai/final/tier2/life-map/lifemap-camera-pull-cue.webp",
+          "status": "fallback-svg-ready"
+        },
+        "lifemap-og": {
+          "id": "lifemap-og",
+          "fallbackSvg": "/assets/urai/final/tier2/life-map/lifemap-og.svg",
+          "preferredWebp": "/assets/urai/final/tier2/life-map/lifemap-og.webp",
+          "status": "fallback-svg-ready"
+        }
+      }
+    },
+    "focus": {
+      "tier": "tier2",
+      "canon": "Focus Chamber",
+      "mood": "selected memory chamber, image inside star, replay entry",
+      "assets": {
+        "focus-memory-chamber-desktop": {
+          "id": "focus-memory-chamber-desktop",
+          "fallbackSvg": "/assets/urai/final/tier2/focus/focus-memory-chamber-desktop.svg",
+          "preferredWebp": "/assets/urai/final/tier2/focus/focus-memory-chamber-desktop.webp",
+          "status": "fallback-svg-ready"
+        },
+        "focus-memory-chamber-mobile": {
+          "id": "focus-memory-chamber-mobile",
+          "fallbackSvg": "/assets/urai/final/tier2/focus/focus-memory-chamber-mobile.svg",
+          "preferredWebp": "/assets/urai/final/tier2/focus/focus-memory-chamber-mobile.webp",
+          "status": "fallback-svg-ready"
+        },
+        "focus-star-image-frame": {
+          "id": "focus-star-image-frame",
+          "fallbackSvg": "/assets/urai/final/tier2/focus/focus-star-image-frame.svg",
+          "preferredWebp": "/assets/urai/final/tier2/focus/focus-star-image-frame.webp",
+          "status": "fallback-svg-ready"
+        },
+        "focus-replay-threshold": {
+          "id": "focus-replay-threshold",
+          "fallbackSvg": "/assets/urai/final/tier2/focus/focus-replay-threshold.svg",
+          "preferredWebp": "/assets/urai/final/tier2/focus/focus-replay-threshold.webp",
+          "status": "fallback-svg-ready"
+        },
+        "focus-og": {
+          "id": "focus-og",
+          "fallbackSvg": "/assets/urai/final/tier2/focus/focus-og.svg",
+          "preferredWebp": "/assets/urai/final/tier2/focus/focus-og.webp",
+          "status": "fallback-svg-ready"
+        }
+      }
+    },
+    "replay": {
+      "tier": "tier2",
+      "canon": "Replay Realm",
+      "mood": "cinematic memory film, inside the memory, emotional beat stage",
+      "assets": {
+        "replay-cinematic-stage-desktop": {
+          "id": "replay-cinematic-stage-desktop",
+          "fallbackSvg": "/assets/urai/final/tier2/replay/replay-cinematic-stage-desktop.svg",
+          "preferredWebp": "/assets/urai/final/tier2/replay/replay-cinematic-stage-desktop.webp",
+          "status": "fallback-svg-ready"
+        },
+        "replay-cinematic-stage-mobile": {
+          "id": "replay-cinematic-stage-mobile",
+          "fallbackSvg": "/assets/urai/final/tier2/replay/replay-cinematic-stage-mobile.svg",
+          "preferredWebp": "/assets/urai/final/tier2/replay/replay-cinematic-stage-mobile.webp",
+          "status": "fallback-svg-ready"
+        },
+        "replay-emotional-beat-01": {
+          "id": "replay-emotional-beat-01",
+          "fallbackSvg": "/assets/urai/final/tier2/replay/replay-emotional-beat-01.svg",
+          "preferredWebp": "/assets/urai/final/tier2/replay/replay-emotional-beat-01.webp",
+          "status": "fallback-svg-ready"
+        },
+        "replay-emotional-beat-02": {
+          "id": "replay-emotional-beat-02",
+          "fallbackSvg": "/assets/urai/final/tier2/replay/replay-emotional-beat-02.svg",
+          "preferredWebp": "/assets/urai/final/tier2/replay/replay-emotional-beat-02.webp",
+          "status": "fallback-svg-ready"
+        },
+        "replay-emotional-beat-03": {
+          "id": "replay-emotional-beat-03",
+          "fallbackSvg": "/assets/urai/final/tier2/replay/replay-emotional-beat-03.svg",
+          "preferredWebp": "/assets/urai/final/tier2/replay/replay-emotional-beat-03.webp",
+          "status": "fallback-svg-ready"
+        },
+        "replay-xr-tease": {
+          "id": "replay-xr-tease",
+          "fallbackSvg": "/assets/urai/final/tier2/replay/replay-xr-tease.svg",
+          "preferredWebp": "/assets/urai/final/tier2/replay/replay-xr-tease.webp",
+          "status": "fallback-svg-ready"
+        },
+        "replay-og": {
+          "id": "replay-og",
+          "fallbackSvg": "/assets/urai/final/tier2/replay/replay-og.svg",
+          "preferredWebp": "/assets/urai/final/tier2/replay/replay-og.webp",
+          "status": "fallback-svg-ready"
+        }
+      }
+    },
+    "mirror": {
+      "tier": "tier2",
+      "canon": "Mirror Realm",
+      "mood": "reflection without judgment, private pattern layer, orb integrated",
+      "assets": {
+        "mirror-reflection-realm-desktop": {
+          "id": "mirror-reflection-realm-desktop",
+          "fallbackSvg": "/assets/urai/final/tier2/mirror/mirror-reflection-realm-desktop.svg",
+          "preferredWebp": "/assets/urai/final/tier2/mirror/mirror-reflection-realm-desktop.webp",
+          "status": "fallback-svg-ready"
+        },
+        "mirror-reflection-realm-mobile": {
+          "id": "mirror-reflection-realm-mobile",
+          "fallbackSvg": "/assets/urai/final/tier2/mirror/mirror-reflection-realm-mobile.svg",
+          "preferredWebp": "/assets/urai/final/tier2/mirror/mirror-reflection-realm-mobile.webp",
+          "status": "fallback-svg-ready"
+        },
+        "mirror-private-pattern-field": {
+          "id": "mirror-private-pattern-field",
+          "fallbackSvg": "/assets/urai/final/tier2/mirror/mirror-private-pattern-field.svg",
+          "preferredWebp": "/assets/urai/final/tier2/mirror/mirror-private-pattern-field.webp",
+          "status": "fallback-svg-ready"
+        },
+        "mirror-orb-reflection": {
+          "id": "mirror-orb-reflection",
+          "fallbackSvg": "/assets/urai/final/tier2/mirror/mirror-orb-reflection.svg",
+          "preferredWebp": "/assets/urai/final/tier2/mirror/mirror-orb-reflection.webp",
+          "status": "fallback-svg-ready"
+        },
+        "mirror-og": {
+          "id": "mirror-og",
+          "fallbackSvg": "/assets/urai/final/tier2/mirror/mirror-og.svg",
+          "preferredWebp": "/assets/urai/final/tier2/mirror/mirror-og.webp",
+          "status": "fallback-svg-ready"
+        }
+      }
+    },
+    "passport": {
+      "tier": "tier2",
+      "canon": "Passport Vault",
+      "mood": "identity, consent, ownership, provenance, private-by-default",
+      "assets": {
+        "passport-vault-desktop": {
+          "id": "passport-vault-desktop",
+          "fallbackSvg": "/assets/urai/final/tier2/passport/passport-vault-desktop.svg",
+          "preferredWebp": "/assets/urai/final/tier2/passport/passport-vault-desktop.webp",
+          "status": "fallback-svg-ready"
+        },
+        "passport-vault-mobile": {
+          "id": "passport-vault-mobile",
+          "fallbackSvg": "/assets/urai/final/tier2/passport/passport-vault-mobile.svg",
+          "preferredWebp": "/assets/urai/final/tier2/passport/passport-vault-mobile.webp",
+          "status": "fallback-svg-ready"
+        },
+        "passport-consent-seal": {
+          "id": "passport-consent-seal",
+          "fallbackSvg": "/assets/urai/final/tier2/passport/passport-consent-seal.svg",
+          "preferredWebp": "/assets/urai/final/tier2/passport/passport-consent-seal.webp",
+          "status": "fallback-svg-ready"
+        },
+        "passport-provenance-thread": {
+          "id": "passport-provenance-thread",
+          "fallbackSvg": "/assets/urai/final/tier2/passport/passport-provenance-thread.svg",
+          "preferredWebp": "/assets/urai/final/tier2/passport/passport-provenance-thread.webp",
+          "status": "fallback-svg-ready"
+        },
+        "passport-ownership-panel": {
+          "id": "passport-ownership-panel",
+          "fallbackSvg": "/assets/urai/final/tier2/passport/passport-ownership-panel.svg",
+          "preferredWebp": "/assets/urai/final/tier2/passport/passport-ownership-panel.webp",
+          "status": "fallback-svg-ready"
+        },
+        "passport-og": {
+          "id": "passport-og",
+          "fallbackSvg": "/assets/urai/final/tier2/passport/passport-og.svg",
+          "preferredWebp": "/assets/urai/final/tier2/passport/passport-og.webp",
+          "status": "fallback-svg-ready"
+        }
+      }
+    },
+    "status": {
+      "tier": "tier2",
+      "canon": "Status Realm",
+      "mood": "system pulse, live trust, operational proof",
+      "assets": {
+        "status-system-pulse-desktop": {
+          "id": "status-system-pulse-desktop",
+          "fallbackSvg": "/assets/urai/final/tier2/status/status-system-pulse-desktop.svg",
+          "preferredWebp": "/assets/urai/final/tier2/status/status-system-pulse-desktop.webp",
+          "status": "fallback-svg-ready"
+        },
+        "status-system-pulse-mobile": {
+          "id": "status-system-pulse-mobile",
+          "fallbackSvg": "/assets/urai/final/tier2/status/status-system-pulse-mobile.svg",
+          "preferredWebp": "/assets/urai/final/tier2/status/status-system-pulse-mobile.webp",
+          "status": "fallback-svg-ready"
+        },
+        "status-route-proof": {
+          "id": "status-route-proof",
+          "fallbackSvg": "/assets/urai/final/tier2/status/status-route-proof.svg",
+          "preferredWebp": "/assets/urai/final/tier2/status/status-route-proof.webp",
+          "status": "fallback-svg-ready"
+        },
+        "status-trust-grid": {
+          "id": "status-trust-grid",
+          "fallbackSvg": "/assets/urai/final/tier2/status/status-trust-grid.svg",
+          "preferredWebp": "/assets/urai/final/tier2/status/status-trust-grid.webp",
+          "status": "fallback-svg-ready"
+        },
+        "status-og": {
+          "id": "status-og",
+          "fallbackSvg": "/assets/urai/final/tier2/status/status-og.svg",
+          "preferredWebp": "/assets/urai/final/tier2/status/status-og.webp",
+          "status": "fallback-svg-ready"
+        }
+      }
+    },
+    "privacy-controls": {
+      "tier": "tier2",
+      "canon": "Privacy Controls",
+      "mood": "consent controls, private operating boundary",
+      "assets": {
+        "privacy-controls-desktop": {
+          "id": "privacy-controls-desktop",
+          "fallbackSvg": "/assets/urai/final/tier2/privacy-controls/privacy-controls-desktop.svg",
+          "preferredWebp": "/assets/urai/final/tier2/privacy-controls/privacy-controls-desktop.webp",
+          "status": "fallback-svg-ready"
+        },
+        "privacy-controls-mobile": {
+          "id": "privacy-controls-mobile",
+          "fallbackSvg": "/assets/urai/final/tier2/privacy-controls/privacy-controls-mobile.svg",
+          "preferredWebp": "/assets/urai/final/tier2/privacy-controls/privacy-controls-mobile.webp",
+          "status": "fallback-svg-ready"
+        },
+        "privacy-consent-ring": {
+          "id": "privacy-consent-ring",
+          "fallbackSvg": "/assets/urai/final/tier2/privacy-controls/privacy-consent-ring.svg",
+          "preferredWebp": "/assets/urai/final/tier2/privacy-controls/privacy-consent-ring.webp",
+          "status": "fallback-svg-ready"
+        },
+        "privacy-og": {
+          "id": "privacy-og",
+          "fallbackSvg": "/assets/urai/final/tier2/privacy-controls/privacy-og.svg",
+          "preferredWebp": "/assets/urai/final/tier2/privacy-controls/privacy-og.webp",
+          "status": "fallback-svg-ready"
+        }
+      }
+    },
+    "location-map": {
+      "tier": "tier2",
+      "canon": "Location Map",
+      "mood": "emotional weather, world signal, place memory",
+      "assets": {
+        "location-map-desktop": {
+          "id": "location-map-desktop",
+          "fallbackSvg": "/assets/urai/final/tier2/location-map/location-map-desktop.svg",
+          "preferredWebp": "/assets/urai/final/tier2/location-map/location-map-desktop.webp",
+          "status": "fallback-svg-ready"
+        },
+        "location-map-mobile": {
+          "id": "location-map-mobile",
+          "fallbackSvg": "/assets/urai/final/tier2/location-map/location-map-mobile.svg",
+          "preferredWebp": "/assets/urai/final/tier2/location-map/location-map-mobile.webp",
+          "status": "fallback-svg-ready"
+        },
+        "location-emotional-weather": {
+          "id": "location-emotional-weather",
+          "fallbackSvg": "/assets/urai/final/tier2/location-map/location-emotional-weather.svg",
+          "preferredWebp": "/assets/urai/final/tier2/location-map/location-emotional-weather.webp",
+          "status": "fallback-svg-ready"
+        },
+        "location-signal-field": {
+          "id": "location-signal-field",
+          "fallbackSvg": "/assets/urai/final/tier2/location-map/location-signal-field.svg",
+          "preferredWebp": "/assets/urai/final/tier2/location-map/location-signal-field.webp",
+          "status": "fallback-svg-ready"
+        },
+        "location-og": {
+          "id": "location-og",
+          "fallbackSvg": "/assets/urai/final/tier2/location-map/location-og.svg",
+          "preferredWebp": "/assets/urai/final/tier2/location-map/location-og.webp",
+          "status": "fallback-svg-ready"
+        }
+      }
+    },
+    "xr": {
+      "tier": "tier3",
+      "canon": "XR Preview",
+      "mood": "Quest, AR, WebXR, spatial preview without fake hardware proof",
+      "assets": {
+        "xr-preview-desktop": {
+          "id": "xr-preview-desktop",
+          "fallbackSvg": "/assets/urai/final/tier3/xr/xr-preview-desktop.svg",
+          "preferredWebp": "/assets/urai/final/tier3/xr/xr-preview-desktop.webp",
+          "status": "fallback-svg-ready"
+        },
+        "xr-preview-mobile": {
+          "id": "xr-preview-mobile",
+          "fallbackSvg": "/assets/urai/final/tier3/xr/xr-preview-mobile.svg",
+          "preferredWebp": "/assets/urai/final/tier3/xr/xr-preview-mobile.webp",
+          "status": "fallback-svg-ready"
+        },
+        "quest-entry-frame": {
+          "id": "quest-entry-frame",
+          "fallbackSvg": "/assets/urai/final/tier3/xr/quest-entry-frame.svg",
+          "preferredWebp": "/assets/urai/final/tier3/xr/quest-entry-frame.webp",
+          "status": "fallback-svg-ready"
+        },
+        "ar-world-anchor": {
+          "id": "ar-world-anchor",
+          "fallbackSvg": "/assets/urai/final/tier3/xr/ar-world-anchor.svg",
+          "preferredWebp": "/assets/urai/final/tier3/xr/ar-world-anchor.webp",
+          "status": "fallback-svg-ready"
+        },
+        "webxr-threshold": {
+          "id": "webxr-threshold",
+          "fallbackSvg": "/assets/urai/final/tier3/xr/webxr-threshold.svg",
+          "preferredWebp": "/assets/urai/final/tier3/xr/webxr-threshold.webp",
+          "status": "fallback-svg-ready"
+        },
+        "xr-og": {
+          "id": "xr-og",
+          "fallbackSvg": "/assets/urai/final/tier3/xr/xr-og.svg",
+          "preferredWebp": "/assets/urai/final/tier3/xr/xr-og.webp",
+          "status": "fallback-svg-ready"
+        }
+      }
+    },
+    "demo": {
+      "tier": "tier3",
+      "canon": "Demo Film",
+      "mood": "public proof, replay film, onboarding cinematic",
+      "assets": {
+        "demo-replay-film-poster": {
+          "id": "demo-replay-film-poster",
+          "fallbackSvg": "/assets/urai/final/tier3/demo/demo-replay-film-poster.svg",
+          "preferredWebp": "/assets/urai/final/tier3/demo/demo-replay-film-poster.webp",
+          "status": "fallback-svg-ready"
+        },
+        "demo-replay-film-mobile": {
+          "id": "demo-replay-film-mobile",
+          "fallbackSvg": "/assets/urai/final/tier3/demo/demo-replay-film-mobile.svg",
+          "preferredWebp": "/assets/urai/final/tier3/demo/demo-replay-film-mobile.webp",
+          "status": "fallback-svg-ready"
+        },
+        "demo-phone-cameo": {
+          "id": "demo-phone-cameo",
+          "fallbackSvg": "/assets/urai/final/tier3/demo/demo-phone-cameo.svg",
+          "preferredWebp": "/assets/urai/final/tier3/demo/demo-phone-cameo.webp",
+          "status": "fallback-svg-ready"
+        },
+        "demo-ground-council-shot": {
+          "id": "demo-ground-council-shot",
+          "fallbackSvg": "/assets/urai/final/tier3/demo/demo-ground-council-shot.svg",
+          "preferredWebp": "/assets/urai/final/tier3/demo/demo-ground-council-shot.webp",
+          "status": "fallback-svg-ready"
+        },
+        "demo-life-map-shot": {
+          "id": "demo-life-map-shot",
+          "fallbackSvg": "/assets/urai/final/tier3/demo/demo-life-map-shot.svg",
+          "preferredWebp": "/assets/urai/final/tier3/demo/demo-life-map-shot.webp",
+          "status": "fallback-svg-ready"
+        },
+        "demo-og": {
+          "id": "demo-og",
+          "fallbackSvg": "/assets/urai/final/tier3/demo/demo-og.svg",
+          "preferredWebp": "/assets/urai/final/tier3/demo/demo-og.webp",
+          "status": "fallback-svg-ready"
+        }
+      }
+    }
+  },
+  "shared": {
+    "shared/orb": {
+      "canon": "Orb Companion",
+      "mood": "alive companion state language",
+      "assets": {
+        "orb-idle": {
+          "id": "orb-idle",
+          "fallbackSvg": "/assets/urai/final/shared/orb/orb-idle.svg",
+          "preferredWebp": "/assets/urai/final/shared/orb/orb-idle.webp",
+          "status": "fallback-svg-ready"
+        },
+        "orb-hover": {
+          "id": "orb-hover",
+          "fallbackSvg": "/assets/urai/final/shared/orb/orb-hover.svg",
+          "preferredWebp": "/assets/urai/final/shared/orb/orb-hover.webp",
+          "status": "fallback-svg-ready"
+        },
+        "orb-thinking": {
+          "id": "orb-thinking",
+          "fallbackSvg": "/assets/urai/final/shared/orb/orb-thinking.svg",
+          "preferredWebp": "/assets/urai/final/shared/orb/orb-thinking.webp",
+          "status": "fallback-svg-ready"
+        },
+        "orb-guiding": {
+          "id": "orb-guiding",
+          "fallbackSvg": "/assets/urai/final/shared/orb/orb-guiding.svg",
+          "preferredWebp": "/assets/urai/final/shared/orb/orb-guiding.webp",
+          "status": "fallback-svg-ready"
+        },
+        "orb-listening": {
+          "id": "orb-listening",
+          "fallbackSvg": "/assets/urai/final/shared/orb/orb-listening.svg",
+          "preferredWebp": "/assets/urai/final/shared/orb/orb-listening.webp",
+          "status": "fallback-svg-ready"
+        },
+        "orb-protecting": {
+          "id": "orb-protecting",
+          "fallbackSvg": "/assets/urai/final/shared/orb/orb-protecting.svg",
+          "preferredWebp": "/assets/urai/final/shared/orb/orb-protecting.webp",
+          "status": "fallback-svg-ready"
+        }
+      }
+    },
+    "shared/avatar": {
+      "canon": "Avatar Presence",
+      "mood": "grounded body presence, not cartoon",
+      "assets": {
+        "avatar-grounded-idle": {
+          "id": "avatar-grounded-idle",
+          "fallbackSvg": "/assets/urai/final/shared/avatar/avatar-grounded-idle.svg",
+          "preferredWebp": "/assets/urai/final/shared/avatar/avatar-grounded-idle.webp",
+          "status": "fallback-svg-ready"
+        },
+        "avatar-walking-shadow": {
+          "id": "avatar-walking-shadow",
+          "fallbackSvg": "/assets/urai/final/shared/avatar/avatar-walking-shadow.svg",
+          "preferredWebp": "/assets/urai/final/shared/avatar/avatar-walking-shadow.webp",
+          "status": "fallback-svg-ready"
+        },
+        "avatar-focus-distance": {
+          "id": "avatar-focus-distance",
+          "fallbackSvg": "/assets/urai/final/shared/avatar/avatar-focus-distance.svg",
+          "preferredWebp": "/assets/urai/final/shared/avatar/avatar-focus-distance.webp",
+          "status": "fallback-svg-ready"
+        },
+        "avatar-ground-presence": {
+          "id": "avatar-ground-presence",
+          "fallbackSvg": "/assets/urai/final/shared/avatar/avatar-ground-presence.svg",
+          "preferredWebp": "/assets/urai/final/shared/avatar/avatar-ground-presence.webp",
+          "status": "fallback-svg-ready"
+        }
+      }
+    },
+    "shared/atmosphere": {
+      "canon": "URAI Atmosphere",
+      "mood": "depth, fog, light beams, private spatial continuity",
+      "assets": {
+        "atmosphere-depth-haze": {
+          "id": "atmosphere-depth-haze",
+          "fallbackSvg": "/assets/urai/final/shared/atmosphere/atmosphere-depth-haze.svg",
+          "preferredWebp": "/assets/urai/final/shared/atmosphere/atmosphere-depth-haze.webp",
+          "status": "fallback-svg-ready"
+        },
+        "atmosphere-ground-fog": {
+          "id": "atmosphere-ground-fog",
+          "fallbackSvg": "/assets/urai/final/shared/atmosphere/atmosphere-ground-fog.svg",
+          "preferredWebp": "/assets/urai/final/shared/atmosphere/atmosphere-ground-fog.webp",
+          "status": "fallback-svg-ready"
+        },
+        "atmosphere-sky-glow": {
+          "id": "atmosphere-sky-glow",
+          "fallbackSvg": "/assets/urai/final/shared/atmosphere/atmosphere-sky-glow.svg",
+          "preferredWebp": "/assets/urai/final/shared/atmosphere/atmosphere-sky-glow.webp",
+          "status": "fallback-svg-ready"
+        },
+        "atmosphere-memory-dust": {
+          "id": "atmosphere-memory-dust",
+          "fallbackSvg": "/assets/urai/final/shared/atmosphere/atmosphere-memory-dust.svg",
+          "preferredWebp": "/assets/urai/final/shared/atmosphere/atmosphere-memory-dust.webp",
+          "status": "fallback-svg-ready"
+        }
+      }
+    },
+    "shared/panels": {
+      "canon": "Spatial Panels",
+      "mood": "glass, private, readable, mobile-safe",
+      "assets": {
+        "panel-glass-soft": {
+          "id": "panel-glass-soft",
+          "fallbackSvg": "/assets/urai/final/shared/panels/panel-glass-soft.svg",
+          "preferredWebp": "/assets/urai/final/shared/panels/panel-glass-soft.webp",
+          "status": "fallback-svg-ready"
+        },
+        "panel-ground-console": {
+          "id": "panel-ground-console",
+          "fallbackSvg": "/assets/urai/final/shared/panels/panel-ground-console.svg",
+          "preferredWebp": "/assets/urai/final/shared/panels/panel-ground-console.webp",
+          "status": "fallback-svg-ready"
+        },
+        "panel-memory-card": {
+          "id": "panel-memory-card",
+          "fallbackSvg": "/assets/urai/final/shared/panels/panel-memory-card.svg",
+          "preferredWebp": "/assets/urai/final/shared/panels/panel-memory-card.webp",
+          "status": "fallback-svg-ready"
+        },
+        "panel-vault": {
+          "id": "panel-vault",
+          "fallbackSvg": "/assets/urai/final/shared/panels/panel-vault.svg",
+          "preferredWebp": "/assets/urai/final/shared/panels/panel-vault.webp",
+          "status": "fallback-svg-ready"
+        }
+      }
+    },
+    "shared/portals": {
+      "canon": "Route Portals",
+      "mood": "movement between worlds",
+      "assets": {
+        "portal-descend-ground": {
+          "id": "portal-descend-ground",
+          "fallbackSvg": "/assets/urai/final/shared/portals/portal-descend-ground.svg",
+          "preferredWebp": "/assets/urai/final/shared/portals/portal-descend-ground.webp",
+          "status": "fallback-svg-ready"
+        },
+        "portal-ascend-sky": {
+          "id": "portal-ascend-sky",
+          "fallbackSvg": "/assets/urai/final/shared/portals/portal-ascend-sky.svg",
+          "preferredWebp": "/assets/urai/final/shared/portals/portal-ascend-sky.webp",
+          "status": "fallback-svg-ready"
+        },
+        "portal-enter-focus": {
+          "id": "portal-enter-focus",
+          "fallbackSvg": "/assets/urai/final/shared/portals/portal-enter-focus.svg",
+          "preferredWebp": "/assets/urai/final/shared/portals/portal-enter-focus.webp",
+          "status": "fallback-svg-ready"
+        },
+        "portal-enter-replay": {
+          "id": "portal-enter-replay",
+          "fallbackSvg": "/assets/urai/final/shared/portals/portal-enter-replay.svg",
+          "preferredWebp": "/assets/urai/final/shared/portals/portal-enter-replay.webp",
+          "status": "fallback-svg-ready"
+        },
+        "portal-unwind": {
+          "id": "portal-unwind",
+          "fallbackSvg": "/assets/urai/final/shared/portals/portal-unwind.svg",
+          "preferredWebp": "/assets/urai/final/shared/portals/portal-unwind.webp",
+          "status": "fallback-svg-ready"
+        }
+      }
+    }
+  },
+  "tiers": {
+    "tier1": "Public spatial shell",
+    "tier2": "Life OS journey",
+    "tier3": "XR / Quest / AR preview",
+    "tier4": "Expansion worlds",
+    "tier5": "Governance / trust / provenance"
+  }
+}
