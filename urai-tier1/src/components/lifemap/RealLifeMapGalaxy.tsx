@@ -191,7 +191,9 @@ export default function RealLifeMapGalaxy() {
 
       <style jsx>{`
         .lifeGalaxy {
-          position: relative;
+          position: fixed;
+          inset: 0;
+          width: 100vw;
           height: 100svh;
           min-height: 100svh;
           max-height: 100svh;
@@ -201,6 +203,7 @@ export default function RealLifeMapGalaxy() {
           isolation: isolate;
           cursor: default;
           overscroll-behavior: none;
+          contain: layout paint size;
         }
 
         .deepSpace {
@@ -470,6 +473,10 @@ export default function RealLifeMapGalaxy() {
           background: linear-gradient(145deg, rgba(0,0,0,0.54), rgba(8,16,30,0.32));
           box-shadow: 0 24px 80px rgba(0,0,0,0.44), inset 0 1px 0 rgba(255,255,255,0.08);
           backdrop-filter: blur(20px);
+        
+          max-height: min(34svh, 320px);
+          overflow: auto;
+          overscroll-behavior: contain;
         }
 
         .mapHud {
