@@ -47,8 +47,16 @@ jobs:
           node-version: 22
           cache: pnpm
 
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
+
+      - name: Install visual audit dependencies
+        run: python -m pip install --disable-pip-version-check pillow
 
       - name: Verify provider-scored Asset Factory handoff
         run: node scripts/verify-asset-factory-handoff.mjs
@@ -99,7 +107,7 @@ jobs:
       - name: Machine image and structural gates
         run: |
           LOOP_NAME="v1-provider-assets" EXPECTED_PNG_COUNT=24 PROOF_DIR="$PROOF_DIR" \
-            python3 scripts/urai-machine-visual-verdict.py
+            python scripts/urai-machine-visual-verdict.py
           LOOP_NAME="v1-provider-assets" BASE_URL="$LIVE_URL" \
             node scripts/urai-v1-structural-audit.mjs
           LOOP_NAME="v1-provider-assets" BASE_URL="$LIVE_URL" \
