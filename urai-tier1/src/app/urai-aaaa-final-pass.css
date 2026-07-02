@@ -342,3 +342,76 @@ html.urai-spatial-warping .urai-spatial-warp-flash {
     overflow: visible;
   }
 }
+
+/* URAI final asset spine visible scene layer.
+   Route-aware final asset atmosphere, kept non-interactive and subtle. */
+.urai-final-asset-spine-scene-layer {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  overflow: hidden;
+  isolation: isolate;
+  contain: paint;
+}
+
+.urai-final-asset-spine-scene-layer__image {
+  position: absolute;
+  inset: -7%;
+  background-position: center;
+  background-size: cover;
+  background-repeat: no-repeat;
+  filter: saturate(1.14) contrast(1.08) brightness(0.92) blur(0.2px);
+  transform: scale(1.035);
+}
+
+.urai-final-asset-spine-scene-layer__depth {
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(circle at 50% 34%, rgba(255,255,255,0.08), transparent 28%),
+    radial-gradient(circle at 18% 80%, rgba(125,211,252,0.07), transparent 34%),
+    radial-gradient(circle at 84% 70%, rgba(251,191,36,0.055), transparent 28%);
+  opacity: 0.74;
+  mix-blend-mode: screen;
+}
+
+.urai-final-asset-spine-scene-layer__vignette {
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(180deg, rgba(2,6,23,0.22), transparent 34%, rgba(2,6,23,0.34)),
+    radial-gradient(ellipse at 50% 50%, transparent 0 36%, rgba(0,0,0,0.34) 78%, rgba(0,0,0,0.72) 100%);
+}
+
+body > *:not(.urai-final-asset-spine-scene-layer) {
+  position: relative;
+  z-index: 1;
+}
+
+@media (max-width: 760px) {
+  .urai-final-asset-spine-scene-layer__image {
+    inset: -11%;
+    transform: scale(1.08);
+    opacity: 0.12 !important;
+  }
+
+  .urai-final-asset-spine-scene-layer__depth {
+    opacity: 0.45;
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .urai-final-asset-spine-scene-layer__image {
+    animation: uraiFinalAssetSceneBreath 18s ease-in-out infinite alternate;
+  }
+
+  @keyframes uraiFinalAssetSceneBreath {
+    from {
+      transform: scale(1.025) translate3d(0, 0, 0);
+    }
+    to {
+      transform: scale(1.055) translate3d(0, -0.8%, 0);
+    }
+  }
+}
