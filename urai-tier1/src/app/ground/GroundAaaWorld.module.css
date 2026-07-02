@@ -1006,3 +1006,292 @@
     width: min(11rem, 42vw);
   }
 }
+
+/* === URAI GROUND FINAL ART-DIRECTION PASS: KILL FLOATING CARD MAP === */
+
+.world::before {
+  filter: saturate(1.08) contrast(1.18) brightness(.58);
+}
+
+.world::after {
+  background:
+    radial-gradient(ellipse at 50% 47%, rgba(255, 213, 150, .08), transparent 18%),
+    radial-gradient(ellipse at 50% 61%, transparent 0 28%, rgba(0,0,0,.44) 67%, rgba(0,0,0,.92) 100%),
+    linear-gradient(90deg, rgba(0,0,0,.72), transparent 26%, transparent 74%, rgba(0,0,0,.72));
+}
+
+.horizon {
+  top: 7%;
+  height: 46vh;
+  opacity: .42;
+  border-color: rgba(255, 225, 180, .08);
+}
+
+.floor {
+  bottom: -33vh;
+  height: 88vh;
+  background:
+    radial-gradient(ellipse at 50% 4%, rgba(255, 222, 172, .38), transparent 12rem),
+    radial-gradient(ellipse at 50% 35%, rgba(116, 79, 44, .4), transparent 31rem),
+    radial-gradient(ellipse at 50% 75%, rgba(0, 0, 0, .62), transparent 26rem),
+    repeating-linear-gradient(90deg, rgba(255,255,255,.025) 0 1px, transparent 1px 10rem),
+    linear-gradient(180deg, rgba(88, 61, 36, .78), rgba(3, 4, 3, 1));
+  box-shadow:
+    inset 0 0 160px rgba(255,255,255,.045),
+    0 -40px 130px rgba(255,185,111,.18);
+}
+
+.stage::before {
+  width: min(42rem, 54vw);
+  height: 78vh;
+  bottom: -26vh;
+  opacity: .96;
+  background:
+    radial-gradient(ellipse at 50% 9%, rgba(255, 236, 200, .42), transparent 11rem),
+    radial-gradient(ellipse at 50% 38%, rgba(255, 193, 111, .13), transparent 19rem),
+    linear-gradient(180deg, rgba(255, 221, 174, .22), rgba(255, 221, 174, .04) 48%, transparent);
+}
+
+.stage::after {
+  top: 28%;
+  width: clamp(22rem, 28vw, 34rem);
+  height: clamp(14rem, 18vw, 21rem);
+  border-radius: 1.8rem;
+  background:
+    linear-gradient(180deg, rgba(0,0,0,.02), rgba(0,0,0,.38) 56%, rgba(0,0,0,.78)),
+    url('/assets/urai/final/tier1/ground/ground-realm-desktop.svg'),
+    var(--station-reception);
+  background-size: cover;
+  background-position: center;
+  box-shadow:
+    0 54px 140px rgba(0,0,0,.7),
+    0 0 110px rgba(255,205,135,.22),
+    inset 0 1px 0 rgba(255,255,255,.14);
+}
+
+.viewportReticle {
+  top: 50%;
+  opacity: .36;
+  transform: translate(-50%, -50%) scale(.82);
+}
+
+.walkHint {
+  bottom: 6.15rem;
+  opacity: .62;
+}
+
+.cameraEntry {
+  width: min(300px, 25vw);
+  bottom: clamp(104px, 15vh, 148px);
+  padding: .82rem .88rem;
+  background: linear-gradient(145deg, rgba(8, 9, 8, .42), rgba(29, 22, 15, .28));
+  border-color: rgba(255, 235, 190, .1);
+  box-shadow: 0 22px 70px rgba(0,0,0,.28), inset 0 1px 0 rgba(255,255,255,.04);
+}
+
+.cameraEntry h1 {
+  font-size: clamp(1.85rem, 3.05vw, 3.8rem);
+  max-width: 10ch;
+}
+
+.cameraEntry span {
+  font-size: .72rem;
+  line-height: 1.25;
+}
+
+.inspector {
+  width: min(285px, calc(100vw - 2.2rem));
+  background: linear-gradient(145deg, rgba(8,9,8,.46), rgba(31,24,15,.32));
+  opacity: .84;
+}
+
+.zone {
+  min-height: auto;
+  width: auto;
+  min-width: 7.5rem;
+  padding: .48rem .62rem;
+  border-radius: 999px;
+  background: rgba(4, 7, 7, .38) !important;
+  box-shadow: 0 18px 54px rgba(0,0,0,.28), 0 0 28px rgba(255,205,135,.07);
+  opacity: .62;
+}
+
+.zone span {
+  font-size: .47rem;
+  margin-bottom: .12rem;
+}
+
+.zone strong {
+  font-size: .68rem;
+}
+
+.zoneReception {
+  left: 48%;
+  top: 23%;
+  transform: translateX(-50%) scale(.92);
+  opacity: .54;
+}
+
+.zonePrivacy {
+  left: 14%;
+  top: 32%;
+}
+
+.zoneWork {
+  right: 12%;
+  top: 36%;
+}
+
+.zoneArchive {
+  right: 17%;
+  bottom: 24%;
+}
+
+.zoneWellness {
+  left: 28%;
+  bottom: 25%;
+}
+
+.zoneGarden,
+.objectCalendar,
+.objectBody,
+.objectCase,
+.objectKeys {
+  opacity: .5;
+}
+
+.agent {
+  width: auto;
+  min-width: 7.2rem;
+  max-width: 9.4rem;
+  min-height: 2.4rem;
+  padding: .43rem .5rem .45rem 2.55rem;
+  border-radius: 999px;
+  background: rgba(4, 9, 10, .42);
+  border-color: rgba(142, 235, 255, .16);
+  box-shadow:
+    0 18px 58px rgba(0,0,0,.34),
+    0 0 34px rgba(83, 221, 255, .1);
+  opacity: .72;
+}
+
+.avatar {
+  left: .42rem;
+  top: .42rem;
+  width: 27px;
+  height: 27px;
+}
+
+.agent small {
+  display: none;
+}
+
+.agent h2 {
+  font-size: .66rem;
+  max-width: 7ch;
+}
+
+.agent p {
+  display: none;
+}
+
+.agentReception {
+  left: 43%;
+  top: 55%;
+}
+
+.agentSchedule {
+  left: 20%;
+  bottom: 34%;
+}
+
+.agentWellness {
+  left: 33%;
+  top: 68%;
+}
+
+.agentRelationship {
+  right: 34%;
+  top: 55%;
+}
+
+.agentLogistics {
+  right: 12%;
+  bottom: 42%;
+}
+
+.agentPrivacy {
+  left: 16%;
+  top: 58%;
+}
+
+.agentArchive {
+  right: 19%;
+  bottom: 13%;
+}
+
+.agentOperator {
+  right: 28%;
+  top: 64%;
+}
+
+.object {
+  width: auto;
+  min-width: 7.2rem;
+  padding: .5rem .62rem;
+  border-radius: 999px;
+  background: rgba(5, 7, 8, .38);
+  opacity: .58;
+}
+
+.object span {
+  font-size: .47rem;
+  margin-bottom: .12rem;
+}
+
+.object strong {
+  font-size: .67rem;
+}
+
+.object p {
+  display: none;
+}
+
+.objectTable {
+  left: 23%;
+  bottom: 12%;
+}
+
+.objectWork {
+  right: 7%;
+  top: 58%;
+}
+
+.routeRail {
+  opacity: .9;
+}
+
+@media (max-width: 900px) {
+  .stage::after {
+    top: 27%;
+    width: min(22rem, 86vw);
+    height: 13rem;
+  }
+
+  .cameraEntry {
+    width: auto;
+    left: 1rem;
+    right: 1rem;
+    bottom: 9.6rem;
+  }
+
+  .cameraEntry h1 {
+    font-size: clamp(2rem, 11vw, 3.4rem);
+  }
+
+  .zoneReception,
+  .zonePrivacy,
+  .zoneWork {
+    display: none;
+  }
+}
