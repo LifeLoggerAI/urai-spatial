@@ -2,6 +2,7 @@
 
 import { usePathname } from "next/navigation";
 import "./urai-autonomous-v1-layer.css";
+import "./urai-autonomous-v1-assets.css";
 import "./urai-autonomous-v1-isolation.css";
 
 const groundStations = [
@@ -15,9 +16,31 @@ const groundStations = [
 
 const helpers = ["privacy", "schedule", "wellness", "memory", "logistics"];
 
+function SceneArt({
+  className,
+  desktop,
+  mobile,
+}: {
+  className: string;
+  desktop: string;
+  mobile: string;
+}) {
+  return (
+    <picture className={`uraiV1SceneArt ${className}`} aria-hidden="true">
+      <source media="(max-width: 760px)" srcSet={mobile} />
+      <img src={desktop} alt="" draggable="false" />
+    </picture>
+  );
+}
+
 function GroundWorld() {
   return (
     <section className="uraiAutoWorld uraiAutoGround" aria-label="Private operations floor">
+      <SceneArt
+        className="uraiGroundSceneArt"
+        desktop="/assets/urai/ground/ground-world-main.webp"
+        mobile="/assets/urai/ground/ground-world-mobile.webp"
+      />
       <div className="uraiAutoAtmosphere" aria-hidden="true" />
       <div className="uraiGroundArchitecture" aria-hidden="true">
         <div className="uraiGroundCeiling" />
@@ -84,6 +107,11 @@ function GroundWorld() {
 function FocusWorld() {
   return (
     <section className="uraiAutoWorld uraiAutoFocus" aria-label="Selected memory chamber">
+      <SceneArt
+        className="uraiFocusSceneArt"
+        desktop="/assets/urai/focus/focus-memory-chamber-main.webp"
+        mobile="/assets/urai/focus/focus-memory-chamber-mobile.webp"
+      />
       <div className="uraiAutoAtmosphere" aria-hidden="true" />
       <div className="uraiFocusTunnel" aria-hidden="true">
         <i /><i /><i /><i />
@@ -96,14 +124,10 @@ function FocusWorld() {
       </header>
 
       <a
-        className="uraiFocusMemory"
+        className="uraiFocusMemory uraiFocusMemoryHotspot"
         href="/replay?memoryId=quiet-reset&manifestId=replay-recovery-thread&from=focus-chamber"
         aria-label="Enter Replay for The Quiet Reset"
       >
-        <div className="uraiFocusMemoryImage" aria-hidden="true">
-          <i className="uraiFocusHorizon" />
-          <i className="uraiFocusFigure" />
-        </div>
         <div className="uraiFocusMemoryRings" aria-hidden="true"><i /><i /><i /></div>
         <span>ENTER REPLAY</span>
       </a>
@@ -128,6 +152,11 @@ function ReplayWorld() {
     <section className="uraiAutoWorld uraiAutoReplay" aria-label="Cinematic memory replay">
       <div className="uraiAutoAtmosphere" aria-hidden="true" />
       <div className="uraiReplayCinema" aria-hidden="true">
+        <SceneArt
+          className="uraiReplaySceneArt"
+          desktop="/assets/urai/replay/replay-memory-film-main.webp"
+          mobile="/assets/urai/replay/replay-memory-film-mobile.webp"
+        />
         <div className="uraiReplayScene uraiReplayScene-1"><i /></div>
         <div className="uraiReplayScene uraiReplayScene-2"><i /></div>
         <div className="uraiReplayScene uraiReplayScene-3"><i /></div>
