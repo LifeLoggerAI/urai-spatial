@@ -90,7 +90,7 @@ export default function RealLifeMapGalaxy() {
 
   const rootStyle = {
     '--life-map-art': assetCssStack(lifeMapAssets.primary),
-    '--life-map-orb': assetCssStack(uiAssets.orbGuiding),
+    '--life-map-orb': assetCssStack(uiAssets.orbActive),
   } as CSSProperties
 
   const sceneStyle = {
