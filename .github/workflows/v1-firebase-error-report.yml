@@ -1,4 +1,4 @@
-name: V1 Firebase Error Report
+name: V1 Audit Error Report
 
 on:
   push:
@@ -20,7 +20,7 @@ jobs:
           script: |
             const owner = context.repo.owner;
             const repo = context.repo.repo;
-            const jobId = 84899863835;
+            const jobId = 84900416997;
             const response = await github.request('GET /repos/{owner}/{repo}/actions/jobs/{job_id}/logs', {
               owner,
               repo,
@@ -33,17 +33,17 @@ jobs:
             else if (typeof text !== 'string') text = JSON.stringify(text);
             const lines = text.split(/\r?\n/);
             const selected = [];
-            const pattern = /firebase|hosting|error|failed|failure|token|auth|permission|denied|credential|expired|project|service account/i;
+            const pattern = /machine|visual|structural|realm|audit|verdict|error|failed|failure|missing|duplicate|route|score|threshold/i;
             for (let index = 0; index < lines.length; index += 1) {
               if (!pattern.test(lines[index])) continue;
-              const start = Math.max(0, index - 2);
-              const end = Math.min(lines.length, index + 3);
+              const start = Math.max(0, index - 3);
+              const end = Math.min(lines.length, index + 4);
               selected.push(...lines.slice(start, end));
             }
-            const concise = [...new Set(selected)].slice(-140).join('\n');
+            const concise = [...new Set(selected)].slice(-220).join('\n');
             await github.rest.issues.create({
               owner,
               repo,
-              title: `V1 production Firebase error ${jobId}`,
-              body: ['```text', concise || 'No matching Firebase error lines found.', '```'].join('\n')
+              title: `V1 machine audit error ${jobId}`,
+              body: ['```text', concise || 'No matching audit error lines found.', '```'].join('\n')
             });
