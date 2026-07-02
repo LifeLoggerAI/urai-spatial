@@ -31,10 +31,19 @@ jobs:
             else if (text instanceof ArrayBuffer) text = Buffer.from(text).toString('utf8');
             else if (ArrayBuffer.isView(text)) text = Buffer.from(text.buffer, text.byteOffset, text.byteLength).toString('utf8');
             else if (typeof text !== 'string') text = JSON.stringify(text);
-            const tail = text.slice(-14000);
+            const lines = text.split(/\r?\n/);
+            const selected = [];
+            const pattern = /firebase|hosting|error|failed|failure|token|auth|permission|denied|credential|expired|project/i;
+            for (let index = 0; index < lines.length; index += 1) {
+              if (!pattern.test(lines[index])) continue;
+              const start = Math.max(0, index - 2);
+              const end = Math.min(lines.length, index + 3);
+              selected.push(...lines.slice(start, end));
+            }
+            const concise = [...new Set(selected)].slice(-120).join('\n');
             await github.rest.issues.create({
               owner,
               repo,
-              title: `V1 Firebase CLI error ${jobId}`,
-              body: ['```text', tail, '```'].join('\n')
+              title: `V1 Firebase concise error ${jobId}`,
+              body: ['```text', concise || 'No matching Firebase error lines found.', '```'].join('\n')
             });
