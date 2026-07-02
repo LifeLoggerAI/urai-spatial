@@ -59,4 +59,4 @@ jobs:
               body: lines.join('\n')
             });
 
-# monitor production deploy
+# poll scoped production deploy
