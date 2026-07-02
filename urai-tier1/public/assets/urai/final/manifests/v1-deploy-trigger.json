@@ -1,0 +1,6 @@
+{
+  "schemaVersion": "1.0.0",
+  "triggeredAt": "2026-07-02T22:58:00Z",
+  "sourceAssetCommit": "6580eacb673815cf39aa3c19639cd147697972d5",
+  "action": "run-v1-asset-promote-and-proof"
+}
