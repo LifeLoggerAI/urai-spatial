@@ -20,7 +20,7 @@ jobs:
           script: |
             const owner = context.repo.owner;
             const repo = context.repo.repo;
-            const jobId = 84900416997;
+            const jobId = 84901242996;
             const response = await github.request('GET /repos/{owner}/{repo}/actions/jobs/{job_id}/logs', {
               owner,
               repo,
