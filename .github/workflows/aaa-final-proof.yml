@@ -1,0 +1,85 @@
+name: URAI AAA Final Proof
+
+on:
+  workflow_dispatch:
+    inputs:
+      base_url:
+        description: Live base URL to smoke after build
+        required: false
+        default: https://urai.app
+      screenshots:
+        description: Capture Playwright screenshots
+        required: false
+        default: "true"
+        type: choice
+        options:
+          - "true"
+          - "false"
+  pull_request:
+    branches:
+      - main
+  push:
+    branches:
+      - main
+
+jobs:
+  final-proof:
+    name: Build, asset, route, and screenshot proof
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    env:
+      CI: "1"
+      FORCE_COLOR: "0"
+      URAI_RECEIPT_ROOT: ${{ github.workspace }}/urai-final-receipts
+      URAI_BASE_URL: ${{ inputs.base_url || 'https://urai.app' }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10.0.0
+
+      - name: Install
+        run: pnpm install --frozen-lockfile
+
+      - name: Verify assets
+        run: pnpm verify:assets
+
+      - name: Typecheck
+        run: pnpm typecheck
+
+      - name: Static build
+        run: pnpm build:static
+
+      - name: Install Chromium for screenshots
+        if: ${{ inputs.screenshots != 'false' }}
+        run: pnpm exec playwright install chromium --with-deps
+
+      - name: Final launch proof receipt
+        run: |
+          FLAGS="--skip-install --skip-typecheck --skip-assets --skip-test --skip-build --base=${URAI_BASE_URL}"
+          if [ "${{ inputs.screenshots }}" != "false" ]; then
+            FLAGS="$FLAGS --screenshots"
+          fi
+          node scripts/aaa-launch-proof.mjs $FLAGS
+
+      - name: Print final receipt summary
+        if: always()
+        run: |
+          find "$URAI_RECEIPT_ROOT" -name final-report.md -print -exec sed -n '1,220p' {} \; || true
+
+      - name: Upload proof receipts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: urai-aaa-final-proof
+          path: urai-final-receipts
+          if-no-files-found: warn
