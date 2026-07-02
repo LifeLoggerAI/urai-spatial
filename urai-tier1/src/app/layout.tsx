@@ -41,6 +41,7 @@ import './aaa-live-visual-proof-polish.css'
 import UraiCinematicBackdrop from './UraiCinematicBackdrop'
 import UraiAAAARoutePolish from "./UraiAAAARoutePolish";
 import "./urai-aaaa-final-pass.css";
+import './urai-proof-machine.css'
 
 export const metadata: Metadata = {
   title: 'URAI Spatial',
