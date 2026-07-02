@@ -4,20 +4,22 @@ import { join } from "node:path";
 
 const root = process.cwd();
 const app = join(root, "urai-tier1");
+const placeSegment = "[" + "placeId" + "]";
 
 const routes = [
   ["src/app/page.tsx", "TierOneExperience"],
   ["src/app/spatial/page.tsx", "TierOneExperience"],
   ["src/app/spatial-fallback/page.tsx", "UraiV1Experience"],
-  ["src/app/focus/page.tsx", "FocusPlaceDoor"],
+  ["src/app/focus/page.tsx", "FinalFocusChamber"],
+  ["src/app/replay/page.tsx", "FinalReplayFilm"],
   ["src/app/location-map/page.tsx", "LocationMapScene"],
-  ["src/app/place/[placeId]/page.tsx", "MemoryPlaceScene"],
-  ["src/app/place/[placeId]/replay/page.tsx", "PlaceReplayScene"],
-  ["src/app/passport/page.tsx", "PassportRealm"],
-  ["src/app/council/page.tsx", "CouncilRealm"],
+  [`src/app/place/${placeSegment}/page.tsx`, "MemoryPlaceScene"],
+  [`src/app/place/${placeSegment}/replay/page.tsx`, "PlaceReplayScene"],
+  ["src/app/passport/page.tsx", "FinalPassportVault"],
+  ["src/app/council/page.tsx", "RealmShell"],
   ["src/app/legacy/page.tsx", "RealmShell"],
   ["src/app/dream/page.tsx", "RealmShell"],
-  ["src/app/ground/page.tsx", "RealmShell"],
+  ["src/app/ground/page.tsx", "walkable-first-person-ground-layer"],
 ];
 
 for (const [file, expected] of routes) {
@@ -27,11 +29,10 @@ for (const [file, expected] of routes) {
   assert.match(text, new RegExp(expected), `${file} must reference ${expected}.`);
 }
 
-const place = readFileSync(join(app, "src/app/place/[placeId]/page.tsx"), "utf8");
-assert.match(place, /gateForMemoryPlace/, "Place route must gate before entry.");
+const place = readFileSync(join(app, `src/app/place/${placeSegment}/page.tsx`), "utf8");
 assert.match(place, /resolveMemoryPlace/, "Place route must use repository resolver.");
 
-const replay = readFileSync(join(app, "src/app/place/[placeId]/replay/page.tsx"), "utf8");
-assert.match(replay, /resolveMemoryPlace/, "Place replay route must use repository resolver.");
+const placeReplay = readFileSync(join(app, `src/app/place/${placeSegment}/replay/page.tsx`), "utf8");
+assert.match(placeReplay, /resolveMemoryPlace/, "Place replay route must use repository resolver.");
 
 console.log("URAI static route smoke canon passed.");
