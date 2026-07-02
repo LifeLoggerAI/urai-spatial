@@ -1,0 +1,59 @@
+name: V1 Run Index
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - .github/workflows/v1-run-index.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: read
+  issues: write
+
+jobs:
+  index:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/github-script@v7
+        with:
+          script: |
+            const owner = context.repo.owner;
+            const repo = context.repo.repo;
+            const runs = await github.rest.actions.listWorkflowRuns({
+              owner,
+              repo,
+              workflow_id: 'v1-asset-promote.yml',
+              per_page: 10
+            });
+            const target = runs.data.workflow_runs[0];
+            if (!target) {
+              core.setFailed('No V1 asset promote runs found');
+              return;
+            }
+            const jobs = await github.rest.actions.listJobsForWorkflowRun({
+              owner,
+              repo,
+              run_id: target.id,
+              per_page: 100
+            });
+            const lines = [
+              `run_id=${target.id}`,
+              `run_number=${target.run_number}`,
+              `conclusion=${target.conclusion}`,
+              `url=${target.html_url}`,
+              ''
+            ];
+            for (const job of jobs.data.jobs) {
+              lines.push(`job_id=${job.id} name=${job.name} conclusion=${job.conclusion}`);
+              for (const step of job.steps || []) {
+                lines.push(`- ${step.number}. ${step.name}: ${step.conclusion}`);
+              }
+            }
+            await github.rest.issues.create({
+              owner,
+              repo,
+              title: `V1 failed run index ${target.id}`,
+              body: lines.join('\n')
+            });
