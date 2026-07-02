@@ -1,0 +1,354 @@
+{
+  "generatedAt": "2026-07-02T06:38:34.188Z",
+  "loopName": "v1-autopilot",
+  "base": "https://urai.app",
+  "verdict": "MACHINE_PASS",
+  "issues": [],
+  "advisories": [
+    "focus/desktop: Chromium reports 9px clipped scene geometry; no actionable content crosses the viewport",
+    "replay/desktop: Chromium reports 9px clipped scene geometry; no actionable content crosses the viewport"
+  ],
+  "results": [
+    {
+      "route": "ground",
+      "viewport": "desktop",
+      "url": "https://urai.app/ground?structural=1782974303707",
+      "status": 200,
+      "checks": [
+        {
+          "name": "immersive replacement root",
+          "expected": 1,
+          "actual": 1,
+          "visible": true
+        },
+        {
+          "name": "six physical stations",
+          "expected": 6,
+          "actual": 6
+        },
+        {
+          "name": "five embodied helpers",
+          "expected": 5,
+          "actual": 5
+        },
+        {
+          "name": "room architecture",
+          "expected": 1,
+          "actual": 1
+        },
+        {
+          "name": "mobile inspection sheet",
+          "expected": 1,
+          "actual": 1
+        },
+        {
+          "name": "legacy card surfaces absent",
+          "expected": 0,
+          "actual": 0
+        }
+      ],
+      "layout": {
+        "viewportWidth": 1440,
+        "viewportHeight": 960,
+        "rawHorizontalOverflow": 0,
+        "rawVerticalOverflow": 0,
+        "horizontalClippingActive": true,
+        "overflowStyles": {
+          "root": "hidden",
+          "document": "hidden",
+          "body": "hidden"
+        },
+        "clippedControls": [],
+        "rootRect": {
+          "left": 0,
+          "top": 0,
+          "right": 1440,
+          "bottom": 960,
+          "width": 1440,
+          "height": 960
+        }
+      }
+    },
+    {
+      "route": "focus",
+      "viewport": "desktop",
+      "url": "https://urai.app/focus?memoryId=quiet-reset&structural=1782974305489",
+      "status": 200,
+      "checks": [
+        {
+          "name": "immersive replacement root",
+          "expected": 1,
+          "actual": 1,
+          "visible": true
+        },
+        {
+          "name": "dominant selected memory",
+          "expected": 1,
+          "actual": 1
+        },
+        {
+          "name": "memory image",
+          "expected": 1,
+          "actual": 1
+        },
+        {
+          "name": "Replay entry",
+          "expected": 1,
+          "actual": 1
+        },
+        {
+          "name": "chamber depth rings",
+          "expected": 3,
+          "actual": 3
+        }
+      ],
+      "layout": {
+        "viewportWidth": 1440,
+        "viewportHeight": 960,
+        "rawHorizontalOverflow": 9,
+        "rawVerticalOverflow": 2,
+        "horizontalClippingActive": true,
+        "overflowStyles": {
+          "root": "hidden",
+          "document": "hidden",
+          "body": "hidden"
+        },
+        "clippedControls": [],
+        "rootRect": {
+          "left": -8.639974594116211,
+          "top": -9.599983215332031,
+          "right": 1448.6400547027588,
+          "bottom": 961.9199752807617,
+          "width": 1457.280029296875,
+          "height": 971.5199584960938
+        }
+      }
+    },
+    {
+      "route": "replay",
+      "viewport": "desktop",
+      "url": "https://urai.app/replay?memoryId=quiet-reset&manifestId=replay-recovery-thread&structural=1782974307204",
+      "status": 200,
+      "checks": [
+        {
+          "name": "immersive replacement root",
+          "expected": 1,
+          "actual": 1,
+          "visible": true
+        },
+        {
+          "name": "cinematic scene planes",
+          "expected": 4,
+          "actual": 4
+        },
+        {
+          "name": "emotional beats",
+          "expected": 4,
+          "actual": 4
+        },
+        {
+          "name": "film caption",
+          "expected": 1,
+          "actual": 1
+        },
+        {
+          "name": "film controls",
+          "expected": 1,
+          "actual": 1
+        }
+      ],
+      "layout": {
+        "viewportWidth": 1440,
+        "viewportHeight": 960,
+        "rawHorizontalOverflow": 9,
+        "rawVerticalOverflow": 2,
+        "horizontalClippingActive": true,
+        "overflowStyles": {
+          "root": "hidden",
+          "document": "hidden",
+          "body": "hidden"
+        },
+        "clippedControls": [],
+        "rootRect": {
+          "left": -8.639974594116211,
+          "top": -9.599983215332031,
+          "right": 1448.6400547027588,
+          "bottom": 961.9199752807617,
+          "width": 1457.280029296875,
+          "height": 971.5199584960938
+        }
+      }
+    },
+    {
+      "route": "ground",
+      "viewport": "mobile",
+      "url": "https://urai.app/ground?structural=1782974308935",
+      "status": 200,
+      "checks": [
+        {
+          "name": "immersive replacement root",
+          "expected": 1,
+          "actual": 1,
+          "visible": true
+        },
+        {
+          "name": "six physical stations",
+          "expected": 6,
+          "actual": 6
+        },
+        {
+          "name": "five embodied helpers",
+          "expected": 5,
+          "actual": 5
+        },
+        {
+          "name": "room architecture",
+          "expected": 1,
+          "actual": 1
+        },
+        {
+          "name": "mobile inspection sheet",
+          "expected": 1,
+          "actual": 1
+        },
+        {
+          "name": "legacy card surfaces absent",
+          "expected": 0,
+          "actual": 0
+        }
+      ],
+      "layout": {
+        "viewportWidth": 390,
+        "viewportHeight": 844,
+        "rawHorizontalOverflow": 0,
+        "rawVerticalOverflow": 0,
+        "horizontalClippingActive": true,
+        "overflowStyles": {
+          "root": "hidden",
+          "document": "hidden",
+          "body": "hidden"
+        },
+        "clippedControls": [],
+        "rootRect": {
+          "left": 0,
+          "top": 0,
+          "right": 390,
+          "bottom": 844,
+          "width": 390,
+          "height": 844
+        }
+      }
+    },
+    {
+      "route": "focus",
+      "viewport": "mobile",
+      "url": "https://urai.app/focus?memoryId=quiet-reset&structural=1782974310687",
+      "status": 200,
+      "checks": [
+        {
+          "name": "immersive replacement root",
+          "expected": 1,
+          "actual": 1,
+          "visible": true
+        },
+        {
+          "name": "dominant selected memory",
+          "expected": 1,
+          "actual": 1
+        },
+        {
+          "name": "memory image",
+          "expected": 1,
+          "actual": 1
+        },
+        {
+          "name": "Replay entry",
+          "expected": 1,
+          "actual": 1
+        },
+        {
+          "name": "chamber depth rings",
+          "expected": 3,
+          "actual": 3
+        }
+      ],
+      "layout": {
+        "viewportWidth": 390,
+        "viewportHeight": 844,
+        "rawHorizontalOverflow": 2,
+        "rawVerticalOverflow": 2,
+        "horizontalClippingActive": true,
+        "overflowStyles": {
+          "root": "hidden",
+          "document": "hidden",
+          "body": "hidden"
+        },
+        "clippedControls": [],
+        "rootRect": {
+          "left": -2.3399930000305176,
+          "top": -8.439985275268555,
+          "right": 392.33999967575073,
+          "bottom": 845.6880054473877,
+          "width": 394.67999267578125,
+          "height": 854.1279907226562
+        }
+      }
+    },
+    {
+      "route": "replay",
+      "viewport": "mobile",
+      "url": "https://urai.app/replay?memoryId=quiet-reset&manifestId=replay-recovery-thread&structural=1782974312566",
+      "status": 200,
+      "checks": [
+        {
+          "name": "immersive replacement root",
+          "expected": 1,
+          "actual": 1,
+          "visible": true
+        },
+        {
+          "name": "cinematic scene planes",
+          "expected": 4,
+          "actual": 4
+        },
+        {
+          "name": "emotional beats",
+          "expected": 4,
+          "actual": 4
+        },
+        {
+          "name": "film caption",
+          "expected": 1,
+          "actual": 1
+        },
+        {
+          "name": "film controls",
+          "expected": 1,
+          "actual": 1
+        }
+      ],
+      "layout": {
+        "viewportWidth": 390,
+        "viewportHeight": 844,
+        "rawHorizontalOverflow": 2,
+        "rawVerticalOverflow": 2,
+        "horizontalClippingActive": true,
+        "overflowStyles": {
+          "root": "hidden",
+          "document": "hidden",
+          "body": "hidden"
+        },
+        "clippedControls": [],
+        "rootRect": {
+          "left": -2.3399930000305176,
+          "top": -8.439985275268555,
+          "right": 392.33999967575073,
+          "bottom": 845.6880054473877,
+          "width": 394.67999267578125,
+          "height": 854.1279907226562
+        }
+      }
+    }
+  ],
+  "note": "This gate verifies route-specific immersive structure and actionable viewport safety. Decorative scene geometry is allowed outside the viewport only when the final owner clips it and no visible control crosses the viewport."
+}

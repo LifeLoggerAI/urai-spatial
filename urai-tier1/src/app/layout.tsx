@@ -1,3 +1,4 @@
+import UraiFinalAssetSpineSceneLayer from './UraiFinalAssetSpineSceneLayer'
 import UraiFinalAssetSpineBridge from './UraiFinalAssetSpineBridge'
 import './home-spatial-world-final.css'
 import './home-one-world-owner.css'
@@ -40,6 +41,8 @@ import './aaa-live-visual-proof-polish.css'
 import UraiCinematicBackdrop from './UraiCinematicBackdrop'
 import UraiAAAARoutePolish from "./UraiAAAARoutePolish";
 import "./urai-aaaa-final-pass.css";
+import './urai-proof-machine.css'
+import UraiAutonomousV1Layer from './UraiAutonomousV1Layer'
 
 export const metadata: Metadata = {
   title: 'URAI Spatial',
@@ -64,8 +67,10 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       >
         <UraiAAAARoutePolish />
         <UraiCinematicBackdrop />
+        <UraiFinalAssetSpineSceneLayer />
         <UraiFinalAssetSpineBridge />
         {children}
+        <UraiAutonomousV1Layer />
       </body>
     </html>
   )

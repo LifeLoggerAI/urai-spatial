@@ -413,3 +413,44 @@ body:has(.urai-genesis-home) .urai-cinematic-backdrop[data-route="home"] .urai-c
     padding-inline: .82rem !important;
   }
 }
+
+
+/* URAI LOOP 5 LIFE MAP ONE SCREEN GUARD */
+html:has(.lifeGalaxy),
+body:has(.lifeGalaxy) {
+  height: 100%;
+  max-height: 100%;
+  overflow: hidden !important;
+  overscroll-behavior: none !important;
+}
+
+body:has(.lifeGalaxy) {
+  min-height: 100svh !important;
+}
+
+body:has(.lifeGalaxy) main,
+body:has(.lifeGalaxy) [data-nextjs-scroll-focus-boundary] {
+  height: 100svh !important;
+  min-height: 100svh !important;
+  max-height: 100svh !important;
+  overflow: hidden !important;
+}
+
+.lifeGalaxy {
+  position: fixed !important;
+  inset: 0 !important;
+  width: 100vw !important;
+  height: 100svh !important;
+  min-height: 100svh !important;
+  max-height: 100svh !important;
+  overflow: hidden !important;
+  overscroll-behavior: none !important;
+}
+
+.lifeGalaxy .starDock,
+.lifeGalaxy [class*="starDock"] {
+  max-height: min(34svh, 320px) !important;
+  overflow: auto !important;
+  overscroll-behavior: contain !important;
+}
+

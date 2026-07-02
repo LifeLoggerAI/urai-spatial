@@ -1,0 +1,55 @@
+/* URAI proof loop viewport locks. Loaded last from app/layout.tsx. */
+
+html.urai-route-life-map,
+html.urai-route-location-map,
+html.urai-route-life-map body,
+html.urai-route-location-map body {
+  height: 100svh !important;
+  min-height: 100svh !important;
+  max-height: 100svh !important;
+  overflow: hidden !important;
+  overscroll-behavior: none;
+}
+
+html.urai-route-life-map body > main.lifeGalaxy,
+html.urai-route-location-map body > section[data-launch-surface="premium-emotional-weather-atlas"],
+html.urai-route-location-map body > section[data-launch-surface="premium-emotional-weather-atlas"] > main {
+  width: 100vw;
+  height: 100svh !important;
+  min-height: 100svh !important;
+  max-height: 100svh !important;
+  overflow: hidden !important;
+  contain: paint;
+}
+
+html.urai-route-location-map [aria-label="Private place memory doors"] {
+  min-height: 0 !important;
+  max-height: calc(100svh - 18.5rem) !important;
+  overflow-y: auto !important;
+  overscroll-behavior: contain;
+  padding-bottom: 1rem;
+}
+
+@media (max-width: 760px) {
+  html.urai-route-location-map [aria-label="Global emotional weather legend"] {
+    margin-top: 0.75rem !important;
+    gap: 0.45rem !important;
+  }
+
+  html.urai-route-location-map [aria-label="Global emotional weather legend"] article {
+    padding: 0.62rem !important;
+    border-radius: 1rem !important;
+  }
+
+  html.urai-route-location-map [aria-label="Private place memory doors"] {
+    margin-top: 0.75rem !important;
+    max-height: calc(100svh - 20.25rem) !important;
+    padding-right: 0.15rem !important;
+  }
+
+  html.urai-route-location-map [aria-label="Private place memory doors"] a {
+    min-height: 9.25rem !important;
+    border-radius: 1.2rem !important;
+    padding: 0.85rem !important;
+  }
+}

@@ -1,0 +1,89 @@
+{
+  "generatedAt": "2026-07-02T04:39:05.060Z",
+  "loops": [
+    {
+      "id": "loop5-one-screen-life-location",
+      "title": "Kill Life Map and Location Map blank screenshot tails",
+      "runCommand": "LOOP_NAME=loop5-one-screen-life-location COMMIT_RECEIPT=1 bash scripts/urai-aaa-proof-loop.sh",
+      "verdictFile": "docs/receipts/visual-verdicts/loop5-one-screen-life-location.md",
+      "humanMustJudge": [
+        "Life Map no longer has blank lower tail",
+        "Location Map mobile no longer has blank lower tail"
+      ],
+      "verdict": "missing"
+    },
+    {
+      "id": "loop6-ground-final-world-art",
+      "title": "Make Ground feel like a real private operations floor",
+      "runCommand": "LOOP_NAME=loop6-ground-final-world-art COMMIT_RECEIPT=1 bash scripts/urai-aaa-proof-loop.sh",
+      "verdictFile": "docs/receipts/visual-verdicts/loop6-ground-final-world-art.md",
+      "humanMustJudge": [
+        "walkable floor impression",
+        "real-world objects",
+        "private workforce presence",
+        "not a dashboard"
+      ],
+      "verdict": "missing"
+    },
+    {
+      "id": "loop7-replay-cinematic-memory-film",
+      "title": "Make Replay feel like a cinematic memory film, not a static player",
+      "runCommand": "LOOP_NAME=loop7-replay-cinematic-memory-film COMMIT_RECEIPT=1 bash scripts/urai-aaa-proof-loop.sh",
+      "verdictFile": "docs/receipts/visual-verdicts/loop7-replay-cinematic-memory-film.md",
+      "humanMustJudge": [
+        "inside-memory feeling",
+        "cinematic depth",
+        "emotional beats are visible",
+        "not poster/player only"
+      ],
+      "verdict": "missing"
+    },
+    {
+      "id": "loop8-focus-chamber-depth",
+      "title": "Make Focus feel like a selected memory chamber",
+      "runCommand": "LOOP_NAME=loop8-focus-chamber-depth COMMIT_RECEIPT=1 bash scripts/urai-aaa-proof-loop.sh",
+      "verdictFile": "docs/receipts/visual-verdicts/loop8-focus-chamber-depth.md",
+      "humanMustJudge": [
+        "selected star is dominant",
+        "memory chamber depth",
+        "Replay affordance is clear",
+        "not static dashboard"
+      ],
+      "verdict": "missing"
+    },
+    {
+      "id": "loop9-mobile-crop-final",
+      "title": "Final mobile crop and panel stacking pass",
+      "runCommand": "LOOP_NAME=loop9-mobile-crop-final COMMIT_RECEIPT=1 bash scripts/urai-aaa-proof-loop.sh",
+      "verdictFile": "docs/receipts/visual-verdicts/loop9-mobile-crop-final.md",
+      "humanMustJudge": [
+        "no nav blocked",
+        "no giant blank tails",
+        "no clipped title",
+        "no unreadable panels"
+      ],
+      "verdict": "missing"
+    },
+    {
+      "id": "loop10-v1-final-receipt",
+      "title": "Record V1 final visual receipt",
+      "runCommand": "LOOP_NAME=loop10-v1-final-receipt COMMIT_RECEIPT=1 bash scripts/urai-aaa-proof-loop.sh",
+      "verdictFile": "docs/receipts/visual-verdicts/loop10-v1-final-receipt.md",
+      "humanMustJudge": [
+        "V1 can be called final public visual pass"
+      ],
+      "verdict": "missing"
+    }
+  ],
+  "next": {
+    "id": "loop5-one-screen-life-location",
+    "title": "Kill Life Map and Location Map blank screenshot tails",
+    "runCommand": "LOOP_NAME=loop5-one-screen-life-location COMMIT_RECEIPT=1 bash scripts/urai-aaa-proof-loop.sh",
+    "verdictFile": "docs/receipts/visual-verdicts/loop5-one-screen-life-location.md",
+    "humanMustJudge": [
+      "Life Map no longer has blank lower tail",
+      "Location Map mobile no longer has blank lower tail"
+    ],
+    "verdict": "missing"
+  }
+}

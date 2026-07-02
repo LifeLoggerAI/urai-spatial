@@ -1,0 +1,80 @@
+name: AAA Live Proof
+
+on:
+  workflow_dispatch:
+    inputs:
+      base_url:
+        description: Live base URL to screenshot-proof
+        required: false
+        default: https://urai.app
+      loop_name:
+        description: Receipt label
+        required: false
+        default: aaa-live-proof
+
+jobs:
+  live-proof:
+    name: Live route and screenshot proof
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10.0.0
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Install Playwright Chromium
+        run: pnpm exec playwright install chromium --with-deps
+
+      - name: Asset wall audit
+        run: node scripts/audit-v123-asset-wall.mjs
+
+      - name: Typecheck
+        run: pnpm typecheck
+
+      - name: Static build
+        run: pnpm build:static
+
+      - name: Live screenshot proof
+        env:
+          BASE_URL: ${{ inputs.base_url }}
+        run: |
+          node scripts/aaa-launch-proof.mjs \
+            --skip-install \
+            --skip-typecheck \
+            --skip-test \
+            --skip-build \
+            --screenshots \
+            --base="$BASE_URL"
+
+      - name: Package proof receipts
+        id: package
+        run: |
+          set -euo pipefail
+          LATEST_PROOF="$(ls -td "$HOME"/urai-final-receipts/aaa-launch-proof-* | head -1)"
+          echo "LATEST_PROOF=$LATEST_PROOF" >> "$GITHUB_ENV"
+          mkdir -p proof-artifact
+          cp -R "$LATEST_PROOF"/* proof-artifact/
+          PNG_COUNT="$(find proof-artifact/screenshots -maxdepth 1 -name '*.png' | wc -l | tr -d ' ')"
+          echo "PNG_COUNT=$PNG_COUNT" | tee proof-artifact/PNG_COUNT.txt
+          test "$PNG_COUNT" = "24"
+
+      - name: Upload proof artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ inputs.loop_name }}-${{ github.sha }}
+          path: proof-artifact
+          if-no-files-found: error

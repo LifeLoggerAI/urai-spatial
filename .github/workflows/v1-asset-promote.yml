@@ -1,0 +1,127 @@
+name: V1 Asset Promote and Proof
+
+on:
+  workflow_dispatch:
+    inputs:
+      live_url:
+        description: Live URL to verify
+        required: true
+        default: https://urai.app
+        type: string
+  repository_dispatch:
+    types: [urai-v1-assets-ready]
+
+concurrency:
+  group: urai-v1-asset-promote
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+  id-token: write
+
+jobs:
+  verify-deploy-proof:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    env:
+      LIVE_URL: ${{ inputs.live_url || 'https://urai.app' }}
+      FIREBASE_PROJECT_ID: ${{ secrets.FIREBASE_PROJECT_ID }}
+    steps:
+      - name: Checkout Spatial
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10.0.0
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Verify provider-scored Asset Factory handoff
+        run: node scripts/verify-asset-factory-handoff.mjs
+
+      - name: Audit V1 asset wall
+        run: node scripts/audit-v123-asset-wall.mjs
+
+      - name: Typecheck
+        run: pnpm typecheck
+
+      - name: Build static production source
+        run: pnpm build:static
+
+      - name: Deploy Firebase hosting
+        uses: FirebaseExtended/action-hosting-deploy@v0
+        with:
+          repoToken: ${{ secrets.GITHUB_TOKEN }}
+          firebaseServiceAccount: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_URAI_SPATIAL }}
+          projectId: ${{ secrets.FIREBASE_PROJECT_ID }}
+          channelId: live
+
+      - name: Install Playwright Chromium
+        run: pnpm exec playwright install --with-deps chromium
+
+      - name: Capture all V1 routes
+        run: |
+          node scripts/aaa-launch-proof.mjs \
+            --skip-install \
+            --skip-typecheck \
+            --skip-test \
+            --skip-build \
+            --screenshots \
+            --base="$LIVE_URL" | tee v1-assets-launch-proof.log
+          proof_dir="$(grep -E '^Receipt: ' v1-assets-launch-proof.log | tail -1 | sed 's/^Receipt: //')"
+          test -d "$proof_dir/screenshots"
+          echo "PROOF_DIR=$proof_dir" >> "$GITHUB_ENV"
+          count="$(find "$proof_dir/screenshots" -maxdepth 1 -name '*.png' | wc -l | tr -d ' ')"
+          test "$count" = "24"
+
+      - name: Machine image and structural gates
+        run: |
+          LOOP_NAME="v1-provider-assets" EXPECTED_PNG_COUNT=24 PROOF_DIR="$PROOF_DIR" \
+            python3 scripts/urai-machine-visual-verdict.py
+          LOOP_NAME="v1-provider-assets" BASE_URL="$LIVE_URL" \
+            node scripts/urai-v1-structural-audit.mjs
+          LOOP_NAME="v1-provider-assets" BASE_URL="$LIVE_URL" \
+            node scripts/urai-v1-realm-audit.mjs
+
+      - name: Package promoted proof
+        run: |
+          mkdir -p artifacts
+          zip -r artifacts/v1-provider-assets-${GITHUB_SHA}.zip \
+            "$PROOF_DIR/screenshots" \
+            "$PROOF_DIR/screenshots.json" \
+            "$PROOF_DIR/final-report.md" \
+            "$PROOF_DIR/route-matrix.md" \
+            "$PROOF_DIR/route-matrix.json" \
+            "$PROOF_DIR/summary.json"
+          cp docs/receipts/visual-verdicts/v1-provider-assets-machine-visual-verdict.* artifacts/ || true
+          cp docs/receipts/visual-verdicts/v1-provider-assets-structural-audit.* artifacts/ || true
+          cp docs/receipts/visual-verdicts/v1-provider-assets-realm-audit.* artifacts/ || true
+          cp urai-tier1/public/assets/urai/final/manifests/asset-factory-spatial-handoff.json artifacts/
+
+      - name: Upload proof artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: v1-provider-assets-proof-${{ github.run_id }}
+          retention-days: 30
+          path: artifacts/**
+
+      - name: Commit proof reports
+        shell: bash
+        run: |
+          git config user.name "URAI Production Wheel"
+          git config user.email "urai-wheel@users.noreply.github.com"
+          git add docs/receipts/visual-verdicts
+          if git diff --cached --quiet; then
+            exit 0
+          fi
+          git commit -m "Record provider V1 asset promotion proof"
+          git pull --rebase origin main
+          git push origin main
