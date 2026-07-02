@@ -59,4 +59,4 @@ jobs:
               body: lines.join('\n')
             });
 
-# monitor live release
+# latest scoped release poll
