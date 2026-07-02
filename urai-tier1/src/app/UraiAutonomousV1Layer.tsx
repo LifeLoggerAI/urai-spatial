@@ -1,8 +1,10 @@
 "use client";
 
 import { usePathname } from "next/navigation";
+import UraiAutonomousV1Realms from "./UraiAutonomousV1Realms";
 import "./urai-autonomous-v1-layer.css";
 import "./urai-autonomous-v1-assets.css";
+import "./urai-autonomous-v1-realms.css";
 import "./urai-autonomous-v1-isolation.css";
 
 const groundStations = [
@@ -198,5 +200,14 @@ export default function UraiAutonomousV1Layer() {
   if (pathname.startsWith("/ground")) return <GroundWorld />;
   if (pathname.startsWith("/focus")) return <FocusWorld />;
   if (pathname.startsWith("/replay")) return <ReplayWorld />;
+  if (
+    pathname.startsWith("/mirror") ||
+    pathname.startsWith("/passport") ||
+    pathname.startsWith("/privacy-controls") ||
+    pathname.startsWith("/location-map") ||
+    pathname.startsWith("/status")
+  ) {
+    return <UraiAutonomousV1Realms pathname={pathname} />;
+  }
   return null;
 }
