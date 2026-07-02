@@ -14,7 +14,7 @@ const getArg = (name, fallback) => {
 };
 
 if (args.has('--help') || args.has('-h')) {
-  console.log(`URAI AAA launch proof runner\n\nUsage:\n  node scripts/aaa-launch-proof.mjs [--deploy] [--screenshots] [--skip-install] [--skip-test] [--skip-build] [--base=https://urai.app]\n\nWhat it does:\n  - Creates a receipt folder under $HOME/urai-final-receipts\n  - Records git state\n  - Runs install/typecheck/test/build unless skipped\n  - Deploys only when --deploy is passed\n  - Curls the live route matrix and checks route-specific copy fingerprints\n  - Checks foundation DNS/HTTPS without claiming success unless it resolves\n  - Optionally captures screenshots if Playwright is available\n  - Writes final-report.md\n`);
+  console.log(`URAI AAA launch proof runner\n\nUsage:\n  node scripts/aaa-launch-proof.mjs [--deploy] [--screenshots] [--skip-install] [--skip-assets] [--skip-test] [--skip-build] [--base=https://urai.app]\n\nWhat it does:\n  - Creates a receipt folder under $HOME/urai-final-receipts\n  - Records git state\n  - Runs install/typecheck/asset verification/test/build unless skipped\n  - Deploys only when --deploy is passed\n  - Curls the live route matrix and checks route-specific copy fingerprints\n  - Checks foundation DNS/HTTPS without claiming success unless it resolves\n  - Optionally captures screenshots if Playwright is available\n  - Writes final-report.md\n`);
   process.exit(0);
 }
 
@@ -23,6 +23,7 @@ const receiptBase = process.env.URAI_RECEIPT_ROOT || join(homedir(), 'urai-final
 const shouldDeploy = args.has('--deploy');
 const shouldScreenshots = args.has('--screenshots');
 const skipInstall = args.has('--skip-install');
+const skipAssets = args.has('--skip-assets');
 const skipTest = args.has('--skip-test');
 const skipBuild = args.has('--skip-build');
 const skipTypecheck = args.has('--skip-typecheck');
@@ -31,12 +32,12 @@ const projectId = process.env.FIREBASE_PROJECT_ID || 'urai-4dc1d';
 const routeExpectations = [
   { route: '/', required: ['Own your life', 'Step inside yourself'] },
   { route: '/home', required: ['Own your life', 'Step inside yourself'] },
-  { route: '/ground', required: ['Ground', 'walkable-first-person-ground-layer'] },
-  { route: '/life-map', required: ['Life Map', 'memory star'] },
-  { route: '/focus', required: ['The Quiet Reset', 'Selected memory camera chamber'] },
-  { route: '/replay', required: ['Replay the thread', 'Film beats'] },
-  { route: '/mirror', required: ['Mirror', 'pattern'] },
-  { route: '/passport', required: ['Passport', 'Your life stays yours'] },
+  { route: '/ground', required: ['Ground', 'walkable-first-person-ground-layer', 'Private operations floor'] },
+  { route: '/life-map', required: ['Life Map', 'Thirty-four private stars', 'Double click / Enter Focus'] },
+  { route: '/focus', required: ['The Quiet Reset', 'Selected memory chamber', 'selected-memory-camera-chamber'] },
+  { route: '/replay', required: ['Memory film', 'The Quiet Reset', 'cinematic-memory-camera-film'] },
+  { route: '/mirror', required: ['Mirror', 'reflection realm', 'Pattern intelligence'] },
+  { route: '/passport', required: ['Passport', 'Your life stays yours', 'identity-consent-vault'] },
   { route: '/status', required: ['URAI Status', 'Route matrix'] },
   {
     route: '/privacy-controls',
@@ -165,6 +166,7 @@ function readAssetReceipt() {
     coreMissing: lineValue('Core launch assets missing'),
     expansionTargets: lineValue('Expansion / AAA next-stage targets checked'),
     expansionMissing: lineValue('Expansion / AAA next-stage targets missing'),
+    placeholderFinalCount: (text.match(/placeholder-final/g) || []).length,
   };
 }
 
@@ -273,7 +275,7 @@ function writeReport({ routeRows, dnsResult, screenshotsResult, assetReceipt }) 
   const status = failedSteps.length === 0 && failedRoutes.length === 0 ? 'GREEN' : 'YELLOW_OR_RED_REVIEW_REQUIRED';
   const gitStatus = sh('git status --short').stdout.trim();
   const branch = sh('git branch --show-current').stdout.trim();
-  const report = ['# URAI AAA launch proof receipt', '', `Generated: ${new Date().toISOString()}`, `Repo: ${process.cwd()}`, `Branch: ${branch || 'unknown'}`, `Commit: ${gitHead}`, `Base URL: ${baseUrl}`, `Receipt: ${receiptDir}`, `Overall receipt status: ${status}`, '', '## Git state', '', gitStatus ? 'Working tree has local changes:' : 'Working tree clean at receipt start/end check:', '', '```text', gitStatus || 'clean', '```', '', '## Command steps', '', '| Step | Exit | Duration ms |', '| --- | ---: | ---: |', ...steps.map((step) => `| ${step.name} | ${step.status} | ${step.durationMs} |`), '', '## Asset receipt', '', assetReceipt.present ? `Result=${assetReceipt.result}; TOTAL_ASSETS=${assetReceipt.totalAssets}; CORE_MISSING=${assetReceipt.coreMissing}; EXPANSION_MISSING=${assetReceipt.expansionMissing}` : 'docs/final-asset-receipt.md not found in this checkout.', '', '## Route matrix summary', '', `Routes checked: ${routeRows.length}`, `Routes OK: ${routeRows.filter((row) => row.ok).length}`, `Routes needing review: ${failedRoutes.length}`, `Fingerprint failures with HTTP 200: ${fingerprintFailures.length}`, '', failedRoutes.length ? failedRoutes.map((row) => `- ${row.route}: HTTP=${row.status}; fingerprint=${row.fingerprintOk ? 'ok' : 'fail'}; missing=${(row.missingRequired || []).join(', ') || 'none'}; forbidden=${(row.presentForbidden || []).join(', ') || 'none'}; error=${row.error || 'none'}`).join('\n') : 'All checked routes returned successful HTTP status and expected route fingerprints.', '', '## Screenshots', '', `Requested: ${screenshotsResult.requested ? 'yes' : 'no'}`, `Captured: ${screenshotsResult.captured.length}`, screenshotsResult.skipped.length ? `Skipped/notes:\n${screenshotsResult.skipped.map((item) => `- ${item}`).join('\n')}` : 'No screenshot notes.', '', '## Quest / WebXR proof state', '', 'XR preview may be live if `/spatial/ar-vr` is green. Physical Quest 2 proof is NOT complete from this script. Record actual Quest Browser proof separately.', '', '## Foundation DNS state', '', `Complete: ${dnsResult.complete ? 'yes' : 'no'}`, `GitHub Pages apex A records: ${dnsResult.githubPagesApex ? 'yes' : 'no'}`, `HTTPS works: ${dnsResult.httpsWorks ? 'yes' : 'no'}`, '', '## Remaining honest gates', '', '- Capture/review desktop and mobile screenshots if not already captured.', '- Do not claim Quest 2 proof until actual Quest Browser testing is recorded.', '- Do not claim `uraifoundation.org` DNS complete unless this receipt says DNS/HTTPS complete and manual browser verification agrees.', '- Do not claim bespoke final art while core art remains placeholder-final.', '- Do not claim production backend/provider automation until real auth/data/actions are wired and tested.', ''].join('\n');
+  const report = ['# URAI AAA launch proof receipt', '', `Generated: ${new Date().toISOString()}`, `Repo: ${process.cwd()}`, `Branch: ${branch || 'unknown'}`, `Commit: ${gitHead}`, `Base URL: ${baseUrl}`, `Receipt: ${receiptDir}`, `Overall receipt status: ${status}`, '', '## Git state', '', gitStatus ? 'Working tree has local changes:' : 'Working tree clean at receipt start/end check:', '', '```text', gitStatus || 'clean', '```', '', '## Command steps', '', '| Step | Exit | Duration ms |', '| --- | ---: | ---: |', ...steps.map((step) => `| ${step.name} | ${step.status} | ${step.durationMs} |`), '', '## Asset receipt', '', assetReceipt.present ? `Result=${assetReceipt.result}; TOTAL_ASSETS=${assetReceipt.totalAssets}; CORE_MISSING=${assetReceipt.coreMissing}; EXPANSION_MISSING=${assetReceipt.expansionMissing}; PLACEHOLDER_FINAL_COUNT=${assetReceipt.placeholderFinalCount}` : 'docs/final-asset-receipt.md not found in this checkout.', '', '## Route matrix summary', '', `Routes checked: ${routeRows.length}`, `Routes OK: ${routeRows.filter((row) => row.ok).length}`, `Routes needing review: ${failedRoutes.length}`, `Fingerprint failures with HTTP 200: ${fingerprintFailures.length}`, '', failedRoutes.length ? failedRoutes.map((row) => `- ${row.route}: HTTP=${row.status}; fingerprint=${row.fingerprintOk ? 'ok' : 'fail'}; missing=${(row.missingRequired || []).join(', ') || 'none'}; forbidden=${(row.presentForbidden || []).join(', ') || 'none'}; error=${row.error || 'none'}`).join('\n') : 'All checked routes returned successful HTTP status and expected route fingerprints.', '', '## Screenshots', '', `Requested: ${screenshotsResult.requested ? 'yes' : 'no'}`, `Captured: ${screenshotsResult.captured.length}`, screenshotsResult.skipped.length ? `Skipped/notes:\n${screenshotsResult.skipped.map((item) => `- ${item}`).join('\n')}` : 'No screenshot notes.', '', '## Quest / WebXR proof state', '', 'XR preview may be live if `/spatial/ar-vr` is green. Physical Quest 2 proof is NOT complete from this script. Record actual Quest Browser proof separately.', '', '## Foundation DNS state', '', `Complete: ${dnsResult.complete ? 'yes' : 'no'}`, `GitHub Pages apex A records: ${dnsResult.githubPagesApex ? 'yes' : 'no'}`, `HTTPS works: ${dnsResult.httpsWorks ? 'yes' : 'no'}`, '', '## Remaining honest gates', '', '- Capture/review desktop and mobile screenshots if not already captured.', '- Do not claim Quest 2 proof until actual Quest Browser testing is recorded.', '- Do not claim `uraifoundation.org` DNS complete unless this receipt says DNS/HTTPS complete and manual browser verification agrees.', '- Do not claim bespoke final art while core art remains placeholder-final.', '- Do not claim production backend/provider automation until real auth/data/actions are wired and tested.', ''].join('\n');
   writeFileSync(join(receiptDir, 'final-report.md'), report);
   writeJson('summary.json', { status, gitHead, branch, receiptDir, steps, assetReceipt, routeRows, dnsResult, screenshotsResult });
 }
@@ -285,6 +287,8 @@ if (!skipInstall) logStep('pnpm-install', 'pnpm install --frozen-lockfile');
 else pushSkippedStep('pnpm-install', 'skipped by --skip-install');
 if (!skipTypecheck) logStep('pnpm-typecheck', 'pnpm typecheck');
 else pushSkippedStep('pnpm-typecheck', 'skipped by --skip-typecheck');
+if (!skipAssets) logStep('pnpm-verify-assets', 'pnpm verify:assets');
+else pushSkippedStep('pnpm-verify-assets', 'skipped by --skip-assets');
 if (!skipTest) logStep('pnpm-test-if-present', 'pnpm run --if-present test');
 else pushSkippedStep('pnpm-test-if-present', 'skipped by --skip-test');
 if (!skipBuild) logStep('pnpm-build-static', 'pnpm build:static');
