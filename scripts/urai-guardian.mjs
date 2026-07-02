@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 import { spawnSync } from 'node:child_process'
+import { mkdirSync, writeFileSync } from 'node:fs'
 
 const tests = [
   'urai-tier1/tests/guardian/route-canon.test.mjs',
@@ -21,8 +22,11 @@ const tests = [
 ]
 
 for (const test of tests) {
+  console.log(`[guardian] running ${test}`)
   const result = spawnSync(process.execPath, [test], { stdio: 'inherit' })
   if (result.status !== 0) {
+    mkdirSync('artifacts/guardian', { recursive: true })
+    writeFileSync('artifacts/guardian/failure.txt', `FAILED_TEST=${test}\nEXIT=${result.status ?? 1}\n`)
     process.exit(result.status ?? 1)
   }
 }

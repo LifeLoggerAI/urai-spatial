@@ -31,13 +31,21 @@ assert.match(shell, /Return Home/, "RealmShell must include Return Home exit.");
 assert.match(shell, /Location Map/, "RealmShell must link to Location Map.");
 assert.match(shell, /LifeMap/, "RealmShell must link to LifeMap.");
 
-for (const route of ["legacy", "passport", "council", "dream", "ground"]) {
+for (const route of ["legacy", "council", "dream"]) {
   const content = readFileSync(join(app, `src/app/${route}/page.tsx`), "utf8");
   assert.match(content, /RealmShell/, `${route} route must render RealmShell.`);
   assert.match(content, /getSceneDefinition/, `${route} route must use sceneRegistry.`);
 }
 
 const mirror = readFileSync(join(app, "src/app/mirror/page.tsx"), "utf8");
-assert.match(mirror, /TierOneExperience/, "Mirror route should preserve its existing true 3D TierOneExperience implementation.");
+assert.match(mirror, /reflection-realm/, "Mirror route must render the final reflection realm owner.");
+assert.match(mirror, /mirror-reflection-main/, "Mirror route must use the final mirror asset.");
 
-console.log("URAI realm routes canon passed.");
+const passport = readFileSync(join(app, "src/app/passport/page.tsx"), "utf8");
+assert.match(passport, /FinalPassportVault/, "Passport route must render the final vault owner.");
+
+const ground = readFileSync(join(app, "src/app/ground/page.tsx"), "utf8");
+assert.match(ground, /walkable-first-person-ground-layer/, "Ground route must render the final ground world.");
+assert.match(ground, /getSceneDefinition/, "Ground route must preserve scene registry contract.");
+
+console.log("URAI realm routes canon passed: shell realms and final route owners are preserved.");

@@ -195,7 +195,7 @@ jobs:
       - name: Verify Firebase rules and runtime
         run: |
           test -f firebase/firestore.rules
-          grep -q "nodejs20" firebase.json
+          grep -q "nodejs22" firebase.json
           grep -q "urai-spatial-functions" firebase.json
           grep -q "isAdmin" firebase/firestore.rules
           grep -Fq "match /spatial/{doc=**}" firebase/firestore.rules

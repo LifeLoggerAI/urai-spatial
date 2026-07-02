@@ -2,90 +2,38 @@ import assert from 'node:assert/strict'
 import { test } from 'node:test'
 import fs from 'node:fs'
 
-const source = fs.readFileSync(new URL('../src/spatial/lifemap/LifeMapScene.tsx', import.meta.url), 'utf8')
-const flat = source.replace(/\s+/g, ' ')
+const source = fs.readFileSync(new URL('../src/components/lifemap/RealLifeMapGalaxy.tsx', import.meta.url), 'utf8')
+const page = fs.readFileSync(new URL('../src/app/life-map/page.tsx', import.meta.url), 'utf8')
 
-function assertEventContract(label, requiredTerms) {
-  for (const term of requiredTerms) {
-    assert.ok(
-      flat.includes(term),
-      `${label} is missing contract term: ${term}`,
-    )
-  }
-}
-
-test('3D LifeMap scene preserves node topology and focus camera behavior', () => {
-  assert.match(source, /DEMO_MEMORY_STARS/)
-  assert.match(source, /export type LifeMapNodeType =/)
-  assert.match(source, /type FocusApi = \{\s*focus: \(node: LifeMapNode\) => void;\s*reset: \(\) => void;\s*\}/)
-  assert.match(source, /const TYPE_BY_MANIFEST/)
-  assert.match(source, /const POSITIONS/)
-  assert.match(source, /const EDGES: LifeMapEdge\[\]/)
-  assert.match(source, /function FocusCameraRig/)
-  assert.match(source, /camera\.position\.lerp/)
-  assert.match(source, /camera\.lookAt\(target\.current\)/)
+test('LifeMap route uses the final RealLifeMapGalaxy owner', () => {
+  assert.match(page, /RealLifeMapGalaxy/, 'Life Map route must render RealLifeMapGalaxy.')
+  assert.doesNotMatch(page, /LifeMapScene/, 'Life Map route must not revert to the obsolete LifeMapScene owner.')
 })
 
-test('focus and selection actions route users into Focus with manifest identity', () => {
-  assert.match(source, /function MemoryNode/)
-  assert.match(source, /onClick=\{\(event: ThreeEvent<MouseEvent>\) => \{/)
-  assert.match(source, /event\.stopPropagation\(\)/)
-  assert.match(source, /onSelect\(node\)/)
-  assert.match(source, /onPointerOver=\{\(event: ThreeEvent<PointerEvent>\) => \{/)
-  assert.match(source, /onHover\(node\)/)
-  assert.match(source, /lm3d-node-label/)
-  assert.match(source, /function openFocus\(node: LifeMapNode\)/)
-  assert.match(flat, /router\.push\(`\/focus\?manifestId=\$\{encodeURIComponent\(node\.manifestId\)\}`\)/)
+test('RealLifeMapGalaxy preserves memory stars and selected-star camera pull', () => {
+  assert.ok(source.includes('Array.from({ length: 34 }'), 'Life Map must preserve thirty-four memory stars.')
+  assert.ok(source.includes('selected, setSelected'), 'Life Map must preserve selected star state.')
+  assert.ok(source.includes('--pull-x'), 'Life Map must preserve selected-star horizontal camera pull.')
+  assert.ok(source.includes('--pull-y'), 'Life Map must preserve selected-star vertical camera pull.')
+  assert.ok(source.includes('--selected-x'), 'Life Map must preserve selected star x focus variable.')
+  assert.ok(source.includes('--selected-y'), 'Life Map must preserve selected star y focus variable.')
 })
 
-test('LifeMap HUD exposes reset, status, and Focus entry copy', () => {
-  assert.match(source, /function HUDOverlay/)
-  assert.match(source, /LIFE MAP 3D V1/)
-  assert.match(source, /A living universe of remembered moments\./)
-  assert.match(source, /Reset View/)
-  assert.match(source, /Memory focus open/)
-  assert.match(source, /Constellation awake/)
-  assert.match(source, /Choose a star to open Focus/)
-  assert.match(source, /function MemoryFocusModal/)
-  assert.match(source, /Open Focus/)
-  assert.match(source, /Return Galaxy/)
+test('LifeMap stars route into Focus and Replay with memory identity', () => {
+  assert.ok(source.includes('openFocus'), 'Life Map must expose Focus entry.')
+  assert.ok(source.includes('openReplay'), 'Life Map must expose Replay entry.')
+  assert.ok(source.includes('focus?memoryId='), 'Focus route must carry selected memory identity.')
+  assert.ok(source.includes('replay?memoryId='), 'Replay route must carry selected memory identity.')
+  assert.ok(source.includes('encodeURIComponent(selected.id)'), 'Selected memory id must be encoded into route transitions.')
+  assert.ok(source.includes('onDoubleClick'), 'Stars must support double click into Focus.')
+  assert.ok(source.includes('Double click / Enter Focus'), 'Selected star must expose the Focus cue.')
 })
 
-test('chapter anchors trigger cluster focus and emit narrator/timeline events', () => {
-  assertEventContract('cluster focus', [
-    "type: 'FOCUS_CLUSTER'",
-    'chapterId: chapter.id',
-    'camera,',
-    'companionLine: CHAPTER_LINES[chapter.id]',
-    'lifemap.cluster.focus',
-    'activeChapterId: chapter.id',
-  ])
-})
-
-test('focus and resolve actions emit narrator/timeline payloads', () => {
-  assertEventContract('star focus event', [
-    'lifemap.star.focus',
-    'starId: star.id',
-    'chapterId: star.chapterId',
-    'emotion: star.emotion',
-  ])
-
-  assertEventContract('star focus timeline sync', [
-    "phase: 'focus'",
-    'activeStarId: star.id',
-    'activeChapterId: star.chapterId',
-  ])
-
-  assertEventContract('star resolved event', [
-    'lifemap.star.resolved',
-    'starId: activeStar.id',
-    'chapterId: activeStar.chapterId',
-    'emotion: activeStar.emotion',
-    "action: 'resolve'",
-  ])
-
-  assertEventContract('star resolved timeline sync', [
-    'activeStarId: activeStar.id',
-    'activeChapterId: activeStar.chapterId',
-  ])
+test('LifeMap visual language remains asset-backed and mobile-safe', () => {
+  assert.ok(source.includes('lifeMapAssets.primary'), 'Life Map must use the registered primary asset stack.')
+  assert.ok(source.includes('lifeMapAssets.accents.threshold'), 'Life Map stars must use registered node imagery.')
+  assert.ok(source.includes('assetCssStack'), 'Life Map must render asset CSS stacks.')
+  assert.ok(source.includes('organicDust'), 'Life Map must preserve organic dust atmosphere.')
+  assert.ok(source.includes('portalRail'), 'Life Map must keep route rail navigation.')
+  assert.ok(source.includes('@media (max-width: 760px)'), 'Life Map must preserve mobile layout handling.')
 })

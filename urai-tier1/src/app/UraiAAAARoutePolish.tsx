@@ -153,7 +153,11 @@ function findQuietResetAnchor(): { x: number; y: number } {
 
 function wireLifeMap(root: HTMLElement, signal: AbortSignal) {
   const stage = findWorldStage();
-  if (stage) stage.classList.add("urai-spatial-world-stage");
+  if (stage) {
+    window.setTimeout(() => {
+      if (!signal.aborted) stage.classList.add("urai-spatial-world-stage");
+    }, 80);
+  }
 
   const hud = node("urai-spatial-hud");
   hud.innerHTML = `<b>SPATIAL ACTIVE</b><span>Drag = orbit</span><span>Scroll = depth</span><span>Hover star = magnetic</span><span>Double-click = Focus</span>`;

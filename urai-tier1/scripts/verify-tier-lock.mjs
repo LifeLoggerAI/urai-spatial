@@ -4,6 +4,9 @@ const checks = [
   'src/spatial/canon/tierLockState.ts',
   'src/spatial/hud/CanonicalTierLockHud.tsx',
   'src/app/page.tsx',
+  'src/app/home/page.tsx',
+  'src/app/FinalHomeThreshold.tsx',
+  'src/app/HomeSpatialWorldFinal.tsx',
   'src/spatial/layout/TierOneExperience.tsx',
   'src/scene/HomeScene.tsx',
   'docs/audits/TIER_LOCK_VISUAL_CLOSEOUT.md',
@@ -28,8 +31,20 @@ const fileNeedles = {
     'URAI_SPATIAL_TIER_LOCKS',
   ],
   'src/app/page.tsx': [
-    'TierOneExperience',
-    'mode="home"',
+    'FinalHomeThreshold',
+  ],
+  'src/app/home/page.tsx': [
+    'FinalHomeThreshold',
+  ],
+  'src/app/FinalHomeThreshold.tsx': [
+    'HomeSpatialWorldFinal',
+  ],
+  'src/app/HomeSpatialWorldFinal.tsx': [
+    'data-urai-route="genesis-home-world"',
+    'data-launch-surface="aaa-final-home-sky-ground-orb-body-portals"',
+    'href="/ground?from=home"',
+    'href="/life-map?from=home-sky"',
+    'Step inside yourself',
   ],
   'src/spatial/layout/TierOneExperience.tsx': [
     '@/scene/HomeScene',
@@ -63,16 +78,16 @@ for (const file of checks) {
   const text = fs.readFileSync(file, 'utf8')
   for (const needle of fileNeedles[file] ?? []) {
     if (!text.includes(needle)) {
-      console.error(`[tier-lock] missing "${needle}" in ${file}`)
+      console.error(`[tier-lock] missing ${JSON.stringify(needle)} in ${file}`)
       failed = true
     }
   }
 }
 
 const home = fs.existsSync('src/app/page.tsx') ? fs.readFileSync('src/app/page.tsx', 'utf8') : ''
-for (const forbidden of ['CanonicalTierLockHud', '<CanonicalTierLockHud />', 'Loading URAI Spatial', '@/spatial/scene/SpatialScene']) {
+for (const forbidden of ['CanonicalTierLockHud', '<CanonicalTierLockHud />', 'Loading URAI Spatial', '@/spatial/scene/SpatialScene', 'UraiV1Experience']) {
   if (home.includes(forbidden)) {
-    console.error(`[tier-lock] home invariant violation: ${forbidden} should not render in src/app/page.tsx`)
+    console.error(`[tier-lock] home invariant violation: ${forbidden}`)
     failed = true
   }
 }
@@ -85,4 +100,4 @@ if (!pkg.scripts || pkg.scripts['verify:tier-lock'] !== 'node scripts/verify-tie
 
 if (failed) process.exit(1)
 
-console.log('[tier-lock] verified: Tier locks preserved and canonical TierOneExperience -> HomeScene runtime remains no-HUD')
+console.log('[tier-lock] verified: FinalHomeThreshold owns Home while TierOneExperience remains the spatial shell')
