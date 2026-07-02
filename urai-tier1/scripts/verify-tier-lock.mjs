@@ -6,6 +6,7 @@ const checks = [
   'src/app/page.tsx',
   'src/app/home/page.tsx',
   'src/app/FinalHomeThreshold.tsx',
+  'src/app/HomeSpatialWorldFinal.tsx',
   'src/spatial/layout/TierOneExperience.tsx',
   'src/scene/HomeScene.tsx',
   'docs/audits/TIER_LOCK_VISUAL_CLOSEOUT.md',
@@ -36,10 +37,14 @@ const fileNeedles = {
     'FinalHomeThreshold',
   ],
   'src/app/FinalHomeThreshold.tsx': [
-    'urai-final-home-threshold',
-    'home-threshold',
-    'Life Map',
-    'Ground',
+    'HomeSpatialWorldFinal',
+  ],
+  'src/app/HomeSpatialWorldFinal.tsx': [
+    'data-urai-route="genesis-home-world"',
+    'data-launch-surface="aaa-final-home-sky-ground-orb-body-portals"',
+    'href="/ground?from=home"',
+    'href="/life-map?from=home-sky"',
+    'Step inside yourself',
   ],
   'src/spatial/layout/TierOneExperience.tsx': [
     '@/scene/HomeScene',
