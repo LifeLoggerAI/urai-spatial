@@ -24,12 +24,12 @@ jobs:
             const runs = await github.rest.actions.listWorkflowRuns({
               owner,
               repo,
-              workflow_id: 'urai-spatial-deploy.yml',
+              workflow_id: 'v1-asset-promote.yml',
               per_page: 10
             });
             const target = runs.data.workflow_runs[0];
             if (!target) {
-              core.setFailed('No spatial deploy runs found');
+              core.setFailed('No V1 deploy proof runs found');
               return;
             }
             const jobs = await github.rest.actions.listJobsForWorkflowRun({
@@ -55,8 +55,8 @@ jobs:
             await github.rest.issues.create({
               owner,
               repo,
-              title: `V1 production deploy index ${target.id}`,
+              title: `V1 production proof index ${target.id}`,
               body: lines.join('\n')
             });
 
-# poll scoped production deploy
+# monitor production environment V1 proof
