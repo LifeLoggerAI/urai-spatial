@@ -1,3 +1,4 @@
+import UraiFinalAssetSpineBridge from './UraiFinalAssetSpineBridge'
 import './home-spatial-world-final.css'
 import './home-one-world-owner.css'
 import type { Metadata, Viewport } from 'next'
@@ -63,6 +64,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       >
         <UraiAAAARoutePolish />
         <UraiCinematicBackdrop />
+        <UraiFinalAssetSpineBridge />
         {children}
       </body>
     </html>
