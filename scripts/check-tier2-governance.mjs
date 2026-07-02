@@ -14,10 +14,11 @@ for (const system of requiredSystems) {
 }
 
 const pathHints = [
-  'src/components/life-map',
-  'src/spatial',
+  'urai-tier1/src/components/lifemap',
+  'urai-tier1/src/spatial',
   'firebase/firestore.rules',
-  'urai-tier1/src/app/api',
+  'apps/functions/src',
+  'urai-tier1/src/app/privacy-controls',
 ]
 for (const p of pathHints) {
   if (!fs.existsSync(path.resolve(p))) {
