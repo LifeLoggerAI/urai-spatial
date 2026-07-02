@@ -101,3 +101,5 @@ jobs:
         env:
           URAI_DEPLOY_URL: ${{ inputs.deploy_url || 'https://urai.app' }}
         run: corepack pnpm smoke:live
+
+# Finalized V1 provider asset production deploy trigger.
