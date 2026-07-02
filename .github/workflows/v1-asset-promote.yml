@@ -27,6 +27,7 @@ permissions:
 jobs:
   verify-deploy-proof:
     runs-on: ubuntu-latest
+    environment: production
     timeout-minutes: 120
     env:
       LIVE_URL: ${{ inputs.live_url || 'https://urai-4dc1d.web.app' }}
