@@ -59,4 +59,4 @@ jobs:
               body: lines.join('\n')
             });
 
-# monitor production environment V1 proof
+# canonical service account poll
