@@ -2,6 +2,7 @@
 
 import { usePathname } from "next/navigation";
 import "./urai-autonomous-v1-layer.css";
+import "./urai-autonomous-v1-isolation.css";
 
 const groundStations = [
   { key: "reception", label: "Reception", detail: "New signals arrive here." },
