@@ -106,6 +106,27 @@
   background: radial-gradient(circle, rgba(225, 248, 255, 0.1), transparent 64%);
 }
 
+.uraiFocusMemoryImage img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center 46%;
+  user-select: none;
+  filter: saturate(1.1) contrast(1.08) brightness(0.9);
+  transform: scale(1.06);
+}
+
+.uraiFocusMemoryImage::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(circle at 50% 48%, transparent 0 42%, rgba(2, 6, 12, 0.18) 68%, rgba(1, 3, 8, 0.72) 100%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.02), transparent 54%, rgba(0, 0, 0, 0.26));
+}
+
 .uraiReplaySceneArt {
   z-index: 8;
 }
@@ -154,6 +175,11 @@
     object-position: center 42%;
   }
 
+  .uraiFocusMemoryImage img {
+    object-position: center 40%;
+    transform: scale(1.08);
+  }
+
   .uraiFocusTunnel {
     opacity: 0.38;
   }
@@ -165,7 +191,8 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .uraiReplaySceneArt img {
+  .uraiReplaySceneArt img,
+  .uraiFocusMemoryImage img {
     transform: none;
   }
 }
