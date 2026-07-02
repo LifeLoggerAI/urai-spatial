@@ -19,6 +19,10 @@ on:
         description: Optional live URL override. Defaults to repository variable URAI_SPATIAL_PRODUCTION_URL.
         required: false
         type: string
+  push:
+    branches: [main]
+    paths:
+      - .github/live-release-trigger/v1.txt
 
 concurrency:
   group: urai-spatial-live-release-${{ github.ref }}
@@ -62,14 +66,14 @@ jobs:
     needs: live-check
     runs-on: ubuntu-latest
     timeout-minutes: 35
-    if: github.event_name == 'workflow_dispatch' && inputs.deploy == 'true'
+    if: (github.event_name == 'workflow_dispatch' && inputs.deploy == 'true') || github.event_name == 'push'
 
     permissions:
       contents: write
 
     env:
-      RESOLVED_FIREBASE_PROJECT_ID: ${{ inputs.firebase_project_id || vars.URAI_SPATIAL_FIREBASE_PROJECT_ID }}
-      RESOLVED_LIVE_URL: ${{ inputs.live_url || vars.URAI_SPATIAL_PRODUCTION_URL }}
+      RESOLVED_FIREBASE_PROJECT_ID: ${{ inputs.firebase_project_id || vars.URAI_SPATIAL_FIREBASE_PROJECT_ID || secrets.FIREBASE_PROJECT_ID }}
+      RESOLVED_LIVE_URL: ${{ inputs.live_url || vars.URAI_SPATIAL_PRODUCTION_URL || 'https://urai-4dc1d.web.app' }}
       RESOLVED_FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT || secrets.FIREBASE_SERVICE_ACCOUNT_URAI_SPATIAL }}
       RESOLVED_FIREBASE_TOKEN: ${{ secrets.FIREBASE_TOKEN }}
 
@@ -94,7 +98,7 @@ jobs:
       - name: Validate deploy input
         run: |
           if [ -z "$RESOLVED_FIREBASE_PROJECT_ID" ]; then
-            echo "Set input firebase_project_id or repository variable URAI_SPATIAL_FIREBASE_PROJECT_ID before deploying." >&2
+            echo "Set input firebase_project_id, repository variable URAI_SPATIAL_FIREBASE_PROJECT_ID, or FIREBASE_PROJECT_ID before deploying." >&2
             exit 1
           fi
           if [ -z "$RESOLVED_FIREBASE_SERVICE_ACCOUNT" ] && [ -z "$RESOLVED_FIREBASE_TOKEN" ]; then
@@ -112,14 +116,14 @@ jobs:
         env:
           GOOGLE_APPLICATION_CREDENTIALS: ${{ runner.temp }}/firebase-service-account.json
           FIREBASE_PROJECT_ID: ${{ env.RESOLVED_FIREBASE_PROJECT_ID }}
-        run: pnpm live:deploy
+        run: pnpm live:deploy:static
 
       - name: Deploy to Firebase with token
         if: env.RESOLVED_FIREBASE_SERVICE_ACCOUNT == '' && env.RESOLVED_FIREBASE_TOKEN != ''
         env:
           FIREBASE_TOKEN: ${{ env.RESOLVED_FIREBASE_TOKEN }}
           FIREBASE_PROJECT_ID: ${{ env.RESOLVED_FIREBASE_PROJECT_ID }}
-        run: pnpm live:deploy
+        run: pnpm live:deploy:static
 
       - name: Smoke live URL
         if: env.RESOLVED_LIVE_URL != ''
