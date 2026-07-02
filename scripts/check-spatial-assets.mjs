@@ -1,9 +1,11 @@
 #!/usr/bin/env node
 import fs from 'node:fs'
 import path from 'node:path'
+import { spawnSync } from 'node:child_process'
 
 const root = process.cwd()
-const publicRoot = path.join(root, 'urai-tier1', 'public')
+const tier1Root = path.join(root, 'urai-tier1')
+const publicRoot = path.join(tier1Root, 'public')
 const uraiAssetRoot = path.join(publicRoot, 'assets', 'urai')
 
 function fail(title, items = []) {
@@ -12,8 +14,20 @@ function fail(title, items = []) {
   process.exit(1)
 }
 
-const requiredXrFiles = [
-  'urai-tier1/public/xr/navmeshes/home-platform-v1.json',
+function run(command, cwd = root) {
+  const result = spawnSync(command, {
+    cwd,
+    shell: true,
+    encoding: 'utf8',
+    env: { ...process.env, FORCE_COLOR: '0', CI: process.env.CI || '1' },
+  })
+  if (result.status !== 0) {
+    fail(`command failed: ${command}`, [result.stdout || '', result.stderr || ''].filter(Boolean))
+  }
+  return result
+}
+
+const requiredXrSourceFiles = [
   'urai-tier1/src/spatial/xr/uraiXrRoomRuntime.ts',
   'urai-tier1/src/spatial/xr/useUraiXrRoom.ts',
   'urai-tier1/scripts/xr/bake-navmesh.mjs',
@@ -21,13 +35,23 @@ const requiredXrFiles = [
   'urai-tier1/tests/xr-runtime-contract.test.mjs',
 ]
 
-const missingXrFiles = requiredXrFiles.filter((file) => !fs.existsSync(path.join(root, file)))
-if (missingXrFiles.length > 0) fail('missing required Spatial/XR files:', missingXrFiles)
+const missingXrSourceFiles = requiredXrSourceFiles.filter((file) => !fs.existsSync(path.join(root, file)))
+if (missingXrSourceFiles.length > 0) fail('missing required Spatial/XR source files:', missingXrSourceFiles)
 
-const navmeshPath = path.join(root, 'urai-tier1/public/xr/navmeshes/home-platform-v1.json')
+const navmeshPath = path.join(publicRoot, 'xr', 'navmeshes', 'home-platform-v1.json')
+if (!fs.existsSync(navmeshPath)) {
+  run('node scripts/xr/bake-navmesh.mjs', tier1Root)
+}
+
+if (!fs.existsSync(navmeshPath)) {
+  fail('XR navmesh was not generated:', ['urai-tier1/public/xr/navmeshes/home-platform-v1.json'])
+}
+
 const navmesh = JSON.parse(fs.readFileSync(navmeshPath, 'utf8'))
-const anchors = new Set(navmesh.anchors || [])
 const requiredAnchors = ['spawn', 'orbFocus', 'safeReturn']
+const anchors = Array.isArray(navmesh.anchors)
+  ? new Set(navmesh.anchors)
+  : new Set(Object.keys(navmesh.anchors || {}))
 const missingAnchors = requiredAnchors.filter((anchor) => !anchors.has(anchor))
 
 if (navmesh.coordinateSystem !== 'webxr-local-floor') {
@@ -74,11 +98,14 @@ console.log(JSON.stringify({
   ok: true,
   service: 'urai-spatial-assets',
   xr: {
-    requiredFiles: requiredXrFiles.length,
+    requiredSourceFiles: requiredXrSourceFiles.length,
+    generatedNavmesh: true,
     navmesh: {
       id: navmesh.id,
       coordinateSystem: navmesh.coordinateSystem,
       anchors: requiredAnchors,
+      vertices: Array.isArray(navmesh.vertices) ? navmesh.vertices.length : navmesh.vertices,
+      triangles: Array.isArray(navmesh.triangles) ? navmesh.triangles.length : navmesh.triangles,
     },
   },
   routeAssets: {
