@@ -9,9 +9,11 @@ const files = [
   "src/spatial/passport/passportPermissionSchema.ts",
   "src/spatial/passport/PassportRealm.tsx",
   "src/app/passport/page.tsx",
+  "src/app/FinalPassportVault.tsx",
   "src/spatial/council/councilAgentSchema.ts",
   "src/spatial/council/CouncilRealm.tsx",
   "src/app/council/page.tsx",
+  "src/spatial/realms/RealmShell.tsx",
   "src/spatial/sound/soundCueRegistry.ts",
   "src/spatial/haptics/hapticCueRegistry.ts",
   "src/spatial/performance/renderLevelSchema.ts",
@@ -25,14 +27,19 @@ assert.match(passport, /DEMO_PASSPORT_PERMISSIONS/, "Demo passport permissions m
 assert.match(passport, /canExport/, "Passport permissions must describe export control.");
 
 const passportRoute = readFileSync(join(app, "src/app/passport/page.tsx"), "utf8");
-assert.match(passportRoute, /PassportRealm/, "Passport route must render PassportRealm.");
+assert.match(passportRoute, /FinalPassportVault/, "Passport route must render the final vault owner.");
+
+const finalPassport = readFileSync(join(app, "src/app/FinalPassportVault.tsx"), "utf8");
+assert.match(finalPassport, /identity-consent-vault/, "Final Passport vault must preserve the identity and consent contract marker.");
+assert.match(finalPassport, /passportAssets/, "Final Passport vault must use the registered Passport asset stack.");
 
 const council = readFileSync(join(app, "src/spatial/council/councilAgentSchema.ts"), "utf8");
 assert.match(council, /CouncilAgent/, "CouncilAgent schema must exist.");
 assert.match(council, /DEMO_COUNCIL_AGENTS/, "Demo Council agents must exist.");
 
 const councilRoute = readFileSync(join(app, "src/app/council/page.tsx"), "utf8");
-assert.match(councilRoute, /CouncilRealm/, "Council route must render CouncilRealm.");
+assert.match(councilRoute, /RealmShell/, "Council route must render through RealmShell.");
+assert.match(councilRoute, /getSceneDefinition/, "Council route must use sceneRegistry.");
 
 const sound = readFileSync(join(app, "src/spatial/sound/soundCueRegistry.ts"), "utf8");
 assert.match(sound, /SOUND_CUE_REGISTRY/, "Sound cue registry must exist.");
