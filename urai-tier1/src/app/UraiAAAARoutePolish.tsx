@@ -4,13 +4,36 @@ import { useEffect } from "react";
 import { usePathname } from "next/navigation";
 
 const ROUTE_CLASSES = [
+  "urai-route-home",
+  "urai-route-ground",
   "urai-route-life-map",
   "urai-route-focus",
   "urai-route-replay",
+  "urai-route-mirror",
+  "urai-route-passport",
+  "urai-route-status",
+  "urai-route-privacy-controls",
+  "urai-route-location-map",
+  "urai-route-spatial-xr",
 ];
 
 function txt(el: Element | null): string {
   return (el?.textContent || "").replace(/\s+/g, " ").trim();
+}
+
+function routeClassFor(pathname: string): string | null {
+  if (pathname === "/" || pathname.startsWith("/home")) return "urai-route-home";
+  if (pathname.startsWith("/ground")) return "urai-route-ground";
+  if (pathname.startsWith("/life-map")) return "urai-route-life-map";
+  if (pathname.startsWith("/focus")) return "urai-route-focus";
+  if (pathname.startsWith("/replay")) return "urai-route-replay";
+  if (pathname.startsWith("/mirror")) return "urai-route-mirror";
+  if (pathname.startsWith("/passport")) return "urai-route-passport";
+  if (pathname.startsWith("/status")) return "urai-route-status";
+  if (pathname.startsWith("/privacy-controls")) return "urai-route-privacy-controls";
+  if (pathname.startsWith("/location-map")) return "urai-route-location-map";
+  if (pathname.startsWith("/spatial/ar-vr")) return "urai-route-spatial-xr";
+  return null;
 }
 
 function cleanup(root: HTMLElement) {
@@ -48,6 +71,20 @@ function node(className: string, text?: string): HTMLElement {
     document.body.appendChild(el);
   }
   return el;
+}
+
+function ensureV1AuditRouteStyles() {
+  if (document.getElementById("urai-v1-audit-route-styles")) return;
+  const style = document.createElement("style");
+  style.id = "urai-v1-audit-route-styles";
+  style.textContent = `
+html.urai-route-life-map,html.urai-route-life-map body{height:100svh!important;min-height:100svh!important;max-height:100svh!important;overflow:hidden!important}
+html.urai-route-life-map main,html.urai-route-life-map [class*="stage"],html.urai-route-life-map [class*="Stage"],html.urai-route-life-map [class*="scene"],html.urai-route-life-map [class*="Scene"]{height:100svh!important;min-height:100svh!important;max-height:100svh!important;overflow:hidden!important}
+html.urai-route-ground body,html.urai-route-location-map body,html.urai-route-privacy-controls body,html.urai-route-status body,html.urai-route-spatial-xr body{overflow-x:hidden!important;max-width:100vw!important}
+html.urai-route-ground main,html.urai-route-ground section,html.urai-route-ground article,html.urai-route-location-map main,html.urai-route-location-map section,html.urai-route-location-map article{max-width:100vw!important;box-sizing:border-box!important}
+@media(max-width:760px){html.urai-route-life-map body{height:100svh!important;min-height:100svh!important}html.urai-route-life-map .urai-spatial-hotspot{max-width:104px;max-height:104px}html.urai-route-life-map .urai-spatial-hud{left:8px!important;right:8px!important;bottom:calc(env(safe-area-inset-bottom) + 14px)!important;max-width:calc(100vw - 16px)!important;font-size:8.5px!important;line-height:1.25!important}html.urai-route-ground body{min-height:100svh!important;overflow-x:hidden!important}html.urai-route-ground [class*="card"],html.urai-route-ground [class*="Card"],html.urai-route-ground [class*="panel"],html.urai-route-ground [class*="Panel"]{max-width:calc(100vw - 20px)!important}html.urai-route-location-map body{height:100svh!important;min-height:100svh!important;max-height:100svh!important;overflow:auto!important}html.urai-route-location-map main{min-height:100svh!important;padding-bottom:24px!important}html.urai-route-location-map [class*="grid"],html.urai-route-location-map [class*="Grid"]{max-height:calc(100svh - 260px)!important;overflow:auto!important}html.urai-route-spatial-xr body{overflow-x:hidden!important}html.urai-route-spatial-xr main{max-width:100vw!important;overflow-x:hidden!important}}
+`;
+  document.head.appendChild(style);
 }
 
 function ensureFocusReplayCueStyles() {
@@ -295,14 +332,16 @@ export default function UraiAAAARoutePolish() {
     const root = document.documentElement;
     const controller = new AbortController();
     cleanup(root);
+    ensureV1AuditRouteStyles();
+
+    const routeClass = routeClassFor(pathname);
+    if (routeClass) root.classList.add(routeClass);
+
     if (pathname.startsWith("/life-map")) {
-      root.classList.add("urai-route-life-map");
       wireLifeMap(root, controller.signal);
     } else if (pathname.startsWith("/focus")) {
-      root.classList.add("urai-route-focus");
       wireFocus(root, controller.signal);
     } else if (pathname.startsWith("/replay")) {
-      root.classList.add("urai-route-replay");
       wireReplay(root, controller.signal);
     }
     return () => {
