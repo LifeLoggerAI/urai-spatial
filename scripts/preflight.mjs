@@ -59,7 +59,7 @@ for (const required of [
 
 contains("package.json", "\"packageManager\": \"pnpm@10.0.0\"", "pinned pnpm package manager");
 contains("package.json", "runtime:authority", "runtime authority script");
-contains("firebase.json", "nodejs20", "Node 20 Functions runtime");
+contains("firebase.json", "nodejs22", "Node 22 Functions runtime");
 contains("firebase.json", "urai-spatial-functions", "named functions codebase");
 contains("firebase.json", "pnpm --filter urai-tier1 typecheck", "typecheck predeploy");
 contains("firebase.json", "pnpm --filter urai-functions build", "functions build predeploy");
