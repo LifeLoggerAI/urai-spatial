@@ -59,4 +59,4 @@ jobs:
               body: lines.join('\n')
             });
 
-# canonical service account poll
+# Pillow-fixed proof poll
