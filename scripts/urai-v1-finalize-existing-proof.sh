@@ -30,6 +30,23 @@ if git status --porcelain -- "${GENERATED_PATHS[@]}" | grep -q .; then
   git stash push -u -m "v1-finalize-generated-$STAMP" -- "${GENERATED_PATHS[@]}" || true
 fi
 
+# Cloud Shell can create files named after console words when a previous log is
+# accidentally pasted into Bash. Restore/remove only the exact known debris names;
+# never auto-delete arbitrary source changes.
+if git ls-files --error-unmatch "urai-spatial-monorepo@" >/dev/null 2>&1; then
+  if ! git diff --quiet -- "urai-spatial-monorepo@"; then
+    echo "Restoring tracked console-paste debris: urai-spatial-monorepo@"
+    git restore --source=HEAD --staged --worktree -- "urai-spatial-monorepo@"
+  fi
+fi
+
+for debris in "node" "starting" "urai-tier1@0.1.0"; do
+  if [ -e "$debris" ] && ! git ls-files --error-unmatch "$debris" >/dev/null 2>&1; then
+    echo "Removing untracked console-paste debris: $debris"
+    rm -f -- "$debris"
+  fi
+done
+
 if [ -n "$(git status --porcelain)" ]; then
   echo "STOP: non-generated source changes remain."
   git status --short
