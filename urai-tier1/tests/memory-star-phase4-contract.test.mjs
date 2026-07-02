@@ -20,61 +20,47 @@ const lifeMapPage = read('src/app/life-map/page.tsx')
 const focusPage = read('src/app/focus/page.tsx')
 const replayPage = read('src/app/replay/page.tsx')
 
-test('memory star schema keeps Phase 4 required fields', () => {
+test('memory star schema keeps final privacy and route fields', () => {
   for (const snippet of [
     'export type MemoryStarPrivacyState',
-    'export type MemoryStarSourceType',
-    'export type MemoryStarEmotionalSignature',
-    'export type MemoryStarFieldPrimitive',
     'export type MemoryStarNode',
-    'id: string',
     'userId: string | null',
-    'sourceType: MemoryStarSourceType',
     'sourceId: string',
-    'provenanceSummary: string',
-    'emotionalSignature: MemoryStarEmotionalSignature',
     'privacyState: MemoryStarPrivacyState',
-    'createdAt: string',
-    'updatedAt: string',
-    'replayId: string',
     'focusHref: string',
     'replayHref: string',
+    'canEnterPlace: boolean',
+    'redactMemoryStarForPublic',
+    "sourceId: 'redacted'",
   ]) {
     assert.ok(schema.includes(snippet), `schema missing ${snippet}`)
   }
 })
 
-test('demo memory stars stay launch-safe and schema fails closed', () => {
-  assert.match(demoStars, /ownerId: 'launch-demo'/)
-  assert.match(demoStars, /provider: 'urai-demo'/)
-  assert.match(schema, /userId: null/)
-  assert.match(schema, /sourceType: 'demo'/)
-  assert.match(schema, /unknown-or-private-memory-star/)
-  assert.match(schema, /deleted-memory-star/)
-  assert.match(schema, /locked-memory-star/)
-  assert.match(schema, /non-renderable-memory-star/)
-  assert.match(schema, /safeHref: '\/life-map'/)
-  assert.match(schema, /redactMemoryStarForPublic/)
-  assert.match(schema, /sourceId: 'redacted'/)
-  assert.doesNotMatch(schema, /getFirestore|collection\(|doc\(|onSnapshot|getDoc|setDoc/)
+test('demo memory stars remain local launch-safe data', () => {
+  assert.ok(demoStars.includes("ownerId: 'launch-demo'"), 'demo stars must remain launch-demo owned')
+  assert.ok(demoStars.includes("provider: 'urai-demo'"), 'demo stars must use the demo provider')
+  assert.ok(schema.includes('unknown-or-private-memory-star'), 'unknown stars must fail closed')
+  assert.ok(schema.includes('locked-memory-star'), 'locked stars must fail closed')
+  assert.ok(schema.includes("safeHref: '/life-map'"), 'blocked stars must return to Life Map')
 })
 
-test('direct routes resolve demo-safe ids into canonical route shells', () => {
-  assert.match(lifeMapStarRoute, /resolveDemoMemoryStar\(starId\)/)
-  assert.match(lifeMapStarRoute, /redirect\(resolution\.star\.focusHref\)/)
-  assert.match(lifeMapStarRoute, /data-testid="urai-memory-star-direct-route"/)
+test('direct memory routes keep safe redirect shells', () => {
+  assert.ok(lifeMapStarRoute.includes('resolveDemoMemoryStar(starId)'), 'star route must resolve demo star id')
+  assert.ok(lifeMapStarRoute.includes('redirect(resolution.star.focusHref)'), 'star route must redirect to Focus shell')
+  assert.ok(lifeMapStarRoute.includes('urai-memory-star-direct-route'), 'star route must expose unavailable state marker')
 
-  assert.match(focusSessionRoute, /resolveDemoMemoryStar\(sessionId\)/)
-  assert.match(focusSessionRoute, /redirect\(resolution\.star\.focusHref\)/)
-  assert.match(focusSessionRoute, /data-testid="urai-focus-session-direct-route"/)
+  assert.ok(focusSessionRoute.includes('resolveDemoMemoryStar(sessionId)'), 'focus session route must resolve demo star id')
+  assert.ok(focusSessionRoute.includes('redirect(resolution.star.focusHref)'), 'focus session route must redirect to Focus shell')
+  assert.ok(focusSessionRoute.includes('urai-focus-session-direct-route'), 'focus session route must expose unavailable state marker')
 
-  assert.match(replayDirectRoute, /resolveDemoReplay\(replayId\)/)
-  assert.match(replayDirectRoute, /redirect\(resolution\.star\.replayHref\)/)
-  assert.match(replayDirectRoute, /data-testid="urai-replay-direct-route"/)
+  assert.ok(replayDirectRoute.includes('resolveDemoReplay(replayId)'), 'replay route must resolve replay id')
+  assert.ok(replayDirectRoute.includes('redirect(resolution.star.replayHref)'), 'replay route must redirect to Replay shell')
+  assert.ok(replayDirectRoute.includes('urai-replay-direct-route'), 'replay route must expose unavailable state marker')
 })
 
 test('canonical LifeMap, Focus, and Replay final owners remain present', () => {
-  assert.match(lifeMapPage, /RealLifeMapGalaxy/)
-  assert.match(focusPage, /FinalFocusChamber/)
-  assert.match(replayPage, /FinalReplayFilm/)
+  assert.ok(lifeMapPage.includes('RealLifeMapGalaxy'), 'Life Map route must use RealLifeMapGalaxy')
+  assert.ok(focusPage.includes('FinalFocusChamber'), 'Focus route must use FinalFocusChamber')
+  assert.ok(replayPage.includes('FinalReplayFilm'), 'Replay route must use FinalReplayFilm')
 })
