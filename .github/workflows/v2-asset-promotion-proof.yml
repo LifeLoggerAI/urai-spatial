@@ -4,9 +4,6 @@ on:
   pull_request:
     paths:
       - 'urai-tier1/public/assets/urai/v2/**'
-      - 'urai-tier1/src/spatial/assets/uraiV2Assets.ts'
-      - 'urai-tier1/scripts/verify-v2-living-assets.mjs'
-      - '.github/workflows/v2-asset-promotion-proof.yml'
   push:
     branches:
       - main
