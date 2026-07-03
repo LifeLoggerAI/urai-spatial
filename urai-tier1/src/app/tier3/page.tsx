@@ -1,5 +1,6 @@
 import SpatialArVrPage from '../spatial/ar-vr/page'
 import '../spatial/ar-vr/aaa-mobile.css'
+import '../spatial/ar-vr/review-fixes.css'
 
 export const metadata = {
   title: 'URAI Spatial Tier 3',
