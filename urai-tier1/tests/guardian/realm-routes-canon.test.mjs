@@ -39,7 +39,12 @@ for (const route of ["legacy", "council", "dream"]) {
 
 const mirror = readFileSync(join(app, "src/app/mirror/page.tsx"), "utf8");
 assert.match(mirror, /reflection-realm/, "Mirror route must render the final reflection realm owner.");
-assert.match(mirror, /mirror-reflection-main/, "Mirror route must use the final mirror asset.");
+assert.match(
+  mirror,
+  /mirrorAssets\.primary\.src|mirror-reflection-main/,
+  "Mirror route must use the canonical final mirror asset through the registry or direct path.",
+);
+assert.match(mirror, /mirrorAssets\.accents\.pattern\.src/, "Mirror route must use the final pattern glyph.");
 
 const passport = readFileSync(join(app, "src/app/passport/page.tsx"), "utf8");
 assert.match(passport, /FinalPassportVault/, "Passport route must render the final vault owner.");
