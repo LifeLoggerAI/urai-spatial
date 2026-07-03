@@ -1,12 +1,12 @@
 .uraiAutoMirror .uraiRealmAccents::after {
-  background-image: url('/assets/urai/v2/mirror/pressure-pattern-glyph.webp'), url('/assets/urai/mirror/mirror-pattern-glyph.webp') !important;
+  background-image: var(--v2-mirror-state, url('/assets/urai/v2/mirror/pressure-pattern-glyph.webp')), url('/assets/urai/mirror/mirror-pattern-glyph.webp') !important;
   background-position: center !important;
   background-size: 78% !important;
   background-repeat: no-repeat !important;
 }
 
 .uraiAutoPassport .uraiRealmAccents::after {
-  background-image: url('/assets/urai/v2/passport/passport-private.webp'), url('/assets/urai/passport/passport-ownership-seal.webp') !important;
+  background-image: var(--v2-passport-state, url('/assets/urai/v2/passport/passport-private.webp')), url('/assets/urai/passport/passport-ownership-seal.webp') !important;
   background-position: center !important;
   background-size: 64% !important;
   background-repeat: no-repeat !important;
