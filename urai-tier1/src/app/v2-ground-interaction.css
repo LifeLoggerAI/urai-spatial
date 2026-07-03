@@ -1,0 +1,12 @@
+body[data-v2-ground-lane] .uraiAutoGround .uraiGroundHelper {
+  opacity: .58;
+}
+
+body[data-v2-ground-lane='welcome'] .uraiGroundHelper-1,
+body[data-v2-ground-lane='privacy'] .uraiGroundHelper-2,
+body[data-v2-ground-lane='work'] .uraiGroundHelper-3,
+body[data-v2-ground-lane='wellness'] .uraiGroundHelper-4,
+body[data-v2-ground-lane='memory'] .uraiGroundHelper-5,
+body[data-v2-ground-lane='logistics'] .uraiGroundHelper-1 {
+  opacity: 1;
+}
