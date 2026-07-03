@@ -49,6 +49,7 @@ import './aaa-graphics-rebuild-20260702.css'
 import './mobile-viewport-final-fixes.css'
 import './aaa-visual-authority-20260703.css'
 import './lifemap-proof-crops.css'
+import './urai-realm-accent-backgrounds.css'
 
 export const metadata: Metadata = {
   title: 'URAI Spatial',
