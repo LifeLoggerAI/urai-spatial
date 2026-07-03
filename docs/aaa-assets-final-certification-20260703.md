@@ -8,7 +8,7 @@ This receipt certifies the V1 visual and asset surface. External providers, live
 
 ## Promoted production asset spine
 
-- 53 of 53 V1 Asset Factory entries are provider-rendered and present in the Spatial handoff.
+- 53 of 53 V1 asset entries are present in the Spatial handoff; provider provenance and live job integration remain separate evidence gates.
 - Home, Ground, Life Map, Focus, Replay, Mirror, Passport, Privacy Controls, Location Map, and Status have desktop and mobile route art.
 - The workforce pack includes Welcome Guide, Privacy Steward, Schedule Steward, Wellness Guide, Memory Archivist, Relationship Liaison, Operator, Builder, Protector, Mirror Guide, and World Guide.
 
