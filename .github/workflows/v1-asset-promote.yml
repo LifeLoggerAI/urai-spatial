@@ -145,5 +145,6 @@ jobs:
             exit 0
           fi
           git commit -m "Record provider V1 asset promotion proof"
+          git restore firebase.json docs/receipts/V123_ASSET_WALL_AUDIT.latest.json || true
           git pull --rebase origin main
-          git push origin main
+          git push origin HEAD:main
