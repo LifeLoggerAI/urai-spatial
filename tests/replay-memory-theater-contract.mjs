@@ -17,13 +17,14 @@ function assertNotIncludes(path, content, forbidden) {
 }
 
 function assertReplayRouteShell(path, content) {
+  const usesFinalReplayFilm = content.includes('FinalReplayFilm');
   const usesCinematicReplayClient = content.includes('CinematicReplayClient');
   const usesCanonicalTierOneReplay =
     content.includes('TierOneExperience') && content.includes('mode="replay"');
 
-  if (!usesCinematicReplayClient && !usesCanonicalTierOneReplay) {
+  if (!usesFinalReplayFilm && !usesCinematicReplayClient && !usesCanonicalTierOneReplay) {
     throw new Error(
-      `${path} must include either CinematicReplayClient or canonical TierOneExperience mode="replay"`,
+      `${path} must include FinalReplayFilm, CinematicReplayClient, or canonical TierOneExperience mode="replay"`,
     );
   }
 }
