@@ -1,9 +1,9 @@
 name: XR Static Gate Diagnostics
 
 on:
-  push:
+  pull_request:
     branches:
-      - fix-spatial-copy-policy-20260703
+      - main
   workflow_dispatch:
 
 permissions:
