@@ -39,11 +39,12 @@ import './urai-canon-camera-transitions.css'
 import './aaa-interaction-final-hotfix.css'
 import './aaa-live-visual-proof-polish.css'
 import UraiCinematicBackdrop from './UraiCinematicBackdrop'
-import UraiAAAARoutePolish from "./UraiAAAARoutePolish";
-import "./urai-aaaa-final-pass.css";
+import UraiAAAARoutePolish from './UraiAAAARoutePolish'
+import './urai-aaaa-final-pass.css'
 import './urai-proof-machine.css'
 import UraiAutonomousV1Layer from './UraiAutonomousV1Layer'
 import './aaa-graphics-rebuild-20260702.css'
+import './mobile-viewport-final-fixes.css'
 
 export const metadata: Metadata = {
   title: 'URAI Spatial',

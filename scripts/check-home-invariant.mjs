@@ -1,148 +1,73 @@
 #!/usr/bin/env node
 import fs from 'node:fs'
 
-const requiredHomeFiles = [
-  'urai-tier1/src/app/page.tsx',
-  'urai-tier1/src/app/home/page.tsx',
-  'urai-tier1/src/spatial/layout/TierOneExperience.tsx',
-  'urai-tier1/src/scene/HomeScene.tsx',
-  'urai-tier1/src/scene/SpatialVisualOverlayPremium.tsx',
-]
-
-const optionalHomeFiles = [
-  'src/app/page.tsx',
-]
-
-const homeFiles = [
-  ...requiredHomeFiles,
-  ...optionalHomeFiles.filter((file) => fs.existsSync(file)),
-]
+const files = {
+  root: 'urai-tier1/src/app/page.tsx',
+  home: 'urai-tier1/src/app/home/page.tsx',
+  threshold: 'urai-tier1/src/app/FinalHomeThreshold.tsx',
+  world: 'urai-tier1/src/app/HomeSpatialWorldFinal.tsx',
+}
 
 const failures = []
 
-function read(file) {
-  if (!fs.existsSync(file)) {
-    failures.push(`missing canonical home invariant file: ${file}`)
+function read(label) {
+  const path = files[label]
+  if (!fs.existsSync(path)) {
+    failures.push(`missing canonical Home file: ${path}`)
     return ''
   }
-  return fs.readFileSync(file, 'utf8')
+  return fs.readFileSync(path, 'utf8')
 }
 
-for (const file of requiredHomeFiles) read(file)
+const root = read('root')
+const home = read('home')
+const threshold = read('threshold')
+const world = read('world')
 
-const rootRouteText = fs.existsSync('urai-tier1/src/app/page.tsx') ? fs.readFileSync('urai-tier1/src/app/page.tsx', 'utf8') : ''
-if (rootRouteText && (!rootRouteText.includes('TierOneExperience') || !rootRouteText.includes('mode="home"'))) {
-  failures.push('urai-tier1/src/app/page.tsx must route through TierOneExperience mode="home"')
+for (const [path, source] of [[files.root, root], [files.home, home]]) {
+  if (source && !source.includes('FinalHomeThreshold')) {
+    failures.push(`${path} must render FinalHomeThreshold`)
+  }
+  for (const legacyOwner of ['TierOneExperience', 'UraiV1Experience', 'SpatialHomeShell']) {
+    if (source.includes(legacyOwner)) failures.push(`${path} must not route through ${legacyOwner}`)
+  }
 }
-if (rootRouteText.includes('SpatialHomeShell')) {
-  failures.push('urai-tier1/src/app/page.tsx must not route through legacy SpatialHomeShell')
+
+if (threshold && !threshold.includes('HomeSpatialWorldFinal')) {
+  failures.push('FinalHomeThreshold must render HomeSpatialWorldFinal')
+}
+
+const requiredWorldSignals = [
+  'className="urai-genesis-home urai-home-spatial-world-final"',
+  'aria-label="URAI Home World threshold"',
+  'urai-genesis-home__sky',
+  'urai-genesis-home__ground',
+  'urai-genesis-home__body',
+  'urai-genesis-home__orb',
+  'href="/ground?from=home"',
+  'href="/life-map?from=home-sky"',
+  "window.matchMedia('(prefers-reduced-motion: reduce)')",
+  'Skip to world routes',
+  'onPointerMove={handlePointerMove}',
+  'event.key.toLowerCase() === "o"',
+  'event.key === "Escape"',
+]
+
+for (const signal of requiredWorldSignals) {
+  if (world && !world.includes(signal)) failures.push(`HomeSpatialWorldFinal missing invariant: ${signal}`)
 }
 
 const forbiddenPatterns = [
   /FirstLightExperience/i,
   /SpatialHomeShell/i,
-  /CompanionCard/i,
+  /UraiV1Experience/i,
   /CanonicalTierLockHud/i,
   /loading\s+urai\s+spatial/i,
 ]
 
-for (const file of homeFiles) {
-  if (!fs.existsSync(file)) continue
-  const text = fs.readFileSync(file, 'utf8')
-  for (const pattern of forbiddenPatterns) {
-    if (pattern.test(text)) {
-      failures.push(`Tier-1 home invariant violation in ${file}: ${pattern}`)
-    }
-  }
-}
-
-function hasSilentOrbGuard(homeSceneText) {
-  const match = homeSceneText.match(/const showOrb = ([^\n]+)/)
-  if (!match) return false
-
-  const expression = match[1]
-  return ['focus', 'replay', 'unwind', 'mirror'].every((mode) => expression.includes(`sceneMode === '${mode}'`)) && !expression.includes('home')
-}
-
-const homeSceneText = read('urai-tier1/src/scene/HomeScene.tsx')
-const overlayText = read('urai-tier1/src/scene/SpatialVisualOverlayPremium.tsx')
-
-if (homeSceneText) {
-  const requiredHomeSilencePatterns = [
-    /if \(mode === 'home'\) return null/,
-    /!isHomeMode \? <NarratorVoice[\s\S]{0,160}: null/,
-    /!isHomeMode \? <NarratorHud \/> : null/,
-    /!isHomeMode \? <CameraResetButton[\s\S]{0,160}: null/,
-    /!isHomeMode \? <ModeGuidance[\s\S]{0,180}: null/,
-    /event\.key\.toLowerCase\(\) === 'r' && !isHomeMode/,
-  ]
-
-  if (!hasSilentOrbGuard(homeSceneText)) {
-    failures.push('Tier-1 home scene is missing required silent-home orb guard for focus/replay/unwind/mirror only')
-  }
-
-  for (const pattern of requiredHomeSilencePatterns) {
-    if (!pattern.test(homeSceneText)) {
-      failures.push(`Tier-1 home scene is missing required silent-home guard: ${pattern}`)
-    }
-  }
-
-  const forbiddenHomeOverlayPatterns = [
-    /if \(mode === 'home'\) \{[\s\S]{0,800}<div className="urai-spatial-guidance/i,
-    /if \(sceneMode === 'home'\) \{[\s\S]{0,800}<div className="urai-spatial-guidance/i,
-    /(?<!!)isHomeMode \? <ModeGuidance/i,
-    /data-testid="urai-sky-click-target"/i,
-    /const showOrb = isHomeMode/i,
-  ]
-
-  for (const pattern of forbiddenHomeOverlayPatterns) {
-    if (pattern.test(homeSceneText)) {
-      failures.push(`Tier-1 home scene still exposes visible or narrated home UI: ${pattern}`)
-    }
-  }
-}
-
-if (overlayText) {
-  const requiredSilentHomeVisuals = [
-    'function HomeOverlay()',
-    'className="urai-home-sky-layer"',
-    'className="urai-home-ground"',
-    'className="urai-home-lifemap-preview"',
-    'className="urai-home-silhouette"',
-    'className="urai-home-orb"',
-    'data-testid="urai-home-orb"',
-    'data-testid="urai-home-body-avatar"',
-    'data-testid="urai-home-lifemap-preview"',
-  ]
-
-  for (const snippet of requiredSilentHomeVisuals) {
-    if (!overlayText.includes(snippet)) failures.push(`Home overlay missing required silent visual layer: ${snippet}`)
-  }
-
-  const homeOverlayMatch = overlayText.match(/function HomeOverlay\(\) \{[\s\S]*?\n\}/)
-  const homeOverlayBody = homeOverlayMatch?.[0] ?? ''
-  if (!homeOverlayBody) failures.push('Home overlay function could not be found for invariant scan')
-
-  const forbiddenVisibleHomeUi = [
-    /<button\b/i,
-    /<a\b/i,
-    /<nav\b/i,
-    /<strong\b/i,
-    /<span\b/i,
-    /<h[1-6]\b/i,
-    /<p\b/i,
-    /Inner Weather/i,
-    /Home awake/i,
-    /Begin the ascent/i,
-    /Your companion is listening/i,
-    /Spatial orientation/i,
-    /SceneStatus/i,
-    /CompassButton/i,
-    /InnerWeatherCard/i,
-  ]
-
-  for (const pattern of forbiddenVisibleHomeUi) {
-    if (pattern.test(homeOverlayBody)) failures.push(`Home overlay contains visible UI/text/button/nav: ${pattern}`)
+for (const pattern of forbiddenPatterns) {
+  for (const [path, source] of [[files.root, root], [files.home, home], [files.threshold, threshold], [files.world, world]]) {
+    if (pattern.test(source)) failures.push(`Home invariant violation in ${path}: ${pattern}`)
   }
 }
 
@@ -152,4 +77,4 @@ if (failures.length > 0) {
   process.exit(1)
 }
 
-console.log(`Tier-1 home invariant passed for ${homeFiles.join(', ')}`)
+console.log('Tier-1 Home invariant passed: / and /home use FinalHomeThreshold -> HomeSpatialWorldFinal with sky, ground, body, orb, portals, keyboard access, and reduced-motion safety.')

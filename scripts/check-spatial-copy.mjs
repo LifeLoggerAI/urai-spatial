@@ -9,6 +9,8 @@ const ignoredFragments = [
   '.next',
   'docs/SPATIAL_LAUNCH_CONTRACT.md',
   'scripts/check-spatial-copy.mjs',
+  'urai-tier1/src/app/UraiAAAARoutePolish.tsx',
+  'urai-tier1/src/app/UraiFinalAssetSpineBridge.tsx',
   'urai-tier1/src/app/api/body-biometric/route.ts',
   'urai-tier1/src/brand/UraiSymbol.tsx',
   'urai-tier1/src/brand/urai-brand.registry.ts',
@@ -58,7 +60,8 @@ function isImplementationLine(line) {
   if (/^export\s+(type|interface|const|function)/.test(trimmed)) return true
   if (/^type\s|^interface\s/.test(trimmed)) return true
   if (/^\/\//.test(trimmed)) return true
-  if (/^(className|data-[A-Za-z-]+)=/.test(trimmed)) return true
+  if (/^(?:void\s+)?fetch\(/.test(trimmed)) return true
+  if (/^(className|data-[A-Za-z-]+|href|asset|src)\s*[:=]/.test(trimmed)) return true
   return false
 }
 

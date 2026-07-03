@@ -22,7 +22,7 @@ for (const required of [
   "smoke:deployed",
   "smoke:live",
 ]) {
-  assert.match(workflow, new RegExp(required.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")), `Deploy workflow must include ${required}.`);
+  assert.ok(workflow.includes(required), `Deploy workflow must include ${required}.`);
 }
 
 const guardianIndex = workflow.indexOf("corepack pnpm urai:guardian");

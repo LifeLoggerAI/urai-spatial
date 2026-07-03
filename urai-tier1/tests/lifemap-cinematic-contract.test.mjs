@@ -11,51 +11,59 @@ function read(relativePath) {
   return fs.readFileSync(absolute, 'utf8')
 }
 
-const scene = read('src/spatial/v1/CinematicLifeMapScene.tsx')
-const tierOne = read('src/spatial/layout/TierOneExperience.tsx')
+const route = read('src/app/life-map/page.tsx')
+const galaxy = read('src/components/lifemap/RealLifeMapGalaxy.tsx')
 const focusPage = read('src/app/focus/page.tsx')
 const replayPage = read('src/app/replay/page.tsx')
+const memorySurfaces = read('src/app/FinalMemorySurfaces.tsx')
 
 function includesAll(source, terms) {
   for (const term of terms) assert.ok(source.includes(term), `missing contract term: ${term}`)
 }
 
-test('Life Map route uses the cinematic spatial constellation scene', () => {
-  assert.match(tierOne, /CinematicLifeMapScene/)
-  assert.match(tierOne, /mode === "life-map" \|\| mode === "demo"/)
-  assert.match(scene, /data-testid="urai-cinematic-lifemap"/)
-  assert.match(scene, /aria-label="URAI Life Map cinematic spatial memory universe"/)
+test('Life Map route uses the final cinematic private galaxy owner', () => {
+  assert.match(route, /RealLifeMapGalaxy/)
+  assert.doesNotMatch(route, /LifeMapAscentGate|TierOneExperience|CinematicLifeMapScene/)
+  assert.match(galaxy, /className="lifeGalaxy"/)
+  assert.match(galaxy, /aria-label="URAI Life Map spatial memory constellation"/)
+  assert.match(galaxy, /Private memory constellation/)
 })
 
 test('memory stars select in place before Focus or Replay navigation', () => {
-  includesAll(scene, [
-    'data-testid="urai-lifemap-memory-star"',
-    'data-testid="urai-lifemap-memory-capsule"',
-    'selectNode(node.id)',
-    'setCamera(cameraForNode(node, 1.28))',
-    'Open Focus',
+  includesAll(galaxy, [
+    'selected, setSelected',
+    'setSelected(node)',
+    '--pull-x',
+    '--pull-y',
+    'Enter Focus',
     'Replay',
-    'Return galaxy',
+    'Recenter',
   ])
-  assert.match(scene, /function focusHref\(nodeId: string\)/)
-  assert.match(scene, /function replayHref\(nodeId: string, replayPathId: string\)/)
+  assert.match(galaxy, /const focusHref = \(memoryId: string\)/)
+  assert.match(galaxy, /const replayHref = \(memoryId: string\)/)
+  assert.match(galaxy, /focusHref\(selected\.id\)/)
+  assert.match(galaxy, /replayHref\(selected\.id\)/)
 })
 
-test('Life Map keeps camera, keyboard, motion, and safe return contracts', () => {
-  includesAll(scene, [
-    'onPointerDown={onPointerDown}',
-    'onPointerMove={onPointerMove}',
-    'onWheel={onWheel}',
-    "event.key === 'Escape'",
-    "event.key === 'ArrowRight'",
-    "prefers-reduced-motion: reduce",
-    "router.push('/home')",
+test('Life Map keeps camera, keyboard, motion, and safe route contracts', () => {
+  includesAll(galaxy, [
+    'onPointerMove',
+    'onPointerLeave',
+    "event.key !== 'Enter'",
+    'onDoubleClick',
+    'Double click / Enter Focus',
+    '@media (prefers-reduced-motion: reduce)',
+    "['Home', '/home']",
   ])
 })
 
-test('Focus and Replay remain query-based and static-export safe', () => {
-  assert.match(focusPage, /MemoryRouteClient mode="focus"/)
-  assert.match(replayPage, /MemoryRouteClient mode="replay"/)
+test('Focus and Replay use final static-export-safe cinematic owners', () => {
+  assert.match(focusPage, /FinalFocusChamber/)
+  assert.match(replayPage, /FinalReplayFilm/)
+  assert.match(memorySurfaces, /selected-memory-camera-chamber/)
+  assert.match(memorySurfaces, /cinematic-memory-camera-film/)
+  assert.match(memorySurfaces, /Camera into Replay/)
+  assert.match(memorySurfaces, /Film beats/)
   assert.doesNotMatch(focusPage, /\[memoryId\]/)
   assert.doesNotMatch(replayPage, /\[memoryId\]/)
 })

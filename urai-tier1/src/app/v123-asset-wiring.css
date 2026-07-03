@@ -1,0 +1,84 @@
+/* Provider-promoted V2/V3 assets activate only after UraiAAAARoutePolish verifies
+ * a complete handoff. V1 remains the stable fallback until then.
+ */
+
+html.urai-v2-assets-ready .groundFinal .helper1 i { --state-art: url('/assets/urai/v2/helpers/welcome-guide-idle.webp'); }
+html.urai-v2-assets-ready .groundFinal .helper2 i { --state-art: url('/assets/urai/v2/helpers/privacy-steward-protecting.webp'); }
+html.urai-v2-assets-ready .groundFinal .helper3 i { --state-art: url('/assets/urai/v2/helpers/schedule-steward-approval.webp'); }
+html.urai-v2-assets-ready .groundFinal .helper4 i { --state-art: url('/assets/urai/v2/helpers/wellness-guide-complete.webp'); }
+html.urai-v2-assets-ready .groundFinal .helper5 i { --state-art: url('/assets/urai/v2/helpers/archivist-protected.webp'); }
+html.urai-v2-assets-ready .groundFinal .helper i {
+  background-image: var(--state-art) !important;
+  background-size: cover !important;
+  background-position: center !important;
+}
+
+html.urai-v2-assets-ready .groundFinal .tableOne {
+  background-image: linear-gradient(180deg, transparent, rgba(0,0,0,.5)), url('/assets/urai/v2/objects/kitchen-table-active.webp') !important;
+}
+html.urai-v2-assets-ready .groundFinal .tableTwo {
+  background-image: linear-gradient(180deg, transparent, rgba(0,0,0,.5)), url('/assets/urai/v2/objects/work-console-approval.webp') !important;
+}
+html.urai-v2-assets-ready .groundFinal .vault {
+  background-image: linear-gradient(180deg, transparent, rgba(0,0,0,.56)), url('/assets/urai/v2/objects/privacy-lock-active.webp') !important;
+}
+html.urai-v2-assets-ready .groundFinal .archiveCase {
+  background-image: linear-gradient(180deg, transparent, rgba(0,0,0,.56)), url('/assets/urai/v2/objects/memory-case-protected.webp') !important;
+}
+html.urai-v2-assets-ready .groundFinal .table,
+html.urai-v2-assets-ready .groundFinal .vault,
+html.urai-v2-assets-ready .groundFinal .archiveCase {
+  background-size: cover !important;
+  background-position: center !important;
+}
+
+html.urai-v2-assets-ready .lifeGalaxy .memoryNode .glow::before {
+  background-image: linear-gradient(180deg, transparent, rgba(0,0,0,.42)), url('/assets/urai/v2/stars/star-base.webp'), var(--node-art) !important;
+}
+html.urai-v2-assets-ready .lifeGalaxy .memoryNode:hover .glow::before {
+  background-image: linear-gradient(180deg, transparent, rgba(0,0,0,.34)), url('/assets/urai/v2/stars/star-hover.webp'), var(--node-art) !important;
+}
+html.urai-v2-assets-ready .lifeGalaxy .memoryNode.active .glow::before {
+  background-image: linear-gradient(180deg, transparent, rgba(0,0,0,.25)), url('/assets/urai/v2/stars/star-selected.webp'), var(--node-art) !important;
+}
+
+html.urai-v2-assets-ready .memorySurface[data-route-polish='selected-memory-camera-chamber'] .memoryCard {
+  background-image: linear-gradient(180deg, transparent, rgba(0,0,0,.58)), url('/assets/urai/v2/focus/recovery-focus-chamber.webp') !important;
+}
+html.urai-v2-assets-ready .memorySurface[data-route-polish='cinematic-memory-camera-film'] .memoryCard {
+  background-image: linear-gradient(180deg, transparent, rgba(0,0,0,.72)), url('/assets/urai/v2/replay/daily-reset-replay-template.webp') !important;
+}
+
+html.urai-v3-assets-ready .urai-xr-portal {
+  background-image: linear-gradient(180deg, rgba(0,2,9,.14), rgba(0,2,9,.78)), url('/assets/urai/xr/quest-entry-main.webp') !important;
+  background-size: cover !important;
+  background-position: center !important;
+}
+html.urai-v3-assets-ready .urai-xr-portal[data-quest-proof='manual-device-required']::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background: radial-gradient(circle at 50% 42%, rgba(165,243,252,.2), transparent 18%), url('/assets/urai/xr/proof-pending-state.webp');
+  background-size: cover;
+  background-position: center;
+  opacity: .42;
+}
+html.urai-v3-assets-ready .urai-xr-portal__portal-door--life {
+  background-image: linear-gradient(180deg, transparent, rgba(0,0,0,.62)), url('/assets/urai/xr/ar/tabletop-life-map.webp') !important;
+}
+html.urai-v3-assets-ready .urai-xr-portal__portal-door--ground {
+  background-image: linear-gradient(180deg, transparent, rgba(0,0,0,.62)), url('/assets/urai/xr/desktop-preview.webp') !important;
+}
+html.urai-v3-assets-ready .urai-xr-portal__portal-door--life,
+html.urai-v3-assets-ready .urai-xr-portal__portal-door--ground {
+  background-size: cover !important;
+  background-position: center !important;
+}
+
+@media (max-width: 760px) {
+  html.urai-v3-assets-ready .urai-xr-portal {
+    background-image: linear-gradient(180deg, rgba(0,2,9,.12), rgba(0,2,9,.82)), url('/assets/urai/xr/mobile-ar-state.webp') !important;
+  }
+}

@@ -2,73 +2,52 @@ import test from 'node:test'
 import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
 
-const dataSource = readFileSync(new URL('../src/spatial/lifemap/lifeMapTrustData.ts', import.meta.url), 'utf8')
-const loopSource = readFileSync(new URL('../src/spatial/lifemap/LifeMapTrustLoop.tsx', import.meta.url), 'utf8')
 const routeSource = readFileSync(new URL('../src/app/life-map/page.tsx', import.meta.url), 'utf8')
-const shellSource = readFileSync(new URL('../src/spatial/layout/TierOneExperience.tsx', import.meta.url), 'utf8')
-const integratedSceneSource = readFileSync(new URL('../src/scene/UraiIntegratedHomeScene.tsx', import.meta.url), 'utf8')
-const homeSceneSource = readFileSync(new URL('../src/scene/HomeScene.tsx', import.meta.url), 'utf8')
+const galaxySource = readFileSync(new URL('../src/components/lifemap/RealLifeMapGalaxy.tsx', import.meta.url), 'utf8')
+const universeSource = readFileSync(new URL('../src/spatial/lifemap/lifeMapUniverseData.ts', import.meta.url), 'utf8')
 
-test('Life Map route preserves canonical TierOneExperience shell', () => {
-  assert.ok(routeSource.includes('TierOneExperience'))
-  assert.ok(routeSource.includes('mode="life-map"'))
+
+test('Life Map route preserves the final RealLifeMapGalaxy authority', () => {
+  assert.ok(routeSource.includes('RealLifeMapGalaxy'))
+  assert.ok(!routeSource.includes('TierOneExperience'))
+  assert.ok(!routeSource.includes('LifeMapTrustLoop'))
 })
 
-test('canonical shell delegates Life Map authority through integrated HomeScene wrapper', () => {
-  assert.ok(shellSource.includes('UraiIntegratedHomeScene'))
-  assert.ok(shellSource.includes('sceneMode={mode}'))
-  assert.ok(integratedSceneSource.includes('HomeScene'))
-  assert.ok(integratedSceneSource.includes('sceneMode={sceneMode}'))
-  assert.ok(!shellSource.includes('mode === "life-map" ? <LifeMapTrustLoop /> : null'))
-  assert.ok(shellSource.includes('mode !== "life-map"'))
-  assert.ok(shellSource.includes('mode !== "home"'))
+test('final galaxy keeps private selected-star state inside the route owner', () => {
+  assert.ok(galaxySource.includes('const [selected, setSelected]'))
+  assert.ok(galaxySource.includes('aria-pressed={active}'))
+  assert.ok(galaxySource.includes('Select ${node.title}. Double click or press Enter to enter Focus.'))
+  assert.ok(galaxySource.includes('Selected star'))
+  assert.ok(galaxySource.includes('Thirty-four private stars'))
 })
 
-test('HomeScene mounts selected-node trust loop behind Life Map gate authority', () => {
-  assert.ok(homeSceneSource.includes("const isLifeMapMode = sceneMode === 'life-map' || sceneMode === 'demo'"))
-  assert.ok(homeSceneSource.includes('isLifeMapMode ? <ConstellationLayer'))
-  assert.ok(homeSceneSource.includes('selectedManifestId={manifestId}'))
-  assert.ok(homeSceneSource.includes('setSelectedPosition(position)'))
-  assert.ok(homeSceneSource.includes('router.push(`/focus?manifestId='))
+test('memory identity is deterministic and private-route safe', () => {
+  assert.ok(galaxySource.includes("['quiet-reset', 'The Quiet Reset'"))
+  assert.ok(galaxySource.includes('Array.from({ length: 34 }'))
+  assert.ok(galaxySource.includes('encodeURIComponent(memoryId)'))
+  assert.ok(galaxySource.includes('/focus?memoryId='))
+  assert.ok(galaxySource.includes('/replay?memoryId='))
+  assert.ok(universeSource.includes("privacyLevel: 'private'"))
 })
 
-test('Life Map uses typed deterministic trust-safe demo nodes', () => {
-  for (const kind of ['now', 'memory', 'ritual', 'pattern', 'void']) {
-    assert.ok(dataSource.includes(`kind: '${kind}'`))
-  }
-
-  assert.ok(dataSource.includes('whyThisAppeared'))
-  assert.ok(dataSource.includes("confidence: 'light'") || dataSource.includes("confidence: 'emerging'") || dataSource.includes("confidence: 'strong'"))
-  assert.ok(dataSource.includes('privateToUser: true'))
-  assert.ok(dataSource.includes('canRename: true'))
-  assert.ok(dataSource.includes('canHide: true'))
-  assert.ok(dataSource.includes('canCorrect: true'))
-  assert.ok(dataSource.includes('canUnlink: true'))
+test('node selection stays in place before explicit Focus or Replay actions', () => {
+  assert.ok(galaxySource.includes('onClick={() => setSelected(node)}'))
+  assert.ok(galaxySource.includes('onDoubleClick={() => router.push(focusHref(node.id))}'))
+  assert.ok(galaxySource.includes('const openFocus = () => router.push(focusHref(selected.id))'))
+  assert.ok(galaxySource.includes('const openReplay = () => router.push(replayHref(selected.id))'))
+  assert.ok(galaxySource.includes('Enter Focus'))
+  assert.ok(galaxySource.includes('Replay'))
 })
 
-test('node selection opens details before replay', () => {
-  assert.ok(loopSource.includes('setSelectedNodeId(nextNode.id)'))
-  assert.ok(loopSource.includes('SelectedMemoryPanel'))
-  assert.ok(loopSource.includes('This may connect to...'))
-  assert.ok(loopSource.includes('Why this appeared'))
-  assert.ok(loopSource.includes('Private to you'))
-  assert.ok(loopSource.includes('Open Replay'))
+test('selected-star camera pull and recenter remain user-controlled', () => {
+  assert.ok(galaxySource.includes("'--pull-x'"))
+  assert.ok(galaxySource.includes("'--pull-y'"))
+  assert.ok(galaxySource.includes('setSelected(nodes[0])'))
+  assert.ok(galaxySource.includes('Recenter'))
 })
 
-test('replay is an explicit action only', () => {
-  const starButtonBlock = loopSource.slice(loopSource.indexOf('function StarNode'), loopSource.indexOf('function SelectedMemoryPanel'))
-  assert.ok(!starButtonBlock.includes('router.push'))
-  assert.ok(loopSource.includes('function openReplay'))
-  assert.ok(loopSource.includes('router.push(`/replay?manifestId='))
-})
-
-test('correction actions provide visible feedback', () => {
-  assert.ok(loopSource.includes('onTrustAction'))
-  assert.ok(loopSource.includes('setTrustActionFeedback'))
-  assert.ok(loopSource.includes('aria-live="polite"'))
-})
-
-test('mobile panel uses bottom-sheet layout', () => {
-  assert.ok(loopSource.includes('@media(max-width:760px)'))
-  assert.ok(loopSource.includes('.lm-panel{inset:auto 0 0 0'))
+test('mobile dock remains stacked above route navigation', () => {
+  assert.ok(galaxySource.includes('@media (max-width: 760px)'))
+  assert.ok(galaxySource.includes('.starDock'))
+  assert.ok(galaxySource.includes('.portalRail'))
 })
