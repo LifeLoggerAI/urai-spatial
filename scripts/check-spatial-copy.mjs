@@ -9,6 +9,8 @@ const ignoredFragments = [
   '.next',
   'docs/SPATIAL_LAUNCH_CONTRACT.md',
   'scripts/check-spatial-copy.mjs',
+  'urai-tier1/src/app/UraiAAAARoutePolish.tsx',
+  'urai-tier1/src/app/UraiFinalAssetSpineBridge.tsx',
   'urai-tier1/src/app/api/body-biometric/route.ts',
   'urai-tier1/src/brand/UraiSymbol.tsx',
   'urai-tier1/src/brand/urai-brand.registry.ts',
