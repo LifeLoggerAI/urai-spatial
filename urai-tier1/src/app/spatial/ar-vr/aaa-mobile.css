@@ -1,0 +1,151 @@
+.urai-xr-route-shell {
+  min-height: 100svh;
+  background: #020611;
+}
+
+@media (max-width: 900px) {
+  .urai-xr-route-shell .urai-xr-portal {
+    min-height: 100svh !important;
+    overflow: auto !important;
+    padding: 28px 14px 112px !important;
+  }
+
+  .urai-xr-route-shell .urai-xr-portal__hero {
+    position: relative !important;
+    inset: auto !important;
+    width: 100% !important;
+    max-width: none !important;
+    box-sizing: border-box;
+    padding: 28px 22px 24px !important;
+    border: 1px solid rgba(194,240,255,.14);
+    border-radius: 28px;
+    background: linear-gradient(160deg, rgba(3,10,24,.88), rgba(3,10,24,.58));
+    box-shadow: 0 28px 100px rgba(0,0,0,.36), inset 0 1px 0 rgba(255,255,255,.08);
+    backdrop-filter: blur(18px);
+  }
+
+  .urai-xr-route-shell .urai-xr-portal h1 {
+    max-width: 9ch !important;
+    font-size: clamp(3.6rem, 17vw, 5.7rem) !important;
+    line-height: .84 !important;
+  }
+
+  .urai-xr-route-shell .urai-xr-portal__actions {
+    display: grid !important;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px !important;
+  }
+
+  .urai-xr-route-shell .urai-xr-portal__quest-entry {
+    grid-column: 1 / -1;
+    width: 100% !important;
+    max-width: none !important;
+    box-sizing: border-box;
+  }
+
+  .urai-xr-route-shell .urai-xr-portal__actions > a {
+    width: 100%;
+    min-width: 0;
+    box-sizing: border-box;
+    padding-inline: 10px !important;
+    text-align: center;
+  }
+
+  .urai-xr-route-shell .urai-xr-portal__world {
+    position: relative !important;
+    inset: auto !important;
+    min-height: 0 !important;
+    display: grid !important;
+    gap: 12px;
+    margin-top: 18px !important;
+  }
+
+  .urai-xr-route-shell .urai-xr-portal__portal-door,
+  .urai-xr-route-shell .urai-xr-portal__card,
+  .urai-xr-route-shell .urai-xr-portal__card--quest {
+    position: relative !important;
+    inset: auto !important;
+    width: 100% !important;
+    min-width: 0 !important;
+    max-width: none !important;
+    box-sizing: border-box;
+    margin: 0 !important;
+    transform: none !important;
+  }
+
+  .urai-xr-route-shell .urai-xr-portal__portal-door {
+    display: grid !important;
+    gap: 5px;
+    padding: 18px !important;
+    border: 1px solid rgba(194,240,255,.14) !important;
+    border-radius: 24px !important;
+    color: #f3fdff;
+    background: linear-gradient(150deg, rgba(3,12,28,.82), rgba(3,8,18,.62)) !important;
+    text-decoration: none;
+  }
+
+  .urai-xr-route-shell .urai-xr-portal__portal-door span {
+    color: #8ff6ff;
+    font-size: .65rem;
+    font-weight: 950;
+    letter-spacing: .16em;
+    text-transform: uppercase;
+  }
+
+  .urai-xr-route-shell .urai-xr-portal__portal-door strong {
+    font-size: 1.1rem;
+  }
+
+  .urai-xr-route-shell .urai-xr-portal__portal-door small {
+    color: rgba(230,248,255,.68);
+    line-height: 1.5;
+  }
+
+  .urai-xr-route-shell .urai-xr-portal__card--quest {
+    display: block !important;
+  }
+
+  .urai-xr-route-shell .urai-xr-portal__card--webxr,
+  .urai-xr-route-shell .urai-xr-portal__card--life,
+  .urai-xr-route-shell .urai-xr-portal__ring,
+  .urai-xr-route-shell .urai-xr-portal aside.fixed {
+    display: none !important;
+  }
+
+  .urai-xr-route-shell .urai-xr-portal__rail {
+    position: fixed !important;
+    left: 14px !important;
+    right: 14px !important;
+    bottom: 14px !important;
+    width: auto !important;
+    max-width: none !important;
+    overflow-x: auto;
+    transform: none !important;
+    justify-content: flex-start !important;
+    scrollbar-width: none;
+  }
+
+  .urai-xr-route-shell .urai-xr-portal__rail::-webkit-scrollbar {
+    display: none;
+  }
+
+  .urai-xr-route-shell .urai-xr-portal__rail a {
+    flex: 0 0 auto;
+  }
+}
+
+@media (max-width: 420px) {
+  .urai-xr-route-shell .urai-xr-portal__actions {
+    grid-template-columns: 1fr;
+  }
+
+  .urai-xr-route-shell .urai-xr-portal__quest-entry {
+    grid-column: auto;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .urai-xr-route-shell * {
+    scroll-behavior: auto !important;
+  }
+}
