@@ -58,13 +58,20 @@ jobs:
       - name: Clean Next state
         run: pnpm clean:next
 
-      - name: Static/source gates
-        run: |
-          pnpm check:source-integrity
-          pnpm check:production-routes
-          pnpm check:spatial-copy
-          pnpm check:launch-boundary-contract
-          pnpm check:spatial
+      - name: Check source integrity
+        run: pnpm check:source-integrity
+
+      - name: Check production routes
+        run: pnpm check:production-routes
+
+      - name: Check public spatial copy
+        run: pnpm check:spatial-copy
+
+      - name: Check launch boundary contract
+        run: pnpm check:launch-boundary-contract
+
+      - name: Check spatial invariants
+        run: pnpm check:spatial
 
       - name: Typecheck
         run: pnpm typecheck
