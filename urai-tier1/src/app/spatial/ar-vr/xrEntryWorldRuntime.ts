@@ -201,10 +201,18 @@ export class UraiXrWorldRuntime {
     this.yaw -= dx * 0.0032
     this.pitch = THREE.MathUtils.clamp(this.pitch - dy * 0.0026, -1.15, 1.15)
   }
-  private pointerUp = (event: PointerEvent) => {
+  private cancelPointerDrag = (event?: PointerEvent) => {
+    if (event && this.renderer.domElement.hasPointerCapture?.(event.pointerId)) {
+      this.renderer.domElement.releasePointerCapture?.(event.pointerId)
+    }
     this.dragging = false
-    this.renderer.domElement.releasePointerCapture?.(event.pointerId)
-    if (this.pointerMoved) return
+    this.pointerMoved = false
+  }
+  private windowBlur = () => this.cancelPointerDrag()
+  private pointerUp = (event: PointerEvent) => {
+    const moved = this.pointerMoved
+    this.cancelPointerDrag(event)
+    if (moved) return
     const rect = this.renderer.domElement.getBoundingClientRect()
     const pointer = new THREE.Vector2(((event.clientX - rect.left) / rect.width) * 2 - 1, -((event.clientY - rect.top) / rect.height) * 2 + 1)
     const raycaster = new THREE.Raycaster()
@@ -219,9 +227,12 @@ export class UraiXrWorldRuntime {
     window.addEventListener('resize', this.resize)
     window.addEventListener('keydown', this.keyDown)
     window.addEventListener('keyup', this.keyUp)
+    window.addEventListener('blur', this.windowBlur)
     this.renderer.domElement.addEventListener('pointerdown', this.pointerDown)
     this.renderer.domElement.addEventListener('pointermove', this.pointerMove)
     this.renderer.domElement.addEventListener('pointerup', this.pointerUp)
+    this.renderer.domElement.addEventListener('pointercancel', this.cancelPointerDrag)
+    this.renderer.domElement.addEventListener('lostpointercapture', this.cancelPointerDrag)
     const raycaster = new THREE.Raycaster()
     for (let index = 0; index < 2; index += 1) {
       const controller = this.renderer.xr.getController(index)
@@ -298,9 +309,12 @@ export class UraiXrWorldRuntime {
     window.removeEventListener('resize', this.resize)
     window.removeEventListener('keydown', this.keyDown)
     window.removeEventListener('keyup', this.keyUp)
+    window.removeEventListener('blur', this.windowBlur)
     this.renderer.domElement.removeEventListener('pointerdown', this.pointerDown)
     this.renderer.domElement.removeEventListener('pointermove', this.pointerMove)
     this.renderer.domElement.removeEventListener('pointerup', this.pointerUp)
+    this.renderer.domElement.removeEventListener('pointercancel', this.cancelPointerDrag)
+    this.renderer.domElement.removeEventListener('lostpointercapture', this.cancelPointerDrag)
     this.scene.traverse((object) => {
       if (object instanceof THREE.Mesh || object instanceof THREE.Points || object instanceof THREE.Line) {
         object.geometry?.dispose()
