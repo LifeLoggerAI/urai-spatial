@@ -69,7 +69,7 @@ const routes = [
   },
   {
     paths: ['/status', '/status/'],
-    markers: [/World online\. Route matrix visible\./i, /Launch spine/i, /Trust and place/i],
+    markers: [/Routes implemented\. Production certification pending\./i, /Launch spine/i, /Certification boundary/i],
   },
   {
     paths: ['/api/system/deploy-proof'],
@@ -113,7 +113,7 @@ for (const { paths, markers, forbidden = [] } of routes) {
       const response = await fetch(url, {
         method: 'GET',
         headers: {
-          'user-agent': 'urai-live-smoke/4.0',
+          'user-agent': 'urai-live-smoke/4.1',
           accept: 'text/html,application/xhtml+xml,application/json,application/xml;q=0.9,*/*;q=0.8',
         },
         redirect: 'follow',
