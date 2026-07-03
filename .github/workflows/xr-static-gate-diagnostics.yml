@@ -1,0 +1,43 @@
+name: XR Static Gate Diagnostics
+
+on:
+  push:
+    branches:
+      - feature/quest-explorable-entry-world-20260703
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  diagnose:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - uses: pnpm/action-setup@v4
+        with:
+          version: "10.0.0"
+      - name: Install dependencies
+        run: pnpm install --no-frozen-lockfile
+      - name: Run static gates independently
+        shell: bash
+        run: |
+          set +e
+          : > xr-static-gates.log
+          for gate in check:source-integrity check:production-routes check:spatial-copy check:launch-boundary-contract check:spatial; do
+            echo "===== $gate =====" | tee -a xr-static-gates.log
+            pnpm "$gate" 2>&1 | tee -a xr-static-gates.log
+            code=${PIPESTATUS[0]}
+            echo "EXIT_CODE=$code" | tee -a xr-static-gates.log
+          done
+          exit 0
+      - name: Upload diagnostic log
+        uses: actions/upload-artifact@v4
+        with:
+          name: xr-static-gate-diagnostics
+          path: xr-static-gates.log
+          retention-days: 7
