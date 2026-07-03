@@ -55,19 +55,24 @@ jobs:
         run: pnpm tier1:check && pnpm tier2:check && pnpm tier3:check && pnpm tier4:check && pnpm tier5:check
 
       - name: Tier 1 lock
-        run: pnpm urai:tier1
+        working-directory: urai-tier1
+        run: node scripts/tier-lock/run-tier-final.mjs tier1
 
       - name: Tier 2 lock
-        run: pnpm urai:tier2
+        working-directory: urai-tier1
+        run: node scripts/tier-lock/run-tier-final.mjs tier2
 
       - name: Tier 3 lock
-        run: pnpm urai:tier3
+        working-directory: urai-tier1
+        run: node scripts/tier-lock/run-tier-final.mjs tier3
 
       - name: Tier 4 lock
-        run: pnpm urai:tier4
+        working-directory: urai-tier1
+        run: node scripts/tier-lock/run-tier-final.mjs tier4
 
       - name: Scripted Tier 5 lock
-        run: pnpm urai:tier5
+        working-directory: urai-tier1
+        run: node scripts/tier-lock/run-tier-final.mjs tier5
 
       - name: Install Playwright browser and Linux dependencies
         run: pnpm playwright:install-deps && pnpm playwright:install
