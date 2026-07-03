@@ -1,0 +1,159 @@
+/* Final screenshot-proven authority layer. Loaded last to resolve legacy polish collisions. */
+
+/* HOME: preserve the world, restore a readable threshold composition. */
+.urai-genesis-home.urai-home-spatial-world-final .urai-genesis-home__hero {
+  display: block !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+  z-index: 140 !important;
+  top: clamp(24px, 5vh, 56px) !important;
+  right: auto !important;
+  bottom: auto !important;
+  left: clamp(20px, 4vw, 62px) !important;
+  width: min(500px, 38vw) !important;
+  max-width: calc(100vw - 40px) !important;
+  max-height: calc(100svh - 118px) !important;
+  overflow: visible !important;
+  box-sizing: border-box;
+  padding: clamp(20px, 2.2vw, 30px) !important;
+  border: 1px solid rgba(222, 250, 255, .14) !important;
+  border-radius: 32px !important;
+  background: linear-gradient(145deg, rgba(2, 8, 20, .78), rgba(4, 12, 26, .42)) !important;
+  box-shadow: 0 30px 110px rgba(0, 0, 0, .40), inset 0 1px 0 rgba(255, 255, 255, .08) !important;
+  backdrop-filter: blur(22px) saturate(1.08) !important;
+  transform: none !important;
+  text-shadow: 0 16px 52px rgba(0, 0, 0, .58) !important;
+}
+
+.urai-genesis-home.urai-home-spatial-world-final .urai-genesis-home__hero h1 {
+  max-width: 8.8ch !important;
+  margin: 10px 0 12px !important;
+  font-size: clamp(3.2rem, 5.6vw, 6.4rem) !important;
+  line-height: .9 !important;
+  letter-spacing: -.075em !important;
+  overflow-wrap: normal !important;
+  word-break: normal !important;
+}
+
+.urai-genesis-home.urai-home-spatial-world-final .urai-genesis-home__hero h1 span {
+  display: block !important;
+  margin-top: .08em !important;
+}
+
+.urai-genesis-home.urai-home-spatial-world-final .urai-genesis-home__micro,
+.urai-genesis-home.urai-home-spatial-world-final .urai-genesis-home__copy,
+.urai-genesis-home.urai-home-spatial-world-final .urai-genesis-home__status-pill {
+  opacity: 1 !important;
+}
+
+.urai-genesis-home.urai-home-spatial-world-final .urai-genesis-home__copy {
+  max-width: 38ch !important;
+  margin: 0 !important;
+  color: rgba(238, 250, 255, .78) !important;
+  font-size: clamp(.88rem, 1.1vw, 1rem) !important;
+  line-height: 1.52 !important;
+}
+
+.urai-genesis-home.urai-home-spatial-world-final .urai-genesis-home__actions {
+  margin-top: 16px !important;
+}
+
+.urai-genesis-home.urai-home-spatial-world-final .urai-genesis-home__memory-orbit,
+.urai-genesis-home.urai-home-spatial-world-final .urai-genesis-home__portals {
+  display: none !important;
+}
+
+.urai-genesis-home.urai-home-spatial-world-final .urai-genesis-home__body {
+  opacity: .72 !important;
+  filter: drop-shadow(0 0 58px rgba(103, 232, 249, .22)) !important;
+}
+
+.urai-genesis-home.urai-home-spatial-world-final .urai-genesis-home__bottom-dock {
+  z-index: 145 !important;
+  opacity: .86 !important;
+}
+
+@media (max-width: 760px) {
+  .urai-genesis-home.urai-home-spatial-world-final .urai-genesis-home__hero {
+    top: max(14px, env(safe-area-inset-top, 0px)) !important;
+    right: 14px !important;
+    left: 14px !important;
+    width: auto !important;
+    max-width: none !important;
+    max-height: min(47svh, 410px) !important;
+    padding: 17px 18px 18px !important;
+    border-radius: 26px !important;
+    background: linear-gradient(145deg, rgba(2, 8, 20, .84), rgba(4, 12, 26, .48)) !important;
+  }
+
+  .urai-genesis-home.urai-home-spatial-world-final .urai-genesis-home__status-pill,
+  .urai-genesis-home.urai-home-spatial-world-final .urai-genesis-home__micro {
+    font-size: .58rem !important;
+  }
+
+  .urai-genesis-home.urai-home-spatial-world-final .urai-genesis-home__hero h1 {
+    max-width: 8.8ch !important;
+    margin: 7px 0 8px !important;
+    font-size: clamp(2.45rem, 12.6vw, 3.4rem) !important;
+    line-height: .92 !important;
+    letter-spacing: -.06em !important;
+  }
+
+  .urai-genesis-home.urai-home-spatial-world-final .urai-genesis-home__copy {
+    max-width: 32ch !important;
+    font-size: .82rem !important;
+    line-height: 1.42 !important;
+  }
+
+  .urai-genesis-home.urai-home-spatial-world-final .urai-genesis-home__actions {
+    margin-top: 11px !important;
+  }
+
+  .urai-genesis-home.urai-home-spatial-world-final .urai-genesis-home__cta {
+    min-height: 36px !important;
+    padding-inline: 13px !important;
+  }
+
+  .urai-genesis-home.urai-home-spatial-world-final .urai-genesis-home__threshold-gate--sky {
+    top: auto !important;
+    right: 14px !important;
+    bottom: 112px !important;
+  }
+
+  .urai-genesis-home.urai-home-spatial-world-final .urai-genesis-home__threshold-gate--ground {
+    left: 14px !important;
+    bottom: 112px !important;
+  }
+
+  .urai-genesis-home.urai-home-spatial-world-final .urai-genesis-home__orb {
+    top: 60% !important;
+  }
+
+  .urai-genesis-home.urai-home-spatial-world-final .urai-genesis-home__bottom-dock {
+    right: 12px !important;
+    bottom: 12px !important;
+    left: 12px !important;
+    width: auto !important;
+    max-width: none !important;
+    transform: none !important;
+  }
+}
+
+@media (max-height: 720px) and (min-width: 761px) {
+  .urai-genesis-home.urai-home-spatial-world-final .urai-genesis-home__hero {
+    top: 18px !important;
+    width: min(450px, 38vw) !important;
+    padding: 18px 22px !important;
+  }
+
+  .urai-genesis-home.urai-home-spatial-world-final .urai-genesis-home__hero h1 {
+    font-size: clamp(2.8rem, 5vw, 5rem) !important;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .urai-genesis-home.urai-home-spatial-world-final .urai-genesis-home__world,
+  .urai-genesis-home.urai-home-spatial-world-final .urai-genesis-home__body {
+    transition: none !important;
+  }
+}
