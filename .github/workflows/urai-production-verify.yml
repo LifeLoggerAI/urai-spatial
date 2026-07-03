@@ -19,5 +19,7 @@ jobs:
           pnpm --version
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
+      - name: Install Playwright runtime
+        run: pnpm playwright:install-deps && pnpm playwright:install
       - name: Verify
         run: node scripts/urai-production-verify.mjs
