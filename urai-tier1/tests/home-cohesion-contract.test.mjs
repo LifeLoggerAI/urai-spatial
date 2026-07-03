@@ -15,9 +15,13 @@ const tierOne = read('src/spatial/layout/TierOneExperience.tsx')
 const cohesionRaw = read('src/spatial/layout/HomeCohesionLayer.tsx')
 const cohesion = cohesionRaw.replace(/\s+/g, ' ')
 
-test('home route mounts cohesion layer only on canonical home mode', () => {
+test('legacy tier shell delegates Home to the production owner and keeps cohesion disabled off-route', () => {
+  assert.match(tierOne, /import \{ HomeWorldProduction \} from "\.\/HomeWorldProduction"/)
+  assert.match(tierOne, /if \(mode === "home"\) \{\s*return <HomeWorldProduction \/>;\s*\}/)
   assert.match(tierOne, /import \{ HomeCohesionLayer \} from "\.\/HomeCohesionLayer"/)
-  assert.match(tierOne, /<HomeCohesionLayer enabled=\{mode === "home"\} \/>/)
+  assert.match(tierOne, /mode === "ascent" \|\| mode === "unwind"/)
+  assert.match(tierOne, /<HomeCohesionLayer enabled=\{false\} \/>/)
+  assert.doesNotMatch(tierOne, /<HomeCohesionLayer enabled=\{mode === "home"\} \/>/)
 })
 
 test('home cohesion layer exposes stable spatial selectors', () => {
