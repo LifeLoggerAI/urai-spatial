@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { usePathname } from "next/navigation";
+import { Suspense, useEffect, useState } from "react";
+import { usePathname, useSearchParams } from "next/navigation";
 import {
   inferMemoryKind,
   resolveConsentState,
@@ -14,15 +14,16 @@ const consentValues = new Set<ConsentState>([
   "export-ready", "delete-ready", "provenance-visible", "shared-expired",
 ]);
 
-export default function UraiV2StateController() {
+function V2StateControllerContent() {
   const pathname = usePathname() || "";
+  const searchParams = useSearchParams();
+  const query = searchParams.toString();
   const [announcement, setAnnouncement] = useState("V2 living state ready");
 
   useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    const kind = inferMemoryKind(params.get("memoryId"));
+    const kind = inferMemoryKind(searchParams.get("memoryId"));
     const memory = resolveMemoryState(kind);
-    const requested = params.get("consent") as ConsentState | null;
+    const requested = searchParams.get("consent") as ConsentState | null;
     const consent = requested && consentValues.has(requested) ? requested : "private";
     const passport = resolveConsentState(consent);
     const body = document.body;
@@ -35,7 +36,7 @@ export default function UraiV2StateController() {
     body.style.setProperty("--v2-mirror-state", `url("${memory.mirror.src}")`);
     body.style.setProperty("--v2-passport-state", `url("${passport.src}")`);
     setAnnouncement(`${kind} memory state active`);
-  }, [pathname]);
+  }, [pathname, query, searchParams]);
 
   useEffect(() => {
     if (!pathname.startsWith("/ground")) return;
@@ -51,8 +52,19 @@ export default function UraiV2StateController() {
       return () => button.removeEventListener("click", handler);
     });
     document.body.dataset.v2GroundLane = "welcome";
-    return () => cleanups.forEach((cleanup) => cleanup());
+    return () => {
+      cleanups.forEach((cleanup) => cleanup());
+      delete document.body.dataset.v2GroundLane;
+    };
   }, [pathname]);
 
   return <span className="uraiV2StateAnnouncer" aria-live="polite">{announcement}</span>;
+}
+
+export default function UraiV2StateController() {
+  return (
+    <Suspense fallback={null}>
+      <V2StateControllerContent />
+    </Suspense>
+  );
 }
