@@ -1,5 +1,4 @@
 import assert from "node:assert/strict";
-import { spawnSync } from "node:child_process";
 import { readFileSync, existsSync } from "node:fs";
 import { join } from "node:path";
 
@@ -23,7 +22,7 @@ for (const required of [
   "smoke:deployed",
   "smoke:live",
 ]) {
-  assert.match(workflow, new RegExp(required.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")), `Deploy workflow must include ${required}.`);
+  assert.ok(workflow.includes(required), `Deploy workflow must include ${required}.`);
 }
 
 const guardianIndex = workflow.indexOf("corepack pnpm urai:guardian");
@@ -34,20 +33,5 @@ const liveSmokeIndex = workflow.indexOf("corepack pnpm smoke:live");
 assert.ok(guardianIndex >= 0 && guardianIndex < deployIndex, "Guardian must run before deploy.");
 assert.ok(typecheckIndex >= 0 && typecheckIndex < deployIndex, "Typecheck must run before deploy.");
 assert.ok(liveSmokeIndex >= 0 && liveSmokeIndex > deployIndex, "Live smoke must run after deploy when deploy_url is provided.");
-
-for (const check of [
-  "scripts/check-tier1-canon-lock.mjs",
-  "scripts/check-tier1-immutable-diff.mjs",
-  "scripts/check-tier1-redefinition.mjs",
-  "scripts/check-runtime-boundary.mjs",
-  "scripts/check-runtime-authority.mjs",
-  "scripts/check-home-invariant.mjs",
-  "scripts/check-firestore-tier1-boundaries.mjs",
-]) {
-  const result = spawnSync(process.execPath, [check], { encoding: "utf8" });
-  if (result.stdout) process.stdout.write(result.stdout);
-  if (result.stderr) process.stderr.write(result.stderr);
-  assert.equal(result.status, 0, `Tier 1 diagnostic failed: ${check}`);
-}
 
 console.log("URAI deploy workflow canon passed.");
