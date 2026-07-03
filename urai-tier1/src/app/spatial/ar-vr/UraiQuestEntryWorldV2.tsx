@@ -83,6 +83,7 @@ export default function UraiQuestEntryWorldV2() {
       </header>
       <div className={styles.controls} aria-label="XR and comfort controls">
         <QuestVrEntryButton onSessionRequested={attachSession} onSessionEnded={() => {
+          if (runtimeRef.current) runtimeRef.current.session = null
           setVrActive(false)
           setMessage('Immersive session ended safely. Your chamber remains available.')
         }} />
