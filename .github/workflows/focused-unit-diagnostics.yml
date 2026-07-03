@@ -1,0 +1,42 @@
+name: Focused Unit Diagnostics
+
+on:
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  focused-unit-diagnostics:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.0.0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --no-frozen-lockfile
+      - name: Run focused unit suite
+        id: unit
+        continue-on-error: true
+        shell: bash
+        run: |
+          set +e
+          pnpm --dir urai-tier1 test:unit 2>&1 | tee focused-unit-diagnostics.log
+          code=${PIPESTATUS[0]}
+          echo "exit_code=$code" >> "$GITHUB_OUTPUT"
+          exit 0
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: focused-unit-diagnostics-${{ github.run_id }}
+          if-no-files-found: error
+          path: focused-unit-diagnostics.log
+      - if: steps.unit.outputs.exit_code != '0'
+        run: exit 1
