@@ -1,113 +1,56 @@
-import { readFileSync } from 'node:fs';
+import { readFileSync } from 'node:fs'
 
-function read(path) {
-  return readFileSync(path, 'utf8');
+const read = (path) => readFileSync(path, 'utf8')
+const requireToken = (path, text, token) => {
+  if (!text.includes(token)) throw new Error(`${path} must include: ${token}`)
+}
+const forbidToken = (path, text, token) => {
+  if (text.includes(token)) throw new Error(`${path} must not include: ${token}`)
 }
 
-function assertIncludes(path, content, expected) {
-  if (!content.includes(expected)) {
-    throw new Error(`${path} must include: ${expected}`);
-  }
-}
+const pagePath = 'urai-tier1/src/app/replay/page.tsx'
+const clientPath = 'urai-tier1/src/app/replay/FinalReplayFilmClient.tsx'
+const cssPath = 'urai-tier1/src/app/replay/FinalReplayFilmClient.module.css'
+const statePath = 'urai-tier1/src/spatial/scene/replayState.ts'
+const page = read(pagePath)
+const client = read(clientPath)
+const css = read(cssPath)
+const state = read(statePath)
 
-function assertNotIncludes(path, content, forbidden) {
-  if (content.includes(forbidden)) {
-    throw new Error(`${path} must not include: ${forbidden}`);
-  }
-}
-
-function assertReplayRouteShell(path, content) {
-  const usesFinalReplayFilm = content.includes('FinalReplayFilm');
-  const usesCinematicReplayClient = content.includes('CinematicReplayClient');
-  const usesCanonicalTierOneReplay =
-    content.includes('TierOneExperience') && content.includes('mode="replay"');
-
-  if (!usesFinalReplayFilm && !usesCinematicReplayClient && !usesCanonicalTierOneReplay) {
-    throw new Error(
-      `${path} must include FinalReplayFilm, CinematicReplayClient, or canonical TierOneExperience mode="replay"`,
-    );
-  }
-}
-
-const replayPagePath = 'urai-tier1/src/app/replay/page.tsx';
-const replayClientPath = 'urai-tier1/src/app/replay/CinematicReplayClient.tsx';
-const replayStatePath = 'urai-tier1/src/spatial/scene/replayState.ts';
-const replayTimelinePath = 'urai-tier1/src/spatial/replay/ReplayTimeline.tsx';
-const replayMetaPath = 'urai-tier1/src/spatial/replay/ReplayMetaPanel.tsx';
-const replayRingsPath = 'urai-tier1/src/spatial/replay/ReplayPhaseRings.tsx';
-
-const replayPage = read(replayPagePath);
-const replayClient = read(replayClientPath);
-const replayState = read(replayStatePath);
-const replayTimeline = read(replayTimelinePath);
-const replayMeta = read(replayMetaPath);
-const replayRings = read(replayRingsPath);
-
-assertReplayRouteShell(replayPagePath, replayPage);
+for (const token of ['FinalReplayFilmClient', 'replay-route-launch-fingerprint']) requireToken(pagePath, page, token)
 
 for (const token of [
-  'data-testid="cinematic-replay-client"',
-  'data-replay-phase={replayPhase}',
-  'data-replay-segment={activeSegment.id}',
+  "'use client'",
+  'urai-replay-surface',
+  'data-urai-final-replay-film',
+  'data-mode="replay"',
+  'replay_playing',
+  'replay_paused',
   'Pattern Replay',
-  'Source: LifeMap · {nodeName}',
-  'Center Replay',
+  'Source: Life Map',
+  'URAI Replay',
+  'Pause replay',
+  'Play replay',
   'Return to Focus',
-  'ReplayMetaPanel',
-  'ReplayTimeline',
-  'ReplayPhaseRings',
-  'onScrubbingChange={setScrubbing}',
-]) {
-  assertIncludes(replayClientPath, replayClient, token);
-}
-
-for (const forbidden of [
-  'Unwind to Focus',
-  'ESC unwinds to focus',
-  'READINESS 87%',
-  'INTENSITY 88%',
-  'BOUNDARY 75%',
-]) {
-  assertNotIncludes(replayClientPath, replayClient, forbidden);
-}
-
-for (const token of [
-  "'replay_ready'",
-  "'replay_playing'",
-  "'replay_paused'",
-  "'replay_scrubbing'",
-  "'replay_complete'",
-  "'memory'",
-  "'emotion'",
-  "'pattern'",
-  "'return'",
-  'resolveReplayPhase',
-  'getReplaySegmentAt',
-]) {
-  assertIncludes(replayStatePath, replayState, token);
-}
-
-for (const token of [
-  'Pause',
-  'Play',
+  'Unwind',
+  'Open Mirror',
   'Esc returns to Focus',
-  'type="range"',
-  'onScrubbingChange',
-]) {
-  assertIncludes(replayTimelinePath, replayTimeline, token);
-}
-
-for (const token of [
-  'Why this appeared',
+  'urai-replay-meta-panel',
+  'Replay narrator panel',
   'Private · Only visible to you',
-  'Save',
-  'Hide',
-  'Correct',
-  'Return to Focus',
-]) {
-  assertIncludes(replayMetaPath, replayMeta, token);
-}
+  'urai-replay-timeline',
+  'Replay playback controls',
+  'type="range"',
+  'Replay timeline',
+  "event.key === 'Escape'",
+  "event.key === ' '",
+  'prefers-reduced-motion: reduce',
+]) requireToken(clientPath, client, token)
 
-assertIncludes(replayRingsPath, replayRings, 'data-testid="urai-replay-phase-rings"');
+for (const token of ['READINESS 87%', 'INTENSITY 88%', 'BOUNDARY 75%', 'coming soon', 'TODO']) forbidToken(clientPath, client, token)
 
-console.log('Replay Memory Theater static contract passed.');
+for (const token of ['@media(max-width:850px)', '@media(prefers-reduced-motion:reduce)', 'var(--replay-art)', 'var(--replay-progress)', '.routeRail', '.timeline']) requireToken(cssPath, css, token)
+
+for (const token of ["'replay_ready'", "'replay_playing'", "'replay_paused'", "'replay_scrubbing'", "'replay_complete'", "'memory'", "'emotion'", "'pattern'", "'return'", 'resolveReplayPhase', 'getReplaySegmentAt']) requireToken(statePath, state, token)
+
+console.log('Replay Memory Theater final film contract passed.')
