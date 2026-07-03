@@ -100,7 +100,7 @@
   backdrop-filter: blur(10px);
 }
 
-/* Mirror: pattern glyph, living orb, and embodied guide in one reflection chamber. */
+/* Mirror: pattern glyph, living orb, and an atmospheric reflection presence. */
 .uraiAutoMirror .uraiRealmAccents {
   right: 16%;
   top: 45%;
@@ -129,7 +129,12 @@
 .uraiAutoMirror .uraiRealmAccent-1 {
   width: min(78%, 430px);
   height: min(78%, 430px);
-  opacity: 0.84;
+  overflow: hidden;
+  border-radius: 50%;
+  clip-path: circle(47% at 50% 50%);
+  mix-blend-mode: screen;
+  object-fit: cover;
+  opacity: 0.78;
 }
 
 .uraiAutoMirror .uraiRealmAccent-2 {
@@ -143,14 +148,32 @@
   opacity: 0.96;
 }
 
+.uraiAutoMirror .uraiRealmGuide {
+  z-index: 5;
+  right: 30%;
+  bottom: 16%;
+  transform: scale(0.72);
+  transform-origin: 50% 100%;
+  opacity: 0.14;
+  mix-blend-mode: screen;
+}
+
+.uraiAutoMirror .uraiRealmGuide i {
+  filter: grayscale(0.55) saturate(0.55) hue-rotate(140deg) drop-shadow(0 0 26px rgba(128, 231, 255, 0.16));
+}
+
+.uraiAutoMirror .uraiRealmGuide span {
+  display: none;
+}
+
 .uraiAutoMirror .uraiRealmSignals {
   right: 24px;
   width: min(270px, 23vw);
 }
 
 .uraiAutoMirror .uraiRealmStatement {
-  left: 55%;
-  bottom: 8%;
+  left: 57%;
+  bottom: 7%;
 }
 
 /* Passport: ownership seal becomes a protected physical vault center. */
@@ -258,17 +281,7 @@
     height: 94px;
   }
 
-  .uraiRealmGuide {
-    right: -2%;
-    bottom: 19%;
-  }
-
-  .uraiRealmGuide i {
-    width: 108px;
-    height: 178px;
-  }
-
-  .uraiRealmGuide span {
+  .uraiAutoMirror .uraiRealmGuide {
     display: none;
   }
 
