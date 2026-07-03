@@ -1,9 +1,10 @@
-import { existsSync, readdirSync, statSync, writeFileSync } from 'node:fs';
+import { existsSync, readFileSync, readdirSync, statSync, writeFileSync } from 'node:fs';
 import { extname, join, relative } from 'node:path';
 
 const repoRoot = process.cwd();
 const assetRoot = join(repoRoot, 'urai-tier1', 'public', 'assets', 'urai');
 const outPath = join(repoRoot, 'docs', 'final-asset-receipt.md');
+const handoffPath = join(assetRoot, 'final', 'manifests', 'asset-factory-spatial-handoff.json');
 const supported = new Set(['.png', '.jpg', '.jpeg', '.webp', '.svg', '.glb', '.gltf', '.mp3', '.wav', '.ogg']);
 
 const coreRequired = [
@@ -114,10 +115,37 @@ function walk(dir, files = []) {
   return files;
 }
 
+function loadProviderHandoff() {
+  if (!existsSync(handoffPath)) return new Map();
+  try {
+    const parsed = JSON.parse(readFileSync(handoffPath, 'utf8'));
+    const entries = Array.isArray(parsed.assets) ? parsed.assets : [];
+    return new Map(entries.map((entry) => {
+      const canonical = String(entry.canonicalPath || '').replace(/^assets\/urai\//, '');
+      return [canonical, entry];
+    }));
+  } catch (error) {
+    console.warn(`Unable to read provider handoff: ${error instanceof Error ? error.message : String(error)}`);
+    return new Map();
+  }
+}
+
+const providerHandoff = loadProviderHandoff();
+
 function rowsFor(items) {
-  return items.map(([area, path, status]) => {
+  return items.map(([area, path, fallbackStatus]) => {
     const present = existsSync(join(assetRoot, path));
-    return { area, path, status: present ? status : 'missing', present };
+    const handoff = providerHandoff.get(path);
+    const providerFinal = present && handoff?.status === 'ready' && handoff?.renderer === 'provider';
+    const status = !present ? 'missing' : providerFinal ? 'provider-final' : fallbackStatus;
+    return {
+      area,
+      path,
+      status,
+      present,
+      renderer: providerFinal ? 'provider' : handoff?.renderer || 'repository',
+      sha256: providerFinal ? handoff.sha256 : '',
+    };
   });
 }
 
@@ -126,6 +154,8 @@ const coreRows = rowsFor(coreRequired);
 const expansionRows = rowsFor(expansionTargets);
 const coreMissing = coreRows.filter((row) => !row.present);
 const expansionMissing = expansionRows.filter((row) => !row.present);
+const providerFinal = coreRows.filter((row) => row.status === 'provider-final');
+const placeholderFinal = coreRows.filter((row) => row.status === 'placeholder-final');
 const allKnown = [...coreRows, ...expansionRows];
 const review = all.filter((file) => !allKnown.some((row) => row.path === file));
 const result = coreMissing.length === 0 ? 'GREEN' : 'RED';
@@ -144,16 +174,26 @@ const md = [
   `Total asset files found: ${all.length}`,
   `Core launch assets checked: ${coreRows.length}`,
   `Core launch assets missing: ${coreMissing.length}`,
+  `Provider-final core assets: ${providerFinal.length}`,
+  `Placeholder-final core assets: ${placeholderFinal.length}`,
   `Expansion / AAA next-stage targets checked: ${expansionRows.length}`,
   `Expansion / AAA next-stage targets missing: ${expansionMissing.length}`,
+  '',
+  '## Provider promotion evidence',
+  '',
+  existsSync(handoffPath)
+    ? `Provider handoff: urai-tier1/public/assets/urai/final/manifests/asset-factory-spatial-handoff.json (${providerHandoff.size} records)`
+    : 'Provider handoff: missing',
+  '',
+  'A core asset is classified as provider-final only when the canonical file exists and the committed Asset Factory handoff marks that exact path ready with renderer=provider.',
   '',
   '## Core launch assets',
   '',
   'These are the assets that must be present for the current wired Tier-1/Tier-2 launch surfaces.',
   '',
-  '| Area | Path | Status |',
-  '| --- | --- | --- |',
-  ...coreRows.map((row) => `| ${row.area} | ${row.path} | ${row.status} |`),
+  '| Area | Path | Status | Renderer | SHA-256 |',
+  '| --- | --- | --- | --- | --- |',
+  ...coreRows.map((row) => `| ${row.area} | ${row.path} | ${row.status} | ${row.renderer} | ${row.sha256 || '—'} |`),
   '',
   '## AAA next-stage asset targets',
   '',
@@ -176,6 +216,7 @@ const md = [
   '',
   '## Classification language',
   '',
+  '- provider-final: provider-rendered production art with committed handoff evidence, ready state, exact canonical path, and checksum.',
   '- final: custom approved art or production capture.',
   '- placeholder-final: safe production placeholder currently wired and acceptable until final custom art replaces it.',
   '- v1-launch: launch social/demo/proof asset needed for the first public push.',
@@ -192,5 +233,7 @@ console.log(`RESULT=${result}`);
 console.log(`TOTAL_ASSETS=${all.length}`);
 console.log(`CORE_REQUIRED=${coreRows.length}`);
 console.log(`CORE_MISSING=${coreMissing.length}`);
+console.log(`PROVIDER_FINAL=${providerFinal.length}`);
+console.log(`PLACEHOLDER_FINAL=${placeholderFinal.length}`);
 console.log(`EXPANSION_TARGETS=${expansionRows.length}`);
 console.log(`EXPANSION_MISSING=${expansionMissing.length}`);
