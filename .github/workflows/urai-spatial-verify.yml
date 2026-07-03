@@ -47,7 +47,18 @@ jobs:
         run: corepack pnpm check:types
 
       - name: Unit tests
-        run: corepack pnpm test:unit
+        shell: bash
+        run: |
+          set -o pipefail
+          corepack pnpm test:unit 2>&1 | tee unit-tests.log
+
+      - name: Upload unit diagnostics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: urai-unit-tests-${{ github.run_id }}
+          path: unit-tests.log
+          if-no-files-found: warn
 
       - name: Build
         run: corepack pnpm build
