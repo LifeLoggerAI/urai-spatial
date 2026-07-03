@@ -1,4 +1,6 @@
 import Link from 'next/link'
+import type { CSSProperties } from 'react'
+import { assetCssStack, privacyControlsAssets } from '@/spatial/assets/uraiAssets'
 
 export const metadata = {
   title: 'URAI Privacy Controls',
@@ -55,10 +57,26 @@ const routeRail = [
   ['Status', '/status'],
 ] as const
 
+const privacyStyle = {
+  '--privacy-art-desktop': assetCssStack(privacyControlsAssets.primary),
+  '--privacy-art-mobile': assetCssStack(privacyControlsAssets.mobile),
+} as CSSProperties
+
+const desktopArtStyle = { backgroundImage: 'var(--privacy-art-desktop)' } as CSSProperties
+const mobileArtStyle = { backgroundImage: 'var(--privacy-art-mobile)' } as CSSProperties
+
 export default function PrivacyControlsRoutePage() {
   return (
-    <main className="relative min-h-screen overflow-hidden bg-[#020617] text-white" data-route-polish="privacy-consent-console" data-launch-surface="premium-privacy-consent-console">
+    <main
+      className="relative min-h-screen overflow-hidden bg-[#020617] text-white"
+      data-route-polish="privacy-consent-console"
+      data-launch-surface="premium-privacy-consent-console"
+      style={privacyStyle}
+    >
       <div className="absolute inset-0 bg-[radial-gradient(circle_at_48%_18%,rgba(103,232,249,.2),transparent_28rem),radial-gradient(circle_at_18%_78%,rgba(251,191,36,.12),transparent_26rem),linear-gradient(180deg,rgba(2,6,23,.15),rgba(0,0,0,.74))]" />
+      <div className="absolute inset-0 hidden bg-cover bg-center opacity-45 mix-blend-screen brightness-75 contrast-125 saturate-150 md:block" style={desktopArtStyle} />
+      <div className="absolute inset-0 bg-cover bg-center opacity-42 mix-blend-screen brightness-70 contrast-125 saturate-150 md:hidden" style={mobileArtStyle} />
+      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_50%_42%,transparent_0_26%,rgba(0,0,0,.46)_70%,rgba(0,0,0,.86)_100%)]" />
       <div className="absolute left-1/2 top-[44%] h-[34rem] w-[min(52rem,82vw)] -translate-x-1/2 -translate-y-1/2 rounded-[3rem] border border-cyan-100/20 bg-white/[.035] shadow-[0_0_140px_rgba(103,232,249,.14),inset_0_0_100px_rgba(255,255,255,.04)]" />
 
       <section className="relative z-10 mx-auto flex min-h-screen max-w-7xl flex-col px-6 py-8 md:px-10">
@@ -73,7 +91,7 @@ export default function PrivacyControlsRoutePage() {
             </p>
           </div>
 
-          <aside className="rounded-[2rem] border border-white/10 bg-black/35 p-5 shadow-[0_24px_90px_rgba(0,0,0,.35)] backdrop-blur-xl">
+          <aside className="rounded-[2rem] border border-white/10 bg-black/45 p-5 shadow-[0_24px_90px_rgba(0,0,0,.45)] backdrop-blur-2xl">
             <p className="text-xs font-black uppercase tracking-[0.3em] text-amber-100/70">Release posture</p>
             <div className="mt-4 grid gap-3 text-sm text-slate-200">
               <div className="rounded-2xl border border-cyan-100/10 bg-cyan-100/5 p-3">Private by default</div>
@@ -86,7 +104,7 @@ export default function PrivacyControlsRoutePage() {
 
         <section className="mt-10 grid gap-4 md:grid-cols-2 xl:grid-cols-3" aria-label="Privacy control groups">
           {controlGroups.map((group, index) => (
-            <article key={group.label} className="rounded-[2rem] border border-white/10 bg-black/35 p-5 shadow-[0_26px_90px_rgba(0,0,0,.34)] backdrop-blur-xl">
+            <article key={group.label} className="rounded-[2rem] border border-white/10 bg-black/45 p-5 shadow-[0_26px_90px_rgba(0,0,0,.42)] backdrop-blur-2xl transition duration-300 hover:-translate-y-1 hover:border-cyan-100/25 hover:bg-black/55">
               <div className="flex items-start justify-between gap-4">
                 <div>
                   <p className="text-xs font-black uppercase tracking-[0.28em] text-cyan-100/70">{group.label}</p>
