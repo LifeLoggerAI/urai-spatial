@@ -1,11 +1,13 @@
 "use client";
 
 import { usePathname } from "next/navigation";
+import { avatarAssets } from "@/spatial/assets/uraiAssets";
 import UraiAutonomousV1Realms from "./UraiAutonomousV1Realms";
 import "./urai-autonomous-v1-layer.css";
 import "./urai-autonomous-v1-assets.css";
 import "./urai-autonomous-v1-realms.css";
 import "./urai-autonomous-v1-isolation.css";
+import "./urai-autonomous-v1-workforce.css";
 
 const groundStations = [
   { key: "reception", label: "Reception", detail: "New signals arrive here." },
@@ -16,7 +18,22 @@ const groundStations = [
   { key: "logistics", label: "Logistics bay", detail: "Real-life tasks wait for consent." },
 ];
 
-const helpers = ["privacy", "schedule", "wellness", "memory", "logistics"];
+const helpers = [
+  { key: "welcome", label: "Welcome Guide", art: avatarAssets.receptionist.src },
+  { key: "privacy", label: "Privacy Steward", art: avatarAssets.privacySteward.src },
+  { key: "schedule", label: "Schedule Steward", art: avatarAssets.scheduleSteward.src },
+  { key: "wellness", label: "Wellness Guide", art: avatarAssets.wellnessGuide.src },
+  { key: "memory", label: "Memory Archivist", art: avatarAssets.archivist.src },
+];
+
+const specialists = [
+  { label: "Relationship Liaison", art: avatarAssets.relationshipLiaison.src },
+  { label: "Operator", art: avatarAssets.operator.src },
+  { label: "Builder", art: avatarAssets.builder.src },
+  { label: "Protector", art: avatarAssets.protector.src },
+  { label: "Mirror Guide", art: avatarAssets.mirror.src },
+  { label: "World Guide", art: avatarAssets.guide.src },
+];
 
 function SceneArt({
   className,
@@ -37,7 +54,11 @@ function SceneArt({
 
 function GroundWorld() {
   return (
-    <section className="uraiAutoWorld uraiAutoGround" aria-label="Private operations floor">
+    <section
+      className="uraiAutoWorld uraiAutoGround"
+      aria-label="Private operations floor"
+      data-workforce-art="provider-final"
+    >
       <SceneArt
         className="uraiGroundSceneArt"
         desktop="/assets/urai/ground/ground-world-main.webp"
@@ -76,24 +97,46 @@ function GroundWorld() {
         ))}
 
         {helpers.map((helper, index) => (
-          <div className={`uraiGroundHelper uraiGroundHelper-${index + 1}`} key={helper} aria-label={`${helper} helper active`}>
-            <i className="uraiGroundHelperHead" />
-            <i className="uraiGroundHelperBody" />
-            <span>{helper}</span>
+          <div
+            className={`uraiGroundHelper uraiGroundHelper-${index + 1}`}
+            key={helper.key}
+            aria-label={`${helper.label} helper active`}
+          >
+            <i
+              className="uraiGroundHelperArt"
+              style={{ backgroundImage: `url("${helper.art}")` }}
+              aria-hidden="true"
+            />
+            <span>{helper.label}</span>
           </div>
         ))}
+
+        <aside className="uraiGroundCouncil" aria-label="Specialist council present in Ground">
+          <strong>Specialist council</strong>
+          <div>
+            {specialists.map((specialist) => (
+              <figure key={specialist.label} title={specialist.label}>
+                <i
+                  style={{ backgroundImage: `url("${specialist.art}")` }}
+                  aria-hidden="true"
+                />
+                <figcaption>{specialist.label}</figcaption>
+              </figure>
+            ))}
+          </div>
+        </aside>
       </div>
 
       <aside className="uraiGroundStatus">
         <span>PRIVATE WORKFORCE</span>
-        <strong>5 helpers preparing quietly</strong>
+        <strong>11 workforce presences staged</strong>
         <small>Every action remains staged until you approve it.</small>
       </aside>
 
       <div className="uraiGroundMobileSheet">
         <span>PRIVATE FLOOR</span>
-        <strong>Tap a station to inspect it.</strong>
-        <small>Helpers prepare. You decide what moves.</small>
+        <strong>Workforce present. You stay in control.</strong>
+        <small>Tap a station to inspect it. Nothing acts without approval.</small>
       </div>
 
       <nav className="uraiAutoNav" aria-label="Ground navigation">
