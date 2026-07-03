@@ -2,54 +2,44 @@ import assert from 'node:assert/strict'
 import { test } from 'node:test'
 import fs from 'node:fs'
 
-const gateSource = fs.readFileSync(new URL('../src/spatial/components/world/LifeMapAscentGate.tsx', import.meta.url), 'utf8')
-const overlaySource = fs.readFileSync(new URL('../src/spatial/components/world/AscentOverlay.tsx', import.meta.url), 'utf8')
 const pageSource = fs.readFileSync(new URL('../src/app/life-map/page.tsx', import.meta.url), 'utf8')
-const tierOneSource = fs.readFileSync(new URL('../src/spatial/layout/TierOneExperience.tsx', import.meta.url), 'utf8')
-const compactGate = gateSource.replace(/\s+/g, '')
-const compactTierOne = tierOneSource.replace(/\s+/g, '')
+const homeSource = fs.readFileSync(new URL('../src/app/HomeSpatialWorldFinal.tsx', import.meta.url), 'utf8')
+const transitionCss = fs.readFileSync(new URL('../src/app/urai-canon-camera-transitions.css', import.meta.url), 'utf8')
+const galaxySource = fs.readFileSync(new URL('../src/components/lifemap/RealLifeMapGalaxy.tsx', import.meta.url), 'utf8')
 
 
-test('life map route is gated by the Ascent contract wrapper', () => {
-  assert.match(pageSource, /LifeMapAscentGate/)
-  assert.match(gateSource, /TierOneExperience/)
-  assert.match(gateSource, /<TierOneExperience mode="life-map" \/>/)
-  assert.match(gateSource, /<AscentOverlay/)
+test('Life Map route resolves directly to the final galaxy after Home ascent', () => {
+  assert.match(pageSource, /RealLifeMapGalaxy/)
+  assert.doesNotMatch(pageSource, /LifeMapAscentGate|TierOneExperience/)
+  assert.match(homeSource, /\/life-map\?from=home-sky/)
+  assert.match(homeSource, /HOME_CAMERA_ASCENT_MS/)
+  assert.match(homeSource, /navigateThroughThreshold/)
 })
 
-test('Ascent visual phase and data readiness are separate observables', () => {
-  assert.match(overlaySource, /export type AscentPhase/)
-  assert.match(overlaySource, /waitingForLifeMap/)
-  assert.match(overlaySource, /export type LifeMapDataStatus/)
-  assert.match(compactGate, /data-ascent-phase=\{ascentPhase\}/)
-  assert.match(compactGate, /data-lifemap-data-status=\{lifeMapDataStatus\}/)
-  assert.match(compactGate, /data-lifemap-interactive=\{lifeMapInteractive\?'true':'false'\}/)
+test('Home ascent truth and camera state remain separate from destination readiness', () => {
+  assert.match(homeSource, /data-transition-target=\{transitionTarget \?\? 'idle'\}/)
+  assert.match(homeSource, /transitionTarget === 'sky'/)
+  assert.match(homeSource, /urai-genesis-home__camera-ascent-signal/)
+  assert.match(homeSource, /Camera ascends into your Life Map/)
+  assert.match(homeSource, /Avatar and orb stay anchored in Home\/Ground/)
 })
 
-test('Ascent copy avoids duplicate debug-style loading surfaces', () => {
-  assert.doesNotMatch(overlaySource, /ASCENT ACTIVE/)
-  assert.doesNotMatch(overlaySource, /Preparing your memory map/)
-  assert.doesNotMatch(overlaySource, /home view/)
-  assert.doesNotMatch(tierOneSource, /URAI is moving from the home view/)
-  assert.match(overlaySource, /Opening your Life Map\./)
-  assert.match(overlaySource, /Memories are becoming constellations/)
-  assert.match(tierOneSource, /Your Life Map is forming\./)
+test('ascent copy stays cinematic and avoids obsolete loading overlays', () => {
+  assert.match(homeSource, /Click the sky/)
+  assert.match(homeSource, /Ground below · memory above/)
+  assert.doesNotMatch(pageSource, /ASCENT ACTIVE|Preparing your memory map|Opening your Life Map\./)
 })
 
-test('Ascent route card is suppressed so the overlay owns the transition copy', () => {
-  assert.match(compactTierOne, /constshowRouteCard=mode!=="home"&&mode!=="ascent"/)
+test('ascent transition has a bounded timer and reduced-motion escape hatch', () => {
+  assert.match(homeSource, /window\.matchMedia\('\(prefers-reduced-motion: reduce\)'\)/)
+  assert.match(homeSource, /target === 'sky' \? HOME_CAMERA_ASCENT_MS : HOME_GROUND_DESCENT_MS/)
+  assert.match(transitionCss, /uraiCanonHomeAscendToLifeMap/)
+  assert.match(transitionCss, /uraiCanonSkyGateIgnites/)
 })
 
-test('Life Map is only interactive after visual phase and data readiness agree', () => {
-  assert.match(compactGate, /ascentPhase==='lifemapReady'/)
-  assert.match(compactGate, /dataIsReady\(lifeMapDataStatus\)/)
-  assert.match(compactGate, /aria-busy=\{lifeMapInteractive\?'false':'true'\}/)
-})
-
-test('Ascent overlay has cinematic visual polish without changing state truth', () => {
-  assert.match(overlaySource, /PHASE_INTENSITY/)
-  assert.match(overlaySource, /buildParticles/)
-  assert.match(overlaySource, /viewBox="0 0 100 100"/)
-  assert.match(overlaySource, /radial-gradient\(circle at 35% 28%/)
-  assert.match(overlaySource, /reducedMotion \? 0\.94 : 1/)
+test('destination becomes interactive as the final galaxy owner', () => {
+  assert.match(galaxySource, /onPointerMove/)
+  assert.match(galaxySource, /onPointerLeave/)
+  assert.match(galaxySource, /aria-label="Private memory constellation"/)
+  assert.match(galaxySource, /Enter Focus/)
 })
