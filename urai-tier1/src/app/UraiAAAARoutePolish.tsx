@@ -17,6 +17,17 @@ const ROUTE_CLASSES = [
   "urai-route-spatial-xr",
 ] as const;
 
+const ASSET_GATES = [
+  { version: "v2", minimum: 80, className: "urai-v2-assets-ready" },
+  { version: "v3", minimum: 39, className: "urai-v3-assets-ready" },
+] as const;
+
+type HandoffManifest = {
+  ready?: number;
+  missing?: number;
+  assets?: Array<{ status?: string; renderer?: string }>;
+};
+
 function routeClassFor(pathname: string): string | null {
   if (pathname === "/" || pathname.startsWith("/home")) return "urai-route-home";
   if (pathname.startsWith("/ground")) return "urai-route-ground";
@@ -32,19 +43,49 @@ function routeClassFor(pathname: string): string | null {
   return null;
 }
 
+function handoffReady(payload: HandoffManifest, minimum: number) {
+  const assets = Array.isArray(payload.assets) ? payload.assets : [];
+  return (
+    Number(payload.ready ?? 0) >= minimum &&
+    Number(payload.missing ?? 0) === 0 &&
+    assets.length >= minimum &&
+    assets.every((asset) => asset.status === "ready" && asset.renderer === "provider")
+  );
+}
+
 export default function UraiAAAARoutePolish() {
   const pathname = usePathname() ?? "";
 
   useEffect(() => {
     const root = document.documentElement;
+    let cancelled = false;
+
     ROUTE_CLASSES.forEach((routeClass) => root.classList.remove(routeClass));
+    ASSET_GATES.forEach((gate) => root.classList.remove(gate.className));
 
     const routeClass = routeClassFor(pathname);
     if (routeClass) root.classList.add(routeClass);
     root.dataset.uraiRoutePolish = routeClass ?? "none";
 
+    for (const gate of ASSET_GATES) {
+      void fetch(`/assets/urai/final/manifests/${gate.version}-asset-factory-spatial-handoff.json`, {
+        cache: "no-store",
+      })
+        .then((response) => (response.ok ? response.json() : null))
+        .then((payload: HandoffManifest | null) => {
+          if (!cancelled && payload && handoffReady(payload, gate.minimum)) {
+            root.classList.add(gate.className);
+          }
+        })
+        .catch(() => {
+          // A pending handoff intentionally keeps the stable V1 fallback active.
+        });
+    }
+
     return () => {
+      cancelled = true;
       if (routeClass) root.classList.remove(routeClass);
+      ASSET_GATES.forEach((gate) => root.classList.remove(gate.className));
       delete root.dataset.uraiRoutePolish;
     };
   }, [pathname]);
