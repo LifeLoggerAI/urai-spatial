@@ -1,6 +1,6 @@
 {
   "schemaVersion": "3.0.0",
-  "generatedAt": "2026-07-03T10:38:54.237937+00:00",
+  "generatedAt": "2026-07-03T11:07:22.469999+00:00",
   "version": "v1",
   "producer": "LifeLoggerAI/asset-factory",
   "consumer": "LifeLoggerAI/urai-spatial",
@@ -734,8 +734,8 @@
       "height": 1024,
       "aspectRatio": "2:3",
       "alpha": true,
-      "sha256": "1690b709547ac072a0db5549b8c498980959d8c8678ce906a4347c65f55a22f8",
-      "bytes": 245580,
+      "sha256": "baac92a769a2c9b28d16beb04f033194bc121ebfb69147ef0bf9b320a6d244d7",
+      "bytes": 218348,
       "promptVersion": "v3",
       "renderer": "provider",
       "claimGate": null
@@ -768,8 +768,8 @@
       "height": 1024,
       "aspectRatio": "2:3",
       "alpha": true,
-      "sha256": "5e0c5ead61dec5ae7c9ca1984911afee89fdfd5718507b66f6c5be13453428aa",
-      "bytes": 225484,
+      "sha256": "34b488a6fc3d62d09d5a85b07ceca8f505eed1aee099d2b1194c91fc5eb5340b",
+      "bytes": 263594,
       "promptVersion": "v3",
       "renderer": "provider",
       "claimGate": null
