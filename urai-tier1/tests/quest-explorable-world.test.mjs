@@ -2,64 +2,147 @@ import assert from 'node:assert/strict'
 import test from 'node:test'
 import { readFile } from 'node:fs/promises'
 
-const pageUrl = new URL('../src/app/spatial/ar-vr/page.tsx', import.meta.url)
-const worldUrl = new URL('../src/app/spatial/ar-vr/UraiQuestEntryWorldV2.tsx', import.meta.url)
-const runtimeUrl = new URL('../src/app/spatial/ar-vr/xrEntryWorldRuntime.ts', import.meta.url)
-const entryUrl = new URL('../src/app/spatial/ar-vr/QuestVrEntryButton.tsx', import.meta.url)
+const pageUrl = new URL(
+  '../src/app/spatial/ar-vr/page.tsx',
+  import.meta.url,
+)
 
-test('Quest route is owned by the corrected explorable real-time world', async () => {
-  const source = await readFile(pageUrl, 'utf8')
-  assert.match(source, /UraiQuestEntryWorldV2/)
-  assert.doesNotMatch(source, /urai-xr-portal__stars/)
-})
+const worldUrl = new URL(
+  '../src/app/spatial/ar-vr/UraiQuestEntryWorldV2.tsx',
+  import.meta.url,
+)
 
-test('runtime creates geometry, lighting, floor boundaries and spatial portals', async () => {
-  const source = await readFile(runtimeUrl, 'utf8')
-  assert.match(source, /WebGLRenderer/)
-  assert.match(source, /HemisphereLight/)
-  assert.match(source, /DirectionalLight/)
-  assert.match(source, /CircleGeometry/)
-  assert.match(source, /CylinderGeometry/)
-  assert.match(source, /BoxGeometry/)
-  assert.match(source, /portalTargets/)
-  assert.match(source, /THREE\.MathUtils\.clamp/)
-})
+const runtimeUrl = new URL(
+  '../src/app/spatial/ar-vr/xrEntryWorldRuntime.ts',
+  import.meta.url,
+)
 
-test('desktop, touch and Quest locomotion controls remain explicit', async () => {
-  const world = await readFile(worldUrl, 'utf8')
-  const runtime = await readFile(runtimeUrl, 'utf8')
-  assert.match(runtime, /KeyW/)
-  assert.match(runtime, /KeyA/)
-  assert.match(runtime, /KeyQ/)
-  assert.match(runtime, /getController/)
-  assert.match(runtime, /intersectObject\(this\.floor/)
-  assert.match(runtime, /Math\.PI \/ 6/)
-  assert.match(runtime, /SPAWN_Z/)
-  assert.match(world, /Exit VR safely/)
-  assert.match(world, /Recenter/)
-  assert.match(world, /Reduced motion/)
-  assert.match(world, /Touch movement controls/)
-  assert.match(world, /right thumbstick snaps 30°/)
-})
+const entryUrl = new URL(
+  '../src/app/spatial/ar-vr/QuestVrEntryButton.tsx',
+  import.meta.url,
+)
 
-test('post-merge boundary hardening keeps navigation and input safe', async () => {
-  const world = await readFile(worldUrl, 'utf8')
-  assert.match(world, /route === '\/spatial\/life-map' \? '\/life-map' : route/)
-  assert.match(world, /source\.handedness === 'right'/)
-  assert.match(world, /source\.handedness !== 'left'/)
-  assert.match(world, /window\.addEventListener\('blur'/)
-  assert.match(world, /document\.addEventListener\('visibilitychange'/)
-  assert.match(world, /runtimeRef\.current\.session = null/)
-})
+test(
+  'Quest route is owned by the corrected explorable real-time world',
+  async () => {
+    const source = await readFile(pageUrl, 'utf8')
 
-test('Quest session is attached to the active renderer and retains honest proof status', async () => {
-  const world = await readFile(worldUrl, 'utf8')
-  const entry = await readFile(entryUrl, 'utf8')
-  assert.match(entry, /requiredFeatures: \['local-floor'\]/)
-  assert.match(entry, /bounded-floor/)
-  assert.match(entry, /hand-tracking/)
-  assert.match(world, /renderer\.xr\.setSession/)
-  assert.match(world, /data-renderer-ready/)
-  assert.match(world, /QUEST_IMMERSIVE_ENTRY_VERIFIED_MINIMAL_SHELL/)
-  assert.doesNotMatch(world, /QUEST_FULL_URAI_WORLD_VERIFIED/)
-})
+    assert.match(source, /UraiQuestEntryWorldV2/)
+    assert.doesNotMatch(source, /urai-xr-portal__stars/)
+  },
+)
+
+test(
+  'runtime creates geometry, lighting, floor boundaries and spatial portals',
+  async () => {
+    const source = await readFile(runtimeUrl, 'utf8')
+
+    assert.match(source, /WebGLRenderer/)
+    assert.match(source, /HemisphereLight/)
+    assert.match(source, /DirectionalLight/)
+    assert.match(source, /CircleGeometry/)
+    assert.match(source, /CylinderGeometry/)
+    assert.match(source, /BoxGeometry/)
+    assert.match(source, /portalTargets/)
+    assert.match(source, /THREE\.MathUtils\.clamp/)
+  },
+)
+
+test(
+  'desktop, touch and Quest locomotion controls remain explicit',
+  async () => {
+    const world = await readFile(worldUrl, 'utf8')
+    const runtime = await readFile(runtimeUrl, 'utf8')
+
+    assert.match(runtime, /KeyW/)
+    assert.match(runtime, /KeyA/)
+    assert.match(runtime, /KeyQ/)
+    assert.match(runtime, /getController/)
+    assert.match(runtime, /intersectObject\(this\.floor/)
+    assert.match(runtime, /Math\.PI\s*\/\s*6/)
+    assert.match(runtime, /SPAWN_Z/)
+
+    assert.match(world, /Exit VR safely/)
+    assert.match(world, /Recenter/)
+    assert.match(world, /Reduced motion/)
+    assert.match(world, /Touch movement controls/)
+    assert.match(world, /right thumbstick snaps 30°/)
+  },
+)
+
+test(
+  'post-merge boundary hardening keeps navigation and input safe',
+  async () => {
+    const world = await readFile(worldUrl, 'utf8')
+
+    assert.match(
+      world,
+      /route\s*===\s*['"]\/spatial\/life-map['"]\s*\?\s*['"]\/life-map['"]\s*:\s*route/,
+    )
+
+    assert.match(
+      world,
+      /source\.handedness\s*===\s*['"]right['"]/,
+    )
+
+    assert.match(
+      world,
+      /source\.handedness\s*!==\s*['"]left['"]/,
+    )
+
+    assert.match(
+      world,
+      /window\.addEventListener\(\s*['"]blur['"]/,
+    )
+
+    assert.match(
+      world,
+      /document\.addEventListener\(\s*['"]visibilitychange['"]/,
+    )
+
+    assert.match(
+      world,
+      /window\.removeEventListener\(\s*['"]blur['"]/,
+    )
+
+    assert.match(
+      world,
+      /document\.removeEventListener\(\s*['"]visibilitychange['"]/,
+    )
+
+    assert.match(
+      world,
+      /runtimeRef\.current\.session\s*=\s*null/,
+    )
+
+    assert.match(world, /clearHeldControls/)
+    assert.match(world, /runtime\.session\s*=\s*null/)
+  },
+)
+
+test(
+  'Quest session is attached to the active renderer and retains honest proof status',
+  async () => {
+    const world = await readFile(worldUrl, 'utf8')
+    const entry = await readFile(entryUrl, 'utf8')
+
+    assert.match(
+      entry,
+      /requiredFeatures:\s*\[\s*['"]local-floor['"]\s*\]/,
+    )
+
+    assert.match(entry, /bounded-floor/)
+    assert.match(entry, /hand-tracking/)
+    assert.match(world, /renderer\.xr\.setSession/)
+    assert.match(world, /data-renderer-ready/)
+    assert.match(
+      world,
+      /QUEST_IMMERSIVE_ENTRY_VERIFIED_MINIMAL_SHELL/,
+    )
+
+    assert.doesNotMatch(
+      world,
+      /QUEST_FULL_URAI_WORLD_VERIFIED/,
+    )
+  },
+)
