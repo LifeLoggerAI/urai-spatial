@@ -3,13 +3,13 @@ import test from 'node:test'
 import { readFile } from 'node:fs/promises'
 
 const pageUrl = new URL('../src/app/spatial/ar-vr/page.tsx', import.meta.url)
-const worldUrl = new URL('../src/app/spatial/ar-vr/UraiQuestEntryWorld.tsx', import.meta.url)
-const runtimeUrl = new URL('../src/app/spatial/ar-vr/xrWorldRuntime.ts', import.meta.url)
+const worldUrl = new URL('../src/app/spatial/ar-vr/UraiQuestEntryWorldV2.tsx', import.meta.url)
+const runtimeUrl = new URL('../src/app/spatial/ar-vr/xrEntryWorldRuntime.ts', import.meta.url)
 const entryUrl = new URL('../src/app/spatial/ar-vr/QuestVrEntryButton.tsx', import.meta.url)
 
-test('Quest route is owned by the explorable real-time world', async () => {
+test('Quest route is owned by the corrected explorable real-time world', async () => {
   const source = await readFile(pageUrl, 'utf8')
-  assert.match(source, /UraiQuestEntryWorld/)
+  assert.match(source, /UraiQuestEntryWorldV2/)
   assert.doesNotMatch(source, /urai-xr-portal__stars/)
 })
 
@@ -34,18 +34,21 @@ test('desktop, touch and Quest locomotion controls remain explicit', async () =>
   assert.match(runtime, /getController/)
   assert.match(runtime, /intersectObject\(this\.floor/)
   assert.match(runtime, /Math\.PI \/ 6/)
+  assert.match(runtime, /SPAWN_Z/)
+  assert.match(world, /Exit VR safely/)
   assert.match(world, /Recenter/)
   assert.match(world, /Reduced motion/)
   assert.match(world, /Touch movement controls/)
 })
 
-test('Quest session is attached to the renderer and retains honest proof status', async () => {
+test('Quest session is attached to the active renderer and retains honest proof status', async () => {
   const world = await readFile(worldUrl, 'utf8')
   const entry = await readFile(entryUrl, 'utf8')
   assert.match(entry, /requiredFeatures: \['local-floor'\]/)
   assert.match(entry, /bounded-floor/)
   assert.match(entry, /hand-tracking/)
   assert.match(world, /renderer\.xr\.setSession/)
+  assert.match(world, /data-renderer-ready/)
   assert.match(world, /QUEST_IMMERSIVE_ENTRY_VERIFIED_MINIMAL_SHELL/)
   assert.doesNotMatch(world, /QUEST_FULL_URAI_WORLD_VERIFIED/)
 })
