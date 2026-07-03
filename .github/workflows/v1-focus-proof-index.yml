@@ -1,0 +1,52 @@
+name: V1 Focus Proof Index
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - .github/workflows/v1-focus-proof-index.yml
+  workflow_dispatch:
+
+permissions:
+  actions: read
+  issues: write
+
+jobs:
+  index:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/github-script@v7
+        with:
+          script: |
+            const runs = await github.rest.actions.listWorkflowRuns({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              workflow_id: 'v1-asset-promote.yml',
+              per_page: 5
+            });
+            const run = runs.data.workflow_runs[0];
+            const jobs = await github.rest.actions.listJobsForWorkflowRun({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              run_id: run.id,
+              per_page: 20
+            });
+            const lines = [
+              `run_id=${run.id}`,
+              `status=${run.status}`,
+              `conclusion=${run.conclusion}`,
+              `url=${run.html_url}`,
+              ''
+            ];
+            for (const job of jobs.data.jobs) {
+              lines.push(`job_id=${job.id} status=${job.status} conclusion=${job.conclusion}`);
+              for (const step of job.steps || []) {
+                lines.push(`- ${step.name}: ${step.status}/${step.conclusion}`);
+              }
+            }
+            await github.rest.issues.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title: `V1 Focus proof ${run.id}`,
+              body: lines.join('\n')
+            });
