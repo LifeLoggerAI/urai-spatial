@@ -1,3 +1,15 @@
+html:has(.urai-xr-route-shell),
+body:has(.urai-xr-route-shell) {
+  height: auto !important;
+  min-height: 100% !important;
+  overflow-y: auto !important;
+}
+
+.urai-xr-route-shell {
+  min-height: 100svh;
+  overflow: visible;
+}
+
 .urai-xr-route-shell .urai-xr-portal::after {
   display: none !important;
 }
@@ -14,6 +26,7 @@
   .urai-xr-route-shell .urai-xr-portal {
     height: auto !important;
     min-height: 100svh !important;
+    overflow: visible !important;
   }
 
   .urai-xr-route-shell .urai-xr-portal h1 {
