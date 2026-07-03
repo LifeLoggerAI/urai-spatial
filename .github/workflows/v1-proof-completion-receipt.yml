@@ -7,38 +7,80 @@ on:
 
 permissions:
   actions: read
+  contents: read
   issues: write
+
+concurrency:
+  group: v1-proof-receipt-${{ github.event.workflow_run.id }}
+  cancel-in-progress: true
 
 jobs:
   receipt:
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
     runs-on: ubuntu-latest
+    timeout-minutes: 5
     steps:
-      - uses: actions/github-script@v7
+      - name: Record successful proof receipt
+        uses: actions/github-script@v7
         with:
           script: |
             const run = context.payload.workflow_run;
-            const jobs = await github.rest.actions.listJobsForWorkflowRun({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              run_id: run.id,
-              per_page: 100
-            });
+            const jobs = await github.paginate(
+              github.rest.actions.listJobsForWorkflowRun,
+              {
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                run_id: run.id,
+                per_page: 100
+              }
+            );
+
+            const title = `V1 completed proof ${run.id}`;
             const lines = [
+              '<!-- urai:v1-proof-receipt -->',
               `run_id=${run.id}`,
               `run_number=${run.run_number}`,
               `conclusion=${run.conclusion}`,
+              `head_sha=${run.head_sha}`,
               `url=${run.html_url}`,
               ''
             ];
-            for (const job of jobs.data.jobs) {
+
+            for (const job of jobs) {
               lines.push(`job_id=${job.id} conclusion=${job.conclusion}`);
               for (const step of job.steps || []) {
                 lines.push(`- ${step.name}: ${step.conclusion}`);
               }
             }
-            await github.rest.issues.create({
+
+            const existingIssues = await github.paginate(
+              github.rest.issues.listForRepo,
+              {
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                state: 'all',
+                per_page: 100
+              }
+            );
+            const existing = existingIssues.find(
+              issue => !issue.pull_request && issue.title === title
+            );
+
+            if (existing) {
+              await github.rest.issues.update({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: existing.number,
+                body: lines.join('\n')
+              });
+              core.info(`Updated existing receipt issue #${existing.number}`);
+              return;
+            }
+
+            const created = await github.rest.issues.create({
               owner: context.repo.owner,
               repo: context.repo.repo,
-              title: `V1 completed proof ${run.id}`,
+              title,
               body: lines.join('\n')
             });
+            core.info(`Created receipt issue #${created.data.number}`);
