@@ -1,0 +1,44 @@
+@media (max-width: 760px) {
+  .urai-genesis-home__hero {
+    top: max(12px, env(safe-area-inset-top, 0px)) !important;
+    right: 12px !important;
+    left: 12px !important;
+    width: auto !important;
+    max-width: none !important;
+    padding: 14px 16px 15px !important;
+    transform: none !important;
+  }
+
+  .urai-genesis-home__hero h1 {
+    max-width: 8.4ch !important;
+    margin-block: 4px 8px !important;
+    font-size: clamp(2.3rem, 11.5vw, 3.25rem) !important;
+    line-height: 0.84 !important;
+  }
+
+  .urai-genesis-home__hero .urai-genesis-home__copy {
+    margin-bottom: 10px !important;
+  }
+
+  .lifeGalaxy .routeBar {
+    left: 50% !important;
+    width: calc(100vw - 1rem) !important;
+    max-width: calc(100vw - 1rem) !important;
+    gap: 0.2rem !important;
+    justify-content: center !important;
+    overflow-x: auto !important;
+    transform: translateX(-50%) !important;
+    scrollbar-width: none;
+  }
+
+  .lifeGalaxy .routeBar::-webkit-scrollbar {
+    display: none;
+  }
+
+  .lifeGalaxy .routeBar a {
+    flex: 0 0 auto !important;
+    padding: 0.38rem 0.46rem !important;
+    font-size: 0.62rem !important;
+    white-space: nowrap !important;
+  }
+}
