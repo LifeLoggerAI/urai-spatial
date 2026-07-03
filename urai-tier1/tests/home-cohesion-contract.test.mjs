@@ -11,13 +11,16 @@ function read(relativePath) {
   return fs.readFileSync(absolutePath, 'utf8')
 }
 
-const tierOne = read('src/spatial/layout/TierOneExperience.tsx')
+const tierOneRaw = read('src/spatial/layout/TierOneExperience.tsx')
+const tierOne = tierOneRaw.replace(/\s+/g, ' ')
 const cohesionRaw = read('src/spatial/layout/HomeCohesionLayer.tsx')
 const cohesion = cohesionRaw.replace(/\s+/g, ' ')
 
-test('home route mounts cohesion layer only on canonical home mode', () => {
-  assert.match(tierOne, /import \{ HomeCohesionLayer \} from "\.\/HomeCohesionLayer"/)
-  assert.match(tierOne, /<HomeCohesionLayer enabled=\{mode === "home"\} \/>/)
+test('canonical home mode delegates to the final Home owner without mounting a duplicate cohesion layer', () => {
+  assert.match(tierOne, /import \{ HomeWorldProduction \} from "\.\/HomeWorldProduction"/)
+  assert.match(tierOne, /if \(mode === "home"\) \{ return <HomeWorldProduction \/>; \}/)
+  assert.match(tierOne, /<HomeCohesionLayer enabled=\{false\} \/>/)
+  assert.doesNotMatch(tierOne, /<HomeCohesionLayer enabled=\{mode === "home"\} \/>/)
 })
 
 test('home cohesion layer exposes stable spatial selectors', () => {
