@@ -30,6 +30,14 @@ const consent: Record<ConsentState, string> = {
   private: 'passport-private', requested: 'passport-consent-requested', granted: 'passport-consent-granted', revoked: 'passport-consent-revoked', 'export-ready': 'passport-export-ready', 'delete-ready': 'passport-delete-ready', 'provenance-visible': 'passport-provenance-visible', 'shared-expired': 'passport-shared-expired',
 }
 
+export function inferMemoryKind(value: string | null | undefined): MemoryKind {
+  const normalized = (value || '').toLowerCase()
+  for (const kind of ['relationship', 'family', 'legacy', 'place', 'body', 'work', 'creation', 'grief', 'milestone'] as const) {
+    if (normalized.includes(kind)) return kind
+  }
+  return 'recovery'
+}
+
 export function resolveMemoryState(kind: MemoryKind) {
   return { star: v2MemoryStars[star[kind]], focus: v2FocusVariants[focus[kind]], replay: v2ReplayTemplates[replay[kind]], mirror: v2MirrorPatterns[mirror[kind]] }
 }
