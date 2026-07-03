@@ -1,0 +1,23 @@
+.uraiAutoGround .uraiGroundObject-reception .uraiGroundObjectBody {
+  background-image: url('/assets/urai/v2/objects/keys-inspect.webp'), url('/assets/urai/ground/ground-reception.webp') !important;
+}
+
+.uraiAutoGround .uraiGroundObject-privacy .uraiGroundObjectBody {
+  background-image: url('/assets/urai/v2/objects/privacy-lock-active.webp'), url('/assets/urai/ground/ground-privacy-sanctuary.webp') !important;
+}
+
+.uraiAutoGround .uraiGroundObject-work .uraiGroundObjectBody {
+  background-image: url('/assets/urai/v2/objects/work-console-approval.webp'), url('/assets/urai/ground/ground-reception.webp') !important;
+}
+
+.uraiAutoGround .uraiGroundObject-wellness .uraiGroundObjectBody {
+  background-image: url('/assets/urai/v2/objects/body-signal-warning.webp'), url('/assets/urai/ground/ground-wellness.webp') !important;
+}
+
+.uraiAutoGround .uraiGroundObject-memory .uraiGroundObjectBody {
+  background-image: url('/assets/urai/v2/objects/memory-case-protected.webp'), url('/assets/urai/ground/ground-memory-archive.webp') !important;
+}
+
+.uraiAutoGround .uraiGroundObject-logistics .uraiGroundObjectBody {
+  background-image: url('/assets/urai/v2/objects/consent-key-requested.webp'), url('/assets/urai/ground/ground-logistics.webp') !important;
+}
