@@ -253,7 +253,7 @@ export function FinalFocusChamber() {
           </div>
         </div>
         <aside className="memoryPanel">
-          <div className="memoryCard"><MemoryStar /></div>
+          <div className="memoryCard" aria-label="The Quiet Reset selected memory image"><MemoryStar /></div>
           <p>Memory readout</p>
           <h2>The Quiet Reset</h2>
           <span>Image, body signal, and context stay in one spatial chamber. Replay is one camera move away.</span>
@@ -286,11 +286,11 @@ export function FinalReplayFilm() {
           </div>
         </div>
         <aside className="memoryPanel">
-          <div className="memoryCard"><MemoryStar /></div>
+          <div className="memoryCard" aria-label="The Quiet Reset cinematic replay"><MemoryStar /></div>
           <p>Replay thread active</p>
           <h2>The Quiet Reset</h2>
           <span>The memory opens as atmosphere, rhythm, and return path — not a static poster.</span>
-          <div className="beatRail">
+          <div className="beatRail" aria-label="Film beats">
             {replayBeats.map((beat, index) => <span key={beat} data-active={index === 2 ? 'true' : 'false'}>{index + 1}. {beat}</span>)}
           </div>
         </aside>
