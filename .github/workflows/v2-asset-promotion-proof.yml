@@ -1,0 +1,37 @@
+name: V2 Asset Promotion Proof
+
+on:
+  pull_request:
+    paths:
+      - 'urai-tier1/public/assets/urai/v2/**'
+  push:
+    branches:
+      - main
+    paths:
+      - 'urai-tier1/public/assets/urai/v2/**'
+
+permissions:
+  contents: read
+
+jobs:
+  prove-v2-assets:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Verify all 80 V2 assets exist
+        working-directory: urai-tier1
+        env:
+          V2_ASSET_REQUIRED: '1'
+        run: node scripts/verify-v2-living-assets.mjs
+
+      - name: Upload V2 asset receipt
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: v2-asset-proof-${{ github.run_id }}
+          path: urai-tier1/v2-asset-proof.json
+          if-no-files-found: error
+          retention-days: 30

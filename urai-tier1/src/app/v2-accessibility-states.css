@@ -1,0 +1,41 @@
+.uraiAutoReplay .uraiReplayCaption::before {
+  content: '';
+  display: block;
+  width: 52px;
+  height: 18px;
+  margin-bottom: 6px;
+  background-image: url('/assets/urai/v2/accessibility/haptic-waveform-visual.webp'), url('/assets/urai/ui/orb-active.webp');
+  background-position: center;
+  background-size: contain;
+  background-repeat: no-repeat;
+  opacity: .72;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .uraiAutoFocus::before,
+  .uraiAutoReplay::before {
+    background-image: linear-gradient(180deg, rgba(2,7,15,.12), rgba(2,7,15,.46)), url('/assets/urai/v2/accessibility/reduced-motion-equivalent.webp'), url('/assets/urai/focus/focus-memory-chamber-main.webp');
+    animation: none !important;
+    transition: none !important;
+  }
+
+  .lifeGalaxy .memoryNode .glow::before {
+    animation: none !important;
+    transition: none !important;
+  }
+}
+
+@media (prefers-contrast: more) {
+  .uraiAutoWorld::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    z-index: 90;
+    pointer-events: none;
+    border: 2px solid rgba(255,255,255,.92);
+    background-image: url('/assets/urai/v2/accessibility/high-contrast-equivalent.webp');
+    background-position: right 12px top 12px;
+    background-size: 40px;
+    background-repeat: no-repeat;
+  }
+}
