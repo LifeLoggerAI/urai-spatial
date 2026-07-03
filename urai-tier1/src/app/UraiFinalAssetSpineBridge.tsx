@@ -42,8 +42,16 @@ const fallbackRoute: FinalAssetRoute = {
 }
 
 const promotedManifestChecks = [
-  { datasetKey: 'uraiV2Assets' as const, minimum: 80, href: '/assets/urai/final/manifests/v2-asset-factory-spatial-handoff.json' },
-  { datasetKey: 'uraiV3Assets' as const, minimum: 39, href: '/assets/urai/final/manifests/v3-asset-factory-spatial-handoff.json' },
+  {
+    datasetKey: 'uraiV2Assets' as const,
+    minimum: 80,
+    href: '/assets/urai/final/manifests/v2-asset-factory-spatial-handoff.json',
+  },
+  {
+    datasetKey: 'uraiV3Assets' as const,
+    minimum: 39,
+    href: '/assets/urai/final/manifests/v3-asset-factory-spatial-handoff.json',
+  },
 ]
 
 function resolveFinalAssetRoute(pathname: string) {
