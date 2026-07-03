@@ -1,0 +1,39 @@
+name: Frozen Lockfile Check
+
+on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - package.json
+      - pnpm-lock.yaml
+      - pnpm-workspace.yaml
+      - "**/package.json"
+      - ".github/workflows/**"
+  push:
+    branches: [main]
+    paths:
+      - package.json
+      - pnpm-lock.yaml
+      - pnpm-workspace.yaml
+      - "**/package.json"
+      - ".github/workflows/**"
+
+concurrency:
+  group: frozen-lockfile-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  frozen-lockfile:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - name: Install exactly the committed dependency graph
+        run: pnpm install --frozen-lockfile
+      - name: Prove install did not rewrite the lockfile
+        run: git diff --exit-code -- pnpm-lock.yaml
