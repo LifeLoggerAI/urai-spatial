@@ -9,6 +9,7 @@ import {
   statusAssets,
   uiAssets,
 } from "@/spatial/assets/uraiAssets";
+import "./urai-autonomous-v1-realms-final.css";
 
 type RealmConfig = {
   key: "mirror" | "passport" | "privacy" | "location" | "status";
