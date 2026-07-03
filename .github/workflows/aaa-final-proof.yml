@@ -51,7 +51,7 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       - name: Generate provider-aware asset receipt
-        run: pnpm --filter urai-tier1 receipt:assets
+        run: node scripts/final-asset-receipt.mjs
 
       - name: Verify assets
         run: pnpm verify:assets
