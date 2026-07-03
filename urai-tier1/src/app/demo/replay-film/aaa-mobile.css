@@ -1,0 +1,124 @@
+.urai-replay-film-route {
+  width: 100%;
+  height: 100svh;
+  overflow-x: clip;
+  overflow-y: auto;
+  overscroll-behavior-y: contain;
+  -webkit-overflow-scrolling: touch;
+}
+
+.urai-replay-film-route main {
+  min-height: 100%;
+  background:
+    linear-gradient(90deg, rgba(3, 4, 10, .92), rgba(3, 4, 10, .50) 48%, rgba(3, 4, 10, .24) 72%, rgba(3, 4, 10, .76)),
+    linear-gradient(180deg, transparent 0 58%, rgba(5, 2, 10, .92) 100%),
+    url('/assets/urai/replay/replay-memory-film-main.webp') center / cover fixed !important;
+}
+
+.urai-replay-film-route main section:first-of-type {
+  min-height: 100svh;
+  align-content: center;
+  padding-top: clamp(76px, 10vh, 118px) !important;
+  padding-bottom: clamp(82px, 12vh, 138px) !important;
+}
+
+.urai-replay-film-route main section:first-of-type > div:first-child {
+  max-width: 760px;
+  padding: clamp(18px, 2vw, 28px);
+  border: 1px solid rgba(255,255,255,.12);
+  border-radius: 30px;
+  background: linear-gradient(135deg, rgba(5,7,15,.68), rgba(5,7,15,.28));
+  box-shadow: 0 34px 120px rgba(0,0,0,.38), inset 0 1px 0 rgba(255,255,255,.08);
+  backdrop-filter: blur(18px);
+}
+
+.urai-replay-film-route main section:first-of-type > div:nth-child(2) {
+  overflow: hidden;
+  background:
+    linear-gradient(180deg, rgba(5,8,14,.08), rgba(5,4,10,.80)),
+    url('/assets/urai/focus/focus-memory-chamber-main.webp') center / cover !important;
+  box-shadow: 0 38px 130px rgba(0,0,0,.50), inset 0 1px 0 rgba(255,255,255,.12) !important;
+}
+
+.urai-replay-film-route main section:first-of-type > div:nth-child(2) > div {
+  width: min(240px, 56%);
+  max-width: 270px;
+  aspect-ratio: 1;
+  margin-inline: auto;
+  overflow: hidden;
+  border: 1px solid rgba(216, 250, 255, .32) !important;
+  border-radius: 50% !important;
+  color: transparent !important;
+  font-size: 0 !important;
+  background:
+    radial-gradient(circle at 42% 35%, rgba(255,255,255,.22), transparent 28%),
+    url('/assets/urai/ui/orb-active.webp') center / cover !important;
+  box-shadow: 0 0 72px rgba(105,226,255,.52), 0 0 160px rgba(167,139,250,.30) !important;
+}
+
+.urai-replay-film-route article {
+  backdrop-filter: blur(14px);
+}
+
+@media (max-width: 720px) {
+  .urai-replay-film-route main {
+    overflow-x: clip !important;
+    background:
+      linear-gradient(180deg, rgba(3,4,10,.22), rgba(3,4,10,.52) 44%, rgba(4,2,9,.96) 100%),
+      url('/assets/urai/replay/replay-memory-film-mobile.webp') center top / cover scroll !important;
+  }
+
+  .urai-replay-film-route main section:first-of-type {
+    min-height: auto;
+    grid-template-columns: minmax(0, 1fr) !important;
+    gap: 28px !important;
+    padding: 64px 18px 62px !important;
+  }
+
+  .urai-replay-film-route main section:first-of-type > div:first-child,
+  .urai-replay-film-route main section:first-of-type > div:nth-child(2) {
+    width: 100% !important;
+    min-width: 0 !important;
+    max-width: none !important;
+    box-sizing: border-box;
+  }
+
+  .urai-replay-film-route main section:first-of-type > div:first-child {
+    padding: 20px 18px;
+    border-radius: 26px;
+  }
+
+  .urai-replay-film-route main section:first-of-type h1 {
+    max-width: 8ch;
+    font-size: clamp(3.7rem, 19vw, 5.6rem) !important;
+    line-height: 1.08 !important;
+    overflow-wrap: normal;
+    word-break: normal;
+  }
+
+  .urai-replay-film-route main section:first-of-type p {
+    max-width: 36ch !important;
+    font-size: 1rem !important;
+    line-height: 1.55 !important;
+  }
+
+  .urai-replay-film-route main section:first-of-type > div:nth-child(2) {
+    padding: 18px !important;
+    border-radius: 28px !important;
+  }
+
+  .urai-replay-film-route main section:first-of-type > div:nth-child(2) > div {
+    width: min(230px, 68vw) !important;
+  }
+
+  .urai-replay-film-route main section:last-of-type {
+    margin-inline: 18px !important;
+    padding: 26px 20px !important;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .urai-replay-film-route * {
+    scroll-behavior: auto !important;
+  }
+}
