@@ -1,0 +1,18 @@
+.uraiRealmAccent {
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: contain;
+}
+
+.uraiAutoMirror .uraiRealmAccent-1 {
+  overflow: hidden;
+  border-radius: 50%;
+  clip-path: circle(47% at 50% 50%);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .uraiRealmAccent {
+    animation: none;
+    transition: none;
+  }
+}
