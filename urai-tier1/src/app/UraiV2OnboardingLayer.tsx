@@ -47,12 +47,12 @@ const cards = {
 function OnboardingCardContent() {
   const pathname = usePathname() || "";
   const searchParams = useSearchParams();
-  const query = searchParams.toString();
+  const query = searchParams?.toString() ?? "";
   const [dismissed, setDismissed] = useState(false);
   const card = cards[pathname as keyof typeof cards];
   const shouldShow =
-    searchParams.get("onboarding") === "1" ||
-    searchParams.get("firstRun") === "1";
+    searchParams?.get("onboarding") === "1" ||
+    searchParams?.get("firstRun") === "1";
 
   useEffect(() => {
     setDismissed(false);
