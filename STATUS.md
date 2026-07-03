@@ -10,6 +10,8 @@ Current mode: `fallback-demo`.
 
 Production-live status: not yet verified.
 
+Latest audited release candidate: July 3, 2026. Route-specific live verification, Privacy Controls, Location Map, Replay film proof, and XR portal upgrades are committed; the configured release workflow must pass before this status advances.
+
 ## Authority
 
 `urai-spatial` owns the immersive spatial interface layer for URAI: spatial home, LifeMap, spatial shell routes, orb companion navigation surfaces, privacy-safe fallback UI, replay surfaces, and future AR, VR, and WebXR expansion work.
