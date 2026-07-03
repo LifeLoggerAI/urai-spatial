@@ -1,0 +1,60 @@
+name: URAI Spatial Copy Policy
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'README.md'
+      - 'ENVIRONMENT.md'
+      - 'docs/**'
+      - 'urai-tier1/src/**'
+      - 'scripts/check-spatial-copy.mjs'
+      - '.github/workflows/spatial-copy-policy.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'README.md'
+      - 'ENVIRONMENT.md'
+      - 'docs/**'
+      - 'urai-tier1/src/**'
+      - 'scripts/check-spatial-copy.mjs'
+      - '.github/workflows/spatial-copy-policy.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: spatial-copy-policy-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  copy-policy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Capture public provider and XR policy output
+        id: policy
+        shell: bash
+        run: |
+          set +e
+          node scripts/check-spatial-copy.mjs > copy-policy.log 2>&1
+          status=$?
+          cat copy-policy.log
+          echo "status=$status" >> "$GITHUB_OUTPUT"
+          exit 0
+      - name: Upload policy output
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: spatial-copy-policy-output
+          path: copy-policy.log
+          if-no-files-found: error
+          retention-days: 7
+      - name: Enforce policy result
+        shell: bash
+        run: test "${{ steps.policy.outputs.status }}" = "0"
