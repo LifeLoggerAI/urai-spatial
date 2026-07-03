@@ -1,5 +1,6 @@
 'use client'
 
+import { useEffect } from 'react'
 import { usePathname } from 'next/navigation'
 import './v123-asset-wiring.css'
 
@@ -9,6 +10,12 @@ type FinalAssetRoute = {
   tier: 'tier1' | 'tier2' | 'tier3'
   canon: string
   asset: string
+}
+
+type AssetHandoffManifest = {
+  ready?: number
+  missing?: number
+  assets?: unknown[]
 }
 
 const finalAssetRoutes: FinalAssetRoute[] = [
@@ -106,13 +113,52 @@ const fallbackRoute: FinalAssetRoute = {
   asset: '/assets/urai/final/shared/orb/orb-idle.svg',
 }
 
+const promotedManifestChecks = [
+  {
+    datasetKey: 'uraiV2Assets' as const,
+    href: '/assets/urai/final/manifests/v2-asset-factory-spatial-handoff.json',
+  },
+  {
+    datasetKey: 'uraiV3Assets' as const,
+    href: '/assets/urai/final/manifests/v3-asset-factory-spatial-handoff.json',
+  },
+]
+
 function resolveFinalAssetRoute(pathname: string) {
   return finalAssetRoutes.find((route) => route.match(pathname)) ?? fallbackRoute
+}
+
+function isCompleteManifest(manifest: AssetHandoffManifest) {
+  const ready = Number(manifest.ready ?? 0)
+  const missing = Number(manifest.missing ?? 0)
+  return ready > 0 && missing === 0 && Array.isArray(manifest.assets) && manifest.assets.length >= ready
 }
 
 export default function UraiFinalAssetSpineBridge() {
   const pathname = usePathname() ?? '/'
   const route = resolveFinalAssetRoute(pathname)
+
+  useEffect(() => {
+    const root = document.documentElement
+    const controller = new AbortController()
+
+    for (const check of promotedManifestChecks) {
+      root.dataset[check.datasetKey] = 'fallback'
+      void fetch(check.href, { cache: 'no-store', signal: controller.signal })
+        .then((response) => {
+          if (!response.ok) throw new Error(`manifest ${response.status}`)
+          return response.json() as Promise<AssetHandoffManifest>
+        })
+        .then((manifest) => {
+          root.dataset[check.datasetKey] = isCompleteManifest(manifest) ? 'ready' : 'fallback'
+        })
+        .catch(() => {
+          if (!controller.signal.aborted) root.dataset[check.datasetKey] = 'fallback'
+        })
+    }
+
+    return () => controller.abort()
+  }, [])
 
   return (
     <aside
