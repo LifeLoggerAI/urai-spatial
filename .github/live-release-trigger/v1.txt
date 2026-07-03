@@ -1,4 +1,1 @@
-URAI V1 provider asset live release
-triggered_at_utc=2026-07-02T23:32:00Z
-source_asset_commit=6580eacb673815cf39aa3c19639cd147697972d5
-mode=scoped-v1-static-firebase-deploy
+2026-07-03T06:56:31Z
