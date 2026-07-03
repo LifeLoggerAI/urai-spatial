@@ -8,6 +8,9 @@ const ignoredFragments = [
   'node_modules',
   '.next',
   'docs/SPATIAL_LAUNCH_CONTRACT.md',
+  'docs/system/',
+  'docs/release/',
+  'docs/audits/',
   'scripts/check-spatial-copy.mjs',
   'urai-tier1/src/app/UraiAAAARoutePolish.tsx',
   'urai-tier1/src/app/UraiFinalAssetSpineBridge.tsx',
@@ -40,8 +43,27 @@ const failingFixtures = [
   'The media pipeline supports studio export now.'
 ]
 
+const internalEvidenceRequirements = [
+  {
+    path: 'docs/system/PROVIDER_STATUS.md',
+    required: [
+      /does not prove that a provider is live/i,
+      /Paid generation not initiated/i,
+      /Do not claim live narration provider/i,
+    ],
+  },
+  {
+    path: 'docs/release/PRODUCTION_EVIDENCE.md',
+    required: [
+      /NOT YET PRODUCTION CERTIFIED/i,
+      /No production deployment was initiated/i,
+      /Physical Quest verification/i,
+    ],
+  },
+]
+
 function shouldIgnore(relativePath) {
-  return ignoredFragments.some((fragment) => relativePath === fragment || relativePath.startsWith(`${fragment}/`) || relativePath.includes(fragment))
+  return ignoredFragments.some((fragment) => relativePath === fragment || relativePath.startsWith(fragment) || relativePath.includes(fragment))
 }
 
 function listFiles(entry) {
@@ -90,6 +112,18 @@ for (const fixture of failingFixtures) {
   if (!risk) {
     console.error(`spatial-copy: failing fixture passed unexpectedly: ${fixture}`)
     process.exit(1)
+  }
+}
+
+for (const requirement of internalEvidenceRequirements) {
+  const absolute = path.join(root, requirement.path)
+  if (!fs.existsSync(absolute)) continue
+  const text = fs.readFileSync(absolute, 'utf8')
+  for (const pattern of requirement.required) {
+    if (!pattern.test(text)) {
+      console.error(`spatial-copy: internal evidence boundary missing in ${requirement.path}: ${pattern}`)
+      process.exit(1)
+    }
   }
 }
 
