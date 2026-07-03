@@ -3,10 +3,147 @@
   background: #020611;
 }
 
+.urai-xr-route-shell .urai-xr-portal {
+  min-height: 100svh;
+  overflow: hidden;
+}
+
+.urai-xr-route-shell .urai-xr-portal__hero {
+  left: clamp(24px, 4vw, 68px) !important;
+  top: clamp(44px, 6vh, 74px) !important;
+  width: min(540px, 36vw) !important;
+  box-sizing: border-box;
+  padding: clamp(24px, 2.4vw, 38px) !important;
+  border: 1px solid rgba(194,240,255,.14);
+  border-radius: 34px;
+  background: linear-gradient(155deg, rgba(2,9,24,.90), rgba(3,10,26,.62));
+  box-shadow: 0 34px 120px rgba(0,0,0,.42), inset 0 1px 0 rgba(255,255,255,.08);
+  backdrop-filter: blur(22px) saturate(1.12);
+}
+
+.urai-xr-route-shell .urai-xr-portal h1 {
+  max-width: 8.5ch !important;
+  font-size: clamp(4rem, 6.3vw, 7.2rem) !important;
+  line-height: .9 !important;
+}
+
+.urai-xr-route-shell .urai-xr-portal__world {
+  position: absolute !important;
+  left: 42vw !important;
+  right: 3vw !important;
+  top: 15vh !important;
+  bottom: 11vh !important;
+  inset-inline: auto 3vw !important;
+  width: auto !important;
+  display: grid !important;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  grid-template-rows: minmax(280px, 1fr) auto;
+  gap: 16px;
+}
+
+.urai-xr-route-shell .urai-xr-portal__portal-door,
+.urai-xr-route-shell .urai-xr-portal__card,
+.urai-xr-route-shell .urai-xr-portal__card--quest {
+  position: relative !important;
+  inset: auto !important;
+  width: auto !important;
+  min-width: 0 !important;
+  max-width: none !important;
+  box-sizing: border-box;
+  margin: 0 !important;
+  transform: none !important;
+}
+
+.urai-xr-route-shell .urai-xr-portal__portal-door {
+  min-height: 280px;
+  display: flex !important;
+  flex-direction: column;
+  justify-content: flex-end;
+  gap: 7px;
+  overflow: hidden;
+  padding: clamp(22px, 2.3vw, 34px) !important;
+  border: 1px solid rgba(194,240,255,.16) !important;
+  border-radius: 32px !important;
+  color: #f3fdff;
+  background-size: cover !important;
+  background-position: center !important;
+  box-shadow: 0 28px 100px rgba(0,0,0,.34), inset 0 1px 0 rgba(255,255,255,.08);
+  text-decoration: none;
+  isolation: isolate;
+}
+
+.urai-xr-route-shell .urai-xr-portal__portal-door::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background: linear-gradient(180deg, rgba(1,5,15,.04), rgba(1,5,15,.28) 44%, rgba(1,5,15,.92));
+}
+
+.urai-xr-route-shell .urai-xr-portal__portal-door span {
+  color: #8ff6ff;
+  font-size: .68rem;
+  font-weight: 950;
+  letter-spacing: .18em;
+  text-transform: uppercase;
+}
+
+.urai-xr-route-shell .urai-xr-portal__portal-door strong {
+  font-size: clamp(1.55rem, 2.2vw, 2.35rem);
+  line-height: 1;
+}
+
+.urai-xr-route-shell .urai-xr-portal__portal-door small {
+  max-width: 34ch;
+  color: rgba(230,248,255,.72);
+  font-size: .82rem;
+  line-height: 1.5;
+}
+
+.urai-xr-route-shell .urai-xr-portal__card--quest {
+  grid-column: 1 / -1;
+  min-height: 116px;
+  display: grid !important;
+  grid-template-columns: minmax(0, .45fr) minmax(0, 1fr);
+  align-items: center;
+  gap: 10px 24px;
+  padding: 20px 24px !important;
+  border-radius: 28px !important;
+  background: linear-gradient(145deg, rgba(3,16,36,.86), rgba(3,10,24,.66)) !important;
+}
+
+.urai-xr-route-shell .urai-xr-portal__card--quest span,
+.urai-xr-route-shell .urai-xr-portal__card--quest strong {
+  grid-column: 1;
+}
+
+.urai-xr-route-shell .urai-xr-portal__card--quest p {
+  grid-column: 2;
+  grid-row: 1 / span 2;
+  margin: 0 !important;
+}
+
+.urai-xr-route-shell .urai-xr-portal__card--webxr,
+.urai-xr-route-shell .urai-xr-portal__card--life,
+.urai-xr-route-shell .urai-xr-portal__ring,
+.urai-xr-route-shell .urai-xr-portal aside.fixed {
+  display: none !important;
+}
+
+.urai-xr-route-shell .urai-xr-portal [data-xr-capability-signal='true'] {
+  top: 4vh !important;
+  right: 3vw !important;
+  bottom: auto !important;
+  width: min(420px, 34vw) !important;
+  padding: 12px 16px !important;
+  border-radius: 22px !important;
+}
+
 @media (max-width: 900px) {
   .urai-xr-route-shell .urai-xr-portal {
-    min-height: 100svh !important;
-    overflow: auto !important;
+    min-height: auto !important;
+    height: auto !important;
+    overflow: visible !important;
     padding: 28px 14px 112px !important;
   }
 
@@ -15,19 +152,14 @@
     inset: auto !important;
     width: 100% !important;
     max-width: none !important;
-    box-sizing: border-box;
     padding: 28px 22px 24px !important;
-    border: 1px solid rgba(194,240,255,.14);
     border-radius: 28px;
-    background: linear-gradient(160deg, rgba(3,10,24,.88), rgba(3,10,24,.58));
-    box-shadow: 0 28px 100px rgba(0,0,0,.36), inset 0 1px 0 rgba(255,255,255,.08);
-    backdrop-filter: blur(18px);
   }
 
   .urai-xr-route-shell .urai-xr-portal h1 {
     max-width: 9ch !important;
-    font-size: clamp(3.6rem, 17vw, 5.7rem) !important;
-    line-height: .84 !important;
+    font-size: clamp(3.4rem, 16vw, 5.3rem) !important;
+    line-height: 1.02 !important;
   }
 
   .urai-xr-route-shell .urai-xr-portal__actions {
@@ -51,11 +183,22 @@
     text-align: center;
   }
 
+  .urai-xr-route-shell .urai-xr-portal [data-xr-capability-signal='true'] {
+    position: relative !important;
+    inset: auto !important;
+    width: 100% !important;
+    box-sizing: border-box;
+    margin: 16px 0 0 !important;
+  }
+
   .urai-xr-route-shell .urai-xr-portal__world {
     position: relative !important;
     inset: auto !important;
+    width: 100% !important;
     min-height: 0 !important;
     display: grid !important;
+    grid-template-columns: 1fr;
+    grid-template-rows: auto;
     gap: 12px;
     margin-top: 18px !important;
   }
@@ -63,53 +206,24 @@
   .urai-xr-route-shell .urai-xr-portal__portal-door,
   .urai-xr-route-shell .urai-xr-portal__card,
   .urai-xr-route-shell .urai-xr-portal__card--quest {
-    position: relative !important;
-    inset: auto !important;
     width: 100% !important;
-    min-width: 0 !important;
-    max-width: none !important;
-    box-sizing: border-box;
-    margin: 0 !important;
-    transform: none !important;
   }
 
   .urai-xr-route-shell .urai-xr-portal__portal-door {
-    display: grid !important;
-    gap: 5px;
-    padding: 18px !important;
-    border: 1px solid rgba(194,240,255,.14) !important;
+    min-height: 190px;
+    padding: 20px !important;
     border-radius: 24px !important;
-    color: #f3fdff;
-    background: linear-gradient(150deg, rgba(3,12,28,.82), rgba(3,8,18,.62)) !important;
-    text-decoration: none;
-  }
-
-  .urai-xr-route-shell .urai-xr-portal__portal-door span {
-    color: #8ff6ff;
-    font-size: .65rem;
-    font-weight: 950;
-    letter-spacing: .16em;
-    text-transform: uppercase;
-  }
-
-  .urai-xr-route-shell .urai-xr-portal__portal-door strong {
-    font-size: 1.1rem;
-  }
-
-  .urai-xr-route-shell .urai-xr-portal__portal-door small {
-    color: rgba(230,248,255,.68);
-    line-height: 1.5;
   }
 
   .urai-xr-route-shell .urai-xr-portal__card--quest {
+    grid-column: auto;
+    min-height: 0;
     display: block !important;
+    padding: 18px !important;
   }
 
-  .urai-xr-route-shell .urai-xr-portal__card--webxr,
-  .urai-xr-route-shell .urai-xr-portal__card--life,
-  .urai-xr-route-shell .urai-xr-portal__ring,
-  .urai-xr-route-shell .urai-xr-portal aside.fixed {
-    display: none !important;
+  .urai-xr-route-shell .urai-xr-portal__card--quest p {
+    margin-top: 8px !important;
   }
 
   .urai-xr-route-shell .urai-xr-portal__rail {
