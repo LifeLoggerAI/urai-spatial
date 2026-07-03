@@ -46,6 +46,7 @@ import UraiAutonomousV1Layer from './UraiAutonomousV1Layer'
 import './aaa-graphics-rebuild-20260702.css'
 import './mobile-viewport-final-fixes.css'
 import './aaa-visual-authority-20260703.css'
+import './lifemap-proof-crops.css'
 
 export const metadata: Metadata = {
   title: 'URAI Spatial',
