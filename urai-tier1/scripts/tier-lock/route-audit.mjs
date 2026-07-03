@@ -63,8 +63,9 @@ for (const route of tierOneRoutes) {
   if (!text) continue
 
   if (route.kind === 'scene' && route.route !== '/') {
-    const usesTierShell = text.includes('TierOneExperience') || text.includes('HomeScene')
-    if (!usesTierShell) failures.push(`${route.route} must use TierOneExperience or HomeScene`)
+    const usesCanonicalHomeOwner = route.route === '/home' && text.includes('FinalHomeThreshold') && text.includes('HomeSpatialWorldFinal')
+    const usesTierShell = text.includes('TierOneExperience') || text.includes('HomeScene') || usesCanonicalHomeOwner
+    if (!usesTierShell) failures.push(`${route.route} must use TierOneExperience, HomeScene, or the canonical FinalHomeThreshold owner`)
   }
 
   if (route.kind === 'access') {
