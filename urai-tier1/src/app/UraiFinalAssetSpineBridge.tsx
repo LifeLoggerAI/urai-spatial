@@ -1,6 +1,7 @@
 'use client'
 
 import { usePathname } from 'next/navigation'
+import './v123-asset-wiring.css'
 
 type FinalAssetRoute = {
   id: string
