@@ -1,4 +1,4 @@
-import UraiQuestEntryWorld from './UraiQuestEntryWorld'
+import UraiQuestEntryWorldV2 from './UraiQuestEntryWorldV2'
 
 export const metadata = {
   title: 'URAI XR World',
@@ -6,5 +6,5 @@ export const metadata = {
 }
 
 export default function SpatialArVrPage() {
-  return <UraiQuestEntryWorld />
+  return <UraiQuestEntryWorldV2 />
 }
