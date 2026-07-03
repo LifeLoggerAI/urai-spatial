@@ -12,12 +12,12 @@ const checks = [
 ]
 
 for (const check of checks) {
-  console.log(`[tier1-diagnostic] ${check}`)
+  console.log(`[tier1-governance] running ${check}`)
   const result = spawnSync(process.execPath, [check], { stdio: 'inherit' })
   if (result.status !== 0) {
-    console.error(`TIER1_DIAGNOSTIC_FAILED=${check}`)
+    console.error(`TIER1_GOVERNANCE_FAILED=${check}`)
     process.exit(result.status ?? 1)
   }
 }
 
-console.log('Tier 1 governance diagnostic passed.')
+console.log('Tier 1 governance check passed.')
