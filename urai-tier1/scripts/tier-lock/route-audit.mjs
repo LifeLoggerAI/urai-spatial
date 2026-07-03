@@ -15,6 +15,13 @@ const failures = []
 const warnings = []
 const visited = new Set()
 
+const canonicalSceneOwners = new Map([
+  ['/home', ['FinalHomeThreshold', 'HomeSpatialWorldFinal']],
+  ['/life-map', ['RealLifeMapGalaxy']],
+  ['/focus', ['FinalFocusChamber']],
+  ['/replay', ['FinalReplayFilm']],
+])
+
 function read(file) {
   if (!fs.existsSync(file)) {
     failures.push(`missing file: ${file}`)
@@ -63,9 +70,13 @@ for (const route of tierOneRoutes) {
   if (!text) continue
 
   if (route.kind === 'scene' && route.route !== '/') {
-    const usesCanonicalHomeOwner = route.route === '/home' && text.includes('FinalHomeThreshold') && text.includes('HomeSpatialWorldFinal')
-    const usesTierShell = text.includes('TierOneExperience') || text.includes('HomeScene') || usesCanonicalHomeOwner
-    if (!usesTierShell) failures.push(`${route.route} must use TierOneExperience, HomeScene, or the canonical FinalHomeThreshold owner`)
+    const requiredOwners = canonicalSceneOwners.get(route.route)
+    const usesCanonicalOwner = requiredOwners?.every((owner) => text.includes(owner)) ?? false
+    const usesTierShell = text.includes('TierOneExperience') || text.includes('HomeScene') || usesCanonicalOwner
+    if (!usesTierShell) {
+      const expected = requiredOwners?.join(' + ') ?? 'TierOneExperience or HomeScene'
+      failures.push(`${route.route} must use its canonical scene owner (${expected})`)
+    }
   }
 
   if (route.kind === 'access') {
