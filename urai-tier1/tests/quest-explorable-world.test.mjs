@@ -58,7 +58,10 @@ test(
     assert.match(runtime, /KeyA/)
     assert.match(runtime, /KeyQ/)
     assert.match(runtime, /getController/)
-    assert.match(runtime, /intersectObject\(this\.floor/)
+    assert.match(
+      runtime,
+      /intersectObject\(\s*this\.floor/,
+    )
     assert.match(runtime, /Math\.PI\s*\/\s*6/)
     assert.match(runtime, /SPAWN_Z/)
 
@@ -110,18 +113,22 @@ test(
       /document\.removeEventListener\(\s*['"]visibilitychange['"]/,
     )
 
+    assert.match(world, /clearHeldControls/)
+
     assert.match(
       world,
-      /runtimeRef\.current\.session\s*=\s*null/,
+      /runtime\.session\s*=\s*null/,
     )
 
-    assert.match(world, /clearHeldControls/)
-    assert.match(world, /runtime\.session\s*=\s*null/)
+    assert.match(
+      world,
+      /runtimeRef\.current\s*=\s*null/,
+    )
   },
 )
 
 test(
-  'Quest session is attached to the active renderer and retains honest proof status',
+  'Quest session is attached to the active renderer and cleaned up safely',
   async () => {
     const world = await readFile(worldUrl, 'utf8')
     const entry = await readFile(entryUrl, 'utf8')
@@ -133,8 +140,32 @@ test(
 
     assert.match(entry, /bounded-floor/)
     assert.match(entry, /hand-tracking/)
-    assert.match(world, /renderer\.xr\.setSession/)
-    assert.match(world, /data-renderer-ready/)
+
+    assert.match(
+      world,
+      /renderer\.xr\.setSession\(/,
+    )
+
+    assert.match(
+      world,
+      /runtimeSessionForRightHandTurning/,
+    )
+
+    assert.match(
+      world,
+      /handleSessionEnded/,
+    )
+
+    assert.match(
+      world,
+      /await\s+runtime\.session\.end\(\)/,
+    )
+
+    assert.match(
+      world,
+      /data-renderer-ready/,
+    )
+
     assert.match(
       world,
       /QUEST_IMMERSIVE_ENTRY_VERIFIED_MINIMAL_SHELL/,
@@ -144,5 +175,23 @@ test(
       world,
       /QUEST_FULL_URAI_WORLD_VERIFIED/,
     )
+  },
+)
+
+test(
+  'XR world source contains no unresolved merge-conflict markers',
+  async () => {
+    const sources = await Promise.all([
+      readFile(pageUrl, 'utf8'),
+      readFile(worldUrl, 'utf8'),
+      readFile(runtimeUrl, 'utf8'),
+      readFile(entryUrl, 'utf8'),
+    ])
+
+    for (const source of sources) {
+      assert.doesNotMatch(source, /^<<<<<<< /m)
+      assert.doesNotMatch(source, /^=======\s*$/m)
+      assert.doesNotMatch(source, /^>>>>>>> /m)
+    }
   },
 )

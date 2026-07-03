@@ -1,6 +1,11 @@
 'use client'
 
-import { useCallback, useEffect, useRef, useState } from 'react'
+import {
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+} from 'react'
 import { useRouter } from 'next/navigation'
 import QuestVrEntryButton from './QuestVrEntryButton'
 import styles from './UraiQuestEntryWorld.module.css'
@@ -52,15 +57,20 @@ function runtimeSessionForRightHandTurning(
       const turnSources =
         rightHandSources.length > 0
           ? rightHandSources
-          : sources.filter((source) => source.handedness !== 'left')
+          : sources.filter(
+              (source) => source.handedness !== 'left',
+            )
 
-      return turnSources as ArrayLike<{ gamepad?: Gamepad }>
+      return turnSources as ArrayLike<{
+        gamepad?: Gamepad
+      }>
     },
   }
 }
 
 export default function UraiQuestEntryWorldV2() {
   const router = useRouter()
+
   const mountRef = useRef<HTMLDivElement>(null)
   const runtimeRef = useRef<UraiXrWorldRuntime | null>(null)
 
@@ -74,22 +84,25 @@ export default function UraiQuestEntryWorldV2() {
   const openRoute = useCallback(
     async (route: string, label: string) => {
       const runtime = runtimeRef.current
-      const destination =
-        route === '/spatial/life-map' ? '/life-map' : route
 
-      setMessage(`Opening ${label}…`)
+      const destination =
+        route === '/spatial/life-map'
+          ? '/life-map'
+          : route
 
       if (runtime?.session) {
         try {
           await runtime.session.end()
         } catch {
-          // Continue navigation if the browser already ended the XR session.
+          // Continue navigation if the browser already ended
+          // the immersive session.
         } finally {
           runtime.session = null
           setVrActive(false)
         }
       }
 
+      setMessage(`Opening ${label}…`)
       router.push(destination)
     },
     [router],
@@ -97,7 +110,10 @@ export default function UraiQuestEntryWorldV2() {
 
   useEffect(() => {
     const mount = mountRef.current
-    if (!mount) return
+
+    if (!mount) {
+      return
+    }
 
     try {
       const runtime = new UraiXrWorldRuntime(
@@ -123,7 +139,10 @@ export default function UraiQuestEntryWorldV2() {
       runtimeRef.current = runtime
 
       window.addEventListener('blur', clearHeldControls)
-      document.addEventListener('visibilitychange', clearWhenHidden)
+      document.addEventListener(
+        'visibilitychange',
+        clearWhenHidden,
+      )
 
       setRendererReady(true)
       setMessage(
@@ -131,7 +150,10 @@ export default function UraiQuestEntryWorldV2() {
       )
 
       return () => {
-        window.removeEventListener('blur', clearHeldControls)
+        window.removeEventListener(
+          'blur',
+          clearHeldControls,
+        )
         document.removeEventListener(
           'visibilitychange',
           clearWhenHidden,
@@ -140,7 +162,9 @@ export default function UraiQuestEntryWorldV2() {
         clearHeldControls()
 
         if (runtime.session) {
-          void runtime.session.end().catch(() => undefined)
+          void runtime.session
+            .end()
+            .catch(() => undefined)
         }
 
         runtime.session = null
@@ -148,7 +172,9 @@ export default function UraiQuestEntryWorldV2() {
         runtimeRef.current = null
       }
     } catch {
+      runtimeRef.current = null
       setRendererReady(false)
+      setVrActive(false)
       setMessage(
         'Real-time 3D is unavailable on this device. The accessible portal controls remain active.',
       )
@@ -156,45 +182,55 @@ export default function UraiQuestEntryWorldV2() {
   }, [openRoute])
 
   useEffect(() => {
-    if (runtimeRef.current) {
-      runtimeRef.current.reducedMotion = reducedMotion
+    const runtime = runtimeRef.current
+
+    if (runtime) {
+      runtime.reducedMotion = reducedMotion
     }
   }, [reducedMotion])
 
-  const attachSession = useCallback(async (session: object) => {
-    const runtime = runtimeRef.current
+  const attachSession = useCallback(
+    async (session: object) => {
+      const runtime = runtimeRef.current
 
-    if (!runtime) {
-      throw new Error('XR renderer is not ready')
-    }
+      if (!runtime) {
+        throw new Error('XR renderer is not ready')
+      }
 
-    const nativeSession = session as XrSessionLike
+      const nativeSession = session as XrSessionLike
 
-    runtime.session =
-      runtimeSessionForRightHandTurning(nativeSession)
+      runtime.session =
+        runtimeSessionForRightHandTurning(nativeSession)
 
-    try {
-      await runtime.renderer.xr.setSession(session as never)
+      try {
+        await runtime.renderer.xr.setSession(
+          session as never,
+        )
 
-      setVrActive(true)
-      setMessage(
-        'Immersive world active. Aim and select a portal, or select the floor to teleport.',
-      )
-    } catch (error) {
-      runtime.session = null
-      setVrActive(false)
-      throw error
-    }
-  }, [])
+        setVrActive(true)
+        setMessage(
+          'Immersive world active. Aim and select a portal, or select the floor to teleport.',
+        )
+      } catch (error) {
+        runtime.session = null
+        setVrActive(false)
+
+        throw error
+      }
+    },
+    [],
+  )
 
   const handleSessionEnded = useCallback(() => {
-    if (runtimeRef.current) {
-      runtimeRef.current.session = null
-    }
+    const runtime = runtimeRef.current
 
-    HELD_CONTROL_CODES.forEach((code) => {
-      runtimeRef.current?.setKey(code, false)
-    })
+    if (runtime) {
+      runtime.session = null
+
+      HELD_CONTROL_CODES.forEach((code) => {
+        runtime.setKey(code, false)
+      })
+    }
 
     setVrActive(false)
     setMessage(
@@ -212,14 +248,19 @@ export default function UraiQuestEntryWorldV2() {
 
     try {
       await runtime.session.end()
+    } catch {
+      // The XR runtime may already have ended the session.
     } finally {
       handleSessionEnded()
     }
   }, [handleSessionEnded])
 
-  const hold = useCallback((code: string, held: boolean) => {
-    runtimeRef.current?.setKey(code, held)
-  }, [])
+  const hold = useCallback(
+    (code: string, held: boolean) => {
+      runtimeRef.current?.setKey(code, held)
+    },
+    [],
+  )
 
   const releaseTouchControls = useCallback(() => {
     hold('KeyQ', false)
@@ -233,10 +274,15 @@ export default function UraiQuestEntryWorldV2() {
       className={styles.world}
       data-testid="urai-quest-explorable-world"
       data-quest-proof="QUEST_IMMERSIVE_ENTRY_VERIFIED_MINIMAL_SHELL"
-      data-renderer-ready={rendererReady ? 'true' : 'false'}
+      data-renderer-ready={
+        rendererReady ? 'true' : 'false'
+      }
       aria-label="URAI explorable XR entry world"
     >
-      <div ref={mountRef} className={styles.mount} />
+      <div
+        ref={mountRef}
+        className={styles.mount}
+      />
 
       <header className={styles.hud}>
         <p>URAI XR ENTRY · LIVE 3D</p>
@@ -266,7 +312,9 @@ export default function UraiQuestEntryWorldV2() {
 
         <button
           type="button"
-          onClick={() => runtimeRef.current?.recenter()}
+          onClick={() => {
+            runtimeRef.current?.recenter()
+          }}
         >
           Recenter
         </button>
@@ -275,7 +323,7 @@ export default function UraiQuestEntryWorldV2() {
           type="button"
           aria-pressed={reducedMotion}
           onClick={() => {
-            setReducedMotion((value) => !value)
+            setReducedMotion((current) => !current)
           }}
         >
           {reducedMotion
@@ -293,7 +341,10 @@ export default function UraiQuestEntryWorldV2() {
             key={portal.id}
             type="button"
             onClick={() => {
-              void openRoute(portal.route, portal.label)
+              void openRoute(
+                portal.route,
+                portal.label,
+              )
             }}
           >
             {portal.label}
@@ -312,8 +363,12 @@ export default function UraiQuestEntryWorldV2() {
           aria-label="Turn left"
           onPointerDown={() => hold('KeyQ', true)}
           onPointerUp={() => hold('KeyQ', false)}
-          onPointerCancel={() => hold('KeyQ', false)}
-          onPointerLeave={() => hold('KeyQ', false)}
+          onPointerCancel={() =>
+            hold('KeyQ', false)
+          }
+          onPointerLeave={() =>
+            hold('KeyQ', false)
+          }
         >
           ↶
         </button>
@@ -323,8 +378,12 @@ export default function UraiQuestEntryWorldV2() {
           aria-label="Move forward"
           onPointerDown={() => hold('KeyW', true)}
           onPointerUp={() => hold('KeyW', false)}
-          onPointerCancel={() => hold('KeyW', false)}
-          onPointerLeave={() => hold('KeyW', false)}
+          onPointerCancel={() =>
+            hold('KeyW', false)
+          }
+          onPointerLeave={() =>
+            hold('KeyW', false)
+          }
         >
           ↑
         </button>
@@ -334,8 +393,12 @@ export default function UraiQuestEntryWorldV2() {
           aria-label="Move backward"
           onPointerDown={() => hold('KeyS', true)}
           onPointerUp={() => hold('KeyS', false)}
-          onPointerCancel={() => hold('KeyS', false)}
-          onPointerLeave={() => hold('KeyS', false)}
+          onPointerCancel={() =>
+            hold('KeyS', false)
+          }
+          onPointerLeave={() =>
+            hold('KeyS', false)
+          }
         >
           ↓
         </button>
@@ -345,17 +408,22 @@ export default function UraiQuestEntryWorldV2() {
           aria-label="Turn right"
           onPointerDown={() => hold('KeyE', true)}
           onPointerUp={() => hold('KeyE', false)}
-          onPointerCancel={() => hold('KeyE', false)}
-          onPointerLeave={() => hold('KeyE', false)}
+          onPointerCancel={() =>
+            hold('KeyE', false)
+          }
+          onPointerLeave={() =>
+            hold('KeyE', false)
+          }
         >
           ↷
         </button>
       </div>
 
       <p className={styles.help}>
-        Desktop: drag to look · WASD move · Q/E or arrows turn ·
-        R recenter. Quest: controller ray selects portals; select
-        the floor to teleport; right thumbstick snaps 30°.
+        Desktop: drag to look · WASD move · Q/E or
+        arrows turn · R recenter. Quest: controller ray
+        selects portals; select the floor to teleport;
+        right thumbstick snaps 30°.
       </p>
     </section>
   )
