@@ -12,22 +12,22 @@ function read(relativePath) {
 }
 
 const replayPage = read('src/app/replay/page.tsx')
+const finalMemorySurfaces = read('src/app/FinalMemorySurfaces.tsx')
 const replayUnwindButton = read('src/app/replay/ReplayUnwindButton.tsx')
 const replayRoute = read('src/app/replay/[replayId]/page.tsx')
-const memoryRouteClient = read('src/spatial/layout/MemoryRouteClient.tsx')
-const memoryModeSurface = read('src/spatial/layout/MemoryModeSurfaceV2.tsx')
 const tierOneExperience = read('src/spatial/layout/TierOneExperience.tsx')
 
-test('replay route remains wired to the static-safe cinematic replay shell', () => {
-  assert.match(replayPage, /MemoryRouteClient/)
-  assert.match(replayPage, /mode="replay"/)
-  assert.match(memoryRouteClient, /MemoryModeSurfaceV2/)
-  assert.match(memoryRouteClient, /mode: 'focus' \| 'replay'/)
-  assert.match(memoryModeSurface, /URAI Replay · living memory film/)
-  assert.match(memoryModeSurface, /playing cinematic replay/)
-  assert.match(memoryModeSurface, /progressPercent/)
-  assert.match(memoryModeSurface, /Replay playback controls/)
-  assert.match(memoryModeSurface, /Return Focus/)
+test('replay route remains wired to the final cinematic memory film owner', () => {
+  assert.match(replayPage, /FinalReplayFilm/)
+  assert.match(replayPage, /replay-route-launch-fingerprint/)
+  assert.match(replayPage, /replay-thread-film-beats/)
+  assert.match(finalMemorySurfaces, /export function FinalReplayFilm/)
+  assert.match(finalMemorySurfaces, /cinematic-memory-camera-film/)
+  assert.match(finalMemorySurfaces, /Memory film\./)
+  assert.match(finalMemorySurfaces, /Replay thread active/)
+  assert.match(finalMemorySurfaces, /Film beats/)
+  assert.match(finalMemorySurfaces, /Open Mirror/)
+  assert.match(finalMemorySurfaces, /Unwind to Focus/)
 })
 
 test('replay direct route resolves only demo-safe replay ids and fails closed', () => {
