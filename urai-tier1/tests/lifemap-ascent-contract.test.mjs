@@ -7,7 +7,6 @@ const homeSource = fs.readFileSync(new URL('../src/app/HomeSpatialWorldFinal.tsx
 const transitionCss = fs.readFileSync(new URL('../src/app/urai-canon-camera-transitions.css', import.meta.url), 'utf8')
 const galaxySource = fs.readFileSync(new URL('../src/components/lifemap/RealLifeMapGalaxy.tsx', import.meta.url), 'utf8')
 
-
 test('Life Map route resolves directly to the final galaxy after Home ascent', () => {
   assert.match(pageSource, /RealLifeMapGalaxy/)
   assert.doesNotMatch(pageSource, /LifeMapAscentGate|TierOneExperience/)
@@ -20,12 +19,13 @@ test('Home ascent truth and camera state remain separate from destination readin
   assert.match(homeSource, /data-transition-target=\{transitionTarget \?\? 'idle'\}/)
   assert.match(homeSource, /transitionTarget === 'sky'/)
   assert.match(homeSource, /urai-genesis-home__camera-ascent-signal/)
-  assert.match(homeSource, /Camera ascends into your Life Map/)
-  assert.match(homeSource, /Avatar and orb stay anchored in Home\/Ground/)
+  assert.match(homeSource, /data-home-avatar-orb="anchored-at-home"/)
+  assert.match(homeSource, /The orb stays anchored at Home\. Ground and Life Map are camera moves\./)
 })
 
 test('ascent copy stays cinematic and avoids obsolete loading overlays', () => {
-  assert.match(homeSource, /Click the sky/)
+  assert.match(homeSource, /<span style=\{thresholdEyebrowStyle\}>Sky<\/span>/)
+  assert.match(homeSource, /<strong style=\{thresholdLabelStyle\}>Ascend<\/strong>/)
   assert.match(homeSource, /Ground below · memory above/)
   assert.doesNotMatch(pageSource, /ASCENT ACTIVE|Preparing your memory map|Opening your Life Map\./)
 })
