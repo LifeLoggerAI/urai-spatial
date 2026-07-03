@@ -46,6 +46,11 @@ export default function SpatialArVrPage() {
           <small>First-person operations floor: sanctuary, objects, helpers, and routes.</small>
         </Link>
 
+        <div className="urai-xr-portal__orb" aria-hidden="true">
+          <b />
+          <i />
+          <span />
+        </div>
         <div className="urai-xr-portal__ring urai-xr-portal__ring--one" />
         <div className="urai-xr-portal__ring urai-xr-portal__ring--two" />
         <div className="urai-xr-portal__ring urai-xr-portal__ring--three" />
@@ -61,7 +66,7 @@ export default function SpatialArVrPage() {
 
       <XrCapabilitySignal />
 
-      <aside className="fixed bottom-24 right-4 z-30 w-[min(390px,calc(100vw-2rem))] rounded-3xl border border-cyan-100/15 bg-slate-950/75 p-4 text-white shadow-2xl shadow-black/40 backdrop-blur-2xl">
+      <aside className="relative z-30 mx-4 mt-6 w-auto rounded-3xl border border-cyan-100/15 bg-slate-950/75 p-4 text-white shadow-2xl shadow-black/40 backdrop-blur-2xl md:fixed md:bottom-24 md:right-4 md:mx-0 md:mt-0 md:w-[min(390px,calc(100vw-2rem))]">
         <p className="text-[10px] font-black uppercase tracking-[0.24em] text-cyan-200">Quest 2 manual test</p>
         <ol className="mt-3 list-decimal space-y-2 pl-5 text-sm font-semibold leading-6 text-slate-100/80">
           <li>Open Quest Browser.</li>
