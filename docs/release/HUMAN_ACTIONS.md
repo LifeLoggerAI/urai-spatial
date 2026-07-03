@@ -38,7 +38,7 @@ Reason: no paid work or billing change was authorized in this pass.
 
 ## DNS ownership
 
-Use domain-owner access for any Foundation, Storytime, or other standalone-domain cutover and record the approved target and rollback records.
+Use domain-owner access for any Foundation, Storytime, or other standalone-domain cutover and record the approved target and recovery records.
 
 Reason: registrar and DNS ownership are external to repository authority.
 
