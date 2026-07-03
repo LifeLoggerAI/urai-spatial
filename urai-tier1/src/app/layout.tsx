@@ -43,6 +43,7 @@ import UraiAAAARoutePolish from './UraiAAAARoutePolish'
 import './urai-aaaa-final-pass.css'
 import './urai-proof-machine.css'
 import UraiAutonomousV1Layer from './UraiAutonomousV1Layer'
+import UraiV2OnboardingLayer from './UraiV2OnboardingLayer'
 import './aaa-graphics-rebuild-20260702.css'
 import './mobile-viewport-final-fixes.css'
 import './aaa-visual-authority-20260703.css'
@@ -67,6 +68,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html lang="en">
       <body
         data-urai-home-spatial-shell="true"
+        data-urai-living-state-layer="v2"
         style={{ margin: 0, background: '#08030f', overflowX: 'hidden' }}
       >
         <UraiAAAARoutePolish />
@@ -75,6 +77,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <UraiFinalAssetSpineBridge />
         {children}
         <UraiAutonomousV1Layer />
+        <UraiV2OnboardingLayer />
       </body>
     </html>
   )
