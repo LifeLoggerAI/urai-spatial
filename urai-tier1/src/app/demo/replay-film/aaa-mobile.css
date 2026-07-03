@@ -31,8 +31,18 @@
 }
 
 .urai-replay-film-route main section:first-of-type > div:nth-child(2) > div {
+  width: min(240px, 56%);
   max-width: 270px;
+  aspect-ratio: 1;
   margin-inline: auto;
+  overflow: hidden;
+  border: 1px solid rgba(216, 250, 255, .32) !important;
+  border-radius: 50% !important;
+  color: transparent !important;
+  font-size: 0 !important;
+  background:
+    radial-gradient(circle at 42% 35%, rgba(255,255,255,.22), transparent 28%),
+    url('/assets/urai/ui/orb-active.webp') center / cover !important;
   box-shadow: 0 0 72px rgba(105,226,255,.52), 0 0 160px rgba(167,139,250,.30) !important;
 }
 
@@ -88,7 +98,7 @@
   }
 
   .urai-replay-film-route main section:first-of-type > div:nth-child(2) > div {
-    width: min(270px, 76vw) !important;
+    width: min(230px, 68vw) !important;
   }
 
   .urai-replay-film-route main section:last-of-type {
