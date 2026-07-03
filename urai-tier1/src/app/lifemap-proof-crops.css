@@ -1,0 +1,86 @@
+/* Screenshot-proven Life Map safety pass. Loaded last to stop legacy headline and node-label cropping. */
+
+@media (min-width: 761px) {
+  .lifeGalaxy .mapHud {
+    width: min(330px, calc(100vw - 2rem)) !important;
+    max-height: none !important;
+    overflow: visible !important;
+  }
+
+  .lifeGalaxy .mapHud h1 {
+    max-width: 8.2ch !important;
+    font-size: clamp(2.55rem, 3.8vw, 4rem) !important;
+    line-height: .88 !important;
+  }
+
+  .lifeGalaxy .mapHud span {
+    display: block !important;
+  }
+}
+
+@media (max-width: 760px) {
+  .lifeGalaxy .mapHud {
+    width: min(258px, calc(100vw - 1rem)) !important;
+    max-height: none !important;
+    overflow: visible !important;
+  }
+
+  .lifeGalaxy .mapHud h1 {
+    max-width: 8.2ch !important;
+    font-size: clamp(2rem, 10.5vw, 2.65rem) !important;
+    line-height: .9 !important;
+  }
+
+  .lifeGalaxy .mapHud span {
+    display: none !important;
+  }
+
+  .lifeGalaxy .memoryNode .nodeLabel {
+    width: min(164px, 42vw) !important;
+    max-width: min(164px, 42vw) !important;
+    padding: .5rem .58rem !important;
+    text-align: center !important;
+    white-space: normal !important;
+  }
+
+  .lifeGalaxy .memoryNode .nodeLabel strong,
+  .lifeGalaxy .memoryNode .nodeLabel em {
+    max-width: 100% !important;
+    overflow-wrap: anywhere !important;
+    white-space: normal !important;
+  }
+
+  .lifeGalaxy .memoryNode .nodeLabel em {
+    font-size: .5rem !important;
+    line-height: 1.2 !important;
+    letter-spacing: .045em !important;
+  }
+
+  .lifeGalaxy .starDock {
+    bottom: 4.9rem !important;
+    width: calc(100vw - 1rem) !important;
+    max-height: none !important;
+    overflow: visible !important;
+  }
+
+  .lifeGalaxy .portalRail {
+    width: calc(100vw - 1rem) !important;
+    box-sizing: border-box !important;
+  }
+}
+
+@media (max-width: 420px), (max-height: 680px) {
+  .lifeGalaxy .mapHud {
+    max-height: none !important;
+  }
+
+  .lifeGalaxy .memoryNode .nodeLabel {
+    width: min(148px, 40vw) !important;
+    max-width: min(148px, 40vw) !important;
+  }
+
+  .lifeGalaxy .starDock {
+    bottom: 4.75rem !important;
+    max-height: none !important;
+  }
+}
