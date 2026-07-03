@@ -13,7 +13,7 @@ type RuntimeInputSource = { gamepad?: Gamepad; handedness?: string }
 function runtimeSessionForRightHandTurning(session: XrSessionLike): XrSessionLike {
   return {
     end: () => session.end(),
-    addEventListener: (type, listener, options) => session.addEventListener(type, listener, options),
+    addEventListener: (type: string, listener: () => void, options?: { once?: boolean }) => session.addEventListener(type, listener, options),
     get inputSources() {
       const sources = Array.from((session.inputSources ?? []) as ArrayLike<RuntimeInputSource>)
       const rightHandSources = sources.filter((source) => source.handedness === 'right')
