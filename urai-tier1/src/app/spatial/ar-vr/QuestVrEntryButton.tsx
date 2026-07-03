@@ -33,6 +33,8 @@ export default function QuestVrEntryButton({ onSessionRequested, onSessionEnded 
       return
     }
 
+    let requestedSession: QuestSession | null = null
+
     try {
       const supported = await xr.isSessionSupported?.('immersive-vr').catch(() => false)
       if (supported === false) {
@@ -43,15 +45,21 @@ export default function QuestVrEntryButton({ onSessionRequested, onSessionEnded 
         requiredFeatures: ['local-floor'],
         optionalFeatures: ['bounded-floor', 'hand-tracking'],
       })
-      await onSessionRequested?.(session)
+      requestedSession = session
+      let sessionEnded = false
       session.addEventListener?.('end', () => {
+        sessionEnded = true
         setActive(false)
         setCopy('Immersive session ended safely. The chamber remains available.')
         onSessionEnded?.()
       }, { once: true })
+      await onSessionRequested?.(session)
+      if (sessionEnded) return
       setActive(true)
       setCopy('Immersive world active. Select a portal or select the floor to teleport.')
     } catch {
+      await requestedSession?.end?.().catch(() => undefined)
+      setActive(false)
       setCopy('VR entry was cancelled or rejected. The non-XR world is still active.')
     } finally {
       setBusy(false)
