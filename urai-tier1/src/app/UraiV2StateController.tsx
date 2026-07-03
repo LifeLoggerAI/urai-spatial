@@ -17,13 +17,13 @@ const consentValues = new Set<ConsentState>([
 function V2StateControllerContent() {
   const pathname = usePathname() || "";
   const searchParams = useSearchParams();
-  const query = searchParams.toString();
+  const query = searchParams?.toString() ?? "";
   const [announcement, setAnnouncement] = useState("V2 living state ready");
 
   useEffect(() => {
-    const kind = inferMemoryKind(searchParams.get("memoryId"));
+    const kind = inferMemoryKind(searchParams?.get("memoryId") ?? null);
     const memory = resolveMemoryState(kind);
-    const requested = searchParams.get("consent") as ConsentState | null;
+    const requested = searchParams?.get("consent") as ConsentState | null | undefined;
     const consent = requested && consentValues.has(requested) ? requested : "private";
     const passport = resolveConsentState(consent);
     const body = document.body;

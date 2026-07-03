@@ -1,9 +1,9 @@
 name: XR Static Gate Diagnostics
 
 on:
-  push:
+  pull_request:
     branches:
-      - feature/quest-explorable-entry-world-20260703
+      - main
   workflow_dispatch:
 
 permissions:
@@ -22,13 +22,13 @@ jobs:
         with:
           version: "10.0.0"
       - name: Install dependencies
-        run: pnpm install --no-frozen-lockfile
+        run: pnpm install --frozen-lockfile
       - name: Run static gates independently
         shell: bash
         run: |
           set +e
           : > xr-static-gates.log
-          for gate in check:source-integrity check:production-routes check:spatial-copy check:launch-boundary-contract check:spatial; do
+          for gate in check:source-integrity check:production-routes check:spatial-copy check:launch-boundary-contract check:spatial typecheck; do
             echo "===== $gate =====" | tee -a xr-static-gates.log
             pnpm "$gate" 2>&1 | tee -a xr-static-gates.log
             code=${PIPESTATUS[0]}
