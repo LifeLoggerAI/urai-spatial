@@ -39,6 +39,17 @@ test('desktop, touch and Quest locomotion controls remain explicit', async () =>
   assert.match(world, /Recenter/)
   assert.match(world, /Reduced motion/)
   assert.match(world, /Touch movement controls/)
+  assert.match(world, /right thumbstick snaps 30°/)
+})
+
+test('post-merge boundary hardening keeps navigation and input safe', async () => {
+  const world = await readFile(worldUrl, 'utf8')
+  assert.match(world, /route === '\/spatial\/life-map' \? '\/life-map' : route/)
+  assert.match(world, /source\.handedness === 'right'/)
+  assert.match(world, /source\.handedness !== 'left'/)
+  assert.match(world, /window\.addEventListener\('blur'/)
+  assert.match(world, /document\.addEventListener\('visibilitychange'/)
+  assert.match(world, /runtimeRef\.current\.session = null/)
 })
 
 test('Quest session is attached to the active renderer and retains honest proof status', async () => {
