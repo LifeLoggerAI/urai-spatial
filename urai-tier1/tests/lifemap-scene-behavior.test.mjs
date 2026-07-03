@@ -19,12 +19,16 @@ test('RealLifeMapGalaxy preserves memory stars and selected-star camera pull', (
   assert.ok(source.includes('--selected-y'), 'Life Map must preserve selected star y focus variable.')
 })
 
-test('LifeMap stars route into Focus and Replay with memory identity', () => {
+test('LifeMap stars route into Focus and Replay with selected memory identity', () => {
   assert.ok(source.includes('openFocus'), 'Life Map must expose Focus entry.')
   assert.ok(source.includes('openReplay'), 'Life Map must expose Replay entry.')
   assert.ok(source.includes('focus?memoryId='), 'Focus route must carry selected memory identity.')
   assert.ok(source.includes('replay?memoryId='), 'Replay route must carry selected memory identity.')
-  assert.ok(source.includes('encodeURIComponent(selected.id)'), 'Selected memory id must be encoded into route transitions.')
+  assert.ok(source.includes('const focusHref = (memoryId: string)'), 'Focus route helper must accept one memory id.')
+  assert.ok(source.includes('const replayHref = (memoryId: string)'), 'Replay route helper must accept one memory id.')
+  assert.ok(source.includes('encodeURIComponent(memoryId)'), 'Memory ids must be encoded inside route helpers.')
+  assert.ok(source.includes('focusHref(selected.id)'), 'Focus must open the selected star identity.')
+  assert.ok(source.includes('replayHref(selected.id)'), 'Replay must open the selected star identity.')
   assert.ok(source.includes('onDoubleClick'), 'Stars must support double click into Focus.')
   assert.ok(source.includes('Double click / Enter Focus'), 'Selected star must expose the Focus cue.')
 })
