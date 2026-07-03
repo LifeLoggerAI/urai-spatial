@@ -6,11 +6,22 @@ body:has(.urai-xr-route-shell) {
 }
 
 .urai-xr-route-shell {
+  width: 100%;
   min-height: 100svh;
   overflow: visible;
+  box-sizing: border-box;
+}
+
+.urai-xr-route-shell .urai-xr-portal {
+  width: 100% !important;
+  box-sizing: border-box !important;
 }
 
 .urai-xr-route-shell .urai-xr-portal::after {
+  display: none !important;
+}
+
+.urai-xr-route-shell .urai-xr-portal__manual-proof {
   display: none !important;
 }
 
@@ -23,6 +34,12 @@ body:has(.urai-xr-route-shell) {
 }
 
 @media (max-width: 980px) {
+  html:has(.urai-xr-route-shell),
+  body:has(.urai-xr-route-shell) {
+    width: 100% !important;
+    overflow-x: hidden !important;
+  }
+
   .urai-xr-route-shell .urai-xr-portal {
     height: auto !important;
     min-height: 100svh !important;
