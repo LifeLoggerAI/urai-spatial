@@ -151,6 +151,7 @@ export default function UraiAutonomousV1Realms({ pathname }: { pathname: string 
       aria-label={realm.label}
       data-realm={realm.key}
       data-realm-art="provider-final"
+      data-release-proof="v1-provider-final"
     >
       <picture className="uraiV1SceneArt uraiRealmSceneArt" aria-hidden="true">
         <source media="(max-width: 760px)" srcSet={realm.mobile} />
