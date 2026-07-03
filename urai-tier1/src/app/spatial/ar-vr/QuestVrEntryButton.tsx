@@ -3,48 +3,56 @@
 import { useState } from 'react'
 
 type XrMode = 'immersive-vr'
-
+type QuestSession = { end?: () => Promise<void>; addEventListener?: (type: string, listener: () => void, options?: { once?: boolean }) => void }
 type QuestXrNavigator = Navigator & {
   xr?: {
     isSessionSupported?: (mode: XrMode) => Promise<boolean>
-    requestSession?: (mode: XrMode, init?: { optionalFeatures?: string[] }) => Promise<unknown>
+    requestSession?: (mode: XrMode, init?: { requiredFeatures?: string[]; optionalFeatures?: string[] }) => Promise<QuestSession>
   }
 }
 
-const idleCopy = 'On Quest Browser, press this to request immersive VR. On phone or desktop, it will keep the honest fallback visible.'
+type Props = {
+  onSessionRequested?: (session: QuestSession) => Promise<void> | void
+  onSessionEnded?: () => void
+}
 
-export default function QuestVrEntryButton() {
+const idleCopy = 'On Quest Browser, enter the live 3D chamber. Desktop and mobile keep the truthful interactive fallback visible.'
+
+export default function QuestVrEntryButton({ onSessionRequested, onSessionEnded }: Props) {
   const [copy, setCopy] = useState(idleCopy)
   const [busy, setBusy] = useState(false)
+  const [active, setActive] = useState(false)
 
   async function enterQuestVr() {
     setBusy(true)
     setCopy('Checking this browser for immersive VR support…')
-
     const xr = (navigator as QuestXrNavigator).xr
-
     if (!xr?.requestSession) {
       setBusy(false)
-      setCopy('No WebXR VR session API here. Open this route in Quest Browser, then press Enter VR from the headset.')
+      setCopy('No WebXR VR session API here. The desktop and touch world remains explorable.')
       return
     }
 
     try {
       const supported = await xr.isSessionSupported?.('immersive-vr').catch(() => false)
-
       if (supported === false) {
-        setBusy(false)
-        setCopy('This browser does not report immersive-vr support. Quest Browser manual proof is still required.')
+        setCopy('This browser does not report immersive VR support. Open this route in Quest Browser.')
         return
       }
-
-      await xr.requestSession('immersive-vr', {
-        optionalFeatures: ['local-floor', 'bounded-floor', 'hand-tracking', 'layers'],
+      const session = await xr.requestSession('immersive-vr', {
+        requiredFeatures: ['local-floor'],
+        optionalFeatures: ['bounded-floor', 'hand-tracking'],
       })
-
-      setCopy('Immersive VR session requested. Confirm readability, Life Map entry, Focus, Replay, and then record Quest proof honestly.')
+      await onSessionRequested?.(session)
+      session.addEventListener?.('end', () => {
+        setActive(false)
+        setCopy('Immersive session ended safely. The chamber remains available.')
+        onSessionEnded?.()
+      }, { once: true })
+      setActive(true)
+      setCopy('Immersive world active. Select a portal or select the floor to teleport.')
     } catch {
-      setCopy('VR request was blocked or cancelled. In Quest Browser, allow immersive mode and try again from this button.')
+      setCopy('VR entry was cancelled or rejected. The non-XR world is still active.')
     } finally {
       setBusy(false)
     }
@@ -52,10 +60,10 @@ export default function QuestVrEntryButton() {
 
   return (
     <div className="urai-xr-portal__quest-entry" data-testid="urai-quest-vr-entry-control">
-      <button type="button" onClick={enterQuestVr} disabled={busy}>
-        {busy ? 'Checking VR…' : 'Enter VR in Quest'}
+      <button type="button" onClick={enterQuestVr} disabled={busy || active}>
+        {busy ? 'Entering VR…' : active ? 'VR active' : 'Enter VR in Quest'}
       </button>
-      <p>{copy}</p>
+      <p aria-live="polite">{copy}</p>
     </div>
   )
 }
