@@ -1,0 +1,44 @@
+name: V1 Proof Completion Receipt
+
+on:
+  workflow_run:
+    workflows: ["V1 Asset Promote and Proof"]
+    types: [completed]
+
+permissions:
+  actions: read
+  issues: write
+
+jobs:
+  receipt:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/github-script@v7
+        with:
+          script: |
+            const run = context.payload.workflow_run;
+            const jobs = await github.rest.actions.listJobsForWorkflowRun({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              run_id: run.id,
+              per_page: 100
+            });
+            const lines = [
+              `run_id=${run.id}`,
+              `run_number=${run.run_number}`,
+              `conclusion=${run.conclusion}`,
+              `url=${run.html_url}`,
+              ''
+            ];
+            for (const job of jobs.data.jobs) {
+              lines.push(`job_id=${job.id} conclusion=${job.conclusion}`);
+              for (const step of job.steps || []) {
+                lines.push(`- ${step.name}: ${step.conclusion}`);
+              }
+            }
+            await github.rest.issues.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title: `V1 completed proof ${run.id}`,
+              body: lines.join('\n')
+            });
