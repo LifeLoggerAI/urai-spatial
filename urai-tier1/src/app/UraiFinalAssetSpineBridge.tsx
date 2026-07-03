@@ -124,6 +124,18 @@ const promotedManifestChecks = [
   },
 ]
 
+const fallbackAssetCss = `
+html:not([data-urai-v2-assets='ready']) .groundFinal .helper i{background-image:linear-gradient(180deg,rgba(223,250,255,.8),rgba(86,180,220,.18))!important}
+html:not([data-urai-v2-assets='ready']) .groundFinal .tableOne,html:not([data-urai-v2-assets='ready']) .groundFinal .tableTwo,html:not([data-urai-v2-assets='ready']) .groundFinal .vault,html:not([data-urai-v2-assets='ready']) .groundFinal .archiveCase{background-image:none!important}
+html:not([data-urai-v2-assets='ready']) .lifeGalaxy .memoryNode .glow::before,html:not([data-urai-v2-assets='ready']) .lifeGalaxy .memoryNode:hover .glow::before,html:not([data-urai-v2-assets='ready']) .lifeGalaxy .memoryNode.active .glow::before{background-image:var(--node-art)!important}
+html:not([data-urai-v2-assets='ready']) .memorySurface[data-route-polish='selected-memory-camera-chamber'] .memoryCard{background-image:linear-gradient(180deg,rgba(0,0,0,.02),rgba(0,0,0,.58)),url('/assets/urai/focus/focus-memory-chamber-main.webp'),url('/assets/urai/focus/focus-memory-chamber-fallback.svg')!important}
+html:not([data-urai-v2-assets='ready']) .memorySurface[data-route-polish='cinematic-memory-camera-film'] .memoryCard{background-image:linear-gradient(180deg,rgba(0,0,0,.03),rgba(0,0,0,.12) 54%,rgba(0,0,0,.72)),url('/assets/urai/replay/replay-memory-film-main.webp'),url('/assets/urai/replay/replay-memory-film-fallback.svg')!important}
+html:not([data-urai-v3-assets='ready']) .urai-xr-portal{background-image:linear-gradient(180deg,rgba(0,2,9,.14),rgba(0,2,9,.78)),url('/assets/urai/xr/xr-entry-fallback.svg')!important}
+html:not([data-urai-v3-assets='ready']) .urai-xr-portal[data-quest-proof='manual-device-required']::before{content:none!important;background-image:none!important}
+html:not([data-urai-v3-assets='ready']) .urai-xr-portal__portal-door--life{background-image:linear-gradient(180deg,rgba(0,0,0,.08),rgba(0,0,0,.62))!important}
+html:not([data-urai-v3-assets='ready']) .urai-xr-portal__portal-door--ground{background-image:linear-gradient(180deg,rgba(0,0,0,.08),rgba(0,0,0,.62)),url('/assets/urai/ground/ground-world-main.webp')!important}
+`
+
 function resolveFinalAssetRoute(pathname: string) {
   return finalAssetRoutes.find((route) => route.match(pathname)) ?? fallbackRoute
 }
@@ -161,37 +173,40 @@ export default function UraiFinalAssetSpineBridge() {
   }, [])
 
   return (
-    <aside
-      aria-hidden="true"
-      data-testid="urai-final-asset-spine-bridge"
-      data-urai-final-asset-spine="runtime-consumed"
-      data-urai-final-asset-route={route.id}
-      data-urai-final-asset-tier={route.tier}
-      data-urai-final-asset-canon={route.canon}
-      data-urai-final-asset-src={route.asset}
-      style={{
-        position: 'fixed',
-        width: 1,
-        height: 1,
-        opacity: 0,
-        pointerEvents: 'none',
-        overflow: 'hidden',
-        inset: 'auto 0 0 auto',
-        zIndex: -1,
-      }}
-    >
-      <img
-        src={route.asset}
-        alt=""
-        width={1}
-        height={1}
-        loading="eager"
-        decoding="async"
-        data-testid="urai-final-asset-spine-route-image"
-      />
-      <span data-testid="urai-final-asset-spine-manifest">
-        /assets/urai/final/manifests/urai-final-assets.json
-      </span>
-    </aside>
+    <>
+      <style data-urai-asset-readiness-guard>{fallbackAssetCss}</style>
+      <aside
+        aria-hidden="true"
+        data-testid="urai-final-asset-spine-bridge"
+        data-urai-final-asset-spine="runtime-consumed"
+        data-urai-final-asset-route={route.id}
+        data-urai-final-asset-tier={route.tier}
+        data-urai-final-asset-canon={route.canon}
+        data-urai-final-asset-src={route.asset}
+        style={{
+          position: 'fixed',
+          width: 1,
+          height: 1,
+          opacity: 0,
+          pointerEvents: 'none',
+          overflow: 'hidden',
+          inset: 'auto 0 0 auto',
+          zIndex: -1,
+        }}
+      >
+        <img
+          src={route.asset}
+          alt=""
+          width={1}
+          height={1}
+          loading="eager"
+          decoding="async"
+          data-testid="urai-final-asset-spine-route-image"
+        />
+        <span data-testid="urai-final-asset-spine-manifest">
+          /assets/urai/final/manifests/urai-final-assets.json
+        </span>
+      </aside>
+    </>
   )
 }
