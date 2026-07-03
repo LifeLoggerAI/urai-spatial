@@ -58,7 +58,7 @@ function isImplementationLine(line) {
   if (/^export\s+(type|interface|const|function)/.test(trimmed)) return true
   if (/^type\s|^interface\s/.test(trimmed)) return true
   if (/^\/\//.test(trimmed)) return true
-  if (/^(className|data-[A-Za-z-]+)=/.test(trimmed)) return true
+  if (/^(className|data-[A-Za-z-]+|href|asset|src)\s*[:=]/.test(trimmed)) return true
   return false
 }
 
