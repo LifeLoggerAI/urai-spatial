@@ -31,7 +31,7 @@ jobs:
       CI: "1"
       FORCE_COLOR: "0"
       URAI_RECEIPT_ROOT: ${{ github.workspace }}/urai-final-receipts
-      URAI_BASE_URL: ${{ inputs.base_url || 'https://urai.app' }}
+      URAI_BASE_URL: ${{ github.event_name == 'workflow_dispatch' && inputs.base_url || 'http://127.0.0.1:4173' }}
 
     steps:
       - name: Checkout
@@ -58,6 +58,13 @@ jobs:
 
       - name: Static build
         run: pnpm build:static
+
+      - name: Serve built branch for PR proof
+        if: ${{ github.event_name != 'workflow_dispatch' }}
+        run: |
+          python3 -m http.server 4173 --directory urai-tier1/out > /tmp/urai-static-server.log 2>&1 &
+          sleep 3
+          curl --fail --silent http://127.0.0.1:4173/ > /dev/null
 
       - name: Install Chromium for screenshots
         if: ${{ inputs.screenshots != 'false' }}
