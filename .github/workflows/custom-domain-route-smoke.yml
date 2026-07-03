@@ -1,0 +1,74 @@
+name: URAI Custom Domain Route Smoke
+
+on:
+  workflow_dispatch:
+  workflow_run:
+    workflows: ["URAI Spatial Live Deploy"]
+    types: [completed]
+  schedule:
+    - cron: "17 9 * * *"
+
+permissions:
+  contents: read
+  issues: write
+
+concurrency:
+  group: urai-custom-domain-route-smoke
+  cancel-in-progress: true
+
+jobs:
+  custom-domain-smoke:
+    if: ${{ github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Verify canonical custom-domain route authority
+        env:
+          URAI_DEPLOY_URL: https://urai.app
+          REQUIRE_CUSTOM_DOMAIN: "true"
+          REQUIRE_LIVE_COMMIT_SHA: "true"
+        run: node scripts/urai-live-smoke.mjs
+      - name: Open or update failure issue
+        if: failure()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const title = 'Custom-domain route authority smoke failed';
+            const marker = '<!-- urai:custom-domain-route-smoke -->';
+            const body = [
+              marker,
+              'The canonical custom-domain smoke failed.',
+              '',
+              `Workflow run: ${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`,
+              `Commit: ${context.sha}`,
+              '',
+              'Do not claim production route continuity until both slash variants resolve to the same spatial runtime and all route fingerprints pass.'
+            ].join('\n');
+            const issues = await github.paginate(github.rest.issues.listForRepo, {
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              state: 'open',
+              per_page: 100
+            });
+            const existing = issues.find(issue => !issue.pull_request && issue.title === title);
+            if (existing) {
+              await github.rest.issues.update({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: existing.number,
+                body
+              });
+            } else {
+              await github.rest.issues.create({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                title,
+                body
+              });
+            }
