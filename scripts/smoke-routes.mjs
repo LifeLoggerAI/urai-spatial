@@ -176,8 +176,8 @@ async function checkHtml(route) {
 
   if (route === '/life-map') {
     assert(
-      body.includes('urai-spatial-stage') || body.includes('lifemap-starfield') || body.includes('urai-scene-stage'),
-      `${route} missing LifeMap marker`,
+      body.includes('lifeGalaxy') || body.includes('urai-spatial-stage') || body.includes('lifemap-starfield') || body.includes('urai-scene-stage'),
+      `${route} missing canonical Life Map marker`,
     )
   }
 
