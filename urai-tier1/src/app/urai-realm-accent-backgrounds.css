@@ -10,6 +10,22 @@
   clip-path: circle(47% at 50% 50%);
 }
 
+html.urai-v2-assets-ready .uraiAutoMirror .uraiRealmAccent-1 {
+  background-image: url('/assets/urai/v2/mirror/pressure-pattern-glyph.webp') !important;
+}
+
+html.urai-v2-assets-ready .uraiAutoPassport .uraiRealmAccent-1 {
+  background-image: url('/assets/urai/v2/passport/passport-private.webp') !important;
+}
+
+html.urai-v2-assets-ready .uraiAutoPassport:has(.uraiRealmControls a[href*='export']:focus-visible) .uraiRealmAccent-1 {
+  background-image: url('/assets/urai/v2/passport/passport-export-ready.webp') !important;
+}
+
+html.urai-v2-assets-ready .uraiAutoPassport:has(.uraiRealmControls a[href*='delete']:focus-visible) .uraiRealmAccent-1 {
+  background-image: url('/assets/urai/v2/passport/passport-delete-ready.webp') !important;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .uraiRealmAccent {
     animation: none;
