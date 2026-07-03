@@ -1,76 +1,155 @@
+import type { CSSProperties } from 'react'
+import { getSceneDefinition } from '@/spatial/realms/sceneRegistry'
+
 const stations = [
-  { tag: "ENTRY", title: "Reception desk", note: "New items arrive here before anything moves." },
-  { tag: "CONSENT", title: "Privacy sanctuary", note: "Permissions, exports, boundaries, and model access stay visible." },
-  { tag: "PRIORITY", title: "Work console", note: "Inbox, files, unfinished decisions, and timing route here first." },
-  { tag: "RECOVERY", title: "Wellness corner", note: "Body signal, pressure, rhythm, and focus remain private context." },
-  { tag: "MEANING", title: "Memory archive", note: "Objects connect to places, memories, relationships, and replay." },
-  { tag: "ERRANDS", title: "Logistics bay", note: "Returns, deliveries, appointments, and home tasks wait for approval." },
-];
+  {
+    tag: 'ENTRY',
+    title: 'Reception desk',
+    note: 'New items arrive here before anything moves.',
+    detail: 'Welcome Guide receives new signals, sorts urgency, and waits for your direction.',
+    className: 'station1',
+    x: '17%',
+    y: '18%',
+  },
+  {
+    tag: 'CONSENT',
+    title: 'Privacy sanctuary',
+    note: 'Permissions, exports, boundaries, and model access stay visible.',
+    detail: 'Privacy Steward protects access, location precision, sharing, export, and deletion boundaries.',
+    className: 'station2',
+    x: '68%',
+    y: '17%',
+  },
+  {
+    tag: 'PRIORITY',
+    title: 'Work console',
+    note: 'Inbox, files, unfinished decisions, and timing route here first.',
+    detail: 'Schedule Steward prepares options and approvals without acting beyond consent.',
+    className: 'station3',
+    x: '8%',
+    y: '55%',
+  },
+  {
+    tag: 'RECOVERY',
+    title: 'Wellness corner',
+    note: 'Body signal, pressure, rhythm, and focus remain private context.',
+    detail: 'Wellness Guide holds a calm recovery lane and never turns your body into a public score.',
+    className: 'station4',
+    x: '75%',
+    y: '53%',
+  },
+  {
+    tag: 'MEANING',
+    title: 'Memory archive',
+    note: 'Objects connect to places, memories, relationships, and replay.',
+    detail: 'Memory Archivist protects source context and prepares Focus and Replay without erasing uncertainty.',
+    className: 'station5',
+    x: '26%',
+    y: '69%',
+  },
+  {
+    tag: 'ERRANDS',
+    title: 'Logistics bay',
+    note: 'Returns, deliveries, appointments, and home tasks wait for approval.',
+    detail: 'Logistics Helper assembles the next practical move and leaves final authority with you.',
+    className: 'station6',
+    x: '61%',
+    y: '70%',
+  },
+] as const
 
 const helpers = [
-  "Privacy steward",
-  "Schedule steward",
-  "Wellness guide",
-  "Memory archivist",
-  "Logistics helper",
-];
+  { name: 'Welcome Guide', className: 'helper1', x: '40%', y: '24%' },
+  { name: 'Privacy Steward', className: 'helper2', x: '58%', y: '24%' },
+  { name: 'Schedule Steward', className: 'helper3', x: '35%', y: '52%' },
+  { name: 'Wellness Guide', className: 'helper4', x: '64%', y: '52%' },
+  { name: 'Memory Archivist', className: 'helper5', x: '49%', y: '64%' },
+] as const
+
+function positioned(x: string, y: string): CSSProperties {
+  return { left: x, top: y }
+}
 
 export default function GroundPage() {
+  const scene = getSceneDefinition('ground')
+
   return (
-    <main className="groundFinal" data-route="ground" aria-label="URAI Ground private operations floor">
-      <div className="skyGlow" />
-      <div className="floorGrid" />
-      <div className="depthVignette" />
+    <main
+      className="groundFinal"
+      data-route="ground"
+      data-route-polish="walkable-first-person-ground-layer"
+      data-launch-surface="premium-embodied-ground-world"
+      data-scene-id={scene.id}
+      data-camera-preset={scene.cameraPreset}
+      data-lighting-preset={scene.lightingPreset}
+      data-privacy-level={scene.privacyLevel}
+      aria-label="URAI Ground private operations floor"
+    >
+      <div className="skyGlow" aria-hidden="true" />
+      <div className="floorGrid" aria-hidden="true" />
+      <div className="depthVignette" aria-hidden="true" />
 
       <header className="topBar">
         <div className="brand">URAI GROUND</div>
         <div className="mode">Private operations floor · first-person camera</div>
       </header>
 
-      <section className="heroCard">
+      <section className="heroCard" aria-labelledby="ground-title">
         <p className="eyebrow">CAMERA DESCENDED</p>
-        <h1>Your private floor is open.</h1>
+        <h1 id="ground-title">Your private floor is open.</h1>
         <p>
           Walk the room. Inspect real objects. Approve what helpers prepare.
           Nothing leaves your world without consent.
         </p>
       </section>
 
-      <section className="room" aria-label="walkable private operations floor">
+      <section className="room" aria-label="Walkable private operations floor">
         <div className="roomBackWall">
-          <div className="orbLens" />
+          <div className="orbLens" aria-hidden="true" />
           <div className="wallLabel">Private workforce preparing the day</div>
         </div>
 
-        <div className="table tableOne">
+        <div className="table tableOne" aria-label="Kitchen table real-life context">
           <span>Kitchen table</span>
         </div>
-        <div className="table tableTwo">
+        <div className="table tableTwo" aria-label="Work surface approval context">
           <span>Work surface</span>
         </div>
-        <div className="vault">
+        <div className="vault" aria-label="Consent vault">
           <span>Consent vault</span>
         </div>
-        <div className="archiveCase">
+        <div className="archiveCase" aria-label="Protected memory case">
           <span>Memory case</span>
         </div>
 
-        {stations.map((station, index) => (
-          <article className={`station station${index + 1}`} key={station.title}>
-            <p>{station.tag}</p>
-            <h2>{station.title}</h2>
-            <span>{station.note}</span>
-          </article>
+        {stations.map((station) => (
+          <details
+            className={`station ${station.className}`}
+            key={station.title}
+            style={positioned(station.x, station.y)}
+          >
+            <summary>
+              <span className="stationTag">{station.tag}</span>
+              <strong>{station.title}</strong>
+              <small>{station.note}</small>
+            </summary>
+            <p>{station.detail}</p>
+          </details>
         ))}
 
-        {helpers.map((helper, index) => (
-          <div className={`helper helper${index + 1}`} key={helper}>
-            <i />
-            <span>{helper}</span>
+        {helpers.map((helper) => (
+          <div
+            className={`helper ${helper.className}`}
+            key={helper.name}
+            style={positioned(helper.x, helper.y)}
+            aria-label={`${helper.name} private workforce presence`}
+          >
+            <i aria-hidden="true" />
+            <span>{helper.name}</span>
           </div>
         ))}
 
-        <div className="centerReticle">
+        <div className="centerReticle" aria-hidden="true">
           <span />
         </div>
       </section>
@@ -83,6 +162,11 @@ export default function GroundPage() {
           as places you can inspect before anything acts.
         </p>
         <a href="/spatial/ar-vr">Open XR entry</a>
+      </aside>
+
+      <aside className="mobileProofTray" aria-label="Mobile Ground World proof tray">
+        <strong>Mobile Ground World proof tray</strong>
+        <span>Reception · consent · work · wellness · memory · logistics</span>
       </aside>
 
       <footer className="navBar" aria-label="URAI route navigation">
@@ -102,500 +186,78 @@ export default function GroundPage() {
           min-height: 100svh;
           overflow: hidden;
           color: rgba(248, 250, 255, .96);
-          background:
-            radial-gradient(circle at 50% 4%, rgba(168, 220, 255, .18), transparent 30%),
-            radial-gradient(circle at 10% 90%, rgba(106, 255, 213, .10), transparent 30%),
-            linear-gradient(180deg, #071019 0%, #0d1419 42%, #060708 100%);
+          background: linear-gradient(180deg, #071019 0%, #0d1419 42%, #060708 100%);
           isolation: isolate;
           font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
         }
-
-        .skyGlow {
-          position: absolute;
-          inset: -20svh -10vw auto -10vw;
-          height: 56svh;
-          background:
-            radial-gradient(circle at 50% 40%, rgba(110, 190, 255, .30), transparent 31%),
-            radial-gradient(circle at 42% 55%, rgba(61, 255, 213, .16), transparent 23%),
-            linear-gradient(180deg, rgba(255, 232, 184, .08), transparent);
-          filter: blur(8px);
-          z-index: 0;
-        }
-
+        .skyGlow, .floorGrid, .depthVignette { position: absolute; inset: 0; pointer-events: none; }
         .floorGrid {
-          position: absolute;
           left: -18vw;
           right: -18vw;
+          top: auto;
           bottom: -9svh;
           height: 53svh;
           background:
-            linear-gradient(180deg, rgba(255,255,255,.13), rgba(255,255,255,.025) 22%, transparent 72%),
             repeating-linear-gradient(90deg, rgba(255,255,255,.10) 0 1px, transparent 1px 88px),
             repeating-linear-gradient(0deg, rgba(255,255,255,.08) 0 1px, transparent 1px 54px),
-            radial-gradient(ellipse at 50% 0%, rgba(101, 180, 255, .28), transparent 58%);
+            radial-gradient(ellipse at 50% 0%, rgba(101,180,255,.28), transparent 58%);
           transform: perspective(900px) rotateX(61deg);
-          transform-origin: 50% 0%;
-          opacity: .74;
-          z-index: 0;
+          transform-origin: 50% 0;
+          opacity: .7;
         }
-
-        .depthVignette {
-          position: absolute;
-          inset: 0;
-          background:
-            radial-gradient(circle at 50% 50%, transparent 0 42%, rgba(0,0,0,.46) 78%, rgba(0,0,0,.76)),
-            linear-gradient(90deg, rgba(0,0,0,.42), transparent 20% 80%, rgba(0,0,0,.42));
-          pointer-events: none;
-          z-index: 3;
-        }
-
-        .topBar {
-          position: relative;
-          z-index: 5;
-          margin: 1.15rem;
-          width: fit-content;
-          display: flex;
-          gap: .85rem;
-          align-items: center;
-          padding: .72rem 1rem;
-          border: 1px solid rgba(245, 224, 178, .28);
-          border-radius: 999px;
-          background: rgba(3, 6, 9, .72);
-          box-shadow: 0 16px 70px rgba(0,0,0,.36);
-          backdrop-filter: blur(18px);
-        }
-
-        .brand {
-          font-size: .74rem;
-          font-weight: 900;
-          letter-spacing: .36em;
-        }
-
-        .mode {
-          font-size: .78rem;
-          font-weight: 800;
-          opacity: .72;
-        }
-
-        .heroCard {
-          position: absolute;
-          z-index: 5;
-          left: clamp(1rem, 3.4vw, 3.6rem);
-          bottom: 8.5rem;
-          width: min(360px, 34vw);
-          padding: 1.35rem;
-          border: 1px solid rgba(245, 224, 178, .20);
-          border-radius: 1.6rem;
-          background: linear-gradient(145deg, rgba(7, 11, 14, .78), rgba(20, 18, 13, .55));
-          box-shadow: 0 28px 90px rgba(0,0,0,.36), inset 0 1px 0 rgba(255,255,255,.08);
-          backdrop-filter: blur(18px);
-        }
-
-        .eyebrow {
-          margin: 0 0 .45rem;
-          color: #f3d99d;
-          font-size: .7rem;
-          letter-spacing: .24em;
-          font-weight: 950;
-        }
-
-        .heroCard h1 {
-          margin: 0 0 .85rem;
-          max-width: 8ch;
-          font-size: clamp(2.45rem, 5.6vw, 5.3rem);
-          line-height: .82;
-          letter-spacing: -.075em;
-        }
-
-        .heroCard p,
-        .rightCard p {
-          margin: 0;
-          color: rgba(246, 249, 255, .78);
-          font-size: .95rem;
-          line-height: 1.45;
-          font-weight: 750;
-        }
-
-        .room {
-          position: absolute;
-          z-index: 2;
-          inset: 6.5rem 5vw 6.8rem 5vw;
-          perspective: 1200px;
-        }
-
-        .roomBackWall {
-          position: absolute;
-          left: 50%;
-          top: 5%;
-          width: min(440px, 36vw);
-          height: min(260px, 27svh);
-          transform: translateX(-50%);
-          border: 1px solid rgba(255, 221, 164, .19);
-          border-radius: 2rem;
-          background:
-            radial-gradient(circle at 50% 47%, rgba(112, 180, 255, .35), transparent 28%),
-            radial-gradient(circle at 32% 68%, rgba(58,255,215,.14), transparent 25%),
-            linear-gradient(160deg, rgba(18, 36, 46, .62), rgba(11, 9, 8, .72));
-          box-shadow: 0 38px 140px rgba(0,0,0,.42), inset 0 1px 0 rgba(255,255,255,.09);
-          overflow: hidden;
-        }
-
-        .roomBackWall::before {
-          content: "";
-          position: absolute;
-          inset: 23% 12% 0;
-          background:
-            radial-gradient(circle at 20% 54%, rgba(144, 255, 226, .28) 0 9px, transparent 10px),
-            radial-gradient(circle at 50% 52%, rgba(144, 255, 226, .24) 0 9px, transparent 10px),
-            radial-gradient(circle at 80% 54%, rgba(144, 255, 226, .24) 0 9px, transparent 10px),
-            linear-gradient(90deg, transparent 19%, rgba(255,255,255,.12) 20%, transparent 21% 49%, rgba(255,255,255,.10) 50%, transparent 51% 79%, rgba(255,255,255,.10) 80%, transparent 81%),
-            linear-gradient(180deg, transparent 36%, rgba(255,255,255,.09) 37%, transparent 38%);
-          opacity: .8;
-        }
-
-        .orbLens {
-          position: absolute;
-          left: 50%;
-          top: 47%;
-          width: 92px;
-          height: 92px;
-          transform: translate(-50%, -50%);
-          border-radius: 999px;
-          background:
-            radial-gradient(circle at 50% 50%, rgba(192, 214, 255, .95) 0 9px, rgba(103, 172, 255, .28) 10px 34px, transparent 35px),
-            radial-gradient(circle, rgba(106, 232, 255, .22), transparent 70%);
-          box-shadow: 0 0 70px rgba(105, 188, 255, .42);
-        }
-
-        .wallLabel {
-          position: absolute;
-          left: 1rem;
-          bottom: 1rem;
-          padding: .62rem .8rem;
-          border-radius: .9rem;
-          background: rgba(0,0,0,.46);
-          color: rgba(255,255,255,.76);
-          font-size: .72rem;
-          font-weight: 850;
-        }
-
-        .station {
-          position: absolute;
-          width: 190px;
-          padding: .88rem;
-          border: 1px solid rgba(255,255,255,.15);
-          border-radius: 1.2rem;
-          background: linear-gradient(145deg, rgba(8, 14, 18, .72), rgba(17, 15, 10, .42));
-          box-shadow: 0 20px 70px rgba(0,0,0,.26), inset 0 1px 0 rgba(255,255,255,.08);
-          backdrop-filter: blur(14px);
-        }
-
-        .station p {
-          margin: 0 0 .22rem;
-          color: #f3d99d;
-          font-size: .62rem;
-          letter-spacing: .22em;
-          font-weight: 950;
-        }
-
-        .station h2 {
-          margin: 0 0 .35rem;
-          font-size: .98rem;
-          letter-spacing: -.025em;
-        }
-
-        .station span {
-          display: block;
-          color: rgba(246, 249, 255, .62);
-          font-size: .73rem;
-          line-height: 1.32;
-          font-weight: 700;
-        }
-
-        .station1 { left: 42%; top: 1%; }
-        .station2 { left: 8%; top: 27%; }
-        .station3 { right: 8%; top: 32%; }
-        .station4 { left: 23%; bottom: 9%; }
-        .station5 { right: 18%; bottom: 8%; }
-        .station6 { right: 3%; bottom: 28%; }
-
-        .helper {
-          position: absolute;
-          display: flex;
-          align-items: center;
-          gap: .55rem;
-          padding: .48rem .75rem;
-          border: 1px solid rgba(126, 209, 255, .18);
-          border-radius: 999px;
-          background: rgba(5, 11, 15, .66);
-          color: rgba(255,255,255,.76);
-          font-size: .8rem;
-          font-weight: 850;
-          backdrop-filter: blur(12px);
-        }
-
-        .helper i {
-          width: 25px;
-          height: 25px;
-          border-radius: 999px;
-          background: radial-gradient(circle, rgba(105,220,255,.95), rgba(55,110,255,.18) 54%, transparent);
-          box-shadow: 0 0 28px rgba(90,190,255,.44);
-        }
-
-        .helper1 { left: 41%; top: 55%; }
-        .helper2 { left: 18%; bottom: 26%; }
-        .helper3 { left: 34%; bottom: 18%; }
-        .helper4 { right: 20%; bottom: 22%; }
-        .helper5 { right: 8%; bottom: 41%; }
-
-        .table,
-        .vault,
-        .archiveCase {
-          position: absolute;
-          border: 1px solid rgba(255,255,255,.11);
-          background: linear-gradient(145deg, rgba(255,255,255,.08), rgba(255,255,255,.02));
-          box-shadow: 0 28px 90px rgba(0,0,0,.30);
-          color: rgba(255,255,255,.64);
-          font-size: .72rem;
-          font-weight: 900;
-          letter-spacing: .08em;
-          text-transform: uppercase;
-        }
-
-        .tableOne {
-          left: 28%;
-          bottom: 4%;
-          width: 270px;
-          height: 54px;
-          border-radius: 999px;
-          transform: perspective(600px) rotateX(62deg);
-        }
-
-        .tableTwo {
-          right: 32%;
-          bottom: 14%;
-          width: 220px;
-          height: 44px;
-          border-radius: 999px;
-          transform: perspective(600px) rotateX(62deg);
-        }
-
-        .vault {
-          left: 11%;
-          bottom: 3%;
-          width: 98px;
-          height: 76px;
-          border-radius: 1.2rem;
-        }
-
-        .archiveCase {
-          right: 8%;
-          bottom: 9%;
-          width: 130px;
-          height: 80px;
-          border-radius: 1.2rem;
-        }
-
-        .table span,
-        .vault span,
-        .archiveCase span {
-          position: absolute;
-          inset: auto .7rem .7rem;
-        }
-
-        .centerReticle {
-          position: absolute;
-          left: 50%;
-          top: 47%;
-          width: 54px;
-          height: 54px;
-          transform: translate(-50%, -50%);
-          border-radius: 999px;
-          border: 1px solid rgba(255, 229, 175, .22);
-          box-shadow: 0 0 42px rgba(247, 209, 138, .15);
-        }
-
-        .centerReticle span {
-          position: absolute;
-          inset: 50% auto auto 50%;
-          width: 1px;
-          height: 92px;
-          background: linear-gradient(180deg, rgba(255,222,158,.6), transparent);
-          transform: translateX(-50%);
-        }
-
-        .rightCard {
-          position: absolute;
-          z-index: 5;
-          right: clamp(1rem, 3.4vw, 3.6rem);
-          bottom: 7.8rem;
-          width: min(330px, 30vw);
-          padding: 1.25rem;
-          border: 1px solid rgba(245, 224, 178, .20);
-          border-radius: 1.4rem;
-          background: linear-gradient(145deg, rgba(9, 15, 18, .78), rgba(30, 22, 10, .48));
-          box-shadow: 0 28px 90px rgba(0,0,0,.36), inset 0 1px 0 rgba(255,255,255,.08);
-          backdrop-filter: blur(18px);
-        }
-
-        .rightCard h2 {
-          margin: 0 0 .7rem;
-          font-size: 1.1rem;
-          line-height: 1.18;
-        }
-
-        .rightCard a {
-          display: inline-flex;
-          margin-top: 1rem;
-          padding: .78rem 1rem;
-          border-radius: 999px;
-          background: #f1d394;
-          color: #111;
-          font-size: .82rem;
-          font-weight: 950;
-          text-transform: uppercase;
-          letter-spacing: .06em;
-          text-decoration: none;
-        }
-
-        .navBar {
-          position: fixed;
-          z-index: 10;
-          left: 50%;
-          bottom: max(1rem, env(safe-area-inset-bottom));
-          transform: translateX(-50%);
-          display: flex;
-          gap: .42rem;
-          padding: .42rem;
-          border: 1px solid rgba(255,255,255,.16);
-          border-radius: 999px;
-          background: rgba(3, 5, 7, .78);
-          box-shadow: 0 22px 70px rgba(0,0,0,.34);
-          backdrop-filter: blur(18px);
-        }
-
-        .navBar a {
-          padding: .72rem .92rem;
-          border-radius: 999px;
-          color: white;
-          text-decoration: none;
-          font-size: .78rem;
-          font-weight: 950;
-        }
-
-        .navBar a.active {
-          background: #f1d394;
-          color: #111;
-        }
-
-        @media (max-width: 860px) {
-          .groundFinal {
-            min-height: 100svh;
-            overflow-y: auto;
-            padding-bottom: 7rem;
-          }
-
-          .topBar {
-            margin: 1rem;
-            max-width: calc(100vw - 2rem);
-          }
-
-          .mode {
-            display: none;
-          }
-
-          .room {
-            position: relative;
-            inset: auto;
-            height: 420px;
-            margin: 5.4rem 1rem 1rem;
-          }
-
-          .roomBackWall {
-            width: calc(100vw - 2rem);
-            height: 210px;
-            top: 0;
-          }
-
-          .heroCard {
-            position: relative;
-            left: auto;
-            bottom: auto;
-            width: auto;
-            margin: 1rem;
-          }
-
-          .heroCard h1 {
-            max-width: 9ch;
-            font-size: 3.15rem;
-          }
-
-          .rightCard {
-            position: relative;
-            right: auto;
-            bottom: auto;
-            width: auto;
-            margin: 1rem;
-          }
-
-          .station {
-            width: 156px;
-            padding: .72rem;
-          }
-
-          .station span {
-            display: none;
-          }
-
-          .station1 { left: 48%; top: 48%; }
-          .station2 { left: 2%; top: 49%; }
-          .station3 { right: 2%; top: 58%; }
-          .station4 { left: 4%; bottom: 6%; }
-          .station5 { right: 4%; bottom: 4%; }
-          .station6 { display: none; }
-
-          .helper {
-            font-size: .72rem;
-            padding: .38rem .55rem;
-          }
-
-          .helper span {
-            max-width: 78px;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            white-space: nowrap;
-          }
-
-          .helper1 { left: 34%; top: 42%; }
-          .helper2 { left: 4%; bottom: 28%; }
-          .helper3 { left: 38%; bottom: 22%; }
-          .helper4 { right: 5%; bottom: 24%; }
-          .helper5 { display: none; }
-
-          .tableOne {
-            left: 17%;
-            width: 220px;
-          }
-
-          .tableTwo,
-          .vault,
-          .archiveCase {
-            display: none;
-          }
-
-          .navBar {
-            width: calc(100vw - 1rem);
-            justify-content: flex-start;
-            overflow-x: auto;
-            border-radius: 1.25rem;
-            transform: translateX(-50%);
-          }
-
-          .navBar a {
-            flex: 0 0 auto;
-          }
+        .depthVignette { z-index: 3; background: radial-gradient(circle at 50% 50%, transparent 0 42%, rgba(0,0,0,.72) 100%); }
+        .topBar { position: relative; z-index: 8; display: flex; width: fit-content; gap: .8rem; margin: 1rem; padding: .7rem 1rem; border: 1px solid rgba(255,255,255,.16); border-radius: 999px; background: rgba(2,8,14,.64); backdrop-filter: blur(18px); }
+        .brand { font-size: .72rem; font-weight: 950; letter-spacing: .3em; }
+        .mode { font-size: .76rem; font-weight: 800; opacity: .65; }
+        .heroCard, .rightCard { position: absolute; z-index: 8; width: min(370px, 31vw); padding: 1.2rem; border: 1px solid rgba(255,255,255,.14); border-radius: 1.5rem; background: rgba(3,9,15,.66); backdrop-filter: blur(18px); }
+        .heroCard { left: 3vw; bottom: 7rem; }
+        .rightCard { right: 3vw; bottom: 7rem; }
+        .eyebrow { margin: 0 0 .45rem; color: #f3d99d; font-size: .64rem; font-weight: 950; letter-spacing: .22em; }
+        .heroCard h1 { margin: 0 0 .8rem; font-size: clamp(2.8rem, 5.4vw, 5.8rem); line-height: .82; letter-spacing: -.075em; }
+        .heroCard p, .rightCard p { color: rgba(246,249,255,.78); line-height: 1.5; }
+        .rightCard h2 { margin: .35rem 0 .7rem; font-size: clamp(1.5rem, 2.5vw, 2.2rem); }
+        .rightCard a { display: inline-flex; margin-top: .9rem; color: white; font-weight: 900; }
+        .room { position: absolute; z-index: 4; inset: 5rem 3vw 5.8rem; perspective: 1400px; }
+        .roomBackWall { position: absolute; left: 50%; top: 2%; width: min(720px, 54vw); height: min(390px, 43svh); transform: translateX(-50%); border: 1px solid rgba(255,255,255,.14); border-radius: 2rem; overflow: hidden; background: rgba(5,15,22,.62); }
+        .orbLens { position: absolute; left: 50%; top: 43%; width: 106px; height: 106px; transform: translate(-50%,-50%); border-radius: 50%; background: radial-gradient(circle, white 0 6%, #9ff7ff 10%, rgba(103,232,249,.18) 38%, transparent 70%); box-shadow: 0 0 80px rgba(103,232,249,.45); }
+        .wallLabel { position: absolute; left: 1rem; bottom: 1rem; padding: .55rem .75rem; border-radius: .8rem; background: rgba(0,0,0,.54); font-size: .7rem; font-weight: 900; }
+        .station { position: absolute; z-index: 7; width: 190px; padding: .75rem; border: 1px solid rgba(255,255,255,.14); border-radius: 1.15rem; background: rgba(3,10,17,.7); color: white; backdrop-filter: blur(16px); }
+        .station summary { list-style: none; cursor: pointer; }
+        .station summary::-webkit-details-marker { display: none; }
+        .stationTag { display: block; color: #f3d99d; font-size: .56rem; font-weight: 950; letter-spacing: .18em; }
+        .station strong, .station small { display: block; }
+        .station strong { margin-top: .22rem; font-size: .92rem; }
+        .station small { margin-top: .3rem; color: rgba(245,250,255,.62); font-size: .65rem; line-height: 1.35; }
+        .station > p { margin: .65rem 0 0; color: rgba(235,250,255,.78); font-size: .72rem; line-height: 1.42; }
+        .helper { position: absolute; z-index: 6; display: grid; justify-items: center; gap: .28rem; transform: translate(-50%,-50%); }
+        .helper i { width: 38px; height: 56px; border-radius: 50% 50% 42% 42%; background: linear-gradient(180deg, rgba(223,250,255,.8), rgba(86,180,220,.18)); box-shadow: 0 0 32px rgba(103,232,249,.25); }
+        .helper span { padding: .3rem .45rem; border-radius: 999px; background: rgba(0,0,0,.54); font-size: .56rem; font-weight: 900; white-space: nowrap; }
+        .table, .vault, .archiveCase { position: absolute; z-index: 5; border: 1px solid rgba(255,255,255,.12); background: rgba(7,14,18,.5); color: rgba(255,255,255,.62); font-size: .6rem; font-weight: 900; }
+        .table { width: 180px; height: 54px; border-radius: 50%; transform: perspective(500px) rotateX(60deg); }
+        .tableOne { left: 30%; top: 43%; }
+        .tableTwo { right: 27%; top: 42%; }
+        .vault { right: 8%; top: 32%; width: 88px; height: 116px; border-radius: 1rem; display: grid; place-items: end center; padding-bottom: .5rem; }
+        .archiveCase { left: 9%; top: 34%; width: 105px; height: 90px; border-radius: 1rem; display: grid; place-items: end center; padding-bottom: .5rem; }
+        .centerReticle { position: absolute; left: 50%; top: 50%; z-index: 12; width: 30px; height: 30px; transform: translate(-50%,-50%); border: 1px solid rgba(255,255,255,.32); border-radius: 50%; }
+        .centerReticle span { position: absolute; left: 50%; top: 50%; width: 4px; height: 4px; transform: translate(-50%,-50%); border-radius: 50%; background: white; box-shadow: 0 0 14px #9ff7ff; }
+        .mobileProofTray { display: none; }
+        .navBar { position: fixed; left: 50%; bottom: 1rem; z-index: 80; display: flex; max-width: calc(100vw - 1rem); gap: .35rem; padding: .4rem; overflow-x: auto; transform: translateX(-50%); border: 1px solid rgba(255,255,255,.12); border-radius: 999px; background: rgba(0,0,0,.58); backdrop-filter: blur(18px); }
+        .navBar a { padding: .5rem .75rem; border-radius: 999px; color: rgba(245,250,255,.78); text-decoration: none; font-size: .68rem; font-weight: 950; white-space: nowrap; }
+        .navBar a.active { background: rgba(225,251,255,.94); color: #020617; }
+        @media (max-width: 760px) {
+          .groundFinal { overflow-y: auto; }
+          .mode { display: none; }
+          .room { inset: 4rem .5rem 13rem; }
+          .roomBackWall { width: calc(100vw - 1rem); height: 38svh; }
+          .station, .helper, .table, .vault, .archiveCase { opacity: .32; pointer-events: none; }
+          .heroCard, .rightCard { position: relative; left: auto; right: auto; bottom: auto; width: auto; margin: 47svh .55rem 0; }
+          .rightCard { margin-top: .65rem; margin-bottom: 11rem; }
+          .mobileProofTray { position: fixed; left: .55rem; right: .55rem; bottom: 4.9rem; z-index: 70; display: grid; gap: .2rem; padding: .7rem .85rem; border: 1px solid rgba(255,255,255,.14); border-radius: 1rem; background: rgba(2,8,14,.78); backdrop-filter: blur(18px); }
+          .mobileProofTray strong { font-size: .7rem; }
+          .mobileProofTray span { color: rgba(235,250,255,.62); font-size: .62rem; }
+          .navBar { bottom: .55rem; width: calc(100vw - 1.1rem); justify-content: flex-start; }
         }
       `}</style>
     </main>
-  );
+  )
 }

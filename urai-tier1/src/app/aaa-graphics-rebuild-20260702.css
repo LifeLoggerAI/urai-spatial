@@ -1,0 +1,870 @@
+/*
+ * URAI AAA GRAPHICS REBUILD — 2026-07-02
+ * Final authoritative visual layer for Home, Ground, Life Map, Focus, and Replay.
+ * Loaded last so the production route owners remain intact while the graphics
+ * become one cinematic world instead of a stack of dashboard surfaces.
+ */
+
+:root {
+  --urai-ink: #01030a;
+  --urai-cyan: #a5f3fc;
+  --urai-blue: #67e8f9;
+  --urai-violet: #c4b5fd;
+  --urai-gold: #fde7b0;
+  --urai-glass: rgba(3, 9, 20, .62);
+  --urai-line: rgba(220, 250, 255, .16);
+  --urai-shadow: 0 34px 120px rgba(0, 0, 0, .56);
+}
+
+body {
+  background: var(--urai-ink) !important;
+}
+
+/* Shared film grain and edge depth. */
+.urai-genesis-home::after,
+.groundFinal::after,
+.lifeGalaxy::after,
+.memorySurface::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: 90;
+  pointer-events: none;
+  background:
+    radial-gradient(ellipse at center, transparent 0 48%, rgba(0, 2, 8, .34) 76%, rgba(0, 1, 5, .88) 100%),
+    url("data:image/svg+xml,%3Csvg viewBox='0 0 180 180' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.18'/%3E%3C/svg%3E");
+  mix-blend-mode: normal;
+  opacity: .78;
+}
+
+/* -------------------------------------------------------------------------- */
+/* HOME — cinematic threshold world                                           */
+/* -------------------------------------------------------------------------- */
+
+.urai-genesis-home.urai-home-spatial-world-final {
+  background: #02040b !important;
+  color: #f8fdff !important;
+  isolation: isolate;
+}
+
+.urai-genesis-home .urai-genesis-home__world {
+  inset: -3% !important;
+  overflow: hidden !important;
+  background:
+    linear-gradient(180deg, rgba(1, 4, 12, .04), rgba(1, 4, 12, .12) 46%, rgba(1, 3, 8, .72)),
+    url('/assets/urai/home/home-threshold-main.webp'),
+    url('/assets/urai/home/home-threshold-fallback.svg') !important;
+  background-size: cover !important;
+  background-position: center !important;
+  filter: saturate(1.16) contrast(1.06) brightness(.88) !important;
+  transform: translate3d(calc(var(--pointer-x, 0px) * -.18), calc(var(--pointer-y, 0px) * -.12), 0) scale(1.08) !important;
+  transition: transform .34s ease-out, filter .72s ease !important;
+}
+
+.urai-genesis-home .urai-genesis-home__world::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  pointer-events: none;
+  background:
+    radial-gradient(circle at var(--glow-x, 50%) var(--glow-y, 35%), rgba(214, 250, 255, .32), transparent 12%),
+    radial-gradient(ellipse at 50% 48%, rgba(93, 218, 255, .18), transparent 34%),
+    linear-gradient(180deg, rgba(24, 18, 55, .16), transparent 58%);
+  mix-blend-mode: screen;
+}
+
+.urai-genesis-home .urai-genesis-home__world::after {
+  content: "";
+  position: absolute;
+  left: -15%;
+  right: -15%;
+  top: 55%;
+  bottom: -32%;
+  z-index: 3;
+  pointer-events: none;
+  background:
+    repeating-linear-gradient(90deg, rgba(177, 244, 255, .11) 0 1px, transparent 1px 112px),
+    repeating-linear-gradient(0deg, rgba(177, 244, 255, .075) 0 1px, transparent 1px 74px),
+    radial-gradient(ellipse at 50% 0%, rgba(100, 218, 255, .25), transparent 58%);
+  transform: perspective(900px) rotateX(64deg);
+  transform-origin: 50% 0;
+  opacity: .46;
+  mask-image: linear-gradient(180deg, black, transparent 92%);
+}
+
+.urai-genesis-home .urai-genesis-home__sky,
+.urai-genesis-home .urai-genesis-home__deep-haze,
+.urai-genesis-home .urai-genesis-home__aurora,
+.urai-genesis-home .urai-genesis-home__ceiling,
+.urai-genesis-home .urai-genesis-home__memory-dust,
+.urai-genesis-home .urai-genesis-home__far-ring,
+.urai-genesis-home .urai-genesis-home__mist,
+.urai-genesis-home .urai-genesis-home__ground,
+.urai-genesis-home .urai-genesis-home__ground-grid {
+  mix-blend-mode: screen;
+}
+
+.urai-genesis-home .urai-genesis-home__horizon-line {
+  opacity: .72 !important;
+  box-shadow: 0 0 42px rgba(126, 223, 255, .42), 0 0 100px rgba(255, 220, 163, .18) !important;
+}
+
+.urai-genesis-home .urai-genesis-home__body {
+  z-index: 9 !important;
+  filter: drop-shadow(0 0 48px rgba(103, 232, 249, .22)) !important;
+  transform: translate3d(var(--pointer-x, 0px), var(--pointer-y, 0px), 90px) rotateX(var(--tilt-x, 0deg)) rotateY(var(--tilt-y, 0deg)) !important;
+  transition: transform .32s ease-out !important;
+}
+
+.urai-genesis-home .urai-genesis-home__hero {
+  z-index: 26 !important;
+  left: clamp(1rem, 5vw, 5.4rem) !important;
+  top: 50% !important;
+  bottom: auto !important;
+  width: min(520px, 46vw) !important;
+  max-width: none !important;
+  padding: 0 !important;
+  border: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  backdrop-filter: none !important;
+  transform: translateY(-50%) !important;
+  text-shadow: 0 18px 60px rgba(0, 0, 0, .68) !important;
+}
+
+.urai-genesis-home .urai-genesis-home__hero h1 {
+  max-width: 8ch !important;
+  font-size: clamp(3.6rem, 7.2vw, 8.4rem) !important;
+  line-height: .78 !important;
+  letter-spacing: -.095em !important;
+}
+
+.urai-genesis-home .urai-genesis-home__hero h1 span {
+  color: transparent !important;
+  background: linear-gradient(90deg, #f8ffff, #a5f3fc 48%, #e9d5ff) !important;
+  -webkit-background-clip: text !important;
+  background-clip: text !important;
+}
+
+.urai-genesis-home .urai-genesis-home__copy {
+  max-width: 36rem !important;
+  color: rgba(235, 250, 255, .76) !important;
+  font-size: clamp(.94rem, 1.35vw, 1.12rem) !important;
+  line-height: 1.55 !important;
+}
+
+.urai-genesis-home .urai-genesis-home__threshold-gate,
+.urai-genesis-home .urai-genesis-home__cta,
+.urai-genesis-home .urai-genesis-home__orb-panel,
+.urai-genesis-home .urai-genesis-home__route-card,
+.urai-genesis-home .urai-genesis-home__routes a {
+  border-color: var(--urai-line) !important;
+  background: linear-gradient(145deg, rgba(2, 8, 18, .68), rgba(6, 13, 27, .38)) !important;
+  box-shadow: 0 24px 80px rgba(0, 0, 0, .36), inset 0 1px 0 rgba(255, 255, 255, .07) !important;
+  backdrop-filter: blur(20px) saturate(1.18) !important;
+}
+
+.urai-genesis-home .urai-genesis-home__threshold-gate:hover,
+.urai-genesis-home .urai-genesis-home__cta:hover,
+.urai-genesis-home .urai-genesis-home__routes a:hover {
+  border-color: rgba(174, 244, 255, .4) !important;
+  box-shadow: 0 30px 100px rgba(0, 0, 0, .48), 0 0 52px rgba(92, 222, 255, .16) !important;
+  transform: translateY(-4px) scale(1.015) !important;
+}
+
+.urai-genesis-home .urai-genesis-home__orb {
+  filter: drop-shadow(0 0 32px rgba(103, 232, 249, .44)) !important;
+}
+
+.urai-genesis-home .urai-genesis-home__orb-shell {
+  background-image: url('/assets/urai/ui/orb-active.webp'), url('/assets/urai/ui/orb-fallback.svg') !important;
+  background-size: cover !important;
+  background-position: center !important;
+  box-shadow: 0 0 38px rgba(103, 232, 249, .48) !important;
+}
+
+.urai-genesis-home[data-transition-target='sky'] .urai-genesis-home__world {
+  transform: scale(1.2) translateY(7vh) !important;
+  filter: brightness(1.28) blur(1.4px) saturate(1.28) !important;
+}
+
+.urai-genesis-home[data-transition-target='ground'] .urai-genesis-home__world {
+  transform: scale(1.17) translateY(-9vh) !important;
+  filter: brightness(.72) saturate(1.18) !important;
+}
+
+/* -------------------------------------------------------------------------- */
+/* GROUND — real private headquarters, not a floating dashboard               */
+/* -------------------------------------------------------------------------- */
+
+.groundFinal {
+  background:
+    linear-gradient(180deg, rgba(2, 6, 11, .2), rgba(2, 5, 8, .44) 54%, rgba(1, 3, 5, .88)),
+    url('/assets/urai/ground/ground-world-main.webp'),
+    url('/assets/urai/ground/ground-world-fallback.svg') !important;
+  background-size: cover !important;
+  background-position: center !important;
+  color: #f8fdff !important;
+  isolation: isolate !important;
+}
+
+.groundFinal::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  background:
+    radial-gradient(circle at 50% 34%, rgba(177, 244, 255, .18), transparent 19%),
+    radial-gradient(ellipse at 15% 70%, rgba(103, 232, 249, .12), transparent 31%),
+    radial-gradient(ellipse at 82% 64%, rgba(253, 231, 176, .1), transparent 30%),
+    linear-gradient(180deg, rgba(0, 0, 0, .02), rgba(0, 0, 0, .42));
+  mix-blend-mode: screen;
+}
+
+.groundFinal .skyGlow {
+  opacity: .16 !important;
+  height: 24svh !important;
+  background: radial-gradient(ellipse at 50% 0%, rgba(165, 243, 252, .18), transparent 68%) !important;
+  filter: blur(28px) !important;
+}
+
+.groundFinal .floorGrid {
+  left: -20vw !important;
+  right: -20vw !important;
+  bottom: -18svh !important;
+  height: 60svh !important;
+  opacity: .38 !important;
+  filter: drop-shadow(0 0 32px rgba(103, 232, 249, .08)) !important;
+}
+
+.groundFinal .room {
+  inset: 5.4rem 3vw 5.8rem !important;
+  z-index: 4 !important;
+  perspective: 1500px !important;
+  transform-style: preserve-3d !important;
+}
+
+.groundFinal .roomBackWall {
+  width: min(720px, 54vw) !important;
+  height: min(390px, 43svh) !important;
+  top: 1% !important;
+  border-color: rgba(220, 250, 255, .18) !important;
+  background:
+    linear-gradient(180deg, rgba(3, 8, 14, .06), rgba(3, 8, 14, .58)),
+    url('/assets/urai/ground/ground-reception.webp'),
+    url('/assets/urai/ground/ground-reception-fallback.svg') !important;
+  background-size: cover !important;
+  background-position: center !important;
+  box-shadow: 0 48px 160px rgba(0, 0, 0, .58), inset 0 1px 0 rgba(255, 255, 255, .1) !important;
+  filter: saturate(1.12) contrast(1.04) !important;
+}
+
+.groundFinal .roomBackWall::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, transparent 42%, rgba(0, 0, 0, .66));
+  pointer-events: none;
+}
+
+.groundFinal .orbLens {
+  width: 116px !important;
+  height: 116px !important;
+  background-image: url('/assets/urai/ui/orb-active.webp'), url('/assets/urai/ui/orb-fallback.svg') !important;
+  background-size: cover !important;
+  background-position: center !important;
+  box-shadow: 0 0 90px rgba(105, 188, 255, .55) !important;
+  animation: uraiGroundOrb 4.4s ease-in-out infinite alternate !important;
+}
+
+.groundFinal .heroCard,
+.groundFinal .rightCard,
+.groundFinal .station,
+.groundFinal details,
+.groundFinal .mobileProofTray {
+  border-color: rgba(220, 250, 255, .15) !important;
+  background: linear-gradient(145deg, rgba(2, 8, 15, .76), rgba(11, 17, 21, .48)) !important;
+  box-shadow: var(--urai-shadow), inset 0 1px 0 rgba(255, 255, 255, .075) !important;
+  backdrop-filter: blur(22px) saturate(1.18) !important;
+}
+
+.groundFinal .heroCard {
+  left: clamp(1rem, 3vw, 3rem) !important;
+  bottom: 6.8rem !important;
+  width: min(390px, 31vw) !important;
+}
+
+.groundFinal .heroCard h1 {
+  max-width: 9ch !important;
+  font-size: clamp(2.8rem, 5.4vw, 6rem) !important;
+  line-height: .82 !important;
+}
+
+.groundFinal .rightCard {
+  right: clamp(1rem, 3vw, 3rem) !important;
+  bottom: 6.8rem !important;
+  width: min(350px, 29vw) !important;
+}
+
+.groundFinal .station {
+  overflow: hidden !important;
+  transition: transform .26s ease, border-color .26s ease, box-shadow .26s ease !important;
+}
+
+.groundFinal .station::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background: radial-gradient(circle at 20% 0%, rgba(165, 243, 252, .14), transparent 52%);
+}
+
+.groundFinal .station:hover,
+.groundFinal details[open] {
+  transform: translateY(-7px) translateZ(80px) !important;
+  border-color: rgba(165, 243, 252, .42) !important;
+  box-shadow: 0 34px 110px rgba(0, 0, 0, .54), 0 0 52px rgba(103, 232, 249, .14) !important;
+}
+
+.groundFinal .helper i {
+  background-image: url('/assets/urai/avatars/receptionist.webp'), url('/assets/urai/avatars/avatar-fallback.svg') !important;
+  background-size: cover !important;
+  background-position: center !important;
+  box-shadow: 0 0 32px rgba(103, 232, 249, .24) !important;
+}
+
+.groundFinal .navBar {
+  z-index: 80 !important;
+  border-color: rgba(220, 250, 255, .13) !important;
+  background: rgba(1, 5, 11, .66) !important;
+  backdrop-filter: blur(20px) saturate(1.2) !important;
+}
+
+/* -------------------------------------------------------------------------- */
+/* LIFE MAP — organic private galaxy with image-bearing memory stars          */
+/* -------------------------------------------------------------------------- */
+
+.lifeGalaxy {
+  background: #000107 !important;
+}
+
+.lifeGalaxy .deepSpace {
+  background-image:
+    linear-gradient(180deg, rgba(0, 0, 0, .18), rgba(0, 0, 0, .72)),
+    url('/assets/urai/life-map/life-map-galaxy-main.webp'),
+    url('/assets/urai/life-map/life-map-galaxy-fallback.svg') !important;
+  background-size: cover !important;
+  background-position: center !important;
+  opacity: .96 !important;
+  filter: saturate(1.2) brightness(.82) contrast(1.05) !important;
+  transform: scale(1.06) !important;
+}
+
+.lifeGalaxy .constellation {
+  inset: -12vh -10vw !important;
+  transform: perspective(1500px) translate3d(var(--pull-x), var(--pull-y), 0) rotateX(var(--rx)) rotateY(var(--ry)) scale(1.075) !important;
+  transition: transform 760ms cubic-bezier(.16, .84, .22, 1) !important;
+}
+
+.lifeGalaxy .galaxyBody {
+  width: 124vw !important;
+  height: 48vh !important;
+  background:
+    radial-gradient(ellipse at 50% 50%, rgba(255, 255, 255, .55), rgba(137, 235, 255, .27) 10%, rgba(139, 99, 255, .15) 31%, rgba(255, 255, 255, .035) 53%, transparent 76%),
+    radial-gradient(ellipse at 40% 56%, rgba(77, 224, 255, .3), transparent 42%),
+    radial-gradient(ellipse at 68% 42%, rgba(204, 128, 255, .26), transparent 44%) !important;
+  filter: blur(1px) saturate(1.22) !important;
+  opacity: .86 !important;
+}
+
+.lifeGalaxy .memoryNode .glow {
+  width: calc(104px * var(--s)) !important;
+  height: calc(104px * var(--s)) !important;
+  opacity: .7 !important;
+  box-shadow: 0 0 44px color-mix(in srgb, var(--hue) 38%, transparent) !important;
+}
+
+.lifeGalaxy .memoryNode .glow::before {
+  inset: 15% !important;
+  border: 1px solid rgba(255, 255, 255, .16) !important;
+  opacity: .42 !important;
+}
+
+.lifeGalaxy .memoryNode.active {
+  transform: translate(-50%, -50%) translateZ(calc(var(--z-depth) + 220px)) scale(1.34) !important;
+  filter: brightness(1.32) saturate(1.3) !important;
+}
+
+.lifeGalaxy .memoryNode.active .glow {
+  width: calc(196px * var(--s)) !important;
+  height: calc(196px * var(--s)) !important;
+  opacity: .98 !important;
+  border: 1px solid rgba(255, 255, 255, .28) !important;
+  box-shadow: 0 0 80px var(--hue), inset 0 0 36px rgba(255, 255, 255, .16) !important;
+}
+
+.lifeGalaxy .memoryNode.active .glow::before {
+  opacity: .88 !important;
+  filter: saturate(1.28) contrast(1.08) !important;
+}
+
+.lifeGalaxy .memoryNode.active .nodeLabel {
+  opacity: 1 !important;
+  transform: translateX(-50%) translateY(-8px) translateZ(160px) !important;
+  background: rgba(0, 3, 10, .72) !important;
+  border-color: rgba(165, 243, 252, .25) !important;
+  box-shadow: 0 24px 80px rgba(0, 0, 0, .58), 0 0 54px rgba(165, 243, 252, .18) !important;
+}
+
+.lifeGalaxy .selectedBeam {
+  width: 330px !important;
+  height: 330px !important;
+  opacity: .74 !important;
+  filter: blur(18px) !important;
+}
+
+.lifeGalaxy .mapHud,
+.lifeGalaxy .starDock,
+.lifeGalaxy .portalRail {
+  border-color: var(--urai-line) !important;
+  background: linear-gradient(145deg, rgba(1, 5, 14, .72), rgba(8, 12, 28, .42)) !important;
+  box-shadow: var(--urai-shadow), inset 0 1px 0 rgba(255, 255, 255, .07) !important;
+  backdrop-filter: blur(22px) saturate(1.2) !important;
+}
+
+.lifeGalaxy .mapHud {
+  width: min(370px, calc(100vw - 2rem)) !important;
+}
+
+.lifeGalaxy .mapHud h1 {
+  font-size: clamp(2.6rem, 5.6vw, 5.8rem) !important;
+  line-height: .82 !important;
+  letter-spacing: -.08em !important;
+}
+
+.lifeGalaxy .starDock {
+  width: min(380px, calc(100vw - 2rem)) !important;
+}
+
+.lifeGalaxy .dockActions button:first-child {
+  background: rgba(226, 252, 255, .95) !important;
+  color: #020617 !important;
+}
+
+/* -------------------------------------------------------------------------- */
+/* FOCUS — inside one star, one image, one doorway                            */
+/* -------------------------------------------------------------------------- */
+
+.memorySurface[data-route-polish='selected-memory-camera-chamber'] {
+  background:
+    linear-gradient(180deg, rgba(0, 1, 7, .1), rgba(0, 1, 7, .74)),
+    url('/assets/urai/focus/focus-memory-chamber-main.webp'),
+    url('/assets/urai/focus/focus-memory-chamber-fallback.svg') !important;
+  background-size: cover !important;
+  background-position: center !important;
+}
+
+.memorySurface[data-route-polish='selected-memory-camera-chamber']::before {
+  background:
+    radial-gradient(circle at 58% 44%, rgba(255, 255, 255, .22), transparent 10rem),
+    radial-gradient(circle at 58% 44%, rgba(80, 228, 255, .18), transparent 30rem),
+    linear-gradient(90deg, rgba(0, 1, 7, .82), transparent 48%, rgba(0, 1, 7, .22)) !important;
+}
+
+.memorySurface[data-route-polish='selected-memory-camera-chamber'] .memoryVoid,
+.memorySurface[data-route-polish='selected-memory-camera-chamber'] .memoryCloud,
+.memorySurface[data-route-polish='selected-memory-camera-chamber'] .memoryDust {
+  opacity: .34 !important;
+}
+
+.memorySurface[data-route-polish='selected-memory-camera-chamber'] .memoryStage {
+  grid-template-columns: minmax(300px, .78fr) minmax(420px, 1.22fr) !important;
+  gap: clamp(2rem, 6vw, 7rem) !important;
+  padding: 5rem clamp(1rem, 5vw, 6rem) 7rem !important;
+}
+
+.memorySurface[data-route-polish='selected-memory-camera-chamber'] .memoryTitle {
+  max-width: 470px !important;
+  padding: 0 !important;
+  border: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  backdrop-filter: none !important;
+  text-shadow: 0 22px 72px rgba(0, 0, 0, .72) !important;
+}
+
+.memorySurface[data-route-polish='selected-memory-camera-chamber'] .memoryTitle h1 {
+  max-width: 7ch !important;
+  font-size: clamp(4rem, 8vw, 9rem) !important;
+  line-height: .75 !important;
+}
+
+.memorySurface[data-route-polish='selected-memory-camera-chamber'] .memoryPanel {
+  position: relative !important;
+  padding: 1rem !important;
+  border-color: rgba(220, 250, 255, .17) !important;
+  background: linear-gradient(145deg, rgba(1, 6, 15, .62), rgba(8, 15, 28, .34)) !important;
+  box-shadow: 0 44px 150px rgba(0, 0, 0, .62), inset 0 1px 0 rgba(255, 255, 255, .08) !important;
+  backdrop-filter: blur(22px) saturate(1.2) !important;
+}
+
+.memorySurface[data-route-polish='selected-memory-camera-chamber'] .memoryCard {
+  min-height: min(62vh, 660px) !important;
+  border-radius: 2.2rem !important;
+  background:
+    linear-gradient(180deg, rgba(0, 0, 0, .02), rgba(0, 0, 0, .58)),
+    url('/assets/urai/focus/focus-memory-chamber-main.webp'),
+    url('/assets/urai/focus/focus-memory-chamber-fallback.svg') !important;
+  background-size: cover !important;
+  background-position: center !important;
+  box-shadow: inset 0 0 110px rgba(255, 255, 255, .08), 0 36px 120px rgba(0, 0, 0, .5) !important;
+}
+
+.memorySurface[data-route-polish='selected-memory-camera-chamber'] .memoryStarCore {
+  left: 50% !important;
+  top: 42% !important;
+  transform: scale(1.28) !important;
+}
+
+.memorySurface[data-route-polish='selected-memory-camera-chamber'] .actions a:first-child {
+  background: rgba(226, 252, 255, .96) !important;
+  color: #020617 !important;
+  box-shadow: 0 0 42px rgba(103, 232, 249, .16) !important;
+}
+
+/* -------------------------------------------------------------------------- */
+/* REPLAY — full-screen memory film, not the Focus card repeated              */
+/* -------------------------------------------------------------------------- */
+
+.memorySurface[data-route-polish='cinematic-memory-camera-film'] {
+  background:
+    linear-gradient(180deg, rgba(0, 0, 4, .04), rgba(0, 0, 4, .42) 58%, rgba(0, 0, 4, .86)),
+    url('/assets/urai/replay/replay-memory-film-main.webp'),
+    url('/assets/urai/replay/replay-memory-film-fallback.svg') !important;
+  background-size: cover !important;
+  background-position: center !important;
+}
+
+.memorySurface[data-route-polish='cinematic-memory-camera-film']::before {
+  background:
+    linear-gradient(90deg, rgba(0, 0, 5, .72), transparent 38%, transparent 68%, rgba(0, 0, 5, .36)),
+    linear-gradient(180deg, rgba(0, 0, 0, .16), transparent 38%, rgba(0, 0, 0, .74)) !important;
+}
+
+.memorySurface[data-route-polish='cinematic-memory-camera-film'] .memoryVoid,
+.memorySurface[data-route-polish='cinematic-memory-camera-film'] .memoryCloud,
+.memorySurface[data-route-polish='cinematic-memory-camera-film'] .memoryOrbit {
+  opacity: .18 !important;
+}
+
+.memorySurface[data-route-polish='cinematic-memory-camera-film'] .memoryStage {
+  display: block !important;
+  min-height: 100svh !important;
+  padding: 0 !important;
+}
+
+.memorySurface[data-route-polish='cinematic-memory-camera-film'] .memoryTitle {
+  position: absolute !important;
+  left: clamp(1rem, 4vw, 4.5rem) !important;
+  top: clamp(4.5rem, 10vh, 7rem) !important;
+  z-index: 24 !important;
+  width: min(500px, 44vw) !important;
+  padding: 0 !important;
+  border: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  backdrop-filter: none !important;
+  text-shadow: 0 22px 72px rgba(0, 0, 0, .78) !important;
+}
+
+.memorySurface[data-route-polish='cinematic-memory-camera-film'] .memoryTitle h1 {
+  font-size: clamp(4.5rem, 10vw, 11rem) !important;
+  line-height: .72 !important;
+  letter-spacing: -.1em !important;
+}
+
+.memorySurface[data-route-polish='cinematic-memory-camera-film'] .memoryPanel {
+  position: absolute !important;
+  inset: 0 !important;
+  z-index: 12 !important;
+  display: flex !important;
+  flex-direction: column !important;
+  justify-content: flex-end !important;
+  padding: 0 clamp(1rem, 4vw, 4.5rem) 6.3rem !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  backdrop-filter: none !important;
+  pointer-events: none !important;
+}
+
+.memorySurface[data-route-polish='cinematic-memory-camera-film'] .memoryCard {
+  position: absolute !important;
+  inset: 0 !important;
+  min-height: 100svh !important;
+  margin: 0 !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background:
+    linear-gradient(180deg, rgba(0, 0, 0, .03), rgba(0, 0, 0, .12) 54%, rgba(0, 0, 0, .72)),
+    url('/assets/urai/replay/replay-memory-film-main.webp'),
+    url('/assets/urai/replay/replay-memory-film-fallback.svg') !important;
+  background-size: cover !important;
+  background-position: center !important;
+  box-shadow: none !important;
+  filter: saturate(1.16) contrast(1.05) !important;
+  animation: uraiReplayCamera 18s ease-in-out infinite alternate !important;
+}
+
+.memorySurface[data-route-polish='cinematic-memory-camera-film'] .memoryCard::before {
+  top: 51% !important;
+  height: 2px !important;
+  opacity: .48 !important;
+}
+
+.memorySurface[data-route-polish='cinematic-memory-camera-film'] .memoryStarCore {
+  left: 68% !important;
+  top: 42% !important;
+  transform: scale(1.5) !important;
+  opacity: .72 !important;
+}
+
+.memorySurface[data-route-polish='cinematic-memory-camera-film'] .memoryPanel > p,
+.memorySurface[data-route-polish='cinematic-memory-camera-film'] .memoryPanel > h2,
+.memorySurface[data-route-polish='cinematic-memory-camera-film'] .memoryPanel > span,
+.memorySurface[data-route-polish='cinematic-memory-camera-film'] .beatRail {
+  position: relative !important;
+  z-index: 20 !important;
+  width: min(780px, 88vw) !important;
+  pointer-events: auto !important;
+  text-shadow: 0 14px 44px rgba(0, 0, 0, .9) !important;
+}
+
+.memorySurface[data-route-polish='cinematic-memory-camera-film'] .memoryPanel > h2 {
+  font-size: clamp(2rem, 4vw, 4rem) !important;
+}
+
+.memorySurface[data-route-polish='cinematic-memory-camera-film'] .beatRail {
+  display: flex !important;
+  gap: .42rem !important;
+  overflow-x: auto !important;
+  padding-bottom: .3rem !important;
+}
+
+.memorySurface[data-route-polish='cinematic-memory-camera-film'] .beatRail::before {
+  content: "Film beats";
+  display: inline-flex;
+  align-items: center;
+  flex: 0 0 auto;
+  color: var(--urai-cyan);
+  font-size: .58rem;
+  font-weight: 950;
+  letter-spacing: .18em;
+  text-transform: uppercase;
+}
+
+.memorySurface[data-route-polish='cinematic-memory-camera-film'] .beatRail span {
+  flex: 0 0 auto !important;
+  border-color: rgba(220, 250, 255, .15) !important;
+  background: rgba(1, 5, 14, .58) !important;
+  backdrop-filter: blur(18px) !important;
+}
+
+.memorySurface[data-route-polish='cinematic-memory-camera-film'] .beatRail span[data-active='true'] {
+  background: rgba(226, 252, 255, .94) !important;
+  color: #020617 !important;
+  box-shadow: 0 0 38px rgba(103, 232, 249, .18) !important;
+}
+
+.memorySurface .memoryNav {
+  z-index: 96 !important;
+  border-color: rgba(220, 250, 255, .14) !important;
+  background: rgba(1, 5, 13, .68) !important;
+  box-shadow: 0 20px 70px rgba(0, 0, 0, .42) !important;
+  backdrop-filter: blur(20px) saturate(1.2) !important;
+}
+
+@keyframes uraiGroundOrb {
+  to { transform: translate(-50%, -50%) translateY(-7px) scale(1.05); filter: brightness(1.14); }
+}
+
+@keyframes uraiReplayCamera {
+  0% { transform: scale(1.03) translate3d(-.8%, -.4%, 0); filter: saturate(1.05) contrast(1.02); }
+  100% { transform: scale(1.11) translate3d(1.2%, .6%, 0); filter: saturate(1.22) contrast(1.07); }
+}
+
+@media (max-width: 900px) {
+  .urai-genesis-home .urai-genesis-home__world {
+    background-image:
+      linear-gradient(180deg, rgba(1, 4, 12, .04), rgba(1, 4, 12, .12) 46%, rgba(1, 3, 8, .72)),
+      url('/assets/urai/home/home-threshold-mobile.webp'),
+      url('/assets/urai/home/home-threshold-fallback.svg') !important;
+  }
+
+  .urai-genesis-home .urai-genesis-home__hero {
+    top: 42% !important;
+    width: min(560px, calc(100vw - 2rem)) !important;
+  }
+
+  .groundFinal {
+    background-image:
+      linear-gradient(180deg, rgba(2, 6, 11, .18), rgba(2, 5, 8, .5) 54%, rgba(1, 3, 5, .9)),
+      url('/assets/urai/ground/ground-world-mobile.webp'),
+      url('/assets/urai/ground/ground-world-fallback.svg') !important;
+  }
+
+  .groundFinal .heroCard,
+  .groundFinal .rightCard {
+    width: min(360px, 42vw) !important;
+  }
+
+  .memorySurface[data-route-polish='selected-memory-camera-chamber'] {
+    background-image:
+      linear-gradient(180deg, rgba(0, 1, 7, .08), rgba(0, 1, 7, .76)),
+      url('/assets/urai/focus/focus-memory-chamber-mobile.webp'),
+      url('/assets/urai/focus/focus-memory-chamber-fallback.svg') !important;
+  }
+
+  .memorySurface[data-route-polish='selected-memory-camera-chamber'] .memoryStage {
+    grid-template-columns: 1fr !important;
+    gap: 1rem !important;
+    padding: 4.5rem 1rem 8rem !important;
+  }
+
+  .memorySurface[data-route-polish='selected-memory-camera-chamber'] .memoryTitle {
+    max-width: 430px !important;
+  }
+
+  .memorySurface[data-route-polish='selected-memory-camera-chamber'] .memoryPanel {
+    margin-top: min(8vh, 80px) !important;
+  }
+
+  .memorySurface[data-route-polish='cinematic-memory-camera-film'] .memoryCard {
+    background-image:
+      linear-gradient(180deg, rgba(0, 0, 0, .04), rgba(0, 0, 0, .12) 54%, rgba(0, 0, 0, .76)),
+      url('/assets/urai/replay/replay-memory-film-mobile.webp'),
+      url('/assets/urai/replay/replay-memory-film-fallback.svg') !important;
+  }
+}
+
+@media (max-width: 680px) {
+  .urai-genesis-home .urai-genesis-home__hero {
+    left: .8rem !important;
+    top: 34% !important;
+    width: calc(100vw - 1.6rem) !important;
+  }
+
+  .urai-genesis-home .urai-genesis-home__hero h1 {
+    font-size: clamp(3.15rem, 16vw, 5rem) !important;
+  }
+
+  .urai-genesis-home .urai-genesis-home__actions {
+    display: none !important;
+  }
+
+  .groundFinal {
+    overflow-y: auto !important;
+  }
+
+  .groundFinal .topBar {
+    margin: .55rem !important;
+  }
+
+  .groundFinal .mode {
+    display: none !important;
+  }
+
+  .groundFinal .room {
+    inset: 4rem .55rem 11rem !important;
+  }
+
+  .groundFinal .roomBackWall {
+    width: calc(100vw - 1.1rem) !important;
+    height: 38svh !important;
+  }
+
+  .groundFinal .heroCard,
+  .groundFinal .rightCard {
+    position: relative !important;
+    left: auto !important;
+    right: auto !important;
+    bottom: auto !important;
+    width: auto !important;
+    margin: 48svh .55rem 0 !important;
+  }
+
+  .groundFinal .rightCard {
+    margin-top: .65rem !important;
+    margin-bottom: 7rem !important;
+  }
+
+  .groundFinal .station,
+  .groundFinal .helper,
+  .groundFinal .table,
+  .groundFinal .vault,
+  .groundFinal .archiveCase {
+    opacity: .42 !important;
+  }
+
+  .lifeGalaxy .mapHud {
+    left: .55rem !important;
+    top: .55rem !important;
+    width: min(260px, calc(100vw - 1.1rem)) !important;
+  }
+
+  .lifeGalaxy .mapHud h1 {
+    font-size: 2.25rem !important;
+  }
+
+  .lifeGalaxy .starDock {
+    left: 50% !important;
+    right: auto !important;
+    bottom: 5.4rem !important;
+    width: calc(100vw - 1.1rem) !important;
+    transform: translateX(-50%) !important;
+  }
+
+  .lifeGalaxy .memoryNode.active .glow {
+    width: calc(150px * var(--s)) !important;
+    height: calc(150px * var(--s)) !important;
+  }
+
+  .memorySurface[data-route-polish='selected-memory-camera-chamber'] .memoryTitle h1 {
+    font-size: clamp(3.3rem, 15vw, 5.4rem) !important;
+  }
+
+  .memorySurface[data-route-polish='selected-memory-camera-chamber'] .memoryCard {
+    min-height: 42svh !important;
+  }
+
+  .memorySurface[data-route-polish='cinematic-memory-camera-film'] .memoryTitle {
+    left: .8rem !important;
+    top: 4rem !important;
+    width: calc(100vw - 1.6rem) !important;
+  }
+
+  .memorySurface[data-route-polish='cinematic-memory-camera-film'] .memoryTitle h1 {
+    font-size: clamp(4rem, 20vw, 7rem) !important;
+  }
+
+  .memorySurface[data-route-polish='cinematic-memory-camera-film'] .memoryPanel {
+    padding: 0 .8rem 6rem !important;
+  }
+
+  .memorySurface[data-route-polish='cinematic-memory-camera-film'] .memoryPanel > span {
+    max-width: 92vw !important;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .urai-genesis-home *,
+  .groundFinal *,
+  .lifeGalaxy *,
+  .memorySurface * {
+    animation: none !important;
+    transition-duration: .01ms !important;
+  }
+}
