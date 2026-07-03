@@ -44,11 +44,13 @@ const fallbackRoute: FinalAssetRoute = {
 const promotedManifestChecks = [
   {
     datasetKey: 'uraiV2Assets' as const,
+    readyClass: 'urai-v2-assets-ready',
     minimum: 80,
     href: '/assets/urai/final/manifests/v2-asset-factory-spatial-handoff.json',
   },
   {
     datasetKey: 'uraiV3Assets' as const,
+    readyClass: 'urai-v3-assets-ready',
     minimum: 39,
     href: '/assets/urai/final/manifests/v3-asset-factory-spatial-handoff.json',
   },
@@ -76,20 +78,29 @@ export default function UraiFinalAssetSpineBridge() {
 
     for (const check of promotedManifestChecks) {
       root.dataset[check.datasetKey] = 'fallback'
+      root.classList.remove(check.readyClass)
       void fetch(check.href, { cache: 'no-store', signal: controller.signal })
         .then((response) => {
           if (!response.ok) throw new Error(`manifest ${response.status}`)
           return response.json() as Promise<AssetHandoffManifest>
         })
         .then((manifest) => {
-          root.dataset[check.datasetKey] = isCompleteManifest(manifest, check.minimum) ? 'ready' : 'fallback'
+          const ready = isCompleteManifest(manifest, check.minimum)
+          root.dataset[check.datasetKey] = ready ? 'ready' : 'fallback'
+          root.classList.toggle(check.readyClass, ready)
         })
         .catch(() => {
-          if (!controller.signal.aborted) root.dataset[check.datasetKey] = 'fallback'
+          if (!controller.signal.aborted) {
+            root.dataset[check.datasetKey] = 'fallback'
+            root.classList.remove(check.readyClass)
+          }
         })
     }
 
-    return () => controller.abort()
+    return () => {
+      controller.abort()
+      for (const check of promotedManifestChecks) root.classList.remove(check.readyClass)
+    }
   }, [])
 
   return (

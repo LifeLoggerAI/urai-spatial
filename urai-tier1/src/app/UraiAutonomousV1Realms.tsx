@@ -176,7 +176,12 @@ export default function UraiAutonomousV1Realms({ pathname }: { pathname: string 
 
       <div className="uraiRealmAccents" aria-hidden="true">
         {realm.accents.map((accent, index) => (
-          <img key={accent.src} className={`uraiRealmAccent uraiRealmAccent-${index + 1}`} src={accent.src} alt="" />
+          <span
+            key={accent.src}
+            className={`uraiRealmAccent uraiRealmAccent-${index + 1}`}
+            style={{ backgroundImage: `url("${accent.src}")` }}
+            data-accent-label={accent.alt}
+          />
         ))}
       </div>
 

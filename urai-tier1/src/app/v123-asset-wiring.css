@@ -1,7 +1,69 @@
-/* Provider-promoted V2/V3 assets activate only after UraiAAAARoutePolish verifies
- * a complete handoff. V1 remains the stable fallback until then.
+/* Provider-promoted V2/V3 assets activate only after a complete, provider-backed
+ * handoff is verified. V1 remains the stable fallback until then.
  */
 
+/* V2 Ground living helpers — actual fixed runtime owner. */
+html.urai-v2-assets-ready .uraiAutoGround .uraiGroundHelper-1 .uraiGroundHelperArt {
+  background-image: url('/assets/urai/v2/helpers/welcome-guide-working.webp') !important;
+}
+html.urai-v2-assets-ready .uraiAutoGround .uraiGroundHelper-2 .uraiGroundHelperArt {
+  background-image: url('/assets/urai/v2/helpers/privacy-steward-protecting.webp') !important;
+}
+html.urai-v2-assets-ready .uraiAutoGround .uraiGroundHelper-3 .uraiGroundHelperArt {
+  background-image: url('/assets/urai/v2/helpers/schedule-steward-approval.webp') !important;
+}
+html.urai-v2-assets-ready .uraiAutoGround .uraiGroundHelper-4 .uraiGroundHelperArt {
+  background-image: url('/assets/urai/v2/helpers/wellness-guide-complete.webp') !important;
+}
+html.urai-v2-assets-ready .uraiAutoGround .uraiGroundHelper-5 .uraiGroundHelperArt {
+  background-image: url('/assets/urai/v2/helpers/archivist-protected.webp') !important;
+}
+
+html.urai-v2-assets-ready .uraiAutoGround .uraiGroundCouncil figure:nth-child(1) i {
+  background-image: url('/assets/urai/v2/helpers/relationship-liaison-blocked.webp') !important;
+}
+html.urai-v2-assets-ready .uraiAutoGround .uraiGroundCouncil figure:nth-child(2) i {
+  background-image: url('/assets/urai/v2/helpers/operator-warning.webp') !important;
+}
+html.urai-v2-assets-ready .uraiAutoGround .uraiGroundCouncil figure:nth-child(3) i {
+  background-image: url('/assets/urai/v2/helpers/logistics-helper-working.webp') !important;
+}
+html.urai-v2-assets-ready .uraiAutoGround .uraiGroundCouncil figure:nth-child(4) i {
+  background-image: url('/assets/urai/v2/helpers/privacy-steward-protecting.webp') !important;
+}
+html.urai-v2-assets-ready .uraiAutoGround .uraiGroundCouncil figure:nth-child(5) i {
+  background-image: url('/assets/urai/v2/helpers/mirror-guide-mobile.webp') !important;
+}
+html.urai-v2-assets-ready .uraiAutoGround .uraiGroundCouncil figure:nth-child(6) i {
+  background-image: url('/assets/urai/v2/helpers/welcome-guide-idle.webp') !important;
+}
+
+/* V2 Ground object states — actual inspectable station owner. */
+html.urai-v2-assets-ready .uraiAutoGround .uraiGroundObject-reception .uraiGroundObjectBody {
+  background-image: url('/assets/urai/v2/objects/keys-inspect.webp') !important;
+}
+html.urai-v2-assets-ready .uraiAutoGround .uraiGroundObject-privacy .uraiGroundObjectBody {
+  background-image: url('/assets/urai/v2/objects/privacy-lock-active.webp') !important;
+}
+html.urai-v2-assets-ready .uraiAutoGround .uraiGroundObject-work .uraiGroundObjectBody {
+  background-image: url('/assets/urai/v2/objects/work-console-approval.webp') !important;
+}
+html.urai-v2-assets-ready .uraiAutoGround .uraiGroundObject-wellness .uraiGroundObjectBody {
+  background-image: url('/assets/urai/v2/objects/body-signal-warning.webp') !important;
+}
+html.urai-v2-assets-ready .uraiAutoGround .uraiGroundObject-memory .uraiGroundObjectBody {
+  background-image: url('/assets/urai/v2/objects/memory-case-protected.webp') !important;
+}
+html.urai-v2-assets-ready .uraiAutoGround .uraiGroundObject-logistics .uraiGroundObjectBody {
+  background-image: url('/assets/urai/v2/objects/calendar-tower-complete.webp') !important;
+}
+html.urai-v2-assets-ready .uraiAutoGround .uraiGroundObjectBody {
+  background-repeat: no-repeat !important;
+  background-position: center !important;
+  background-size: contain !important;
+}
+
+/* Keep the underlying page owner compatible for non-fixed render contexts. */
 html.urai-v2-assets-ready .groundFinal .helper1 i { --state-art: url('/assets/urai/v2/helpers/welcome-guide-idle.webp'); }
 html.urai-v2-assets-ready .groundFinal .helper2 i { --state-art: url('/assets/urai/v2/helpers/privacy-steward-protecting.webp'); }
 html.urai-v2-assets-ready .groundFinal .helper3 i { --state-art: url('/assets/urai/v2/helpers/schedule-steward-approval.webp'); }
@@ -9,8 +71,8 @@ html.urai-v2-assets-ready .groundFinal .helper4 i { --state-art: url('/assets/ur
 html.urai-v2-assets-ready .groundFinal .helper5 i { --state-art: url('/assets/urai/v2/helpers/archivist-protected.webp'); }
 html.urai-v2-assets-ready .groundFinal .helper i {
   background-image: var(--state-art) !important;
-  background-size: cover !important;
-  background-position: center !important;
+  background-size: contain !important;
+  background-position: center bottom !important;
 }
 
 html.urai-v2-assets-ready .groundFinal .tableOne {
@@ -32,6 +94,7 @@ html.urai-v2-assets-ready .groundFinal .archiveCase {
   background-position: center !important;
 }
 
+/* V2 Life Map star states. */
 html.urai-v2-assets-ready .lifeGalaxy .memoryNode .glow::before {
   background-image: linear-gradient(180deg, transparent, rgba(0,0,0,.42)), url('/assets/urai/v2/stars/star-base.webp'), var(--node-art) !important;
 }
@@ -41,6 +104,29 @@ html.urai-v2-assets-ready .lifeGalaxy .memoryNode:hover .glow::before {
 html.urai-v2-assets-ready .lifeGalaxy .memoryNode.active .glow::before {
   background-image: linear-gradient(180deg, transparent, rgba(0,0,0,.25)), url('/assets/urai/v2/stars/star-selected.webp'), var(--node-art) !important;
 }
+html.urai-v2-assets-ready .lifeGalaxy .memoryNode.active:focus-visible .glow::before {
+  background-image: linear-gradient(180deg, transparent, rgba(0,0,0,.18)), url('/assets/urai/v2/stars/star-focus-ready.webp'), var(--node-art) !important;
+}
+
+/* V2 Focus and Replay variants — actual fixed runtime owners. */
+html.urai-v2-assets-ready .uraiAutoFocus .uraiFocusMemoryImage {
+  background-image: linear-gradient(180deg, rgba(0,0,0,.04), rgba(0,0,0,.38)), url('/assets/urai/v2/focus/recovery-focus-chamber.webp') !important;
+  background-position: center !important;
+  background-size: cover !important;
+}
+html.urai-v2-assets-ready .uraiAutoFocus .uraiFocusMemoryImage img {
+  opacity: .22 !important;
+  mix-blend-mode: screen;
+}
+html.urai-v2-assets-ready .uraiAutoReplay .uraiReplayCinema {
+  background-image: linear-gradient(180deg, rgba(0,0,0,.02), rgba(0,0,0,.52)), url('/assets/urai/v2/replay/daily-reset-replay-template.webp') !important;
+  background-position: center !important;
+  background-size: cover !important;
+}
+html.urai-v2-assets-ready .uraiAutoReplay .uraiReplaySceneArt {
+  opacity: .34 !important;
+  mix-blend-mode: screen;
+}
 
 html.urai-v2-assets-ready .memorySurface[data-route-polish='selected-memory-camera-chamber'] .memoryCard {
   background-image: linear-gradient(180deg, transparent, rgba(0,0,0,.58)), url('/assets/urai/v2/focus/recovery-focus-chamber.webp') !important;
@@ -49,6 +135,21 @@ html.urai-v2-assets-ready .memorySurface[data-route-polish='cinematic-memory-cam
   background-image: linear-gradient(180deg, transparent, rgba(0,0,0,.72)), url('/assets/urai/v2/replay/daily-reset-replay-template.webp') !important;
 }
 
+/* V2 reflection and ownership states — actual fixed realm owner. */
+html.urai-v2-assets-ready .uraiAutoMirror .uraiRealmAccent-1 {
+  content: url('/assets/urai/v2/mirror/pressure-pattern-glyph.webp');
+}
+html.urai-v2-assets-ready .uraiAutoPassport .uraiRealmAccent-1 {
+  content: url('/assets/urai/v2/passport/passport-private.webp');
+}
+html.urai-v2-assets-ready .uraiAutoPassport:has(.uraiRealmControls a[href*='export']:focus-visible) .uraiRealmAccent-1 {
+  content: url('/assets/urai/v2/passport/passport-export-ready.webp');
+}
+html.urai-v2-assets-ready .uraiAutoPassport:has(.uraiRealmControls a[href*='delete']:focus-visible) .uraiRealmAccent-1 {
+  content: url('/assets/urai/v2/passport/passport-delete-ready.webp');
+}
+
+/* V3 stays separately gated and never implies physical hardware proof. */
 html.urai-v3-assets-ready .urai-xr-portal {
   background-image: linear-gradient(180deg, rgba(0,2,9,.14), rgba(0,2,9,.78)), url('/assets/urai/xr/quest-entry-main.webp') !important;
   background-size: cover !important;
@@ -78,7 +179,31 @@ html.urai-v3-assets-ready .urai-xr-portal__portal-door--ground {
 }
 
 @media (max-width: 760px) {
+  html.urai-v2-assets-ready .uraiAutoGround .uraiGroundCouncil figure:nth-child(1) i {
+    background-image: url('/assets/urai/v2/helpers/relationship-liaison-blocked.webp') !important;
+  }
+  html.urai-v2-assets-ready .uraiAutoGround .uraiGroundCouncil figure:nth-child(2) i {
+    background-image: url('/assets/urai/v2/helpers/operator-warning.webp') !important;
+  }
+  html.urai-v2-assets-ready .uraiAutoGround .uraiGroundCouncil figure:nth-child(3) i {
+    background-image: url('/assets/urai/v2/helpers/logistics-helper-working.webp') !important;
+  }
+  html.urai-v2-assets-ready .uraiAutoGround .uraiGroundCouncil figure:nth-child(4) i {
+    background-image: url('/assets/urai/v2/helpers/trust-steward-mobile.webp') !important;
+  }
+  html.urai-v2-assets-ready .uraiAutoGround .uraiGroundCouncil figure:nth-child(5) i {
+    background-image: url('/assets/urai/v2/helpers/mirror-guide-mobile.webp') !important;
+  }
   html.urai-v3-assets-ready .urai-xr-portal {
     background-image: linear-gradient(180deg, rgba(0,2,9,.12), rgba(0,2,9,.82)), url('/assets/urai/xr/mobile-ar-state.webp') !important;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html.urai-v2-assets-ready .uraiAutoGround .uraiGroundHelperArt,
+  html.urai-v2-assets-ready .lifeGalaxy .memoryNode,
+  html.urai-v2-assets-ready .uraiAutoReplay .uraiReplaySceneArt {
+    animation: none !important;
+    transition: none !important;
   }
 }
