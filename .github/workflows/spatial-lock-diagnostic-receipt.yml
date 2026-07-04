@@ -25,6 +25,7 @@ jobs:
     timeout-minutes: 40
     env:
       SOURCE_SHA: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
+      LOCK_DIAGNOSTIC_DIR: artifacts/spatial-lock-diagnostics
     steps:
       - name: Checkout exact source
         uses: actions/checkout@v4
@@ -53,9 +54,9 @@ jobs:
         continue-on-error: true
         shell: bash
         run: |
-          mkdir -p artifacts/spatial-lock
+          mkdir -p "$LOCK_DIAGNOSTIC_DIR"
           set -o pipefail
-          pnpm lock:static 2>&1 | tee artifacts/spatial-lock/lock-static.log
+          pnpm lock:static 2>&1 | tee "$LOCK_DIAGNOSTIC_DIR/lock-static.log"
 
       - name: Build lock
         id: build_gate
@@ -63,9 +64,9 @@ jobs:
         continue-on-error: true
         shell: bash
         run: |
-          mkdir -p artifacts/spatial-lock
+          mkdir -p "$LOCK_DIAGNOSTIC_DIR"
           set -o pipefail
-          pnpm lock:build 2>&1 | tee artifacts/spatial-lock/lock-build.log
+          pnpm lock:build 2>&1 | tee "$LOCK_DIAGNOSTIC_DIR/lock-build.log"
 
       - name: Browser lock
         id: browser_gate
@@ -73,16 +74,18 @@ jobs:
         continue-on-error: true
         shell: bash
         run: |
-          mkdir -p artifacts/spatial-lock
+          mkdir -p "$LOCK_DIAGNOSTIC_DIR"
           set -o pipefail
-          pnpm lock:e2e 2>&1 | tee artifacts/spatial-lock/lock-e2e.log
+          pnpm lock:e2e 2>&1 | tee "$LOCK_DIAGNOSTIC_DIR/lock-e2e.log"
 
       - name: Upload diagnostic logs
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: spatial-lock-diagnostic-${{ github.run_id }}
-          path: artifacts/spatial-lock
+          path: |
+            artifacts/spatial-lock-diagnostics
+            artifacts/spatial-lock
           if-no-files-found: warn
           retention-days: 30
 
