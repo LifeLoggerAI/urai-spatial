@@ -1,0 +1,31 @@
+/* Restore the existing CSS Home when the browser cannot create the WebGL runtime. */
+html.urai-route-home:not(:has(.urai-home-spatial-runtime-layer)),
+html.urai-route-home:not(:has(.urai-home-spatial-runtime-layer)) body,
+body:has(.urai-home-spatial-world-final):not(:has(.urai-home-spatial-runtime-layer)) {
+  width: auto !important;
+  height: auto !important;
+  min-height: 100% !important;
+  overflow-x: hidden !important;
+  overflow-y: auto !important;
+  background: #02050d !important;
+}
+
+body:has(.urai-home-spatial-world-final):not(:has(.urai-home-spatial-runtime-layer)) .urai-cinematic-backdrop,
+body:has(.urai-home-spatial-world-final):not(:has(.urai-home-spatial-runtime-layer)) .urai-final-asset-spine-scene-layer {
+  display: block !important;
+}
+
+body:has(.urai-home-spatial-world-final):not(:has(.urai-home-spatial-runtime-layer)) .urai-home-spatial-world-final {
+  z-index: 3 !important;
+  min-height: 100svh !important;
+  overflow: hidden !important;
+  pointer-events: auto !important;
+  background:
+    radial-gradient(circle at var(--glow-x) var(--glow-y), rgba(164, 232, 255, .18), transparent 21rem),
+    linear-gradient(180deg, #111f3f 0%, #07172e 46%, #030914 100%) !important;
+}
+
+body:has(.urai-home-spatial-world-final):not(:has(.urai-home-spatial-runtime-layer)) .urai-home-spatial-world-final::before,
+body:has(.urai-home-spatial-world-final):not(:has(.urai-home-spatial-runtime-layer)) .urai-home-spatial-world-final .urai-genesis-home__world {
+  display: block !important;
+}
