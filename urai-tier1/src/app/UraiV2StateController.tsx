@@ -8,6 +8,7 @@ import {
   resolveMemoryState,
   type ConsentState,
 } from "@/spatial/v2/livingStateResolver";
+import "./v2-state-controller.css";
 
 const consentValues = new Set<ConsentState>([
   "private", "requested", "granted", "revoked",
