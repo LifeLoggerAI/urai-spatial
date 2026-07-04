@@ -1,4 +1,4 @@
-import { FinalReplayFilm } from '@/app/FinalMemorySurfaces'
+import CinematicReplayClient from './CinematicReplayClient'
 
 const routeFingerprintStyle = {
   position: 'absolute',
@@ -22,7 +22,7 @@ export default function ReplayRoutePage() {
       >
         Replay the thread. Film beats.
       </span>
-      <FinalReplayFilm />
+      <CinematicReplayClient />
     </>
   )
 }
