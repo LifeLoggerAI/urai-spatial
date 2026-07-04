@@ -1,6 +1,9 @@
 name: Spatial Missing Resource Diagnostics
 
 on:
+  push:
+    branches:
+      - fix/spatial-e2e-404-diagnostics
   pull_request:
     branches:
       - main
