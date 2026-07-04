@@ -1,5 +1,5 @@
-import HomeSpatialWorldFinal from './HomeSpatialWorldFinal'
+import SpatialRealmPage from './spatial/ar-vr/SpatialRealmPage'
 
 export default function FinalHomeThreshold() {
-  return <HomeSpatialWorldFinal />
+  return <SpatialRealmPage realm="home" />
 }
