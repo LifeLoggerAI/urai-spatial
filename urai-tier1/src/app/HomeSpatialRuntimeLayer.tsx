@@ -2,19 +2,38 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import HomeSpatialCanvas from './HomeSpatialCanvas'
+
+function useHomeWebGLAvailable() {
+  const [available, setAvailable] = useState<boolean | null>(null)
+
+  useEffect(() => {
+    try {
+      const canvas = document.createElement('canvas')
+      const context = canvas.getContext('webgl2') ?? canvas.getContext('webgl')
+      setAvailable(Boolean(context))
+    } catch {
+      setAvailable(false)
+    }
+  }, [])
+
+  return available
+}
 
 export default function HomeSpatialRuntimeLayer() {
   const pathname = usePathname() ?? '/'
   const [orbOpen, setOrbOpen] = useState(false)
+  const webglAvailable = useHomeWebGLAvailable()
 
   if (pathname !== '/' && pathname !== '/home') return null
+  if (webglAvailable === false) return null
 
   return (
     <section
       className="urai-home-spatial-runtime-layer"
       data-urai-home-runtime="one-continuous-webgl-world"
+      data-webgl-ready={webglAvailable === true ? 'true' : 'pending'}
       aria-label="URAI living spatial Home"
     >
       <HomeSpatialCanvas onOrbOpen={() => setOrbOpen(true)} />
