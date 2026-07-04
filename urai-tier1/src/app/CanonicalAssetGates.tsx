@@ -6,8 +6,8 @@ const handoffName = 'asset' + '-factory-spatial-handoff.json'
 
 const checks = [
   ['v2', 80, `/assets/urai/final/manifests/v2-${handoffName}`, 'urai-v2-assets-ready', 'uraiCanonicalV2Assets'],
-  ['v3', 14, `/assets/urai/final/manifests/v3-${handoffName}`, 'urai-v3-relationship-assets-ready', 'uraiCanonicalV3Assets'],
-  ['v4', 39, `/assets/urai/final/manifests/v4-${handoffName}`, 'urai-v4-assets-ready', 'uraiCanonicalV4Assets'],
+  ['v3', 14, `/assets/urai/final/manifests/v3-relationship-${handoffName}`, 'urai-v3-relationship-assets-ready', 'uraiCanonicalV3Assets'],
+  ['v4', 39, '/assets/urai/final/manifests/canonical-v4-handoff.json', 'urai-v4-assets-ready', 'uraiCanonicalV4Assets'],
 ] as const
 
 export default function CanonicalAssetGates() {
