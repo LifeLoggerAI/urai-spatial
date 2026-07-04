@@ -17,8 +17,12 @@ concurrency:
 
 jobs:
   prune:
-    name: Cancel superseded URAI Spatial runs
-    runs-on: macos-latest
+    name: Cancel superseded runs (${{ matrix.os }})
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [macos-latest, windows-latest, ubuntu-slim]
+    runs-on: ${{ matrix.os }}
     timeout-minutes: 15
     steps:
       - name: Cancel runs not owned by current canonical SHA
@@ -65,6 +69,7 @@ jobs:
             core.summary
               .addHeading('URAI Spatial release queue pruning')
               .addRaw(`Canonical SHA preserved: ${keepSha}\n`)
+              .addRaw(`Runner lane: ${{ matrix.os }}\n`)
               .addRaw(`Runs inspected: ${inspected}\n`)
               .addRaw(`Superseded runs cancelled: ${cancelled}\n`)
               .addRaw(`Unexpected cancellation failures: ${failures.length}\n`)
