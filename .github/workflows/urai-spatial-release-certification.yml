@@ -10,6 +10,10 @@ on:
       - main
       - tier-1-5-final-lock
 
+concurrency:
+  group: urai-spatial-release-certification-${{ github.base_ref || github.ref_name }}
+  cancel-in-progress: true
+
 jobs:
   certify:
     name: Build, smoke, and E2E certify URAI Spatial
@@ -25,6 +29,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
 
       - name: Setup Node
         uses: actions/setup-node@v4
@@ -50,7 +56,7 @@ jobs:
             ${{ runner.os }}-pnpm-
 
       - name: Install dependencies
-        run: pnpm install --no-frozen-lockfile
+        run: pnpm install --frozen-lockfile
 
       - name: Install Playwright system dependencies and Chromium
         run: pnpm exec playwright install --with-deps chromium
@@ -82,7 +88,6 @@ jobs:
       - name: Smoke routes
         run: |
           pnpm --filter urai-tier1 exec next start -p 3015 > /tmp/urai-spatial-next.log 2>&1 &
-          echo $! > /tmp/urai-spatial-next.pid
           for i in {1..40}; do
             if curl -fsS http://127.0.0.1:3015/ >/dev/null; then
               break
@@ -90,7 +95,6 @@ jobs:
             sleep 1
           done
           HOST=http://127.0.0.1:3015 pnpm smoke
-          kill $(cat /tmp/urai-spatial-next.pid)
 
       - name: Browser E2E
         run: pnpm test:e2e
