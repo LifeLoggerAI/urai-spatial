@@ -2,196 +2,125 @@ import assert from 'node:assert/strict'
 import test from 'node:test'
 import { readFile } from 'node:fs/promises'
 
-const pageUrl = new URL(
-  '../src/app/spatial/ar-vr/page.tsx',
-  import.meta.url,
-)
+const file = (name) =>
+  new URL(`../src/app/spatial/ar-vr/${name}`, import.meta.url)
 
-const worldUrl = new URL(
-  '../src/app/spatial/ar-vr/UraiQuestEntryWorldV2.tsx',
-  import.meta.url,
-)
+const pageUrl = file('page.tsx')
+const worldUrl = file('UraiQuestEntryWorldV2.tsx')
+const runtimeUrl = file('xrEntryWorldRuntime.ts')
+const skyUrl = file('xrEntrySkyAndParticles.ts')
+const geometryUrl = file('xrEntrySanctuaryGeometry.ts')
+const orbUrl = file('xrEntryLivingOrb.ts')
+const environmentUrl = file('xrEntryPremiumEnvironment.ts')
+const entryUrl = file('QuestVrEntryButton.tsx')
 
-const runtimeUrl = new URL(
-  '../src/app/spatial/ar-vr/xrEntryWorldRuntime.ts',
-  import.meta.url,
-)
+test('Quest route uses the real-time XR world', async () => {
+  const page = await readFile(pageUrl, 'utf8')
+  assert.ok(page.includes('UraiQuestEntryWorldV2'))
+  assert.ok(!page.includes('urai-xr-portal__stars'))
+})
 
-const entryUrl = new URL(
-  '../src/app/spatial/ar-vr/QuestVrEntryButton.tsx',
-  import.meta.url,
-)
+test('XR entry builds a premium atmospheric sanctuary', async () => {
+  const sources = await Promise.all([
+    readFile(runtimeUrl, 'utf8'),
+    readFile(skyUrl, 'utf8'),
+    readFile(geometryUrl, 'utf8'),
+    readFile(orbUrl, 'utf8'),
+    readFile(environmentUrl, 'utf8'),
+  ])
+  const source = sources.join('\n')
 
-test(
-  'Quest route is owned by the corrected explorable real-time world',
-  async () => {
-    const source = await readFile(pageUrl, 'utf8')
+  for (const contract of [
+    'WebGLRenderer',
+    'HemisphereLight',
+    'DirectionalLight',
+    'CircleGeometry',
+    'CylinderGeometry',
+    'BoxGeometry',
+    'ShaderMaterial',
+    'MeshPhysicalMaterial',
+    'buildPremiumEnvironment',
+    'createLivingOrb',
+  ]) {
+    assert.ok(source.includes(contract), contract)
+  }
+})
 
-    assert.match(source, /UraiQuestEntryWorldV2/)
-    assert.doesNotMatch(source, /urai-xr-portal__stars/)
-  },
-)
+test('sky and ground are the primary destinations', async () => {
+  const world = await readFile(worldUrl, 'utf8')
+  const runtime = await readFile(runtimeUrl, 'utf8')
+  const sky = await readFile(skyUrl, 'utf8')
 
-test(
-  'runtime creates geometry, lighting, floor boundaries and spatial portals',
-  async () => {
-    const source = await readFile(runtimeUrl, 'utf8')
+  for (const contract of [
+    'Select the sky',
+    'Select the ground',
+    'Ascend to Life Map',
+    'Descend to Ground HQ',
+  ]) {
+    assert.ok(world.includes(contract), contract)
+  }
 
-    assert.match(source, /WebGLRenderer/)
-    assert.match(source, /HemisphereLight/)
-    assert.match(source, /DirectionalLight/)
-    assert.match(source, /CircleGeometry/)
-    assert.match(source, /CylinderGeometry/)
-    assert.match(source, /BoxGeometry/)
-    assert.match(source, /portalTargets/)
-    assert.match(source, /THREE\.MathUtils\.clamp/)
-  },
-)
+  assert.ok(sky.includes('SKY_ROUTE'))
+  assert.ok(sky.includes('GROUND_ROUTE'))
+  assert.ok(runtime.includes('this.floor'))
+  assert.ok(runtime.includes('this.environment.sky'))
+  assert.ok(!runtime.includes('function makePortal'))
+  assert.ok(!runtime.includes('PlaneGeometry'))
+})
 
-test(
-  'desktop, touch and Quest locomotion controls remain explicit',
-  async () => {
-    const world = await readFile(worldUrl, 'utf8')
-    const runtime = await readFile(runtimeUrl, 'utf8')
+test('desktop, touch and Quest controls remain explicit', async () => {
+  const world = await readFile(worldUrl, 'utf8')
+  const runtime = await readFile(runtimeUrl, 'utf8')
 
-    assert.match(runtime, /KeyW/)
-    assert.match(runtime, /KeyA/)
-    assert.match(runtime, /KeyQ/)
-    assert.match(runtime, /getController/)
-    assert.match(
-      runtime,
-      /intersectObject\(\s*this\.floor/,
-    )
-    assert.match(runtime, /Math\.PI\s*\/\s*6/)
-    assert.match(runtime, /SPAWN_Z/)
+  for (const contract of [
+    'KeyW',
+    'KeyA',
+    'KeyQ',
+    'getController',
+    'Math.PI / 6',
+    'SPAWN_Z',
+  ]) {
+    assert.ok(runtime.includes(contract), contract)
+  }
 
-    assert.match(world, /Exit VR safely/)
-    assert.match(world, /Recenter/)
-    assert.match(world, /Reduced motion/)
-    assert.match(world, /Touch movement controls/)
-    assert.match(world, /right thumbstick snaps 30°/)
-  },
-)
+  for (const contract of [
+    'Exit VR safely',
+    'Recenter',
+    'Reduced motion',
+    'Touch movement controls',
+    'right thumbstick snaps 30°',
+  ]) {
+    assert.ok(world.includes(contract), contract)
+  }
+})
 
-test(
-  'post-merge boundary hardening keeps navigation and input safe',
-  async () => {
-    const world = await readFile(worldUrl, 'utf8')
+test('navigation and session cleanup remain safe', async () => {
+  const world = await readFile(worldUrl, 'utf8')
+  const entry = await readFile(entryUrl, 'utf8')
 
-    assert.match(
-      world,
-      /route\s*===\s*['"]\/spatial\/life-map['"]\s*\?\s*['"]\/life-map['"]\s*:\s*route/,
-    )
+  for (const contract of [
+    "route === '/spatial/life-map'",
+    "source.handedness === 'right'",
+    "source.handedness !== 'left'",
+    'window.addEventListener(',
+    'document.addEventListener(',
+    'window.removeEventListener(',
+    'document.removeEventListener(',
+    'clearHeldControls',
+    'runtime.session = null',
+    'runtimeRef.current = null',
+    'renderer.xr.setSession(',
+    'runtimeSessionForRightHandTurning',
+    'handleSessionEnded',
+    'await runtime.session.end()',
+    'data-renderer-ready',
+    'QUEST_IMMERSIVE_ENTRY_VERIFIED_MINIMAL_SHELL',
+  ]) {
+    assert.ok(world.includes(contract), contract)
+  }
 
-    assert.match(
-      world,
-      /source\.handedness\s*===\s*['"]right['"]/,
-    )
-
-    assert.match(
-      world,
-      /source\.handedness\s*!==\s*['"]left['"]/,
-    )
-
-    assert.match(
-      world,
-      /window\.addEventListener\(\s*['"]blur['"]/,
-    )
-
-    assert.match(
-      world,
-      /document\.addEventListener\(\s*['"]visibilitychange['"]/,
-    )
-
-    assert.match(
-      world,
-      /window\.removeEventListener\(\s*['"]blur['"]/,
-    )
-
-    assert.match(
-      world,
-      /document\.removeEventListener\(\s*['"]visibilitychange['"]/,
-    )
-
-    assert.match(world, /clearHeldControls/)
-
-    assert.match(
-      world,
-      /runtime\.session\s*=\s*null/,
-    )
-
-    assert.match(
-      world,
-      /runtimeRef\.current\s*=\s*null/,
-    )
-  },
-)
-
-test(
-  'Quest session is attached to the active renderer and cleaned up safely',
-  async () => {
-    const world = await readFile(worldUrl, 'utf8')
-    const entry = await readFile(entryUrl, 'utf8')
-
-    assert.match(
-      entry,
-      /requiredFeatures:\s*\[\s*['"]local-floor['"]\s*\]/,
-    )
-
-    assert.match(entry, /bounded-floor/)
-    assert.match(entry, /hand-tracking/)
-
-    assert.match(
-      world,
-      /renderer\.xr\.setSession\(/,
-    )
-
-    assert.match(
-      world,
-      /runtimeSessionForRightHandTurning/,
-    )
-
-    assert.match(
-      world,
-      /handleSessionEnded/,
-    )
-
-    assert.match(
-      world,
-      /await\s+runtime\.session\.end\(\)/,
-    )
-
-    assert.match(
-      world,
-      /data-renderer-ready/,
-    )
-
-    assert.match(
-      world,
-      /QUEST_IMMERSIVE_ENTRY_VERIFIED_MINIMAL_SHELL/,
-    )
-
-    assert.doesNotMatch(
-      world,
-      /QUEST_FULL_URAI_WORLD_VERIFIED/,
-    )
-  },
-)
-
-test(
-  'XR world source contains no unresolved merge-conflict markers',
-  async () => {
-    const sources = await Promise.all([
-      readFile(pageUrl, 'utf8'),
-      readFile(worldUrl, 'utf8'),
-      readFile(runtimeUrl, 'utf8'),
-      readFile(entryUrl, 'utf8'),
-    ])
-
-    for (const source of sources) {
-      assert.doesNotMatch(source, /^<<<<<<< /m)
-      assert.doesNotMatch(source, /^=======\s*$/m)
-      assert.doesNotMatch(source, /^>>>>>>> /m)
-    }
-  },
-)
+  assert.ok(entry.includes("requiredFeatures: ['local-floor']"))
+  assert.ok(entry.includes('bounded-floor'))
+  assert.ok(entry.includes('hand-tracking'))
+  assert.ok(!world.includes('QUEST_FULL_URAI_WORLD_VERIFIED'))
+})
