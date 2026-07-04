@@ -4,6 +4,7 @@ import { Html, OrbitControls, Stars } from '@react-three/drei'
 import { Canvas, useFrame, type ThreeEvent } from '@react-three/fiber'
 import { Bloom, EffectComposer, Vignette } from '@react-three/postprocessing'
 import dynamic from 'next/dynamic'
+import { useRouter } from 'next/navigation'
 import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import * as THREE from 'three'
 
@@ -12,7 +13,7 @@ type PortalSpec = {
   label: string
   detail: string
   href: string
-  position: readonly [number, number, number]
+  position: [number, number, number]
   rotationY: number
   color: string
 }
@@ -79,7 +80,7 @@ function useReducedMotionPreference() {
   return reducedMotion
 }
 
-function useWebGLAvailable() {
+export function useWebGLAvailable() {
   const [available, setAvailable] = useState<boolean | null>(null)
 
   useEffect(() => {
@@ -96,11 +97,6 @@ function useWebGLAvailable() {
 }
 
 function LivingTerrain() {
-  const pathMaterial = useMemo(
-    () => new THREE.MeshStandardMaterial({ color: '#9b978c', roughness: 0.95, metalness: 0.02 }),
-    [],
-  )
-
   return (
     <group>
       <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.08, 0]} receiveShadow>
@@ -126,12 +122,12 @@ function LivingTerrain() {
         return (
           <mesh
             key={`path-${portal.id}`}
-            material={pathMaterial}
             rotation={[-Math.PI / 2, 0, -angle]}
             position={[x, -0.025, z]}
             receiveShadow
           >
             <planeGeometry args={[1.15, Math.max(2.4, length)]} />
+            <meshStandardMaterial color="#9b978c" roughness={0.95} metalness={0.02} />
           </mesh>
         )
       })}
@@ -144,7 +140,12 @@ function LivingTerrain() {
         [-13, 3, 6.2, 2.7],
         [13, 4, 6.4, 2.9],
       ].map(([x, z, width, height], index) => (
-        <mesh key={`hill-${index}`} position={[x, height * 0.15 - 0.2, z]} scale={[width, height, width * 0.7]} receiveShadow>
+        <mesh
+          key={`hill-${index}`}
+          position={[x, height * 0.15 - 0.2, z]}
+          scale={[width, height, width * 0.7]}
+          receiveShadow
+        >
           <dodecahedronGeometry args={[1, 2]} />
           <meshStandardMaterial color={index % 2 === 0 ? '#26382e' : '#2c3e34'} roughness={1} />
         </mesh>
@@ -153,7 +154,7 @@ function LivingTerrain() {
   )
 }
 
-function Tree({ position, scale = 1 }: { position: readonly [number, number, number]; scale?: number }) {
+function Tree({ position, scale = 1 }: { position: [number, number, number]; scale?: number }) {
   return (
     <group position={position} scale={scale}>
       <mesh position={[0, 1.05, 0]} castShadow>
@@ -173,7 +174,7 @@ function Tree({ position, scale = 1 }: { position: readonly [number, number, num
 }
 
 function LandscapeDetails() {
-  const trees = [
+  const trees: Array<[number, number, number, number]> = [
     [-8.6, 0, -7.8, 1.12],
     [-5.9, 0, -10.1, 0.92],
     [-1.2, 0, -11.6, 1.04],
@@ -183,7 +184,7 @@ function LandscapeDetails() {
     [-10.6, 0, -2.4, 1.02],
     [-10.1, 0, 5.1, 0.92],
     [10.2, 0, 5.4, 1.02],
-  ] as const
+  ]
 
   return (
     <group>
@@ -258,14 +259,22 @@ function OrbCompanion({ reducedMotion, onOpen }: { reducedMotion: boolean; onOpe
   )
 }
 
-function PortalArch({ spec, onNavigate }: { spec: PortalSpec; onNavigate: (href: string) => void }) {
+function PortalArch({
+  spec,
+  onNavigate,
+  reducedMotion,
+}: {
+  spec: PortalSpec
+  onNavigate: (href: string) => void
+  reducedMotion: boolean
+}) {
   const groupRef = useRef<THREE.Group>(null)
   const [hovered, setHovered] = useState(false)
   const color = useMemo(() => new THREE.Color(spec.color), [spec.color])
 
   useFrame(({ clock }) => {
     if (!groupRef.current) return
-    const pulse = 1 + Math.sin(clock.elapsedTime * 1.7 + spec.position[0]) * 0.012
+    const pulse = reducedMotion ? 1 : 1 + Math.sin(clock.elapsedTime * 1.7 + spec.position[0]) * 0.012
     groupRef.current.scale.setScalar(hovered ? 1.035 : pulse)
   })
 
@@ -302,9 +311,22 @@ function PortalArch({ spec, onNavigate }: { spec: PortalSpec; onNavigate: (href:
       </mesh>
       <mesh position={[0, 1.56, 0.03]} onPointerOver={enter} onPointerOut={leave} onClick={open}>
         <planeGeometry args={[1.82, 2.72]} />
-        <meshBasicMaterial color={color} transparent opacity={hovered ? 0.24 : 0.11} side={THREE.DoubleSide} depthWrite={false} toneMapped={false} />
+        <meshBasicMaterial
+          color={color}
+          transparent
+          opacity={hovered ? 0.24 : 0.11}
+          side={THREE.DoubleSide}
+          depthWrite={false}
+          toneMapped={false}
+        />
       </mesh>
-      <mesh position={[0, 1.57, 0.08]} scale={[1, 1.28, 1]} onPointerOver={enter} onPointerOut={leave} onClick={open}>
+      <mesh
+        position={[0, 1.57, 0.08]}
+        scale={[1, 1.28, 1]}
+        onPointerOver={enter}
+        onPointerOut={leave}
+        onClick={open}
+      >
         <torusGeometry args={[0.82, hovered ? 0.055 : 0.035, 12, 72]} />
         <meshBasicMaterial color={color} transparent opacity={hovered ? 1 : 0.66} toneMapped={false} />
       </mesh>
@@ -312,7 +334,13 @@ function PortalArch({ spec, onNavigate }: { spec: PortalSpec; onNavigate: (href:
         <boxGeometry args={[2.55, 0.16, 1.02]} />
         <meshStandardMaterial color="#4a4c49" roughness={0.94} />
       </mesh>
-      <pointLight position={[0, 1.8, 0.5]} color={color} intensity={hovered ? 5.5 : 2.2} distance={5.5} decay={2} />
+      <pointLight
+        position={[0, 1.8, 0.5]}
+        color={color}
+        intensity={hovered ? 5.5 : 2.2}
+        distance={5.5}
+        decay={2}
+      />
       <Html center position={[0, 3.65, 0]} distanceFactor={10} transform sprite>
         <button
           type="button"
@@ -331,10 +359,11 @@ function PortalArch({ spec, onNavigate }: { spec: PortalSpec; onNavigate: (href:
 }
 
 function HomeWorldScene({ reducedMotion, onOrbOpen }: { reducedMotion: boolean; onOrbOpen: () => void }) {
+  const router = useRouter()
   const navigate = useCallback((href: string) => {
     document.body.style.cursor = 'default'
-    window.location.assign(href)
-  }, [])
+    router.push(href)
+  }, [router])
 
   return (
     <>
@@ -351,12 +380,20 @@ function HomeWorldScene({ reducedMotion, onOrbOpen }: { reducedMotion: boolean; 
         shadow-mapSize-height={1024}
       />
       <pointLight position={[0, 5, -8]} color="#9bdcf5" intensity={3.4} distance={18} />
-      <Stars radius={55} depth={35} count={reducedMotion ? 700 : 1400} factor={3.2} saturation={0.12} fade speed={reducedMotion ? 0 : 0.22} />
+      <Stars
+        radius={55}
+        depth={35}
+        count={reducedMotion ? 700 : 1400}
+        factor={3.2}
+        saturation={0.12}
+        fade
+        speed={reducedMotion ? 0 : 0.22}
+      />
       <LivingTerrain />
       <LandscapeDetails />
       <OrbCompanion reducedMotion={reducedMotion} onOpen={onOrbOpen} />
       {portalSpecs.map((spec) => (
-        <PortalArch key={spec.id} spec={spec} onNavigate={navigate} />
+        <PortalArch key={spec.id} spec={spec} onNavigate={navigate} reducedMotion={reducedMotion} />
       ))}
       <OrbitControls
         makeDefault
@@ -385,13 +422,16 @@ function HomeSpatialCanvasImpl({ onOrbOpen }: { onOrbOpen: () => void }) {
   const reducedMotion = useReducedMotionPreference()
   const webglAvailable = useWebGLAvailable()
 
+  if (webglAvailable === null) {
+    return <div className="urai-home-spatial-canvas-loading" aria-hidden="true" />
+  }
   if (webglAvailable === false) return null
 
   return (
     <div
       className="urai-home-spatial-canvas-shell"
       data-home-spatial-renderer="webgl"
-      data-webgl-ready={webglAvailable === true ? 'true' : 'pending'}
+      data-webgl-ready="true"
       aria-label="Interactive spatial Home world"
     >
       <Suspense fallback={<div className="urai-home-spatial-canvas-loading" aria-hidden="true" />}>
