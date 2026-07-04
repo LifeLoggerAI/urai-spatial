@@ -1,1 +1,455 @@
-.world{position:relative;min-height:100svh;overflow:hidden;background:#050816;color:#fff}.mount{position:absolute;inset:0}.mount canvas{display:block;width:100%;height:100%;touch-action:none}.hud{position:absolute;left:max(18px,env(safe-area-inset-left));top:max(18px,env(safe-area-inset-top));z-index:4;width:min(430px,calc(100vw - 36px));padding:16px 18px;border:1px solid rgb(153 246 228 / .25);border-radius:22px;background:rgb(3 10 24 / .72);box-shadow:0 24px 80px rgb(0 0 0 / .38);backdrop-filter:blur(18px)}.hud p{margin:0 0 6px;font-size:10px;font-weight:900;letter-spacing:.24em;color:#a5f3fc}.hud strong{display:block;font-size:clamp(18px,3vw,28px)}.hud span{display:block;margin-top:6px;font-size:13px;line-height:1.45;color:rgb(226 232 240 / .82)}.controls{position:absolute;right:max(18px,env(safe-area-inset-right));top:max(18px,env(safe-area-inset-top));z-index:5;display:flex;flex-wrap:wrap;justify-content:flex-end;gap:8px;width:min(520px,calc(100vw - 36px))}.controls button,.portals button{min-height:44px;border:1px solid rgb(165 243 252 / .28);border-radius:999px;padding:0 16px;background:rgb(7 22 40 / .8);color:#ecfeff;font-weight:800;cursor:pointer;backdrop-filter:blur(14px)}.controls button:first-child{background:linear-gradient(135deg,#0e7490,#6d28d9)}.controls button:disabled{cursor:not-allowed;opacity:.62}.portals{position:absolute;z-index:4;left:50%;bottom:max(74px,calc(54px + env(safe-area-inset-bottom)));display:flex;transform:translateX(-50%);gap:8px}.help{position:absolute;z-index:3;left:50%;bottom:max(22px,env(safe-area-inset-bottom));width:min(780px,calc(100vw - 32px));transform:translateX(-50%);margin:0;text-align:center;font-size:12px;color:rgb(226 232 240 / .72);text-shadow:0 2px 12px #000}.touch{display:none;position:absolute;z-index:5;right:max(16px,env(safe-area-inset-right));bottom:max(152px,calc(132px + env(safe-area-inset-bottom)));grid-template-columns:repeat(2,52px);gap:8px}.touch button{width:52px;height:52px;border:1px solid rgb(165 243 252 / .32);border-radius:18px;background:rgb(4 18 34 / .76);color:#fff;font-size:24px;font-weight:900;touch-action:none}.fallback{position:absolute;inset:auto 16px 16px;z-index:2;color:transparent;pointer-events:none}@media(max-width:760px){.hud{width:calc(100vw - 32px);padding:13px 15px}.controls{top:auto;right:auto;left:16px;bottom:max(214px,calc(194px + env(safe-area-inset-bottom)));justify-content:flex-start;width:calc(100vw - 104px)}.controls button{min-height:40px;padding:0 12px;font-size:12px}.portals{bottom:max(84px,calc(64px + env(safe-area-inset-bottom)));width:calc(100vw - 32px);overflow-x:auto;justify-content:flex-start}.portals button{flex:0 0 auto;min-height:40px;font-size:12px}.touch{display:grid}.help{bottom:max(20px,env(safe-area-inset-bottom));font-size:10px}}@media(prefers-reduced-motion:reduce){.controls button,.portals button{scroll-behavior:auto}}
+.world {
+  position: relative;
+  min-height: 100svh;
+  overflow: hidden;
+  isolation: isolate;
+  background: #071325;
+  color: #fff;
+}
+
+.mount {
+  position: absolute;
+  inset: 0;
+}
+
+.mount::after {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  content: '';
+  background:
+    linear-gradient(
+      180deg,
+      rgb(2 8 18 / 0.12),
+      transparent 28%
+    ),
+    radial-gradient(
+      circle at 50% 48%,
+      transparent 38%,
+      rgb(1 5 14 / 0.36) 100%
+    );
+}
+
+.mount canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+  touch-action: none;
+}
+
+.hud {
+  position: absolute;
+  top: max(18px, env(safe-area-inset-top));
+  left: max(18px, env(safe-area-inset-left));
+  z-index: 4;
+  display: grid;
+  width: min(340px, calc(100vw - 36px));
+  gap: 3px;
+  padding: 11px 14px;
+  border: 1px solid rgb(198 246 255 / 0.16);
+  border-radius: 16px;
+  background: rgb(3 12 25 / 0.42);
+  box-shadow: 0 20px 70px rgb(0 0 0 / 0.2);
+  backdrop-filter: blur(14px) saturate(1.2);
+}
+
+.hud p {
+  margin: 0;
+  color: #b9f5ff;
+  font-size: 9px;
+  font-weight: 900;
+  letter-spacing: 0.22em;
+}
+
+.hud strong {
+  font-size: clamp(15px, 2vw, 19px);
+  line-height: 1.15;
+  letter-spacing: -0.02em;
+}
+
+.hud span {
+  overflow: hidden;
+  color: rgb(232 244 255 / 0.72);
+  font-size: 11px;
+  line-height: 1.35;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.controls {
+  position: absolute;
+  top: max(18px, env(safe-area-inset-top));
+  right: max(18px, env(safe-area-inset-right));
+  z-index: 5;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 7px;
+  width: min(520px, calc(100vw - 390px));
+}
+
+.controls button,
+.destinations button,
+.home {
+  min-height: 40px;
+  border: 1px solid rgb(205 247 255 / 0.2);
+  border-radius: 999px;
+  padding: 0 14px;
+  background: rgb(4 16 31 / 0.58);
+  box-shadow: 0 14px 40px rgb(0 0 0 / 0.18);
+  color: #effcff;
+  font-size: 12px;
+  font-weight: 800;
+  cursor: pointer;
+  backdrop-filter: blur(12px) saturate(1.2);
+  transition:
+    transform 160ms ease,
+    border-color 160ms ease,
+    background 160ms ease;
+}
+
+.controls button:hover,
+.destinations button:hover,
+.home:hover,
+.controls button:focus-visible,
+.destinations button:focus-visible,
+.home:focus-visible {
+  border-color: rgb(197 246 255 / 0.55);
+  background: rgb(8 28 48 / 0.78);
+  transform: translateY(-1px);
+  outline: none;
+}
+
+.controls button:first-child {
+  background:
+    linear-gradient(
+      135deg,
+      rgb(8 118 145 / 0.92),
+      rgb(99 51 198 / 0.92)
+    );
+}
+
+.controls button:disabled {
+  cursor: not-allowed;
+  opacity: 0.58;
+}
+
+.guide {
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  pointer-events: none;
+  animation: guide-in 700ms ease both;
+}
+
+.skyGuide,
+.groundGuide {
+  position: absolute;
+  left: 50%;
+  display: grid;
+  place-items: center;
+  transform: translateX(-50%);
+  color: rgb(244 251 255 / 0.9);
+  text-align: center;
+  text-shadow: 0 3px 20px rgb(0 0 0 / 0.72);
+}
+
+.skyGuide {
+  top: 12.5%;
+}
+
+.groundGuide {
+  bottom: 16.5%;
+}
+
+.skyGuide span,
+.groundGuide span {
+  color: #d9f7ff;
+  font-size: 22px;
+  line-height: 1;
+  filter:
+    drop-shadow(
+      0 0 12px rgb(122 222 255 / 0.74)
+    );
+}
+
+.skyGuide strong,
+.groundGuide strong {
+  margin-top: 4px;
+  font-size: 12px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.skyGuide small,
+.groundGuide small {
+  margin-top: 2px;
+  color: rgb(223 241 255 / 0.68);
+  font-size: 10px;
+  letter-spacing: 0.08em;
+}
+
+.destinations {
+  position: absolute;
+  bottom:
+    max(
+      58px,
+      calc(40px + env(safe-area-inset-bottom))
+    );
+  left: 50%;
+  z-index: 4;
+  display: flex;
+  gap: 8px;
+  transform: translateX(-50%);
+}
+
+.destinations button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  min-width: 166px;
+}
+
+.skyDestination {
+  border-color:
+    rgb(183 163 255 / 0.3) !important;
+  background:
+    linear-gradient(
+      135deg,
+      rgb(33 50 89 / 0.66),
+      rgb(73 48 121 / 0.66)
+    ) !important;
+}
+
+.groundDestination {
+  border-color:
+    rgb(125 244 211 / 0.28) !important;
+  background:
+    linear-gradient(
+      135deg,
+      rgb(13 56 64 / 0.66),
+      rgb(21 68 57 / 0.66)
+    ) !important;
+}
+
+.home {
+  position: absolute;
+  right: max(18px, env(safe-area-inset-right));
+  bottom:
+    max(
+      18px,
+      env(safe-area-inset-bottom)
+    );
+  z-index: 4;
+  min-height: 34px;
+  padding: 0 12px;
+  color: rgb(231 246 255 / 0.72);
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.help {
+  position: absolute;
+  bottom:
+    max(
+      18px,
+      env(safe-area-inset-bottom)
+    );
+  left: 50%;
+  z-index: 3;
+  width: min(680px, calc(100vw - 200px));
+  transform: translateX(-50%);
+  margin: 0;
+  color: rgb(226 240 255 / 0.56);
+  font-size: 10px;
+  line-height: 1.4;
+  text-align: center;
+  text-shadow: 0 2px 12px #000;
+}
+
+.touch {
+  position: absolute;
+  right: max(16px, env(safe-area-inset-right));
+  bottom:
+    max(
+      132px,
+      calc(112px + env(safe-area-inset-bottom))
+    );
+  z-index: 5;
+  display: none;
+  grid-template-columns: repeat(2, 50px);
+  gap: 8px;
+}
+
+.touch button {
+  width: 50px;
+  height: 50px;
+  border: 1px solid rgb(203 247 255 / 0.24);
+  border-radius: 17px;
+  background: rgb(3 15 29 / 0.62);
+  color: #fff;
+  font-size: 22px;
+  font-weight: 900;
+  touch-action: none;
+  backdrop-filter: blur(12px);
+}
+
+.fallback {
+  position: absolute;
+  inset: auto 16px 16px;
+  z-index: 2;
+  color: transparent;
+  pointer-events: none;
+}
+
+@keyframes guide-in {
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
+}
+
+@media (max-width: 900px) {
+  .hud {
+    width: min(310px, calc(100vw - 32px));
+  }
+
+  .controls {
+    top: auto;
+    right: auto;
+    bottom:
+      max(
+        186px,
+        calc(
+          166px +
+          env(safe-area-inset-bottom)
+        )
+      );
+    left: 16px;
+    justify-content: flex-start;
+    width: calc(100vw - 104px);
+  }
+
+  .controls button {
+    min-height: 38px;
+    padding: 0 11px;
+    font-size: 11px;
+  }
+
+  .touch {
+    display: grid;
+  }
+
+  .destinations {
+    bottom:
+      max(
+        72px,
+        calc(
+          54px +
+          env(safe-area-inset-bottom)
+        )
+      );
+    width: calc(100vw - 32px);
+  }
+
+  .destinations button {
+    min-width: 0;
+    flex: 1;
+    padding: 0 10px;
+    font-size: 11px;
+  }
+
+  .help {
+    bottom:
+      max(
+        24px,
+        env(safe-area-inset-bottom)
+      );
+    width: calc(100vw - 190px);
+    font-size: 9px;
+  }
+
+  .home {
+    top:
+      max(
+        130px,
+        calc(
+          112px +
+          env(safe-area-inset-top)
+        )
+      );
+    right: 16px;
+    bottom: auto;
+  }
+}
+
+@media (max-width: 560px) {
+  .hud {
+    top: 12px;
+    left: 12px;
+    width: calc(100vw - 24px);
+    padding: 10px 12px;
+  }
+
+  .controls {
+    left: 12px;
+    bottom:
+      max(
+        190px,
+        calc(
+          170px +
+          env(safe-area-inset-bottom)
+        )
+      );
+    width: calc(100vw - 82px);
+  }
+
+  .skyGuide {
+    top: 18%;
+  }
+
+  .groundGuide {
+    bottom: 23%;
+  }
+
+  .destinations {
+    bottom:
+      max(
+        74px,
+        calc(
+          56px +
+          env(safe-area-inset-bottom)
+        )
+      );
+    gap: 6px;
+  }
+
+  .destinations button {
+    min-height: 42px;
+    border-radius: 16px;
+    line-height: 1.15;
+  }
+
+  .help {
+    display: none;
+  }
+
+  .home {
+    top: 112px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .guide,
+  .controls button,
+  .destinations button,
+  .home {
+    animation: none;
+    transition: none;
+  }
+}
