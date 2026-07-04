@@ -1,18 +1,18 @@
-.uraiAutoMirror .uraiRealmAccents::after {
+html.urai-v2-assets-ready .uraiAutoMirror .uraiRealmAccents::after {
   background-image: var(--v2-mirror-state, url('/assets/urai/v2/mirror/pressure-pattern-glyph.webp')), url('/assets/urai/mirror/mirror-pattern-glyph.webp') !important;
   background-position: center !important;
   background-size: 78% !important;
   background-repeat: no-repeat !important;
 }
 
-.uraiAutoPassport .uraiRealmAccents::after {
+html.urai-v2-assets-ready .uraiAutoPassport .uraiRealmAccents::after {
   background-image: var(--v2-passport-state, url('/assets/urai/v2/passport/passport-private.webp')), url('/assets/urai/passport/passport-ownership-seal.webp') !important;
   background-position: center !important;
   background-size: 64% !important;
   background-repeat: no-repeat !important;
 }
 
-.uraiAutoPrivacy .uraiRealmAccent-1 {
+html.urai-v2-assets-ready .uraiAutoPrivacy .uraiRealmAccent-1 {
   background-image: url('/assets/urai/v2/passport/passport-consent-requested.webp'), url('/assets/urai/privacy-controls/privacy-model-access.webp');
   background-position: center;
   background-size: contain;
@@ -21,8 +21,8 @@
 }
 
 @media (max-width: 760px) {
-  .uraiAutoMirror .uraiRealmAccents::after,
-  .uraiAutoPassport .uraiRealmAccents::after {
+  html.urai-v2-assets-ready .uraiAutoMirror .uraiRealmAccents::after,
+  html.urai-v2-assets-ready .uraiAutoPassport .uraiRealmAccents::after {
     background-size: 58% !important;
   }
 }
