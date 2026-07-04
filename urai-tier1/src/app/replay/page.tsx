@@ -17,10 +17,10 @@ export default function ReplayRoutePage() {
     <>
       <span
         data-testid="replay-route-launch-fingerprint"
-        data-urai-route-fingerprint="replay-thread-film-beats"
+        data-urai-route-fingerprint="replay-thread-film-beats cinematic-memory-camera-film"
         style={routeFingerprintStyle}
       >
-        Replay the thread. Film beats.
+        Replay the thread. Film beats. Cinematic memory camera film.
       </span>
       <CinematicReplayClient />
     </>
