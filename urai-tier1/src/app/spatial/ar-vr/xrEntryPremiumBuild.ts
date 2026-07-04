@@ -2,7 +2,7 @@ import * as THREE from 'three'
 import { createAtmosphere, createFloor, createSky } from './xrEntrySkyAndParticles'
 import { addArrivalDais, addLighting, addSanctuaryArchitecture } from './xrEntrySanctuaryGeometry'
 import { createLivingOrb } from './xrEntryLivingOrb'
-import { isolateAnimatedMaterials } from './xrEntryRingMaterialIsolation'
+import { isolateAnimatedMaterials, normalizeTransmission, shareStaticMaterial } from './xrEntryRingMaterialIsolation'
 import type { PremiumEnvironment } from './xrEntryPremiumTypes'
 
 export function buildPremiumEnvironment(scene: THREE.Scene, mobile: boolean): PremiumEnvironment {
@@ -17,5 +17,7 @@ export function buildPremiumEnvironment(scene: THREE.Scene, mobile: boolean): Pr
   isolateAnimatedMaterials(glowRings)
   const accentLights = addSanctuaryArchitecture(scene, mobile)
   const orbParts = createLivingOrb(scene, mobile)
+  shareStaticMaterial(orbParts.orbRings)
+  normalizeTransmission(scene, mobile)
   return { floor, sky, glowRings, accentLights, ...atmosphere, ...orbParts }
 }
