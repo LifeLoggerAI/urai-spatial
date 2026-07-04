@@ -1,19 +1,19 @@
-.uraiAutoGround .uraiGroundHelper-1 .uraiGroundHelperArt {
+html.urai-v2-assets-ready .uraiAutoGround .uraiGroundHelper-1 .uraiGroundHelperArt {
   background-image: url('/assets/urai/v2/helpers/welcome-guide-working.webp'), url('/assets/urai/avatars/receptionist.webp') !important;
 }
 
-.uraiAutoGround .uraiGroundHelper-2 .uraiGroundHelperArt {
+html.urai-v2-assets-ready .uraiAutoGround .uraiGroundHelper-2 .uraiGroundHelperArt {
   background-image: url('/assets/urai/v2/helpers/privacy-steward-protecting.webp'), url('/assets/urai/avatars/privacy-steward.webp') !important;
 }
 
-.uraiAutoGround .uraiGroundHelper-3 .uraiGroundHelperArt {
+html.urai-v2-assets-ready .uraiAutoGround .uraiGroundHelper-3 .uraiGroundHelperArt {
   background-image: url('/assets/urai/v2/helpers/schedule-steward-approval.webp'), url('/assets/urai/avatars/schedule-steward.webp') !important;
 }
 
-.uraiAutoGround .uraiGroundHelper-4 .uraiGroundHelperArt {
+html.urai-v2-assets-ready .uraiAutoGround .uraiGroundHelper-4 .uraiGroundHelperArt {
   background-image: url('/assets/urai/v2/helpers/wellness-guide-complete.webp'), url('/assets/urai/avatars/wellness-guide.webp') !important;
 }
 
-.uraiAutoGround .uraiGroundHelper-5 .uraiGroundHelperArt {
+html.urai-v2-assets-ready .uraiAutoGround .uraiGroundHelper-5 .uraiGroundHelperArt {
   background-image: url('/assets/urai/v2/helpers/archivist-protected.webp'), url('/assets/urai/avatars/archivist.webp') !important;
 }
