@@ -1,0 +1,24 @@
+name: Export Spatial E2E Source
+
+on:
+  push:
+    branches:
+      - spatial-e2e-network-fix-20260704
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  export-source:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/upload-artifact@v4
+        with:
+          name: spatial-e2e-source
+          path: |
+            tests/spatial-lock.mjs
+            .github/workflows/urai-spatial-ci.yml
+          if-no-files-found: error
+          retention-days: 7
