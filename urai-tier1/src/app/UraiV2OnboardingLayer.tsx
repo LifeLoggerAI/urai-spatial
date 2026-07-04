@@ -3,6 +3,7 @@
 import { Suspense, useEffect, useState } from "react";
 import { usePathname, useSearchParams } from "next/navigation";
 import { v2Onboarding } from "@/spatial/assets/uraiV2Assets";
+import UraiCanonicalVersionAssetTemplate from "./UraiCanonicalVersionAssetTemplate";
 import "./v2-ground-states.css";
 import "./v2-ground-council.css";
 import "./v2-ground-objects.css";
@@ -83,8 +84,11 @@ function OnboardingCardContent() {
 
 export default function UraiV2OnboardingLayer() {
   return (
-    <Suspense fallback={null}>
-      <OnboardingCardContent />
-    </Suspense>
+    <>
+      <UraiCanonicalVersionAssetTemplate />
+      <Suspense fallback={null}>
+        <OnboardingCardContent />
+      </Suspense>
+    </>
   );
 }
