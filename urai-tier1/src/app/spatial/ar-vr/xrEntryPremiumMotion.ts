@@ -1,1 +1,1 @@
-export const XR_MOTION_READY = true
+export const XR_MOTION_READY = false
