@@ -10,7 +10,7 @@ on:
   workflow_dispatch:
 
 concurrency:
-  group: urai-spatial-lock-${{ github.base_ref || github.ref_name }}
+  group: urai-spatial-lock-${{ github.event_name == 'pull_request' && github.event.pull_request.number || github.ref_name }}
   cancel-in-progress: true
 
 jobs:
