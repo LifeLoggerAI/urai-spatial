@@ -57,11 +57,31 @@ export default function QuestVrEntryButton({ onSessionRequested, onSessionEnded 
   }
 
   return (
-    <div className="urai-xr-portal__quest-entry" data-testid="urai-quest-vr-entry-control">
-      <button type="button" onClick={enterQuestVr} disabled={busy || active} title={copy}>
-        {busy ? 'Entering VR…' : active ? 'VR active' : 'Enter VR in Quest'}
-      </button>
-      <p className="sr-only" aria-live="polite">{copy}</p>
-    </div>
+    <>
+      <div className="urai-xr-portal__quest-entry" data-testid="urai-quest-vr-entry-control">
+        <button type="button" onClick={enterQuestVr} disabled={busy || active} title={copy}>
+          {busy ? 'Entering VR…' : active ? 'VR active' : 'Enter VR in Quest'}
+        </button>
+        <p className="sr-only" aria-live="polite">{copy}</p>
+      </div>
+      <style jsx global>{`
+        @media (max-width: 900px) {
+          [data-testid='urai-quest-explorable-world'] [aria-label='XR and comfort controls'] {
+            top: 96px;
+            right: 12px;
+            bottom: auto;
+            left: 12px;
+            width: auto;
+            justify-content: center;
+          }
+        }
+        @media (max-width: 560px) {
+          [data-testid='urai-quest-explorable-world'] [aria-hidden='true'] { display: none; }
+          [data-testid='urai-quest-explorable-world'] [aria-label='XR and comfort controls'] { top: 94px; gap: 6px; }
+          [data-testid='urai-quest-explorable-world'] [aria-label='XR and comfort controls'] button { min-height: 36px; padding-inline: 10px; font-size: 10px; }
+          [data-testid='urai-quest-explorable-world'] [aria-label='Accessible sky and ground destinations'] { right: 12px; bottom: 66px; left: 12px; width: auto; transform: none; }
+        }
+      `}</style>
+    </>
   )
 }
