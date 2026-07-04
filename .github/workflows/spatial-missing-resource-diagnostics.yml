@@ -1,0 +1,39 @@
+name: Spatial Missing Resource Diagnostics
+
+on:
+  push:
+    branches:
+      - fix/spatial-e2e-404-diagnostics
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  diagnose-404s:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: pnpm
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+      - name: Install Playwright runtime
+        run: pnpm playwright:ensure
+      - name: Capture missing resource URLs
+        run: node tests/spatial-missing-resource-diagnostic.mjs
+      - name: Upload missing resource report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: spatial-missing-resource-diagnostics
+          path: artifacts/spatial-404-diagnostics
+          if-no-files-found: error
+          retention-days: 7
