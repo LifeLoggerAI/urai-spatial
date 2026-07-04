@@ -102,30 +102,34 @@ jobs:
       - name: Firebase deploy hosting
         if: ${{ github.event_name == 'workflow_dispatch' && !inputs.static_export }}
         env:
-          FIREBASE_TOKEN: ${{ secrets.FIREBASE_TOKEN }}
           FIREBASE_PROJECT_ID: ${{ secrets.FIREBASE_PROJECT_ID }}
+          FIREBASE_FALLBACK_TOKEN: ${{ secrets.FIREBASE_TOKEN }}
         shell: bash
         run: |
           set -euo pipefail
           test -n "${FIREBASE_PROJECT_ID}"
           if [[ "${URAI_FIREBASE_AUTH_MODE}" == 'token' ]]; then
-            npx firebase-tools deploy --only hosting --project "${FIREBASE_PROJECT_ID}" --token "${FIREBASE_TOKEN}"
+            test -n "${FIREBASE_FALLBACK_TOKEN}"
+            npx firebase-tools deploy --only hosting --project "${FIREBASE_PROJECT_ID}" --token "${FIREBASE_FALLBACK_TOKEN}"
           else
+            unset FIREBASE_TOKEN FIREBASE_FALLBACK_TOKEN
             npx firebase-tools deploy --only hosting --project "${FIREBASE_PROJECT_ID}"
           fi
 
       - name: Firebase deploy static hosting
         if: ${{ github.event_name == 'push' || inputs.static_export }}
         env:
-          FIREBASE_TOKEN: ${{ secrets.FIREBASE_TOKEN }}
           FIREBASE_PROJECT_ID: ${{ secrets.FIREBASE_PROJECT_ID }}
+          FIREBASE_FALLBACK_TOKEN: ${{ secrets.FIREBASE_TOKEN }}
         shell: bash
         run: |
           set -euo pipefail
           test -n "${FIREBASE_PROJECT_ID}"
           if [[ "${URAI_FIREBASE_AUTH_MODE}" == 'token' ]]; then
-            npx firebase-tools deploy --config firebase.static.json --only hosting --project "${FIREBASE_PROJECT_ID}" --token "${FIREBASE_TOKEN}"
+            test -n "${FIREBASE_FALLBACK_TOKEN}"
+            npx firebase-tools deploy --config firebase.static.json --only hosting --project "${FIREBASE_PROJECT_ID}" --token "${FIREBASE_FALLBACK_TOKEN}"
           else
+            unset FIREBASE_TOKEN FIREBASE_FALLBACK_TOKEN
             npx firebase-tools deploy --config firebase.static.json --only hosting --project "${FIREBASE_PROJECT_ID}"
           fi
 
