@@ -1,6 +1,8 @@
 import { Suspense } from 'react'
 import CinematicReplayClient from './CinematicReplayClient'
 
+const FinalReplayFilm = CinematicReplayClient
+
 const routeFingerprintStyle = {
   position: 'absolute',
   width: 1,
@@ -30,7 +32,7 @@ export default function ReplayRoutePage() {
         Replay the thread. Film beats. Cinematic memory camera film.
       </span>
       <Suspense fallback={<ReplayLoadingFallback />}>
-        <CinematicReplayClient />
+        <FinalReplayFilm />
       </Suspense>
     </>
   )
