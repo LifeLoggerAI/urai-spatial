@@ -27,13 +27,13 @@ export default function HomeSpatialRuntimeLayer() {
   const webglAvailable = useHomeWebGLAvailable()
 
   if (pathname !== '/' && pathname !== '/home') return null
-  if (webglAvailable === false) return null
+  if (webglAvailable !== true) return null
 
   return (
     <section
       className="urai-home-spatial-runtime-layer"
       data-urai-home-runtime="one-continuous-webgl-world"
-      data-webgl-ready={webglAvailable === true ? 'true' : 'pending'}
+      data-webgl-ready="true"
       aria-label="URAI living spatial Home"
     >
       <HomeSpatialCanvas onOrbOpen={() => setOrbOpen(true)} />
