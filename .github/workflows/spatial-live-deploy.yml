@@ -82,8 +82,8 @@ permissions:
   contents: read
 
 concurrency:
-  group: urai-spatial-live-deploy-${{ github.ref }}
-  cancel-in-progress: false
+  group: urai-spatial-live-deploy-${{ github.base_ref || github.ref_name }}
+  cancel-in-progress: true
 
 jobs:
   verify:
@@ -110,6 +110,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
 
       - name: Setup Node
         uses: actions/setup-node@v4
@@ -174,6 +176,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
 
       - name: Setup Node
         uses: actions/setup-node@v4
