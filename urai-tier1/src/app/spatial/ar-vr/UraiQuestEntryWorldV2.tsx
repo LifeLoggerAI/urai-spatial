@@ -1,31 +1,29 @@
 'use client'
 
-import {
-  useCallback,
-  useEffect,
-  useRef,
-  useState,
-} from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import QuestVrEntryButton from './QuestVrEntryButton'
 import styles from './UraiQuestEntryWorld.module.css'
 import {
+  isSpatialRealmRoute,
+  routeToRealm,
+  SPATIAL_REALM_LABELS,
   UraiXrWorldRuntime,
   XR_PORTALS,
+  type SpatialRealmId,
   type XrSessionLike,
 } from './xrEntryWorldRuntime'
 
 const HELD_CONTROL_CODES = [
-  'KeyW',
-  'KeyA',
-  'KeyS',
-  'KeyD',
-  'KeyQ',
-  'KeyE',
-  'ArrowUp',
-  'ArrowDown',
-  'ArrowLeft',
-  'ArrowRight',
+  'KeyW', 'KeyA', 'KeyS', 'KeyD', 'KeyQ', 'KeyE',
+  'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight',
+] as const
+
+const TOUCH_CONTROLS = [
+  ['KeyQ', 'Turn left', '↶'],
+  ['KeyW', 'Move forward', '↑'],
+  ['KeyS', 'Move backward', '↓'],
+  ['KeyE', 'Turn right', '↷'],
 ] as const
 
 type RuntimeInputSource = {
@@ -33,140 +31,109 @@ type RuntimeInputSource = {
   handedness?: string
 }
 
-function runtimeSessionForRightHandTurning(
-  session: XrSessionLike,
-): XrSessionLike {
+type Props = {
+  initialRealm?: SpatialRealmId
+}
+
+function runtimeSessionForRightHandTurning(session: XrSessionLike): XrSessionLike {
   return {
     end: () => session.end(),
-
-    addEventListener: (
-      type: string,
-      listener: () => void,
-      options?: { once?: boolean },
-    ) => session.addEventListener(type, listener, options),
-
+    addEventListener: (type, listener, options) =>
+      session.addEventListener(type, listener, options),
     get inputSources() {
       const sources = Array.from(
         (session.inputSources ?? []) as ArrayLike<RuntimeInputSource>,
       )
-
       const rightHandSources = sources.filter(
         (source) => source.handedness === 'right',
       )
-
-      const turnSources =
-        rightHandSources.length > 0
-          ? rightHandSources
-          : sources.filter(
-              (source) => source.handedness !== 'left',
-            )
-
-      return turnSources as ArrayLike<{
-        gamepad?: Gamepad
-      }>
+      const turnSources = rightHandSources.length
+        ? rightHandSources
+        : sources.filter((source) => source.handedness !== 'left')
+      return turnSources as ArrayLike<{ gamepad?: Gamepad }>
     },
   }
 }
 
-export default function UraiQuestEntryWorldV2() {
+export default function UraiQuestEntryWorldV2({
+  initialRealm = 'home',
+}: Props) {
   const router = useRouter()
-
   const mountRef = useRef<HTMLDivElement>(null)
   const runtimeRef = useRef<UraiXrWorldRuntime | null>(null)
-
+  const [realm, setRealm] = useState<SpatialRealmId>(initialRealm)
   const [message, setMessage] = useState(
-    'Building the explorable entry chamber…',
+    `${SPATIAL_REALM_LABELS[initialRealm]} is waking…`,
   )
   const [reducedMotion, setReducedMotion] = useState(false)
   const [vrActive, setVrActive] = useState(false)
   const [rendererReady, setRendererReady] = useState(false)
+  const [helpOpen, setHelpOpen] = useState(false)
 
-  const openRoute = useCallback(
-    async (route: string, label: string) => {
-      const runtime = runtimeRef.current
+  const openRoute = useCallback(async (route: string, label: string) => {
+    const runtime = runtimeRef.current
+    const destination = route === '/spatial/life-map' ? '/life-map' : route
 
-      const destination =
-        route === '/spatial/life-map'
-          ? '/life-map'
-          : route
+    if (isSpatialRealmRoute(destination)) {
+      const nextRealm = routeToRealm(destination)
+      runtime?.setRealm(nextRealm)
+      setRealm(nextRealm)
+      setMessage(`${label} entered without leaving the world.`)
+      window.history.pushState({ uraiRealm: nextRealm }, '', destination)
+      return
+    }
 
-      if (runtime?.session) {
-        try {
-          await runtime.session.end()
-        } catch {
-          // Continue navigation if the browser already ended
-          // the immersive session.
-        } finally {
-          runtime.session = null
-          setVrActive(false)
-        }
+    if (runtime?.session) {
+      try {
+        await runtime.session.end()
+      } catch {
+        // Continue if the browser already ended the immersive session.
+      } finally {
+        runtime.session = null
+        setVrActive(false)
       }
-
-      setMessage(`Opening ${label}…`)
-      router.push(destination)
-    },
-    [router],
-  )
+    }
+    router.push(destination)
+  }, [router])
 
   useEffect(() => {
     const mount = mountRef.current
-
-    if (!mount) {
-      return
-    }
+    if (!mount) return
 
     try {
       const runtime = new UraiXrWorldRuntime(
         mount,
         setMessage,
-        (route, label) => {
-          void openRoute(route, label)
-        },
+        (route, label) => void openRoute(route, label),
+        initialRealm,
       )
 
       const clearHeldControls = () => {
-        HELD_CONTROL_CODES.forEach((code) => {
-          runtime.setKey(code, false)
-        })
+        HELD_CONTROL_CODES.forEach((code) => runtime.setKey(code, false))
       }
-
       const clearWhenHidden = () => {
-        if (document.hidden) {
-          clearHeldControls()
-        }
+        if (document.hidden) clearHeldControls()
+      }
+      const followBrowserHistory = () => {
+        const nextRealm = routeToRealm(window.location.pathname)
+        runtime.setRealm(nextRealm)
+        setRealm(nextRealm)
+        setMessage(`${SPATIAL_REALM_LABELS[nextRealm]} restored.`)
       }
 
       runtimeRef.current = runtime
-
       window.addEventListener('blur', clearHeldControls)
-      document.addEventListener(
-        'visibilitychange',
-        clearWhenHidden,
-      )
-
+      window.addEventListener('popstate', followBrowserHistory)
+      document.addEventListener('visibilitychange', clearWhenHidden)
       setRendererReady(true)
-      setMessage(
-        'World ready. Drag to look, use WASD to move, select a portal, or enter Quest VR.',
-      )
+      setMessage(`${SPATIAL_REALM_LABELS[initialRealm]} ready.`)
 
       return () => {
-        window.removeEventListener(
-          'blur',
-          clearHeldControls,
-        )
-        document.removeEventListener(
-          'visibilitychange',
-          clearWhenHidden,
-        )
-
+        window.removeEventListener('blur', clearHeldControls)
+        window.removeEventListener('popstate', followBrowserHistory)
+        document.removeEventListener('visibilitychange', clearWhenHidden)
         clearHeldControls()
-
-        if (runtime.session) {
-          void runtime.session
-            .end()
-            .catch(() => undefined)
-        }
-
+        if (runtime.session) void runtime.session.end().catch(() => undefined)
         runtime.session = null
         runtime.dispose()
         runtimeRef.current = null
@@ -175,77 +142,42 @@ export default function UraiQuestEntryWorldV2() {
       runtimeRef.current = null
       setRendererReady(false)
       setVrActive(false)
-      setMessage(
-        'Real-time 3D is unavailable on this device. The accessible portal controls remain active.',
-      )
+      setMessage('Real-time 3D is unavailable. Accessible world controls remain active.')
     }
-  }, [openRoute])
+  }, [initialRealm, openRoute])
 
   useEffect(() => {
-    const runtime = runtimeRef.current
-
-    if (runtime) {
-      runtime.reducedMotion = reducedMotion
-    }
+    if (runtimeRef.current) runtimeRef.current.reducedMotion = reducedMotion
   }, [reducedMotion])
 
-  const attachSession = useCallback(
-    async (session: object) => {
-      const runtime = runtimeRef.current
-
-      if (!runtime) {
-        throw new Error('XR renderer is not ready')
-      }
-
-      const nativeSession = session as XrSessionLike
-
-      runtime.session =
-        runtimeSessionForRightHandTurning(nativeSession)
-
-      try {
-        await runtime.renderer.xr.setSession(
-          session as never,
-        )
-
-        setVrActive(true)
-        setMessage(
-          'Immersive world active. Aim and select a portal, or select the floor to teleport.',
-        )
-      } catch (error) {
-        runtime.session = null
-        setVrActive(false)
-
-        throw error
-      }
-    },
-    [],
-  )
+  const attachSession = useCallback(async (session: object) => {
+    const runtime = runtimeRef.current
+    if (!runtime) throw new Error('XR renderer is not ready')
+    runtime.session = runtimeSessionForRightHandTurning(session as XrSessionLike)
+    try {
+      await runtime.renderer.xr.setSession(session as never)
+      setVrActive(true)
+      setMessage('Immersive world active. Select portals or the floor to teleport.')
+    } catch (error) {
+      runtime.session = null
+      setVrActive(false)
+      throw error
+    }
+  }, [])
 
   const handleSessionEnded = useCallback(() => {
     const runtime = runtimeRef.current
-
     if (runtime) {
       runtime.session = null
-
-      HELD_CONTROL_CODES.forEach((code) => {
-        runtime.setKey(code, false)
-      })
+      HELD_CONTROL_CODES.forEach((code) => runtime.setKey(code, false))
     }
-
     setVrActive(false)
-    setMessage(
-      'Immersive session ended safely. Your chamber remains available.',
-    )
+    setMessage('Immersive session ended safely. Your world remains available.')
   }, [])
 
   const exitVr = useCallback(async () => {
     const runtime = runtimeRef.current
-
-    if (!runtime?.session) {
-      handleSessionEnded()
-      return
-    }
-
+    if (!runtime?.session) return handleSessionEnded()
     try {
       await runtime.session.end()
     } catch {
@@ -255,176 +187,94 @@ export default function UraiQuestEntryWorldV2() {
     }
   }, [handleSessionEnded])
 
-  const hold = useCallback(
-    (code: string, held: boolean) => {
-      runtimeRef.current?.setKey(code, held)
-    },
-    [],
-  )
-
-  const releaseTouchControls = useCallback(() => {
-    hold('KeyQ', false)
-    hold('KeyW', false)
-    hold('KeyS', false)
-    hold('KeyE', false)
-  }, [hold])
+  const hold = useCallback((code: string, held: boolean) => {
+    runtimeRef.current?.setKey(code, held)
+  }, [])
 
   return (
     <section
       className={styles.world}
       data-testid="urai-quest-explorable-world"
       data-quest-proof="QUEST_IMMERSIVE_ENTRY_VERIFIED_MINIMAL_SHELL"
-      data-renderer-ready={
-        rendererReady ? 'true' : 'false'
-      }
-      aria-label="URAI explorable XR entry world"
+      data-spatial-world-owner="canonical-home-ground-lifemap-focus-replay"
+      data-spatial-realm={realm}
+      data-renderer-ready={rendererReady ? 'true' : 'false'}
+      aria-label={`URAI ${SPATIAL_REALM_LABELS[realm]} spatial world`}
     >
-      <div
-        ref={mountRef}
-        className={styles.mount}
-      />
+      <div ref={mountRef} className={styles.mount} />
 
       <header className={styles.hud}>
-        <p>URAI XR ENTRY · LIVE 3D</p>
-        <strong>Explorable entry chamber</strong>
+        <p>URAI WORLD · LIVE 3D</p>
+        <strong>{SPATIAL_REALM_LABELS[realm]}</strong>
         <span aria-live="polite">{message}</span>
       </header>
 
-      <div
-        className={styles.controls}
-        aria-label="XR and comfort controls"
-      >
+      <div className={styles.controls} aria-label="XR and comfort controls">
         <QuestVrEntryButton
           onSessionRequested={attachSession}
           onSessionEnded={handleSessionEnded}
         />
-
         {vrActive ? (
-          <button
-            type="button"
-            onClick={() => {
-              void exitVr()
-            }}
-          >
+          <button type="button" onClick={() => void exitVr()}>
             Exit VR safely
           </button>
         ) : null}
-
-        <button
-          type="button"
-          onClick={() => {
-            runtimeRef.current?.recenter()
-          }}
-        >
+        <button type="button" onClick={() => runtimeRef.current?.recenter()}>
           Recenter
         </button>
-
         <button
           type="button"
           aria-pressed={reducedMotion}
-          onClick={() => {
-            setReducedMotion((current) => !current)
-          }}
+          onClick={() => setReducedMotion((current) => !current)}
         >
-          {reducedMotion
-            ? 'Reduced motion on'
-            : 'Reduce motion'}
+          {reducedMotion ? 'Reduced motion on' : 'Reduce motion'}
+        </button>
+        <button
+          type="button"
+          aria-expanded={helpOpen}
+          onClick={() => setHelpOpen((current) => !current)}
+        >
+          {helpOpen ? 'Hide help' : 'Help'}
         </button>
       </div>
 
-      <nav
-        className={styles.portals}
-        aria-label="Accessible portal equivalents"
-      >
+      <nav className={styles.portals} aria-label="Accessible world destinations">
         {XR_PORTALS.map((portal) => (
           <button
             key={portal.id}
             type="button"
-            onClick={() => {
-              void openRoute(
-                portal.route,
-                portal.label,
-              )
-            }}
+            aria-current={portal.realm === realm ? 'page' : undefined}
+            className={portal.realm === realm ? styles.activePortal : undefined}
+            onClick={() => void openRoute(portal.route, portal.label)}
           >
             {portal.label}
           </button>
         ))}
       </nav>
 
-      <div
-        className={styles.touch}
-        aria-label="Touch movement controls"
-        onPointerCancel={releaseTouchControls}
-        onPointerLeave={releaseTouchControls}
-      >
-        <button
-          type="button"
-          aria-label="Turn left"
-          onPointerDown={() => hold('KeyQ', true)}
-          onPointerUp={() => hold('KeyQ', false)}
-          onPointerCancel={() =>
-            hold('KeyQ', false)
-          }
-          onPointerLeave={() =>
-            hold('KeyQ', false)
-          }
-        >
-          ↶
-        </button>
-
-        <button
-          type="button"
-          aria-label="Move forward"
-          onPointerDown={() => hold('KeyW', true)}
-          onPointerUp={() => hold('KeyW', false)}
-          onPointerCancel={() =>
-            hold('KeyW', false)
-          }
-          onPointerLeave={() =>
-            hold('KeyW', false)
-          }
-        >
-          ↑
-        </button>
-
-        <button
-          type="button"
-          aria-label="Move backward"
-          onPointerDown={() => hold('KeyS', true)}
-          onPointerUp={() => hold('KeyS', false)}
-          onPointerCancel={() =>
-            hold('KeyS', false)
-          }
-          onPointerLeave={() =>
-            hold('KeyS', false)
-          }
-        >
-          ↓
-        </button>
-
-        <button
-          type="button"
-          aria-label="Turn right"
-          onPointerDown={() => hold('KeyE', true)}
-          onPointerUp={() => hold('KeyE', false)}
-          onPointerCancel={() =>
-            hold('KeyE', false)
-          }
-          onPointerLeave={() =>
-            hold('KeyE', false)
-          }
-        >
-          ↷
-        </button>
+      <div className={styles.touch} aria-label="Touch movement controls">
+        {TOUCH_CONTROLS.map(([code, label, symbol]) => (
+          <button
+            key={code}
+            type="button"
+            aria-label={label}
+            onPointerDown={() => hold(code, true)}
+            onPointerUp={() => hold(code, false)}
+            onPointerCancel={() => hold(code, false)}
+            onPointerLeave={() => hold(code, false)}
+          >
+            {symbol}
+          </button>
+        ))}
       </div>
 
-      <p className={styles.help}>
-        Desktop: drag to look · WASD move · Q/E or
-        arrows turn · R recenter. Quest: controller ray
-        selects portals; select the floor to teleport;
-        right thumbstick snaps 30°.
-      </p>
+      {helpOpen ? (
+        <p className={styles.help}>
+          Desktop: drag to look · WASD move · Q/E or arrows turn · R recenter.
+          Quest: controller ray selects portals; select the floor to teleport;
+          right thumbstick snaps 30°.
+        </p>
+      ) : null}
     </section>
   )
 }
