@@ -17,7 +17,6 @@ const pathsToRemove = [
   'urai-tier1/coverage',
   'urai-tier1/test-results',
   'urai-tier1/playwright-report',
-  'artifacts/spatial-lock',
   'coverage',
   'test-results',
   'playwright-report',
