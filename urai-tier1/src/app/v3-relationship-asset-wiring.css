@@ -1,0 +1,44 @@
+html.urai-v3-relationship-assets-ready .lifeGalaxy {
+  --life-map-art: url('/assets/urai/v3/relationship-galaxy-main.webp') !important;
+}
+
+html.urai-v3-relationship-assets-ready .lifeGalaxy .memoryNode:nth-of-type(5n + 1) {
+  --node-art: url('/assets/urai/v3/present-friends.webp') !important;
+}
+
+html.urai-v3-relationship-assets-ready .lifeGalaxy .memoryNode:nth-of-type(5n + 2) {
+  --node-art: url('/assets/urai/v3/past-friends-trails.webp') !important;
+}
+
+html.urai-v3-relationship-assets-ready .lifeGalaxy .memoryNode:nth-of-type(5n + 3) {
+  --node-art: url('/assets/urai/v3/family-roots-main.webp') !important;
+}
+
+html.urai-v3-relationship-assets-ready .lifeGalaxy .memoryNode:nth-of-type(5n + 4) {
+  --node-art: url('/assets/urai/v3/mentor-guidelights.webp') !important;
+}
+
+html.urai-v3-relationship-assets-ready .lifeGalaxy .memoryNode:nth-of-type(5n) {
+  --node-art: url('/assets/urai/v3/legacy-sanctuary.webp') !important;
+}
+
+html.urai-v3-relationship-assets-ready main[data-testid='urai-final-focus-chamber'] {
+  --memory-route-art: url('/assets/urai/v3/family-roots-main.webp') !important;
+}
+
+html.urai-v3-relationship-assets-ready main[data-testid='urai-final-passport-vault'] {
+  --passport-vault-art: url('/assets/urai/v3/lineage-seal.webp') !important;
+}
+
+@media (max-width: 760px) {
+  html.urai-v3-relationship-assets-ready .lifeGalaxy {
+    --life-map-art: url('/assets/urai/v3/relationship-galaxy-mobile.webp') !important;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html.urai-v3-relationship-assets-ready .lifeGalaxy .memoryNode {
+    animation: none !important;
+    transition: none !important;
+  }
+}
