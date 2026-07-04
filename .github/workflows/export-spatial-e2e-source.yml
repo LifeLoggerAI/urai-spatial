@@ -1,9 +1,9 @@
 name: Export Spatial E2E Source
 
 on:
-  push:
+  pull_request:
     branches:
-      - spatial-e2e-network-fix-20260704
+      - main
   workflow_dispatch:
 
 permissions:
