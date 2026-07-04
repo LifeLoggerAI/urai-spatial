@@ -38,7 +38,7 @@ function safeMove(position: THREE.Vector3, nextX: number, nextZ: number) {
 
 function makePortal(spec: (typeof XR_PORTALS)[number], targets: THREE.Object3D[]) {
   const group = new THREE.Group()
-  group.position.set(...spec.position)
+  group.position.set(spec.position[0], spec.position[1], spec.position[2])
   group.rotation.y = spec.id === 'home' ? Math.PI : 0
   const frame = new THREE.MeshStandardMaterial({ color: spec.color, emissive: spec.color, emissiveIntensity: 0.65, roughness: 0.24, metalness: 0.42 })
   const veilMaterial = new THREE.MeshBasicMaterial({ color: spec.color, transparent: true, opacity: 0.2, side: THREE.DoubleSide, depthWrite: false })

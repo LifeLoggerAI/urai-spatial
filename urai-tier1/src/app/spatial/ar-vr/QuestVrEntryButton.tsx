@@ -54,7 +54,10 @@ export default function QuestVrEntryButton({ onSessionRequested, onSessionEnded 
         onSessionEnded?.()
       }, { once: true })
       await onSessionRequested?.(session)
-      if (sessionEnded) return
+      if (sessionEnded) {
+        onSessionEnded?.()
+        return
+      }
       setActive(true)
       setCopy('Immersive world active. Select a portal or select the floor to teleport.')
     } catch {

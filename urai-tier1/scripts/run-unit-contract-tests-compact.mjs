@@ -12,6 +12,7 @@ const tests = [
   'tests/memory-star-phase4-contract.test.mjs',
   'tests/orb-companion-contract.test.mjs',
   'tests/quest-entry-lifecycle.test.mjs',
+  'tests/quest-ended-during-attach.test.mjs',
   'tests/quest-pointer-cancel.test.mjs',
   'tests/replay-memory-theater-contract.test.mjs',
   'tests/spatial-launch-boundaries.test.mjs',
