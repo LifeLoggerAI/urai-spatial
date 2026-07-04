@@ -1,19 +1,19 @@
-.lifeGalaxy .memoryNode .glow::before {
+html.urai-v2-assets-ready .lifeGalaxy .memoryNode .glow::before {
   background-image: linear-gradient(180deg, rgba(0,0,0,.05), rgba(0,0,0,.38)), url('/assets/urai/v2/stars/star-base.webp'), var(--node-art) !important;
 }
 
-.lifeGalaxy .memoryNode:hover .glow::before,
-.lifeGalaxy .memoryNode:focus-visible .glow::before {
+html.urai-v2-assets-ready .lifeGalaxy .memoryNode:hover .glow::before,
+html.urai-v2-assets-ready .lifeGalaxy .memoryNode:focus-visible .glow::before {
   background-image: linear-gradient(180deg, rgba(0,0,0,.02), rgba(0,0,0,.28)), url('/assets/urai/v2/stars/star-hover.webp'), var(--node-art) !important;
   opacity: .72 !important;
 }
 
-.lifeGalaxy .memoryNode.active .glow::before {
+html.urai-v2-assets-ready .lifeGalaxy .memoryNode.active .glow::before {
   background-image: linear-gradient(180deg, rgba(0,0,0,.02), rgba(0,0,0,.24)), url('/assets/urai/v2/stars/star-selected.webp'), var(--v2-star-state, url('/assets/urai/v2/stars/recovery-star.webp')), var(--node-art) !important;
   opacity: .86 !important;
 }
 
-.lifeGalaxy .memoryNode.active .glow::after {
+html.urai-v2-assets-ready .lifeGalaxy .memoryNode.active .glow::after {
   background-image: url('/assets/urai/v2/stars/star-focus-ready.webp'), radial-gradient(circle, transparent 0 34%, rgba(255,255,255,.2) 52%, transparent 72%) !important;
   background-size: contain, cover !important;
   background-position: center !important;
@@ -21,8 +21,8 @@
   opacity: .64;
 }
 
-.uraiAutoFocus::before,
-.uraiAutoReplay::before {
+html.urai-v2-assets-ready .uraiAutoFocus::before,
+html.urai-v2-assets-ready .uraiAutoReplay::before {
   content: '';
   position: absolute;
   inset: 0;
@@ -32,12 +32,12 @@
   background-size: cover;
 }
 
-.uraiAutoFocus::before {
+html.urai-v2-assets-ready .uraiAutoFocus::before {
   background-image: linear-gradient(180deg, rgba(1,5,13,.08), rgba(1,5,13,.34)), var(--v2-focus-state, url('/assets/urai/v2/focus/recovery-focus-chamber.webp')), url('/assets/urai/focus/focus-memory-chamber-main.webp');
   opacity: .86;
 }
 
-.uraiAutoReplay::before {
+html.urai-v2-assets-ready .uraiAutoReplay::before {
   background-image: linear-gradient(180deg, rgba(1,4,10,.05), rgba(1,4,10,.28)), var(--v2-replay-state, url('/assets/urai/v2/replay/recovery-replay-template.webp')), url('/assets/urai/replay/replay-memory-film-main.webp');
   opacity: .72;
   mix-blend-mode: screen;

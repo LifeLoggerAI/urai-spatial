@@ -1,4 +1,4 @@
-.uraiAutoReplay .uraiReplayCaption::before {
+html.urai-v2-assets-ready .uraiAutoReplay .uraiReplayCaption::before {
   content: '';
   display: block;
   width: 52px;
@@ -12,21 +12,21 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .uraiAutoFocus::before,
-  .uraiAutoReplay::before {
+  html.urai-v2-assets-ready .uraiAutoFocus::before,
+  html.urai-v2-assets-ready .uraiAutoReplay::before {
     background-image: linear-gradient(180deg, rgba(2,7,15,.12), rgba(2,7,15,.46)), url('/assets/urai/v2/accessibility/reduced-motion-equivalent.webp'), url('/assets/urai/focus/focus-memory-chamber-main.webp');
     animation: none !important;
     transition: none !important;
   }
 
-  .lifeGalaxy .memoryNode .glow::before {
+  html.urai-v2-assets-ready .lifeGalaxy .memoryNode .glow::before {
     animation: none !important;
     transition: none !important;
   }
 }
 
 @media (prefers-contrast: more) {
-  .uraiAutoWorld::after {
+  html.urai-v2-assets-ready .uraiAutoWorld::after {
     content: '';
     position: absolute;
     inset: 0;
