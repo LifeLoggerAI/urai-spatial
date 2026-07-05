@@ -4,6 +4,10 @@ import { processMemory } from "../pipeline/processMemory";
 export function createCognitiveBridge(userId: string = "demo-user") {
   const cognitive = initCognitiveLoop();
 
+  let autonomousInterval: any = null;
+  let isAutonomousRunning = false;
+  let isProcessingTick = false;
+
   function getMemory() {
     return cognitive.getLatestMemory?.() ?? null;
   }
@@ -29,23 +33,45 @@ export function createCognitiveBridge(userId: string = "demo-user") {
     return () => clearInterval(interval);
   }
 
-  // AUTONOMOUS LOOP (SAFE REFLECTION MODE)
+  // AUTONOMOUS LOOP (LEVELLED UP + GUARDED)
   function startAutonomousLoop(intervalMs: number = 2000) {
-    const id = setInterval(() => {
-      const mem = getMemory();
-      const insight = getInsight();
+    if (isAutonomousRunning) return stopAutonomousLoop;
 
-      // prevent runaway self-triggering
-      if (!mem && !insight) return;
+    isAutonomousRunning = true;
 
-      // only reflect if system is idle-ish
-      const text = mem?.content || insight?.message;
-      if (!text) return;
+    autonomousInterval = setInterval(() => {
+      if (isProcessingTick) return;
+      isProcessingTick = true;
 
-      processMemory(userId, "autonomous reflection: " + text);
+      try {
+        const mem = getMemory();
+        const insight = getInsight();
+
+        // prevent empty churn
+        if (!mem && !insight) return;
+
+        const text = mem?.content || insight?.message;
+        if (!text) return;
+
+        // guard against self-trigger storm
+        if (text.includes("autonomous reflection")) return;
+
+        processMemory(userId, "autonomous reflection: " + text);
+      } finally {
+        isProcessingTick = false;
+      }
     }, intervalMs);
 
-    return () => clearInterval(id);
+    return stopAutonomousLoop;
+  }
+
+  function stopAutonomousLoop() {
+    if (autonomousInterval) {
+      clearInterval(autonomousInterval);
+      autonomousInterval = null;
+    }
+    isAutonomousRunning = false;
+    isProcessingTick = false;
   }
 
   return {
@@ -54,6 +80,7 @@ export function createCognitiveBridge(userId: string = "demo-user") {
     getInsight,
     send,
     subscribe,
-    startAutonomousLoop
+    startAutonomousLoop,
+    stopAutonomousLoop
   };
 }
