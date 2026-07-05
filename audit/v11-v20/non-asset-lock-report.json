@@ -1,0 +1,196 @@
+{
+  "generatedAt": "2026-07-05T17:59:26.191Z",
+  "decision": "V11_V20_NON_ASSET_LOCK_READY",
+  "scope": "V11-V20 non-asset closure",
+  "excludes": [
+    "final generated art assets",
+    "final cinematic or AAA replacement assets",
+    "external XR provider validation",
+    "Quest device-lab validation",
+    "visionOS device or simulator validation",
+    "handheld AR camera/session privacy validation",
+    "store or distribution packet completion",
+    "paid production media completion"
+  ],
+  "lanes": [
+    {
+      "version": "v11",
+      "label": "System APIs and manifest proof lane",
+      "requiredPaths": [
+        "release/urai-spatial-live-manifest.json",
+        "urai-tier1/src/app/api/system/health/route.ts",
+        "urai-tier1/src/app/api/system/manifest/route.ts",
+        "urai-tier1/src/app/api/system/capabilities/route.ts",
+        "urai-tier1/src/app/api/system/integration-contract/route.ts"
+      ],
+      "requiredScripts": [
+        "check:production-routes",
+        "live:check"
+      ],
+      "missingPaths": [],
+      "missingScripts": [],
+      "decision": "NON_ASSET_LOCK_READY"
+    },
+    {
+      "version": "v12",
+      "label": "Privacy consent and provider boundary proof lane",
+      "requiredPaths": [
+        "firebase/firestore.rules",
+        "firebase/firestore.indexes.json",
+        "scripts/check-firestore-tier1-boundaries.mjs",
+        "scripts/check-spatial-copy.mjs"
+      ],
+      "requiredScripts": [
+        "firebase:rules:check",
+        "check:spatial-copy"
+      ],
+      "missingPaths": [],
+      "missingScripts": [],
+      "decision": "NON_ASSET_LOCK_READY"
+    },
+    {
+      "version": "v13",
+      "label": "World ground place and location route proof lane",
+      "requiredPaths": [
+        "urai-tier1/src/app/world/page.tsx",
+        "urai-tier1/src/app/ground/page.tsx",
+        "urai-tier1/src/app/place/[placeId]/page.tsx",
+        "urai-tier1/src/app/place/[placeId]/replay/page.tsx",
+        "urai-tier1/src/app/location-map/page.tsx"
+      ],
+      "requiredScripts": [
+        "urai:guardian",
+        "check:production-routes"
+      ],
+      "missingPaths": [],
+      "missingScripts": [],
+      "decision": "NON_ASSET_LOCK_READY"
+    },
+    {
+      "version": "v14",
+      "label": "Replay film and cinematic route proof lane",
+      "requiredPaths": [
+        "urai-tier1/src/app/replay/page.tsx",
+        "urai-tier1/src/app/replay/[replayId]/page.tsx",
+        "urai-tier1/src/app/demo/replay-film/page.tsx",
+        "tests/replay-memory-theater-contract.mjs"
+      ],
+      "requiredScripts": [
+        "test:replay-contract",
+        "verify:release:critical"
+      ],
+      "missingPaths": [],
+      "missingScripts": [],
+      "decision": "NON_ASSET_LOCK_READY"
+    },
+    {
+      "version": "v15",
+      "label": "Passport council and identity layer proof lane",
+      "requiredPaths": [
+        "urai-tier1/src/app/passport/page.tsx",
+        "urai-tier1/src/app/council/page.tsx",
+        "urai-tier1/src/app/u/[handle]/page.tsx",
+        "urai-tier1/src/app/u/adamclamp/page.tsx"
+      ],
+      "requiredScripts": [
+        "urai:guardian",
+        "check:production-routes"
+      ],
+      "missingPaths": [],
+      "missingScripts": [],
+      "decision": "NON_ASSET_LOCK_READY"
+    },
+    {
+      "version": "v16",
+      "label": "Admin internal locks and governance proof lane",
+      "requiredPaths": [
+        "urai-tier1/src/app/internal/locks/page.tsx",
+        "scripts/urai-guardian.mjs",
+        "scripts/check-runtime-boundary.mjs",
+        "scripts/check-source-integrity.mjs"
+      ],
+      "requiredScripts": [
+        "urai:guardian",
+        "check:runtime-boundary",
+        "check:source-integrity"
+      ],
+      "missingPaths": [],
+      "missingScripts": [],
+      "decision": "NON_ASSET_LOCK_READY"
+    },
+    {
+      "version": "v17",
+      "label": "Studio handoff and asset interface proof lane",
+      "requiredPaths": [
+        "docs/contracts/URAI_STUDIO_SPATIAL_HANDOFF.md",
+        "urai-tier1/src/lib/studio-spatial-handoff.ts",
+        "urai-tier1/tests/studio-spatial-handoff.test.mjs"
+      ],
+      "requiredScripts": [
+        "check:launch-boundary-contract",
+        "verify:release:critical"
+      ],
+      "missingPaths": [],
+      "missingScripts": [],
+      "decision": "NON_ASSET_LOCK_READY"
+    },
+    {
+      "version": "v18",
+      "label": "Deployment live release and status proof lane",
+      "requiredPaths": [
+        ".github/workflows/spatial-live-deploy.yml",
+        ".github/workflows/urai-launch.yml",
+        "LIVE_RELEASE.md",
+        "DEPLOYMENT.md",
+        "STATUS.md",
+        "RUNBOOK.md"
+      ],
+      "requiredScripts": [
+        "live:check",
+        "live:deploy",
+        "verify:e2e:resilient"
+      ],
+      "missingPaths": [],
+      "missingScripts": [],
+      "decision": "NON_ASSET_LOCK_READY"
+    },
+    {
+      "version": "v19",
+      "label": "Commercial early access invite and checkout proof lane",
+      "requiredPaths": [
+        "urai-tier1/src/app/early-access/page.tsx",
+        "urai-tier1/src/app/invite/[code]/page.tsx",
+        "urai-tier1/src/app/api/stripe/create-checkout-session/route.ts",
+        "urai-tier1/src/app/api/stripe/webhook/route.ts"
+      ],
+      "requiredScripts": [
+        "check:production-routes",
+        "verify:release:critical"
+      ],
+      "missingPaths": [],
+      "missingScripts": [],
+      "decision": "NON_ASSET_LOCK_READY"
+    },
+    {
+      "version": "v20",
+      "label": "Final aggregate non asset launch proof lane",
+      "requiredPaths": [
+        "package.json",
+        "scripts/check-v1-v6-non-asset-lock.mjs",
+        "scripts/check-v7-v10-non-asset-lock.mjs",
+        "audit/v7-v10/non-asset-lock-report.json",
+        "audit/tier-lock/TIER_1_5_FINAL_LOCK_REPORT.md"
+      ],
+      "requiredScripts": [
+        "verify:v1-v6:non-assets",
+        "verify:v7-v10:non-assets",
+        "verify:v1-v10:non-assets",
+        "verify:release:critical"
+      ],
+      "missingPaths": [],
+      "missingScripts": [],
+      "decision": "NON_ASSET_LOCK_READY"
+    }
+  ],
+  "failures": []
+}
