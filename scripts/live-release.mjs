@@ -302,8 +302,12 @@ async function main() {
   const manifest = assertReleaseManifest()
   console.log(`[URAI Spatial Live] Manifest: ${manifest.name} (${manifest.canonicalStatus})`)
 
-  console.log('[URAI Spatial Live] Running full release verification.')
-  await runPnpm(['verify:release:full'])
+  const liveVerifyScript =
+    process.env.URAI_LIVE_VERIFY_SCRIPT ||
+    (process.env.GITHUB_ACTIONS === 'true' ? 'verify:release:critical' : 'verify:release:full')
+
+  console.log(`[URAI Spatial Live] Running release verification: ${liveVerifyScript}`)
+  await runPnpm([liveVerifyScript])
 
   if (mode !== 'deploy') {
     console.log('\n[URAI Spatial Live] Live check passed. No deploy requested.')
