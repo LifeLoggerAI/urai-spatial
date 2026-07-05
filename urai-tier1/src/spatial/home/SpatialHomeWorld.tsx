@@ -40,6 +40,8 @@ export default function SpatialHomeWorld({ userId = "demo-user" }: { userId?: st
   const latestMemory = cognitive.getLatestMemory();
   const latestInsight = cognitive.getLatestInsight();
 
+  const [debugInput, setDebugInput] = useState("");
+
   return (
     <div
       data-testid="urai-spatial-stage"
@@ -93,6 +95,26 @@ export default function SpatialHomeWorld({ userId = "demo-user" }: { userId?: st
         <div style={{ marginTop: 8 }}>
           <b>Insight:</b><br />
           {latestInsight?.message || "none"}
+        </div>
+
+        <div style={{ marginTop: 10 }}>
+          <input
+            value={debugInput}
+            onChange={(e) => setDebugInput(e.target.value)}
+            placeholder="type memory"
+            style={{ width: "100%" }}
+          />
+
+          <button
+            onClick={() => {
+              if (!debugInput.trim()) return;
+              processMemory(userId, debugInput);
+              setDebugInput("");
+            }}
+            style={{ marginTop: 6, width: "100%" }}
+          >
+            send
+          </button>
         </div>
       </div>
 
