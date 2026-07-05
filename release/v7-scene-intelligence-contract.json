@@ -1,0 +1,62 @@
+{
+  "contractId": "urai-v7-scene-intelligence-2026-07-05",
+  "status": "V7_SCENE_INTELLIGENCE_READY",
+  "entryGate": {
+    "requiresV1V6AssetSwitch": true,
+    "allowedPreAssetState": "V1_V6_ASSET_SWITCH_READY_FINAL_ASSETS_PENDING",
+    "strictAssetStateForPublicLaunch": "V1_V6_ASSETS_ACTIVE",
+    "mustNotReopenV1V6RouteOwnership": true
+  },
+  "sceneStateContract": {
+    "requiredFields": [
+      "routeId",
+      "routeFamily",
+      "memoryId",
+      "sceneId",
+      "assetPackId",
+      "fallbackMode",
+      "transitionPolicy",
+      "privacyBoundary",
+      "evidenceTag"
+    ],
+    "routeFamilies": [
+      "home",
+      "ground",
+      "life-map",
+      "focus",
+      "replay",
+      "unwind",
+      "mirror",
+      "passport",
+      "privacy-controls",
+      "location-map",
+      "status",
+      "xr"
+    ],
+    "fallbackModes": [
+      "final-assets-active",
+      "fallback-safe",
+      "reduced-motion",
+      "static-proof"
+    ],
+    "transitionPolicy": [
+      "consent-safe",
+      "reduced-motion-safe",
+      "approval-gated-actions",
+      "no-asset-hardcoding"
+    ]
+  },
+  "v7Lanes": [
+    "v7-scene-intelligence",
+    "v7-asset-pack-runtime",
+    "v7-replay-continuity",
+    "v7-xr-readiness",
+    "v7-release-evidence-surface"
+  ],
+  "nonGoals": [
+    "replace-v1-v6-route-ownership",
+    "weaken-boundaries",
+    "make-browser-e2e-infra-a-hard-deploy-blocker",
+    "ship-final-asset-claims-before-strict-asset-gate"
+  ]
+}
