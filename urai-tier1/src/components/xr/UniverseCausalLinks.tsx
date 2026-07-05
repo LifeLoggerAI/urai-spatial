@@ -3,11 +3,9 @@
 import * as THREE from "three";
 import { useMemo } from "react";
 
-export default function UniverseCausalLinks({ state }: any) {
-  const geometry = useMemo(() => {
+export default function UniverseCausalLinks({ state, onSelectEdge }: any) {
+  const { geometry, edgesMeta } = useMemo(() => {
     const count = Math.max(3, state?.events ?? 5);
-
-    const positions: number[] = [];
 
     const nodes = Array.from({ length: count }).map((_, i) => {
       const angle = (i / count) * Math.PI * 2;
@@ -18,18 +16,36 @@ export default function UniverseCausalLinks({ state }: any) {
       ];
     });
 
-    const edges: number[][] = [];
+    const positions: number[] = [];
+    const edgesMeta: any[] = [];
 
     for (let i = 0; i < nodes.length; i++) {
       const a = nodes[i];
       const b = nodes[(i + 1) % nodes.length];
       const c = nodes[(i + 2) % nodes.length];
 
-      edges.push([...a, ...b]);
-      edges.push([...a, ...c]);
-    }
+      const edges = [
+        { from: i, to: (i + 1) % nodes.length, a, b },
+        { from: i, to: (i + 2) % nodes.length, a, b: c }
+      ];
 
-    edges.forEach((e) => positions.push(...e));
+      for (const e of edges) {
+        positions.push(...e.a, ...e.b);
+
+        const mid = [
+          (e.a[0] + e.b[0]) / 2,
+          (e.a[1] + e.b[1]) / 2,
+          (e.a[2] + e.b[2]) / 2
+        ];
+
+        edgesMeta.push({
+          id: `${e.from}-${e.to}`,
+          from: e.from,
+          to: e.to,
+          midpoint: mid
+        });
+      }
+    }
 
     const geom = new THREE.BufferGeometry();
     geom.setAttribute(
@@ -37,12 +53,28 @@ export default function UniverseCausalLinks({ state }: any) {
       new THREE.Float32BufferAttribute(positions, 3)
     );
 
-    return geom;
+    return { geometry: geom, edgesMeta };
   }, [state]);
 
   return (
-    <lineSegments geometry={geometry}>
-      <lineBasicMaterial color="#66ccff" opacity={0.6} transparent />
-    </lineSegments>
+    <group>
+      <lineSegments geometry={geometry}>
+        <lineBasicMaterial color="#66ccff" opacity={0.6} transparent />
+      </lineSegments>
+
+      {edgesMeta.map((e) => (
+        <mesh
+          key={e.id}
+          position={e.midpoint as [number, number, number]}
+          onClick={(ev) => {
+            ev.stopPropagation();
+            onSelectEdge?.(e);
+          }}
+        >
+          <sphereGeometry args={[0.08, 12, 12]} />
+          <meshBasicMaterial transparent opacity={0.0} />
+        </mesh>
+      ))}
+    </group>
   );
 }
