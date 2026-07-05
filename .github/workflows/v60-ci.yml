@@ -1,0 +1,13 @@
+name: v60 CI
+
+on:
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run demo
+        run: echo v60-ci-running
