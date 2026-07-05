@@ -83,7 +83,7 @@
     "test:rules": "node scripts/run-pnpm.mjs firebase:rules:check",
     "test:smoke": "node scripts/run-pnpm.mjs smoke",
     "canon:lock": "node scripts/check-tier1-canon-lock.mjs",
-    "test": "node scripts/run-pnpm.mjs bootstrap:check && node scripts/run-pnpm.mjs --filter urai-functions build && node scripts/run-pnpm.mjs --filter urai-functions test && node scripts/run-optional-e2e.mjs && node tests/replay-memory-theater-contract.mjs && node tests/replay-tier5-lock.mjs",
+    "test": "node scripts/run-pnpm.mjs bootstrap:check && node scripts/run-pnpm.mjs --filter urai-functions build && node scripts/run-pnpm.mjs --filter urai-functions test && node scripts/run-optional-e2e.mjs && node tests/replay-memory-theater-contract.mjs && node scripts/run-pnpm.mjs playwright:ensure && node scripts/run-pnpm.mjs exec playwright test tests/replay-tier5-current.spec.mjs",
     "test:e2e": "node scripts/run-pnpm.mjs playwright:ensure && node tests/spatial-lock.mjs",
     "test:e2e:lock": "node scripts/run-pnpm.mjs test:e2e && node scripts/run-pnpm.mjs test:tier-lock-hardening",
     "test:e2e:navigation-stack": "node scripts/run-pnpm.mjs playwright:ensure && node tests/spatial-tier-lock-hardening.mjs --suite=navigation",
@@ -96,7 +96,7 @@
     "test:playwright": "node scripts/run-playwright-tests.mjs",
     "test:firestore-rules": "node scripts/run-firestore-rules-tests.mjs",
     "test:replay-contract": "node tests/replay-memory-theater-contract.mjs",
-    "test:replay-tier5": "node scripts/run-pnpm.mjs test:replay-contract && node tests/replay-tier5-lock.mjs",
+    "test:replay-tier5": "node scripts/run-pnpm.mjs test:replay-contract && node scripts/run-pnpm.mjs playwright:ensure && node scripts/run-pnpm.mjs exec playwright test tests/replay-tier5-current.spec.mjs",
     "playwright:install": "node scripts/run-pnpm.mjs bootstrap:check && node scripts/run-pnpm.mjs exec playwright install chromium",
     "playwright:install-deps": "node scripts/run-pnpm.mjs bootstrap:check && node scripts/run-pnpm.mjs exec playwright install-deps chromium",
     "playwright:check": "node scripts/check-playwright-runtime.mjs",
@@ -136,7 +136,7 @@
     "urai:guardian": "node scripts/urai-guardian.mjs",
     "tier4:production:check": "node urai-tier1/tests/tier4-production-contract.test.mjs && node scripts/run-pnpm.mjs tier4:check && node scripts/run-pnpm.mjs urai:tier4",
     "tier5:production:check": "node scripts/check-tier5-local-production.mjs",
-    "tier5:browser:check": "pnpm playwright:ensure && node tests/replay-tier5-lock.mjs",
+    "tier5:browser:check": "node scripts/run-pnpm.mjs playwright:ensure && node scripts/run-pnpm.mjs exec playwright test tests/replay-tier5-current.spec.mjs",
     "tier5:full:check": "pnpm tier5:production:check && pnpm tier5:browser:check && pnpm live:check"
   },
   "devDependencies": {
