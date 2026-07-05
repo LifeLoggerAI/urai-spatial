@@ -9,14 +9,14 @@
       "criticality": "primary"
     },
     {
-      "id": "asset-factory",
-      "role": "final asset production and handoff source",
+      "id": "deferred-asset-lane",
+      "role": "external asset lane placeholder until live job integration is certified",
       "repo": "external-or-adjacent",
       "criticality": "asset-lane"
     },
     {
-      "id": "urai-studio",
-      "role": "studio handoff and content production coordination",
+      "id": "deferred-studio-handoff",
+      "role": "external studio handoff placeholder until live job integration is certified",
       "repo": "external-or-adjacent",
       "criticality": "handoff-lane"
     },
@@ -31,6 +31,7 @@
     "Do not collapse ecosystem state into one repo status.",
     "Classify external dependencies separately from core runtime safety.",
     "Asset pending is not the same as product broken.",
-    "Every ecosystem decision must produce auditable evidence."
+    "Every ecosystem decision must produce auditable evidence.",
+    "External asset and studio lanes remain deferred until live job integration is certified."
   ]
 }
