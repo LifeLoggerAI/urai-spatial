@@ -1,9 +1,9 @@
 /**
  * URAI Unified Event + State Kernel (MVP)
- * Step 1: single-file deterministic core
- *
- * This is the minimal primitive required for v50 convergence.
+ * Step 1 + 2 integration: deterministic core + persistence
  */
+
+import { EventStore } from "./eventStore";
 
 // =========================
 // Types
@@ -26,7 +26,7 @@ export type URAIState = {
 };
 
 // =========================
-// Event Bus (single source of truth ingress)
+// Event Bus
 // =========================
 
 export class EventBus {
@@ -42,7 +42,7 @@ export class EventBus {
 }
 
 // =========================
-// Reducer (pure function = determinism layer)
+// Reducer
 // =========================
 
 export function reducer(state: URAIState, event: URAIEvent): URAIState {
@@ -51,7 +51,6 @@ export function reducer(state: URAIState, event: URAIEvent): URAIState {
     memory: [...state.memory, event],
   };
 
-  // minimal projection examples
   if (event.type === "USER_UPDATE") {
     next.users[event.userId] = {
       ...(next.users[event.userId] || {}),
@@ -70,7 +69,7 @@ export function reducer(state: URAIState, event: URAIEvent): URAIState {
 }
 
 // =========================
-// Store (single canonical state engine)
+// Store
 // =========================
 
 export class Store {
@@ -100,28 +99,55 @@ export class Store {
 }
 
 // =========================
-// Kernel Bootstrap
+// Kernel Bootstrap (NOW PERSISTENT)
 // =========================
 
 export class URAIKernel {
   public bus: EventBus;
   public store: Store;
+  public eventStore: EventStore;
 
-  constructor() {
+  private ready: boolean = false;
+
+  constructor(eventStore?: EventStore) {
     this.bus = new EventBus();
     this.store = new Store();
+    this.eventStore = eventStore || new EventStore();
 
-    // wire event flow
+    // In-memory propagation
     this.bus.subscribe((event) => {
       this.store.dispatch(event);
+
+      // Persist every event (source of truth)
+      this.eventStore.write(event).catch((err) => {
+        console.error("EventStore write failed:", err);
+      });
     });
   }
 
+  /**
+   * MUST be called before system use
+   * Rebuilds deterministic state from event log
+   */
+  async init() {
+    const events = await this.eventStore.readAll();
+    this.store.replay(events);
+    this.ready = true;
+  }
+
   emit(event: URAIEvent) {
+    if (!this.ready) {
+      console.warn("Kernel not initialized yet");
+    }
+
     this.bus.emit(event);
   }
 
   getState() {
     return this.store.getState();
+  }
+
+  isReady() {
+    return this.ready;
   }
 }
