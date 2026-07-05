@@ -120,7 +120,9 @@ jobs:
           git config --global --add safe.directory "$GITHUB_WORKSPACE" || true
           git fetch origin main --tags --force --prune || true
           git fetch --unshallow || true
-          git checkout -B main origin/main || true
+          if [ "${{ github.event_name }}" = "push" ] && [ "${{ github.ref_name }}" = "main" ]; then
+            git checkout -B main origin/main || true
+          fi
           git status --short || true
           git rev-parse --is-inside-work-tree
           git rev-parse HEAD
