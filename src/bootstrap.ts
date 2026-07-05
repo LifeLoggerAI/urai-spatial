@@ -1,11 +1,12 @@
 /**
  * URAI Runtime Bootstrap
- * Step 4 + 6: kernel + spatial runtime binding
+ * Step 4 + 6 + 8: full runtime integration (kernel + input + spatial)
  */
 
 import { URAIKernel } from "./kernel";
 import { EventStore } from "./eventStore";
 import { startSpatialRuntime } from "./spatialLoop";
+import { bindInputToKernel } from "./input";
 
 async function main() {
   // =========================
@@ -27,7 +28,12 @@ async function main() {
   console.log("Current state:", kernel.getState());
 
   // =========================
-  // 4. First synthetic system event (sanity test)
+  // 4. Bind INPUT LAYER (USER → EVENT)
+  // =========================
+  bindInputToKernel(kernel);
+
+  // =========================
+  // 5. First synthetic system event (sanity test)
   // =========================
   kernel.emit({
     id: "boot-event-1",
@@ -42,12 +48,12 @@ async function main() {
   });
 
   // =========================
-  // 5. Verify state transition
+  // 6. Verify state transition
   // =========================
   console.log("State after boot event:", kernel.getState());
 
   // =========================
-  // 6. START SPATIAL RUNTIME LOOP (FIRST LIVE SYSTEM LOOP)
+  // 7. START SPATIAL RUNTIME LOOP (FIRST LIVE SYSTEM LOOP)
   // =========================
   await startSpatialRuntime(kernel);
 }
