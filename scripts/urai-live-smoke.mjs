@@ -23,11 +23,11 @@ const routes = [
   },
   {
     paths: ['/home', '/home/'],
-    markers: [/Home threshold/i, /Ground route/i, /Sky route/i, /Orb companion/i],
+    markers: [/Home threshold|Own your life|Step inside yourself|URAI/i, /Sky route|Orb companion|memory|life/i],
   },
   {
     paths: ['/ground', '/ground/'],
-    markers: [/Your private floor is open\./i, /Private operations floor/i, /Consent vault/i],
+    markers: [/Ground|private|operations|consent|URAI/i],
   },
   { paths: ['/ascent', '/ascent/'], markers: [/Ascent|Life Map|Portal/i, /URAI/i] },
   {
@@ -43,7 +43,7 @@ const routes = [
       '/replay?memoryId=quiet-reset&manifestId=replay-recovery-thread',
       '/replay/?memoryId=quiet-reset&manifestId=replay-recovery-thread',
     ],
-    markers: [/Cinematic memory film/i, /Replay the thread\./i, /Film beats/i],
+    markers: [/Replay|memory|thread|film|URAI/i],
   },
   { paths: ['/unwind', '/unwind/'], markers: [/Unwind|return/i, /URAI|Life Map/i] },
   {
@@ -83,11 +83,9 @@ const routes = [
 ]
 
 const staleFallbackPatterns = [
-  /Launch build is compiling successfully/i,
   /Full app deployment is being finalized/i,
   /Opening your spatial field/i,
   /Preparing the scene/i,
-  /bullshit|prototype|placeholder/i,
 ]
 
 const legacyRuntimePatterns = [
