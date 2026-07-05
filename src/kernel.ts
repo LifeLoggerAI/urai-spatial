@@ -1,9 +1,10 @@
 /**
  * URAI Unified Event + State Kernel (MVP)
- * Step 1 + 2 + 9 integration: deterministic core + persistence + input reaction
+ * Step 1 + 2 + 9 + 11 integration: deterministic core + persistence + input reaction + validation
  */
 
 import { EventStore } from "./eventStore";
+import { validateEvent } from "./schema";
 
 // =========================
 // Types
@@ -65,10 +66,6 @@ export function reducer(state: URAIState, event: URAIEvent): URAIState {
     };
   }
 
-  // =========================
-  // NEW: USER INPUT → WORLD STATE EFFECTS
-  // =========================
-
   if (event.type === "USER_INPUT") {
     const world = next.worlds[event.worldId] || {};
 
@@ -117,7 +114,7 @@ export class Store {
 }
 
 // =========================
-// Kernel Bootstrap (NOW PERSISTENT)
+// Kernel Bootstrap (NOW VALIDATED)
 // =========================
 
 export class URAIKernel {
@@ -133,6 +130,13 @@ export class URAIKernel {
     this.eventStore = eventStore || new EventStore();
 
     this.bus.subscribe((event) => {
+      // Only persist VALID events
+      const validation = validateEvent(event);
+      if (!validation.valid) {
+        console.error("Blocked invalid event in kernel:", validation.error);
+        return;
+      }
+
       this.store.dispatch(event);
 
       this.eventStore.write(event).catch((err) => {
@@ -143,13 +147,23 @@ export class URAIKernel {
 
   async init() {
     const events = await this.eventStore.readAll();
-    this.store.replay(events);
+
+    // filter invalid events during replay
+    const validEvents = events.filter((e) => validateEvent(e).valid);
+
+    this.store.replay(validEvents);
     this.ready = true;
   }
 
   emit(event: URAIEvent) {
     if (!this.ready) {
       console.warn("Kernel not initialized yet");
+    }
+
+    const validation = validateEvent(event);
+    if (!validation.valid) {
+      console.error("Rejected event at emit:", validation.error);
+      return;
     }
 
     this.bus.emit(event);
