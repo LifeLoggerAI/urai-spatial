@@ -15,20 +15,39 @@ export type EvolutionAction =
   | { type: "synthesize" };
 
 /**
- * AI POLICY LAYER (stubbed intelligence core)
+ * AI POLICY LAYER (now connected to live model inference)
  *
- * Replaces hardcoded evolution rules with a decision policy.
- * Later upgrade point: LLM / RL / learned policy network.
+ * Primary path: external model inference API
+ * Fallback path: deterministic heuristic policy
  */
-export function aiEvolutionPolicy(ctx: EvolutionContext): EvolutionAction {
+export async function aiEvolutionPolicy(
+  ctx: EvolutionContext
+): Promise<EvolutionAction> {
+  try {
+    const res = await fetch("/api/model/infer", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        task: "evolution_policy",
+        context: ctx
+      })
+    });
+
+    if (res.ok) {
+      const action = await res.json();
+      if (action?.type) return action;
+    }
+  } catch (e) {
+    // fallback below
+  }
+
+  // fallback heuristic signals
   const { historyLength, branchCount, density, anomalyScore = 0 } = ctx;
 
-  // heuristic signals (replace with model later)
   const pressure = historyLength / 25;
   const instability = branchCount / 5;
   const chaos = density + anomalyScore;
 
-  // 🧠 fork decision
   if (pressure > 1.0 && chaos < 0.7) {
     return {
       type: "fork",
@@ -36,7 +55,6 @@ export function aiEvolutionPolicy(ctx: EvolutionContext): EvolutionAction {
     };
   }
 
-  // 🔀 merge decision
   if (instability > 1 && chaos > 0.5) {
     return {
       type: "merge",
@@ -45,7 +63,6 @@ export function aiEvolutionPolicy(ctx: EvolutionContext): EvolutionAction {
     };
   }
 
-  // 🧬 synthesis decision
   if (anomalyScore > 0.8) {
     return { type: "synthesize" };
   }
