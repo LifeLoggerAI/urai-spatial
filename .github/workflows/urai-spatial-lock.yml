@@ -55,12 +55,14 @@ jobs:
       - name: Run build release lock
         shell: bash
         run: |
+          mkdir -p artifacts/spatial-lock
           set -o pipefail
           pnpm lock:build 2>&1 | tee artifacts/spatial-lock/lock-build.log
 
       - name: Run browser release lock
         shell: bash
         run: |
+          mkdir -p artifacts/spatial-lock
           set -o pipefail
           pnpm lock:e2e 2>&1 | tee artifacts/spatial-lock/lock-e2e.log
 
