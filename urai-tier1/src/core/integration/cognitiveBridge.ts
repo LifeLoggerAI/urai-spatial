@@ -8,6 +8,15 @@ export function createCognitiveBridge(userId: string = "demo-user") {
   let isAutonomousRunning = false;
   let isProcessingTick = false;
 
+  // event subscribers (real-time evolution layer)
+  const listeners: Array<(state: { memory: any; insight: any }) => void> = [];
+
+  // multi-agent cognition layer
+  const agents: Array<{
+    id: string;
+    policy: (state: { memory: any; insight: any }) => string | null;
+  }> = [];
+
   function getMemory() {
     return cognitive.getLatestMemory?.() ?? null;
   }
@@ -21,19 +30,38 @@ export function createCognitiveBridge(userId: string = "demo-user") {
     return processMemory(userId, input);
   }
 
-  // REAL-TIME SUBSCRIPTION LAYER
-  function subscribe(callback: (state: { memory: any; insight: any }) => void) {
-    const interval = setInterval(() => {
-      callback({
-        memory: getMemory(),
-        insight: getInsight()
-      });
-    }, 500);
+  function emit() {
+    const state = {
+      memory: getMemory(),
+      insight: getInsight()
+    };
 
-    return () => clearInterval(interval);
+    // notify UI subscribers
+    for (const l of listeners) {
+      try {
+        l(state);
+      } catch {}
+    }
+
+    return state;
   }
 
-  // AUTONOMOUS LOOP (LEVELLED UP + GUARDED)
+  function onUpdate(cb: (state: { memory: any; insight: any }) => void) {
+    listeners.push(cb);
+    return () => {
+      const i = listeners.indexOf(cb);
+      if (i >= 0) listeners.splice(i, 1);
+    };
+  }
+
+  function registerAgent(agent: {
+    id: string;
+    policy: (state: { memory: any; insight: any }) => string | null;
+  }) {
+    agents.push(agent);
+  }
+
+  // AUTONOMOUS EVOLUTION LOOP (MULTI-AGENT)
   function startAutonomousLoop(intervalMs: number = 2000) {
     if (isAutonomousRunning) return stopAutonomousLoop;
 
@@ -44,19 +72,29 @@ export function createCognitiveBridge(userId: string = "demo-user") {
       isProcessingTick = true;
 
       try {
-        const mem = getMemory();
-        const insight = getInsight();
+        const state = emit();
+        const mem = state.memory;
+        const insight = state.insight;
 
-        // prevent empty churn
         if (!mem && !insight) return;
 
-        const text = mem?.content || insight?.message;
-        if (!text) return;
+        const baseText = mem?.content || insight?.message;
+        if (!baseText) return;
 
-        // guard against self-trigger storm
-        if (text.includes("autonomous reflection")) return;
+        // core autonomous reflection
+        if (!baseText.includes("autonomous reflection")) {
+          processMemory(userId, "autonomous reflection: " + baseText);
+        }
 
-        processMemory(userId, "autonomous reflection: " + text);
+        // multi-agent evolution step
+        for (const agent of agents) {
+          try {
+            const result = agent.policy(state);
+            if (result && result.trim()) {
+              processMemory(userId, `[agent:${agent.id}] ${result}`);
+            }
+          } catch {}
+        }
       } finally {
         isProcessingTick = false;
       }
@@ -74,12 +112,19 @@ export function createCognitiveBridge(userId: string = "demo-user") {
     isProcessingTick = false;
   }
 
+  // backward compatible subscription (now event-driven)
+  function subscribe(callback: (state: { memory: any; insight: any }) => void) {
+    return onUpdate(callback);
+  }
+
   return {
     cognitive,
     getMemory,
     getInsight,
     send,
     subscribe,
+    onUpdate,
+    registerAgent,
     startAutonomousLoop,
     stopAutonomousLoop
   };
