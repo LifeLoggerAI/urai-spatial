@@ -8,6 +8,7 @@ import HomeScene from "./visual/HomeScene";
 import { useUraiXrRoom } from "../xr/useUraiXrRoom";
 
 import { initCognitiveLoop } from "../../core/bootstrap/cognitiveLoop";
+import { processMemory } from "../../core/pipeline/processMemory";
 
 export default function SpatialHomeWorld({ userId = "demo-user" }: { userId?: string }) {
   const router = useRouter();
