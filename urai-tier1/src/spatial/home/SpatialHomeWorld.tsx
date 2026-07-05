@@ -75,14 +75,25 @@ export default function SpatialHomeWorld({ userId = "demo-user" }: { userId?: st
         <button type="button" onClick={enter} disabled={opening}>LifeMap</button>
         <button type="button" onClick={() => router.push("/mirror", { scroll: false })} disabled={opening}>Mirror</button>
         <button type="button" onClick={() => router.push("/replay", { scroll: false })} disabled={opening}>Replay</button>
-        <button
-          type="button"
-          onClick={() => setShowExplanation((open) => !open)}
-          aria-expanded={showExplanation}
-        >
+        <button type="button" onClick={() => setShowExplanation((open) => !open)} aria-expanded={showExplanation}>
           Why am I seeing this?
         </button>
       </nav>
+
+      {/* Cognitive Overlay */}
+      <div style={{ position: "fixed", top: 20, right: 20, zIndex: 9999, background: "rgba(0,0,0,0.75)", padding: 12, borderRadius: 10, color: "white", width: 300 }}>
+        <div style={{ fontWeight: "bold", marginBottom: 8 }}>URAI Cognitive Loop</div>
+
+        <div>
+          <b>Memory:</b><br />
+          {latestMemory?.content || "none"}
+        </div>
+
+        <div style={{ marginTop: 8 }}>
+          <b>Insight:</b><br />
+          {latestInsight?.message || "none"}
+        </div>
+      </div>
 
       {showExplanation ? (
         <aside className="explanation" data-testid="homeworld-explanation-panel">
@@ -95,39 +106,6 @@ export default function SpatialHomeWorld({ userId = "demo-user" }: { userId?: st
           </div>
 
           <p>{explanation.summary}</p>
-
-          <div className="badges">
-            <span>{explanation.confidence.label} confidence</span>
-            <span>Derived only · no raw audio stored</span>
-            {source === "local" ? <span>Local-only</span> : null}
-            {xrEnabled ? <span>XR room: {xrRoom.roomId}</span> : null}
-          </div>
-
-          <ul>
-            {explanation.whyAmISeeingThis.map((line) => (
-              <li key={line}>{line}</li>
-            ))}
-          </ul>
-
-          <div className="channels">
-            <article>
-              <strong>Ground</strong>
-              <p>{explanation.ground}</p>
-            </article>
-            <article>
-              <strong>Orb</strong>
-              <p>{explanation.orb}</p>
-            </article>
-            <article>
-              <strong>Sky</strong>
-              <p>{explanation.sky}</p>
-            </article>
-          </div>
-
-          <p className="privacy">{explanation.privacy.note}</p>
-          <button type="button" className="refresh" onClick={refresh}>
-            Refresh world
-          </button>
         </aside>
       ) : null}
     </div>
