@@ -83,6 +83,17 @@ function stageForMode(page, mode) {
   return page.locator(`[data-testid="urai-scene-stage"][data-scene-mode="${mode}"], [data-scene-mode="${mode}"]`).first();
 }
 
+async function resolveReplaySurface(page) {
+  const proofSurface = page.getByTestId('urai-replay-surface').first();
+  if (await proofSurface.isVisible().catch(() => false)) return proofSurface;
+
+  const cinematicSurface = page.getByTestId('cinematic-replay-client').first();
+  if (await cinematicSurface.isVisible().catch(() => false)) return cinematicSurface;
+
+  const legacySurface = page.locator('[data-mode="replay"]').first();
+  return legacySurface;
+}
+
 async function openFocus(page, baseUrl, report) {
   await page.goto(`${baseUrl}/life-map`, { waitUntil: 'domcontentloaded' });
   await page.waitForLoadState('networkidle', { timeout: 15000 }).catch(() => {});
@@ -159,7 +170,7 @@ async function run() {
     await page.screenshot({ path: `${ARTIFACT_DIR}/01-focus-memory-bloom.png`, fullPage: true });
     await openReplay(page, report);
 
-    const replay = page.locator('[data-testid="cinematic-replay-client"], [data-testid="urai-replay-surface"], [data-mode="replay"]').first();
+    const replay = await resolveReplaySurface(page);
     await expectVisible(replay, 'cinematic replay client');
     const replayPhase = await replay.getAttribute('data-replay-phase').catch(() => null);
     const replayPlaying = await replay.getAttribute('data-playing').catch(() => null);
@@ -190,7 +201,7 @@ async function run() {
 
     await page.setViewportSize({ width: 390, height: 844 });
     await page.goto(`${server.baseUrl}/replay?manifestId=${SEED}`, { waitUntil: 'domcontentloaded' });
-    const mobileReplay = page.locator('[data-testid="cinematic-replay-client"], [data-testid="urai-replay-surface"], [data-mode="replay"]').first();
+    const mobileReplay = await resolveReplaySurface(page);
     await expectVisible(mobileReplay, 'mobile cinematic replay client');
     await expectVisible(page.locator('[data-testid="urai-replay-timeline"], [aria-label="Replay playback controls"]').first(), 'mobile replay timeline');
     await expectVisible(page.locator('[data-testid="urai-replay-meta-panel"], [aria-label="Replay narrator panel"]').first(), 'mobile replay meta panel');
