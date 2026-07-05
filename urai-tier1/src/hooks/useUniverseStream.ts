@@ -102,6 +102,33 @@ export function useUniverseStream() {
     });
   }
 
+  function synthesizeReality(inputBranchIds?: string[]) {
+    const ids = inputBranchIds ?? Object.keys(branches);
+    const selected = ids.map((id) => branches[id]).filter(Boolean);
+
+    const allEvents = selected.flatMap((b) => b.history);
+
+    const avgEvents = selected.length
+      ? selected.reduce((acc, b) => acc + b.history.length, 0) / selected.length
+      : 0;
+
+    const latest = allEvents.sort((a, b) => (a?.timestamp ?? 0) - (b?.timestamp ?? 0)).slice(-1)[0];
+
+    const summary = latest?.summary ?? "synthetic_reality";
+
+    return {
+      id: "ai-synthesis",
+      type: "synthetic_reality",
+      sourceBranches: ids,
+      metrics: {
+        avgEvents
+      },
+      state: latest ?? null,
+      summary,
+      timestamp: Date.now()
+    };
+  }
+
   const current = branches[currentBranchId];
 
   const displayedState =
@@ -131,6 +158,7 @@ export function useUniverseStream() {
     setScrubIndex,
     forkAt,
     mergeBranches,
+    synthesizeReality,
     branches,
     currentBranchId,
     setCurrentBranchId
