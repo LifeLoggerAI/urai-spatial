@@ -123,7 +123,9 @@ export default function CinematicReplayClient() {
   return (
     <main
       data-testid="cinematic-replay-client"
+      data-mode="replay"
       data-replay-phase={replayPhase}
+      data-playing={playing ? 'true' : 'false'}
       data-replay-segment={activeSegment.id}
       data-reduced-motion={reducedMotion ? 'true' : 'false'}
       style={{
@@ -162,6 +164,7 @@ export default function CinematicReplayClient() {
         }}
       >
         <p style={{ margin: '0 0 6px', color: '#9be7ff', letterSpacing: '0.18em', textTransform: 'uppercase', fontSize: 11 }}>Replay chamber</p>
+        <p style={{ margin: '0 0 10px', color: '#ffffff', fontSize: 13 }}>URAI Replay · Source: Life Map</p>
         <h1 style={{ margin: 0, fontSize: 'clamp(1.45rem, 4vw, 2.5rem)' }}>{nodeName}</h1>
         <p style={{ margin: '8px 0 0', color: 'rgba(238,243,255,0.72)', lineHeight: 1.45 }}>{phaseDefinition.userVisibleUi}</p>
       </section>
