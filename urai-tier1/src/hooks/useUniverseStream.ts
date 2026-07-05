@@ -19,7 +19,6 @@ export function useUniverseStream() {
 
   const latestRef = useRef<any>(null);
 
-  // init main branch
   useEffect(() => {
     setBranches({
       main: {
@@ -76,8 +75,31 @@ export function useUniverseStream() {
         }
       };
     });
+  }
 
-    setCurrentBranchId((id) => id);
+  function mergeBranches(targetId: string, sourceId: string) {
+    setBranches((prev) => {
+      const target = prev[targetId];
+      const source = prev[sourceId];
+
+      if (!target || !source) return prev;
+
+      const mergedId = createId();
+
+      const mergedHistory = [...target.history, ...source.history]
+        .sort((a, b) => (a?.timestamp ?? 0) - (b?.timestamp ?? 0))
+        .slice(-100);
+
+      return {
+        ...prev,
+        [mergedId]: {
+          id: mergedId,
+          history: mergedHistory,
+          scrubIndex: null,
+          parentId: targetId
+        }
+      };
+    });
   }
 
   const current = branches[currentBranchId];
@@ -108,6 +130,7 @@ export function useUniverseStream() {
     scrubIndex: current?.scrubIndex ?? null,
     setScrubIndex,
     forkAt,
+    mergeBranches,
     branches,
     currentBranchId,
     setCurrentBranchId
