@@ -1,5 +1,5 @@
 import { chromium } from '@playwright/test';
-import { spawn } from 'node:child_process';
+import { spawn, spawnSync } from 'node:child_process';
 import { mkdirSync, writeFileSync } from 'node:fs';
 import process from 'node:process';
 
@@ -39,13 +39,55 @@ async function waitForServer(url, timeoutMs = 90000) {
   throw new Error(`Timed out waiting for ${url}`);
 }
 
+function killPort(port, signal = 'TERM') {
+  if (process.platform === 'win32' || port === 80 || port === 443) return;
+  const script = [
+    'set +e',
+    `if command -v fuser >/dev/null 2>&1; then fuser -k -${signal} ${port}/tcp >/dev/null 2>&1 || true; fi`,
+    `if command -v lsof >/dev/null 2>&1; then lsof -ti tcp:${port} | xargs -r kill -${signal} >/dev/null 2>&1 || true; fi`,
+  ].join('\n');
+  spawnSync('bash', ['-lc', script], { stdio: 'ignore' });
+}
+
+async function releasePort(port) {
+  killPort(port, 'TERM');
+  await sleep(750);
+  killPort(port, 'KILL');
+  await sleep(250);
+}
+
 async function startServer() {
-  if (USE_EXISTING || (await serverResponds(REQUESTED_BASE_URL))) return { child: null, baseUrl: REQUESTED_BASE_URL.replace(/\/$/, '') };
+  if (USE_EXISTING) {
+    return { child: null, baseUrl: REQUESTED_BASE_URL.replace(/\/$/, ''), port: REQUESTED_PORT };
+  }
+
+  await releasePort(FALLBACK_PORT);
   const baseUrl = baseUrlForPort(FALLBACK_PORT);
   const child = spawn('pnpm', ['--filter', 'urai-tier1', 'dev', '--port', String(FALLBACK_PORT)], {
-    cwd: process.cwd(), env: { ...process.env, CI: '1' }, stdio: 'inherit', shell: process.platform === 'win32',
+    cwd: process.cwd(),
+    env: { ...process.env, CI: '1' },
+    stdio: 'inherit',
+    detached: process.platform !== 'win32',
+    shell: process.platform === 'win32',
   });
-  return { child, baseUrl };
+  child.on('exit', (code) => {
+    if (code && code !== 0) console.error(`URAI Replay Tier 5 dev server exited with ${code}`);
+  });
+  return { child, baseUrl, port: FALLBACK_PORT };
+}
+
+function stopServer(server) {
+  if (!server?.child) return;
+  try {
+    if (process.platform === 'win32') server.child.kill('SIGTERM');
+    else process.kill(-server.child.pid, 'SIGTERM');
+  } catch {
+    try {
+      server.child.kill('SIGTERM');
+    } catch {
+      // already stopped
+    }
+  }
 }
 
 async function expectVisible(locator, label, timeout = 8000) {
@@ -142,9 +184,10 @@ async function run() {
   const server = await startServer();
   const report = { screenshots: [], console: [], audits: [], baseUrl: server.baseUrl };
   const consoleMessages = [];
+  let browser = null;
   try {
     await waitForServer(server.baseUrl);
-    const browser = await chromium.launch();
+    browser = await chromium.launch();
     const page = await browser.newPage({ viewport: { width: 1440, height: 1000 } });
     page.on('console', (message) => { if (message.type() === 'error') consoleMessages.push(message.text()); });
     page.on('pageerror', (error) => consoleMessages.push(error.message));
@@ -196,7 +239,6 @@ async function run() {
     await expectVisible(page.locator('[data-testid="urai-replay-meta-panel"], [aria-label="Replay narrator panel"]').first(), 'mobile replay meta panel');
     await page.screenshot({ path: `${ARTIFACT_DIR}/03-mobile-memory-theater-replay.png`, fullPage: true });
 
-    await browser.close();
     report.console = consoleMessages;
     if (consoleMessages.length) throw new Error(`Console errors detected:\n${consoleMessages.join('\n')}`);
     writeFileSync(`${ARTIFACT_DIR}/replay-tier5-report.json`, JSON.stringify(report, null, 2));
@@ -205,7 +247,9 @@ async function run() {
     writeFileSync(`${ARTIFACT_DIR}/replay-tier5-report.json`, JSON.stringify(report, null, 2));
     throw error;
   } finally {
-    if (server.child) server.child.kill('SIGTERM');
+    if (browser) await browser.close().catch(() => {});
+    stopServer(server);
+    if (server.child) await releasePort(server.port);
   }
 }
 
