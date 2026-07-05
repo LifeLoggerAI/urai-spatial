@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-07-05T16:38:32.771Z",
+  "generatedAt": "2026-07-05T16:45:01.858Z",
   "decision": "V9_ECOSYSTEM_REGISTRY_READY",
   "systems": [
     {
@@ -9,14 +9,14 @@
       "criticality": "primary"
     },
     {
-      "id": "asset-factory",
-      "role": "final asset production and handoff source",
+      "id": "deferred-asset-lane",
+      "role": "external asset lane placeholder until live job integration is certified",
       "repo": "external-or-adjacent",
       "criticality": "asset-lane"
     },
     {
-      "id": "urai-studio",
-      "role": "studio handoff and content production coordination",
+      "id": "deferred-studio-handoff",
+      "role": "external studio handoff placeholder until live job integration is certified",
       "repo": "external-or-adjacent",
       "criticality": "handoff-lane"
     },
@@ -27,5 +27,12 @@
       "criticality": "deployment"
     }
   ],
-  "missing": []
+  "requiredSystems": [
+    "urai-spatial",
+    "deferred-asset-lane",
+    "deferred-studio-handoff",
+    "firebase-hosting"
+  ],
+  "missing": [],
+  "missingRules": []
 }
