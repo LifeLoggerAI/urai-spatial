@@ -1,6 +1,6 @@
 v60 DISTRIBUTED RUNTIME EPOCH
 
-This file marks the divergence point for v60 kernel integration.
+This file establishes divergence for the v60-kernel-next branch.
 
 Systems included:
 - SharedEventLog
@@ -10,6 +10,6 @@ Systems included:
 - ConflictResolution
 - Distributed runtime bootstrap
 
-Status: ACTIVE DISTRIBUTED EPOCH
+STATUS: ACTIVE DISTRIBUTED EPOCH (BRANCH COMMIT)
 
-NOTE: This commit establishes structural divergence for v60 branch alignment.
+NOTE: This commit exists only on v60-kernel-next to force repository divergence for PR integration.
