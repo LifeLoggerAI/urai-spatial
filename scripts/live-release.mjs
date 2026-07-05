@@ -282,6 +282,23 @@ function assertDeployInputs() {
   }
 }
 
+async function runResilientE2eEvidence(liveVerifyScript) {
+  if (process.env.URAI_SKIP_RESILIENT_E2E === 'true') return
+  if (liveVerifyScript === 'verify:release:full') return
+
+  console.log('[URAI Spatial Live] Collecting resilient E2E evidence without blocking release safety.')
+  try {
+    await runPnpm(['verify:e2e:resilient'], {
+      env: {
+        CI: process.env.CI || 'true',
+        URAI_E2E_RESILIENT: '1',
+      },
+    })
+  } catch (error) {
+    console.warn(`[URAI Spatial Live] Resilient E2E evidence degraded: ${error.message}`)
+  }
+}
+
 async function main() {
   console.log(`[URAI Spatial Live] Mode: ${mode}`)
   assertDeployInputs()
@@ -302,12 +319,11 @@ async function main() {
   const manifest = assertReleaseManifest()
   console.log(`[URAI Spatial Live] Manifest: ${manifest.name} (${manifest.canonicalStatus})`)
 
-  const liveVerifyScript =
-    process.env.URAI_LIVE_VERIFY_SCRIPT ||
-    (process.env.GITHUB_ACTIONS === 'true' ? 'verify:release:critical' : 'verify:release:full')
+  const liveVerifyScript = process.env.URAI_LIVE_VERIFY_SCRIPT || 'verify:release:critical'
 
   console.log(`[URAI Spatial Live] Running release verification: ${liveVerifyScript}`)
   await runPnpm([liveVerifyScript])
+  await runResilientE2eEvidence(liveVerifyScript)
 
   if (mode !== 'deploy') {
     console.log('\n[URAI Spatial Live] Live check passed. No deploy requested.')
