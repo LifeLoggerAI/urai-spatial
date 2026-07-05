@@ -141,7 +141,10 @@
     "lock:v1-v6:non-assets": "node scripts/check-v1-v6-non-asset-lock.mjs",
     "verify:release:critical": "pnpm lock:static && pnpm lock:build",
     "verify:e2e:resilient": "node scripts/run-e2e-resilient.mjs",
-    "verify:v1-v6:non-assets": "pnpm lock:v1-v6:non-assets && pnpm verify:release:critical"
+    "verify:v1-v6:non-assets": "pnpm lock:v1-v6:non-assets && pnpm verify:release:critical",
+    "lock:v7-v10:non-assets": "node scripts/check-v7-v10-non-asset-lock.mjs",
+    "verify:v7-v10:non-assets": "pnpm lock:v7-v10:non-assets && pnpm verify:release:critical",
+    "verify:v1-v10:non-assets": "pnpm verify:v1-v6:non-assets && pnpm verify:v7-v10:non-assets"
   },
   "devDependencies": {
     "firebase-tools": "^15.22.3"
