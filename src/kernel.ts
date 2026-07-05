@@ -1,6 +1,6 @@
 /**
  * URAI Unified Event + State Kernel (MVP)
- * Step 1 + 2 integration: deterministic core + persistence
+ * Step 1 + 2 + 9 integration: deterministic core + persistence + input reaction
  */
 
 import { EventStore } from "./eventStore";
@@ -65,6 +65,24 @@ export function reducer(state: URAIState, event: URAIEvent): URAIState {
     };
   }
 
+  // =========================
+  // NEW: USER INPUT → WORLD STATE EFFECTS
+  // =========================
+
+  if (event.type === "USER_INPUT") {
+    const world = next.worlds[event.worldId] || {};
+
+    next.worlds[event.worldId] = {
+      ...world,
+      lastInteraction: {
+        userId: event.userId,
+        timestamp: event.timestamp,
+        payload: event.payload,
+      },
+      interactionCount: (world.interactionCount || 0) + 1,
+    };
+  }
+
   return next;
 }
 
@@ -114,21 +132,15 @@ export class URAIKernel {
     this.store = new Store();
     this.eventStore = eventStore || new EventStore();
 
-    // In-memory propagation
     this.bus.subscribe((event) => {
       this.store.dispatch(event);
 
-      // Persist every event (source of truth)
       this.eventStore.write(event).catch((err) => {
         console.error("EventStore write failed:", err);
       });
     });
   }
 
-  /**
-   * MUST be called before system use
-   * Rebuilds deterministic state from event log
-   */
   async init() {
     const events = await this.eventStore.readAll();
     this.store.replay(events);
