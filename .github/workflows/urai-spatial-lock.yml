@@ -62,7 +62,7 @@ jobs:
         shell: bash
         run: |
           set -o pipefail
-          pnpm lock:e2e 2>&1 | tee artifacts/spatial-lock/lock-e2e.log
+          pnpm test:e2e 2>&1 | tee artifacts/spatial-lock/lock-e2e.log
 
       - name: Upload Spatial Lock diagnostics
         if: always()
