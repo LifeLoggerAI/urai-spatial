@@ -59,10 +59,7 @@ jobs:
           pnpm lock:build 2>&1 | tee artifacts/spatial-lock/lock-build.log
 
       - name: Run browser release lock
-        shell: bash
-        run: |
-          set -o pipefail
-          pnpm test:e2e 2>&1 | tee artifacts/spatial-lock/lock-e2e.log
+        run: node scripts/run-spatial-lock-browser.mjs
 
       - name: Upload Spatial Lock diagnostics
         if: always()
