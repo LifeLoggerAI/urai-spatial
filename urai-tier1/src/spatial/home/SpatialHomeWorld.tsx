@@ -7,18 +7,22 @@ import { useAscentTransition } from "./motion/useAscentTransition";
 import HomeScene from "./visual/HomeScene";
 import { useUraiXrRoom } from "../xr/useUraiXrRoom";
 
+import { initCognitiveLoop } from "../../core/bootstrap/cognitiveLoop";
+
 export default function SpatialHomeWorld({ userId = "demo-user" }: { userId?: string }) {
   const router = useRouter();
   const params = useSearchParams();
   const { state, loading, explanation, source, refresh } = useHomeWorldState(userId);
   const { opening, enter } = useAscentTransition("/life-map");
   const [showExplanation, setShowExplanation] = useState(false);
+
   const xrEnabled = params.get("xr") === "1" || params.get("mode") === "xr" || params.get("mode") === "vr";
   const xrRoomId = params.get("xrRoom") ?? "home";
   const xrPeerId = params.get("xrPeer") ?? userId;
   const xrToken = params.get("xrToken") ?? undefined;
   const xrNavmeshUrl = "/xr/navmeshes/home-platform-v1.json";
   const xrRoom = useUraiXrRoom({ enabled: xrEnabled, roomId: xrRoomId, peerId: xrPeerId, token: xrToken, navmeshUrl: xrNavmeshUrl });
+
   const xrRuntime = useMemo(
     () => ({
       enabled: xrEnabled,
@@ -30,6 +34,10 @@ export default function SpatialHomeWorld({ userId = "demo-user" }: { userId?: st
     }),
     [xrEnabled, xrRoom.connected, xrRoom.navmeshUrl, xrRoom.peerId, xrRoom.peerSnapshot, xrRoom.roomId],
   );
+
+  const cognitive = useMemo(() => initCognitiveLoop(), []);
+  const latestMemory = cognitive.getLatestMemory();
+  const latestInsight = cognitive.getLatestInsight();
 
   return (
     <div
@@ -63,16 +71,10 @@ export default function SpatialHomeWorld({ userId = "demo-user" }: { userId?: st
         xrRuntime={xrRuntime}
       />
 
-      <nav className="dock" data-testid="urai-command-ribbon" aria-label="Home World controls">
-        <button type="button" onClick={enter} disabled={opening}>
-          LifeMap
-        </button>
-        <button type="button" onClick={() => router.push("/mirror", { scroll: false })} disabled={opening}>
-          Mirror
-        </button>
-        <button type="button" onClick={() => router.push("/replay", { scroll: false })} disabled={opening}>
-          Replay
-        </button>
+      <nav className="dock" aria-label="Home World controls">
+        <button type="button" onClick={enter} disabled={opening}>LifeMap</button>
+        <button type="button" onClick={() => router.push("/mirror", { scroll: false })} disabled={opening}>Mirror</button>
+        <button type="button" onClick={() => router.push("/replay", { scroll: false })} disabled={opening}>Replay</button>
         <button
           type="button"
           onClick={() => setShowExplanation((open) => !open)}
@@ -83,20 +85,13 @@ export default function SpatialHomeWorld({ userId = "demo-user" }: { userId?: st
       </nav>
 
       {showExplanation ? (
-        <aside
-          className="explanation"
-          data-testid="homeworld-explanation-panel"
-          data-homeworld-explanation="open"
-          aria-label="Why am I seeing this?"
-        >
+        <aside className="explanation" data-testid="homeworld-explanation-panel">
           <div className="explanation-head">
             <div>
               <p className="eyebrow">Home World V3</p>
               <h2>{explanation.headline}</h2>
             </div>
-            <button type="button" onClick={() => setShowExplanation(false)} aria-label="Close explanation">
-              ×
-            </button>
+            <button type="button" onClick={() => setShowExplanation(false)}>×</button>
           </div>
 
           <p>{explanation.summary}</p>
