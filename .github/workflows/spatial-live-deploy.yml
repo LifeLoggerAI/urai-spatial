@@ -143,6 +143,9 @@ jobs:
       - name: Install Playwright browsers
         run: npx playwright install --with-deps chromium
 
+      - name: Check V1-V6 asset-ready switch
+        run: node scripts/check-v1-v6-asset-ready.mjs
+
       - name: Run Spatial live release check
         run: pnpm live:check
 
@@ -169,6 +172,7 @@ jobs:
             docs/release
             release
             audit/tier-lock
+            audit/v1-v6
             src/canon
             firebase/firestore.rules
             firebase/firestore.indexes.json
