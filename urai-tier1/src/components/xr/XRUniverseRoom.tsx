@@ -7,6 +7,7 @@ import { useUniverseStream } from "../../hooks/useUniverseStream";
 import UniverseNodeCloud from "./UniverseNodeCloud";
 import UniverseTelemetryPanel from "./UniverseTelemetryPanel";
 import XRInspectorPanel from "./XRInspectorPanel";
+import UniverseCausalLinks from "./UniverseCausalLinks";
 
 export default function XRUniverseRoom() {
   const state = useUniverseStream();
@@ -25,6 +26,7 @@ export default function XRUniverseRoom() {
         URAI XR CONTROL ROOM
       </Text>
 
+      <UniverseCausalLinks state={state} />
       <UniverseNodeCloud state={state} onSelect={setSelected} />
       <UniverseTelemetryPanel state={state} />
       <XRInspectorPanel selected={selected} />
