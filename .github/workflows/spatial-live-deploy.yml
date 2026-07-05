@@ -127,8 +127,16 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
+      - name: Install Playwright browsers
+        run: npx playwright install --with-deps chromium
+
+
       - name: Run Spatial live release check
-        run: pnpm live:check
+        run: pnpm live:check      - name: Run resilient E2E evidence
+        if: always()
+        run: pnpm verify:e2e:resilient
+
+
 
       - name: Upload verification evidence
         if: always()

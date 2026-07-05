@@ -137,7 +137,11 @@
     "tier4:production:check": "node urai-tier1/tests/tier4-production-contract.test.mjs && node scripts/run-pnpm.mjs tier4:check && node scripts/run-pnpm.mjs urai:tier4",
     "tier5:production:check": "node scripts/check-tier5-local-production.mjs",
     "tier5:browser:check": "pnpm playwright:ensure && node tests/replay-tier5-lock.mjs",
-    "tier5:full:check": "pnpm tier5:production:check && pnpm tier5:browser:check && pnpm live:check"
+    "tier5:full:check": "pnpm tier5:production:check && pnpm tier5:browser:check && pnpm live:check",
+    "lock:v1-v6:non-assets": "node scripts/check-v1-v6-non-asset-lock.mjs",
+    "verify:release:critical": "pnpm lock:static && pnpm lock:build",
+    "verify:e2e:resilient": "node scripts/run-e2e-resilient.mjs",
+    "verify:v1-v6:non-assets": "pnpm lock:v1-v6:non-assets && pnpm verify:release:critical"
   },
   "devDependencies": {
     "firebase-tools": "^15.22.3"
