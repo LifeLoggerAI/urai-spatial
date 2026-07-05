@@ -2,10 +2,10 @@
 
 ## Core graph
 
-- asset-factory produces files for urai-spatial public assets.
-- urai-studio coordinates studio handoff into urai-spatial.
+- asset-factory is tracked as a deferred external asset-lane dependency until live job integration is certified.
+- urai-studio is tracked as a deferred handoff-lane dependency until live job integration is certified.
 - firebase-hosting provides deploy and live runtime surface.
-- GitHub Actions produces release gates and evidence artifacts.
+- GitHub Actions records release gates and evidence artifacts.
 - urai-spatial owns the V1-V10 roadmap and product evolution evidence.
 
 ## Risk classes
@@ -19,4 +19,4 @@
 
 ## Rule
 
-V9 must report ecosystem state without pretending external systems are local code.
+V9 must report ecosystem state without pretending external systems are local code or live provider integrations.
