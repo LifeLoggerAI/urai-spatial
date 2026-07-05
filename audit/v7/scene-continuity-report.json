@@ -1,0 +1,44 @@
+{
+  "generatedAt": "2026-07-05T16:38:32.177Z",
+  "decision": "V7_SCENE_INTELLIGENCE_READY",
+  "requiredRoutes": [
+    {
+      "routeId": "home",
+      "path": "urai-tier1/src/app/home/page.tsx"
+    },
+    {
+      "routeId": "life-map",
+      "path": "urai-tier1/src/app/life-map/page.tsx"
+    },
+    {
+      "routeId": "focus",
+      "path": "urai-tier1/src/app/focus/page.tsx"
+    },
+    {
+      "routeId": "replay",
+      "path": "urai-tier1/src/app/replay/page.tsx"
+    },
+    {
+      "routeId": "unwind",
+      "path": "urai-tier1/src/app/unwind/page.tsx"
+    },
+    {
+      "routeId": "spatial-ar-vr",
+      "path": "urai-tier1/src/app/spatial/ar-vr/page.tsx"
+    }
+  ],
+  "missingRoutes": [],
+  "registry": "urai-tier1/src/spatial/scene/sceneRegistry.ts",
+  "contract": "urai-tier1/src/spatial/scene/sceneIntelligenceContract.ts",
+  "missingFiles": [],
+  "missingRegistryRoutes": [],
+  "requiredContinuity": [
+    "home->life-map",
+    "life-map->focus",
+    "focus->replay",
+    "replay->unwind",
+    "unwind->life-map"
+  ],
+  "missingContinuity": [],
+  "missingTypes": []
+}

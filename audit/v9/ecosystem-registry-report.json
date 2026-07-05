@@ -1,0 +1,31 @@
+{
+  "generatedAt": "2026-07-05T16:38:32.771Z",
+  "decision": "V9_ECOSYSTEM_REGISTRY_READY",
+  "systems": [
+    {
+      "id": "urai-spatial",
+      "role": "spatial memory interface and V1-V10 release spine",
+      "repo": "LifeLoggerAI/urai-spatial",
+      "criticality": "primary"
+    },
+    {
+      "id": "asset-factory",
+      "role": "final asset production and handoff source",
+      "repo": "external-or-adjacent",
+      "criticality": "asset-lane"
+    },
+    {
+      "id": "urai-studio",
+      "role": "studio handoff and content production coordination",
+      "repo": "external-or-adjacent",
+      "criticality": "handoff-lane"
+    },
+    {
+      "id": "firebase-hosting",
+      "role": "deployment and live runtime surface",
+      "repo": "infrastructure",
+      "criticality": "deployment"
+    }
+  ],
+  "missing": []
+}

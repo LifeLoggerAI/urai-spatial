@@ -1,0 +1,83 @@
+{
+  "generatedAt": "2026-07-05T16:38:31.750Z",
+  "decision": "V1_V6_ASSETS_ACTIVE",
+  "strict": false,
+  "purpose": "Keep V1-V6 code/routes/gates ready so final assets turn on by landing files at the registry paths.",
+  "registry": "urai-tier1/src/spatial/assets/uraiAssets.ts",
+  "exportedContracts": [
+    "routeAssets",
+    "avatarAssets",
+    "uiAssets"
+  ],
+  "missingExports": [],
+  "activationContract": {
+    "rule": "The runtime already references final asset URLs first and fallback assets second. When final files are added at these paths, browser/runtime activation is automatic without route rewrites.",
+    "finalAssetPathsMustExistForFullActivation": true,
+    "fallbackAssetsMustExistForSafePreAssetMode": true
+  },
+  "counts": {
+    "referencedPublicAssets": 77,
+    "finalCandidates": 51,
+    "fallbackCandidates": 26,
+    "missingAll": 0,
+    "missingFinal": 0,
+    "missingFallback": 0
+  },
+  "byTier": {
+    "v5-mirror": {
+      "referenced": 5,
+      "missing": 0,
+      "missingFinal": 0,
+      "missingFallback": 0
+    },
+    "v6-system": {
+      "referenced": 39,
+      "missing": 0,
+      "missingFinal": 0,
+      "missingFallback": 0
+    },
+    "v1-home": {
+      "referenced": 7,
+      "missing": 0,
+      "missingFinal": 0,
+      "missingFallback": 0
+    },
+    "v1-ground": {
+      "referenced": 13,
+      "missing": 0,
+      "missingFinal": 0,
+      "missingFallback": 0
+    },
+    "v2-life-map": {
+      "referenced": 7,
+      "missing": 0,
+      "missingFinal": 0,
+      "missingFallback": 0
+    },
+    "v3-focus": {
+      "referenced": 3,
+      "missing": 0,
+      "missingFinal": 0,
+      "missingFallback": 0
+    },
+    "v4-replay": {
+      "referenced": 3,
+      "missing": 0,
+      "missingFinal": 0,
+      "missingFallback": 0
+    }
+  },
+  "finalManifests": [
+    {
+      "path": "urai-tier1/public/assets/urai/final/manifests/urai-final-assets.json",
+      "present": true
+    },
+    {
+      "path": "urai-tier1/public/assets/urai/final/manifests/asset-factory-spatial-handoff.json",
+      "present": true
+    }
+  ],
+  "missingFinal": [],
+  "missingFallback": [],
+  "nextStep": "Proceed to V7 branch planning."
+}

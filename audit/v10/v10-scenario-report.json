@@ -1,0 +1,61 @@
+{
+  "generatedAt": "2026-07-05T16:38:33.090Z",
+  "decision": "V10_SCENARIO_SIMULATION_READY",
+  "scenario": {
+    "id": "urai-personal-memory-os",
+    "title": "Personal memory operating systems",
+    "timeHorizon": [
+      "1 year",
+      "5 years",
+      "20 years"
+    ],
+    "actors": [
+      "individuals",
+      "families",
+      "clinicians",
+      "founders",
+      "AI assistants"
+    ],
+    "institutions": [
+      "healthcare",
+      "education",
+      "legal/IP",
+      "grant systems"
+    ],
+    "technologies": [
+      "spatial memory interface",
+      "AI assistants",
+      "asset-driven XR scenes",
+      "product evolution observers"
+    ],
+    "constraints": [
+      "privacy",
+      "consent",
+      "clinical validation",
+      "evidence quality"
+    ],
+    "risks": [
+      "over-claiming",
+      "privacy leakage",
+      "manipulative personalization",
+      "institutional misunderstanding"
+    ],
+    "benefits": [
+      "agency",
+      "memory continuity",
+      "accessibility",
+      "solo-founder leverage"
+    ],
+    "unknowns": [
+      "adoption curve",
+      "regulatory pathway",
+      "clinical evidence requirements"
+    ],
+    "safetyBoundary": "advisory simulation only"
+  },
+  "outputs": {
+    "nearTerm": "Asset-active V1-V6 enables credible demonstration and evidence capture.",
+    "midTerm": "V7-V9 add continuity, product evolution evidence, and ecosystem coordination.",
+    "longTerm": "V10 remains a research layer for scenario comparison, not control."
+  }
+}

@@ -1,0 +1,51 @@
+{
+  "generatedAt": "2026-07-05T16:38:32.347Z",
+  "commit": "f9cd86cfa72b8e6e17560feefdea2af95fca36ce",
+  "branch": "main",
+  "releaseDocs": [
+    {
+      "file": "docs/release/V1_V6_ASSET_READY_SWITCH.md",
+      "present": true
+    },
+    {
+      "file": "docs/release/V1_V6_ASSET_INVENTORY_COMPLETION_PLAN.md",
+      "present": true
+    },
+    {
+      "file": "docs/release/V7_ARCHITECTURE_PLAN.md",
+      "present": true
+    },
+    {
+      "file": "docs/release/V7_V10_COMPLETION_ROADMAP.md",
+      "present": true
+    },
+    {
+      "file": "docs/release/FINAL_PRODUCTION_RELEASE_CHECKLIST.md",
+      "present": true
+    }
+  ],
+  "gates": [
+    {
+      "file": "scripts/check-v1-v6-asset-ready.mjs",
+      "present": true
+    },
+    {
+      "file": "scripts/check-v7-scene-continuity.mjs",
+      "present": true
+    }
+  ],
+  "evidenceDirs": [
+    {
+      "dir": "audit/v1-v6",
+      "present": true
+    },
+    {
+      "dir": "audit/v7",
+      "present": true
+    },
+    {
+      "dir": "audit/v8",
+      "present": true
+    }
+  ]
+}

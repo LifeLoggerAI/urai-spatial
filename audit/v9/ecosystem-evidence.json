@@ -1,0 +1,16 @@
+{
+  "generatedAt": "2026-07-05T16:38:32.905Z",
+  "core": {
+    "assetSwitch": true,
+    "sceneGate": true,
+    "releaseChecklist": true
+  },
+  "ecosystem": {
+    "registry": true,
+    "dependencyGraph": true
+  },
+  "simulation": {
+    "scenarioSchema": true,
+    "safetyBoundary": true
+  }
+}
