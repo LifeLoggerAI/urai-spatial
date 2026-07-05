@@ -1,0 +1,93 @@
+{
+  "generatedAt": "2026-07-05T17:38:37.203Z",
+  "decision": "V7_V10_NON_ASSET_LOCK_READY",
+  "scope": "V7-V10 non-asset closure",
+  "excludes": [
+    "final generated art assets",
+    "final cinematic or AAA replacement assets",
+    "external XR validation",
+    "store or distribution packet completion"
+  ],
+  "lanes": [
+    {
+      "version": "v7",
+      "label": "Advanced spatial and XR contract lane",
+      "requiredPaths": [
+        "urai-tier1/src/app/spatial/ar-vr/page.tsx",
+        "release/tier-xr-release-matrix.json",
+        "release/urai-spatial-live-manifest.json",
+        "scripts/check-tier-xr-release-matrix.mjs"
+      ],
+      "requiredScripts": [
+        "xr:contract",
+        "xr:verify",
+        "check:tier-xr-release-matrix"
+      ],
+      "missingPaths": [],
+      "missingScripts": [],
+      "decision": "NON_ASSET_LOCK_READY"
+    },
+    {
+      "version": "v8",
+      "label": "Tier 3-5 canon and governance lane",
+      "requiredPaths": [
+        "src/canon/tier3.ts",
+        "src/canon/tier4.ts",
+        "src/canon/tier5.ts",
+        "scripts/check-tier3-governance.mjs",
+        "scripts/check-tier4-governance.mjs",
+        "scripts/check-tier5-governance.mjs"
+      ],
+      "requiredScripts": [
+        "tier3:check",
+        "tier4:check",
+        "tier5:check",
+        "urai:tier3",
+        "urai:tier4",
+        "urai:tier5"
+      ],
+      "missingPaths": [],
+      "missingScripts": [],
+      "decision": "NON_ASSET_LOCK_READY"
+    },
+    {
+      "version": "v9",
+      "label": "Live release and resilient verification lane",
+      "requiredPaths": [
+        ".github/workflows/urai-launch.yml",
+        ".github/workflows/spatial-live-deploy.yml",
+        "scripts/live-release.mjs",
+        "scripts/run-e2e-resilient.mjs",
+        "release/urai-spatial-live-manifest.json"
+      ],
+      "requiredScripts": [
+        "live:check",
+        "live:deploy",
+        "verify:e2e:resilient",
+        "verify:release:critical"
+      ],
+      "missingPaths": [],
+      "missingScripts": [],
+      "decision": "NON_ASSET_LOCK_READY"
+    },
+    {
+      "version": "v10",
+      "label": "Final proof pack and launch boundary lane",
+      "requiredPaths": [
+        "README.md",
+        "audit/tier-lock/TIER_1_5_FINAL_LOCK_REPORT.md",
+        "scripts/check-v1-v6-non-asset-lock.mjs",
+        "package.json"
+      ],
+      "requiredScripts": [
+        "lock:v1-v6:non-assets",
+        "verify:v1-v6:non-assets",
+        "verify:release:critical"
+      ],
+      "missingPaths": [],
+      "missingScripts": [],
+      "decision": "NON_ASSET_LOCK_READY"
+    }
+  ],
+  "failures": []
+}
