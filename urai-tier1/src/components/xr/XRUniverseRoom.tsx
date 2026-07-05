@@ -8,10 +8,12 @@ import UniverseNodeCloud from "./UniverseNodeCloud";
 import UniverseTelemetryPanel from "./UniverseTelemetryPanel";
 import XRInspectorPanel from "./XRInspectorPanel";
 import UniverseCausalLinks from "./UniverseCausalLinks";
+import XRCausalHistoryPanel from "./XRCausalHistoryPanel";
 
 export default function XRUniverseRoom() {
   const state = useUniverseStream();
   const [selected, setSelected] = useState<any>(null);
+  const [selectedEdge, setSelectedEdge] = useState<any>(null);
 
   return (
     <Canvas camera={{ position: [0, 2, 8], fov: 60 }}>
@@ -26,10 +28,11 @@ export default function XRUniverseRoom() {
         URAI XR CONTROL ROOM
       </Text>
 
-      <UniverseCausalLinks state={state} />
+      <UniverseCausalLinks state={state} onSelectEdge={setSelectedEdge} />
       <UniverseNodeCloud state={state} onSelect={setSelected} />
       <UniverseTelemetryPanel state={state} />
       <XRInspectorPanel selected={selected} />
+      <XRCausalHistoryPanel edge={selectedEdge} state={state} />
 
       <OrbitControls />
     </Canvas>
