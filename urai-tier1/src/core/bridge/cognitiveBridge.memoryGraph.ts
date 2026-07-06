@@ -42,8 +42,8 @@ export function createMemoryGraph(userId: string = "demo-user") {
   }
 
   function syncFromKernel() {
-    const memory = kernel.getMemory();
-    const insight = kernel.getInsight();
+    const memory = kernel.getMemory() as { id?: string; content?: unknown } | null;
+    const insight = kernel.getInsight() as { id?: string; message?: unknown } | null;
 
     if (memory) {
       addNode({
