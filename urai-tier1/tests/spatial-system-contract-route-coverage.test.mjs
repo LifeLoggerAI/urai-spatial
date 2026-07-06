@@ -7,6 +7,7 @@ const source = readFileSync(contractPath, 'utf8')
 
 const requiredRoutes = [
   '/',
+  '/about',
   '/home',
   '/ground',
   '/spatial',
