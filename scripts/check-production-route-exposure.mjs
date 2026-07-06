@@ -2,12 +2,13 @@
 import fs from 'node:fs'
 import path from 'node:path'
 
-const appRoot = path.join(process.cwd(), 'urai-tier1', 'src', 'app')
+const repoRoot = process.cwd()
+const appRoot = path.join(repoRoot, 'urai-tier1', 'src', 'app')
 const middlewareCandidates = [
-  path.join(process.cwd(), 'middleware.ts'),
-  path.join(process.cwd(), 'src', 'middleware.ts'),
-  path.join(process.cwd(), 'urai-tier1', 'middleware.ts'),
-  path.join(process.cwd(), 'urai-tier1', 'src', 'middleware.ts'),
+  path.join(repoRoot, 'middleware.ts'),
+  path.join(repoRoot, 'src', 'middleware.ts'),
+  path.join(repoRoot, 'urai-tier1', 'middleware.ts'),
+  path.join(repoRoot, 'urai-tier1', 'src', 'middleware.ts'),
 ]
 
 const guardedRoutePatterns = [
@@ -78,6 +79,19 @@ function middlewareGuardsRoute(routePath, middlewareText) {
   return envTokens.some((token) => middlewareText.includes(token))
 }
 
+function requireFileTokens(failures, relativePath, tokens) {
+  const absolutePath = path.join(repoRoot, relativePath)
+  if (!fs.existsSync(absolutePath)) {
+    failures.push(`${relativePath} is missing`)
+    return
+  }
+
+  const source = fs.readFileSync(absolutePath, 'utf8')
+  for (const token of tokens) {
+    if (!source.includes(token)) failures.push(`${relativePath} is missing required production token: ${token}`)
+  }
+}
+
 const failures = []
 const middlewareText = middlewareSource()
 
@@ -91,7 +105,37 @@ for (const file of walk(appRoot)) {
   const middlewareGuarded = middlewareGuardsRoute(routePath, middlewareText)
 
   if (!pageGuarded && !middlewareGuarded) {
-    failures.push(`${path.relative(process.cwd(), file)} exposes /${routePath} without an explicit production guard`)
+    failures.push(`${path.relative(repoRoot, file)} exposes /${routePath} without an explicit production guard`)
+  }
+}
+
+requireFileTokens(failures, 'urai-tier1/src/app/privacy-controls/page.tsx', [
+  "title: 'URAI Privacy Controls'",
+  'data-route-polish="privacy-consent-console"',
+  'PrivacyControlsRoutePage',
+])
+
+requireFileTokens(failures, 'urai-tier1/src/app/focus/page.tsx', [
+  'FinalFocusChamber',
+  'data-urai-route-fingerprint="focus-selected-memory-camera-chamber"',
+  'Selected memory camera chamber',
+])
+
+const staticConfigPath = path.join(repoRoot, 'firebase.static.json')
+if (!fs.existsSync(staticConfigPath)) {
+  failures.push('firebase.static.json is missing')
+} else {
+  try {
+    const staticConfig = JSON.parse(fs.readFileSync(staticConfigPath, 'utf8'))
+    const hosting = staticConfig.hosting || {}
+    if (hosting.public !== 'urai-tier1/out') failures.push('firebase.static.json must publish urai-tier1/out')
+    if (hosting.cleanUrls !== true) failures.push('firebase.static.json must enable cleanUrls')
+    if (hosting.trailingSlash !== true) failures.push('firebase.static.json must enable trailingSlash')
+    if (!Array.isArray(hosting.rewrites) || hosting.rewrites.length !== 0) {
+      failures.push('firebase.static.json must not use rewrites that mask missing exported routes')
+    }
+  } catch (error) {
+    failures.push(`firebase.static.json is invalid JSON: ${error instanceof Error ? error.message : String(error)}`)
   }
 }
 
@@ -101,4 +145,4 @@ if (failures.length > 0) {
   process.exit(1)
 }
 
-console.log('Production route exposure gate passed')
+console.log('Production route exposure gate passed: guarded routes, public route owners, and static hosting are locked.')
