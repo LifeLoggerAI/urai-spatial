@@ -110,5 +110,50 @@
       "additionalProperties": false
     },
     "remainingCaveats": { "type": "array", "items": { "type": "string" } }
-  }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": { "classification": { "const": "VERIFIED LIVE" } },
+        "required": ["classification"]
+      },
+      "then": {
+        "properties": {
+          "commitSha": { "type": "string", "pattern": "^[0-9a-f]{40}$" },
+          "changedFiles": { "type": "array", "minItems": 1 },
+          "workflowRuns": { "type": "array", "minItems": 1 },
+          "validation": {
+            "properties": {
+              "commands": { "type": "array", "minItems": 1 },
+              "runtimeVerification": { "type": "string", "minLength": 1 }
+            }
+          },
+          "deployment": {
+            "properties": {
+              "target": { "type": "string", "minLength": 1 },
+              "environment": { "type": "string", "minLength": 1 },
+              "deployedSha": { "type": "string", "pattern": "^[0-9a-f]{40}$" },
+              "publicUrls": { "type": "array", "minItems": 1 },
+              "rollbackSha": { "type": "string", "pattern": "^[0-9a-f]{40}$" }
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": { "classification": { "const": "VERIFIED IN REPOSITORY" } },
+        "required": ["classification"]
+      },
+      "then": {
+        "properties": {
+          "commitSha": { "type": "string", "pattern": "^[0-9a-f]{40}$" },
+          "changedFiles": { "type": "array", "minItems": 1 },
+          "validation": {
+            "properties": { "commands": { "type": "array", "minItems": 1 } }
+          }
+        }
+      }
+    }
+  ]
 }
