@@ -4,7 +4,8 @@ import { createHash } from 'node:crypto'
 import { mkdir, writeFile } from 'node:fs/promises'
 import { dirname, resolve } from 'node:path'
 
-const baseUrl = process.env.URAI_LIVE_BASE_URL || 'https://urai.app'
+const canonicalBaseUrl = 'https://urai.app'
+const baseUrl = (process.env.URAI_LIVE_BASE_URL || canonicalBaseUrl).trim()
 const expectedSha = (process.env.URAI_EXPECTED_DEPLOYED_SHA || '').trim()
 const receiptPath = resolve(
   process.cwd(),
@@ -36,8 +37,23 @@ function sha256(value) {
   return createHash('sha256').update(value).digest('hex')
 }
 
+function normalizePathname(pathname) {
+  if (pathname === '/') return '/'
+  return pathname.replace(/\/+$/, '') || '/'
+}
+
+function validateAuthority() {
+  if (!/^[0-9a-f]{40}$/.test(expectedSha)) {
+    throw new Error('URAI_EXPECTED_DEPLOYED_SHA must be a full lowercase 40-character SHA.')
+  }
+  const parsed = new URL(baseUrl)
+  if (parsed.origin !== canonicalBaseUrl || normalizePathname(parsed.pathname) !== '/' || parsed.search || parsed.hash) {
+    throw new Error(`Live certification is restricted to ${canonicalBaseUrl}.`)
+  }
+}
+
 function routeVariants(route) {
-  const parsed = new URL(route, baseUrl)
+  const parsed = new URL(route, canonicalBaseUrl)
   if (parsed.pathname === '/') return [parsed]
 
   const withoutSlash = new URL(parsed)
@@ -58,28 +74,40 @@ async function inspectVariant(contract, url) {
   try {
     const response = await fetch(url, {
       redirect: 'follow',
+      cache: 'no-store',
+      signal: AbortSignal.timeout(15_000),
       headers: {
-        'user-agent': 'urai-live-content-parity/1.0',
+        'user-agent': 'urai-live-content-parity/2.0',
         accept: 'text/html,application/xhtml+xml',
+        'cache-control': 'no-cache',
       },
     })
     const html = await response.text()
+    const finalUrl = new URL(response.url)
+    const contentType = response.headers.get('content-type') || ''
     const missingMarkers = contract.markers.filter((marker) => !html.includes(marker))
     const forbiddenMarkers = (contract.forbiddenMarkers || []).filter((marker) => html.includes(marker))
     const deployedSha = readShaEvidence(response, html)
-    const queryPreserved = url.search ? new URL(response.url).search === url.search : true
-    const shaMatches = expectedSha ? deployedSha === expectedSha : null
+    const sameOrigin = finalUrl.origin === canonicalBaseUrl
+    const pathPreserved = normalizePathname(finalUrl.pathname) === normalizePathname(url.pathname)
+    const queryPreserved = finalUrl.search === url.search
+    const htmlResponse = contentType.toLowerCase().includes('text/html')
+    const shaMatches = deployedSha === expectedSha
     const passed =
       response.ok &&
+      sameOrigin &&
+      pathPreserved &&
+      queryPreserved &&
+      htmlResponse &&
       missingMarkers.length === 0 &&
       forbiddenMarkers.length === 0 &&
-      queryPreserved &&
-      (shaMatches !== false)
+      shaMatches
 
     return {
       requestedUrl: url.toString(),
       finalUrl: response.url,
       status: response.status,
+      contentType,
       startedAt,
       completedAt: new Date().toISOString(),
       contentSha256: sha256(html),
@@ -87,9 +115,12 @@ async function inspectVariant(contract, url) {
       requiredMarkers: contract.markers,
       missingMarkers,
       forbiddenMarkers,
+      sameOrigin,
+      pathPreserved,
       queryPreserved,
+      htmlResponse,
       deployedSha: deployedSha || null,
-      expectedSha: expectedSha || null,
+      expectedSha,
       shaMatches,
       passed,
     }
@@ -99,13 +130,15 @@ async function inspectVariant(contract, url) {
       startedAt,
       completedAt: new Date().toISOString(),
       error: error instanceof Error ? error.message : String(error),
-      expectedSha: expectedSha || null,
+      expectedSha,
       passed: false,
     }
   }
 }
 
 async function main() {
+  validateAuthority()
+
   const routeResults = []
   for (const contract of routeContracts) {
     const variants = []
@@ -115,26 +148,28 @@ async function main() {
     routeResults.push({ route: contract.route, variants, passed: variants.every((item) => item.passed) })
   }
 
+  const passed = routeResults.every((item) => item.passed)
   const receipt = {
-    schemaVersion: 'urai-live-content-parity-1',
+    schemaVersion: 'urai-live-content-parity-2',
     generatedAt: new Date().toISOString(),
-    baseUrl,
-    expectedDeployedSha: expectedSha || null,
-    exactShaRequired: Boolean(expectedSha),
+    classification: passed ? 'VERIFIED LIVE' : 'BLOCKED',
+    baseUrl: canonicalBaseUrl,
+    expectedDeployedSha: expectedSha,
+    exactShaRequired: true,
     routeCount: routeResults.length,
     variantCount: routeResults.reduce((sum, item) => sum + item.variants.length, 0),
-    passed: routeResults.every((item) => item.passed),
+    passed,
     routes: routeResults,
-    caveat: expectedSha
-      ? 'Content and deployed-SHA parity were required.'
-      : 'Content parity was checked, but no exact deployed SHA was required; this is not a deployment certification receipt.',
+    caveat: passed
+      ? 'Canonical content, origin, path, query, HTML, and deployed-SHA parity passed.'
+      : 'One or more canonical content, redirect, query, HTML, or deployed-SHA checks failed.',
   }
 
   await mkdir(dirname(receiptPath), { recursive: true })
   await writeFile(receiptPath, `${JSON.stringify(receipt, null, 2)}\n`, 'utf8')
   console.log(JSON.stringify(receipt, null, 2))
 
-  if (!receipt.passed) process.exitCode = 1
+  if (!passed) process.exitCode = 1
 }
 
 await main()
