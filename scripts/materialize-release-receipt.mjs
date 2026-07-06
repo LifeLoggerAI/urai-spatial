@@ -17,7 +17,26 @@ const requireCommitSha = (name) => {
   return value.toLowerCase();
 };
 
-const evidencePassed = (name) => process.env[name] === "1";
+const sha256File = (filePath) =>
+  crypto.createHash("sha256").update(fs.readFileSync(filePath)).digest("hex");
+
+const requireEvidenceFile = (checkName, envName) => {
+  const supplied = process.env[envName]?.trim();
+  if (!supplied) {
+    throw new Error(`${envName} must point to the evidence file for ${checkName}.`);
+  }
+  const absolute = path.resolve(supplied);
+  if (!fs.existsSync(absolute) || !fs.statSync(absolute).isFile()) {
+    throw new Error(`${envName} does not reference an existing file: ${absolute}`);
+  }
+  if (fs.statSync(absolute).size === 0) {
+    throw new Error(`${envName} evidence file is empty: ${absolute}`);
+  }
+  return {
+    path: path.relative(process.cwd(), absolute) || path.basename(absolute),
+    sha256: sha256File(absolute),
+  };
+};
 
 if (!["prepared", "certified"].includes(phase)) {
   throw new Error("URAI_RELEASE_RECEIPT_PHASE must be prepared or certified.");
@@ -39,31 +58,42 @@ const receipt = JSON.parse(fs.readFileSync(receiptPath, "utf8"));
 if (!Array.isArray(receipt.routes) || receipt.routes.length === 0) {
   throw new Error("Release receipt template must contain routes.");
 }
-const manifestSha = crypto
-  .createHash("sha256")
-  .update(fs.readFileSync(manifestPath))
-  .digest("hex");
-
-const releaseId = process.env.URAI_RELEASE_ID?.trim() || `urai-spatial-${deployedSha.slice(0, 12)}`;
-const generatedAt = new Date().toISOString();
-const requestedCertification = phase === "certified";
-const evidence = {
-  browserFlow: evidencePassed("URAI_RELEASE_BROWSER_VERIFIED"),
-  mobileFlow: evidencePassed("URAI_RELEASE_MOBILE_VERIFIED"),
-  accessibility: evidencePassed("URAI_RELEASE_ACCESSIBILITY_VERIFIED"),
-  customDomain: evidencePassed("URAI_RELEASE_CUSTOM_DOMAIN_VERIFIED"),
-  rollback: evidencePassed("URAI_RELEASE_ROLLBACK_VERIFIED"),
-};
-const evidenceComplete = Object.values(evidence).every(Boolean);
-
-if (requestedCertification && !evidenceComplete) {
-  const missing = Object.entries(evidence)
-    .filter(([, passed]) => !passed)
-    .map(([name]) => name);
-  throw new Error(`Certified receipt requires explicit evidence flags: ${missing.join(", ")}`);
+if (!fs.existsSync(manifestPath)) {
+  throw new Error(`Release manifest is missing: ${manifestPath}`);
 }
 
-const certified = requestedCertification && evidenceComplete;
+const coreEvidenceRequirements = {
+  canonicalContract: "URAI_RELEASE_CANONICAL_EVIDENCE",
+  routeContract: "URAI_RELEASE_ROUTE_CONTRACT_EVIDENCE",
+  runtimeCompile: "URAI_RELEASE_RUNTIME_COMPILE_EVIDENCE",
+  runtimeSmoke: "URAI_RELEASE_RUNTIME_SMOKE_EVIDENCE",
+  productTypecheck: "URAI_RELEASE_TYPECHECK_EVIDENCE",
+  productBuild: "URAI_RELEASE_BUILD_EVIDENCE",
+};
+const certificationEvidenceRequirements = {
+  browserFlow: "URAI_RELEASE_BROWSER_EVIDENCE",
+  mobileFlow: "URAI_RELEASE_MOBILE_EVIDENCE",
+  accessibility: "URAI_RELEASE_ACCESSIBILITY_EVIDENCE",
+  customDomain: "URAI_RELEASE_CUSTOM_DOMAIN_EVIDENCE",
+  rollback: "URAI_RELEASE_ROLLBACK_EVIDENCE",
+};
+
+const evidenceArtifacts = {};
+for (const [checkName, envName] of Object.entries(coreEvidenceRequirements)) {
+  evidenceArtifacts[checkName] = requireEvidenceFile(checkName, envName);
+}
+
+const requestedCertification = phase === "certified";
+if (requestedCertification) {
+  for (const [checkName, envName] of Object.entries(certificationEvidenceRequirements)) {
+    evidenceArtifacts[checkName] = requireEvidenceFile(checkName, envName);
+  }
+}
+
+const manifestSha = sha256File(manifestPath);
+const releaseId = process.env.URAI_RELEASE_ID?.trim() || `urai-spatial-${deployedSha.slice(0, 12)}`;
+const generatedAt = new Date().toISOString();
+
 receipt.releaseId = releaseId;
 receipt.generatedAt = generatedAt;
 receipt.environment = "production";
@@ -72,30 +102,33 @@ receipt.testedSha = testedSha;
 receipt.deployedSha = deployedSha;
 receipt.rollbackSha = rollbackSha;
 receipt.manifestSha = manifestSha;
+receipt.evidenceArtifacts = evidenceArtifacts;
 receipt.checks = {
   canonicalContract: "passed",
+  routeContract: "passed",
   runtimeCompile: "passed",
   runtimeSmoke: "passed",
   productTypecheck: "passed",
   productBuild: "passed",
-  browserFlow: evidence.browserFlow ? "passed" : "pending",
-  mobileFlow: evidence.mobileFlow ? "passed" : "pending",
-  accessibility: evidence.accessibility ? "passed" : "pending",
-  customDomain: evidence.customDomain ? "passed" : "pending",
-  rollback: evidence.rollback ? "passed" : "pending",
+  browserFlow: requestedCertification ? "passed" : "pending",
+  mobileFlow: requestedCertification ? "passed" : "pending",
+  accessibility: requestedCertification ? "passed" : "pending",
+  customDomain: requestedCertification ? "passed" : "pending",
+  rollback: requestedCertification ? "passed" : "pending",
   physicalXr: "not-applicable-to-web-release",
 };
 receipt.routes = receipt.routes.map((route) => ({
   ...route,
-  productionState: certified ? "verified" : "unverified",
+  productionState: requestedCertification ? "verified" : "unverified",
 }));
-receipt.claimBoundary = certified
-  ? "This receipt certifies the web release SHA, custom-domain route set, accessibility/mobile/browser evidence, and an exercised rollback path. Provider-backed asset promotions and physical XR/device certification remain separate receipts."
-  : "This receipt records the exact deployment candidate and rollback target but remains uncertified until explicit browser, mobile, accessibility, custom-domain, and exercised rollback evidence is supplied.";
+receipt.claimBoundary = requestedCertification
+  ? "This receipt certifies the exact web release SHA using hashed canonical, route, runtime, build, browser, mobile, accessibility, custom-domain, and rollback evidence files. Provider-backed asset promotions and physical XR/device certification remain separate receipts."
+  : "This receipt records the exact deployment candidate, rollback target, and hashed build/runtime evidence but remains uncertified until browser, mobile, accessibility, custom-domain, and exercised rollback evidence files are attached.";
 
 fs.writeFileSync(receiptPath, `${JSON.stringify(receipt, null, 2)}\n`, "utf8");
 console.log(`RELEASE_RECEIPT=${receiptPath}`);
 console.log(`RELEASE_RECEIPT_PHASE=${phase}`);
 console.log(`RELEASE_RECEIPT_SHA=${deployedSha}`);
 console.log(`RELEASE_MANIFEST_SHA256=${manifestSha}`);
-console.log(`RELEASE_CERTIFIED=${certified ? "1" : "0"}`);
+console.log(`RELEASE_EVIDENCE_ARTIFACTS=${Object.keys(evidenceArtifacts).length}`);
+console.log(`RELEASE_CERTIFIED=${requestedCertification ? "1" : "0"}`);
