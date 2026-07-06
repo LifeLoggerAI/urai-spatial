@@ -2,6 +2,7 @@
 
 import { useEffect } from "react";
 import { usePathname } from "next/navigation";
+import releaseReceipt from "@/data/release-receipt.json";
 
 const ROUTE_CLASSES = [
   "urai-route-home",
@@ -19,13 +20,18 @@ const ROUTE_CLASSES = [
 
 const ASSET_GATES = [
   { version: "v2", minimum: 80, className: "urai-v2-assets-ready" },
-  { version: "v3", minimum: 39, className: "urai-v3-assets-ready" },
+  { version: "v3", minimum: 14, className: "urai-v3-assets-ready" },
 ] as const;
 
 type HandoffManifest = {
   ready?: number;
   missing?: number;
   assets?: Array<{ status?: string; renderer?: string }>;
+};
+
+type ReleaseReceipt = {
+  deployedSha?: string | null;
+  rollbackSha?: string | null;
 };
 
 function routeClassFor(pathname: string): string | null {
@@ -53,8 +59,15 @@ function handoffReady(payload: HandoffManifest, minimum: number) {
   );
 }
 
+function validSha(value: unknown): value is string {
+  return typeof value === "string" && /^[0-9a-f]{40}$/.test(value);
+}
+
 export default function UraiAAAARoutePolish() {
   const pathname = usePathname() ?? "";
+  const receipt = releaseReceipt as ReleaseReceipt;
+  const deployedSha = validSha(receipt.deployedSha) ? receipt.deployedSha : "unverified";
+  const rollbackSha = validSha(receipt.rollbackSha) ? receipt.rollbackSha : "unverified";
 
   useEffect(() => {
     const root = document.documentElement;
@@ -66,6 +79,8 @@ export default function UraiAAAARoutePolish() {
     const routeClass = routeClassFor(pathname);
     if (routeClass) root.classList.add(routeClass);
     root.dataset.uraiRoutePolish = routeClass ?? "none";
+    root.dataset.deployedSha = deployedSha;
+    root.dataset.rollbackSha = rollbackSha;
 
     for (const gate of ASSET_GATES) {
       void fetch(`/assets/urai/final/manifests/${gate.version}-asset-factory-spatial-handoff.json`, {
@@ -87,8 +102,18 @@ export default function UraiAAAARoutePolish() {
       if (routeClass) root.classList.remove(routeClass);
       ASSET_GATES.forEach((gate) => root.classList.remove(gate.className));
       delete root.dataset.uraiRoutePolish;
+      delete root.dataset.deployedSha;
+      delete root.dataset.rollbackSha;
     };
-  }, [pathname]);
+  }, [deployedSha, pathname, rollbackSha]);
 
-  return null;
+  return (
+    <span
+      hidden
+      aria-hidden="true"
+      data-urai-release-identity="receipt"
+      data-deployed-sha={deployedSha}
+      data-rollback-sha={rollbackSha}
+    />
+  );
 }
