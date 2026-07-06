@@ -14,10 +14,25 @@ export const URAI_SPATIAL_DOMAIN = process.env.NEXT_PUBLIC_URAI_SPATIAL_DOMAIN ?
 export const spatialRoutes = {
   home: "/",
   homeAlias: "/home",
+  ground: "/ground",
   spatial: "/spatial",
   lifeMap: "/life-map",
-  demoLifeMap: "/demo/life-map",
+  focus: "/focus",
+  replay: "/replay",
+  mirror: "/mirror",
+  passport: "/passport",
+  status: "/status",
   privacy: "/privacy",
+  privacyControls: "/privacy-controls",
+  locationMap: "/location-map",
+  ascent: "/ascent",
+  unwind: "/unwind",
+  demo: "/demo",
+  demoLifeMap: "/demo/life-map",
+  demoReplayFilm: "/demo/replay-film",
+  spatialLifeMap: "/spatial/life-map",
+  spatialLifeMapR3f: "/spatial/life-map-r3f",
+  spatialArVr: "/spatial/ar-vr",
   terms: "/terms",
 };
 
@@ -55,6 +70,17 @@ export const spatialCapabilities = [
 ];
 
 export const spatialTargets = ["urai", "urai-studio", "asset-factory", "urai-jobs"];
+
+export const spatialSmokeCoverage = [
+  ...Object.values(spatialRoutes),
+  spatialApiRoutes.health,
+  spatialApiRoutes.studioSpatialHandoff,
+  spatialApiRoutes.launchBoundary,
+  spatialApiRoutes.uraiSpatialLock,
+  spatialApiRoutes.uraiSpatial3DWorld,
+  spatialApiRoutes.bodyBiometric,
+  spatialApiRoutes.orbCompanion,
+] as const;
 
 export function buildSpatialSystemContract() {
   const world3D = assertUraiSpatial3DWorldModel();
@@ -138,7 +164,7 @@ export function buildSpatialSystemContract() {
       "Studio exports must pass the Studio Spatial handoff validator before rendering.",
       "Live providers require explicit consent, tests, and deployment verification before launch claims.",
     ],
-    smokeCoverage: ["/", "/home", "/life-map", "/demo/life-map", "/privacy", "/terms", "/api/system/health", "/api/system/studio-spatial-handoff", "/api/system/launch-boundary", "/api/system/urai-spatial-lock", "/api/system/urai-spatial-3d-world", "/api/body-biometric", "/api/orb-companion"],
+    smokeCoverage: spatialSmokeCoverage,
   };
 }
 
