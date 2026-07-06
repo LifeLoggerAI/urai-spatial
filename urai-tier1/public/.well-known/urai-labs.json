@@ -1,0 +1,34 @@
+{
+  "schemaVersion": "urai-public-identity-1",
+  "organization": {
+    "name": "URAI Labs",
+    "alternateNames": ["URAI", "URAI Spatial", "Urai Labs", "UrAi Labs"],
+    "canonicalUrl": "https://urai.app",
+    "canonicalRepository": "https://github.com/LifeLoggerAI/urai-spatial"
+  },
+  "product": {
+    "name": "URAI",
+    "canonicalUrl": "https://urai.app/",
+    "description": "A privacy-first spatial experience for memory, reflection, relationships, and personal ownership."
+  },
+  "creator": {
+    "name": "Adam Clamp",
+    "relationship": "Creator of URAI",
+    "canonicalPage": "https://urai.app/about"
+  },
+  "disambiguation": {
+    "not": [
+      "ARAI Labs",
+      "URAI S.p.A.",
+      "CoCoSys neuroscience lab",
+      "Roots URAI industrial blowers",
+      "unrelated voice-agent companies",
+      "unrelated chemical or laboratory-equipment companies"
+    ]
+  },
+  "evidence": {
+    "statusPage": "https://urai.app/status",
+    "sitemap": "https://urai.app/sitemap.xml",
+    "releaseRule": "Do not infer production, provider, user-count, audience, medical, or physical-device claims without matching receipts."
+  }
+}
