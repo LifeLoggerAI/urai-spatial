@@ -87,6 +87,8 @@ function validateReadyManifest(check: CanonicalCheck, manifest: unknown) {
   const assets = Array.isArray(record.assets) ? record.assets as AssetRecord[] : []
   const expectedMatches = record.expectedOutputs === undefined
     || record.expectedOutputs === check.expectedOutputs
+  const assetNames = new Set<string>()
+  const canonicalPaths = new Set<string>()
   const variableKeys = new Set<string>()
 
   const ready = record.schemaVersion === '3.0.0'
@@ -99,16 +101,20 @@ function validateReadyManifest(check: CanonicalCheck, manifest: unknown) {
       if (!asset || typeof asset !== 'object') return false
       if (asset.status !== 'ready' || asset.renderer !== 'provider') return false
       if (typeof asset.name !== 'string' || asset.name.trim().length === 0) return false
+      if (asset.name !== asset.name.trim() || assetNames.has(asset.name)) return false
       if (typeof asset.canonicalPath !== 'string') return false
       if (!safeCanonicalPath.test(asset.canonicalPath)) return false
       if (asset.canonicalPath.startsWith('/') || asset.canonicalPath.includes('..')) return false
       if (asset.canonicalPath.split('/').some((part) => part.length === 0)) return false
       if (!asset.canonicalPath.startsWith(check.canonicalPrefix)) return false
+      if (canonicalPaths.has(asset.canonicalPath)) return false
       if (typeof asset.sha256 !== 'string' || !/^[a-f0-9]{64}$/i.test(asset.sha256)) return false
       if (typeof asset.bytes !== 'number' || !Number.isSafeInteger(asset.bytes) || asset.bytes <= 0) return false
 
       const key = variable(asset.name)
       if (key === '--urai-asset-' || variableKeys.has(key)) return false
+      assetNames.add(asset.name)
+      canonicalPaths.add(asset.canonicalPath)
       variableKeys.add(key)
       return true
     })
