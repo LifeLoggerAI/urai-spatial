@@ -15,6 +15,9 @@ const fail = (message) => {
   process.exit(1);
 };
 
+const isSha256 = (value) =>
+  typeof value === "string" && /^[0-9a-f]{64}$/i.test(value);
+
 const nullableCommitSha = (value, name) => {
   if (value === null) return;
   if (typeof value !== "string" || !/^[0-9a-f]{40}$/i.test(value)) {
@@ -24,7 +27,7 @@ const nullableCommitSha = (value, name) => {
 
 const nullableManifestSha = (value) => {
   if (value === null) return;
-  if (typeof value !== "string" || !/^[0-9a-f]{64}$/i.test(value)) {
+  if (!isSha256(value)) {
     fail("manifestSha must be null or a 64-character SHA-256 digest");
   }
 };
@@ -84,12 +87,16 @@ for (const route of [
   "/mirror",
   "/passport",
   "/status",
+  "/privacy-controls",
 ]) {
   if (!routePaths.has(route)) fail(`missing canonical route ${route}`);
 }
 
 if (receipt.deployedSha && receipt.testedSha !== receipt.deployedSha) {
   fail("deployedSha must equal testedSha");
+}
+if (receipt.deployedSha && receipt.candidateSha !== receipt.deployedSha) {
+  fail("deployedSha must equal candidateSha");
 }
 if (receipt.deployedSha && !receipt.rollbackSha) {
   fail("a deployed release must record rollbackSha");
@@ -115,6 +122,38 @@ for (const [name, state] of Object.entries(receipt.checks ?? {})) {
   if (!allowedEvidenceStates.has(state)) fail(`invalid evidence state for ${name}`);
 }
 
+if (!receipt.evidenceArtifacts || typeof receipt.evidenceArtifacts !== "object") {
+  fail("evidenceArtifacts must be an object");
+}
+for (const [name, artifact] of Object.entries(receipt.evidenceArtifacts)) {
+  if (!artifact || typeof artifact !== "object") {
+    fail(`evidence artifact ${name} must be an object`);
+  }
+  if (typeof artifact.path !== "string" || artifact.path.trim() === "") {
+    fail(`evidence artifact ${name} must record a path`);
+  }
+  if (!isSha256(artifact.sha256)) {
+    fail(`evidence artifact ${name} must record a SHA-256 digest`);
+  }
+}
+
+const requiredCoreArtifacts = [
+  "canonicalContract",
+  "routeContract",
+  "runtimeCompile",
+  "runtimeSmoke",
+  "productTypecheck",
+  "productBuild",
+];
+const requiredCertificationArtifacts = [
+  "browserFlow",
+  "mobileFlow",
+  "accessibility",
+  "customDomain",
+  "rollback",
+];
+const hasArtifacts = (names) => names.every((name) => Boolean(receipt.evidenceArtifacts[name]));
+
 const allRoutesVerified = receipt.routes.every(
   (route) => route.productionState === "verified"
 );
@@ -129,13 +168,19 @@ const certificationFieldsComplete = Boolean(
     receipt.manifestSha &&
     receipt.candidateSha === receipt.testedSha &&
     receipt.testedSha === receipt.deployedSha &&
-    requiredChecksPassed
+    requiredChecksPassed &&
+    hasArtifacts(requiredCoreArtifacts) &&
+    hasArtifacts(requiredCertificationArtifacts)
 );
 
 if (allRoutesVerified !== certificationFieldsComplete) {
   fail(
-    "verified routes require matching candidate/tested/deployed SHAs, rollback SHA, manifest SHA-256, and passed checks"
+    "verified routes require matching candidate/tested/deployed SHAs, rollback SHA, manifest SHA-256, passed checks, and hashed core/certification evidence artifacts"
   );
+}
+
+if (receipt.deployedSha && !hasArtifacts(requiredCoreArtifacts)) {
+  fail("a deployed receipt must include hashed canonical, route, runtime, typecheck, and build evidence artifacts");
 }
 
 console.log(
@@ -147,6 +192,7 @@ console.log(
       deployed: Boolean(receipt.deployedSha),
       failClosed: !receipt.deployedSha && !allRoutesVerified,
       manifestDigestRecorded: Boolean(receipt.manifestSha),
+      evidenceArtifacts: Object.keys(receipt.evidenceArtifacts).length,
       assetContract: expectedAssetCounts,
       status: "pass",
     },
