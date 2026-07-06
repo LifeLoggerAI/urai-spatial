@@ -12,9 +12,22 @@ const releaseOnly = [
 
 const failures = []
 
+const readRequired = (file) => {
+  try {
+    return readFileSync(file, 'utf8')
+  } catch (error) {
+    const detail = error instanceof Error ? error.message : String(error)
+    failures.push(`Could not read ${file}: ${detail}`)
+    return ''
+  }
+}
+
+const triggerBlockFor = (source) => source.split(/\r?\n\s*jobs\s*:/)[0]
+const mergedMainTrigger = /\n\s*push\s*:[\s\S]*?branches\s*:\s*(?:\r?\n\s*-\s*['"]?main['"]?|\[\s*['"]?main['"]?\s*\])/
+
 for (const file of releaseOnly) {
-  const source = readFileSync(file, 'utf8')
-  const triggerBlock = source.split('\njobs:')[0]
+  const source = readRequired(file)
+  const triggerBlock = triggerBlockFor(source)
 
   if (/\n\s*pull_request\s*:/.test(triggerBlock)) {
     failures.push(`${file} must not run its heavy release suite on every pull request`)
@@ -22,7 +35,7 @@ for (const file of releaseOnly) {
   if (!/\n\s*workflow_dispatch\s*:/.test(triggerBlock)) {
     failures.push(`${file} must retain an explicit manual release path`)
   }
-  if (!/\n\s*push\s*:/.test(triggerBlock) || !/branches:\s*(?:\n\s*-\s*main|\[main\])/.test(triggerBlock)) {
+  if (!mergedMainTrigger.test(triggerBlock)) {
     failures.push(`${file} must retain merged-main verification`)
   }
   if (!source.includes('pnpm install --frozen-lockfile')) {
@@ -30,14 +43,18 @@ for (const file of releaseOnly) {
   }
 }
 
-const deploy = readFileSync('.github/workflows/spatial-live-deploy.yml', 'utf8')
-if (!deploy.includes("if: github.event_name == 'workflow_dispatch' && github.event.inputs.deploy == 'DEPLOY'")) {
+const deployPath = '.github/workflows/spatial-live-deploy.yml'
+const deploy = readRequired(deployPath)
+const manualDeployCondition = /if:\s*github\.event_name\s*==\s*['"]workflow_dispatch['"]\s*&&\s*github\.event\.inputs\.deploy\s*==\s*['"]DEPLOY['"]/
+const productionEnvironment = /environment\s*:\s*(?:['"]?production['"]?|\r?\n\s*name\s*:\s*['"]?production['"]?)/
+
+if (!manualDeployCondition.test(deploy)) {
   failures.push('spatial-live-deploy.yml must require explicit manual DEPLOY authorization')
 }
 if (deploy.includes('URAI_SPATIAL_AUTO_DEPLOY')) {
   failures.push('spatial-live-deploy.yml must not permit automatic production deployment from a repository variable')
 }
-if (!deploy.includes('environment: production')) {
+if (!productionEnvironment.test(deploy)) {
   failures.push('spatial-live-deploy.yml must use the protected production environment')
 }
 if (!deploy.includes('Remove Firebase credential file')) {
