@@ -120,6 +120,7 @@ const allowedEvidenceStates = new Set([
 ]);
 const requiredNonXrChecks = [
   "canonicalContract",
+  "routeContract",
   "runtimeCompile",
   "runtimeSmoke",
   "productTypecheck",
