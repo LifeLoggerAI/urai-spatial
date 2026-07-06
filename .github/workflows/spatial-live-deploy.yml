@@ -272,6 +272,14 @@ jobs:
         if: env.LIVE_URL != ''
         run: HOST="$LIVE_URL" pnpm smoke
 
+      - name: Verify live route identities and query preservation
+        if: env.LIVE_URL != ''
+        shell: bash
+        run: |
+          mkdir -p deployment-receipt
+          set -o pipefail
+          HOST="$LIVE_URL" node scripts/smoke-live-route-fingerprints.mjs 2>&1 | tee deployment-receipt/route-fingerprints.json
+
       - name: Write deployment receipt
         if: always()
         shell: bash
@@ -309,6 +317,6 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: urai-spatial-deployment-receipt-${{ github.sha }}
-          path: deployment-receipt/deployment.json
+          path: deployment-receipt
           if-no-files-found: error
           retention-days: 90
