@@ -1,0 +1,2 @@
+v60 CI trigger
+commit: first execution validation
