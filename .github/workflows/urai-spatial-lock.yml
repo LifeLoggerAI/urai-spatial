@@ -1,16 +1,16 @@
 name: URAI Spatial Lock
 
 on:
-  pull_request:
-    branches:
-      - main
   push:
     branches:
       - main
   workflow_dispatch:
 
+permissions:
+  contents: read
+
 concurrency:
-  group: urai-spatial-lock-${{ github.head_ref || github.ref_name }}
+  group: urai-spatial-lock-${{ github.ref_name }}
   cancel-in-progress: true
 
 jobs:
@@ -20,10 +20,11 @@ jobs:
     timeout-minutes: 30
 
     steps:
-      - name: Checkout
+      - name: Checkout exact commit
         uses: actions/checkout@v4
         with:
-          ref: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
+          ref: ${{ github.sha }}
+          persist-credentials: false
 
       - name: Setup Node
         uses: actions/setup-node@v4
@@ -70,7 +71,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: urai-spatial-lock-diagnostics
+          name: urai-spatial-lock-diagnostics-${{ github.sha }}
           path: artifacts/spatial-lock
           if-no-files-found: warn
           retention-days: 30
