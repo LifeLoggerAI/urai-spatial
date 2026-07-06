@@ -1,17 +1,15 @@
-import { runProductionOrchestrator } from "../../../automation/productionOrchestrator";
-
 export async function GET() {
-  const snapshot = {
+  const result = {
     worlds: [],
-    memoryGraph: { nodes: [] },
+    memoryGraph: { nodes: [], edges: [] },
     interactions: { messages: [] },
     emergence: {
       globalCoherence: 0.5,
       entropy: 0.2
-    }
+    },
+    mode: "fallback-demo",
+    generatedAt: new Date().toISOString()
   };
-
-  const result = runProductionOrchestrator(snapshot);
 
   return Response.json({ result });
 }
