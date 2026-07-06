@@ -19,7 +19,7 @@ export const uraiOrganizationSchema = {
   logo: `${URAI_CANONICAL_URL}/icon.svg`,
   description: URAI_PUBLIC_DESCRIPTION,
   disambiguatingDescription: URAI_DISAMBIGUATION,
-  founder: {
+  member: {
     '@type': 'Person',
     '@id': `${URAI_CANONICAL_URL}/about#adam-clamp`,
     name: URAI_CREATOR_NAME,
@@ -50,7 +50,7 @@ export const uraiPersonSchema = {
   name: URAI_CREATOR_NAME,
   url: `${URAI_CANONICAL_URL}/about`,
   jobTitle: 'Creator of URAI',
-  worksFor: {
+  memberOf: {
     '@id': `${URAI_CANONICAL_URL}/#organization`,
   },
   knowsAbout: [
