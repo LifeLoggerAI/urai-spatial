@@ -12,6 +12,9 @@ const robots = read('src/app/robots.ts')
 const manifest = read('src/app/manifest.ts')
 const socialImage = read('src/app/opengraph-image.tsx')
 const routeContract = read('src/lib/spatial-system-contract.ts')
+const llms = read('public/llms.txt')
+const humans = read('public/humans.txt')
+const machineIdentity = JSON.parse(read('public/.well-known/urai-labs.json'))
 
 test('canonical public identity names URAI Labs and Adam Clamp', () => {
   assert.match(brand, /URAI_BRAND_NAME = 'URAI Labs'/)
@@ -45,6 +48,22 @@ test('crawler discovery surfaces expose the identity page', () => {
   assert.match(robots, /\/sitemap\.xml/)
   assert.match(manifest, /URAI Labs — URAI/)
   assert.match(routeContract, /about: "\/about"/)
+})
+
+test('AI and human crawler files repeat the narrow canonical identity', () => {
+  for (const source of [llms, humans]) {
+    assert.match(source, /URAI Labs/)
+    assert.match(source, /Adam Clamp/)
+    assert.match(source, /https:\/\/urai\.app/)
+    assert.match(source, /ARAI Labs/)
+  }
+
+  assert.equal(machineIdentity.organization.name, 'URAI Labs')
+  assert.equal(machineIdentity.product.name, 'URAI')
+  assert.equal(machineIdentity.creator.name, 'Adam Clamp')
+  assert.equal(machineIdentity.creator.relationship, 'Creator of URAI')
+  assert.equal(machineIdentity.organization.canonicalUrl, 'https://urai.app')
+  assert.ok(machineIdentity.disambiguation.not.includes('ARAI Labs'))
 })
 
 test('social identity image names both URAI Labs and Adam Clamp', () => {
