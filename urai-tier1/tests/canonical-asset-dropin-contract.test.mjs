@@ -91,7 +91,7 @@ test('canonical asset activation fails closed and fully cleans document state', 
   assert.match(source, /root\.dataset\[check\.dataKey\] = 'ready'/)
 })
 
-test('V5 visual wiring cannot activate without the verified ready class', async () => {
+test('V5 visual wiring cannot invalidate route styles when an optional wired name is absent', async () => {
   const css = await read('../src/app/v5-becoming-asset-wiring.css')
   const blocks = [...css.matchAll(/([^{}]+)\{([^{}]*--urai-v5-[^{}]*)\}/g)]
   assert.ok(blocks.length > 0)
@@ -108,5 +108,19 @@ test('V5 visual wiring cannot activate without the verified ready class', async 
     '--urai-v5-final-orb',
   ]) {
     assert.ok(css.includes(variableName), `missing V5 wiring variable: ${variableName}`)
+  }
+
+  for (const assetVariable of [
+    '--urai-asset-v5-life-layer-main',
+    '--urai-asset-v5-life-layer-mobile',
+    '--urai-asset-v5-global-emotional-weather',
+    '--urai-asset-v5-autonomous-city',
+    '--urai-asset-v5-memory-universe',
+    '--urai-asset-v5-identity-vault',
+    '--urai-asset-v5-cross-device-continuum',
+    '--urai-asset-v5-legacy-archive',
+    '--urai-asset-v5-final-orb',
+  ]) {
+    assert.ok(css.includes(`var(${assetVariable}, none)`), `missing safe fallback for ${assetVariable}`)
   }
 })
