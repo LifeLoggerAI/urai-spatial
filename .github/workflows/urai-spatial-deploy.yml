@@ -16,7 +16,7 @@ on:
         required: true
         type: string
       rollback_sha:
-        description: Full 40-character commit SHA approved for rollback
+        description: Full 40-character known-good main SHA approved for rollback
         required: true
         type: string
       expected_firebase_project:
@@ -54,7 +54,7 @@ jobs:
   deploy:
     name: Deploy exact URAI Spatial SHA
     runs-on: ubuntu-latest
-    timeout-minutes: 60
+    timeout-minutes: 75
     environment: ${{ inputs.environment }}
     env:
       URAI_TARGET_SHA: ${{ inputs.target_sha }}
@@ -63,6 +63,7 @@ jobs:
       URAI_DEPLOYMENT_MODE: framework
       URAI_PULL_REQUEST: ${{ inputs.pull_request }}
       URAI_RELEASE_ISSUE: ${{ inputs.release_issue }}
+      URAI_REQUESTED_DEPLOY_URL: ${{ inputs.deploy_url }}
       FIREBASE_PROJECT_ID: ${{ secrets.FIREBASE_PROJECT_ID }}
 
     steps:
@@ -71,8 +72,9 @@ jobs:
         with:
           ref: ${{ inputs.target_sha }}
           fetch-depth: 0
+          persist-credentials: false
 
-      - name: Validate release identity and rollback
+      - name: Validate release identity and canonical rollback
         shell: bash
         env:
           EXPECTED_FIREBASE_PROJECT: ${{ inputs.expected_firebase_project }}
@@ -85,7 +87,14 @@ jobs:
           [[ "${URAI_ROLLBACK_SHA}" =~ ${sha_pattern} ]] || { echo '::error::rollback_sha must be a full lowercase 40-character SHA.'; exit 1; }
           [[ "${URAI_TARGET_SHA}" != "${URAI_ROLLBACK_SHA}" ]] || { echo '::error::rollback_sha must differ from target_sha.'; exit 1; }
           [[ "$(git rev-parse HEAD)" == "${URAI_TARGET_SHA}" ]] || { echo '::error::Checked-out SHA does not match target_sha.'; exit 1; }
-          git cat-file -e "${URAI_ROLLBACK_SHA}^{commit}" || { echo '::error::rollback_sha is not a reachable commit.'; exit 1; }
+
+          git fetch origin main --no-tags --prune
+          git cat-file -e "${URAI_TARGET_SHA}^{commit}" || { echo '::error::target_sha is not a commit.'; exit 1; }
+          git cat-file -e "${URAI_ROLLBACK_SHA}^{commit}" || { echo '::error::rollback_sha is not a commit.'; exit 1; }
+          git merge-base --is-ancestor "${URAI_TARGET_SHA}" origin/main || { echo '::error::target_sha must belong to canonical main.'; exit 1; }
+          git merge-base --is-ancestor "${URAI_ROLLBACK_SHA}" "${URAI_TARGET_SHA}" || { echo '::error::rollback_sha must be an ancestor of target_sha.'; exit 1; }
+          git merge-base --is-ancestor "${URAI_ROLLBACK_SHA}" origin/main || { echo '::error::rollback_sha must belong to canonical main.'; exit 1; }
+
           [[ -n "${FIREBASE_PROJECT_ID}" ]] || { echo '::error::The selected environment requires FIREBASE_PROJECT_ID.'; exit 1; }
           [[ "${FIREBASE_PROJECT_ID}" == "${EXPECTED_FIREBASE_PROJECT}" ]] || { echo '::error::Environment Firebase project does not match expected_firebase_project.'; exit 1; }
 
@@ -105,6 +114,11 @@ jobs:
 
           echo 'REQUIRE_LIVE_COMMIT_SHA=true' >> "${GITHUB_ENV}"
           echo "URAI_DEPLOYMENT_RECEIPT_PATH=operations/receipts/releases/${URAI_TARGET_SHA}/deployment-receipt.json" >> "${GITHUB_ENV}"
+          echo 'URAI_TARGET_DEPLOYED=false' >> "${GITHUB_ENV}"
+          echo 'URAI_TARGET_SMOKE_RESULT=not-run' >> "${GITHUB_ENV}"
+          echo 'URAI_ROLLBACK_ATTEMPTED=false' >> "${GITHUB_ENV}"
+          echo 'URAI_ROLLBACK_RESULT=not-run' >> "${GITHUB_ENV}"
+          echo 'URAI_FINAL_LIVE_SHA=' >> "${GITHUB_ENV}"
 
       - name: Enable Corepack
         run: corepack enable
@@ -145,7 +159,8 @@ jobs:
             exit 1
           fi
 
-      - name: Deploy Firebase framework hosting
+      - name: Deploy target Firebase framework hosting
+        id: deploy-target
         env:
           FIREBASE_FALLBACK_TOKEN: ${{ secrets.FIREBASE_TOKEN }}
         shell: bash
@@ -153,22 +168,61 @@ jobs:
           set -euo pipefail
           if [[ "${URAI_FIREBASE_AUTH_MODE}" == 'token' ]]; then
             test -n "${FIREBASE_FALLBACK_TOKEN}"
-            npx firebase-tools deploy --only hosting --project "${FIREBASE_PROJECT_ID}" --token "${FIREBASE_FALLBACK_TOKEN}"
+            corepack pnpm exec firebase deploy --only hosting --project "${FIREBASE_PROJECT_ID}" --token "${FIREBASE_FALLBACK_TOKEN}"
           else
             unset FIREBASE_TOKEN FIREBASE_FALLBACK_TOKEN
-            npx firebase-tools deploy --only hosting --project "${FIREBASE_PROJECT_ID}"
+            corepack pnpm exec firebase deploy --only hosting --project "${FIREBASE_PROJECT_ID}"
           fi
+          echo 'URAI_TARGET_DEPLOYED=true' >> "${GITHUB_ENV}"
+          echo "URAI_FINAL_LIVE_SHA=${URAI_TARGET_SHA}" >> "${GITHUB_ENV}"
 
-      - name: Validate public route and query behavior
+      - name: Validate target public route and query behavior
         run: |
           corepack pnpm smoke:deployed
           corepack pnpm smoke:live
           corepack pnpm smoke:home-xr:live
+          echo 'URAI_TARGET_SMOKE_RESULT=success' >> "${GITHUB_ENV}"
+
+      - name: Mark rollback attempt after failed target verification
+        if: ${{ failure() && env.URAI_TARGET_DEPLOYED == 'true' }}
+        run: |
+          echo 'URAI_ROLLBACK_ATTEMPTED=true' >> "${GITHUB_ENV}"
+          echo 'URAI_ROLLBACK_RESULT=failed' >> "${GITHUB_ENV}"
+
+      - name: Restore approved rollback SHA
+        if: ${{ failure() && env.URAI_TARGET_DEPLOYED == 'true' }}
+        env:
+          FIREBASE_FALLBACK_TOKEN: ${{ secrets.FIREBASE_TOKEN }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          rollback_dir="${RUNNER_TEMP}/urai-spatial-rollback"
+          rm -rf "${rollback_dir}"
+          git worktree add --detach "${rollback_dir}" "${URAI_ROLLBACK_SHA}"
+          cd "${rollback_dir}"
+          corepack pnpm install --frozen-lockfile
+          corepack pnpm build
+          if [[ "${URAI_FIREBASE_AUTH_MODE}" == 'token' ]]; then
+            test -n "${FIREBASE_FALLBACK_TOKEN}"
+            corepack pnpm exec firebase deploy --only hosting --project "${FIREBASE_PROJECT_ID}" --token "${FIREBASE_FALLBACK_TOKEN}"
+          else
+            unset FIREBASE_TOKEN FIREBASE_FALLBACK_TOKEN
+            corepack pnpm exec firebase deploy --only hosting --project "${FIREBASE_PROJECT_ID}"
+          fi
+          URAI_TARGET_SHA="${URAI_ROLLBACK_SHA}" corepack pnpm smoke:deployed
+          URAI_TARGET_SHA="${URAI_ROLLBACK_SHA}" corepack pnpm smoke:live
+          URAI_TARGET_SHA="${URAI_ROLLBACK_SHA}" corepack pnpm smoke:home-xr:live
+          echo 'URAI_ROLLBACK_RESULT=success' >> "${GITHUB_ENV}"
+          echo "URAI_FINAL_LIVE_SHA=${URAI_ROLLBACK_SHA}" >> "${GITHUB_ENV}"
 
       - name: Write exact deployment receipt
+        if: always()
+        env:
+          URAI_JOB_STATUS: ${{ job.status }}
         run: node scripts/write-deployment-receipt.mjs
 
       - name: Upload deployment receipt
+        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: urai-spatial-deployment-receipt-${{ inputs.target_sha }}
