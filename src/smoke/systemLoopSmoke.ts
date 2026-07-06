@@ -4,7 +4,10 @@ import path from "node:path";
 import { PersistenceManager } from "../kernel/PersistenceManager";
 import { createSystemLoop, type SystemLoopState } from "../kernel/SystemLoop";
 
-const assert = (condition: unknown, message: string): asserts condition => { if (!condition) throw new Error(message); };
+function assert(condition: unknown, message: string): asserts condition {
+  if (!condition) throw new Error(message);
+}
+
 const isInsideRepository = (targetPath: string) => {
   const relative = path.relative(process.cwd(), path.resolve(targetPath));
   return relative === "" || (!relative.startsWith("..") && !path.isAbsolute(relative));
