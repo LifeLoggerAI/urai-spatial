@@ -1,12 +1,13 @@
 {
   "receiptId": "URAI-SPATIAL-ASSET-DROPIN-20260706-002",
-  "recordedAt": "2026-07-06T17:24:00-05:00",
+  "recordedAt": "2026-07-06T17:29:00-05:00",
   "classification": "IMPLEMENTED ON CURRENT MAIN ANCESTRY; EXACT-HEAD CI PENDING; PROVIDER ASSETS PARTIALLY PENDING; NOT DEPLOYED",
   "repository": "LifeLoggerAI/urai-spatial",
   "branch": "canonical-asset-runtime-clean",
-  "implementationSha": "0384e85d5fa47a8b4580218545ae33bc87280189",
+  "implementationSha": "b0502160080dc9af7137e31958a0c61a968f8389",
   "receiptCommitRule": "implementationSha identifies the final code-and-test commit immediately before this evidence-only receipt commit.",
   "sourcePullRequest": "https://github.com/LifeLoggerAI/urai-spatial/pull/453",
+  "activePullRequest": "https://github.com/LifeLoggerAI/urai-spatial/pull/457",
   "purpose": "Prove that the Spatial runtime is fail-closed and ready for canonical V1-V5 provider assets to activate from schema-3 manifests on current main ancestry, without route rewrites or unsafe placeholder promotion.",
   "changedFiles": [
     "urai-tier1/src/app/CanonicalAssetGates.tsx",
@@ -24,9 +25,9 @@
       "ready equals the exact expected output count",
       "missing equals zero",
       "assets length equals the exact expected output count",
-      "every asset has a non-empty name",
+      "every asset has a trimmed, non-empty, unique name",
+      "every canonical path is unique, relative, traversal-free, injection-safe, and inside the version prefix",
       "every normalized CSS variable key is non-empty and unique",
-      "every canonical path is relative, traversal-free, injection-safe, and inside the version prefix",
       "every asset has a 64-character SHA-256 digest",
       "every asset has a positive safe-integer byte count"
     ],
