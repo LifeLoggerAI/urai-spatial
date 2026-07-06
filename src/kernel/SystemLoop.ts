@@ -3,6 +3,8 @@ import { MemoryGraphPlugin } from "../memory/MemoryGraphPlugin";
 import { ReplayEngine } from "../memory/ReplayEngine";
 import { PredictionEngine, type PredictionResult } from "../prediction/PredictionEngine";
 import { XRRuntime, type XRFrame } from "../xr/XRRuntime";
+import { CommunicationsBridge, type CommunicationPacket } from "../bridges/communicationsBridge";
+import { AnalyticsBridge, type AnalyticsEvent } from "../bridges/analyticsBridge";
 
 export type SystemLoopState = {
   startedAt: number;
@@ -10,6 +12,8 @@ export type SystemLoopState = {
   totalRuns: number;
   lastPrediction?: PredictionResult;
   lastXRFrame?: XRFrame;
+  lastPackets?: CommunicationPacket[];
+  lastAnalyticsEvents?: AnalyticsEvent[];
 };
 
 export type SystemLoopOptions = {
@@ -23,6 +27,8 @@ export class SystemLoop<TState = Record<string, unknown>> {
   readonly replay: ReplayEngine;
   readonly prediction: PredictionEngine;
   readonly xr: XRRuntime;
+  readonly communications: CommunicationsBridge;
+  readonly analytics: AnalyticsBridge;
 
   private replayLimit: number;
   private loopState: SystemLoopState = {
@@ -39,11 +45,17 @@ export class SystemLoop<TState = Record<string, unknown>> {
     this.replay = new ReplayEngine();
     this.prediction = new PredictionEngine();
     this.xr = new XRRuntime();
+    this.communications = new CommunicationsBridge();
+    this.analytics = new AnalyticsBridge();
     this.replayLimit = options.replayLimit ?? 50;
   }
 
   async initialize() {
     await this.engine.register(this.memory);
+
+    this.engine.bus.on("*", (event) => {
+      this.communications.push(event);
+    });
 
     await this.engine.emit("system.loop.initialized", {
       replayLimit: this.replayLimit
@@ -64,19 +76,26 @@ export class SystemLoop<TState = Record<string, unknown>> {
     const frame = this.xr.renderPrediction(prediction, this.engine.tick);
     await this.xr.emitFrame(frame, this.engine.bus);
 
+    const packets = this.communications.flush();
+    const analyticsEvents = packets.map((packet) => this.analytics.ingest(packet));
+
     this.loopState = {
       ...this.loopState,
       lastRunAt: Date.now(),
       totalRuns: this.loopState.totalRuns + 1,
       lastPrediction: prediction,
-      lastXRFrame: frame
+      lastXRFrame: frame,
+      lastPackets: packets,
+      lastAnalyticsEvents: analyticsEvents
     };
 
     await this.engine.emit("system.loop.completed", {
       tick: this.engine.tick,
       totalRuns: this.loopState.totalRuns,
       predictionId: prediction.id,
-      xrFrameId: frame.id
+      xrFrameId: frame.id,
+      packets: packets.length,
+      analyticsEvents: analyticsEvents.length
     }, "system-loop");
 
     return {
@@ -84,6 +103,8 @@ export class SystemLoop<TState = Record<string, unknown>> {
       timeline,
       prediction,
       frame,
+      packets,
+      analyticsEvents,
       state: this.getState()
     };
   }
