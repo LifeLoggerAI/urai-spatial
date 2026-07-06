@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import currentReleaseReceipt from '@/data/currentReleaseReceipt.json'
 
 export const metadata = {
   title: 'URAI Status',
@@ -42,11 +43,23 @@ const groups = [
 ] as const
 
 const totalRoutes = groups.reduce((sum, group) => sum + group.items.length, 0)
-
 const badgeClass = (state: 'implemented' | 'preview') =>
   state === 'implemented'
     ? 'border-cyan-100/20 bg-cyan-100 text-slate-950'
     : 'border-amber-200/30 bg-amber-200 text-slate-950'
+
+const shortSha = (value: string | null) => value ? value.slice(0, 12) : 'Not recorded'
+
+const receiptRows = [
+  ['Release state', currentReleaseReceipt.releaseState],
+  ['Audited main', shortSha(currentReleaseReceipt.sourceMainShaAtAudit)],
+  ['Tested SHA', shortSha(currentReleaseReceipt.testedSha)],
+  ['Deployed SHA', shortSha(currentReleaseReceipt.deployedSha)],
+  ['Rollback SHA', shortSha(currentReleaseReceipt.rollbackSha)],
+  ['Firebase project', currentReleaseReceipt.firebaseProject],
+  ['Asset pack', currentReleaseReceipt.assetPackVersion ?? 'Not recorded'],
+  ['Quest proof', currentReleaseReceipt.evidence.questDeviceProof],
+] as const
 
 export default function StatusRoutePage() {
   return (
@@ -54,7 +67,7 @@ export default function StatusRoutePage() {
       className="relative min-h-screen overflow-hidden bg-[#020713] px-4 py-8 text-white md:px-8"
       data-testid="urai-final-status-control-room"
       data-launch-surface="premium-status-control-room"
-      data-production-certification="pending-current-main-evidence"
+      data-production-certification={currentReleaseReceipt.releaseState}
     >
       <div className="absolute inset-0 bg-[radial-gradient(circle_at_22%_20%,rgba(103,232,249,0.20),transparent_30%),radial-gradient(circle_at_76%_28%,rgba(192,132,252,0.18),transparent_32%),linear-gradient(180deg,#020713_0%,#04111b_58%,#01040a_100%)]" />
       <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_50%_50%,transparent_0_38%,rgba(0,0,0,0.64)_78%,rgba(0,0,0,0.92)_100%)]" />
@@ -66,7 +79,7 @@ export default function StatusRoutePage() {
               Routes implemented. Production certification pending.
             </h1>
             <p className="mt-6 max-w-3xl text-base font-semibold leading-8 text-slate-200/80">
-              This room distinguishes source implementation from current deployment proof. A route is not certified live until the canonical commit, deploy receipt, custom-domain fingerprints, slash parity, and required checks are recorded together.
+              This room reads one machine-readable receipt. Blank SHA fields mean the evidence has not been established; route reachability never fills them automatically.
             </p>
           </article>
           <article className="rounded-[2rem] border border-cyan-100/15 bg-slate-950/60 p-7 shadow-2xl shadow-cyan-950/30 backdrop-blur-2xl">
@@ -79,6 +92,19 @@ export default function StatusRoutePage() {
             </div>
           </article>
         </div>
+
+        <section className="mt-6 rounded-[2rem] border border-amber-200/20 bg-slate-950/58 p-6 shadow-2xl shadow-black/30 backdrop-blur-2xl">
+          <h2 className="text-xl font-black text-amber-100">Current release receipt</h2>
+          <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+            {receiptRows.map(([label, value]) => (
+              <div key={label} className="rounded-2xl border border-white/10 bg-white/[0.045] p-4">
+                <span className="text-[10px] font-black uppercase tracking-[0.18em] text-cyan-200">{label}</span>
+                <strong className="mt-2 block break-words text-sm">{value}</strong>
+              </div>
+            ))}
+          </div>
+        </section>
+
         <div className="mt-6 grid gap-5 lg:grid-cols-3">
           {groups.map((group) => (
             <section key={group.title} className="rounded-[2rem] border border-white/10 bg-slate-950/58 p-5 shadow-2xl shadow-black/30 backdrop-blur-2xl">
@@ -99,7 +125,7 @@ export default function StatusRoutePage() {
         </div>
         <section className="mt-6 rounded-[2rem] border border-amber-200/20 bg-amber-200/[0.07] p-6 text-sm font-semibold leading-7 text-amber-50/90">
           <h2 className="text-xl font-black text-amber-100">Certification boundary</h2>
-          <p className="mt-2">Current source implementation is visible above. Production certification remains pending until the exact deployed commit and rollback target are recorded and the post-deployment custom-domain smoke passes every route fingerprint, slash form, and query-preservation check.</p>
+          <p className="mt-2">Production certification remains pending until the tested and deployed SHAs match, a rollback SHA is recorded, and every required evidence field in the receipt passes.</p>
         </section>
         <nav className="mt-6 flex flex-wrap gap-3" aria-label="Status route navigation">
           <Link className="rounded-full bg-white px-5 py-3 text-sm font-black text-slate-950 no-underline" href="/home">Open Home</Link>
