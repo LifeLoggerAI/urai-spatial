@@ -1,157 +1,67 @@
-name: URAI Spatial Live Deploy
+name: URAI Spatial Release Verification
 
 on:
-  push:
-    branches:
-      - main
-    paths:
-      - "urai-tier1/**"
-      - "apps/functions/**"
-      - "packages/**"
-      - "scripts/**"
-      - "tests/**"
-      - "src/canon/**"
-      - "docs/**"
-      - "release/**"
-      - "audit/**"
-      - "firebase/**"
-      - "firebase.json"
-      - "firebase.static.json"
-      - ".firebaserc.example"
-      - "CANONICAL_RUNTIME.md"
-      - "SYSTEM_MAP.md"
-      - "REPO_PURPOSE.md"
-      - "RUNBOOK.md"
-      - "README.md"
-      - "LIVE_RELEASE.md"
-      - "DEPLOYMENT.md"
-      - "STATUS.md"
-      - "EVIDENCE.md"
-      - "package.json"
-      - "pnpm-lock.yaml"
-      - "pnpm-workspace.yaml"
-      - ".nvmrc"
-      - ".node-version"
-      - ".github/workflows/**"
   pull_request:
-    branches:
-      - main
-    paths:
-      - "urai-tier1/**"
-      - "apps/functions/**"
-      - "packages/**"
-      - "scripts/**"
-      - "tests/**"
-      - "src/canon/**"
-      - "docs/**"
-      - "release/**"
-      - "audit/**"
-      - "firebase/**"
-      - "firebase.json"
-      - "firebase.static.json"
-      - ".firebaserc.example"
-      - "CANONICAL_RUNTIME.md"
-      - "SYSTEM_MAP.md"
-      - "REPO_PURPOSE.md"
-      - "RUNBOOK.md"
-      - "README.md"
-      - "LIVE_RELEASE.md"
-      - "DEPLOYMENT.md"
-      - "STATUS.md"
-      - "EVIDENCE.md"
-      - "package.json"
-      - "pnpm-lock.yaml"
-      - "pnpm-workspace.yaml"
-      - ".nvmrc"
-      - ".node-version"
-      - ".github/workflows/**"
+    branches: [main]
+  push:
+    branches: [main]
   workflow_dispatch:
-    inputs:
-      deploy:
-        description: "Type DEPLOY to publish after live checks pass"
-        required: true
-        default: "CHECK_ONLY"
-        type: string
-      live_url:
-        description: "Live URL to smoke after deploy"
-        required: false
-        default: ""
-        type: string
 
 permissions:
   contents: read
 
 concurrency:
-  group: urai-spatial-live-deploy-${{ github.head_ref || github.ref_name }}
+  group: urai-spatial-release-verification-${{ github.head_ref || github.ref_name }}
   cancel-in-progress: true
 
 jobs:
   verify:
-    name: Verify Spatial release gates
+    name: Verify release without deployment
     runs-on: ubuntu-latest
     timeout-minutes: 45
     env:
       NEXT_PUBLIC_URAI_SPATIAL_DOMAIN: ${{ vars.NEXT_PUBLIC_URAI_SPATIAL_DOMAIN }}
-      NEXT_PUBLIC_URAI_DEBUG_SPATIAL: ${{ vars.NEXT_PUBLIC_URAI_DEBUG_SPATIAL }}
-      NEXT_PUBLIC_FIREBASE_API_KEY: ${{ secrets.NEXT_PUBLIC_FIREBASE_API_KEY }}
-      NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN: ${{ secrets.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN }}
       NEXT_PUBLIC_FIREBASE_PROJECT_ID: ${{ secrets.NEXT_PUBLIC_FIREBASE_PROJECT_ID }}
-      NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET: ${{ secrets.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET }}
-      NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID: ${{ secrets.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID }}
-      NEXT_PUBLIC_FIREBASE_APP_ID: ${{ secrets.NEXT_PUBLIC_FIREBASE_APP_ID }}
       FIREBASE_PROJECT_ID: ${{ secrets.FIREBASE_PROJECT_ID }}
-      FIREBASE_CLIENT_EMAIL: ${{ secrets.FIREBASE_CLIENT_EMAIL }}
-      FIREBASE_PRIVATE_KEY: ${{ secrets.FIREBASE_PRIVATE_KEY }}
       URAI_CORE_BASE_URL: ${{ vars.URAI_CORE_BASE_URL }}
       URAI_STUDIO_BASE_URL: ${{ vars.URAI_STUDIO_BASE_URL }}
       ASSET_FACTORY_BASE_URL: ${{ vars.ASSET_FACTORY_BASE_URL }}
       URAI_JOBS_BASE_URL: ${{ vars.URAI_JOBS_BASE_URL }}
-      GOOGLE_APPLICATION_CREDENTIALS: ${{ github.workspace }}/firebase-service-account.json
+
     steps:
-      - name: Checkout
+      - name: Checkout exact event commit
         uses: actions/checkout@v4
         with:
           ref: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
-          fetch-depth: 0
-          persist-credentials: true
+          persist-credentials: false
 
-      - name: Prepare git safe environment
-        run: |
-          git config --global --add safe.directory "$GITHUB_WORKSPACE" || true
-          git fetch origin main --tags --force --prune || true
-          git fetch --unshallow || true
-          if [ "${{ github.event_name }}" = "push" ] && [ "${{ github.ref_name }}" = "main" ]; then
-            git checkout -B main origin/main || true
-          fi
-          git status --short || true
-          git rev-parse --is-inside-work-tree
-          git rev-parse HEAD
-          git log -2 --oneline || true
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10.0.0
 
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
           node-version: 22
+          cache: pnpm
 
-      - name: Enable pnpm
-        run: |
-          corepack enable
-          corepack prepare pnpm@10.0.0 --activate
-          pnpm --version
-
-      - name: Install dependencies
+      - name: Install frozen dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Install Playwright browsers
-        run: npx playwright install --with-deps chromium
+      - name: Install Playwright Chromium
+        run: pnpm exec playwright install --with-deps chromium
 
-      - name: Check V1-V6 asset-ready switch
+      - name: Validate sole deployment authority
+        run: node scripts/check-deployment-authority.mjs
+
+      - name: Check versioned asset readiness
         run: node scripts/check-v1-v6-asset-ready.mjs
 
-      - name: Run Spatial live release check
+      - name: Run authoritative release checks
         run: pnpm live:check
 
-      - name: Run resilient E2E evidence
+      - name: Collect resilient E2E evidence
         if: always()
         run: pnpm verify:e2e:resilient
 
@@ -159,94 +69,20 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: urai-spatial-live-check-evidence
+          name: urai-spatial-release-verification-${{ github.sha }}
           path: |
             EVIDENCE.md
             STATUS.md
             LIVE_RELEASE.md
             DEPLOYMENT.md
             RUNBOOK.md
-            REPO_PURPOSE.md
-            docs/URAI_SPATIAL_DONE_DONE_LOCK.md
-            docs/contracts/URAI_STUDIO_SPATIAL_HANDOFF.md
-            docs/canon
-            docs/decisions/runtime-authority.md
-            docs/release
             release
-            audit/tier-lock
-            audit/v1-v6
-            src/canon
-            firebase/firestore.rules
-            firebase/firestore.indexes.json
-            firebase/spatial-collection-contract.json
-            urai-tier1/src/lib/studio-spatial-handoff.ts
-            urai-tier1/src/spatial/xr
-            urai-tier1/tests/studio-spatial-handoff.test.mjs
-            urai-tier1/tests/xr-runtime-contract.test.mjs
-            urai-tier1/scripts/xr
             test-results
             playwright-report
           if-no-files-found: warn
-          retention-days: 30
+          retention-days: 90
 
-  deploy:
-    name: Deploy Spatial to Firebase
-    needs: verify
-    if: (github.event_name == 'workflow_dispatch' && github.event.inputs.deploy == 'DEPLOY') || (github.event_name == 'push' && vars.URAI_SPATIAL_AUTO_DEPLOY == 'true')
-    runs-on: ubuntu-latest
-    timeout-minutes: 30
-    env:
-      FIREBASE_PROJECT_ID: ${{ secrets.FIREBASE_PROJECT_ID }}
-      GOOGLE_APPLICATION_CREDENTIALS: ${{ github.workspace }}/firebase-service-account.json
-      LIVE_URL: ${{ github.event.inputs.live_url || vars.URAI_SPATIAL_LIVE_URL }}
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-        with:
-          ref: ${{ github.sha }}
-
-      - name: Setup Node
-        uses: actions/setup-node@v4
-        with:
-          node-version: 22
-
-      - name: Enable pnpm
+      - name: State release boundary
         run: |
-          corepack enable
-          corepack prepare pnpm@10.0.0 --activate
-          pnpm --version
-
-      - name: Verify deploy inputs
-        run: |
-          test -n "$FIREBASE_PROJECT_ID"
-          test -n '${{ secrets.FIREBASE_SERVICE_ACCOUNT_JSON }}'
-
-      - name: Write Firebase service account
-        run: |
-          cat > "$GOOGLE_APPLICATION_CREDENTIALS" <<'JSON'
-          ${{ secrets.FIREBASE_SERVICE_ACCOUNT_JSON }}
-          JSON
-          python -m json.tool "$GOOGLE_APPLICATION_CREDENTIALS" > /dev/null
-          chmod 600 "$GOOGLE_APPLICATION_CREDENTIALS"
-
-      - name: Install dependencies
-        run: pnpm install --frozen-lockfile
-
-      - name: Deploy Spatial live
-        run: pnpm live:deploy
-
-      - name: Smoke live URL
-        if: env.LIVE_URL != ''
-        run: HOST="$LIVE_URL" pnpm smoke
-
-      - name: Write deployment summary
-        if: always()
-        run: |
-          {
-            echo "# URAI Spatial live deploy"
-            echo ""
-            echo "- Commit: $GITHUB_SHA"
-            echo "- Firebase project: $FIREBASE_PROJECT_ID"
-            echo "- Live URL: ${LIVE_URL:-not provided}"
-            echo "- Workflow run: $GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID"
-          } >> "$GITHUB_STEP_SUMMARY"
+          echo "This workflow performs verification only."
+          echo "The sole deployment authority is .github/workflows/urai-spatial-deploy.yml."
