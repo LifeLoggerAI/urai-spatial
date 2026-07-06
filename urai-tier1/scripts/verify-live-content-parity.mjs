@@ -1,0 +1,140 @@
+#!/usr/bin/env node
+
+import { createHash } from 'node:crypto'
+import { mkdir, writeFile } from 'node:fs/promises'
+import { dirname, resolve } from 'node:path'
+
+const baseUrl = process.env.URAI_LIVE_BASE_URL || 'https://urai.app'
+const expectedSha = (process.env.URAI_EXPECTED_DEPLOYED_SHA || '').trim()
+const receiptPath = resolve(
+  process.cwd(),
+  process.env.URAI_LIVE_RECEIPT_PATH || 'artifacts/live-content-parity.json',
+)
+
+const routeContracts = [
+  { route: '/', markers: ['Own your life.', 'Ground', 'Life Map'] },
+  { route: '/home', markers: ['Home threshold', 'Own your life.'] },
+  { route: '/ground', markers: ['URAI GROUND', 'Your private floor is open.'] },
+  { route: '/life-map', markers: ['URAI Spatial · Life Map', 'Your memory constellation is online.'] },
+  { route: '/focus?memoryId=quiet-reset', markers: ['Selected memory chamber', 'The Quiet Reset'] },
+  { route: '/replay?memoryId=quiet-reset&manifestId=replay-recovery-thread', markers: ['Cinematic memory film', 'Replay the thread.'] },
+  { route: '/mirror', markers: ['URAI Mirror', 'See the pattern clearly.'] },
+  { route: '/passport', markers: ['URAI Passport', 'Your life stays yours.'] },
+  {
+    route: '/privacy-controls',
+    markers: ['URAI Privacy Controls', 'Choose what the world can hold.'],
+    forbiddenMarkers: ['Home threshold'],
+  },
+  {
+    route: '/status',
+    markers: ['URAI Status · Evidence Control Room', 'Production certification pending.'],
+    forbiddenMarkers: ['World online. Route matrix visible.'],
+  },
+]
+
+function sha256(value) {
+  return createHash('sha256').update(value).digest('hex')
+}
+
+function routeVariants(route) {
+  const parsed = new URL(route, baseUrl)
+  if (parsed.pathname === '/') return [parsed]
+
+  const withoutSlash = new URL(parsed)
+  withoutSlash.pathname = withoutSlash.pathname.replace(/\/$/, '')
+  const withSlash = new URL(withoutSlash)
+  withSlash.pathname = `${withoutSlash.pathname}/`
+  return [withoutSlash, withSlash]
+}
+
+function readShaEvidence(response, html) {
+  const header = response.headers.get('x-urai-commit-sha') || response.headers.get('x-deployed-sha')
+  const meta = html.match(/(?:data-deployed-sha|name=["']urai-deployed-sha["']\s+content)=["']([0-9a-f]{40})["']/i)?.[1]
+  return (header || meta || '').trim()
+}
+
+async function inspectVariant(contract, url) {
+  const startedAt = new Date().toISOString()
+  try {
+    const response = await fetch(url, {
+      redirect: 'follow',
+      headers: {
+        'user-agent': 'urai-live-content-parity/1.0',
+        accept: 'text/html,application/xhtml+xml',
+      },
+    })
+    const html = await response.text()
+    const missingMarkers = contract.markers.filter((marker) => !html.includes(marker))
+    const forbiddenMarkers = (contract.forbiddenMarkers || []).filter((marker) => html.includes(marker))
+    const deployedSha = readShaEvidence(response, html)
+    const queryPreserved = url.search ? new URL(response.url).search === url.search : true
+    const shaMatches = expectedSha ? deployedSha === expectedSha : null
+    const passed =
+      response.ok &&
+      missingMarkers.length === 0 &&
+      forbiddenMarkers.length === 0 &&
+      queryPreserved &&
+      (shaMatches !== false)
+
+    return {
+      requestedUrl: url.toString(),
+      finalUrl: response.url,
+      status: response.status,
+      startedAt,
+      completedAt: new Date().toISOString(),
+      contentSha256: sha256(html),
+      bytes: Buffer.byteLength(html),
+      requiredMarkers: contract.markers,
+      missingMarkers,
+      forbiddenMarkers,
+      queryPreserved,
+      deployedSha: deployedSha || null,
+      expectedSha: expectedSha || null,
+      shaMatches,
+      passed,
+    }
+  } catch (error) {
+    return {
+      requestedUrl: url.toString(),
+      startedAt,
+      completedAt: new Date().toISOString(),
+      error: error instanceof Error ? error.message : String(error),
+      expectedSha: expectedSha || null,
+      passed: false,
+    }
+  }
+}
+
+async function main() {
+  const routeResults = []
+  for (const contract of routeContracts) {
+    const variants = []
+    for (const url of routeVariants(contract.route)) {
+      variants.push(await inspectVariant(contract, url))
+    }
+    routeResults.push({ route: contract.route, variants, passed: variants.every((item) => item.passed) })
+  }
+
+  const receipt = {
+    schemaVersion: 'urai-live-content-parity-1',
+    generatedAt: new Date().toISOString(),
+    baseUrl,
+    expectedDeployedSha: expectedSha || null,
+    exactShaRequired: Boolean(expectedSha),
+    routeCount: routeResults.length,
+    variantCount: routeResults.reduce((sum, item) => sum + item.variants.length, 0),
+    passed: routeResults.every((item) => item.passed),
+    routes: routeResults,
+    caveat: expectedSha
+      ? 'Content and deployed-SHA parity were required.'
+      : 'Content parity was checked, but no exact deployed SHA was required; this is not a deployment certification receipt.',
+  }
+
+  await mkdir(dirname(receiptPath), { recursive: true })
+  await writeFile(receiptPath, `${JSON.stringify(receipt, null, 2)}\n`, 'utf8')
+  console.log(JSON.stringify(receipt, null, 2))
+
+  if (!receipt.passed) process.exitCode = 1
+}
+
+await main()
