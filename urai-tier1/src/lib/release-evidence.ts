@@ -49,6 +49,15 @@ export type ReleaseReceipt = {
   claimBoundary: string;
 };
 
+export const requiredCoreEvidenceArtifacts = [
+  "canonicalContract",
+  "routeContract",
+  "runtimeCompile",
+  "runtimeSmoke",
+  "productTypecheck",
+  "productBuild",
+] as const;
+
 export const requiredReleaseEvidenceArtifacts = [
   "browserFlow",
   "mobileFlow",
@@ -56,6 +65,14 @@ export const requiredReleaseEvidenceArtifacts = [
   "customDomain",
   "rollback",
 ] as const;
+
+const expectedAssetCounts = {
+  v1: 53,
+  v2: 80,
+  v3: 14,
+  v4: 39,
+  v5: 27,
+} as const;
 
 const isCommitSha = (value: unknown): value is string =>
   typeof value === "string" && /^[0-9a-f]{40}$/i.test(value);
@@ -66,7 +83,9 @@ const isSha256 = (value: unknown): value is string =>
 const nullableCommitSha = (value: unknown, field: string): string | null => {
   if (value === null) return null;
   if (!isCommitSha(value)) {
-    throw new Error(`Release receipt field ${field} must be null or a 40-character Git commit SHA.`);
+    throw new Error(
+      `Release receipt field ${field} must be null or a 40-character Git commit SHA.`,
+    );
   }
   return value;
 };
@@ -74,7 +93,9 @@ const nullableCommitSha = (value: unknown, field: string): string | null => {
 const nullableManifestSha = (value: unknown): string | null => {
   if (value === null) return null;
   if (!isSha256(value)) {
-    throw new Error("Release receipt field manifestSha must be null or a 64-character SHA-256 digest.");
+    throw new Error(
+      "Release receipt field manifestSha must be null or a 64-character SHA-256 digest.",
+    );
   }
   return value;
 };
@@ -85,6 +106,30 @@ const validEvidenceStates = new Set<EvidenceState>([
   "pending",
   "not-applicable-to-web-release",
 ]);
+
+const hasArtifacts = (
+  receipt: ReleaseReceipt,
+  names: readonly string[],
+): boolean => names.every((name) => Boolean(receipt.evidenceArtifacts[name]));
+
+const nonXrChecksPassed = (receipt: ReleaseReceipt): boolean =>
+  Object.entries(receipt.checks)
+    .filter(([name]) => name !== "physicalXr")
+    .every(([, state]) => state === "passed");
+
+const certificationFieldsComplete = (receipt: ReleaseReceipt): boolean =>
+  Boolean(
+    receipt.candidateSha &&
+      receipt.testedSha &&
+      receipt.deployedSha &&
+      receipt.rollbackSha &&
+      receipt.manifestSha &&
+      receipt.candidateSha === receipt.testedSha &&
+      receipt.testedSha === receipt.deployedSha &&
+      nonXrChecksPassed(receipt) &&
+      hasArtifacts(receipt, requiredCoreEvidenceArtifacts) &&
+      hasArtifacts(receipt, requiredReleaseEvidenceArtifacts),
+  );
 
 const validateReceipt = (value: unknown): ReleaseReceipt => {
   if (!value || typeof value !== "object") {
@@ -104,7 +149,9 @@ const validateReceipt = (value: unknown): ReleaseReceipt => {
     throw new Error("Release receipt contains duplicate route paths.");
   }
   for (const route of receipt.routes) {
-    if (!route.path.startsWith("/")) throw new Error(`Invalid release route path: ${route.path}`);
+    if (!route.path.startsWith("/")) {
+      throw new Error(`Invalid release route path: ${route.path}`);
+    }
     if (!["implemented", "preview"].includes(route.sourceState)) {
       throw new Error(`Invalid source state for ${route.path}.`);
     }
@@ -140,11 +187,42 @@ const validateReceipt = (value: unknown): ReleaseReceipt => {
   receipt.rollbackSha = nullableCommitSha(receipt.rollbackSha, "rollbackSha");
   receipt.manifestSha = nullableManifestSha(receipt.manifestSha);
 
+  for (const [version, expected] of Object.entries(expectedAssetCounts)) {
+    if (receipt.assetContract?.[version as keyof typeof expectedAssetCounts] !== expected) {
+      throw new Error(`Release receipt asset contract ${version} must equal ${expected}.`);
+    }
+  }
+  if (!Array.isArray(receipt.assetContract.providerPromotionsVerified)) {
+    throw new Error(
+      "Release receipt providerPromotionsVerified must be an array.",
+    );
+  }
+
   if (receipt.deployedSha && receipt.testedSha !== receipt.deployedSha) {
     throw new Error("A deployed SHA must equal the tested SHA.");
   }
+  if (receipt.deployedSha && receipt.candidateSha !== receipt.deployedSha) {
+    throw new Error("A deployed SHA must equal the candidate SHA.");
+  }
   if (receipt.deployedSha && !receipt.rollbackSha) {
     throw new Error("A deployed release must record a rollback SHA.");
+  }
+  if (receipt.deployedSha && !receipt.manifestSha) {
+    throw new Error("A deployed release must record a manifest SHA-256 digest.");
+  }
+  if (receipt.deployedSha && !hasArtifacts(receipt, requiredCoreEvidenceArtifacts)) {
+    throw new Error(
+      "A deployed release must include hashed canonical, route, runtime, typecheck, and build evidence artifacts.",
+    );
+  }
+
+  const allRoutesVerified = receipt.routes.every(
+    (route) => route.productionState === "verified",
+  );
+  if (allRoutesVerified !== certificationFieldsComplete(receipt)) {
+    throw new Error(
+      "Verified routes require matching candidate, tested and deployed SHAs, rollback and manifest SHAs, passed checks, and all required hashed evidence artifacts.",
+    );
   }
 
   return receipt;
@@ -153,15 +231,5 @@ const validateReceipt = (value: unknown): ReleaseReceipt => {
 export const releaseReceipt = validateReceipt(structuredClone(rawReceipt));
 
 export const isProductionCertified = (receipt: ReleaseReceipt): boolean =>
-  Boolean(
-    receipt.testedSha &&
-      receipt.deployedSha &&
-      receipt.rollbackSha &&
-      receipt.manifestSha &&
-      receipt.testedSha === receipt.deployedSha &&
-      requiredReleaseEvidenceArtifacts.every((name) => Boolean(receipt.evidenceArtifacts[name])) &&
-      receipt.routes.every((route) => route.productionState === "verified") &&
-      Object.entries(receipt.checks)
-        .filter(([name]) => name !== "physicalXr")
-        .every(([, state]) => state === "passed")
-  );
+  receipt.routes.every((route) => route.productionState === "verified") &&
+  certificationFieldsComplete(receipt);
