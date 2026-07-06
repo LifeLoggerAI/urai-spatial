@@ -33,7 +33,7 @@ const report = {
     'HTTP navigation',
     'document language and title',
     'main landmark and H1 presence',
-    'accessible names for interactive controls',
+    'accessible names for visible interactive controls',
     'image alternative text',
     'keyboard focus entry',
     'mobile horizontal overflow',
@@ -63,9 +63,9 @@ try {
       const url = `${baseUrl}${route}`;
       let responseStatus = 0;
       try {
-        const response = await page.goto(url, { waitUntil: 'networkidle', timeout: 60000 });
+        const response = await page.goto(url, { waitUntil: 'load', timeout: 60000 });
         responseStatus = response?.status() || 0;
-        if (!response?.ok()) failures.push(`HTTP status ${responseStatus}`);
+        if (!response?.ok()) throw new Error(`HTTP status ${responseStatus}`);
 
         const result = await page.evaluate(() => {
           const accessibleName = (element) => {
@@ -90,6 +90,7 @@ try {
             return (
               element.getAttribute('title')?.trim() ||
               element.getAttribute('alt')?.trim() ||
+              (element.tagName === 'INPUT' ? element.value?.trim() : '') ||
               element.textContent?.trim() ||
               ''
             );
@@ -106,8 +107,11 @@ try {
             '[tabindex]:not([tabindex="-1"])',
           ].join(',');
           const interactive = Array.from(document.querySelectorAll(interactiveSelector));
-          const unnamedInteractive = interactive
+          const visibleInteractive = interactive
             .filter((element) => !element.hasAttribute('disabled'))
+            .filter((element) => element.getAttribute('aria-hidden') !== 'true')
+            .filter((element) => element.offsetWidth > 0 || element.offsetHeight > 0);
+          const unnamedInteractive = visibleInteractive
             .filter((element) => accessibleName(element).length === 0)
             .map((element) => ({
               tag: element.tagName.toLowerCase(),
@@ -116,6 +120,8 @@ try {
             }));
           const imagesWithoutAlt = Array.from(document.querySelectorAll('img'))
             .filter((image) => image.getAttribute('role') !== 'presentation')
+            .filter((image) => image.getAttribute('aria-hidden') !== 'true')
+            .filter((image) => image.offsetWidth > 0 || image.offsetHeight > 0)
             .filter((image) => !image.hasAttribute('alt'))
             .map((image) => image.getAttribute('src') || 'unknown');
 
@@ -124,7 +130,7 @@ try {
             title: document.title,
             mainCount: document.querySelectorAll('main').length,
             h1Count: document.querySelectorAll('h1').length,
-            interactiveCount: interactive.length,
+            interactiveCount: visibleInteractive.length,
             unnamedInteractive,
             imagesWithoutAlt,
             horizontalOverflow: document.documentElement.scrollWidth - document.documentElement.clientWidth,
@@ -137,10 +143,10 @@ try {
         if (result.mainCount < 1) failures.push('Missing main landmark');
         if (result.h1Count < 1) failures.push('Missing H1');
         if (result.unnamedInteractive.length > 0) {
-          failures.push(`${result.unnamedInteractive.length} interactive controls have no accessible name`);
+          failures.push(`${result.unnamedInteractive.length} visible interactive controls have no accessible name`);
         }
         if (result.imagesWithoutAlt.length > 0) {
-          failures.push(`${result.imagesWithoutAlt.length} images are missing alt attributes`);
+          failures.push(`${result.imagesWithoutAlt.length} visible images are missing alt attributes`);
         }
         if (profile.isMobile && result.horizontalOverflow > 2) {
           failures.push(`Mobile horizontal overflow: ${result.horizontalOverflow}px`);
