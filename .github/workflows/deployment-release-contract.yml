@@ -1,0 +1,32 @@
+name: Deployment Release Contract
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/urai-spatial-deploy.yml'
+      - '.github/workflows/deployment-release-contract.yml'
+      - 'scripts/write-deployment-receipt.mjs'
+      - 'scripts/check-deployment-release-contract.mjs'
+  push:
+    branches:
+      - main
+    paths:
+      - '.github/workflows/urai-spatial-deploy.yml'
+      - '.github/workflows/deployment-release-contract.yml'
+      - 'scripts/write-deployment-receipt.mjs'
+      - 'scripts/check-deployment-release-contract.mjs'
+
+permissions:
+  contents: read
+
+jobs:
+  validate-deployment-contract:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Validate release workflow boundaries
+        run: node scripts/check-deployment-release-contract.mjs
