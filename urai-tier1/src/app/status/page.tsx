@@ -48,17 +48,17 @@ const badgeClass = (state: 'implemented' | 'preview') =>
     ? 'border-cyan-100/20 bg-cyan-100 text-slate-950'
     : 'border-amber-200/30 bg-amber-200 text-slate-950'
 
-const shortSha = (value: string | null) => value ? value.slice(0, 12) : 'Not recorded'
+const shortSha = (value: string | null | undefined) => value ? value.slice(0, 12) : 'Not recorded'
 
 const receiptRows = [
-  ['Release state', currentReleaseReceipt.releaseState],
+  ['Release state', currentReleaseReceipt.releaseState ?? 'Not recorded'],
   ['Audited main', shortSha(currentReleaseReceipt.sourceMainShaAtAudit)],
   ['Tested SHA', shortSha(currentReleaseReceipt.testedSha)],
   ['Deployed SHA', shortSha(currentReleaseReceipt.deployedSha)],
   ['Rollback SHA', shortSha(currentReleaseReceipt.rollbackSha)],
-  ['Firebase project', currentReleaseReceipt.firebaseProject],
+  ['Firebase project', currentReleaseReceipt.firebaseProject ?? 'Not recorded'],
   ['Asset pack', currentReleaseReceipt.assetPackVersion ?? 'Not recorded'],
-  ['Quest proof', currentReleaseReceipt.evidence.questDeviceProof],
+  ['Quest proof', currentReleaseReceipt.evidence?.questDeviceProof ?? 'Not recorded'],
 ] as const
 
 export default function StatusRoutePage() {
@@ -67,7 +67,7 @@ export default function StatusRoutePage() {
       className="relative min-h-screen overflow-hidden bg-[#020713] px-4 py-8 text-white md:px-8"
       data-testid="urai-final-status-control-room"
       data-launch-surface="premium-status-control-room"
-      data-production-certification={currentReleaseReceipt.releaseState}
+      data-production-certification={currentReleaseReceipt.releaseState ?? 'pending-current-main-evidence'}
     >
       <div className="absolute inset-0 bg-[radial-gradient(circle_at_22%_20%,rgba(103,232,249,0.20),transparent_30%),radial-gradient(circle_at_76%_28%,rgba(192,132,252,0.18),transparent_32%),linear-gradient(180deg,#020713_0%,#04111b_58%,#01040a_100%)]" />
       <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_50%_50%,transparent_0_38%,rgba(0,0,0,0.64)_78%,rgba(0,0,0,0.92)_100%)]" />
