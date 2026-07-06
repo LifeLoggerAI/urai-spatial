@@ -1,22 +1,26 @@
-import { createSystemLoop, type SystemLoopState } from "./kernel/SystemLoop";
+import {
+  createSystemLoop,
+  isSystemLoopState,
+  type SystemLoopState,
+} from "./kernel/SystemLoop";
 import { PersistenceManager } from "./kernel/PersistenceManager";
 import { SimulationDashboard } from "./dashboard/SimulationDashboard";
 
 async function main() {
   const persistence = new PersistenceManager<SystemLoopState>();
   const savedState = persistence.load();
+  const restoredState = savedState && isSystemLoopState(savedState) ? savedState : undefined;
 
   const loop = await createSystemLoop({
     tickIntervalMs: 1000,
     replayLimit: 50,
-    initialState: savedState ?? undefined,
+    initialState: restoredState,
   });
 
   const dashboard = new SimulationDashboard(loop.engine.bus, {
     enabled: true,
     logIntervalMs: 2000,
   });
-
   dashboard.attach();
 
   await loop.engine.emit(
@@ -24,11 +28,11 @@ async function main() {
     {
       name: "urai-spatial",
       mode: "system-loop",
-      restored: savedState !== null,
+      restored: restoredState !== undefined,
       persistencePath: persistence.getPath(),
       startedAt: Date.now(),
     },
-    "entrypoint"
+    "entrypoint",
   );
 
   const firstRun = await loop.runOnce();
