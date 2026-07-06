@@ -66,6 +66,24 @@ export const requiredReleaseEvidenceArtifacts = [
   "rollback",
 ] as const;
 
+export const requiredNonXrChecks = [
+  "canonicalContract",
+  "runtimeCompile",
+  "runtimeSmoke",
+  "productTypecheck",
+  "productBuild",
+  "browserFlow",
+  "mobileFlow",
+  "accessibility",
+  "customDomain",
+  "rollback",
+] as const;
+
+export const requiredCheckNames = [
+  ...requiredNonXrChecks,
+  "physicalXr",
+] as const;
+
 const expectedAssetCounts = {
   v1: 53,
   v2: 80,
@@ -113,9 +131,7 @@ const hasArtifacts = (
 ): boolean => names.every((name) => Boolean(receipt.evidenceArtifacts[name]));
 
 const nonXrChecksPassed = (receipt: ReleaseReceipt): boolean =>
-  Object.entries(receipt.checks)
-    .filter(([name]) => name !== "physicalXr")
-    .every(([, state]) => state === "passed");
+  requiredNonXrChecks.every((name) => receipt.checks[name] === "passed");
 
 const certificationFieldsComplete = (receipt: ReleaseReceipt): boolean =>
   Boolean(
@@ -160,6 +176,14 @@ const validateReceipt = (value: unknown): ReleaseReceipt => {
     }
   }
 
+  if (!receipt.checks || typeof receipt.checks !== "object") {
+    throw new Error("Release receipt checks must be an object.");
+  }
+  for (const name of requiredCheckNames) {
+    if (!(name in receipt.checks)) {
+      throw new Error(`Release receipt is missing required check ${name}.`);
+    }
+  }
   for (const [name, state] of Object.entries(receipt.checks)) {
     if (!validEvidenceStates.has(state)) {
       throw new Error(`Invalid evidence state for ${name}: ${state}`);
