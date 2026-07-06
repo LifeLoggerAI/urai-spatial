@@ -1,30 +1,47 @@
-name: System Loop Runtime
+name: V50 Canonical Runtime Certification
 
 on:
   pull_request:
+    branches: [main]
     paths:
       - "src/**"
+      - "urai-tier1/src/**"
       - "scripts/check-system-loop-runtime.mjs"
       - "scripts/smoke-system-loop-runtime.mjs"
       - "tsconfig.runtime.json"
+      - "CANONICAL_APP_PATH.md"
+      - "docs/V50_CANONICAL_RUNTIME_CONTRACT.md"
+      - "docs/URAI_SPATIAL_SOURCE_OF_TRUTH_LOCK.md"
+      - ".gitignore"
+      - "package.json"
+      - "pnpm-lock.yaml"
       - ".github/workflows/system-loop-runtime.yml"
   push:
-    branches:
-      - main
+    branches: [main]
     paths:
       - "src/**"
+      - "urai-tier1/src/**"
       - "scripts/check-system-loop-runtime.mjs"
       - "scripts/smoke-system-loop-runtime.mjs"
       - "tsconfig.runtime.json"
+      - "CANONICAL_APP_PATH.md"
+      - "docs/V50_CANONICAL_RUNTIME_CONTRACT.md"
+      - "docs/URAI_SPATIAL_SOURCE_OF_TRUTH_LOCK.md"
+      - ".gitignore"
+      - "package.json"
+      - "pnpm-lock.yaml"
       - ".github/workflows/system-loop-runtime.yml"
   workflow_dispatch:
 
 jobs:
-  runtime-check:
+  v50-canonical-certification:
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 25
+    permissions:
+      contents: read
+
     steps:
-      - name: Checkout
+      - name: Checkout exact commit
         uses: actions/checkout@v4
 
       - name: Setup pnpm
@@ -38,11 +55,95 @@ jobs:
           node-version: 22
           cache: pnpm
 
-      - name: Install dependencies
+      - name: Install frozen dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Check SystemLoop runtime
-        run: node scripts/check-system-loop-runtime.mjs
+      - name: Prepare evidence directory
+        run: mkdir -p artifacts/v50
 
-      - name: Smoke SystemLoop runtime
-        run: node scripts/smoke-system-loop-runtime.mjs
+      - name: Record canonical contract
+        shell: bash
+        run: |
+          set -o pipefail
+          {
+            echo "commit=${GITHUB_SHA}"
+            echo "product_root=urai-tier1"
+            echo "home_entry=urai-tier1/src/app/page.tsx -> FinalHomeThreshold.tsx -> HomeSpatialWorldFinal.tsx"
+            test -f docs/V50_CANONICAL_RUNTIME_CONTRACT.md
+            test -f CANONICAL_APP_PATH.md
+            grep -q "FinalHomeThreshold" CANONICAL_APP_PATH.md
+            grep -q "HomeSpatialWorldFinal" CANONICAL_APP_PATH.md
+            grep -q "V50_CANONICAL_RUNTIME_CONTRACT" docs/URAI_SPATIAL_SOURCE_OF_TRUTH_LOCK.md
+            grep -q "urai-simulation-state.json" .gitignore
+            echo "canonical_contract=pass"
+          } 2>&1 | tee artifacts/v50/canonical-contract.log
+
+      - name: Compile root SystemLoop runtime
+        shell: bash
+        run: |
+          set -o pipefail
+          node scripts/check-system-loop-runtime.mjs 2>&1 | tee artifacts/v50/runtime-compile.log
+
+      - name: Smoke root SystemLoop runtime
+        shell: bash
+        run: |
+          set -o pipefail
+          node scripts/smoke-system-loop-runtime.mjs 2>&1 | tee artifacts/v50/runtime-smoke.log
+
+      - name: Typecheck canonical product
+        shell: bash
+        run: |
+          set -o pipefail
+          pnpm typecheck 2>&1 | tee artifacts/v50/product-typecheck.log
+
+      - name: Build canonical product
+        shell: bash
+        run: |
+          set -o pipefail
+          pnpm build 2>&1 | tee artifacts/v50/product-build.log
+
+      - name: Write machine-readable receipt
+        if: success()
+        shell: bash
+        run: |
+          node - <<'NODE'
+          const fs = require('node:fs');
+          const receipt = {
+            schemaVersion: 'urai-v50-certification-1',
+            commitSha: process.env.GITHUB_SHA,
+            generatedAt: new Date().toISOString(),
+            productRoot: 'urai-tier1',
+            productEntry: [
+              'urai-tier1/src/app/page.tsx',
+              'urai-tier1/src/app/FinalHomeThreshold.tsx',
+              'urai-tier1/src/app/HomeSpatialWorldFinal.tsx'
+            ],
+            runtimeEntry: 'src/kernel/SystemLoop.ts',
+            status: 'candidate-passed',
+            checks: {
+              canonicalContract: true,
+              runtimeCompile: true,
+              runtimeSmoke: true,
+              productTypecheck: true,
+              productBuild: true
+            },
+            exclusions: [
+              'deployment',
+              'custom-domain parity',
+              'provider activation',
+              'multi-user convergence',
+              'physical-device certification'
+            ]
+          };
+          fs.writeFileSync('artifacts/v50/v50-certification-receipt.json', JSON.stringify(receipt, null, 2));
+          fs.writeFileSync('artifacts/v50/tested-commit-sha.txt', `${process.env.GITHUB_SHA}\n`);
+          NODE
+
+      - name: Upload v50 evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: v50-canonical-evidence-${{ github.sha }}
+          path: artifacts/v50
+          if-no-files-found: error
+          retention-days: 90
