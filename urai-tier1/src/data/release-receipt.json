@@ -21,6 +21,7 @@
     "v5": 27,
     "providerPromotionsVerified": []
   },
+  "evidenceArtifacts": {},
   "checks": {
     "canonicalContract": "pending",
     "runtimeCompile": "pending",
