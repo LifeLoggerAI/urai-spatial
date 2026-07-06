@@ -10,7 +10,18 @@ function assert(condition: unknown, message: string): asserts condition {
   }
 }
 
+function isInsideRepository(targetPath: string): boolean {
+  const relative = path.relative(process.cwd(), path.resolve(targetPath));
+  return relative === "" || (!relative.startsWith("..") && !path.isAbsolute(relative));
+}
+
 async function main() {
+  const defaultPersistence = new PersistenceManager<SystemLoopState>();
+  assert(
+    !isInsideRepository(defaultPersistence.getPath()),
+    "Default runtime persistence path must remain outside the repository."
+  );
+
   const tempDirectory = mkdtempSync(path.join(tmpdir(), "urai-v50-smoke-"));
   const statePath = path.join(tempDirectory, "runtime-state.json");
 
@@ -73,7 +84,8 @@ async function main() {
       analyticsEvents: result.analyticsEvents.length,
       persistedRuns: persistedState.totalRuns,
       restoredRuns: restoredResult.state.totalRuns,
-      persistenceOutsideRepository: statePath.startsWith(tmpdir()),
+      defaultPersistencePath: defaultPersistence.getPath(),
+      persistenceOutsideRepository: !isInsideRepository(defaultPersistence.getPath()),
     });
   } finally {
     rmSync(tempDirectory, { recursive: true, force: true });
