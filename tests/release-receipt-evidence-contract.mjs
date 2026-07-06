@@ -14,6 +14,7 @@ import test from 'node:test'
 const materializer = readFileSync('scripts/materialize-release-receipt.mjs', 'utf8')
 const validator = readFileSync('scripts/check-release-receipt.mjs', 'utf8')
 const runtimeContract = readFileSync('urai-tier1/src/lib/release-evidence.ts', 'utf8')
+const routePolish = readFileSync('urai-tier1/src/app/UraiAAAARoutePolish.tsx', 'utf8')
 const receipt = JSON.parse(readFileSync('urai-tier1/src/data/release-receipt.json', 'utf8'))
 
 const requiredEvidenceNames = [
@@ -66,6 +67,14 @@ test('release receipt template fails closed before evidence exists', () => {
   for (const name of requiredCheckNames) {
     assert.ok(name in receipt.checks, `template is missing required check ${name}`)
   }
+})
+
+test('public route shell exposes only receipt-backed release identity and canonical V3 count', () => {
+  assert.match(routePolish, /import releaseReceipt from "@\/data\/release-receipt\.json"/)
+  assert.match(routePolish, /version: "v3", minimum: 14/)
+  assert.match(routePolish, /data-deployed-sha=\{deployedSha\}/)
+  assert.match(routePolish, /data-rollback-sha=\{rollbackSha\}/)
+  assert.match(routePolish, /\^\[0-9a-f\]\{40\}\$/)
 })
 
 test('materializer requires files and hashes them instead of trusting boolean flags', () => {
