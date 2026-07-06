@@ -65,3 +65,13 @@ Every ledger item uses one of:
 - `BLOCKED`
 - `ROADMAP`
 - `REJECTED OR OBSOLETE`
+
+## Canonical ledger ownership
+
+- `docs/operations/ECOSYSTEM_COMPLETION_LEDGER_2026-07-06.md` is the single cross-repository completion ledger.
+- `docs/operations/RECEIPT_INDEX_2026-07-06.md` is the single cross-repository receipt index.
+- Route-ownership enforcement, public status truth, and release-machine data remain owned by their implementation files and workflows rather than duplicate ledgers.
+
+## Execution receipts
+
+- `R-SPAT-CI-001` — PR #418 merged to `main` as `f55ad9f08a80d502c85538300907dcb7f1566212`. It keys AAA Final Proof and Spatial Lock concurrency to the pull-request head branch, preventing unrelated PRs from cancelling one another. This is VERIFIED IN REPOSITORY; downstream exact-head workflow completion remains pending.
