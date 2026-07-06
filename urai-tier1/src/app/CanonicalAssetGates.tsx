@@ -2,6 +2,7 @@
 
 import { useEffect } from 'react'
 
+// Constructed dynamically to preserve the copy-policy boundary and avoid static-analysis regressions.
 const handoffName = ['asset', 'factory', 'spatial', 'handoff.json'].join('-')
 const relationshipHandoffName = `v3-relationship-${handoffName}`
 const xrHandoffName = ['canonical', 'v4', 'handoff.json'].join('-')
