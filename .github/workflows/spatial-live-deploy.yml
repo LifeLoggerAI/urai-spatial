@@ -1,98 +1,58 @@
-name: URAI Spatial Live Deploy
+name: URAI Spatial Release Verification
 
 on:
-  push:
-    branches:
-      - main
-    paths:
-      - "urai-tier1/**"
-      - "apps/functions/**"
-      - "packages/**"
-      - "scripts/**"
-      - "tests/**"
-      - "src/canon/**"
-      - "docs/**"
-      - "release/**"
-      - "audit/**"
-      - "firebase/**"
-      - "firebase.json"
-      - "firebase.static.json"
-      - ".firebaserc.example"
-      - "CANONICAL_RUNTIME.md"
-      - "SYSTEM_MAP.md"
-      - "REPO_PURPOSE.md"
-      - "RUNBOOK.md"
-      - "README.md"
-      - "LIVE_RELEASE.md"
-      - "DEPLOYMENT.md"
-      - "STATUS.md"
-      - "EVIDENCE.md"
-      - "package.json"
-      - "pnpm-lock.yaml"
-      - "pnpm-workspace.yaml"
-      - ".nvmrc"
-      - ".node-version"
-      - ".github/workflows/**"
   pull_request:
-    branches:
-      - main
+    branches: [main]
     paths:
       - "urai-tier1/**"
       - "apps/functions/**"
       - "packages/**"
       - "scripts/**"
       - "tests/**"
-      - "src/canon/**"
+      - "src/**"
       - "docs/**"
+      - "operations/**"
       - "release/**"
       - "audit/**"
       - "firebase/**"
       - "firebase.json"
       - "firebase.static.json"
-      - ".firebaserc.example"
-      - "CANONICAL_RUNTIME.md"
-      - "SYSTEM_MAP.md"
-      - "REPO_PURPOSE.md"
-      - "RUNBOOK.md"
-      - "README.md"
-      - "LIVE_RELEASE.md"
-      - "DEPLOYMENT.md"
-      - "STATUS.md"
-      - "EVIDENCE.md"
       - "package.json"
       - "pnpm-lock.yaml"
       - "pnpm-workspace.yaml"
-      - ".nvmrc"
-      - ".node-version"
+      - ".github/workflows/**"
+  push:
+    branches: [main]
+    paths:
+      - "urai-tier1/**"
+      - "apps/functions/**"
+      - "packages/**"
+      - "scripts/**"
+      - "tests/**"
+      - "src/**"
+      - "docs/**"
+      - "operations/**"
+      - "release/**"
+      - "audit/**"
+      - "firebase/**"
+      - "firebase.json"
+      - "firebase.static.json"
+      - "package.json"
+      - "pnpm-lock.yaml"
+      - "pnpm-workspace.yaml"
       - ".github/workflows/**"
   workflow_dispatch:
-    inputs:
-      deploy:
-        description: "Type DEPLOY to publish after live checks pass"
-        required: true
-        default: "CHECK_ONLY"
-        type: string
-      live_url:
-        description: "Live URL to smoke after deploy"
-        required: false
-        default: ""
-        type: string
-      rollback_sha:
-        description: "Exact 40-character commit SHA to redeploy if the target fails"
-        required: false
-        default: ""
-        type: string
 
 permissions:
   contents: read
 
 concurrency:
-  group: urai-spatial-live-deploy-${{ github.base_ref || github.ref_name }}
+  group: urai-spatial-release-verification-${{ github.head_ref || github.ref_name }}
   cancel-in-progress: true
 
 jobs:
   verify:
-    name: Verify Spatial release gates
+    name: Verify Spatial release gates without deployment
     runs-on: ubuntu-latest
     timeout-minutes: 45
     env:
@@ -105,218 +65,104 @@ jobs:
       NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID: ${{ secrets.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID }}
       NEXT_PUBLIC_FIREBASE_APP_ID: ${{ secrets.NEXT_PUBLIC_FIREBASE_APP_ID }}
       FIREBASE_PROJECT_ID: ${{ secrets.FIREBASE_PROJECT_ID }}
-      FIREBASE_CLIENT_EMAIL: ${{ secrets.FIREBASE_CLIENT_EMAIL }}
-      FIREBASE_PRIVATE_KEY: ${{ secrets.FIREBASE_PRIVATE_KEY }}
       URAI_CORE_BASE_URL: ${{ vars.URAI_CORE_BASE_URL }}
       URAI_STUDIO_BASE_URL: ${{ vars.URAI_STUDIO_BASE_URL }}
       ASSET_FACTORY_BASE_URL: ${{ vars.ASSET_FACTORY_BASE_URL }}
       URAI_JOBS_BASE_URL: ${{ vars.URAI_JOBS_BASE_URL }}
-      GOOGLE_APPLICATION_CREDENTIALS: ${{ github.workspace }}/firebase-service-account.json
+
     steps:
-      - name: Checkout
+      - name: Checkout exact event commit
         uses: actions/checkout@v4
         with:
           ref: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
           fetch-depth: 0
-          persist-credentials: true
+          persist-credentials: false
 
-      - name: Prepare git safe environment
+      - name: Verify checkout identity
+        shell: bash
         run: |
-          git config --global --add safe.directory "$GITHUB_WORKSPACE" || true
-          git fetch origin main --tags --force --prune || true
-          git fetch --unshallow || true
-          if [ "${{ github.event_name }}" = "push" ] && [ "${{ github.ref_name }}" = "main" ]; then
-            git checkout -B main origin/main || true
-          fi
-          git status --short || true
-          git rev-parse --is-inside-work-tree
-          git rev-parse HEAD
-          git log -2 --oneline || true
+          set -euo pipefail
+          expected='${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}'
+          actual="$(git rev-parse HEAD)"
+          test "$actual" = "$expected"
+          echo "verified_sha=$actual"
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10.0.0
 
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
           node-version: 22
+          cache: pnpm
 
-      - name: Enable pnpm
-        run: |
-          corepack enable
-          corepack prepare pnpm@10.0.0 --activate
-          pnpm --version
-
-      - name: Install dependencies
+      - name: Install frozen dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Install Playwright browsers
+      - name: Install Playwright Chromium
         run: npx playwright install --with-deps chromium
 
+      - name: Prepare verification evidence
+        run: mkdir -p artifacts/release-verification
+
+      - name: Validate single deployment authority
+        shell: bash
+        run: |
+          set -o pipefail
+          node scripts/check-deployment-authority.mjs 2>&1 | tee artifacts/release-verification/deployment-authority.log
+
       - name: Validate fail-closed release receipt
-        run: node scripts/check-release-receipt.mjs
+        shell: bash
+        run: |
+          set -o pipefail
+          node scripts/check-release-receipt.mjs 2>&1 | tee artifacts/release-verification/release-receipt.log
 
-      - name: Check V1-V6 asset-ready switch
-        run: node scripts/check-v1-v6-asset-ready.mjs
+      - name: Check versioned asset readiness
+        shell: bash
+        run: |
+          set -o pipefail
+          node scripts/check-v1-v6-asset-ready.mjs 2>&1 | tee artifacts/release-verification/asset-readiness.log
 
-      - name: Run Spatial live release check
-        run: pnpm live:check
+      - name: Run authoritative release checks
+        shell: bash
+        run: |
+          set -o pipefail
+          pnpm live:check 2>&1 | tee artifacts/release-verification/live-check.log
 
       - name: Run resilient E2E evidence
         if: always()
-        run: pnpm verify:e2e:resilient
+        shell: bash
+        run: |
+          set -o pipefail
+          pnpm verify:e2e:resilient 2>&1 | tee artifacts/release-verification/resilient-e2e.log
 
       - name: Upload verification evidence
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: urai-spatial-live-check-evidence-${{ github.sha }}
+          name: urai-spatial-release-verification-${{ github.sha }}
           path: |
+            artifacts/release-verification
             EVIDENCE.md
             STATUS.md
             LIVE_RELEASE.md
             DEPLOYMENT.md
             RUNBOOK.md
-            REPO_PURPOSE.md
-            docs/URAI_SPATIAL_DONE_DONE_LOCK.md
-            docs/contracts/URAI_STUDIO_SPATIAL_HANDOFF.md
-            docs/canon
-            docs/decisions/runtime-authority.md
-            docs/release
+            docs
+            operations
             release
-            audit/tier-lock
-            audit/v1-v6
-            src/canon
-            firebase/firestore.rules
-            firebase/firestore.indexes.json
-            firebase/spatial-collection-contract.json
+            audit
+            firebase
             urai-tier1/src/data/release-receipt.json
             urai-tier1/src/lib/release-evidence.ts
-            urai-tier1/src/lib/studio-spatial-handoff.ts
-            urai-tier1/src/spatial/xr
-            urai-tier1/tests/studio-spatial-handoff.test.mjs
-            urai-tier1/tests/xr-runtime-contract.test.mjs
             test-results
             playwright-report
           if-no-files-found: warn
-          retention-days: 30
-
-  deploy:
-    name: Deploy Spatial to Firebase
-    needs: verify
-    if: (github.event_name == 'workflow_dispatch' && github.event.inputs.deploy == 'DEPLOY') || (github.event_name == 'push' && vars.URAI_SPATIAL_AUTO_DEPLOY == 'true')
-    runs-on: ubuntu-latest
-    timeout-minutes: 30
-    env:
-      FIREBASE_PROJECT_ID: ${{ secrets.FIREBASE_PROJECT_ID }}
-      GOOGLE_APPLICATION_CREDENTIALS: ${{ github.workspace }}/firebase-service-account.json
-      LIVE_URL: ${{ github.event.inputs.live_url || vars.URAI_SPATIAL_LIVE_URL }}
-      ROLLBACK_SHA: ${{ github.event.inputs.rollback_sha || vars.URAI_SPATIAL_ROLLBACK_SHA }}
-    steps:
-      - name: Checkout exact target
-        uses: actions/checkout@v4
-        with:
-          ref: ${{ github.sha }}
-          fetch-depth: 0
-
-      - name: Setup Node
-        uses: actions/setup-node@v4
-        with:
-          node-version: 22
-
-      - name: Enable pnpm
-        run: |
-          corepack enable
-          corepack prepare pnpm@10.0.0 --activate
-          pnpm --version
-
-      - name: Verify deploy inputs and rollback target
-        shell: bash
-        run: |
-          set -euo pipefail
-          test -n "$FIREBASE_PROJECT_ID"
-          test -n '${{ secrets.FIREBASE_SERVICE_ACCOUNT_JSON }}'
-          if [[ ! "$GITHUB_SHA" =~ ^[0-9a-f]{40}$ ]]; then
-            echo "Target GITHUB_SHA is invalid" >&2
-            exit 1
-          fi
-          if [[ ! "$ROLLBACK_SHA" =~ ^[0-9a-f]{40}$ ]]; then
-            echo "A valid 40-character rollback SHA is required before deployment" >&2
-            exit 1
-          fi
-          if [ "$ROLLBACK_SHA" = "$GITHUB_SHA" ]; then
-            echo "Rollback SHA must differ from target SHA" >&2
-            exit 1
-          fi
-          git cat-file -e "$ROLLBACK_SHA^{commit}"
-          echo "target_sha=$GITHUB_SHA"
-          echo "rollback_sha=$ROLLBACK_SHA"
-
-      - name: Write Firebase service account
-        run: |
-          cat > "$GOOGLE_APPLICATION_CREDENTIALS" <<'JSON'
-          ${{ secrets.FIREBASE_SERVICE_ACCOUNT_JSON }}
-          JSON
-          python -m json.tool "$GOOGLE_APPLICATION_CREDENTIALS" > /dev/null
-          chmod 600 "$GOOGLE_APPLICATION_CREDENTIALS"
-
-      - name: Install dependencies
-        run: pnpm install --frozen-lockfile
-
-      - name: Revalidate release receipt and exact checkout
-        run: |
-          test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
-          node scripts/check-release-receipt.mjs
-
-      - name: Deploy Spatial live
-        run: pnpm live:deploy
-
-      - name: Smoke live URL
-        if: env.LIVE_URL != ''
-        run: HOST="$LIVE_URL" pnpm smoke
-
-      - name: Verify live route identities and query preservation
-        if: env.LIVE_URL != ''
-        shell: bash
-        run: |
-          mkdir -p deployment-receipt
-          set -o pipefail
-          HOST="$LIVE_URL" node scripts/smoke-live-route-fingerprints.mjs 2>&1 | tee deployment-receipt/route-fingerprints.json
-
-      - name: Write deployment receipt
-        if: always()
-        shell: bash
-        run: |
-          mkdir -p deployment-receipt
-          node - <<'NODE'
-          const fs = require('node:fs');
-          const receipt = {
-            schemaVersion: 'urai-deployment-receipt-1',
-            workflowRun: process.env.GITHUB_RUN_ID,
-            repository: process.env.GITHUB_REPOSITORY,
-            targetSha: process.env.GITHUB_SHA,
-            rollbackSha: process.env.ROLLBACK_SHA,
-            firebaseProject: process.env.FIREBASE_PROJECT_ID,
-            liveUrl: process.env.LIVE_URL || null,
-            generatedAt: new Date().toISOString(),
-            conclusion: process.env.JOB_STATUS || 'workflow-step-completed'
-          };
-          fs.writeFileSync('deployment-receipt/deployment.json', JSON.stringify(receipt, null, 2));
-          NODE
-          {
-            echo "# URAI Spatial live deploy"
-            echo ""
-            echo "- Target commit: $GITHUB_SHA"
-            echo "- Rollback commit: $ROLLBACK_SHA"
-            echo "- Firebase project: $FIREBASE_PROJECT_ID"
-            echo "- Live URL: ${LIVE_URL:-not provided}"
-            echo "- Workflow run: $GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID"
-          } >> "$GITHUB_STEP_SUMMARY"
-        env:
-          JOB_STATUS: ${{ job.status }}
-
-      - name: Upload deployment receipt
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: urai-spatial-deployment-receipt-${{ github.sha }}
-          path: deployment-receipt
-          if-no-files-found: error
           retention-days: 90
+
+      - name: State deployment authority
+        run: |
+          echo "This workflow performs verification only."
+          echo "The sole deployment authority is .github/workflows/urai-spatial-deploy.yml."
