@@ -11,6 +11,9 @@
     "rootDir": "src",
     "types": ["node"]
   },
-  "include": ["src/**/*.ts"],
+  "files": [
+    "src/index.ts",
+    "src/smoke/systemLoopSmoke.ts"
+  ],
   "exclude": ["node_modules", "dist-runtime", "urai-tier1", "apps", "packages"]
 }
