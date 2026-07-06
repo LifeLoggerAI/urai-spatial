@@ -86,9 +86,13 @@ function requireFileTokens(failures, relativePath, tokens) {
     return
   }
 
-  const source = fs.readFileSync(absolutePath, 'utf8')
-  for (const token of tokens) {
-    if (!source.includes(token)) failures.push(`${relativePath} is missing required production token: ${token}`)
+  try {
+    const source = fs.readFileSync(absolutePath, 'utf8')
+    for (const token of tokens) {
+      if (!source.includes(token)) failures.push(`${relativePath} is missing required production token: ${token}`)
+    }
+  } catch (error) {
+    failures.push(`Failed to read ${relativePath}: ${error instanceof Error ? error.message : String(error)}`)
   }
 }
 
