@@ -1,13 +1,4 @@
-// =====================================================
-// URAI COMMUNICATIONS → ANALYTICS BRIDGE LAYER
-// =====================================================
-
-import { CommunicationPacket } from "./communicationsBridge";
-
-/**
- * Ingestion bridge that forwards system events into
- * analytics + observation layer (future urai-analytics repo).
- */
+import type { CommunicationPacket } from "./communicationsBridge";
 
 export interface AnalyticsEvent {
   id: string;
@@ -22,20 +13,21 @@ export class AnalyticsBridge {
 
   ingest(packet: CommunicationPacket) {
     const metrics: Record<string, number> = {
-      payloadSize: JSON.stringify(packet.payload).length,
+      payloadSize: JSON.stringify(packet.payload ?? null).length,
       typeHash: this.hashString(packet.type),
-      timestamp: packet.timestamp,
+      timestamp: packet.timestamp
     };
 
     const event: AnalyticsEvent = {
-      id: `an-${packet.id}`,
+      id: `analytics-${packet.id}`,
       type: packet.type,
       timestamp: packet.timestamp,
       metrics,
-      raw: packet,
+      raw: packet
     };
 
     this.buffer.push(event);
+    return event;
   }
 
   flush(): AnalyticsEvent[] {
@@ -44,23 +36,25 @@ export class AnalyticsBridge {
     return out;
   }
 
-  summarize() {
-    const events = this.buffer;
+  peek(): AnalyticsEvent[] {
+    return [...this.buffer];
+  }
 
+  summarize(events = this.buffer) {
     return {
       totalEvents: events.length,
       avgPayloadSize:
-        events.reduce((a, b) => a + b.metrics.payloadSize, 0) /
+        events.reduce((sum, event) => sum + event.metrics.payloadSize, 0) /
         Math.max(1, events.length),
-      dominantTypes: this.topTypes(events),
+      dominantTypes: this.topTypes(events)
     };
   }
 
   private topTypes(events: AnalyticsEvent[]) {
     const map = new Map<string, number>();
 
-    for (const e of events) {
-      map.set(e.type, (map.get(e.type) || 0) + 1);
+    for (const event of events) {
+      map.set(event.type, (map.get(event.type) ?? 0) + 1);
     }
 
     return Array.from(map.entries())
@@ -70,10 +64,12 @@ export class AnalyticsBridge {
 
   private hashString(str: string): number {
     let hash = 0;
-    for (let i = 0; i < str.length; i++) {
+
+    for (let i = 0; i < str.length; i += 1) {
       hash = (hash << 5) - hash + str.charCodeAt(i);
       hash |= 0;
     }
+
     return hash;
   }
 }
