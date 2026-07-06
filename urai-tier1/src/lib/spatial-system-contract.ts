@@ -13,6 +13,7 @@ export const URAI_SPATIAL_DOMAIN = process.env.NEXT_PUBLIC_URAI_SPATIAL_DOMAIN ?
 
 export const spatialRoutes = {
   home: "/",
+  about: "/about",
   homeAlias: "/home",
   ground: "/ground",
   spatial: "/spatial",
