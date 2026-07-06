@@ -7,8 +7,6 @@ const root = process.cwd();
 const workflowsDir = path.join(root, ".github", "workflows");
 const canonicalRelative = ".github/workflows/urai-spatial-deploy.yml";
 const verificationRelative = ".github/workflows/spatial-live-deploy.yml";
-const canonicalPath = path.join(root, canonicalRelative);
-const verificationPath = path.join(root, verificationRelative);
 
 function fail(message) {
   console.error(`[deployment-authority] ${message}`);
@@ -30,11 +28,16 @@ function hasTopLevelTrigger(source, trigger) {
 
 function containsProductionDeploy(source) {
   return [
+    /FirebaseExtended\/action-hosting-deploy@/,
     /firebase-tools\s+deploy\b/,
-    /firebase\s+deploy\b/,
-    /pnpm\s+(?:live:deploy|publish:live)\b/,
-    /deploy:xr:firebase\b/,
+    /(?:pnpm\s+exec\s+)?firebase\s+deploy\b/,
+    /pnpm\s+(?:live:deploy(?::static)?|publish:live(?::static)?)\b/,
+    /deploy:xr:firebase(?::static)?\b/,
   ].some((pattern) => pattern.test(source));
+}
+
+function requireText(source, value, message) {
+  if (!source.includes(value)) fail(message);
 }
 
 if (!existsSync(workflowsDir)) {
@@ -54,34 +57,125 @@ if (hasTopLevelTrigger(canonical, "push")) {
 if (hasTopLevelTrigger(canonical, "pull_request")) {
   fail(`${canonicalRelative} must not deploy from pull requests.`);
 }
-if (!canonical.includes("target_sha:")) {
-  fail(`${canonicalRelative} must require target_sha.`);
+
+for (const input of [
+  "target_sha:",
+  "rollback_sha:",
+  "certification_run_id:",
+  "expected_firebase_project:",
+  "deploy_url:",
+  "confirmation:",
+]) {
+  requireText(canonical, input, `${canonicalRelative} must require ${input.replace(":", "")}.`);
 }
-if (!canonical.includes("rollback_sha:")) {
-  fail(`${canonicalRelative} must require rollback_sha.`);
+
+requireText(
+  canonical,
+  "environment: ${{ inputs.environment }}",
+  `${canonicalRelative} must use the selected protected environment.`,
+);
+requireText(
+  canonical,
+  "ref: ${{ inputs.target_sha }}",
+  `${canonicalRelative} must check out inputs.target_sha exactly.`,
+);
+requireText(
+  canonical,
+  'test "$(git rev-parse HEAD)" = "$TARGET_SHA"',
+  `${canonicalRelative} must verify the checked-out SHA.`,
+);
+requireText(
+  canonical,
+  'git merge-base --is-ancestor "$TARGET_SHA" origin/main',
+  `${canonicalRelative} must require the target SHA to be merged into main.`,
+);
+requireText(
+  canonical,
+  'git merge-base --is-ancestor "$ROLLBACK_SHA" "$TARGET_SHA"',
+  `${canonicalRelative} must require the rollback SHA to be an ancestor of the target.`,
+);
+requireText(
+  canonical,
+  "actions/download-artifact@v4",
+  `${canonicalRelative} must consume an exact certification artifact.`,
+);
+requireText(
+  canonical,
+  "v50-canonical-evidence-${{ inputs.target_sha }}",
+  `${canonicalRelative} must bind the V50 artifact name to target_sha.`,
+);
+requireText(
+  canonical,
+  "tested-commit-sha.txt",
+  `${canonicalRelative} must verify the certification artifact SHA.`,
+);
+requireText(
+  canonical,
+  "pnpm install --frozen-lockfile",
+  `${canonicalRelative} must install from the frozen lockfile.`,
+);
+requireText(
+  canonical,
+  "node-version: 22",
+  `${canonicalRelative} must use Node 22.`,
+);
+requireText(
+  canonical,
+  "FIREBASE_SERVICE_ACCOUNT_JSON",
+  `${canonicalRelative} must require a service account from the protected environment.`,
+);
+requireText(
+  canonical,
+  "materialize-release-receipt.mjs",
+  `${canonicalRelative} must materialize the exact release receipt.`,
+);
+requireText(
+  canonical,
+  "smoke-live-route-fingerprints.mjs",
+  `${canonicalRelative} must verify deployed route identities.`,
+);
+requireText(
+  canonical,
+  "DEPLOY_URAI_PRODUCTION",
+  `${canonicalRelative} must require explicit production confirmation.`,
+);
+requireText(
+  canonical,
+  "https://urai.app",
+  `${canonicalRelative} must lock the production custom domain.`,
+);
+requireText(
+  canonical,
+  "rollback_sha must differ from target_sha",
+  `${canonicalRelative} must reject identical target and rollback SHAs.`,
+);
+
+if (canonical.includes("--no-frozen-lockfile")) {
+  fail(`${canonicalRelative} must not use a mutable dependency installation.`);
 }
-if (!canonical.includes("ref: ${{ inputs.target_sha }}")) {
-  fail(`${canonicalRelative} must check out inputs.target_sha exactly.`);
+if (canonical.includes("FIREBASE_TOKEN")) {
+  fail(`${canonicalRelative} must not use the legacy Firebase token fallback.`);
 }
-if (!canonical.includes("test \"$(git rev-parse HEAD)\" = \"$TARGET_SHA\"")) {
-  fail(`${canonicalRelative} must verify the checked-out SHA.`);
-}
-if (!canonical.includes("rollback_sha must differ from target_sha")) {
-  fail(`${canonicalRelative} must reject identical target and rollback SHAs.`);
+if (canonical.includes("static_export:")) {
+  fail(`${canonicalRelative} must not expose competing static/framework deployment modes.`);
 }
 if (!containsProductionDeploy(canonical)) {
-  fail(`${canonicalRelative} does not contain the production deploy command.`);
+  fail(`${canonicalRelative} does not contain the canonical production deploy command.`);
 }
 
 if (containsProductionDeploy(verification)) {
   fail(`${verificationRelative} must remain verification-only.`);
 }
-if (!verification.includes("This workflow performs verification only.")) {
-  fail(`${verificationRelative} must state that it is verification-only.`);
-}
-if (!verification.includes(canonicalRelative)) {
-  fail(`${verificationRelative} must name the sole deployment authority.`);
-}
+requireText(
+  verification,
+  "This workflow performs verification only.",
+  `${verificationRelative} must state that it is verification-only.`,
+);
+requireText(
+  verification,
+  canonicalRelative,
+  `${verificationRelative} must name the sole deployment authority.`,
+);
 
 const workflowFiles = readdirSync(workflowsDir)
   .filter((name) => name.endsWith(".yml") || name.endsWith(".yaml"))
@@ -111,11 +205,9 @@ if (productionAuthorities.length !== 1 || productionAuthorities[0] !== canonical
   );
 }
 
-if (process.exitCode) {
-  process.exit(process.exitCode);
-}
+if (process.exitCode) process.exit(process.exitCode);
 
 console.log("Deployment authority check passed.");
 console.log(`Sole production authority: ${canonicalRelative}`);
 console.log("Trigger: workflow_dispatch only");
-console.log("Required revisions: target_sha and rollback_sha");
+console.log("Required: exact main SHA, exact V50 artifact, approved rollback ancestor, protected environment");
