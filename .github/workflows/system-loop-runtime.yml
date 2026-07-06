@@ -57,6 +57,10 @@ on:
       - ".github/workflows/**"
   workflow_dispatch:
 
+concurrency:
+  group: v50-canonical-certification-${{ github.head_ref || github.ref_name }}
+  cancel-in-progress: true
+
 jobs:
   v50-canonical-certification:
     runs-on: ubuntu-latest
@@ -67,6 +71,8 @@ jobs:
     steps:
       - name: Checkout exact commit
         uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
 
       - name: Setup pnpm
         uses: pnpm/action-setup@v4
@@ -129,6 +135,7 @@ jobs:
         run: |
           set -euo pipefail
           tmp="$(mktemp -d)"
+          trap 'rm -rf "$tmp"' EXIT
           mkdir -p "$tmp/urai-tier1/src/data" "$tmp/release" "$tmp/evidence"
           cp urai-tier1/src/data/release-receipt.json "$tmp/urai-tier1/src/data/release-receipt.json"
           cp release/urai-spatial-live-manifest.json "$tmp/release/urai-spatial-live-manifest.json"
@@ -195,7 +202,7 @@ jobs:
             node "$GITHUB_WORKSPACE/scripts/check-release-receipt.mjs"
             grep -q '"manifestSha": "[0-9a-f]\{64\}"' urai-tier1/src/data/release-receipt.json
             test "$(grep -c '"sha256": "[0-9a-f]\{64\}"' urai-tier1/src/data/release-receipt.json)" -eq 11
-          } 2>&1 | tee artifacts/v50/release-receipt-materialization.log
+          } 2>&1 | tee "$GITHUB_WORKSPACE/artifacts/v50/release-receipt-materialization.log"
 
       - name: Compile root SystemLoop runtime
         shell: bash
