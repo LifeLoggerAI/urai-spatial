@@ -21,6 +21,14 @@ const requiredEvidenceNames = [
   'rollback',
 ]
 
+const expectedAssetContract = {
+  v1: 53,
+  v2: 80,
+  v3: 14,
+  v4: 39,
+  v5: 27,
+}
+
 test('release receipt template fails closed before evidence exists', () => {
   assert.deepEqual(receipt.evidenceArtifacts, {})
   assert.equal(receipt.candidateSha, null)
@@ -28,6 +36,9 @@ test('release receipt template fails closed before evidence exists', () => {
   assert.equal(receipt.deployedSha, null)
   assert.equal(receipt.rollbackSha, null)
   assert.equal(receipt.routes.some((route) => route.productionState === 'verified'), false)
+  for (const [version, expected] of Object.entries(expectedAssetContract)) {
+    assert.equal(receipt.assetContract[version], expected)
+  }
 })
 
 test('materializer requires files and hashes them instead of trusting boolean flags', () => {
@@ -41,12 +52,20 @@ test('materializer requires files and hashes them instead of trusting boolean fl
   }
 })
 
-test('runtime and repository validators require evidence artifact digests', () => {
+test('runtime and repository validators enforce the same fail-closed certification boundary', () => {
   assert.match(runtimeContract, /evidenceArtifacts: Record<string, EvidenceArtifact>/)
+  assert.match(runtimeContract, /requiredCoreEvidenceArtifacts/)
   assert.match(runtimeContract, /requiredReleaseEvidenceArtifacts/)
+  assert.match(runtimeContract, /candidateSha === receipt\.testedSha/)
+  assert.match(runtimeContract, /testedSha === receipt\.deployedSha/)
+  assert.match(runtimeContract, /allRoutesVerified !== certificationFieldsComplete/)
   assert.match(runtimeContract, /isSha256/)
+
   assert.match(validator, /requiredCoreArtifacts/)
   assert.match(validator, /requiredCertificationArtifacts/)
+  assert.match(validator, /candidateSha !== receipt\.deployedSha/)
+  assert.match(validator, /testedSha !== receipt\.deployedSha/)
+  assert.match(validator, /allRoutesVerified !== certificationFieldsComplete/)
   assert.match(validator, /hasArtifacts/)
   assert.match(validator, /SHA-256 digest/)
 })
