@@ -4,6 +4,7 @@ import fs from 'node:fs'
 const tests = [
   'tests/aaa-world-artifact-contract.test.mjs',
   'tests/asset-factory-phase6-contract.test.mjs',
+  'tests/brand-authority-contract.test.mjs',
   'tests/body-biometric-contract.test.mjs',
   'tests/field-reconstruction-phase5-contract.test.mjs',
   'tests/home-cohesion-contract.test.mjs',
