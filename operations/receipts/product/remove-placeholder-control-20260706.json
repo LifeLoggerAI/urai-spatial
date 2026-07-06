@@ -1,0 +1,51 @@
+{
+  "receiptId": "URAI-SPATIAL-CONTROL-REMOVAL-20260706-001",
+  "recordedAt": "2026-07-06T03:00:00-05:00",
+  "classification": "IMPLEMENTED BUT NOT DEPLOYED",
+  "repository": "LifeLoggerAI/urai-spatial",
+  "branch": "audit/ecosystem-truth-20260706",
+  "implementationSha": "07986f072793061ccab11d86dfd621ed8592ee00",
+  "pullRequest": "https://github.com/LifeLoggerAI/urai-spatial/pull/415",
+  "issue": "https://github.com/LifeLoggerAI/urai-spatial/issues/414",
+  "changedFiles": [
+    "urai-tier1/src/app/control/page.tsx (removed)",
+    "urai-tier1/src/app/api/universe/route.ts (removed)",
+    "urai-tier1/tests/spatial-system-contract-route-coverage.test.mjs"
+  ],
+  "commits": [
+    "ab1bf6c7aa6f56f1e2247c22a7bdc8a7a2f0c7dd",
+    "e034b813cc72adda1db9935a484ea3b956b94707",
+    "07986f072793061ccab11d86dfd621ed8592ee00"
+  ],
+  "workflowRuns": [
+    {
+      "name": "V50 Canonical Runtime Certification",
+      "status": "queued",
+      "conclusion": null
+    }
+  ],
+  "validation": {
+    "testCommand": "node --test urai-tier1/tests/spatial-system-contract-route-coverage.test.mjs",
+    "testResult": "PENDING_GITHUB_ACTIONS",
+    "sourceVerification": [
+      "The removed /control route exposed an unauthenticated manual-control button.",
+      "The removed /api/universe endpoint returned hard-coded empty state with mode fallback-demo.",
+      "The route-contract test now requires both files to remain absent and rejects /control, /api/universe, and fallback-demo from the canonical route contract."
+    ],
+    "buildResult": "PENDING_EXACT_HEAD_V50",
+    "runtimeVerification": "NOT_DEPLOYED"
+  },
+  "deployment": {
+    "target": "urai-4dc1d",
+    "environment": "production",
+    "deployedSha": null,
+    "publicUrl": "https://urai.app",
+    "rollbackSha": null
+  },
+  "provider": null,
+  "remainingCaveats": [
+    "The removal is not live until an exact passing main SHA is deployed.",
+    "Pre-existing experimental cognitive bridge files remain outside the canonical public route registry and require a separate privacy/identity review before production adoption.",
+    "Exact-head workflow execution remains queued."
+  ]
+}
