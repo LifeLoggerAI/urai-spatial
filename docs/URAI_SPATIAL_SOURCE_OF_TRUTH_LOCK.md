@@ -1,153 +1,75 @@
 # URAI Spatial Source-of-Truth Production Lock
 
-Status: audit branch lock candidate
-Date: 2026-05-07
-Repo: LifeLoggerAI/urai-spatial
-Live app source: `urai-tier1`
+Status: active certification candidate
+Date: 2026-07-06
+Repository: `LifeLoggerAI/urai-spatial`
+Canonical branch: `main`
+Canonical product root: `urai-tier1`
+Firebase project target: `urai-4dc1d`
+Public domain: `https://urai.app`
 
-## Locked source of truth
+## Current Home authority
 
-`urai-tier1` is the canonical application package for URAI Spatial. The root workspace intentionally includes only:
-
-- `urai-tier1`
-- `apps/functions`
-- `packages/tier-locks`
-
-Audit, backup, archive, and quarantine folders are not production source of truth.
-
-## Canonical runtime path
-
-The V1 launch runtime authority is:
-
-```txt
-Next.js route
-  -> urai-tier1/src/spatial/layout/TierOneExperience.tsx
-  -> urai-tier1/src/scene/HomeScene.tsx
+```text
+urai-tier1/src/app/page.tsx
+  -> urai-tier1/src/app/FinalHomeThreshold.tsx
+  -> urai-tier1/src/app/HomeSpatialWorldFinal.tsx
 ```
 
-`TierOneExperience` is the route shell. `HomeScene` owns the routed launch scene state, including Home, Ascent, Life Map, Focus, Replay, and Mirror modes.
+Earlier references to `SpatialScene`, `TierOneExperience`, or `HomeScene` are historical and are not current Home authority. A migration may change the owner only when the route entry, this lock, tests, browser proof, and release receipt change together in one passing pull request.
 
-## Canonical runtime files
+## Canonical route authority
 
-- App entry: `urai-tier1/src/app/page.tsx`
-- Home route: `urai-tier1/src/app/home/page.tsx`
-- Ascent route: `urai-tier1/src/app/ascent/page.tsx`
-- Life Map route: `urai-tier1/src/app/life-map/page.tsx`
-- Focus route: `urai-tier1/src/app/focus/page.tsx`
-- Replay route: `urai-tier1/src/app/replay/page.tsx`
-- Mirror route: `urai-tier1/src/app/mirror/page.tsx`
-- Route shell: `urai-tier1/src/spatial/layout/TierOneExperience.tsx`
-- Canonical scene: `urai-tier1/src/scene/HomeScene.tsx`
-- Global shell/layout: `urai-tier1/src/app/layout.tsx`
-- Global CSS: `urai-tier1/src/app/globals.css`
-- App fallback styles: `urai-tier1/src/app/boundary.css`
-- Firebase deploy config: `firebase.json`
-- Firestore rules: `firebase/firestore.rules`
-- Firestore indexes: `firebase/firestore.indexes.json`
-- Functions source: `apps/functions`
-- Production-lock workflow: `.github/workflows/spatial-production-lock.yml`
-- E2E lock runner: `tests/spatial-lock.mjs`
-- Replay Tier 5 runner: `tests/replay-tier5-lock.mjs`
-- Runtime authority check: `scripts/check-runtime-authority.mjs`
+The route owner is the matching App Router entry under `urai-tier1/src/app`. The primary journey is:
 
-## Legacy / migration-candidate path
+`Home -> Ground -> Life Map -> Focus -> Replay -> Mirror -> Passport -> Status`
 
-The following path exists but is not V1 route authority:
+This includes `/`, `/home`, `/ground`, `/life-map`, `/focus`, `/replay`, `/mirror`, `/passport`, `/privacy-controls`, `/location-map`, `/status`, `/ascent`, `/unwind`, and the preview-only `/spatial/ar-vr` route.
 
-```txt
-urai-tier1/src/spatial/scene/SpatialScene.tsx
-```
+Route reachability alone does not prove correct ownership, interaction behavior, query/slash parity, deployment freshness, or XR device support.
 
-It may contain useful systems, but it must not compete with `TierOneExperience -> HomeScene`. New launch behavior should go into the canonical path unless a migration PR explicitly moves a system from the legacy path into canonical modules.
+## Runtime boundary
 
-## Core routes
+The public product plane under `urai-tier1` owns browser routes, visual interaction, accessibility, fallback behavior, builds, and Firebase output.
 
-- `/` renders Home.
-- `/home` renders Home.
-- `/ascent` renders the cinematic Ascent transition.
-- `/life-map` renders the Life Map constellation.
-- `/focus` renders focused memory state.
-- `/replay` renders Replay state.
-- `/mirror` renders the Mirror/detail state.
+The root TypeScript plane under `src` owns deterministic simulation, memory capture, replay ordering, prediction, XR-frame generation, communications packets, analytics events, and local runtime state.
 
-## Core state model
+The root runtime is not the deployed browser owner. It may connect to `urai-tier1` only through a versioned JSON-safe contract and exact-commit evidence. See `docs/V50_CANONICAL_RUNTIME_CONTRACT.md`.
 
-`HomeScene.tsx` owns V1 routed scene state and interactions:
+## Persistence lock
 
-- `sceneMode`: current spatial mode.
-- `selectedManifest`: selected memory manifest.
-- `selectedPosition`: selected constellation position.
-- `narratorContext`: narrator mode.
-- `cameraResetSignal`: camera reset trigger.
-- `activeManifest`: manifest used by focus/replay renderers.
+The root runtime must not write its default state into the repository working tree. Its default path must be outside the repo, with `URAI_RUNTIME_STATE_PATH` available for controlled overrides. Local runtime state filenames must be ignored by Git.
 
-## Home ascent flow
+## v50 evidence lock
 
-Home sky activation routes to `/ascent`. Ascent auto-advances to `/life-map` unless reduced motion is enabled, in which case the user can explicitly enter the Life Map.
+One immutable commit must produce a downloadable artifact containing:
 
-## Life Map flow
+- canonical path and runtime-boundary check;
+- root runtime TypeScript compile log;
+- one-cycle root runtime smoke log;
+- `urai-tier1` typecheck log;
+- `urai-tier1` production build log;
+- exact tested commit SHA;
+- machine-readable v50 receipt.
 
-Life Map renders deterministic demo stars plus optional Firestore-backed manifests. Selecting a star routes to Focus with a `manifestId`.
+Deployment, custom-domain parity, rollback, screenshots, provider receipts, and physical-device proof remain separate gates.
 
-## Focus and replay flow
+## Version boundary
 
-Focus renders a selected memory panel and can start Replay. Escape unwinds one layer at a time:
+- **v50**: canonical product path plus single-node deterministic runtime evidence.
+- **v100**: distributed convergence and cross-repository contracts. PR #412 remains outside v50 until rebased and passing.
+- **v150**: provider, shared spatial, resilience, language, cost, deploy, and device-matrix evidence.
+- **v200**: production release train, data-rights proof, load/security/recovery evidence, device certification, and immutable rollback.
 
-- `replay` -> `focus`
-- `focus` -> `life-map`
-- `life-map` or `ascent` -> `/`
+## Current checklist
 
-## Automation lock
-
-The production lock is automated through `.github/workflows/spatial-production-lock.yml`. The workflow validates:
-
-- source-of-truth files,
-- install,
-- preflight,
-- runtime authority,
-- app typecheck,
-- app build,
-- functions build/tests,
-- app tests,
-- E2E lock flow,
-- Replay Tier 5 flow,
-- canonical governance checks,
-- Firebase deploy references.
-
-## Tier completion status
-
-### Tier 1: Locked candidate
-
-Repo structure, canonical source files, Firebase config, package manager pin, and app boundaries are present.
-
-### Tier 2: Locked candidate
-
-Home -> Ascent -> Life Map -> Focus -> Replay route contract is documented and covered by runtime governance.
-
-### Tier 3: Locked candidate
-
-Typecheck, tests, build, and E2E commands are wired in CI. Final result depends on GitHub Actions execution.
-
-### Tier 4: Locked candidate
-
-Preflight, runtime authority, Firebase deploy checks, and CI validation are wired. Final result depends on CI and deployed preview.
-
-### Tier 5: Partial
-
-Production handoff docs exist, but production lock remains blocked until automated checks pass and all manual signoffs in `verification/signoffs.md` are complete.
-
-## Final production checklist
-
-- [ ] Install passes.
-- [ ] Preflight passes.
-- [ ] Runtime authority check passes.
-- [ ] Typecheck passes.
-- [ ] App tests pass.
-- [ ] App build passes.
-- [ ] Functions build/tests pass.
-- [ ] E2E flow passes.
-- [ ] Replay Tier 5 flow passes.
-- [ ] Firebase deploy references validate.
-- [ ] Preview deploy opens `/`, `/home`, `/ascent`, `/life-map`, `/focus`, `/replay`, and `/mirror`.
-- [ ] Visual review confirms no broken layout, z-index, clipping, overflow, or console noise.
-- [ ] `verification/signoffs.md` has no `Status: PENDING` entries.
+- [x] Canonical product root named.
+- [x] Current Home source owner named.
+- [x] Root computation plane separated from browser authority.
+- [x] v50 claim boundary documented.
+- [ ] Default persistence moved outside the repository.
+- [ ] v50 contract, compile, smoke, typecheck, and build pass on one exact commit.
+- [ ] Downloadable evidence artifact exists.
+- [ ] Passing main, deployed, and rollback SHAs are recorded.
+- [ ] Domain parity and desktop/mobile proof pass.
+- [ ] Provider and device claims remain disabled until their receipts exist.
