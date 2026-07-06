@@ -10,6 +10,7 @@ on:
       - "scripts/check-system-loop-runtime.mjs"
       - "scripts/smoke-system-loop-runtime.mjs"
       - "scripts/check-release-receipt.mjs"
+      - "scripts/materialize-release-receipt.mjs"
       - "operations/completion-ledger/**"
       - "tsconfig.runtime.json"
       - "CANONICAL_APP_PATH.md"
@@ -29,6 +30,7 @@ on:
       - "scripts/check-system-loop-runtime.mjs"
       - "scripts/smoke-system-loop-runtime.mjs"
       - "scripts/check-release-receipt.mjs"
+      - "scripts/materialize-release-receipt.mjs"
       - "operations/completion-ledger/**"
       - "tsconfig.runtime.json"
       - "CANONICAL_APP_PATH.md"
@@ -102,6 +104,54 @@ jobs:
           set -o pipefail
           node scripts/check-release-receipt.mjs 2>&1 | tee artifacts/v50/release-receipt.log
 
+      - name: Exercise release receipt materialization
+        shell: bash
+        run: |
+          set -euo pipefail
+          tmp="$(mktemp -d)"
+          mkdir -p "$tmp/urai-tier1/src/data" "$tmp/release"
+          cp urai-tier1/src/data/release-receipt.json "$tmp/urai-tier1/src/data/release-receipt.json"
+          cp release/urai-spatial-live-manifest.json "$tmp/release/urai-spatial-live-manifest.json"
+          target="aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+          rollback="bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+          {
+            cd "$tmp"
+            env \
+              URAI_RELEASE_RECEIPT_PHASE=prepared \
+              URAI_RELEASE_CANDIDATE_SHA="$target" \
+              URAI_RELEASE_TESTED_SHA="$target" \
+              URAI_RELEASE_DEPLOYED_SHA="$target" \
+              URAI_RELEASE_ROLLBACK_SHA="$rollback" \
+              node "$GITHUB_WORKSPACE/scripts/materialize-release-receipt.mjs"
+            node "$GITHUB_WORKSPACE/scripts/check-release-receipt.mjs"
+
+            if env \
+              URAI_RELEASE_RECEIPT_PHASE=certified \
+              URAI_RELEASE_CANDIDATE_SHA="$target" \
+              URAI_RELEASE_TESTED_SHA="$target" \
+              URAI_RELEASE_DEPLOYED_SHA="$target" \
+              URAI_RELEASE_ROLLBACK_SHA="$rollback" \
+              node "$GITHUB_WORKSPACE/scripts/materialize-release-receipt.mjs"; then
+              echo "Certified receipt unexpectedly accepted missing evidence flags" >&2
+              exit 1
+            fi
+
+            env \
+              URAI_RELEASE_RECEIPT_PHASE=certified \
+              URAI_RELEASE_CANDIDATE_SHA="$target" \
+              URAI_RELEASE_TESTED_SHA="$target" \
+              URAI_RELEASE_DEPLOYED_SHA="$target" \
+              URAI_RELEASE_ROLLBACK_SHA="$rollback" \
+              URAI_RELEASE_BROWSER_VERIFIED=1 \
+              URAI_RELEASE_MOBILE_VERIFIED=1 \
+              URAI_RELEASE_ACCESSIBILITY_VERIFIED=1 \
+              URAI_RELEASE_CUSTOM_DOMAIN_VERIFIED=1 \
+              URAI_RELEASE_ROLLBACK_VERIFIED=1 \
+              node "$GITHUB_WORKSPACE/scripts/materialize-release-receipt.mjs"
+            node "$GITHUB_WORKSPACE/scripts/check-release-receipt.mjs"
+            grep -q '"manifestSha": "[0-9a-f]\{64\}"' urai-tier1/src/data/release-receipt.json
+          } 2>&1 | tee artifacts/v50/release-receipt-materialization.log
+
       - name: Compile root SystemLoop runtime
         shell: bash
         run: |
@@ -148,6 +198,7 @@ jobs:
               canonicalContract: true,
               routeContract: true,
               releaseReceipt: true,
+              releaseReceiptMaterialization: true,
               runtimeCompile: true,
               runtimeSmoke: true,
               productTypecheck: true,
