@@ -1,6 +1,8 @@
-# Canonical URAI Repository Ownership
+# URAI Repository Ownership Mirror
 
 Date: 2026-07-06
+
+Evidence boundary: this human-readable table supports route/source review only. The machine-readable ownership, completion-ledger, release-receipt, and deployment authority remains PR #415. Nothing in this file authorizes deployment or certifies production.
 
 | System | Canonical repository | Runtime root | Branch | Role | Current state |
 | --- | --- | --- | --- | --- | --- |
@@ -17,7 +19,7 @@ Date: 2026-07-06
 | B2B | `LifeLoggerAI/B2Bportal` | Vite/React/Firebase portal | `main` | Enterprise intake and partner cockpit | Source cohesive; external environment blocked |
 | Storytime | `LifeLoggerAI/urai-storytime` | Next/Firebase app | `main` | Private narrative/story engine | Current Next runtime; external safety/deploy blocked |
 | Foundation | `LifeLoggerAI/urai-foundation` | static publication source | `main` | Formation-stage standards and governance | PR #11 open; custom-domain evidence blocked |
-| Communications | `LifeLoggerAI/urai-communications` | To be confirmed from repository evidence | `main` | Communications service | NOT YET RECONCILED |
+| Communications | `LifeLoggerAI/urai-communications` | provider/Firebase application | `main` | Communications and delivery intelligence | PARTIALLY IMPLEMENTED; provider-active evidence gated |
 | Corporate site | `LifeLoggerAI/urai-labs-llc` | To be confirmed | `main` | URAI Labs public/corporate surface | Separate from product runtime |
 | Legacy demo | `LifeLoggerAI/UrAi` | repository root app | `main` | Conservative V1 sample memory demo | REJECTED AS CANONICAL PUBLIC RUNTIME |
 | Legacy development | `LifeLoggerAI/UrAi-Dev` | To be inventoried | default branch | Development/reference only | REJECTED AS PRODUCTION AUTHORITY |
@@ -27,6 +29,9 @@ Date: 2026-07-06
 ## Authority rules
 
 - `urai-spatial/urai-tier1/main` is the only current public-product authority.
+- PR #415 owns the canonical machine ledger, release receipt, Status evidence, and deployment boundary.
+- PR #431 owns live content/slash/query/SHA certification.
+- PR #433 owns bounded public route and static-source corrections only.
 - Service repositories own their domain contracts and production receipts; they do not independently declare the whole ecosystem live.
 - Legacy repositories may provide migration or rollback evidence but may not auto-deploy over the canonical product.
 - A repository is not production-live until its exact deployed SHA, rollback SHA, provider environment, smoke, monitoring and security evidence are recorded.
