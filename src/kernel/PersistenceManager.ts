@@ -1,55 +1,65 @@
 // URAI Spatial Runtime - Persistence Layer
-// Provides state save/load for SimulationState across sessions
+// Persists JSON-safe runtime state outside the repository by default.
 
-import { SimulationState, createInitialState } from './SimulationState';
-import { readFileSync, writeFileSync, existsSync } from 'node:fs';
-import path from 'node:path';
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import path from "node:path";
 
 export type PersistenceOptions = {
   filePath?: string;
 };
 
-export class PersistenceManager {
-  private filePath: string;
+type PersistenceEnvelope<TState> = {
+  schemaVersion: "urai-runtime-state-1";
+  savedAt: number;
+  state: TState;
+};
+
+export class PersistenceManager<TState> {
+  private readonly filePath: string;
 
   constructor(options: PersistenceOptions = {}) {
-    this.filePath = options.filePath ?? path.resolve(process.cwd(), 'urai-simulation-state.json');
+    this.filePath =
+      options.filePath ??
+      process.env.URAI_SIMULATION_STATE_PATH ??
+      path.join(tmpdir(), "urai-spatial", "simulation-state.json");
   }
 
-  /**
-   * Save simulation state to disk
-   */
-  save(state: SimulationState) {
-    const payload = {
+  getPath(): string {
+    return this.filePath;
+  }
+
+  save(state: TState): void {
+    const payload: PersistenceEnvelope<TState> = {
+      schemaVersion: "urai-runtime-state-1",
       savedAt: Date.now(),
       state,
     };
 
-    writeFileSync(this.filePath, JSON.stringify(payload, null, 2), 'utf-8');
+    mkdirSync(path.dirname(this.filePath), { recursive: true });
+    writeFileSync(this.filePath, JSON.stringify(payload, null, 2), "utf-8");
   }
 
-  /**
-   * Load simulation state from disk
-   */
-  load(): SimulationState {
+  load(): TState | null {
     if (!existsSync(this.filePath)) {
-      return createInitialState();
+      return null;
     }
 
     try {
-      const raw = readFileSync(this.filePath, 'utf-8');
-      const parsed = JSON.parse(raw);
+      const raw = readFileSync(this.filePath, "utf-8");
+      const parsed = JSON.parse(raw) as Partial<PersistenceEnvelope<TState>>;
 
-      return parsed.state as SimulationState;
-    } catch (err) {
-      console.error('[PersistenceManager] Failed to load state, resetting.', err);
-      return createInitialState();
+      if (parsed.schemaVersion !== "urai-runtime-state-1" || !("state" in parsed)) {
+        throw new Error("Unsupported or incomplete runtime state envelope.");
+      }
+
+      return parsed.state as TState;
+    } catch (error) {
+      console.error("[PersistenceManager] Failed to load state; starting clean.", error);
+      return null;
     }
   }
 
-  /**
-   * Check if saved state exists
-   */
   exists(): boolean {
     return existsSync(this.filePath);
   }
