@@ -192,6 +192,32 @@ requireFileTokens(failures, 'urai-tier1/src/app/focus/page.tsx', [
   '<FinalFocusChamber />',
 ])
 
+requireFileTokens(failures, 'urai-tier1/src/app/layout.tsx', [
+  'NEXT_PUBLIC_URAI_BUILD_SHA',
+  "'urai-deployed-sha': deployedSha",
+  'data-deployed-sha={deployedSha}',
+  "data-deployment-evidence={deployedSha === 'unverified' ? 'missing' : 'embedded'}",
+])
+
+requireFileTokens(failures, 'scripts/deploy-exact-static-release.mjs', [
+  "URAI_DEPLOY_CONFIRM must equal DEPLOY VERIFIED URAI",
+  'URAI_TARGET_SHA must be a full lowercase 40-character SHA',
+  'URAI_ROLLBACK_SHA must be a full lowercase 40-character SHA',
+  "'--config', 'firebase.static.json', '--only', 'hosting'",
+  'Post-deploy live content or SHA verification failed',
+  'production-release-',
+])
+
+requireFileTokens(failures, '.github/workflows/spatial-exact-production-deploy.yml', [
+  'name: URAI Spatial Exact Production Deploy',
+  'target_sha:',
+  'rollback_sha:',
+  'DEPLOY VERIFIED URAI',
+  'environment:',
+  'name: production',
+  'node scripts/deploy-exact-static-release.mjs',
+])
+
 const staticConfigPath = path.join(repoRoot, 'firebase.static.json')
 if (!fs.existsSync(staticConfigPath)) {
   failures.push('firebase.static.json is missing')
@@ -218,4 +244,4 @@ if (failures.length > 0) {
   process.exit(1)
 }
 
-console.log('Production route and asset contract gate passed: guarded routes, public route owners, static hosting, and version manifests are locked.')
+console.log('Production route and asset contract gate passed: guarded routes, public route owners, release identity, exact rollback authority, static hosting, and version manifests are locked.')
