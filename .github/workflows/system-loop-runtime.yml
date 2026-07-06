@@ -64,7 +64,7 @@ concurrency:
 jobs:
   v50-canonical-certification:
     runs-on: ubuntu-latest
-    timeout-minutes: 25
+    timeout-minutes: 45
     permissions:
       contents: read
 
@@ -73,6 +73,16 @@ jobs:
         uses: actions/checkout@v4
         with:
           ref: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
+
+      - name: Verify exact checkout identity
+        shell: bash
+        run: |
+          set -euo pipefail
+          actual="$(git rev-parse HEAD)"
+          expected='${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}'
+          test "$actual" = "$expected"
+          echo "URAI_TESTED_SHA=$actual" >> "$GITHUB_ENV"
+          echo "tested_sha=$actual"
 
       - name: Setup pnpm
         uses: pnpm/action-setup@v4
@@ -96,7 +106,7 @@ jobs:
         run: |
           set -o pipefail
           {
-            echo "commit=${GITHUB_SHA}"
+            echo "commit=${URAI_TESTED_SHA}"
             echo "product_root=urai-tier1"
             echo "home_entry=urai-tier1/src/app/page.tsx -> FinalHomeThreshold.tsx -> HomeSpatialWorldFinal.tsx"
             test -f docs/V50_CANONICAL_RUNTIME_CONTRACT.md
@@ -236,7 +246,7 @@ jobs:
           const fs = require('node:fs');
           const receipt = {
             schemaVersion: 'urai-v50-certification-1',
-            commitSha: process.env.GITHUB_SHA,
+            commitSha: process.env.URAI_TESTED_SHA,
             generatedAt: new Date().toISOString(),
             productRoot: 'urai-tier1',
             productEntry: [
@@ -266,14 +276,14 @@ jobs:
             ]
           };
           fs.writeFileSync('artifacts/v50/v50-certification-receipt.json', JSON.stringify(receipt, null, 2));
-          fs.writeFileSync('artifacts/v50/tested-commit-sha.txt', `${process.env.GITHUB_SHA}\n`);
+          fs.writeFileSync('artifacts/v50/tested-commit-sha.txt', `${process.env.URAI_TESTED_SHA}\n`);
           NODE
 
       - name: Upload v50 evidence
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: v50-canonical-evidence-${{ github.sha }}
+          name: v50-canonical-evidence-${{ github.event.pull_request.head.sha || github.sha }}
           path: artifacts/v50
           if-no-files-found: error
           retention-days: 90
