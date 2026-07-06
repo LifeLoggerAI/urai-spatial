@@ -1,16 +1,16 @@
 name: URAI Spatial Lock
 
 on:
-  pull_request:
-    branches:
-      - main
   push:
     branches:
       - main
   workflow_dispatch:
 
+permissions:
+  contents: read
+
 concurrency:
-  group: urai-spatial-lock-${{ github.head_ref || github.ref_name }}
+  group: urai-spatial-lock-${{ github.ref_name }}
   cancel-in-progress: true
 
 jobs:
@@ -18,49 +18,60 @@ jobs:
     name: lock:all
     runs-on: ubuntu-24.04
     timeout-minutes: 30
+
     steps:
-      - name: Checkout
+      - name: Checkout exact commit
         uses: actions/checkout@v4
         with:
-          ref: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
+          ref: ${{ github.sha }}
+          persist-credentials: false
+
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
           node-version: '22'
+
       - name: Enable Corepack
         run: corepack enable
+
       - name: Setup pnpm
         uses: pnpm/action-setup@v4
         with:
           version: 10.0.0
           run_install: false
+
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
+
       - name: Install Playwright browser and Linux runtime dependencies
         run: pnpm playwright:ensure
+
       - name: Run static release lock
         shell: bash
         run: |
           mkdir -p artifacts/spatial-lock
           set -o pipefail
           pnpm lock:static 2>&1 | tee artifacts/spatial-lock/lock-static.log
+
       - name: Run build release lock
         shell: bash
         run: |
           mkdir -p artifacts/spatial-lock
           set -o pipefail
           pnpm lock:build 2>&1 | tee artifacts/spatial-lock/lock-build.log
+
       - name: Run browser release lock
         shell: bash
         run: |
           mkdir -p artifacts/spatial-lock
           set -o pipefail
           pnpm lock:e2e 2>&1 | tee artifacts/spatial-lock/lock-e2e.log
+
       - name: Upload Spatial Lock diagnostics
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: urai-spatial-lock-diagnostics
+          name: urai-spatial-lock-diagnostics-${{ github.sha }}
           path: artifacts/spatial-lock
           if-no-files-found: warn
           retention-days: 30
