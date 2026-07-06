@@ -123,6 +123,8 @@ if (receipt.deployedSha && !hasArtifacts(coreArtifacts)) {
   fail("a deployed receipt must include hashed canonical, route, runtime, typecheck, and build evidence artifacts");
 }
 
+await import("./check-production-deploy-authority.mjs");
+
 console.log(JSON.stringify({
   schemaVersion: receipt.schemaVersion,
   releaseId: receipt.releaseId,
@@ -134,5 +136,6 @@ console.log(JSON.stringify({
   evidenceArtifacts: Object.keys(receipt.evidenceArtifacts).length,
   requiredChecks,
   assetContract: expectedAssets,
+  productionDeployAuthority: "pass",
   status: "pass",
 }, null, 2));
