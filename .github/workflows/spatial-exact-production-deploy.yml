@@ -1,0 +1,112 @@
+name: URAI Spatial Exact Production Deploy
+
+on:
+  workflow_dispatch:
+    inputs:
+      target_sha:
+        description: Full reviewed main SHA to deploy
+        required: true
+        type: string
+      rollback_sha:
+        description: Full previously deployed SHA to use for rollback
+        required: true
+        type: string
+      live_url:
+        description: Canonical public URL
+        required: true
+        default: https://urai.app
+        type: string
+      confirm:
+        description: Type DEPLOY VERIFIED URAI
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: urai-spatial-exact-production
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    name: Deploy exact reviewed SHA with rollback evidence
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    environment:
+      name: production
+      url: ${{ inputs.live_url }}
+    env:
+      FIREBASE_PROJECT_ID: ${{ secrets.FIREBASE_PROJECT_ID }}
+      GOOGLE_APPLICATION_CREDENTIALS: ${{ github.workspace }}/firebase-service-account.json
+      URAI_TARGET_SHA: ${{ inputs.target_sha }}
+      URAI_ROLLBACK_SHA: ${{ inputs.rollback_sha }}
+      NEXT_PUBLIC_URAI_BUILD_SHA: ${{ inputs.target_sha }}
+      NEXT_PUBLIC_URAI_ROLLBACK_SHA: ${{ inputs.rollback_sha }}
+      URAI_DEPLOY_CONFIRM: ${{ inputs.confirm }}
+      LIVE_URL: ${{ inputs.live_url }}
+    steps:
+      - name: Validate exact release inputs
+        shell: bash
+        run: |
+          set -euo pipefail
+          [[ "$URAI_DEPLOY_CONFIRM" == "DEPLOY VERIFIED URAI" ]]
+          [[ "$URAI_TARGET_SHA" =~ ^[0-9a-f]{40}$ ]]
+          [[ "$URAI_ROLLBACK_SHA" =~ ^[0-9a-f]{40}$ ]]
+          [[ "$URAI_TARGET_SHA" != "$URAI_ROLLBACK_SHA" ]]
+          [[ "$LIVE_URL" == "https://urai.app" || "$LIVE_URL" == "https://urai.app/" ]]
+
+      - name: Checkout exact reviewed target
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.target_sha }}
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Verify main ancestry and rollback availability
+        shell: bash
+        run: |
+          set -euo pipefail
+          git fetch origin main --no-tags --prune
+          [[ "$(git rev-parse HEAD)" == "$URAI_TARGET_SHA" ]]
+          git merge-base --is-ancestor "$URAI_TARGET_SHA" origin/main
+          git cat-file -e "$URAI_ROLLBACK_SHA^{commit}"
+          git merge-base --is-ancestor "$URAI_ROLLBACK_SHA" "$URAI_TARGET_SHA"
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Enable pnpm
+        run: |
+          corepack enable
+          corepack prepare pnpm@10.0.0 --activate
+          pnpm --version
+
+      - name: Write Firebase service account
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -n "$FIREBASE_PROJECT_ID"
+          test -n '${{ secrets.FIREBASE_SERVICE_ACCOUNT_JSON }}'
+          cat > "$GOOGLE_APPLICATION_CREDENTIALS" <<'JSON'
+          ${{ secrets.FIREBASE_SERVICE_ACCOUNT_JSON }}
+          JSON
+          python -m json.tool "$GOOGLE_APPLICATION_CREDENTIALS" >/dev/null
+          chmod 600 "$GOOGLE_APPLICATION_CREDENTIALS"
+
+      - name: Install exact dependency lock
+        run: pnpm install --frozen-lockfile
+
+      - name: Deploy and externally verify exact release
+        run: node scripts/deploy-exact-static-release.mjs
+
+      - name: Upload immutable release receipt
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: urai-spatial-production-${{ inputs.target_sha }}
+          path: release/receipts/production-release-${{ inputs.target_sha }}.json
+          if-no-files-found: error
+          retention-days: 90
