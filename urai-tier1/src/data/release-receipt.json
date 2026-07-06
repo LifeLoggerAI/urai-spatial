@@ -24,6 +24,7 @@
   "evidenceArtifacts": {},
   "checks": {
     "canonicalContract": "pending",
+    "routeContract": "pending",
     "runtimeCompile": "pending",
     "runtimeSmoke": "pending",
     "productTypecheck": "pending",
