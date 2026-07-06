@@ -1,0 +1,100 @@
+{
+  "receiptId": "URAI-SPATIAL-ASSET-DROPIN-20260706-002",
+  "recordedAt": "2026-07-06T17:24:00-05:00",
+  "classification": "IMPLEMENTED ON CURRENT MAIN ANCESTRY; EXACT-HEAD CI PENDING; PROVIDER ASSETS PARTIALLY PENDING; NOT DEPLOYED",
+  "repository": "LifeLoggerAI/urai-spatial",
+  "branch": "canonical-asset-runtime-clean",
+  "implementationSha": "0384e85d5fa47a8b4580218545ae33bc87280189",
+  "receiptCommitRule": "implementationSha identifies the final code-and-test commit immediately before this evidence-only receipt commit.",
+  "sourcePullRequest": "https://github.com/LifeLoggerAI/urai-spatial/pull/453",
+  "purpose": "Prove that the Spatial runtime is fail-closed and ready for canonical V1-V5 provider assets to activate from schema-3 manifests on current main ancestry, without route rewrites or unsafe placeholder promotion.",
+  "changedFiles": [
+    "urai-tier1/src/app/CanonicalAssetGates.tsx",
+    "urai-tier1/src/app/UraiCanonicalVersionAssetTemplate.tsx",
+    "urai-tier1/src/app/v5-becoming-asset-wiring.css",
+    "urai-tier1/public/assets/urai/final/manifests/v5-asset-factory-spatial-handoff.json",
+    "urai-tier1/tests/canonical-asset-dropin-contract.test.mjs",
+    "urai-tier1/scripts/run-unit-contract-tests-compact.mjs"
+  ],
+  "activationContract": {
+    "schemaVersion": "3.0.0",
+    "requiredRenderer": "provider",
+    "requiredEvidence": [
+      "version matches the manifest slot",
+      "ready equals the exact expected output count",
+      "missing equals zero",
+      "assets length equals the exact expected output count",
+      "every asset has a non-empty name",
+      "every normalized CSS variable key is non-empty and unique",
+      "every canonical path is relative, traversal-free, injection-safe, and inside the version prefix",
+      "every asset has a 64-character SHA-256 digest",
+      "every asset has a positive safe-integer byte count"
+    ],
+    "failureMode": "fallback",
+    "cleanup": "Abort in-flight fetches and remove injected CSS variables, ready classes, and dataset state on unmount."
+  },
+  "manifestMatrix": [
+    {
+      "version": "v1",
+      "expectedOutputs": 53,
+      "manifestReady": 53,
+      "manifestMissing": 0,
+      "status": "PROVIDER_MANIFEST_READY"
+    },
+    {
+      "version": "v2",
+      "expectedOutputs": 80,
+      "manifestReady": 0,
+      "manifestMissing": 80,
+      "status": "PROVIDER_ASSETS_PENDING"
+    },
+    {
+      "version": "v3",
+      "expectedOutputs": 14,
+      "manifestReady": 0,
+      "manifestMissing": 14,
+      "status": "PROVIDER_ASSETS_PENDING"
+    },
+    {
+      "version": "v4",
+      "expectedOutputs": 39,
+      "manifestReady": 0,
+      "manifestMissing": 39,
+      "status": "PROVIDER_ASSETS_PENDING"
+    },
+    {
+      "version": "v5",
+      "expectedOutputs": 27,
+      "manifestReady": 0,
+      "manifestMissing": 27,
+      "status": "PROVIDER_ASSETS_PENDING"
+    }
+  ],
+  "totals": {
+    "expectedOutputs": 213,
+    "providerManifestReady": 53,
+    "providerAssetsPending": 160
+  },
+  "validation": {
+    "contractTest": "urai-tier1/tests/canonical-asset-dropin-contract.test.mjs",
+    "focusedRunner": "urai-tier1/scripts/run-unit-contract-tests-compact.mjs",
+    "reviewThreadsResolvedOnSourcePR": true,
+    "exactHeadWorkflowResult": "PENDING",
+    "buildResult": "PENDING_EXACT_HEAD_CI",
+    "runtimeVerification": "NOT_DEPLOYED"
+  },
+  "deployment": {
+    "performed": false,
+    "productionMutation": false,
+    "providerCallPerformed": false,
+    "billingActionPerformed": false,
+    "deployedSha": null,
+    "rollbackSha": null
+  },
+  "remainingCaveats": [
+    "This receipt proves code and contract readiness, not that V2-V5 provider assets exist.",
+    "The clean branch must pass exact-head CI before merge.",
+    "After merge, production still requires an exact-SHA manual release and immutable deployment receipt.",
+    "Physical Quest/XR certification remains a separate device-evidence gate."
+  ]
+}
