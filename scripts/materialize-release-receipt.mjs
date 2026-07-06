@@ -17,8 +17,10 @@ const requireCommitSha = (name) => {
   return value.toLowerCase();
 };
 
-if (!["prepared", "verified"].includes(phase)) {
-  throw new Error("URAI_RELEASE_RECEIPT_PHASE must be prepared or verified.");
+const evidencePassed = (name) => process.env[name] === "1";
+
+if (!["prepared", "certified"].includes(phase)) {
+  throw new Error("URAI_RELEASE_RECEIPT_PHASE must be prepared or certified.");
 }
 
 const candidateSha = requireCommitSha("URAI_RELEASE_CANDIDATE_SHA");
@@ -34,6 +36,9 @@ if (rollbackSha === deployedSha) {
 }
 
 const receipt = JSON.parse(fs.readFileSync(receiptPath, "utf8"));
+if (!Array.isArray(receipt.routes) || receipt.routes.length === 0) {
+  throw new Error("Release receipt template must contain routes.");
+}
 const manifestSha = crypto
   .createHash("sha256")
   .update(fs.readFileSync(manifestPath))
@@ -41,8 +46,24 @@ const manifestSha = crypto
 
 const releaseId = process.env.URAI_RELEASE_ID?.trim() || `urai-spatial-${deployedSha.slice(0, 12)}`;
 const generatedAt = new Date().toISOString();
-const verified = phase === "verified";
+const requestedCertification = phase === "certified";
+const evidence = {
+  browserFlow: evidencePassed("URAI_RELEASE_BROWSER_VERIFIED"),
+  mobileFlow: evidencePassed("URAI_RELEASE_MOBILE_VERIFIED"),
+  accessibility: evidencePassed("URAI_RELEASE_ACCESSIBILITY_VERIFIED"),
+  customDomain: evidencePassed("URAI_RELEASE_CUSTOM_DOMAIN_VERIFIED"),
+  rollback: evidencePassed("URAI_RELEASE_ROLLBACK_VERIFIED"),
+};
+const evidenceComplete = Object.values(evidence).every(Boolean);
 
+if (requestedCertification && !evidenceComplete) {
+  const missing = Object.entries(evidence)
+    .filter(([, passed]) => !passed)
+    .map(([name]) => name);
+  throw new Error(`Certified receipt requires explicit evidence flags: ${missing.join(", ")}`);
+}
+
+const certified = requestedCertification && evidenceComplete;
 receipt.releaseId = releaseId;
 receipt.generatedAt = generatedAt;
 receipt.environment = "production";
@@ -57,23 +78,24 @@ receipt.checks = {
   runtimeSmoke: "passed",
   productTypecheck: "passed",
   productBuild: "passed",
-  browserFlow: verified ? "passed" : "pending",
-  mobileFlow: verified ? "passed" : "pending",
-  accessibility: verified ? "passed" : "pending",
-  customDomain: verified ? "passed" : "pending",
-  rollback: verified ? "passed" : "pending",
+  browserFlow: evidence.browserFlow ? "passed" : "pending",
+  mobileFlow: evidence.mobileFlow ? "passed" : "pending",
+  accessibility: evidence.accessibility ? "passed" : "pending",
+  customDomain: evidence.customDomain ? "passed" : "pending",
+  rollback: evidence.rollback ? "passed" : "pending",
   physicalXr: "not-applicable-to-web-release",
 };
 receipt.routes = receipt.routes.map((route) => ({
   ...route,
-  productionState: verified ? "verified" : "unverified",
+  productionState: certified ? "verified" : "unverified",
 }));
-receipt.claimBoundary = verified
-  ? "This receipt certifies the web release SHA, custom-domain route set, and rollback evidence only. Provider-backed asset promotions and physical XR/device certification remain separate receipts."
-  : "This receipt is prepared for deployment but is not production-certified until post-deploy browser, mobile, accessibility, custom-domain, and rollback checks pass.";
+receipt.claimBoundary = certified
+  ? "This receipt certifies the web release SHA, custom-domain route set, accessibility/mobile/browser evidence, and an exercised rollback path. Provider-backed asset promotions and physical XR/device certification remain separate receipts."
+  : "This receipt records the exact deployment candidate and rollback target but remains uncertified until explicit browser, mobile, accessibility, custom-domain, and exercised rollback evidence is supplied.";
 
 fs.writeFileSync(receiptPath, `${JSON.stringify(receipt, null, 2)}\n`, "utf8");
 console.log(`RELEASE_RECEIPT=${receiptPath}`);
 console.log(`RELEASE_RECEIPT_PHASE=${phase}`);
 console.log(`RELEASE_RECEIPT_SHA=${deployedSha}`);
 console.log(`RELEASE_MANIFEST_SHA256=${manifestSha}`);
+console.log(`RELEASE_CERTIFIED=${certified ? "1" : "0"}`);
