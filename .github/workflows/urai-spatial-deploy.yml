@@ -3,12 +3,6 @@ name: URAI Spatial Exact-SHA Deploy
 on:
   workflow_dispatch:
     inputs:
-      environment:
-        description: Protected deployment environment
-        required: true
-        default: staging
-        type: choice
-        options: [staging, production]
       target_sha:
         description: Full commit SHA already merged into main
         required: true
@@ -27,12 +21,12 @@ on:
         default: urai-4dc1d
         type: string
       deploy_url:
-        description: Exact HTTPS URL to verify after deployment
+        description: Exact production URL to verify after deployment
         required: true
         default: https://urai.app
         type: string
       confirmation:
-        description: DEPLOY_URAI_STAGING or DEPLOY_URAI_PRODUCTION
+        description: Type DEPLOY VERIFIED URAI
         required: true
         type: string
 
@@ -41,7 +35,7 @@ permissions:
   actions: read
 
 concurrency:
-  group: urai-spatial-deploy-${{ inputs.environment }}
+  group: urai-spatial-deploy-production
   cancel-in-progress: false
 
 env:
@@ -50,14 +44,20 @@ env:
   CERTIFICATION_RUN_ID: ${{ inputs.certification_run_id }}
   EXPECTED_FIREBASE_PROJECT: ${{ inputs.expected_firebase_project }}
   URAI_DEPLOY_URL: ${{ inputs.deploy_url }}
-  URAI_DEPLOY_ENVIRONMENT: ${{ inputs.environment }}
+  URAI_DEPLOY_ENVIRONMENT: production
+  URAI_DEPLOY_CONFIRM: ${{ inputs.confirmation }}
+  URAI_TARGET_SHA: ${{ inputs.target_sha }}
+  URAI_ROLLBACK_SHA: ${{ inputs.rollback_sha }}
+  URAI_FIREBASE_PROJECT: ${{ inputs.expected_firebase_project }}
+  URAI_LIVE_BASE_URL: ${{ inputs.deploy_url }}
+  URAI_DEPLOY_RECEIPT_DIR: deployment-receipt/production-release-${{ inputs.target_sha }}
 
 jobs:
   deploy:
-    name: Deploy exact V50-certified URAI Spatial revision
+    name: Deploy exact V50-certified static URAI Spatial revision
     runs-on: ubuntu-latest
     timeout-minutes: 75
-    environment: ${{ inputs.environment }}
+    environment: production
     env:
       FIREBASE_PROJECT_ID: ${{ secrets.FIREBASE_PROJECT_ID }}
       GOOGLE_APPLICATION_CREDENTIALS: ${{ github.workspace }}/firebase-service-account.json
@@ -70,19 +70,17 @@ jobs:
           fetch-depth: 0
           persist-credentials: false
 
-      - name: Validate target, rollback, environment, and domain
+      - name: Validate target, rollback, project, and domain
         shell: bash
-        env:
-          DEPLOY_CONFIRMATION: ${{ inputs.confirmation }}
         run: |
           set -euo pipefail
-          sha_pattern='^[0-9a-fA-F]{40}$'
-          [[ "$TARGET_SHA" =~ $sha_pattern ]] || { echo 'target_sha must be a full SHA' >&2; exit 1; }
-          [[ "$ROLLBACK_SHA" =~ $sha_pattern ]] || { echo 'rollback_sha must be a full SHA' >&2; exit 1; }
+          sha_pattern='^[0-9a-f]{40}$'
+          [[ "$TARGET_SHA" =~ $sha_pattern ]] || { echo 'target_sha must be a lowercase full SHA' >&2; exit 1; }
+          [[ "$ROLLBACK_SHA" =~ $sha_pattern ]] || { echo 'rollback_sha must be a lowercase full SHA' >&2; exit 1; }
           [ "$TARGET_SHA" != "$ROLLBACK_SHA" ] || { echo 'rollback_sha must differ from target_sha' >&2; exit 1; }
-          TARGET_SHA="$(echo "$TARGET_SHA" | tr '[:upper:]' '[:lower:]')"
-          ROLLBACK_SHA="$(echo "$ROLLBACK_SHA" | tr '[:upper:]' '[:lower:]')"
-          export TARGET_SHA ROLLBACK_SHA
+          [ "$URAI_DEPLOY_CONFIRM" = 'DEPLOY VERIFIED URAI' ] || { echo 'production confirmation is invalid' >&2; exit 1; }
+          [ "$URAI_DEPLOY_URL" = 'https://urai.app' ] || { echo 'production URL must be https://urai.app' >&2; exit 1; }
+          [ "$EXPECTED_FIREBASE_PROJECT" = 'urai-4dc1d' ] || { echo 'production Firebase project must be urai-4dc1d' >&2; exit 1; }
           test "$(git rev-parse HEAD)" = "$TARGET_SHA"
           git fetch origin main --force --prune
           git cat-file -e "$ROLLBACK_SHA^{commit}"
@@ -90,14 +88,6 @@ jobs:
           git merge-base --is-ancestor "$ROLLBACK_SHA" "$TARGET_SHA" || { echo 'rollback_sha is not an ancestor of target_sha' >&2; exit 1; }
           [ -n "$FIREBASE_PROJECT_ID" ] || { echo 'FIREBASE_PROJECT_ID secret is required' >&2; exit 1; }
           [ "$FIREBASE_PROJECT_ID" = "$EXPECTED_FIREBASE_PROJECT" ] || { echo 'Firebase project mismatch' >&2; exit 1; }
-
-          if [ "$URAI_DEPLOY_ENVIRONMENT" = production ]; then
-            [ "$DEPLOY_CONFIRMATION" = DEPLOY_URAI_PRODUCTION ] || { echo 'production confirmation is invalid' >&2; exit 1; }
-            [ "$URAI_DEPLOY_URL" = https://urai.app ] || { echo 'production URL must be https://urai.app' >&2; exit 1; }
-          else
-            [ "$DEPLOY_CONFIRMATION" = DEPLOY_URAI_STAGING ] || { echo 'staging confirmation is invalid' >&2; exit 1; }
-            [[ "$URAI_DEPLOY_URL" =~ ^https:// ]] || { echo 'staging URL must use HTTPS' >&2; exit 1; }
-          fi
 
       - name: Setup pnpm
         uses: pnpm/action-setup@v4
@@ -129,7 +119,7 @@ jobs:
           tested_file="$(find certification-evidence -type f -name tested-commit-sha.txt -print -quit)"
           [ -n "$tested_file" ] || { echo 'V50 artifact is missing tested-commit-sha.txt' >&2; exit 1; }
           tested_sha="$(tr -d '\r\n ' < "$tested_file")"
-          [ "$tested_sha" = "$(echo "$TARGET_SHA" | tr '[:upper:]' '[:lower:]')" ] || { echo 'V50 artifact SHA mismatch' >&2; exit 1; }
+          [ "$tested_sha" = "$TARGET_SHA" ] || { echo 'V50 artifact SHA mismatch' >&2; exit 1; }
           for name in canonical-contract.log route-contract.log runtime-compile.log runtime-smoke.log product-typecheck.log product-build.log; do
             file="$(find certification-evidence -type f -name "$name" -print -quit)"
             [ -n "$file" ] && [ -s "$file" ] || { echo "missing non-empty V50 evidence: $name" >&2; exit 1; }
@@ -172,24 +162,10 @@ jobs:
           node scripts/materialize-release-receipt.mjs
           node scripts/check-release-receipt.mjs
 
-      - name: Re-run authoritative release checks
-        run: pnpm live:check
+      - name: Execute exact static Hosting release
+        run: node scripts/deploy-exact-static-release.mjs
 
-      - name: Deploy canonical Firebase surfaces
-        env:
-          URAI_LIVE_VERIFY_SCRIPT: verify:release:critical
-        run: pnpm live:deploy
-
-      - name: Verify deployed route identities
-        shell: bash
-        run: |
-          set -euo pipefail
-          mkdir -p deployment-receipt
-          set -o pipefail
-          HOST="$URAI_DEPLOY_URL" pnpm smoke 2>&1 | tee deployment-receipt/smoke.log
-          HOST="$URAI_DEPLOY_URL" node scripts/smoke-live-route-fingerprints.mjs 2>&1 | tee deployment-receipt/route-fingerprints.json
-
-      - name: Write deployment receipt
+      - name: Write deployment receipt index
         if: always()
         shell: bash
         env:
@@ -199,13 +175,15 @@ jobs:
           node - <<'NODE'
           const crypto = require('node:crypto');
           const fs = require('node:fs');
+          const path = require('node:path');
           const hash = (file) => fs.existsSync(file) ? crypto.createHash('sha256').update(fs.readFileSync(file)).digest('hex') : null;
+          const exactReceipt = path.join('deployment-receipt', `production-release-${process.env.TARGET_SHA}`, 'deployment.json');
           const receipt = {
-            schemaVersion: 'urai-deployment-receipt-2',
+            schemaVersion: 'urai-deployment-receipt-index-1',
             repository: process.env.GITHUB_REPOSITORY,
             workflowRunId: process.env.GITHUB_RUN_ID,
             workflowRunUrl: `${process.env.GITHUB_SERVER_URL}/${process.env.GITHUB_REPOSITORY}/actions/runs/${process.env.GITHUB_RUN_ID}`,
-            environment: process.env.URAI_DEPLOY_ENVIRONMENT,
+            environment: 'production',
             targetSha: process.env.TARGET_SHA,
             rollbackSha: process.env.ROLLBACK_SHA,
             certificationRunId: process.env.CERTIFICATION_RUN_ID,
@@ -213,14 +191,14 @@ jobs:
             liveUrl: process.env.URAI_DEPLOY_URL,
             generatedAt: new Date().toISOString(),
             conclusion: process.env.JOB_STATUS,
+            exactReleaseReceipt: exactReceipt,
             evidence: {
-              releaseReceiptSha256: hash('urai-tier1/src/data/release-receipt.json'),
-              routeFingerprintsSha256: hash('deployment-receipt/route-fingerprints.json'),
-              smokeSha256: hash('deployment-receipt/smoke.log')
+              exactReleaseReceiptSha256: hash(exactReceipt),
+              releaseReceiptSha256: hash('urai-tier1/src/data/release-receipt.json')
             },
-            boundary: 'Deployment evidence only; mobile, accessibility, exercised rollback, provider assets, and physical XR remain separate receipts.'
+            boundary: 'Static Hosting deployment evidence only; provider assets and physical XR remain separate receipts.'
           };
-          fs.writeFileSync('deployment-receipt/deployment.json', `${JSON.stringify(receipt, null, 2)}\n`);
+          fs.writeFileSync('deployment-receipt/index.json', `${JSON.stringify(receipt, null, 2)}\n`);
           NODE
 
       - name: Upload deployment receipt
