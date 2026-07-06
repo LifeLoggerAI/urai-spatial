@@ -79,6 +79,10 @@ function middlewareGuardsRoute(routePath, middlewareText) {
   return envTokens.some((token) => middlewareText.includes(token))
 }
 
+function normalizeMarker(value) {
+  return value.replaceAll('"', "'").replace(/\s+/g, '')
+}
+
 function requireFileTokens(failures, relativePath, tokens) {
   const absolutePath = path.join(repoRoot, relativePath)
   if (!fs.existsSync(absolutePath)) {
@@ -87,9 +91,11 @@ function requireFileTokens(failures, relativePath, tokens) {
   }
 
   try {
-    const source = fs.readFileSync(absolutePath, 'utf8')
+    const source = normalizeMarker(fs.readFileSync(absolutePath, 'utf8'))
     for (const token of tokens) {
-      if (!source.includes(token)) failures.push(`${relativePath} is missing required production token: ${token}`)
+      if (!source.includes(normalizeMarker(token))) {
+        failures.push(`${relativePath} is missing required production marker: ${token}`)
+      }
     }
   } catch (error) {
     failures.push(`Failed to read ${relativePath}: ${error instanceof Error ? error.message : String(error)}`)
@@ -108,7 +114,6 @@ function checkVersionAssetContracts(failures) {
     version: match[1],
     expected: Number(match[2]),
   }))
-
   if (contracts.length === 0) {
     failures.push('CanonicalAssetGates.tsx does not declare version asset contracts')
     return
@@ -177,13 +182,14 @@ for (const file of walk(appRoot)) {
 requireFileTokens(failures, 'urai-tier1/src/app/privacy-controls/page.tsx', [
   "title: 'URAI Privacy Controls'",
   'data-route-polish="privacy-consent-console"',
-  'PrivacyControlsRoutePage',
+  'export default function PrivacyControlsRoutePage()',
 ])
 
 requireFileTokens(failures, 'urai-tier1/src/app/focus/page.tsx', [
-  'FinalFocusChamber',
+  "import { FinalFocusChamber } from '@/app/FinalMemorySurfaces'",
   'data-urai-route-fingerprint="focus-selected-memory-camera-chamber"',
   'Selected memory camera chamber',
+  '<FinalFocusChamber />',
 ])
 
 const staticConfigPath = path.join(repoRoot, 'firebase.static.json')
