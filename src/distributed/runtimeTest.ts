@@ -1,88 +1,45 @@
 /**
- * URAI v60 Distributed Layer
- * Runtime Determinism Test Harness
- *
- * This simulates TWO independent kernels consuming the SAME event stream
- * and verifies deterministic convergence of world state.
+ * URAI v60 Runtime Test
+ * Executes the same ordered shared stream through two kernels and asserts convergence.
  */
 
-import { SharedEventLog } from "./sharedEventLog";
-import { KernelSync } from "./kernelSync";
+import { EventStore } from "../eventStore";
+import { URAIEvent, URAIKernel } from "../kernel";
 import { EventOrdering } from "./eventOrdering";
+import { KernelSync } from "./kernelSync";
+import { SharedEventLog } from "./sharedEventLog";
 import { StateConvergence } from "./stateConvergence";
-import { URAIKernel, URAIEvent } from "../kernel";
-
-// =========================
-// Mock dual-node environment
-// =========================
 
 export class DualKernelTest {
-  private log = new SharedEventLog();
-
-  private kernelA = new URAIKernel();
-  private kernelB = new URAIKernel();
-
-  private syncA = new KernelSync(this.kernelA, this.log);
-  private syncB = new KernelSync(this.kernelB, this.log);
-
+  private sharedLog = new SharedEventLog();
   private ordering = new EventOrdering();
+  private convergence = new StateConvergence();
+  private kernelA = new URAIKernel(new EventStore());
+  private kernelB = new URAIKernel(new EventStore());
+  private syncA = new KernelSync(this.kernelA, this.sharedLog);
+  private syncB = new KernelSync(this.kernelB, this.sharedLog);
 
-  /**
-   * Initialize both kernels into shared deterministic mode
-   */
-  init() {
+  async init() {
+    await this.kernelA.init();
+    await this.kernelB.init();
     this.syncA.connect();
     this.syncB.connect();
-
-    this.syncA.bootstrap();
-    this.syncB.bootstrap();
   }
 
-  /**
-   * Inject event into distributed system
-   */
-  emit(event: URAIEvent) {
-    const stamped = this.ordering.stamp(event);
-    this.log.append(stamped);
-  }
-
-  /**
-   * Run deterministic validation across both kernels
-   */
-  validate(): boolean {
-    const stateA = this.kernelA.getState();
-    const stateB = this.kernelB.getState();
-
-    const ok = StateConvergence.compare(stateA, stateB);
-
-    if (!ok) {
-      const report = StateConvergence.diagnose([stateA, stateB]);
-      console.error("❌ DIVERGENCE DETECTED", report);
-    } else {
-      console.log("✅ DETERMINISTIC CONVERGENCE CONFIRMED");
-    }
-
-    return ok;
-  }
-
-  /**
-   * Run a sample simulation step
-   */
   step(event: URAIEvent) {
-    this.emit(event);
+    this.syncA.publish(this.ordering.stamp(event));
+  }
+
+  validate(): boolean {
+    this.convergence.assert(this.kernelA.getState(), this.kernelB.getState());
+    return true;
+  }
+
+  states() {
+    return {
+      kernelA: this.kernelA.getState(),
+      kernelB: this.kernelB.getState(),
+      eventLog: this.sharedLog.getHistory(),
+    };
   }
 }
-
-/**
- * DESIGN NOTE (v60 FINAL VALIDATION LAYER):
- *
- * This is the first full distributed determinism test:
- *
- * - Two independent kernels
- * - One shared event log
- * - Identical ordering rules
- * - Convergence verification
- *
- * SUCCESS CONDITION:
- * BOTH kernels produce identical state from identical event stream
- */
