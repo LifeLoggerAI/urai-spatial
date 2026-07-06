@@ -11,72 +11,101 @@ on:
         options:
           - staging
           - production
+      target_sha:
+        description: Exact 40-character commit SHA to deploy
+        required: true
+        type: string
+      rollback_sha:
+        description: Exact 40-character commit SHA reserved for rollback
+        required: true
+        type: string
       static_export:
         description: Use static Firebase hosting config
         required: true
-        default: false
+        default: true
         type: boolean
       deploy_url:
-        description: Optional deployed base URL for smoke route output and HTTP smoke validation
-        required: false
-        default: ''
+        description: Deployed base URL for route validation
+        required: true
+        default: https://urai.app
         type: string
-  push:
-    branches:
-      - main
-    paths:
-      - '.github/workflows/urai-spatial-deploy.yml'
-      - 'firebase.static.json'
-      - 'package.json'
-      - 'pnpm-lock.yaml'
-      - 'scripts/**'
-      - 'tests/**'
-      - 'urai-tier1/src/app/**'
-      - 'urai-tier1/src/spatial/**'
+
+permissions:
+  contents: read
+
+env:
+  TARGET_SHA: ${{ inputs.target_sha }}
+  ROLLBACK_SHA: ${{ inputs.rollback_sha }}
+  URAI_DEPLOY_URL: ${{ inputs.deploy_url }}
 
 jobs:
   deploy:
-    name: Deploy URAI Spatial
+    name: Deploy exact URAI Spatial revision
     runs-on: ubuntu-latest
     timeout-minutes: 45
-    environment: ${{ github.event_name == 'workflow_dispatch' && inputs.environment || 'production' }}
+    environment: ${{ inputs.environment }}
 
     steps:
-      - name: Checkout
+      - name: Checkout exact target
         uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.target_sha }}
+          fetch-depth: 0
+          persist-credentials: false
 
-      - name: Enable Corepack
-        run: corepack enable
+      - name: Verify target and rollback revisions
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ ! "$TARGET_SHA" =~ ^[0-9a-f]{40}$ ]]; then
+            echo "target_sha must be an exact 40-character commit SHA" >&2
+            exit 1
+          fi
+          if [[ ! "$ROLLBACK_SHA" =~ ^[0-9a-f]{40}$ ]]; then
+            echo "rollback_sha must be an exact 40-character commit SHA" >&2
+            exit 1
+          fi
+          if [ "$TARGET_SHA" = "$ROLLBACK_SHA" ]; then
+            echo "rollback_sha must differ from target_sha" >&2
+            exit 1
+          fi
+          test "$(git rev-parse HEAD)" = "$TARGET_SHA"
+          git cat-file -e "$ROLLBACK_SHA^{commit}"
+          echo "target_sha=$TARGET_SHA"
+          echo "rollback_sha=$ROLLBACK_SHA"
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10.0.0
 
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
-          node-version: 24
+          node-version: 22
           cache: pnpm
 
-      - name: Install dependencies
-        run: corepack pnpm install --no-frozen-lockfile
+      - name: Install frozen dependencies
+        run: pnpm install --frozen-lockfile
 
-      - name: Guardian
-        if: github.event_name == 'workflow_dispatch'
-        run: corepack pnpm urai:guardian
-
-      - name: Verify finalized V1 provider assets
-        if: github.event_name == 'push'
+      - name: Validate deployment authority and release receipt
         run: |
-          node scripts/verify-asset-factory-handoff.mjs
-          node scripts/audit-v123-asset-wall.mjs
+          node scripts/check-deployment-authority.mjs
+          node scripts/check-release-receipt.mjs
 
-      - name: Typecheck
-        run: corepack pnpm check:types
+      - name: Run release gates
+        run: |
+          pnpm urai:guardian
+          node scripts/check-v1-v6-asset-ready.mjs
+          pnpm check:types
 
-      - name: Build
-        if: ${{ github.event_name == 'workflow_dispatch' && !inputs.static_export }}
-        run: corepack pnpm build
+      - name: Build dynamic hosting target
+        if: ${{ !inputs.static_export }}
+        run: pnpm build
 
-      - name: Build static export
-        if: ${{ github.event_name == 'push' || inputs.static_export }}
-        run: corepack pnpm build:static
+      - name: Build static hosting target
+        if: ${{ inputs.static_export }}
+        run: pnpm build:static
 
       - name: Configure Firebase authentication
         env:
@@ -91,16 +120,15 @@ jobs:
             python -m json.tool "${credentials_file}" > /dev/null
             chmod 600 "${credentials_file}"
             echo "GOOGLE_APPLICATION_CREDENTIALS=${credentials_file}" >> "${GITHUB_ENV}"
-            echo 'URAI_FIREBASE_AUTH_MODE=service-account' >> "${GITHUB_ENV}"
+            echo "URAI_FIREBASE_AUTH_MODE=service-account" >> "${GITHUB_ENV}"
           elif [[ -n "${FIREBASE_TOKEN}" ]]; then
-            echo 'URAI_FIREBASE_AUTH_MODE=token' >> "${GITHUB_ENV}"
+            echo "URAI_FIREBASE_AUTH_MODE=token" >> "${GITHUB_ENV}"
           else
-            echo '::error::Firebase deployment requires FIREBASE_SERVICE_ACCOUNT_JSON or FIREBASE_TOKEN.'
+            echo "Firebase deployment credentials are not configured" >&2
             exit 1
           fi
 
-      - name: Firebase deploy hosting
-        if: ${{ github.event_name == 'workflow_dispatch' && !inputs.static_export }}
+      - name: Deploy Firebase hosting
         env:
           FIREBASE_PROJECT_ID: ${{ secrets.FIREBASE_PROJECT_ID }}
           FIREBASE_FALLBACK_TOKEN: ${{ secrets.FIREBASE_TOKEN }}
@@ -108,41 +136,55 @@ jobs:
         run: |
           set -euo pipefail
           test -n "${FIREBASE_PROJECT_ID}"
-          if [[ "${URAI_FIREBASE_AUTH_MODE}" == 'token' ]]; then
+          config_args=()
+          if ${{ inputs.static_export }}; then
+            config_args=(--config firebase.static.json)
+          fi
+          if [[ "${URAI_FIREBASE_AUTH_MODE}" == "token" ]]; then
             test -n "${FIREBASE_FALLBACK_TOKEN}"
-            npx firebase-tools deploy --only hosting --project "${FIREBASE_PROJECT_ID}" --token "${FIREBASE_FALLBACK_TOKEN}"
+            npx firebase-tools deploy "${config_args[@]}" --only hosting --project "${FIREBASE_PROJECT_ID}" --token "${FIREBASE_FALLBACK_TOKEN}"
           else
             unset FIREBASE_TOKEN FIREBASE_FALLBACK_TOKEN
-            npx firebase-tools deploy --only hosting --project "${FIREBASE_PROJECT_ID}"
+            npx firebase-tools deploy "${config_args[@]}" --only hosting --project "${FIREBASE_PROJECT_ID}"
           fi
 
-      - name: Firebase deploy static hosting
-        if: ${{ github.event_name == 'push' || inputs.static_export }}
+      - name: Validate deployed routes
+        run: |
+          pnpm smoke:deployed
+          pnpm smoke:live
+          HOST="$URAI_DEPLOY_URL" node scripts/smoke-live-route-fingerprints.mjs
+
+      - name: Write exact-revision deployment receipt
+        if: always()
         env:
           FIREBASE_PROJECT_ID: ${{ secrets.FIREBASE_PROJECT_ID }}
-          FIREBASE_FALLBACK_TOKEN: ${{ secrets.FIREBASE_TOKEN }}
+          JOB_STATUS: ${{ job.status }}
         shell: bash
         run: |
-          set -euo pipefail
-          test -n "${FIREBASE_PROJECT_ID}"
-          if [[ "${URAI_FIREBASE_AUTH_MODE}" == 'token' ]]; then
-            test -n "${FIREBASE_FALLBACK_TOKEN}"
-            npx firebase-tools deploy --config firebase.static.json --only hosting --project "${FIREBASE_PROJECT_ID}" --token "${FIREBASE_FALLBACK_TOKEN}"
-          else
-            unset FIREBASE_TOKEN FIREBASE_FALLBACK_TOKEN
-            npx firebase-tools deploy --config firebase.static.json --only hosting --project "${FIREBASE_PROJECT_ID}"
-          fi
+          mkdir -p deployment-receipt
+          node - <<'NODE'
+          const fs = require('node:fs');
+          const receipt = {
+            schemaVersion: 'urai-deployment-receipt-1',
+            repository: process.env.GITHUB_REPOSITORY,
+            workflowRun: process.env.GITHUB_RUN_ID,
+            targetSha: process.env.TARGET_SHA,
+            rollbackSha: process.env.ROLLBACK_SHA,
+            firebaseProject: process.env.FIREBASE_PROJECT_ID,
+            liveUrl: process.env.URAI_DEPLOY_URL,
+            environment: '${{ inputs.environment }}',
+            staticExport: ${{ inputs.static_export }},
+            status: process.env.JOB_STATUS,
+            generatedAt: new Date().toISOString()
+          };
+          fs.writeFileSync('deployment-receipt/deployment.json', JSON.stringify(receipt, null, 2));
+          NODE
 
-      - name: Print smoke routes
-        if: ${{ github.event_name == 'push' || inputs.deploy_url != '' }}
-        env:
-          URAI_DEPLOY_URL: ${{ inputs.deploy_url || 'https://urai.app' }}
-        run: corepack pnpm smoke:deployed
-
-      - name: Validate live routes
-        if: ${{ github.event_name == 'push' || inputs.deploy_url != '' }}
-        env:
-          URAI_DEPLOY_URL: ${{ inputs.deploy_url || 'https://urai.app' }}
-        run: corepack pnpm smoke:live
-
-# Finalized V1 provider asset production deploy trigger, scoped to V1 web gates on push.
+      - name: Upload deployment receipt
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: urai-spatial-deployment-${{ inputs.target_sha }}
+          path: deployment-receipt
+          if-no-files-found: error
+          retention-days: 90
