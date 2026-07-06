@@ -1,0 +1,49 @@
+{
+  "schemaVersion": "urai-material-change-receipt-1",
+  "receiptId": "SPATIAL-SECURE-RELEASE-20260706-001",
+  "recordedAt": "2026-07-06T07:35:00Z",
+  "status": "IMPLEMENTED BUT NOT DEPLOYED",
+  "repository": "LifeLoggerAI/urai-spatial",
+  "branch": "secure-release-20260706",
+  "baseBranch": "audit/ecosystem-truth-20260706",
+  "implemented": [
+    "manual-only production deployment authority",
+    "exact current main target requirement",
+    "pre-deploy current SHA and receipt requirement",
+    "rollback SHA equality with current deployed SHA",
+    "workload identity authentication",
+    "frozen dependency installation",
+    "hashed core build and runtime evidence",
+    "prepared release receipt before first deploy",
+    "external route fingerprint and desktop/mobile screenshot proof",
+    "automated semantic keyboard mobile and reduced-motion accessibility gate",
+    "actual rollback SHA deployment and smoke",
+    "target SHA restoration",
+    "certified release receipt and final redeploy",
+    "final status SHA and privacy-controls identity verification",
+    "365-day immutable production evidence artifact",
+    "static workflow authority contract check"
+  ],
+  "liveEvidenceAtImplementation": {
+    "privacyControls": "VERIFIED LIVE DEFECT: current domain serves Home threshold",
+    "status": "VERIFIED LIVE BUT STALE: no exact deployed or rollback SHA",
+    "sourcePrivacyControls": "IMPLEMENTED BUT NOT DEPLOYED",
+    "deployedSha": null,
+    "rollbackSha": null
+  },
+  "verification": {
+    "staticContractCommand": "node scripts/check-canonical-deploy-workflow.mjs",
+    "workflow": ".github/workflows/canonical-deploy-contract.yml",
+    "exactHeadWorkflowStatus": "PENDING",
+    "deploymentExecuted": false,
+    "providerCallsExecuted": 0
+  },
+  "deploymentBlockers": [
+    "exact current urai.app deployed SHA has not been established",
+    "rollback SHA has not been proven",
+    "current deployment evidence receipt is absent",
+    "V50 exact-head certification remains queued",
+    "workload identity and production environment secrets are not inspectable from this session",
+    "production deployment is destructive/external and remains gated"
+  ]
+}
