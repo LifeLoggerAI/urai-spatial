@@ -16,9 +16,22 @@ export type SystemLoopState = {
   lastAnalyticsEvents?: AnalyticsEvent[];
 };
 
+export function isSystemLoopState(value: unknown): value is SystemLoopState {
+  if (!value || typeof value !== "object") return false;
+  const record = value as Record<string, unknown>;
+  return typeof record.startedAt === "number" && Number.isFinite(record.startedAt) && typeof record.totalRuns === "number" && Number.isInteger(record.totalRuns) && record.totalRuns >= 0;
+}
+
 export type SystemLoopOptions = {
   tickIntervalMs?: number;
   replayLimit?: number;
+  initialState?: Partial<SystemLoopState>;
+};
+
+type SimulationFeedbackState = {
+  intentVector: Array<{ id: string; type: string; timestamp: number }>;
+  predictedBias: number | null;
+  memoryWeighting: Record<string, unknown>;
 };
 
 export class SystemLoop<TState = Record<string, unknown>> {
@@ -29,26 +42,12 @@ export class SystemLoop<TState = Record<string, unknown>> {
   readonly xr: XRRuntime;
   readonly communications: CommunicationsBridge;
   readonly analytics: AnalyticsBridge;
-
-  private replayLimit: number;
-
-  // 🧠 Simulation feedback state (NEW)
-  private simulationState = {
-    intentVector: [] as any[],
-    predictedBias: null as any,
-    memoryWeighting: {} as Record<string, any>
-  };
-
-  private loopState: SystemLoopState = {
-    startedAt: Date.now(),
-    totalRuns: 0
-  };
+  private readonly replayLimit: number;
+  private simulationState: SimulationFeedbackState = { intentVector: [], predictedBias: null, memoryWeighting: {} };
+  private loopState: SystemLoopState;
 
   constructor(options: SystemLoopOptions = {}) {
-    this.engine = new SimulationEngine<TState>({
-      tickIntervalMs: options.tickIntervalMs ?? 1000
-    });
-
+    this.engine = new SimulationEngine<TState>({ tickIntervalMs: options.tickIntervalMs ?? 1000 });
     this.memory = new MemoryGraphPlugin<TState>();
     this.replay = new ReplayEngine();
     this.prediction = new PredictionEngine();
@@ -56,102 +55,53 @@ export class SystemLoop<TState = Record<string, unknown>> {
     this.communications = new CommunicationsBridge();
     this.analytics = new AnalyticsBridge();
     this.replayLimit = options.replayLimit ?? 50;
+    this.loopState = {
+      startedAt: options.initialState?.startedAt ?? Date.now(),
+      totalRuns: options.initialState?.totalRuns ?? 0,
+      lastRunAt: options.initialState?.lastRunAt,
+      lastPrediction: options.initialState?.lastPrediction,
+      lastXRFrame: options.initialState?.lastXRFrame,
+      lastPackets: options.initialState?.lastPackets,
+      lastAnalyticsEvents: options.initialState?.lastAnalyticsEvents,
+    };
   }
 
-  async initialize() {
+  async initialize(): Promise<void> {
     await this.engine.register(this.memory);
-
-    this.engine.bus.on("*", (event) => {
-      this.communications.push(event);
-    });
-
-    await this.engine.emit("system.loop.initialized", {
-      replayLimit: this.replayLimit
-    }, "system-loop");
+    this.engine.bus.on("*", (event) => { this.communications.push(event); });
+    await this.engine.emit("system.loop.initialized", { replayLimit: this.replayLimit, restoredRuns: this.loopState.totalRuns }, "system-loop");
   }
 
-  private applySimulationMutationBridge(
-    state: any,
-    prediction: any,
-    snapshot: any
-  ) {
+  private applySimulationMutationBridge(state: SimulationFeedbackState, prediction: PredictionResult, snapshot: ReturnType<MemoryGraphPlugin<TState>["snapshot"]>): SimulationFeedbackState {
+    const confidence = prediction.topCandidate?.confidence ?? 0.5;
     return {
       ...state,
-      predictedBias: prediction?.confidence ?? 0.5,
-      intentVector: snapshot?.events?.slice?.(-10) ?? [],
-      memoryWeighting: {
-        ...state.memoryWeighting,
-        lastConfidence: prediction?.confidence ?? 0.5
-      }
+      predictedBias: confidence,
+      intentVector: snapshot.nodes.slice(-10).map((node) => ({ id: node.id, type: node.type, timestamp: node.timestamp })),
+      memoryWeighting: { ...state.memoryWeighting, lastConfidence: confidence },
     };
   }
 
   async runOnce() {
     await this.engine.step();
-
     const snapshot = this.memory.snapshot();
-    const timeline = this.replay.buildTimeline(snapshot, {
-      limit: this.replayLimit
-    });
-
+    const timeline = this.replay.buildTimeline(snapshot, { limit: this.replayLimit });
     const prediction = this.prediction.predict(timeline);
     await this.prediction.emitPrediction(prediction, this.engine.bus);
-
-    // 🧠 APPLY FEEDBACK BRIDGE (NEW CORE LOOP LINK)
-    this.simulationState = this.applySimulationMutationBridge(
-      this.simulationState,
-      prediction,
-      snapshot
-    );
-
+    this.simulationState = this.applySimulationMutationBridge(this.simulationState, prediction, snapshot);
     const frame = this.xr.renderPrediction(prediction, this.engine.tick);
     await this.xr.emitFrame(frame, this.engine.bus);
-
     const packets = this.communications.flush();
     const analyticsEvents = packets.map((packet) => this.analytics.ingest(packet));
-
-    this.loopState = {
-      ...this.loopState,
-      lastRunAt: Date.now(),
-      totalRuns: this.loopState.totalRuns + 1,
-      lastPrediction: prediction,
-      lastXRFrame: frame,
-      lastPackets: packets,
-      lastAnalyticsEvents: analyticsEvents
-    };
-
-    await this.engine.emit("system.loop.completed", {
-      tick: this.engine.tick,
-      totalRuns: this.loopState.totalRuns,
-      predictionId: prediction.id,
-      xrFrameId: frame.id,
-      packets: packets.length,
-      analyticsEvents: analyticsEvents.length
-    }, "system-loop");
-
-    return {
-      snapshot,
-      timeline,
-      prediction,
-      frame,
-      packets,
-      analyticsEvents,
-      state: this.getState(),
-      simulationState: this.simulationState
-    };
+    this.loopState = { ...this.loopState, lastRunAt: Date.now(), totalRuns: this.loopState.totalRuns + 1, lastPrediction: prediction, lastXRFrame: frame, lastPackets: packets, lastAnalyticsEvents: analyticsEvents };
+    await this.engine.emit("state.snapshot", { snapshot, prediction, frame, loopState: this.loopState }, "system-loop");
+    await this.engine.emit("system.loop.completed", { tick: this.engine.tick, totalRuns: this.loopState.totalRuns, predictionId: prediction.id, xrFrameId: frame.id, packets: packets.length, analyticsEvents: analyticsEvents.length }, "system-loop");
+    return { snapshot, timeline, prediction, frame, packets, analyticsEvents, state: this.getState(), simulationState: this.simulationState };
   }
 
-  start() {
-    this.engine.start();
-  }
-
-  stop() {
-    this.engine.stop();
-  }
-
-  getState(): SystemLoopState {
-    return { ...this.loopState };
-  }
+  start(): void { this.engine.start(); }
+  stop(): void { this.engine.stop(); }
+  getState(): SystemLoopState { return { ...this.loopState }; }
 }
 
 export async function createSystemLoop(options: SystemLoopOptions = {}) {
