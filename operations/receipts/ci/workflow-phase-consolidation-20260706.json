@@ -1,0 +1,38 @@
+{
+  "receiptId": "CI-SPATIAL-PHASES-20260706-001",
+  "recordedAt": "2026-07-06T07:58:00Z",
+  "classification": "IMPLEMENTED BUT NOT MERGED",
+  "repository": "LifeLoggerAI/urai-spatial",
+  "branch": "ci/consolidate-pr-release-gates-20260706",
+  "baseSha": "ce22b4bc39fdd26a1874797eeaba1d942e4e1301",
+  "changedFiles": [
+    ".github/workflows/spatial-production-lock.yml",
+    ".github/workflows/aaa-final-proof.yml",
+    ".github/workflows/urai-spatial-lock.yml",
+    ".github/workflows/urai-spatial-release-certification.yml",
+    ".github/workflows/spatial-live-deploy.yml",
+    ".github/workflows/workflow-phase-boundaries.yml",
+    "scripts/check-workflow-phase-boundaries.mjs"
+  ],
+  "implementation": {
+    "pullRequestHeavySuitesRemoved": 5,
+    "qualityStepsRemoved": 0,
+    "mergedMainSuitesRetained": 5,
+    "manualSuitesRetained": 5,
+    "newLightweightPullRequestGuard": "Workflow Phase Boundaries",
+    "productionDeployMode": "manual workflow_dispatch with DEPLOY confirmation and protected production environment",
+    "automaticProductionDeployRemoved": true,
+    "credentialCleanupRequired": true
+  },
+  "validation": {
+    "command": "node scripts/check-workflow-phase-boundaries.mjs",
+    "expectedResult": "five heavy workflows remain frozen-install merged-main/manual gates and live deployment remains manual-only"
+  },
+  "deployment": null,
+  "providerCalls": 0,
+  "remainingCaveats": [
+    "Exact-head GitHub Actions must pass before merge.",
+    "Repository branch-protection required-check settings are not modified by this source change.",
+    "The canonical V50 PR remains the source certification candidate; this change only removes duplicated release-stage executions from unrelated PRs."
+  ]
+}
