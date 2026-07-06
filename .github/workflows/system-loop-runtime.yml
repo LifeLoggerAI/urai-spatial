@@ -6,6 +6,7 @@ on:
     paths:
       - "src/**"
       - "urai-tier1/src/**"
+      - "urai-tier1/tests/spatial-system-contract-route-coverage.test.mjs"
       - "scripts/check-system-loop-runtime.mjs"
       - "scripts/smoke-system-loop-runtime.mjs"
       - "tsconfig.runtime.json"
@@ -21,6 +22,7 @@ on:
     paths:
       - "src/**"
       - "urai-tier1/src/**"
+      - "urai-tier1/tests/spatial-system-contract-route-coverage.test.mjs"
       - "scripts/check-system-loop-runtime.mjs"
       - "scripts/smoke-system-loop-runtime.mjs"
       - "tsconfig.runtime.json"
@@ -78,6 +80,12 @@ jobs:
             echo "canonical_contract=pass"
           } 2>&1 | tee artifacts/v50/canonical-contract.log
 
+      - name: Verify canonical public route contract
+        shell: bash
+        run: |
+          set -o pipefail
+          node --test urai-tier1/tests/spatial-system-contract-route-coverage.test.mjs 2>&1 | tee artifacts/v50/route-contract.log
+
       - name: Compile root SystemLoop runtime
         shell: bash
         run: |
@@ -122,6 +130,7 @@ jobs:
             status: 'candidate-passed',
             checks: {
               canonicalContract: true,
+              routeContract: true,
               runtimeCompile: true,
               runtimeSmoke: true,
               productTypecheck: true,
