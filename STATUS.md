@@ -6,19 +6,30 @@ Runtime app root: `urai-tier1`.
 
 Canonical public application: `LifeLoggerAI/urai-spatial/urai-tier1` on `main`.
 
+Current audited `main` SHA: `4e1606c9ab7cde42b942f62e1d65148df8fadceb`.
+
 Current mode: `fallback-demo` with a partially current live deployment.
 
 Production-live status: not yet verified.
 
-Latest audited release candidate: July 3, 2026. V1 has a 53-of-53 provider-marked asset handoff in source, but the configured release workflow, exact-commit deployment receipt, rollback reference, route parity, and post-deployment browser proof are not complete. V2 and V3 remain handoff-gated (`ready: 0`). V4 and V5 remain provider/browser/device/deployment gated.
+Latest source audit: July 6, 2026. V1 has a 53-of-53 provider-marked asset handoff in source, but the configured release workflow, exact-commit deployment receipt, rollback reference, route parity, and post-deployment browser proof are not complete. V2 and V3 remain handoff-gated (`ready: 0`). V4 and V5 remain provider/browser/device/deployment gated.
 
 ## Current verified blockers
 
-- The live custom domain serves current Home, Ground, Life Map, Replay, Mirror, Passport, Status, Ascent, and Unwind surfaces, but `/privacy-controls/` currently resolves to Home instead of the dedicated Privacy Controls source owner.
-- Query and slash parity is not stable: `/focus/` and `/focus/?memoryId=quiet-reset` expose the current chamber, while `/focus?memoryId=quiet-reset` can expose a stale legacy shell.
-- `firebase.static.json` contains a catch-all rewrite to `/index.html`, which can mask missing exported pages as successful Home responses.
-- The canonical Firebase deployment workflow exports `FIREBASE_TOKEN` even when service-account mode is selected, allowing an expired token to override valid application-default credentials.
-- No exact-current-main deployment receipt, rollback target, complete mobile/desktop screenshot set, or physical Quest proof is recorded.
+- No exact-current-main deployment receipt, Firebase target receipt, rollback target, complete mobile/desktop screenshot set, or physical Quest proof is recorded.
+- Current custom-domain parity for `/privacy-controls/`, `/focus/`, `/focus/?memoryId=quiet-reset`, and `/focus?memoryId=quiet-reset` has not been reverified from an external browser against the audited source SHA.
+- The canonical deployment workflow requires a successful current-main `pnpm live:check` and an authorized deploy invocation before the public domain can be certified.
+- V2 and V3 provider assets are not promoted: V2 reports 0 ready / 80 missing; V3 reports 0 ready / 39 missing.
+
+## Source-fixed items awaiting live verification
+
+- `urai-tier1/src/app/privacy-controls/page.tsx` is the dedicated Privacy Controls source owner with an explicit `URAI Privacy Controls` title and route fingerprint.
+- `urai-tier1/src/app/focus/page.tsx` renders `FinalFocusChamber` with the canonical `focus-selected-memory-camera-chamber` fingerprint.
+- `firebase.static.json` publishes `urai-tier1/out`, enables clean URLs and trailing slashes, and contains no rewrites; missing pages are no longer intentionally masked by a catch-all Home rewrite in current source.
+- `.github/workflows/spatial-live-deploy.yml` uses a service-account JSON file through `GOOGLE_APPLICATION_CREDENTIALS`; the current workflow does not export the legacy token variable previously documented as a blocker.
+- `scripts/check-production-route-exposure.mjs` now enforces the two route owners and zero-rewrite static hosting posture on release checks.
+
+These source fixes are **VERIFIED IN REPOSITORY**, not **VERIFIED LIVE**. They require a passing release run, deployment receipt, and external route proof before the live blockers can close.
 
 ## Authority
 
@@ -42,7 +53,7 @@ Not allowed claim:
 
 | Version | Source posture | Asset/runtime posture | Certification posture |
 | --- | --- | --- | --- |
-| V1 | Main route chain and production owners are present. | Provider handoff reports 53 ready, 0 missing. Live deployment is mixed/stale on at least Privacy Controls and Focus parity. | Not certified. |
+| V1 | Main route chain and production owners are present. Privacy Controls, Focus ownership, and zero-rewrite static hosting are source-locked. | Provider handoff reports 53 ready, 0 missing. Current live deployment parity and exact deployed SHA remain unverified. | Not certified. |
 | V2 | Living-state wiring, fallback inventory, gating, and verifier exist. | Canonical handoff reports 0 ready, 80 missing; V1 fallback remains active. | Not certified. |
 | V3 | Relationship, shadow, pattern, consent-safe fallback surfaces and inventory exist. | Canonical handoff reports 0 ready, 39 missing. | Not certified. |
 | V4 | WebXR/Quest runtime and lifecycle hardening exist in source. | Browser/provider/device proof remains gated. | Not certified; no physical Quest claim. |
@@ -66,16 +77,16 @@ Not allowed claim:
 
 `urai-spatial` is not production-certified until all applicable evidence is recorded:
 
-- frozen dependency install
-- source integrity and canonical runtime locks
-- typecheck, unit, integration, privacy, accessibility, reduced-motion, and browser tests
-- normal and static builds
-- route exposure, slash/query parity, missing-resource, and console-error checks
-- exact canonical `main` commit and previous rollback target
-- Firebase deployment output from the canonical workflow
-- custom-domain route and interaction smoke
-- desktop and mobile screenshots
-- provider-specific and device-specific evidence before those claims are enabled
+- frozen dependency install;
+- source integrity and canonical runtime locks;
+- typecheck, unit, integration, privacy, accessibility, reduced-motion, and browser tests;
+- normal and static builds;
+- route exposure, slash/query parity, missing-resource, and console-error checks;
+- exact canonical `main` commit and previous rollback target;
+- Firebase deployment output from the canonical workflow;
+- custom-domain route and interaction smoke;
+- desktop and mobile screenshots;
+- provider-specific and device-specific evidence before those claims are enabled.
 
 ## Copy boundary
 
