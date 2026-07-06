@@ -1,58 +1,87 @@
-name: URAI Spatial Release Verification
+name: URAI Spatial Live Release
 
 on:
-  pull_request:
-    branches: [main]
-    paths:
-      - "urai-tier1/**"
-      - "apps/functions/**"
-      - "packages/**"
-      - "scripts/**"
-      - "tests/**"
-      - "src/**"
-      - "docs/**"
-      - "operations/**"
-      - "release/**"
-      - "audit/**"
-      - "firebase/**"
-      - "firebase.json"
-      - "firebase.static.json"
-      - "package.json"
-      - "pnpm-lock.yaml"
-      - "pnpm-workspace.yaml"
-      - ".github/workflows/**"
   push:
-    branches: [main]
+    branches:
+      - main
     paths:
       - "urai-tier1/**"
       - "apps/functions/**"
       - "packages/**"
       - "scripts/**"
       - "tests/**"
-      - "src/**"
+      - "src/canon/**"
       - "docs/**"
-      - "operations/**"
       - "release/**"
       - "audit/**"
       - "firebase/**"
       - "firebase.json"
       - "firebase.static.json"
+      - ".firebaserc.example"
+      - "CANONICAL_RUNTIME.md"
+      - "SYSTEM_MAP.md"
+      - "REPO_PURPOSE.md"
+      - "RUNBOOK.md"
+      - "README.md"
+      - "LIVE_RELEASE.md"
+      - "DEPLOYMENT.md"
+      - "STATUS.md"
+      - "EVIDENCE.md"
       - "package.json"
       - "pnpm-lock.yaml"
       - "pnpm-workspace.yaml"
+      - ".nvmrc"
+      - ".node-version"
       - ".github/workflows/**"
   workflow_dispatch:
+    inputs:
+      deploy:
+        description: "Type DEPLOY to publish the exact certified SHA"
+        required: true
+        default: "CHECK_ONLY"
+        type: string
+      target_sha:
+        description: "Exact reviewed main SHA"
+        required: false
+        default: ""
+        type: string
+      rollback_sha:
+        description: "Distinct known-good ancestor SHA"
+        required: false
+        default: ""
+        type: string
+      certification_run_id:
+        description: "Passing V50 workflow run ID for target_sha"
+        required: false
+        default: ""
+        type: string
+      expected_firebase_project:
+        description: "Protected production Firebase project"
+        required: false
+        default: "urai-4dc1d"
+        type: string
+      live_url:
+        description: "Canonical production URL"
+        required: false
+        default: "https://urai.app"
+        type: string
+      confirmation:
+        description: "Type DEPLOY VERIFIED URAI"
+        required: false
+        default: ""
+        type: string
 
 permissions:
   contents: read
+  actions: read
 
 concurrency:
-  group: urai-spatial-release-verification-${{ github.head_ref || github.ref_name }}
+  group: urai-spatial-live-release-${{ github.ref_name }}
   cancel-in-progress: true
 
 jobs:
   verify:
-    name: Verify Spatial release gates without deployment
+    name: Verify Spatial release gates
     runs-on: ubuntu-latest
     timeout-minutes: 45
     env:
@@ -71,21 +100,12 @@ jobs:
       URAI_JOBS_BASE_URL: ${{ vars.URAI_JOBS_BASE_URL }}
 
     steps:
-      - name: Checkout exact event commit
+      - name: Checkout exact commit
         uses: actions/checkout@v4
         with:
-          ref: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
+          ref: ${{ github.sha }}
           fetch-depth: 0
           persist-credentials: false
-
-      - name: Verify checkout identity
-        shell: bash
-        run: |
-          set -euo pipefail
-          expected='${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}'
-          actual="$(git rev-parse HEAD)"
-          test "$actual" = "$expected"
-          echo "verified_sha=$actual"
 
       - name: Setup pnpm
         uses: pnpm/action-setup@v4
@@ -162,7 +182,141 @@ jobs:
           if-no-files-found: warn
           retention-days: 90
 
-      - name: State deployment authority
+  deploy:
+    name: Deploy exact V50-certified static revision
+    needs: verify
+    if: github.event_name == 'workflow_dispatch' && github.event.inputs.deploy == 'DEPLOY'
+    runs-on: ubuntu-latest
+    timeout-minutes: 75
+    environment: production
+    env:
+      TARGET_SHA: ${{ inputs.target_sha }}
+      ROLLBACK_SHA: ${{ inputs.rollback_sha }}
+      CERTIFICATION_RUN_ID: ${{ inputs.certification_run_id }}
+      EXPECTED_FIREBASE_PROJECT: ${{ inputs.expected_firebase_project }}
+      URAI_DEPLOY_CONFIRM: ${{ inputs.confirmation }}
+      URAI_TARGET_SHA: ${{ inputs.target_sha }}
+      URAI_ROLLBACK_SHA: ${{ inputs.rollback_sha }}
+      URAI_FIREBASE_PROJECT: ${{ inputs.expected_firebase_project }}
+      URAI_LIVE_BASE_URL: ${{ inputs.live_url }}
+      URAI_DEPLOY_RECEIPT_DIR: deployment-receipt/production-release-${{ inputs.target_sha }}
+      FIREBASE_PROJECT_ID: ${{ secrets.FIREBASE_PROJECT_ID }}
+      GOOGLE_APPLICATION_CREDENTIALS: ${{ github.workspace }}/firebase-service-account.json
+
+    steps:
+      - name: Checkout exact target
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.target_sha }}
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Validate target, rollback, project, and domain
+        shell: bash
         run: |
-          echo "This workflow performs verification only."
-          echo "The sole deployment authority is .github/workflows/urai-spatial-deploy.yml."
+          set -euo pipefail
+          sha_pattern='^[0-9a-f]{40}$'
+          [[ "$TARGET_SHA" =~ $sha_pattern ]] || { echo 'target_sha must be a lowercase full SHA' >&2; exit 1; }
+          [[ "$ROLLBACK_SHA" =~ $sha_pattern ]] || { echo 'rollback_sha must be a lowercase full SHA' >&2; exit 1; }
+          [ "$TARGET_SHA" != "$ROLLBACK_SHA" ] || { echo 'rollback_sha must differ from target_sha' >&2; exit 1; }
+          [ "$URAI_DEPLOY_CONFIRM" = 'DEPLOY VERIFIED URAI' ] || { echo 'production confirmation is invalid' >&2; exit 1; }
+          [ "$URAI_LIVE_BASE_URL" = 'https://urai.app' ] || { echo 'production URL must be https://urai.app' >&2; exit 1; }
+          [ "$EXPECTED_FIREBASE_PROJECT" = 'urai-4dc1d' ] || { echo 'production Firebase project must be urai-4dc1d' >&2; exit 1; }
+          test "$(git rev-parse HEAD)" = "$TARGET_SHA"
+          git fetch origin main --force --prune
+          git cat-file -e "$ROLLBACK_SHA^{commit}"
+          git merge-base --is-ancestor "$TARGET_SHA" origin/main || { echo 'target_sha is not merged into main' >&2; exit 1; }
+          git merge-base --is-ancestor "$ROLLBACK_SHA" "$TARGET_SHA" || { echo 'rollback_sha is not an ancestor of target_sha' >&2; exit 1; }
+          [ -n "$FIREBASE_PROJECT_ID" ] || { echo 'FIREBASE_PROJECT_ID secret is required' >&2; exit 1; }
+          [ "$FIREBASE_PROJECT_ID" = "$EXPECTED_FIREBASE_PROJECT" ] || { echo 'Firebase project mismatch' >&2; exit 1; }
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10.0.0
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install frozen dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Download exact V50 evidence
+        uses: actions/download-artifact@v4
+        with:
+          name: v50-canonical-evidence-${{ inputs.target_sha }}
+          path: certification-evidence
+          repository: ${{ github.repository }}
+          run-id: ${{ inputs.certification_run_id }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Validate V50 artifact identity
+        shell: bash
+        run: |
+          set -euo pipefail
+          tested_file="$(find certification-evidence -type f -name tested-commit-sha.txt -print -quit)"
+          [ -n "$tested_file" ] || { echo 'V50 artifact is missing tested-commit-sha.txt' >&2; exit 1; }
+          tested_sha="$(tr -d '\r\n ' < "$tested_file")"
+          [ "$tested_sha" = "$TARGET_SHA" ] || { echo 'V50 artifact SHA mismatch' >&2; exit 1; }
+          for name in canonical-contract.log route-contract.log runtime-compile.log runtime-smoke.log product-typecheck.log product-build.log; do
+            file="$(find certification-evidence -type f -name "$name" -print -quit)"
+            [ -n "$file" ] && [ -s "$file" ] || { echo "missing non-empty V50 evidence: $name" >&2; exit 1; }
+          done
+
+      - name: Validate single deployment authority
+        run: node scripts/check-deployment-authority.mjs
+
+      - name: Write and validate Firebase service account
+        shell: bash
+        env:
+          FIREBASE_SERVICE_ACCOUNT_JSON: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_JSON }}
+        run: |
+          set -euo pipefail
+          [ -n "$FIREBASE_SERVICE_ACCOUNT_JSON" ] || { echo 'FIREBASE_SERVICE_ACCOUNT_JSON is required' >&2; exit 1; }
+          printf '%s' "$FIREBASE_SERVICE_ACCOUNT_JSON" > "$GOOGLE_APPLICATION_CREDENTIALS"
+          chmod 600 "$GOOGLE_APPLICATION_CREDENTIALS"
+          node - <<'NODE'
+          const fs = require('node:fs');
+          const value = JSON.parse(fs.readFileSync(process.env.GOOGLE_APPLICATION_CREDENTIALS, 'utf8'));
+          if (value.project_id !== process.env.FIREBASE_PROJECT_ID) throw new Error('Service-account project mismatch');
+          NODE
+
+      - name: Materialize prepared release receipt
+        shell: bash
+        run: |
+          set -euo pipefail
+          evidence_file() { find certification-evidence -type f -name "$1" -print -quit; }
+          export URAI_RELEASE_RECEIPT_PHASE=prepared
+          export URAI_RELEASE_CANDIDATE_SHA="$TARGET_SHA"
+          export URAI_RELEASE_TESTED_SHA="$TARGET_SHA"
+          export URAI_RELEASE_DEPLOYED_SHA="$TARGET_SHA"
+          export URAI_RELEASE_ROLLBACK_SHA="$ROLLBACK_SHA"
+          export URAI_RELEASE_CANONICAL_EVIDENCE="$(evidence_file canonical-contract.log)"
+          export URAI_RELEASE_ROUTE_CONTRACT_EVIDENCE="$(evidence_file route-contract.log)"
+          export URAI_RELEASE_RUNTIME_COMPILE_EVIDENCE="$(evidence_file runtime-compile.log)"
+          export URAI_RELEASE_RUNTIME_SMOKE_EVIDENCE="$(evidence_file runtime-smoke.log)"
+          export URAI_RELEASE_TYPECHECK_EVIDENCE="$(evidence_file product-typecheck.log)"
+          export URAI_RELEASE_BUILD_EVIDENCE="$(evidence_file product-build.log)"
+          node scripts/materialize-release-receipt.mjs
+          node scripts/check-release-receipt.mjs
+
+      - name: Execute exact static Hosting release
+        run: node scripts/deploy-exact-static-release.mjs
+
+      - name: Remove Firebase credential file
+        if: always()
+        run: rm -f "$GOOGLE_APPLICATION_CREDENTIALS"
+
+      - name: Upload deployment receipt
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: urai-spatial-deployment-${{ inputs.target_sha }}
+          path: |
+            deployment-receipt
+            urai-tier1/src/data/release-receipt.json
+          if-no-files-found: error
+          retention-days: 365
