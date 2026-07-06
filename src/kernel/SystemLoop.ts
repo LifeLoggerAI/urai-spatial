@@ -19,6 +19,7 @@ export type SystemLoopState = {
 export type SystemLoopOptions = {
   tickIntervalMs?: number;
   replayLimit?: number;
+  initialState?: Partial<SystemLoopState>;
 };
 
 export class SystemLoop<TState = Record<string, unknown>> {
@@ -30,25 +31,20 @@ export class SystemLoop<TState = Record<string, unknown>> {
   readonly communications: CommunicationsBridge;
   readonly analytics: AnalyticsBridge;
 
-  private replayLimit: number;
+  private readonly replayLimit: number;
 
-  // 🧠 Simulation feedback state (NEW)
   private simulationState = {
-    intentVector: [] as any[],
-    predictedBias: null as any,
-    memoryWeighting: {} as Record<string, any>
+    intentVector: [] as unknown[],
+    predictedBias: null as number | null,
+    memoryWeighting: {} as Record<string, unknown>,
   };
 
-  private loopState: SystemLoopState = {
-    startedAt: Date.now(),
-    totalRuns: 0
-  };
+  private loopState: SystemLoopState;
 
   constructor(options: SystemLoopOptions = {}) {
     this.engine = new SimulationEngine<TState>({
-      tickIntervalMs: options.tickIntervalMs ?? 1000
+      tickIntervalMs: options.tickIntervalMs ?? 1000,
     });
-
     this.memory = new MemoryGraphPlugin<TState>();
     this.replay = new ReplayEngine();
     this.prediction = new PredictionEngine();
@@ -56,6 +52,16 @@ export class SystemLoop<TState = Record<string, unknown>> {
     this.communications = new CommunicationsBridge();
     this.analytics = new AnalyticsBridge();
     this.replayLimit = options.replayLimit ?? 50;
+
+    this.loopState = {
+      startedAt: options.initialState?.startedAt ?? Date.now(),
+      totalRuns: options.initialState?.totalRuns ?? 0,
+      lastRunAt: options.initialState?.lastRunAt,
+      lastPrediction: options.initialState?.lastPrediction,
+      lastXRFrame: options.initialState?.lastXRFrame,
+      lastPackets: options.initialState?.lastPackets,
+      lastAnalyticsEvents: options.initialState?.lastAnalyticsEvents,
+    };
   }
 
   async initialize() {
@@ -65,24 +71,29 @@ export class SystemLoop<TState = Record<string, unknown>> {
       this.communications.push(event);
     });
 
-    await this.engine.emit("system.loop.initialized", {
-      replayLimit: this.replayLimit
-    }, "system-loop");
+    await this.engine.emit(
+      "system.loop.initialized",
+      {
+        replayLimit: this.replayLimit,
+        restoredRuns: this.loopState.totalRuns,
+      },
+      "system-loop"
+    );
   }
 
   private applySimulationMutationBridge(
-    state: any,
-    prediction: any,
-    snapshot: any
+    state: typeof this.simulationState,
+    prediction: PredictionResult,
+    snapshot: ReturnType<MemoryGraphPlugin<TState>["snapshot"]>
   ) {
     return {
       ...state,
-      predictedBias: prediction?.confidence ?? 0.5,
-      intentVector: snapshot?.events?.slice?.(-10) ?? [],
+      predictedBias: prediction.confidence ?? 0.5,
+      intentVector: snapshot.events.slice(-10),
       memoryWeighting: {
         ...state.memoryWeighting,
-        lastConfidence: prediction?.confidence ?? 0.5
-      }
+        lastConfidence: prediction.confidence ?? 0.5,
+      },
     };
   }
 
@@ -91,13 +102,12 @@ export class SystemLoop<TState = Record<string, unknown>> {
 
     const snapshot = this.memory.snapshot();
     const timeline = this.replay.buildTimeline(snapshot, {
-      limit: this.replayLimit
+      limit: this.replayLimit,
     });
 
     const prediction = this.prediction.predict(timeline);
     await this.prediction.emitPrediction(prediction, this.engine.bus);
 
-    // 🧠 APPLY FEEDBACK BRIDGE (NEW CORE LOOP LINK)
     this.simulationState = this.applySimulationMutationBridge(
       this.simulationState,
       prediction,
@@ -117,17 +127,21 @@ export class SystemLoop<TState = Record<string, unknown>> {
       lastPrediction: prediction,
       lastXRFrame: frame,
       lastPackets: packets,
-      lastAnalyticsEvents: analyticsEvents
+      lastAnalyticsEvents: analyticsEvents,
     };
 
-    await this.engine.emit("system.loop.completed", {
-      tick: this.engine.tick,
-      totalRuns: this.loopState.totalRuns,
-      predictionId: prediction.id,
-      xrFrameId: frame.id,
-      packets: packets.length,
-      analyticsEvents: analyticsEvents.length
-    }, "system-loop");
+    await this.engine.emit(
+      "system.loop.completed",
+      {
+        tick: this.engine.tick,
+        totalRuns: this.loopState.totalRuns,
+        predictionId: prediction.id,
+        xrFrameId: frame.id,
+        packets: packets.length,
+        analyticsEvents: analyticsEvents.length,
+      },
+      "system-loop"
+    );
 
     return {
       snapshot,
@@ -137,7 +151,7 @@ export class SystemLoop<TState = Record<string, unknown>> {
       packets,
       analyticsEvents,
       state: this.getState(),
-      simulationState: this.simulationState
+      simulationState: this.simulationState,
     };
   }
 
