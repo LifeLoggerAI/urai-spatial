@@ -40,21 +40,25 @@
     { "path": "/", "sourceState": "implemented", "productionState": "unverified" },
     { "path": "/home", "sourceState": "implemented", "productionState": "unverified" },
     { "path": "/ground", "sourceState": "implemented", "productionState": "unverified" },
+    { "path": "/spatial", "sourceState": "implemented", "productionState": "unverified" },
     { "path": "/life-map", "sourceState": "implemented", "productionState": "unverified" },
     { "path": "/focus", "sourceState": "implemented", "productionState": "unverified" },
     { "path": "/replay", "sourceState": "implemented", "productionState": "unverified" },
     { "path": "/mirror", "sourceState": "implemented", "productionState": "unverified" },
     { "path": "/passport", "sourceState": "implemented", "productionState": "unverified" },
     { "path": "/status", "sourceState": "implemented", "productionState": "failed" },
+    { "path": "/privacy", "sourceState": "implemented", "productionState": "unverified" },
     { "path": "/privacy-controls", "sourceState": "implemented", "productionState": "failed" },
     { "path": "/location-map", "sourceState": "implemented", "productionState": "unverified" },
     { "path": "/ascent", "sourceState": "implemented", "productionState": "unverified" },
     { "path": "/unwind", "sourceState": "implemented", "productionState": "unverified" },
     { "path": "/demo", "sourceState": "implemented", "productionState": "unverified" },
+    { "path": "/demo/life-map", "sourceState": "implemented", "productionState": "unverified" },
     { "path": "/demo/replay-film", "sourceState": "implemented", "productionState": "unverified" },
     { "path": "/spatial/life-map", "sourceState": "implemented", "productionState": "unverified" },
     { "path": "/spatial/life-map-r3f", "sourceState": "implemented", "productionState": "unverified" },
-    { "path": "/spatial/ar-vr", "sourceState": "preview", "productionState": "unverified" }
+    { "path": "/spatial/ar-vr", "sourceState": "preview", "productionState": "unverified" },
+    { "path": "/terms", "sourceState": "implemented", "productionState": "unverified" }
   ],
   "claimBoundary": "Current external verification found deployment drift: /privacy-controls serves the Home threshold and /status labels routes live without an exact deployed SHA or rollback receipt. Source implementation exists, but production certification is failed until an exact passing commit is deployed and rechecked."
 }
