@@ -1,7 +1,7 @@
 {
   "schemaVersion": "urai-release-receipt-1",
   "releaseId": "unreleased-current-candidate",
-  "generatedAt": "2026-07-06T06:35:00-05:00",
+  "generatedAt": "2026-07-06T06:43:00-05:00",
   "environment": "production",
   "repository": "LifeLoggerAI/urai-spatial",
   "canonicalBranch": "main",
@@ -27,10 +27,10 @@
     "runtimeSmoke": "pending",
     "productTypecheck": "pending",
     "productBuild": "pending",
-    "browserFlow": "pending",
+    "browserFlow": "failed",
     "mobileFlow": "pending",
     "accessibility": "pending",
-    "customDomain": "pending",
+    "customDomain": "failed",
     "rollback": "pending",
     "physicalXr": "not-applicable-to-web-release"
   },
@@ -43,8 +43,8 @@
     { "path": "/replay", "sourceState": "implemented", "productionState": "unverified" },
     { "path": "/mirror", "sourceState": "implemented", "productionState": "unverified" },
     { "path": "/passport", "sourceState": "implemented", "productionState": "unverified" },
-    { "path": "/status", "sourceState": "implemented", "productionState": "unverified" },
-    { "path": "/privacy-controls", "sourceState": "implemented", "productionState": "unverified" },
+    { "path": "/status", "sourceState": "implemented", "productionState": "failed" },
+    { "path": "/privacy-controls", "sourceState": "implemented", "productionState": "failed" },
     { "path": "/location-map", "sourceState": "implemented", "productionState": "unverified" },
     { "path": "/ascent", "sourceState": "implemented", "productionState": "unverified" },
     { "path": "/unwind", "sourceState": "implemented", "productionState": "unverified" },
@@ -54,5 +54,5 @@
     { "path": "/spatial/life-map-r3f", "sourceState": "implemented", "productionState": "unverified" },
     { "path": "/spatial/ar-vr", "sourceState": "preview", "productionState": "unverified" }
   ],
-  "claimBoundary": "This receipt records source implementation only. No exact production deployment, rollback, provider promotion, or physical XR certification is recorded yet."
+  "claimBoundary": "Current external verification found deployment drift: /privacy-controls serves the Home threshold and /status labels routes live without an exact deployed SHA or rollback receipt. Source implementation exists, but production certification is failed until an exact passing commit is deployed and rechecked."
 }
