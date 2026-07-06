@@ -19,7 +19,7 @@ Source presence is not deployment proof. Exact tested, deployed, and rollback SH
 | Repository | Authority | Current disposition |
 | --- | --- | --- |
 | `urai-spatial` | Canonical public spatial product and browser/XR runtime | Active canonical |
-| `asset-factory` | Canonical asset generation, receipts, manifests, optimization and promotion | Active canonical dependency |
+| `asset-factory` | Canonical asset labels, manifests, generation, receipts, optimization and promotion | Active canonical dependency |
 | `urai-studio` | Studio command/integration plane | Active; production service wiring unverified |
 | `urai-staging` | Release train, environment registry and staging evidence | Active; complete environment authority pending |
 | `urai-jobs` | Durable jobs/orchestration | Active; deployed queue/DLQ evidence pending |
@@ -30,7 +30,7 @@ Source presence is not deployment proof. Exact tested, deployed, and rollback SH
 | `urai-communications` | Call intelligence and governed communication pilot | Active adjacent service; broad production blocked |
 | `urai-marketing` | Marketing/public acquisition surfaces | Active; claims and provider deployment must follow product receipts |
 | `urai-storytime` | Narrative/story media | Research/product lane; not launch-critical |
-| `urai-foundation` | Foundation/research/nonprofit materials | Stakeholder lane; not runtime authority |
+| `urai-foundation` | Public-interest standards, governance and accountability lane | Active stakeholder dependency; not runtime authority |
 | `urai-investors` | Investor materials | Stakeholder lane; not runtime authority |
 | `B2Bportal` | Enterprise/B2B surface | Future/enterprise lane |
 | `urai-labs-llc` | Historical business-architecture repository | Entity naming requires counsel reconciliation |
@@ -40,16 +40,21 @@ Source presence is not deployment proof. Exact tested, deployed, and rollback SH
 
 ## Version authority
 
-The evidence-backed version ladder is:
+Asset Factory's executable canonical contract owns V1-V5 labels and counts:
 
-- **V1 — Spatial Foundation:** route owners and V1 asset source handoff exist; current deployment, route parity, browser, visual and rollback proof remain incomplete.
-- **V2 — Living World:** canonical target requires 80 provider-backed assets. Current handoff reports `0 ready / 80 missing`.
-- **V3 — Relationships and Patterns:** canonical target requires 39 provider-backed, privacy-reviewed assets. Current handoff reports `0 ready / 39 missing`.
-- **V4 — Spatial Computing:** WebXR/Quest source hardening exists; browser and physical-device certification remain blocked.
-- **V5 — Mirror of Becoming:** identity, provenance, legacy and protected-presence capabilities remain implementation/privacy gated.
+- **V1 — Genesis Public Route World:** 53 outputs. Source handoff exists; promotion/live proof remains incomplete.
+- **V2 — Living System States:** 80 outputs. No promoted 80/80 provider receipt is recorded.
+- **V3 — Relationship, Shadow and Pattern World:** 14 outputs. No promoted 14/14 provider receipt is recorded.
+- **V4 — WebXR, AR and VR Pathway:** 39 outputs. WebXR source exists; provider, browser and physical-device certification remain blocked.
+- **V5 — Mirror of Becoming and Autonomous Legacy:** 27 outputs. Implementation, provenance, privacy and provider proof remain blocked.
+
+Any older document or handoff that labels the 39-output XR pack as V3 is `REJECTED OR OBSOLETE` and must not drive provider execution or promotion.
+
+Capability milestones:
+
 - **V50 — Canonical deterministic baseline:** PR #415 is the active certification candidate. It is not certified until its exact-head workflow artifact passes.
 - **V100 — Production-integrated operating baseline:** requires certified V50, distributed convergence, deployed cross-service contracts, privacy/jobs/monitoring and production receipts.
-- **V150 — Shared spatial/provider baseline:** requires V100 plus provider-backed V2/V3 promotion and browser/device-certified spatial computing.
+- **V150 — Shared spatial/provider baseline:** requires V100, promoted V2-V5 assets as applicable, and browser/device-certified spatial computing.
 - **V200 — Audited global production platform:** requires global accessibility, localization, privacy, security, cost, provider, monitoring, incident and rollback certification.
 
 V50/V100/V150/V200 are capability milestones, not marketing numbers. They become true only when their required receipts exist.
@@ -70,7 +75,7 @@ Every ledger item uses one of:
 
 - `docs/operations/ECOSYSTEM_COMPLETION_LEDGER_2026-07-06.md` is the single cross-repository completion ledger.
 - `docs/operations/RECEIPT_INDEX_2026-07-06.md` is the single cross-repository receipt index.
-- Route-ownership enforcement, public status truth, and release-machine data remain owned by their implementation files and workflows rather than duplicate ledgers.
+- Route-ownership enforcement, public status truth, and release-machine data remain owned by implementation files and workflows rather than duplicate ledgers.
 
 ## Execution receipts
 
