@@ -6,7 +6,7 @@ import path from 'node:path'
 const deploy = process.argv.includes('--deploy')
 const project = process.env.FIREBASE_PROJECT_ID || process.env.FIREBASE_PROJECT || process.env.GCLOUD_PROJECT || ''
 const expectedProject = process.env.URAI_EXPECTED_FIREBASE_PROJECT || 'urai-4dc1d'
-const liveUrl = process.env.URAI_LIVE_BASE_URL || process.env.LIVE_URL || ''
+const liveUrl = process.env.URAI_LIVE_BASE_URL || process.env.LIVE_URL || 'https://urai.app'
 
 function run(command, args, extraEnv = {}) {
   console.log(`[URAI release] $ ${command} ${args.join(' ')}`)
