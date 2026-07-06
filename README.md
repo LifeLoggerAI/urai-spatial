@@ -64,4 +64,4 @@ node scripts/smoke-system-loop-runtime.mjs
 
 ## Repository authority
 
-Older URAI repositories may support migration, reference, or rollback. The canonical public runtime remains `urai-spatial/urai-tier1` unless a reviewed decision record changes that authority.
+Older URAI repositories may support migration, reference, or rollback. The canonical public runtime remains `LifeLoggerAI/urai-spatial/urai-tier1` unless a reviewed decision record changes that authority.
