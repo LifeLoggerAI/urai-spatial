@@ -51,11 +51,18 @@ import './aaa-visual-authority-20260703.css'
 import './lifemap-proof-crops.css'
 import './urai-realm-accent-backgrounds.css'
 
+const deployedSha = [process.env.NEXT_PUBLIC_URAI_DEPLOYED_SHA, process.env.GITHUB_SHA].find(
+  (value): value is string => typeof value === 'string' && /^[0-9a-f]{40}$/.test(value),
+) ?? 'unrecorded'
+
 export const metadata: Metadata = {
   title: 'URAI Spatial',
   description: 'Cinematic, spatial, interactive URAI runtime',
   icons: {
     icon: '/icon.svg',
+  },
+  other: {
+    'urai-deployed-sha': deployedSha,
   },
 }
 
@@ -67,7 +74,7 @@ export const viewport: Viewport = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en">
+    <html lang="en" data-deployed-sha={deployedSha}>
       <body
         data-urai-home-spatial-shell="true"
         data-urai-living-state-layer="v2"
