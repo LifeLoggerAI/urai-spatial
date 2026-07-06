@@ -12,7 +12,7 @@ async function main() {
     initialState: savedState ?? undefined,
   });
 
-  const dashboard = new SimulationDashboard(loop.engine as never, {
+  const dashboard = new SimulationDashboard(loop.engine.bus, {
     enabled: true,
     logIntervalMs: 2000,
   });
@@ -42,32 +42,21 @@ async function main() {
     persistencePath: persistence.getPath(),
   });
 
-  try {
-    persistence.save(loop.getState());
-  } catch (error) {
-    console.error("Failed to persist simulation state", error);
-  }
-
+  persistence.save(loop.getState());
   loop.start();
 
   const shutdown = () => {
-    try {
-      persistence.save(loop.getState());
-    } catch (error) {
-      console.error("Failed to persist on shutdown", error);
-    }
-
+    persistence.save(loop.getState());
     dashboard.stop();
     loop.stop();
     console.log("URAI Spatial system loop stopped", loop.getState());
-    process.exit(0);
   };
 
   process.on("SIGINT", shutdown);
   process.on("SIGTERM", shutdown);
 }
 
-main().catch((error) => {
+void main().catch((error) => {
   console.error("URAI Spatial boot failed", error);
-  process.exit(1);
+  process.exitCode = 1;
 });
