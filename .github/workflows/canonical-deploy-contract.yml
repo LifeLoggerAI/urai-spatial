@@ -1,0 +1,26 @@
+name: Canonical Deploy Contract
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+    paths:
+      - .github/workflows/spatial-live-deploy.yml
+      - .github/workflows/canonical-deploy-contract.yml
+      - scripts/check-canonical-deploy-workflow.mjs
+      - scripts/verify-live-accessibility.mjs
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: node scripts/check-canonical-deploy-workflow.mjs
