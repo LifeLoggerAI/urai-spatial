@@ -1,0 +1,114 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://urai.app/schemas/material-completion-receipt.schema.json",
+  "title": "URAI Material Completion Receipt",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "receiptId",
+    "recordedAt",
+    "classification",
+    "repository",
+    "branch",
+    "commitSha",
+    "changedFiles",
+    "validation",
+    "deployment",
+    "remainingCaveats"
+  ],
+  "properties": {
+    "receiptId": { "type": "string", "minLength": 1 },
+    "recordedAt": { "type": "string", "format": "date-time" },
+    "classification": {
+      "enum": [
+        "VERIFIED LIVE",
+        "VERIFIED IN REPOSITORY",
+        "IMPLEMENTED BUT NOT DEPLOYED",
+        "PARTIALLY IMPLEMENTED",
+        "BLOCKED",
+        "ROADMAP",
+        "REJECTED OR OBSOLETE"
+      ]
+    },
+    "repository": { "type": "string", "minLength": 1 },
+    "branch": { "type": "string", "minLength": 1 },
+    "commitSha": {
+      "anyOf": [
+        { "type": "string", "pattern": "^[0-9a-f]{40}$" },
+        { "type": "null" }
+      ]
+    },
+    "pullRequest": { "type": ["string", "null"] },
+    "issue": { "type": ["string", "null"] },
+    "changedFiles": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "workflowRuns": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["name", "runId", "status", "conclusion"],
+        "properties": {
+          "name": { "type": "string" },
+          "runId": { "type": ["integer", "null"] },
+          "status": { "type": "string" },
+          "conclusion": { "type": ["string", "null"] },
+          "artifact": { "type": ["string", "null"] }
+        }
+      },
+      "default": []
+    },
+    "validation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["commands", "testResult", "buildResult", "runtimeVerification"],
+      "properties": {
+        "commands": { "type": "array", "items": { "type": "string" } },
+        "testResult": { "type": "string" },
+        "buildResult": { "type": "string" },
+        "runtimeVerification": { "type": "string" },
+        "screenshotsOrArtifacts": { "type": "array", "items": { "type": "string" }, "default": [] }
+      }
+    },
+    "deployment": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["target", "environment", "deployedSha", "publicUrls", "rollbackSha"],
+      "properties": {
+        "target": { "type": ["string", "null"] },
+        "environment": { "type": ["string", "null"] },
+        "deployedSha": {
+          "anyOf": [
+            { "type": "string", "pattern": "^[0-9a-f]{40}$" },
+            { "type": "null" }
+          ]
+        },
+        "publicUrls": { "type": "array", "items": { "type": "string" } },
+        "rollbackSha": {
+          "anyOf": [
+            { "type": "string", "pattern": "^[0-9a-f]{40}$" },
+            { "type": "null" }
+          ]
+        }
+      }
+    },
+    "provider": {
+      "type": ["object", "null"],
+      "properties": {
+        "provider": { "type": "string" },
+        "model": { "type": "string" },
+        "requestIds": { "type": "array", "items": { "type": "string" } },
+        "assetCount": { "type": "integer", "minimum": 0 },
+        "failedAssetCount": { "type": "integer", "minimum": 0 },
+        "costUsd": { "type": "number", "minimum": 0 },
+        "manifestSha256": { "type": "string" },
+        "checksumsArtifact": { "type": ["string", "null"] }
+      },
+      "required": ["provider", "model", "requestIds", "assetCount", "failedAssetCount", "costUsd", "manifestSha256"],
+      "additionalProperties": false
+    },
+    "remainingCaveats": { "type": "array", "items": { "type": "string" } }
+  }
+}
