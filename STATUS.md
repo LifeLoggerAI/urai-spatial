@@ -6,19 +6,33 @@ Runtime app root: `urai-tier1`.
 
 Canonical public application: `LifeLoggerAI/urai-spatial/urai-tier1` on `main`.
 
-Current mode: `fallback-demo` with a partially current live deployment.
+Current source mode: `fallback-demo` with a partially current live deployment.
 
-Production-live status: not yet verified.
+Production-live status: not yet certified.
 
-Latest audited release candidate: July 3, 2026. V1 has a 53-of-53 provider-marked asset handoff in source, but the configured release workflow, exact-commit deployment receipt, rollback reference, route parity, and post-deployment browser proof are not complete. V2 and V3 remain handoff-gated (`ready: 0`). V4 and V5 remain provider/browser/device/deployment gated.
+Release-authority candidate: PR #442 on `release-authority-20260706`. The branch began from audited main snapshot `ce22b4bc39fdd26a1874797eeaba1d942e4e1301`, but production dispatch is required to resolve and enforce the exact then-current `origin/main` SHA.
+
+Latest source audit: July 6, 2026. V1 has a 53-of-53 provider-marked asset handoff in source, but the exact deployed SHA, rollback reference, route parity, post-deployment browser proof, monitoring evidence, and complete device/accessibility evidence are not established. V2 and V3 remain handoff-gated (`ready: 0`). V4 and V5 remain provider/browser/device/deployment gated.
 
 ## Current verified blockers
 
-- The live custom domain serves current Home, Ground, Life Map, Replay, Mirror, Passport, Status, Ascent, and Unwind surfaces, but `/privacy-controls/` currently resolves to Home instead of the dedicated Privacy Controls source owner.
-- Query and slash parity is not stable: `/focus/` and `/focus/?memoryId=quiet-reset` expose the current chamber, while `/focus?memoryId=quiet-reset` can expose a stale legacy shell.
-- `firebase.static.json` contains a catch-all rewrite to `/index.html`, which can mask missing exported pages as successful Home responses.
-- The canonical Firebase deployment workflow exports `FIREBASE_TOKEN` even when service-account mode is selected, allowing an expired token to override valid application-default credentials.
-- No exact-current-main deployment receipt, rollback target, complete mobile/desktop screenshot set, or physical Quest proof is recorded.
+- The live `/privacy-controls/` route serves Home threshold content instead of the dedicated Privacy Controls source owner.
+- The live `/focus/` route serves the intended Selected memory chamber, while `/focus?memoryId=quiet-reset` serves a legacy URAI shell.
+- The live `/status/` route labels routes `live` and mode `Launch` without recording tested, deployed, or rollback SHA evidence.
+- No exact-current deployment receipt, Firebase target receipt, rollback target, complete mobile/desktop screenshot set, monitoring receipt, or physical Quest proof is recorded.
+- V2 and V3 provider assets are not promoted: V2 reports 0 ready / 80 missing; V3 reports 0 ready / 14 missing.
+
+## Source-fixed and externally reverified items
+
+- `urai-tier1/src/app/privacy-controls/page.tsx` is the dedicated Privacy Controls source owner with an explicit `URAI Privacy Controls` title and route fingerprint; live parity remains failed.
+- `urai-tier1/src/app/focus/page.tsx` renders `FinalFocusChamber` with the canonical `focus-selected-memory-camera-chamber` fingerprint. External verification on July 6, 2026 confirmed `/focus/` renders the selected-memory chamber.
+- External verification on July 6, 2026 confirmed `/replay/` renders the cinematic memory film surface.
+- `firebase.static.json` publishes `urai-tier1/out`, enables clean URLs and trailing slashes, and contains zero rewrites; current source does not intentionally mask missing routes as Home.
+- `.github/workflows/spatial-live-deploy.yml` is manual-only, requires exact target/current/rollback SHAs, uses workload identity, performs frozen installation, verifies live route identity and accessibility, exercises rollback, restores the target, and materializes immutable receipts.
+- `scripts/check-production-route-exposure.mjs` locks the Privacy Controls and Focus source owners plus the zero-rewrite static-hosting posture.
+- `scripts/check-canonical-deploy-workflow.mjs` fail-closes if the manual exact-SHA deployment and rollback contract regresses.
+
+These source facts are **VERIFIED IN REPOSITORY**. Focus and Replay route content are externally reachable, but complete deployed identity and production certification remain unknown.
 
 ## Authority
 
@@ -42,9 +56,9 @@ Not allowed claim:
 
 | Version | Source posture | Asset/runtime posture | Certification posture |
 | --- | --- | --- | --- |
-| V1 | Main route chain and production owners are present. | Provider handoff reports 53 ready, 0 missing. Live deployment is mixed/stale on at least Privacy Controls and Focus parity. | Not certified. |
+| V1 | Main route chain and production owners are present. Privacy Controls, Focus ownership, zero-rewrite static hosting, and manual exact-SHA deployment authority are source-locked. | Provider handoff reports 53 ready, 0 missing. Focus and Replay are externally reachable; Privacy Controls, Focus query parity, and Status truth remain failed live. | Not certified. |
 | V2 | Living-state wiring, fallback inventory, gating, and verifier exist. | Canonical handoff reports 0 ready, 80 missing; V1 fallback remains active. | Not certified. |
-| V3 | Relationship, shadow, pattern, consent-safe fallback surfaces and inventory exist. | Canonical handoff reports 0 ready, 39 missing. | Not certified. |
+| V3 | Relationship, shadow, pattern, consent-safe fallback surfaces and inventory exist. | Canonical handoff reports 0 ready, 14 missing. | Not certified. |
 | V4 | WebXR/Quest runtime and lifecycle hardening exist in source. | Browser/provider/device proof remains gated. | Not certified; no physical Quest claim. |
 | V5 | Mirror of Becoming, legacy, consent, provenance, and protected-presence concepts exist across source and fallback assets. | Canon explicitly keeps V5 production-gated pending implementation, privacy, tests, deploy, and live smoke. | Not certified. |
 
@@ -54,7 +68,7 @@ Not allowed claim:
 | --- | --- | --- |
 | V1 provider asset handoff | Source-ready | Requires current-main build, deploy receipt, live route/resource/browser proof, and rollback evidence. |
 | V2 living-state assets | Not active | Requires provider forge receipt for 80 assets, zero-missing promoted handoff, runtime activation proof, deploy, and live browser proof. |
-| V3 relationship/pattern assets | Not active | Requires provider forge receipt for 39 assets, privacy review, runtime activation proof, deploy, and live browser proof. |
+| V3 relationship/pattern assets | Not active | Requires provider forge receipt for 14 assets, privacy review, runtime activation proof, deploy, and live browser proof. |
 | AR/WebXR | Not active | Requires browser/provider validation, permission-safe session proof, device matrix, consent review, E2E evidence, and live smoke. |
 | Quest VR | Not device-certified | Requires physical headset run, controller/hand input, comfort/performance, session lifecycle, and recorded evidence. |
 | Wearables/body signal | Not active | Requires provider contract, explicit consent, non-diagnostic copy review, privacy tests, fallback behavior, and live smoke. |
@@ -66,16 +80,16 @@ Not allowed claim:
 
 `urai-spatial` is not production-certified until all applicable evidence is recorded:
 
-- frozen dependency install
-- source integrity and canonical runtime locks
-- typecheck, unit, integration, privacy, accessibility, reduced-motion, and browser tests
-- normal and static builds
-- route exposure, slash/query parity, missing-resource, and console-error checks
-- exact canonical `main` commit and previous rollback target
-- Firebase deployment output from the canonical workflow
-- custom-domain route and interaction smoke
-- desktop and mobile screenshots
-- provider-specific and device-specific evidence before those claims are enabled
+- frozen dependency install;
+- source integrity and canonical runtime locks;
+- typecheck, unit, integration, privacy, accessibility, reduced-motion, and browser tests;
+- normal and static builds;
+- route exposure, slash/query parity, missing-resource, and console-error checks;
+- exact canonical `main` commit and previous rollback target;
+- Firebase deployment output from the canonical workflow;
+- custom-domain route and interaction smoke;
+- desktop and mobile screenshots;
+- provider-specific and device-specific evidence before those claims are enabled.
 
 ## Copy boundary
 
