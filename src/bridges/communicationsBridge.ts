@@ -1,33 +1,27 @@
-// =====================================================
-// URAI SPATIAL → COMMUNICATIONS BRIDGE LAYER
-// =====================================================
-
-import { SimulationEvent } from "../index";
-
-/**
- * Bridge: exports simulation events to external systems
- * (e.g., urai-communications repository / service)
- */
+import type { KernelEvent } from "../kernel/eventBus";
 
 export interface CommunicationPacket {
   id: string;
   type: string;
   timestamp: number;
-  payload: any;
+  payload?: unknown;
+  source?: string;
 }
 
 export class CommunicationsBridge {
   private buffer: CommunicationPacket[] = [];
 
-  push(event: SimulationEvent) {
+  push(event: KernelEvent) {
     const packet: CommunicationPacket = {
-      id: `${event.type}-${event.timestamp}-${Math.random().toString(36).slice(2)}`,
+      id: `packet-${event.id}`,
       type: event.type,
       timestamp: event.timestamp,
       payload: event.payload,
+      source: event.source
     };
 
     this.buffer.push(packet);
+    return packet;
   }
 
   flush(): CommunicationPacket[] {
@@ -36,13 +30,11 @@ export class CommunicationsBridge {
     return out;
   }
 
-  /**
-   * Simulated export hook (later: HTTP / queue / repo sync)
-   */
-  export(): void {
-    const packets = this.flush();
-    if (packets.length === 0) return;
+  peek(): CommunicationPacket[] {
+    return [...this.buffer];
+  }
 
-    console.log("[COMM-BRIDGE] exporting packets:", packets.length);
+  export(): CommunicationPacket[] {
+    return this.flush();
   }
 }
