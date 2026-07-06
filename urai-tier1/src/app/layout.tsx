@@ -3,6 +3,15 @@ import UraiFinalAssetSpineBridge from './UraiFinalAssetSpineBridge'
 import './home-spatial-world-final.css'
 import './home-one-world-owner.css'
 import type { Metadata, Viewport } from 'next'
+import {
+  URAI_BRAND_NAME,
+  URAI_CANONICAL_URL,
+  URAI_CREATOR_NAME,
+  URAI_PRODUCT_NAME,
+  URAI_PUBLIC_DESCRIPTION,
+  uraiOrganizationSchema,
+  uraiWebsiteSchema,
+} from '@/lib/brand-authority'
 import './globals.css'
 import './launch-home-polish.css'
 import './life-map-production-3d.css'
@@ -52,8 +61,62 @@ import './lifemap-proof-crops.css'
 import './urai-realm-accent-backgrounds.css'
 
 export const metadata: Metadata = {
-  title: 'URAI Spatial',
-  description: 'Cinematic, spatial, interactive URAI runtime',
+  metadataBase: new URL(URAI_CANONICAL_URL),
+  title: {
+    default: `${URAI_BRAND_NAME} — ${URAI_PRODUCT_NAME}`,
+    template: `%s | ${URAI_BRAND_NAME}`,
+  },
+  description: URAI_PUBLIC_DESCRIPTION,
+  applicationName: URAI_PRODUCT_NAME,
+  authors: [{ name: URAI_CREATOR_NAME, url: '/about' }],
+  creator: URAI_CREATOR_NAME,
+  publisher: URAI_BRAND_NAME,
+  category: 'technology',
+  keywords: [
+    'URAI Labs',
+    'URAI',
+    'Adam Clamp',
+    'spatial computing',
+    'memory',
+    'reflection',
+    'personal data ownership',
+    'privacy-first AI',
+  ],
+  alternates: {
+    canonical: '/',
+  },
+  openGraph: {
+    type: 'website',
+    url: URAI_CANONICAL_URL,
+    siteName: URAI_BRAND_NAME,
+    title: `${URAI_BRAND_NAME} — ${URAI_PRODUCT_NAME}`,
+    description: URAI_PUBLIC_DESCRIPTION,
+    images: [
+      {
+        url: '/opengraph-image',
+        width: 1200,
+        height: 630,
+        alt: 'URAI Labs — Own your life. Step inside yourself.',
+      },
+    ],
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: `${URAI_BRAND_NAME} — ${URAI_PRODUCT_NAME}`,
+    description: URAI_PUBLIC_DESCRIPTION,
+    images: ['/opengraph-image'],
+  },
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      'max-image-preview': 'large',
+      'max-snippet': -1,
+      'max-video-preview': -1,
+    },
+  },
   icons: {
     icon: '/icon.svg',
   },
@@ -73,6 +136,14 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         data-urai-living-state-layer="v2"
         style={{ margin: 0, background: '#08030f', overflowX: 'hidden' }}
       >
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(uraiOrganizationSchema) }}
+        />
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(uraiWebsiteSchema) }}
+        />
         <UraiAAAARoutePolish />
         <UraiCinematicBackdrop />
         <UraiFinalAssetSpineSceneLayer />
