@@ -101,7 +101,7 @@ jobs:
       - name: Enable pnpm
         run: |
           corepack enable
-          corepack prepare pnpm@9.15.9 --activate
+          corepack prepare pnpm@10.0.0 --activate
           pnpm --version
 
       - name: Install frozen dependencies
