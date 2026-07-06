@@ -4,46 +4,107 @@ on:
   workflow_dispatch:
     inputs:
       environment:
-        description: Deploy environment
+        description: Protected deployment environment
         required: true
         default: staging
         type: choice
         options:
           - staging
           - production
-      static_export:
-        description: Use static Firebase hosting config
+      target_sha:
+        description: Full 40-character commit SHA to build and deploy
         required: true
-        default: false
-        type: boolean
+        type: string
+      rollback_sha:
+        description: Full 40-character commit SHA approved for rollback
+        required: true
+        type: string
+      expected_firebase_project:
+        description: Firebase project expected from the selected environment secret
+        required: true
+        type: string
       deploy_url:
-        description: Optional deployed base URL for smoke route output and HTTP smoke validation
+        description: Staging URL to verify; production must use https://urai.app
         required: false
         default: ''
         type: string
-  push:
-    branches:
-      - main
-    paths:
-      - '.github/workflows/urai-spatial-deploy.yml'
-      - 'firebase.static.json'
-      - 'package.json'
-      - 'pnpm-lock.yaml'
-      - 'scripts/**'
-      - 'tests/**'
-      - 'urai-tier1/src/app/**'
-      - 'urai-tier1/src/spatial/**'
+      confirmation:
+        description: DEPLOY_URAI_STAGING or DEPLOY_URAI_PRODUCTION
+        required: true
+        type: string
+      pull_request:
+        description: Optional source PR number for the receipt
+        required: false
+        default: ''
+        type: string
+      release_issue:
+        description: Optional release issue number for the receipt
+        required: false
+        default: ''
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: urai-spatial-deploy-${{ inputs.environment }}
+  cancel-in-progress: false
 
 jobs:
   deploy:
-    name: Deploy URAI Spatial
+    name: Deploy exact URAI Spatial SHA
     runs-on: ubuntu-latest
-    timeout-minutes: 45
-    environment: ${{ github.event_name == 'workflow_dispatch' && inputs.environment || 'production' }}
+    timeout-minutes: 60
+    environment: ${{ inputs.environment }}
+    env:
+      URAI_TARGET_SHA: ${{ inputs.target_sha }}
+      URAI_ROLLBACK_SHA: ${{ inputs.rollback_sha }}
+      URAI_DEPLOY_ENVIRONMENT: ${{ inputs.environment }}
+      URAI_DEPLOYMENT_MODE: framework
+      URAI_PULL_REQUEST: ${{ inputs.pull_request }}
+      URAI_RELEASE_ISSUE: ${{ inputs.release_issue }}
+      FIREBASE_PROJECT_ID: ${{ secrets.FIREBASE_PROJECT_ID }}
 
     steps:
-      - name: Checkout
+      - name: Checkout exact target SHA
         uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.target_sha }}
+          fetch-depth: 0
+
+      - name: Validate release identity and rollback
+        shell: bash
+        env:
+          EXPECTED_FIREBASE_PROJECT: ${{ inputs.expected_firebase_project }}
+          INPUT_DEPLOY_URL: ${{ inputs.deploy_url }}
+          DEPLOY_CONFIRMATION: ${{ inputs.confirmation }}
+        run: |
+          set -euo pipefail
+          sha_pattern='^[0-9a-f]{40}$'
+          [[ "${URAI_TARGET_SHA}" =~ ${sha_pattern} ]] || { echo '::error::target_sha must be a full lowercase 40-character SHA.'; exit 1; }
+          [[ "${URAI_ROLLBACK_SHA}" =~ ${sha_pattern} ]] || { echo '::error::rollback_sha must be a full lowercase 40-character SHA.'; exit 1; }
+          [[ "${URAI_TARGET_SHA}" != "${URAI_ROLLBACK_SHA}" ]] || { echo '::error::rollback_sha must differ from target_sha.'; exit 1; }
+          [[ "$(git rev-parse HEAD)" == "${URAI_TARGET_SHA}" ]] || { echo '::error::Checked-out SHA does not match target_sha.'; exit 1; }
+          git cat-file -e "${URAI_ROLLBACK_SHA}^{commit}" || { echo '::error::rollback_sha is not a reachable commit.'; exit 1; }
+          [[ -n "${FIREBASE_PROJECT_ID}" ]] || { echo '::error::The selected environment requires FIREBASE_PROJECT_ID.'; exit 1; }
+          [[ "${FIREBASE_PROJECT_ID}" == "${EXPECTED_FIREBASE_PROJECT}" ]] || { echo '::error::Environment Firebase project does not match expected_firebase_project.'; exit 1; }
+
+          if [[ "${URAI_DEPLOY_ENVIRONMENT}" == 'production' ]]; then
+            [[ "${DEPLOY_CONFIRMATION}" == 'DEPLOY_URAI_PRODUCTION' ]] || { echo '::error::Production confirmation must be DEPLOY_URAI_PRODUCTION.'; exit 1; }
+            [[ "${FIREBASE_PROJECT_ID}" == 'urai-4dc1d' ]] || { echo '::error::Production may deploy only to urai-4dc1d.'; exit 1; }
+            [[ -z "${INPUT_DEPLOY_URL}" || "${INPUT_DEPLOY_URL}" == 'https://urai.app' ]] || { echo '::error::Production verification URL must be https://urai.app.'; exit 1; }
+            echo 'URAI_DEPLOY_URL=https://urai.app' >> "${GITHUB_ENV}"
+            echo 'REQUIRE_CUSTOM_DOMAIN=true' >> "${GITHUB_ENV}"
+          else
+            [[ "${DEPLOY_CONFIRMATION}" == 'DEPLOY_URAI_STAGING' ]] || { echo '::error::Staging confirmation must be DEPLOY_URAI_STAGING.'; exit 1; }
+            [[ "${FIREBASE_PROJECT_ID}" != 'urai-4dc1d' ]] || { echo '::error::Staging may not target the production Firebase project.'; exit 1; }
+            [[ "${INPUT_DEPLOY_URL}" =~ ^https:// ]] || { echo '::error::Staging requires an explicit HTTPS deploy_url.'; exit 1; }
+            echo "URAI_DEPLOY_URL=${INPUT_DEPLOY_URL%/}" >> "${GITHUB_ENV}"
+            echo 'REQUIRE_CUSTOM_DOMAIN=false' >> "${GITHUB_ENV}"
+          fi
+
+          echo 'REQUIRE_LIVE_COMMIT_SHA=true' >> "${GITHUB_ENV}"
+          echo "URAI_DEPLOYMENT_RECEIPT_PATH=operations/receipts/releases/${URAI_TARGET_SHA}/deployment-receipt.json" >> "${GITHUB_ENV}"
 
       - name: Enable Corepack
         run: corepack enable
@@ -54,29 +115,14 @@ jobs:
           node-version: 22
           cache: pnpm
 
-      - name: Install dependencies
+      - name: Install exact lockfile
         run: corepack pnpm install --frozen-lockfile
 
-      - name: Guardian
-        if: github.event_name == 'workflow_dispatch'
-        run: corepack pnpm urai:guardian
+      - name: Run authoritative release gates
+        run: corepack pnpm verify:release
 
-      - name: Verify finalized V1 provider assets
-        if: github.event_name == 'push'
-        run: |
-          node scripts/verify-asset-factory-handoff.mjs
-          node scripts/audit-v123-asset-wall.mjs
-
-      - name: Typecheck
-        run: corepack pnpm check:types
-
-      - name: Build
-        if: ${{ github.event_name == 'workflow_dispatch' && !inputs.static_export }}
+      - name: Build Firebase framework release
         run: corepack pnpm build
-
-      - name: Build static export
-        if: ${{ github.event_name == 'push' || inputs.static_export }}
-        run: corepack pnpm build:static
 
       - name: Configure Firebase authentication
         env:
@@ -99,15 +145,12 @@ jobs:
             exit 1
           fi
 
-      - name: Firebase deploy hosting
-        if: ${{ github.event_name == 'workflow_dispatch' && !inputs.static_export }}
+      - name: Deploy Firebase framework hosting
         env:
-          FIREBASE_PROJECT_ID: ${{ secrets.FIREBASE_PROJECT_ID }}
           FIREBASE_FALLBACK_TOKEN: ${{ secrets.FIREBASE_TOKEN }}
         shell: bash
         run: |
           set -euo pipefail
-          test -n "${FIREBASE_PROJECT_ID}"
           if [[ "${URAI_FIREBASE_AUTH_MODE}" == 'token' ]]; then
             test -n "${FIREBASE_FALLBACK_TOKEN}"
             npx firebase-tools deploy --only hosting --project "${FIREBASE_PROJECT_ID}" --token "${FIREBASE_FALLBACK_TOKEN}"
@@ -116,33 +159,19 @@ jobs:
             npx firebase-tools deploy --only hosting --project "${FIREBASE_PROJECT_ID}"
           fi
 
-      - name: Firebase deploy static hosting
-        if: ${{ github.event_name == 'push' || inputs.static_export }}
-        env:
-          FIREBASE_PROJECT_ID: ${{ secrets.FIREBASE_PROJECT_ID }}
-          FIREBASE_FALLBACK_TOKEN: ${{ secrets.FIREBASE_TOKEN }}
-        shell: bash
+      - name: Validate public route and query behavior
         run: |
-          set -euo pipefail
-          test -n "${FIREBASE_PROJECT_ID}"
-          if [[ "${URAI_FIREBASE_AUTH_MODE}" == 'token' ]]; then
-            test -n "${FIREBASE_FALLBACK_TOKEN}"
-            npx firebase-tools deploy --config firebase.static.json --only hosting --project "${FIREBASE_PROJECT_ID}" --token "${FIREBASE_FALLBACK_TOKEN}"
-          else
-            unset FIREBASE_TOKEN FIREBASE_FALLBACK_TOKEN
-            npx firebase-tools deploy --config firebase.static.json --only hosting --project "${FIREBASE_PROJECT_ID}"
-          fi
+          corepack pnpm smoke:deployed
+          corepack pnpm smoke:live
+          corepack pnpm smoke:home-xr:live
 
-      - name: Print smoke routes
-        if: ${{ github.event_name == 'push' || inputs.deploy_url != '' }}
-        env:
-          URAI_DEPLOY_URL: ${{ inputs.deploy_url || 'https://urai.app' }}
-        run: corepack pnpm smoke:deployed
+      - name: Write exact deployment receipt
+        run: node scripts/write-deployment-receipt.mjs
 
-      - name: Validate live routes
-        if: ${{ github.event_name == 'push' || inputs.deploy_url != '' }}
-        env:
-          URAI_DEPLOY_URL: ${{ inputs.deploy_url || 'https://urai.app' }}
-        run: corepack pnpm smoke:live
-
-# Finalized V1 provider asset production deploy trigger, scoped to V1 web gates on push.
+      - name: Upload deployment receipt
+        uses: actions/upload-artifact@v4
+        with:
+          name: urai-spatial-deployment-receipt-${{ inputs.target_sha }}
+          path: ${{ env.URAI_DEPLOYMENT_RECEIPT_PATH }}
+          if-no-files-found: error
+          retention-days: 90
