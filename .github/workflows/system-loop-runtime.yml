@@ -5,6 +5,7 @@ on:
     paths:
       - "src/**"
       - "scripts/check-system-loop-runtime.mjs"
+      - "scripts/smoke-system-loop-runtime.mjs"
       - "tsconfig.runtime.json"
       - ".github/workflows/system-loop-runtime.yml"
   push:
@@ -13,6 +14,7 @@ on:
     paths:
       - "src/**"
       - "scripts/check-system-loop-runtime.mjs"
+      - "scripts/smoke-system-loop-runtime.mjs"
       - "tsconfig.runtime.json"
       - ".github/workflows/system-loop-runtime.yml"
   workflow_dispatch:
@@ -41,3 +43,6 @@ jobs:
 
       - name: Check SystemLoop runtime
         run: node scripts/check-system-loop-runtime.mjs
+
+      - name: Smoke SystemLoop runtime
+        run: node scripts/smoke-system-loop-runtime.mjs
