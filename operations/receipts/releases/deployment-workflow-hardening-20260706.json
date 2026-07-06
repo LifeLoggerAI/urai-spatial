@@ -1,0 +1,47 @@
+{
+  "receiptId": "URAI-SPATIAL-DEPLOY-WORKFLOW-20260706-001",
+  "recordedAt": "2026-07-06T00:00:00-05:00",
+  "classification": "IMPLEMENTED BUT NOT DEPLOYED",
+  "repository": "LifeLoggerAI/urai-spatial",
+  "branch": "fix-deploy-runtime-lockfile",
+  "commitSha": "eb8c23f705d918972d9087bea675288d2bf99f5d",
+  "pullRequest": "#423",
+  "issue": null,
+  "changedFiles": [
+    ".github/workflows/urai-spatial-deploy.yml",
+    ".github/workflows/deployment-release-contract.yml",
+    "scripts/write-deployment-receipt.mjs",
+    "scripts/check-deployment-release-contract.mjs"
+  ],
+  "workflowRuns": [],
+  "validation": {
+    "commands": [
+      "node scripts/check-deployment-release-contract.mjs",
+      "corepack pnpm verify:release",
+      "corepack pnpm build",
+      "corepack pnpm smoke:deployed",
+      "corepack pnpm smoke:live",
+      "corepack pnpm smoke:home-xr:live"
+    ],
+    "testResult": "PENDING_EXACT_HEAD_GITHUB_ACTIONS",
+    "buildResult": "PENDING_EXACT_HEAD_GITHUB_ACTIONS",
+    "runtimeVerification": "NOT DEPLOYED; workflow implementation only",
+    "screenshotsOrArtifacts": []
+  },
+  "deployment": {
+    "target": "Firebase urai-4dc1d after exact-head approval",
+    "environment": "production",
+    "deployedSha": null,
+    "publicUrls": [
+      "https://urai.app"
+    ],
+    "rollbackSha": null
+  },
+  "provider": null,
+  "remainingCaveats": [
+    "Exact-head CI is queued and must pass before merge.",
+    "No Firebase credentials or production deployment were exercised.",
+    "The deployment operator must provide the exact target SHA and a distinct reachable rollback SHA.",
+    "A successful workflow must upload the generated deployment receipt before a release can be classified VERIFIED LIVE."
+  ]
+}
