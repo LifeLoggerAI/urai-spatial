@@ -9,7 +9,7 @@ const expectedSha = (process.env.URAI_EXPECTED_DEPLOYED_SHA || '').trim()
 const receiptPath = process.env.URAI_LIVE_RECEIPT_PATH || 'deployment-receipt/live-content-parity.json'
 
 if (!baseUrl) throw new Error('URAI_DEPLOY_URL is required')
-if (new URL(baseUrl).protocol !== 'https:') throw new Error('URAI_DEPLOY_URL must use HTTPS')
+if (new URL(baseUrl).origin !== 'https://urai.app') throw new Error('Live certification is restricted to https://urai.app')
 if (!/^[0-9a-f]{40}$/.test(expectedSha)) throw new Error('URAI_EXPECTED_DEPLOYED_SHA must be a full lowercase SHA')
 
 const contracts = [
