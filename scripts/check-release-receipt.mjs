@@ -77,19 +77,32 @@ for (const route of receipt.routes) {
   }
 }
 
-for (const route of [
+const requiredPublicRoutes = [
   "/",
   "/home",
   "/ground",
+  "/spatial",
   "/life-map",
   "/focus",
   "/replay",
   "/mirror",
   "/passport",
   "/status",
+  "/privacy",
   "/privacy-controls",
-]) {
-  if (!routePaths.has(route)) fail(`missing canonical route ${route}`);
+  "/location-map",
+  "/ascent",
+  "/unwind",
+  "/demo",
+  "/demo/life-map",
+  "/demo/replay-film",
+  "/spatial/life-map",
+  "/spatial/life-map-r3f",
+  "/spatial/ar-vr",
+  "/terms",
+];
+for (const route of requiredPublicRoutes) {
+  if (!routePaths.has(route)) fail(`missing required public route ${route}`);
 }
 
 if (receipt.deployedSha && receipt.testedSha !== receipt.deployedSha) {
@@ -200,7 +213,7 @@ if (allRoutesVerified !== certificationFieldsComplete) {
   );
 }
 
-if (receipt.deployedSha && !hasArtifacts(requiredCoreArtifacts)) {
+if (receipt.deployedSha && !hasArtifacts(receipt, requiredCoreArtifacts)) {
   fail("a deployed receipt must include hashed canonical, route, runtime, typecheck, and build evidence artifacts");
 }
 
@@ -210,6 +223,7 @@ console.log(
       schemaVersion: receipt.schemaVersion,
       releaseId: receipt.releaseId,
       routes: receipt.routes.length,
+      requiredRoutes: requiredPublicRoutes.length,
       deployed: Boolean(receipt.deployedSha),
       failClosed: !receipt.deployedSha && !allRoutesVerified,
       manifestDigestRecorded: Boolean(receipt.manifestSha),
