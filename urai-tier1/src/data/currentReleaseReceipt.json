@@ -1,0 +1,41 @@
+{
+  "schemaVersion": "1.0.0",
+  "releaseState": "pending-current-main-evidence",
+  "generatedAt": null,
+  "canonicalRepository": "LifeLoggerAI/urai-spatial",
+  "canonicalRuntime": "urai-tier1",
+  "canonicalBranch": "main",
+  "sourceMainShaAtAudit": "b0e29681956e2892f3c38d1cf5f99ffa8da1ec57",
+  "testedSha": null,
+  "deployedSha": null,
+  "rollbackSha": null,
+  "firebaseProject": "urai-4dc1d",
+  "publicDomain": "https://urai.app",
+  "hostingSource": "urai-tier1",
+  "functionsSource": "apps/functions",
+  "functionsRuntime": "nodejs22",
+  "assetPackVersion": null,
+  "assetManifestSha256": null,
+  "evidence": {
+    "staticGate": "pending",
+    "buildGate": "pending",
+    "browserGate": "pending",
+    "deployedSmoke": "pending",
+    "desktopVisualQa": "pending",
+    "mobileVisualQa": "pending",
+    "questDeviceProof": "pending",
+    "rollbackSmoke": "pending"
+  },
+  "routeSummary": {
+    "implemented": 18,
+    "preview": 1,
+    "productionCertified": 0
+  },
+  "blockers": [
+    "Exact-head CI has not been recorded for current main.",
+    "The deployed commit SHA has not been established.",
+    "A rollback SHA and rollback smoke receipt have not been established.",
+    "Desktop and mobile visual QA evidence is pending.",
+    "Quest device proof is pending for XR certification."
+  ]
+}
