@@ -42,7 +42,8 @@
     "issue": { "type": ["string", "null"] },
     "changedFiles": {
       "type": "array",
-      "items": { "type": "string" }
+      "items": { "type": "string" },
+      "uniqueItems": true
     },
     "workflowRuns": {
       "type": "array",
@@ -52,7 +53,7 @@
         "required": ["name", "runId", "status", "conclusion"],
         "properties": {
           "name": { "type": "string" },
-          "runId": { "type": ["integer", "null"] },
+          "runId": { "type": ["integer", "null"], "minimum": 1 },
           "status": { "type": "string" },
           "conclusion": { "type": ["string", "null"] },
           "artifact": { "type": ["string", "null"] }
@@ -65,11 +66,11 @@
       "additionalProperties": false,
       "required": ["commands", "testResult", "buildResult", "runtimeVerification"],
       "properties": {
-        "commands": { "type": "array", "items": { "type": "string" } },
+        "commands": { "type": "array", "items": { "type": "string" }, "uniqueItems": true },
         "testResult": { "type": "string" },
         "buildResult": { "type": "string" },
         "runtimeVerification": { "type": "string" },
-        "screenshotsOrArtifacts": { "type": "array", "items": { "type": "string" }, "default": [] }
+        "screenshotsOrArtifacts": { "type": "array", "items": { "type": "string" }, "uniqueItems": true, "default": [] }
       }
     },
     "deployment": {
@@ -85,7 +86,11 @@
             { "type": "null" }
           ]
         },
-        "publicUrls": { "type": "array", "items": { "type": "string" } },
+        "publicUrls": {
+          "type": "array",
+          "items": { "type": "string", "format": "uri" },
+          "uniqueItems": true
+        },
         "rollbackSha": {
           "anyOf": [
             { "type": "string", "pattern": "^[0-9a-f]{40}$" },
@@ -99,17 +104,17 @@
       "properties": {
         "provider": { "type": "string" },
         "model": { "type": "string" },
-        "requestIds": { "type": "array", "items": { "type": "string" } },
+        "requestIds": { "type": "array", "items": { "type": "string" }, "uniqueItems": true },
         "assetCount": { "type": "integer", "minimum": 0 },
         "failedAssetCount": { "type": "integer", "minimum": 0 },
         "costUsd": { "type": "number", "minimum": 0 },
-        "manifestSha256": { "type": "string" },
+        "manifestSha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
         "checksumsArtifact": { "type": ["string", "null"] }
       },
       "required": ["provider", "model", "requestIds", "assetCount", "failedAssetCount", "costUsd", "manifestSha256"],
       "additionalProperties": false
     },
-    "remainingCaveats": { "type": "array", "items": { "type": "string" } }
+    "remainingCaveats": { "type": "array", "items": { "type": "string" }, "uniqueItems": true }
   },
   "allOf": [
     {
