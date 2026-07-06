@@ -7,28 +7,29 @@ on:
     branches: [ main ]
 
 jobs:
-  test:
+  v60-gate:
     runs-on: ubuntu-latest
 
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Enable Corepack
+        run: corepack enable
+
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
 
-      - name: Cache npm
-        uses: actions/cache@v4
-        with:
-          path: ~/.npm
-          key: ${{ runner.os }}-npm-${{ hashFiles('**/package-lock.json') }}
-          restore-keys: |
-            ${{ runner.os }}-npm-
+      - name: Install dependencies (pnpm)
+        run: pnpm install --frozen-lockfile
 
-      - name: Install dependencies
-        run: npm install
+      - name: Run v60 static lock
+        run: pnpm lock:static
+
+      - name: Run v60 build lock
+        run: pnpm lock:build
 
       - name: Run distributed demo
-        run: npx ts-node src/distributed/runDistributedDemo.ts
+        run: pnpm demo
