@@ -2,7 +2,21 @@
 // Plugin-driven deterministic simulation loop
 
 import type { SimulationEnginePlugin } from "../plugins/SimulationEnginePlugin";
-import type { SimulationState } from "../kernel/SimulationState";
+
+export interface SimulationMemoryNode {
+  id: string;
+  type: string;
+  data: any;
+  timestamp: number;
+}
+
+export interface SimulationState {
+  tick: number;
+  memory: SimulationMemoryNode[];
+  entities?: Record<string, any>;
+  world?: Record<string, any>;
+  metadata?: Record<string, any>;
+}
 
 export class SimulationEngine {
   private plugins: SimulationEnginePlugin[] = [];
