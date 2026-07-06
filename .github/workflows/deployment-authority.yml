@@ -1,0 +1,39 @@
+name: Spatial Deployment Authority
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - ".github/workflows/**"
+      - "scripts/check-deployment-authority.mjs"
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/**"
+      - "scripts/check-deployment-authority.mjs"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: spatial-deployment-authority-${{ github.head_ref || github.ref_name }}
+  cancel-in-progress: true
+
+jobs:
+  authority:
+    name: Verify sole manual deployment authority
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Checkout exact event commit
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Scan deployment workflows
+        run: node scripts/check-deployment-authority.mjs
