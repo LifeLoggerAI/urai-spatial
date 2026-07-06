@@ -77,6 +77,11 @@ on:
         required: false
         default: ""
         type: string
+      rollback_sha:
+        description: "Exact 40-character commit SHA to redeploy if the target fails"
+        required: false
+        default: ""
+        type: string
 
 permissions:
   contents: read
@@ -145,6 +150,9 @@ jobs:
       - name: Install Playwright browsers
         run: npx playwright install --with-deps chromium
 
+      - name: Validate fail-closed release receipt
+        run: node scripts/check-release-receipt.mjs
+
       - name: Check V1-V6 asset-ready switch
         run: node scripts/check-v1-v6-asset-ready.mjs
 
@@ -159,7 +167,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: urai-spatial-live-check-evidence
+          name: urai-spatial-live-check-evidence-${{ github.sha }}
           path: |
             EVIDENCE.md
             STATUS.md
@@ -179,11 +187,12 @@ jobs:
             firebase/firestore.rules
             firebase/firestore.indexes.json
             firebase/spatial-collection-contract.json
+            urai-tier1/src/data/release-receipt.json
+            urai-tier1/src/lib/release-evidence.ts
             urai-tier1/src/lib/studio-spatial-handoff.ts
             urai-tier1/src/spatial/xr
             urai-tier1/tests/studio-spatial-handoff.test.mjs
             urai-tier1/tests/xr-runtime-contract.test.mjs
-            urai-tier1/scripts/xr
             test-results
             playwright-report
           if-no-files-found: warn
@@ -199,11 +208,13 @@ jobs:
       FIREBASE_PROJECT_ID: ${{ secrets.FIREBASE_PROJECT_ID }}
       GOOGLE_APPLICATION_CREDENTIALS: ${{ github.workspace }}/firebase-service-account.json
       LIVE_URL: ${{ github.event.inputs.live_url || vars.URAI_SPATIAL_LIVE_URL }}
+      ROLLBACK_SHA: ${{ github.event.inputs.rollback_sha || vars.URAI_SPATIAL_ROLLBACK_SHA }}
     steps:
-      - name: Checkout
+      - name: Checkout exact target
         uses: actions/checkout@v4
         with:
           ref: ${{ github.sha }}
+          fetch-depth: 0
 
       - name: Setup Node
         uses: actions/setup-node@v4
@@ -216,10 +227,27 @@ jobs:
           corepack prepare pnpm@10.0.0 --activate
           pnpm --version
 
-      - name: Verify deploy inputs
+      - name: Verify deploy inputs and rollback target
+        shell: bash
         run: |
+          set -euo pipefail
           test -n "$FIREBASE_PROJECT_ID"
           test -n '${{ secrets.FIREBASE_SERVICE_ACCOUNT_JSON }}'
+          if [[ ! "$GITHUB_SHA" =~ ^[0-9a-f]{40}$ ]]; then
+            echo "Target GITHUB_SHA is invalid" >&2
+            exit 1
+          fi
+          if [[ ! "$ROLLBACK_SHA" =~ ^[0-9a-f]{40}$ ]]; then
+            echo "A valid 40-character rollback SHA is required before deployment" >&2
+            exit 1
+          fi
+          if [ "$ROLLBACK_SHA" = "$GITHUB_SHA" ]; then
+            echo "Rollback SHA must differ from target SHA" >&2
+            exit 1
+          fi
+          git cat-file -e "$ROLLBACK_SHA^{commit}"
+          echo "target_sha=$GITHUB_SHA"
+          echo "rollback_sha=$ROLLBACK_SHA"
 
       - name: Write Firebase service account
         run: |
@@ -232,6 +260,11 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
+      - name: Revalidate release receipt and exact checkout
+        run: |
+          test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
+          node scripts/check-release-receipt.mjs
+
       - name: Deploy Spatial live
         run: pnpm live:deploy
 
@@ -239,14 +272,43 @@ jobs:
         if: env.LIVE_URL != ''
         run: HOST="$LIVE_URL" pnpm smoke
 
-      - name: Write deployment summary
+      - name: Write deployment receipt
         if: always()
+        shell: bash
         run: |
+          mkdir -p deployment-receipt
+          node - <<'NODE'
+          const fs = require('node:fs');
+          const receipt = {
+            schemaVersion: 'urai-deployment-receipt-1',
+            workflowRun: process.env.GITHUB_RUN_ID,
+            repository: process.env.GITHUB_REPOSITORY,
+            targetSha: process.env.GITHUB_SHA,
+            rollbackSha: process.env.ROLLBACK_SHA,
+            firebaseProject: process.env.FIREBASE_PROJECT_ID,
+            liveUrl: process.env.LIVE_URL || null,
+            generatedAt: new Date().toISOString(),
+            conclusion: process.env.JOB_STATUS || 'workflow-step-completed'
+          };
+          fs.writeFileSync('deployment-receipt/deployment.json', JSON.stringify(receipt, null, 2));
+          NODE
           {
             echo "# URAI Spatial live deploy"
             echo ""
-            echo "- Commit: $GITHUB_SHA"
+            echo "- Target commit: $GITHUB_SHA"
+            echo "- Rollback commit: $ROLLBACK_SHA"
             echo "- Firebase project: $FIREBASE_PROJECT_ID"
             echo "- Live URL: ${LIVE_URL:-not provided}"
             echo "- Workflow run: $GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID"
           } >> "$GITHUB_STEP_SUMMARY"
+        env:
+          JOB_STATUS: ${{ job.status }}
+
+      - name: Upload deployment receipt
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: urai-spatial-deployment-receipt-${{ github.sha }}
+          path: deployment-receipt/deployment.json
+          if-no-files-found: error
+          retention-days: 90
