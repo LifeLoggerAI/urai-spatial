@@ -1,39 +1,39 @@
 html.urai-v5-assets-ready {
-  --urai-v5-life-layer: var(--urai-asset-v5-life-layer-main);
-  --urai-v5-life-layer-mobile: var(--urai-asset-v5-life-layer-mobile);
-  --urai-v5-global-weather: var(--urai-asset-v5-global-emotional-weather);
-  --urai-v5-autonomous-city: var(--urai-asset-v5-autonomous-city);
-  --urai-v5-memory-universe: var(--urai-asset-v5-memory-universe);
-  --urai-v5-identity-vault: var(--urai-asset-v5-identity-vault);
-  --urai-v5-cross-device: var(--urai-asset-v5-cross-device-continuum);
-  --urai-v5-legacy-archive: var(--urai-asset-v5-legacy-archive);
-  --urai-v5-final-orb: var(--urai-asset-v5-final-orb);
+  --urai-v5-life-layer: var(--urai-asset-v5-life-layer-main, none);
+  --urai-v5-life-layer-mobile: var(--urai-asset-v5-life-layer-mobile, none);
+  --urai-v5-global-weather: var(--urai-asset-v5-global-emotional-weather, none);
+  --urai-v5-autonomous-city: var(--urai-asset-v5-autonomous-city, none);
+  --urai-v5-memory-universe: var(--urai-asset-v5-memory-universe, none);
+  --urai-v5-identity-vault: var(--urai-asset-v5-identity-vault, none);
+  --urai-v5-cross-device: var(--urai-asset-v5-cross-device-continuum, none);
+  --urai-v5-legacy-archive: var(--urai-asset-v5-legacy-archive, none);
+  --urai-v5-final-orb: var(--urai-asset-v5-final-orb, none);
 }
 
 html.urai-v5-assets-ready .lifeGalaxy {
-  --life-map-art: var(--urai-v5-memory-universe) !important;
+  --life-map-art: var(--urai-v5-memory-universe, none) !important;
 }
 
 html.urai-v5-assets-ready .uraiAutoGround {
-  background-image: linear-gradient(180deg, rgba(3,8,18,.12), rgba(3,8,18,.78)), var(--urai-v5-autonomous-city) !important;
+  background-image: linear-gradient(180deg, rgba(3,8,18,.12), rgba(3,8,18,.78)), var(--urai-v5-autonomous-city, none) !important;
   background-size: cover !important;
   background-position: center !important;
 }
 
 html.urai-v5-assets-ready main[data-testid='urai-final-passport-vault'] {
-  --passport-vault-art: var(--urai-v5-identity-vault) !important;
+  --passport-vault-art: var(--urai-v5-identity-vault, none) !important;
 }
 
 html.urai-v5-assets-ready main[data-testid='urai-final-focus-chamber'] {
-  --memory-route-art: var(--urai-v5-legacy-archive) !important;
+  --memory-route-art: var(--urai-v5-legacy-archive, none) !important;
 }
 
 html.urai-v5-assets-ready .urai-xr-portal {
-  background-image: linear-gradient(180deg, rgba(0,2,9,.12), rgba(0,2,9,.8)), var(--urai-v5-cross-device) !important;
+  background-image: linear-gradient(180deg, rgba(0,2,9,.12), rgba(0,2,9,.8)), var(--urai-v5-cross-device, none) !important;
   background-size: cover !important;
   background-position: center !important;
 }
 
 @media (max-width: 760px) {
-  html.urai-v5-assets-ready { --urai-v5-life-layer: var(--urai-v5-life-layer-mobile); }
+  html.urai-v5-assets-ready { --urai-v5-life-layer: var(--urai-v5-life-layer-mobile, none); }
 }
