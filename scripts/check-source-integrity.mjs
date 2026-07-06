@@ -120,3 +120,4 @@ if (failures.length > 0) {
 }
 
 console.log('Source integrity gate passed')
+await import('./validate-completion-ledger.mjs')
