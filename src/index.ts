@@ -1,5 +1,6 @@
 import { createSystemLoop } from "./kernel/SystemLoop";
 import { PersistenceManager } from "./kernel/PersistenceManager";
+import { SimulationDashboard } from "./dashboard/SimulationDashboard";
 
 async function main() {
   const persistence = new PersistenceManager();
@@ -11,6 +12,14 @@ async function main() {
     tickIntervalMs: 1000,
     replayLimit: 50
   });
+
+  // Attach live dashboard to engine event stream
+  const dashboard = new SimulationDashboard(loop.engine as any, {
+    enabled: true,
+    logIntervalMs: 2000,
+  });
+
+  dashboard.attach();
 
   await loop.engine.emit("app.boot", {
     name: "urai-spatial",
