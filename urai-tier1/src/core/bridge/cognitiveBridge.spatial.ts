@@ -34,10 +34,10 @@ export function createSpatialEngine(userId: string = "demo-user") {
   function addNode(input: {
     id: string;
     type: SpatialVector["type"];
-    content?: string;
+    content?: unknown;
     intensity?: number;
   }) {
-    const base = input.id + (input.content ?? "");
+    const base = input.id + String(input.content ?? "");
 
     const node: SpatialVector = {
       id: input.id,
@@ -54,8 +54,8 @@ export function createSpatialEngine(userId: string = "demo-user") {
   }
 
   function syncFromKernel() {
-    const memory = kernel.getMemory();
-    const insight = kernel.getInsight();
+    const memory = kernel.getMemory() as { id?: string; content?: unknown } | null;
+    const insight = kernel.getInsight() as { id?: string; message?: unknown } | null;
 
     if (memory) {
       addNode({
