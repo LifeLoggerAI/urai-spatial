@@ -96,6 +96,67 @@ function requireFileTokens(failures, relativePath, tokens) {
   }
 }
 
+function checkVersionAssetContracts(failures) {
+  const gatePath = path.join(repoRoot, 'urai-tier1', 'src', 'app', 'CanonicalAssetGates.tsx')
+  if (!fs.existsSync(gatePath)) {
+    failures.push('CanonicalAssetGates.tsx is missing')
+    return
+  }
+
+  const gateSource = fs.readFileSync(gatePath, 'utf8')
+  const contracts = [...gateSource.matchAll(/\['(v\d+)',\s*(\d+),/g)].map((match) => ({
+    version: match[1],
+    expected: Number(match[2]),
+  }))
+
+  if (contracts.length === 0) {
+    failures.push('CanonicalAssetGates.tsx does not declare version asset contracts')
+    return
+  }
+
+  for (const contract of contracts) {
+    const manifestPath = path.join(
+      repoRoot,
+      'urai-tier1',
+      'public',
+      'assets',
+      'urai',
+      'final',
+      'manifests',
+      `${contract.version}-asset-factory-spatial-handoff.json`,
+    )
+
+    if (!fs.existsSync(manifestPath)) {
+      failures.push(`${contract.version} handoff manifest is missing`)
+      continue
+    }
+
+    try {
+      const manifest = JSON.parse(fs.readFileSync(manifestPath, 'utf8'))
+      const ready = Number(manifest.ready)
+      const missing = Number(manifest.missing)
+      const assets = Array.isArray(manifest.assets) ? manifest.assets : []
+
+      if (manifest.version !== contract.version) {
+        failures.push(`${contract.version} manifest declares version ${String(manifest.version)}`)
+      }
+      if (!Number.isInteger(ready) || ready < 0 || !Number.isInteger(missing) || missing < 0) {
+        failures.push(`${contract.version} manifest ready/missing counts must be non-negative integers`)
+      } else if (ready + missing !== contract.expected) {
+        failures.push(`${contract.version} manifest totals ${ready + missing}; runtime contract requires ${contract.expected}`)
+      }
+      if (assets.length !== ready) {
+        failures.push(`${contract.version} manifest contains ${assets.length} assets but ready=${ready}`)
+      }
+      if (assets.some((asset) => asset?.status !== 'ready' || asset?.renderer !== 'provider')) {
+        failures.push(`${contract.version} ready assets must have status=ready and renderer=provider`)
+      }
+    } catch (error) {
+      failures.push(`${contract.version} handoff manifest is invalid JSON: ${error instanceof Error ? error.message : String(error)}`)
+    }
+  }
+}
+
 const failures = []
 const middlewareText = middlewareSource()
 
@@ -143,10 +204,12 @@ if (!fs.existsSync(staticConfigPath)) {
   }
 }
 
+checkVersionAssetContracts(failures)
+
 if (failures.length > 0) {
-  console.error('Production route exposure gate failed:')
+  console.error('Production route and asset contract gate failed:')
   for (const failure of failures) console.error(`- ${failure}`)
   process.exit(1)
 }
 
-console.log('Production route exposure gate passed: guarded routes, public route owners, and static hosting are locked.')
+console.log('Production route and asset contract gate passed: guarded routes, public route owners, static hosting, and version manifests are locked.')
