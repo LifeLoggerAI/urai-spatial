@@ -232,7 +232,7 @@ async function main() {
     staticArtifact: null,
     deployment: null,
     verification: null,
-    rollbackCommand: `git checkout ${rollbackSha} && firebase deploy --project ${firebaseProject} --config firebase.static.json --only hosting`,
+    rollbackCommand: `git checkout ${rollbackSha} && pnpm exec firebase deploy --project ${firebaseProject} --config firebase.static.json --only hosting`,
   }
   writeFileSync(receiptPath, `${JSON.stringify(receipt, null, 2)}\n`)
 
@@ -255,7 +255,7 @@ async function main() {
     })
     receipt.staticArtifact = createStaticManifest()
 
-    run('firebase', ['deploy', '--project', firebaseProject, '--config', 'firebase.static.json', '--only', 'hosting'])
+    run('pnpm', ['exec', 'firebase', 'deploy', '--project', firebaseProject, '--config', 'firebase.static.json', '--only', 'hosting'])
     receipt.deployment = {
       completedAt: new Date().toISOString(),
       target: firebaseProject,
