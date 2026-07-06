@@ -31,6 +31,14 @@ export class SystemLoop<TState = Record<string, unknown>> {
   readonly analytics: AnalyticsBridge;
 
   private replayLimit: number;
+
+  // 🧠 Simulation feedback state (NEW)
+  private simulationState = {
+    intentVector: [] as any[],
+    predictedBias: null as any,
+    memoryWeighting: {} as Record<string, any>
+  };
+
   private loopState: SystemLoopState = {
     startedAt: Date.now(),
     totalRuns: 0
@@ -62,6 +70,22 @@ export class SystemLoop<TState = Record<string, unknown>> {
     }, "system-loop");
   }
 
+  private applySimulationMutationBridge(
+    state: any,
+    prediction: any,
+    snapshot: any
+  ) {
+    return {
+      ...state,
+      predictedBias: prediction?.confidence ?? 0.5,
+      intentVector: snapshot?.events?.slice?.(-10) ?? [],
+      memoryWeighting: {
+        ...state.memoryWeighting,
+        lastConfidence: prediction?.confidence ?? 0.5
+      }
+    };
+  }
+
   async runOnce() {
     await this.engine.step();
 
@@ -72,6 +96,13 @@ export class SystemLoop<TState = Record<string, unknown>> {
 
     const prediction = this.prediction.predict(timeline);
     await this.prediction.emitPrediction(prediction, this.engine.bus);
+
+    // 🧠 APPLY FEEDBACK BRIDGE (NEW CORE LOOP LINK)
+    this.simulationState = this.applySimulationMutationBridge(
+      this.simulationState,
+      prediction,
+      snapshot
+    );
 
     const frame = this.xr.renderPrediction(prediction, this.engine.tick);
     await this.xr.emitFrame(frame, this.engine.bus);
@@ -105,7 +136,8 @@ export class SystemLoop<TState = Record<string, unknown>> {
       frame,
       packets,
       analyticsEvents,
-      state: this.getState()
+      state: this.getState(),
+      simulationState: this.simulationState
     };
   }
 
