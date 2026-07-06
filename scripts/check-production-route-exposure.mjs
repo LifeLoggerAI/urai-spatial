@@ -131,7 +131,7 @@ if (!fs.existsSync(staticConfigPath)) {
     if (hosting.public !== 'urai-tier1/out') failures.push('firebase.static.json must publish urai-tier1/out')
     if (hosting.cleanUrls !== true) failures.push('firebase.static.json must enable cleanUrls')
     if (hosting.trailingSlash !== true) failures.push('firebase.static.json must enable trailingSlash')
-    if (!Array.isArray(hosting.rewrites) || hosting.rewrites.length !== 0) {
+    if (hosting.rewrites !== undefined && (!Array.isArray(hosting.rewrites) || hosting.rewrites.length !== 0)) {
       failures.push('firebase.static.json must not use rewrites that mask missing exported routes')
     }
   } catch (error) {
