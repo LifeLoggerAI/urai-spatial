@@ -1,0 +1,48 @@
+name: Workflow Phase Boundaries
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - ".github/workflows/spatial-production-lock.yml"
+      - ".github/workflows/aaa-final-proof.yml"
+      - ".github/workflows/urai-spatial-lock.yml"
+      - ".github/workflows/urai-spatial-release-certification.yml"
+      - ".github/workflows/spatial-live-deploy.yml"
+      - ".github/workflows/workflow-phase-boundaries.yml"
+      - "scripts/check-workflow-phase-boundaries.mjs"
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/spatial-production-lock.yml"
+      - ".github/workflows/aaa-final-proof.yml"
+      - ".github/workflows/urai-spatial-lock.yml"
+      - ".github/workflows/urai-spatial-release-certification.yml"
+      - ".github/workflows/spatial-live-deploy.yml"
+      - ".github/workflows/workflow-phase-boundaries.yml"
+      - "scripts/check-workflow-phase-boundaries.mjs"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: workflow-phase-boundaries-${{ github.head_ref || github.ref_name }}
+  cancel-in-progress: true
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Checkout exact commit
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Verify workflow phase boundaries
+        run: node scripts/check-workflow-phase-boundaries.mjs
