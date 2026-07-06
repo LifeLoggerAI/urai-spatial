@@ -1,25 +1,26 @@
 {
   "receiptId": "DOC-ARCH-DRIVE-20260706-001",
-  "recordedAt": "2026-07-06T02:20:00-05:00",
-  "classification": "PARTIALLY IMPLEMENTED",
+  "recordedAt": "2026-07-06T02:55:00-05:00",
+  "classification": "VERIFIED IN REPOSITORY",
   "repository": "LifeLoggerAI/urai-spatial",
   "branch": "audit/ecosystem-truth-20260706",
-  "commitSha": "8e68881e30c276a0e517bab86aff77a9413450d3",
+  "commitSha": "7f5a5506e742058a0fcdc93f62a65374ffc98b23",
   "pullRequest": "https://github.com/LifeLoggerAI/urai-spatial/pull/415",
   "issue": "https://github.com/LifeLoggerAI/urai-spatial/issues/414",
   "changedFiles": [
-    "Google Drive: URAI System Architecture Spec v1"
+    "Google Drive: URAI System Architecture Spec v1",
+    "operations/receipts/docs/system-architecture-drive-20260706.json"
   ],
   "workflowRuns": [],
   "validation": {
     "commands": [
-      "Google Drive get_document_text before update",
-      "Google Drive batch_update_document with required revision",
-      "Google Drive get_document_text after update"
+      "Google Drive get_document_text",
+      "GitHub fetch_file"
     ],
-    "testResult": "Authority references updated and re-read from Drive revision ALtnJHwtVJm8IZFPRrgtzgpcpXpgyR0EqQSn8dLB0KDWW-f0ecRDh9IFfPehnLV5bwImWzjHad51IrW3aZWv7WsPN2SQ4-GwLgNYwmC2t-U",
+    "testResult": "The current Drive revision was re-read in full. Canonical authority, runtime planes, route journey, repository map, v50 boundary, privacy and persistence, Asset Factory PR #141, Spatial PR #415, closed superseded deployment PR #423, and Privacy draft PR #93 are present without a truncated privacy paragraph.",
+    "driveRevisionId": "ALtnJHwbm0q9GERld6B1oD8bbTXg514F1xJsITIT33bKqzFJxTloUWAAR-aPuE-mSveAVj-Bx0YpavTX_cUh6w4_lncjXkqgKb44uLGkprA",
     "buildResult": "NOT_APPLICABLE_DOCUMENTATION_ONLY",
-    "runtimeVerification": "Drive text now identifies PR #415 as the single Spatial release/Status authority, PR #141 as the canonical asset and paid-request guard authority, and issues #356/#6/#86 as legacy deployment-collision blockers.",
+    "runtimeVerification": "The Drive document identifies PR #415 as the single Spatial release and Status authority, PR #141 as the canonical asset and paid-request guard authority, PR #423 as superseded, PR #93 as implemented but not deployed consent work, and issues #356/#6/#86 as legacy deployment-collision blockers.",
     "screenshotsOrArtifacts": []
   },
   "deployment": {
@@ -33,8 +34,8 @@
   },
   "provider": null,
   "remainingCaveats": [
-    "One privacy-and-persistence paragraph remains truncated after the connector rejected the final corrective edit.",
-    "The documentation update does not certify v50, production deployment, provider activation, or rollback.",
-    "Exact-head GitHub Actions for PR #415 remain queued."
+    "This documentation receipt does not certify v50, production deployment, provider activation, privacy deployment, or rollback.",
+    "Exact-head GitHub Actions for PR #415 remain queued.",
+    "Privacy PR #93 remains stacked on its authorization base and requires exact-head security and emulator evidence before merge or deployment."
   ]
 }
