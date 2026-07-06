@@ -1,12 +1,12 @@
 {
   "schemaVersion": "urai-material-change-receipt-1",
   "receiptId": "SPATIAL-SECURE-RELEASE-20260706-001",
-  "recordedAt": "2026-07-06T07:47:00Z",
+  "recordedAt": "2026-07-06T08:15:00Z",
   "status": "IMPLEMENTED BUT NOT DEPLOYED",
   "repository": "LifeLoggerAI/urai-spatial",
-  "branch": "secure-release-20260706",
+  "branch": "release-authority-20260706",
   "baseBranch": "main",
-  "candidatePullRequest": 438,
+  "candidatePullRequest": 442,
   "implemented": [
     "manual-only production deployment authority",
     "exact current main target requirement",
@@ -26,11 +26,15 @@
     "static workflow authority contract check"
   ],
   "liveEvidenceAtImplementation": {
-    "privacyControls": "VERIFIED LIVE DEFECT: current domain serves Home threshold",
-    "status": "VERIFIED LIVE BUT STALE: no exact deployed or rollback SHA",
+    "verifiedAt": "2026-07-06T08:14:00Z",
+    "privacyControls": "VERIFIED LIVE DEFECT: /privacy-controls/ serves Home threshold content instead of the dedicated Privacy Controls route",
+    "focusSlash": "VERIFIED LIVE: /focus/ serves the Selected memory chamber",
+    "focusQuery": "VERIFIED LIVE DEFECT: /focus?memoryId=quiet-reset serves the legacy URAI shell",
+    "status": "VERIFIED LIVE BUT STALE: Mode Launch and /privacy-controls live are claimed without exact tested, deployed, or rollback SHA evidence",
     "sourcePrivacyControls": "IMPLEMENTED BUT NOT DEPLOYED",
     "deployedSha": null,
-    "rollbackSha": null
+    "rollbackSha": null,
+    "githubEvidenceComment": "LifeLoggerAI/urai-spatial#442 issue comment 4890564858"
   },
   "verification": {
     "staticContractCommand": "node scripts/check-canonical-deploy-workflow.mjs",
@@ -43,8 +47,8 @@
     "exact current urai.app deployed SHA has not been established",
     "rollback SHA has not been proven",
     "current deployment evidence receipt is absent",
-    "V50 exact-head certification remains queued",
+    "exact-head certification has not completed",
     "workload identity and production environment secrets are not inspectable from this session",
-    "production deployment is destructive/external and remains gated"
+    "production deployment remains fail-closed until all required identity and rollback evidence is supplied"
   ]
 }
