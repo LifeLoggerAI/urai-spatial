@@ -1,6 +1,8 @@
 name: v60 CI
 
 on:
+  push:
+    branches: [ main, v60-kernel-next ]
   pull_request:
     branches: [ main ]
 
