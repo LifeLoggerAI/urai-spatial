@@ -10,7 +10,7 @@ Current mode: `fallback-demo` with a partially current live deployment.
 
 Production-live status: not yet verified.
 
-Latest audited release candidate: July 3, 2026. V1 has a 53-of-53 provider-marked asset handoff in source, but the configured release workflow, exact-commit deployment receipt, rollback reference, route parity, and post-deployment browser proof are not complete. V2 and V3 remain handoff-gated (`ready: 0`). V4 and V5 remain provider/browser/device/deployment gated.
+Latest audited release candidate: July 3, 2026. V1 has a 53-of-53 provider-marked asset handoff in source, but the configured release workflow, exact-commit deployment receipt, rollback reference, route parity, and post-deployment browser proof are not complete. V2, V3, and V4 remain exact-receipt and handoff-gated (`ready: 0`). V4 also remains browser and physical-device gated. V5 remains implementation, privacy, provider, test, and deployment gated.
 
 ## Current verified blockers
 
@@ -36,30 +36,31 @@ Allowed claim:
 
 Not allowed claim:
 
-> URAI Spatial V1 through V5 is fully production-certified with active provider-backed V2/V3 assets, AR/WebXR hardware proof, autonomous real-world actions, wearable/body-signal providers, memory-grounded persistence, or complete live deployment evidence.
+> URAI Spatial V1 through V5 is fully production-certified with active provider-backed V2/V3/V4 assets, AR/WebXR hardware proof, autonomous real-world actions, wearable/body-signal providers, memory-grounded persistence, or complete live deployment evidence.
 
 ## Version posture
 
 | Version | Source posture | Asset/runtime posture | Certification posture |
 | --- | --- | --- | --- |
 | V1 | Main route chain and production owners are present. | Provider handoff reports 53 ready, 0 missing. Live deployment is mixed/stale on at least Privacy Controls and Focus parity. | Not certified. |
-| V2 | Living-state wiring, fallback inventory, gating, and verifier exist. | Canonical handoff reports 0 ready, 80 missing; V1 fallback remains active. | Not certified. |
-| V3 | Relationship, shadow, pattern, consent-safe fallback surfaces and inventory exist. | Canonical handoff reports 0 ready, 39 missing. | Not certified. |
-| V4 | WebXR/Quest runtime and lifecycle hardening exist in source. | Browser/provider/device proof remains gated. | Not certified; no physical Quest claim. |
-| V5 | Mirror of Becoming, legacy, consent, provenance, and protected-presence concepts exist across source and fallback assets. | Canon explicitly keeps V5 production-gated pending implementation, privacy, tests, deploy, and live smoke. | Not certified. |
+| V2 | Living-state wiring, fallback inventory, gating, and verifier exist. | Canonical contract requires 80 outputs; current promoted provider handoff reports 0 ready, 80 missing; V1 fallback remains active. | Not certified. |
+| V3 | Relationship, shadow, pattern, consent-safe fallback surfaces and inventory exist. | Canonical contract requires 14 outputs under `assets/urai/v3`; current promoted provider handoff reports 0 ready, 14 missing. | Not certified. |
+| V4 | WebXR/Quest runtime and lifecycle hardening exist in source. | Canonical contract requires 39 XR graphics under `assets/urai/xr`; provider, browser, permission, and physical-device proof remain gated. | Not certified; provider graphics cannot certify Quest or physical-device behavior. |
+| V5 | Mirror of Becoming, legacy, consent, provenance, and protected-presence concepts exist across source and fallback assets. | Canonical contract requires 27 outputs, but V5 remains production-gated pending implementation, privacy, provider receipts, tests, deploy, and live smoke. | Not certified. |
 
 ## Provider status
 
 | Capability | Status | Rule before live claim |
 | --- | --- | --- |
 | V1 provider asset handoff | Source-ready | Requires current-main build, deploy receipt, live route/resource/browser proof, and rollback evidence. |
-| V2 living-state assets | Not active | Requires provider forge receipt for 80 assets, zero-missing promoted handoff, runtime activation proof, deploy, and live browser proof. |
-| V3 relationship/pattern assets | Not active | Requires provider forge receipt for 39 assets, privacy review, runtime activation proof, deploy, and live browser proof. |
+| V2 living-state assets | Not active | Requires exact provider forge receipt for 80 assets, zero-missing promoted handoff, runtime activation proof, deploy, and live browser proof. |
+| V3 relationship/pattern assets | Not active | Requires exact provider forge receipt for 14 assets, privacy review, zero-missing promoted handoff, runtime activation proof, deploy, and live browser proof. |
+| V4 XR graphics | Not active | Requires exact provider forge receipt for 39 graphics, zero-missing promoted handoff, runtime activation proof, deploy, browser and permission validation. This receipt does not certify physical hardware. |
 | AR/WebXR | Not active | Requires browser/provider validation, permission-safe session proof, device matrix, consent review, E2E evidence, and live smoke. |
 | Quest VR | Not device-certified | Requires physical headset run, controller/hand input, comfort/performance, session lifecycle, and recorded evidence. |
 | Wearables/body signal | Not active | Requires provider contract, explicit consent, non-diagnostic copy review, privacy tests, fallback behavior, and live smoke. |
 | Memory-grounded orb | Not active | Requires memory contract, consent gates, fallback behavior, deletion/export proof, and live smoke. |
-| Asset Factory live jobs | V1 evidence present; V2/V3 not promoted | Requires provider receipts, approved promotion manifests, runtime activation, and cross-repository release evidence. |
+| Asset Factory live jobs | V1 evidence present; V2/V3/V4 not promoted | Requires canonical provider receipts, approved promotion manifests, runtime activation, and cross-repository release evidence. |
 | Firebase/Firestore persistence | Not proven live | Requires exact project, deployed rules/indexes, Auth configuration, owner/tenant tests, deployment receipt, and live smoke. |
 
 ## Done definition
