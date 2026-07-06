@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict'
-import { readFileSync } from 'node:fs'
+import { existsSync, readFileSync } from 'node:fs'
 import test from 'node:test'
 
 const contractPath = new URL('../src/lib/spatial-system-contract.ts', import.meta.url)
@@ -32,7 +32,7 @@ const requiredRoutes = [
 
 test('spatial system contract lists every active public route', () => {
   for (const route of requiredRoutes) {
-    assert.match(source, new RegExp(`['\"]${route.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}['\"]`), `missing route ${route}`)
+    assert.match(source, new RegExp(`['"]${route.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}['"]`), `missing route ${route}`)
   }
 })
 
@@ -43,6 +43,17 @@ test('smoke coverage derives from the canonical route registry', () => {
 })
 
 test('privacy information and operational controls remain distinct', () => {
-  assert.match(source, /privacy: ['\"]\/privacy['\"]/)
-  assert.match(source, /privacyControls: ['\"]\/privacy-controls['\"]/)
+  assert.match(source, /privacy: ['"]\/privacy['"]/)
+  assert.match(source, /privacyControls: ['"]\/privacy-controls['"]/)
+})
+
+test('placeholder public control plane is excluded from the release', () => {
+  const controlPage = new URL('../src/app/control/page.tsx', import.meta.url)
+  const universeApi = new URL('../src/app/api/universe/route.ts', import.meta.url)
+
+  assert.equal(existsSync(controlPage), false, '/control must not expose a demo manual-control surface')
+  assert.equal(existsSync(universeApi), false, '/api/universe must not return hard-coded fallback state')
+  assert.doesNotMatch(source, /['"]\/control['"]/)
+  assert.doesNotMatch(source, /['"]\/api\/universe['"]/)
+  assert.doesNotMatch(source, /fallback-demo/)
 })
