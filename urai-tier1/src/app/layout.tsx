@@ -51,11 +51,17 @@ import './aaa-visual-authority-20260703.css'
 import './lifemap-proof-crops.css'
 import './urai-realm-accent-backgrounds.css'
 
+const configuredBuildSha = process.env.NEXT_PUBLIC_URAI_BUILD_SHA ?? ''
+const deployedSha = /^[0-9a-f]{40}$/.test(configuredBuildSha) ? configuredBuildSha : 'unverified'
+
 export const metadata: Metadata = {
   title: 'URAI Spatial',
   description: 'Cinematic, spatial, interactive URAI runtime',
   icons: {
     icon: '/icon.svg',
+  },
+  other: {
+    'urai-deployed-sha': deployedSha,
   },
 }
 
@@ -71,6 +77,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <body
         data-urai-home-spatial-shell="true"
         data-urai-living-state-layer="v2"
+        data-deployed-sha={deployedSha}
+        data-deployment-evidence={deployedSha === 'unverified' ? 'missing' : 'embedded'}
         style={{ margin: 0, background: '#08030f', overflowX: 'hidden' }}
       >
         <UraiAAAARoutePolish />
