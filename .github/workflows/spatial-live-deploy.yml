@@ -105,6 +105,8 @@ jobs:
         run: |
           set -euo pipefail
           mkdir -p release-evidence/core
+          node scripts/check-canonical-deploy-workflow.mjs 2>&1 | tee release-evidence/core/deploy-authority-contract.log
+          pnpm check:production-routes 2>&1 | tee release-evidence/core/production-route-contract.log
           pnpm runtime:authority 2>&1 | tee release-evidence/core/canonical-contract.log
           node urai-tier1/tests/spatial-system-contract-route-coverage.test.mjs 2>&1 | tee release-evidence/core/route-contract.log
           node scripts/check-system-loop-runtime.mjs 2>&1 | tee release-evidence/core/runtime-compile.log
