@@ -43,16 +43,34 @@ export type ReleaseReceipt = {
   claimBoundary: string;
 };
 
-const isSha = (value: unknown): value is string =>
+const isCommitSha = (value: unknown): value is string =>
   typeof value === "string" && /^[0-9a-f]{40}$/i.test(value);
 
-const nullableSha = (value: unknown, field: string): string | null => {
+const isSha256 = (value: unknown): value is string =>
+  typeof value === "string" && /^[0-9a-f]{64}$/i.test(value);
+
+const nullableCommitSha = (value: unknown, field: string): string | null => {
   if (value === null) return null;
-  if (!isSha(value)) {
-    throw new Error(`Release receipt field ${field} must be null or a 40-character commit SHA.`);
+  if (!isCommitSha(value)) {
+    throw new Error(`Release receipt field ${field} must be null or a 40-character Git commit SHA.`);
   }
   return value;
 };
+
+const nullableManifestSha = (value: unknown): string | null => {
+  if (value === null) return null;
+  if (!isSha256(value)) {
+    throw new Error("Release receipt field manifestSha must be null or a 64-character SHA-256 digest.");
+  }
+  return value;
+};
+
+const validEvidenceStates = new Set<EvidenceState>([
+  "passed",
+  "failed",
+  "pending",
+  "not-applicable-to-web-release",
+]);
 
 const validateReceipt = (value: unknown): ReleaseReceipt => {
   if (!value || typeof value !== "object") {
@@ -71,12 +89,27 @@ const validateReceipt = (value: unknown): ReleaseReceipt => {
   if (new Set(routePaths).size !== routePaths.length) {
     throw new Error("Release receipt contains duplicate route paths.");
   }
+  for (const route of receipt.routes) {
+    if (!route.path.startsWith("/")) throw new Error(`Invalid release route path: ${route.path}`);
+    if (!["implemented", "preview"].includes(route.sourceState)) {
+      throw new Error(`Invalid source state for ${route.path}.`);
+    }
+    if (!["verified", "unverified", "failed"].includes(route.productionState)) {
+      throw new Error(`Invalid production state for ${route.path}.`);
+    }
+  }
 
-  receipt.candidateSha = nullableSha(receipt.candidateSha, "candidateSha");
-  receipt.testedSha = nullableSha(receipt.testedSha, "testedSha");
-  receipt.deployedSha = nullableSha(receipt.deployedSha, "deployedSha");
-  receipt.rollbackSha = nullableSha(receipt.rollbackSha, "rollbackSha");
-  receipt.manifestSha = nullableSha(receipt.manifestSha, "manifestSha");
+  for (const [name, state] of Object.entries(receipt.checks)) {
+    if (!validEvidenceStates.has(state)) {
+      throw new Error(`Invalid evidence state for ${name}: ${state}`);
+    }
+  }
+
+  receipt.candidateSha = nullableCommitSha(receipt.candidateSha, "candidateSha");
+  receipt.testedSha = nullableCommitSha(receipt.testedSha, "testedSha");
+  receipt.deployedSha = nullableCommitSha(receipt.deployedSha, "deployedSha");
+  receipt.rollbackSha = nullableCommitSha(receipt.rollbackSha, "rollbackSha");
+  receipt.manifestSha = nullableManifestSha(receipt.manifestSha);
 
   if (receipt.deployedSha && receipt.testedSha !== receipt.deployedSha) {
     throw new Error("A deployed SHA must equal the tested SHA.");
@@ -95,6 +128,7 @@ export const isProductionCertified = (receipt: ReleaseReceipt): boolean =>
     receipt.testedSha &&
       receipt.deployedSha &&
       receipt.rollbackSha &&
+      receipt.manifestSha &&
       receipt.testedSha === receipt.deployedSha &&
       receipt.routes.every((route) => route.productionState === "verified") &&
       Object.entries(receipt.checks)
