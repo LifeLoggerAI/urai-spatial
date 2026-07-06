@@ -118,7 +118,27 @@ const allowedEvidenceStates = new Set([
   "pending",
   "not-applicable-to-web-release",
 ]);
-for (const [name, state] of Object.entries(receipt.checks ?? {})) {
+const requiredNonXrChecks = [
+  "canonicalContract",
+  "runtimeCompile",
+  "runtimeSmoke",
+  "productTypecheck",
+  "productBuild",
+  "browserFlow",
+  "mobileFlow",
+  "accessibility",
+  "customDomain",
+  "rollback",
+];
+const requiredCheckNames = [...requiredNonXrChecks, "physicalXr"];
+
+if (!receipt.checks || typeof receipt.checks !== "object") {
+  fail("checks must be an object");
+}
+for (const name of requiredCheckNames) {
+  if (!(name in receipt.checks)) fail(`missing required check ${name}`);
+}
+for (const [name, state] of Object.entries(receipt.checks)) {
   if (!allowedEvidenceStates.has(state)) fail(`invalid evidence state for ${name}`);
 }
 
@@ -157,9 +177,9 @@ const hasArtifacts = (names) => names.every((name) => Boolean(receipt.evidenceAr
 const allRoutesVerified = receipt.routes.every(
   (route) => route.productionState === "verified"
 );
-const requiredChecksPassed = Object.entries(receipt.checks ?? {})
-  .filter(([name]) => name !== "physicalXr")
-  .every(([, state]) => state === "passed");
+const requiredChecksPassed = requiredNonXrChecks.every(
+  (name) => receipt.checks[name] === "passed"
+);
 const certificationFieldsComplete = Boolean(
   receipt.candidateSha &&
     receipt.testedSha &&
@@ -193,6 +213,7 @@ console.log(
       failClosed: !receipt.deployedSha && !allRoutesVerified,
       manifestDigestRecorded: Boolean(receipt.manifestSha),
       evidenceArtifacts: Object.keys(receipt.evidenceArtifacts).length,
+      requiredChecks: requiredCheckNames,
       assetContract: expectedAssetCounts,
       status: "pass",
     },
