@@ -1,40 +1,37 @@
-name: V1 Asset Promote and Proof
+name: V1 Asset Verification and Proof
 
 on:
   workflow_dispatch:
-    inputs:
-      live_url:
-        description: Live URL to verify
-        required: true
-        default: https://urai-4dc1d.web.app
-        type: string
   repository_dispatch:
     types: [urai-v1-assets-ready]
-  push:
+  pull_request:
     branches: [main]
     paths:
       - urai-tier1/public/assets/urai/**
       - .github/workflows/v1-asset-promote.yml
+      - scripts/verify-asset-factory-handoff.mjs
+      - scripts/audit-v123-asset-wall.mjs
 
 concurrency:
-  group: urai-v1-asset-promote
-  cancel-in-progress: false
+  group: urai-v1-asset-proof-${{ github.head_ref || github.ref_name }}
+  cancel-in-progress: true
 
 permissions:
-  contents: write
-  id-token: write
+  contents: read
 
 jobs:
-  verify-deploy-proof:
+  verify-proof:
+    name: Verify V1 assets without production deployment
     runs-on: ubuntu-latest
-    environment: production
     timeout-minutes: 120
     env:
-      LIVE_URL: ${{ inputs.live_url || 'https://urai-4dc1d.web.app' }}
-      FIREBASE_PROJECT_ID: ${{ secrets.FIREBASE_PROJECT_ID }}
+      PROOF_URL: http://127.0.0.1:4173
     steps:
-      - name: Checkout Spatial
+      - name: Checkout exact event commit
         uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
 
       - name: Setup pnpm
         uses: pnpm/action-setup@v4
@@ -52,11 +49,14 @@ jobs:
         with:
           python-version: '3.12'
 
-      - name: Install dependencies
+      - name: Install frozen dependencies
         run: pnpm install --frozen-lockfile
 
       - name: Install visual audit dependencies
         run: python -m pip install --disable-pip-version-check pillow
+
+      - name: Validate sole deployment authority
+        run: node scripts/check-deployment-authority.mjs
 
       - name: Verify provider-scored Asset Factory handoff
         run: node scripts/verify-asset-factory-handoff.mjs
@@ -67,29 +67,27 @@ jobs:
       - name: Typecheck
         run: pnpm typecheck
 
-      - name: Build static production source
+      - name: Build static proof source
         run: pnpm build:static
 
-      - name: Activate static Firebase hosting config
-        shell: bash
+      - name: Serve static proof source
         run: |
           test -d urai-tier1/out
           test -f urai-tier1/out/index.html
-          cp firebase.static.json firebase.json
-          node -e "const f=require('./firebase.json'); if(f.hosting.public!=='urai-tier1/out') process.exit(1)"
-
-      - name: Deploy Firebase hosting
-        uses: FirebaseExtended/action-hosting-deploy@v0
-        with:
-          repoToken: ${{ secrets.GITHUB_TOKEN }}
-          firebaseServiceAccount: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_JSON }}
-          projectId: ${{ secrets.FIREBASE_PROJECT_ID }}
-          channelId: live
+          python3 -m http.server 4173 --directory urai-tier1/out > /tmp/urai-v1-proof-server.log 2>&1 &
+          for i in {1..30}; do
+            if curl -fsS "$PROOF_URL" >/dev/null; then
+              exit 0
+            fi
+            sleep 1
+          done
+          cat /tmp/urai-v1-proof-server.log
+          exit 1
 
       - name: Install Playwright Chromium
         run: pnpm exec playwright install --with-deps chromium
 
-      - name: Capture all V1 routes
+      - name: Capture V1 route proof
         run: |
           node scripts/aaa-launch-proof.mjs \
             --skip-install \
@@ -97,7 +95,7 @@ jobs:
             --skip-test \
             --skip-build \
             --screenshots \
-            --base="$LIVE_URL" | tee v1-assets-launch-proof.log
+            --base="$PROOF_URL" | tee v1-assets-launch-proof.log
           proof_dir="$(grep -E '^Receipt: ' v1-assets-launch-proof.log | tail -1 | sed 's/^Receipt: //')"
           test -d "$proof_dir/screenshots"
           echo "PROOF_DIR=$proof_dir" >> "$GITHUB_ENV"
@@ -108,12 +106,12 @@ jobs:
         run: |
           LOOP_NAME="v1-provider-assets" EXPECTED_PNG_COUNT=24 PROOF_DIR="$PROOF_DIR" \
             python scripts/urai-machine-visual-verdict.py
-          LOOP_NAME="v1-provider-assets" BASE_URL="$LIVE_URL" \
+          LOOP_NAME="v1-provider-assets" BASE_URL="$PROOF_URL" \
             node scripts/urai-v1-structural-audit.mjs
-          LOOP_NAME="v1-provider-assets" BASE_URL="$LIVE_URL" \
+          LOOP_NAME="v1-provider-assets" BASE_URL="$PROOF_URL" \
             node scripts/urai-v1-realm-audit.mjs
 
-      - name: Package promoted proof
+      - name: Package proof
         run: |
           mkdir -p artifacts
           zip -r artifacts/v1-provider-assets-${GITHUB_SHA}.zip \
@@ -131,20 +129,13 @@ jobs:
       - name: Upload proof artifact
         uses: actions/upload-artifact@v4
         with:
-          name: v1-provider-assets-proof-${{ github.run_id }}
-          retention-days: 30
+          name: v1-provider-assets-proof-${{ github.sha }}
+          retention-days: 90
           path: artifacts/**
+          if-no-files-found: error
 
-      - name: Commit proof reports
-        shell: bash
+      - name: State promotion boundary
         run: |
-          git config user.name "URAI Production Wheel"
-          git config user.email "urai-wheel@users.noreply.github.com"
-          git add docs/receipts/visual-verdicts
-          if git diff --cached --quiet; then
-            exit 0
-          fi
-          git commit -m "Record provider V1 asset promotion proof"
-          git restore firebase.json docs/receipts/V123_ASSET_WALL_AUDIT.latest.json || true
-          git pull --rebase origin main
-          git push origin HEAD:main
+          echo "This workflow verifies assets and produces proof only."
+          echo "It does not deploy production or write evidence to main."
+          echo "Promotion requires the sole exact-SHA deployment workflow."
