@@ -3,64 +3,130 @@ import fs from 'node:fs'
 import path from 'node:path'
 import process from 'node:process'
 
-function requireValue(name) {
-  const value = process.env[name]?.trim()
-  if (!value) throw new Error(`${name} is required to write a deployment receipt.`)
-  return value
+const shaPattern = /^[0-9a-f]{40}$/
+
+function value(name, fallback = '') {
+  return process.env[name]?.trim() || fallback
 }
 
-function requireSha(name) {
-  const value = requireValue(name)
-  if (!/^[0-9a-f]{40}$/.test(value)) {
-    throw new Error(`${name} must be a full lowercase 40-character Git SHA.`)
-  }
-  return value
+function booleanValue(name) {
+  return value(name) === 'true'
 }
 
 function changedFiles(rollbackSha, targetSha) {
-  const output = execFileSync('git', ['diff', '--name-only', `${rollbackSha}..${targetSha}`], {
-    encoding: 'utf8',
-  })
-  return output.split('\n').map((value) => value.trim()).filter(Boolean)
+  if (!shaPattern.test(rollbackSha) || !shaPattern.test(targetSha)) {
+    return { files: [], error: 'target or rollback SHA was invalid before receipt generation' }
+  }
+
+  try {
+    const output = execFileSync('git', ['diff', '--name-only', `${rollbackSha}..${targetSha}`], {
+      encoding: 'utf8',
+    })
+    return {
+      files: output.split('\n').map((entry) => entry.trim()).filter(Boolean),
+      error: null,
+    }
+  } catch (error) {
+    return {
+      files: [],
+      error: error instanceof Error ? error.message : String(error),
+    }
+  }
+}
+
+function deploymentOutcome({
+  targetSha,
+  rollbackSha,
+  targetDeployed,
+  targetSmokeResult,
+  rollbackAttempted,
+  rollbackResult,
+  finalLiveSha,
+}) {
+  if (targetDeployed && targetSmokeResult === 'success' && finalLiveSha === targetSha) {
+    return 'verified-live'
+  }
+  if (rollbackAttempted && rollbackResult === 'success' && finalLiveSha === rollbackSha) {
+    return 'rolled-back-to-approved-sha'
+  }
+  if (rollbackAttempted && rollbackResult !== 'success') {
+    return 'rollback-failed'
+  }
+  if (targetDeployed) {
+    return 'target-deployed-but-unverified'
+  }
+  return 'failed-before-deploy'
 }
 
 function main() {
-  const targetSha = requireSha('URAI_TARGET_SHA')
-  const rollbackSha = requireSha('URAI_ROLLBACK_SHA')
-  const environment = requireValue('URAI_DEPLOY_ENVIRONMENT')
-  const firebaseProject = requireValue('FIREBASE_PROJECT_ID')
-  const publicUrl = requireValue('URAI_DEPLOY_URL')
-  const deploymentMode = requireValue('URAI_DEPLOYMENT_MODE')
-  const outputPath = process.env.URAI_DEPLOYMENT_RECEIPT_PATH?.trim()
-    || `operations/receipts/releases/${targetSha}/deployment-receipt.json`
-
-  if (targetSha === rollbackSha) {
-    throw new Error('URAI_ROLLBACK_SHA must differ from URAI_TARGET_SHA.')
-  }
-
-  const files = changedFiles(rollbackSha, targetSha)
-  if (files.length === 0) {
-    throw new Error('The target and rollback SHAs contain no changed files; refusing an ambiguous release receipt.')
-  }
-
+  const targetSha = value('URAI_TARGET_SHA', 'missing-target-sha')
+  const rollbackSha = value('URAI_ROLLBACK_SHA', 'missing-rollback-sha')
+  const environment = value('URAI_DEPLOY_ENVIRONMENT', 'unknown')
+  const firebaseProject = value('FIREBASE_PROJECT_ID', 'unknown')
+  const publicUrl = value('URAI_DEPLOY_URL', value('URAI_REQUESTED_DEPLOY_URL')) || null
+  const deploymentMode = value('URAI_DEPLOYMENT_MODE', 'framework')
+  const targetDeployed = booleanValue('URAI_TARGET_DEPLOYED')
+  const targetSmokeResult = value('URAI_TARGET_SMOKE_RESULT', 'not-run')
+  const rollbackAttempted = booleanValue('URAI_ROLLBACK_ATTEMPTED')
+  const rollbackResult = value('URAI_ROLLBACK_RESULT', 'not-run')
+  const finalLiveSha = value('URAI_FINAL_LIVE_SHA') || null
+  const jobStatus = value('URAI_JOB_STATUS', 'unknown')
   const runId = process.env.GITHUB_RUN_ID ? Number(process.env.GITHUB_RUN_ID) : null
+  const targetIsValid = shaPattern.test(targetSha)
+  const rollbackIsValid = shaPattern.test(rollbackSha)
+  const diff = changedFiles(rollbackSha, targetSha)
+  const outcome = deploymentOutcome({
+    targetSha,
+    rollbackSha,
+    targetDeployed,
+    targetSmokeResult,
+    rollbackAttempted,
+    rollbackResult,
+    finalLiveSha,
+  })
+  const classification = outcome === 'verified-live' ? 'VERIFIED LIVE' : 'BLOCKED'
+  const receiptKey = targetIsValid ? targetSha : `failed-run-${runId || Date.now()}`
+  const outputPath = value('URAI_DEPLOYMENT_RECEIPT_PATH')
+    || `operations/receipts/releases/${receiptKey}/deployment-receipt.json`
+
+  const caveats = [
+    'Physical Quest, Vision Pro, and handheld AR certification remain separate device gates.',
+    'Paid provider generation requires separate immutable provider receipts.',
+  ]
+  if (diff.error) caveats.push(`Changed-file evidence could not be generated: ${diff.error}`)
+  if (!targetIsValid) caveats.push('Target SHA input was invalid or absent.')
+  if (!rollbackIsValid) caveats.push('Rollback SHA input was invalid or absent.')
+  if (outcome === 'rolled-back-to-approved-sha') {
+    caveats.push('The target release failed verification and the approved rollback SHA was restored; the target remains uncertified.')
+  }
+  if (outcome === 'rollback-failed') {
+    caveats.push('Automatic rollback failed. Immediate operator intervention and environment containment are required.')
+  }
+  if (outcome === 'target-deployed-but-unverified') {
+    caveats.push('The target was deployed but did not complete external verification and no successful rollback was recorded.')
+  }
+  if (outcome === 'failed-before-deploy') {
+    caveats.push('The workflow failed before a verified target deployment was recorded.')
+  }
+
   const receipt = {
-    receiptId: `URAI-SPATIAL-DEPLOY-${targetSha.slice(0, 12)}`,
+    receiptId: `URAI-SPATIAL-DEPLOY-${targetIsValid ? targetSha.slice(0, 12) : `RUN-${runId || 'UNKNOWN'}`}`,
     recordedAt: new Date().toISOString(),
-    classification: 'VERIFIED LIVE',
+    classification,
+    outcome,
     repository: 'LifeLoggerAI/urai-spatial',
     branch: process.env.GITHUB_REF_NAME || 'manual-release',
-    commitSha: targetSha,
-    pullRequest: process.env.URAI_PULL_REQUEST || null,
-    issue: process.env.URAI_RELEASE_ISSUE || null,
-    changedFiles: files,
+    commitSha: targetIsValid ? targetSha : null,
+    pullRequest: value('URAI_PULL_REQUEST') || null,
+    issue: value('URAI_RELEASE_ISSUE') || null,
+    changedFiles: diff.files,
     workflowRuns: [
       {
         name: process.env.GITHUB_WORKFLOW || 'URAI Spatial Deploy',
         runId,
         status: 'completed',
-        conclusion: 'success',
-        artifact: 'urai-spatial-deployment-receipt',
+        conclusion: jobStatus,
+        artifact: `urai-spatial-deployment-receipt-${targetSha}`,
       },
     ],
     validation: {
@@ -71,31 +137,34 @@ function main() {
         'corepack pnpm smoke:live',
         'corepack pnpm smoke:home-xr:live',
       ],
-      testResult: 'passed on exact target SHA before deployment',
-      buildResult: `${deploymentMode} build and Firebase deployment passed`,
-      runtimeVerification: `External smoke passed against ${publicUrl}`,
+      testResult: targetDeployed ? 'release gates completed before target deployment' : 'release gates did not produce a recorded target deployment',
+      buildResult: targetDeployed ? `${deploymentMode} target build and Firebase deployment completed` : `${deploymentMode} target deployment not recorded`,
+      runtimeVerification: targetSmokeResult === 'success'
+        ? `External smoke passed against ${publicUrl || 'the configured deployment URL'}`
+        : `Target external smoke result: ${targetSmokeResult}`,
       screenshotsOrArtifacts: [],
     },
     deployment: {
       target: `Firebase ${firebaseProject}`,
       environment,
-      deployedSha: targetSha,
-      publicUrls: [publicUrl],
-      rollbackSha,
+      requestedSha: targetIsValid ? targetSha : null,
+      targetDeployed,
+      targetSmokeResult,
+      finalLiveSha: finalLiveSha && shaPattern.test(finalLiveSha) ? finalLiveSha : null,
+      publicUrls: publicUrl ? [publicUrl] : [],
+      rollbackSha: rollbackIsValid ? rollbackSha : null,
+      rollbackAttempted,
+      rollbackResult,
     },
     provider: null,
-    remainingCaveats: [
-      'Physical Quest, Vision Pro, and handheld AR certification remain separate device gates.',
-      'This receipt proves the deployed web release only; paid provider generation requires separate provider receipts.',
-      'Rollback SHA is recorded but a separate rollback execution receipt is required if rollback is exercised.',
-    ],
+    remainingCaveats: caveats,
   }
 
   fs.mkdirSync(path.dirname(outputPath), { recursive: true })
   fs.writeFileSync(outputPath, `${JSON.stringify(receipt, null, 2)}\n`, 'utf8')
   console.log(`URAI_DEPLOYMENT_RECEIPT=${outputPath}`)
-  console.log(`URAI_DEPLOYED_SHA=${targetSha}`)
-  console.log(`URAI_ROLLBACK_SHA=${rollbackSha}`)
+  console.log(`URAI_DEPLOYMENT_OUTCOME=${outcome}`)
+  console.log(`URAI_FINAL_LIVE_SHA=${receipt.deployment.finalLiveSha || 'not-recorded'}`)
 }
 
 main()
