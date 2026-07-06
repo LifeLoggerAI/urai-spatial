@@ -47,6 +47,10 @@ function run(command, args, options = {}) {
   return `${result.stdout || ''}${result.stderr || ''}`
 }
 
+function runFirebase(args) {
+  return run('pnpm', ['exec', 'firebase', ...args])
+}
+
 function git(...args) {
   return execFileSync('git', args, { cwd: root, encoding: 'utf8' }).trim()
 }
@@ -121,7 +125,7 @@ async function verifyLive() {
       redirect: 'follow',
       cache: 'no-store',
       signal: AbortSignal.timeout(20_000),
-      headers: { 'user-agent': 'urai-exact-release-verifier/1.0', 'cache-control': 'no-cache' },
+      headers: { 'user-agent': 'urai-exact-release-verifier/1.1', 'cache-control': 'no-cache' },
     })
     const html = await response.text()
     const missingMarkers = markers.filter((marker) => !html.includes(marker))
@@ -173,16 +177,16 @@ async function main() {
     receipt.status = 'artifact-verified'
     writeReceipt(receipt)
 
-    receipt.commands.push(`firebase deploy --config firebase.static.json --only hosting --project ${projectId}`)
-    receipt.hostingProviderOutput = run('firebase', ['deploy', '--non-interactive', '--config', 'firebase.static.json', '--only', 'hosting', '--project', projectId])
+    receipt.commands.push(`pnpm exec firebase deploy --config firebase.static.json --only hosting --project ${projectId}`)
+    receipt.hostingProviderOutput = runFirebase(['deploy', '--non-interactive', '--config', 'firebase.static.json', '--only', 'hosting', '--project', projectId])
 
-    receipt.commands.push(`firebase deploy --config firebase.json --only firestore:rules,firestore:indexes,functions --project ${projectId}`)
-    receipt.backendProviderOutput = run('firebase', ['deploy', '--non-interactive', '--config', 'firebase.json', '--only', 'firestore:rules,firestore:indexes,functions', '--project', projectId])
+    receipt.commands.push(`pnpm exec firebase deploy --config firebase.json --only firestore:rules,firestore:indexes,functions --project ${projectId}`)
+    receipt.backendProviderOutput = runFirebase(['deploy', '--non-interactive', '--config', 'firebase.json', '--only', 'firestore:rules,firestore:indexes,functions', '--project', projectId])
 
     receipt.liveResults = await verifyLive()
     receipt.status = 'verified-live'
     receipt.completedAt = new Date().toISOString()
-    receipt.rollbackCommand = `git checkout ${rollbackSha} && NEXT_PUBLIC_URAI_BUILD_SHA=${rollbackSha} NEXT_PUBLIC_URAI_ROLLBACK_SHA=${targetSha} pnpm build:static && firebase deploy --non-interactive --config firebase.static.json --only hosting --project ${projectId}`
+    receipt.rollbackCommand = `git checkout ${rollbackSha} && NEXT_PUBLIC_URAI_BUILD_SHA=${rollbackSha} NEXT_PUBLIC_URAI_ROLLBACK_SHA=${targetSha} pnpm build:static && pnpm exec firebase deploy --non-interactive --config firebase.static.json --only hosting --project ${projectId}`
     writeReceipt(receipt)
     console.log(`Production release verified. Receipt: ${receiptPath}`)
   } catch (error) {
