@@ -14,21 +14,25 @@ const routeNotes: Record<string, string> = {
   "/": "Home threshold entry",
   "/home": "Canonical Home World",
   "/ground": "Private operating world",
+  "/spatial": "Spatial system entry",
   "/life-map": "Spatial memory galaxy",
   "/focus": "Selected memory chamber",
   "/replay": "Memory film route",
   "/mirror": "Reflection realm",
   "/passport": "Identity vault",
   "/status": "Route and certification room",
+  "/privacy": "Privacy information",
   "/privacy-controls": "Permission controls",
   "/location-map": "Place and emotional weather",
   "/ascent": "Sky ascent route",
   "/unwind": "Return route",
   "/demo": "Public walkthrough",
+  "/demo/life-map": "Life Map demonstration",
   "/demo/replay-film": "Replay film proof surface",
   "/spatial/life-map": "Spatial Life Map",
   "/spatial/life-map-r3f": "R3F Life Map",
   "/spatial/ar-vr": "Explorable XR entry; physical verification remains separate",
+  "/terms": "Public terms surface",
 };
 
 const routeGroups = [
@@ -48,12 +52,21 @@ const routeGroups = [
   },
   {
     title: "Trust and place",
-    paths: ["/privacy-controls", "/location-map", "/ascent", "/unwind"],
+    paths: [
+      "/privacy",
+      "/privacy-controls",
+      "/location-map",
+      "/ascent",
+      "/unwind",
+      "/terms",
+    ],
   },
   {
     title: "Showcase and XR",
     paths: [
+      "/spatial",
       "/demo",
+      "/demo/life-map",
       "/demo/replay-film",
       "/spatial/life-map",
       "/spatial/life-map-r3f",
