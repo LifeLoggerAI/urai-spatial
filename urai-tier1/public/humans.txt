@@ -1,0 +1,11 @@
+URAI Labs
+
+Product: URAI
+Created by: Adam Clamp
+Website: https://urai.app
+Source: https://github.com/LifeLoggerAI/urai-spatial
+
+URAI Labs is the organization behind URAI at urai.app.
+URAI Labs is not ARAI Labs, URAI S.p.A., the CoCoSys neuroscience lab, Roots URAI blowers, or another unrelated organization using the word Urai.
+
+Current release claims must be checked against https://urai.app/status and repository evidence.
