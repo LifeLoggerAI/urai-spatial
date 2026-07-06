@@ -1,10 +1,10 @@
 {
   "receiptId": "URAI-SPATIAL-ASSET-DROPIN-20260706-002",
-  "recordedAt": "2026-07-06T17:29:00-05:00",
+  "recordedAt": "2026-07-06T17:39:00-05:00",
   "classification": "IMPLEMENTED ON CURRENT MAIN ANCESTRY; EXACT-HEAD CI PENDING; PROVIDER ASSETS PARTIALLY PENDING; NOT DEPLOYED",
   "repository": "LifeLoggerAI/urai-spatial",
   "branch": "canonical-asset-runtime-clean",
-  "implementationSha": "b0502160080dc9af7137e31958a0c61a968f8389",
+  "implementationSha": "cfdd7d526dc1821f020e0e87693c36da4b3af0d7",
   "receiptCommitRule": "implementationSha identifies the final code-and-test commit immediately before this evidence-only receipt commit.",
   "sourcePullRequest": "https://github.com/LifeLoggerAI/urai-spatial/pull/453",
   "activePullRequest": "https://github.com/LifeLoggerAI/urai-spatial/pull/457",
@@ -29,7 +29,8 @@
       "every canonical path is unique, relative, traversal-free, injection-safe, and inside the version prefix",
       "every normalized CSS variable key is non-empty and unique",
       "every asset has a 64-character SHA-256 digest",
-      "every asset has a positive safe-integer byte count"
+      "every asset has a positive safe-integer byte count",
+      "every V5 route-level CSS override has an explicit safe fallback when an optional wired asset name is absent"
     ],
     "failureMode": "fallback",
     "cleanup": "Abort in-flight fetches and remove injected CSS variables, ready classes, and dataset state on unmount."
