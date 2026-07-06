@@ -15,6 +15,11 @@ export type ReleaseRoute = {
   productionState: RouteProductionState;
 };
 
+export type EvidenceArtifact = {
+  path: string;
+  sha256: string;
+};
+
 export type ReleaseReceipt = {
   schemaVersion: "urai-release-receipt-1";
   releaseId: string;
@@ -38,10 +43,19 @@ export type ReleaseReceipt = {
     v5: number;
     providerPromotionsVerified: string[];
   };
+  evidenceArtifacts: Record<string, EvidenceArtifact>;
   checks: Record<string, EvidenceState>;
   routes: ReleaseRoute[];
   claimBoundary: string;
 };
+
+export const requiredReleaseEvidenceArtifacts = [
+  "browserFlow",
+  "mobileFlow",
+  "accessibility",
+  "customDomain",
+  "rollback",
+] as const;
 
 const isCommitSha = (value: unknown): value is string =>
   typeof value === "string" && /^[0-9a-f]{40}$/i.test(value);
@@ -105,6 +119,21 @@ const validateReceipt = (value: unknown): ReleaseReceipt => {
     }
   }
 
+  if (!receipt.evidenceArtifacts || typeof receipt.evidenceArtifacts !== "object") {
+    throw new Error("Release receipt evidenceArtifacts must be an object.");
+  }
+  for (const [name, artifact] of Object.entries(receipt.evidenceArtifacts)) {
+    if (!artifact || typeof artifact !== "object") {
+      throw new Error(`Evidence artifact ${name} must be an object.`);
+    }
+    if (typeof artifact.path !== "string" || !artifact.path.trim()) {
+      throw new Error(`Evidence artifact ${name} must record a path.`);
+    }
+    if (!isSha256(artifact.sha256)) {
+      throw new Error(`Evidence artifact ${name} must record a SHA-256 digest.`);
+    }
+  }
+
   receipt.candidateSha = nullableCommitSha(receipt.candidateSha, "candidateSha");
   receipt.testedSha = nullableCommitSha(receipt.testedSha, "testedSha");
   receipt.deployedSha = nullableCommitSha(receipt.deployedSha, "deployedSha");
@@ -130,6 +159,7 @@ export const isProductionCertified = (receipt: ReleaseReceipt): boolean =>
       receipt.rollbackSha &&
       receipt.manifestSha &&
       receipt.testedSha === receipt.deployedSha &&
+      requiredReleaseEvidenceArtifacts.every((name) => Boolean(receipt.evidenceArtifacts[name])) &&
       receipt.routes.every((route) => route.productionState === "verified") &&
       Object.entries(receipt.checks)
         .filter(([name]) => name !== "physicalXr")
