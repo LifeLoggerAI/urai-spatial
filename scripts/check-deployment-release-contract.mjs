@@ -32,6 +32,7 @@ requireTokens(workflow, workflowPath, [
   'confirmation:',
   'ref: ${{ inputs.target_sha }}',
   'fetch-depth: 0',
+  'persist-credentials: false',
   'node-version: 22',
   'corepack pnpm install --frozen-lockfile',
   'corepack pnpm verify:release',
@@ -39,9 +40,17 @@ requireTokens(workflow, workflowPath, [
   "'DEPLOY_URAI_STAGING'",
   "'urai-4dc1d'",
   'https://urai.app',
+  'git fetch origin main --no-tags --prune',
+  'git merge-base --is-ancestor "${URAI_TARGET_SHA}" origin/main',
+  'git merge-base --is-ancestor "${URAI_ROLLBACK_SHA}" "${URAI_TARGET_SHA}"',
   'REQUIRE_LIVE_COMMIT_SHA=true',
   'corepack pnpm smoke:live',
   'corepack pnpm smoke:home-xr:live',
+  'Mark rollback attempt after failed target verification',
+  'Restore approved rollback SHA',
+  'git worktree add --detach',
+  'URAI_ROLLBACK_RESULT=success',
+  'if: always()',
   'node scripts/write-deployment-receipt.mjs',
   'actions/upload-artifact@v4',
   'cancel-in-progress: false',
@@ -57,15 +66,20 @@ requireTokens(legacyWorkflow, legacyWorkflowPath, [
 ])
 
 requireTokens(receiptWriter, receiptWriterPath, [
-  "classification: 'VERIFIED LIVE'",
+  "classification = outcome === 'verified-live' ? 'VERIFIED LIVE' : 'BLOCKED'",
+  "'rolled-back-to-approved-sha'",
+  "'rollback-failed'",
+  "'target-deployed-but-unverified'",
+  "'failed-before-deploy'",
   "repository: 'LifeLoggerAI/urai-spatial'",
   'URAI_TARGET_SHA',
   'URAI_ROLLBACK_SHA',
   'FIREBASE_PROJECT_ID',
   'URAI_DEPLOY_URL',
   "execFileSync('git', ['diff', '--name-only'",
-  "artifact: 'urai-spatial-deployment-receipt'",
-  'rollbackSha',
+  'rollbackAttempted',
+  'rollbackResult',
+  'finalLiveSha',
 ])
 
 if (/^\s*push:/m.test(workflow)) {
@@ -79,6 +93,9 @@ if (workflow.includes('firebase.static.json')) {
 }
 if (workflow.includes('cancel-in-progress: true')) {
   failures.push(`${workflowPath} must not auto-cancel an in-progress production deployment`)
+}
+if (receiptWriter.includes("classification: 'VERIFIED LIVE'")) {
+  failures.push(`${receiptWriterPath} must derive certification from the recorded deployment outcome`)
 }
 
 for (const forbidden of [
@@ -100,4 +117,4 @@ if (failures.length) {
   process.exit(1)
 }
 
-console.log('[deployment-release-contract] one manual exact-SHA deployment authority, rollback, project, smoke, and receipt boundaries passed')
+console.log('[deployment-release-contract] exact-main target, ancestor rollback, automatic recovery, smoke, and honest receipt boundaries passed')
