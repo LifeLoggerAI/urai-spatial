@@ -112,6 +112,12 @@ jobs:
           set -o pipefail
           node --test urai-tier1/tests/spatial-system-contract-route-coverage.test.mjs 2>&1 | tee artifacts/v50/route-contract.log
 
+      - name: Verify hashed release evidence source contract
+        shell: bash
+        run: |
+          set -o pipefail
+          node --test tests/release-receipt-evidence-contract.mjs 2>&1 | tee artifacts/v50/release-evidence-contract.log
+
       - name: Validate fail-closed release receipt
         shell: bash
         run: |
@@ -123,14 +129,36 @@ jobs:
         run: |
           set -euo pipefail
           tmp="$(mktemp -d)"
-          mkdir -p "$tmp/urai-tier1/src/data" "$tmp/release"
+          mkdir -p "$tmp/urai-tier1/src/data" "$tmp/release" "$tmp/evidence"
           cp urai-tier1/src/data/release-receipt.json "$tmp/urai-tier1/src/data/release-receipt.json"
           cp release/urai-spatial-live-manifest.json "$tmp/release/urai-spatial-live-manifest.json"
           target="aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
           rollback="bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+
+          for name in canonical route runtime-compile runtime-smoke typecheck build browser mobile accessibility custom-domain rollback; do
+            printf '%s evidence for %s\n' "$name" "$target" > "$tmp/evidence/$name.log"
+          done
+
+          core_env=(
+            "URAI_RELEASE_CANONICAL_EVIDENCE=$tmp/evidence/canonical.log"
+            "URAI_RELEASE_ROUTE_CONTRACT_EVIDENCE=$tmp/evidence/route.log"
+            "URAI_RELEASE_RUNTIME_COMPILE_EVIDENCE=$tmp/evidence/runtime-compile.log"
+            "URAI_RELEASE_RUNTIME_SMOKE_EVIDENCE=$tmp/evidence/runtime-smoke.log"
+            "URAI_RELEASE_TYPECHECK_EVIDENCE=$tmp/evidence/typecheck.log"
+            "URAI_RELEASE_BUILD_EVIDENCE=$tmp/evidence/build.log"
+          )
+          certification_env=(
+            "URAI_RELEASE_BROWSER_EVIDENCE=$tmp/evidence/browser.log"
+            "URAI_RELEASE_MOBILE_EVIDENCE=$tmp/evidence/mobile.log"
+            "URAI_RELEASE_ACCESSIBILITY_EVIDENCE=$tmp/evidence/accessibility.log"
+            "URAI_RELEASE_CUSTOM_DOMAIN_EVIDENCE=$tmp/evidence/custom-domain.log"
+            "URAI_RELEASE_ROLLBACK_EVIDENCE=$tmp/evidence/rollback.log"
+          )
+
           {
             cd "$tmp"
             env \
+              "${core_env[@]}" \
               URAI_RELEASE_RECEIPT_PHASE=prepared \
               URAI_RELEASE_CANDIDATE_SHA="$target" \
               URAI_RELEASE_TESTED_SHA="$target" \
@@ -138,32 +166,35 @@ jobs:
               URAI_RELEASE_ROLLBACK_SHA="$rollback" \
               node "$GITHUB_WORKSPACE/scripts/materialize-release-receipt.mjs"
             node "$GITHUB_WORKSPACE/scripts/check-release-receipt.mjs"
+            grep -q '"evidenceArtifacts"' urai-tier1/src/data/release-receipt.json
+            grep -q '"browserFlow": "pending"' urai-tier1/src/data/release-receipt.json
 
+            cp "$GITHUB_WORKSPACE/urai-tier1/src/data/release-receipt.json" urai-tier1/src/data/release-receipt.json
             if env \
+              "${core_env[@]}" \
               URAI_RELEASE_RECEIPT_PHASE=certified \
               URAI_RELEASE_CANDIDATE_SHA="$target" \
               URAI_RELEASE_TESTED_SHA="$target" \
               URAI_RELEASE_DEPLOYED_SHA="$target" \
               URAI_RELEASE_ROLLBACK_SHA="$rollback" \
               node "$GITHUB_WORKSPACE/scripts/materialize-release-receipt.mjs"; then
-              echo "Certified receipt unexpectedly accepted missing evidence flags" >&2
+              echo "Certified receipt unexpectedly accepted missing evidence files" >&2
               exit 1
             fi
 
+            cp "$GITHUB_WORKSPACE/urai-tier1/src/data/release-receipt.json" urai-tier1/src/data/release-receipt.json
             env \
+              "${core_env[@]}" \
+              "${certification_env[@]}" \
               URAI_RELEASE_RECEIPT_PHASE=certified \
               URAI_RELEASE_CANDIDATE_SHA="$target" \
               URAI_RELEASE_TESTED_SHA="$target" \
               URAI_RELEASE_DEPLOYED_SHA="$target" \
               URAI_RELEASE_ROLLBACK_SHA="$rollback" \
-              URAI_RELEASE_BROWSER_VERIFIED=1 \
-              URAI_RELEASE_MOBILE_VERIFIED=1 \
-              URAI_RELEASE_ACCESSIBILITY_VERIFIED=1 \
-              URAI_RELEASE_CUSTOM_DOMAIN_VERIFIED=1 \
-              URAI_RELEASE_ROLLBACK_VERIFIED=1 \
               node "$GITHUB_WORKSPACE/scripts/materialize-release-receipt.mjs"
             node "$GITHUB_WORKSPACE/scripts/check-release-receipt.mjs"
             grep -q '"manifestSha": "[0-9a-f]\{64\}"' urai-tier1/src/data/release-receipt.json
+            test "$(grep -c '"sha256": "[0-9a-f]\{64\}"' urai-tier1/src/data/release-receipt.json)" -eq 11
           } 2>&1 | tee artifacts/v50/release-receipt-materialization.log
 
       - name: Compile root SystemLoop runtime
@@ -211,6 +242,7 @@ jobs:
             checks: {
               canonicalContract: true,
               routeContract: true,
+              releaseEvidenceContract: true,
               releaseReceipt: true,
               releaseReceiptMaterialization: true,
               runtimeCompile: true,
