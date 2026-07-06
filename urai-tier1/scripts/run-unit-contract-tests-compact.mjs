@@ -11,6 +11,7 @@ const tests = [
   'tests/lifemap-scene-behavior.test.mjs',
   'tests/memory-star-phase4-contract.test.mjs',
   'tests/orb-companion-contract.test.mjs',
+  'tests/production-release-identity-contract.test.mjs',
   'tests/quest-entry-lifecycle.test.mjs',
   'tests/quest-ended-during-attach.test.mjs',
   'tests/quest-pointer-cancel.test.mjs',
