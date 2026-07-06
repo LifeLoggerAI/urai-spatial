@@ -6,6 +6,22 @@ const workflowPath = '.github/workflows/spatial-live-deploy.yml';
 const accessibilityPath = 'scripts/verify-live-accessibility.mjs';
 const failures = [];
 
+const requiredWorkflowDependencies = [
+  'scripts/materialize-release-receipt.mjs',
+  'scripts/check-release-receipt.mjs',
+  'scripts/smoke-live-route-fingerprints.mjs',
+  'scripts/aaa-launch-proof.mjs',
+  'scripts/check-system-loop-runtime.mjs',
+  'scripts/smoke-system-loop-runtime.mjs',
+  'urai-tier1/src/data/release-receipt.json',
+  'urai-tier1/src/lib/release-evidence.ts',
+  'urai-tier1/src/app/status/page.tsx',
+  'urai-tier1/src/lib/spatial-system-contract.ts',
+  'urai-tier1/tests/spatial-system-contract-route-coverage.test.mjs',
+  'release/urai-spatial-live-manifest.json',
+  'firebase.static.json',
+];
+
 const readRequiredFile = (filePath, description) => {
   try {
     return fs.readFileSync(filePath, 'utf8');
@@ -16,8 +32,16 @@ const readRequiredFile = (filePath, description) => {
   }
 };
 
+for (const filePath of requiredWorkflowDependencies) {
+  if (!fs.existsSync(filePath) || !fs.statSync(filePath).isFile()) {
+    failures.push(`workflow dependency is missing: ${filePath}`);
+  }
+}
+
 const workflow = readRequiredFile(workflowPath, 'canonical deployment workflow');
 const accessibility = readRequiredFile(accessibilityPath, 'live accessibility verifier');
+const statusPage = readRequiredFile('urai-tier1/src/app/status/page.tsx', 'receipt-backed Status route');
+const routeContract = readRequiredFile('urai-tier1/src/lib/spatial-system-contract.ts', 'canonical spatial route contract');
 
 const requireText = (source, text, description) => {
   if (!source.includes(text)) failures.push(`${description}: missing ${JSON.stringify(text)}`);
@@ -44,6 +68,7 @@ requireText(workflow, 'materialize-release-receipt.mjs', 'release receipt must b
 requireText(workflow, 'URAI_RELEASE_RECEIPT_PHASE: prepared', 'prepared receipt stage is mandatory');
 requireText(workflow, 'URAI_RELEASE_RECEIPT_PHASE: certified', 'certified receipt stage is mandatory');
 requireText(workflow, 'verify-live-accessibility.mjs', 'live accessibility evidence is mandatory');
+requireText(workflow, 'smoke-live-route-fingerprints.mjs', 'live route identity proof is mandatory');
 requireText(workflow, 'rollback-smoke.log', 'rollback smoke evidence is mandatory');
 requireText(workflow, 'git checkout --force "$ROLLBACK_SHA"', 'rollback SHA must actually be deployed');
 requireText(workflow, 'git checkout --force "$TARGET_SHA"', 'target must be restored after rollback');
@@ -61,6 +86,12 @@ requireText(accessibility, 'imagesWithoutAlt', 'image alternative text must be c
 requireText(accessibility, 'horizontalOverflow', 'mobile horizontal overflow must be checked');
 requireText(accessibility, "page.keyboard.press('Tab')", 'keyboard focus entry must be checked');
 
+requireText(statusPage, 'releaseReceipt', 'Status must render from the release receipt');
+requireText(statusPage, 'data-deployed-sha', 'Status must expose deployed SHA identity');
+requireText(statusPage, 'Rollback SHA', 'Status must display rollback identity');
+requireText(routeContract, 'export const spatialSmokeCoverage = [', 'route smoke coverage must be canonical');
+requireText(routeContract, '...Object.values(spatialRoutes)', 'route smoke coverage must derive from route registry');
+
 if (failures.length > 0) {
   console.error('[FAIL] canonical Spatial deployment workflow contract');
   for (const failure of failures) console.error(`- ${failure}`);
@@ -70,6 +101,8 @@ if (failures.length > 0) {
 console.log('[PASS] canonical Spatial deployment workflow contract');
 console.log('[PASS] automatic production deployment disabled');
 console.log('[PASS] exact target/current/rollback identity required');
+console.log('[PASS] all workflow file dependencies exist');
 console.log('[PASS] rollback deployment, smoke, and target restoration required');
 console.log('[PASS] accessibility, mobile, reduced-motion, and route identity evidence required');
+console.log('[PASS] Status renders deployed and rollback identity from fail-closed receipt');
 console.log('[PASS] deployment executed: 0');
