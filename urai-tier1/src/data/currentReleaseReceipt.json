@@ -1,0 +1,25 @@
+{
+  "schemaVersion": "1.0.0",
+  "releaseState": "pending-current-main-evidence",
+  "canonicalRepository": "LifeLoggerAI/urai-spatial",
+  "canonicalRuntime": "urai-tier1",
+  "canonicalBranch": "main",
+  "sourceMainShaAtAudit": "f55ad9f08a80d502c85538300907dcb7f1566212",
+  "testedSha": null,
+  "deployedSha": null,
+  "rollbackSha": null,
+  "firebaseProject": "urai-4dc1d",
+  "publicDomain": "https://urai.app",
+  "assetPackVersion": null,
+  "assetManifestSha256": null,
+  "evidence": {
+    "staticGate": "pending",
+    "buildGate": "pending",
+    "browserGate": "pending",
+    "deployedSmoke": "pending",
+    "desktopVisualQa": "pending",
+    "mobileVisualQa": "pending",
+    "questDeviceProof": "pending",
+    "rollbackSmoke": "pending"
+  }
+}
