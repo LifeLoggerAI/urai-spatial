@@ -68,6 +68,7 @@ export const requiredReleaseEvidenceArtifacts = [
 
 export const requiredNonXrChecks = [
   "canonicalContract",
+  "routeContract",
   "runtimeCompile",
   "runtimeSmoke",
   "productTypecheck",
