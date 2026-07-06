@@ -32,6 +32,7 @@ const requiredEvidenceNames = [
 
 const requiredCheckNames = [
   'canonicalContract',
+  'routeContract',
   'runtimeCompile',
   'runtimeSmoke',
   'productTypecheck',
