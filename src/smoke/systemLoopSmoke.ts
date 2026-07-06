@@ -1,4 +1,8 @@
-import { createSystemLoop } from "../kernel/SystemLoop";
+import { mkdtempSync, rmSync } from "node:fs";
+import { tmpdir } from "node:os";
+import path from "node:path";
+import { PersistenceManager } from "../kernel/PersistenceManager";
+import { createSystemLoop, type SystemLoopState } from "../kernel/SystemLoop";
 
 function assert(condition: unknown, message: string): asserts condition {
   if (!condition) {
@@ -7,43 +11,76 @@ function assert(condition: unknown, message: string): asserts condition {
 }
 
 async function main() {
-  const loop = await createSystemLoop({
-    tickIntervalMs: 1000,
-    replayLimit: 25
-  });
+  const tempDirectory = mkdtempSync(path.join(tmpdir(), "urai-v50-smoke-"));
+  const statePath = path.join(tempDirectory, "runtime-state.json");
 
-  await loop.engine.emit(
-    "smoke.boot",
-    {
-      startedAt: Date.now(),
-      purpose: "system-loop-runtime-smoke"
-    },
-    "system-loop-smoke"
-  );
+  try {
+    const loop = await createSystemLoop({
+      tickIntervalMs: 1000,
+      replayLimit: 25,
+    });
 
-  const result = await loop.runOnce();
+    await loop.engine.emit(
+      "smoke.boot",
+      {
+        startedAt: Date.now(),
+        purpose: "system-loop-runtime-smoke",
+      },
+      "system-loop-smoke"
+    );
 
-  assert(result.snapshot.totalNodes > 0, "Expected memory graph to record at least one node.");
-  assert(result.timeline.totalFrames > 0, "Expected replay timeline to contain at least one frame.");
-  assert(result.prediction.id, "Expected prediction result id.");
-  assert(result.frame.id, "Expected XR frame id.");
-  assert(result.packets.length > 0, "Expected communications packets.");
-  assert(result.analyticsEvents.length > 0, "Expected analytics events.");
+    const result = await loop.runOnce();
 
-  loop.stop();
+    assert(result.snapshot.totalNodes > 0, "Expected memory graph to record at least one node.");
+    assert(result.timeline.totalFrames > 0, "Expected replay timeline to contain at least one frame.");
+    assert(result.prediction.id, "Expected prediction result id.");
+    assert(result.frame.id, "Expected XR frame id.");
+    assert(result.packets.length > 0, "Expected communications packets.");
+    assert(result.analyticsEvents.length > 0, "Expected analytics events.");
 
-  console.log("SystemLoop smoke passed", {
-    tick: loop.engine.tick,
-    memoryNodes: result.snapshot.totalNodes,
-    replayFrames: result.timeline.totalFrames,
-    predictionCandidates: result.prediction.candidates.length,
-    xrObjects: result.frame.objects.length,
-    packets: result.packets.length,
-    analyticsEvents: result.analyticsEvents.length
-  });
+    const persistence = new PersistenceManager<SystemLoopState>({ filePath: statePath });
+    persistence.save(result.state);
+
+    const persistedState = persistence.load();
+    assert(persistedState !== null, "Expected persisted SystemLoop state.");
+    assert(
+      persistedState.totalRuns === result.state.totalRuns,
+      "Expected persisted totalRuns to match the completed cycle."
+    );
+
+    const restoredLoop = await createSystemLoop({
+      tickIntervalMs: 1000,
+      replayLimit: 25,
+      initialState: persistedState,
+    });
+    const restoredResult = await restoredLoop.runOnce();
+
+    assert(
+      restoredResult.state.totalRuns === result.state.totalRuns + 1,
+      "Expected restored SystemLoop state to continue from the persisted run count."
+    );
+
+    loop.stop();
+    restoredLoop.stop();
+
+    console.log("SystemLoop smoke passed", {
+      tick: loop.engine.tick,
+      memoryNodes: result.snapshot.totalNodes,
+      replayFrames: result.timeline.totalFrames,
+      predictionCandidates: result.prediction.candidates.length,
+      xrObjects: result.frame.objects.length,
+      packets: result.packets.length,
+      analyticsEvents: result.analyticsEvents.length,
+      persistedRuns: persistedState.totalRuns,
+      restoredRuns: restoredResult.state.totalRuns,
+      persistenceOutsideRepository: statePath.startsWith(tmpdir()),
+    });
+  } finally {
+    rmSync(tempDirectory, { recursive: true, force: true });
+  }
 }
 
-main().catch((error) => {
+void main().catch((error) => {
   console.error("SystemLoop smoke failed", error);
-  process.exit(1);
+  process.exitCode = 1;
 });
