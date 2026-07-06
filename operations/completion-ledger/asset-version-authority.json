@@ -1,0 +1,58 @@
+{
+  "schemaVersion": "urai-asset-version-authority-1",
+  "recordedAt": "2026-07-06T06:30:00-05:00",
+  "authority": {
+    "repository": "LifeLoggerAI/asset-factory",
+    "pullRequest": 141,
+    "catalogPath": "image_asset_generator/canonical_version_catalog.json",
+    "consumerRepository": "LifeLoggerAI/urai-spatial"
+  },
+  "versions": {
+    "v1": {
+      "label": "Genesis Public Route World",
+      "expectedOutputs": 53,
+      "providerStatus": "not certified by this record"
+    },
+    "v2": {
+      "label": "Living System States",
+      "expectedOutputs": 80,
+      "providerStatus": "blocked until exact paid-provider receipt"
+    },
+    "v3": {
+      "label": "Relationship, Shadow and Pattern World",
+      "expectedOutputs": 14,
+      "providerStatus": "blocked until exact paid-provider receipt"
+    },
+    "v4": {
+      "label": "WebXR, AR and VR Pathway",
+      "expectedOutputs": 39,
+      "providerStatus": "blocked until exact paid-provider receipt and separate physical-device proof"
+    },
+    "v5": {
+      "label": "Mirror of Becoming and Autonomous Legacy",
+      "expectedOutputs": 27,
+      "providerStatus": "blocked until exact paid-provider receipt"
+    }
+  },
+  "supersedes": [
+    "Any prior document or issue that labels the 39-output XR pathway as V3",
+    "Any prior document or issue that omits the 14-output relationship/shadow/pattern V3 pack"
+  ],
+  "claimBoundary": {
+    "providerCallsExecutedByThisRecord": 0,
+    "assetsPromotedByThisRecord": 0,
+    "deploymentsTriggeredByThisRecord": 0,
+    "physicalDevicesCertifiedByThisRecord": 0
+  },
+  "requiredPromotionEvidence": [
+    "canonical manifest SHA-256",
+    "expected-output count equals successful-output count",
+    "provider request and response receipt per output",
+    "declared and actual cost receipt",
+    "output checksum and provenance",
+    "optimized derivative and mobile crop validation",
+    "runtime wiring evidence in urai-spatial",
+    "visual regression evidence",
+    "physical XR validation for V4"
+  ]
+}
