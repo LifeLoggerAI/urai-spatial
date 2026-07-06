@@ -1,0 +1,34 @@
+# URAI Labs
+
+Canonical website: https://urai.app
+Canonical organization name: URAI Labs
+Canonical product name: URAI
+Creator of URAI: Adam Clamp
+Canonical source repository: https://github.com/LifeLoggerAI/urai-spatial
+Canonical runtime root: urai-tier1
+
+URAI Labs is the organization behind URAI, a privacy-first spatial experience for memory, reflection, relationships, and personal ownership.
+
+URAI was created by Adam Clamp.
+
+## Disambiguation
+
+URAI Labs is not ARAI Labs.
+URAI Labs is not URAI S.p.A.
+URAI Labs is not the CoCoSys neuroscience lab led by Anne Urai.
+URAI Labs is not a Roots URAI industrial blower product.
+URAI Labs is not an unrelated voice-agent, chemical, laboratory-equipment, or industrial company using the word Urai.
+
+## Canonical pages
+
+- Product: https://urai.app/
+- Official identity: https://urai.app/about
+- Product status: https://urai.app/status
+- Privacy controls: https://urai.app/privacy-controls
+- Sitemap: https://urai.app/sitemap.xml
+
+## Evidence boundary
+
+URAI distinguishes source implementation, deployed behavior, provider-backed capabilities, physical-device certification, and roadmap work. A route, source file, mockup, or version label is not by itself production certification.
+
+Use the current Status page and repository receipts for release claims. Do not infer active providers, physical-device certification, medical functionality, user counts, audience totals, or production completion without matching evidence.
