@@ -2,6 +2,7 @@
 import fs from 'node:fs'
 
 const workflowPath = '.github/workflows/urai-spatial-deploy.yml'
+const legacyWorkflowPath = '.github/workflows/spatial-live-deploy.yml'
 const receiptWriterPath = 'scripts/write-deployment-receipt.mjs'
 const failures = []
 
@@ -20,6 +21,7 @@ function requireTokens(source, path, tokens) {
 }
 
 const workflow = read(workflowPath)
+const legacyWorkflow = read(legacyWorkflowPath)
 const receiptWriter = read(receiptWriterPath)
 
 requireTokens(workflow, workflowPath, [
@@ -43,6 +45,15 @@ requireTokens(workflow, workflowPath, [
   'node scripts/write-deployment-receipt.mjs',
   'actions/upload-artifact@v4',
   'cancel-in-progress: false',
+])
+
+requireTokens(legacyWorkflow, legacyWorkflowPath, [
+  'name: URAI Spatial Live Release Check',
+  'Verify Spatial release gates without deployment',
+  'pnpm install --frozen-lockfile',
+  'pnpm live:check',
+  'This workflow performs verification only.',
+  'The sole deployment authority is .github/workflows/urai-spatial-deploy.yml.',
 ])
 
 requireTokens(receiptWriter, receiptWriterPath, [
@@ -70,10 +81,23 @@ if (workflow.includes('cancel-in-progress: true')) {
   failures.push(`${workflowPath} must not auto-cancel an in-progress production deployment`)
 }
 
+for (const forbidden of [
+  'pnpm live:deploy',
+  'firebase-tools deploy',
+  'Deploy Spatial to Firebase',
+  'URAI_SPATIAL_AUTO_DEPLOY',
+  'FIREBASE_SERVICE_ACCOUNT_JSON',
+  'FIREBASE_TOKEN',
+]) {
+  if (legacyWorkflow.includes(forbidden)) {
+    failures.push(`${legacyWorkflowPath} must remain verification-only; found ${forbidden}`)
+  }
+}
+
 if (failures.length) {
   console.error('[deployment-release-contract] failed')
   for (const failure of failures) console.error(`- ${failure}`)
   process.exit(1)
 }
 
-console.log('[deployment-release-contract] exact-SHA, rollback, project, smoke, and receipt boundaries passed')
+console.log('[deployment-release-contract] one manual exact-SHA deployment authority, rollback, project, smoke, and receipt boundaries passed')
