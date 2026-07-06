@@ -3,9 +3,21 @@
 import fs from 'node:fs';
 
 const workflowPath = '.github/workflows/spatial-live-deploy.yml';
-const workflow = fs.readFileSync(workflowPath, 'utf8');
-const accessibility = fs.readFileSync('scripts/verify-live-accessibility.mjs', 'utf8');
+const accessibilityPath = 'scripts/verify-live-accessibility.mjs';
 const failures = [];
+
+const readRequiredFile = (filePath, description) => {
+  try {
+    return fs.readFileSync(filePath, 'utf8');
+  } catch (error) {
+    const detail = error instanceof Error ? error.message : String(error);
+    failures.push(`${description}: unable to read ${filePath}: ${detail}`);
+    return '';
+  }
+};
+
+const workflow = readRequiredFile(workflowPath, 'canonical deployment workflow');
+const accessibility = readRequiredFile(accessibilityPath, 'live accessibility verifier');
 
 const requireText = (source, text, description) => {
   if (!source.includes(text)) failures.push(`${description}: missing ${JSON.stringify(text)}`);
@@ -39,7 +51,12 @@ requireText(workflow, 'grep -q "URAI Privacy Controls"', 'privacy-controls ident
 requireText(workflow, 'retention-days: 365', 'production evidence must have long retention');
 
 requireText(accessibility, "reducedMotion: 'reduce'", 'reduced-motion context must be exercised');
+requireText(accessibility, "waitUntil: 'load'", 'live navigation must avoid network-idle flakiness');
+requireText(accessibility, 'if (!response?.ok()) throw new Error', 'HTTP failures must stop semantic checks');
 requireText(accessibility, 'unnamedInteractive', 'interactive accessible names must be checked');
+requireText(accessibility, "element.tagName === 'INPUT'", 'input control values must be included in accessible names');
+requireText(accessibility, "element.getAttribute('aria-hidden') !== 'true'", 'hidden controls must be excluded');
+requireText(accessibility, 'element.offsetWidth > 0 || element.offsetHeight > 0', 'non-visible controls must be excluded');
 requireText(accessibility, 'imagesWithoutAlt', 'image alternative text must be checked');
 requireText(accessibility, 'horizontalOverflow', 'mobile horizontal overflow must be checked');
 requireText(accessibility, "page.keyboard.press('Tab')", 'keyboard focus entry must be checked');
