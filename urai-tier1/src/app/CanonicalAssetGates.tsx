@@ -20,64 +20,144 @@ type ManifestRecord = {
   assets?: unknown
 }
 
+type CanonicalCheck = {
+  version: 'v1' | 'v2' | 'v3' | 'v4' | 'v5'
+  expectedOutputs: number
+  href: string
+  className: string
+  dataKey: string
+  canonicalPrefix: string
+}
+
 const handoffName = 'asset' + '-factory-spatial-handoff.json'
-const checks = [
-  ['v1', 53, `/assets/urai/final/manifests/v1-${handoffName}`, 'urai-v1-assets-ready', 'assets/urai/'],
-  ['v2', 80, `/assets/urai/final/manifests/v2-${handoffName}`, 'urai-v2-assets-ready', 'assets/urai/v2/'],
-  ['v3', 14, `/assets/urai/final/manifests/v3-${handoffName}`, 'urai-v3-relationship-assets-ready', 'assets/urai/v3/'],
-  ['v4', 39, `/assets/urai/final/manifests/v4-${handoffName}`, 'urai-v4-assets-ready', 'assets/urai/xr/'],
-  ['v5', 27, `/assets/urai/final/manifests/v5-${handoffName}`, 'urai-v5-assets-ready', 'assets/urai/v5/'],
+const checks: readonly CanonicalCheck[] = [
+  {
+    version: 'v1',
+    expectedOutputs: 53,
+    href: `/assets/urai/final/manifests/v1-${handoffName}`,
+    className: 'urai-v1-assets-ready',
+    dataKey: 'uraiCanonicalV1Assets',
+    canonicalPrefix: 'assets/urai/',
+  },
+  {
+    version: 'v2',
+    expectedOutputs: 80,
+    href: `/assets/urai/final/manifests/v2-${handoffName}`,
+    className: 'urai-v2-assets-ready',
+    dataKey: 'uraiCanonicalV2Assets',
+    canonicalPrefix: 'assets/urai/v2/',
+  },
+  {
+    version: 'v3',
+    expectedOutputs: 14,
+    href: `/assets/urai/final/manifests/v3-${handoffName}`,
+    className: 'urai-v3-relationship-assets-ready',
+    dataKey: 'uraiCanonicalV3Assets',
+    canonicalPrefix: 'assets/urai/v3/',
+  },
+  {
+    version: 'v4',
+    expectedOutputs: 39,
+    href: `/assets/urai/final/manifests/v4-${handoffName}`,
+    className: 'urai-v4-assets-ready',
+    dataKey: 'uraiCanonicalV4Assets',
+    canonicalPrefix: 'assets/urai/xr/',
+  },
+  {
+    version: 'v5',
+    expectedOutputs: 27,
+    href: `/assets/urai/final/manifests/v5-${handoffName}`,
+    className: 'urai-v5-assets-ready',
+    dataKey: 'uraiCanonicalV5Assets',
+    canonicalPrefix: 'assets/urai/v5/',
+  },
 ] as const
 
 function variable(name: string) {
   return `--urai-asset-${name.toLowerCase().replace(/[^a-z0-9-]+/g, '-')}`
 }
 
+function validateReadyManifest(check: CanonicalCheck, manifest: unknown) {
+  if (!manifest || typeof manifest !== 'object') {
+    return { ready: false, assets: [] as AssetRecord[] }
+  }
+
+  const record = manifest as ManifestRecord
+  const assets = Array.isArray(record.assets) ? record.assets as AssetRecord[] : []
+  const expectedMatches = record.expectedOutputs === undefined
+    || record.expectedOutputs === check.expectedOutputs
+
+  const ready = record.schemaVersion === '3.0.0'
+    && record.version === check.version
+    && expectedMatches
+    && record.ready === check.expectedOutputs
+    && record.missing === 0
+    && assets.length === check.expectedOutputs
+    && assets.every((asset) => {
+      if (!asset || typeof asset !== 'object') return false
+      if (asset.status !== 'ready' || asset.renderer !== 'provider') return false
+      if (typeof asset.name !== 'string' || asset.name.length === 0) return false
+      if (typeof asset.canonicalPath !== 'string') return false
+      if (asset.canonicalPath.startsWith('/') || asset.canonicalPath.includes('..')) return false
+      if (!asset.canonicalPath.startsWith(check.canonicalPrefix)) return false
+      if (typeof asset.sha256 !== 'string' || !/^[a-f0-9]{64}$/i.test(asset.sha256)) return false
+      return typeof asset.bytes === 'number' && Number.isSafeInteger(asset.bytes) && asset.bytes > 0
+    })
+
+  return { ready, assets: ready ? assets : [] }
+}
+
 export default function CanonicalAssetGates() {
   useEffect(() => {
     const root = document.documentElement
     const controller = new AbortController()
-    const injected = new Set<string>()
+    const injectedVariables = new Set<string>()
 
-    for (const [version, count, href, className, prefix] of checks) {
-      root.classList.remove(className)
-      void fetch(href, { cache: 'no-store', signal: controller.signal })
-        .then((response) => response.ok ? response.json() : Promise.reject(new Error('manifest unavailable')))
-        .then((manifest: ManifestRecord) => {
-          const assets = Array.isArray(manifest.assets) ? manifest.assets as AssetRecord[] : []
-          const expectedMatches = manifest.expectedOutputs === undefined || manifest.expectedOutputs === count
-          const ready = manifest.schemaVersion === '3.0.0'
-            && manifest.version === version
-            && expectedMatches
-            && manifest.ready === count
-            && manifest.missing === 0
-            && assets.length === count
-            && assets.every((asset) => asset.status === 'ready'
-              && asset.renderer === 'provider'
-              && typeof asset.name === 'string'
-              && typeof asset.canonicalPath === 'string'
-              && asset.canonicalPath.startsWith(prefix)
-              && typeof asset.sha256 === 'string'
-              && /^[a-f0-9]{64}$/i.test(asset.sha256)
-              && typeof asset.bytes === 'number'
-              && asset.bytes > 0)
-          if (!ready) return
-          for (const asset of assets) {
+    for (const check of checks) {
+      root.dataset[check.dataKey] = 'fallback'
+      root.classList.remove(check.className)
+
+      void fetch(check.href, { cache: 'no-store', signal: controller.signal })
+        .then((response) => response.ok
+          ? response.json()
+          : Promise.reject(new Error('manifest unavailable')))
+        .then((manifest: unknown) => {
+          if (controller.signal.aborted) return
+
+          const result = validateReadyManifest(check, manifest)
+          if (!result.ready) {
+            root.dataset[check.dataKey] = 'fallback'
+            root.classList.remove(check.className)
+            return
+          }
+
+          for (const asset of result.assets) {
             const name = asset.name as string
-            const canonicalPath = (asset.canonicalPath as string).replace(/^\/+/, '')
+            const canonicalPath = asset.canonicalPath as string
             const key = variable(name)
             root.style.setProperty(key, `url('/${canonicalPath}')`)
-            injected.add(key)
+            injectedVariables.add(key)
           }
-          root.classList.add(className)
+
+          root.dataset[check.dataKey] = 'ready'
+          root.classList.add(check.className)
         })
-        .catch(() => root.classList.remove(className))
+        .catch(() => {
+          if (controller.signal.aborted) return
+          root.dataset[check.dataKey] = 'fallback'
+          root.classList.remove(check.className)
+        })
     }
 
     return () => {
       controller.abort()
-      for (const key of injected) root.style.removeProperty(key)
+      for (const key of injectedVariables) root.style.removeProperty(key)
+      for (const check of checks) {
+        root.classList.remove(check.className)
+        delete root.dataset[check.dataKey]
+      }
     }
   }, [])
+
   return null
 }
