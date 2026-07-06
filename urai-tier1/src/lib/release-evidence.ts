@@ -85,6 +85,31 @@ export const requiredCheckNames = [
   "physicalXr",
 ] as const;
 
+export const requiredPublicRoutes = [
+  "/",
+  "/home",
+  "/ground",
+  "/spatial",
+  "/life-map",
+  "/focus",
+  "/replay",
+  "/mirror",
+  "/passport",
+  "/status",
+  "/privacy",
+  "/privacy-controls",
+  "/location-map",
+  "/ascent",
+  "/unwind",
+  "/demo",
+  "/demo/life-map",
+  "/demo/replay-film",
+  "/spatial/life-map",
+  "/spatial/life-map-r3f",
+  "/spatial/ar-vr",
+  "/terms",
+] as const;
+
 const expectedAssetCounts = {
   v1: 53,
   v2: 80,
@@ -174,6 +199,12 @@ const validateReceipt = (value: unknown): ReleaseReceipt => {
     }
     if (!["verified", "unverified", "failed"].includes(route.productionState)) {
       throw new Error(`Invalid production state for ${route.path}.`);
+    }
+  }
+  const routePathSet = new Set(routePaths);
+  for (const path of requiredPublicRoutes) {
+    if (!routePathSet.has(path)) {
+      throw new Error(`Release receipt is missing required public route ${path}.`);
     }
   }
 
