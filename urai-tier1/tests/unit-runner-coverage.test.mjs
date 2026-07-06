@@ -11,7 +11,7 @@ const requiredFocusedTests = [
   'tests/xr-runtime-contract.test.mjs',
 ]
 
-test('focused unit runner includes critical Spatial public-demo contract tests', () => {
+test('focused unit runner includes critical Spatial public contract tests', () => {
   for (const testPath of requiredFocusedTests) {
     assert.ok(runnerSource.includes(`'${testPath}'`), `focused unit runner must include ${testPath}`)
   }
