@@ -1,0 +1,94 @@
+{
+  "version": "v1-critical-paid-assets",
+  "status": "intake-ready",
+  "policy": "Generate one asset at a time, commit and receipt before spending credits on the next asset.",
+  "root": "urai-tier1/public/assets/urai/generated",
+  "assets": [
+    {
+      "id": "home-entry-chamber-model-v1",
+      "priority": "P0",
+      "type": "model",
+      "format": "glb",
+      "path": "urai-tier1/public/assets/urai/generated/models/home-entry-chamber-v1.glb",
+      "targetSurface": "home",
+      "fallbackAssetId": "home-entry-chamber-procedural-fallback",
+      "requiredBeforeNextSpend": true,
+      "acceptance": [
+        "Looks like a navigable place, not a dashboard.",
+        "Has obvious floor/walkable orientation.",
+        "Supports portal placement visually.",
+        "Loads in the Home/default spatial world."
+      ]
+    },
+    {
+      "id": "portal-ring-master-glb-v1",
+      "priority": "P0",
+      "type": "portal",
+      "format": "glb",
+      "path": "urai-tier1/public/assets/urai/generated/models/portal-ring-master-v1.glb",
+      "targetSurface": "global",
+      "fallbackAssetId": "portal-ring-procedural-fallback",
+      "requiredBeforeNextSpend": true,
+      "acceptance": [
+        "Reads as a premium destination portal.",
+        "Reusable for Home, Ground, Life Map, Focus, and Replay.",
+        "Does not feel like a flat button.",
+        "Loads through the shared spatial asset path."
+      ]
+    },
+    {
+      "id": "ground-world-terrain-glb-v1",
+      "priority": "P0",
+      "type": "world",
+      "format": "glb",
+      "path": "urai-tier1/public/assets/urai/generated/models/ground-world-terrain-v1.glb",
+      "targetSurface": "ground",
+      "fallbackAssetId": "ground-world-procedural-fallback",
+      "requiredBeforeNextSpend": true,
+      "acceptance": [
+        "Makes Ground feel reachable below the Home world.",
+        "Has believable walkable surfaces.",
+        "Can receive future rooms and zones.",
+        "Loads in Ground route/world integration."
+      ]
+    },
+    {
+      "id": "life-map-galaxy-skybox-v1",
+      "priority": "P0",
+      "type": "skybox",
+      "format": "hdr",
+      "path": "urai-tier1/public/assets/urai/generated/skyboxes/life-map-galaxy-skybox-v1.hdr",
+      "targetSurface": "life-map",
+      "fallbackAssetId": "life-map-procedural-starfield-fallback",
+      "requiredBeforeNextSpend": true,
+      "acceptance": [
+        "Feels like looking into a living memory galaxy.",
+        "Leaves room for runtime star nodes.",
+        "Does not overpower UI or star interactions.",
+        "Loads in Life Map sky context."
+      ]
+    },
+    {
+      "id": "global-cinematic-material-pack-v1",
+      "priority": "P1",
+      "type": "texture",
+      "format": "json",
+      "path": "urai-tier1/public/assets/urai/generated/textures/global-cinematic-material-pack-v1.json",
+      "targetSurface": "global",
+      "fallbackAssetId": null,
+      "requiredBeforeNextSpend": false,
+      "acceptance": [
+        "Valid JSON.",
+        "Includes all required material keys.",
+        "Can drive Three.js/PBR mapping or artist handoff.",
+        "Unifies Home, Ground, Life Map, Focus, Replay, Passport, and Status."
+      ]
+    }
+  ],
+  "validationCommands": [
+    "node scripts/receipt-v1-paid-assets.mjs",
+    "pnpm --dir urai-tier1 assets:validate",
+    "pnpm --dir urai-tier1 typecheck",
+    "pnpm --dir urai-tier1 build"
+  ]
+}
