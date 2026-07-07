@@ -1,4 +1,4 @@
-import SpatialWorldCanvas from '@/spatial/components/world/SpatialWorldCanvas'
+import SpatialHomeWorld from './SpatialHomeWorld'
 
 export const metadata = {
   title: 'URAI Spatial',
@@ -6,5 +6,5 @@ export const metadata = {
 }
 
 export default function HomePage() {
-  return <SpatialWorldCanvas mode="home" />
+  return <SpatialHomeWorld />
 }
