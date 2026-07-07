@@ -1,0 +1,94 @@
+{
+  "version": "v1",
+  "system": "URAI Spatial",
+  "status": "ready-for-runtime-mapping",
+  "intent": "Shared cinematic material language for Home, Ground, Life Map, Focus, Replay, Passport, and Status.",
+  "materials": {
+    "obsidian_glass": {
+      "baseColor": "#05070d",
+      "emissiveColor": "#0ea5e9",
+      "roughness": 0.18,
+      "metalness": 0.35,
+      "opacity": 0.72,
+      "glowIntensity": 0.2,
+      "usage": "Primary premium glass surfaces, chamber panels, and quiet reflective world layers."
+    },
+    "smoked_metal": {
+      "baseColor": "#111827",
+      "emissiveColor": "#312e81",
+      "roughness": 0.42,
+      "metalness": 0.78,
+      "opacity": 1,
+      "glowIntensity": 0.08,
+      "usage": "Portal frames, chamber ribs, platform supports, and structural trim."
+    },
+    "portal_energy": {
+      "baseColor": "#1e1b4b",
+      "emissiveColor": "#67e8f9",
+      "roughness": 0.08,
+      "metalness": 0.12,
+      "opacity": 0.86,
+      "glowIntensity": 1.35,
+      "usage": "Inner portal seams, transition thresholds, and destination gateway light."
+    },
+    "floor_luminous_seam": {
+      "baseColor": "#020617",
+      "emissiveColor": "#c084fc",
+      "roughness": 0.28,
+      "metalness": 0.5,
+      "opacity": 0.92,
+      "glowIntensity": 0.7,
+      "usage": "Walkable path guides, Ground descent traces, and spatial route lines."
+    },
+    "star_dust": {
+      "baseColor": "#bae6fd",
+      "emissiveColor": "#fef3c7",
+      "roughness": 0.12,
+      "metalness": 0,
+      "opacity": 0.64,
+      "glowIntensity": 0.95,
+      "usage": "Life Map particles, galaxy depth, memory-star haze, and quiet atmospheric detail."
+    },
+    "memory_glow": {
+      "baseColor": "#7dd3fc",
+      "emissiveColor": "#fde68a",
+      "roughness": 0.1,
+      "metalness": 0.04,
+      "opacity": 0.78,
+      "glowIntensity": 1.15,
+      "usage": "Memory nodes, Focus star flight, Replay film windows, and selected state aura."
+    },
+    "privacy_shield": {
+      "baseColor": "#0f172a",
+      "emissiveColor": "#22c55e",
+      "roughness": 0.22,
+      "metalness": 0.18,
+      "opacity": 0.58,
+      "glowIntensity": 0.48,
+      "usage": "Passport, consent, protected rooms, privacy boundaries, and secure layers."
+    },
+    "gold_provenance": {
+      "baseColor": "#92400e",
+      "emissiveColor": "#fef08a",
+      "roughness": 0.26,
+      "metalness": 0.68,
+      "opacity": 1,
+      "glowIntensity": 0.55,
+      "usage": "Receipts, ownership seals, audit marks, launch proof, and trusted status accents."
+    },
+    "soft_volumetric_haze": {
+      "baseColor": "#312e81",
+      "emissiveColor": "#a78bfa",
+      "roughness": 0.9,
+      "metalness": 0,
+      "opacity": 0.22,
+      "glowIntensity": 0.35,
+      "usage": "Atmosphere layers, chamber depth, portal bloom, galaxy fog, and cinematic loading states."
+    }
+  },
+  "runtimeNotes": {
+    "threeJs": "Map baseColor to color, emissiveColor to emissive, roughness and metalness to MeshStandardMaterial where applicable. Use opacity with transparent=true only for intended translucent materials.",
+    "performance": "Use glowIntensity as a design token for bloom/postprocessing or shader strength, not as raw unbounded light intensity.",
+    "accessibility": "Provide reduced-motion and reduced-bloom variants for comfort mode."
+  }
+}
