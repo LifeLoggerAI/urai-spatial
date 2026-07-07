@@ -20,6 +20,10 @@ export function readSpatialTelemetry(): SpatialTelemetryEvent[] {
   }
 }
 
+export function readSpatialTelemetryQueue(): SpatialTelemetryEvent[] {
+  return readSpatialTelemetry();
+}
+
 export function writeSpatialTelemetry(events: SpatialTelemetryEvent[]): void {
   if (typeof window === "undefined") return;
   try {
