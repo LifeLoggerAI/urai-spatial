@@ -1,5 +1,5 @@
-import SpatialHomeWorld from '@/app/SpatialHomeWorld'
+import RealPlaceWorld from '@/app/SpatialRealPlaceWorld'
 
 export default function HomeRoutePage() {
-  return <SpatialHomeWorld />
+  return <RealPlaceWorld mode="home" />
 }
