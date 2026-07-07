@@ -6,6 +6,7 @@ import PresenceRig from "../components/PresenceRig";
 import HomeSkyDome from "../components/HomeSkyDome";
 import { useSceneStore } from "../store/useSceneStore";
 import GroundWorld from "./GroundWorld";
+import SpatialWorldAssetLayer from "./SpatialWorldAssetLayer";
 import { getGroundChannelsForPhase } from "./phaseMachine";
 
 type NarratorSource = "orb" | "overlay" | "pointer" | "keyboard" | "scene";
@@ -28,15 +29,7 @@ type HomeNarratorEvent = {
 
 function emitHomeNarratorEvent(detail: Omit<HomeNarratorEvent, "timestamp">) {
   if (typeof window === "undefined") return;
-
-  window.dispatchEvent(
-    new CustomEvent<HomeNarratorEvent>("urai:narrator", {
-      detail: {
-        ...detail,
-        timestamp: Date.now(),
-      },
-    }),
-  );
+  window.dispatchEvent(new CustomEvent<HomeNarratorEvent>("urai:narrator", { detail: { ...detail, timestamp: Date.now() } }));
 }
 
 export default function HomeWorld() {
@@ -50,48 +43,23 @@ export default function HomeWorld() {
   const busy = phase === "ASCENT" || isTransitioning || inputLocked;
   const disabled = phase !== "HOME";
 
-  const narratorBase = {
-    phase,
-    busy,
-    disabled,
-    progress,
-    context: {
-      surface: "home" as const,
-      target: "lifemap" as const,
-      inputLocked,
-      isTransitioning,
-    },
-  };
+  const narratorBase = { phase, busy, disabled, progress, context: { surface: "home" as const, target: "lifemap" as const, inputLocked, isTransitioning } };
 
   const handleOrbFocus = (source: "orb" | "overlay") => {
-    emitHomeNarratorEvent({
-      event: "home.orb.focus",
-      source,
-      ...narratorBase,
-    });
+    emitHomeNarratorEvent({ event: "home.orb.focus", source, ...narratorBase });
   };
 
   const handleEnterLifeMap = (source: "pointer" | "keyboard" | "overlay") => {
     if (busy || disabled) return;
-
-    emitHomeNarratorEvent({
-      event: "home.orb.activate",
-      source,
-      ...narratorBase,
-    });
-
+    emitHomeNarratorEvent({ event: "home.orb.activate", source, ...narratorBase });
     enterLifeMap();
   };
 
   return (
     <group>
       <HomeSkyDome visible={true} />
-
-      <GroundWorld
-        recession={channels.recession}
-        elevation={channels.elevation}
-        opacity={channels.opacity}
-      />
+      <SpatialWorldAssetLayer phase={phase} />
+      <GroundWorld recession={channels.recession} elevation={channels.elevation} opacity={channels.opacity} />
 
       <mesh rotation={[-Math.PI / 2, 0, 0]} position={[-0.52, 0.012, -0.05]} receiveShadow>
         <circleGeometry args={[1.1, 36]} />
@@ -103,15 +71,7 @@ export default function HomeWorld() {
         <meshBasicMaterial color="#67c4ff" transparent opacity={0.08} depthWrite={false} />
       </mesh>
 
-      <Orb
-        interactive
-        active={!disabled}
-        busy={busy}
-        disabled={disabled}
-        ariaLabel="Enter Life Map"
-        onFocus={() => handleOrbFocus("orb")}
-        onClick={handleEnterLifeMap}
-      />
+      <Orb interactive active={!disabled} busy={busy} disabled={disabled} ariaLabel="Enter Life Map" onFocus={() => handleOrbFocus("orb")} onClick={handleEnterLifeMap} />
 
       <Html position={[-0.52, 1.05, 0]} center>
         <button
@@ -120,15 +80,7 @@ export default function HomeWorld() {
           disabled={busy || disabled}
           onFocus={() => handleOrbFocus("overlay")}
           onClick={() => handleEnterLifeMap("overlay")}
-          style={{
-            width: "8rem",
-            height: "8rem",
-            borderRadius: "9999px",
-            border: "none",
-            background: "transparent",
-            cursor: busy || disabled ? "not-allowed" : "pointer",
-            opacity: 0,
-          }}
+          style={{ width: "8rem", height: "8rem", borderRadius: "9999px", border: "none", background: "transparent", cursor: busy || disabled ? "not-allowed" : "pointer", opacity: 0 }}
         />
       </Html>
 
