@@ -1,5 +1,11 @@
 import SpatialTelemetryPanel from "@/spatial/ui/SpatialTelemetryPanel";
 
-export default function UniverseTelemetryPanel() {
+type UniverseTelemetryPanelProps = {
+  state?: unknown;
+};
+
+export default function UniverseTelemetryPanel(
+  _props: UniverseTelemetryPanelProps,
+) {
   return <SpatialTelemetryPanel />;
 }
