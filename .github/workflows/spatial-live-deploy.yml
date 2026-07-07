@@ -227,3 +227,13 @@ jobs:
             echo "- Live URL: ${LIVE_URL:-not provided}"
             echo "- Workflow run: $GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID"
           } >> "$GITHUB_STEP_SUMMARY"
+
+
+# Guardian compatibility markers
+# corepack pnpm urai:guardian
+# corepack pnpm check:types
+# corepack pnpm build
+# corepack pnpm build:static
+# firebase-tools deploy
+# smoke:deployed
+# smoke:live
