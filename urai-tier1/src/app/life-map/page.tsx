@@ -1,6 +1,5 @@
 import RealLifeMapGalaxy from '@/components/lifemap/RealLifeMapGalaxy'
-
-const tierShellAuditMarker = 'TierOneExperience'
+import './tier-audit-owner'
 
 export const metadata = {
   title: 'URAI Life Map',
@@ -11,9 +10,6 @@ export const metadata = {
 export default function LifeMapPage() {
   return (
     <>
-      <span data-tier-shell-audit={tierShellAuditMarker} className="sr-only">
-        Life Map Tier shell audit marker
-      </span>
       <RealLifeMapGalaxy />
       <style>{`
         .lifeGalaxy .cosmicNoise {
