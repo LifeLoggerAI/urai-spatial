@@ -11,6 +11,8 @@
     "src/components/**/*.tsx",
     "src/lib/**/*.ts",
     "src/lib/**/*.tsx",
+    "src/spatial/assets/**/*.ts",
+    "src/spatial/assets/**/*.tsx",
     "src/spatial/components/**/*.ts",
     "src/spatial/components/**/*.tsx",
     "src/spatial/hooks/useSceneAuthority.ts",
