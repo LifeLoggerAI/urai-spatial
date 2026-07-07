@@ -1,10 +1,10 @@
 {
   "receiptId": "URAI-SPATIAL-ASSET-DROPIN-20260706-002",
-  "recordedAt": "2026-07-06T17:39:00-05:00",
+  "recordedAt": "2026-07-06T22:18:00-05:00",
   "classification": "IMPLEMENTED ON CURRENT MAIN ANCESTRY; EXACT-HEAD CI PENDING; PROVIDER ASSETS PARTIALLY PENDING; NOT DEPLOYED",
   "repository": "LifeLoggerAI/urai-spatial",
   "branch": "canonical-asset-runtime-clean",
-  "implementationSha": "cfdd7d526dc1821f020e0e87693c36da4b3af0d7",
+  "implementationSha": "545e07585ba7e6e56f73b7fc953c323b712c2652",
   "receiptCommitRule": "implementationSha identifies the final code-and-test commit immediately before this evidence-only receipt commit.",
   "sourcePullRequest": "https://github.com/LifeLoggerAI/urai-spatial/pull/453",
   "activePullRequest": "https://github.com/LifeLoggerAI/urai-spatial/pull/457",
@@ -15,7 +15,8 @@
     "urai-tier1/src/app/v5-becoming-asset-wiring.css",
     "urai-tier1/public/assets/urai/final/manifests/v5-asset-factory-spatial-handoff.json",
     "urai-tier1/tests/canonical-asset-dropin-contract.test.mjs",
-    "urai-tier1/scripts/run-unit-contract-tests-compact.mjs"
+    "urai-tier1/scripts/run-unit-contract-tests-compact.mjs",
+    "scripts/check-production-route-exposure-v2.mjs"
   ],
   "activationContract": {
     "schemaVersion": "3.0.0",
@@ -30,56 +31,24 @@
       "every normalized CSS variable key is non-empty and unique",
       "every asset has a 64-character SHA-256 digest",
       "every asset has a positive safe-integer byte count",
-      "every V5 route-level CSS override has an explicit safe fallback when an optional wired asset name is absent"
+      "every V5 route-level CSS override has an explicit safe fallback when an optional wired asset name is absent",
+      "production route exposure recognizes typed V1-V5 object contracts and enforces exact unique counts"
     ],
     "failureMode": "fallback",
     "cleanup": "Abort in-flight fetches and remove injected CSS variables, ready classes, and dataset state on unmount."
   },
   "manifestMatrix": [
-    {
-      "version": "v1",
-      "expectedOutputs": 53,
-      "manifestReady": 53,
-      "manifestMissing": 0,
-      "status": "PROVIDER_MANIFEST_READY"
-    },
-    {
-      "version": "v2",
-      "expectedOutputs": 80,
-      "manifestReady": 0,
-      "manifestMissing": 80,
-      "status": "PROVIDER_ASSETS_PENDING"
-    },
-    {
-      "version": "v3",
-      "expectedOutputs": 14,
-      "manifestReady": 0,
-      "manifestMissing": 14,
-      "status": "PROVIDER_ASSETS_PENDING"
-    },
-    {
-      "version": "v4",
-      "expectedOutputs": 39,
-      "manifestReady": 0,
-      "manifestMissing": 39,
-      "status": "PROVIDER_ASSETS_PENDING"
-    },
-    {
-      "version": "v5",
-      "expectedOutputs": 27,
-      "manifestReady": 0,
-      "manifestMissing": 27,
-      "status": "PROVIDER_ASSETS_PENDING"
-    }
+    {"version":"v1","expectedOutputs":53,"manifestReady":53,"manifestMissing":0,"status":"PROVIDER_MANIFEST_READY"},
+    {"version":"v2","expectedOutputs":80,"manifestReady":0,"manifestMissing":80,"status":"PROVIDER_ASSETS_PENDING"},
+    {"version":"v3","expectedOutputs":14,"manifestReady":0,"manifestMissing":14,"status":"PROVIDER_ASSETS_PENDING"},
+    {"version":"v4","expectedOutputs":39,"manifestReady":0,"manifestMissing":39,"status":"PROVIDER_ASSETS_PENDING"},
+    {"version":"v5","expectedOutputs":27,"manifestReady":0,"manifestMissing":27,"status":"PROVIDER_ASSETS_PENDING"}
   ],
-  "totals": {
-    "expectedOutputs": 213,
-    "providerManifestReady": 53,
-    "providerAssetsPending": 160
-  },
+  "totals": {"expectedOutputs":213,"providerManifestReady":53,"providerAssetsPending":160},
   "validation": {
     "contractTest": "urai-tier1/tests/canonical-asset-dropin-contract.test.mjs",
     "focusedRunner": "urai-tier1/scripts/run-unit-contract-tests-compact.mjs",
+    "routeExposureGate": "scripts/check-production-route-exposure-v2.mjs",
     "reviewThreadsResolvedOnSourcePR": true,
     "exactHeadWorkflowResult": "PENDING",
     "buildResult": "PENDING_EXACT_HEAD_CI",
