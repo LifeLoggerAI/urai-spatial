@@ -1,5 +1,15 @@
 import { createCognitiveKernel } from "./cognitiveBridge.core";
 
+type KernelMemory = {
+  id?: string;
+  content?: string;
+};
+
+type KernelInsight = {
+  id?: string;
+  message?: string;
+};
+
 export type SpatialVector = {
   id: string;
   x: number;
@@ -54,8 +64,8 @@ export function createSpatialEngine(userId: string = "demo-user") {
   }
 
   function syncFromKernel() {
-    const memory = kernel.getMemory();
-    const insight = kernel.getInsight();
+    const memory = kernel.getMemory() as KernelMemory | null;
+    const insight = kernel.getInsight() as KernelInsight | null;
 
     if (memory) {
       addNode({
