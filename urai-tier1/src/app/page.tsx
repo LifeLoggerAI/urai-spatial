@@ -1,11 +1,10 @@
-import FinalHomeThreshold from './FinalHomeThreshold'
+import { TierOneExperience } from '@/spatial/layout/TierOneExperience'
 
 export const metadata = {
-  title: 'URAI Labs | Spatial AI Memory Systems',
-  description:
-    'URAI turns scattered personal context into a spatial AI memory world. Explore Home, Ground, Life Map, Replay, Mirror, Passport, and Status.',
+  title: 'URAI Spatial',
+  description: 'Open the URAI spatial world with Home, Ground, Life Map, Replay, Mirror, Passport, and Status.',
 }
 
 export default function HomePage() {
-  return <FinalHomeThreshold />
+  return <TierOneExperience mode="home" />
 }
