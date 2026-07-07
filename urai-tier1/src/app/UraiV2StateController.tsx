@@ -14,6 +14,18 @@ const consentValues = new Set<ConsentState>([
   "export-ready", "delete-ready", "provenance-visible", "shared-expired",
 ]);
 
+const announcerStyle = {
+  position: "absolute",
+  width: "1px",
+  height: "1px",
+  padding: 0,
+  margin: "-1px",
+  overflow: "hidden",
+  clip: "rect(0, 0, 0, 0)",
+  whiteSpace: "nowrap",
+  border: 0,
+} as const;
+
 function V2StateControllerContent() {
   const pathname = usePathname() || "";
   const searchParams = useSearchParams();
@@ -58,7 +70,7 @@ function V2StateControllerContent() {
     };
   }, [pathname]);
 
-  return <span className="uraiV2StateAnnouncer" aria-live="polite">{announcement}</span>;
+  return <span className="uraiV2StateAnnouncer" aria-live="polite" style={announcerStyle}>{announcement}</span>;
 }
 
 export default function UraiV2StateController() {
