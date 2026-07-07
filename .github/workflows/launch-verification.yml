@@ -55,7 +55,7 @@ jobs:
         run: |
           mkdir -p _audit/20260623_launch_route_chain
           : > _audit/20260623_launch_route_chain/route-smoke.tsv
-          for route in / /home /ground /life-map /focus /replay /mirror /passport /status; do
+          for route in / /home /ground /life-map /focus /replay /mirror /passport /status /privacy-controls /demo /receipts /technology /proof /memory; do
             code=$(curl -sS -o /tmp/urai-route.html -w '%{http_code}' "http://127.0.0.1:3001${route}")
             printf '%s\t%s\n' "$route" "$code" | tee -a _audit/20260623_launch_route_chain/route-smoke.tsv
             test "$code" = "200"
