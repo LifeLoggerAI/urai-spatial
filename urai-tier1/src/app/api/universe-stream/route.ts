@@ -1,4 +1,4 @@
-import { runProductionOrchestrator } from "../../../../automation/productionOrchestrator";
+import { runProductionOrchestrator } from "../../../automation/productionOrchestrator";
 
 export const dynamic = "force-static";
 
