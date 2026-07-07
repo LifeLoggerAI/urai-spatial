@@ -11,27 +11,41 @@ const workflow = readFileSync(workflowPath, "utf8");
 
 for (const required of [
   "workflow_dispatch",
-  "environment:",
-  "FIREBASE_TOKEN",
+  "environment: production",
+  "FIREBASE_SERVICE_ACCOUNT_JSON",
   "FIREBASE_PROJECT_ID",
-  "corepack pnpm urai:guardian",
-  "corepack pnpm check:types",
-  "corepack pnpm build",
-  "corepack pnpm build:static",
-  "firebase-tools deploy",
-  "smoke:deployed",
-  "smoke:live",
+  "GOOGLE_APPLICATION_CREDENTIALS",
+  "ref: ${{ github.sha }}",
+  "persist-credentials: false",
+  "pnpm live:check",
+  "pnpm verify:e2e:resilient",
+  "pnpm live:deploy",
+  "HOST=\"$LIVE_URL\" pnpm smoke",
+  "rm -f \"$GOOGLE_APPLICATION_CREDENTIALS\"",
 ]) {
   assert.ok(workflow.includes(required), `Deploy workflow must include ${required}.`);
 }
 
-const guardianIndex = workflow.indexOf("corepack pnpm urai:guardian");
-const typecheckIndex = workflow.indexOf("corepack pnpm check:types");
-const deployIndex = workflow.indexOf("firebase-tools deploy");
-const liveSmokeIndex = workflow.indexOf("corepack pnpm smoke:live");
+assert.equal(
+  workflow.includes("FIREBASE_TOKEN"),
+  false,
+  "Deploy workflow must not fall back to the legacy long-lived FIREBASE_TOKEN path.",
+);
 
-assert.ok(guardianIndex >= 0 && guardianIndex < deployIndex, "Guardian must run before deploy.");
-assert.ok(typecheckIndex >= 0 && typecheckIndex < deployIndex, "Typecheck must run before deploy.");
-assert.ok(liveSmokeIndex >= 0 && liveSmokeIndex > deployIndex, "Live smoke must run after deploy when deploy_url is provided.");
+const exactCheckoutIndex = workflow.indexOf("ref: ${{ github.sha }}");
+const verifyIndex = workflow.indexOf("pnpm live:check");
+const deployJobIndex = workflow.indexOf("\n  deploy:");
+const environmentIndex = workflow.indexOf("environment: production");
+const credentialWriteIndex = workflow.indexOf("Write Firebase service account");
+const deployIndex = workflow.indexOf("pnpm live:deploy");
+const smokeIndex = workflow.indexOf('HOST="$LIVE_URL" pnpm smoke');
+const cleanupIndex = workflow.indexOf('rm -f "$GOOGLE_APPLICATION_CREDENTIALS"');
+
+assert.ok(exactCheckoutIndex >= 0 && exactCheckoutIndex < verifyIndex, "Exact commit checkout must precede verification.");
+assert.ok(verifyIndex >= 0 && verifyIndex < deployJobIndex, "Release verification must precede the deploy job.");
+assert.ok(deployJobIndex >= 0 && environmentIndex > deployJobIndex, "Deploy job must use the production environment.");
+assert.ok(credentialWriteIndex >= 0 && credentialWriteIndex < deployIndex, "Service-account material must be written before deploy.");
+assert.ok(deployIndex >= 0 && smokeIndex > deployIndex, "Live smoke must run after deploy when a URL is supplied.");
+assert.ok(cleanupIndex > deployIndex, "Credential cleanup must run after deployment.");
 
 console.log("URAI deploy workflow canon passed.");
