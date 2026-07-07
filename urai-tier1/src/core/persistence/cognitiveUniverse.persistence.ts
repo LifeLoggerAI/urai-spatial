@@ -1,8 +1,12 @@
-import { createCognitiveUniverse } from "./cognitiveUniverse";
 import { createUniverseInspector } from "../bridge/cognitiveUniverse.inspector";
 
+const fallbackUniverse = {
+  worlds: [],
+};
+
 // PERSISTENCE LAYER (SAVE / LOAD UNIVERSE STATE)
-// Enables full snapshotting of worlds, memory graphs, interactions, and emergence state
+// Enables full snapshotting of worlds, memory graphs, interactions, and emergence state.
+// Launch note: runtime reconstruction remains provider-gated until the verified universe engine is attached.
 
 export type UniverseSnapshot = {
   timestamp: number;
@@ -15,7 +19,7 @@ export type UniverseSnapshot = {
 };
 
 export function createUniversePersistence(userId: string = "demo-user") {
-  const universe = createCognitiveUniverse(userId);
+  const universe = fallbackUniverse;
   const inspector = createUniverseInspector(userId);
 
   // Capture full system state
