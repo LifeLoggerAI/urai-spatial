@@ -1,5 +1,5 @@
-import FinalHomeThreshold from '../FinalHomeThreshold'
+import { TierOneExperience } from '@/spatial/layout/TierOneExperience'
 
 export default function HomeRoutePage() {
-  return <FinalHomeThreshold />
+  return <TierOneExperience mode="home" />
 }
