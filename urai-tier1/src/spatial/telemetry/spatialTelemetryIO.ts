@@ -1,12 +1,7 @@
+import type { SpatialTelemetryEvent } from "@/spatial/telemetry/spatialTelemetryTypes";
+
 const SPATIAL_TELEMETRY_KEY = "urai.spatial.telemetry.v1";
 const SPATIAL_TELEMETRY_LIMIT = 200;
-
-export type SpatialTelemetryEvent = {
-  id?: string;
-  type?: string;
-  createdAt?: string;
-  [key: string]: any;
-};
 
 export function readSpatialTelemetry(): SpatialTelemetryEvent[] {
   if (typeof window === "undefined") return [];
