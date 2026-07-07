@@ -26,7 +26,7 @@ const riskyClaims = [
   { id: 'live-immersive-runtime', pattern: /\b(live AR|live WebXR|live XR|production XR|AR session|WebXR session|immersive provider)\b/i, allowedNearby: /not live|not claimed|separate gate|future|deferred|fallback|provider is connected|do not claim|seam|preview|scaffold|contract|private beta|gated|disabled/i, reason: 'AR/WebXR must be framed as deferred, fallback, preview, or provider-gated.' },
   { id: 'sensitive-provider', pattern: /\b(biometric provider|camera provider|body biometric|face tracking|voiceprint|wearable provider|wearable sync)\b/i, allowedNearby: /fallback|mock|not live|not claimed|separate gate|future|deferred|privacy-safe|provider is connected|consent|scaffold|contract|private beta|gated|disabled/i, reason: 'Biometric, camera, and wearable language must stay privacy-safe, fallback, deferred, or consent-gated.' },
   { id: 'memory-grounded-provider', pattern: /\b(memory-grounded|memory grounded|live memory|cross-repo memory|user memory sync)\b/i, allowedNearby: /not live|not claimed|separate gate|future|deferred|fallback|provider is connected|consent|scaffold|contract|private beta|gated|disabled/i, reason: 'Memory-grounded and cross-repo sync language must be deferred unless provider wiring and consent exist.' },
-  { id: 'asset-factory-provider', pattern: /\b(asset-factory|asset factory|spatial asset jobs|media pipeline|studio export)\b/i, allowedNearby: /not live|not claimed|separate gate|provenance|future|deferred|fallback|provider is connected|scaffold|contract|private beta|gated|disabled/i, reason: 'Asset-factory/studio export language must remain deferred unless job integration is live.' },
+  { id: 'asset-factory-provider', pattern: /\b(asset-factory|asset factory|spatial asset jobs|media pipeline|studio export)\b/i, allowedNearby: /not live|not claimed|no certified|not certified|uncertified|unverified|separate gate|provenance|future|deferred|pending|incomplete|blocked|fallback|provider is connected|scaffold|contract|private beta|gated|disabled/i, reason: 'Asset-factory/studio export language must remain deferred unless job integration is live.' },
 ]
 
 const passingFixtures = [
@@ -35,6 +35,7 @@ const passingFixtures = [
   'Memory-grounded narration is private beta and gated behind consent.',
   'Asset Factory jobs are scaffold contracts and not live in this public demo.',
   'Asset Factory provenance is recorded, but live integration is not claimed.',
+  'Asset Factory provider-backed production proof is pending and no certified public surface exists.',
 ]
 
 const failingFixtures = [
