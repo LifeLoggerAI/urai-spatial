@@ -9,7 +9,7 @@ This is an evidence register, not a credential store. Unknown values remain unkn
 | Canonical Spatial | Firebase project `urai-4dc1d` | `https://urai.app` | Live content exists; release identity unverified | Unknown | Unknown |
 | Foundation fallback | Project `urai-4dc1d`, site `urai-foundation` reported in issue #10 | `https://urai-foundation.web.app` | Fallback reported; custom domain unresolved | Unknown | Unknown |
 | Marketing | Firebase project `urai-marketing` | `https://urai-marketing.web.app` | Public surface documented; strict current lock incomplete | Unknown | Unknown |
-| Asset Factory | Firebase URL `https://urai-4dc1d.web.app` reported for API smoke | Custom domain not certified | Historical production evidence; current provider lock incomplete | Historical only | Unknown |
+| Asset Factory | Project and hosting target require current receipt verification | No certified public provider surface | Provider-backed production, deployment identity, and custom-domain proof pending | Unknown | Unknown |
 | Investors | Firebase/App Hosting target `urai-investors` | `https://urai-investors.web.app` target | Investor-send readiness blocked | Unknown | Unknown |
 | Privacy | Project not centrally verified | `https://uraiprivacy.com` target | Authenticated production proof blocked | Unknown | Unknown |
 | Admin | Project/site expected from repo config | `https://www.uraiadmin.com` target | Deployment and owner bootstrap blocked | Unknown | Unknown |
