@@ -34,7 +34,7 @@ export const launchTruth = {
   safeClaim:
     'URAI Spatial is reachable as a privacy-safe fallback/demo spatial shell with a substantial V1 web experience, public route proof, receipt infrastructure, V1 asset evidence, and future provider seams.',
   unsafeClaim:
-    'V1-V100 are complete, production-certified, provider-active, device-certified, backend-integrated, or externally verified end-to-end.',
+    'Do not present V1 through V100 as finished, certified, provider-active, device-certified, backend-integrated, or externally verified end to end until receipts prove each claim.',
   firstThirtySeconds: {
     what: 'A living AI operating ecosystem for memory, identity, spatial intelligence, proof, and human-centered digital continuity.',
     why: 'It turns scattered human data, stories, experiences, and digital systems into something structured, useful, interactive, and eventually persistent across time.',
