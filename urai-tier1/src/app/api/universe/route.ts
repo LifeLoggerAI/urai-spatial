@@ -1,5 +1,7 @@
 import { runProductionOrchestrator } from "../../../automation/productionOrchestrator";
 
+export const dynamic = "force-static";
+
 export async function GET() {
   const snapshot = {
     worlds: [],
@@ -7,8 +9,8 @@ export async function GET() {
     interactions: { messages: [] },
     emergence: {
       globalCoherence: 0.5,
-      entropy: 0.2
-    }
+      entropy: 0.2,
+    },
   };
 
   const result = runProductionOrchestrator(snapshot);
