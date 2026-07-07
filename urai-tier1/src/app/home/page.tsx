@@ -1,5 +1,5 @@
-import FinalHomeThreshold from '@/app/FinalHomeThreshold'
+import SpatialRealPlaceWorld from '@/app/SpatialRealPlaceWorld'
 
 export default function HomeRoutePage() {
-  return <FinalHomeThreshold />
+  return <SpatialRealPlaceWorld mode="home" />
 }
