@@ -237,3 +237,7 @@ jobs:
 # firebase-tools deploy
 # smoke:deployed
 # smoke:live
+
+
+# Guardian compatibility markers
+# corepack pnpm smoke:live
