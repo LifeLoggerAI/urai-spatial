@@ -49,9 +49,23 @@ if (staticConfig.trailingSlash !== true) failures.push('firebase.static.json mus
 if (staticConfig.rewrites !== undefined && (!Array.isArray(staticConfig.rewrites) || staticConfig.rewrites.length !== 0)) failures.push('firebase.static.json must not mask missing static routes with rewrites')
 
 const gateSource = read('urai-tier1/src/app/CanonicalAssetGates.tsx')
-const contracts = [...gateSource.matchAll(/\['(v\d+)',\s*(\d+),/g)].map((match) => ({ version: match[1], expected: Number(match[2]) }))
-if (!contracts.length) failures.push('CanonicalAssetGates.tsx does not declare version contracts')
-for (const { version, expected } of contracts) {
+const objectContracts = [...gateSource.matchAll(/version:\s*'(v\d+)'[\s\S]*?expectedOutputs:\s*(\d+)/g)]
+  .map((match) => ({ version: match[1], expected: Number(match[2]) }))
+const tupleContracts = [...gateSource.matchAll(/\['(v\d+)',\s*(\d+),/g)]
+  .map((match) => ({ version: match[1], expected: Number(match[2]) }))
+const contracts = objectContracts.length ? objectContracts : tupleContracts
+const uniqueContracts = new Map()
+for (const contract of contracts) {
+  if (uniqueContracts.has(contract.version)) failures.push(`CanonicalAssetGates.tsx declares ${contract.version} more than once`)
+  uniqueContracts.set(contract.version, contract.expected)
+}
+const expectedVersions = new Map([['v1', 53], ['v2', 80], ['v3', 14], ['v4', 39], ['v5', 27]])
+for (const [version, expected] of expectedVersions) {
+  if (uniqueContracts.get(version) !== expected) failures.push(`CanonicalAssetGates.tsx must declare ${version} with expectedOutputs=${expected}`)
+}
+if (uniqueContracts.size !== expectedVersions.size) failures.push('CanonicalAssetGates.tsx must declare exactly V1-V5 asset contracts')
+
+for (const [version, expected] of expectedVersions) {
   const relative = `urai-tier1/public/assets/urai/final/manifests/${version}-asset-factory-spatial-handoff.json`
   try {
     const manifest = JSON.parse(read(relative))
