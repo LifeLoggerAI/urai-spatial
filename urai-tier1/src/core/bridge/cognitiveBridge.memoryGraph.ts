@@ -1,5 +1,15 @@
 import { createCognitiveKernel } from "./cognitiveBridge.core";
 
+type KernelMemory = {
+  id?: string;
+  content?: unknown;
+};
+
+type KernelInsight = {
+  id?: string;
+  message?: unknown;
+};
+
 export type MemoryNode = {
   id: string;
   content: any;
@@ -42,8 +52,8 @@ export function createMemoryGraph(userId: string = "demo-user") {
   }
 
   function syncFromKernel() {
-    const memory = kernel.getMemory();
-    const insight = kernel.getInsight();
+    const memory = kernel.getMemory() as KernelMemory | null;
+    const insight = kernel.getInsight() as KernelInsight | null;
 
     if (memory) {
       addNode({
