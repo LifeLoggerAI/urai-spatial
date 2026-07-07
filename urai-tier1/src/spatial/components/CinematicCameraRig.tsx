@@ -4,7 +4,7 @@ import { useFrame, useThree } from "@react-three/fiber";
 import { useRef } from "react";
 import * as THREE from "three";
 
-type CanonPhase = "HOME" | "ASCENT" | "LIFEMAP" | "FOCUS" | "REPLAY" | string;
+type CanonPhase = "HOME" | "ASCENT" | "GROUND" | "LIFEMAP" | "FOCUS" | "REPLAY" | "PASSPORT" | "STATUS" | string;
 
 type EmotionalCameraSync = {
   breathSeconds?: number;
@@ -25,7 +25,6 @@ type CinematicCameraRigProps = {
 };
 
 const clamp01 = (value: number) => Math.max(0, Math.min(1, value));
-
 const smooth = (value: number) => {
   const t = clamp01(value);
   return t * t * (3 - 2 * t);
@@ -33,13 +32,17 @@ const smooth = (value: number) => {
 
 const HOME_POS = new THREE.Vector3(0, 1.65, 8.8);
 const HOME_TARGET = new THREE.Vector3(0, 0.68, 0);
-
 const ASCENT_POS = new THREE.Vector3(0, 3.6, 9.2);
 const ASCENT_TARGET = new THREE.Vector3(0, 2.25, -11.5);
-
-const LIFEMAP_POS = new THREE.Vector3(0, 1.8, 6.5);
-const LIFEMAP_TARGET = new THREE.Vector3(0, 1.2, -6.5);
-const LIFEMAP_FOV = 48;
+const GROUND_POS = new THREE.Vector3(0, -2.15, 8.6);
+const GROUND_TARGET = new THREE.Vector3(0, -2.55, -4.6);
+const LIFEMAP_POS = new THREE.Vector3(0, 5.4, 9.2);
+const LIFEMAP_TARGET = new THREE.Vector3(0, 9.2, -8.5);
+const PASSPORT_POS = new THREE.Vector3(-2.8, 1.9, 8.2);
+const PASSPORT_TARGET = new THREE.Vector3(-1.15, 1.05, -2.2);
+const STATUS_POS = new THREE.Vector3(2.9, 2.0, 8.2);
+const STATUS_TARGET = new THREE.Vector3(1.25, 1.05, -2.2);
+const LIFEMAP_FOV = 52;
 
 function readPhase(props: CinematicCameraRigProps): CanonPhase {
   return props.phase ?? props.activePhase ?? props.scenePhase ?? "HOME";
@@ -62,9 +65,16 @@ function lifePathAt(progress: number) {
   return { position, target, fov };
 }
 
+function phasePose(phase: CanonPhase) {
+  if (phase === "GROUND") return { position: GROUND_POS.clone(), target: GROUND_TARGET.clone(), fov: 46 };
+  if (phase === "PASSPORT") return { position: PASSPORT_POS.clone(), target: PASSPORT_TARGET.clone(), fov: 43 };
+  if (phase === "STATUS") return { position: STATUS_POS.clone(), target: STATUS_TARGET.clone(), fov: 44 };
+  if (phase === "LIFEMAP") return { position: LIFEMAP_POS.clone(), target: LIFEMAP_TARGET.clone(), fov: LIFEMAP_FOV };
+  return null;
+}
+
 function applyEmotionalDrift(pos: THREE.Vector3, target: THREE.Vector3, sync: EmotionalCameraSync | null | undefined, phase: CanonPhase, elapsed: number) {
   if (!sync || phase === "HOME") return;
-
   const breathSeconds = Math.max(4.2, Math.min(9, sync.breathSeconds ?? 6));
   const glow = clamp01(sync.glowStrength ?? 0.35);
   const restraint = clamp01(sync.restraint ?? 0.7);
@@ -72,13 +82,10 @@ function applyEmotionalDrift(pos: THREE.Vector3, target: THREE.Vector3, sync: Em
   const breath = Math.sin((elapsed / breathSeconds) * Math.PI * 2);
   const slow = Math.sin((elapsed / (breathSeconds * 1.7)) * Math.PI * 2);
   const amplitude = 0.018 + glow * 0.035 - restraint * 0.012;
-  const vertical = amplitude * 0.42;
-  const horizontal = amplitude * (0.45 + warmth * 0.25);
-
-  pos.x += slow * horizontal;
-  pos.y += breath * vertical;
-  target.x += slow * horizontal * 0.32;
-  target.y += breath * vertical * 0.22;
+  pos.x += slow * amplitude * (0.45 + warmth * 0.25);
+  pos.y += breath * amplitude * 0.42;
+  target.x += slow * amplitude * 0.16;
+  target.y += breath * amplitude * 0.1;
 }
 
 export default function CinematicCameraRig(props: CinematicCameraRigProps) {
@@ -95,13 +102,7 @@ export default function CinematicCameraRig(props: CinematicCameraRigProps) {
     const travelLambda = phase === "ASCENT" ? 2.35 : phase === "HOME" ? 3.15 : 5.2;
     const explicitAscent = phase === "ASCENT" ? clamp01(props.ascentProgress ?? 0) : travelTarget;
 
-    travelRef.current = THREE.MathUtils.damp(
-      travelRef.current,
-      phase === "ASCENT" ? Math.max(explicitAscent, 0.18) : travelTarget,
-      travelLambda,
-      delta,
-    );
-
+    travelRef.current = THREE.MathUtils.damp(travelRef.current, phase === "ASCENT" ? Math.max(explicitAscent, 0.18) : travelTarget, travelLambda, delta);
     if (phase === "HOME" && travelRef.current < 0.01) travelRef.current = 0;
 
     const base = lifePathAt(travelRef.current);
@@ -109,28 +110,23 @@ export default function CinematicCameraRig(props: CinematicCameraRigProps) {
     let desiredTarget = base.target;
     let desiredFov = phase === "HOME" ? 42 : base.fov;
 
-    if (phase === "LIFEMAP") {
-      desiredPos = LIFEMAP_POS.clone();
-      desiredTarget = LIFEMAP_TARGET.clone();
-      desiredFov = LIFEMAP_FOV;
+    const mappedPose = phasePose(phase);
+    if (mappedPose) {
+      desiredPos = mappedPose.position;
+      desiredTarget = mappedPose.target;
+      desiredFov = mappedPose.fov;
     }
 
-    const selected = finiteVector(props.selectedStarPosition ?? props.selectedStar?.position ?? null, new THREE.Vector3(0, 1.4, -8));
-
+    const selected = finiteVector(props.selectedStarPosition ?? props.selectedStar?.position ?? null, new THREE.Vector3(0, 4.4, -8));
     if (phase === "FOCUS" || phase === "REPLAY") {
       desiredPos = new THREE.Vector3(selected.x * 0.18, selected.y + 1.45, selected.z + 8.5);
       desiredTarget = selected.clone();
       desiredFov = 42;
     }
-
     if (phase === "REPLAY") {
       replayOrbitRef.current += delta;
       const orbit = replayOrbitRef.current;
-      desiredPos = new THREE.Vector3(
-        selected.x * 0.14 + Math.sin(orbit * 0.42) * 1.4,
-        selected.y + 1.25 + Math.sin(orbit * 0.3) * 0.3,
-        selected.z + 7 + Math.cos(orbit * 0.42) * 1.25,
-      );
+      desiredPos = new THREE.Vector3(selected.x * 0.14 + Math.sin(orbit * 0.42) * 1.4, selected.y + 1.25 + Math.sin(orbit * 0.3) * 0.3, selected.z + 7 + Math.cos(orbit * 0.42) * 1.25);
       desiredTarget = new THREE.Vector3(selected.x, selected.y, selected.z - 0.8);
       desiredFov = 40;
     } else {
@@ -154,10 +150,8 @@ export default function CinematicCameraRig(props: CinematicCameraRigProps) {
 
     const lambda = phase === "ASCENT" ? 4.8 : phase === "FOCUS" || phase === "REPLAY" ? 5.7 : 6.2;
     const step = clamp01(1 - Math.exp(-delta * lambda));
-
     camera.position.lerp(desiredPos, step);
     targetRef.current.lerp(desiredTarget, step);
-
     const perspective = camera as THREE.PerspectiveCamera;
     perspective.fov = THREE.MathUtils.damp(perspective.fov, desiredFov, 5.4, delta);
     perspective.near = 0.05;
