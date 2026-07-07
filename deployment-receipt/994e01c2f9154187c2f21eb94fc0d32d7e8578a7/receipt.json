@@ -1,0 +1,11 @@
+{
+  "schemaVersion": "urai-static-release-receipt-1",
+  "generatedAt": "2026-07-07T14:19:02.147Z",
+  "repository": "LifeLoggerAI/urai-spatial",
+  "targetSha": "994e01c2f9154187c2f21eb94fc0d32d7e8578a7",
+  "firebaseProject": null,
+  "liveUrl": "https://urai.app",
+  "status": "verified-no-deploy",
+  "deploymentScope": "hosting-only",
+  "workflowRunId": null
+}
