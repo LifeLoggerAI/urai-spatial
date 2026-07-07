@@ -27,6 +27,16 @@ function toCoord(seed: string, scale = 50) {
   return (hash(seed) % (scale * 2)) - scale;
 }
 
+function toText(value: unknown) {
+  if (typeof value === "string") return value;
+  if (value === null || value === undefined) return "";
+  try {
+    return JSON.stringify(value);
+  } catch {
+    return String(value);
+  }
+}
+
 export function createSpatialEngine(userId: string = "demo-user") {
   const kernel = createCognitiveKernel(userId);
   const nodes: SpatialVector[] = [];
@@ -61,7 +71,7 @@ export function createSpatialEngine(userId: string = "demo-user") {
       addNode({
         id: memory.id ?? String(Date.now()),
         type: "memory",
-        content: memory.content
+        content: toText(memory.content)
       });
     }
 
@@ -69,7 +79,7 @@ export function createSpatialEngine(userId: string = "demo-user") {
       addNode({
         id: insight.id ?? String(Date.now()) + "i",
         type: "insight",
-        content: insight.message
+        content: toText(insight.message)
       });
     }
 
