@@ -1,6 +1,7 @@
+import LaunchAssetHealthWidget from "../../components/LaunchAssetHealthWidget";
 import LaunchReadinessWidget from "../../components/LaunchReadinessWidget";
-import LaunchVersionWidget from "../../components/LaunchVersionWidget";
 import LaunchReceiptWidget from "../../components/LaunchReceiptWidget";
+import LaunchVersionWidget from "../../components/LaunchVersionWidget";
 
 export const metadata = {
   title: "URAI Launch Dashboard",
@@ -16,13 +17,14 @@ export default function LaunchDashboardPage() {
         </p>
         <h1 className="mt-4 text-5xl font-black">Launch readiness control room</h1>
         <p className="mt-5 max-w-3xl text-slate-300">
-          Readiness, version, evidence, and release visibility.
+          Readiness, version, evidence, assets, and release visibility.
         </p>
 
         <div className="mt-8 grid gap-4 md:grid-cols-2">
           <LaunchReadinessWidget />
           <LaunchVersionWidget />
           <LaunchReceiptWidget />
+          <LaunchAssetHealthWidget />
         </div>
       </section>
     </main>
