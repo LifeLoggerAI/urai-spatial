@@ -24,10 +24,13 @@ export const launchTruth = {
   repository: 'LifeLoggerAI/urai-spatial',
   runtimeRoot: 'urai-tier1',
   canonicalPublicApp: 'https://urai.app',
-  doctrine: 'docs/URAI_LAUNCH_LOCK.md',
+  doctrine: 'docs/URAI_LAUNCH_DOCTRINE.md',
+  launchLock: 'docs/URAI_LAUNCH_LOCK.md',
   ledger: 'docs/V1_V100_VERIFICATION_LEDGER.md',
   runbook: 'docs/P0_VERIFICATION_CLOSURE_RUNBOOK.md',
   trackingIssue: '#461',
+  phase: 'conversion: system -> product -> public proof -> trust -> launch -> momentum',
+  finalBlockers: ['verification', 'deployment identity', 'route parity', 'final public clarity'],
   safeClaim:
     'URAI Spatial is reachable as a privacy-safe fallback/demo spatial shell with a substantial V1 web experience, public route proof, receipt infrastructure, V1 asset evidence, and future provider seams.',
   unsafeClaim:
