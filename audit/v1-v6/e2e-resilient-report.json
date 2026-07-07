@@ -1,8 +1,8 @@
 {
-  "generatedAt": "2026-07-05T17:31:54.964Z",
-  "playwrightInstallExitCode": 1,
-  "e2eExitCode": 1,
+  "generatedAt": "2026-07-07T05:14:56.191Z",
+  "playwrightInstallExitCode": 0,
+  "e2eExitCode": 0,
   "blocking": false,
-  "decision": "E2E_DEGRADED_NON_BLOCKING",
-  "reason": "Replay/browser E2E is treated as infra-sensitive and does not block V1-V6 non-asset closure."
+  "decision": "E2E_PASS",
+  "reason": "Replay/browser E2E passed."
 }

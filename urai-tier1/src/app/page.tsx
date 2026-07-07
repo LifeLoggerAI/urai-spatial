@@ -1,9 +1,9 @@
 import FinalHomeThreshold from './FinalHomeThreshold'
 
 export const metadata = {
-  title: 'URAI Spatial',
+  title: 'URAI Labs | Spatial AI Memory Systems',
   description:
-    'The URAI Spatial Genesis Home World: sky, horizon, ground, embodied presence, orb companion, and connected Life Map routes.',
+    'URAI turns scattered personal context into a spatial AI memory world. Explore Home, Ground, Life Map, Replay, Mirror, Passport, and Status.',
 }
 
 export default function HomePage() {

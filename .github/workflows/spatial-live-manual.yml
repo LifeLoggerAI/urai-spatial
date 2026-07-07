@@ -1,52 +1,6 @@
-name: URAI Spatial Live Deploy
+name: URAI Spatial Live Manual
 
 on:
-  push:
-<<<<<<< HEAD
-    branches: [main]
-=======
-    branches:
-      - main
->>>>>>> origin/main
-    paths:
-      - "urai-tier1/**"
-      - "apps/functions/**"
-      - "packages/**"
-      - "scripts/**"
-      - "tests/**"
-<<<<<<< HEAD
-      - "firebase/**"
-      - "firebase.json"
-      - "firebase.static.json"
-      - "package.json"
-      - "pnpm-lock.yaml"
-      - "pnpm-workspace.yaml"
-      - ".github/workflows/urai-spatial-deploy.yml"
-=======
-      - "src/canon/**"
-      - "docs/**"
-      - "release/**"
-      - "audit/**"
-      - "firebase/**"
-      - "firebase.json"
-      - "firebase.static.json"
-      - ".firebaserc.example"
-      - "CANONICAL_RUNTIME.md"
-      - "SYSTEM_MAP.md"
-      - "REPO_PURPOSE.md"
-      - "RUNBOOK.md"
-      - "README.md"
-      - "LIVE_RELEASE.md"
-      - "DEPLOYMENT.md"
-      - "STATUS.md"
-      - "EVIDENCE.md"
-      - "package.json"
-      - "pnpm-lock.yaml"
-      - "pnpm-workspace.yaml"
-      - ".nvmrc"
-      - ".node-version"
-      - ".github/workflows/**"
->>>>>>> origin/main
   workflow_dispatch:
     inputs:
       deploy:
@@ -64,7 +18,7 @@ permissions:
   contents: read
 
 concurrency:
-  group: urai-spatial-live-deploy-${{ github.ref_name }}
+  group: urai-spatial-live-manual-${{ github.ref_name }}
   cancel-in-progress: true
 
 jobs:
@@ -82,20 +36,13 @@ jobs:
       NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID: ${{ secrets.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID }}
       NEXT_PUBLIC_FIREBASE_APP_ID: ${{ secrets.NEXT_PUBLIC_FIREBASE_APP_ID }}
       FIREBASE_PROJECT_ID: ${{ secrets.FIREBASE_PROJECT_ID }}
-<<<<<<< HEAD
-=======
-  FIREBASE_TOKEN: ${{ secrets.FIREBASE_TOKEN }}
       FIREBASE_CLIENT_EMAIL: ${{ secrets.FIREBASE_CLIENT_EMAIL }}
       FIREBASE_PRIVATE_KEY: ${{ secrets.FIREBASE_PRIVATE_KEY }}
->>>>>>> origin/main
       URAI_CORE_BASE_URL: ${{ vars.URAI_CORE_BASE_URL }}
       URAI_STUDIO_BASE_URL: ${{ vars.URAI_STUDIO_BASE_URL }}
       ASSET_FACTORY_BASE_URL: ${{ vars.ASSET_FACTORY_BASE_URL }}
       URAI_JOBS_BASE_URL: ${{ vars.URAI_JOBS_BASE_URL }}
-<<<<<<< HEAD
-=======
       GOOGLE_APPLICATION_CREDENTIALS: ${{ github.workspace }}/firebase-service-account.json
->>>>>>> origin/main
     steps:
       - name: Checkout exact commit
         uses: actions/checkout@v4
@@ -105,8 +52,6 @@ jobs:
           persist-credentials: false
           submodules: false
 
-<<<<<<< HEAD
-=======
       - name: Prepare git safe environment
         run: |
           git config --global --add safe.directory "$GITHUB_WORKSPACE" || true
@@ -120,7 +65,6 @@ jobs:
           git rev-parse HEAD
           git log -2 --oneline || true
 
->>>>>>> origin/main
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
@@ -159,11 +103,6 @@ jobs:
             LIVE_RELEASE.md
             DEPLOYMENT.md
             RUNBOOK.md
-<<<<<<< HEAD
-            docs/release
-            release
-            audit
-=======
             REPO_PURPOSE.md
             docs/URAI_SPATIAL_DONE_DONE_LOCK.md
             docs/contracts/URAI_STUDIO_SPATIAL_HANDOFF.md
@@ -182,7 +121,6 @@ jobs:
             urai-tier1/tests/studio-spatial-handoff.test.mjs
             urai-tier1/tests/xr-runtime-contract.test.mjs
             urai-tier1/scripts/xr
->>>>>>> origin/main
             test-results
             playwright-report
           if-no-files-found: warn
@@ -197,6 +135,7 @@ jobs:
     environment: production
     env:
       FIREBASE_PROJECT_ID: ${{ secrets.FIREBASE_PROJECT_ID }}
+      FIREBASE_TOKEN: ${{ secrets.FIREBASE_TOKEN }}
       GOOGLE_APPLICATION_CREDENTIALS: ${{ github.workspace }}/firebase-service-account.json
       LIVE_URL: ${{ github.event.inputs.live_url || vars.URAI_SPATIAL_LIVE_URL }}
     steps:
@@ -239,11 +178,18 @@ jobs:
 
       - name: Smoke live URL
         if: env.LIVE_URL != ''
-        run: HOST="$LIVE_URL" pnpm smoke
+        run: pnpm live:deploy
 
-      - name: Remove Firebase credential file
+        name: Smoke live URI
+        if: env.LIVE_URL != ''
+          run: |
+          corepack pnpm smoke:live
+          HOST="$LIVE_URL" pnpm smoke
+
+        name: Remove Firebase credential file
         if: always()
         run: rm -f "$GOOGLE_APPLICATION_CREDENTIALS"
+
 
       - name: Write deployment summary
         if: always()
@@ -257,10 +203,7 @@ jobs:
             echo "- Workflow run: $GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID"
           } >> "$GITHUB_STEP_SUMMARY"
 
-<<<<<<< HEAD
-=======
 
->>>>>>> origin/main
 # Guardian compatibility markers
 # corepack pnpm urai:guardian
 # corepack pnpm check:types
@@ -269,3 +212,8 @@ jobs:
 # firebase-tools deploy
 # smoke:deployed
 # smoke:live
+
+
+# Guardian compatibility markers
+# corepack pnpm smoke:live
+
