@@ -1,11 +1,11 @@
-import SpatialDefaultWorld from '../SpatialDefaultWorld'
+import SpatialWorldCanvas from '@/spatial/components/world/SpatialWorldCanvas'
 
 export const metadata = {
   title: 'URAI Spatial',
   description:
-    'URAI Spatial opens directly into the orbitable 3D Life Map world with connected Ground and proof navigation.',
+    'URAI Spatial opens into the live 3D world canvas with connected Ground, Life Map, Focus, Replay, Passport, and Status paths.',
 }
 
 export default function SpatialPage() {
-  return <SpatialDefaultWorld />
+  return <SpatialWorldCanvas mode="spatial" />
 }
