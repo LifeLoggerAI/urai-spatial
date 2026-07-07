@@ -1,10 +1,10 @@
-import SpatialRealPlaceWorld from './SpatialRealPlaceWorld'
+import FinalHomeThreshold from './FinalHomeThreshold'
 
 export const metadata = {
   title: 'URAI Spatial',
-  description: 'Open the URAI real-place spatial home first: Ground below, Life Map above, one anchored world.',
+  description: 'Open the URAI Genesis Home threshold first: Ground below, Life Map above, one anchored world.',
 }
 
 export default function HomePage() {
-  return <SpatialRealPlaceWorld mode="home" />
+  return <FinalHomeThreshold />
 }
