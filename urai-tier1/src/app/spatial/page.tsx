@@ -1,11 +1,11 @@
-import { TierOneExperience } from '@/spatial/layout/TierOneExperience';
+import SpatialDefaultWorld from '../SpatialDefaultWorld'
 
 export const metadata = {
   title: 'URAI Spatial',
   description:
-    'URAI Spatial opens the canonical true 3D Genesis surface with connected navigation.',
-};
+    'URAI Spatial opens directly into the orbitable 3D Life Map world with connected Ground and proof navigation.',
+}
 
 export default function SpatialPage() {
-  return <TierOneExperience mode="home" />;
+  return <SpatialDefaultWorld />
 }
