@@ -51,6 +51,7 @@ import './aaa-visual-authority-20260703.css'
 import './lifemap-proof-crops.css'
 import './urai-realm-accent-backgrounds.css'
 import './spatial-first-root-launch.css'
+import './urai-design-system.css'
 
 const configuredBuildSha = process.env.NEXT_PUBLIC_URAI_BUILD_SHA ?? process.env.GITHUB_SHA ?? ''
 const deployedSha = /^[0-9a-f]{40}$/.test(configuredBuildSha) ? configuredBuildSha : 'unverified'
@@ -74,7 +75,7 @@ export const viewport: Viewport = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en">
+    <html lang="en" data-urai-domain="app" data-urai-surface="spatial">
       <body
         data-urai-home-spatial-shell="true"
         data-urai-living-state-layer="v2"
