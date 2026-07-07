@@ -31,7 +31,7 @@ export interface UraiSpatialAssetManifestEntry {
 const generatedRoot = '/assets/urai/generated'
 const fallbackRoot = '/assets/urai/fallbacks'
 
-export const uraiSpatialAssetManifest = [
+export const uraiSpatialAssetManifest: readonly UraiSpatialAssetManifestEntry[] = [
   {
     id: 'home-entry-chamber-model-v1',
     name: 'Home Entry Chamber GLB',
@@ -227,7 +227,7 @@ export const uraiSpatialAssetManifest = [
     updatedAt: '2026-07-07',
     generationPromptId: 'texture-style-guide',
   },
-] as const satisfies readonly UraiSpatialAssetManifestEntry[]
+]
 
 export type UraiSpatialAssetId = (typeof uraiSpatialAssetManifest)[number]['id']
 
@@ -235,20 +235,20 @@ export const criticalUraiSpatialAssetIds = uraiSpatialAssetManifest
   .filter((asset) => asset.priority === 'critical')
   .map((asset) => asset.id)
 
-export function getUraiSpatialAsset(assetId: string) {
+export function getUraiSpatialAsset(assetId: string): UraiSpatialAssetManifestEntry | null {
   return uraiSpatialAssetManifest.find((asset) => asset.id === assetId) ?? null
 }
 
-export function getUraiSpatialFallbackAsset(assetId: string) {
+export function getUraiSpatialFallbackAsset(assetId: string): UraiSpatialAssetManifestEntry | null {
   const asset = getUraiSpatialAsset(assetId)
   return asset?.fallbackAssetId ? getUraiSpatialAsset(asset.fallbackAssetId) : null
 }
 
-export function getUraiSpatialAssetsForSurface(surface: UraiSpatialTargetSurface) {
+export function getUraiSpatialAssetsForSurface(surface: UraiSpatialTargetSurface): readonly UraiSpatialAssetManifestEntry[] {
   return uraiSpatialAssetManifest.filter((asset) => asset.targetSurface === surface || asset.targetSurface === 'global')
 }
 
-export function isUraiSpatialAssetReady(assetId: string) {
+export function isUraiSpatialAssetReady(assetId: string): boolean {
   const asset = getUraiSpatialAsset(assetId)
   return asset?.status === 'ready' || asset?.status === 'placeholder'
 }
