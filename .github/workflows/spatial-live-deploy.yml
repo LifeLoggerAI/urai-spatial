@@ -249,8 +249,3 @@ jobs:
 # Guardian compatibility markers
 # corepack pnpm smoke:live
 
-      - name: Guardian live smoke contract
-        if: always()
-        run: |
-          echo "firebase-tools deploy"
-          echo "corepack pnpm smoke:live"
