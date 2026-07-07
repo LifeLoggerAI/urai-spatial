@@ -1,7 +1,9 @@
 "use client";
 
 import { useGLTF } from "@react-three/drei";
-import type { GroupProps } from "@react-three/fiber";
+import type { ThreeElements } from "@react-three/fiber";
+
+type GroupProps = ThreeElements["group"];
 
 function AssetModel({ src, name, ...props }: GroupProps & { src: string; name: string }) {
   const gltf = useGLTF(src);
