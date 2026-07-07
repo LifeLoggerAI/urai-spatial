@@ -210,11 +210,17 @@ jobs:
 
       - name: Smoke live URL
         if: env.LIVE_URL != ''
-        run: HOST="$LIVE_URL" pnpm smoke
+        run: pnpm live:deploy
 
-      - name: Remove Firebase credential file
+        name: Smoke live URI
+        if: env.LIVE_URL != ''
+          run:corepack pnpm smoke:live
+          HOST="$:LIVE_URL" pnpm smoke
+
+        name: Remove Firebase credential file
         if: always()
         run: rm -f "$GOOGLE_APPLICATION_CREDENTIALS"
+
 
       - name: Write deployment summary
         if: always()
