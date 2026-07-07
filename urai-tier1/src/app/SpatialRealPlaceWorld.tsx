@@ -13,15 +13,24 @@ type RealPlaceWorldProps = {
   mode: RealPlaceMode
 }
 
+type CityAssetId = 'skyline-band' | 'city-overlook-deck' | 'street-descent-path' | 'life-map-sky-anchor'
+
+const cityGlbAssets: Record<CityAssetId, string> = {
+  'skyline-band': '/assets/urai/spatial/city-overlook/models/skyline-band.glb',
+  'city-overlook-deck': '/assets/urai/spatial/city-overlook/models/city-overlook-deck.glb',
+  'street-descent-path': '/assets/urai/spatial/city-overlook/models/street-descent-path.glb',
+  'life-map-sky-anchor': '/assets/urai/spatial/city-overlook/models/life-map-sky-anchor.glb',
+}
+
 const cityProfile = {
   id: 'default-city-overlook',
   title: 'City Overlook',
-  orbAnchorPosition: [0.78, 0.92, -1.65] as [number, number, number],
-  lifeMapAnchorPosition: [0, 4.9, -8.2] as [number, number, number],
+  orbAnchorPosition: [1.15, 0.82, -1.78] as [number, number, number],
+  lifeMapAnchorPosition: [0, 4.65, -8.65] as [number, number, number],
   camera: {
-    home: { position: [0, 2.12, 7.25] as [number, number, number], fov: 42 },
-    ground: { position: [0, 1.34, 5.35] as [number, number, number], fov: 46 },
-    'life-map': { position: [0, 3.85, 8.45] as [number, number, number], fov: 44 },
+    home: { position: [0, 1.72, 6.65] as [number, number, number], fov: 45 },
+    ground: { position: [0, 1.22, 5.08] as [number, number, number], fov: 48 },
+    'life-map': { position: [0, 3.25, 7.9] as [number, number, number], fov: 46 },
   },
 }
 
@@ -52,11 +61,19 @@ const copy = {
   },
 } as const
 
+function CityAssetSlot({ assetId, children }: { assetId: CityAssetId; children: React.ReactNode }) {
+  return (
+    <group name={`urai-city-asset:${assetId}`} userData={{ assetSrc: cityGlbAssets[assetId], assetStatus: 'glb-slot-ready-procedural-fallback-active' }}>
+      {children}
+    </group>
+  )
+}
+
 function Stars({ mode }: { mode: RealPlaceMode }) {
   const ref = useRef<THREE.Points>(null)
   const geometry = useMemo(() => {
     const g = new THREE.BufferGeometry()
-    const count = mode === 'life-map' ? 1100 : 620
+    const count = mode === 'life-map' ? 1200 : 700
     const positions = new Float32Array(count * 3)
     for (let i = 0; i < count; i += 1) {
       const angle = i * 2.399963
@@ -81,83 +98,139 @@ function Stars({ mode }: { mode: RealPlaceMode }) {
   )
 }
 
-function CitySkylineBackdrop() {
-  const buildings = [
-    [-7.4, -0.05, -9.8, 1.15, 2.3, 0.75],
-    [-6.05, 0.35, -10.05, 0.92, 3.2, 0.75],
-    [-4.95, 0.0, -9.65, 1.35, 2.5, 0.8],
-    [-3.3, 0.55, -9.9, 1.05, 3.7, 0.75],
-    [-1.85, 0.82, -10.15, 1.25, 4.4, 0.78],
-    [-0.25, 0.25, -9.75, 1.4, 3.0, 0.8],
-    [1.45, 0.62, -10.0, 1.0, 4.0, 0.75],
-    [2.85, 0.2, -9.55, 1.25, 2.8, 0.8],
-    [4.35, 0.65, -9.95, 1.05, 3.9, 0.75],
-    [5.72, 0.15, -9.65, 1.28, 2.7, 0.78],
-    [7.1, 0.45, -10.1, 0.95, 3.45, 0.75],
-  ] as const
+function CityAtmosphere({ mode }: { mode: RealPlaceMode }) {
+  const mist = useRef<THREE.Group>(null)
+  const traffic = useRef<THREE.Group>(null)
+
+  useFrame(({ clock }) => {
+    if (mist.current) mist.current.rotation.y = Math.sin(clock.elapsedTime * 0.08) * 0.04
+    if (traffic.current) traffic.current.position.x = Math.sin(clock.elapsedTime * 0.55) * 0.42
+  })
 
   return (
     <group>
-      {buildings.map(([x, y, z, w, h, d], index) => (
-        <group key={index} position={[x, y, z]}>
-          <mesh castShadow>
-            <boxGeometry args={[w, h, d]} />
-            <meshStandardMaterial color="#071220" emissive="#10253b" emissiveIntensity={0.2} roughness={0.88} metalness={0.06} />
+      <group ref={mist} position={[0, 1.3, -7.8]}>
+        <mesh>
+          <sphereGeometry args={[5.8, 32, 32]} />
+          <meshBasicMaterial color="#67e8f9" transparent opacity={mode === 'life-map' ? 0.055 : 0.036} depthWrite={false} blending={THREE.AdditiveBlending} />
+        </mesh>
+        <mesh position={[0, 1.1, -1.4]}>
+          <sphereGeometry args={[4.6, 32, 32]} />
+          <meshBasicMaterial color="#a78bfa" transparent opacity={mode === 'life-map' ? 0.032 : 0.018} depthWrite={false} blending={THREE.AdditiveBlending} />
+        </mesh>
+      </group>
+      <group ref={traffic} position={[0, -0.38, -8.25]}>
+        {[-4.8, -2.4, 0.4, 2.9, 5.5].map((x, index) => (
+          <mesh key={x} position={[x, 0, index % 2 === 0 ? 0.06 : -0.06]}>
+            <boxGeometry args={[0.55 + (index % 2) * 0.32, 0.018, 0.018]} />
+            <meshBasicMaterial color={index % 2 === 0 ? '#facc6b' : '#67e8f9'} transparent opacity={0.38} blending={THREE.AdditiveBlending} />
           </mesh>
-          {Array.from({ length: 5 }).map((_, row) => (
-            <mesh key={row} position={[0, -h / 2 + 0.46 + row * 0.52, d / 2 + 0.01]}>
-              <boxGeometry args={[w * 0.72, 0.035, 0.02]} />
-              <meshBasicMaterial color={row % 2 === 0 ? '#facc6b' : '#67e8f9'} transparent opacity={0.13 + ((index + row) % 3) * 0.04} blending={THREE.AdditiveBlending} />
-            </mesh>
-          ))}
-        </group>
-      ))}
-      <mesh position={[0, 1.05, -10.35]}>
-        <boxGeometry args={[16.5, 0.02, 0.02]} />
-        <meshBasicMaterial color="#67e8f9" transparent opacity={0.22} blending={THREE.AdditiveBlending} />
-      </mesh>
+        ))}
+      </group>
     </group>
   )
 }
 
-function StreetLevelGround({ mode }: { mode: RealPlaceMode }) {
+function SkylineBand() {
+  const buildings = [
+    [-7.6, -0.05, -9.85, 1.05, 2.25, 0.72],
+    [-6.28, 0.35, -10.05, 0.84, 3.2, 0.72],
+    [-5.1, 0.0, -9.65, 1.25, 2.5, 0.78],
+    [-3.55, 0.55, -9.95, 0.98, 3.7, 0.72],
+    [-2.15, 0.92, -10.15, 1.16, 4.65, 0.78],
+    [-0.55, 0.25, -9.75, 1.32, 3.0, 0.78],
+    [1.08, 0.72, -10.0, 0.95, 4.15, 0.72],
+    [2.48, 0.2, -9.55, 1.2, 2.8, 0.78],
+    [4.0, 0.72, -9.95, 1.0, 4.05, 0.72],
+    [5.35, 0.15, -9.65, 1.22, 2.7, 0.78],
+    [6.78, 0.45, -10.1, 0.95, 3.45, 0.72],
+  ] as const
+
+  return (
+    <CityAssetSlot assetId="skyline-band">
+      <group>
+        {buildings.map(([x, y, z, w, h, d], index) => (
+          <group key={index} position={[x, y, z]}>
+            <mesh castShadow>
+              <boxGeometry args={[w, h, d]} />
+              <meshStandardMaterial color="#06111d" emissive="#10253b" emissiveIntensity={0.22} roughness={0.88} metalness={0.08} />
+            </mesh>
+            {Array.from({ length: 7 }).map((_, row) => (
+              <mesh key={row} position={[0, -h / 2 + 0.36 + row * 0.45, d / 2 + 0.011]}>
+                <boxGeometry args={[w * 0.68, 0.028, 0.02]} />
+                <meshBasicMaterial color={row % 2 === 0 ? '#facc6b' : '#67e8f9'} transparent opacity={0.1 + ((index + row) % 4) * 0.04} blending={THREE.AdditiveBlending} />
+              </mesh>
+            ))}
+          </group>
+        ))}
+        <mesh position={[0, 1.06, -10.35]}>
+          <boxGeometry args={[16.6, 0.02, 0.02]} />
+          <meshBasicMaterial color="#67e8f9" transparent opacity={0.24} blending={THREE.AdditiveBlending} />
+        </mesh>
+      </group>
+    </CityAssetSlot>
+  )
+}
+
+function CityOverlookDeck() {
+  return (
+    <CityAssetSlot assetId="city-overlook-deck">
+      <group>
+        <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.88, 0.1]} receiveShadow>
+          <planeGeometry args={[9.8, 5.35]} />
+          <meshStandardMaterial color="#111827" emissive="#0b1d2a" emissiveIntensity={0.14} roughness={0.92} metalness={0.05} />
+        </mesh>
+        <mesh position={[0, 0.05, -6.85]}>
+          <boxGeometry args={[12.8, 0.1, 0.12]} />
+          <meshStandardMaterial color="#203246" roughness={0.7} metalness={0.12} />
+        </mesh>
+        {[-4.8, -2.4, 0, 2.4, 4.8].map((x) => (
+          <mesh key={x} position={[x, -0.42, -6.85]}>
+            <boxGeometry args={[0.12, 1.05, 0.12]} />
+            <meshStandardMaterial color="#203246" roughness={0.7} metalness={0.12} />
+          </mesh>
+        ))}
+        {[-4.1, 4.1].map((x) => (
+          <group key={x} position={[x, -0.36, -4.8]}>
+            <mesh>
+              <cylinderGeometry args={[0.05, 0.07, 1.35, 16]} />
+              <meshStandardMaterial color="#172437" emissive="#0f172a" emissiveIntensity={0.2} roughness={0.58} />
+            </mesh>
+            <mesh position={[0, 0.82, 0]}>
+              <sphereGeometry args={[0.16, 24, 24]} />
+              <meshBasicMaterial color="#fde68a" transparent opacity={0.62} blending={THREE.AdditiveBlending} />
+            </mesh>
+          </group>
+        ))}
+      </group>
+    </CityAssetSlot>
+  )
+}
+
+function StreetDescentPath({ mode }: { mode: RealPlaceMode }) {
   const isGround = mode === 'ground'
 
   return (
-    <group>
-      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.88, 0.25]} receiveShadow>
-        <planeGeometry args={[9.2, 5.2]} />
-        <meshStandardMaterial color="#111827" emissive="#0b1d2a" emissiveIntensity={0.14} roughness={0.92} metalness={0.05} />
-      </mesh>
-      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.84, 2.85]} receiveShadow>
-        <planeGeometry args={[2.35, 6.2]} />
-        <meshStandardMaterial color="#18212d" emissive={isGround ? '#14384d' : '#0b2233'} emissiveIntensity={isGround ? 0.28 : 0.1} roughness={0.96} />
-      </mesh>
-      {[-1.05, 1.05].map((x) => (
-        <mesh key={x} rotation={[-Math.PI / 2, 0, 0]} position={[x, -0.79, 2.6]}>
-          <planeGeometry args={[0.08, 5.4]} />
-          <meshBasicMaterial color="#67e8f9" transparent opacity={isGround ? 0.36 : 0.18} side={THREE.DoubleSide} blending={THREE.AdditiveBlending} />
+    <CityAssetSlot assetId="street-descent-path">
+      <group>
+        <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.835, 2.78]} receiveShadow>
+          <planeGeometry args={[2.35, 6.2]} />
+          <meshStandardMaterial color="#18212d" emissive={isGround ? '#14384d' : '#0b2233'} emissiveIntensity={isGround ? 0.28 : 0.1} roughness={0.96} />
         </mesh>
-      ))}
-      {[0, 1, 2].map((step) => (
-        <mesh key={step} position={[0, -1.04 - step * 0.22, 4.65 + step * 0.72]} receiveShadow>
-          <boxGeometry args={[3.1 + step * 0.24, 0.2, 0.54]} />
-          <meshStandardMaterial color={step === 0 ? '#111827' : '#0b1320'} emissive="#071827" emissiveIntensity={0.12} roughness={0.9} />
-        </mesh>
-      ))}
-      {[-3.9, 3.9].map((x) => (
-        <group key={x} position={[x, -0.36, -4.8]}>
-          <mesh>
-            <cylinderGeometry args={[0.05, 0.07, 1.4, 16]} />
-            <meshStandardMaterial color="#172437" emissive="#0f172a" emissiveIntensity={0.2} roughness={0.58} />
+        {[-1.05, 1.05].map((x) => (
+          <mesh key={x} rotation={[-Math.PI / 2, 0, 0]} position={[x, -0.79, 2.6]}>
+            <planeGeometry args={[0.08, 5.55]} />
+            <meshBasicMaterial color="#67e8f9" transparent opacity={isGround ? 0.36 : 0.18} side={THREE.DoubleSide} blending={THREE.AdditiveBlending} />
           </mesh>
-          <mesh position={[0, 0.82, 0]}>
-            <sphereGeometry args={[0.16, 24, 24]} />
-            <meshBasicMaterial color="#fde68a" transparent opacity={0.62} blending={THREE.AdditiveBlending} />
+        ))}
+        {[0, 1, 2, 3].map((step) => (
+          <mesh key={step} position={[0, -1.02 - step * 0.19, 4.42 + step * 0.64]} receiveShadow>
+            <boxGeometry args={[3.0 + step * 0.22, 0.18, 0.48]} />
+            <meshStandardMaterial color={step === 0 ? '#111827' : '#0b1320'} emissive="#071827" emissiveIntensity={0.12} roughness={0.9} />
           </mesh>
-        </group>
-      ))}
-    </group>
+        ))}
+      </group>
+    </CityAssetSlot>
   )
 }
 
@@ -168,18 +241,10 @@ function CityOverlookEnvironment({ mode }: { mode: RealPlaceMode }) {
         <circleGeometry args={[25, 180]} />
         <meshStandardMaterial color={mode === 'ground' ? '#071019' : '#071827'} emissive={mode === 'ground' ? '#0f2d3a' : '#0b2638'} emissiveIntensity={0.14} roughness={0.96} />
       </mesh>
-      <StreetLevelGround mode={mode} />
-      <CitySkylineBackdrop />
-      <mesh position={[0, 0.05, -6.85]}>
-        <boxGeometry args={[12.4, 0.1, 0.12]} />
-        <meshStandardMaterial color="#203246" roughness={0.7} metalness={0.12} />
-      </mesh>
-      {[-4.2, -1.4, 1.4, 4.2].map((x) => (
-        <mesh key={x} position={[x, -0.42, -6.85]}>
-          <boxGeometry args={[0.12, 1.05, 0.12]} />
-          <meshStandardMaterial color="#203246" roughness={0.7} metalness={0.12} />
-        </mesh>
-      ))}
+      <CityOverlookDeck />
+      <StreetDescentPath mode={mode} />
+      <SkylineBand />
+      <CityAtmosphere mode={mode} />
     </group>
   )
 }
@@ -256,18 +321,20 @@ function LifeMapSky({ mode }: { mode: RealPlaceMode }) {
   ] as const
 
   return (
-    <group ref={ref} position={cityProfile.lifeMapAnchorPosition} scale={strong ? 1.35 : 0.82}>
-      <mesh rotation={[Math.PI / 2, 0, 0]}>
-        <torusGeometry args={[3.0, 0.02, 16, 150]} />
-        <meshBasicMaterial color="#60a5fa" transparent opacity={strong ? 0.55 : 0.16} blending={THREE.AdditiveBlending} />
-      </mesh>
-      {stars.map(([x, y, z, color], index) => (
-        <mesh key={index} position={[x, y, z]}>
-          <sphereGeometry args={[strong ? 0.16 : 0.08, 24, 24]} />
-          <meshStandardMaterial color="#020617" emissive={color} emissiveIntensity={strong ? 3.4 : 1.3} transparent opacity={0.96} />
+    <CityAssetSlot assetId="life-map-sky-anchor">
+      <group ref={ref} position={cityProfile.lifeMapAnchorPosition} scale={strong ? 1.35 : 0.82}>
+        <mesh rotation={[Math.PI / 2, 0, 0]}>
+          <torusGeometry args={[3.0, 0.02, 16, 150]} />
+          <meshBasicMaterial color="#60a5fa" transparent opacity={strong ? 0.55 : 0.16} blending={THREE.AdditiveBlending} />
         </mesh>
-      ))}
-    </group>
+        {stars.map(([x, y, z, color], index) => (
+          <mesh key={index} position={[x, y, z]}>
+            <sphereGeometry args={[strong ? 0.16 : 0.08, 24, 24]} />
+            <meshStandardMaterial color="#020617" emissive={color} emissiveIntensity={strong ? 3.4 : 1.3} transparent opacity={0.96} />
+          </mesh>
+        ))}
+      </group>
+    </CityAssetSlot>
   )
 }
 
@@ -277,7 +344,7 @@ function SpatialScene({ mode }: { mode: RealPlaceMode }) {
   return (
     <>
       <color attach="background" args={["#020611"]} />
-      <fog attach="fog" args={["#041225", 6, mode === 'life-map' ? 30 : 22]} />
+      <fog attach="fog" args={["#041225", 5.5, mode === 'life-map' ? 31 : 23]} />
       <PerspectiveCamera makeDefault position={camera.position} fov={camera.fov} />
       <OrbitControls enablePan={false} enableZoom enableDamping dampingFactor={0.06} rotateSpeed={0.28} zoomSpeed={0.55} minDistance={mode === 'ground' ? 3.4 : 4.6} maxDistance={mode === 'life-map' ? 14 : 10.5} minPolarAngle={0.58} maxPolarAngle={1.72} />
       <ambientLight intensity={0.38} color="#d7e7ff" />
@@ -345,9 +412,9 @@ export default function SpatialRealPlaceWorld({ mode }: RealPlaceWorldProps) {
       <style jsx>{`
         :global(.uraiV2StateAnnouncer){position:absolute!important;width:1px!important;height:1px!important;overflow:hidden!important;clip-path:inset(50%)!important;white-space:nowrap!important;color:transparent!important}
         .srp-root{position:fixed;inset:0;overflow:hidden;background:#020611;color:#f8fbff;isolation:isolate;font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif}
-        .srp-root:before{content:'';position:absolute;inset:0;z-index:2;pointer-events:none;background:radial-gradient(circle at 50% 16%,rgba(96,165,250,.14),transparent 24%),linear-gradient(180deg,rgba(2,6,17,.52),transparent 23%,transparent 66%,rgba(2,6,17,.86))}
-        .srp-root[data-mode='ground']:before{background:linear-gradient(180deg,rgba(2,6,17,.32),transparent 22%,rgba(2,6,17,.88))}
-        .srp-root[data-mode='life']:before{background:radial-gradient(circle at 50% 14%,rgba(96,165,250,.26),transparent 32%),linear-gradient(180deg,rgba(2,6,17,.28),transparent 30%,rgba(2,6,17,.86))}
+        .srp-root:before{content:'';position:absolute;inset:0;z-index:2;pointer-events:none;background:radial-gradient(circle at 50% 16%,rgba(96,165,250,.14),transparent 24%),linear-gradient(180deg,rgba(2,6,17,.5),transparent 23%,transparent 66%,rgba(2,6,17,.86))}
+        .srp-root[data-mode='ground']:before{background:linear-gradient(180deg,rgba(2,6,17,.3),transparent 22%,rgba(2,6,17,.88))}
+        .srp-root[data-mode='life']:before{background:radial-gradient(circle at 50% 14%,rgba(96,165,250,.26),transparent 32%),linear-gradient(180deg,rgba(2,6,17,.26),transparent 30%,rgba(2,6,17,.86))}
         .srp-root canvas{position:absolute;inset:0;z-index:1;display:block;cursor:grab}
         .srp-loader{position:absolute;inset:0;z-index:10;display:grid;place-items:center;background:#020611;color:rgba(226,246,255,.76);letter-spacing:.18em;text-transform:uppercase;font-size:12px}
         .srp-card,.srp-ground,.srp-rail,.srp-status{position:absolute;z-index:5;border:1px solid rgba(160,220,255,.15);background:linear-gradient(145deg,rgba(2,8,24,.54),rgba(10,9,31,.32));box-shadow:0 24px 90px rgba(0,0,0,.28),inset 0 1px 0 rgba(255,255,255,.045);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px)}
