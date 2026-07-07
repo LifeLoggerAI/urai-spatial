@@ -82,6 +82,7 @@ jobs:
           ref: ${{ github.sha }}
           fetch-depth: 0
           persist-credentials: false
+          submodules: false
 
       - name: Prepare git safe environment
         run: |
@@ -174,6 +175,7 @@ jobs:
         with:
           ref: ${{ github.sha }}
           persist-credentials: false
+          submodules: false
 
       - name: Setup Node
         uses: actions/setup-node@v4
