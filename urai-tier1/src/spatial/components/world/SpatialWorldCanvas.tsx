@@ -6,6 +6,7 @@ import { Bloom, EffectComposer, Vignette } from '@react-three/postprocessing'
 import dynamic from 'next/dynamic'
 import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import * as THREE from 'three'
+import SpatialWorldAssetLayer from '../../scene/SpatialWorldAssetLayer'
 import SpatialFallbackPanel from './SpatialFallbackPanel'
 import SpatialWorldStyles from './SpatialWorldStyles'
 import { URAI_SPATIAL_DEMO_DATA, type SpatialMemory } from './spatialDemoData'
@@ -45,6 +46,10 @@ function useWebGLAvailable() {
   }, [])
 
   return available
+}
+
+function spatialAssetPhaseForMode(mode: SpatialWorldMode) {
+  return mode === 'home' ? 'HOME' : 'LIFEMAP'
 }
 
 function SkyDome({ reducedMotion }: { reducedMotion: boolean }) {
@@ -270,6 +275,7 @@ function SpatialScene({ mode, selectedMemory, onHover, onSelect, onGuide, reduce
       <pointLight position={[0, 2.25, 1.8]} intensity={3.1} color="#67e8f9" distance={8} />
       <pointLight position={[-4, 3, -4]} intensity={1.2} color="#a78bfa" distance={12} />
       <SkyDome reducedMotion={reducedMotion} />
+      <SpatialWorldAssetLayer phase={spatialAssetPhaseForMode(mode)} />
       <DreamTerrain reducedMotion={reducedMotion} />
       <AvatarAnchor reducedMotion={reducedMotion} />
       <MemoryConstellation memories={memories} selectedMemory={selectedMemory} onHover={onHover} onSelect={onSelect} />
