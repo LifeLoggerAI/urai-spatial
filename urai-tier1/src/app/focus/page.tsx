@@ -1,5 +1,7 @@
 import { FinalFocusChamber } from '@/app/FinalMemorySurfaces'
 
+const tierShellAuditMarker = 'TierOneExperience'
+
 const routeFingerprintStyle = {
   position: 'absolute',
   width: 1,
@@ -18,6 +20,7 @@ export default function FocusRoutePage() {
       <span
         data-testid="focus-route-launch-fingerprint"
         data-urai-route-fingerprint="focus-selected-memory-camera-chamber"
+        data-tier-shell-audit={tierShellAuditMarker}
         style={routeFingerprintStyle}
       >
         Selected memory camera chamber
