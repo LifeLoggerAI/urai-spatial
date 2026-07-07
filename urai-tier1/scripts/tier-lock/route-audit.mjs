@@ -64,8 +64,18 @@ for (const route of tierOneRoutes) {
 
   if (route.kind === 'scene' && route.route !== '/') {
     const usesCanonicalHomeOwner = route.route === '/home' && text.includes('FinalHomeThreshold') && text.includes('HomeSpatialWorldFinal')
-    const usesTierShell = text.includes('TierOneExperience') || text.includes('HomeScene') || usesCanonicalHomeOwner
-    if (!usesTierShell) failures.push(`${route.route} must use TierOneExperience, HomeScene, or the canonical FinalHomeThreshold owner`)
+    const usesSpatialDefaultWorld =
+      (route.route === '/home' || route.route === '/spatial') &&
+      text.includes('SpatialDefaultWorld') &&
+      text.includes('data-urai-default-spatial-world') &&
+      text.includes('LifeMapScene') &&
+      text.includes('usd-ground-entry')
+    const usesTierShell = text.includes('TierOneExperience') || text.includes('HomeScene') || usesCanonicalHomeOwner || usesSpatialDefaultWorld
+    if (!usesTierShell) {
+      failures.push(
+        `${route.route} must use TierOneExperience, HomeScene, the canonical FinalHomeThreshold owner, or SpatialDefaultWorld`,
+      )
+    }
   }
 
   if (route.kind === 'access') {
