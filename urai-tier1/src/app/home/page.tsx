@@ -1,5 +1,5 @@
-import SpatialDefaultWorld from '../SpatialDefaultWorld'
+import SpatialWorldCanvas from '@/spatial/components/world/SpatialWorldCanvas'
 
 export default function HomeRoutePage() {
-  return <SpatialDefaultWorld />
+  return <SpatialWorldCanvas mode="home" />
 }
