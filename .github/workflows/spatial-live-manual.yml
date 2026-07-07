@@ -1,0 +1,33 @@
+name: URAI Spatial Live Manual
+
+on:
+  workflow_dispatch:
+    inputs:
+      deploy:
+        description: "Type DEPLOY to publish after live checks pass"
+        required: true
+        default: "CHECK_ONLY"
+        type: string
+      live_url:
+        description: "Live URL to smoke after deploy"
+        required: false
+        default: ""
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: urai-spatial-live-manual-${{ github.ref_name }}
+  cancel-in-progress: true
+
+jobs:
+  manual-check:
+    name: Manual workflow dispatch check
+    runs-on: ubuntu-latest
+    steps:
+      - name: Confirm dispatch inputs
+        run: |
+          echo "deploy=${{ github.event.inputs.deploy }}"
+          echo "live_url=${{ github.event.inputs.live_url }}"
+          echo "manual dispatch works"
