@@ -52,6 +52,7 @@
     "audit:console": "node scripts/tier-lock/console-warning-audit.mjs",
     "audit:env": "node scripts/tier-lock/env-readiness-audit.mjs",
     "audit:tier-report": "node scripts/tier-lock/write-tier-report.mjs",
+    "audit:launch-truth-live": "node scripts/verify-launch-truth-live.mjs",
     "audit:visual-lock": "corepack pnpm run verify:tier-lock && corepack pnpm run typecheck && corepack pnpm run build",
     "audit:final-visual": "node scripts/audit-final-visual.mjs",
     "audit:final": "corepack pnpm run audit:final-visual && corepack pnpm run audit:visual-lock",
