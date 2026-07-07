@@ -1,5 +1,5 @@
-import { TierOneExperience } from '@/spatial/layout/TierOneExperience'
+import SpatialDefaultWorld from '../SpatialDefaultWorld'
 
 export default function HomeRoutePage() {
-  return <TierOneExperience mode="home" />
+  return <SpatialDefaultWorld />
 }
