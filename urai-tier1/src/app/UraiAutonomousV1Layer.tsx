@@ -251,7 +251,10 @@ function ReplayWorld() {
 export default function UraiAutonomousV1Layer() {
   const pathname = usePathname() || "";
 
-  if (pathname.startsWith("/ground")) return <GroundWorld />;
+  // Ground is now owned by the shared City Overlook spatial world. Do not overlay
+  // the legacy private-floor screen, because it replaces the explorable city layer.
+  if (pathname.startsWith("/ground")) return null;
+
   if (pathname.startsWith("/focus")) return <FocusWorld />;
   if (pathname.startsWith("/replay")) return <ReplayWorld />;
   if (
