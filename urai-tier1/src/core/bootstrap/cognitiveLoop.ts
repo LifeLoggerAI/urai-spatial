@@ -1,17 +1,29 @@
 import { subscribe } from '../events/eventBus';
 
-let latestMemory = null;
-let latestInsight = null;
+export type CognitiveMemory = {
+  id?: string;
+  content?: unknown;
+  [key: string]: unknown;
+};
+
+export type CognitiveInsight = {
+  id?: string;
+  message?: unknown;
+  [key: string]: unknown;
+};
+
+let latestMemory: CognitiveMemory | null = null;
+let latestInsight: CognitiveInsight | null = null;
 
 export function initCognitiveLoop() {
   subscribe((event) => {
     switch (event.type) {
       case 'memory.created':
-        latestMemory = event.payload;
+        latestMemory = event.payload as CognitiveMemory;
         break;
 
       case 'insight.created':
-        latestInsight = event.payload;
+        latestInsight = event.payload as CognitiveInsight;
         break;
     }
   });
