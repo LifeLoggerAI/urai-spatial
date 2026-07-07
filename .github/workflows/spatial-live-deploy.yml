@@ -214,8 +214,9 @@ jobs:
 
         name: Smoke live URI
         if: env.LIVE_URL != ''
-          run:corepack pnpm smoke:live
-          HOST="$:LIVE_URL" pnpm smoke
+          run: |
+          corepack pnpm smoke:live
+          HOST="$LIVE_URL" pnpm smoke
 
         name: Remove Firebase credential file
         if: always()
