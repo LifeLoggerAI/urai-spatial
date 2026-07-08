@@ -1,5 +1,5 @@
-import M from '../MemoryStarJourneyWorld'
+import SpatialRealPlaceWorld from '../SpatialRealPlaceWorld'
 
 export default function LifeMapPage() {
-  return <M mode="life-map" />
+  return <SpatialRealPlaceWorld mode="life-map" />
 }
