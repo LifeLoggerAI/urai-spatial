@@ -33,7 +33,7 @@ export default function SpatialWorldStyles() {
         animation:uraiSpatialLoaderPulse 2.4s ease-in-out infinite
       }
       .spatial-world-loading:after{
-        content:'URAI Spatial World · loading assets';position:absolute;left:50%;top:calc(50% + 104px);transform:translateX(-50%);
+        content:'URAI Spatial Home · loading world assets';position:absolute;left:50%;top:calc(50% + 104px);transform:translateX(-50%);
         width:max-content;max-width:calc(100vw - 40px);letter-spacing:.2em;text-transform:uppercase;font-size:.68rem;color:rgba(226,246,255,.74)
       }
       .spatial-fallback-panel{position:absolute;left:50%;top:50%;z-index:45;width:min(430px,calc(100vw - 32px));transform:translate(-50%,-50%);padding:24px;border:1px solid rgba(142,220,255,.28);border-radius:28px;background:linear-gradient(150deg,rgba(5,12,30,.78),rgba(20,13,48,.7));box-shadow:0 30px 120px rgba(0,0,0,.45),0 0 80px rgba(103,232,249,.12);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px)}
@@ -44,29 +44,32 @@ export default function SpatialWorldStyles() {
       .spatial-fallback-panel__truth{font-size:.78rem;color:rgba(226,232,240,.58)!important}
       .spatial-hud{position:absolute;inset:0;z-index:20;pointer-events:none}
       .spatial-hud__top{
-        position:absolute;left:22px;top:22px;width:min(330px,calc(100vw - 44px));padding:13px 15px;
-        border:1px solid rgba(142,220,255,.16);border-radius:24px;
-        background:linear-gradient(150deg,rgba(3,8,21,.34),rgba(12,10,32,.22));
-        box-shadow:0 18px 70px rgba(0,0,0,.18),inset 0 1px 0 rgba(255,255,255,.04);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px)
+        position:absolute;left:22px;top:22px;width:min(300px,calc(100vw - 44px));padding:12px 14px;
+        border:1px solid rgba(142,220,255,.1);border-radius:22px;
+        background:linear-gradient(150deg,rgba(3,8,21,.24),rgba(12,10,32,.14));
+        box-shadow:0 18px 70px rgba(0,0,0,.12),inset 0 1px 0 rgba(255,255,255,.03);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px)
       }
+      .spatial-world-root[data-mode='home'] .spatial-hud__top{background:linear-gradient(150deg,rgba(3,8,21,.18),rgba(12,10,32,.1));border-color:rgba(142,220,255,.08);box-shadow:0 18px 70px rgba(0,0,0,.08)}
       .spatial-hud__top .spatial-hud__eyebrow{font-size:0;margin:0 0 7px}
-      .spatial-hud__top .spatial-hud__eyebrow:after{content:'URAI Spatial';font-size:.64rem;letter-spacing:.22em;text-transform:uppercase;color:rgba(186,230,253,.72)}
+      .spatial-hud__top .spatial-hud__eyebrow:after{content:'URAI Spatial Home';font-size:.62rem;letter-spacing:.22em;text-transform:uppercase;color:rgba(186,230,253,.72)}
       .spatial-hud__top h1{margin:0 0 7px;font-size:0;line-height:1.02}
-      .spatial-hud__top h1:after{content:'Living 3D memory field';font-size:clamp(1.12rem,2.6vw,1.72rem);font-weight:850;color:#f8fbff;text-shadow:0 0 28px rgba(103,232,249,.2)}
+      .spatial-hud__top h1:after{content:'URAI world hub';font-size:clamp(1.08rem,2.4vw,1.58rem);font-weight:850;color:#f8fbff;text-shadow:0 0 28px rgba(103,232,249,.18)}
+      .spatial-hud[data-world-ui='life-map'] .spatial-hud__top h1:after{content:'Life Map sky layer'}
       .spatial-hud__top p{margin:0;color:transparent;font-size:0;line-height:1.45}
-      .spatial-hud__top p:after{content:'Drag to orbit. Scroll through depth. Click a star to open its memory thread.';display:block;color:rgba(235,244,255,.66);font-size:.78rem;line-height:1.45}
-      .spatial-hud__pill{display:inline-flex;margin-top:10px;padding:6px 10px;border:1px solid rgba(142,220,255,.16);border-radius:999px;background:rgba(103,232,249,.06);color:rgba(224,247,255,.76);font-size:0}
-      .spatial-hud__pill:after{content:'Orbit · zoom · select';font-size:.66rem}
+      .spatial-hud__top p:after{content:'Ground below. Life Map above. Orb at center.';display:block;color:rgba(235,244,255,.6);font-size:.76rem;line-height:1.45}
+      .spatial-hud[data-world-ui='life-map'] .spatial-hud__top p:after{content:'Home remains below while the memory sky opens above it.'}
+      .spatial-hud__pill{display:inline-flex;margin-top:10px;padding:5px 9px;border:1px solid rgba(142,220,255,.14);border-radius:999px;background:rgba(103,232,249,.045);color:rgba(224,247,255,.72);font-size:0}
+      .spatial-hud__pill:after{content:'Home · Ground · Life Map';font-size:.64rem}
       .spatial-hud__detail{position:absolute;right:22px;bottom:24px;width:min(390px,calc(100vw - 44px));padding:18px 20px;border:1px solid rgba(142,220,255,.22);border-radius:28px;background:linear-gradient(150deg,rgba(3,8,21,.66),rgba(20,13,48,.52));box-shadow:0 28px 100px rgba(0,0,0,.38),0 0 70px rgba(103,232,249,.1);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);pointer-events:auto}
       .spatial-hud__detail h2{margin:0 0 8px;font-size:1.35rem}
       .spatial-hud__detail p{margin:0 0 10px;color:rgba(235,244,255,.74);line-height:1.5}
       .spatial-hud__meta{display:flex;flex-wrap:wrap;gap:8px;margin:12px 0}
       .spatial-hud__meta span{border:1px solid rgba(142,220,255,.18);border-radius:999px;padding:5px 8px;background:rgba(255,255,255,.06);font-size:.72rem;color:rgba(226,239,255,.78)}
       .spatial-hud__actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:14px}
-      .spatial-hud button,.memory-star-label,.orb-companion-button{border:1px solid rgba(142,220,255,.26);background:rgba(8,18,40,.52);color:#eef6ff;border-radius:999px;backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px)}
+      .spatial-hud button,.memory-star-label,.orb-companion-button{border:1px solid rgba(142,220,255,.24);background:rgba(8,18,40,.42);color:#eef6ff;border-radius:999px;backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px)}
       .spatial-hud button{padding:8px 12px;pointer-events:auto}
-      .spatial-hud button.primary{background:linear-gradient(135deg,rgba(103,232,249,.92),rgba(167,139,250,.88));color:#03101f;font-weight:800;box-shadow:0 0 34px rgba(103,232,249,.16)}
-      .spatial-hud__companion{position:absolute;left:22px;bottom:24px;width:min(340px,calc(100vw - 44px));padding:13px 15px;border:1px solid rgba(142,220,255,.16);border-radius:22px;background:rgba(5,12,30,.34);box-shadow:0 20px 70px rgba(0,0,0,.22);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);color:rgba(235,244,255,.74);font-size:.82rem}
+      .spatial-hud button.primary{background:linear-gradient(135deg,rgba(103,232,249,.88),rgba(167,139,250,.82));color:#03101f;font-weight:800;box-shadow:0 0 34px rgba(103,232,249,.14)}
+      .spatial-hud__companion{position:absolute;left:22px;bottom:24px;width:min(340px,calc(100vw - 44px));padding:13px 15px;border:1px solid rgba(142,220,255,.13);border-radius:22px;background:rgba(5,12,30,.26);box-shadow:0 20px 70px rgba(0,0,0,.18);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);color:rgba(235,244,255,.7);font-size:.8rem}
       .memory-star-label{padding:5px 8px;font-size:.68rem;white-space:nowrap;opacity:.92;box-shadow:0 8px 28px rgba(0,0,0,.28)}
       .orb-companion-button{width:58px;height:58px;border-radius:999px;box-shadow:0 0 34px rgba(103,232,249,.28);font-size:0;cursor:pointer}
       .orb-companion-button:after{content:'Orb';font-size:.62rem;color:rgba(235,244,255,.86)}
