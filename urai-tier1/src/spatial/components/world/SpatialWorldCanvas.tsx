@@ -84,15 +84,15 @@ function DreamTerrain({ reducedMotion, mode }: { reducedMotion: boolean; mode: S
     <group name="home-ground-visibility-fallback">
       <mesh ref={ref} rotation={[-Math.PI / 2, 0, 0]} position={[0, -1.25, 0]} receiveShadow>
         <circleGeometry args={[16, 128]} />
-        <meshStandardMaterial color="#071427" roughness={0.82} metalness={0.08} emissive="#0b2a3f" emissiveIntensity={isHome ? 0.42 : 0.28} />
+        <meshStandardMaterial color="#071427" roughness={0.82} metalness={0.08} emissive="#0b2a3f" emissiveIntensity={isHome ? 0.36 : 0.28} />
       </mesh>
       <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -1.17, 0]}>
         <ringGeometry args={[2.1, 10.2, 160]} />
-        <meshBasicMaterial color="#67e8f9" transparent opacity={isHome ? 0.12 : 0.07} side={THREE.DoubleSide} />
+        <meshBasicMaterial color="#67e8f9" transparent opacity={isHome ? 0.09 : 0.07} side={THREE.DoubleSide} />
       </mesh>
-      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -2.35, -5.35]}>
-        <ringGeometry args={[1.45, 3.05, 128]} />
-        <meshBasicMaterial color="#a78bfa" transparent opacity={isHome ? 0.2 : 0.11} side={THREE.DoubleSide} blending={THREE.AdditiveBlending} />
+      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -3.85, -8.2]}>
+        <ringGeometry args={[1.15, 2.45, 128]} />
+        <meshBasicMaterial color="#a78bfa" transparent opacity={isHome ? 0.11 : 0.08} side={THREE.DoubleSide} blending={THREE.AdditiveBlending} />
       </mesh>
     </group>
   )
