@@ -7,6 +7,14 @@ const repoRoot = process.cwd()
 const generatedRoot = path.join(repoRoot, 'urai-tier1/public/assets/urai/generated')
 const manifestPath = path.join(repoRoot, 'urai-tier1/public/assets/urai/generated/textures/global-cinematic-material-pack-v1.json')
 
+const materials = [
+  material('obsidian_glass', [0.018, 0.021, 0.035, 0.9], [0.0, 0.018, 0.032], 0.55, 0.18, 'BLEND'),
+  material('smoked_metal', [0.035, 0.04, 0.06, 1], [0.0, 0.012, 0.02], 0.88, 0.22),
+  material('portal_energy_cyan', [0.04, 0.68, 1.0, 0.66], [0.0, 0.9, 1.0], 0.05, 0.04, 'BLEND'),
+  material('violet_memory_glow', [0.45, 0.16, 1.0, 0.62], [0.5, 0.18, 1.0], 0.08, 0.06, 'BLEND'),
+  material('gold_provenance', [1.0, 0.62, 0.2, 1], [0.55, 0.28, 0.05], 0.55, 0.16),
+]
+
 const glbAssets = [
   {
     id: 'ground-world-terrain-glb-v1',
@@ -110,14 +118,6 @@ for (const id of paidReceiptIds) {
 function material(name, baseColorFactor, emissiveFactor, metallicFactor, roughnessFactor, alphaMode = 'OPAQUE') {
   return { name, pbrMetallicRoughness: { baseColorFactor, metallicFactor, roughnessFactor }, emissiveFactor, alphaMode, doubleSided: true }
 }
-
-const materials = [
-  material('obsidian_glass', [0.018, 0.021, 0.035, 0.9], [0.0, 0.018, 0.032], 0.55, 0.18, 'BLEND'),
-  material('smoked_metal', [0.035, 0.04, 0.06, 1], [0.0, 0.012, 0.02], 0.88, 0.22),
-  material('portal_energy_cyan', [0.04, 0.68, 1.0, 0.66], [0.0, 0.9, 1.0], 0.05, 0.04, 'BLEND'),
-  material('violet_memory_glow', [0.45, 0.16, 1.0, 0.62], [0.5, 0.18, 1.0], 0.08, 0.06, 'BLEND'),
-  material('gold_provenance', [1.0, 0.62, 0.2, 1], [0.55, 0.28, 0.05], 0.55, 0.16),
-]
 
 function buildGlb(sceneName, nodeSpecs) {
   const meshes = []
