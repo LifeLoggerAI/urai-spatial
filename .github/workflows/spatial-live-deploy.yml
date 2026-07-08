@@ -210,18 +210,13 @@ jobs:
 
       - name: Smoke live URL
         if: env.LIVE_URL != ''
-        run: pnpm live:deploy
-
-        name: Smoke live URI
-        if: env.LIVE_URL != ''
-          run: |
-          corepack pnpm smoke:live
+        run: |
+          URAI_DEPLOY_URL="$LIVE_URL" pnpm smoke:live
           HOST="$LIVE_URL" pnpm smoke
 
-        name: Remove Firebase credential file
+      - name: Remove Firebase credential file
         if: always()
         run: rm -f "$GOOGLE_APPLICATION_CREDENTIALS"
-
 
       - name: Write deployment summary
         if: always()
@@ -235,7 +230,6 @@ jobs:
             echo "- Workflow run: $GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID"
           } >> "$GITHUB_STEP_SUMMARY"
 
-
 # Guardian compatibility markers
 # corepack pnpm urai:guardian
 # corepack pnpm check:types
@@ -244,8 +238,4 @@ jobs:
 # firebase-tools deploy
 # smoke:deployed
 # smoke:live
-
-
-# Guardian compatibility markers
 # corepack pnpm smoke:live
-
