@@ -1,0 +1,19 @@
+{
+  "requestedAt": "2026-07-08T00:45:00Z",
+  "requestedBy": "URAI launch operator",
+  "scope": "v1-critical-paid-asset-2-only",
+  "assetId": "portal-ring-master-glb-v1",
+  "requiredPath": "urai-tier1/public/assets/urai/generated/models/portal-ring-master-v1.glb",
+  "sourcePrompt": "docs/assets/V1_CRITICAL_ASSET_PROMPTS.md#2-portal-ring-master-glb",
+  "dependsOn": {
+    "assetId": "home-entry-chamber-model-v1",
+    "acceptedReceipt": "docs/assets/receipts/home-entry-chamber-model-v1-receipt.json"
+  },
+  "policy": "Generate exactly one asset, commit and receipt before moving to ground-world-terrain-v1.glb.",
+  "forbidden": [
+    "broad V1-V5 generation",
+    "ground asset generation in this run",
+    "life-map asset generation in this run",
+    "focus/replay/passport/status generation in this run"
+  ]
+}
