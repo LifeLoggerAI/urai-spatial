@@ -1,0 +1,20 @@
+{
+  "version": "0.1.0",
+  "updated": "2026-07-07",
+  "purpose": "Shared fallback references for launch-critical URAI spatial asset slots. These are placeholder records, not final GLB/WebP production assets.",
+  "status": "placeholder",
+  "placeholders": [
+    "urai_world_home_core_001",
+    "urai_world_ground_terrain_001",
+    "urai_world_sky_lifemap_001",
+    "urai_world_portals_core_001",
+    "urai_lifemap_memory_star_001",
+    "urai_lifemap_star_feedback_fx_001",
+    "urai_focus_star_entry_tunnel_001",
+    "urai_focus_memory_chamber_001",
+    "urai_replay_film_object_001",
+    "urai_ui_cinematic_loading_001",
+    "urai_ui_passport_status_room_001",
+    "urai_particles_light_trails_001"
+  ]
+}
