@@ -7,6 +7,13 @@ const repoRoot = process.cwd()
 const assetId = process.argv[2] ?? process.env.URAI_V1_ASSET_ID ?? 'home-entry-chamber-model-v1'
 const manifestPath = path.join(repoRoot, 'docs/assets/v1-critical-paid-assets.json')
 const outDir = path.join(repoRoot, 'docs/assets/receipts')
+const spendingOrder = [
+  'home-entry-chamber-model-v1',
+  'portal-ring-master-glb-v1',
+  'ground-world-terrain-glb-v1',
+  'life-map-galaxy-skybox-v1',
+  'global-cinematic-material-pack-v1',
+]
 
 function hashFile(file) {
   return crypto.createHash('sha256').update(fs.readFileSync(file)).digest('hex')
@@ -14,6 +21,12 @@ function hashFile(file) {
 
 function readJson(file) {
   return JSON.parse(fs.readFileSync(file, 'utf8'))
+}
+
+function nextAssetAfter(id) {
+  const index = spendingOrder.indexOf(id)
+  if (index < 0) return null
+  return spendingOrder[index + 1] ?? null
 }
 
 const manifest = readJson(manifestPath)
@@ -58,7 +71,7 @@ const receipt = {
     accepted,
   },
   nextSpendAllowed: accepted,
-  nextAsset: accepted ? 'portal-ring-master-glb-v1' : asset.id,
+  nextAsset: accepted ? nextAssetAfter(asset.id) : asset.id,
   rule: 'One V1 paid asset must be present, hashed, and accepted before spending on the next asset.',
 }
 
@@ -78,6 +91,7 @@ fs.writeFileSync(mdPath, [
   `- SHA-256: ${sha256 ?? 'missing'}`,
   `- Accepted: ${accepted ? 'yes' : 'no'}`,
   `- Next spend allowed: ${accepted ? 'yes' : 'no'}`,
+  `- Next asset: ${receipt.nextAsset ?? 'none'}`,
   `- Canonical path: \`${asset.path}\``,
   '',
 ].join('\n'))
