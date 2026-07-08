@@ -97,21 +97,14 @@ if (!fs.existsSync(manifestPath)) {
   }, null, 2) + '\n')
 }
 
-const receiptIds = [
+const paidReceiptIds = [
   'portal-ring-master-glb-v1',
   'ground-world-terrain-glb-v1',
   'life-map-galaxy-skybox-v1',
-  'focus-star-flight-glb-v1',
-  'replay-memory-film-glb-v1',
-  'passport-status-room-glb-v1',
+  'global-cinematic-material-pack-v1',
 ]
-for (const id of receiptIds) {
-  try {
-    execFileSync('node', ['scripts/receipt-single-v1-paid-asset.mjs', id], { cwd: repoRoot, stdio: 'inherit' })
-  } catch (error) {
-    console.error(`Receipt failed for ${id}`)
-    process.exitCode = 1
-  }
+for (const id of paidReceiptIds) {
+  execFileSync('node', ['scripts/receipt-single-v1-paid-asset.mjs', id], { cwd: repoRoot, stdio: 'inherit' })
 }
 
 function material(name, baseColorFactor, emissiveFactor, metallicFactor, roughnessFactor, alphaMode = 'OPAQUE') {
