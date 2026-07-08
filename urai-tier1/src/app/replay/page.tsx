@@ -1,4 +1,5 @@
 import { Suspense } from 'react'
+import { AssetFactoryRoutePanel } from '@/components/urai/assets/AssetFactoryRoutePanel'
 import CinematicReplayClient from './CinematicReplayClient'
 
 const FinalReplayFilm = CinematicReplayClient
@@ -71,6 +72,7 @@ export default function ReplayRoutePage() {
       <Suspense fallback={<ReplayLoadingFallback />}>
         <FinalReplayFilm />
       </Suspense>
+      <AssetFactoryRoutePanel route="/replay" title="Replay Asset Factory" />
     </>
   )
 }
