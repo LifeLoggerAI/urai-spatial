@@ -32,23 +32,23 @@ export default function SpatialWorldAssetLayer({ phase }: { phase: string }) {
   const showLifeMap = worldPhase === "LIFEMAP" || worldPhase === "ASCENT" || worldPhase === "FOCUS" || worldPhase === "REPLAY";
   const showFocus = worldPhase === "FOCUS" || worldPhase === "REPLAY";
   const showReplay = worldPhase === "REPLAY";
-  const showPassportStatus = worldPhase === "PASSPORT" || worldPhase === "STATUS" || worldPhase === "HOME";
+  const showPassportStatus = worldPhase === "PASSPORT" || worldPhase === "STATUS";
 
   return (
     <group name="urai-spatial-world-asset-layer">
       {showHome && (
         <group name="entry-chamber-assets">
-          <OptionalGeneratedAssetModel src={GENERATED_HOME_ENTRY_CHAMBER} name="home-entry-chamber-v1" position={[0, -0.08, -2.4]} scale={[0.72, 0.72, 0.72]} />
-          <OptionalGeneratedAssetModel src={GENERATED_PORTAL_RING} name="portal-ring-ground-descent-v1" position={[-2.95, 0.9, -1.2]} rotation={[Math.PI / 2, 0.08, -0.2]} scale={[0.34, 0.34, 0.34]} />
-          <OptionalGeneratedAssetModel src={GENERATED_PORTAL_RING} name="portal-ring-life-map-ascent-v1" position={[2.95, 1.15, -1.4]} rotation={[Math.PI / 2, -0.08, 0.2]} scale={[0.34, 0.34, 0.34]} />
-          <OptionalGeneratedAssetModel src={GENERATED_PORTAL_RING} name="portal-ring-passport-status-v1" position={[0, 0.98, 2.95]} rotation={[Math.PI / 2, 0, Math.PI]} scale={[0.28, 0.28, 0.28]} />
+          <OptionalGeneratedAssetModel src={GENERATED_HOME_ENTRY_CHAMBER} name="home-entry-chamber-v1" position={[0, -0.08, -2.45]} scale={[0.74, 0.74, 0.74]} />
+          <OptionalGeneratedAssetModel src={GENERATED_PORTAL_RING} name="portal-ring-ground-descent-v1" position={[0, -0.88, -3.05]} rotation={[Math.PI / 2, 0, 0]} scale={[0.27, 0.27, 0.27]} />
+          <OptionalGeneratedAssetModel src={GENERATED_PORTAL_RING} name="portal-ring-life-map-ascent-v1" position={[2.9, 2.45, -2.65]} rotation={[Math.PI / 2, -0.18, 0.28]} scale={[0.25, 0.25, 0.25]} />
+          <OptionalGeneratedAssetModel src={GENERATED_PORTAL_RING} name="portal-ring-status-side-room-v1" position={[-3.45, 1.18, -2.25]} rotation={[Math.PI / 2, 0.14, -0.32]} scale={[0.2, 0.2, 0.2]} />
         </group>
       )}
 
       {showGround && (
-        <group name="ground-world-assets" position={[0, -3.35, -5.35]} scale={[0.52, 0.52, 0.52]}>
+        <group name="ground-world-assets" position={[0, -5.15, -8.2]} scale={[0.34, 0.34, 0.34]}>
           <OptionalGeneratedAssetModel src={GENERATED_GROUND_WORLD} name="ground-world-terrain-v1" />
-          <OptionalGeneratedAssetModel src={GENERATED_PORTAL_RING} name="ground-return-portal-v1" position={[0, 0.28, -2.85]} rotation={[Math.PI / 2, 0, 0]} scale={[0.42, 0.42, 0.42]} />
+          <OptionalGeneratedAssetModel src={GENERATED_PORTAL_RING} name="ground-return-portal-v1" position={[0, 0.36, -2.85]} rotation={[Math.PI / 2, 0, 0]} scale={[0.38, 0.38, 0.38]} />
         </group>
       )}
 
