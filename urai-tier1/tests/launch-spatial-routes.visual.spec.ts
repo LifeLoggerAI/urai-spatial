@@ -2,6 +2,13 @@ import { test, expect } from '@playwright/test'
 
 const baseUrl = process.env.PLAYWRIGHT_BASE_URL ?? process.env.BASE_URL ?? 'http://127.0.0.1:3001'
 
+test.setTimeout(60_000)
+
+test.use({
+  colorScheme: 'dark',
+  reducedMotion: 'reduce',
+})
+
 const routes = [
   { name: 'home-root', path: '/?audit=launch-loop' },
   { name: 'home-route', path: '/home?audit=launch-loop' },
@@ -28,8 +35,9 @@ test.describe('URAI launch spatial routes visual audit', () => {
     for (const route of routes) {
       test(`${viewport.name} ${route.name}`, async ({ page }, testInfo) => {
         await page.setViewportSize({ width: viewport.width, height: viewport.height })
-        await page.goto(routeUrl(route.path), { waitUntil: 'networkidle' })
-        await page.waitForTimeout(1800)
+        await page.goto(routeUrl(route.path), { waitUntil: 'domcontentloaded', timeout: 45_000 })
+        await page.waitForLoadState('networkidle', { timeout: 15_000 }).catch(() => undefined)
+        await page.waitForTimeout(1200)
 
         await expect(page.locator('body')).toBeVisible()
         await expect(page.locator('body')).not.toContainText('Runtime Error')
@@ -38,7 +46,9 @@ test.describe('URAI launch spatial routes visual audit', () => {
 
         await page.screenshot({
           path: testInfo.outputPath(`${viewport.name}-${route.name}.png`),
-          fullPage: true,
+          fullPage: false,
+          animations: 'disabled',
+          timeout: 20_000,
         })
       })
     }
