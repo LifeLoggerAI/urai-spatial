@@ -1,0 +1,71 @@
+name: V1 Portal Ring Master GLB Forge
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - asset-safe-launch-pack
+    paths:
+      - ".github/asset-generation-requests/portal-ring/**"
+      - ".github/workflows/v1-portal-ring-master-glb-forge.yml"
+      - "scripts/forge-portal-ring-master-glb.mjs"
+      - "scripts/receipt-single-v1-paid-asset.mjs"
+
+concurrency:
+  group: v1-portal-ring-master-glb-forge
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+  pull-requests: read
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  forge-portal-ring-master:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout asset intake branch
+        uses: actions/checkout@v4
+        with:
+          ref: asset-safe-launch-pack
+          fetch-depth: 1
+
+      - name: Generate only portal-ring-master-v1.glb
+        run: node scripts/forge-portal-ring-master-glb.mjs
+
+      - name: Receipt only portal V1 paid asset
+        run: node scripts/receipt-single-v1-paid-asset.mjs portal-ring-master-glb-v1
+
+      - name: Verify canonical asset exists
+        run: |
+          test -s urai-tier1/public/assets/urai/generated/models/portal-ring-master-v1.glb
+          test -s docs/assets/receipts/portal-ring-master-glb-v1-receipt.json
+
+      - name: Commit generated GLB and receipt
+        run: |
+          git config user.name "URAI Asset Forge"
+          git config user.email "urai-asset-forge@users.noreply.github.com"
+          git add \
+            urai-tier1/public/assets/urai/generated/models/portal-ring-master-v1.glb \
+            docs/assets/receipts/portal-ring-master-glb-v1-receipt.json \
+            docs/assets/receipts/portal-ring-master-glb-v1-receipt.md
+          if git diff --cached --quiet; then
+            echo "No generated asset changes to commit."
+            exit 0
+          fi
+          git commit -m "Generate portal ring master V1 GLB asset"
+          git push origin HEAD:asset-safe-launch-pack
+
+      - name: Next required validation note
+        run: |
+          echo "Generated only the second V1 paid asset."
+          echo "Next checks after runner completes:"
+          echo "node scripts/receipt-v1-paid-assets.mjs || true"
+          echo "pnpm --dir urai-tier1 assets:validate"
+          echo "pnpm --dir urai-tier1 typecheck"
+          echo "pnpm --dir urai-tier1 build"
+          echo "Next asset after visual acceptance: ground-world-terrain-v1.glb"
