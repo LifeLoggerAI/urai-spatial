@@ -100,34 +100,40 @@ export default function GroundPage() {
     <main
       className="groundFinal"
       data-route="ground"
-      data-route-polish="walkable-first-person-ground-layer"
+      data-route-polish="descended-shared-world-ground-layer"
       data-launch-surface="premium-embodied-ground-world"
       data-workforce-art="provider-final"
       data-scene-id={scene.id}
       data-camera-preset={scene.cameraPreset}
       data-lighting-preset={scene.lightingPreset}
       data-privacy-level={scene.privacyLevel}
-      aria-label="URAI Ground private operations floor"
+      aria-label="URAI Ground lower world below Home"
     >
+      <div className="homeMemorySky" aria-hidden="true" />
+      <div className="descentShaft" aria-hidden="true">
+        <span className="homeAperture" />
+        <span className="descentBeam" />
+        <span className="groundReceiver" />
+      </div>
       <div className="skyGlow" aria-hidden="true" />
       <div className="floorGrid" aria-hidden="true" />
       <div className="depthVignette" aria-hidden="true" />
 
       <header className="topBar">
         <div className="brand">URAI GROUND</div>
-        <div className="mode">Private operations floor · first-person camera</div>
+        <div className="mode">Lower world below Home · physical operations layer</div>
       </header>
 
       <section className="heroCard" aria-labelledby="ground-title">
-        <p className="eyebrow">CAMERA DESCENDED</p>
-        <h1 id="ground-title">Your private floor is open.</h1>
+        <p className="eyebrow">CAMERA DESCENDED FROM HOME</p>
+        <h1 id="ground-title">Ground is open below the chamber.</h1>
         <p>
-          Walk the room. Inspect real objects. Approve what helpers prepare.
-          Nothing leaves your world without consent.
+          You are under the Home platform now. Inspect real objects, approve prepared moves,
+          and return upward through the same world.
         </p>
       </section>
 
-      <section className="room" aria-label="Walkable private operations floor">
+      <section className="room" aria-label="Walkable lower Ground world below Home">
         <div className="roomBackWall">
           <div className="orbLens" aria-hidden="true" />
           <div className="workforceRoster" aria-label="Specialist council present in Ground">
@@ -147,7 +153,7 @@ export default function GroundPage() {
               ))}
             </div>
           </div>
-          <div className="wallLabel">Private workforce preparing the day</div>
+          <div className="wallLabel">Home chamber aperture visible above</div>
         </div>
 
         <div className="table tableOne" aria-label="Kitchen table real-life context">
@@ -196,28 +202,28 @@ export default function GroundPage() {
       </section>
 
       <aside className="rightCard">
-        <p className="eyebrow">PRIVATE FLOOR</p>
-        <h2>Your workforce is present, not represented by placeholders.</h2>
+        <p className="eyebrow">LOWER WORLD</p>
+        <h2>The Orb stayed above and opened this layer below it.</h2>
         <p>
           Reception, privacy, work, wellness, memory, logistics, and the specialist council
-          remain visible before anything acts.
+          live down here as rooms in the same spatial system.
         </p>
-        <a href="/spatial/ar-vr">Open XR entry</a>
+        <a href="/home?from=ground">Rise back to Home</a>
       </aside>
 
       <aside className="mobileProofTray" aria-label="Mobile Ground World workforce tray">
-        <strong>Private workforce awake</strong>
+        <strong>Ground layer below Home</strong>
         <span>Reception · consent · work · wellness · memory · logistics · council</span>
       </aside>
 
       <footer className="navBar" aria-label="URAI route navigation">
-        <a href="/home">Home</a>
+        <a href="/home?from=ground">Rise Home</a>
         <a className="active" href="/ground">Ground</a>
-        <a href="/life-map">Life Map</a>
+        <a href="/life-map?from=ground">Life Map above</a>
         <a href="/focus?memoryId=quiet-reset">Focus</a>
         <a href="/replay?memoryId=quiet-reset&manifestId=replay-recovery-thread">Replay</a>
-        <a href="/mirror">Mirror</a>
         <a href="/passport">Passport</a>
+        <a href="/status">Status</a>
         <a href="/spatial/ar-vr">XR</a>
       </footer>
 
@@ -228,14 +234,56 @@ export default function GroundPage() {
           overflow: hidden;
           color: rgba(248, 250, 255, .96);
           background:
-            linear-gradient(180deg, rgba(4,11,18,.22), rgba(7,10,13,.72)),
+            radial-gradient(circle at 50% 0%, rgba(103,232,249,.2), transparent 28%),
+            linear-gradient(180deg, rgba(4,11,18,.06), rgba(7,10,13,.76)),
             url('/assets/urai/ground/ground-world-main.webp') center / cover;
           isolation: isolate;
           font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
         }
-        .skyGlow, .floorGrid, .depthVignette { position: absolute; inset: 0; pointer-events: none; }
-        .skyGlow { background: radial-gradient(circle at 50% 12%, rgba(114,225,255,.18), transparent 34%); }
+        .homeMemorySky, .descentShaft, .skyGlow, .floorGrid, .depthVignette { position: absolute; inset: 0; pointer-events: none; }
+        .homeMemorySky {
+          z-index: 1;
+          height: 34svh;
+          background:
+            radial-gradient(circle at 50% 15%, rgba(248,255,255,.72), rgba(103,232,249,.3) 4%, rgba(139,92,246,.18) 11%, transparent 24%),
+            radial-gradient(circle at 36% 9%, rgba(167,139,250,.28), transparent 13%),
+            radial-gradient(circle at 68% 11%, rgba(103,232,249,.2), transparent 14%),
+            linear-gradient(180deg, rgba(4,12,28,.82), rgba(4,12,28,.08));
+          opacity: .86;
+          mask-image: linear-gradient(180deg, #000 0 58%, transparent 100%);
+        }
+        .descentShaft { z-index: 5; display: grid; place-items: start center; }
+        .homeAperture {
+          width: min(360px, 42vw);
+          height: min(120px, 12svh);
+          margin-top: 2.2svh;
+          border: 1px solid rgba(165,243,252,.32);
+          border-radius: 50%;
+          background: radial-gradient(ellipse at 50% 50%, rgba(236,254,255,.2), rgba(103,232,249,.12) 38%, transparent 66%);
+          box-shadow: 0 0 58px rgba(103,232,249,.22), inset 0 0 34px rgba(255,255,255,.12);
+        }
+        .descentBeam {
+          position: absolute;
+          top: 8svh;
+          width: min(300px, 30vw);
+          height: 54svh;
+          background: linear-gradient(180deg, rgba(103,232,249,.22), rgba(103,232,249,.055) 62%, transparent 100%);
+          clip-path: polygon(44% 0, 56% 0, 74% 100%, 26% 100%);
+          opacity: .58;
+          filter: blur(.3px);
+        }
+        .groundReceiver {
+          position: absolute;
+          top: 56svh;
+          width: min(360px, 46vw);
+          height: 88px;
+          border-radius: 50%;
+          background: radial-gradient(ellipse at 50% 50%, rgba(167,139,250,.22), rgba(103,232,249,.12) 44%, transparent 72%);
+          box-shadow: 0 0 70px rgba(167,139,250,.22);
+        }
+        .skyGlow { z-index: 2; background: radial-gradient(circle at 50% 12%, rgba(114,225,255,.14), transparent 34%); }
         .floorGrid {
+          z-index: 2;
           left: -18vw;
           right: -18vw;
           top: auto;
@@ -247,36 +295,37 @@ export default function GroundPage() {
             radial-gradient(ellipse at 50% 0%, rgba(101,180,255,.28), transparent 58%);
           transform: perspective(900px) rotateX(61deg);
           transform-origin: 50% 0;
-          opacity: .58;
+          opacity: .48;
         }
         .depthVignette { z-index: 3; background: radial-gradient(circle at 50% 50%, transparent 0 42%, rgba(0,0,0,.72) 100%); }
-        .topBar { position: relative; z-index: 18; display: flex; width: fit-content; gap: .8rem; margin: 1rem; padding: .7rem 1rem; border: 1px solid rgba(255,255,255,.16); border-radius: 999px; background: rgba(2,8,14,.72); backdrop-filter: blur(18px); }
+        .topBar { position: relative; z-index: 18; display: flex; width: fit-content; gap: .8rem; margin: 1rem; padding: .7rem 1rem; border: 1px solid rgba(255,255,255,.16); border-radius: 999px; background: rgba(2,8,14,.58); backdrop-filter: blur(18px); }
         .brand { font-size: .72rem; font-weight: 950; letter-spacing: .3em; }
         .mode { font-size: .76rem; font-weight: 800; opacity: .65; }
-        .heroCard, .rightCard { position: absolute; z-index: 18; width: min(370px, 31vw); padding: 1.2rem; border: 1px solid rgba(255,255,255,.14); border-radius: 1.5rem; background: rgba(3,9,15,.72); box-shadow: 0 24px 80px rgba(0,0,0,.34); backdrop-filter: blur(20px); }
-        .heroCard { left: 3vw; bottom: 7rem; }
-        .rightCard { right: 3vw; bottom: 7rem; }
+        .heroCard, .rightCard { position: absolute; z-index: 18; width: min(350px, 30vw); padding: 1rem 1.05rem; border: 1px solid rgba(255,255,255,.1); border-radius: 1.35rem; background: rgba(3,9,15,.46); box-shadow: 0 24px 80px rgba(0,0,0,.22); backdrop-filter: blur(18px); }
+        .heroCard { left: 2.1vw; bottom: 6.4rem; }
+        .rightCard { right: 2.1vw; bottom: 6.4rem; }
         .eyebrow { margin: 0 0 .45rem; color: #f3d99d; font-size: .64rem; font-weight: 950; letter-spacing: .22em; }
-        .heroCard h1 { margin: 0 0 .8rem; font-size: clamp(2.8rem, 5.4vw, 5.8rem); line-height: .82; letter-spacing: -.075em; }
+        .heroCard h1 { margin: 0 0 .7rem; font-size: clamp(2.25rem, 4.2vw, 4.65rem); line-height: .86; letter-spacing: -.065em; }
         .heroCard p, .rightCard p { color: rgba(246,249,255,.78); line-height: 1.5; }
-        .rightCard h2 { margin: .35rem 0 .7rem; font-size: clamp(1.5rem, 2.5vw, 2.2rem); }
+        .rightCard h2 { margin: .35rem 0 .7rem; font-size: clamp(1.35rem, 2.05vw, 1.95rem); }
         .rightCard a { display: inline-flex; margin-top: .9rem; color: white; font-weight: 900; }
         .room { position: absolute; z-index: 4; inset: 5rem 3vw 5.8rem; perspective: 1400px; }
         .roomBackWall {
           position: absolute;
           left: 50%;
-          top: 2%;
+          top: 8%;
           width: min(760px, 56vw);
-          height: min(420px, 46svh);
+          height: min(390px, 42svh);
           transform: translateX(-50%);
           border: 1px solid rgba(205,244,255,.18);
           border-radius: 2rem;
           overflow: hidden;
           background:
-            linear-gradient(180deg, rgba(2,9,16,.16), rgba(2,9,16,.84)),
+            linear-gradient(180deg, rgba(2,9,16,.08), rgba(2,9,16,.84)),
             url('/assets/urai/ground/ground-reception.webp') center / cover;
           box-shadow: 0 30px 110px rgba(0,0,0,.38), inset 0 1px 0 rgba(255,255,255,.08);
         }
+        .roomBackWall::before { content: ''; position: absolute; left: 50%; top: -48px; width: 280px; height: 86px; transform: translateX(-50%); border-radius: 50%; background: radial-gradient(ellipse at 50% 50%, rgba(236,254,255,.3), rgba(103,232,249,.16) 45%, transparent 72%); box-shadow: 0 0 42px rgba(103,232,249,.2); }
         .roomBackWall::after { content: ''; position: absolute; inset: 0; pointer-events: none; background: radial-gradient(circle at 50% 42%, rgba(139,239,255,.14), transparent 32%); }
         .orbLens { position: absolute; left: 50%; top: 35%; z-index: 5; width: 94px; height: 94px; transform: translate(-50%,-50%); border-radius: 50%; background: radial-gradient(circle, white 0 6%, #9ff7ff 10%, rgba(103,232,249,.18) 38%, transparent 70%); box-shadow: 0 0 80px rgba(103,232,249,.45); }
         .wallLabel { position: absolute; left: 1rem; bottom: 1rem; z-index: 7; padding: .55rem .75rem; border-radius: .8rem; background: rgba(0,0,0,.64); font-size: .7rem; font-weight: 900; }
@@ -286,7 +335,7 @@ export default function GroundPage() {
         .specialist { min-width: 0; display: grid; justify-items: center; gap: .18rem; }
         .specialist i { width: clamp(42px, 4.3vw, 68px); height: clamp(62px, 6.6vw, 102px); background-image: var(--specialist-art); background-repeat: no-repeat; background-position: center bottom; background-size: contain; filter: drop-shadow(0 10px 16px rgba(0,0,0,.48)) drop-shadow(0 0 18px rgba(111,231,255,.18)); }
         .specialist span { max-width: 100%; overflow: hidden; color: rgba(239,252,255,.76); font-size: .48rem; font-weight: 850; text-overflow: ellipsis; white-space: nowrap; }
-        .station { position: absolute; z-index: 11; width: 190px; padding: .75rem; border: 1px solid rgba(255,255,255,.14); border-radius: 1.15rem; background: rgba(3,10,17,.74); color: white; backdrop-filter: blur(16px); }
+        .station { position: absolute; z-index: 11; width: 190px; padding: .75rem; border: 1px solid rgba(255,255,255,.11); border-radius: 1.15rem; background: rgba(3,10,17,.56); color: white; backdrop-filter: blur(16px); }
         .station summary { list-style: none; cursor: pointer; }
         .station summary::-webkit-details-marker { display: none; }
         .stationTag { display: block; color: #f3d99d; font-size: .56rem; font-weight: 950; letter-spacing: .18em; }
@@ -306,7 +355,7 @@ export default function GroundPage() {
         .centerReticle { position: absolute; left: 50%; top: 50%; z-index: 14; width: 30px; height: 30px; transform: translate(-50%,-50%); border: 1px solid rgba(255,255,255,.32); border-radius: 50%; }
         .centerReticle span { position: absolute; left: 50%; top: 50%; width: 4px; height: 4px; transform: translate(-50%,-50%); border-radius: 50%; background: white; box-shadow: 0 0 14px #9ff7ff; }
         .mobileProofTray { display: none; }
-        .navBar { position: fixed; left: 50%; bottom: 1rem; z-index: 80; display: flex; max-width: calc(100vw - 1rem); gap: .35rem; padding: .4rem; overflow-x: auto; transform: translateX(-50%); border: 1px solid rgba(255,255,255,.12); border-radius: 999px; background: rgba(0,0,0,.64); backdrop-filter: blur(18px); }
+        .navBar { position: fixed; left: 50%; bottom: 1rem; z-index: 80; display: flex; max-width: calc(100vw - 1rem); gap: .35rem; padding: .4rem; overflow-x: auto; transform: translateX(-50%); border: 1px solid rgba(255,255,255,.1); border-radius: 999px; background: rgba(0,0,0,.52); backdrop-filter: blur(18px); }
         .navBar a { padding: .5rem .75rem; border-radius: 999px; color: rgba(245,250,255,.78); text-decoration: none; font-size: .68rem; font-weight: 950; white-space: nowrap; }
         .navBar a.active { background: rgba(225,251,255,.94); color: #020617; }
         @media (max-width: 980px) {
@@ -323,8 +372,12 @@ export default function GroundPage() {
               url('/assets/urai/ground/ground-world-mobile.webp') center top / cover fixed;
           }
           .mode { display: none; }
+          .homeMemorySky { height: 28svh; }
+          .homeAperture { width: 210px; height: 72px; margin-top: 1.8svh; }
+          .descentBeam { top: 6svh; width: 190px; height: 44svh; }
+          .groundReceiver { top: 48svh; width: 230px; height: 64px; }
           .room { inset: 4rem .5rem 13rem; }
-          .roomBackWall { width: calc(100vw - 1rem); height: 40svh; }
+          .roomBackWall { top: 9%; width: calc(100vw - 1rem); height: 40svh; }
           .orbLens { top: 31%; width: 74px; height: 74px; }
           .workforceRoster { right: .45rem; bottom: .45rem; left: .45rem; }
           .rosterLabel { display: none; }
@@ -335,7 +388,7 @@ export default function GroundPage() {
           .helper i { width: 42px; height: 68px; }
           .helper span { display: none; }
           .heroCard, .rightCard { position: relative; left: auto; right: auto; bottom: auto; width: auto; margin: 49svh .55rem 0; }
-          .heroCard h1 { font-size: clamp(2.7rem, 13vw, 4rem); line-height: .9; }
+          .heroCard h1 { font-size: clamp(2.35rem, 11vw, 3.35rem); line-height: .9; }
           .rightCard { margin-top: .65rem; margin-bottom: 11rem; }
           .mobileProofTray { position: fixed; left: .55rem; right: .55rem; bottom: 4.9rem; z-index: 70; display: grid; gap: .2rem; padding: .7rem .85rem; border: 1px solid rgba(255,255,255,.14); border-radius: 1rem; background: rgba(2,8,14,.82); backdrop-filter: blur(18px); }
           .mobileProofTray strong { font-size: .7rem; }
