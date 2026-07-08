@@ -1,5 +1,7 @@
 import { test, expect } from '@playwright/test'
 
+const baseUrl = process.env.PLAYWRIGHT_BASE_URL ?? process.env.BASE_URL ?? 'http://127.0.0.1:3001'
+
 const routes = [
   { name: 'home-root', path: '/?audit=launch-loop' },
   { name: 'home-route', path: '/home?audit=launch-loop' },
@@ -17,12 +19,16 @@ const viewports = [
   { name: 'mobile', width: 390, height: 844 },
 ] as const
 
+function routeUrl(path: string) {
+  return new URL(path, baseUrl).toString()
+}
+
 test.describe('URAI launch spatial routes visual audit', () => {
   for (const viewport of viewports) {
     for (const route of routes) {
       test(`${viewport.name} ${route.name}`, async ({ page }, testInfo) => {
         await page.setViewportSize({ width: viewport.width, height: viewport.height })
-        await page.goto(route.path, { waitUntil: 'networkidle' })
+        await page.goto(routeUrl(route.path), { waitUntil: 'networkidle' })
         await page.waitForTimeout(1800)
 
         await expect(page.locator('body')).toBeVisible()
