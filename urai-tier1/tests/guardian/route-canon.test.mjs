@@ -9,12 +9,17 @@ function readAppFile(relativePath) {
   return readFileSync(join(appRoot, relativePath), "utf8");
 }
 
-function assertHomeRouteUsesFinalOwner(relativePath) {
+function assertHomeRouteUsesCanonicalOwner(relativePath) {
   const content = readAppFile(relativePath);
   assert.match(
     content,
-    /FinalHomeThreshold/,
-    `${relativePath} must render FinalHomeThreshold as the canonical Genesis Home owner.`,
+    /SpatialRealPlaceWorld/,
+    `${relativePath} must render SpatialRealPlaceWorld as the canonical public spatial Home owner.`,
+  );
+  assert.match(
+    content,
+    /mode=["']home["']/,
+    `${relativePath} must render SpatialRealPlaceWorld in home mode.`,
   );
   assert.doesNotMatch(
     content,
@@ -48,9 +53,9 @@ function assertFallbackRouteUses2D(relativePath) {
   );
 }
 
-assertHomeRouteUsesFinalOwner("src/app/page.tsx");
-assertHomeRouteUsesFinalOwner("src/app/home/page.tsx");
+assertHomeRouteUsesCanonicalOwner("src/app/page.tsx");
+assertHomeRouteUsesCanonicalOwner("src/app/home/page.tsx");
 assertSpatialRouteUses3D("src/app/spatial/page.tsx");
 assertFallbackRouteUses2D("src/app/spatial-fallback/page.tsx");
 
-console.log("URAI route canon passed: / and /home use FinalHomeThreshold; /spatial is true 3D; /spatial-fallback is 2.5D fallback.");
+console.log("URAI route canon passed: / and /home use SpatialRealPlaceWorld home mode; /spatial is true 3D; /spatial-fallback is 2.5D fallback.");
