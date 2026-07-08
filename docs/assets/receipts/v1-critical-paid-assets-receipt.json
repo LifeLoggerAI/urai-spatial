@@ -1,0 +1,71 @@
+{
+  "summary": {
+    "generatedAt": "2026-07-07T23:59:00Z",
+    "totalAssets": 5,
+    "presentAssets": 1,
+    "blockedAssets": 4,
+    "locked": false
+  },
+  "assets": [
+    {
+      "id": "home-entry-chamber-model-v1",
+      "priority": "P0",
+      "path": "urai-tier1/public/assets/urai/generated/models/home-entry-chamber-v1.glb",
+      "format": "glb",
+      "targetSurface": "home",
+      "exists": true,
+      "extensionMatches": true,
+      "sizeBytes": 8732,
+      "sha256": "280d7cd5b4291d4abe0bacc274b211139cbe86adcd6c046fe343534fee12295a",
+      "jsonValid": null
+    },
+    {
+      "id": "portal-ring-master-glb-v1",
+      "priority": "P0",
+      "path": "urai-tier1/public/assets/urai/generated/models/portal-ring-master-v1.glb",
+      "format": "glb",
+      "targetSurface": "global",
+      "exists": false,
+      "extensionMatches": true,
+      "sizeBytes": 0,
+      "sha256": null,
+      "jsonValid": null
+    },
+    {
+      "id": "ground-world-terrain-glb-v1",
+      "priority": "P0",
+      "path": "urai-tier1/public/assets/urai/generated/models/ground-world-terrain-v1.glb",
+      "format": "glb",
+      "targetSurface": "ground",
+      "exists": false,
+      "extensionMatches": true,
+      "sizeBytes": 0,
+      "sha256": null,
+      "jsonValid": null
+    },
+    {
+      "id": "life-map-galaxy-skybox-v1",
+      "priority": "P0",
+      "path": "urai-tier1/public/assets/urai/generated/skyboxes/life-map-galaxy-skybox-v1.hdr",
+      "format": "hdr",
+      "targetSurface": "life-map",
+      "exists": false,
+      "extensionMatches": true,
+      "sizeBytes": 0,
+      "sha256": null,
+      "jsonValid": null
+    },
+    {
+      "id": "global-cinematic-material-pack-v1",
+      "priority": "P1",
+      "path": "urai-tier1/public/assets/urai/generated/textures/global-cinematic-material-pack-v1.json",
+      "format": "json",
+      "targetSurface": "global",
+      "exists": false,
+      "extensionMatches": true,
+      "sizeBytes": 0,
+      "sha256": null,
+      "jsonValid": null
+    }
+  ]
+}
