@@ -1,0 +1,87 @@
+{
+  "generatedAt": "2026-07-08T01:25:00Z",
+  "branch": "asset-safe-launch-pack",
+  "pullRequest": 463,
+  "state": "audit_in_progress",
+  "visualLock": false,
+  "buildVerifiedByOperatorLog": true,
+  "githubConnectorCanCaptureScreenshots": false,
+  "overallReadinessScore": 6.9,
+  "launchGate": {
+    "assetsValidate": "pass_from_operator_log",
+    "typecheck": "pass_from_operator_log",
+    "build": "pass_from_operator_log_with_nonblocking_warnings",
+    "desktopScreenshots": "pending_after_latest_home_composition_correction",
+    "mobileScreenshots": "pending_after_latest_home_composition_correction",
+    "unifiedWorldIllusion": "partial",
+    "readyForPublicLaunch": false
+  },
+  "nonBlockingWarnings": [
+    "CSS @import ordering warning",
+    "protobuf dynamic dependency warning through Firebase/Firestore path",
+    "Next ESLint plugin not detected warning"
+  ],
+  "routes": {
+    "/": {
+      "activeSurface": "SpatialWorldCanvas mode=home",
+      "score": 6.8,
+      "status": "needs_fresh_screenshot_after_home_composition_fix",
+      "primaryRisk": "Home first frame may still look less premium than Life Map/Focus/Replay"
+    },
+    "/home": {
+      "activeSurface": "SpatialDefaultWorld / SpatialWorldCanvas family",
+      "score": 6.8,
+      "status": "needs_fresh_screenshot_after_home_composition_fix",
+      "primaryRisk": "Same Home composition risk as root"
+    },
+    "/spatial/ar-vr": {
+      "activeSurface": "spatial AR/VR route",
+      "score": null,
+      "status": "screenshot_pending",
+      "primaryRisk": "Not captured in latest loop"
+    },
+    "/life-map": {
+      "activeSurface": "RealLifeMapGalaxy",
+      "score": 8.0,
+      "status": "visually_strong_needs_diegetic_nav_polish",
+      "primaryRisk": "Route bar/navigation can feel web-like"
+    },
+    "/ground": {
+      "activeSurface": "GroundPage groundFinal private operations floor",
+      "score": 5.8,
+      "status": "needs_unified_world_bridge",
+      "primaryRisk": "Still reads like separate route rather than physical layer below Home"
+    },
+    "/focus": {
+      "activeSurface": "FinalFocusChamber",
+      "score": 8.2,
+      "status": "visually_strong_contextuality_needed",
+      "primaryRisk": "Must remain selected-star state, not global nav destination"
+    },
+    "/replay": {
+      "activeSurface": "CinematicReplayClient",
+      "score": 8.2,
+      "status": "visually_strong_contextuality_needed",
+      "primaryRisk": "Must feel inside Focus/star memory thread"
+    },
+    "/passport": {
+      "activeSurface": "passport route",
+      "score": null,
+      "status": "screenshot_pending",
+      "primaryRisk": "Must read as identity vault room/layer"
+    },
+    "/status": {
+      "activeSurface": "status route",
+      "score": null,
+      "status": "screenshot_pending",
+      "primaryRisk": "Must read as status beacon/control layer"
+    }
+  },
+  "nextActions": [
+    "Pull latest asset-safe-launch-pack",
+    "Run assets:validate, typecheck, build",
+    "Capture desktop and mobile screenshots for all launch routes",
+    "If Home first-frame passes, prioritize Ground continuity bridge",
+    "If Home first-frame fails, adjust SpatialWorldAssetLayer positions only"
+  ]
+}
