@@ -1,0 +1,78 @@
+name: V1 Spatial Candidate Batch Forge
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - asset-safe-launch-pack
+    paths:
+      - ".github/asset-generation-requests/spatial-candidate-batch/**"
+      - ".github/workflows/v1-spatial-candidate-batch-forge.yml"
+      - "scripts/forge-v1-spatial-candidate-batch.mjs"
+      - "scripts/forge-portal-ring-master-glb.mjs"
+      - "scripts/receipt-single-v1-paid-asset.mjs"
+
+concurrency:
+  group: v1-spatial-candidate-batch-forge
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+  pull-requests: read
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  forge-spatial-candidate-batch:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout asset intake branch
+        uses: actions/checkout@v4
+        with:
+          ref: asset-safe-launch-pack
+          fetch-depth: 1
+
+      - name: Generate V1 spatial candidate batch
+        run: node scripts/forge-v1-spatial-candidate-batch.mjs
+
+      - name: Verify generated candidate files
+        run: |
+          test -s urai-tier1/public/assets/urai/generated/models/portal-ring-master-v1.glb
+          test -s urai-tier1/public/assets/urai/generated/models/ground-world-terrain-v1.glb
+          test -s urai-tier1/public/assets/urai/generated/skyboxes/life-map-galaxy-skybox-v1.hdr
+          test -s urai-tier1/public/assets/urai/generated/models/focus-star-flight-v1.glb
+          test -s urai-tier1/public/assets/urai/generated/models/replay-memory-film-v1.glb
+          test -s urai-tier1/public/assets/urai/generated/models/passport-status-room-v1.glb
+
+      - name: Commit generated candidate batch
+        run: |
+          git config user.name "URAI Asset Forge"
+          git config user.email "urai-asset-forge@users.noreply.github.com"
+          git add \
+            urai-tier1/public/assets/urai/generated/models/portal-ring-master-v1.glb \
+            urai-tier1/public/assets/urai/generated/models/ground-world-terrain-v1.glb \
+            urai-tier1/public/assets/urai/generated/skyboxes/life-map-galaxy-skybox-v1.hdr \
+            urai-tier1/public/assets/urai/generated/models/focus-star-flight-v1.glb \
+            urai-tier1/public/assets/urai/generated/models/replay-memory-film-v1.glb \
+            urai-tier1/public/assets/urai/generated/models/passport-status-room-v1.glb \
+            urai-tier1/public/assets/urai/generated/textures/global-cinematic-material-pack-v1.json \
+            docs/assets/receipts/*-receipt.json \
+            docs/assets/receipts/*-receipt.md
+          if git diff --cached --quiet; then
+            echo "No generated asset changes to commit."
+            exit 0
+          fi
+          git commit -m "Generate V1 spatial candidate asset batch"
+          git push origin HEAD:asset-safe-launch-pack
+
+      - name: Validation note
+        run: |
+          echo "Candidate batch generated."
+          echo "Do not call these final AAA assets until visual route review passes."
+          echo "Run locally after pull:"
+          echo "pnpm --dir urai-tier1 assets:validate"
+          echo "pnpm --dir urai-tier1 typecheck"
+          echo "rm -rf urai-tier1/.next && pnpm --dir urai-tier1 build"
