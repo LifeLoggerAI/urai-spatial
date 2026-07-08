@@ -6,31 +6,30 @@ Runtime app root: `urai-tier1`.
 
 Canonical public application: `LifeLoggerAI/urai-spatial/urai-tier1` on `main`.
 
-Current audited `main` SHA: `ce22b4bc39fdd26a1874797eeaba1d942e4e1301`.
+Latest connector-observed `main` SHA before this status refresh: `c1f06bda62fffae3b2eb1c9a681f9a7a1ae37287`.
 
 Current mode: `fallback-demo` with a partially current live deployment.
 
 Production-live status: not yet verified.
 
-Latest source audit: July 6, 2026. V1 has a 53-of-53 provider-marked asset handoff in source, but the exact deployed SHA, rollback reference, route parity, post-deployment browser proof, and complete device/accessibility evidence are not established. V2 and V3 remain handoff-gated (`ready: 0`). V4 and V5 remain provider/browser/device/deployment gated.
+Latest source audit: July 7, 2026. V1 has a substantial public route spine, route owners, launch truth, asset/readiness wiring, and workflow release authority in source. The exact deployed SHA, rollback reference, route parity, post-deployment browser proof, and complete device/accessibility evidence are not established. V2 and V3 remain handoff-gated (`ready: 0`). V4 and V5 remain provider/browser/device/deployment gated.
 
 ## Current verified blockers
 
-- The live `/privacy-controls/` route serves Home threshold content instead of the dedicated Privacy Controls source owner.
-- The live `/status/` route labels routes `live` and mode `Launch` without recording tested, deployed, or rollback SHA evidence.
+- The live `/privacy-controls/` route has previously served Home threshold content instead of the dedicated Privacy Controls source owner; current production parity must be reverified after the latest deploy.
+- The live `/status/` route has previously drifted from source truth; current production parity must be reverified after the latest deploy.
 - No exact-current-main deployment receipt, Firebase target receipt, rollback target, complete mobile/desktop screenshot set, monitoring receipt, or physical Quest proof is recorded.
 - V2 and V3 provider assets are not promoted: V2 reports 0 ready / 80 missing; V3 reports 0 ready / 14 missing.
 
 ## Source-fixed and externally reverified items
 
-- `urai-tier1/src/app/privacy-controls/page.tsx` is the dedicated Privacy Controls source owner with an explicit `URAI Privacy Controls` title and route fingerprint; live parity remains failed.
-- `urai-tier1/src/app/focus/page.tsx` renders `FinalFocusChamber` with the canonical `focus-selected-memory-camera-chamber` fingerprint. External verification on July 6, 2026 confirmed `/focus/` renders the selected-memory chamber.
-- External verification on July 6, 2026 confirmed `/replay/` renders the cinematic memory film surface.
+- `urai-tier1/src/app/privacy-controls/page.tsx` is the dedicated Privacy Controls source owner with an explicit `URAI Privacy Controls` title and route fingerprint; live parity remains pending until a fresh deploy/smoke receipt proves it.
+- `urai-tier1/src/app/status/page.tsx` renders a production-truth control room and imports `launchTruth` from `urai-tier1/src/data/launchTruth.ts`; live parity remains pending until a fresh deploy/smoke receipt proves it.
+- `.github/workflows/spatial-live-deploy.yml` is the sole current workflow authority for release-gated live deploy and now separates deploy, live smoke, and credential cleanup into valid steps.
 - `firebase.static.json` publishes `urai-tier1/out`, enables clean URLs and trailing slashes, and contains zero rewrites; current source does not intentionally mask missing routes as Home.
-- `.github/workflows/spatial-live-deploy.yml` uses service-account credentials through `GOOGLE_APPLICATION_CREDENTIALS` and a frozen pnpm install.
 - `scripts/check-production-route-exposure.mjs` locks the Privacy Controls and Focus source owners plus the zero-rewrite static-hosting posture.
 
-These source facts are **VERIFIED IN REPOSITORY**. Focus and Replay route content are externally reachable, but the complete deployed SHA and release evidence remain unknown.
+These source facts are **VERIFIED IN REPOSITORY**. Focus and Replay route content have been externally reachable in previous checks, but the complete deployed SHA and release evidence remain unknown.
 
 ## Authority
 
@@ -54,8 +53,8 @@ Not allowed claim:
 
 | Version | Source posture | Asset/runtime posture | Certification posture |
 | --- | --- | --- | --- |
-| V1 | Main route chain and production owners are present. Privacy Controls, Focus ownership, and zero-rewrite static hosting are source-locked. | Provider handoff reports 53 ready, 0 missing. Focus and Replay are externally reachable; Privacy Controls and Status parity remain failed. | Not certified. |
-| V2 | Living-state wiring, fallback inventory, gating, and verifier exist. | Canonical handoff reports 0 ready, 80 missing; V1 fallback remains active. | Not certified. |
+| V1 | Main route chain and production owners are present. Privacy Controls, Status, Focus ownership, and zero-rewrite static hosting are source-locked. | Provider handoff/source asset seams exist. Focus and Replay have been externally reachable in prior checks; Privacy Controls and Status require fresh parity proof. | Not certified until exact deploy and smoke receipts exist. |
+| V2 | Living-state wiring, fallback inventory, gating, and verifier exist. | Canonical handoff reports 0 ready, 80 missing. | Not certified. |
 | V3 | Relationship, shadow, pattern, consent-safe fallback surfaces and inventory exist. | Canonical handoff reports 0 ready, 14 missing. | Not certified. |
 | V4 | WebXR/Quest runtime and lifecycle hardening exist in source. | Browser/provider/device proof remains gated. | Not certified; no physical Quest claim. |
 | V5 | Mirror of Becoming, legacy, consent, provenance, and protected-presence concepts exist across source and fallback assets. | Canon explicitly keeps V5 production-gated pending implementation, privacy, tests, deploy, and live smoke. | Not certified. |
@@ -64,10 +63,10 @@ Not allowed claim:
 
 | Capability | Status | Rule before live claim |
 | --- | --- | --- |
-| V1 provider asset handoff | Source-ready | Requires current-main build, deploy receipt, live route/resource/browser proof, and rollback evidence. |
+| V1 provider asset handoff | Source-ready / receipt-gated | Requires current-main build, deploy receipt, live route/resource/browser proof, and rollback evidence. |
 | V2 living-state assets | Not active | Requires provider forge receipt for 80 assets, zero-missing promoted handoff, runtime activation proof, deploy, and live browser proof. |
 | V3 relationship/pattern assets | Not active | Requires provider forge receipt for 14 assets, privacy review, runtime activation proof, deploy, and live browser proof. |
-| AR/WebXR | Not active | Requires browser/provider validation, permission-safe session proof, device matrix, consent review, E2E evidence, and live smoke. |
+| AR/WebXR | Preview/source only | Requires browser/provider validation, permission-safe session proof, device matrix, consent review, E2E evidence, and live smoke. |
 | Quest VR | Not device-certified | Requires physical headset run, controller/hand input, comfort/performance, session lifecycle, and recorded evidence. |
 | Wearables/body signal | Not active | Requires provider contract, explicit consent, non-diagnostic copy review, privacy tests, fallback behavior, and live smoke. |
 | Memory-grounded orb | Not active | Requires memory contract, consent gates, fallback behavior, deletion/export proof, and live smoke. |
