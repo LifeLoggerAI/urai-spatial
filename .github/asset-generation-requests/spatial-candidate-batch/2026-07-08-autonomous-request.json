@@ -1,0 +1,22 @@
+{
+  "requestedAt": "2026-07-08T01:05:00Z",
+  "requestedBy": "URAI launch operator",
+  "scope": "v1-spatial-candidate-batch",
+  "mode": "batch-generate-candidates-receipt-separately",
+  "assets": [
+    "portal-ring-master-glb-v1",
+    "ground-world-terrain-glb-v1",
+    "life-map-galaxy-skybox-v1",
+    "focus-star-flight-glb-v1",
+    "replay-memory-film-glb-v1",
+    "passport-status-room-glb-v1",
+    "global-cinematic-material-pack-v1"
+  ],
+  "policy": "Batch generation is allowed for deterministic candidate assets. Acceptance remains per asset after route proof and visual review.",
+  "forbidden": [
+    "claiming AAA final acceptance without visual proof",
+    "claiming provider-rendered paid assets without provider receipts",
+    "deleting working fallback routes",
+    "broad PNG image forge"
+  ]
+}
