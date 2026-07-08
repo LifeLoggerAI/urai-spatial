@@ -25,39 +25,39 @@ const cityGlbAssets: Record<CityAssetId, string> = {
 const cityProfile = {
   id: 'default-city-overlook',
   title: 'City Overlook',
-  orbAnchorPosition: [0, 1.12, -2.35] as [number, number, number],
-  lifeMapAnchorPosition: [0, 4.25, -3.95] as [number, number, number],
+  orbAnchorPosition: [0, 1.18, -2.05] as [number, number, number],
+  lifeMapAnchorPosition: [0, 2.9, -6.8] as [number, number, number],
   camera: {
-    home: { position: [0, 1.34, 5.45] as [number, number, number], fov: 46 },
-    ground: { position: [0, 1.02, 4.72] as [number, number, number], fov: 50 },
-    'life-map': { position: [0, 1.62, 5.25] as [number, number, number], fov: 51 },
+    home: { position: [0, 1.2, 5.05] as [number, number, number], fov: 42 },
+    ground: { position: [0, 0.82, 4.35] as [number, number, number], fov: 48 },
+    'life-map': { position: [0, 1.1, 7.2] as [number, number, number], fov: 56 },
   },
 }
 
 const copy = {
   home: {
-    eyebrow: 'URAI Spatial',
-    title: 'Living world hub',
-    body: 'The Orb holds the city. Ground opens below the deck. Life Map glows above the skyline.',
-    primary: ['Descend Ground', '/ground'],
-    secondary: ['Open Life Map', '/life-map'],
-    status: 'Orb-centered Home world',
+    eyebrow: 'URAI Home',
+    title: 'World hub',
+    body: 'Orb. Ground below. Life Map above.',
+    primary: ['Ground', '/ground'],
+    secondary: ['Life Map', '/life-map'],
+    status: 'Home world',
   },
   ground: {
     eyebrow: 'URAI Ground',
-    title: 'Ground below Home',
-    body: 'The same city, closer to life: path, block, signals, approvals, and lived context stay embodied.',
-    primary: ['Rise Home', '/home'],
-    secondary: ['Open Sky', '/life-map'],
-    status: 'Lower world connected',
+    title: 'Lower city',
+    body: 'The lived layer below Home.',
+    primary: ['Home', '/home'],
+    secondary: ['Life Map', '/life-map'],
+    status: 'Below Home',
   },
   'life-map': {
     eyebrow: 'URAI Life Map',
-    title: 'Memory sky above',
-    body: 'Home stays below. The sky opens into memory stars. Select a star and the camera flies inside.',
-    primary: ['Return Home', '/home'],
-    secondary: ['Enter Focus', '/focus?manifestId=seed-memory-bloom'],
-    status: 'Explorable galaxy layer active',
+    title: 'Memory galaxy',
+    body: 'Stars, memories, paths.',
+    primary: ['Home', '/home'],
+    secondary: ['Focus', '/focus?manifestId=seed-memory-bloom'],
+    status: 'Galaxy active',
   },
 } as const
 
@@ -76,14 +76,14 @@ function Stars({ mode }: { mode: RealPlaceMode }) {
   const ref = useRef<THREE.Points>(null)
   const geometry = useMemo(() => {
     const g = new THREE.BufferGeometry()
-    const count = mode === 'life-map' ? 2400 : 820
+    const count = mode === 'life-map' ? 3600 : 720
     const positions = new Float32Array(count * 3)
     for (let i = 0; i < count; i += 1) {
       const angle = i * 2.399963
-      const radius = 5.5 + (i % 211) * 0.25
+      const radius = mode === 'life-map' ? 4.8 + ((i * 17) % 900) / 42 : 5.2 + (i % 211) * 0.22
       positions[i * 3] = Math.cos(angle) * radius
-      positions[i * 3 + 1] = 1.65 + ((i * 31) % 300) / 18
-      positions[i * 3 + 2] = -6.6 + Math.sin(angle) * radius
+      positions[i * 3 + 1] = mode === 'life-map' ? -2.4 + ((i * 31) % 520) / 58 : 1.35 + ((i * 31) % 260) / 22
+      positions[i * 3 + 2] = mode === 'life-map' ? -12.0 + Math.sin(angle) * radius : -6.8 + Math.sin(angle) * radius
     }
     g.setAttribute('position', new THREE.BufferAttribute(positions, 3))
     return g
@@ -91,12 +91,12 @@ function Stars({ mode }: { mode: RealPlaceMode }) {
 
   useFrame(({ clock }) => {
     if (!ref.current) return
-    ref.current.rotation.y = clock.elapsedTime * 0.006
+    ref.current.rotation.y = clock.elapsedTime * (mode === 'life-map' ? 0.018 : 0.006)
   })
 
   return (
     <points ref={ref} geometry={geometry}>
-      <pointsMaterial size={mode === 'life-map' ? 0.05 : 0.022} color="#dffcff" transparent opacity={mode === 'ground' ? 0.12 : mode === 'life-map' ? 0.72 : 0.38} depthWrite={false} blending={THREE.AdditiveBlending} />
+      <pointsMaterial size={mode === 'life-map' ? 0.042 : 0.02} color="#e8fbff" transparent opacity={mode === 'ground' ? 0.16 : mode === 'life-map' ? 0.86 : 0.36} depthWrite={false} blending={THREE.AdditiveBlending} />
     </points>
   )
 }
@@ -115,18 +115,18 @@ function CityAtmosphere({ mode }: { mode: RealPlaceMode }) {
       <group ref={skyGlow} position={[0, 2.15, -9.8]}>
         <mesh>
           <planeGeometry args={[19, 7.4]} />
-          <meshBasicMaterial color="#1d4ed8" transparent opacity={mode === 'life-map' ? 0.24 : 0.08} depthWrite={false} blending={THREE.AdditiveBlending} />
+          <meshBasicMaterial color="#1d4ed8" transparent opacity={0.08} depthWrite={false} blending={THREE.AdditiveBlending} />
         </mesh>
         <mesh position={[0, 1.1, -0.1]}>
           <planeGeometry args={[14, 3.4]} />
-          <meshBasicMaterial color="#67e8f9" transparent opacity={mode === 'life-map' ? 0.16 : 0.055} depthWrite={false} blending={THREE.AdditiveBlending} />
+          <meshBasicMaterial color="#67e8f9" transparent opacity={0.055} depthWrite={false} blending={THREE.AdditiveBlending} />
         </mesh>
       </group>
       <group ref={traffic} position={[0, -0.38, -8.25]}>
         {[-5.4, -3.1, -0.8, 1.8, 4.4, 6.1].map((x, index) => (
           <mesh key={x} position={[x, 0, index % 2 === 0 ? 0.08 : -0.08]}>
             <boxGeometry args={[0.58 + (index % 2) * 0.34, 0.018, 0.018]} />
-            <meshBasicMaterial color={index % 2 === 0 ? '#facc6b' : '#67e8f9'} transparent opacity={0.4} blending={THREE.AdditiveBlending} />
+            <meshBasicMaterial color={index % 2 === 0 ? '#facc6b' : '#67e8f9'} transparent opacity={mode === 'ground' ? 0.32 : 0.42} blending={THREE.AdditiveBlending} />
           </mesh>
         ))}
       </group>
@@ -150,76 +150,59 @@ function SkylineBand({ mode }: { mode: RealPlaceMode }) {
     [6.88, 0.5, -10.32, 0.98, 3.55, 0.72],
     [8.15, 0.05, -10.08, 1.08, 2.35, 0.78],
   ] as const
-  const fade = mode === 'life-map'
 
   return (
     <CityAssetSlot assetId="skyline-band">
-      <group position={fade ? [0, -0.25, -0.45] : [0, 0, 0]} scale={fade ? 0.92 : 1}>
+      <group position={mode === 'ground' ? [0, 0.2, -0.65] : [0, 0, 0]} scale={mode === 'ground' ? 1.05 : 1}>
         {buildings.map(([x, y, z, w, h, d], index) => (
           <group key={index} position={[x, y, z]}>
             <mesh castShadow>
               <boxGeometry args={[w, h, d]} />
-              <meshStandardMaterial color="#040b14" emissive="#10253b" emissiveIntensity={fade ? 0.17 : 0.3} roughness={0.82} metalness={0.12} transparent opacity={fade ? 0.68 : 1} />
+              <meshStandardMaterial color="#040b14" emissive="#10253b" emissiveIntensity={mode === 'ground' ? 0.2 : 0.34} roughness={0.82} metalness={0.12} />
             </mesh>
             {Array.from({ length: 8 }).map((_, row) => (
               <mesh key={row} position={[0, -h / 2 + 0.32 + row * 0.42, d / 2 + 0.011]}>
                 <boxGeometry args={[w * 0.68, 0.026, 0.02]} />
-                <meshBasicMaterial color={row % 2 === 0 ? '#facc6b' : '#67e8f9'} transparent opacity={(fade ? 0.05 : 0.1) + ((index + row) % 4) * 0.04} blending={THREE.AdditiveBlending} />
+                <meshBasicMaterial color={row % 2 === 0 ? '#facc6b' : '#67e8f9'} transparent opacity={0.1 + ((index + row) % 4) * 0.04} blending={THREE.AdditiveBlending} />
               </mesh>
             ))}
-            {index % 3 === 0 ? (
-              <mesh position={[0, h / 2 + 0.18, 0]}>
-                <boxGeometry args={[0.04, 0.36, 0.04]} />
-                <meshBasicMaterial color="#67e8f9" transparent opacity={fade ? 0.18 : 0.36} blending={THREE.AdditiveBlending} />
-              </mesh>
-            ) : null}
           </group>
         ))}
-        <mesh position={[0, 1.05, -10.35]}>
-          <boxGeometry args={[18, 0.018, 0.018]} />
-          <meshBasicMaterial color="#67e8f9" transparent opacity={fade ? 0.08 : 0.2} blending={THREE.AdditiveBlending} />
-        </mesh>
       </group>
     </CityAssetSlot>
   )
 }
 
 function CityOverlookDeck({ mode }: { mode: RealPlaceMode }) {
-  const fade = mode === 'life-map'
+  const lower = mode === 'ground'
   return (
     <CityAssetSlot assetId="city-overlook-deck">
-      <group position={fade ? [0, -0.18, 0] : [0, 0, 0]}>
+      <group position={lower ? [0, -0.12, 0.15] : [0, 0, 0]} scale={lower ? 1.1 : 1}>
         <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.88, 0.15]} receiveShadow>
-          <planeGeometry args={[10.4, 5.5]} />
-          <meshStandardMaterial color="#101820" emissive="#0b1d2a" emissiveIntensity={fade ? 0.1 : 0.22} roughness={0.88} metalness={0.12} transparent opacity={fade ? 0.6 : 1} />
+          <planeGeometry args={[10.8, 5.9]} />
+          <meshStandardMaterial color={lower ? '#08131d' : '#101820'} emissive={lower ? '#071b2a' : '#0b1d2a'} emissiveIntensity={lower ? 0.28 : 0.22} roughness={0.88} metalness={0.12} />
         </mesh>
         <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.86, 0.15]}>
           <ringGeometry args={[1.45, 5.0, 160]} />
-          <meshBasicMaterial color="#67e8f9" transparent opacity={fade ? 0.035 : 0.07} side={THREE.DoubleSide} blending={THREE.AdditiveBlending} />
+          <meshBasicMaterial color="#67e8f9" transparent opacity={lower ? 0.11 : 0.07} side={THREE.DoubleSide} blending={THREE.AdditiveBlending} />
         </mesh>
         <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.845, 1.35]}>
           <circleGeometry args={[1.05, 96]} />
-          <meshBasicMaterial color="#67e8f9" transparent opacity={fade ? 0.035 : 0.065} side={THREE.DoubleSide} blending={THREE.AdditiveBlending} />
+          <meshBasicMaterial color="#67e8f9" transparent opacity={lower ? 0.09 : 0.065} side={THREE.DoubleSide} blending={THREE.AdditiveBlending} />
         </mesh>
         <mesh position={[0, 0.06, -6.86]}>
           <boxGeometry args={[13.4, 0.1, 0.12]} />
-          <meshStandardMaterial color="#203246" roughness={0.64} metalness={0.18} transparent opacity={fade ? 0.55 : 1} />
+          <meshStandardMaterial color="#203246" roughness={0.64} metalness={0.18} />
         </mesh>
-        {[-5.1, -2.55, 0, 2.55, 5.1].map((x) => (
-          <mesh key={x} position={[x, -0.42, -6.86]}>
-            <boxGeometry args={[0.12, 1.05, 0.12]} />
-            <meshStandardMaterial color="#203246" roughness={0.64} metalness={0.18} transparent opacity={fade ? 0.55 : 1} />
-          </mesh>
-        ))}
         {[-4.15, 4.15].map((x) => (
           <group key={x} position={[x, -0.36, -4.8]}>
             <mesh>
               <cylinderGeometry args={[0.05, 0.07, 1.35, 16]} />
-              <meshStandardMaterial color="#172437" emissive="#0f172a" emissiveIntensity={0.2} roughness={0.58} transparent opacity={fade ? 0.55 : 1} />
+              <meshStandardMaterial color="#172437" emissive="#0f172a" emissiveIntensity={0.2} roughness={0.58} />
             </mesh>
             <mesh position={[0, 0.82, 0]}>
               <sphereGeometry args={[0.16, 24, 24]} />
-              <meshBasicMaterial color="#fde68a" transparent opacity={fade ? 0.36 : 0.66} blending={THREE.AdditiveBlending} />
+              <meshBasicMaterial color="#fde68a" transparent opacity={0.66} blending={THREE.AdditiveBlending} />
             </mesh>
           </group>
         ))}
@@ -230,29 +213,51 @@ function CityOverlookDeck({ mode }: { mode: RealPlaceMode }) {
 
 function StreetDescentPath({ mode }: { mode: RealPlaceMode }) {
   const isGround = mode === 'ground'
-  const fade = mode === 'life-map'
 
   return (
     <CityAssetSlot assetId="street-descent-path">
       <group>
         <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.835, 2.6]} receiveShadow>
-          <planeGeometry args={[2.55, 6.8]} />
-          <meshStandardMaterial color="#172332" emissive={isGround ? '#16445d' : '#0b2233'} emissiveIntensity={isGround ? 0.36 : 0.14} roughness={0.92} metalness={0.08} transparent opacity={fade ? 0.48 : 1} />
+          <planeGeometry args={[2.75, isGround ? 8.2 : 6.8]} />
+          <meshStandardMaterial color="#172332" emissive={isGround ? '#16445d' : '#0b2233'} emissiveIntensity={isGround ? 0.42 : 0.14} roughness={0.92} metalness={0.08} />
         </mesh>
-        {[-1.05, 1.05].map((x) => (
+        {[-1.12, 1.12].map((x) => (
           <mesh key={x} rotation={[-Math.PI / 2, 0, 0]} position={[x, -0.79, 2.55]}>
-            <planeGeometry args={[0.09, 5.75]} />
-            <meshBasicMaterial color="#67e8f9" transparent opacity={fade ? 0.14 : isGround ? 0.48 : 0.28} side={THREE.DoubleSide} blending={THREE.AdditiveBlending} />
+            <planeGeometry args={[0.09, isGround ? 7.3 : 5.75]} />
+            <meshBasicMaterial color="#67e8f9" transparent opacity={isGround ? 0.58 : 0.28} side={THREE.DoubleSide} blending={THREE.AdditiveBlending} />
           </mesh>
         ))}
         {[0, 1, 2, 3].map((step) => (
           <mesh key={step} position={[0, -1.02 - step * 0.19, 4.32 + step * 0.64]} receiveShadow>
             <boxGeometry args={[3.0 + step * 0.22, 0.18, 0.48]} />
-            <meshStandardMaterial color={step === 0 ? '#111827' : '#0b1320'} emissive="#071827" emissiveIntensity={0.18} roughness={0.86} transparent opacity={fade ? 0.42 : 1} />
+            <meshStandardMaterial color={step === 0 ? '#111827' : '#0b1320'} emissive="#071827" emissiveIntensity={0.18} roughness={0.86} />
           </mesh>
         ))}
       </group>
     </CityAssetSlot>
+  )
+}
+
+function GroundDepthLayer() {
+  return (
+    <group position={[0, -1.16, -1.65]}>
+      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.18, -1.2]}>
+        <ringGeometry args={[2.2, 9.5, 180]} />
+        <meshBasicMaterial color="#38bdf8" transparent opacity={0.065} side={THREE.DoubleSide} blending={THREE.AdditiveBlending} />
+      </mesh>
+      {[-3.6, -1.85, 1.85, 3.6].map((x, index) => (
+        <group key={x} position={[x, 0.05, -2.6 - index * 0.25]}>
+          <mesh>
+            <cylinderGeometry args={[0.16, 0.22, 1.05 + index * 0.22, 24]} />
+            <meshStandardMaterial color="#07111d" emissive={index % 2 === 0 ? '#0f3550' : '#241653'} emissiveIntensity={0.48} roughness={0.54} metalness={0.2} />
+          </mesh>
+          <mesh position={[0, 0.66 + index * 0.11, 0]}>
+            <sphereGeometry args={[0.18 + index * 0.025, 24, 24]} />
+            <meshBasicMaterial color={index % 2 === 0 ? '#67e8f9' : '#a78bfa'} transparent opacity={0.5} blending={THREE.AdditiveBlending} />
+          </mesh>
+        </group>
+      ))}
+    </group>
   )
 }
 
@@ -261,12 +266,13 @@ function CityOverlookEnvironment({ mode }: { mode: RealPlaceMode }) {
     <group>
       <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.98, -2.75]} receiveShadow>
         <circleGeometry args={[25, 180]} />
-        <meshStandardMaterial color={mode === 'ground' ? '#071019' : '#071827'} emissive={mode === 'ground' ? '#0f2d3a' : '#0b2638'} emissiveIntensity={mode === 'life-map' ? 0.08 : 0.16} roughness={0.94} transparent opacity={mode === 'life-map' ? 0.5 : 1} />
+        <meshStandardMaterial color={mode === 'ground' ? '#061019' : '#071827'} emissive={mode === 'ground' ? '#0f2d3a' : '#0b2638'} emissiveIntensity={mode === 'ground' ? 0.23 : 0.16} roughness={0.94} />
       </mesh>
       <CityOverlookDeck mode={mode} />
       <StreetDescentPath mode={mode} />
       <SkylineBand mode={mode} />
       <CityAtmosphere mode={mode} />
+      {mode === 'ground' ? <GroundDepthLayer /> : null}
     </group>
   )
 }
@@ -274,7 +280,7 @@ function CityOverlookEnvironment({ mode }: { mode: RealPlaceMode }) {
 function OrbGuide({ mode }: { mode: RealPlaceMode }) {
   const ref = useRef<THREE.Group>(null)
   const [x, baseY, z] = cityProfile.orbAnchorPosition
-  const scale = mode === 'home' ? 1.55 : mode === 'life-map' ? 1.06 : 1.28
+  const scale = mode === 'home' ? 1.72 : 1.18
 
   useFrame(({ clock }) => {
     if (!ref.current) return
@@ -287,19 +293,19 @@ function OrbGuide({ mode }: { mode: RealPlaceMode }) {
     <group ref={ref} position={[x, baseY, mode === 'ground' ? -0.72 : z]} scale={scale}>
       <mesh castShadow>
         <sphereGeometry args={[0.18, 48, 48]} />
-        <meshStandardMaterial color="#f8ffff" emissive="#67e8f9" emissiveIntensity={mode === 'life-map' ? 1.8 : 3.1} roughness={0.11} metalness={0.16} />
+        <meshStandardMaterial color="#f8ffff" emissive="#67e8f9" emissiveIntensity={3.25} roughness={0.11} metalness={0.16} />
       </mesh>
       <mesh>
-        <sphereGeometry args={[0.5, 40, 40]} />
-        <meshBasicMaterial color="#67e8f9" transparent opacity={0.075} depthWrite={false} blending={THREE.AdditiveBlending} />
+        <sphereGeometry args={[0.56, 40, 40]} />
+        <meshBasicMaterial color="#67e8f9" transparent opacity={0.085} depthWrite={false} blending={THREE.AdditiveBlending} />
       </mesh>
       <mesh rotation={[Math.PI / 2, 0, 0]}>
-        <torusGeometry args={[0.37, 0.012, 16, 128]} />
-        <meshBasicMaterial color="#dffcff" transparent opacity={0.56} blending={THREE.AdditiveBlending} />
+        <torusGeometry args={[0.38, 0.012, 16, 128]} />
+        <meshBasicMaterial color="#dffcff" transparent opacity={0.62} blending={THREE.AdditiveBlending} />
       </mesh>
       <mesh rotation={[0.35, 0, 0.8]}>
-        <torusGeometry args={[0.52, 0.006, 12, 128]} />
-        <meshBasicMaterial color="#a78bfa" transparent opacity={0.25} blending={THREE.AdditiveBlending} />
+        <torusGeometry args={[0.55, 0.006, 12, 128]} />
+        <meshBasicMaterial color="#a78bfa" transparent opacity={0.3} blending={THREE.AdditiveBlending} />
       </mesh>
     </group>
   )
@@ -317,15 +323,15 @@ function GroundPortal({ mode }: { mode: RealPlaceMode }) {
     <group ref={ref} position={[0, -0.745, 1.38]} rotation={[Math.PI / 2, 0, 0]}>
       <mesh>
         <torusGeometry args={[1.05, 0.024, 18, 160]} />
-        <meshBasicMaterial color="#67e8f9" transparent opacity={mode === 'ground' ? 0.74 : mode === 'life-map' ? 0.22 : 0.48} blending={THREE.AdditiveBlending} />
+        <meshBasicMaterial color="#67e8f9" transparent opacity={mode === 'ground' ? 0.78 : 0.54} blending={THREE.AdditiveBlending} />
       </mesh>
       <mesh>
         <torusGeometry args={[1.55, 0.012, 16, 160]} />
-        <meshBasicMaterial color="#a78bfa" transparent opacity={mode === 'ground' ? 0.28 : mode === 'life-map' ? 0.1 : 0.16} blending={THREE.AdditiveBlending} />
+        <meshBasicMaterial color="#a78bfa" transparent opacity={mode === 'ground' ? 0.32 : 0.18} blending={THREE.AdditiveBlending} />
       </mesh>
       <mesh>
         <circleGeometry args={[0.72, 96]} />
-        <meshBasicMaterial color="#67e8f9" transparent opacity={mode === 'ground' ? 0.16 : mode === 'life-map' ? 0.035 : 0.09} side={THREE.DoubleSide} blending={THREE.AdditiveBlending} />
+        <meshBasicMaterial color="#67e8f9" transparent opacity={mode === 'ground' ? 0.18 : 0.1} side={THREE.DoubleSide} blending={THREE.AdditiveBlending} />
       </mesh>
     </group>
   )
@@ -333,16 +339,14 @@ function GroundPortal({ mode }: { mode: RealPlaceMode }) {
 
 function LifeMapSky({ mode }: { mode: RealPlaceMode }) {
   const ref = useRef<THREE.Group>(null)
-  const visible = mode !== 'ground'
   const strong = mode === 'life-map'
 
   useFrame(({ clock }) => {
     if (!ref.current) return
-    ref.current.rotation.y = Math.sin(clock.elapsedTime * 0.18) * 0.12
+    ref.current.rotation.y = Math.sin(clock.elapsedTime * 0.18) * (strong ? 0.22 : 0.1)
+    ref.current.rotation.z = clock.elapsedTime * (strong ? 0.018 : 0.006)
     ref.current.position.y = cityProfile.lifeMapAnchorPosition[1] + Math.sin(clock.elapsedTime * 0.22) * 0.06
   })
-
-  if (!visible) return null
 
   const stars = [
     [-4.6, 0.25, 0, '#67e8f9'],
@@ -353,32 +357,34 @@ function LifeMapSky({ mode }: { mode: RealPlaceMode }) {
     [3.8, 0.2, -0.5, '#93c5fd'],
     [5.0, 1.16, -1.05, '#facc6b'],
     [-5.5, 1.25, -1.0, '#c4b5fd'],
+    [0.6, -1.25, 0.4, '#38bdf8'],
+    [-1.9, -1.0, -0.15, '#f0abfc'],
   ] as const
 
   return (
     <CityAssetSlot assetId="life-map-sky-anchor">
-      <group ref={ref} position={cityProfile.lifeMapAnchorPosition} scale={strong ? 2.35 : 1.08}>
+      <group ref={ref} position={strong ? [0, 0.1, -6.6] : cityProfile.lifeMapAnchorPosition} scale={strong ? 1.62 : 1.08}>
         <mesh rotation={[Math.PI / 2, 0, 0]}>
-          <torusGeometry args={[3.8, 0.024, 16, 190]} />
-          <meshBasicMaterial color="#60a5fa" transparent opacity={strong ? 0.72 : 0.28} blending={THREE.AdditiveBlending} />
+          <torusGeometry args={[strong ? 5.6 : 3.8, 0.018, 16, 220]} />
+          <meshBasicMaterial color="#60a5fa" transparent opacity={strong ? 0.38 : 0.24} blending={THREE.AdditiveBlending} />
+        </mesh>
+        <mesh rotation={[Math.PI / 2, 0, 0.44]}>
+          <torusGeometry args={[strong ? 7.4 : 5.25, 0.01, 14, 220]} />
+          <meshBasicMaterial color="#a78bfa" transparent opacity={strong ? 0.2 : 0.08} blending={THREE.AdditiveBlending} />
         </mesh>
         <mesh rotation={[Math.PI / 2, 0, 0]}>
-          <torusGeometry args={[5.25, 0.012, 14, 190]} />
-          <meshBasicMaterial color="#a78bfa" transparent opacity={strong ? 0.34 : 0.1} blending={THREE.AdditiveBlending} />
-        </mesh>
-        <mesh rotation={[Math.PI / 2, 0, 0]}>
-          <circleGeometry args={[4.7, 160]} />
-          <meshBasicMaterial color="#67e8f9" transparent opacity={strong ? 0.045 : 0.018} side={THREE.DoubleSide} blending={THREE.AdditiveBlending} />
+          <circleGeometry args={[strong ? 6.5 : 4.7, 180]} />
+          <meshBasicMaterial color="#67e8f9" transparent opacity={strong ? 0.025 : 0.014} side={THREE.DoubleSide} blending={THREE.AdditiveBlending} />
         </mesh>
         {stars.map(([x, y, z, color], index) => (
           <group key={index} position={[x, y, z]}>
             <mesh>
-              <sphereGeometry args={[strong ? 0.2 : 0.09, 28, 28]} />
-              <meshStandardMaterial color="#020617" emissive={color} emissiveIntensity={strong ? 4.8 : 1.7} transparent opacity={0.98} />
+              <sphereGeometry args={[strong ? 0.17 : 0.08, 30, 30]} />
+              <meshStandardMaterial color="#020617" emissive={color} emissiveIntensity={strong ? 5.5 : 1.7} transparent opacity={0.98} />
             </mesh>
             <mesh>
-              <sphereGeometry args={[strong ? 0.6 : 0.22, 24, 24]} />
-              <meshBasicMaterial color={color} transparent opacity={strong ? 0.08 : 0.045} depthWrite={false} blending={THREE.AdditiveBlending} />
+              <sphereGeometry args={[strong ? 0.72 : 0.22, 26, 26]} />
+              <meshBasicMaterial color={color} transparent opacity={strong ? 0.075 : 0.04} depthWrite={false} blending={THREE.AdditiveBlending} />
             </mesh>
           </group>
         ))}
@@ -389,31 +395,32 @@ function LifeMapSky({ mode }: { mode: RealPlaceMode }) {
 
 function SpatialScene({ mode }: { mode: RealPlaceMode }) {
   const camera = cityProfile.camera[mode]
+  const life = mode === 'life-map'
 
   return (
     <>
-      <color attach="background" args={["#020611"]} />
-      <fog attach="fog" args={["#041225", mode === 'life-map' ? 3.6 : 5.4, mode === 'life-map' ? 30 : 23]} />
+      <color attach="background" args={[life ? '#01030a' : '#020611']} />
+      <fog attach="fog" args={[life ? '#01030a' : '#041225', life ? 7.5 : 5.4, life ? 42 : 23]} />
       <PerspectiveCamera makeDefault position={camera.position} fov={camera.fov} />
-      <OrbitControls enablePan={false} enableZoom enableDamping dampingFactor={0.06} rotateSpeed={0.26} zoomSpeed={0.52} minDistance={mode === 'ground' ? 3.2 : 4.0} maxDistance={mode === 'life-map' ? 13 : 10.5} minPolarAngle={mode === 'life-map' ? 0.22 : 0.45} maxPolarAngle={1.76} />
-      <ambientLight intensity={0.4} color="#d7e7ff" />
-      <hemisphereLight args={["#dbeafe", "#020617", 1.0]} />
-      <directionalLight position={[-4, 7, 5]} intensity={1.22} color="#dbeafe" castShadow />
-      <pointLight position={[0, 1.6, -2.0]} intensity={3.6} color="#67e8f9" distance={6.2} />
-      <pointLight position={[-4.0, 1.6, -7.8]} intensity={1.35} color="#f59e0b" distance={12} />
-      <pointLight position={[4.0, 1.65, -7.8]} intensity={1.1} color="#a78bfa" distance={12} />
+      <OrbitControls enablePan={life} enableZoom enableDamping dampingFactor={0.06} rotateSpeed={life ? 0.18 : 0.26} zoomSpeed={0.52} minDistance={life ? 4.4 : mode === 'ground' ? 3.2 : 4.0} maxDistance={life ? 18 : 10.5} minPolarAngle={life ? 0.1 : 0.45} maxPolarAngle={life ? 2.65 : 1.76} />
+      <ambientLight intensity={life ? 0.58 : 0.4} color="#d7e7ff" />
+      <hemisphereLight args={["#dbeafe", "#020617", life ? 1.35 : 1.0]} />
+      <directionalLight position={[-4, 7, 5]} intensity={life ? 0.4 : 1.22} color="#dbeafe" castShadow={!life} />
+      <pointLight position={[0, 1.6, -2.0]} intensity={life ? 1.4 : 3.6} color="#67e8f9" distance={life ? 13 : 6.2} />
+      <pointLight position={[-4.0, 1.6, -7.8]} intensity={life ? 1.0 : 1.35} color="#f59e0b" distance={12} />
+      <pointLight position={[4.0, 1.65, -7.8]} intensity={life ? 1.15 : 1.1} color="#a78bfa" distance={12} />
       <mesh scale={[-1, 1, 1]}>
         <sphereGeometry args={[60, 72, 72]} />
-        <meshBasicMaterial side={THREE.BackSide} color="#020713" />
+        <meshBasicMaterial side={THREE.BackSide} color={life ? '#01030a' : '#020713'} />
       </mesh>
       <Stars mode={mode} />
-      <CityOverlookEnvironment mode={mode} />
-      <GroundPortal mode={mode} />
-      <OrbGuide mode={mode} />
+      {life ? null : <CityOverlookEnvironment mode={mode} />}
+      {life ? null : <GroundPortal mode={mode} />}
+      {life ? null : <OrbGuide mode={mode} />}
       <LifeMapSky mode={mode} />
       <EffectComposer>
-        <Bloom intensity={mode === 'life-map' ? 1.25 : 0.86} luminanceThreshold={0.06} luminanceSmoothing={0.24} />
-        <Vignette eskil={false} offset={0.14} darkness={mode === 'life-map' ? 0.56 : 0.64} />
+        <Bloom intensity={life ? 1.45 : 0.9} luminanceThreshold={0.05} luminanceSmoothing={0.22} />
+        <Vignette eskil={false} offset={life ? 0.08 : 0.14} darkness={life ? 0.45 : 0.64} />
       </EffectComposer>
     </>
   )
@@ -443,10 +450,12 @@ export default function SpatialRealPlaceWorld({ mode }: RealPlaceWorldProps) {
 
       <aside className="srp-status">{current.status}</aside>
 
-      <Link className="srp-ground" href={mode === 'life-map' ? '/home' : '/ground'}>
-        <strong>{mode === 'life-map' ? 'Home below' : mode === 'ground' ? 'You are below Home' : 'Ground hatch below'}</strong>
-        <span>{mode === 'life-map' ? 'return through the same world' : mode === 'ground' ? 'same city, lived layer' : 'descend into the lived layer'}</span>
-      </Link>
+      {mode === 'life-map' ? null : (
+        <Link className="srp-ground" href={mode === 'ground' ? '/home' : '/ground'}>
+          <strong>{mode === 'ground' ? 'Return above' : 'Descend'}</strong>
+          <span>{mode === 'ground' ? 'same world overhead' : 'ground layer below'}</span>
+        </Link>
+      )}
 
       <nav className="srp-rail" aria-label="URAI real-place routes">
         <Link href="/home">Home</Link>
@@ -461,29 +470,32 @@ export default function SpatialRealPlaceWorld({ mode }: RealPlaceWorldProps) {
       <style jsx>{`
         :global(.uraiV2StateAnnouncer){position:absolute!important;width:1px!important;height:1px!important;overflow:hidden!important;clip-path:inset(50%)!important;white-space:nowrap!important;color:transparent!important}
         .srp-root{position:fixed;inset:0;overflow:hidden;background:#020611;color:#f8fbff;isolation:isolate;font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif}
-        .srp-root:before{content:'';position:absolute;inset:0;z-index:2;pointer-events:none;background:radial-gradient(circle at 50% 30%,rgba(103,232,249,.16),transparent 18%),radial-gradient(circle at 50% 8%,rgba(96,165,250,.22),transparent 30%),linear-gradient(180deg,rgba(2,6,17,.34),transparent 26%,transparent 67%,rgba(2,6,17,.84))}
-        .srp-root[data-mode='ground']:before{background:radial-gradient(circle at 50% 24%,rgba(103,232,249,.12),transparent 22%),linear-gradient(180deg,rgba(2,6,17,.2),transparent 23%,rgba(2,6,17,.88))}
-        .srp-root[data-mode='life']:before{background:radial-gradient(ellipse at 50% 20%,rgba(103,232,249,.32),transparent 22%),radial-gradient(ellipse at 46% 13%,rgba(167,139,250,.26),transparent 34%),radial-gradient(circle at 70% 22%,rgba(250,204,21,.13),transparent 20%),linear-gradient(180deg,rgba(2,6,17,.05),transparent 50%,rgba(2,6,17,.72))}
-        .srp-root[data-mode='life']:after{content:'';position:absolute;inset:-12%;z-index:3;pointer-events:none;opacity:.48;background-image:radial-gradient(circle,rgba(255,255,255,.9) 0 1px,transparent 1.4px),radial-gradient(circle,rgba(103,232,249,.62) 0 1px,transparent 1.2px),radial-gradient(circle,rgba(167,139,250,.5) 0 1px,transparent 1.2px);background-size:82px 82px,137px 137px,211px 211px;background-position:0 0,43px 51px,17px 109px;mask-image:linear-gradient(180deg,#000 0 68%,transparent 100%)}
+        .srp-root:before{content:'';position:absolute;inset:0;z-index:2;pointer-events:none;background:radial-gradient(circle at 50% 30%,rgba(103,232,249,.16),transparent 18%),radial-gradient(circle at 50% 8%,rgba(96,165,250,.2),transparent 30%),linear-gradient(180deg,rgba(2,6,17,.24),transparent 26%,transparent 67%,rgba(2,6,17,.82))}
+        .srp-root[data-mode='ground']:before{background:radial-gradient(circle at 50% 19%,rgba(103,232,249,.12),transparent 23%),linear-gradient(180deg,rgba(2,6,17,.08),transparent 23%,rgba(2,6,17,.9))}
+        .srp-root[data-mode='life']:before{background:radial-gradient(circle at 49% 46%,rgba(103,232,249,.2),transparent 14%),radial-gradient(ellipse at 62% 35%,rgba(167,139,250,.18),transparent 33%),radial-gradient(circle at 25% 30%,rgba(250,204,21,.09),transparent 18%),linear-gradient(180deg,rgba(1,3,10,.03),transparent 48%,rgba(1,3,10,.42))}
+        .srp-root[data-mode='life']:after{content:'';position:absolute;inset:-16%;z-index:3;pointer-events:none;opacity:.48;background-image:radial-gradient(circle,rgba(255,255,255,.9) 0 1px,transparent 1.4px),radial-gradient(circle,rgba(103,232,249,.62) 0 1px,transparent 1.2px),radial-gradient(circle,rgba(167,139,250,.5) 0 1px,transparent 1.2px);background-size:82px 82px,137px 137px,211px 211px;background-position:0 0,43px 51px,17px 109px;mask-image:linear-gradient(180deg,#000 0 76%,transparent 100%)}
         .srp-root canvas{position:absolute;inset:0;z-index:1;display:block;cursor:grab}
         .srp-loader{position:absolute;inset:0;z-index:10;display:grid;place-items:center;background:#020611;color:rgba(226,246,255,.76);letter-spacing:.18em;text-transform:uppercase;font-size:12px}
-        .srp-card,.srp-ground,.srp-rail,.srp-status{position:absolute;z-index:5;border:1px solid rgba(160,220,255,.14);background:linear-gradient(145deg,rgba(2,8,24,.42),rgba(10,9,31,.2));box-shadow:0 24px 90px rgba(0,0,0,.24),inset 0 1px 0 rgba(255,255,255,.045);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px)}
-        .srp-hero{left:22px;top:22px;width:min(300px,calc(100vw - 44px));padding:13px 15px;border-radius:22px}
-        .srp-hero p{margin:0 0 7px;color:rgba(186,230,253,.7);font-size:9px;letter-spacing:.24em;text-transform:uppercase;font-weight:850}
-        .srp-hero h1{margin:0 0 7px;font-size:clamp(25px,2.65vw,36px);line-height:.94;font-weight:950;letter-spacing:-.045em;text-shadow:0 0 34px rgba(103,232,249,.2)}
-        .srp-hero span{display:block;color:rgba(235,244,255,.72);line-height:1.42;font-size:12px}
-        .srp-root[data-mode='life'] .srp-hero{background:linear-gradient(145deg,rgba(2,8,24,.34),rgba(20,14,44,.22));box-shadow:0 22px 80px rgba(0,0,0,.22),0 0 70px rgba(103,232,249,.08)}
-        .srp-hero div{display:flex;gap:8px;flex-wrap:wrap;margin-top:13px}
-        .srp-hero a,.srp-rail a{border:1px solid rgba(160,220,255,.2);border-radius:999px;padding:8px 11px;color:#eef6ff;text-decoration:none;background:rgba(2,8,24,.38)}
-        .srp-hero a.primary{background:linear-gradient(135deg,rgba(103,232,249,.94),rgba(167,139,250,.88));color:#03101f;font-weight:900}
-        .srp-status{right:22px;top:22px;padding:9px 12px;border-radius:999px;color:rgba(226,246,255,.78);font-size:10px;letter-spacing:.13em;text-transform:uppercase}
-        .srp-ground{left:50%;bottom:84px;display:grid;gap:3px;min-width:218px;padding:12px 17px;transform:translateX(-50%);border-radius:999px;text-align:center;color:#f8fbff;text-decoration:none;box-shadow:0 0 90px rgba(103,232,249,.18),0 24px 90px rgba(0,0,0,.26)}
-        .srp-ground strong{font-size:11px;letter-spacing:.16em;text-transform:uppercase}
-        .srp-ground span{color:rgba(235,244,255,.68);font-size:10px}
-        .srp-rail{left:50%;bottom:18px;display:flex;gap:6px;max-width:calc(100vw - 32px);padding:7px;transform:translateX(-50%);overflow-x:auto;border-radius:999px}
-        .srp-rail a{white-space:nowrap;font-size:11px;font-weight:850;letter-spacing:.04em;padding:8px 11px}
-        .srp-hero a:hover,.srp-rail a:hover,.srp-ground:hover{border-color:rgba(103,232,249,.56);box-shadow:0 0 46px rgba(103,232,249,.15)}
-        @media(max-width:720px){.srp-hero{left:14px;right:14px;top:14px;width:auto;max-width:310px;padding:13px}.srp-hero h1{font-size:29px}.srp-status{display:none}.srp-ground{bottom:82px;min-width:190px}.srp-rail{bottom:12px}}
+        .srp-card,.srp-ground,.srp-rail,.srp-status{position:absolute;z-index:5;border:1px solid rgba(160,220,255,.12);background:linear-gradient(145deg,rgba(2,8,24,.28),rgba(10,9,31,.12));box-shadow:0 20px 70px rgba(0,0,0,.18),inset 0 1px 0 rgba(255,255,255,.035);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px)}
+        .srp-hero{left:22px;top:22px;width:min(218px,calc(100vw - 44px));padding:11px 12px;border-radius:18px;opacity:.82}
+        .srp-hero p{margin:0 0 5px;color:rgba(186,230,253,.68);font-size:8px;letter-spacing:.24em;text-transform:uppercase;font-weight:850}
+        .srp-hero h1{margin:0 0 5px;font-size:clamp(18px,1.8vw,24px);line-height:.98;font-weight:930;letter-spacing:-.04em;text-shadow:0 0 34px rgba(103,232,249,.16)}
+        .srp-hero span{display:block;color:rgba(235,244,255,.62);line-height:1.35;font-size:10px}
+        .srp-hero div{display:flex;gap:6px;flex-wrap:wrap;margin-top:10px}
+        .srp-hero a,.srp-rail a{border:1px solid rgba(160,220,255,.15);border-radius:999px;padding:7px 9px;color:#eef6ff;text-decoration:none;background:rgba(2,8,24,.28)}
+        .srp-hero a.primary{background:rgba(103,232,249,.78);color:#03101f;font-weight:900}
+        .srp-status{right:22px;top:22px;padding:8px 11px;border-radius:999px;color:rgba(226,246,255,.72);font-size:9px;letter-spacing:.13em;text-transform:uppercase;opacity:.8}
+        .srp-ground{left:50%;bottom:84px;display:grid;gap:3px;min-width:162px;padding:10px 14px;transform:translateX(-50%);border-radius:999px;text-align:center;color:#f8fbff;text-decoration:none;box-shadow:0 0 90px rgba(103,232,249,.18),0 24px 90px rgba(0,0,0,.22)}
+        .srp-ground strong{font-size:10px;letter-spacing:.16em;text-transform:uppercase}
+        .srp-ground span{color:rgba(235,244,255,.6);font-size:9px}
+        .srp-rail{left:50%;bottom:18px;display:flex;gap:5px;max-width:calc(100vw - 32px);padding:6px;transform:translateX(-50%);overflow-x:auto;border-radius:999px;opacity:.78}
+        .srp-rail a{white-space:nowrap;font-size:10px;font-weight:820;letter-spacing:.04em;padding:7px 9px}
+        .srp-root[data-mode='life'] .srp-hero{width:170px;background:transparent;border-color:transparent;box-shadow:none;backdrop-filter:none;-webkit-backdrop-filter:none;opacity:.58}
+        .srp-root[data-mode='life'] .srp-hero span,.srp-root[data-mode='life'] .srp-hero div{display:none}
+        .srp-root[data-mode='life'] .srp-status{background:transparent;border-color:transparent;box-shadow:none;opacity:.5}
+        .srp-root[data-mode='life'] .srp-rail{opacity:.48;background:rgba(2,8,24,.18)}
+        .srp-hero a:hover,.srp-rail a:hover,.srp-ground:hover{border-color:rgba(103,232,249,.46);box-shadow:0 0 38px rgba(103,232,249,.12)}
+        @media(max-width:720px){.srp-hero{left:14px;right:auto;top:14px;width:190px;padding:10px}.srp-hero h1{font-size:20px}.srp-status{display:none}.srp-ground{bottom:82px;min-width:142px}.srp-rail{bottom:12px}}
       `}</style>
     </main>
   )
