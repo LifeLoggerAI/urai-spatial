@@ -1,19 +1,20 @@
 {
-  "generatedAt": "2026-07-08T01:25:00Z",
+  "generatedAt": "2026-07-08T01:35:00Z",
   "branch": "asset-safe-launch-pack",
   "pullRequest": 463,
-  "state": "audit_in_progress",
+  "state": "audit_repair_loop_2_in_progress",
   "visualLock": false,
   "buildVerifiedByOperatorLog": true,
   "githubConnectorCanCaptureScreenshots": false,
-  "overallReadinessScore": 6.9,
+  "screenshotHarnessAdded": true,
+  "overallReadinessScore": 7.2,
   "launchGate": {
-    "assetsValidate": "pass_from_operator_log",
-    "typecheck": "pass_from_operator_log",
-    "build": "pass_from_operator_log_with_nonblocking_warnings",
-    "desktopScreenshots": "pending_after_latest_home_composition_correction",
-    "mobileScreenshots": "pending_after_latest_home_composition_correction",
-    "unifiedWorldIllusion": "partial",
+    "assetsValidate": "requires_rerun_after_ground_bridge_commit",
+    "typecheck": "requires_rerun_after_ground_bridge_commit",
+    "build": "requires_rerun_after_ground_bridge_commit",
+    "desktopScreenshots": "playwright_harness_added_pending_run",
+    "mobileScreenshots": "playwright_harness_added_pending_run",
+    "unifiedWorldIllusion": "improved_partial",
     "readyForPublicLaunch": false
   },
   "nonBlockingWarnings": [
@@ -24,13 +25,13 @@
   "routes": {
     "/": {
       "activeSurface": "SpatialWorldCanvas mode=home",
-      "score": 6.8,
+      "score": 6.9,
       "status": "needs_fresh_screenshot_after_home_composition_fix",
       "primaryRisk": "Home first frame may still look less premium than Life Map/Focus/Replay"
     },
     "/home": {
       "activeSurface": "SpatialDefaultWorld / SpatialWorldCanvas family",
-      "score": 6.8,
+      "score": 6.9,
       "status": "needs_fresh_screenshot_after_home_composition_fix",
       "primaryRisk": "Same Home composition risk as root"
     },
@@ -47,10 +48,10 @@
       "primaryRisk": "Route bar/navigation can feel web-like"
     },
     "/ground": {
-      "activeSurface": "GroundPage groundFinal private operations floor",
-      "score": 5.8,
-      "status": "needs_unified_world_bridge",
-      "primaryRisk": "Still reads like separate route rather than physical layer below Home"
+      "activeSurface": "GroundPage with descended shared-world bridge",
+      "score": 6.7,
+      "status": "bridge_landed_screenshot_pending",
+      "primaryRisk": "Must verify that descent aperture makes it feel like a lower layer, not just styled overlay"
     },
     "/focus": {
       "activeSurface": "FinalFocusChamber",
@@ -77,11 +78,17 @@
       "primaryRisk": "Must read as status beacon/control layer"
     }
   },
+  "latestRepairs": [
+    "Ground route reframed as lower world below Home",
+    "Added visible Home aperture, descent beam, and Ground receiver",
+    "Changed Ground copy from separate private floor to descended physical layer",
+    "Added Playwright screenshot audit spec for desktop and mobile launch routes"
+  ],
   "nextActions": [
     "Pull latest asset-safe-launch-pack",
     "Run assets:validate, typecheck, build",
-    "Capture desktop and mobile screenshots for all launch routes",
-    "If Home first-frame passes, prioritize Ground continuity bridge",
-    "If Home first-frame fails, adjust SpatialWorldAssetLayer positions only"
+    "Run Playwright launch spatial route visual audit",
+    "Review generated screenshots for Home and Ground first",
+    "If Ground passes, next repair should target Passport/Status spatial room framing"
   ]
 }
