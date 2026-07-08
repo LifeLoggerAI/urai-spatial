@@ -1,20 +1,21 @@
 {
-  "generatedAt": "2026-07-08T01:35:00Z",
+  "generatedAt": "2026-07-08T01:45:00Z",
   "branch": "asset-safe-launch-pack",
   "pullRequest": 463,
-  "state": "audit_repair_loop_2_in_progress",
+  "state": "visual_audit_passed_pending_human_visual_grade",
   "visualLock": false,
   "buildVerifiedByOperatorLog": true,
   "githubConnectorCanCaptureScreenshots": false,
   "screenshotHarnessAdded": true,
-  "overallReadinessScore": 7.2,
+  "playwrightRouteScreenshotAudit": "18_of_18_passed",
+  "overallReadinessScore": 7.5,
   "launchGate": {
-    "assetsValidate": "requires_rerun_after_ground_bridge_commit",
-    "typecheck": "requires_rerun_after_ground_bridge_commit",
-    "build": "requires_rerun_after_ground_bridge_commit",
-    "desktopScreenshots": "playwright_harness_added_pending_run",
-    "mobileScreenshots": "playwright_harness_added_pending_run",
-    "unifiedWorldIllusion": "improved_partial",
+    "assetsValidate": "pass_from_operator_log_after_ground_bridge_commit",
+    "typecheck": "pass_from_operator_log_after_ground_bridge_commit",
+    "build": "pass_from_operator_log_after_ground_bridge_commit_with_nonblocking_warnings",
+    "desktopScreenshots": "18_route_harness_passed",
+    "mobileScreenshots": "18_route_harness_passed",
+    "unifiedWorldIllusion": "improved_partial_requires_human_visual_grade",
     "readyForPublicLaunch": false
   },
   "nonBlockingWarnings": [
@@ -25,56 +26,65 @@
   "routes": {
     "/": {
       "activeSurface": "SpatialWorldCanvas mode=home",
-      "score": 6.9,
-      "status": "needs_fresh_screenshot_after_home_composition_fix",
+      "screenshotHarness": "pass",
+      "score": 7.0,
+      "status": "runtime_visual_capture_passed_needs_human_grade",
       "primaryRisk": "Home first frame may still look less premium than Life Map/Focus/Replay"
     },
     "/home": {
       "activeSurface": "SpatialDefaultWorld / SpatialWorldCanvas family",
-      "score": 6.9,
-      "status": "needs_fresh_screenshot_after_home_composition_fix",
+      "screenshotHarness": "pass",
+      "score": 7.0,
+      "status": "runtime_visual_capture_passed_needs_human_grade",
       "primaryRisk": "Same Home composition risk as root"
     },
     "/spatial/ar-vr": {
       "activeSurface": "spatial AR/VR route",
+      "screenshotHarness": "pass",
       "score": null,
-      "status": "screenshot_pending",
-      "primaryRisk": "Not captured in latest loop"
+      "status": "runtime_visual_capture_passed_needs_human_grade",
+      "primaryRisk": "Must verify AR/VR entry feels like one world, not separate tech demo"
     },
     "/life-map": {
       "activeSurface": "RealLifeMapGalaxy",
+      "screenshotHarness": "pass",
       "score": 8.0,
       "status": "visually_strong_needs_diegetic_nav_polish",
       "primaryRisk": "Route bar/navigation can feel web-like"
     },
     "/ground": {
       "activeSurface": "GroundPage with descended shared-world bridge",
-      "score": 6.7,
-      "status": "bridge_landed_screenshot_pending",
+      "screenshotHarness": "pass",
+      "score": 7.0,
+      "status": "runtime_visual_capture_passed_after_bridge_needs_human_grade",
       "primaryRisk": "Must verify that descent aperture makes it feel like a lower layer, not just styled overlay"
     },
     "/focus": {
       "activeSurface": "FinalFocusChamber",
+      "screenshotHarness": "pass",
       "score": 8.2,
       "status": "visually_strong_contextuality_needed",
       "primaryRisk": "Must remain selected-star state, not global nav destination"
     },
     "/replay": {
       "activeSurface": "CinematicReplayClient",
+      "screenshotHarness": "pass",
       "score": 8.2,
       "status": "visually_strong_contextuality_needed",
       "primaryRisk": "Must feel inside Focus/star memory thread"
     },
     "/passport": {
       "activeSurface": "passport route",
+      "screenshotHarness": "pass",
       "score": null,
-      "status": "screenshot_pending",
+      "status": "runtime_visual_capture_passed_needs_spatial_room_grade",
       "primaryRisk": "Must read as identity vault room/layer"
     },
     "/status": {
       "activeSurface": "status route",
+      "screenshotHarness": "pass",
       "score": null,
-      "status": "screenshot_pending",
+      "status": "runtime_visual_capture_passed_needs_spatial_beacon_grade",
       "primaryRisk": "Must read as status beacon/control layer"
     }
   },
@@ -82,13 +92,12 @@
     "Ground route reframed as lower world below Home",
     "Added visible Home aperture, descent beam, and Ground receiver",
     "Changed Ground copy from separate private floor to descended physical layer",
-    "Added Playwright screenshot audit spec for desktop and mobile launch routes"
+    "Added and stabilized Playwright screenshot audit spec for desktop and mobile launch routes",
+    "Operator reran Playwright launch spatial route audit and all 18 route/viewport checks passed"
   ],
   "nextActions": [
-    "Pull latest asset-safe-launch-pack",
-    "Run assets:validate, typecheck, build",
-    "Run Playwright launch spatial route visual audit",
-    "Review generated screenshots for Home and Ground first",
-    "If Ground passes, next repair should target Passport/Status spatial room framing"
+    "Review generated screenshots visually, especially Home, Ground, Passport, Status, and AR/VR",
+    "If Home and Ground pass visually, next repair should target Passport/Status spatial room framing",
+    "Resolve PR mergeability before marking ready for review"
   ]
 }
