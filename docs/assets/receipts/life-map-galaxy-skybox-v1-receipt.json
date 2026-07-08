@@ -1,0 +1,20 @@
+{
+  "schemaVersion": "1.0.0",
+  "generatedAt": "2026-07-08T00:53:36.578Z",
+  "asset": {
+    "id": "life-map-galaxy-skybox-v1",
+    "priority": "P0",
+    "path": "urai-tier1/public/assets/urai/generated/skyboxes/life-map-galaxy-skybox-v1.hdr",
+    "format": "hdr",
+    "targetSurface": "life-map",
+    "exists": true,
+    "extensionMatches": true,
+    "sizeBytes": 8264,
+    "sha256": "1ebe1f317e6fe0185de85d46c803007128fa463c671cbc7fb1d210bdcbb85f92",
+    "jsonValid": null,
+    "accepted": true
+  },
+  "nextSpendAllowed": true,
+  "nextAsset": "global-cinematic-material-pack-v1",
+  "rule": "One V1 paid asset must be present, hashed, and accepted before spending on the next asset."
+}

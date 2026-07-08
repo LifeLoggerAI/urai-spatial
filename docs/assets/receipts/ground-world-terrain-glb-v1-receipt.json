@@ -1,0 +1,20 @@
+{
+  "schemaVersion": "1.0.0",
+  "generatedAt": "2026-07-08T00:53:36.510Z",
+  "asset": {
+    "id": "ground-world-terrain-glb-v1",
+    "priority": "P0",
+    "path": "urai-tier1/public/assets/urai/generated/models/ground-world-terrain-v1.glb",
+    "format": "glb",
+    "targetSurface": "ground",
+    "exists": true,
+    "extensionMatches": true,
+    "sizeBytes": 19220,
+    "sha256": "347d9c4e94b74c76ef303cd53531a7c9f670eeeb90ff72f4ef63244ffa41090a",
+    "jsonValid": null,
+    "accepted": true
+  },
+  "nextSpendAllowed": true,
+  "nextAsset": "life-map-galaxy-skybox-v1",
+  "rule": "One V1 paid asset must be present, hashed, and accepted before spending on the next asset."
+}
