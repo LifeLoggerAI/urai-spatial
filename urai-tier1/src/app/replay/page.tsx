@@ -72,7 +72,7 @@ export default function ReplayRoutePage() {
       <Suspense fallback={<ReplayLoadingFallback />}>
         <FinalReplayFilm />
       </Suspense>
-      <AssetFactoryRoutePanel route="/replay" title="Replay Asset Factory" />
+      <AssetFactoryRoutePanel route="/replay" title="Replay Launch Asset Pipeline" />
     </>
   )
 }
