@@ -29,14 +29,22 @@ const requireTokens = (relative, tokens) => {
   for (const token of tokens) if (!source.includes(token)) failures.push(`${relative} is missing: ${token}`)
 }
 
+const guardedPageReport = []
+
 for (const file of walk(appRoot)) {
   const relative = path.relative(appRoot, file).replaceAll(path.sep, '/')
   if (!/(?:^|\/)page\.(?:ts|tsx|js|jsx)$/.test(relative)) continue
   const route = relative.replace(/\/page\.(?:ts|tsx|js|jsx)$/, '')
   if (!guardedPrefixes.some((prefix) => route === prefix || route.startsWith(`${prefix}/`))) continue
   const source = fs.readFileSync(file, 'utf8')
-  if (!guardTokens.some((token) => source.includes(token))) failures.push(`${path.relative(root, file)} exposes /${route} without an explicit production guard`)
+  const matchedGuard = guardTokens.find((token) => source.includes(token))
+  const repoRelative = path.relative(root, file).replaceAll(path.sep, '/')
+  guardedPageReport.push(`${repoRelative} -> /${route} -> ${matchedGuard ?? 'unguarded'}`)
+  if (!matchedGuard) failures.push(`${repoRelative} exposes /${route} without an explicit production guard`)
 }
+
+console.log('Production route exposure v2 guarded page scan:')
+for (const entry of guardedPageReport) console.log(`- ${entry}`)
 
 requireTokens('urai-tier1/src/app/privacy-controls/page.tsx', ["title: 'URAI Privacy Controls'", 'data-route-polish="privacy-consent-console"', 'export default function PrivacyControlsRoutePage()'])
 requireTokens('urai-tier1/src/app/focus/page.tsx', ["import { FinalFocusChamber } from '@/app/FinalMemorySurfaces'", 'data-urai-route-fingerprint="focus-selected-memory-camera-chamber"', 'Selected memory camera chamber', '<FinalFocusChamber />'])
