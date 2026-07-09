@@ -1,0 +1,233 @@
+{
+  "schemaVersion": "urai.spatial.asset-forge.v1",
+  "pipelineVersion": "v1-procedural-source",
+  "status": "generated-by-script",
+  "publicRoot": "/assets/urai/spatial",
+  "places": {
+    "entry-chamber": {
+      "routes": [
+        "/",
+        "/spatial/ar-vr"
+      ],
+      "motion": "default world, Ground below, Life Map above"
+    },
+    "ground-room": {
+      "routes": [
+        "/ground"
+      ],
+      "motion": "camera descent"
+    },
+    "life-map-sky": {
+      "routes": [
+        "/life-map"
+      ],
+      "motion": "camera ascent"
+    },
+    "focus-star": {
+      "routes": [
+        "/focus"
+      ],
+      "motion": "fly into selected star"
+    },
+    "replay-portal": {
+      "routes": [
+        "/replay"
+      ],
+      "motion": "memory film portal"
+    },
+    "passport-room": {
+      "routes": [
+        "/passport"
+      ],
+      "motion": "identity chamber"
+    },
+    "status-room": {
+      "routes": [
+        "/status"
+      ],
+      "motion": "control layer room"
+    }
+  },
+  "assets": [
+    {
+      "id": "entry-chamber-shell-v1",
+      "place": "entry-chamber",
+      "route": "/",
+      "kind": "model",
+      "file": "/assets/urai/spatial/entry-chamber/models/entry-chamber-shell-v1.gltf",
+      "generator": "chamber",
+      "status": "procedural-source"
+    },
+    {
+      "id": "entry-floor-ring-v1",
+      "place": "entry-chamber",
+      "route": "/",
+      "kind": "model",
+      "file": "/assets/urai/spatial/entry-chamber/models/entry-floor-ring-v1.gltf",
+      "generator": "ring",
+      "status": "procedural-source"
+    },
+    {
+      "id": "central-orb-v1",
+      "place": "entry-chamber",
+      "route": "/",
+      "kind": "model",
+      "file": "/assets/urai/spatial/entry-chamber/models/central-orb-v1.gltf",
+      "generator": "orb",
+      "status": "procedural-source"
+    },
+    {
+      "id": "universal-portal-ring-v1",
+      "place": "shared",
+      "route": "all",
+      "kind": "model",
+      "file": "/assets/urai/spatial/shared/models/universal-portal-ring-v1.gltf",
+      "generator": "portal",
+      "status": "procedural-source"
+    },
+    {
+      "id": "ground-descent-hatch-v1",
+      "place": "entry-chamber",
+      "route": "/ground",
+      "kind": "model",
+      "file": "/assets/urai/spatial/entry-chamber/models/ground-descent-hatch-v1.gltf",
+      "generator": "hatch",
+      "status": "procedural-source"
+    },
+    {
+      "id": "ground-room-shell-v1",
+      "place": "ground-room",
+      "route": "/ground",
+      "kind": "model",
+      "file": "/assets/urai/spatial/ground-room/models/ground-room-shell-v1.gltf",
+      "generator": "chamber",
+      "status": "procedural-source"
+    },
+    {
+      "id": "ground-terminal-v1",
+      "place": "ground-room",
+      "route": "/ground",
+      "kind": "model",
+      "file": "/assets/urai/spatial/ground-room/models/ground-terminal-v1.gltf",
+      "generator": "panel",
+      "status": "procedural-source"
+    },
+    {
+      "id": "agent-source-station-v1",
+      "place": "ground-room",
+      "route": "/ground",
+      "kind": "model",
+      "file": "/assets/urai/spatial/ground-room/models/agent-source-station-v1.gltf",
+      "generator": "station",
+      "status": "procedural-source"
+    },
+    {
+      "id": "life-map-sky-dome-v1",
+      "place": "life-map-sky",
+      "route": "/life-map",
+      "kind": "model",
+      "file": "/assets/urai/spatial/life-map/models/life-map-sky-dome-v1.gltf",
+      "generator": "sky",
+      "status": "procedural-source"
+    },
+    {
+      "id": "star-memory-node-v1",
+      "place": "life-map-sky",
+      "route": "/life-map",
+      "kind": "model",
+      "file": "/assets/urai/spatial/life-map/models/star-memory-node-v1.gltf",
+      "generator": "star",
+      "status": "procedural-source"
+    },
+    {
+      "id": "focus-star-tunnel-v1",
+      "place": "focus-star",
+      "route": "/focus",
+      "kind": "model",
+      "file": "/assets/urai/spatial/focus-star/models/focus-star-tunnel-v1.gltf",
+      "generator": "tunnel",
+      "status": "procedural-source"
+    },
+    {
+      "id": "replay-film-portal-v1",
+      "place": "replay-portal",
+      "route": "/replay",
+      "kind": "model",
+      "file": "/assets/urai/spatial/replay-portal/models/replay-film-portal-v1.gltf",
+      "generator": "film",
+      "status": "procedural-source"
+    },
+    {
+      "id": "passport-identity-plinth-v1",
+      "place": "passport-room",
+      "route": "/passport",
+      "kind": "model",
+      "file": "/assets/urai/spatial/passport-room/models/passport-identity-plinth-v1.gltf",
+      "generator": "plinth",
+      "status": "procedural-source"
+    },
+    {
+      "id": "status-control-board-v1",
+      "place": "status-room",
+      "route": "/status",
+      "kind": "model",
+      "file": "/assets/urai/spatial/status-room/models/status-control-board-v1.gltf",
+      "generator": "board",
+      "status": "procedural-source"
+    },
+    {
+      "id": "hologram-panel-material-v1",
+      "place": "shared",
+      "route": "all",
+      "kind": "texture-svg",
+      "file": "/assets/urai/spatial/shared/textures/hologram-panel-material-v1.svg",
+      "generator": "svg",
+      "status": "procedural-source"
+    },
+    {
+      "id": "dark-metal-panel-material-v1",
+      "place": "shared",
+      "route": "all",
+      "kind": "texture-svg",
+      "file": "/assets/urai/spatial/shared/textures/dark-metal-panel-material-v1.svg",
+      "generator": "svg",
+      "status": "procedural-source"
+    },
+    {
+      "id": "gold-trim-material-v1",
+      "place": "shared",
+      "route": "all",
+      "kind": "texture-svg",
+      "file": "/assets/urai/spatial/shared/textures/gold-trim-material-v1.svg",
+      "generator": "svg",
+      "status": "procedural-source"
+    },
+    {
+      "id": "cosmic-glass-material-v1",
+      "place": "shared",
+      "route": "all",
+      "kind": "texture-svg",
+      "file": "/assets/urai/spatial/shared/textures/cosmic-glass-material-v1.svg",
+      "generator": "svg",
+      "status": "procedural-source"
+    },
+    {
+      "id": "energy-particle-sprite-v1",
+      "place": "shared",
+      "route": "all",
+      "kind": "particle-svg",
+      "file": "/assets/urai/spatial/shared/particles/energy-particle-sprite-v1.svg",
+      "generator": "svg",
+      "status": "procedural-source"
+    },
+    {
+      "id": "star-particle-sprite-v1",
+      "place": "shared",
+      "route": "all",
+      "kind": "particle-svg",
+      "file": "/assets/urai/spatial/shared/particles/star-particle-sprite-v1.svg",
+      "generator": "svg",
+      "status": "procedural-source"
+    }
+  ]
+}

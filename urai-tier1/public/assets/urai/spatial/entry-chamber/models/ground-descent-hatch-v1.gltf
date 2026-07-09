@@ -1,0 +1,201 @@
+{
+  "asset": {
+    "version": "2.0",
+    "generator": "URAI Spatial Asset Forge"
+  },
+  "scene": 0,
+  "scenes": [
+    {
+      "nodes": [
+        0,
+        1
+      ]
+    }
+  ],
+  "nodes": [
+    {
+      "name": "ground-descent-hatch-v1-hatch-ring",
+      "mesh": 0,
+      "translation": [
+        0,
+        0,
+        0
+      ],
+      "scale": [
+        2.2,
+        0.08,
+        2.2
+      ]
+    },
+    {
+      "name": "ground-descent-hatch-v1-bridge",
+      "mesh": 1,
+      "translation": [
+        0,
+        0,
+        0
+      ],
+      "scale": [
+        2.8,
+        0.08,
+        0.32
+      ]
+    }
+  ],
+  "meshes": [
+    {
+      "name": "ground-descent-hatch-v1-hatch-ring",
+      "primitives": [
+        {
+          "attributes": {
+            "POSITION": 0
+          },
+          "indices": 1,
+          "material": 2
+        }
+      ]
+    },
+    {
+      "name": "ground-descent-hatch-v1-bridge",
+      "primitives": [
+        {
+          "attributes": {
+            "POSITION": 0
+          },
+          "indices": 1,
+          "material": 0
+        }
+      ]
+    }
+  ],
+  "materials": [
+    {
+      "name": "urai-metal",
+      "pbrMetallicRoughness": {
+        "baseColorFactor": [
+          0.02,
+          0.025,
+          0.05,
+          1
+        ],
+        "metallicFactor": 0.75,
+        "roughnessFactor": 0.18
+      },
+      "emissiveFactor": [
+        0.006999999999999999,
+        0.008749999999999999,
+        0.027500000000000004
+      ],
+      "alphaMode": "OPAQUE",
+      "doubleSided": true
+    },
+    {
+      "name": "urai-glass",
+      "pbrMetallicRoughness": {
+        "baseColorFactor": [
+          0.1,
+          0.55,
+          1,
+          0.55
+        ],
+        "metallicFactor": 0.2,
+        "roughnessFactor": 0.18
+      },
+      "emissiveFactor": [
+        0.034999999999999996,
+        0.1925,
+        0.55
+      ],
+      "alphaMode": "BLEND",
+      "doubleSided": true
+    },
+    {
+      "name": "urai-gold",
+      "pbrMetallicRoughness": {
+        "baseColorFactor": [
+          1,
+          0.62,
+          0.18,
+          1
+        ],
+        "metallicFactor": 0.75,
+        "roughnessFactor": 0.18
+      },
+      "emissiveFactor": [
+        0.35,
+        0.217,
+        0.099
+      ],
+      "alphaMode": "OPAQUE",
+      "doubleSided": true
+    },
+    {
+      "name": "urai-violet",
+      "pbrMetallicRoughness": {
+        "baseColorFactor": [
+          0.55,
+          0.22,
+          1,
+          0.65
+        ],
+        "metallicFactor": 0.75,
+        "roughnessFactor": 0.18
+      },
+      "emissiveFactor": [
+        0.1925,
+        0.077,
+        0.55
+      ],
+      "alphaMode": "BLEND",
+      "doubleSided": true
+    }
+  ],
+  "buffers": [
+    {
+      "byteLength": 96,
+      "uri": "data:application/octet-stream;base64,AACAvwAAAAAAAIC/AACAPwAAAAAAAIC/AACAPwAAAAAAAIA/AACAvwAAAAAAAIA/AAAAADMzsz8AAAAAAAABAAQAAQACAAQAAgADAAQAAwAAAAQAAAADAAIAAAACAAEA"
+    }
+  ],
+  "bufferViews": [
+    {
+      "buffer": 0,
+      "byteOffset": 0,
+      "byteLength": 60
+    },
+    {
+      "buffer": 0,
+      "byteOffset": 60,
+      "byteLength": 36
+    }
+  ],
+  "accessors": [
+    {
+      "bufferView": 0,
+      "componentType": 5126,
+      "count": 5,
+      "type": "VEC3",
+      "min": [
+        -1,
+        0,
+        -1
+      ],
+      "max": [
+        1,
+        1.4,
+        1
+      ]
+    },
+    {
+      "bufferView": 1,
+      "componentType": 5123,
+      "count": 18,
+      "type": "SCALAR",
+      "min": [
+        0
+      ],
+      "max": [
+        4
+      ]
+    }
+  ]
+}

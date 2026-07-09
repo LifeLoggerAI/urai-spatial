@@ -1,3 +1,0 @@
-urai-tier1/src/spatial/state/sceneStore.ts
-urai-tier1/src/spatial/components/CameraRig.tsx
-urai-tier1/src/spatial/scene/SpatialScene.tsx

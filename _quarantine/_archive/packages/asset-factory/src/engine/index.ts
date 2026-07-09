@@ -1,1 +1,0 @@
-// The deterministic rendering engine for Asset Factory.

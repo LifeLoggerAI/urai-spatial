@@ -1,2 +1,0 @@
-37:  exitReplay: () => void;
-89:  exitReplay: () => {

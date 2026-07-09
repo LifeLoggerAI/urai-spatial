@@ -1,1 +1,0 @@
-// Asset Factory: The programmable creative layer for the internet.

@@ -1,8 +1,0 @@
-"use client";
-
-export type SceneAuthorityMode = "home" | "lifemap" | "focus" | "replay";
-export type SceneAuthorityPhase = "idle" | "ascend" | "descend" | "focus" | "replay";
-
-export default function SceneController() {
-  return null;
-}
