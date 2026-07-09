@@ -10,7 +10,7 @@ export default function GroundPage() {
   return (
     <>
       <GroundSpatialWorldClean />
-      <AssetFactoryRoutePanel route="/ground" title="Ground Asset Factory" />
+      <AssetFactoryRoutePanel route="/ground" title="Ground Launch Asset Pipeline" />
     </>
   )
 }
