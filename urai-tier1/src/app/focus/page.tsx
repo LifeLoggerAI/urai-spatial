@@ -6,7 +6,7 @@ export default function FocusRoutePage() {
     <main data-urai-route-fingerprint="focus-selected-memory-camera-chamber">
       <h1 className="sr-only">Selected memory camera chamber</h1>
       <FinalFocusChamber />
-      <AssetFactoryRoutePanel route="/focus" title="Focus Asset Factory" />
+      <AssetFactoryRoutePanel route="/focus" title="Focus Launch Asset Pipeline" />
     </main>
   )
 }
