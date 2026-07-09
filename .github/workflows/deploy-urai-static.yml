@@ -1,0 +1,44 @@
+name: Deploy URAI Static Firebase Hosting
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - asset-safe-launch-pack
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Enable Corepack
+        run: corepack enable
+
+      - name: Install pnpm
+        run: corepack prepare pnpm@10.0.0 --activate
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: XR verify
+        run: pnpm run xr:verify
+
+      - name: Build static
+        run: pnpm run build:static
+
+      - name: Deploy Firebase Hosting
+        uses: FirebaseExtended/action-hosting-deploy@v0
+        with:
+          repoToken: '${{ secrets.GITHUB_TOKEN }}'
+          firebaseServiceAccount: '${{ secrets.FIREBASE_SERVICE_ACCOUNT_URAI_4DC1D }}'
+          projectId: urai-4dc1d
+          channelId: live
+          entryPoint: .
