@@ -3,6 +3,7 @@
 import Link from "next/link";
 import type { CSSProperties, MouseEvent, PointerEvent } from "react";
 import { useCallback, useEffect, useRef, useState } from "react";
+import { URAI_SPATIAL_WORLD_CONTRACT_VERSION } from "@/spatial/uraiSpatialWorldContract";
 
 const portals = [
   { id: "world", href: "/ground?from=home", eyebrow: "Below", label: "Ground", detail: "walk the lower layer" },
@@ -144,6 +145,9 @@ export default function HomeSpatialWorldFinal() {
       aria-label="URAI Home World threshold"
       data-urai-route="genesis-home-world"
       data-launch-surface="aaa-final-home-sky-ground-orb-body-portals"
+      data-spatial-contract={URAI_SPATIAL_WORLD_CONTRACT_VERSION}
+      data-spatial-pillars="sky ground orb avatar camera"
+      data-place-contract="oriented-calm-curious"
       data-transition-target={transitionTarget ?? 'idle'}
       data-home-avatar-orb="anchored-at-home"
       onPointerMove={handlePointerMove}
