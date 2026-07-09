@@ -3,6 +3,7 @@
 import Link from "next/link";
 import type { CSSProperties, MouseEvent, PointerEvent } from "react";
 import { useCallback, useEffect, useRef, useState } from "react";
+import { createOrbState, resolveOrbLighting } from "@/spatial/orb/orbState";
 import { URAI_SPATIAL_WORLD_CONTRACT_VERSION } from "@/spatial/uraiSpatialWorldContract";
 
 const portals = [
@@ -68,6 +69,11 @@ export default function HomeSpatialWorldFinal() {
   const navigationTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [orbOpen, setOrbOpen] = useState(false);
   const [transitionTarget, setTransitionTarget] = useState<HomeTransitionTarget | null>(null);
+  const orbLighting = resolveOrbLighting(createOrbState());
+  const orbVisualStyle: CSSProperties = {
+    opacity: Math.min(1, 0.72 + orbLighting.glow * 0.2),
+    filter: `drop-shadow(0 0 ${Math.round(38 + orbLighting.glow * 28)}px rgba(103, 232, 249, 0.34))`,
+  };
 
   const handlePointerMove = useCallback((event: PointerEvent<HTMLElement>) => {
     const element = homeRef.current;
@@ -242,7 +248,18 @@ export default function HomeSpatialWorldFinal() {
 
       <div className="urai-genesis-home__memory-orbit" aria-label="Home threshold status"><strong>Threshold online</strong><span>body grounded · camera travels</span></div>
 
-      <button type="button" className="urai-genesis-home__orb" aria-label="Open URAI orb companion" aria-expanded={orbOpen} aria-controls="urai-orb-companion-panel" onClick={() => { primeTransition('orb'); setOrbOpen((open) => !open); }}>
+      <button
+        type="button"
+        className="urai-genesis-home__orb"
+        aria-label="Open URAI orb companion"
+        aria-expanded={orbOpen}
+        aria-controls="urai-orb-companion-panel"
+        data-orb-contract={orbLighting.contract}
+        data-orb-privacy={orbLighting.privacyFirst ? "consent-visible" : "consent-hidden"}
+        data-orb-insight={orbLighting.respondsToInsight ? "responsive" : "idle"}
+        style={orbVisualStyle}
+        onClick={() => { primeTransition('orb'); setOrbOpen((open) => !open); }}
+      >
         <span className="urai-genesis-home__orb-aura" />
         <span className="urai-genesis-home__orb-shell" />
         <span className="urai-genesis-home__orb-ring urai-genesis-home__orb-ring--outer" />
