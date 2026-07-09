@@ -18,5 +18,23 @@ jobs:
         with:
           show-progress: false
 
+      - name: Capture production route output
+        run: |
+          set +e
+          node scripts/check-production-route-exposure.mjs > route-check.log 2>&1
+          status=$?
+          cat route-check.log
+          echo "$status" > route-check-status.txt
+          exit 0
+
+      - name: Upload production route output
+        uses: actions/upload-artifact@v4
+        with:
+          name: production-route-output
+          path: |
+            route-check.log
+            route-check-status.txt
+          if-no-files-found: error
+
       - name: Verify production routes
-        run: node scripts/check-production-route-exposure.mjs
+        run: test "$(cat route-check-status.txt)" = "0"
