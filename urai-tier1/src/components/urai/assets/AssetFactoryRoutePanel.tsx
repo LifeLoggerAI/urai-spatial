@@ -5,7 +5,7 @@ type AssetFactoryRoutePanelProps = {
   title?: string
 }
 
-export function AssetFactoryRoutePanel({ route, title = 'Asset Factory' }: AssetFactoryRoutePanelProps) {
+export function AssetFactoryRoutePanel({ route, title = 'Launch Asset Pipeline' }: AssetFactoryRoutePanelProps) {
   const assets = getUraiRouteAssets(route)
   const ready = assets.filter((asset) => asset.status === 'ready').length
   const placeholders = assets.filter((asset) => asset.status === 'placeholder').length
