@@ -5,7 +5,7 @@ export default function HomeRoutePage() {
   return (
     <>
       <SpatialRealPlaceWorld mode="home" />
-      <AssetFactoryRoutePanel route="/home" title="Home Asset Factory" />
+      <AssetFactoryRoutePanel route="/home" title="Home Launch Asset Pipeline" />
     </>
   )
 }
