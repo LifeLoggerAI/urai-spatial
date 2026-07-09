@@ -1,10 +1,10 @@
 import { AssetFactoryRoutePanel } from '@/components/urai/assets/AssetFactoryRoutePanel'
-import SpatialRealPlaceWorld from '../SpatialRealPlaceWorld'
+import RealLifeMapGalaxy from '@/components/lifemap/RealLifeMapGalaxy'
 
 export default function LifeMapPage() {
   return (
     <>
-      <SpatialRealPlaceWorld mode="life-map" />
+      <RealLifeMapGalaxy />
       <AssetFactoryRoutePanel route="/life-map" title="Life Map Launch Asset Pipeline" />
     </>
   )
