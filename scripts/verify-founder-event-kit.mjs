@@ -30,6 +30,23 @@ const eventPage = requireTokens('urai-tier1/src/app/event/page.tsx', [
 for (const forbidden of ['/admin', '/internal', 'console.firebase.google.com', 'process.env', 'customer record example']) {
   if (eventPage.includes(forbidden)) failures.push(`event page contains forbidden surface or runtime dependency: ${forbidden}`)
 }
+const eventClaimRisks = [
+  { id: 'production-ready', pattern: /\bproduction[- ]ready\b/i, qualifier: /not|pending|gated|requires?|evidence|proof/i },
+  { id: 'fully-live', pattern: /\bfully live\b/i, qualifier: /not|pending|gated|requires?|evidence|proof/i },
+  { id: 'active-provider', pattern: /\bactive providers?\b|\bprovider[- ]active\b/i, qualifier: /not|pending|gated|without|does not/i },
+  { id: 'device-certified', pattern: /\bdevice[- ]certified\b|\bphysical[- ]device certification\b/i, qualifier: /not|pending|gated|without|does not/i },
+  { id: 'medical-diagnosis', pattern: /\bdiagnos(?:e|es|is|tic)\b|\btherapy replacement\b|\bmedical device\b/i, qualifier: /not|non-diagnostic|does not|without|never/i },
+  { id: 'surveillance-certainty', pattern: /\blie detection\b|\bmind reading\b|\bemotional certainty\b|\bsurveillance\b/i, qualifier: /not|does not|without|never|disabled/i },
+  { id: 'autonomous-action', pattern: /\bautonomous(?: real-world)? actions?\b|\btakes action for you\b/i, qualifier: /not|does not|human-approved|disabled|gated/i },
+  { id: 'persistent-memory', pattern: /\bpersistent (?:personal|private) memory\b|\bremembers your life\b/i, qualifier: /not|does not|without|pending|gated|sample|demo/i },
+]
+for (const risk of eventClaimRisks) {
+  const match = eventPage.match(risk.pattern)
+  if (!match) continue
+  const index = match.index ?? 0
+  const context = eventPage.slice(Math.max(0, index - 180), index + match[0].length + 180)
+  if (!risk.qualifier.test(context)) failures.push(`event page contains unqualified risky claim: ${risk.id}`)
+}
 
 const target = read('urai-tier1/public/media/event/QR_TARGET.txt').split(/\r?\n/)[0].trim()
 if (target !== 'https://urai.app/event') failures.push(`QR target is ${target || 'missing'}; expected https://urai.app/event`)
