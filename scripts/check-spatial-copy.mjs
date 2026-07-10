@@ -4,7 +4,14 @@ import path from 'node:path'
 
 const root = process.cwd()
 const scannedRoots = ['README.md', 'ENVIRONMENT.md', 'docs', 'urai-tier1/src']
-const claimMatrixRoots = ['docs/media-kit']
+const claimMatrixRoots = [
+  'docs/media-kit',
+  'urai-tier1/src/app/page.tsx',
+  'urai-tier1/src/app/launch/page.tsx',
+  'urai-tier1/src/app/early-access/page.tsx',
+  'urai-tier1/src/app/terms/page.tsx',
+  'urai-tier1/src/app/status/page.tsx',
+]
 const ignoredFragments = [
   'node_modules',
   '.next',
@@ -31,8 +38,8 @@ const riskyClaims = [
 ]
 
 const claimMatrixRisks = [
-  { id: 'legacy-public-brand', pattern: /\bURAI Genesis\b/i, allowedNearby: /historical|legacy|deprecated|do not use|replace|avoid/i, reason: 'Current public media must use URAI or URAI Spatial, not the legacy URAI Genesis name.' },
-  { id: 'production-certification', pattern: /\b(production[- ]ready|production[- ]certification|production[- ]certified|provider[- ]active|active providers?|device[- ]certified|physical[- ]device certification|fully live|launch[- ]ready)\b/i, allowedNearby: /not|not yet|pending|gated|requires?|without|cannot|do not|does not|evidence|receipt|certification-pending|separately/i, reason: 'Production, provider, and device status require an immediate evidence or pending qualifier.' },
+  { id: 'legacy-public-brand', pattern: /\bURAI Genesis\b/i, allowedNearby: /historical|legacy|deprecated|do not use|replace|avoid/i, reason: 'Current public media and selected public routes must use URAI or URAI Spatial, not the legacy URAI Genesis name.' },
+  { id: 'production-certification', pattern: /\b(production[- ]ready|production[- ]certification|production[- ]certified|provider[- ]active|active providers?|device[- ]certified|physical[- ]device certification|fully live|launch[- ]ready)\b/i, allowedNearby: /not|not yet|pending|gated|requires?|without|cannot|do not|does not|evidence|receipt|certification-pending|separately|matrix|status|boundary/i, reason: 'Production, provider, and device status require an immediate evidence, pending, matrix, or boundary qualifier.' },
   { id: 'medical-or-therapy', pattern: /\b(diagnos(?:e|es|is|tic)|therapy replacement|medical device|treat(?:s|ment)?|clinical outcome)\b/i, allowedNearby: /not|non-diagnostic|do not|does not|avoid|without|never|prohibited|reflection/i, reason: 'Medical, diagnosis, treatment, and therapy language must be explicitly disclaimed.' },
   { id: 'surveillance-or-certainty', pattern: /\b(lie detection|mind reading|emotional certainty|psychological truth|always-on monitoring|surveillance)\b/i, allowedNearby: /not|do not|does not|avoid|without|never|prohibited|disabled|consent/i, reason: 'Surveillance and certainty claims must be explicitly prohibited or disclaimed.' },
   { id: 'autonomous-action', pattern: /\b(autonomous(?: real-world)? actions?|acts autonomously|takes action for you|executes actions for you)\b/i, allowedNearby: /not|does not|do not|human-approved|approval|consent|disabled|future|gated/i, reason: 'Autonomous-action language must remain human-approved, disabled, future, or explicitly disclaimed.' },
@@ -56,6 +63,7 @@ const failingFixtures = [
 
 const claimMatrixPassingFixtures = [
   'Production certification remains pending until exact receipts exist.',
+  'This page is a production-certification matrix.',
   'Active providers remain separately gated.',
   'Physical-device certification requires exact evidence.',
   'Mirror is reflection, not diagnosis or treatment.',
@@ -111,6 +119,16 @@ const internalEvidenceRequirements = [
       /This demo uses sample data/i,
       /production-certification pending/i,
       /authenticated persistence/i,
+    ],
+  },
+  {
+    path: 'urai-tier1/src/app/launch/page.tsx',
+    required: [
+      />URAI</,
+      /This demo uses sample data/i,
+      /production-certification pending/i,
+      /does not diagnose/i,
+      /does not prove persistent personal memory/i,
     ],
   },
 ]
