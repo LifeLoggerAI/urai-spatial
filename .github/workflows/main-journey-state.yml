@@ -1,0 +1,26 @@
+name: Main Journey State Contract
+
+on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - 'urai-tier1/src/app/focus/**'
+      - 'urai-tier1/src/app/replay/**'
+      - 'urai-tier1/src/app/FinalMemorySurfaces.tsx'
+      - 'scripts/audit-main-journey-state.mjs'
+      - '.github/workflows/main-journey-state.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  journey-state:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Audit Home to Life Map to Focus to Replay state
+        run: node scripts/audit-main-journey-state.mjs
