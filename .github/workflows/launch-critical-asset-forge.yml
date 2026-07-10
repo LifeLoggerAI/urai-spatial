@@ -9,6 +9,7 @@ on:
       - 'scripts/normalize-launch-critical-assets.mjs'
       - 'scripts/verify-launch-critical-assets.mjs'
       - 'scripts/audit-launch-critical-artifact.mjs'
+      - 'scripts/validate-radiance-hdr.mjs'
       - 'scripts/compare-legacy-asset-candidates.mjs'
       - '.github/workflows/launch-critical-asset-forge.yml'
 
@@ -37,6 +38,8 @@ jobs:
         run: node scripts/verify-launch-critical-assets.mjs
       - name: Independently audit generated formats and metrics
         run: node scripts/audit-launch-critical-artifact.mjs
+      - name: Strictly decode every Radiance HDR scanline
+        run: node scripts/validate-radiance-hdr.mjs
       - name: Validate every GLB with Khronos-compatible validator
         shell: bash
         run: |
