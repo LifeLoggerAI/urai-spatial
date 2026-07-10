@@ -6,6 +6,7 @@ on:
     paths:
       - 'operations/assets/**'
       - 'scripts/forge-launch-critical-assets.mjs'
+      - 'scripts/normalize-launch-critical-assets.mjs'
       - 'scripts/verify-launch-critical-assets.mjs'
       - 'scripts/audit-launch-critical-artifact.mjs'
       - 'scripts/compare-legacy-asset-candidates.mjs'
@@ -20,7 +21,7 @@ env:
 jobs:
   forge-and-verify:
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
         with:
@@ -30,10 +31,19 @@ jobs:
           node-version: '22'
       - name: Forge deterministic launch candidates
         run: node scripts/forge-launch-critical-assets.mjs
+      - name: Normalize formats and repair glTF rotations
+        run: node scripts/normalize-launch-critical-assets.mjs
       - name: Verify manifest, receipts and budgets
         run: node scripts/verify-launch-critical-assets.mjs
       - name: Independently audit generated formats and metrics
         run: node scripts/audit-launch-critical-artifact.mjs
+      - name: Validate every GLB with Khronos-compatible validator
+        shell: bash
+        run: |
+          set -euo pipefail
+          for file in urai-tier1/public/assets/urai/generated/models/*.glb; do
+            npx --yes @gltf-transform/cli@4.2.1 validate "$file"
+          done
       - name: Extract pinned legacy comparison candidates
         shell: bash
         run: |
