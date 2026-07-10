@@ -7,6 +7,7 @@ on:
       - 'operations/assets/**'
       - 'scripts/forge-launch-critical-assets.mjs'
       - 'scripts/verify-launch-critical-assets.mjs'
+      - 'scripts/audit-launch-critical-artifact.mjs'
       - '.github/workflows/launch-critical-asset-forge.yml'
 
 permissions:
@@ -25,6 +26,8 @@ jobs:
         run: node scripts/forge-launch-critical-assets.mjs
       - name: Verify manifest, receipts and budgets
         run: node scripts/verify-launch-critical-assets.mjs
+      - name: Independently audit generated formats and metrics
+        run: node scripts/audit-launch-critical-artifact.mjs
       - name: Upload reviewable candidate bundle
         uses: actions/upload-artifact@v4
         with:
