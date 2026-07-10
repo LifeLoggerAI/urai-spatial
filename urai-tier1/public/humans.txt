@@ -1,0 +1,13 @@
+URAI Spatial
+
+Product: URAI Spatial
+Short name: URAI
+Canonical application: https://urai.app
+Canonical public repository: https://github.com/LifeLoggerAI/urai-spatial
+Runtime root: urai-tier1
+
+Current public posture:
+A substantial fallback/demo spatial web experience using synthetic sample data. Production certification, authenticated private persistence, active providers, and physical-device certification remain separately evidence-gated.
+
+Identity boundary:
+This public file identifies the product and repository. It does not assert a legal entity, creator, founder, trademark owner, patent owner, copyright owner, or chain of title. Use authorized corporate records and appropriate review for those statements.
