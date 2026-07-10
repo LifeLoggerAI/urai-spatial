@@ -11,10 +11,17 @@ type AssetModelProps = GroupProps & {
   name: string;
 };
 
-function AssetModel({ assetId, name, ...props }: AssetModelProps) {
-  const src = resolveUraiSpatialAssetPath(assetId);
-  if (!src) return null;
+function resolveRequiredModelPath(assetId: string): string {
+  const path = resolveUraiSpatialAssetPath(assetId);
+  if (!path) throw new Error(`URAI spatial model is unavailable: ${assetId}`);
+  if (!/\.(?:gltf|glb)$/i.test(path)) {
+    throw new Error(`URAI spatial asset is not a model: ${assetId} -> ${path}`);
+  }
+  return path;
+}
 
+function AssetModel({ assetId, name, ...props }: AssetModelProps) {
+  const src = resolveRequiredModelPath(assetId);
   const gltf = useGLTF(src);
   return <primitive object={gltf.scene.clone(true)} name={name} data-urai-asset-id={assetId} data-urai-asset-path={src} {...props} />;
 }
@@ -52,7 +59,7 @@ export default function SpatialWorldAssetLayer({ phase }: { phase: string }) {
 
       {showLifeMap && (
         <group name="life-map-sky-assets" position={[0, 4.8, -7.2]} scale={[0.75, 0.75, 0.75]}>
-          <AssetModel assetId="life-map-galaxy-skybox-v1" name="life-map-sky-dome-v1" />
+          <AssetModel assetId="life-map-sky-dome-proof-fallback" name="life-map-sky-dome-v1" />
           <AssetModel assetId="life-map-memory-star-glb-v1" name="star-memory-node-origin-v1" position={[0, 1.1, -1.2]} />
           <AssetModel assetId="life-map-memory-star-glb-v1" name="star-memory-node-left-v1" position={[-2.7, 0.5, -2.5]} scale={[0.7, 0.7, 0.7]} />
           <AssetModel assetId="life-map-memory-star-glb-v1" name="star-memory-node-right-v1" position={[2.7, 0.62, -2.8]} scale={[0.7, 0.7, 0.7]} />
