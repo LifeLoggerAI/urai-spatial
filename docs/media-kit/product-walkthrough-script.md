@@ -2,32 +2,38 @@
 
 Length: 60 to 90 seconds.
 
-Required disclosure: "This demo uses sample data."
+Required disclosure:
+
+> This demo uses sample data. Some capabilities use fallback-safe behavior and remain production-certification pending.
 
 ## Script
 
-"This is URAI Genesis."
+> This is URAI, a private spatial interface being built around memory, identity, reflection, focus, and personal direction.
 
-"The orb is your companion."
+> The orb is a companion interface using opened or sample context in this demo.
 
-"The sky opens into your Life Map."
+> The sky opens into Life Map, where sample moments and chapters become a symbolic spatial field.
 
-"The Ground holds roots, blooms, and rituals."
+> Focus brings one selected thread forward without losing its identity.
 
-"Mirror reflects patterns without judgment."
+> Replay demonstrates a source-aware reflective story and a return path to the selected thread.
 
-"Passport controls what URAI can use."
+> Ground holds roots, blooms, and rituals as symbolic reflection—not diagnosis or treatment.
 
-"Shadow and Legacy stay closed unless you open them."
+> Mirror reflects patterns without claiming certainty.
 
-"Exports require review before anything leaves."
+> Passport demonstrates the permission model and how sensitive layers can remain closed.
 
-"The public demo uses sample data."
+> Status separates implemented surfaces from provider, persistence, device, and production claims that remain gated.
+
+> URAI is designed so users review what can leave their private world. End-to-end export, deletion, revocation, and authenticated persistence require separate evidence.
+
+> The current public experience uses sample data and fallback-safe behavior.
 
 ## End CTA
 
-"Join the waitlist."
+> Join the waitlist or request a focused product demonstration.
 
 ## Visual Order
 
-Genesis home, orb open, Life Map sky, Ground garden, Mirror reflection, Passport overview, Shadow gate, Legacy gate, export review, waitlist.
+Home, orb open, Life Map, Focus, Replay, Ground, Mirror, Passport, Status, approved follow-up destination.
