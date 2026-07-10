@@ -1,20 +1,20 @@
-
 # URAI AAA MACHINE STEERING
 
-Loop verdicts:
-- loop5-one-screen-life-location: missing
-- loop6-ground-final-world-art: missing
-- loop7-replay-cinematic-memory-film: missing
-- loop8-focus-chamber-depth: missing
-- loop9-mobile-crop-final: missing
-- loop10-v1-final-receipt: missing
+STATE: awaiting-current-proof
+MACHINE_PROOF_GREEN: no
+EXPECTED_SCREENSHOTS: 28
+PRODUCTION_AUTHORITY: .github/workflows/spatial-live-deploy.yml
+
+No current exact-source proof receipt is recorded in this committed snapshot.
 
 NEXT TARGET:
 loop5-one-screen-life-location — Kill Life Map and Location Map blank screenshot tails
 
 RUN:
-LOOP_NAME=loop5-one-screen-life-location COMMIT_RECEIPT=1 bash scripts/urai-aaa-proof-loop.sh
+LOOP_NAME=loop5-one-screen-life-location node scripts/aaa-launch-proof.mjs --screenshots
 
 HUMAN CHECK AFTER SCREENSHOTS:
 - Life Map no longer has blank lower tail
 - Location Map mobile no longer has blank lower tail
+
+This command is proof-only and cannot deploy production.
