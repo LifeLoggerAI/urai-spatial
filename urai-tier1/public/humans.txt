@@ -1,0 +1,10 @@
+URAI
+Website: https://urai.app
+Canonical source: https://github.com/LifeLoggerAI/urai-spatial
+Creator: Adam Clamp — founder and creator of URAI
+
+Current public boundary:
+The public experience uses sample data and fallback-safe behavior. Production, provider, persistence, and physical-device claims remain evidence-gated.
+
+Status and release truth: https://urai.app/status
+About and disambiguation: https://urai.app/about
