@@ -29,9 +29,12 @@ When this pack conflicts with those sources, use the stricter evidence-backed st
 
 ## Quick-use materials
 
+- [`FOUNDER_EVENT_DEMO_KIT.md`](./FOUNDER_EVENT_DEMO_KIT.md) — event runbook, QR publication gate, offline/video/screenshot instructions, verification, and ownership
 - [`EVENT_QUICK_CARD.md`](./EVENT_QUICK_CARD.md) — phone-screen founder script, one-minute demo wording, objections, asks, and event checklist
 - [`BETA_TESTER_PACKET.md`](./BETA_TESTER_PACKET.md) — tester instructions, data restrictions, journey, feedback questions, and severity guide
 - [`INVESTOR_ONE_PAGER.md`](./INVESTOR_ONE_PAGER.md) — concise claim-safe investor overview for internal review and focused meetings
+- [`../../urai-tier1/public/media/event/urai-event-qr.svg`](../../urai-tier1/public/media/event/urai-event-qr.svg) — committed QR source for the gated `/event` destination
+- [`../../urai-tier1/public/media/event/offline-demo.html`](../../urai-tier1/public/media/event/offline-demo.html) — self-contained timed offline walkthrough
 - [`../../.github/ISSUE_TEMPLATE/beta-feedback.yml`](../../.github/ISSUE_TEMPLATE/beta-feedback.yml) — structured public beta feedback form
 - [`../../.github/ISSUE_TEMPLATE/beta-bug.yml`](../../.github/ISSUE_TEMPLATE/beta-bug.yml) — structured beta bug report with privacy and severity controls
 
