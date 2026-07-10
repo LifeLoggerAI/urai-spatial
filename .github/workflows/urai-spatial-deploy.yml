@@ -206,11 +206,23 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       - name: Deploy Spatial live
-        run: pnpm live:deploy
+        run: |
+          # corepack pnpm urai:guardian
+          # corepack pnpm check:types
+          # corepack pnpm build
+          # corepack pnpm build:static
+          # firebase-tools deploy
+          pnpm live:deploy
 
-      - name: Smoke live URL
+      - name: Smoke deployed URL
         if: env.LIVE_URL != ''
-        run: HOST="$LIVE_URL" pnpm smoke
+        run: corepack pnpm smoke:deployed
+
+      - name: Smoke live deployed URL
+        if: env.LIVE_URL != ''
+        env:
+          URAI_DEPLOY_URL: ${{ env.LIVE_URL }}
+        run: corepack pnpm smoke:live
 
       - name: Remove Firebase credential file
         if: always()
