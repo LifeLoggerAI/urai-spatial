@@ -44,7 +44,9 @@ const capture = (command, commandArgs) => {
 const headResult = capture('git', ['rev-parse', 'HEAD'])
 const statusResult = capture('git', ['status', '--porcelain'])
 const sourceSha = headResult.status === 0 && /^[0-9a-f]{40}$/.test(headResult.stdout) ? headResult.stdout : 'unverified'
-const expectedSourceSha = String(process.env.GITHUB_SHA || process.env.URAI_PROOF_SOURCE_SHA || '').trim()
+const explicitExpectedSha = String(process.env.URAI_PROOF_SOURCE_SHA || '').trim()
+const workflowExpectedSha = process.env.GITHUB_EVENT_NAME === 'pull_request' ? '' : String(process.env.GITHUB_SHA || '').trim()
+const expectedSourceSha = explicitExpectedSha || workflowExpectedSha
 const cleanWorkingTree = statusResult.status === 0 && statusResult.stdout.length === 0
 const sourceIdentityVerified = sourceSha !== 'unverified' && cleanWorkingTree && (!expectedSourceSha || expectedSourceSha === sourceSha)
 
