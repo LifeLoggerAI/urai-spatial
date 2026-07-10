@@ -64,21 +64,38 @@ Explain one purpose per route. End on Status so the evidence boundary is visible
 
 ## Offline fallback
 
-### Immediate no-build fallback
+### Repository-stored video
 
 Open this file directly in a browser:
+
+`urai-tier1/public/media/event/offline-video.html`
+
+It reconstructs and plays the committed 72-second silent WebM entirely in the browser. The payload is stored under `urai-tier1/public/media/event/video/`, verified by exact byte length and SHA-256, and makes no network requests. It covers Event, Home, Life Map, Focus, Replay, Mirror, Passport, and Status using synthetic route-storyboard frames.
+
+### Timed walkthrough
+
+Open:
 
 `urai-tier1/public/media/event/offline-demo.html`
 
 It is a self-contained 64-second timed walkthrough. Press **Pause** at any point and speak over the current frame. It has no external assets, accounts, network calls, or private data.
 
-### Generated video and screenshot fallback
+### Screenshot/storyboard fallback
+
+Open:
+
+`urai-tier1/public/media/event/founder-event-storyboard.svg`
+
+This is the repository-native eight-panel visual fallback. It is usable directly from disk without a network connection.
+
+### Exact-head generated capture
 
 From a verified local or deployed build:
 
 ```bash
 URAI_EVENT_BASE_URL=http://127.0.0.1:3001 \
 URAI_EVENT_OUT_DIR=founder-event-kit-output \
+URAI_EVENT_SOURCE_SHA=<exact-40-character-head> \
 node scripts/capture-founder-event-kit.mjs
 ```
 
@@ -96,7 +113,7 @@ Generated output:
 - `founder-event-kit-output/index.html`
 - `founder-event-kit-output/manifest.json`
 
-The generated `index.html` is the screenshot-based fallback. Copy the complete output directory to the event laptop and test it with networking disabled.
+The dedicated GitHub workflow uploads this directory as `urai-founder-event-kit-<exact-sha>`. The generated capture is supplemental evidence; the committed offline video and storyboard remain usable even when Actions runners are unavailable.
 
 ## Verification
 
@@ -105,6 +122,8 @@ Static safety and completeness check:
 ```bash
 node --check scripts/capture-founder-event-kit.mjs
 node --check scripts/verify-founder-event-kit.mjs
+node --check scripts/verify-embedded-event-video.mjs
+node scripts/verify-embedded-event-video.mjs
 node scripts/verify-founder-event-kit.mjs
 node scripts/check-spatial-copy.mjs
 node scripts/check-production-route-exposure.mjs
@@ -123,10 +142,12 @@ Capture validation:
 ```bash
 NEXT_PUBLIC_ALLOW_PUBLIC_DEMO_ROUTES=true node scripts/run-pnpm.mjs dev:3001
 # In another shell:
-URAI_EVENT_BASE_URL=http://127.0.0.1:3001 node scripts/capture-founder-event-kit.mjs
+URAI_EVENT_BASE_URL=http://127.0.0.1:3001 \
+URAI_EVENT_SOURCE_SHA=<exact-40-character-head> \
+node scripts/capture-founder-event-kit.mjs
 ```
 
-Review `manifest.json`; `failures` must be empty.
+Review `manifest.json`; `failures` must be empty and `sourceSha` must match the reviewed commit.
 
 ## Event-device checklist
 
@@ -134,18 +155,18 @@ Review `manifest.json`; `failures` must be empty.
 - Browser profile contains no logged-in personal or customer sessions.
 - Notifications and password-manager overlays disabled.
 - `/event` preloaded only after the QR publication gate passes.
-- Offline output copied locally and opened once with Wi-Fi disabled.
-- WebM playback tested in the event browser.
-- Screenshot fallback `index.html` bookmarked.
+- `offline-video.html`, `offline-demo.html`, and `founder-event-storyboard.svg` opened once with Wi-Fi disabled.
+- Embedded WebM playback tested in the event browser.
+- Storyboard fallback bookmarked.
 - QR printed only from the committed SVG.
 - Post-event follow-up text available from `EVENT_QUICK_CARD.md`.
 
 ## Failure instructions
 
-- If the live route is stale, unknown, or lacks exact-SHA proof: stop using it and switch to the offline kit.
+- If the live route is stale, unknown, or lacks exact-SHA proof: stop using it and switch to `offline-video.html`.
 - If any private or unexpected data appears: stop the demo, close the browser, preserve a safe redacted incident note, and open a P0 report.
-- If WebGL fails: use the generated video, then the screenshot gallery.
-- If the video fails: open `index.html` and narrate the eight screenshots.
+- If WebGL fails: use the committed offline video, then the storyboard.
+- If the embedded video fails: open `offline-demo.html` or `founder-event-storyboard.svg`.
 - If all visual fallbacks fail: use `EVENT_QUICK_CARD.md` and schedule a verified follow-up.
 
 ## Ownership
@@ -154,11 +175,28 @@ Review `manifest.json`; `failures` must be empty.
 | --- | --- | --- |
 | Event copy and spoken claims | Founder / claims owner (`#497`) | Approved claims matrix and current Status source |
 | Exact deployment and rollback | Release-control owner (`#461`) | Deployment, rollback, and live-smoke receipts |
-| Sample-data safety | Demo-kit owner (`#495`) | `verify-founder-event-kit.mjs` and capture manifest |
+| Sample-data safety | Demo-kit owner (`#495`) | `verify-founder-event-kit.mjs`, `verify-embedded-event-video.mjs`, and capture manifest |
 | QR publication | Founder-event operator | Completed QR publication gate |
-| Offline artifact generation | Demo-kit owner | Workflow artifact or local capture output |
+| Committed offline assets | Demo-kit owner | `public/media/event/**` plus exact payload hash |
+| Exact-head capture artifact | Demo-kit workflow owner | `urai-founder-event-kit-<exact-sha>` workflow artifact |
 | Event device rehearsal | Founder-event operator | Offline/network-disabled rehearsal note |
 
-## Known external blocker
+## Known external blockers
 
-As of the source audit on July 10, 2026, `https://urai.app/status/` is reachable but stale relative to current `main` and does not expose a verified exact deployed SHA in publicly parsed markup. The live URL and QR therefore remain **not approved for event publication** until the canonical deployment owner completes the gate above.
+### Live destination approval
+
+- **Blocked task:** approve `https://urai.app/event` and distribute the QR.
+- **Why blocked:** the currently known public deployment is stale relative to source and lacks a public exact deployed-SHA receipt and current Status parity.
+- **Owner:** canonical release-control owner tracked in `#461`.
+- **Smallest unblock:** merge all required release changes, restore required Actions execution, then manually dispatch `URAI Canonical Production Release` on the frozen `main` SHA with a proven rollback SHA and attach the deployment/smoke receipts.
+- **Already complete:** event source, QR source, sample-safe offline video, timed walkthrough, storyboard, verification scripts, workflow, and operator instructions.
+- **Immediate follow-up:** run custom-domain route/query smoke, exact-head sample-safety capture, and approve QR publication only if every gate passes.
+
+### Exact-head generated screenshots and runtime video
+
+- **Blocked task:** produce the workflow artifact from the exact PR head.
+- **Why blocked:** repository Actions jobs are queued and not receiving runner capacity.
+- **Owner:** repository or organization Actions/billing/runner administrator.
+- **Smallest unblock:** restore runner capacity so the queued `Founder Event Demo Kit` job executes.
+- **Already complete:** deterministic capture code, exact-SHA checkout proof, artifact naming, committed offline video, and committed storyboard fallback.
+- **Immediate follow-up:** inspect the exact-head manifest and screenshots, fix any branch-caused failure, and merge only after required checks pass.
