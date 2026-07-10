@@ -8,6 +8,11 @@ const outDir = process.env.URAI_EVENT_OUT_DIR || 'founder-event-kit-output'
 const screenshotDir = path.join(outDir, 'screenshots')
 const videoDir = path.join(outDir, 'video')
 const holdMs = Number(process.env.URAI_EVENT_HOLD_MS || 4500)
+const sourceSha = process.env.URAI_EVENT_SOURCE_SHA || 'unverified'
+
+if (process.env.CI && !/^[0-9a-f]{40}$/.test(sourceSha)) {
+  throw new Error('URAI_EVENT_SOURCE_SHA must be the exact 40-character source commit in CI')
+}
 
 const routes = [
   { name: 'event', route: '/event', label: 'Founder destination', markers: ['Sample-data demonstration', 'https://urai.app/event'] },
@@ -140,7 +145,9 @@ if (consoleErrors.length) failures.push(`browser console errors: ${consoleErrors
 if (!recordedVideo) failures.push('recorded WebM video was not produced')
 
 const manifest = {
+  schemaVersion: 'urai-founder-event-kit-1',
   generatedAt: new Date().toISOString(),
+  sourceSha,
   baseUrl,
   sampleDataOnly: true,
   productionCertificationClaimed: false,
@@ -162,7 +169,7 @@ await fs.writeFile(path.join(outDir, 'index.html'), `<!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>URAI Founder Event Offline Kit</title><style>
 body{margin:0;background:#020713;color:#fff;font-family:system-ui,sans-serif}main{max-width:1200px;margin:auto;padding:32px}header{padding:28px;border:1px solid #ffffff22;border-radius:28px;background:#071321}h1{font-size:clamp(2rem,6vw,5rem);line-height:.9}.notice{color:#ffe9a8}.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:18px;margin-top:24px}article{padding:14px;border:1px solid #ffffff22;border-radius:22px;background:#ffffff0d}img{width:100%;border-radius:14px;display:block}code{color:#9af8ff}video{width:100%;margin-top:24px;border-radius:22px;background:#000}</style></head>
-<body><main><header><p>URAI · FOUNDER EVENT OFFLINE KIT</p><h1>Your life should not look like a dashboard.</h1><p class="notice">Synthetic sample data only. Production certification and exact deployed-SHA proof remain pending.</p></header>
+<body><main><header><p>URAI · FOUNDER EVENT OFFLINE KIT</p><h1>Your life should not look like a dashboard.</h1><p class="notice">Synthetic sample data only. Production certification and exact deployed-SHA proof remain pending.</p><p><code>Source SHA: ${escapeHtml(sourceSha)}</code></p></header>
 <video controls preload="metadata" src="video/urai-founder-event-demo.webm">Offline video unavailable; use the screenshot gallery below.</video>
 <section class="grid">${cards}</section></main></body></html>`)
 
