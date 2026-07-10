@@ -108,10 +108,12 @@ if (!deploy) {
   process.exit(0)
 }
 
-const authorized = process.env.URAI_DEPLOY_CONFIRM === 'DEPLOY_STATIC_URAI' || (
-  process.env.GITHUB_ACTIONS === 'true' && process.env.GITHUB_EVENT_NAME === 'workflow_dispatch'
-)
-if (!authorized) throw new Error('Static deployment requires protected workflow dispatch or URAI_DEPLOY_CONFIRM=DEPLOY_STATIC_URAI')
+if (process.env.URAI_DEPLOY_CONFIRM !== 'DEPLOY_STATIC_URAI') {
+  throw new Error('Static deployment requires URAI_DEPLOY_CONFIRM=DEPLOY_STATIC_URAI')
+}
+if (process.env.GITHUB_ACTIONS === 'true' && process.env.GITHUB_EVENT_NAME !== 'workflow_dispatch') {
+  throw new Error('GitHub Actions production deployment is allowed only from workflow_dispatch')
+}
 if (!project) throw new Error('FIREBASE_PROJECT_ID is required')
 if (project !== expectedProject) throw new Error(`Refusing project ${project}; expected ${expectedProject}`)
 
