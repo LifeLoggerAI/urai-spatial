@@ -1,83 +1,113 @@
 # Social Post Launch Pack
 
-Every post should be demo-safe and avoid medical, diagnostic, lie-detection, therapy-replacement, and surveillance claims.
+Every post must use claim-safe language, identify sample data, and avoid medical, diagnostic, treatment, therapy-replacement, lie-detection, mind-reading, surveillance, persistence, provider, device, and production-certification overclaims.
+
+Campaign, fundraiser, or financing language requires appropriate approval and must never imply investment return, ownership, valuation certainty, or guaranteed outcomes.
 
 ## 1. Founder Announcement
 
-Short: "I’m building URAI Genesis: a private symbolic life interface where reflection begins with permission. The demo uses sample data. Join the waitlist."
+Short:
 
-Long: "URAI Genesis is live in demo form. It’s a private symbolic life interface where your sky, Ground, Mirror, and Companion respond only to the layers you choose to open. The demo uses sample data. Join the waitlist."
+> I’m building URAI: a private spatial interface where reflection begins with permission. The demo uses sample data. Join the waitlist.
 
-Visual suggestion: Founder note over Genesis home.
+Long:
+
+> URAI is building a private spatial interface for memory, identity, reflection, focus, and personal direction. The current demo uses sample data and fallback-safe behavior while production certification, authenticated persistence, selected provider assets, and device proof remain separately gated.
+
+Visual suggestion: Founder note over the verified URAI Home route.
 
 CTA: Join the waitlist.
 
-## 2. Demo Launch
+## 2. Demo Announcement
 
-Short: "URAI Genesis demo is live with sample data. Explore the orb, Life Map, Ground, Mirror, Passport, and protected gates."
+Short:
 
-Long: "The URAI Genesis public demo shows how a private life interface can feel more like a symbolic world than a dashboard. Sample data only, privacy-first by design."
+> Explore the current URAI sample-data demo: Home, Life Map, Focus, Replay, Mirror, Passport, and Status.
 
-Visual suggestion: 30-second walkthrough clip.
+Long:
+
+> The current URAI demo shows how a private life interface can feel more like a symbolic spatial world than a dashboard. It uses sample data and does not claim production-certified persistence, active providers, or physical-device certification.
+
+Visual suggestion: 30-second verified walkthrough clip.
 
 CTA: Try the demo.
 
-## 3. Privacy Promise
+## 3. Permission Model
 
-Short: "Passport controls what URAI can see, remember, use in AI replies, or export."
+Short:
 
-Long: "URAI is built around permission. Sensitive layers stay closed by default, and exports require review before anything leaves."
+> Passport demonstrates how users can control what context opens, reflects, or remains closed.
 
-Visual suggestion: Passport screenshot.
+Long:
 
-CTA: See the privacy-first demo.
+> URAI is being designed around permission. Passport represents how sensitive layers can stay closed by default and how users can review what context is opened. The demo does not prove authenticated personal-memory persistence.
 
-## 4. Life Map Feature
+Visual suggestion: Passport screenshot from an exact verified build.
 
-Short: "Tap the sky. Approved moments become stars."
+CTA: See the permission-first demo.
 
-Long: "Life Map turns approved memories into a symbolic sky, making reflection visual without giving up control."
+## 4. Life Map
 
-Visual suggestion: Life Map galaxy.
+Short:
+
+> Tap the sky. Sample moments become stars.
+
+Long:
+
+> Life Map demonstrates how memories, goals, and chapters can become a symbolic spatial field without presenting sample data as persistent personal memory.
+
+Visual suggestion: Life Map sample-data view.
 
 CTA: Join the waitlist.
 
-## 5. Passport Feature
+## 5. Focus and Replay
 
-Short: "Closed by default. Opened by permission."
+Short:
 
-Long: "Passport is URAI’s control center for what opens, reflects, remembers, or leaves."
+> Move from the whole Life Map into one selected thread, then return without losing its identity.
 
-Visual suggestion: Passport overview.
+Long:
+
+> Focus and Replay demonstrate a continuous journey from a selected sample memory into a source-aware reflective experience. Production persistence and personal-data reconstruction remain separately gated.
+
+Visual suggestion: Verified Life Map → Focus → Replay sequence.
 
 CTA: Try the sample demo.
 
-## 6. Ground Feature
+## 6. Ground
 
-Short: "Not every insight needs a chart. Some need a place to land."
+Short:
 
-Long: "Ground gives reflection a calmer shape through roots, blooms, and rituals."
+> Not every insight needs a chart. Some need a place to land.
 
-Visual suggestion: Ground bloom loop.
+Long:
+
+> Ground gives reflection a calmer symbolic shape through roots, blooms, and rituals—without diagnosis, certainty, or autonomous-action claims.
+
+Visual suggestion: Ground route sample view.
 
 CTA: Join the waitlist.
 
 ## 7. Waitlist Invitation
 
-Short: "URAI Genesis is opening carefully. Join the waitlist."
+Short:
 
-Long: "URAI Genesis is a privacy-first symbolic life interface. The public demo uses sample data, and early access will expand carefully."
+> URAI is opening carefully. Join the waitlist.
 
-Visual suggestion: Waitlist success screenshot.
+Long:
+
+> URAI is building a privacy-first spatial interface. The current public experience uses sample data, and access should expand only with evidence-backed privacy, reliability, and deployment controls.
+
+Visual suggestion: Approved waitlist or early-access screen.
 
 CTA: Join the waitlist.
 
-## 8. Fundraiser Announcement
+## 8. Fundraiser or Support Announcement
 
-Short: "Help bring URAI Genesis from public demo to a stronger V1 launch."
+Use only after campaign-specific legal, financial, platform, and claims review.
 
-Long: "The next stretch of URAI Genesis focuses on polish, accessibility, voice, sound, privacy review, and careful beta expansion."
+Safe framing:
 
-Visual suggestion: Founder note plus roadmap visual.
+> Support the work required to move URAI from a sample-data spatial demo toward a secure, evidence-backed public beta.
 
-CTA: Support the fundraiser.
+Do not publish financing terms, ownership language, return expectations, valuation claims, market-size guarantees, or IP-certainty claims through this template.
