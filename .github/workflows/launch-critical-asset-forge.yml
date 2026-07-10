@@ -1,0 +1,87 @@
+name: Launch Critical Asset Forge
+
+on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - 'operations/assets/**'
+      - 'scripts/forge-launch-critical-assets.mjs'
+      - 'scripts/normalize-launch-critical-assets.mjs'
+      - 'scripts/verify-launch-critical-assets.mjs'
+      - 'scripts/audit-launch-critical-artifact.mjs'
+      - 'scripts/compare-legacy-asset-candidates.mjs'
+      - '.github/workflows/launch-critical-asset-forge.yml'
+
+permissions:
+  contents: read
+
+env:
+  LEGACY_ASSET_HEAD: e4e94a501a64e7375a5cfdbe9547436fbc8e75a2
+
+jobs:
+  forge-and-verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Forge deterministic launch candidates
+        run: node scripts/forge-launch-critical-assets.mjs
+      - name: Normalize formats and repair glTF rotations
+        run: node scripts/normalize-launch-critical-assets.mjs
+      - name: Verify manifest, receipts and budgets
+        run: node scripts/verify-launch-critical-assets.mjs
+      - name: Independently audit generated formats and metrics
+        run: node scripts/audit-launch-critical-artifact.mjs
+      - name: Validate every GLB with Khronos-compatible validator
+        shell: bash
+        run: |
+          set -euo pipefail
+          for file in urai-tier1/public/assets/urai/generated/models/*.glb; do
+            npx --yes @gltf-transform/cli@4.2.1 validate "$file"
+          done
+      - name: Extract pinned legacy comparison candidates
+        shell: bash
+        run: |
+          set -euo pipefail
+          git fetch --no-tags --depth=1 origin "$LEGACY_ASSET_HEAD"
+          files=(
+            'urai-tier1/public/assets/urai/generated/models/home-entry-chamber-v1.glb'
+            'urai-tier1/public/assets/urai/generated/models/ground-world-terrain-v1.glb'
+            'urai-tier1/public/assets/urai/generated/models/focus-star-flight-v1.glb'
+            'urai-tier1/public/assets/urai/generated/models/replay-memory-film-v1.glb'
+            'urai-tier1/public/assets/urai/generated/models/portal-ring-master-v1.glb'
+            'urai-tier1/public/assets/urai/generated/models/passport-status-room-v1.glb'
+            'urai-tier1/public/assets/urai/generated/skyboxes/life-map-galaxy-skybox-v1.hdr'
+            'urai-tier1/public/assets/urai/generated/textures/global-cinematic-material-pack-v1.json'
+          )
+          for file in "${files[@]}"; do
+            destination="comparison/legacy/$file"
+            mkdir -p "$(dirname "$destination")"
+            git show "$LEGACY_ASSET_HEAD:$file" > "$destination"
+          done
+      - name: Compare current and pinned legacy candidates
+        run: node scripts/compare-legacy-asset-candidates.mjs --legacy-root comparison/legacy --legacy-head "$LEGACY_ASSET_HEAD"
+      - name: Upload reviewable candidate bundle
+        uses: actions/upload-artifact@v4
+        with:
+          name: urai-launch-critical-asset-candidates-${{ github.sha }}
+          if-no-files-found: error
+          retention-days: 14
+          path: |
+            urai-tier1/public/assets/urai/generated/
+            operations/assets/generated-receipts/
+            operations/assets/launch-critical-assets.json
+      - name: Upload legacy comparison evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: urai-legacy-asset-comparison-${{ github.sha }}
+          if-no-files-found: error
+          retention-days: 14
+          path: |
+            operations/assets/comparison/
+            comparison/legacy/urai-tier1/public/assets/urai/generated/
