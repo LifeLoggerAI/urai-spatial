@@ -7,6 +7,11 @@ import dynamic from 'next/dynamic'
 import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import * as THREE from 'three'
 import SpatialWorldAssetLayer from '../../scene/SpatialWorldAssetLayer'
+import {
+  markFirstSpatialFrame,
+  useAdaptiveSpatialQuality,
+  type SpatialQualityProfile,
+} from '../../performance/useAdaptiveSpatialQuality'
 import SpatialFallbackPanel from './SpatialFallbackPanel'
 import SpatialWorldStyles from './SpatialWorldStyles'
 import { URAI_SPATIAL_DEMO_DATA, type SpatialMemory } from './spatialDemoData'
@@ -16,20 +21,6 @@ type SpatialWorldMode = 'spatial' | 'life-map' | 'home'
 type SpatialWorldProps = {
   mode?: SpatialWorldMode
   embedded?: boolean
-}
-
-function useReducedMotionPreference() {
-  const [reduced, setReduced] = useState(false)
-
-  useEffect(() => {
-    const media = window.matchMedia('(prefers-reduced-motion: reduce)')
-    const update = () => setReduced(media.matches)
-    update()
-    media.addEventListener('change', update)
-    return () => media.removeEventListener('change', update)
-  }, [])
-
-  return reduced
 }
 
 function useWebGLAvailable() {
@@ -52,6 +43,18 @@ function spatialAssetPhaseForMode(mode: SpatialWorldMode) {
   return mode === 'home' ? 'HOME' : 'LIFEMAP'
 }
 
+function FirstSpatialFrameMarker({ route, profile }: { route: string; profile: SpatialQualityProfile }) {
+  const marked = useRef(false)
+
+  useFrame(() => {
+    if (marked.current || !profile.documentVisible) return
+    marked.current = true
+    markFirstSpatialFrame(route, profile.tier)
+  })
+
+  return null
+}
+
 function SkyDome({ reducedMotion }: { reducedMotion: boolean }) {
   const ref = useRef<THREE.Mesh>(null)
 
@@ -68,7 +71,7 @@ function SkyDome({ reducedMotion }: { reducedMotion: boolean }) {
   )
 }
 
-function DreamTerrain({ reducedMotion }: { reducedMotion: boolean }) {
+function DreamTerrain({ reducedMotion, shadows }: { reducedMotion: boolean; shadows: boolean }) {
   const ref = useRef<THREE.Mesh>(null)
 
   useFrame(({ clock }) => {
@@ -78,7 +81,7 @@ function DreamTerrain({ reducedMotion }: { reducedMotion: boolean }) {
 
   return (
     <group>
-      <mesh ref={ref} rotation={[-Math.PI / 2, 0, 0]} position={[0, -1.25, 0]} receiveShadow>
+      <mesh ref={ref} rotation={[-Math.PI / 2, 0, 0]} position={[0, -1.25, 0]} receiveShadow={shadows}>
         <circleGeometry args={[16, 128]} />
         <meshStandardMaterial color="#071427" roughness={0.82} metalness={0.08} emissive="#0b2a3f" emissiveIntensity={0.34} />
       </mesh>
@@ -90,7 +93,7 @@ function DreamTerrain({ reducedMotion }: { reducedMotion: boolean }) {
   )
 }
 
-function AvatarAnchor({ reducedMotion }: { reducedMotion: boolean }) {
+function AvatarAnchor({ reducedMotion, shadows }: { reducedMotion: boolean; shadows: boolean }) {
   const group = useRef<THREE.Group>(null)
 
   useFrame(({ clock }) => {
@@ -100,11 +103,11 @@ function AvatarAnchor({ reducedMotion }: { reducedMotion: boolean }) {
 
   return (
     <group ref={group} position={[0, -0.55, 0]} data-testid="avatar-anchor">
-      <mesh castShadow position={[0, 0.9, 0]}>
+      <mesh castShadow={shadows} position={[0, 0.9, 0]}>
         <capsuleGeometry args={[0.3, 1.38, 10, 28]} />
         <meshStandardMaterial color="#081225" emissive="#5eead4" emissiveIntensity={0.24} transparent opacity={0.74} />
       </mesh>
-      <mesh position={[0, 1.82, 0]} castShadow>
+      <mesh position={[0, 1.82, 0]} castShadow={shadows}>
         <sphereGeometry args={[0.27, 32, 32]} />
         <meshStandardMaterial color="#0b1224" emissive="#a78bfa" emissiveIntensity={0.28} transparent opacity={0.76} />
       </mesh>
@@ -116,21 +119,23 @@ function AvatarAnchor({ reducedMotion }: { reducedMotion: boolean }) {
   )
 }
 
-function AuraParticles({ reducedMotion }: { reducedMotion: boolean }) {
+function AuraParticles({ reducedMotion, particleCount }: { reducedMotion: boolean; particleCount: number }) {
   const points = useRef<THREE.Points>(null)
   const geometry = useMemo(() => {
-    const positions = new Float32Array(360 * 3)
-    for (let i = 0; i < 360; i += 1) {
+    const positions = new Float32Array(particleCount * 3)
+    for (let i = 0; i < particleCount; i += 1) {
       const radius = 3.4 + (i % 61) * 0.14
       const angle = i * 2.399963
       positions[i * 3] = Math.cos(angle) * radius
       positions[i * 3 + 1] = -0.55 + ((i * 17) % 110) / 19
       positions[i * 3 + 2] = Math.sin(angle) * radius
     }
-    const g = new THREE.BufferGeometry()
-    g.setAttribute('position', new THREE.BufferAttribute(positions, 3))
-    return g
-  }, [])
+    const nextGeometry = new THREE.BufferGeometry()
+    nextGeometry.setAttribute('position', new THREE.BufferAttribute(positions, 3))
+    return nextGeometry
+  }, [particleCount])
+
+  useEffect(() => () => geometry.dispose(), [geometry])
 
   useFrame(({ clock }) => {
     if (!points.current || reducedMotion) return
@@ -144,14 +149,14 @@ function AuraParticles({ reducedMotion }: { reducedMotion: boolean }) {
   )
 }
 
-function MemoryStar({ memory, selected, onHover, onSelect }: { memory: SpatialMemory; selected: boolean; onHover: (memory: SpatialMemory | null) => void; onSelect: (memory: SpatialMemory) => void }) {
+function MemoryStar({ memory, selected, onHover, onSelect, reducedMotion }: { memory: SpatialMemory; selected: boolean; onHover: (memory: SpatialMemory | null) => void; onSelect: (memory: SpatialMemory) => void; reducedMotion: boolean }) {
   const mesh = useRef<THREE.Mesh>(null)
   const [hovered, setHovered] = useState(false)
   const color = useMemo(() => new THREE.Color(memory.colorToken), [memory.colorToken])
 
   useFrame(({ clock }) => {
     if (!mesh.current) return
-    const pulse = 1 + Math.sin(clock.elapsedTime * 2.2 + memory.intensity * 4) * 0.08
+    const pulse = reducedMotion ? 1 : 1 + Math.sin(clock.elapsedTime * 2.2 + memory.intensity * 4) * 0.08
     mesh.current.scale.setScalar((0.78 + memory.intensity * 0.58) * (hovered || selected ? 1.55 : pulse))
   })
 
@@ -191,7 +196,7 @@ function MemoryStar({ memory, selected, onHover, onSelect }: { memory: SpatialMe
   )
 }
 
-function MemoryConstellation({ memories, selectedMemory, onHover, onSelect }: { memories: readonly SpatialMemory[]; selectedMemory: SpatialMemory | null; onHover: (memory: SpatialMemory | null) => void; onSelect: (memory: SpatialMemory) => void }) {
+function MemoryConstellation({ memories, selectedMemory, onHover, onSelect, reducedMotion }: { memories: readonly SpatialMemory[]; selectedMemory: SpatialMemory | null; onHover: (memory: SpatialMemory | null) => void; onSelect: (memory: SpatialMemory) => void; reducedMotion: boolean }) {
   const lines = useMemo(() => {
     const byId = new Map(memories.map((memory) => [memory.id, memory]))
     const positions: number[] = []
@@ -207,23 +212,25 @@ function MemoryConstellation({ memories, selectedMemory, onHover, onSelect }: { 
     return geometry
   }, [memories])
 
+  useEffect(() => () => lines.dispose(), [lines])
+
   return (
     <group>
       <lineSegments geometry={lines} frustumCulled={false}>
         <lineBasicMaterial color="#8fdcff" transparent opacity={0.24} blending={THREE.AdditiveBlending} depthWrite={false} />
       </lineSegments>
       {memories.map((memory) => (
-        <MemoryStar key={memory.id} memory={memory} selected={selectedMemory?.id === memory.id} onHover={onHover} onSelect={onSelect} />
+        <MemoryStar key={memory.id} memory={memory} selected={selectedMemory?.id === memory.id} onHover={onHover} onSelect={onSelect} reducedMotion={reducedMotion} />
       ))}
     </group>
   )
 }
 
-function OrbCompanion3D({ onGuide }: { onGuide: () => void }) {
+function OrbCompanion3D({ onGuide, reducedMotion }: { onGuide: () => void; reducedMotion: boolean }) {
   const ref = useRef<THREE.Group>(null)
 
   useFrame(({ clock }) => {
-    if (!ref.current) return
+    if (!ref.current || reducedMotion) return
     ref.current.position.y = 1.32 + Math.sin(clock.elapsedTime * 1.1) * 0.075
     ref.current.rotation.y = clock.elapsedTime * 0.18
   })
@@ -258,33 +265,36 @@ function ReplayCameraRig({ selectedMemory, reducedMotion }: { selectedMemory: Sp
   return <group data-testid="replay-camera-rig" />
 }
 
-function SpatialScene({ mode, selectedMemory, onHover, onSelect, onGuide, reducedMotion }: { mode: SpatialWorldMode; selectedMemory: SpatialMemory | null; onHover: (memory: SpatialMemory | null) => void; onSelect: (memory: SpatialMemory) => void; onGuide: () => void; reducedMotion: boolean }) {
+function SpatialScene({ mode, selectedMemory, onHover, onSelect, onGuide, profile }: { mode: SpatialWorldMode; selectedMemory: SpatialMemory | null; onHover: (memory: SpatialMemory | null) => void; onSelect: (memory: SpatialMemory) => void; onGuide: () => void; profile: SpatialQualityProfile }) {
   const memories = URAI_SPATIAL_DEMO_DATA.memories
   const isLifeMap = mode === 'life-map' || mode === 'spatial'
 
   return (
     <>
+      <FirstSpatialFrameMarker route={`/spatial/${mode}`} profile={profile} />
       <color attach="background" args={[isLifeMap ? '#02030a' : '#071126']} />
       <fog attach="fog" args={['#08142f', 8, 26]} />
       <PerspectiveCamera makeDefault position={isLifeMap ? [0, 2.6, 9.2] : [0, 2.05, 6.8]} fov={isLifeMap ? 50 : 44} />
-      <ReplayCameraRig selectedMemory={selectedMemory} reducedMotion={reducedMotion} />
-      <OrbitControls enablePan={false} enableZoom zoomSpeed={0.62} enableDamping={!reducedMotion} dampingFactor={0.065} rotateSpeed={0.36} minDistance={3.2} maxDistance={14} minPolarAngle={0.68} maxPolarAngle={1.82} />
+      <ReplayCameraRig selectedMemory={selectedMemory} reducedMotion={profile.reducedMotion} />
+      <OrbitControls enablePan={false} enableZoom zoomSpeed={0.62} enableDamping={!profile.reducedMotion} dampingFactor={0.065} rotateSpeed={0.36} minDistance={3.2} maxDistance={14} minPolarAngle={0.68} maxPolarAngle={1.82} />
       <ambientLight intensity={0.58} color="#c7ddff" />
       <hemisphereLight args={['#dbeafe', '#09051f', 1.2]} />
-      <directionalLight position={[-4, 7, 4]} intensity={1.8} color="#dbeafe" castShadow />
+      <directionalLight position={[-4, 7, 4]} intensity={1.8} color="#dbeafe" castShadow={profile.shadows} shadow-mapSize-width={profile.tier === 'high' ? 1024 : 512} shadow-mapSize-height={profile.tier === 'high' ? 1024 : 512} />
       <pointLight position={[0, 2.25, 1.8]} intensity={3.1} color="#67e8f9" distance={8} />
       <pointLight position={[-4, 3, -4]} intensity={1.2} color="#a78bfa" distance={12} />
-      <SkyDome reducedMotion={reducedMotion} />
+      <SkyDome reducedMotion={profile.reducedMotion} />
       <SpatialWorldAssetLayer phase={spatialAssetPhaseForMode(mode)} />
-      <DreamTerrain reducedMotion={reducedMotion} />
-      <AvatarAnchor reducedMotion={reducedMotion} />
-      <MemoryConstellation memories={memories} selectedMemory={selectedMemory} onHover={onHover} onSelect={onSelect} />
-      <OrbCompanion3D onGuide={onGuide} />
-      <AuraParticles reducedMotion={reducedMotion} />
-      <EffectComposer enabled={!reducedMotion}>
-        <Bloom intensity={0.82} luminanceThreshold={0.12} luminanceSmoothing={0.28} />
-        <Vignette eskil={false} offset={0.18} darkness={0.62} />
-      </EffectComposer>
+      <DreamTerrain reducedMotion={profile.reducedMotion} shadows={profile.shadows} />
+      <AvatarAnchor reducedMotion={profile.reducedMotion} shadows={profile.shadows} />
+      <MemoryConstellation memories={memories} selectedMemory={selectedMemory} onHover={onHover} onSelect={onSelect} reducedMotion={profile.reducedMotion} />
+      <OrbCompanion3D onGuide={onGuide} reducedMotion={profile.reducedMotion} />
+      <AuraParticles reducedMotion={profile.reducedMotion} particleCount={profile.particleCount} />
+      {profile.postprocessing && !profile.reducedMotion ? (
+        <EffectComposer>
+          <Bloom intensity={0.82} luminanceThreshold={0.12} luminanceSmoothing={0.28} />
+          <Vignette eskil={false} offset={0.18} darkness={0.62} />
+        </EffectComposer>
+      ) : null}
     </>
   )
 }
@@ -334,7 +344,7 @@ function SpatialHUD({ mode, selectedMemory, hoveredMemory, companionMessage, onC
 }
 
 function SpatialWorldCanvasImpl({ mode = 'home', embedded = false }: SpatialWorldProps) {
-  const reducedMotion = useReducedMotionPreference()
+  const profile = useAdaptiveSpatialQuality()
   const webglAvailable = useWebGLAvailable()
   const [worldMode, setWorldMode] = useState<SpatialWorldMode>(mode)
   const [selectedMemory, setSelectedMemory] = useState<SpatialMemory | null>(null)
@@ -367,14 +377,32 @@ function SpatialWorldCanvasImpl({ mode = 'home', embedded = false }: SpatialWorl
   }, [closeFocus])
 
   return (
-    <main className="spatial-world-root" data-mode={worldMode} data-embed={embedded ? 'true' : 'false'}>
+    <main
+      className="spatial-world-root"
+      data-mode={worldMode}
+      data-embed={embedded ? 'true' : 'false'}
+      data-spatial-quality={profile.tier}
+      data-spatial-visible={profile.documentVisible ? 'true' : 'false'}
+      style={{ minHeight: '100dvh', contain: 'layout paint size' }}
+    >
       <SpatialWorldStyles />
       {!webglAvailable ? (
         <SpatialFallbackPanel reason="WebGL is unavailable, so URAI is showing the spatial fallback panel." />
       ) : (
         <Suspense fallback={<div className="spatial-world-loading"><SpatialFallbackPanel reason="Loading the 3D memory world." /></div>}>
-          <Canvas data-testid="spatial-world-canvas" shadows dpr={[1, 1.7]} gl={{ antialias: true, alpha: false, powerPreference: 'high-performance' }} onCreated={({ gl }) => { gl.setPixelRatio(Math.min(window.devicePixelRatio, 1.7)) }}>
-            <SpatialScene mode={worldMode} selectedMemory={selectedMemory} onHover={setHoveredMemory} onSelect={setSelectedMemory} onGuide={guide} reducedMotion={reducedMotion} />
+          <Canvas
+            key={`${profile.tier}-${profile.antialias ? 'aa' : 'noaa'}`}
+            data-testid="spatial-world-canvas"
+            shadows={profile.shadows}
+            dpr={[1, profile.pixelRatioMax]}
+            frameloop={profile.documentVisible ? 'always' : 'never'}
+            gl={{ antialias: profile.antialias, alpha: false, powerPreference: 'high-performance' }}
+            onCreated={({ gl }) => {
+              gl.setPixelRatio(Math.min(window.devicePixelRatio, profile.pixelRatioMax))
+              gl.shadowMap.enabled = profile.shadows
+            }}
+          >
+            <SpatialScene mode={worldMode} selectedMemory={selectedMemory} onHover={setHoveredMemory} onSelect={setSelectedMemory} onGuide={guide} profile={profile} />
           </Canvas>
         </Suspense>
       )}
