@@ -3,9 +3,6 @@ name: AAA World Diagnostics
 on:
   pull_request:
     branches: [main]
-    paths:
-      - 'urai-tier1/**'
-      - '.github/workflows/aaa-world-diagnostics.yml'
   workflow_dispatch:
 
 permissions:
@@ -28,6 +25,8 @@ jobs:
           corepack prepare pnpm@10.0.0 --activate
       - name: Install frozen dependencies
         run: pnpm install --frozen-lockfile
+      - name: Prepare diagnostic evidence directory
+        run: mkdir -p release-control-evidence
       - name: Runtime dependency bootstrap
         run: node urai-tier1/scripts/require-test-bootstrap.mjs
       - name: AAA artifact contract
@@ -38,13 +37,11 @@ jobs:
       - name: Unit contracts
         if: always()
         run: |
-          mkdir -p release-control-evidence
           set -o pipefail
           pnpm --dir urai-tier1 test:unit 2>&1 | tee release-control-evidence/aaa-unit-contracts.log
       - name: Production build
         if: always()
         run: |
-          mkdir -p release-control-evidence
           set -o pipefail
           pnpm --dir urai-tier1 build 2>&1 | tee release-control-evidence/aaa-build.log
       - name: Upload diagnostics
