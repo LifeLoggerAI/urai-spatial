@@ -1,0 +1,46 @@
+name: Apply Adaptive Spatial Canvas
+
+on:
+  push:
+    branches:
+      - converge/public-beta-20260710
+    paths:
+      - 'scripts/apply-adaptive-spatial-canvas.mjs'
+      - '.github/workflows/apply-adaptive-spatial-canvas.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  apply:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: converge/public-beta-20260710
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Apply fail-closed adaptive Canvas patch
+        run: node scripts/apply-adaptive-spatial-canvas.mjs
+      - name: Verify direct adaptive controls exist
+        run: |
+          grep -F "particleCount={quality.particleCount}" urai-tier1/src/spatial/components/world/SpatialWorldCanvas.tsx
+          grep -F "dpr={[1, quality.pixelRatioMax]}" urai-tier1/src/spatial/components/world/SpatialWorldCanvas.tsx
+          grep -F "shadows={quality.shadows}" urai-tier1/src/spatial/components/world/SpatialWorldCanvas.tsx
+          grep -F "postprocessing={quality.postprocessing}" urai-tier1/src/spatial/components/world/SpatialWorldCanvas.tsx
+          grep -F "frameloop={quality.documentVisible ? 'always' : 'never'}" urai-tier1/src/spatial/components/world/SpatialWorldCanvas.tsx
+      - name: Commit generated integration
+        run: |
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add urai-tier1/src/spatial/components/world/SpatialWorldCanvas.tsx
+          if git diff --cached --quiet; then
+            echo 'Adaptive Canvas integration already applied.'
+            exit 0
+          fi
+          git commit -m 'Wire adaptive quality into SpatialWorldCanvas [skip ci]'
+          git push origin HEAD:converge/public-beta-20260710
