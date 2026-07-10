@@ -1,0 +1,35 @@
+{
+  "schemaVersion": "urai-public-product-identity-1",
+  "productName": "URAI Spatial",
+  "shortName": "URAI",
+  "canonicalApplication": "https://urai.app",
+  "canonicalRepository": "https://github.com/LifeLoggerAI/urai-spatial",
+  "runtimeRoot": "urai-tier1",
+  "productPath": [
+    "Home",
+    "Ground",
+    "Life Map",
+    "Focus",
+    "Replay",
+    "Mirror",
+    "Passport",
+    "Status"
+  ],
+  "currentPosture": "substantial fallback/demo spatial web experience using synthetic sample data",
+  "productionCertification": "pending exact deployment and rollback proof",
+  "identityScope": "product-not-legal-entity",
+  "withheldAssertions": [
+    "legal entity",
+    "creator or founder identity",
+    "trademark ownership",
+    "patent ownership",
+    "copyright ownership",
+    "chain of title"
+  ],
+  "sourcesOfTruth": [
+    "STATUS.md",
+    "EVIDENCE.md",
+    "docs/V1_V100_VERIFICATION_LEDGER.md",
+    "urai-tier1/src/data/launchTruth.ts"
+  ]
+}
