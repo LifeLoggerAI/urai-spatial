@@ -1,0 +1,58 @@
+{
+  "schemaVersion": "urai-investor-materials-1",
+  "updatedAt": "2026-07-10",
+  "state": "internal-review-only",
+  "formalSolicitationAuthorized": false,
+  "financingTermsApproved": false,
+  "confidentialDataRoomApproved": false,
+  "selectedWedgeHypothesis": {
+    "name": "founder decision continuity",
+    "status": "unvalidated hypothesis",
+    "reason": "It can be tested with low-risk sample data, aligns with current founder-demo distribution, and avoids medical or device claims.",
+    "proofRequired": [
+      "defined founder cohort",
+      "repeat use for decision context",
+      "trust and permission comprehension",
+      "willingness to continue or pay",
+      "evidence that spatial navigation adds value beyond a conventional journal or chat interface"
+    ]
+  },
+  "currentProofSources": [
+    "STATUS.md",
+    "EVIDENCE.md",
+    "docs/V1_V100_VERIFICATION_LEDGER.md",
+    "urai-tier1/src/data/launchTruth.ts",
+    "docs/founder-readiness/INVESTOR_ONE_PAGER.md",
+    "docs/founder-readiness/INVESTOR_PACKAGE.md"
+  ],
+  "blockedClaims": [
+    "production certification",
+    "validated market wedge",
+    "validated retention or willingness to pay",
+    "guaranteed market size, valuation, return, patent coverage, or regulatory outcome",
+    "verified entity or IP ownership beyond authorized records",
+    "active provider, persistent private memory, or device certification without receipts"
+  ],
+  "externalBlockers": [
+    {
+      "id": "SECURITIES_AND_FINANCING_REVIEW",
+      "owner": "authorized corporate officer and securities counsel",
+      "smallestUnblock": "Approve the exact audience, wording, terms, jurisdiction, and distribution method before formal solicitation."
+    },
+    {
+      "id": "ENTITY_AND_CHAIN_OF_TITLE",
+      "owner": "authorized corporate officer and counsel",
+      "smallestUnblock": "Produce a dated entity registry and chain-of-title matrix for domains, repositories, code, assets, filings, contracts, and contributor assignments."
+    },
+    {
+      "id": "DEPLOYMENT_AND_BETA_EVIDENCE",
+      "owner": "release-control owner #461 and beta owner #496",
+      "smallestUnblock": "Attach exact deployed-SHA, rollback, live-smoke, and controlled-beta evidence before upgrading current-state or traction claims."
+    },
+    {
+      "id": "PRIVATE_DATA_ROOM",
+      "owner": "authorized corporate officer",
+      "smallestUnblock": "Select an access-controlled private location and approve the confidential document inventory and recipients."
+    }
+  ]
+}
