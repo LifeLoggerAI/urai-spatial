@@ -7,22 +7,27 @@ const budget = JSON.parse(fs.readFileSync(path.join(root, 'operations/performanc
 const canvasPath = path.join(root, 'urai-tier1/src/spatial/components/world/SpatialWorldCanvas.tsx')
 const adaptivePath = path.join(root, 'urai-tier1/src/spatial/performance/useAdaptiveSpatialQuality.ts')
 const boundaryPath = path.join(root, 'urai-tier1/src/spatial/performance/SpatialPerformanceBoundary.tsx')
+const tierOnePath = path.join(root, 'urai-tier1/src/spatial/layout/TierOneExperience.tsx')
 const errors = []
 const warnings = []
 
-for (const required of [canvasPath, adaptivePath, boundaryPath]) {
+for (const required of [canvasPath, adaptivePath, boundaryPath, tierOnePath]) {
   if (!fs.existsSync(required)) errors.push(`Missing required file: ${path.relative(root, required)}`)
 }
 
 const canvas = fs.existsSync(canvasPath) ? fs.readFileSync(canvasPath, 'utf8') : ''
 const adaptive = fs.existsSync(adaptivePath) ? fs.readFileSync(adaptivePath, 'utf8') : ''
 const boundary = fs.existsSync(boundaryPath) ? fs.readFileSync(boundaryPath, 'utf8') : ''
+const tierOne = fs.existsSync(tierOnePath) ? fs.readFileSync(tierOnePath, 'utf8') : ''
 
 for (const marker of ['deviceMemory', 'hardwareConcurrency', 'saveData', 'effectiveType', 'documentVisible']) {
   if (!adaptive.includes(marker)) errors.push(`Adaptive quality controller missing marker: ${marker}`)
 }
 for (const marker of ['requestAnimationFrame', 'markFirstSpatialFrame', 'minHeight', 'contain']) {
   if (!boundary.includes(marker)) errors.push(`Performance boundary missing marker: ${marker}`)
+}
+for (const marker of ['SpatialPerformanceBoundary', 'TierOneExperienceContent', 'route={`/spatial/${mode}`}']) {
+  if (!tierOne.includes(marker)) errors.push(`Active Tier One runtime missing performance integration marker: ${marker}`)
 }
 
 if (/Float32Array\(360 \* 3\)/.test(canvas)) warnings.push('Current runtime still hardcodes 360 particles; integrate quality profile particleCount before merge.')
@@ -60,7 +65,7 @@ const report = {
   errors,
   warnings,
   oversized,
-  integrationState: warnings.length ? 'foundation-ready-runtime-integration-pending' : 'integrated',
+  integrationState: warnings.length ? 'active-boundary-canvas-tuning-pending' : 'integrated',
 }
 
 console.log(JSON.stringify(report, null, 2))
