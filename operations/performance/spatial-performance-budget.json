@@ -26,7 +26,7 @@
   "qualityTiers": {
     "low": {
       "pixelRatioMax": 1,
-      "particles": 120,
+      "particleCount": 120,
       "shadows": false,
       "postprocessing": false,
       "antialias": false,
@@ -34,7 +34,7 @@
     },
     "medium": {
       "pixelRatioMax": 1.35,
-      "particles": 180,
+      "particleCount": 180,
       "shadows": true,
       "postprocessing": false,
       "antialias": true,
@@ -42,7 +42,7 @@
     },
     "high": {
       "pixelRatioMax": 1.75,
-      "particles": 520,
+      "particleCount": 520,
       "shadows": true,
       "postprocessing": true,
       "antialias": true,
