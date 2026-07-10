@@ -8,6 +8,20 @@ const scriptsDirectory = path.join(root, 'scripts')
 const canonical = 'spatial-live-deploy.yml'
 const allowedProductionScript = 'scripts/live-release.mjs'
 const auditScript = 'scripts/audit-production-workflow-authority.mjs'
+const proofRunner = 'scripts/aaa-launch-proof.mjs'
+const steeringPlanPath = 'docs/aaa-machine/steering-plan.json'
+const steeringScriptPath = 'scripts/urai-aaa-steer.mjs'
+const steeringCompatibilityPath = 'scripts/urai-aaa-steer.cjs'
+const proofGuidePaths = ['docs/aaa-launch-proof-runner.md', 'docs/receipts/URAI_PROOF_MACHINE.md']
+const retiredExecutables = [
+  'scripts/deploy-exact-static-release.mjs',
+  'scripts/firebase-studio-polish-deploy-node.sh',
+  'scripts/urai-aaa-proof-loop.sh',
+  'scripts/urai-firebase-studio-static-release.mjs',
+  'scripts/urai-proof-loop.mjs',
+  'scripts/urai-v1-autopilot-retry.sh',
+  'scripts/urai-v1-autopilot.sh',
+]
 const failures = []
 
 function walk(directory) {
@@ -20,6 +34,21 @@ function walk(directory) {
 
 function relative(file) {
   return path.relative(root, file).replaceAll('\\', '/')
+}
+
+function read(relativePath) {
+  const absolute = path.join(root, relativePath)
+  if (!existsSync(absolute)) {
+    failures.push(`Missing required authority file: ${relativePath}`)
+    return ''
+  }
+  return readFileSync(absolute, 'utf8')
+}
+
+function requireTokens(label, source, tokens) {
+  for (const token of tokens) {
+    if (!source.includes(token)) failures.push(`${label} missing marker: ${token}`)
+  }
 }
 
 function hasDirectDeployCommand(source) {
@@ -43,6 +72,10 @@ function workflowCanDeploy(source, productionCapableScripts) {
     /\benvironment:\s*production\b/i.test(source) ||
     /\bDEPLOY_URAI_APP\b/.test(source) ||
     productionCapableScripts.some((script) => source.includes(script))
+}
+
+for (const retired of retiredExecutables) {
+  if (existsSync(path.join(root, retired))) failures.push(`Retired executable was restored: ${retired}`)
 }
 
 const productionCapableScripts = []
@@ -141,10 +174,82 @@ if (!existsSync(packagePath)) {
   }
 }
 
+const proofSource = read(proofRunner)
+requireTokens('Proof runner', proofSource, [
+  "if (args.has('--deploy'))",
+  "process.exit(64)",
+  "git', ['rev-parse', 'HEAD']",
+  "git', ['status', '--porcelain']",
+  'sourceIdentityVerified',
+  'cleanWorkingTree',
+  "productionDeploymentAttempted: false",
+  "productionDeploymentAuthority: '.github/workflows/spatial-live-deploy.yml'",
+  "join(receiptDir, 'live-visual-audit')",
+])
+if (hasDirectDeployCommand(proofSource)) failures.push('Proof runner contains a direct Firebase deploy command')
+
+for (const guidePath of proofGuidePaths) {
+  const guide = read(guidePath)
+  requireTokens(guidePath, guide, [
+    'scripts/aaa-launch-proof.mjs',
+    '.github/workflows/spatial-live-deploy.yml',
+  ])
+  if (/bash\s+scripts\/urai-aaa-proof-loop\.sh/.test(guide)) failures.push(`${guidePath} invokes retired urai-aaa-proof-loop.sh`)
+  if (/node\s+scripts\/urai-proof-loop\.mjs/.test(guide)) failures.push(`${guidePath} invokes retired urai-proof-loop.mjs`)
+  if (/aaa-launch-proof\.mjs[^\n`]*--deploy/.test(guide)) failures.push(`${guidePath} tells operators to deploy through the proof runner`)
+}
+
+const steeringSource = read(steeringScriptPath)
+requireTokens('Machine steering', steeringSource, [
+  "screenshotDirectory || 'live-visual-audit/screenshots'",
+  "receipt.sourceIdentityVerified === true",
+  "receipt.cleanWorkingTree === true",
+  "receipt.productionDeploymentAttempted === false",
+  'machineProofGreen',
+])
+
+const compatibilitySource = read(steeringCompatibilityPath)
+if (!compatibilitySource.includes("import('./urai-aaa-steer.mjs')")) {
+  failures.push(`${steeringCompatibilityPath} must delegate to the canonical steering implementation`)
+}
+
+const steeringPlanSource = read(steeringPlanPath)
+try {
+  const steeringPlan = JSON.parse(steeringPlanSource)
+  if (Number(steeringPlan.version) < 2) failures.push('Steering plan version must be at least 2')
+  if (steeringPlan.proofRequirements?.productionDeploymentAttempted !== false) {
+    failures.push('Steering plan must require productionDeploymentAttempted=false')
+  }
+  if (steeringPlan.proofRequirements?.screenshotsPng !== 28) {
+    failures.push('Steering plan must require the current 28-screen visual matrix')
+  }
+  if (steeringPlan.receiptContract?.screenshotDirectory !== 'live-visual-audit/screenshots') {
+    failures.push('Steering plan screenshot directory does not match live-visual-audit output')
+  }
+  if (steeringPlan.receiptContract?.productionAuthority !== '.github/workflows/spatial-live-deploy.yml') {
+    failures.push('Steering plan production authority is not canonical')
+  }
+  if ('deployExit' in (steeringPlan.proofRequirements || {})) failures.push('Steering plan still expects a local deploy exit code')
+  for (const loop of steeringPlan.loops || []) {
+    const command = String(loop.runCommand || '')
+    if (!command.includes('node scripts/aaa-launch-proof.mjs --screenshots')) {
+      failures.push(`Steering loop ${loop.id || 'unknown'} does not use the proof-only runner`)
+    }
+    if (/--deploy\b|urai-aaa-proof-loop\.sh|urai-proof-loop\.mjs/.test(command)) {
+      failures.push(`Steering loop ${loop.id || 'unknown'} references a retired or deploy-capable proof path`)
+    }
+  }
+} catch (error) {
+  failures.push(`Invalid ${steeringPlanPath}: ${error instanceof Error ? error.message : String(error)}`)
+}
+
 const report = {
   ok: failures.length === 0,
   canonicalWorkflow: canonical,
   canonicalProductionScript: allowedProductionScript,
+  proofRunner,
+  steeringPlan: steeringPlanPath,
+  retiredExecutables,
   productionCapableScripts: productionCapableScripts.sort(),
   failures,
 }
