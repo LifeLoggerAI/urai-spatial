@@ -33,6 +33,7 @@ const groups = [
   {
     title: 'Showcase and XR',
     items: [
+      ['/event', 'pending proof', 'Founder event destination'],
       ['/demo', 'implemented', 'Public walkthrough'],
       ['/demo/replay-film', 'implemented', 'Replay film proof surface'],
       ['/spatial/life-map', 'implemented', 'Spatial Life Map'],
@@ -111,6 +112,7 @@ export default function StatusRoutePage() {
         </section>
         <nav className="mt-6 flex flex-wrap gap-3" aria-label="Status route navigation">
           <Link className="rounded-full bg-white px-5 py-3 text-sm font-black text-slate-950 no-underline" href="/home">Open Home</Link>
+          <Link className="rounded-full border border-white/20 px-5 py-3 text-sm font-black text-white no-underline" href="/event">Founder event route</Link>
           <Link className="rounded-full border border-white/20 px-5 py-3 text-sm font-black text-white no-underline" href="/ground">Open Ground</Link>
           <Link className="rounded-full border border-white/20 px-5 py-3 text-sm font-black text-white no-underline" href="/life-map">Open Life Map</Link>
           <Link className="rounded-full border border-white/20 px-5 py-3 text-sm font-black text-white no-underline" href="/privacy-controls">Privacy Controls</Link>
