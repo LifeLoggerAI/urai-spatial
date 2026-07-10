@@ -1,0 +1,48 @@
+{
+  "schemaVersion": "urai-beta-execution-1",
+  "updatedAt": "2026-07-10",
+  "state": "blocked",
+  "exactBuildSha": null,
+  "deploymentReceipt": null,
+  "rollbackSha": null,
+  "liveBaseUrl": "https://urai.app",
+  "sampleDataOnly": true,
+  "realUserSensitiveDataAllowed": false,
+  "targetCohortSize": {
+    "minimum": 15,
+    "maximum": 30
+  },
+  "requiredRoutes": [
+    "/event",
+    "/home",
+    "/life-map",
+    "/focus?memoryId=quiet-reset",
+    "/replay?memoryId=quiet-reset&manifestId=replay-recovery-thread",
+    "/mirror",
+    "/passport",
+    "/privacy-controls",
+    "/status"
+  ],
+  "blockers": [
+    {
+      "id": "EXACT_DEPLOYED_SHA",
+      "owner": "release-control owner tracked in #461",
+      "smallestUnblock": "Deploy one frozen main SHA through URAI Canonical Production Release and attach the exact deployment receipt."
+    },
+    {
+      "id": "ROLLBACK_RECEIPT",
+      "owner": "release-control owner tracked in #461",
+      "smallestUnblock": "Record a distinct proven rollback SHA and rollback command before beta enrollment."
+    },
+    {
+      "id": "LIVE_ROUTE_STATUS_PARITY",
+      "owner": "release-control owner tracked in #461",
+      "smallestUnblock": "Pass custom-domain route, query, slash, Status, and Privacy Controls smoke on the deployed SHA."
+    },
+    {
+      "id": "EXACT_HEAD_CI",
+      "owner": "repository or organization Actions/runner administrator",
+      "smallestUnblock": "Restore GitHub Actions runner capacity so required exact-head checks and beta capture jobs execute."
+    }
+  ]
+}
