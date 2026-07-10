@@ -38,11 +38,29 @@ for (const forbidden of [
   if (forbidden.test(about)) failures.push(`about page contains unapproved identity or ownership assertion: ${forbidden}`)
 }
 
+requireTokens('urai-tier1/src/app/layout.tsx', [
+  "metadataBase: new URL('https://urai.app')",
+  "applicationName: 'URAI Spatial'",
+  "siteName: 'URAI Spatial'",
+  "card: 'summary'",
+  "'urai-product-identity': 'product-not-legal-entity'",
+])
 requireTokens('urai-tier1/src/app/manifest.ts', [
   "name: 'URAI Spatial'",
   "short_name: 'URAI'",
   "start_url: '/home'",
   "src: '/icon.svg'",
+])
+requireTokens('urai-tier1/src/app/robots.ts', [
+  "allow: '/'",
+  "sitemap: 'https://urai.app/sitemap.xml'",
+  "host: 'https://urai.app'",
+])
+requireTokens('urai-tier1/src/app/sitemap.ts', [
+  "'/about'",
+  "'/status'",
+  "'/privacy-controls'",
+  "new URL(route, 'https://urai.app')",
 ])
 requireTokens('urai-tier1/public/icon.svg', [
   '<title id="title">URAI Spatial icon</title>',
@@ -57,10 +75,25 @@ for (const file of ['urai-tier1/public/humans.txt', 'urai-tier1/public/llms.txt'
   ])
 }
 
+const productRecordText = read('urai-tier1/public/urai-product.json')
+if (productRecordText) {
+  try {
+    const record = JSON.parse(productRecordText)
+    if (record.schemaVersion !== 'urai-public-product-identity-1') failures.push('urai-product.json has an unexpected schemaVersion')
+    if (record.productName !== 'URAI Spatial') failures.push('urai-product.json has an unexpected productName')
+    if (record.canonicalApplication !== 'https://urai.app') failures.push('urai-product.json has an unexpected canonicalApplication')
+    if (record.canonicalRepository !== 'https://github.com/LifeLoggerAI/urai-spatial') failures.push('urai-product.json has an unexpected canonicalRepository')
+    if (record.identityScope !== 'product-not-legal-entity') failures.push('urai-product.json must remain product-not-legal-entity')
+    if (!Array.isArray(record.withheldAssertions) || !record.withheldAssertions.includes('chain of title')) failures.push('urai-product.json must record withheld identity/ownership assertions')
+  } catch (error) {
+    failures.push(`urai-product.json is invalid JSON: ${error instanceof Error ? error.message : String(error)}`)
+  }
+}
+
 if (failures.length) {
   console.error('Public product identity verification failed:')
   failures.forEach((failure) => console.error(`- ${failure}`))
   process.exit(1)
 }
 
-console.log('Public product identity verified: product/repository facts and manifest icon present; legal identity and ownership claims withheld')
+console.log('Public product identity verified: metadata, manifest, discovery files, icon, product record, and legal-identity boundaries passed')
