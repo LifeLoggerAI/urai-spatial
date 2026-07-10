@@ -1,0 +1,22 @@
+{
+  "schemaVersion": "urai-public-authority-1",
+  "product": "URAI",
+  "runtime": "URAI Spatial",
+  "canonicalUrl": "https://urai.app",
+  "canonicalRepository": "https://github.com/LifeLoggerAI/urai-spatial",
+  "productionRuntimeRoot": "urai-tier1",
+  "productionBranch": "main",
+  "creator": {
+    "name": "Adam Clamp",
+    "role": "Founder and creator of URAI",
+    "profile": "https://urai.app/u/adamclamp"
+  },
+  "statusUrl": "https://urai.app/status",
+  "aboutUrl": "https://urai.app/about",
+  "claimsBoundary": "The current public experience uses sample data and fallback-safe behavior. Production, provider, persistence, and physical-device claims remain evidence-gated.",
+  "deploymentIdentity": {
+    "source": "HTML metadata and the Status/release receipt",
+    "required": true
+  },
+  "disambiguation": "This record describes the URAI project at urai.app and LifeLoggerAI/urai-spatial. It does not assert affiliation with unrelated similarly named organizations or products."
+}
