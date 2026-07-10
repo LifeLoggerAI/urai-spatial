@@ -48,8 +48,8 @@ for (const marker of ['deviceMemory', 'hardwareConcurrency', 'saveData', 'effect
 }
 
 for (const marker of ['particleCount', 'pixelRatioMax', 'shadows', 'postprocessing', 'antialias']) {
-  requireMatch(`Secondary spatial Canvas consumes ${marker}`, canvas, new RegExp(`profile\\.${marker}`))
-  requireMatch(`Active Life Map consumes ${marker}`, activeLifeMap, new RegExp(`profile\\.${marker}`))
+  requireMatch(`Secondary spatial Canvas consumes ${marker}`, canvas, new RegExp(`profile\.${marker}`))
+  requireMatch(`Active Life Map consumes ${marker}`, activeLifeMap, new RegExp(`profile\.${marker}`))
 }
 
 requireMatch('Secondary visibility-aware frameloop', canvas, /frameloop=\{profile\.documentVisible \? 'always' : 'never'\}/)
@@ -64,7 +64,8 @@ requireMatch('Active route renders Life Map boundary', activeLifeMapWrapper, /<L
 requireMatch('Active route wraps query reader in Suspense', activeLifeMapWrapper, /<Suspense[\s\S]*<LifeMapRouteBoundary/)
 forbidMatch('Active wrapper destroys persisted state', activeLifeMapWrapper, /localStorage\.removeItem/)
 
-requireMatch('Life Map boundary imports adaptive scene', activeLifeMapBoundary, /import AdaptiveLifeMapScene from ['"]\.\/AdaptiveLifeMapScene['"]/)
+requireMatch('Life Map boundary loads adaptive scene client-only', activeLifeMapBoundary, /dynamic\(\(\) => import\(['"]\.\/AdaptiveLifeMapScene['"]\),\s*\{[\s\S]*ssr:\s*false/)
+requireMatch('Life Map boundary provides stable loading surface', activeLifeMapBoundary, /aria-label="Opening Life Map"/)
 requireMatch('Life Map boundary reads query identity', activeLifeMapBoundary, /useSearchParams\(\)/)
 requireMatch('Life Map boundary detects selected-to-overview history', activeLifeMapBoundary, /previousIdentity\.current && !identity/)
 requireMatch('Life Map boundary clears stale history snapshot only', activeLifeMapBoundary, /localStorage\.removeItem\(LIFE_MAP_STATE_KEY\)/)
