@@ -4,6 +4,7 @@ import path from 'node:path'
 
 const root = process.cwd()
 const scannedRoots = ['README.md', 'ENVIRONMENT.md', 'docs', 'urai-tier1/src']
+const claimMatrixRoots = ['docs/media-kit']
 const ignoredFragments = [
   'node_modules',
   '.next',
@@ -29,6 +30,15 @@ const riskyClaims = [
   { id: 'asset-factory-provider', pattern: /\b(asset-factory|asset factory|spatial asset jobs|media pipeline|studio export)\b/i, allowedNearby: /not live|not claimed|separate gate|provenance|future|deferred|fallback|provider is connected|scaffold|contract|private beta|gated|disabled/i, reason: 'Asset-factory/studio export language must remain deferred unless job integration is live.' },
 ]
 
+const claimMatrixRisks = [
+  { id: 'legacy-public-brand', pattern: /\bURAI Genesis\b/i, allowedNearby: /historical|legacy|deprecated|do not use|replace|avoid/i, reason: 'Current public media must use URAI or URAI Spatial, not the legacy URAI Genesis name.' },
+  { id: 'production-certification', pattern: /\b(production[- ]ready|production[- ]certified|fully live|launch[- ]ready)\b/i, allowedNearby: /not|not yet|pending|gated|requires?|without|cannot|do not|evidence|receipt|certification-pending/i, reason: 'Production status requires an immediate evidence or pending qualifier.' },
+  { id: 'medical-or-therapy', pattern: /\b(diagnos(?:e|es|is|tic)|therapy replacement|medical device|treat(?:s|ment)?|clinical outcome)\b/i, allowedNearby: /not|non-diagnostic|do not|does not|avoid|without|never|prohibited|reflection/i, reason: 'Medical, diagnosis, treatment, and therapy language must be explicitly disclaimed.' },
+  { id: 'surveillance-or-certainty', pattern: /\b(lie detection|mind reading|emotional certainty|psychological truth|always-on monitoring|surveillance)\b/i, allowedNearby: /not|do not|does not|avoid|without|never|prohibited|disabled|consent/i, reason: 'Surveillance and certainty claims must be explicitly prohibited or disclaimed.' },
+  { id: 'autonomous-action', pattern: /\b(autonomous(?: real-world)? actions?|acts autonomously|takes action for you|executes actions for you)\b/i, allowedNearby: /not|does not|do not|human-approved|approval|consent|disabled|future|gated/i, reason: 'Autonomous-action language must remain human-approved, disabled, future, or explicitly disclaimed.' },
+  { id: 'persistent-memory', pattern: /\b(remembers your life|persistent personal memory|persistent private memory|user-owned memory)\b/i, allowedNearby: /designed|not proven|not live|pending|gated|sample|demo|user-controlled|permission|future|without/i, reason: 'Persistent personal-memory language requires an immediate design, sample, or evidence-gated qualifier.' },
+]
+
 const passingFixtures = [
   'AR session support is deferred and disabled until provider is connected.',
   'Body biometric panels are privacy-safe fallback previews, not live providers.',
@@ -41,7 +51,24 @@ const failingFixtures = [
   'URAI Spatial includes live WebXR for public users.',
   'The biometric provider enables face tracking today.',
   'Live memory sync powers the companion.',
-  'The media pipeline supports studio export now.'
+  'The media pipeline supports studio export now.',
+]
+
+const claimMatrixPassingFixtures = [
+  'Production certification remains pending until exact receipts exist.',
+  'Mirror is reflection, not diagnosis or treatment.',
+  'URAI must not be described as surveillance or always-on monitoring.',
+  'Autonomous actions remain disabled and require human approval.',
+  'The demo does not prove persistent personal memory.',
+]
+
+const claimMatrixFailingFixtures = [
+  'URAI Genesis is the current public product.',
+  'URAI is production ready.',
+  'Mirror diagnoses your emotional state.',
+  'URAI provides lie detection and emotional certainty.',
+  'URAI takes autonomous actions for you.',
+  'URAI remembers your life with persistent personal memory.',
 ]
 
 const internalEvidenceRequirements = [
@@ -59,6 +86,26 @@ const internalEvidenceRequirements = [
       /NOT YET PRODUCTION CERTIFIED/i,
       /No production deployment was initiated/i,
       /Physical Quest verification/i,
+    ],
+  },
+  {
+    path: 'docs/founder-readiness/CLAIMS_AND_LEGAL.md',
+    required: [
+      /## Green claims/i,
+      /## Yellow claims/i,
+      /## Red claims/i,
+      /This demo uses sample data/i,
+      /not a medical device/i,
+      /guaranteed investment return/i,
+    ],
+  },
+  {
+    path: 'docs/media-kit/press-media-kit.md',
+    required: [
+      /^URAI$/m,
+      /This demo uses sample data/i,
+      /production-certification pending/i,
+      /authenticated persistence/i,
     ],
   },
 ]
@@ -96,12 +143,12 @@ function publicTextFromLine(line) {
   return fragments.length > 0 ? fragments.join(' ') : line
 }
 
-function findRisk(text) {
-  return riskyClaims.find((claim) => claim.pattern.test(text) && !claim.allowedNearby.test(text))
+function findRisk(risks, text) {
+  return risks.find((claim) => claim.pattern.test(text) && !claim.allowedNearby.test(text))
 }
 
 for (const fixture of passingFixtures) {
-  const risk = findRisk(fixture)
+  const risk = findRisk(riskyClaims, fixture)
   if (risk) {
     console.error(`spatial-copy: passing fixture failed (${risk.id}): ${fixture}`)
     process.exit(1)
@@ -109,9 +156,25 @@ for (const fixture of passingFixtures) {
 }
 
 for (const fixture of failingFixtures) {
-  const risk = findRisk(fixture)
+  const risk = findRisk(riskyClaims, fixture)
   if (!risk) {
     console.error(`spatial-copy: failing fixture passed unexpectedly: ${fixture}`)
+    process.exit(1)
+  }
+}
+
+for (const fixture of claimMatrixPassingFixtures) {
+  const risk = findRisk(claimMatrixRisks, fixture)
+  if (risk) {
+    console.error(`spatial-copy: claim-matrix passing fixture failed (${risk.id}): ${fixture}`)
+    process.exit(1)
+  }
+}
+
+for (const fixture of claimMatrixFailingFixtures) {
+  const risk = findRisk(claimMatrixRisks, fixture)
+  if (!risk) {
+    console.error(`spatial-copy: claim-matrix failing fixture passed unexpectedly: ${fixture}`)
     process.exit(1)
   }
 }
@@ -128,29 +191,40 @@ for (const requirement of internalEvidenceRequirements) {
   }
 }
 
-const files = scannedRoots
+function scan(files, risks, label) {
+  let failed = false
+  for (const filePath of files) {
+    const relativePath = path.relative(root, filePath).replace(/\\/g, '/')
+    const lines = fs.readFileSync(filePath, 'utf8').split(/\r?\n/)
+    lines.forEach((line, index) => {
+      if (isImplementationLine(line)) return
+      const publicText = publicTextFromLine(line)
+      const risk = findRisk(risks, publicText)
+      if (!risk) return
+      const context = [lines[index - 1] ?? '', line, lines[index + 1] ?? ''].join(' ')
+      if (risk.allowedNearby.test(context)) return
+      console.error(`spatial-copy: risky ${label} claim in ${relativePath}:${index + 1}`)
+      console.error(`  policy: ${risk.id}`)
+      console.error(`  ${risk.reason}`)
+      console.error(`  ${line.trim()}`)
+      failed = true
+    })
+  }
+  return failed
+}
+
+const providerFiles = scannedRoots
   .flatMap(listFiles)
   .filter((filePath) => textExtensions.has(path.extname(filePath)))
   .filter((filePath) => !shouldIgnore(path.relative(root, filePath).replace(/\\/g, '/')))
 
-let failed = false
-for (const filePath of files) {
-  const relativePath = path.relative(root, filePath).replace(/\\/g, '/')
-  const lines = fs.readFileSync(filePath, 'utf8').split(/\r?\n/)
-  lines.forEach((line, index) => {
-    if (isImplementationLine(line)) return
-    const publicText = publicTextFromLine(line)
-    const risk = findRisk(publicText)
-    if (!risk) return
-    const context = [lines[index - 1] ?? '', line, lines[index + 1] ?? ''].join(' ')
-    if (risk.allowedNearby.test(context)) return
-    console.error(`spatial-copy: risky spatial provider claim in ${relativePath}:${index + 1}`)
-    console.error(`  policy: ${risk.id}`)
-    console.error(`  ${risk.reason}`)
-    console.error(`  ${line.trim()}`)
-    failed = true
-  })
-}
+const claimMatrixFiles = claimMatrixRoots
+  .flatMap(listFiles)
+  .filter((filePath) => textExtensions.has(path.extname(filePath)))
+  .filter((filePath) => !shouldIgnore(path.relative(root, filePath).replace(/\\/g, '/')))
 
-if (failed) process.exit(1)
-console.log('spatial-copy: provider boundary checks passed')
+const providerFailed = scan(providerFiles, riskyClaims, 'spatial provider')
+const claimMatrixFailed = scan(claimMatrixFiles, claimMatrixRisks, 'public claims matrix')
+
+if (providerFailed || claimMatrixFailed) process.exit(1)
+console.log('spatial-copy: provider boundaries and public claims matrix passed')
