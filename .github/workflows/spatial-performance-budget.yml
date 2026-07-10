@@ -8,6 +8,8 @@ on:
       - 'scripts/audit-spatial-performance-budget.mjs'
       - 'urai-tier1/src/spatial/performance/**'
       - 'urai-tier1/src/spatial/components/world/SpatialWorldCanvas.tsx'
+      - 'urai-tier1/src/components/lifemap/AdaptiveLifeMapScene.tsx'
+      - 'urai-tier1/src/spatial/lifemap/SpatialLifeMapCanonical.tsx'
       - 'urai-tier1/public/assets/urai/**'
       - '.github/workflows/spatial-performance-budget.yml'
 
