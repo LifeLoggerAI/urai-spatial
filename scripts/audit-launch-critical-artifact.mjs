@@ -24,7 +24,14 @@ for (const asset of manifest.assets) {
 
   const assetPath = path.join(root, asset.fixedPath)
   const receiptPath = path.join(root, manifest.receiptRoot, `${asset.id}.json`)
-  if (!fs.existsSync(assetPath) || !fs.existsSync(receiptPath)) continue
+  if (!fs.existsSync(assetPath)) {
+    errors.push(`${asset.id}: missing asset file at ${asset.fixedPath}`)
+    continue
+  }
+  if (!fs.existsSync(receiptPath)) {
+    errors.push(`${asset.id}: missing receipt file at ${path.relative(root, receiptPath)}`)
+    continue
+  }
 
   const bytes = fs.readFileSync(assetPath)
   const receipt = JSON.parse(fs.readFileSync(receiptPath, 'utf8'))
@@ -103,6 +110,10 @@ for (const asset of manifest.assets) {
   results.push({ id: asset.id, fixedPath: asset.fixedPath, bytes: bytes.length, sha256, releaseState: asset.releaseState, measured })
 }
 
+if (results.length !== manifest.assets.length) {
+  errors.push(`audited ${results.length} of ${manifest.assets.length} manifest assets`)
+}
+
 const report = {
   ok: errors.length === 0,
   candidateOnly: manifest.assets.every((asset) => asset.releaseState !== 'production-ready'),
@@ -140,19 +151,35 @@ function inspectGlb(bytes) {
   let triangleCount = 0
   const min = [Infinity, Infinity, Infinity]
   const max = [-Infinity, -Infinity, -Infinity]
+  let positionedPrimitiveCount = 0
+
   for (const mesh of json.meshes ?? []) {
     for (const primitive of mesh.primitives ?? []) {
-      const indexAccessor = json.accessors?.[primitive.indices]
-      if (!indexAccessor) throw new Error('GLB primitive is missing an index accessor')
-      triangleCount += Math.floor(indexAccessor.count / 3)
       const positionAccessor = json.accessors?.[primitive.attributes?.POSITION]
-      if (!positionAccessor?.min || !positionAccessor?.max) throw new Error('GLB POSITION accessor is missing min/max bounds')
+      if (!positionAccessor) throw new Error('GLB primitive is missing POSITION attribute')
+
+      const indexAccessor = primitive.indices === undefined ? null : json.accessors?.[primitive.indices]
+      if (primitive.indices !== undefined && !indexAccessor) {
+        throw new Error('GLB primitive references a missing index accessor')
+      }
+
+      const elementCount = indexAccessor?.count ?? positionAccessor.count
+      const mode = primitive.mode ?? 4
+      triangleCount += triangleCountForMode(mode, elementCount)
+
+      if (!positionAccessor.min || !positionAccessor.max) {
+        throw new Error('GLB POSITION accessor is missing min/max bounds')
+      }
+      positionedPrimitiveCount += 1
       for (let axis = 0; axis < 3; axis += 1) {
         min[axis] = Math.min(min[axis], positionAccessor.min[axis])
         max[axis] = Math.max(max[axis], positionAccessor.max[axis])
       }
     }
   }
+
+  if (positionedPrimitiveCount === 0) throw new Error('GLB contains no positioned mesh primitives')
+
   return {
     format: 'glb',
     version: 2,
@@ -169,6 +196,13 @@ function inspectGlb(bytes) {
   }
 }
 
+function triangleCountForMode(mode, count) {
+  if (!Number.isFinite(count) || count < 0) throw new Error(`invalid primitive element count ${count}`)
+  if (mode === 4) return Math.floor(count / 3)
+  if (mode === 5 || mode === 6) return Math.max(0, count - 2)
+  throw new Error(`unsupported non-triangle primitive mode ${mode}`)
+}
+
 function inspectHdr(bytes) {
   const headerEnd = bytes.indexOf(Buffer.from('\n\n'))
   if (headerEnd < 0) throw new Error('HDR header terminator is missing')
@@ -180,15 +214,50 @@ function inspectHdr(bytes) {
 }
 
 function inspectWav(bytes) {
-  if (bytes.length < 44 || bytes.toString('ascii', 0, 4) !== 'RIFF' || bytes.toString('ascii', 8, 12) !== 'WAVE') {
+  if (bytes.length < 12 || bytes.toString('ascii', 0, 4) !== 'RIFF' || bytes.toString('ascii', 8, 12) !== 'WAVE') {
     throw new Error('invalid WAV header')
   }
-  const channels = bytes.readUInt16LE(22)
-  const sampleRate = bytes.readUInt32LE(24)
-  const byteRate = bytes.readUInt32LE(28)
-  const bitsPerSample = bytes.readUInt16LE(34)
-  const dataBytes = bytes.readUInt32LE(40)
-  return { format: 'audio', container: 'wav', channels, sampleRate, bitsPerSample, durationSeconds: round(dataBytes / byteRate) }
+
+  let channels
+  let sampleRate
+  let byteRate
+  let bitsPerSample
+  let dataBytes
+  let offset = 12
+
+  while (offset + 8 <= bytes.length) {
+    const chunkId = bytes.toString('ascii', offset, offset + 4)
+    const chunkSize = bytes.readUInt32LE(offset + 4)
+    const dataOffset = offset + 8
+    const nextOffset = dataOffset + chunkSize + (chunkSize % 2)
+
+    if (nextOffset > bytes.length) throw new Error(`truncated WAV chunk ${chunkId}`)
+
+    if (chunkId === 'fmt ') {
+      if (chunkSize < 16) throw new Error('WAV fmt chunk is too small')
+      channels = bytes.readUInt16LE(dataOffset + 2)
+      sampleRate = bytes.readUInt32LE(dataOffset + 4)
+      byteRate = bytes.readUInt32LE(dataOffset + 8)
+      bitsPerSample = bytes.readUInt16LE(dataOffset + 14)
+    } else if (chunkId === 'data') {
+      dataBytes = chunkSize
+    }
+
+    offset = nextOffset
+  }
+
+  if (!channels || !sampleRate || !byteRate || !bitsPerSample || dataBytes === undefined) {
+    throw new Error('WAV is missing required fmt or data fields')
+  }
+
+  return {
+    format: 'audio',
+    container: 'wav',
+    channels,
+    sampleRate,
+    bitsPerSample,
+    durationSeconds: round(dataBytes / byteRate),
+  }
 }
 
 function inspectSvg(bytes) {
