@@ -1,31 +1,54 @@
 # URAI Proof Machine
 
-This is the repeatable V1/V2/V3 proof loop.
+This is the repeatable proof-only V1 route and visual verification loop.
 
-## What landed
+## Current authority
 
-- `urai-tier1/src/app/urai-proof-machine.css` locks Life Map and Location Map to one cinematic viewport so full-page screenshots stop exposing blank tails.
-- `scripts/urai-proof-loop.mjs` runs the local proof loop: browser install, typecheck, static build, optional deploy, live screenshot proof, PNG count check, and ZIP packaging.
+- `scripts/aaa-launch-proof.mjs` runs install, asset checks, typecheck, unit tests, build, production-authority audit, route-exposure checks, copy-policy checks, and optional live screenshots.
+- The proof runner writes receipts under `$HOME/urai-final-receipts` or `URAI_RECEIPT_ROOT`.
+- It never deploys production. Passing `--deploy` fails closed.
+- `.github/workflows/spatial-live-deploy.yml` is the sole production deployment authority.
 
-## Fast local proof loop
+The retired `scripts/urai-proof-loop.mjs` deploy path must not be restored or used.
 
-```bash
-node scripts/urai-proof-loop.mjs --label=v1-loop-5 --base=https://urai.app --skip-browser-install --skip-typecheck --skip-build
-```
-
-## Full deploy/proof loop
+## Fast proof of an already-built live surface
 
 ```bash
-node scripts/urai-proof-loop.mjs --label=v1-loop-5 --base=https://urai.app --deploy --archive-to-repo
+node scripts/aaa-launch-proof.mjs \
+  --base=https://urai.app \
+  --screenshots \
+  --skip-install \
+  --skip-assets \
+  --skip-typecheck \
+  --skip-test \
+  --skip-build
 ```
 
-Expected green lines:
+This checks authority, route exposure, copy policy, live route fingerprints, interaction paths, and desktop/mobile screenshots without publishing anything.
+
+## Full local proof
+
+```bash
+node scripts/aaa-launch-proof.mjs --base=https://urai.app --screenshots
+```
+
+Expected final line:
 
 ```text
-PROOF_EXIT=0
-PNG_COUNT=24
-STATUS=GREEN
+URAI AAA proof passed. Receipt: <receipt-directory>
 ```
+
+The receipt records `productionDeploymentAttempted: false` and identifies `.github/workflows/spatial-live-deploy.yml` as production authority.
+
+## Production release
+
+Do not run a local Firebase deploy command. After an exact candidate is merged and all required checks pass:
+
+1. Freeze the exact `main` SHA.
+2. Record a distinct proven rollback ancestor and rollback command.
+3. Dispatch **URAI Canonical Production Release** with the required `DEPLOY_URAI_APP` confirmation and Firebase project `urai-4dc1d`.
+4. Preserve the workflow verification, deployment, rollback, route, query, Status, Privacy Controls, and screenshot receipts.
+5. Treat the deployment as unverified until the custom-domain smoke proves the exact deployed SHA.
 
 ## Human visual verdict order
 
@@ -41,3 +64,4 @@ STATUS=GREEN
 - Route proof green does not equal visual AAA+++.
 - Screenshot proof green does not equal Quest proof.
 - Quest proof stays manual until actual Quest Browser evidence is captured.
+- Source implementation does not equal production certification.
