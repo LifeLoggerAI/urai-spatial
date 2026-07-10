@@ -2,17 +2,17 @@
 
 Script: `scripts/aaa-launch-proof.mjs`
 
-This runner creates a timestamped final proof receipt under:
+This runner is verification-only. It creates a timestamped proof receipt under:
 
 ```text
 $HOME/urai-final-receipts/aaa-launch-proof-<commit>-<timestamp>/
 ```
 
-It is intentionally conservative. It records evidence and does not deploy unless `--deploy` is passed.
+Production deployment is intentionally unavailable from this script. Deploy `urai.app` only through `.github/workflows/spatial-live-deploy.yml` using the protected `production` environment, exact release and rollback SHAs, and `DEPLOY_URAI_APP`.
 
 ## Standard proof pass
 
-Run from repo root:
+Run from the repository root:
 
 ```bash
 node scripts/aaa-launch-proof.mjs
@@ -20,62 +20,38 @@ node scripts/aaa-launch-proof.mjs
 
 This records:
 
-- git branch, commit, and working-tree state
-- `pnpm install --frozen-lockfile`
-- `pnpm typecheck`
-- `pnpm run --if-present test`
-- `pnpm build:static`
-- live route matrix for `https://urai.app`
-- asset receipt summary from `docs/final-asset-receipt.md`
-- foundation DNS/HTTPS status for `uraifoundation.org`
-- final report at `final-report.md`
+- git branch, commit, and working-tree state;
+- `pnpm install --frozen-lockfile`;
+- `pnpm typecheck`;
+- `pnpm run --if-present test`;
+- `pnpm build:static`;
+- live route and fingerprint checks for `https://urai.app`;
+- the asset receipt summary from `docs/final-asset-receipt.md`;
+- `final-report.md`, `summary.json`, and route-matrix evidence.
 
-## Deploy proof pass
-
-Only use when Firebase credentials are available and you intend to deploy:
-
-```bash
-node scripts/aaa-launch-proof.mjs --deploy
-```
-
-This adds:
-
-```bash
-firebase deploy --config firebase.static.json --only hosting --project "${FIREBASE_PROJECT_ID:-urai-4dc1d}"
-```
-
-## Screenshot attempt
-
-Only use when Playwright and browser deps are available:
+## Screenshot proof
 
 ```bash
 node scripts/aaa-launch-proof.mjs --screenshots
 ```
 
-Screenshots are attempted for desktop and mobile widths across:
+Screenshots are attempted at desktop and mobile widths for:
 
 ```text
 /home
 /ground
 /life-map
-/focus?memoryId=quiet-reset
-/replay?memoryId=quiet-reset&manifestId=replay-recovery-thread
+/focus?memoryId=quiet-reset&manifestId=launch&node=quiet-reset
+/replay?memoryId=quiet-reset&manifestId=replay-recovery-thread&node=quiet-reset
 /mirror
 /passport
 /status
 /privacy-controls
 /location-map
 /spatial/ar-vr
-/demo/replay-film
 ```
 
-If Playwright is missing or browser launch fails, the runner records the skip honestly instead of failing silently.
-
-## Full public-preview receipt
-
-```bash
-node scripts/aaa-launch-proof.mjs --deploy --screenshots
-```
+If Playwright or a browser is unavailable, the receipt records the block instead of silently claiming proof.
 
 ## Useful skip flags
 
@@ -84,9 +60,10 @@ node scripts/aaa-launch-proof.mjs --deploy --screenshots
 --skip-typecheck
 --skip-test
 --skip-build
+--skip-assets
 ```
 
-These should only be used when the same receipt folder already has trusted logs for those steps or the environment cannot run them.
+Use skip flags only when the same exact commit already has trusted evidence for the omitted step.
 
 ## Custom live base URL
 
@@ -94,19 +71,26 @@ These should only be used when the same receipt folder already has trusted logs 
 node scripts/aaa-launch-proof.mjs --base=https://urai.app
 ```
 
+## Production release
+
+Use the canonical workflow:
+
+```text
+.github/workflows/spatial-live-deploy.yml
+```
+
+Required manual inputs:
+
+- exact 40-character `release_sha`;
+- exact 40-character proven `rollback_sha`;
+- confirmation `DEPLOY_URAI_APP`.
+
+The proof runner rejects `--deploy`.
+
 ## Honest proof boundaries
 
-The runner does not and cannot prove:
+The runner does not prove:
 
-- Quest 2 physical-device verification
-- `uraifoundation.org` DNS completion unless DNS and HTTPS actually resolve
-- bespoke final art completion while assets remain `placeholder-final`
-- production backend/provider/auth readiness
-
-Correct wording before Quest hardware proof:
-
-> URAI XR preview is live with Quest Browser instructions and WebXR fallback language. Physical Quest 2 proof is still pending.
-
-Correct wording before foundation DNS proof:
-
-> Foundation source is ready, but `uraifoundation.org` DNS/HTTPS remains a separate custom-domain verification gate.
+- physical Quest hardware certification;
+- bespoke final art while assets remain fallback or placeholder;
+- production backend, provider, authentication, persistence, or destructive deletion behavior without corresponding live evidence.
