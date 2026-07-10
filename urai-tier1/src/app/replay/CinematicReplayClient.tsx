@@ -16,6 +16,13 @@ import {
 } from '@/spatial/scene/replayState'
 
 const DEFAULT_REPLAY_MANIFEST_ID = 'seed-memory-bloom'
+const DEFAULT_MEMORY_ID = 'quiet-reset'
+
+function safeToken(value: string | null | undefined, fallback: string) {
+  if (!value) return fallback
+  const trimmed = value.trim().slice(0, 120)
+  return /^[A-Za-z0-9._:-]+$/.test(trimmed) ? trimmed : fallback
+}
 
 function nodeNameFromParams(value: string | null | undefined) {
   if (!value) return 'Evening Pattern'
@@ -26,8 +33,13 @@ function nodeNameFromParams(value: string | null | undefined) {
     .replace(/\b\w/g, (letter) => letter.toUpperCase())
 }
 
-function focusReturnUrl(manifestId: string) {
-  return `/focus?manifestId=${encodeURIComponent(manifestId)}`
+function focusReturnUrl(memoryId: string, manifestId: string, node: string) {
+  const next = new URLSearchParams()
+  next.set('memoryId', memoryId)
+  next.set('manifestId', manifestId)
+  next.set('node', node)
+  next.set('unwind', 'replay')
+  return `/focus?${next.toString()}`
 }
 
 export default function CinematicReplayClient() {
@@ -37,8 +49,10 @@ export default function CinematicReplayClient() {
   const [scrubbing, setScrubbing] = useState(false)
   const [progressMs, setProgressMs] = useState(0)
 
-  const manifestId = params?.get('manifestId') ?? DEFAULT_REPLAY_MANIFEST_ID
-  const nodeName = nodeNameFromParams(params?.get('node') ?? manifestId)
+  const memoryId = safeToken(params?.get('memoryId'), DEFAULT_MEMORY_ID)
+  const manifestId = safeToken(params?.get('manifestId'), DEFAULT_REPLAY_MANIFEST_ID)
+  const node = safeToken(params?.get('node'), memoryId)
+  const nodeName = nodeNameFromParams(node)
   const morphology = useMemo(() => buildMemoryMorphology(null, 'mirror'), [])
   const activeSegment = getReplaySegmentAt(progressMs)
   const replayPhase = resolveReplayPhase({
@@ -55,16 +69,18 @@ export default function CinematicReplayClient() {
   const progressPercent = (clampReplayProgress(progressMs) / REPLAY_DURATION_MS) * 100
 
   const returnToFocus = useCallback(() => {
-    const target = focusReturnUrl(manifestId)
+    const target = focusReturnUrl(memoryId, manifestId, node)
+    window.sessionStorage.setItem('urai-replay-return-memory-id', memoryId)
     window.sessionStorage.setItem('urai-replay-return-manifest-id', manifestId)
+    window.sessionStorage.setItem('urai-replay-return-node', node)
     window.history.pushState(null, '', target)
     window.dispatchEvent(new PopStateEvent('popstate'))
     window.setTimeout(() => {
-      if (window.location.pathname !== '/focus' || window.location.search !== `?manifestId=${encodeURIComponent(manifestId)}`) {
+      if (window.location.pathname !== '/focus' || window.location.search !== target.slice('/focus'.length)) {
         window.location.assign(target)
       }
     }, 80)
-  }, [manifestId])
+  }, [manifestId, memoryId, node])
 
   const scrubTo = useCallback((nextProgressMs: number) => {
     const next = clampReplayProgress(nextProgressMs)
@@ -124,6 +140,9 @@ export default function CinematicReplayClient() {
     <main
       data-testid="cinematic-replay-client"
       data-mode="replay"
+      data-memory-id={memoryId}
+      data-manifest-id={manifestId}
+      data-node={node}
       data-replay-phase={replayPhase}
       data-playing={playing ? 'true' : 'false'}
       data-replay-segment={activeSegment.id}
