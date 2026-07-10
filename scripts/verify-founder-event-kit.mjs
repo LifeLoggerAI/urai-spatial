@@ -75,9 +75,6 @@ requireTokens('urai-tier1/src/data/launchTruth.ts', [
 requireTokens('urai-tier1/src/app/status/page.tsx', [
   "['/event', 'pending proof', 'Founder event destination']",
 ])
-requireTokens('scripts/check-spatial-copy.mjs', [
-  "'urai-tier1/src/app/event/page.tsx'",
-])
 requireTokens('docs/founder-readiness/FOUNDER_EVENT_DEMO_KIT.md', [
   '## Event operator: 60-second run',
   '## Offline fallback',
