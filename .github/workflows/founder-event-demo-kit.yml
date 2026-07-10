@@ -7,6 +7,7 @@ on:
       - 'docs/founder-readiness/**'
       - 'scripts/capture-founder-event-kit.mjs'
       - 'scripts/verify-founder-event-kit.mjs'
+      - 'scripts/verify-embedded-event-video.mjs'
       - 'urai-tier1/public/media/event/**'
       - 'urai-tier1/src/app/event/**'
       - 'urai-tier1/src/app/status/page.tsx'
@@ -66,6 +67,8 @@ jobs:
         run: |
           node --check scripts/capture-founder-event-kit.mjs
           node --check scripts/verify-founder-event-kit.mjs
+          node --check scripts/verify-embedded-event-video.mjs
+          node scripts/verify-embedded-event-video.mjs
           node scripts/verify-founder-event-kit.mjs
           node scripts/check-spatial-copy.mjs
           node scripts/check-production-route-exposure.mjs
