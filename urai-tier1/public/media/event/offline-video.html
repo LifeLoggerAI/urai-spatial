@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>URAI Founder Event Offline Video</title>
+<style>
+:root{color-scheme:dark}*{box-sizing:border-box}body{margin:0;background:#020713;color:#fff;font-family:Inter,ui-sans-serif,system-ui,sans-serif}main{max-width:1100px;margin:auto;padding:32px}section{border:1px solid #ffffff22;border-radius:28px;background:radial-gradient(circle at 20% 10%,#31d9ff22,transparent 32%),radial-gradient(circle at 85% 20%,#b066ff22,transparent 34%),#071321;padding:28px}h1{font-size:clamp(2.5rem,7vw,6rem);line-height:.86;letter-spacing:-.07em;margin:.3em 0}p{font-size:1rem;line-height:1.65;color:#dbe9f5}.notice{color:#fff0bd;font-weight:750}.status{display:inline-block;margin:14px 0;padding:8px 12px;border-radius:999px;background:#9af8ff;color:#020713;font-weight:900}video{display:block;width:100%;margin-top:20px;border-radius:22px;background:#000;aspect-ratio:16/9}a{color:#9af8ff;font-weight:800}.meta{font-family:ui-monospace,monospace;font-size:.85rem;color:#c084fc}</style>
+</head>
+<body>
+<main>
+<section>
+<p class="meta">URAI · REPOSITORY-STORED OFFLINE VIDEO</p>
+<h1>Your life should not look like a dashboard.</h1>
+<p class="notice">Synthetic sample content only. This file makes no network requests and contains no customer, account, credential, admin, console, environment, or production data.</p>
+<div id="status" class="status" role="status">Loading embedded video…</div>
+<video id="video" controls preload="metadata" playsinline aria-label="URAI founder event sample-safe offline walkthrough"></video>
+<p>This silent 72-second walkthrough follows the current founder path: Event, Home, Life Map, Focus, Replay, Mirror, Passport, and Status. It is a route storyboard, not production-deployment proof.</p>
+<p>Fallback: <a href="founder-event-storyboard.svg">open the eight-panel offline storyboard</a>.</p>
+</section>
+</main>
+<script src="video/chunk-00.js"></script>
+<script src="video/chunk-01.js"></script>
+<script src="video/chunk-02.js"></script>
+<script>
+(() => {
+  const status = document.getElementById('status')
+  const video = document.getElementById('video')
+  try {
+    const encoded = window.__URAI_VIDEO_B64 || ''
+    if (!encoded) throw new Error('Embedded video payload is missing.')
+    const binary = atob(encoded)
+    const bytes = new Uint8Array(binary.length)
+    for (let index = 0; index < binary.length; index += 1) bytes[index] = binary.charCodeAt(index)
+    const objectUrl = URL.createObjectURL(new Blob([bytes], { type: 'video/webm' }))
+    video.src = objectUrl
+    video.addEventListener('loadedmetadata', () => {
+      const duration = Number.isFinite(video.duration) ? video.duration : 0
+      if (duration < 70 || duration > 74) {
+        status.textContent = `Video loaded with unexpected duration: ${duration.toFixed(1)} seconds`
+        status.style.background = '#ffe9a8'
+        return
+      }
+      status.textContent = `Video ready · ${duration.toFixed(1)} seconds · offline`
+    }, { once: true })
+    video.addEventListener('error', () => {
+      status.textContent = 'Video could not be decoded. Use the storyboard fallback below.'
+      status.style.background = '#ffe9a8'
+    }, { once: true })
+    window.addEventListener('beforeunload', () => URL.revokeObjectURL(objectUrl), { once: true })
+  } catch (error) {
+    status.textContent = error instanceof Error ? error.message : 'Embedded video failed to load.'
+    status.style.background = '#ffe9a8'
+  }
+})()
+</script>
+</body>
+</html>
