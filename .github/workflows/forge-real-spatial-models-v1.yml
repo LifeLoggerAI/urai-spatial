@@ -6,26 +6,35 @@ on:
       - feat/real-spatial-models-v1-20260710
     paths:
       - scripts/generate-real-spatial-models-v1.py
+      - operations/assets/spatial-proof-fallbacks-v1.json
+      - docs/REAL_SPATIAL_MODELS_V1.md
+      - .github/workflows/forge-real-spatial-models-v1.yml
+  pull_request:
+    paths:
+      - scripts/generate-real-spatial-models-v1.py
+      - operations/assets/spatial-proof-fallbacks-v1.json
+      - docs/REAL_SPATIAL_MODELS_V1.md
+      - urai-tier1/public/assets/urai/spatial/**
+      - docs/generated/spatial-models-v1-receipt.json
       - .github/workflows/forge-real-spatial-models-v1.yml
   workflow_dispatch:
 
 permissions:
-  contents: write
+  contents: read
 
 concurrency:
   group: forge-real-spatial-models-v1-${{ github.ref }}
-  cancel-in-progress: false
+  cancel-in-progress: true
 
 jobs:
   forge:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
-      - name: Check out branch
+      - name: Check out exact revision
         uses: actions/checkout@v4
         with:
-          ref: ${{ github.ref_name }}
-          fetch-depth: 0
+          fetch-depth: 1
 
       - name: Set up Python
         uses: actions/setup-python@v5
@@ -35,41 +44,52 @@ jobs:
       - name: Install deterministic model dependencies
         run: python -m pip install --disable-pip-version-check numpy==2.2.6 trimesh==4.11.1
 
-      - name: Generate real spatial models
+      - name: Generate real spatial fallback models
         run: python scripts/generate-real-spatial-models-v1.py
 
-      - name: Verify receipt and non-empty geometry
+      - name: Verify receipt, non-empty geometry and authority boundary
         run: |
           python - <<'PY'
           import json
           from pathlib import Path
-          receipt = json.loads(Path('docs/generated/spatial-models-v1-receipt.json').read_text())
+
+          receipt_path = Path('docs/generated/spatial-models-v1-receipt.json')
+          inventory_path = Path('operations/assets/spatial-proof-fallbacks-v1.json')
+          receipt = json.loads(receipt_path.read_text())
+          inventory = json.loads(inventory_path.read_text())
+
           assert receipt['modelCount'] == 14, receipt
           assert receipt['totalVertices'] >= 20000, receipt
           assert receipt['totalFaces'] >= 40000, receipt
+          assert inventory['authority']['selectedProductionRoot'] == 'urai-tier1/public/assets/urai/generated', inventory
+          assert inventory['authority']['fallbackRoot'] == 'urai-tier1/public/assets/urai/spatial', inventory
+          assert inventory['authority']['selectedProduction'] is False, inventory
+          assert inventory['policy']['mayBeDescribedAsFinalArt'] is False, inventory
+          assert inventory['policy']['maySilentlyOverrideSelectedAsset'] is False, inventory
+
+          receipt_files = {model['file'] for model in receipt['models']}
+          inventory_files = {model['file'] for model in inventory['models']}
+          assert receipt_files == inventory_files, {'receipt': sorted(receipt_files), 'inventory': sorted(inventory_files)}
+
           for model in receipt['models']:
               path = Path('urai-tier1/public') / model['file'].lstrip('/')
               assert path.exists(), path
               assert model['vertices'] > 0 and model['faces'] > 0, model
               assert path.stat().st_size == model['bytes'], model
+
           print(json.dumps({
               'ok': True,
+              'runtimeRole': inventory['policy']['runtimeRole'],
               'modelCount': receipt['modelCount'],
               'totalVertices': receipt['totalVertices'],
               'totalFaces': receipt['totalFaces'],
           }, indent=2))
           PY
 
-      - name: Commit generated models and receipt
+      - name: Verify deterministic output is committed
+        shell: bash
         run: |
-          git config user.name 'github-actions[bot]'
-          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add urai-tier1/public/assets/urai/spatial docs/generated/spatial-models-v1-receipt.json
-          if git diff --cached --quiet; then
-            echo 'Generated assets already match the deterministic forge.'
-            exit 0
-          fi
-          git commit -m 'Generate real spatial model pack v1 [skip ci]'
-          git push origin HEAD:${{ github.ref_name }}
-
-# Manual retrigger: 2026-07-10 production model materialization.
+          set -euo pipefail
+          git diff --exit-code -- \
+            urai-tier1/public/assets/urai/spatial \
+            docs/generated/spatial-models-v1-receipt.json
