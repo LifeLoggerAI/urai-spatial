@@ -1,0 +1,56 @@
+name: Public Product Identity
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/public-product-identity.yml'
+      - 'scripts/verify-public-product-identity.mjs'
+      - 'urai-tier1/src/app/about/**'
+      - 'urai-tier1/src/app/manifest.ts'
+      - 'urai-tier1/public/humans.txt'
+      - 'urai-tier1/public/llms.txt'
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/public-product-identity.yml'
+      - 'scripts/verify-public-product-identity.mjs'
+      - 'urai-tier1/src/app/about/**'
+      - 'urai-tier1/src/app/manifest.ts'
+      - 'urai-tier1/public/humans.txt'
+      - 'urai-tier1/public/llms.txt'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: public-product-identity-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+env:
+  TARGET_SHA: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout exact head
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ env.TARGET_SHA }}
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Prove exact clean head
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$TARGET_SHA"
+          test -z "$(git status --porcelain)"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Verify product identity
+        run: |
+          node --check scripts/verify-public-product-identity.mjs
+          node scripts/verify-public-product-identity.mjs
