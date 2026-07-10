@@ -73,12 +73,13 @@ jobs:
             node scripts/audit-public-identity.mjs
             identity_status=$?
             if test "$claims_status" = '0' && test "$identity_status" = '0'; then
-              status=0
+              policy_status=0
             else
-              status=1
+              policy_status=1
             fi
             echo "claims_status=$claims_status"
             echo "identity_status=$identity_status"
+            exit "$policy_status"
           } > copy-identity-policy.log 2>&1
           status=$?
           cat copy-identity-policy.log
