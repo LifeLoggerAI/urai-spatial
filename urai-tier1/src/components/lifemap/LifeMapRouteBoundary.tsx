@@ -1,8 +1,29 @@
 'use client'
 
+import dynamic from 'next/dynamic'
 import { useSearchParams } from 'next/navigation'
 import { useEffect, useMemo, useRef, useState } from 'react'
-import AdaptiveLifeMapScene from './AdaptiveLifeMapScene'
+
+const AdaptiveLifeMapScene = dynamic(() => import('./AdaptiveLifeMapScene'), {
+  ssr: false,
+  loading: () => (
+    <main
+      aria-label="Opening Life Map"
+      style={{
+        minHeight: '100svh',
+        display: 'grid',
+        placeItems: 'center',
+        color: '#dffbff',
+        background: 'radial-gradient(circle at 50% 45%, rgba(117,231,255,.18), transparent 28%), #020713',
+        fontWeight: 900,
+        letterSpacing: '.08em',
+        textTransform: 'uppercase',
+      }}
+    >
+      Opening Life Map…
+    </main>
+  ),
+})
 
 const LIFE_MAP_STATE_KEY = 'urai:spatial:lifeMapState'
 
