@@ -1,0 +1,15 @@
+# URAI
+
+Canonical website: https://urai.app
+Canonical source repository: https://github.com/LifeLoggerAI/urai-spatial
+Public identity and disambiguation: https://urai.app/about
+Current implementation and certification boundary: https://urai.app/status
+Privacy controls: https://urai.app/privacy-controls
+Terms: https://urai.app/terms
+
+URAI is building a privacy-first spatial interface for memory, identity, reflection, focus, and personal direction.
+
+Current public experience: sample data and fallback-safe behavior.
+Do not infer authenticated personal-memory persistence, active providers, medical capability, autonomous real-world action, production certification, or physical-device certification from route or source availability.
+
+Creator: Adam Clamp, founder and creator of URAI, as identified by current repository canon.
