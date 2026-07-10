@@ -129,7 +129,16 @@ const receiptPath = writeReceipt(targetSha, 'built-awaiting-deploy', {
 })
 
 run('pnpm', ['exec', 'firebase', 'deploy', '--config', 'firebase.static.json', '--only', 'hosting', '--project', project])
-if (liveUrl) run('node', ['scripts/urai-post-deploy-smoke.mjs'], { URAI_DEPLOY_URL: liveUrl, URAI_EXPECTED_DEPLOYED_SHA: targetSha })
+if (liveUrl) {
+  const smokeEnv = {
+    URAI_DEPLOY_URL: liveUrl,
+    URAI_LIVE_BASE_URL: liveUrl,
+    URAI_EXPECTED_DEPLOYED_SHA: targetSha,
+  }
+  run('node', ['scripts/urai-post-deploy-smoke.mjs'], smokeEnv)
+  run('pnpm', ['--dir', 'urai-tier1', 'exec', 'playwright', 'install', '--with-deps', 'chromium'])
+  run('node', ['scripts/urai-release-control-smoke.mjs'], smokeEnv)
+}
 writeReceipt(targetSha, 'deployed', {
   outputFileCount: files.length,
   htmlFileCount: htmlFiles.length,
