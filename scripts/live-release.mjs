@@ -7,6 +7,9 @@ const deploy = process.argv.includes('--deploy')
 const project = process.env.FIREBASE_PROJECT_ID || process.env.FIREBASE_PROJECT || process.env.GCLOUD_PROJECT || ''
 const expectedProject = process.env.URAI_EXPECTED_FIREBASE_PROJECT || 'urai-4dc1d'
 const liveUrl = process.env.URAI_LIVE_BASE_URL || process.env.LIVE_URL || 'https://urai.app'
+const releaseOperation = process.env.URAI_RELEASE_OPERATION || 'verify'
+const canonicalWorkflow = 'URAI Canonical Production Release'
+const canonicalRepository = 'LifeLoggerAI/urai-spatial'
 
 function run(command, args, extraEnv = {}) {
   console.log(`[URAI release] $ ${command} ${args.join(' ')}`)
@@ -74,25 +77,36 @@ function assertReleaseSurface() {
   assertStaticConfig()
 }
 
+function assertCanonicalDeployContext() {
+  if (process.env.GITHUB_ACTIONS !== 'true') throw new Error('Production deployment is allowed only inside GitHub Actions')
+  if (process.env.GITHUB_EVENT_NAME !== 'workflow_dispatch') throw new Error('Production deployment is allowed only from workflow_dispatch')
+  if (process.env.GITHUB_WORKFLOW !== canonicalWorkflow) throw new Error(`Production deployment requires workflow ${canonicalWorkflow}`)
+  if (process.env.GITHUB_REPOSITORY !== canonicalRepository) throw new Error(`Production deployment requires repository ${canonicalRepository}`)
+  if (process.env.GITHUB_REF !== 'refs/heads/main') throw new Error('Production deployment requires refs/heads/main')
+  if (!['deploy', 'rollback'].includes(releaseOperation)) throw new Error(`Unsupported release operation: ${releaseOperation}`)
+}
+
 function writeReceipt(targetSha, status, details = {}) {
   const directory = path.join('deployment-receipt', targetSha)
   mkdirSync(directory, { recursive: true })
   const receipt = {
-    schemaVersion: 'urai-static-release-receipt-1',
+    schemaVersion: 'urai-static-release-receipt-2',
     generatedAt: new Date().toISOString(),
-    repository: process.env.GITHUB_REPOSITORY || 'LifeLoggerAI/urai-spatial',
+    repository: process.env.GITHUB_REPOSITORY || canonicalRepository,
     targetSha,
+    releaseOperation,
     firebaseProject: project || null,
     liveUrl: liveUrl || null,
     status,
     deploymentScope: 'hosting-only',
+    productionAuthority: '.github/workflows/spatial-live-deploy.yml',
     workflowRunId: process.env.GITHUB_RUN_ID || null,
     ...details,
   }
   const receiptPath = path.join(directory, 'receipt.json')
   writeFileSync(receiptPath, `${JSON.stringify(receipt, null, 2)}\n`)
   if (process.env.GITHUB_STEP_SUMMARY) {
-    const summary = `\n## URAI static release\n\n- SHA: \`${targetSha}\`\n- Project: \`${project || 'not set'}\`\n- Scope: Hosting only\n- Status: **${status}**\n- Receipt: \`${receiptPath}\`\n`
+    const summary = `\n## URAI static release\n\n- SHA: \`${targetSha}\`\n- Operation: \`${releaseOperation}\`\n- Project: \`${project || 'not set'}\`\n- Scope: Hosting only\n- Status: **${status}**\n- Receipt: \`${receiptPath}\`\n`
     writeFileSync(process.env.GITHUB_STEP_SUMMARY, summary, { flag: 'a' })
   }
   return receiptPath
@@ -103,16 +117,14 @@ assertReleaseSurface()
 run('pnpm', ['verify:release:critical'], { NEXT_PUBLIC_URAI_BUILD_SHA: targetSha })
 
 if (!deploy) {
-  writeReceipt(targetSha, 'verified-no-deploy')
+  writeReceipt(targetSha, 'verified-no-deploy', { releaseOperation: 'verify' })
   console.log('[URAI release] Verification passed. No deployment requested.')
   process.exit(0)
 }
 
+assertCanonicalDeployContext()
 if (process.env.URAI_DEPLOY_CONFIRM !== 'DEPLOY_STATIC_URAI') {
   throw new Error('Static deployment requires URAI_DEPLOY_CONFIRM=DEPLOY_STATIC_URAI')
-}
-if (process.env.GITHUB_ACTIONS === 'true' && process.env.GITHUB_EVENT_NAME !== 'workflow_dispatch') {
-  throw new Error('GitHub Actions production deployment is allowed only from workflow_dispatch')
 }
 if (!project) throw new Error('FIREBASE_PROJECT_ID is required')
 if (project !== expectedProject) throw new Error(`Refusing project ${project}; expected ${expectedProject}`)
