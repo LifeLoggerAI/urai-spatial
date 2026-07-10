@@ -1,0 +1,122 @@
+{
+  "schemaVersion": "urai.spatial.real-model-receipt.v1",
+  "generator": "URAI deterministic spatial model forge v1",
+  "productionClass": "modular-first-pass",
+  "modelCount": 14,
+  "totalVertices": 23712,
+  "totalFaces": 46776,
+  "models": [
+    {
+      "id": "agent-source-station-v1",
+      "file": "/assets/urai/spatial/ground-room/models/agent-source-station-v1.gltf",
+      "bytes": 86285,
+      "geometryCount": 5,
+      "vertices": 1166,
+      "faces": 2320
+    },
+    {
+      "id": "central-orb-v1",
+      "file": "/assets/urai/spatial/entry-chamber/models/central-orb-v1.gltf",
+      "bytes": 165013,
+      "geometryCount": 7,
+      "vertices": 2552,
+      "faces": 5088
+    },
+    {
+      "id": "entry-chamber-shell-v1",
+      "file": "/assets/urai/spatial/entry-chamber/models/entry-chamber-shell-v1.gltf",
+      "bytes": 161831,
+      "geometryCount": 24,
+      "vertices": 2806,
+      "faces": 5528
+    },
+    {
+      "id": "entry-floor-ring-v1",
+      "file": "/assets/urai/spatial/entry-chamber/models/entry-floor-ring-v1.gltf",
+      "bytes": 122714,
+      "geometryCount": 15,
+      "vertices": 1634,
+      "faces": 3216
+    },
+    {
+      "id": "focus-star-tunnel-v1",
+      "file": "/assets/urai/spatial/focus-star/models/focus-star-tunnel-v1.gltf",
+      "bytes": 166611,
+      "geometryCount": 12,
+      "vertices": 4164,
+      "faces": 8320
+    },
+    {
+      "id": "ground-descent-hatch-v1",
+      "file": "/assets/urai/spatial/entry-chamber/models/ground-descent-hatch-v1.gltf",
+      "bytes": 81269,
+      "geometryCount": 11,
+      "vertices": 1060,
+      "faces": 2080
+    },
+    {
+      "id": "ground-room-shell-v1",
+      "file": "/assets/urai/spatial/ground-room/models/ground-room-shell-v1.gltf",
+      "bytes": 9211,
+      "geometryCount": 12,
+      "vertices": 96,
+      "faces": 144
+    },
+    {
+      "id": "ground-terminal-v1",
+      "file": "/assets/urai/spatial/ground-room/models/ground-terminal-v1.gltf",
+      "bytes": 10580,
+      "geometryCount": 7,
+      "vertices": 158,
+      "faces": 288
+    },
+    {
+      "id": "life-map-sky-dome-v1",
+      "file": "/assets/urai/spatial/life-map/models/life-map-sky-dome-v1.gltf",
+      "bytes": 181497,
+      "geometryCount": 40,
+      "vertices": 3450,
+      "faces": 6752
+    },
+    {
+      "id": "passport-identity-plinth-v1",
+      "file": "/assets/urai/spatial/passport-room/models/passport-identity-plinth-v1.gltf",
+      "bytes": 53132,
+      "geometryCount": 4,
+      "vertices": 702,
+      "faces": 1392
+    },
+    {
+      "id": "replay-film-portal-v1",
+      "file": "/assets/urai/spatial/replay-portal/models/replay-film-portal-v1.gltf",
+      "bytes": 98949,
+      "geometryCount": 12,
+      "vertices": 1360,
+      "faces": 2680
+    },
+    {
+      "id": "star-memory-node-v1",
+      "file": "/assets/urai/spatial/life-map/models/star-memory-node-v1.gltf",
+      "bytes": 72801,
+      "geometryCount": 12,
+      "vertices": 1204,
+      "faces": 2368
+    },
+    {
+      "id": "status-control-board-v1",
+      "file": "/assets/urai/spatial/status-room/models/status-control-board-v1.gltf",
+      "bytes": 38999,
+      "geometryCount": 20,
+      "vertices": 704,
+      "faces": 1328
+    },
+    {
+      "id": "universal-portal-ring-v1",
+      "file": "/assets/urai/spatial/shared/models/universal-portal-ring-v1.gltf",
+      "bytes": 182907,
+      "geometryCount": 13,
+      "vertices": 2656,
+      "faces": 5272
+    }
+  ]
+}
