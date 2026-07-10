@@ -1,87 +1,119 @@
 # Short Video Script Pack
 
-All videos must use sample data and avoid medical, therapy, diagnosis, lie-detection, and surveillance claims.
+All videos must use sample data and avoid medical, treatment, therapy, diagnosis, lie-detection, mind-reading, surveillance, persistent-memory, active-provider, device-certification, and production-certification overclaims.
+
+Required on-screen disclosure:
+
+> Sample-data demo. Production, provider, persistence, and device claims remain evidence-gated.
 
 ## A. 15-Second Teaser
 
-Hook: "What if your life app felt like a private sky instead of a dashboard?"
+Hook:
 
-Visual scene: Genesis home, orb pulse, sky shimmer.
+> What if your life interface felt like a private sky instead of a dashboard?
 
-Voiceover: "URAI Genesis turns reflection into a private symbolic world you control. The demo uses sample data."
+Visual scene: Verified URAI Home, orb pulse, sky shimmer.
 
-On-screen text: "Your private sky. Your permission. Your memory."
+Voiceover:
 
-CTA: "Join the waitlist."
+> URAI is building a private spatial world for reflection, memory, focus, and personal direction. This demo uses sample data.
+
+On-screen text: “Your private sky. Your permission. Your direction.”
+
+CTA: “Join the waitlist.”
 
 ## B. 30-Second Demo
 
-Hook: "URAI turns reflection into a symbolic world you control."
+Hook:
 
-Visual scene: Orb, Passport, Life Map, Ground, Mirror, waitlist.
+> URAI turns reflection into a symbolic spatial journey you can control.
 
-Voiceover: "The orb is your companion. Passport controls what opens. Approved moments become stars. Ground holds roots and rituals. Mirror reflects patterns without judgment. Shadow and Legacy stay closed unless you open them."
+Visual scene: Orb, Passport, Life Map, Focus, Replay, Ground, Mirror.
 
-On-screen text: "Private. Permissioned. Symbolic."
+Voiceover:
 
-CTA: "Try the sample demo and join the waitlist."
+> The orb is a companion interface. Passport represents permission. Sample moments become stars. Focus brings one thread forward. Replay shows a reflective story. Ground and Mirror create space to think without diagnosis or certainty claims.
+
+On-screen text: “Private. Permission-first. Sample-data demo.”
+
+CTA: “Explore the demo.”
 
 ## C. 60-Second Founder Pitch
 
-Hook: "I’m building URAI because AI should help you understand your life without making you feel watched."
+Hook:
 
-Visual scene: Founder intro, Genesis, Passport, Companion, Life Map, Ground, Mirror, waitlist.
+> I’m building URAI because AI should help people understand their lives without making them feel watched.
 
-Voiceover: "URAI Genesis is a private symbolic life interface. It replaces dashboards with an orb companion, a Life Map, Ground, Mirror, Passport permissions, protected Shadow and Legacy spaces, and user-reviewed exports. It is built around consent and sample-safe demos."
+Visual scene: Founder intro, Home, Passport, Companion, Life Map, Focus, Replay, Ground, Mirror, Status.
 
-On-screen text: "Founder-led. Privacy-first. Demo uses sample data."
+Voiceover:
 
-CTA: "Join the waitlist."
+> URAI is a private spatial interface being built around memory, identity, reflection, focus, and personal direction. The current product demonstrates a continuous journey through Home, Life Map, Focus, Replay, Ground, Mirror, Passport, and Status. Passport represents the permission model, while Status distinguishes what is implemented from what remains gated. This demonstration uses sample data. Authenticated persistence, selected provider assets, production certification, and physical-device proof remain separate evidence gates.
 
-## D. Privacy-First Clip
+On-screen text: “Founder-led. Privacy-first. Sample-data demo.”
 
-Hook: "Passport controls what URAI can see, remember, use in AI replies, or export."
+CTA: “Join the waitlist or request a demo.”
 
-Visual scene: Passport overview and closed sensitive layers.
+## D. Permission-First Clip
 
-Voiceover: "Sensitive layers stay closed by default. URAI should only reflect from opened or sample context."
+Hook:
 
-On-screen text: "Closed by default. Opened by permission."
+> Passport demonstrates how context can stay closed until the user chooses to open it.
 
-CTA: "See the demo."
+Visual scene: Passport overview and protected sample layers.
+
+Voiceover:
+
+> URAI is designed around user control. The current demo shows the permission model but does not prove authenticated personal-memory persistence.
+
+On-screen text: “Closed by default. Opened by permission.”
+
+CTA: “See the demo.”
 
 ## E. Life Map Clip
 
-Hook: "Tap the sky. Your approved moments become stars."
+Hook:
 
-Visual scene: Sky tap, Life Map galaxy, star detail.
+> Tap the sky. Sample moments become stars.
 
-Voiceover: "Life Map turns approved moments into a symbolic field you can revisit without giving up control."
+Visual scene: Sky tap, Life Map galaxy, sample star detail.
 
-On-screen text: "Memory as a sky."
+Voiceover:
 
-CTA: "Join the waitlist."
+> Life Map demonstrates how memories, goals, and chapters can become a symbolic field without presenting sample content as persistent private memory.
+
+On-screen text: “Memory as a spatial field.”
+
+CTA: “Join the waitlist.”
 
 ## F. Ground Clip
 
-Hook: "Not every insight needs a chart. Some need a place to land."
+Hook:
 
-Visual scene: Ground garden, roots, blooms, ritual detail.
+> Not every insight needs a chart. Some need a place to land.
 
-Voiceover: "Ground gives reflection a calmer shape: roots, blooms, and rituals."
+Visual scene: Ground, roots, blooms, and ritual detail.
 
-On-screen text: "A place to land."
+Voiceover:
 
-CTA: "Try the sample demo."
+> Ground gives reflection a calmer symbolic shape through roots, blooms, and rituals. It does not diagnose, treat, or claim certainty.
 
-## G. Shadow/Legacy Clip
+On-screen text: “A place to land.”
 
-Hook: "The deeper layers stay closed unless you open them."
+CTA: “Explore the sample demo.”
 
-Visual scene: Shadow gate, Legacy gate, Passport reminder.
+## G. Protected-Layers Clip
 
-Voiceover: "Shadow and Legacy are protected opt-in spaces. For launch media, show gates and sample content only."
+Hook:
 
-On-screen text: "Protected by consent."
+> Deeper layers stay closed unless the user opens them.
 
-CTA: "Join the waitlist."
+Visual scene: Protected gates and Passport reminder.
+
+Voiceover:
+
+> Protected layers are opt-in design surfaces. Launch media must show sample content only and must not imply live private-data storage.
+
+On-screen text: “Protected by permission.”
+
+CTA: “Join the waitlist.”

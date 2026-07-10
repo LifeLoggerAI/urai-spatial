@@ -2,60 +2,78 @@
 
 Length: 3 to 5 minutes.
 
-Required disclosure: "This demo uses sample data."
+Required disclosure:
+
+> This demo uses sample data. Some capabilities use fallback-safe behavior and remain production-certification pending.
 
 ## Opening
 
-"Hi, I’m Adam Clamp, founder of URAI. This is URAI Genesis - a private symbolic life interface built around permission, reflection, and user-owned memory."
+> Hi, I’m Adam Clamp, founder of URAI. URAI is a private spatial interface being built around permission, reflection, memory, focus, and personal direction.
 
-## Scene 1: Genesis
+## Scene 1: Home
 
-Visual: Show the Genesis home screen.
+Visual: Show the verified URAI home screen.
 
-Voiceover: "URAI does not begin as a dashboard. It begins as a world. The orb is your companion, the sky opens into your Life Map, the Ground holds roots and rituals, and Passport controls what each layer is allowed to use."
+Voiceover:
+
+> URAI does not begin as a dashboard. It begins as a world. The orb is a companion interface, the sky opens into the Life Map, Ground holds roots and rituals, and Passport represents the permission model.
 
 ## Scene 2: Passport
 
 Visual: Open Passport.
 
-Voiceover: "Passport is the privacy center. Sensitive layers stay closed by default. URAI can only reflect from the layers a user chooses to open."
+Voiceover:
+
+> Passport demonstrates how sensitive layers can stay closed by default and how the user can control what context is opened. The current demo does not prove authenticated personal-memory persistence.
 
 ## Scene 3: Companion
 
-Visual: Open the orb and ask, "What can you see?"
+Visual: Open the orb and ask, “What can you see?”
 
-Voiceover: "The Companion answers only from opened or sample context. It should not pretend to know what the user has not allowed."
+Voiceover:
+
+> In this demo, the Companion uses opened or sample context. It should never pretend to know what the user has not provided or allowed.
 
 ## Scene 4: Life Map
 
 Visual: Tap the sky and show sample stars.
 
-Voiceover: "Approved moments become symbolic stars. The Life Map turns reflection into a visual memory field the user can understand and control."
+Voiceover:
+
+> Sample moments become symbolic stars. The Life Map demonstrates how reflection, memories, goals, and chapters can become a visual field the user can understand and control.
 
 ## Scene 5: Ground
 
 Visual: Tap Ground and show roots, blooms, and rituals.
 
-Voiceover: "Ground gives insights a place to land. Roots, blooms, and rituals create calm structure without pressure."
+Voiceover:
+
+> Ground gives reflection a place to land. Roots, blooms, and rituals create calm structure without turning a person into a score.
 
 ## Scene 6: Mirror
 
 Visual: Show a gentle reflection view.
 
-Voiceover: "Mirror reflects patterns without judgment. It is reflection, not diagnosis."
+Voiceover:
 
-## Scene 7: Shadow / Legacy
+> Mirror reflects patterns without judgment. It is reflection, not diagnosis, treatment, or therapy.
+
+## Scene 7: Protected Layers
 
 Visual: Show the protected gates.
 
-Voiceover: "Shadow and Legacy are opt-in protected spaces. They stay closed unless the user chooses to open them."
+Voiceover:
 
-## Scene 8: Export / Waitlist
+> Protected layers are opt-in spaces. In the current demo they remain sample-safe and should not be presented as proof of live private-data storage.
 
-Visual: Show export review or a demo artifact, then waitlist.
+## Scene 8: Review and Follow-Up
 
-Voiceover: "Exports require review before anything leaves. If you want to follow URAI Genesis, join the waitlist."
+Visual: Show a review surface or demo artifact, then the waitlist or approved follow-up destination.
+
+Voiceover:
+
+> URAI is designed so users review what can leave their private world. End-to-end export, deletion, revocation, and authenticated persistence remain separately evidence-gated.
 
 ## Closing
 
-"URAI is not trying to own your data. It is trying to give your life back to you in a form you can understand, control, and carry forward."
+> URAI is being built to help people understand and direct their lives without turning private context into surveillance. This demonstration shows the current spatial journey; production, provider, persistence, and device claims remain receipt-gated.
