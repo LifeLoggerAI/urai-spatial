@@ -39,12 +39,9 @@ No candidate asset should be called final or be promoted to `main` merely becaus
 ### Runtime fallbacks
 
 - `urai-tier1/public/assets/urai/fallbacks`
-
-### Procedural proof assets
-
 - `urai-tier1/public/assets/urai/spatial`
 
-The procedural proof root may remain for deterministic fallback and test coverage, but it must be labeled accurately and must not silently override a reviewed generated asset.
+The `/assets/urai/spatial/**` namespace contains deterministic proof/fallback geometry. It may remain for runtime resilience and test coverage, but it must be classified explicitly and must never silently override a reviewed selected asset.
 
 ### Contracts and evidence
 
@@ -90,7 +87,9 @@ Draft PR #463 contains useful generated candidate files at the intended fixed pa
 
 The branch also contains extensive unrelated audit, quarantine, runtime and deployment changes. It is an extraction source only and must not be merged.
 
-This PR, #469, is the preferred governing lane because it contains a focused launch-critical manifest, size/triangle/resolution budgets, compression requirements, source/license fields, deterministic forge, SHA receipts, verification and a reviewable artifact workflow.
+PR #475 is the governing lane because it contains the focused launch-critical manifest, size/triangle/resolution budgets, compression requirements, source/license fields, deterministic forge, SHA receipts, strict format validation and a reviewable artifact workflow.
+
+PR #476 is a separate fallback lane. It improves real geometry under `/assets/urai/spatial/**` but does not promote those files into the selected production namespace.
 
 ## Legacy `UrAiProd` catalog
 
@@ -138,15 +137,17 @@ An asset may become `ready` only when all of these are present:
 ## Convergence order
 
 1. Keep #463 unmerged and preserve it only as an extraction source.
-2. Run #469 forge and verification at its exact head.
-3. Compare #463 candidate hashes with the fresh #469 artifact.
+2. Run #475 forge and verification at its exact head.
+3. Compare #463 candidate hashes with the fresh #475 artifact.
 4. Visually review both candidate sets where hashes differ.
-5. Select, compress and promote only approved files.
-6. Replace direct proof-model imports with manifest-driven selection.
-7. Merge or retire the `/assets/models/**` world slot namespace.
-8. Fix route-art format truth.
-9. Inventory all real binaries across legacy repositories and classify them.
-10. Run full exact-head validation and deployment proof.
+5. Merge #475 only after exact-head governance checks pass.
+6. Merge or rebase #476 as the explicit proof/fallback geometry lane.
+7. Select, compress and promote only approved generated assets.
+8. Replace direct proof-model imports with manifest-driven selection.
+9. Merge or retire the `/assets/models/**` world slot namespace.
+10. Fix route-art format truth.
+11. Inventory all real binaries across legacy repositories and classify them.
+12. Run full exact-head validation and deployment proof.
 
 ## Definition of done
 
