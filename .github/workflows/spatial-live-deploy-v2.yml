@@ -50,7 +50,7 @@ permissions:
   contents: read
 
 concurrency:
-  group: urai-spatial-live-deploy-${{ github.ref_name }}
+  group: urai-spatial-live-deploy-${{ github.event_name }}-${{ github.ref_name }}
   cancel-in-progress: true
 
 jobs:
@@ -163,11 +163,10 @@ jobs:
     needs: verify
     if: github.event_name == 'workflow_dispatch' && github.event.inputs.deploy == 'DEPLOY'
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 45
     environment: production
     env:
       FIREBASE_PROJECT_ID: ${{ secrets.FIREBASE_PROJECT_ID }}
-      FIREBASE_TOKEN: ${{ secrets.FIREBASE_TOKEN }}
       GOOGLE_APPLICATION_CREDENTIALS: ${{ github.workspace }}/firebase-service-account.json
       LIVE_URL: ${{ github.event.inputs.live_url || vars.URAI_SPATIAL_LIVE_URL }}
     steps:
@@ -208,20 +207,37 @@ jobs:
       - name: Deploy Spatial live
         run: pnpm live:deploy
 
-      - name: Smoke live URL
+      - name: Smoke deployed content parity
         if: env.LIVE_URL != ''
-        run: pnpm live:deploy
+        env:
+          URAI_DEPLOY_URL: ${{ env.LIVE_URL }}
+          URAI_EXPECTED_DEPLOYED_SHA: ${{ github.sha }}
+        run: corepack pnpm smoke:deployed
 
-        name: Smoke live URI
+      - name: Smoke live route matrix
         if: env.LIVE_URL != ''
-          run: |
-          corepack pnpm smoke:live
-          HOST="$LIVE_URL" pnpm smoke
+        env:
+          URAI_DEPLOY_URL: ${{ env.LIVE_URL }}
+          REQUIRE_LIVE_COMMIT_SHA: "true"
+        run: corepack pnpm smoke:live
 
-        name: Remove Firebase credential file
+      - name: Upload deployment evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: urai-spatial-deploy-evidence-${{ github.sha }}
+          path: |
+            deployment-receipt
+            EVIDENCE.md
+            STATUS.md
+            LIVE_RELEASE.md
+            DEPLOYMENT.md
+          if-no-files-found: warn
+          retention-days: 30
+
+      - name: Remove Firebase credential file
         if: always()
         run: rm -f "$GOOGLE_APPLICATION_CREDENTIALS"
-
 
       - name: Write deployment summary
         if: always()
@@ -235,7 +251,6 @@ jobs:
             echo "- Workflow run: $GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID"
           } >> "$GITHUB_STEP_SUMMARY"
 
-
 # Guardian compatibility markers
 # corepack pnpm urai:guardian
 # corepack pnpm check:types
@@ -244,8 +259,3 @@ jobs:
 # firebase-tools deploy
 # smoke:deployed
 # smoke:live
-
-
-# Guardian compatibility markers
-# corepack pnpm smoke:live
-
