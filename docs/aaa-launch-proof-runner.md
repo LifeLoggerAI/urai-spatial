@@ -2,11 +2,13 @@
 
 Script: `scripts/aaa-launch-proof.mjs`
 
-This runner is verification-only. It creates a timestamped proof receipt under:
+This runner is verification-only. It requires a clean Git working tree and a resolvable 40-character commit SHA before any proof step runs. It creates a receipt under:
 
 ```text
-$HOME/urai-final-receipts/aaa-launch-proof-<commit>-<timestamp>/
+$HOME/urai-final-receipts/aaa-launch-proof-<loop>-<short-sha>-<timestamp>/
 ```
+
+Set `URAI_RECEIPT_ROOT` to use a different receipt root. Set `URAI_PROOF_SOURCE_SHA` when an external caller needs the checked-out commit to match an explicit SHA. Pull-request runs do not infer the expected head from GitHub's merge-ref `GITHUB_SHA`; the checked-out clean commit remains recorded in every receipt.
 
 Production deployment is intentionally unavailable from this script. Deploy `urai.app` only through `.github/workflows/spatial-live-deploy.yml` using the protected `production` environment, exact release and rollback SHAs, and `DEPLOY_URAI_APP`.
 
@@ -18,44 +20,46 @@ Run from the repository root:
 node scripts/aaa-launch-proof.mjs
 ```
 
-This records:
+The standard pass executes:
 
-- git branch, commit, and working-tree state;
-- `pnpm install --frozen-lockfile`;
-- `pnpm typecheck`;
-- `pnpm run --if-present test`;
-- `pnpm build:static`;
-- live route and fingerprint checks for `https://urai.app`;
-- the asset receipt summary from `docs/final-asset-receipt.md`;
-- `final-report.md`, `summary.json`, and route-matrix evidence.
+- frozen installation;
+- asset checks when `scripts/check-spatial-assets.mjs` exists;
+- typecheck;
+- unit tests;
+- build;
+- production-authority audit;
+- production-route exposure check;
+- public-copy policy check.
+
+The receipt records:
+
+- exact source SHA;
+- optional expected source SHA;
+- clean working-tree state;
+- source-identity verification result;
+- every command and exit status;
+- production deployment attempted: `false`;
+- the sole production authority.
+
+A dirty tree, unresolvable Git commit, or explicit SHA mismatch fails before verification begins.
 
 ## Screenshot proof
 
 ```bash
-node scripts/aaa-launch-proof.mjs --screenshots
+LOOP_NAME=manual-visual-proof node scripts/aaa-launch-proof.mjs --screenshots --base=https://urai.app
 ```
 
-Screenshots are attempted at desktop and mobile widths for:
+The screenshot option runs `scripts/live-visual-audit.mjs`. Its current matrix captures desktop and mobile evidence for 14 route configurations, producing 28 PNGs under:
 
 ```text
-/home
-/ground
-/life-map
-/focus?memoryId=quiet-reset&manifestId=launch&node=quiet-reset
-/replay?memoryId=quiet-reset&manifestId=replay-recovery-thread&node=quiet-reset
-/mirror
-/passport
-/status
-/privacy-controls
-/location-map
-/spatial/ar-vr
+<receipt>/live-visual-audit/screenshots/
 ```
 
-If Playwright or a browser is unavailable, the receipt records the block instead of silently claiming proof.
+The visual audit also records route markers, stale-content checks, links, interaction checks, HTTP status, final URLs, and browser errors. A missing browser or failed route is a failed proof step; it is never silently counted as success.
 
 ## Useful skip flags
 
-```bash
+```text
 --skip-install
 --skip-typecheck
 --skip-test
@@ -63,12 +67,21 @@ If Playwright or a browser is unavailable, the receipt records the block instead
 --skip-assets
 ```
 
-Use skip flags only when the same exact commit already has trusted evidence for the omitted step.
+Use a skip flag only when the same exact source SHA already has trusted evidence for the omitted step. The receipt records the commands that actually ran, so a partial proof cannot masquerade as a full one.
 
-## Custom live base URL
+## Fast live-surface check
+
+For a commit that already has trusted install, asset, typecheck, test, and build receipts:
 
 ```bash
-node scripts/aaa-launch-proof.mjs --base=https://urai.app
+LOOP_NAME=live-surface-check node scripts/aaa-launch-proof.mjs \
+  --base=https://urai.app \
+  --screenshots \
+  --skip-install \
+  --skip-assets \
+  --skip-typecheck \
+  --skip-test \
+  --skip-build
 ```
 
 ## Production release
@@ -85,12 +98,14 @@ Required manual inputs:
 - exact 40-character proven `rollback_sha`;
 - confirmation `DEPLOY_URAI_APP`.
 
-The proof runner rejects `--deploy`.
+The proof runner rejects `--deploy` with a nonzero exit code.
 
 ## Honest proof boundaries
 
 The runner does not prove:
 
 - physical Quest hardware certification;
-- bespoke final art while assets remain fallback or placeholder;
-- production backend, provider, authentication, persistence, or destructive deletion behavior without corresponding live evidence.
+- bespoke final art that is absent from the repository;
+- production backend, provider, authentication, persistence, or destructive deletion behavior without corresponding live evidence;
+- production deployment merely because source and route proof pass;
+- final visual taste without the recorded human review step.
