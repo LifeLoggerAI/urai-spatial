@@ -55,15 +55,38 @@ import './urai-design-system.css'
 
 const configuredBuildSha = process.env.NEXT_PUBLIC_URAI_BUILD_SHA ?? process.env.GITHUB_SHA ?? ''
 const deployedSha = /^[0-9a-f]{40}$/.test(configuredBuildSha) ? configuredBuildSha : 'unverified'
+const productDescription = 'A spatial web experience for memory, identity, reflection, focus, and personal direction.'
 
 export const metadata: Metadata = {
-  title: 'URAI Spatial',
-  description: 'Cinematic, spatial, interactive URAI runtime',
+  metadataBase: new URL('https://urai.app'),
+  applicationName: 'URAI Spatial',
+  title: {
+    default: 'URAI Spatial',
+    template: '%s · URAI Spatial',
+  },
+  description: productDescription,
+  category: 'lifestyle',
+  alternates: {
+    canonical: '/',
+  },
   icons: {
     icon: '/icon.svg',
   },
+  openGraph: {
+    type: 'website',
+    url: 'https://urai.app',
+    siteName: 'URAI Spatial',
+    title: 'URAI Spatial',
+    description: productDescription,
+  },
+  twitter: {
+    card: 'summary',
+    title: 'URAI Spatial',
+    description: productDescription,
+  },
   other: {
     'urai-deployed-sha': deployedSha,
+    'urai-product-identity': 'product-not-legal-entity',
   },
 }
 
