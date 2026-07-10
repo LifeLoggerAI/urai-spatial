@@ -125,4 +125,5 @@ console.log(JSON.stringify({
   ok: true,
   file,
   applied: ['pixelRatioMax', 'particleCount', 'shadows', 'postprocessing', 'antialias', 'documentVisible'],
+  trigger: '2026-07-10T13:30:00Z',
 }, null, 2))
