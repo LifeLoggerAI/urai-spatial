@@ -1,10 +1,10 @@
 'use client'
 
 import dynamic from 'next/dynamic'
+import { Suspense } from 'react'
 
-const AdaptiveLifeMapScene = dynamic(() => import('@/components/lifemap/AdaptiveLifeMapScene'), {
-  ssr: false,
-  loading: () => (
+function LifeMapLoading({ label = 'Opening Life Map…' }: { label?: string }) {
+  return (
     <main
       aria-label="Life Map loading"
       style={{
@@ -18,15 +18,22 @@ const AdaptiveLifeMapScene = dynamic(() => import('@/components/lifemap/Adaptive
         textTransform: 'uppercase',
       }}
     >
-      Opening Life Map…
+      {label}
     </main>
-  ),
+  )
+}
+
+const LifeMapRouteBoundary = dynamic(() => import('@/components/lifemap/LifeMapRouteBoundary'), {
+  ssr: false,
+  loading: () => <LifeMapLoading />,
 })
 
 export default function SpatialLifeMapCanonical() {
   return (
     <section data-testid="urai-r3f-canonical-lifemap" aria-label="URAI canonical spatial Life Map">
-      <AdaptiveLifeMapScene />
+      <Suspense fallback={<LifeMapLoading label="Restoring Life Map…" />}>
+        <LifeMapRouteBoundary />
+      </Suspense>
     </section>
   )
 }
