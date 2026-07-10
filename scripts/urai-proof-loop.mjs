@@ -13,7 +13,6 @@ const getArg = (name, fallback) => {
 
 const base = getArg('--base', process.env.URAI_BASE_URL || 'https://urai.app')
 const label = getArg('--label', 'v1-proof-loop')
-const project = process.env.FIREBASE_PROJECT_ID || 'urai-4dc1d'
 const receiptsRoot = process.env.URAI_RECEIPT_ROOT || join(homedir(), 'urai-final-receipts')
 const runDeploy = argv.has('--deploy')
 const archiveToRepo = argv.has('--archive-to-repo')
@@ -47,6 +46,10 @@ function latestReceiptDir() {
   return dirs[0] || ''
 }
 
+if (runDeploy) {
+  fail('The --deploy option is disabled. Deploy only through the protected URAI Canonical Production Release workflow.')
+}
+
 const startedAt = new Date().toISOString().replace(/[:.]/g, '-')
 const loopDir = join(receiptsRoot, `proof-loop-${label}-${startedAt}`)
 mkdirSync(loopDir, { recursive: true })
@@ -61,7 +64,7 @@ function mark(line) {
 mark(`LOOP_DIR=${loopDir}`)
 mark(`BASE=${base}`)
 mark(`LABEL=${label}`)
-mark(`DEPLOY=${runDeploy ? 'yes' : 'no'}`)
+mark('DEPLOY=no-protected-workflow-only')
 
 if (!skipBrowserInstall) {
   const code = sh('pnpm exec playwright install chromium')
@@ -72,26 +75,13 @@ if (!skipBrowserInstall) {
 if (!skipTypecheck) {
   const code = sh('pnpm typecheck')
   mark(`TYPECHECK_EXIT=${code}`)
-  if (code !== 0) fail('Typecheck failed before deploy/proof.')
+  if (code !== 0) fail('Typecheck failed before proof.')
 }
 
 if (!skipBuild) {
   const code = sh('rm -rf urai-tier1/.next urai-tier1/out .next out && pnpm build:static')
   mark(`BUILD_EXIT=${code}`)
-  if (code !== 0) fail('Static build failed before deploy/proof.')
-}
-
-if (runDeploy) {
-  let deployExit = 1
-  for (let i = 1; i <= 6; i += 1) {
-    deployExit = sh(`firebase deploy --config firebase.static.json --only hosting --project ${project} --non-interactive`)
-    mark(`DEPLOY_EXIT_ATTEMPT_${i}=${deployExit}`)
-    if (deployExit === 0) break
-    sh('rm -rf "$HOME/.cache/firebase" || true')
-    sh('sleep 20')
-  }
-  mark(`DEPLOY_EXIT=${deployExit}`)
-  if (deployExit !== 0) fail('Firebase deploy failed after retries.')
+  if (code !== 0) fail('Static build failed before proof.')
 }
 
 const proofExit = sh(`node scripts/aaa-launch-proof.mjs --skip-install --skip-typecheck --skip-test --skip-build --screenshots --base=${base}`)
@@ -120,8 +110,8 @@ if (archiveToRepo) {
   const dst = join(dstDir, zipName)
   cpSync(zipPath, dst)
   mark(`REPO_ZIP=${dst}`)
-  mark('Archive copied into docs/receipts/screenshots. Run: git add docs/receipts/screenshots && git commit -m "Add proof loop screenshot archive" && git push origin main')
+  mark('Archive copied into docs/receipts/screenshots. Commit through a reviewed branch; do not push directly to main.')
 }
 
 mark('STATUS=GREEN')
-mark('Next: upload the ZIP, review screenshots, patch the named visual defect, then run the loop again.')
+mark('Next: review screenshots, patch the named visual defect, and rerun proof. Production deployment remains protected-workflow only.')
