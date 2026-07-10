@@ -9,6 +9,7 @@ import { HomeCohesionLayer } from "./HomeCohesionLayer";
 import { CinematicLifeMapScene } from "@/spatial/v1/CinematicLifeMapScene";
 import { LifeMapScene } from "@/spatial/v1/LifeMapScene";
 import { MirrorOfBecomingView } from "@/spatial/v1/MirrorOfBecomingView";
+import { SpatialPerformanceBoundary } from "@/spatial/performance/SpatialPerformanceBoundary";
 import { lifeMapEdges, lifeMapNodes, mirrorStates, replayPaths } from "@/spatial/v1/lifeMapDemoData";
 import styles from "@/spatial/v1/uraiSpatialV1.module.css";
 
@@ -73,7 +74,7 @@ function StageFrame({ mode, children }: { mode: SceneMode; children: ReactNode }
   );
 }
 
-export function TierOneExperience({ mode = "home", selectedNodeId }: Props) {
+function TierOneExperienceContent({ mode = "home", selectedNodeId }: Props) {
   const router = useRouter();
   const showRouteCard = mode !== "home" && mode !== "ascent" && mode !== "life-map" && mode !== "demo" && mode !== "focus" && mode !== replayMode && mode !== "mirror" && mode !== "unwind";
   const routeCard = showRouteCard ? <p className="urai-v1-route-card">Your Life Map is ready.</p> : null;
@@ -134,4 +135,13 @@ export function TierOneExperience({ mode = "home", selectedNodeId }: Props) {
   }
 
   return <UraiSpatialStage />;
+}
+
+export function TierOneExperience(props: Props) {
+  const mode = props.mode ?? "home";
+  return (
+    <SpatialPerformanceBoundary route={`/spatial/${mode}`}>
+      <TierOneExperienceContent {...props} />
+    </SpatialPerformanceBoundary>
+  );
 }
