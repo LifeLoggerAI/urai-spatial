@@ -27,11 +27,13 @@ const budgetPath = 'operations/performance/spatial-performance-budget.json'
 const canvasPath = 'urai-tier1/src/spatial/components/world/SpatialWorldCanvas.tsx'
 const adaptivePath = 'urai-tier1/src/spatial/performance/useAdaptiveSpatialQuality.ts'
 const activeLifeMapPath = 'urai-tier1/src/components/lifemap/AdaptiveLifeMapScene.tsx'
+const activeLifeMapBoundaryPath = 'urai-tier1/src/components/lifemap/LifeMapRouteBoundary.tsx'
 const activeLifeMapWrapperPath = 'urai-tier1/src/spatial/lifemap/SpatialLifeMapCanonical.tsx'
 const budgetSource = read(budgetPath)
 const canvas = read(canvasPath)
 const adaptive = read(adaptivePath)
 const activeLifeMap = read(activeLifeMapPath)
+const activeLifeMapBoundary = read(activeLifeMapBoundaryPath)
 const activeLifeMapWrapper = read(activeLifeMapWrapperPath)
 
 let budget = null
@@ -57,9 +59,16 @@ requireMatch('Secondary particle geometry disposal', canvas, /geometry\.dispose\
 requireMatch('Secondary constellation geometry disposal', canvas, /lines\.dispose\(\)/)
 requireMatch('Secondary shadow map tiering', canvas, /profile\.tier === 'high' \? 1024 : 512/)
 
-requireMatch('Active route imports adaptive Life Map', activeLifeMapWrapper, /import\(['"]@\/components\/lifemap\/AdaptiveLifeMapScene['"]\)/)
-requireMatch('Active route renders adaptive Life Map', activeLifeMapWrapper, /<AdaptiveLifeMapScene\s*\/>/)
+requireMatch('Active route imports Life Map boundary', activeLifeMapWrapper, /import\(['"]@\/components\/lifemap\/LifeMapRouteBoundary['"]\)/)
+requireMatch('Active route renders Life Map boundary', activeLifeMapWrapper, /<LifeMapRouteBoundary\s*\/>/)
+requireMatch('Active route wraps query reader in Suspense', activeLifeMapWrapper, /<Suspense[\s\S]*<LifeMapRouteBoundary/)
 forbidMatch('Active wrapper destroys persisted state', activeLifeMapWrapper, /localStorage\.removeItem/)
+
+requireMatch('Life Map boundary imports adaptive scene', activeLifeMapBoundary, /import AdaptiveLifeMapScene from ['"]\.\/AdaptiveLifeMapScene['"]/)
+requireMatch('Life Map boundary reads query identity', activeLifeMapBoundary, /useSearchParams\(\)/)
+requireMatch('Life Map boundary detects selected-to-overview history', activeLifeMapBoundary, /previousIdentity\.current && !identity/)
+requireMatch('Life Map boundary clears stale history snapshot only', activeLifeMapBoundary, /localStorage\.removeItem\(LIFE_MAP_STATE_KEY\)/)
+requireMatch('Life Map boundary remounts adaptive scene', activeLifeMapBoundary, /<AdaptiveLifeMapScene key=/)
 
 requireMatch('Active Life Map adaptive hook', activeLifeMap, /useAdaptiveSpatialQuality\(\)/)
 requireMatch('Active Life Map visibility-aware frameloop', activeLifeMap, /frameloop=\{profile\.documentVisible \? ["']always["'] : ["']never["']\}/)
@@ -130,6 +139,7 @@ const report = {
   integrationState: failures.length === 0 ? 'integrated' : 'failed',
   activeProductionRoute: '/life-map',
   activeLifeMapPath,
+  activeLifeMapBoundaryPath,
   activeLifeMapWrapperPath,
   failures,
   oversized,
