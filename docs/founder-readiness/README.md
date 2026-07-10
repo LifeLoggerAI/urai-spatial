@@ -27,14 +27,30 @@ When this pack conflicts with those sources, use the stricter evidence-backed st
 - Full vision posture: URAI is building a spatial operating system for memory, identity, reflection, focus, personal evidence, and human-directed digital continuity
 - Demo rule: use sample data unless a user has explicitly consented to show their own information
 
-## Documents
+## Quick-use materials
+
+- [`EVENT_QUICK_CARD.md`](./EVENT_QUICK_CARD.md) — phone-screen founder script, one-minute demo wording, objections, asks, and event checklist
+- [`BETA_TESTER_PACKET.md`](./BETA_TESTER_PACKET.md) — tester instructions, data restrictions, journey, feedback questions, and severity guide
+- [`INVESTOR_ONE_PAGER.md`](./INVESTOR_ONE_PAGER.md) — concise claim-safe investor overview for internal review and focused meetings
+- [`../../.github/ISSUE_TEMPLATE/beta-feedback.yml`](../../.github/ISSUE_TEMPLATE/beta-feedback.yml) — structured public beta feedback form
+- [`../../.github/ISSUE_TEMPLATE/beta-bug.yml`](../../.github/ISSUE_TEMPLATE/beta-bug.yml) — structured beta bug report with privacy and severity controls
+
+## Full documents
 
 - [`FOUNDERS_AND_EVENTS.md`](./FOUNDERS_AND_EVENTS.md) — conversational pitches, founder-event field guide, questions, and follow-up copy
 - [`DEMO_AND_WEBSITE.md`](./DEMO_AND_WEBSITE.md) — 60-second and 3-minute demo runbooks plus claim-safe website copy
 - [`CLAIMS_AND_LEGAL.md`](./CLAIMS_AND_LEGAL.md) — green/yellow/red claim matrix and legal-organization checklist
 - [`LAUNCH_QA_BETA.md`](./LAUNCH_QA_BETA.md) — public-beta launch gates, QA matrix, tester instructions, severity model, and feedback form
-- [`INVESTOR_PACKAGE.md`](./INVESTOR_PACKAGE.md) — investor one-pager, meeting structure, FAQ, milestones, and diligence checklist
+- [`INVESTOR_PACKAGE.md`](./INVESTOR_PACKAGE.md) — investor meeting structure, FAQ, milestones, use-of-funds template, and diligence checklist
 - [`AUDIT_AND_HANDOFF.md`](./AUDIT_AND_HANDOFF.md) — current repository audit and parallel-chat handoff protocol
+
+## GitHub execution trackers
+
+- `#494` — umbrella founder demo and public-beta readiness
+- `#495` — claim-safe founder event demo kit
+- `#496` — controlled public-beta readiness cohort
+- `#497` — evidence-backed public claims matrix
+- `#498` — investor-readiness materials for internal review
 
 ## Operating rule
 
