@@ -94,8 +94,10 @@ Review at minimum:
 | `/mirror` | Reflection | Non-diagnostic copy | Medical or certainty claim |
 | `/passport` | Permission and identity UX | Closed layers stay closed | Permission bypass |
 | `/privacy-controls` | Dedicated controls | Correct fingerprint and controls | Home content served instead |
+| `/location-map` | Place and emotional weather | Symbolic/place UX only, no live location provider | Precise location tracking claim without provider |
 | `/status` | Evidence control room | Exact claim boundaries and receipt identity | Claims certification without receipts |
 | `/demo` | Public walkthrough | Sample data only | Private state or unsupported claim |
+| `/demo/replay-film` | Replay film proof surface | Demo route proof only, no backend persistence | False persistence or backend storage claim |
 | `/spatial/ar-vr` | XR preview | Preview label and safe fallback | Device-certified claim without proof |
 
 ## Beta cohort design
