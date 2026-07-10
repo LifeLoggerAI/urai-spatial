@@ -1,0 +1,124 @@
+name: URAI beta bug
+description: Report a reproducible problem in the URAI beta or demo journey.
+title: "[Beta bug]: "
+labels: []
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Stop testing and report immediately if private or cross-user information appears. Do not paste credentials, personal records, private URLs, or highly sensitive data into this public form.
+  - type: input
+    id: route
+    attributes:
+      label: Exact route
+      placeholder: /life-map, /focus?memoryId=..., or full public URL
+    validations:
+      required: true
+  - type: input
+    id: build
+    attributes:
+      label: Build or deployment identifier
+      placeholder: Exact SHA or receipt ID when known
+    validations:
+      required: false
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      description: List the smallest reliable sequence that causes the problem.
+      placeholder: |
+        1. Open...
+        2. Select...
+        3. Observe...
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected result
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual result
+    validations:
+      required: true
+  - type: dropdown
+    id: severity
+    attributes:
+      label: Suggested severity
+      options:
+        - P0 - Privacy, security, wrong deployment, or total launch blocker
+        - P1 - Main journey blocked or major trust/accessibility failure
+        - P2 - Significant problem with a workaround
+        - P3 - Cosmetic or minor issue
+    validations:
+      required: true
+  - type: input
+    id: device
+    attributes:
+      label: Device and browser
+      placeholder: Example: Pixel 9 / Chrome 138
+    validations:
+      required: true
+  - type: dropdown
+    id: connection
+    attributes:
+      label: Connection
+      options:
+        - Fast Wi-Fi or wired
+        - Typical Wi-Fi
+        - Cellular
+        - Slow or unstable
+        - Unknown
+    validations:
+      required: false
+  - type: checkboxes
+    id: symptoms
+    attributes:
+      label: Symptoms
+      options:
+        - label: Blank screen or canvas
+        - label: Broken or missing asset
+        - label: Stuck transition
+        - label: Wrong route content
+        - label: Selected memory identity lost
+        - label: Permission or privacy-control failure
+        - label: Console or fatal error
+        - label: Motion or accessibility problem
+        - label: Mobile layout unusable
+  - type: textarea
+    id: evidence
+    attributes:
+      label: Screenshot, recording, or safe log excerpt
+      description: Remove private information before attaching evidence.
+    validations:
+      required: false
+  - type: dropdown
+    id: recover
+    attributes:
+      label: Could you recover without restarting?
+      options:
+        - Yes
+        - No
+        - Not tested
+    validations:
+      required: true
+  - type: dropdown
+    id: private_exposure
+    attributes:
+      label: Did this expose or mix private information?
+      options:
+        - No
+        - Possibly
+        - Yes - stop testing and escalate
+    validations:
+      required: true
+  - type: checkboxes
+    id: public_safety
+    attributes:
+      label: Public-data acknowledgment
+      options:
+        - label: I removed credentials and highly sensitive or private information from this report.
+          required: true
