@@ -1,0 +1,34 @@
+# URAI Spatial
+
+Canonical application: https://urai.app
+Canonical public repository: https://github.com/LifeLoggerAI/urai-spatial
+Canonical runtime root: urai-tier1
+
+## Product
+
+URAI is building a spatial operating system for memory, identity, reflection, focus, and personal direction.
+
+## Public product path
+
+- /home — orientation and entry
+- /ground — intentional operating world
+- /life-map — synthetic sample memory constellation
+- /focus — selected sample memory chamber
+- /replay — source-aware narrative demo
+- /mirror — non-diagnostic reflection
+- /passport — permission and identity UX
+- /privacy-controls — permission controls
+- /status — evidence and claim boundaries
+- /about — canonical product identity and repository authority
+
+## Current evidence boundary
+
+The repository contains a substantial fallback/demo spatial web experience that can be demonstrated with synthetic sample data. A source-implemented route is not automatically production-certified. Exact deployed-SHA, rollback, route-parity, authenticated persistence, provider activation, and physical-device claims require separate receipts.
+
+## Safety boundary
+
+Do not describe URAI as a medical device, diagnosis, therapy replacement, lie detector, mind reader, surveillance system, autonomous real-world actor, guaranteed investment, fully production-certified product, active-provider platform, or device-certified XR experience without new evidence and appropriate review.
+
+## Identity boundary
+
+This file identifies the product and canonical public repository. It does not assert a legal entity, creator, founder, trademark owner, patent owner, copyright owner, or chain of title. Use authorized corporate records and appropriate review for those statements.
