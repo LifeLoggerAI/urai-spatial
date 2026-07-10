@@ -77,6 +77,9 @@ const next = loops.find((loop) => loop.verdict !== 'pass') || loops[loops.length
 const receiptSafe = Boolean(
   receipt &&
   receipt.status === 'passed' &&
+  receipt.sourceIdentityVerified === true &&
+  receipt.cleanWorkingTree === true &&
+  /^[0-9a-f]{40}$/.test(String(receipt.sourceSha || '')) &&
   receipt.productionDeploymentAttempted === false &&
   receipt.productionDeploymentAuthority === contract.productionAuthority
 )
@@ -87,6 +90,9 @@ const report = {
   latestProofDir: proofDir,
   receiptStatus: receipt?.status || 'missing',
   receiptLoopName: receipt?.loopName || null,
+  sourceSha: receipt?.sourceSha || null,
+  sourceIdentityVerified: receipt?.sourceIdentityVerified ?? null,
+  cleanWorkingTree: receipt?.cleanWorkingTree ?? null,
   productionDeploymentAttempted: receipt?.productionDeploymentAttempted ?? null,
   productionDeploymentAuthority: receipt?.productionDeploymentAuthority || null,
   pngCount: count,
@@ -111,6 +117,8 @@ console.log('')
 console.log('# URAI AAA Machine Steering')
 console.log(`latestProofDir=${report.latestProofDir || 'none'}`)
 console.log(`receiptStatus=${report.receiptStatus}`)
+console.log(`sourceSha=${report.sourceSha || 'unverified'}`)
+console.log(`sourceIdentityVerified=${report.sourceIdentityVerified === true ? 'yes' : 'no'}`)
 console.log(`pngCount=${report.pngCount}/${report.expectedPngCount}`)
 console.log(`machineProofGreen=${report.machineProofGreen ? 'yes' : 'no'}`)
 
