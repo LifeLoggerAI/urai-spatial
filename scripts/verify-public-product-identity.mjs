@@ -44,6 +44,11 @@ requireTokens('urai-tier1/src/app/manifest.ts', [
   "start_url: '/home'",
   "src: '/icon.svg'",
 ])
+requireTokens('urai-tier1/public/icon.svg', [
+  '<title id="title">URAI Spatial icon</title>',
+  '<desc id="desc">A luminous cyan orb and orbit representing the URAI Spatial product.</desc>',
+  'viewBox="0 0 512 512"',
+])
 for (const file of ['urai-tier1/public/humans.txt', 'urai-tier1/public/llms.txt']) {
   requireTokens(file, [
     'Canonical application: https://urai.app',
@@ -58,4 +63,4 @@ if (failures.length) {
   process.exit(1)
 }
 
-console.log('Public product identity verified: product/repository facts present; legal identity and ownership claims withheld')
+console.log('Public product identity verified: product/repository facts and manifest icon present; legal identity and ownership claims withheld')
