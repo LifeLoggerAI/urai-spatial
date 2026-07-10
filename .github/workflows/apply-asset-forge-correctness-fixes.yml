@@ -1,0 +1,51 @@
+name: Apply Asset Forge Correctness Fixes
+
+on:
+  push:
+    branches:
+      - converge/public-beta-20260710
+    paths:
+      - 'scripts/apply-asset-forge-correctness-fixes.mjs'
+      - '.github/workflows/apply-asset-forge-correctness-fixes.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: apply-asset-forge-correctness-fixes
+  cancel-in-progress: false
+
+jobs:
+  apply:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: converge/public-beta-20260710
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Apply correctness fixes
+        run: node scripts/apply-asset-forge-correctness-fixes.mjs
+      - name: Verify patched source
+        run: |
+          grep -F "primitive.indices == null ? null" scripts/forge-launch-critical-assets.mjs
+          grep -F "primitive.indices == null ? null" scripts/audit-launch-critical-artifact.mjs
+          grep -F "function eulerToQuaternion" scripts/forge-launch-critical-assets.mjs
+          grep -F "...(rotation ? { rotation } : {})" scripts/forge-launch-critical-assets.mjs
+          node --check scripts/forge-launch-critical-assets.mjs
+          node --check scripts/audit-launch-critical-artifact.mjs
+      - name: Commit fixes
+        run: |
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add scripts/forge-launch-critical-assets.mjs scripts/audit-launch-critical-artifact.mjs
+          if git diff --cached --quiet; then
+            echo 'Correctness fixes already applied.'
+            exit 0
+          fi
+          git commit -m 'Fix asset forge GLB correctness'
+          git push origin HEAD:converge/public-beta-20260710
