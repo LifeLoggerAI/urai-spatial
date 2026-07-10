@@ -42,6 +42,25 @@ requireTokens('urai-tier1/public/media/event/offline-demo.html', [
   'Substantial demo. Certification pending.',
   'No customer, account, credential, admin, console, environment, or production data is shown.',
 ])
+requireTokens('urai-tier1/public/media/event/offline-video.html', [
+  'Synthetic sample content only',
+  'Event, Home, Life Map, Focus, Replay, Mirror, Passport, and Status',
+  'video/chunk-00.js',
+  'video/chunk-01.js',
+  'video/chunk-02.js',
+  'founder-event-storyboard.svg',
+])
+requireTokens('urai-tier1/public/media/event/video/README.md', [
+  'Duration: 72 seconds',
+  'Decoded size: 22,263 bytes',
+  '1280a31745e5cfc98eea64f733468daa064ce1d799026f98090485bedb1f8c6c',
+])
+requireTokens('scripts/verify-embedded-event-video.mjs', [
+  'base64Length: 29684',
+  'byteLength: 22263',
+  "sha256: '1280a31745e5cfc98eea64f733468daa064ce1d799026f98090485bedb1f8c6c'",
+  "ebmlMagic: '1a45dfa3'",
+])
 requireTokens('scripts/capture-founder-event-kit.mjs', [
   "route: '/event'",
   "route: '/life-map'",
@@ -64,6 +83,7 @@ requireTokens('.github/workflows/founder-event-demo-kit.yml', [
   'test "$(git rev-parse HEAD)" = "$TARGET_SHA"',
   'NEXT_PUBLIC_URAI_BUILD_SHA: ${{ env.TARGET_SHA }}',
   'URAI_EVENT_SOURCE_SHA: ${{ env.TARGET_SHA }}',
+  'node scripts/verify-embedded-event-video.mjs',
   'name: urai-founder-event-kit-${{ env.TARGET_SHA }}',
 ])
 
@@ -91,6 +111,7 @@ requireTokens('docs/founder-readiness/FOUNDER_EVENT_DEMO_KIT.md', [
   '## Offline fallback',
   '## QR publication gate',
   '## Ownership',
+  'offline-video.html',
 ])
 
 if (failures.length) {
