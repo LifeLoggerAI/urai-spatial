@@ -5,7 +5,9 @@ import path from 'node:path'
 const root = process.cwd()
 const workflowDirectory = path.join(root, '.github', 'workflows')
 const scriptsDirectory = path.join(root, 'scripts')
-const canonical = 'spatial-live-deploy.yml'
+const canonicalWorkflowFile = 'spatial-live-deploy.yml'
+const canonicalWorkflowName = 'URAI Canonical Production Release'
+const canonicalRepository = 'LifeLoggerAI/urai-spatial'
 const allowedProductionScript = 'scripts/live-release.mjs'
 const auditScript = 'scripts/audit-production-workflow-authority.mjs'
 const proofRunner = 'scripts/aaa-launch-proof.mjs'
@@ -13,6 +15,7 @@ const steeringPlanPath = 'docs/aaa-machine/steering-plan.json'
 const steeringScriptPath = 'scripts/urai-aaa-steer.mjs'
 const steeringCompatibilityPath = 'scripts/urai-aaa-steer.cjs'
 const proofGuidePaths = ['docs/aaa-launch-proof-runner.md', 'docs/receipts/URAI_PROOF_MACHINE.md']
+const steeringSnapshots = ['docs/receipts/machine-steering/latest.json', 'docs/receipts/machine-steering/latest.txt']
 const retiredExecutables = [
   'scripts/deploy-exact-static-release.mjs',
   'scripts/firebase-studio-polish-deploy-node.sh',
@@ -71,6 +74,7 @@ function workflowCanDeploy(source, productionCapableScripts) {
     /\bpnpm\s+live:deploy\b/i.test(source) ||
     /\benvironment:\s*production\b/i.test(source) ||
     /\bDEPLOY_URAI_APP\b/.test(source) ||
+    /\bROLLBACK_URAI_APP\b/.test(source) ||
     productionCapableScripts.some((script) => source.includes(script))
 }
 
@@ -86,59 +90,66 @@ for (const file of walk(scriptsDirectory)) {
   const source = readFileSync(file, 'utf8')
   if (scriptCanDeploy(source)) productionCapableScripts.push(name)
 }
-
 for (const script of productionCapableScripts) {
   if (script !== allowedProductionScript) failures.push(`Competing production-capable script: ${script}`)
 }
 
+let canonicalSource = ''
 if (!existsSync(workflowDirectory)) {
   failures.push('Missing .github/workflows directory')
 } else {
   const workflowFiles = readdirSync(workflowDirectory).filter((name) => /\.ya?ml$/.test(name))
-  if (!workflowFiles.includes(canonical)) failures.push(`Missing canonical production workflow: ${canonical}`)
+  if (!workflowFiles.includes(canonicalWorkflowFile)) failures.push(`Missing canonical production workflow: ${canonicalWorkflowFile}`)
 
   for (const name of workflowFiles) {
     const source = readFileSync(path.join(workflowDirectory, name), 'utf8')
-    if (workflowCanDeploy(source, productionCapableScripts) && name !== canonical) {
+    if (workflowCanDeploy(source, productionCapableScripts) && name !== canonicalWorkflowFile) {
       failures.push(`Competing production-capable workflow: ${name}`)
     }
   }
 
-  const canonicalSource = workflowFiles.includes(canonical)
-    ? readFileSync(path.join(workflowDirectory, canonical), 'utf8')
+  canonicalSource = workflowFiles.includes(canonicalWorkflowFile)
+    ? readFileSync(path.join(workflowDirectory, canonicalWorkflowFile), 'utf8')
     : ''
 
-  for (const marker of [
-    "inputs.confirm == 'DEPLOY_URAI_APP'",
-    'URAI_DEPLOY_CONFIRM: DEPLOY_STATIC_URAI',
+  requireTokens('Canonical workflow', canonicalSource, [
+    `name: ${canonicalWorkflowName}`,
+    "inputs.confirm == 'DEPLOY_URAI_APP' || inputs.confirm == 'ROLLBACK_URAI_APP'",
+    "github.event_name == 'workflow_dispatch' && inputs.release_sha || github.sha",
     'environment: production',
-    'inputs.release_sha == github.sha',
     'git merge-base --is-ancestor',
-    'service_account.get',
+    "test \"$RELEASE_SHA\" = \"$CURRENT_MAIN_SHA\"",
+    "test \"$RELEASE_SHA\" = \"$ROLLBACK_SHA\"",
+    'URAI_RELEASE_OPERATION:',
+    'GITHUB_WORKFLOW',
+    'GITHUB_REPOSITORY',
+    'GITHUB_REF',
     'scripts/urai-release-control-smoke.mjs',
+    'gh workflow run spatial-live-deploy.yml --ref main',
     'if: always()',
-  ]) {
-    if (!canonicalSource.includes(marker)) failures.push(`Canonical workflow missing marker: ${marker}`)
+  ])
+  if (canonicalSource.includes('NEXT_PUBLIC_URAI_BUILD_SHA=$ROLLBACK_SHA') && canonicalSource.includes('pnpm live:deploy')) {
+    failures.push('Canonical workflow still records a local rollback deploy command')
   }
 }
 
-const releaseScriptPath = path.join(root, allowedProductionScript)
-if (!existsSync(releaseScriptPath)) {
-  failures.push(`Missing ${allowedProductionScript}`)
-} else {
-  const source = readFileSync(releaseScriptPath, 'utf8')
-  if (!source.includes("process.env.URAI_DEPLOY_CONFIRM !== 'DEPLOY_STATIC_URAI'")) {
-    failures.push('Deploy executable does not require the explicit production token')
-  }
-  if (/GITHUB_ACTIONS === 'true'\s*&&\s*process\.env\.GITHUB_EVENT_NAME === 'workflow_dispatch'/.test(source)) {
-    failures.push('Deploy executable still authorizes generic workflow dispatch without the explicit token')
-  }
-  if (!source.includes("process.env.GITHUB_EVENT_NAME !== 'workflow_dispatch'")) {
-    failures.push('Deploy executable does not reject non-dispatch GitHub Actions events')
-  }
-  if (!source.includes('project !== expectedProject')) {
-    failures.push('Deploy executable does not lock the Firebase project')
-  }
+const releaseSource = read(allowedProductionScript)
+requireTokens('Deploy executable', releaseSource, [
+  "process.env.URAI_DEPLOY_CONFIRM !== 'DEPLOY_STATIC_URAI'",
+  "process.env.GITHUB_ACTIONS !== 'true'",
+  "process.env.GITHUB_EVENT_NAME !== 'workflow_dispatch'",
+  'process.env.GITHUB_WORKFLOW !== canonicalWorkflow',
+  'process.env.GITHUB_REPOSITORY !== canonicalRepository',
+  "process.env.GITHUB_REF !== 'refs/heads/main'",
+  "['deploy', 'rollback'].includes(releaseOperation)",
+  'project !== expectedProject',
+  "productionAuthority: '.github/workflows/spatial-live-deploy.yml'",
+])
+if (!releaseSource.includes(`const canonicalWorkflow = '${canonicalWorkflowName}'`)) {
+  failures.push('Deploy executable workflow name does not match the canonical workflow')
+}
+if (!releaseSource.includes(`const canonicalRepository = '${canonicalRepository}'`)) {
+  failures.push('Deploy executable repository does not match the canonical repository')
 }
 
 const packagePath = path.join(root, 'package.json')
@@ -177,12 +188,12 @@ if (!existsSync(packagePath)) {
 const proofSource = read(proofRunner)
 requireTokens('Proof runner', proofSource, [
   "if (args.has('--deploy'))",
-  "process.exit(64)",
+  'process.exit(64)',
   "git', ['rev-parse', 'HEAD']",
   "git', ['status', '--porcelain']",
   'sourceIdentityVerified',
   'cleanWorkingTree',
-  "productionDeploymentAttempted: false",
+  'productionDeploymentAttempted: false',
   "productionDeploymentAuthority: '.github/workflows/spatial-live-deploy.yml'",
   "join(receiptDir, 'live-visual-audit')",
 ])
@@ -190,10 +201,7 @@ if (hasDirectDeployCommand(proofSource)) failures.push('Proof runner contains a 
 
 for (const guidePath of proofGuidePaths) {
   const guide = read(guidePath)
-  requireTokens(guidePath, guide, [
-    'scripts/aaa-launch-proof.mjs',
-    '.github/workflows/spatial-live-deploy.yml',
-  ])
+  requireTokens(guidePath, guide, ['scripts/aaa-launch-proof.mjs', '.github/workflows/spatial-live-deploy.yml'])
   if (/bash\s+scripts\/urai-aaa-proof-loop\.sh/.test(guide)) failures.push(`${guidePath} invokes retired urai-aaa-proof-loop.sh`)
   if (/node\s+scripts\/urai-proof-loop\.mjs/.test(guide)) failures.push(`${guidePath} invokes retired urai-proof-loop.mjs`)
   if (/aaa-launch-proof\.mjs[^\n`]*--deploy/.test(guide)) failures.push(`${guidePath} tells operators to deploy through the proof runner`)
@@ -202,12 +210,11 @@ for (const guidePath of proofGuidePaths) {
 const steeringSource = read(steeringScriptPath)
 requireTokens('Machine steering', steeringSource, [
   "screenshotDirectory || 'live-visual-audit/screenshots'",
-  "receipt.sourceIdentityVerified === true",
-  "receipt.cleanWorkingTree === true",
-  "receipt.productionDeploymentAttempted === false",
+  'receipt.sourceIdentityVerified === true',
+  'receipt.cleanWorkingTree === true',
+  'receipt.productionDeploymentAttempted === false',
   'machineProofGreen',
 ])
-
 const compatibilitySource = read(steeringCompatibilityPath)
 if (!compatibilitySource.includes("import('./urai-aaa-steer.mjs')")) {
   failures.push(`${steeringCompatibilityPath} must delegate to the canonical steering implementation`)
@@ -217,36 +224,33 @@ const steeringPlanSource = read(steeringPlanPath)
 try {
   const steeringPlan = JSON.parse(steeringPlanSource)
   if (Number(steeringPlan.version) < 2) failures.push('Steering plan version must be at least 2')
-  if (steeringPlan.proofRequirements?.productionDeploymentAttempted !== false) {
-    failures.push('Steering plan must require productionDeploymentAttempted=false')
-  }
-  if (steeringPlan.proofRequirements?.screenshotsPng !== 28) {
-    failures.push('Steering plan must require the current 28-screen visual matrix')
-  }
-  if (steeringPlan.receiptContract?.screenshotDirectory !== 'live-visual-audit/screenshots') {
-    failures.push('Steering plan screenshot directory does not match live-visual-audit output')
-  }
-  if (steeringPlan.receiptContract?.productionAuthority !== '.github/workflows/spatial-live-deploy.yml') {
-    failures.push('Steering plan production authority is not canonical')
-  }
+  if (steeringPlan.proofRequirements?.productionDeploymentAttempted !== false) failures.push('Steering plan must require productionDeploymentAttempted=false')
+  if (steeringPlan.proofRequirements?.screenshotsPng !== 28) failures.push('Steering plan must require the current 28-screen visual matrix')
+  if (steeringPlan.receiptContract?.screenshotDirectory !== 'live-visual-audit/screenshots') failures.push('Steering plan screenshot directory does not match live-visual-audit output')
+  if (steeringPlan.receiptContract?.productionAuthority !== '.github/workflows/spatial-live-deploy.yml') failures.push('Steering plan production authority is not canonical')
   if ('deployExit' in (steeringPlan.proofRequirements || {})) failures.push('Steering plan still expects a local deploy exit code')
   for (const loop of steeringPlan.loops || []) {
     const command = String(loop.runCommand || '')
-    if (!command.includes('node scripts/aaa-launch-proof.mjs --screenshots')) {
-      failures.push(`Steering loop ${loop.id || 'unknown'} does not use the proof-only runner`)
-    }
-    if (/--deploy\b|urai-aaa-proof-loop\.sh|urai-proof-loop\.mjs/.test(command)) {
-      failures.push(`Steering loop ${loop.id || 'unknown'} references a retired or deploy-capable proof path`)
-    }
+    if (!command.includes('node scripts/aaa-launch-proof.mjs --screenshots')) failures.push(`Steering loop ${loop.id || 'unknown'} does not use the proof-only runner`)
+    if (/--deploy\b|urai-aaa-proof-loop\.sh|urai-proof-loop\.mjs/.test(command)) failures.push(`Steering loop ${loop.id || 'unknown'} references a retired or deploy-capable proof path`)
   }
 } catch (error) {
   failures.push(`Invalid ${steeringPlanPath}: ${error instanceof Error ? error.message : String(error)}`)
 }
 
+for (const snapshotPath of steeringSnapshots) {
+  const snapshot = read(snapshotPath)
+  if (/urai-aaa-proof-loop\.sh|node\s+scripts\/urai-proof-loop\.mjs|aaa-launch-proof\.mjs[^\n"]*--deploy/.test(snapshot)) {
+    failures.push(`${snapshotPath} contains a retired or deploy-capable proof command`)
+  }
+  requireTokens(snapshotPath, snapshot, ['scripts/aaa-launch-proof.mjs', '.github/workflows/spatial-live-deploy.yml'])
+}
+
 const report = {
   ok: failures.length === 0,
-  canonicalWorkflow: canonical,
+  canonicalWorkflow: canonicalWorkflowFile,
   canonicalProductionScript: allowedProductionScript,
+  protectedOperations: ['deploy', 'rollback'],
   proofRunner,
   steeringPlan: steeringPlanPath,
   retiredExecutables,
