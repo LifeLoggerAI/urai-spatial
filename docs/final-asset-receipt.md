@@ -4,7 +4,7 @@ Generated: 2026-06-30T23:59:43.340Z
 
 Result: STALE — NOT RELEASE EVIDENCE
 
-This committed receipt predates the provider handoff generated on July 3, 2026. Its former `GREEN` result only proved that expected paths existed and classified all 51 core launch assets as `placeholder-final`; it did not recalculate SHA-256 values, verify byte sizes or image dimensions, prove provider source records, or confirm runtime consumption.
+This committed receipt predates the provider handoff generated on July 3, 2026. Its former `GREEN` result only proved that expected paths existed and classified all 51 core launch assets as `placeholder-final`; it did not recalculate SHA-256 values, verify byte sizes or image dimensions, prove provider source records, confirm registry coverage, or prove active route rendering.
 
 Do not use this committed file as production certification.
 
@@ -20,8 +20,11 @@ That command now runs `scripts/verify-provider-asset-handoff.mjs` first. A relea
 - the committed binary SHA-256 and byte size match the provider handoff;
 - the WebP dimensions match the handoff;
 - the handoff contains producer, source-path, and prompt-version records;
-- every core route/UI/avatar asset is consumed by `uraiAssets.ts`;
+- all 51 core route/UI/avatar paths are registered in `uraiAssets.ts`;
+- the active owners for `/`, `/home`, `/ground`, `/life-map`, `/focus`, `/replay`, `/passport`, `/privacy-controls`, and `/status` render their primary route asset sets through `assetCssStack`;
 - the generated verification JSON reports `ok: true`;
 - the exact-head workflow uploads both the regenerated Markdown receipt and `release-control-evidence/provider-asset-verification.json`.
 
-Until that exact-head verification executes successfully, asset certification status is **PENDING**.
+This certifies provider WebP route art and its active browser paths. It does not certify absent bespoke GLB/HDR models or physical XR hardware.
+
+Until exact-head verification executes successfully, asset certification status is **PENDING**.
