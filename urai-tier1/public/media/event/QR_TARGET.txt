@@ -1,0 +1,3 @@
+https://urai.app/event
+
+Publication gate: do not print, distribute, or display this QR until the canonical deployment workflow records the exact deployed SHA, the live Status route matches current source, and the custom-domain smoke passes.
