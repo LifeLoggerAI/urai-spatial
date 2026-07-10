@@ -10,10 +10,14 @@ const chunkPaths = [
   'urai-tier1/public/media/event/video/chunk-02.js',
 ]
 const expected = {
-  base64Length: 29684,
-  byteLength: 22263,
-  sha256: '1280a31745e5cfc98eea64f733468daa064ce1d799026f98090485bedb1f8c6c',
+  base64Length: 12804,
+  byteLength: 9603,
+  sha256: '7812d1f74db521288948ac8aebcd189065a9e7821d8f77cb8e506ea6141fa11c',
   ebmlMagic: '1a45dfa3',
+  codec: 'vp8',
+  width: 160,
+  height: 90,
+  durationSeconds: 72,
 }
 
 const failures = []
@@ -61,11 +65,28 @@ if (!fs.existsSync(playerPath)) {
     'Synthetic sample content only',
     'Event, Home, Life Map, Focus, Replay, Mirror, Passport, and Status',
     'founder-event-storyboard.svg',
+    'duration < 70 || duration > 74',
   ]) {
     if (!player.includes(required)) failures.push(`offline-video.html is missing: ${required}`)
   }
   for (const forbidden of ['fetch(', 'XMLHttpRequest', 'WebSocket(', 'EventSource(']) {
     if (player.includes(forbidden)) failures.push(`offline-video.html contains network-capable call: ${forbidden}`)
+  }
+}
+
+const evidencePath = path.join(root, 'urai-tier1/public/media/event/video/verification.json')
+if (!fs.existsSync(evidencePath)) {
+  failures.push('video/verification.json is missing')
+} else {
+  try {
+    const evidence = JSON.parse(fs.readFileSync(evidencePath, 'utf8'))
+    for (const key of ['sha256', 'byteLength', 'codec', 'width', 'height', 'durationSeconds']) {
+      if (evidence[key] !== expected[key]) failures.push(`verification.json ${key}=${evidence[key]}; expected ${expected[key]}`)
+    }
+    if (evidence.fullDecode !== 'passed') failures.push('verification.json must record fullDecode=passed')
+    if (evidence.sampleDataOnly !== true) failures.push('verification.json must record sampleDataOnly=true')
+  } catch (error) {
+    failures.push(`verification.json is invalid: ${error instanceof Error ? error.message : String(error)}`)
   }
 }
 
