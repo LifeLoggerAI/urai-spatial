@@ -1,6 +1,6 @@
 export type UraiSpatialAssetType = 'model' | 'texture' | 'skybox' | 'portal' | 'world' | 'ui' | 'audio' | 'fallback'
 
-export type UraiSpatialAssetStatus = 'ready' | 'placeholder' | 'missing' | 'future'
+export type UraiSpatialAssetStatus = 'ready' | 'candidate' | 'fallback' | 'missing' | 'future'
 
 export type UraiSpatialTargetSurface =
   | 'home'
@@ -28,8 +28,21 @@ export interface UraiSpatialAssetManifestEntry {
   readonly generationPromptId?: string
 }
 
+export type UraiSpatialAssetResolutionSource = 'selected' | 'fallback' | 'unavailable'
+
+export interface UraiSpatialAssetResolution {
+  readonly requestedAssetId: string
+  readonly source: UraiSpatialAssetResolutionSource
+  readonly path: string | null
+  readonly selectedAsset: UraiSpatialAssetManifestEntry | null
+  readonly fallbackAsset: UraiSpatialAssetManifestEntry | null
+}
+
 const generatedRoot = '/assets/urai/generated'
-const fallbackRoot = '/assets/urai/fallbacks'
+const proofFallbackRoot = '/assets/urai/spatial'
+
+const createdAt = '2026-07-07'
+const updatedAt = '2026-07-10'
 
 export const uraiSpatialAssetManifest: readonly UraiSpatialAssetManifestEntry[] = [
   {
@@ -40,23 +53,11 @@ export const uraiSpatialAssetManifest: readonly UraiSpatialAssetManifestEntry[] 
     status: 'future',
     targetSurface: 'home',
     priority: 'critical',
-    notes: 'Primary navigable home chamber model. Must feel cinematic, spatial, walkable, and non-dashboard.',
-    createdAt: '2026-07-07',
-    updatedAt: '2026-07-07',
-    fallbackAssetId: 'home-entry-chamber-procedural-fallback',
+    notes: 'Selected Home environment. It may load only after review, compression, receipts and promotion mark it ready.',
+    createdAt,
+    updatedAt,
+    fallbackAssetId: 'home-entry-chamber-proof-fallback',
     generationPromptId: 'home-world-assets',
-  },
-  {
-    id: 'home-entry-chamber-procedural-fallback',
-    name: 'Home Entry Chamber Procedural Fallback',
-    type: 'fallback',
-    path: `${fallbackRoot}/models/home-entry-chamber-procedural.json`,
-    status: 'placeholder',
-    targetSurface: 'home',
-    priority: 'critical',
-    notes: 'Runtime procedural fallback rendered with Three.js geometry until final GLB is imported.',
-    createdAt: '2026-07-07',
-    updatedAt: '2026-07-07',
   },
   {
     id: 'portal-ring-master-glb-v1',
@@ -66,23 +67,11 @@ export const uraiSpatialAssetManifest: readonly UraiSpatialAssetManifestEntry[] 
     status: 'future',
     targetSurface: 'global',
     priority: 'critical',
-    notes: 'Reusable premium portal geometry for home to ground, home to Life Map, focus, and replay transitions.',
-    createdAt: '2026-07-07',
-    updatedAt: '2026-07-07',
-    fallbackAssetId: 'portal-ring-procedural-fallback',
+    notes: 'Selected reusable portal geometry for spatial transitions.',
+    createdAt,
+    updatedAt,
+    fallbackAssetId: 'portal-ring-proof-fallback',
     generationPromptId: 'home-world-assets',
-  },
-  {
-    id: 'portal-ring-procedural-fallback',
-    name: 'Portal Ring Procedural Fallback',
-    type: 'fallback',
-    path: `${fallbackRoot}/portals/portal-ring-procedural.json`,
-    status: 'placeholder',
-    targetSurface: 'global',
-    priority: 'critical',
-    notes: 'Runtime torus/ring fallback. Should look intentional, luminous, and spatial.',
-    createdAt: '2026-07-07',
-    updatedAt: '2026-07-07',
   },
   {
     id: 'ground-world-terrain-glb-v1',
@@ -92,23 +81,11 @@ export const uraiSpatialAssetManifest: readonly UraiSpatialAssetManifestEntry[] 
     status: 'future',
     targetSurface: 'ground',
     priority: 'critical',
-    notes: 'Walkable reachable ground below the default world. Must not feel like a separate 2D page.',
-    createdAt: '2026-07-07',
-    updatedAt: '2026-07-07',
-    fallbackAssetId: 'ground-world-procedural-fallback',
+    notes: 'Selected lower-world environment beneath Home.',
+    createdAt,
+    updatedAt,
+    fallbackAssetId: 'ground-room-shell-proof-fallback',
     generationPromptId: 'ground-world-assets',
-  },
-  {
-    id: 'ground-world-procedural-fallback',
-    name: 'Ground World Procedural Fallback',
-    type: 'fallback',
-    path: `${fallbackRoot}/worlds/ground-world-procedural.json`,
-    status: 'placeholder',
-    targetSurface: 'ground',
-    priority: 'critical',
-    notes: 'Runtime terrain/floor fallback rendered before final terrain GLB exists.',
-    createdAt: '2026-07-07',
-    updatedAt: '2026-07-07',
   },
   {
     id: 'life-map-galaxy-skybox-v1',
@@ -118,101 +95,81 @@ export const uraiSpatialAssetManifest: readonly UraiSpatialAssetManifestEntry[] 
     status: 'future',
     targetSurface: 'life-map',
     priority: 'critical',
-    notes: 'The Life Map should feel like looking up into a living galaxy rather than opening a flat overlay.',
-    createdAt: '2026-07-07',
-    updatedAt: '2026-07-07',
-    fallbackAssetId: 'life-map-procedural-starfield-fallback',
+    notes: 'Selected Life Map sky environment. The proof dome remains the explicit fallback.',
+    createdAt,
+    updatedAt,
+    fallbackAssetId: 'life-map-sky-dome-proof-fallback',
     generationPromptId: 'life-map-galaxy-assets',
   },
   {
-    id: 'life-map-procedural-starfield-fallback',
-    name: 'Life Map Procedural Starfield Fallback',
-    type: 'fallback',
-    path: `${fallbackRoot}/skyboxes/life-map-procedural-starfield.json`,
-    status: 'placeholder',
+    id: 'life-map-memory-star-glb-v1',
+    name: 'Life Map Memory Star GLB',
+    type: 'model',
+    path: `${generatedRoot}/models/life-map-memory-star-v1.glb`,
+    status: 'future',
     targetSurface: 'life-map',
     priority: 'critical',
-    notes: 'Runtime point-cloud fallback for galaxy depth and star hover/tap feedback.',
-    createdAt: '2026-07-07',
-    updatedAt: '2026-07-07',
+    notes: 'Selected reusable memory-star model for Life Map and Focus.',
+    createdAt,
+    updatedAt,
+    fallbackAssetId: 'life-map-memory-star-proof-fallback',
+    generationPromptId: 'life-map-galaxy-assets',
   },
   {
-    id: 'focus-star-flight-glb-v1',
-    name: 'Focus Star Flight GLB',
+    id: 'focus-memory-chamber-glb-v1',
+    name: 'Focus Memory Chamber GLB',
     type: 'model',
-    path: `${generatedRoot}/models/focus-star-flight-v1.glb`,
+    path: `${generatedRoot}/models/focus-memory-chamber-v1.glb`,
     status: 'future',
     targetSurface: 'focus',
     priority: 'high',
-    notes: 'Focus should feel like flying into a selected star, not opening a normal route.',
-    createdAt: '2026-07-07',
-    updatedAt: '2026-07-07',
-    fallbackAssetId: 'focus-star-procedural-fallback',
+    notes: 'Selected Focus environment entered from a Life Map memory star.',
+    createdAt,
+    updatedAt,
+    fallbackAssetId: 'focus-star-tunnel-proof-fallback',
     generationPromptId: 'focus-star-assets',
   },
   {
-    id: 'focus-star-procedural-fallback',
-    name: 'Focus Star Procedural Fallback',
-    type: 'fallback',
-    path: `${fallbackRoot}/models/focus-star-procedural.json`,
-    status: 'placeholder',
-    targetSurface: 'focus',
-    priority: 'high',
-    notes: 'Runtime star tunnel/focus object fallback.',
-    createdAt: '2026-07-07',
-    updatedAt: '2026-07-07',
-  },
-  {
-    id: 'replay-memory-film-glb-v1',
-    name: 'Replay Memory Film GLB',
+    id: 'replay-memory-environment-glb-v1',
+    name: 'Replay Memory Environment GLB',
     type: 'model',
-    path: `${generatedRoot}/models/replay-memory-film-v1.glb`,
+    path: `${generatedRoot}/models/replay-memory-environment-v1.glb`,
     status: 'future',
     targetSurface: 'replay',
     priority: 'high',
-    notes: 'Replay should feel like opening a memory film-world from a star.',
-    createdAt: '2026-07-07',
-    updatedAt: '2026-07-07',
-    fallbackAssetId: 'replay-memory-film-procedural-fallback',
+    notes: 'Selected Replay film-world environment.',
+    createdAt,
+    updatedAt,
+    fallbackAssetId: 'replay-film-portal-proof-fallback',
     generationPromptId: 'replay-memory-assets',
   },
   {
-    id: 'replay-memory-film-procedural-fallback',
-    name: 'Replay Memory Film Procedural Fallback',
-    type: 'fallback',
-    path: `${fallbackRoot}/models/replay-memory-film-procedural.json`,
-    status: 'placeholder',
-    targetSurface: 'replay',
-    priority: 'high',
-    notes: 'Runtime film-strip/world-window fallback for replay.',
-    createdAt: '2026-07-07',
-    updatedAt: '2026-07-07',
+    id: 'urai-orb-avatar-glb-v1',
+    name: 'URAI Orb Avatar GLB',
+    type: 'model',
+    path: `${generatedRoot}/models/urai-orb-avatar-v1.glb`,
+    status: 'future',
+    targetSurface: 'global',
+    priority: 'critical',
+    notes: 'Selected spatial companion orb/avatar.',
+    createdAt,
+    updatedAt,
+    fallbackAssetId: 'urai-orb-proof-fallback',
+    generationPromptId: 'home-world-assets',
   },
   {
     id: 'passport-status-room-glb-v1',
-    name: 'Passport Status Spatial Room GLB',
+    name: 'Passport and Status Room GLB',
     type: 'model',
     path: `${generatedRoot}/models/passport-status-room-v1.glb`,
-    status: 'future',
+    status: 'missing',
     targetSurface: 'passport',
     priority: 'medium',
-    notes: 'Passport and status should feel like rooms/control layers inside the world, not admin pages.',
-    createdAt: '2026-07-07',
-    updatedAt: '2026-07-07',
-    fallbackAssetId: 'passport-status-terminal-procedural-fallback',
+    notes: 'Not part of the current selected launch-critical promotion set. Passport uses its explicit proof fallback.',
+    createdAt,
+    updatedAt,
+    fallbackAssetId: 'passport-identity-plinth-proof-fallback',
     generationPromptId: 'passport-status-room-assets',
-  },
-  {
-    id: 'passport-status-terminal-procedural-fallback',
-    name: 'Passport Status Terminal Procedural Fallback',
-    type: 'fallback',
-    path: `${fallbackRoot}/models/passport-status-terminal-procedural.json`,
-    status: 'placeholder',
-    targetSurface: 'status',
-    priority: 'medium',
-    notes: 'Runtime terminal/room fallback for passport and status surfaces.',
-    createdAt: '2026-07-07',
-    updatedAt: '2026-07-07',
   },
   {
     id: 'global-cinematic-material-pack-v1',
@@ -222,10 +179,178 @@ export const uraiSpatialAssetManifest: readonly UraiSpatialAssetManifestEntry[] 
     status: 'future',
     targetSurface: 'global',
     priority: 'high',
-    notes: 'Shared PBR texture/material map definitions for glass, dark metal, volumetric glow, floor, portal energy, and star dust.',
-    createdAt: '2026-07-07',
-    updatedAt: '2026-07-07',
+    notes: 'Selected material definitions. Runtime defaults remain active until this asset is ready.',
+    createdAt,
+    updatedAt,
     generationPromptId: 'texture-style-guide',
+  },
+  {
+    id: 'home-entry-chamber-proof-fallback',
+    name: 'Home Entry Chamber Proof Fallback',
+    type: 'fallback',
+    path: `${proofFallbackRoot}/entry-chamber/models/entry-chamber-shell-v1.gltf`,
+    status: 'fallback',
+    targetSurface: 'home',
+    priority: 'critical',
+    notes: 'Deterministic proof geometry used until the selected Home chamber is ready.',
+    createdAt,
+    updatedAt,
+  },
+  {
+    id: 'home-entry-floor-ring-proof-fallback',
+    name: 'Home Entry Floor Ring Proof Fallback',
+    type: 'fallback',
+    path: `${proofFallbackRoot}/entry-chamber/models/entry-floor-ring-v1.gltf`,
+    status: 'fallback',
+    targetSurface: 'home',
+    priority: 'high',
+    notes: 'Supporting proof geometry retained alongside the selected Home environment.',
+    createdAt,
+    updatedAt,
+  },
+  {
+    id: 'ground-descent-hatch-proof-fallback',
+    name: 'Ground Descent Hatch Proof Fallback',
+    type: 'fallback',
+    path: `${proofFallbackRoot}/entry-chamber/models/ground-descent-hatch-v1.gltf`,
+    status: 'fallback',
+    targetSurface: 'home',
+    priority: 'high',
+    notes: 'Supporting proof geometry for the Home-to-Ground transition.',
+    createdAt,
+    updatedAt,
+  },
+  {
+    id: 'portal-ring-proof-fallback',
+    name: 'Portal Ring Proof Fallback',
+    type: 'fallback',
+    path: `${proofFallbackRoot}/shared/models/universal-portal-ring-v1.gltf`,
+    status: 'fallback',
+    targetSurface: 'global',
+    priority: 'critical',
+    notes: 'Deterministic portal geometry used until the selected portal is ready.',
+    createdAt,
+    updatedAt,
+  },
+  {
+    id: 'ground-room-shell-proof-fallback',
+    name: 'Ground Room Shell Proof Fallback',
+    type: 'fallback',
+    path: `${proofFallbackRoot}/ground-room/models/ground-room-shell-v1.gltf`,
+    status: 'fallback',
+    targetSurface: 'ground',
+    priority: 'critical',
+    notes: 'Deterministic Ground environment fallback.',
+    createdAt,
+    updatedAt,
+  },
+  {
+    id: 'ground-terminal-proof-fallback',
+    name: 'Ground Terminal Proof Fallback',
+    type: 'fallback',
+    path: `${proofFallbackRoot}/ground-room/models/ground-terminal-v1.gltf`,
+    status: 'fallback',
+    targetSurface: 'ground',
+    priority: 'high',
+    notes: 'Supporting deterministic Ground terminal geometry.',
+    createdAt,
+    updatedAt,
+  },
+  {
+    id: 'agent-source-station-proof-fallback',
+    name: 'Agent Source Station Proof Fallback',
+    type: 'fallback',
+    path: `${proofFallbackRoot}/ground-room/models/agent-source-station-v1.gltf`,
+    status: 'fallback',
+    targetSurface: 'ground',
+    priority: 'high',
+    notes: 'Supporting deterministic Ground source-station geometry.',
+    createdAt,
+    updatedAt,
+  },
+  {
+    id: 'life-map-sky-dome-proof-fallback',
+    name: 'Life Map Sky Dome Proof Fallback',
+    type: 'fallback',
+    path: `${proofFallbackRoot}/life-map/models/life-map-sky-dome-v1.gltf`,
+    status: 'fallback',
+    targetSurface: 'life-map',
+    priority: 'critical',
+    notes: 'Deterministic Life Map sky geometry used until the selected HDR environment is ready.',
+    createdAt,
+    updatedAt,
+  },
+  {
+    id: 'life-map-memory-star-proof-fallback',
+    name: 'Life Map Memory Star Proof Fallback',
+    type: 'fallback',
+    path: `${proofFallbackRoot}/life-map/models/star-memory-node-v1.gltf`,
+    status: 'fallback',
+    targetSurface: 'life-map',
+    priority: 'critical',
+    notes: 'Deterministic memory-star geometry.',
+    createdAt,
+    updatedAt,
+  },
+  {
+    id: 'focus-star-tunnel-proof-fallback',
+    name: 'Focus Star Tunnel Proof Fallback',
+    type: 'fallback',
+    path: `${proofFallbackRoot}/focus-star/models/focus-star-tunnel-v1.gltf`,
+    status: 'fallback',
+    targetSurface: 'focus',
+    priority: 'high',
+    notes: 'Deterministic Focus fallback geometry.',
+    createdAt,
+    updatedAt,
+  },
+  {
+    id: 'replay-film-portal-proof-fallback',
+    name: 'Replay Film Portal Proof Fallback',
+    type: 'fallback',
+    path: `${proofFallbackRoot}/replay-portal/models/replay-film-portal-v1.gltf`,
+    status: 'fallback',
+    targetSurface: 'replay',
+    priority: 'high',
+    notes: 'Deterministic Replay fallback geometry.',
+    createdAt,
+    updatedAt,
+  },
+  {
+    id: 'urai-orb-proof-fallback',
+    name: 'URAI Orb Proof Fallback',
+    type: 'fallback',
+    path: `${proofFallbackRoot}/entry-chamber/models/central-orb-v1.gltf`,
+    status: 'fallback',
+    targetSurface: 'global',
+    priority: 'critical',
+    notes: 'Deterministic companion orb geometry.',
+    createdAt,
+    updatedAt,
+  },
+  {
+    id: 'passport-identity-plinth-proof-fallback',
+    name: 'Passport Identity Plinth Proof Fallback',
+    type: 'fallback',
+    path: `${proofFallbackRoot}/passport-room/models/passport-identity-plinth-v1.gltf`,
+    status: 'fallback',
+    targetSurface: 'passport',
+    priority: 'medium',
+    notes: 'Deterministic Passport room fallback.',
+    createdAt,
+    updatedAt,
+  },
+  {
+    id: 'status-control-board-proof-fallback',
+    name: 'Status Control Board Proof Fallback',
+    type: 'fallback',
+    path: `${proofFallbackRoot}/status-room/models/status-control-board-v1.gltf`,
+    status: 'fallback',
+    targetSurface: 'status',
+    priority: 'medium',
+    notes: 'Deterministic Status room fallback.',
+    createdAt,
+    updatedAt,
   },
 ]
 
@@ -249,6 +374,50 @@ export function getUraiSpatialAssetsForSurface(surface: UraiSpatialTargetSurface
 }
 
 export function isUraiSpatialAssetReady(assetId: string): boolean {
-  const asset = getUraiSpatialAsset(assetId)
-  return asset?.status === 'ready' || asset?.status === 'placeholder'
+  return getUraiSpatialAsset(assetId)?.status === 'ready'
+}
+
+export function resolveUraiSpatialAsset(assetId: string): UraiSpatialAssetResolution {
+  const selectedAsset = getUraiSpatialAsset(assetId)
+
+  if (!selectedAsset) {
+    return { requestedAssetId: assetId, source: 'unavailable', path: null, selectedAsset: null, fallbackAsset: null }
+  }
+
+  if (selectedAsset.status === 'fallback') {
+    return {
+      requestedAssetId: assetId,
+      source: 'fallback',
+      path: selectedAsset.path,
+      selectedAsset: null,
+      fallbackAsset: selectedAsset,
+    }
+  }
+
+  if (selectedAsset.status === 'ready') {
+    return {
+      requestedAssetId: assetId,
+      source: 'selected',
+      path: selectedAsset.path,
+      selectedAsset,
+      fallbackAsset: getUraiSpatialFallbackAsset(assetId),
+    }
+  }
+
+  const fallbackAsset = getUraiSpatialFallbackAsset(assetId)
+  if (fallbackAsset?.status === 'fallback') {
+    return {
+      requestedAssetId: assetId,
+      source: 'fallback',
+      path: fallbackAsset.path,
+      selectedAsset,
+      fallbackAsset,
+    }
+  }
+
+  return { requestedAssetId: assetId, source: 'unavailable', path: null, selectedAsset, fallbackAsset }
+}
+
+export function resolveUraiSpatialAssetPath(assetId: string): string | null {
+  return resolveUraiSpatialAsset(assetId).path
 }
