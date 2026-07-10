@@ -1,0 +1,32 @@
+name: Spatial Performance Budget
+
+on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - 'operations/performance/**'
+      - 'scripts/audit-spatial-performance-budget.mjs'
+      - 'urai-tier1/src/spatial/performance/**'
+      - 'urai-tier1/src/spatial/components/world/SpatialWorldCanvas.tsx'
+      - 'urai-tier1/public/assets/urai/**'
+      - '.github/workflows/spatial-performance-budget.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  static-budget-audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Audit performance contracts and asset budgets
+        run: node scripts/audit-spatial-performance-budget.mjs
+      - name: Typecheck adaptive performance layer
+        run: |
+          corepack enable
+          corepack pnpm install --frozen-lockfile
+          corepack pnpm --dir urai-tier1 typecheck
