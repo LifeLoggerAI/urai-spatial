@@ -64,6 +64,17 @@ const corePaths = new Set([
   'avatars/guide.webp',
 ])
 
+const routeOwnerChecks = [
+  { routes: ['/', '/home'], file: 'urai-tier1/src/spatial/layout/HomeWorldProduction.tsx', assetSet: 'homeAssets' },
+  { routes: ['/ground'], file: 'urai-tier1/src/app/GroundSpatialWorldClean.tsx', assetSet: 'groundAssets' },
+  { routes: ['/life-map'], file: 'urai-tier1/src/spatial/lifemap/SpatialLifeMapCanonical.tsx', assetSet: 'lifeMapAssets' },
+  { routes: ['/focus'], file: 'urai-tier1/src/app/focus/FocusChamberClient.tsx', assetSet: 'focusAssets' },
+  { routes: ['/replay'], file: 'urai-tier1/src/app/replay/CinematicReplayClient.tsx', assetSet: 'replayAssets' },
+  { routes: ['/passport'], file: 'urai-tier1/src/app/FinalPassportVault.tsx', assetSet: 'passportAssets' },
+  { routes: ['/privacy-controls'], file: 'urai-tier1/src/app/privacy-controls/page.tsx', assetSet: 'privacyControlsAssets' },
+  { routes: ['/status'], file: 'urai-tier1/src/app/status/page.tsx', assetSet: 'statusAssets' },
+]
+
 function normalizeCanonicalPath(value) {
   return String(value || '').replace(/^\/?assets\/urai\//, '')
 }
@@ -171,14 +182,14 @@ for (const entry of entries) {
   }
 
   const core = corePaths.has(canonicalPath)
-  const consumed = registry.includes(`"/${canonicalPath}"`)
-  if (core && !consumed) entryFailures.push('core asset is not consumed by uraiAssets.ts')
+  const registered = registry.includes(`"/${canonicalPath}"`)
+  if (core && !registered) entryFailures.push('core asset is not registered in uraiAssets.ts')
 
   records.push({
     name: entry.name || null,
     canonicalPath,
     core,
-    consumed,
+    registered,
     sourcePath: entry.sourcePath || null,
     promptVersion: entry.promptVersion || null,
     expected: { bytes: entry.bytes ?? null, sha256: entry.sha256 || null, width: entry.width ?? null, height: entry.height ?? null },
@@ -197,9 +208,25 @@ for (const corePath of corePaths) {
 const coreRecords = records.filter((record) => record.core)
 if (coreRecords.length !== corePaths.size) failures.push(`Expected ${corePaths.size} core provider records, found ${coreRecords.length}`)
 
+const routeOwners = routeOwnerChecks.map((check) => {
+  const absolute = path.join(root, check.file)
+  const ownerFailures = []
+  let active = false
+  if (!existsSync(absolute)) {
+    ownerFailures.push('active owner file is missing')
+  } else {
+    const source = readFileSync(absolute, 'utf8')
+    if (!source.includes(check.assetSet)) ownerFailures.push(`does not import ${check.assetSet}`)
+    if (!source.includes(`assetCssStack(${check.assetSet}.`)) ownerFailures.push(`does not render ${check.assetSet} through assetCssStack`)
+    active = ownerFailures.length === 0
+  }
+  for (const failure of ownerFailures) failures.push(`${check.routes.join(', ')} via ${check.file}: ${failure}`)
+  return { ...check, active, failures: ownerFailures }
+})
+
 const report = {
   ok: failures.length === 0,
-  schemaVersion: 'urai-provider-asset-verification-1',
+  schemaVersion: 'urai-provider-asset-verification-2',
   generatedAt: new Date().toISOString(),
   repository: process.env.GITHUB_REPOSITORY || 'LifeLoggerAI/urai-spatial',
   commit: process.env.GITHUB_SHA || null,
@@ -208,7 +235,11 @@ const report = {
   totalRecords: records.length,
   coreRequired: corePaths.size,
   coreVerified: coreRecords.filter((record) => record.ok).length,
+  coreRegistered: coreRecords.filter((record) => record.registered).length,
   providerVerified: records.filter((record) => record.ok).length,
+  routeOwnersRequired: routeOwners.length,
+  routeOwnersVerified: routeOwners.filter((owner) => owner.active).length,
+  routeOwners,
   failures,
   records,
 }
@@ -220,7 +251,9 @@ console.log(JSON.stringify({
   totalRecords: report.totalRecords,
   coreRequired: report.coreRequired,
   coreVerified: report.coreVerified,
+  coreRegistered: report.coreRegistered,
   providerVerified: report.providerVerified,
+  routeOwnersVerified: `${report.routeOwnersVerified}/${report.routeOwnersRequired}`,
   failureCount: failures.length,
   evidencePath: path.relative(root, evidencePath),
   failures,
