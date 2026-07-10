@@ -1,3 +1,4 @@
+import { notFound } from 'next/navigation'
 export const metadata = {
   title: "URAI Cut One Replay Film",
   description: "Playable launch review route for the first URAI cinematic proof flow.",
@@ -31,11 +32,17 @@ const chain = [
   ["Status", "/status"],
 ] as const;
 
+function publicDemoRoutesAllowed() {
+  return process.env.NEXT_PUBLIC_ALLOW_PUBLIC_DEMO_ROUTES === 'true' || process.env.URAI_ALLOW_PUBLIC_DEMO_ROUTES === 'true' || process.env.NODE_ENV !== 'production'
+}
+
 export function generateStaticParams() {
   return [{ slug: "replay-film" }];
 }
 
 export default function CutOneReplayFilmPage() {
+  if (!publicDemoRoutesAllowed()) notFound()
+
   return (
     <main style={{ minHeight: "100svh", color: "#eef6ff", background: "radial-gradient(circle at 15% 10%, rgba(125,211,252,.24), transparent 28rem), radial-gradient(circle at 80% 0%, rgba(168,85,247,.22), transparent 30rem), linear-gradient(145deg,#020617,#071126 58%,#0f172a)", fontFamily: "Inter, ui-sans-serif, system-ui, sans-serif", overflow: "hidden" }}>
       <section style={{ width: "min(1180px, calc(100% - 32px))", margin: "0 auto", padding: "clamp(32px,6vw,76px) 0" }}>

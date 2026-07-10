@@ -1,3 +1,4 @@
+import { notFound } from 'next/navigation'
 import Link from 'next/link'
 import type { CSSProperties } from 'react'
 import {
@@ -13,6 +14,10 @@ import {
 } from '@/spatial/assets/uraiAssets'
 
 export const dynamic = 'force-static'
+
+function publicDemoRoutesAllowed() {
+  return process.env.NEXT_PUBLIC_ALLOW_PUBLIC_DEMO_ROUTES === 'true' || process.env.URAI_ALLOW_PUBLIC_DEMO_ROUTES === 'true' || process.env.NODE_ENV !== 'production'
+}
 
 const scenes = [
   {
