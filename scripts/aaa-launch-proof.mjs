@@ -19,7 +19,7 @@ if (args.has('--help') || args.has('-h')) {
 Usage:
   node scripts/aaa-launch-proof.mjs [--screenshots] [--skip-install] [--skip-assets] [--skip-test] [--skip-build] [--skip-typecheck] [--base=https://urai.app]
 
-This command is proof-only. Production deployment is available only through .github/workflows/spatial-live-deploy.yml.`)
+This command is proof-only. It requires an exact clean Git commit. Production deployment is available only through .github/workflows/spatial-live-deploy.yml.`)
   process.exit(0)
 }
 
@@ -27,6 +27,26 @@ if (args.has('--deploy')) {
   console.error('Direct deployment is disabled. Use the protected URAI Canonical Production Release workflow.')
   process.exit(64)
 }
+
+const capture = (command, commandArgs) => {
+  const result = spawnSync(command, commandArgs, {
+    cwd: process.cwd(),
+    encoding: 'utf8',
+    shell: process.platform === 'win32',
+  })
+  return {
+    status: typeof result.status === 'number' ? result.status : 1,
+    stdout: String(result.stdout || '').trim(),
+    stderr: String(result.stderr || '').trim(),
+  }
+}
+
+const headResult = capture('git', ['rev-parse', 'HEAD'])
+const statusResult = capture('git', ['status', '--porcelain'])
+const sourceSha = headResult.status === 0 && /^[0-9a-f]{40}$/.test(headResult.stdout) ? headResult.stdout : 'unverified'
+const expectedSourceSha = String(process.env.GITHUB_SHA || process.env.URAI_PROOF_SOURCE_SHA || '').trim()
+const cleanWorkingTree = statusResult.status === 0 && statusResult.stdout.length === 0
+const sourceIdentityVerified = sourceSha !== 'unverified' && cleanWorkingTree && (!expectedSourceSha || expectedSourceSha === sourceSha)
 
 const baseUrl = getArg('--base', process.env.URAI_BASE_URL || 'https://urai.app').replace(/\/$/, '')
 const receiptBase = process.env.URAI_RECEIPT_ROOT || join(homedir(), 'urai-final-receipts')
@@ -61,10 +81,43 @@ const routeExpectations = [
 
 const startedAt = new Date().toISOString()
 const runId = startedAt.replace(/[:.]/g, '-')
-const receiptDir = join(receiptBase, `aaa-launch-proof-${loopName}-${runId}`)
+const shortSha = sourceSha === 'unverified' ? sourceSha : sourceSha.slice(0, 12)
+const receiptDir = join(receiptBase, `aaa-launch-proof-${loopName}-${shortSha}-${runId}`)
 mkdirSync(receiptDir, { recursive: true })
 
 const commands = []
+const writeReceipt = (status, failedStep = '') => {
+  const receipt = {
+    status,
+    failedStep,
+    loopName,
+    sourceSha,
+    expectedSourceSha: expectedSourceSha || null,
+    cleanWorkingTree,
+    sourceIdentityVerified,
+    sourceIdentityErrors: {
+      gitHead: headResult.status === 0 ? null : headResult.stderr || 'git rev-parse failed',
+      gitStatus: statusResult.status === 0 ? null : statusResult.stderr || 'git status failed',
+      expectedShaMismatch: Boolean(expectedSourceSha && expectedSourceSha !== sourceSha),
+    },
+    startedAt,
+    finishedAt: new Date().toISOString(),
+    baseUrl,
+    productionDeploymentAttempted: false,
+    productionDeploymentAuthority: '.github/workflows/spatial-live-deploy.yml',
+    routeExpectations,
+    commands,
+  }
+  writeFileSync(join(receiptDir, 'receipt.json'), `${JSON.stringify(receipt, null, 2)}\n`)
+  writeFileSync(join(receiptDir, 'README.md'), `# URAI AAA proof receipt\n\n- Status: ${status}\n- Loop: ${loopName}\n- Source SHA: ${sourceSha}\n- Expected source SHA: ${expectedSourceSha || 'not provided'}\n- Clean working tree: ${cleanWorkingTree ? 'yes' : 'no'}\n- Source identity verified: ${sourceIdentityVerified ? 'yes' : 'no'}\n- Started: ${startedAt}\n- Base URL: ${baseUrl}\n- Production deployment attempted: no\n- Production authority: \`.github/workflows/spatial-live-deploy.yml\`\n${failedStep ? `- Failed step: ${failedStep}\n` : ''}\n`)
+}
+
+if (!sourceIdentityVerified) {
+  writeReceipt('failed', 'source-identity')
+  console.error(`Proof requires an exact clean Git commit. Receipt: ${receiptDir}`)
+  process.exit(65)
+}
+
 const run = (label, command, commandArgs, options = {}) => {
   const result = spawnSync(command, commandArgs, {
     cwd: options.cwd || process.cwd(),
@@ -77,23 +130,6 @@ const run = (label, command, commandArgs, options = {}) => {
     writeReceipt('failed', label)
     process.exit(result.status || 1)
   }
-}
-
-const writeReceipt = (status, failedStep = '') => {
-  const receipt = {
-    status,
-    failedStep,
-    loopName,
-    startedAt,
-    finishedAt: new Date().toISOString(),
-    baseUrl,
-    productionDeploymentAttempted: false,
-    productionDeploymentAuthority: '.github/workflows/spatial-live-deploy.yml',
-    routeExpectations,
-    commands,
-  }
-  writeFileSync(join(receiptDir, 'receipt.json'), `${JSON.stringify(receipt, null, 2)}\n`)
-  writeFileSync(join(receiptDir, 'README.md'), `# URAI AAA proof receipt\n\n- Status: ${status}\n- Loop: ${loopName}\n- Started: ${startedAt}\n- Base URL: ${baseUrl}\n- Production deployment attempted: no\n- Production authority: \`.github/workflows/spatial-live-deploy.yml\`\n${failedStep ? `- Failed step: ${failedStep}\n` : ''}\n`)
 }
 
 if (!skipInstall) run('install', 'node', ['scripts/run-pnpm.mjs', 'install', '--frozen-lockfile'])
