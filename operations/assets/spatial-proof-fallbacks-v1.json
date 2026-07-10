@@ -1,0 +1,90 @@
+{
+  "schemaVersion": 1,
+  "inventoryId": "urai-spatial-proof-fallbacks-v1",
+  "runtimeRoot": "urai-tier1",
+  "assetRoot": "urai-tier1/public/assets/urai/spatial",
+  "authority": {
+    "selectedProductionRoot": "urai-tier1/public/assets/urai/generated",
+    "fallbackRoot": "urai-tier1/public/assets/urai/spatial",
+    "selectedProduction": false
+  },
+  "policy": {
+    "runtimeRole": "deterministic-proof-fallback",
+    "mayReplaceEmptyPlaceholderGeometry": true,
+    "mayBeDescribedAsFinalArt": false,
+    "maySilentlyOverrideSelectedAsset": false,
+    "requiresExplicitFallbackResolution": true
+  },
+  "models": [
+    {
+      "id": "entry-chamber-shell-v1",
+      "file": "/assets/urai/spatial/entry-chamber/models/entry-chamber-shell-v1.gltf",
+      "targetRoutes": ["/", "/home"]
+    },
+    {
+      "id": "entry-floor-ring-v1",
+      "file": "/assets/urai/spatial/entry-chamber/models/entry-floor-ring-v1.gltf",
+      "targetRoutes": ["/", "/home"]
+    },
+    {
+      "id": "central-orb-v1",
+      "file": "/assets/urai/spatial/entry-chamber/models/central-orb-v1.gltf",
+      "targetRoutes": ["/", "/home", "/life-map", "/focus", "/replay"]
+    },
+    {
+      "id": "ground-descent-hatch-v1",
+      "file": "/assets/urai/spatial/entry-chamber/models/ground-descent-hatch-v1.gltf",
+      "targetRoutes": ["/home", "/ground"]
+    },
+    {
+      "id": "universal-portal-ring-v1",
+      "file": "/assets/urai/spatial/shared/models/universal-portal-ring-v1.gltf",
+      "targetRoutes": ["/", "/home", "/ground", "/life-map", "/focus", "/replay", "/passport", "/status"]
+    },
+    {
+      "id": "ground-room-shell-v1",
+      "file": "/assets/urai/spatial/ground-room/models/ground-room-shell-v1.gltf",
+      "targetRoutes": ["/ground"]
+    },
+    {
+      "id": "ground-terminal-v1",
+      "file": "/assets/urai/spatial/ground-room/models/ground-terminal-v1.gltf",
+      "targetRoutes": ["/ground"]
+    },
+    {
+      "id": "agent-source-station-v1",
+      "file": "/assets/urai/spatial/ground-room/models/agent-source-station-v1.gltf",
+      "targetRoutes": ["/ground"]
+    },
+    {
+      "id": "life-map-sky-dome-v1",
+      "file": "/assets/urai/spatial/life-map/models/life-map-sky-dome-v1.gltf",
+      "targetRoutes": ["/life-map"]
+    },
+    {
+      "id": "star-memory-node-v1",
+      "file": "/assets/urai/spatial/life-map/models/star-memory-node-v1.gltf",
+      "targetRoutes": ["/life-map"]
+    },
+    {
+      "id": "focus-star-tunnel-v1",
+      "file": "/assets/urai/spatial/focus-star/models/focus-star-tunnel-v1.gltf",
+      "targetRoutes": ["/focus"]
+    },
+    {
+      "id": "replay-film-portal-v1",
+      "file": "/assets/urai/spatial/replay-portal/models/replay-film-portal-v1.gltf",
+      "targetRoutes": ["/replay"]
+    },
+    {
+      "id": "passport-identity-plinth-v1",
+      "file": "/assets/urai/spatial/passport-room/models/passport-identity-plinth-v1.gltf",
+      "targetRoutes": ["/passport"]
+    },
+    {
+      "id": "status-control-board-v1",
+      "file": "/assets/urai/spatial/status-room/models/status-control-board-v1.gltf",
+      "targetRoutes": ["/status"]
+    }
+  ]
+}
