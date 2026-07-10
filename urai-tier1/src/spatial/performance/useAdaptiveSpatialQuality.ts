@@ -89,10 +89,13 @@ export function useAdaptiveSpatialQuality(): SpatialQualityProfile {
 
   useEffect(() => {
     const motion = window.matchMedia('(prefers-reduced-motion: reduce)')
+    const narrow = window.matchMedia('(max-width: 760px)')
+    const coarsePointer = window.matchMedia('(pointer: coarse)')
+    const connection = (navigator as NavigatorHints).connection
+
     const updateMotion = () => setReducedMotion(motion.matches)
     const updateVisibility = () => setDocumentVisible(document.visibilityState === 'visible')
     const updateTier = () => setTier(deriveTier(motion.matches))
-    const connection = (navigator as NavigatorHints).connection
 
     updateMotion()
     updateVisibility()
@@ -100,14 +103,16 @@ export function useAdaptiveSpatialQuality(): SpatialQualityProfile {
 
     motion.addEventListener('change', updateMotion)
     motion.addEventListener('change', updateTier)
-    window.addEventListener('resize', updateTier, { passive: true })
+    narrow.addEventListener('change', updateTier)
+    coarsePointer.addEventListener('change', updateTier)
     document.addEventListener('visibilitychange', updateVisibility)
     connection?.addEventListener?.('change', updateTier)
 
     return () => {
       motion.removeEventListener('change', updateMotion)
       motion.removeEventListener('change', updateTier)
-      window.removeEventListener('resize', updateTier)
+      narrow.removeEventListener('change', updateTier)
+      coarsePointer.removeEventListener('change', updateTier)
       document.removeEventListener('visibilitychange', updateVisibility)
       connection?.removeEventListener?.('change', updateTier)
     }
