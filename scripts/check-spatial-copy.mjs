@@ -32,11 +32,11 @@ const riskyClaims = [
 
 const claimMatrixRisks = [
   { id: 'legacy-public-brand', pattern: /\bURAI Genesis\b/i, allowedNearby: /historical|legacy|deprecated|do not use|replace|avoid/i, reason: 'Current public media must use URAI or URAI Spatial, not the legacy URAI Genesis name.' },
-  { id: 'production-certification', pattern: /\b(production[- ]ready|production[- ]certified|fully live|launch[- ]ready)\b/i, allowedNearby: /not|not yet|pending|gated|requires?|without|cannot|do not|evidence|receipt|certification-pending/i, reason: 'Production status requires an immediate evidence or pending qualifier.' },
+  { id: 'production-certification', pattern: /\b(production[- ]ready|production[- ]certification|production[- ]certified|provider[- ]active|active providers?|device[- ]certified|physical[- ]device certification|fully live|launch[- ]ready)\b/i, allowedNearby: /not|not yet|pending|gated|requires?|without|cannot|do not|does not|evidence|receipt|certification-pending|separately/i, reason: 'Production, provider, and device status require an immediate evidence or pending qualifier.' },
   { id: 'medical-or-therapy', pattern: /\b(diagnos(?:e|es|is|tic)|therapy replacement|medical device|treat(?:s|ment)?|clinical outcome)\b/i, allowedNearby: /not|non-diagnostic|do not|does not|avoid|without|never|prohibited|reflection/i, reason: 'Medical, diagnosis, treatment, and therapy language must be explicitly disclaimed.' },
   { id: 'surveillance-or-certainty', pattern: /\b(lie detection|mind reading|emotional certainty|psychological truth|always-on monitoring|surveillance)\b/i, allowedNearby: /not|do not|does not|avoid|without|never|prohibited|disabled|consent/i, reason: 'Surveillance and certainty claims must be explicitly prohibited or disclaimed.' },
   { id: 'autonomous-action', pattern: /\b(autonomous(?: real-world)? actions?|acts autonomously|takes action for you|executes actions for you)\b/i, allowedNearby: /not|does not|do not|human-approved|approval|consent|disabled|future|gated/i, reason: 'Autonomous-action language must remain human-approved, disabled, future, or explicitly disclaimed.' },
-  { id: 'persistent-memory', pattern: /\b(remembers your life|persistent personal memory|persistent private memory|user-owned memory)\b/i, allowedNearby: /designed|not proven|not live|pending|gated|sample|demo|user-controlled|permission|future|without/i, reason: 'Persistent personal-memory language requires an immediate design, sample, or evidence-gated qualifier.' },
+  { id: 'persistent-memory', pattern: /\b(remembers your life|what (?:URAI|the system) can remember|persistent personal memory|persistent private memory|user-owned memory)\b/i, allowedNearby: /designed|not proven|not live|pending|gated|sample|demo|user-controlled|permission|future|without|does not/i, reason: 'Persistent personal-memory language requires an immediate design, sample, or evidence-gated qualifier.' },
 ]
 
 const passingFixtures = [
@@ -56,6 +56,8 @@ const failingFixtures = [
 
 const claimMatrixPassingFixtures = [
   'Production certification remains pending until exact receipts exist.',
+  'Active providers remain separately gated.',
+  'Physical-device certification requires exact evidence.',
   'Mirror is reflection, not diagnosis or treatment.',
   'URAI must not be described as surveillance or always-on monitoring.',
   'Autonomous actions remain disabled and require human approval.',
@@ -65,9 +67,12 @@ const claimMatrixPassingFixtures = [
 const claimMatrixFailingFixtures = [
   'URAI Genesis is the current public product.',
   'URAI is production ready.',
+  'URAI has active providers.',
+  'URAI is device certified.',
   'Mirror diagnoses your emotional state.',
   'URAI provides lie detection and emotional certainty.',
   'URAI takes autonomous actions for you.',
+  'Passport controls what URAI can remember.',
   'URAI remembers your life with persistent personal memory.',
 ]
 
@@ -181,7 +186,10 @@ for (const fixture of claimMatrixFailingFixtures) {
 
 for (const requirement of internalEvidenceRequirements) {
   const absolute = path.join(root, requirement.path)
-  if (!fs.existsSync(absolute)) continue
+  if (!fs.existsSync(absolute)) {
+    console.error(`spatial-copy: required evidence file missing: ${requirement.path}`)
+    process.exit(1)
+  }
   const text = fs.readFileSync(absolute, 'utf8')
   for (const pattern of requirement.required) {
     if (!pattern.test(text)) {
