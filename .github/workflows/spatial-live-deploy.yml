@@ -85,6 +85,9 @@ jobs:
       - name: Install frozen dependencies
         run: pnpm install --frozen-lockfile
 
+      - name: Prepare release evidence
+        run: mkdir -p release-control-evidence
+
       - name: Validate canonical assets
         run: pnpm --dir urai-tier1 assets:validate
 
@@ -94,8 +97,27 @@ jobs:
       - name: Typecheck Tier1
         run: pnpm --dir urai-tier1 typecheck
 
-      - name: Verify AAA world
-        run: pnpm --dir urai-tier1 verify:aaa-world
+      - name: Bootstrap AAA test runtime
+        run: node urai-tier1/scripts/require-test-bootstrap.mjs
+
+      - name: Verify AAA artifact contract
+        shell: bash
+        run: |
+          set -o pipefail
+          cd urai-tier1
+          node --import tsx --test tests/aaa-world-artifact-contract.test.mjs 2>&1 | tee ../release-control-evidence/aaa-artifact-contract.log
+
+      - name: Verify AAA unit contracts
+        shell: bash
+        run: |
+          set -o pipefail
+          pnpm --dir urai-tier1 test:unit 2>&1 | tee release-control-evidence/aaa-unit-contracts.log
+
+      - name: Verify AAA production build
+        shell: bash
+        run: |
+          set -o pipefail
+          pnpm --dir urai-tier1 build 2>&1 | tee release-control-evidence/aaa-build.log
 
       - name: Verify XR contracts
         run: pnpm --dir urai-tier1 xr:verify
@@ -118,6 +140,7 @@ jobs:
             docs/ASSET_VERIFICATION_REPORT.md
             docs/final-asset-receipt.md
             deployment-receipt/${{ env.TARGET_SHA }}/
+            release-control-evidence/
             release/
             STATUS.md
             EVIDENCE.md
