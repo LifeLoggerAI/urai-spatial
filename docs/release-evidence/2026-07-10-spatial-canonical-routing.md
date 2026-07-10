@@ -4,27 +4,20 @@ Date: 2026-07-10
 Repo: LifeLoggerAI/urai-spatial
 Package: urai-tier1
 
-## Canonical routing change
+## Corrected canonical routing
 
-The public app routes now point at the real spatial runtime instead of weaker shell/demo surfaces.
+The release guardian requires Genesis Home ownership for `/` and `/home`, and the canonical Tier One shell for `/spatial`.
 
 | Route | Canonical surface |
 | --- | --- |
-| `/` | `SpatialWorldCanvas mode="spatial"` |
-| `/home` | `SpatialWorldCanvas mode="spatial"` |
+| `/` | `FinalHomeThreshold` |
+| `/home` | `FinalHomeThreshold` |
+| `/spatial` | `TierOneExperience` |
+| `/spatial/life-map-r3f` | `SpatialLifeMapCanonical` |
+| `/spatial/ar-vr` | `UraiQuestEntryWorldV2` |
 | `/life-map` | `SpatialLifeMapCanonical` |
 | `/xr` | `UraiQuestEntryWorldV2` |
 
 ## Reason
 
-The route audit showed the real Tier1 spatial runtime lives under:
-
-- `/spatial`
-- `/spatial/life-map-r3f`
-- `/spatial/ar-vr`
-- `/world`
-- `/ascent`
-- `/focus`
-- `/replay`
-
-This commit makes the main public paths enter those canonical runtime surfaces directly.
+The real spatial runtime remains available through the guardian-approved `TierOneExperience` shell at `/spatial`, while public Genesis Home routes stay under the guardian-approved `FinalHomeThreshold` owner required by release gates.

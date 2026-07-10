@@ -1,147 +1,63 @@
-# URAI Privacy and Location Rules
+# URAI Privacy Location Rules
 
-URAI Spatial treats location as highly private. Memory Places should feel personal and meaningful without exposing exact coordinates, exact addresses, or raw private source data by default.
+Status: Release guardian canonical rule
+Owner: URAI Labs
+Applies to: URAI Spatial, Genesis Home, Ground, Life Map, XR, Replay, Focus, and location-aware surfaces
 
-## Default location rule
+## Core rule
 
-```text
-Default location precision is symbolic or approximate.
-Exact location is opt-in only.
-Exact location sharing requires explicit confirmation every time.
-```
+URAI treats location as sensitive private context.
 
-## Allowed location privacy modes
+Location data must be permissioned, minimized, explainable, revocable, and never silently converted into surveillance, diagnosis, advertising targeting, law enforcement, emergency dispatch, or third-party tracking.
 
-```text
-hidden
-symbolic-only
-city-only
-approx-private
-exact-private
-exact-share-opt-in
-```
+## Required privacy modes
 
-## Default modes
+URAI Spatial location display modes are:
 
-For normal generated memory places, use one of:
+- symbolic-only
+- city-only
+- approx-private
+- exact-private
+- exact-share-opt-in
 
-```text
-symbolic-only
-city-only
-approx-private
-```
+## Genesis mode restrictions
 
-For public demo worlds, use:
-
-```text
-hidden
-symbolic-only
-city-only
-```
-
-For sensitive memory places, use:
-
-```text
-hidden
-symbolic-only
-approx-private
-```
-
-## Forbidden by default
-
-```text
 Do not display exact addresses in Genesis mode.
+
 Do not display raw latitude and longitude in Genesis mode.
-Do not export exact coordinates by default.
-Do not expose raw location source events in public/demo mode.
-Do not include private place labels in public exports without confirmation.
-```
 
-## Memory Place privacy requirements
+Genesis mode may use symbolic-only, city-only, or approx-private context only.
 
-Every MemoryPlace must include:
+## Exact location rule
 
-```ts
-privacyLevel: "private" | "sensitive" | "shareable" | "demo";
-locationPrivacy:
-  | "hidden"
-  | "symbolic-only"
-  | "city-only"
-  | "approx-private"
-  | "exact-private"
-  | "exact-share-opt-in";
-```
+Exact location is always private by default.
 
-Every PlaceObject must include:
+Exact address, exact latitude, exact longitude, and continuous live tracking must stay hidden unless a future verified feature uses exact-share-opt-in with explicit user consent.
 
-```ts
-privacyLevel: "private" | "sensitive" | "shareable" | "demo";
-```
+## Required behavior
 
-## Exact location handling
+- Location access requires clear user consent.
+- Location-aware features must work in degraded mode when location is unavailable.
+- Raw precise location must not be exposed to public UI by default.
+- Location context should be reduced to the minimum useful precision.
+- Stored location-derived signals must be tied to a clear product purpose.
+- Users must be able to revoke location permissions.
+- Users must be able to understand why a location-aware surface is being shown.
+- Location context must not be used for hidden profiling.
+- Location context must not be sold.
+- Location context must not be shared with external services except when required to perform a user-requested action.
+- Location context must not be used for advertising targeting.
 
-Exact location can exist only in private user-controlled contexts and must not render unless the user explicitly enables exact-private display. Exact location must not be included in share/export flows unless the user explicitly chooses exact-share-opt-in for that export.
+## Spatial rules
 
-## Export redaction
+Ground, Life Map, Focus, Replay, and XR routes may use location only as contextual world state.
 
-All place exports must pass through a privacy filter that checks:
+They must not imply real-world surveillance, live tracking, emergency dispatch, diagnosis, or authority action unless the user explicitly enables a future verified feature with separate consent.
 
-```text
-location label
-address
-coordinates
-people names
-raw transcript
-raw email/text content
-raw media references
-sensitive object labels
-```
+## Launch rule
 
-Default export behavior:
+If location permissions, contracts, or retention behavior are incomplete, the feature must stay demo, local, mocked, symbolic-only, city-only, approx-private, or privacy-safe fallback only.
 
-```text
-Use symbolic scene title.
-Use abstract place category.
-Remove exact address.
-Remove exact coordinates.
-Redact private names unless allowed.
-Use narrator summary instead of raw source data.
-```
+## Evidence rule
 
-## Spatial explanation rule
-
-Every data-driven place or object should eventually answer:
-
-```text
-Why am I seeing this?
-What data category created it?
-How private is it?
-Can I hide it?
-Can I delete it?
-Can I export it?
-```
-
-The explanation should never reveal raw sensitive source data by default.
-
-## Public demo rule
-
-Public demo worlds must use synthetic data only.
-
-Public demo worlds must not include:
-
-```text
-real private addresses
-real private names
-raw private screenshots
-raw private audio/text
-precise coordinates
-private user source events
-```
-
-## Fallback behavior
-
-If location precision is unclear, downgrade to symbolic-only.
-
-If privacy status is missing, treat the object as private and do not export it.
-
-If an export privacy decision is uncertain, block export until reviewed or confirmed.
+Any production release touching location must include route owner, consent behavior, data source, storage behavior, retention behavior, delete/export behavior, fallback behavior, and evidence receipt.

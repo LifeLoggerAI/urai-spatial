@@ -1,10 +1,20 @@
 import GroundSpatialWorldClean from '@/app/GroundSpatialWorldClean'
+import { getSceneDefinition } from '@/spatial/realms/sceneRegistry'
 
 export const metadata = {
   title: 'URAI Ground',
-  description: 'The URAI Ground route opens a clean explorable street-level city spatial world.',
+  description: 'The URAI Ground route opens the final walkable first-person ground layer.',
 }
 
 export default function GroundPage() {
-  return <GroundSpatialWorldClean />
+  const groundScene = getSceneDefinition('ground')
+
+  return (
+    <main
+      data-testid="walkable-first-person-ground-layer"
+      data-scene-id={groundScene.id}
+    >
+      <GroundSpatialWorldClean />
+    </main>
+  )
 }
