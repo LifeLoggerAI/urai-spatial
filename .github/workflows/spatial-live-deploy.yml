@@ -6,6 +6,7 @@ on:
     paths:
       - 'urai-tier1/**'
       - 'scripts/live-release.mjs'
+      - 'scripts/deny-direct-production-deploy.mjs'
       - 'scripts/urai-release-control-smoke.mjs'
       - 'scripts/audit-production-workflow-authority.mjs'
       - 'firebase.static.json'
@@ -17,6 +18,7 @@ on:
     paths:
       - 'urai-tier1/**'
       - 'scripts/live-release.mjs'
+      - 'scripts/deny-direct-production-deploy.mjs'
       - 'scripts/urai-release-control-smoke.mjs'
       - 'scripts/audit-production-workflow-authority.mjs'
       - 'firebase.static.json'
@@ -25,12 +27,18 @@ on:
       - '.github/workflows/spatial-live-deploy.yml'
   workflow_dispatch:
     inputs:
+      mode:
+        description: Release current main or roll back to a verified main ancestor
+        required: true
+        default: release
+        type: choice
+        options: [release, rollback]
       release_sha:
         description: Exact 40-character main commit SHA to deploy
         required: true
         type: string
       rollback_sha:
-        description: Last proven production SHA reserved for rollback
+        description: Distinct verified ancestor reserved if this deployment must be reversed
         required: true
         type: string
       confirm:
@@ -58,34 +66,46 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 60
     env:
-      TARGET_SHA: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
-      NEXT_PUBLIC_URAI_BUILD_SHA: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
+      TARGET_SHA: ${{ github.event_name == 'workflow_dispatch' && inputs.release_sha || (github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha) }}
+      NEXT_PUBLIC_URAI_BUILD_SHA: ${{ github.event_name == 'workflow_dispatch' && inputs.release_sha || (github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha) }}
     steps:
-      - name: Checkout exact head
+      - name: Checkout exact target
         uses: actions/checkout@v4
         with:
           ref: ${{ env.TARGET_SHA }}
           fetch-depth: 0
           persist-credentials: false
-      - name: Prove exact head
+      - name: Prove exact clean target
         shell: bash
         run: |
           set -euo pipefail
           test "$(git rev-parse HEAD)" = "$TARGET_SHA"
           test -z "$(git status --porcelain)"
-      - name: Validate manual release inputs
+      - name: Validate manual release or rollback inputs
         if: github.event_name == 'workflow_dispatch'
         shell: bash
         env:
+          MODE: ${{ inputs.mode }}
           RELEASE_SHA: ${{ inputs.release_sha }}
           ROLLBACK_SHA: ${{ inputs.rollback_sha }}
+          DISPATCH_SHA: ${{ github.sha }}
         run: |
           set -euo pipefail
           [[ "$RELEASE_SHA" =~ ^[0-9a-f]{40}$ ]]
           [[ "$ROLLBACK_SHA" =~ ^[0-9a-f]{40}$ ]]
-          test "$RELEASE_SHA" = "$TARGET_SHA"
           test "${{ github.ref }}" = 'refs/heads/main'
+          test "$RELEASE_SHA" = "$TARGET_SHA"
+          test "$RELEASE_SHA" != "$ROLLBACK_SHA"
+          git cat-file -e "$RELEASE_SHA^{commit}"
+          git cat-file -e "$ROLLBACK_SHA^{commit}"
+          git merge-base --is-ancestor "$RELEASE_SHA" "$DISPATCH_SHA"
           git merge-base --is-ancestor "$ROLLBACK_SHA" "$RELEASE_SHA"
+          if test "$MODE" = 'release'; then
+            test "$RELEASE_SHA" = "$DISPATCH_SHA"
+          else
+            test "$MODE" = 'rollback'
+            test "$RELEASE_SHA" != "$DISPATCH_SHA"
+          fi
       - uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
@@ -138,20 +158,22 @@ jobs:
     if: >-
       github.event_name == 'workflow_dispatch' &&
       github.ref == 'refs/heads/main' &&
-      inputs.confirm == 'DEPLOY_URAI_APP' &&
-      inputs.release_sha == github.sha
+      inputs.confirm == 'DEPLOY_URAI_APP'
     runs-on: ubuntu-latest
     timeout-minutes: 60
     environment: production
     env:
+      RELEASE_MODE: ${{ inputs.mode }}
       RELEASE_SHA: ${{ inputs.release_sha }}
       ROLLBACK_SHA: ${{ inputs.rollback_sha }}
+      DISPATCH_SHA: ${{ github.sha }}
       FIREBASE_PROJECT_ID: ${{ secrets.FIREBASE_PROJECT_ID }}
       URAI_EXPECTED_FIREBASE_PROJECT: urai-4dc1d
       NEXT_PUBLIC_URAI_BUILD_SHA: ${{ inputs.release_sha }}
       URAI_TARGET_SHA: ${{ inputs.release_sha }}
       URAI_LIVE_BASE_URL: https://urai.app
       URAI_DEPLOY_CONFIRM: DEPLOY_STATIC_URAI
+      URAI_CANONICAL_DEPLOY_WORKFLOW: 'true'
       GOOGLE_APPLICATION_CREDENTIALS: ${{ github.workspace }}/firebase-service-account.json
     steps:
       - name: Checkout frozen release SHA
@@ -166,8 +188,16 @@ jobs:
           set -euo pipefail
           test "$(git rev-parse HEAD)" = "$RELEASE_SHA"
           test "$FIREBASE_PROJECT_ID" = "$URAI_EXPECTED_FIREBASE_PROJECT"
+          test "$RELEASE_SHA" != "$ROLLBACK_SHA"
           [[ "$ROLLBACK_SHA" =~ ^[0-9a-f]{40}$ ]]
+          git merge-base --is-ancestor "$RELEASE_SHA" "$DISPATCH_SHA"
           git merge-base --is-ancestor "$ROLLBACK_SHA" "$RELEASE_SHA"
+          if test "$RELEASE_MODE" = 'release'; then
+            test "$RELEASE_SHA" = "$DISPATCH_SHA"
+          else
+            test "$RELEASE_MODE" = 'rollback'
+            test "$RELEASE_SHA" != "$DISPATCH_SHA"
+          fi
           test -n '${{ secrets.FIREBASE_SERVICE_ACCOUNT_JSON }}'
       - name: Write and validate temporary service account
         shell: bash
@@ -199,19 +229,30 @@ jobs:
       - name: Deploy exact release and run built-in smoke
         env:
           GITHUB_SHA: ${{ env.RELEASE_SHA }}
-          GITHUB_EVENT_NAME: workflow_dispatch
         run: pnpm live:deploy
       - name: Run canonical live smoke
         env:
           URAI_EXPECTED_DEPLOYED_SHA: ${{ env.RELEASE_SHA }}
         run: node scripts/urai-release-control-smoke.mjs
-      - name: Record rollback command
+      - name: Record protected rollback request
         run: |
           mkdir -p "deployment-receipt/$RELEASE_SHA"
+          cat > "deployment-receipt/$RELEASE_SHA/rollback-request.json" <<EOF
+          {
+            "workflow": ".github/workflows/spatial-live-deploy.yml",
+            "mode": "rollback",
+            "targetReleaseSha": "$ROLLBACK_SHA",
+            "requiredFallback": "Select a distinct verified ancestor of $ROLLBACK_SHA",
+            "confirmation": "DEPLOY_URAI_APP",
+            "workstationDeployAllowed": false
+          }
+          EOF
           cat > "deployment-receipt/$RELEASE_SHA/rollback.txt" <<EOF
-          git checkout $ROLLBACK_SHA
-          pnpm install --frozen-lockfile
-          NEXT_PUBLIC_URAI_BUILD_SHA=$ROLLBACK_SHA URAI_TARGET_SHA=$ROLLBACK_SHA FIREBASE_PROJECT_ID=urai-4dc1d URAI_EXPECTED_FIREBASE_PROJECT=urai-4dc1d URAI_DEPLOY_CONFIRM=DEPLOY_STATIC_URAI pnpm live:deploy
+          Rollback must be dispatched from the protected URAI Canonical Production Release workflow on main.
+          Set mode=rollback and release_sha=$ROLLBACK_SHA.
+          Set rollback_sha to a distinct verified ancestor of $ROLLBACK_SHA.
+          Set confirm=DEPLOY_URAI_APP.
+          Do not deploy from a workstation.
           EOF
       - name: Upload deployment receipt
         if: always()
