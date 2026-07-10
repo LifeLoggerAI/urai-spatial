@@ -1,8 +1,13 @@
-import { FinalFocusChamber } from '@/app/FinalMemorySurfaces'
+import { Suspense } from 'react'
+import FocusChamberClient from './FocusChamberClient'
 
 export const metadata = {
   title: 'URAI Focus',
   description: 'Open the guardian-approved Final Focus Chamber.',
+}
+
+function FocusLoadingFallback() {
+  return <main aria-label="Focus loading" style={{ minHeight: '100svh', background: '#030713' }} />
 }
 
 export default function FocusRoutePage() {
@@ -12,7 +17,9 @@ export default function FocusRoutePage() {
       aria-label="Selected memory camera chamber"
     >
       <span className="sr-only">Selected memory camera chamber</span>
-      <FinalFocusChamber />
+      <Suspense fallback={<FocusLoadingFallback />}>
+        <FocusChamberClient />
+      </Suspense>
     </main>
   )
 }
