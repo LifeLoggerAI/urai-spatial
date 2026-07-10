@@ -51,15 +51,29 @@ requireTokens('urai-tier1/public/media/event/offline-video.html', [
   'founder-event-storyboard.svg',
 ])
 requireTokens('urai-tier1/public/media/event/video/README.md', [
+  'Dimensions: 160 × 90',
+  'Frame rate: 1 fps',
   'Duration: 72 seconds',
-  'Decoded size: 22,263 bytes',
-  '1280a31745e5cfc98eea64f733468daa064ce1d799026f98090485bedb1f8c6c',
+  'Decoded size: 9,603 bytes',
+  '7812d1f74db521288948ac8aebcd189065a9e7821d8f77cb8e506ea6141fa11c',
+  'Full FFmpeg decode: passed',
+])
+requireTokens('urai-tier1/public/media/event/video/verification.json', [
+  '"durationSeconds": 72',
+  '"byteLength": 9603',
+  '"sha256": "7812d1f74db521288948ac8aebcd189065a9e7821d8f77cb8e506ea6141fa11c"',
+  '"fullDecode": "passed"',
+  '"sampleDataOnly": true',
 ])
 requireTokens('scripts/verify-embedded-event-video.mjs', [
-  'base64Length: 29684',
-  'byteLength: 22263',
-  "sha256: '1280a31745e5cfc98eea64f733468daa064ce1d799026f98090485bedb1f8c6c'",
+  'base64Length: 12804',
+  'byteLength: 9603',
+  "sha256: '7812d1f74db521288948ac8aebcd189065a9e7821d8f77cb8e506ea6141fa11c'",
   "ebmlMagic: '1a45dfa3'",
+  "codec: 'vp8'",
+  'width: 160',
+  'height: 90',
+  'durationSeconds: 72',
 ])
 requireTokens('scripts/capture-founder-event-kit.mjs', [
   "route: '/event'",
