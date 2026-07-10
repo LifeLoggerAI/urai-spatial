@@ -34,8 +34,10 @@ When this pack conflicts with those sources, use the stricter evidence-backed st
 - [`BETA_TESTER_PACKET.md`](./BETA_TESTER_PACKET.md) — tester instructions, data restrictions, journey, feedback questions, and severity guide
 - [`INVESTOR_ONE_PAGER.md`](./INVESTOR_ONE_PAGER.md) — concise claim-safe investor overview for internal review and focused meetings
 - [`../../urai-tier1/public/media/event/urai-event-qr.svg`](../../urai-tier1/public/media/event/urai-event-qr.svg) — committed QR source for the gated `/event` destination
+- [`../../urai-tier1/public/media/event/offline-video.html`](../../urai-tier1/public/media/event/offline-video.html) — repository-stored 72-second offline WebM player
 - [`../../urai-tier1/public/media/event/offline-demo.html`](../../urai-tier1/public/media/event/offline-demo.html) — self-contained timed offline walkthrough
-- [`../../urai-tier1/public/media/event/founder-event-storyboard.svg`](../../urai-tier1/public/media/event/founder-event-storyboard.svg) — eight-panel repository-native screenshot fallback
+- [`../../urai-tier1/public/media/event/founder-event-storyboard.svg`](../../urai-tier1/public/media/event/founder-event-storyboard.svg) — eight-panel repository-native screenshot/storyboard fallback
+- [`../../urai-tier1/public/media/event/video/README.md`](../../urai-tier1/public/media/event/video/README.md) — embedded-video dimensions, duration, size, hash, content, and verification
 - [`../../.github/ISSUE_TEMPLATE/beta-feedback.yml`](../../.github/ISSUE_TEMPLATE/beta-feedback.yml) — structured public beta feedback form
 - [`../../.github/ISSUE_TEMPLATE/beta-bug.yml`](../../.github/ISSUE_TEMPLATE/beta-bug.yml) — structured beta bug report with privacy and severity controls
 
