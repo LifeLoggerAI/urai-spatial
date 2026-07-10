@@ -1,5 +1,10 @@
-import SpatialRealPlaceWorld from '@/app/SpatialRealPlaceWorld'
+import SpatialWorldCanvas from '@/spatial/components/world/SpatialWorldCanvas'
 
-export default function HomeRoutePage() {
-  return <SpatialRealPlaceWorld mode="home" />
+export const metadata = {
+  title: 'URAI Home World',
+  description: 'The canonical URAI home route opens into the live 3D spatial world.',
+}
+
+export default function HomePage() {
+  return <SpatialWorldCanvas mode="spatial" />
 }
