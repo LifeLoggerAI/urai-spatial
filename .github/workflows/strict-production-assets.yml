@@ -1,0 +1,28 @@
+name: Strict Production Asset Gate
+
+on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - 'scripts/final-asset-receipt.mjs'
+      - 'scripts/verify-production-asset-receipt.mjs'
+      - 'urai-tier1/public/assets/urai/**'
+      - 'docs/final-asset-receipt.md'
+      - '.github/workflows/strict-production-assets.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  strict-production-assets:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Materialize current asset receipt
+        run: node scripts/final-asset-receipt.mjs
+      - name: Require zero placeholders for production
+        run: node scripts/verify-production-asset-receipt.mjs
