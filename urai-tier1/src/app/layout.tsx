@@ -52,18 +52,53 @@ import './lifemap-proof-crops.css'
 import './urai-realm-accent-backgrounds.css'
 import './spatial-first-root-launch.css'
 import './urai-design-system.css'
+import { publicIdentity, publicIdentityJsonLd } from '@/data/publicIdentity'
 
 const configuredBuildSha = process.env.NEXT_PUBLIC_URAI_BUILD_SHA ?? process.env.GITHUB_SHA ?? ''
 const deployedSha = /^[0-9a-f]{40}$/.test(configuredBuildSha) ? configuredBuildSha : 'unverified'
+const structuredIdentity = JSON.stringify(publicIdentityJsonLd).replace(/</g, '\\u003c')
 
 export const metadata: Metadata = {
-  title: 'URAI Spatial',
-  description: 'Cinematic, spatial, interactive URAI runtime',
+  metadataBase: new URL(publicIdentity.canonicalUrl),
+  applicationName: publicIdentity.runtimeName,
+  title: {
+    default: publicIdentity.runtimeName,
+    template: `%s · ${publicIdentity.productName}`,
+  },
+  description: publicIdentity.description,
+  authors: [
+    {
+      name: publicIdentity.creator.name,
+      url: publicIdentity.creator.profilePath,
+    },
+  ],
+  creator: publicIdentity.creator.name,
+  publisher: publicIdentity.productName,
+  category: 'technology',
+  alternates: {
+    canonical: '/',
+  },
+  openGraph: {
+    type: 'website',
+    siteName: publicIdentity.runtimeName,
+    title: publicIdentity.runtimeName,
+    description: publicIdentity.description,
+    url: '/',
+  },
+  twitter: {
+    card: 'summary',
+    title: publicIdentity.runtimeName,
+    description: publicIdentity.description,
+  },
   icons: {
     icon: '/icon.svg',
   },
+  manifest: '/manifest.webmanifest',
   other: {
     'urai-deployed-sha': deployedSha,
+    'urai-canonical-repository': publicIdentity.repositoryUrl,
+    'urai-production-authority': 'LifeLoggerAI/urai-spatial/urai-tier1/main',
+    'urai-claims-boundary': publicIdentity.publicBoundary,
   },
 }
 
@@ -71,6 +106,7 @@ export const viewport: Viewport = {
   width: 'device-width',
   initialScale: 1,
   viewportFit: 'cover',
+  themeColor: '#08030f',
 }
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
@@ -83,6 +119,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         data-deployment-evidence={deployedSha === 'unverified' ? 'missing' : 'embedded'}
         style={{ margin: 0, background: '#08030f', overflowX: 'hidden' }}
       >
+        <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: structuredIdentity }} />
         <UraiAAAARoutePolish />
         <UraiCinematicBackdrop />
         <UraiFinalAssetSpineSceneLayer />
