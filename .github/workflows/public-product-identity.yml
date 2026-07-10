@@ -5,21 +5,29 @@ on:
     paths:
       - '.github/workflows/public-product-identity.yml'
       - 'scripts/verify-public-product-identity.mjs'
+      - 'urai-tier1/src/app/layout.tsx'
       - 'urai-tier1/src/app/about/**'
       - 'urai-tier1/src/app/manifest.ts'
+      - 'urai-tier1/src/app/robots.ts'
+      - 'urai-tier1/src/app/sitemap.ts'
       - 'urai-tier1/public/icon.svg'
       - 'urai-tier1/public/humans.txt'
       - 'urai-tier1/public/llms.txt'
+      - 'urai-tier1/public/urai-product.json'
   push:
     branches: [main]
     paths:
       - '.github/workflows/public-product-identity.yml'
       - 'scripts/verify-public-product-identity.mjs'
+      - 'urai-tier1/src/app/layout.tsx'
       - 'urai-tier1/src/app/about/**'
       - 'urai-tier1/src/app/manifest.ts'
+      - 'urai-tier1/src/app/robots.ts'
+      - 'urai-tier1/src/app/sitemap.ts'
       - 'urai-tier1/public/icon.svg'
       - 'urai-tier1/public/humans.txt'
       - 'urai-tier1/public/llms.txt'
+      - 'urai-tier1/public/urai-product.json'
   workflow_dispatch:
 
 permissions:
