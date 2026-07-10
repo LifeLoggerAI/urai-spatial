@@ -4,8 +4,49 @@ import path from 'node:path'
 
 const root = process.cwd()
 const workflowDirectory = path.join(root, '.github', 'workflows')
+const scriptsDirectory = path.join(root, 'scripts')
 const canonical = 'spatial-live-deploy.yml'
+const allowedProductionScript = 'scripts/live-release.mjs'
 const failures = []
+
+function walk(directory) {
+  if (!existsSync(directory)) return []
+  return readdirSync(directory, { withFileTypes: true }).flatMap((entry) => {
+    const absolute = path.join(directory, entry.name)
+    return entry.isDirectory() ? walk(absolute) : entry.isFile() ? [absolute] : []
+  })
+}
+
+function relative(file) {
+  return path.relative(root, file).replaceAll('\\', '/')
+}
+
+function hasDeployCapability(source) {
+  return [
+    /\bfirebase(?:-tools)?(?:@[^\s'"`]+)?\s+deploy\b/i,
+    /\brun\(\s*['"]firebase['"]\s*,\s*\[\s*['"]deploy['"]/i,
+    /\bspawnSync\(\s*['"]firebase['"]\s*,\s*\[\s*['"]deploy['"]/i,
+    /\bexecFileSync\(\s*['"]firebase['"]\s*,\s*\[\s*['"]deploy['"]/i,
+    /\bpnpm\s+live:deploy\b/i,
+    /\bURAI_DEPLOY_CONFIRM\b/,
+    /\bDEPLOY_URAI_APP\b/,
+    /\benvironment:\s*production\b/i,
+  ].some((pattern) => pattern.test(source))
+}
+
+const productionCapableScripts = new Set()
+for (const file of walk(scriptsDirectory)) {
+  if (!/\.(?:mjs|cjs|js|sh)$/.test(file)) continue
+  const name = relative(file)
+  const source = readFileSync(file, 'utf8')
+  if (hasDeployCapability(source)) productionCapableScripts.add(name)
+}
+
+for (const script of productionCapableScripts) {
+  if (script !== allowedProductionScript) {
+    failures.push(`Competing production-capable script: ${script}`)
+  }
+}
 
 if (!existsSync(workflowDirectory)) {
   failures.push('Missing .github/workflows directory')
@@ -15,15 +56,9 @@ if (!existsSync(workflowDirectory)) {
 
   for (const name of workflowFiles) {
     const source = readFileSync(path.join(workflowDirectory, name), 'utf8')
-    const productionSignals = [
-      /firebase(?:-tools)?\s+deploy/i,
-      /pnpm\s+live:deploy/i,
-      /environment:\s*production/i,
-      /DEPLOY_STATIC_URAI/,
-      /DEPLOY_URAI_APP/,
-    ]
-    const isProductionCapable = productionSignals.some((pattern) => pattern.test(source))
-    if (isProductionCapable && name !== canonical) {
+    const directProductionCapability = hasDeployCapability(source)
+    const referencedProductionScripts = [...productionCapableScripts].filter((script) => source.includes(script))
+    if ((directProductionCapability || referencedProductionScripts.length) && name !== canonical) {
       failures.push(`Competing production-capable workflow: ${name}`)
     }
   }
@@ -40,14 +75,15 @@ if (!existsSync(workflowDirectory)) {
     'git merge-base --is-ancestor',
     'service_account.get',
     'scripts/urai-release-control-smoke.mjs',
+    'if: always()',
   ]) {
     if (!canonicalSource.includes(marker)) failures.push(`Canonical workflow missing marker: ${marker}`)
   }
 }
 
-const releaseScriptPath = path.join(root, 'scripts', 'live-release.mjs')
+const releaseScriptPath = path.join(root, allowedProductionScript)
 if (!existsSync(releaseScriptPath)) {
-  failures.push('Missing scripts/live-release.mjs')
+  failures.push(`Missing ${allowedProductionScript}`)
 } else {
   const source = readFileSync(releaseScriptPath, 'utf8')
   if (!source.includes("process.env.URAI_DEPLOY_CONFIRM !== 'DEPLOY_STATIC_URAI'")) {
@@ -56,11 +92,54 @@ if (!existsSync(releaseScriptPath)) {
   if (/GITHUB_ACTIONS === 'true'\s*&&\s*process\.env\.GITHUB_EVENT_NAME === 'workflow_dispatch'/.test(source)) {
     failures.push('Deploy executable still authorizes generic workflow dispatch without the explicit token')
   }
+  if (!source.includes("process.env.GITHUB_EVENT_NAME !== 'workflow_dispatch'")) {
+    failures.push('Deploy executable does not reject non-dispatch GitHub Actions events')
+  }
+  if (!source.includes('project !== expectedProject')) {
+    failures.push('Deploy executable does not lock the Firebase project')
+  }
+}
+
+const packagePath = path.join(root, 'package.json')
+if (!existsSync(packagePath)) {
+  failures.push('Missing package.json')
+} else {
+  const packageJson = JSON.parse(readFileSync(packagePath, 'utf8'))
+  const scripts = packageJson.scripts || {}
+  const forbiddenAliases = [
+    'studio:deploy:static',
+    'deploy:xr:firebase',
+    'deploy:xr:firebase:static',
+    'deploy:staging',
+    'deploy:prod',
+    'frb',
+    'live:deploy:static',
+    'publish:live:static',
+  ]
+  for (const name of forbiddenAliases) {
+    if (name in scripts) failures.push(`Forbidden deploy alias remains in package.json: ${name}`)
+  }
+  if (scripts['live:deploy'] !== 'node scripts/live-release.mjs --deploy') {
+    failures.push('package.json live:deploy must point only to scripts/live-release.mjs --deploy')
+  }
+  if (scripts['publish:live'] !== 'node scripts/run-pnpm.mjs live:deploy') {
+    failures.push('package.json publish:live must delegate to live:deploy')
+  }
+  for (const [name, command] of Object.entries(scripts)) {
+    if (/\bfirebase(?:-tools)?(?:@[^\s'"`]+)?\s+deploy\b/i.test(command)) {
+      failures.push(`Direct Firebase deploy command remains in package script: ${name}`)
+    }
+    if (name !== 'live:deploy' && /live-release\.mjs\s+--deploy/.test(command)) {
+      failures.push(`Package script bypasses canonical live:deploy alias: ${name}`)
+    }
+  }
 }
 
 const report = {
   ok: failures.length === 0,
   canonicalWorkflow: canonical,
+  canonicalProductionScript: allowedProductionScript,
+  productionCapableScripts: [...productionCapableScripts].sort(),
   failures,
 }
 
