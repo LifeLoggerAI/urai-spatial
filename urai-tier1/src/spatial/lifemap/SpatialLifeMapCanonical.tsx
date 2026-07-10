@@ -2,6 +2,7 @@
 
 import dynamic from 'next/dynamic'
 import { Suspense } from 'react'
+import { assetCssStack, lifeMapAssets } from '@/spatial/assets/uraiAssets'
 
 function LifeMapLoading({ label = 'Opening Life Map…' }: { label?: string }) {
   return (
@@ -30,10 +31,29 @@ const LifeMapRouteBoundary = dynamic(() => import('@/components/lifemap/LifeMapR
 
 export default function SpatialLifeMapCanonical() {
   return (
-    <section data-testid="urai-r3f-canonical-lifemap" aria-label="URAI canonical spatial Life Map">
+    <section
+      data-testid="urai-r3f-canonical-lifemap"
+      data-canonical-asset={lifeMapAssets.primary.src}
+      aria-label="URAI canonical spatial Life Map"
+      style={{ position: 'relative', minHeight: '100svh', overflow: 'hidden', background: '#01030a' }}
+    >
       <Suspense fallback={<LifeMapLoading label="Restoring Life Map…" />}>
         <LifeMapRouteBoundary />
       </Suspense>
+      <div
+        aria-hidden="true"
+        style={{
+          position: 'absolute',
+          inset: 0,
+          zIndex: 60,
+          pointerEvents: 'none',
+          backgroundImage: assetCssStack(lifeMapAssets.primary),
+          backgroundSize: 'cover',
+          backgroundPosition: 'center',
+          mixBlendMode: 'screen',
+          opacity: 0.08,
+        }}
+      />
     </section>
   )
 }
