@@ -53,7 +53,18 @@ requireTokens('scripts/capture-founder-event-kit.mjs', [
   'recordVideo',
   'piiPatterns',
   'unsafeLinks',
+  "schemaVersion: 'urai-founder-event-kit-1'",
+  'sourceSha,',
   'sampleDataOnly: true',
+  'URAI_EVENT_SOURCE_SHA must be the exact 40-character source commit in CI',
+])
+requireTokens('.github/workflows/founder-event-demo-kit.yml', [
+  "TARGET_SHA: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}",
+  'ref: ${{ env.TARGET_SHA }}',
+  'test "$(git rev-parse HEAD)" = "$TARGET_SHA"',
+  'NEXT_PUBLIC_URAI_BUILD_SHA: ${{ env.TARGET_SHA }}',
+  'URAI_EVENT_SOURCE_SHA: ${{ env.TARGET_SHA }}',
+  'name: urai-founder-event-kit-${{ env.TARGET_SHA }}',
 ])
 
 const demoData = requireTokens('urai-tier1/src/spatial/v1/lifeMapDemoData.ts', [
