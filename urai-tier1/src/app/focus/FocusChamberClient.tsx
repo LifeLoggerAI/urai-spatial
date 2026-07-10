@@ -49,7 +49,7 @@ export default function FocusChamberClient() {
   }, [manifestId, memoryId])
 
   return (
-    <main
+    <div
       className="focusMemorySurface"
       data-testid="urai-final-focus-chamber"
       data-route-polish="selected-memory-camera-chamber"
@@ -95,6 +95,6 @@ export default function FocusChamberClient() {
         .focusStage{position:relative;z-index:10;min-height:100svh;display:grid;grid-template-columns:minmax(0,1fr) minmax(320px,430px);align-items:center;gap:2rem;padding:5.5rem 2rem 7.5rem}.focusTitle,.focusPanel{border:1px solid rgba(255,255,255,.12);background:rgba(5,10,22,.55);backdrop-filter:blur(20px);border-radius:2rem;padding:1rem}.focusTitle{max-width:540px}.focusTitle h1{margin:.45rem 0 0;font-size:clamp(3.2rem,8vw,7.8rem);line-height:.8}.focusCard{position:relative;min-height:318px;margin-bottom:1rem;border-radius:1.5rem;background:var(--focus-route-art),linear-gradient(135deg,#09131f,#17293b);background-size:cover;background-position:center}.focusActions,.focusNav{display:flex;gap:.55rem}.focusActions a,.focusNav a{border:1px solid rgba(255,255,255,.16);border-radius:999px;padding:.72rem 1rem;background:rgba(255,255,255,.06);color:white;text-decoration:none}.focusNav{position:fixed;left:50%;bottom:1rem;z-index:40;transform:translateX(-50%);background:rgba(0,0,0,.52);padding:.42rem;backdrop-filter:blur(18px)}
         @media(max-width:850px){.focusStage{grid-template-columns:1fr;padding:4.75rem .75rem 9rem}.focusNav{width:calc(100vw - 1rem);overflow-x:auto}}
       `}</style>
-    </main>
+    </div>
   )
 }
