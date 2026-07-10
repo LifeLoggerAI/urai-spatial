@@ -1,0 +1,40 @@
+name: Launch Critical Asset Forge
+
+on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - 'operations/assets/**'
+      - 'scripts/forge-launch-critical-assets.mjs'
+      - 'scripts/verify-launch-critical-assets.mjs'
+      - 'scripts/audit-launch-critical-artifact.mjs'
+      - '.github/workflows/launch-critical-asset-forge.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  forge-and-verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Forge deterministic launch candidates
+        run: node scripts/forge-launch-critical-assets.mjs
+      - name: Verify manifest, receipts and budgets
+        run: node scripts/verify-launch-critical-assets.mjs
+      - name: Independently audit generated formats and metrics
+        run: node scripts/audit-launch-critical-artifact.mjs
+      - name: Upload reviewable candidate bundle
+        uses: actions/upload-artifact@v4
+        with:
+          name: urai-launch-critical-asset-candidates-${{ github.sha }}
+          if-no-files-found: error
+          retention-days: 14
+          path: |
+            urai-tier1/public/assets/urai/generated/
+            operations/assets/generated-receipts/
+            operations/assets/launch-critical-assets.json
