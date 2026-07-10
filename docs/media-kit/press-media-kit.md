@@ -44,12 +44,12 @@ Adam Clamp
 
 ## Avoid
 
-- Medical, diagnostic, treatment, or therapy-replacement claims.
-- Lie detection, mind reading, emotional certainty, or surveillance framing.
-- Claims that imply always-on monitoring.
-- Claims of persistent personal memory without authenticated ownership, deletion, export, revocation, and live evidence.
-- Production-certified, provider-active, or device-certified language without exact receipts.
-- Investment-return, valuation, market-size, IP-ownership, or regulatory guarantees.
+- Do not use medical, diagnostic, treatment, or therapy-replacement claims.
+- Do not use lie detection, mind reading, emotional certainty, or surveillance framing.
+- Do not use claims that imply always-on monitoring.
+- Do not claim persistent personal memory without authenticated ownership, deletion, export, revocation, and live evidence.
+- Do not use production-certified, provider-active, or device-certified language without exact receipts.
+- Do not make investment-return, valuation, market-size, IP-ownership, or regulatory guarantees.
 
 ## Required Demo Note
 
