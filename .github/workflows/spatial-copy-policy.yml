@@ -9,6 +9,7 @@ on:
       - 'docs/**'
       - 'urai-tier1/src/**'
       - 'scripts/check-spatial-copy.mjs'
+      - 'scripts/check-public-claims-adoption.mjs'
       - '.github/workflows/spatial-copy-policy.yml'
   push:
     branches: [main]
@@ -18,6 +19,7 @@ on:
       - 'docs/**'
       - 'urai-tier1/src/**'
       - 'scripts/check-spatial-copy.mjs'
+      - 'scripts/check-public-claims-adoption.mjs'
       - '.github/workflows/spatial-copy-policy.yml'
   workflow_dispatch:
 
@@ -37,12 +39,20 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-      - name: Capture public provider and XR policy output
+      - name: Capture public claims and provider policy output
         id: policy
         shell: bash
         run: |
           set +e
-          node scripts/check-spatial-copy.mjs > copy-policy.log 2>&1
+          {
+            node scripts/check-spatial-copy.mjs
+            spatial_status=$?
+            node scripts/check-public-claims-adoption.mjs
+            claims_status=$?
+            if test "$spatial_status" -ne 0 || test "$claims_status" -ne 0; then
+              exit 1
+            fi
+          } > copy-policy.log 2>&1
           status=$?
           cat copy-policy.log
           echo "status=$status" >> "$GITHUB_OUTPUT"
