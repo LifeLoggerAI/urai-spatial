@@ -30,6 +30,11 @@ if (args.has('--deploy')) {
 
 const baseUrl = getArg('--base', process.env.URAI_BASE_URL || 'https://urai.app').replace(/\/$/, '')
 const receiptBase = process.env.URAI_RECEIPT_ROOT || join(homedir(), 'urai-final-receipts')
+const loopName = String(process.env.LOOP_NAME || 'manual-proof')
+  .trim()
+  .slice(0, 80)
+  .replace(/[^A-Za-z0-9._-]+/g, '-')
+  .replace(/^-+|-+$/g, '') || 'manual-proof'
 const shouldScreenshots = args.has('--screenshots')
 const skipInstall = args.has('--skip-install')
 const skipAssets = args.has('--skip-assets')
@@ -56,7 +61,7 @@ const routeExpectations = [
 
 const startedAt = new Date().toISOString()
 const runId = startedAt.replace(/[:.]/g, '-')
-const receiptDir = join(receiptBase, `aaa-launch-proof-${runId}`)
+const receiptDir = join(receiptBase, `aaa-launch-proof-${loopName}-${runId}`)
 mkdirSync(receiptDir, { recursive: true })
 
 const commands = []
@@ -78,6 +83,7 @@ const writeReceipt = (status, failedStep = '') => {
   const receipt = {
     status,
     failedStep,
+    loopName,
     startedAt,
     finishedAt: new Date().toISOString(),
     baseUrl,
@@ -87,7 +93,7 @@ const writeReceipt = (status, failedStep = '') => {
     commands,
   }
   writeFileSync(join(receiptDir, 'receipt.json'), `${JSON.stringify(receipt, null, 2)}\n`)
-  writeFileSync(join(receiptDir, 'README.md'), `# URAI AAA proof receipt\n\n- Status: ${status}\n- Started: ${startedAt}\n- Base URL: ${baseUrl}\n- Production deployment attempted: no\n- Production authority: \`.github/workflows/spatial-live-deploy.yml\`\n${failedStep ? `- Failed step: ${failedStep}\n` : ''}\n`)
+  writeFileSync(join(receiptDir, 'README.md'), `# URAI AAA proof receipt\n\n- Status: ${status}\n- Loop: ${loopName}\n- Started: ${startedAt}\n- Base URL: ${baseUrl}\n- Production deployment attempted: no\n- Production authority: \`.github/workflows/spatial-live-deploy.yml\`\n${failedStep ? `- Failed step: ${failedStep}\n` : ''}\n`)
 }
 
 if (!skipInstall) run('install', 'node', ['scripts/run-pnpm.mjs', 'install', '--frozen-lockfile'])
