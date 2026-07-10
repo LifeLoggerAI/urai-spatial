@@ -7,6 +7,7 @@ on:
       - 'scripts/verify-public-product-identity.mjs'
       - 'urai-tier1/src/app/about/**'
       - 'urai-tier1/src/app/manifest.ts'
+      - 'urai-tier1/public/icon.svg'
       - 'urai-tier1/public/humans.txt'
       - 'urai-tier1/public/llms.txt'
   push:
@@ -16,6 +17,7 @@ on:
       - 'scripts/verify-public-product-identity.mjs'
       - 'urai-tier1/src/app/about/**'
       - 'urai-tier1/src/app/manifest.ts'
+      - 'urai-tier1/public/icon.svg'
       - 'urai-tier1/public/humans.txt'
       - 'urai-tier1/public/llms.txt'
   workflow_dispatch:
