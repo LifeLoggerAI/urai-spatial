@@ -6,11 +6,14 @@ import path from 'node:path'
 
 const baseUrl = (process.env.URAI_DEPLOY_URL || '').trim().replace(/\/$/, '')
 const expectedSha = (process.env.URAI_EXPECTED_DEPLOYED_SHA || '').trim()
+const expectedRollbackSha = (process.env.URAI_EXPECTED_ROLLBACK_SHA || process.env.ROLLBACK_SHA || '').trim()
 const receiptPath = process.env.URAI_LIVE_RECEIPT_PATH || 'deployment-receipt/live-content-parity.json'
 
 if (!baseUrl) throw new Error('URAI_DEPLOY_URL is required')
 if (new URL(baseUrl).origin !== 'https://urai.app') throw new Error('Live certification is restricted to https://urai.app')
 if (!/^[0-9a-f]{40}$/.test(expectedSha)) throw new Error('URAI_EXPECTED_DEPLOYED_SHA must be a full lowercase SHA')
+if (!/^[0-9a-f]{40}$/.test(expectedRollbackSha)) throw new Error('URAI_EXPECTED_ROLLBACK_SHA must be a full lowercase SHA')
+if (expectedRollbackSha === expectedSha) throw new Error('Rollback SHA must be distinct from deployed SHA')
 
 const contracts = [
   ['/', ['Own your life.', 'Ground', 'Life Map'], []],
@@ -46,6 +49,34 @@ function deployedSha(response, html) {
   return (header || bodyMarker || metaMarker || '').trim()
 }
 
+async function fetchFingerprint() {
+  const url = new URL('/release-fingerprint.json', `${baseUrl}/`)
+  const response = await fetch(url, {
+    redirect: 'follow',
+    cache: 'no-store',
+    signal: AbortSignal.timeout(20_000),
+    headers: { 'cache-control': 'no-cache', 'user-agent': 'urai-static-release-verifier/1.1' },
+  })
+  const text = await response.text()
+  let payload = null
+  try { payload = JSON.parse(text) } catch {}
+  const passed = response.ok
+    && response.headers.get('content-type')?.toLowerCase().includes('application/json')
+    && payload?.schemaVersion === 'urai-release-fingerprint-1'
+    && payload?.releaseSha === expectedSha
+    && payload?.rollbackSha === expectedRollbackSha
+    && payload?.firebaseProject === 'urai-4dc1d'
+    && payload?.liveUrl === 'https://urai.app'
+    && payload?.deploymentScope === 'hosting-only'
+  return {
+    url: url.toString(),
+    status: response.status,
+    contentSha256: createHash('sha256').update(text).digest('hex'),
+    payload,
+    passed,
+  }
+}
+
 const results = []
 for (const [route, required, forbidden] of contracts) {
   for (const requested of variants(route)) {
@@ -55,7 +86,7 @@ for (const [route, required, forbidden] of contracts) {
         redirect: 'follow',
         cache: 'no-store',
         signal: AbortSignal.timeout(20_000),
-        headers: { 'cache-control': 'no-cache', 'user-agent': 'urai-static-release-verifier/1.0' },
+        headers: { 'cache-control': 'no-cache', 'user-agent': 'urai-static-release-verifier/1.1' },
       })
       const html = await response.text()
       const finalUrl = new URL(response.url)
@@ -100,14 +131,23 @@ for (const [route, required, forbidden] of contracts) {
   }
 }
 
-const passed = results.every((result) => result.passed)
+let fingerprint
+try {
+  fingerprint = await fetchFingerprint()
+} catch (error) {
+  fingerprint = { error: error instanceof Error ? error.message : String(error), passed: false }
+}
+
+const passed = results.every((result) => result.passed) && fingerprint.passed
 const receipt = {
-  schemaVersion: 'urai-live-content-parity-1',
+  schemaVersion: 'urai-live-content-parity-2',
   generatedAt: new Date().toISOString(),
   baseUrl,
   expectedDeployedSha: expectedSha,
+  expectedRollbackSha,
   routeContracts: contracts.length,
   checkedVariants: results.length,
+  fingerprint,
   passed,
   results,
 }
