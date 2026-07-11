@@ -66,28 +66,37 @@ function ReadySpatialSensoryLayer({ materialPath, particlePath, loadingPath }: R
       },
     )
 
-    Promise.all([
-      fetch(materialPath).then((response) => response.ok
+    fetch(materialPath)
+      .then((response) => response.ok
         ? response.json() as Promise<MaterialPack>
-        : Promise.reject(new Error('material pack unavailable'))),
-      fetch(loadingPath).then((response) => response.ok
+        : Promise.reject(new Error('material pack unavailable')))
+      .then((materialPack) => {
+        if (!active) return
+        setParticleColor(materialPack.materials?.memoryViolet?.baseColor ?? DEFAULT_PARTICLE_COLOR)
+        setPortalColor(materialPack.materials?.portalEnergy?.emissive ?? DEFAULT_PORTAL_COLOR)
+      })
+      .catch(() => {
+        if (!active) return
+        setParticleColor(DEFAULT_PARTICLE_COLOR)
+        setPortalColor(DEFAULT_PORTAL_COLOR)
+      })
+
+    fetch(loadingPath)
+      .then((response) => response.ok
         ? response.json() as Promise<LoadingSequence>
-        : Promise.reject(new Error('loading sequence unavailable'))),
-    ]).then(([materialPack, loadingSequence]) => {
-      if (!active) return
-      setParticleColor(materialPack.materials?.memoryViolet?.baseColor ?? DEFAULT_PARTICLE_COLOR)
-      setPortalColor(materialPack.materials?.portalEnergy?.emissive ?? DEFAULT_PORTAL_COLOR)
-      setLoadingDurationMs(
-        typeof loadingSequence.durationMs === 'number' && loadingSequence.durationMs > 0
-          ? loadingSequence.durationMs
-          : DEFAULT_LOADING_DURATION_MS,
-      )
-    }).catch(() => {
-      if (!active) return
-      setParticleColor(DEFAULT_PARTICLE_COLOR)
-      setPortalColor(DEFAULT_PORTAL_COLOR)
-      setLoadingDurationMs(DEFAULT_LOADING_DURATION_MS)
-    })
+        : Promise.reject(new Error('loading sequence unavailable')))
+      .then((loadingSequence) => {
+        if (!active) return
+        setLoadingDurationMs(
+          typeof loadingSequence.durationMs === 'number' && loadingSequence.durationMs > 0
+            ? loadingSequence.durationMs
+            : DEFAULT_LOADING_DURATION_MS,
+        )
+      })
+      .catch(() => {
+        if (!active) return
+        setLoadingDurationMs(DEFAULT_LOADING_DURATION_MS)
+      })
 
     return () => {
       active = false
@@ -144,6 +153,7 @@ export default function SpatialSensoryLayer() {
 
   return (
     <ReadySpatialSensoryLayer
+      key={`${materialPath}|${particlePath}|${loadingPath}`}
       materialPath={materialPath}
       particlePath={particlePath}
       loadingPath={loadingPath}
