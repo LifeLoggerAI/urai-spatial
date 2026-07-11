@@ -7,6 +7,7 @@ import { useReducedMotion } from '@/spatial/hooks/useReducedMotion'
 import { ReplayMetaPanel } from '@/spatial/replay/ReplayMetaPanel'
 import { ReplayTimeline } from '@/spatial/replay/ReplayTimeline'
 import { ReplayPhaseRings } from '@/spatial/replay/ReplayPhaseRings'
+import { assetCssStack, replayAssets } from '@/spatial/assets/uraiAssets'
 import {
   REPLAY_DURATION_MS,
   getReplayPhaseDefinition,
@@ -147,6 +148,7 @@ export default function CinematicReplayClient() {
       data-playing={playing ? 'true' : 'false'}
       data-replay-segment={activeSegment.id}
       data-reduced-motion={reducedMotion ? 'true' : 'false'}
+      data-canonical-asset={replayAssets.primary.src}
       style={{
         position: 'fixed',
         inset: 0,
@@ -156,6 +158,20 @@ export default function CinematicReplayClient() {
           'radial-gradient(circle at 50% 36%, rgba(103, 232, 249, 0.18), transparent 24%), radial-gradient(circle at 50% 62%, rgba(139, 92, 246, 0.24), transparent 42%), linear-gradient(180deg, #08112a 0%, #030713 56%, #010208 100%)',
       }}
     >
+      <div
+        aria-hidden="true"
+        style={{
+          position: 'absolute',
+          inset: 0,
+          zIndex: 0,
+          backgroundImage: assetCssStack(replayAssets.primary),
+          backgroundSize: 'cover',
+          backgroundPosition: 'center',
+          mixBlendMode: 'screen',
+          opacity: 0.14,
+          pointerEvents: 'none',
+        }}
+      />
       <div
         aria-hidden="true"
         style={{

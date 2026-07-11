@@ -9,11 +9,9 @@ Run this checklist before publishing any URAI launch media.
 - No browser console.
 - No real Shadow content.
 - No real Legacy content.
-- No medical claims.
-- No therapy-replacement claims.
-- No diagnosis claims.
-- No lie-detection claims.
-- No surveillance language.
+- URAI must not be described as a medical device, diagnosis, treatment, or therapy replacement.
+- No lie-detection or mind-reading claims.
+- URAI must not be described as surveillance, always-on monitoring, or emotional certainty.
 - Demo sample disclosure visible.
 - Captions readable.
 - Mobile crops good.
@@ -26,4 +24,4 @@ Run this checklist before publishing any URAI launch media.
 
 ## Required Disclosure
 
-"This demo uses sample data."
+"This demo uses sample data. Production certification, authenticated persistence, active providers, and physical-device proof remain evidence-gated."

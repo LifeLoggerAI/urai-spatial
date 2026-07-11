@@ -1,6 +1,6 @@
 # Short Video Script Pack
 
-All videos must use sample data and avoid medical, treatment, therapy, diagnosis, lie-detection, mind-reading, surveillance, persistent-memory, active-provider, device-certification, and production-certification overclaims.
+Production certification, authenticated persistence, active providers, and physical-device proof remain evidence-gated. All videos must use sample data and must not make medical, treatment, therapy, diagnosis, lie-detection, mind-reading, surveillance, or persistent-memory claims.
 
 Required on-screen disclosure:
 
@@ -97,23 +97,3 @@ Visual scene: Ground, roots, blooms, and ritual detail.
 Voiceover:
 
 > Ground gives reflection a calmer symbolic shape through roots, blooms, and rituals. It does not diagnose, treat, or claim certainty.
-
-On-screen text: “A place to land.”
-
-CTA: “Explore the sample demo.”
-
-## G. Protected-Layers Clip
-
-Hook:
-
-> Deeper layers stay closed unless the user opens them.
-
-Visual scene: Protected gates and Passport reminder.
-
-Voiceover:
-
-> Protected layers are opt-in design surfaces. Launch media must show sample content only and must not imply live private-data storage.
-
-On-screen text: “Protected by permission.”
-
-CTA: “Join the waitlist.”

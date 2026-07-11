@@ -1,6 +1,6 @@
 # Social Post Launch Pack
 
-Every post must use claim-safe language, identify sample data, and avoid medical, diagnostic, treatment, therapy-replacement, lie-detection, mind-reading, surveillance, persistence, provider, device, and production-certification overclaims.
+Production certification, authenticated persistence, active providers, and physical-device proof remain evidence-gated. Every post must use claim-safe language, identify sample data, and must not make medical, diagnostic, treatment, therapy-replacement, lie-detection, mind-reading, surveillance, or persistent-memory claims.
 
 Campaign, fundraiser, or financing language requires appropriate approval and must never imply investment return, ownership, valuation certainty, or guaranteed outcomes.
 
@@ -97,17 +97,3 @@ Short:
 Long:
 
 > URAI is building a privacy-first spatial interface. The current public experience uses sample data, and access should expand only with evidence-backed privacy, reliability, and deployment controls.
-
-Visual suggestion: Approved waitlist or early-access screen.
-
-CTA: Join the waitlist.
-
-## 8. Fundraiser or Support Announcement
-
-Use only after campaign-specific legal, financial, platform, and claims review.
-
-Safe framing:
-
-> Support the work required to move URAI from a sample-data spatial demo toward a secure, evidence-backed public beta.
-
-Do not publish financing terms, ownership language, return expectations, valuation claims, market-size guarantees, or IP-certainty claims through this template.

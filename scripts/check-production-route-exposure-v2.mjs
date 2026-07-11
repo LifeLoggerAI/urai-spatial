@@ -39,7 +39,8 @@ for (const file of walk(appRoot)) {
 }
 
 requireTokens('urai-tier1/src/app/privacy-controls/page.tsx', ["title: 'URAI Privacy Controls'", 'data-route-polish="privacy-consent-console"', 'export default function PrivacyControlsRoutePage()'])
-requireTokens('urai-tier1/src/app/focus/page.tsx', ["import { FinalFocusChamber } from '@/app/FinalMemorySurfaces'", 'data-urai-route-fingerprint="focus-selected-memory-camera-chamber"', 'Selected memory camera chamber', '<FinalFocusChamber />'])
+requireTokens('urai-tier1/src/app/focus/page.tsx', ["import FocusChamberClient from './FocusChamberClient'", '<Suspense', '<FocusChamberClient />'])
+requireTokens('urai-tier1/src/app/focus/FocusChamberClient.tsx', ['data-testid="urai-final-focus-chamber"', 'data-route-polish="selected-memory-camera-chamber"', 'Selected memory chamber.', "next.set('memoryId', memoryId)", "next.set('manifestId', manifestId)", "next.set('node', node)"])
 requireTokens('urai-tier1/src/app/layout.tsx', ['NEXT_PUBLIC_URAI_BUILD_SHA', "'urai-deployed-sha': deployedSha", 'data-deployed-sha={deployedSha}', "data-deployment-evidence={deployedSha === 'unverified' ? 'missing' : 'embedded'}"])
 
 const staticConfig = JSON.parse(read('firebase.static.json') || '{}').hosting || {}
