@@ -15,15 +15,17 @@ type MaterialPack = {
 
 type LoadingSequence = { durationMs: number }
 
-const materialPath = resolveReadyUraiSensoryAssetPath('materials')
-const particlePath = resolveReadyUraiSensoryAssetPath('particles')
-const loadingPath = resolveReadyUraiSensoryAssetPath('loading')
-
-if (!materialPath || !particlePath || !loadingPath) {
-  throw new Error('URAI sensory assets are not promoted')
+type PromotedSpatialSensoryLayerProps = {
+  materialPath: string
+  particlePath: string
+  loadingPath: string
 }
 
-export default function SpatialSensoryLayer() {
+function PromotedSpatialSensoryLayer({
+  materialPath,
+  particlePath,
+  loadingPath,
+}: PromotedSpatialSensoryLayerProps) {
   const points = useRef<THREE.Points>(null)
   const loadingRing = useRef<THREE.Mesh>(null)
   const particleTexture = useTexture(particlePath)
@@ -68,5 +70,23 @@ export default function SpatialSensoryLayer() {
         <meshBasicMaterial color={materialPack.materials.portalEnergy.emissive} transparent opacity={0.34} depthWrite={false} side={THREE.DoubleSide} />
       </mesh>
     </group>
+  )
+}
+
+export default function SpatialSensoryLayer() {
+  const materialPath = resolveReadyUraiSensoryAssetPath('materials')
+  const particlePath = resolveReadyUraiSensoryAssetPath('particles')
+  const loadingPath = resolveReadyUraiSensoryAssetPath('loading')
+
+  if (!materialPath || !particlePath || !loadingPath) {
+    return null
+  }
+
+  return (
+    <PromotedSpatialSensoryLayer
+      materialPath={materialPath}
+      particlePath={particlePath}
+      loadingPath={loadingPath}
+    />
   )
 }
