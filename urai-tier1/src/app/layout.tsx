@@ -3,6 +3,7 @@ import UraiFinalAssetSpineBridge from './UraiFinalAssetSpineBridge'
 import './home-spatial-world-final.css'
 import './home-one-world-owner.css'
 import type { Metadata, Viewport } from 'next'
+import { URAI_INDEXING_STATE, URAI_PUBLIC_ORIGIN } from '@/lib/discoverability-boundary'
 import './globals.css'
 import './launch-home-polish.css'
 import './life-map-production-3d.css'
@@ -58,13 +59,25 @@ const configuredBuildSha = process.env.NEXT_PUBLIC_URAI_BUILD_SHA ?? process.env
 const deployedSha = /^[0-9a-f]{40}$/.test(configuredBuildSha) ? configuredBuildSha : 'unverified'
 
 export const metadata: Metadata = {
+  metadataBase: new URL(URAI_PUBLIC_ORIGIN),
   title: 'URAI Spatial',
   description: 'Cinematic, spatial, interactive URAI runtime',
   icons: {
     icon: '/icon.svg',
   },
+  robots: {
+    index: false,
+    follow: false,
+    nocache: true,
+    googleBot: {
+      index: false,
+      follow: false,
+      noimageindex: true,
+    },
+  },
   other: {
     'urai-deployed-sha': deployedSha,
+    'urai-indexing-state': URAI_INDEXING_STATE,
   },
 }
 
@@ -82,6 +95,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         data-urai-living-state-layer="v2"
         data-deployed-sha={deployedSha}
         data-deployment-evidence={deployedSha === 'unverified' ? 'missing' : 'embedded'}
+        data-indexing-state={URAI_INDEXING_STATE}
         style={{ margin: 0, background: '#08030f', overflowX: 'hidden' }}
       >
         <UraiAAAARoutePolish />
