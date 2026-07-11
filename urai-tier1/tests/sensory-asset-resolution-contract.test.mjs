@@ -36,6 +36,7 @@ test('candidate assets cannot appear in the production-ready receipt set', () =>
     'spatial-particle-atlas-v1',
     'urai-loading-sequence-v1',
   ])
+  assert.ok(receipt.assets.every((asset) => asset.status === 'ready'))
   assert.ok(receipt.excludedCandidates.some((asset) => asset.id === 'urai-ambient-bed-v1'))
   assert.ok(receipt.excludedCandidates.some((asset) => asset.id === 'life-map-galaxy-skybox-v1'))
 })
@@ -45,4 +46,17 @@ test('sensory fallbacks remain explicit and activation is fail-closed', () => {
   assert.match(manifest, /shader-point-particles/)
   assert.match(manifest, /accessible-static-loading-state/)
   assert.match(manifest, /return asset\.status === 'ready' \? asset\.path : null/)
+  assert.match(sensoryLayer, /if \(!materialPath \|\| !particlePath \|\| !loadingPath\) return null/)
+  assert.match(sensoryLayer, /data-urai-fallback="procedural"/)
+  assert.match(sensoryLayer, /new THREE\.TextureLoader\(\)/)
+  assert.match(sensoryLayer, /fetch\(materialPath\)/)
+  assert.match(sensoryLayer, /fetch\(loadingPath\)/)
+  assert.ok(sensoryLayer.includes('key={`${materialPath}|${particlePath}|${loadingPath}`}'))
+  assert.doesNotMatch(sensoryLayer, /Promise\.all/)
+  assert.doesNotMatch(sensoryLayer, /throw new Error\('URAI sensory assets are not promoted'\)/)
+})
+
+test('candidate ambient audio is not mounted as a production asset', () => {
+  assert.doesNotMatch(sensoryLayer, /urai-ambient-bed-v1/)
+  assert.doesNotMatch(worldLayer, /urai-ambient-bed-v1/)
 })
