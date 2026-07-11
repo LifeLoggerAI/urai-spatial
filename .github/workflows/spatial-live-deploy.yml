@@ -123,7 +123,7 @@ jobs:
           esac
 
       - name: Set up Node
-        uses: actions/setup-node@1e60f620b9541d80c77f7b4a3bcd8bf5e940c37 # v4.4.0
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
         with:
           node-version: ${{ env.NODE_VERSION }}
 
@@ -227,7 +227,7 @@ jobs:
           git -C authority merge-base --is-ancestor "$PROOF_SHA" "$CURRENT_MAIN_SHA"
 
       - name: Set up Node
-        uses: actions/setup-node@1e60f620b9541d80c77f7b4a3bcd8bf5e940c37 # v4.4.0
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
         with:
           node-version: ${{ env.NODE_VERSION }}
 
@@ -342,7 +342,7 @@ jobs:
           test "$ROLLBACK_SHA" != "$RELEASE_SHA"
 
       - name: Set up Node
-        uses: actions/setup-node@1e60f620b9541d80c77f7b4a3bcd8bf5e940c37 # v4.4.0
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
         with:
           node-version: ${{ env.NODE_VERSION }}
 
@@ -500,7 +500,7 @@ jobs:
           fi
 
       - name: Set up Node
-        uses: actions/setup-node@1e60f620b9541d80c77f7b4a3bcd8bf5e940c37 # v4.4.0
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
         with:
           node-version: ${{ env.NODE_VERSION }}
 
