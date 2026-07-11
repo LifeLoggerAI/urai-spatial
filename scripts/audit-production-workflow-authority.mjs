@@ -162,7 +162,6 @@ requireTokens('Canonical workflow', canonicalSource, [
   'GITHUB_REF',
   'FIREBASE_SERVICE_ACCOUNT_JSON: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_JSON }}',
   'test -n "$FIREBASE_SERVICE_ACCOUNT_JSON"',
-  'printf \'%s\' "$FIREBASE_SERVICE_ACCOUNT_JSON"',
   'gh workflow run spatial-live-deploy.yml --ref main',
   'if: always()',
 ])
@@ -260,6 +259,7 @@ requireTokens('Deploy executable', releaseSource, [
   'Release bundle file set, sizes, or hashes do not match the manifest',
   'Firebase CLI must resolve inside current authority',
   'delete process.env.FIREBASE_SERVICE_ACCOUNT_JSON',
+  'writeFileSync(managedCredentialsPath',
   "flag: 'wx'",
 ])
 if (releaseSource.includes("run('node', ['scripts/urai-post-deploy-smoke.mjs']")) failures.push('Deploy executable invokes a checkout-relative post-deploy smoke instead of current authority')
