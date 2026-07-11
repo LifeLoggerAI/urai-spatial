@@ -81,8 +81,13 @@ function assertRemoteMainUnchanged(targetSha) {
   if (releaseOperation === 'deploy' && targetSha !== remoteMainSha) {
     throw new Error(`Deploy target ${targetSha} is not the current remote main ${remoteMainSha}`)
   }
-  if (releaseOperation === 'rollback' && rollbackSha !== remoteMainSha) {
-    throw new Error(`Rollback recovery SHA ${rollbackSha} is not the current remote main ${remoteMainSha}`)
+  if (releaseOperation === 'rollback') {
+    if (targetSha === remoteMainSha) {
+      throw new Error(`Rollback target ${targetSha} cannot be the current remote main ${remoteMainSha}`)
+    }
+    if (rollbackSha !== remoteMainSha) {
+      throw new Error(`Rollback recovery SHA ${rollbackSha} must be the current remote main ${remoteMainSha}`)
+    }
   }
   return remoteMainSha
 }
