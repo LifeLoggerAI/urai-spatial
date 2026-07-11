@@ -24,17 +24,17 @@
       "id": "global-cinematic-material-pack-v1",
       "status": "ready",
       "path": "urai-tier1/public/assets/urai/generated/textures/global-cinematic-material-pack-v1.json",
-      "bytes": 673,
-      "sha256": "f50f13f9e581c5253d3c046bbfd8749600864cd2669bd7bef48226c3514a6035",
-      "validation": ["JSON parsed", "portal energy color consumed by runtime", "under 262144-byte budget"]
+      "bytes": 579,
+      "sha256": "8c518c715e60fa41dc49bb0a89f543232ce180d0c3a2f48b075cebe5e49edc04",
+      "validation": ["schemaVersion 1", "JSON parsed", "portal and memory colors consumed by runtime", "under 262144-byte budget"]
     },
     {
       "id": "urai-loading-sequence-v1",
       "status": "ready",
       "path": "urai-tier1/public/assets/urai/generated/loading/urai-loading-sequence-v1.json",
-      "bytes": 612,
-      "sha256": "7034eabf693fdd6701b648750cff183d104fba78adef68c9bd92ef545a574046",
-      "validation": ["JSON parsed", "2200ms deterministic sequence", "accessible label consumed by runtime"]
+      "bytes": 480,
+      "sha256": "d023d471800e2385b0525bddc490ad2a7a227c16fc3305cb948b7238c2f835aa",
+      "validation": ["JSON parsed", "2200ms deterministic sequence", "accessible label retained", "under 262144-byte budget"]
     }
   ],
   "excludedCandidates": [
@@ -50,5 +50,5 @@
   "verificationCommand": "node scripts/verify-production-sensory-assets.mjs",
   "verificationResult": "pending-exact-head-ci",
   "license": "URAI Labs internal production assets",
-  "provenance": "Deterministic URAI forge; no external provider or private-life data used"
+  "provenance": "Deterministic URAI forge; receipt regenerated from exact committed ready-asset bytes; no external provider or private-life data used"
 }
