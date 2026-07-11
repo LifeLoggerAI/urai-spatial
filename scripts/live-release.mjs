@@ -21,6 +21,8 @@ const postDeploySmoke = path.join(authorityDirectory, 'urai-post-deploy-smoke.mj
 const writeReleaseFingerprint = path.join(authorityDirectory, 'write-release-fingerprint.mjs')
 const deploy = process.argv.includes('--deploy') || process.argv.includes('--deploy-prebuilt')
 const prebuiltDeploy = process.argv.includes('--deploy-prebuilt')
+const verifyPrebuilt = process.argv.includes('--verify-prebuilt')
+const prebuiltMode = prebuiltDeploy || verifyPrebuilt
 const project = process.env.FIREBASE_PROJECT_ID || process.env.FIREBASE_PROJECT || process.env.GCLOUD_PROJECT || ''
 const expectedProject = process.env.URAI_EXPECTED_FIREBASE_PROJECT || 'urai-4dc1d'
 const liveUrl = process.env.URAI_LIVE_BASE_URL || process.env.LIVE_URL || 'https://urai.app'
@@ -98,7 +100,7 @@ function walkRegularFiles(directory, prefix = '') {
 function resolveAuthoritySha() {
   const authoritySha = output('git', ['rev-parse', 'HEAD'])
   requireFullSha('Authority SHA', authoritySha)
-  if (prebuiltDeploy) {
+  if (prebuiltMode) {
     requireFullSha('CURRENT_MAIN_SHA', expectedCurrentMain)
     if (authoritySha !== expectedCurrentMain) {
       throw new Error(`Current authority SHA ${authoritySha} does not match dispatch main ${expectedCurrentMain}`)
@@ -116,7 +118,7 @@ function resolveTargetSha(authoritySha) {
     authoritySha
   ).trim()
   requireFullSha('Release SHA', candidate)
-  if (!prebuiltDeploy && authoritySha !== candidate) {
+  if (!prebuiltMode && authoritySha !== candidate) {
     throw new Error(`Checked-out SHA ${authoritySha} does not match release SHA ${candidate}`)
   }
   return candidate
@@ -175,13 +177,17 @@ function assertReleaseSurface() {
   assertStaticConfig()
 }
 
-function assertCanonicalDeployContext() {
-  if (process.env.GITHUB_ACTIONS !== 'true') throw new Error('Production deployment is allowed only inside GitHub Actions')
-  if (process.env.GITHUB_EVENT_NAME !== 'workflow_dispatch') throw new Error('Production deployment is allowed only from workflow_dispatch')
-  if (process.env.GITHUB_WORKFLOW !== canonicalWorkflow) throw new Error(`Production deployment requires workflow ${canonicalWorkflow}`)
-  if (process.env.GITHUB_REPOSITORY !== canonicalRepository) throw new Error(`Production deployment requires repository ${canonicalRepository}`)
-  if (process.env.GITHUB_REF !== 'refs/heads/main') throw new Error('Production deployment requires refs/heads/main')
+function assertCanonicalWorkflowContext() {
+  if (process.env.GITHUB_ACTIONS !== 'true') throw new Error('Production release verification is allowed only inside GitHub Actions')
+  if (process.env.GITHUB_EVENT_NAME !== 'workflow_dispatch') throw new Error('Production release verification is allowed only from workflow_dispatch')
+  if (process.env.GITHUB_WORKFLOW !== canonicalWorkflow) throw new Error(`Production release verification requires workflow ${canonicalWorkflow}`)
+  if (process.env.GITHUB_REPOSITORY !== canonicalRepository) throw new Error(`Production release verification requires repository ${canonicalRepository}`)
+  if (process.env.GITHUB_REF !== 'refs/heads/main') throw new Error('Production release verification requires refs/heads/main')
   if (!['deploy', 'rollback'].includes(releaseOperation)) throw new Error(`Unsupported release operation: ${releaseOperation}`)
+}
+
+function assertCanonicalDeployContext() {
+  assertCanonicalWorkflowContext()
   if (!prebuiltDeploy) throw new Error('Canonical production deployment requires --deploy-prebuilt')
 }
 
@@ -366,6 +372,27 @@ if (deploy) removeTemporaryServiceAccount()
 const authoritySha = resolveAuthoritySha()
 const targetSha = resolveTargetSha(authoritySha)
 assertReleaseSurface()
+
+if (verifyPrebuilt) {
+  assertCanonicalWorkflowContext()
+  if (!project) throw new Error('FIREBASE_PROJECT_ID is required')
+  if (project !== expectedProject) throw new Error(`Refusing project ${project}; expected ${expectedProject}`)
+  requireFullSha('ROLLBACK_SHA', rollbackSha)
+  if (rollbackSha === targetSha) throw new Error('ROLLBACK_SHA must be distinct from the release SHA')
+  const authorizedMainSha = assertRemoteMainUnchanged(targetSha)
+  const verifiedBundle = validateAndMaterializePrebuiltBundle(targetSha, authoritySha)
+  writeReceipt(targetSha, 'verified-prebuilt-no-deploy', {
+    authoritySha,
+    authorizedMainSha,
+    bundleSchemaVersion: verifiedBundle.manifest.schemaVersion,
+    bundleWorkflowRunId: verifiedBundle.manifest.workflowRunId,
+    bundleFileCount: verifiedBundle.files.length,
+    bundleTotalBytes: verifiedBundle.totalBytes,
+    bundleManifestSha256: sha256(path.join(releaseBundleDirectory, 'manifest.json')),
+  })
+  console.log('[URAI release] Prebuilt bundle verification passed. No deployment requested.')
+  process.exit(0)
+}
 
 if (!deploy) {
   run('pnpm', ['verify:release:critical'], { NEXT_PUBLIC_URAI_BUILD_SHA: targetSha })
