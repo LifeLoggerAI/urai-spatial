@@ -4,7 +4,10 @@ import {
   resolveUraiSpatialAssetPath,
   type UraiSpatialAssetResolution,
 } from './assetManifest'
-import { isUraiAssetPromoted } from './assetPromotionState'
+import {
+  isUraiAssetPromoted,
+  uraiPromotedAssetPathOverrides,
+} from './assetPromotionState'
 
 export function resolvePromotedUraiSpatialAsset(assetId: string): UraiSpatialAssetResolution {
   const selectedAsset = getUraiSpatialAsset(assetId)
@@ -23,7 +26,7 @@ export function resolvePromotedUraiSpatialAsset(assetId: string): UraiSpatialAss
   return {
     requestedAssetId: assetId,
     source: 'selected',
-    path: selectedAsset.path,
+    path: uraiPromotedAssetPathOverrides[assetId] ?? selectedAsset.path,
     selectedAsset,
     fallbackAsset: getUraiSpatialFallbackAsset(assetId),
   }
