@@ -9,9 +9,10 @@ const files = {
   atlas: 'urai-tier1/public/assets/urai/generated/textures/spatial-particle-atlas-v1.svg',
   materials: 'urai-tier1/public/assets/urai/generated/textures/global-cinematic-material-pack-v1.json',
   loading: 'urai-tier1/public/assets/urai/generated/loading/urai-loading-sequence-v1.json',
-  audioScore: 'urai-tier1/public/assets/urai/generated/audio/urai-ambient-bed-v1.json',
-  audioOpus: 'urai-tier1/public/assets/urai/generated/audio/urai-ambient-bed-v1.opus',
+  manifest: 'urai-tier1/src/spatial/assets/sensoryAssetManifest.ts',
+  sensoryLayer: 'urai-tier1/src/spatial/scene/SpatialSensoryLayer.tsx',
   consumer: 'urai-tier1/src/spatial/scene/SpatialWorldAssetLayer.tsx',
+  receipt: 'operations/assets/production-receipts/sensory-layer-v1.json',
 }
 
 const read = (key) => fs.readFileSync(path.join(root, files[key]))
@@ -25,41 +26,56 @@ assert.equal((atlas.match(/<circle /g) ?? []).length, 4)
 assert.ok(read('atlas').length <= 524288)
 
 const materials = JSON.parse(text('materials'))
+assert.equal(materials.schemaVersion, 1)
 assert.equal(materials.version, 'global-cinematic-material-pack-v1')
 assert.ok(materials.materials.portalEnergy.baseColor)
+assert.ok(materials.materials.memoryViolet.baseColor)
 assert.ok(read('materials').length <= 262144)
 
 const loading = JSON.parse(text('loading'))
 assert.equal(loading.version, 'urai-loading-sequence-v1')
 assert.equal(loading.durationMs, 2200)
 assert.equal(loading.frames.at(-1).state, 'complete')
+assert.equal(loading.frames.at(-1).opacity, 0)
 assert.ok(read('loading').length <= 262144)
 
-const audio = JSON.parse(text('audioScore'))
-assert.equal(audio.version, 'urai-ambient-bed-v1')
-assert.equal(audio.userControlled, true)
-assert.equal(audio.fallback, 'silent')
-assert.ok(Array.isArray(audio.voices) && audio.voices.length >= 3)
-assert.ok(audio.masterGain > 0 && audio.masterGain <= 1)
+const manifest = text('manifest')
+assert.match(manifest, /materials:[\s\S]*status: 'ready'/)
+assert.match(manifest, /particles:[\s\S]*status: 'ready'/)
+assert.match(manifest, /loading:[\s\S]*status: 'ready'/)
+assert.match(manifest, /skybox:[\s\S]*status: 'candidate'/)
+assert.match(manifest, /ambientAudio:[\s\S]*status: 'candidate'/)
 
-const opus = read('audioOpus')
-assert.equal(opus.subarray(0, 4).toString('ascii'), 'OggS')
-assert.ok(opus.includes(Buffer.from('OpusHead', 'ascii')))
-assert.ok(opus.length <= 1048576)
+const sensoryLayer = text('sensoryLayer')
+assert.match(sensoryLayer, /if \(!materialPath \|\| !particlePath \|\| !loadingPath\) return null/)
+assert.match(sensoryLayer, /new THREE\.TextureLoader\(\)/)
+assert.match(sensoryLayer, /fetch\(materialPath\)/)
+assert.match(sensoryLayer, /fetch\(loadingPath\)/)
+assert.match(sensoryLayer, /data-urai-fallback="procedural"/)
+assert.doesNotMatch(sensoryLayer, /throw new Error\('URAI sensory assets are not promoted'\)/)
+assert.doesNotMatch(sensoryLayer, /urai-ambient-bed-v1/)
 
 const consumer = text('consumer')
-for (const required of [
-  '/assets/urai/generated/textures/spatial-particle-atlas-v1.svg',
-  '/assets/urai/generated/textures/global-cinematic-material-pack-v1.json',
-  '/assets/urai/generated/loading/urai-loading-sequence-v1.json',
-  '/assets/urai/generated/audio/urai-ambient-bed-v1.json',
-  '<SpatialSensoryLayer />',
-]) assert.ok(consumer.includes(required), `Missing route consumption marker: ${required}`)
+assert.match(consumer, /import SpatialSensoryLayer from ["']\.\/SpatialSensoryLayer["']/)
+assert.match(consumer, /<SpatialSensoryLayer \/>/)
+assert.doesNotMatch(consumer, /function SpatialSensoryLayer\(/)
+assert.doesNotMatch(consumer, /urai-ambient-bed-v1/)
 
-console.log(JSON.stringify({
-  ok: true,
-  files: Object.fromEntries(Object.entries(files).map(([key, relative]) => {
-    const payload = read(key)
-    return [key, { path: relative, bytes: payload.length, sha256: sha256(payload) }]
-  })),
-}, null, 2))
+const readyFiles = ['atlas', 'materials', 'loading']
+const results = Object.fromEntries(readyFiles.map((key) => {
+  const payload = read(key)
+  return [key, { path: files[key], bytes: payload.length, sha256: sha256(payload) }]
+}))
+
+const receipt = JSON.parse(text('receipt'))
+assert.equal(receipt.releaseState, 'ready')
+assert.equal(receipt.assets.length, readyFiles.length)
+for (const result of Object.values(results)) {
+  const entry = receipt.assets.find((asset) => asset.path === result.path)
+  assert.ok(entry, `Missing receipt entry: ${result.path}`)
+  assert.equal(entry.bytes, result.bytes, `Receipt byte mismatch: ${result.path}`)
+  assert.equal(entry.sha256, result.sha256, `Receipt SHA-256 mismatch: ${result.path}`)
+}
+assert.equal(receipt.assets.some((asset) => /ambient-bed|\.opus$/.test(asset.path)), false)
+
+console.log(JSON.stringify({ ok: true, files: results }, null, 2))
