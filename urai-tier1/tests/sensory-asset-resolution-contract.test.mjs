@@ -41,7 +41,7 @@ test('candidate assets cannot appear in the production-ready receipt set', () =>
   assert.ok(receipt.excludedCandidates.some((asset) => asset.id === 'life-map-galaxy-skybox-v1'))
 })
 
-test('sensory fallbacks remain explicit and activation is fail-closed', () => {
+test('sensory fallbacks remain explicit, abortable, null-safe, and fail-closed', () => {
   assert.match(manifest, /runtime-default-materials/)
   assert.match(manifest, /shader-point-particles/)
   assert.match(manifest, /accessible-static-loading-state/)
@@ -49,8 +49,12 @@ test('sensory fallbacks remain explicit and activation is fail-closed', () => {
   assert.match(sensoryLayer, /if \(!materialPath \|\| !particlePath \|\| !loadingPath\) return null/)
   assert.match(sensoryLayer, /data-urai-fallback="procedural"/)
   assert.match(sensoryLayer, /new THREE\.TextureLoader\(\)/)
-  assert.match(sensoryLayer, /fetch\(materialPath\)/)
-  assert.match(sensoryLayer, /fetch\(loadingPath\)/)
+  assert.match(sensoryLayer, /new AbortController\(\)/)
+  assert.match(sensoryLayer, /fetch\(materialPath, \{ signal \}\)/)
+  assert.match(sensoryLayer, /fetch\(loadingPath, \{ signal \}\)/)
+  assert.match(sensoryLayer, /controller\.abort\(\)/)
+  assert.match(sensoryLayer, /materialPack\?\.materials/)
+  assert.match(sensoryLayer, /loadingSequence\?\.durationMs/)
   assert.ok(sensoryLayer.includes('key={`${materialPath}|${particlePath}|${loadingPath}`}'))
   assert.doesNotMatch(sensoryLayer, /Promise\.all/)
   assert.doesNotMatch(sensoryLayer, /throw new Error\('URAI sensory assets are not promoted'\)/)
