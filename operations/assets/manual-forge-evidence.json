@@ -1,0 +1,35 @@
+{
+  "schemaVersion": 1,
+  "generatedAt": "2026-07-11T10:43:59.387Z",
+  "sourceHead": "3cb7463196bb469458afad88dc03d345e572839c",
+  "executionMode": "local-runner-fallback",
+  "candidateOnly": true,
+  "productionReady": false,
+  "hostedRunnerRunId": 29149517705,
+  "hostedRunnerState": "queued",
+  "checks": {
+    "basicBinaryStructure": true,
+    "receiptHashAndBytes": true,
+    "manifestBudgets": true,
+    "khronosValidator": false,
+    "strictRadianceDecoder": false,
+    "routeVisualReview": false,
+    "compression": false
+  },
+  "ok": true,
+  "assetCount": 12,
+  "results": [
+    {"id":"home-entry-chamber-v1","bytes":45904,"sha256":"772356256606718f98e3edb9021e1f2a3dd1cb3c3043457316230846ca65bb72","triangles":2132},
+    {"id":"ground-world-terrain-v1","bytes":24956,"sha256":"019f41081b2715c99e4a17637ccca60cafcbb3eaa4c5605ca1fc2c54d1cfddff","triangles":852},
+    {"id":"life-map-memory-star-v1","bytes":32148,"sha256":"dbebf32ca909c83f2b32c1de9269aa341f257eabc361aef1b332dc1e17ae07c5","triangles":1520},
+    {"id":"focus-memory-chamber-v1","bytes":72388,"sha256":"e3e5c487432188c7d7eca9670029a57d9780a061822922d6f1bbea8485382955","triangles":3644},
+    {"id":"replay-memory-environment-v1","bytes":22356,"sha256":"44a7470491718cfd9cd2a9fbd544c14832d682aacb3f0982fb2ca09453738e29","triangles":828},
+    {"id":"urai-orb-avatar-v1","bytes":55980,"sha256":"68009eb88c0429cd2639dcf9c1f5ba2150798775ec55438da329d166ef334279","triangles":2784},
+    {"id":"portal-ring-master-v1","bytes":32952,"sha256":"1b3072aed3735fe23f7f894e89247ca18fe2a2132727a05f157ba11c644aeaac","triangles":1560},
+    {"id":"life-map-galaxy-skybox-v1","bytes":131146,"sha256":"4b9c0b16ec8a32ab67ab68b4d57e5fa0a7b5f32d2c9f8ccbc1640c15c337e0bc","resolution":[256,128]},
+    {"id":"spatial-particle-atlas-v1","bytes":622,"sha256":"3fb14004bc6320d1f2891a47af10f3e2c21c8a8fae2ad1a589c4d2e3b57ea1ba"},
+    {"id":"global-cinematic-material-pack-v1","bytes":673,"sha256":"f50f13f9e581c5253d3c046bbfd8749600864cd2669bd7bef48226c3514a6035"},
+    {"id":"urai-loading-sequence-v1","bytes":612,"sha256":"7034eabf693fdd6701b648750cff183d104fba78adef68c9bd92ef545a574046"},
+    {"id":"urai-ambient-bed-v1","bytes":352844,"sha256":"148c93d429e1d2bd664756152377227d3d6e7e4b79878b26d317e7c7dfab318d","durationSeconds":8,"sampleRate":22050,"channels":1}
+  ]
+}
