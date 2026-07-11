@@ -284,6 +284,7 @@ jobs:
       URAI_DEPLOY_CONFIRM: DEPLOY_STATIC_URAI
       URAI_RELEASE_OPERATION: ${{ inputs.confirm == 'ROLLBACK_URAI_APP' && 'rollback' || 'deploy' }}
       GOOGLE_APPLICATION_CREDENTIALS: ${{ runner.temp }}/urai-firebase-service-account.json
+      URAI_FIREBASE_CLI: ${{ github.workspace }}/authority/node_modules/.bin/firebase
     steps:
       - name: Checkout current release authority
         uses: actions/checkout@v4
@@ -326,6 +327,9 @@ jobs:
         run: |
           corepack enable
           corepack prepare "pnpm@${PNPM_VERSION}" --activate
+      - name: Install current authority dependencies without production credentials
+        working-directory: authority
+        run: pnpm install --frozen-lockfile
       - name: Install frozen target dependencies without production credentials
         working-directory: target
         run: pnpm install --frozen-lockfile
