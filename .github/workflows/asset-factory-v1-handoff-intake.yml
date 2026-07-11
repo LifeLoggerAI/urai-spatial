@@ -1,0 +1,88 @@
+name: Asset Factory V1 Handoff Intake
+
+on:
+  pull_request:
+    paths:
+      - .github/workflows/asset-factory-v1-handoff-intake.yml
+      - operations/assets/contracts/asset-factory-v1-spatial-pack.json
+      - scripts/verify-asset-factory-v1-handoff.mjs
+      - urai-tier1/src/spatial/assets/uraiAssets.ts
+  push:
+    branches: [main]
+    paths:
+      - .github/workflows/asset-factory-v1-handoff-intake.yml
+      - operations/assets/contracts/asset-factory-v1-spatial-pack.json
+      - scripts/verify-asset-factory-v1-handoff.mjs
+      - urai-tier1/src/spatial/assets/uraiAssets.ts
+
+permissions:
+  contents: read
+
+concurrency:
+  group: asset-factory-v1-handoff-intake-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  contract:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout exact candidate
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          fetch-depth: 1
+          persist-credentials: false
+
+      - name: Verify exact candidate identity
+        shell: bash
+        run: |
+          set -euo pipefail
+          expected='${{ github.event.pull_request.head.sha || github.sha }}'
+          test "$(git rev-parse HEAD)" = "$expected"
+          test -z "$(git status --porcelain)"
+
+      - name: Compile intake verifier
+        run: node --check scripts/verify-asset-factory-v1-handoff.mjs
+
+      - name: Verify non-activation boundary
+        shell: bash
+        run: |
+          set -euo pipefail
+          node - <<'NODE'
+          const fs = require('node:fs')
+          const source = fs.readFileSync('scripts/verify-asset-factory-v1-handoff.mjs', 'utf8')
+          const contract = JSON.parse(fs.readFileSync('operations/assets/contracts/asset-factory-v1-spatial-pack.json', 'utf8'))
+          if (contract.promotion !== false || contract.activationMode !== 'atomic-complete-pack') {
+            throw new Error('intake contract must remain non-promoting and atomic')
+          }
+          for (const forbidden of [
+            'copyFileSync(',
+            'copyFile(',
+            'cpSync(',
+            'renameSync(',
+            'unlinkSync(',
+            'rmSync(',
+            'spawnSync(',
+            'execSync(',
+            'child_process',
+          ]) {
+            if (source.includes(forbidden)) throw new Error(`forbidden intake mutation/execution primitive: ${forbidden}`)
+          }
+          if (!source.includes("promotion: false")) throw new Error('verifier report must remain non-promoting')
+          NODE
+
+      - name: Verify contract and current Spatial registry
+        run: >-
+          node scripts/verify-asset-factory-v1-handoff.mjs
+          --contract-only
+          --report artifacts/v1-asset-factory-intake-contract-report.json
+
+      - name: Upload contract receipt
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: urai-spatial-v1-asset-intake-contract-${{ github.run_id }}
+          retention-days: 30
+          if-no-files-found: error
+          path: artifacts/v1-asset-factory-intake-contract-report.json
