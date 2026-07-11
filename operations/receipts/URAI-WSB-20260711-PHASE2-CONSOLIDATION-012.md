@@ -4,7 +4,7 @@ Receipt ID: `URAI-WSB-20260711-PHASE2-CONSOLIDATION-012`
 
 Recorded: 2026-07-11
 
-Classification: `SOURCE-CONSOLIDATED / CI-REPAIR-APPLIED / NOT DEPLOYED / NOT CERTIFIED`
+Classification: `SOURCE-CONSOLIDATED / ACTIVE-CI-REPAIR / NOT DEPLOYED / NOT CERTIFIED`
 
 ## Canonical authority
 
@@ -13,48 +13,49 @@ Classification: `SOURCE-CONSOLIDATED / CI-REPAIR-APPLIED / NOT DEPLOYED / NOT CE
 - Canonical main SHA: `60730edcb5bcedfe2ded2cee9a96cef96dff9510`
 - Consolidated Phase 2 PR: `#539`
 - Consolidated branch: `release/protected-rollback-authority-20260711-v2`
-- Final audited source head before this receipt: `3ac5dc5b9211fc6ea5fab7c1ad27d2c13f992f2c`
+- Final source head before this receipt: `d76d81674ae7ab65f3269fcf372b0f3a7b8cf315`
 - PR state at recording: open, draft, mergeable
 - Candidate inventory: 32 source/control files plus this receipt
 
 ## Incorporated authorities
 
-The Phase 2 branch contains the source work previously isolated in:
+The Phase 2 branch contains the source work previously isolated in #552, #575, #577, #578 and #579. These authorities were incorporated into the Phase 2 branch only. Nothing was merged to `main`.
 
-1. `#579` — repository-, authority-, and workflow-run-bound live rollback provenance.
-2. `#552` — target-only build, clean authority attestation, credential isolation, immutable action pins, exact bundle/fingerprint validation and protected rollback controls.
-3. `#578` — exact deployed-SHA, route/query identity, hydrated browser and network-boundary evidence.
-4. `#577` — fail-closed ready/fallback asset validation.
-5. `#575` — candidate-aware sensory runtime and exact sensory evidence.
+## Consolidated source boundaries
 
-These authorities were incorporated into the Phase 2 branch only. Nothing was merged to `main`.
+The candidate preserves:
 
-## Post-consolidation source corrections
+- target-only static build and clean authority attestation;
+- managed ephemeral production credentials and immutable action pins;
+- repository-, authority-, run-, release-, rollback- and fingerprint-bound provenance;
+- normalized manifest-path collision detection and physical `realpath` containment;
+- exact live route/query/SHA identity;
+- pre-request abort of noncanonical browser traffic;
+- candidate-aware sensory assets with procedural fallback and explicit disposal.
 
-The final source audit preserves:
+## CI execution and repairs
 
-- normalized manifest-path collision detection;
-- physical `realpath` containment against symlink-parent asset escapes;
-- exact query-entry equality with no undeclared parameters;
-- pre-request interception and abort of noncanonical browser traffic;
-- release-smoke schema `urai-release-control-smoke-5`;
-- production-authority audit schema `urai-production-authority-audit-5`.
+GitHub-hosted runner assignment resumed.
 
-The production-authority audit now explicitly requires the schema-v5 smoke, exact query identity, `context.route` interception, `blockedbyclient` abort behavior and retained blocked-request evidence.
+On stale head `7fc065c4afa43585516c9619882da7f058ee6c9b`:
 
-## Previous-head CI finding and repair
+- XR Static Gate Diagnostics succeeded;
+- Spatial Missing Resource Diagnostics succeeded;
+- Release Security Path Guard failed in `Audit production workflow authority`.
 
-GitHub-hosted runner assignment resumed on prior exact head `7fc065c4afa43585516c9619882da7f058ee6c9b`.
+The failed job passed checkout, exact clean source identity, Node setup, syntax checks, guard immutability and immutable action-pin verification first.
 
-Observed terminal results on that stale head:
+The first defect was a stale authority-audit assertion requiring release-control smoke schema `2` after the consolidated smoke advanced to schema `5`. The audit was advanced to `urai-production-authority-audit-5` and now requires exact query identity, Playwright request interception, `blockedbyclient` abort behavior and retained blocked-request evidence.
 
-- XR Static Gate Diagnostics: success.
-- Spatial Missing Resource Diagnostics: success.
-- Release Security Path Guard: failure in `Audit production workflow authority`.
+On stale repaired head `53eb1c7e8c6cf2de5d23d9c6341e112ad1d9b233`:
 
-The failing job proved checkout, clean source identity, Node setup, syntax checks, guard immutability and action-pin verification before failing. The defect was a stale audit assertion that still required release-smoke schema `2` after the consolidated smoke advanced to schema `5`.
+- XR Static Gate Diagnostics succeeded;
+- Spatial Missing Resource Diagnostics succeeded;
+- Release Security Path Guard again failed in the authority-audit step after the same preceding security checks passed.
 
-The owning audit was repaired on source head `3ac5dc5b9211fc6ea5fab7c1ad27d2c13f992f2c`. Every workflow result from `7fc065c4...` and earlier heads is stale for final gating.
+The connector-truncated runner log did not expose the final audit failure list. The security workflow was therefore changed only to set `show-progress: false` on the exact pinned checkout step. This changes no permissions, paths, action pins, source checks, authority rules, credential boundaries or deployment capability; it makes the audit result readable for the next exact-head repair cycle.
+
+Every workflow conclusion from `53eb1c7e...`, `7fc065c4...` and earlier heads is stale for final gating.
 
 ## Final changed-file inventory
 
