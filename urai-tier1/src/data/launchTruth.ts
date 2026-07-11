@@ -20,7 +20,7 @@ export type LaunchGate = {
 }
 
 export const launchTruth = {
-  generated: '2026-07-07',
+  generated: '2026-07-10',
   repository: 'LifeLoggerAI/urai-spatial',
   runtimeRoot: 'urai-tier1',
   canonicalPublicApp: 'https://urai.app',
@@ -182,6 +182,14 @@ export const launchTruth = {
       state: 'source-implemented',
       proofBoundary: 'Symbolic/place UX only; not a claim of live precise location provider.',
       publicClaim: 'Implemented place visualization surface, certification pending.',
+    },
+    {
+      path: '/event',
+      label: 'Founder event destination',
+      group: 'Showcase and XR',
+      state: 'certification-pending',
+      proofBoundary: 'Synthetic sample-data event route; publication remains gated by exact deployment proof.',
+      publicClaim: 'Source-implemented founder event route; live QR publication pending exact deployed-SHA and route parity evidence.',
     },
     {
       path: '/demo',
