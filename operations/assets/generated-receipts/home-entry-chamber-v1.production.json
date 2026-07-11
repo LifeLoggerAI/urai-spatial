@@ -1,0 +1,18 @@
+{
+  "schemaVersion": 2,
+  "id": "home-entry-chamber-v1",
+  "releaseState": "ready-local-evidence",
+  "sourceMain": "f83f31ba65b733d5d2c5c9b04e3c1fc32ebc98be",
+  "path": "urai-tier1/public/assets/urai/generated/models/home-entry-chamber-v1.gltf",
+  "bytes": 5254,
+  "sha256": "863c15a5df30cf18b0cc91aec47d0cd71ff20c4bfce59808d96da8edf858ca3f",
+  "geometry": {"boxes": 3, "lineRings": 2},
+  "maxTriangles": 180000,
+  "withinTriangleBudget": true,
+  "khronosValidator": {"tool": "@gltf-transform/cli@4.2.1 validate", "errors": 0, "warnings": 0},
+  "license": "URAI Labs internal production asset",
+  "provenance": "URAI deterministic Home candidate family; compact embedded delivery variant; independently validated locally",
+  "fallbackRetained": true,
+  "activationReversible": true,
+  "runtimeRoutes": ["/", "/home"]
+}
