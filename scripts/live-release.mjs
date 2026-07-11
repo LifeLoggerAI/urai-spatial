@@ -1,6 +1,6 @@
 import { createHash } from 'node:crypto'
 import { spawnSync } from 'node:child_process'
-import { chmodSync, existsSync, mkdirSync, readFileSync, readdirSync, rmSync, writeFileSync } from 'node:fs'
+import { chmodSync, existsSync, mkdirSync, readFileSync, readdirSync, realpathSync, rmSync, writeFileSync } from 'node:fs'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 
@@ -16,6 +16,7 @@ const releaseOperation = process.env.URAI_RELEASE_OPERATION || 'verify'
 const expectedCurrentMain = process.env.CURRENT_MAIN_SHA || ''
 const serviceAccountJson = process.env.FIREBASE_SERVICE_ACCOUNT_JSON || ''
 const credentialsPath = (process.env.GOOGLE_APPLICATION_CREDENTIALS || '').trim()
+const firebaseCliPath = (process.env.URAI_FIREBASE_CLI || '').trim()
 const canonicalWorkflow = 'URAI Canonical Production Release'
 const canonicalRepository = 'LifeLoggerAI/urai-spatial'
 
@@ -141,6 +142,17 @@ function assertCanonicalDeployContext() {
   if (!['deploy', 'rollback'].includes(releaseOperation)) throw new Error(`Unsupported release operation: ${releaseOperation}`)
 }
 
+function resolveAuthorityFirebaseCli() {
+  if (!firebaseCliPath) throw new Error('URAI_FIREBASE_CLI must point to the current-authority Firebase executable')
+  requireFile(firebaseCliPath)
+  const authorityRoot = realpathSync(path.resolve(authorityDirectory, '..'))
+  const resolvedCli = realpathSync(firebaseCliPath)
+  if (!resolvedCli.startsWith(`${authorityRoot}${path.sep}`)) {
+    throw new Error(`Firebase CLI must resolve inside current authority: ${resolvedCli}`)
+  }
+  return resolvedCli
+}
+
 function writeTemporaryServiceAccount() {
   if (!credentialsPath) throw new Error('GOOGLE_APPLICATION_CREDENTIALS must point to a temporary runner path')
   if (!serviceAccountJson.trim()) throw new Error('FIREBASE_SERVICE_ACCOUNT_JSON is required only for the canonical deploy step')
@@ -168,14 +180,15 @@ function removeTemporaryServiceAccount() {
 function deployHostingWithTemporaryCredentials() {
   let result
   try {
+    const authorityFirebaseCli = resolveAuthorityFirebaseCli()
     const credentialFile = writeTemporaryServiceAccount()
-    console.log(`[URAI release] $ pnpm exec firebase deploy --config firebase.static.json --only hosting --project ${project}`)
+    console.log(`[URAI release] $ ${authorityFirebaseCli} deploy --config firebase.static.json --only hosting --project ${project}`)
     result = spawnSync(
-      'pnpm',
-      ['exec', 'firebase', 'deploy', '--config', 'firebase.static.json', '--only', 'hosting', '--project', project],
+      authorityFirebaseCli,
+      ['deploy', '--config', 'firebase.static.json', '--only', 'hosting', '--project', project],
       {
         stdio: 'inherit',
-        shell: process.platform === 'win32',
+        shell: false,
         env: childEnvironment({ GOOGLE_APPLICATION_CREDENTIALS: credentialFile }, true),
       },
     )
