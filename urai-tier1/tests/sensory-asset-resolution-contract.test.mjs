@@ -8,6 +8,7 @@ const read = (relativePath) => fs.readFileSync(path.join(root, relativePath), 'u
 const manifest = read('src/spatial/assets/sensoryAssetManifest.ts')
 const sensoryLayer = read('src/spatial/scene/SpatialSensoryLayer.tsx')
 const worldLayer = read('src/spatial/scene/SpatialWorldAssetLayer.tsx')
+const receipt = JSON.parse(read('../operations/assets/production-receipts/sensory-layer-v1.json'))
 
 test('only evidence-backed sensory assets are ready', () => {
   assert.match(manifest, /materials:[\s\S]*status: 'ready'/)
@@ -17,11 +18,26 @@ test('only evidence-backed sensory assets are ready', () => {
   assert.match(manifest, /ambientAudio:[\s\S]*status: 'candidate'/)
 })
 
-test('active spatial routes consume the promoted sensory family', () => {
+test('active spatial routes consume one promoted sensory component', () => {
+  assert.match(worldLayer, /import SpatialSensoryLayer from ["']\.\/SpatialSensoryLayer["']/)
   assert.match(worldLayer, /<SpatialSensoryLayer \/>/)
+  assert.doesNotMatch(worldLayer, /function SpatialSensoryLayer\s*\(/)
+  assert.equal((sensoryLayer.match(/function SpatialSensoryLayer\s*\(/g) ?? []).length, 1)
   assert.match(sensoryLayer, /global-cinematic-material-pack-v1|materialPath/)
   assert.match(sensoryLayer, /spatial-particle-atlas-v1|particlePath/)
   assert.match(sensoryLayer, /urai-loading-sequence-v1|loadingPath/)
+})
+
+test('candidate assets cannot appear in the production-ready receipt set', () => {
+  assert.equal(receipt.releaseState, 'candidate')
+  assert.equal(receipt.verificationResult, 'pending-exact-head-ci')
+  assert.deepEqual(receipt.assets.map((asset) => asset.id).sort(), [
+    'global-cinematic-material-pack-v1',
+    'spatial-particle-atlas-v1',
+    'urai-loading-sequence-v1',
+  ])
+  assert.ok(receipt.excludedCandidates.some((asset) => asset.id === 'urai-ambient-bed-v1'))
+  assert.ok(receipt.excludedCandidates.some((asset) => asset.id === 'life-map-galaxy-skybox-v1'))
 })
 
 test('sensory fallbacks remain explicit and activation is fail-closed', () => {
