@@ -1,10 +1,11 @@
-import { existsSync, mkdirSync, writeFileSync } from 'node:fs'
-import { dirname, join, relative } from 'node:path'
+import { existsSync, lstatSync, mkdirSync, writeFileSync } from 'node:fs'
+import { dirname, extname, join, relative, resolve, sep } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
 const here = dirname(fileURLToPath(import.meta.url))
 const appRoot = dirname(here)
 const repoRoot = dirname(appRoot)
+const publicRoot = resolve(appRoot, 'public')
 const manifestPath = join(appRoot, 'src/spatial/assets/assetManifest.ts')
 const reportPath = join(repoRoot, 'docs/ASSET_VERIFICATION_REPORT.md')
 
@@ -22,14 +23,48 @@ const extensionByType = {
   fallback: ['.glb', '.gltf', '.json', '.svg', '.png', '.webp'],
 }
 
+const duplicateIds = new Set()
+const duplicatePaths = new Set()
+const seenIds = new Set()
+const seenPaths = new Set()
+for (const asset of manifest) {
+  if (seenIds.has(asset.id)) duplicateIds.add(asset.id)
+  else seenIds.add(asset.id)
+  if (seenPaths.has(asset.path)) duplicatePaths.add(asset.path)
+  else seenPaths.add(asset.path)
+}
+
 const rows = manifest.map((asset) => {
   const publicPath = asset.path.startsWith('/') ? asset.path.slice(1) : asset.path
-  const abs = join(appRoot, 'public', publicPath.replace(/^assets\//, 'assets/'))
-  const exists = existsSync(abs)
+  const abs = resolve(publicRoot, publicPath)
+  const pathInsidePublic = abs !== publicRoot && abs.startsWith(`${publicRoot}${sep}`)
+  let exists = false
+  let regularFile = false
+  let symbolicLink = false
+  if (pathInsidePublic && existsSync(abs)) {
+    const stats = lstatSync(abs)
+    exists = true
+    symbolicLink = stats.isSymbolicLink()
+    regularFile = stats.isFile() && !symbolicLink
+  }
   const allowed = extensionByType[asset.type] ?? []
-  const extensionOk = allowed.some((ext) => asset.path.endsWith(ext))
-  const blocking = asset.priority === 'critical' && asset.status === 'ready' && !exists
-  return { ...asset, exists, extensionOk, blocking, relativePath: relative(repoRoot, abs) }
+  const extension = extname(asset.path).toLowerCase()
+  const extensionOk = allowed.includes(extension)
+  const requiredFile = asset.status === 'ready' || asset.status === 'fallback'
+  const blocking = requiredFile && (!pathInsidePublic || !exists || !regularFile)
+  return {
+    ...asset,
+    exists,
+    regularFile,
+    symbolicLink,
+    pathInsidePublic,
+    extensionOk,
+    requiredFile,
+    blocking,
+    duplicateId: duplicateIds.has(asset.id),
+    duplicatePath: duplicatePaths.has(asset.path),
+    relativePath: pathInsidePublic ? relative(repoRoot, abs) : 'outside-public-root',
+  }
 })
 
 const summary = {
@@ -40,9 +75,20 @@ const summary = {
   future: rows.filter((asset) => asset.status === 'future').length,
   missing: rows.filter((asset) => asset.status === 'missing').length,
   missingFiles: rows.filter((asset) => !asset.exists).length,
+  missingRequiredFiles: rows.filter((asset) => asset.requiredFile && !asset.exists).length,
+  nonRegularRequiredFiles: rows.filter((asset) => asset.requiredFile && asset.exists && !asset.regularFile).length,
+  invalidPaths: rows.filter((asset) => !asset.pathInsidePublic).length,
   invalidExtensions: rows.filter((asset) => !asset.extensionOk).length,
+  duplicateIds: duplicateIds.size,
+  duplicatePaths: duplicatePaths.size,
   blocking: rows.filter((asset) => asset.blocking).length,
 }
+
+const failed = summary.blocking > 0
+  || summary.invalidPaths > 0
+  || summary.invalidExtensions > 0
+  || summary.duplicateIds > 0
+  || summary.duplicatePaths > 0
 
 const lines = [
   '# URAI Asset Verification Report',
@@ -58,18 +104,25 @@ const lines = [
   `- Future generation slots: ${summary.future}`,
   `- Missing status entries: ${summary.missing}`,
   `- Paths without files yet: ${summary.missingFiles}`,
+  `- Missing ready/fallback files: ${summary.missingRequiredFiles}`,
+  `- Non-regular or symlinked ready/fallback files: ${summary.nonRegularRequiredFiles}`,
+  `- Paths outside public root: ${summary.invalidPaths}`,
   `- Invalid extensions: ${summary.invalidExtensions}`,
-  `- Blocking critical ready assets missing: ${summary.blocking}`,
+  `- Duplicate asset IDs: ${summary.duplicateIds}`,
+  `- Duplicate asset paths: ${summary.duplicatePaths}`,
+  `- Blocking ready/fallback asset failures: ${summary.blocking}`,
   '',
   '## Asset Rows',
   '',
-  '| ID | Type | Surface | Status | Priority | Extension | File |',
-  '| --- | --- | --- | --- | --- | --- | --- |',
-  ...rows.map((asset) => `| ${asset.id} | ${asset.type} | ${asset.targetSurface} | ${asset.status} | ${asset.priority} | ${asset.extensionOk ? 'ok' : 'bad'} | ${asset.exists ? 'present' : 'pending'} |`),
+  '| ID | Type | Surface | Status | Priority | Extension | Path | File | Required | Duplicate |',
+  '| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |',
+  ...rows.map((asset) => `| ${asset.id} | ${asset.type} | ${asset.targetSurface} | ${asset.status} | ${asset.priority} | ${asset.extensionOk ? 'ok' : 'bad'} | ${asset.pathInsidePublic ? 'inside-public' : 'invalid'} | ${asset.regularFile ? 'regular' : asset.symbolicLink ? 'symlink' : asset.exists ? 'non-regular' : 'pending'} | ${asset.requiredFile ? 'yes' : 'no'} | ${asset.duplicateId || asset.duplicatePath ? 'yes' : 'no'} |`),
   '',
   '## Gate Result',
   '',
-  summary.blocking === 0 && summary.invalidExtensions === 0 ? 'PASS: no blocking ready critical asset failures.' : 'FAIL: blocking ready critical asset failure or invalid extension found.',
+  failed
+    ? 'FAIL: a ready/fallback file is missing or non-regular, a path escapes the public root, an extension is invalid, or an ID/path is duplicated.'
+    : 'PASS: every ready/fallback asset is a regular in-root file and the manifest has valid unique IDs, paths and extensions.',
   '',
 ]
 
@@ -77,4 +130,4 @@ mkdirSync(dirname(reportPath), { recursive: true })
 writeFileSync(reportPath, `${lines.join('\n')}\n`)
 console.log(lines.join('\n'))
 
-if (summary.blocking > 0 || summary.invalidExtensions > 0) process.exit(1)
+if (failed) process.exit(1)
