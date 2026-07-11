@@ -1,0 +1,17 @@
+/* Live regression hotfix: decorative global backdrops must never cover route UI. */
+body > .urai-cinematic-backdrop {
+  z-index: 0 !important;
+}
+
+/* Preserve the final asset-spine atmosphere beneath every route surface. */
+body > .urai-final-asset-spine-scene-layer {
+  z-index: 0 !important;
+}
+
+/* Route content remains the foreground interaction plane. */
+body > main,
+body > [data-urai-route],
+body > [data-launch-surface] {
+  position: relative;
+  z-index: 3;
+}
