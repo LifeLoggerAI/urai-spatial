@@ -1,0 +1,112 @@
+{
+  "schemaVersion": 1,
+  "programId": "urai-parallel-launch-asset-production-v1",
+  "authority": {
+    "repository": "LifeLoggerAI/urai-spatial",
+    "baseBranch": "main",
+    "runtimeRoot": "urai-tier1",
+    "selectedNamespace": "urai-tier1/public/assets/urai/generated",
+    "manifest": "operations/assets/launch-critical-assets.json",
+    "runtimeResolver": "urai-tier1/src/spatial/assets/assetManifest.ts",
+    "masterIssues": [473, 518, 520]
+  },
+  "sharedContractIssue": 523,
+  "qaIssue": 530,
+  "lanes": [
+    {
+      "id": "A",
+      "issue": 524,
+      "name": "Home Entry Chamber",
+      "outputs": [
+        "urai-tier1/public/assets/urai/generated/models/home-entry-chamber-v1.glb"
+      ]
+    },
+    {
+      "id": "B",
+      "issue": 525,
+      "name": "Portal Ring and URAI Orb",
+      "outputs": [
+        "urai-tier1/public/assets/urai/generated/models/portal-ring-master-v1.glb",
+        "urai-tier1/public/assets/urai/generated/models/urai-orb-avatar-v1.glb"
+      ]
+    },
+    {
+      "id": "C",
+      "issue": 526,
+      "name": "Ground World Terrain",
+      "outputs": [
+        "urai-tier1/public/assets/urai/generated/models/ground-world-terrain-v1.glb"
+      ]
+    },
+    {
+      "id": "D",
+      "issue": 527,
+      "name": "Life Map HDR and Memory Star",
+      "outputs": [
+        "urai-tier1/public/assets/urai/generated/skyboxes/life-map-galaxy-skybox-v1.hdr",
+        "urai-tier1/public/assets/urai/generated/models/life-map-memory-star-v1.glb"
+      ]
+    },
+    {
+      "id": "E",
+      "issue": 528,
+      "name": "Focus and Replay",
+      "outputs": [
+        "urai-tier1/public/assets/urai/generated/models/focus-memory-chamber-v1.glb",
+        "urai-tier1/public/assets/urai/generated/models/replay-memory-environment-v1.glb"
+      ]
+    },
+    {
+      "id": "F",
+      "issue": 529,
+      "name": "Materials, particles, loading, and ambient audio",
+      "outputs": [
+        "urai-tier1/public/assets/urai/generated/textures/global-cinematic-material-pack-v1.json",
+        "urai-tier1/public/assets/urai/generated/textures/spatial-particle-atlas-v1.svg",
+        "urai-tier1/public/assets/urai/generated/loading/urai-loading-sequence-v1.json",
+        "urai-tier1/public/assets/urai/generated/audio/urai-ambient-bed-v1.wav"
+      ]
+    }
+  ],
+  "waves": [
+    {
+      "id": 0,
+      "name": "Freeze shared visual and technical contract",
+      "issues": [523]
+    },
+    {
+      "id": 1,
+      "name": "Parallel candidate production",
+      "issues": [524, 525, 526, 527, 528, 529]
+    },
+    {
+      "id": 2,
+      "name": "Independent normalization and evidence",
+      "issues": [530]
+    },
+    {
+      "id": 3,
+      "name": "Visual and route review",
+      "issues": [524, 525, 526, 527, 528, 529, 530]
+    },
+    {
+      "id": 4,
+      "name": "One-asset governed promotion PRs",
+      "issues": [520, 530]
+    },
+    {
+      "id": 5,
+      "name": "Integrated Home to Replay journey certification",
+      "issues": [473, 518, 530]
+    }
+  ],
+  "rules": {
+    "oneAssetPerPromotionPr": true,
+    "generationMayDeploy": false,
+    "candidateMayShip": false,
+    "fallbackMustRemainAvailable": true,
+    "readyRequiresHumanReview": true,
+    "readyRequiresExactHeadChecks": true,
+    "legacyBranchMayMergeWholesale": false
+  }
+}
