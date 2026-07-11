@@ -1,0 +1,68 @@
+{
+  "schemaVersion": 1,
+  "receiptId": "URAI-WSD-20260711-SUPPORT-001",
+  "evidenceDate": "2026-07-11",
+  "repository": "LifeLoggerAI/urai-spatial",
+  "sourceSha": "60730edcb5bcedfe2ded2cee9a96cef96dff9510",
+  "stackedParentSha": "f3588054e37c3a5d639af8e04855bc3aa332e7a4",
+  "branch": "ws-d/support-readiness-20260711",
+  "verdict": "public-support-operations-no-go",
+  "sourceDeltaSincePriorRunbook": {
+    "supportAuthorityChanged": false,
+    "changedScope": "asset-intake-workflow-contract-verifier-only"
+  },
+  "authorities": {
+    "publicSupportChannelEstablished": false,
+    "securityReportChannelEstablished": false,
+    "privacyRightsChannelEstablished": false,
+    "accessibilityChannelEstablished": false,
+    "primaryOwnerNamed": false,
+    "backupOwnerNamed": false,
+    "incidentCommanderNamed": false,
+    "operatingHoursApproved": false,
+    "responseCommitmentsApproved": false
+  },
+  "operationalCapabilities": {
+    "authenticatedAccountLookupProven": false,
+    "accountRecoveryProven": false,
+    "personalMemoryRecoveryProven": false,
+    "exportOperationsProven": false,
+    "deletionOperationsProven": false,
+    "revocationPropagationProven": false,
+    "providerOutageNotificationAuthorityProven": false,
+    "productionSupportSurfaceProven": false
+  },
+  "safetyRules": {
+    "emergencyServiceClaimApproved": false,
+    "medicalAdviceClaimApproved": false,
+    "legalAdviceClaimApproved": false,
+    "requestSecrets": false,
+    "requestRawMemories": false,
+    "requestPreciseLocation": false,
+    "requestHealthOrBodySignals": false,
+    "completionClaimsRequireImmutableReceipt": true,
+    "publicIssuesMayContainSensitiveEvidence": false
+  },
+  "severityLevels": [
+    "p0-security-privacy-safety",
+    "p1-blocked-rights-or-core-journey",
+    "p2-material-degraded-behavior",
+    "p3-question-or-feedback"
+  ],
+  "playbooks": [
+    "sign-in-account-access",
+    "missing-memory-or-content",
+    "replay-failure-or-inaccuracy",
+    "export-deletion-revocation-retention",
+    "consent-dispute-or-privacy-complaint",
+    "provider-or-external-service-outage",
+    "accessibility-report",
+    "security-report",
+    "degraded-offline-unsupported-device"
+  ],
+  "runtimeMutation": false,
+  "deploymentMutation": false,
+  "providerCalls": 0,
+  "externalMessagesSent": 0,
+  "publicChannelPublished": false
+}
