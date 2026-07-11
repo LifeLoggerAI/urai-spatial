@@ -109,7 +109,12 @@ let downloadedBundlePresent = false
 let downloadedBundleRunBound = false
 let downloadedBundleFingerprintBound = false
 const downloadedBundleRequired = githubJob === 'deploy' || (process.env.URAI_REQUIRE_RELEASE_BUNDLE || '').trim() === '1'
-const bundleDirectoryValue = (process.env.URAI_RELEASE_BUNDLE_DIR || '').trim()
+const runnerTemp = (process.env.RUNNER_TEMP || '').trim()
+const canonicalDeployBundleDirectory =
+  process.env.GITHUB_ACTIONS === 'true' && githubJob === 'deploy' && runnerTemp
+    ? path.join(runnerTemp, 'urai-release-bundle')
+    : ''
+const bundleDirectoryValue = (process.env.URAI_RELEASE_BUNDLE_DIR || canonicalDeployBundleDirectory).trim()
 
 if (downloadedBundleRequired && !bundleDirectoryValue) {
   failures.push('URAI_RELEASE_BUNDLE_DIR must be set when a downloaded release bundle is required')
