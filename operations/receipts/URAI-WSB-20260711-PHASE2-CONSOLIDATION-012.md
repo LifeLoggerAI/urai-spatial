@@ -10,26 +10,39 @@ Classification: `SOURCE-CONSOLIDATED / EXECUTION-BLOCKED / NOT DEPLOYED / NOT CE
 
 - Repository: `LifeLoggerAI/urai-spatial`
 - Canonical production branch: `main`
-- Current canonical main SHA: `60730edcb5bcedfe2ded2cee9a96cef96dff9510`
+- Canonical main SHA: `60730edcb5bcedfe2ded2cee9a96cef96dff9510`
 - Consolidated Phase 2 PR: `#539`
-- Consolidated release branch: `release/protected-rollback-authority-20260711-v2`
-- Consolidated exact head: `fe90208c8c6774c2e3868bafe52dedb35cf8e815`
-- Current PR state: open, draft, mergeable
-- Diff against main: 93 commits, 32 changed files, 3,554 additions, 670 deletions
+- Consolidated branch: `release/protected-rollback-authority-20260711-v2`
+- Final audited source head before this receipt: `f5c75129ef36a979accad0bcbe91f48863fe1ae0`
+- PR state at recording: open, draft, mergeable
+- Candidate inventory: 32 source/control files plus this receipt
 
-## Incorporated source authorities
+## Incorporated authorities
 
-The following stacked source repairs were incorporated into the Phase 2 release branch without merging to `main`:
+The Phase 2 branch now contains the source work previously isolated in:
 
-1. `#579` — pre-deploy rollback provenance bound to canonical repository, authority SHA, workflow-run identity, exact response URL and JSON content type.
-2. `#552` — isolated target build, clean authority attestation, immutable action pins, protected production credential lifecycle, exact bundle/fingerprint validation and rollback authority.
-3. `#578` — live browser/release smoke fails closed on redirect, route/query identity drift, cross-origin requests, browser errors and missing exact deployed SHA.
-4. `#577` — asset validation fails closed on missing ready/fallback files, symlinks, path escape, invalid extensions and duplicate asset identity.
-5. `#575` — one fail-closed sensory runtime layer, ready-only resolution, abortable loaders, procedural fallbacks, explicit texture disposal, exact sensory receipts and excluded unapproved HDR/audio candidates.
+1. `#579` — live rollback provenance requires canonical repository, authority SHA, numeric workflow run, direct cache-busted fingerprint URL and JSON content type.
+2. `#552` — target-only build, clean authority attestation, credential isolation, immutable action pins, exact bundle/fingerprint validation and protected rollback controls.
+3. `#578` — live release smoke requires exact deployed SHA, canonical route/query identity, hydrated identity and retained browser evidence.
+4. `#577` — ready/fallback asset validation fails closed on absent, non-regular, unsafe, duplicate or invalid manifest entries.
+5. `#575` — one candidate-aware sensory runtime layer with ready-only resolution, abortable/null-safe loading, procedural fallback, explicit texture disposal, mount-relative timing and exact sensory receipts.
+
+These were incorporated into the Phase 2 branch only. Nothing was merged to `main`.
+
+## Final source-audit corrections
+
+A post-consolidation source audit found and repaired four lost hardening blobs before this receipt:
+
+- `urai-tier1/scripts/validate-assets.mjs` now normalizes manifest paths before duplicate detection and uses `realpathSync` to reject symlink-parent escapes outside the canonical public root.
+- `urai-tier1/tests/asset-validation-fail-closed-contract.test.mjs` locks normalized collision and physical realpath containment behavior.
+- `scripts/urai-release-control-smoke.mjs` now emits schema v5, requires exact requested query entries with no extras, intercepts and aborts noncanonical browser requests before they leave, records every blocked attempt, and fails the receipt if any are observed.
+- `urai-tier1/tests/release-control-smoke-boundary-contract.test.mjs` locks request interception, abort behavior, exact query identity and retained failure evidence.
+
+The compact unit runner includes both focused contracts.
 
 ## Final changed-file inventory
 
-The final `#539` candidate changes exactly 32 files:
+The consolidated candidate changes exactly 32 non-receipt files:
 
 - `.github/workflows/release-security-path-guard.yml`
 - `.github/workflows/spatial-live-deploy.yml`
@@ -64,45 +77,23 @@ The final `#539` candidate changes exactly 32 files:
 - `urai-tier1/tests/sensory-asset-resolution-contract.test.mjs`
 - `urai-tier1/tests/unit-runner-coverage.test.mjs`
 
-## Exact-head workflow registration
+## Evidence rule
 
-GitHub registered the following pull-request workflow runs against exact head `fe90208c8c6774c2e3868bafe52dedb35cf8e815`:
+Every workflow conclusion from `c7c7422d595f7da9330bd4f18f07105767163994`, `fe90208c8c6774c2e3868bafe52dedb35cf8e815`, or any earlier head is stale. Only workflows attached to the receipt-bearing final branch head may gate incorporation or deployment.
 
-- Spatial Missing Resource Diagnostics — `29169799134`
-- URAI Spatial Release Readiness — `29169799120`
-- URAI Spatial Firebase Preview — `29169799118`
-- URAI Production Verify — `29169799155`
-- Patch Check — `29169799135`
-- Launch Critical Asset Forge — `29169799150`
-- Guardian Diagnostics — `29169799153`
-- Frozen Lockfile Check — `29169799119`
-- Export Spatial E2E Source — `29169799126`
-- Spatial Performance Budget — `29169799125`
-- v60 CI — `29169799127`
-- URAI Canonical Production Release — `29169799139`
-- XR Static Gate Diagnostics — `29169799144`
-- URAI Spatial Copy Policy — `29169799138`
-- Release Security Path Guard — `29169799163`
-- URAI Spatial Verify — `29169799170`
-- URAI Spatial CI — `29169799162`
-- Privacy adoption check — `29169799166`
-- Workflow Phase Boundaries — `29169799152`
+Queued registration is not passing evidence.
 
-At receipt time all 19 runs were `queued` with no conclusion. Queued registration is not passing evidence.
+## Mutation receipt
 
-## Safety and mutation receipt
-
-- Merge to `main`: **not performed**
-- Production deployment: **not performed**
-- Firebase mutation: **not performed**
-- Production credential materialization: **not performed**
-- Provider call: **not performed**
-- Billing/spend: **none established**
-- Asset promotion beyond the reviewed candidate boundary: **not performed**
-- Production data mutation: **not performed**
+- Merge to `main`: not performed
+- Production deployment or rollback: not performed
+- Firebase or production-data mutation: not performed
+- Production credential materialization: not performed
+- Provider call: not performed
+- Billing/spend: none established
+- Asset promotion beyond the reviewed candidate boundary: not performed
+- Public launch or certification: not authorized
 
 ## Remaining terminal gate
 
-The source consolidation work is complete. Production certification remains blocked until all required workflows execute successfully on the unchanged exact head, retained logs/artifacts are available, independent release/security review is recorded, and a protected exact-SHA deployment produces deployed-SHA, rollback-SHA, fingerprint, route/domain and browser receipts.
-
-No statement in this receipt authorizes a public launch or represents the candidate as deployed or certified.
+Source consolidation and audit repair are complete. Production certification remains blocked until all required workflows execute successfully on one unchanged exact head, retained logs and artifacts are available, independent release/security and asset review are recorded, the tested SHA is merged without drift, and a protected exact-SHA release produces deployed-SHA, rollback-SHA, fingerprint, route/domain, browser and recovery receipts.
