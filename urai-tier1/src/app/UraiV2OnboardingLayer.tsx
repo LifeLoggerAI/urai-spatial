@@ -38,10 +38,10 @@ const cards = {
   },
   "/privacy-controls": {
     asset: v2Onboarding["first-run-privacy-card"],
-    label: "CONSENT LAYER",
-    title: "Permissions remain visible and reversible.",
-    href: "/passport",
-    action: "Open Passport",
+    label: "CONSENT PREVIEW",
+    title: "Review planned controls. Nothing changes here.",
+    href: "/status",
+    action: "View production Status",
   },
 } as const;
 

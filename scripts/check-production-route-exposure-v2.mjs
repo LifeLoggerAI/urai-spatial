@@ -29,6 +29,11 @@ const requireTokens = (relative, tokens) => {
   for (const token of tokens) if (!source.includes(token)) failures.push(`${relative} is missing: ${token}`)
 }
 
+const requireAbsentTokens = (relative, tokens) => {
+  const source = read(relative)
+  for (const token of tokens) if (source.includes(token)) failures.push(`${relative} must not contain: ${token}`)
+}
+
 for (const file of walk(appRoot)) {
   const relative = path.relative(appRoot, file).replaceAll(path.sep, '/')
   if (!/(?:^|\/)page\.(?:ts|tsx|js|jsx)$/.test(relative)) continue
@@ -38,7 +43,20 @@ for (const file of walk(appRoot)) {
   if (!guardTokens.some((token) => source.includes(token))) failures.push(`${path.relative(root, file)} exposes /${route} without an explicit production guard`)
 }
 
-requireTokens('urai-tier1/src/app/privacy-controls/page.tsx', ["title: 'URAI Privacy Controls'", 'data-route-polish="privacy-consent-console"', 'export default function PrivacyControlsRoutePage()'])
+requireTokens('urai-tier1/src/app/privacy-controls/page.tsx', [
+  "title: 'URAI Privacy Controls Preview'",
+  'data-route-polish="privacy-consent-console"',
+  'data-privacy-controls-state="non-operational-preview"',
+  'Nothing on this page is a working privacy control.',
+  'export default function PrivacyControlsRoutePage()',
+])
+requireAbsentTokens('urai-tier1/src/app/privacy-controls/page.tsx', [
+  '<button',
+  'Private by default',
+  'No hidden raw-data sharing',
+  'Export and deletion controls visible',
+  'Human approval before real-world action',
+])
 requireTokens('urai-tier1/src/app/focus/page.tsx', ["import FocusChamberClient from './FocusChamberClient'", '<Suspense', '<FocusChamberClient />'])
 requireTokens('urai-tier1/src/app/focus/FocusChamberClient.tsx', ['data-testid="urai-final-focus-chamber"', 'data-route-polish="selected-memory-camera-chamber"', 'Selected memory chamber.', "next.set('memoryId', memoryId)", "next.set('manifestId', manifestId)", "next.set('node', node)"])
 requireTokens('urai-tier1/src/app/layout.tsx', ['NEXT_PUBLIC_URAI_BUILD_SHA', "'urai-deployed-sha': deployedSha", 'data-deployed-sha={deployedSha}', "data-deployment-evidence={deployedSha === 'unverified' ? 'missing' : 'embedded'}"])
