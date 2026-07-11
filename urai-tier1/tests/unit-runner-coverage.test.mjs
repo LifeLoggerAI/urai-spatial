@@ -7,6 +7,7 @@ const runnerSource = fs.readFileSync(new URL('../scripts/run-unit-contract-tests
 const requiredFocusedTests = [
   'tests/body-biometric-contract.test.mjs',
   'tests/orb-companion-contract.test.mjs',
+  'tests/sensory-asset-resolution-contract.test.mjs',
   'tests/spatial-launch-boundaries.test.mjs',
   'tests/xr-runtime-contract.test.mjs',
 ]
