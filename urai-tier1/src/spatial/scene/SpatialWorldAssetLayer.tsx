@@ -1,10 +1,9 @@
 "use client";
 
-import { Html, useGLTF, useTexture } from "@react-three/drei";
-import { useFrame, type ThreeElements } from "@react-three/fiber";
-import { useEffect, useMemo, useRef, useState } from "react";
-import * as THREE from "three";
+import { useGLTF } from "@react-three/drei";
+import { type ThreeElements } from "@react-three/fiber";
 import { resolvePromotedUraiSpatialAssetPath } from "../assets/promotedAssetResolver";
+import SpatialSensoryLayer from "./SpatialSensoryLayer";
 
 type GroupProps = ThreeElements["group"];
 
@@ -12,11 +11,6 @@ type AssetModelProps = GroupProps & {
   assetId: string;
   name: string;
 };
-
-const PARTICLE_ATLAS_PATH = "/assets/urai/generated/textures/spatial-particle-atlas-v1.svg";
-const MATERIAL_PACK_PATH = "/assets/urai/generated/textures/global-cinematic-material-pack-v1.json";
-const LOADING_SEQUENCE_PATH = "/assets/urai/generated/loading/urai-loading-sequence-v1.json";
-const AMBIENT_SCORE_PATH = "/assets/urai/generated/audio/urai-ambient-bed-v1.json";
 
 function resolveRequiredModelPath(assetId: string): string {
   const path = resolvePromotedUraiSpatialAssetPath(assetId);
@@ -31,122 +25,6 @@ function AssetModel({ assetId, name, ...props }: AssetModelProps) {
   const src = resolveRequiredModelPath(assetId);
   const gltf = useGLTF(src);
   return <primitive object={gltf.scene.clone(true)} name={name} data-urai-asset-id={assetId} data-urai-asset-path={src} {...props} />;
-}
-
-type AmbientVoice = { type: OscillatorType; frequencyHz: number; gain: number };
-type AmbientScore = { voices: AmbientVoice[]; masterGain: number; fadeSeconds: number };
-type MaterialPack = { materials?: { portalEnergy?: { baseColor?: string } } };
-type LoadingSequence = { accessibleLabel?: string };
-
-function SpatialSensoryLayer() {
-  const points = useRef<THREE.Points>(null);
-  const texture = useTexture(PARTICLE_ATLAS_PATH);
-  const audioRef = useRef<{ context: AudioContext; gain: GainNode; oscillators: OscillatorNode[] } | null>(null);
-  const [particleColor, setParticleColor] = useState("#9eeeff");
-  const [loadingLabel, setLoadingLabel] = useState("Preparing your spatial world");
-  const [audioEnabled, setAudioEnabled] = useState(false);
-
-  const positions = useMemo(() => {
-    const values = new Float32Array(240 * 3);
-    for (let index = 0; index < 240; index += 1) {
-      const radius = 3.8 + (index % 37) * 0.13;
-      const angle = index * 2.399963;
-      values[index * 3] = Math.cos(angle) * radius;
-      values[index * 3 + 1] = -0.4 + ((index * 19) % 95) / 18;
-      values[index * 3 + 2] = Math.sin(angle) * radius;
-    }
-    return values;
-  }, []);
-
-  useEffect(() => {
-    texture.colorSpace = THREE.SRGBColorSpace;
-    texture.needsUpdate = true;
-  }, [texture]);
-
-  useEffect(() => {
-    let active = true;
-    Promise.all([
-      fetch(MATERIAL_PACK_PATH).then((response) => response.ok ? response.json() as Promise<MaterialPack> : Promise.reject(new Error("material pack unavailable"))),
-      fetch(LOADING_SEQUENCE_PATH).then((response) => response.ok ? response.json() as Promise<LoadingSequence> : Promise.reject(new Error("loading sequence unavailable"))),
-    ]).then(([materials, loading]) => {
-      if (!active) return;
-      setParticleColor(materials.materials?.portalEnergy?.baseColor ?? "#9eeeff");
-      setLoadingLabel(loading.accessibleLabel ?? "Preparing your spatial world");
-    }).catch(() => {
-      if (!active) return;
-      setParticleColor("#9eeeff");
-      setLoadingLabel("Preparing your spatial world");
-    });
-    return () => { active = false; };
-  }, []);
-
-  useEffect(() => () => {
-    const current = audioRef.current;
-    if (!current) return;
-    current.oscillators.forEach((oscillator) => oscillator.stop());
-    void current.context.close();
-  }, []);
-
-  useFrame(({ clock }) => {
-    if (points.current) points.current.rotation.y = clock.elapsedTime * 0.018;
-  });
-
-  async function toggleAmbientAudio() {
-    const current = audioRef.current;
-    if (current) {
-      const now = current.context.currentTime;
-      current.gain.gain.cancelScheduledValues(now);
-      current.gain.gain.linearRampToValueAtTime(0, now + 0.35);
-      window.setTimeout(() => {
-        current.oscillators.forEach((oscillator) => oscillator.stop());
-        void current.context.close();
-      }, 400);
-      audioRef.current = null;
-      setAudioEnabled(false);
-      return;
-    }
-
-    try {
-      const response = await fetch(AMBIENT_SCORE_PATH);
-      if (!response.ok) throw new Error("ambient score unavailable");
-      const score = await response.json() as AmbientScore;
-      const context = new AudioContext();
-      const master = context.createGain();
-      master.gain.setValueAtTime(0, context.currentTime);
-      master.gain.linearRampToValueAtTime(score.masterGain, context.currentTime + score.fadeSeconds);
-      master.connect(context.destination);
-      const oscillators = score.voices.map((voice) => {
-        const oscillator = context.createOscillator();
-        const voiceGain = context.createGain();
-        oscillator.type = voice.type;
-        oscillator.frequency.value = voice.frequencyHz;
-        voiceGain.gain.value = voice.gain;
-        oscillator.connect(voiceGain).connect(master);
-        oscillator.start();
-        return oscillator;
-      });
-      audioRef.current = { context, gain: master, oscillators };
-      setAudioEnabled(true);
-    } catch {
-      setAudioEnabled(false);
-    }
-  }
-
-  return (
-    <group name="urai-production-sensory-layer" data-loading-sequence={LOADING_SEQUENCE_PATH} data-material-pack={MATERIAL_PACK_PATH}>
-      <points ref={points}>
-        <bufferGeometry>
-          <bufferAttribute attach="attributes-position" args={[positions, 3]} />
-        </bufferGeometry>
-        <pointsMaterial map={texture} color={particleColor} size={0.42} transparent opacity={0.32} depthWrite={false} blending={THREE.AdditiveBlending} />
-      </points>
-      <Html position={[0, -2.6, 0]} center>
-        <button type="button" aria-label={`${audioEnabled ? "Disable" : "Enable"} ambient spatial audio`} title={loadingLabel} data-urai-asset-id="urai-ambient-bed-v1" data-urai-asset-path={AMBIENT_SCORE_PATH} onClick={toggleAmbientAudio} style={{ border: "1px solid rgba(126,232,255,.38)", borderRadius: 999, background: "rgba(4,9,22,.82)", color: "#dff8ff", padding: "8px 12px", cursor: "pointer" }}>
-          {audioEnabled ? "Ambient on" : "Ambient off"}
-        </button>
-      </Html>
-    </group>
-  );
 }
 
 export default function SpatialWorldAssetLayer({ phase }: { phase: string }) {
