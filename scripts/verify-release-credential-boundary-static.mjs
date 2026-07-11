@@ -12,6 +12,13 @@ const operator = normalizeNewlines(readFileSync(operatorPath, 'utf8'))
 const bundleBuilder = normalizeNewlines(readFileSync(bundlePath, 'utf8'))
 const failures = []
 
+const immutableActions = {
+  checkout: 'actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683',
+  setupNode: 'actions/setup-node@1e60f620b9541d80c77f7b4a3bcd8bf5e940c37',
+  uploadArtifact: 'actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02',
+  downloadArtifact: 'actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093',
+}
+
 function requireMarker(label, source, marker) {
   if (!source.includes(marker)) failures.push(`${label} missing marker: ${marker}`)
 }
@@ -29,12 +36,45 @@ function jobSection(source, jobName) {
   return next < 0 ? rest : rest.slice(0, next)
 }
 
+const verifyJob = jobSection(workflow, 'verify')
+const rollbackJob = jobSection(workflow, 'rollback-verify')
 const buildJob = jobSection(workflow, 'build-release-output')
 const attestJob = jobSection(workflow, 'attest-release-bundle')
 const deployJob = jobSection(workflow, 'deploy')
+if (!verifyJob) failures.push('Workflow is missing the exact-head verify job')
+if (!rollbackJob) failures.push('Workflow is missing the current-authority rollback-verify job')
 if (!buildJob) failures.push('Workflow is missing the target-only build-release-output job')
 if (!attestJob) failures.push('Workflow is missing the clean authority attest-release-bundle job')
 if (!deployJob) failures.push('Workflow is missing the protected deploy job')
+
+for (const [name, action] of Object.entries(immutableActions)) {
+  requireMarker(`Immutable ${name} action`, workflow, action)
+}
+forbid('Workflow', workflow, /uses:\s+actions\/(?:checkout|setup-node|upload-artifact|download-artifact)@v\d+(?:\.\d+){0,2}/, 'mutable release action tag')
+forbid('Workflow', workflow, /uses:\s+actions\/(?:checkout|setup-node|upload-artifact|download-artifact)@(?![0-9a-f]{40}(?:\s|#|$))[^\s]+/, 'non-immutable release action reference')
+
+const actionReferences = [...workflow.matchAll(/uses:\s+(actions\/(?:checkout|setup-node|upload-artifact|download-artifact)@[^\s]+)/g)]
+  .map((match) => match[1])
+const approvedActionReferences = new Set(Object.values(immutableActions))
+for (const reference of actionReferences) {
+  if (!approvedActionReferences.has(reference)) failures.push(`Workflow uses an unapproved action reference: ${reference}`)
+}
+if (!actionReferences.length) failures.push('Workflow has no recognized release action references')
+
+for (const marker of [
+  'name: Exact-head release verification',
+  'Verify target credential boundary',
+  "if: github.event_name != 'workflow_dispatch' || inputs.confirm != 'ROLLBACK_URAI_APP'",
+]) requireMarker('Exact-head verify job', verifyJob, marker)
+
+for (const marker of [
+  'name: Prove rollback target with current authority',
+  'Checkout current release authority',
+  'Verify current credential boundary',
+  'working-directory: authority',
+  'node scripts/verify-release-credential-boundary.mjs',
+]) requireMarker('Rollback authority job', rollbackJob, marker)
+forbid('Rollback authority job', rollbackJob, /working-directory:\s*target[\s\S]{0,200}verify-release-credential-boundary/, 'target-owned credential-boundary verification')
 
 const secretMarker = 'FIREBASE_SERVICE_ACCOUNT_JSON: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_JSON }}'
 const secretOccurrences = workflow.split(secretMarker).length - 1
@@ -61,6 +101,7 @@ for (const marker of [
   'name: Attest raw static output with clean current authority',
   'needs: [verify, rollback-verify, build-release-output]',
   'Checkout clean current release authority only',
+  immutableActions.downloadArtifact,
   'Download unattested raw static output',
   'node scripts/verify-release-credential-boundary.mjs',
   'node scripts/create-static-release-bundle.mjs',
@@ -78,7 +119,7 @@ for (const marker of [
   'needs: [verify, rollback-verify, attest-release-bundle]',
   'Checkout current release authority only',
   'pnpm install --frozen-lockfile --ignore-scripts',
-  'actions/download-artifact@v4',
+  immutableActions.downloadArtifact,
   'node scripts/verify-release-credential-boundary.mjs',
   'node scripts/live-release.mjs --verify-prebuilt',
   protectedDeployCommand,
@@ -179,11 +220,13 @@ for (const marker of [
 ]) requireMarker('Authority bundle attester', bundleBuilder, marker)
 
 const report = {
-  schemaVersion: 'urai-release-credential-boundary-2',
+  schemaVersion: 'urai-release-credential-boundary-3',
   ok: failures.length === 0,
   secretOccurrences,
   rawSecretJobScoped: deployJobEnvironment.includes('FIREBASE_SERVICE_ACCOUNT_JSON'),
   lineEndingsNormalized: true,
+  thirdPartyActionsPinned: true,
+  rollbackAuthorityVerifierUsesCurrentAuthority: true,
   targetBuildIsolated: true,
   authorityAttestationIsolated: true,
   targetCodeExecutesInProductionJob: false,
