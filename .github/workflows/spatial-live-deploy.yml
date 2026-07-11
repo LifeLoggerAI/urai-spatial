@@ -152,9 +152,64 @@ jobs:
           if-no-files-found: warn
           retention-days: 90
 
+  verify-rollback:
+    name: Exact-SHA rollback verification
+    if: github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    env:
+      ROLLBACK_SHA: ${{ inputs.rollback_sha }}
+      RELEASE_SHA: ${{ inputs.release_sha }}
+      NEXT_PUBLIC_URAI_BUILD_SHA: ${{ inputs.rollback_sha }}
+    steps:
+      - name: Checkout exact rollback target
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ env.ROLLBACK_SHA }}
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Prove rollback ancestry and clean checkout
+        shell: bash
+        run: |
+          set -euo pipefail
+          [[ "$ROLLBACK_SHA" =~ ^[0-9a-f]{40}$ ]]
+          test "$(git rev-parse HEAD)" = "$ROLLBACK_SHA"
+          test -z "$(git status --porcelain)"
+          test "$ROLLBACK_SHA" != "$RELEASE_SHA"
+          git cat-file -e "$RELEASE_SHA^{commit}"
+          git merge-base --is-ancestor "$ROLLBACK_SHA" "$RELEASE_SHA"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+      - name: Enable pnpm
+        run: |
+          corepack enable
+          corepack prepare "pnpm@${PNPM_VERSION}" --activate
+      - name: Install frozen dependencies
+        run: pnpm install --frozen-lockfile
+      - name: Verify rollback release-critical contract
+        env:
+          GITHUB_SHA: ${{ env.ROLLBACK_SHA }}
+          URAI_TARGET_SHA: ${{ env.ROLLBACK_SHA }}
+          FIREBASE_PROJECT_ID: ${{ env.EXPECTED_FIREBASE_PROJECT }}
+          URAI_EXPECTED_FIREBASE_PROJECT: ${{ env.EXPECTED_FIREBASE_PROJECT }}
+          URAI_LIVE_BASE_URL: ${{ env.LIVE_URL }}
+        run: pnpm live:check
+      - name: Upload rollback verification evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: urai-rollback-verified-${{ env.ROLLBACK_SHA }}
+          path: |
+            deployment-receipt/${{ env.ROLLBACK_SHA }}/
+            STATUS.md
+            EVIDENCE.md
+          if-no-files-found: warn
+          retention-days: 365
+
   deploy:
     name: Deploy exact SHA to urai.app
-    needs: verify
+    needs: [verify, verify-rollback]
     if: >-
       github.event_name == 'workflow_dispatch' &&
       github.ref == 'refs/heads/main' &&
