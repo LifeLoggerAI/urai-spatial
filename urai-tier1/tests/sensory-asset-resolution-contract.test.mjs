@@ -1,0 +1,32 @@
+import assert from 'node:assert/strict'
+import fs from 'node:fs'
+import path from 'node:path'
+import test from 'node:test'
+
+const root = process.cwd()
+const read = (relativePath) => fs.readFileSync(path.join(root, relativePath), 'utf8')
+const manifest = read('src/spatial/assets/sensoryAssetManifest.ts')
+const sensoryLayer = read('src/spatial/scene/SpatialSensoryLayer.tsx')
+const worldLayer = read('src/spatial/scene/SpatialWorldAssetLayer.tsx')
+
+test('only evidence-backed sensory assets are ready', () => {
+  assert.match(manifest, /materials:[\s\S]*status: 'ready'/)
+  assert.match(manifest, /particles:[\s\S]*status: 'ready'/)
+  assert.match(manifest, /loading:[\s\S]*status: 'ready'/)
+  assert.match(manifest, /skybox:[\s\S]*status: 'candidate'/)
+  assert.match(manifest, /ambientAudio:[\s\S]*status: 'candidate'/)
+})
+
+test('active spatial routes consume the promoted sensory family', () => {
+  assert.match(worldLayer, /<SpatialSensoryLayer \/>/)
+  assert.match(sensoryLayer, /global-cinematic-material-pack-v1|materialPath/)
+  assert.match(sensoryLayer, /spatial-particle-atlas-v1|particlePath/)
+  assert.match(sensoryLayer, /urai-loading-sequence-v1|loadingPath/)
+})
+
+test('sensory fallbacks remain explicit and activation is fail-closed', () => {
+  assert.match(manifest, /runtime-default-materials/)
+  assert.match(manifest, /shader-point-particles/)
+  assert.match(manifest, /accessible-static-loading-state/)
+  assert.match(manifest, /return asset\.status === 'ready' \? asset\.path : null/)
+})
