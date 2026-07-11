@@ -6,6 +6,7 @@ on:
     paths:
       - 'urai-tier1/**'
       - 'scripts/live-release.mjs'
+      - 'scripts/write-release-fingerprint.mjs'
       - 'scripts/urai-release-control-smoke.mjs'
       - 'scripts/audit-production-workflow-authority.mjs'
       - 'firebase.static.json'
@@ -17,6 +18,7 @@ on:
     paths:
       - 'urai-tier1/**'
       - 'scripts/live-release.mjs'
+      - 'scripts/write-release-fingerprint.mjs'
       - 'scripts/urai-release-control-smoke.mjs'
       - 'scripts/audit-production-workflow-authority.mjs'
       - 'firebase.static.json'
@@ -211,7 +213,7 @@ jobs:
           cat > "deployment-receipt/$RELEASE_SHA/rollback.txt" <<EOF
           git checkout $ROLLBACK_SHA
           pnpm install --frozen-lockfile
-          NEXT_PUBLIC_URAI_BUILD_SHA=$ROLLBACK_SHA URAI_TARGET_SHA=$ROLLBACK_SHA FIREBASE_PROJECT_ID=urai-4dc1d URAI_EXPECTED_FIREBASE_PROJECT=urai-4dc1d URAI_DEPLOY_CONFIRM=DEPLOY_STATIC_URAI pnpm live:deploy
+          NEXT_PUBLIC_URAI_BUILD_SHA=$ROLLBACK_SHA URAI_TARGET_SHA=$ROLLBACK_SHA ROLLBACK_SHA=$RELEASE_SHA FIREBASE_PROJECT_ID=urai-4dc1d URAI_EXPECTED_FIREBASE_PROJECT=urai-4dc1d URAI_DEPLOY_CONFIRM=DEPLOY_STATIC_URAI pnpm live:deploy
           EOF
       - name: Upload deployment receipt
         if: always()
