@@ -1,0 +1,15 @@
+{
+  "schemaVersion": 2,
+  "releaseState": "ready-local-evidence",
+  "sourceMain": "2c7f0daf8338200de7bc7dfe251ab5873874a00a",
+  "license": "URAI Labs internal production assets",
+  "provenance": "URAI deterministic memory-journey candidate families; compact embedded delivery variants; independently validated locally",
+  "fallbackRetained": true,
+  "activationReversible": true,
+  "validator": {"tool": "@gltf-transform/cli@4.2.1 validate", "errors": 0, "warnings": 0},
+  "assets": [
+    {"id":"life-map-memory-star-v1","path":"urai-tier1/public/assets/urai/generated/models/life-map-memory-star-v1.gltf","bytes":2694,"sha256":"382c95a7a7d8f8e4d91931f3332fb5476aafe8f3c0d8d38211d0e1e9ec524bdd","maxTriangles":12000,"routes":["/life-map","/focus"]},
+    {"id":"focus-memory-chamber-v1","path":"urai-tier1/public/assets/urai/generated/models/focus-memory-chamber-v1.gltf","bytes":6455,"sha256":"4fe95993ceef3aac4be9b6d641881ade2a1ddba32f519d60608d5965ac0dd328","maxTriangles":140000,"routes":["/focus"]},
+    {"id":"replay-memory-environment-v1","path":"urai-tier1/public/assets/urai/generated/models/replay-memory-environment-v1.gltf","bytes":5481,"sha256":"b1976ffb1f3b0f2b1e4b48e83fbed261b05d8f8a1fc32099027460e238bf55b2","maxTriangles":160000,"routes":["/replay"]}
+  ]
+}
