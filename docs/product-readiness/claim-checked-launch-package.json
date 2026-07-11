@@ -1,5 +1,5 @@
 {
-  "schemaVersion": 8,
+  "schemaVersion": 9,
   "receiptId": "URAI-WSD-20260711-LAUNCH-PACKAGE-001",
   "evidenceDate": "2026-07-11",
   "repository": "LifeLoggerAI/urai-spatial",
@@ -153,7 +153,10 @@
     "runbookReceipt": "URAI-WSD-20260711-SUPPORT-001",
     "publicChannelApproved": false,
     "ownersNamed": false,
-    "serviceCommitmentsApproved": false
+    "serviceCommitmentsApproved": false,
+    "githubSupportTicket": 4553961,
+    "humanResponseReceived": false,
+    "finalEvidenceUpdateSent": true
   },
   "workflowBlocker": {
     "issue": 450,
@@ -166,7 +169,8 @@
   },
   "externalActions": {
     "published": false,
-    "emailsSent": 0,
+    "emailsSent": 1,
+    "supportTicketUpdatesSent": 1,
     "qrReleased": false,
     "enrollmentOpened": false,
     "providerCalls": 0,
