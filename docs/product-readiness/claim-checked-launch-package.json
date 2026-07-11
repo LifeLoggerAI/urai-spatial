@@ -1,5 +1,5 @@
 {
-  "schemaVersion": 3,
+  "schemaVersion": 4,
   "receiptId": "URAI-WSD-20260711-LAUNCH-PACKAGE-001",
   "evidenceDate": "2026-07-11",
   "repository": "LifeLoggerAI/urai-spatial",
@@ -92,7 +92,9 @@
     },
     "releaseCredentialBoundary": {
       "pullRequest": 552,
-      "headSha": "281a4e30a9e1aa0b55218295c3a552466187eee1",
+      "headSha": "d592e4f32d444b501a02278033921f1a0294e6d0",
+      "basePullRequest": 539,
+      "baseHeadSha": "ad473628eb97235171eda2ff9f8fc9647c0d518f",
       "sourceRepairsComplete": true,
       "invalidSetupNodePinsPresent": false,
       "mutableArtifactAuditAccepted": false,
@@ -102,9 +104,11 @@
     },
     "releaseControls": {
       "pullRequest": 539,
-      "headSha": "f62e2ff5860e107f180715377a7cd87605898ade",
-      "state": "draft-unverified",
-      "sourceMetadataCurrent": false
+      "headSha": "ad473628eb97235171eda2ff9f8fc9647c0d518f",
+      "state": "draft-unverified-current-main-reconciled",
+      "sourceMetadataCurrent": true,
+      "releaseAssuranceIncorporated": false,
+      "workflowState": "queued"
     },
     "founderEventSource": {
       "pullRequest": 521,
