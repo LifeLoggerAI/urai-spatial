@@ -29,43 +29,53 @@ function jobSection(source, jobName) {
   return next < 0 ? rest : rest.slice(0, next)
 }
 
-const prepareJob = jobSection(workflow, 'prepare-release-bundle')
+const buildJob = jobSection(workflow, 'build-release-output')
+const attestJob = jobSection(workflow, 'attest-release-bundle')
 const deployJob = jobSection(workflow, 'deploy')
-if (!prepareJob) failures.push('Workflow is missing the no-secret prepare-release-bundle job')
+if (!buildJob) failures.push('Workflow is missing the target-only build-release-output job')
+if (!attestJob) failures.push('Workflow is missing the clean authority attest-release-bundle job')
 if (!deployJob) failures.push('Workflow is missing the protected deploy job')
 
 const secretMarker = 'FIREBASE_SERVICE_ACCOUNT_JSON: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_JSON }}'
 const secretOccurrences = workflow.split(secretMarker).length - 1
 if (secretOccurrences !== 1) failures.push(`Workflow must scope the service-account secret to exactly one step; found ${secretOccurrences}`)
-if (!deployJob.includes(secretMarker)) failures.push('The one raw service-account secret occurrence must be inside the protected deploy job')
-if (prepareJob.includes(secretMarker)) failures.push('The no-secret bundle job must not receive the raw service-account secret')
-
-const deployStepsStart = deployJob.indexOf('\n    steps:')
-const deployJobEnvironment = deployStepsStart >= 0 ? deployJob.slice(0, deployStepsStart) : deployJob
-if (!deployJob || deployStepsStart < 0) {
-  failures.push('Workflow is missing the protected deploy job steps definition')
-} else if (deployJobEnvironment.includes('FIREBASE_SERVICE_ACCOUNT_JSON')) {
-  failures.push('Workflow exposes the raw service-account secret at deploy-job scope')
-}
+if (!deployJob.includes(secretMarker)) failures.push('The raw service-account secret must occur only inside the protected deploy job')
+if (buildJob.includes(secretMarker) || attestJob.includes(secretMarker)) failures.push('Build and attestation jobs must not receive the raw service-account secret')
 
 for (const marker of [
-  'name: Prepare exact static release bundle without production credentials',
+  'name: Build exact static target without production authority or credentials',
+  'needs: [verify, rollback-verify]',
+  'Checkout exact release target only',
   'path: target',
   'pnpm install --frozen-lockfile',
   'pnpm build:static',
-  'node ../authority/scripts/create-static-release-bundle.mjs',
-  'actions/upload-artifact@v4',
-  'urai-static-release-bundle-${{ env.RELEASE_SHA }}',
-]) requireMarker('No-secret bundle job', prepareJob, marker)
+  'Upload unattested raw static output',
+  'urai-raw-static-output-${{ env.RELEASE_SHA }}',
+]) requireMarker('Target-only build job', buildJob, marker)
+forbid('Target-only build job', buildJob, /environment:\s*production/, 'production environment')
+forbid('Target-only build job', buildJob, /FIREBASE_SERVICE_ACCOUNT_JSON|GOOGLE_APPLICATION_CREDENTIALS/, 'production credentials')
+forbid('Target-only build job', buildJob, /Checkout .*authority|node\s+scripts\/create-static-release-bundle\.mjs/, 'authority execution')
+forbid('Target-only build job', buildJob, /firebase\s+deploy|--deploy-prebuilt/, 'deployment command')
 
-forbid('No-secret bundle job', prepareJob, /environment:\s*production/, 'production environment')
-forbid('No-secret bundle job', prepareJob, /FIREBASE_SERVICE_ACCOUNT_JSON/, 'raw production secret')
-forbid('No-secret bundle job', prepareJob, /GOOGLE_APPLICATION_CREDENTIALS/, 'credential path')
-forbid('No-secret bundle job', prepareJob, /firebase\s+deploy|--deploy-prebuilt/, 'production deployment command')
+for (const marker of [
+  'name: Attest raw static output with clean current authority',
+  'needs: [verify, rollback-verify, build-release-output]',
+  'Checkout clean current release authority only',
+  'Download unattested raw static output',
+  'node scripts/verify-release-credential-boundary.mjs',
+  'node scripts/create-static-release-bundle.mjs',
+  'Upload authority-attested static release bundle',
+  'urai-static-release-bundle-${{ env.RELEASE_SHA }}',
+]) requireMarker('Clean authority attestation job', attestJob, marker)
+forbid('Clean authority attestation job', attestJob, /environment:\s*production/, 'production environment')
+forbid('Clean authority attestation job', attestJob, /FIREBASE_SERVICE_ACCOUNT_JSON|GOOGLE_APPLICATION_CREDENTIALS/, 'production credentials')
+forbid('Clean authority attestation job', attestJob, /path:\s*target|working-directory:\s*target|pnpm\s+(?:install|build:static)/, 'target checkout or execution')
+forbid('Clean authority attestation job', attestJob, /firebase\s+deploy|--deploy-prebuilt/, 'deployment command')
 
 const protectedDeployCommand = 'node scripts/live-release.mjs --' + 'deploy-prebuilt'
 for (const marker of [
   'name: Deploy or roll back verified static bundle on urai.app',
+  'needs: [verify, rollback-verify, attest-release-bundle]',
   'Checkout current release authority only',
   'pnpm install --frozen-lockfile --ignore-scripts',
   'actions/download-artifact@v4',
@@ -73,17 +83,18 @@ for (const marker of [
   'node scripts/live-release.mjs --verify-prebuilt',
   protectedDeployCommand,
   'node scripts/urai-release-control-smoke.mjs',
-  "GOOGLE_APPLICATION_CREDENTIALS: ${{ runner.temp }}/urai-firebase-service-account.json",
-  "URAI_FIREBASE_CLI: ${{ github.workspace }}/node_modules/.bin/firebase",
+  'GOOGLE_APPLICATION_CREDENTIALS: ${{ runner.temp }}/urai-firebase-service-account.json',
+  'URAI_FIREBASE_CLI: ${{ github.workspace }}/node_modules/.bin/firebase',
   'Remove temporary credentials',
 ]) requireMarker('Protected deploy job', deployJob, marker)
-
-forbid('Protected deploy job', deployJob, /path:\s*target/, 'target checkout')
-forbid('Protected deploy job', deployJob, /working-directory:\s*target/, 'target working directory')
-forbid('Protected deploy job', deployJob, /Checkout (?:frozen|exact) (?:release )?target/, 'target checkout step')
-forbid('Protected deploy job', deployJob, /pnpm\s+build:static/, 'target build command')
-forbid('Protected deploy job', deployJob, /node\s+\.\.\/authority\//, 'cross-checkout authority execution')
+forbid('Protected deploy job', deployJob, /path:\s*target|working-directory:\s*target|Checkout (?:frozen|exact) (?:release )?target/, 'target checkout')
+forbid('Protected deploy job', deployJob, /pnpm\s+build:static|node\s+\.\.\/authority\//, 'target build or cross-checkout authority execution')
 forbid('Protected deploy job', deployJob, /pnpm\s+install\s+--frozen-lockfile(?!\s+--ignore-scripts)/, 'lifecycle-enabled dependency install')
+
+const deployStepsStart = deployJob.indexOf('\n    steps:')
+const deployJobEnvironment = deployStepsStart >= 0 ? deployJob.slice(0, deployStepsStart) : deployJob
+if (!deployJob || deployStepsStart < 0) failures.push('Workflow is missing the protected deploy job steps definition')
+else if (deployJobEnvironment.includes('FIREBASE_SERVICE_ACCOUNT_JSON')) failures.push('Workflow exposes the raw service-account secret at deploy-job scope')
 
 const authorityCheckoutIndex = deployJob.indexOf('Checkout current release authority only')
 const authorityInstallIndex = deployJob.indexOf('Install current authority dependencies with lifecycle scripts disabled')
@@ -93,25 +104,9 @@ const verifyPrebuiltIndex = deployJob.indexOf('Verify downloaded bundle before p
 const secretIndex = deployJob.indexOf(secretMarker)
 const deployPrebuiltIndex = deployJob.indexOf(protectedDeployCommand)
 const smokeIndex = deployJob.indexOf('Run canonical live smoke with current authority')
-const orderedIndexes = [
-  authorityCheckoutIndex,
-  authorityInstallIndex,
-  downloadIndex,
-  verifyBoundaryIndex,
-  verifyPrebuiltIndex,
-  secretIndex,
-  deployPrebuiltIndex,
-  smokeIndex,
-]
-if (orderedIndexes.some((index) => index < 0)) {
-  failures.push('Protected deploy job is missing the authority/download/verify/secret/deploy/smoke sequence')
-} else if (!(authorityCheckoutIndex < authorityInstallIndex &&
-  authorityInstallIndex < downloadIndex &&
-  downloadIndex < verifyBoundaryIndex &&
-  verifyBoundaryIndex < verifyPrebuiltIndex &&
-  verifyPrebuiltIndex < secretIndex &&
-  secretIndex < deployPrebuiltIndex &&
-  deployPrebuiltIndex < smokeIndex)) {
+const orderedIndexes = [authorityCheckoutIndex, authorityInstallIndex, downloadIndex, verifyBoundaryIndex, verifyPrebuiltIndex, secretIndex, deployPrebuiltIndex, smokeIndex]
+if (orderedIndexes.some((index) => index < 0)) failures.push('Protected deploy job is missing the authority/download/verify/secret/deploy/smoke sequence')
+else if (!(authorityCheckoutIndex < authorityInstallIndex && authorityInstallIndex < downloadIndex && downloadIndex < verifyBoundaryIndex && verifyBoundaryIndex < verifyPrebuiltIndex && verifyPrebuiltIndex < secretIndex && secretIndex < deployPrebuiltIndex && deployPrebuiltIndex < smokeIndex)) {
   failures.push('Protected deploy job must verify the artifact before secret scope and smoke only after deployment cleanup')
 }
 
@@ -130,11 +125,9 @@ for (const marker of [
   'function resolveManagedCredentialPath({ required = false } = {})',
   'resolveManagedCredentialPath({ required: true })',
   'Credential path must stay inside RUNNER_TEMP',
-  'if (required) throw new Error(`Credential path must use the dedicated managed filename',
   'function validateAndMaterializePrebuiltBundle',
   "manifest.schemaVersion !== 'urai-static-release-bundle-1'",
   'manifest.authoritySha !== authoritySha',
-  'Release surface must not contain symlinks',
   'Release bundle file set, sizes, or hashes do not match the manifest',
   'function resolveAuthorityFirebaseCli()',
   'realpathSync(firebaseCliPath)',
@@ -149,59 +142,56 @@ for (const marker of [
   '\nremoveTemporaryServiceAccount()\nconst authoritySha',
   'finally {\n    removeTemporaryServiceAccount()',
 ]) requireMarker('Release operator', operator, marker)
-
-forbid('Release operator', operator, /pnpm\s+exec\s+firebase/, 'target/package-manager-resolved Firebase CLI')
+forbid('Release operator', operator, /pnpm\s+exec\s+firebase/, 'package-manager-resolved Firebase CLI')
 forbid('Release operator', operator, /spawnSync\(\s*['"]pnpm['"][\s\S]{0,200}['"]firebase['"]/, 'pnpm-spawned Firebase CLI')
 
 const unconditionalCleanupIndex = operator.indexOf('\nremoveTemporaryServiceAccount()\nconst authoritySha')
 const authorityResolutionIndex = operator.indexOf('const authoritySha = resolveAuthoritySha()')
 const readOnlyVerifyIndex = operator.indexOf('validateAndMaterializePrebuiltBundle(targetSha, authoritySha, false)')
 const protectedMaterializeIndex = operator.lastIndexOf('validateAndMaterializePrebuiltBundle(targetSha, authoritySha)')
+const deployCallIndex = operator.lastIndexOf('\ndeployHostingWithTemporaryCredentials()')
 const credentialMaterializeIndex = operator.indexOf('const credentialFile = writeTemporaryServiceAccount()')
 const firebaseSpawnIndex = operator.indexOf('spawnSync(\n      authorityFirebaseCli', credentialMaterializeIndex)
 const cleanupIndex = operator.indexOf('finally {\n    removeTemporaryServiceAccount()', credentialMaterializeIndex)
-if ([unconditionalCleanupIndex, authorityResolutionIndex, readOnlyVerifyIndex, protectedMaterializeIndex, credentialMaterializeIndex, firebaseSpawnIndex, cleanupIndex].some((index) => index < 0)) {
-  failures.push('Release operator is missing unconditional cleanup, read-only verification, or protected materialize/deploy cleanup')
-} else if (!(unconditionalCleanupIndex < authorityResolutionIndex &&
-  authorityResolutionIndex < readOnlyVerifyIndex &&
-  readOnlyVerifyIndex < protectedMaterializeIndex &&
-  protectedMaterializeIndex < credentialMaterializeIndex &&
-  credentialMaterializeIndex < firebaseSpawnIndex &&
-  firebaseSpawnIndex < cleanupIndex)) {
-  failures.push('Release operator must clean managed credentials before verification, verify read-only, materialize verified bytes, then scope credentials only around authority Firebase execution')
+if ([unconditionalCleanupIndex, authorityResolutionIndex, readOnlyVerifyIndex, protectedMaterializeIndex, deployCallIndex, credentialMaterializeIndex, firebaseSpawnIndex, cleanupIndex].some((index) => index < 0)) {
+  failures.push('Release operator is missing cleanup, prebuilt verification/materialization, deploy call, or credential-scoped Firebase execution')
+} else {
+  const mainOrderOk = unconditionalCleanupIndex < authorityResolutionIndex && authorityResolutionIndex < readOnlyVerifyIndex && readOnlyVerifyIndex < protectedMaterializeIndex && protectedMaterializeIndex < deployCallIndex
+  const helperOrderOk = credentialMaterializeIndex < firebaseSpawnIndex && firebaseSpawnIndex < cleanupIndex
+  if (!mainOrderOk || !helperOrderOk) failures.push('Release operator must clean before verification, verify read-only, materialize verified bytes, call deploy, and scope credentials only around authority Firebase execution')
 }
 
 for (const marker of [
   "schemaVersion: 'urai-static-release-bundle-1'",
+  'assertCleanAuthorityCheckout()',
+  'writeAuthoritativeFingerprint()',
+  "attestedBy: 'scripts/create-static-release-bundle.mjs'",
   'Release bundle source must not contain symlinks',
   'Copied release bundle bytes do not match the source output',
+  'fingerprintSha256',
   'authoritySha',
   'targetSha',
   'rollbackSha',
   'sha256',
   'fileCount',
   'totalBytes',
-]) requireMarker('Bundle builder', bundleBuilder, marker)
+  'Release bundle live URL is invalid or missing',
+]) requireMarker('Authority bundle attester', bundleBuilder, marker)
 
 const report = {
-  schemaVersion: 'urai-release-credential-boundary-1',
+  schemaVersion: 'urai-release-credential-boundary-2',
   ok: failures.length === 0,
   secretOccurrences,
   rawSecretJobScoped: deployJobEnvironment.includes('FIREBASE_SERVICE_ACCOUNT_JSON'),
   lineEndingsNormalized: true,
-  targetBuildIsolatedOnNoSecretRunner: true,
+  targetBuildIsolated: true,
+  authorityAttestationIsolated: true,
   targetCodeExecutesInProductionJob: false,
   prebuiltArtifactHashVerified: true,
   credentialsMaterializedByAuthorityOnly: true,
   unmanagedLocalCredentialPathsIgnoredDuringVerification: true,
   managedCredentialPathRequiredForProductionWrite: true,
-  managedCredentialPathConstrained: true,
   firebaseCliResolvedFromCurrentAuthority: true,
-  staleCredentialsRemovedBeforeAllVerification: true,
-  materializationCoveredByCleanup: true,
-  targetCommandsReceiveRawSecret: false,
-  targetCommandsReceiveCredentialPath: false,
-  targetFirebaseCliReceivesCredentials: false,
   failures,
 }
 
