@@ -1,0 +1,260 @@
+{
+  "schemaVersion": 3,
+  "receiptId": "URAI-WSD-20260711-LAUNCH-PACKAGE-001",
+  "evidenceDate": "2026-07-11",
+  "repository": "LifeLoggerAI/urai-spatial",
+  "sourceSha": "60730edcb5bcedfe2ded2cee9a96cef96dff9510",
+  "stackedParentSha": "ad31eeff849fb0764cb3623a3d6d0cf77e7dce14",
+  "branch": "ws-d/launch-package-20260711",
+  "distributionState": "internal-review-only",
+  "launchDecision": "no-go",
+  "releaseMode": "fallback-demo",
+  "approvedOneSentenceDescription": "URAI Spatial is reachable as a privacy-safe fallback/demo spatial shell with a substantial V1 web experience and future provider seams.",
+  "releaseIdentity": {
+    "testedSha": null,
+    "deployedSha": null,
+    "rollbackSha": null,
+    "productionTargetReceipt": null,
+    "productionCertification": "incomplete"
+  },
+  "acceptedEvidenceCounts": {
+    "routesPublicLaunchComplete": 0,
+    "screenshotsPublicUse": 0,
+    "demosPublicUse": 0,
+    "reviewedLocales": 0,
+    "certifiedDevices": 0,
+    "activeProviderClaims": 0,
+    "publicSupportChannels": 0
+  },
+  "workstreamDChain": {
+    "authority": {
+      "pullRequest": 546,
+      "headSha": "a2b4f26ff927da2666ad9ece70984855be3f5e1e",
+      "parentSha": "60730edcb5bcedfe2ded2cee9a96cef96dff9510",
+      "compare": "3-ahead-0-behind",
+      "workflowState": "12-queued"
+    },
+    "routeAudit": {
+      "pullRequest": 547,
+      "headSha": "277347c517290c9dee9d660b1877fdb817b7024b",
+      "parentSha": "a2b4f26ff927da2666ad9ece70984855be3f5e1e",
+      "compare": "3-ahead-0-behind",
+      "acceptedRoutes": 0,
+      "workflowState": "5-queued"
+    },
+    "localizationAnalyticsMetadata": {
+      "pullRequest": 548,
+      "headSha": "f3588054e37c3a5d639af8e04855bc3aa332e7a4",
+      "parentSha": "277347c517290c9dee9d660b1877fdb817b7024b",
+      "compare": "3-ahead-0-behind",
+      "workflowState": "5-queued"
+    },
+    "supportReadiness": {
+      "pullRequest": 558,
+      "headSha": "ad31eeff849fb0764cb3623a3d6d0cf77e7dce14",
+      "parentSha": "f3588054e37c3a5d639af8e04855bc3aa332e7a4",
+      "compare": "3-ahead-0-behind",
+      "readiness": "no-go",
+      "workflowState": "5-queued"
+    }
+  },
+  "currentCandidates": {
+    "analyticsRepair": {
+      "pullRequest": 553,
+      "headSha": "b7a145809d64cf2616f60657d5a1be78b4d03765",
+      "workflowState": "13-queued",
+      "providerActivationApproved": false,
+      "persistedAnalyticsHistory": false,
+      "persistedRawPacketHistory": false,
+      "staleAgainstCurrentMain": true
+    },
+    "privacyPreview": {
+      "pullRequest": 554,
+      "headSha": "57cb67a3429ca8273c08a486b3a2b605b6127631",
+      "operationalControlsProven": false,
+      "staleAgainstCurrentMain": true
+    },
+    "guidedDemo": {
+      "pullRequest": 555,
+      "headSha": "906ccb3f6b8254e9deecbec78ac6c9dd7a38d6b5",
+      "parentPullRequest": 554,
+      "workflowState": "5-queued",
+      "state": "optional-guided-demo",
+      "persistence": "none",
+      "routeTriggerContinuity": true,
+      "staleAgainstCurrentMain": true
+    },
+    "discoverability": {
+      "pullRequest": 557,
+      "headSha": "96b2d3a21087e4cc5c6e1c739d9017ac318cb85a",
+      "publicIndexingApproved": false,
+      "staleAgainstCurrentMain": true
+    },
+    "releaseCredentialBoundary": {
+      "pullRequest": 552,
+      "headSha": "281a4e30a9e1aa0b55218295c3a552466187eee1",
+      "sourceRepairsComplete": true,
+      "invalidSetupNodePinsPresent": false,
+      "mutableArtifactAuditAccepted": false,
+      "credentialWriterVerifierAligned": true,
+      "workflowState": "6-queued",
+      "incorporatedIntoReleaseControls": false
+    },
+    "releaseControls": {
+      "pullRequest": 539,
+      "headSha": "f62e2ff5860e107f180715377a7cd87605898ade",
+      "state": "draft-unverified",
+      "sourceMetadataCurrent": false
+    },
+    "founderEventSource": {
+      "pullRequest": 521,
+      "headSha": "780802576f2e0b0ebcaa0d5331ad9bb9032dccdf",
+      "state": "source-corrupt-rejected"
+    },
+    "founderEventRepair": {
+      "pullRequest": 562,
+      "headSha": "d5494f6febfaf98bdcb0af1fc2368d3d8afecbcf",
+      "state": "draft-unincorporated",
+      "workflowState": "6-queued",
+      "eventRouteLabel": "pending-proof",
+      "publicQrApproved": false
+    },
+    "sensoryAuthority": {
+      "pullRequest": 544,
+      "headSha": "7896f75c340f2ea3e046529eb2ea6c55255b7231",
+      "state": "draft-uncertified",
+      "mountRelativeLoadingTiming": true
+    },
+    "redundantSensoryRepair": {
+      "pullRequest": 563,
+      "state": "closed-unmerged-not-authority"
+    }
+  },
+  "assetIntake": {
+    "contractPresentOnMain": true,
+    "promotion": false,
+    "expectedOutputs": 53,
+    "outputFilesVerifiedInConsumer": false,
+    "providerGenerationCompleteProven": false,
+    "duplicateReviewCompleteProven": false,
+    "copiedRegisteredPromotedActivated": false,
+    "spendProven": false
+  },
+  "platformClaims": {
+    "webFallbackDemoSourceExists": true,
+    "desktopCertified": false,
+    "mobileCertified": false,
+    "pwaApproved": false,
+    "offlineAppApproved": false,
+    "nativeDesktopApproved": false,
+    "nativeMobileApproved": false,
+    "webxrApproved": false,
+    "questApproved": false,
+    "visionOsApproved": false,
+    "handheldArApproved": false
+  },
+  "localeClaims": {
+    "sourceLocaleObserved": "en",
+    "supportedLocalesApproved": [],
+    "nineteenLanguagesApproved": false,
+    "rtlApproved": false,
+    "localizedMetadataApproved": false,
+    "legalTranslationReviewComplete": false
+  },
+  "privacyAndAnalytics": {
+    "privacyFirstDesignLanguageQualified": true,
+    "operationalPrivacyControlsProven": false,
+    "authenticatedPersistenceProven": false,
+    "exportDeletionRevocationProven": false,
+    "allDataLocalClaimApproved": false,
+    "productionAnalyticsApproved": false
+  },
+  "accessibility": {
+    "sourceIntentExists": true,
+    "certificationApproved": false,
+    "wcagConformanceApproved": false,
+    "assistiveTechnologyMatrixComplete": false,
+    "publicAccessibilitySupportChannelApproved": false
+  },
+  "support": {
+    "readiness": "no-go",
+    "runbookReceipt": "URAI-WSD-20260711-SUPPORT-001",
+    "publicChannelApproved": false,
+    "ownersNamed": false,
+    "serviceCommitmentsApproved": false
+  },
+  "discoverability": {
+    "publicIndexingApproved": false,
+    "approvedSitemapRoutes": [],
+    "pwaManifestApproved": false,
+    "socialMetadataApproved": false
+  },
+  "demoAndMedia": {
+    "acceptedScreenshotIndex": [],
+    "acceptedDemoIndex": [],
+    "publicQrApproved": false,
+    "founderEventApproved": false
+  },
+  "workflowBlocker": {
+    "issue": 450,
+    "supportTicket": 4553961,
+    "supportAgentReplyReceived": false,
+    "state": "queued-before-runner-execution",
+    "representativeJobsHaveSteps": false,
+    "representativeJobsHaveLogs": false,
+    "ownerSideControlsRequired": [
+      "billing-and-actions-usage",
+      "actions-general-settings",
+      "allowed-actions-policy",
+      "hosted-runner-restrictions"
+    ]
+  },
+  "claims": {
+    "green": [
+      "canonical-public-web-repository",
+      "substantial-spatial-web-source-experience",
+      "sample-fallback-demo-disclosure",
+      "evidence-gated-production-provider-persistence-asset-device-claims",
+      "fallback-demo-production-certification-incomplete"
+    ],
+    "yellow": [
+      "privacy-first-design",
+      "user-controlled-memory-concepts",
+      "route-reachability",
+      "cinematic-replay",
+      "spatial-interaction",
+      "xr-preview-pathways",
+      "provider-seams",
+      "asset-intake-candidate-state",
+      "data-rights-concepts",
+      "desktop-mobile-browser-behavior",
+      "accessibility-features",
+      "future-localization"
+    ],
+    "red": [
+      "production-ready",
+      "fully-autonomous-real-world-action",
+      "active-personal-memory-persistence",
+      "complete-export-deletion-retention-revocation",
+      "all-data-local",
+      "completed-certified-53-asset-delivery",
+      "active-provider-v2-v3",
+      "active-wearables-body-biometric-iot",
+      "medical-diagnostic-treatment-clinical-outcome",
+      "lie-detection-mind-reading-emotional-certainty-surveillance",
+      "accessibility-certification",
+      "nineteen-languages",
+      "physical-xr-device-certification",
+      "guaranteed-security-privacy-compliance-uptime-recovery-support-or-financial-outcomes"
+    ]
+  },
+  "externalActions": {
+    "published": false,
+    "emailsSent": 0,
+    "qrReleased": false,
+    "enrollmentOpened": false,
+    "providerCalls": 0,
+    "deployments": 0,
+    "billingActions": 0
+  }
+}
