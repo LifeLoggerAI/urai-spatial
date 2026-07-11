@@ -116,7 +116,10 @@ const queryCases = [
 
 for (const check of queryCases) {
   const response = await request(check.path, 'manual')
-  const observedUrl = response.status >= 300 && response.status < 400
+  const redirecting = response.status >= 300 && response.status < 400
+  if (redirecting && !response.location) throw new Error(`Query redirect is missing Location for ${check.path}`)
+  if (!redirecting && response.status !== 200) throw new Error(`Query route failed for ${check.path}: HTTP ${response.status}`)
+  const observedUrl = redirecting
     ? new URL(response.location, response.requestedUrl)
     : new URL(response.finalUrl)
   if (observedUrl.origin !== canonicalOrigin || normalizePath(observedUrl.pathname) !== normalizePath(new URL(response.requestedUrl).pathname)) {
@@ -160,14 +163,15 @@ try {
     { name: 'mobile', viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true },
   ]
   for (const profile of profiles) {
-    const context = await browser.newContext({ ...profile, serviceWorkers: 'block' })
+    const { name: profileName, ...contextOptions } = profile
+    const context = await browser.newContext({ ...contextOptions, serviceWorkers: 'block' })
     const page = await context.newPage()
     page.on('pageerror', (error) => {
-      report.pageErrors.push({ profile: profile.name, url: page.url(), message: String(error?.message || error) })
+      report.pageErrors.push({ profile: profileName, url: page.url(), message: String(error?.message || error) })
     })
     page.on('console', (message) => {
       if (message.type() === 'error') {
-        report.consoleErrors.push({ profile: profile.name, url: page.url(), message: message.text() })
+        report.consoleErrors.push({ profile: profileName, url: page.url(), message: message.text() })
       }
     })
     page.on('request', (requestEvent) => {
@@ -175,12 +179,12 @@ try {
       try {
         requested = new URL(requestEvent.url())
       } catch {
-        report.externalRequests.push({ profile: profile.name, url: requestEvent.url(), resourceType: requestEvent.resourceType(), reason: 'invalid-url' })
+        report.externalRequests.push({ profile: profileName, url: requestEvent.url(), resourceType: requestEvent.resourceType(), reason: 'invalid-url' })
         return
       }
       if (['data:', 'blob:', 'about:'].includes(requested.protocol)) return
       if (requested.origin !== canonicalOrigin) {
-        report.externalRequests.push({ profile: profile.name, url: requested.toString(), resourceType: requestEvent.resourceType(), reason: 'cross-origin' })
+        report.externalRequests.push({ profile: profileName, url: requested.toString(), resourceType: requestEvent.resourceType(), reason: 'cross-origin' })
       }
     })
     const browserRoutes = ['/', '/life-map', queryCases[0].path, queryCases[1].path, '/privacy-controls', '/status']
@@ -190,12 +194,12 @@ try {
       if (!response || response.status() !== 200) throw new Error(`Browser route failed for ${route}: ${response?.status() ?? 'no response'}`)
       await page.locator('body').waitFor({ state: 'visible', timeout: 10000 })
       await page.waitForTimeout(1200)
-      assertCanonicalFinalUrl(`${profile.name} browser route ${route}`, requestedUrl, page.url())
+      assertCanonicalFinalUrl(`${profileName} browser route ${route}`, requestedUrl, page.url())
       const identityCheck = queryCases.find((check) => check.path === route)
-      if (identityCheck) await verifyHydratedIdentity(page, identityCheck, profile.name)
+      if (identityCheck) await verifyHydratedIdentity(page, identityCheck, profileName)
       const html = await page.content()
-      if (!html.includes(expectedSha)) throw new Error(`Hydrated browser route ${route} is missing exact release SHA on ${profile.name}`)
-      const filename = `${profile.name}-${route.replace(/[/?=&]+/g, '-').replace(/^-|-$/g, '') || 'root'}.png`
+      if (!html.includes(expectedSha)) throw new Error(`Hydrated browser route ${route} is missing exact release SHA on ${profileName}`)
+      const filename = `${profileName}-${route.replace(/[/?=&]+/g, '-').replace(/^-|-$/g, '') || 'root'}.png`
       await page.screenshot({ path: `${out}/${filename}`, fullPage: true, animations: 'disabled' })
       report.screenshots.push(filename)
     }
