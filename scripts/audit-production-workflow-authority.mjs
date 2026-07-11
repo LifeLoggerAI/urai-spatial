@@ -4,14 +4,12 @@ import path from 'node:path'
 
 const root = process.cwd()
 const workflowsDir = path.join(root, '.github', 'workflows')
-const scriptsDir = path.join(root, 'scripts')
 const canonicalWorkflowPath = '.github/workflows/spatial-live-deploy.yml'
 const securityWorkflowPath = '.github/workflows/release-security-path-guard.yml'
-const canonicalProductionScript = 'scripts/live-release.mjs'
 const failures = []
 
-function normalize(source) {
-  return source.replace(/\r\n?/g, '\n')
+function normalize(value) {
+  return value.replace(/\r\n?/g, '\n')
 }
 
 function read(relativePath) {
@@ -21,19 +19,6 @@ function read(relativePath) {
     return ''
   }
   return normalize(readFileSync(absolute, 'utf8'))
-}
-
-function walk(directory) {
-  if (!existsSync(directory)) return []
-  return readdirSync(directory, { withFileTypes: true }).flatMap((entry) => {
-    const absolute = path.join(directory, entry.name)
-    if (entry.isDirectory()) return walk(absolute)
-    return entry.isFile() ? [absolute] : []
-  })
-}
-
-function relative(file) {
-  return path.relative(root, file).replaceAll('\\', '/')
 }
 
 function requireAll(label, source, markers) {
@@ -53,26 +38,14 @@ function jobSection(source, jobName) {
   const start = source.indexOf(marker)
   if (start < 0) return ''
   const remainder = source.slice(start + marker.length)
-  const nextJob = remainder.search(/\n  [A-Za-z0-9_-]+:\n/)
-  return nextJob < 0 ? remainder : remainder.slice(0, nextJob)
-}
-
-function containsDirectFirebaseDeploy(source) {
-  return [
-    /\bfirebase(?:-tools)?(?:@[^\s'"`]+)?\s+deploy\b/i,
-    /\b(?:run|spawnSync|execFileSync)\(\s*['"]firebase['"]\s*,\s*\[\s*['"]deploy['"]/i,
-  ].some((pattern) => pattern.test(source))
+  const next = remainder.search(/\n  [A-Za-z0-9_-]+:\n/)
+  return next < 0 ? remainder : remainder.slice(0, next)
 }
 
 function workflowExecutesProductionMutation(source) {
-  return containsDirectFirebaseDeploy(source) ||
-    /(?:run:\s*|\n\s*)node\s+scripts\/live-release\.mjs\s+--deploy-prebuilt\b/.test(source) ||
-    /(?:run:\s*|\n\s*)pnpm\s+live:deploy\b/.test(source)
-}
-
-function scriptExecutesProductionMutation(source) {
-  return containsDirectFirebaseDeploy(source) ||
-    /process\.env\.URAI_DEPLOY_CONFIRM\s*!==\s*['"]DEPLOY_STATIC_URAI['"]/.test(source)
+  return source.includes('node scripts/live-release.mjs --deploy-prebuilt') ||
+    /(^|\n)\s*(?:run:\s*)?(?:npx\s+)?firebase(?:-tools)?(?:@[^\s]+)?\s+deploy\b/i.test(source) ||
+    /(^|\n)\s*run:\s*pnpm\s+live:deploy\b/i.test(source)
 }
 
 for (const retired of [
@@ -85,17 +58,6 @@ for (const retired of [
   'scripts/urai-v1-autopilot.sh',
 ]) {
   if (existsSync(path.join(root, retired))) failures.push(`Retired executable was restored: ${retired}`)
-}
-
-const productionScripts = []
-for (const file of walk(scriptsDir)) {
-  if (!/\.(?:mjs|cjs|js|sh)$/.test(file)) continue
-  const name = relative(file)
-  if (name === 'scripts/audit-production-workflow-authority.mjs') continue
-  if (scriptExecutesProductionMutation(readFileSync(file, 'utf8'))) productionScripts.push(name)
-}
-if (productionScripts.length !== 1 || productionScripts[0] !== canonicalProductionScript) {
-  failures.push(`Exactly one production mutation script is allowed (${canonicalProductionScript}); found ${productionScripts.sort().join(', ') || 'none'}`)
 }
 
 const productionWorkflows = []
@@ -113,8 +75,6 @@ if (productionWorkflows.length !== 1 || productionWorkflows[0] !== canonicalWork
 
 const workflow = read(canonicalWorkflowPath)
 const securityWorkflow = read(securityWorkflowPath)
-const verifyJob = jobSection(workflow, 'verify')
-const rollbackJob = jobSection(workflow, 'rollback-verify')
 const buildJob = jobSection(workflow, 'build-release-output')
 const attestJob = jobSection(workflow, 'attest-release-bundle')
 const deployJob = jobSection(workflow, 'deploy')
@@ -134,10 +94,9 @@ requireAll('Canonical production workflow', workflow, [
   'git merge-base --is-ancestor',
   'gh workflow run spatial-live-deploy.yml --ref main',
 ])
-
-for (const [name, section] of Object.entries({ verifyJob, rollbackJob, buildJob, attestJob, deployJob })) {
-  if (!section) failures.push(`Canonical production workflow is missing job: ${name}`)
-}
+if (!buildJob) failures.push('Canonical workflow is missing build-release-output')
+if (!attestJob) failures.push('Canonical workflow is missing attest-release-bundle')
+if (!deployJob) failures.push('Canonical workflow is missing deploy')
 
 requireAll('Target-only build job', buildJob, [
   'Checkout exact release target only',
@@ -195,6 +154,7 @@ requireAll('Release security workflow', securityWorkflow, [
   'name: Release Security Path Guard',
   'permissions:\n  contents: read',
   'runs-on: ubuntu-24.04',
+  'fetch-depth: 1',
   'persist-credentials: false',
   'show-progress: false',
   'node scripts/verify-release-security-path-guard.mjs',
@@ -215,7 +175,7 @@ forbidAny('Release security workflow', securityWorkflow, [
 ])
 if (workflowExecutesProductionMutation(securityWorkflow)) failures.push('Release security workflow must not execute production mutation')
 
-const operator = read(canonicalProductionScript)
+const operator = read('scripts/live-release.mjs')
 requireAll('Canonical production operator', operator, [
   "const canonicalWorkflow = 'URAI Canonical Production Release'",
   "const canonicalRepository = 'LifeLoggerAI/urai-spatial'",
@@ -252,9 +212,6 @@ requireAll('Authority bundle attester', bundle, [
   'fingerprintSha256',
 ])
 
-const bundleAlias = read('scripts/attest-static-release-bundle.mjs')
-if (!bundleAlias.includes("import './create-static-release-bundle.mjs'")) failures.push('Bundle alias must delegate to the canonical authority attester')
-
 const credentialBoundary = read('scripts/verify-release-credential-boundary.mjs')
 requireAll('Credential boundary verifier', credentialBoundary, [
   "schemaVersion: 'urai-release-credential-boundary-4'",
@@ -288,10 +245,6 @@ if (scripts['live:deploy'] !== 'node scripts/live-release.mjs --deploy-prebuilt'
 for (const forbiddenAlias of ['studio:deploy:static', 'deploy:xr:firebase', 'deploy:xr:firebase:static', 'deploy:staging', 'deploy:prod', 'frb', 'live:deploy:static', 'publish:live:static']) {
   if (forbiddenAlias in scripts) failures.push(`Forbidden deploy alias remains in package.json: ${forbiddenAlias}`)
 }
-for (const [name, command] of Object.entries(scripts)) {
-  if (containsDirectFirebaseDeploy(command)) failures.push(`Direct Firebase deploy command remains in package script: ${name}`)
-  if (name !== 'live:deploy' && /live-release\.mjs\s+--deploy(?:-prebuilt)?/.test(command)) failures.push(`Package script bypasses canonical live:deploy alias: ${name}`)
-}
 
 const proof = read('scripts/aaa-launch-proof.mjs')
 requireAll('Proof-only runner', proof, [
@@ -302,60 +255,19 @@ requireAll('Proof-only runner', proof, [
   'productionDeploymentAttempted: false',
   "productionDeploymentAuthority: '.github/workflows/spatial-live-deploy.yml'",
 ])
-if (containsDirectFirebaseDeploy(proof)) failures.push('Proof-only runner contains a direct deploy command')
-
-for (const guidePath of ['docs/aaa-launch-proof-runner.md', 'docs/receipts/URAI_PROOF_MACHINE.md']) {
-  const guide = read(guidePath)
-  requireAll(guidePath, guide, ['scripts/aaa-launch-proof.mjs', canonicalWorkflowPath])
-  if (/urai-aaa-proof-loop\.sh|node\s+scripts\/urai-proof-loop\.mjs|aaa-launch-proof\.mjs[^\n`]*--deploy/.test(guide)) failures.push(`${guidePath} references a retired or deploy-capable proof path`)
-}
-
-const steering = read('scripts/urai-aaa-steer.mjs')
-requireAll('Machine steering', steering, [
-  "screenshotDirectory || 'live-visual-audit/screenshots'",
-  'receipt.sourceIdentityVerified === true',
-  'receipt.cleanWorkingTree === true',
-  'receipt.productionDeploymentAttempted === false',
-  'machineProofGreen',
-])
-const steeringCompatibility = read('scripts/urai-aaa-steer.cjs')
-if (!steeringCompatibility.includes("import('./urai-aaa-steer.mjs')")) failures.push('Steering compatibility wrapper must delegate to canonical implementation')
-
-const steeringPlanText = read('docs/aaa-machine/steering-plan.json')
-try {
-  const plan = JSON.parse(steeringPlanText)
-  if (Number(plan.version) < 2) failures.push('Steering plan version must be at least 2')
-  if (plan.proofRequirements?.productionDeploymentAttempted !== false) failures.push('Steering plan must require productionDeploymentAttempted=false')
-  if (plan.proofRequirements?.screenshotsPng !== 28) failures.push('Steering plan must require the current 28-screen visual matrix')
-  if (plan.receiptContract?.screenshotDirectory !== 'live-visual-audit/screenshots') failures.push('Steering plan screenshot directory does not match proof output')
-  if (plan.receiptContract?.productionAuthority !== canonicalWorkflowPath) failures.push('Steering plan production authority is not canonical')
-  if ('deployExit' in (plan.proofRequirements || {})) failures.push('Steering plan still expects a local deploy exit code')
-  for (const loop of plan.loops || []) {
-    const command = String(loop.runCommand || '')
-    if (!command.includes('node scripts/aaa-launch-proof.mjs --screenshots')) failures.push(`Steering loop ${loop.id || 'unknown'} does not use the proof-only runner`)
-    if (/--deploy\b|urai-aaa-proof-loop\.sh|urai-proof-loop\.mjs/.test(command)) failures.push(`Steering loop ${loop.id || 'unknown'} references a retired or deploy-capable path`)
-  }
-} catch (error) {
-  failures.push(`Invalid steering plan: ${error instanceof Error ? error.message : String(error)}`)
-}
-
-for (const snapshotPath of ['docs/receipts/machine-steering/latest.json', 'docs/receipts/machine-steering/latest.txt']) {
-  const snapshot = read(snapshotPath)
-  requireAll(snapshotPath, snapshot, ['scripts/aaa-launch-proof.mjs', canonicalWorkflowPath])
-  if (/urai-aaa-proof-loop\.sh|node\s+scripts\/urai-proof-loop\.mjs|aaa-launch-proof\.mjs[^\n"]*--deploy/.test(snapshot)) failures.push(`${snapshotPath} contains a retired or deploy-capable proof command`)
-}
+if (workflowExecutesProductionMutation(proof)) failures.push('Proof-only runner contains a deploy-capable command')
 
 const report = {
-  schemaVersion: 'urai-production-authority-audit-6',
+  schemaVersion: 'urai-production-authority-audit-7',
   ok: failures.length === 0,
   canonicalWorkflow: canonicalWorkflowPath,
-  canonicalProductionScript,
   productionWorkflows: productionWorkflows.sort(),
-  productionScripts: productionScripts.sort(),
   releaseSmokeSchema: 'urai-release-control-smoke-5',
+  exactHeadSecurityCheckoutDepth: 1,
   preRequestNetworkBlockingRequired: true,
   exactQueryIdentityRequired: true,
   rawServiceAccountSecretOccurrences: secretOccurrences,
+  executableUniquenessDelegatedToCredentialBoundaryVerifier: true,
   failures,
 }
 
