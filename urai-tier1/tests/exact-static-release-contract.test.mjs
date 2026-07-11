@@ -8,6 +8,7 @@ const operator = readFileSync('../scripts/live-release.mjs', 'utf8')
 const fingerprintWriter = readFileSync('../scripts/write-release-fingerprint.mjs', 'utf8')
 const verifier = readFileSync('../scripts/urai-post-deploy-smoke.mjs', 'utf8')
 const workflow = readFileSync('../.github/workflows/spatial-live-deploy.yml', 'utf8')
+const credentialBoundary = readFileSync('../scripts/verify-release-credential-boundary.mjs', 'utf8')
 
 test('static hosting publishes the canonical export without route masking', () => {
   assert.equal(hosting.public, 'urai-tier1/out')
@@ -47,6 +48,26 @@ test('release operator is exact-SHA, rollback-aware, protected, fingerprinted, a
   assert.doesNotMatch(operator, /hosting,firestore/)
   assert.doesNotMatch(operator, /firestore:indexes/)
   assert.doesNotMatch(operator, /functions/)
+})
+
+test('release credentials are ephemeral and isolated from target-controlled commands', () => {
+  for (const marker of [
+    'delete env.FIREBASE_SERVICE_ACCOUNT_JSON',
+    'delete env.GOOGLE_APPLICATION_CREDENTIALS',
+    'writeTemporaryServiceAccount',
+    'deployHostingWithTemporaryCredentials',
+    'removeTemporaryServiceAccount',
+    'mode: 0o600',
+  ]) assert.ok(operator.includes(marker), `missing credential-isolation marker: ${marker}`)
+  assert.match(workflow, /GOOGLE_APPLICATION_CREDENTIALS: \$\{\{ runner\.temp \}\}\/urai-firebase-service-account\.json/)
+  assert.match(workflow, /Install frozen target dependencies without production credentials/)
+  assert.match(workflow, /Deploy exact target with current authority and ephemeral credentials/)
+  assert.match(workflow, /node scripts\/verify-release-credential-boundary\.mjs/)
+  assert.doesNotMatch(workflow, /printf\s+['"]%s['"]\s+"\$FIREBASE_SERVICE_ACCOUNT_JSON"\s*>\s*"\$GOOGLE_APPLICATION_CREDENTIALS"/)
+  assert.match(credentialBoundary, /urai-release-credential-boundary-1/)
+  assert.match(credentialBoundary, /secretOccurrences !== 1/)
+  assert.match(credentialBoundary, /targetCommandsReceiveRawSecret: false/)
+  assert.match(credentialBoundary, /targetCommandsReceiveCredentialPath: false/)
 })
 
 test('fingerprint writer publishes exact release and distinct recovery authority', () => {
