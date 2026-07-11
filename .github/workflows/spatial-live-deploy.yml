@@ -9,6 +9,7 @@ on:
       - 'scripts/write-release-fingerprint.mjs'
       - 'scripts/urai-release-control-smoke.mjs'
       - 'scripts/audit-production-workflow-authority.mjs'
+      - 'scripts/verify-release-credential-boundary.mjs'
       - 'firebase.static.json'
       - 'package.json'
       - 'pnpm-lock.yaml'
@@ -21,6 +22,7 @@ on:
       - 'scripts/write-release-fingerprint.mjs'
       - 'scripts/urai-release-control-smoke.mjs'
       - 'scripts/audit-production-workflow-authority.mjs'
+      - 'scripts/verify-release-credential-boundary.mjs'
       - 'firebase.static.json'
       - 'package.json'
       - 'pnpm-lock.yaml'
@@ -122,6 +124,8 @@ jobs:
       - name: Audit production workflow authority
         if: github.event_name != 'workflow_dispatch' || inputs.confirm != 'ROLLBACK_URAI_APP'
         run: node scripts/audit-production-workflow-authority.mjs
+      - name: Verify release credential boundary
+        run: node scripts/verify-release-credential-boundary.mjs
       - name: Validate canonical assets
         run: pnpm --dir urai-tier1 assets:validate
       - name: Materialize asset receipt
@@ -206,6 +210,9 @@ jobs:
       - name: Audit current production authority
         working-directory: authority
         run: node scripts/audit-production-workflow-authority.mjs
+      - name: Verify current credential boundary
+        working-directory: authority
+        run: node scripts/verify-release-credential-boundary.mjs
       - name: Validate rollback target assets
         working-directory: target
         run: pnpm --dir urai-tier1 assets:validate
@@ -276,7 +283,7 @@ jobs:
       URAI_LIVE_BASE_URL: https://urai.app
       URAI_DEPLOY_CONFIRM: DEPLOY_STATIC_URAI
       URAI_RELEASE_OPERATION: ${{ inputs.confirm == 'ROLLBACK_URAI_APP' && 'rollback' || 'deploy' }}
-      GOOGLE_APPLICATION_CREDENTIALS: ${{ github.workspace }}/firebase-service-account.json
+      GOOGLE_APPLICATION_CREDENTIALS: ${{ runner.temp }}/urai-firebase-service-account.json
     steps:
       - name: Checkout current release authority
         uses: actions/checkout@v4
@@ -312,23 +319,6 @@ jobs:
             test "$ROLLBACK_SHA" = "$CURRENT_MAIN_SHA"
             git -C authority merge-base --is-ancestor "$RELEASE_SHA" "$CURRENT_MAIN_SHA"
           fi
-      - name: Write and validate temporary service account
-        shell: bash
-        env:
-          FIREBASE_SERVICE_ACCOUNT_JSON: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_JSON }}
-        run: |
-          set -euo pipefail
-          test -n "$FIREBASE_SERVICE_ACCOUNT_JSON"
-          printf '%s' "$FIREBASE_SERVICE_ACCOUNT_JSON" > "$GOOGLE_APPLICATION_CREDENTIALS"
-          python -m json.tool "$GOOGLE_APPLICATION_CREDENTIALS" >/dev/null
-          python - "$GOOGLE_APPLICATION_CREDENTIALS" "$URAI_EXPECTED_FIREBASE_PROJECT" <<'PY'
-          import json, sys
-          with open(sys.argv[1], encoding='utf-8') as handle:
-              service_account = json.load(handle)
-          if service_account.get('project_id') != sys.argv[2]:
-              raise SystemExit(f"Service-account project mismatch: {service_account.get('project_id')!r}")
-          PY
-          chmod 600 "$GOOGLE_APPLICATION_CREDENTIALS"
       - uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
@@ -336,14 +326,19 @@ jobs:
         run: |
           corepack enable
           corepack prepare "pnpm@${PNPM_VERSION}" --activate
-      - name: Install frozen target dependencies
+      - name: Install frozen target dependencies without production credentials
         working-directory: target
         run: pnpm install --frozen-lockfile
-      - name: Install Chromium for live evidence
+      - name: Install Chromium without production credentials
         working-directory: target
         run: pnpm exec playwright install --with-deps chromium
-      - name: Deploy exact target with current authority
+      - name: Revalidate current credential boundary
+        working-directory: authority
+        run: node scripts/verify-release-credential-boundary.mjs
+      - name: Deploy exact target with current authority and ephemeral credentials
         working-directory: target
+        env:
+          FIREBASE_SERVICE_ACCOUNT_JSON: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_JSON }}
         run: node ../authority/scripts/live-release.mjs --deploy
       - name: Run canonical live smoke with current authority
         working-directory: target
