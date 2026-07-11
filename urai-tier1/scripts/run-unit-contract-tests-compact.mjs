@@ -18,6 +18,7 @@ const tests = [
   'tests/quest-pointer-cancel.test.mjs',
   'tests/release-control-smoke-boundary-contract.test.mjs',
   'tests/replay-memory-theater-contract.test.mjs',
+  'tests/sensory-asset-resolution-contract.test.mjs',
   'tests/spatial-launch-boundaries.test.mjs',
   'tests/unit-runner-coverage.test.mjs',
   'tests/v2-asset-gating.test.mjs',
