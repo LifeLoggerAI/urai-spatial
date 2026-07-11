@@ -13,7 +13,7 @@ Classification: `SOURCE-CONSOLIDATED / ACTIVE-CI-REPAIR / NOT DEPLOYED / NOT CER
 - Canonical main SHA: `60730edcb5bcedfe2ded2cee9a96cef96dff9510`
 - Consolidated Phase 2 PR: `#539`
 - Consolidated branch: `release/protected-rollback-authority-20260711-v2`
-- Final source head before this receipt: `d76d81674ae7ab65f3269fcf372b0f3a7b8cf315`
+- Final source head before this receipt: `e2a4bc1923eb041389c18994a9366f5f983b9222`
 - PR state at recording: open, draft, mergeable
 - Candidate inventory: 32 source/control files plus this receipt
 
@@ -43,19 +43,28 @@ On stale head `7fc065c4afa43585516c9619882da7f058ee6c9b`:
 - Spatial Missing Resource Diagnostics succeeded;
 - Release Security Path Guard failed in `Audit production workflow authority`.
 
-The failed job passed checkout, exact clean source identity, Node setup, syntax checks, guard immutability and immutable action-pin verification first.
-
-The first defect was a stale authority-audit assertion requiring release-control smoke schema `2` after the consolidated smoke advanced to schema `5`. The audit was advanced to `urai-production-authority-audit-5` and now requires exact query identity, Playwright request interception, `blockedbyclient` abort behavior and retained blocked-request evidence.
+The first defect was a stale audit assertion requiring release-control smoke schema `2` after the consolidated smoke advanced to schema `5`.
 
 On stale repaired head `53eb1c7e8c6cf2de5d23d9c6341e112ad1d9b233`:
 
 - XR Static Gate Diagnostics succeeded;
 - Spatial Missing Resource Diagnostics succeeded;
-- Release Security Path Guard again failed in the authority-audit step after the same preceding security checks passed.
+- Release Security Path Guard again failed in the authority-audit step after checkout, exact source identity, Node setup, syntax, guard immutability and action-pin verification all passed.
 
-The connector-truncated runner log did not expose the final audit failure list. The security workflow was therefore changed only to set `show-progress: false` on the exact pinned checkout step. This changes no permissions, paths, action pins, source checks, authority rules, credential boundaries or deployment capability; it makes the audit result readable for the next exact-head repair cycle.
+The second defect was reference-based production-workflow detection: the read-only security guard was classified as production-capable merely because it referenced `live-release.mjs` for syntax checking.
 
-Every workflow conclusion from `53eb1c7e...`, `7fc065c4...` and earlier heads is stale for final gating.
+The authority audit now:
+
+- detects actual production mutation execution instead of passive path references;
+- requires exactly one production mutation script and one production mutation workflow;
+- preserves target-build, attestation, credential, fingerprint, rollback, smoke, proof and steering boundaries;
+- requires release-control smoke schema `5`, exact query identity and pre-request network blocking;
+- emits explicit GitHub annotations for every future failure;
+- reports schema `urai-production-authority-audit-6`.
+
+The security workflow keeps immutable checkout/setup-node pins, read-only permissions, exact source identity, all security checks and `fetch-depth: 0`; `show-progress: false` only removes checkout noise so audit diagnostics remain readable.
+
+Every workflow conclusion from `e2a4bc19...` before this receipt, `53eb1c7e...`, `7fc065c4...` and earlier heads is stale for final gating.
 
 ## Final changed-file inventory
 
