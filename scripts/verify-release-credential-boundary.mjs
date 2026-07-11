@@ -11,6 +11,7 @@ import {
 const directory = path.dirname(fileURLToPath(import.meta.url))
 const staticVerifierPath = path.join(directory, 'verify-release-credential-boundary-static.mjs')
 const liveProvenanceVerifierPath = path.join(directory, 'verify-live-rollback-provenance.mjs')
+const releaseOperatorPath = path.join(directory, 'live-release.mjs')
 const failures = []
 
 function sha256(file) {
@@ -34,10 +35,12 @@ const requiredStaticMarkers = [
   'normalizeNewlines',
   'secretOccurrences !== 1',
   'lineEndingsNormalized: true',
+  'thirdPartyActionsPinned: true',
+  'rollbackAuthorityVerifierUsesCurrentAuthority: true',
   'targetBuildIsolated: true',
   'authorityAttestationIsolated: true',
   'targetCodeExecutesInProductionJob: false',
-  'prebuiltArtifactHashVerified: true',
+  'releaseOperatorVerifiesFullBundleManifest: true',
   'credentialsMaterializedByAuthorityOnly: true',
   'unmanagedLocalCredentialPathsIgnoredDuringVerification: true',
   'managedCredentialPathRequiredForProductionWrite: true',
@@ -64,6 +67,25 @@ if (requireRegularFile('Live rollback-provenance verifier', liveProvenanceVerifi
   const liveVerifierSource = readFileSync(liveProvenanceVerifierPath, 'utf8').replace(/\r\n?/g, '\n')
   for (const marker of requiredLiveProvenanceMarkers) {
     if (!liveVerifierSource.includes(marker)) failures.push(`Live rollback-provenance verifier missing marker: ${marker}`)
+  }
+}
+
+let releaseOperatorFullBundleVerificationPresent = false
+if (requireRegularFile('Release operator', releaseOperatorPath)) {
+  const releaseOperatorSource = readFileSync(releaseOperatorPath, 'utf8').replace(/\r\n?/g, '\n')
+  const requiredOperatorMarkers = [
+    'function validateAndMaterializePrebuiltBundle',
+    'Release bundle file set, sizes, or hashes do not match the manifest',
+    'Release bundle manifest totals do not match the verified files',
+    'Materialized hosting output does not match the verified release bundle',
+    'validateAndMaterializePrebuiltBundle(targetSha, authoritySha, false)',
+    'validateAndMaterializePrebuiltBundle(targetSha, authoritySha)',
+  ]
+  const missing = requiredOperatorMarkers.filter((marker) => !releaseOperatorSource.includes(marker))
+  if (missing.length) {
+    for (const marker of missing) failures.push(`Release operator missing full-bundle verifier marker: ${marker}`)
+  } else {
+    releaseOperatorFullBundleVerificationPresent = true
   }
 }
 
@@ -135,26 +157,31 @@ if (bundleDirectoryValue) {
 }
 
 const report = {
-  schemaVersion: 'urai-release-credential-boundary-3',
+  schemaVersion: 'urai-release-credential-boundary-4',
   ok:
     failures.length === 0 &&
     process.exitCode !== 1 &&
     (!liveRollbackProvenanceRequired || liveRollbackProvenanceVerified),
   lineEndingsNormalized: true,
+  thirdPartyActionsPinned: true,
+  rollbackAuthorityVerifierUsesCurrentAuthority: true,
   targetBuildIsolated: true,
   authorityAttestationIsolated: true,
   targetCodeExecutesInProductionJob: false,
-  prebuiltArtifactHashVerified: true,
   credentialsMaterializedByAuthorityOnly: true,
   unmanagedLocalCredentialPathsIgnoredDuringVerification: true,
   managedCredentialPathRequiredForProductionWrite: true,
   firebaseCliResolvedFromCurrentAuthority: true,
+  releaseOperatorFullBundleVerificationPresent,
   liveRollbackProvenanceRequired,
   liveRollbackProvenanceVerified,
   downloadedBundleRequired,
   downloadedBundlePresent,
   downloadedBundleRunBound,
   downloadedBundleFingerprintBound,
+  fullBundleVerificationStatus: downloadedBundleRequired
+    ? 'pending-live-release-verify-prebuilt-step'
+    : 'not-applicable-in-this-job',
   failures,
 }
 
