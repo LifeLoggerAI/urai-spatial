@@ -16,6 +16,7 @@ const tests = [
   'tests/quest-entry-lifecycle.test.mjs',
   'tests/quest-ended-during-attach.test.mjs',
   'tests/quest-pointer-cancel.test.mjs',
+  'tests/release-control-smoke-boundary-contract.test.mjs',
   'tests/replay-memory-theater-contract.test.mjs',
   'tests/spatial-launch-boundaries.test.mjs',
   'tests/unit-runner-coverage.test.mjs',
