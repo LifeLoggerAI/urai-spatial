@@ -1,310 +1,157 @@
 #!/usr/bin/env node
 
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
-import { homedir } from 'node:os';
-import { join } from 'node:path';
-import { spawnSync } from 'node:child_process';
-import { resolve4, resolve6, resolveCname } from 'node:dns/promises';
+import { existsSync, mkdirSync, writeFileSync } from 'node:fs'
+import { homedir } from 'node:os'
+import { join } from 'node:path'
+import { spawnSync } from 'node:child_process'
 
-const args = new Set(process.argv.slice(2));
+const argv = process.argv.slice(2)
+const args = new Set(argv)
 const getArg = (name, fallback) => {
-  const prefix = `${name}=`;
-  const match = process.argv.slice(2).find((arg) => arg.startsWith(prefix));
-  return match ? match.slice(prefix.length) : fallback;
-};
+  const prefix = `${name}=`
+  const match = argv.find((arg) => arg.startsWith(prefix))
+  return match ? match.slice(prefix.length) : fallback
+}
 
 if (args.has('--help') || args.has('-h')) {
-  console.log(`URAI AAA launch proof runner\n\nUsage:\n  node scripts/aaa-launch-proof.mjs [--deploy] [--screenshots] [--skip-install] [--skip-assets] [--skip-test] [--skip-build] [--base=https://urai.app]\n\nWhat it does:\n  - Creates a receipt folder under $HOME/urai-final-receipts\n  - Records git state\n  - Runs install/typecheck/asset verification/test/build unless skipped\n  - Deploys only when --deploy is passed\n  - Curls the live route matrix and checks route-specific copy fingerprints\n  - Checks foundation DNS/HTTPS without claiming success unless it resolves\n  - Optionally captures screenshots if Playwright is available\n  - Writes final-report.md\n`);
-  process.exit(0);
+  console.log(`URAI AAA proof runner
+
+Usage:
+  node scripts/aaa-launch-proof.mjs [--screenshots] [--skip-install] [--skip-assets] [--skip-test] [--skip-build] [--skip-typecheck] [--base=https://urai.app]
+
+This command is proof-only. It requires an exact clean Git commit. Production deployment is available only through .github/workflows/spatial-live-deploy.yml.`)
+  process.exit(0)
 }
 
-const baseUrl = getArg('--base', process.env.URAI_BASE_URL || 'https://urai.app').replace(/\/$/, '');
-const receiptBase = process.env.URAI_RECEIPT_ROOT || join(homedir(), 'urai-final-receipts');
-const shouldDeploy = args.has('--deploy');
-const shouldScreenshots = args.has('--screenshots');
-const skipInstall = args.has('--skip-install');
-const skipAssets = args.has('--skip-assets');
-const skipTest = args.has('--skip-test');
-const skipBuild = args.has('--skip-build');
-const skipTypecheck = args.has('--skip-typecheck');
-const projectId = process.env.FIREBASE_PROJECT_ID || 'urai-4dc1d';
+if (args.has('--deploy')) {
+  console.error('Direct deployment is disabled. Use the protected URAI Canonical Production Release workflow.')
+  process.exit(64)
+}
 
-const routeExpectations = [
-  { route: '/', required: ['Own your life', 'Step inside yourself'] },
-  { route: '/home', required: ['Own your life', 'Step inside yourself'] },
-  { route: '/ground', required: ['Ground', 'walkable-first-person-ground-layer', 'Private operations floor'] },
-  { route: '/life-map', required: ['Life Map', 'Thirty-four private stars', 'Double click / Enter Focus'] },
-  { route: '/focus', required: ['The Quiet Reset', 'Selected memory chamber', 'selected-memory-camera-chamber'] },
-  { route: '/replay', required: ['Memory film', 'The Quiet Reset', 'cinematic-memory-camera-film'] },
-  { route: '/mirror', required: ['Mirror', 'reflection realm', 'Pattern intelligence'] },
-  { route: '/passport', required: ['Passport', 'Your life stays yours', 'identity-consent-vault'] },
-  { route: '/status', required: ['URAI Status', 'Route matrix'] },
-  {
-    route: '/privacy-controls',
-    required: ['URAI Privacy Controls', 'Choose what the world can hold'],
-    forbidden: ['Home threshold', 'Click the sky', 'Click the ground'],
-  },
-  { route: '/location-map', required: ['Location', 'Place'] },
-  { route: '/spatial/ar-vr', required: ['AR / VR / XR', 'Quest'] },
-  { route: '/demo', required: ['URAI'] },
-  { route: '/demo/replay-film', required: ['Replay'] },
-  { route: '/asset-audit', required: ['Asset'] },
-  { route: '/tier3', required: ['Tier'] },
-  { route: '/tier4', required: ['Tier'] },
-  { route: '/tier5', required: ['Tier'] },
-];
-
-const screenshotRoutes = [
-  ['/home', 'home'],
-  ['/ground', 'ground'],
-  ['/life-map', 'life-map'],
-  ['/focus?memoryId=quiet-reset', 'focus-quiet-reset'],
-  ['/replay?memoryId=quiet-reset&manifestId=replay-recovery-thread', 'replay-recovery-thread'],
-  ['/mirror', 'mirror'],
-  ['/passport', 'passport'],
-  ['/status', 'status'],
-  ['/privacy-controls', 'privacy-controls'],
-  ['/location-map', 'location-map'],
-  ['/spatial/ar-vr', 'spatial-ar-vr'],
-  ['/demo/replay-film', 'demo-replay-film'],
-];
-
-function sh(command, opts = {}) {
-  const result = spawnSync(command, {
-    shell: true,
+const capture = (command, commandArgs) => {
+  const result = spawnSync(command, commandArgs, {
     cwd: process.cwd(),
     encoding: 'utf8',
-    env: { ...process.env, FORCE_COLOR: '0', CI: process.env.CI || '1' },
-    maxBuffer: 1024 * 1024 * 48,
-    ...opts,
-  });
+    shell: process.platform === 'win32',
+  })
   return {
-    command,
     status: typeof result.status === 'number' ? result.status : 1,
-    stdout: result.stdout || '',
-    stderr: result.stderr || '',
-    error: result.error ? String(result.error.message || result.error) : '',
-  };
-}
-
-function safeName(name) {
-  return name.replace(/[^a-z0-9._-]+/gi, '-').replace(/^-+|-+$/g, '').toLowerCase();
-}
-
-function textIncludes(text, needle) {
-  return text.toLowerCase().includes(String(needle).toLowerCase());
-}
-
-function evaluateFingerprint(text, expectation) {
-  const required = expectation.required || [];
-  const forbidden = expectation.forbidden || [];
-  const missingRequired = required.filter((needle) => !textIncludes(text, needle));
-  const presentForbidden = forbidden.filter((needle) => textIncludes(text, needle));
-  return { fingerprintOk: missingRequired.length === 0 && presentForbidden.length === 0, required, forbidden, missingRequired, presentForbidden };
-}
-
-const gitHead = sh('git rev-parse HEAD').stdout.trim() || 'unknown';
-const shortHead = gitHead === 'unknown' ? 'unknown' : gitHead.slice(0, 8);
-const stamp = new Date().toISOString().replace(/[:.]/g, '-');
-const receiptDir = join(receiptBase, `aaa-launch-proof-${shortHead}-${stamp}`);
-const logDir = join(receiptDir, 'logs');
-const screenshotDir = join(receiptDir, 'screenshots');
-mkdirSync(logDir, { recursive: true });
-mkdirSync(screenshotDir, { recursive: true });
-
-const steps = [];
-
-function writeJson(name, value) {
-  writeFileSync(join(receiptDir, name), `${JSON.stringify(value, null, 2)}\n`);
-}
-
-function pushSkippedStep(name, command) {
-  steps.push({ name, command, status: 0, startedAt: new Date().toISOString(), endedAt: new Date().toISOString(), durationMs: 0 });
-}
-
-function logStep(name, command, options = {}) {
-  const startedAt = new Date().toISOString();
-  const started = Date.now();
-  const result = sh(command, options);
-  const endedAt = new Date().toISOString();
-  const durationMs = Date.now() - started;
-  const log = [
-    `STEP=${name}`,
-    `STARTED_AT=${startedAt}`,
-    `ENDED_AT=${endedAt}`,
-    `DURATION_MS=${durationMs}`,
-    `COMMAND=${command}`,
-    `EXIT=${result.status}`,
-    '',
-    '===== STDOUT =====',
-    result.stdout,
-    '',
-    '===== STDERR =====',
-    result.stderr,
-    '',
-    result.error ? `ERROR=${result.error}` : '',
-  ].join('\n');
-  writeFileSync(join(logDir, `${safeName(name)}.log`), log);
-  steps.push({ name, command, status: result.status, startedAt, endedAt, durationMs });
-  console.log(`${result.status === 0 ? 'PASS' : 'FAIL'} ${name} (${result.status})`);
-  return result;
-}
-
-function readAssetReceipt() {
-  const path = join(process.cwd(), 'docs', 'final-asset-receipt.md');
-  if (!existsSync(path)) return { present: false };
-  const text = readFileSync(path, 'utf8');
-  const lineValue = (label) => {
-    const line = text.split('\n').find((entry) => entry.toLowerCase().startsWith(label.toLowerCase()));
-    return line ? line.split(':').slice(1).join(':').trim() : '';
-  };
-  return {
-    present: true,
-    result: lineValue('Result'),
-    totalAssets: lineValue('Total asset files found'),
-    coreRequired: lineValue('Core launch assets checked'),
-    coreMissing: lineValue('Core launch assets missing'),
-    expansionTargets: lineValue('Expansion / AAA next-stage targets checked'),
-    expansionMissing: lineValue('Expansion / AAA next-stage targets missing'),
-    placeholderFinalCount: (text.match(/placeholder-final/g) || []).length,
-  };
-}
-
-async function smokeRoutes() {
-  const rows = [];
-  for (const expectation of routeExpectations) {
-    const route = expectation.route;
-    const url = `${baseUrl}${route}`;
-    const started = Date.now();
-    try {
-      const res = await fetch(url, { redirect: 'follow' });
-      const text = await res.text().catch(() => '');
-      const fingerprint = evaluateFingerprint(text, expectation);
-      const httpOk = res.ok;
-      const ok = httpOk && fingerprint.fingerprintOk;
-      rows.push({ route, url, status: res.status, httpOk, fingerprintOk: fingerprint.fingerprintOk, ok, finalUrl: res.url, ms: Date.now() - started, title: (text.match(/<title>(.*?)<\/title>/i)?.[1] || '').trim(), bytes: text.length, hasUrai: /urai/i.test(text), missingRequired: fingerprint.missingRequired, presentForbidden: fingerprint.presentForbidden });
-      console.log(`${ok ? 'OK' : 'REVIEW'} ${res.status} ${route}${fingerprint.fingerprintOk ? '' : ' fingerprint-mismatch'}`);
-    } catch (error) {
-      rows.push({ route, url, status: 0, httpOk: false, fingerprintOk: false, ok: false, finalUrl: '', ms: Date.now() - started, error: String(error?.message || error) });
-      console.log(`ERR ${route}`);
-    }
+    stdout: String(result.stdout || '').trim(),
+    stderr: String(result.stderr || '').trim(),
   }
-  writeJson('route-matrix.json', rows);
-  writeFileSync(join(receiptDir, 'route-matrix.md'), ['# URAI live route matrix', '', `Base: ${baseUrl}`, '', '| Route | HTTP | HTTP OK | Fingerprint OK | Overall | Final URL | ms | Missing required | Forbidden present | Title |', '| --- | ---: | --- | --- | --- | --- | ---: | --- | --- | --- |', ...rows.map((row) => `| ${row.route} | ${row.status} | ${row.httpOk ? 'yes' : 'no'} | ${row.fingerprintOk ? 'yes' : 'no'} | ${row.ok ? 'yes' : 'no'} | ${row.finalUrl || ''} | ${row.ms} | ${(row.missingRequired || []).join(', ')} | ${(row.presentForbidden || []).join(', ')} | ${String(row.title || '').replace(/\|/g, '/') } |`), ''].join('\n'));
-  return rows;
 }
 
-async function checkDns() {
-  const apex = 'uraifoundation.org';
-  const www = 'www.uraifoundation.org';
-  const expectedGithubPagesIpv4 = new Set(['185.199.108.153', '185.199.109.153', '185.199.110.153', '185.199.111.153']);
-  const result = { apex, www, expectedGithubPagesIpv4: [...expectedGithubPagesIpv4], checks: {} };
-  async function maybe(label, fn) {
-    try {
-      result.checks[label] = { ok: true, value: await fn() };
-    } catch (error) {
-      result.checks[label] = { ok: false, error: String(error?.message || error) };
-    }
+const headResult = capture('git', ['rev-parse', 'HEAD'])
+const statusResult = capture('git', ['status', '--porcelain'])
+const sourceSha = headResult.status === 0 && /^[0-9a-f]{40}$/.test(headResult.stdout) ? headResult.stdout : 'unverified'
+const explicitExpectedSha = String(process.env.URAI_PROOF_SOURCE_SHA || '').trim()
+const workflowExpectedSha = process.env.GITHUB_EVENT_NAME === 'pull_request' ? '' : String(process.env.GITHUB_SHA || '').trim()
+const expectedSourceSha = explicitExpectedSha || workflowExpectedSha
+const cleanWorkingTree = statusResult.status === 0 && statusResult.stdout.length === 0
+const sourceIdentityVerified = sourceSha !== 'unverified' && cleanWorkingTree && (!expectedSourceSha || expectedSourceSha === sourceSha)
+
+const baseUrl = getArg('--base', process.env.URAI_BASE_URL || 'https://urai.app').replace(/\/$/, '')
+const receiptBase = process.env.URAI_RECEIPT_ROOT || join(homedir(), 'urai-final-receipts')
+const loopName = String(process.env.LOOP_NAME || 'manual-proof')
+  .trim()
+  .slice(0, 80)
+  .replace(/[^A-Za-z0-9._-]+/g, '-')
+  .replace(/^-+|-+$/g, '') || 'manual-proof'
+const shouldScreenshots = args.has('--screenshots')
+const skipInstall = args.has('--skip-install')
+const skipAssets = args.has('--skip-assets')
+const skipTest = args.has('--skip-test')
+const skipBuild = args.has('--skip-build')
+const skipTypecheck = args.has('--skip-typecheck')
+
+const routeExpectations = [
+  { route: '/', markers: ['Own your life', 'Step inside yourself'] },
+  { route: '/home', markers: ['Own your life', 'Step inside yourself'] },
+  { route: '/ground', markers: ['Your real life has a place', 'private operating world'] },
+  { route: '/life-map', markers: ['Life Map'] },
+  { route: '/focus?memoryId=quiet-reset', markers: ['The Quiet Reset', 'Selected memory camera chamber'] },
+  { route: '/replay?memoryId=quiet-reset&manifestId=replay-recovery-thread', markers: ['Replay the thread', 'Film beats'] },
+  { route: '/mirror', markers: ['See the pattern clearly', 'Reflection stack'] },
+  { route: '/passport', markers: ['Your life stays yours', 'Vault layers'] },
+  { route: '/status', markers: ['Launch locked. Proof before expansion.', 'Pending proof'] },
+  { route: '/privacy-controls', markers: ['Choose what the world can hold', 'Privacy Controls'] },
+  { route: '/location-map', markers: ['Emotional weather over private places', 'symbolic atlas'] },
+  { route: '/spatial/ar-vr', markers: ['Step inside the Life Map', 'Quest'] },
+  { route: '/demo', markers: ['URAI'] },
+  { route: '/demo/replay-film', markers: ['Replay'] },
+]
+
+const startedAt = new Date().toISOString()
+const runId = startedAt.replace(/[:.]/g, '-')
+const shortSha = sourceSha === 'unverified' ? sourceSha : sourceSha.slice(0, 12)
+const receiptDir = join(receiptBase, `aaa-launch-proof-${loopName}-${shortSha}-${runId}`)
+mkdirSync(receiptDir, { recursive: true })
+
+const commands = []
+const writeReceipt = (status, failedStep = '') => {
+  const receipt = {
+    status,
+    failedStep,
+    loopName,
+    sourceSha,
+    expectedSourceSha: expectedSourceSha || null,
+    cleanWorkingTree,
+    sourceIdentityVerified,
+    sourceIdentityErrors: {
+      gitHead: headResult.status === 0 ? null : headResult.stderr || 'git rev-parse failed',
+      gitStatus: statusResult.status === 0 ? null : statusResult.stderr || 'git status failed',
+      expectedShaMismatch: Boolean(expectedSourceSha && expectedSourceSha !== sourceSha),
+    },
+    startedAt,
+    finishedAt: new Date().toISOString(),
+    baseUrl,
+    productionDeploymentAttempted: false,
+    productionDeploymentAuthority: '.github/workflows/spatial-live-deploy.yml',
+    routeExpectations,
+    commands,
   }
-  await maybe('apexA', () => resolve4(apex));
-  await maybe('apexAAAA', () => resolve6(apex));
-  await maybe('wwwCNAME', () => resolveCname(www));
-  await maybe('wwwA', () => resolve4(www));
-  await maybe('httpsApex', async () => {
-    const res = await fetch(`https://${apex}/`, { method: 'HEAD', redirect: 'follow' });
-    return { status: res.status, ok: res.ok, url: res.url, server: res.headers.get('server') || '' };
-  });
-  await maybe('httpsSitemap', async () => {
-    const res = await fetch(`https://${apex}/sitemap.xml`, { method: 'HEAD', redirect: 'follow' });
-    return { status: res.status, ok: res.ok, url: res.url, server: res.headers.get('server') || '' };
-  });
-  const apexA = result.checks.apexA?.value || [];
-  result.githubPagesApex = apexA.length > 0 && apexA.every((ip) => expectedGithubPagesIpv4.has(ip));
-  result.httpsWorks = Boolean(result.checks.httpsApex?.value?.ok && result.checks.httpsSitemap?.value?.ok);
-  result.complete = Boolean(result.githubPagesApex && result.httpsWorks);
-  return result;
+  writeFileSync(join(receiptDir, 'receipt.json'), `${JSON.stringify(receipt, null, 2)}\n`)
+  writeFileSync(join(receiptDir, 'README.md'), `# URAI AAA proof receipt\n\n- Status: ${status}\n- Loop: ${loopName}\n- Source SHA: ${sourceSha}\n- Expected source SHA: ${expectedSourceSha || 'not provided'}\n- Clean working tree: ${cleanWorkingTree ? 'yes' : 'no'}\n- Source identity verified: ${sourceIdentityVerified ? 'yes' : 'no'}\n- Started: ${startedAt}\n- Base URL: ${baseUrl}\n- Production deployment attempted: no\n- Production authority: \`.github/workflows/spatial-live-deploy.yml\`\n${failedStep ? `- Failed step: ${failedStep}\n` : ''}\n`)
 }
 
-async function captureScreenshots() {
-  const result = { requested: shouldScreenshots, captured: [], skipped: [] };
-  if (!shouldScreenshots) {
-    result.skipped.push('Run with --screenshots to attempt Playwright screenshot capture.');
-    writeJson('screenshots.json', result);
-    return result;
-  }
-  let chromium;
-  try {
-    ({ chromium } = await import('playwright'));
-  } catch (error) {
-    result.skipped.push(`Playwright import failed: ${String(error?.message || error)}`);
-    writeJson('screenshots.json', result);
-    return result;
-  }
-  let browser;
-  try {
-    browser = await chromium.launch({ headless: true });
-    for (const [route, name] of screenshotRoutes) {
-      for (const [label, viewport] of [['desktop', { width: 1440, height: 1100 }], ['mobile', { width: 390, height: 844 }]]) {
-        const page = await browser.newPage({ viewport });
-        const path = join(screenshotDir, `${name}-${label}.png`);
-        try {
-          await page.goto(`${baseUrl}${route}`, { waitUntil: 'networkidle', timeout: 45000 });
-          await page.screenshot({ path, fullPage: true });
-          result.captured.push({ route, label, path });
-          console.log(`SHOT ${route} ${label}`);
-        } catch (error) {
-          result.skipped.push(`${route} ${label}: ${String(error?.message || error)}`);
-        } finally {
-          await page.close().catch(() => {});
-        }
-      }
-    }
-  } catch (error) {
-    result.skipped.push(`Browser launch failed: ${String(error?.message || error)}`);
-  } finally {
-    if (browser) await browser.close().catch(() => {});
-  }
-  writeJson('screenshots.json', result);
-  return result;
+if (!sourceIdentityVerified) {
+  writeReceipt('failed', 'source-identity')
+  console.error(`Proof requires an exact clean Git commit. Receipt: ${receiptDir}`)
+  process.exit(65)
 }
 
-function writeReport({ routeRows, dnsResult, screenshotsResult, assetReceipt }) {
-  const failedSteps = steps.filter((step) => step.status !== 0);
-  const failedRoutes = routeRows.filter((row) => !row.ok);
-  const fingerprintFailures = routeRows.filter((row) => row.httpOk && !row.fingerprintOk);
-  const status = failedSteps.length === 0 && failedRoutes.length === 0 ? 'GREEN' : 'YELLOW_OR_RED_REVIEW_REQUIRED';
-  const gitStatus = sh('git status --short').stdout.trim();
-  const branch = sh('git branch --show-current').stdout.trim();
-  const report = ['# URAI AAA launch proof receipt', '', `Generated: ${new Date().toISOString()}`, `Repo: ${process.cwd()}`, `Branch: ${branch || 'unknown'}`, `Commit: ${gitHead}`, `Base URL: ${baseUrl}`, `Receipt: ${receiptDir}`, `Overall receipt status: ${status}`, '', '## Git state', '', gitStatus ? 'Working tree has local changes:' : 'Working tree clean at receipt start/end check:', '', '```text', gitStatus || 'clean', '```', '', '## Command steps', '', '| Step | Exit | Duration ms |', '| --- | ---: | ---: |', ...steps.map((step) => `| ${step.name} | ${step.status} | ${step.durationMs} |`), '', '## Asset receipt', '', assetReceipt.present ? `Result=${assetReceipt.result}; TOTAL_ASSETS=${assetReceipt.totalAssets}; CORE_MISSING=${assetReceipt.coreMissing}; EXPANSION_MISSING=${assetReceipt.expansionMissing}; PLACEHOLDER_FINAL_COUNT=${assetReceipt.placeholderFinalCount}` : 'docs/final-asset-receipt.md not found in this checkout.', '', '## Route matrix summary', '', `Routes checked: ${routeRows.length}`, `Routes OK: ${routeRows.filter((row) => row.ok).length}`, `Routes needing review: ${failedRoutes.length}`, `Fingerprint failures with HTTP 200: ${fingerprintFailures.length}`, '', failedRoutes.length ? failedRoutes.map((row) => `- ${row.route}: HTTP=${row.status}; fingerprint=${row.fingerprintOk ? 'ok' : 'fail'}; missing=${(row.missingRequired || []).join(', ') || 'none'}; forbidden=${(row.presentForbidden || []).join(', ') || 'none'}; error=${row.error || 'none'}`).join('\n') : 'All checked routes returned successful HTTP status and expected route fingerprints.', '', '## Screenshots', '', `Requested: ${screenshotsResult.requested ? 'yes' : 'no'}`, `Captured: ${screenshotsResult.captured.length}`, screenshotsResult.skipped.length ? `Skipped/notes:\n${screenshotsResult.skipped.map((item) => `- ${item}`).join('\n')}` : 'No screenshot notes.', '', '## Quest / WebXR proof state', '', 'XR preview may be live if `/spatial/ar-vr` is green. Physical Quest 2 proof is NOT complete from this script. Record actual Quest Browser proof separately.', '', '## Foundation DNS state', '', `Complete: ${dnsResult.complete ? 'yes' : 'no'}`, `GitHub Pages apex A records: ${dnsResult.githubPagesApex ? 'yes' : 'no'}`, `HTTPS works: ${dnsResult.httpsWorks ? 'yes' : 'no'}`, '', '## Remaining honest gates', '', '- Capture/review desktop and mobile screenshots if not already captured.', '- Do not claim Quest 2 proof until actual Quest Browser testing is recorded.', '- Do not claim `uraifoundation.org` DNS complete unless this receipt says DNS/HTTPS complete and manual browser verification agrees.', '- Do not claim bespoke final art while core art remains placeholder-final.', '- Do not claim production backend/provider automation until real auth/data/actions are wired and tested.', ''].join('\n');
-  writeFileSync(join(receiptDir, 'final-report.md'), report);
-  writeJson('summary.json', { status, gitHead, branch, receiptDir, steps, assetReceipt, routeRows, dnsResult, screenshotsResult });
+const run = (label, command, commandArgs, options = {}) => {
+  const result = spawnSync(command, commandArgs, {
+    cwd: options.cwd || process.cwd(),
+    stdio: 'inherit',
+    env: { ...process.env, ...(options.env || {}) },
+    shell: process.platform === 'win32',
+  })
+  commands.push({ label, command: [command, ...commandArgs].join(' '), status: result.status })
+  if (result.status !== 0) {
+    writeReceipt('failed', label)
+    process.exit(result.status || 1)
+  }
 }
 
-console.log(`Receipt: ${receiptDir}`);
-writeJson('repo-state.json', { generatedAt: new Date().toISOString(), cwd: process.cwd(), gitHead, branch: sh('git branch --show-current').stdout.trim(), statusShort: sh('git status --short').stdout.trim(), baseUrl, shouldDeploy, shouldScreenshots });
-logStep('git-status', 'git status --short && git rev-parse HEAD && git branch --show-current');
-if (!skipInstall) logStep('pnpm-install', 'pnpm install --frozen-lockfile');
-else pushSkippedStep('pnpm-install', 'skipped by --skip-install');
-if (!skipTypecheck) logStep('pnpm-typecheck', 'pnpm typecheck');
-else pushSkippedStep('pnpm-typecheck', 'skipped by --skip-typecheck');
-if (!skipAssets) logStep('pnpm-verify-assets', 'pnpm verify:assets');
-else pushSkippedStep('pnpm-verify-assets', 'skipped by --skip-assets');
-if (!skipTest) logStep('pnpm-test-if-present', 'pnpm run --if-present test');
-else pushSkippedStep('pnpm-test-if-present', 'skipped by --skip-test');
-if (!skipBuild) logStep('pnpm-build-static', 'pnpm build:static');
-else pushSkippedStep('pnpm-build-static', 'skipped by --skip-build');
-if (shouldDeploy) {
-  logStep('firebase-deploy-static', `firebase deploy --config firebase.static.json --only hosting --project ${projectId}`);
-} else {
-  pushSkippedStep('firebase-deploy-static', 'skipped; pass --deploy to run');
-  writeFileSync(join(logDir, 'firebase-deploy-static.log'), 'Skipped. Pass --deploy to run Firebase hosting deploy.\n');
+if (!skipInstall) run('install', 'node', ['scripts/run-pnpm.mjs', 'install', '--frozen-lockfile'])
+if (!skipAssets && existsSync('scripts/check-spatial-assets.mjs')) run('asset-check', 'node', ['scripts/check-spatial-assets.mjs'])
+if (!skipTypecheck) run('typecheck', 'node', ['scripts/run-pnpm.mjs', 'check:types'])
+if (!skipTest) run('unit-tests', 'node', ['scripts/run-pnpm.mjs', 'test:unit'])
+if (!skipBuild) run('build', 'node', ['scripts/run-pnpm.mjs', 'build'])
+
+run('production-authority-audit', 'node', ['scripts/audit-production-workflow-authority.mjs'])
+run('route-exposure', 'node', ['scripts/check-production-route-exposure.mjs'])
+run('copy-policy', 'node', ['scripts/check-spatial-copy.mjs'])
+
+if (shouldScreenshots) {
+  run('live-visual-audit', 'node', ['scripts/live-visual-audit.mjs'], {
+    env: {
+      URAI_AUDIT_BASE_URL: baseUrl,
+      URAI_AUDIT_OUT_DIR: join(receiptDir, 'live-visual-audit'),
+    },
+  })
 }
-const assetReceipt = readAssetReceipt();
-writeJson('asset-receipt-summary.json', assetReceipt);
-const routeRows = await smokeRoutes();
-const dnsResult = await checkDns();
-const screenshotsResult = await captureScreenshots();
-writeReport({ routeRows, dnsResult, screenshotsResult, assetReceipt });
-console.log('\nFINAL RECEIPT WRITTEN');
-console.log(join(receiptDir, 'final-report.md'));
-console.log('Quest proof remains manual until tested on actual Quest Browser.');
+
+writeReceipt('passed')
+console.log(`URAI AAA proof passed. Receipt: ${receiptDir}`)

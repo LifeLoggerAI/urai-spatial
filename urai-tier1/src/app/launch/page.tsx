@@ -43,7 +43,7 @@ export default function LaunchPage() {
       <section aria-labelledby="launch-founder-heading">
         <h2 id="launch-founder-heading">Founder note</h2>
         <p>
-          URAI is being built to help people understand and direct their lives without turning private context into surveillance. It does not diagnose, decide what a life means, or prove persistent personal memory in this demo.
+          URAI is being built to help people understand and direct their lives without turning private context into surveillance. It does not diagnose or decide what a life means. This demo does not prove persistent personal memory.
         </p>
       </section>
 

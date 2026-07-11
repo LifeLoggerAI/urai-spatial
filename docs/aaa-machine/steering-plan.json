@@ -1,13 +1,19 @@
 {
-  "version": 1,
-  "principle": "The machine runs proof loops and proposes the next target. Human review is required for final visual taste claims.",
+  "version": 2,
+  "principle": "The machine runs proof-only checks and proposes the next target. Production deployment stays exclusively in the protected canonical workflow, and human review is required for final visual taste claims.",
   "proofRequirements": {
-    "routesOk": 18,
-    "screenshotsPng": 24,
+    "routesOk": 14,
+    "screenshotsPng": 28,
     "typecheckExit": 0,
     "buildExit": 0,
-    "deployExit": 0,
-    "proofExit": 0
+    "proofExit": 0,
+    "productionDeploymentAttempted": false
+  },
+  "receiptContract": {
+    "directoryPrefix": "aaa-launch-proof-",
+    "receiptFile": "receipt.json",
+    "screenshotDirectory": "live-visual-audit/screenshots",
+    "productionAuthority": ".github/workflows/spatial-live-deploy.yml"
   },
   "loops": [
     {
@@ -15,13 +21,13 @@
       "title": "Kill Life Map and Location Map blank screenshot tails",
       "stage": "v1-layout",
       "priority": 5,
-      "machineCanJudge": ["typecheck", "build", "deploy", "route proof", "24 screenshots", "receipt zip"],
+      "machineCanJudge": ["typecheck", "build", "route proof", "28 screenshots", "proof receipt"],
       "humanMustJudge": ["Life Map no longer has blank lower tail", "Location Map mobile no longer has blank lower tail"],
       "paths": [
         "urai-tier1/src/components/lifemap/RealLifeMapGalaxy.tsx",
         "urai-tier1/src/spatial/places/LocationMapScene.tsx"
       ],
-      "runCommand": "LOOP_NAME=loop5-one-screen-life-location COMMIT_RECEIPT=1 bash scripts/urai-aaa-proof-loop.sh",
+      "runCommand": "LOOP_NAME=loop5-one-screen-life-location node scripts/aaa-launch-proof.mjs --screenshots",
       "verdictFile": "docs/receipts/visual-verdicts/loop5-one-screen-life-location.md"
     },
     {
@@ -29,7 +35,7 @@
       "title": "Make Ground feel like a real private operations floor",
       "stage": "v1-art",
       "priority": 6,
-      "machineCanJudge": ["asset files present", "build", "deploy", "24 screenshots"],
+      "machineCanJudge": ["asset files present", "build", "route proof", "28 screenshots", "proof receipt"],
       "humanMustJudge": ["walkable floor impression", "real-world objects", "private workforce presence", "not a dashboard"],
       "paths": [
         "urai-tier1/public/assets/urai/ground/ground-world-main.webp",
@@ -40,7 +46,7 @@
         "urai-tier1/public/assets/urai/ground/ground-wellness.webp",
         "urai-tier1/public/assets/urai/ground/ground-memory-archive.webp"
       ],
-      "runCommand": "LOOP_NAME=loop6-ground-final-world-art COMMIT_RECEIPT=1 bash scripts/urai-aaa-proof-loop.sh",
+      "runCommand": "LOOP_NAME=loop6-ground-final-world-art node scripts/aaa-launch-proof.mjs --screenshots",
       "verdictFile": "docs/receipts/visual-verdicts/loop6-ground-final-world-art.md"
     },
     {
@@ -48,14 +54,14 @@
       "title": "Make Replay feel like a cinematic memory film, not a static player",
       "stage": "v1-art-motion",
       "priority": 7,
-      "machineCanJudge": ["build", "deploy", "24 screenshots", "Replay route 200"],
+      "machineCanJudge": ["build", "route proof", "28 screenshots", "Replay route 200", "proof receipt"],
       "humanMustJudge": ["inside-memory feeling", "cinematic depth", "emotional beats are visible", "not poster/player only"],
       "paths": [
         "urai-tier1/public/assets/urai/replay/replay-memory-film-main.webp",
         "urai-tier1/public/assets/urai/replay/replay-memory-film-mobile.webp",
         "urai-tier1/src/app/UraiAAAARoutePolish.tsx"
       ],
-      "runCommand": "LOOP_NAME=loop7-replay-cinematic-memory-film COMMIT_RECEIPT=1 bash scripts/urai-aaa-proof-loop.sh",
+      "runCommand": "LOOP_NAME=loop7-replay-cinematic-memory-film node scripts/aaa-launch-proof.mjs --screenshots",
       "verdictFile": "docs/receipts/visual-verdicts/loop7-replay-cinematic-memory-film.md"
     },
     {
@@ -63,14 +69,14 @@
       "title": "Make Focus feel like a selected memory chamber",
       "stage": "v1-art-motion",
       "priority": 8,
-      "machineCanJudge": ["build", "deploy", "24 screenshots", "Focus route 200"],
+      "machineCanJudge": ["build", "route proof", "28 screenshots", "Focus route 200", "proof receipt"],
       "humanMustJudge": ["selected star is dominant", "memory chamber depth", "Replay affordance is clear", "not static dashboard"],
       "paths": [
         "urai-tier1/public/assets/urai/focus/focus-memory-chamber-main.webp",
         "urai-tier1/public/assets/urai/focus/focus-memory-chamber-mobile.webp",
         "urai-tier1/src/app/UraiAAAARoutePolish.tsx"
       ],
-      "runCommand": "LOOP_NAME=loop8-focus-chamber-depth COMMIT_RECEIPT=1 bash scripts/urai-aaa-proof-loop.sh",
+      "runCommand": "LOOP_NAME=loop8-focus-chamber-depth node scripts/aaa-launch-proof.mjs --screenshots",
       "verdictFile": "docs/receipts/visual-verdicts/loop8-focus-chamber-depth.md"
     },
     {
@@ -78,14 +84,14 @@
       "title": "Final mobile crop and panel stacking pass",
       "stage": "v1-mobile",
       "priority": 9,
-      "machineCanJudge": ["24 screenshots", "mobile screenshots present", "route proof"],
+      "machineCanJudge": ["28 screenshots", "mobile screenshots present", "route proof", "proof receipt"],
       "humanMustJudge": ["no nav blocked", "no giant blank tails", "no clipped title", "no unreadable panels"],
       "paths": [
         "urai-tier1/src/app/UraiAAAARoutePolish.tsx",
         "urai-tier1/src/components/lifemap/RealLifeMapGalaxy.tsx",
         "urai-tier1/src/spatial/places/LocationMapScene.tsx"
       ],
-      "runCommand": "LOOP_NAME=loop9-mobile-crop-final COMMIT_RECEIPT=1 bash scripts/urai-aaa-proof-loop.sh",
+      "runCommand": "LOOP_NAME=loop9-mobile-crop-final node scripts/aaa-launch-proof.mjs --screenshots",
       "verdictFile": "docs/receipts/visual-verdicts/loop9-mobile-crop-final.md"
     },
     {
@@ -93,10 +99,10 @@
       "title": "Record V1 final visual receipt",
       "stage": "v1-final",
       "priority": 10,
-      "machineCanJudge": ["all previous verdict files exist", "24 screenshots", "asset wall green", "route proof green"],
+      "machineCanJudge": ["all previous verdict files exist", "28 screenshots", "asset wall green", "route proof green", "proof receipt"],
       "humanMustJudge": ["V1 can be called final public visual pass"],
       "paths": ["docs/receipts"],
-      "runCommand": "LOOP_NAME=loop10-v1-final-receipt COMMIT_RECEIPT=1 bash scripts/urai-aaa-proof-loop.sh",
+      "runCommand": "LOOP_NAME=loop10-v1-final-receipt node scripts/aaa-launch-proof.mjs --screenshots",
       "verdictFile": "docs/receipts/visual-verdicts/loop10-v1-final-receipt.md"
     }
   ]

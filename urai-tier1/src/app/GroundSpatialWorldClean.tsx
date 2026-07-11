@@ -6,6 +6,7 @@ import { Bloom, EffectComposer, Vignette } from '@react-three/postprocessing'
 import Link from 'next/link'
 import { Suspense, useRef } from 'react'
 import * as THREE from 'three'
+import { assetCssStack, groundAssets } from '@/spatial/assets/uraiAssets'
 
 function MovingCityLights() {
   const ref = useRef<THREE.Group>(null)
@@ -126,7 +127,12 @@ function GroundScene() {
 
 export default function GroundSpatialWorldClean() {
   return (
-    <main className="ground-spatial-root" aria-label="URAI Ground explorable city layer">
+    <main className="ground-spatial-root" aria-label="URAI Ground explorable city layer" data-canonical-asset={groundAssets.primary.src}>
+      <div
+        aria-hidden="true"
+        className="ground-provider-art"
+        style={{ backgroundImage: assetCssStack(groundAssets.primary) }}
+      />
       <Suspense fallback={<div className="ground-loader">URAI Ground · loading street layer</div>}>
         <Canvas shadows dpr={[1, 1.7]} gl={{ antialias: true, alpha: false, powerPreference: 'high-performance' }}>
           <GroundScene />
@@ -146,6 +152,7 @@ export default function GroundSpatialWorldClean() {
       <style jsx>{`
         .ground-spatial-root{position:fixed;inset:0;overflow:hidden;background:#020611;color:#f8fbff;isolation:isolate;font-family:Inter,ui-sans-serif,system-ui}
         .ground-spatial-root:before{content:'';position:absolute;inset:0;z-index:2;pointer-events:none;background:linear-gradient(180deg,rgba(2,6,17,.18),transparent 26%,rgba(2,6,17,.8))}
+        .ground-provider-art{position:absolute;inset:0;z-index:2;pointer-events:none;background-size:cover;background-position:center;opacity:.12;mix-blend-mode:screen}
         .ground-spatial-root canvas{position:absolute;inset:0;z-index:1;display:block;cursor:grab}
         .ground-loader{position:absolute;inset:0;z-index:10;display:grid;place-items:center;background:#020611;color:rgba(226,246,255,.76);letter-spacing:.18em;text-transform:uppercase;font-size:12px}
         .ground-card,.ground-status,.ground-rail,.ground-pins{position:absolute;z-index:5;border:1px solid rgba(160,220,255,.15);background:linear-gradient(145deg,rgba(2,8,24,.52),rgba(10,9,31,.28));box-shadow:0 24px 90px rgba(0,0,0,.28);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px)}
