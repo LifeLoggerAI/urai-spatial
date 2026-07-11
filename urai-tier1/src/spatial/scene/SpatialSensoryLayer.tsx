@@ -48,6 +48,8 @@ function ReadySpatialSensoryLayer({ materialPath, particlePath, loadingPath }: R
 
   useEffect(() => {
     let active = true
+    const controller = new AbortController()
+    const { signal } = controller
     const loader = new THREE.TextureLoader()
     const texture = loader.load(
       particlePath,
@@ -66,14 +68,14 @@ function ReadySpatialSensoryLayer({ materialPath, particlePath, loadingPath }: R
       },
     )
 
-    fetch(materialPath)
+    fetch(materialPath, { signal })
       .then((response) => response.ok
-        ? response.json() as Promise<MaterialPack>
+        ? response.json() as Promise<MaterialPack | null>
         : Promise.reject(new Error('material pack unavailable')))
       .then((materialPack) => {
         if (!active) return
-        setParticleColor(materialPack.materials?.memoryViolet?.baseColor ?? DEFAULT_PARTICLE_COLOR)
-        setPortalColor(materialPack.materials?.portalEnergy?.emissive ?? DEFAULT_PORTAL_COLOR)
+        setParticleColor(materialPack?.materials?.memoryViolet?.baseColor ?? DEFAULT_PARTICLE_COLOR)
+        setPortalColor(materialPack?.materials?.portalEnergy?.emissive ?? DEFAULT_PORTAL_COLOR)
       })
       .catch(() => {
         if (!active) return
@@ -81,15 +83,16 @@ function ReadySpatialSensoryLayer({ materialPath, particlePath, loadingPath }: R
         setPortalColor(DEFAULT_PORTAL_COLOR)
       })
 
-    fetch(loadingPath)
+    fetch(loadingPath, { signal })
       .then((response) => response.ok
-        ? response.json() as Promise<LoadingSequence>
+        ? response.json() as Promise<LoadingSequence | null>
         : Promise.reject(new Error('loading sequence unavailable')))
       .then((loadingSequence) => {
         if (!active) return
+        const duration = loadingSequence?.durationMs
         setLoadingDurationMs(
-          typeof loadingSequence.durationMs === 'number' && loadingSequence.durationMs > 0
-            ? loadingSequence.durationMs
+          typeof duration === 'number' && duration > 0
+            ? duration
             : DEFAULT_LOADING_DURATION_MS,
         )
       })
@@ -100,6 +103,7 @@ function ReadySpatialSensoryLayer({ materialPath, particlePath, loadingPath }: R
 
     return () => {
       active = false
+      controller.abort()
       texture.dispose()
     }
   }, [loadingPath, materialPath, particlePath])
