@@ -264,8 +264,8 @@ jobs:
           if-no-files-found: error
           retention-days: 365
 
-  prepare-release-bundle:
-    name: Prepare exact static release bundle without production credentials
+  build-release-output:
+    name: Build exact static target without production authority or credentials
     needs: [verify, rollback-verify]
     if: >-
       github.event_name == 'workflow_dispatch' &&
@@ -276,36 +276,25 @@ jobs:
     env:
       RELEASE_SHA: ${{ inputs.release_sha }}
       ROLLBACK_SHA: ${{ inputs.rollback_sha }}
-      CURRENT_MAIN_SHA: ${{ github.sha }}
-      FIREBASE_PROJECT_ID: urai-4dc1d
-      URAI_EXPECTED_FIREBASE_PROJECT: urai-4dc1d
-      URAI_LIVE_BASE_URL: https://urai.app
       NEXT_PUBLIC_URAI_BUILD_SHA: ${{ inputs.release_sha }}
       URAI_TARGET_SHA: ${{ inputs.release_sha }}
-      URAI_RELEASE_BUNDLE_DIR: ${{ runner.temp }}/urai-release-bundle
+      RAW_OUTPUT_DIR: ${{ runner.temp }}/urai-raw-static-output
     steps:
-      - name: Checkout current release authority
-        uses: actions/checkout@v4
-        with:
-          ref: ${{ env.CURRENT_MAIN_SHA }}
-          path: authority
-          fetch-depth: 0
-          persist-credentials: false
-      - name: Checkout exact release target
+      - name: Checkout exact release target only
         uses: actions/checkout@v4
         with:
           ref: ${{ env.RELEASE_SHA }}
           path: target
           fetch-depth: 0
           persist-credentials: false
-      - name: Prove bundle authority and target identities
+      - name: Prove exact clean target identity
         shell: bash
         run: |
           set -euo pipefail
-          test "$(git -C authority rev-parse HEAD)" = "$CURRENT_MAIN_SHA"
           test "$(git -C target rev-parse HEAD)" = "$RELEASE_SHA"
-          test -z "$(git -C authority status --porcelain)"
           test -z "$(git -C target status --porcelain)"
+          [[ "$ROLLBACK_SHA" =~ ^[0-9a-f]{40}$ ]]
+          test "$ROLLBACK_SHA" != "$RELEASE_SHA"
       - uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
@@ -316,16 +305,79 @@ jobs:
       - name: Install exact target dependencies without production credentials
         working-directory: target
         run: pnpm install --frozen-lockfile
-      - name: Write exact fingerprint with current authority
-        working-directory: target
-        run: node ../authority/scripts/write-release-fingerprint.mjs
       - name: Build exact target without production credentials
         working-directory: target
+        env:
+          NEXT_PUBLIC_URAI_BUILD_SHA: ${{ env.RELEASE_SHA }}
+          ROLLBACK_SHA: ${{ env.ROLLBACK_SHA }}
         run: pnpm build:static
-      - name: Create hash-bound static release bundle with current authority
-        working-directory: target
-        run: node ../authority/scripts/create-static-release-bundle.mjs
-      - name: Upload exact static release bundle
+      - name: Verify raw output identity and stage regular files
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -f target/urai-tier1/out/index.html
+          grep -R --fixed-strings "$RELEASE_SHA" target/urai-tier1/out --include='*.html' -l | grep -q .
+          if find target/urai-tier1/out -type l -print -quit | grep -q .; then
+            echo 'Raw static output contains a symlink' >&2
+            exit 65
+          fi
+          rm -rf "$RAW_OUTPUT_DIR"
+          mkdir -p "$RAW_OUTPUT_DIR/urai-tier1"
+          cp -a target/urai-tier1/out "$RAW_OUTPUT_DIR/urai-tier1/out"
+      - name: Upload unattested raw static output
+        uses: actions/upload-artifact@v4
+        with:
+          name: urai-raw-static-output-${{ env.RELEASE_SHA }}
+          path: ${{ env.RAW_OUTPUT_DIR }}
+          if-no-files-found: error
+          retention-days: 2
+
+  attest-release-bundle:
+    name: Attest raw static output with clean current authority
+    needs: [verify, rollback-verify, build-release-output]
+    if: >-
+      github.event_name == 'workflow_dispatch' &&
+      github.ref == 'refs/heads/main' &&
+      (inputs.confirm == 'DEPLOY_URAI_APP' || inputs.confirm == 'ROLLBACK_URAI_APP')
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      RELEASE_SHA: ${{ inputs.release_sha }}
+      ROLLBACK_SHA: ${{ inputs.rollback_sha }}
+      CURRENT_MAIN_SHA: ${{ github.sha }}
+      FIREBASE_PROJECT_ID: urai-4dc1d
+      URAI_EXPECTED_FIREBASE_PROJECT: urai-4dc1d
+      URAI_LIVE_BASE_URL: https://urai.app
+      NEXT_PUBLIC_URAI_BUILD_SHA: ${{ inputs.release_sha }}
+      URAI_TARGET_SHA: ${{ inputs.release_sha }}
+      URAI_STATIC_OUTPUT_DIR: ${{ runner.temp }}/urai-raw-static-output/urai-tier1/out
+      URAI_RELEASE_BUNDLE_DIR: ${{ runner.temp }}/urai-release-bundle
+    steps:
+      - name: Checkout clean current release authority only
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ env.CURRENT_MAIN_SHA }}
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Prove clean current authority identity
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$CURRENT_MAIN_SHA"
+          test -z "$(git status --porcelain)"
+          [[ "$RELEASE_SHA" =~ ^[0-9a-f]{40}$ ]]
+          [[ "$ROLLBACK_SHA" =~ ^[0-9a-f]{40}$ ]]
+          test "$ROLLBACK_SHA" != "$RELEASE_SHA"
+      - name: Download unattested raw static output
+        uses: actions/download-artifact@v4
+        with:
+          name: urai-raw-static-output-${{ env.RELEASE_SHA }}
+          path: ${{ runner.temp }}/urai-raw-static-output
+      - name: Revalidate authority boundary before attestation
+        run: node scripts/verify-release-credential-boundary.mjs
+      - name: Create hash-bound release bundle with clean authority
+        run: node scripts/create-static-release-bundle.mjs
+      - name: Upload authority-attested static release bundle
         uses: actions/upload-artifact@v4
         with:
           name: urai-static-release-bundle-${{ env.RELEASE_SHA }}
@@ -335,7 +387,7 @@ jobs:
 
   deploy:
     name: Deploy or roll back verified static bundle on urai.app
-    needs: [verify, rollback-verify, prepare-release-bundle]
+    needs: [verify, rollback-verify, attest-release-bundle]
     if: >-
       github.event_name == 'workflow_dispatch' &&
       github.ref == 'refs/heads/main' &&
