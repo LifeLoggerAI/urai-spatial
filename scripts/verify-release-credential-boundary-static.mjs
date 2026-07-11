@@ -11,7 +11,7 @@ const failures = []
 
 const immutableActions = {
   checkout: 'actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683',
-  setupNode: 'actions/setup-node@1e60f620b9541d80c77f7b4a3bcd8bf5e940c37',
+  setupNode: 'actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020',
   uploadArtifact: 'actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02',
   downloadArtifact: 'actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093',
 }
@@ -39,7 +39,15 @@ const buildJob = jobSection(workflow, 'build-release-output')
 const attestJob = jobSection(workflow, 'attest-release-bundle')
 const deployJob = jobSection(workflow, 'deploy')
 for (const [name, section] of Object.entries({ verifyJob, rollbackJob, buildJob, attestJob, deployJob })) {
-  if (!section) failures.push(`Workflow is missing ${name}`)
+  if (!section) {
+    failures.push(`Workflow is missing ${name}`)
+    continue
+  }
+  const stepsStart = section.indexOf('\n    steps:')
+  const jobScope = stepsStart >= 0 ? section.slice(0, stepsStart) : section
+  if (/\$\{\{\s*runner\./.test(jobScope)) {
+    failures.push(`Workflow ${name} uses runner context before steps; runner context is not allowed at job scope`)
+  }
 }
 
 for (const [name, action] of Object.entries(immutableActions)) requireMarker(`Immutable ${name} action`, workflow, action)
