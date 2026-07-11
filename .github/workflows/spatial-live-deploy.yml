@@ -339,7 +339,11 @@ jobs:
         working-directory: target
         env:
           FIREBASE_SERVICE_ACCOUNT_JSON: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_JSON }}
-        run: node ../authority/scripts/live-release.mjs --deploy
+        run: |
+          set -euo pipefail
+          test -n "$FIREBASE_SERVICE_ACCOUNT_JSON"
+          printf '%s' "$FIREBASE_SERVICE_ACCOUNT_JSON" >/dev/null
+          node ../authority/scripts/live-release.mjs --deploy
       - name: Run canonical live smoke with current authority
         working-directory: target
         env:
