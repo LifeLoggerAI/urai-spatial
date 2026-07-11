@@ -103,10 +103,17 @@ requireTokens('scripts/capture-founder-event-kit.mjs', [
   'recordVideo',
   'piiPatterns',
   'unsafeLinks',
-  "schemaVersion: 'urai-founder-event-kit-1'",
+  "schemaVersion: 'urai-founder-event-kit-2'",
   'sourceSha,',
   'sampleDataOnly: true',
   'URAI_EVENT_SOURCE_SHA must be the exact 40-character source commit in CI',
+  'URAI_EVENT_BASE_URL must remain loopback-only in CI',
+  "context.route('**/*'",
+  'requested.origin === captureBase.origin',
+  'normalizeRouteIdentity',
+  'routeIdentityMatched',
+  'blockedExternalRequests',
+  "networkBoundary: 'same-origin-plus-data-blob-about'",
 ])
 requireTokens('.github/workflows/founder-event-demo-kit.yml', [
   "TARGET_SHA: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}",
@@ -114,6 +121,7 @@ requireTokens('.github/workflows/founder-event-demo-kit.yml', [
   'test "$(git rev-parse HEAD)" = "$TARGET_SHA"',
   'NEXT_PUBLIC_URAI_BUILD_SHA: ${{ env.TARGET_SHA }}',
   'URAI_EVENT_SOURCE_SHA: ${{ env.TARGET_SHA }}',
+  'URAI_EVENT_BASE_URL: http://127.0.0.1:3001',
   'node scripts/verify-embedded-event-video.mjs',
   'name: urai-founder-event-kit-${{ env.TARGET_SHA }}',
 ])
