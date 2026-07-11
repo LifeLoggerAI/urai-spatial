@@ -19,6 +19,9 @@ const credentialsPath = (process.env.GOOGLE_APPLICATION_CREDENTIALS || '').trim(
 const canonicalWorkflow = 'URAI Canonical Production Release'
 const canonicalRepository = 'LifeLoggerAI/urai-spatial'
 
+delete process.env.FIREBASE_SERVICE_ACCOUNT_JSON
+delete process.env.GOOGLE_APPLICATION_CREDENTIALS
+
 function childEnvironment(extraEnv = {}, allowCredentialPath = false) {
   const env = { ...process.env, ...extraEnv }
   delete env.FIREBASE_SERVICE_ACCOUNT_JSON
@@ -163,9 +166,9 @@ function removeTemporaryServiceAccount() {
 }
 
 function deployHostingWithTemporaryCredentials() {
-  const credentialFile = writeTemporaryServiceAccount()
   let result
   try {
+    const credentialFile = writeTemporaryServiceAccount()
     console.log(`[URAI release] $ pnpm exec firebase deploy --config firebase.static.json --only hosting --project ${project}`)
     result = spawnSync(
       'pnpm',
@@ -212,6 +215,7 @@ function writeReceipt(targetSha, status, details = {}) {
   return receiptPath
 }
 
+if (deploy) removeTemporaryServiceAccount()
 const targetSha = resolveTargetSha()
 assertReleaseSurface()
 run('pnpm', ['verify:release:critical'], { NEXT_PUBLIC_URAI_BUILD_SHA: targetSha })
@@ -223,7 +227,6 @@ if (!deploy) {
 }
 
 assertCanonicalDeployContext()
-removeTemporaryServiceAccount()
 if (process.env.URAI_DEPLOY_CONFIRM !== 'DEPLOY_STATIC_URAI') {
   throw new Error('Static deployment requires URAI_DEPLOY_CONFIRM=DEPLOY_STATIC_URAI')
 }
