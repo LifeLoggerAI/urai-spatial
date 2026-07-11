@@ -1,0 +1,135 @@
+{
+  "schemaVersion": "1.0.0",
+  "contractId": "URAI-SPATIAL-ASSET-FACTORY-V1-INTAKE-20260711",
+  "producer": "LifeLoggerAI/asset-factory",
+  "consumer": "LifeLoggerAI/urai-spatial",
+  "version": "v1",
+  "authorizedMarkerSha": "bdf2cd003bf16ed621cdcdc63312c75ce5e5d5e5",
+  "seedProviderRequestId": "req_105244180b6f4b95bec882bdfc1a695b",
+  "expectedOutputs": 53,
+  "directProviderOutputs": 48,
+  "reusedProviderOutputs": 1,
+  "newProviderCalls": 47,
+  "derivedProviderOutputs": 5,
+  "maxUnitCostUsd": "1.00",
+  "maxTotalCostUsd": "47.00",
+  "assetPrefix": "assets/urai/",
+  "copyRoot": "urai-tier1/public",
+  "activationMode": "atomic-complete-pack",
+  "promotion": false,
+  "artifactLayout": {
+    "generatedManifest": "image_asset_generator/manifests/generated/v1.manifest.json",
+    "forgeReceipt": "image_asset_generator/forge_receipt_v1.json",
+    "qualityReport": "image_asset_generator/quality_report_v1.json",
+    "dropinReceipt": "image_asset_generator/dropin_receipt_v1.json",
+    "budgetLedger": "artifacts/budget/paid-request-state.json",
+    "handoffRoot": "image_asset_generator/spatial_handoff",
+    "versionedHandoffManifest": "image_asset_generator/spatial_handoff/assets/urai/final/manifests/v1-asset-factory-spatial-handoff.json",
+    "genericHandoffManifest": "image_asset_generator/spatial_handoff/assets/urai/final/manifests/asset-factory-spatial-handoff.json",
+    "postCertificationReport": "post-certification/v1-spatial-duplicate-report.json"
+  },
+  "spatialCanon": {
+    "life_map_galaxy_main": [
+      "deep outer space",
+      "no ground",
+      "no orb",
+      "no avatar"
+    ],
+    "life_map_galaxy_mobile": [
+      "deep outer space",
+      "no ground",
+      "no orb",
+      "no avatar"
+    ],
+    "life_map_node_threshold": [
+      "no orb",
+      "no avatar",
+      "no ground"
+    ],
+    "life_map_node_becoming": [
+      "no orb",
+      "no avatar",
+      "no ground"
+    ],
+    "life_map_node_studio": [
+      "no orb",
+      "no avatar",
+      "no ground"
+    ],
+    "focus_memory_chamber_main": [
+      "selecting and zooming",
+      "opened memory star",
+      "outer space"
+    ],
+    "focus_memory_chamber_mobile": [
+      "opened memory star",
+      "cosmic space",
+      "no ground"
+    ],
+    "replay_memory_film_main": [
+      "moving through an opened memory star",
+      "inside a full-world living cinematic memory",
+      "no orb companion"
+    ],
+    "replay_memory_film_mobile": [
+      "entering an opened star",
+      "immersive living sunrise memory",
+      "no orb"
+    ]
+  },
+  "assets": [
+    {"name":"home_threshold_main","canonicalPath":"assets/urai/home/home-threshold-main.webp","sourceMode":"reused-provider","registryRequired":true},
+    {"name":"home_threshold_mobile","canonicalPath":"assets/urai/home/home-threshold-mobile.webp","sourceMode":"new-provider","registryRequired":true},
+    {"name":"home_ground_portal","canonicalPath":"assets/urai/home/home-ground-portal.webp","sourceMode":"new-provider","registryRequired":true},
+    {"name":"home_sky_ascent","canonicalPath":"assets/urai/home/home-sky-ascent.webp","sourceMode":"new-provider","registryRequired":true},
+    {"name":"ground_world_main","canonicalPath":"assets/urai/ground/ground-world-main.webp","sourceMode":"new-provider","registryRequired":true},
+    {"name":"ground_world_mobile","canonicalPath":"assets/urai/ground/ground-world-mobile.webp","sourceMode":"new-provider","registryRequired":true},
+    {"name":"ground_reception","canonicalPath":"assets/urai/ground/ground-reception.webp","sourceMode":"new-provider","registryRequired":true},
+    {"name":"ground_privacy_sanctuary","canonicalPath":"assets/urai/ground/ground-privacy-sanctuary.webp","sourceMode":"new-provider","registryRequired":true},
+    {"name":"ground_logistics","canonicalPath":"assets/urai/ground/ground-logistics.webp","sourceMode":"new-provider","registryRequired":true},
+    {"name":"ground_wellness","canonicalPath":"assets/urai/ground/ground-wellness.webp","sourceMode":"new-provider","registryRequired":true},
+    {"name":"ground_memory_archive","canonicalPath":"assets/urai/ground/ground-memory-archive.webp","sourceMode":"new-provider","registryRequired":true},
+    {"name":"life_map_galaxy_main","canonicalPath":"assets/urai/life-map/life-map-galaxy-main.webp","sourceMode":"new-provider","registryRequired":true},
+    {"name":"life_map_galaxy_mobile","canonicalPath":"assets/urai/life-map/life-map-galaxy-mobile.webp","sourceMode":"new-provider","registryRequired":true},
+    {"name":"life_map_node_threshold","canonicalPath":"assets/urai/life-map/life-map-node-threshold.webp","sourceMode":"new-provider","registryRequired":true},
+    {"name":"life_map_node_becoming","canonicalPath":"assets/urai/life-map/life-map-node-becoming.webp","sourceMode":"new-provider","registryRequired":true},
+    {"name":"life_map_node_studio","canonicalPath":"assets/urai/life-map/life-map-node-studio.webp","sourceMode":"new-provider","registryRequired":true},
+    {"name":"focus_memory_chamber_main","canonicalPath":"assets/urai/focus/focus-memory-chamber-main.webp","sourceMode":"new-provider","registryRequired":true},
+    {"name":"focus_memory_chamber_mobile","canonicalPath":"assets/urai/focus/focus-memory-chamber-mobile.webp","sourceMode":"new-provider","registryRequired":true},
+    {"name":"replay_memory_film_main","canonicalPath":"assets/urai/replay/replay-memory-film-main.webp","sourceMode":"new-provider","registryRequired":true},
+    {"name":"replay_memory_film_mobile","canonicalPath":"assets/urai/replay/replay-memory-film-mobile.webp","sourceMode":"new-provider","registryRequired":true},
+    {"name":"mirror_reflection_main","canonicalPath":"assets/urai/mirror/mirror-reflection-main.webp","sourceMode":"new-provider","registryRequired":true},
+    {"name":"mirror_reflection_mobile","canonicalPath":"assets/urai/mirror/mirror-reflection-mobile.webp","sourceMode":"new-provider","registryRequired":true},
+    {"name":"mirror_pattern_glyph","canonicalPath":"assets/urai/mirror/mirror-pattern-glyph.webp","sourceMode":"new-provider","registryRequired":true},
+    {"name":"passport_vault_main","canonicalPath":"assets/urai/passport/passport-vault-main.webp","sourceMode":"new-provider","registryRequired":true},
+    {"name":"passport_vault_mobile","canonicalPath":"assets/urai/passport/passport-vault-mobile.webp","sourceMode":"new-provider","registryRequired":true},
+    {"name":"passport_ownership_seal","canonicalPath":"assets/urai/passport/passport-ownership-seal.webp","sourceMode":"new-provider","registryRequired":true},
+    {"name":"privacy_controls_main","canonicalPath":"assets/urai/privacy-controls/privacy-controls-main.webp","sourceMode":"new-provider","registryRequired":true},
+    {"name":"privacy_controls_mobile","canonicalPath":"assets/urai/privacy-controls/privacy-controls-mobile.webp","sourceMode":"new-provider","registryRequired":true},
+    {"name":"privacy_model_access","canonicalPath":"assets/urai/privacy-controls/privacy-model-access.webp","sourceMode":"new-provider","registryRequired":true},
+    {"name":"privacy_location_precision","canonicalPath":"assets/urai/privacy-controls/privacy-location-precision.webp","sourceMode":"new-provider","registryRequired":true},
+    {"name":"location_emotional_weather_main","canonicalPath":"assets/urai/location-map/location-emotional-weather-main.webp","sourceMode":"new-provider","registryRequired":true},
+    {"name":"location_emotional_weather_mobile","canonicalPath":"assets/urai/location-map/location-emotional-weather-mobile.webp","sourceMode":"new-provider","registryRequired":true},
+    {"name":"location_place_node","canonicalPath":"assets/urai/location-map/location-place-node.webp","sourceMode":"new-provider","registryRequired":true},
+    {"name":"status_route_matrix_main","canonicalPath":"assets/urai/status/status-route-matrix-main.webp","sourceMode":"derived-provider","registryRequired":true},
+    {"name":"status_route_matrix_mobile","canonicalPath":"assets/urai/status/status-route-matrix-mobile.webp","sourceMode":"derived-provider","registryRequired":true},
+    {"name":"status_health_pill","canonicalPath":"assets/urai/status/status-health-pill.webp","sourceMode":"derived-provider","registryRequired":true},
+    {"name":"avatar_receptionist","canonicalPath":"assets/urai/avatars/receptionist.webp","sourceMode":"new-provider","registryRequired":true},
+    {"name":"avatar_privacy_steward","canonicalPath":"assets/urai/avatars/privacy-steward.webp","sourceMode":"new-provider","registryRequired":true},
+    {"name":"avatar_schedule_steward","canonicalPath":"assets/urai/avatars/schedule-steward.webp","sourceMode":"new-provider","registryRequired":true},
+    {"name":"avatar_wellness_guide","canonicalPath":"assets/urai/avatars/wellness-guide.webp","sourceMode":"new-provider","registryRequired":true},
+    {"name":"avatar_logistics_helper","canonicalPath":"assets/urai/avatars/logistics-helper.webp","sourceMode":"new-provider","registryRequired":true},
+    {"name":"avatar_archivist","canonicalPath":"assets/urai/avatars/archivist.webp","sourceMode":"new-provider","registryRequired":true},
+    {"name":"avatar_relationship_liaison","canonicalPath":"assets/urai/avatars/relationship-liaison.webp","sourceMode":"new-provider","registryRequired":true},
+    {"name":"avatar_operator","canonicalPath":"assets/urai/avatars/operator.webp","sourceMode":"new-provider","registryRequired":true},
+    {"name":"avatar_builder","canonicalPath":"assets/urai/avatars/builder.webp","sourceMode":"new-provider","registryRequired":true},
+    {"name":"avatar_protector","canonicalPath":"assets/urai/avatars/protector.webp","sourceMode":"new-provider","registryRequired":true},
+    {"name":"avatar_mirror","canonicalPath":"assets/urai/avatars/mirror.webp","sourceMode":"new-provider","registryRequired":true},
+    {"name":"avatar_guide","canonicalPath":"assets/urai/avatars/guide.webp","sourceMode":"new-provider","registryRequired":true},
+    {"name":"orb_idle","canonicalPath":"assets/urai/ui/orb-idle.webp","sourceMode":"new-provider","registryRequired":true},
+    {"name":"orb_active","canonicalPath":"assets/urai/ui/orb-active.webp","sourceMode":"new-provider","registryRequired":true},
+    {"name":"orb_listening","canonicalPath":"assets/urai/ui/orb-listening.webp","sourceMode":"new-provider","registryRequired":true},
+    {"name":"open_graph_launch","canonicalPath":"assets/urai/social/open-graph-launch.webp","sourceMode":"derived-provider","registryRequired":false},
+    {"name":"open_graph_life_map","canonicalPath":"assets/urai/social/open-graph-life-map.webp","sourceMode":"derived-provider","registryRequired":false}
+  ]
+}
