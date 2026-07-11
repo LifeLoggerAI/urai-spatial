@@ -48,6 +48,8 @@ assert.match(sensoryLayer, /if \(!materialPath \|\| !particlePath \|\| !loadingP
 assert.match(sensoryLayer, /new THREE\.TextureLoader\(\)/)
 assert.match(sensoryLayer, /fetch\(materialPath\)/)
 assert.match(sensoryLayer, /fetch\(loadingPath\)/)
+assert.ok(sensoryLayer.includes('key={`${materialPath}|${particlePath}|${loadingPath}`}'))
+assert.doesNotMatch(sensoryLayer, /Promise\.all/)
 assert.match(worldLayer, /import SpatialSensoryLayer from ["']\.\/SpatialSensoryLayer["']/)
 assert.match(worldLayer, /<SpatialSensoryLayer \/>/)
 assert.doesNotMatch(worldLayer, /function SpatialSensoryLayer\(/)
