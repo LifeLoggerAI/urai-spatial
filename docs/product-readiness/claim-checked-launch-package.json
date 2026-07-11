@@ -1,11 +1,9 @@
 {
-  "schemaVersion": 7,
+  "schemaVersion": 8,
   "receiptId": "URAI-WSD-20260711-LAUNCH-PACKAGE-001",
   "evidenceDate": "2026-07-11",
   "repository": "LifeLoggerAI/urai-spatial",
-  "sourceSha": "60730edcb5bcedfe2ded2cee9a96cef96dff9510",
-  "stackedParentSha": "ad31eeff849fb0764cb3623a3d6d0cf77e7dce14",
-  "branch": "ws-d/launch-package-20260711",
+  "canonicalMainSha": "60730edcb5bcedfe2ded2cee9a96cef96dff9510",
   "distributionState": "internal-review-only",
   "launchDecision": "no-go",
   "releaseMode": "fallback-demo",
@@ -27,203 +25,128 @@
     "activeProviderClaims": 0,
     "publicSupportChannels": 0
   },
-  "workstreamDChain": {
+  "documentationChain": {
     "authority": {
       "pullRequest": 546,
       "headSha": "a2b4f26ff927da2666ad9ece70984855be3f5e1e",
-      "parentSha": "60730edcb5bcedfe2ded2cee9a96cef96dff9510",
-      "changedFiles": 3,
       "workflowState": "queued"
     },
     "routeAudit": {
       "pullRequest": 547,
       "headSha": "277347c517290c9dee9d660b1877fdb817b7024b",
-      "parentSha": "a2b4f26ff927da2666ad9ece70984855be3f5e1e",
-      "changedFiles": 3,
       "acceptedRoutes": 0,
       "workflowState": "queued"
     },
     "localizationAnalyticsMetadata": {
       "pullRequest": 548,
       "headSha": "f3588054e37c3a5d639af8e04855bc3aa332e7a4",
-      "parentSha": "277347c517290c9dee9d660b1877fdb817b7024b",
-      "changedFiles": 3,
       "workflowState": "queued"
     },
     "supportReadiness": {
       "pullRequest": 558,
       "headSha": "ad31eeff849fb0764cb3623a3d6d0cf77e7dce14",
-      "parentSha": "f3588054e37c3a5d639af8e04855bc3aa332e7a4",
-      "changedFiles": 3,
       "readiness": "no-go",
       "workflowState": "queued"
     }
   },
-  "currentCandidates": {
-    "analyticsRepair": {
+  "currentAuthorities": {
+    "consolidatedPhase2": {
+      "pullRequest": 539,
+      "headSha": "7fc065c4afa43585516c9619882da7f058ee6c9b",
+      "auditedSourceHeadSha": "f5c75129ef36a979accad0bcbe91f48863fe1ae0",
+      "parentSha": "60730edcb5bcedfe2ded2cee9a96cef96dff9510",
+      "compare": "96-ahead-0-behind",
+      "changedFiles": 33,
+      "receipt": "URAI-WSB-20260711-PHASE2-CONSOLIDATION-012",
+      "receiptBlobSha": "8812ea28bbd937ab9ce3638ca86ba8726c402db2",
+      "workflowState": "19-nonterminal",
+      "representativeJobs": {
+        "canonicalReleaseVerification": 86589282298,
+        "tier1BuildAndTests": 86589282132,
+        "releaseSecurityPathGuard": 86589282403
+      },
+      "sourceBoundaries": {
+        "targetBuildIsolated": true,
+        "cleanAuthorityAttestation": true,
+        "managedCredentialLifecycle": true,
+        "repositoryAuthorityRunFingerprintBound": true,
+        "directFingerprintUrlBound": true,
+        "exactLiveRouteQueryAndShaBound": true,
+        "crossOriginBrowserRequestsAbortedBeforeSend": true,
+        "assetPathsNormalizedBeforeDuplicateDetection": true,
+        "assetRealpathContainment": true,
+        "sensoryCandidateAware": true,
+        "sensoryMountRelativeTiming": true
+      },
+      "incorporatedPullRequests": [552, 575, 577, 578, 579],
+      "mergedToMain": false,
+      "deployed": false,
+      "certified": false
+    },
+    "analytics": {
       "pullRequest": 553,
       "headSha": "910532016136c3919e420be7d3809300f44c9802",
-      "parentSha": "60730edcb5bcedfe2ded2cee9a96cef96dff9510",
-      "compare": "3-ahead-0-behind",
       "changedFiles": 4,
-      "workflowState": "13-latest-queued",
+      "workflowState": "13-queued",
       "providerActivationApproved": false,
-      "persistedAnalyticsHistory": false,
-      "persistedRawPacketHistory": false,
-      "inMemoryBufferDrainedPerCycle": true,
       "incorporatedRepairPullRequests": [572]
     },
     "privacyPreview": {
       "pullRequest": 554,
       "headSha": "972616b92536108818ca0965e543bae2ae322c6c",
-      "parentSha": "60730edcb5bcedfe2ded2cee9a96cef96dff9510",
-      "compare": "1-ahead-0-behind",
       "changedFiles": 5,
       "workflowState": "14-queued",
-      "supplementalFocusedContract": "5-of-5-passed",
       "operationalControlsProven": false
     },
     "guidedDemo": {
       "pullRequest": 555,
       "headSha": "212126a90920c5601f858175556ae319bc349ae8",
       "parentPullRequest": 554,
-      "parentHeadSha": "972616b92536108818ca0965e543bae2ae322c6c",
-      "compare": "1-ahead-0-behind-parent",
       "changedFiles": 4,
       "workflowState": "5-queued",
-      "supplementalFocusedContract": "7-of-7-passed",
-      "state": "optional-guided-demo",
-      "persistence": "none",
-      "routeTriggerContinuity": true
+      "persistence": "none"
     },
     "discoverability": {
       "pullRequest": 557,
       "headSha": "3d6354fa44d784334645c86151b158edd1f1c4d6",
-      "parentSha": "60730edcb5bcedfe2ded2cee9a96cef96dff9510",
-      "compare": "1-ahead-0-behind",
       "changedFiles": 6,
       "workflowState": "16-queued",
-      "supplementalFocusedContract": "6-of-6-passed",
       "publicIndexingApproved": false
-    },
-    "releaseCredentialBoundary": {
-      "pullRequest": 552,
-      "headSha": "b94320b4b4693291d37b6f8ddf8800b128127076",
-      "basePullRequest": 539,
-      "baseHeadSha": "ad473628eb97235171eda2ff9f8fc9647c0d518f",
-      "changedFiles": 15,
-      "sourceRepairsComplete": true,
-      "schemaVersion": 4,
-      "invalidSetupNodePinsPresent": false,
-      "mutableArtifactAuditAccepted": false,
-      "credentialWriterVerifierAligned": true,
-      "canonicalDeployBundleFallbackBounded": true,
-      "publicFingerprintDirectUrlBound": true,
-      "publicFingerprintAuthorityBound": true,
-      "workflowState": "6-latest-queued",
-      "incorporatedRepairPullRequests": [571, 576],
-      "incorporatedIntoReleaseControls": false
-    },
-    "releaseControls": {
-      "pullRequest": 539,
-      "headSha": "ad473628eb97235171eda2ff9f8fc9647c0d518f",
-      "state": "draft-unverified-current-main-reconciled",
-      "sourceMetadataCurrent": true,
-      "releaseAssuranceIncorporated": false,
-      "workflowState": "queued"
-    },
-    "sensoryAuthority": {
-      "pullRequest": 575,
-      "headSha": "b5914ab709e043771029b66bc2c9a92178189fb3",
-      "parentSha": "60730edcb5bcedfe2ded2cee9a96cef96dff9510",
-      "compare": "12-ahead-0-behind",
-      "changedFiles": 11,
-      "state": "draft-candidate-uncertified",
-      "releaseState": "candidate",
-      "readyAssetCount": 3,
-      "excludedCandidateAssetCount": 2,
-      "failClosedMissingPaths": true,
-      "abortableIndependentLoads": true,
-      "nullSafeFallbacks": true,
-      "keyedTextureOwnershipAndDisposal": true,
-      "mountRelativeLoadingTiming": true,
-      "focusedRunnerCoverage": true,
-      "workflowState": "16-queued",
-      "supersedesPullRequests": [541, 544, 573]
     },
     "founderEvent": {
       "pullRequest": 521,
       "headSha": "a440707f598d56735e21e80cb33c17eb141f740a",
-      "state": "draft-source-repaired-dependency-reconciliation-required",
       "changedFiles": 18,
-      "statusSourceComplete": true,
+      "workflowState": "7-queued",
       "eventRouteLabel": "pending-proof",
-      "loopbackCaptureRequiredInCi": true,
-      "finalRouteIdentityChecked": true,
-      "crossOriginRequestsBlockedAndRecorded": true,
-      "captureManifestSchema": 2,
-      "workflowState": "7-latest-queued",
-      "incorporatedRepairPullRequests": [562, 574],
       "publicQrApproved": false,
-      "publicMediaApproved": false
+      "publicMediaApproved": false,
+      "incorporatedRepairPullRequests": [562, 574]
     }
   },
   "repairLineage": {
-    "541": "closed-unmerged-superseded-by-575",
-    "544": "closed-unmerged-safety-incorporated-in-575",
+    "541": "closed-unmerged-superseded-by-575-then-incorporated-into-539",
+    "544": "closed-unmerged-safety-incorporated-through-575-into-539",
+    "552": "merged-into-539",
     "562": "merged-into-521",
     "563": "closed-unmerged-not-authority",
-    "571": "merged-into-552",
+    "571": "incorporated-through-552-into-539",
     "572": "merged-into-553",
     "573": "closed-unmerged-superseded-by-575",
     "574": "merged-into-521",
-    "576": "merged-into-552"
+    "575": "merged-into-539",
+    "576": "incorporated-through-552-into-539",
+    "577": "merged-into-539",
+    "578": "merged-into-539",
+    "579": "merged-through-552-into-539"
   },
   "assetIntake": {
-    "contractPresentOnMain": true,
     "promotion": false,
     "expectedOutputs": 53,
-    "outputFilesVerifiedInConsumer": false,
     "providerGenerationCompleteProven": false,
     "duplicateReviewCompleteProven": false,
     "copiedRegisteredPromotedActivated": false,
     "spendProven": false
-  },
-  "platformClaims": {
-    "webFallbackDemoSourceExists": true,
-    "desktopCertified": false,
-    "mobileCertified": false,
-    "pwaApproved": false,
-    "offlineAppApproved": false,
-    "nativeDesktopApproved": false,
-    "nativeMobileApproved": false,
-    "webxrApproved": false,
-    "questApproved": false,
-    "visionOsApproved": false,
-    "handheldArApproved": false
-  },
-  "localeClaims": {
-    "sourceLocaleObserved": "en",
-    "supportedLocalesApproved": [],
-    "nineteenLanguagesApproved": false,
-    "rtlApproved": false,
-    "localizedMetadataApproved": false,
-    "legalTranslationReviewComplete": false
-  },
-  "privacyAndAnalytics": {
-    "privacyFirstDesignLanguageQualified": true,
-    "operationalPrivacyControlsProven": false,
-    "authenticatedPersistenceProven": false,
-    "exportDeletionRevocationProven": false,
-    "allDataLocalClaimApproved": false,
-    "productionAnalyticsApproved": false
-  },
-  "accessibility": {
-    "sourceIntentExists": true,
-    "certificationApproved": false,
-    "wcagConformanceApproved": false,
-    "assistiveTechnologyMatrixComplete": false,
-    "publicAccessibilitySupportChannelApproved": false
   },
   "support": {
     "readiness": "no-go",
@@ -232,18 +155,6 @@
     "ownersNamed": false,
     "serviceCommitmentsApproved": false
   },
-  "discoverability": {
-    "publicIndexingApproved": false,
-    "approvedSitemapRoutes": [],
-    "pwaManifestApproved": false,
-    "socialMetadataApproved": false
-  },
-  "demoAndMedia": {
-    "acceptedScreenshotIndex": [],
-    "acceptedDemoIndex": [],
-    "publicQrApproved": false,
-    "founderEventApproved": false
-  },
   "workflowBlocker": {
     "issue": 450,
     "supportTicket": 4553961,
@@ -251,13 +162,7 @@
     "state": "queued-before-runner-execution",
     "representativeJobsHaveSteps": false,
     "representativeJobsHaveLogs": false,
-    "explicitUbuntu2404ProbeAlsoBlocked": true,
-    "ownerSideControlsRequired": [
-      "billing-and-actions-usage",
-      "actions-general-settings",
-      "allowed-actions-policy",
-      "hosted-runner-restrictions"
-    ]
+    "explicitUbuntu2404ProbeAlsoBlocked": true
   },
   "externalActions": {
     "published": false,
