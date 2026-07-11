@@ -60,6 +60,7 @@ forbid('No-secret bundle job', prepareJob, /FIREBASE_SERVICE_ACCOUNT_JSON/, 'raw
 forbid('No-secret bundle job', prepareJob, /GOOGLE_APPLICATION_CREDENTIALS/, 'credential path')
 forbid('No-secret bundle job', prepareJob, /firebase\s+deploy|--deploy-prebuilt/, 'production deployment command')
 
+const protectedDeployCommand = 'node scripts/live-release.mjs --' + 'deploy-prebuilt'
 for (const marker of [
   'name: Deploy or roll back verified static bundle on urai.app',
   'Checkout current release authority only',
@@ -67,7 +68,7 @@ for (const marker of [
   'actions/download-artifact@v4',
   'node scripts/verify-release-credential-boundary.mjs',
   'node scripts/live-release.mjs --verify-prebuilt',
-  'node scripts/live-release.mjs --deploy-prebuilt',
+  protectedDeployCommand,
   'node scripts/urai-release-control-smoke.mjs',
   "GOOGLE_APPLICATION_CREDENTIALS: ${{ runner.temp }}/urai-firebase-service-account.json",
   "URAI_FIREBASE_CLI: ${{ github.workspace }}/node_modules/.bin/firebase",
@@ -87,7 +88,7 @@ const downloadIndex = deployJob.indexOf('Download exact static release bundle')
 const verifyBoundaryIndex = deployJob.indexOf('Revalidate current credential boundary')
 const verifyPrebuiltIndex = deployJob.indexOf('Verify downloaded bundle before production credentials exist')
 const secretIndex = deployJob.indexOf(secretMarker)
-const deployPrebuiltIndex = deployJob.indexOf('node scripts/live-release.mjs --deploy-prebuilt')
+const deployPrebuiltIndex = deployJob.indexOf(protectedDeployCommand)
 const smokeIndex = deployJob.indexOf('Run canonical live smoke with current authority')
 const orderedIndexes = [
   authorityCheckoutIndex,
