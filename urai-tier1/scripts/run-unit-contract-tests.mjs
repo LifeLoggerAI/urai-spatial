@@ -14,6 +14,7 @@ const focusedContractTests = [
   'tests/replay-memory-theater-contract.test.mjs',
   'tests/sensory-asset-resolution-contract.test.mjs',
   'tests/spatial-launch-boundaries.test.mjs',
+  'tests/spatial-missing-resource-diagnostic-contract.test.mjs',
   'tests/unit-runner-coverage.test.mjs',
   'tests/xr-runtime-contract.test.mjs',
 ]
