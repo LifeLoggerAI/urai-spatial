@@ -3,9 +3,14 @@ import { createHash } from 'node:crypto'
 import { existsSync, lstatSync, readFileSync } from 'node:fs'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
+import {
+  runLiveRollbackProvenanceSelfTest,
+  verifyLiveRollbackProvenance,
+} from './verify-live-rollback-provenance.mjs'
 
 const directory = path.dirname(fileURLToPath(import.meta.url))
 const staticVerifierPath = path.join(directory, 'verify-release-credential-boundary-static.mjs')
+const liveProvenanceVerifierPath = path.join(directory, 'verify-live-rollback-provenance.mjs')
 const failures = []
 
 function sha256(file) {
@@ -46,12 +51,41 @@ if (requireRegularFile('Static credential-boundary verifier', staticVerifierPath
   }
 }
 
+const requiredLiveProvenanceMarkers = [
+  "schemaVersion: 'urai-live-rollback-provenance-1'",
+  "candidate.schemaVersion !== 'urai-release-fingerprint-1'",
+  'Deploy recovery SHA',
+  'Rollback target',
+  "redirect: 'manual'",
+  "cache: 'no-store'",
+  'verifiedAt',
+]
+if (requireRegularFile('Live rollback-provenance verifier', liveProvenanceVerifierPath)) {
+  const liveVerifierSource = readFileSync(liveProvenanceVerifierPath, 'utf8').replace(/\r\n?/g, '\n')
+  for (const marker of requiredLiveProvenanceMarkers) {
+    if (!liveVerifierSource.includes(marker)) failures.push(`Live rollback-provenance verifier missing marker: ${marker}`)
+  }
+}
+
 await import('./verify-release-credential-boundary-static.mjs')
+runLiveRollbackProvenanceSelfTest()
+
+const githubJob = (process.env.GITHUB_JOB || '').trim()
+const liveRollbackProvenanceRequired =
+  process.env.GITHUB_ACTIONS === 'true' &&
+  process.env.GITHUB_EVENT_NAME === 'workflow_dispatch' &&
+  githubJob === 'deploy' &&
+  process.env.GITHUB_REF === 'refs/heads/main' &&
+  ['deploy', 'rollback'].includes(String(process.env.URAI_RELEASE_OPERATION || ''))
+let liveRollbackProvenanceVerified = false
+if (liveRollbackProvenanceRequired) {
+  await verifyLiveRollbackProvenance()
+  liveRollbackProvenanceVerified = true
+}
 
 let downloadedBundlePresent = false
 let downloadedBundleRunBound = false
 let downloadedBundleFingerprintBound = false
-const githubJob = (process.env.GITHUB_JOB || '').trim()
 const downloadedBundleRequired = githubJob === 'deploy' || (process.env.URAI_REQUIRE_RELEASE_BUNDLE || '').trim() === '1'
 const bundleDirectoryValue = (process.env.URAI_RELEASE_BUNDLE_DIR || '').trim()
 
@@ -101,8 +135,11 @@ if (bundleDirectoryValue) {
 }
 
 const report = {
-  schemaVersion: 'urai-release-credential-boundary-2',
-  ok: failures.length === 0 && process.exitCode !== 1,
+  schemaVersion: 'urai-release-credential-boundary-3',
+  ok:
+    failures.length === 0 &&
+    process.exitCode !== 1 &&
+    (!liveRollbackProvenanceRequired || liveRollbackProvenanceVerified),
   lineEndingsNormalized: true,
   targetBuildIsolated: true,
   authorityAttestationIsolated: true,
@@ -112,6 +149,8 @@ const report = {
   unmanagedLocalCredentialPathsIgnoredDuringVerification: true,
   managedCredentialPathRequiredForProductionWrite: true,
   firebaseCliResolvedFromCurrentAuthority: true,
+  liveRollbackProvenanceRequired,
+  liveRollbackProvenanceVerified,
   downloadedBundleRequired,
   downloadedBundlePresent,
   downloadedBundleRunBound,
@@ -120,4 +159,4 @@ const report = {
 }
 
 console.log(JSON.stringify(report, null, 2))
-if (failures.length) process.exitCode = 1
+if (failures.length || (liveRollbackProvenanceRequired && !liveRollbackProvenanceVerified)) process.exitCode = 1
