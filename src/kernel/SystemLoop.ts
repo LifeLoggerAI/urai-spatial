@@ -94,10 +94,8 @@ export class SystemLoop<TState = Record<string, unknown>> {
     const frame = this.xr.renderPrediction(prediction, this.engine.tick);
     await this.xr.emitFrame(frame, this.engine.bus);
     const packets = this.communications.flush();
-    const analyticsEvents: AnalyticsEvent[] = packets.flatMap((packet) => {
-      const event = this.analytics.ingest(packet);
-      return event ? [event] : [];
-    });
+    for (const packet of packets) this.analytics.ingest(packet);
+    const analyticsEvents: AnalyticsEvent[] = this.analytics.flush();
     this.loopState = { ...this.loopState, lastRunAt: Date.now(), totalRuns: this.loopState.totalRuns + 1, lastPrediction: prediction, lastXRFrame: frame };
     await this.engine.emit("state.snapshot", { snapshot, prediction, frame, loopState: this.loopState }, "system-loop");
     await this.engine.emit("system.loop.completed", { tick: this.engine.tick, totalRuns: this.loopState.totalRuns, predictionId: prediction.id, xrFrameId: frame.id, packets: packets.length, analyticsEvents: analyticsEvents.length }, "system-loop");
