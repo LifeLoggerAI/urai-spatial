@@ -1,0 +1,20 @@
+{
+  "schemaVersion": 2,
+  "id": "urai-orb-avatar-v1",
+  "releaseState": "ready-local-evidence",
+  "sourceMain": "30200c15f1c7204cb1e8bf2d1978630aefb1db94",
+  "path": "urai-tier1/public/assets/urai/generated/models/urai-orb-avatar-v1.gltf",
+  "bytes": 4049,
+  "sha256": "aa2e4a1c8667c16f212508094b362d1a072ba86d7dd482fd6084b1a4a7fe50fa",
+  "triangles": 20,
+  "lineSegments": 64,
+  "maxTriangles": 30000,
+  "withinTriangleBudget": true,
+  "compression": "embedded compact glTF",
+  "khronosValidator": {"tool": "@gltf-transform/cli@4.2.1 validate", "errors": 0, "warnings": 0},
+  "license": "URAI Labs internal production asset",
+  "provenance": "URAI deterministic orb family; compact embedded delivery variant; independently validated locally",
+  "fallbackRetained": true,
+  "activationReversible": true,
+  "runtimeRoutes": ["/", "/home", "/life-map", "/focus", "/replay"]
+}
