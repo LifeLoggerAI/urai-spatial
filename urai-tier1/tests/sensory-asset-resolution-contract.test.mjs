@@ -1,9 +1,11 @@
 import assert from 'node:assert/strict'
+import { spawnSync } from 'node:child_process'
 import fs from 'node:fs'
 import path from 'node:path'
 import test from 'node:test'
 
 const root = process.cwd()
+const repoRoot = path.resolve(root, '..')
 const read = (relativePath) => fs.readFileSync(path.join(root, relativePath), 'utf8')
 const manifest = read('src/spatial/assets/sensoryAssetManifest.ts')
 const sensoryLayer = read('src/spatial/scene/SpatialSensoryLayer.tsx')
@@ -55,4 +57,17 @@ test('missing promoted sensory paths preserve the procedural world instead of cr
   )
   assert.match(sensoryLayer, /type PromotedSpatialSensoryLayerProps = \{[\s\S]*materialPath: string[\s\S]*particlePath: string[\s\S]*loadingPath: string/)
   assert.match(sensoryLayer, /<PromotedSpatialSensoryLayer[\s\S]*materialPath=\{materialPath\}[\s\S]*particlePath=\{particlePath\}[\s\S]*loadingPath=\{loadingPath\}/)
+})
+
+test('production sensory verifiers pass on the exact checked-out source and receipt bytes', () => {
+  for (const script of [
+    'scripts/verify-production-sensory-assets.mjs',
+    'scripts/verify-promoted-sensory-assets.mjs',
+  ]) {
+    const result = spawnSync(process.execPath, [script], {
+      cwd: repoRoot,
+      encoding: 'utf8',
+    })
+    assert.equal(result.status, 0, `${script} failed:\n${result.stdout}\n${result.stderr}`)
+  }
 })
