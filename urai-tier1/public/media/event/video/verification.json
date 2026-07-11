@@ -1,0 +1,29 @@
+{
+  "schemaVersion": "urai-founder-event-offline-video-1",
+  "verifiedAt": "2026-07-10",
+  "generator": "ffmpeg 7.1.2",
+  "container": "webm",
+  "codec": "vp8",
+  "width": 160,
+  "height": 90,
+  "frameRate": "1/1",
+  "durationSeconds": 72,
+  "byteLength": 9603,
+  "base64Length": 12804,
+  "sha256": "7812d1f74db521288948ac8aebcd189065a9e7821d8f77cb8e506ea6141fa11c",
+  "ebmlMagic": "1a45dfa3",
+  "fullDecode": "passed",
+  "sampleDataOnly": true,
+  "networkRequired": false,
+  "routeSequence": [
+    "Event",
+    "Home",
+    "Life Map",
+    "Focus",
+    "Replay",
+    "Mirror",
+    "Passport",
+    "Status"
+  ],
+  "contentBoundary": "Silent synthetic route storyboard. No customer, account, credential, admin, console, environment, or production data."
+}

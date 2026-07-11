@@ -1,0 +1,123 @@
+name: Founder Event Demo Kit
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/founder-event-demo-kit.yml'
+      - 'docs/founder-readiness/**'
+      - 'scripts/capture-founder-event-kit.mjs'
+      - 'scripts/verify-founder-event-kit.mjs'
+      - 'scripts/verify-embedded-event-video.mjs'
+      - 'urai-tier1/public/media/event/**'
+      - 'urai-tier1/src/app/event/**'
+      - 'urai-tier1/src/app/status/page.tsx'
+      - 'urai-tier1/src/data/launchTruth.ts'
+      - 'urai-tier1/src/spatial/v1/lifeMapDemoData.ts'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: founder-event-kit-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+env:
+  TARGET_SHA: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
+
+jobs:
+  verify-and-capture:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - name: Checkout exact reviewed head
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ env.TARGET_SHA }}
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Prove exact clean head
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$TARGET_SHA"
+          test -z "$(git status --porcelain)"
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10.0.0
+          run_install: false
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: pnpm-lock.yaml
+
+      - name: Enable Corepack
+        run: corepack enable
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Verify scripts and sample-safety contract
+        run: |
+          node --check scripts/capture-founder-event-kit.mjs
+          node --check scripts/verify-founder-event-kit.mjs
+          node --check scripts/verify-embedded-event-video.mjs
+          node scripts/verify-embedded-event-video.mjs
+          node scripts/verify-founder-event-kit.mjs
+          node scripts/check-spatial-copy.mjs
+          node scripts/check-production-route-exposure.mjs
+
+      - name: Install Chromium
+        run: pnpm exec playwright install --with-deps chromium
+
+      - name: Start local URAI runtime
+        env:
+          NEXT_PUBLIC_ALLOW_PUBLIC_DEMO_ROUTES: 'true'
+          NEXT_PUBLIC_URAI_BUILD_SHA: ${{ env.TARGET_SHA }}
+        run: |
+          pnpm dev:3001 > /tmp/urai-founder-event-runtime.log 2>&1 &
+          echo $! > /tmp/urai-founder-event-runtime.pid
+          for attempt in $(seq 1 90); do
+            if curl --fail --silent http://127.0.0.1:3001/event >/dev/null; then
+              exit 0
+            fi
+            sleep 2
+          done
+          cat /tmp/urai-founder-event-runtime.log
+          exit 1
+
+      - name: Capture video and screenshot fallback
+        env:
+          URAI_EVENT_BASE_URL: http://127.0.0.1:3001
+          URAI_EVENT_OUT_DIR: founder-event-kit-output
+          URAI_EVENT_HOLD_MS: '4500'
+          URAI_EVENT_SOURCE_SHA: ${{ env.TARGET_SHA }}
+        run: node scripts/capture-founder-event-kit.mjs
+
+      - name: Attach runtime log
+        if: always()
+        run: |
+          mkdir -p founder-event-kit-output
+          cp /tmp/urai-founder-event-runtime.log founder-event-kit-output/runtime.log || true
+
+      - name: Stop local runtime
+        if: always()
+        run: |
+          if test -f /tmp/urai-founder-event-runtime.pid; then
+            kill "$(cat /tmp/urai-founder-event-runtime.pid)" 2>/dev/null || true
+          fi
+
+      - name: Upload founder event kit
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: urai-founder-event-kit-${{ env.TARGET_SHA }}
+          path: founder-event-kit-output
+          if-no-files-found: error
+          retention-days: 30
