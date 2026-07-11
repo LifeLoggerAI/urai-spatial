@@ -16,16 +16,17 @@ if (!/^[0-9a-f]{40}$/.test(expectedRollbackSha)) throw new Error('URAI_EXPECTED_
 if (expectedRollbackSha === expectedSha) throw new Error('Rollback SHA must be distinct from deployed SHA')
 
 const contracts = [
-  ['/', ['Own your life.', 'Ground', 'Life Map'], []],
-  ['/home', ['Own your life.'], []],
-  ['/ground', ['URAI GROUND', 'Your private floor is open.'], []],
-  ['/life-map', ['Your memory constellation is online.'], []],
-  ['/focus?memoryId=quiet-reset', ['Selected memory chamber', 'The Quiet Reset'], []],
-  ['/replay?memoryId=quiet-reset&manifestId=replay-recovery-thread', ['Cinematic memory film', 'Replay the thread.'], []],
-  ['/mirror', ['URAI Mirror', 'See the pattern clearly.'], []],
-  ['/passport', ['URAI Passport', 'Your life stays yours.'], []],
-  ['/privacy-controls', ['URAI Privacy Controls', 'Choose what the world can hold.'], ['Home threshold']],
-  ['/status', ['URAI Status · Evidence Control Room', 'Production certification pending.'], ['World online. Route matrix visible.']],
+  ['/', ['aaa-final-home-sky-ground-orb-body-portals', 'Own your life.', 'Ground', 'Life Map'], []],
+  ['/home', ['aaa-final-home-sky-ground-orb-body-portals', 'Own your life.'], []],
+  ['/ground', ['walkable-first-person-ground-layer', 'Street-level city world'], []],
+  ['/life-map', ['urai-r3f-canonical-lifemap', 'URAI canonical spatial Life Map'], []],
+  ['/focus?memoryId=quiet-reset&manifestId=replay-recovery-thread&node=quiet-reset', ['Focus loading'], []],
+  ['/replay?memoryId=quiet-reset&manifestId=replay-recovery-thread&node=quiet-reset', ['replay-route-launch-fingerprint', 'Replay the thread. Film beats. Cinematic memory camera film.'], []],
+  ['/mirror', ['urai-final-mirror-realm', 'See the pattern clearly.'], []],
+  ['/passport', ['urai-final-passport-vault', 'Your life stays yours.'], []],
+  ['/privacy-controls', ['privacy-consent-console', 'Choose what the world can hold.'], ['Home threshold']],
+  ['/location-map', ['premium-emotional-weather-atlas'], []],
+  ['/status', ['urai-final-status-control-room', 'Launch locked. Proof before expansion.', 'Pending proof'], ['World online. Route matrix visible.']],
 ]
 
 function normalizePath(value) {
@@ -55,7 +56,7 @@ async function fetchFingerprint() {
     redirect: 'follow',
     cache: 'no-store',
     signal: AbortSignal.timeout(20_000),
-    headers: { 'cache-control': 'no-cache', 'user-agent': 'urai-static-release-verifier/1.1' },
+    headers: { 'cache-control': 'no-cache', 'user-agent': 'urai-static-release-verifier/2.1' },
   })
   const text = await response.text()
   let payload = null
@@ -86,7 +87,7 @@ for (const [route, required, forbidden] of contracts) {
         redirect: 'follow',
         cache: 'no-store',
         signal: AbortSignal.timeout(20_000),
-        headers: { 'cache-control': 'no-cache', 'user-agent': 'urai-static-release-verifier/1.1' },
+        headers: { 'cache-control': 'no-cache', 'user-agent': 'urai-static-release-verifier/2.1' },
       })
       const html = await response.text()
       const finalUrl = new URL(response.url)
@@ -147,6 +148,7 @@ const receipt = {
   expectedRollbackSha,
   routeContracts: contracts.length,
   checkedVariants: results.length,
+  hydratedIdentityProof: 'scripts/urai-release-control-smoke.mjs',
   fingerprint,
   passed,
   results,

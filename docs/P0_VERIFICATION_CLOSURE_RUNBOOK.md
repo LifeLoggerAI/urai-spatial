@@ -1,31 +1,23 @@
 # P0 Verification Closure Runbook
 
-Generated: 2026-07-07
-Repository: `LifeLoggerAI/urai-spatial`
-Runtime root: `urai-tier1`
-Tracking issue: #461
+Generated: 2026-07-07  
+Updated: 2026-07-10  
+Repository: `LifeLoggerAI/urai-spatial`  
+Runtime root: `urai-tier1`  
+Tracking issue: #461  
 Ledger: `docs/V1_V100_VERIFICATION_LEDGER.md`
 
 ## Purpose
 
-This runbook turns the V1-V100 verification ledger into an executable closure pass.
+This runbook turns the V1-V100 verification ledger into an executable closure pass. It does not add product scope. It closes the evidence gaps that block safe public claims.
 
-The goal is not to add new product scope. The goal is to close the evidence gaps that block safe public claims.
+## Current release authority
 
-## Current authority reality
-
-PR #415 was the previous canonical V50 runtime/release-gate authority, but it is closed, unmerged, and non-mergeable. Its body still contains useful requirements:
-
-- exact target SHA;
-- distinct rollback ancestor;
-- receipt-backed Status source;
-- fail-closed release receipt;
-- manual production dispatch;
-- immutable deployment receipt;
-- route/query/content/SHA verification;
-- Firebase Hosting-only static release boundary.
-
-Because PR #415 is closed and unmerged, do not treat it as an active merge path. Treat it as a requirements reference. Current closure should happen on current `main` or a fresh branch based on current `main`.
+- `.github/workflows/spatial-live-deploy.yml` is the sole production deploy and rollback authority.
+- `scripts/live-release.mjs` refuses deployment outside that protected manual workflow.
+- Production and rollback both use the protected `production` environment.
+- Local `firebase deploy`, `pnpm live:deploy`, and retired proof-loop deploy commands are not approved release paths.
+- An exact tested SHA, a distinct proven rollback SHA, current live smoke, and immutable workflow artifacts are required before a production claim.
 
 ## Non-negotiable claim boundary
 
@@ -39,48 +31,49 @@ Public copy must not say:
 
 ## P0 closure sequence
 
-### 1. Clean current-main workspace
+### 1. Freeze a clean candidate
 
 ```bash
 git checkout main
 git pull --ff-only
-cd urai-tier1
 corepack enable
-corepack pnpm install --frozen-lockfile
-```
-
-Record:
-
-```bash
+corepack prepare pnpm@10.0.0 --activate
+pnpm install --frozen-lockfile
 git rev-parse HEAD
 git status --short
 ```
 
 Required result:
 
-- exact current-main SHA captured;
-- working tree state captured;
-- no untracked evidence files left outside the intended receipt path.
+- one exact 40-character current-main SHA;
+- clean working tree;
+- no untracked evidence files outside the intended receipt path;
+- one distinct rollback SHA that is an ancestor of the candidate and is already proven safe enough to restore.
 
 ### 2. Run source verification
 
-From `urai-tier1`:
+From the repository root, use the exact repository-prescribed commands and preserve their output:
 
 ```bash
-corepack pnpm run typecheck
-corepack pnpm run build
-corepack pnpm run audit:routes
-corepack pnpm run tier1:verify
-corepack pnpm run tier5:verify
+node scripts/aaa-launch-proof.mjs
+node scripts/audit-production-workflow-authority.mjs
+node scripts/audit-spatial-performance-budget.mjs
+pnpm --dir urai-tier1 receipt:assets
+pnpm --dir urai-tier1 typecheck
+pnpm --dir urai-tier1 verify:aaa-world
+pnpm --dir urai-tier1 xr:verify
 ```
+
+Also allow the exact-head required GitHub workflows to complete. A local pass is not a substitute for current-head protected CI.
 
 Required result:
 
-- command output saved verbatim;
-- exit code saved for each command;
-- failure output preserved if any command fails.
+- exact source SHA and clean-tree state in receipts;
+- command output and exit status preserved;
+- provider asset verification reports `ok: true` before the asset receipt is materialized;
+- failures remain visible and block release.
 
-### 3. Run route/content parity verification
+### 3. Run route and content parity verification
 
 Required route families:
 
@@ -98,60 +91,83 @@ Required route families:
 - `/spatial/ar-vr`
 - `/demo`
 - `/demo/replay-film`
-- `/asset-audit`
-- `/tier3`
-- `/tier4`
-- `/tier5`
 
-For each route, record:
-
-- URL;
-- slash and non-slash behavior where applicable;
-- HTTP status;
-- final URL;
-- content hash;
-- byte count;
-- required route fingerprint/marker;
-- forbidden marker checks for route drift;
-- query preservation for Focus and Replay;
-- any available deployed-SHA metadata/header.
+For each route, record URL, slash behavior, HTTP status, final URL, content fingerprint, byte count, required and forbidden markers, query preservation, browser errors, and deployed-SHA evidence.
 
 Required result:
 
-- `/privacy-controls` must render Privacy Controls content, not Home threshold content;
-- `/status` must render production truth and not overclaim unreceipted routes;
-- live route reachability must be tied to tested/deployed SHA evidence where available.
+- `/privacy-controls` renders Privacy Controls, not Home threshold content;
+- `/status` reports current evidence boundaries and does not claim certification without receipts;
+- Focus and Replay preserve memory and manifest identity;
+- live reachability is tied to the exact deployed SHA.
 
-### 4. Record deployment identity
+### 4. Deploy through the protected workflow
 
-Before production claim:
+Before dispatch:
 
-- exact tested SHA;
-- exact deployed SHA;
-- previous rollback SHA;
-- Firebase project/target;
-- deployment command or workflow run;
-- deployment receipt path;
-- rollback command;
-- operator/time metadata.
+- all required checks on the exact candidate are successful;
+- the candidate is merged to `main`;
+- `release_sha` is the exact current `main` SHA;
+- `rollback_sha` is a distinct proven ancestor;
+- Firebase project is `urai-4dc1d`;
+- the protected environment has the required service account and approvals.
 
-Required result:
+Approved production dispatch:
 
-- immutable deployment receipt exists;
-- rollback target is distinct from deployed SHA;
-- Status route can cite or render the same truth boundary.
+```bash
+gh workflow run spatial-live-deploy.yml \
+  --ref main \
+  -f release_sha=<EXACT_CURRENT_MAIN_SHA> \
+  -f rollback_sha=<DISTINCT_PROVEN_PRODUCTION_SHA> \
+  -f confirm=DEPLOY_URAI_APP
+```
 
-### 5. Capture visual evidence
+Do not run the command until the exact values are known. The workflow verifies, checks out, builds, deploys, smokes, and records only the requested target SHA.
 
-Capture desktop and mobile screenshots for the live route family.
+Required deployment evidence:
 
-Required result:
+- exact tested and deployed SHA;
+- distinct rollback SHA;
+- workflow run ID and protected environment;
+- Firebase project and hosting-only scope;
+- build/output hashes;
+- custom-domain route, query, Status, and Privacy Controls smoke;
+- desktop and mobile screenshots;
+- immutable deployment and provider-verification artifacts;
+- protected rollback command.
 
-- screenshots saved under a dated receipt folder;
-- screenshot index includes route, viewport, timestamp, and file path;
-- human review notes classify each route as pass/review/block.
+### 5. Roll back through the same protected workflow
 
-### 6. Update ledgers
+The deployment receipt writes the exact recovery command. Its form is:
+
+```bash
+gh workflow run spatial-live-deploy.yml \
+  --ref main \
+  -f release_sha=<PROVEN_ROLLBACK_SHA> \
+  -f rollback_sha=<PROVEN_ROLLBACK_SHA> \
+  -f confirm=ROLLBACK_URAI_APP
+```
+
+The workflow requires the rollback target to be a non-current ancestor of `main`, re-runs verification against that target, uses the protected production environment, deploys the exact ancestor, and repeats live smoke. Never perform rollback through a local Firebase command.
+
+### 6. Capture visual evidence
+
+Run the proof-only visual pass against the deployed domain:
+
+```bash
+LOOP_NAME=post-deploy-live node scripts/aaa-launch-proof.mjs \
+  --base=https://urai.app \
+  --screenshots \
+  --skip-install \
+  --skip-assets \
+  --skip-typecheck \
+  --skip-test \
+  --skip-build
+```
+
+Use skip flags only when the same exact SHA already has trusted evidence for the omitted steps. Review the 28 desktop/mobile screenshots and classify each route as pass, review, or block.
+
+### 7. Update ledgers
 
 After evidence exists, update:
 
@@ -159,34 +175,24 @@ After evidence exists, update:
 - `docs/completion-ledger.md` if still authoritative as a mirror;
 - `docs/LAUNCH_VERIFICATION_STATE.md`;
 - `STATUS.md`;
-- any machine-readable receipt file used by Status or launch surfaces.
+- issue #461;
+- machine-readable receipt files used by Status or launch surfaces.
 
-Required result:
-
-- V1 can only move greener if exact deploy/rollback/route/screenshot proof exists;
-- V2/V3/V4/V5 remain gated unless their provider/device/provenance receipts exist;
-- V100 remains roadmap until production services/privacy/jobs/analytics/monitoring/rollback are verified.
+V1 may move greener only when exact deploy, rollback, route, and screenshot evidence exists. V2-V5 and V100 remain gated unless their own provider, device, provenance, service, privacy, and operations receipts exist.
 
 ## Failure handling
 
-If any command fails, do not patch docs to hide the failure. Record:
-
-- command;
-- exit code;
-- failure output;
-- suspected owner;
-- next fix.
-
-Then keep the affected claim blocked.
+If any command or workflow fails, preserve the command, exact SHA, exit status, log, owner, and next fix. Do not edit documentation to hide the failure, weaken the check, or substitute evidence from an older commit.
 
 ## Done definition
 
 Issue #461 can close only when:
 
-1. exact deployed SHA and rollback SHA are recorded;
-2. source verification output exists for current main;
-3. live route/content parity passes;
-4. `/privacy-controls` and `/status` are externally verified against correct content boundaries;
-5. screenshots are captured/reviewed;
-6. ledgers are updated with evidence, not assumptions;
-7. unsafe V1-V100 production claims remain blocked unless receipts prove them.
+1. exact deployed SHA and distinct rollback SHA are recorded;
+2. exact-head source and CI verification output exists;
+3. the protected workflow completed deployment and live smoke;
+4. live route/content/query parity passes;
+5. `/privacy-controls` and `/status` match the current source boundary;
+6. desktop and mobile evidence is captured and reviewed;
+7. ledgers and trackers are updated from evidence;
+8. unsafe V1-V100 production claims remain blocked unless their own receipts prove them.
