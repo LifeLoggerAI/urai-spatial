@@ -6,6 +6,7 @@ on:
     paths:
       - 'urai-tier1/**'
       - 'scripts/live-release.mjs'
+      - 'scripts/create-static-release-bundle.mjs'
       - 'scripts/write-release-fingerprint.mjs'
       - 'scripts/urai-release-control-smoke.mjs'
       - 'scripts/audit-production-workflow-authority.mjs'
@@ -19,6 +20,7 @@ on:
     paths:
       - 'urai-tier1/**'
       - 'scripts/live-release.mjs'
+      - 'scripts/create-static-release-bundle.mjs'
       - 'scripts/write-release-fingerprint.mjs'
       - 'scripts/urai-release-control-smoke.mjs'
       - 'scripts/audit-production-workflow-authority.mjs'
@@ -262,9 +264,78 @@ jobs:
           if-no-files-found: error
           retention-days: 365
 
-  deploy:
-    name: Deploy or roll back exact SHA on urai.app
+  prepare-release-bundle:
+    name: Prepare exact static release bundle without production credentials
     needs: [verify, rollback-verify]
+    if: >-
+      github.event_name == 'workflow_dispatch' &&
+      github.ref == 'refs/heads/main' &&
+      (inputs.confirm == 'DEPLOY_URAI_APP' || inputs.confirm == 'ROLLBACK_URAI_APP')
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    env:
+      RELEASE_SHA: ${{ inputs.release_sha }}
+      ROLLBACK_SHA: ${{ inputs.rollback_sha }}
+      CURRENT_MAIN_SHA: ${{ github.sha }}
+      FIREBASE_PROJECT_ID: urai-4dc1d
+      URAI_EXPECTED_FIREBASE_PROJECT: urai-4dc1d
+      URAI_LIVE_BASE_URL: https://urai.app
+      NEXT_PUBLIC_URAI_BUILD_SHA: ${{ inputs.release_sha }}
+      URAI_TARGET_SHA: ${{ inputs.release_sha }}
+      URAI_RELEASE_BUNDLE_DIR: ${{ runner.temp }}/urai-release-bundle
+    steps:
+      - name: Checkout current release authority
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ env.CURRENT_MAIN_SHA }}
+          path: authority
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Checkout exact release target
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ env.RELEASE_SHA }}
+          path: target
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Prove bundle authority and target identities
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git -C authority rev-parse HEAD)" = "$CURRENT_MAIN_SHA"
+          test "$(git -C target rev-parse HEAD)" = "$RELEASE_SHA"
+          test -z "$(git -C authority status --porcelain)"
+          test -z "$(git -C target status --porcelain)"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+      - name: Enable pnpm
+        run: |
+          corepack enable
+          corepack prepare "pnpm@${PNPM_VERSION}" --activate
+      - name: Install exact target dependencies without production credentials
+        working-directory: target
+        run: pnpm install --frozen-lockfile
+      - name: Write exact fingerprint with current authority
+        working-directory: target
+        run: node ../authority/scripts/write-release-fingerprint.mjs
+      - name: Build exact target without production credentials
+        working-directory: target
+        run: pnpm build:static
+      - name: Create hash-bound static release bundle with current authority
+        working-directory: target
+        run: node ../authority/scripts/create-static-release-bundle.mjs
+      - name: Upload exact static release bundle
+        uses: actions/upload-artifact@v4
+        with:
+          name: urai-static-release-bundle-${{ env.RELEASE_SHA }}
+          path: ${{ env.URAI_RELEASE_BUNDLE_DIR }}
+          if-no-files-found: error
+          retention-days: 2
+
+  deploy:
+    name: Deploy or roll back verified static bundle on urai.app
+    needs: [verify, rollback-verify, prepare-release-bundle]
     if: >-
       github.event_name == 'workflow_dispatch' &&
       github.ref == 'refs/heads/main' &&
@@ -283,29 +354,22 @@ jobs:
       URAI_LIVE_BASE_URL: https://urai.app
       URAI_DEPLOY_CONFIRM: DEPLOY_STATIC_URAI
       URAI_RELEASE_OPERATION: ${{ inputs.confirm == 'ROLLBACK_URAI_APP' && 'rollback' || 'deploy' }}
+      URAI_RELEASE_BUNDLE_DIR: ${{ runner.temp }}/urai-release-bundle
       GOOGLE_APPLICATION_CREDENTIALS: ${{ runner.temp }}/urai-firebase-service-account.json
-      URAI_FIREBASE_CLI: ${{ github.workspace }}/authority/node_modules/.bin/firebase
+      URAI_FIREBASE_CLI: ${{ github.workspace }}/node_modules/.bin/firebase
     steps:
-      - name: Checkout current release authority
+      - name: Checkout current release authority only
         uses: actions/checkout@v4
         with:
           ref: ${{ env.CURRENT_MAIN_SHA }}
-          path: authority
           fetch-depth: 0
           persist-credentials: false
-      - name: Checkout frozen target SHA
-        uses: actions/checkout@v4
-        with:
-          ref: ${{ env.RELEASE_SHA }}
-          path: target
-          fetch-depth: 0
-          persist-credentials: false
-      - name: Validate authority and target
+      - name: Validate clean current authority
         shell: bash
         run: |
           set -euo pipefail
-          test "$(git -C authority rev-parse HEAD)" = "$CURRENT_MAIN_SHA"
-          test "$(git -C target rev-parse HEAD)" = "$RELEASE_SHA"
+          test "$(git rev-parse HEAD)" = "$CURRENT_MAIN_SHA"
+          test -z "$(git status --porcelain)"
           test "$FIREBASE_PROJECT_ID" = "$URAI_EXPECTED_FIREBASE_PROJECT"
           test "$GITHUB_WORKFLOW" = 'URAI Canonical Production Release'
           test "$GITHUB_REPOSITORY" = 'LifeLoggerAI/urai-spatial'
@@ -314,11 +378,11 @@ jobs:
           if test "$URAI_RELEASE_OPERATION" = 'deploy'; then
             test "$RELEASE_SHA" = "$CURRENT_MAIN_SHA"
             test "$ROLLBACK_SHA" != "$RELEASE_SHA"
-            git -C authority merge-base --is-ancestor "$ROLLBACK_SHA" "$RELEASE_SHA"
+            git merge-base --is-ancestor "$ROLLBACK_SHA" "$RELEASE_SHA"
           else
             test "$RELEASE_SHA" != "$CURRENT_MAIN_SHA"
             test "$ROLLBACK_SHA" = "$CURRENT_MAIN_SHA"
-            git -C authority merge-base --is-ancestor "$RELEASE_SHA" "$CURRENT_MAIN_SHA"
+            git merge-base --is-ancestor "$RELEASE_SHA" "$CURRENT_MAIN_SHA"
           fi
       - uses: actions/setup-node@v4
         with:
@@ -327,35 +391,33 @@ jobs:
         run: |
           corepack enable
           corepack prepare "pnpm@${PNPM_VERSION}" --activate
-      - name: Install current authority dependencies without production credentials
-        working-directory: authority
-        run: pnpm install --frozen-lockfile
-      - name: Install frozen target dependencies without production credentials
-        working-directory: target
-        run: pnpm install --frozen-lockfile
-      - name: Install Chromium without production credentials
-        working-directory: target
+      - name: Install current authority dependencies with lifecycle scripts disabled
+        run: pnpm install --frozen-lockfile --ignore-scripts
+      - name: Install Chromium from current authority without production credentials
         run: pnpm exec playwright install --with-deps chromium
+      - name: Download exact static release bundle
+        uses: actions/download-artifact@v4
+        with:
+          name: urai-static-release-bundle-${{ env.RELEASE_SHA }}
+          path: ${{ env.URAI_RELEASE_BUNDLE_DIR }}
       - name: Revalidate current credential boundary
-        working-directory: authority
         run: node scripts/verify-release-credential-boundary.mjs
-      - name: Deploy exact target with current authority and ephemeral credentials
-        working-directory: target
+      - name: Verify downloaded bundle before production credentials exist
+        run: node scripts/live-release.mjs --verify-prebuilt
+      - name: Deploy verified bundle with current authority and ephemeral credentials
         env:
           FIREBASE_SERVICE_ACCOUNT_JSON: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_JSON }}
         run: |
           set -euo pipefail
           test -n "$FIREBASE_SERVICE_ACCOUNT_JSON"
           printf '%s' "$FIREBASE_SERVICE_ACCOUNT_JSON" >/dev/null
-          node ../authority/scripts/live-release.mjs --deploy
+          node scripts/live-release.mjs --deploy-prebuilt
       - name: Run canonical live smoke with current authority
-        working-directory: target
         env:
           URAI_EXPECTED_DEPLOYED_SHA: ${{ env.RELEASE_SHA }}
           URAI_EXPECTED_ROLLBACK_SHA: ${{ env.ROLLBACK_SHA }}
-        run: node ../authority/scripts/urai-release-control-smoke.mjs
+        run: node scripts/urai-release-control-smoke.mjs
       - name: Record protected recovery command
-        working-directory: target
         shell: bash
         run: |
           set -euo pipefail
@@ -386,8 +448,8 @@ jobs:
         with:
           name: urai-production-${{ env.RELEASE_SHA }}-${{ env.URAI_RELEASE_OPERATION }}
           path: |
-            target/deployment-receipt/${{ env.RELEASE_SHA }}/
-            target/release-control-evidence/
+            deployment-receipt/${{ env.RELEASE_SHA }}/
+            release-control-evidence/
           if-no-files-found: error
           retention-days: 365
       - name: Remove temporary credentials
