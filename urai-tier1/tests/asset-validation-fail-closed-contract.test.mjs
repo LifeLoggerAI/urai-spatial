@@ -7,20 +7,30 @@ const source = fs.readFileSync(path.join(process.cwd(), 'scripts/validate-assets
 
 test('ready and fallback assets require regular committed files', () => {
   assert.match(source, /asset\.status === 'ready' \|\| asset\.status === 'fallback'/)
-  assert.match(source, /stats\.isFile\(\) && !symbolicLink/)
+  assert.match(source, /stats\.isFile\(\) && !symbolicLink && realPathInsidePublic/)
   assert.match(source, /requiredFile && \(!pathInsidePublic \|\| !exists \|\| !regularFile\)/)
   assert.match(source, /missingRequiredFiles/)
   assert.match(source, /nonRegularRequiredFiles/)
 })
 
-test('asset paths remain inside the public root', () => {
+test('asset paths remain lexically and physically inside the public root', () => {
   assert.match(source, /const publicRoot = resolve\(appRoot, 'public'\)/)
-  assert.match(source, /abs\.startsWith\(`\$\{publicRoot\}\$\{sep\}`\)/)
-  assert.match(source, /invalidPaths/)
+  assert.match(source, /const canonicalPublicRoot = realpathSync\(publicRoot\)/)
+  assert.match(source, /realPath = realpathSync\(abs\)/)
+  assert.match(source, /realPath\.startsWith\(`\$\{canonicalPublicRoot\}\$\{sep\}`\)/)
+  assert.match(source, /lexicalPathInsidePublic && \(!exists \|\| realPathInsidePublic\)/)
   assert.match(source, /outside-public-root/)
 })
 
-test('manifest identity and path collisions fail the gate', () => {
+test('manifest paths are normalized before collision detection', () => {
+  assert.match(source, /function normalizeManifestPath\(value\)/)
+  assert.match(source, /replace\(\/\\\\\/g, '\/'\)/)
+  assert.match(source, /posix\.normalize\(withoutLeadingSlash\)/)
+  assert.match(source, /seenPaths\.has\(normalizedPath\.normalized\)/)
+  assert.match(source, /duplicatePaths\.add\(normalizedPath\.normalized\)/)
+})
+
+test('manifest identity and normalized path collisions fail the gate', () => {
   assert.match(source, /duplicateIds/)
   assert.match(source, /duplicatePaths/)
   assert.match(source, /summary\.duplicateIds > 0/)

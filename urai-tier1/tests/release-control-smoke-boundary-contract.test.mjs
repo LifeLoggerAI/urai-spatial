@@ -13,25 +13,30 @@ test('release-control smoke requires canonical origin and exact deployed SHA', (
   assert.match(source, /final\.search !== requested\.search/)
 })
 
-test('query routes require valid responses and exact structured identity', () => {
+test('query routes require valid responses and the exact requested key-value set', () => {
   assert.match(source, /redirecting && !response\.location/)
   assert.match(source, /!redirecting && response\.status !== 200/)
+  assert.match(source, /function assertExactQueryIdentity/)
+  assert.match(source, /JSON\.stringify\(observedEntries\) !== JSON\.stringify\(requestedEntries\)/)
   assert.match(source, /observedUrl\.searchParams\.get\(key\) !== expected/)
   assert.match(source, /Query route escaped canonical identity/)
   assert.match(source, /verifyHydratedIdentity/)
 })
 
-test('browser evidence uses clean options, blocks service workers, and rejects cross-origin requests', () => {
+test('browser evidence blocks service workers and aborts cross-origin requests before send', () => {
   assert.match(source, /const \{ name: profileName, \.\.\.contextOptions \} = profile/)
   assert.match(source, /serviceWorkers: 'block'/)
-  assert.match(source, /page\.on\('request'/)
+  assert.match(source, /context\.route\('\*\*\/\*'/)
   assert.match(source, /requested\.origin !== canonicalOrigin/)
-  assert.match(source, /Cross-origin browser requests/)
+  assert.match(source, /route\.abort\('blockedbyclient'\)/)
+  assert.match(source, /blockedExternalRequests/)
+  assert.match(source, /Blocked cross-origin browser requests/)
 })
 
-test('browser console and page errors fail the retained evidence receipt', () => {
+test('browser console, page, and blocked-network evidence fail the retained receipt', () => {
   assert.match(source, /page\.on\('pageerror'/)
   assert.match(source, /message\.type\(\) === 'error'/)
   assert.match(source, /smoke-report\.json/)
-  assert.match(source, /urai-release-control-smoke-4/)
+  assert.match(source, /urai-release-control-smoke-5/)
+  assert.match(source, /if \(failures\.length\) throw new Error/)
 })

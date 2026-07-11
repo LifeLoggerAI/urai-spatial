@@ -1,13 +1,14 @@
-import { existsSync, lstatSync, mkdirSync, writeFileSync } from 'node:fs'
-import { dirname, extname, join, relative, resolve, sep } from 'node:path'
+import { existsSync, lstatSync, mkdirSync, realpathSync, writeFileSync } from 'node:fs'
+import { dirname, extname, posix, relative, resolve, sep } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
 const here = dirname(fileURLToPath(import.meta.url))
 const appRoot = dirname(here)
 const repoRoot = dirname(appRoot)
 const publicRoot = resolve(appRoot, 'public')
-const manifestPath = join(appRoot, 'src/spatial/assets/assetManifest.ts')
-const reportPath = join(repoRoot, 'docs/ASSET_VERIFICATION_REPORT.md')
+const canonicalPublicRoot = realpathSync(publicRoot)
+const manifestPath = resolve(appRoot, 'src/spatial/assets/assetManifest.ts')
+const reportPath = resolve(repoRoot, 'docs/ASSET_VERIFICATION_REPORT.md')
 
 const source = existsSync(manifestPath) ? await import(`file://${manifestPath}?t=${Date.now()}`) : null
 const manifest = source?.uraiSpatialAssetManifest ?? []
@@ -23,47 +24,85 @@ const extensionByType = {
   fallback: ['.glb', '.gltf', '.json', '.svg', '.png', '.webp'],
 }
 
+function normalizeManifestPath(value) {
+  const raw = String(value ?? '').trim().replace(/\\/g, '/')
+  const withoutLeadingSlash = raw.replace(/^\/+/, '')
+  const normalized = posix.normalize(withoutLeadingSlash)
+  const unsafe =
+    !raw ||
+    raw.includes('\0') ||
+    normalized === '.' ||
+    normalized === '..' ||
+    normalized.startsWith('../') ||
+    posix.isAbsolute(normalized)
+  return { raw, normalized, unsafe }
+}
+
+const normalizedEntries = manifest.map((asset) => ({
+  asset,
+  normalizedPath: normalizeManifestPath(asset.path),
+}))
 const duplicateIds = new Set()
 const duplicatePaths = new Set()
 const seenIds = new Set()
 const seenPaths = new Set()
-for (const asset of manifest) {
-  if (seenIds.has(asset.id)) duplicateIds.add(asset.id)
-  else seenIds.add(asset.id)
-  if (seenPaths.has(asset.path)) duplicatePaths.add(asset.path)
-  else seenPaths.add(asset.path)
+for (const { asset, normalizedPath } of normalizedEntries) {
+  const id = String(asset.id ?? '').trim()
+  if (seenIds.has(id)) duplicateIds.add(id)
+  else seenIds.add(id)
+  if (seenPaths.has(normalizedPath.normalized)) duplicatePaths.add(normalizedPath.normalized)
+  else seenPaths.add(normalizedPath.normalized)
 }
 
-const rows = manifest.map((asset) => {
-  const publicPath = asset.path.startsWith('/') ? asset.path.slice(1) : asset.path
-  const abs = resolve(publicRoot, publicPath)
-  const pathInsidePublic = abs !== publicRoot && abs.startsWith(`${publicRoot}${sep}`)
+const rows = normalizedEntries.map(({ asset, normalizedPath }) => {
+  const abs = resolve(publicRoot, normalizedPath.normalized)
+  const lexicalPathInsidePublic =
+    !normalizedPath.unsafe &&
+    abs !== publicRoot &&
+    abs.startsWith(`${publicRoot}${sep}`)
   let exists = false
   let regularFile = false
   let symbolicLink = false
-  if (pathInsidePublic && existsSync(abs)) {
-    const stats = lstatSync(abs)
-    exists = true
-    symbolicLink = stats.isSymbolicLink()
-    regularFile = stats.isFile() && !symbolicLink
+  let realPathInsidePublic = false
+  let realPath = ''
+  if (lexicalPathInsidePublic && existsSync(abs)) {
+    try {
+      const stats = lstatSync(abs)
+      exists = true
+      symbolicLink = stats.isSymbolicLink()
+      realPath = realpathSync(abs)
+      realPathInsidePublic =
+        realPath !== canonicalPublicRoot &&
+        realPath.startsWith(`${canonicalPublicRoot}${sep}`)
+      regularFile = stats.isFile() && !symbolicLink && realPathInsidePublic
+    } catch {
+      exists = true
+      regularFile = false
+      realPathInsidePublic = false
+    }
   }
   const allowed = extensionByType[asset.type] ?? []
-  const extension = extname(asset.path).toLowerCase()
+  const extension = extname(normalizedPath.normalized).toLowerCase()
   const extensionOk = allowed.includes(extension)
   const requiredFile = asset.status === 'ready' || asset.status === 'fallback'
+  const pathInsidePublic = lexicalPathInsidePublic && (!exists || realPathInsidePublic)
   const blocking = requiredFile && (!pathInsidePublic || !exists || !regularFile)
   return {
     ...asset,
+    normalizedPath: normalizedPath.normalized,
     exists,
     regularFile,
     symbolicLink,
     pathInsidePublic,
+    lexicalPathInsidePublic,
+    realPathInsidePublic,
     extensionOk,
     requiredFile,
     blocking,
-    duplicateId: duplicateIds.has(asset.id),
-    duplicatePath: duplicatePaths.has(asset.path),
+    duplicateId: duplicateIds.has(String(asset.id ?? '').trim()),
+    duplicatePath: duplicatePaths.has(normalizedPath.normalized),
     relativePath: pathInsidePublic ? relative(repoRoot, abs) : 'outside-public-root',
+    realPath: realPathInsidePublic ? relative(repoRoot, realPath) : '',
   }
 })
 
@@ -105,24 +144,24 @@ const lines = [
   `- Missing status entries: ${summary.missing}`,
   `- Paths without files yet: ${summary.missingFiles}`,
   `- Missing ready/fallback files: ${summary.missingRequiredFiles}`,
-  `- Non-regular or symlinked ready/fallback files: ${summary.nonRegularRequiredFiles}`,
-  `- Paths outside public root: ${summary.invalidPaths}`,
+  `- Non-regular or escaped ready/fallback files: ${summary.nonRegularRequiredFiles}`,
+  `- Invalid or escaped paths: ${summary.invalidPaths}`,
   `- Invalid extensions: ${summary.invalidExtensions}`,
   `- Duplicate asset IDs: ${summary.duplicateIds}`,
-  `- Duplicate asset paths: ${summary.duplicatePaths}`,
+  `- Duplicate normalized asset paths: ${summary.duplicatePaths}`,
   `- Blocking ready/fallback asset failures: ${summary.blocking}`,
   '',
   '## Asset Rows',
   '',
   '| ID | Type | Surface | Status | Priority | Extension | Path | File | Required | Duplicate |',
   '| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |',
-  ...rows.map((asset) => `| ${asset.id} | ${asset.type} | ${asset.targetSurface} | ${asset.status} | ${asset.priority} | ${asset.extensionOk ? 'ok' : 'bad'} | ${asset.pathInsidePublic ? 'inside-public' : 'invalid'} | ${asset.regularFile ? 'regular' : asset.symbolicLink ? 'symlink' : asset.exists ? 'non-regular' : 'pending'} | ${asset.requiredFile ? 'yes' : 'no'} | ${asset.duplicateId || asset.duplicatePath ? 'yes' : 'no'} |`),
+  ...rows.map((asset) => `| ${asset.id} | ${asset.type} | ${asset.targetSurface} | ${asset.status} | ${asset.priority} | ${asset.extensionOk ? 'ok' : 'bad'} | ${asset.pathInsidePublic ? 'inside-public' : 'invalid'} | ${asset.regularFile ? 'regular' : asset.symbolicLink ? 'symlink' : asset.exists ? 'non-regular-or-escaped' : 'pending'} | ${asset.requiredFile ? 'yes' : 'no'} | ${asset.duplicateId || asset.duplicatePath ? 'yes' : 'no'} |`),
   '',
   '## Gate Result',
   '',
   failed
-    ? 'FAIL: a ready/fallback file is missing or non-regular, a path escapes the public root, an extension is invalid, or an ID/path is duplicated.'
-    : 'PASS: every ready/fallback asset is a regular in-root file and the manifest has valid unique IDs, paths and extensions.',
+    ? 'FAIL: a ready/fallback file is missing, non-regular, symlinked or escaped; a path is unsafe; an extension is invalid; or an ID/normalized path is duplicated.'
+    : 'PASS: every ready/fallback asset is a regular in-root file and the manifest has valid unique IDs, normalized paths and extensions.',
   '',
 ]
 
