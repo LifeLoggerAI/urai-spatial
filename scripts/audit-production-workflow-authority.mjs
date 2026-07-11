@@ -59,6 +59,11 @@ if (!existsSync(workflowDirectory)) {
     "test \"$RELEASE_SHA\" = \"$DISPATCH_SHA\"",
     "test \"$MODE\" = 'rollback'",
     'git merge-base --is-ancestor "$ROLLBACK_SHA" "$RELEASE_SHA"',
+    'name: Exact-SHA hardened rollback verification',
+    'needs: [verify, verify-rollback]',
+    "grep -F 'Production deployment is denied outside GitHub Actions' scripts/live-release.mjs",
+    'name: Audit rollback production authority',
+    'name: Re-audit production authority at deploy time',
     'service_account.get',
     'scripts/urai-release-control-smoke.mjs',
     'Do not deploy from a workstation.',
@@ -68,6 +73,8 @@ if (!existsSync(workflowDirectory)) {
 
   if (!canonicalSource.includes('ref: ${{ env.TARGET_SHA }}')) failures.push('Canonical verification does not check out the exact target SHA')
   if (!canonicalSource.includes('test "$(git rev-parse HEAD)" = "$TARGET_SHA"')) failures.push('Canonical verification does not prove the exact target SHA')
+  if (!canonicalSource.includes('ref: ${{ env.ROLLBACK_SHA }}')) failures.push('Rollback verification does not check out the exact fallback SHA')
+  if (!canonicalSource.includes('test "$(git rev-parse HEAD)" = "$ROLLBACK_SHA"')) failures.push('Rollback verification does not prove the exact fallback SHA')
   if (/git checkout \$ROLLBACK_SHA\s+pnpm install/s.test(canonicalSource)) failures.push('Canonical workflow still records a workstation rollback command')
 }
 
@@ -153,6 +160,7 @@ const report = {
   canonicalRepository: 'LifeLoggerAI/urai-spatial',
   productionRuntime: 'urai-tier1/main',
   workstationDeployAllowed: false,
+  hardenedRollbackRequired: true,
   scannedActiveScripts: scriptFiles.length,
   failures,
   warnings,
