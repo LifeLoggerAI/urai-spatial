@@ -52,6 +52,8 @@ assert.match(sensoryLayer, /new THREE\.TextureLoader\(\)/)
 assert.match(sensoryLayer, /fetch\(materialPath\)/)
 assert.match(sensoryLayer, /fetch\(loadingPath\)/)
 assert.match(sensoryLayer, /data-urai-fallback="procedural"/)
+assert.ok(sensoryLayer.includes('key={`${materialPath}|${particlePath}|${loadingPath}`}'))
+assert.doesNotMatch(sensoryLayer, /Promise\.all/)
 assert.doesNotMatch(sensoryLayer, /throw new Error\('URAI sensory assets are not promoted'\)/)
 assert.doesNotMatch(sensoryLayer, /urai-ambient-bed-v1/)
 
