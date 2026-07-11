@@ -28,12 +28,12 @@ No stronger description is approved.
 
 | Authority | Exact current state |
 | --- | --- |
-| Consolidated Phase 2 release and sensory candidate #539 | `53eb1c7e8c6cf2de5d23d9c6341e112ad1d9b233`; open, draft, mergeable; 98 ahead / 0 behind `main`; exactly 33 files including receipt `URAI-WSB-20260711-PHASE2-CONSOLIDATION-012` blob `e4a8add9390a3d8299cb25938d7f6e20a0d2339d`. Contains incorporated #552, #575, #577, #578 and #579 authorities plus the final production-authority audit repair. Nineteen fresh workflows are registered on this head. |
+| Consolidated Phase 2 release and sensory candidate #539 | `6dff0fec84c1b146dad1bcb53e65a2ed0ef6aa52`; open, draft, mergeable; 102 ahead / 0 behind `main`; exactly 33 files including receipt `URAI-WSB-20260711-PHASE2-CONSOLIDATION-012` blob `312f0f50791a8e5cebe18868fe9c03fb480c706e`. Contains incorporated #552, #575, #577, #578 and #579 authorities plus the execution-aware production-authority audit v6. Nineteen fresh workflows are registered on this head. |
 | Analytics #553 | `910532016136c3919e420be7d3809300f44c9802`; four-file fail-closed candidate; repair #572 incorporated; provider activation not approved. |
 | Privacy Controls #554 | `972616b92536108818ca0965e543bae2ae322c6c`; non-operational preview; operational controls unproven. |
 | Guided demo #555 | `212126a90920c5601f858175556ae319bc349ae8`; query-only, sample-only and non-persistent child of #554. |
 | Discoverability #557 | `3d6354fa44d784334645c86151b158edd1f1c4d6`; indexing remains fail-closed. |
-| Founder event #521 | `a440707f598d56735e21e80cb33c17eb141f740a`; repairs #562/#574 incorporated; `/event` remains `pending proof`; dependency reconciliation and public-media approval absent. |
+| Founder event #521 | `a440707f598d56735e21e80cb33c17eb141f740a`; `/event` remains `pending proof`; dependency reconciliation and public-media approval absent. |
 
 ## Consolidated release boundary
 
@@ -52,31 +52,31 @@ This is source and contract evidence only. It is not a passing complete test set
 
 ## CI execution and repair evidence
 
-GitHub-hosted runner assignment resumed on stale #539 head `7fc065c4afa43585516c9619882da7f058ee6c9b`.
+Runner assignment resumed and produced real results.
 
-Terminal results observed on that stale head:
+On stale #539 head `7fc065c4afa43585516c9619882da7f058ee6c9b`, XR Static Gate Diagnostics and Spatial Missing Resource Diagnostics succeeded while Release Security Path Guard failed in `Audit production workflow authority`.
 
-- XR Static Gate Diagnostics: **success**;
-- Spatial Missing Resource Diagnostics: **success**;
-- Release Security Path Guard: **failure** in `Audit production workflow authority`.
+The first defect was a stale audit requirement for release-control smoke schema `2` after the consolidated smoke advanced to schema `5`.
 
-The failed security job passed checkout, clean exact-source identity, Node setup, syntax checks, guard immutability and immutable action-pin checks before failing. The exact defect was a stale authority-audit marker requiring release-control smoke schema `2` after the consolidated smoke advanced to schema `5`.
+On stale repaired head `53eb1c7e8c6cf2de5d23d9c6341e112ad1d9b233`, the same two diagnostics succeeded and the security gate again failed after checkout, exact clean source identity, Node setup, syntax, guard immutability and immutable action-pin verification passed.
 
-The audit was repaired on source head `3ac5dc5b9211fc6ea5fab7c1ad27d2c13f992f2c` and sealed by receipt head `53eb1c7e8c6cf2de5d23d9c6341e112ad1d9b233`. It now requires schema-v5 smoke, exact query identity, Playwright request interception, `blockedbyclient` abort behavior and retained blocked-request evidence.
+The second defect was reference-based production detection: a read-only security workflow was treated as production-capable solely because it referenced `live-release.mjs` for syntax checking.
 
-All results from `7fc065c4...` and earlier heads are stale for final gating.
+The audit now reports `urai-production-authority-audit-6`, detects actual mutation execution rather than passive references, requires exactly one mutation script/workflow, preserves all credential/build/attestation/provenance/proof boundaries, and emits explicit GitHub annotations for every failure. Checkout progress is suppressed only to keep diagnostics readable; permissions, pins, history depth and checks are unchanged.
+
+All results from `53eb1c7e...`, `7fc065c4...` and earlier heads are stale for final gating.
 
 ## Current exact-head workflow evidence
 
-Nineteen workflows are registered on #539 head `53eb1c7e8c6cf2de5d23d9c6341e112ad1d9b233`. At the latest observation they were queued, including:
+Nineteen workflows are registered on #539 head `6dff0fec84c1b146dad1bcb53e65a2ed0ef6aa52`. At the latest observation they were queued, including:
 
-- Release Security Path Guard `29170523802`;
-- Canonical Production Release `29170523790`;
-- Spatial CI `29170523774`;
-- Production Verify `29170523779`;
-- Frozen Lockfile `29170523831`.
+- Release Security Path Guard `29170835706`;
+- Canonical Production Release `29170835700`;
+- Spatial CI `29170835709`;
+- Production Verify `29170835695`;
+- Frozen Lockfile `29170835699`.
 
-Runner assignment is no longer treated as universally blocked. Current-head queued registration is still not passing evidence; each terminal result must be processed on this unchanged head.
+Runner assignment is no longer represented as universally blocked. Current-head queued registration is still not passing evidence; every terminal result must be processed on this unchanged head.
 
 ## Product, provider and support boundaries
 
@@ -94,9 +94,7 @@ Not approved:
 - physical Quest, AR, VR, XR, visionOS or device certification;
 - guaranteed security, privacy, compliance, uptime, recovery, support or financial outcomes.
 
-Public support remains NO-GO under `URAI-WSD-20260711-SUPPORT-001`: no authorized public channel, owner set, hours, SLA or deployed support surface is established.
-
-GitHub Support ticket #4553961 has received operational evidence updates, but no human resolution is recorded.
+Public support remains NO-GO under `URAI-WSD-20260711-SUPPORT-001`. GitHub Support ticket #4553961 has operational evidence updates but no human resolution.
 
 ## Exact release identity
 
