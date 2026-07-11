@@ -1,0 +1,18 @@
+{
+  "schemaVersion": 2,
+  "id": "ground-world-terrain-v1",
+  "releaseState": "ready-local-evidence",
+  "sourceMain": "d61f4bbbc2f73fc59ec8f1b8fb052c4164d6a6da",
+  "path": "urai-tier1/public/assets/urai/generated/models/ground-world-terrain-v1.gltf",
+  "bytes": 4494,
+  "sha256": "5e42e90ac502477cd42c32d6b126b374285fbfe26081e510d9fd79283bec1ac9",
+  "geometry": {"boxes": 4, "lineRings": 1},
+  "maxTriangles": 220000,
+  "withinTriangleBudget": true,
+  "khronosValidator": {"tool": "@gltf-transform/cli@4.2.1 validate", "errors": 0, "warnings": 0},
+  "license": "URAI Labs internal production asset",
+  "provenance": "URAI deterministic Ground candidate family; compact embedded delivery variant; independently validated locally",
+  "fallbackRetained": true,
+  "activationReversible": true,
+  "runtimeRoutes": ["/ground"]
+}
