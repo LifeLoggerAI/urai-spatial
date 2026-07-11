@@ -4,94 +4,74 @@ Receipt ID: `URAI-WSB-20260711-PHASE2-CONSOLIDATION-012`
 
 Recorded: 2026-07-11
 
-Classification: `SOURCE-CONSOLIDATED / ACTIVE-CI-REPAIR / NOT DEPLOYED / NOT CERTIFIED`
+Classification: `SOURCE CONSOLIDATED / ACTIVE CI / NOT DEPLOYED / NOT CERTIFIED`
 
-## Canonical authority
+## Authority
 
 - Repository: `LifeLoggerAI/urai-spatial`
-- Canonical production branch: `main`
+- Canonical branch: `main`
 - Canonical main SHA: `60730edcb5bcedfe2ded2cee9a96cef96dff9510`
-- Consolidated Phase 2 PR: `#539`
-- Consolidated branch: `release/protected-rollback-authority-20260711-v2`
-- Final source head before this receipt: `5ad4f5560719dcaa99412cb804f675e3ee35c8f7`
-- PR state at recording: open, draft, mergeable
-- Candidate inventory: 35 source/control files plus this receipt
+- Pull request: `#539`
+- Release branch: `release/protected-rollback-authority-20260711-v2`
+- Audited source head before this receipt: `e30654e678db3876f7a0f5ef31081bbc6dd44740`
+- Candidate scope: 37 source/control files plus this receipt
 
-## Incorporated authorities
+## Consolidated boundaries
 
-The Phase 2 branch contains the source work previously isolated in #552, #575, #577, #578 and #579. Nothing was merged to `main`.
+The branch contains the reviewed release, rollback, credential, fingerprint, asset and sensory work previously isolated in #552, #575, #577, #578 and #579.
 
-## Consolidated source boundaries
+The current source keeps:
 
-The candidate preserves target-build isolation, clean authority attestation, immutable actions, managed ephemeral credentials, repository/authority/run/release/rollback/fingerprint provenance, exact live route/query/SHA identity, pre-request noncanonical traffic blocking, fail-closed asset realpath validation and candidate-aware sensory fallbacks.
+- target-only build and clean authority attestation;
+- managed production credentials and immutable action pins;
+- exact repository, authority, run, release, rollback and fingerprint identity;
+- exact route/query/SHA checks and noncanonical request blocking;
+- fail-closed asset path and realpath validation;
+- candidate-aware sensory fallback behavior;
+- production-authority audit schema `urai-production-authority-audit-7`.
 
-## CI execution and authority-audit repairs
+## Diagnostic corrections
 
-GitHub-hosted runner assignment resumed and produced real results.
+Two previous diagnostic workflows could report success without enforcing all recorded findings.
 
-On stale head `7fc065c4afa43585516c9619882da7f058ee6c9b`, XR Static Gate Diagnostics and Spatial Missing Resource Diagnostics succeeded while Release Security Path Guard failed in `Audit production workflow authority`. The first defect was a stale schema-2 assertion after the release-control smoke advanced to schema 5.
+### Missing resources
 
-On stale head `53eb1c7e8c6cf2de5d23d9c6341e112ad1d9b233`, the same diagnostics succeeded and the security gate failed again after all preceding security steps passed. The second defect was reference-based production detection that classified a read-only verifier as production-capable.
+The current diagnostic:
 
-On stale head `6dff0fec84c1b146dad1bcb53e65a2ed0ef6aa52`, the security gate again reached the authority-audit step after checkout, exact identity, Node setup, syntax, guard immutability and action-pin verification passed. The full audit message remained hidden behind full-history checkout output.
+- disables provider configuration for the fallback/demo process;
+- blocks non-local requests before send;
+- ignores only bounded local navigation and HMR cancellations;
+- exits nonzero on every actionable finding;
+- writes schema `urai-spatial-missing-resource-diagnostics-2` evidence;
+- is covered by a focused contract in both unit runners.
 
-Authority-audit repairs now provide:
+### XR static gates
 
-- exact-head shallow checkout only for the read-only security workflow; the protected production workflow retains full-history ancestry checks;
-- actual mutation-execution detection rather than passive path references;
-- executable uniqueness delegated to `verify-release-credential-boundary.mjs`, which runs immediately after the authority audit;
-- build/attestation/deploy separation, exact action pins, secret confinement, operator guards, bundle provenance, schema-v5 smoke, exact query identity and pre-request network blocking;
-- explicit GitHub annotations under schema `urai-production-authority-audit-7`.
+The current diagnostic:
 
-## Current-head diagnostic artifact review and false-green repair
+- runs every static gate independently;
+- records each exit code;
+- aggregates failures;
+- exits nonzero when any gate fails;
+- retains the complete log even on failure;
+- is covered by a focused contract in both unit runners.
 
-On stale receipt-bearing head `9137f1fa48c1c442431b2280ece509e3a60ab553`:
-
-- XR Static Gate Diagnostics completed successfully and retained artifact `8253559742`, digest `sha256:9c02d712867b917d8a4b110832c4fdf83b55c3e95d7c6cb5873c068424af5233`.
-- Spatial Missing Resource Diagnostics completed successfully and retained artifact `8253569246`, digest `sha256:39fda45245aee8c7654db4567f488b78336a1eb806803083f4ef2a014463d038`.
-
-Artifact inspection showed that the old missing-resource workflow was report-only: it exited successfully even when `missing-resources.json` contained aborted RSC/HMR requests and three attempted Firestore listeners against project `urai-local`.
-
-That false-green boundary is repaired:
-
-- the diagnostic explicitly neutralizes public Firebase configuration and disables manifest Firestore before starting the fallback/demo Next process;
-- browser routing blocks every non-local request before send;
-- only bounded local `_rsc` navigation aborts and Next HMR hot-update aborts are ignored;
-- HTTP errors, invalid URLs, external attempts and all other failed requests are actionable;
-- any actionable finding exits nonzero;
-- the report is schema-bound as `urai-spatial-missing-resource-diagnostics-2`;
-- the workflow uses exact-head checkout, immutable checkout/setup-node/upload-artifact pins, exact pnpm 10.0.0, clean source identity and 30-day retained evidence;
-- `spatial-missing-resource-diagnostic-contract.test.mjs` locks the provider-neutralization, pre-send blocking, bounded-ignore, nonzero-exit and workflow-authority markers into both focused unit runners.
-
-The prior green missing-resource conclusion is therefore diagnostic evidence of a repaired false-pass condition, not accepted final gate evidence.
-
-Every conclusion from `9137f1fa...` and all earlier heads is stale for final gating.
-
-## Final changed-file inventory
-
-The consolidated candidate changes exactly 35 non-receipt files. Relative to the prior 32-file source boundary, the only new paths are:
-
-- `.github/workflows/spatial-missing-resource-diagnostics.yml`;
-- `tests/spatial-missing-resource-diagnostic.mjs`;
-- `urai-tier1/tests/spatial-missing-resource-diagnostic-contract.test.mjs`.
-
-The existing focused runners and unit-runner coverage file were already governed files and now include the new contract. This receipt is the thirty-sixth changed file.
+Previous diagnostic conclusions are stale after these corrections.
 
 ## Evidence rule
 
-Only workflows attached to the receipt-bearing final branch head may gate incorporation or deployment. Queued, skipped, cancelled, stale-head, false-green or different-head results are not passing evidence.
+Only workflows attached to the receipt-bearing final head may gate incorporation or deployment. Queued, skipped, cancelled, stale-head, report-only or different-head results are not passing evidence.
 
-## Mutation receipt
+## Mutation record
 
 - Merge to `main`: not performed
-- Production deployment or rollback: not performed
+- Deployment or rollback: not performed
 - Firebase or production-data mutation: not performed
 - Production credential materialization: not performed
-- Provider call: not performed by the repair; stale diagnostic evidence recorded blocked/aborted provider attempts
-- Billing/spend: none established
-- Asset promotion beyond the reviewed candidate boundary: not performed
+- Provider activation: not performed
+- Billing action: not performed
 - Public launch or certification: not authorized
 
-## Remaining terminal gate
+## Remaining gate
 
-Production certification remains blocked until all required workflows execute successfully on one unchanged exact head, retained logs and artifacts are available and inspected, independent release/security/privacy and asset review are recorded, the tested SHA is merged without drift, and a protected exact-SHA release produces deployed-SHA, rollback-SHA, fingerprint, route/domain, browser and recovery receipts.
+All required workflows must pass on one unchanged exact head with retained evidence. Independent release, security, privacy and asset review must be recorded. The tested SHA must then merge without drift, followed by protected deployment and rollback receipts for the exact deployed SHA, rollback SHA, fingerprint, custom domain, browser routes and recovery path.
