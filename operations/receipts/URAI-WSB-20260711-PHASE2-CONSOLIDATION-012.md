@@ -4,7 +4,7 @@ Receipt ID: `URAI-WSB-20260711-PHASE2-CONSOLIDATION-012`
 
 Recorded: 2026-07-11
 
-Classification: `SOURCE-CONSOLIDATED / EXECUTION-BLOCKED / NOT DEPLOYED / NOT CERTIFIED`
+Classification: `SOURCE-CONSOLIDATED / CI-REPAIR-APPLIED / NOT DEPLOYED / NOT CERTIFIED`
 
 ## Canonical authority
 
@@ -13,32 +13,48 @@ Classification: `SOURCE-CONSOLIDATED / EXECUTION-BLOCKED / NOT DEPLOYED / NOT CE
 - Canonical main SHA: `60730edcb5bcedfe2ded2cee9a96cef96dff9510`
 - Consolidated Phase 2 PR: `#539`
 - Consolidated branch: `release/protected-rollback-authority-20260711-v2`
-- Final audited source head before this receipt: `f5c75129ef36a979accad0bcbe91f48863fe1ae0`
+- Final audited source head before this receipt: `3ac5dc5b9211fc6ea5fab7c1ad27d2c13f992f2c`
 - PR state at recording: open, draft, mergeable
 - Candidate inventory: 32 source/control files plus this receipt
 
 ## Incorporated authorities
 
-The Phase 2 branch now contains the source work previously isolated in:
+The Phase 2 branch contains the source work previously isolated in:
 
-1. `#579` — live rollback provenance requires canonical repository, authority SHA, numeric workflow run, direct cache-busted fingerprint URL and JSON content type.
+1. `#579` — repository-, authority-, and workflow-run-bound live rollback provenance.
 2. `#552` — target-only build, clean authority attestation, credential isolation, immutable action pins, exact bundle/fingerprint validation and protected rollback controls.
-3. `#578` — live release smoke requires exact deployed SHA, canonical route/query identity, hydrated identity and retained browser evidence.
-4. `#577` — ready/fallback asset validation fails closed on absent, non-regular, unsafe, duplicate or invalid manifest entries.
-5. `#575` — one candidate-aware sensory runtime layer with ready-only resolution, abortable/null-safe loading, procedural fallback, explicit texture disposal, mount-relative timing and exact sensory receipts.
+3. `#578` — exact deployed-SHA, route/query identity, hydrated browser and network-boundary evidence.
+4. `#577` — fail-closed ready/fallback asset validation.
+5. `#575` — candidate-aware sensory runtime and exact sensory evidence.
 
-These were incorporated into the Phase 2 branch only. Nothing was merged to `main`.
+These authorities were incorporated into the Phase 2 branch only. Nothing was merged to `main`.
 
-## Final source-audit corrections
+## Post-consolidation source corrections
 
-A post-consolidation source audit found and repaired four lost hardening blobs before this receipt:
+The final source audit preserves:
 
-- `urai-tier1/scripts/validate-assets.mjs` now normalizes manifest paths before duplicate detection and uses `realpathSync` to reject symlink-parent escapes outside the canonical public root.
-- `urai-tier1/tests/asset-validation-fail-closed-contract.test.mjs` locks normalized collision and physical realpath containment behavior.
-- `scripts/urai-release-control-smoke.mjs` now emits schema v5, requires exact requested query entries with no extras, intercepts and aborts noncanonical browser requests before they leave, records every blocked attempt, and fails the receipt if any are observed.
-- `urai-tier1/tests/release-control-smoke-boundary-contract.test.mjs` locks request interception, abort behavior, exact query identity and retained failure evidence.
+- normalized manifest-path collision detection;
+- physical `realpath` containment against symlink-parent asset escapes;
+- exact query-entry equality with no undeclared parameters;
+- pre-request interception and abort of noncanonical browser traffic;
+- release-smoke schema `urai-release-control-smoke-5`;
+- production-authority audit schema `urai-production-authority-audit-5`.
 
-The compact unit runner includes both focused contracts.
+The production-authority audit now explicitly requires the schema-v5 smoke, exact query identity, `context.route` interception, `blockedbyclient` abort behavior and retained blocked-request evidence.
+
+## Previous-head CI finding and repair
+
+GitHub-hosted runner assignment resumed on prior exact head `7fc065c4afa43585516c9619882da7f058ee6c9b`.
+
+Observed terminal results on that stale head:
+
+- XR Static Gate Diagnostics: success.
+- Spatial Missing Resource Diagnostics: success.
+- Release Security Path Guard: failure in `Audit production workflow authority`.
+
+The failing job proved checkout, clean source identity, Node setup, syntax checks, guard immutability and action-pin verification before failing. The defect was a stale audit assertion that still required release-smoke schema `2` after the consolidated smoke advanced to schema `5`.
+
+The owning audit was repaired on source head `3ac5dc5b9211fc6ea5fab7c1ad27d2c13f992f2c`. Every workflow result from `7fc065c4...` and earlier heads is stale for final gating.
 
 ## Final changed-file inventory
 
@@ -79,9 +95,7 @@ The consolidated candidate changes exactly 32 non-receipt files:
 
 ## Evidence rule
 
-Every workflow conclusion from `c7c7422d595f7da9330bd4f18f07105767163994`, `fe90208c8c6774c2e3868bafe52dedb35cf8e815`, or any earlier head is stale. Only workflows attached to the receipt-bearing final branch head may gate incorporation or deployment.
-
-Queued registration is not passing evidence.
+Only workflows attached to the receipt-bearing final branch head may gate incorporation or deployment. Queued, skipped, cancelled, stale-head or different-head results are not passing evidence.
 
 ## Mutation receipt
 
@@ -96,4 +110,4 @@ Queued registration is not passing evidence.
 
 ## Remaining terminal gate
 
-Source consolidation and audit repair are complete. Production certification remains blocked until all required workflows execute successfully on one unchanged exact head, retained logs and artifacts are available, independent release/security and asset review are recorded, the tested SHA is merged without drift, and a protected exact-SHA release produces deployed-SHA, rollback-SHA, fingerprint, route/domain, browser and recovery receipts.
+Production certification remains blocked until all required workflows execute successfully on one unchanged exact head, retained logs and artifacts are available, independent release/security and asset review are recorded, the tested SHA is merged without drift, and a protected exact-SHA release produces deployed-SHA, rollback-SHA, fingerprint, route/domain, browser and recovery receipts.
