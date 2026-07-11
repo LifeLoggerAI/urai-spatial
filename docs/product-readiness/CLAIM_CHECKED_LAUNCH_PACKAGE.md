@@ -48,8 +48,8 @@ All exact-head workflows attached to the refreshed Workstream D chain remain que
 | Privacy Controls #554 | `57cb67a3429ca8273c08a486b3a2b605b6127631` | Explicit non-operational preview; still based on stale main and unverified. |
 | Optional guided demo #555 | `906ccb3f6b8254e9deecbec78ac6c9dd7a38d6b5` | Query-only, sample-only, non-persistent route guidance; 5 queued checks; parent #554 required first. |
 | Discoverability #557 | `96b2d3a21087e4cc5c6e1c739d9017ac318cb85a` | Indexing remains fail-closed; candidate is stale against current main and unverified. |
-| Release credential boundary #552 | `281a4e30a9e1aa0b55218295c3a552466187eee1` | Invalid setup-node refs, mutable artifact-pin audit, and credential-writer verifier mismatch repaired; 6 queued checks; not incorporated into #539. |
-| Release controls #539 | `f62e2ff5860e107f180715377a7cd87605898ade` | Draft release candidate; exact-head evidence incomplete and source metadata stale against current main. |
+| Release credential boundary #552 | `d592e4f32d444b501a02278033921f1a0294e6d0` | Source pin/audit/credential-verifier repairs reconciled onto refreshed #539; 6 queued checks; not incorporated into #539. |
+| Release controls #539 | `ad473628eb97235171eda2ff9f8fc9647c0d518f` | Current main reconciled through PR #568; draft, queued, and awaiting terminal-green #552 plus incorporation and a full evidence rerun. |
 | Sensory authority #544 | `7896f75c340f2ea3e046529eb2ea6c55255b7231` | Mount-relative loading timing and fail-closed candidate boundary exist; uncertified, unincorporated, queued. |
 | Founder-event source #521 | `780802576f2e0b0ebcaa0d5331ad9bb9032dccdf` | Source-corrupt and rejected until repair is incorporated. |
 | Founder-event repair #562 | `d5494f6febfaf98bdcb0af1fc2368d3d8afecbcf` | Restores Status source and labels `/event` pending proof; unincorporated; 6 queued checks. |
