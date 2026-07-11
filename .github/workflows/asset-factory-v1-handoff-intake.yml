@@ -1,0 +1,78 @@
+name: Asset Factory V1 Handoff Intake
+
+on:
+  pull_request:
+    paths:
+      - .github/workflows/asset-factory-v1-handoff-intake.yml
+      - operations/assets/contracts/asset-factory-v1-spatial-pack.json
+      - scripts/verify_asset_factory_v1_handoff.py
+      - urai-tier1/src/spatial/assets/uraiAssets.ts
+  push:
+    branches: [main]
+    paths:
+      - .github/workflows/asset-factory-v1-handoff-intake.yml
+      - operations/assets/contracts/asset-factory-v1-spatial-pack.json
+      - scripts/verify_asset_factory_v1_handoff.py
+      - urai-tier1/src/spatial/assets/uraiAssets.ts
+
+permissions:
+  contents: read
+
+concurrency:
+  group: asset-factory-v1-handoff-intake-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  contract:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout exact candidate
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          fetch-depth: 1
+          persist-credentials: false
+
+      - name: Verify exact candidate identity
+        shell: bash
+        run: |
+          set -euo pipefail
+          expected='${{ github.event.pull_request.head.sha || github.sha }}'
+          test "$(git rev-parse HEAD)" = "$expected"
+          test -z "$(git status --porcelain)"
+
+      - name: Compile intake verifier
+        run: python3 -m py_compile scripts/verify_asset_factory_v1_handoff.py
+
+      - name: Verify read-only intake boundary
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          source = Path('scripts/verify_asset_factory_v1_handoff.py').read_text()
+          contract = json.loads(Path('operations/assets/contracts/asset-factory-v1-spatial-pack.json').read_text())
+          assert contract['promotion'] is False
+          assert contract['activationMode'] == 'atomic-complete-pack'
+          for forbidden in ('shutil.copy', 'os.replace', 'os.rename', 'subprocess', 'git push'):
+              assert forbidden not in source, forbidden
+          assert 'ROOT / "artifacts"' in source
+          assert 'ROOT / "urai-tier1/public"' in source
+          PY
+
+      - name: Verify contract and current Spatial registry
+        run: >-
+          python3 scripts/verify_asset_factory_v1_handoff.py
+          --contract-only
+          --report artifacts/v1-asset-factory-intake-contract-report.json
+
+      - name: Upload contract receipt
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: urai-spatial-v1-asset-intake-contract-${{ github.run_id }}
+          retention-days: 30
+          if-no-files-found: error
+          path: artifacts/v1-asset-factory-intake-contract-report.json

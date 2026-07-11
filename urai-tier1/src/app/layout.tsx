@@ -52,6 +52,7 @@ import './lifemap-proof-crops.css'
 import './urai-realm-accent-backgrounds.css'
 import './spatial-first-root-launch.css'
 import './urai-design-system.css'
+import './route-layering-hotfix.css'
 
 const configuredBuildSha = process.env.NEXT_PUBLIC_URAI_BUILD_SHA ?? process.env.GITHUB_SHA ?? ''
 const deployedSha = /^[0-9a-f]{40}$/.test(configuredBuildSha) ? configuredBuildSha : 'unverified'
