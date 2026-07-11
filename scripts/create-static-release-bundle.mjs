@@ -26,6 +26,7 @@ const project = (process.env.URAI_EXPECTED_FIREBASE_PROJECT || process.env.FIREB
 const liveUrl = (process.env.URAI_LIVE_BASE_URL || process.env.LIVE_URL || '').trim()
 const canonicalRepository = 'LifeLoggerAI/urai-spatial'
 const repository = (process.env.GITHUB_REPOSITORY || canonicalRepository).trim()
+const workflowRunId = String(process.env.GITHUB_RUN_ID || '').trim()
 
 function requireFullSha(label, value) {
   if (!/^[0-9a-f]{40}$/.test(value)) throw new Error(`${label} must be a full lowercase 40-character commit SHA`)
@@ -80,12 +81,15 @@ function writeAuthoritativeFingerprint() {
   const fingerprint = {
     schemaVersion: 'urai-release-fingerprint-1',
     generatedAt: new Date().toISOString(),
+    repository: canonicalRepository,
+    authoritySha,
     releaseSha: targetSha,
     rollbackSha,
     firebaseProject: project,
     liveUrl: 'https://urai.app',
     deploymentScope: 'hosting-only',
-    authoritySha,
+    certification: 'pending-post-deploy-smoke',
+    workflowRunId,
     attestedBy: 'scripts/create-static-release-bundle.mjs',
   }
   writeFileSync(fingerprintPath, `${JSON.stringify(fingerprint, null, 2)}\n`, {
@@ -99,6 +103,7 @@ function writeAuthoritativeFingerprint() {
 requireFullSha('Release SHA', targetSha)
 requireFullSha('Rollback SHA', rollbackSha)
 requireFullSha('Authority SHA', authoritySha)
+if (!/^\d+$/.test(workflowRunId)) throw new Error('GITHUB_RUN_ID must be a numeric GitHub Actions run identifier')
 if (targetSha === rollbackSha) throw new Error('Release and rollback SHAs must be distinct')
 if (repository !== canonicalRepository) throw new Error(`Release bundle repository mismatch: ${repository || 'missing'}`)
 if (project !== 'urai-4dc1d') throw new Error(`Release bundle project mismatch: ${project || 'missing'}`)
@@ -123,12 +128,15 @@ if (!htmlFiles.some((entry) => readFileSync(entry.absolute, 'utf8').includes(tar
 }
 if (
   fingerprint.schemaVersion !== 'urai-release-fingerprint-1' ||
+  fingerprint.repository !== canonicalRepository ||
+  fingerprint.authoritySha !== authoritySha ||
   fingerprint.releaseSha !== targetSha ||
   fingerprint.rollbackSha !== rollbackSha ||
   fingerprint.firebaseProject !== project ||
   fingerprint.liveUrl !== 'https://urai.app' ||
   fingerprint.deploymentScope !== 'hosting-only' ||
-  fingerprint.authoritySha !== authoritySha
+  fingerprint.certification !== 'pending-post-deploy-smoke' ||
+  fingerprint.workflowRunId !== workflowRunId
 ) {
   throw new Error('Authority-created release fingerprint does not match the bundle inputs')
 }
@@ -158,7 +166,7 @@ const manifest = {
   schemaVersion: 'urai-static-release-bundle-1',
   generatedAt: new Date().toISOString(),
   repository: canonicalRepository,
-  workflowRunId: process.env.GITHUB_RUN_ID || null,
+  workflowRunId,
   authoritySha,
   targetSha,
   rollbackSha,
@@ -178,6 +186,7 @@ console.log(JSON.stringify({
   targetSha,
   rollbackSha,
   authoritySha,
+  workflowRunId,
   fileCount: manifest.fileCount,
   totalBytes: manifest.totalBytes,
   fingerprintSha256: manifest.fingerprintSha256,
