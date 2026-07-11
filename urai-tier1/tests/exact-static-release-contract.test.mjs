@@ -5,6 +5,7 @@ import { readFileSync } from 'node:fs'
 const hosting = JSON.parse(readFileSync('../firebase.static.json', 'utf8')).hosting
 const layout = readFileSync('src/app/layout.tsx', 'utf8')
 const operator = readFileSync('../scripts/live-release.mjs', 'utf8')
+const bundleBuilder = readFileSync('../scripts/create-static-release-bundle.mjs', 'utf8')
 const fingerprintWriter = readFileSync('../scripts/write-release-fingerprint.mjs', 'utf8')
 const verifier = readFileSync('../scripts/urai-post-deploy-smoke.mjs', 'utf8')
 const workflow = readFileSync('../.github/workflows/spatial-live-deploy.yml', 'utf8')
@@ -29,8 +30,7 @@ test('public markup embeds exact build identity or reports unverified', () => {
 test('release operator is exact-SHA, rollback-aware, protected, fingerprinted, and hosting-only', () => {
   for (const marker of [
     'Release SHA must be a full lowercase 40-character commit SHA',
-    'Checked-out SHA',
-    'ROLLBACK_SHA must be a full lowercase 40-character commit SHA',
+    'Current authority SHA',
     'ROLLBACK_SHA must be distinct from the release SHA',
     'write-release-fingerprint.mjs',
     'release-fingerprint.json',
@@ -43,11 +43,63 @@ test('release operator is exact-SHA, rollback-aware, protected, fingerprinted, a
     'firebase.static.json',
     'scripts/urai-post-deploy-smoke.mjs',
     'deployment-receipt',
+    "process.argv.includes('--verify-prebuilt')",
+    "process.argv.includes('--deploy-prebuilt')",
   ]) assert.ok(operator.includes(marker), `missing operator marker: ${marker}`)
   assert.match(operator, /'--only', 'hosting'/)
   assert.doesNotMatch(operator, /hosting,firestore/)
   assert.doesNotMatch(operator, /firestore:indexes/)
   assert.doesNotMatch(operator, /functions/)
+})
+
+test('static bundle is hash-bound to authority, target, rollback, and exact regular files', () => {
+  for (const marker of [
+    "schemaVersion: 'urai-static-release-bundle-1'",
+    'authoritySha',
+    'targetSha',
+    'rollbackSha',
+    'Release bundle source must not contain symlinks',
+    'Copied release bundle bytes do not match the source output',
+    'release-fingerprint.json',
+    'fileCount',
+    'totalBytes',
+    'sha256',
+  ]) assert.ok(bundleBuilder.includes(marker), `missing bundle marker: ${marker}`)
+})
+
+test('target build is isolated from the protected production runner', () => {
+  const prepareStart = workflow.indexOf('\n  prepare-release-bundle:')
+  const deployStart = workflow.indexOf('\n  deploy:')
+  assert.ok(prepareStart >= 0)
+  assert.ok(deployStart > prepareStart)
+  const prepareJob = workflow.slice(prepareStart, deployStart)
+  const deployJob = workflow.slice(deployStart)
+
+  for (const marker of [
+    'Prepare exact static release bundle without production credentials',
+    'path: target',
+    'pnpm install --frozen-lockfile',
+    'pnpm build:static',
+    'node ../authority/scripts/create-static-release-bundle.mjs',
+    'actions/upload-artifact@v4',
+  ]) assert.match(prepareJob, new RegExp(marker.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')))
+  assert.doesNotMatch(prepareJob, /environment:\s*production/)
+  assert.doesNotMatch(prepareJob, /FIREBASE_SERVICE_ACCOUNT_JSON/)
+  assert.doesNotMatch(prepareJob, /GOOGLE_APPLICATION_CREDENTIALS/)
+
+  for (const marker of [
+    'Deploy or roll back verified static bundle on urai.app',
+    'Checkout current release authority only',
+    'pnpm install --frozen-lockfile --ignore-scripts',
+    'actions/download-artifact@v4',
+    'node scripts/live-release.mjs --verify-prebuilt',
+    'node scripts/live-release.mjs --deploy-prebuilt',
+    'node scripts/urai-release-control-smoke.mjs',
+  ]) assert.ok(deployJob.includes(marker), `missing deploy-isolation marker: ${marker}`)
+  assert.doesNotMatch(deployJob, /path:\s*target/)
+  assert.doesNotMatch(deployJob, /working-directory:\s*target/)
+  assert.doesNotMatch(deployJob, /pnpm\s+build:static/)
+  assert.doesNotMatch(deployJob, /node\s+\.\.\/authority\//)
 })
 
 test('release credentials and deploy executable are isolated from target-controlled code', () => {
@@ -56,27 +108,29 @@ test('release credentials and deploy executable are isolated from target-control
     'delete process.env.GOOGLE_APPLICATION_CREDENTIALS',
     'delete env.FIREBASE_SERVICE_ACCOUNT_JSON',
     'delete env.GOOGLE_APPLICATION_CREDENTIALS',
+    'validateAndMaterializePrebuiltBundle',
+    'manifest.authoritySha !== authoritySha',
+    'Release bundle file set, sizes, or hashes do not match the manifest',
     'resolveAuthorityFirebaseCli',
-    "realpathSync(path.resolve(authorityDirectory, '..'))",
     'realpathSync(firebaseCliPath)',
     'writeTemporaryServiceAccount',
+    "flag: 'wx'",
     'deployHostingWithTemporaryCredentials',
     'removeTemporaryServiceAccount',
-    'mode: 0o600',
     'shell: false',
   ]) assert.ok(operator.includes(marker), `missing credential-isolation marker: ${marker}`)
 
   assert.match(workflow, /GOOGLE_APPLICATION_CREDENTIALS: \$\{\{ runner\.temp \}\}\/urai-firebase-service-account\.json/)
-  assert.match(workflow, /URAI_FIREBASE_CLI: \$\{\{ github\.workspace \}\}\/authority\/node_modules\/\.bin\/firebase/)
-  assert.match(workflow, /Install current authority dependencies without production credentials/)
-  assert.match(workflow, /Install frozen target dependencies without production credentials/)
-  assert.match(workflow, /Deploy exact target with current authority and ephemeral credentials/)
+  assert.match(workflow, /URAI_FIREBASE_CLI: \$\{\{ github\.workspace \}\}\/node_modules\/\.bin\/firebase/)
   assert.match(workflow, /node scripts\/verify-release-credential-boundary\.mjs/)
   assert.doesNotMatch(workflow, /printf\s+['"]%s['"]\s+"\$FIREBASE_SERVICE_ACCOUNT_JSON"\s*>\s*"\$GOOGLE_APPLICATION_CREDENTIALS"/)
   assert.doesNotMatch(operator, /pnpm\s+exec\s+firebase/)
 
   assert.match(credentialBoundary, /urai-release-credential-boundary-1/)
   assert.match(credentialBoundary, /secretOccurrences !== 1/)
+  assert.match(credentialBoundary, /targetBuildIsolatedOnNoSecretRunner: true/)
+  assert.match(credentialBoundary, /targetCodeExecutesInProductionJob: false/)
+  assert.match(credentialBoundary, /prebuiltArtifactHashVerified: true/)
   assert.match(credentialBoundary, /firebaseCliResolvedFromCurrentAuthority: true/)
   assert.match(credentialBoundary, /materializationCoveredByCleanup: true/)
   assert.match(credentialBoundary, /targetCommandsReceiveRawSecret: false/)
@@ -122,14 +176,14 @@ test('production deploy and rollback remain manual, exact-SHA, distinct-recovery
     'workflow_dispatch:',
     "inputs.confirm == 'DEPLOY_URAI_APP' || inputs.confirm == 'ROLLBACK_URAI_APP'",
     'rollback-verify:',
-    'needs: [verify, rollback-verify]',
+    'prepare-release-bundle:',
+    'needs: [verify, rollback-verify, prepare-release-bundle]',
     'environment: production',
     'ROLLBACK_SHA: ${{ inputs.rollback_sha }}',
     'test "$RELEASE_SHA" = "$CURRENT_MAIN_SHA"',
     'test "$ROLLBACK_SHA" = "$CURRENT_MAIN_SHA"',
     'git merge-base --is-ancestor',
     'FIREBASE_SERVICE_ACCOUNT_JSON',
-    'pnpm install --frozen-lockfile',
     'Remove temporary credentials',
     'gh workflow run spatial-live-deploy.yml --ref main',
   ]) assert.ok(workflow.includes(marker), `missing workflow marker: ${marker}`)
