@@ -2,7 +2,7 @@
 
 import { useGLTF } from "@react-three/drei";
 import type { ThreeElements } from "@react-three/fiber";
-import { resolveUraiSpatialAssetPath } from "../assets/assetManifest";
+import { resolvePromotedUraiSpatialAssetPath } from "../assets/promotedAssetResolver";
 
 type GroupProps = ThreeElements["group"];
 
@@ -12,7 +12,7 @@ type AssetModelProps = GroupProps & {
 };
 
 function resolveRequiredModelPath(assetId: string): string {
-  const path = resolveUraiSpatialAssetPath(assetId);
+  const path = resolvePromotedUraiSpatialAssetPath(assetId);
   if (!path) throw new Error(`URAI spatial model is unavailable: ${assetId}`);
   if (!/\.(?:gltf|glb)$/i.test(path)) {
     throw new Error(`URAI spatial asset is not a model: ${assetId} -> ${path}`);
