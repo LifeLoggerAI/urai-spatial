@@ -79,6 +79,12 @@ function normalizeCanonicalPath(value) {
   return String(value || '').replace(/^\/?assets\/urai\//, '')
 }
 
+function isSafeCanonicalPath(value) {
+  if (!value || value.startsWith('/') || value.includes('\\')) return false
+  if (path.posix.normalize(value) !== value) return false
+  return value.split('/').every((segment) => segment && segment !== '.' && segment !== '..')
+}
+
 function sha256(buffer) {
   return createHash('sha256').update(buffer).digest('hex')
 }
@@ -148,10 +154,11 @@ if (handoff.ready !== entries.length || handoff.missing !== 0) failures.push('Pr
 
 for (const entry of entries) {
   const canonicalPath = normalizeCanonicalPath(entry.canonicalPath)
-  const filePath = path.join(assetRoot, canonicalPath)
+  const safeCanonicalPath = isSafeCanonicalPath(canonicalPath)
+  const filePath = safeCanonicalPath ? path.resolve(assetRoot, canonicalPath) : null
   const entryFailures = []
 
-  if (!canonicalPath || canonicalPath.includes('..') || path.isAbsolute(canonicalPath)) entryFailures.push('invalid canonical path')
+  if (!safeCanonicalPath) entryFailures.push('invalid canonical path')
   if (seen.has(canonicalPath)) entryFailures.push('duplicate canonical path')
   seen.add(canonicalPath)
   if (entry.status !== 'ready') entryFailures.push(`status=${entry.status || 'missing'}`)
@@ -162,7 +169,9 @@ for (const entry of entries) {
   if (!Number.isInteger(entry.width) || entry.width <= 0 || !Number.isInteger(entry.height) || entry.height <= 0) entryFailures.push('invalid expected dimensions')
 
   let actual = null
-  if (!existsSync(filePath)) {
+  if (!filePath) {
+    // Invalid paths are rejected before resolution or filesystem access.
+  } else if (!existsSync(filePath)) {
     entryFailures.push('missing committed binary')
   } else {
     const stat = statSync(filePath)
@@ -182,7 +191,7 @@ for (const entry of entries) {
   }
 
   const core = corePaths.has(canonicalPath)
-  const registered = registry.includes(`"/${canonicalPath}"`)
+  const registered = safeCanonicalPath && registry.includes(`"/${canonicalPath}"`)
   if (core && !registered) entryFailures.push('core asset is not registered in uraiAssets.ts')
 
   records.push({
