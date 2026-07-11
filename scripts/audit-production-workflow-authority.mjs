@@ -10,6 +10,7 @@ const canonicalWorkflowName = 'URAI Canonical Production Release'
 const canonicalRepository = 'LifeLoggerAI/urai-spatial'
 const allowedProductionScript = 'scripts/live-release.mjs'
 const bundleScriptPath = 'scripts/create-static-release-bundle.mjs'
+const bundleAliasPath = 'scripts/attest-static-release-bundle.mjs'
 const credentialBoundaryPath = 'scripts/verify-release-credential-boundary.mjs'
 const releaseSmokePath = 'scripts/urai-release-control-smoke.mjs'
 const auditScript = 'scripts/audit-production-workflow-authority.mjs'
@@ -48,7 +49,7 @@ function read(relativePath) {
     failures.push(`Missing required authority file: ${relativePath}`)
     return ''
   }
-  return readFileSync(absolute, 'utf8')
+  return readFileSync(absolute, 'utf8').replace(/\r\n?/g, '\n')
 }
 
 function requireTokens(label, source, tokens) {
@@ -125,7 +126,7 @@ if (!existsSync(workflowDirectory)) {
     }
   }
   canonicalSource = workflowFiles.includes(canonicalWorkflowFile)
-    ? readFileSync(path.join(workflowDirectory, canonicalWorkflowFile), 'utf8')
+    ? readFileSync(path.join(workflowDirectory, canonicalWorkflowFile), 'utf8').replace(/\r\n?/g, '\n')
     : ''
 }
 
@@ -135,10 +136,13 @@ requireTokens('Canonical workflow', canonicalSource, [
   "github.event_name == 'workflow_dispatch' && inputs.release_sha || github.sha",
   'rollback-verify:',
   'name: Prove rollback target with current authority',
-  'prepare-release-bundle:',
-  'name: Prepare exact static release bundle without production credentials',
-  'needs: [verify, rollback-verify, prepare-release-bundle]',
-  'node ../authority/scripts/create-static-release-bundle.mjs',
+  'build-release-output:',
+  'name: Build exact static target without production authority or credentials',
+  'attest-release-bundle:',
+  'name: Attest raw static output with clean current authority',
+  'needs: [verify, rollback-verify, build-release-output]',
+  'needs: [verify, rollback-verify, attest-release-bundle]',
+  'node scripts/create-static-release-bundle.mjs',
   'actions/upload-artifact@v4',
   'actions/download-artifact@v4',
   'Checkout current release authority only',
@@ -161,21 +165,43 @@ requireTokens('Canonical workflow', canonicalSource, [
   'if: always()',
 ])
 
-const prepareSource = jobSection(canonicalSource, 'prepare-release-bundle')
+const buildSource = jobSection(canonicalSource, 'build-release-output')
+const attestSource = jobSection(canonicalSource, 'attest-release-bundle')
 const deploySource = jobSection(canonicalSource, 'deploy')
-requireTokens('Bundle preparation job', prepareSource, [
-  'path: authority',
+
+requireTokens('Target-only build job', buildSource, [
+  'Checkout exact release target only',
   'path: target',
   'pnpm install --frozen-lockfile',
   'pnpm build:static',
-  'node ../authority/scripts/create-static-release-bundle.mjs',
-  'urai-static-release-bundle-${{ env.RELEASE_SHA }}',
+  'Upload unattested raw static output',
+  'urai-raw-static-output-${{ env.RELEASE_SHA }}',
 ])
-forbidTokens('Bundle preparation job', prepareSource, [
+forbidTokens('Target-only build job', buildSource, [
   'environment: production',
   'FIREBASE_SERVICE_ACCOUNT_JSON',
   'GOOGLE_APPLICATION_CREDENTIALS',
+  'Checkout clean current release authority only',
+  'node scripts/create-static-release-bundle.mjs',
 ])
+
+requireTokens('Clean authority attestation job', attestSource, [
+  'Checkout clean current release authority only',
+  'Download unattested raw static output',
+  'node scripts/verify-release-credential-boundary.mjs',
+  'node scripts/create-static-release-bundle.mjs',
+  'Upload authority-attested static release bundle',
+  'urai-static-release-bundle-${{ env.RELEASE_SHA }}',
+])
+forbidTokens('Clean authority attestation job', attestSource, [
+  'environment: production',
+  'FIREBASE_SERVICE_ACCOUNT_JSON',
+  'GOOGLE_APPLICATION_CREDENTIALS',
+  'path: target',
+  'working-directory: target',
+  'pnpm build:static',
+])
+
 requireTokens('Production deploy job', deploySource, [
   'Checkout current release authority only',
   'pnpm install --frozen-lockfile --ignore-scripts',
@@ -197,6 +223,8 @@ const secretMarker = 'FIREBASE_SERVICE_ACCOUNT_JSON: ${{ secrets.FIREBASE_SERVIC
 const secretOccurrences = canonicalSource.split(secretMarker).length - 1
 if (secretOccurrences !== 1) failures.push(`Canonical workflow must expose the raw service-account secret exactly once; found ${secretOccurrences}`)
 if (!deploySource.includes(secretMarker)) failures.push('Raw service-account secret must exist only in the production deploy job')
+if (buildSource.includes(secretMarker) || attestSource.includes(secretMarker)) failures.push('Build and attestation jobs must not receive the raw service-account secret')
+
 for (const forbidden of [
   "test -n '${{ secrets.FIREBASE_SERVICE_ACCOUNT_JSON }}'",
   'cat > "$GOOGLE_APPLICATION_CREDENTIALS" <<\'JSON\'',
@@ -238,25 +266,38 @@ if (!releaseSource.includes(`const canonicalRepository = '${canonicalRepository}
 if (/pnpm\s+exec\s+firebase/.test(releaseSource)) failures.push('Deploy executable resolves Firebase through a package manager instead of current authority')
 
 const bundleSource = read(bundleScriptPath)
-requireTokens('Static release bundle builder', bundleSource, [
+requireTokens('Authority static release attester', bundleSource, [
   "schemaVersion: 'urai-static-release-bundle-1'",
+  'assertCleanAuthorityCheckout()',
+  'writeAuthoritativeFingerprint()',
+  "attestedBy: 'scripts/create-static-release-bundle.mjs'",
   'authoritySha',
   'targetSha',
   'rollbackSha',
   'Release bundle source must not contain symlinks',
+  'Copied release bundle bytes do not match the source output',
+  'fingerprintSha256',
+  'Release bundle live URL is invalid or missing',
   'sha256',
   'fileCount',
   'totalBytes',
   'release-fingerprint.json',
 ])
 
+const bundleAliasSource = read(bundleAliasPath)
+if (!bundleAliasSource.includes("import './create-static-release-bundle.mjs'")) {
+  failures.push(`${bundleAliasPath} must delegate to the canonical authority attester`)
+}
+
 const credentialBoundarySource = read(credentialBoundaryPath)
 requireTokens('Credential boundary verifier', credentialBoundarySource, [
-  "schemaVersion: 'urai-release-credential-boundary-1'",
+  "schemaVersion: 'urai-release-credential-boundary-2'",
+  'targetBuildIsolated: true',
+  'authorityAttestationIsolated: true',
   'targetCodeExecutesInProductionJob: false',
-  'targetBuildIsolatedOnNoSecretRunner: true',
   'prebuiltArtifactHashVerified: true',
-  'targetFirebaseCliReceivesCredentials: false',
+  'credentialsMaterializedByAuthorityOnly: true',
+  'firebaseCliResolvedFromCurrentAuthority: true',
 ])
 
 const releaseSmokeSource = read(releaseSmokePath)
@@ -293,8 +334,9 @@ if (!existsSync(packagePath)) {
   for (const name of forbiddenAliases) {
     if (name in scripts) failures.push(`Forbidden deploy alias remains in package.json: ${name}`)
   }
-  if (scripts['live:deploy'] !== 'node scripts/live-release.mjs --deploy-prebuilt') failures.push('package.json live:deploy must point only to the protected prebuilt release executable')
-  if (scripts['publish:live'] !== 'node scripts/run-pnpm.mjs live:deploy') failures.push('package.json publish:live must delegate to live:deploy')
+  if (scripts['live:deploy'] !== 'node scripts/live-release.mjs --deploy-prebuilt') {
+    failures.push('package.json live:deploy must route only through --deploy-prebuilt')
+  }
   for (const [name, command] of Object.entries(scripts)) {
     if (hasDirectDeployCommand(command)) failures.push(`Direct Firebase deploy command remains in package script: ${name}`)
     if (name !== 'live:deploy' && /live-release\.mjs\s+--deploy(?:-prebuilt)?/.test(command)) failures.push(`Package script bypasses canonical live:deploy alias: ${name}`)
@@ -359,16 +401,17 @@ for (const snapshotPath of steeringSnapshots) {
 }
 
 const report = {
-  schemaVersion: 'urai-production-authority-audit-3',
+  schemaVersion: 'urai-production-authority-audit-4',
   ok: failures.length === 0,
   canonicalWorkflow: canonicalWorkflowFile,
   canonicalProductionScript: allowedProductionScript,
-  staticBundleBuilder: bundleScriptPath,
+  staticBundleAttester: bundleScriptPath,
   credentialBoundaryVerifier: credentialBoundaryPath,
   releaseSmoke: releaseSmokePath,
   protectedOperations: ['deploy', 'rollback'],
   rollbackTargetProofRequired: true,
-  targetBuildIsolatedFromProductionRunner: true,
+  targetBuildIsolatedFromAuthorityAttestation: true,
+  authorityAttestationIsolatedFromProductionRunner: true,
   prebuiltArtifactHashVerified: true,
   currentAuthorityExecutesTarget: false,
   currentAuthorityPostDeploySmoke: true,
