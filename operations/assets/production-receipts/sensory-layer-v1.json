@@ -1,0 +1,50 @@
+{
+  "schemaVersion": 1,
+  "family": "urai-sensory-layer-v1",
+  "releaseState": "ready",
+  "validatedAt": "2026-07-11T12:15:00Z",
+  "routes": ["/", "/home", "/ground", "/life-map", "/focus", "/replay"],
+  "activation": {
+    "consumer": "urai-tier1/src/spatial/scene/SpatialWorldAssetLayer.tsx",
+    "marker": "<SpatialSensoryLayer />",
+    "reversible": true,
+    "rollback": "Remove the SpatialSensoryLayer mount; model and procedural fallbacks remain unchanged."
+  },
+  "assets": [
+    {
+      "id": "spatial-particle-atlas-v1",
+      "path": "urai-tier1/public/assets/urai/generated/textures/spatial-particle-atlas-v1.svg",
+      "bytes": 622,
+      "sha256": "3fb14004bc6320d1f2891a47af10f3e2c21c8a8fae2ad1a589c4d2e3b57ea1ba",
+      "validation": ["complete SVG", "1024x1024 viewbox", "four radial sprites", "under 524288-byte budget"]
+    },
+    {
+      "id": "global-cinematic-material-pack-v1",
+      "path": "urai-tier1/public/assets/urai/generated/textures/global-cinematic-material-pack-v1.json",
+      "bytes": 673,
+      "sha256": "f50f13f9e581c5253d3c046bbfd8749600864cd2669bd7bef48226c3514a6035",
+      "validation": ["JSON parsed", "portal energy color consumed by runtime", "under 262144-byte budget"]
+    },
+    {
+      "id": "urai-loading-sequence-v1",
+      "path": "urai-tier1/public/assets/urai/generated/loading/urai-loading-sequence-v1.json",
+      "bytes": 612,
+      "sha256": "7034eabf693fdd6701b648750cff183d104fba78adef68c9bd92ef545a574046",
+      "validation": ["JSON parsed", "2200ms deterministic sequence", "accessible label consumed by runtime"]
+    },
+    {
+      "id": "urai-ambient-bed-v1",
+      "path": "urai-tier1/public/assets/urai/generated/audio/urai-ambient-bed-v1.json",
+      "optimizedVariant": "urai-tier1/public/assets/urai/generated/audio/urai-ambient-bed-v1.opus",
+      "bytes": 368,
+      "sha256": "f34bd116b8ecb9b43117d8765d655d5a74258980d2bc8e7f696d57d7e47f3b71",
+      "optimizedBytes": 14265,
+      "optimizedSha256": "912224a0035d7fd46bebe8f8e6042863a2c73ede3e53657ddd9c05ed3d5728a5",
+      "validation": ["user-controlled", "silent fallback", "three deterministic voices", "OggS and OpusHead present", "under 1048576-byte budget"]
+    }
+  ],
+  "verificationCommand": "node scripts/verify-production-sensory-assets.mjs",
+  "verificationResult": "pass",
+  "license": "URAI Labs internal production assets",
+  "provenance": "Deterministic URAI forge and local production optimization"
+}

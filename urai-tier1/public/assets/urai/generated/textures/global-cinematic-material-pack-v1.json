@@ -1,0 +1,10 @@
+{
+  "version": "global-cinematic-material-pack-v1",
+  "materials": {
+    "obsidianGlass": { "baseColor": "#060912", "roughness": 0.12, "metalness": 0.24, "opacity": 0.82 },
+    "smokedMetal": { "baseColor": "#121827", "roughness": 0.24, "metalness": 0.86 },
+    "portalEnergy": { "baseColor": "#2de8ff", "emissive": "#00d9ff", "emissiveIntensity": 1.5 },
+    "memoryViolet": { "baseColor": "#7b42ff", "emissive": "#6d28d9", "emissiveIntensity": 1.2 },
+    "provenanceGold": { "baseColor": "#f2b45c", "emissive": "#8b4f14", "emissiveIntensity": 0.55 }
+  }
+}
