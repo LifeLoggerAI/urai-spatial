@@ -10,8 +10,8 @@
 - Evidence date: 2026-07-11
 - Distribution state: INTERNAL REVIEW ONLY
 - Launch decision: NO-GO
-- Package Markdown blob SHA: `01115ab2c445e08b4d313cfdd4981d700ad548b3`
-- Package JSON blob SHA: `2284b678364e1093db60eb43f4c2f819fc2bfadb`
+- Package Markdown blob SHA: `c88cf76b1e42d1efd974c64f962164d2a675c35a`
+- Package JSON blob SHA: `9b85b986b148ecc9f01eb927d1bd824b0ab6b7c0`
 
 ## Approved one-sentence description
 
@@ -30,22 +30,22 @@ All fresh exact-head workflows remain queued and count as zero passes.
 
 ## Current candidate evidence
 
-- analytics #553 `b7a145809d64cf2616f60657d5a1be78b4d03765`: candidate fail-closed repair, no provider activation, 13 queued checks, stale against current main;
-- Privacy Controls #554 `57cb67a3429ca8273c08a486b3a2b605b6127631`: non-operational preview candidate, stale against current main;
-- optional guided demo #555 `906ccb3f6b8254e9deecbec78ac6c9dd7a38d6b5`: query-only and non-persistent, 5 queued checks, parent required first;
-- discoverability #557 `96b2d3a21087e4cc5c6e1c739d9017ac318cb85a`: indexing fail-closed, stale against current main;
-- release credential boundary #552 `d592e4f32d444b501a02278033921f1a0294e6d0`: source pin/audit/credential-verifier repairs reconciled onto refreshed #539; 6 queued checks; not incorporated into #539;
-- release controls #539 `ad473628eb97235171eda2ff9f8fc9647c0d518f`: current main reconciled, draft, queued, and awaiting terminal-green #552 plus incorporation and a full rerun;
-- sensory #544 `7896f75c340f2ea3e046529eb2ea6c55255b7231`: candidate, queued, uncertified;
+- analytics #553 `5bb85f8764dbe58f4bd75e853fe30012ad1ef977`: exact four-file fail-closed repair rebuilt on current `main`; 1 ahead / 0 behind; 13 queued checks; no provider activation;
+- Privacy Controls #554 `972616b92536108818ca0965e543bae2ae322c6c`: exact five-file non-operational preview rebuilt on current `main`; 1 ahead / 0 behind; 14 queued checks;
+- optional guided demo #555 `212126a90920c5601f858175556ae319bc349ae8`: exact four-file query-only and non-persistent child of #554 head `972616b92536108818ca0965e543bae2ae322c6c`; 1 ahead / 0 behind parent; 5 queued checks;
+- discoverability #557 `3d6354fa44d784334645c86151b158edd1f1c4d6`: exact six-file indexing fail-closed repair rebuilt on current `main`; 1 ahead / 0 behind; 16 queued checks;
+- release credential boundary #552 `d592e4f32d444b501a02278033921f1a0294e6d0`: source pin, immutable-action audit and credential-verifier repairs reconciled onto refreshed #539; 6 queued checks; not incorporated into #539;
+- release controls #539 `ad473628eb97235171eda2ff9f8fc9647c0d518f`: current-main reconciled, draft and queued; awaiting terminal-green #552, incorporation and a full rerun;
+- sensory #544 `7896f75c340f2ea3e046529eb2ea6c55255b7231`: candidate, queued and uncertified;
 - founder source #521 `780802576f2e0b0ebcaa0d5331ad9bb9032dccdf`: source-corrupt and rejected;
-- founder repair #562 `d5494f6febfaf8bdcb0af1fc2368d3d8afecbcf`: restores Status, unincorporated, 6 queued checks;
+- founder repair #562 `d5494f6febfaf98bdcb0af1fc2368d3d8afecbcf`: restores Status, unincorporated and queued;
 - #563: closed unmerged and not an authority.
 
 ## Asset-intake boundary
 
-Current `main` contains a read-only V1 asset handoff contract, verifier, workflow, and safe-resume marker binding. `promotion` remains false.
+Current `main` contains a read-only V1 asset handoff contract, verifier, workflow and safe-resume marker binding. `promotion` remains false.
 
-This receipt does not prove the 53 output files exist, were provider-generated, passed duplicate or visual review, were copied, registered, promoted, activated, deployed, route-consumed, or paid for.
+This receipt does not prove the 53 output files exist, were provider-generated, passed duplicate or visual review, were copied, registered, promoted, activated, deployed, route-consumed or paid for.
 
 ## Exact release state
 
@@ -71,7 +71,7 @@ This receipt does not prove the 53 output files exist, were provider-generated, 
 
 The package distinguishes:
 
-- source, contract, intake, candidate, tested, deployed, and live states;
+- source, contract, intake, candidate, tested, deployed and live states;
 - fallback/sample/demo behavior from provider-active behavior;
 - design intent from operational privacy/data-rights enforcement;
 - asset-intake definitions from completed asset delivery;
@@ -85,7 +85,7 @@ The package distinguishes:
 
 Public support readiness remains NO-GO. GitHub Support ticket #4553961 contains the runner-assignment evidence, but no human support response is recorded at this evidence point.
 
-Issue #450 remains the Actions blocker authority. Queued jobs with no steps or logs are not passing evidence.
+Issue #450 remains the Actions blocker authority. Representative current jobs for #553, #554, #555 and #557 are queued with no steps or logs and are not passing evidence.
 
 ## No actions performed
 
@@ -121,7 +121,7 @@ Issue #450 remains the Actions blocker authority. Queued jobs with no steps or l
 - candidate implementation references must be refreshed immediately before incorporation or publication;
 - #552 must be terminal-green, independently reviewed, incorporated into #539, and the resulting #539 head fully rerun before release approval;
 - #562 must be incorporated into #521 and the resulting founder-event head fully verified before QR or demo approval;
-- one tested SHA, deployed SHA, rollback SHA, target receipt, custom-domain proof, route acceptance set, screenshot set, demo set, support state, asset-delivery state, and reviewer sign-off set must be recorded together;
+- one tested SHA, deployed SHA, rollback SHA, target receipt, custom-domain proof, route acceptance set, screenshot set, demo set, support state, asset-delivery state and reviewer sign-off set must be recorded together;
 - no public distribution may occur from this receipt alone.
 
 ## Final result
