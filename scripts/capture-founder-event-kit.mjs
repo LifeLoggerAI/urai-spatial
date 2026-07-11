@@ -9,7 +9,14 @@ const screenshotDir = path.join(outDir, 'screenshots')
 const videoDir = path.join(outDir, 'video')
 const holdMs = Number(process.env.URAI_EVENT_HOLD_MS || 4500)
 const sourceSha = process.env.URAI_EVENT_SOURCE_SHA || 'unverified'
+const captureBase = new URL(baseUrl)
 
+if (!['http:', 'https:'].includes(captureBase.protocol)) {
+  throw new Error('URAI_EVENT_BASE_URL must use http or https')
+}
+if (process.env.CI && !['127.0.0.1', 'localhost', '[::1]'].includes(captureBase.hostname)) {
+  throw new Error('URAI_EVENT_BASE_URL must remain loopback-only in CI')
+}
 if (process.env.CI && !/^[0-9a-f]{40}$/.test(sourceSha)) {
   throw new Error('URAI_EVENT_SOURCE_SHA must be the exact 40-character source commit in CI')
 }
@@ -33,7 +40,13 @@ const piiPatterns = [
 ]
 
 function absolute(route) {
-  return new URL(route, baseUrl).toString()
+  return new URL(route, captureBase).toString()
+}
+
+function normalizeRouteIdentity(value) {
+  const parsed = new URL(value)
+  const pathname = parsed.pathname === '/' ? '/' : parsed.pathname.replace(/\/+$/, '')
+  return `${parsed.origin}${pathname || '/'}${parsed.search}`
 }
 
 function portableRelative(from, to) {
@@ -62,6 +75,7 @@ await fs.mkdir(videoDir, { recursive: true })
 
 const browser = await chromium.launch({ headless: true })
 const consoleErrors = []
+const blockedExternalRequests = []
 const results = []
 let context = null
 let page = null
@@ -73,6 +87,23 @@ try {
     deviceScaleFactor: 1,
     recordVideo: { dir: videoDir, size: { width: 1280, height: 720 } },
   })
+  await context.route('**/*', async (route) => {
+    const request = route.request()
+    let requested
+    try {
+      requested = new URL(request.url())
+    } catch {
+      blockedExternalRequests.push({ url: request.url(), resourceType: request.resourceType(), reason: 'invalid-url' })
+      await route.abort('blockedbyclient')
+      return
+    }
+    if (['data:', 'blob:', 'about:'].includes(requested.protocol) || requested.origin === captureBase.origin) {
+      await route.continue()
+      return
+    }
+    blockedExternalRequests.push({ url: requested.toString(), resourceType: request.resourceType(), reason: 'cross-origin' })
+    await route.abort('blockedbyclient')
+  })
   page = await context.newPage()
   video = page.video()
 
@@ -83,6 +114,8 @@ try {
 
   for (const item of routes) {
     const url = absolute(item.route)
+    const expectedRouteIdentity = normalizeRouteIdentity(url)
+    const blockedRequestStart = blockedExternalRequests.length
     const screenshot = path.join(screenshotDir, `${String(results.length + 1).padStart(2, '0')}-${item.name}.png`)
     let response = null
     let body = ''
@@ -99,6 +132,10 @@ try {
       await page.screenshot({ path: screenshot, fullPage: false, animations: 'disabled' }).catch(() => {})
     }
 
+    const finalUrl = page.url()
+    const finalRouteIdentity = normalizeRouteIdentity(finalUrl)
+    const routeIdentityMatched = finalRouteIdentity === expectedRouteIdentity
+    const routeExternalRequests = blockedExternalRequests.slice(blockedRequestStart)
     const missingMarkers = item.markers.filter((marker) => !body.toLowerCase().includes(marker.toLowerCase()))
     const piiFindings = piiPatterns.filter(({ pattern }) => pattern.test(body)).map(({ id }) => id)
     const unsafeLinks = await page.locator('a[href^="/admin"], a[href^="/internal"], a[href*="console.firebase.google.com"]').count().catch(() => 0)
@@ -108,6 +145,10 @@ try {
     results.push({
       ...item,
       url,
+      finalUrl,
+      expectedRouteIdentity,
+      finalRouteIdentity,
+      routeIdentityMatched,
       status: response?.status() ?? null,
       title: await page.title().catch(() => ''),
       missingMarkers,
@@ -115,6 +156,7 @@ try {
       unsafeLinks,
       passwordInputs,
       eventDisclosure,
+      blockedExternalRequests: routeExternalRequests,
       screenshot: portableRelative(outDir, screenshot),
       error: routeError,
     })
@@ -134,6 +176,8 @@ const failures = results.flatMap((result) => {
   const issues = []
   if (result.error) issues.push(`${result.name}: ${result.error}`)
   if (result.status !== 200) issues.push(`${result.name}: HTTP ${result.status}`)
+  if (!result.routeIdentityMatched) issues.push(`${result.name}: final route ${result.finalRouteIdentity} did not match ${result.expectedRouteIdentity}`)
+  if (result.blockedExternalRequests.length) issues.push(`${result.name}: blocked cross-origin requests ${result.blockedExternalRequests.map(({ url }) => url).join(', ')}`)
   if (result.missingMarkers.length) issues.push(`${result.name}: missing markers ${result.missingMarkers.join(', ')}`)
   if (result.piiFindings.length) issues.push(`${result.name}: potential PII ${result.piiFindings.join(', ')}`)
   if (result.unsafeLinks) issues.push(`${result.name}: unsafe internal/admin links ${result.unsafeLinks}`)
@@ -145,15 +189,18 @@ if (consoleErrors.length) failures.push(`browser console errors: ${consoleErrors
 if (!recordedVideo) failures.push('recorded WebM video was not produced')
 
 const manifest = {
-  schemaVersion: 'urai-founder-event-kit-1',
+  schemaVersion: 'urai-founder-event-kit-2',
   generatedAt: new Date().toISOString(),
   sourceSha,
-  baseUrl,
+  baseUrl: captureBase.toString(),
+  captureOrigin: captureBase.origin,
+  networkBoundary: 'same-origin-plus-data-blob-about',
   sampleDataOnly: true,
   productionCertificationClaimed: false,
   routes: results,
   video: portableRelative(outDir, videoTarget),
   consoleErrors,
+  blockedExternalRequests,
   failures,
 }
 await fs.writeFile(path.join(outDir, 'manifest.json'), `${JSON.stringify(manifest, null, 2)}\n`)
