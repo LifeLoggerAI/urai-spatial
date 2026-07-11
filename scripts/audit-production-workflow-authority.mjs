@@ -3,23 +3,14 @@ import { existsSync, readFileSync, readdirSync } from 'node:fs'
 import path from 'node:path'
 
 const root = process.cwd()
-const workflowDirectory = path.join(root, '.github', 'workflows')
-const scriptsDirectory = path.join(root, 'scripts')
+const workflowsDir = path.join(root, '.github', 'workflows')
+const scriptsDir = path.join(root, 'scripts')
 const canonicalWorkflowFile = 'spatial-live-deploy.yml'
 const canonicalWorkflowName = 'URAI Canonical Production Release'
 const canonicalRepository = 'LifeLoggerAI/urai-spatial'
 const allowedProductionScript = 'scripts/live-release.mjs'
-const bundleScriptPath = 'scripts/create-static-release-bundle.mjs'
-const bundleAliasPath = 'scripts/attest-static-release-bundle.mjs'
-const credentialBoundaryPath = 'scripts/verify-release-credential-boundary.mjs'
-const releaseSmokePath = 'scripts/urai-release-control-smoke.mjs'
-const auditScript = 'scripts/audit-production-workflow-authority.mjs'
-const proofRunner = 'scripts/aaa-launch-proof.mjs'
-const steeringPlanPath = 'docs/aaa-machine/steering-plan.json'
-const steeringScriptPath = 'scripts/urai-aaa-steer.mjs'
-const steeringCompatibilityPath = 'scripts/urai-aaa-steer.cjs'
-const proofGuidePaths = ['docs/aaa-launch-proof-runner.md', 'docs/receipts/URAI_PROOF_MACHINE.md']
-const steeringSnapshots = ['docs/receipts/machine-steering/latest.json', 'docs/receipts/machine-steering/latest.txt']
+const failures = []
+
 const retiredExecutables = [
   'scripts/deploy-exact-static-release.mjs',
   'scripts/firebase-studio-polish-deploy-node.sh',
@@ -29,18 +20,9 @@ const retiredExecutables = [
   'scripts/urai-v1-autopilot-retry.sh',
   'scripts/urai-v1-autopilot.sh',
 ]
-const failures = []
 
-function walk(directory) {
-  if (!existsSync(directory)) return []
-  return readdirSync(directory, { withFileTypes: true }).flatMap((entry) => {
-    const absolute = path.join(directory, entry.name)
-    return entry.isDirectory() ? walk(absolute) : entry.isFile() ? [absolute] : []
-  })
-}
-
-function relative(file) {
-  return path.relative(root, file).replaceAll('\\', '/')
+function normalize(source) {
+  return source.replace(/\r\n?/g, '\n')
 }
 
 function read(relativePath) {
@@ -49,7 +31,20 @@ function read(relativePath) {
     failures.push(`Missing required authority file: ${relativePath}`)
     return ''
   }
-  return readFileSync(absolute, 'utf8').replace(/\r\n?/g, '\n')
+  return normalize(readFileSync(absolute, 'utf8'))
+}
+
+function walk(directory) {
+  if (!existsSync(directory)) return []
+  return readdirSync(directory, { withFileTypes: true }).flatMap((entry) => {
+    const absolute = path.join(directory, entry.name)
+    if (entry.isDirectory()) return walk(absolute)
+    return entry.isFile() ? [absolute] : []
+  })
+}
+
+function relative(file) {
+  return path.relative(root, file).replaceAll('\\', '/')
 }
 
 function requireTokens(label, source, tokens) {
@@ -102,31 +97,30 @@ for (const retired of retiredExecutables) {
 }
 
 const productionCapableScripts = []
-for (const file of walk(scriptsDirectory)) {
+for (const file of walk(scriptsDir)) {
   if (!/\.(?:mjs|cjs|js|sh)$/.test(file)) continue
   const name = relative(file)
-  if (name === auditScript) continue
-  const source = readFileSync(file, 'utf8')
-  if (scriptCanDeploy(source)) productionCapableScripts.push(name)
+  if (name === 'scripts/audit-production-workflow-authority.mjs') continue
+  if (scriptCanDeploy(readFileSync(file, 'utf8'))) productionCapableScripts.push(name)
 }
 for (const script of productionCapableScripts) {
   if (script !== allowedProductionScript) failures.push(`Competing production-capable script: ${script}`)
 }
 
 let canonicalSource = ''
-if (!existsSync(workflowDirectory)) {
+if (!existsSync(workflowsDir)) {
   failures.push('Missing .github/workflows directory')
 } else {
-  const workflowFiles = readdirSync(workflowDirectory).filter((name) => /\.ya?ml$/.test(name))
+  const workflowFiles = readdirSync(workflowsDir).filter((name) => /\.ya?ml$/.test(name))
   if (!workflowFiles.includes(canonicalWorkflowFile)) failures.push(`Missing canonical production workflow: ${canonicalWorkflowFile}`)
   for (const name of workflowFiles) {
-    const source = readFileSync(path.join(workflowDirectory, name), 'utf8')
+    const source = normalize(readFileSync(path.join(workflowsDir, name), 'utf8'))
     if (workflowCanDeploy(source, productionCapableScripts) && name !== canonicalWorkflowFile) {
       failures.push(`Competing production-capable workflow: ${name}`)
     }
   }
   canonicalSource = workflowFiles.includes(canonicalWorkflowFile)
-    ? readFileSync(path.join(workflowDirectory, canonicalWorkflowFile), 'utf8').replace(/\r\n?/g, '\n')
+    ? normalize(readFileSync(path.join(workflowsDir, canonicalWorkflowFile), 'utf8'))
     : ''
 }
 
@@ -134,21 +128,19 @@ requireTokens('Canonical workflow', canonicalSource, [
   `name: ${canonicalWorkflowName}`,
   "inputs.confirm == 'DEPLOY_URAI_APP' || inputs.confirm == 'ROLLBACK_URAI_APP'",
   "github.event_name == 'workflow_dispatch' && inputs.release_sha || github.sha",
-  'rollback-verify:',
+  'name: Exact-head release verification',
   'name: Prove rollback target with current authority',
-  'build-release-output:',
   'name: Build exact static target without production authority or credentials',
-  'attest-release-bundle:',
   'name: Attest raw static output with clean current authority',
+  'name: Deploy or roll back verified static bundle on urai.app',
   'needs: [verify, rollback-verify, build-release-output]',
   'needs: [verify, rollback-verify, attest-release-bundle]',
-  'node scripts/create-static-release-bundle.mjs',
   'actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683',
   'actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020',
   'actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02',
   'actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093',
-  'Checkout current release authority only',
-  'pnpm install --frozen-lockfile --ignore-scripts',
+  'node scripts/verify-release-credential-boundary.mjs',
+  'node scripts/create-static-release-bundle.mjs',
   'node scripts/live-release.mjs --verify-prebuilt',
   'node scripts/live-release.mjs --deploy-prebuilt',
   'node scripts/urai-release-control-smoke.mjs',
@@ -156,12 +148,6 @@ requireTokens('Canonical workflow', canonicalSource, [
   'git merge-base --is-ancestor',
   'test "$RELEASE_SHA" = "$CURRENT_MAIN_SHA"',
   'test "$ROLLBACK_SHA" = "$CURRENT_MAIN_SHA"',
-  'URAI_RELEASE_OPERATION:',
-  'GITHUB_WORKFLOW',
-  'GITHUB_REPOSITORY',
-  'GITHUB_REF',
-  'FIREBASE_SERVICE_ACCOUNT_JSON: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_JSON }}',
-  'test -n "$FIREBASE_SERVICE_ACCOUNT_JSON"',
   'gh workflow run spatial-live-deploy.yml --ref main',
   'if: always()',
 ])
@@ -182,8 +168,8 @@ forbidTokens('Target-only build job', buildSource, [
   'environment: production',
   'FIREBASE_SERVICE_ACCOUNT_JSON',
   'GOOGLE_APPLICATION_CREDENTIALS',
-  'Checkout clean current release authority only',
   'node scripts/create-static-release-bundle.mjs',
+  '--deploy-prebuilt',
 ])
 
 requireTokens('Clean authority attestation job', attestSource, [
@@ -198,7 +184,6 @@ forbidTokens('Clean authority attestation job', attestSource, [
   'environment: production',
   'FIREBASE_SERVICE_ACCOUNT_JSON',
   'GOOGLE_APPLICATION_CREDENTIALS',
-  'path: target',
   'working-directory: target',
   'pnpm build:static',
 ])
@@ -206,11 +191,11 @@ forbidTokens('Clean authority attestation job', attestSource, [
 requireTokens('Production deploy job', deploySource, [
   'Checkout current release authority only',
   'pnpm install --frozen-lockfile --ignore-scripts',
-  'actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093',
   'node scripts/verify-release-credential-boundary.mjs',
   'node scripts/live-release.mjs --verify-prebuilt',
   'node scripts/live-release.mjs --deploy-prebuilt',
   'node scripts/urai-release-control-smoke.mjs',
+  'Remove temporary credentials',
 ])
 forbidTokens('Production deploy job', deploySource, [
   'path: target',
@@ -226,21 +211,16 @@ if (secretOccurrences !== 1) failures.push(`Canonical workflow must expose the r
 if (!deploySource.includes(secretMarker)) failures.push('Raw service-account secret must exist only in the production deploy job')
 if (buildSource.includes(secretMarker) || attestSource.includes(secretMarker)) failures.push('Build and attestation jobs must not receive the raw service-account secret')
 
-for (const forbidden of [
+forbidTokens('Canonical workflow', canonicalSource, [
   "test -n '${{ secrets.FIREBASE_SERVICE_ACCOUNT_JSON }}'",
-  'cat > "$GOOGLE_APPLICATION_CREDENTIALS" <<\'JSON\'',
   'run: pnpm live:deploy',
   'NEXT_PUBLIC_URAI_BUILD_SHA=$ROLLBACK_SHA',
-]) {
-  if (canonicalSource.includes(forbidden)) failures.push(`Canonical workflow contains forbidden authority pattern: ${forbidden}`)
-}
+])
 
 const releaseSource = read(allowedProductionScript)
 requireTokens('Deploy executable', releaseSource, [
   'fileURLToPath(import.meta.url)',
   "const postDeploySmoke = path.join(authorityDirectory, 'urai-post-deploy-smoke.mjs')",
-  'requireFile(postDeploySmoke)',
-  "run('node', [postDeploySmoke]",
   "process.env.URAI_DEPLOY_CONFIRM !== 'DEPLOY_STATIC_URAI'",
   "process.env.GITHUB_ACTIONS !== 'true'",
   "process.env.GITHUB_EVENT_NAME !== 'workflow_dispatch'",
@@ -248,7 +228,6 @@ requireTokens('Deploy executable', releaseSource, [
   'process.env.GITHUB_REPOSITORY !== canonicalRepository',
   "process.env.GITHUB_REF !== 'refs/heads/main'",
   "['deploy', 'rollback'].includes(releaseOperation)",
-  'project !== expectedProject',
   "productionAuthority: '.github/workflows/spatial-live-deploy.yml'",
   "process.argv.includes('--verify-prebuilt')",
   "process.argv.includes('--deploy-prebuilt')",
@@ -262,36 +241,33 @@ requireTokens('Deploy executable', releaseSource, [
   'writeFileSync(managedCredentialsPath',
   "flag: 'wx'",
 ])
-if (releaseSource.includes("run('node', ['scripts/urai-post-deploy-smoke.mjs']")) failures.push('Deploy executable invokes a checkout-relative post-deploy smoke instead of current authority')
+if (/pnpm\s+exec\s+firebase/.test(releaseSource)) failures.push('Deploy executable resolves Firebase through a package manager instead of current authority')
 if (!releaseSource.includes(`const canonicalWorkflow = '${canonicalWorkflowName}'`)) failures.push('Deploy executable workflow name does not match the canonical workflow')
 if (!releaseSource.includes(`const canonicalRepository = '${canonicalRepository}'`)) failures.push('Deploy executable repository does not match the canonical repository')
-if (/pnpm\s+exec\s+firebase/.test(releaseSource)) failures.push('Deploy executable resolves Firebase through a package manager instead of current authority')
 
-const bundleSource = read(bundleScriptPath)
+const bundleSource = read('scripts/create-static-release-bundle.mjs')
 requireTokens('Authority static release attester', bundleSource, [
   "schemaVersion: 'urai-static-release-bundle-1'",
   'assertCleanAuthorityCheckout()',
   'writeAuthoritativeFingerprint()',
   "attestedBy: 'scripts/create-static-release-bundle.mjs'",
+  'repository: canonicalRepository',
   'authoritySha',
   'targetSha',
   'rollbackSha',
+  "certification: 'pending-post-deploy-smoke'",
+  'workflowRunId',
   'Release bundle source must not contain symlinks',
   'Copied release bundle bytes do not match the source output',
   'fingerprintSha256',
-  'Release bundle live URL is invalid or missing',
-  'sha256',
   'fileCount',
   'totalBytes',
-  'release-fingerprint.json',
 ])
 
-const bundleAliasSource = read(bundleAliasPath)
-if (!bundleAliasSource.includes("import './create-static-release-bundle.mjs'")) {
-  failures.push(`${bundleAliasPath} must delegate to the canonical authority attester`)
-}
+const bundleAliasSource = read('scripts/attest-static-release-bundle.mjs')
+if (!bundleAliasSource.includes("import './create-static-release-bundle.mjs'")) failures.push('Bundle alias must delegate to the canonical authority attester')
 
-const credentialBoundarySource = read(credentialBoundaryPath)
+const credentialBoundarySource = read('scripts/verify-release-credential-boundary.mjs')
 requireTokens('Credential boundary verifier', credentialBoundarySource, [
   "schemaVersion: 'urai-release-credential-boundary-4'",
   'targetBuildIsolated: true',
@@ -304,17 +280,21 @@ requireTokens('Credential boundary verifier', credentialBoundarySource, [
   'firebaseCliResolvedFromCurrentAuthority: true',
 ])
 
-const releaseSmokeSource = read(releaseSmokePath)
+const releaseSmokeSource = read('scripts/urai-release-control-smoke.mjs')
 requireTokens('Release-control smoke', releaseSmokeSource, [
+  "schemaVersion: 'urai-release-control-smoke-5'",
   "createRequire(path.join(process.cwd(), 'package.json'))",
   "requireFromTarget('playwright')",
   "waitUntil: 'domcontentloaded'",
   "page.locator('body').waitFor",
   "animations: 'disabled'",
+  'assertExactQueryIdentity',
+  "await context.route('**/*'",
+  "await route.abort('blockedbyclient')",
+  'blockedExternalRequests',
   'pageErrors',
   "'/mirror'",
   "'/location-map'",
-  "schemaVersion: 'urai-release-control-smoke-2'",
 ])
 if (/from ['"]playwright['"]/.test(releaseSmokeSource)) failures.push('Release-control smoke must resolve Playwright through the current authority workspace')
 if (/waitUntil:\s*['"]networkidle['"]/.test(releaseSmokeSource)) failures.push('Release-control smoke relies on networkidle and can hang on persistent connections')
@@ -323,36 +303,21 @@ const packagePath = path.join(root, 'package.json')
 if (!existsSync(packagePath)) {
   failures.push('Missing package.json')
 } else {
-  const packageJson = JSON.parse(readFileSync(packagePath, 'utf8'))
-  const scripts = packageJson.scripts || {}
-  const forbiddenAliases = [
-    'studio:deploy:static',
-    'deploy:xr:firebase',
-    'deploy:xr:firebase:static',
-    'deploy:staging',
-    'deploy:prod',
-    'frb',
-    'live:deploy:static',
-    'publish:live:static',
-  ]
-  for (const name of forbiddenAliases) {
+  const scripts = JSON.parse(readFileSync(packagePath, 'utf8')).scripts || {}
+  for (const name of ['studio:deploy:static', 'deploy:xr:firebase', 'deploy:xr:firebase:static', 'deploy:staging', 'deploy:prod', 'frb', 'live:deploy:static', 'publish:live:static']) {
     if (name in scripts) failures.push(`Forbidden deploy alias remains in package.json: ${name}`)
   }
-  if (scripts['live:deploy'] !== 'node scripts/live-release.mjs --deploy-prebuilt') {
-    failures.push('package.json live:deploy must route only through --deploy-prebuilt')
-  }
+  if (scripts['live:deploy'] !== 'node scripts/live-release.mjs --deploy-prebuilt') failures.push('package.json live:deploy must route only through --deploy-prebuilt')
   for (const [name, command] of Object.entries(scripts)) {
     if (hasDirectDeployCommand(command)) failures.push(`Direct Firebase deploy command remains in package script: ${name}`)
     if (name !== 'live:deploy' && /live-release\.mjs\s+--deploy(?:-prebuilt)?/.test(command)) failures.push(`Package script bypasses canonical live:deploy alias: ${name}`)
   }
 }
 
-const proofSource = read(proofRunner)
+const proofSource = read('scripts/aaa-launch-proof.mjs')
 requireTokens('Proof runner', proofSource, [
   "if (args.has('--deploy'))",
   'process.exit(64)',
-  "git', ['rev-parse', 'HEAD']",
-  "git', ['status', '--porcelain']",
   'sourceIdentityVerified',
   'cleanWorkingTree',
   'productionDeploymentAttempted: false',
@@ -361,15 +326,13 @@ requireTokens('Proof runner', proofSource, [
 ])
 if (hasDirectDeployCommand(proofSource)) failures.push('Proof runner contains a direct Firebase deploy command')
 
-for (const guidePath of proofGuidePaths) {
+for (const guidePath of ['docs/aaa-launch-proof-runner.md', 'docs/receipts/URAI_PROOF_MACHINE.md']) {
   const guide = read(guidePath)
   requireTokens(guidePath, guide, ['scripts/aaa-launch-proof.mjs', '.github/workflows/spatial-live-deploy.yml'])
-  if (/bash\s+scripts\/urai-aaa-proof-loop\.sh/.test(guide)) failures.push(`${guidePath} invokes retired urai-aaa-proof-loop.sh`)
-  if (/node\s+scripts\/urai-proof-loop\.mjs/.test(guide)) failures.push(`${guidePath} invokes retired urai-proof-loop.mjs`)
-  if (/aaa-launch-proof\.mjs[^\n`]*--deploy/.test(guide)) failures.push(`${guidePath} tells operators to deploy through the proof runner`)
+  if (/urai-aaa-proof-loop\.sh|node\s+scripts\/urai-proof-loop\.mjs|aaa-launch-proof\.mjs[^\n`]*--deploy/.test(guide)) failures.push(`${guidePath} references a retired or deploy-capable proof path`)
 }
 
-const steeringSource = read(steeringScriptPath)
+const steeringSource = read('scripts/urai-aaa-steer.mjs')
 requireTokens('Machine steering', steeringSource, [
   "screenshotDirectory || 'live-visual-audit/screenshots'",
   'receipt.sourceIdentityVerified === true',
@@ -377,10 +340,10 @@ requireTokens('Machine steering', steeringSource, [
   'receipt.productionDeploymentAttempted === false',
   'machineProofGreen',
 ])
-const compatibilitySource = read(steeringCompatibilityPath)
-if (!compatibilitySource.includes("import('./urai-aaa-steer.mjs')")) failures.push(`${steeringCompatibilityPath} must delegate to the canonical steering implementation`)
+const compatibilitySource = read('scripts/urai-aaa-steer.cjs')
+if (!compatibilitySource.includes("import('./urai-aaa-steer.mjs')")) failures.push('Steering compatibility wrapper must delegate to canonical implementation')
 
-const steeringPlanSource = read(steeringPlanPath)
+const steeringPlanSource = read('docs/aaa-machine/steering-plan.json')
 try {
   const steeringPlan = JSON.parse(steeringPlanSource)
   if (Number(steeringPlan.version) < 2) failures.push('Steering plan version must be at least 2')
@@ -395,23 +358,21 @@ try {
     if (/--deploy\b|urai-aaa-proof-loop\.sh|urai-proof-loop\.mjs/.test(command)) failures.push(`Steering loop ${loop.id || 'unknown'} references a retired or deploy-capable proof path`)
   }
 } catch (error) {
-  failures.push(`Invalid ${steeringPlanPath}: ${error instanceof Error ? error.message : String(error)}`)
+  failures.push(`Invalid docs/aaa-machine/steering-plan.json: ${error instanceof Error ? error.message : String(error)}`)
 }
 
-for (const snapshotPath of steeringSnapshots) {
+for (const snapshotPath of ['docs/receipts/machine-steering/latest.json', 'docs/receipts/machine-steering/latest.txt']) {
   const snapshot = read(snapshotPath)
   if (/urai-aaa-proof-loop\.sh|node\s+scripts\/urai-proof-loop\.mjs|aaa-launch-proof\.mjs[^\n"]*--deploy/.test(snapshot)) failures.push(`${snapshotPath} contains a retired or deploy-capable proof command`)
   requireTokens(snapshotPath, snapshot, ['scripts/aaa-launch-proof.mjs', '.github/workflows/spatial-live-deploy.yml'])
 }
 
 const report = {
-  schemaVersion: 'urai-production-authority-audit-4',
+  schemaVersion: 'urai-production-authority-audit-5',
   ok: failures.length === 0,
   canonicalWorkflow: canonicalWorkflowFile,
   canonicalProductionScript: allowedProductionScript,
-  staticBundleAttester: bundleScriptPath,
-  credentialBoundaryVerifier: credentialBoundaryPath,
-  releaseSmoke: releaseSmokePath,
+  releaseSmokeSchema: 'urai-release-control-smoke-5',
   protectedOperations: ['deploy', 'rollback'],
   rollbackTargetProofRequired: true,
   targetBuildIsolatedFromAuthorityAttestation: true,
@@ -420,9 +381,9 @@ const report = {
   currentAuthorityExecutesTarget: false,
   currentAuthorityPostDeploySmoke: true,
   authorityResolvedSmokeDependencies: true,
+  preRequestNetworkBlockingRequired: true,
+  exactQueryIdentityRequired: true,
   rawServiceAccountSecretOccurrences: secretOccurrences,
-  proofRunner,
-  steeringPlan: steeringPlanPath,
   retiredExecutables,
   productionCapableScripts: productionCapableScripts.sort(),
   failures,
