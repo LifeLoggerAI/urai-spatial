@@ -11,22 +11,53 @@ const checkoutRef = 'actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683'
 const setupNodeRef = 'actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020'
 const expectedExternalActions = new Set([checkoutRef, setupNodeRef])
 
+const expectedPaths = [
+  'scripts/live-release.mjs',
+  'scripts/create-static-release-bundle.mjs',
+  'scripts/attest-static-release-bundle.mjs',
+  'scripts/write-release-fingerprint.mjs',
+  'scripts/verify-live-rollback-provenance.mjs',
+  'scripts/verify-release-credential-boundary.mjs',
+  'scripts/verify-release-credential-boundary-static.mjs',
+  'scripts/verify-release-security-path-guard.mjs',
+  'scripts/verify-production-action-pins.mjs',
+  'scripts/audit-production-workflow-authority.mjs',
+  'scripts/urai-release-control-smoke.mjs',
+  'scripts/urai-post-deploy-smoke.mjs',
+  'urai-tier1/tests/exact-static-release-contract.test.mjs',
+  '.github/workflows/spatial-live-deploy.yml',
+  workflowRelativePath,
+  'package.json',
+  'pnpm-lock.yaml',
+]
+
 const requiredTokens = [
   'name: Release Security Path Guard',
   'branches: [main]',
-  "'scripts/verify-release-security-path-guard.mjs'",
-  `'${workflowRelativePath}'`,
   'permissions:\n  contents: read',
   'runs-on: ubuntu-24.04',
+  'timeout-minutes: 20',
   checkoutRef,
   setupNodeRef,
+  "ref: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}",
+  'fetch-depth: 0',
   'persist-credentials: false',
   'git status --porcelain --untracked-files=all',
+  'node --check scripts/live-release.mjs',
+  'node --check scripts/create-static-release-bundle.mjs',
+  'node --check scripts/attest-static-release-bundle.mjs',
   'node --check scripts/write-release-fingerprint.mjs',
+  'node --check scripts/verify-live-rollback-provenance.mjs',
+  'node --check scripts/verify-release-credential-boundary.mjs',
+  'node --check scripts/verify-release-credential-boundary-static.mjs',
   'node --check scripts/verify-release-security-path-guard.mjs',
+  'node --check scripts/verify-production-action-pins.mjs',
+  'node --check scripts/audit-production-workflow-authority.mjs',
   'node --check scripts/urai-release-control-smoke.mjs',
   'node --check scripts/urai-post-deploy-smoke.mjs',
+  'node --check urai-tier1/tests/exact-static-release-contract.test.mjs',
   'node scripts/verify-release-security-path-guard.mjs',
+  'node scripts/verify-production-action-pins.mjs',
   'node scripts/audit-production-workflow-authority.mjs',
   'node scripts/verify-release-credential-boundary.mjs',
   'node scripts/verify-live-rollback-provenance.mjs --self-test',
@@ -35,6 +66,12 @@ const requiredTokens = [
 
 for (const token of requiredTokens) {
   if (!source.includes(token)) failures.push(`Release security guard missing marker: ${token}`)
+}
+
+for (const expectedPath of expectedPaths) {
+  const marker = `'${expectedPath}'`
+  const count = source.split(marker).length - 1
+  if (count !== 2) failures.push(`Protected path must appear in both pull and push filters: ${expectedPath}; found ${count}`)
 }
 
 const forbiddenTokens = [
@@ -75,9 +112,10 @@ if (pathSections.length !== 2) failures.push(`Release security guard must define
 if (pathSections.length === 2 && pathSections[0] !== pathSections[1]) failures.push('Pull-request and push path filters differ')
 
 const report = {
-  schemaVersion: 'urai-release-security-path-guard-1',
+  schemaVersion: 'urai-release-security-path-guard-2',
   ok: failures.length === 0,
   workflow: workflowRelativePath,
+  protectedPaths: expectedPaths,
   externalActions: actionRefs,
   permissions: ['contents:read'],
   productionCredentialsAvailable: false,
