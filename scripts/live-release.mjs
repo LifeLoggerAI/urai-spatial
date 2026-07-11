@@ -226,7 +226,7 @@ function removeTemporaryServiceAccount() {
   if (credentialsPath) rmSync(credentialsPath, { force: true })
 }
 
-function validateAndMaterializePrebuiltBundle(targetSha, authoritySha) {
+function validateAndMaterializePrebuiltBundle(targetSha, authoritySha, materialize = true) {
   const manifestPath = path.join(releaseBundleDirectory, 'manifest.json')
   const bundleOutputDirectory = path.join(releaseBundleDirectory, 'urai-tier1', 'out')
   requireFile(manifestPath)
@@ -265,7 +265,7 @@ function validateAndMaterializePrebuiltBundle(targetSha, authoritySha) {
   })
   const expectedPaths = expectedFiles.map((entry) => entry.path)
   if (new Set(expectedPaths).size !== expectedPaths.length) throw new Error('Release bundle manifest contains duplicate paths')
-  if (JSON.stringify(expectedPaths) !== JSON.stringify([...expectedPaths].sort())) {
+  if (JSON.stringify(expectedPaths) !== JSON.stringify([...expectedPaths].sort((left, right) => left.localeCompare(right)))) {
     throw new Error('Release bundle manifest paths must be sorted')
   }
 
@@ -301,6 +301,8 @@ function validateAndMaterializePrebuiltBundle(targetSha, authoritySha) {
   if (!htmlFiles.some((entry) => readFileSync(path.join(bundleOutputDirectory, ...entry.path.split('/')), 'utf8').includes(targetSha))) {
     throw new Error('Verified bundle HTML does not contain the exact release SHA')
   }
+
+  if (!materialize) return { manifest, files: actualFiles, totalBytes }
 
   rmSync('urai-tier1/out', { recursive: true, force: true })
   mkdirSync('urai-tier1', { recursive: true })
@@ -380,16 +382,20 @@ if (verifyPrebuilt) {
   requireFullSha('ROLLBACK_SHA', rollbackSha)
   if (rollbackSha === targetSha) throw new Error('ROLLBACK_SHA must be distinct from the release SHA')
   const authorizedMainSha = assertRemoteMainUnchanged(targetSha)
-  const verifiedBundle = validateAndMaterializePrebuiltBundle(targetSha, authoritySha)
-  writeReceipt(targetSha, 'verified-prebuilt-no-deploy', {
+  const verifiedBundle = validateAndMaterializePrebuiltBundle(targetSha, authoritySha, false)
+  console.log(JSON.stringify({
+    schemaVersion: 'urai-prebuilt-release-verification-1',
+    ok: true,
     authoritySha,
     authorizedMainSha,
+    targetSha,
+    rollbackSha,
     bundleSchemaVersion: verifiedBundle.manifest.schemaVersion,
     bundleWorkflowRunId: verifiedBundle.manifest.workflowRunId,
     bundleFileCount: verifiedBundle.files.length,
     bundleTotalBytes: verifiedBundle.totalBytes,
     bundleManifestSha256: sha256(path.join(releaseBundleDirectory, 'manifest.json')),
-  })
+  }, null, 2))
   console.log('[URAI release] Prebuilt bundle verification passed. No deployment requested.')
   process.exit(0)
 }
