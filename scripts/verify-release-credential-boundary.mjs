@@ -55,12 +55,19 @@ if (requireRegularFile('Static credential-boundary verifier', staticVerifierPath
 }
 
 const requiredLiveProvenanceMarkers = [
-  "schemaVersion: 'urai-live-rollback-provenance-1'",
+  "schemaVersion: 'urai-live-rollback-provenance-2'",
   "candidate.schemaVersion !== 'urai-release-fingerprint-1'",
+  'candidate.repository !== expectedRepository',
+  "candidate.authoritySha || ''",
+  'authoritySha must equal the release or rollback authority',
+  'workflowRunId must be a numeric GitHub Actions run identifier',
   'Deploy recovery SHA',
   'Rollback target',
   "redirect: 'manual'",
   "cache: 'no-store'",
+  'responseUrl.toString() !== fingerprintUrl.toString()',
+  "contentType.toLowerCase().includes('application/json')",
+  'liveAuthoritySha',
   'verifiedAt',
 ]
 if (requireRegularFile('Live rollback-provenance verifier', liveProvenanceVerifierPath)) {
