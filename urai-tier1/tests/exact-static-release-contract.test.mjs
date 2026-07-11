@@ -185,13 +185,14 @@ test('fingerprint writer publishes exact release and distinct recovery authority
   assert.match(fingerprintWriter, /urai-release-fingerprint-1/)
   assert.match(fingerprintWriter, /releaseSha/)
   assert.match(fingerprintWriter, /rollbackSha/)
+  assert.match(fingerprintWriter, /authoritySha/)
   assert.match(fingerprintWriter, /Release and rollback SHAs must be distinct/)
   assert.match(fingerprintWriter, /urai-4dc1d/)
   assert.match(fingerprintWriter, /https:\/\/urai\.app/)
   assert.match(fingerprintWriter, /hosting-only/)
 })
 
-test('post-deploy verifier checks current routes, stale markers, queries, SHA, and public fingerprint', () => {
+test('post-deploy verifier checks current routes, direct fingerprint identity, SHA, and authority', () => {
   for (const marker of [
     'aaa-final-home-sky-ground-orb-body-portals',
     'walkable-first-person-ground-layer',
@@ -205,12 +206,17 @@ test('post-deploy verifier checks current routes, stale markers, queries, SHA, a
   ]) assert.ok(verifier.includes(marker), `missing verifier marker: ${marker}`)
   assert.match(verifier, /URAI_EXPECTED_DEPLOYED_SHA/)
   assert.match(verifier, /URAI_EXPECTED_ROLLBACK_SHA/)
+  assert.match(verifier, /URAI_EXPECTED_AUTHORITY_SHA|CURRENT_MAIN_SHA/)
   assert.match(verifier, /release-fingerprint\.json/)
   assert.match(verifier, /urai-release-fingerprint-1/)
+  assert.match(verifier, /redirect: 'manual'/)
+  assert.match(verifier, /finalUrl\.origin === canonicalOrigin/)
+  assert.match(verifier, /normalizePath\(finalUrl\.pathname\) === '\/release-fingerprint\.json'/)
+  assert.match(verifier, /payload\?\.authoritySha === expectedAuthoritySha/)
   assert.match(verifier, /finalUrl\.search === requested\.search/)
   assert.match(verifier, /sha === expectedSha/)
   assert.match(verifier, /fingerprint\.passed/)
-  assert.match(verifier, /live-content-parity-2/)
+  assert.match(verifier, /live-content-parity-3/)
   assert.match(verifier, /hydratedIdentityProof/)
 })
 
