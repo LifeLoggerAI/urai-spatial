@@ -24,6 +24,7 @@ const tests = [
   'tests/unit-runner-coverage.test.mjs',
   'tests/v2-asset-gating.test.mjs',
   'tests/xr-runtime-contract.test.mjs',
+  'tests/xr-static-gate-diagnostics-contract.test.mjs',
 ]
 
 for (const testPath of tests) {
