@@ -31,10 +31,12 @@ const releaseOperation = process.env.URAI_RELEASE_OPERATION || 'verify'
 const expectedCurrentMain = (process.env.CURRENT_MAIN_SHA || '').trim()
 const serviceAccountJson = process.env.FIREBASE_SERVICE_ACCOUNT_JSON || ''
 const credentialsPath = (process.env.GOOGLE_APPLICATION_CREDENTIALS || '').trim()
+const runnerTemp = (process.env.RUNNER_TEMP || '').trim()
 const firebaseCliPath = (process.env.URAI_FIREBASE_CLI || '').trim()
 const releaseBundleDirectory = path.resolve(process.env.URAI_RELEASE_BUNDLE_DIR || path.join(authorityRoot, 'release-bundle'))
 const canonicalWorkflow = 'URAI Canonical Production Release'
 const canonicalRepository = 'LifeLoggerAI/urai-spatial'
+const managedCredentialFilename = 'urai-firebase-service-account.json'
 
 delete process.env.FIREBASE_SERVICE_ACCOUNT_JSON
 delete process.env.GOOGLE_APPLICATION_CREDENTIALS
@@ -202,8 +204,25 @@ function resolveAuthorityFirebaseCli() {
   return resolvedCli
 }
 
+function resolveManagedCredentialPath() {
+  if (!credentialsPath) return null
+  const resolvedCredentialsPath = path.resolve(credentialsPath)
+  if (path.basename(resolvedCredentialsPath) !== managedCredentialFilename) {
+    throw new Error(`Credential path must use the dedicated managed filename ${managedCredentialFilename}`)
+  }
+  if (process.env.GITHUB_ACTIONS === 'true') {
+    if (!runnerTemp) throw new Error('RUNNER_TEMP is required for the managed production credential path')
+    const expectedCredentialsPath = path.resolve(runnerTemp, managedCredentialFilename)
+    if (resolvedCredentialsPath !== expectedCredentialsPath) {
+      throw new Error(`Credential path must stay inside RUNNER_TEMP: ${expectedCredentialsPath}`)
+    }
+  }
+  return resolvedCredentialsPath
+}
+
 function writeTemporaryServiceAccount() {
-  if (!credentialsPath) throw new Error('GOOGLE_APPLICATION_CREDENTIALS must point to a temporary runner path')
+  const managedCredentialsPath = resolveManagedCredentialPath()
+  if (!managedCredentialsPath) throw new Error('GOOGLE_APPLICATION_CREDENTIALS must point to the dedicated managed runner path')
   if (!serviceAccountJson.trim()) throw new Error('FIREBASE_SERVICE_ACCOUNT_JSON is required only for the canonical deploy step')
 
   let serviceAccount
@@ -216,14 +235,15 @@ function writeTemporaryServiceAccount() {
     throw new Error(`Service-account project mismatch: ${serviceAccount?.project_id || 'missing'}`)
   }
 
-  mkdirSync(path.dirname(credentialsPath), { recursive: true })
-  writeFileSync(credentialsPath, `${JSON.stringify(serviceAccount)}\n`, { encoding: 'utf8', mode: 0o600, flag: 'wx' })
-  chmodSync(credentialsPath, 0o600)
-  return credentialsPath
+  mkdirSync(path.dirname(managedCredentialsPath), { recursive: true })
+  writeFileSync(managedCredentialsPath, `${JSON.stringify(serviceAccount)}\n`, { encoding: 'utf8', mode: 0o600, flag: 'wx' })
+  chmodSync(managedCredentialsPath, 0o600)
+  return managedCredentialsPath
 }
 
 function removeTemporaryServiceAccount() {
-  if (credentialsPath) rmSync(credentialsPath, { force: true })
+  const managedCredentialsPath = resolveManagedCredentialPath()
+  if (managedCredentialsPath) rmSync(managedCredentialsPath, { force: true })
 }
 
 function validateAndMaterializePrebuiltBundle(targetSha, authoritySha, materialize = true) {
@@ -370,7 +390,7 @@ function writeReceipt(targetSha, status, details = {}) {
   return receiptPath
 }
 
-if (deploy) removeTemporaryServiceAccount()
+removeTemporaryServiceAccount()
 const authoritySha = resolveAuthoritySha()
 const targetSha = resolveTargetSha(authoritySha)
 assertReleaseSurface()
