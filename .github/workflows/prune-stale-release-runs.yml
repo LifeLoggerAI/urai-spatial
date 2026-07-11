@@ -2,7 +2,9 @@ name: Prune stale release runs
 
 on:
   push:
-    branches: [main]
+    branches:
+      - main
+      - release/final-public-beta-stable-20260710
     paths:
       - .github/workflows/prune-stale-release-runs.yml
   workflow_dispatch:
@@ -12,69 +14,5 @@ permissions:
   contents: read
 
 concurrency:
-  group: urai-spatial-release-queue-pruner
+  group: urai-spatial-release-queue-pruner-${{ github.ref }}
   cancel-in-progress: true
-
-jobs:
-  prune:
-    name: Cancel superseded runs (${{ matrix.os }})
-    strategy:
-      fail-fast: false
-      matrix:
-        os: [macos-latest, windows-latest, ubuntu-slim]
-    runs-on: ${{ matrix.os }}
-    timeout-minutes: 15
-    steps:
-      - name: Cancel runs not owned by current canonical SHA
-        uses: actions/github-script@v7
-        with:
-          script: |
-            const statuses = ['queued', 'in_progress', 'waiting', 'pending', 'requested'];
-            const keepSha = context.sha;
-            const keepRun = context.runId;
-            let inspected = 0;
-            let cancelled = 0;
-            const failures = [];
-
-            for (const status of statuses) {
-              const runs = await github.paginate(
-                github.rest.actions.listWorkflowRunsForRepo,
-                {
-                  owner: context.repo.owner,
-                  repo: context.repo.repo,
-                  status,
-                  per_page: 100,
-                },
-              );
-
-              for (const run of runs) {
-                inspected += 1;
-                if (run.id === keepRun || run.head_sha === keepSha) continue;
-                try {
-                  await github.rest.actions.cancelWorkflowRun({
-                    owner: context.repo.owner,
-                    repo: context.repo.repo,
-                    run_id: run.id,
-                  });
-                  cancelled += 1;
-                } catch (error) {
-                  const statusCode = error?.status;
-                  if (statusCode !== 409) {
-                    failures.push(`${run.id}:${statusCode || 'unknown'}`);
-                  }
-                }
-              }
-            }
-
-            core.summary
-              .addHeading('URAI Spatial release queue pruning')
-              .addRaw(`Canonical SHA preserved: ${keepSha}\n`)
-              .addRaw(`Runner lane: ${{ matrix.os }}\n`)
-              .addRaw(`Runs inspected: ${inspected}\n`)
-              .addRaw(`Superseded runs cancelled: ${cancelled}\n`)
-              .addRaw(`Unexpected cancellation failures: ${failures.length}\n`)
-              .write();
-
-            if (failures.length) {
-              core.setFailed(`Unexpected cancellation failures: ${failures.join(', ')}`);
-            }
