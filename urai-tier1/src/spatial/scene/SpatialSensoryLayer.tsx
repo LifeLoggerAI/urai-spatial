@@ -1,38 +1,38 @@
 'use client'
 
-import { useTexture } from '@react-three/drei'
-import { useFrame, useLoader } from '@react-three/fiber'
-import { useEffect, useMemo, useRef } from 'react'
+import { useFrame } from '@react-three/fiber'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import * as THREE from 'three'
 import { resolveReadyUraiSensoryAssetPath } from '../assets/sensoryAssetManifest'
 
 type MaterialPack = {
-  materials: {
-    portalEnergy: { baseColor: string; emissive: string; emissiveIntensity: number }
-    memoryViolet: { baseColor: string; emissive: string; emissiveIntensity: number }
+  materials?: {
+    portalEnergy?: { baseColor?: string; emissive?: string; emissiveIntensity?: number }
+    memoryViolet?: { baseColor?: string; emissive?: string; emissiveIntensity?: number }
   }
 }
 
-type LoadingSequence = { durationMs: number }
+type LoadingSequence = { durationMs?: number }
 
-type PromotedSpatialSensoryLayerProps = {
+type ReadySensoryPaths = {
   materialPath: string
   particlePath: string
   loadingPath: string
 }
 
-function PromotedSpatialSensoryLayer({
-  materialPath,
-  particlePath,
-  loadingPath,
-}: PromotedSpatialSensoryLayerProps) {
+const DEFAULT_PARTICLE_COLOR = '#7b42ff'
+const DEFAULT_PORTAL_COLOR = '#00d9ff'
+const DEFAULT_LOADING_DURATION_MS = 2200
+
+function ReadySpatialSensoryLayer({ materialPath, particlePath, loadingPath }: ReadySensoryPaths) {
   const points = useRef<THREE.Points>(null)
   const loadingRing = useRef<THREE.Mesh>(null)
-  const particleTexture = useTexture(particlePath)
-  const materialSource = useLoader(THREE.FileLoader, materialPath) as string
-  const loadingSource = useLoader(THREE.FileLoader, loadingPath) as string
-  const materialPack = useMemo(() => JSON.parse(materialSource) as MaterialPack, [materialSource])
-  const loadingSequence = useMemo(() => JSON.parse(loadingSource) as LoadingSequence, [loadingSource])
+  const loadingStartedAtMs = useRef<number | null>(null)
+  const [particleTexture, setParticleTexture] = useState<THREE.Texture | null>(null)
+  const [particleColor, setParticleColor] = useState(DEFAULT_PARTICLE_COLOR)
+  const [portalColor, setPortalColor] = useState(DEFAULT_PORTAL_COLOR)
+  const [loadingDurationMs, setLoadingDurationMs] = useState(DEFAULT_LOADING_DURATION_MS)
+
   const geometry = useMemo(() => {
     const positions = new Float32Array(144 * 3)
     for (let index = 0; index < 144; index += 1) {
@@ -47,12 +47,79 @@ function PromotedSpatialSensoryLayer({
     return next
   }, [])
 
+  useEffect(() => {
+    let active = true
+    const controller = new AbortController()
+    const { signal } = controller
+    const loader = new THREE.TextureLoader()
+    const texture = loader.load(
+      particlePath,
+      (loaded) => {
+        loaded.colorSpace = THREE.SRGBColorSpace
+        loaded.needsUpdate = true
+        if (!active) {
+          loaded.dispose()
+          return
+        }
+        setParticleTexture(loaded)
+      },
+      undefined,
+      () => {
+        if (active) setParticleTexture(null)
+      },
+    )
+
+    fetch(materialPath, { signal })
+      .then((response) => response.ok
+        ? response.json() as Promise<MaterialPack | null>
+        : Promise.reject(new Error('material pack unavailable')))
+      .then((materialPack) => {
+        if (!active) return
+        setParticleColor(materialPack?.materials?.memoryViolet?.baseColor ?? DEFAULT_PARTICLE_COLOR)
+        setPortalColor(materialPack?.materials?.portalEnergy?.emissive ?? DEFAULT_PORTAL_COLOR)
+      })
+      .catch(() => {
+        if (!active) return
+        setParticleColor(DEFAULT_PARTICLE_COLOR)
+        setPortalColor(DEFAULT_PORTAL_COLOR)
+      })
+
+    fetch(loadingPath, { signal })
+      .then((response) => response.ok
+        ? response.json() as Promise<LoadingSequence | null>
+        : Promise.reject(new Error('loading sequence unavailable')))
+      .then((loadingSequence) => {
+        if (!active) return
+        const duration = loadingSequence?.durationMs
+        setLoadingDurationMs(
+          typeof duration === 'number' && duration > 0
+            ? duration
+            : DEFAULT_LOADING_DURATION_MS,
+        )
+      })
+      .catch(() => {
+        if (!active) return
+        setLoadingDurationMs(DEFAULT_LOADING_DURATION_MS)
+      })
+
+    return () => {
+      active = false
+      controller.abort()
+      texture.dispose()
+    }
+  }, [loadingPath, materialPath, particlePath])
+
   useEffect(() => () => geometry.dispose(), [geometry])
 
   useFrame(({ clock }) => {
     if (points.current) points.current.rotation.y = clock.elapsedTime * 0.018
     if (loadingRing.current) {
-      const progress = Math.min(1, (clock.elapsedTime * 1000) / loadingSequence.durationMs)
+      const elapsedMs = clock.elapsedTime * 1000
+      if (loadingStartedAtMs.current === null) loadingStartedAtMs.current = elapsedMs
+      const progress = Math.min(
+        1,
+        Math.max(0, (elapsedMs - loadingStartedAtMs.current) / loadingDurationMs),
+      )
       loadingRing.current.scale.setScalar(0.7 + progress * 0.45)
       const material = loadingRing.current.material as THREE.MeshBasicMaterial
       material.opacity = Math.max(0, 0.34 * (1 - progress))
@@ -61,13 +128,27 @@ function PromotedSpatialSensoryLayer({
   })
 
   return (
-    <group name="urai-promoted-sensory-layer" data-urai-material-pack={materialPath} data-urai-particle-atlas={particlePath} data-urai-loading-sequence={loadingPath}>
+    <group
+      name="urai-promoted-sensory-layer"
+      data-urai-material-pack={materialPath}
+      data-urai-particle-atlas={particlePath}
+      data-urai-loading-sequence={loadingPath}
+      data-urai-fallback="procedural"
+    >
       <points ref={points} geometry={geometry}>
-        <pointsMaterial map={particleTexture} size={0.42} color={materialPack.materials.memoryViolet.baseColor} transparent opacity={0.34} depthWrite={false} blending={THREE.AdditiveBlending} />
+        <pointsMaterial
+          map={particleTexture ?? undefined}
+          size={0.42}
+          color={particleColor}
+          transparent
+          opacity={0.34}
+          depthWrite={false}
+          blending={THREE.AdditiveBlending}
+        />
       </points>
       <mesh ref={loadingRing} rotation={[Math.PI / 2, 0, 0]} position={[0, -0.72, 0]}>
         <ringGeometry args={[1.2, 1.34, 96]} />
-        <meshBasicMaterial color={materialPack.materials.portalEnergy.emissive} transparent opacity={0.34} depthWrite={false} side={THREE.DoubleSide} />
+        <meshBasicMaterial color={portalColor} transparent opacity={0.34} depthWrite={false} side={THREE.DoubleSide} />
       </mesh>
     </group>
   )
@@ -78,12 +159,11 @@ export default function SpatialSensoryLayer() {
   const particlePath = resolveReadyUraiSensoryAssetPath('particles')
   const loadingPath = resolveReadyUraiSensoryAssetPath('loading')
 
-  if (!materialPath || !particlePath || !loadingPath) {
-    return null
-  }
+  if (!materialPath || !particlePath || !loadingPath) return null
 
   return (
-    <PromotedSpatialSensoryLayer
+    <ReadySpatialSensoryLayer
+      key={`${materialPath}|${particlePath}|${loadingPath}`}
       materialPath={materialPath}
       particlePath={particlePath}
       loadingPath={loadingPath}
