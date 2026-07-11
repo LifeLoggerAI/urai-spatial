@@ -120,11 +120,12 @@ test('target build, clean authority attestation, and production deploy use separ
     'needs: [verify, rollback-verify, attest-release-bundle]',
     'Checkout current release authority only',
     'pnpm install --frozen-lockfile --ignore-scripts',
-    'actions/download-artifact@v4',
+    'actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093',
     'node scripts/live-release.mjs --verify-prebuilt',
     'node scripts/live-release.mjs --deploy-prebuilt',
     'node scripts/urai-release-control-smoke.mjs',
   ]) assert.ok(deployJob.includes(marker), `missing deploy-isolation marker: ${marker}`)
+  assert.doesNotMatch(deployJob, /uses:\s+actions\/download-artifact@v\d/)
   assert.doesNotMatch(deployJob, /path:\s*target/)
   assert.doesNotMatch(deployJob, /working-directory:\s*target/)
   assert.doesNotMatch(deployJob, /pnpm\s+build:static/)
