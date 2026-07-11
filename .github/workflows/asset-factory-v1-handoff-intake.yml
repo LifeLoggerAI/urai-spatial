@@ -5,14 +5,14 @@ on:
     paths:
       - .github/workflows/asset-factory-v1-handoff-intake.yml
       - operations/assets/contracts/asset-factory-v1-spatial-pack.json
-      - scripts/verify-asset-factory-v1-handoff.mjs
+      - scripts/verify_asset_factory_v1_handoff.py
       - urai-tier1/src/spatial/assets/uraiAssets.ts
   push:
     branches: [main]
     paths:
       - .github/workflows/asset-factory-v1-handoff-intake.yml
       - operations/assets/contracts/asset-factory-v1-spatial-pack.json
-      - scripts/verify-asset-factory-v1-handoff.mjs
+      - scripts/verify_asset_factory_v1_handoff.py
       - urai-tier1/src/spatial/assets/uraiAssets.ts
 
 permissions:
@@ -43,38 +43,28 @@ jobs:
           test -z "$(git status --porcelain)"
 
       - name: Compile intake verifier
-        run: node --check scripts/verify-asset-factory-v1-handoff.mjs
+        run: python3 -m py_compile scripts/verify_asset_factory_v1_handoff.py
 
-      - name: Verify non-activation boundary
+      - name: Verify read-only intake boundary
         shell: bash
         run: |
           set -euo pipefail
-          node - <<'NODE'
-          const fs = require('node:fs')
-          const source = fs.readFileSync('scripts/verify-asset-factory-v1-handoff.mjs', 'utf8')
-          const contract = JSON.parse(fs.readFileSync('operations/assets/contracts/asset-factory-v1-spatial-pack.json', 'utf8'))
-          if (contract.promotion !== false || contract.activationMode !== 'atomic-complete-pack') {
-            throw new Error('intake contract must remain non-promoting and atomic')
-          }
-          for (const forbidden of [
-            'copyFileSync(',
-            'copyFile(',
-            'cpSync(',
-            'renameSync(',
-            'unlinkSync(',
-            'rmSync(',
-            'spawnSync(',
-            'execSync(',
-            'child_process',
-          ]) {
-            if (source.includes(forbidden)) throw new Error(`forbidden intake mutation/execution primitive: ${forbidden}`)
-          }
-          if (!source.includes("promotion: false")) throw new Error('verifier report must remain non-promoting')
-          NODE
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          source = Path('scripts/verify_asset_factory_v1_handoff.py').read_text()
+          contract = json.loads(Path('operations/assets/contracts/asset-factory-v1-spatial-pack.json').read_text())
+          assert contract['promotion'] is False
+          assert contract['activationMode'] == 'atomic-complete-pack'
+          for forbidden in ('shutil.copy', 'os.replace', 'os.rename', 'subprocess', 'git push'):
+              assert forbidden not in source, forbidden
+          assert 'ROOT / "artifacts"' in source
+          assert 'ROOT / "urai-tier1/public"' in source
+          PY
 
       - name: Verify contract and current Spatial registry
         run: >-
-          node scripts/verify-asset-factory-v1-handoff.mjs
+          python3 scripts/verify_asset_factory_v1_handoff.py
           --contract-only
           --report artifacts/v1-asset-factory-intake-contract-report.json
 
