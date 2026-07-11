@@ -6,8 +6,10 @@ import { fileURLToPath } from 'node:url'
 
 const SHA_PATTERN = /^[0-9a-f]{40}$/
 const SHA256_PATTERN = /^[0-9a-f]{64}$/
+const RUN_ID_PATTERN = /^\d+$/
 const CANONICAL_ORIGIN = 'https://urai.app'
 const CANONICAL_PROJECT = 'urai-4dc1d'
+const CANONICAL_REPOSITORY = 'LifeLoggerAI/urai-spatial'
 const FINGERPRINT_PATH = '/release-fingerprint.json'
 const MAX_FINGERPRINT_BYTES = 64 * 1024
 
@@ -41,6 +43,7 @@ function requireExactCanonicalOrigin(value) {
 export function validateLiveReleaseFingerprint(candidate, expected = {}) {
   const expectedOrigin = expected.liveOrigin || CANONICAL_ORIGIN
   const expectedProject = expected.firebaseProject || CANONICAL_PROJECT
+  const expectedRepository = expected.repository || CANONICAL_REPOSITORY
   const failures = []
 
   if (!candidate || typeof candidate !== 'object' || Array.isArray(candidate)) {
@@ -48,6 +51,12 @@ export function validateLiveReleaseFingerprint(candidate, expected = {}) {
   }
   if (candidate.schemaVersion !== 'urai-release-fingerprint-1') {
     failures.push('schemaVersion must equal urai-release-fingerprint-1')
+  }
+  if (candidate.repository !== expectedRepository) {
+    failures.push(`repository must equal ${expectedRepository}`)
+  }
+  if (!SHA_PATTERN.test(String(candidate.authoritySha || ''))) {
+    failures.push('authoritySha must be a full lowercase 40-character commit SHA')
   }
   if (!SHA_PATTERN.test(String(candidate.releaseSha || ''))) {
     failures.push('releaseSha must be a full lowercase 40-character commit SHA')
@@ -58,6 +67,12 @@ export function validateLiveReleaseFingerprint(candidate, expected = {}) {
   if (candidate.releaseSha === candidate.rollbackSha) {
     failures.push('releaseSha and rollbackSha must be distinct')
   }
+  if (
+    SHA_PATTERN.test(String(candidate.authoritySha || '')) &&
+    ![candidate.releaseSha, candidate.rollbackSha].includes(candidate.authoritySha)
+  ) {
+    failures.push('authoritySha must equal the release or rollback authority recorded by the fingerprint')
+  }
   if (candidate.firebaseProject !== expectedProject) {
     failures.push(`firebaseProject must equal ${expectedProject}`)
   }
@@ -66,6 +81,12 @@ export function validateLiveReleaseFingerprint(candidate, expected = {}) {
   }
   if (candidate.deploymentScope !== 'hosting-only') {
     failures.push('deploymentScope must equal hosting-only')
+  }
+  if (candidate.certification !== 'pending-post-deploy-smoke') {
+    failures.push('certification must equal pending-post-deploy-smoke')
+  }
+  if (!RUN_ID_PATTERN.test(String(candidate.workflowRunId || ''))) {
+    failures.push('workflowRunId must be a numeric GitHub Actions run identifier')
   }
 
   if (failures.length) {
@@ -82,6 +103,7 @@ export function evaluateLiveRollbackProvenance({
   fingerprint,
   liveOrigin = CANONICAL_ORIGIN,
   firebaseProject = CANONICAL_PROJECT,
+  repository = CANONICAL_REPOSITORY,
 }) {
   if (!['deploy', 'rollback'].includes(operation)) {
     throw new Error(`Unsupported release operation: ${operation || 'missing'}`)
@@ -94,10 +116,14 @@ export function evaluateLiveRollbackProvenance({
   if (firebaseProject !== CANONICAL_PROJECT) {
     throw new Error(`Firebase project must equal ${CANONICAL_PROJECT}`)
   }
+  if (repository !== CANONICAL_REPOSITORY) {
+    throw new Error(`Repository must equal ${CANONICAL_REPOSITORY}`)
+  }
 
   const live = validateLiveReleaseFingerprint(fingerprint, {
     liveOrigin,
     firebaseProject,
+    repository,
   })
 
   if (operation === 'deploy') {
@@ -127,9 +153,11 @@ export function evaluateLiveRollbackProvenance({
     targetSha,
     rollbackSha,
     currentMainSha,
+    liveAuthoritySha: live.authoritySha,
     liveReleaseSha: live.releaseSha,
     liveRollbackSha: live.rollbackSha,
     firebaseProject,
+    repository,
     liveOrigin,
   }
 }
@@ -148,10 +176,14 @@ export async function verifyLiveRollbackProvenance({
   const currentMainSha = String(env.CURRENT_MAIN_SHA || '').trim()
   const firebaseProject = String(env.FIREBASE_PROJECT_ID || '').trim()
   const expectedProject = String(env.URAI_EXPECTED_FIREBASE_PROJECT || CANONICAL_PROJECT).trim()
+  const repository = String(env.GITHUB_REPOSITORY || '').trim()
   const liveOrigin = requireExactCanonicalOrigin(String(env.URAI_LIVE_BASE_URL || env.LIVE_URL || '').trim())
 
   if (firebaseProject !== expectedProject || expectedProject !== CANONICAL_PROJECT) {
     throw new Error(`Live provenance project mismatch: selected ${firebaseProject || 'missing'}, expected ${CANONICAL_PROJECT}`)
+  }
+  if (repository !== CANONICAL_REPOSITORY) {
+    throw new Error(`Live provenance repository mismatch: selected ${repository || 'missing'}, expected ${CANONICAL_REPOSITORY}`)
   }
 
   const fingerprintUrl = new URL(FINGERPRINT_PATH, liveOrigin)
@@ -174,9 +206,13 @@ export async function verifyLiveRollbackProvenance({
   if (response.status !== 200) {
     throw new Error(`Live release fingerprint request failed with HTTP ${response.status}`)
   }
-  const responseOrigin = new URL(response.url || fingerprintUrl).origin
-  if (responseOrigin !== liveOrigin) {
-    throw new Error(`Live release fingerprint resolved outside canonical origin: ${responseOrigin}`)
+  const responseUrl = new URL(response.url || fingerprintUrl)
+  if (responseUrl.toString() !== fingerprintUrl.toString()) {
+    throw new Error(`Live release fingerprint resolved to an unexpected URL: ${responseUrl.toString()}`)
+  }
+  const contentType = response.headers?.get?.('content-type') || ''
+  if (!contentType.toLowerCase().includes('application/json')) {
+    throw new Error(`Live release fingerprint content type must be application/json; received ${contentType || 'missing'}`)
   }
 
   const raw = await response.text()
@@ -198,12 +234,14 @@ export async function verifyLiveRollbackProvenance({
     fingerprint,
     liveOrigin,
     firebaseProject,
+    repository,
   })
 
   const report = {
-    schemaVersion: 'urai-live-rollback-provenance-1',
+    schemaVersion: 'urai-live-rollback-provenance-2',
     verifiedAt: now().toISOString(),
     fingerprintUrl: `${liveOrigin}${FINGERPRINT_PATH}`,
+    fingerprintRequestUrl: fingerprintUrl.toString(),
     fingerprintSha256: createHash('sha256').update(raw).digest('hex'),
     ...result,
   }
@@ -224,11 +262,15 @@ export function runLiveRollbackProvenanceSelfTest() {
   const older = 'c'.repeat(40)
   const fingerprint = {
     schemaVersion: 'urai-release-fingerprint-1',
+    repository: CANONICAL_REPOSITORY,
+    authoritySha: prior,
     releaseSha: prior,
     rollbackSha: older,
     firebaseProject: CANONICAL_PROJECT,
     liveUrl: CANONICAL_ORIGIN,
     deploymentScope: 'hosting-only',
+    certification: 'pending-post-deploy-smoke',
+    workflowRunId: '123456789',
   }
 
   evaluateLiveRollbackProvenance({
@@ -292,6 +334,22 @@ export function runLiveRollbackProvenanceSelfTest() {
     currentMainSha: main,
     fingerprint: { ...fingerprint, rollbackSha: 'manual' },
   }), 'rollbackSha must be a full lowercase')
+
+  expectRejected('unbound authority', () => evaluateLiveRollbackProvenance({
+    operation: 'deploy',
+    targetSha: main,
+    rollbackSha: prior,
+    currentMainSha: main,
+    fingerprint: { ...fingerprint, authoritySha: 'd'.repeat(40) },
+  }), 'authoritySha must equal the release or rollback authority')
+
+  expectRejected('wrong repository', () => evaluateLiveRollbackProvenance({
+    operation: 'deploy',
+    targetSha: main,
+    rollbackSha: prior,
+    currentMainSha: main,
+    fingerprint: { ...fingerprint, repository: 'LifeLoggerAI/UrAi' },
+  }), `repository must equal ${CANONICAL_REPOSITORY}`)
 
   expectRejected('wrong production project', () => evaluateLiveRollbackProvenance({
     operation: 'deploy',
