@@ -293,11 +293,13 @@ if (!bundleAliasSource.includes("import './create-static-release-bundle.mjs'")) 
 
 const credentialBoundarySource = read(credentialBoundaryPath)
 requireTokens('Credential boundary verifier', credentialBoundarySource, [
-  "schemaVersion: 'urai-release-credential-boundary-2'",
+  "schemaVersion: 'urai-release-credential-boundary-4'",
   'targetBuildIsolated: true',
   'authorityAttestationIsolated: true',
   'targetCodeExecutesInProductionJob: false',
-  'prebuiltArtifactHashVerified: true',
+  'downloadedBundleRunBound',
+  'downloadedBundleFingerprintBound',
+  'releaseOperatorFullBundleVerificationPresent',
   'credentialsMaterializedByAuthorityOnly: true',
   'firebaseCliResolvedFromCurrentAuthority: true',
 ])
