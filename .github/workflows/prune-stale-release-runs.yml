@@ -16,3 +16,65 @@ permissions:
 concurrency:
   group: urai-spatial-release-queue-pruner-${{ github.ref }}
   cancel-in-progress: true
+
+jobs:
+  prune:
+    name: Cancel superseded runs for this branch
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Cancel stale runs from the same branch
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const statuses = ['queued', 'in_progress', 'waiting', 'pending', 'requested'];
+            const keepSha = context.sha;
+            const keepRun = context.runId;
+            const keepBranch = context.ref.replace('refs/heads/', '');
+            let inspected = 0;
+            let cancelled = 0;
+            const failures = [];
+
+            for (const status of statuses) {
+              const runs = await github.paginate(
+                github.rest.actions.listWorkflowRunsForRepo,
+                {
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  status,
+                  per_page: 100,
+                },
+              );
+
+              for (const run of runs) {
+                if (run.id === keepRun) continue;
+                if (run.head_branch !== keepBranch) continue;
+                if (run.head_sha === keepSha) continue;
+                inspected += 1;
+                try {
+                  await github.rest.actions.cancelWorkflowRun({
+                    owner: context.repo.owner,
+                    repo: context.repo.repo,
+                    run_id: run.id,
+                  });
+                  cancelled += 1;
+                } catch (error) {
+                  if (error?.status !== 409) {
+                    failures.push(`${run.id}:${error?.status || 'unknown'}`);
+                  }
+                }
+              }
+            }
+
+            await core.summary
+              .addHeading('URAI Spatial branch queue pruning')
+              .addRaw(`Branch preserved: ${keepBranch}\n`)
+              .addRaw(`Exact SHA preserved: ${keepSha}\n`)
+              .addRaw(`Superseded runs inspected: ${inspected}\n`)
+              .addRaw(`Superseded runs cancelled: ${cancelled}\n`)
+              .addRaw(`Unexpected failures: ${failures.length}\n`)
+              .write();
+
+            if (failures.length) {
+              core.setFailed(`Unexpected cancellation failures: ${failures.join(', ')}`);
+            }
