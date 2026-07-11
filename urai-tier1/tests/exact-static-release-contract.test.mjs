@@ -110,8 +110,10 @@ test('release credentials and deploy executable are isolated from target-control
     'delete env.FIREBASE_SERVICE_ACCOUNT_JSON',
     'delete env.GOOGLE_APPLICATION_CREDENTIALS',
     'managedCredentialFilename',
-    'resolveManagedCredentialPath',
+    'function resolveManagedCredentialPath({ required = false } = {})',
+    'resolveManagedCredentialPath({ required: true })',
     'Credential path must stay inside RUNNER_TEMP',
+    'if (required) throw new Error(`Credential path must use the dedicated managed filename',
     '\nremoveTemporaryServiceAccount()\nconst authoritySha',
     'validateAndMaterializePrebuiltBundle',
     'manifest.authoritySha !== authoritySha',
@@ -138,6 +140,8 @@ test('release credentials and deploy executable are isolated from target-control
   assert.match(credentialBoundary, /targetBuildIsolatedOnNoSecretRunner: true/)
   assert.match(credentialBoundary, /targetCodeExecutesInProductionJob: false/)
   assert.match(credentialBoundary, /prebuiltArtifactHashVerified: true/)
+  assert.match(credentialBoundary, /unmanagedLocalCredentialPathsIgnoredDuringVerification: true/)
+  assert.match(credentialBoundary, /managedCredentialPathRequiredForProductionWrite: true/)
   assert.match(credentialBoundary, /managedCredentialPathConstrained: true/)
   assert.match(credentialBoundary, /firebaseCliResolvedFromCurrentAuthority: true/)
   assert.match(credentialBoundary, /staleCredentialsRemovedBeforeAllVerification: true/)
