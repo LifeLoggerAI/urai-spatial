@@ -5,61 +5,81 @@ import fs from 'node:fs'
 import path from 'node:path'
 
 const root = process.cwd()
-const files = {
+const readyFiles = {
   atlas: 'urai-tier1/public/assets/urai/generated/textures/spatial-particle-atlas-v1.svg',
   materials: 'urai-tier1/public/assets/urai/generated/textures/global-cinematic-material-pack-v1.json',
   loading: 'urai-tier1/public/assets/urai/generated/loading/urai-loading-sequence-v1.json',
-  audioScore: 'urai-tier1/public/assets/urai/generated/audio/urai-ambient-bed-v1.json',
-  audioOpus: 'urai-tier1/public/assets/urai/generated/audio/urai-ambient-bed-v1.opus',
+}
+const contractFiles = {
   consumer: 'urai-tier1/src/spatial/scene/SpatialWorldAssetLayer.tsx',
+  component: 'urai-tier1/src/spatial/scene/SpatialSensoryLayer.tsx',
+  manifest: 'urai-tier1/src/spatial/assets/sensoryAssetManifest.ts',
+  receipt: 'operations/assets/production-receipts/sensory-layer-v1.json',
 }
 
-const read = (key) => fs.readFileSync(path.join(root, files[key]))
-const text = (key) => read(key).toString('utf8')
+const readPath = (relative) => fs.readFileSync(path.join(root, relative))
+const textPath = (relative) => readPath(relative).toString('utf8')
 const sha256 = (payload) => crypto.createHash('sha256').update(payload).digest('hex')
 
-const atlas = text('atlas')
+const atlas = textPath(readyFiles.atlas)
 assert.match(atlas, /^<svg[^>]+width="1024"[^>]+height="1024"/)
 assert.match(atlas, /<\/svg>\s*$/)
 assert.equal((atlas.match(/<circle /g) ?? []).length, 4)
-assert.ok(read('atlas').length <= 524288)
+assert.ok(readPath(readyFiles.atlas).length <= 524288)
 
-const materials = JSON.parse(text('materials'))
+const materials = JSON.parse(textPath(readyFiles.materials))
 assert.equal(materials.version, 'global-cinematic-material-pack-v1')
 assert.ok(materials.materials.portalEnergy.baseColor)
-assert.ok(read('materials').length <= 262144)
+assert.ok(readPath(readyFiles.materials).length <= 262144)
 
-const loading = JSON.parse(text('loading'))
+const loading = JSON.parse(textPath(readyFiles.loading))
 assert.equal(loading.version, 'urai-loading-sequence-v1')
 assert.equal(loading.durationMs, 2200)
 assert.equal(loading.frames.at(-1).state, 'complete')
-assert.ok(read('loading').length <= 262144)
+assert.ok(readPath(readyFiles.loading).length <= 262144)
 
-const audio = JSON.parse(text('audioScore'))
-assert.equal(audio.version, 'urai-ambient-bed-v1')
-assert.equal(audio.userControlled, true)
-assert.equal(audio.fallback, 'silent')
-assert.ok(Array.isArray(audio.voices) && audio.voices.length >= 3)
-assert.ok(audio.masterGain > 0 && audio.masterGain <= 1)
+const consumer = textPath(contractFiles.consumer)
+const component = textPath(contractFiles.component)
+const manifest = textPath(contractFiles.manifest)
+const receipt = JSON.parse(textPath(contractFiles.receipt))
 
-const opus = read('audioOpus')
-assert.equal(opus.subarray(0, 4).toString('ascii'), 'OggS')
-assert.ok(opus.includes(Buffer.from('OpusHead', 'ascii')))
-assert.ok(opus.length <= 1048576)
+assert.match(consumer, /import SpatialSensoryLayer from ["']\.\/SpatialSensoryLayer["']/)
+assert.match(consumer, /<SpatialSensoryLayer \/>/)
+assert.doesNotMatch(consumer, /function SpatialSensoryLayer\s*\(/)
+assert.doesNotMatch(consumer, /urai-ambient-bed-v1/)
+assert.equal((component.match(/function SpatialSensoryLayer\s*\(/g) ?? []).length, 1)
 
-const consumer = text('consumer')
-for (const required of [
-  '/assets/urai/generated/textures/spatial-particle-atlas-v1.svg',
-  '/assets/urai/generated/textures/global-cinematic-material-pack-v1.json',
-  '/assets/urai/generated/loading/urai-loading-sequence-v1.json',
-  '/assets/urai/generated/audio/urai-ambient-bed-v1.json',
-  '<SpatialSensoryLayer />',
-]) assert.ok(consumer.includes(required), `Missing route consumption marker: ${required}`)
+for (const key of ['materials', 'particles', 'loading']) {
+  assert.match(manifest, new RegExp(`${key}:[\\s\\S]*status: 'ready'`))
+}
+assert.match(manifest, /skybox:[\s\S]*status: 'candidate'/)
+assert.match(manifest, /ambientAudio:[\s\S]*status: 'candidate'/)
+
+assert.equal(receipt.releaseState, 'candidate')
+assert.equal(receipt.verificationResult, 'pending-exact-head-ci')
+assert.deepEqual(receipt.assets.map((asset) => asset.id).sort(), [
+  'global-cinematic-material-pack-v1',
+  'spatial-particle-atlas-v1',
+  'urai-loading-sequence-v1',
+])
+assert.ok(receipt.assets.every((asset) => asset.status === 'ready'))
+assert.ok(receipt.excludedCandidates.some((asset) => asset.id === 'urai-ambient-bed-v1'))
+assert.ok(receipt.excludedCandidates.some((asset) => asset.id === 'life-map-galaxy-skybox-v1'))
+
+for (const asset of receipt.assets) {
+  const payload = readPath(asset.path)
+  assert.equal(payload.length, asset.bytes, `Byte count mismatch: ${asset.id}`)
+  assert.equal(sha256(payload), asset.sha256, `SHA-256 mismatch: ${asset.id}`)
+}
 
 console.log(JSON.stringify({
   ok: true,
-  files: Object.fromEntries(Object.entries(files).map(([key, relative]) => {
-    const payload = read(key)
+  releaseState: receipt.releaseState,
+  verificationResult: receipt.verificationResult,
+  readyAssets: receipt.assets.map((asset) => asset.id),
+  excludedCandidates: receipt.excludedCandidates.map((asset) => asset.id),
+  files: Object.fromEntries(Object.entries(readyFiles).map(([key, relative]) => {
+    const payload = readPath(relative)
     return [key, { path: relative, bytes: payload.length, sha256: sha256(payload) }]
   })),
 }, null, 2))
