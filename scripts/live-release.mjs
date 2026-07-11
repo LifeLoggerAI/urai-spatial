@@ -204,25 +204,34 @@ function resolveAuthorityFirebaseCli() {
   return resolvedCli
 }
 
-function resolveManagedCredentialPath() {
-  if (!credentialsPath) return null
+function resolveManagedCredentialPath({ required = false } = {}) {
+  if (!credentialsPath) {
+    if (required) throw new Error('GOOGLE_APPLICATION_CREDENTIALS must point to the dedicated managed runner path')
+    return null
+  }
+
   const resolvedCredentialsPath = path.resolve(credentialsPath)
   if (path.basename(resolvedCredentialsPath) !== managedCredentialFilename) {
-    throw new Error(`Credential path must use the dedicated managed filename ${managedCredentialFilename}`)
+    if (required) throw new Error(`Credential path must use the dedicated managed filename ${managedCredentialFilename}`)
+    return null
   }
+
   if (process.env.GITHUB_ACTIONS === 'true') {
-    if (!runnerTemp) throw new Error('RUNNER_TEMP is required for the managed production credential path')
+    if (!runnerTemp) {
+      if (required) throw new Error('RUNNER_TEMP is required for the managed production credential path')
+      return null
+    }
     const expectedCredentialsPath = path.resolve(runnerTemp, managedCredentialFilename)
     if (resolvedCredentialsPath !== expectedCredentialsPath) {
-      throw new Error(`Credential path must stay inside RUNNER_TEMP: ${expectedCredentialsPath}`)
+      if (required) throw new Error(`Credential path must stay inside RUNNER_TEMP: ${expectedCredentialsPath}`)
+      return null
     }
   }
   return resolvedCredentialsPath
 }
 
 function writeTemporaryServiceAccount() {
-  const managedCredentialsPath = resolveManagedCredentialPath()
-  if (!managedCredentialsPath) throw new Error('GOOGLE_APPLICATION_CREDENTIALS must point to the dedicated managed runner path')
+  const managedCredentialsPath = resolveManagedCredentialPath({ required: true })
   if (!serviceAccountJson.trim()) throw new Error('FIREBASE_SERVICE_ACCOUNT_JSON is required only for the canonical deploy step')
 
   let serviceAccount
