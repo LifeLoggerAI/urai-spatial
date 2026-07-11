@@ -40,7 +40,7 @@ export const uraiSensoryAssetManifest = {
     status: 'candidate',
     routes: ['/life-map', '/focus', '/replay'],
     fallback: 'life-map-sky-dome-proof-fallback',
-    license: 'URAI Labs internal production asset',
+    license: 'URAI Labs internal production asset; not promoted without rendered-route proof',
   },
   ambientAudio: {
     id: 'urai-ambient-bed-v1',
@@ -48,7 +48,7 @@ export const uraiSensoryAssetManifest = {
     status: 'candidate',
     routes: ['/home', '/life-map', '/focus', '/replay'],
     fallback: 'silent-audio-with-user-controlled-enable',
-    license: 'URAI Labs internal production asset',
+    license: 'URAI Labs internal production asset; not promoted without rendered-route proof',
   },
 } as const satisfies Record<string, UraiSensoryAssetEntry>
 
