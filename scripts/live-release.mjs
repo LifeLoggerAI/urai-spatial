@@ -1,6 +1,6 @@
 import { createHash } from 'node:crypto'
 import { spawnSync } from 'node:child_process'
-import { existsSync, mkdirSync, readFileSync, readdirSync, writeFileSync } from 'node:fs'
+import { chmodSync, existsSync, mkdirSync, readFileSync, readdirSync, rmSync, writeFileSync } from 'node:fs'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 
@@ -14,21 +14,34 @@ const liveUrl = process.env.URAI_LIVE_BASE_URL || process.env.LIVE_URL || 'https
 const rollbackSha = (process.env.ROLLBACK_SHA || process.env.URAI_ROLLBACK_SHA || '').trim()
 const releaseOperation = process.env.URAI_RELEASE_OPERATION || 'verify'
 const expectedCurrentMain = process.env.CURRENT_MAIN_SHA || ''
+const serviceAccountJson = process.env.FIREBASE_SERVICE_ACCOUNT_JSON || ''
+const credentialsPath = (process.env.GOOGLE_APPLICATION_CREDENTIALS || '').trim()
 const canonicalWorkflow = 'URAI Canonical Production Release'
 const canonicalRepository = 'LifeLoggerAI/urai-spatial'
+
+function childEnvironment(extraEnv = {}, allowCredentialPath = false) {
+  const env = { ...process.env, ...extraEnv }
+  delete env.FIREBASE_SERVICE_ACCOUNT_JSON
+  if (!allowCredentialPath) delete env.GOOGLE_APPLICATION_CREDENTIALS
+  return env
+}
 
 function run(command, args, extraEnv = {}) {
   console.log(`[URAI release] $ ${command} ${args.join(' ')}`)
   const result = spawnSync(command, args, {
     stdio: 'inherit',
     shell: process.platform === 'win32',
-    env: { ...process.env, ...extraEnv },
+    env: childEnvironment(extraEnv),
   })
   if (result.status !== 0) process.exit(result.status ?? 1)
 }
 
 function output(command, args) {
-  const result = spawnSync(command, args, { encoding: 'utf8', shell: process.platform === 'win32' })
+  const result = spawnSync(command, args, {
+    encoding: 'utf8',
+    shell: process.platform === 'win32',
+    env: childEnvironment(),
+  })
   if (result.status !== 0) throw new Error(`${command} ${args.join(' ')} failed`)
   return result.stdout.trim()
 }
@@ -125,6 +138,50 @@ function assertCanonicalDeployContext() {
   if (!['deploy', 'rollback'].includes(releaseOperation)) throw new Error(`Unsupported release operation: ${releaseOperation}`)
 }
 
+function writeTemporaryServiceAccount() {
+  if (!credentialsPath) throw new Error('GOOGLE_APPLICATION_CREDENTIALS must point to a temporary runner path')
+  if (!serviceAccountJson.trim()) throw new Error('FIREBASE_SERVICE_ACCOUNT_JSON is required only for the canonical deploy step')
+
+  let serviceAccount
+  try {
+    serviceAccount = JSON.parse(serviceAccountJson)
+  } catch {
+    throw new Error('FIREBASE_SERVICE_ACCOUNT_JSON must be valid JSON')
+  }
+  if (serviceAccount?.project_id !== expectedProject) {
+    throw new Error(`Service-account project mismatch: ${serviceAccount?.project_id || 'missing'}`)
+  }
+
+  mkdirSync(path.dirname(credentialsPath), { recursive: true })
+  writeFileSync(credentialsPath, `${JSON.stringify(serviceAccount)}\n`, { encoding: 'utf8', mode: 0o600 })
+  chmodSync(credentialsPath, 0o600)
+  return credentialsPath
+}
+
+function removeTemporaryServiceAccount() {
+  if (credentialsPath) rmSync(credentialsPath, { force: true })
+}
+
+function deployHostingWithTemporaryCredentials() {
+  const credentialFile = writeTemporaryServiceAccount()
+  let result
+  try {
+    console.log(`[URAI release] $ pnpm exec firebase deploy --config firebase.static.json --only hosting --project ${project}`)
+    result = spawnSync(
+      'pnpm',
+      ['exec', 'firebase', 'deploy', '--config', 'firebase.static.json', '--only', 'hosting', '--project', project],
+      {
+        stdio: 'inherit',
+        shell: process.platform === 'win32',
+        env: childEnvironment({ GOOGLE_APPLICATION_CREDENTIALS: credentialFile }, true),
+      },
+    )
+  } finally {
+    removeTemporaryServiceAccount()
+  }
+  if (result?.status !== 0) process.exit(result?.status ?? 1)
+}
+
 function writeReceipt(targetSha, status, details = {}) {
   const directory = path.join('deployment-receipt', targetSha)
   mkdirSync(directory, { recursive: true })
@@ -166,6 +223,7 @@ if (!deploy) {
 }
 
 assertCanonicalDeployContext()
+removeTemporaryServiceAccount()
 if (process.env.URAI_DEPLOY_CONFIRM !== 'DEPLOY_STATIC_URAI') {
   throw new Error('Static deployment requires URAI_DEPLOY_CONFIRM=DEPLOY_STATIC_URAI')
 }
@@ -204,7 +262,7 @@ const receiptPath = writeReceipt(targetSha, 'built-awaiting-deploy', {
 })
 
 const preDeployMainSha = assertRemoteMainUnchanged(targetSha)
-run('pnpm', ['exec', 'firebase', 'deploy', '--config', 'firebase.static.json', '--only', 'hosting', '--project', project])
+deployHostingWithTemporaryCredentials()
 if (liveUrl) run('node', [postDeploySmoke], {
   URAI_DEPLOY_URL: liveUrl,
   URAI_EXPECTED_DEPLOYED_SHA: targetSha,
