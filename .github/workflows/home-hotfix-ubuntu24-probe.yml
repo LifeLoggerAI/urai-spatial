@@ -1,0 +1,73 @@
+name: Home Hotfix Ubuntu 24 Probe
+
+on:
+  push:
+    branches:
+      - diagnostics/home-hotfix-ubuntu24-probe-20260711
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: home-hotfix-ubuntu24-probe-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  NODE_VERSION: '22'
+  PNPM_VERSION: '10.0.0'
+  NEXT_PUBLIC_URAI_BUILD_SHA: ${{ github.sha }}
+
+jobs:
+  verify-home-hotfix:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    steps:
+      - name: Checkout exact probe head
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Prove exact head
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "${GITHUB_SHA}"
+          test -z "$(git status --porcelain)"
+      - name: Set up Node
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+      - name: Enable pnpm
+        shell: bash
+        run: |
+          set -euo pipefail
+          corepack enable
+          corepack prepare "pnpm@${PNPM_VERSION}" --activate
+      - name: Install frozen dependencies
+        run: pnpm install --frozen-lockfile
+      - name: Verify route layering regression contract
+        run: node --test urai-tier1/tests/route-layering-hotfix-contract.test.mjs
+      - name: Typecheck Tier1
+        run: pnpm --dir urai-tier1 typecheck
+      - name: Build exact probe head
+        run: pnpm --dir urai-tier1 build
+      - name: Record probe evidence
+        if: always()
+        shell: bash
+        run: |
+          mkdir -p probe-evidence
+          {
+            echo "probe_sha=${GITHUB_SHA}"
+            echo "runner_label=ubuntu-24.04"
+            echo "home_hotfix_commit=791416e7cee781d482ef8225e3bef1097532a64d"
+            echo "main_at_probe_start=60730edcb5bcedfe2ded2cee9a96cef96dff9510"
+          } > probe-evidence/home-hotfix-ubuntu24.txt
+      - name: Upload probe evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: home-hotfix-ubuntu24-${{ github.sha }}
+          path: probe-evidence/
+          if-no-files-found: error
+          retention-days: 14
