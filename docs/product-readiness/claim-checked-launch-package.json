@@ -1,5 +1,5 @@
 {
-  "schemaVersion": 4,
+  "schemaVersion": 5,
   "receiptId": "URAI-WSD-20260711-LAUNCH-PACKAGE-001",
   "evidenceDate": "2026-07-11",
   "repository": "LifeLoggerAI/urai-spatial",
@@ -61,34 +61,52 @@
   "currentCandidates": {
     "analyticsRepair": {
       "pullRequest": 553,
-      "headSha": "b7a145809d64cf2616f60657d5a1be78b4d03765",
+      "headSha": "5bb85f8764dbe58f4bd75e853fe30012ad1ef977",
+      "parentSha": "60730edcb5bcedfe2ded2cee9a96cef96dff9510",
+      "compare": "1-ahead-0-behind",
+      "changedFiles": 4,
       "workflowState": "13-queued",
+      "representativeJobId": 86579605594,
       "providerActivationApproved": false,
       "persistedAnalyticsHistory": false,
       "persistedRawPacketHistory": false,
-      "staleAgainstCurrentMain": true
+      "staleAgainstCurrentMain": false
     },
     "privacyPreview": {
       "pullRequest": 554,
-      "headSha": "57cb67a3429ca8273c08a486b3a2b605b6127631",
+      "headSha": "972616b92536108818ca0965e543bae2ae322c6c",
+      "parentSha": "60730edcb5bcedfe2ded2cee9a96cef96dff9510",
+      "compare": "1-ahead-0-behind",
+      "changedFiles": 5,
+      "workflowState": "14-queued",
+      "representativeJobId": 86579719390,
       "operationalControlsProven": false,
-      "staleAgainstCurrentMain": true
+      "staleAgainstCurrentMain": false
     },
     "guidedDemo": {
       "pullRequest": 555,
-      "headSha": "906ccb3f6b8254e9deecbec78ac6c9dd7a38d6b5",
+      "headSha": "212126a90920c5601f858175556ae319bc349ae8",
       "parentPullRequest": 554,
+      "parentHeadSha": "972616b92536108818ca0965e543bae2ae322c6c",
+      "compare": "1-ahead-0-behind-parent",
+      "changedFiles": 4,
       "workflowState": "5-queued",
+      "representativeJobId": 86579803002,
       "state": "optional-guided-demo",
       "persistence": "none",
       "routeTriggerContinuity": true,
-      "staleAgainstCurrentMain": true
+      "staleAgainstCurrentMain": false
     },
     "discoverability": {
       "pullRequest": 557,
-      "headSha": "96b2d3a21087e4cc5c6e1c739d9017ac318cb85a",
+      "headSha": "3d6354fa44d784334645c86151b158edd1f1c4d6",
+      "parentSha": "60730edcb5bcedfe2ded2cee9a96cef96dff9510",
+      "compare": "1-ahead-0-behind",
+      "changedFiles": 6,
+      "workflowState": "16-queued",
+      "representativeJobId": 86579905399,
       "publicIndexingApproved": false,
-      "staleAgainstCurrentMain": true
+      "staleAgainstCurrentMain": false
     },
     "releaseCredentialBoundary": {
       "pullRequest": 552,
@@ -128,10 +146,6 @@
       "headSha": "7896f75c340f2ea3e046529eb2ea6c55255b7231",
       "state": "draft-uncertified",
       "mountRelativeLoadingTiming": true
-    },
-    "redundantSensoryRepair": {
-      "pullRequest": 563,
-      "state": "closed-unmerged-not-authority"
     }
   },
   "assetIntake": {
