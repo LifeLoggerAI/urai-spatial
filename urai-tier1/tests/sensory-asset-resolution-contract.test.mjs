@@ -46,3 +46,13 @@ test('sensory fallbacks remain explicit and activation is fail-closed', () => {
   assert.match(manifest, /accessible-static-loading-state/)
   assert.match(manifest, /return asset\.status === 'ready' \? asset\.path : null/)
 })
+
+test('missing promoted sensory paths preserve the procedural world instead of crashing module import', () => {
+  assert.doesNotMatch(sensoryLayer, /throw new Error\(['"]URAI sensory assets are not promoted['"]\)/)
+  assert.match(
+    sensoryLayer,
+    /if \(!materialPath \|\| !particlePath \|\| !loadingPath\) \{\s*return null\s*\}/,
+  )
+  assert.match(sensoryLayer, /type PromotedSpatialSensoryLayerProps = \{[\s\S]*materialPath: string[\s\S]*particlePath: string[\s\S]*loadingPath: string/)
+  assert.match(sensoryLayer, /<PromotedSpatialSensoryLayer[\s\S]*materialPath=\{materialPath\}[\s\S]*particlePath=\{particlePath\}[\s\S]*loadingPath=\{loadingPath\}/)
+})
