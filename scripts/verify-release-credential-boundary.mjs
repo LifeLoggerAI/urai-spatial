@@ -6,9 +6,10 @@ const root = process.cwd()
 const workflowPath = path.join(root, '.github', 'workflows', 'spatial-live-deploy.yml')
 const operatorPath = path.join(root, 'scripts', 'live-release.mjs')
 const bundlePath = path.join(root, 'scripts', 'create-static-release-bundle.mjs')
-const workflow = readFileSync(workflowPath, 'utf8')
-const operator = readFileSync(operatorPath, 'utf8')
-const bundleBuilder = readFileSync(bundlePath, 'utf8')
+const normalizeNewlines = (source) => source.replace(/\r\n?/g, '\n')
+const workflow = normalizeNewlines(readFileSync(workflowPath, 'utf8'))
+const operator = normalizeNewlines(readFileSync(operatorPath, 'utf8'))
+const bundleBuilder = normalizeNewlines(readFileSync(bundlePath, 'utf8'))
 const failures = []
 
 function requireMarker(label, source, marker) {
@@ -41,7 +42,9 @@ if (prepareJob.includes(secretMarker)) failures.push('The no-secret bundle job m
 
 const deployStepsStart = deployJob.indexOf('\n    steps:')
 const deployJobEnvironment = deployStepsStart >= 0 ? deployJob.slice(0, deployStepsStart) : deployJob
-if (deployJobEnvironment.includes('FIREBASE_SERVICE_ACCOUNT_JSON')) {
+if (!deployJob || deployStepsStart < 0) {
+  failures.push('Workflow is missing the protected deploy job steps definition')
+} else if (deployJobEnvironment.includes('FIREBASE_SERVICE_ACCOUNT_JSON')) {
   failures.push('Workflow exposes the raw service-account secret at deploy-job scope')
 }
 
@@ -123,6 +126,9 @@ for (const marker of [
   'delete process.env.GOOGLE_APPLICATION_CREDENTIALS',
   'delete env.FIREBASE_SERVICE_ACCOUNT_JSON',
   'delete env.GOOGLE_APPLICATION_CREDENTIALS',
+  'const managedCredentialFilename',
+  'function resolveManagedCredentialPath()',
+  'Credential path must stay inside RUNNER_TEMP',
   'function validateAndMaterializePrebuiltBundle',
   "manifest.schemaVersion !== 'urai-static-release-bundle-1'",
   'manifest.authoritySha !== authoritySha',
@@ -138,22 +144,29 @@ for (const marker of [
   'childEnvironment({ GOOGLE_APPLICATION_CREDENTIALS: credentialFile }, true)',
   'spawnSync(\n      authorityFirebaseCli',
   'shell: false',
-  'if (deploy) removeTemporaryServiceAccount()',
+  '\nremoveTemporaryServiceAccount()\nconst authoritySha',
   'finally {\n    removeTemporaryServiceAccount()',
 ]) requireMarker('Release operator', operator, marker)
 
 forbid('Release operator', operator, /pnpm\s+exec\s+firebase/, 'target/package-manager-resolved Firebase CLI')
 forbid('Release operator', operator, /spawnSync\(\s*['"]pnpm['"][\s\S]{0,200}['"]firebase['"]/, 'pnpm-spawned Firebase CLI')
 
+const unconditionalCleanupIndex = operator.indexOf('\nremoveTemporaryServiceAccount()\nconst authoritySha')
+const authorityResolutionIndex = operator.indexOf('const authoritySha = resolveAuthoritySha()')
 const readOnlyVerifyIndex = operator.indexOf('validateAndMaterializePrebuiltBundle(targetSha, authoritySha, false)')
 const protectedMaterializeIndex = operator.lastIndexOf('validateAndMaterializePrebuiltBundle(targetSha, authoritySha)')
 const credentialMaterializeIndex = operator.indexOf('const credentialFile = writeTemporaryServiceAccount()')
 const firebaseSpawnIndex = operator.indexOf('spawnSync(\n      authorityFirebaseCli', credentialMaterializeIndex)
 const cleanupIndex = operator.indexOf('finally {\n    removeTemporaryServiceAccount()', credentialMaterializeIndex)
-if ([readOnlyVerifyIndex, protectedMaterializeIndex, credentialMaterializeIndex, firebaseSpawnIndex, cleanupIndex].some((index) => index < 0)) {
-  failures.push('Release operator is missing read-only verification or protected materialize/deploy cleanup')
-} else if (!(readOnlyVerifyIndex < protectedMaterializeIndex && protectedMaterializeIndex < credentialMaterializeIndex && credentialMaterializeIndex < firebaseSpawnIndex && firebaseSpawnIndex < cleanupIndex)) {
-  failures.push('Release operator must verify read-only first, materialize verified bytes, then scope credentials only around authority Firebase execution')
+if ([unconditionalCleanupIndex, authorityResolutionIndex, readOnlyVerifyIndex, protectedMaterializeIndex, credentialMaterializeIndex, firebaseSpawnIndex, cleanupIndex].some((index) => index < 0)) {
+  failures.push('Release operator is missing unconditional cleanup, read-only verification, or protected materialize/deploy cleanup')
+} else if (!(unconditionalCleanupIndex < authorityResolutionIndex &&
+  authorityResolutionIndex < readOnlyVerifyIndex &&
+  readOnlyVerifyIndex < protectedMaterializeIndex &&
+  protectedMaterializeIndex < credentialMaterializeIndex &&
+  credentialMaterializeIndex < firebaseSpawnIndex &&
+  firebaseSpawnIndex < cleanupIndex)) {
+  failures.push('Release operator must clean managed credentials before verification, verify read-only, materialize verified bytes, then scope credentials only around authority Firebase execution')
 }
 
 for (const marker of [
@@ -173,12 +186,14 @@ const report = {
   ok: failures.length === 0,
   secretOccurrences,
   rawSecretJobScoped: deployJobEnvironment.includes('FIREBASE_SERVICE_ACCOUNT_JSON'),
+  lineEndingsNormalized: true,
   targetBuildIsolatedOnNoSecretRunner: true,
   targetCodeExecutesInProductionJob: false,
   prebuiltArtifactHashVerified: true,
   credentialsMaterializedByAuthorityOnly: true,
+  managedCredentialPathConstrained: true,
   firebaseCliResolvedFromCurrentAuthority: true,
-  staleCredentialsRemovedBeforeProtectedExecution: true,
+  staleCredentialsRemovedBeforeAllVerification: true,
   materializationCoveredByCleanup: true,
   targetCommandsReceiveRawSecret: false,
   targetCommandsReceiveCredentialPath: false,
