@@ -7,6 +7,7 @@ const deploy = process.argv.includes('--deploy')
 const project = process.env.FIREBASE_PROJECT_ID || process.env.FIREBASE_PROJECT || process.env.GCLOUD_PROJECT || ''
 const expectedProject = process.env.URAI_EXPECTED_FIREBASE_PROJECT || 'urai-4dc1d'
 const liveUrl = process.env.URAI_LIVE_BASE_URL || process.env.LIVE_URL || 'https://urai.app'
+const rollbackSha = (process.env.ROLLBACK_SHA || process.env.URAI_ROLLBACK_SHA || '').trim()
 
 function run(command, args, extraEnv = {}) {
   console.log(`[URAI release] $ ${command} ${args.join(' ')}`)
@@ -70,6 +71,7 @@ function assertReleaseSurface() {
     'docs/URAI_SPATIAL_DONE_DONE_LOCK.md',
     'docs/contracts/URAI_STUDIO_SPATIAL_HANDOFF.md',
     'urai-tier1/src/app/layout.tsx',
+    'scripts/write-release-fingerprint.mjs',
   ]) requireFile(file)
   assertStaticConfig()
 }
@@ -78,10 +80,11 @@ function writeReceipt(targetSha, status, details = {}) {
   const directory = path.join('deployment-receipt', targetSha)
   mkdirSync(directory, { recursive: true })
   const receipt = {
-    schemaVersion: 'urai-static-release-receipt-1',
+    schemaVersion: 'urai-static-release-receipt-2',
     generatedAt: new Date().toISOString(),
     repository: process.env.GITHUB_REPOSITORY || 'LifeLoggerAI/urai-spatial',
     targetSha,
+    rollbackSha: rollbackSha || null,
     firebaseProject: project || null,
     liveUrl: liveUrl || null,
     status,
@@ -92,7 +95,7 @@ function writeReceipt(targetSha, status, details = {}) {
   const receiptPath = path.join(directory, 'receipt.json')
   writeFileSync(receiptPath, `${JSON.stringify(receipt, null, 2)}\n`)
   if (process.env.GITHUB_STEP_SUMMARY) {
-    const summary = `\n## URAI static release\n\n- SHA: \`${targetSha}\`\n- Project: \`${project || 'not set'}\`\n- Scope: Hosting only\n- Status: **${status}**\n- Receipt: \`${receiptPath}\`\n`
+    const summary = `\n## URAI static release\n\n- SHA: \`${targetSha}\`\n- Rollback: \`${rollbackSha || 'not set'}\`\n- Project: \`${project || 'not set'}\`\n- Scope: Hosting only\n- Status: **${status}**\n- Receipt: \`${receiptPath}\`\n`
     writeFileSync(process.env.GITHUB_STEP_SUMMARY, summary, { flag: 'a' })
   }
   return receiptPath
@@ -116,26 +119,47 @@ if (process.env.GITHUB_ACTIONS === 'true' && process.env.GITHUB_EVENT_NAME !== '
 }
 if (!project) throw new Error('FIREBASE_PROJECT_ID is required')
 if (project !== expectedProject) throw new Error(`Refusing project ${project}; expected ${expectedProject}`)
+if (!/^[0-9a-f]{40}$/.test(rollbackSha)) throw new Error('ROLLBACK_SHA must be a full lowercase 40-character commit SHA')
+if (rollbackSha === targetSha) throw new Error('ROLLBACK_SHA must be distinct from the release SHA')
 
-run('pnpm', ['build:static'], { NEXT_PUBLIC_URAI_BUILD_SHA: targetSha })
+run('node', ['scripts/write-release-fingerprint.mjs'], {
+  NEXT_PUBLIC_URAI_BUILD_SHA: targetSha,
+  URAI_TARGET_SHA: targetSha,
+  ROLLBACK_SHA: rollbackSha,
+  FIREBASE_PROJECT_ID: project,
+  URAI_EXPECTED_FIREBASE_PROJECT: expectedProject,
+  URAI_LIVE_BASE_URL: liveUrl,
+})
+run('pnpm', ['build:static'], { NEXT_PUBLIC_URAI_BUILD_SHA: targetSha, ROLLBACK_SHA: rollbackSha })
 requireFile('urai-tier1/out/index.html')
+requireFile('urai-tier1/out/release-fingerprint.json')
 const files = walk('urai-tier1/out')
 const htmlFiles = files.filter((file) => file.endsWith('.html'))
 if (!htmlFiles.some((file) => readFileSync(file, 'utf8').includes(targetSha))) {
   throw new Error('Static output does not contain the exact release SHA')
 }
+const fingerprint = JSON.parse(readFileSync('urai-tier1/out/release-fingerprint.json', 'utf8'))
+if (fingerprint.releaseSha !== targetSha || fingerprint.rollbackSha !== rollbackSha) {
+  throw new Error('Static release fingerprint does not match release and rollback SHAs')
+}
 const receiptPath = writeReceipt(targetSha, 'built-awaiting-deploy', {
   outputFileCount: files.length,
   htmlFileCount: htmlFiles.length,
   indexSha256: sha256('urai-tier1/out/index.html'),
+  fingerprintSha256: sha256('urai-tier1/out/release-fingerprint.json'),
 })
 
 run('pnpm', ['exec', 'firebase', 'deploy', '--config', 'firebase.static.json', '--only', 'hosting', '--project', project])
-if (liveUrl) run('node', ['scripts/urai-post-deploy-smoke.mjs'], { URAI_DEPLOY_URL: liveUrl, URAI_EXPECTED_DEPLOYED_SHA: targetSha })
+if (liveUrl) run('node', ['scripts/urai-post-deploy-smoke.mjs'], {
+  URAI_DEPLOY_URL: liveUrl,
+  URAI_EXPECTED_DEPLOYED_SHA: targetSha,
+  URAI_EXPECTED_ROLLBACK_SHA: rollbackSha,
+})
 writeReceipt(targetSha, 'deployed', {
   outputFileCount: files.length,
   htmlFileCount: htmlFiles.length,
   indexSha256: sha256('urai-tier1/out/index.html'),
+  fingerprintSha256: sha256('urai-tier1/out/release-fingerprint.json'),
   previousReceipt: receiptPath,
 })
 console.log('[URAI release] Static Hosting deployment completed.')
