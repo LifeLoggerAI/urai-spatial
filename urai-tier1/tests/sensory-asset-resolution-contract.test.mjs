@@ -60,6 +60,14 @@ test('sensory fallbacks remain explicit, abortable, null-safe, and fail-closed',
   assert.doesNotMatch(sensoryLayer, /throw new Error\('URAI sensory assets are not promoted'\)/)
 })
 
+test('loading sequence progress starts at sensory-layer mount, not scene boot', () => {
+  assert.match(sensoryLayer, /const loadingStartedAt = useRef<number \| null>\(null\)/)
+  assert.match(sensoryLayer, /if \(loadingStartedAt\.current === null\) loadingStartedAt\.current = clock\.elapsedTime/)
+  assert.match(sensoryLayer, /\(clock\.elapsedTime - loadingStartedAt\.current\) \* 1000/)
+  assert.match(sensoryLayer, /Math\.max\(0, [\s\S]*elapsedSinceMountMs/)
+  assert.doesNotMatch(sensoryLayer, /\(clock\.elapsedTime \* 1000\) \/ loadingDurationMs/)
+})
+
 test('candidate ambient audio is not mounted as a production asset', () => {
   assert.doesNotMatch(sensoryLayer, /urai-ambient-bed-v1/)
   assert.doesNotMatch(worldLayer, /urai-ambient-bed-v1/)
