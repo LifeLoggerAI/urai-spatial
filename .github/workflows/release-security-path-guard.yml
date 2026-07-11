@@ -12,6 +12,7 @@ on:
       - 'scripts/verify-release-credential-boundary.mjs'
       - 'scripts/verify-release-credential-boundary-static.mjs'
       - 'scripts/verify-release-security-path-guard.mjs'
+      - 'scripts/verify-production-action-pins.mjs'
       - 'scripts/audit-production-workflow-authority.mjs'
       - 'scripts/urai-release-control-smoke.mjs'
       - 'scripts/urai-post-deploy-smoke.mjs'
@@ -31,6 +32,7 @@ on:
       - 'scripts/verify-release-credential-boundary.mjs'
       - 'scripts/verify-release-credential-boundary-static.mjs'
       - 'scripts/verify-release-security-path-guard.mjs'
+      - 'scripts/verify-production-action-pins.mjs'
       - 'scripts/audit-production-workflow-authority.mjs'
       - 'scripts/urai-release-control-smoke.mjs'
       - 'scripts/urai-post-deploy-smoke.mjs'
@@ -83,12 +85,15 @@ jobs:
           node --check scripts/verify-release-credential-boundary.mjs
           node --check scripts/verify-release-credential-boundary-static.mjs
           node --check scripts/verify-release-security-path-guard.mjs
+          node --check scripts/verify-production-action-pins.mjs
           node --check scripts/audit-production-workflow-authority.mjs
           node --check scripts/urai-release-control-smoke.mjs
           node --check scripts/urai-post-deploy-smoke.mjs
           node --check urai-tier1/tests/exact-static-release-contract.test.mjs
       - name: Verify this guard is immutable and least-privileged
         run: node scripts/verify-release-security-path-guard.mjs
+      - name: Verify protected workflow action pins
+        run: node scripts/verify-production-action-pins.mjs
       - name: Audit production workflow authority
         run: node scripts/audit-production-workflow-authority.mjs
       - name: Verify release credential boundary
