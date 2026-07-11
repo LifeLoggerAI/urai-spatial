@@ -1,0 +1,56 @@
+{
+  "schemaVersion": 1,
+  "receiptId": "URAI-WSD-20260711-LAM-001",
+  "evidenceDate": "2026-07-11",
+  "repository": "LifeLoggerAI/urai-spatial",
+  "sourceSha": "60730edcb5bcedfe2ded2cee9a96cef96dff9510",
+  "stackedParentSha": "277347c517290c9dee9d660b1877fdb817b7024b",
+  "branch": "ws-d/launch-measurement-metadata-20260711",
+  "sourceDeltaSincePriorAudit": {
+    "inspectedLaneFilesChanged": false,
+    "changedScope": "asset-intake-workflow-contract-verifier-only"
+  },
+  "lanes": {
+    "localization": {
+      "verdict": "unknown-not-approved",
+      "observedDocumentLanguage": "en",
+      "canonicalRuntimeIdentified": false,
+      "reviewedLocales": [],
+      "supportedLanguageClaimApproved": false
+    },
+    "analytics": {
+      "verdict": "blocked-raw-payload-boundary",
+      "activeExternalExportProven": false,
+      "rawCommunicationPacketRetained": true,
+      "packetPayloadType": "unknown",
+      "consentGateIdentifiedInInspectedBridge": false,
+      "prohibitedPropertyControlIdentified": false,
+      "redactionIdentified": false,
+      "retentionContractIdentified": false,
+      "eventDictionaryApproved": false,
+      "candidateRemediationPullRequest": 553,
+      "candidateMergedIntoSourceBaseline": false
+    },
+    "metadata": {
+      "verdict": "partial-source-implementation-not-accepted",
+      "rootTitlePresent": true,
+      "rootDescriptionPresent": true,
+      "rootIconPresent": true,
+      "routeSpecificMetadataObserved": true,
+      "metadataBaseIdentified": false,
+      "canonicalMetadataIdentified": false,
+      "openGraphIdentified": false,
+      "twitterMetadataIdentified": false,
+      "robotsAppRouteFound": false,
+      "sitemapAppRouteFound": false,
+      "manifestAppRouteFound": false,
+      "pwaClaimApproved": false,
+      "indexingCompletenessClaimApproved": false,
+      "socialSharingCompletenessClaimApproved": false
+    }
+  },
+  "runtimeMutation": false,
+  "deploymentMutation": false,
+  "providerCalls": 0,
+  "externalPublication": false
+}
