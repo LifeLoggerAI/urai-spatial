@@ -22,12 +22,14 @@ const results = files.map((relativePath) => {
 
 const materialPack = JSON.parse(fs.readFileSync(path.join(root, files[0]), 'utf8'))
 assert.equal(materialPack.schemaVersion, 1)
+assert.equal(materialPack.version, 'global-cinematic-material-pack-v1')
 assert.ok(materialPack.materials.portalEnergy)
 assert.ok(materialPack.materials.memoryViolet)
 
 const particleAtlas = fs.readFileSync(path.join(root, files[1]), 'utf8')
 assert.match(particleAtlas, /width="1024" height="1024"/)
 assert.match(particleAtlas, /radialGradient/)
+assert.equal((particleAtlas.match(/<circle /g) ?? []).length, 4)
 
 const loadingSequence = JSON.parse(fs.readFileSync(path.join(root, files[2]), 'utf8'))
 assert.equal(loadingSequence.durationMs, 2200)
@@ -42,18 +44,36 @@ const receipt = JSON.parse(fs.readFileSync(path.join(root, 'operations/assets/pr
 for (const id of ['global-cinematic-material-pack-v1', 'spatial-particle-atlas-v1', 'urai-loading-sequence-v1']) {
   assert.match(sensoryManifest, new RegExp(id))
 }
-assert.match(sensoryLayer, /useTexture\(particlePath\)/)
-assert.match(sensoryLayer, /useLoader\(THREE\.FileLoader, materialPath\)/)
-assert.match(sensoryLayer, /useLoader\(THREE\.FileLoader, loadingPath\)/)
+assert.match(sensoryLayer, /if \(!materialPath \|\| !particlePath \|\| !loadingPath\) return null/)
+assert.match(sensoryLayer, /new THREE\.TextureLoader\(\)/)
+assert.match(sensoryLayer, /fetch\(materialPath\)/)
+assert.match(sensoryLayer, /fetch\(loadingPath\)/)
+assert.ok(sensoryLayer.includes('key={`${materialPath}|${particlePath}|${loadingPath}`}'))
+assert.doesNotMatch(sensoryLayer, /Promise\.all/)
+assert.doesNotMatch(sensoryLayer, /throw new Error\('URAI sensory assets are not promoted'\)/)
 assert.match(worldLayer, /import SpatialSensoryLayer from ["']\.\/SpatialSensoryLayer["']/)
 assert.match(worldLayer, /<SpatialSensoryLayer \/>/)
 assert.doesNotMatch(worldLayer, /function SpatialSensoryLayer\s*\(/)
 assert.doesNotMatch(worldLayer, /urai-ambient-bed-v1/)
 assert.match(sensoryManifest, /skybox:[\s\S]*status: 'candidate'/)
 assert.match(sensoryManifest, /ambientAudio:[\s\S]*status: 'candidate'/)
+
 assert.equal(receipt.releaseState, 'candidate')
 assert.equal(receipt.verificationResult, 'pending-exact-head-ci')
+assert.equal(receipt.assets.length, results.length)
+for (const result of results) {
+  const entry = receipt.assets.find((asset) => asset.path === result.path)
+  assert.ok(entry, `Missing receipt entry: ${result.path}`)
+  assert.equal(entry.status, 'ready')
+  assert.equal(entry.bytes, result.bytes)
+  assert.equal(entry.sha256, result.sha256)
+}
 assert.ok(receipt.excludedCandidates.some((asset) => asset.id === 'urai-ambient-bed-v1'))
 assert.ok(receipt.excludedCandidates.some((asset) => asset.id === 'life-map-galaxy-skybox-v1'))
 
-console.log(JSON.stringify({ ok: true, releaseState: receipt.releaseState, assets: results }, null, 2))
+console.log(JSON.stringify({
+  ok: true,
+  releaseState: receipt.releaseState,
+  verificationResult: receipt.verificationResult,
+  assets: results,
+}, null, 2))
