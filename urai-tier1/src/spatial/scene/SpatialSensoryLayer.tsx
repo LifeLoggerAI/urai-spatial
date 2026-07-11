@@ -27,6 +27,7 @@ const DEFAULT_LOADING_DURATION_MS = 2200
 function ReadySpatialSensoryLayer({ materialPath, particlePath, loadingPath }: ReadySensoryPaths) {
   const points = useRef<THREE.Points>(null)
   const loadingRing = useRef<THREE.Mesh>(null)
+  const loadingStartedAtMs = useRef<number | null>(null)
   const [particleTexture, setParticleTexture] = useState<THREE.Texture | null>(null)
   const [particleColor, setParticleColor] = useState(DEFAULT_PARTICLE_COLOR)
   const [portalColor, setPortalColor] = useState(DEFAULT_PORTAL_COLOR)
@@ -113,7 +114,12 @@ function ReadySpatialSensoryLayer({ materialPath, particlePath, loadingPath }: R
   useFrame(({ clock }) => {
     if (points.current) points.current.rotation.y = clock.elapsedTime * 0.018
     if (loadingRing.current) {
-      const progress = Math.min(1, (clock.elapsedTime * 1000) / loadingDurationMs)
+      const elapsedMs = clock.elapsedTime * 1000
+      if (loadingStartedAtMs.current === null) loadingStartedAtMs.current = elapsedMs
+      const progress = Math.min(
+        1,
+        Math.max(0, (elapsedMs - loadingStartedAtMs.current) / loadingDurationMs),
+      )
       loadingRing.current.scale.setScalar(0.7 + progress * 0.45)
       const material = loadingRing.current.material as THREE.MeshBasicMaterial
       material.opacity = Math.max(0, 0.34 * (1 - progress))
