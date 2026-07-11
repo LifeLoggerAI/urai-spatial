@@ -1,0 +1,19 @@
+{
+  "schemaVersion": 2,
+  "id": "portal-ring-master-v1",
+  "releaseState": "ready-local-evidence",
+  "sourceMain": "30200c15f1c7204cb1e8bf2d1978630aefb1db94",
+  "path": "urai-tier1/public/assets/urai/generated/models/portal-ring-master-v1.glb",
+  "bytes": 9688,
+  "sha256": "d2943d90579e2567c328ff07aab9b6544b8facba39bc55f105e54ebfbdc3045b",
+  "triangles": 1560,
+  "maxTriangles": 24000,
+  "withinTriangleBudget": true,
+  "compression": "EXT_meshopt_compression",
+  "khronosValidator": {"tool": "@gltf-transform/cli@4.2.1 validate", "errors": 0, "warnings": 0},
+  "license": "URAI Labs internal production asset",
+  "provenance": "URAI deterministic candidate forge; quaternion repaired; Meshopt optimized; independently validated locally",
+  "fallbackRetained": true,
+  "activationReversible": true,
+  "runtimeRoutes": ["/", "/home", "/ground", "/life-map", "/focus", "/replay"]
+}
