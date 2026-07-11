@@ -17,6 +17,7 @@ const focusedContractTests = [
   'tests/spatial-missing-resource-diagnostic-contract.test.mjs',
   'tests/unit-runner-coverage.test.mjs',
   'tests/xr-runtime-contract.test.mjs',
+  'tests/xr-static-gate-diagnostics-contract.test.mjs',
 ]
 
 const missingTests = focusedContractTests.filter((testPath) => !fs.existsSync(testPath))
