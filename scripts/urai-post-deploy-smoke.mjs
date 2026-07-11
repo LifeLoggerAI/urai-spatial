@@ -7,12 +7,15 @@ import path from 'node:path'
 const baseUrl = (process.env.URAI_DEPLOY_URL || '').trim().replace(/\/$/, '')
 const expectedSha = (process.env.URAI_EXPECTED_DEPLOYED_SHA || '').trim()
 const expectedRollbackSha = (process.env.URAI_EXPECTED_ROLLBACK_SHA || process.env.ROLLBACK_SHA || '').trim()
+const expectedAuthoritySha = (process.env.URAI_EXPECTED_AUTHORITY_SHA || process.env.CURRENT_MAIN_SHA || '').trim()
 const receiptPath = process.env.URAI_LIVE_RECEIPT_PATH || 'deployment-receipt/live-content-parity.json'
 
 if (!baseUrl) throw new Error('URAI_DEPLOY_URL is required')
-if (new URL(baseUrl).origin !== 'https://urai.app') throw new Error('Live certification is restricted to https://urai.app')
+const canonicalOrigin = new URL(baseUrl).origin
+if (canonicalOrigin !== 'https://urai.app') throw new Error('Live certification is restricted to https://urai.app')
 if (!/^[0-9a-f]{40}$/.test(expectedSha)) throw new Error('URAI_EXPECTED_DEPLOYED_SHA must be a full lowercase SHA')
 if (!/^[0-9a-f]{40}$/.test(expectedRollbackSha)) throw new Error('URAI_EXPECTED_ROLLBACK_SHA must be a full lowercase SHA')
+if (!/^[0-9a-f]{40}$/.test(expectedAuthoritySha)) throw new Error('URAI_EXPECTED_AUTHORITY_SHA or CURRENT_MAIN_SHA must be a full lowercase SHA')
 if (expectedRollbackSha === expectedSha) throw new Error('Rollback SHA must be distinct from deployed SHA')
 
 const contracts = [
@@ -53,24 +56,30 @@ function deployedSha(response, html) {
 async function fetchFingerprint() {
   const url = new URL('/release-fingerprint.json', `${baseUrl}/`)
   const response = await fetch(url, {
-    redirect: 'follow',
+    redirect: 'manual',
     cache: 'no-store',
     signal: AbortSignal.timeout(20_000),
-    headers: { 'cache-control': 'no-cache', 'user-agent': 'urai-static-release-verifier/2.1' },
+    headers: { 'cache-control': 'no-cache', 'user-agent': 'urai-static-release-verifier/2.2' },
   })
+  const finalUrl = new URL(response.url)
   const text = await response.text()
   let payload = null
   try { payload = JSON.parse(text) } catch {}
   const passed = response.ok
     && response.headers.get('content-type')?.toLowerCase().includes('application/json')
+    && finalUrl.origin === canonicalOrigin
+    && normalizePath(finalUrl.pathname) === '/release-fingerprint.json'
+    && finalUrl.search === ''
     && payload?.schemaVersion === 'urai-release-fingerprint-1'
     && payload?.releaseSha === expectedSha
     && payload?.rollbackSha === expectedRollbackSha
+    && payload?.authoritySha === expectedAuthoritySha
     && payload?.firebaseProject === 'urai-4dc1d'
     && payload?.liveUrl === 'https://urai.app'
     && payload?.deploymentScope === 'hosting-only'
   return {
-    url: url.toString(),
+    requestedUrl: url.toString(),
+    finalUrl: response.url,
     status: response.status,
     contentSha256: createHash('sha256').update(text).digest('hex'),
     payload,
@@ -87,7 +96,7 @@ for (const [route, required, forbidden] of contracts) {
         redirect: 'follow',
         cache: 'no-store',
         signal: AbortSignal.timeout(20_000),
-        headers: { 'cache-control': 'no-cache', 'user-agent': 'urai-static-release-verifier/2.1' },
+        headers: { 'cache-control': 'no-cache', 'user-agent': 'urai-static-release-verifier/2.2' },
       })
       const html = await response.text()
       const finalUrl = new URL(response.url)
@@ -96,7 +105,7 @@ for (const [route, required, forbidden] of contracts) {
       const stale = forbidden.filter((marker) => html.includes(marker))
       const passed = response.ok
         && response.headers.get('content-type')?.toLowerCase().includes('text/html')
-        && finalUrl.origin === new URL(baseUrl).origin
+        && finalUrl.origin === canonicalOrigin
         && normalizePath(finalUrl.pathname) === normalizePath(requested.pathname)
         && finalUrl.search === requested.search
         && sha === expectedSha
@@ -141,11 +150,12 @@ try {
 
 const passed = results.every((result) => result.passed) && fingerprint.passed
 const receipt = {
-  schemaVersion: 'urai-live-content-parity-2',
+  schemaVersion: 'urai-live-content-parity-3',
   generatedAt: new Date().toISOString(),
   baseUrl,
   expectedDeployedSha: expectedSha,
   expectedRollbackSha,
+  expectedAuthoritySha,
   routeContracts: contracts.length,
   checkedVariants: results.length,
   hydratedIdentityProof: 'scripts/urai-release-control-smoke.mjs',

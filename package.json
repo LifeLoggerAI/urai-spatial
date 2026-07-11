@@ -67,7 +67,7 @@
     "release:p1": "node scripts/run-pnpm.mjs release:check",
     "done-done:guard": "node scripts/live-release.mjs --check",
     "live:check": "node scripts/live-release.mjs --check",
-    "live:deploy": "node scripts/live-release.mjs --deploy",
+    "live:deploy": "node scripts/live-release.mjs --deploy-prebuilt",
     "live:record": "node scripts/record-live-status.mjs",
     "publish:live": "node scripts/run-pnpm.mjs live:deploy",
     "test:unit": "node scripts/run-pnpm.mjs bootstrap:check && node scripts/run-pnpm.mjs --filter urai-tier1 test:unit",
