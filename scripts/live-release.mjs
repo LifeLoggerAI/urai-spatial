@@ -2,12 +2,20 @@ import { createHash } from 'node:crypto'
 import { spawnSync } from 'node:child_process'
 import { existsSync, mkdirSync, readFileSync, readdirSync, writeFileSync } from 'node:fs'
 import path from 'node:path'
+import { fileURLToPath } from 'node:url'
 
+const authorityDirectory = path.dirname(fileURLToPath(import.meta.url))
+const postDeploySmoke = path.join(authorityDirectory, 'urai-post-deploy-smoke.mjs')
+const writeReleaseFingerprint = path.join(authorityDirectory, 'write-release-fingerprint.mjs')
 const deploy = process.argv.includes('--deploy')
 const project = process.env.FIREBASE_PROJECT_ID || process.env.FIREBASE_PROJECT || process.env.GCLOUD_PROJECT || ''
 const expectedProject = process.env.URAI_EXPECTED_FIREBASE_PROJECT || 'urai-4dc1d'
 const liveUrl = process.env.URAI_LIVE_BASE_URL || process.env.LIVE_URL || 'https://urai.app'
 const rollbackSha = (process.env.ROLLBACK_SHA || process.env.URAI_ROLLBACK_SHA || '').trim()
+const releaseOperation = process.env.URAI_RELEASE_OPERATION || 'verify'
+const expectedCurrentMain = process.env.CURRENT_MAIN_SHA || ''
+const canonicalWorkflow = 'URAI Canonical Production Release'
+const canonicalRepository = 'LifeLoggerAI/urai-spatial'
 
 function run(command, args, extraEnv = {}) {
   console.log(`[URAI release] $ ${command} ${args.join(' ')}`)
@@ -53,6 +61,32 @@ function resolveTargetSha() {
   return candidate
 }
 
+function resolveRemoteMainSha() {
+  const result = output('git', ['ls-remote', '--exit-code', 'origin', 'refs/heads/main'])
+  const [sha, ref, ...extra] = result.split(/\s+/)
+  if (extra.length > 0 || ref !== 'refs/heads/main' || !/^[0-9a-f]{40}$/.test(sha || '')) {
+    throw new Error('Unable to resolve a single exact remote refs/heads/main SHA')
+  }
+  return sha
+}
+
+function assertRemoteMainUnchanged(targetSha) {
+  if (!/^[0-9a-f]{40}$/.test(expectedCurrentMain)) {
+    throw new Error('CURRENT_MAIN_SHA must be the full dispatch-time main SHA')
+  }
+  const remoteMainSha = resolveRemoteMainSha()
+  if (remoteMainSha !== expectedCurrentMain) {
+    throw new Error(`Remote main changed after dispatch or approval: expected ${expectedCurrentMain}, found ${remoteMainSha}`)
+  }
+  if (releaseOperation === 'deploy' && targetSha !== remoteMainSha) {
+    throw new Error(`Deploy target ${targetSha} is not the current remote main ${remoteMainSha}`)
+  }
+  if (releaseOperation === 'rollback' && rollbackSha !== remoteMainSha) {
+    throw new Error(`Rollback recovery SHA ${rollbackSha} is not the current remote main ${remoteMainSha}`)
+  }
+  return remoteMainSha
+}
+
 function assertStaticConfig() {
   requireFile('firebase.static.json')
   const config = JSON.parse(readFileSync('firebase.static.json', 'utf8'))
@@ -71,9 +105,19 @@ function assertReleaseSurface() {
     'docs/URAI_SPATIAL_DONE_DONE_LOCK.md',
     'docs/contracts/URAI_STUDIO_SPATIAL_HANDOFF.md',
     'urai-tier1/src/app/layout.tsx',
-    'scripts/write-release-fingerprint.mjs',
   ]) requireFile(file)
+  requireFile(postDeploySmoke)
+  requireFile(writeReleaseFingerprint)
   assertStaticConfig()
+}
+
+function assertCanonicalDeployContext() {
+  if (process.env.GITHUB_ACTIONS !== 'true') throw new Error('Production deployment is allowed only inside GitHub Actions')
+  if (process.env.GITHUB_EVENT_NAME !== 'workflow_dispatch') throw new Error('Production deployment is allowed only from workflow_dispatch')
+  if (process.env.GITHUB_WORKFLOW !== canonicalWorkflow) throw new Error(`Production deployment requires workflow ${canonicalWorkflow}`)
+  if (process.env.GITHUB_REPOSITORY !== canonicalRepository) throw new Error(`Production deployment requires repository ${canonicalRepository}`)
+  if (process.env.GITHUB_REF !== 'refs/heads/main') throw new Error('Production deployment requires refs/heads/main')
+  if (!['deploy', 'rollback'].includes(releaseOperation)) throw new Error(`Unsupported release operation: ${releaseOperation}`)
 }
 
 function writeReceipt(targetSha, status, details = {}) {
@@ -82,20 +126,25 @@ function writeReceipt(targetSha, status, details = {}) {
   const receipt = {
     schemaVersion: 'urai-static-release-receipt-2',
     generatedAt: new Date().toISOString(),
-    repository: process.env.GITHUB_REPOSITORY || 'LifeLoggerAI/urai-spatial',
+    repository: process.env.GITHUB_REPOSITORY || canonicalRepository,
     targetSha,
     rollbackSha: rollbackSha || null,
+    releaseOperation,
     firebaseProject: project || null,
     liveUrl: liveUrl || null,
     status,
     deploymentScope: 'hosting-only',
+    productionAuthority: '.github/workflows/spatial-live-deploy.yml',
+    authorityDirectory,
+    postDeploySmoke,
+    writeReleaseFingerprint,
     workflowRunId: process.env.GITHUB_RUN_ID || null,
     ...details,
   }
   const receiptPath = path.join(directory, 'receipt.json')
   writeFileSync(receiptPath, `${JSON.stringify(receipt, null, 2)}\n`)
   if (process.env.GITHUB_STEP_SUMMARY) {
-    const summary = `\n## URAI static release\n\n- SHA: \`${targetSha}\`\n- Rollback: \`${rollbackSha || 'not set'}\`\n- Project: \`${project || 'not set'}\`\n- Scope: Hosting only\n- Status: **${status}**\n- Receipt: \`${receiptPath}\`\n`
+    const summary = `\n## URAI static release\n\n- SHA: \`${targetSha}\`\n- Recovery SHA: \`${rollbackSha || 'not set'}\`\n- Operation: \`${releaseOperation}\`\n- Project: \`${project || 'not set'}\`\n- Scope: Hosting only\n- Status: **${status}**\n- Receipt: \`${receiptPath}\`\n`
     writeFileSync(process.env.GITHUB_STEP_SUMMARY, summary, { flag: 'a' })
   }
   return receiptPath
@@ -106,23 +155,22 @@ assertReleaseSurface()
 run('pnpm', ['verify:release:critical'], { NEXT_PUBLIC_URAI_BUILD_SHA: targetSha })
 
 if (!deploy) {
-  writeReceipt(targetSha, 'verified-no-deploy')
+  writeReceipt(targetSha, 'verified-no-deploy', { releaseOperation: 'verify' })
   console.log('[URAI release] Verification passed. No deployment requested.')
   process.exit(0)
 }
 
+assertCanonicalDeployContext()
 if (process.env.URAI_DEPLOY_CONFIRM !== 'DEPLOY_STATIC_URAI') {
   throw new Error('Static deployment requires URAI_DEPLOY_CONFIRM=DEPLOY_STATIC_URAI')
-}
-if (process.env.GITHUB_ACTIONS === 'true' && process.env.GITHUB_EVENT_NAME !== 'workflow_dispatch') {
-  throw new Error('GitHub Actions production deployment is allowed only from workflow_dispatch')
 }
 if (!project) throw new Error('FIREBASE_PROJECT_ID is required')
 if (project !== expectedProject) throw new Error(`Refusing project ${project}; expected ${expectedProject}`)
 if (!/^[0-9a-f]{40}$/.test(rollbackSha)) throw new Error('ROLLBACK_SHA must be a full lowercase 40-character commit SHA')
 if (rollbackSha === targetSha) throw new Error('ROLLBACK_SHA must be distinct from the release SHA')
+const authorizedMainSha = assertRemoteMainUnchanged(targetSha)
 
-run('node', ['scripts/write-release-fingerprint.mjs'], {
+run('node', [writeReleaseFingerprint], {
   NEXT_PUBLIC_URAI_BUILD_SHA: targetSha,
   URAI_TARGET_SHA: targetSha,
   ROLLBACK_SHA: rollbackSha,
@@ -143,19 +191,23 @@ if (fingerprint.releaseSha !== targetSha || fingerprint.rollbackSha !== rollback
   throw new Error('Static release fingerprint does not match release and rollback SHAs')
 }
 const receiptPath = writeReceipt(targetSha, 'built-awaiting-deploy', {
+  authorizedMainSha,
   outputFileCount: files.length,
   htmlFileCount: htmlFiles.length,
   indexSha256: sha256('urai-tier1/out/index.html'),
   fingerprintSha256: sha256('urai-tier1/out/release-fingerprint.json'),
 })
 
+const preDeployMainSha = assertRemoteMainUnchanged(targetSha)
 run('pnpm', ['exec', 'firebase', 'deploy', '--config', 'firebase.static.json', '--only', 'hosting', '--project', project])
-if (liveUrl) run('node', ['scripts/urai-post-deploy-smoke.mjs'], {
+if (liveUrl) run('node', [postDeploySmoke], {
   URAI_DEPLOY_URL: liveUrl,
   URAI_EXPECTED_DEPLOYED_SHA: targetSha,
   URAI_EXPECTED_ROLLBACK_SHA: rollbackSha,
 })
 writeReceipt(targetSha, 'deployed', {
+  authorizedMainSha,
+  preDeployMainSha,
   outputFileCount: files.length,
   htmlFileCount: htmlFiles.length,
   indexSha256: sha256('urai-tier1/out/index.html'),

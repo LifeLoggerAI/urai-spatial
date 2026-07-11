@@ -1,18 +1,44 @@
 import { mkdirSync, writeFileSync } from 'node:fs'
-import { chromium } from 'playwright'
+import { createRequire } from 'node:module'
+import path from 'node:path'
+
+const requireFromTarget = createRequire(path.join(process.cwd(), 'package.json'))
+const { chromium } = requireFromTarget('playwright')
 
 const base = process.env.URAI_LIVE_BASE_URL || 'https://urai.app'
 const expectedSha = process.env.URAI_EXPECTED_DEPLOYED_SHA || ''
 const out = 'release-control-evidence'
 mkdirSync(out, { recursive: true })
 
-const routes = ['/', '/home', '/ground', '/life-map', '/focus', '/replay', '/passport', '/privacy-controls', '/status']
-const report = { generatedAt: new Date().toISOString(), base, expectedSha, routes: [], queryChecks: [], fingerprints: [], screenshots: [] }
+const routes = ['/', '/home', '/ground', '/life-map', '/focus', '/replay', '/mirror', '/passport', '/privacy-controls', '/location-map', '/status']
+const identity = {
+  memoryId: 'release-control-memory',
+  manifestId: 'release-control-manifest',
+  node: 'release-control-node',
+}
+const requiredQueryTokens = [
+  `memoryId=${identity.memoryId}`,
+  `manifestId=${identity.manifestId}`,
+  `node=${identity.node}`,
+]
+const report = {
+  schemaVersion: 'urai-release-control-smoke-3',
+  generatedAt: new Date().toISOString(),
+  base,
+  expectedSha,
+  dependencyRoot: process.cwd(),
+  routes: [],
+  queryChecks: [],
+  hydratedIdentityChecks: [],
+  fingerprints: [],
+  screenshots: [],
+  pageErrors: [],
+}
 
-async function request(path, redirect = 'follow') {
-  const response = await fetch(`${base}${path}`, { redirect })
+async function request(route, redirect = 'follow') {
+  const response = await fetch(`${base}${route}`, { redirect })
   const body = await response.text()
-  return { path, status: response.status, finalUrl: response.url, body, location: response.headers.get('location') || '' }
+  return { path: route, status: response.status, finalUrl: response.url, body, location: response.headers.get('location') || '' }
 }
 
 for (const route of routes) {
@@ -26,12 +52,16 @@ for (const route of routes) {
 
 const queryCases = [
   {
-    path: '/focus?memoryId=release-control-memory&manifestId=release-control-manifest&node=release-control-node',
-    required: ['memoryId=release-control-memory', 'manifestId=release-control-manifest', 'node=release-control-node'],
+    name: 'focus',
+    path: `/focus?${requiredQueryTokens.join('&')}`,
+    required: requiredQueryTokens,
+    selector: '[data-testid="urai-final-focus-chamber"]',
   },
   {
-    path: '/replay?memoryId=release-control-memory&manifestId=release-control-manifest&node=release-control-node',
-    required: ['memoryId=release-control-memory', 'manifestId=release-control-manifest', 'node=release-control-node'],
+    name: 'replay',
+    path: `/replay?${requiredQueryTokens.join('&')}`,
+    required: requiredQueryTokens,
+    selector: '[data-testid="cinematic-replay-client"]',
   },
 ]
 
@@ -41,7 +71,7 @@ for (const check of queryCases) {
   for (const token of check.required) {
     if (!observed.includes(token)) throw new Error(`Query preservation failed for ${check.path}: missing ${token} in ${observed}`)
   }
-  report.queryChecks.push({ path: check.path, status: response.status, observed })
+  report.queryChecks.push({ name: check.name, path: check.path, status: response.status, observed })
 }
 
 const root = await request('/')
@@ -49,6 +79,22 @@ for (const fingerprint of ['LifeLoggerAI/UrAi', 'legacy-urai-production-deploy',
   const present = root.body.includes(fingerprint)
   report.fingerprints.push({ fingerprint, present })
   if (present) throw new Error(`Legacy runtime fingerprint present: ${fingerprint}`)
+}
+
+async function verifyHydratedIdentity(page, check, profileName) {
+  const surface = page.locator(check.selector)
+  await surface.waitFor({ state: 'visible', timeout: 20000 })
+  const observed = {
+    memoryId: await surface.getAttribute('data-memory-id'),
+    manifestId: await surface.getAttribute('data-manifest-id'),
+    node: await surface.getAttribute('data-node'),
+  }
+  for (const [key, expected] of Object.entries(identity)) {
+    if (observed[key] !== expected) {
+      throw new Error(`${check.name} hydrated identity failed on ${profileName}: ${key}=${observed[key] ?? 'missing'}, expected ${expected}`)
+    }
+  }
+  report.hydratedIdentityChecks.push({ profile: profileName, route: check.name, selector: check.selector, observed, passed: true })
 }
 
 const browser = await chromium.launch({ headless: true })
@@ -60,21 +106,35 @@ try {
   for (const profile of profiles) {
     const context = await browser.newContext(profile)
     const page = await context.newPage()
-    for (const route of ['/', '/life-map', queryCases[0].path, queryCases[1].path, '/privacy-controls', '/status']) {
-      await page.goto(`${base}${route}`, { waitUntil: 'networkidle', timeout: 60000 })
-      if (page.url().includes('/focus') || page.url().includes('/replay')) {
-        for (const token of queryCases[0].required) {
+    page.on('pageerror', (error) => {
+      report.pageErrors.push({ profile: profile.name, url: page.url(), message: String(error?.message || error) })
+    })
+    const browserRoutes = ['/', '/life-map', queryCases[0].path, queryCases[1].path, '/privacy-controls', '/status']
+    for (const route of browserRoutes) {
+      const response = await page.goto(`${base}${route}`, { waitUntil: 'domcontentloaded', timeout: 60000 })
+      if (!response || response.status() !== 200) throw new Error(`Browser route failed for ${route}: ${response?.status() ?? 'no response'}`)
+      await page.locator('body').waitFor({ state: 'visible', timeout: 10000 })
+      await page.waitForTimeout(1200)
+      const identityCheck = queryCases.find((check) => check.path === route)
+      if (identityCheck) {
+        for (const token of identityCheck.required) {
           if (!page.url().includes(token)) throw new Error(`Browser query preservation failed for ${route}: missing ${token}`)
         }
+        await verifyHydratedIdentity(page, identityCheck, profile.name)
       }
       const filename = `${profile.name}-${route.replace(/[/?=&]+/g, '-').replace(/^-|-$/g, '') || 'root'}.png`
-      await page.screenshot({ path: `${out}/${filename}`, fullPage: true })
+      await page.screenshot({ path: `${out}/${filename}`, fullPage: true, animations: 'disabled' })
       report.screenshots.push(filename)
     }
     await context.close()
   }
 } finally {
   await browser.close()
+}
+
+if (report.pageErrors.length) {
+  writeFileSync(`${out}/smoke-report.json`, `${JSON.stringify(report, null, 2)}\n`)
+  throw new Error(`Browser page errors detected: ${report.pageErrors.map((item) => `${item.profile}:${item.message}`).join(' | ')}`)
 }
 
 writeFileSync(`${out}/smoke-report.json`, `${JSON.stringify(report, null, 2)}\n`)

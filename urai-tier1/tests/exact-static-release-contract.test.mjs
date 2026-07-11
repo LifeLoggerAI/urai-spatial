@@ -25,25 +25,31 @@ test('public markup embeds exact build identity or reports unverified', () => {
   assert.match(layout, /unverified/)
 })
 
-test('release operator is exact-SHA, rollback-aware, canonical-project, and hosting-only', () => {
-  assert.match(operator, /Release SHA must be a full lowercase 40-character commit SHA/)
-  assert.match(operator, /Checked-out SHA/)
-  assert.match(operator, /ROLLBACK_SHA must be a full lowercase 40-character commit SHA/)
-  assert.match(operator, /ROLLBACK_SHA must be distinct from the release SHA/)
-  assert.match(operator, /write-release-fingerprint\.mjs/)
-  assert.match(operator, /release-fingerprint\.json/)
-  assert.match(operator, /fingerprintSha256/)
-  assert.match(operator, /urai-4dc1d/)
-  assert.match(operator, /firebase\.static\.json/)
+test('release operator is exact-SHA, rollback-aware, protected, fingerprinted, and hosting-only', () => {
+  for (const marker of [
+    'Release SHA must be a full lowercase 40-character commit SHA',
+    'Checked-out SHA',
+    'ROLLBACK_SHA must be a full lowercase 40-character commit SHA',
+    'ROLLBACK_SHA must be distinct from the release SHA',
+    'write-release-fingerprint.mjs',
+    'release-fingerprint.json',
+    'fingerprintSha256',
+    'URAI Canonical Production Release',
+    'LifeLoggerAI/urai-spatial',
+    'refs/heads/main',
+    'CURRENT_MAIN_SHA',
+    'urai-4dc1d',
+    'firebase.static.json',
+    'scripts/urai-post-deploy-smoke.mjs',
+    'deployment-receipt',
+  ]) assert.ok(operator.includes(marker), `missing operator marker: ${marker}`)
   assert.match(operator, /'--only', 'hosting'/)
   assert.doesNotMatch(operator, /hosting,firestore/)
   assert.doesNotMatch(operator, /firestore:indexes/)
   assert.doesNotMatch(operator, /functions/)
-  assert.match(operator, /scripts\/urai-post-deploy-smoke\.mjs/)
-  assert.match(operator, /deployment-receipt/)
 })
 
-test('fingerprint writer publishes exact release and rollback authority', () => {
+test('fingerprint writer publishes exact release and distinct recovery authority', () => {
   assert.match(fingerprintWriter, /urai-release-fingerprint-1/)
   assert.match(fingerprintWriter, /releaseSha/)
   assert.match(fingerprintWriter, /rollbackSha/)
@@ -53,12 +59,15 @@ test('fingerprint writer publishes exact release and rollback authority', () => 
   assert.match(fingerprintWriter, /hosting-only/)
 })
 
-test('post-deploy verifier checks route content, stale markers, queries, SHA, and public fingerprint', () => {
+test('post-deploy verifier checks current routes, stale markers, queries, SHA, and public fingerprint', () => {
   for (const marker of [
-    'Selected memory chamber',
-    'Cinematic memory film',
-    'Choose what the world can hold.',
-    'Production certification pending.',
+    'aaa-final-home-sky-ground-orb-body-portals',
+    'walkable-first-person-ground-layer',
+    'urai-r3f-canonical-lifemap',
+    'replay-route-launch-fingerprint',
+    'privacy-consent-console',
+    'premium-emotional-weather-atlas',
+    'urai-final-status-control-room',
     'Home threshold',
     'World online. Route matrix visible.',
   ]) assert.ok(verifier.includes(marker), `missing verifier marker: ${marker}`)
@@ -70,16 +79,23 @@ test('post-deploy verifier checks route content, stale markers, queries, SHA, an
   assert.match(verifier, /sha === expectedSha/)
   assert.match(verifier, /fingerprint\.passed/)
   assert.match(verifier, /live-content-parity-2/)
+  assert.match(verifier, /hydratedIdentityProof/)
 })
 
-test('production deploy remains manual, exact-SHA, rollback-aware, and protected', () => {
-  assert.match(workflow, /workflow_dispatch:/)
-  assert.match(workflow, /inputs\.confirm == 'DEPLOY_URAI_APP'/)
-  assert.match(workflow, /inputs\.release_sha == github\.sha/)
-  assert.match(workflow, /environment: production/)
-  assert.match(workflow, /ROLLBACK_SHA: \$\{\{ inputs\.rollback_sha \}\}/)
-  assert.match(workflow, /git merge-base --is-ancestor/)
-  assert.match(workflow, /FIREBASE_SERVICE_ACCOUNT_JSON/)
-  assert.match(workflow, /pnpm install --frozen-lockfile/)
-  assert.match(workflow, /Remove temporary credentials/)
+test('production deploy and rollback remain manual, exact-SHA, distinct-recovery, and protected', () => {
+  for (const marker of [
+    'workflow_dispatch:',
+    "inputs.confirm == 'DEPLOY_URAI_APP' || inputs.confirm == 'ROLLBACK_URAI_APP'",
+    'rollback-verify:',
+    'needs: [verify, rollback-verify]',
+    'environment: production',
+    'ROLLBACK_SHA: ${{ inputs.rollback_sha }}',
+    'test "$RELEASE_SHA" = "$CURRENT_MAIN_SHA"',
+    'test "$ROLLBACK_SHA" = "$CURRENT_MAIN_SHA"',
+    'git merge-base --is-ancestor',
+    'FIREBASE_SERVICE_ACCOUNT_JSON',
+    'pnpm install --frozen-lockfile',
+    'Remove temporary credentials',
+    'gh workflow run spatial-live-deploy.yml --ref main',
+  ]) assert.ok(workflow.includes(marker), `missing workflow marker: ${marker}`)
 })
