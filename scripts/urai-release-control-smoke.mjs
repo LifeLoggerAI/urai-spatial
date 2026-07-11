@@ -30,7 +30,7 @@ const requiredQueryTokens = [
   `node=${identity.node}`,
 ]
 const report = {
-  schemaVersion: 'urai-release-control-smoke-4',
+  schemaVersion: 'urai-release-control-smoke-5',
   generatedAt: new Date().toISOString(),
   base,
   expectedSha,
@@ -42,7 +42,7 @@ const report = {
   screenshots: [],
   pageErrors: [],
   consoleErrors: [],
-  externalRequests: [],
+  blockedExternalRequests: [],
 }
 
 function normalizePath(value) {
@@ -61,13 +61,26 @@ function assertCanonicalFinalUrl(label, requestedUrl, finalUrl) {
   }
 }
 
+function sortedSearchEntries(value) {
+  return [...new URL(value).searchParams.entries()].sort(([leftKey, leftValue], [rightKey, rightValue]) =>
+    leftKey.localeCompare(rightKey) || leftValue.localeCompare(rightValue))
+}
+
+function assertExactQueryIdentity(label, requestedUrl, observedUrl) {
+  const requestedEntries = sortedSearchEntries(requestedUrl)
+  const observedEntries = sortedSearchEntries(observedUrl)
+  if (JSON.stringify(observedEntries) !== JSON.stringify(requestedEntries)) {
+    throw new Error(`${label} query changed: requested ${JSON.stringify(requestedEntries)}, observed ${JSON.stringify(observedEntries)}`)
+  }
+}
+
 async function request(route, redirect = 'follow') {
   const requestedUrl = new URL(route, `${base}/`).toString()
   const response = await fetch(requestedUrl, {
     redirect,
     cache: 'no-store',
     signal: AbortSignal.timeout(20_000),
-    headers: { 'cache-control': 'no-cache', 'user-agent': 'urai-release-control-smoke/4' },
+    headers: { 'cache-control': 'no-cache', 'user-agent': 'urai-release-control-smoke/5' },
   })
   const body = await response.text()
   return {
@@ -125,6 +138,7 @@ for (const check of queryCases) {
   if (observedUrl.origin !== canonicalOrigin || normalizePath(observedUrl.pathname) !== normalizePath(new URL(response.requestedUrl).pathname)) {
     throw new Error(`Query route escaped canonical identity for ${check.path}: ${observedUrl.toString()}`)
   }
+  assertExactQueryIdentity(`Query route ${check.path}`, response.requestedUrl, observedUrl.toString())
   for (const [key, expected] of Object.entries(check.required)) {
     if (observedUrl.searchParams.get(key) !== expected) {
       throw new Error(`Query preservation failed for ${check.path}: ${key}=${observedUrl.searchParams.get(key) ?? 'missing'}`)
@@ -165,6 +179,37 @@ try {
   for (const profile of profiles) {
     const { name: profileName, ...contextOptions } = profile
     const context = await browser.newContext({ ...contextOptions, serviceWorkers: 'block' })
+    await context.route('**/*', async (route) => {
+      const requestEvent = route.request()
+      let requested
+      try {
+        requested = new URL(requestEvent.url())
+      } catch {
+        report.blockedExternalRequests.push({
+          profile: profileName,
+          url: requestEvent.url(),
+          resourceType: requestEvent.resourceType(),
+          reason: 'invalid-url',
+        })
+        await route.abort('blockedbyclient')
+        return
+      }
+      if (['data:', 'blob:', 'about:'].includes(requested.protocol)) {
+        await route.continue()
+        return
+      }
+      if (requested.origin !== canonicalOrigin) {
+        report.blockedExternalRequests.push({
+          profile: profileName,
+          url: requested.toString(),
+          resourceType: requestEvent.resourceType(),
+          reason: 'cross-origin',
+        })
+        await route.abort('blockedbyclient')
+        return
+      }
+      await route.continue()
+    })
     const page = await context.newPage()
     page.on('pageerror', (error) => {
       report.pageErrors.push({ profile: profileName, url: page.url(), message: String(error?.message || error) })
@@ -172,19 +217,6 @@ try {
     page.on('console', (message) => {
       if (message.type() === 'error') {
         report.consoleErrors.push({ profile: profileName, url: page.url(), message: message.text() })
-      }
-    })
-    page.on('request', (requestEvent) => {
-      let requested
-      try {
-        requested = new URL(requestEvent.url())
-      } catch {
-        report.externalRequests.push({ profile: profileName, url: requestEvent.url(), resourceType: requestEvent.resourceType(), reason: 'invalid-url' })
-        return
-      }
-      if (['data:', 'blob:', 'about:'].includes(requested.protocol)) return
-      if (requested.origin !== canonicalOrigin) {
-        report.externalRequests.push({ profile: profileName, url: requested.toString(), resourceType: requestEvent.resourceType(), reason: 'cross-origin' })
       }
     })
     const browserRoutes = ['/', '/life-map', queryCases[0].path, queryCases[1].path, '/privacy-controls', '/status']
@@ -212,7 +244,7 @@ try {
 const failures = []
 if (report.pageErrors.length) failures.push(`Browser page errors: ${report.pageErrors.map((item) => `${item.profile}:${item.message}`).join(' | ')}`)
 if (report.consoleErrors.length) failures.push(`Browser console errors: ${report.consoleErrors.map((item) => `${item.profile}:${item.message}`).join(' | ')}`)
-if (report.externalRequests.length) failures.push(`Cross-origin browser requests: ${report.externalRequests.map((item) => `${item.profile}:${item.url}`).join(' | ')}`)
+if (report.blockedExternalRequests.length) failures.push(`Blocked cross-origin browser requests: ${report.blockedExternalRequests.map((item) => `${item.profile}:${item.url}`).join(' | ')}`)
 
 writeFileSync(`${out}/smoke-report.json`, `${JSON.stringify(report, null, 2)}\n`)
 if (failures.length) throw new Error(failures.join(' || '))
