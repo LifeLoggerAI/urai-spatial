@@ -12,6 +12,7 @@ const requiredFocusedTests = [
   'tests/spatial-launch-boundaries.test.mjs',
   'tests/spatial-missing-resource-diagnostic-contract.test.mjs',
   'tests/xr-runtime-contract.test.mjs',
+  'tests/xr-static-gate-diagnostics-contract.test.mjs',
 ]
 
 test('both focused unit runners include critical Spatial public contract tests', () => {
