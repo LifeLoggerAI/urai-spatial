@@ -10,8 +10,8 @@
 - Evidence date: 2026-07-11
 - Distribution state: INTERNAL REVIEW ONLY
 - Launch decision: NO-GO
-- Package Markdown blob SHA: `025a694d4c747c0f6522e2870990900d42080b4b`
-- Package JSON blob SHA: `43b255f11d9326094c437044a82dfb7ec9660ca3`
+- Package Markdown blob SHA: `01115ab2c445e08b4d313cfdd4981d700ad548b3`
+- Package JSON blob SHA: `2284b678364e1093db60eb43f4c2f819fc2bfadb`
 
 ## Approved one-sentence description
 
@@ -34,11 +34,11 @@ All fresh exact-head workflows remain queued and count as zero passes.
 - Privacy Controls #554 `57cb67a3429ca8273c08a486b3a2b605b6127631`: non-operational preview candidate, stale against current main;
 - optional guided demo #555 `906ccb3f6b8254e9deecbec78ac6c9dd7a38d6b5`: query-only and non-persistent, 5 queued checks, parent required first;
 - discoverability #557 `96b2d3a21087e4cc5c6e1c739d9017ac318cb85a`: indexing fail-closed, stale against current main;
-- release credential boundary #552 `281a4e30a9e1aa0b55218295c3a552466187eee1`: invalid action pins, mutable artifact audit, and credential-writer verifier mismatch repaired; 6 queued checks; not incorporated into #539;
-- release controls #539 `f62e2ff5860e107f180715377a7cd87605898ade`: draft and unverified;
+- release credential boundary #552 `d592e4f32d444b501a02278033921f1a0294e6d0`: source pin/audit/credential-verifier repairs reconciled onto refreshed #539; 6 queued checks; not incorporated into #539;
+- release controls #539 `ad473628eb97235171eda2ff9f8fc9647c0d518f`: current main reconciled, draft, queued, and awaiting terminal-green #552 plus incorporation and a full rerun;
 - sensory #544 `7896f75c340f2ea3e046529eb2ea6c55255b7231`: candidate, queued, uncertified;
 - founder source #521 `780802576f2e0b0ebcaa0d5331ad9bb9032dccdf`: source-corrupt and rejected;
-- founder repair #562 `d5494f6febfaf98bdcb0af1fc2368d3d8afecbcf`: restores Status, unincorporated, 6 queued checks;
+- founder repair #562 `d5494f6febfaf8bdcb0af1fc2368d3d8afecbcf`: restores Status, unincorporated, 6 queued checks;
 - #563: closed unmerged and not an authority.
 
 ## Asset-intake boundary
@@ -85,7 +85,7 @@ The package distinguishes:
 
 Public support readiness remains NO-GO. GitHub Support ticket #4553961 contains the runner-assignment evidence, but no human support response is recorded at this evidence point.
 
-Issue #450 remains the Actions blocker authority. Queued jobs with no steps/logs are not passing evidence.
+Issue #450 remains the Actions blocker authority. Queued jobs with no steps or logs are not passing evidence.
 
 ## No actions performed
 
@@ -119,6 +119,7 @@ Issue #450 remains the Actions blocker authority. Queued jobs with no steps/logs
 - exact branch head and three-file diff must remain stable;
 - exact-head checks must pass;
 - candidate implementation references must be refreshed immediately before incorporation or publication;
+- #552 must be terminal-green, independently reviewed, incorporated into #539, and the resulting #539 head fully rerun before release approval;
 - #562 must be incorporated into #521 and the resulting founder-event head fully verified before QR or demo approval;
 - one tested SHA, deployed SHA, rollback SHA, target receipt, custom-domain proof, route acceptance set, screenshot set, demo set, support state, asset-delivery state, and reviewer sign-off set must be recorded together;
 - no public distribution may occur from this receipt alone.
