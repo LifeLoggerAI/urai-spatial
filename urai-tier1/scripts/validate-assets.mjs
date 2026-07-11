@@ -19,7 +19,7 @@ const extensionByType = {
   world: ['.glb', '.gltf', '.json'],
   ui: ['.svg', '.png', '.webp', '.json'],
   audio: ['.mp3', '.wav', '.ogg'],
-  fallback: ['.json', '.svg', '.png', '.webp'],
+  fallback: ['.glb', '.gltf', '.json', '.svg', '.png', '.webp'],
 }
 
 const rows = manifest.map((asset) => {
@@ -35,7 +35,8 @@ const rows = manifest.map((asset) => {
 const summary = {
   total: rows.length,
   ready: rows.filter((asset) => asset.status === 'ready').length,
-  placeholders: rows.filter((asset) => asset.status === 'placeholder').length,
+  fallback: rows.filter((asset) => asset.status === 'fallback').length,
+  candidate: rows.filter((asset) => asset.status === 'candidate').length,
   future: rows.filter((asset) => asset.status === 'future').length,
   missing: rows.filter((asset) => asset.status === 'missing').length,
   missingFiles: rows.filter((asset) => !asset.exists).length,
@@ -52,7 +53,8 @@ const lines = [
   '',
   `- Total manifest entries: ${summary.total}`,
   `- Ready assets: ${summary.ready}`,
-  `- Procedural placeholders: ${summary.placeholders}`,
+  `- Explicit fallback assets: ${summary.fallback}`,
+  `- Candidate assets: ${summary.candidate}`,
   `- Future generation slots: ${summary.future}`,
   `- Missing status entries: ${summary.missing}`,
   `- Paths without files yet: ${summary.missingFiles}`,
