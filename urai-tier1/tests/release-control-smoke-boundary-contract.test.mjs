@@ -13,13 +13,16 @@ test('release-control smoke requires canonical origin and exact deployed SHA', (
   assert.match(source, /final\.search !== requested\.search/)
 })
 
-test('query routes preserve exact structured identity', () => {
+test('query routes require valid responses and exact structured identity', () => {
+  assert.match(source, /redirecting && !response\.location/)
+  assert.match(source, /!redirecting && response\.status !== 200/)
   assert.match(source, /observedUrl\.searchParams\.get\(key\) !== expected/)
   assert.match(source, /Query route escaped canonical identity/)
   assert.match(source, /verifyHydratedIdentity/)
 })
 
-test('browser evidence blocks service workers and rejects cross-origin requests', () => {
+test('browser evidence uses clean options, blocks service workers, and rejects cross-origin requests', () => {
+  assert.match(source, /const \{ name: profileName, \.\.\.contextOptions \} = profile/)
   assert.match(source, /serviceWorkers: 'block'/)
   assert.match(source, /page\.on\('request'/)
   assert.match(source, /requested\.origin !== canonicalOrigin/)
