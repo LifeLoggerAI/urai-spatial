@@ -190,6 +190,10 @@ async function main() {
     assert(result.analyticsEvents.every((event) => !("raw" in event)), "Runtime analytics events must not retain raw packets.");
     assert(!JSON.stringify(result.analyticsEvents).includes("system-loop-runtime-smoke"), "Runtime analytics output must not retain smoke payload text.");
     assert(result.analyticsDropCounts["invalid-payload"] > 0, "Runtime must reject allowlisted event names whose payload contains undeclared properties.");
+    assert(loop.analytics.peek().length === 0, "SystemLoop must drain accepted analytics events after each run.");
+    const secondResult = await loop.runOnce();
+    assert(secondResult.analyticsEvents.length > 0, "A later SystemLoop run must still return its accepted analytics events.");
+    assert(loop.analytics.peek().length === 0, "SystemLoop analytics buffer must remain empty after repeated runs.");
     assert(!("lastAnalyticsEvents" in result.state), "Persistable SystemLoop state must not retain analytics events.");
     assert(!("lastPackets" in result.state), "Persistable SystemLoop state must not retain raw communication packets.");
 
@@ -208,6 +212,7 @@ async function main() {
     const restored = await createSystemLoop({ tickIntervalMs: 1000, replayLimit: 25, initialState: persisted, analytics: analyticsOptions });
     const restoredResult = await restored.runOnce();
     assert(restoredResult.state.totalRuns === result.state.totalRuns + 1, "Restored run count did not continue.");
+    assert(restored.analytics.peek().length === 0, "Restored SystemLoop must drain its analytics buffer after a run.");
     assert(!("lastAnalyticsEvents" in restoredResult.state), "Restored runtime state must not recreate persisted analytics history.");
     assert(!("lastPackets" in restoredResult.state), "Restored runtime state must not recreate raw packet history.");
     loop.stop();
