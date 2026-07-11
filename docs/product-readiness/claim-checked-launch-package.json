@@ -1,5 +1,5 @@
 {
-  "schemaVersion": 9,
+  "schemaVersion": 10,
   "receiptId": "URAI-WSD-20260711-LAUNCH-PACKAGE-001",
   "evidenceDate": "2026-07-11",
   "repository": "LifeLoggerAI/urai-spatial",
@@ -28,42 +28,58 @@
   "documentationChain": {
     "authority": {
       "pullRequest": 546,
-      "headSha": "a2b4f26ff927da2666ad9ece70984855be3f5e1e",
-      "workflowState": "queued"
+      "headSha": "a2b4f26ff927da2666ad9ece70984855be3f5e1e"
     },
     "routeAudit": {
       "pullRequest": 547,
       "headSha": "277347c517290c9dee9d660b1877fdb817b7024b",
-      "acceptedRoutes": 0,
-      "workflowState": "queued"
+      "acceptedRoutes": 0
     },
     "localizationAnalyticsMetadata": {
       "pullRequest": 548,
-      "headSha": "f3588054e37c3a5d639af8e04855bc3aa332e7a4",
-      "workflowState": "queued"
+      "headSha": "f3588054e37c3a5d639af8e04855bc3aa332e7a4"
     },
     "supportReadiness": {
       "pullRequest": 558,
       "headSha": "ad31eeff849fb0764cb3623a3d6d0cf77e7dce14",
-      "readiness": "no-go",
-      "workflowState": "queued"
+      "readiness": "no-go"
     }
   },
   "currentAuthorities": {
     "consolidatedPhase2": {
       "pullRequest": 539,
-      "headSha": "7fc065c4afa43585516c9619882da7f058ee6c9b",
-      "auditedSourceHeadSha": "f5c75129ef36a979accad0bcbe91f48863fe1ae0",
+      "headSha": "53eb1c7e8c6cf2de5d23d9c6341e112ad1d9b233",
+      "auditedSourceHeadSha": "3ac5dc5b9211fc6ea5fab7c1ad27d2c13f992f2c",
       "parentSha": "60730edcb5bcedfe2ded2cee9a96cef96dff9510",
-      "compare": "96-ahead-0-behind",
+      "compare": "98-ahead-0-behind",
       "changedFiles": 33,
       "receipt": "URAI-WSB-20260711-PHASE2-CONSOLIDATION-012",
-      "receiptBlobSha": "8812ea28bbd937ab9ce3638ca86ba8726c402db2",
-      "workflowState": "19-nonterminal",
-      "representativeJobs": {
-        "canonicalReleaseVerification": 86589282298,
-        "tier1BuildAndTests": 86589282132,
-        "releaseSecurityPathGuard": 86589282403
+      "receiptBlobSha": "e4a8add9390a3d8299cb25938d7f6e20a0d2339d",
+      "workflowState": "19-fresh-runs-queued-at-latest-observation",
+      "currentRunIds": {
+        "releaseSecurityPathGuard": 29170523802,
+        "canonicalProductionRelease": 29170523790,
+        "spatialCi": 29170523774,
+        "productionVerify": 29170523779,
+        "frozenLockfile": 29170523831
+      },
+      "staleHeadExecutionEvidence": {
+        "headSha": "7fc065c4afa43585516c9619882da7f058ee6c9b",
+        "xrStaticGateDiagnostics": "success",
+        "missingResourceDiagnostics": "success",
+        "releaseSecurityPathGuard": "failure",
+        "failedStep": "Audit production workflow authority",
+        "rootCause": "authority audit required release-control smoke schema 2 while consolidated smoke emitted schema 5",
+        "finalGateEvidence": false
+      },
+      "repair": {
+        "sourceHeadSha": "3ac5dc5b9211fc6ea5fab7c1ad27d2c13f992f2c",
+        "receiptHeadSha": "53eb1c7e8c6cf2de5d23d9c6341e112ad1d9b233",
+        "auditSchema": "urai-production-authority-audit-5",
+        "releaseSmokeSchemaRequired": "urai-release-control-smoke-5",
+        "exactQueryIdentityRequired": true,
+        "preRequestNetworkBlockingRequired": true,
+        "blockedRequestEvidenceRequired": true
       },
       "sourceBoundaries": {
         "targetBuildIsolated": true,
@@ -87,7 +103,6 @@
       "pullRequest": 553,
       "headSha": "910532016136c3919e420be7d3809300f44c9802",
       "changedFiles": 4,
-      "workflowState": "13-queued",
       "providerActivationApproved": false,
       "incorporatedRepairPullRequests": [572]
     },
@@ -95,7 +110,6 @@
       "pullRequest": 554,
       "headSha": "972616b92536108818ca0965e543bae2ae322c6c",
       "changedFiles": 5,
-      "workflowState": "14-queued",
       "operationalControlsProven": false
     },
     "guidedDemo": {
@@ -103,21 +117,18 @@
       "headSha": "212126a90920c5601f858175556ae319bc349ae8",
       "parentPullRequest": 554,
       "changedFiles": 4,
-      "workflowState": "5-queued",
       "persistence": "none"
     },
     "discoverability": {
       "pullRequest": 557,
       "headSha": "3d6354fa44d784334645c86151b158edd1f1c4d6",
       "changedFiles": 6,
-      "workflowState": "16-queued",
       "publicIndexingApproved": false
     },
     "founderEvent": {
       "pullRequest": 521,
       "headSha": "a440707f598d56735e21e80cb33c17eb141f740a",
       "changedFiles": 18,
-      "workflowState": "7-queued",
       "eventRouteLabel": "pending-proof",
       "publicQrApproved": false,
       "publicMediaApproved": false,
@@ -156,16 +167,17 @@
     "serviceCommitmentsApproved": false,
     "githubSupportTicket": 4553961,
     "humanResponseReceived": false,
-    "finalEvidenceUpdateSent": true
+    "evidenceUpdatesSent": true
   },
-  "workflowBlocker": {
+  "workflowState": {
     "issue": 450,
     "supportTicket": 4553961,
     "supportAgentReplyReceived": false,
-    "state": "queued-before-runner-execution",
-    "representativeJobsHaveSteps": false,
-    "representativeJobsHaveLogs": false,
-    "explicitUbuntu2404ProbeAlsoBlocked": true
+    "runnerAssignmentState": "resumed-for-some-workflows",
+    "realCiFailureObserved": true,
+    "currentExactHead": "53eb1c7e8c6cf2de5d23d9c6341e112ad1d9b233",
+    "currentHeadTerminalConclusionCountAtLatestObservation": 0,
+    "oldHeadResultsAreStale": true
   },
   "externalActions": {
     "published": false,
