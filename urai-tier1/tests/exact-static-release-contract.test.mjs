@@ -2,14 +2,15 @@ import test from 'node:test'
 import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
 
+const normalizeNewlines = (source) => source.replace(/\r\n?/g, '\n')
 const hosting = JSON.parse(readFileSync('../firebase.static.json', 'utf8')).hosting
-const layout = readFileSync('src/app/layout.tsx', 'utf8')
-const operator = readFileSync('../scripts/live-release.mjs', 'utf8')
-const bundleBuilder = readFileSync('../scripts/create-static-release-bundle.mjs', 'utf8')
-const fingerprintWriter = readFileSync('../scripts/write-release-fingerprint.mjs', 'utf8')
-const verifier = readFileSync('../scripts/urai-post-deploy-smoke.mjs', 'utf8')
-const workflow = readFileSync('../.github/workflows/spatial-live-deploy.yml', 'utf8')
-const credentialBoundary = readFileSync('../scripts/verify-release-credential-boundary.mjs', 'utf8')
+const layout = normalizeNewlines(readFileSync('src/app/layout.tsx', 'utf8'))
+const operator = normalizeNewlines(readFileSync('../scripts/live-release.mjs', 'utf8'))
+const bundleBuilder = normalizeNewlines(readFileSync('../scripts/create-static-release-bundle.mjs', 'utf8'))
+const fingerprintWriter = normalizeNewlines(readFileSync('../scripts/write-release-fingerprint.mjs', 'utf8'))
+const verifier = normalizeNewlines(readFileSync('../scripts/urai-post-deploy-smoke.mjs', 'utf8'))
+const workflow = normalizeNewlines(readFileSync('../.github/workflows/spatial-live-deploy.yml', 'utf8'))
+const credentialBoundary = normalizeNewlines(readFileSync('../scripts/verify-release-credential-boundary.mjs', 'utf8'))
 
 test('static hosting publishes the canonical export without route masking', () => {
   assert.equal(hosting.public, 'urai-tier1/out')
@@ -108,6 +109,10 @@ test('release credentials and deploy executable are isolated from target-control
     'delete process.env.GOOGLE_APPLICATION_CREDENTIALS',
     'delete env.FIREBASE_SERVICE_ACCOUNT_JSON',
     'delete env.GOOGLE_APPLICATION_CREDENTIALS',
+    'managedCredentialFilename',
+    'resolveManagedCredentialPath',
+    'Credential path must stay inside RUNNER_TEMP',
+    '\nremoveTemporaryServiceAccount()\nconst authoritySha',
     'validateAndMaterializePrebuiltBundle',
     'manifest.authoritySha !== authoritySha',
     'Release bundle file set, sizes, or hashes do not match the manifest',
@@ -126,12 +131,16 @@ test('release credentials and deploy executable are isolated from target-control
   assert.doesNotMatch(workflow, /printf\s+['"]%s['"]\s+"\$FIREBASE_SERVICE_ACCOUNT_JSON"\s*>\s*"\$GOOGLE_APPLICATION_CREDENTIALS"/)
   assert.doesNotMatch(operator, /pnpm\s+exec\s+firebase/)
 
+  assert.match(credentialBoundary, /normalizeNewlines/)
   assert.match(credentialBoundary, /urai-release-credential-boundary-1/)
   assert.match(credentialBoundary, /secretOccurrences !== 1/)
+  assert.match(credentialBoundary, /lineEndingsNormalized: true/)
   assert.match(credentialBoundary, /targetBuildIsolatedOnNoSecretRunner: true/)
   assert.match(credentialBoundary, /targetCodeExecutesInProductionJob: false/)
   assert.match(credentialBoundary, /prebuiltArtifactHashVerified: true/)
+  assert.match(credentialBoundary, /managedCredentialPathConstrained: true/)
   assert.match(credentialBoundary, /firebaseCliResolvedFromCurrentAuthority: true/)
+  assert.match(credentialBoundary, /staleCredentialsRemovedBeforeAllVerification: true/)
   assert.match(credentialBoundary, /materializationCoveredByCleanup: true/)
   assert.match(credentialBoundary, /targetCommandsReceiveRawSecret: false/)
   assert.match(credentialBoundary, /targetCommandsReceiveCredentialPath: false/)
