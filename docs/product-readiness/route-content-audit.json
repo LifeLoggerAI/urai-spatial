@@ -1,0 +1,76 @@
+{
+  "schemaVersion": 1,
+  "receiptId": "URAI-WSD-20260711-ROUTE-CONTENT-001",
+  "evidenceDate": "2026-07-11",
+  "repository": "LifeLoggerAI/urai-spatial",
+  "sourceSha": "60730edcb5bcedfe2ded2cee9a96cef96dff9510",
+  "stackedParentSha": "a2b4f26ff927da2666ad9ece70984855be3f5e1e",
+  "branch": "ws-d/route-content-audit-20260711",
+  "verdict": "no-route-accepted-for-public-launch",
+  "sourceDeltaSincePriorAudit": {
+    "routeFilesChanged": false,
+    "changedScope": "asset-intake-workflow-contract-verifier-only"
+  },
+  "scope": {
+    "directlyInspectedRoutes": [
+      "/",
+      "/home",
+      "/ground",
+      "/life-map",
+      "/focus",
+      "/replay",
+      "/mirror",
+      "/passport",
+      "/status",
+      "/privacy-controls"
+    ],
+    "inventoriedRoutes": [
+      "/location-map",
+      "/ascent",
+      "/unwind",
+      "/demo",
+      "/demo/replay-film",
+      "/spatial/life-map",
+      "/spatial/life-map-r3f",
+      "/spatial/ar-vr"
+    ],
+    "acceptedRoutes": []
+  },
+  "requiredDimensions": [
+    "purpose-and-capability-boundary",
+    "accurate-actions",
+    "privacy-consent-provider-device-disclosure",
+    "accessibility",
+    "loading-empty-offline-degraded-permission-states",
+    "destructive-action-and-recovery",
+    "identity-session-and-data-lifecycle-states",
+    "localization-and-reviewed-legal-copy",
+    "exact-deployed-sha-live-proof",
+    "support-and-escalation"
+  ],
+  "routes": {
+    "/": {"state": "source-owner-verified", "accepted": false},
+    "/home": {"state": "source-owner-verified", "accepted": false},
+    "/ground": {"state": "source-content-partial", "accepted": false},
+    "/life-map": {"state": "source-content-partial", "accepted": false},
+    "/focus": {"state": "source-content-partial", "accepted": false},
+    "/replay": {"state": "source-content-partial", "accepted": false},
+    "/mirror": {"state": "source-content-partial", "accepted": false},
+    "/passport": {"state": "source-owner-verified", "accepted": false},
+    "/status": {"state": "source-content-partial", "accepted": false},
+    "/privacy-controls": {"state": "blocked-by-runtime-evidence", "accepted": false},
+    "/location-map": {"state": "inventoried-only", "accepted": false},
+    "/ascent": {"state": "inventoried-only", "accepted": false},
+    "/unwind": {"state": "inventoried-only", "accepted": false},
+    "/demo": {"state": "inventoried-only", "accepted": false},
+    "/demo/replay-film": {"state": "inventoried-only", "accepted": false},
+    "/spatial/life-map": {"state": "inventoried-only", "accepted": false},
+    "/spatial/life-map-r3f": {"state": "inventoried-only", "accepted": false},
+    "/spatial/ar-vr": {"state": "inventoried-preview", "accepted": false}
+  },
+  "privacyCopyEscalation": true,
+  "runtimeMutation": false,
+  "deploymentMutation": false,
+  "providerCalls": 0,
+  "externalPublication": false
+}
