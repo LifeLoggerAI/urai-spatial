@@ -28,37 +28,53 @@ if (deployJobEnvironment.includes('FIREBASE_SERVICE_ACCOUNT_JSON')) {
   failures.push('Workflow exposes the raw service-account secret at deploy-job scope')
 }
 
-const installIndex = workflow.indexOf('Install frozen target dependencies without production credentials')
+const authorityInstallIndex = workflow.indexOf('Install current authority dependencies without production credentials')
+const targetInstallIndex = workflow.indexOf('Install frozen target dependencies without production credentials')
 const chromiumIndex = workflow.indexOf('Install Chromium without production credentials')
-const secretIndex = workflow.indexOf(secretMarker)
 const deployStepIndex = workflow.indexOf('Deploy exact target with current authority and ephemeral credentials')
-if ([installIndex, chromiumIndex, secretIndex, deployStepIndex].some((index) => index < 0)) {
+const secretIndex = workflow.indexOf(secretMarker)
+if ([authorityInstallIndex, targetInstallIndex, chromiumIndex, deployStepIndex, secretIndex].some((index) => index < 0)) {
   failures.push('Workflow is missing the ordered credential-boundary steps')
-} else if (!(installIndex < chromiumIndex && chromiumIndex < deployStepIndex && deployStepIndex < secretIndex)) {
-  failures.push('Service-account secret must be introduced only inside the deploy step after target install and browser setup')
+} else if (!(authorityInstallIndex < targetInstallIndex && targetInstallIndex < chromiumIndex && chromiumIndex < deployStepIndex && deployStepIndex < secretIndex)) {
+  failures.push('Authority and target dependencies must install before the one credential-scoped deploy step')
 }
 
-requireMarker('Workflow', workflow, "GOOGLE_APPLICATION_CREDENTIALS: ${{ runner.temp }}/urai-firebase-service-account.json")
-requireMarker('Workflow', workflow, 'node scripts/verify-release-credential-boundary.mjs')
-requireMarker('Workflow', workflow, 'node ../authority/scripts/live-release.mjs --deploy')
-requireMarker('Workflow', workflow, 'Remove temporary credentials')
+for (const marker of [
+  "GOOGLE_APPLICATION_CREDENTIALS: ${{ runner.temp }}/urai-firebase-service-account.json",
+  "URAI_FIREBASE_CLI: ${{ github.workspace }}/authority/node_modules/.bin/firebase",
+  'node scripts/verify-release-credential-boundary.mjs',
+  'node ../authority/scripts/live-release.mjs --deploy',
+  'Remove temporary credentials',
+]) requireMarker('Workflow', workflow, marker)
+
 forbid('Workflow', workflow, /printf\s+['"]%s['"]\s+"\$FIREBASE_SERVICE_ACCOUNT_JSON"\s*>\s*"\$GOOGLE_APPLICATION_CREDENTIALS"/, 'early credential-file write')
 forbid('Workflow', workflow, /cat\s+>\s*"\$GOOGLE_APPLICATION_CREDENTIALS"/, 'credential heredoc write')
+forbid('Workflow', workflow, /working-directory:\s*target[\s\S]{0,300}pnpm\s+exec\s+firebase\s+deploy/, 'target-resolved Firebase deploy')
 
 for (const marker of [
+  'const firebaseCliPath',
   'delete process.env.FIREBASE_SERVICE_ACCOUNT_JSON',
   'delete process.env.GOOGLE_APPLICATION_CREDENTIALS',
   'delete env.FIREBASE_SERVICE_ACCOUNT_JSON',
   'delete env.GOOGLE_APPLICATION_CREDENTIALS',
+  'function resolveAuthorityFirebaseCli()',
+  "realpathSync(path.resolve(authorityDirectory, '..'))",
+  'realpathSync(firebaseCliPath)',
+  'resolvedCli.startsWith(`${authorityRoot}${path.sep}`)',
   'function writeTemporaryServiceAccount()',
   'function removeTemporaryServiceAccount()',
   'function deployHostingWithTemporaryCredentials()',
   "writeFileSync(credentialsPath, `${JSON.stringify(serviceAccount)}\\n`, { encoding: 'utf8', mode: 0o600 })",
   'chmodSync(credentialsPath, 0o600)',
   'childEnvironment({ GOOGLE_APPLICATION_CREDENTIALS: credentialFile }, true)',
+  'spawnSync(\n      authorityFirebaseCli',
+  'shell: false',
   'if (deploy) removeTemporaryServiceAccount()',
   'finally {\n    removeTemporaryServiceAccount()',
 ]) requireMarker('Release operator', operator, marker)
+
+forbid('Release operator', operator, /pnpm\s+exec\s+firebase/, 'target/package-manager-resolved Firebase CLI')
+forbid('Release operator', operator, /spawnSync\(\s*['"]pnpm['"][\s\S]{0,200}['"]firebase['"]/, 'pnpm-spawned Firebase CLI')
 
 const staleCleanupIndex = operator.indexOf('if (deploy) removeTemporaryServiceAccount()')
 const verifyIndex = operator.indexOf("run('pnpm', ['verify:release:critical']")
@@ -71,11 +87,13 @@ if ([staleCleanupIndex, verifyIndex, buildIndex, deployCallIndex, smokeIndex].so
   failures.push('Release operator must remove stale credentials, verify and build without them, deploy ephemerally, then smoke after cleanup')
 }
 
+const cliResolutionIndex = operator.indexOf('const authorityFirebaseCli = resolveAuthorityFirebaseCli()')
 const materializeCallIndex = operator.indexOf('const credentialFile = writeTemporaryServiceAccount()')
 const materializeTryIndex = operator.lastIndexOf('try {', materializeCallIndex)
 const materializeFinallyIndex = operator.indexOf('finally {', materializeCallIndex)
-if (!(materializeTryIndex >= 0 && materializeTryIndex < materializeCallIndex && materializeCallIndex < materializeFinallyIndex)) {
-  failures.push('Credential materialization itself must be covered by the cleanup try/finally block')
+const authoritySpawnIndex = operator.indexOf('spawnSync(\n      authorityFirebaseCli', materializeCallIndex)
+if (!(materializeTryIndex >= 0 && materializeTryIndex < cliResolutionIndex && cliResolutionIndex < materializeCallIndex && materializeCallIndex < authoritySpawnIndex && authoritySpawnIndex < materializeFinallyIndex)) {
+  failures.push('Authority CLI resolution, credential materialization, and deploy must all be covered by one cleanup try/finally block')
 }
 
 const report = {
@@ -84,10 +102,12 @@ const report = {
   secretOccurrences,
   rawSecretJobScoped: deployJobEnvironment.includes('FIREBASE_SERVICE_ACCOUNT_JSON'),
   credentialsMaterializedByAuthorityOnly: true,
+  firebaseCliResolvedFromCurrentAuthority: true,
   staleCredentialsRemovedBeforeTargetCommands: true,
   materializationCoveredByCleanup: true,
   targetCommandsReceiveRawSecret: false,
   targetCommandsReceiveCredentialPath: false,
+  targetFirebaseCliReceivesCredentials: false,
   failures,
 }
 
