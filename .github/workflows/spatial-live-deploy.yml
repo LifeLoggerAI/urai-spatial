@@ -38,7 +38,7 @@ on:
         required: true
         type: string
       rollback_sha:
-        description: Distinct verified ancestor reserved if this deployment must be reversed
+        description: Distinct hardened and verified ancestor reserved for rollback
         required: true
         type: string
       confirm:
@@ -153,7 +153,7 @@ jobs:
           retention-days: 90
 
   verify-rollback:
-    name: Exact-SHA rollback verification
+    name: Exact-SHA hardened rollback verification
     if: github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     timeout-minutes: 60
@@ -168,7 +168,7 @@ jobs:
           ref: ${{ env.ROLLBACK_SHA }}
           fetch-depth: 0
           persist-credentials: false
-      - name: Prove rollback ancestry and clean checkout
+      - name: Prove hardened rollback ancestry and clean checkout
         shell: bash
         run: |
           set -euo pipefail
@@ -178,6 +178,10 @@ jobs:
           test "$ROLLBACK_SHA" != "$RELEASE_SHA"
           git cat-file -e "$RELEASE_SHA^{commit}"
           git merge-base --is-ancestor "$ROLLBACK_SHA" "$RELEASE_SHA"
+          test -f scripts/live-release.mjs
+          test -f scripts/audit-production-workflow-authority.mjs
+          grep -F 'Production deployment is denied outside GitHub Actions' scripts/live-release.mjs
+          grep -F 'Canonical deploy workflow marker is missing' scripts/live-release.mjs
       - uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
@@ -187,6 +191,8 @@ jobs:
           corepack prepare "pnpm@${PNPM_VERSION}" --activate
       - name: Install frozen dependencies
         run: pnpm install --frozen-lockfile
+      - name: Audit rollback production authority
+        run: node scripts/audit-production-workflow-authority.mjs
       - name: Verify rollback release-critical contract
         env:
           GITHUB_SHA: ${{ env.ROLLBACK_SHA }}
@@ -237,7 +243,7 @@ jobs:
           ref: ${{ env.RELEASE_SHA }}
           fetch-depth: 0
           persist-credentials: false
-      - name: Validate authority and credentials
+      - name: Validate hardened authority and credentials
         shell: bash
         run: |
           set -euo pipefail
@@ -247,6 +253,10 @@ jobs:
           [[ "$ROLLBACK_SHA" =~ ^[0-9a-f]{40}$ ]]
           git merge-base --is-ancestor "$RELEASE_SHA" "$DISPATCH_SHA"
           git merge-base --is-ancestor "$ROLLBACK_SHA" "$RELEASE_SHA"
+          test -f scripts/live-release.mjs
+          test -f scripts/audit-production-workflow-authority.mjs
+          grep -F 'Production deployment is denied outside GitHub Actions' scripts/live-release.mjs
+          grep -F 'Canonical deploy workflow marker is missing' scripts/live-release.mjs
           if test "$RELEASE_MODE" = 'release'; then
             test "$RELEASE_SHA" = "$DISPATCH_SHA"
           else
@@ -279,6 +289,8 @@ jobs:
           corepack prepare "pnpm@${PNPM_VERSION}" --activate
       - name: Install frozen dependencies
         run: pnpm install --frozen-lockfile
+      - name: Re-audit production authority at deploy time
+        run: node scripts/audit-production-workflow-authority.mjs
       - name: Install Chromium for live evidence
         run: pnpm exec playwright install --with-deps chromium
       - name: Deploy exact release and run built-in smoke
@@ -297,7 +309,7 @@ jobs:
             "workflow": ".github/workflows/spatial-live-deploy.yml",
             "mode": "rollback",
             "targetReleaseSha": "$ROLLBACK_SHA",
-            "requiredFallback": "Select a distinct verified ancestor of $ROLLBACK_SHA",
+            "requiredFallback": "Select a distinct hardened and verified ancestor of $ROLLBACK_SHA",
             "confirmation": "DEPLOY_URAI_APP",
             "workstationDeployAllowed": false
           }
@@ -305,7 +317,7 @@ jobs:
           cat > "deployment-receipt/$RELEASE_SHA/rollback.txt" <<EOF
           Rollback must be dispatched from the protected URAI Canonical Production Release workflow on main.
           Set mode=rollback and release_sha=$ROLLBACK_SHA.
-          Set rollback_sha to a distinct verified ancestor of $ROLLBACK_SHA.
+          Set rollback_sha to a distinct hardened and verified ancestor of $ROLLBACK_SHA.
           Set confirm=DEPLOY_URAI_APP.
           Do not deploy from a workstation.
           EOF
