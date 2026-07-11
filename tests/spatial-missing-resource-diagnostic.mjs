@@ -8,6 +8,7 @@ import {
 
 const { chromium } = playwright;
 const baseUrl = 'http://localhost:3000';
+const baseOrigin = new URL(baseUrl).origin;
 const artifactDir = 'artifacts/spatial-404-diagnostics';
 const routes = [
   '/home',
@@ -52,6 +53,23 @@ function stopServer(server) {
   spawnSync('bash', ['-lc', 'fuser -k 3000/tcp >/dev/null 2>&1 || true']);
 }
 
+function key(entry) {
+  return `${entry.kind}:${entry.status ?? 0}:${entry.method ?? ''}:${entry.url}`;
+}
+
+function isBenignLocalAbort(entry) {
+  if (entry.failure !== 'net::ERR_ABORTED') return false;
+  let parsed;
+  try {
+    parsed = new URL(entry.url);
+  } catch {
+    return false;
+  }
+  if (parsed.origin !== baseOrigin) return false;
+  if (parsed.searchParams.has('_rsc')) return true;
+  return parsed.pathname.startsWith('/_next/static/webpack/') && parsed.pathname.endsWith('.hot-update.js');
+}
+
 const server = spawn('pnpm', ['--dir', 'urai-tier1', 'dev', '--port', '3000'], {
   cwd: process.cwd(),
   env: { ...process.env, CI: '1' },
@@ -60,15 +78,56 @@ const server = spawn('pnpm', ['--dir', 'urai-tier1', 'dev', '--port', '3000'], {
 });
 
 let browser;
-const missing = [];
+let context;
+const httpFailures = [];
+const failedRequests = [];
+const blockedExternalRequests = [];
 
 try {
   await waitForServer();
   browser = await chromium.launch(chromiumLaunchOptions());
-  const page = await browser.newPage({ viewport: { width: 1440, height: 1000 } });
+  context = await browser.newContext({
+    viewport: { width: 1440, height: 1000 },
+    serviceWorkers: 'block',
+  });
+
+  await context.route('**/*', async (route) => {
+    const request = route.request();
+    let parsed;
+    try {
+      parsed = new URL(request.url());
+    } catch {
+      blockedExternalRequests.push({
+        kind: 'blocked-invalid-url',
+        status: 0,
+        url: request.url(),
+        method: request.method(),
+        resourceType: request.resourceType(),
+      });
+      await route.abort('blockedbyclient');
+      return;
+    }
+
+    if (['data:', 'blob:', 'about:'].includes(parsed.protocol) || parsed.origin === baseOrigin) {
+      await route.continue();
+      return;
+    }
+
+    blockedExternalRequests.push({
+      kind: 'blocked-external-request',
+      status: 0,
+      url: parsed.toString(),
+      method: request.method(),
+      resourceType: request.resourceType(),
+    });
+    await route.abort('blockedbyclient');
+  });
+
+  const page = await context.newPage();
   page.on('response', (response) => {
     if (response.status() < 400) return;
-    missing.push({
+    httpFailures.push({
+      kind: 'http-error',
       status: response.status(),
       url: response.url(),
       method: response.request().method(),
@@ -76,7 +135,8 @@ try {
     });
   });
   page.on('requestfailed', (request) => {
-    missing.push({
+    failedRequests.push({
+      kind: 'request-failed',
       status: 0,
       url: request.url(),
       method: request.method(),
@@ -86,19 +146,55 @@ try {
   });
 
   for (const route of routes) {
-    await page.goto(`${baseUrl}${route}`, { waitUntil: 'domcontentloaded' });
-    await page.waitForLoadState('networkidle', { timeout: 15000 }).catch(() => undefined);
+    const response = await page.goto(`${baseUrl}${route}`, {
+      waitUntil: 'domcontentloaded',
+      timeout: 60_000,
+    });
+    if (!response || response.status() !== 200) {
+      throw new Error(`Spatial diagnostic route failed: ${route} (${response?.status() ?? 'no response'})`);
+    }
+    await page.waitForTimeout(1_000);
   }
 
-  const unique = [...new Map(missing.map((entry) => [`${entry.status}:${entry.method}:${entry.url}`, entry])).values()];
-  writeFileSync(`${artifactDir}/missing-resources.json`, JSON.stringify({ routes, missing: unique }, null, 2));
-  if (unique.length) {
-    console.log('SPATIAL_MISSING_RESOURCES');
-    for (const entry of unique) console.log(`${entry.status} ${entry.method} ${entry.resourceType} ${entry.url}`);
+  const blockedKeys = new Set(blockedExternalRequests.map((entry) => `${entry.method}:${entry.url}`));
+  const ignored = failedRequests.filter((entry) => isBenignLocalAbort(entry));
+  const actionableFailedRequests = failedRequests.filter((entry) => {
+    if (isBenignLocalAbort(entry)) return false;
+    return !blockedKeys.has(`${entry.method}:${entry.url}`);
+  });
+
+  const actionable = [...new Map([
+    ...httpFailures,
+    ...blockedExternalRequests,
+    ...actionableFailedRequests,
+  ].map((entry) => [key(entry), entry])).values()];
+
+  const report = {
+    schemaVersion: 'urai-spatial-missing-resource-diagnostics-2',
+    generatedAt: new Date().toISOString(),
+    baseUrl,
+    routes,
+    policy: {
+      externalRequestsAllowed: false,
+      externalRequestsBlockedBeforeSend: true,
+      ignoredLocalAbortClasses: ['next-rsc-navigation', 'next-hmr-hot-update'],
+    },
+    actionable,
+    ignored,
+  };
+  writeFileSync(`${artifactDir}/missing-resources.json`, `${JSON.stringify(report, null, 2)}\n`);
+
+  if (actionable.length) {
+    console.error('SPATIAL_ACTIONABLE_RESOURCE_FAILURES');
+    for (const entry of actionable) {
+      console.error(`${entry.kind} ${entry.status} ${entry.method} ${entry.resourceType} ${entry.url}`);
+    }
+    process.exitCode = 1;
   } else {
-    console.log('PASS no missing spatial resources detected');
+    console.log(`PASS no actionable missing or external spatial resources; ignored ${ignored.length} benign local aborts`);
   }
 } finally {
+  if (context) await context.close().catch(() => undefined);
   if (browser) await browser.close().catch(() => undefined);
   stopServer(server);
 }
