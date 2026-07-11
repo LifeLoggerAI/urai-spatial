@@ -46,6 +46,8 @@ forbid('Workflow', workflow, /printf\s+['"]%s['"]\s+"\$FIREBASE_SERVICE_ACCOUNT_
 forbid('Workflow', workflow, /cat\s+>\s*"\$GOOGLE_APPLICATION_CREDENTIALS"/, 'credential heredoc write')
 
 for (const marker of [
+  'delete process.env.FIREBASE_SERVICE_ACCOUNT_JSON',
+  'delete process.env.GOOGLE_APPLICATION_CREDENTIALS',
   'delete env.FIREBASE_SERVICE_ACCOUNT_JSON',
   'delete env.GOOGLE_APPLICATION_CREDENTIALS',
   'function writeTemporaryServiceAccount()',
@@ -54,17 +56,26 @@ for (const marker of [
   "writeFileSync(credentialsPath, `${JSON.stringify(serviceAccount)}\\n`, { encoding: 'utf8', mode: 0o600 })",
   'chmodSync(credentialsPath, 0o600)',
   'childEnvironment({ GOOGLE_APPLICATION_CREDENTIALS: credentialFile }, true)',
+  'if (deploy) removeTemporaryServiceAccount()',
   'finally {\n    removeTemporaryServiceAccount()',
 ]) requireMarker('Release operator', operator, marker)
 
+const staleCleanupIndex = operator.indexOf('if (deploy) removeTemporaryServiceAccount()')
 const verifyIndex = operator.indexOf("run('pnpm', ['verify:release:critical']")
 const buildIndex = operator.indexOf("run('pnpm', ['build:static']")
 const deployCallIndex = operator.lastIndexOf('deployHostingWithTemporaryCredentials()')
 const smokeIndex = operator.lastIndexOf("run('node', [postDeploySmoke]")
-if ([verifyIndex, buildIndex, deployCallIndex, smokeIndex].some((index) => index < 0)) {
-  failures.push('Release operator is missing the required verify/build/deploy/smoke sequence')
-} else if (!(verifyIndex < buildIndex && buildIndex < deployCallIndex && deployCallIndex < smokeIndex)) {
-  failures.push('Release operator must verify and build before credentials exist, then remove them before post-deploy smoke')
+if ([staleCleanupIndex, verifyIndex, buildIndex, deployCallIndex, smokeIndex].some((index) => index < 0)) {
+  failures.push('Release operator is missing the required cleanup/verify/build/deploy/smoke sequence')
+} else if (!(staleCleanupIndex < verifyIndex && verifyIndex < buildIndex && buildIndex < deployCallIndex && deployCallIndex < smokeIndex)) {
+  failures.push('Release operator must remove stale credentials, verify and build without them, deploy ephemerally, then smoke after cleanup')
+}
+
+const materializeCallIndex = operator.indexOf('const credentialFile = writeTemporaryServiceAccount()')
+const materializeTryIndex = operator.lastIndexOf('try {', materializeCallIndex)
+const materializeFinallyIndex = operator.indexOf('finally {', materializeCallIndex)
+if (!(materializeTryIndex >= 0 && materializeTryIndex < materializeCallIndex && materializeCallIndex < materializeFinallyIndex)) {
+  failures.push('Credential materialization itself must be covered by the cleanup try/finally block')
 }
 
 const report = {
@@ -73,6 +84,8 @@ const report = {
   secretOccurrences,
   rawSecretJobScoped: deployJobEnvironment.includes('FIREBASE_SERVICE_ACCOUNT_JSON'),
   credentialsMaterializedByAuthorityOnly: true,
+  staleCredentialsRemovedBeforeTargetCommands: true,
+  materializationCoveredByCleanup: true,
   targetCommandsReceiveRawSecret: false,
   targetCommandsReceiveCredentialPath: false,
   failures,
