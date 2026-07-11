@@ -128,8 +128,8 @@ if (!existsSync(workflowDirectory)) {
     'grep -R --fixed-strings "$PROOF_SHA"',
     'environment: production',
     'git merge-base --is-ancestor',
-    "test \"$RELEASE_SHA\" = \"$CURRENT_MAIN_SHA\"",
-    "test \"$RELEASE_SHA\" = \"$ROLLBACK_SHA\"",
+    'test "$RELEASE_SHA" = "$CURRENT_MAIN_SHA"',
+    'test "$ROLLBACK_SHA" = "$CURRENT_MAIN_SHA"',
     'URAI_RELEASE_OPERATION:',
     'GITHUB_WORKFLOW',
     'GITHUB_REPOSITORY',
@@ -153,7 +153,7 @@ if (!existsSync(workflowDirectory)) {
 
 const releaseSource = read(allowedProductionScript)
 requireTokens('Deploy executable', releaseSource, [
-  "fileURLToPath(import.meta.url)",
+  'fileURLToPath(import.meta.url)',
   "const postDeploySmoke = path.join(authorityDirectory, 'urai-post-deploy-smoke.mjs')",
   'requireFile(postDeploySmoke)',
   "run('node', [postDeploySmoke]",
