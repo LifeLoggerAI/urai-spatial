@@ -40,8 +40,9 @@ const requiredTokens = [
   checkoutRef,
   setupNodeRef,
   "ref: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}",
-  'fetch-depth: 0',
+  'fetch-depth: 1',
   'persist-credentials: false',
+  'show-progress: false',
   'git status --porcelain --untracked-files=all',
   'node --check scripts/live-release.mjs',
   'node --check scripts/create-static-release-bundle.mjs',
@@ -88,7 +89,6 @@ const forbiddenTokens = [
   'packages: write',
   'secrets:',
 ]
-
 for (const token of forbiddenTokens) {
   if (source.includes(token)) failures.push(`Release security guard contains forbidden marker: ${token}`)
 }
@@ -101,7 +101,6 @@ for (const actionRef of actionRefs) {
   if (!/^[0-9a-f]{40}$/.test(ref)) failures.push(`External action is not pinned to a full immutable commit SHA: ${actionRef}`)
   if (!expectedExternalActions.has(actionRef)) failures.push(`Unexpected external action in release security guard: ${actionRef}`)
 }
-
 for (const expected of expectedExternalActions) {
   const count = actionRefs.filter((actionRef) => actionRef === expected).length
   if (count !== 1) failures.push(`Expected external action must appear exactly once: ${expected}; found ${count}`)
@@ -112,12 +111,14 @@ if (pathSections.length !== 2) failures.push(`Release security guard must define
 if (pathSections.length === 2 && pathSections[0] !== pathSections[1]) failures.push('Pull-request and push path filters differ')
 
 const report = {
-  schemaVersion: 'urai-release-security-path-guard-2',
+  schemaVersion: 'urai-release-security-path-guard-3',
   ok: failures.length === 0,
   workflow: workflowRelativePath,
   protectedPaths: expectedPaths,
   externalActions: actionRefs,
   permissions: ['contents:read'],
+  exactHeadOnlyCheckout: true,
+  checkoutHistoryDepth: 1,
   productionCredentialsAvailable: false,
   productionMutationAvailable: false,
   failures,
