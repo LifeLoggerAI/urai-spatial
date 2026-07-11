@@ -1,0 +1,14 @@
+{
+  "version": "urai-ambient-bed-v1",
+  "durationSeconds": 8,
+  "loop": true,
+  "userControlled": true,
+  "fallback": "silent",
+  "voices": [
+    { "type": "sine", "frequencyHz": 55, "gain": 0.018 },
+    { "type": "sine", "frequencyHz": 82.5, "gain": 0.009 },
+    { "type": "sine", "frequencyHz": 110, "gain": 0.005 }
+  ],
+  "masterGain": 0.55,
+  "fadeSeconds": 1.2
+}
