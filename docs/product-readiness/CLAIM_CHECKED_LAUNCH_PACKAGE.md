@@ -11,9 +11,9 @@
 
 **PUBLIC LAUNCH PACKAGE: NO-GO**
 
-This package is an internal claim and evidence boundary. It is not authorization to publish, announce, email, pitch, distribute screenshots or video, release QR codes, enable indexing, open enrollment, activate providers, deploy, or describe URAI Spatial as production-ready.
+This package is an internal claim and evidence boundary. It does not authorize publication, outreach, QR release, screenshot or video distribution, enrollment, indexing, provider activation, deployment, or production-ready language.
 
-## Approved current one-sentence description
+## Approved current description
 
 > URAI Spatial is reachable as a privacy-safe fallback/demo spatial shell with a substantial V1 web experience and future provider seams.
 
@@ -23,7 +23,7 @@ No stronger description is approved.
 
 > This experience uses sample or fallback-safe content. Source implementation, contracts, and route availability do not prove authenticated personal-memory persistence, operational privacy controls, completed asset delivery, active providers, production certification, or physical-device support.
 
-A disclosure does not cure unsupported behavior; it prevents bounded demo behavior from being mistaken for production evidence.
+A disclosure does not convert unsupported behavior into supported behavior.
 
 ## Current authority chain
 
@@ -31,12 +31,12 @@ A disclosure does not cure unsupported behavior; it prevents bounded demo behavi
 | --- | --- |
 | Canonical source | `main@60730edcb5bcedfe2ded2cee9a96cef96dff9510` |
 | Product authority/glossary | PR #546 `a2b4f26ff927da2666ad9ece70984855be3f5e1e` — draft, 3 ahead / 0 behind main |
-| Route-content audit | PR #547 `277347c517290c9dee9d660b1877fdb817b7024b` — draft, 3 ahead / 0 behind #546, zero routes accepted |
+| Route-content audit | PR #547 `277347c517290c9dee9d660b1877fdb817b7024b` — draft, 3 ahead / 0 behind #546; zero routes accepted |
 | Localization/analytics/metadata audit | PR #548 `f3588054e37c3a5d639af8e04855bc3aa332e7a4` — draft, 3 ahead / 0 behind #547 |
-| Support readiness | PR #558 `ad31eeff849fb0764cb3623a3d6d0cf77e7dce14` — draft, 3 ahead / 0 behind #548, support NO-GO |
+| Support readiness | PR #558 `ad31eeff849fb0764cb3623a3d6d0cf77e7dce14` — draft, 3 ahead / 0 behind #548; support NO-GO |
 | Program truth | Issue #413 |
 | Production truth | Issue #414 |
-| Runner/account blocker | Issue #450 and GitHub Support ticket #4553961; no human support response recorded at this evidence point |
+| Runner/account blocker | Issue #450 and GitHub Support ticket #4553961; no human support response recorded |
 
 All exact-head workflows attached to the refreshed Workstream D chain remain queued. Queued is not passing evidence.
 
@@ -44,45 +44,36 @@ All exact-head workflows attached to the refreshed Workstream D chain remain que
 
 | Candidate | Exact head | Evidence-bounded state |
 | --- | --- | --- |
-| Analytics #553 | `b7a145809d64cf2616f60657d5a1be78b4d03765` | Runtime fail-closed and persistable packet/event history removed; 13 queued checks; no analytics provider activation or production approval. |
-| Privacy Controls #554 | `57cb67a3429ca8273c08a486b3a2b605b6127631` | Explicit non-operational preview; still based on stale main and unverified. |
-| Optional guided demo #555 | `906ccb3f6b8254e9deecbec78ac6c9dd7a38d6b5` | Query-only, sample-only, non-persistent route guidance; 5 queued checks; parent #554 required first. |
-| Discoverability #557 | `96b2d3a21087e4cc5c6e1c739d9017ac318cb85a` | Indexing remains fail-closed; candidate is stale against current main and unverified. |
-| Release credential boundary #552 | `d592e4f32d444b501a02278033921f1a0294e6d0` | Source pin/audit/credential-verifier repairs reconciled onto refreshed #539; 6 queued checks; not incorporated into #539. |
-| Release controls #539 | `ad473628eb97235171eda2ff9f8fc9647c0d518f` | Current main reconciled through PR #568; draft, queued, and awaiting terminal-green #552 plus incorporation and a full evidence rerun. |
-| Sensory authority #544 | `7896f75c340f2ea3e046529eb2ea6c55255b7231` | Mount-relative loading timing and fail-closed candidate boundary exist; uncertified, unincorporated, queued. |
+| Analytics #553 | `5bb85f8764dbe58f4bd75e853fe30012ad1ef977` | Rebuilt from exact reviewed blobs on current main; 1 ahead / 0 behind; four-file fail-closed correction; 13 queued checks; no analytics provider activation or production approval. |
+| Privacy Controls #554 | `972616b92536108818ca0965e543bae2ae322c6c` | Rebuilt on current main; 1 ahead / 0 behind; explicit non-operational preview; 14 queued checks; operational controls remain unproven. |
+| Optional guided demo #555 | `212126a90920c5601f858175556ae319bc349ae8` | Rebuilt directly on #554 head `972616b...`; 1 ahead / 0 behind parent; query-only, sample-only and non-persistent; 5 queued checks. |
+| Discoverability #557 | `3d6354fa44d784334645c86151b158edd1f1c4d6` | Rebuilt on current main; 1 ahead / 0 behind; indexing remains fail-closed; 16 queued checks; no public indexing approval. |
+| Release credential boundary #552 | `d592e4f32d444b501a02278033921f1a0294e6d0` | Source pin, immutable-action audit and credential-verifier repairs reconciled onto refreshed #539; 6 queued checks; not incorporated into #539. |
+| Release controls #539 | `ad473628eb97235171eda2ff9f8fc9647c0d518f` | Current-main reconciled, draft and queued; requires terminal-green #552, incorporation and a full evidence rerun. |
+| Sensory authority #544 | `7896f75c340f2ea3e046529eb2ea6c55255b7231` | Fail-closed candidate boundary exists; uncertified, unincorporated and queued. |
 | Founder-event source #521 | `780802576f2e0b0ebcaa0d5331ad9bb9032dccdf` | Source-corrupt and rejected until repair is incorporated. |
-| Founder-event repair #562 | `d5494f6febfaf98bdcb0af1fc2368d3d8afecbcf` | Restores Status source and labels `/event` pending proof; unincorporated; 6 queued checks. |
+| Founder-event repair #562 | `d5494f6febfaf98bdcb0af1fc2368d3d8afecbcf` | Restores Status and labels `/event` pending proof; unincorporated; 6 queued checks. |
 | Redundant sensory repair #563 | closed unmerged | Not an authority. |
 
 ## V1 asset-intake boundary
 
-Current `main` contains a read-only V1 handoff intake workflow, contract, and verifier. The contract is bound to a safe-resume marker and remains `promotion: false`.
+Current `main` contains a read-only V1 handoff intake workflow, contract, verifier and safe-resume marker binding. The contract remains `promotion: false`.
 
-This proves none of the following:
-
-- 53 output files exist in the consumer repository;
-- all assets were provider-generated;
-- duplicates were reviewed;
-- assets were copied, registered, promoted, activated, deployed, or visually certified;
-- provider spending was incurred or approved;
-- route consumption and fallback behavior were tested.
-
-Do not describe the intake contract as completed asset delivery.
+This does not prove that 53 output files exist, were provider-generated, passed duplicate or visual review, were copied, registered, promoted, activated, deployed, route-consumed, or paid for.
 
 ## Product and route overview
 
 | Surface | Evidence-backed description | Launch state |
 | --- | --- | --- |
-| Home | Entry realm and first step of the intended route journey. | Source exists; complete onboarding, auth, provider, failure, accessibility, mobile, and exact-live states not accepted. |
-| Ground | Ground/private-world experience with visual workforce and object concepts. | Source exists; no autonomous action or persistent operations claim. |
-| Life Map | Spatial memory/navigation experience. | Source exists; no authenticated personal-memory persistence, completeness, or provider-grounding claim. |
-| Focus | Selected-memory or focused-context realm. | Source exists; missing/deleted/revoked/offline and exact-live behavior not accepted. |
-| Replay | Cinematic memory-replay experience. | Source exists; no factual reconstruction, active provider media, caption, recovery, or live certification claim. |
-| Mirror | Reflection and pattern realm. | Source exists; no diagnosis, certainty, treatment, or active V5 certification. |
-| Passport | Identity, consent, ownership, and provenance concept surface. | Legal identity, authentication, export/deletion, and ownership guarantees unproven. |
-| Privacy Controls | Consent/privacy concept surface. | Current main has strong language without end-to-end proof; #554 is preview-only candidate, not live evidence. |
-| Status | Production-truth control-room concept. | Source distinguishes implementation from proof; exact deployed and rollback derivation remain required. |
+| Home | Entry realm and first step of the intended route journey. | Source exists; complete onboarding, auth, provider, failure, accessibility, mobile and exact-live states are not accepted. |
+| Ground | Ground/private-world experience with visual workforce and object concepts. | No autonomous action or persistent operations claim. |
+| Life Map | Spatial memory/navigation experience. | No authenticated personal-memory persistence, completeness or provider-grounding claim. |
+| Focus | Selected-memory or focused-context realm. | Missing, deleted, revoked, offline and exact-live behavior remain unaccepted. |
+| Replay | Cinematic memory-replay experience. | No factual reconstruction, active provider media, caption, recovery or live-certification claim. |
+| Mirror | Reflection and pattern realm. | No diagnosis, certainty, treatment or active V5 certification. |
+| Passport | Identity, consent, ownership and provenance concept surface. | Authentication, legal identity, export/deletion and ownership guarantees remain unproven. |
+| Privacy Controls | Consent/privacy concept surface. | #554 is a preview-only candidate, not live operational evidence. |
+| Status | Production-truth control-room concept. | Exact deployed and rollback derivation remain required. |
 | XR/Quest | Preview and source-hardening pathways. | No physical-device certification or active WebXR/Quest claim. |
 
 Receipt `URAI-WSD-20260711-ROUTE-CONTENT-001` accepts **zero routes** as public-launch complete.
@@ -98,44 +89,41 @@ Not approved:
 
 - desktop or mobile certification;
 - complete browser matrix;
-- PWA, offline app, native app, WebXR, Quest, visionOS, handheld AR, controller, hand-tracking, comfort, thermal, or performance support;
-- `19 languages`, multilingual production support, reviewed translations, localized legal/privacy content, RTL, localized metadata, or `hreflang`.
+- PWA, offline app, native app, WebXR, Quest, visionOS, handheld AR, controller, hand-tracking, comfort, thermal or performance support;
+- `19 languages`, reviewed multilingual support, localized legal/privacy content, RTL, localized metadata or `hreflang`.
 
 ## Privacy and analytics statement
 
-Safe framing: URAI Spatial is designed around permission-first and privacy-conscious concepts, and current public language must distinguish fallback/sample design from active data processing and operational controls.
+Privacy-first and permission-first language must remain qualified.
 
-Required limitations:
-
-- privacy-first design is not proof of complete enforcement;
-- copy and UI controls are not proof of consent persistence, revocation propagation, export, deletion, retention, audit, legal hold, tenant isolation, or provider enforcement;
-- `all data is local`, `nothing leaves the device`, `zero data sharing`, and equivalent guarantees are not approved;
+- copy and UI are not proof of consent persistence, revocation propagation, export, deletion, retention, audit, legal hold, tenant isolation or provider enforcement;
+- `all data is local`, `nothing leaves the device`, `zero data sharing` and equivalent guarantees are not approved;
 - canonical `main` still contains the raw analytics boundary audited by #548;
-- #553 is a candidate remediation only and no analytics destination or production measurement is approved.
+- #553 is a current-main candidate remediation only; no analytics destination or production measurement is approved.
 
 ## Accessibility statement
 
-Source contains accessibility-oriented labels, semantics, loading labels, reduced-motion work, and route-specific intent. No WCAG conformance, assistive-technology matrix, complete keyboard/screen-reader/zoom/reflow/contrast/caption/touch-target/error-announcement support, or accessibility certification is approved.
+Source contains accessibility-oriented labels, semantics, loading labels, reduced-motion work and route-specific intent. No WCAG conformance, complete assistive-technology matrix or accessibility certification is approved.
 
 ## Provider and persistence note
 
 | Capability | Current approved state |
 | --- | --- |
-| Provider-backed V2/V3 assets | Not active; promotion, provider, privacy, deployment, and receipts required. |
+| Provider-backed V2/V3 assets | Not active; promotion, provider, privacy, deployment and receipts required. |
 | Asset Factory live jobs | Candidate/intake evidence exists; no unqualified production or completion claim. |
-| Firebase/Firestore personal persistence | Not proven live with owner/tenant, rules, export, deletion, revocation, retention, and audit evidence. |
+| Firebase/Firestore personal persistence | Not proven live with owner/tenant, rules, export, deletion, revocation, retention and audit evidence. |
 | Memory-grounded orb | Not active. |
 | Wearables/body signals | Not active. |
 | External communications/actions | Not approved as autonomous or active without explicit human-authorized receipts. |
 | AR/WebXR/Quest | Preview/source only; not device certified. |
 
-A configured adapter, environment variable, seam, mock, fallback, contract, candidate asset, or repository name does not prove provider activity.
+A configured adapter, environment variable, seam, mock, fallback, contract, candidate asset or repository name does not prove provider activity.
 
 ## Support note
 
 Public support readiness is **NO-GO** under `URAI-WSD-20260711-SUPPORT-001`.
 
-No public support channel, restricted security/privacy/accessibility channel, primary or backup owner, incident commander, legal/privacy escalation owner, operating hours, SLA, authenticated account lookup, recovery process, data-rights operation, outage-notification authority, or deployed support surface is approved.
+No public support channel, restricted security/privacy/accessibility channel, primary or backup owner, incident commander, legal/privacy escalation owner, operating hours, SLA, authenticated account lookup, recovery process, data-rights operation, outage-notification authority or deployed support surface is approved.
 
 ## Exact release identity
 
@@ -154,9 +142,9 @@ No public support channel, restricted security/privacy/accessibility channel, pr
 **Accepted public screenshots: 0**  
 **Accepted public demos: 0**
 
-A screenshot, video, QR, or demo is not accepted until it records exact source/build/deployed SHA, route/query, viewport/device/browser/OS, sample-versus-personal classification, visible limitations, sensitive-content review, route/asset parity, reviewer, date, and public-use approval.
+A screenshot, video, QR or demo is not accepted until it records exact source/build/deployed SHA, route/query, viewport/device/browser/OS, sample-versus-personal classification, visible limitations, sensitive-content review, route/asset parity, reviewer, date and public-use approval.
 
-Founder-event #521 is rejected while its source-corrupt head remains current. Repair #562 must be incorporated and the resulting founder-event head fully reverified before any QR, screenshot, or video approval.
+Founder-event #521 remains rejected while its corrupt head is current. #562 must be incorporated and the resulting founder-event head fully reverified before QR, screenshot or video approval.
 
 ## Claims matrix
 
@@ -164,45 +152,42 @@ Founder-event #521 is rejected while its source-corrupt head remains current. Re
 
 - URAI Spatial is the canonical public URAI web repository/runtime.
 - The repository contains a substantial spatial web source experience.
-- The intended route journey includes Home, Ground, Life Map, Focus, Replay, Mirror, Passport, and Status.
+- The intended route journey includes Home, Ground, Life Map, Focus, Replay, Mirror, Passport and Status.
 - Public demos must use sample/fallback-safe content and visible limitations.
-- Provider, persistence, asset delivery, deployment, accessibility, localization, and device claims are evidence-gated.
+- Provider, persistence, asset delivery, deployment, accessibility, localization and device claims are evidence-gated.
 - Current release posture is fallback/demo with incomplete production certification.
 
-### Yellow — requires immediate qualifier and exact evidence reference
+### Yellow — requires immediate qualifier and exact evidence
 
 - privacy-first or permission-first design;
 - user-controlled memory concepts;
 - route reachability;
-- cinematic replay;
-- spatial interaction;
+- cinematic replay and spatial interaction;
 - XR preview pathways;
-- provider seams;
-- asset-intake or candidate-asset state;
-- data ownership, provenance, export, deletion, revocation, or consent concepts;
+- provider seams and asset-intake state;
+- data ownership, provenance, export, deletion, revocation or consent concepts;
 - desktop/mobile browser behavior;
 - accessibility features;
 - future localization.
 
-Yellow claims must state whether they are design intent, source implementation, contract, candidate, preview, fallback, tested, deployed, or live.
+Yellow claims must state whether they are design intent, source implementation, contract, candidate, preview, fallback, tested, deployed or live.
 
 ### Red — not approved
 
-- production-ready, launch-ready, production-certified, fully live, complete, or done;
+- production-ready, launch-ready, production-certified, fully live, complete or done;
 - fully autonomous real-world action;
 - active personal-memory persistence;
-- complete export, deletion, retention, or revocation guarantees;
+- complete export, deletion, retention or revocation guarantees;
 - `all data is local` or `nothing leaves the device`;
 - completed/certified 53-asset delivery without exact files and receipts;
 - active provider-backed V2/V3 behavior;
-- active wearables, body signals, camera, microphone, Wi-Fi sensing, or IoT inference;
-- medical, diagnostic, treatment, therapeutic, clinical-outcome, dementia, Alzheimer’s, PTSD, seizure, or safety-detection claims;
-- lie detection, mind reading, psychological truth, emotional certainty, or surveillance;
+- active wearables, body signals, camera, microphone, Wi-Fi sensing or IoT inference;
+- medical, diagnostic, treatment, therapeutic or clinical-outcome claims;
+- lie detection, mind reading, psychological truth, emotional certainty or surveillance;
 - accessibility certification or WCAG conformance;
 - `19 languages` or reviewed multilingual support;
-- Quest, AR, VR, XR, visionOS, or physical-device certification;
-- guaranteed security, privacy, compliance, uptime, recovery, support response, adoption, revenue, valuation, investment return, or media reach;
-- legal entity, ownership, IP, authorization, signature, or regulatory conclusions without controlling records and authorized review.
+- physical XR/device certification;
+- guaranteed security, privacy, compliance, uptime, recovery, support response, adoption, revenue, valuation, investment return or media reach.
 
 ## Accepted evidence counts
 
@@ -219,14 +204,14 @@ Yellow claims must state whether they are design intent, source implementation, 
 This package may move from INTERNAL REVIEW ONLY only when:
 
 - one exact release SHA has complete passing checks;
-- the exact SHA is deployed to the authorized target;
+- that exact SHA is deployed to the authorized target;
 - a distinct rollback SHA and tested rollback command exist;
-- custom-domain route/content/query/slash/resource/console/interaction proof passes;
+- custom-domain route, content, query, slash, resource, console and interaction proof passes;
 - route-content acceptance is complete for the published scope;
-- platform, locale, privacy, accessibility, provider, support, metadata, asset, demo, screenshot, legal/entity, and contact statements are independently approved;
+- platform, locale, privacy, accessibility, provider, support, metadata, asset, demo, screenshot, legal/entity and contact statements are independently approved;
 - every media asset is tied to the exact deployed release;
 - known limitations remain visible;
 - the receipt index is current and immutable;
-- authorized release, privacy, security, accessibility, operations, and legal reviewers sign off.
+- authorized release, privacy, security, accessibility, operations and legal reviewers sign off.
 
 Until then, the launch decision remains **NO-GO**.
