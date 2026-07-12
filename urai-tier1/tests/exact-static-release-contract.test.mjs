@@ -48,7 +48,7 @@ test('public markup embeds exact build identity or reports unverified', () => {
 
 test('release operator is exact-SHA, rollback-aware, protected, fingerprinted, and hosting-only', () => {
   for (const marker of [
-    'Release SHA must be a full lowercase 40-character commit SHA',
+    "requireFullSha('Release SHA', candidate)",
     'Current authority SHA',
     'ROLLBACK_SHA must be distinct from the release SHA',
     'write-release-fingerprint.mjs',
