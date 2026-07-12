@@ -102,4 +102,5 @@ jobs:
       - name: Verify rollback-provenance policy
         run: node scripts/verify-live-rollback-provenance.mjs --self-test
       - name: Verify exact static release contract
-        run: node urai-tier1/tests/exact-static-release-contract.test.mjs
+        working-directory: urai-tier1
+        run: node tests/exact-static-release-contract.test.mjs
