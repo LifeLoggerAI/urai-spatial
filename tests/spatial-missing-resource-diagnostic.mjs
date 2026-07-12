@@ -77,7 +77,8 @@ function isBenignLocalAbort(entry) {
   }
   if (parsed.origin !== baseOrigin) return false;
   if (parsed.searchParams.has('_rsc')) return true;
-  return parsed.pathname.startsWith('/_next/static/webpack/') && parsed.pathname.endsWith('.hot-update.js');
+  if (!parsed.pathname.startsWith('/_next/static/webpack/')) return false;
+  return parsed.pathname.endsWith('.hot-update.js') || parsed.pathname.endsWith('.hot-update.json');
 }
 
 const diagnosticEnvironment = {
