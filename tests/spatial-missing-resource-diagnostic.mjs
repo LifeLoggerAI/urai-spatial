@@ -77,8 +77,10 @@ function isBenignLocalAbort(entry) {
   }
   if (parsed.origin !== baseOrigin) return false;
   if (parsed.searchParams.has('_rsc')) return true;
-  if (!parsed.pathname.startsWith('/_next/static/webpack/')) return false;
-  return parsed.pathname.endsWith('.hot-update.js') || parsed.pathname.endsWith('.hot-update.json');
+  if (parsed.pathname.startsWith('/_next/static/webpack/')) {
+    return parsed.pathname.endsWith('.hot-update.js') || parsed.pathname.endsWith('.hot-update.json');
+  }
+  return parsed.search === '' && parsed.pathname.startsWith('/_next/static/chunks/') && parsed.pathname.endsWith('.js');
 }
 
 const diagnosticEnvironment = {
@@ -188,7 +190,7 @@ try {
   ].map((entry) => [key(entry), entry])).values()];
 
   const report = {
-    schemaVersion: 'urai-spatial-missing-resource-diagnostics-2',
+    schemaVersion: 'urai-spatial-missing-resource-diagnostics-3',
     generatedAt: new Date().toISOString(),
     baseUrl,
     routes,
@@ -198,7 +200,7 @@ try {
       manifestFirestoreEnabled: false,
       externalRequestsAllowed: false,
       externalRequestsBlockedBeforeSend: true,
-      ignoredLocalAbortClasses: ['next-rsc-navigation', 'next-hmr-hot-update'],
+      ignoredLocalAbortClasses: ['next-rsc-navigation', 'next-hmr-hot-update', 'next-dev-route-chunk-navigation'],
     },
     actionable,
     ignored,
