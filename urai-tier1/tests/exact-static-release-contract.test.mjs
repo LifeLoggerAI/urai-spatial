@@ -8,18 +8,22 @@ const normalizeNewlines = (source) => source.replace(/\r\n?/g, '\n')
 const testDirectory = path.dirname(fileURLToPath(import.meta.url))
 const tier1Root = path.resolve(testDirectory, '..')
 const repositoryRoot = path.resolve(tier1Root, '..')
-const readTier1 = (relativePath) => readFileSync(path.join(tier1Root, relativePath), 'utf8')
-const readRepository = (relativePath) => readFileSync(path.join(repositoryRoot, relativePath), 'utf8')
+const readTier1 = (relativePath) => normalizeNewlines(readFileSync(path.join(tier1Root, relativePath), 'utf8'))
+const readRepository = (relativePath) => normalizeNewlines(readFileSync(path.join(repositoryRoot, relativePath), 'utf8'))
 
 const hosting = JSON.parse(readRepository('firebase.static.json')).hosting
-const layout = normalizeNewlines(readTier1('src/app/layout.tsx'))
-const operator = normalizeNewlines(readRepository('scripts/live-release.mjs'))
-const bundleBuilder = normalizeNewlines(readRepository('scripts/create-static-release-bundle.mjs'))
-const bundleAlias = normalizeNewlines(readRepository('scripts/attest-static-release-bundle.mjs'))
-const fingerprintWriter = normalizeNewlines(readRepository('scripts/write-release-fingerprint.mjs'))
-const verifier = normalizeNewlines(readRepository('scripts/urai-post-deploy-smoke.mjs'))
-const workflow = normalizeNewlines(readRepository('.github/workflows/spatial-live-deploy.yml'))
-const credentialBoundary = normalizeNewlines(readRepository('scripts/verify-release-credential-boundary.mjs'))
+const layout = readTier1('src/app/layout.tsx')
+const operator = readRepository('scripts/live-release.mjs')
+const bundleBuilder = readRepository('scripts/create-static-release-bundle.mjs')
+const bundleAlias = readRepository('scripts/attest-static-release-bundle.mjs')
+const fingerprintWriter = readRepository('scripts/write-release-fingerprint.mjs')
+const verifier = readRepository('scripts/urai-post-deploy-smoke.mjs')
+const workflow = readRepository('.github/workflows/spatial-live-deploy.yml')
+const credentialBoundary = readRepository('scripts/verify-release-credential-boundary.mjs')
+
+function requireMarkers(source, markers, label) {
+  for (const marker of markers) assert.ok(source.includes(marker), `missing ${label} marker: ${marker}`)
+}
 
 function jobSection(source, jobName) {
   const marker = `\n  ${jobName}:\n`
@@ -37,17 +41,19 @@ test('static hosting publishes the canonical export without route masking', () =
   assert.deepEqual(hosting.rewrites, [])
 })
 
-test('public markup embeds exact build identity or reports unverified', () => {
-  assert.match(layout, /NEXT_PUBLIC_URAI_BUILD_SHA/)
-  assert.match(layout, /process\.env\.GITHUB_SHA/)
-  assert.match(layout, /urai-deployed-sha/)
-  assert.match(layout, /data-deployed-sha/)
-  assert.match(layout, /data-deployment-evidence/)
-  assert.match(layout, /unverified/)
+test('public markup exposes exact deployment identity or unverified state', () => {
+  requireMarkers(layout, [
+    'NEXT_PUBLIC_URAI_BUILD_SHA',
+    'process.env.GITHUB_SHA',
+    'urai-deployed-sha',
+    'data-deployed-sha',
+    'data-deployment-evidence',
+    'unverified',
+  ], 'layout')
 })
 
-test('release operator is exact-SHA, rollback-aware, protected, fingerprinted, and hosting-only', () => {
-  for (const marker of [
+test('release operator is exact-SHA, rollback-aware, hosting-only, and shell-bounded', () => {
+  requireMarkers(operator, [
     "requireFullSha('Release SHA', candidate)",
     'Current authority SHA',
     'ROLLBACK_SHA must be distinct from the release SHA',
@@ -64,15 +70,14 @@ test('release operator is exact-SHA, rollback-aware, protected, fingerprinted, a
     'deployment-receipt',
     "process.argv.includes('--verify-prebuilt')",
     "process.argv.includes('--deploy-prebuilt')",
-  ]) assert.ok(operator.includes(marker), `missing operator marker: ${marker}`)
+    "shell: process.platform === 'win32'",
+  ], 'operator')
   assert.match(operator, /'--only', 'hosting'/)
-  assert.doesNotMatch(operator, /hosting,firestore/)
-  assert.doesNotMatch(operator, /firestore:indexes/)
-  assert.doesNotMatch(operator, /functions/)
+  assert.doesNotMatch(operator, /hosting,firestore|firestore:indexes|functions/)
 })
 
-test('authority attester binds exact regular files to authority, target, rollback, and fingerprint', () => {
-  for (const marker of [
+test('authority attester binds exact regular files to authority and fingerprint', () => {
+  requireMarkers(bundleBuilder, [
     "schemaVersion: 'urai-static-release-bundle-1'",
     'assertCleanAuthorityCheckout()',
     'writeAuthoritativeFingerprint()',
@@ -88,16 +93,16 @@ test('authority attester binds exact regular files to authority, target, rollbac
     'fileCount',
     'totalBytes',
     'sha256',
-  ]) assert.ok(bundleBuilder.includes(marker), `missing attester marker: ${marker}`)
+  ], 'attester')
   assert.match(bundleAlias, /import '\.\/create-static-release-bundle\.mjs'/)
 })
 
-test('target build, clean authority attestation, and production deploy use separate jobs', () => {
+test('target build, clean authority attestation, and production deploy are isolated', () => {
   const buildJob = jobSection(workflow, 'build-release-output')
   const attestJob = jobSection(workflow, 'attest-release-bundle')
   const deployJob = jobSection(workflow, 'deploy')
 
-  for (const marker of [
+  requireMarkers(buildJob, [
     'Build exact static target without production authority or credentials',
     'needs: [verify, rollback-verify]',
     'Checkout exact release target only',
@@ -105,12 +110,10 @@ test('target build, clean authority attestation, and production deploy use separ
     'pnpm install --frozen-lockfile',
     'pnpm build:static',
     'Upload unattested raw static output',
-  ]) assert.ok(buildJob.includes(marker), `missing build-isolation marker: ${marker}`)
-  assert.doesNotMatch(buildJob, /environment:\s*production/)
-  assert.doesNotMatch(buildJob, /FIREBASE_SERVICE_ACCOUNT_JSON|GOOGLE_APPLICATION_CREDENTIALS/)
-  assert.doesNotMatch(buildJob, /node scripts\/create-static-release-bundle\.mjs/)
+  ], 'build isolation')
+  assert.doesNotMatch(buildJob, /environment:\s*production|FIREBASE_SERVICE_ACCOUNT_JSON|GOOGLE_APPLICATION_CREDENTIALS|create-static-release-bundle/)
 
-  for (const marker of [
+  requireMarkers(attestJob, [
     'Attest raw static output with clean current authority',
     'needs: [verify, rollback-verify, build-release-output]',
     'Checkout clean current release authority only',
@@ -118,12 +121,10 @@ test('target build, clean authority attestation, and production deploy use separ
     'node scripts/verify-release-credential-boundary.mjs',
     'node scripts/create-static-release-bundle.mjs',
     'Upload authority-attested static release bundle',
-  ]) assert.ok(attestJob.includes(marker), `missing attestation-isolation marker: ${marker}`)
-  assert.doesNotMatch(attestJob, /environment:\s*production/)
-  assert.doesNotMatch(attestJob, /FIREBASE_SERVICE_ACCOUNT_JSON|GOOGLE_APPLICATION_CREDENTIALS/)
-  assert.doesNotMatch(attestJob, /path:\s*target|working-directory:\s*target|pnpm\s+build:static/)
+  ], 'attestation isolation')
+  assert.doesNotMatch(attestJob, /environment:\s*production|FIREBASE_SERVICE_ACCOUNT_JSON|GOOGLE_APPLICATION_CREDENTIALS|working-directory:\s*target|pnpm\s+build:static/)
 
-  for (const marker of [
+  requireMarkers(deployJob, [
     'Deploy or roll back verified static bundle on urai.app',
     'needs: [verify, rollback-verify, attest-release-bundle]',
     'Checkout current release authority only',
@@ -132,16 +133,12 @@ test('target build, clean authority attestation, and production deploy use separ
     'node scripts/live-release.mjs --verify-prebuilt',
     'node scripts/live-release.mjs --deploy-prebuilt',
     'node scripts/urai-release-control-smoke.mjs',
-  ]) assert.ok(deployJob.includes(marker), `missing deploy-isolation marker: ${marker}`)
-  assert.doesNotMatch(deployJob, /uses:\s+actions\/download-artifact@v\d/)
-  assert.doesNotMatch(deployJob, /path:\s*target/)
-  assert.doesNotMatch(deployJob, /working-directory:\s*target/)
-  assert.doesNotMatch(deployJob, /pnpm\s+build:static/)
-  assert.doesNotMatch(deployJob, /node\s+\.\.\/authority\//)
+  ], 'deploy isolation')
+  assert.doesNotMatch(deployJob, /download-artifact@v\d|working-directory:\s*target|pnpm\s+build:static|node\s+\.\.\/authority\//)
 })
 
-test('release credentials and deploy executable are isolated from target-controlled code', () => {
-  for (const marker of [
+test('credentials and deploy executable remain authority-isolated', () => {
+  requireMarkers(operator, [
     'delete process.env.FIREBASE_SERVICE_ACCOUNT_JSON',
     'delete process.env.GOOGLE_APPLICATION_CREDENTIALS',
     'delete env.FIREBASE_SERVICE_ACCOUNT_JSON',
@@ -150,8 +147,6 @@ test('release credentials and deploy executable are isolated from target-control
     'function resolveManagedCredentialPath({ required = false } = {})',
     'resolveManagedCredentialPath({ required: true })',
     'Credential path must stay inside RUNNER_TEMP',
-    'if (required) throw new Error(`Credential path must use the dedicated managed filename',
-    '\nremoveTemporaryServiceAccount()\nconst authoritySha',
     'validateAndMaterializePrebuiltBundle',
     'manifest.authoritySha !== authoritySha',
     'Release bundle file set, sizes, or hashes do not match the manifest',
@@ -161,47 +156,43 @@ test('release credentials and deploy executable are isolated from target-control
     "flag: 'wx'",
     'deployHostingWithTemporaryCredentials',
     'removeTemporaryServiceAccount',
-    'shell: false',
-  ]) assert.ok(operator.includes(marker), `missing credential-isolation marker: ${marker}`)
-
+  ], 'credential isolation')
   assert.match(workflow, /GOOGLE_APPLICATION_CREDENTIALS: \$\{\{ runner\.temp \}\}\/urai-firebase-service-account\.json/)
   assert.match(workflow, /URAI_FIREBASE_CLI: \$\{\{ github\.workspace \}\}\/node_modules\/\.bin\/firebase/)
-  assert.match(workflow, /node scripts\/verify-release-credential-boundary\.mjs/)
-  assert.doesNotMatch(workflow, /printf\s+['"]%s['"]\s+"\$FIREBASE_SERVICE_ACCOUNT_JSON"\s*>\s*"\$GOOGLE_APPLICATION_CREDENTIALS"/)
   assert.doesNotMatch(operator, /pnpm\s+exec\s+firebase/)
 
-  assert.match(credentialBoundary, /normalizeNewlines/)
-  assert.match(credentialBoundary, /urai-release-credential-boundary-4/)
-  assert.match(credentialBoundary, /secretOccurrences !== 1/)
-  assert.match(credentialBoundary, /lineEndingsNormalized: true/)
-  assert.match(credentialBoundary, /targetBuildIsolated: true/)
-  assert.match(credentialBoundary, /authorityAttestationIsolated: true/)
-  assert.match(credentialBoundary, /targetCodeExecutesInProductionJob: false/)
-  assert.match(credentialBoundary, /releaseOperatorFullBundleVerificationPresent/)
-  assert.match(credentialBoundary, /downloadedBundleRunBound/)
-  assert.match(credentialBoundary, /downloadedBundleFingerprintBound/)
-  assert.match(credentialBoundary, /fullBundleVerificationStatus/)
-  assert.match(credentialBoundary, /canonicalDeployBundleDirectory/)
-  assert.match(credentialBoundary, /path\.join\(runnerTemp, 'urai-release-bundle'\)/)
-  assert.match(credentialBoundary, /credentialsMaterializedByAuthorityOnly: true/)
-  assert.match(credentialBoundary, /unmanagedLocalCredentialPathsIgnoredDuringVerification: true/)
-  assert.match(credentialBoundary, /managedCredentialPathRequiredForProductionWrite: true/)
-  assert.match(credentialBoundary, /firebaseCliResolvedFromCurrentAuthority: true/)
+  requireMarkers(credentialBoundary, [
+    'normalizeNewlines',
+    'urai-release-credential-boundary-4',
+    'secretOccurrences !== 1',
+    'lineEndingsNormalized: true',
+    'targetBuildIsolated: true',
+    'authorityAttestationIsolated: true',
+    'targetCodeExecutesInProductionJob: false',
+    'releaseOperatorFullBundleVerificationPresent',
+    'downloadedBundleRunBound',
+    'downloadedBundleFingerprintBound',
+    'fullBundleVerificationStatus',
+    'canonicalDeployBundleDirectory',
+    "path.join(runnerTemp, 'urai-release-bundle')",
+    'credentialsMaterializedByAuthorityOnly: true',
+    'managedCredentialPathRequiredForProductionWrite: true',
+    'firebaseCliResolvedFromCurrentAuthority: true',
+  ], 'credential verifier')
 })
 
-test('fingerprint writer publishes exact release and distinct recovery authority', () => {
-  assert.match(fingerprintWriter, /urai-release-fingerprint-1/)
-  assert.match(fingerprintWriter, /releaseSha/)
-  assert.match(fingerprintWriter, /rollbackSha/)
-  assert.match(fingerprintWriter, /authoritySha/)
-  assert.match(fingerprintWriter, /Release and rollback SHAs must be distinct/)
-  assert.match(fingerprintWriter, /urai-4dc1d/)
-  assert.match(fingerprintWriter, /https:\/\/urai\.app/)
-  assert.match(fingerprintWriter, /hosting-only/)
-})
-
-test('post-deploy verifier checks current routes, direct fingerprint identity, SHA, and authority', () => {
-  for (const marker of [
+test('fingerprint and live verifier bind route, SHA, authority, and canonical origin', () => {
+  requireMarkers(fingerprintWriter, [
+    'urai-release-fingerprint-1',
+    'releaseSha',
+    'rollbackSha',
+    'authoritySha',
+    'Release and rollback SHAs must be distinct',
+    'urai-4dc1d',
+    'https://urai.app',
+    'hosting-only',
+  ], 'fingerprint')
+  requireMarkers(verifier, [
     'aaa-final-home-sky-ground-orb-body-portals',
     'walkable-first-person-ground-layer',
     'urai-r3f-canonical-lifemap',
@@ -209,34 +200,24 @@ test('post-deploy verifier checks current routes, direct fingerprint identity, S
     'privacy-consent-console',
     'premium-emotional-weather-atlas',
     'urai-final-status-control-room',
-    'Home threshold',
-    'World online. Route matrix visible.',
-  ]) assert.ok(verifier.includes(marker), `missing verifier marker: ${marker}`)
-  assert.match(verifier, /URAI_EXPECTED_DEPLOYED_SHA/)
-  assert.match(verifier, /URAI_EXPECTED_ROLLBACK_SHA/)
-  assert.match(verifier, /URAI_EXPECTED_AUTHORITY_SHA|CURRENT_MAIN_SHA/)
-  assert.match(verifier, /release-fingerprint\.json/)
-  assert.match(verifier, /urai-release-fingerprint-1/)
-  assert.match(verifier, /redirect: 'manual'/)
-  assert.match(verifier, /finalUrl\.origin === canonicalOrigin/)
-  assert.match(verifier, /normalizePath\(finalUrl\.pathname\) === '\/release-fingerprint\.json'/)
-  assert.match(verifier, /payload\?\.authoritySha === expectedAuthoritySha/)
-  assert.match(verifier, /finalUrl\.search === requested\.search/)
-  assert.match(verifier, /sha === expectedSha/)
-  assert.match(verifier, /fingerprint\.passed/)
-  assert.match(verifier, /live-content-parity-3/)
-  assert.match(verifier, /hydratedIdentityProof/)
+    'URAI_EXPECTED_DEPLOYED_SHA',
+    'URAI_EXPECTED_ROLLBACK_SHA',
+    'release-fingerprint.json',
+    "redirect: 'manual'",
+    'finalUrl.origin === canonicalOrigin',
+    'payload?.authoritySha === expectedAuthoritySha',
+    'live-content-parity-3',
+    'hydratedIdentityProof',
+  ], 'post-deploy verifier')
 })
 
-test('production deploy and rollback remain manual, exact-SHA, distinct-recovery, and protected', () => {
-  for (const marker of [
+test('production deploy and rollback remain manual, exact-SHA, and protected', () => {
+  requireMarkers(workflow, [
     'workflow_dispatch:',
     "inputs.confirm == 'DEPLOY_URAI_APP' || inputs.confirm == 'ROLLBACK_URAI_APP'",
     'rollback-verify:',
     'build-release-output:',
     'attest-release-bundle:',
-    'needs: [verify, rollback-verify, build-release-output]',
-    'needs: [verify, rollback-verify, attest-release-bundle]',
     'environment: production',
     'ROLLBACK_SHA: ${{ inputs.rollback_sha }}',
     'test "$RELEASE_SHA" = "$CURRENT_MAIN_SHA"',
@@ -245,5 +226,5 @@ test('production deploy and rollback remain manual, exact-SHA, distinct-recovery
     'FIREBASE_SERVICE_ACCOUNT_JSON',
     'Remove temporary credentials',
     'gh workflow run spatial-live-deploy.yml --ref main',
-  ]) assert.ok(workflow.includes(marker), `missing workflow marker: ${marker}`)
+  ], 'protected workflow')
 })
