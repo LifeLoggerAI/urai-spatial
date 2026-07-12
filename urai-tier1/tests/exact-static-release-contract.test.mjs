@@ -1,17 +1,25 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
+import path from 'node:path'
+import { fileURLToPath } from 'node:url'
 
 const normalizeNewlines = (source) => source.replace(/\r\n?/g, '\n')
-const hosting = JSON.parse(readFileSync('../firebase.static.json', 'utf8')).hosting
-const layout = normalizeNewlines(readFileSync('src/app/layout.tsx', 'utf8'))
-const operator = normalizeNewlines(readFileSync('../scripts/live-release.mjs', 'utf8'))
-const bundleBuilder = normalizeNewlines(readFileSync('../scripts/create-static-release-bundle.mjs', 'utf8'))
-const bundleAlias = normalizeNewlines(readFileSync('../scripts/attest-static-release-bundle.mjs', 'utf8'))
-const fingerprintWriter = normalizeNewlines(readFileSync('../scripts/write-release-fingerprint.mjs', 'utf8'))
-const verifier = normalizeNewlines(readFileSync('../scripts/urai-post-deploy-smoke.mjs', 'utf8'))
-const workflow = normalizeNewlines(readFileSync('../.github/workflows/spatial-live-deploy.yml', 'utf8'))
-const credentialBoundary = normalizeNewlines(readFileSync('../scripts/verify-release-credential-boundary.mjs', 'utf8'))
+const testDirectory = path.dirname(fileURLToPath(import.meta.url))
+const tier1Root = path.resolve(testDirectory, '..')
+const repositoryRoot = path.resolve(tier1Root, '..')
+const readTier1 = (relativePath) => readFileSync(path.join(tier1Root, relativePath), 'utf8')
+const readRepository = (relativePath) => readFileSync(path.join(repositoryRoot, relativePath), 'utf8')
+
+const hosting = JSON.parse(readRepository('firebase.static.json')).hosting
+const layout = normalizeNewlines(readTier1('src/app/layout.tsx'))
+const operator = normalizeNewlines(readRepository('scripts/live-release.mjs'))
+const bundleBuilder = normalizeNewlines(readRepository('scripts/create-static-release-bundle.mjs'))
+const bundleAlias = normalizeNewlines(readRepository('scripts/attest-static-release-bundle.mjs'))
+const fingerprintWriter = normalizeNewlines(readRepository('scripts/write-release-fingerprint.mjs'))
+const verifier = normalizeNewlines(readRepository('scripts/urai-post-deploy-smoke.mjs'))
+const workflow = normalizeNewlines(readRepository('.github/workflows/spatial-live-deploy.yml'))
+const credentialBoundary = normalizeNewlines(readRepository('scripts/verify-release-credential-boundary.mjs'))
 
 function jobSection(source, jobName) {
   const marker = `\n  ${jobName}:\n`
