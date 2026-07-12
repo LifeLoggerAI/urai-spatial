@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { collection, limit, onSnapshot, orderBy, query, type DocumentData } from "firebase/firestore";
-import { getFirebaseDb } from "../../lib/firebase/client";
+import { firebasePublicEnvReady, getFirebaseDb } from "../../lib/firebase/client";
 import {
   lifeMapEras,
   lifeMapNodes,
@@ -147,6 +147,16 @@ export function useLifeMapEvents(userId?: string): LifeMapEventState {
   useEffect(() => {
     let cancelled = false;
 
+    if (!firebasePublicEnvReady) {
+      setNodes(lifeMapNodes);
+      setUsingSeedNodes(true);
+      setEventsLoading(false);
+      setError(null);
+      return () => {
+        cancelled = true;
+      };
+    }
+
     try {
       const db = getFirebaseDb();
       const eventsRef = collection(db, "users", resolvedUserId, "lifeMapEvents");
@@ -192,6 +202,16 @@ export function useLifeMapEvents(userId?: string): LifeMapEventState {
 
   useEffect(() => {
     let cancelled = false;
+
+    if (!firebasePublicEnvReady) {
+      setEras(lifeMapEras);
+      setUsingSeedEras(true);
+      setErasLoading(false);
+      setError(null);
+      return () => {
+        cancelled = true;
+      };
+    }
 
     try {
       const db = getFirebaseDb();
