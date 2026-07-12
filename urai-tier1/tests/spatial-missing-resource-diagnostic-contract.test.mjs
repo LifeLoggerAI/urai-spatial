@@ -12,6 +12,10 @@ const workflowSource = fs.readFileSync(
   path.join(repositoryRoot, '.github', 'workflows', 'spatial-missing-resource-diagnostics.yml'),
   'utf8',
 )
+const lifeMapEventsSource = fs.readFileSync(
+  path.join(process.cwd(), 'src', 'components', 'lifemap', 'useLifeMapEvents.ts'),
+  'utf8',
+)
 
 test('fallback diagnostic neutralizes provider configuration before starting Next', () => {
   for (const variable of [
@@ -23,6 +27,13 @@ test('fallback diagnostic neutralizes provider configuration before starting Nex
   ]) assert.match(diagnosticSource, new RegExp(variable))
   assert.match(diagnosticSource, /NEXT_PUBLIC_URAI_MANIFEST_FIRESTORE: 'false'/)
   assert.match(diagnosticSource, /providerMode: 'disabled-for-fallback-diagnostic'/)
+})
+
+test('Life Map event listeners remain offline when public Firebase configuration is absent', () => {
+  assert.match(lifeMapEventsSource, /firebasePublicEnvReady/)
+  assert.equal((lifeMapEventsSource.match(/if \(!firebasePublicEnvReady\)/g) ?? []).length, 2)
+  assert.match(lifeMapEventsSource, /setNodes\(lifeMapNodes\)/)
+  assert.match(lifeMapEventsSource, /setEras\(lifeMapEras\)/)
 })
 
 test('external requests are intercepted and aborted before send', () => {
@@ -37,6 +48,7 @@ test('only bounded local navigation and HMR aborts are ignored', () => {
   assert.match(diagnosticSource, /parsed\.searchParams\.has\('_rsc'\)/)
   assert.match(diagnosticSource, /parsed\.pathname\.startsWith\('\/_next\/static\/webpack\/'\)/)
   assert.match(diagnosticSource, /parsed\.pathname\.endsWith\('\.hot-update\.js'\)/)
+  assert.match(diagnosticSource, /parsed\.pathname\.endsWith\('\.hot-update\.json'\)/)
   assert.match(diagnosticSource, /actionableFailedRequests/)
 })
 
