@@ -54,8 +54,12 @@ jobs:
       - name: URAI Guardian
         run: node scripts/urai-guardian.mjs
 
-      - name: Install dependencies
-        run: corepack pnpm install --no-frozen-lockfile
+      - name: Install exact dependency graph
+        run: corepack pnpm install --frozen-lockfile
+
+      - name: Prove install preserved exact source
+        shell: bash
+        run: test -z "$(git status --porcelain --untracked-files=all)"
 
       - name: Check public copy
         run: corepack pnpm check:public-copy
@@ -66,11 +70,41 @@ jobs:
       - name: Typecheck
         run: corepack pnpm check:types
 
-      - name: Unit tests
-        run: corepack pnpm test:unit
+      - name: Capture focused unit-test evidence
+        id: unit
+        shell: bash
+        run: |
+          set +e
+          corepack pnpm test:unit > /tmp/urai-tier1-unit-tests.log 2>&1
+          status=$?
+          set -e
+          cat /tmp/urai-tier1-unit-tests.log
+          echo "status=$status" >> "$GITHUB_OUTPUT"
+          exit 0
+
+      - name: Upload focused unit-test evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: urai-spatial-unit-tests-${{ env.URAI_EXACT_HEAD }}
+          path: /tmp/urai-tier1-unit-tests.log
+          if-no-files-found: error
+          retention-days: 365
+
+      - name: Enforce unit-test result
+        shell: bash
+        run: test "${{ steps.unit.outputs.status }}" = "0"
 
       - name: Build
         run: corepack pnpm build
 
       - name: Release gate
         run: corepack pnpm release:p1
+
+      - name: Prove final clean candidate identity
+        if: always()
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$URAI_EXACT_HEAD"
+          test -z "$(git status --porcelain --untracked-files=all)"
