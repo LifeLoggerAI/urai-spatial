@@ -53,7 +53,7 @@ test('only bounded local navigation and HMR aborts are ignored', () => {
 })
 
 test('actionable findings fail and remain in a schema-bound artifact', () => {
-  assert.match(diagnosticSource, /urai-spatial-missing-resource-diagnostics-2/)
+  assert.match(diagnosticSource, /urai-spatial-missing-resource-diagnostics-3/)
   assert.match(diagnosticSource, /missing-resources\.json/)
   assert.match(diagnosticSource, /if \(actionable\.length\)/)
   assert.match(diagnosticSource, /process\.exitCode = 1/)
