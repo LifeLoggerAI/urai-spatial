@@ -13,6 +13,24 @@ function createId() {
   return Math.random().toString(36).slice(2, 10);
 }
 
+function createLocalUniverseSnapshot(tick: number) {
+  return {
+    worlds: [],
+    memoryGraph: { nodes: [] },
+    interactions: { messages: [] },
+    emergence: {
+      globalCoherence: Math.random(),
+      entropy: Math.random()
+    },
+    summary: "client_local_universe_simulation",
+    transport: "client-local-simulation",
+    productionData: false,
+    providerCalls: 0,
+    tick,
+    timestamp: Date.now()
+  };
+}
+
 export function useUniverseStream() {
   const [branches, setBranches] = useState<Record<string, Branch>>({});
   const [currentBranchId, setCurrentBranchId] = useState<string>("main");
@@ -31,30 +49,27 @@ export function useUniverseStream() {
   }, []);
 
   useEffect(() => {
-    const es = new EventSource("/api/universe/stream");
+    let tick = 0;
+    const interval = window.setInterval(() => {
+      tick += 1;
+      const snapshot = createLocalUniverseSnapshot(tick);
+      latestRef.current = snapshot;
 
-    es.onmessage = (event) => {
-      try {
-        const json = JSON.parse(event.data);
-        latestRef.current = json;
-
-        setBranches((prev) => {
-          const updated = { ...prev };
-
-          Object.keys(updated).forEach((id) => {
-            updated[id] = {
-              ...updated[id],
-              history: [...updated[id].history, json].slice(-100)
-            };
-          });
-
-          return updated;
+      setBranches((previous) => {
+        const updated = { ...previous };
+        Object.keys(updated).forEach((id) => {
+          updated[id] = {
+            ...updated[id],
+            history: [...updated[id].history, snapshot].slice(-100)
+          };
         });
-      } catch (e) {}
-    };
+        return updated;
+      });
 
-    es.onerror = () => es.close();
-    return () => es.close();
+      if (tick >= 50) window.clearInterval(interval);
+    }, 1000);
+
+    return () => window.clearInterval(interval);
   }, []);
 
   function forkAt(index: number) {
@@ -106,13 +121,14 @@ export function useUniverseStream() {
     const ids = inputBranchIds ?? Object.keys(branches);
     const selected = ids.map((id) => branches[id]).filter(Boolean);
 
-    const allEvents = selected.flatMap((b) => b.history);
-
+    const allEvents = selected.flatMap((branch) => branch.history);
     const avgEvents = selected.length
-      ? selected.reduce((acc, b) => acc + b.history.length, 0) / selected.length
+      ? selected.reduce((acc, branch) => acc + branch.history.length, 0) / selected.length
       : 0;
 
-    const latest = allEvents.sort((a, b) => (a?.timestamp ?? 0) - (b?.timestamp ?? 0)).slice(-1)[0];
+    const latest = allEvents
+      .sort((a, b) => (a?.timestamp ?? 0) - (b?.timestamp ?? 0))
+      .slice(-1)[0];
 
     const summary = latest?.summary ?? "synthetic_reality";
 
@@ -120,9 +136,7 @@ export function useUniverseStream() {
       id: "ai-synthesis",
       type: "synthetic_reality",
       sourceBranches: ids,
-      metrics: {
-        avgEvents
-      },
+      metrics: { avgEvents },
       state: latest ?? null,
       summary,
       timestamp: Date.now()
@@ -138,13 +152,13 @@ export function useUniverseStream() {
 
   function setScrubIndex(index: number | null) {
     setBranches((prev) => {
-      const b = prev[currentBranchId];
-      if (!b) return prev;
+      const branch = prev[currentBranchId];
+      if (!branch) return prev;
 
       return {
         ...prev,
         [currentBranchId]: {
-          ...b,
+          ...branch,
           scrubIndex: index
         }
       };
