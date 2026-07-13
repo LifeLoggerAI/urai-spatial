@@ -58,7 +58,7 @@ jobs:
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
         with:
           ref: ${{ env.URAI_EXACT_HEAD }}
-          fetch-depth: 0
+          fetch-depth: 1
           persist-credentials: false
           show-progress: false
 
@@ -82,6 +82,10 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
+      - name: Prove install preserved exact source
+        shell: bash
+        run: test -z "$(git status --porcelain --untracked-files=all)"
+
       - name: Verify static release contract
         run: pnpm lock:static
 
@@ -91,11 +95,46 @@ jobs:
       - name: Verify XR contract
         run: pnpm xr:verify
 
-      - name: Build static Firebase export
-        run: pnpm build:static
+      - name: Capture static Firebase export
+        id: static_build
+        shell: bash
+        run: |
+          set +e
+          set -o pipefail
+          mkdir -p artifacts/release-readiness
+          pnpm build:static 2>&1 | tee artifacts/release-readiness/static-firebase-export.log
+          status=${PIPESTATUS[0]}
+          echo "$status" > artifacts/release-readiness/static-firebase-export-exit-code.txt
+          echo "status=$status" >> "$GITHUB_OUTPUT"
+          exit 0
+
+      - name: Upload static export diagnostics
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: spatial-release-readiness-${{ env.URAI_EXACT_HEAD }}-${{ github.run_id }}
+          path: artifacts/release-readiness
+          if-no-files-found: error
+          retention-days: 365
+
+      - name: Enforce static Firebase export
+        shell: bash
+        run: test "${{ steps.static_build.outputs.status }}" = "0"
+
+      - name: Remove retained diagnostics
+        if: always()
+        run: rm -rf artifacts
 
       - name: Verify live smoke
         if: ${{ github.event_name == 'workflow_dispatch' && inputs.live_url != '' }}
         env:
           URAI_DEPLOY_URL: ${{ inputs.live_url }}
         run: pnpm smoke:live
+
+      - name: Prove final exact clean tree
+        if: always()
+        shell: bash
+        run: |
+          rm -rf artifacts
+          test "$(git rev-parse HEAD)" = "$URAI_EXACT_HEAD"
+          test -z "$(git status --porcelain --untracked-files=all)"
