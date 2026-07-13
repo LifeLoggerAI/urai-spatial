@@ -37,6 +37,7 @@ test('Firebase publishes only the canonical static export', () => {
   assert.equal(hosting.cleanUrls, true)
   assert.equal(hosting.trailingSlash, true)
   assert.deepEqual(hosting.rewrites, [])
+  assert.ok(hosting.ignore.includes('**/.*'))
 })
 
 test('public output carries exact deployment identity or an unverified state', () => {
@@ -58,6 +59,10 @@ test('release operator is exact-SHA, rollback-aware, hosting-only, and credentia
     "process.argv.includes('--deploy-prebuilt')",
     'validateAndMaterializePrebuiltBundle',
     'Release bundle file set, sizes, or hashes do not match the manifest',
+    "segment.startsWith('.')",
+    'fingerprint.repository !== canonicalRepository',
+    'fingerprint.authoritySha !== authoritySha',
+    'manifest.fingerprintSha256 !== sha256(fingerprintPath)',
     'delete process.env.FIREBASE_SERVICE_ACCOUNT_JSON',
     'delete process.env.GOOGLE_APPLICATION_CREDENTIALS',
     'resolveManagedCredentialPath({ required: true })',
@@ -110,7 +115,7 @@ test('build, authority attestation, and protected deploy are separate jobs', () 
   assert.doesNotMatch(deploy, /working-directory:\s*target|pnpm\s+build:static/)
 })
 
-test('authority bundle and credential verifier bind the complete immutable release', () => {
+test('authority bundle and credential verifier bind the complete immutable hosted release', () => {
   hasAll(bundleBuilder, [
     "schemaVersion: 'urai-static-release-bundle-1'",
     'assertCleanAuthorityCheckout()',
@@ -118,6 +123,9 @@ test('authority bundle and credential verifier bind the complete immutable relea
     'targetSha',
     'rollbackSha',
     'Release bundle source must not contain symlinks',
+    'isFirebaseIgnoredPath',
+    "segment.startsWith('.')",
+    'Release bundle manifest must not contain Firebase-ignored dot paths',
     'Copied release bundle bytes do not match the source output',
     'fingerprintSha256',
     'fileCount',
