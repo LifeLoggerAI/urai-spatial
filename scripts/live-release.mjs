@@ -80,13 +80,18 @@ function sha256(file) {
   return createHash('sha256').update(readFileSync(file)).digest('hex')
 }
 
+function isFirebaseIgnoredPath(relative) {
+  return relative.split('/').some((segment) => segment.startsWith('.'))
+}
+
 function walkRegularFiles(directory, prefix = '') {
   if (!existsSync(directory)) throw new Error(`Required release directory missing: ${directory}`)
   const entries = readdirSync(directory, { withFileTypes: true }).sort((left, right) => left.name.localeCompare(right.name))
   const files = []
   for (const entry of entries) {
-    const absolute = path.join(directory, entry.name)
     const relative = path.posix.join(prefix, entry.name)
+    if (isFirebaseIgnoredPath(relative)) continue
+    const absolute = path.join(directory, entry.name)
     const stats = lstatSync(absolute)
     if (stats.isSymbolicLink()) throw new Error(`Release surface must not contain symlinks: ${relative}`)
     if (stats.isDirectory()) {
@@ -283,7 +288,7 @@ function validateAndMaterializePrebuiltBundle(targetSha, authoritySha, materiali
       typeof entry.path !== 'string' ||
       entry.path.startsWith('/') ||
       entry.path.includes('\\') ||
-      entry.path.split('/').some((segment) => !segment || segment === '.' || segment === '..') ||
+      entry.path.split('/').some((segment) => !segment || segment === '.' || segment === '..' || segment.startsWith('.')) ||
       !Number.isSafeInteger(entry.bytes) ||
       entry.bytes < 0 ||
       !/^[0-9a-f]{64}$/.test(entry.sha256 || '')
@@ -315,9 +320,15 @@ function validateAndMaterializePrebuiltBundle(targetSha, authoritySha, materiali
     throw new Error('Release bundle is missing release-fingerprint.json')
   }
 
-  const fingerprint = JSON.parse(readFileSync(path.join(bundleOutputDirectory, 'release-fingerprint.json'), 'utf8'))
+  const fingerprintPath = path.join(bundleOutputDirectory, 'release-fingerprint.json')
+  if (manifest.fingerprintSha256 !== sha256(fingerprintPath)) {
+    throw new Error('Release bundle fingerprint hash does not match the manifest')
+  }
+  const fingerprint = JSON.parse(readFileSync(fingerprintPath, 'utf8'))
   if (
     fingerprint.schemaVersion !== 'urai-release-fingerprint-1' ||
+    fingerprint.repository !== canonicalRepository ||
+    fingerprint.authoritySha !== authoritySha ||
     fingerprint.releaseSha !== targetSha ||
     fingerprint.rollbackSha !== rollbackSha ||
     fingerprint.firebaseProject !== project ||
