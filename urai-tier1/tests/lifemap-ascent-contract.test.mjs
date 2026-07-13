@@ -3,13 +3,17 @@ import { test } from 'node:test'
 import fs from 'node:fs'
 
 const pageSource = fs.readFileSync(new URL('../src/app/life-map/page.tsx', import.meta.url), 'utf8')
+const canonicalSource = fs.readFileSync(new URL('../src/spatial/lifemap/SpatialLifeMapCanonical.tsx', import.meta.url), 'utf8')
+const boundarySource = fs.readFileSync(new URL('../src/components/lifemap/LifeMapRouteBoundary.tsx', import.meta.url), 'utf8')
+const sceneSource = fs.readFileSync(new URL('../src/components/lifemap/AdaptiveLifeMapScene.tsx', import.meta.url), 'utf8')
 const homeSource = fs.readFileSync(new URL('../src/app/HomeSpatialWorldFinal.tsx', import.meta.url), 'utf8')
 const transitionCss = fs.readFileSync(new URL('../src/app/urai-canon-camera-transitions.css', import.meta.url), 'utf8')
-const galaxySource = fs.readFileSync(new URL('../src/components/lifemap/RealLifeMapGalaxy.tsx', import.meta.url), 'utf8')
 
-test('Life Map route resolves directly to the final galaxy after Home ascent', () => {
-  assert.match(pageSource, /RealLifeMapGalaxy/)
-  assert.doesNotMatch(pageSource, /LifeMapAscentGate|TierOneExperience/)
+test('Life Map route resolves directly to the final canonical galaxy after Home ascent', () => {
+  assert.match(pageSource, /SpatialLifeMapCanonical/)
+  assert.doesNotMatch(pageSource, /RealLifeMapGalaxy|LifeMapAscentGate|TierOneExperience/)
+  assert.match(canonicalSource, /LifeMapRouteBoundary/)
+  assert.match(boundarySource, /AdaptiveLifeMapScene/)
   assert.match(homeSource, /\/life-map\?from=home-sky/)
   assert.match(homeSource, /HOME_CAMERA_ASCENT_MS/)
   assert.match(homeSource, /navigateThroughThreshold/)
@@ -37,9 +41,10 @@ test('ascent transition has a bounded timer and reduced-motion escape hatch', ()
   assert.match(transitionCss, /uraiCanonSkyGateIgnites/)
 })
 
-test('destination becomes interactive as the final galaxy owner', () => {
-  assert.match(galaxySource, /onPointerMove/)
-  assert.match(galaxySource, /onPointerLeave/)
-  assert.match(galaxySource, /aria-label="Private memory constellation"/)
-  assert.match(galaxySource, /Enter Focus/)
+test('destination becomes interactive as the final adaptive galaxy owner', () => {
+  assert.match(sceneSource, /onPointerMove/)
+  assert.match(sceneSource, /onPointerDown/)
+  assert.match(sceneSource, /onWheel/)
+  assert.match(sceneSource, /aria-label="URAI Life Map route portals"/)
+  assert.match(sceneSource, /Enter Focus/)
 })
