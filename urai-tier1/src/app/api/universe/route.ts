@@ -1,5 +1,7 @@
 import { runProductionOrchestrator } from "../../../automation/productionOrchestrator";
 
+export const dynamic = "force-static";
+
 export async function GET() {
   const snapshot = {
     worlds: [],
