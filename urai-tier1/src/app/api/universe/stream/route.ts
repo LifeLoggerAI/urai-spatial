@@ -1,48 +1,12 @@
-import { runProductionOrchestrator } from "../../../../automation/productionOrchestrator";
+export const dynamic = "force-static";
 
-// SIMPLE SSE STREAM (REAL-TIME SIMULATION FEED)
-export async function GET() {
-  const encoder = new TextEncoder();
-
-  let tick = 0;
-
-  const stream = new ReadableStream({
-    start(controller) {
-      const interval = setInterval(() => {
-        tick++;
-
-        const snapshot = {
-          worlds: [],
-          memoryGraph: { nodes: [] },
-          interactions: { messages: [] },
-          emergence: {
-            globalCoherence: Math.random(),
-            entropy: Math.random()
-          },
-          tick
-        };
-
-        const result = runProductionOrchestrator(snapshot);
-
-        controller.enqueue(
-          encoder.encode(`data: ${JSON.stringify(result)}\n\n`)
-        );
-
-        if (tick > 50) {
-          clearInterval(interval);
-          controller.close();
-        }
-      }, 1000);
-
-      return () => clearInterval(interval);
-    }
-  });
-
-  return new Response(stream, {
-    headers: {
-      "Content-Type": "text/event-stream",
-      "Cache-Control": "no-cache",
-      Connection: "keep-alive"
-    }
+export function GET() {
+  return Response.json({
+    service: "universe-stream",
+    available: false,
+    transport: "client-local-simulation",
+    reason: "The canonical Firebase export is static and does not host server-sent events.",
+    productionData: false,
+    providerCalls: 0
   });
 }
