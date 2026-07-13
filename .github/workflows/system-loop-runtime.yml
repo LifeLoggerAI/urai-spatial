@@ -71,8 +71,35 @@ jobs:
       - name: Check SystemLoop runtime
         run: node scripts/check-system-loop-runtime.mjs
 
-      - name: Smoke SystemLoop runtime
-        run: node scripts/smoke-system-loop-runtime.mjs
+      - name: Capture SystemLoop smoke evidence
+        id: smoke
+        shell: bash
+        run: |
+          set +e
+          set -o pipefail
+          mkdir -p artifacts/system-loop
+          node scripts/smoke-system-loop-runtime.mjs 2>&1 | tee artifacts/system-loop/system-loop-smoke.log
+          status=${PIPESTATUS[0]}
+          echo "status=$status" >> "$GITHUB_OUTPUT"
+          exit 0
 
-      - name: Final clean-tree proof
-        run: test -z "$(git status --porcelain --untracked-files=all)"
+      - name: Upload SystemLoop smoke evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: system-loop-smoke-${{ env.URAI_EXACT_HEAD }}-${{ github.run_id }}
+          path: artifacts/system-loop/system-loop-smoke.log
+          if-no-files-found: error
+          retention-days: 365
+
+      - name: Enforce SystemLoop smoke result
+        shell: bash
+        run: test "${{ steps.smoke.outputs.status }}" = "0"
+
+      - name: Restore and prove final clean candidate identity
+        if: always()
+        shell: bash
+        run: |
+          rm -rf artifacts/system-loop dist-runtime
+          test "$(git rev-parse HEAD)" = "$URAI_EXACT_HEAD"
+          test -z "$(git status --porcelain --untracked-files=all)"
