@@ -14,6 +14,7 @@ function run(command, args) {
 rmSync("dist-runtime", { recursive: true, force: true });
 run("pnpm", [
   "exec", "tsc",
+  "--ignoreConfig",
   "--target", "ES2022",
   "--module", "NodeNext",
   "--moduleResolution", "NodeNext",
