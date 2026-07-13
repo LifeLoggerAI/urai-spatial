@@ -131,10 +131,14 @@ jobs:
           URAI_DEPLOY_URL: ${{ inputs.live_url }}
         run: pnpm smoke:live
 
-      - name: Prove final exact clean tree
+      - name: Reject tracked mutation and remove generated output
         if: always()
         shell: bash
         run: |
-          rm -rf artifacts
+          set -euo pipefail
           test "$(git rev-parse HEAD)" = "$URAI_EXACT_HEAD"
+          git diff --exit-code
+          git diff --cached --exit-code
+          git status --short --untracked-files=all
+          git clean -fdx
           test -z "$(git status --porcelain --untracked-files=all)"
