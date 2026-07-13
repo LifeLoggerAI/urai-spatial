@@ -47,19 +47,37 @@ export class DualKernelTest {
   }
 
   /**
-   * Run deterministic validation across both kernels
+   * Run deterministic validation across both kernels.
+   * Requiring an expected event count prevents a false-green result where
+   * both nodes converge only because every sample event was rejected.
    */
-  validate(): boolean {
+  validate(expectedEventCount?: number): boolean {
     const stateA = this.kernelA.getState();
     const stateB = this.kernelB.getState();
 
-    const ok = StateConvergence.compare(stateA, stateB);
+    const converged = StateConvergence.compare(stateA, stateB);
+    const acceptedExpectedEvents = expectedEventCount === undefined
+      || (stateA.memory.length === expectedEventCount && stateB.memory.length === expectedEventCount);
+    const ok = converged && acceptedExpectedEvents;
 
-    if (!ok) {
+    if (!converged) {
       const report = StateConvergence.diagnose([stateA, stateB]);
       console.error("❌ DIVERGENCE DETECTED", report);
-    } else {
-      console.log("✅ DETERMINISTIC CONVERGENCE CONFIRMED");
+    }
+
+    if (!acceptedExpectedEvents) {
+      console.error("❌ DISTRIBUTED EVENT ACCEPTANCE MISMATCH", {
+        expectedEventCount,
+        kernelAEvents: stateA.memory.length,
+        kernelBEvents: stateB.memory.length,
+      });
+    }
+
+    if (ok) {
+      console.log("✅ DETERMINISTIC CONVERGENCE CONFIRMED", {
+        acceptedEvents: stateA.memory.length,
+        fingerprint: StateConvergence.fingerprint(stateA),
+      });
     }
 
     return ok;
