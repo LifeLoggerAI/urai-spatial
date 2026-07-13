@@ -124,7 +124,7 @@ test('authority bundle and credential verifier bind the complete immutable hoste
     'rollbackSha',
     'Release bundle source must not contain symlinks',
     'isFirebaseIgnoredPath',
-    "segment.startsWith('.')",
+    "path.posix.basename(relative).startsWith('.')",
     'Release bundle manifest must not contain Firebase-ignored dot paths',
     'Copied release bundle bytes do not match the source output',
     'fingerprintSha256',
