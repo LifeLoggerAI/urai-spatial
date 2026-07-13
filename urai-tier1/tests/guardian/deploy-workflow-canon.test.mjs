@@ -3,9 +3,9 @@ import { readFileSync, existsSync } from "node:fs";
 import { join } from "node:path";
 
 const root = process.cwd();
-const workflowPath = join(root, ".github/workflows/urai-spatial-deploy.yml");
+const workflowPath = join(root, ".github/workflows/spatial-live-deploy.yml");
 
-assert.equal(existsSync(workflowPath), true, "Deploy workflow must exist.");
+assert.equal(existsSync(workflowPath), true, "Canonical spatial release workflow must exist.");
 
 const workflow = readFileSync(workflowPath, "utf8");
 
