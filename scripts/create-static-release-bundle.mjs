@@ -44,12 +44,17 @@ function sha256(file) {
   return createHash('sha256').update(readFileSync(file)).digest('hex')
 }
 
+function isFirebaseIgnoredPath(relative) {
+  return relative.split('/').some((segment) => segment.startsWith('.'))
+}
+
 function walkRegularFiles(directory, prefix = '') {
   const entries = readdirSync(directory, { withFileTypes: true }).sort((left, right) => left.name.localeCompare(right.name))
   const files = []
   for (const entry of entries) {
-    const absolute = path.join(directory, entry.name)
     const relative = path.posix.join(prefix, entry.name)
+    if (isFirebaseIgnoredPath(relative)) continue
+    const absolute = path.join(directory, entry.name)
     const stats = lstatSync(absolute)
     if (stats.isSymbolicLink()) throw new Error(`Release bundle source must not contain symlinks: ${relative}`)
     if (stats.isDirectory()) {
@@ -118,6 +123,9 @@ assertCleanAuthorityCheckout()
 const fingerprint = writeAuthoritativeFingerprint()
 const sourceFiles = walkRegularFiles(sourceDirectory)
 if (!sourceFiles.length) throw new Error('Static output directory is empty')
+if (sourceFiles.some((entry) => isFirebaseIgnoredPath(entry.relative))) {
+  throw new Error('Release bundle manifest must not contain Firebase-ignored dot paths')
+}
 if (!sourceFiles.some((entry) => entry.relative === 'index.html')) throw new Error('Static output is missing index.html')
 if (!sourceFiles.some((entry) => entry.relative === 'release-fingerprint.json')) {
   throw new Error('Static output is missing release-fingerprint.json')
