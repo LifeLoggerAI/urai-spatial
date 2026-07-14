@@ -81,7 +81,7 @@ function sha256(file) {
 }
 
 function isFirebaseIgnoredPath(relative) {
-  return relative.split('/').some((segment) => segment.startsWith('.'))
+  return path.posix.basename(relative).startsWith('.')
 }
 
 function walkRegularFiles(directory, prefix = '') {
@@ -90,9 +90,6 @@ function walkRegularFiles(directory, prefix = '') {
   const files = []
   for (const entry of entries) {
     const relative = path.posix.join(prefix, entry.name)
-    if (isFirebaseIgnoredPath(relative)) {
-      throw new Error(`Release surface contains a Firebase-ignored dot path: ${relative}`)
-    }
     const absolute = path.join(directory, entry.name)
     const stats = lstatSync(absolute)
     if (stats.isSymbolicLink()) throw new Error(`Release surface must not contain symlinks: ${relative}`)
@@ -101,6 +98,9 @@ function walkRegularFiles(directory, prefix = '') {
       continue
     }
     if (!stats.isFile()) throw new Error(`Release surface contains a non-regular entry: ${relative}`)
+    if (isFirebaseIgnoredPath(relative)) {
+      throw new Error(`Release surface contains a Firebase-ignored dotfile: ${relative}`)
+    }
     files.push({ absolute, relative, bytes: stats.size, sha256: sha256(absolute) })
   }
   return files
@@ -290,7 +290,8 @@ function validateAndMaterializePrebuiltBundle(targetSha, authoritySha, materiali
       typeof entry.path !== 'string' ||
       entry.path.startsWith('/') ||
       entry.path.includes('\\') ||
-      entry.path.split('/').some((segment) => !segment || segment === '.' || segment === '..' || segment.startsWith('.')) ||
+      entry.path.split('/').some((segment) => !segment || segment === '.' || segment === '..') ||
+      isFirebaseIgnoredPath(entry.path) ||
       !Number.isSafeInteger(entry.bytes) ||
       entry.bytes < 0 ||
       !/^[0-9a-f]{64}$/.test(entry.sha256 || '')
