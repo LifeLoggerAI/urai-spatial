@@ -59,8 +59,9 @@ test('release operator is exact-SHA, rollback-aware, hosting-only, and credentia
     "process.argv.includes('--deploy-prebuilt')",
     'validateAndMaterializePrebuiltBundle',
     'Release bundle file set, sizes, or hashes do not match the manifest',
-    "path.posix.basename(relative).startsWith('.')",
-    'Release surface contains a Firebase-ignored dotfile',
+    "relative.split('/').some((segment) => segment.startsWith('.'))",
+    'Release surface contains a Firebase-ignored dot path',
+    'live-rollback-provenance.json',
     'fingerprint.repository !== canonicalRepository',
     'fingerprint.authoritySha !== authoritySha',
     'manifest.fingerprintSha256 !== sha256(fingerprintPath)',
@@ -73,7 +74,8 @@ test('release operator is exact-SHA, rollback-aware, hosting-only, and credentia
     "flag: 'wx'",
     'removeTemporaryServiceAccount',
   ], 'operator')
-  assert.doesNotMatch(operator, /relative\.split\('\/'\)\.some\(\(segment\) => segment\.startsWith\('\.'\)\)/)
+  assert.match(operator, /relative\.split\('\/'\)\.some\(\(segment\) => segment\.startsWith\('\.'\)\)/)
+  assert.doesNotMatch(operator, /path\.posix\.basename\(relative\)\.startsWith\('\.'\)/)
   assert.match(operator, /'--only', 'hosting'/)
   assert.doesNotMatch(operator, /hosting,firestore|firestore:indexes|functions|pnpm\s+exec\s+firebase/)
 })
@@ -145,6 +147,8 @@ test('authority bundle and credential verifier bind the complete immutable hoste
     'firebaseCliResolvedFromCurrentAuthority: true',
     'downloadedBundleRunBound',
     'downloadedBundleFingerprintBound',
+    'liveRollbackEvidenceDirectory',
+    'evidenceDirectory: liveRollbackEvidenceDirectory',
   ], 'credential boundary')
 })
 

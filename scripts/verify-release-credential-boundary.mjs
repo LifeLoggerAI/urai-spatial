@@ -100,15 +100,20 @@ await import('./verify-release-credential-boundary-static.mjs')
 runLiveRollbackProvenanceSelfTest()
 
 const githubJob = (process.env.GITHUB_JOB || '').trim()
+const runnerTemp = (process.env.RUNNER_TEMP || '').trim()
 const liveRollbackProvenanceRequired =
   process.env.GITHUB_ACTIONS === 'true' &&
   process.env.GITHUB_EVENT_NAME === 'workflow_dispatch' &&
   githubJob === 'deploy' &&
   process.env.GITHUB_REF === 'refs/heads/main' &&
   ['deploy', 'rollback'].includes(String(process.env.URAI_RELEASE_OPERATION || ''))
+const liveRollbackEvidenceDirectory =
+  liveRollbackProvenanceRequired && runnerTemp
+    ? path.join(runnerTemp, 'release-control-evidence')
+    : path.resolve('release-control-evidence')
 let liveRollbackProvenanceVerified = false
 if (liveRollbackProvenanceRequired) {
-  await verifyLiveRollbackProvenance()
+  await verifyLiveRollbackProvenance({ evidenceDirectory: liveRollbackEvidenceDirectory })
   liveRollbackProvenanceVerified = true
 }
 
@@ -116,7 +121,6 @@ let downloadedBundlePresent = false
 let downloadedBundleRunBound = false
 let downloadedBundleFingerprintBound = false
 const downloadedBundleRequired = githubJob === 'deploy' || (process.env.URAI_REQUIRE_RELEASE_BUNDLE || '').trim() === '1'
-const runnerTemp = (process.env.RUNNER_TEMP || '').trim()
 const canonicalDeployBundleDirectory =
   process.env.GITHUB_ACTIONS === 'true' && githubJob === 'deploy' && runnerTemp
     ? path.join(runnerTemp, 'urai-release-bundle')

@@ -2,6 +2,7 @@ import { createHash } from 'node:crypto'
 import { spawnSync } from 'node:child_process'
 import {
   chmodSync,
+  copyFileSync,
   cpSync,
   existsSync,
   lstatSync,
@@ -32,6 +33,9 @@ const expectedCurrentMain = (process.env.CURRENT_MAIN_SHA || '').trim()
 const serviceAccountJson = process.env.FIREBASE_SERVICE_ACCOUNT_JSON || ''
 const credentialsPath = (process.env.GOOGLE_APPLICATION_CREDENTIALS || '').trim()
 const runnerTemp = (process.env.RUNNER_TEMP || '').trim()
+const liveRollbackProvenancePath = runnerTemp
+  ? path.join(runnerTemp, 'release-control-evidence', 'live-rollback-provenance.json')
+  : ''
 const firebaseCliPath = (process.env.URAI_FIREBASE_CLI || '').trim()
 const releaseBundleDirectory = path.resolve(process.env.URAI_RELEASE_BUNDLE_DIR || path.join(authorityRoot, 'release-bundle'))
 const canonicalWorkflow = 'URAI Canonical Production Release'
@@ -81,7 +85,7 @@ function sha256(file) {
 }
 
 function isFirebaseIgnoredPath(relative) {
-  return path.posix.basename(relative).startsWith('.')
+  return relative.split('/').some((segment) => segment.startsWith('.'))
 }
 
 function walkRegularFiles(directory, prefix = '') {
@@ -99,7 +103,7 @@ function walkRegularFiles(directory, prefix = '') {
     }
     if (!stats.isFile()) throw new Error(`Release surface contains a non-regular entry: ${relative}`)
     if (isFirebaseIgnoredPath(relative)) {
-      throw new Error(`Release surface contains a Firebase-ignored dotfile: ${relative}`)
+      throw new Error(`Release surface contains a Firebase-ignored dot path: ${relative}`)
     }
     files.push({ absolute, relative, bytes: stats.size, sha256: sha256(absolute) })
   }
@@ -406,6 +410,9 @@ function writeReceipt(targetSha, status, details = {}) {
   }
   const receiptPath = path.join(directory, 'receipt.json')
   writeFileSync(receiptPath, `${JSON.stringify(receipt, null, 2)}\n`)
+  if (liveRollbackProvenancePath && existsSync(liveRollbackProvenancePath)) {
+    copyFileSync(liveRollbackProvenancePath, path.join(directory, 'live-rollback-provenance.json'))
+  }
   if (process.env.GITHUB_STEP_SUMMARY) {
     const summary = `\n## URAI static release\n\n- SHA: \`${targetSha}\`\n- Recovery SHA: \`${rollbackSha || 'not set'}\`\n- Operation: \`${releaseOperation}\`\n- Project: \`${project || 'not set'}\`\n- Scope: Hosting only\n- Prebuilt: \`${prebuiltDeploy}\`\n- Status: **${status}**\n- Receipt: \`${receiptPath}\`\n`
     writeFileSync(process.env.GITHUB_STEP_SUMMARY, summary, { flag: 'a' })
