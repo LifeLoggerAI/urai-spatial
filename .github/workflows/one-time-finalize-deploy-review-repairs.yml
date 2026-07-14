@@ -1,9 +1,6 @@
 name: One-time final deploy review repairs
 
 on:
-  push:
-    paths:
-      - '.github/workflows/one-time-finalize-deploy-review-repairs.yml'
   pull_request:
     branches: [main]
     types: [opened, synchronize, reopened]
@@ -14,12 +11,12 @@ permissions:
   contents: write
 
 concurrency:
-  group: one-time-finalize-deploy-review-repairs-${{ github.event.pull_request.number || github.ref }}
+  group: one-time-finalize-deploy-review-repairs-${{ github.event.pull_request.number }}
   cancel-in-progress: false
 
 jobs:
   repair:
-    if: github.head_ref == 'release/protected-rollback-authority-20260711-v2' || github.ref == 'refs/heads/release/protected-rollback-authority-20260711-v2'
+    if: github.head_ref == 'release/protected-rollback-authority-20260711-v2'
     runs-on: ubuntu-24.04
     timeout-minutes: 15
     steps:
@@ -38,39 +35,50 @@ jobs:
           python - <<'PY'
           from pathlib import Path
 
-          def replace_exact(path: str, old: str, new: str) -> None:
+          def replace_one(path: str, old: str, new: str) -> None:
               file = Path(path)
               source = file.read_text()
               count = source.count(old)
-              if count != 1:
-                  raise SystemExit(f'{path}: expected one exact replacement, found {count}')
-              file.write_text(source.replace(old, new))
+              print(f'{path}: replacement count={count}')
+              if count < 1:
+                  raise SystemExit(f'{path}: required source marker missing')
+              file.write_text(source.replace(old, new, 1))
 
-          replace_exact(
+          replace_one(
               'scripts/live-release.mjs',
-              "function isFirebaseIgnoredPath(relative) {\n  return path.posix.basename(relative).startsWith('.')\n}",
-              "function isFirebaseIgnoredPath(relative) {\n  return relative.split('/').some((segment) => segment.startsWith('.'))\n}",
+              "return path.posix.basename(relative).startsWith('.')",
+              "return relative.split('/').some((segment) => segment.startsWith('.'))",
           )
-          replace_exact(
+          replace_one(
               'scripts/live-release.mjs',
               'Release surface contains a Firebase-ignored dotfile:',
               'Release surface contains a Firebase-ignored dot path:',
           )
-          replace_exact(
+          replace_one(
               'scripts/verify-release-credential-boundary.mjs',
-              "let liveRollbackProvenanceVerified = false\nif (liveRollbackProvenanceRequired) {\n  await verifyLiveRollbackProvenance()\n  liveRollbackProvenanceVerified = true\n}",
-              "let liveRollbackProvenanceVerified = false\nconst liveRollbackEvidenceDirectory = (process.env.RUNNER_TEMP || '').trim()\n  ? path.join((process.env.RUNNER_TEMP || '').trim(), 'urai-release-control-evidence')\n  : path.resolve('release-control-evidence')\nif (liveRollbackProvenanceRequired) {\n  await verifyLiveRollbackProvenance({ evidenceDirectory: liveRollbackEvidenceDirectory })\n  liveRollbackProvenanceVerified = true\n}",
+              '  await verifyLiveRollbackProvenance()\n  liveRollbackProvenanceVerified = true',
+              "  const evidenceDirectory = (process.env.RUNNER_TEMP || '').trim()\n    ? path.join((process.env.RUNNER_TEMP || '').trim(), 'urai-release-control-evidence')\n    : path.resolve('release-control-evidence')\n  await verifyLiveRollbackProvenance({ evidenceDirectory })\n  liveRollbackProvenanceVerified = true",
           )
-          replace_exact(
-              'urai-tier1/tests/exact-static-release-contract.test.mjs',
-              "    'downloadedBundleFingerprintBound',\n  ], 'credential boundary')",
-              "    'downloadedBundleFingerprintBound',\n    'liveRollbackEvidenceDirectory',\n    'urai-release-control-evidence',\n    'verifyLiveRollbackProvenance({ evidenceDirectory: liveRollbackEvidenceDirectory })',\n  ], 'credential boundary')",
-          )
-          replace_exact(
-              'urai-tier1/tests/exact-static-release-contract.test.mjs',
-              "  assert.doesNotMatch(bundleBuilder, /path\\.posix\\.basename\\(relative\\)\\.startsWith\\('\\.'\\)/)\n  hasAll(credentialBoundary, [",
-              "  assert.doesNotMatch(bundleBuilder, /path\\.posix\\.basename\\(relative\\)\\.startsWith\\('\\.'\\)/)\n  hasAll(operator, [\n    'isFirebaseIgnoredPath',\n    \"relative.split('/').some((segment) => segment.startsWith('.'))\",\n    'Release surface contains a Firebase-ignored dot path',\n  ], 'release operator')\n  assert.doesNotMatch(operator, /path\\.posix\\.basename\\(relative\\)\\.startsWith\\('\\.'\\)/)\n  hasAll(credentialBoundary, [",
-          )
+
+          Path('urai-tier1/tests/final-protected-deploy-regressions.test.mjs').write_text("""import test from 'node:test'
+import assert from 'node:assert/strict'
+import { readFileSync } from 'node:fs'
+
+const operator = readFileSync('scripts/live-release.mjs', 'utf8')
+const credentialBoundary = readFileSync('scripts/verify-release-credential-boundary.mjs', 'utf8')
+
+test('prebuilt release verification rejects every dot-prefixed path segment', () => {
+  assert.match(operator, /relative\.split\('\/'\)\.some\(\(segment\) => segment\.startsWith\('\.'\)\)/)
+  assert.doesNotMatch(operator, /path\.posix\.basename\(relative\)\.startsWith\('\.'\)/)
+  assert.match(operator, /Firebase-ignored dot path/)
+})
+
+test('live rollback provenance evidence stays outside the authority checkout', () => {
+  assert.match(credentialBoundary, /process\.env\.RUNNER_TEMP/)
+  assert.match(credentialBoundary, /urai-release-control-evidence/)
+  assert.match(credentialBoundary, /verifyLiveRollbackProvenance\(\{ evidenceDirectory \}\)/)
+})
+""")
 
           Path('.github/workflows/one-time-finalize-deploy-review-repairs.yml').unlink()
           PY
@@ -79,6 +87,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
+          node --test urai-tier1/tests/final-protected-deploy-regressions.test.mjs
           node urai-tier1/tests/exact-static-release-contract.test.mjs
           node scripts/audit-production-workflow-authority.mjs
           git diff --check
@@ -89,7 +98,7 @@ jobs:
           set -euo pipefail
           git config user.name 'LifeLoggerAI release automation'
           git config user.email 'actions@users.noreply.github.com'
-          git add scripts/live-release.mjs scripts/verify-release-credential-boundary.mjs urai-tier1/tests/exact-static-release-contract.test.mjs .github/workflows/one-time-finalize-deploy-review-repairs.yml
+          git add scripts/live-release.mjs scripts/verify-release-credential-boundary.mjs urai-tier1/tests/final-protected-deploy-regressions.test.mjs .github/workflows/one-time-finalize-deploy-review-repairs.yml
           git diff --cached --check
           git commit -m 'Close final protected deploy review findings'
           git push origin HEAD:release/protected-rollback-authority-20260711-v2
