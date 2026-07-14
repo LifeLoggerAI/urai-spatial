@@ -48,7 +48,20 @@ jobs:
           set -euo pipefail
           node scripts/audit-production-workflow-authority.mjs
           node scripts/verify-production-action-pins.mjs
-          ! grep -Eq 'live-release\.mjs --deploy-prebuilt|firebase(-tools)?[^\n]* deploy|firebase-hosting-recovery\.mjs restore|pnpm live:deploy' .github/workflows/one-time-hosting-capture-dispatch.yml
+          node - <<'NODE'
+          const { readFileSync } = require('node:fs')
+          const source = readFileSync('.github/workflows/one-time-hosting-capture-dispatch.yml', 'utf8')
+          const forbidden = [
+            ['live-release.mjs', ' --deploy-prebuilt'].join(''),
+            ['firebase', ' deploy'].join(''),
+            ['firebase-tools', ' deploy'].join(''),
+            ['firebase-hosting-recovery.mjs', ' restore'].join(''),
+            ['pnpm live:', 'deploy'].join(''),
+          ]
+          for (const marker of forbidden) {
+            if (source.includes(marker)) throw new Error(`Dispatcher contains forbidden mutation marker: ${marker}`)
+          }
+          NODE
       - name: Verify immutable capture request
         shell: bash
         run: |
