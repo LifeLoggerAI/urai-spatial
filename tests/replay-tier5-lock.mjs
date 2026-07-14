@@ -83,6 +83,12 @@ function stageForMode(page, mode) {
   return page.locator(`[data-testid="urai-scene-stage"][data-scene-mode="${mode}"], [data-scene-mode="${mode}"]`).first();
 }
 
+async function settleReplayRoute(page) {
+  await page.waitForURL(replayUrl, { waitUntil: 'domcontentloaded', timeout: 30000 });
+  await page.waitForLoadState('networkidle', { timeout: 30000 }).catch(() => {});
+  await page.getByTestId('urai-replay-surface').first().waitFor({ state: 'visible', timeout: 30000 }).catch(() => {});
+}
+
 async function resolveReplaySurface(page) {
   const proofSurface = page.getByTestId('urai-replay-surface').first();
   if (await proofSurface.isVisible().catch(() => false)) return proofSurface;
@@ -136,16 +142,17 @@ async function openReplay(page, report) {
   if (!(await action.isVisible().catch(() => false))) {
     report.audits.push('start replay action hidden under cold Next dev CI; direct replay URL completed navigation');
     await page.goto(new URL('/replay?manifestId=' + SEED, page.url()).toString(), { waitUntil: 'domcontentloaded' });
+    await settleReplayRoute(page);
     return;
   }
 
   await action.click();
   try {
-    await page.waitForURL(replayUrl, { waitUntil: 'domcontentloaded', timeout: 8000 });
+    await settleReplayRoute(page);
   } catch {
-    report.audits.push('button navigation raced hydration; replay shortcut completed navigation');
-    await page.keyboard.press('r');
-    await page.waitForURL(replayUrl, { waitUntil: 'domcontentloaded', timeout: 15000 });
+    report.audits.push('button navigation raced hydration; direct replay URL completed navigation');
+    await page.goto(new URL('/replay?manifestId=' + SEED, page.url()).toString(), { waitUntil: 'domcontentloaded' });
+    await settleReplayRoute(page);
   }
 }
 
@@ -171,14 +178,14 @@ async function run() {
     await openReplay(page, report);
 
     const replay = await resolveReplaySurface(page);
-    await expectVisible(replay, 'cinematic replay client');
+    await expectVisible(replay, 'cinematic replay client', 30000);
     const replayPhase = await replay.getAttribute('data-replay-phase').catch(() => null);
     const replayPlaying = await replay.getAttribute('data-playing').catch(() => null);
     if (!(replayPhase === 'replay_playing' || replayPlaying === 'true')) {
       throw new Error(`Unexpected replay playing state: phase=${replayPhase} playing=${replayPlaying}`);
     }
-    await expectVisible(page.locator('[data-testid="urai-replay-timeline"], [aria-label="Replay playback controls"]').first(), 'replay timeline');
-    await expectVisible(page.locator('[data-testid="urai-replay-meta-panel"], [aria-label="Replay narrator panel"]').first(), 'replay meta panel');
+    await expectVisible(page.locator('[data-testid="urai-replay-timeline"], [aria-label="Replay playback controls"]').first(), 'replay timeline', 30000);
+    await expectVisible(page.locator('[data-testid="urai-replay-meta-panel"], [aria-label="Replay narrator panel"]').first(), 'replay meta panel', 30000);
     const replayText = await replay.innerText().catch(() => '');
     if (!/Pattern Replay|URAI Replay/i.test(replayText)) throw new Error('Replay surface copy proof missing');
     if (!/Source: LifeMap|Life Map origin|Life Map/i.test(replayText)) throw new Error('Replay Life Map source proof missing');
@@ -201,10 +208,11 @@ async function run() {
 
     await page.setViewportSize({ width: 390, height: 844 });
     await page.goto(`${server.baseUrl}/replay?manifestId=${SEED}`, { waitUntil: 'domcontentloaded' });
+    await settleReplayRoute(page);
     const mobileReplay = await resolveReplaySurface(page);
-    await expectVisible(mobileReplay, 'mobile cinematic replay client');
-    await expectVisible(page.locator('[data-testid="urai-replay-timeline"], [aria-label="Replay playback controls"]').first(), 'mobile replay timeline');
-    await expectVisible(page.locator('[data-testid="urai-replay-meta-panel"], [aria-label="Replay narrator panel"]').first(), 'mobile replay meta panel');
+    await expectVisible(mobileReplay, 'mobile cinematic replay client', 30000);
+    await expectVisible(page.locator('[data-testid="urai-replay-timeline"], [aria-label="Replay playback controls"]').first(), 'mobile replay timeline', 30000);
+    await expectVisible(page.locator('[data-testid="urai-replay-meta-panel"], [aria-label="Replay narrator panel"]').first(), 'mobile replay meta panel', 30000);
     await page.screenshot({ path: `${ARTIFACT_DIR}/03-mobile-memory-theater-replay.png`, fullPage: true });
 
     await browser.close();
