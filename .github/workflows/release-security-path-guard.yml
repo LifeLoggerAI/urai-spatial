@@ -17,8 +17,8 @@ on:
       - 'scripts/urai-release-control-smoke.mjs'
       - 'scripts/urai-post-deploy-smoke.mjs'
       - 'urai-tier1/tests/exact-static-release-contract.test.mjs'
-      - '.github/workflows/spatial-live-deploy.yml'
-      - '.github/workflows/release-security-path-guard.yml'
+      - '.github/workflows/**.yml'
+      - '.github/workflows/**.yaml'
       - 'package.json'
       - 'pnpm-lock.yaml'
   push:
@@ -37,8 +37,8 @@ on:
       - 'scripts/urai-release-control-smoke.mjs'
       - 'scripts/urai-post-deploy-smoke.mjs'
       - 'urai-tier1/tests/exact-static-release-contract.test.mjs'
-      - '.github/workflows/spatial-live-deploy.yml'
-      - '.github/workflows/release-security-path-guard.yml'
+      - '.github/workflows/**.yml'
+      - '.github/workflows/**.yaml'
       - 'package.json'
       - 'pnpm-lock.yaml'
   workflow_dispatch:
