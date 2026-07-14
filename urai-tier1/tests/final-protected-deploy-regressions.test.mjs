@@ -41,6 +41,7 @@ test('predeploy receipt stays outside the checkout until deploy succeeds', () =>
   assert.ok(releaseOperator.includes('rootDirectory: preDeployReceiptRoot'))
   assert.ok(releaseOperator.includes('includeLiveRollbackProvenance: false'))
   assert.ok(releaseOperator.includes('Current authority checkout must remain clean immediately before deployment'))
+  assert.ok(releaseOperator.includes("output('git', ['status', '--porcelain', '--untracked-files=all'])"))
   assert.ok(releaseOperator.includes("copyFileSync(receiptPath, path.join(path.dirname(finalReceiptPath), 'predeploy-receipt.json'))"))
 
   const predeployReceipt = releaseOperator.indexOf("writeReceipt(targetSha, 'built-awaiting-deploy'")

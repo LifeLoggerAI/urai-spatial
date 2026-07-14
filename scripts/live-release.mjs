@@ -529,7 +529,7 @@ const receiptPath = writeReceipt(targetSha, 'built-awaiting-deploy', {
   rootDirectory: preDeployReceiptRoot,
   includeLiveRollbackProvenance: false,
 })
-if (output('git', ['status', '--porcelain'])) {
+if (output('git', ['status', '--porcelain', '--untracked-files=all'])) {
   throw new Error('Current authority checkout must remain clean immediately before deployment')
 }
 
