@@ -25,3 +25,9 @@ test('provider verification remains fail closed before receipt generation', () =
   assert.ok(failureIndex > verifierIndex)
   assert.ok(receiptIndex > failureIndex)
 })
+
+test('generated receipt keeps provider integration language provenance-qualified', () => {
+  assert.match(runner, /Provider provenance handoff:/)
+  assert.match(runner, /Asset Factory provenance handoff/)
+  assert.match(runner, /unqualified provider-integration claim/)
+})
