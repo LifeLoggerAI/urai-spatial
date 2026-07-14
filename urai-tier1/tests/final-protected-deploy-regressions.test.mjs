@@ -30,4 +30,8 @@ test('live rollback provenance evidence stays outside the authority checkout', (
     credentialBoundary,
     /verifyLiveRollbackProvenance\(\{ evidenceDirectory: liveRollbackEvidenceDirectory \}\)/,
   )
+  assert.match(
+    releaseOperator,
+    /status === 'deployed' && liveRollbackProvenancePath && existsSync\(liveRollbackProvenancePath\)/,
+  )
 })

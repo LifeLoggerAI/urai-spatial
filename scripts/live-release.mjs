@@ -410,7 +410,7 @@ function writeReceipt(targetSha, status, details = {}) {
   }
   const receiptPath = path.join(directory, 'receipt.json')
   writeFileSync(receiptPath, `${JSON.stringify(receipt, null, 2)}\n`)
-  if (liveRollbackProvenancePath && existsSync(liveRollbackProvenancePath)) {
+  if (status === 'deployed' && liveRollbackProvenancePath && existsSync(liveRollbackProvenancePath)) {
     copyFileSync(liveRollbackProvenancePath, path.join(directory, 'live-rollback-provenance.json'))
   }
   if (process.env.GITHUB_STEP_SUMMARY) {
