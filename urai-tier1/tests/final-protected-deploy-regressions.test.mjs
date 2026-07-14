@@ -32,6 +32,20 @@ test('live rollback provenance evidence stays outside the authority checkout', (
   )
   assert.match(
     releaseOperator,
-    /status === 'deployed' && liveRollbackProvenancePath && existsSync\(liveRollbackProvenancePath\)/,
+    /includeLiveRollbackProvenance && liveRollbackProvenancePath && existsSync\(liveRollbackProvenancePath\)/,
   )
+})
+
+test('predeploy receipt stays outside the checkout until deploy succeeds', () => {
+  assert.ok(releaseOperator.includes('function resolvePreDeployReceiptRoot()'))
+  assert.ok(releaseOperator.includes('rootDirectory: preDeployReceiptRoot'))
+  assert.ok(releaseOperator.includes('includeLiveRollbackProvenance: false'))
+  assert.ok(releaseOperator.includes('Current authority checkout must remain clean immediately before deployment'))
+  assert.ok(releaseOperator.includes("copyFileSync(receiptPath, path.join(path.dirname(finalReceiptPath), 'predeploy-receipt.json'))"))
+
+  const predeployReceipt = releaseOperator.indexOf("writeReceipt(targetSha, 'built-awaiting-deploy'")
+  const deploy = releaseOperator.lastIndexOf('deployHostingWithTemporaryCredentials()')
+  const finalReceipt = releaseOperator.indexOf("writeReceipt(targetSha, 'deployed'")
+  const retainedPredeploy = releaseOperator.indexOf("'predeploy-receipt.json'")
+  assert.ok(predeployReceipt >= 0 && deploy > predeployReceipt && finalReceipt > deploy && retainedPredeploy > finalReceipt)
 })
