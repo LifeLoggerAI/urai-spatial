@@ -148,6 +148,18 @@ if (sequence.some((index) => index < 0) || sequence.some((value, index) => index
   failures.push('Protected deploy job must preserve authority, download, verify, secret, deploy, and smoke ordering')
 }
 
+const strictSmokeIndex = deployJob.indexOf('Run canonical live smoke with current authority')
+const cleanupIndex = deployJob.indexOf('name: Remove temporary credentials')
+if (strictSmokeIndex < 0 || cleanupIndex <= strictSmokeIndex) {
+  failures.push('Protected deploy job must retain the managed credential through strict smoke and clean it only afterward')
+}
+const cleanupSection = cleanupIndex >= 0 ? deployJob.slice(cleanupIndex) : ''
+for (const marker of [
+  'if: always()',
+  'GOOGLE_APPLICATION_CREDENTIALS: ${{ runner.temp }}/urai-firebase-service-account.json',
+  'run: rm -f "$GOOGLE_APPLICATION_CREDENTIALS"',
+]) requireMarker('Protected credential cleanup step', cleanupSection, marker)
+
 forbid('Workflow', workflow, /printf\s+['"]%s['"]\s+"\$FIREBASE_SERVICE_ACCOUNT_JSON"\s*>\s*"\$GOOGLE_APPLICATION_CREDENTIALS"/, 'early credential-file write')
 forbid('Workflow', workflow, /cat\s+>\s*"\$GOOGLE_APPLICATION_CREDENTIALS"/, 'credential heredoc write')
 forbid('Workflow', workflow, /working-directory:\s*target[\s\S]{0,300}pnpm\s+exec\s+firebase\s+deploy/, 'target-resolved Firebase deploy')
@@ -175,9 +187,29 @@ for (const marker of [
   'function deployHostingWithTemporaryCredentials()',
   'childEnvironment({ GOOGLE_APPLICATION_CREDENTIALS: credentialFile }, true)',
   'shell: false',
-  'finally {\n    removeTemporaryServiceAccount()',
+  'const credentialFile = writeTemporaryServiceAccount()',
+  'const hostingCapture = await discoverCurrentLiveRelease()',
+  'await recoverExactHostingVersion({',
+  'managedCredentialRetainedForStrictSmoke: true',
+  'finally {\n  clearHostingRecoveryEnvironment()',
 ]) requireMarker('Release operator', operator, marker)
 forbid('Release operator', operator, /pnpm\s+exec\s+firebase/, 'package-manager-resolved Firebase CLI')
+
+const credentialWriteIndex = operator.indexOf('const credentialFile = writeTemporaryServiceAccount()')
+const captureIndex = operator.indexOf('const hostingCapture = await discoverCurrentLiveRelease()')
+const deployCallIndex = operator.indexOf('deployHostingWithTemporaryCredentials()', captureIndex)
+const recoveryIndex = operator.indexOf('await recoverExactHostingVersion({', deployCallIndex)
+const clearRecoveryEnvironmentIndex = operator.indexOf('clearHostingRecoveryEnvironment()', recoveryIndex)
+const finalReceiptIndex = operator.indexOf("writeReceipt(targetSha, 'deployed'", clearRecoveryEnvironmentIndex)
+if ([credentialWriteIndex, captureIndex, deployCallIndex, recoveryIndex, clearRecoveryEnvironmentIndex, finalReceiptIndex].some((index) => index < 0)) {
+  failures.push('Release operator is missing the managed credential, capture, deploy, recovery, cleanup, or final-receipt sequence')
+} else if (!(credentialWriteIndex < captureIndex && captureIndex < deployCallIndex && deployCallIndex < recoveryIndex && recoveryIndex < clearRecoveryEnvironmentIndex && clearRecoveryEnvironmentIndex < finalReceiptIndex)) {
+  failures.push('Release operator must preserve managed credential, capture, deploy, recovery, environment cleanup, and final-receipt ordering')
+}
+const operatorAfterCredentialWrite = credentialWriteIndex >= 0 ? operator.slice(credentialWriteIndex) : ''
+if (operatorAfterCredentialWrite.includes('removeTemporaryServiceAccount()')) {
+  failures.push('Release operator must not remove the managed credential before the workflow strict-smoke step')
+}
 
 for (const marker of [
   "schemaVersion: 'urai-static-release-bundle-1'",
@@ -195,7 +227,7 @@ for (const marker of [
 ]) requireMarker('Authority bundle attester', bundleBuilder, marker)
 
 const report = {
-  schemaVersion: 'urai-release-credential-boundary-static-4',
+  schemaVersion: 'urai-release-credential-boundary-static-5',
   ok: failures.length === 0,
   secretOccurrences,
   rawSecretJobScoped: deployJobEnvironment.includes('FIREBASE_SERVICE_ACCOUNT_JSON'),
@@ -209,6 +241,8 @@ const report = {
   credentialsMaterializedByAuthorityOnly: true,
   unmanagedLocalCredentialPathsIgnoredDuringVerification: true,
   managedCredentialPathRequiredForProductionWrite: true,
+  managedCredentialRetainedThroughStrictSmokeOnly: true,
+  managedCredentialCleanupIsAlwaysRunAfterStrictSmoke: true,
   firebaseCliResolvedFromCurrentAuthority: true,
   failures,
 }
