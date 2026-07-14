@@ -103,3 +103,199 @@ jobs:
         run: node scripts/verify-live-rollback-provenance.mjs --self-test
       - name: Verify exact static release contract
         run: node urai-tier1/tests/exact-static-release-contract.test.mjs
+
+  one-time-fix-predeploy-receipt-order:
+    name: One-time fix predeploy receipt ordering
+    if: github.event_name == 'pull_request' && github.head_ref == 'release/protected-rollback-authority-20260711-v2'
+    permissions:
+      contents: write
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - name: Checkout repair branch with confined write token
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          ref: release/protected-rollback-authority-20260711-v2
+          fetch-depth: 0
+          persist-credentials: true
+          show-progress: false
+
+      - name: Apply reviewed receipt-order repair
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          from pathlib import Path
+
+          operator_path = Path('scripts/live-release.mjs')
+          workflow_path = Path('.github/workflows/spatial-live-deploy.yml')
+          regression_path = Path('urai-tier1/tests/final-protected-deploy-regressions.test.mjs')
+          guard_path = Path('.github/workflows/release-security-path-guard.yml')
+          temporary_path = Path('.github/workflows/one-time-fix-predeploy-receipt-order.yml')
+
+          operator = operator_path.read_text()
+          old_signature = "function writeReceipt(targetSha, status, details = {}) {\n  const directory = path.join('deployment-receipt', targetSha)\n"
+          new_signature = """function resolvePreDeployReceiptRoot() {
+  if (!runnerTemp) throw new Error('RUNNER_TEMP is required for pre-deploy receipt evidence')
+  const receiptRoot = path.resolve(runnerTemp, 'deployment-receipt')
+  const resolvedAuthorityRoot = realpathSync(authorityRoot)
+  if (receiptRoot === resolvedAuthorityRoot || receiptRoot.startsWith(`${resolvedAuthorityRoot}${path.sep}`)) {
+    throw new Error('Pre-deploy receipt evidence must remain outside the authority checkout')
+  }
+  return receiptRoot
+}
+
+function writeReceipt(
+  targetSha,
+  status,
+  details = {},
+  { rootDirectory = 'deployment-receipt', includeLiveRollbackProvenance = true } = {},
+) {
+  const directory = path.join(rootDirectory, targetSha)
+"""
+          if old_signature in operator:
+              operator = operator.replace(old_signature, new_signature, 1)
+          elif 'function resolvePreDeployReceiptRoot()' not in operator:
+              raise SystemExit('writeReceipt signature marker missing')
+
+          old_copy = "  if (liveRollbackProvenancePath && existsSync(liveRollbackProvenancePath)) {"
+          new_copy = "  if (includeLiveRollbackProvenance && liveRollbackProvenancePath && existsSync(liveRollbackProvenancePath)) {"
+          if old_copy in operator:
+              operator = operator.replace(old_copy, new_copy, 1)
+          elif new_copy not in operator:
+              raise SystemExit('provenance copy marker missing')
+
+          old_predeploy = """const htmlFiles = releaseFiles.filter((entry) => entry.path.endsWith('.html'))
+const receiptPath = writeReceipt(targetSha, 'built-awaiting-deploy', {
+  authorizedMainSha,
+  authoritySha,
+  outputFileCount: releaseFiles.length,
+  htmlFileCount: htmlFiles.length,
+  indexSha256: sha256('urai-tier1/out/index.html'),
+  fingerprintSha256: sha256('urai-tier1/out/release-fingerprint.json'),
+  ...outputDetails,
+})
+
+const preDeployMainSha = assertRemoteMainUnchanged(targetSha)
+"""
+          new_predeploy = """const htmlFiles = releaseFiles.filter((entry) => entry.path.endsWith('.html'))
+const preDeployReceiptRoot = resolvePreDeployReceiptRoot()
+const receiptPath = writeReceipt(targetSha, 'built-awaiting-deploy', {
+  authorizedMainSha,
+  authoritySha,
+  outputFileCount: releaseFiles.length,
+  htmlFileCount: htmlFiles.length,
+  indexSha256: sha256('urai-tier1/out/index.html'),
+  fingerprintSha256: sha256('urai-tier1/out/release-fingerprint.json'),
+  ...outputDetails,
+}, {
+  rootDirectory: preDeployReceiptRoot,
+  includeLiveRollbackProvenance: false,
+})
+if (output('git', ['status', '--porcelain'])) {
+  throw new Error('Current authority checkout must remain clean immediately before deployment')
+}
+
+const preDeployMainSha = assertRemoteMainUnchanged(targetSha)
+"""
+          if old_predeploy in operator:
+              operator = operator.replace(old_predeploy, new_predeploy, 1)
+          elif 'rootDirectory: preDeployReceiptRoot' not in operator:
+              raise SystemExit('predeploy receipt block marker missing')
+          operator_path.write_text(operator)
+
+          release_expr = '$' + '{{ env.RELEASE_SHA }}'
+          runner_expr = '$' + '{{ runner.temp }}'
+          workflow = workflow_path.read_text()
+          old_paths = (
+              '          path: |\n'
+              f'            deployment-receipt/{release_expr}/\n'
+              '            release-control-evidence/\n'
+          )
+          new_paths = (
+              '          path: |\n'
+              f'            deployment-receipt/{release_expr}/\n'
+              f'            {runner_expr}/deployment-receipt/{release_expr}/\n'
+              f'            {runner_expr}/release-control-evidence/\n'
+          )
+          if old_paths in workflow:
+              workflow = workflow.replace(old_paths, new_paths, 1)
+          elif new_paths not in workflow:
+              raise SystemExit('deployment artifact path marker missing')
+          workflow_path.write_text(workflow)
+
+          regression_path.write_text(r"""import test from 'node:test'
+import assert from 'node:assert/strict'
+import { readFileSync } from 'node:fs'
+import path from 'node:path'
+import { fileURLToPath } from 'node:url'
+
+const testDirectory = path.dirname(fileURLToPath(import.meta.url))
+const repositoryRoot = path.resolve(testDirectory, '../..')
+const readRepositoryFile = (file) => readFileSync(path.join(repositoryRoot, file), 'utf8').replace(/\r\n?/g, '\n')
+
+const releaseOperator = readRepositoryFile('scripts/live-release.mjs')
+const credentialBoundary = readRepositoryFile('scripts/verify-release-credential-boundary.mjs')
+const deploymentWorkflow = readRepositoryFile('.github/workflows/spatial-live-deploy.yml')
+
+test('prebuilt release verification rejects every dot-prefixed path segment', () => {
+  assert.match(releaseOperator, /relative\.split\('\/'\)\.some\(\(segment\) => segment\.startsWith\('\.'\)\)/)
+  assert.doesNotMatch(releaseOperator, /path\.posix\.basename\(relative\)\.startsWith\('\.'\)/)
+  assert.match(releaseOperator, /Firebase-ignored dot path/)
+})
+
+test('live rollback provenance evidence stays outside the authority checkout', () => {
+  assert.match(credentialBoundary, /const runnerTemp = \(process\.env\.RUNNER_TEMP \|\| ''\)\.trim\(\)/)
+  assert.match(credentialBoundary, /path\.join\(runnerTemp, 'release-control-evidence'\)/)
+  assert.match(credentialBoundary, /verifyLiveRollbackProvenance\(\{ evidenceDirectory: liveRollbackEvidenceDirectory \}\)/)
+})
+
+test('predeploy receipts stay outside the checkout and provenance is copied only after deploy', () => {
+  assert.match(releaseOperator, /function resolvePreDeployReceiptRoot\(\)/)
+  assert.match(releaseOperator, /rootDirectory = 'deployment-receipt'/)
+  assert.match(releaseOperator, /includeLiveRollbackProvenance = true/)
+  assert.match(releaseOperator, /rootDirectory: preDeployReceiptRoot/)
+  assert.match(releaseOperator, /includeLiveRollbackProvenance: false/)
+  assert.match(releaseOperator, /Current authority checkout must remain clean immediately before deployment/)
+
+  const predeployReceipt = releaseOperator.indexOf("writeReceipt(targetSha, 'built-awaiting-deploy'")
+  const deploy = releaseOperator.indexOf('deployHostingWithTemporaryCredentials()')
+  const finalReceipt = releaseOperator.indexOf("writeReceipt(targetSha, 'deployed'")
+  assert.ok(predeployReceipt >= 0 && deploy > predeployReceipt && finalReceipt > deploy)
+  assert.match(deploymentWorkflow, /runner\.temp/)
+  assert.match(deploymentWorkflow, /deployment-receipt/)
+  assert.match(deploymentWorkflow, /release-control-evidence/)
+})
+""")
+
+          guard = guard_path.read_text()
+          marker = '\n  one-time-fix-predeploy-receipt-order:\n'
+          if marker not in guard:
+              raise SystemExit('temporary guard job marker missing')
+          guard_path.write_text(guard.split(marker, 1)[0] + '\n')
+          if temporary_path.exists():
+              temporary_path.unlink()
+          PY
+
+      - name: Run focused protected-deploy regressions after restoring guard
+        shell: bash
+        run: |
+          set -euo pipefail
+          node --test urai-tier1/tests/final-protected-deploy-regressions.test.mjs
+          node urai-tier1/tests/exact-static-release-contract.test.mjs
+          node scripts/verify-release-security-path-guard.mjs
+          node scripts/verify-production-action-pins.mjs
+          node scripts/audit-production-workflow-authority.mjs
+          node scripts/verify-release-credential-boundary.mjs
+          git diff --check
+
+      - name: Commit reviewed repair with no temporary write authority
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name 'LifeLoggerAI release automation'
+          git config user.email 'actions@users.noreply.github.com'
+          git add -A
+          git diff --cached --check
+          git commit -m 'Keep predeploy receipts outside authority checkout'
+          git push origin HEAD:release/protected-rollback-authority-20260711-v2
