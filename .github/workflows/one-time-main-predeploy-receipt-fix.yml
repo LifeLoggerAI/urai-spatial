@@ -1,11 +1,6 @@
 name: One-time main predeploy receipt fix
 
 on:
-  push:
-    branches:
-      - fix/predeploy-receipt-outside-checkout-20260714
-    paths:
-      - '.github/workflows/one-time-main-predeploy-receipt-fix.yml'
   pull_request:
     branches: [main]
     types: [opened, synchronize, reopened]
@@ -166,16 +161,23 @@ jobs:
               test_path.write_text(test_source)
           PY
 
-      - name: Verify corrective source
-        shell: bash
-        run: |
-          set -euo pipefail
-          node --check scripts/live-release.mjs
-          node --check urai-tier1/tests/final-protected-deploy-regressions.test.mjs
-          node --test urai-tier1/tests/final-protected-deploy-regressions.test.mjs
-          node urai-tier1/tests/exact-static-release-contract.test.mjs
-          node scripts/verify-release-credential-boundary.mjs
-          git diff --check
+      - name: Syntax-check release operator
+        run: node --check scripts/live-release.mjs
+
+      - name: Syntax-check regression test
+        run: node --check urai-tier1/tests/final-protected-deploy-regressions.test.mjs
+
+      - name: Run focused regression test
+        run: node --test urai-tier1/tests/final-protected-deploy-regressions.test.mjs
+
+      - name: Run exact static release contract
+        run: node urai-tier1/tests/exact-static-release-contract.test.mjs
+
+      - name: Verify release credential boundary
+        run: node scripts/verify-release-credential-boundary.mjs
+
+      - name: Prove clean patch
+        run: git diff --check
 
       - name: Commit normal corrective files
         shell: bash
