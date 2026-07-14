@@ -176,23 +176,32 @@ async function runReleaseControlSmoke() {
   }
 
   async function request(route, redirect = 'follow') {
-    const requestedUrl = new URL(route, `${base}/`).toString()
-    const response = await fetch(requestedUrl, {
-      redirect,
-      cache: 'no-store',
-      signal: AbortSignal.timeout(20_000),
-      headers: { 'cache-control': 'no-cache', 'user-agent': 'urai-release-control-smoke/5' },
-    })
-    const body = await response.text()
-    return {
-      path: route,
-      requestedUrl,
-      status: response.status,
-      finalUrl: response.url,
-      body,
-      location: response.headers.get('location') || '',
+  const requestedUrl = new URL(route, `${base}/`).toString()
+  let lastError = null
+  for (let attempt = 1; attempt <= 3; attempt += 1) {
+    try {
+      const response = await fetch(requestedUrl, {
+        redirect,
+        cache: 'no-store',
+        signal: AbortSignal.timeout(20_000),
+        headers: { 'cache-control': 'no-cache', 'user-agent': 'urai-release-control-smoke/5' },
+      })
+      const body = await response.text()
+      return {
+        path: route,
+        requestedUrl,
+        status: response.status,
+        finalUrl: response.url,
+        body,
+        location: response.headers.get('location') || '',
+      }
+    } catch (error) {
+      lastError = error
+      if (attempt < 3) await new Promise((resolve) => setTimeout(resolve, 1000 * 2 ** (attempt - 1)))
     }
   }
+  throw lastError || new Error(`Request failed without an error: ${requestedUrl}`)
+}
 
   for (const route of routes) {
     const slash = route === '/' ? '/' : `${route}/`

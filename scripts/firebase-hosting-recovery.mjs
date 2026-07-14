@@ -153,8 +153,8 @@ function parseServiceAccount(raw) {
   } catch {
     throw new Error('Firebase service-account material must contain valid JSON')
   }
-  if (parsed.project_id !== expectedSiteId) {
-    throw new Error(`Service-account project mismatch: ${parsed.project_id || 'missing'}`)
+  if (!parsed || typeof parsed !== 'object' || parsed.project_id !== expectedSiteId) {
+    throw new Error(`Service-account project mismatch: ${parsed?.project_id || 'missing'}`)
   }
   return parsed
 }
@@ -290,9 +290,10 @@ export async function verifyRestoredVersion({ attempts = 12, delayMs = 1000 } = 
 
   const { receiptPath, receipt, siteId, versionName } = readRecoveryReceipt()
   const serviceAccount = serviceAccountFromEnvironment()
+  const accessToken = await accessTokenFromServiceAccount(serviceAccount)
   let observed = null
   for (let attempt = 1; attempt <= attempts; attempt += 1) {
-    const { release } = await currentLiveRelease(serviceAccount, siteId)
+    const release = selectCurrentLiveRelease(await listAllReleases(accessToken, siteId), siteId)
     observed = release
     if (release.versionName === versionName) {
       const resultPath = path.join(path.dirname(receiptPath), 'restore-verification.json')

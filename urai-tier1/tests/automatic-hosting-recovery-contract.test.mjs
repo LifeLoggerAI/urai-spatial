@@ -55,6 +55,27 @@ test('recovery accepts only the managed runner credential or the one scoped raw 
   assert.match(recovery, /verify-restored/)
 })
 
+test('service-account parsing rejects null and non-object JSON values', () => {
+  assert.match(recovery, /if \(!parsed \|\| typeof parsed !== 'object' \|\| parsed\.project_id !== expectedSiteId\)/)
+  assert.match(recovery, /parsed\?\.project_id \|\| 'missing'/)
+})
+
+test('restore verification reuses one OAuth token across bounded polling', () => {
+  const start = recovery.indexOf('export async function verifyRestoredVersion')
+  const end = recovery.indexOf('export function selfTest', start)
+  assert.ok(start >= 0 && end > start, 'restore verification implementation must be discoverable')
+  const block = recovery.slice(start, end)
+  assert.equal((block.match(/accessTokenFromServiceAccount/g) || []).length, 1)
+  assert.match(block, /listAllReleases\(accessToken, siteId\)/)
+})
+
+test('strict smoke retries transient request failures before recovery', () => {
+  assert.match(smoke, /for \(let attempt = 1; attempt <= 3; attempt \+= 1\)/)
+  assert.match(smoke, /AbortSignal\.timeout\(20_000\)/)
+  assert.match(smoke, /setTimeout\(resolve, 1000 \* 2 \*\* \(attempt - 1\)\)/)
+  assert.match(smoke, /throw lastError/)
+})
+
 test('recovery remains inside the single canonical production authority', () => {
   assert.doesNotMatch(recovery, /firebase(?:-tools)?(?:@[^\s]+)?\s+deploy/)
   assert.doesNotMatch(smoke, /firebase(?:-tools)?(?:@[^\s]+)?\s+deploy/)
