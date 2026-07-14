@@ -42,90 +42,57 @@ jobs:
           node <<'NODE'
           const fs = require('node:fs');
 
-          function replaceExact(file, before, after, expected = 1) {
-            const source = fs.readFileSync(file, 'utf8');
-            const count = source.split(before).length - 1;
-            if (count !== expected) {
-              throw new Error(`${file}: expected ${expected} occurrences, found ${count}: ${before}`);
-            }
-            fs.writeFileSync(file, source.split(before).join(after));
+          function edit(file, transform) {
+            const before = fs.readFileSync(file, 'utf8');
+            const after = transform(before);
+            if (after === before) throw new Error(`${file}: repair produced no change`);
+            fs.writeFileSync(file, after);
           }
 
           for (const file of ['scripts/create-static-release-bundle.mjs', 'scripts/live-release.mjs']) {
-            replaceExact(
-              file,
-              "return path.posix.basename(relative).startsWith('.')",
-              "return relative.split('/').some((segment) => segment.startsWith('.'))",
-            );
+            edit(file, (source) => {
+              if (!source.includes("return path.posix.basename(relative).startsWith('.')")) throw new Error(`${file}: old dot-path predicate missing`);
+              return source
+                .replace("return path.posix.basename(relative).startsWith('.')", "return relative.split('/').some((segment) => segment.startsWith('.'))")
+                .replace('Firebase-ignored dotfile:', 'Firebase-ignored dot path:');
+            });
           }
 
-          replaceExact(
-            'scripts/create-static-release-bundle.mjs',
-            'Static output contains a Firebase-ignored dotfile:',
-            'Static output contains a Firebase-ignored dot path:',
-          );
-          replaceExact(
-            'scripts/live-release.mjs',
-            'Release surface contains a Firebase-ignored dotfile:',
-            'Release surface contains a Firebase-ignored dot path:',
-          );
+          edit('.github/workflows/release-security-path-guard.yml', (source) => {
+            const marker = "      - '.github/workflows/spatial-live-deploy.yml'";
+            const count = source.split(marker).length - 1;
+            if (count !== 2) throw new Error(`workflow guard: expected two path sections, found ${count}`);
+            return source.split(marker).join("      - '.github/workflows/**'\n" + marker);
+          });
 
-          const guardedWorkflowBlock = "      - '.github/workflows/spatial-live-deploy.yml'\n      - '.github/workflows/release-security-path-guard.yml'";
-          replaceExact(
-            '.github/workflows/release-security-path-guard.yml',
-            guardedWorkflowBlock,
-            "      - '.github/workflows/**'\n" + guardedWorkflowBlock,
-            2,
-          );
+          edit('scripts/verify-release-security-path-guard.mjs', (source) => {
+            if (!source.includes("  '.github/workflows/spatial-live-deploy.yml',")) throw new Error('guard verifier workflow marker missing');
+            return source
+              .replace("  '.github/workflows/spatial-live-deploy.yml',", "  '.github/workflows/**',\n  '.github/workflows/spatial-live-deploy.yml',")
+              .replace("schemaVersion: 'urai-release-security-path-guard-3'", "schemaVersion: 'urai-release-security-path-guard-4'");
+          });
 
-          replaceExact(
-            'scripts/verify-release-security-path-guard.mjs',
-            "  '.github/workflows/spatial-live-deploy.yml',\n  workflowRelativePath,",
-            "  '.github/workflows/**',\n  '.github/workflows/spatial-live-deploy.yml',\n  workflowRelativePath,",
-          );
-          replaceExact(
-            'scripts/verify-release-security-path-guard.mjs',
-            "schemaVersion: 'urai-release-security-path-guard-3'",
-            "schemaVersion: 'urai-release-security-path-guard-4'",
-          );
+          edit('urai-tier1/tests/exact-static-release-contract.test.mjs', (source) => {
+            const oldPredicate = "path.posix.basename(relative).startsWith('.')";
+            const count = source.split(oldPredicate).length - 1;
+            if (count !== 2) throw new Error(`static contract: expected two old predicate markers, found ${count}`);
+            return source
+              .split(oldPredicate).join("relative.split('/').some((segment) => segment.startsWith('.'))")
+              .replaceAll('Firebase-ignored dotfile', 'Firebase-ignored dot path')
+              .replace('assert.doesNotMatch(operator,', 'assert.match(operator,')
+              .replace('assert.doesNotMatch(bundleBuilder,', 'assert.match(bundleBuilder,');
+          });
 
-          replaceExact(
-            'urai-tier1/tests/exact-static-release-contract.test.mjs',
-            "path.posix.basename(relative).startsWith('.')",
-            "relative.split('/').some((segment) => segment.startsWith('.'))",
-            2,
-          );
-          replaceExact(
-            'urai-tier1/tests/exact-static-release-contract.test.mjs',
-            'Release surface contains a Firebase-ignored dotfile',
-            'Release surface contains a Firebase-ignored dot path',
-          );
-          replaceExact(
-            'urai-tier1/tests/exact-static-release-contract.test.mjs',
-            'Static output contains a Firebase-ignored dotfile',
-            'Static output contains a Firebase-ignored dot path',
-          );
-          replaceExact(
-            'urai-tier1/tests/exact-static-release-contract.test.mjs',
-            'assert.doesNotMatch(operator,',
-            'assert.match(operator,',
-          );
-          replaceExact(
-            'urai-tier1/tests/exact-static-release-contract.test.mjs',
-            'assert.doesNotMatch(bundleBuilder,',
-            'assert.match(bundleBuilder,',
-          );
-
-          replaceExact(
-            'docs/P0_VERIFICATION_CLOSURE_RUNBOOK.md',
-            '  -f rollback_sha=<PROVEN_ROLLBACK_SHA> \\\n  -f confirm=ROLLBACK_URAI_APP',
-            '  -f rollback_sha=<EXACT_CURRENT_MAIN_SHA> \\\n  -f confirm=ROLLBACK_URAI_APP',
-          );
-          replaceExact(
-            'docs/P0_VERIFICATION_CLOSURE_RUNBOOK.md',
-            'The workflow requires the rollback target to be a non-current ancestor of `main`, re-runs verification against that target, uses the protected production environment, deploys the exact ancestor, and repeats live smoke.',
-            'The workflow requires the rollback target to be a non-current ancestor of `main` and `rollback_sha` to be the exact current `main` recovery authority. It re-runs verification against the target, uses the protected production environment, deploys the exact ancestor, and repeats live smoke.',
-          );
+          edit('docs/P0_VERIFICATION_CLOSURE_RUNBOOK.md', (source) => {
+            const lines = source.split('\n');
+            const rollbackInput = lines.findIndex((line) => line.includes('-f rollback_sha=<PROVEN_ROLLBACK_SHA>'));
+            if (rollbackInput < 0) throw new Error('runbook rollback input marker missing');
+            lines[rollbackInput] = lines[rollbackInput].replace('<PROVEN_ROLLBACK_SHA>', '<EXACT_CURRENT_MAIN_SHA>');
+            const explanation = lines.findIndex((line) => line.startsWith('The workflow requires the rollback target to be a non-current ancestor'));
+            if (explanation < 0) throw new Error('runbook rollback explanation missing');
+            lines[explanation] = 'The workflow requires the rollback target to be a non-current ancestor of `main` and `rollback_sha` to be the exact current `main` recovery authority. It re-runs verification against the target, uses the protected production environment, deploys the exact ancestor, and repeats live smoke. Never perform rollback through a local Firebase command.';
+            return lines.join('\n');
+          });
           NODE
 
       - name: Remove one-time repair workflow
@@ -140,8 +107,8 @@ jobs:
           node --check scripts/verify-release-security-path-guard.mjs
           node scripts/verify-release-security-path-guard.mjs
           node urai-tier1/tests/exact-static-release-contract.test.mjs
-          grep -F "'.github/workflows/**'" .github/workflows/release-security-path-guard.yml
-          grep -F "rollback_sha=<EXACT_CURRENT_MAIN_SHA>" docs/P0_VERIFICATION_CLOSURE_RUNBOOK.md
+          test "$(grep -F "'.github/workflows/**'" .github/workflows/release-security-path-guard.yml | wc -l)" -eq 2
+          grep -F 'rollback_sha=<EXACT_CURRENT_MAIN_SHA>' docs/P0_VERIFICATION_CLOSURE_RUNBOOK.md
           test -z "$(git diff --check)"
 
       - name: Commit one atomic repair and push
