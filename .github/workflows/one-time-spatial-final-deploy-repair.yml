@@ -1,0 +1,126 @@
+name: One-time Spatial final deploy repair
+
+on:
+  push:
+    branches:
+      - repair/spatial-539-final-deploy-20260714
+    paths:
+      - .github/workflows/one-time-spatial-final-deploy-repair.yml
+
+permissions:
+  contents: write
+
+concurrency:
+  group: one-time-spatial-final-deploy-repair
+  cancel-in-progress: false
+
+jobs:
+  repair:
+    if: github.repository == 'LifeLoggerAI/urai-spatial' && github.ref == 'refs/heads/repair/spatial-539-final-deploy-20260714'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - name: Checkout exact repair branch
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          ref: repair/spatial-539-final-deploy-20260714
+          fetch-depth: 0
+          persist-credentials: true
+
+      - name: Verify exact clean source
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
+          test -z "$(git status --porcelain --untracked-files=all)"
+
+      - name: Apply final deploy-path repairs
+        shell: bash
+        run: |
+          set -euo pipefail
+          node <<'NODE'
+          const fs = require('node:fs');
+
+          function edit(file, transform) {
+            const before = fs.readFileSync(file, 'utf8');
+            const after = transform(before);
+            if (after === before) throw new Error(`${file}: repair produced no change`);
+            fs.writeFileSync(file, after);
+          }
+
+          edit('scripts/live-release.mjs', (source) => {
+            if (!source.includes('  cpSync,\n')) throw new Error('live-release cpSync import marker missing');
+            if (!source.includes("return path.posix.basename(relative).startsWith('.')")) throw new Error('live-release old dot predicate missing');
+            if (!source.includes("const runnerTemp = (process.env.RUNNER_TEMP || '').trim()")) throw new Error('live-release runner temp marker missing');
+            if (!source.includes("writeFileSync(receiptPath, `${JSON.stringify(receipt, null, 2)}\\n`)")) throw new Error('live-release receipt write marker missing');
+            return source
+              .replace('  cpSync,\n', '  copyFileSync,\n  cpSync,\n')
+              .replace("return path.posix.basename(relative).startsWith('.')", "return relative.split('/').some((segment) => segment.startsWith('.'))")
+              .replace('Release surface contains a Firebase-ignored dotfile:', 'Release surface contains a Firebase-ignored dot path:')
+              .replace(
+                "const runnerTemp = (process.env.RUNNER_TEMP || '').trim()",
+                "const runnerTemp = (process.env.RUNNER_TEMP || '').trim()\nconst liveRollbackProvenancePath = runnerTemp\n  ? path.join(runnerTemp, 'release-control-evidence', 'live-rollback-provenance.json')\n  : ''",
+              )
+              .replace(
+                "  writeFileSync(receiptPath, `${JSON.stringify(receipt, null, 2)}\\n`)",
+                "  writeFileSync(receiptPath, `${JSON.stringify(receipt, null, 2)}\\n`)\n  if (liveRollbackProvenancePath && existsSync(liveRollbackProvenancePath)) {\n    copyFileSync(liveRollbackProvenancePath, path.join(directory, 'live-rollback-provenance.json'))\n  }",
+              );
+          });
+
+          edit('scripts/verify-release-credential-boundary.mjs', (source) => {
+            if (!source.includes("const githubJob = (process.env.GITHUB_JOB || '').trim()")) throw new Error('credential job marker missing');
+            if (!source.includes('  await verifyLiveRollbackProvenance()')) throw new Error('credential provenance call missing');
+            const runnerMarker = "const runnerTemp = (process.env.RUNNER_TEMP || '').trim()";
+            const count = source.split(runnerMarker).length - 1;
+            if (count !== 1) throw new Error(`credential runner temp marker count ${count}`);
+            source = source.replace(
+              "const githubJob = (process.env.GITHUB_JOB || '').trim()",
+              "const githubJob = (process.env.GITHUB_JOB || '').trim()\nconst runnerTemp = (process.env.RUNNER_TEMP || '').trim()",
+            );
+            source = source.replace(
+              'let liveRollbackProvenanceVerified = false',
+              "const liveRollbackEvidenceDirectory =\n  liveRollbackProvenanceRequired && runnerTemp\n    ? path.join(runnerTemp, 'release-control-evidence')\n    : path.resolve('release-control-evidence')\nlet liveRollbackProvenanceVerified = false",
+            );
+            source = source.replace(
+              '  await verifyLiveRollbackProvenance()',
+              '  await verifyLiveRollbackProvenance({ evidenceDirectory: liveRollbackEvidenceDirectory })',
+            );
+            source = source.replace(`\n${runnerMarker}\nconst canonicalDeployBundleDirectory`, '\nconst canonicalDeployBundleDirectory');
+            return source;
+          });
+
+          edit('urai-tier1/tests/exact-static-release-contract.test.mjs', (source) => {
+            if (!source.includes("    \"path.posix.basename(relative).startsWith('.')\",")) throw new Error('test old operator marker missing');
+            if (!source.includes("  assert.doesNotMatch(operator, /relative\\.split")) throw new Error('test old negative segment assertion missing');
+            return source
+              .replace("    \"path.posix.basename(relative).startsWith('.')\",", "    \"relative.split('/').some((segment) => segment.startsWith('.'))\",")
+              .replace("    'Release surface contains a Firebase-ignored dotfile',", "    'Release surface contains a Firebase-ignored dot path',\n    'live-rollback-provenance.json',")
+              .replace("  assert.doesNotMatch(operator, /relative\\.split\\('\\/'\\)\\.some\\(\\(segment\\) => segment\\.startsWith\\('\\.'\\)\\)/)", "  assert.match(operator, /relative\\.split\\('\\/'\\)\\.some\\(\\(segment\\) => segment\\.startsWith\\('\\.'\\)\\)/)\n  assert.doesNotMatch(operator, /path\\.posix\\.basename\\(relative\\)\\.startsWith\\('\\.'\\)/)")
+              .replace("    'downloadedBundleFingerprintBound',", "    'downloadedBundleFingerprintBound',\n    'liveRollbackEvidenceDirectory',\n    'evidenceDirectory: liveRollbackEvidenceDirectory',");
+          });
+          NODE
+
+      - name: Validate final deploy-path contract
+        shell: bash
+        run: |
+          set -euo pipefail
+          node --check scripts/live-release.mjs
+          node --check scripts/verify-release-credential-boundary.mjs
+          node urai-tier1/tests/exact-static-release-contract.test.mjs
+          grep -F "relative.split('/').some((segment) => segment.startsWith('.'))" scripts/live-release.mjs
+          grep -F 'evidenceDirectory: liveRollbackEvidenceDirectory' scripts/verify-release-credential-boundary.mjs
+          grep -F 'live-rollback-provenance.json' scripts/live-release.mjs
+          test -z "$(git diff --check)"
+
+      - name: Commit non-workflow repair source
+        shell: bash
+        run: |
+          set -euo pipefail
+          git add \
+            scripts/live-release.mjs \
+            scripts/verify-release-credential-boundary.mjs \
+            urai-tier1/tests/exact-static-release-contract.test.mjs
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git commit -m 'Close protected Spatial deploy path'
+          git push origin HEAD:repair/spatial-539-final-deploy-20260714
