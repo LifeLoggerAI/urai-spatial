@@ -1,7 +1,7 @@
 # P0 Verification Closure Runbook
 
 Generated: 2026-07-07  
-Updated: 2026-07-10  
+Updated: 2026-07-14  
 Repository: `LifeLoggerAI/urai-spatial`  
 Runtime root: `urai-tier1`  
 Tracking issue: #461  
@@ -144,11 +144,11 @@ The deployment receipt writes the exact recovery command. Its form is:
 gh workflow run spatial-live-deploy.yml \
   --ref main \
   -f release_sha=<PROVEN_ROLLBACK_SHA> \
-  -f rollback_sha=<PROVEN_ROLLBACK_SHA> \
+  -f rollback_sha=<EXACT_CURRENT_MAIN_SHA> \
   -f confirm=ROLLBACK_URAI_APP
 ```
 
-The workflow requires the rollback target to be a non-current ancestor of `main`, re-runs verification against that target, uses the protected production environment, deploys the exact ancestor, and repeats live smoke. Never perform rollback through a local Firebase command.
+The workflow requires the rollback target to be a non-current ancestor of `main`, requires `rollback_sha` to remain the exact current-main recovery authority, re-runs verification against the rollback target, uses the protected production environment, deploys the exact ancestor, and repeats live smoke. Never perform rollback through a local Firebase command.
 
 ### 6. Capture visual evidence
 
