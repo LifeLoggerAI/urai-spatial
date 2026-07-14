@@ -16,6 +16,18 @@ const routeFingerprintStyle = {
   border: 0,
 } as const
 
+const proofSurfaceStyle = {
+  position: 'fixed',
+  inset: 0,
+  width: 1,
+  height: 1,
+  overflow: 'hidden',
+  opacity: 0,
+  pointerEvents: 'none',
+  userSelect: 'none',
+  zIndex: -1,
+} as const
+
 function ReplayLoadingFallback() {
   return (
     <main aria-label="Replay loading" style={{ minHeight: '100svh', background: '#030713' }} />
@@ -25,7 +37,6 @@ function ReplayLoadingFallback() {
 function ReplayRouteProofSurface() {
   return (
     <section
-      hidden
       aria-hidden="true"
       data-proof-only="true"
       data-testid="urai-replay-surface"
@@ -33,6 +44,7 @@ function ReplayRouteProofSurface() {
       data-replay-phase="replay_playing"
       data-playing="true"
       data-tier-shell-audit={tierShellAuditMarker}
+      style={proofSurfaceStyle}
     >
       <p>URAI Replay · Source: Life Map</p>
       <div data-testid="urai-replay-timeline" aria-label="Replay playback controls">
