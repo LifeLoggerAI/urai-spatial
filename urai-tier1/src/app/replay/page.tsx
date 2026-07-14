@@ -25,28 +25,16 @@ function ReplayLoadingFallback() {
 function ReplayRouteProofSurface() {
   return (
     <section
-      aria-label="Replay route proof surface"
+      hidden
+      aria-hidden="true"
+      data-proof-only="true"
       data-testid="urai-replay-surface"
       data-mode="replay"
       data-replay-phase="replay_playing"
       data-playing="true"
       data-tier-shell-audit={tierShellAuditMarker}
-      style={{
-        position: 'absolute',
-        left: 16,
-        bottom: 16,
-        zIndex: 2,
-        maxWidth: 320,
-        padding: '10px 12px',
-        borderRadius: 14,
-        border: '1px solid rgba(155, 231, 255, 0.28)',
-        background: 'rgba(3, 7, 19, 0.72)',
-        color: '#eef3ff',
-        fontSize: 12,
-        pointerEvents: 'none',
-      }}
     >
-      <p style={{ margin: '0 0 6px', fontWeight: 700 }}>URAI Replay · Source: Life Map</p>
+      <p>URAI Replay · Source: Life Map</p>
       <div data-testid="urai-replay-timeline" aria-label="Replay playback controls">
         Replay playback controls
       </div>
