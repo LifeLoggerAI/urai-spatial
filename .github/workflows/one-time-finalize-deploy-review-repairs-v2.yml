@@ -34,6 +34,7 @@ jobs:
           set -euo pipefail
           python - <<'PY'
           from pathlib import Path
+          from textwrap import dedent
 
           operator = Path('scripts/live-release.mjs').read_text()
           if "relative.split('/').some((segment) => segment.startsWith('.'))" not in operator:
@@ -55,28 +56,34 @@ jobs:
               raise SystemExit('deployment receipt does not retain confined provenance evidence')
           workflow_path.write_text(workflow)
 
-          Path('urai-tier1/tests/final-protected-deploy-regressions.test.mjs').write_text("""import test from 'node:test'
+          Path('urai-tier1/tests/final-protected-deploy-regressions.test.mjs').write_text(dedent("""\
+          import test from 'node:test'
           import assert from 'node:assert/strict'
           import { readFileSync } from 'node:fs'
+          import path from 'node:path'
+          import { fileURLToPath } from 'node:url'
 
-          const operator = readFileSync('scripts/live-release.mjs', 'utf8')
-          const credentialBoundary = readFileSync('scripts/verify-release-credential-boundary.mjs', 'utf8')
-          const workflow = readFileSync('.github/workflows/spatial-live-deploy.yml', 'utf8')
+          const testDirectory = path.dirname(fileURLToPath(import.meta.url))
+          const repositoryRoot = path.resolve(testDirectory, '../..')
+          const readRepositoryFile = (file) => readFileSync(path.join(repositoryRoot, file), 'utf8').replace(/\\r\\n?/g, '\\n')
+          const operator = readRepositoryFile('scripts/live-release.mjs')
+          const credentialBoundary = readRepositoryFile('scripts/verify-release-credential-boundary.mjs')
+          const workflow = readRepositoryFile('.github/workflows/spatial-live-deploy.yml')
 
           test('prebuilt release verification rejects every dot-prefixed path segment', () => {
-            assert.match(operator, /relative\.split\('\/'\)\.some\(\(segment\) => segment\.startsWith\('\.'\)\)/)
-            assert.doesNotMatch(operator, /path\.posix\.basename\(relative\)\.startsWith\('\.'\)/)
+            assert.match(operator, /relative\\.split\\('\/'\\)\\.some\\(\\(segment\\) => segment\\.startsWith\\('\\.'\\)\\)/)
+            assert.doesNotMatch(operator, /path\\.posix\\.basename\\(relative\\)\\.startsWith\\('\\.'\\)/)
             assert.match(operator, /Firebase-ignored dot path/)
           })
 
           test('live rollback provenance stays outside source and remains in the receipt', () => {
             assert.match(credentialBoundary, /liveRollbackEvidenceDirectory/)
             assert.match(credentialBoundary, /RUNNER_TEMP/)
-            assert.match(credentialBoundary, /verifyLiveRollbackProvenance\(\{ evidenceDirectory: liveRollbackEvidenceDirectory \}\)/)
-            assert.match(workflow, /\$\{\{ runner\.temp \}\}\/release-control-evidence\//)
-            assert.doesNotMatch(workflow, /^\s+release-control-evidence\/$/m)
+            assert.match(credentialBoundary, /verifyLiveRollbackProvenance\\(\\{ evidenceDirectory: liveRollbackEvidenceDirectory \\}\\)/)
+            assert.match(workflow, /\\$\\{\\{ runner\\.temp \\}\\}\/release-control-evidence\//)
+            assert.doesNotMatch(workflow, /^\\s+release-control-evidence\/$/m)
           })
-          """.replace(/^          /gm, ''))
+          """))
 
           for temporary in [
               '.github/workflows/one-time-finalize-deploy-review-repairs.yml',
