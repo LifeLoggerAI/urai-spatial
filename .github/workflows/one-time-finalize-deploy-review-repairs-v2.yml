@@ -49,7 +49,7 @@ jobs:
           workflow_path = Path('.github/workflows/spatial-live-deploy.yml')
           workflow = workflow_path.read_text()
           old = '            release-control-evidence/\n'
-          new = '            ${{ runner.temp }}/release-control-evidence/\n'
+          new = '            $' + '{{ runner.temp }}/release-control-evidence/\n'
           if old in workflow:
               workflow = workflow.replace(old, new, 1)
           elif new not in workflow:
