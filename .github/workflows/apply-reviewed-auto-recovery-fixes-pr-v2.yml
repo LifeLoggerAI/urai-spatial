@@ -1,0 +1,173 @@
+name: Build reviewed automatic recovery candidate v2
+
+on:
+  pull_request:
+    types: [synchronize]
+    branches: [main]
+    paths:
+      - '.github/workflows/apply-reviewed-auto-recovery-fixes-pr-v2.yml'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: build-reviewed-auto-recovery-candidate-v2-${{ github.event.pull_request.number }}
+  cancel-in-progress: false
+
+jobs:
+  build-final-candidate:
+    if: >-
+      github.repository == 'LifeLoggerAI/urai-spatial' &&
+      github.event.pull_request.head.repo.full_name == github.repository &&
+      github.event.pull_request.head.ref == 'ops/apply-reviewed-auto-recovery-fixes-20260714'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    env:
+      BASE_SHA: 6a02e272192c136e5802f1321ef53e343b9ac837
+      FINAL_BRANCH: release/automatic-hosting-recovery-final-20260714
+    steps:
+      - name: Checkout exact clean release base
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          ref: ${{ env.BASE_SHA }}
+          fetch-depth: 1
+          persist-credentials: true
+          show-progress: false
+
+      - name: Apply reviewed source fixes
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$BASE_SHA"
+          test -z "$(git status --porcelain --untracked-files=all)"
+          python - <<'PY'
+          from pathlib import Path
+
+          recovery_path = Path('scripts/firebase-hosting-recovery.mjs')
+          recovery = recovery_path.read_text(encoding='utf-8')
+          replacements = [
+              (
+                  "  if (parsed.project_id !== expectedSiteId) {\n    throw new Error(`Service-account project mismatch: ${parsed.project_id || 'missing'}`)\n  }",
+                  "  if (!parsed || typeof parsed !== 'object' || parsed.project_id !== expectedSiteId) {\n    throw new Error(`Service-account project mismatch: ${parsed?.project_id || 'missing'}`)\n  }",
+              ),
+              (
+                  "  const { receiptPath, receipt, siteId, versionName } = readRecoveryReceipt()\n  const serviceAccount = serviceAccountFromEnvironment()\n  let observed = null\n  for (let attempt = 1; attempt <= attempts; attempt += 1) {\n    const { release } = await currentLiveRelease(serviceAccount, siteId)\n    observed = release",
+                  "  const { receiptPath, receipt, siteId, versionName } = readRecoveryReceipt()\n  const serviceAccount = serviceAccountFromEnvironment()\n  const accessToken = await accessTokenFromServiceAccount(serviceAccount)\n  let observed = null\n  for (let attempt = 1; attempt <= attempts; attempt += 1) {\n    const release = selectCurrentLiveRelease(await listAllReleases(accessToken, siteId), siteId)\n    observed = release",
+              ),
+          ]
+          for old, new in replacements:
+              count = recovery.count(old)
+              if count != 1:
+                  raise SystemExit(f'recovery replacement expected once, found {count}: {old[:80]!r}')
+              recovery = recovery.replace(old, new, 1)
+          recovery_path.write_text(recovery, encoding='utf-8', newline='')
+
+          smoke_path = Path('scripts/urai-release-control-smoke.mjs')
+          smoke = smoke_path.read_text(encoding='utf-8')
+          start_marker = "  async function request(route, redirect = 'follow') {\n"
+          end_marker = "  for (const route of routes) {\n"
+          start = smoke.find(start_marker)
+          end = smoke.find(end_marker, start + len(start_marker))
+          if start < 0 or end < 0 or smoke.find(start_marker, start + 1) >= 0:
+              raise SystemExit('strict-smoke request boundaries are missing or non-unique')
+          retrying_request = """  async function request(route, redirect = 'follow') {
+            const requestedUrl = new URL(route, `${base}/`).toString()
+            let lastError = null
+            for (let attempt = 1; attempt <= 3; attempt += 1) {
+              try {
+                const response = await fetch(requestedUrl, {
+                  redirect,
+                  cache: 'no-store',
+                  signal: AbortSignal.timeout(20_000),
+                  headers: { 'cache-control': 'no-cache', 'user-agent': 'urai-release-control-smoke/5' },
+                })
+                const body = await response.text()
+                return {
+                  path: route,
+                  requestedUrl,
+                  status: response.status,
+                  finalUrl: response.url,
+                  body,
+                  location: response.headers.get('location') || '',
+                }
+              } catch (error) {
+                lastError = error
+                if (attempt < 3) await new Promise((resolve) => setTimeout(resolve, 1000 * 2 ** (attempt - 1)))
+              }
+            }
+            throw lastError || new Error(`Request failed without an error: ${requestedUrl}`)
+          }
+
+          """
+          smoke_path.write_text(smoke[:start] + retrying_request + smoke[end:], encoding='utf-8', newline='')
+
+          test_path = Path('urai-tier1/tests/automatic-hosting-recovery-contract.test.mjs')
+          contract = test_path.read_text(encoding='utf-8')
+          anchor = "test('recovery remains inside the single canonical production authority', () => {\n"
+          if contract.count(anchor) != 1:
+              raise SystemExit(f'expected one regression anchor, found {contract.count(anchor)}')
+          regression = """test('service-account parsing rejects null and non-object JSON values', () => {
+            assert.match(recovery, /if \(!parsed \|\| typeof parsed !== 'object' \|\| parsed\.project_id !== expectedSiteId\)/)
+            assert.match(recovery, /parsed\?\.project_id \|\| 'missing'/)
+          })
+
+          test('restore verification reuses one OAuth token across bounded polling', () => {
+            const start = recovery.indexOf('export async function verifyRestoredVersion')
+            const end = recovery.indexOf('export function selfTest', start)
+            assert.ok(start >= 0 && end > start, 'restore verification implementation must be discoverable')
+            const block = recovery.slice(start, end)
+            assert.equal((block.match(/accessTokenFromServiceAccount/g) || []).length, 1)
+            assert.match(block, /listAllReleases\(accessToken, siteId\)/)
+          })
+
+          test('strict smoke retries transient request failures before recovery', () => {
+            assert.match(smoke, /for \(let attempt = 1; attempt <= 3; attempt \+= 1\)/)
+            assert.match(smoke, /AbortSignal\.timeout\(20_000\)/)
+            assert.match(smoke, /setTimeout\(resolve, 1000 \* 2 \*\* \(attempt - 1\)\)/)
+            assert.match(smoke, /throw lastError/)
+          })
+
+          """
+          for marker in [
+              'service-account parsing rejects null and non-object JSON values',
+              'restore verification reuses one OAuth token across bounded polling',
+              'strict smoke retries transient request failures before recovery',
+          ]:
+              if marker in contract:
+                  raise SystemExit(f'regression already exists unexpectedly: {marker}')
+          test_path.write_text(contract.replace(anchor, regression + anchor, 1), encoding='utf-8', newline='')
+          PY
+
+      - name: Validate and publish clean candidate
+        shell: bash
+        run: |
+          set -euo pipefail
+          node --check scripts/firebase-hosting-recovery.mjs
+          node --check scripts/urai-release-control-smoke.mjs
+          node --test urai-tier1/tests/automatic-hosting-recovery-contract.test.mjs
+          git diff --check
+          changed="$(git diff --name-only | sort)"
+          expected="$(printf '%s\n' \
+            'scripts/firebase-hosting-recovery.mjs' \
+            'scripts/urai-release-control-smoke.mjs' \
+            'urai-tier1/tests/automatic-hosting-recovery-contract.test.mjs' | sort)"
+          test "$changed" = "$expected"
+          git add scripts/firebase-hosting-recovery.mjs \
+            scripts/urai-release-control-smoke.mjs \
+            urai-tier1/tests/automatic-hosting-recovery-contract.test.mjs
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git commit -m 'Prevent transient false-positive Hosting recovery'
+          git push --force origin "HEAD:refs/heads/$FINAL_BRANCH"
+
+      - name: Retain source on failure
+        if: failure()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: reviewed-auto-recovery-builder-v2-${{ github.event.pull_request.head.sha }}
+          path: |
+            scripts/firebase-hosting-recovery.mjs
+            scripts/urai-release-control-smoke.mjs
+            urai-tier1/tests/automatic-hosting-recovery-contract.test.mjs
+          if-no-files-found: error
+          retention-days: 1
