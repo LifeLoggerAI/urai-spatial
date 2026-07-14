@@ -71,17 +71,18 @@ jobs:
           const workflow = readRepositoryFile('.github/workflows/spatial-live-deploy.yml')
 
           test('prebuilt release verification rejects every dot-prefixed path segment', () => {
-            assert.match(operator, /relative\\.split\\('\/'\\)\\.some\\(\\(segment\\) => segment\\.startsWith\\('\\.'\\)\\)/)
-            assert.doesNotMatch(operator, /path\\.posix\\.basename\\(relative\\)\\.startsWith\\('\\.'\\)/)
-            assert.match(operator, /Firebase-ignored dot path/)
+            assert.ok(operator.includes("relative.split('/').some((segment) => segment.startsWith('.'))"))
+            assert.ok(!operator.includes("path.posix.basename(relative).startsWith('.')"))
+            assert.ok(operator.includes('Firebase-ignored dot path'))
           })
 
           test('live rollback provenance stays outside source and remains in the receipt', () => {
-            assert.match(credentialBoundary, /liveRollbackEvidenceDirectory/)
-            assert.match(credentialBoundary, /RUNNER_TEMP/)
-            assert.match(credentialBoundary, /verifyLiveRollbackProvenance\\(\\{ evidenceDirectory: liveRollbackEvidenceDirectory \\}\\)/)
-            assert.match(workflow, /\\$\\{\\{ runner\\.temp \\}\\}\/release-control-evidence\//)
-            assert.doesNotMatch(workflow, /^\\s+release-control-evidence\/$/m)
+            assert.ok(credentialBoundary.includes('liveRollbackEvidenceDirectory'))
+            assert.ok(credentialBoundary.includes('RUNNER_TEMP'))
+            assert.ok(credentialBoundary.includes('verifyLiveRollbackProvenance({ evidenceDirectory: liveRollbackEvidenceDirectory })'))
+            const expectedReceiptPath = '$' + '{{ runner.temp }}/release-control-evidence/'
+            assert.ok(workflow.includes(expectedReceiptPath))
+            assert.ok(!workflow.includes('            release-control-evidence/\\n'))
           })
           """))
 
@@ -94,15 +95,20 @@ jobs:
                   path.unlink()
           PY
 
-      - name: Run focused release authority regressions
-        shell: bash
-        run: |
-          set -euo pipefail
-          node --test urai-tier1/tests/final-protected-deploy-regressions.test.mjs
-          node urai-tier1/tests/exact-static-release-contract.test.mjs
-          node scripts/audit-production-workflow-authority.mjs
-          node scripts/verify-release-credential-boundary.mjs
-          git diff --check
+      - name: Run final deploy regression test
+        run: node --test urai-tier1/tests/final-protected-deploy-regressions.test.mjs
+
+      - name: Run exact static release contract
+        run: node urai-tier1/tests/exact-static-release-contract.test.mjs
+
+      - name: Audit production workflow authority
+        run: node scripts/audit-production-workflow-authority.mjs
+
+      - name: Verify release credential boundary
+        run: node scripts/verify-release-credential-boundary.mjs
+
+      - name: Prove clean patch
+        run: git diff --check
 
       - name: Commit clean reviewed authority
         shell: bash
