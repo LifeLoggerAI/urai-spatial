@@ -7,10 +7,15 @@ import {
   runLiveRollbackProvenanceSelfTest,
   verifyLiveRollbackProvenance,
 } from './verify-live-rollback-provenance.mjs'
+import {
+  runLegacyLiveBootstrapSelfTest,
+  verifyLegacyLiveBootstrap,
+} from './verify-legacy-live-bootstrap.mjs'
 
 const directory = path.dirname(fileURLToPath(import.meta.url))
 const staticVerifierPath = path.join(directory, 'verify-release-credential-boundary-static.mjs')
 const liveProvenanceVerifierPath = path.join(directory, 'verify-live-rollback-provenance.mjs')
+const legacyBootstrapVerifierPath = path.join(directory, 'verify-legacy-live-bootstrap.mjs')
 const releaseOperatorPath = path.join(directory, 'live-release.mjs')
 const failures = []
 
@@ -77,6 +82,23 @@ if (requireRegularFile('Live rollback-provenance verifier', liveProvenanceVerifi
   }
 }
 
+const requiredLegacyBootstrapMarkers = [
+  "schemaVersion: 'urai-legacy-live-bootstrap-provenance-1'",
+  'BOOTSTRAP_LEGACY_URAI_APP',
+  'valid release fingerprint already exists',
+  'recognized-legacy-html',
+  'live-rollback-provenance.json',
+  'normalFingerprintDeployRequiredAfterBootstrap: true',
+  'target.username',
+  'target.password',
+]
+if (requireRegularFile('Legacy live-bootstrap verifier', legacyBootstrapVerifierPath)) {
+  const legacyVerifierSource = readFileSync(legacyBootstrapVerifierPath, 'utf8').replace(/\r\n?/g, '\n')
+  for (const marker of requiredLegacyBootstrapMarkers) {
+    if (!legacyVerifierSource.includes(marker)) failures.push(`Legacy live-bootstrap verifier missing marker: ${marker}`)
+  }
+}
+
 let releaseOperatorFullBundleVerificationPresent = false
 if (requireRegularFile('Release operator', releaseOperatorPath)) {
   const releaseOperatorSource = readFileSync(releaseOperatorPath, 'utf8').replace(/\r\n?/g, '\n')
@@ -98,23 +120,47 @@ if (requireRegularFile('Release operator', releaseOperatorPath)) {
 
 await import('./verify-release-credential-boundary-static.mjs')
 runLiveRollbackProvenanceSelfTest()
+runLegacyLiveBootstrapSelfTest()
 
 const githubJob = (process.env.GITHUB_JOB || '').trim()
 const runnerTemp = (process.env.RUNNER_TEMP || '').trim()
-const liveRollbackProvenanceRequired =
+const releaseOperation = String(process.env.URAI_RELEASE_OPERATION || '')
+const legacyBootstrapRequested = String(process.env.URAI_LEGACY_BOOTSTRAP || '') === '1'
+const protectedDispatch =
   process.env.GITHUB_ACTIONS === 'true' &&
   process.env.GITHUB_EVENT_NAME === 'workflow_dispatch' &&
   githubJob === 'deploy' &&
-  process.env.GITHUB_REF === 'refs/heads/main' &&
-  ['deploy', 'rollback'].includes(String(process.env.URAI_RELEASE_OPERATION || ''))
+  process.env.GITHUB_REF === 'refs/heads/main'
+if (
+  legacyBootstrapRequested &&
+  (
+    releaseOperation !== 'deploy' ||
+    process.env.URAI_LEGACY_BOOTSTRAP_CONFIRM !== 'BOOTSTRAP_LEGACY_URAI_APP'
+  )
+) {
+  failures.push('Legacy bootstrap requires deploy operation and exact BOOTSTRAP_LEGACY_URAI_APP confirmation')
+}
+const liveRollbackProvenanceRequired =
+  protectedDispatch &&
+  !legacyBootstrapRequested &&
+  ['deploy', 'rollback'].includes(releaseOperation)
+const legacyBootstrapProofRequired =
+  protectedDispatch &&
+  legacyBootstrapRequested &&
+  releaseOperation === 'deploy'
 const liveRollbackEvidenceDirectory =
-  liveRollbackProvenanceRequired && runnerTemp
+  (liveRollbackProvenanceRequired || legacyBootstrapProofRequired) && runnerTemp
     ? path.join(runnerTemp, 'release-control-evidence')
     : path.resolve('release-control-evidence')
 let liveRollbackProvenanceVerified = false
+let legacyBootstrapProofVerified = false
 if (liveRollbackProvenanceRequired) {
   await verifyLiveRollbackProvenance({ evidenceDirectory: liveRollbackEvidenceDirectory })
   liveRollbackProvenanceVerified = true
+}
+if (legacyBootstrapProofRequired) {
+  await verifyLegacyLiveBootstrap({ evidenceDirectory: liveRollbackEvidenceDirectory })
+  legacyBootstrapProofVerified = true
 }
 
 let downloadedBundlePresent = false
@@ -177,7 +223,8 @@ const report = {
   ok:
     failures.length === 0 &&
     process.exitCode !== 1 &&
-    (!liveRollbackProvenanceRequired || liveRollbackProvenanceVerified),
+    (!liveRollbackProvenanceRequired || liveRollbackProvenanceVerified) &&
+    (!legacyBootstrapProofRequired || legacyBootstrapProofVerified),
   lineEndingsNormalized: true,
   thirdPartyActionsPinned: true,
   rollbackAuthorityVerifierUsesCurrentAuthority: true,
@@ -191,6 +238,9 @@ const report = {
   releaseOperatorFullBundleVerificationPresent,
   liveRollbackProvenanceRequired,
   liveRollbackProvenanceVerified,
+  legacyBootstrapRequested,
+  legacyBootstrapProofRequired,
+  legacyBootstrapProofVerified,
   downloadedBundleRequired,
   downloadedBundlePresent,
   downloadedBundleRunBound,
@@ -202,4 +252,8 @@ const report = {
 }
 
 console.log(JSON.stringify(report, null, 2))
-if (failures.length || (liveRollbackProvenanceRequired && !liveRollbackProvenanceVerified)) process.exitCode = 1
+if (
+  failures.length ||
+  (liveRollbackProvenanceRequired && !liveRollbackProvenanceVerified) ||
+  (legacyBootstrapProofRequired && !legacyBootstrapProofVerified)
+) process.exitCode = 1
