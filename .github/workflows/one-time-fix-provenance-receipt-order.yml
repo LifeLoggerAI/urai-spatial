@@ -1,0 +1,79 @@
+name: One-time provenance receipt ordering repair
+
+on:
+  pull_request:
+    branches: [main]
+    types: [synchronize]
+    paths:
+      - '.github/workflows/one-time-fix-provenance-receipt-order.yml'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: one-time-provenance-receipt-order-${{ github.event.pull_request.number }}
+  cancel-in-progress: false
+
+jobs:
+  repair:
+    if: github.head_ref == 'release/protected-rollback-authority-20260711-v2'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - name: Checkout exact repair branch
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          ref: release/protected-rollback-authority-20260711-v2
+          fetch-depth: 0
+          persist-credentials: true
+          show-progress: false
+
+      - name: Restrict provenance attachment to final deployed receipt
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          from pathlib import Path
+
+          operator_path = Path('scripts/live-release.mjs')
+          operator = operator_path.read_text()
+          old = "  if (liveRollbackProvenancePath && existsSync(liveRollbackProvenancePath)) {"
+          new = "  if (status === 'deployed' && liveRollbackProvenancePath && existsSync(liveRollbackProvenancePath)) {"
+          if operator.count(old) != 1:
+              raise SystemExit('expected exactly one unconditional provenance receipt attachment')
+          operator_path.write_text(operator.replace(old, new, 1))
+
+          test_path = Path('urai-tier1/tests/final-protected-deploy-regressions.test.mjs')
+          test_source = test_path.read_text()
+          marker = "    /verifyLiveRollbackProvenance\\(\\{ evidenceDirectory: liveRollbackEvidenceDirectory \\}\\)/,\n  )\n"
+          assertion = "    /verifyLiveRollbackProvenance\\(\\{ evidenceDirectory: liveRollbackEvidenceDirectory \\}\\)/,\n  )\n  assert.match(\n    releaseOperator,\n    /status === 'deployed' && liveRollbackProvenancePath && existsSync\\(liveRollbackProvenancePath\\)/,\n  )\n"
+          if marker not in test_source:
+              raise SystemExit('final protected deploy regression insertion marker is missing')
+          test_path.write_text(test_source.replace(marker, assertion, 1))
+          PY
+
+      - name: Run focused protected deploy regressions
+        run: node --test urai-tier1/tests/final-protected-deploy-regressions.test.mjs
+
+      - name: Run exact static release contract
+        run: node urai-tier1/tests/exact-static-release-contract.test.mjs
+
+      - name: Audit production workflow authority
+        run: node scripts/audit-production-workflow-authority.mjs
+
+      - name: Verify release credential boundary
+        run: node scripts/verify-release-credential-boundary.mjs
+
+      - name: Prove clean patch
+        run: git diff --check
+
+      - name: Commit reviewed ordering repair
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name 'LifeLoggerAI release automation'
+          git config user.email 'actions@users.noreply.github.com'
+          git add scripts/live-release.mjs urai-tier1/tests/final-protected-deploy-regressions.test.mjs
+          git diff --cached --check
+          git commit -m 'Attach live provenance only after deployment'
+          git push origin HEAD:release/protected-rollback-authority-20260711-v2
