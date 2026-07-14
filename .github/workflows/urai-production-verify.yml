@@ -67,6 +67,14 @@ jobs:
           timeout --signal=TERM --kill-after=30s 25m node scripts/urai-production-verify.mjs 2>&1 | tee "$log_dir/production-verify.log"
           status=${PIPESTATUS[0]}
           echo "$status" > "$log_dir/exit-code.txt"
+          if [ "$status" -ne 0 ]; then
+            URAI_SPATIAL_ARTIFACT_DIR="$log_dir/replay-route-diagnostics" timeout --signal=TERM --kill-after=15s 4m node tests/replay-route-diagnostics.mjs > "$log_dir/replay-route-diagnostics.log" 2>&1
+            echo "$?" > "$log_dir/replay-route-diagnostics-exit-code.txt"
+            cat "$log_dir/replay-route-diagnostics.log"
+          fi
+          if [ -d artifacts/replay-tier5-lock ]; then
+            cp -R artifacts/replay-tier5-lock "$log_dir/replay-tier5-lock"
+          fi
           echo "status=$status" >> "$GITHUB_OUTPUT"
           exit 0
 
