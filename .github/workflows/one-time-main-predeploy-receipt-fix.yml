@@ -6,6 +6,11 @@ on:
       - fix/predeploy-receipt-outside-checkout-20260714
     paths:
       - '.github/workflows/one-time-main-predeploy-receipt-fix.yml'
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize, reopened]
+    paths:
+      - '.github/workflows/one-time-main-predeploy-receipt-fix.yml'
 
 permissions:
   contents: write
