@@ -25,8 +25,8 @@ const expectedPaths = [
   'scripts/urai-release-control-smoke.mjs',
   'scripts/urai-post-deploy-smoke.mjs',
   'urai-tier1/tests/exact-static-release-contract.test.mjs',
-  '.github/workflows/spatial-live-deploy.yml',
-  workflowRelativePath,
+  '.github/workflows/**.yml',
+  '.github/workflows/**.yaml',
   'package.json',
   'pnpm-lock.yaml',
 ]
@@ -111,10 +111,11 @@ if (pathSections.length !== 2) failures.push(`Release security guard must define
 if (pathSections.length === 2 && pathSections[0] !== pathSections[1]) failures.push('Pull-request and push path filters differ')
 
 const report = {
-  schemaVersion: 'urai-release-security-path-guard-3',
+  schemaVersion: 'urai-release-security-path-guard-4',
   ok: failures.length === 0,
   workflow: workflowRelativePath,
   protectedPaths: expectedPaths,
+  workflowNamespaceCovered: true,
   externalActions: actionRefs,
   permissions: ['contents:read'],
   exactHeadOnlyCheckout: true,
