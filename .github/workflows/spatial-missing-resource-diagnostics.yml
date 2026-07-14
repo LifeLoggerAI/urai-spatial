@@ -1,39 +1,75 @@
 name: Spatial Missing Resource Diagnostics
 
 on:
-  push:
-    branches:
-      - fix/spatial-e2e-404-diagnostics
   pull_request:
-    branches:
-      - main
+    branches: [main]
+    paths:
+      - 'urai-tier1/**'
+      - 'tests/spatial-missing-resource-diagnostic.mjs'
+      - 'scripts/playwright-runtime-helpers.mjs'
+      - '.github/workflows/spatial-missing-resource-diagnostics.yml'
+      - 'package.json'
+      - 'pnpm-lock.yaml'
+  push:
+    branches: [main]
+    paths:
+      - 'urai-tier1/**'
+      - 'tests/spatial-missing-resource-diagnostic.mjs'
+      - 'scripts/playwright-runtime-helpers.mjs'
+      - '.github/workflows/spatial-missing-resource-diagnostics.yml'
+      - 'package.json'
+      - 'pnpm-lock.yaml'
   workflow_dispatch:
 
 permissions:
   contents: read
 
+concurrency:
+  group: spatial-missing-resource-diagnostics-${{ github.event.pull_request.number || github.ref }}-${{ github.event.pull_request.head.sha || github.sha }}
+  cancel-in-progress: true
+
 jobs:
   diagnose-404s:
+    name: Fail closed on missing and external resources
     runs-on: ubuntu-24.04
     timeout-minutes: 25
     steps:
-      - uses: actions/checkout@v4
-      - uses: pnpm/action-setup@v4
-      - uses: actions/setup-node@v4
+      - name: Checkout exact source head
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          ref: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
+          fetch-depth: 1
+          persist-credentials: false
+          show-progress: false
+      - name: Prove exact clean source identity
+        shell: bash
+        run: |
+          set -euo pipefail
+          EXPECTED_SHA='${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}'
+          test "$(git rev-parse HEAD)" = "$EXPECTED_SHA"
+          test -z "$(git status --porcelain --untracked-files=all)"
+      - name: Set up Node
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
         with:
           node-version: '22'
-          cache: pnpm
-      - name: Install dependencies
+      - name: Enable exact pnpm
+        shell: bash
+        run: |
+          set -euo pipefail
+          corepack enable
+          corepack prepare pnpm@10.0.0 --activate
+          test "$(pnpm --version)" = '10.0.0'
+      - name: Install frozen dependencies
         run: pnpm install --frozen-lockfile
       - name: Install Playwright runtime
         run: pnpm playwright:ensure
-      - name: Capture missing resource URLs
+      - name: Fail closed on actionable resource findings
         run: node tests/spatial-missing-resource-diagnostic.mjs
       - name: Upload missing resource report
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
-          name: spatial-missing-resource-diagnostics
+          name: spatial-missing-resource-diagnostics-${{ github.event.pull_request.head.sha || github.sha }}
           path: artifacts/spatial-404-diagnostics
           if-no-files-found: error
-          retention-days: 7
+          retention-days: 30

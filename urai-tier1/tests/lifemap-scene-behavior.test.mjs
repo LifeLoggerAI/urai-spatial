@@ -2,42 +2,40 @@ import assert from 'node:assert/strict'
 import { test } from 'node:test'
 import fs from 'node:fs'
 
-const source = fs.readFileSync(new URL('../src/components/lifemap/RealLifeMapGalaxy.tsx', import.meta.url), 'utf8')
 const page = fs.readFileSync(new URL('../src/app/life-map/page.tsx', import.meta.url), 'utf8')
+const canonical = fs.readFileSync(new URL('../src/spatial/lifemap/SpatialLifeMapCanonical.tsx', import.meta.url), 'utf8')
+const boundary = fs.readFileSync(new URL('../src/components/lifemap/LifeMapRouteBoundary.tsx', import.meta.url), 'utf8')
+const source = fs.readFileSync(new URL('../src/components/lifemap/AdaptiveLifeMapScene.tsx', import.meta.url), 'utf8')
 
-test('LifeMap route uses the final RealLifeMapGalaxy owner', () => {
-  assert.match(page, /RealLifeMapGalaxy/, 'Life Map route must render RealLifeMapGalaxy.')
-  assert.doesNotMatch(page, /LifeMapScene/, 'Life Map route must not revert to the obsolete LifeMapScene owner.')
+test('LifeMap route uses the final canonical adaptive scene chain', () => {
+  assert.match(page, /SpatialLifeMapCanonical/, 'Life Map route must render SpatialLifeMapCanonical.')
+  assert.doesNotMatch(page, /RealLifeMapGalaxy|LifeMapScene/, 'Life Map route must not revert to retired direct owners.')
+  assert.match(canonical, /LifeMapRouteBoundary/, 'Canonical owner must keep the route boundary.')
+  assert.match(boundary, /AdaptiveLifeMapScene/, 'Route boundary must render the adaptive R3F scene.')
 })
 
-test('RealLifeMapGalaxy preserves memory stars and selected-star camera pull', () => {
-  assert.ok(source.includes('Array.from({ length: 34 }'), 'Life Map must preserve thirty-four memory stars.')
-  assert.ok(source.includes('selected, setSelected'), 'Life Map must preserve selected star state.')
-  assert.ok(source.includes('--pull-x'), 'Life Map must preserve selected-star horizontal camera pull.')
-  assert.ok(source.includes('--pull-y'), 'Life Map must preserve selected-star vertical camera pull.')
-  assert.ok(source.includes('--selected-x'), 'Life Map must preserve selected star x focus variable.')
-  assert.ok(source.includes('--selected-y'), 'Life Map must preserve selected star y focus variable.')
+test('AdaptiveLifeMapScene preserves memory stars and selected-star camera pull', () => {
+  assert.ok(source.includes('useLifeMapEvents()'), 'Life Map must load private or seed-backed memory nodes.')
+  assert.ok(source.includes('selectedId, setSelectedId'), 'Life Map must preserve selected star state.')
+  assert.ok(source.includes('cameraForNode(node)'), 'Life Map must preserve selected-star camera pull.')
+  assert.ok(source.includes('<MemoryStar'), 'Life Map must render interactive memory stars.')
+  assert.ok(source.includes('setCameraIntent(cameraForNode(node))'), 'Selecting a star must move the camera toward it.')
 })
 
 test('LifeMap stars route into Focus and Replay with selected memory identity', () => {
-  assert.ok(source.includes('openFocus'), 'Life Map must expose Focus entry.')
-  assert.ok(source.includes('openReplay'), 'Life Map must expose Replay entry.')
-  assert.ok(source.includes('focus?memoryId='), 'Focus route must carry selected memory identity.')
-  assert.ok(source.includes('replay?memoryId='), 'Replay route must carry selected memory identity.')
-  assert.ok(source.includes('const focusHref = (memoryId: string)'), 'Focus route helper must accept one memory id.')
-  assert.ok(source.includes('const replayHref = (memoryId: string)'), 'Replay route helper must accept one memory id.')
-  assert.ok(source.includes('encodeURIComponent(memoryId)'), 'Memory ids must be encoded inside route helpers.')
-  assert.ok(source.includes('focusHref(selected.id)'), 'Focus must open the selected star identity.')
-  assert.ok(source.includes('replayHref(selected.id)'), 'Replay must open the selected star identity.')
-  assert.ok(source.includes('onDoubleClick'), 'Stars must support double click into Focus.')
-  assert.ok(source.includes('Double click / Enter Focus'), 'Selected star must expose the Focus cue.')
+  assert.ok(source.includes('identityHref("focus", selectedNode)'), 'Life Map must expose Focus entry.')
+  assert.ok(source.includes('identityHref("replay", selectedNode)'), 'Life Map must expose Replay entry.')
+  assert.ok(source.includes('next.set("memoryId", node.id)'), 'Focus and Replay must carry selected memory identity.')
+  assert.ok(source.includes('next.set("manifestId", manifestId)'), 'Focus and Replay must carry manifest identity.')
+  assert.ok(source.includes('next.set("node", node.id)'), 'Focus and Replay must preserve node identity.')
+  assert.ok(source.includes('router.replace(`/life-map?${next.toString()}`'), 'Selection must remain inside Life Map before explicit navigation.')
 })
 
-test('LifeMap visual language remains asset-backed and mobile-safe', () => {
-  assert.ok(source.includes('lifeMapAssets.primary'), 'Life Map must use the registered primary asset stack.')
-  assert.ok(source.includes('lifeMapAssets.accents.threshold'), 'Life Map stars must use registered node imagery.')
-  assert.ok(source.includes('assetCssStack'), 'Life Map must render asset CSS stacks.')
-  assert.ok(source.includes('organicDust'), 'Life Map must preserve organic dust atmosphere.')
-  assert.ok(source.includes('portalRail'), 'Life Map must keep route rail navigation.')
-  assert.ok(source.includes('@media (max-width: 760px)'), 'Life Map must preserve mobile layout handling.')
+test('LifeMap visual language remains asset-backed, adaptive, and mobile-safe', () => {
+  assert.ok(canonical.includes('lifeMapAssets.primary'), 'Life Map must use the registered primary asset stack.')
+  assert.ok(canonical.includes('assetCssStack'), 'Life Map must render the canonical asset stack.')
+  assert.ok(source.includes('<Canvas'), 'Life Map must keep the true R3F canvas.')
+  assert.ok(source.includes('useAdaptiveSpatialQuality'), 'Life Map must adapt rendering quality and reduced motion.')
+  assert.ok(source.includes('max-w-[calc(100vw-24px)]'), 'Life Map route navigation must remain viewport-safe.')
+  assert.ok(source.includes('w-[min(540px,calc(100vw-34px))]'), 'Life Map selection controls must remain mobile-safe.')
 })

@@ -10,14 +10,16 @@ const pkg = JSON.parse(readFileSync('package.json', 'utf8'))
 const requestedScripts = ['typecheck', 'test', 'build', 'urai:qa']
 const scripts = requestedScripts.filter((name) => typeof pkg.scripts?.[name] === 'string')
 
-let failed = false
 for (const script of scripts) {
   const cmd = 'corepack'
   const args = ['pnpm', 'run', script]
   console.log(`\n> ${cmd} ${args.join(' ')}`)
   const result = spawnSync(cmd, args, { stdio: 'inherit', shell: process.platform === 'win32' })
-  if (result.status !== 0) failed = true
+  if (result.status !== 0) {
+    console.error(`[URAI production verify] ${script} failed with status ${result.status ?? 'unknown'}`)
+    process.exit(result.status ?? 1)
+  }
 }
 
 if (!scripts.length) console.log('No production verification scripts found.')
-process.exit(failed ? 1 : 0)
+process.exit(0)

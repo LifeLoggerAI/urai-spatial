@@ -4,37 +4,101 @@ on:
   workflow_dispatch:
   pull_request:
 
+permissions:
+  contents: read
+
+concurrency:
+  group: urai-spatial-production-verify-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: false
+
+env:
+  URAI_EXACT_HEAD: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
+
 jobs:
   verify:
     runs-on: ubuntu-latest
+    timeout-minutes: 35
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - name: Checkout exact reviewed head
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
         with:
-          node-version: '22'
-      - name: Enable pnpm
-        run: |
-          corepack enable
-          corepack prepare pnpm@10.0.0 --activate
-          pnpm --version
-      - name: Install dependencies
-        run: pnpm install --frozen-lockfile
-      - name: Install Playwright runtime
-        run: pnpm playwright:install-deps && pnpm playwright:install
-      - name: Verify
-        id: verify
-        continue-on-error: true
+          ref: ${{ env.URAI_EXACT_HEAD }}
+          fetch-depth: 1
+          persist-credentials: false
+          show-progress: false
+
+      - name: Prove exact clean head
         shell: bash
         run: |
-          set -o pipefail
-          node scripts/urai-production-verify.mjs 2>&1 | tee production-verify.log
-      - name: Upload production verification log
-        if: always()
-        uses: actions/upload-artifact@v4
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$URAI_EXACT_HEAD"
+          test -z "$(git status --porcelain --untracked-files=all)"
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1 # v4.0.0
         with:
-          name: urai-production-verify-log
-          path: production-verify.log
+          version: 10.0.0
+
+      - name: Setup Node
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: '22'
+          cache: pnpm
+
+      - name: Install exact dependency graph
+        run: pnpm install --frozen-lockfile
+
+      - name: Prove install preserved exact source
+        shell: bash
+        run: test -z "$(git status --porcelain --untracked-files=all)"
+
+      - name: Install Playwright runtime
+        run: pnpm playwright:install-deps && pnpm playwright:install
+
+      - name: Capture bounded production verification
+        id: verify
+        shell: bash
+        run: |
+          set +e
+          set -o pipefail
+          log_dir="$RUNNER_TEMP/spatial-production-verify"
+          rm -rf -- "$log_dir"
+          mkdir -p -- "$log_dir"
+          timeout --signal=TERM --kill-after=30s 25m node scripts/urai-production-verify.mjs 2>&1 | tee "$log_dir/production-verify.log"
+          status=${PIPESTATUS[0]}
+          echo "$status" > "$log_dir/exit-code.txt"
+          if [ "$status" -ne 0 ]; then
+            URAI_SPATIAL_ARTIFACT_DIR="$log_dir/replay-route-diagnostics" timeout --signal=TERM --kill-after=15s 4m node tests/replay-route-diagnostics.mjs > "$log_dir/replay-route-diagnostics.log" 2>&1
+            echo "$?" > "$log_dir/replay-route-diagnostics-exit-code.txt"
+            cat "$log_dir/replay-route-diagnostics.log"
+          fi
+          if [ -d artifacts/replay-tier5-lock ]; then
+            cp -R artifacts/replay-tier5-lock "$log_dir/replay-tier5-lock"
+          fi
+          echo "status=$status" >> "$GITHUB_OUTPUT"
+          exit 0
+
+      - name: Upload production verification diagnostics
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: spatial-production-verify-${{ env.URAI_EXACT_HEAD }}-${{ github.run_id }}
+          path: ${{ runner.temp }}/spatial-production-verify
           if-no-files-found: error
-      - name: Preserve verification result
-        if: steps.verify.outcome == 'failure'
-        run: exit 1
+          retention-days: 365
+
+      - name: Enforce production verification
+        shell: bash
+        run: test "${{ steps.verify.outputs.status }}" = "0"
+
+      - name: Reject tracked mutation and remove generated output
+        if: always()
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$URAI_EXACT_HEAD"
+          git diff --exit-code
+          git diff --cached --exit-code
+          git status --short --untracked-files=all
+          git clean -fdx
+          test -z "$(git status --porcelain --untracked-files=all)"

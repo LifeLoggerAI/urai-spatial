@@ -10,6 +10,16 @@ on:
       - main
   workflow_dispatch:
 
+permissions:
+  contents: read
+
+concurrency:
+  group: urai-spatial-verify-${{ github.event.pull_request.number || github.ref }}-${{ github.event.pull_request.head.sha || github.sha }}
+  cancel-in-progress: true
+
+env:
+  URAI_EXACT_HEAD: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
+
 jobs:
   verify:
     name: Verify URAI Spatial
@@ -17,16 +27,26 @@ jobs:
     timeout-minutes: 30
 
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+      - name: Checkout exact candidate
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
         with:
-          show-progress: "false"
+          ref: ${{ env.URAI_EXACT_HEAD }}
+          fetch-depth: 1
+          persist-credentials: false
+          show-progress: false
+
+      - name: Verify exact clean candidate identity
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$URAI_EXACT_HEAD"
+          test -z "$(git status --porcelain --untracked-files=all)"
 
       - name: Enable Corepack
         run: corepack enable
 
       - name: Setup Node
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
         with:
           node-version: 22
           cache: pnpm
@@ -34,8 +54,12 @@ jobs:
       - name: URAI Guardian
         run: node scripts/urai-guardian.mjs
 
-      - name: Install dependencies
-        run: corepack pnpm install --no-frozen-lockfile
+      - name: Install exact dependency graph
+        run: corepack pnpm install --frozen-lockfile
+
+      - name: Prove install preserved exact source
+        shell: bash
+        run: test -z "$(git status --porcelain --untracked-files=all)"
 
       - name: Check public copy
         run: corepack pnpm check:public-copy
@@ -46,11 +70,41 @@ jobs:
       - name: Typecheck
         run: corepack pnpm check:types
 
-      - name: Unit tests
-        run: corepack pnpm test:unit
+      - name: Capture focused unit-test evidence
+        id: unit
+        shell: bash
+        run: |
+          set +e
+          corepack pnpm test:unit > /tmp/urai-tier1-unit-tests.log 2>&1
+          status=$?
+          set -e
+          cat /tmp/urai-tier1-unit-tests.log
+          echo "status=$status" >> "$GITHUB_OUTPUT"
+          exit 0
+
+      - name: Upload focused unit-test evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: urai-spatial-unit-tests-${{ env.URAI_EXACT_HEAD }}
+          path: /tmp/urai-tier1-unit-tests.log
+          if-no-files-found: error
+          retention-days: 365
+
+      - name: Enforce unit-test result
+        shell: bash
+        run: test "${{ steps.unit.outputs.status }}" = "0"
 
       - name: Build
         run: corepack pnpm build
 
       - name: Release gate
         run: corepack pnpm release:p1
+
+      - name: Prove final clean candidate identity
+        if: always()
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$URAI_EXACT_HEAD"
+          test -z "$(git status --porcelain --untracked-files=all)"

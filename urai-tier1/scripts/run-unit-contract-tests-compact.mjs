@@ -4,6 +4,7 @@ import fs from 'node:fs'
 const tests = [
   'tests/aaa-world-artifact-contract.test.mjs',
   'tests/asset-factory-phase6-contract.test.mjs',
+  'tests/asset-validation-fail-closed-contract.test.mjs',
   'tests/body-biometric-contract.test.mjs',
   'tests/exact-static-release-contract.test.mjs',
   'tests/field-reconstruction-phase5-contract.test.mjs',
@@ -15,11 +16,15 @@ const tests = [
   'tests/quest-entry-lifecycle.test.mjs',
   'tests/quest-ended-during-attach.test.mjs',
   'tests/quest-pointer-cancel.test.mjs',
+  'tests/release-control-smoke-boundary-contract.test.mjs',
   'tests/replay-memory-theater-contract.test.mjs',
+  'tests/sensory-asset-resolution-contract.test.mjs',
   'tests/spatial-launch-boundaries.test.mjs',
+  'tests/spatial-missing-resource-diagnostic-contract.test.mjs',
   'tests/unit-runner-coverage.test.mjs',
   'tests/v2-asset-gating.test.mjs',
   'tests/xr-runtime-contract.test.mjs',
+  'tests/xr-static-gate-diagnostics-contract.test.mjs',
 ]
 
 for (const testPath of tests) {

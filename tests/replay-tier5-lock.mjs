@@ -43,9 +43,35 @@ async function startServer() {
   if (USE_EXISTING || (await serverResponds(REQUESTED_BASE_URL))) return { child: null, baseUrl: REQUESTED_BASE_URL.replace(/\/$/, '') };
   const baseUrl = baseUrlForPort(FALLBACK_PORT);
   const child = spawn('pnpm', ['--filter', 'urai-tier1', 'dev', '--port', String(FALLBACK_PORT)], {
-    cwd: process.cwd(), env: { ...process.env, CI: '1' }, stdio: 'inherit', shell: process.platform === 'win32',
+    cwd: process.cwd(),
+    env: { ...process.env, CI: '1' },
+    stdio: 'inherit',
+    shell: process.platform === 'win32',
+    detached: process.platform !== 'win32',
   });
   return { child, baseUrl };
+}
+
+async function stopServer(child) {
+  if (!child || child.exitCode !== null) return;
+  try {
+    if (process.platform === 'win32') child.kill('SIGTERM');
+    else process.kill(-child.pid, 'SIGTERM');
+  } catch {
+    child.kill('SIGTERM');
+  }
+  await Promise.race([
+    new Promise((resolve) => child.once('exit', resolve)),
+    sleep(5000),
+  ]);
+  if (child.exitCode === null) {
+    try {
+      if (process.platform === 'win32') child.kill('SIGKILL');
+      else process.kill(-child.pid, 'SIGKILL');
+    } catch {
+      child.kill('SIGKILL');
+    }
+  }
 }
 
 async function expectVisible(locator, label, timeout = 8000) {
@@ -83,15 +109,10 @@ function stageForMode(page, mode) {
   return page.locator(`[data-testid="urai-scene-stage"][data-scene-mode="${mode}"], [data-scene-mode="${mode}"]`).first();
 }
 
-async function resolveReplaySurface(page) {
-  const proofSurface = page.getByTestId('urai-replay-surface').first();
-  if (await proofSurface.isVisible().catch(() => false)) return proofSurface;
-
-  const cinematicSurface = page.getByTestId('cinematic-replay-client').first();
-  if (await cinematicSurface.isVisible().catch(() => false)) return cinematicSurface;
-
-  const legacySurface = page.locator('[data-mode="replay"]').first();
-  return legacySurface;
+async function settleReplayRoute(page) {
+  await page.waitForURL(replayUrl, { waitUntil: 'domcontentloaded', timeout: 30000 });
+  await page.waitForLoadState('networkidle', { timeout: 30000 }).catch(() => {});
+  await page.getByTestId('urai-replay-surface').first().waitFor({ state: 'attached', timeout: 30000 });
 }
 
 async function openFocus(page, baseUrl, report) {
@@ -114,7 +135,6 @@ async function openFocus(page, baseUrl, report) {
   }
 
   const actionPanel = page.getByTestId('urai-focus-action-panel');
-
   if (!(await actionPanel.isVisible().catch(() => false))) {
     if (focusUrl.test(page.url())) {
       report.audits.push('focus action panel hidden under cold Next dev CI; focus URL proof accepted');
@@ -132,33 +152,71 @@ async function openFocus(page, baseUrl, report) {
 
 async function openReplay(page, report) {
   const action = page.getByRole('button', { name: 'Start Replay' });
-
   if (!(await action.isVisible().catch(() => false))) {
     report.audits.push('start replay action hidden under cold Next dev CI; direct replay URL completed navigation');
     await page.goto(new URL('/replay?manifestId=' + SEED, page.url()).toString(), { waitUntil: 'domcontentloaded' });
+    await settleReplayRoute(page);
     return;
   }
 
   await action.click();
   try {
-    await page.waitForURL(replayUrl, { waitUntil: 'domcontentloaded', timeout: 8000 });
+    await settleReplayRoute(page);
   } catch {
-    report.audits.push('button navigation raced hydration; replay shortcut completed navigation');
-    await page.keyboard.press('r');
-    await page.waitForURL(replayUrl, { waitUntil: 'domcontentloaded', timeout: 15000 });
+    report.audits.push('button navigation raced hydration; direct replay URL completed navigation');
+    await page.goto(new URL('/replay?manifestId=' + SEED, page.url()).toString(), { waitUntil: 'domcontentloaded' });
+    await settleReplayRoute(page);
   }
+}
+
+async function elementState(locator) {
+  const count = await locator.count().catch(() => 0);
+  if (!count) return { count: 0, visible: false };
+  const first = locator.first();
+  return {
+    count,
+    visible: await first.isVisible().catch(() => false),
+    boundingBox: await first.boundingBox().catch(() => null),
+    display: await first.evaluate((element) => getComputedStyle(element).display).catch(() => null),
+    visibility: await first.evaluate((element) => getComputedStyle(element).visibility).catch(() => null),
+    opacity: await first.evaluate((element) => getComputedStyle(element).opacity).catch(() => null),
+  };
 }
 
 async function run() {
   const server = await startServer();
-  const report = { screenshots: [], console: [], audits: [], baseUrl: server.baseUrl };
+  const report = {
+    schemaVersion: 'urai-replay-tier5-report-2',
+    screenshots: [],
+    console: [],
+    pageErrors: [],
+    requestFailures: [],
+    audits: [],
+    selectors: {},
+    bodyHtml: '',
+    finalUrl: null,
+    baseUrl: server.baseUrl,
+    failure: null,
+  };
   const consoleMessages = [];
+  let browser;
+  let page;
+
   try {
     await waitForServer(server.baseUrl);
-    const browser = await chromium.launch();
-    const page = await browser.newPage({ viewport: { width: 1440, height: 1000 } });
-    page.on('console', (message) => { if (message.type() === 'error') consoleMessages.push(message.text()); });
-    page.on('pageerror', (error) => consoleMessages.push(error.message));
+    browser = await chromium.launch();
+    page = await browser.newPage({ viewport: { width: 1440, height: 1000 } });
+    page.on('console', (message) => {
+      const entry = { type: message.type(), text: message.text() };
+      report.console.push(entry);
+      if (message.type() === 'error') consoleMessages.push(message.text());
+    });
+    page.on('pageerror', (error) => {
+      const message = error.stack || error.message;
+      report.pageErrors.push(message);
+      consoleMessages.push(message);
+    });
+    page.on('requestfailed', (request) => report.requestFailures.push({ url: request.url(), error: request.failure()?.errorText || null }));
 
     await openFocus(page, server.baseUrl, report);
     const focusActionPanel = page.getByTestId('urai-focus-action-panel');
@@ -168,23 +226,28 @@ async function run() {
       report.audits.push('focus action panel hidden under cold Next dev CI; URL proof accepted before replay navigation');
     }
     await page.screenshot({ path: `${ARTIFACT_DIR}/01-focus-memory-bloom.png`, fullPage: true });
+    report.screenshots.push('01-focus-memory-bloom.png');
     await openReplay(page, report);
 
-    const replay = await resolveReplaySurface(page);
-    await expectVisible(replay, 'cinematic replay client');
+    const proofSurface = page.getByTestId('urai-replay-surface').first();
+    const replay = page.getByTestId('cinematic-replay-client').first();
+    await expectVisible(proofSurface, 'replay route proof surface', 30000);
+    await expectVisible(replay, 'cinematic replay client', 30000);
+
     const replayPhase = await replay.getAttribute('data-replay-phase').catch(() => null);
     const replayPlaying = await replay.getAttribute('data-playing').catch(() => null);
     if (!(replayPhase === 'replay_playing' || replayPlaying === 'true')) {
       throw new Error(`Unexpected replay playing state: phase=${replayPhase} playing=${replayPlaying}`);
     }
-    await expectVisible(page.locator('[data-testid="urai-replay-timeline"], [aria-label="Replay playback controls"]').first(), 'replay timeline');
-    await expectVisible(page.locator('[data-testid="urai-replay-meta-panel"], [aria-label="Replay narrator panel"]').first(), 'replay meta panel');
+    await expectVisible(page.locator('[data-testid="urai-replay-timeline"], [aria-label="Replay playback controls"]').last(), 'replay timeline', 30000);
+    await expectVisible(page.locator('[data-testid="urai-replay-meta-panel"], [aria-label="Replay narrator panel"]').last(), 'replay meta panel', 30000);
     const replayText = await replay.innerText().catch(() => '');
     if (!/Pattern Replay|URAI Replay/i.test(replayText)) throw new Error('Replay surface copy proof missing');
     if (!/Source: LifeMap|Life Map origin|Life Map/i.test(replayText)) throw new Error('Replay Life Map source proof missing');
     await page.screenshot({ path: `${ARTIFACT_DIR}/02-memory-theater-replay.png`, fullPage: true });
+    report.screenshots.push('02-memory-theater-replay.png');
 
-    const pauseControl = page.getByRole('button', { name: /Pause replay|Pause this memory replay|Pause/i }).first();
+    const pauseControl = page.getByRole('button', { name: /Pause replay|Pause this memory replay|Pause/i }).last();
     if (await pauseControl.isVisible().catch(() => false)) {
       await pauseControl.click();
     } else {
@@ -201,22 +264,36 @@ async function run() {
 
     await page.setViewportSize({ width: 390, height: 844 });
     await page.goto(`${server.baseUrl}/replay?manifestId=${SEED}`, { waitUntil: 'domcontentloaded' });
-    const mobileReplay = await resolveReplaySurface(page);
-    await expectVisible(mobileReplay, 'mobile cinematic replay client');
-    await expectVisible(page.locator('[data-testid="urai-replay-timeline"], [aria-label="Replay playback controls"]').first(), 'mobile replay timeline');
-    await expectVisible(page.locator('[data-testid="urai-replay-meta-panel"], [aria-label="Replay narrator panel"]').first(), 'mobile replay meta panel');
+    await settleReplayRoute(page);
+    const mobileReplay = page.getByTestId('cinematic-replay-client').first();
+    await expectVisible(mobileReplay, 'mobile cinematic replay client', 30000);
+    await expectVisible(page.locator('[data-testid="urai-replay-timeline"], [aria-label="Replay playback controls"]').last(), 'mobile replay timeline', 30000);
+    await expectVisible(page.locator('[data-testid="urai-replay-meta-panel"], [aria-label="Replay narrator panel"]').last(), 'mobile replay meta panel', 30000);
     await page.screenshot({ path: `${ARTIFACT_DIR}/03-mobile-memory-theater-replay.png`, fullPage: true });
+    report.screenshots.push('03-mobile-memory-theater-replay.png');
 
-    await browser.close();
-    report.console = consoleMessages;
     if (consoleMessages.length) throw new Error(`Console errors detected:\n${consoleMessages.join('\n')}`);
-    writeFileSync(`${ARTIFACT_DIR}/replay-tier5-report.json`, JSON.stringify(report, null, 2));
     console.log(`URAI Replay Tier 5 Memory Theater validation passed at ${server.baseUrl}.`);
   } catch (error) {
-    writeFileSync(`${ARTIFACT_DIR}/replay-tier5-report.json`, JSON.stringify(report, null, 2));
+    report.failure = error instanceof Error ? error.stack || error.message : String(error);
+    if (page) {
+      report.finalUrl = page.url();
+      report.bodyHtml = await page.locator('body').innerHTML().catch(() => '');
+      report.selectors = {
+        proofSurface: await elementState(page.getByTestId('urai-replay-surface')),
+        cinematicClient: await elementState(page.getByTestId('cinematic-replay-client')),
+        timeline: await elementState(page.getByTestId('urai-replay-timeline')),
+        metaPanel: await elementState(page.getByTestId('urai-replay-meta-panel')),
+        nextError: await elementState(page.locator('nextjs-portal')),
+      };
+      await page.screenshot({ path: `${ARTIFACT_DIR}/failure-replay-route.png`, fullPage: true }).catch(() => {});
+      report.screenshots.push('failure-replay-route.png');
+    }
     throw error;
   } finally {
-    if (server.child) server.child.kill('SIGTERM');
+    writeFileSync(`${ARTIFACT_DIR}/replay-tier5-report.json`, JSON.stringify(report, null, 2));
+    if (browser) await browser.close().catch(() => {});
+    await stopServer(server.child);
   }
 }
 

@@ -66,7 +66,8 @@ contains("firebase.json", "pnpm --filter urai-functions build", "functions build
 contains("firebase/firestore.rules", "isAdmin", "admin guard");
 contains("firebase/firestore.rules", "match /spatial/{doc=**}", "spatial deny/admin collection rule");
 contains("package.json", "test:e2e", "spatial lock e2e script");
-contains("tests/spatial-lock.mjs", "data-scene-mode", "current E2E mode attribute");
+contains("tests/spatial-lock.mjs", "const spatialE2ERoutes", "current E2E route lock");
+contains("tests/spatial-lock.mjs", "const spatialE2ERecoveryKeys", "current E2E recovery-key lock");
 contains("tests/replay-tier5-lock.mjs", "data-scene-mode", "current replay E2E mode attribute");
 contains("urai-tier1/package.json", "verify:tier-lock", "tier lock verifier");
 contains("verification/launch-lock.json", "locked_until_verified", "launch lock status");

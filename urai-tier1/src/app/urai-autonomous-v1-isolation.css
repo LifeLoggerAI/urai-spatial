@@ -1,11 +1,11 @@
 /*
- * Final-owner isolation for the autonomous Ground, Focus, and Replay worlds.
- * The underlying route remains mounted for compatibility and data hydration, but it
- * must not affect scroll dimensions, screenshots, hit testing, or structural gates.
+ * Final-owner isolation for autonomous worlds that still own their route.
+ * The legacy Replay overlay remains mounted only for compatibility metadata;
+ * CinematicReplayClient owns /replay and must never be hidden by this layer.
  */
 
-html:has(body > .uraiAutoWorld),
-body:has(> .uraiAutoWorld) {
+html:has(body > .uraiAutoWorld:not(.uraiAutoReplay)),
+body:has(> .uraiAutoWorld:not(.uraiAutoReplay)) {
   width: 100%;
   height: 100%;
   min-width: 0;
@@ -17,14 +17,22 @@ body:has(> .uraiAutoWorld) {
   overscroll-behavior: none;
 }
 
-body:has(> .uraiAutoWorld) {
+body:has(> .uraiAutoWorld:not(.uraiAutoReplay)) {
   position: fixed;
   inset: 0;
   margin: 0 !important;
   padding: 0 !important;
 }
 
-body:has(> .uraiAutoWorld) > :not(.uraiAutoWorld):not(script):not(style) {
+body:has(> .uraiAutoWorld:not(.uraiAutoReplay)) > :not(.uraiAutoWorld):not(script):not(style) {
+  display: none !important;
+  visibility: hidden !important;
+  pointer-events: none !important;
+}
+
+/* Retired Replay world: keep the compatibility node inert and let the
+ * canonical route sibling own rendering, interaction, and screenshots. */
+body > .uraiAutoReplay {
   display: none !important;
   visibility: hidden !important;
   pointer-events: none !important;
@@ -51,7 +59,7 @@ body > .uraiAutoWorld {
   overflow-x: clip !important;
 }
 
-@supports not selector(body:has(> .uraiAutoWorld)) {
+@supports not selector(body:has(> .uraiAutoWorld:not(.uraiAutoReplay))) {
   html,
   body {
     max-width: 100%;

@@ -49,8 +49,8 @@ if (missingRootScripts.length) {
   for (const script of missingRootScripts) console.error(`- ${script}`)
   process.exit(1)
 }
-if (rootPackage.scripts?.['live:deploy'] !== 'node scripts/live-release.mjs --deploy') {
-  console.error('[xr:firebase:preflight] live:deploy must use the guarded canonical release executable')
+if (rootPackage.scripts?.['live:deploy'] !== 'node scripts/live-release.mjs --deploy-prebuilt') {
+  console.error('[xr:firebase:preflight] live:deploy must deploy only a preverified immutable release bundle')
   process.exit(1)
 }
 

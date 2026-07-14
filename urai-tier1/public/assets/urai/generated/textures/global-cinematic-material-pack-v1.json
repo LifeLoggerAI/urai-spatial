@@ -1,4 +1,5 @@
 {
+  "schemaVersion": 1,
   "version": "global-cinematic-material-pack-v1",
   "materials": {
     "obsidianGlass": { "baseColor": "#060912", "roughness": 0.12, "metalness": 0.24, "opacity": 0.82 },

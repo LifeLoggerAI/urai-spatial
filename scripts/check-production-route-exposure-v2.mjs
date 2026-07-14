@@ -39,7 +39,17 @@ for (const file of walk(appRoot)) {
 }
 
 requireTokens('urai-tier1/src/app/privacy-controls/page.tsx', ["title: 'URAI Privacy Controls'", 'data-route-polish="privacy-consent-console"', 'export default function PrivacyControlsRoutePage()'])
-requireTokens('urai-tier1/src/app/focus/page.tsx', ["import FocusChamberClient from './FocusChamberClient'", '<Suspense', '<FocusChamberClient />'])
+
+const focusRoutePath = 'urai-tier1/src/app/focus/page.tsx'
+const focusRouteSource = read(focusRoutePath)
+const focusImport = focusRouteSource.match(/import\s+([A-Za-z_$][\w$]*)\s+from\s+['"]\.\/FocusChamberClient['"]/)
+if (!focusImport) {
+  failures.push(`${focusRoutePath} must default-import ./FocusChamberClient`)
+} else {
+  if (!focusRouteSource.includes('<Suspense')) failures.push(`${focusRoutePath} is missing: <Suspense`)
+  if (!focusRouteSource.includes(`<${focusImport[1]} />`)) failures.push(`${focusRoutePath} must render the imported FocusChamberClient component`)
+}
+
 requireTokens('urai-tier1/src/app/focus/FocusChamberClient.tsx', ['data-testid="urai-final-focus-chamber"', 'data-route-polish="selected-memory-camera-chamber"', 'Selected memory chamber.', "next.set('memoryId', memoryId)", "next.set('manifestId', manifestId)", "next.set('node', node)"])
 requireTokens('urai-tier1/src/app/layout.tsx', ['NEXT_PUBLIC_URAI_BUILD_SHA', "'urai-deployed-sha': deployedSha", 'data-deployed-sha={deployedSha}', "data-deployment-evidence={deployedSha === 'unverified' ? 'missing' : 'embedded'}"])
 

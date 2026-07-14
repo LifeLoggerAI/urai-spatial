@@ -1,5 +1,5 @@
 import { Suspense } from 'react'
-import FocusChamberClient from './FocusChamberClient'
+import FinalFocusChamber from './FocusChamberClient'
 
 export const metadata = {
   title: 'URAI Focus',
@@ -13,7 +13,7 @@ function FocusLoadingFallback() {
 export default function FocusRoutePage() {
   return (
     <Suspense fallback={<FocusLoadingFallback />}>
-      <FocusChamberClient />
+      <FinalFocusChamber />
     </Suspense>
   )
 }

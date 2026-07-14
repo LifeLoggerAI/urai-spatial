@@ -12,9 +12,12 @@ const focusedContractTests = [
   'tests/memory-star-phase4-contract.test.mjs',
   'tests/orb-companion-contract.test.mjs',
   'tests/replay-memory-theater-contract.test.mjs',
+  'tests/sensory-asset-resolution-contract.test.mjs',
   'tests/spatial-launch-boundaries.test.mjs',
+  'tests/spatial-missing-resource-diagnostic-contract.test.mjs',
   'tests/unit-runner-coverage.test.mjs',
   'tests/xr-runtime-contract.test.mjs',
+  'tests/xr-static-gate-diagnostics-contract.test.mjs',
 ]
 
 const missingTests = focusedContractTests.filter((testPath) => !fs.existsSync(testPath))

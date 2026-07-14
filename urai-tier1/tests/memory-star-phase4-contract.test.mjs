@@ -17,6 +17,8 @@ const lifeMapStarRoute = read('src/app/life-map/star/[starId]/page.tsx')
 const focusSessionRoute = read('src/app/focus/session/[sessionId]/page.tsx')
 const replayDirectRoute = read('src/app/replay/[replayId]/page.tsx')
 const lifeMapPage = read('src/app/life-map/page.tsx')
+const lifeMapCanonical = read('src/spatial/lifemap/SpatialLifeMapCanonical.tsx')
+const lifeMapBoundary = read('src/components/lifemap/LifeMapRouteBoundary.tsx')
 const focusPage = read('src/app/focus/page.tsx')
 const replayPage = read('src/app/replay/page.tsx')
 
@@ -60,7 +62,9 @@ test('direct memory routes keep safe redirect shells', () => {
 })
 
 test('canonical LifeMap, Focus, and Replay final owners remain present', () => {
-  assert.ok(lifeMapPage.includes('RealLifeMapGalaxy'), 'Life Map route must use RealLifeMapGalaxy')
+  assert.ok(lifeMapPage.includes('SpatialLifeMapCanonical'), 'Life Map route must use SpatialLifeMapCanonical')
+  assert.ok(lifeMapCanonical.includes('LifeMapRouteBoundary'), 'Life Map canonical owner must keep its route boundary')
+  assert.ok(lifeMapBoundary.includes('AdaptiveLifeMapScene'), 'Life Map route boundary must use AdaptiveLifeMapScene')
   assert.ok(focusPage.includes('FinalFocusChamber'), 'Focus route must use FinalFocusChamber')
   assert.ok(replayPage.includes('FinalReplayFilm'), 'Replay route must use FinalReplayFilm')
 })

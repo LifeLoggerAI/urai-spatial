@@ -13,36 +13,61 @@ export function runDistributedDemo() {
 
   system.init();
 
-  // ------------------------
-  // Simulated world events
-  // ------------------------
-
+  // Use current kernel-schema events with explicit payloads so this proof
+  // exercises accepted state transitions rather than two empty kernels.
   const events: URAIEvent[] = [
-    { id: "e1", type: "USER_JOIN", timestamp: 0, userId: "u1", worldId: "w1" },
-    { id: "e2", type: "MOVE", timestamp: 0, userId: "u1", worldId: "w1" },
-    { id: "e3", type: "USER_ACTION", timestamp: 0, userId: "u2", worldId: "w1" },
-    { id: "e4", type: "INTERACT", timestamp: 0, userId: "u1", worldId: "w1" },
-    { id: "e5", type: "STATE_UPDATE", timestamp: 0, userId: "u2", worldId: "w1" }
+    {
+      id: "e1",
+      type: "SYSTEM_BOOT",
+      timestamp: 0,
+      userId: "system",
+      worldId: "w1",
+      payload: { source: "v60-distributed-demo" },
+    },
+    {
+      id: "e2",
+      type: "USER_UPDATE",
+      timestamp: 0,
+      userId: "u1",
+      worldId: "w1",
+      payload: { presence: "active" },
+    },
+    {
+      id: "e3",
+      type: "WORLD_UPDATE",
+      timestamp: 0,
+      userId: "system",
+      worldId: "w1",
+      payload: { phase: "ready" },
+    },
+    {
+      id: "e4",
+      type: "USER_INPUT",
+      timestamp: 0,
+      userId: "u1",
+      worldId: "w1",
+      payload: { action: "move", direction: "forward" },
+    },
+    {
+      id: "e5",
+      type: "USER_INPUT",
+      timestamp: 0,
+      userId: "u2",
+      worldId: "w1",
+      payload: { action: "interact", target: "memory-star" },
+    },
   ];
-
-  // ------------------------
-  // Feed events into distributed system
-  // ------------------------
 
   for (const event of events) {
     system.step(event);
   }
 
-  // ------------------------
-  // Validate deterministic convergence
-  // ------------------------
-
-  const ok = system.validate();
+  const ok = system.validate(events.length);
 
   if (ok) {
     console.log("🚀 v60 DISTRIBUTED DEMO: SUCCESS");
   } else {
-    console.log("❌ v60 DISTRIBUTED DEMO: FAILURE");
+    console.error("❌ v60 DISTRIBUTED DEMO: FAILURE");
   }
 
   return ok;
