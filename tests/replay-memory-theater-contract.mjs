@@ -37,8 +37,22 @@ for (const token of [
   '<Suspense',
   'replay-route-launch-fingerprint',
   'cinematic-memory-camera-film',
+  'proofSurfaceStyle',
+  'data-proof-only="true"',
+  'aria-hidden="true"',
+  'opacity: 0',
+  "pointerEvents: 'none'",
+  'style={proofSurfaceStyle}',
 ]) {
   assertIncludes(replayPagePath, replayPage, token)
+}
+
+for (const forbidden of [
+  "background: 'rgba(3, 7, 19, 0.72)'",
+  "border: '1px solid rgba(155, 231, 255, 0.28)'",
+  "maxWidth: 320",
+]) {
+  assertNotIncludes(replayPagePath, replayPage, forbidden)
 }
 
 for (const token of [
@@ -121,4 +135,4 @@ assertNotIncludes(
 
 assertIncludes(replayRingsPath, replayRings, 'data-testid="urai-replay-phase-rings"')
 
-console.log('Replay Memory Theater composed runtime and visibility ownership contract passed.')
+console.log('Replay Memory Theater composed runtime, visibility ownership, and proof-presentation contract passed.')
