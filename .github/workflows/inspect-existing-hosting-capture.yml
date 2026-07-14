@@ -44,9 +44,20 @@ jobs:
           set -euo pipefail
           test "$(git rev-parse HEAD)" = '${{ github.event.pull_request.head.sha }}'
           test -z "$(git status --porcelain --untracked-files=all)"
-          grep -Fq 'actions: read' .github/workflows/inspect-existing-hosting-capture.yml
-          grep -Fq 'contents: read' .github/workflows/inspect-existing-hosting-capture.yml
-          test "$(grep -Ec 'contents: write|issues: write|deploy|restore|FIREBASE_SERVICE_ACCOUNT|GOOGLE_APPLICATION_CREDENTIALS' .github/workflows/inspect-existing-hosting-capture.yml || true)" = '0'
+          python - <<'PY'
+          from pathlib import Path
+          import re
+
+          source = Path('.github/workflows/inspect-existing-hosting-capture.yml').read_text(encoding='utf-8')
+          match = re.search(r'^permissions:\n((?:  [^\n]+\n)+)', source, re.MULTILINE)
+          if not match:
+              raise SystemExit('workflow permissions block is missing')
+          permissions = [line.strip() for line in match.group(1).splitlines() if line.strip()]
+          if permissions != ['actions: read', 'contents: read']:
+              raise SystemExit(f'unexpected workflow permissions: {permissions}')
+          if 'persist-credentials: false' not in source:
+              raise SystemExit('checkout must not persist credentials')
+          PY
 
       - name: Query existing dispatcher, capture, status, jobs, and artifacts
         shell: bash
