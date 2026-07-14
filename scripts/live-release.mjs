@@ -90,7 +90,9 @@ function walkRegularFiles(directory, prefix = '') {
   const files = []
   for (const entry of entries) {
     const relative = path.posix.join(prefix, entry.name)
-    if (isFirebaseIgnoredPath(relative)) continue
+    if (isFirebaseIgnoredPath(relative)) {
+      throw new Error(`Release surface contains a Firebase-ignored dot path: ${relative}`)
+    }
     const absolute = path.join(directory, entry.name)
     const stats = lstatSync(absolute)
     if (stats.isSymbolicLink()) throw new Error(`Release surface must not contain symlinks: ${relative}`)
