@@ -386,8 +386,23 @@ function deployHostingWithTemporaryCredentials() {
   if (result?.status !== 0) process.exit(result?.status ?? 1)
 }
 
-function writeReceipt(targetSha, status, details = {}) {
-  const directory = path.join('deployment-receipt', targetSha)
+function resolvePreDeployReceiptRoot() {
+  if (!runnerTemp) throw new Error('RUNNER_TEMP is required for pre-deploy receipt evidence')
+  const receiptRoot = path.resolve(runnerTemp, 'deployment-receipt')
+  const resolvedAuthorityRoot = realpathSync(authorityRoot)
+  if (receiptRoot === resolvedAuthorityRoot || receiptRoot.startsWith(`${resolvedAuthorityRoot}${path.sep}`)) {
+    throw new Error('Pre-deploy receipt evidence must remain outside the authority checkout')
+  }
+  return receiptRoot
+}
+
+function writeReceipt(
+  targetSha,
+  status,
+  details = {},
+  { rootDirectory = 'deployment-receipt', includeLiveRollbackProvenance = true } = {},
+) {
+  const directory = path.join(rootDirectory, targetSha)
   mkdirSync(directory, { recursive: true })
   const receipt = {
     schemaVersion: 'urai-static-release-receipt-2',
@@ -410,7 +425,7 @@ function writeReceipt(targetSha, status, details = {}) {
   }
   const receiptPath = path.join(directory, 'receipt.json')
   writeFileSync(receiptPath, `${JSON.stringify(receipt, null, 2)}\n`)
-  if (status === 'deployed' && liveRollbackProvenancePath && existsSync(liveRollbackProvenancePath)) {
+  if (includeLiveRollbackProvenance && liveRollbackProvenancePath && existsSync(liveRollbackProvenancePath)) {
     copyFileSync(liveRollbackProvenancePath, path.join(directory, 'live-rollback-provenance.json'))
   }
   if (process.env.GITHUB_STEP_SUMMARY) {
@@ -501,6 +516,7 @@ requireFile('urai-tier1/out/index.html')
 requireFile('urai-tier1/out/release-fingerprint.json')
 
 const htmlFiles = releaseFiles.filter((entry) => entry.path.endsWith('.html'))
+const preDeployReceiptRoot = resolvePreDeployReceiptRoot()
 const receiptPath = writeReceipt(targetSha, 'built-awaiting-deploy', {
   authorizedMainSha,
   authoritySha,
@@ -509,7 +525,13 @@ const receiptPath = writeReceipt(targetSha, 'built-awaiting-deploy', {
   indexSha256: sha256('urai-tier1/out/index.html'),
   fingerprintSha256: sha256('urai-tier1/out/release-fingerprint.json'),
   ...outputDetails,
+}, {
+  rootDirectory: preDeployReceiptRoot,
+  includeLiveRollbackProvenance: false,
 })
+if (output('git', ['status', '--porcelain', '--untracked-files=all'])) {
+  throw new Error('Current authority checkout must remain clean immediately before deployment')
+}
 
 const preDeployMainSha = assertRemoteMainUnchanged(targetSha)
 deployHostingWithTemporaryCredentials()
@@ -518,7 +540,7 @@ if (liveUrl) run('node', [postDeploySmoke], {
   URAI_EXPECTED_DEPLOYED_SHA: targetSha,
   URAI_EXPECTED_ROLLBACK_SHA: rollbackSha,
 })
-writeReceipt(targetSha, 'deployed', {
+const finalReceiptPath = writeReceipt(targetSha, 'deployed', {
   authorizedMainSha,
   preDeployMainSha,
   authoritySha,
@@ -529,4 +551,5 @@ writeReceipt(targetSha, 'deployed', {
   previousReceipt: receiptPath,
   ...outputDetails,
 })
+copyFileSync(receiptPath, path.join(path.dirname(finalReceiptPath), 'predeploy-receipt.json'))
 console.log('[URAI release] Static Hosting deployment completed.')
