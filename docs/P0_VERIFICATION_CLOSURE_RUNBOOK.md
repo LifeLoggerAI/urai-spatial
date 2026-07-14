@@ -144,11 +144,11 @@ The deployment receipt writes the exact recovery command. Its form is:
 gh workflow run spatial-live-deploy.yml \
   --ref main \
   -f release_sha=<PROVEN_ROLLBACK_SHA> \
-  -f rollback_sha=<PROVEN_ROLLBACK_SHA> \
+  -f rollback_sha=<EXACT_CURRENT_MAIN_SHA> \
   -f confirm=ROLLBACK_URAI_APP
 ```
 
-The workflow requires the rollback target to be a non-current ancestor of `main`, re-runs verification against that target, uses the protected production environment, deploys the exact ancestor, and repeats live smoke. Never perform rollback through a local Firebase command.
+The workflow requires the rollback target to be a non-current ancestor of `main` and `rollback_sha` to be the exact current `main` recovery authority. It re-runs verification against the target, uses the protected production environment, deploys the exact ancestor, and repeats live smoke. Never perform rollback through a local Firebase command.
 
 ### 6. Capture visual evidence
 

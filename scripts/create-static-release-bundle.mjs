@@ -45,7 +45,7 @@ function sha256(file) {
 }
 
 function isFirebaseIgnoredPath(relative) {
-  return path.posix.basename(relative).startsWith('.')
+  return relative.split('/').some((segment) => segment.startsWith('.'))
 }
 
 function walkRegularFiles(directory, prefix = '') {
@@ -62,7 +62,7 @@ function walkRegularFiles(directory, prefix = '') {
     }
     if (!stats.isFile()) throw new Error(`Release bundle source contains a non-regular entry: ${relative}`)
     if (isFirebaseIgnoredPath(relative)) {
-      throw new Error(`Static output contains a Firebase-ignored dotfile: ${relative}`)
+      throw new Error(`Static output contains a Firebase-ignored dot path: ${relative}`)
     }
     files.push({ absolute, relative, bytes: stats.size, sha256: sha256(absolute) })
   }
