@@ -126,15 +126,15 @@ test('authority bundle and credential verifier bind the complete immutable hoste
     'rollbackSha',
     'Release bundle source must not contain symlinks',
     'isFirebaseIgnoredPath',
-    "path.posix.basename(relative).startsWith('.')",
-    'Static output contains a Firebase-ignored dotfile',
+    "relative.split('/').some((segment) => segment.startsWith('.'))",
+    'Static output contains a Firebase-ignored dot path',
     'Copied release bundle bytes do not match the source output',
     'fingerprintSha256',
     'fileCount',
     'totalBytes',
     'sha256',
   ], 'bundle attester')
-  assert.doesNotMatch(bundleBuilder, /relative\.split\('\/'\)\.some\(\(segment\) => segment\.startsWith\('\.'\)\)/)
+  assert.doesNotMatch(bundleBuilder, /path\.posix\.basename\(relative\)\.startsWith\('\.'\)/)
   hasAll(credentialBoundary, [
     'urai-release-credential-boundary-4',
     'targetBuildIsolated: true',
