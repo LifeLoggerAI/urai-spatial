@@ -1,0 +1,121 @@
+name: Normalize reviewed automatic recovery output
+
+on:
+  pull_request:
+    types: [synchronize]
+    branches: [main]
+    paths:
+      - '.github/workflows/normalize-reviewed-auto-recovery-output.yml'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: normalize-reviewed-auto-recovery-output-${{ github.event.pull_request.number }}
+  cancel-in-progress: false
+
+jobs:
+  normalize:
+    if: >-
+      github.repository == 'LifeLoggerAI/urai-spatial' &&
+      github.event.pull_request.head.repo.full_name == github.repository &&
+      github.event.pull_request.head.ref == 'ops/apply-reviewed-auto-recovery-fixes-20260714'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    env:
+      REVIEWED_SHA: 667f5b2e4ac2dabcb1421530df8367dc32c952a4
+      FINAL_BRANCH: release/automatic-hosting-recovery-final-20260714
+    steps:
+      - name: Checkout validated reviewed candidate
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          ref: ${{ env.REVIEWED_SHA }}
+          fetch-depth: 1
+          persist-credentials: true
+          show-progress: false
+
+      - name: Normalize strict-smoke retry indentation
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$REVIEWED_SHA"
+          test -z "$(git status --porcelain --untracked-files=all)"
+          python - <<'PY'
+          from pathlib import Path
+
+          path = Path('scripts/urai-release-control-smoke.mjs')
+          source = path.read_text(encoding='utf-8')
+          old = """  async function request(route, redirect = 'follow') {
+          const requestedUrl = new URL(route, `${base}/`).toString()
+          let lastError = null
+          for (let attempt = 1; attempt <= 3; attempt += 1) {
+            try {
+              const response = await fetch(requestedUrl, {
+                redirect,
+                cache: 'no-store',
+                signal: AbortSignal.timeout(20_000),
+                headers: { 'cache-control': 'no-cache', 'user-agent': 'urai-release-control-smoke/5' },
+              })
+              const body = await response.text()
+              return {
+                path: route,
+                requestedUrl,
+                status: response.status,
+                finalUrl: response.url,
+                body,
+                location: response.headers.get('location') || '',
+              }
+            } catch (error) {
+              lastError = error
+              if (attempt < 3) await new Promise((resolve) => setTimeout(resolve, 1000 * 2 ** (attempt - 1)))
+            }
+          }
+          throw lastError || new Error(`Request failed without an error: ${requestedUrl}`)
+        }
+          """
+          new = """  async function request(route, redirect = 'follow') {
+            const requestedUrl = new URL(route, `${base}/`).toString()
+            let lastError = null
+            for (let attempt = 1; attempt <= 3; attempt += 1) {
+              try {
+                const response = await fetch(requestedUrl, {
+                  redirect,
+                  cache: 'no-store',
+                  signal: AbortSignal.timeout(20_000),
+                  headers: { 'cache-control': 'no-cache', 'user-agent': 'urai-release-control-smoke/5' },
+                })
+                const body = await response.text()
+                return {
+                  path: route,
+                  requestedUrl,
+                  status: response.status,
+                  finalUrl: response.url,
+                  body,
+                  location: response.headers.get('location') || '',
+                }
+              } catch (error) {
+                lastError = error
+                if (attempt < 3) await new Promise((resolve) => setTimeout(resolve, 1000 * 2 ** (attempt - 1)))
+              }
+            }
+            throw lastError || new Error(`Request failed without an error: ${requestedUrl}`)
+          }
+          """
+          if source.count(old) != 1:
+              raise SystemExit(f'expected one malformed retry block, found {source.count(old)}')
+          path.write_text(source.replace(old, new, 1), encoding='utf-8', newline='')
+          PY
+
+      - name: Validate normalized candidate
+        shell: bash
+        run: |
+          set -euo pipefail
+          node --check scripts/urai-release-control-smoke.mjs
+          node --test urai-tier1/tests/automatic-hosting-recovery-contract.test.mjs
+          git diff --check
+          test "$(git diff --name-only)" = 'scripts/urai-release-control-smoke.mjs'
+          git add scripts/urai-release-control-smoke.mjs
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git commit -m 'Normalize strict-smoke retry indentation'
+          git push --force origin "HEAD:refs/heads/$FINAL_BRANCH"
