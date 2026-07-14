@@ -8,7 +8,7 @@ on:
       - '.github/workflows/one-time-fix-predeploy-receipt-order.yml'
   pull_request:
     branches: [main]
-    types: [synchronize]
+    types: [synchronize, reopened]
     paths:
       - '.github/workflows/one-time-fix-predeploy-receipt-order.yml'
 
