@@ -22,6 +22,7 @@ const replayStatePath = 'urai-tier1/src/spatial/scene/replayState.ts'
 const replayTimelinePath = 'urai-tier1/src/spatial/replay/ReplayTimeline.tsx'
 const replayMetaPath = 'urai-tier1/src/spatial/replay/ReplayMetaPanel.tsx'
 const replayRingsPath = 'urai-tier1/src/spatial/replay/ReplayPhaseRings.tsx'
+const autonomousIsolationPath = 'urai-tier1/src/app/urai-autonomous-v1-isolation.css'
 
 const replayPage = read(replayPagePath)
 const replayClient = read(replayClientPath)
@@ -29,6 +30,7 @@ const replayState = read(replayStatePath)
 const replayTimeline = read(replayTimelinePath)
 const replayMeta = read(replayMetaPath)
 const replayRings = read(replayRingsPath)
+const autonomousIsolation = read(autonomousIsolationPath)
 
 for (const token of [
   'CinematicReplayClient',
@@ -103,6 +105,20 @@ for (const token of [
   assertIncludes(replayMetaPath, replayMeta, token)
 }
 
+for (const token of [
+  'body:has(> .uraiAutoWorld:not(.uraiAutoReplay))',
+  'body > .uraiAutoReplay',
+  'display: none !important',
+  'CinematicReplayClient owns /replay',
+]) {
+  assertIncludes(autonomousIsolationPath, autonomousIsolation, token)
+}
+assertNotIncludes(
+  autonomousIsolationPath,
+  autonomousIsolation,
+  'body:has(> .uraiAutoWorld) > :not(.uraiAutoWorld):not(script):not(style)',
+)
+
 assertIncludes(replayRingsPath, replayRings, 'data-testid="urai-replay-phase-rings"')
 
-console.log('Replay Memory Theater composed runtime contract passed.')
+console.log('Replay Memory Theater composed runtime and visibility ownership contract passed.')
