@@ -18,6 +18,7 @@ const workflow = readRepo('.github/workflows/spatial-live-deploy.yml')
 const bundleBuilder = readRepo('scripts/create-static-release-bundle.mjs')
 const credentialBoundary = readRepo('scripts/verify-release-credential-boundary.mjs')
 const verifier = readRepo('scripts/urai-post-deploy-smoke.mjs')
+const legacyBootstrapVerifier = readRepo('scripts/verify-legacy-live-bootstrap.mjs')
 
 function hasAll(source, markers, label) {
   for (const marker of markers) assert.ok(source.includes(marker), `missing ${label} marker: ${marker}`)
@@ -165,6 +166,31 @@ test('live verification binds canonical routes, origin, SHA, authority, and fing
     'live-content-parity-3',
     'hydratedIdentityProof',
   ], 'live verifier')
+})
+
+
+test('legacy bootstrap is fingerprint-absence-only and recovery-bound', () => {
+  hasAll(workflow, [
+    'BOOTSTRAP_LEGACY_URAI_APP',
+    "URAI_LEGACY_BOOTSTRAP: ${{ inputs.confirm == 'BOOTSTRAP_LEGACY_URAI_APP' && '1' || '0' }}",
+    'URAI_LEGACY_BOOTSTRAP_CONFIRM: ${{ inputs.confirm }}',
+    'git merge-base --is-ancestor "$ROLLBACK_SHA" "$RELEASE_SHA"',
+  ], 'legacy bootstrap workflow')
+  hasAll(credentialBoundary, [
+    'legacyBootstrapRequested',
+    'legacyBootstrapProofRequired',
+    'verifyLegacyLiveBootstrap',
+    'legacyBootstrapProofVerified',
+  ], 'legacy bootstrap credential boundary')
+  hasAll(legacyBootstrapVerifier, [
+    "schemaVersion: 'urai-legacy-live-bootstrap-provenance-1'",
+    'valid release fingerprint already exists',
+    'recognized-legacy-html',
+    'Legacy bootstrap recovery SHA must be distinct from current main',
+    "runGit(['merge-base', '--is-ancestor', recoverySha, currentMainSha])",
+    "path.join(evidenceDirectory, 'live-rollback-provenance.json')",
+    'normalFingerprintDeployRequiredAfterBootstrap: true',
+  ], 'legacy bootstrap verifier')
 })
 
 test('manual deploy and rollback preserve distinct target and recovery identities', () => {

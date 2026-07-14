@@ -121,6 +121,9 @@ for (const marker of [
   'GOOGLE_APPLICATION_CREDENTIALS: ${{ runner.temp }}/urai-firebase-service-account.json',
   'URAI_FIREBASE_CLI: ${{ github.workspace }}/node_modules/.bin/firebase',
   'Remove temporary credentials',
+  'BOOTSTRAP_LEGACY_URAI_APP',
+  'URAI_LEGACY_BOOTSTRAP:',
+  'URAI_LEGACY_BOOTSTRAP_CONFIRM:',
 ]) requireMarker('Protected deploy job', deployJob, marker)
 forbid('Protected deploy job', deployJob, /path:\s*target|working-directory:\s*target|Checkout (?:frozen|exact) (?:release )?target/, 'target checkout')
 forbid('Protected deploy job', deployJob, /pnpm\s+build:static|node\s+\.\.\/authority\//, 'target build or cross-checkout authority execution')
