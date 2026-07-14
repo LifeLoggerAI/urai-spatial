@@ -4,17 +4,22 @@ on:
   push:
     paths:
       - '.github/workflows/one-time-finalize-deploy-review-repairs.yml'
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize, reopened]
+    paths:
+      - '.github/workflows/one-time-finalize-deploy-review-repairs.yml'
 
 permissions:
   contents: write
 
 concurrency:
-  group: one-time-finalize-deploy-review-repairs
+  group: one-time-finalize-deploy-review-repairs-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: false
 
 jobs:
   repair:
-    if: github.ref == 'refs/heads/release/protected-rollback-authority-20260711-v2'
+    if: github.head_ref == 'release/protected-rollback-authority-20260711-v2' || github.ref == 'refs/heads/release/protected-rollback-authority-20260711-v2'
     runs-on: ubuntu-24.04
     timeout-minutes: 15
     steps:
@@ -76,7 +81,7 @@ jobs:
           set -euo pipefail
           node urai-tier1/tests/exact-static-release-contract.test.mjs
           node scripts/audit-production-workflow-authority.mjs
-          test -z "$(git diff --check)"
+          git diff --check
 
       - name: Commit reviewed repairs and remove one-time workflow
         shell: bash
