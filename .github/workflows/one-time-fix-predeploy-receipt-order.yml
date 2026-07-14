@@ -1,6 +1,11 @@
 name: One-time predeploy receipt ordering repair
 
 on:
+  push:
+    branches:
+      - release/protected-rollback-authority-20260711-v2
+    paths:
+      - '.github/workflows/one-time-fix-predeploy-receipt-order.yml'
   pull_request:
     branches: [main]
     types: [synchronize]
@@ -11,12 +16,12 @@ permissions:
   contents: write
 
 concurrency:
-  group: one-time-predeploy-receipt-order-${{ github.event.pull_request.number }}
+  group: one-time-predeploy-receipt-order-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: false
 
 jobs:
   repair:
-    if: github.head_ref == 'release/protected-rollback-authority-20260711-v2'
+    if: github.head_ref == 'release/protected-rollback-authority-20260711-v2' || github.ref == 'refs/heads/release/protected-rollback-authority-20260711-v2'
     runs-on: ubuntu-24.04
     timeout-minutes: 15
     steps:
