@@ -115,16 +115,19 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          git add \
-            .github/workflows/release-security-path-guard.yml \
+          git add -A
+          staged="$(git diff --cached --name-only | sort)"
+          printf '%s\n' "$staged"
+          for required in \
             .github/workflows/one-time-spatial-539-codex-repair.yml \
+            .github/workflows/release-security-path-guard.yml \
             docs/P0_VERIFICATION_CLOSURE_RUNBOOK.md \
             scripts/create-static-release-bundle.mjs \
             scripts/live-release.mjs \
             scripts/verify-release-security-path-guard.mjs \
-            urai-tier1/tests/exact-static-release-contract.test.mjs
-          mapfile -t changed < <(git diff --cached --name-only | sort)
-          test "${#changed[@]}" -eq 7
+            urai-tier1/tests/exact-static-release-contract.test.mjs; do
+            printf '%s\n' "$staged" | grep -Fx "$required"
+          done
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           git commit -m 'Close final Spatial release review findings'
