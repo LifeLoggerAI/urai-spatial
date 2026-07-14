@@ -1,0 +1,106 @@
+name: Diagnose Hosting capture status
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - '.github/workflows/diagnose-hosting-capture-status.yml'
+
+permissions:
+  actions: read
+  contents: read
+
+concurrency:
+  group: diagnose-hosting-capture-status-${{ github.event.pull_request.number }}-${{ github.event.pull_request.head.sha }}
+  cancel-in-progress: true
+
+env:
+  DISPATCHER_SHA: 48835d090bdc2db0a46f79a09cc414f1fd7f82c3
+  DISPATCHER_WORKFLOW: one-time-hosting-capture-dispatch.yml
+  CAPTURE_WORKFLOW: capture-legacy-hosting-recovery.yml
+
+jobs:
+  diagnose:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - name: Checkout exact diagnostic head
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 1
+          persist-credentials: false
+          show-progress: false
+      - name: Prove exact clean diagnostic source
+        shell: bash
+        env:
+          EXPECTED_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$EXPECTED_SHA"
+          test -z "$(git status --porcelain --untracked-files=all)"
+      - name: Query exact Actions metadata
+        id: query
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          report_dir="$RUNNER_TEMP/hosting-capture-diagnostic"
+          mkdir -p "$report_dir"
+          api() {
+            curl --fail --silent --show-error \
+              --header "Accept: application/vnd.github+json" \
+              --header "Authorization: Bearer $GH_TOKEN" \
+              --header "X-GitHub-Api-Version: 2022-11-28" \
+              "$1"
+          }
+          api "${GITHUB_API_URL}/repos/${GITHUB_REPOSITORY}/actions/workflows/${DISPATCHER_WORKFLOW}/runs?branch=main&event=push&head_sha=${DISPATCHER_SHA}&per_page=20" > "$report_dir/dispatcher-runs.json"
+          api "${GITHUB_API_URL}/repos/${GITHUB_REPOSITORY}/actions/workflows/${CAPTURE_WORKFLOW}/runs?branch=main&event=workflow_dispatch&per_page=20" > "$report_dir/capture-runs.json"
+          node - <<'NODE' "$report_dir"
+          const { readFileSync, writeFileSync } = require('node:fs')
+          const path = require('node:path')
+          const reportDir = process.argv[2]
+          const dispatcherRuns = JSON.parse(readFileSync(path.join(reportDir, 'dispatcher-runs.json'), 'utf8')).workflow_runs || []
+          const captureRuns = JSON.parse(readFileSync(path.join(reportDir, 'capture-runs.json'), 'utf8')).workflow_runs || []
+          const dispatcher = dispatcherRuns.find((run) => run.head_sha === process.env.DISPATCHER_SHA) || null
+          const dispatcherStarted = dispatcher ? Date.parse(dispatcher.created_at || '') : 0
+          const capture = captureRuns.find((run) => {
+            const started = Date.parse(run.created_at || '')
+            return run.head_branch === 'main' && !Number.isNaN(started) && started >= dispatcherStarted
+          }) || null
+          const compact = (run) => run && ({
+            id: run.id,
+            name: run.name,
+            event: run.event,
+            status: run.status,
+            conclusion: run.conclusion,
+            headSha: run.head_sha,
+            headBranch: run.head_branch,
+            createdAt: run.created_at,
+            updatedAt: run.updated_at,
+            runAttempt: run.run_attempt,
+            htmlUrl: run.html_url,
+            artifactsUrl: run.artifacts_url,
+            jobsUrl: run.jobs_url,
+          })
+          const report = {
+            schemaVersion: 'urai-hosting-capture-diagnostic-1',
+            recordedAt: new Date().toISOString(),
+            dispatcherExpectedSha: process.env.DISPATCHER_SHA,
+            dispatcher: compact(dispatcher),
+            capture: compact(capture),
+            captureRequested: Boolean(capture),
+            productionMutationPerformed: false,
+          }
+          writeFileSync(path.join(reportDir, 'status.json'), `${JSON.stringify(report, null, 2)}\n`)
+          console.log(JSON.stringify(report, null, 2))
+          NODE
+          echo "report_dir=$report_dir" >> "$GITHUB_OUTPUT"
+      - name: Upload exact diagnostic receipt
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: hosting-capture-diagnostic-${{ github.event.pull_request.head.sha }}
+          path: ${{ steps.query.outputs.report_dir }}
+          if-no-files-found: error
+          retention-days: 7
