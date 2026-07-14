@@ -14,6 +14,7 @@ on:
       - 'scripts/verify-release-credential-boundary.mjs'
       - 'scripts/verify-release-credential-boundary-static.mjs'
       - 'scripts/verify-live-rollback-provenance.mjs'
+      - 'scripts/verify-legacy-live-bootstrap.mjs'
       - 'firebase.static.json'
       - 'package.json'
       - 'pnpm-lock.yaml'
@@ -31,6 +32,7 @@ on:
       - 'scripts/verify-release-credential-boundary.mjs'
       - 'scripts/verify-release-credential-boundary-static.mjs'
       - 'scripts/verify-live-rollback-provenance.mjs'
+      - 'scripts/verify-legacy-live-bootstrap.mjs'
       - 'firebase.static.json'
       - 'package.json'
       - 'pnpm-lock.yaml'
@@ -42,11 +44,11 @@ on:
         required: true
         type: string
       rollback_sha:
-        description: Distinct recovery SHA; currently live SHA for deploy or current main for rollback
+        description: Distinct recovery SHA; live SHA for normal deploy, proven ancestor for legacy bootstrap, or current main for rollback
         required: true
         type: string
       confirm:
-        description: Type DEPLOY_URAI_APP or ROLLBACK_URAI_APP
+        description: Type DEPLOY_URAI_APP, ROLLBACK_URAI_APP, or BOOTSTRAP_LEGACY_URAI_APP
         required: true
         default: CHECK_ONLY
         type: string
@@ -105,6 +107,11 @@ jobs:
           git merge-base --is-ancestor "$RELEASE_SHA" "$CURRENT_MAIN_SHA"
           case "$CONFIRM" in
             DEPLOY_URAI_APP)
+              test "$RELEASE_SHA" = "$CURRENT_MAIN_SHA"
+              test "$ROLLBACK_SHA" != "$RELEASE_SHA"
+              git merge-base --is-ancestor "$ROLLBACK_SHA" "$RELEASE_SHA"
+              ;;
+            BOOTSTRAP_LEGACY_URAI_APP)
               test "$RELEASE_SHA" = "$CURRENT_MAIN_SHA"
               test "$ROLLBACK_SHA" != "$RELEASE_SHA"
               git merge-base --is-ancestor "$ROLLBACK_SHA" "$RELEASE_SHA"
@@ -193,7 +200,7 @@ jobs:
     name: Prove rollback target with current authority
     if: >-
       github.event_name == 'workflow_dispatch' &&
-      (inputs.confirm == 'DEPLOY_URAI_APP' || inputs.confirm == 'ROLLBACK_URAI_APP')
+      (inputs.confirm == 'DEPLOY_URAI_APP' || inputs.confirm == 'ROLLBACK_URAI_APP' || inputs.confirm == 'BOOTSTRAP_LEGACY_URAI_APP')
     runs-on: ubuntu-latest
     timeout-minutes: 60
     env:
@@ -314,7 +321,7 @@ jobs:
     if: >-
       github.event_name == 'workflow_dispatch' &&
       github.ref == 'refs/heads/main' &&
-      (inputs.confirm == 'DEPLOY_URAI_APP' || inputs.confirm == 'ROLLBACK_URAI_APP')
+      (inputs.confirm == 'DEPLOY_URAI_APP' || inputs.confirm == 'ROLLBACK_URAI_APP' || inputs.confirm == 'BOOTSTRAP_LEGACY_URAI_APP')
     runs-on: ubuntu-latest
     timeout-minutes: 60
     env:
@@ -393,7 +400,7 @@ jobs:
     if: >-
       github.event_name == 'workflow_dispatch' &&
       github.ref == 'refs/heads/main' &&
-      (inputs.confirm == 'DEPLOY_URAI_APP' || inputs.confirm == 'ROLLBACK_URAI_APP')
+      (inputs.confirm == 'DEPLOY_URAI_APP' || inputs.confirm == 'ROLLBACK_URAI_APP' || inputs.confirm == 'BOOTSTRAP_LEGACY_URAI_APP')
     runs-on: ubuntu-latest
     timeout-minutes: 30
     env:
@@ -452,7 +459,7 @@ jobs:
     if: >-
       github.event_name == 'workflow_dispatch' &&
       github.ref == 'refs/heads/main' &&
-      (inputs.confirm == 'DEPLOY_URAI_APP' || inputs.confirm == 'ROLLBACK_URAI_APP')
+      (inputs.confirm == 'DEPLOY_URAI_APP' || inputs.confirm == 'ROLLBACK_URAI_APP' || inputs.confirm == 'BOOTSTRAP_LEGACY_URAI_APP')
     runs-on: ubuntu-latest
     timeout-minutes: 60
     environment: production
@@ -467,6 +474,8 @@ jobs:
       URAI_LIVE_BASE_URL: https://urai.app
       URAI_DEPLOY_CONFIRM: DEPLOY_STATIC_URAI
       URAI_RELEASE_OPERATION: ${{ inputs.confirm == 'ROLLBACK_URAI_APP' && 'rollback' || 'deploy' }}
+      URAI_LEGACY_BOOTSTRAP: ${{ inputs.confirm == 'BOOTSTRAP_LEGACY_URAI_APP' && '1' || '0' }}
+      URAI_LEGACY_BOOTSTRAP_CONFIRM: ${{ inputs.confirm }}
       URAI_FIREBASE_CLI: ${{ github.workspace }}/node_modules/.bin/firebase
     steps:
       - name: Checkout current release authority only

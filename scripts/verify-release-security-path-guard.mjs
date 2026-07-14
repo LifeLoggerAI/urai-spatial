@@ -17,6 +17,7 @@ const expectedPaths = [
   'scripts/attest-static-release-bundle.mjs',
   'scripts/write-release-fingerprint.mjs',
   'scripts/verify-live-rollback-provenance.mjs',
+  'scripts/verify-legacy-live-bootstrap.mjs',
   'scripts/verify-release-credential-boundary.mjs',
   'scripts/verify-release-credential-boundary-static.mjs',
   'scripts/verify-release-security-path-guard.mjs',
@@ -49,6 +50,7 @@ const requiredTokens = [
   'node --check scripts/attest-static-release-bundle.mjs',
   'node --check scripts/write-release-fingerprint.mjs',
   'node --check scripts/verify-live-rollback-provenance.mjs',
+  'node --check scripts/verify-legacy-live-bootstrap.mjs',
   'node --check scripts/verify-release-credential-boundary.mjs',
   'node --check scripts/verify-release-credential-boundary-static.mjs',
   'node --check scripts/verify-release-security-path-guard.mjs',
@@ -62,6 +64,7 @@ const requiredTokens = [
   'node scripts/audit-production-workflow-authority.mjs',
   'node scripts/verify-release-credential-boundary.mjs',
   'node scripts/verify-live-rollback-provenance.mjs --self-test',
+  'node scripts/verify-legacy-live-bootstrap.mjs --self-test',
   'node urai-tier1/tests/exact-static-release-contract.test.mjs',
 ]
 
