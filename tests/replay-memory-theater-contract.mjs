@@ -34,7 +34,6 @@ const autonomousIsolation = read(autonomousIsolationPath)
 
 for (const token of [
   'CinematicReplayClient',
-  '<Suspense',
   'replay-route-launch-fingerprint',
   'cinematic-memory-camera-film',
   'proofSurfaceStyle',
@@ -48,9 +47,10 @@ for (const token of [
 }
 
 for (const forbidden of [
+  '<Suspense',
   "background: 'rgba(3, 7, 19, 0.72)'",
   "border: '1px solid rgba(155, 231, 255, 0.28)'",
-  "maxWidth: 320",
+  'maxWidth: 320',
 ]) {
   assertNotIncludes(replayPagePath, replayPage, forbidden)
 }
