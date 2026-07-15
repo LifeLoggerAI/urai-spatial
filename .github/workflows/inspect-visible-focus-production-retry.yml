@@ -102,26 +102,56 @@ jobs:
           fi
 
           if test -n "$production_id"; then
-            gh api "/repos/${GITHUB_REPOSITORY}/actions/runs/${production_id}" > "$receipt_dir/production-run.json"
+            for attempt in $(seq 1 60); do
+              gh api "/repos/${GITHUB_REPOSITORY}/actions/runs/${production_id}" > "$receipt_dir/production-run.json"
+              status="$(jq -r '.status // empty' "$receipt_dir/production-run.json")"
+              if test "$status" = 'completed'; then
+                break
+              fi
+              sleep 10
+            done
             gh api --paginate "/repos/${GITHUB_REPOSITORY}/actions/runs/${production_id}/jobs?per_page=100" > "$receipt_dir/production-jobs.json"
             gh api --paginate "/repos/${GITHUB_REPOSITORY}/actions/runs/${production_id}/artifacts?per_page=100" > "$receipt_dir/production-artifacts.json"
             if ! gh api "/repos/${GITHUB_REPOSITORY}/actions/runs/${production_id}/pending_deployments" > "$receipt_dir/pending-deployments.json"; then
               printf '%s\n' '[]' > "$receipt_dir/pending-deployments.json"
+            fi
+
+            mkdir -p "$receipt_dir/production-logs"
+            if gh api "/repos/${GITHUB_REPOSITORY}/actions/runs/${production_id}/logs" > "$receipt_dir/production-logs.zip" \
+              && unzip -q "$receipt_dir/production-logs.zip" -d "$receipt_dir/production-logs"; then
+              grep -RhoE 'sites/urai-4dc1d/(releases|versions)/[A-Za-z0-9._-]+' "$receipt_dir/production-logs" \
+                | sort -u > "$receipt_dir/hosting-resource-markers.txt" || true
+            else
+              printf '%s\n' 'production-log-download-unavailable' > "$receipt_dir/hosting-resource-markers.txt"
             fi
           else
             printf '%s\n' '{}' > "$receipt_dir/production-run.json"
             printf '%s\n' '{"jobs":[]}' > "$receipt_dir/production-jobs.json"
             printf '%s\n' '{"artifacts":[]}' > "$receipt_dir/production-artifacts.json"
             printf '%s\n' '[]' > "$receipt_dir/pending-deployments.json"
+            printf '%s\n' 'production-run-not-found' > "$receipt_dir/hosting-resource-markers.txt"
           fi
 
+          cache_bust="$(date +%s%N)"
+          curl --fail --silent --show-error --location --retry 3 --retry-delay 2 \
+            "https://urai.app/release-fingerprint.json?receipt=${cache_bust}" \
+            > "$receipt_dir/custom-domain-release-fingerprint.json"
+          curl --fail --silent --show-error --location --retry 3 --retry-delay 2 \
+            "https://urai-4dc1d.web.app/release-fingerprint.json?receipt=${cache_bust}" \
+            > "$receipt_dir/firebase-site-release-fingerprint.json"
+
           DISPATCH_ID="$dispatch_id" PRODUCTION_ID="$production_id" RECEIPT_DIR="$receipt_dir" node - <<'NODE'
+          const crypto = require('node:crypto')
           const fs = require('node:fs')
           const path = require('node:path')
           const dir = process.env.RECEIPT_DIR
           const read = (name, fallback) => {
             try { return JSON.parse(fs.readFileSync(path.join(dir, name), 'utf8')) } catch { return fallback }
           }
+          const readText = (name) => {
+            try { return fs.readFileSync(path.join(dir, name), 'utf8') } catch { return '' }
+          }
+          const hash = (value) => crypto.createHash('sha256').update(value).digest('hex')
           const dispatcher = read('dispatcher-run.json', {})
           const production = read('production-run.json', {})
           const dispatcherJobs = read('dispatcher-jobs.json', { jobs: [] }).jobs || []
@@ -129,11 +159,17 @@ jobs:
           const dispatcherArtifacts = read('dispatcher-artifacts.json', { artifacts: [] }).artifacts || []
           const productionArtifacts = read('production-artifacts.json', { artifacts: [] }).artifacts || []
           const pending = read('pending-deployments.json', [])
+          const customFingerprintText = readText('custom-domain-release-fingerprint.json')
+          const firebaseFingerprintText = readText('firebase-site-release-fingerprint.json')
+          const customFingerprint = read('custom-domain-release-fingerprint.json', {})
+          const firebaseFingerprint = read('firebase-site-release-fingerprint.json', {})
+          const hostingMarkers = readText('hosting-resource-markers.txt').split(/\r?\n/).map((item) => item.trim()).filter(Boolean)
+          const expectedSha = process.env.EXPECTED_DISPATCH_SHA
           const summary = {
-            schemaVersion: 'urai-visible-focus-production-retry-inspection-1',
+            schemaVersion: 'urai-visible-focus-production-retry-inspection-2',
             inspectedAt: new Date().toISOString(),
             repository: process.env.GITHUB_REPOSITORY,
-            expectedDispatchSha: process.env.EXPECTED_DISPATCH_SHA,
+            expectedDispatchSha: expectedSha,
             inspectorHead: process.env.GITHUB_SHA,
             dispatcher: process.env.DISPATCH_ID ? {
               found: true,
@@ -160,7 +196,8 @@ jobs:
               url: production.html_url,
               createdAt: production.created_at,
               updatedAt: production.updated_at,
-              jobs: productionJobs.map(({ id, name, status, conclusion, html_url }) => ({ id, name, status, conclusion, url: html_url })),
+              runStartedAt: production.run_started_at,
+              jobs: productionJobs.map(({ id, name, status, conclusion, html_url, started_at, completed_at }) => ({ id, name, status, conclusion, url: html_url, startedAt: started_at, completedAt: completed_at })),
               artifacts: productionArtifacts.map(({ id, name, size_in_bytes, digest, expired, created_at, expires_at }) => ({ id, name, sizeInBytes: size_in_bytes, digest, expired, createdAt: created_at, expiresAt: expires_at })),
               pendingDeployments: Array.isArray(pending) ? pending.map((item) => ({
                 environmentId: item.environment?.id || null,
@@ -169,7 +206,17 @@ jobs:
                 currentUserCanApprove: Boolean(item.current_user_can_approve),
                 reviewers: item.reviewers || [],
               })) : [],
+              hostingResourceMarkers: hostingMarkers,
             } : { found: false },
+            publicFingerprintParity: {
+              customDomain: customFingerprint,
+              firebaseSite: firebaseFingerprint,
+              customDomainSha256: hash(customFingerprintText),
+              firebaseSiteSha256: hash(firebaseFingerprintText),
+              exactBytesMatch: customFingerprintText === firebaseFingerprintText,
+              customDomainContainsExpectedSha: customFingerprintText.includes(expectedSha),
+              firebaseSiteContainsExpectedSha: firebaseFingerprintText.includes(expectedSha),
+            },
           }
           fs.writeFileSync(path.join(dir, 'summary.json'), `${JSON.stringify(summary, null, 2)}\n`)
           console.log(JSON.stringify(summary, null, 2))
@@ -181,7 +228,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
-          name: visible-focus-production-retry-inspection-${{ env.EXPECTED_DISPATCH_SHA }}
+          name: visible-focus-production-retry-final-inspection-${{ env.EXPECTED_DISPATCH_SHA }}
           path: ${{ steps.inspect.outputs.receipt_dir }}
           if-no-files-found: error
           retention-days: 365
