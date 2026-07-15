@@ -1,6 +1,9 @@
 import { mkdir, writeFile } from 'node:fs/promises'
+import { createRequire } from 'node:module'
 import path from 'node:path'
-import { chromium } from 'playwright'
+
+const requireFromTierOne = createRequire(new URL('../urai-tier1/package.json', import.meta.url))
+const { chromium } = requireFromTierOne('playwright')
 
 const base = process.env.URAI_PROOF_BASE || 'http://127.0.0.1:4173'
 const outputDir = path.resolve(process.env.URAI_PROOF_DIR || 'artifacts/continuous-spatial-proof')
