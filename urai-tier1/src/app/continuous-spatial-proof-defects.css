@@ -1,0 +1,195 @@
+/* Exact replacements for defects proven by retained browser receipts. */
+
+/* The living Home canvas owns the painted world. Keep only the concise canonical
+   hero as an accessible overlay; old orb, gates and docks must not veil it. */
+body:has(.urai-home-spatial-runtime-layer) .urai-home-spatial-world-final .urai-genesis-home__threshold-gate,
+body:has(.urai-home-spatial-runtime-layer) .urai-home-spatial-world-final .urai-genesis-home__memory-orbit,
+body:has(.urai-home-spatial-runtime-layer) .urai-home-spatial-world-final .urai-genesis-home__orb,
+body:has(.urai-home-spatial-runtime-layer) .urai-home-spatial-world-final .urai-genesis-home__orb-panel,
+body:has(.urai-home-spatial-runtime-layer) .urai-home-spatial-world-final .urai-genesis-home__portals,
+body:has(.urai-home-spatial-runtime-layer) .urai-home-spatial-world-final .urai-genesis-home__bottom-dock,
+body:has(.urai-home-spatial-runtime-layer) .urai-home-spatial-world-final .urai-genesis-home__skip {
+  display: none !important;
+}
+
+/* No DOM veil, rounded mask, blur or inherited visual effect may sit between the
+   WebGL scene and the user. These resets are deliberately scoped to active Home. */
+.urai-home-spatial-runtime-layer::before,
+.urai-home-spatial-runtime-layer::after,
+.urai-home-spatial-canvas-shell::before,
+.urai-home-spatial-canvas-shell::after,
+.urai-home-spatial-canvas-shell > div::before,
+.urai-home-spatial-canvas-shell > div::after {
+  content: none !important;
+  display: none !important;
+  filter: none !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+
+.urai-home-spatial-runtime-layer,
+.urai-home-spatial-canvas-shell,
+.urai-home-spatial-canvas-shell > div,
+.urai-home-spatial-canvas-shell canvas {
+  width: 100% !important;
+  height: 100% !important;
+  min-width: 0 !important;
+  min-height: 0 !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  clip-path: none !important;
+  mask: none !important;
+  -webkit-mask: none !important;
+  filter: none !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  opacity: 1 !important;
+}
+
+.urai-home-spatial-canvas-shell canvas {
+  display: block !important;
+  image-rendering: auto !important;
+}
+
+.urai-home-spatial-runtime-portals {
+  z-index: 32 !important;
+}
+
+/* Ground rail links are real pill controls. Use a named structural rule rather
+   than depending on a utility class surviving the static build. */
+.ground-rail a {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  white-space: nowrap !important;
+}
+
+/* The prior Life Map build exposed R3F's default 150px canvas. The true spatial
+   owner and its Canvas wrapper must fill the viewport so the provider image can
+   never masquerade as the interactive galaxy. */
+html:has([data-testid="urai-true-3d-life-map"]),
+html:has([data-testid="urai-true-3d-life-map"]) body,
+body:has([data-testid="urai-true-3d-life-map"]) {
+  width: 100% !important;
+  height: 100% !important;
+  min-height: 100% !important;
+  overflow: hidden !important;
+  background: #01030a !important;
+}
+
+[data-testid="urai-true-3d-life-map"] {
+  position: fixed !important;
+  inset: 0 !important;
+  width: 100vw !important;
+  height: 100vh !important;
+  height: 100svh !important;
+  min-height: 100vh !important;
+  min-height: 100svh !important;
+  overflow: hidden !important;
+  isolation: isolate;
+  background: #01030a !important;
+}
+
+[data-testid="urai-true-3d-life-map"] > div:has(> canvas) {
+  position: absolute !important;
+  inset: 0 !important;
+  width: 100% !important;
+  height: 100% !important;
+  min-height: 100% !important;
+  overflow: hidden !important;
+}
+
+[data-testid="urai-true-3d-life-map"] > div:has(> canvas) > canvas {
+  display: block !important;
+  width: 100% !important;
+  height: 100% !important;
+  min-height: 100% !important;
+}
+
+.urai-lifemap-deep-link-controls {
+  position: absolute;
+  right: 20px;
+  top: 118px;
+  z-index: 80;
+  width: min(320px, calc(100vw - 40px));
+  box-sizing: border-box;
+  display: grid;
+  gap: 8px;
+  padding: 16px;
+  border: 1px solid rgba(177, 244, 255, 0.24);
+  border-radius: 22px;
+  color: #effdff;
+  background: linear-gradient(145deg, rgba(3, 12, 29, 0.88), rgba(18, 8, 39, 0.78));
+  box-shadow: 0 24px 80px rgba(0, 0, 0, 0.52), 0 0 48px rgba(87, 224, 255, 0.12);
+  backdrop-filter: blur(20px);
+}
+
+.urai-lifemap-deep-link-controls__eyebrow {
+  margin: 0;
+  font-size: 10px;
+  font-weight: 900;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: rgba(173, 244, 255, 0.82);
+}
+
+.urai-lifemap-deep-link-controls__title {
+  font-size: clamp(20px, 2.6vw, 30px);
+  line-height: 1;
+  letter-spacing: -0.04em;
+}
+
+.urai-lifemap-deep-link-controls__detail {
+  font-size: 12px;
+  line-height: 1.5;
+  color: rgba(231, 250, 255, 0.72);
+}
+
+.urai-lifemap-deep-link-controls__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 4px;
+}
+
+.urai-lifemap-deep-link-controls__actions button {
+  min-height: 38px;
+  padding: 9px 14px;
+  border: 1px solid rgba(204, 249, 255, 0.28);
+  border-radius: 999px;
+  color: #f4fdff;
+  background: rgba(255, 255, 255, 0.07);
+  font: inherit;
+  font-size: 11px;
+  font-weight: 900;
+  cursor: pointer;
+}
+
+.urai-lifemap-deep-link-controls__actions button:first-child {
+  color: #07111f;
+  border-color: rgba(210, 252, 255, 0.86);
+  background: #c9f8ff;
+}
+
+.urai-lifemap-deep-link-controls__actions button:focus-visible {
+  outline: 3px solid #f6f3ff;
+  outline-offset: 3px;
+}
+
+@media (max-width: 760px) {
+  body:has(.urai-home-spatial-runtime-layer) .urai-home-spatial-world-final .urai-genesis-home__hero {
+    max-width: calc(100vw - 28px) !important;
+  }
+
+  [data-testid="urai-true-3d-life-map"] {
+    height: 100dvh !important;
+    min-height: 100dvh !important;
+  }
+
+  .urai-lifemap-deep-link-controls {
+    top: 230px;
+    right: 14px;
+    width: min(330px, calc(100vw - 28px));
+    padding: 14px;
+  }
+}

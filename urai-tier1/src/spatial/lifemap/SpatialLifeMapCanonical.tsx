@@ -3,6 +3,7 @@
 import dynamic from 'next/dynamic'
 import { Suspense } from 'react'
 import { assetCssStack, lifeMapAssets } from '@/spatial/assets/uraiAssets'
+import LifeMapDeepLinkControls from './LifeMapDeepLinkControls'
 
 function LifeMapLoading({ label = 'Opening Life Map…' }: { label?: string }) {
   return (
@@ -39,6 +40,7 @@ export default function SpatialLifeMapCanonical() {
     >
       <Suspense fallback={<LifeMapLoading label="Restoring Life Map…" />}>
         <LifeMapRouteBoundary />
+        <LifeMapDeepLinkControls />
       </Suspense>
       <div
         aria-hidden="true"

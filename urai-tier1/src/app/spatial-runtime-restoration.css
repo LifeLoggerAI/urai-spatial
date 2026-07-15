@@ -1,0 +1,312 @@
+/* Restore the living spatial runtime without replacing accessible route owners. */
+html:has(.urai-home-spatial-runtime-layer),
+html:has(.urai-home-spatial-runtime-layer) body,
+body:has(.urai-home-spatial-runtime-layer) {
+  width: 100%;
+  height: 100%;
+  overflow: hidden !important;
+  background: #07111c !important;
+}
+
+body:has(.urai-home-spatial-runtime-layer) .urai-cinematic-backdrop,
+body:has(.urai-home-spatial-runtime-layer) .urai-final-asset-spine-scene-layer,
+body:has(.ground-spatial-root) .urai-cinematic-backdrop,
+body:has(.ground-spatial-root) .urai-final-asset-spine-scene-layer,
+body:has([data-testid="urai-r3f-canonical-lifemap"]) .urai-cinematic-backdrop,
+body:has([data-testid="urai-r3f-canonical-lifemap"]) .urai-final-asset-spine-scene-layer {
+  display: none !important;
+}
+
+.urai-home-spatial-runtime-layer {
+  position: fixed;
+  inset: 0;
+  z-index: 10;
+  overflow: hidden;
+  isolation: isolate;
+  background:
+    radial-gradient(circle at 50% 38%, rgba(116, 225, 234, .14), transparent 28rem),
+    linear-gradient(180deg, #0c1825 0%, #07111c 54%, #111b17 100%);
+}
+
+.urai-home-spatial-canvas-shell,
+.urai-home-spatial-canvas-loading,
+.urai-home-spatial-canvas {
+  position: absolute !important;
+  inset: 0;
+  width: 100% !important;
+  height: 100% !important;
+}
+
+.urai-home-spatial-canvas-shell {
+  touch-action: none;
+  user-select: none;
+}
+
+.urai-home-spatial-canvas-loading {
+  background:
+    radial-gradient(circle at 50% 45%, rgba(103, 232, 249, .16), transparent 18rem),
+    linear-gradient(180deg, #0b1724, #07111c 58%, #14231b);
+}
+
+.urai-home-spatial-canvas-hint {
+  position: absolute;
+  left: 50%;
+  bottom: 22px;
+  z-index: 5;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  transform: translateX(-50%);
+  padding: 8px 12px;
+  border: 1px solid rgba(220, 250, 255, .14);
+  border-radius: 999px;
+  color: rgba(239, 249, 250, .68);
+  background: rgba(3, 9, 15, .34);
+  backdrop-filter: blur(14px);
+  font: 700 .68rem/1.2 Inter, ui-sans-serif, system-ui, sans-serif;
+  letter-spacing: .03em;
+  pointer-events: none;
+}
+
+.urai-home-spatial-canvas-hint span {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #8ce7ee;
+  box-shadow: 0 0 14px rgba(140, 231, 238, .85);
+}
+
+.urai-home-spatial-portal-label {
+  display: grid;
+  gap: 2px;
+  min-width: 112px;
+  padding: 8px 11px;
+  border: 1px solid rgba(229, 246, 247, .16);
+  border-radius: 999px;
+  color: rgba(248, 252, 252, .92);
+  background: rgba(3, 9, 14, .56);
+  box-shadow: 0 12px 38px rgba(0, 0, 0, .24);
+  backdrop-filter: blur(10px);
+  font-family: Inter, ui-sans-serif, system-ui, sans-serif;
+  text-align: center;
+  cursor: pointer;
+  transition: transform .18s ease, background .18s ease, border-color .18s ease;
+}
+
+.urai-home-spatial-portal-label strong {
+  font-size: .78rem;
+  letter-spacing: .02em;
+}
+
+.urai-home-spatial-portal-label span {
+  color: rgba(230, 242, 242, .58);
+  font-size: .55rem;
+  font-weight: 750;
+  letter-spacing: .05em;
+  text-transform: uppercase;
+}
+
+.urai-home-spatial-portal-label[data-active="true"],
+.urai-home-spatial-portal-label:hover,
+.urai-home-spatial-portal-label:focus-visible {
+  transform: translateY(-2px) scale(1.04);
+  border-color: rgba(188, 245, 248, .46);
+  background: rgba(5, 18, 25, .82);
+  outline: none;
+}
+
+.urai-home-spatial-runtime-orb {
+  position: absolute;
+  right: clamp(18px, 4vw, 58px);
+  top: clamp(90px, 15vh, 150px);
+  z-index: 8;
+  display: grid;
+  gap: 10px;
+  width: min(330px, calc(100vw - 32px));
+  padding: 18px;
+  border: 1px solid rgba(167, 236, 242, .2);
+  border-radius: 22px;
+  color: #f5fbfb;
+  background: rgba(3, 11, 17, .78);
+  box-shadow: 0 28px 80px rgba(0, 0, 0, .42), 0 0 56px rgba(103, 232, 249, .08);
+  backdrop-filter: blur(22px);
+  opacity: 0;
+  transform: translateY(-8px) scale(.98);
+  pointer-events: none;
+  transition: opacity .2s ease, transform .2s ease;
+}
+
+.urai-home-spatial-runtime-orb[data-open="true"] {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+  pointer-events: auto;
+}
+
+.urai-home-spatial-runtime-orb > button {
+  position: absolute;
+  right: 10px;
+  top: 8px;
+  border: 0;
+  color: rgba(255, 255, 255, .7);
+  background: transparent;
+  font-size: 1.4rem;
+  cursor: pointer;
+}
+
+.urai-home-spatial-runtime-orb p {
+  margin: 0;
+  color: #8ce7ee;
+  font-size: .65rem;
+  font-weight: 900;
+  letter-spacing: .14em;
+  text-transform: uppercase;
+}
+
+.urai-home-spatial-runtime-orb strong {
+  padding-right: 18px;
+  font-size: .92rem;
+  line-height: 1.45;
+}
+
+.urai-home-spatial-runtime-orb nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+}
+
+.urai-home-spatial-runtime-orb a {
+  padding: 7px 10px;
+  border: 1px solid rgba(255, 255, 255, .14);
+  border-radius: 999px;
+  color: #effafa;
+  text-decoration: none;
+  font-size: .68rem;
+  font-weight: 850;
+}
+
+/* Keep the canonical Home DOM as an accessible overlay, not a second painted scene. */
+body:has(.urai-home-spatial-runtime-layer) .urai-home-spatial-world-final {
+  position: relative !important;
+  z-index: 20 !important;
+  min-height: 100svh !important;
+  background: transparent !important;
+  pointer-events: none;
+}
+
+body:has(.urai-home-spatial-runtime-layer) .urai-home-spatial-world-final::before,
+body:has(.urai-home-spatial-runtime-layer) .urai-home-spatial-world-final .urai-genesis-home__world {
+  display: none !important;
+}
+
+body:has(.urai-home-spatial-runtime-layer) .urai-home-spatial-world-final .urai-genesis-home__skip,
+body:has(.urai-home-spatial-runtime-layer) .urai-home-spatial-world-final .urai-genesis-home__threshold-gate,
+body:has(.urai-home-spatial-runtime-layer) .urai-home-spatial-world-final .urai-genesis-home__hero,
+body:has(.urai-home-spatial-runtime-layer) .urai-home-spatial-world-final .urai-genesis-home__memory-orbit,
+body:has(.urai-home-spatial-runtime-layer) .urai-home-spatial-world-final .urai-genesis-home__orb,
+body:has(.urai-home-spatial-runtime-layer) .urai-home-spatial-world-final .urai-genesis-home__orb-panel,
+body:has(.urai-home-spatial-runtime-layer) .urai-home-spatial-world-final .urai-genesis-home__portals,
+body:has(.urai-home-spatial-runtime-layer) .urai-home-spatial-world-final .urai-genesis-home__bottom-dock {
+  pointer-events: auto;
+}
+
+body:has(.urai-home-spatial-runtime-layer) .urai-home-spatial-world-final .urai-genesis-home__hero {
+  position: absolute !important;
+  left: clamp(18px, 4vw, 58px) !important;
+  top: clamp(18px, 4vh, 40px) !important;
+  z-index: 24 !important;
+  display: grid !important;
+  gap: 6px !important;
+  width: min(390px, calc(100vw - 36px)) !important;
+  padding: 0 !important;
+  border: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  backdrop-filter: none !important;
+}
+
+body:has(.urai-home-spatial-runtime-layer) .urai-home-spatial-world-final .urai-genesis-home__hero h1 {
+  max-width: 360px !important;
+  margin: 0 !important;
+  color: rgba(248, 252, 252, .96) !important;
+  font-size: clamp(1.55rem, 3.4vw, 3rem) !important;
+  line-height: .92 !important;
+  letter-spacing: -.055em !important;
+  text-shadow: 0 10px 34px rgba(0, 0, 0, .42) !important;
+}
+
+body:has(.urai-home-spatial-runtime-layer) .urai-home-spatial-world-final .urai-genesis-home__hero h1 span {
+  display: block !important;
+  color: rgba(219, 238, 238, .66) !important;
+  font-size: .62em !important;
+  line-height: 1.12 !important;
+}
+
+body:has(.urai-home-spatial-runtime-layer) .urai-home-spatial-world-final .urai-genesis-home__actions {
+  display: none !important;
+}
+
+/* Ground and Life Map already own current R3F canvases. Remove the flat provider-image veil. */
+.ground-provider-art {
+  display: none !important;
+}
+
+.ground-spatial-root canvas {
+  filter: brightness(1.28) saturate(1.16) contrast(1.04);
+}
+
+[data-testid="urai-r3f-canonical-lifemap"] > div[aria-hidden="true"] {
+  opacity: .012 !important;
+}
+
+[data-testid="urai-true-3d-life-map"] canvas {
+  filter: brightness(1.12) saturate(1.18) contrast(1.04);
+}
+
+@media (max-width: 760px) {
+  .urai-home-spatial-canvas-hint {
+    bottom: 14px;
+    max-width: calc(100vw - 28px);
+    white-space: nowrap;
+    font-size: .58rem;
+  }
+
+  .urai-home-spatial-portal-label {
+    min-width: 88px;
+    padding: 6px 8px;
+  }
+
+  .urai-home-spatial-portal-label span {
+    display: none;
+  }
+
+  body:has(.urai-home-spatial-runtime-layer) .urai-home-spatial-world-final .urai-genesis-home__hero {
+    left: 14px !important;
+    top: 14px !important;
+    width: min(270px, calc(100vw - 84px)) !important;
+  }
+
+  body:has(.urai-home-spatial-runtime-layer) .urai-home-spatial-world-final .urai-genesis-home__hero h1 {
+    font-size: clamp(1.25rem, 7vw, 1.8rem) !important;
+  }
+
+  body:has(.urai-home-spatial-runtime-layer) .urai-home-spatial-world-final .urai-genesis-home__copy,
+  body:has(.urai-home-spatial-runtime-layer) .urai-home-spatial-world-final .urai-genesis-home__memory-orbit,
+  body:has(.urai-home-spatial-runtime-layer) .urai-home-spatial-world-final .urai-genesis-home__bottom-dock {
+    display: none !important;
+  }
+
+  .urai-home-spatial-runtime-orb {
+    left: 16px;
+    right: 16px;
+    top: auto;
+    bottom: 76px;
+    width: auto;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .urai-home-spatial-portal-label,
+  .urai-home-spatial-runtime-orb {
+    transition: none !important;
+  }
+}
