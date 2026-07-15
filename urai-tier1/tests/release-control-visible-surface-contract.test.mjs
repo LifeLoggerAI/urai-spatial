@@ -4,10 +4,12 @@ import test from 'node:test'
 
 const source = readFileSync(new URL('../../scripts/urai-release-control-smoke.mjs', import.meta.url), 'utf8')
 
-test('strict release smoke targets a visible hydrated route instance', () => {
+test('strict release smoke targets an exact visible hydrated route instance', () => {
   assert.match(source, /const visibleSelector = `\$\{check\.selector\}:visible`/)
-  assert.match(source, /page\.locator\(visibleSelector\)/)
-  assert.match(source, /surface\.waitFor\(\{ state: 'visible', timeout: 20000 \}\)/)
+  assert.match(source, /await page\.waitForFunction\(/)
+  assert.match(source, /const visible = style\.display !== 'none'/)
+  assert.match(source, /const surface = page\.locator\(visibleSelector\)\.first\(\)/)
+  assert.doesNotMatch(source, /surface\.waitFor\(\{ state: 'visible'/)
   assert.doesNotMatch(source, /const surface = page\.locator\(check\.selector\)/)
 })
 

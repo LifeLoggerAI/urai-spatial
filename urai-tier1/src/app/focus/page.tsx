@@ -1,4 +1,3 @@
-import { Suspense } from 'react'
 import FinalFocusChamber from './FocusChamberClient'
 
 export const metadata = {
@@ -6,14 +5,6 @@ export const metadata = {
   description: 'Open the guardian-approved Final Focus Chamber.',
 }
 
-function FocusLoadingFallback() {
-  return <main aria-label="Focus loading" style={{ minHeight: '100svh', background: '#030713' }} />
-}
-
 export default function FocusRoutePage() {
-  return (
-    <Suspense fallback={<FocusLoadingFallback />}>
-      <FinalFocusChamber />
-    </Suspense>
-  )
+  return <FinalFocusChamber />
 }

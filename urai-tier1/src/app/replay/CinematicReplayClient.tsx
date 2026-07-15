@@ -1,7 +1,6 @@
 'use client'
 
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { useSearchParams } from 'next/navigation'
 import { buildMemoryMorphology } from '@/spatial/memory/memoryMorphology'
 import { useReducedMotion } from '@/spatial/hooks/useReducedMotion'
 import { ReplayMetaPanel } from '@/spatial/replay/ReplayMetaPanel'
@@ -44,16 +43,25 @@ function focusReturnUrl(memoryId: string, manifestId: string, node: string) {
 }
 
 export default function CinematicReplayClient() {
-  const params = useSearchParams()
   const reducedMotion = useReducedMotion()
   const [playing, setPlaying] = useState(true)
   const [scrubbing, setScrubbing] = useState(false)
   const [progressMs, setProgressMs] = useState(0)
-
-  const memoryId = safeToken(params.get('memoryId'), DEFAULT_MEMORY_ID)
-  const manifestId = safeToken(params.get('manifestId'), DEFAULT_REPLAY_MANIFEST_ID)
-  const node = safeToken(params.get('node'), memoryId)
+  const [identity, setIdentity] = useState(() => ({
+    memoryId: DEFAULT_MEMORY_ID,
+    manifestId: DEFAULT_REPLAY_MANIFEST_ID,
+    node: DEFAULT_MEMORY_ID,
+  }))
+  const { memoryId, manifestId, node } = identity
   const nodeName = nodeNameFromParams(node)
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search)
+    const nextMemoryId = safeToken(params.get('memoryId'), DEFAULT_MEMORY_ID)
+    const nextManifestId = safeToken(params.get('manifestId'), DEFAULT_REPLAY_MANIFEST_ID)
+    const nextNode = safeToken(params.get('node'), nextMemoryId)
+    setIdentity({ memoryId: nextMemoryId, manifestId: nextManifestId, node: nextNode })
+  }, [])
   const morphology = useMemo(() => buildMemoryMorphology(null, 'mirror'), [])
   const activeSegment = getReplaySegmentAt(progressMs)
   const replayPhase = resolveReplayPhase({

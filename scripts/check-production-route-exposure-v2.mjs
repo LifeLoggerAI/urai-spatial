@@ -46,8 +46,8 @@ const focusImport = focusRouteSource.match(/import\s+([A-Za-z_$][\w$]*)\s+from\s
 if (!focusImport) {
   failures.push(`${focusRoutePath} must default-import ./FocusChamberClient`)
 } else {
-  if (!focusRouteSource.includes('<Suspense')) failures.push(`${focusRoutePath} is missing: <Suspense`)
-  if (!focusRouteSource.includes(`<${focusImport[1]} />`)) failures.push(`${focusRoutePath} must render the imported FocusChamberClient component`)
+  if (focusRouteSource.includes('<Suspense') || focusRouteSource.includes('Focus loading')) failures.push(`${focusRoutePath} must not restore a static Suspense loading shell`)
+  if (!focusRouteSource.includes(`return <${focusImport[1]} />`)) failures.push(`${focusRoutePath} must directly render the imported FocusChamberClient component`)
 }
 
 requireTokens('urai-tier1/src/app/focus/FocusChamberClient.tsx', ['data-testid="urai-final-focus-chamber"', 'data-route-polish="selected-memory-camera-chamber"', 'Selected memory chamber.', "next.set('memoryId', memoryId)", "next.set('manifestId', manifestId)", "next.set('node', node)"])

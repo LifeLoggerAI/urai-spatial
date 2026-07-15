@@ -1,4 +1,3 @@
-import { Suspense } from 'react'
 import CinematicReplayClient from './CinematicReplayClient'
 
 const FinalReplayFilm = CinematicReplayClient
@@ -27,12 +26,6 @@ const proofSurfaceStyle = {
   userSelect: 'none',
   zIndex: -1,
 } as const
-
-function ReplayLoadingFallback() {
-  return (
-    <main aria-label="Replay loading" style={{ minHeight: '100svh', background: '#030713' }} />
-  )
-}
 
 function ReplayRouteProofSurface() {
   return (
@@ -68,9 +61,7 @@ export default function ReplayRoutePage() {
         Replay the thread. Film beats. Cinematic memory camera film.
       </span>
       <ReplayRouteProofSurface />
-      <Suspense fallback={<ReplayLoadingFallback />}>
-        <FinalReplayFilm />
-      </Suspense>
+      <FinalReplayFilm />
     </>
   )
 }
