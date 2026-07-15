@@ -36,6 +36,8 @@ const TREES: readonly [number, number, number, number][] = [
   [-10.5, 0, -2.2, 1], [-9.8, 0, 5, 0.9], [9.8, 0, 5.2, 1],
 ]
 
+let cachedWebGLAvailable: boolean | null = null
+
 function useReducedMotion() {
   const [reducedMotion, setReducedMotion] = useState(false)
 
@@ -57,13 +59,18 @@ function useReducedMotion() {
 }
 
 export function useWebGLAvailable() {
-  const [available, setAvailable] = useState<boolean | null>(null)
+  const [available, setAvailable] = useState<boolean | null>(cachedWebGLAvailable)
 
   useEffect(() => {
+    if (cachedWebGLAvailable !== null) return
+
     try {
       const canvas = document.createElement('canvas')
-      setAvailable(Boolean(canvas.getContext('webgl2') ?? canvas.getContext('webgl')))
+      const isAvailable = Boolean(canvas.getContext('webgl2') ?? canvas.getContext('webgl'))
+      cachedWebGLAvailable = isAvailable
+      setAvailable(isAvailable)
     } catch {
+      cachedWebGLAvailable = false
       setAvailable(false)
     }
   }, [])
@@ -140,7 +147,7 @@ function LivingGround() {
         const length = Math.max(2.8, Math.hypot(portal.position[0], portal.position[2] + 1.5) - 2.2)
         const angle = Math.atan2(portal.position[0], portal.position[2] + 1.5)
         return (
-          <mesh key={`path-${portal.id}`} position={[x, 0.015, z]} rotation={[0, -angle, 0]} receiveShadow>
+          <mesh key={`path-${portal.id}`} position={[x, 0.015, z]} rotation={[0, angle, 0]} receiveShadow>
             <boxGeometry args={[0.92, 0.045, length]} />
             <meshStandardMaterial color="#9f9b88" roughness={0.88} metalness={0.06} />
           </mesh>
