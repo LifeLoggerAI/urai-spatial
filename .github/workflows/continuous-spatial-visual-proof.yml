@@ -24,7 +24,9 @@ permissions:
   contents: read
 
 concurrency:
-  group: continuous-spatial-visual-proof-${{ github.event.pull_request.number || github.ref }}-${{ github.event.pull_request.head.sha || inputs.verification_sha || github.sha }}
+  # One visual-proof lane per PR. A new exact head cancels stale queued/running
+  # evidence, while the job still checks out and verifies the immutable head SHA.
+  group: continuous-spatial-visual-proof-${{ github.event.pull_request.number || inputs.verification_sha || github.ref }}
   cancel-in-progress: true
 
 env:
