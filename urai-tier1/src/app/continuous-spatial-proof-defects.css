@@ -1,0 +1,93 @@
+/* Exact replacements for defects proven by the schema-6 browser receipt. */
+
+/* The living Home canvas owns the painted world. Keep only the concise canonical
+   hero as an accessible overlay; old orb, gates and docks must not veil it. */
+body:has(.urai-home-spatial-runtime-layer) .urai-home-spatial-world-final .urai-genesis-home__threshold-gate,
+body:has(.urai-home-spatial-runtime-layer) .urai-home-spatial-world-final .urai-genesis-home__memory-orbit,
+body:has(.urai-home-spatial-runtime-layer) .urai-home-spatial-world-final .urai-genesis-home__orb,
+body:has(.urai-home-spatial-runtime-layer) .urai-home-spatial-world-final .urai-genesis-home__orb-panel,
+body:has(.urai-home-spatial-runtime-layer) .urai-home-spatial-world-final .urai-genesis-home__portals,
+body:has(.urai-home-spatial-runtime-layer) .urai-home-spatial-world-final .urai-genesis-home__bottom-dock,
+body:has(.urai-home-spatial-runtime-layer) .urai-home-spatial-world-final .urai-genesis-home__skip {
+  display: none !important;
+}
+
+.urai-home-spatial-runtime-layer,
+.urai-home-spatial-canvas-shell,
+.urai-home-spatial-canvas-shell > div,
+.urai-home-spatial-canvas-shell canvas {
+  width: 100% !important;
+  height: 100% !important;
+  min-width: 0 !important;
+  min-height: 0 !important;
+}
+
+.urai-home-spatial-canvas-shell canvas {
+  display: block !important;
+}
+
+.urai-home-spatial-runtime-portals {
+  z-index: 32 !important;
+}
+
+/* Ground rail links are real pill controls. Use a named structural rule rather
+   than depending on a utility class surviving the static build. */
+.ground-rail a {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  white-space: nowrap !important;
+}
+
+/* The prior Life Map build exposed R3F's default 150px canvas. The true spatial
+   owner and its Canvas wrapper must fill the viewport so the provider image can
+   never masquerade as the interactive galaxy. */
+html:has([data-testid="urai-true-3d-life-map"]),
+html:has([data-testid="urai-true-3d-life-map"]) body,
+body:has([data-testid="urai-true-3d-life-map"]) {
+  width: 100% !important;
+  height: 100% !important;
+  min-height: 100% !important;
+  overflow: hidden !important;
+  background: #01030a !important;
+}
+
+[data-testid="urai-true-3d-life-map"] {
+  position: fixed !important;
+  inset: 0 !important;
+  width: 100vw !important;
+  height: 100vh !important;
+  height: 100svh !important;
+  min-height: 100vh !important;
+  min-height: 100svh !important;
+  overflow: hidden !important;
+  isolation: isolate;
+  background: #01030a !important;
+}
+
+[data-testid="urai-true-3d-life-map"] > div:has(> canvas) {
+  position: absolute !important;
+  inset: 0 !important;
+  width: 100% !important;
+  height: 100% !important;
+  min-height: 100% !important;
+  overflow: hidden !important;
+}
+
+[data-testid="urai-true-3d-life-map"] > div:has(> canvas) > canvas {
+  display: block !important;
+  width: 100% !important;
+  height: 100% !important;
+  min-height: 100% !important;
+}
+
+@media (max-width: 760px) {
+  body:has(.urai-home-spatial-runtime-layer) .urai-home-spatial-world-final .urai-genesis-home__hero {
+    max-width: calc(100vw - 28px) !important;
+  }
+
+  [data-testid="urai-true-3d-life-map"] {
+    height: 100dvh !important;
+    min-height: 100dvh !important;
+  }
+}

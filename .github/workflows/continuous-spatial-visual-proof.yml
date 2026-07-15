@@ -1,0 +1,136 @@
+name: Continuous Spatial Visual Proof
+
+on:
+  workflow_dispatch:
+    inputs:
+      verification_sha:
+        description: Exact 40-character commit SHA to verify
+        required: true
+        type: string
+  pull_request:
+    branches: [main]
+    paths:
+      - '.github/workflows/continuous-spatial-visual-proof.yml'
+      - 'scripts/capture-continuous-spatial-proof.mjs'
+      - 'urai-tier1/src/app/HomeSpatialCanvas.tsx'
+      - 'urai-tier1/src/app/HomeSpatialRuntimeLayer.tsx'
+      - 'urai-tier1/src/app/spatial-runtime-restoration.css'
+      - 'urai-tier1/src/app/template.tsx'
+      - 'urai-tier1/src/app/GroundSpatialWorldClean.tsx'
+      - 'urai-tier1/src/components/lifemap/**'
+      - 'urai-tier1/src/spatial/lifemap/**'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: continuous-spatial-visual-proof-${{ github.event.pull_request.number || github.ref }}-${{ github.event.pull_request.head.sha || inputs.verification_sha || github.sha }}
+  cancel-in-progress: true
+
+env:
+  URAI_EXACT_HEAD: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.event_name == 'workflow_dispatch' && inputs.verification_sha || github.sha }}
+  PLAYWRIGHT_BROWSERS_PATH: '0'
+
+jobs:
+  browser-proof:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+    steps:
+      - name: Checkout exact candidate
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          ref: ${{ env.URAI_EXACT_HEAD }}
+          fetch-depth: 1
+          persist-credentials: false
+          show-progress: false
+
+      - name: Prove exact clean candidate
+        shell: bash
+        run: |
+          set -euo pipefail
+          [[ "$URAI_EXACT_HEAD" =~ ^[0-9a-f]{40}$ ]]
+          test "$(git rev-parse HEAD)" = "$URAI_EXACT_HEAD"
+          test -z "$(git status --porcelain --untracked-files=all)"
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1 # v4.0.0
+        with:
+          version: 10.0.0
+          run_install: false
+
+      - name: Setup Node
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: pnpm-lock.yaml
+
+      - name: Install exact lockfile
+        run: |
+          corepack enable
+          pnpm install --frozen-lockfile
+
+      - name: Build exact static release candidate before browser installation
+        run: pnpm build:static
+
+      - name: Install and prove exact Tier-1 Chromium
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p artifacts/continuous-spatial-proof
+          set +e
+          set -o pipefail
+          pnpm --dir urai-tier1 exec playwright install --with-deps chromium \
+            2>&1 | tee artifacts/continuous-spatial-proof/playwright-install.log
+          install_status=${PIPESTATUS[0]}
+          printf '%s\n' "$install_status" > artifacts/continuous-spatial-proof/playwright-install-exit-code.txt
+          set -e
+          test "$install_status" -eq 0
+
+          pnpm --dir urai-tier1 exec playwright --version \
+            | tee artifacts/continuous-spatial-proof/playwright-version.txt
+          browser_path="$(node --input-type=module - <<'NODE'
+          import { createRequire } from 'node:module'
+          const requireFromTierOne = createRequire(new URL('./urai-tier1/package.json', import.meta.url))
+          const { chromium } = requireFromTierOne('playwright')
+          process.stdout.write(chromium.executablePath())
+          NODE
+          )"
+          test -n "$browser_path"
+          test -x "$browser_path"
+          printf '%s\n' "$browser_path" > artifacts/continuous-spatial-proof/playwright-executable-path.txt
+
+      - name: Capture desktop mobile and fallback spatial proof
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p artifacts/continuous-spatial-proof
+          python3 -m http.server 4173 --bind 127.0.0.1 --directory urai-tier1/out \
+            > artifacts/continuous-spatial-proof/http-server.log 2>&1 &
+          server_pid=$!
+          trap 'kill "$server_pid" 2>/dev/null || true' EXIT
+          for attempt in $(seq 1 60); do
+            if curl --fail --silent --show-error http://127.0.0.1:4173/home/ >/dev/null; then
+              break
+            fi
+            sleep 1
+          done
+          curl --fail --silent --show-error http://127.0.0.1:4173/home/ >/dev/null
+          set +e
+          URAI_PROOF_BASE=http://127.0.0.1:4173 \
+          URAI_PROOF_DIR=artifacts/continuous-spatial-proof \
+          URAI_EXACT_HEAD="$URAI_EXACT_HEAD" \
+            node scripts/capture-continuous-spatial-proof.mjs \
+            2>&1 | tee artifacts/continuous-spatial-proof/capture.log
+          capture_status=${PIPESTATUS[0]}
+          set -e
+          exit "$capture_status"
+
+      - name: Upload exact-head visual receipt
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: continuous-spatial-visual-proof-${{ env.URAI_EXACT_HEAD }}
+          path: artifacts/continuous-spatial-proof
+          if-no-files-found: error
+          retention-days: 365
