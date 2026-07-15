@@ -181,6 +181,24 @@ body:has([data-testid="urai-true-3d-life-map"]) {
     max-width: calc(100vw - 28px) !important;
   }
 
+  /* The phone viewport is tall and narrow. Give the WebGL owner a wider render
+     aspect while the fixed runtime clips it to the device, so the actual Home
+     gateways—not only their labels—and all Ground chambers remain visible. */
+  .urai-home-spatial-canvas-shell {
+    left: -20vw !important;
+    width: 140vw !important;
+    max-width: none !important;
+  }
+
+  .ground-spatial-root > div:has(> canvas) {
+    position: absolute !important;
+    inset-block: 0 !important;
+    left: -18vw !important;
+    width: 136vw !important;
+    height: 100% !important;
+    max-width: none !important;
+  }
+
   [data-testid="urai-true-3d-life-map"] {
     height: 100dvh !important;
     min-height: 100dvh !important;
