@@ -1,4 +1,4 @@
-name: Inspect production failure log tail
+name: Inspect static hydration repair log tail
 
 on:
   pull_request:
@@ -15,15 +15,15 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 10
     steps:
-      - name: Download exact failed production job log
+      - name: Download exact failed hydration repair job log
         id: logs
         shell: bash
         env:
           GH_TOKEN: ${{ github.token }}
-          JOB_ID: '87267108764'
+          JOB_ID: '87315633717'
         run: |
           set -euo pipefail
-          out="$RUNNER_TEMP/production-failure-log-tail"
+          out="$RUNNER_TEMP/static-hydration-repair-log-tail"
           mkdir -p "$out"
           curl --fail --location --silent --show-error \
             --header 'Accept: application/vnd.github+json' \
@@ -34,10 +34,10 @@ jobs:
           tail -n 300 "$out/full.log" > "$out/tail.log"
           cat "$out/tail.log"
           echo "out=$out" >> "$GITHUB_OUTPUT"
-      - name: Upload production failure log tail
+      - name: Upload hydration repair log tail
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
-          name: production-failure-log-tail-87267108764
+          name: static-hydration-repair-log-tail-87315633717
           path: ${{ steps.logs.outputs.out }}
           if-no-files-found: error
           retention-days: 30
