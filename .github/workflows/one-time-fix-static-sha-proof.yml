@@ -94,7 +94,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          changed="$(git diff --name-only | sort)"
+          changed="$({ git diff --name-only; git diff --cached --name-only; } | sort -u)"
           expected="$(printf '%s\n' '.github/workflows/one-time-fix-static-sha-proof.yml' '.github/workflows/spatial-live-deploy.yml' 'urai-tier1/tests/exact-static-release-contract.test.mjs' | sort)"
           test "$changed" = "$expected"
           git config user.name 'LifeLoggerAI'
