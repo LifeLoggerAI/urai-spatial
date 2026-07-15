@@ -35,11 +35,6 @@ async function canvasEvidence(page, selector) {
   })
 }
 
-function hasPaintedBackground(style) {
-  return style.backgroundColor !== 'rgba(0, 0, 0, 0)'
-    || (style.backgroundImage && style.backgroundImage !== 'none')
-}
-
 const routes = [
   {
     id: 'home',
@@ -84,10 +79,12 @@ const routes = [
       }))
       const portalShortcutsStyled = portalShortcutCount === 5 && await portalShortcuts.first().evaluate((node) => {
         const style = getComputedStyle(node)
+        const hasPaintedBackground = style.backgroundColor !== 'rgba(0, 0, 0, 0)'
+          || (style.backgroundImage && style.backgroundImage !== 'none')
         return style.display === 'inline-flex'
           && Number.parseFloat(style.borderTopWidth || '0') >= 1
           && Number.parseFloat(style.paddingLeft || '0') >= 10
-          && hasPaintedBackground(style)
+          && hasPaintedBackground
       })
       const canvas = await canvasEvidence(page, '[data-home-spatial-renderer="webgl"] canvas')
       return {
@@ -114,11 +111,13 @@ const routes = [
       const railLinks = rail.locator('a')
       const navigationPillsStyled = await railLinks.count() === 5 && await railLinks.first().evaluate((node) => {
         const style = getComputedStyle(node)
+        const hasPaintedBackground = style.backgroundColor !== 'rgba(0, 0, 0, 0)'
+          || (style.backgroundImage && style.backgroundImage !== 'none')
         return style.display === 'inline-flex'
           && style.whiteSpace === 'nowrap'
           && Number.parseFloat(style.borderTopWidth || '0') >= 1
           && Number.parseFloat(style.paddingLeft || '0') >= 8
-          && hasPaintedBackground(style)
+          && hasPaintedBackground
       })
       const navigationRailContained = await rail.evaluate((node) => {
         const rect = node.getBoundingClientRect()
