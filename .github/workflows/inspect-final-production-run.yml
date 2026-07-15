@@ -1,0 +1,66 @@
+name: Inspect final production run
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - '.github/workflows/inspect-final-production-run.yml'
+
+permissions:
+  actions: read
+  contents: read
+
+jobs:
+  inspect:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - name: Resolve exact protected production run
+        id: query
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          MERGE_SHA: 0dac29563148c3e6f2b4532eee7217f6dea07e8d
+        run: |
+          set -euo pipefail
+          out="$RUNNER_TEMP/final-production-run"
+          mkdir -p "$out"
+          curl --fail --silent --show-error \
+            --header 'Accept: application/vnd.github+json' \
+            --header "Authorization: Bearer $GH_TOKEN" \
+            --header 'X-GitHub-Api-Version: 2022-11-28' \
+            "$GITHUB_API_URL/repos/$GITHUB_REPOSITORY/actions/workflows/spatial-live-deploy.yml/runs?branch=main&event=workflow_dispatch&per_page=20" \
+            > "$out/runs.json"
+          OUT_DIR="$out" node - <<'NODE'
+          const fs = require('node:fs')
+          const path = require('node:path')
+          const out = process.env.OUT_DIR
+          const runs = JSON.parse(fs.readFileSync(path.join(out, 'runs.json'), 'utf8')).workflow_runs || []
+          const run = runs.find(item => item.head_sha === process.env.MERGE_SHA) || null
+          const report = {
+            inspectedAt: new Date().toISOString(),
+            mergeSha: process.env.MERGE_SHA,
+            run: run && {
+              id: run.id,
+              status: run.status,
+              conclusion: run.conclusion,
+              runNumber: run.run_number,
+              runAttempt: run.run_attempt,
+              createdAt: run.created_at,
+              updatedAt: run.updated_at,
+              htmlUrl: run.html_url,
+            },
+          }
+          fs.writeFileSync(path.join(out, 'report.json'), JSON.stringify(report, null, 2) + '\n')
+          console.log(JSON.stringify(report, null, 2))
+          if (!run) process.exitCode = 11
+          NODE
+          echo "out=$out" >> "$GITHUB_OUTPUT"
+      - name: Upload final run resolver receipt
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: final-production-run-0dac29563148c3e6f2b4532eee7217f6dea07e8d
+          path: ${{ steps.query.outputs.out }}
+          if-no-files-found: error
+          retention-days: 30
