@@ -1,4 +1,4 @@
-name: Inspect static hydration repair v5 validation log tail
+name: Inspect failed protected deploy log
 
 on:
   pull_request:
@@ -15,15 +15,17 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 10
     steps:
-      - name: Download exact failed hydration repair v5 job log
+      - name: Download exact failed protected deploy job log
         id: logs
         shell: bash
         env:
           GH_TOKEN: ${{ github.token }}
-          JOB_ID: '87321438331'
+          JOB_ID: '87368136967'
+          EXPECTED_RUN_ID: '29419673288'
+          EXPECTED_SHA: 9eda81321f8d6b91f79ada7ebac7166428642e67
         run: |
           set -euo pipefail
-          out="$RUNNER_TEMP/static-hydration-repair-v5-validation-log-tail"
+          out="$RUNNER_TEMP/failed-protected-deploy-log"
           mkdir -p "$out"
           curl --fail --location --silent --show-error \
             --header 'Accept: application/vnd.github+json' \
@@ -31,13 +33,20 @@ jobs:
             --header 'X-GitHub-Api-Version: 2022-11-28' \
             "$GITHUB_API_URL/repos/$GITHUB_REPOSITORY/actions/jobs/$JOB_ID/logs" \
             > "$out/full.log"
-          tail -n 500 "$out/full.log" > "$out/tail.log"
-          cat "$out/tail.log"
+
+          grep -Fq "$EXPECTED_SHA" "$out/full.log"
+          grep -Fq "$EXPECTED_RUN_ID" "$out/full.log" || true
+          tail -n 900 "$out/full.log" > "$out/tail.log"
+          grep -Ein -C 12 'error|failed|failure|post-deploy|smoke|focus|replay|expected|observed|timeout|console|network|resource|restore' "$out/full.log" \
+            > "$out/diagnostic-excerpts.log" || true
+          cat "$out/diagnostic-excerpts.log"
           echo "out=$out" >> "$GITHUB_OUTPUT"
-      - name: Upload hydration repair v5 validation log tail
+
+      - name: Upload failed protected deploy log evidence
+        if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
-          name: static-hydration-repair-v5-validation-log-tail-87321438331
+          name: failed-protected-deploy-log-87368136967
           path: ${{ steps.logs.outputs.out }}
           if-no-files-found: error
           retention-days: 30
