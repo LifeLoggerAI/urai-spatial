@@ -30,6 +30,12 @@ const portals: readonly PortalSpec[] = [
   { id: 'xr', label: 'XR', detail: 'Enter the world', href: '/spatial/ar-vr', position: [0, 0.08, -9], rotationY: 0, color: '#62e6f2' },
 ]
 
+const TREES: readonly [number, number, number, number][] = [
+  [-8.5, 0, -7.4, 1.1], [-5.8, 0, -9.6, 0.92], [-1.4, 0, -11.4, 1],
+  [3.2, 0, -11.2, 0.94], [8, 0, -8.2, 1.08], [10.4, 0, -2.8, 0.92],
+  [-10.5, 0, -2.2, 1], [-9.8, 0, 5, 0.9], [9.8, 0, 5.2, 1],
+]
+
 function useReducedMotion() {
   const [reducedMotion, setReducedMotion] = useState(false)
 
@@ -65,6 +71,18 @@ export function useWebGLAvailable() {
   return available
 }
 
+function FirstHomeFrame() {
+  const marked = useRef(false)
+  useFrame(() => {
+    if (marked.current) return
+    marked.current = true
+    if (performance.getEntriesByName('urai:first-home-spatial-frame').length === 0) {
+      performance.mark('urai:first-home-spatial-frame')
+    }
+  })
+  return null
+}
+
 function CameraRig() {
   const { camera } = useThree()
 
@@ -97,12 +115,6 @@ function Tree({ position, scale = 1 }: { position: [number, number, number]; sca
 }
 
 function LivingGround() {
-  const trees: Array<[number, number, number, number]> = [
-    [-8.5, 0, -7.4, 1.1], [-5.8, 0, -9.6, 0.92], [-1.4, 0, -11.4, 1],
-    [3.2, 0, -11.2, 0.94], [8, 0, -8.2, 1.08], [10.4, 0, -2.8, 0.92],
-    [-10.5, 0, -2.2, 1], [-9.8, 0, 5, 0.9], [9.8, 0, 5.2, 1],
-  ]
-
   return (
     <group data-testid="urai-home-living-ground">
       <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.12, -1.5]} receiveShadow>
@@ -145,7 +157,7 @@ function LivingGround() {
         </mesh>
       ))}
 
-      {trees.map(([x, y, z, scale], index) => <Tree key={`tree-${index}`} position={[x, y, z]} scale={scale} />)}
+      {TREES.map(([x, y, z, scale], index) => <Tree key={`tree-${index}`} position={[x, y, z]} scale={scale} />)}
     </group>
   )
 }
@@ -225,8 +237,14 @@ function Portal({ spec, reducedMotion, onNavigate }: { spec: PortalSpec; reduced
         <planeGeometry args={[1.95, 2.9]} />
         <meshBasicMaterial color={color} transparent opacity={hovered ? 0.44 : 0.23} side={THREE.DoubleSide} depthWrite={false} toneMapped={false} />
       </mesh>
-      <mesh position={[0, 1.67, 0.14]} scale={[1, 1.28, 1]} onPointerOver={enter} onPointerOut={leave} onClick={open}>
-        <torusGeometry args={[0.88, hovered ? 0.065 : 0.045, 14, 96]} />
+      <mesh
+        position={[0, 1.67, 0.14]}
+        scale={hovered ? [1.05, 1.34, 1.05] : [1, 1.28, 1]}
+        onPointerOver={enter}
+        onPointerOut={leave}
+        onClick={open}
+      >
+        <torusGeometry args={[0.88, 0.045, 14, 96]} />
         <meshBasicMaterial color={color} transparent opacity={hovered ? 1 : 0.88} toneMapped={false} />
       </mesh>
       <pointLight position={[0, 1.8, 0.7]} color={color} intensity={hovered ? 8 : 4.6} distance={7.5} decay={2} />
@@ -253,6 +271,7 @@ function Scene({ reducedMotion, onOrbOpen }: { reducedMotion: boolean; onOrbOpen
 
   return (
     <>
+      <FirstHomeFrame />
       <CameraRig />
       <color attach="background" args={['#091b29']} />
       <fog attach="fog" args={['#0b1d29', 20, 58]} />
@@ -301,6 +320,7 @@ export default function HomeSpatialCanvas({ onOrbOpen, webglAvailable }: HomeSpa
     >
       <Canvas
         className="urai-home-spatial-canvas"
+        style={{ position: 'absolute', inset: 0, width: '100%', height: '100%' }}
         shadows
         frameloop="always"
         dpr={[1, 1.45]}
