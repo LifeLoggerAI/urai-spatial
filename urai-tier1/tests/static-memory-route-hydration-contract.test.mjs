@@ -8,6 +8,7 @@ const replayPage = readFileSync(new URL('../src/app/replay/page.tsx', import.met
 const replayClient = readFileSync(new URL('../src/app/replay/CinematicReplayClient.tsx', import.meta.url), 'utf8')
 const smoke = readFileSync(new URL('../../scripts/urai-release-control-smoke.mjs', import.meta.url), 'utf8')
 
+// Static export must expose the real surfaces before client-side query hydration begins.
 test('focus and replay render real static surfaces instead of Suspense loading shells', () => {
   assert.doesNotMatch(focusPage, /Suspense|Focus loading/)
   assert.match(focusPage, /return <FinalFocusChamber \/>/)
