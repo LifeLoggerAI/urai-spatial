@@ -1,4 +1,4 @@
-name: Inspect static hydration repair v9
+name: Inspect static hydration repair v10
 
 on:
   pull_request:
@@ -14,8 +14,8 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 35
     env:
-      TARGET_SHA: 1d5761daa0e1aed7a0eb0fc809cd8a5325216198
-      NEXT_PUBLIC_URAI_BUILD_SHA: 1d5761daa0e1aed7a0eb0fc809cd8a5325216198
+      TARGET_SHA: 8d2406e1db52e3dd2e9a8a5f05e3972edc72907d
+      NEXT_PUBLIC_URAI_BUILD_SHA: 8d2406e1db52e3dd2e9a8a5f05e3972edc72907d
     steps:
       - name: Checkout exact PR 605 head
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
@@ -59,7 +59,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          out="$RUNNER_TEMP/static-hydration-v9"
+          out="$RUNNER_TEMP/static-hydration-v10"
           mkdir -p "$out"
           echo "out=$out" >> "$GITHUB_OUTPUT"
           cat > "$RUNNER_TEMP/static-server.mjs" <<'NODE'
@@ -191,7 +191,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
-          name: static-hydration-v9-${{ env.TARGET_SHA }}
+          name: static-hydration-v10-${{ env.TARGET_SHA }}
           path: ${{ steps.probe.outputs.out }}
           if-no-files-found: error
           retention-days: 30
