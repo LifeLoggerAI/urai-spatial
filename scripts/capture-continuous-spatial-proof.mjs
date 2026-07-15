@@ -52,7 +52,7 @@ const routes = [
 await mkdir(outputDir, { recursive: true })
 
 const receipt = {
-  schemaVersion: 'urai-continuous-spatial-visual-proof-2',
+  schemaVersion: 'urai-continuous-spatial-visual-proof-3',
   capturedAt: new Date().toISOString(),
   exactHead,
   base,
@@ -66,6 +66,16 @@ function verificationPassed(verification) {
   return Object.entries(verification).every(([key, value]) => {
     if (key === 'overlayOpacities') return true
     return value === true
+  })
+}
+
+async function takeScreenshot(page, targetPath) {
+  await page.screenshot({
+    path: targetPath,
+    fullPage: false,
+    animations: 'disabled',
+    caret: 'hide',
+    timeout: 60_000,
   })
 }
 
@@ -102,7 +112,7 @@ async function captureRoute(context, route, viewportId) {
     await page.locator(route.ready).waitFor({ state: 'visible', timeout: 45_000 })
     await page.waitForTimeout(1800)
     capture.verification = await route.verify(page)
-    await page.screenshot({ path: path.join(outputDir, screenshotName), fullPage: false })
+    await takeScreenshot(page, path.join(outputDir, screenshotName))
     capture.passed = capture.status === 200
       && verificationPassed(capture.verification)
       && pageErrors.length === 0
@@ -112,7 +122,7 @@ async function captureRoute(context, route, viewportId) {
     capture.error = String(error)
     capture.passed = false
     try {
-      await page.screenshot({ path: path.join(outputDir, `failed-${screenshotName}`), fullPage: false })
+      await takeScreenshot(page, path.join(outputDir, `failed-${screenshotName}`))
     } catch {
       // Capture log and structured error remain authoritative when screenshot capture is impossible.
     }
@@ -147,8 +157,11 @@ async function captureNoWebGLFallback() {
       const oldWorld = page.locator('.urai-genesis-home__world')
       const fallbackOwnerVisible = await oldWorld.count() > 0
         && await oldWorld.evaluate((node) => getComputedStyle(node).display !== 'none')
-      const fallbackInteractive = await page.locator('.urai-home-spatial-world-final').evaluate((node) => getComputedStyle(node).pointerEvents !== 'none')
-      return { runtimeAbsent, fallbackOwnerVisible, fallbackInteractive }
+      const fallbackAction = page.locator('.urai-genesis-home__threshold-gate').first()
+      const fallbackActionVisible = await fallbackAction.count() > 0 && await fallbackAction.isVisible()
+      const fallbackActionHref = await fallbackAction.getAttribute('href')
+      const fallbackInteractive = fallbackActionVisible && Boolean(fallbackActionHref)
+      return { runtimeAbsent, fallbackOwnerVisible, fallbackActionVisible, fallbackInteractive }
     },
   }
 
