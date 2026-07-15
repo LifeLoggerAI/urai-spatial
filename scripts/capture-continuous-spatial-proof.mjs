@@ -51,13 +51,8 @@ const routes = [
 
 await mkdir(outputDir, { recursive: true })
 
-const browser = await chromium.launch({
-  headless: true,
-  args: ['--use-angle=swiftshader', '--enable-webgl', '--ignore-gpu-blocklist'],
-})
-
-const summary = {
-  schemaVersion: 'urai-continuous-spatial-visual-proof-1',
+const receipt = {
+  schemaVersion: 'urai-continuous-spatial-visual-proof-2',
   capturedAt: new Date().toISOString(),
   exactHead,
   base,
@@ -65,8 +60,111 @@ const summary = {
 }
 
 let failed = false
+let browser
+
+function verificationPassed(verification) {
+  return Object.entries(verification).every(([key, value]) => {
+    if (key === 'overlayOpacities') return true
+    return value === true
+  })
+}
+
+async function captureRoute(context, route, viewportId) {
+  const page = await context.newPage()
+  const pageErrors = []
+  const consoleErrors = []
+  const requestFailures = []
+  const url = new URL(route.path, base).toString()
+  const screenshotName = `${route.id}-${viewportId}-${exactHead.slice(0, 12)}.png`
+  const capture = {
+    route: route.id,
+    viewport: viewportId,
+    url,
+    status: null,
+    screenshot: screenshotName,
+    verification: {},
+    pageErrors,
+    consoleErrors,
+    requestFailures,
+  }
+
+  page.on('pageerror', (error) => pageErrors.push(String(error)))
+  page.on('console', (message) => {
+    if (message.type() === 'error') consoleErrors.push(message.text())
+  })
+  page.on('requestfailed', (request) => {
+    requestFailures.push({ url: request.url(), error: request.failure()?.errorText || 'unknown' })
+  })
+
+  try {
+    const response = await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 60_000 })
+    capture.status = response?.status() ?? null
+    await page.locator(route.ready).waitFor({ state: 'visible', timeout: 45_000 })
+    await page.waitForTimeout(1800)
+    capture.verification = await route.verify(page)
+    await page.screenshot({ path: path.join(outputDir, screenshotName), fullPage: false })
+    capture.passed = capture.status === 200
+      && verificationPassed(capture.verification)
+      && pageErrors.length === 0
+      && consoleErrors.length === 0
+      && requestFailures.length === 0
+  } catch (error) {
+    capture.error = String(error)
+    capture.passed = false
+    try {
+      await page.screenshot({ path: path.join(outputDir, `failed-${screenshotName}`), fullPage: false })
+    } catch {
+      // Capture log and structured error remain authoritative when screenshot capture is impossible.
+    }
+  } finally {
+    if (!capture.passed) failed = true
+    receipt.captures.push(capture)
+    await page.close()
+  }
+}
+
+async function captureNoWebGLFallback() {
+  const context = await browser.newContext({
+    viewport: { width: 1440, height: 900 },
+    deviceScaleFactor: 1,
+    reducedMotion: 'no-preference',
+  })
+
+  await context.addInitScript(() => {
+    const originalGetContext = HTMLCanvasElement.prototype.getContext
+    HTMLCanvasElement.prototype.getContext = function patchedGetContext(type, ...args) {
+      if (type === 'webgl' || type === 'webgl2' || type === 'experimental-webgl') return null
+      return originalGetContext.call(this, type, ...args)
+    }
+  })
+
+  const fallbackRoute = {
+    id: 'home-no-webgl-fallback',
+    path: '/home/',
+    ready: '.urai-home-spatial-world-final',
+    verify: async (page) => {
+      const runtimeAbsent = await page.locator('.urai-home-spatial-runtime-layer').count() === 0
+      const oldWorld = page.locator('.urai-genesis-home__world')
+      const fallbackOwnerVisible = await oldWorld.count() > 0
+        && await oldWorld.evaluate((node) => getComputedStyle(node).display !== 'none')
+      const homeScrollable = await page.evaluate(() => getComputedStyle(document.body).overflowY !== 'hidden')
+      return { runtimeAbsent, fallbackOwnerVisible, homeScrollable }
+    },
+  }
+
+  try {
+    await captureRoute(context, fallbackRoute, 'desktop-no-webgl')
+  } finally {
+    await context.close()
+  }
+}
 
 try {
+  browser = await chromium.launch({
+    headless: true,
+    args: ['--use-angle=swiftshader', '--enable-webgl', '--ignore-gpu-blocklist'],
+  })
+
   for (const viewport of viewports) {
     const context = await browser.newContext({
       viewport: { width: viewport.width, height: viewport.height },
@@ -76,60 +174,22 @@ try {
       reducedMotion: 'no-preference',
     })
 
-    for (const route of routes) {
-      const page = await context.newPage()
-      const pageErrors = []
-      const consoleErrors = []
-      const requestFailures = []
-
-      page.on('pageerror', (error) => pageErrors.push(String(error)))
-      page.on('console', (message) => {
-        if (message.type() === 'error') consoleErrors.push(message.text())
-      })
-      page.on('requestfailed', (request) => {
-        requestFailures.push({ url: request.url(), error: request.failure()?.errorText || 'unknown' })
-      })
-
-      const url = new URL(route.path, base).toString()
-      const response = await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 60_000 })
-      await page.locator(route.ready).waitFor({ state: 'visible', timeout: 45_000 })
-      await page.waitForTimeout(1800)
-
-      const verification = await route.verify(page)
-      const screenshotName = `${route.id}-${viewport.id}-${exactHead.slice(0, 12)}.png`
-      await page.screenshot({ path: path.join(outputDir, screenshotName), fullPage: true })
-
-      const capture = {
-        route: route.id,
-        viewport: viewport.id,
-        url,
-        status: response?.status() ?? null,
-        screenshot: screenshotName,
-        verification,
-        pageErrors,
-        consoleErrors,
-        requestFailures,
-      }
-      summary.captures.push(capture)
-
-      if ((capture.status ?? 500) >= 400) failed = true
-      if (pageErrors.length > 0 || consoleErrors.length > 0 || requestFailures.length > 0) failed = true
-      if (Object.values(verification).some((value) => value === false)) failed = true
-
-      await page.close()
+    try {
+      for (const route of routes) await captureRoute(context, route, viewport.id)
+    } finally {
+      await context.close()
     }
-
-    await context.close()
   }
+
+  await captureNoWebGLFallback()
+} catch (error) {
+  failed = true
+  receipt.fatalError = String(error)
 } finally {
-  await browser.close()
+  if (browser) await browser.close()
+  receipt.passed = !failed
+  await writeFile(path.join(outputDir, 'receipt.json'), `${JSON.stringify(receipt, null, 2)}\n`)
+  console.log(JSON.stringify(receipt, null, 2))
 }
 
-await writeFile(path.join(outputDir, 'receipt.json'), `${JSON.stringify(summary, null, 2)}\n`)
-
-if (failed) {
-  console.error(JSON.stringify(summary, null, 2))
-  process.exit(1)
-}
-
-console.log(JSON.stringify(summary, null, 2))
+if (failed) process.exit(1)
