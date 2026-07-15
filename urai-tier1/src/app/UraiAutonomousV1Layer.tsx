@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
 import { avatarAssets } from "@/spatial/assets/uraiAssets";
 import UraiAutonomousV1Realms from "./UraiAutonomousV1Realms";
@@ -8,6 +9,39 @@ import "./urai-autonomous-v1-assets.css";
 import "./urai-autonomous-v1-realms.css";
 import "./urai-autonomous-v1-isolation.css";
 import "./urai-autonomous-v1-workforce.css";
+
+const DEFAULT_MEMORY_ID = "quiet-reset";
+const DEFAULT_MANIFEST_ID = "replay-recovery-thread";
+
+type MemoryIdentity = {
+  memoryId: string;
+  manifestId: string;
+  node: string;
+};
+
+function safeToken(value: string | null, fallback: string) {
+  if (!value) return fallback;
+  const trimmed = value.trim().slice(0, 120);
+  return /^[A-Za-z0-9._:-]+$/.test(trimmed) ? trimmed : fallback;
+}
+
+function readableName(value: string) {
+  return value
+    .replace(/[-_:]+/g, " ")
+    .replace(/\s+/g, " ")
+    .trim()
+    .replace(/\b\w/g, (letter) => letter.toUpperCase());
+}
+
+function memoryRoute(pathname: "/focus" | "/replay" | "/life-map", identity: MemoryIdentity, extra?: Record<string, string>) {
+  const params = new URLSearchParams({
+    memoryId: identity.memoryId,
+    manifestId: identity.manifestId,
+    node: identity.node,
+    ...extra,
+  });
+  return `${pathname}?${params.toString()}`;
+}
 
 const groundStations = [
   { key: "reception", label: "Reception", detail: "New signals arrive here." },
@@ -149,9 +183,22 @@ function GroundWorld() {
   );
 }
 
-function FocusWorld() {
+function FocusWorld({ identity }: { identity: MemoryIdentity }) {
+  const memoryName = identity.node === DEFAULT_MEMORY_ID ? "The Quiet Reset" : readableName(identity.node);
+  const replayHref = memoryRoute("/replay", identity, { from: "focus-chamber" });
+  const lifeMapHref = memoryRoute("/life-map", identity, { unwind: "focus" });
+  const focusHref = memoryRoute("/focus", identity);
+
   return (
-    <section className="uraiAutoWorld uraiAutoFocus" aria-label="Selected memory chamber">
+    <section
+      className="uraiAutoWorld uraiAutoFocus"
+      aria-label="Selected memory chamber"
+      data-testid="urai-final-focus-chamber"
+      data-memory-id={identity.memoryId}
+      data-manifest-id={identity.manifestId}
+      data-node={identity.node}
+      data-visible-route-owner="urai-autonomous-v1-focus"
+    >
       <SceneArt
         className="uraiFocusSceneArt"
         desktop="/assets/urai/focus/focus-memory-chamber-main.webp"
@@ -164,14 +211,14 @@ function FocusWorld() {
 
       <header className="uraiAutoHud uraiAutoHudFocus">
         <span>SELECTED MEMORY</span>
-        <strong>The Quiet Reset</strong>
+        <strong>{memoryName}</strong>
         <small>May 17, 2023 · private chamber</small>
       </header>
 
       <a
         className="uraiFocusMemory uraiFocusMemoryHotspot"
-        href="/replay?memoryId=quiet-reset&manifestId=replay-recovery-thread&from=focus-chamber"
-        aria-label="Enter Replay for The Quiet Reset"
+        href={replayHref}
+        aria-label={`Enter Replay for ${memoryName}`}
       >
         <picture className="uraiFocusMemoryImage" aria-hidden="true">
           <source
@@ -195,9 +242,9 @@ function FocusWorld() {
       </aside>
 
       <nav className="uraiAutoNav" aria-label="Focus navigation">
-        <a href="/life-map">Return to Life Map</a>
-        <a className="isActive" href="/focus?memoryId=quiet-reset">Focus</a>
-        <a href="/replay?memoryId=quiet-reset&manifestId=replay-recovery-thread">Replay</a>
+        <a href={lifeMapHref}>Return to Life Map</a>
+        <a className="isActive" href={focusHref}>Focus</a>
+        <a href={replayHref}>Replay</a>
       </nav>
     </section>
   );
@@ -250,12 +297,33 @@ function ReplayWorld() {
 
 export default function UraiAutonomousV1Layer() {
   const pathname = usePathname() || "";
+  const [focusIdentity, setFocusIdentity] = useState<MemoryIdentity>({
+    memoryId: DEFAULT_MEMORY_ID,
+    manifestId: DEFAULT_MANIFEST_ID,
+    node: DEFAULT_MEMORY_ID,
+  });
+
+  useEffect(() => {
+    if (!pathname.startsWith("/focus")) return;
+
+    const hydrateFocusIdentity = () => {
+      const params = new URLSearchParams(window.location.search);
+      const memoryId = safeToken(params.get("memoryId"), DEFAULT_MEMORY_ID);
+      const manifestId = safeToken(params.get("manifestId"), DEFAULT_MANIFEST_ID);
+      const node = safeToken(params.get("node"), memoryId);
+      setFocusIdentity({ memoryId, manifestId, node });
+    };
+
+    hydrateFocusIdentity();
+    window.addEventListener("popstate", hydrateFocusIdentity);
+    return () => window.removeEventListener("popstate", hydrateFocusIdentity);
+  }, [pathname]);
 
   // Ground is now owned by the shared City Overlook spatial world. Do not overlay
   // the legacy private-floor screen, because it replaces the explorable city layer.
   if (pathname.startsWith("/ground")) return null;
 
-  if (pathname.startsWith("/focus")) return <FocusWorld />;
+  if (pathname.startsWith("/focus")) return <FocusWorld identity={focusIdentity} />;
   if (pathname.startsWith("/replay")) return <ReplayWorld />;
   if (
     pathname.startsWith("/mirror") ||
