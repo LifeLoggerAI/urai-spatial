@@ -54,15 +54,20 @@ test('restored Home is a deterministic visible world with stable geometry and hy
     'data-testid="urai-home-living-ground"',
     'data-testid="urai-home-webgl-orb"',
     'urai:first-home-spatial-frame',
-    'toneMappingExposure = 1.32',
+    'toneMappingExposure = 1.22',
   ]) assert.ok(canvas.includes(marker), `missing Home spatial marker: ${marker}`)
 
   assert.match(canvas, /const \[available, setAvailable\] = useState<boolean \| null>\(null\)/)
   assert.match(canvas, /if \(cachedWebGLAvailable !== null\) \{\s*setAvailable\(cachedWebGLAvailable\)\s*return\s*\}/s)
   assert.doesNotMatch(canvas, /useState<boolean \| null>\(cachedWebGLAvailable\)/)
   assert.match(canvas, /const TREES: readonly/)
+  assert.match(canvas, /const HILLS: readonly/)
   assert.match(canvas, /TREES\.map/)
+  assert.match(canvas, /HILLS\.map/)
   assert.doesNotMatch(canvas, /function LivingGround\(\)[\s\S]{0,200}const trees:/)
+  assert.match(canvas, /<planeGeometry args=\{\[48, 48\]\}/)
+  assert.doesNotMatch(canvas, /<circleGeometry args=\{\[18, 128\]\}/)
+  assert.match(canvas, /<fog attach="fog" args=\{\['#0b1d29', 30, 80\]\}/)
   assert.match(canvas, /scale=\{hovered \? \[1\.05, 1\.34, 1\.05\] : \[1, 1\.28, 1\]\}/)
   assert.match(canvas, /<torusGeometry args=\{\[0\.88, 0\.045, 14, 96\]\}/)
   assert.doesNotMatch(canvas, /hovered \? 0\.065 : 0\.045/)
@@ -86,13 +91,21 @@ test('reviewed Home runtime keeps semantic portal navigation and defensive brows
   assert.match(layer, /data-orb-open=\{orbOpen \? 'true' : 'false'\}/)
 })
 
-test('Home visual overrides activate only when the WebGL runtime exists', () => {
+test('Home visual overrides activate only when the WebGL runtime exists and remove every canvas veil', () => {
   assert.match(css, /html:has\(\.urai-home-spatial-runtime-layer\)/)
   assert.match(css, /body:has\(\.urai-home-spatial-runtime-layer\) \.urai-home-spatial-world-final::before/)
   assert.match(css, /body:has\(\.urai-home-spatial-runtime-layer\) \.urai-home-spatial-world-final \.urai-genesis-home__world/)
   assert.doesNotMatch(css, /\n\.urai-home-spatial-world-final::before/)
   assert.doesNotMatch(css, /body:has\(\.urai-home-spatial-world-final\) \.urai-cinematic-backdrop/)
   assert.match(structuralCss, /living Home canvas owns the painted world/i)
+  assert.match(structuralCss, /No DOM veil, rounded mask, blur or inherited visual effect/i)
+  assert.match(structuralCss, /\.urai-home-spatial-runtime-layer::before/)
+  assert.match(structuralCss, /\.urai-home-spatial-canvas-shell::after/)
+  assert.match(structuralCss, /content: none !important/)
+  assert.match(structuralCss, /border-radius: 0 !important/)
+  assert.match(structuralCss, /clip-path: none !important/)
+  assert.match(structuralCss, /filter: none !important/)
+  assert.match(structuralCss, /backdrop-filter: none !important/)
   assert.match(structuralCss, /\.urai-genesis-home__threshold-gate/)
   assert.match(structuralCss, /\.urai-genesis-home__bottom-dock/)
   assert.match(structuralCss, /display: none !important/)
