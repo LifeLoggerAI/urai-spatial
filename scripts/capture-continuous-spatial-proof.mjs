@@ -260,9 +260,18 @@ async function probeWebGL(page) {
           powerPreference: 'high-performance',
         })
         if (context) {
-          const debug = context.getExtension('WEBGL_debug_renderer_info')
-          const renderer = debug ? context.getParameter(debug.UNMASKED_RENDERER_WEBGL) : null
-          context.getExtension('WEBGL_lose_context')?.loseContext()
+          let renderer = null
+          try {
+            const debug = context.getExtension('WEBGL_debug_renderer_info')
+            renderer = debug ? context.getParameter(debug.UNMASKED_RENDERER_WEBGL) : null
+          } catch (debugError) {
+            attempts.push({ kind, debugError: String(debugError) })
+          }
+          try {
+            context.getExtension('WEBGL_lose_context')?.loseContext()
+          } catch (loseContextError) {
+            attempts.push({ kind, loseContextError: String(loseContextError) })
+          }
           return { available: true, kind, renderer, attempts }
         }
         attempts.push({ kind, outcome: 'null' })
