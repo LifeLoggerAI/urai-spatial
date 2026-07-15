@@ -77,7 +77,15 @@ test('exact-head browser proof captures desktop mobile and no-WebGL fallback rec
   assert.match(proofWorkflow, /PLAYWRIGHT_BROWSERS_PATH: '0'/)
   assert.match(proofWorkflow, /pnpm --dir urai-tier1 exec playwright install --with-deps chromium/)
   assert.doesNotMatch(proofWorkflow, /resolve\('playwright\/cli'\)/)
+  assert.match(proofWorkflow, /chromium\.executablePath\(\)/)
+  assert.match(proofWorkflow, /test -x "\$browser_path"/)
+  assert.match(proofWorkflow, /playwright-executable-path\.txt/)
   assert.match(proofWorkflow, /Capture desktop mobile and fallback spatial proof/)
+
+  const buildIndex = proofWorkflow.indexOf('Build exact static release candidate before browser installation')
+  const installIndex = proofWorkflow.indexOf('Install and prove exact Tier-1 Chromium')
+  assert.ok(buildIndex >= 0, 'visual proof must build the exact candidate')
+  assert.ok(installIndex > buildIndex, 'browser installation must occur after low-disk build cleanup')
 })
 
 test('flat route-image veils are suppressed while current Ground and Life Map canvases remain authoritative', () => {
