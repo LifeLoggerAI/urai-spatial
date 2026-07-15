@@ -305,11 +305,18 @@ export default function UraiAutonomousV1Layer() {
 
   useEffect(() => {
     if (!pathname.startsWith("/focus")) return;
-    const params = new URLSearchParams(window.location.search);
-    const memoryId = safeToken(params.get("memoryId"), DEFAULT_MEMORY_ID);
-    const manifestId = safeToken(params.get("manifestId"), DEFAULT_MANIFEST_ID);
-    const node = safeToken(params.get("node"), memoryId);
-    setFocusIdentity({ memoryId, manifestId, node });
+
+    const hydrateFocusIdentity = () => {
+      const params = new URLSearchParams(window.location.search);
+      const memoryId = safeToken(params.get("memoryId"), DEFAULT_MEMORY_ID);
+      const manifestId = safeToken(params.get("manifestId"), DEFAULT_MANIFEST_ID);
+      const node = safeToken(params.get("node"), memoryId);
+      setFocusIdentity({ memoryId, manifestId, node });
+    };
+
+    hydrateFocusIdentity();
+    window.addEventListener("popstate", hydrateFocusIdentity);
+    return () => window.removeEventListener("popstate", hydrateFocusIdentity);
   }, [pathname]);
 
   // Ground is now owned by the shared City Overlook spatial world. Do not overlay
