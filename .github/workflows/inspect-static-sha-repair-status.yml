@@ -1,0 +1,104 @@
+name: Inspect static SHA repair status
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - '.github/workflows/inspect-static-sha-repair-status.yml'
+
+permissions:
+  actions: read
+  contents: read
+
+jobs:
+  inspect:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - name: Query isolated repair branch and workflow
+        id: query
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPAIR_BRANCH: release/fix-static-sha-proof-20260714
+          INITIAL_SHA: f1ecf71763cd831d46b0551857c57b7df0ef7c67
+        run: |
+          set -euo pipefail
+          out="$RUNNER_TEMP/static-sha-repair-status"
+          mkdir -p "$out"
+          headers=(
+            --header 'Accept: application/vnd.github+json'
+            --header "Authorization: Bearer $GH_TOKEN"
+            --header 'X-GitHub-Api-Version: 2022-11-28'
+          )
+          encoded_branch="${REPAIR_BRANCH//\//%2F}"
+          curl --fail --silent --show-error "${headers[@]}" \
+            "$GITHUB_API_URL/repos/$GITHUB_REPOSITORY/git/ref/heads/$encoded_branch" \
+            > "$out/ref.json"
+          curl --fail --silent --show-error "${headers[@]}" \
+            "$GITHUB_API_URL/repos/$GITHUB_REPOSITORY/actions/workflows/one-time-fix-static-sha-proof.yml/runs?branch=$encoded_branch&event=push&per_page=20" \
+            > "$out/runs.json"
+          OUT_DIR="$out" node - <<'NODE'
+          const fs = require('node:fs')
+          const path = require('node:path')
+          const out = process.env.OUT_DIR
+          const ref = JSON.parse(fs.readFileSync(path.join(out, 'ref.json'), 'utf8'))
+          const runs = JSON.parse(fs.readFileSync(path.join(out, 'runs.json'), 'utf8')).workflow_runs || []
+          const run = runs.find(item => item.head_sha === process.env.INITIAL_SHA) || runs[0] || null
+          const report = {
+            schemaVersion: 'urai-static-sha-repair-status-1',
+            inspectedAt: new Date().toISOString(),
+            branch: process.env.REPAIR_BRANCH,
+            initialSha: process.env.INITIAL_SHA,
+            currentHeadSha: ref?.object?.sha || null,
+            branchAdvanced: Boolean(ref?.object?.sha && ref.object.sha !== process.env.INITIAL_SHA),
+            repairRun: run && {
+              id: run.id,
+              name: run.name,
+              status: run.status,
+              conclusion: run.conclusion,
+              headSha: run.head_sha,
+              runNumber: run.run_number,
+              runAttempt: run.run_attempt,
+              createdAt: run.created_at,
+              updatedAt: run.updated_at,
+              htmlUrl: run.html_url,
+            },
+          }
+          fs.writeFileSync(path.join(out, 'report.partial.json'), JSON.stringify(report, null, 2) + '\n')
+          fs.writeFileSync(path.join(out, 'run-id.txt'), run ? String(run.id) : '')
+          NODE
+          run_id="$(cat "$out/run-id.txt")"
+          if test -n "$run_id"; then
+            curl --fail --silent --show-error "${headers[@]}" \
+              "$GITHUB_API_URL/repos/$GITHUB_REPOSITORY/actions/runs/$run_id/jobs?per_page=100" \
+              > "$out/jobs.json"
+          else
+            printf '{"total_count":0,"jobs":[]}\n' > "$out/jobs.json"
+          fi
+          OUT_DIR="$out" node - <<'NODE'
+          const fs = require('node:fs')
+          const path = require('node:path')
+          const out = process.env.OUT_DIR
+          const report = JSON.parse(fs.readFileSync(path.join(out, 'report.partial.json'), 'utf8'))
+          const jobs = JSON.parse(fs.readFileSync(path.join(out, 'jobs.json'), 'utf8')).jobs || []
+          report.jobs = jobs.map(job => ({
+            id: job.id,
+            name: job.name,
+            status: job.status,
+            conclusion: job.conclusion,
+            htmlUrl: job.html_url,
+            steps: (job.steps || []).map(step => ({ name: step.name, status: step.status, conclusion: step.conclusion, number: step.number })),
+          }))
+          fs.writeFileSync(path.join(out, 'report.json'), JSON.stringify(report, null, 2) + '\n')
+          console.log(JSON.stringify(report, null, 2))
+          NODE
+          echo "report_dir=$out" >> "$GITHUB_OUTPUT"
+      - name: Upload repair status receipt
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: static-sha-repair-status
+          path: ${{ steps.query.outputs.report_dir }}
+          if-no-files-found: error
+          retention-days: 30
