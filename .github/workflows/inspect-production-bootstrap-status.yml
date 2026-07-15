@@ -15,7 +15,7 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 10
     env:
-      MERGE_SHA: 40edee19e6354257682ac24f8f78b107dac8b90b
+      MERGE_SHA: 4b37a5ed41a059e56b9705661db6c8074d06c247
     steps:
       - name: Checkout exact inspector candidate
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
