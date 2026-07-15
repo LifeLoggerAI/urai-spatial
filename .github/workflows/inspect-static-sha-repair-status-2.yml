@@ -21,7 +21,7 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
           REPAIR_BRANCH: release/fix-static-sha-proof-20260714
-          EXPECTED_RUN_SHA: 2ac3239b2e73c7c184a61c8efe3c68b57fe6542a
+          EXPECTED_RUN_SHA: 2c16ac48a8ca6a9a350f44d716f5f96bc25fce3d
         run: |
           set -euo pipefail
           out="$RUNNER_TEMP/static-sha-repair-status-2"
