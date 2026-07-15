@@ -37,6 +37,13 @@ test('visible Focus owner hydrates and exposes the same exact query identity', (
   assert.doesNotMatch(visibleLayer, /if \(pathname\.startsWith\("\/focus"\)\) return <FocusWorld \/>/)
 })
 
+test('visible Focus identity refreshes on same-path history navigation', () => {
+  assert.match(visibleLayer, /const hydrateFocusIdentity = \(\) => \{/)
+  assert.match(visibleLayer, /hydrateFocusIdentity\(\);/)
+  assert.match(visibleLayer, /window\.addEventListener\("popstate", hydrateFocusIdentity\)/)
+  assert.match(visibleLayer, /window\.removeEventListener\("popstate", hydrateFocusIdentity\)/)
+})
+
 test('visible Focus navigation preserves memory, manifest, and node identity', () => {
   assert.match(visibleLayer, /memoryRoute\("\/replay", identity, \{ from: "focus-chamber" \}\)/)
   assert.match(visibleLayer, /memoryRoute\("\/life-map", identity, \{ unwind: "focus" \}\)/)
