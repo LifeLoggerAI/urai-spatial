@@ -95,7 +95,6 @@ jobs:
         run: |
           set -euo pipefail
           git add .github/workflows/spatial-live-deploy.yml urai-tier1/tests/exact-static-release-contract.test.mjs
-          git add -u .github/workflows/one-time-fix-static-sha-proof.yml
           staged="$(git diff --cached --name-only | sort)"
           expected="$(printf '%s\n' '.github/workflows/one-time-fix-static-sha-proof.yml' '.github/workflows/spatial-live-deploy.yml' 'urai-tier1/tests/exact-static-release-contract.test.mjs' | sort)"
           test "$staged" = "$expected"
