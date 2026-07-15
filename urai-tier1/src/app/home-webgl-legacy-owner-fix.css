@@ -1,0 +1,8 @@
+/* The WebGL runtime owns semantic doorway navigation, orb guidance, and the
+   accessibility name. The former Home owner must not paint above it: inherited
+   rounded glass, perspective, and backdrop effects globally blurred the live
+   world in the retained desktop and mobile screenshots. The runtime-gated
+   selector preserves the complete no-WebGL fallback. */
+body:has(.urai-home-spatial-runtime-layer) .urai-home-spatial-world-final {
+  display: none !important;
+}
