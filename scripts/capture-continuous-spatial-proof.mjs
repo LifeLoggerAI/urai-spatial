@@ -52,6 +52,7 @@ const routes = [
 await mkdir(outputDir, { recursive: true })
 
 const browser = await chromium.launch({
+  channel: 'chromium',
   headless: true,
   args: ['--use-angle=swiftshader', '--enable-webgl', '--ignore-gpu-blocklist'],
 })
