@@ -7,10 +7,11 @@ import HomeSpatialCanvas, { useWebGLAvailable } from './HomeSpatialCanvas'
 
 export default function HomeSpatialRuntimeLayer() {
   const pathname = usePathname() ?? '/'
+  const normalizedPathname = pathname.replace(/\/+$/, '') || '/'
   const [orbOpen, setOrbOpen] = useState(false)
   const webglAvailable = useWebGLAvailable()
 
-  if (pathname !== '/' && pathname !== '/home') return null
+  if (normalizedPathname !== '/' && normalizedPathname !== '/home') return null
   if (webglAvailable !== true) return null
 
   return (
