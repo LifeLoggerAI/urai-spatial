@@ -21,13 +21,19 @@ const homeOwner = read('src/app/FinalHomeThreshold.tsx')
 const groundOwner = read('src/app/ground/page.tsx')
 const groundWorld = read('src/app/GroundSpatialWorldClean.tsx')
 const lifeMapOwner = read('src/app/life-map/page.tsx')
+const lifeMapCanonical = read('src/spatial/lifemap/SpatialLifeMapCanonical.tsx')
 
-test('app template mounts the restored Home WebGL runtime without replacing route owners', () => {
+test('app template mounts the restored Home runtime without replacing route owners', () => {
   assert.match(template, /HomeSpatialRuntimeLayer/)
   assert.match(template, /spatial-runtime-restoration\.css/)
   assert.match(layer, /const normalizedPathname = pathname\.replace/)
-  assert.match(layer, /normalizedPathname !== '\/' && normalizedPathname !== '\/home'/)
+  assert.match(layer, /routeEligible/)
+  assert.match(layer, /runtimeActive/)
+  assert.match(layer, /createPortal/)
+  assert.match(layer, /document\.body/)
+  assert.match(layer, /urai-home-runtime-active/)
   assert.match(layer, /data-urai-home-runtime="one-continuous-webgl-world"/)
+  assert.match(layer, /Step inside yourself\./)
   assert.match(homeOwner, /HomeSpatialWorldFinal/)
   assert.match(groundOwner, /GroundSpatialWorldClean/)
   assert.match(lifeMapOwner, /SpatialLifeMapCanonical/)
@@ -65,19 +71,21 @@ test('reviewed Home runtime keeps semantic portal navigation and defensive brows
   assert.match(canvas, /document\.body\.style\.cursor = 'default'/)
   assert.match(layer, /HomeSpatialCanvas, \{ useWebGLAvailable \}/)
   assert.doesNotMatch(layer, /function useHomeWebGLAvailable/)
-  assert.match(layer, /webglAvailable=\{webglAvailable\}/)
+  assert.match(layer, /<HomeSpatialCanvas webglAvailable/)
   assert.match(layer, /const doorwayLinks =/)
   assert.match(layer, /className="urai-home-spatial-runtime-portals"/)
   assert.match(layer, /aria-label="Spatial doorway shortcuts"/)
   assert.match(layer, /data-orb-open=\{orbOpen \? 'true' : 'false'\}/)
 })
 
-test('Home visual overrides activate only when the WebGL runtime exists', () => {
+test('Home visual takeover is body-portal based and fallback-safe', () => {
+  assert.match(layer, /html\.urai-home-runtime-active body > \.urai-home-spatial-runtime-layer/)
+  assert.match(layer, /z-index: 2147483000/)
+  assert.match(layer, /html\.urai-home-runtime-active \.urai-home-spatial-world-final/)
+  assert.match(layer, /display: none !important/)
   assert.match(css, /html:has\(\.urai-home-spatial-runtime-layer\)/)
-  assert.match(css, /body:has\(\.urai-home-spatial-runtime-layer\) \.urai-home-spatial-world-final::before/)
   assert.match(css, /body:has\(\.urai-home-spatial-runtime-layer\) \.urai-home-spatial-world-final \.urai-genesis-home__world/)
   assert.doesNotMatch(css, /\n\.urai-home-spatial-world-final::before/)
-  assert.doesNotMatch(css, /body:has\(\.urai-home-spatial-world-final\) \.urai-cinematic-backdrop/)
 })
 
 test('exact-head browser proof rejects blank WebGL mounts and captures desktop mobile and fallback receipts', () => {
@@ -124,20 +132,33 @@ test('exact-head browser proof rejects blank WebGL mounts and captures desktop m
   assert.ok(installIndex > buildIndex, 'browser installation must occur after low-disk build cleanup')
 })
 
-test('Ground navigation is rendered as contained touch-safe pills', () => {
+test('Ground navigation is rendered as contained independently measurable touch-safe pills', () => {
   assert.match(groundWorld, /const groundLinkStyle: CSSProperties/)
   assert.match(groundWorld, /display: 'inline-flex'/)
   assert.match(groundWorld, /whiteSpace: 'nowrap'/)
+  assert.match(groundWorld, /const groundRailLinks =/)
+  assert.match(groundWorld, /className="ground-rail-item"/)
+  assert.match(groundWorld, /\.ground-rail-item\{display:flex;flex:0 0 auto\}/)
   assert.match(groundWorld, /style=\{groundLinkStyle\}/)
   assert.match(groundWorld, /width:calc\(100vw - 28px\)/)
   assert.match(groundWorld, /scrollbar-width:none/)
+  assert.match(groundWorld, /memoryId=quiet-reset/)
 })
 
-test('flat route-image veils are suppressed while current Ground and Life Map canvases remain authoritative', () => {
+test('Life Map is full viewport, suppresses the flat veil, and preserves canonical selected-memory identity', () => {
+  assert.match(lifeMapCanonical, /height: '100svh'/)
+  assert.match(lifeMapCanonical, /data-testid="urai-life-map-canonical-memory-controls"/)
+  assert.match(lifeMapCanonical, /memoryId === 'quiet-reset' \? 'The Quiet Reset'/)
+  assert.match(lifeMapCanonical, /Enter Focus/)
+  assert.match(lifeMapCanonical, />Replay<\/button>/)
+  assert.match(lifeMapCanonical, /next\.set\('memoryId', memoryId\)/)
+  assert.match(lifeMapCanonical, /next\.set\('manifestId', manifestId\)/)
+  assert.match(lifeMapCanonical, /opacity: 0\.012/)
+  assert.match(lifeMapCanonical, /div:has\(> canvas\)/)
+  assert.match(lifeMapCanonical, /height: 100% !important/)
   assert.match(css, /\.ground-provider-art\s*\{\s*display: none !important;/s)
   assert.match(css, /data-testid="urai-r3f-canonical-lifemap"/)
   assert.match(css, /data-testid="urai-true-3d-life-map"/)
-  assert.match(css, /\.urai-cinematic-backdrop/)
   assert.match(css, /prefers-reduced-motion: reduce/)
 })
 
