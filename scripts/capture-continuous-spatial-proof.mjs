@@ -23,7 +23,24 @@ const routes = [
       const runtime = await page.locator('[data-urai-home-runtime="one-continuous-webgl-world"]').count()
       const oldWorld = page.locator('.urai-genesis-home__world')
       const oldWorldHidden = (await oldWorld.count()) === 0 || await oldWorld.evaluate((node) => getComputedStyle(node).display === 'none')
-      return { runtimeMounted: runtime === 1, oldWorldHidden }
+      const portalShortcuts = page.locator('.urai-home-spatial-runtime-portals a')
+      const portalShortcutCount = await portalShortcuts.count()
+      const portalShortcutsVisible = portalShortcutCount === 5 && await portalShortcuts.evaluateAll((nodes) => nodes.every((node) => {
+        const style = getComputedStyle(node)
+        const rect = node.getBoundingClientRect()
+        return style.visibility !== 'hidden'
+          && style.display !== 'none'
+          && rect.width >= 48
+          && rect.height >= 28
+      }))
+      const portalShortcutsStyled = portalShortcutCount === 5 && await portalShortcuts.first().evaluate((node) => {
+        const style = getComputedStyle(node)
+        return style.display === 'inline-flex'
+          && Number.parseFloat(style.borderTopWidth || '0') >= 1
+          && Number.parseFloat(style.paddingLeft || '0') >= 10
+          && style.backgroundColor !== 'rgba(0, 0, 0, 0)'
+      })
+      return { runtimeMounted: runtime === 1, oldWorldHidden, portalShortcutsVisible, portalShortcutsStyled }
     },
   },
   {
@@ -34,7 +51,23 @@ const routes = [
       const provider = page.locator('.ground-provider-art')
       const providerHidden = (await provider.count()) === 0 || await provider.evaluate((node) => getComputedStyle(node).display === 'none')
       const canvasVisible = await page.locator('.ground-spatial-root canvas').isVisible()
-      return { providerHidden, canvasVisible }
+      const rail = page.locator('.ground-rail')
+      const railLinks = rail.locator('a')
+      const navigationPillsStyled = await railLinks.count() === 5 && await railLinks.first().evaluate((node) => {
+        const style = getComputedStyle(node)
+        return style.display === 'inline-flex'
+          && style.whiteSpace === 'nowrap'
+          && Number.parseFloat(style.borderTopWidth || '0') >= 1
+          && Number.parseFloat(style.paddingLeft || '0') >= 8
+          && style.backgroundColor !== 'rgba(0, 0, 0, 0)'
+      })
+      const navigationRailContained = await rail.evaluate((node) => {
+        const rect = node.getBoundingClientRect()
+        return rect.left >= -1
+          && rect.right <= window.innerWidth + 1
+          && rect.bottom <= window.innerHeight + 1
+      })
+      return { providerHidden, canvasVisible, navigationPillsStyled, navigationRailContained }
     },
   },
   {
@@ -52,7 +85,7 @@ const routes = [
 await mkdir(outputDir, { recursive: true })
 
 const receipt = {
-  schemaVersion: 'urai-continuous-spatial-visual-proof-4',
+  schemaVersion: 'urai-continuous-spatial-visual-proof-5',
   capturedAt: new Date().toISOString(),
   exactHead,
   base,
