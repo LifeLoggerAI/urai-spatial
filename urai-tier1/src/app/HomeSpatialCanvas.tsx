@@ -107,9 +107,9 @@ function CameraRig() {
     camera.position.set(0, mobile ? 6.4 : 5.25, mobile ? 19.2 : 14.6)
     if (camera instanceof THREE.PerspectiveCamera) {
       camera.fov = mobile ? 58 : 50
+      camera.updateProjectionMatrix()
     }
     camera.lookAt(0, 1.35, -2.25)
-    camera.updateProjectionMatrix()
   }, [camera, size.width])
 
   return null
@@ -179,12 +179,12 @@ function LivingGround() {
         const length = Math.max(2.8, Math.hypot(portal.position[0], portal.position[2] + 1.5) - 1.8)
         const angle = Math.atan2(portal.position[0], portal.position[2] + 1.5)
         return (
-          <group key={`path-${portal.id}`}>
-            <mesh position={[x, 0.012, z]} rotation={[0, angle, 0]} receiveShadow>
+          <group key={`path-${portal.id}`} position={[x, 0, z]} rotation={[0, angle, 0]}>
+            <mesh position={[0, 0.012, 0]} receiveShadow>
               <boxGeometry args={[1.04, 0.055, length]} />
               <meshStandardMaterial color="#8f9287" roughness={0.74} metalness={0.12} />
             </mesh>
-            <mesh position={[x, 0.05, z]} rotation={[0, angle, 0]}>
+            <mesh position={[0, 0.05, 0]}>
               <boxGeometry args={[0.08, 0.018, length * 0.94]} />
               <meshBasicMaterial color={portal.color} transparent opacity={0.72} toneMapped={false} />
             </mesh>

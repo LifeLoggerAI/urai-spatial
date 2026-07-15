@@ -189,7 +189,7 @@ function GroundDistrict({ spec }: { spec: GroundDistrictSpec }) {
 
 function GroundPaths() {
   const paths = GROUND_DISTRICTS.map((district) => {
-    const x = district.position[0] * 0.48
+    const x = district.position[0] * 0.5
     const z = (district.position[2] + 3.1) * 0.5 - 3.1
     const length = Math.max(2.2, Math.hypot(district.position[0], district.position[2] + 3.1))
     const angle = Math.atan2(district.position[0], district.position[2] + 3.1)
@@ -220,7 +220,7 @@ function GroundScene() {
       <color attach="background" args={['#010611']} />
       <fog attach="fog" args={['#041225', 8, 30]} />
       <PerspectiveCamera makeDefault position={[0, 4.8, 10.8]} fov={50} />
-      <OrbitControls enablePan={false} enableZoom enableDamping dampingFactor={0.06} rotateSpeed={0.28} zoomSpeed={0.48} minDistance={7.5} maxDistance={15} minPolarAngle={0.5} maxPolarAngle={1.35} target={[0, 0.55, -3.35]} />
+      <OrbitControls makeDefault enablePan={false} enableZoom enableDamping dampingFactor={0.06} rotateSpeed={0.28} zoomSpeed={0.48} minDistance={7.5} maxDistance={15} minPolarAngle={0.5} maxPolarAngle={1.35} target={[0, 0.55, -3.35]} />
       <ambientLight intensity={0.62} color="#d7e7ff" />
       <hemisphereLight args={['#dbeafe', '#020617', 1.55]} />
       <directionalLight position={[-5, 9, 7]} intensity={2.1} color="#e8f4ff" castShadow />
