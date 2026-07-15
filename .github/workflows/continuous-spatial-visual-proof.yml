@@ -70,7 +70,7 @@ jobs:
           pnpm install --frozen-lockfile
 
       - name: Install Chromium and system dependencies
-        run: pnpm exec playwright install --with-deps chromium
+        run: pnpm --dir urai-tier1 exec playwright install --with-deps chromium
 
       - name: Build exact static release candidate
         run: pnpm build:static
