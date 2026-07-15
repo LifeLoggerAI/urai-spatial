@@ -1,0 +1,73 @@
+name: Discover premium release runs
+
+on:
+  pull_request:
+    branches:
+      - main
+    paths:
+      - .github/workflows/discover-premium-release.yml
+
+permissions:
+  actions: read
+  contents: read
+
+jobs:
+  discover:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - name: Query dispatcher and protected release metadata
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPOSITORY: ${{ github.repository }}
+          TARGET_SHA: a8aab1206f4c7ccf14cb3ce0390820179a130ce3
+        run: |
+          set -euo pipefail
+          mkdir -p receipt
+          api_get() {
+            curl --fail-with-body --silent --show-error \
+              --header "Accept: application/vnd.github+json" \
+              --header "Authorization: Bearer $GH_TOKEN" \
+              --header "X-GitHub-Api-Version: 2022-11-28" \
+              "$1"
+          }
+          api_get "https://api.github.com/repos/$REPOSITORY/actions/workflows/one-time-production-bootstrap-dispatch.yml/runs?branch=main&per_page=40" > receipt/dispatcher-runs.json
+          api_get "https://api.github.com/repos/$REPOSITORY/actions/workflows/spatial-live-deploy.yml/runs?branch=main&per_page=40" > receipt/release-runs.json
+          node - <<'NODE'
+          const fs = require('node:fs')
+          const target = process.env.TARGET_SHA
+          const normalize = (run) => ({
+            id: run.id,
+            name: run.name,
+            event: run.event,
+            status: run.status,
+            conclusion: run.conclusion,
+            headSha: run.head_sha,
+            headBranch: run.head_branch,
+            runNumber: run.run_number,
+            runAttempt: run.run_attempt,
+            htmlUrl: run.html_url,
+            createdAt: run.created_at,
+            updatedAt: run.updated_at,
+          })
+          const dispatcher = JSON.parse(fs.readFileSync('receipt/dispatcher-runs.json', 'utf8')).workflow_runs || []
+          const releases = JSON.parse(fs.readFileSync('receipt/release-runs.json', 'utf8')).workflow_runs || []
+          const result = {
+            schemaVersion: 'urai-premium-release-run-discovery-1',
+            generatedAt: new Date().toISOString(),
+            targetSha: target,
+            dispatcherRuns: dispatcher.filter((run) => run.head_sha === target).map(normalize),
+            protectedReleaseRuns: releases.filter((run) => run.head_sha === target).map(normalize),
+            latestWorkflowDispatchRuns: releases.filter((run) => run.event === 'workflow_dispatch').slice(0, 10).map(normalize),
+          }
+          fs.writeFileSync('receipt/latest.json', JSON.stringify(result, null, 2) + '\n')
+          console.log(JSON.stringify(result, null, 2))
+          NODE
+      - name: Upload read-only discovery receipt
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: premium-release-discovery-${{ github.event.pull_request.head.sha }}
+          path: receipt
+          if-no-files-found: error
+          retention-days: 30
