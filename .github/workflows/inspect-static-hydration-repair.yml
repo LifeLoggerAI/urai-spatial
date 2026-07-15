@@ -1,4 +1,4 @@
-name: Inspect static hydration repair v3
+name: Inspect static hydration repair v4
 
 on:
   pull_request:
@@ -15,20 +15,20 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 10
     steps:
-      - name: Query exact helper v3 run
+      - name: Query exact helper v4 run
         id: query
         shell: bash
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
-          out="$RUNNER_TEMP/static-hydration-repair-v3"
+          out="$RUNNER_TEMP/static-hydration-repair-v4"
           mkdir -p "$out"
           curl --fail --silent --show-error \
             --header 'Accept: application/vnd.github+json' \
             --header "Authorization: Bearer $GH_TOKEN" \
             --header 'X-GitHub-Api-Version: 2022-11-28' \
-            "$GITHUB_API_URL/repos/$GITHUB_REPOSITORY/actions/workflows/one-time-fix-static-memory-route-hydration-v3.yml/runs?branch=release/fix-static-memory-route-hydration-20260715&event=push&per_page=20" \
+            "$GITHUB_API_URL/repos/$GITHUB_REPOSITORY/actions/workflows/one-time-fix-static-memory-route-hydration-v4.yml/runs?branch=release/fix-static-memory-route-hydration-20260715&event=push&per_page=20" \
             > "$out/runs.json"
           run_id="$(node -e "const p=require('$out/runs.json'); process.stdout.write(String(p.workflow_runs?.[0]?.id||''))")"
           if test -n "$run_id"; then
@@ -44,10 +44,10 @@ jobs:
           cat "$out/runs.json"
           cat "$out/jobs.json"
           echo "out=$out" >> "$GITHUB_OUTPUT"
-      - name: Upload helper v3 status
+      - name: Upload helper v4 status
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
-          name: static-hydration-repair-v3-status
+          name: static-hydration-repair-v4-status
           path: ${{ steps.query.outputs.out }}
           if-no-files-found: error
           retention-days: 30
