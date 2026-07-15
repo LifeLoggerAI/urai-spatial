@@ -3,27 +3,41 @@ import fs from 'node:fs'
 import path from 'node:path'
 import test from 'node:test'
 
-const cssPath = path.join(process.cwd(), 'src/app/continuous-spatial-proof-defects.css')
-assert.ok(fs.existsSync(cssPath), 'missing mobile spatial framing CSS')
-const css = fs.readFileSync(cssPath, 'utf8')
+const appRoot = path.join(process.cwd(), 'src/app')
+const home = fs.readFileSync(path.join(appRoot, 'HomeSpatialCanvas.tsx'), 'utf8')
+const defects = fs.readFileSync(path.join(appRoot, 'continuous-spatial-proof-defects.css'), 'utf8')
+const override = fs.readFileSync(path.join(appRoot, 'premium-mobile-composition.css'), 'utf8')
+const template = fs.readFileSync(path.join(appRoot, 'template.tsx'), 'utf8')
 
-test('mobile Home widens the WebGL render aspect inside the clipped device viewport', () => {
-  assert.match(css, /@media \(max-width: 760px\)/)
-  assert.match(css, /\.urai-home-spatial-canvas-shell\s*\{[^}]*left: -20vw !important;[^}]*width: 140vw !important;/s)
-  assert.match(css, /max-width: none !important/)
+test('mobile Home composition is owned by a farther real camera and visible portal positions', () => {
+  assert.match(home, /const mobile = size\.width < 720/)
+  assert.match(home, /mobile \? 7\.2 : 5\.25/)
+  assert.match(home, /mobile \? 24\.5 : 14\.6/)
+  assert.match(home, /camera\.fov = mobile \? 64 : 50/)
+  assert.match(home, /position: \[-2\.75, 0\.08, -2\.4\]/)
+  assert.match(home, /position: \[2\.75, 0\.08, -2\.4\]/)
+  assert.match(home, /position: \[-5\.2, 0\.08, 0\.75\]/)
+  assert.match(home, /position: \[5\.2, 0\.08, 0\.75\]/)
+  assert.match(home, /position: \[0, 0\.08, -5\.4\]/)
 })
 
-test('mobile Ground widens the actual R3F wrapper so side chambers remain visible', () => {
-  assert.match(css, /\.ground-spatial-root > div:has\(> canvas\)/)
-  assert.match(css, /left: -18vw !important/)
-  assert.match(css, /width: 136vw !important/)
-  assert.match(css, /height: 100% !important/)
+test('final mobile override defeats the obsolete oversized Home canvas crop', () => {
+  assert.match(defects, /left: -20vw !important/)
+  assert.match(defects, /width: 140vw !important/)
+  assert.match(override, /@media \(max-width: 760px\)/)
+  assert.match(override, /left: 0 !important/)
+  assert.match(override, /width: 100% !important/)
+  assert.match(override, /max-width: 100% !important/)
+  assert.match(template, /continuous-spatial-proof-defects\.css[\s\S]*premium-mobile-composition\.css/)
 })
 
-test('wide rendering stays mobile-scoped and leaves Life Map full-height guarantees intact', () => {
-  const mediaIndex = css.indexOf('@media (max-width: 760px)')
-  const homeWideIndex = css.indexOf('width: 140vw !important')
-  const groundWideIndex = css.indexOf('width: 136vw !important')
-  assert.ok(mediaIndex >= 0 && homeWideIndex > mediaIndex && groundWideIndex > mediaIndex)
-  assert.match(css, /\[data-testid="urai-true-3d-life-map"\][\s\S]*height: 100dvh !important/)
+test('mobile Ground retains its centered wide R3F wrapper so side chambers remain visible', () => {
+  assert.match(defects, /\.ground-spatial-root > div:has\(> canvas\)/)
+  assert.match(defects, /left: -18vw !important/)
+  assert.match(defects, /width: 136vw !important/)
+  assert.match(defects, /height: 100% !important/)
+})
+
+test('Life Map full-height guarantees remain intact', () => {
+  assert.match(defects, /\[data-testid="urai-true-3d-life-map"\][\s\S]*height: 100dvh !important/)
 })
