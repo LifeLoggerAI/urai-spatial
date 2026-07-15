@@ -23,7 +23,7 @@ const contracts = [
   ['/home', ['aaa-final-home-sky-ground-orb-body-portals', 'Own your life.'], []],
   ['/ground', ['walkable-first-person-ground-layer', 'Street-level city world'], []],
   ['/life-map', ['urai-r3f-canonical-lifemap', 'URAI canonical spatial Life Map'], []],
-  ['/focus?memoryId=quiet-reset&manifestId=replay-recovery-thread&node=quiet-reset', ['Focus loading'], []],
+  ['/focus?memoryId=quiet-reset&manifestId=replay-recovery-thread&node=quiet-reset', ['urai-final-focus-chamber', 'Selected memory chamber.'], ['Focus loading']],
   ['/replay?memoryId=quiet-reset&manifestId=replay-recovery-thread&node=quiet-reset', ['replay-route-launch-fingerprint', 'Replay the thread. Film beats. Cinematic memory camera film.'], []],
   ['/mirror', ['urai-final-mirror-realm', 'See the pattern clearly.'], []],
   ['/passport', ['urai-final-passport-vault', 'Your life stays yours.'], []],

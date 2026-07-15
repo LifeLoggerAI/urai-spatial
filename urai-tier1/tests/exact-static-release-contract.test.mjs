@@ -174,6 +174,12 @@ test('live verification binds canonical routes, origin, SHA, authority, and fing
   ], 'live verifier')
 })
 
+test('Focus live verification requires the real static chamber and rejects the obsolete loading shell', () => {
+  const expected = "['/focus?memoryId=quiet-reset&manifestId=replay-recovery-thread&node=quiet-reset', ['urai-final-focus-chamber', 'Selected memory chamber.'], ['Focus loading']]"
+  const obsolete = "['/focus?memoryId=quiet-reset&manifestId=replay-recovery-thread&node=quiet-reset', ['Focus loading'], []]"
+  assert.ok(verifier.includes(expected), 'Focus live contract must bind the real static chamber and forbid the old shell')
+  assert.ok(!verifier.includes(obsolete), 'Focus live contract must not contain the obsolete loading shell')
+})
 
 test('legacy bootstrap is fingerprint-absence-only and recovery-bound', () => {
   hasAll(workflow, [
