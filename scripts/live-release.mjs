@@ -15,10 +15,16 @@ import {
 } from 'node:fs'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
+import {
+  discoverCurrentLiveRelease,
+  restoreDiscoveredVersion,
+  verifyRestoredVersion,
+} from './firebase-hosting-recovery.mjs'
 
 const authorityDirectory = path.dirname(fileURLToPath(import.meta.url))
 const authorityRoot = path.resolve(authorityDirectory, '..')
 const postDeploySmoke = path.join(authorityDirectory, 'urai-post-deploy-smoke.mjs')
+const hostingRecoveryTool = path.join(authorityDirectory, 'firebase-hosting-recovery.mjs')
 const writeReleaseFingerprint = path.join(authorityDirectory, 'write-release-fingerprint.mjs')
 const deploy = process.argv.includes('--deploy') || process.argv.includes('--deploy-prebuilt')
 const prebuiltDeploy = process.argv.includes('--deploy-prebuilt')
@@ -36,12 +42,18 @@ const runnerTemp = (process.env.RUNNER_TEMP || '').trim()
 const liveRollbackProvenancePath = runnerTemp
   ? path.join(runnerTemp, 'release-control-evidence', 'live-rollback-provenance.json')
   : ''
+const hostingRecoveryReceiptPath = runnerTemp
+  ? path.join(runnerTemp, 'hosting-recovery', 'legacy-live-release.json')
+  : ''
 const firebaseCliPath = (process.env.URAI_FIREBASE_CLI || '').trim()
 const releaseBundleDirectory = path.resolve(process.env.URAI_RELEASE_BUNDLE_DIR || path.join(authorityRoot, 'release-bundle'))
 const canonicalWorkflow = 'URAI Canonical Production Release'
 const canonicalRepository = 'LifeLoggerAI/urai-spatial'
 const managedCredentialFilename = 'urai-firebase-service-account.json'
 
+// Raw secret material is retained only in the immutable local binding above and is
+// never inherited by child processes. The managed file remains inside RUNNER_TEMP
+// until the workflow's existing always-run cleanup step removes it.
 delete process.env.FIREBASE_SERVICE_ACCOUNT_JSON
 delete process.env.GOOGLE_APPLICATION_CREDENTIALS
 
@@ -60,6 +72,20 @@ function run(command, args, extraEnv = {}) {
     env: childEnvironment(extraEnv),
   })
   if (result.status !== 0) process.exit(result.status ?? 1)
+}
+
+function runChecked(command, args, extraEnv = {}) {
+  console.log(`[URAI release] $ ${command} ${args.join(' ')}`)
+  const result = spawnSync(command, args, {
+    stdio: 'inherit',
+    shell: process.platform === 'win32',
+    env: childEnvironment(extraEnv),
+  })
+  if (result.status !== 0) {
+    const error = new Error(`${command} ${args.join(' ')} failed with status ${result.status ?? 'unknown'}`)
+    error.exitCode = result.status ?? 1
+    throw error
+  }
 }
 
 function output(command, args) {
@@ -186,6 +212,7 @@ function assertReleaseSurface() {
     'urai-tier1/src/app/layout.tsx',
   ]) requireFile(file)
   requireFile(postDeploySmoke)
+  requireFile(hostingRecoveryTool)
   requireFile(writeReleaseFingerprint)
   assertStaticConfig()
 }
@@ -196,6 +223,7 @@ function assertCanonicalWorkflowContext() {
   if (process.env.GITHUB_WORKFLOW !== canonicalWorkflow) throw new Error(`Production release verification requires workflow ${canonicalWorkflow}`)
   if (process.env.GITHUB_REPOSITORY !== canonicalRepository) throw new Error(`Production release verification requires repository ${canonicalRepository}`)
   if (process.env.GITHUB_REF !== 'refs/heads/main') throw new Error('Production release verification requires refs/heads/main')
+  if (process.env.GITHUB_JOB !== 'deploy') throw new Error('Production release mutation requires the protected deploy job')
   if (!['deploy', 'rollback'].includes(releaseOperation)) throw new Error(`Unsupported release operation: ${releaseOperation}`)
 }
 
@@ -264,6 +292,81 @@ function writeTemporaryServiceAccount() {
 function removeTemporaryServiceAccount() {
   const managedCredentialsPath = resolveManagedCredentialPath()
   if (managedCredentialsPath) rmSync(managedCredentialsPath, { force: true })
+}
+
+function configureHostingRecoveryEnvironment(credentialFile) {
+  if (!runnerTemp) throw new Error('RUNNER_TEMP is required for exact Firebase Hosting recovery')
+  if (!hostingRecoveryReceiptPath) throw new Error('Hosting recovery receipt path is unavailable')
+  process.env.FIREBASE_SITE_ID = expectedProject
+  process.env.GOOGLE_APPLICATION_CREDENTIALS = credentialFile
+  process.env.URAI_HOSTING_RECOVERY_RECEIPT = hostingRecoveryReceiptPath
+}
+
+function clearHostingRecoveryEnvironment() {
+  delete process.env.FIREBASE_SITE_ID
+  delete process.env.GOOGLE_APPLICATION_CREDENTIALS
+  delete process.env.URAI_HOSTING_RESTORE_CONFIRM
+}
+
+function copyHostingRecoveryEvidence(destinationRoot) {
+  const sourceDirectory = runnerTemp ? path.join(runnerTemp, 'hosting-recovery') : ''
+  if (!sourceDirectory || !existsSync(sourceDirectory)) return null
+  const destination = path.join(destinationRoot, 'hosting-recovery')
+  rmSync(destination, { recursive: true, force: true })
+  mkdirSync(path.dirname(destination), { recursive: true })
+  cpSync(sourceDirectory, destination, { recursive: true, dereference: false, errorOnExist: true, force: false })
+  return destination
+}
+
+async function recoverExactHostingVersion({ phase, originalError, targetSha }) {
+  let restoreError = null
+  let verification = null
+  try {
+    process.env.URAI_HOSTING_RESTORE_CONFIRM = 'RESTORE_EXACT_HOSTING_VERSION'
+    await restoreDiscoveredVersion()
+    verification = await verifyRestoredVersion()
+  } catch (error) {
+    restoreError = error
+  }
+
+  const evidenceRoot = path.join('release-control-evidence', 'hosting-recovery')
+  mkdirSync(evidenceRoot, { recursive: true })
+  copyHostingRecoveryEvidence('release-control-evidence')
+  const summary = {
+    schemaVersion: 'urai-protected-hosting-recovery-1',
+    recordedAt: new Date().toISOString(),
+    repository: process.env.GITHUB_REPOSITORY || canonicalRepository,
+    workflowRunId: process.env.GITHUB_RUN_ID || null,
+    authoritySha: expectedCurrentMain || null,
+    targetSha,
+    rollbackSha,
+    releaseOperation,
+    failurePhase: phase,
+    originalError: String(originalError?.stack || originalError),
+    restoreSucceeded: !restoreError,
+    restoreVerificationPath: verification?.resultPath || null,
+    restoreError: restoreError ? String(restoreError?.stack || restoreError) : null,
+  }
+  writeFileSync(path.join(evidenceRoot, 'operator-recovery.json'), `${JSON.stringify(summary, null, 2)}\n`)
+  const finalStateDirectory = path.join('deployment-receipt', targetSha)
+  mkdirSync(finalStateDirectory, { recursive: true })
+  writeFileSync(path.join(finalStateDirectory, 'recovery-final-state.json'), `${JSON.stringify({
+    ...summary,
+    finalState: restoreError ? 'recovery-failed' : 'restored-previous-hosting-version',
+    expectedRestoredVersionName: verification?.result?.expectedVersionName || null,
+    observedRestoredVersionName: verification?.result?.observedVersionName || null,
+  }, null, 2)}\n`)
+
+  if (restoreError) {
+    throw new AggregateError(
+      [originalError, restoreError],
+      `URAI production ${phase} failed and exact Firebase Hosting recovery also failed`,
+    )
+  }
+  throw new AggregateError(
+    [originalError],
+    `URAI production ${phase} failed; the exact previously live Firebase Hosting version was restored and verified`,
+  )
 }
 
 function validateAndMaterializePrebuiltBundle(targetSha, authoritySha, materialize = true) {
@@ -366,24 +469,23 @@ function validateAndMaterializePrebuiltBundle(targetSha, authoritySha, materiali
 }
 
 function deployHostingWithTemporaryCredentials() {
-  let result
-  try {
-    const authorityFirebaseCli = resolveAuthorityFirebaseCli()
-    const credentialFile = writeTemporaryServiceAccount()
-    console.log(`[URAI release] $ ${authorityFirebaseCli} deploy --config firebase.static.json --only hosting --project ${project}`)
-    result = spawnSync(
-      authorityFirebaseCli,
-      ['deploy', '--config', 'firebase.static.json', '--only', 'hosting', '--project', project],
-      {
-        stdio: 'inherit',
-        shell: false,
-        env: childEnvironment({ GOOGLE_APPLICATION_CREDENTIALS: credentialFile }, true),
-      },
-    )
-  } finally {
-    removeTemporaryServiceAccount()
+  const credentialFile = resolveManagedCredentialPath({ required: true })
+  const authorityFirebaseCli = resolveAuthorityFirebaseCli()
+  console.log(`[URAI release] $ ${authorityFirebaseCli} deploy --config firebase.static.json --only hosting --project ${project}`)
+  const result = spawnSync(
+    authorityFirebaseCli,
+    ['deploy', '--config', 'firebase.static.json', '--only', 'hosting', '--project', project],
+    {
+      stdio: 'inherit',
+      shell: false,
+      env: childEnvironment({ GOOGLE_APPLICATION_CREDENTIALS: credentialFile }, true),
+    },
+  )
+  if (result.status !== 0) {
+    const error = new Error(`Firebase Hosting deployment failed with status ${result.status ?? 'unknown'}`)
+    error.exitCode = result.status ?? 1
+    throw error
   }
-  if (result?.status !== 0) process.exit(result?.status ?? 1)
 }
 
 function resolvePreDeployReceiptRoot() {
@@ -534,12 +636,28 @@ if (output('git', ['status', '--porcelain', '--untracked-files=all'])) {
 }
 
 const preDeployMainSha = assertRemoteMainUnchanged(targetSha)
-deployHostingWithTemporaryCredentials()
-if (liveUrl) run('node', [postDeploySmoke], {
-  URAI_DEPLOY_URL: liveUrl,
-  URAI_EXPECTED_DEPLOYED_SHA: targetSha,
-  URAI_EXPECTED_ROLLBACK_SHA: rollbackSha,
-})
+const credentialFile = writeTemporaryServiceAccount()
+configureHostingRecoveryEnvironment(credentialFile)
+const hostingCapture = await discoverCurrentLiveRelease()
+let deploymentCompleted = false
+try {
+  deployHostingWithTemporaryCredentials()
+  deploymentCompleted = true
+  if (liveUrl) runChecked('node', [postDeploySmoke], {
+    URAI_DEPLOY_URL: liveUrl,
+    URAI_EXPECTED_DEPLOYED_SHA: targetSha,
+    URAI_EXPECTED_ROLLBACK_SHA: rollbackSha,
+  })
+} catch (error) {
+  await recoverExactHostingVersion({
+    phase: deploymentCompleted ? 'post-deploy-smoke' : 'firebase-deploy',
+    originalError: error,
+    targetSha,
+  })
+} finally {
+  clearHostingRecoveryEnvironment()
+}
+
 const finalReceiptPath = writeReceipt(targetSha, 'deployed', {
   authorizedMainSha,
   preDeployMainSha,
@@ -549,7 +667,13 @@ const finalReceiptPath = writeReceipt(targetSha, 'deployed', {
   indexSha256: sha256('urai-tier1/out/index.html'),
   fingerprintSha256: sha256('urai-tier1/out/release-fingerprint.json'),
   previousReceipt: receiptPath,
+  hostingRecoverySchemaVersion: hostingCapture.receipt.schemaVersion,
+  hostingRecoveryReleaseName: hostingCapture.receipt.releaseName,
+  hostingRecoveryVersionName: hostingCapture.receipt.versionName,
+  hostingRecoveryReceipt: hostingCapture.receiptPath,
+  managedCredentialRetainedForStrictSmoke: true,
   ...outputDetails,
 })
 copyFileSync(receiptPath, path.join(path.dirname(finalReceiptPath), 'predeploy-receipt.json'))
-console.log('[URAI release] Static Hosting deployment completed.')
+copyHostingRecoveryEvidence(path.dirname(finalReceiptPath))
+console.log('[URAI release] Static Hosting deployment and first protected smoke completed; exact prior Hosting version remains available for strict-smoke recovery.')

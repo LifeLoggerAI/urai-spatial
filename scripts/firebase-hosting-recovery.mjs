@@ -1,7 +1,14 @@
 #!/usr/bin/env node
 
 import { createSign } from 'node:crypto'
-import { existsSync, mkdirSync, readFileSync, realpathSync, writeFileSync } from 'node:fs'
+import {
+  existsSync,
+  lstatSync,
+  mkdirSync,
+  readFileSync,
+  realpathSync,
+  writeFileSync,
+} from 'node:fs'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 
@@ -9,6 +16,7 @@ const apiRoot = 'https://firebasehosting.googleapis.com/v1beta1'
 const hostingScope = 'https://www.googleapis.com/auth/firebase.hosting'
 const expectedSiteId = 'urai-4dc1d'
 const restoreConfirmation = 'RESTORE_EXACT_HOSTING_VERSION'
+const managedCredentialFilename = 'urai-firebase-service-account.json'
 
 function requireString(label, value) {
   const normalized = String(value || '').trim()
@@ -18,6 +26,28 @@ function requireString(label, value) {
 
 function escapeRegExp(value) {
   return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+}
+
+function sleep(milliseconds) {
+  return new Promise((resolve) => setTimeout(resolve, milliseconds))
+}
+
+function resolveRunnerTemp() {
+  const runnerTemp = requireString('RUNNER_TEMP', process.env.RUNNER_TEMP)
+  mkdirSync(runnerTemp, { recursive: true })
+  return realpathSync(runnerTemp)
+}
+
+function assertPathInsideRunnerTemp(label, requestedPath) {
+  const runnerTemp = resolveRunnerTemp()
+  const resolved = path.resolve(requestedPath)
+  if (resolved !== runnerTemp && !resolved.startsWith(`${runnerTemp}${path.sep}`)) {
+    if (label === 'Hosting recovery receipt') {
+      throw new Error('Hosting recovery receipt must remain inside RUNNER_TEMP')
+    }
+    throw new Error(`${label} must remain inside RUNNER_TEMP`)
+  }
+  return resolved
 }
 
 export function assertSiteId(value) {
@@ -46,7 +76,7 @@ export function selectCurrentLiveRelease(releases, siteId = expectedSiteId) {
       if (!Number.isFinite(releaseTimeMs)) {
         throw new Error(`Invalid releaseTime for live Firebase Hosting release: ${release.name}`)
       }
-      return {...release, releaseTimeMs}
+      return { ...release, releaseTimeMs }
     })
     .sort((left, right) => right.releaseTimeMs - left.releaseTimeMs)
 
@@ -116,31 +146,65 @@ async function accessTokenFromServiceAccount(serviceAccount) {
   return requireString('OAuth access_token', token.access_token)
 }
 
-function serviceAccountFromEnvironment() {
-  const raw = requireString('FIREBASE_SERVICE_ACCOUNT_JSON', process.env.FIREBASE_SERVICE_ACCOUNT_JSON)
+function parseServiceAccount(raw) {
   let parsed
   try {
     parsed = JSON.parse(raw)
   } catch {
-    throw new Error('FIREBASE_SERVICE_ACCOUNT_JSON must contain valid JSON')
+    throw new Error('Firebase service-account material must contain valid JSON')
   }
-  if (parsed.project_id !== expectedSiteId) {
-    throw new Error(`Service-account project mismatch: ${parsed.project_id || 'missing'}`)
+  if (!parsed || typeof parsed !== 'object' || parsed.project_id !== expectedSiteId) {
+    throw new Error(`Service-account project mismatch: ${parsed?.project_id || 'missing'}`)
   }
   return parsed
 }
 
-function resolveReceiptPath() {
-  const runnerTemp = requireString('RUNNER_TEMP', process.env.RUNNER_TEMP)
-  const requested = process.env.URAI_HOSTING_RECOVERY_RECEIPT?.trim()
-    || path.join(runnerTemp, 'hosting-recovery', 'legacy-live-release.json')
-  const resolved = path.resolve(requested)
-  mkdirSync(runnerTemp, { recursive: true })
-  const resolvedRunnerTemp = realpathSync(runnerTemp)
-  if (resolved !== resolvedRunnerTemp && !resolved.startsWith(`${resolvedRunnerTemp}${path.sep}`)) {
-    throw new Error('Hosting recovery receipt must remain inside RUNNER_TEMP')
+function managedCredentialPath() {
+  const runnerTemp = resolveRunnerTemp()
+  const requested = String(process.env.GOOGLE_APPLICATION_CREDENTIALS || '').trim()
+    || path.join(runnerTemp, managedCredentialFilename)
+  const resolved = assertPathInsideRunnerTemp('Managed Firebase credential path', requested)
+  if (path.basename(resolved) !== managedCredentialFilename) {
+    throw new Error(`Managed Firebase credential path must use ${managedCredentialFilename}`)
   }
   return resolved
+}
+
+function serviceAccountFromEnvironment() {
+  const raw = String(process.env.FIREBASE_SERVICE_ACCOUNT_JSON || '').trim()
+  if (raw) return parseServiceAccount(raw)
+
+  const credentialPath = managedCredentialPath()
+  if (!existsSync(credentialPath)) {
+    throw new Error(`Managed Firebase credential file is missing: ${credentialPath}`)
+  }
+  const stats = lstatSync(credentialPath)
+  if (!stats.isFile() || stats.isSymbolicLink()) {
+    throw new Error('Managed Firebase credential must be a regular non-symlinked file')
+  }
+  return parseServiceAccount(readFileSync(credentialPath, 'utf8'))
+}
+
+function resolveReceiptPath() {
+  const runnerTemp = resolveRunnerTemp()
+  const requested = process.env.URAI_HOSTING_RECOVERY_RECEIPT?.trim()
+    || path.join(runnerTemp, 'hosting-recovery', 'legacy-live-release.json')
+  return assertPathInsideRunnerTemp('Hosting recovery receipt', requested)
+}
+
+function readRecoveryReceipt() {
+  const receiptPath = resolveReceiptPath()
+  if (!existsSync(receiptPath)) throw new Error(`Hosting recovery receipt is missing: ${receiptPath}`)
+  const stats = lstatSync(receiptPath)
+  if (!stats.isFile() || stats.isSymbolicLink()) throw new Error('Hosting recovery receipt must be a regular non-symlinked file')
+  const receipt = JSON.parse(readFileSync(receiptPath, 'utf8'))
+  if (receipt.schemaVersion !== 'urai-firebase-hosting-recovery-1') throw new Error('Unsupported Hosting recovery receipt schema')
+  const siteId = assertSiteId(receipt.siteId)
+  const versionName = assertVersionName(receipt.versionName, siteId)
+  if (!new RegExp(`^sites/${escapeRegExp(siteId)}/releases/[^/]+$`).test(String(receipt.releaseName || ''))) {
+    throw new Error('Recovery receipt does not identify a live-channel release')
+  }
+  return { receiptPath, receipt, siteId, versionName }
 }
 
 async function listAllReleases(accessToken, siteId) {
@@ -163,11 +227,16 @@ async function listAllReleases(accessToken, siteId) {
   throw new Error('Firebase Hosting release pagination exceeded the fail-closed limit')
 }
 
+async function currentLiveRelease(serviceAccount, siteId) {
+  const accessToken = await accessTokenFromServiceAccount(serviceAccount)
+  const release = selectCurrentLiveRelease(await listAllReleases(accessToken, siteId), siteId)
+  return { accessToken, release }
+}
+
 export async function discoverCurrentLiveRelease() {
   const siteId = assertSiteId(process.env.FIREBASE_SITE_ID || expectedSiteId)
   const serviceAccount = serviceAccountFromEnvironment()
-  const accessToken = await accessTokenFromServiceAccount(serviceAccount)
-  const release = selectCurrentLiveRelease(await listAllReleases(accessToken, siteId), siteId)
+  const { release } = await currentLiveRelease(serviceAccount, siteId)
   const receiptPath = resolveReceiptPath()
   mkdirSync(path.dirname(receiptPath), { recursive: true })
   const receipt = {
@@ -193,16 +262,7 @@ export async function restoreDiscoveredVersion() {
   if (process.env.URAI_HOSTING_RESTORE_CONFIRM !== restoreConfirmation) {
     throw new Error(`Restore requires URAI_HOSTING_RESTORE_CONFIRM=${restoreConfirmation}`)
   }
-  const receiptPath = resolveReceiptPath()
-  if (!existsSync(receiptPath)) throw new Error(`Hosting recovery receipt is missing: ${receiptPath}`)
-  const receipt = JSON.parse(readFileSync(receiptPath, 'utf8'))
-  if (receipt.schemaVersion !== 'urai-firebase-hosting-recovery-1') throw new Error('Unsupported Hosting recovery receipt schema')
-  const siteId = assertSiteId(receipt.siteId)
-  const versionName = assertVersionName(receipt.versionName, siteId)
-  if (!new RegExp(`^sites/${escapeRegExp(siteId)}/releases/[^/]+$`).test(String(receipt.releaseName || ''))) {
-    throw new Error('Recovery receipt does not identify a live-channel release')
-  }
-
+  const { receiptPath, receipt, siteId, versionName } = readRecoveryReceipt()
   const serviceAccount = serviceAccountFromEnvironment()
   const accessToken = await accessTokenFromServiceAccount(serviceAccount)
   const url = new URL(`${apiRoot}/sites/${siteId}/releases`)
@@ -222,6 +282,42 @@ export async function restoreDiscoveredVersion() {
   writeFileSync(resultPath, `${JSON.stringify({ restoredAt: new Date().toISOString(), receipt, restored }, null, 2)}\n`, { mode: 0o600 })
   console.log(JSON.stringify({ ok: true, action: 'restore', versionName, releaseName: restored.name, resultPath }, null, 2))
   return { resultPath, restored }
+}
+
+export async function verifyRestoredVersion({ attempts = 12, delayMs = 1000 } = {}) {
+  if (!Number.isInteger(attempts) || attempts < 1 || attempts > 60) throw new Error('Restore verification attempts must be between 1 and 60')
+  if (!Number.isInteger(delayMs) || delayMs < 0 || delayMs > 10_000) throw new Error('Restore verification delay must be between 0 and 10000 ms')
+
+  const { receiptPath, receipt, siteId, versionName } = readRecoveryReceipt()
+  const serviceAccount = serviceAccountFromEnvironment()
+  const accessToken = await accessTokenFromServiceAccount(serviceAccount)
+  let observed = null
+  for (let attempt = 1; attempt <= attempts; attempt += 1) {
+    const release = selectCurrentLiveRelease(await listAllReleases(accessToken, siteId), siteId)
+    observed = release
+    if (release.versionName === versionName) {
+      const resultPath = path.join(path.dirname(receiptPath), 'restore-verification.json')
+      const result = {
+        schemaVersion: 'urai-firebase-hosting-restore-verification-1',
+        verifiedAt: new Date().toISOString(),
+        repository: process.env.GITHUB_REPOSITORY || 'LifeLoggerAI/urai-spatial',
+        workflowRunId: process.env.GITHUB_RUN_ID || null,
+        authoritySha: process.env.GITHUB_SHA || null,
+        siteId,
+        expectedVersionName: versionName,
+        observedReleaseName: release.name,
+        observedVersionName: release.versionName,
+        attemptsUsed: attempt,
+        restored: true,
+        sourceReceipt: receipt,
+      }
+      writeFileSync(resultPath, `${JSON.stringify(result, null, 2)}\n`, { mode: 0o600 })
+      console.log(JSON.stringify({ ok: true, action: 'verify-restored', resultPath, ...result }, null, 2))
+      return { resultPath, result }
+    }
+    if (attempt < attempts) await sleep(delayMs)
+  }
+  throw new Error(`Firebase Hosting restore verification failed: expected ${versionName}, observed ${observed?.versionName || 'none'}`)
 }
 
 export function selfTest() {
@@ -257,5 +353,6 @@ if (fileURLToPath(import.meta.url) === invokedPath) {
   if (command === '--self-test') selfTest()
   else if (command === 'discover') await discoverCurrentLiveRelease()
   else if (command === 'restore') await restoreDiscoveredVersion()
-  else throw new Error('Usage: firebase-hosting-recovery.mjs --self-test|discover|restore')
+  else if (command === 'verify-restored') await verifyRestoredVersion()
+  else throw new Error('Usage: firebase-hosting-recovery.mjs --self-test|discover|restore|verify-restored')
 }
