@@ -59,10 +59,13 @@ function useReducedMotion() {
 }
 
 export function useWebGLAvailable() {
-  const [available, setAvailable] = useState<boolean | null>(cachedWebGLAvailable)
+  const [available, setAvailable] = useState<boolean | null>(null)
 
   useEffect(() => {
-    if (cachedWebGLAvailable !== null) return
+    if (cachedWebGLAvailable !== null) {
+      setAvailable(cachedWebGLAvailable)
+      return
+    }
 
     try {
       const canvas = document.createElement('canvas')
