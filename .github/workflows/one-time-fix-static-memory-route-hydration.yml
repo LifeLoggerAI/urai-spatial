@@ -1,0 +1,132 @@
+name: One-time fix static memory route hydration
+
+on:
+  push:
+    branches:
+      - release/fix-static-memory-route-hydration-20260715
+    paths:
+      - '.github/workflows/one-time-fix-static-memory-route-hydration.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  repair:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - name: Checkout exact repair branch
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          ref: ${{ github.ref }}
+          fetch-depth: 0
+          persist-credentials: true
+      - name: Prove isolated branch identity
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$GITHUB_REF" = 'refs/heads/release/fix-static-memory-route-hydration-20260715'
+          test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
+          test -z "$(git status --porcelain --untracked-files=all)"
+          git merge-base --is-ancestor 7812741e41b73df973d4796ca0930c86ca42e7ef "$GITHUB_SHA"
+      - name: Apply static hydration repair
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+
+          def replace_exact(path, old, new):
+              file = Path(path)
+              source = file.read_text()
+              if old not in source:
+                  raise SystemExit(f'missing expected source block in {path}')
+              file.write_text(source.replace(old, new, 1))
+
+          focus_client = 'urai-tier1/src/app/focus/FocusChamberClient.tsx'
+          replace_exact(
+              focus_client,
+              "import { useEffect, useMemo } from 'react'\nimport { assetCssStack, focusAssets, uiAssets } from '@/spatial/assets/uraiAssets'",
+              "import { useEffect, useMemo, useState } from 'react'\nimport { assetCssStack, focusAssets, uiAssets } from '@/spatial/assets/uraiAssets'",
+          )
+          replace_exact(
+              focus_client,
+              "import { useSearchParams } from 'next/navigation'\n",
+              '',
+          )
+          replace_exact(
+              focus_client,
+              "export default function FocusChamberClient() {\n  const params = useSearchParams()\n  const memoryId = safeToken(params.get('memoryId'), DEFAULT_MEMORY_ID)\n  const manifestId = safeToken(params.get('manifestId'), DEFAULT_MANIFEST_ID)\n  const node = safeToken(params.get('node'), memoryId)\n  const memoryName = readableName(node)\n",
+              "export default function FocusChamberClient() {\n  const [identity, setIdentity] = useState(() => ({\n    memoryId: DEFAULT_MEMORY_ID,\n    manifestId: DEFAULT_MANIFEST_ID,\n    node: DEFAULT_MEMORY_ID,\n  }))\n  const { memoryId, manifestId, node } = identity\n  const memoryName = readableName(node)\n\n  useEffect(() => {\n    const params = new URLSearchParams(window.location.search)\n    const nextMemoryId = safeToken(params.get('memoryId'), DEFAULT_MEMORY_ID)\n    const nextManifestId = safeToken(params.get('manifestId'), DEFAULT_MANIFEST_ID)\n    const nextNode = safeToken(params.get('node'), nextMemoryId)\n    setIdentity({ memoryId: nextMemoryId, manifestId: nextManifestId, node: nextNode })\n  }, [])\n",
+          )
+
+          Path('urai-tier1/src/app/focus/page.tsx').write_text("""import FinalFocusChamber from './FocusChamberClient'\n\nexport const metadata = {\n  title: 'URAI Focus',\n  description: 'Open the guardian-approved Final Focus Chamber.',\n}\n\nexport default function FocusRoutePage() {\n  return <FinalFocusChamber />\n}\n""")
+
+          replay_client = 'urai-tier1/src/app/replay/CinematicReplayClient.tsx'
+          replace_exact(replay_client, "import { useSearchParams } from 'next/navigation'\n", '')
+          replace_exact(
+              replay_client,
+              "export default function CinematicReplayClient() {\n  const params = useSearchParams()\n  const reducedMotion = useReducedMotion()\n  const [playing, setPlaying] = useState(true)\n  const [scrubbing, setScrubbing] = useState(false)\n  const [progressMs, setProgressMs] = useState(0)\n\n  const memoryId = safeToken(params.get('memoryId'), DEFAULT_MEMORY_ID)\n  const manifestId = safeToken(params.get('manifestId'), DEFAULT_REPLAY_MANIFEST_ID)\n  const node = safeToken(params.get('node'), memoryId)\n  const nodeName = nodeNameFromParams(node)\n",
+              "export default function CinematicReplayClient() {\n  const reducedMotion = useReducedMotion()\n  const [playing, setPlaying] = useState(true)\n  const [scrubbing, setScrubbing] = useState(false)\n  const [progressMs, setProgressMs] = useState(0)\n  const [identity, setIdentity] = useState(() => ({\n    memoryId: DEFAULT_MEMORY_ID,\n    manifestId: DEFAULT_REPLAY_MANIFEST_ID,\n    node: DEFAULT_MEMORY_ID,\n  }))\n  const { memoryId, manifestId, node } = identity\n  const nodeName = nodeNameFromParams(node)\n\n  useEffect(() => {\n    const params = new URLSearchParams(window.location.search)\n    const nextMemoryId = safeToken(params.get('memoryId'), DEFAULT_MEMORY_ID)\n    const nextManifestId = safeToken(params.get('manifestId'), DEFAULT_REPLAY_MANIFEST_ID)\n    const nextNode = safeToken(params.get('node'), nextMemoryId)\n    setIdentity({ memoryId: nextMemoryId, manifestId: nextManifestId, node: nextNode })\n  }, [])\n",
+          )
+
+          replay_page = Path('urai-tier1/src/app/replay/page.tsx')
+          replay_source = replay_page.read_text()
+          replay_source = replay_source.replace("import { Suspense } from 'react'\n", '', 1)
+          fallback = """function ReplayLoadingFallback() {\n  return (\n    <main aria-label=\"Replay loading\" style={{ minHeight: '100svh', background: '#030713' }} />\n  )\n}\n\n"""
+          if fallback not in replay_source:
+              raise SystemExit('missing Replay loading fallback')
+          replay_source = replay_source.replace(fallback, '', 1)
+          replay_source = replay_source.replace(
+              """      <Suspense fallback={<ReplayLoadingFallback />}>\n        <FinalReplayFilm />\n      </Suspense>\n""",
+              """      <FinalReplayFilm />\n""",
+              1,
+          )
+          replay_page.write_text(replay_source)
+
+          smoke = 'scripts/urai-release-control-smoke.mjs'
+          replace_exact(
+              smoke,
+              """  async function verifyHydratedIdentity(page, check, profileName) {\n    const visibleSelector = `${check.selector}:visible`\n    const surface = page.locator(visibleSelector)\n    await surface.waitFor({ state: 'visible', timeout: 20000 })\n    const observed = {\n      memoryId: await surface.getAttribute('data-memory-id'),\n      manifestId: await surface.getAttribute('data-manifest-id'),\n      node: await surface.getAttribute('data-node'),\n    }\n""",
+              """  async function verifyHydratedIdentity(page, check, profileName) {\n    const visibleSelector = `${check.selector}:visible`\n    await page.waitForFunction(\n      ({ selector, expected }) => Array.from(document.querySelectorAll(selector)).some((element) => {\n        const style = window.getComputedStyle(element)\n        const bounds = element.getBoundingClientRect()\n        const visible = style.display !== 'none' && style.visibility !== 'hidden' && bounds.width > 0 && bounds.height > 0\n        return visible\n          && element.getAttribute('data-memory-id') === expected.memoryId\n          && element.getAttribute('data-manifest-id') === expected.manifestId\n          && element.getAttribute('data-node') === expected.node\n      }),\n      { selector: check.selector, expected: identity },\n      { timeout: 20000 },\n    )\n    const surface = page.locator(visibleSelector).first()\n    const observed = {\n      memoryId: await surface.getAttribute('data-memory-id'),\n      manifestId: await surface.getAttribute('data-manifest-id'),\n      node: await surface.getAttribute('data-node'),\n    }\n""",
+          )
+
+          Path('urai-tier1/tests/static-memory-route-hydration-contract.test.mjs').write_text("""import assert from 'node:assert/strict'\nimport { readFileSync } from 'node:fs'\nimport test from 'node:test'\n\nconst focusPage = readFileSync(new URL('../src/app/focus/page.tsx', import.meta.url), 'utf8')\nconst focusClient = readFileSync(new URL('../src/app/focus/FocusChamberClient.tsx', import.meta.url), 'utf8')\nconst replayPage = readFileSync(new URL('../src/app/replay/page.tsx', import.meta.url), 'utf8')\nconst replayClient = readFileSync(new URL('../src/app/replay/CinematicReplayClient.tsx', import.meta.url), 'utf8')\nconst smoke = readFileSync(new URL('../../scripts/urai-release-control-smoke.mjs', import.meta.url), 'utf8')\n\ntest('focus and replay render real static surfaces instead of Suspense loading shells', () => {\n  assert.doesNotMatch(focusPage, /Suspense|Focus loading/)\n  assert.match(focusPage, /return <FinalFocusChamber \/>/)\n  assert.doesNotMatch(replayPage, /Suspense|Replay loading/)\n  assert.match(replayPage, /<FinalReplayFilm \/>/)\n})\n\ntest('memory routes hydrate exact query identity without useSearchParams', () => {\n  for (const source of [focusClient, replayClient]) {\n    assert.doesNotMatch(source, /useSearchParams/)\n    assert.match(source, /new URLSearchParams\(window\.location\.search\)/)\n    assert.match(source, /setIdentity\(\{ memoryId: nextMemoryId, manifestId: nextManifestId, node: nextNode \}\)/)\n  }\n})\n\ntest('strict smoke waits for an exact visible hydrated identity', () => {\n  assert.match(smoke, /await page\.waitForFunction\(/)\n  assert.match(smoke, /element\.getAttribute\('data-memory-id'\) === expected\.memoryId/)\n  assert.match(smoke, /element\.getAttribute\('data-manifest-id'\) === expected\.manifestId/)\n  assert.match(smoke, /element\.getAttribute\('data-node'\) === expected\.node/)\n  assert.match(smoke, /page\.locator\(visibleSelector\)\.first\(\)/)\n})\n""")
+          PY
+          git diff --check
+          test "$(git diff --name-only | wc -l | tr -d ' ')" = '6'
+      - name: Set up Node
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: '22'
+          cache: pnpm
+      - name: Enable exact pnpm
+        shell: bash
+        run: corepack enable && corepack prepare pnpm@10.0.0 --activate
+      - name: Install frozen dependencies
+        shell: bash
+        run: pnpm install --frozen-lockfile --ignore-scripts
+      - name: Run focused hydration contracts
+        shell: bash
+        run: |
+          set -euo pipefail
+          node --test urai-tier1/tests/static-memory-route-hydration-contract.test.mjs urai-tier1/tests/release-control-visible-surface-contract.test.mjs urai-tier1/tests/exact-static-release-contract.test.mjs
+          pnpm --dir urai-tier1 typecheck
+          node scripts/audit-production-workflow-authority.mjs
+          node scripts/verify-production-action-pins.mjs
+          node scripts/verify-release-security-paths.mjs
+      - name: Commit exact permanent repair
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add scripts/urai-release-control-smoke.mjs \
+            urai-tier1/src/app/focus/FocusChamberClient.tsx \
+            urai-tier1/src/app/focus/page.tsx \
+            urai-tier1/src/app/replay/CinematicReplayClient.tsx \
+            urai-tier1/src/app/replay/page.tsx \
+            urai-tier1/tests/static-memory-route-hydration-contract.test.mjs
+          test "$(git diff --cached --name-only | wc -l | tr -d ' ')" = '6'
+          git commit -m 'Fix static Focus and Replay hydration'
+          git push origin HEAD:release/fix-static-memory-route-hydration-20260715
