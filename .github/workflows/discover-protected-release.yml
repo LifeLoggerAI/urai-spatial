@@ -1,0 +1,91 @@
+name: Discover protected release runs
+
+on:
+  push:
+    branches:
+      - ops/discover-protected-release-20260715
+    paths:
+      - .github/workflows/discover-protected-release.yml
+
+permissions:
+  actions: read
+  contents: write
+
+jobs:
+  discover:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - name: Query run metadata and write branch receipt
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPOSITORY: ${{ github.repository }}
+          TARGET_SHA: 5385ad6d7e3cea5c8bb8e86cbda8e8c82ca8558b
+          RECEIPT_BRANCH: ops/discover-protected-release-20260715
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/discovery"
+          dispatcher="$RUNNER_TEMP/discovery/dispatcher.json"
+          release="$RUNNER_TEMP/discovery/release.json"
+          receipt="$RUNNER_TEMP/discovery/latest.json"
+
+          api_get() {
+            curl --fail-with-body --silent --show-error \
+              --header "Accept: application/vnd.github+json" \
+              --header "Authorization: Bearer $GH_TOKEN" \
+              --header "X-GitHub-Api-Version: 2022-11-28" \
+              "$1"
+          }
+
+          api_get "https://api.github.com/repos/$REPOSITORY/actions/workflows/one-time-production-bootstrap-dispatch.yml/runs?branch=main&per_page=30" > "$dispatcher"
+          api_get "https://api.github.com/repos/$REPOSITORY/actions/workflows/spatial-live-deploy.yml/runs?branch=main&per_page=30" > "$release"
+
+          node - "$dispatcher" "$release" "$receipt" <<'NODE'
+          const fs = require('node:fs')
+          const [dispatcherPath, releasePath, receiptPath] = process.argv.slice(2)
+          const target = process.env.TARGET_SHA
+          const normalize = (run) => ({
+            id: run.id,
+            name: run.name,
+            event: run.event,
+            status: run.status,
+            conclusion: run.conclusion,
+            headSha: run.head_sha,
+            headBranch: run.head_branch,
+            runNumber: run.run_number,
+            runAttempt: run.run_attempt,
+            htmlUrl: run.html_url,
+            createdAt: run.created_at,
+            updatedAt: run.updated_at,
+          })
+          const dispatcher = JSON.parse(fs.readFileSync(dispatcherPath, 'utf8')).workflow_runs || []
+          const release = JSON.parse(fs.readFileSync(releasePath, 'utf8')).workflow_runs || []
+          const result = {
+            schemaVersion: 'urai-protected-release-run-discovery-1',
+            generatedAt: new Date().toISOString(),
+            repository: process.env.REPOSITORY,
+            targetSha: target,
+            dispatcherRuns: dispatcher.filter((run) => run.head_sha === target).map(normalize),
+            releaseRuns: release.filter((run) => run.head_sha === target || run.event === 'workflow_dispatch').slice(0, 10).map(normalize),
+          }
+          fs.writeFileSync(receiptPath, JSON.stringify(result, null, 2) + '\n')
+          NODE
+
+          content="$(base64 -w0 "$receipt")"
+          payload="$RUNNER_TEMP/discovery/payload.json"
+          CONTENT="$content" node - <<'NODE' > "$payload"
+          process.stdout.write(JSON.stringify({
+            message: 'Record protected release run discovery',
+            content: process.env.CONTENT,
+            branch: process.env.RECEIPT_BRANCH,
+          }))
+          NODE
+
+          curl --fail-with-body --silent --show-error \
+            --request PUT \
+            --header "Accept: application/vnd.github+json" \
+            --header "Authorization: Bearer $GH_TOKEN" \
+            --header "X-GitHub-Api-Version: 2022-11-28" \
+            "https://api.github.com/repos/$REPOSITORY/contents/.release-discovery/latest.json" \
+            --data-binary "@$payload" >/dev/null
