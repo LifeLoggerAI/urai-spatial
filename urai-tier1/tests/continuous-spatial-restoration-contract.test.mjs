@@ -32,25 +32,32 @@ test('app template mounts the restored Home WebGL runtime without replacing rout
   assert.match(lifeMapOwner, /SpatialLifeMapCanonical/)
 })
 
-test('restored Home is an interactive world with grounded routes and fallback behavior', () => {
+test('restored Home is a deterministic visible world with grounded routes and fallback behavior', () => {
   for (const marker of [
     "id: 'ground'",
     "id: 'life-map'",
     "id: 'mirror'",
     "id: 'passport'",
     "id: 'xr'",
+    'CameraRig',
+    'LivingGround',
     'OrbitControls',
     'Stars',
-    'Bloom',
     'useWebGLAvailable',
     'data-home-spatial-renderer="webgl"',
+    'data-home-spatial-geometry="terrain-portals-orb"',
+    'data-testid="urai-home-living-ground"',
+    'data-testid="urai-home-webgl-orb"',
+    'toneMappingExposure = 1.32',
   ]) assert.ok(canvas.includes(marker), `missing Home spatial marker: ${marker}`)
+
+  assert.doesNotMatch(canvas, /EffectComposer|Bloom|Vignette/)
 })
 
-test('reviewed Home runtime keeps semantic navigation and defensive browser cleanup', () => {
+test('reviewed Home runtime keeps semantic portal navigation and defensive browser cleanup', () => {
   assert.match(canvas, /import Link from 'next\/link'/)
   assert.match(canvas, /<Link\s+[\s\S]*href=\{spec\.href\}/)
-  assert.doesNotMatch(canvas, /<button[^>]+urai-home-spatial-portal-label/)
+  assert.match(canvas, /data-urai-home-portal=\{spec\.id\}/)
   assert.match(canvas, /typeof query\.addEventListener === 'function'/)
   assert.match(canvas, /query\.addListener\(update\)/)
   assert.match(canvas, /query\.removeListener\(update\)/)
