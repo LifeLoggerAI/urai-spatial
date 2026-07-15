@@ -1,4 +1,4 @@
-/* Exact replacements for defects proven by the schema-6 browser receipt. */
+/* Exact replacements for defects proven by retained browser receipts. */
 
 /* The living Home canvas owns the painted world. Keep only the concise canonical
    hero as an accessible overlay; old orb, gates and docks must not veil it. */
@@ -12,6 +12,21 @@ body:has(.urai-home-spatial-runtime-layer) .urai-home-spatial-world-final .urai-
   display: none !important;
 }
 
+/* No DOM veil, rounded mask, blur or inherited visual effect may sit between the
+   WebGL scene and the user. These resets are deliberately scoped to active Home. */
+.urai-home-spatial-runtime-layer::before,
+.urai-home-spatial-runtime-layer::after,
+.urai-home-spatial-canvas-shell::before,
+.urai-home-spatial-canvas-shell::after,
+.urai-home-spatial-canvas-shell > div::before,
+.urai-home-spatial-canvas-shell > div::after {
+  content: none !important;
+  display: none !important;
+  filter: none !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+
 .urai-home-spatial-runtime-layer,
 .urai-home-spatial-canvas-shell,
 .urai-home-spatial-canvas-shell > div,
@@ -20,10 +35,20 @@ body:has(.urai-home-spatial-runtime-layer) .urai-home-spatial-world-final .urai-
   height: 100% !important;
   min-width: 0 !important;
   min-height: 0 !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  clip-path: none !important;
+  mask: none !important;
+  -webkit-mask: none !important;
+  filter: none !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  opacity: 1 !important;
 }
 
 .urai-home-spatial-canvas-shell canvas {
   display: block !important;
+  image-rendering: auto !important;
 }
 
 .urai-home-spatial-runtime-portals {
