@@ -1,4 +1,4 @@
-name: Inspect static hydration repair v8
+name: Inspect static hydration repair v9
 
 on:
   pull_request:
@@ -14,10 +14,10 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 35
     env:
-      TARGET_SHA: d41c5275a359e028ff2b4b3ca37e585bcdfa8515
-      NEXT_PUBLIC_URAI_BUILD_SHA: d41c5275a359e028ff2b4b3ca37e585bcdfa8515
+      TARGET_SHA: 1d5761daa0e1aed7a0eb0fc809cd8a5325216198
+      NEXT_PUBLIC_URAI_BUILD_SHA: 1d5761daa0e1aed7a0eb0fc809cd8a5325216198
     steps:
-      - name: Checkout exact repaired main
+      - name: Checkout exact PR 605 head
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
         with:
           ref: ${{ env.TARGET_SHA }}
@@ -54,12 +54,12 @@ jobs:
           echo "CHROME_BIN=$chrome" >> "$GITHUB_ENV"
       - name: Build exact static output
         run: pnpm build:static
-      - name: Probe local hydrated query identity
+      - name: Probe visible query identity on desktop and mobile
         id: probe
         shell: bash
         run: |
           set -euo pipefail
-          out="$RUNNER_TEMP/static-hydration-v8"
+          out="$RUNNER_TEMP/static-hydration-v9"
           mkdir -p "$out"
           echo "out=$out" >> "$GITHUB_OUTPUT"
           cat > "$RUNNER_TEMP/static-server.mjs" <<'NODE'
@@ -76,9 +76,7 @@ jobs:
           function resolveFile(urlValue) {
             const pathname = decodeURIComponent(new URL(urlValue, 'http://127.0.0.1').pathname)
             const clean = pathname.replace(/^\/+/, '')
-            const candidates = pathname === '/'
-              ? ['index.html']
-              : [clean, `${clean}.html`, path.join(clean, 'index.html')]
+            const candidates = pathname === '/' ? ['index.html'] : [clean, `${clean}.html`, path.join(clean, 'index.html')]
             for (const candidate of candidates) {
               const file = path.resolve(root, candidate)
               if (!file.startsWith(`${root}${path.sep}`) && file !== path.join(root, 'index.html')) continue
@@ -101,7 +99,6 @@ jobs:
             curl --fail --silent http://127.0.0.1:4177/ >/dev/null && break
             sleep .2
           done
-          set +e
           OUT_DIR="$out" node - <<'NODE'
           const { chromium } = require('playwright')
           const fs = require('node:fs')
@@ -113,33 +110,49 @@ jobs:
             { name: 'focus', url: `http://127.0.0.1:4177/focus/?${query}`, selector: '[data-testid="urai-final-focus-chamber"]' },
             { name: 'replay', url: `http://127.0.0.1:4177/replay/?${query}`, selector: '[data-testid="cinematic-replay-client"]' },
           ]
+          const profiles = [
+            { name: 'desktop', viewport: { width: 1440, height: 1000 } },
+            { name: 'mobile', viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true },
+          ]
           ;(async () => {
             const browser = await chromium.launch({ headless: true, executablePath: process.env.CHROME_BIN, args: ['--no-sandbox', '--disable-dev-shm-usage'] })
             const results = []
             try {
-              for (const route of routes) {
-                const context = await browser.newContext({ viewport: { width: 1440, height: 1000 }, serviceWorkers: 'block' })
-                const page = await context.newPage()
-                const pageErrors = []
-                const consoleErrors = []
-                const requestFailures = []
-                page.on('pageerror', error => pageErrors.push(String(error?.stack || error)))
-                page.on('console', message => { if (message.type() === 'error') consoleErrors.push(message.text()) })
-                page.on('requestfailed', request => requestFailures.push({ url: request.url(), failure: request.failure() }))
-                const response = await page.goto(route.url, { waitUntil: 'domcontentloaded', timeout: 60000 })
-                await page.waitForTimeout(25000)
-                const state = await page.evaluate(({ selector, expected }) => {
-                  const elements = [...document.querySelectorAll(selector)]
-                  return {
+              for (const profile of profiles) {
+                for (const route of routes) {
+                  const { name: profileName, ...options } = profile
+                  const context = await browser.newContext({ ...options, serviceWorkers: 'block' })
+                  const page = await context.newPage()
+                  const pageErrors = []
+                  const consoleErrors = []
+                  const requestFailures = []
+                  page.on('pageerror', error => pageErrors.push(String(error?.stack || error)))
+                  page.on('console', message => { if (message.type() === 'error') consoleErrors.push(message.text()) })
+                  page.on('requestfailed', request => requestFailures.push({ url: request.url(), failure: request.failure() }))
+                  const response = await page.goto(route.url, { waitUntil: 'domcontentloaded', timeout: 60000 })
+                  await page.waitForFunction(
+                    ({ selector, expected }) => [...document.querySelectorAll(selector)].some(element => {
+                      const bounds = element.getBoundingClientRect()
+                      const style = getComputedStyle(element)
+                      return style.display !== 'none' && style.visibility !== 'hidden' && bounds.width > 0 && bounds.height > 0
+                        && element.getAttribute('data-memory-id') === expected.memoryId
+                        && element.getAttribute('data-manifest-id') === expected.manifestId
+                        && element.getAttribute('data-node') === expected.node
+                    }),
+                    { selector: route.selector, expected: identity },
+                    { timeout: 20000 },
+                  )
+                  const state = await page.evaluate(({ selector, expected }) => ({
                     readyState: document.readyState,
                     href: location.href,
-                    elements: elements.map(element => {
+                    elements: [...document.querySelectorAll(selector)].map(element => {
                       const bounds = element.getBoundingClientRect()
                       const style = getComputedStyle(element)
                       return {
                         memoryId: element.getAttribute('data-memory-id'),
                         manifestId: element.getAttribute('data-manifest-id'),
                         node: element.getAttribute('data-node'),
+                        owner: element.getAttribute('data-visible-route-owner'),
                         width: bounds.width,
                         height: bounds.height,
                         display: style.display,
@@ -149,43 +162,36 @@ jobs:
                           && element.getAttribute('data-node') === expected.node,
                       }
                     }),
-                    scripts: [...document.scripts].map(script => script.src || 'inline'),
-                  }
-                }, { selector: route.selector, expected: identity })
-                const screenshot = path.join(out, `${route.name}.png`)
-                await page.screenshot({ path: screenshot, fullPage: true, animations: 'disabled' })
-                results.push({
-                  route: route.name,
-                  responseStatus: response?.status() || null,
-                  state,
-                  pageErrors,
-                  consoleErrors,
-                  requestFailures,
-                  passed: state.elements.some(element => element.matches && element.width > 0 && element.height > 0),
-                })
-                await context.close()
+                  }), { selector: route.selector, expected: identity })
+                  const filename = `${profileName}-${route.name}.png`
+                  await page.screenshot({ path: path.join(out, filename), fullPage: true, animations: 'disabled' })
+                  const passed = response?.status() === 200
+                    && state.elements.some(element => element.matches && element.width > 0 && element.height > 0 && element.display !== 'none' && element.visibility !== 'hidden')
+                    && pageErrors.length === 0
+                    && consoleErrors.length === 0
+                    && requestFailures.length === 0
+                  results.push({ profile: profileName, route: route.name, responseStatus: response?.status() || null, state, pageErrors, consoleErrors, requestFailures, screenshot: filename, passed })
+                  await context.close()
+                }
               }
             } finally {
               await browser.close()
             }
-            const report = { schemaVersion: 2, targetSha: process.env.TARGET_SHA, chromeBin: process.env.CHROME_BIN, generatedAt: new Date().toISOString(), results }
+            const report = { schemaVersion: 3, targetSha: process.env.TARGET_SHA, chromeBin: process.env.CHROME_BIN, generatedAt: new Date().toISOString(), passed: results.every(item => item.passed), results }
             fs.writeFileSync(path.join(out, 'report.json'), JSON.stringify(report, null, 2) + '\n')
             console.log(JSON.stringify(report, null, 2))
+            if (!report.passed) process.exitCode = 1
           })().catch(error => {
             fs.writeFileSync(path.join(out, 'probe-error.txt'), String(error?.stack || error) + '\n')
             console.error(error)
             process.exitCode = 1
           })
           NODE
-          probe_status=$?
-          set -e
-          printf '%s\n' "$probe_status" > "$out/probe-status.txt"
-          cat "$out/report.json" 2>/dev/null || cat "$out/probe-error.txt" 2>/dev/null || true
       - name: Upload static hydration probe
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
-          name: static-hydration-v8-${{ env.TARGET_SHA }}
+          name: static-hydration-v9-${{ env.TARGET_SHA }}
           path: ${{ steps.probe.outputs.out }}
           if-no-files-found: error
           retention-days: 30
