@@ -147,8 +147,8 @@ async function captureNoWebGLFallback() {
       const oldWorld = page.locator('.urai-genesis-home__world')
       const fallbackOwnerVisible = await oldWorld.count() > 0
         && await oldWorld.evaluate((node) => getComputedStyle(node).display !== 'none')
-      const homeScrollable = await page.evaluate(() => getComputedStyle(document.body).overflowY !== 'hidden')
-      return { runtimeAbsent, fallbackOwnerVisible, homeScrollable }
+      const fallbackInteractive = await page.locator('.urai-home-spatial-world-final').evaluate((node) => getComputedStyle(node).pointerEvents !== 'none')
+      return { runtimeAbsent, fallbackOwnerVisible, fallbackInteractive }
     },
   }
 
