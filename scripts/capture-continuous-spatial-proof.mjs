@@ -14,15 +14,53 @@ const viewports = [
   { id: 'mobile', width: 390, height: 844, isMobile: true },
 ]
 
+async function waitForFirstSpatialFrame(page) {
+  await page.waitForFunction(
+    () => performance.getEntriesByName('urai:first-spatial-frame').length > 0,
+    null,
+    { timeout: 45_000 },
+  )
+}
+
+async function canvasEvidence(page, selector) {
+  return page.locator(selector).evaluate((canvas) => {
+    const rect = canvas.getBoundingClientRect()
+    return {
+      canvasSized: rect.width >= 240 && rect.height >= 240 && canvas.width > 0 && canvas.height > 0,
+      canvasWidth: canvas.width,
+      canvasHeight: canvas.height,
+      cssWidth: Math.round(rect.width),
+      cssHeight: Math.round(rect.height),
+    }
+  })
+}
+
 const routes = [
   {
     id: 'home',
     path: '/home/',
     ready: '[data-home-spatial-renderer="webgl"][data-webgl-ready="true"] canvas',
+    waitForScene: async (page) => {
+      await page.waitForFunction(
+        () => document.querySelectorAll('.urai-home-spatial-canvas-shell .urai-home-spatial-portal-label').length >= 6,
+        null,
+        { timeout: 45_000 },
+      )
+    },
     verify: async (page) => {
       const runtime = await page.locator('[data-urai-home-runtime="one-continuous-webgl-world"]').count()
       const oldWorld = page.locator('.urai-genesis-home__world')
       const oldWorldHidden = (await oldWorld.count()) === 0 || await oldWorld.evaluate((node) => getComputedStyle(node).display === 'none')
+      const sceneLabels = page.locator('.urai-home-spatial-canvas-shell .urai-home-spatial-portal-label')
+      const sceneLabelCount = await sceneLabels.count()
+      const sceneLabelsRendered = sceneLabelCount >= 6 && await sceneLabels.evaluateAll((nodes) => nodes.every((node) => {
+        const style = getComputedStyle(node)
+        const rect = node.getBoundingClientRect()
+        return style.visibility !== 'hidden'
+          && style.display !== 'none'
+          && rect.width > 20
+          && rect.height > 14
+      }))
       const portalShortcuts = page.locator('.urai-home-spatial-runtime-portals a')
       const portalShortcutCount = await portalShortcuts.count()
       const portalShortcutsVisible = portalShortcutCount === 5 && await portalShortcuts.evaluateAll((nodes) => nodes.every((node) => {
@@ -40,7 +78,17 @@ const routes = [
           && Number.parseFloat(style.paddingLeft || '0') >= 10
           && style.backgroundColor !== 'rgba(0, 0, 0, 0)'
       })
-      return { runtimeMounted: runtime === 1, oldWorldHidden, portalShortcutsVisible, portalShortcutsStyled }
+      const canvas = await canvasEvidence(page, '[data-home-spatial-renderer="webgl"] canvas')
+      return {
+        runtimeMounted: runtime === 1,
+        oldWorldHidden,
+        sceneLabelsRendered,
+        portalShortcutsVisible,
+        portalShortcutsStyled,
+        canvasSized: canvas.canvasSized,
+        sceneLabelCount,
+        ...canvas,
+      }
     },
   },
   {
@@ -67,17 +115,50 @@ const routes = [
           && rect.right <= window.innerWidth + 1
           && rect.bottom <= window.innerHeight + 1
       })
-      return { providerHidden, canvasVisible, navigationPillsStyled, navigationRailContained }
+      const canvas = await canvasEvidence(page, '.ground-spatial-root canvas')
+      return { providerHidden, canvasVisible, navigationPillsStyled, navigationRailContained, canvasSized: canvas.canvasSized, ...canvas }
     },
   },
   {
     id: 'life-map',
     path: '/life-map/',
     ready: '[data-testid="urai-true-3d-life-map"] canvas',
+    waitForScene: waitForFirstSpatialFrame,
     verify: async (page) => {
       const canvasVisible = await page.locator('[data-testid="urai-true-3d-life-map"] canvas').isVisible()
       const overlayOpacities = await page.locator('[data-testid="urai-r3f-canonical-lifemap"] > div[aria-hidden="true"]').evaluateAll((nodes) => nodes.map((node) => Number.parseFloat(getComputedStyle(node).opacity || '1')))
-      return { canvasVisible, overlayOpacities, providerVeilSuppressed: overlayOpacities.length === 0 || overlayOpacities.every((opacity) => opacity <= 0.02) }
+      const firstSpatialFrameMarked = await page.evaluate(() => performance.getEntriesByName('urai:first-spatial-frame').length > 0)
+      const spatialVisible = await page.locator('[data-testid="urai-true-3d-life-map"]').getAttribute('data-spatial-visible')
+      const canvas = await canvasEvidence(page, '[data-testid="urai-true-3d-life-map"] canvas')
+      return {
+        canvasVisible,
+        overlayOpacities,
+        providerVeilSuppressed: overlayOpacities.length === 0 || overlayOpacities.every((opacity) => opacity <= 0.02),
+        firstSpatialFrameMarked,
+        spatialDocumentVisible: spatialVisible === 'true',
+        canvasSized: canvas.canvasSized,
+        ...canvas,
+      }
+    },
+  },
+  {
+    id: 'life-map-selected',
+    path: '/life-map/?memoryId=quiet-reset&manifestId=replay-recovery-thread&node=quiet-reset',
+    ready: '[data-testid="urai-true-3d-life-map"] canvas',
+    waitForScene: waitForFirstSpatialFrame,
+    verify: async (page) => {
+      const firstSpatialFrameMarked = await page.evaluate(() => performance.getEntriesByName('urai:first-spatial-frame').length > 0)
+      const selectedControls = page.locator('button', { hasText: 'Enter Focus' })
+      const selectedMemoryControlsVisible = await selectedControls.count() === 1 && await selectedControls.isVisible()
+      const replayControlVisible = await page.locator('button', { hasText: 'Replay' }).count() >= 1
+      const canvas = await canvasEvidence(page, '[data-testid="urai-true-3d-life-map"] canvas')
+      return {
+        firstSpatialFrameMarked,
+        selectedMemoryControlsVisible,
+        replayControlVisible,
+        canvasSized: canvas.canvasSized,
+        ...canvas,
+      }
     },
   },
 ]
@@ -85,7 +166,7 @@ const routes = [
 await mkdir(outputDir, { recursive: true })
 
 const receipt = {
-  schemaVersion: 'urai-continuous-spatial-visual-proof-5',
+  schemaVersion: 'urai-continuous-spatial-visual-proof-6',
   capturedAt: new Date().toISOString(),
   exactHead,
   base,
@@ -98,6 +179,7 @@ let browser
 function verificationPassed(verification) {
   return Object.entries(verification).every(([key, value]) => {
     if (key === 'overlayOpacities') return true
+    if (key.endsWith('Width') || key.endsWith('Height') || key.endsWith('Count')) return typeof value === 'number' && value > 0
     return value === true
   })
 }
@@ -172,10 +254,12 @@ async function captureRoute(context, route, viewportId) {
     capture.status = response?.status() ?? null
     capture.browserWebGL = await probeWebGL(page)
     await page.locator(route.ready).waitFor({ state: 'visible', timeout: 45_000 })
+    if (route.waitForScene) await route.waitForScene(page)
     await page.waitForTimeout(1800)
     capture.verification = await route.verify(page)
     await takeScreenshot(page, path.join(outputDir, screenshotName))
     capture.passed = capture.status === 200
+      && capture.browserWebGL?.available === true
       && verificationPassed(capture.verification)
       && pageErrors.length === 0
       && consoleErrors.length === 0
@@ -230,9 +314,52 @@ async function captureNoWebGLFallback() {
     },
   }
 
+  const page = await context.newPage()
+  const pageErrors = []
+  const consoleErrors = []
+  const requestFailures = []
+  const url = new URL(fallbackRoute.path, base).toString()
+  const screenshotName = `${fallbackRoute.id}-desktop-no-webgl-${exactHead.slice(0, 12)}.png`
+  const capture = {
+    route: fallbackRoute.id,
+    viewport: 'desktop-no-webgl',
+    url,
+    status: null,
+    screenshot: screenshotName,
+    browserWebGL: { available: false, forcedFallback: true },
+    verification: {},
+    pageErrors,
+    consoleErrors,
+    requestFailures,
+  }
+
+  page.on('pageerror', (error) => pageErrors.push(String(error)))
+  page.on('console', (message) => {
+    if (message.type() === 'error') consoleErrors.push(message.text())
+  })
+  page.on('requestfailed', (request) => {
+    requestFailures.push({ url: request.url(), error: request.failure()?.errorText || 'unknown' })
+  })
+
   try {
-    await captureRoute(context, fallbackRoute, 'desktop-no-webgl')
+    const response = await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 60_000 })
+    capture.status = response?.status() ?? null
+    await page.locator(fallbackRoute.ready).waitFor({ state: 'visible', timeout: 45_000 })
+    await page.waitForTimeout(1200)
+    capture.verification = await fallbackRoute.verify(page)
+    await takeScreenshot(page, path.join(outputDir, screenshotName))
+    capture.passed = capture.status === 200
+      && verificationPassed(capture.verification)
+      && pageErrors.length === 0
+      && consoleErrors.length === 0
+      && requestFailures.length === 0
+  } catch (error) {
+    capture.error = String(error)
+    capture.passed = false
   } finally {
+    if (!capture.passed) failed = true
+    receipt.captures.push(capture)
+    await page.close()
     await context.close()
   }
 }
