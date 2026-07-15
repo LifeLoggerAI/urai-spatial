@@ -133,7 +133,7 @@ function walkRegularFiles(directory, prefix = '') {
     }
     files.push({ absolute, relative, bytes: stats.size, sha256: sha256(absolute) })
   }
-  return files
+  return files.sort((left, right) => left.relative.localeCompare(right.relative))
 }
 
 function resolveAuthoritySha() {
