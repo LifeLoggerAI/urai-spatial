@@ -35,6 +35,11 @@ async function canvasEvidence(page, selector) {
   })
 }
 
+function hasPaintedBackground(style) {
+  return style.backgroundColor !== 'rgba(0, 0, 0, 0)'
+    || (style.backgroundImage && style.backgroundImage !== 'none')
+}
+
 const routes = [
   {
     id: 'home',
@@ -42,7 +47,13 @@ const routes = [
     ready: '[data-home-spatial-renderer="webgl"][data-webgl-ready="true"] canvas',
     waitForScene: async (page) => {
       await page.waitForFunction(
-        () => document.querySelectorAll('.urai-home-spatial-canvas-shell .urai-home-spatial-portal-label').length >= 6,
+        () => {
+          const canvas = document.querySelector('[data-home-spatial-renderer="webgl"] canvas')
+          if (!canvas) return false
+          const rect = canvas.getBoundingClientRect()
+          const labels = document.querySelectorAll('.urai-home-spatial-canvas-shell .urai-home-spatial-portal-label')
+          return rect.width >= 240 && rect.height >= 240 && labels.length >= 6
+        },
         null,
         { timeout: 45_000 },
       )
@@ -76,7 +87,7 @@ const routes = [
         return style.display === 'inline-flex'
           && Number.parseFloat(style.borderTopWidth || '0') >= 1
           && Number.parseFloat(style.paddingLeft || '0') >= 10
-          && style.backgroundColor !== 'rgba(0, 0, 0, 0)'
+          && hasPaintedBackground(style)
       })
       const canvas = await canvasEvidence(page, '[data-home-spatial-renderer="webgl"] canvas')
       return {
@@ -107,7 +118,7 @@ const routes = [
           && style.whiteSpace === 'nowrap'
           && Number.parseFloat(style.borderTopWidth || '0') >= 1
           && Number.parseFloat(style.paddingLeft || '0') >= 8
-          && style.backgroundColor !== 'rgba(0, 0, 0, 0)'
+          && hasPaintedBackground(style)
       })
       const navigationRailContained = await rail.evaluate((node) => {
         const rect = node.getBoundingClientRect()
@@ -143,19 +154,22 @@ const routes = [
   },
   {
     id: 'life-map-selected',
-    path: '/life-map/?memoryId=quiet-reset&manifestId=replay-recovery-thread&node=quiet-reset',
+    path: '/life-map/?memoryId=recovery-bloom&manifestId=replay-recovery-thread&node=recovery-bloom',
     ready: '[data-testid="urai-true-3d-life-map"] canvas',
     waitForScene: waitForFirstSpatialFrame,
     verify: async (page) => {
       const firstSpatialFrameMarked = await page.evaluate(() => performance.getEntriesByName('urai:first-spatial-frame').length > 0)
       const selectedControls = page.locator('button', { hasText: 'Enter Focus' })
       const selectedMemoryControlsVisible = await selectedControls.count() === 1 && await selectedControls.isVisible()
-      const replayControlVisible = await page.locator('button', { hasText: 'Replay' }).count() >= 1
+      const replayControl = page.locator('button', { hasText: 'Replay' })
+      const replayControlVisible = await replayControl.count() >= 1 && await replayControl.first().isVisible()
+      const selectedMemoryTitleVisible = await page.getByText('Recovery Bloom', { exact: true }).count() >= 1
       const canvas = await canvasEvidence(page, '[data-testid="urai-true-3d-life-map"] canvas')
       return {
         firstSpatialFrameMarked,
         selectedMemoryControlsVisible,
         replayControlVisible,
+        selectedMemoryTitleVisible,
         canvasSized: canvas.canvasSized,
         ...canvas,
       }
