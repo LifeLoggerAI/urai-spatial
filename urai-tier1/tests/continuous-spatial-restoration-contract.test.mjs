@@ -44,6 +44,19 @@ test('restored Home is an interactive world with grounded routes and fallback be
   ]) assert.ok(canvas.includes(marker), `missing Home spatial marker: ${marker}`)
 })
 
+test('reviewed Home runtime keeps semantic navigation and defensive browser cleanup', () => {
+  assert.match(canvas, /import Link from 'next\/link'/)
+  assert.match(canvas, /<Link\s+[\s\S]*href=\{spec\.href\}/)
+  assert.doesNotMatch(canvas, /<button[^>]+urai-home-spatial-portal-label/)
+  assert.match(canvas, /typeof query\.addEventListener === 'function'/)
+  assert.match(canvas, /query\.addListener\(update\)/)
+  assert.match(canvas, /query\.removeListener\(update\)/)
+  assert.match(canvas, /document\.body\.style\.cursor = 'default'/)
+  assert.match(layer, /HomeSpatialCanvas, \{ useWebGLAvailable \}/)
+  assert.doesNotMatch(layer, /function useHomeWebGLAvailable/)
+  assert.match(layer, /webglAvailable=\{webglAvailable\}/)
+})
+
 test('flat route-image veils are suppressed while current Ground and Life Map canvases remain authoritative', () => {
   assert.match(css, /\.ground-provider-art\s*\{\s*display: none !important;/s)
   assert.match(css, /data-testid="urai-r3f-canonical-lifemap"/)
