@@ -58,7 +58,7 @@ jobs:
             ['firebase-tools', ' deploy'].join(''),
             ['firebase-hosting-recovery.mjs', ' restore'].join(''),
             ['pnpm live:', 'deploy'].join(''),
-            ['FIREBASE_SERVICE_ACCOUNT_JSON'].join(''),
+            ['FIREBASE_', 'SERVICE_ACCOUNT_JSON'].join(''),
           ]
           for (const marker of forbidden) {
             if (source.includes(marker)) throw new Error(`Dispatcher contains forbidden mutation marker: ${marker}`)
