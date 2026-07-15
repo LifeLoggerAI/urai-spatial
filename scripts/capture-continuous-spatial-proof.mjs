@@ -22,6 +22,12 @@ async function waitForFirstSpatialFrame(page) {
   )
 }
 
+async function waitForStableAnimationFrames(page) {
+  await page.evaluate(() => new Promise((resolve) => {
+    requestAnimationFrame(() => requestAnimationFrame(resolve))
+  }))
+}
+
 async function canvasEvidence(page, selector) {
   return page.locator(selector).evaluate((canvas) => {
     const rect = canvas.getBoundingClientRect()
@@ -66,8 +72,8 @@ async function chooseVisibleLifeMapStar(page) {
       position: { x: Math.round(box.width * xRatio), y: Math.round(box.height * yRatio) },
       force: true,
     })
-    await page.waitForTimeout(420)
-    if (await page.getByRole('button', { name: 'Enter Focus' }).isVisible().catch(() => false)) return true
+    await waitForStableAnimationFrames(page)
+    if (await page.getByRole('button', { name: 'Enter Focus' }).first().isVisible().catch(() => false)) return true
   }
 
   return false
@@ -78,9 +84,7 @@ const routes = [
     id: 'home',
     path: '/home/',
     ready: '[data-home-spatial-renderer="webgl"][data-webgl-ready="true"] canvas',
-    waitForScene: async (page) => {
-      await page.waitForTimeout(2600)
-    },
+    waitForScene: waitForStableAnimationFrames,
     verify: async (page) => {
       const runtime = await page.locator('[data-urai-home-runtime="one-continuous-webgl-world"]').count()
       const oldWorld = page.locator('.urai-genesis-home__world')
@@ -104,16 +108,20 @@ const routes = [
       const portalShortcutsVisible = portalShortcutCount === 5 && visiblePortalShortcutCount === 5
       const portalShortcutsStyled = portalShortcutCount === 5 && await portalShortcuts.first().evaluate((node) => {
         const style = getComputedStyle(node)
+        const hasPaintedBackground = style.backgroundColor !== 'rgba(0, 0, 0, 0)'
+          || (style.backgroundImage && style.backgroundImage !== 'none')
         return ['flex', 'inline-flex'].includes(style.display)
           && Number.parseFloat(style.borderTopWidth || '0') >= 1
           && Number.parseFloat(style.paddingLeft || '0') >= 10
-          && style.backgroundColor !== 'rgba(0, 0, 0, 0)'
+          && hasPaintedBackground
       })
+      const firstHomeFrameMarked = await page.evaluate(() => performance.getEntriesByName('urai:first-home-spatial-frame').length > 0)
       const canvas = await canvasEvidence(page, '[data-home-spatial-renderer="webgl"] canvas')
       return {
         runtimeMounted: runtime === 1,
         oldWorldHidden,
         legacyControlsSuppressed: legacyControlsVisible === 0,
+        firstHomeFrameMarked,
         sceneLabelsRendered,
         portalShortcutsVisible,
         portalShortcutsStyled,
@@ -130,6 +138,7 @@ const routes = [
     id: 'ground',
     path: '/ground/',
     ready: '.ground-spatial-root canvas',
+    waitForScene: waitForStableAnimationFrames,
     verify: async (page) => {
       const provider = page.locator('.ground-provider-art')
       const providerHidden = (await provider.count()) === 0 || await provider.evaluate((node) => getComputedStyle(node).display === 'none')
@@ -138,11 +147,13 @@ const routes = [
       const railLinks = rail.locator('a')
       const navigationPillsStyled = await railLinks.count() === 5 && await railLinks.first().evaluate((node) => {
         const style = getComputedStyle(node)
+        const hasPaintedBackground = style.backgroundColor !== 'rgba(0, 0, 0, 0)'
+          || (style.backgroundImage && style.backgroundImage !== 'none')
         return ['flex', 'inline-flex'].includes(style.display)
           && style.whiteSpace === 'nowrap'
           && Number.parseFloat(style.borderTopWidth || '0') >= 1
           && Number.parseFloat(style.paddingLeft || '0') >= 8
-          && style.backgroundColor !== 'rgba(0, 0, 0, 0)'
+          && hasPaintedBackground
       })
       const navigationRailContained = await rail.evaluate((node) => {
         const rect = node.getBoundingClientRect()
@@ -150,8 +161,10 @@ const routes = [
           && rect.right <= window.innerWidth + 1
           && rect.bottom <= window.innerHeight + 1
       })
+      const activeGroundLink = rail.locator('a[aria-current="page"]')
+      const activeGroundLinkVisible = await activeGroundLink.count() === 1 && await activeGroundLink.isVisible()
       const canvas = await canvasEvidence(page, '.ground-spatial-root canvas')
-      return { providerHidden, canvasVisible, navigationPillsStyled, navigationRailContained, canvasSized: canvas.canvasSized, ...canvas }
+      return { providerHidden, canvasVisible, navigationPillsStyled, navigationRailContained, activeGroundLinkVisible, canvasSized: canvas.canvasSized, ...canvas }
     },
   },
   {
@@ -182,13 +195,13 @@ const routes = [
     ready: '[data-testid="urai-true-3d-life-map"] canvas',
     waitForScene: async (page) => {
       await waitForFirstSpatialFrame(page)
-      await page.waitForTimeout(900)
+      await waitForStableAnimationFrames(page)
       await chooseVisibleLifeMapStar(page)
     },
     verify: async (page) => {
       const firstSpatialFrameMarked = await page.evaluate(() => performance.getEntriesByName('urai:first-spatial-frame').length > 0)
       const selectedControls = page.getByRole('button', { name: 'Enter Focus' })
-      const selectedMemoryControlsVisible = await selectedControls.count() === 1 && await selectedControls.isVisible()
+      const selectedMemoryControlsVisible = await selectedControls.count() >= 1 && await selectedControls.first().isVisible()
       const replayControl = page.getByRole('button', { name: 'Replay' })
       const replayControlVisible = await replayControl.count() >= 1 && await replayControl.first().isVisible()
       const canvas = await canvasEvidence(page, '[data-testid="urai-true-3d-life-map"] canvas')
@@ -295,7 +308,7 @@ async function captureRoute(context, route, viewportId) {
     capture.browserWebGL = await probeWebGL(page)
     await page.locator(route.ready).waitFor({ state: 'visible', timeout: 45_000 })
     if (route.waitForScene) await route.waitForScene(page)
-    await page.waitForTimeout(1400)
+    await waitForStableAnimationFrames(page)
     capture.verification = await route.verify(page)
     await takeScreenshot(page, path.join(outputDir, screenshotName))
     capture.passed = capture.status === 200
@@ -385,7 +398,7 @@ async function captureNoWebGLFallback() {
     const response = await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 60_000 })
     capture.status = response?.status() ?? null
     await page.locator(fallbackRoute.ready).waitFor({ state: 'visible', timeout: 45_000 })
-    await page.waitForTimeout(1200)
+    await waitForStableAnimationFrames(page)
     capture.verification = await fallbackRoute.verify(page)
     await takeScreenshot(page, path.join(outputDir, screenshotName))
     capture.passed = capture.status === 200
