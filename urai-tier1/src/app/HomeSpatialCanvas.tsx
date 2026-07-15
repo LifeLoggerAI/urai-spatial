@@ -4,6 +4,7 @@ import { Html, OrbitControls, Stars } from '@react-three/drei'
 import { Canvas, useFrame, type ThreeEvent } from '@react-three/fiber'
 import { Bloom, EffectComposer, Vignette } from '@react-three/postprocessing'
 import dynamic from 'next/dynamic'
+import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import * as THREE from 'three'
@@ -18,6 +19,11 @@ type PortalSpec = {
   color: string
 }
 
+type HomeSpatialCanvasProps = {
+  onOrbOpen: () => void
+  webglAvailable: true
+}
+
 const portals: readonly PortalSpec[] = [
   { id: 'ground', label: 'Ground', detail: 'Private workforce', href: '/ground?from=home-spatial', position: [-4.8, 0.05, -4.6], rotationY: 0.42, color: '#86d9b8' },
   { id: 'life-map', label: 'Life Map', detail: 'Memory sky', href: '/life-map?from=home-sky', position: [4.8, 0.05, -4.6], rotationY: -0.42, color: '#a997ef' },
@@ -28,18 +34,27 @@ const portals: readonly PortalSpec[] = [
 
 function useReducedMotion() {
   const [reducedMotion, setReducedMotion] = useState(false)
+
   useEffect(() => {
     const query = window.matchMedia('(prefers-reduced-motion: reduce)')
     const update = () => setReducedMotion(query.matches)
     update()
-    query.addEventListener('change', update)
-    return () => query.removeEventListener('change', update)
+
+    if (typeof query.addEventListener === 'function') {
+      query.addEventListener('change', update)
+      return () => query.removeEventListener('change', update)
+    }
+
+    query.addListener(update)
+    return () => query.removeListener(update)
   }, [])
+
   return reducedMotion
 }
 
 export function useWebGLAvailable() {
   const [available, setAvailable] = useState<boolean | null>(null)
+
   useEffect(() => {
     try {
       const canvas = document.createElement('canvas')
@@ -48,6 +63,7 @@ export function useWebGLAvailable() {
       setAvailable(false)
     }
   }, [])
+
   return available
 }
 
@@ -122,6 +138,7 @@ function Landscape() {
 function Orb({ reducedMotion, onOpen }: { reducedMotion: boolean; onOpen: () => void }) {
   const group = useRef<THREE.Group>(null)
   const halo = useRef<THREE.Mesh>(null)
+
   useFrame(({ clock }) => {
     if (!group.current) return
     if (!reducedMotion) {
@@ -130,6 +147,7 @@ function Orb({ reducedMotion, onOpen }: { reducedMotion: boolean; onOpen: () => 
       if (halo.current) halo.current.rotation.z = clock.elapsedTime * 0.22
     }
   })
+
   return (
     <group ref={group} position={[0, 1.85, 0]}>
       <mesh castShadow onClick={(event: ThreeEvent<MouseEvent>) => { event.stopPropagation(); onOpen() }} onPointerOver={() => { document.body.style.cursor = 'pointer' }} onPointerOut={() => { document.body.style.cursor = 'default' }}>
@@ -153,14 +171,17 @@ function Portal({ spec, reducedMotion, onNavigate }: { spec: PortalSpec; reduced
   const group = useRef<THREE.Group>(null)
   const [hovered, setHovered] = useState(false)
   const color = useMemo(() => new THREE.Color(spec.color), [spec.color])
+
   useFrame(({ clock }) => {
     if (!group.current) return
     const pulse = reducedMotion ? 1 : 1 + Math.sin(clock.elapsedTime * 1.7 + spec.position[0]) * 0.012
     group.current.scale.setScalar(hovered ? 1.035 : pulse)
   })
+
   const enter = (event: ThreeEvent<PointerEvent>) => { event.stopPropagation(); setHovered(true); document.body.style.cursor = 'pointer' }
   const leave = (event: ThreeEvent<PointerEvent>) => { event.stopPropagation(); setHovered(false); document.body.style.cursor = 'default' }
   const open = (event: ThreeEvent<MouseEvent>) => { event.stopPropagation(); onNavigate(spec.href) }
+
   return (
     <group ref={group} position={spec.position} rotation={[0, spec.rotationY, 0]}>
       <mesh position={[-1.05, 1.55, 0]} castShadow receiveShadow><boxGeometry args={[0.34, 3.1, 0.58]} /><meshStandardMaterial color="#77756f" roughness={0.88} metalness={0.04} /></mesh>
@@ -176,9 +197,17 @@ function Portal({ spec, reducedMotion, onNavigate }: { spec: PortalSpec; reduced
       </mesh>
       <pointLight position={[0, 1.8, 0.5]} color={color} intensity={hovered ? 5.5 : 2.2} distance={5.5} decay={2} />
       <Html center position={[0, 3.65, 0]} distanceFactor={10} transform sprite>
-        <button type="button" className="urai-home-spatial-portal-label" data-active={hovered ? 'true' : 'false'} onClick={() => onNavigate(spec.href)} onFocus={() => setHovered(true)} onBlur={() => setHovered(false)}>
+        <Link
+          href={spec.href}
+          className="urai-home-spatial-portal-label"
+          data-active={hovered ? 'true' : 'false'}
+          onClick={() => { document.body.style.cursor = 'default' }}
+          onFocus={() => setHovered(true)}
+          onBlur={() => setHovered(false)}
+          style={{ textDecoration: 'none' }}
+        >
           <strong>{spec.label}</strong><span>{spec.detail}</span>
-        </button>
+        </Link>
       </Html>
     </group>
   )
@@ -187,6 +216,7 @@ function Portal({ spec, reducedMotion, onNavigate }: { spec: PortalSpec; reduced
 function Scene({ reducedMotion, onOrbOpen }: { reducedMotion: boolean; onOrbOpen: () => void }) {
   const router = useRouter()
   const navigate = useCallback((href: string) => { document.body.style.cursor = 'default'; router.push(href) }, [router])
+
   return (
     <>
       <color attach="background" args={['#07111c']} />
@@ -209,11 +239,17 @@ function Scene({ reducedMotion, onOrbOpen }: { reducedMotion: boolean; onOrbOpen
   )
 }
 
-function HomeSpatialCanvasImpl({ onOrbOpen }: { onOrbOpen: () => void }) {
+function HomeSpatialCanvasImpl({ onOrbOpen, webglAvailable }: HomeSpatialCanvasProps) {
   const reducedMotion = useReducedMotion()
-  const webgl = useWebGLAvailable()
-  if (webgl === null) return <div className="urai-home-spatial-canvas-loading" aria-hidden="true" />
-  if (webgl === false) return null
+
+  useEffect(() => {
+    return () => {
+      document.body.style.cursor = 'default'
+    }
+  }, [])
+
+  if (!webglAvailable) return null
+
   return (
     <div className="urai-home-spatial-canvas-shell" data-home-spatial-renderer="webgl" data-webgl-ready="true" aria-label="Interactive spatial Home world">
       <Suspense fallback={<div className="urai-home-spatial-canvas-loading" aria-hidden="true" />}>
