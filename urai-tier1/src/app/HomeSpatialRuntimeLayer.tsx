@@ -2,7 +2,8 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
+import { createPortal } from 'react-dom'
 import HomeSpatialCanvas, { useWebGLAvailable } from './HomeSpatialCanvas'
 
 const doorwayLinks = [
@@ -18,11 +19,23 @@ export default function HomeSpatialRuntimeLayer() {
   const normalizedPathname = pathname.replace(/\/+$/, '') || '/'
   const [orbOpen, setOrbOpen] = useState(false)
   const webglAvailable = useWebGLAvailable()
+  const routeEligible = normalizedPathname === '/' || normalizedPathname === '/home'
+  const runtimeActive = routeEligible && webglAvailable === true
 
-  if (normalizedPathname !== '/' && normalizedPathname !== '/home') return null
-  if (webglAvailable !== true) return null
+  useEffect(() => {
+    const root = document.documentElement
+    if (!runtimeActive) {
+      root.classList.remove('urai-home-runtime-active')
+      return
+    }
 
-  return (
+    root.classList.add('urai-home-runtime-active')
+    return () => root.classList.remove('urai-home-runtime-active')
+  }, [runtimeActive])
+
+  if (!runtimeActive) return null
+
+  return createPortal(
     <section
       className="urai-home-spatial-runtime-layer"
       data-urai-home-runtime="one-continuous-webgl-world"
@@ -30,7 +43,8 @@ export default function HomeSpatialRuntimeLayer() {
       data-orb-open={orbOpen ? 'true' : 'false'}
       aria-label="URAI living spatial Home"
     >
-      <HomeSpatialCanvas webglAvailable={webglAvailable} onOrbOpen={() => setOrbOpen(true)} />
+      <h1 className="urai-home-spatial-runtime-title">Step inside yourself.</h1>
+      <HomeSpatialCanvas webglAvailable onOrbOpen={() => setOrbOpen(true)} />
       <nav className="urai-home-spatial-runtime-portals" aria-label="Spatial doorway shortcuts">
         {doorwayLinks.map((doorway) => <Link key={doorway.href} href={doorway.href}>{doorway.label}</Link>)}
       </nav>
@@ -46,40 +60,38 @@ export default function HomeSpatialRuntimeLayer() {
         </nav>
       </aside>
       <style jsx global>{`
-        .urai-home-spatial-runtime-layer {
-          z-index: 30 !important;
+        html.urai-home-runtime-active,
+        html.urai-home-runtime-active body {
+          width: 100%;
+          height: 100%;
+          overflow: hidden !important;
+          background: #07111c !important;
         }
 
-        html body:has(.urai-home-spatial-runtime-layer) .urai-home-spatial-world-final {
-          position: static !important;
-          z-index: auto !important;
-          isolation: auto !important;
-          min-height: 0 !important;
-          background: transparent !important;
-          box-shadow: none !important;
-          pointer-events: none !important;
+        html.urai-home-runtime-active body > .urai-home-spatial-runtime-layer {
+          position: fixed !important;
+          inset: 0 !important;
+          z-index: 2147483000 !important;
+          display: block !important;
+          width: 100vw !important;
+          height: 100svh !important;
+          isolation: isolate !important;
         }
 
-        html body:has(.urai-home-spatial-runtime-layer) .urai-home-spatial-world-final::before,
-        html body:has(.urai-home-spatial-runtime-layer) .urai-home-spatial-world-final::after,
-        html body:has(.urai-home-spatial-runtime-layer) .urai-home-spatial-world-final .urai-genesis-home__world,
-        html body:has(.urai-home-spatial-runtime-layer) .urai-home-spatial-world-final .urai-genesis-home__memory-orbit,
-        html body:has(.urai-home-spatial-runtime-layer) .urai-home-spatial-world-final .urai-genesis-home__orb,
-        html body:has(.urai-home-spatial-runtime-layer) .urai-home-spatial-world-final .urai-genesis-home__orb-panel,
-        html body:has(.urai-home-spatial-runtime-layer) .urai-home-spatial-world-final .urai-genesis-home__portals,
-        html body:has(.urai-home-spatial-runtime-layer) .urai-home-spatial-world-final .urai-genesis-home__bottom-dock {
+        html.urai-home-runtime-active .urai-home-spatial-world-final {
           display: none !important;
         }
 
-        html body:has(.urai-home-spatial-runtime-layer) .urai-home-spatial-world-final .urai-genesis-home__hero {
-          z-index: 42 !important;
-          pointer-events: none !important;
-        }
-
-        html body:has(.urai-home-spatial-runtime-layer) .urai-home-spatial-world-final .urai-genesis-home__threshold-gate,
-        html body:has(.urai-home-spatial-runtime-layer) .urai-home-spatial-world-final .urai-genesis-home__skip {
-          z-index: 48 !important;
-          pointer-events: auto !important;
+        .urai-home-spatial-runtime-title {
+          position: absolute !important;
+          width: 1px !important;
+          height: 1px !important;
+          padding: 0 !important;
+          margin: -1px !important;
+          overflow: hidden !important;
+          clip: rect(0, 0, 0, 0) !important;
+          white-space: nowrap !important;
+          border: 0 !important;
         }
 
         .urai-home-spatial-runtime-layer .urai-home-spatial-canvas {
@@ -132,7 +144,8 @@ export default function HomeSpatialRuntimeLayer() {
         .urai-home-spatial-runtime-portals a:focus-visible {
           border-color: rgba(188, 245, 248, .52);
           background: rgba(12, 37, 47, .92);
-          outline: none;
+          outline: 2px solid rgba(188, 245, 248, .72);
+          outline-offset: 2px;
         }
 
         .urai-home-spatial-runtime-layer[data-orb-open="true"] .urai-home-spatial-runtime-portals {
@@ -161,6 +174,7 @@ export default function HomeSpatialRuntimeLayer() {
           }
         }
       `}</style>
-    </section>
+    </section>,
+    document.body,
   )
 }
