@@ -2,28 +2,13 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { useEffect, useState } from 'react'
-import HomeSpatialCanvas from './HomeSpatialCanvas'
-
-function useHomeWebGLAvailable() {
-  const [available, setAvailable] = useState<boolean | null>(null)
-
-  useEffect(() => {
-    try {
-      const canvas = document.createElement('canvas')
-      setAvailable(Boolean(canvas.getContext('webgl2') ?? canvas.getContext('webgl')))
-    } catch {
-      setAvailable(false)
-    }
-  }, [])
-
-  return available
-}
+import { useState } from 'react'
+import HomeSpatialCanvas, { useWebGLAvailable } from './HomeSpatialCanvas'
 
 export default function HomeSpatialRuntimeLayer() {
   const pathname = usePathname() ?? '/'
   const [orbOpen, setOrbOpen] = useState(false)
-  const webglAvailable = useHomeWebGLAvailable()
+  const webglAvailable = useWebGLAvailable()
 
   if (pathname !== '/' && pathname !== '/home') return null
   if (webglAvailable !== true) return null
@@ -35,7 +20,7 @@ export default function HomeSpatialRuntimeLayer() {
       data-webgl-ready="true"
       aria-label="URAI living spatial Home"
     >
-      <HomeSpatialCanvas onOrbOpen={() => setOrbOpen(true)} />
+      <HomeSpatialCanvas webglAvailable={webglAvailable} onOrbOpen={() => setOrbOpen(true)} />
       <aside className="urai-home-spatial-runtime-orb" data-open={orbOpen ? 'true' : 'false'} aria-live="polite">
         <button type="button" aria-label="Close orb guidance" onClick={() => setOrbOpen(false)}>×</button>
         <p>URAI orb</p>
