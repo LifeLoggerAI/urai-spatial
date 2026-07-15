@@ -21,7 +21,7 @@ env:
   TARGET_WORKFLOW: spatial-live-deploy.yml
   ROLLBACK_SHA: c1c1a96ec9ae2415e59e9d8359ab26e8cfeda332
   CONFIRMATION: BOOTSTRAP_LEGACY_URAI_APP
-  RETRY_REASON: bundle-manifest-global-order-fixed-20260714
+  RETRY_REASON: visible-route-smoke-fixed-20260715
 
 jobs:
   verify-dispatch-contract:
@@ -72,7 +72,7 @@ jobs:
           grep -Fq 'TARGET_WORKFLOW: spatial-live-deploy.yml' .github/workflows/one-time-production-bootstrap-dispatch.yml
           grep -Fq 'ROLLBACK_SHA: c1c1a96ec9ae2415e59e9d8359ab26e8cfeda332' .github/workflows/one-time-production-bootstrap-dispatch.yml
           grep -Fq 'CONFIRMATION: BOOTSTRAP_LEGACY_URAI_APP' .github/workflows/one-time-production-bootstrap-dispatch.yml
-          grep -Fq 'RETRY_REASON: bundle-manifest-global-order-fixed-20260714' .github/workflows/one-time-production-bootstrap-dispatch.yml
+          grep -Fq 'RETRY_REASON: visible-route-smoke-fixed-20260715' .github/workflows/one-time-production-bootstrap-dispatch.yml
           grep -Fq 'actions: write' .github/workflows/one-time-production-bootstrap-dispatch.yml
           test -z "$(git status --porcelain --untracked-files=all)"
 
