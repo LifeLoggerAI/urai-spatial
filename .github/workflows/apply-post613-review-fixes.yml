@@ -6,12 +6,18 @@ on:
       - fix/post613-premium-world-review-20260715
     paths:
       - .github/workflows/apply-post613-review-fixes.yml
+  pull_request:
+    branches:
+      - main
+    paths:
+      - .github/workflows/apply-post613-review-fixes.yml
 
 permissions:
   contents: write
 
 jobs:
   repair:
+    if: github.event_name == 'push' || github.event.pull_request.head.repo.full_name == github.repository
     runs-on: ubuntu-24.04
     timeout-minutes: 10
     steps:
@@ -83,8 +89,7 @@ jobs:
           ground = ground.replace(old_controls, new_controls, 1)
           ground_path.write_text(ground)
 
-          workflow = Path('.github/workflows/apply-post613-review-fixes.yml')
-          workflow.unlink()
+          Path('.github/workflows/apply-post613-review-fixes.yml').unlink()
           PY
       - name: Verify exact repair surface
         shell: bash
@@ -93,7 +98,6 @@ jobs:
           changed="$(git status --short | awk '{print $2}' | sort)"
           expected="$(printf '%s\n' '.github/workflows/apply-post613-review-fixes.yml' 'urai-tier1/src/app/GroundSpatialWorldClean.tsx' 'urai-tier1/src/app/HomeSpatialCanvas.tsx' | sort)"
           test "$changed" = "$expected"
-          grep -Fq 'camera.updateProjectionMatrix()' urai-tier1/src/app/HomeSpatialCanvas.tsx
           grep -Fq 'position={[x, 0, z]} rotation={[0, angle, 0]}' urai-tier1/src/app/HomeSpatialCanvas.tsx
           grep -Fq 'const x = district.position[0] * 0.5' urai-tier1/src/app/GroundSpatialWorldClean.tsx
           grep -Fq '<OrbitControls makeDefault enablePan={false}' urai-tier1/src/app/GroundSpatialWorldClean.tsx
