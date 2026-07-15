@@ -74,9 +74,12 @@ jobs:
         run: |
           set -euo pipefail
           mkdir -p artifacts/continuous-spatial-proof
+          playwright_cli="$(node --input-type=module -e "import { createRequire } from 'node:module'; const requireFromTierOne = createRequire(new URL('./urai-tier1/package.json', import.meta.url)); console.log(requireFromTierOne.resolve('playwright/cli'));" )"
+          test -f "$playwright_cli"
+          printf '%s\n' "$playwright_cli" > artifacts/continuous-spatial-proof/playwright-cli-path.txt
           set +e
           set -o pipefail
-          pnpm --dir urai-tier1 exec playwright install --with-deps chromium \
+          node "$playwright_cli" install --with-deps chromium \
             2>&1 | tee artifacts/continuous-spatial-proof/playwright-install.log
           install_status=${PIPESTATUS[0]}
           printf '%s\n' "$install_status" > artifacts/continuous-spatial-proof/playwright-install-exit-code.txt
