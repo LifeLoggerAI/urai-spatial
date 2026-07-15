@@ -34,6 +34,22 @@ const groundPrimaryLinkStyle: CSSProperties = {
   fontWeight: 900,
 }
 
+const groundActiveLinkStyle: CSSProperties = {
+  ...groundLinkStyle,
+  border: '1px solid rgba(154,240,255,.66)',
+  color: '#ffffff',
+  background: 'rgba(28,91,115,.82)',
+  boxShadow: '0 0 24px rgba(103,232,249,.2), inset 0 1px 0 rgba(255,255,255,.12)',
+}
+
+const groundRailLinks = [
+  { href: '/home', label: 'Home' },
+  { href: '/ground', label: 'Ground' },
+  { href: '/life-map', label: 'Life Map' },
+  { href: '/focus?memoryId=quiet-reset&manifestId=replay-recovery-thread&node=quiet-reset', label: 'Focus' },
+  { href: '/replay?memoryId=quiet-reset&manifestId=replay-recovery-thread&node=quiet-reset', label: 'Replay' },
+] as const
+
 function MovingCityLights() {
   const ref = useRef<THREE.Group>(null)
   useFrame(({ clock }) => {
@@ -176,11 +192,20 @@ export default function GroundSpatialWorldClean() {
       <aside className="ground-status">Explorable spatial Ground active</aside>
       <aside className="ground-pins">Pins: Signal · Tasks · Memory · Control</aside>
       <nav className="ground-rail" aria-label="URAI Ground navigation">
-        <Link style={groundLinkStyle} href="/home">Home</Link>
-        <Link style={groundLinkStyle} href="/ground">Ground</Link>
-        <Link style={groundLinkStyle} href="/life-map">Life Map</Link>
-        <Link style={groundLinkStyle} href="/focus?manifestId=seed-memory-bloom">Focus</Link>
-        <Link style={groundLinkStyle} href="/replay?memoryId=quiet-reset&manifestId=replay-recovery-thread">Replay</Link>
+        {groundRailLinks.map((link) => {
+          const active = link.href === '/ground'
+          return (
+            <span className="ground-rail-item" key={link.href}>
+              <Link
+                style={active ? groundActiveLinkStyle : groundLinkStyle}
+                href={link.href}
+                aria-current={active ? 'page' : undefined}
+              >
+                {link.label}
+              </Link>
+            </span>
+          )
+        })}
       </nav>
       <style jsx>{`
         .ground-spatial-root{position:fixed;inset:0;overflow:hidden;background:#020611;color:#f8fbff;isolation:isolate;font-family:Inter,ui-sans-serif,system-ui}
@@ -197,6 +222,7 @@ export default function GroundSpatialWorldClean() {
         .ground-status{right:22px;top:22px;padding:10px 13px;border-radius:999px;color:rgba(226,246,255,.78);font-size:11px;letter-spacing:.12em;text-transform:uppercase}
         .ground-pins{right:22px;bottom:88px;padding:10px 13px;border-radius:999px;color:rgba(226,246,255,.75);font-size:11px;letter-spacing:.08em;text-transform:uppercase}
         .ground-rail{left:50%;bottom:18px;display:flex;align-items:center;gap:6px;width:max-content;max-width:calc(100vw - 32px);padding:7px;transform:translateX(-50%);overflow-x:auto;scrollbar-width:none;border-radius:999px}
+        .ground-rail-item{display:flex;flex:0 0 auto}
         .ground-rail::-webkit-scrollbar{display:none}
         @media(max-width:720px){.ground-hero{left:14px;right:14px;top:14px;width:auto}.ground-status,.ground-pins{display:none}.ground-rail{bottom:12px;width:calc(100vw - 28px);justify-content:flex-start}}
       `}</style>
