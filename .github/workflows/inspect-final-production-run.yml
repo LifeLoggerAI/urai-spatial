@@ -20,7 +20,7 @@ jobs:
         shell: bash
         env:
           GH_TOKEN: ${{ github.token }}
-          MERGE_SHA: 0dac29563148c3e6f2b4532eee7217f6dea07e8d
+          MERGE_SHA: 7812741e41b73df973d4796ca0930c86ca42e7ef
         run: |
           set -euo pipefail
           out="$RUNNER_TEMP/final-production-run"
@@ -60,7 +60,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
-          name: final-production-run-0dac29563148c3e6f2b4532eee7217f6dea07e8d
+          name: final-production-run-7812741e41b73df973d4796ca0930c86ca42e7ef
           path: ${{ steps.query.outputs.out }}
           if-no-files-found: error
           retention-days: 30
