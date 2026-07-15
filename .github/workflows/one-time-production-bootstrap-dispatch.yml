@@ -1,4 +1,4 @@
-name: One-time production bootstrap dispatch
+name: One-time production release dispatch
 
 on:
   pull_request:
@@ -14,14 +14,14 @@ permissions:
   contents: read
 
 concurrency:
-  group: one-time-production-bootstrap-dispatch
+  group: one-time-production-release-dispatch
   cancel-in-progress: false
 
 env:
   TARGET_WORKFLOW: spatial-live-deploy.yml
-  ROLLBACK_SHA: c1c1a96ec9ae2415e59e9d8359ab26e8cfeda332
-  CONFIRMATION: BOOTSTRAP_LEGACY_URAI_APP
-  RETRY_REASON: visible-focus-owner-identity-fixed-20260715
+  ROLLBACK_SHA: e2850a8b9dbd2fd11ee0197505da278322916aa0
+  CONFIRMATION: DEPLOY_URAI_APP
+  RETRY_REASON: continuous-spatial-world-restored-20260715
 
 jobs:
   verify-dispatch-contract:
@@ -70,13 +70,13 @@ jobs:
         run: |
           set -euo pipefail
           grep -Fq 'TARGET_WORKFLOW: spatial-live-deploy.yml' .github/workflows/one-time-production-bootstrap-dispatch.yml
-          grep -Fq 'ROLLBACK_SHA: c1c1a96ec9ae2415e59e9d8359ab26e8cfeda332' .github/workflows/one-time-production-bootstrap-dispatch.yml
-          grep -Fq 'CONFIRMATION: BOOTSTRAP_LEGACY_URAI_APP' .github/workflows/one-time-production-bootstrap-dispatch.yml
-          grep -Fq 'RETRY_REASON: visible-focus-owner-identity-fixed-20260715' .github/workflows/one-time-production-bootstrap-dispatch.yml
+          grep -Fq 'ROLLBACK_SHA: e2850a8b9dbd2fd11ee0197505da278322916aa0' .github/workflows/one-time-production-bootstrap-dispatch.yml
+          grep -Fq 'CONFIRMATION: DEPLOY_URAI_APP' .github/workflows/one-time-production-bootstrap-dispatch.yml
+          grep -Fq 'RETRY_REASON: continuous-spatial-world-restored-20260715' .github/workflows/one-time-production-bootstrap-dispatch.yml
           grep -Fq 'actions: write' .github/workflows/one-time-production-bootstrap-dispatch.yml
           test -z "$(git status --porcelain --untracked-files=all)"
 
-  dispatch-protected-production-bootstrap:
+  dispatch-protected-production-release:
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     permissions:
       actions: write
@@ -108,14 +108,14 @@ jobs:
             changed="$(git diff-tree --no-commit-id --name-only -r "$GITHUB_SHA")"
           fi
           test "$changed" = '.github/workflows/one-time-production-bootstrap-dispatch.yml'
-      - name: Request protected production bootstrap
+      - name: Request protected production release
         id: dispatch
         shell: bash
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
-          receipt_dir="$RUNNER_TEMP/production-bootstrap-dispatch"
+          receipt_dir="$RUNNER_TEMP/production-release-dispatch"
           mkdir -p "$receipt_dir"
           payload="$receipt_dir/request.json"
           response="$receipt_dir/response.txt"
@@ -139,7 +139,7 @@ jobs:
           test "$status" = '204'
           cat > "$receipt_dir/receipt.json" <<EOF
           {
-            "schemaVersion": "urai-one-time-production-bootstrap-dispatch-1",
+            "schemaVersion": "urai-one-time-production-release-dispatch-1",
             "requestedAt": "$(date -u +%Y-%m-%dT%H:%M:%SZ)",
             "repository": "$GITHUB_REPOSITORY",
             "dispatcherWorkflow": "$GITHUB_WORKFLOW",
@@ -159,7 +159,7 @@ jobs:
       - name: Upload dispatch receipt
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
-          name: production-bootstrap-dispatch-${{ github.sha }}
+          name: production-release-dispatch-${{ github.sha }}
           path: ${{ steps.dispatch.outputs.receipt_dir }}
           if-no-files-found: error
           retention-days: 365
