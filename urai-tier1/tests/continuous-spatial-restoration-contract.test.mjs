@@ -15,6 +15,8 @@ const template = read('src/app/template.tsx')
 const layer = read('src/app/HomeSpatialRuntimeLayer.tsx')
 const canvas = read('src/app/HomeSpatialCanvas.tsx')
 const css = read('src/app/spatial-runtime-restoration.css')
+const proof = read('../scripts/capture-continuous-spatial-proof.mjs')
+const proofWorkflow = read('../.github/workflows/continuous-spatial-visual-proof.yml')
 const homeOwner = read('src/app/FinalHomeThreshold.tsx')
 const groundOwner = read('src/app/ground/page.tsx')
 const lifeMapOwner = read('src/app/life-map/page.tsx')
@@ -55,6 +57,25 @@ test('reviewed Home runtime keeps semantic navigation and defensive browser clea
   assert.match(layer, /HomeSpatialCanvas, \{ useWebGLAvailable \}/)
   assert.doesNotMatch(layer, /function useHomeWebGLAvailable/)
   assert.match(layer, /webglAvailable=\{webglAvailable\}/)
+})
+
+test('Home visual overrides activate only when the WebGL runtime exists', () => {
+  assert.match(css, /html:has\(\.urai-home-spatial-runtime-layer\)/)
+  assert.match(css, /body:has\(\.urai-home-spatial-runtime-layer\) \.urai-home-spatial-world-final::before/)
+  assert.match(css, /body:has\(\.urai-home-spatial-runtime-layer\) \.urai-home-spatial-world-final \.urai-genesis-home__world/)
+  assert.doesNotMatch(css, /\n\.urai-home-spatial-world-final::before/)
+  assert.doesNotMatch(css, /body:has\(\.urai-home-spatial-world-final\) \.urai-cinematic-backdrop/)
+})
+
+test('exact-head browser proof captures desktop mobile and no-WebGL fallback receipts', () => {
+  assert.match(proof, /home-no-webgl-fallback/)
+  assert.match(proof, /patchedGetContext/)
+  assert.match(proof, /runtimeAbsent/)
+  assert.match(proof, /fallbackOwnerVisible/)
+  assert.match(proof, /desktop-no-webgl/)
+  assert.match(proof, /receipt\.json/)
+  assert.match(proofWorkflow, /requireFromTierOne\.resolve\('playwright\/cli'\)/)
+  assert.match(proofWorkflow, /Capture desktop mobile and fallback spatial proof/)
 })
 
 test('flat route-image veils are suppressed while current Ground and Life Map canvases remain authoritative', () => {
