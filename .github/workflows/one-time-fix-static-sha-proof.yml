@@ -107,5 +107,6 @@ jobs:
         with:
           name: validated-static-sha-proof-repair-${{ github.sha }}
           path: ${{ steps.transfer.outputs.out }}
+          include-hidden-files: true
           if-no-files-found: error
           retention-days: 30
