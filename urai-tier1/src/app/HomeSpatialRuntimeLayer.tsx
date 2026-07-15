@@ -46,6 +46,42 @@ export default function HomeSpatialRuntimeLayer() {
         </nav>
       </aside>
       <style jsx global>{`
+        .urai-home-spatial-runtime-layer {
+          z-index: 30 !important;
+        }
+
+        html body:has(.urai-home-spatial-runtime-layer) .urai-home-spatial-world-final {
+          position: static !important;
+          z-index: auto !important;
+          isolation: auto !important;
+          min-height: 0 !important;
+          background: transparent !important;
+          box-shadow: none !important;
+          pointer-events: none !important;
+        }
+
+        html body:has(.urai-home-spatial-runtime-layer) .urai-home-spatial-world-final::before,
+        html body:has(.urai-home-spatial-runtime-layer) .urai-home-spatial-world-final::after,
+        html body:has(.urai-home-spatial-runtime-layer) .urai-home-spatial-world-final .urai-genesis-home__world,
+        html body:has(.urai-home-spatial-runtime-layer) .urai-home-spatial-world-final .urai-genesis-home__memory-orbit,
+        html body:has(.urai-home-spatial-runtime-layer) .urai-home-spatial-world-final .urai-genesis-home__orb,
+        html body:has(.urai-home-spatial-runtime-layer) .urai-home-spatial-world-final .urai-genesis-home__orb-panel,
+        html body:has(.urai-home-spatial-runtime-layer) .urai-home-spatial-world-final .urai-genesis-home__portals,
+        html body:has(.urai-home-spatial-runtime-layer) .urai-home-spatial-world-final .urai-genesis-home__bottom-dock {
+          display: none !important;
+        }
+
+        html body:has(.urai-home-spatial-runtime-layer) .urai-home-spatial-world-final .urai-genesis-home__hero {
+          z-index: 42 !important;
+          pointer-events: none !important;
+        }
+
+        html body:has(.urai-home-spatial-runtime-layer) .urai-home-spatial-world-final .urai-genesis-home__threshold-gate,
+        html body:has(.urai-home-spatial-runtime-layer) .urai-home-spatial-world-final .urai-genesis-home__skip {
+          z-index: 48 !important;
+          pointer-events: auto !important;
+        }
+
         .urai-home-spatial-runtime-layer .urai-home-spatial-canvas {
           filter: brightness(1.34) saturate(1.2) contrast(1.02);
         }
@@ -54,7 +90,7 @@ export default function HomeSpatialRuntimeLayer() {
           position: absolute;
           left: 50%;
           bottom: 58px;
-          z-index: 7;
+          z-index: 37;
           display: flex;
           align-items: center;
           gap: 7px;
