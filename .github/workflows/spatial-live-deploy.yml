@@ -300,7 +300,7 @@ jobs:
         run: |
           set -euo pipefail
           test -f urai-tier1/out/index.html
-          grep -R --fixed-strings "$PROOF_SHA" urai-tier1/out --include='*.html' -l | grep -q .
+          grep -R --fixed-strings --include='*.html' -q "$PROOF_SHA" urai-tier1/out
 
       - name: Upload rollback proof
         if: always()
@@ -377,7 +377,7 @@ jobs:
         run: |
           set -euo pipefail
           test -f target/urai-tier1/out/index.html
-          grep -R --fixed-strings "$RELEASE_SHA" target/urai-tier1/out --include='*.html' -l | grep -q .
+          grep -R --fixed-strings --include='*.html' -q "$RELEASE_SHA" target/urai-tier1/out
           if find target/urai-tier1/out -type l -print -quit | grep -q .; then
             echo 'Raw static output contains a symlink' >&2
             exit 65

@@ -193,6 +193,14 @@ test('legacy bootstrap is fingerprint-absence-only and recovery-bound', () => {
   ], 'legacy bootstrap verifier')
 })
 
+test('static SHA proofs avoid pipefail SIGPIPE false negatives', () => {
+  hasAll(workflow, [
+    'grep -R --fixed-strings --include=\'*.html\' -q "$PROOF_SHA" urai-tier1/out',
+    'grep -R --fixed-strings --include=\'*.html\' -q "$RELEASE_SHA" target/urai-tier1/out',
+  ], 'direct static SHA proof')
+  assert.doesNotMatch(workflow, /--include='\*\.html' -l \| grep -q \./)
+})
+
 test('manual deploy and rollback preserve distinct target and recovery identities', () => {
   hasAll(workflow, [
     'workflow_dispatch:',
