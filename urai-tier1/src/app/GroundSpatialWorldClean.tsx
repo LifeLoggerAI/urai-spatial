@@ -34,6 +34,14 @@ const groundPrimaryLinkStyle: CSSProperties = {
   fontWeight: 900,
 }
 
+const groundActiveLinkStyle: CSSProperties = {
+  ...groundLinkStyle,
+  border: '1px solid rgba(154,240,255,.66)',
+  color: '#ffffff',
+  background: 'rgba(28,91,115,.82)',
+  boxShadow: '0 0 24px rgba(103,232,249,.2), inset 0 1px 0 rgba(255,255,255,.12)',
+}
+
 const groundRailLinks = [
   { href: '/home', label: 'Home' },
   { href: '/ground', label: 'Ground' },
@@ -184,11 +192,20 @@ export default function GroundSpatialWorldClean() {
       <aside className="ground-status">Explorable spatial Ground active</aside>
       <aside className="ground-pins">Pins: Signal · Tasks · Memory · Control</aside>
       <nav className="ground-rail" aria-label="URAI Ground navigation">
-        {groundRailLinks.map((link) => (
-          <span className="ground-rail-item" key={link.href}>
-            <Link style={groundLinkStyle} href={link.href}>{link.label}</Link>
-          </span>
-        ))}
+        {groundRailLinks.map((link) => {
+          const active = link.href === '/ground'
+          return (
+            <span className="ground-rail-item" key={link.href}>
+              <Link
+                style={active ? groundActiveLinkStyle : groundLinkStyle}
+                href={link.href}
+                aria-current={active ? 'page' : undefined}
+              >
+                {link.label}
+              </Link>
+            </span>
+          )
+        })}
       </nav>
       <style jsx>{`
         .ground-spatial-root{position:fixed;inset:0;overflow:hidden;background:#020611;color:#f8fbff;isolation:isolate;font-family:Inter,ui-sans-serif,system-ui}
