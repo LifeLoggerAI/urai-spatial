@@ -36,6 +36,11 @@ const TREES: readonly [number, number, number, number][] = [
   [-10.5, 0, -2.2, 1], [-9.8, 0, 5, 0.9], [9.8, 0, 5.2, 1],
 ]
 
+const HILLS: readonly [number, number, number, number, number, number][] = [
+  [-13, 0.5, -8, 5.5, 2.4, 4.5], [-8, 0.38, -14, 7, 2.2, 5.2],
+  [8, 0.42, -14, 7.4, 2.5, 5.4], [13, 0.5, -7, 5.5, 2.5, 4.5],
+]
+
 let cachedWebGLAvailable: boolean | null = null
 
 function useReducedMotion() {
@@ -97,8 +102,8 @@ function CameraRig() {
   const { camera } = useThree()
 
   useEffect(() => {
-    camera.position.set(0, 5.1, 12.8)
-    camera.lookAt(0, 1.15, -2.2)
+    camera.position.set(0, 4.8, 12.8)
+    camera.lookAt(0, 1.25, -2.4)
     camera.updateProjectionMatrix()
   }, [camera])
 
@@ -128,7 +133,7 @@ function LivingGround() {
   return (
     <group data-testid="urai-home-living-ground">
       <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.12, -1.5]} receiveShadow>
-        <circleGeometry args={[18, 128]} />
+        <planeGeometry args={[48, 48]} />
         <meshStandardMaterial color="#29463a" roughness={0.94} metalness={0.02} />
       </mesh>
       <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.04, -1.5]} receiveShadow>
@@ -157,10 +162,7 @@ function LivingGround() {
         )
       })}
 
-      {[
-        [-13, 0.5, -8, 5.5, 2.4, 4.5], [-8, 0.38, -14, 7, 2.2, 5.2],
-        [8, 0.42, -14, 7.4, 2.5, 5.4], [13, 0.5, -7, 5.5, 2.5, 4.5],
-      ].map(([x, y, z, sx, sy, sz], index) => (
+      {HILLS.map(([x, y, z, sx, sy, sz], index) => (
         <mesh key={`hill-${index}`} position={[x, y, z]} scale={[sx, sy, sz]} receiveShadow>
           <dodecahedronGeometry args={[1, 2]} />
           <meshStandardMaterial color={index % 2 ? '#355445' : '#3c5d4a'} roughness={1} />
@@ -177,12 +179,10 @@ function Orb({ reducedMotion, onOpen }: { reducedMotion: boolean; onOpen: () => 
   const outerRing = useRef<THREE.Mesh>(null)
 
   useFrame(({ clock }) => {
-    if (!group.current) return
-    if (!reducedMotion) {
-      group.current.position.y = 1.9 + Math.sin(clock.elapsedTime * 1.1) * 0.1
-      group.current.rotation.y = clock.elapsedTime * 0.2
-      if (outerRing.current) outerRing.current.rotation.z = clock.elapsedTime * 0.28
-    }
+    if (!group.current || reducedMotion) return
+    group.current.position.y = 1.9 + Math.sin(clock.elapsedTime * 1.1) * 0.1
+    group.current.rotation.y = clock.elapsedTime * 0.2
+    if (outerRing.current) outerRing.current.rotation.z = clock.elapsedTime * 0.28
   })
 
   return (
@@ -284,7 +284,7 @@ function Scene({ reducedMotion, onOrbOpen }: { reducedMotion: boolean; onOrbOpen
       <FirstHomeFrame />
       <CameraRig />
       <color attach="background" args={['#091b29']} />
-      <fog attach="fog" args={['#0b1d29', 20, 58]} />
+      <fog attach="fog" args={['#0b1d29', 30, 80]} />
       <ambientLight intensity={1.25} color="#dceff4" />
       <hemisphereLight args={['#dff6ff', '#24382d', 2.1]} />
       <directionalLight position={[-6, 12, 8]} intensity={4.1} color="#fff0d8" castShadow shadow-mapSize-width={1536} shadow-mapSize-height={1536} />
@@ -307,7 +307,7 @@ function Scene({ reducedMotion, onOrbOpen }: { reducedMotion: boolean; onOrbOpen
         maxPolarAngle={1.45}
         minAzimuthAngle={-1.35}
         maxAzimuthAngle={1.35}
-        target={[0, 1.15, -2.2]}
+        target={[0, 1.25, -2.4]}
       />
     </>
   )
@@ -334,12 +334,12 @@ export default function HomeSpatialCanvas({ onOrbOpen, webglAvailable }: HomeSpa
         shadows
         frameloop="always"
         dpr={[1, 1.45]}
-        camera={{ position: [0, 5.1, 12.8], fov: 50, near: 0.1, far: 100 }}
+        camera={{ position: [0, 4.8, 12.8], fov: 50, near: 0.1, far: 110 }}
         gl={{ antialias: true, alpha: false, powerPreference: 'high-performance' }}
         onCreated={({ gl }) => {
           gl.outputColorSpace = THREE.SRGBColorSpace
           gl.toneMapping = THREE.ACESFilmicToneMapping
-          gl.toneMappingExposure = 1.32
+          gl.toneMappingExposure = 1.22
         }}
       >
         <Scene reducedMotion={reducedMotion} onOrbOpen={onOrbOpen} />
