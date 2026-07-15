@@ -19,6 +19,7 @@ const proof = read('../scripts/capture-continuous-spatial-proof.mjs')
 const proofWorkflow = read('../.github/workflows/continuous-spatial-visual-proof.yml')
 const homeOwner = read('src/app/FinalHomeThreshold.tsx')
 const groundOwner = read('src/app/ground/page.tsx')
+const groundWorld = read('src/app/GroundSpatialWorldClean.tsx')
 const lifeMapOwner = read('src/app/life-map/page.tsx')
 
 test('app template mounts the restored Home WebGL runtime without replacing route owners', () => {
@@ -65,6 +66,10 @@ test('reviewed Home runtime keeps semantic portal navigation and defensive brows
   assert.match(layer, /HomeSpatialCanvas, \{ useWebGLAvailable \}/)
   assert.doesNotMatch(layer, /function useHomeWebGLAvailable/)
   assert.match(layer, /webglAvailable=\{webglAvailable\}/)
+  assert.match(layer, /const doorwayLinks =/)
+  assert.match(layer, /className="urai-home-spatial-runtime-portals"/)
+  assert.match(layer, /aria-label="Spatial doorway shortcuts"/)
+  assert.match(layer, /data-orb-open=\{orbOpen \? 'true' : 'false'\}/)
 })
 
 test('Home visual overrides activate only when the WebGL runtime exists', () => {
@@ -76,13 +81,17 @@ test('Home visual overrides activate only when the WebGL runtime exists', () => 
 })
 
 test('exact-head browser proof captures desktop mobile and no-WebGL fallback receipts', () => {
-  assert.match(proof, /schemaVersion: 'urai-continuous-spatial-visual-proof-4'/)
+  assert.match(proof, /schemaVersion: 'urai-continuous-spatial-visual-proof-5'/)
   assert.match(proof, /home-no-webgl-fallback/)
   assert.match(proof, /patchedGetContext/)
   assert.match(proof, /probeWebGL/)
   assert.match(proof, /WEBGL_debug_renderer_info/)
   assert.match(proof, /browserWebGL/)
   assert.match(proof, /--enable-unsafe-swiftshader/)
+  assert.match(proof, /portalShortcutsVisible/)
+  assert.match(proof, /portalShortcutsStyled/)
+  assert.match(proof, /navigationPillsStyled/)
+  assert.match(proof, /navigationRailContained/)
   assert.match(proof, /runtimeAbsent/)
   assert.match(proof, /fallbackOwnerVisible/)
   assert.match(proof, /fallbackActionVisible/)
@@ -104,6 +113,15 @@ test('exact-head browser proof captures desktop mobile and no-WebGL fallback rec
   const installIndex = proofWorkflow.indexOf('Install and prove exact Tier-1 Chromium')
   assert.ok(buildIndex >= 0, 'visual proof must build the exact candidate')
   assert.ok(installIndex > buildIndex, 'browser installation must occur after low-disk build cleanup')
+})
+
+test('Ground navigation is rendered as contained touch-safe pills', () => {
+  assert.match(groundWorld, /const groundLinkStyle: CSSProperties/)
+  assert.match(groundWorld, /display: 'inline-flex'/)
+  assert.match(groundWorld, /whiteSpace: 'nowrap'/)
+  assert.match(groundWorld, /style=\{groundLinkStyle\}/)
+  assert.match(groundWorld, /width:calc\(100vw - 28px\)/)
+  assert.match(groundWorld, /scrollbar-width:none/)
 })
 
 test('flat route-image veils are suppressed while current Ground and Life Map canvases remain authoritative', () => {
