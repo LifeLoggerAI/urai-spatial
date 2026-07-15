@@ -12,13 +12,16 @@ on:
     paths:
       - '.github/workflows/continuous-spatial-visual-proof.yml'
       - 'scripts/capture-continuous-spatial-proof.mjs'
+      - 'urai-tier1/scripts/run-unit-contract-tests-compact.mjs'
       - 'urai-tier1/src/app/HomeSpatialCanvas.tsx'
       - 'urai-tier1/src/app/HomeSpatialRuntimeLayer.tsx'
+      - 'urai-tier1/src/app/continuous-spatial-proof-defects.css'
       - 'urai-tier1/src/app/spatial-runtime-restoration.css'
       - 'urai-tier1/src/app/template.tsx'
       - 'urai-tier1/src/app/GroundSpatialWorldClean.tsx'
       - 'urai-tier1/src/components/lifemap/**'
       - 'urai-tier1/src/spatial/lifemap/**'
+      - 'urai-tier1/tests/mobile-spatial-framing-contract.test.mjs'
 
 permissions:
   contents: read
