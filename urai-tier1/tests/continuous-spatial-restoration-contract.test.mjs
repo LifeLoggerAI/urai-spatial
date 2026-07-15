@@ -74,7 +74,8 @@ test('exact-head browser proof captures desktop mobile and no-WebGL fallback rec
   assert.match(proof, /fallbackOwnerVisible/)
   assert.match(proof, /desktop-no-webgl/)
   assert.match(proof, /receipt\.json/)
-  assert.match(proofWorkflow, /requireFromTierOne\.resolve\('playwright\/cli'\)/)
+  assert.match(proofWorkflow, /pnpm --dir urai-tier1 exec playwright install --with-deps chromium/)
+  assert.doesNotMatch(proofWorkflow, /resolve\('playwright\/cli'\)/)
   assert.match(proofWorkflow, /Capture desktop mobile and fallback spatial proof/)
 })
 
