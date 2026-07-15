@@ -266,8 +266,20 @@ async function runReleaseControlSmoke() {
 
   async function verifyHydratedIdentity(page, check, profileName) {
     const visibleSelector = `${check.selector}:visible`
-    const surface = page.locator(visibleSelector)
-    await surface.waitFor({ state: 'visible', timeout: 20000 })
+    await page.waitForFunction(
+      ({ selector, expected }) => Array.from(document.querySelectorAll(selector)).some((element) => {
+        const style = window.getComputedStyle(element)
+        const bounds = element.getBoundingClientRect()
+        const visible = style.display !== 'none' && style.visibility !== 'hidden' && bounds.width > 0 && bounds.height > 0
+        return visible
+          && element.getAttribute('data-memory-id') === expected.memoryId
+          && element.getAttribute('data-manifest-id') === expected.manifestId
+          && element.getAttribute('data-node') === expected.node
+      }),
+      { selector: check.selector, expected: identity },
+      { timeout: 20000 },
+    )
+    const surface = page.locator(visibleSelector).first()
     const observed = {
       memoryId: await surface.getAttribute('data-memory-id'),
       manifestId: await surface.getAttribute('data-manifest-id'),

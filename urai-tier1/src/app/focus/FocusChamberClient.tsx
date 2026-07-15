@@ -1,8 +1,7 @@
 'use client'
 
 import Link from 'next/link'
-import { useSearchParams } from 'next/navigation'
-import { useEffect, useMemo } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { assetCssStack, focusAssets, uiAssets } from '@/spatial/assets/uraiAssets'
 
 const DEFAULT_MEMORY_ID = 'quiet-reset'
@@ -23,11 +22,21 @@ function readableName(value: string) {
 }
 
 export default function FocusChamberClient() {
-  const params = useSearchParams()
-  const memoryId = safeToken(params.get('memoryId'), DEFAULT_MEMORY_ID)
-  const manifestId = safeToken(params.get('manifestId'), DEFAULT_MANIFEST_ID)
-  const node = safeToken(params.get('node'), memoryId)
+  const [identity, setIdentity] = useState(() => ({
+    memoryId: DEFAULT_MEMORY_ID,
+    manifestId: DEFAULT_MANIFEST_ID,
+    node: DEFAULT_MEMORY_ID,
+  }))
+  const { memoryId, manifestId, node } = identity
   const memoryName = readableName(node)
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search)
+    const nextMemoryId = safeToken(params.get('memoryId'), DEFAULT_MEMORY_ID)
+    const nextManifestId = safeToken(params.get('manifestId'), DEFAULT_MANIFEST_ID)
+    const nextNode = safeToken(params.get('node'), nextMemoryId)
+    setIdentity({ memoryId: nextMemoryId, manifestId: nextManifestId, node: nextNode })
+  }, [])
 
   const replayHref = useMemo(() => {
     const next = new URLSearchParams()
