@@ -20,7 +20,7 @@ body:has([data-testid="urai-r3f-canonical-lifemap"]) .urai-final-asset-spine-sce
 .urai-home-spatial-runtime-layer {
   position: fixed;
   inset: 0;
-  z-index: 10;
+  z-index: 30 !important;
   overflow: hidden;
   isolation: isolate;
   background:
@@ -38,8 +38,23 @@ body:has([data-testid="urai-r3f-canonical-lifemap"]) .urai-final-asset-spine-sce
 }
 
 .urai-home-spatial-canvas-shell {
+  z-index: 1;
+  min-height: 100svh;
   touch-action: none;
   user-select: none;
+}
+
+.urai-home-spatial-canvas-shell > div:has(> canvas) {
+  position: absolute !important;
+  inset: 0 !important;
+  width: 100% !important;
+  height: 100% !important;
+  min-height: 100svh !important;
+}
+
+.urai-home-spatial-canvas-shell canvas {
+  width: 100% !important;
+  height: 100% !important;
 }
 
 .urai-home-spatial-canvas-loading {
@@ -119,7 +134,7 @@ body:has([data-testid="urai-r3f-canonical-lifemap"]) .urai-final-asset-spine-sce
   position: absolute;
   right: clamp(18px, 4vw, 58px);
   top: clamp(90px, 15vh, 150px);
-  z-index: 8;
+  z-index: 38;
   display: grid;
   gap: 10px;
   width: min(330px, calc(100vw - 32px));
@@ -184,36 +199,39 @@ body:has([data-testid="urai-r3f-canonical-lifemap"]) .urai-final-asset-spine-sce
   font-weight: 850;
 }
 
-/* Keep the canonical Home DOM as an accessible overlay, not a second painted scene. */
+/* Keep the canonical Home DOM only as a semantic overlay while WebGL owns the scene. */
 body:has(.urai-home-spatial-runtime-layer) .urai-home-spatial-world-final {
-  position: relative !important;
-  z-index: 20 !important;
-  min-height: 100svh !important;
+  position: static !important;
+  z-index: auto !important;
+  isolation: auto !important;
+  min-height: 0 !important;
   background: transparent !important;
-  pointer-events: none;
+  box-shadow: none !important;
+  pointer-events: none !important;
 }
 
 body:has(.urai-home-spatial-runtime-layer) .urai-home-spatial-world-final::before,
-body:has(.urai-home-spatial-runtime-layer) .urai-home-spatial-world-final .urai-genesis-home__world {
-  display: none !important;
-}
-
-body:has(.urai-home-spatial-runtime-layer) .urai-home-spatial-world-final .urai-genesis-home__skip,
-body:has(.urai-home-spatial-runtime-layer) .urai-home-spatial-world-final .urai-genesis-home__threshold-gate,
-body:has(.urai-home-spatial-runtime-layer) .urai-home-spatial-world-final .urai-genesis-home__hero,
+body:has(.urai-home-spatial-runtime-layer) .urai-home-spatial-world-final::after,
+body:has(.urai-home-spatial-runtime-layer) .urai-home-spatial-world-final .urai-genesis-home__world,
 body:has(.urai-home-spatial-runtime-layer) .urai-home-spatial-world-final .urai-genesis-home__memory-orbit,
 body:has(.urai-home-spatial-runtime-layer) .urai-home-spatial-world-final .urai-genesis-home__orb,
 body:has(.urai-home-spatial-runtime-layer) .urai-home-spatial-world-final .urai-genesis-home__orb-panel,
 body:has(.urai-home-spatial-runtime-layer) .urai-home-spatial-world-final .urai-genesis-home__portals,
 body:has(.urai-home-spatial-runtime-layer) .urai-home-spatial-world-final .urai-genesis-home__bottom-dock {
-  pointer-events: auto;
+  display: none !important;
+}
+
+body:has(.urai-home-spatial-runtime-layer) .urai-home-spatial-world-final .urai-genesis-home__skip,
+body:has(.urai-home-spatial-runtime-layer) .urai-home-spatial-world-final .urai-genesis-home__threshold-gate {
+  z-index: 48 !important;
+  pointer-events: auto !important;
 }
 
 body:has(.urai-home-spatial-runtime-layer) .urai-home-spatial-world-final .urai-genesis-home__hero {
   position: absolute !important;
   left: clamp(18px, 4vw, 58px) !important;
   top: clamp(18px, 4vh, 40px) !important;
-  z-index: 24 !important;
+  z-index: 42 !important;
   display: grid !important;
   gap: 6px !important;
   width: min(390px, calc(100vw - 36px)) !important;
@@ -222,6 +240,7 @@ body:has(.urai-home-spatial-runtime-layer) .urai-home-spatial-world-final .urai-
   background: transparent !important;
   box-shadow: none !important;
   backdrop-filter: none !important;
+  pointer-events: none !important;
 }
 
 body:has(.urai-home-spatial-runtime-layer) .urai-home-spatial-world-final .urai-genesis-home__hero h1 {
@@ -245,7 +264,7 @@ body:has(.urai-home-spatial-runtime-layer) .urai-home-spatial-world-final .urai-
   display: none !important;
 }
 
-/* Ground and Life Map already own current R3F canvases. Remove the flat provider-image veil. */
+/* Ground and Life Map own current R3F canvases. Remove flat veils and force viewport-sized render targets. */
 .ground-provider-art {
   display: none !important;
 }
@@ -254,12 +273,47 @@ body:has(.urai-home-spatial-runtime-layer) .urai-home-spatial-world-final .urai-
   filter: brightness(1.28) saturate(1.16) contrast(1.04);
 }
 
-[data-testid="urai-r3f-canonical-lifemap"] > div[aria-hidden="true"] {
-  opacity: .012 !important;
+.ground-spatial-root .ground-rail a {
+  display: inline-flex !important;
+  flex: 0 0 auto !important;
+  align-items: center !important;
+  justify-content: center !important;
+  min-height: 34px !important;
+  padding: 8px 11px !important;
+  border: 1px solid rgba(160, 220, 255, .24) !important;
+  border-radius: 999px !important;
+  color: #eef6ff !important;
+  background: rgba(2, 8, 24, .78) !important;
+  text-decoration: none !important;
+  white-space: nowrap !important;
+  box-sizing: border-box !important;
+}
+
+[data-testid="urai-true-3d-life-map"] {
+  position: fixed !important;
+  inset: 0 !important;
+  width: 100vw !important;
+  height: 100svh !important;
+  min-height: 100svh !important;
+  overflow: hidden !important;
+}
+
+[data-testid="urai-true-3d-life-map"] > div:has(> canvas) {
+  position: absolute !important;
+  inset: 0 !important;
+  width: 100% !important;
+  height: 100% !important;
+  min-height: 100svh !important;
 }
 
 [data-testid="urai-true-3d-life-map"] canvas {
+  width: 100% !important;
+  height: 100% !important;
   filter: brightness(1.12) saturate(1.18) contrast(1.04);
+}
+
+[data-testid="urai-r3f-canonical-lifemap"] > div[aria-hidden="true"] {
+  opacity: .012 !important;
 }
 
 @media (max-width: 760px) {
@@ -289,9 +343,7 @@ body:has(.urai-home-spatial-runtime-layer) .urai-home-spatial-world-final .urai-
     font-size: clamp(1.25rem, 7vw, 1.8rem) !important;
   }
 
-  body:has(.urai-home-spatial-runtime-layer) .urai-home-spatial-world-final .urai-genesis-home__copy,
-  body:has(.urai-home-spatial-runtime-layer) .urai-home-spatial-world-final .urai-genesis-home__memory-orbit,
-  body:has(.urai-home-spatial-runtime-layer) .urai-home-spatial-world-final .urai-genesis-home__bottom-dock {
+  body:has(.urai-home-spatial-runtime-layer) .urai-home-spatial-world-final .urai-genesis-home__copy {
     display: none !important;
   }
 
