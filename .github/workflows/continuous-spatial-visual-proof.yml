@@ -70,7 +70,10 @@ jobs:
           corepack enable
           pnpm install --frozen-lockfile
 
-      - name: Install exact Tier-1 Chromium and system dependencies
+      - name: Build exact static release candidate before browser installation
+        run: pnpm build:static
+
+      - name: Install and prove exact Tier-1 Chromium
         shell: bash
         run: |
           set -euo pipefail
@@ -82,10 +85,20 @@ jobs:
           install_status=${PIPESTATUS[0]}
           printf '%s\n' "$install_status" > artifacts/continuous-spatial-proof/playwright-install-exit-code.txt
           set -e
-          exit "$install_status"
+          test "$install_status" -eq 0
 
-      - name: Build exact static release candidate
-        run: pnpm build:static
+          pnpm --dir urai-tier1 exec playwright --version \
+            | tee artifacts/continuous-spatial-proof/playwright-version.txt
+          browser_path="$(node --input-type=module - <<'NODE'
+          import { createRequire } from 'node:module'
+          const requireFromTierOne = createRequire(new URL('./urai-tier1/package.json', import.meta.url))
+          const { chromium } = requireFromTierOne('playwright')
+          process.stdout.write(chromium.executablePath())
+          NODE
+          )"
+          test -n "$browser_path"
+          test -x "$browser_path"
+          printf '%s\n' "$browser_path" > artifacts/continuous-spatial-proof/playwright-executable-path.txt
 
       - name: Capture desktop mobile and fallback spatial proof
         shell: bash
