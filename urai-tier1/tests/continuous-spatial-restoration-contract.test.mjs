@@ -35,7 +35,7 @@ test('app template mounts the restored Home WebGL runtime without replacing rout
   assert.match(lifeMapOwner, /SpatialLifeMapCanonical/)
 })
 
-test('restored Home is a deterministic visible world with stable geometry and cached capability detection', () => {
+test('restored Home is a deterministic visible world with stable geometry and hydration-safe cached capability detection', () => {
   for (const marker of [
     "id: 'ground'",
     "id: 'life-map'",
@@ -57,6 +57,9 @@ test('restored Home is a deterministic visible world with stable geometry and ca
     'toneMappingExposure = 1.32',
   ]) assert.ok(canvas.includes(marker), `missing Home spatial marker: ${marker}`)
 
+  assert.match(canvas, /const \[available, setAvailable\] = useState<boolean \| null>\(null\)/)
+  assert.match(canvas, /if \(cachedWebGLAvailable !== null\) \{\s*setAvailable\(cachedWebGLAvailable\)\s*return\s*\}/s)
+  assert.doesNotMatch(canvas, /useState<boolean \| null>\(cachedWebGLAvailable\)/)
   assert.match(canvas, /const TREES: readonly/)
   assert.match(canvas, /TREES\.map/)
   assert.doesNotMatch(canvas, /function LivingGround\(\)[\s\S]{0,200}const trees:/)
@@ -101,6 +104,10 @@ test('exact-head browser proof is deterministic, diagnostic and fallback-safe', 
   assert.match(proof, /patchedGetContext/)
   assert.match(proof, /probeWebGL/)
   assert.match(proof, /WEBGL_debug_renderer_info/)
+  assert.match(proof, /let renderer = null/)
+  assert.match(proof, /catch \(debugError\)/)
+  assert.match(proof, /catch \(loseContextError\)/)
+  assert.match(proof, /return \{ available: true, kind, renderer, attempts \}/)
   assert.match(proof, /browserWebGL/)
   assert.match(proof, /capture\.browserWebGL\?\.available === true/)
   assert.match(proof, /waitForFirstSpatialFrame/)
