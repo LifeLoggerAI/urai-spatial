@@ -94,11 +94,15 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          changed="$({ git diff --name-only; git diff --cached --name-only; } | sort -u)"
+          git add .github/workflows/spatial-live-deploy.yml urai-tier1/tests/exact-static-release-contract.test.mjs
+          git add -u .github/workflows/one-time-fix-static-sha-proof.yml
+          staged="$(git diff --cached --name-only | sort)"
           expected="$(printf '%s\n' '.github/workflows/one-time-fix-static-sha-proof.yml' '.github/workflows/spatial-live-deploy.yml' 'urai-tier1/tests/exact-static-release-contract.test.mjs' | sort)"
-          test "$changed" = "$expected"
+          test "$staged" = "$expected"
+          git diff --cached --check
           git config user.name 'LifeLoggerAI'
           git config user.email '215797546+LifeLoggerAI@users.noreply.github.com'
-          git add -A
           git commit -m 'Fix static SHA proof pipefail false negative'
+          git reset --hard HEAD
+          git clean -fd
           git push origin HEAD:release/fix-static-sha-proof-20260714
