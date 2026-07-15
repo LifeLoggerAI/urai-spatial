@@ -1,0 +1,88 @@
+name: One-time fix static memory route hydration v4
+
+on:
+  push:
+    branches:
+      - release/fix-static-memory-route-hydration-20260715
+    paths:
+      - '.github/workflows/one-time-fix-static-memory-route-hydration-v4.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  repair:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 40
+    steps:
+      - name: Checkout exact repair branch
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          ref: ${{ github.ref }}
+          fetch-depth: 0
+          persist-credentials: true
+      - name: Prove isolated branch identity
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$GITHUB_REF" = 'refs/heads/release/fix-static-memory-route-hydration-20260715'
+          test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
+          test -z "$(git status --porcelain --untracked-files=all)"
+          git merge-base --is-ancestor 7812741e41b73df973d4796ca0930c86ca42e7ef "$GITHUB_SHA"
+      - name: Apply reviewed repair program
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+          workflow = Path('.github/workflows/one-time-fix-static-memory-route-hydration.yml').read_text()
+          marker = "python3 - <<'PY'\n"
+          program = workflow.split(marker, 1)[1].split('\n          PY\n', 1)[0]
+          program = '\n'.join(line[10:] if line.startswith('          ') else line for line in program.splitlines())
+          exec(compile(program, 'static-memory-route-repair.py', 'exec'))
+          PY
+          git diff --check
+          expected="$(printf '%s\n' \
+            scripts/urai-release-control-smoke.mjs \
+            urai-tier1/src/app/focus/FocusChamberClient.tsx \
+            urai-tier1/src/app/focus/page.tsx \
+            urai-tier1/src/app/replay/CinematicReplayClient.tsx \
+            urai-tier1/src/app/replay/page.tsx \
+            urai-tier1/tests/static-memory-route-hydration-contract.test.mjs | sort)"
+          observed="$(git status --porcelain --untracked-files=all | sed -E 's/^.. //' | sort)"
+          printf 'Expected files:\n%s\nObserved files:\n%s\n' "$expected" "$observed"
+          test "$observed" = "$expected"
+      - name: Set up Node
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: '22'
+      - name: Enable exact pnpm
+        shell: bash
+        run: corepack enable && corepack prepare pnpm@10.0.0 --activate
+      - name: Install frozen dependencies
+        shell: bash
+        run: pnpm install --frozen-lockfile --ignore-scripts
+      - name: Run focused hydration contracts
+        shell: bash
+        run: |
+          set -euo pipefail
+          node --test urai-tier1/tests/static-memory-route-hydration-contract.test.mjs urai-tier1/tests/release-control-visible-surface-contract.test.mjs urai-tier1/tests/exact-static-release-contract.test.mjs
+          pnpm --dir urai-tier1 typecheck
+          node scripts/audit-production-workflow-authority.mjs
+          node scripts/verify-production-action-pins.mjs
+          node scripts/verify-release-security-paths.mjs
+      - name: Commit exact permanent repair
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add scripts/urai-release-control-smoke.mjs \
+            urai-tier1/src/app/focus/FocusChamberClient.tsx \
+            urai-tier1/src/app/focus/page.tsx \
+            urai-tier1/src/app/replay/CinematicReplayClient.tsx \
+            urai-tier1/src/app/replay/page.tsx \
+            urai-tier1/tests/static-memory-route-hydration-contract.test.mjs
+          test "$(git diff --cached --name-only | wc -l | tr -d ' ')" = '6'
+          git commit -m 'Fix static Focus and Replay hydration'
+          git push origin HEAD:release/fix-static-memory-route-hydration-20260715
