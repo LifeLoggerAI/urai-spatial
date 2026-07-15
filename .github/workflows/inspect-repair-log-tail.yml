@@ -20,9 +20,9 @@ jobs:
         shell: bash
         env:
           GH_TOKEN: ${{ github.token }}
-          JOB_ID: '87368136967'
-          EXPECTED_RUN_ID: '29419673288'
-          EXPECTED_SHA: 9eda81321f8d6b91f79ada7ebac7166428642e67
+          JOB_ID: '87378340286'
+          EXPECTED_RUN_ID: '29422581477'
+          EXPECTED_SHA: d41c5275a359e028ff2b4b3ca37e585bcdfa8515
         run: |
           set -euo pipefail
           out="$RUNNER_TEMP/failed-protected-deploy-log"
@@ -36,8 +36,8 @@ jobs:
 
           grep -Fq "$EXPECTED_SHA" "$out/full.log"
           grep -Fq "$EXPECTED_RUN_ID" "$out/full.log" || true
-          tail -n 900 "$out/full.log" > "$out/tail.log"
-          grep -Ein -C 12 'error|failed|failure|post-deploy|smoke|focus|replay|expected|observed|timeout|console|network|resource|restore' "$out/full.log" \
+          tail -n 1100 "$out/full.log" > "$out/tail.log"
+          grep -Ein -C 16 'error|failed|failure|post-deploy|smoke|focus|replay|expected|observed|timeout|console|network|resource|restore|recovery|selector|identity|screenshot' "$out/full.log" \
             > "$out/diagnostic-excerpts.log" || true
           cat "$out/diagnostic-excerpts.log"
           echo "out=$out" >> "$GITHUB_OUTPUT"
@@ -46,7 +46,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
-          name: failed-protected-deploy-log-87368136967
+          name: failed-protected-deploy-log-87378340286
           path: ${{ steps.logs.outputs.out }}
           if-no-files-found: error
           retention-days: 30
