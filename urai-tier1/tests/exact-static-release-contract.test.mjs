@@ -81,6 +81,12 @@ test('release operator is exact-SHA, rollback-aware, hosting-only, and credentia
   assert.doesNotMatch(operator, /hosting,firestore|firestore:indexes|functions|pnpm\s+exec\s+firebase/)
 })
 
+test('bundle producer and verifier use one global manifest path order', () => {
+  const marker = 'return files.sort((left, right) => left.relative.localeCompare(right.relative))'
+  assert.ok(bundleBuilder.includes(marker), 'bundle attester must globally sort paths')
+  assert.ok(operator.includes(marker), 'bundle verifier must globally sort paths')
+})
+
 test('build, authority attestation, and protected deploy are separate jobs', () => {
   const build = job(workflow, 'build-release-output')
   const attest = job(workflow, 'attest-release-bundle')
