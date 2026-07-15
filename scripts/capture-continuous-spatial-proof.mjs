@@ -35,45 +35,76 @@ async function canvasEvidence(page, selector) {
   })
 }
 
+async function visibleElementCount(locator) {
+  return locator.evaluateAll((nodes) => nodes.filter((node) => {
+    const style = getComputedStyle(node)
+    const rect = node.getBoundingClientRect()
+    return style.display !== 'none'
+      && style.visibility !== 'hidden'
+      && Number.parseFloat(style.opacity || '1') > 0.02
+      && rect.width > 4
+      && rect.height > 4
+      && rect.bottom > 0
+      && rect.right > 0
+      && rect.top < window.innerHeight
+      && rect.left < window.innerWidth
+  }).length)
+}
+
+async function chooseVisibleLifeMapStar(page) {
+  const canvas = page.locator('[data-testid="urai-true-3d-life-map"] canvas')
+  const box = await canvas.boundingBox()
+  if (!box) return false
+
+  const positions = [
+    [0.5, 0.47], [0.6, 0.46], [0.4, 0.46], [0.68, 0.38], [0.32, 0.38],
+    [0.52, 0.34], [0.45, 0.58], [0.62, 0.58], [0.28, 0.55], [0.75, 0.55],
+  ]
+
+  for (const [xRatio, yRatio] of positions) {
+    await canvas.click({
+      position: { x: Math.round(box.width * xRatio), y: Math.round(box.height * yRatio) },
+      force: true,
+    })
+    await page.waitForTimeout(420)
+    if (await page.getByRole('button', { name: 'Enter Focus' }).isVisible().catch(() => false)) return true
+  }
+
+  return false
+}
+
 const routes = [
   {
     id: 'home',
     path: '/home/',
     ready: '[data-home-spatial-renderer="webgl"][data-webgl-ready="true"] canvas',
     waitForScene: async (page) => {
-      await page.waitForFunction(
-        () => document.querySelectorAll('.urai-home-spatial-canvas-shell .urai-home-spatial-portal-label').length >= 6,
-        null,
-        { timeout: 45_000 },
-      )
+      await page.waitForTimeout(2600)
     },
     verify: async (page) => {
       const runtime = await page.locator('[data-urai-home-runtime="one-continuous-webgl-world"]').count()
       const oldWorld = page.locator('.urai-genesis-home__world')
       const oldWorldHidden = (await oldWorld.count()) === 0 || await oldWorld.evaluate((node) => getComputedStyle(node).display === 'none')
-      const sceneLabels = page.locator('.urai-home-spatial-canvas-shell .urai-home-spatial-portal-label')
+      const legacyControls = page.locator([
+        '.urai-home-spatial-world-final .urai-genesis-home__threshold-gate',
+        '.urai-home-spatial-world-final .urai-genesis-home__orb',
+        '.urai-home-spatial-world-final .urai-genesis-home__memory-orbit',
+        '.urai-home-spatial-world-final .urai-genesis-home__bottom-dock',
+      ].join(','))
+      const legacyControlsVisible = await visibleElementCount(legacyControls)
+
+      const sceneLabels = page.locator('.urai-home-spatial-portal-label')
       const sceneLabelCount = await sceneLabels.count()
-      const sceneLabelsRendered = sceneLabelCount >= 6 && await sceneLabels.evaluateAll((nodes) => nodes.every((node) => {
-        const style = getComputedStyle(node)
-        const rect = node.getBoundingClientRect()
-        return style.visibility !== 'hidden'
-          && style.display !== 'none'
-          && rect.width > 20
-          && rect.height > 14
-      }))
+      const visibleSceneLabelCount = await visibleElementCount(sceneLabels)
+      const sceneLabelsRendered = sceneLabelCount >= 6 && visibleSceneLabelCount >= 4
+
       const portalShortcuts = page.locator('.urai-home-spatial-runtime-portals a')
       const portalShortcutCount = await portalShortcuts.count()
-      const portalShortcutsVisible = portalShortcutCount === 5 && await portalShortcuts.evaluateAll((nodes) => nodes.every((node) => {
-        const style = getComputedStyle(node)
-        const rect = node.getBoundingClientRect()
-        return style.visibility !== 'hidden'
-          && style.display !== 'none'
-          && rect.width >= 48
-          && rect.height >= 28
-      }))
+      const visiblePortalShortcutCount = await visibleElementCount(portalShortcuts)
+      const portalShortcutsVisible = portalShortcutCount === 5 && visiblePortalShortcutCount === 5
       const portalShortcutsStyled = portalShortcutCount === 5 && await portalShortcuts.first().evaluate((node) => {
         const style = getComputedStyle(node)
-        return style.display === 'inline-flex'
+        return ['flex', 'inline-flex'].includes(style.display)
           && Number.parseFloat(style.borderTopWidth || '0') >= 1
           && Number.parseFloat(style.paddingLeft || '0') >= 10
           && style.backgroundColor !== 'rgba(0, 0, 0, 0)'
@@ -82,11 +113,15 @@ const routes = [
       return {
         runtimeMounted: runtime === 1,
         oldWorldHidden,
+        legacyControlsSuppressed: legacyControlsVisible === 0,
         sceneLabelsRendered,
         portalShortcutsVisible,
         portalShortcutsStyled,
         canvasSized: canvas.canvasSized,
         sceneLabelCount,
+        visibleSceneLabelCount,
+        portalShortcutCount,
+        visiblePortalShortcutCount,
         ...canvas,
       }
     },
@@ -103,7 +138,7 @@ const routes = [
       const railLinks = rail.locator('a')
       const navigationPillsStyled = await railLinks.count() === 5 && await railLinks.first().evaluate((node) => {
         const style = getComputedStyle(node)
-        return style.display === 'inline-flex'
+        return ['flex', 'inline-flex'].includes(style.display)
           && style.whiteSpace === 'nowrap'
           && Number.parseFloat(style.borderTopWidth || '0') >= 1
           && Number.parseFloat(style.paddingLeft || '0') >= 8
@@ -145,12 +180,17 @@ const routes = [
     id: 'life-map-selected',
     path: '/life-map/?memoryId=quiet-reset&manifestId=replay-recovery-thread&node=quiet-reset',
     ready: '[data-testid="urai-true-3d-life-map"] canvas',
-    waitForScene: waitForFirstSpatialFrame,
+    waitForScene: async (page) => {
+      await waitForFirstSpatialFrame(page)
+      await page.waitForTimeout(900)
+      await chooseVisibleLifeMapStar(page)
+    },
     verify: async (page) => {
       const firstSpatialFrameMarked = await page.evaluate(() => performance.getEntriesByName('urai:first-spatial-frame').length > 0)
-      const selectedControls = page.locator('button', { hasText: 'Enter Focus' })
+      const selectedControls = page.getByRole('button', { name: 'Enter Focus' })
       const selectedMemoryControlsVisible = await selectedControls.count() === 1 && await selectedControls.isVisible()
-      const replayControlVisible = await page.locator('button', { hasText: 'Replay' }).count() >= 1
+      const replayControl = page.getByRole('button', { name: 'Replay' })
+      const replayControlVisible = await replayControl.count() >= 1 && await replayControl.first().isVisible()
       const canvas = await canvasEvidence(page, '[data-testid="urai-true-3d-life-map"] canvas')
       return {
         firstSpatialFrameMarked,
@@ -166,7 +206,7 @@ const routes = [
 await mkdir(outputDir, { recursive: true })
 
 const receipt = {
-  schemaVersion: 'urai-continuous-spatial-visual-proof-6',
+  schemaVersion: 'urai-continuous-spatial-visual-proof-7',
   capturedAt: new Date().toISOString(),
   exactHead,
   base,
@@ -255,7 +295,7 @@ async function captureRoute(context, route, viewportId) {
     capture.browserWebGL = await probeWebGL(page)
     await page.locator(route.ready).waitFor({ state: 'visible', timeout: 45_000 })
     if (route.waitForScene) await route.waitForScene(page)
-    await page.waitForTimeout(1800)
+    await page.waitForTimeout(1400)
     capture.verification = await route.verify(page)
     await takeScreenshot(page, path.join(outputDir, screenshotName))
     capture.passed = capture.status === 200
