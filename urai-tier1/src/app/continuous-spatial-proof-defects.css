@@ -81,6 +81,76 @@ body:has([data-testid="urai-true-3d-life-map"]) {
   min-height: 100% !important;
 }
 
+.urai-lifemap-deep-link-controls {
+  position: absolute;
+  right: 20px;
+  top: 118px;
+  z-index: 80;
+  width: min(320px, calc(100vw - 40px));
+  box-sizing: border-box;
+  display: grid;
+  gap: 8px;
+  padding: 16px;
+  border: 1px solid rgba(177, 244, 255, 0.24);
+  border-radius: 22px;
+  color: #effdff;
+  background: linear-gradient(145deg, rgba(3, 12, 29, 0.88), rgba(18, 8, 39, 0.78));
+  box-shadow: 0 24px 80px rgba(0, 0, 0, 0.52), 0 0 48px rgba(87, 224, 255, 0.12);
+  backdrop-filter: blur(20px);
+}
+
+.urai-lifemap-deep-link-controls__eyebrow {
+  margin: 0;
+  font-size: 10px;
+  font-weight: 900;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: rgba(173, 244, 255, 0.82);
+}
+
+.urai-lifemap-deep-link-controls__title {
+  font-size: clamp(20px, 2.6vw, 30px);
+  line-height: 1;
+  letter-spacing: -0.04em;
+}
+
+.urai-lifemap-deep-link-controls__detail {
+  font-size: 12px;
+  line-height: 1.5;
+  color: rgba(231, 250, 255, 0.72);
+}
+
+.urai-lifemap-deep-link-controls__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 4px;
+}
+
+.urai-lifemap-deep-link-controls__actions button {
+  min-height: 38px;
+  padding: 9px 14px;
+  border: 1px solid rgba(204, 249, 255, 0.28);
+  border-radius: 999px;
+  color: #f4fdff;
+  background: rgba(255, 255, 255, 0.07);
+  font: inherit;
+  font-size: 11px;
+  font-weight: 900;
+  cursor: pointer;
+}
+
+.urai-lifemap-deep-link-controls__actions button:first-child {
+  color: #07111f;
+  border-color: rgba(210, 252, 255, 0.86);
+  background: #c9f8ff;
+}
+
+.urai-lifemap-deep-link-controls__actions button:focus-visible {
+  outline: 3px solid #f6f3ff;
+  outline-offset: 3px;
+}
+
 @media (max-width: 760px) {
   body:has(.urai-home-spatial-runtime-layer) .urai-home-spatial-world-final .urai-genesis-home__hero {
     max-width: calc(100vw - 28px) !important;
@@ -89,5 +159,12 @@ body:has([data-testid="urai-true-3d-life-map"]) {
   [data-testid="urai-true-3d-life-map"] {
     height: 100dvh !important;
     min-height: 100dvh !important;
+  }
+
+  .urai-lifemap-deep-link-controls {
+    top: 230px;
+    right: 14px;
+    width: min(330px, calc(100vw - 28px));
+    padding: 14px;
   }
 }
