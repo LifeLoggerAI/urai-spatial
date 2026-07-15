@@ -1,0 +1,10 @@
+/* Loaded after continuous-spatial-proof-defects.css. Home mobile composition is
+   owned by the real PerspectiveCamera, never by rendering a larger canvas and
+   cropping away the physical gateways. */
+@media (max-width: 760px) {
+  .urai-home-spatial-canvas-shell {
+    left: 0 !important;
+    width: 100% !important;
+    max-width: 100% !important;
+  }
+}
