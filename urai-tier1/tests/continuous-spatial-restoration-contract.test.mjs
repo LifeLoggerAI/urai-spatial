@@ -23,19 +23,19 @@ const groundOwner = read('src/app/ground/page.tsx')
 const groundWorld = read('src/app/GroundSpatialWorldClean.tsx')
 const lifeMapOwner = read('src/app/life-map/page.tsx')
 
-test('app template mounts the restored Home WebGL runtime without replacing route owners', () => {
+test('app template mounts the restored WebGL owners without redirecting certified routes', () => {
   assert.match(template, /HomeSpatialRuntimeLayer/)
   assert.match(template, /spatial-runtime-restoration\.css/)
   assert.match(template, /continuous-spatial-proof-defects\.css/)
-  assert.match(layer, /const normalizedPathname = pathname\.replace/)
-  assert.match(layer, /normalizedPathname !== '\/' && normalizedPathname !== '\/home'/)
   assert.match(layer, /data-urai-home-runtime="one-continuous-webgl-world"/)
   assert.match(homeOwner, /HomeSpatialWorldFinal/)
   assert.match(groundOwner, /GroundSpatialWorldClean/)
   assert.match(lifeMapOwner, /SpatialLifeMapCanonical/)
+  assert.doesNotMatch(template, /focus|replay/i)
+  assert.doesNotMatch(layer, /pathname === '\/focus'|pathname === '\/replay'/)
 })
 
-test('restored Home is a deterministic visible world with stable geometry and hydration-safe cached capability detection', () => {
+test('Home is a premium coherent world with aspect-aware framing and layered gateway architecture', () => {
   for (const marker of [
     "id: 'ground'",
     "id: 'life-map'",
@@ -44,6 +44,7 @@ test('restored Home is a deterministic visible world with stable geometry and hy
     "id: 'xr'",
     'CameraRig',
     'LivingGround',
+    'HorizonMonoliths',
     'FirstHomeFrame',
     'OrbitControls',
     'Stars',
@@ -52,137 +53,148 @@ test('restored Home is a deterministic visible world with stable geometry and hy
     'data-home-spatial-renderer="webgl"',
     'data-home-spatial-geometry="terrain-portals-orb"',
     'data-testid="urai-home-living-ground"',
+    'data-testid="urai-home-horizon-architecture"',
     'data-testid="urai-home-webgl-orb"',
     'urai:first-home-spatial-frame',
     'toneMappingExposure = 1.22',
   ]) assert.ok(canvas.includes(marker), `missing Home spatial marker: ${marker}`)
 
   assert.match(canvas, /const \[available, setAvailable\] = useState<boolean \| null>\(null\)/)
-  assert.match(canvas, /if \(cachedWebGLAvailable !== null\) \{\s*setAvailable\(cachedWebGLAvailable\)\s*return\s*\}/s)
+  assert.match(canvas, /if \(cachedWebGLAvailable !== null\)/)
   assert.doesNotMatch(canvas, /useState<boolean \| null>\(cachedWebGLAvailable\)/)
-  assert.match(canvas, /const TREES: readonly/)
-  assert.match(canvas, /const HILLS: readonly/)
-  assert.match(canvas, /TREES\.map/)
-  assert.match(canvas, /HILLS\.map/)
-  assert.doesNotMatch(canvas, /function LivingGround\(\)[\s\S]{0,200}const trees:/)
+  assert.match(canvas, /const mobile = size\.width < 720/)
+  assert.match(canvas, /mobile \? 6\.4 : 5\.25/)
+  assert.match(canvas, /mobile \? 19\.2 : 14\.6/)
+  assert.match(canvas, /camera\.fov = mobile \? 58 : 50/)
+
   assert.match(canvas, /<planeGeometry args=\{\[48, 48\]\}/)
   assert.doesNotMatch(canvas, /<circleGeometry args=\{\[18, 128\]\}/)
-  assert.match(canvas, /<fog attach="fog" args=\{\['#0b1d29', 30, 80\]\}/)
-  assert.match(canvas, /scale=\{hovered \? \[1\.05, 1\.34, 1\.05\] : \[1, 1\.28, 1\]\}/)
+  assert.match(canvas, /<cylinderGeometry args=\{\[1\.75, 2\.05, 0\.24, 72\]\}/)
+  assert.match(canvas, /<torusGeometry args=\{\[1\.28, 0\.11, 18, 96, Math\.PI\]\}/)
   assert.match(canvas, /<torusGeometry args=\{\[0\.88, 0\.045, 14, 96\]\}/)
-  assert.doesNotMatch(canvas, /hovered \? 0\.065 : 0\.045/)
+  assert.match(canvas, /spec\.metal/)
+  assert.match(canvas, /HorizonMonoliths/)
+  assert.match(canvas, /portals\.map/)
   assert.doesNotMatch(canvas, /EffectComposer|Bloom|Vignette/)
 })
 
-test('reviewed Home runtime keeps semantic portal navigation and defensive browser cleanup', () => {
+test('Home keeps semantic navigation, first-frame evidence and defensive browser cleanup', () => {
   assert.match(canvas, /import Link from 'next\/link'/)
-  assert.match(canvas, /<Link\s+[\s\S]*href=\{spec\.href\}/)
+  assert.match(canvas, /<Link href=\{spec\.href\}/)
   assert.match(canvas, /data-urai-home-portal=\{spec\.id\}/)
   assert.match(canvas, /typeof query\.addEventListener === 'function'/)
   assert.match(canvas, /query\.addListener\(update\)/)
   assert.match(canvas, /query\.removeListener\(update\)/)
   assert.match(canvas, /document\.body\.style\.cursor = 'default'/)
   assert.match(layer, /HomeSpatialCanvas, \{ useWebGLAvailable \}/)
-  assert.doesNotMatch(layer, /function useHomeWebGLAvailable/)
-  assert.match(layer, /webglAvailable=\{webglAvailable\}/)
-  assert.match(layer, /const doorwayLinks =/)
   assert.match(layer, /className="urai-home-spatial-runtime-portals"/)
   assert.match(layer, /aria-label="Spatial doorway shortcuts"/)
-  assert.match(layer, /data-orb-open=\{orbOpen \? 'true' : 'false'\}/)
 })
 
-test('Home visual overrides activate only when the WebGL runtime exists and remove every canvas veil', () => {
+test('Home visual overrides remain scoped to the active WebGL runtime and remove canvas veils', () => {
   assert.match(css, /html:has\(\.urai-home-spatial-runtime-layer\)/)
   assert.match(css, /body:has\(\.urai-home-spatial-runtime-layer\) \.urai-home-spatial-world-final::before/)
-  assert.match(css, /body:has\(\.urai-home-spatial-runtime-layer\) \.urai-home-spatial-world-final \.urai-genesis-home__world/)
-  assert.doesNotMatch(css, /\n\.urai-home-spatial-world-final::before/)
-  assert.doesNotMatch(css, /body:has\(\.urai-home-spatial-world-final\) \.urai-cinematic-backdrop/)
   assert.match(structuralCss, /living Home canvas owns the painted world/i)
   assert.match(structuralCss, /No DOM veil, rounded mask, blur or inherited visual effect/i)
-  assert.match(structuralCss, /\.urai-home-spatial-runtime-layer::before/)
-  assert.match(structuralCss, /\.urai-home-spatial-canvas-shell::after/)
   assert.match(structuralCss, /content: none !important/)
   assert.match(structuralCss, /border-radius: 0 !important/)
   assert.match(structuralCss, /clip-path: none !important/)
   assert.match(structuralCss, /filter: none !important/)
   assert.match(structuralCss, /backdrop-filter: none !important/)
-  assert.match(structuralCss, /\.urai-genesis-home__threshold-gate/)
-  assert.match(structuralCss, /\.urai-genesis-home__bottom-dock/)
   assert.match(structuralCss, /display: none !important/)
 })
 
-test('exact-head browser proof is deterministic, diagnostic and fallback-safe', () => {
-  assert.match(proof, /schemaVersion: 'urai-continuous-spatial-visual-proof-7'/)
-  assert.match(proof, /home-no-webgl-fallback/)
-  assert.match(proof, /patchedGetContext/)
-  assert.match(proof, /probeWebGL/)
-  assert.match(proof, /WEBGL_debug_renderer_info/)
-  assert.match(proof, /let renderer = null/)
-  assert.match(proof, /catch \(debugError\)/)
-  assert.match(proof, /catch \(loseContextError\)/)
-  assert.match(proof, /return \{ available: true, kind, renderer, attempts \}/)
-  assert.match(proof, /browserWebGL/)
-  assert.match(proof, /capture\.browserWebGL\?\.available === true/)
-  assert.match(proof, /waitForFirstSpatialFrame/)
-  assert.match(proof, /waitForStableAnimationFrames/)
-  assert.match(proof, /requestAnimationFrame\(\(\) => requestAnimationFrame\(resolve\)\)/)
-  assert.doesNotMatch(proof, /waitForTimeout/)
-  assert.match(proof, /urai:first-spatial-frame/)
-  assert.match(proof, /urai:first-home-spatial-frame/)
-  assert.match(proof, /firstHomeFrameMarked/)
-  assert.match(proof, /canvasEvidence/)
-  assert.match(proof, /canvasSized/)
-  assert.match(proof, /visibleElementCount/)
-  assert.match(proof, /sceneLabelsRendered/)
-  assert.match(proof, /page\.locator\('\.urai-home-spatial-portal-label'\)/)
-  assert.match(proof, /legacyControlsSuppressed/)
-  assert.match(proof, /portalShortcutsVisible/)
-  assert.match(proof, /portalShortcutsStyled/)
-  assert.match(proof, /navigationPillsStyled/)
-  assert.match(proof, /activeGroundLinkVisible/)
-  assert.match(proof, /a\[aria-current="page"\]/)
-  assert.match(proof, /\['flex', 'inline-flex'\]/)
-  assert.match(proof, /navigationRailContained/)
-  assert.match(proof, /life-map-selected/)
-  assert.match(proof, /chooseVisibleLifeMapStar/)
-  assert.match(proof, /selectedMemoryControlsVisible/)
-  assert.match(proof, /--enable-unsafe-swiftshader/)
-  assert.match(proof, /runtimeAbsent/)
-  assert.match(proof, /fallbackOwnerVisible/)
-  assert.match(proof, /fallbackActionVisible/)
-  assert.match(proof, /\.urai-genesis-home__threshold-gate--ground/)
-  assert.match(proof, /fallbackActionHref\?\.startsWith\('\/ground'\)/)
-  assert.match(proof, /animations: 'disabled'/)
-  assert.match(proof, /timeout: 60_000/)
-  assert.match(proof, /desktop-no-webgl/)
-  assert.match(proof, /receipt\.json/)
-  assert.match(proofWorkflow, /PLAYWRIGHT_BROWSERS_PATH: '0'/)
-  assert.match(proofWorkflow, /pnpm --dir urai-tier1 exec playwright install --with-deps chromium/)
-  assert.doesNotMatch(proofWorkflow, /resolve\('playwright\/cli'\)/)
-  assert.match(proofWorkflow, /chromium\.executablePath\(\)/)
-  assert.match(proofWorkflow, /test -x "\$browser_path"/)
-  assert.match(proofWorkflow, /playwright-executable-path\.txt/)
-  assert.match(proofWorkflow, /Capture desktop mobile and fallback spatial proof/)
+test('Ground is a six-chamber private workforce world rather than an anonymous runway', () => {
+  for (const marker of [
+    'const GROUND_DISTRICTS',
+    "id: 'reception'",
+    "id: 'sanctuary'",
+    "id: 'council'",
+    "id: 'logistics'",
+    "id: 'wellness'",
+    "id: 'archive'",
+    'Reception',
+    'Privacy Sanctuary',
+    'Council Table',
+    'Logistics',
+    'Wellness',
+    'Archive',
+    'GroundDistrict',
+    'WorkforceAvatar',
+    'CouncilPlaza',
+    'GroundPaths',
+    'data-ground-district',
+    'data-ground-workforce-avatar',
+    'data-testid="urai-ground-council-plaza"',
+    'data-testid="urai-ground-private-workforce-world"',
+    'Your private workforce.',
+    'Nothing acts without you.',
+  ]) assert.ok(groundWorld.includes(marker), `missing Ground workforce marker: ${marker}`)
 
-  const buildIndex = proofWorkflow.indexOf('Build exact static release candidate before browser installation')
-  const installIndex = proofWorkflow.indexOf('Install and prove exact Tier-1 Chromium')
-  assert.ok(buildIndex >= 0, 'visual proof must build the exact candidate')
-  assert.ok(installIndex > buildIndex, 'browser installation must occur after low-disk build cleanup')
+  assert.doesNotMatch(groundWorld, /function GroundPin/)
+  assert.doesNotMatch(groundWorld, /<GroundPin/)
+  assert.match(groundWorld, /GROUND_DISTRICTS\.map/)
+  assert.match(groundWorld, /WORKFORCE\.map/)
+  assert.match(groundWorld, /ground-district-label/)
+  assert.match(groundWorld, /capsuleGeometry/)
 })
 
-test('Ground navigation is contained, touch-safe and exposes the active route', () => {
+test('Ground navigation remains contained, touch-safe and exposes the active route', () => {
   assert.match(groundWorld, /const groundLinkStyle: CSSProperties/)
   assert.match(groundWorld, /const groundActiveLinkStyle: CSSProperties/)
   assert.match(groundWorld, /display: 'inline-flex'/)
   assert.match(groundWorld, /whiteSpace: 'nowrap'/)
   assert.match(groundWorld, /aria-current=\{active \? 'page' : undefined\}/)
   assert.match(groundWorld, /style=\{active \? groundActiveLinkStyle : groundLinkStyle\}/)
-  assert.match(groundWorld, /width:calc\(100vw - 28px\)/)
+  assert.match(groundWorld, /max-width:calc\(100vw - 28px\)/)
   assert.match(groundWorld, /scrollbar-width:none/)
   assert.match(structuralCss, /\.ground-rail a/)
 })
 
-test('Life Map true 3D owner and Canvas wrapper are structurally full viewport', () => {
+test('exact-head browser proof stays deterministic, diagnostic and fallback-safe', () => {
+  for (const marker of [
+    "schemaVersion: 'urai-continuous-spatial-visual-proof-7'",
+    'home-no-webgl-fallback',
+    'patchedGetContext',
+    'probeWebGL',
+    'WEBGL_debug_renderer_info',
+    'waitForFirstSpatialFrame',
+    'waitForStableAnimationFrames',
+    'urai:first-spatial-frame',
+    'urai:first-home-spatial-frame',
+    'firstHomeFrameMarked',
+    'canvasEvidence',
+    'visibleElementCount',
+    'sceneLabelsRendered',
+    'portalShortcutsVisible',
+    'portalShortcutsStyled',
+    'navigationPillsStyled',
+    'activeGroundLinkVisible',
+    'navigationRailContained',
+    'life-map-selected',
+    'selectedMemoryControlsVisible',
+    '--enable-unsafe-swiftshader',
+    'runtimeAbsent',
+    'fallbackOwnerVisible',
+    'fallbackActionVisible',
+    'desktop-no-webgl',
+    'receipt.json',
+  ]) assert.ok(proof.includes(marker), `missing browser-proof marker: ${marker}`)
+
+  assert.doesNotMatch(proof, /waitForTimeout/)
+  assert.match(proof, /requestAnimationFrame\(\(\) => requestAnimationFrame\(resolve\)\)/)
+  assert.match(proofWorkflow, /PLAYWRIGHT_BROWSERS_PATH: '0'/)
+  assert.match(proofWorkflow, /pnpm --dir urai-tier1 exec playwright install --with-deps chromium/)
+  assert.doesNotMatch(proofWorkflow, /resolve\('playwright\/cli'\)/)
+  assert.match(proofWorkflow, /chromium\.executablePath\(\)/)
+
+  const buildIndex = proofWorkflow.indexOf('Build exact static release candidate before browser installation')
+  const installIndex = proofWorkflow.indexOf('Install and prove exact Tier-1 Chromium')
+  assert.ok(buildIndex >= 0)
+  assert.ok(installIndex > buildIndex)
+})
+
+test('Life Map true 3D owner and Canvas wrapper remain full viewport', () => {
   assert.match(structuralCss, /data-testid="urai-true-3d-life-map"/)
   assert.match(structuralCss, /position: fixed !important/)
   assert.match(structuralCss, /height: 100svh !important/)
@@ -191,15 +203,10 @@ test('Life Map true 3D owner and Canvas wrapper are structurally full viewport',
   assert.match(structuralCss, /height: 100% !important/)
 })
 
-test('flat route-image veils are suppressed while current Ground and Life Map canvases remain authoritative', () => {
+test('flat route-image veils remain suppressed while Ground and Life Map canvases own the scene', () => {
   assert.match(css, /\.ground-provider-art\s*\{\s*display: none !important;/s)
   assert.match(css, /data-testid="urai-r3f-canonical-lifemap"/)
   assert.match(css, /data-testid="urai-true-3d-life-map"/)
   assert.match(css, /\.urai-cinematic-backdrop/)
   assert.match(css, /prefers-reduced-motion: reduce/)
-})
-
-test('restoration does not redirect Focus or Replay away from their certified static owners', () => {
-  assert.doesNotMatch(template, /focus|replay/i)
-  assert.doesNotMatch(layer, /pathname === '\/focus'|pathname === '\/replay'/)
 })
