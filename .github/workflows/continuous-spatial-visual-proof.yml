@@ -69,8 +69,14 @@ jobs:
           corepack enable
           pnpm install --frozen-lockfile
 
-      - name: Install Chromium and system dependencies
-        run: pnpm --dir urai-tier1 exec playwright install --with-deps chromium
+      - name: Install exact Tier-1 Chromium and system dependencies
+        shell: bash
+        run: |
+          set -euo pipefail
+          playwright_cli="$(node --input-type=module -e "import { createRequire } from 'node:module'; const requireFromTierOne = createRequire(new URL('./urai-tier1/package.json', import.meta.url)); console.log(requireFromTierOne.resolve('playwright/cli'));" )"
+          test -f "$playwright_cli"
+          echo "Using Playwright CLI: $playwright_cli"
+          node "$playwright_cli" install --with-deps chromium
 
       - name: Build exact static release candidate
         run: pnpm build:static
