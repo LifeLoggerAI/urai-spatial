@@ -1,9 +1,9 @@
 name: Apply Home WebGL Legacy Veil Repair
 
 on:
-  push:
+  pull_request:
     branches:
-      - fix/home-webgl-legacy-veil-20260715
+      - release/continuous-spatial-world-clean-20260715
     paths:
       - .github/workflows/apply-home-webgl-legacy-veil-fix.yml
 
@@ -27,8 +27,10 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
+          base=96b9534f4f36f3545f151d5f1135c543afd7c202
           test "$(git branch --show-current)" = "fix/home-webgl-legacy-veil-20260715"
-          test "$(git rev-parse HEAD^)" = "96b9534f4f36f3545f151d5f1135c543afd7c202"
+          test "$(git merge-base HEAD "$base")" = "$base"
+          test "$(git diff --name-only "$base" HEAD)" = ".github/workflows/apply-home-webgl-legacy-veil-fix.yml"
           test -z "$(git status --porcelain --untracked-files=all)"
 
       - name: Apply focused permanent repair
