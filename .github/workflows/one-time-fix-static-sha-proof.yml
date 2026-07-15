@@ -1,4 +1,4 @@
-name: One-time fix static SHA proof
+name: One-time prepare static SHA proof repair
 
 on:
   push:
@@ -8,14 +8,14 @@ on:
       - '.github/workflows/one-time-fix-static-sha-proof.yml'
 
 permissions:
-  contents: write
+  contents: read
 
 concurrency:
-  group: one-time-fix-static-sha-proof-20260714
+  group: one-time-prepare-static-sha-proof-repair-20260714
   cancel-in-progress: false
 
 jobs:
-  repair:
+  prepare:
     runs-on: ubuntu-24.04
     timeout-minutes: 15
     steps:
@@ -24,7 +24,7 @@ jobs:
         with:
           ref: release/fix-static-sha-proof-20260714
           fetch-depth: 0
-          persist-credentials: true
+          persist-credentials: false
           show-progress: false
       - name: Prove isolated repair base
         shell: bash
@@ -79,7 +79,6 @@ jobs:
           source = source.replace(marker, regression + marker)
           test_path.write_text(source)
           PY
-          git rm .github/workflows/one-time-fix-static-sha-proof.yml
           git diff --check
       - name: Run focused release contracts
         shell: bash
@@ -90,18 +89,23 @@ jobs:
           node scripts/verify-production-action-pins.mjs
           node scripts/verify-release-security-path-guard.mjs
           git diff --check
-      - name: Commit exact permanent repair
+      - name: Stage exact transfer payload
+        id: transfer
         shell: bash
         run: |
           set -euo pipefail
-          git add .github/workflows/spatial-live-deploy.yml urai-tier1/tests/exact-static-release-contract.test.mjs
-          staged="$(git diff --cached --name-only | sort)"
-          expected="$(printf '%s\n' '.github/workflows/one-time-fix-static-sha-proof.yml' '.github/workflows/spatial-live-deploy.yml' 'urai-tier1/tests/exact-static-release-contract.test.mjs' | sort)"
-          test "$staged" = "$expected"
-          git diff --cached --check
-          git config user.name 'LifeLoggerAI'
-          git config user.email '215797546+LifeLoggerAI@users.noreply.github.com'
-          git commit -m 'Fix static SHA proof pipefail false negative'
-          git reset --hard HEAD
-          git clean -fd
-          git push origin HEAD:release/fix-static-sha-proof-20260714
+          out="$RUNNER_TEMP/static-sha-proof-transfer"
+          mkdir -p "$out/.github/workflows" "$out/urai-tier1/tests"
+          cp .github/workflows/spatial-live-deploy.yml "$out/.github/workflows/spatial-live-deploy.yml"
+          cp urai-tier1/tests/exact-static-release-contract.test.mjs "$out/urai-tier1/tests/exact-static-release-contract.test.mjs"
+          git diff -- .github/workflows/spatial-live-deploy.yml urai-tier1/tests/exact-static-release-contract.test.mjs > "$out/reviewed.patch"
+          sha256sum "$out/.github/workflows/spatial-live-deploy.yml" "$out/urai-tier1/tests/exact-static-release-contract.test.mjs" > "$out/SHA256SUMS"
+          test "$(git diff --name-only | sort)" = "$(printf '%s\n' '.github/workflows/spatial-live-deploy.yml' 'urai-tier1/tests/exact-static-release-contract.test.mjs' | sort)"
+          echo "out=$out" >> "$GITHUB_OUTPUT"
+      - name: Upload validated transfer payload
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: validated-static-sha-proof-repair-${{ github.sha }}
+          path: ${{ steps.transfer.outputs.out }}
+          if-no-files-found: error
+          retention-days: 30
