@@ -20,7 +20,7 @@ jobs:
         shell: bash
         env:
           GH_TOKEN: ${{ github.token }}
-          JOB_ID: '87261915103'
+          JOB_ID: '87262436237'
         run: |
           set -euo pipefail
           out="$RUNNER_TEMP/repair-log-tail"
@@ -37,7 +37,7 @@ jobs:
       - name: Upload repair log tail
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
-          name: repair-log-tail-87261915103
+          name: repair-log-tail-87262436237
           path: ${{ steps.logs.outputs.out }}
           if-no-files-found: error
           retention-days: 30
