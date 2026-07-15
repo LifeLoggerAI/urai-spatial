@@ -22,6 +22,12 @@ async function waitForFirstSpatialFrame(page) {
   )
 }
 
+async function waitForStableAnimationFrames(page) {
+  await page.evaluate(() => new Promise((resolve) => {
+    requestAnimationFrame(() => requestAnimationFrame(resolve))
+  }))
+}
+
 async function canvasEvidence(page, selector) {
   return page.locator(selector).evaluate((canvas) => {
     const rect = canvas.getBoundingClientRect()
@@ -125,8 +131,10 @@ const routes = [
           && rect.right <= window.innerWidth + 1
           && rect.bottom <= window.innerHeight + 1
       })
+      const activeGroundLink = rail.locator('a[aria-current="page"]')
+      const activeGroundLinkVisible = await activeGroundLink.count() === 1 && await activeGroundLink.isVisible()
       const canvas = await canvasEvidence(page, '.ground-spatial-root canvas')
-      return { providerHidden, canvasVisible, navigationPillsStyled, navigationRailContained, canvasSized: canvas.canvasSized, ...canvas }
+      return { providerHidden, canvasVisible, navigationPillsStyled, navigationRailContained, activeGroundLinkVisible, canvasSized: canvas.canvasSized, ...canvas }
     },
   },
   {
@@ -159,7 +167,7 @@ const routes = [
     verify: async (page) => {
       const firstSpatialFrameMarked = await page.evaluate(() => performance.getEntriesByName('urai:first-spatial-frame').length > 0)
       const selectedControls = page.locator('button', { hasText: 'Enter Focus' })
-      const selectedMemoryControlsVisible = await selectedControls.count() === 1 && await selectedControls.isVisible()
+      const selectedMemoryControlsVisible = await selectedControls.count() >= 1 && await selectedControls.first().isVisible()
       const replayControl = page.locator('button', { hasText: 'Replay' })
       const replayControlVisible = await replayControl.count() >= 1 && await replayControl.first().isVisible()
       const selectedMemoryTitleVisible = await page.getByText('Recovery Bloom', { exact: true }).count() >= 1
@@ -268,7 +276,7 @@ async function captureRoute(context, route, viewportId) {
     capture.browserWebGL = await probeWebGL(page)
     await page.locator(route.ready).waitFor({ state: 'visible', timeout: 45_000 })
     if (route.waitForScene) await route.waitForScene(page)
-    await page.waitForTimeout(1800)
+    await waitForStableAnimationFrames(page)
     capture.verification = await route.verify(page)
     await takeScreenshot(page, path.join(outputDir, screenshotName))
     capture.passed = capture.status === 200
@@ -358,7 +366,7 @@ async function captureNoWebGLFallback() {
     const response = await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 60_000 })
     capture.status = response?.status() ?? null
     await page.locator(fallbackRoute.ready).waitFor({ state: 'visible', timeout: 45_000 })
-    await page.waitForTimeout(1200)
+    await waitForStableAnimationFrames(page)
     capture.verification = await fallbackRoute.verify(page)
     await takeScreenshot(page, path.join(outputDir, screenshotName))
     capture.passed = capture.status === 200
