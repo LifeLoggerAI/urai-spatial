@@ -52,7 +52,6 @@ const routes = [
 await mkdir(outputDir, { recursive: true })
 
 const browser = await chromium.launch({
-  channel: 'chromium',
   headless: true,
   args: ['--use-angle=swiftshader', '--enable-webgl', '--ignore-gpu-blocklist'],
 })
@@ -98,7 +97,7 @@ try {
 
       const verification = await route.verify(page)
       const screenshotName = `${route.id}-${viewport.id}-${exactHead.slice(0, 12)}.png`
-      await page.screenshot({ path: path.join(outputDir, screenshotName), fullPage: false })
+      await page.screenshot({ path: path.join(outputDir, screenshotName), fullPage: true })
 
       const capture = {
         route: route.id,
@@ -111,14 +110,12 @@ try {
         consoleErrors,
         requestFailures,
       }
-
-      const verificationPassed = Object.entries(verification).every(([key, value]) => {
-        if (key === 'overlayOpacities') return true
-        return value === true
-      })
-      capture.passed = capture.status === 200 && verificationPassed && pageErrors.length === 0
-      if (!capture.passed) failed = true
       summary.captures.push(capture)
+
+      if ((capture.status ?? 500) >= 400) failed = true
+      if (pageErrors.length > 0 || consoleErrors.length > 0 || requestFailures.length > 0) failed = true
+      if (Object.values(verification).some((value) => value === false)) failed = true
+
       await page.close()
     }
 
@@ -128,8 +125,11 @@ try {
   await browser.close()
 }
 
-summary.passed = !failed
-await writeFile(path.join(outputDir, 'summary.json'), `${JSON.stringify(summary, null, 2)}\n`)
-console.log(JSON.stringify(summary, null, 2))
+await writeFile(path.join(outputDir, 'receipt.json'), `${JSON.stringify(summary, null, 2)}\n`)
 
-if (failed) process.exit(1)
+if (failed) {
+  console.error(JSON.stringify(summary, null, 2))
+  process.exit(1)
+}
+
+console.log(JSON.stringify(summary, null, 2))
