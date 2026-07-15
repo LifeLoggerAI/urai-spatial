@@ -36,6 +36,9 @@ export default function FocusChamberClient() {
     const nextManifestId = safeToken(params.get('manifestId'), DEFAULT_MANIFEST_ID)
     const nextNode = safeToken(params.get('node'), nextMemoryId)
     setIdentity({ memoryId: nextMemoryId, manifestId: nextManifestId, node: nextNode })
+    window.sessionStorage.setItem('urai-focus-memory-id', nextMemoryId)
+    window.sessionStorage.setItem('urai-focus-manifest-id', nextManifestId)
+    window.sessionStorage.setItem('urai-focus-node', nextNode)
   }, [])
 
   const replayHref = useMemo(() => {
@@ -62,12 +65,6 @@ export default function FocusChamberClient() {
     next.set('manifestId', manifestId)
     next.set('node', node)
     return `/focus?${next.toString()}`
-  }, [manifestId, memoryId, node])
-
-  useEffect(() => {
-    window.sessionStorage.setItem('urai-focus-memory-id', memoryId)
-    window.sessionStorage.setItem('urai-focus-manifest-id', manifestId)
-    window.sessionStorage.setItem('urai-focus-node', node)
   }, [manifestId, memoryId, node])
 
   return (
