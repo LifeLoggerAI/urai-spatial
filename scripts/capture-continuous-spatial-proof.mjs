@@ -52,7 +52,7 @@ const routes = [
 await mkdir(outputDir, { recursive: true })
 
 const receipt = {
-  schemaVersion: 'urai-continuous-spatial-visual-proof-3',
+  schemaVersion: 'urai-continuous-spatial-visual-proof-4',
   capturedAt: new Date().toISOString(),
   exactHead,
   base,
@@ -79,6 +79,33 @@ async function takeScreenshot(page, targetPath) {
   })
 }
 
+async function probeWebGL(page) {
+  return page.evaluate(() => {
+    const attempts = []
+    for (const kind of ['webgl2', 'webgl']) {
+      const canvas = document.createElement('canvas')
+      canvas.width = 8
+      canvas.height = 8
+      try {
+        const context = canvas.getContext(kind, {
+          failIfMajorPerformanceCaveat: false,
+          powerPreference: 'high-performance',
+        })
+        if (context) {
+          const debug = context.getExtension('WEBGL_debug_renderer_info')
+          const renderer = debug ? context.getParameter(debug.UNMASKED_RENDERER_WEBGL) : null
+          context.getExtension('WEBGL_lose_context')?.loseContext()
+          return { available: true, kind, renderer, attempts }
+        }
+        attempts.push({ kind, outcome: 'null' })
+      } catch (error) {
+        attempts.push({ kind, outcome: String(error) })
+      }
+    }
+    return { available: false, kind: null, renderer: null, attempts }
+  })
+}
+
 async function captureRoute(context, route, viewportId) {
   const page = await context.newPage()
   const pageErrors = []
@@ -92,6 +119,7 @@ async function captureRoute(context, route, viewportId) {
     url,
     status: null,
     screenshot: screenshotName,
+    browserWebGL: null,
     verification: {},
     pageErrors,
     consoleErrors,
@@ -109,6 +137,7 @@ async function captureRoute(context, route, viewportId) {
   try {
     const response = await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 60_000 })
     capture.status = response?.status() ?? null
+    capture.browserWebGL = await probeWebGL(page)
     await page.locator(route.ready).waitFor({ state: 'visible', timeout: 45_000 })
     await page.waitForTimeout(1800)
     capture.verification = await route.verify(page)
@@ -123,8 +152,9 @@ async function captureRoute(context, route, viewportId) {
     capture.passed = false
     try {
       await takeScreenshot(page, path.join(outputDir, `failed-${screenshotName}`))
-    } catch {
-      // Capture log and structured error remain authoritative when screenshot capture is impossible.
+      capture.screenshot = `failed-${screenshotName}`
+    } catch (screenshotError) {
+      capture.screenshotError = String(screenshotError)
     }
   } finally {
     if (!capture.passed) failed = true
@@ -137,7 +167,7 @@ async function captureNoWebGLFallback() {
   const context = await browser.newContext({
     viewport: { width: 1440, height: 900 },
     deviceScaleFactor: 1,
-    reducedMotion: 'no-preference',
+    reducedMotion: 'reduce',
   })
 
   await context.addInitScript(() => {
@@ -157,10 +187,12 @@ async function captureNoWebGLFallback() {
       const oldWorld = page.locator('.urai-genesis-home__world')
       const fallbackOwnerVisible = await oldWorld.count() > 0
         && await oldWorld.evaluate((node) => getComputedStyle(node).display !== 'none')
-      const fallbackAction = page.locator('.urai-genesis-home__threshold-gate').first()
+      const fallbackAction = page.locator('.urai-genesis-home__threshold-gate--ground')
       const fallbackActionVisible = await fallbackAction.count() > 0 && await fallbackAction.isVisible()
       const fallbackActionHref = await fallbackAction.getAttribute('href')
-      const fallbackInteractive = fallbackActionVisible && Boolean(fallbackActionHref)
+      const fallbackInteractive = fallbackActionVisible
+        && fallbackActionHref?.startsWith('/ground') === true
+        && await fallbackAction.evaluate((node) => getComputedStyle(node).pointerEvents !== 'none')
       return { runtimeAbsent, fallbackOwnerVisible, fallbackActionVisible, fallbackInteractive }
     },
   }
@@ -175,7 +207,13 @@ async function captureNoWebGLFallback() {
 try {
   browser = await chromium.launch({
     headless: true,
-    args: ['--use-angle=swiftshader', '--enable-webgl', '--ignore-gpu-blocklist'],
+    args: [
+      '--use-gl=angle',
+      '--use-angle=swiftshader',
+      '--enable-unsafe-swiftshader',
+      '--enable-webgl',
+      '--ignore-gpu-blocklist',
+    ],
   })
 
   for (const viewport of viewports) {
