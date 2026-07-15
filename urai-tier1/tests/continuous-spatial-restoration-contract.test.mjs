@@ -35,7 +35,7 @@ test('app template mounts the restored Home WebGL runtime without replacing rout
   assert.match(lifeMapOwner, /SpatialLifeMapCanonical/)
 })
 
-test('restored Home is a deterministic visible world with grounded routes and fallback behavior', () => {
+test('restored Home is a deterministic visible world with stable geometry and cached capability detection', () => {
   for (const marker of [
     "id: 'ground'",
     "id: 'life-map'",
@@ -44,16 +44,25 @@ test('restored Home is a deterministic visible world with grounded routes and fa
     "id: 'xr'",
     'CameraRig',
     'LivingGround',
+    'FirstHomeFrame',
     'OrbitControls',
     'Stars',
     'useWebGLAvailable',
+    'cachedWebGLAvailable',
     'data-home-spatial-renderer="webgl"',
     'data-home-spatial-geometry="terrain-portals-orb"',
     'data-testid="urai-home-living-ground"',
     'data-testid="urai-home-webgl-orb"',
+    'urai:first-home-spatial-frame',
     'toneMappingExposure = 1.32',
   ]) assert.ok(canvas.includes(marker), `missing Home spatial marker: ${marker}`)
 
+  assert.match(canvas, /const TREES: readonly/)
+  assert.match(canvas, /TREES\.map/)
+  assert.doesNotMatch(canvas, /function LivingGround\(\)[\s\S]{0,200}const trees:/)
+  assert.match(canvas, /scale=\{hovered \? \[1\.05, 1\.34, 1\.05\] : \[1, 1\.28, 1\]\}/)
+  assert.match(canvas, /<torusGeometry args=\{\[0\.88, 0\.045, 14, 96\]\}/)
+  assert.doesNotMatch(canvas, /hovered \? 0\.065 : 0\.045/)
   assert.doesNotMatch(canvas, /EffectComposer|Bloom|Vignette/)
 })
 
@@ -80,13 +89,13 @@ test('Home visual overrides activate only when the WebGL runtime exists', () => 
   assert.match(css, /body:has\(\.urai-home-spatial-runtime-layer\) \.urai-home-spatial-world-final \.urai-genesis-home__world/)
   assert.doesNotMatch(css, /\n\.urai-home-spatial-world-final::before/)
   assert.doesNotMatch(css, /body:has\(\.urai-home-spatial-world-final\) \.urai-cinematic-backdrop/)
-  assert.match(structuralCss, /legacy Home canvas owns the painted world|living Home canvas owns the painted world/i)
+  assert.match(structuralCss, /living Home canvas owns the painted world/i)
   assert.match(structuralCss, /\.urai-genesis-home__threshold-gate/)
   assert.match(structuralCss, /\.urai-genesis-home__bottom-dock/)
   assert.match(structuralCss, /display: none !important/)
 })
 
-test('exact-head browser proof is diagnostic, interaction-driven and retains fallback receipts', () => {
+test('exact-head browser proof is deterministic, diagnostic and fallback-safe', () => {
   assert.match(proof, /schemaVersion: 'urai-continuous-spatial-visual-proof-7'/)
   assert.match(proof, /home-no-webgl-fallback/)
   assert.match(proof, /patchedGetContext/)
@@ -95,7 +104,12 @@ test('exact-head browser proof is diagnostic, interaction-driven and retains fal
   assert.match(proof, /browserWebGL/)
   assert.match(proof, /capture\.browserWebGL\?\.available === true/)
   assert.match(proof, /waitForFirstSpatialFrame/)
+  assert.match(proof, /waitForStableAnimationFrames/)
+  assert.match(proof, /requestAnimationFrame\(\(\) => requestAnimationFrame\(resolve\)\)/)
+  assert.doesNotMatch(proof, /waitForTimeout/)
   assert.match(proof, /urai:first-spatial-frame/)
+  assert.match(proof, /urai:first-home-spatial-frame/)
+  assert.match(proof, /firstHomeFrameMarked/)
   assert.match(proof, /canvasEvidence/)
   assert.match(proof, /canvasSized/)
   assert.match(proof, /visibleElementCount/)
@@ -105,6 +119,8 @@ test('exact-head browser proof is diagnostic, interaction-driven and retains fal
   assert.match(proof, /portalShortcutsVisible/)
   assert.match(proof, /portalShortcutsStyled/)
   assert.match(proof, /navigationPillsStyled/)
+  assert.match(proof, /activeGroundLinkVisible/)
+  assert.match(proof, /a\[aria-current="page"\]/)
   assert.match(proof, /\['flex', 'inline-flex'\]/)
   assert.match(proof, /navigationRailContained/)
   assert.match(proof, /life-map-selected/)
@@ -134,11 +150,13 @@ test('exact-head browser proof is diagnostic, interaction-driven and retains fal
   assert.ok(installIndex > buildIndex, 'browser installation must occur after low-disk build cleanup')
 })
 
-test('Ground navigation is rendered as contained touch-safe pills', () => {
+test('Ground navigation is contained, touch-safe and exposes the active route', () => {
   assert.match(groundWorld, /const groundLinkStyle: CSSProperties/)
+  assert.match(groundWorld, /const groundActiveLinkStyle: CSSProperties/)
   assert.match(groundWorld, /display: 'inline-flex'/)
   assert.match(groundWorld, /whiteSpace: 'nowrap'/)
-  assert.match(groundWorld, /style=\{groundLinkStyle\}/)
+  assert.match(groundWorld, /aria-current=\{active \? 'page' : undefined\}/)
+  assert.match(groundWorld, /style=\{active \? groundActiveLinkStyle : groundLinkStyle\}/)
   assert.match(groundWorld, /width:calc\(100vw - 28px\)/)
   assert.match(groundWorld, /scrollbar-width:none/)
   assert.match(structuralCss, /\.ground-rail a/)
@@ -149,7 +167,7 @@ test('Life Map true 3D owner and Canvas wrapper are structurally full viewport',
   assert.match(structuralCss, /position: fixed !important/)
   assert.match(structuralCss, /height: 100svh !important/)
   assert.match(structuralCss, /> div:has\(> canvas\)/)
-  assert.match(structuralCss, /> canvas/)
+  assert.match(structuralCss, /> div:has\(> canvas\) > canvas/)
   assert.match(structuralCss, /height: 100% !important/)
 })
 
