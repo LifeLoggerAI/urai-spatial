@@ -7,6 +7,7 @@ const tests = [
   'tests/asset-validation-fail-closed-contract.test.mjs',
   'tests/automatic-hosting-recovery-contract.test.mjs',
   'tests/body-biometric-contract.test.mjs',
+  'tests/continuous-spatial-restoration-contract.test.mjs',
   'tests/exact-static-release-contract.test.mjs',
   'tests/field-reconstruction-phase5-contract.test.mjs',
   'tests/firebase-hosting-capture-workflow-contract.test.mjs',
