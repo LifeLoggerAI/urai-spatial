@@ -16,6 +16,7 @@ const layer = read('src/app/HomeSpatialRuntimeLayer.tsx')
 const canvas = read('src/app/HomeSpatialCanvas.tsx')
 const css = read('src/app/spatial-runtime-restoration.css')
 const structuralCss = read('src/app/continuous-spatial-proof-defects.css')
+const premiumMobileCss = read('src/app/premium-mobile-composition.css')
 const proof = read('../scripts/capture-continuous-spatial-proof.mjs')
 const proofWorkflow = read('../.github/workflows/continuous-spatial-visual-proof.yml')
 const homeOwner = read('src/app/FinalHomeThreshold.tsx')
@@ -27,6 +28,7 @@ test('app template mounts the restored WebGL owners without redirecting certifie
   assert.match(template, /HomeSpatialRuntimeLayer/)
   assert.match(template, /spatial-runtime-restoration\.css/)
   assert.match(template, /continuous-spatial-proof-defects\.css/)
+  assert.match(template, /premium-mobile-composition\.css/)
   assert.match(layer, /data-urai-home-runtime="one-continuous-webgl-world"/)
   assert.match(homeOwner, /HomeSpatialWorldFinal/)
   assert.match(groundOwner, /GroundSpatialWorldClean/)
@@ -63,9 +65,14 @@ test('Home is a premium coherent world with aspect-aware framing and layered gat
   assert.match(canvas, /if \(cachedWebGLAvailable !== null\)/)
   assert.doesNotMatch(canvas, /useState<boolean \| null>\(cachedWebGLAvailable\)/)
   assert.match(canvas, /const mobile = size\.width < 720/)
-  assert.match(canvas, /mobile \? 6\.4 : 5\.25/)
-  assert.match(canvas, /mobile \? 19\.2 : 14\.6/)
-  assert.match(canvas, /camera\.fov = mobile \? 58 : 50/)
+  assert.match(canvas, /mobile \? 7\.2 : 5\.25/)
+  assert.match(canvas, /mobile \? 24\.5 : 14\.6/)
+  assert.match(canvas, /camera\.fov = mobile \? 64 : 50/)
+  assert.match(canvas, /position: \[-2\.75, 0\.08, -2\.4\]/)
+  assert.match(canvas, /position: \[2\.75, 0\.08, -2\.4\]/)
+  assert.match(canvas, /position: \[-5\.2, 0\.08, 0\.75\]/)
+  assert.match(canvas, /position: \[5\.2, 0\.08, 0\.75\]/)
+  assert.match(canvas, /position: \[0, 0\.08, -5\.4\]/)
 
   assert.match(canvas, /<planeGeometry args=\{\[48, 48\]\}/)
   assert.doesNotMatch(canvas, /<circleGeometry args=\{\[18, 128\]\}/)
@@ -91,7 +98,7 @@ test('Home keeps semantic navigation, first-frame evidence and defensive browser
   assert.match(layer, /aria-label="Spatial doorway shortcuts"/)
 })
 
-test('Home visual overrides remain scoped to the active WebGL runtime and remove canvas veils', () => {
+test('Home visual overrides remain scoped and final mobile composition defeats canvas cropping', () => {
   assert.match(css, /html:has\(\.urai-home-spatial-runtime-layer\)/)
   assert.match(css, /body:has\(\.urai-home-spatial-runtime-layer\) \.urai-home-spatial-world-final::before/)
   assert.match(structuralCss, /living Home canvas owns the painted world/i)
@@ -102,6 +109,9 @@ test('Home visual overrides remain scoped to the active WebGL runtime and remove
   assert.match(structuralCss, /filter: none !important/)
   assert.match(structuralCss, /backdrop-filter: none !important/)
   assert.match(structuralCss, /display: none !important/)
+  assert.match(premiumMobileCss, /left: 0 !important/)
+  assert.match(premiumMobileCss, /width: 100% !important/)
+  assert.match(premiumMobileCss, /max-width: 100% !important/)
 })
 
 test('Ground is a six-chamber private workforce world rather than an anonymous runway', () => {
