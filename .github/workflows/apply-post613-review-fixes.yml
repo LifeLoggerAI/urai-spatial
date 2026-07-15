@@ -1,0 +1,108 @@
+name: Apply post-613 review fixes
+
+on:
+  push:
+    branches:
+      - fix/post613-premium-world-review-20260715
+    paths:
+      - .github/workflows/apply-post613-review-fixes.yml
+
+permissions:
+  contents: write
+
+jobs:
+  repair:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - name: Checkout repair branch
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: fix/post613-premium-world-review-20260715
+          fetch-depth: 0
+      - name: Apply exact reviewed corrections
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          from pathlib import Path
+
+          home_path = Path('urai-tier1/src/app/HomeSpatialCanvas.tsx')
+          home = home_path.read_text()
+
+          old_camera = """    if (camera instanceof THREE.PerspectiveCamera) {
+              camera.fov = mobile ? 58 : 50
+            }
+            camera.lookAt(0, 1.35, -2.25)
+            camera.updateProjectionMatrix()
+          """
+          new_camera = """    if (camera instanceof THREE.PerspectiveCamera) {
+              camera.fov = mobile ? 58 : 50
+              camera.updateProjectionMatrix()
+            }
+            camera.lookAt(0, 1.35, -2.25)
+          """
+          if old_camera not in home:
+              raise SystemExit('camera review target not found')
+          home = home.replace(old_camera, new_camera, 1)
+
+          old_paths = """          <group key={`path-${portal.id}`}>
+                <mesh position={[x, 0.012, z]} rotation={[0, angle, 0]} receiveShadow>
+                  <boxGeometry args={[1.04, 0.055, length]} />
+                  <meshStandardMaterial color=\"#8f9287\" roughness={0.74} metalness={0.12} />
+                </mesh>
+                <mesh position={[x, 0.05, z]} rotation={[0, angle, 0]}>
+                  <boxGeometry args={[0.08, 0.018, length * 0.94]} />
+                  <meshBasicMaterial color={portal.color} transparent opacity={0.72} toneMapped={false} />
+                </mesh>
+              </group>"""
+          new_paths = """          <group key={`path-${portal.id}`} position={[x, 0, z]} rotation={[0, angle, 0]}>
+                <mesh position={[0, 0.012, 0]} receiveShadow>
+                  <boxGeometry args={[1.04, 0.055, length]} />
+                  <meshStandardMaterial color=\"#8f9287\" roughness={0.74} metalness={0.12} />
+                </mesh>
+                <mesh position={[0, 0.05, 0]}>
+                  <boxGeometry args={[0.08, 0.018, length * 0.94]} />
+                  <meshBasicMaterial color={portal.color} transparent opacity={0.72} toneMapped={false} />
+                </mesh>
+              </group>"""
+          if old_paths not in home:
+              raise SystemExit('Home path review target not found')
+          home = home.replace(old_paths, new_paths, 1)
+          home_path.write_text(home)
+
+          ground_path = Path('urai-tier1/src/app/GroundSpatialWorldClean.tsx')
+          ground = ground_path.read_text()
+          if 'const x = district.position[0] * 0.48' not in ground:
+              raise SystemExit('Ground midpoint review target not found')
+          ground = ground.replace('const x = district.position[0] * 0.48', 'const x = district.position[0] * 0.5', 1)
+          old_controls = '<OrbitControls enablePan={false} enableZoom enableDamping dampingFactor={0.06}'
+          new_controls = '<OrbitControls makeDefault enablePan={false} enableZoom enableDamping dampingFactor={0.06}'
+          if old_controls not in ground:
+              raise SystemExit('Ground controls review target not found')
+          ground = ground.replace(old_controls, new_controls, 1)
+          ground_path.write_text(ground)
+
+          workflow = Path('.github/workflows/apply-post613-review-fixes.yml')
+          workflow.unlink()
+          PY
+      - name: Verify exact repair surface
+        shell: bash
+        run: |
+          set -euo pipefail
+          changed="$(git status --short | awk '{print $2}' | sort)"
+          expected="$(printf '%s\n' '.github/workflows/apply-post613-review-fixes.yml' 'urai-tier1/src/app/GroundSpatialWorldClean.tsx' 'urai-tier1/src/app/HomeSpatialCanvas.tsx' | sort)"
+          test "$changed" = "$expected"
+          grep -Fq 'camera.updateProjectionMatrix()' urai-tier1/src/app/HomeSpatialCanvas.tsx
+          grep -Fq 'position={[x, 0, z]} rotation={[0, angle, 0]}' urai-tier1/src/app/HomeSpatialCanvas.tsx
+          grep -Fq 'const x = district.position[0] * 0.5' urai-tier1/src/app/GroundSpatialWorldClean.tsx
+          grep -Fq '<OrbitControls makeDefault enablePan={false}' urai-tier1/src/app/GroundSpatialWorldClean.tsx
+      - name: Commit exact corrections and remove temporary workflow
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name 'LifeLoggerAI'
+          git config user.email 'actions@users.noreply.github.com'
+          git add -A
+          git commit -m 'Fix premium Home and Ground review findings'
+          git push origin HEAD:fix/post613-premium-world-review-20260715
