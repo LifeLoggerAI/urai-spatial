@@ -1,4 +1,4 @@
-name: Inspect static hydration repair v7
+name: Inspect static hydration repair v8
 
 on:
   pull_request:
@@ -43,8 +43,15 @@ jobs:
           test "$(pnpm --version)" = '10.0.0'
       - name: Install exact dependency graph
         run: pnpm install --frozen-lockfile
-      - name: Install Chromium
-        run: pnpm exec playwright install --with-deps chromium
+      - name: Resolve runner Chrome
+        shell: bash
+        run: |
+          set -euo pipefail
+          chrome="$(command -v google-chrome || command -v google-chrome-stable || command -v chromium || true)"
+          test -n "$chrome"
+          test -x "$chrome"
+          "$chrome" --version
+          echo "CHROME_BIN=$chrome" >> "$GITHUB_ENV"
       - name: Build exact static output
         run: pnpm build:static
       - name: Probe local hydrated query identity
@@ -52,8 +59,9 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          out="$RUNNER_TEMP/static-hydration-v7"
+          out="$RUNNER_TEMP/static-hydration-v8"
           mkdir -p "$out"
+          echo "out=$out" >> "$GITHUB_OUTPUT"
           cat > "$RUNNER_TEMP/static-server.mjs" <<'NODE'
           import http from 'node:http'
           import { createReadStream, existsSync, statSync } from 'node:fs'
@@ -93,6 +101,7 @@ jobs:
             curl --fail --silent http://127.0.0.1:4177/ >/dev/null && break
             sleep .2
           done
+          set +e
           OUT_DIR="$out" node - <<'NODE'
           const { chromium } = require('playwright')
           const fs = require('node:fs')
@@ -105,7 +114,7 @@ jobs:
             { name: 'replay', url: `http://127.0.0.1:4177/replay/?${query}`, selector: '[data-testid="cinematic-replay-client"]' },
           ]
           ;(async () => {
-            const browser = await chromium.launch({ headless: true })
+            const browser = await chromium.launch({ headless: true, executablePath: process.env.CHROME_BIN, args: ['--no-sandbox', '--disable-dev-shm-usage'] })
             const results = []
             try {
               for (const route of routes) {
@@ -140,7 +149,7 @@ jobs:
                           && element.getAttribute('data-node') === expected.node,
                       }
                     }),
-                    nextDataScripts: [...document.scripts].map(script => script.src || 'inline').filter(value => value.includes('_next') || value === 'inline'),
+                    scripts: [...document.scripts].map(script => script.src || 'inline'),
                   }
                 }, { selector: route.selector, expected: identity })
                 const screenshot = path.join(out, `${route.name}.png`)
@@ -159,7 +168,7 @@ jobs:
             } finally {
               await browser.close()
             }
-            const report = { schemaVersion: 1, targetSha: process.env.TARGET_SHA, generatedAt: new Date().toISOString(), results }
+            const report = { schemaVersion: 2, targetSha: process.env.TARGET_SHA, chromeBin: process.env.CHROME_BIN, generatedAt: new Date().toISOString(), results }
             fs.writeFileSync(path.join(out, 'report.json'), JSON.stringify(report, null, 2) + '\n')
             console.log(JSON.stringify(report, null, 2))
           })().catch(error => {
@@ -168,12 +177,15 @@ jobs:
             process.exitCode = 1
           })
           NODE
-          echo "out=$out" >> "$GITHUB_OUTPUT"
+          probe_status=$?
+          set -e
+          printf '%s\n' "$probe_status" > "$out/probe-status.txt"
+          cat "$out/report.json" 2>/dev/null || cat "$out/probe-error.txt" 2>/dev/null || true
       - name: Upload static hydration probe
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
-          name: static-hydration-v7-${{ env.TARGET_SHA }}
+          name: static-hydration-v8-${{ env.TARGET_SHA }}
           path: ${{ steps.probe.outputs.out }}
           if-no-files-found: error
           retention-days: 30
