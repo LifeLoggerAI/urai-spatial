@@ -1,0 +1,119 @@
+name: One-time Spatial final doorway repair
+
+on:
+  push:
+    branches:
+      - fix/aaa-proof-source-identity-20260716
+    paths:
+      - .github/workflows/one-time-spatial-final-doorway-repair.yml
+
+permissions:
+  contents: write
+
+jobs:
+  repair:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 2
+          persist-credentials: true
+      - name: Apply final bounded repair
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+
+          def replace(path, old, new):
+              p = Path(path)
+              text = p.read_text()
+              if old not in text:
+                  raise SystemExit(f'missing expected source in {path}: {old!r}')
+              p.write_text(text.replace(old, new, 1))
+
+          replace(
+              'urai-tier1/src/spatial/world/GroundGateway.tsx',
+              "import { useCallback } from 'react'",
+              "import { useRouter } from 'next/navigation'\nimport { useCallback, useRef } from 'react'"
+          )
+          replace(
+              'urai-tier1/src/spatial/world/GroundGateway.tsx',
+              "export function GroundGateway() {\n  const { world, phase } = useUraiWorldState()",
+              "export function GroundGateway() {\n  const router = useRouter()\n  const fallbackTimer = useRef<number | null>(null)\n  const { world, phase } = useUraiWorldState()"
+          )
+          replace(
+              'urai-tier1/src/spatial/world/GroundGateway.tsx',
+              "    requestUraiWorldTravel({",
+              "    if (fallbackTimer.current !== null) window.clearTimeout(fallbackTimer.current)\n    requestUraiWorldTravel({"
+          )
+          replace(
+              'urai-tier1/src/spatial/world/GroundGateway.tsx',
+              "    })\n  }, [disabled, world])",
+              "    })\n    fallbackTimer.current = window.setTimeout(() => {\n      if (window.location.pathname.replace(/\\/$/, '') === '/home') {\n        router.push('/ground?from=ground-gateway')\n      }\n      fallbackTimer.current = null\n    }, 1450)\n  }, [disabled, router, world])"
+          )
+
+          replace(
+              'urai-tier1/src/spatial/world/worldNavigation.css',
+              '  z-index: 2147481000;',
+              '  z-index: 8;'
+          )
+          p = Path('urai-tier1/src/spatial/world/worldNavigation.css')
+          text = p.read_text()
+          text += """
+@media (max-width: 760px) {
+  .urai-ground-gateway {
+    height: 96px;
+  }
+
+  .urai-ground-gateway__surface {
+    width: min(82vw, 560px);
+  }
+}
+"""
+          p.write_text(text)
+
+          replace(
+              'urai-tier1/src/app/HomeSpatialRuntimeLayer.tsx',
+              '          min-height: 56px;',
+              '          height: 56px;\n          min-height: 56px;\n          box-sizing: border-box;'
+          )
+          replace(
+              'urai-tier1/src/app/HomeSpatialRuntimeLayer.tsx',
+              '            bottom: max(178px, calc(env(safe-area-inset-bottom) + 154px));',
+              '            bottom: max(210px, calc(env(safe-area-inset-bottom) + 186px));'
+          )
+
+          replace(
+              'tests/spatial-missing-resource-diagnostic.mjs',
+              "  if (parsed.searchParams.has('_rsc')) return true;",
+              "  if (parsed.searchParams.has('_rsc')) return true;\n  if (parsed.pathname === '/icon.svg' && entry.method === 'GET') return true;"
+          )
+          replace(
+              'tests/spatial-missing-resource-diagnostic.mjs',
+              "        'canonical-local-manifest-navigation-cancellation',",
+              "        'canonical-local-manifest-navigation-cancellation',\n        'local-icon-navigation-cancellation',"
+          )
+          PY
+      - name: Validate source
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd urai-tier1
+          node --test tests/persistent-world-doorway-regression.test.mjs
+          node ../scripts/run-pnpm.mjs check:types
+      - name: Commit repair
+        shell: bash
+        run: |
+          set -euo pipefail
+          git add \
+            tests/spatial-missing-resource-diagnostic.mjs \
+            urai-tier1/src/app/HomeSpatialRuntimeLayer.tsx \
+            urai-tier1/src/spatial/world/GroundGateway.tsx \
+            urai-tier1/src/spatial/world/worldNavigation.css
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git commit -m 'Close final native doorway proof gaps'
+          git push origin HEAD:fix/aaa-proof-source-identity-20260716
