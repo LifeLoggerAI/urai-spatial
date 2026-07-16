@@ -7,4 +7,50 @@ const tests = [
   'tests/asset-validation-fail-closed-contract.test.mjs',
   'tests/automatic-hosting-recovery-contract.test.mjs',
   'tests/body-biometric-contract.test.mjs',
-  'tests/continuous-spatial
+  'tests/continuous-spatial-restoration-contract.test.mjs',
+  'tests/exact-static-release-contract.test.mjs',
+  'tests/field-reconstruction-phase5-contract.test.mjs',
+  'tests/firebase-hosting-capture-workflow-contract.test.mjs',
+  'tests/firebase-hosting-recovery-contract.test.mjs',
+  'tests/home-cohesion-contract.test.mjs',
+  'tests/lifemap-cinematic-contract.test.mjs',
+  'tests/lifemap-deep-link-controls-contract.test.mjs',
+  'tests/lifemap-scene-behavior.test.mjs',
+  'tests/memory-star-phase4-contract.test.mjs',
+  'tests/orb-companion-contract.test.mjs',
+  'tests/post-deploy-ground-smoke-contract.test.mjs',
+  'tests/persistent-world-doorway-regression.test.mjs',
+  'tests/quest-entry-lifecycle.test.mjs',
+  'tests/quest-ended-during-attach.test.mjs',
+  'tests/quest-pointer-cancel.test.mjs',
+  'tests/release-control-smoke-boundary-contract.test.mjs',
+  'tests/replay-memory-theater-contract.test.mjs',
+  'tests/sensory-asset-resolution-contract.test.mjs',
+  'tests/spatial-launch-boundaries.test.mjs',
+  'tests/tier0-world-navigation-canon.test.mjs',
+  'tests/spatial-missing-resource-diagnostic-contract.test.mjs',
+  'tests/unit-runner-coverage.test.mjs',
+  'tests/v2-asset-gating.test.mjs',
+  'tests/xr-runtime-contract.test.mjs',
+  'tests/xr-static-gate-diagnostics-contract.test.mjs',
+]
+
+for (const testPath of tests) {
+  if (!fs.existsSync(testPath)) {
+    console.error(`MISSING ${testPath}`)
+    process.exit(1)
+  }
+  const result = spawnSync(process.execPath, ['--import', 'tsx', '--test', testPath], {
+    encoding: 'utf8',
+  })
+  if (result.status === 0) {
+    console.log(`PASS ${testPath}`)
+    continue
+  }
+  console.error(`FAIL ${testPath}`)
+  if (result.stdout) process.stdout.write(result.stdout)
+  if (result.stderr) process.stderr.write(result.stderr)
+  process.exit(result.status ?? 1)
+}
+
+console.log(`PASS all ${tests.length} focused contract suites`)
