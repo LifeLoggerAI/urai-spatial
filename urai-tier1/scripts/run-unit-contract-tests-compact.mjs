@@ -17,6 +17,7 @@ const tests = [
   'tests/lifemap-deep-link-controls-contract.test.mjs',
   'tests/lifemap-scene-behavior.test.mjs',
   'tests/memory-star-phase4-contract.test.mjs',
+  'tests/mobile-spatial-framing-contract.test.mjs',
   'tests/orb-companion-contract.test.mjs',
   'tests/quest-entry-lifecycle.test.mjs',
   'tests/quest-ended-during-attach.test.mjs',
