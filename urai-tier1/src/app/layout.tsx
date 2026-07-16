@@ -55,6 +55,7 @@ import './urai-design-system.css'
 import './route-layering-hotfix.css'
 import './native-doorway-final-fix.css'
 import WorldRuntimeBoundary from '@/spatial/world/WorldRuntimeBoundary'
+import LifeMapPersistentDoorways from '@/components/lifemap/LifeMapPersistentDoorways'
 
 const configuredBuildSha = process.env.NEXT_PUBLIC_URAI_BUILD_SHA ?? process.env.GITHUB_SHA ?? ''
 const deployedSha = /^[0-9a-f]{40}$/.test(configuredBuildSha) ? configuredBuildSha : 'unverified'
@@ -93,6 +94,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           <UraiFinalAssetSpineSceneLayer />
           <UraiFinalAssetSpineBridge />
           {children}
+          <LifeMapPersistentDoorways />
           <UraiAutonomousV1Layer />
           <UraiV2StateController />
           <UraiV2OnboardingLayer />
