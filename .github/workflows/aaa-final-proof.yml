@@ -1,6 +1,22 @@
 name: URAI AAA Final Proof
 
 on:
+  workflow_call:
+    inputs:
+      target_sha:
+        description: Exact source SHA to verify
+        required: true
+        type: string
+      base_url:
+        description: Base URL to smoke after build
+        required: false
+        type: string
+        default: http://127.0.0.1:4173
+      screenshots:
+        description: Capture Playwright screenshots
+        required: false
+        type: string
+        default: "true"
   workflow_dispatch:
     inputs:
       base_url:
@@ -30,11 +46,11 @@ permissions:
   contents: read
 
 concurrency:
-  group: urai-aaa-final-proof-${{ github.event.pull_request.head.sha || github.sha }}
+  group: urai-aaa-final-proof-${{ inputs.target_sha || github.event.pull_request.head.sha || github.sha }}
   cancel-in-progress: true
 
 env:
-  TARGET_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+  TARGET_SHA: ${{ inputs.target_sha || github.event.pull_request.head.sha || github.sha }}
 
 jobs:
   final-proof:
@@ -46,7 +62,7 @@ jobs:
       FORCE_COLOR: "0"
       URAI_PROOF_SOURCE_SHA: ${{ env.TARGET_SHA }}
       URAI_RECEIPT_ROOT: ${{ github.workspace }}/urai-final-receipts
-      URAI_BASE_URL: ${{ github.event_name == 'workflow_dispatch' && inputs.base_url || 'http://127.0.0.1:4173' }}
+      URAI_BASE_URL: ${{ inputs.base_url || 'http://127.0.0.1:4173' }}
 
     steps:
       - name: Checkout exact commit
