@@ -21,7 +21,7 @@ if (expectedRollbackSha === expectedSha) throw new Error('Rollback SHA must be d
 const contracts = [
   ['/', ['aaa-final-home-sky-ground-orb-body-portals', 'Own your life.', 'Ground', 'Life Map'], []],
   ['/home', ['aaa-final-home-sky-ground-orb-body-portals', 'Own your life.'], []],
-  ['/ground', ['walkable-first-person-ground-layer', 'Street-level city world'], []],
+  ['/ground', ['walkable-first-person-ground-layer', 'urai-ground-private-workforce-world', 'Your private workforce.', 'Six chambers active · private by default'], ['Street-level city world']],
   ['/life-map', ['urai-r3f-canonical-lifemap', 'URAI canonical spatial Life Map'], []],
   ['/focus?memoryId=quiet-reset&manifestId=replay-recovery-thread&node=quiet-reset', ['urai-final-focus-chamber', 'Selected memory chamber.'], ['Focus loading']],
   ['/replay?memoryId=quiet-reset&manifestId=replay-recovery-thread&node=quiet-reset', ['replay-route-launch-fingerprint', 'Replay the thread. Film beats. Cinematic memory camera film.'], []],
