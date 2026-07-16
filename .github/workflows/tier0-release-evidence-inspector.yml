@@ -5,6 +5,11 @@ on:
     branches: [main]
     paths:
       - '.github/workflows/tier0-release-evidence-inspector.yml'
+  push:
+    branches:
+      - 'audit/tier0-release-evidence-20260716'
+    paths:
+      - '.github/workflows/tier0-release-evidence-inspector.yml'
   workflow_dispatch:
 
 permissions:
@@ -25,4 +30,76 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 10
     steps:
-      - name: Query
+      - name: Query exact release workflow evidence
+        id: inspect
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          receipt_dir="$RUNNER_TEMP/tier0-release-evidence"
+          mkdir -p "$receipt_dir"
+
+          api() {
+            curl --fail --silent --show-error \
+              --header "Accept: application/vnd.github+json" \
+              --header "Authorization: Bearer $GH_TOKEN" \
+              --header "X-GitHub-Api-Version: 2022-11-28" \
+              "$1"
+          }
+
+          api "$GITHUB_API_URL/repos/$GITHUB_REPOSITORY/actions/runs?head_sha=$TARGET_SHA&per_page=100" \
+            > "$receipt_dir/exact-sha-runs.json"
+          api "$GITHUB_API_URL/repos/$GITHUB_REPOSITORY/actions/workflows/$DISPATCHER_WORKFLOW/runs?branch=main&event=push&per_page=100" \
+            > "$receipt_dir/dispatcher-runs.json"
+          api "$GITHUB_API_URL/repos/$GITHUB_REPOSITORY/actions/workflows/$RELEASE_WORKFLOW/runs?branch=main&event=workflow_dispatch&per_page=100" \
+            > "$receipt_dir/release-runs.json"
+
+          TARGET_SHA="$TARGET_SHA" node - "$receipt_dir" <<'NODE'
+          const fs = require('node:fs')
+          const path = require('node:path')
+          const dir = process.argv[2]
+          const target = process.env.TARGET_SHA
+          const read = (name) => JSON.parse(fs.readFileSync(path.join(dir, name), 'utf8'))
+          const compact = (run) => ({
+            id: run.id,
+            name: run.name,
+            event: run.event,
+            status: run.status,
+            conclusion: run.conclusion,
+            head_sha: run.head_sha,
+            run_number: run.run_number,
+            run_attempt: run.run_attempt,
+            created_at: run.created_at,
+            updated_at: run.updated_at,
+            html_url: run.html_url,
+          })
+          const exact = (read('exact-sha-runs.json').workflow_runs || []).filter((run) => run.head_sha === target)
+          const dispatcher = (read('dispatcher-runs.json').workflow_runs || []).filter((run) => run.head_sha === target)
+          const release = (read('release-runs.json').workflow_runs || []).filter((run) => run.head_sha === target)
+          const receipt = {
+            schemaVersion: 'urai-tier0-release-evidence-inspector-1',
+            inspectedAt: new Date().toISOString(),
+            repository: process.env.GITHUB_REPOSITORY,
+            targetSha: target,
+            exactShaRuns: exact.map(compact),
+            dispatcherRuns: dispatcher.map(compact),
+            releaseRuns: release.map(compact),
+            dispatcherFound: dispatcher.length > 0,
+            releaseFound: release.length > 0,
+          }
+          fs.writeFileSync(path.join(dir, 'receipt.json'), `${JSON.stringify(receipt, null, 2)}\n`)
+          console.log(JSON.stringify(receipt, null, 2))
+          if (!receipt.dispatcherFound || !receipt.releaseFound) process.exitCode = 1
+          NODE
+
+          echo "receipt_dir=$receipt_dir" >> "$GITHUB_OUTPUT"
+
+      - name: Upload read-only evidence receipt
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: tier0-release-evidence-${{ env.TARGET_SHA }}
+          path: ${{ steps.inspect.outputs.receipt_dir }}
+          if-no-files-found: error
+          retention-days: 365
