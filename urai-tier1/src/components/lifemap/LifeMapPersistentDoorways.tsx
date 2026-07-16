@@ -20,7 +20,7 @@ function buildDoorwayHref(route: 'focus' | 'replay') {
 }
 
 export default function LifeMapPersistentDoorways() {
-  const pathname = usePathname()
+  const pathname = usePathname() ?? '/'
   const router = useRouter()
   const normalizedPathname = pathname.replace(/\/+$/, '') || '/'
 
