@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import HomeSpatialCanvas, { useWebGLAvailable } from './HomeSpatialCanvas'
 
 export default function HomeSpatialRuntimeLayer() {
@@ -10,6 +10,10 @@ export default function HomeSpatialRuntimeLayer() {
   const normalizedPathname = pathname.replace(/\/+$/, '') || '/'
   const [orbOpen, setOrbOpen] = useState(false)
   const webglAvailable = useWebGLAvailable()
+
+  useEffect(() => () => {
+    document.body.style.cursor = 'default'
+  }, [])
 
   if (normalizedPathname !== '/' && normalizedPathname !== '/home') return null
   if (webglAvailable !== true) return null
