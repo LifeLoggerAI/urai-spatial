@@ -11,6 +11,8 @@ const controller = read('src/spatial/world/WorldTransitionController.tsx')
 const gateway = read('src/spatial/world/GroundGateway.tsx')
 const shell = read('src/spatial/world/UraiWorldShell.tsx')
 const layout = read('src/app/layout.tsx')
+const homeRuntime = read('src/app/HomeSpatialRuntimeLayer.tsx')
+const homeCanvas = read('src/app/HomeSpatialCanvas.tsx')
 
 test('Tier-0 canon defines the required persistent-world destinations', () => {
   for (const destination of [
@@ -41,6 +43,16 @@ test('Ground is the canonical gateway to Hidden Infrastructure', () => {
   assert.match(gateway, /href:\s*['"]\/ground\?from=ground-gateway['"]/)
   assert.match(gateway, /Open the ground and descend into Hidden Infrastructure/)
   assert.match(gateway, /type=['"]button['"]/)
+})
+
+test('Home stays calm and does not expose permanent feature portals', () => {
+  assert.doesNotMatch(homeRuntime, /urai-home-spatial-runtime-portals/)
+  assert.doesNotMatch(homeRuntime, />Mirror</)
+  assert.doesNotMatch(homeRuntime, />Passport</)
+  assert.doesNotMatch(homeCanvas, /data-urai-home-portal/)
+  assert.doesNotMatch(homeCanvas, /const portals/)
+  assert.match(homeCanvas, /data-tier0-ground-gateway=['"]true['"]/)
+  assert.match(homeCanvas, /tap the ground to enter below/)
 })
 
 test('The root application owns one persistent world shell', () => {
