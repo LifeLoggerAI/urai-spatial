@@ -36,7 +36,7 @@ test('Ground is the canonical gateway to Hidden Infrastructure', () => {
   assert.match(registry, /href:\s*['"]\/ground['"]/)
   assert.match(registry, /entryPortal:\s*['"]ground-gateway['"]/)
   assert.match(registry, /environmentalForm:\s*['"]underground-network['"]/)
-  assert.match(registry, /\['"]\/ground['"],\s*['"]infrastructure-hub['"]\]/)
+  assert.match(registry, /\[\s*['"]\/ground['"]\s*,\s*['"]infrastructure-hub['"]\s*\]/)
   assert.match(gateway, /destination:\s*['"]infrastructure-hub['"]/)
   assert.match(gateway, /href:\s*['"]\/ground\?from=ground-gateway['"]/)
   assert.match(gateway, /Open the ground and descend into Hidden Infrastructure/)
