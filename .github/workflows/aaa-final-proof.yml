@@ -1,14 +1,20 @@
 name: URAI AAA Final Proof
-
 on:
   workflow_call:
     inputs:
-      target_sha:
-        description: Exact source SHA to verify
-        required: true
-        type: string
-      base_url:
-        description: Base URL to smoke after build
-        required: false
-        type: string
-        default: http://
+      target_sha: {required: true, type: string}
+      base_url: {required: false, type: string, default: http://127.0.0.1:4173}
+      screenshots: {required: false, type: string, default: "true"}
+  workflow_dispatch:
+  push: {branches: [main]}
+permissions: {contents: read}
+concurrency:
+  group: urai-aaa-final-proof-${{ inputs.target_sha || github.sha }}
+  cancel-in-progress: true
+env:
+  TARGET_SHA: ${{ inputs.target_sha || github.sha }}
+jobs:
+  final-proof:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    env
