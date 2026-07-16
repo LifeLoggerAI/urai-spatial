@@ -2,12 +2,12 @@
    while its bounded bottom rail never overlaps the Orb or its panel. */
 .urai-ground-gateway {
   z-index: 11 !important;
-  height: 112px !important;
+  height: 80px !important;
 }
 
 .urai-ground-gateway__surface {
   inset: auto 0 0 !important;
-  height: 112px !important;
+  height: 80px !important;
 }
 
 .urai-home-spatial-runtime-layer {
@@ -27,6 +27,33 @@
   transform: none !important;
 }
 
+.urai-life-map-persistent-doorways {
+  position: fixed;
+  right: max(18px, env(safe-area-inset-right));
+  bottom: max(72px, calc(env(safe-area-inset-bottom) + 72px));
+  z-index: 2147481200;
+  display: flex;
+  gap: 8px;
+  pointer-events: auto;
+}
+
+.urai-life-map-persistent-doorways button {
+  min-width: 72px;
+  min-height: 48px;
+  border: 1px solid rgba(165, 243, 252, .3);
+  border-radius: 999px;
+  background: rgba(2, 12, 27, .82);
+  color: #ecfeff;
+  box-shadow: 0 12px 38px rgba(0, 0, 0, .38);
+  font-weight: 900;
+  backdrop-filter: blur(16px);
+}
+
+.urai-life-map-persistent-doorways button:focus-visible {
+  outline: 2px solid #a5f3fc;
+  outline-offset: 3px;
+}
+
 @media (max-width: 760px) {
   .urai-ground-gateway,
   .urai-ground-gateway__surface {
@@ -38,5 +65,10 @@
     right: auto !important;
     width: min(82vw, 560px) !important;
     transform: translateX(-50%) !important;
+  }
+
+  .urai-life-map-persistent-doorways {
+    right: 12px;
+    bottom: max(66px, calc(env(safe-area-inset-bottom) + 66px));
   }
 }
