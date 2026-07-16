@@ -60,7 +60,7 @@ jobs:
     env:
       CI: "1"
       FORCE_COLOR: "0"
-      URAI_PROOF_SOURCE_SHA: ${{ env.TARGET_SHA }}
+      URAI_PROOF_SOURCE_SHA: ${{ inputs.target_sha || github.event.pull_request.head.sha || github.sha }}
       URAI_RECEIPT_ROOT: ${{ github.workspace }}/urai-final-receipts
       URAI_BASE_URL: ${{ inputs.base_url || 'http://127.0.0.1:4173' }}
 
