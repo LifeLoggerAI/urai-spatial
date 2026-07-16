@@ -71,7 +71,7 @@ async function prove({ browser, doorway, testCase }) {
     }
 
     if (testCase.method === 'pointer') {
-      await target.click({ timeout: 10000 })
+      await target.click({ timeout: 10000, noWaitAfter: true })
     } else if (testCase.method === 'touch') {
       await target.tap({ timeout: 10000 })
     } else if (testCase.method === 'keyboard') {
