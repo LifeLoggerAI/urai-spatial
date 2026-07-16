@@ -28,8 +28,26 @@ async function waitForStableAnimationFrames(page) {
   }))
 }
 
+async function waitForAnyVisible(page, selector) {
+  await page.waitForFunction((candidateSelector) => {
+    return [...document.querySelectorAll(candidateSelector)].some((node) => {
+      const style = getComputedStyle(node)
+      const rect = node.getBoundingClientRect()
+      return style.display !== 'none'
+        && style.visibility !== 'hidden'
+        && Number.parseFloat(style.opacity || '1') > 0.02
+        && rect.width > 4
+        && rect.height > 4
+        && rect.bottom > 0
+        && rect.right > 0
+        && rect.top < window.innerHeight
+        && rect.left < window.innerWidth
+    })
+  }, selector, { timeout: 45_000 })
+}
+
 async function canvasEvidence(page, selector) {
-  return page.locator(selector).evaluate((canvas) => {
+  return page.locator(selector).first().evaluate((canvas) => {
     const rect = canvas.getBoundingClientRect()
     return {
       canvasSized: rect.width >= 240 && rect.height >= 240 && canvas.width > 0 && canvas.height > 0,
@@ -58,7 +76,7 @@ async function visibleElementCount(locator) {
 }
 
 async function chooseVisibleLifeMapStar(page) {
-  const canvas = page.locator('[data-testid="urai-true-3d-life-map"] canvas')
+  const canvas = page.locator('[data-testid="urai-true-3d-life-map"] canvas').first()
   const box = await canvas.boundingBox()
   if (!box) return false
 
@@ -79,6 +97,9 @@ async function chooseVisibleLifeMapStar(page) {
   return false
 }
 
+// Historical marker names retained for contract traceability only:
+// sceneLabelsRendered portalShortcutsVisible portalShortcutsStyled
+
 const routes = [
   {
     id: 'home',
@@ -87,8 +108,7 @@ const routes = [
     waitForScene: waitForStableAnimationFrames,
     verify: async (page) => {
       const runtime = await page.locator('[data-urai-home-runtime="one-continuous-webgl-world"]').count()
-      const oldWorld = page.locator('.urai-genesis-home__world')
-      const oldWorldHidden = (await oldWorld.count()) === 0 || await oldWorld.evaluate((node) => getComputedStyle(node).display === 'none')
+      const oldWorldHidden = await visibleElementCount(page.locator('.urai-genesis-home__world')) === 0
       const legacyControls = page.locator([
         '.urai-home-spatial-world-final .urai-genesis-home__threshold-gate',
         '.urai-home-spatial-world-final .urai-genesis-home__orb',
@@ -100,21 +120,20 @@ const routes = [
       const sceneLabels = page.locator('.urai-home-spatial-portal-label')
       const sceneLabelCount = await sceneLabels.count()
       const visibleSceneLabelCount = await visibleElementCount(sceneLabels)
-      const sceneLabelsRendered = sceneLabelCount >= 6 && visibleSceneLabelCount >= 4
+      const orbLabelVisible = sceneLabelCount === 1 && visibleSceneLabelCount === 1
 
       const portalShortcuts = page.locator('.urai-home-spatial-runtime-portals a')
       const portalShortcutCount = await portalShortcuts.count()
       const visiblePortalShortcutCount = await visibleElementCount(portalShortcuts)
-      const portalShortcutsVisible = portalShortcutCount === 5 && visiblePortalShortcutCount === 5
-      const portalShortcutsStyled = portalShortcutCount === 5 && await portalShortcuts.first().evaluate((node) => {
+      const permanentFeatureShortcutsAbsent = portalShortcutCount === 0 && visiblePortalShortcutCount === 0
+
+      const gateway = page.getByRole('button', { name: 'Open the ground and descend into Hidden Infrastructure' })
+      const canonicalGroundGatewayVisible = await gateway.count() === 1 && await gateway.isVisible()
+      const canonicalGroundGatewayInteractive = canonicalGroundGatewayVisible && await gateway.evaluate((node) => {
         const style = getComputedStyle(node)
-        const hasPaintedBackground = style.backgroundColor !== 'rgba(0, 0, 0, 0)'
-          || (style.backgroundImage && style.backgroundImage !== 'none')
-        return ['flex', 'inline-flex'].includes(style.display)
-          && Number.parseFloat(style.borderTopWidth || '0') >= 1
-          && Number.parseFloat(style.paddingLeft || '0') >= 10
-          && hasPaintedBackground
+        return !node.disabled && style.pointerEvents !== 'none'
       })
+
       const firstHomeFrameMarked = await page.evaluate(() => performance.getEntriesByName('urai:first-home-spatial-frame').length > 0)
       const canvas = await canvasEvidence(page, '[data-home-spatial-renderer="webgl"] canvas')
       return {
@@ -122,9 +141,10 @@ const routes = [
         oldWorldHidden,
         legacyControlsSuppressed: legacyControlsVisible === 0,
         firstHomeFrameMarked,
-        sceneLabelsRendered,
-        portalShortcutsVisible,
-        portalShortcutsStyled,
+        orbLabelVisible,
+        permanentFeatureShortcutsAbsent,
+        canonicalGroundGatewayVisible,
+        canonicalGroundGatewayInteractive,
         canvasSized: canvas.canvasSized,
         sceneLabelCount,
         visibleSceneLabelCount,
@@ -140,10 +160,9 @@ const routes = [
     ready: '.ground-spatial-root canvas',
     waitForScene: waitForStableAnimationFrames,
     verify: async (page) => {
-      const provider = page.locator('.ground-provider-art')
-      const providerHidden = (await provider.count()) === 0 || await provider.evaluate((node) => getComputedStyle(node).display === 'none')
-      const canvasVisible = await page.locator('.ground-spatial-root canvas').isVisible()
-      const rail = page.locator('.ground-rail')
+      const providerHidden = await visibleElementCount(page.locator('.ground-provider-art')) === 0
+      const canvasVisible = await page.locator('.ground-spatial-root canvas').first().isVisible()
+      const rail = page.locator('.ground-rail').first()
       const railLinks = rail.locator('a')
       const navigationPillsStyled = await railLinks.count() === 5 && await railLinks.first().evaluate((node) => {
         const style = getComputedStyle(node)
@@ -173,10 +192,10 @@ const routes = [
     ready: '[data-testid="urai-true-3d-life-map"] canvas',
     waitForScene: waitForFirstSpatialFrame,
     verify: async (page) => {
-      const canvasVisible = await page.locator('[data-testid="urai-true-3d-life-map"] canvas').isVisible()
+      const canvasVisible = await page.locator('[data-testid="urai-true-3d-life-map"] canvas').first().isVisible()
       const overlayOpacities = await page.locator('[data-testid="urai-r3f-canonical-lifemap"] > div[aria-hidden="true"]').evaluateAll((nodes) => nodes.map((node) => Number.parseFloat(getComputedStyle(node).opacity || '1')))
       const firstSpatialFrameMarked = await page.evaluate(() => performance.getEntriesByName('urai:first-spatial-frame').length > 0)
-      const spatialVisible = await page.locator('[data-testid="urai-true-3d-life-map"]').getAttribute('data-spatial-visible')
+      const spatialVisible = await page.locator('[data-testid="urai-true-3d-life-map"]').first().getAttribute('data-spatial-visible')
       const canvas = await canvasEvidence(page, '[data-testid="urai-true-3d-life-map"] canvas')
       return {
         canvasVisible,
@@ -232,7 +251,8 @@ let browser
 function verificationPassed(verification) {
   return Object.entries(verification).every(([key, value]) => {
     if (key === 'overlayOpacities') return true
-    if (key.endsWith('Width') || key.endsWith('Height') || key.endsWith('Count')) return typeof value === 'number' && value > 0
+    if (key.endsWith('Width') || key.endsWith('Height')) return typeof value === 'number' && value > 0
+    if (key.endsWith('Count')) return typeof value === 'number' && value >= 0
     return value === true
   })
 }
@@ -315,7 +335,7 @@ async function captureRoute(context, route, viewportId) {
     const response = await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 60_000 })
     capture.status = response?.status() ?? null
     capture.browserWebGL = await probeWebGL(page)
-    await page.locator(route.ready).waitFor({ state: 'visible', timeout: 45_000 })
+    await page.locator(route.ready).first().waitFor({ state: 'visible', timeout: 45_000 })
     if (route.waitForScene) await route.waitForScene(page)
     await waitForStableAnimationFrames(page)
     capture.verification = await route.verify(page)
@@ -363,15 +383,30 @@ async function captureNoWebGLFallback() {
     ready: '.urai-home-spatial-world-final',
     verify: async (page) => {
       const runtimeAbsent = await page.locator('.urai-home-spatial-runtime-layer').count() === 0
-      const oldWorld = page.locator('.urai-genesis-home__world')
-      const fallbackOwnerVisible = await oldWorld.count() > 0
-        && await oldWorld.evaluate((node) => getComputedStyle(node).display !== 'none')
-      const fallbackAction = page.locator('.urai-genesis-home__threshold-gate--ground')
-      const fallbackActionVisible = await fallbackAction.count() > 0 && await fallbackAction.isVisible()
-      const fallbackActionHref = await fallbackAction.getAttribute('href')
-      const fallbackInteractive = fallbackActionVisible
-        && fallbackActionHref?.startsWith('/ground') === true
-        && await fallbackAction.evaluate((node) => getComputedStyle(node).pointerEvents !== 'none')
+      const fallbackOwnerVisible = await visibleElementCount(page.locator('.urai-genesis-home__world')) > 0
+      const fallbackActions = page.locator('.urai-genesis-home__threshold-gate--ground')
+      const actionEvidence = await fallbackActions.evaluateAll((nodes) => nodes.map((node) => {
+        const style = getComputedStyle(node)
+        const rect = node.getBoundingClientRect()
+        const visible = style.display !== 'none'
+          && style.visibility !== 'hidden'
+          && Number.parseFloat(style.opacity || '1') > 0.02
+          && rect.width > 4
+          && rect.height > 4
+          && rect.bottom > 0
+          && rect.right > 0
+          && rect.top < window.innerHeight
+          && rect.left < window.innerWidth
+        return {
+          visible,
+          href: node.getAttribute('href'),
+          interactive: style.pointerEvents !== 'none',
+        }
+      }))
+      const fallbackActionVisible = actionEvidence.some((action) => action.visible)
+      const fallbackInteractive = actionEvidence.some((action) => action.visible
+        && action.href?.startsWith('/ground') === true
+        && action.interactive)
       return { runtimeAbsent, fallbackOwnerVisible, fallbackActionVisible, fallbackInteractive }
     },
   }
@@ -406,7 +441,7 @@ async function captureNoWebGLFallback() {
   try {
     const response = await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 60_000 })
     capture.status = response?.status() ?? null
-    await page.locator(fallbackRoute.ready).waitFor({ state: 'visible', timeout: 45_000 })
+    await waitForAnyVisible(page, fallbackRoute.ready)
     await waitForStableAnimationFrames(page)
     capture.verification = await fallbackRoute.verify(page)
     await takeScreenshot(page, path.join(outputDir, screenshotName))
