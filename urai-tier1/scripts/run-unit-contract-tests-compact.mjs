@@ -20,7 +20,7 @@ const tests = [
   'tests/memory-star-phase4-contract.test.mjs',
   'tests/mobile-spatial-framing-contract.test.mjs',
   'tests/orb-companion-contract.test.mjs',
-  'tests/premium-ground-live-smoke-contract.test.mjs',
+  'tests/post-deploy-ground-smoke-contract.test.mjs',
   'tests/quest-entry-lifecycle.test.mjs',
   'tests/quest-ended-during-attach.test.mjs',
   'tests/quest-pointer-cancel.test.mjs',
