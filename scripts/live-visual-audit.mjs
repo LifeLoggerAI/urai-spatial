@@ -22,62 +22,65 @@ const routes = [
   {
     name: 'ground',
     route: '/ground',
-    markers: ['Your real life has a place', 'private operating world'],
-    visualPrompt: 'Ground should read as a private operating world with zones, helpers, objects, and inspectable life surfaces.',
+    markers: ['Your private workforce.', 'Six chambers active · private by default'],
+    staleMarkers: ['Street-level city world'],
+    visualPrompt: 'Ground should read as a private operating world with six chambers, helpers, objects, and inspectable life surfaces.',
   },
   {
     name: 'life-map',
     route: '/life-map',
-    markers: ['Life Map', 'Wheel', 'Drag', 'memory star'],
+    markers: ['Step inside the map.', 'Focus and Replay keep the same memory identity'],
     visualPrompt: 'Life Map should feel like a private galaxy with depth/parallax, not a flat dashboard or wallpaper.',
   },
   {
     name: 'focus-quiet-reset',
-    route: '/focus?memoryId=quiet-reset',
-    markers: ['The Quiet Reset', 'Selected memory camera chamber', 'Replay'],
-    visualPrompt: 'Focus should feel like one selected memory camera chamber with one obvious Replay doorway.',
+    route: '/focus?memoryId=quiet-reset&manifestId=replay-recovery-thread&node=quiet-reset',
+    markers: ['The Quiet Reset', 'The moment pressure became permission to begin again.', 'Replay'],
+    staleMarkers: ['Focus loading'],
+    visualPrompt: 'Focus should feel like one selected memory chamber with one obvious Replay doorway.',
   },
   {
     name: 'replay-recovery-thread',
-    route: '/replay?memoryId=quiet-reset&manifestId=replay-recovery-thread',
+    route: '/replay?memoryId=quiet-reset&manifestId=replay-recovery-thread&node=quiet-reset',
     markers: ['Replay the thread', 'Film beats'],
     visualPrompt: 'Replay should feel like a cinematic memory-film space, not a static poster.',
   },
   {
     name: 'mirror',
     route: '/mirror',
-    markers: ['See the pattern clearly', 'Reflection stack', 'Mirror'],
+    markers: ['Mirror does not judge.', 'Patterns become visible without turning your life into a score.'],
     visualPrompt: 'Mirror should feel like a reflection realm with orb/pattern intelligence, not a normal content page.',
   },
   {
     name: 'passport',
     route: '/passport',
-    markers: ['Your life stays yours', 'Vault layers', 'Passport'],
-    visualPrompt: 'Passport should feel like a premium identity, consent, provenance, and ownership vault.',
+    markers: ['Your life remains yours.', 'OWNERSHIP VAULT', 'System Status'],
+    visualPrompt: 'Passport should feel like a premium identity, consent, provenance, and ownership vault with a visible Status doorway.',
   },
   {
     name: 'status',
     route: '/status',
-    markers: ['World online', 'Route matrix', 'Tracked'],
-    visualPrompt: 'Status should feel like a live control room / launch proof room, not a plain status table.',
+    markers: ['The route matrix is visible.', 'Availability and proof stay separate'],
+    staleMarkers: ['World online'],
+    visualPrompt: 'Status should feel like a system constellation and launch-proof room, not a plain status table.',
   },
   {
     name: 'privacy-controls',
     route: '/privacy-controls',
-    markers: ['Choose what the world can hold', 'Privacy Controls', 'Private by default'],
+    markers: ['Nothing moves without you.', 'Consent remains reversible'],
     staleMarkers: ['Home threshold', 'Click the sky', 'Click the ground'],
-    visualPrompt: 'Privacy Controls should be its own premium consent control room. It must not render Home threshold content.',
+    visualPrompt: 'Privacy Controls should be its own premium consent sanctuary. It must not render Home threshold content.',
   },
   {
     name: 'location-map',
     route: '/location-map',
-    markers: ['Emotional weather over private places', 'symbolic atlas'],
+    markers: ['Places carry signal.', 'EMOTIONAL WEATHER'],
     visualPrompt: 'Location Map should feel like a symbolic emotional atlas/place layer, not a bare list.',
   },
   {
     name: 'spatial-ar-vr',
     route: '/spatial/ar-vr',
-    markers: ['Step inside the Life Map', 'Quest', 'manual'],
+    markers: ['Explorable entry chamber', 'Enter VR in Quest'],
     visualPrompt: 'XR portal should honestly show Quest/WebXR capability and manual-device-required proof steps.',
   },
   {
@@ -108,8 +111,7 @@ const devices = [
     deviceScaleFactor: 2,
     isMobile: true,
     hasTouch: true,
-    userAgent:
-      'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1',
+    userAgent: 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1',
   },
 ]
 
@@ -121,6 +123,7 @@ const interactionChecks = [
       'a[data-urai-audit-action="home-life-map"]',
       'a[data-urai-audit-action="open-life-map"]',
       'a[href="/life-map"]',
+      'a[href="/life-map/"]',
       'a[href*="/life-map"]',
       'button:has-text("Life Map")',
       'button:has-text("Open My World")',
@@ -134,6 +137,7 @@ const interactionChecks = [
       'a[data-urai-audit-action="home-ground"]',
       'a[data-urai-audit-action="open-ground"]',
       'a[href="/ground"]',
+      'a[href="/ground/"]',
       'a[href*="/ground"]',
       'button:has-text("Ground")',
     ],
@@ -141,20 +145,19 @@ const interactionChecks = [
   },
   {
     name: 'life-map-to-focus',
-    start: '/life-map',
+    start: '/life-map?memoryId=quiet-reset&manifestId=replay-recovery-thread&node=quiet-reset',
     selectors: [
+      'button:has-text("Enter Focus")',
+      'button:has-text("Focus")',
       'a[data-urai-audit-action="life-map-focus"]',
       'a[data-urai-audit-action="open-focus"]',
       'a[href*="/focus"]',
-      'button:has-text("Focus")',
-      'button:has-text("Open selected memory")',
-      'button:has-text("Open")',
     ],
     expected: '/focus',
   },
   {
     name: 'focus-to-replay',
-    start: '/focus?memoryId=quiet-reset',
+    start: '/focus?memoryId=quiet-reset&manifestId=replay-recovery-thread&node=quiet-reset',
     selectors: [
       'a[data-urai-audit-action="focus-replay"]',
       'a[data-urai-audit-action="open-replay"]',
@@ -170,6 +173,8 @@ const interactionChecks = [
     selectors: [
       'a[data-urai-audit-action="open-status"]',
       'a[href="/status"]',
+      'a[href="/status/"]',
+      'a:has-text("System Status")',
       'a:has-text("Status")',
       'button:has-text("Status")',
     ],
@@ -233,7 +238,6 @@ async function captureRoute({ browser, routeConfig, device }) {
     hasTouch: device.hasTouch,
     userAgent: device.userAgent,
   })
-
   const page = await context.newPage()
   page.setDefaultTimeout(30000)
 
@@ -254,23 +258,19 @@ async function captureRoute({ browser, routeConfig, device }) {
 
   const title = await page.title().catch(() => '')
   const text = await page.locator('body').innerText({ timeout: 7000 }).catch(() => '')
-  const links = await page
-    .locator('a, button')
-    .evaluateAll((elements) =>
-      elements.slice(0, 140).map((element) => ({
-        tag: element.tagName.toLowerCase(),
-        text: (element.innerText || element.getAttribute('aria-label') || '').replace(/\s+/g, ' ').trim(),
-        href: element.getAttribute('href') || '',
-      })),
-    )
-    .catch(() => [])
+  const links = await page.locator('a, button').evaluateAll((elements) =>
+    elements.slice(0, 140).map((element) => ({
+      tag: element.tagName.toLowerCase(),
+      text: (element.innerText || element.getAttribute('aria-label') || '').replace(/\s+/g, ' ').trim(),
+      href: element.getAttribute('href') || '',
+    })),
+  ).catch(() => [])
 
   const screenshotRelative = path.join('screenshots', `${device.name}-${routeConfig.name}.png`)
   const screenshot = path.join(outDir, screenshotRelative)
   await page.screenshot({ path: screenshot, fullPage: false, animations: 'disabled' }).catch((caught) => {
     error = `${error} screenshot:${String(caught?.message || caught)}`.trim()
   })
-
   await context.close()
 
   const markers = markerResults(text, routeConfig.markers)
@@ -309,7 +309,6 @@ async function captureInteraction({ browser, check, device }) {
     hasTouch: device.hasTouch,
     userAgent: device.userAgent,
   })
-
   const page = await context.newPage()
   page.setDefaultTimeout(30000)
 
@@ -344,7 +343,6 @@ async function captureInteraction({ browser, check, device }) {
   }
 
   await context.close()
-
   return {
     name: check.name,
     device: device.name,
@@ -362,21 +360,14 @@ async function captureInteraction({ browser, check, device }) {
 
 async function main() {
   await fs.mkdir(shotDir, { recursive: true })
-
-  const browser = await chromium.launch({
-    headless: true,
-    args: ['--no-sandbox', '--disable-dev-shm-usage', '--disable-gpu'],
-  })
+  const browser = await chromium.launch({ headless: true, args: ['--no-sandbox', '--disable-dev-shm-usage', '--disable-gpu'] })
 
   const routeResults = []
-
   for (const routeConfig of routes) {
     for (const device of devices) {
       const result = await captureRoute({ browser, routeConfig, device })
       routeResults.push(result)
-      console.log(
-        `AUDIT ${result.device} ${result.name}: status=${result.status} markers=${result.markerStatus} stale=${result.staleStatus} screenshot=${result.screenshot}${result.error ? ` error=${result.error}` : ''}`,
-      )
+      console.log(`AUDIT ${result.device} ${result.name}: status=${result.status} markers=${result.markerStatus} stale=${result.staleStatus} screenshot=${result.screenshot}${result.error ? ` error=${result.error}` : ''}`)
     }
   }
 
@@ -385,9 +376,7 @@ async function main() {
     for (const device of devices) {
       const result = await captureInteraction({ browser, check, device })
       interactions.push(result)
-      console.log(
-        `INTERACTION ${result.device} ${result.name}: ok=${result.ok} mode=${result.mode || 'none'} selector=${result.selector || 'none'} current=${result.currentUrl || 'none'}${result.error ? ` note=${result.error}` : ''}`,
-      )
+      console.log(`INTERACTION ${result.device} ${result.name}: ok=${result.ok} mode=${result.mode || 'none'} selector=${result.selector || 'none'} current=${result.currentUrl || 'none'}${result.error ? ` note=${result.error}` : ''}`)
     }
   }
 
@@ -397,7 +386,6 @@ async function main() {
   const missingMarkerRoutes = routeResults.filter((result) => result.missingMarkers.length > 0)
   const staleContentRoutes = routeResults.filter((result) => result.presentStaleMarkers.length > 0)
   const failedInteractions = interactions.filter((result) => !result.ok)
-
   const summary = {
     routeCount: routes.length,
     deviceCount: devices.length,
@@ -410,56 +398,42 @@ async function main() {
     interactionModes: interactions.map((item) => ({ name: item.name, device: item.device, ok: item.ok, mode: item.mode || 'none', note: item.error || '' })),
   }
 
-  const payload = {
-    createdAt: new Date().toISOString(),
-    baseUrl,
-    devices,
-    routes: routeResults,
-    interactions,
-    summary,
-  }
-
+  const payload = { createdAt: new Date().toISOString(), baseUrl, devices, routes: routeResults, interactions, summary }
   await fs.writeFile(path.join(outDir, 'visual-audit.json'), JSON.stringify(payload, null, 2))
   await fs.writeFile(path.join(outDir, 'latest-screenshots.txt'), routeResults.map((result) => result.screenshot).join('\n') + '\n')
-  await fs.writeFile(
-    path.join(outDir, 'visual-audit-summary.md'),
-    [
-      '# URAI live visual audit',
-      '',
-      `Base URL: ${baseUrl}`,
-      `Created: ${payload.createdAt}`,
-      '',
-      '## Summary',
-      '',
-      `- Routes audited: ${summary.routeCount}`,
-      `- Devices audited: ${summary.deviceCount}`,
-      `- Screenshots captured: ${summary.screenshotCount}/${summary.expectedScreenshotCount}`,
-      `- Failed routes: ${summary.failedRoutes.length}`,
-      `- Missing marker route/device pairs: ${summary.missingMarkerRoutes.length}`,
-      `- Stale-content route/device pairs: ${summary.staleContentRoutes.length}`,
-      `- Failed interactions: ${summary.failedInteractions.length}`,
-      '',
-      '## Human visual judgment checklist',
-      '',
-      ...routes.map((route) => `- ${route.route}: ${route.visualPrompt}`),
-      '',
-      '## Route results',
-      '',
-      ...routeResults.map(
-        (result) =>
-          `- ${result.device} ${result.route}: status=${result.status}; markers=${result.markerStatus}; stale=${result.staleStatus}; screenshot=${result.screenshot}${result.error ? `; error=${result.error}` : ''}`,
-      ),
-      '',
-      '## Interactions',
-      '',
-      ...interactions.map((item) => `- ${item.ok ? 'PASS' : 'FAIL'} ${item.device} ${item.name}: mode=${item.mode || 'none'}; ${item.currentUrl || item.error || 'no result'}`),
-      '',
-      '## XR hardware boundary',
-      '',
-      'This audit proves desktop/mobile browser render and route navigation only. Physical Quest Browser proof remains manual and cannot be inferred from this script.',
-      '',
-    ].join('\n'),
-  )
+  await fs.writeFile(path.join(outDir, 'visual-audit-summary.md'), [
+    '# URAI live visual audit',
+    '',
+    `Base URL: ${baseUrl}`,
+    `Created: ${payload.createdAt}`,
+    '',
+    '## Summary',
+    '',
+    `- Routes audited: ${summary.routeCount}`,
+    `- Devices audited: ${summary.deviceCount}`,
+    `- Screenshots captured: ${summary.screenshotCount}/${summary.expectedScreenshotCount}`,
+    `- Failed routes: ${summary.failedRoutes.length}`,
+    `- Missing marker route/device pairs: ${summary.missingMarkerRoutes.length}`,
+    `- Stale-content route/device pairs: ${summary.staleContentRoutes.length}`,
+    `- Failed interactions: ${summary.failedInteractions.length}`,
+    '',
+    '## Human visual judgment checklist',
+    '',
+    ...routes.map((route) => `- ${route.route}: ${route.visualPrompt}`),
+    '',
+    '## Route results',
+    '',
+    ...routeResults.map((result) => `- ${result.device} ${result.route}: status=${result.status}; markers=${result.markerStatus}; stale=${result.staleStatus}; screenshot=${result.screenshot}${result.error ? `; error=${result.error}` : ''}`),
+    '',
+    '## Interactions',
+    '',
+    ...interactions.map((item) => `- ${item.ok ? 'PASS' : 'FAIL'} ${item.device} ${item.name}: mode=${item.mode || 'none'}; ${item.currentUrl || item.error || 'no result'}`),
+    '',
+    '## XR hardware boundary',
+    '',
+    'This audit proves desktop/mobile browser render and route navigation only. Physical Quest Browser proof remains manual and cannot be inferred from this script.',
+    '',
+  ].join('\n'))
 
   if (failedRoutes.length > 0 || missingMarkerRoutes.length > 0 || staleContentRoutes.length > 0 || failedInteractions.length > 0) {
     console.error('LIVE_VISUAL_AUDIT_FAILED')
@@ -473,5 +447,5 @@ async function main() {
 
 main().catch((error) => {
   console.error(error)
-  process.exit(1)
+  process.exitCode = 1
 })
