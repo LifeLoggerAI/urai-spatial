@@ -53,6 +53,7 @@ import './urai-realm-accent-backgrounds.css'
 import './spatial-first-root-launch.css'
 import './urai-design-system.css'
 import './route-layering-hotfix.css'
+import WorldRuntimeBoundary from '@/spatial/world/WorldRuntimeBoundary'
 
 const configuredBuildSha = process.env.NEXT_PUBLIC_URAI_BUILD_SHA ?? process.env.GITHUB_SHA ?? ''
 const deployedSha = /^[0-9a-f]{40}$/.test(configuredBuildSha) ? configuredBuildSha : 'unverified'
@@ -84,14 +85,16 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         data-deployment-evidence={deployedSha === 'unverified' ? 'missing' : 'embedded'}
         style={{ margin: 0, background: '#08030f', overflowX: 'hidden' }}
       >
-        <UraiAAAARoutePolish />
-        <UraiCinematicBackdrop />
-        <UraiFinalAssetSpineSceneLayer />
-        <UraiFinalAssetSpineBridge />
-        {children}
-        <UraiAutonomousV1Layer />
-        <UraiV2StateController />
-        <UraiV2OnboardingLayer />
+        <WorldRuntimeBoundary>
+          <UraiAAAARoutePolish />
+          <UraiCinematicBackdrop />
+          <UraiFinalAssetSpineSceneLayer />
+          <UraiFinalAssetSpineBridge />
+          {children}
+          <UraiAutonomousV1Layer />
+          <UraiV2StateController />
+          <UraiV2OnboardingLayer />
+        </WorldRuntimeBoundary>
       </body>
     </html>
   )
