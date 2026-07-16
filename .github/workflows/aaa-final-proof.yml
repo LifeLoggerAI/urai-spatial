@@ -31,13 +31,6 @@ on:
         options:
           - "true"
           - "false"
-  pull_request:
-    branches:
-      - main
-    paths:
-      - ".github/workflows/aaa-final-proof.yml"
-      - "scripts/aaa-launch-proof.mjs"
-      - "scripts/check-workflow-phase-boundaries.mjs"
   push:
     branches:
       - main
@@ -46,11 +39,11 @@ permissions:
   contents: read
 
 concurrency:
-  group: urai-aaa-final-proof-${{ inputs.target_sha || github.event.pull_request.head.sha || github.sha }}
+  group: urai-aaa-final-proof-${{ inputs.target_sha || github.sha }}
   cancel-in-progress: true
 
 env:
-  TARGET_SHA: ${{ inputs.target_sha || github.event.pull_request.head.sha || github.sha }}
+  TARGET_SHA: ${{ inputs.target_sha || github.sha }}
 
 jobs:
   final-proof:
@@ -60,7 +53,7 @@ jobs:
     env:
       CI: "1"
       FORCE_COLOR: "0"
-      URAI_PROOF_SOURCE_SHA: ${{ inputs.target_sha || github.event.pull_request.head.sha || github.sha }}
+      URAI_PROOF_SOURCE_SHA: ${{ inputs.target_sha || github.sha }}
       URAI_RECEIPT_ROOT: ${{ github.workspace }}/urai-final-receipts
       URAI_BASE_URL: ${{ inputs.base_url || 'http://127.0.0.1:4173' }}
 
