@@ -4,6 +4,81 @@
   isolation: isolate;
 }
 
+.urai-ground-gateway {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: clamp(150px, 28svh, 330px);
+  z-index: 2147481000;
+  pointer-events: none;
+}
+
+.urai-ground-gateway__surface {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  border: 0;
+  padding: 0;
+  appearance: none;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+  pointer-events: auto;
+}
+
+.urai-ground-gateway__surface:disabled {
+  cursor: wait;
+}
+
+.urai-ground-gateway__focus-ring {
+  position: absolute;
+  left: 50%;
+  bottom: 12%;
+  width: min(46vw, 430px);
+  aspect-ratio: 3 / 1;
+  border: 1px solid transparent;
+  border-radius: 50%;
+  transform: translateX(-50%) rotateX(68deg);
+  transition: border-color 180ms ease, box-shadow 180ms ease, background 180ms ease;
+}
+
+.urai-ground-gateway__signal {
+  position: absolute;
+  left: 50%;
+  bottom: max(12px, env(safe-area-inset-bottom));
+  transform: translateX(-50%) translateY(8px);
+  color: rgba(224, 255, 249, .72);
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: .16em;
+  text-transform: uppercase;
+  opacity: 0;
+  transition: opacity 180ms ease, transform 180ms ease;
+}
+
+.urai-ground-gateway__surface:hover .urai-ground-gateway__focus-ring,
+.urai-ground-gateway__surface:focus-visible .urai-ground-gateway__focus-ring {
+  border-color: rgba(134, 255, 235, .48);
+  background: radial-gradient(ellipse, rgba(91, 239, 216, .12), transparent 68%);
+  box-shadow: 0 0 54px rgba(86, 229, 217, .16), inset 0 0 34px rgba(86, 229, 217, .1);
+}
+
+.urai-ground-gateway__surface:hover .urai-ground-gateway__signal,
+.urai-ground-gateway__surface:focus-visible .urai-ground-gateway__signal {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+}
+
+.urai-ground-gateway__surface:focus-visible {
+  outline: 2px solid rgba(184, 255, 244, .92);
+  outline-offset: -4px;
+}
+
+.urai-ground-gateway[data-transition-active='true'] {
+  pointer-events: none;
+}
+
 .urai-world-transition {
   position: fixed;
   inset: 0;
@@ -114,6 +189,11 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
+  .urai-ground-gateway__focus-ring,
+  .urai-ground-gateway__signal {
+    transition: none;
+  }
+
   .urai-world-transition[data-phase] .urai-world-transition__surface,
   .urai-world-transition[data-phase] .urai-world-transition__aperture,
   .urai-world-transition[data-phase] .urai-world-transition__depth {
