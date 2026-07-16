@@ -1,0 +1,28 @@
+name: Tier-0 release evidence inspector
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - '.github/workflows/tier0-release-evidence-inspector.yml'
+  workflow_dispatch:
+
+permissions:
+  actions: read
+  contents: read
+
+concurrency:
+  group: tier0-release-evidence-inspector
+  cancel-in-progress: false
+
+env:
+  TARGET_SHA: 8b126971cf02d86055b3babf2273b6c792835cd3
+  DISPATCHER_WORKFLOW: one-time-production-bootstrap-dispatch.yml
+  RELEASE_WORKFLOW: spatial-live-deploy.yml
+
+jobs:
+  inspect-release-evidence:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - name: Query
