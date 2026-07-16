@@ -1,0 +1,68 @@
+name: Inspect premium smoke failure
+
+on:
+  pull_request:
+    branches:
+      - main
+    paths:
+      - .github/workflows/inspect-premium-smoke-failure.yml
+
+permissions:
+  actions: read
+  contents: read
+
+jobs:
+  inspect:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - name: Download completed deployment job log
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPOSITORY: ${{ github.repository }}
+          JOB_ID: '87502938142'
+        run: |
+          set -euo pipefail
+          mkdir -p receipt
+          curl --fail-with-body --location --silent --show-error \
+            --header "Accept: application/vnd.github+json" \
+            --header "Authorization: Bearer $GH_TOKEN" \
+            --header "X-GitHub-Api-Version: 2022-11-28" \
+            "https://api.github.com/repos/$REPOSITORY/actions/jobs/$JOB_ID/logs" \
+            --output receipt/job.log
+          test -s receipt/job.log
+      - name: Extract smoke failure context
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          from pathlib import Path
+          raw = Path('receipt/job.log').read_text(errors='replace').splitlines()
+          needles = (
+              'post-deploy-smoke', 'smoke', 'error', 'failed', 'expected',
+              'release-fingerprint', 'focus', 'replay', 'home', 'ground', 'life-map',
+          )
+          selected = []
+          for i, line in enumerate(raw):
+              lower = line.lower()
+              if any(token in lower for token in needles):
+                  start = max(0, i - 4)
+                  end = min(len(raw), i + 7)
+                  selected.extend(raw[start:end])
+          dedup = []
+          seen = set()
+          for line in selected:
+              if line not in seen:
+                  seen.add(line)
+                  dedup.append(line)
+          Path('receipt/smoke-failure-context.txt').write_text('\n'.join(dedup[-1200:]) + '\n')
+          PY
+          test -s receipt/smoke-failure-context.txt
+      - name: Upload read-only diagnostic receipt
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: premium-smoke-failure-context-${{ github.event.pull_request.head.sha }}
+          path: receipt
+          if-no-files-found: error
+          retention-days: 30
