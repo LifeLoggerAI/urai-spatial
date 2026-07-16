@@ -43,6 +43,30 @@ for (const file of releaseWorkflows) {
   }
 }
 
+const aaaPath = '.github/workflows/aaa-final-proof.yml'
+const aaa = readRequired(aaaPath)
+const aaaBuildIndex = aaa.indexOf('- name: Static build')
+const aaaPrepareIndex = aaa.indexOf('- name: Prepare exact clean proof source')
+const aaaProofIndex = aaa.indexOf('- name: Final launch proof receipt')
+
+for (const marker of [
+  'PROOF_SOURCE="$GITHUB_WORKSPACE/.urai-proof-source-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}"',
+  'git clone --no-hardlinks --no-checkout "$GITHUB_WORKSPACE" "$PROOF_SOURCE"',
+  'git -C "$PROOF_SOURCE" checkout --detach "$GITHUB_SHA"',
+  'test "$(git -C "$PROOF_SOURCE" rev-parse HEAD)" = "$GITHUB_SHA"',
+  'test -z "$(git -C "$PROOF_SOURCE" status --porcelain --untracked-files=all)"',
+  'echo "URAI_PROOF_SOURCE_ROOT=$PROOF_SOURCE" >> "$GITHUB_ENV"',
+  'cd "$URAI_PROOF_SOURCE_ROOT"',
+]) {
+  if (!aaa.includes(marker)) failures.push(`${aaaPath} must retain clean-proof marker: ${marker}`)
+}
+if (aaaBuildIndex < 0 || aaaPrepareIndex <= aaaBuildIndex || aaaProofIndex <= aaaPrepareIndex) {
+  failures.push(`${aaaPath} must build first, then prepare an exact clean proof source, then run final proof`)
+}
+if (aaa.includes('git reset --hard') || aaa.includes('git clean -fdx')) {
+  failures.push(`${aaaPath} must not destructively reset the build workspace or delete ignored build output`)
+}
+
 const deployPath = '.github/workflows/spatial-live-deploy.yml'
 const deploy = readRequired(deployPath)
 const productionEnvironment = /environment\s*:\s*(?:['"]?production['"]?|\r?\n\s*name\s*:\s*['"]?production['"]?)/
