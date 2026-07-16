@@ -56,11 +56,14 @@ export default function HomeSpatialRuntimeLayer() {
         .urai-home-spatial-orb-trigger {
           position: absolute;
           left: 50%;
-          bottom: 76px;
+          bottom: clamp(190px, 24svh, 270px);
           z-index: 12;
           display: inline-flex;
           min-width: 56px;
+          width: auto;
+          height: 56px;
           min-height: 56px;
+          box-sizing: border-box;
           align-items: center;
           justify-content: center;
           gap: 8px;
@@ -100,7 +103,7 @@ export default function HomeSpatialRuntimeLayer() {
 
         @media (max-width: 760px) {
           .urai-home-spatial-orb-trigger {
-            bottom: 68px;
+            bottom: max(210px, calc(env(safe-area-inset-bottom) + 186px));
           }
         }
       `}</style>
