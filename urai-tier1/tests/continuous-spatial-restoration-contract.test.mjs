@@ -35,13 +35,8 @@ test('app template mounts the restored WebGL owners without redirecting certifie
   assert.doesNotMatch(layer, /pathname === '\/focus'|pathname === '\/replay'/)
 })
 
-test('Home is a premium coherent world with aspect-aware framing and layered gateway architecture', () => {
+test('Home is a premium coherent world with aspect-aware framing and one canonical Ground gateway', () => {
   for (const marker of [
-    "id: 'ground'",
-    "id: 'life-map'",
-    "id: 'mirror'",
-    "id: 'passport'",
-    "id: 'xr'",
     'CameraRig',
     'LivingGround',
     'HorizonMonoliths',
@@ -51,12 +46,14 @@ test('Home is a premium coherent world with aspect-aware framing and layered gat
     'useWebGLAvailable',
     'cachedWebGLAvailable',
     'data-home-spatial-renderer="webgl"',
-    'data-home-spatial-geometry="terrain-portals-orb"',
+    'data-home-spatial-geometry="terrain-orb-ground-gateway"',
+    'data-tier0-ground-gateway="true"',
     'data-testid="urai-home-living-ground"',
     'data-testid="urai-home-horizon-architecture"',
     'data-testid="urai-home-webgl-orb"',
     'urai:first-home-spatial-frame',
     'toneMappingExposure = 1.22',
+    'tap the ground to enter below',
   ]) assert.ok(canvas.includes(marker), `missing Home spatial marker: ${marker}`)
 
   assert.match(canvas, /const \[available, setAvailable\] = useState<boolean \| null>\(null\)/)
@@ -69,26 +66,25 @@ test('Home is a premium coherent world with aspect-aware framing and layered gat
 
   assert.match(canvas, /<planeGeometry args=\{\[48, 48\]\}/)
   assert.doesNotMatch(canvas, /<circleGeometry args=\{\[18, 128\]\}/)
-  assert.match(canvas, /<cylinderGeometry args=\{\[1\.75, 2\.05, 0\.24, 72\]\}/)
-  assert.match(canvas, /<torusGeometry args=\{\[1\.28, 0\.11, 18, 96, Math\.PI\]\}/)
-  assert.match(canvas, /<torusGeometry args=\{\[0\.88, 0\.045, 14, 96\]\}/)
-  assert.match(canvas, /spec\.metal/)
+  assert.doesNotMatch(canvas, /const portals/)
+  assert.doesNotMatch(canvas, /portals\.map/)
+  assert.doesNotMatch(canvas, /data-urai-home-portal/)
+  assert.doesNotMatch(canvas, /id: 'mirror'|id: 'passport'|id: 'xr'/)
   assert.match(canvas, /HorizonMonoliths/)
-  assert.match(canvas, /portals\.map/)
   assert.doesNotMatch(canvas, /EffectComposer|Bloom|Vignette/)
 })
 
-test('Home keeps semantic navigation, first-frame evidence and defensive browser cleanup', () => {
-  assert.match(canvas, /import Link from 'next\/link'/)
-  assert.match(canvas, /<Link href=\{spec\.href\}/)
-  assert.match(canvas, /data-urai-home-portal=\{spec\.id\}/)
+test('Home keeps accessible world entrances, first-frame evidence and defensive browser cleanup', () => {
   assert.match(canvas, /typeof query\.addEventListener === 'function'/)
   assert.match(canvas, /query\.addListener\(update\)/)
   assert.match(canvas, /query\.removeListener\(update\)/)
   assert.match(canvas, /document\.body\.style\.cursor = 'default'/)
   assert.match(layer, /HomeSpatialCanvas, \{ useWebGLAvailable \}/)
-  assert.match(layer, /className="urai-home-spatial-runtime-portals"/)
-  assert.match(layer, /aria-label="Spatial doorway shortcuts"/)
+  assert.match(layer, /aria-label="Accessible world entrances"/)
+  assert.match(layer, />Enter through Ground</)
+  assert.match(layer, />Open the Life Map sky</)
+  assert.doesNotMatch(layer, /urai-home-spatial-runtime-portals/)
+  assert.doesNotMatch(layer, />Mirror<|>Passport<|>XR</)
 })
 
 test('Home visual overrides remain scoped to the active WebGL runtime and remove canvas veils', () => {
