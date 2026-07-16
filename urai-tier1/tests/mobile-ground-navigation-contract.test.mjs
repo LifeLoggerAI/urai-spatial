@@ -10,5 +10,6 @@ test('mobile Ground navigation exposes every destination without horizontal clip
   assert.match(css, /\.ground-rail \{[\s\S]*justify-content: center;/)
   assert.match(css, /\.ground-rail \{[\s\S]*overflow-x: hidden !important;/)
   assert.match(css, /\.ground-rail a \{[\s\S]*min-height: 40px !important;/)
+  assert.match(css, /\.ground-rail a \{[\s\S]*padding: 6px 8px !important;/)
   assert.match(css, /\.ground-rail a \{[\s\S]*font-size: 10px !important;/)
 })
