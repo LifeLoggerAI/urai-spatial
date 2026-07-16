@@ -50,8 +50,14 @@ const aaaBuildIndex = aaa.indexOf('- name: Static build')
 const aaaPrepareIndex = aaa.indexOf('- name: Prepare exact clean proof source')
 const aaaProofIndex = aaa.indexOf('- name: Final launch proof receipt')
 
+if (!/\n\s*workflow_call\s*:/.test(aaaTrigger)) {
+  failures.push(`${aaaPath} must expose a reusable exact-head proof path`)
+}
+if (!aaaTrigger.includes('target_sha:') || !aaaTrigger.includes('required: true') || !aaaTrigger.includes('type: string')) {
+  failures.push(`${aaaPath} workflow_call must require a string target_sha input`)
+}
 if (!/\n\s*pull_request\s*:/.test(aaaTrigger)) {
-  failures.push(`${aaaPath} must run path-scoped proof on pull requests before merge`)
+  failures.push(`${aaaPath} must retain path-scoped proof on pull requests after merge`)
 }
 for (const path of [
   '.github/workflows/aaa-final-proof.yml',
@@ -62,8 +68,8 @@ for (const path of [
 }
 
 for (const marker of [
-  'group: urai-aaa-final-proof-${{ github.event.pull_request.head.sha || github.sha }}',
-  'TARGET_SHA: ${{ github.event.pull_request.head.sha || github.sha }}',
+  'group: urai-aaa-final-proof-${{ inputs.target_sha || github.event.pull_request.head.sha || github.sha }}',
+  'TARGET_SHA: ${{ inputs.target_sha || github.event.pull_request.head.sha || github.sha }}',
   'URAI_PROOF_SOURCE_SHA: ${{ env.TARGET_SHA }}',
   'ref: ${{ env.TARGET_SHA }}',
   'test "$(git rev-parse HEAD)" = "$TARGET_SHA"',
@@ -85,6 +91,24 @@ if (aaaBuildIndex < 0 || aaaPrepareIndex <= aaaBuildIndex || aaaProofIndex <= aa
 }
 if (aaa.includes('git reset --hard') || aaa.includes('git clean -fdx')) {
   failures.push(`${aaaPath} must not destructively reset the build workspace or delete ignored build output`)
+}
+
+const phasePath = '.github/workflows/workflow-phase-boundaries.yml'
+const phase = readRequired(phasePath)
+const phaseVerifyIndex = phase.indexOf('\n  verify:')
+const phaseProofIndex = phase.indexOf('\n  aaa-proof:')
+for (const marker of [
+  'group: workflow-phase-boundaries-${{ github.event.pull_request.head.sha || github.sha }}',
+  'uses: ./.github/workflows/aaa-final-proof.yml',
+  'target_sha: ${{ github.event.pull_request.head.sha }}',
+  'base_url: http://127.0.0.1:4173',
+  'screenshots: "true"',
+  'needs: verify',
+]) {
+  if (!phase.includes(marker)) failures.push(`${phasePath} must retain reusable AAA proof marker: ${marker}`)
+}
+if (phaseVerifyIndex < 0 || phaseProofIndex <= phaseVerifyIndex) {
+  failures.push(`${phasePath} must run static boundary verification before exact PR-head AAA proof`)
 }
 
 const deployPath = '.github/workflows/spatial-live-deploy.yml'
