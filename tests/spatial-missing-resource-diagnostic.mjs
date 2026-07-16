@@ -32,6 +32,13 @@ const neutralizedProviderVariables = [
   'NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID',
   'FIREBASE_CONFIG',
 ];
+const benignStaticMetadataPaths = new Set([
+  '/favicon.ico',
+  '/icon.svg',
+  '/icon.png',
+  '/apple-icon.png',
+  '/manifest.webmanifest',
+]);
 
 mkdirSync(artifactDir, { recursive: true });
 addPortableBrowserLibraries();
@@ -79,6 +86,9 @@ function isBenignLocalAbort(entry) {
   if (parsed.searchParams.has('_rsc')) return true;
   if (parsed.pathname.startsWith('/_next/static/webpack/')) {
     return parsed.pathname.endsWith('.hot-update.js') || parsed.pathname.endsWith('.hot-update.json');
+  }
+  if (parsed.search === '' && benignStaticMetadataPaths.has(parsed.pathname)) {
+    return entry.resourceType === 'other' || entry.resourceType === 'image';
   }
   return parsed.search === '' && parsed.pathname.startsWith('/_next/static/chunks/') && parsed.pathname.endsWith('.js');
 }
@@ -190,7 +200,7 @@ try {
   ].map((entry) => [key(entry), entry])).values()];
 
   const report = {
-    schemaVersion: 'urai-spatial-missing-resource-diagnostics-3',
+    schemaVersion: 'urai-spatial-missing-resource-diagnostics-4',
     generatedAt: new Date().toISOString(),
     baseUrl,
     routes,
@@ -200,7 +210,13 @@ try {
       manifestFirestoreEnabled: false,
       externalRequestsAllowed: false,
       externalRequestsBlockedBeforeSend: true,
-      ignoredLocalAbortClasses: ['next-rsc-navigation', 'next-hmr-hot-update', 'next-dev-route-chunk-navigation'],
+      ignoredLocalAbortClasses: [
+        'next-rsc-navigation',
+        'next-hmr-hot-update',
+        'next-dev-route-chunk-navigation',
+        'same-origin-static-metadata-icon',
+      ],
+      benignStaticMetadataPaths: [...benignStaticMetadataPaths],
     },
     actionable,
     ignored,
