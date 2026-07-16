@@ -1,7 +1,7 @@
-/* Final native doorway separation: Ground remains clickable over the world canvas,
-   while the Orb stays above it and keeps a full accessibility-sized hit target. */
+/* Final native doorway separation: Ground sits above the WebGL canvas,
+   while the Orb and its panel stay above Ground with accessibility-sized hit targets. */
 .urai-ground-gateway {
-  z-index: 8 !important;
+  z-index: 11 !important;
 }
 
 .urai-home-spatial-runtime-layer {
@@ -12,6 +12,13 @@
 .urai-home-spatial-orb-trigger,
 .urai-home-spatial-runtime-orb {
   z-index: 12 !important;
+}
+
+.urai-home-spatial-runtime-orb a,
+.urai-home-spatial-runtime-orb > button {
+  min-height: 48px !important;
+  min-width: 48px !important;
+  transform: none !important;
 }
 
 @media (max-width: 760px) {
