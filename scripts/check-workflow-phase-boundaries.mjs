@@ -45,20 +45,40 @@ for (const file of releaseWorkflows) {
 
 const aaaPath = '.github/workflows/aaa-final-proof.yml'
 const aaa = readRequired(aaaPath)
+const aaaTrigger = triggerBlockFor(aaa)
 const aaaBuildIndex = aaa.indexOf('- name: Static build')
 const aaaPrepareIndex = aaa.indexOf('- name: Prepare exact clean proof source')
 const aaaProofIndex = aaa.indexOf('- name: Final launch proof receipt')
 
+if (!/\n\s*pull_request\s*:/.test(aaaTrigger)) {
+  failures.push(`${aaaPath} must run path-scoped proof on pull requests before merge`)
+}
+for (const path of [
+  '.github/workflows/aaa-final-proof.yml',
+  'scripts/aaa-launch-proof.mjs',
+  'scripts/check-workflow-phase-boundaries.mjs',
+]) {
+  if (!aaaTrigger.includes(`- "${path}"`)) failures.push(`${aaaPath} pull-request trigger must include ${path}`)
+}
+
 for (const marker of [
+  'group: urai-aaa-final-proof-${{ github.event.pull_request.head.sha || github.sha }}',
+  'TARGET_SHA: ${{ github.event.pull_request.head.sha || github.sha }}',
+  'URAI_PROOF_SOURCE_SHA: ${{ env.TARGET_SHA }}',
+  'ref: ${{ env.TARGET_SHA }}',
+  'test "$(git rev-parse HEAD)" = "$TARGET_SHA"',
+  'test "$(git write-tree)" = "$(git rev-parse \'HEAD^{tree}\')"',
+  'test -z "$(git ls-files --others --exclude-standard)"',
   'PROOF_SOURCE="$GITHUB_WORKSPACE/.urai-proof-source-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}"',
   'git clone --no-hardlinks --no-checkout "$GITHUB_WORKSPACE" "$PROOF_SOURCE"',
-  'git -C "$PROOF_SOURCE" checkout --detach "$GITHUB_SHA"',
-  'test "$(git -C "$PROOF_SOURCE" rev-parse HEAD)" = "$GITHUB_SHA"',
+  'git -C "$PROOF_SOURCE" checkout --detach "$TARGET_SHA"',
+  'test "$(git -C "$PROOF_SOURCE" rev-parse HEAD)" = "$TARGET_SHA"',
   'test -z "$(git -C "$PROOF_SOURCE" status --porcelain --untracked-files=all)"',
   'echo "URAI_PROOF_SOURCE_ROOT=$PROOF_SOURCE" >> "$GITHUB_ENV"',
   'cd "$URAI_PROOF_SOURCE_ROOT"',
+  'name: urai-aaa-final-proof-${{ env.TARGET_SHA }}',
 ]) {
-  if (!aaa.includes(marker)) failures.push(`${aaaPath} must retain clean-proof marker: ${marker}`)
+  if (!aaa.includes(marker)) failures.push(`${aaaPath} must retain exact-proof marker: ${marker}`)
 }
 if (aaaBuildIndex < 0 || aaaPrepareIndex <= aaaBuildIndex || aaaProofIndex <= aaaPrepareIndex) {
   failures.push(`${aaaPath} must build first, then prepare an exact clean proof source, then run final proof`)
