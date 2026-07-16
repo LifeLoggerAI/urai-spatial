@@ -15,6 +15,13 @@ on:
         options:
           - "true"
           - "false"
+  pull_request:
+    branches:
+      - main
+    paths:
+      - ".github/workflows/aaa-final-proof.yml"
+      - "scripts/aaa-launch-proof.mjs"
+      - "scripts/check-workflow-phase-boundaries.mjs"
   push:
     branches:
       - main
@@ -23,8 +30,11 @@ permissions:
   contents: read
 
 concurrency:
-  group: urai-aaa-final-proof-${{ github.ref_name }}
+  group: urai-aaa-final-proof-${{ github.event.pull_request.head.sha || github.sha }}
   cancel-in-progress: true
+
+env:
+  TARGET_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
 
 jobs:
   final-proof:
@@ -34,6 +44,7 @@ jobs:
     env:
       CI: "1"
       FORCE_COLOR: "0"
+      URAI_PROOF_SOURCE_SHA: ${{ env.TARGET_SHA }}
       URAI_RECEIPT_ROOT: ${{ github.workspace }}/urai-final-receipts
       URAI_BASE_URL: ${{ github.event_name == 'workflow_dispatch' && inputs.base_url || 'http://127.0.0.1:4173' }}
 
@@ -41,8 +52,16 @@ jobs:
       - name: Checkout exact commit
         uses: actions/checkout@v4
         with:
-          ref: ${{ github.sha }}
+          ref: ${{ env.TARGET_SHA }}
           persist-credentials: false
+
+      - name: Prove exact clean candidate
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$TARGET_SHA"
+          test "$(git write-tree)" = "$(git rev-parse 'HEAD^{tree}')"
+          test -z "$(git ls-files --others --exclude-standard)"
 
       - name: Setup Node
         uses: actions/setup-node@v4
@@ -87,8 +106,8 @@ jobs:
           PROOF_SOURCE="$GITHUB_WORKSPACE/.urai-proof-source-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}"
           test ! -e "$PROOF_SOURCE"
           git clone --no-hardlinks --no-checkout "$GITHUB_WORKSPACE" "$PROOF_SOURCE"
-          git -C "$PROOF_SOURCE" checkout --detach "$GITHUB_SHA"
-          test "$(git -C "$PROOF_SOURCE" rev-parse HEAD)" = "$GITHUB_SHA"
+          git -C "$PROOF_SOURCE" checkout --detach "$TARGET_SHA"
+          test "$(git -C "$PROOF_SOURCE" rev-parse HEAD)" = "$TARGET_SHA"
           test -z "$(git -C "$PROOF_SOURCE" status --porcelain --untracked-files=all)"
           echo "URAI_PROOF_SOURCE_ROOT=$PROOF_SOURCE" >> "$GITHUB_ENV"
 
@@ -110,6 +129,6 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: urai-aaa-final-proof-${{ github.sha }}
+          name: urai-aaa-final-proof-${{ env.TARGET_SHA }}
           path: urai-final-receipts
           if-no-files-found: warn
