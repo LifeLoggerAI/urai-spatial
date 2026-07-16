@@ -24,11 +24,11 @@ type HomeSpatialCanvasProps = {
 }
 
 const portals: readonly PortalSpec[] = [
-  { id: 'ground', label: 'Ground', detail: 'Private workforce', href: '/ground?from=home-spatial', position: [-3.65, 0.08, -3.9], rotationY: 0.2, color: '#70e1bd', metal: '#354e49' },
-  { id: 'life-map', label: 'Life Map', detail: 'Memory sky', href: '/life-map?from=home-sky', position: [3.65, 0.08, -3.9], rotationY: -0.2, color: '#b49bff', metal: '#403a57' },
-  { id: 'mirror', label: 'Mirror', detail: 'Pattern realm', href: '/mirror', position: [-5.8, 0.08, 0.3], rotationY: 0.72, color: '#82ddff', metal: '#344b59' },
-  { id: 'passport', label: 'Passport', detail: 'Ownership vault', href: '/passport', position: [5.8, 0.08, 0.3], rotationY: -0.72, color: '#f1ca72', metal: '#574a35' },
-  { id: 'xr', label: 'XR', detail: 'Enter the world', href: '/spatial/ar-vr', position: [0, 0.08, -7.2], rotationY: 0, color: '#62e6f2', metal: '#31505a' },
+  { id: 'ground', label: 'Ground', detail: 'Private workforce', href: '/ground?from=home-spatial', position: [-2.75, 0.08, -2.4], rotationY: 0.14, color: '#70e1bd', metal: '#354e49' },
+  { id: 'life-map', label: 'Life Map', detail: 'Memory sky', href: '/life-map?from=home-sky', position: [2.75, 0.08, -2.4], rotationY: -0.14, color: '#b49bff', metal: '#403a57' },
+  { id: 'mirror', label: 'Mirror', detail: 'Pattern realm', href: '/mirror', position: [-5.2, 0.08, 0.75], rotationY: 0.68, color: '#82ddff', metal: '#344b59' },
+  { id: 'passport', label: 'Passport', detail: 'Ownership vault', href: '/passport', position: [5.2, 0.08, 0.75], rotationY: -0.68, color: '#f1ca72', metal: '#574a35' },
+  { id: 'xr', label: 'XR', detail: 'Enter the world', href: '/spatial/ar-vr', position: [0, 0.08, -5.4], rotationY: 0, color: '#62e6f2', metal: '#31505a' },
 ]
 
 const TREES: readonly [number, number, number, number][] = [
@@ -38,8 +38,8 @@ const TREES: readonly [number, number, number, number][] = [
 ]
 
 const HILLS: readonly [number, number, number, number, number, number][] = [
-  [-13, 0.5, -8, 5.5, 2.4, 4.5], [-8, 0.38, -14, 7, 2.2, 5.2],
-  [8, 0.42, -14, 7.4, 2.5, 5.4], [13, 0.5, -7, 5.5, 2.5, 4.5],
+  [-12.5, 0.3, -9.5, 4.5, 1.4, 3.8], [-7.5, 0.25, -16, 4.8, 1.2, 3.8],
+  [7.5, 0.28, -16, 5, 1.35, 4], [12.5, 0.32, -9, 4.5, 1.45, 3.8],
 ]
 
 let cachedWebGLAvailable: boolean | null = null
@@ -104,12 +104,12 @@ function CameraRig() {
 
   useEffect(() => {
     const mobile = size.width < 720
-    camera.position.set(0, mobile ? 6.4 : 5.25, mobile ? 19.2 : 14.6)
+    camera.position.set(0, mobile ? 7.2 : 5.25, mobile ? 24.5 : 14.6)
     if (camera instanceof THREE.PerspectiveCamera) {
-      camera.fov = mobile ? 58 : 50
+      camera.fov = mobile ? 64 : 50
       camera.updateProjectionMatrix()
     }
-    camera.lookAt(0, 1.35, -2.25)
+    camera.lookAt(0, 1.4, -2.35)
   }, [camera, size.width])
 
   return null
@@ -160,7 +160,7 @@ function LivingGround() {
         <planeGeometry args={[48, 48]} />
         <meshStandardMaterial color="#223d34" roughness={0.9} metalness={0.04} />
       </mesh>
-      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.035, -1.5]} receiveShadow>
+      <mesh position={[0, -0.035, -1.5]} receiveShadow data-testid="urai-home-horizontal-plaza">
         <cylinderGeometry args={[6.3, 6.8, 0.12, 128]} />
         <meshStandardMaterial color="#334a45" roughness={0.64} metalness={0.18} />
       </mesh>
@@ -324,7 +324,7 @@ function Scene({ reducedMotion, onOrbOpen }: { reducedMotion: boolean; onOrbOpen
       <LivingGround />
       <Orb reducedMotion={reducedMotion} onOpen={onOrbOpen} />
       {portals.map((spec) => <Portal key={spec.id} spec={spec} reducedMotion={reducedMotion} onNavigate={navigate} />)}
-      <OrbitControls makeDefault enablePan={false} enableDamping={!reducedMotion} dampingFactor={0.07} rotateSpeed={0.36} zoomSpeed={0.5} minDistance={9} maxDistance={20} minPolarAngle={0.62} maxPolarAngle={1.42} minAzimuthAngle={-1.28} maxAzimuthAngle={1.28} target={[0, 1.35, -2.25]} />
+      <OrbitControls makeDefault enablePan={false} enableDamping={!reducedMotion} dampingFactor={0.07} rotateSpeed={0.36} zoomSpeed={0.5} minDistance={9} maxDistance={28} minPolarAngle={0.62} maxPolarAngle={1.42} minAzimuthAngle={-1.28} maxAzimuthAngle={1.28} target={[0, 1.4, -2.35]} />
     </>
   )
 }
