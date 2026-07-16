@@ -1,16 +1,25 @@
 'use client'
 
-import { useCallback } from 'react'
+import { useRouter } from 'next/navigation'
+import { useCallback, useEffect, useRef } from 'react'
 import { requestUraiWorldTravel } from './worldEvents'
 import { useUraiWorldState } from './WorldStateProvider'
 
 export function GroundGateway() {
+  const router = useRouter()
+  const fallbackTimer = useRef<number | null>(null)
   const { world, phase } = useUraiWorldState()
   const isHome = world.destination === 'home'
   const disabled = !isHome || phase !== 'idle'
 
+  useEffect(() => () => {
+    if (fallbackTimer.current !== null) window.clearTimeout(fallbackTimer.current)
+  }, [])
+
   const enterInfrastructure = useCallback(() => {
     if (disabled) return
+    if (fallbackTimer.current !== null) window.clearTimeout(fallbackTimer.current)
+
     requestUraiWorldTravel({
       destination: 'infrastructure-hub',
       href: '/ground?from=ground-gateway',
@@ -25,7 +34,14 @@ export function GroundGateway() {
         privacyMode: world.privacyMode,
       },
     })
-  }, [disabled, world])
+
+    fallbackTimer.current = window.setTimeout(() => {
+      if (window.location.pathname.replace(/\/$/, '') === '/home') {
+        router.push('/ground?from=ground-gateway')
+      }
+      fallbackTimer.current = null
+    }, 1450)
+  }, [disabled, router, world])
 
   if (!isHome) return null
 
