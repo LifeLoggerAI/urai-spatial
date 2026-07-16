@@ -53,6 +53,7 @@ import './urai-realm-accent-backgrounds.css'
 import './spatial-first-root-launch.css'
 import './urai-design-system.css'
 import './route-layering-hotfix.css'
+import './native-doorway-final-fix.css'
 import WorldRuntimeBoundary from '@/spatial/world/WorldRuntimeBoundary'
 
 const configuredBuildSha = process.env.NEXT_PUBLIC_URAI_BUILD_SHA ?? process.env.GITHUB_SHA ?? ''
@@ -61,9 +62,6 @@ const deployedSha = /^[0-9a-f]{40}$/.test(configuredBuildSha) ? configuredBuildS
 export const metadata: Metadata = {
   title: 'URAI Spatial',
   description: 'Cinematic, spatial, interactive URAI runtime',
-  icons: {
-    icon: '/icon.svg',
-  },
   other: {
     'urai-deployed-sha': deployedSha,
   },
