@@ -16,3 +16,40 @@ on:
         description: Capture Playwright screenshots
         required: false
         type: string
+        default: "true"
+  workflow_dispatch:
+    inputs:
+      base_url:
+        description: Live base URL to smoke after build
+        required: false
+        default: https://urai.app
+      screenshots:
+        description: Capture Playwright screenshots
+        required: false
+        default: "true"
+        type: choice
+        options:
+          - "true"
+          - "false"
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+concurrency:
+  group: urai-aaa-final-proof-${{ inputs.target_sha || github.sha }}
+  cancel-in-progress: true
+
+env:
+  TARGET_SHA: ${{ inputs.target_sha || github.sha }}
+
+jobs:
+  final-proof:
+    name: Build, asset, route, native interaction, and screenshot proof
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    env:
+      CI: "1"
+      FORCE_COLOR: "0"
