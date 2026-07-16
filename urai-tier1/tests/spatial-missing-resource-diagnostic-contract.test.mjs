@@ -44,15 +44,16 @@ test('external requests are intercepted and aborted before send', () => {
   assert.match(diagnosticSource, /externalRequestsBlockedBeforeSend: true/)
 })
 
-test('only bounded local navigation, HMR and metadata-icon aborts are ignored', () => {
+test('only bounded local navigation, HMR and canonical manifest cancellations are ignored', () => {
   assert.match(diagnosticSource, /parsed\.searchParams\.has\('_rsc'\)/)
   assert.match(diagnosticSource, /parsed\.pathname\.startsWith\('\/_next\/static\/webpack\/'\)/)
   assert.match(diagnosticSource, /parsed\.pathname\.endsWith\('\.hot-update\.js'\)/)
   assert.match(diagnosticSource, /parsed\.pathname\.endsWith\('\.hot-update\.json'\)/)
-  assert.match(diagnosticSource, /benignStaticMetadataPaths/)
-  assert.match(diagnosticSource, /'\/icon\.svg'/)
-  assert.match(diagnosticSource, /entry\.resourceType === 'other' \|\| entry\.resourceType === 'image'/)
-  assert.match(diagnosticSource, /same-origin-static-metadata-icon/)
+  assert.match(diagnosticSource, /entry\.method === 'GET'/)
+  assert.match(diagnosticSource, /entry\.resourceType === 'fetch'/)
+  assert.match(diagnosticSource, /parsed\.pathname\.startsWith\('\/assets\/urai\/final\/manifests\/'\)/)
+  assert.match(diagnosticSource, /parsed\.pathname\.endsWith\('-asset-factory-spatial-handoff\.json'\)/)
+  assert.match(diagnosticSource, /canonical-local-manifest-navigation-cancellation/)
   assert.match(diagnosticSource, /actionableFailedRequests/)
 })
 

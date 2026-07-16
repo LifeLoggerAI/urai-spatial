@@ -32,13 +32,6 @@ const neutralizedProviderVariables = [
   'NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID',
   'FIREBASE_CONFIG',
 ];
-const benignStaticMetadataPaths = new Set([
-  '/favicon.ico',
-  '/icon.svg',
-  '/icon.png',
-  '/apple-icon.png',
-  '/manifest.webmanifest',
-]);
 
 mkdirSync(artifactDir, { recursive: true });
 addPortableBrowserLibraries();
@@ -87,10 +80,12 @@ function isBenignLocalAbort(entry) {
   if (parsed.pathname.startsWith('/_next/static/webpack/')) {
     return parsed.pathname.endsWith('.hot-update.js') || parsed.pathname.endsWith('.hot-update.json');
   }
-  if (parsed.search === '' && benignStaticMetadataPaths.has(parsed.pathname)) {
-    return entry.resourceType === 'other' || entry.resourceType === 'image';
-  }
-  return parsed.search === '' && parsed.pathname.startsWith('/_next/static/chunks/') && parsed.pathname.endsWith('.js');
+  if (parsed.search === '' && parsed.pathname.startsWith('/_next/static/chunks/') && parsed.pathname.endsWith('.js')) return true;
+  return entry.method === 'GET'
+    && entry.resourceType === 'fetch'
+    && parsed.search === ''
+    && parsed.pathname.startsWith('/assets/urai/final/manifests/')
+    && parsed.pathname.endsWith('-asset-factory-spatial-handoff.json');
 }
 
 const diagnosticEnvironment = {
@@ -214,9 +209,8 @@ try {
         'next-rsc-navigation',
         'next-hmr-hot-update',
         'next-dev-route-chunk-navigation',
-        'same-origin-static-metadata-icon',
+        'canonical-local-manifest-navigation-cancellation',
       ],
-      benignStaticMetadataPaths: [...benignStaticMetadataPaths],
     },
     actionable,
     ignored,

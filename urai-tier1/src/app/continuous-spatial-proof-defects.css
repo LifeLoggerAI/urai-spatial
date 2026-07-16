@@ -192,23 +192,4 @@ body:has([data-testid="urai-true-3d-life-map"]) {
     width: min(330px, calc(100vw - 28px));
     padding: 14px;
   }
-
-  /* Ground's canonical operational state is launch-critical evidence and useful
-     user context. Keep it visible above the navigation rail on narrow screens. */
-  .ground-status {
-    display: block !important;
-    left: 14px !important;
-    right: 14px !important;
-    top: auto !important;
-    bottom: 66px !important;
-    width: auto !important;
-    box-sizing: border-box !important;
-    padding: 8px 11px !important;
-    overflow: hidden !important;
-    text-align: center !important;
-    text-overflow: ellipsis !important;
-    white-space: nowrap !important;
-    font-size: 9px !important;
-    letter-spacing: .08em !important;
-  }
 }

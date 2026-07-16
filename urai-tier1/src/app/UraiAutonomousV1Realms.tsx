@@ -25,7 +25,7 @@ type RealmConfig = {
   controls?: Array<{ href: string; label: string; primary?: boolean }>;
   signals: string[];
   previous: { href: string; label: string };
-  next: { href: string; label: string; auditAction?: string };
+  next: { href: string; label: string };
 };
 
 const realms: Record<string, RealmConfig> = {
@@ -74,7 +74,7 @@ const realms: Record<string, RealmConfig> = {
     ],
     signals: ["Private by default", "Permission before movement", "Portable provenance"],
     previous: { href: "/mirror", label: "Mirror" },
-    next: { href: "/status", label: "System Status", auditAction: "open-status" },
+    next: { href: "/privacy-controls", label: "Privacy Controls" },
   },
   privacy: {
     key: "privacy",
@@ -211,9 +211,7 @@ export default function UraiAutonomousV1Realms({ pathname }: { pathname: string 
 
       <nav className="uraiRealmNavigation" aria-label={`${realm.label} navigation`}>
         <a href={realm.previous.href}>{realm.previous.label}</a>
-        <a className="isPrimary" href={realm.next.href} data-urai-audit-action={realm.next.auditAction}>
-          {realm.next.label}
-        </a>
+        <a className="isPrimary" href={realm.next.href}>{realm.next.label}</a>
       </nav>
     </section>
   );
