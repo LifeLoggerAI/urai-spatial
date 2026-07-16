@@ -1,0 +1,127 @@
+.urai-world-runtime {
+  position: relative;
+  min-height: 100svh;
+  isolation: isolate;
+}
+
+.urai-world-transition {
+  position: fixed;
+  inset: 0;
+  z-index: 2147482500;
+  overflow: hidden;
+  pointer-events: none;
+  visibility: hidden;
+  opacity: 0;
+  perspective: 1200px;
+}
+
+.urai-world-transition[data-phase='descending'],
+.urai-world-transition[data-phase='ascending'],
+.urai-world-transition[data-phase='travelling'] {
+  visibility: visible;
+  opacity: 1;
+}
+
+.urai-world-transition__surface,
+.urai-world-transition__aperture,
+.urai-world-transition__depth {
+  position: absolute;
+  inset: 0;
+}
+
+.urai-world-transition__surface {
+  background:
+    radial-gradient(ellipse at 50% 76%, rgba(108, 238, 212, .2), transparent 18%),
+    linear-gradient(180deg, rgba(5, 18, 24, 0) 0 42%, rgba(5, 13, 16, .92) 72%, #01050a 100%);
+  transform-origin: 50% 78%;
+}
+
+.urai-world-transition__aperture {
+  left: 50%;
+  top: 72%;
+  width: min(76vw, 920px);
+  height: min(46vw, 520px);
+  inset: auto;
+  border: 1px solid rgba(134, 255, 235, .42);
+  border-radius: 50%;
+  background: radial-gradient(ellipse, rgba(3, 12, 22, .04) 0 32%, rgba(2, 7, 14, .86) 64%, #01040a 100%);
+  box-shadow: 0 0 90px rgba(86, 229, 217, .18), inset 0 0 80px rgba(4, 8, 16, .9);
+  transform: translate(-50%, -50%) scale(.08) rotateX(68deg);
+}
+
+.urai-world-transition__depth {
+  background:
+    radial-gradient(circle at 50% 50%, rgba(83, 214, 221, .13), transparent 22%),
+    repeating-radial-gradient(circle at 50% 50%, transparent 0 38px, rgba(150, 230, 255, .07) 40px 41px),
+    linear-gradient(180deg, #020816, #01030a);
+  opacity: 0;
+  transform: scale(1.4);
+}
+
+.urai-world-transition[data-phase='descending'] .urai-world-transition__surface {
+  animation: urai-ground-surface-descend 1.1s cubic-bezier(.65, 0, .2, 1) both;
+}
+
+.urai-world-transition[data-phase='descending'] .urai-world-transition__aperture {
+  animation: urai-ground-aperture-open 1.1s cubic-bezier(.65, 0, .2, 1) both;
+}
+
+.urai-world-transition[data-phase='descending'] .urai-world-transition__depth {
+  animation: urai-ground-depth-enter 1.1s cubic-bezier(.65, 0, .2, 1) both;
+}
+
+.urai-world-transition[data-phase='ascending'] .urai-world-transition__surface {
+  animation: urai-ground-surface-descend 1.1s cubic-bezier(.65, 0, .2, 1) reverse both;
+}
+
+.urai-world-transition[data-phase='ascending'] .urai-world-transition__aperture {
+  animation: urai-ground-aperture-open 1.1s cubic-bezier(.65, 0, .2, 1) reverse both;
+}
+
+.urai-world-transition[data-phase='ascending'] .urai-world-transition__depth {
+  animation: urai-ground-depth-enter 1.1s cubic-bezier(.65, 0, .2, 1) reverse both;
+}
+
+.urai-world-transition[data-phase='travelling'] .urai-world-transition__depth {
+  animation: urai-world-tunnel-travel 1.9s cubic-bezier(.7, 0, .2, 1) both;
+}
+
+@keyframes urai-ground-surface-descend {
+  0% { transform: translateY(0) scale(1); opacity: 0; }
+  18% { opacity: 1; }
+  68% { transform: translateY(-7vh) scale(1.08); opacity: 1; }
+  100% { transform: translateY(-34vh) scale(1.42); opacity: 0; }
+}
+
+@keyframes urai-ground-aperture-open {
+  0% { transform: translate(-50%, -50%) scale(.08) rotateX(68deg); opacity: 0; }
+  22% { opacity: 1; }
+  72% { transform: translate(-50%, -50%) scale(1.35) rotateX(68deg); opacity: 1; }
+  100% { transform: translate(-50%, -50%) scale(4.2) rotateX(68deg); opacity: 0; }
+}
+
+@keyframes urai-ground-depth-enter {
+  0%, 38% { opacity: 0; transform: scale(1.4); }
+  72% { opacity: 1; }
+  100% { opacity: 1; transform: scale(1); }
+}
+
+@keyframes urai-world-tunnel-travel {
+  0% { opacity: 0; transform: scale(1.34) rotate(0deg); }
+  18% { opacity: 1; }
+  72% { opacity: 1; transform: scale(.88) rotate(4deg); }
+  100% { opacity: 0; transform: scale(.68) rotate(7deg); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .urai-world-transition[data-phase] .urai-world-transition__surface,
+  .urai-world-transition[data-phase] .urai-world-transition__aperture,
+  .urai-world-transition[data-phase] .urai-world-transition__depth {
+    animation-duration: 260ms !important;
+    animation-timing-function: ease-out !important;
+  }
+
+  .urai-world-transition__aperture {
+    transform: translate(-50%, -50%) scale(1) rotateX(68deg);
+  }
+}
