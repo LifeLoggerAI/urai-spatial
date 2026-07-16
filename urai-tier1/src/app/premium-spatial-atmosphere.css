@@ -1,0 +1,17 @@
+/* Premium spatial atmosphere pass: visual depth, readable overlays, mobile framing, and reduced-motion safety. */
+
+.urai-home-spatial-canvas-shell,
+.ground-spatial-root,
+[data-testid="urai-r3f-canonical-lifemap"] {
+  --urai-atmosphere-cyan: 103 232 249;
+  --urai-atmosphere-violet: 167 139 250;
+  --urai-atmosphere-gold: 250 204 107;
+  isolation: isolate;
+}
+
+.urai-home-spatial-canvas-shell::before,
+.ground-spatial-root::after,
+[data-testid="urai-r3f-canonical-lifemap"]::before {
+  content: "";
+  position: absolute;
+  inset
