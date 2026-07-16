@@ -22,8 +22,9 @@ function buildDoorwayHref(route: 'focus' | 'replay') {
 export default function LifeMapPersistentDoorways() {
   const pathname = usePathname()
   const router = useRouter()
+  const normalizedPathname = pathname.replace(/\/+$/, '') || '/'
 
-  if (pathname !== '/life-map') return null
+  if (normalizedPathname !== '/life-map') return null
 
   return (
     <nav className="urai-life-map-persistent-doorways" aria-label="Life Map persistent memory doorways">
