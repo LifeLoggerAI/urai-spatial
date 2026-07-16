@@ -145,7 +145,7 @@ run('route-exposure', 'node', ['scripts/check-production-route-exposure.mjs'])
 run('copy-policy', 'node', ['scripts/check-spatial-copy.mjs'])
 
 if (shouldScreenshots) {
-  run('live-visual-audit', 'node', ['scripts/live-visual-audit.mjs'], {
+  run('live-visual-audit', 'node', ['scripts/run-live-visual-audit-current.mjs'], {
     env: {
       URAI_AUDIT_BASE_URL: baseUrl,
       URAI_AUDIT_OUT_DIR: join(receiptDir, 'live-visual-audit'),
