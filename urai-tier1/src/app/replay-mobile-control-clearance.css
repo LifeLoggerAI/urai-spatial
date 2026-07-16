@@ -1,0 +1,9 @@
+/* Keep the mobile Replay footer clear of the persistent lower-left world control. */
+@media (max-width: 760px) {
+  .uraiAutoReplay .uraiReplayControls {
+    left: max(58px, calc(env(safe-area-inset-left, 0px) + 46px));
+    right: max(6px, env(safe-area-inset-right, 0px));
+    width: auto;
+    transform: none;
+  }
+}
