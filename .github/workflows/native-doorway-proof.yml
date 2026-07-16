@@ -1,0 +1,60 @@
+name: Native Doorway Proof
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - "urai-tier1/src/app/HomeSpatialRuntimeLayer.tsx"
+      - "tests/native-doorway-proof.mjs"
+      - ".github/workflows/native-doorway-proof.yml"
+      - ".github/workflows/aaa-final-proof.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: native-doorway-proof-${{ github.event.pull_request.head.sha || github.sha }}
+  cancel-in-progress: true
+
+jobs:
+  native-doorway-proof:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    env:
+      CI: "1"
+      URAI_PROOF_SOURCE_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+      URAI_AUDIT_BASE_URL: http://127.0.0.1:4173
+      URAI_NATIVE_DOORWAY_OUT_DIR: native-doorway-proof
+    steps:
+      - name: Checkout exact commit
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ env.URAI_PROOF_SOURCE_SHA }}
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.0.0
+      - name: Install
+        run: pnpm install --frozen-lockfile
+      - name: Build static app
+        run: pnpm build:static
+      - name: Serve static app
+        run: |
+          python3 -m http.server 4173 --directory urai-tier1/out > /tmp/urai-native-doorway.log 2>&1 &
+          sleep 3
+          curl --fail --silent http://127.0.0.1:4173/home > /dev/null
+      - name: Install Chromium
+        run: pnpm exec playwright install chromium --with-deps
+      - name: Prove native doorways
+        run: node tests/native-doorway-proof.mjs
+      - name: Upload native doorway receipt
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: native-doorway-proof-${{ env.URAI_PROOF_SOURCE_SHA }}
+          path: native-doorway-proof
+          if-no-files-found: error
