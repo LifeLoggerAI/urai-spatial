@@ -21,7 +21,7 @@ env:
   TARGET_WORKFLOW: spatial-live-deploy.yml
   ROLLBACK_SHA: e2850a8b9dbd2fd11ee0197505da278322916aa0
   CONFIRMATION: DEPLOY_URAI_APP
-  RETRY_REASON: premium-ground-smoke-contract-fixed-20260716
+  RETRY_REASON: tier0-world-navigation-canon-20260716
 
 jobs:
   verify-dispatch-contract:
@@ -72,7 +72,7 @@ jobs:
           grep -Fq 'TARGET_WORKFLOW: spatial-live-deploy.yml' .github/workflows/one-time-production-bootstrap-dispatch.yml
           grep -Fq 'ROLLBACK_SHA: e2850a8b9dbd2fd11ee0197505da278322916aa0' .github/workflows/one-time-production-bootstrap-dispatch.yml
           grep -Fq 'CONFIRMATION: DEPLOY_URAI_APP' .github/workflows/one-time-production-bootstrap-dispatch.yml
-          grep -Fq 'RETRY_REASON: premium-ground-smoke-contract-fixed-20260716' .github/workflows/one-time-production-bootstrap-dispatch.yml
+          grep -Fq 'RETRY_REASON: tier0-world-navigation-canon-20260716' .github/workflows/one-time-production-bootstrap-dispatch.yml
           grep -Fq 'actions: write' .github/workflows/one-time-production-bootstrap-dispatch.yml
           test -z "$(git status --porcelain --untracked-files=all)"
 
