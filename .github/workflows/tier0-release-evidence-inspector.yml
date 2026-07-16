@@ -24,6 +24,8 @@ env:
   TARGET_SHA: 8b126971cf02d86055b3babf2273b6c792835cd3
   DISPATCHER_WORKFLOW: one-time-production-bootstrap-dispatch.yml
   RELEASE_WORKFLOW: spatial-live-deploy.yml
+  FAILED_RELEASE_RUN_ID: '29472899928'
+  FAILED_DEPLOY_JOB_ID: '87540378173'
 
 jobs:
   inspect-release-evidence:
@@ -54,6 +56,22 @@ jobs:
             > "$receipt_dir/dispatcher-runs.json"
           api "$GITHUB_API_URL/repos/$GITHUB_REPOSITORY/actions/workflows/$RELEASE_WORKFLOW/runs?branch=main&event=workflow_dispatch&per_page=100" \
             > "$receipt_dir/release-runs.json"
+          api "$GITHUB_API_URL/repos/$GITHUB_REPOSITORY/actions/runs/$FAILED_RELEASE_RUN_ID/jobs?per_page=100" \
+            > "$receipt_dir/failed-release-jobs.json"
+
+          curl --fail --silent --show-error --location \
+            --header "Accept: application/vnd.github+json" \
+            --header "Authorization: Bearer $GH_TOKEN" \
+            --header "X-GitHub-Api-Version: 2022-11-28" \
+            "$GITHUB_API_URL/repos/$GITHUB_REPOSITORY/actions/jobs/$FAILED_DEPLOY_JOB_ID/logs" \
+            > "$receipt_dir/failed-deploy-job.log"
+
+          curl --silent --show-error --location --max-time 20 \
+            --dump-header "$receipt_dir/live-fingerprint.headers" \
+            --output "$receipt_dir/live-fingerprint.body" \
+            --write-out '%{http_code}\n' \
+            "https://urai.app/release-fingerprint.json?urai_evidence_check=$(date +%s)" \
+            > "$receipt_dir/live-fingerprint.status"
 
           TARGET_SHA="$TARGET_SHA" node - "$receipt_dir" <<'NODE'
           const fs = require('node:fs')
@@ -77,14 +95,25 @@ jobs:
           const exact = (read('exact-sha-runs.json').workflow_runs || []).filter((run) => run.head_sha === target)
           const dispatcher = (read('dispatcher-runs.json').workflow_runs || []).filter((run) => run.head_sha === target)
           const release = (read('release-runs.json').workflow_runs || []).filter((run) => run.head_sha === target)
+          const failedJobs = (read('failed-release-jobs.json').jobs || []).map((job) => ({
+            id: job.id,
+            name: job.name,
+            status: job.status,
+            conclusion: job.conclusion,
+            started_at: job.started_at,
+            completed_at: job.completed_at,
+            steps: (job.steps || []).map((step) => ({ name: step.name, conclusion: step.conclusion, number: step.number })),
+          }))
           const receipt = {
-            schemaVersion: 'urai-tier0-release-evidence-inspector-1',
+            schemaVersion: 'urai-tier0-release-evidence-inspector-2',
             inspectedAt: new Date().toISOString(),
             repository: process.env.GITHUB_REPOSITORY,
             targetSha: target,
             exactShaRuns: exact.map(compact),
             dispatcherRuns: dispatcher.map(compact),
             releaseRuns: release.map(compact),
+            failedReleaseJobs: failedJobs,
+            liveFingerprintStatus: fs.readFileSync(path.join(dir, 'live-fingerprint.status'), 'utf8').trim(),
             dispatcherFound: dispatcher.length > 0,
             releaseFound: release.length > 0,
           }
