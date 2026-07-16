@@ -1,0 +1,20 @@
+/* Loaded after continuous-spatial-proof-defects.css. Home mobile composition is
+   owned by the real PerspectiveCamera, never by an oversized cropped canvas. */
+@media (max-width: 760px) {
+  .urai-home-spatial-canvas-shell {
+    left: 0 !important;
+    width: 100% !important;
+    max-width: 100% !important;
+  }
+
+  /* Ground uses a centered wider R3F wrapper so its side operational chambers
+     remain visible while the fixed device viewport clips noninteractive margins. */
+  .ground-spatial-root > div:has(> canvas) {
+    position: absolute !important;
+    inset-block: 0 !important;
+    left: -18vw !important;
+    width: 136vw !important;
+    height: 100% !important;
+    max-width: none !important;
+  }
+}
