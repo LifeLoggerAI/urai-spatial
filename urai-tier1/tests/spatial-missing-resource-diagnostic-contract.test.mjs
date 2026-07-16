@@ -44,16 +44,20 @@ test('external requests are intercepted and aborted before send', () => {
   assert.match(diagnosticSource, /externalRequestsBlockedBeforeSend: true/)
 })
 
-test('only bounded local navigation and HMR aborts are ignored', () => {
+test('only bounded local navigation, HMR and metadata-icon aborts are ignored', () => {
   assert.match(diagnosticSource, /parsed\.searchParams\.has\('_rsc'\)/)
   assert.match(diagnosticSource, /parsed\.pathname\.startsWith\('\/_next\/static\/webpack\/'\)/)
   assert.match(diagnosticSource, /parsed\.pathname\.endsWith\('\.hot-update\.js'\)/)
   assert.match(diagnosticSource, /parsed\.pathname\.endsWith\('\.hot-update\.json'\)/)
+  assert.match(diagnosticSource, /benignStaticMetadataPaths/)
+  assert.match(diagnosticSource, /'\/icon\.svg'/)
+  assert.match(diagnosticSource, /entry\.resourceType === 'other' \|\| entry\.resourceType === 'image'/)
+  assert.match(diagnosticSource, /same-origin-static-metadata-icon/)
   assert.match(diagnosticSource, /actionableFailedRequests/)
 })
 
 test('actionable findings fail and remain in a schema-bound artifact', () => {
-  assert.match(diagnosticSource, /urai-spatial-missing-resource-diagnostics-3/)
+  assert.match(diagnosticSource, /urai-spatial-missing-resource-diagnostics-4/)
   assert.match(diagnosticSource, /missing-resources\.json/)
   assert.match(diagnosticSource, /if \(actionable\.length\)/)
   assert.match(diagnosticSource, /process\.exitCode = 1/)
