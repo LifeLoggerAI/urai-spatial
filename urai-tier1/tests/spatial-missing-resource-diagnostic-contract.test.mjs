@@ -44,12 +44,20 @@ test('external requests are intercepted and aborted before send', () => {
   assert.match(diagnosticSource, /externalRequestsBlockedBeforeSend: true/)
 })
 
-test('only bounded local navigation and HMR aborts are ignored', () => {
+test('only bounded local navigation, HMR, chunk and static metadata aborts are ignored', () => {
   assert.match(diagnosticSource, /parsed\.searchParams\.has\('_rsc'\)/)
   assert.match(diagnosticSource, /parsed\.pathname\.startsWith\('\/_next\/static\/webpack\/'\)/)
   assert.match(diagnosticSource, /parsed\.pathname\.endsWith\('\.hot-update\.js'\)/)
   assert.match(diagnosticSource, /parsed\.pathname\.endsWith\('\.hot-update\.json'\)/)
+  assert.match(diagnosticSource, /const benignStaticMetadataPaths = new Set/)
+  for (const pathName of ['/favicon.ico', '/icon.svg', '/icon.png', '/apple-icon.png', '/manifest.webmanifest']) {
+    assert.ok(diagnosticSource.includes(`'${pathName}'`), `missing bounded metadata path: ${pathName}`)
+  }
+  assert.match(diagnosticSource, /benignStaticMetadataPaths\.has\(parsed\.pathname\)/)
+  assert.match(diagnosticSource, /entry\.resourceType === 'other' \|\| entry\.resourceType === 'image'/)
+  assert.match(diagnosticSource, /same-origin-static-metadata-icon/)
   assert.match(diagnosticSource, /actionableFailedRequests/)
+  assert.doesNotMatch(diagnosticSource, /pathname\.startsWith\('\/'\).*ERR_ABORTED/s)
 })
 
 test('actionable findings fail and remain in a schema-bound artifact', () => {
