@@ -139,7 +139,7 @@ function LivingGround() {
         <planeGeometry args={[48, 48]} />
         <meshStandardMaterial color="#223d34" roughness={0.9} metalness={0.04} />
       </mesh>
-      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.035, -1.5]} receiveShadow>
+      <mesh position={[0, -0.035, -1.5]} receiveShadow>
         <cylinderGeometry args={[6.3, 6.8, 0.12, 128]} />
         <meshStandardMaterial color="#334a45" roughness={0.64} metalness={0.18} />
       </mesh>
