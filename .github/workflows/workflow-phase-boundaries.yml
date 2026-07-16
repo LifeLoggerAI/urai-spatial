@@ -10,6 +10,7 @@ on:
       - ".github/workflows/urai-spatial-release-certification.yml"
       - ".github/workflows/spatial-live-deploy.yml"
       - ".github/workflows/workflow-phase-boundaries.yml"
+      - "scripts/aaa-launch-proof.mjs"
       - "scripts/check-workflow-phase-boundaries.mjs"
   push:
     branches: [main]
@@ -20,6 +21,7 @@ on:
       - ".github/workflows/urai-spatial-release-certification.yml"
       - ".github/workflows/spatial-live-deploy.yml"
       - ".github/workflows/workflow-phase-boundaries.yml"
+      - "scripts/aaa-launch-proof.mjs"
       - "scripts/check-workflow-phase-boundaries.mjs"
   workflow_dispatch:
 
@@ -27,7 +29,7 @@ permissions:
   contents: read
 
 concurrency:
-  group: workflow-phase-boundaries-${{ github.head_ref || github.ref_name }}
+  group: workflow-phase-boundaries-${{ github.event.pull_request.head.sha || github.sha }}
   cancel-in-progress: true
 
 jobs:
@@ -38,7 +40,7 @@ jobs:
       - name: Checkout exact commit
         uses: actions/checkout@v4
         with:
-          ref: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
           persist-credentials: false
       - name: Setup Node
         uses: actions/setup-node@v4
@@ -46,3 +48,13 @@ jobs:
           node-version: "22"
       - name: Verify workflow phase boundaries
         run: node scripts/check-workflow-phase-boundaries.mjs
+
+  aaa-proof:
+    name: Exact PR-head AAA proof
+    if: ${{ github.event_name == 'pull_request' }}
+    needs: verify
+    uses: ./.github/workflows/aaa-final-proof.yml
+    with:
+      target_sha: ${{ github.event.pull_request.head.sha }}
+      base_url: http://127.0.0.1:4173
+      screenshots: "true"

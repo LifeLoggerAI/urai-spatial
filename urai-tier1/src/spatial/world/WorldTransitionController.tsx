@@ -62,8 +62,15 @@ function isEditableTarget(target: EventTarget | null) {
 
 export function WorldTransitionController() {
   const router = useRouter()
-  const { world, phase, pendingTravel, beginTravel, cancelTransition } = useUraiWorldState()
+  const { world, phase, beginTravel } = useUraiWorldState()
   const timer = useRef<number | null>(null)
+  const worldRef = useRef(world)
+  const phaseRef = useRef(phase)
+  const beginTravelRef = useRef(beginTravel)
+
+  useEffect(() => { worldRef.current = world }, [world])
+  useEffect(() => { phaseRef.current = phase }, [phase])
+  useEffect(() => { beginTravelRef.current = beginTravel }, [beginTravel])
 
   const clearTimer = useCallback(() => {
     if (timer.current === null) return
@@ -73,13 +80,14 @@ export function WorldTransitionController() {
 
   const executeTravel = useCallback((request: UraiWorldTravelRequest) => {
     clearTimer()
-    beginTravel(request)
+    const currentWorld = worldRef.current
+    beginTravelRef.current(request)
 
-    if (world.destination === 'home') {
+    if (currentWorld.destination === 'home') {
       window.sessionStorage.setItem('urai-world-home-checkpoint', JSON.stringify({
-        destination: world.destination,
+        destination: currentWorld.destination,
         entryPortal: request.entryPortal ?? 'ground-gateway',
-        cameraCheckpoint: world.cameraCheckpoint ?? 'home-threshold',
+        cameraCheckpoint: currentWorld.cameraCheckpoint ?? 'home-threshold',
         savedAt: Date.now(),
       }))
     }
@@ -89,34 +97,36 @@ export function WorldTransitionController() {
       router.push(href)
       timer.current = null
     }, transitionDuration(request.destination))
-  }, [beginTravel, clearTimer, router, world])
+  }, [clearTimer, router])
 
   const reverseTravel = useCallback(() => {
-    if (phase !== 'idle') return
-    const destination = world.previousDestination ?? (world.destination === 'infrastructure-hub' ? 'home' : 'infrastructure-hub')
+    const currentWorld = worldRef.current
+    if (phaseRef.current !== 'idle') return
+    const destination = currentWorld.previousDestination ?? (currentWorld.destination === 'infrastructure-hub' ? 'home' : 'infrastructure-hub')
     const definition = definitionForDestination(destination)
     executeTravel({
       destination,
       href: definition.href,
-      entryPortal: world.entryPortal ?? definition.entryPortal,
+      entryPortal: currentWorld.entryPortal ?? definition.entryPortal,
       cameraCheckpoint: destination === 'home' ? 'home-threshold' : definition.cameraCheckpoint,
       context: {
-        memoryId: world.memoryId,
-        threadId: world.threadId,
-        personId: world.personId,
-        placeId: world.placeId,
-        replayManifestId: world.replayManifestId,
-        privacyMode: world.privacyMode,
+        memoryId: currentWorld.memoryId,
+        threadId: currentWorld.threadId,
+        personId: currentWorld.personId,
+        placeId: currentWorld.placeId,
+        replayManifestId: currentWorld.replayManifestId,
+        privacyMode: currentWorld.privacyMode,
       },
     })
-  }, [executeTravel, phase, world])
+  }, [executeTravel])
 
   useEffect(() => {
     const onTravel = (event: WindowEventMap[typeof URAI_WORLD_TRAVEL_EVENT]) => executeTravel(event.detail)
     const onReturn = () => reverseTravel()
     const onKeyDown = (event: KeyboardEvent) => {
+      const currentWorld = worldRef.current
       if (event.key !== 'Escape' || isEditableTarget(event.target)) return
-      if (world.destination === 'home' && phase === 'idle') return
+      if (currentWorld.destination === 'home' && phaseRef.current === 'idle') return
       event.preventDefault()
       reverseTravel()
     }
@@ -130,19 +140,14 @@ export function WorldTransitionController() {
       window.removeEventListener('keydown', onKeyDown)
       clearTimer()
     }
-  }, [clearTimer, executeTravel, phase, reverseTravel, world.destination])
-
-  useEffect(() => {
-    if (phase === 'idle' || pendingTravel) return
-    cancelTransition()
-  }, [cancelTransition, pendingTravel, phase])
+  }, [clearTimer, executeTravel, reverseTravel])
 
   return (
     <div
       className="urai-world-transition"
       data-phase={phase}
       data-from={world.destination}
-      data-to={pendingTravel?.destination ?? world.destination}
+      data-to={world.destination}
       aria-hidden="true"
     >
       <span className="urai-world-transition__surface" />

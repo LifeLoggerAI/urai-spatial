@@ -1,6 +1,22 @@
 name: URAI AAA Final Proof
 
 on:
+  workflow_call:
+    inputs:
+      target_sha:
+        description: Exact source SHA to verify
+        required: true
+        type: string
+      base_url:
+        description: Base URL to smoke after build
+        required: false
+        type: string
+        default: http://127.0.0.1:4173
+      screenshots:
+        description: Capture Playwright screenshots
+        required: false
+        type: string
+        default: "true"
   workflow_dispatch:
     inputs:
       base_url:
@@ -23,31 +39,43 @@ permissions:
   contents: read
 
 concurrency:
-  group: urai-aaa-final-proof-${{ github.ref_name }}
+  group: urai-aaa-final-proof-${{ inputs.target_sha || github.sha }}
   cancel-in-progress: true
+
+env:
+  TARGET_SHA: ${{ inputs.target_sha || github.sha }}
 
 jobs:
   final-proof:
     name: Build, asset, route, and screenshot proof
     runs-on: ubuntu-latest
-    timeout-minutes: 35
+    timeout-minutes: 40
     env:
       CI: "1"
       FORCE_COLOR: "0"
+      URAI_PROOF_SOURCE_SHA: ${{ inputs.target_sha || github.sha }}
       URAI_RECEIPT_ROOT: ${{ github.workspace }}/urai-final-receipts
-      URAI_BASE_URL: ${{ github.event_name == 'workflow_dispatch' && inputs.base_url || 'http://127.0.0.1:4173' }}
+      URAI_BASE_URL: ${{ inputs.base_url || 'http://127.0.0.1:4173' }}
 
     steps:
       - name: Checkout exact commit
         uses: actions/checkout@v4
         with:
-          ref: ${{ github.sha }}
+          ref: ${{ env.TARGET_SHA }}
           persist-credentials: false
+
+      - name: Prove exact clean candidate
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$TARGET_SHA"
+          test "$(git write-tree)" = "$(git rev-parse 'HEAD^{tree}')"
+          test -z "$(git ls-files --others --exclude-standard)"
 
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
-          node-version: 22
+          node-version: "22"
 
       - name: Setup pnpm
         uses: pnpm/action-setup@v4
@@ -80,8 +108,21 @@ jobs:
         if: ${{ inputs.screenshots != 'false' }}
         run: pnpm exec playwright install chromium --with-deps
 
+      - name: Prepare exact clean proof source
+        shell: bash
+        run: |
+          set -euo pipefail
+          PROOF_SOURCE="$GITHUB_WORKSPACE/.urai-proof-source-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}"
+          test ! -e "$PROOF_SOURCE"
+          git clone --no-hardlinks --no-checkout "$GITHUB_WORKSPACE" "$PROOF_SOURCE"
+          git -C "$PROOF_SOURCE" checkout --detach "$TARGET_SHA"
+          test "$(git -C "$PROOF_SOURCE" rev-parse HEAD)" = "$TARGET_SHA"
+          test -z "$(git -C "$PROOF_SOURCE" status --porcelain --untracked-files=all)"
+          echo "URAI_PROOF_SOURCE_ROOT=$PROOF_SOURCE" >> "$GITHUB_ENV"
+
       - name: Final launch proof receipt
         run: |
+          cd "$URAI_PROOF_SOURCE_ROOT"
           FLAGS="--skip-install --skip-typecheck --skip-assets --skip-test --skip-build --base=${URAI_BASE_URL}"
           if [ "${{ inputs.screenshots }}" != "false" ]; then
             FLAGS="$FLAGS --screenshots"
@@ -97,6 +138,6 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: urai-aaa-final-proof-${{ github.sha }}
+          name: urai-aaa-final-proof-${{ env.TARGET_SHA }}
           path: urai-final-receipts
           if-no-files-found: warn

@@ -43,57 +43,109 @@ for (const file of releaseWorkflows) {
   }
 }
 
+const aaaPath = '.github/workflows/aaa-final-proof.yml'
+const aaa = readRequired(aaaPath)
+const aaaTrigger = triggerBlockFor(aaa)
+const aaaBuildIndex = aaa.indexOf('- name: Static build')
+const aaaPrepareIndex = aaa.indexOf('- name: Prepare exact clean proof source')
+const aaaProofIndex = aaa.indexOf('- name: Final launch proof receipt')
+const exactTargetExpression = '${{ inputs.target_sha || github.sha }}'
+
+if (!/\n\s*workflow_call\s*:/.test(aaaTrigger)) {
+  failures.push(`${aaaPath} must expose a reusable exact-head proof path`)
+}
+if (!aaaTrigger.includes('target_sha:') || !aaaTrigger.includes('required: true') || !aaaTrigger.includes('type: string')) {
+  failures.push(`${aaaPath} workflow_call must require a string target_sha input`)
+}
+if (/\n\s*pull_request\s*:/.test(aaaTrigger)) {
+  failures.push(`${aaaPath} must not register a duplicate pull_request proof; PR proof belongs to workflow-phase-boundaries.yml`)
+}
+
+for (const marker of [
+  `group: urai-aaa-final-proof-${exactTargetExpression}`,
+  `TARGET_SHA: ${exactTargetExpression}`,
+  `URAI_PROOF_SOURCE_SHA: ${exactTargetExpression}`,
+  'ref: ${{ env.TARGET_SHA }}',
+  'test "$(git rev-parse HEAD)" = "$TARGET_SHA"',
+  'test "$(git write-tree)" = "$(git rev-parse \'HEAD^{tree}\')"',
+  'test -z "$(git ls-files --others --exclude-standard)"',
+  'PROOF_SOURCE="$GITHUB_WORKSPACE/.urai-proof-source-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}"',
+  'git clone --no-hardlinks --no-checkout "$GITHUB_WORKSPACE" "$PROOF_SOURCE"',
+  'git -C "$PROOF_SOURCE" checkout --detach "$TARGET_SHA"',
+  'test "$(git -C "$PROOF_SOURCE" rev-parse HEAD)" = "$TARGET_SHA"',
+  'test -z "$(git -C "$PROOF_SOURCE" status --porcelain --untracked-files=all)"',
+  'echo "URAI_PROOF_SOURCE_ROOT=$PROOF_SOURCE" >> "$GITHUB_ENV"',
+  'cd "$URAI_PROOF_SOURCE_ROOT"',
+  'name: urai-aaa-final-proof-${{ env.TARGET_SHA }}',
+]) {
+  if (!aaa.includes(marker)) failures.push(`${aaaPath} must retain exact-proof marker: ${marker}`)
+}
+if (aaa.includes('URAI_PROOF_SOURCE_SHA: ${{ env.TARGET_SHA }}')) {
+  failures.push(`${aaaPath} must not construct job env from the env context; bind proof SHA directly from inputs/github`)
+}
+if (aaaBuildIndex < 0 || aaaPrepareIndex <= aaaBuildIndex || aaaProofIndex <= aaaPrepareIndex) {
+  failures.push(`${aaaPath} must build first, then prepare an exact clean proof source, then run final proof`)
+}
+if (aaa.includes('git reset --hard') || aaa.includes('git clean -fdx')) {
+  failures.push(`${aaaPath} must not destructively reset the build workspace or delete ignored build output`)
+}
+
+const phasePath = '.github/workflows/workflow-phase-boundaries.yml'
+const phase = readRequired(phasePath)
+const phaseTrigger = triggerBlockFor(phase)
+const phaseVerifyIndex = phase.indexOf('\n  verify:')
+const phaseProofIndex = phase.indexOf('\n  aaa-proof:')
+
+if (!/\n\s*pull_request\s*:/.test(phaseTrigger)) {
+  failures.push(`${phasePath} must remain the sole pull-request proof authority`)
+}
+for (const path of [
+  '.github/workflows/aaa-final-proof.yml',
+  '.github/workflows/workflow-phase-boundaries.yml',
+  'scripts/aaa-launch-proof.mjs',
+  'scripts/check-workflow-phase-boundaries.mjs',
+]) {
+  if (!phaseTrigger.includes(`- "${path}"`)) failures.push(`${phasePath} pull-request trigger must include ${path}`)
+}
+for (const marker of [
+  'group: workflow-phase-boundaries-${{ github.event.pull_request.head.sha || github.sha }}',
+  'uses: ./.github/workflows/aaa-final-proof.yml',
+  'target_sha: ${{ github.event.pull_request.head.sha }}',
+  'base_url: http://127.0.0.1:4173',
+  'screenshots: "true"',
+  'needs: verify',
+]) {
+  if (!phase.includes(marker)) failures.push(`${phasePath} must retain reusable AAA proof marker: ${marker}`)
+}
+if (phaseVerifyIndex < 0 || phaseProofIndex <= phaseVerifyIndex) {
+  failures.push(`${phasePath} must run static boundary verification before exact PR-head AAA proof`)
+}
+
 const deployPath = '.github/workflows/spatial-live-deploy.yml'
 const deploy = readRequired(deployPath)
 const productionEnvironment = /environment\s*:\s*(?:['"]?production['"]?|\r?\n\s*name\s*:\s*['"]?production['"]?)/
 const deployJobStart = deploy.indexOf('\n  deploy:')
 const deployJob = deployJobStart >= 0 ? deploy.slice(deployJobStart) : ''
 
-if (deployJobStart < 0) {
-  failures.push('spatial-live-deploy.yml must retain the protected deploy job')
-}
-if (!deployJob.includes("github.event_name == 'workflow_dispatch'")) {
-  failures.push('spatial-live-deploy.yml deploy job must require manual workflow dispatch')
-}
-if (!deployJob.includes("github.ref == 'refs/heads/main'")) {
-  failures.push('spatial-live-deploy.yml deploy job must require refs/heads/main')
-}
-if (!deployJob.includes("inputs.confirm == 'DEPLOY_URAI_APP'") || !deployJob.includes("inputs.confirm == 'ROLLBACK_URAI_APP'")) {
-  failures.push('spatial-live-deploy.yml must retain explicit deploy and rollback confirmations')
-}
-if (!productionEnvironment.test(deployJob)) {
-  failures.push('spatial-live-deploy.yml must use the protected production environment')
-}
-if (!deployJob.includes('FIREBASE_SERVICE_ACCOUNT_JSON: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_JSON }}')) {
-  failures.push('spatial-live-deploy.yml must use the protected service-account secret')
-}
-if (!deployJob.includes('GOOGLE_APPLICATION_CREDENTIALS: ${{ runner.temp }}/urai-firebase-service-account.json')) {
-  failures.push('spatial-live-deploy.yml must isolate credentials in a temporary file')
-}
-if (deploy.includes('FIREBASE_TOKEN')) {
-  failures.push('spatial-live-deploy.yml must not restore legacy Firebase CLI tokens')
-}
-if (!deploy.includes('Remove temporary credentials')) {
-  failures.push('spatial-live-deploy.yml must clean up the temporary service-account file')
-}
-if (!deploy.includes('persist-credentials: false')) {
-  failures.push('spatial-live-deploy.yml must not retain repository checkout credentials')
-}
+if (deployJobStart < 0) failures.push('spatial-live-deploy.yml must retain the protected deploy job')
+if (!deployJob.includes("github.event_name == 'workflow_dispatch'")) failures.push('spatial-live-deploy.yml deploy job must require manual workflow dispatch')
+if (!deployJob.includes("github.ref == 'refs/heads/main'")) failures.push('spatial-live-deploy.yml deploy job must require refs/heads/main')
+if (!deployJob.includes("inputs.confirm == 'DEPLOY_URAI_APP'") || !deployJob.includes("inputs.confirm == 'ROLLBACK_URAI_APP'")) failures.push('spatial-live-deploy.yml must retain explicit deploy and rollback confirmations')
+if (!productionEnvironment.test(deployJob)) failures.push('spatial-live-deploy.yml must use the protected production environment')
+if (!deployJob.includes('FIREBASE_SERVICE_ACCOUNT_JSON: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_JSON }}')) failures.push('spatial-live-deploy.yml must use the protected service-account secret')
+if (!deployJob.includes('GOOGLE_APPLICATION_CREDENTIALS: ${{ runner.temp }}/urai-firebase-service-account.json')) failures.push('spatial-live-deploy.yml must isolate credentials in a temporary file')
+if (deploy.includes('FIREBASE_TOKEN')) failures.push('spatial-live-deploy.yml must not restore legacy Firebase CLI tokens')
+if (!deploy.includes('Remove temporary credentials')) failures.push('spatial-live-deploy.yml must clean up the temporary service-account file')
+if (!deploy.includes('persist-credentials: false')) failures.push('spatial-live-deploy.yml must not retain repository checkout credentials')
 
 const verifyBundleIndex = deploy.indexOf('node scripts/live-release.mjs --verify-prebuilt')
 const credentialIndex = deploy.indexOf('FIREBASE_SERVICE_ACCOUNT_JSON: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_JSON }}')
 const deployIndex = deploy.indexOf('node scripts/live-release.mjs --deploy-prebuilt')
 const cleanupIndex = deploy.indexOf('Remove temporary credentials')
 
-if (verifyBundleIndex < 0 || credentialIndex <= verifyBundleIndex) {
-  failures.push('spatial-live-deploy.yml must verify the release bundle before production credentials exist')
-}
-if (deployIndex <= credentialIndex) {
-  failures.push('spatial-live-deploy.yml must deploy only after ephemeral credentials are scoped')
-}
-if (cleanupIndex <= deployIndex) {
-  failures.push('spatial-live-deploy.yml must remove temporary credentials after the deployment attempt')
-}
+if (verifyBundleIndex < 0 || credentialIndex <= verifyBundleIndex) failures.push('spatial-live-deploy.yml must verify the release bundle before production credentials exist')
+if (deployIndex <= credentialIndex) failures.push('spatial-live-deploy.yml must deploy only after ephemeral credentials are scoped')
+if (cleanupIndex <= deployIndex) failures.push('spatial-live-deploy.yml must remove temporary credentials after the deployment attempt')
 
 if (failures.length) {
   console.error('Workflow phase-boundary check failed:')

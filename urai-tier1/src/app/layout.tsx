@@ -47,22 +47,26 @@ import UraiV2OnboardingLayer from './UraiV2OnboardingLayer'
 import UraiV2StateController from './UraiV2StateController'
 import './aaa-graphics-rebuild-20260702.css'
 import './mobile-viewport-final-fixes.css'
+import './replay-mobile-control-clearance.css'
 import './aaa-visual-authority-20260703.css'
 import './lifemap-proof-crops.css'
 import './urai-realm-accent-backgrounds.css'
 import './spatial-first-root-launch.css'
 import './urai-design-system.css'
 import './route-layering-hotfix.css'
+import './native-doorway-final-fix.css'
 import WorldRuntimeBoundary from '@/spatial/world/WorldRuntimeBoundary'
+import LifeMapPersistentDoorways from '@/components/lifemap/LifeMapPersistentDoorways'
 
 const configuredBuildSha = process.env.NEXT_PUBLIC_URAI_BUILD_SHA ?? process.env.GITHUB_SHA ?? ''
 const deployedSha = /^[0-9a-f]{40}$/.test(configuredBuildSha) ? configuredBuildSha : 'unverified'
+const embeddedIcon = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='16' fill='%2307111c'/%3E%3Cpath d='M6 44c9-8 43-8 52 0v14H6z' fill='%23152f28'/%3E%3Ccircle cx='32' cy='27' r='14' fill='%238ce7ee'/%3E%3Ccircle cx='32' cy='27' r='19' fill='none' stroke='%238ce7ee' stroke-opacity='.22' stroke-width='2'/%3E%3C/svg%3E"
 
 export const metadata: Metadata = {
   title: 'URAI Spatial',
   description: 'Cinematic, spatial, interactive URAI runtime',
   icons: {
-    icon: '/icon.svg',
+    icon: embeddedIcon,
   },
   other: {
     'urai-deployed-sha': deployedSha,
@@ -91,6 +95,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           <UraiFinalAssetSpineSceneLayer />
           <UraiFinalAssetSpineBridge />
           {children}
+          <LifeMapPersistentDoorways />
           <UraiAutonomousV1Layer />
           <UraiV2StateController />
           <UraiV2OnboardingLayer />

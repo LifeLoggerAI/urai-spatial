@@ -11,6 +11,7 @@ export function GroundGateway() {
 
   const enterInfrastructure = useCallback(() => {
     if (disabled) return
+
     requestUraiWorldTravel({
       destination: 'infrastructure-hub',
       href: '/ground?from=ground-gateway',
