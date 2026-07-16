@@ -6,11 +6,11 @@ import { useState } from 'react'
 import HomeSpatialCanvas, { useWebGLAvailable } from './HomeSpatialCanvas'
 
 const doorwayLinks = [
-  { href: '/ground?from=home-spatial-shortcuts', label: 'Ground' },
-  { href: '/life-map?from=home-spatial-shortcuts', label: 'Life Map' },
-  { href: '/mirror', label: 'Mirror' },
-  { href: '/passport', label: 'Passport' },
-  { href: '/spatial/ar-vr', label: 'XR' },
+  { href: '/ground?from=home-spatial-shortcuts', label: 'Ground', auditAction: 'home-ground' },
+  { href: '/life-map?from=home-spatial-shortcuts', label: 'Life Map', auditAction: 'home-life-map' },
+  { href: '/mirror', label: 'Mirror', auditAction: 'home-mirror' },
+  { href: '/passport', label: 'Passport', auditAction: 'home-passport' },
+  { href: '/spatial/ar-vr', label: 'XR', auditAction: 'home-xr' },
 ] as const
 
 export default function HomeSpatialRuntimeLayer() {
@@ -32,7 +32,15 @@ export default function HomeSpatialRuntimeLayer() {
     >
       <HomeSpatialCanvas webglAvailable={webglAvailable} onOrbOpen={() => setOrbOpen(true)} />
       <nav className="urai-home-spatial-runtime-portals" aria-label="Spatial doorway shortcuts">
-        {doorwayLinks.map((doorway) => <Link key={doorway.href} href={doorway.href}>{doorway.label}</Link>)}
+        {doorwayLinks.map((doorway) => (
+          <Link
+            key={doorway.href}
+            href={doorway.href}
+            data-urai-audit-action={doorway.auditAction}
+          >
+            {doorway.label}
+          </Link>
+        ))}
       </nav>
       <aside className="urai-home-spatial-runtime-orb" data-open={orbOpen ? 'true' : 'false'} aria-live="polite">
         <button type="button" aria-label="Close orb guidance" onClick={() => setOrbOpen(false)}>×</button>
@@ -54,7 +62,7 @@ export default function HomeSpatialRuntimeLayer() {
           position: absolute;
           left: 50%;
           bottom: 58px;
-          z-index: 7;
+          z-index: 40;
           display: flex;
           align-items: center;
           gap: 7px;
@@ -68,6 +76,7 @@ export default function HomeSpatialRuntimeLayer() {
           background: rgba(3, 9, 15, .56);
           box-shadow: 0 18px 54px rgba(0, 0, 0, .34), 0 0 44px rgba(103, 232, 249, .08);
           backdrop-filter: blur(16px);
+          pointer-events: auto;
           transition: opacity .2s ease, transform .2s ease;
         }
 
@@ -80,7 +89,8 @@ export default function HomeSpatialRuntimeLayer() {
           flex: 0 0 auto;
           align-items: center;
           justify-content: center;
-          min-height: 34px;
+          min-height: 44px;
+          min-width: 44px;
           padding: 7px 12px;
           border: 1px solid rgba(188, 245, 248, .2);
           border-radius: 999px;
@@ -90,13 +100,15 @@ export default function HomeSpatialRuntimeLayer() {
           white-space: nowrap;
           font: 850 .7rem/1 Inter, ui-sans-serif, system-ui, sans-serif;
           letter-spacing: .035em;
+          pointer-events: auto;
         }
 
         .urai-home-spatial-runtime-portals a:hover,
         .urai-home-spatial-runtime-portals a:focus-visible {
           border-color: rgba(188, 245, 248, .52);
           background: rgba(12, 37, 47, .92);
-          outline: none;
+          outline: 3px solid rgba(246, 243, 255, .96);
+          outline-offset: 3px;
         }
 
         .urai-home-spatial-runtime-layer[data-orb-open="true"] .urai-home-spatial-runtime-portals {
@@ -113,7 +125,7 @@ export default function HomeSpatialRuntimeLayer() {
           }
 
           .urai-home-spatial-runtime-portals a {
-            min-height: 32px;
+            min-height: 44px;
             padding: 7px 11px;
             font-size: .66rem;
           }
