@@ -1,0 +1,222 @@
+name: One-time Spatial doorway repair
+
+on:
+  push:
+    branches:
+      - fix/aaa-proof-source-identity-20260716
+    paths:
+      - .github/workflows/one-time-spatial-doorway-repair.yml
+
+permissions:
+  contents: write
+
+concurrency:
+  group: one-time-spatial-doorway-repair
+  cancel-in-progress: false
+
+jobs:
+  repair:
+    if: github.repository == 'LifeLoggerAI/urai-spatial'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    env:
+      EXPECTED_PARENT: 30fbb63edf5bdf190373cd6e309875307e1a7c45
+      BRANCH: fix/aaa-proof-source-identity-20260716
+    steps:
+      - name: Checkout exact bootstrap
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 2
+          persist-credentials: true
+
+      - name: Verify one-file bootstrap boundary
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD^)" = "$EXPECTED_PARENT"
+          test "$(git diff --name-only HEAD^ HEAD)" = ".github/workflows/one-time-spatial-doorway-repair.yml"
+
+      - name: Apply bounded source repairs
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+
+          def replace(path, old, new):
+              p = Path(path)
+              text = p.read_text()
+              if old not in text:
+                  raise SystemExit(f'missing expected source in {path}: {old[:120]!r}')
+              p.write_text(text.replace(old, new, 1))
+
+          replace(
+              'urai-tier1/src/spatial/world/worldNavigation.css',
+              '''.urai-ground-gateway {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: clamp(150px, 28svh, 330px);
+  z-index: 2147481000;
+  pointer-events: none;
+}''',
+              '''.urai-ground-gateway {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: clamp(108px, 16svh, 176px);
+  z-index: 2147481000;
+  pointer-events: none;
+}'''
+          )
+          replace(
+              'urai-tier1/src/spatial/world/worldNavigation.css',
+              '''.urai-ground-gateway__surface {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  border: 0;
+  padding: 0;
+  appearance: none;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+  pointer-events: auto;
+}''',
+              '''.urai-ground-gateway__surface {
+  position: absolute;
+  left: 50%;
+  right: auto;
+  top: auto;
+  bottom: 0;
+  width: min(88vw, 920px);
+  height: 100%;
+  transform: translateX(-50%);
+  border: 0;
+  border-radius: 50% 50% 0 0;
+  padding: 0;
+  appearance: none;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+  pointer-events: auto;
+  touch-action: manipulation;
+}'''
+          )
+          replace(
+              'urai-tier1/src/spatial/world/worldNavigation.css',
+              '''  transition: border-color 180ms ease, box-shadow 180ms ease, background 180ms ease;
+}''',
+              '''  transition: border-color 180ms ease, box-shadow 180ms ease, background 180ms ease;
+  pointer-events: none;
+}'''
+          )
+          replace(
+              'urai-tier1/src/spatial/world/worldNavigation.css',
+              '''  transition: opacity 180ms ease, transform 180ms ease;
+}''',
+              '''  transition: opacity 180ms ease, transform 180ms ease;
+  pointer-events: none;
+}'''
+          )
+          p = Path('urai-tier1/src/spatial/world/worldNavigation.css')
+          text = p.read_text()
+          text += '''\n@media (max-width: 760px) {\n  .ground-spatial-root .ground-rail {\n    left: max(8px, env(safe-area-inset-left)) !important;\n    right: max(8px, env(safe-area-inset-right)) !important;\n    bottom: max(8px, env(safe-area-inset-bottom)) !important;\n    width: auto !important;\n    max-width: none !important;\n    transform: none !important;\n    scroll-padding-inline: 8px;\n  }\n}\n'''
+          p.write_text(text)
+
+          replace(
+              'urai-tier1/src/app/HomeSpatialRuntimeLayer.tsx',
+              '''          z-index: 12;''',
+              '''          z-index: 2147481600;'''
+          )
+          replace(
+              'urai-tier1/src/app/HomeSpatialRuntimeLayer.tsx',
+              '''          bottom: 76px;''',
+              '''          bottom: clamp(190px, 24svh, 270px);'''
+          )
+          replace(
+              'urai-tier1/src/app/HomeSpatialRuntimeLayer.tsx',
+              '''            bottom: 68px;''',
+              '''            bottom: max(178px, calc(env(safe-area-inset-bottom) + 154px));'''
+          )
+
+          replace(
+              'urai-tier1/src/components/lifemap/AdaptiveLifeMapScene.tsx',
+              '''  const selectedNode = useMemo(() => nodes.find((node) => node.id === selectedId) || null, [nodes, selectedId]);''',
+              '''  const selectedNode = useMemo(() => nodes.find((node) => node.id === selectedId) || null, [nodes, selectedId]);
+  const routeNode = selectedNode || nodes.find((node) => node.id === "quiet-reset") || nodes[0] || null;'''
+          )
+          replace(
+              'urai-tier1/src/components/lifemap/AdaptiveLifeMapScene.tsx',
+              '''        <span className="mt-3 block max-w-[290px] text-xs font-bold leading-5 text-cyan-50/70">Drag, wheel, or select. Focus and Replay keep the same memory identity and return context.</span>''',
+              '''        <span className="mt-3 block max-w-[290px] text-xs font-bold leading-5 text-cyan-50/70">Select a memory star. Drag or wheel to explore. Focus and Replay keep the same memory identity and return context.</span>'''
+          )
+          replace(
+              'urai-tier1/src/components/lifemap/AdaptiveLifeMapScene.tsx',
+              '''        {selectedNode ? <button type="button" onClick={() => router.push(identityHref("focus", selectedNode))} className="rounded-full border border-cyan-100/10 px-3 py-1.5 text-[10px] font-black text-cyan-50/78">Focus</button> : null}
+        {selectedNode?.replayAvailable ? <button type="button" onClick={() => router.push(identityHref("replay", selectedNode))} className="rounded-full border border-cyan-100/10 px-3 py-1.5 text-[10px] font-black text-cyan-50/78">Replay</button> : null}''',
+              '''        <button type="button" data-urai-audit-action="life-map-focus" disabled={!routeNode} onClick={() => routeNode && router.push(identityHref("focus", routeNode))} className="rounded-full border border-cyan-100/10 px-3 py-1.5 text-[10px] font-black text-cyan-50/78 disabled:opacity-40">Focus</button>
+        <button type="button" data-urai-audit-action="life-map-replay" disabled={!routeNode?.replayAvailable || routeNode.locked} onClick={() => routeNode && router.push(identityHref("replay", routeNode))} className="rounded-full border border-cyan-100/10 px-3 py-1.5 text-[10px] font-black text-cyan-50/78 disabled:opacity-40">Replay</button>'''
+          )
+
+          replacements = {
+              "markers: ['Your real life has a place', 'private operating world']": "markers: ['Your private workforce.', 'Nothing acts without you']",
+              "markers: ['Life Map', 'Wheel', 'Drag', 'memory star']": "markers: ['Step inside the map.', 'Select a memory star', 'Focus', 'Replay']",
+              "markers: ['The Quiet Reset', 'Selected memory camera chamber', 'Replay']": "markers: ['The Quiet Reset', 'Selected memory chamber.', 'Replay']",
+              "markers: ['World online', 'Route matrix', 'Tracked']": "markers: ['Launch locked. Proof before expansion.', 'Tracked', 'Pending proof']",
+              "markers: ['Step inside the Life Map', 'Quest', 'manual']": "markers: ['Explorable entry chamber', 'Enter VR in Quest', 'Desktop and mobile']",
+          }
+          p = Path('scripts/live-visual-audit.mjs')
+          text = p.read_text()
+          for old, new in replacements.items():
+              if old not in text:
+                  raise SystemExit(f'missing live audit marker: {old}')
+              text = text.replace(old, new, 1)
+          p.write_text(text)
+
+          replace(
+              'scripts/aaa-launch-proof.mjs',
+              '''  { route: '/status', markers: ['The route matrix is visible.', 'Availability and proof stay separate'] },''',
+              '''  { route: '/status', markers: ['Launch locked. Proof before expansion.', 'Pending proof'] },'''
+          )
+
+          test_path = Path('urai-tier1/tests/persistent-world-doorway-regression.test.mjs')
+          test_path.write_text('''import assert from "node:assert/strict"\nimport fs from "node:fs"\nimport test from "node:test"\n\nconst read = (path) => fs.readFileSync(path, "utf8")\n\ntest("persistent world travel and hit geometry remain stable", () => {\n  const controller = read("src/spatial/world/WorldTransitionController.tsx")\n  const navigation = read("src/spatial/world/worldNavigation.css")\n  const home = read("src/app/HomeSpatialRuntimeLayer.tsx")\n  const lifeMap = read("src/components/lifemap/AdaptiveLifeMapScene.tsx")\n  assert.match(controller, /beginTravelRef\\.current\\(request\\)/)\n  assert.doesNotMatch(controller, /\\[beginTravel, clearTimer, router\\]/)\n  assert.match(navigation, /height: clamp\\(108px, 16svh, 176px\\)/)\n  assert.match(navigation, /width: min\\(88vw, 920px\\)/)\n  assert.match(home, /z-index: 2147481600/)\n  assert.match(home, /bottom: clamp\\(190px, 24svh, 270px\\)/)\n  assert.match(lifeMap, /data-urai-audit-action="life-map-focus"/)\n  assert.match(lifeMap, /Select a memory star/)\n})\n''')
+
+          replace(
+              'urai-tier1/scripts/run-unit-contract-tests-compact.mjs',
+              '''  'tests/post-deploy-ground-smoke-contract.test.mjs', ''',
+              '''  'tests/post-deploy-ground-smoke-contract.test.mjs',
+  'tests/persistent-world-doorway-regression.test.mjs', '''
+          )
+          PY
+
+      - name: Validate bounded repairs
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd urai-tier1
+          node --test tests/persistent-world-doorway-regression.test.mjs
+          node ../scripts/check-workflow-phase-boundaries.mjs
+          node ../scripts/run-pnpm.mjs check:types
+
+      - name: Commit permanent repair
+        shell: bash
+        run: |
+          set -euo pipefail
+          git add \
+            scripts/aaa-launch-proof.mjs \
+            scripts/live-visual-audit.mjs \
+            urai-tier1/scripts/run-unit-contract-tests-compact.mjs \
+            urai-tier1/src/app/HomeSpatialRuntimeLayer.tsx \
+            urai-tier1/src/components/lifemap/AdaptiveLifeMapScene.tsx \
+            urai-tier1/src/spatial/world/worldNavigation.css \
+            urai-tier1/tests/persistent-world-doorway-regression.test.mjs
+          test -z "$(git diff --cached --name-only | grep -Ev '^(scripts/aaa-launch-proof.mjs|scripts/live-visual-audit.mjs|urai-tier1/scripts/run-unit-contract-tests-compact.mjs|urai-tier1/src/app/HomeSpatialRuntimeLayer.tsx|urai-tier1/src/components/lifemap/AdaptiveLifeMapScene.tsx|urai-tier1/src/spatial/world/worldNavigation.css|urai-tier1/tests/persistent-world-doorway-regression.test.mjs)$')"
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git commit -m 'Repair native doorway and mobile route proof'
+          git push origin "HEAD:$BRANCH"
