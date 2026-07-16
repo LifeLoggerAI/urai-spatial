@@ -80,8 +80,21 @@ jobs:
         if: ${{ inputs.screenshots != 'false' }}
         run: pnpm exec playwright install chromium --with-deps
 
+      - name: Prepare exact clean proof source
+        shell: bash
+        run: |
+          set -euo pipefail
+          PROOF_SOURCE="$GITHUB_WORKSPACE/.urai-proof-source-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}"
+          test ! -e "$PROOF_SOURCE"
+          git clone --no-hardlinks --no-checkout "$GITHUB_WORKSPACE" "$PROOF_SOURCE"
+          git -C "$PROOF_SOURCE" checkout --detach "$GITHUB_SHA"
+          test "$(git -C "$PROOF_SOURCE" rev-parse HEAD)" = "$GITHUB_SHA"
+          test -z "$(git -C "$PROOF_SOURCE" status --porcelain --untracked-files=all)"
+          echo "URAI_PROOF_SOURCE_ROOT=$PROOF_SOURCE" >> "$GITHUB_ENV"
+
       - name: Final launch proof receipt
         run: |
+          cd "$URAI_PROOF_SOURCE_ROOT"
           FLAGS="--skip-install --skip-typecheck --skip-assets --skip-test --skip-build --base=${URAI_BASE_URL}"
           if [ "${{ inputs.screenshots }}" != "false" ]; then
             FLAGS="$FLAGS --screenshots"
