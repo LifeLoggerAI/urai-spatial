@@ -21,7 +21,7 @@ env:
   TARGET_WORKFLOW: spatial-live-deploy.yml
   ROLLBACK_SHA: 3a7aaf7bf47bd4ccf713584390201fd13317065e
   CONFIRMATION: DEPLOY_URAI_APP
-  RETRY_REASON: final-spatial-convergence-20260716
+  RETRY_REASON: final-spatial-convergence-20260716-retry-b
 
 jobs:
   verify-dispatch-contract:
@@ -72,7 +72,7 @@ jobs:
           grep -Fq 'TARGET_WORKFLOW: spatial-live-deploy.yml' .github/workflows/one-time-production-bootstrap-dispatch.yml
           grep -Fq 'ROLLBACK_SHA: 3a7aaf7bf47bd4ccf713584390201fd13317065e' .github/workflows/one-time-production-bootstrap-dispatch.yml
           grep -Fq 'CONFIRMATION: DEPLOY_URAI_APP' .github/workflows/one-time-production-bootstrap-dispatch.yml
-          grep -Fq 'RETRY_REASON: final-spatial-convergence-20260716' .github/workflows/one-time-production-bootstrap-dispatch.yml
+          grep -Fq 'RETRY_REASON: final-spatial-convergence-20260716-retry-b' .github/workflows/one-time-production-bootstrap-dispatch.yml
           grep -Fq 'actions: write' .github/workflows/one-time-production-bootstrap-dispatch.yml
           test -z "$(git status --porcelain --untracked-files=all)"
 
