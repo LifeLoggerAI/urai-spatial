@@ -27,6 +27,7 @@ test('persistent world doorways preserve canonical navigation and separate hit t
   assert.match(finalCss, /height: 96px !important/)
   assert.match(lifeMap, /identityHref\("focus", selectedNode\)/)
   assert.match(lifeMap, /identityHref\("replay", selectedNode\)/)
+  assert.match(persistentLifeMap, /const pathname = usePathname\(\) \?\? '\/'/)
   assert.match(persistentLifeMap, /normalizedPathname = pathname\.replace\(\/\\\/\+\$\/, ''\) \|\| '\/'/)
   assert.match(persistentLifeMap, /data-urai-audit-action="life-map-focus"/)
   assert.match(persistentLifeMap, /data-urai-audit-action="life-map-replay"/)
