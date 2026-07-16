@@ -49,6 +49,7 @@ test('Home is a premium coherent world with aspect-aware framing and one canonic
     'data-home-spatial-geometry="terrain-orb-ground-gateway"',
     'data-tier0-ground-gateway="true"',
     'data-testid="urai-home-living-ground"',
+    'data-testid="urai-home-horizontal-plaza"',
     'data-testid="urai-home-horizon-architecture"',
     'data-testid="urai-home-webgl-orb"',
     'urai:first-home-spatial-frame',
@@ -60,10 +61,21 @@ test('Home is a premium coherent world with aspect-aware framing and one canonic
   assert.match(canvas, /if \(cachedWebGLAvailable !== null\)/)
   assert.doesNotMatch(canvas, /useState<boolean \| null>\(cachedWebGLAvailable\)/)
   assert.match(canvas, /const mobile = size\.width < 720/)
-  assert.match(canvas, /mobile \? 6\.4 : 5\.25/)
-  assert.match(canvas, /mobile \? 19\.2 : 14\.6/)
-  assert.match(canvas, /camera\.fov = mobile \? 58 : 50/)
 
+  const positionMatch = canvas.match(/camera\.position\.set\(0, mobile \? ([\d.]+) : ([\d.]+), mobile \? ([\d.]+) : ([\d.]+)\)/)
+  assert.ok(positionMatch, 'camera must define explicit mobile and desktop height and distance')
+  const [, mobileHeight, desktopHeight, mobileDistance, desktopDistance] = positionMatch.map(Number)
+  assert.ok(mobileHeight > desktopHeight, 'mobile camera must rise to keep the Orb, plaza and horizon visible')
+  assert.ok(mobileDistance > desktopDistance, 'mobile camera must pull back instead of cropping the spatial world')
+  assert.ok(mobileDistance <= 26, 'mobile camera must remain close enough to preserve meaningful world scale')
+
+  const fovMatch = canvas.match(/camera\.fov = mobile \? ([\d.]+) : ([\d.]+)/)
+  assert.ok(fovMatch, 'camera must define explicit mobile and desktop fields of view')
+  const [, mobileFov, desktopFov] = fovMatch.map(Number)
+  assert.ok(mobileFov >= desktopFov, 'mobile field of view must not be narrower than desktop')
+  assert.ok(mobileFov <= 68, 'mobile field of view must avoid excessive wide-angle distortion')
+
+  assert.match(canvas, /camera\.lookAt\(0, 1\.4, -2\.35\)/)
   assert.match(canvas, /<planeGeometry args=\{\[48, 48\]\}/)
   assert.doesNotMatch(canvas, /<circleGeometry args=\{\[18, 128\]\}/)
   assert.doesNotMatch(canvas, /const portals/)
