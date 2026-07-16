@@ -2,34 +2,13 @@
 
 import { Html, OrbitControls, Stars } from '@react-three/drei'
 import { Canvas, useFrame, useThree, type ThreeEvent } from '@react-three/fiber'
-import Link from 'next/link'
-import { useRouter } from 'next/navigation'
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import * as THREE from 'three'
-
-type PortalSpec = {
-  id: 'ground' | 'life-map' | 'mirror' | 'passport' | 'xr'
-  label: string
-  detail: string
-  href: string
-  position: [number, number, number]
-  rotationY: number
-  color: string
-  metal: string
-}
 
 type HomeSpatialCanvasProps = {
   onOrbOpen: () => void
   webglAvailable: true
 }
-
-const portals: readonly PortalSpec[] = [
-  { id: 'ground', label: 'Ground', detail: 'Private workforce', href: '/ground?from=home-spatial', position: [-3.65, 0.08, -3.9], rotationY: 0.2, color: '#70e1bd', metal: '#354e49' },
-  { id: 'life-map', label: 'Life Map', detail: 'Memory sky', href: '/life-map?from=home-sky', position: [3.65, 0.08, -3.9], rotationY: -0.2, color: '#b49bff', metal: '#403a57' },
-  { id: 'mirror', label: 'Mirror', detail: 'Pattern realm', href: '/mirror', position: [-5.8, 0.08, 0.3], rotationY: 0.72, color: '#82ddff', metal: '#344b59' },
-  { id: 'passport', label: 'Passport', detail: 'Ownership vault', href: '/passport', position: [5.8, 0.08, 0.3], rotationY: -0.72, color: '#f1ca72', metal: '#574a35' },
-  { id: 'xr', label: 'XR', detail: 'Enter the world', href: '/spatial/ar-vr', position: [0, 0.08, -7.2], rotationY: 0, color: '#62e6f2', metal: '#31505a' },
-]
 
 const TREES: readonly [number, number, number, number][] = [
   [-8.4, 0, -7.2, 1.15], [-5.8, 0, -9.2, 0.92], [-1.8, 0, -11.2, 1.04],
@@ -155,7 +134,7 @@ function HorizonMonoliths() {
 
 function LivingGround() {
   return (
-    <group data-testid="urai-home-living-ground">
+    <group data-testid="urai-home-living-ground" data-tier0-ground-gateway="true">
       <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.12, -1.5]} receiveShadow>
         <planeGeometry args={[48, 48]} />
         <meshStandardMaterial color="#223d34" roughness={0.9} metalness={0.04} />
@@ -172,25 +151,6 @@ function LivingGround() {
         <ringGeometry args={[3.8, 3.9, 128]} />
         <meshBasicMaterial color="#8de6ce" transparent opacity={0.34} toneMapped={false} />
       </mesh>
-
-      {portals.map((portal) => {
-        const x = portal.position[0] * 0.5
-        const z = (portal.position[2] - 1.5) * 0.5
-        const length = Math.max(2.8, Math.hypot(portal.position[0], portal.position[2] + 1.5) - 1.8)
-        const angle = Math.atan2(portal.position[0], portal.position[2] + 1.5)
-        return (
-          <group key={`path-${portal.id}`} position={[x, 0, z]} rotation={[0, angle, 0]}>
-            <mesh position={[0, 0.012, 0]} receiveShadow>
-              <boxGeometry args={[1.04, 0.055, length]} />
-              <meshStandardMaterial color="#8f9287" roughness={0.74} metalness={0.12} />
-            </mesh>
-            <mesh position={[0, 0.05, 0]}>
-              <boxGeometry args={[0.08, 0.018, length * 0.94]} />
-              <meshBasicMaterial color={portal.color} transparent opacity={0.72} toneMapped={false} />
-            </mesh>
-          </group>
-        )
-      })}
 
       {HILLS.map(([x, y, z, sx, sy, sz], index) => (
         <mesh key={`hill-${index}`} position={[x, y, z]} scale={[sx, sy, sz]} receiveShadow>
@@ -238,77 +198,7 @@ function Orb({ reducedMotion, onOpen }: { reducedMotion: boolean; onOpen: () => 
   )
 }
 
-function Portal({ spec, reducedMotion, onNavigate }: { spec: PortalSpec; reducedMotion: boolean; onNavigate: (href: string) => void }) {
-  const group = useRef<THREE.Group>(null)
-  const [hovered, setHovered] = useState(false)
-  const color = useMemo(() => new THREE.Color(spec.color), [spec.color])
-
-  useFrame(({ clock }) => {
-    if (!group.current) return
-    const pulse = reducedMotion ? 1 : 1 + Math.sin(clock.elapsedTime * 1.5 + spec.position[0]) * 0.012
-    group.current.scale.setScalar(hovered ? 1.035 : pulse)
-  })
-
-  const enter = (event: ThreeEvent<PointerEvent>) => { event.stopPropagation(); setHovered(true); document.body.style.cursor = 'pointer' }
-  const leave = (event: ThreeEvent<PointerEvent>) => { event.stopPropagation(); setHovered(false); document.body.style.cursor = 'default' }
-  const open = (event: ThreeEvent<MouseEvent>) => { event.stopPropagation(); onNavigate(spec.href) }
-
-  return (
-    <group ref={group} position={spec.position} rotation={[0, spec.rotationY, 0]} data-urai-home-portal={spec.id}>
-      <mesh position={[0, 0.12, 0]} castShadow receiveShadow>
-        <cylinderGeometry args={[1.75, 2.05, 0.24, 72]} />
-        <meshStandardMaterial color="#26383b" emissive={color} emissiveIntensity={0.08} roughness={0.48} metalness={0.42} />
-      </mesh>
-      <mesh position={[0, 0.27, 0]}>
-        <ringGeometry args={[1.05, 1.55, 96]} />
-        <meshBasicMaterial color={color} transparent opacity={hovered ? 0.42 : 0.2} side={THREE.DoubleSide} toneMapped={false} />
-      </mesh>
-      {[-1.18, 1.18].map((x) => (
-        <group key={x} position={[x, 1.72, 0]}>
-          <mesh castShadow receiveShadow>
-            <cylinderGeometry args={[0.24, 0.36, 3.25, 18]} />
-            <meshStandardMaterial color={spec.metal} emissive={color} emissiveIntensity={hovered ? 0.26 : 0.1} roughness={0.38} metalness={0.58} />
-          </mesh>
-          <mesh position={[0, 0.15, 0.28]}>
-            <boxGeometry args={[0.07, 2.35, 0.035]} />
-            <meshBasicMaterial color={color} transparent opacity={0.8} toneMapped={false} />
-          </mesh>
-        </group>
-      ))}
-      <mesh position={[0, 3.32, 0]} castShadow>
-        <boxGeometry args={[2.75, 0.38, 0.78]} />
-        <meshStandardMaterial color={spec.metal} emissive={color} emissiveIntensity={hovered ? 0.3 : 0.12} roughness={0.36} metalness={0.62} />
-      </mesh>
-      <mesh position={[0, 3.66, 0]}>
-        <torusGeometry args={[1.28, 0.11, 18, 96, Math.PI]} />
-        <meshStandardMaterial color="#b7c6c8" emissive={color} emissiveIntensity={0.32} roughness={0.28} metalness={0.72} />
-      </mesh>
-      <mesh position={[0, 1.72, 0.08]} onPointerOver={enter} onPointerOut={leave} onClick={open}>
-        <planeGeometry args={[2.05, 2.95]} />
-        <meshBasicMaterial color={color} transparent opacity={hovered ? 0.48 : 0.25} side={THREE.DoubleSide} depthWrite={false} toneMapped={false} />
-      </mesh>
-      <mesh position={[0, 1.73, 0.14]} scale={hovered ? [1.05, 1.34, 1.05] : [1, 1.28, 1]} onPointerOver={enter} onPointerOut={leave} onClick={open}>
-        <torusGeometry args={[0.88, 0.045, 14, 96]} />
-        <meshBasicMaterial color={color} transparent opacity={hovered ? 1 : 0.88} toneMapped={false} />
-      </mesh>
-      <mesh position={[0, 1.73, 0.18]} scale={[0.76, 1.08, 1]}>
-        <torusGeometry args={[0.88, 0.018, 12, 96]} />
-        <meshBasicMaterial color="#f5ffff" transparent opacity={0.34} toneMapped={false} />
-      </mesh>
-      <pointLight position={[0, 1.9, 0.7]} color={color} intensity={hovered ? 9 : 5.2} distance={8} decay={2} />
-      <Html center position={[0, 4.12, 0]} distanceFactor={9} transform sprite>
-        <Link href={spec.href} className="urai-home-spatial-portal-label" data-active={hovered ? 'true' : 'false'} onClick={() => { document.body.style.cursor = 'default' }} onFocus={() => setHovered(true)} onBlur={() => setHovered(false)} style={{ textDecoration: 'none' }}>
-          <strong>{spec.label}</strong><span>{spec.detail}</span>
-        </Link>
-      </Html>
-    </group>
-  )
-}
-
 function Scene({ reducedMotion, onOrbOpen }: { reducedMotion: boolean; onOrbOpen: () => void }) {
-  const router = useRouter()
-  const navigate = useCallback((href: string) => { document.body.style.cursor = 'default'; router.push(href) }, [router])
-
   return (
     <>
       <FirstHomeFrame />
@@ -323,7 +213,6 @@ function Scene({ reducedMotion, onOrbOpen }: { reducedMotion: boolean; onOrbOpen
       <Stars radius={62} depth={42} count={reducedMotion ? 900 : 1900} factor={3.8} saturation={0.18} fade speed={reducedMotion ? 0 : 0.16} />
       <LivingGround />
       <Orb reducedMotion={reducedMotion} onOpen={onOrbOpen} />
-      {portals.map((spec) => <Portal key={spec.id} spec={spec} reducedMotion={reducedMotion} onNavigate={navigate} />)}
       <OrbitControls makeDefault enablePan={false} enableDamping={!reducedMotion} dampingFactor={0.07} rotateSpeed={0.36} zoomSpeed={0.5} minDistance={9} maxDistance={20} minPolarAngle={0.62} maxPolarAngle={1.42} minAzimuthAngle={-1.28} maxAzimuthAngle={1.28} target={[0, 1.35, -2.25]} />
     </>
   )
@@ -337,7 +226,7 @@ export default function HomeSpatialCanvas({ onOrbOpen, webglAvailable }: HomeSpa
   if (!webglAvailable) return null
 
   return (
-    <div className="urai-home-spatial-canvas-shell" data-home-spatial-renderer="webgl" data-webgl-ready="true" data-home-spatial-geometry="terrain-portals-orb" aria-label="Interactive spatial Home world">
+    <div className="urai-home-spatial-canvas-shell" data-home-spatial-renderer="webgl" data-webgl-ready="true" data-home-spatial-geometry="terrain-orb-ground-gateway" aria-label="Interactive spatial Home world">
       <Canvas className="urai-home-spatial-canvas" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%' }} shadows frameloop="always" dpr={[1, 1.45]} camera={{ position: [0, 5.25, 14.6], fov: 50, near: 0.1, far: 110 }} gl={{ antialias: true, alpha: false, powerPreference: 'high-performance' }} onCreated={({ gl }) => {
         gl.outputColorSpace = THREE.SRGBColorSpace
         gl.toneMapping = THREE.ACESFilmicToneMapping
@@ -345,7 +234,7 @@ export default function HomeSpatialCanvas({ onOrbOpen, webglAvailable }: HomeSpa
       }}>
         <Scene reducedMotion={reducedMotion} onOrbOpen={onOrbOpen} />
       </Canvas>
-      <div className="urai-home-spatial-canvas-hint" aria-hidden="true"><span /> Drag to look · scroll to move · choose a doorway</div>
+      <div className="urai-home-spatial-canvas-hint" aria-hidden="true"><span /> Drag to look · tap the ground to enter below</div>
     </div>
   )
 }
