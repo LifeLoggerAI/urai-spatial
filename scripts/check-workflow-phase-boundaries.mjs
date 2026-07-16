@@ -49,6 +49,7 @@ const aaaTrigger = triggerBlockFor(aaa)
 const aaaBuildIndex = aaa.indexOf('- name: Static build')
 const aaaPrepareIndex = aaa.indexOf('- name: Prepare exact clean proof source')
 const aaaProofIndex = aaa.indexOf('- name: Final launch proof receipt')
+const exactTargetExpression = '${{ inputs.target_sha || github.event.pull_request.head.sha || github.sha }}'
 
 if (!/\n\s*workflow_call\s*:/.test(aaaTrigger)) {
   failures.push(`${aaaPath} must expose a reusable exact-head proof path`)
@@ -68,9 +69,9 @@ for (const path of [
 }
 
 for (const marker of [
-  'group: urai-aaa-final-proof-${{ inputs.target_sha || github.event.pull_request.head.sha || github.sha }}',
-  'TARGET_SHA: ${{ inputs.target_sha || github.event.pull_request.head.sha || github.sha }}',
-  'URAI_PROOF_SOURCE_SHA: ${{ env.TARGET_SHA }}',
+  `group: urai-aaa-final-proof-${exactTargetExpression}`,
+  `TARGET_SHA: ${exactTargetExpression}`,
+  `URAI_PROOF_SOURCE_SHA: ${exactTargetExpression}`,
   'ref: ${{ env.TARGET_SHA }}',
   'test "$(git rev-parse HEAD)" = "$TARGET_SHA"',
   'test "$(git write-tree)" = "$(git rev-parse \'HEAD^{tree}\')"',
@@ -85,6 +86,9 @@ for (const marker of [
   'name: urai-aaa-final-proof-${{ env.TARGET_SHA }}',
 ]) {
   if (!aaa.includes(marker)) failures.push(`${aaaPath} must retain exact-proof marker: ${marker}`)
+}
+if (aaa.includes('URAI_PROOF_SOURCE_SHA: ${{ env.TARGET_SHA }}')) {
+  failures.push(`${aaaPath} must not construct job env from the env context; bind proof SHA directly from inputs/github`)
 }
 if (aaaBuildIndex < 0 || aaaPrepareIndex <= aaaBuildIndex || aaaProofIndex <= aaaPrepareIndex) {
   failures.push(`${aaaPath} must build first, then prepare an exact clean proof source, then run final proof`)
