@@ -1,7 +1,13 @@
 /* Final native doorway separation: Ground sits above the WebGL canvas,
-   while the Orb and its panel stay above Ground with accessibility-sized hit targets. */
+   while its bounded bottom rail never overlaps the Orb or its panel. */
 .urai-ground-gateway {
   z-index: 11 !important;
+  height: 112px !important;
+}
+
+.urai-ground-gateway__surface {
+  inset: auto 0 0 !important;
+  height: 112px !important;
 }
 
 .urai-home-spatial-runtime-layer {
@@ -22,11 +28,15 @@
 }
 
 @media (max-width: 760px) {
-  .urai-ground-gateway {
+  .urai-ground-gateway,
+  .urai-ground-gateway__surface {
     height: 96px !important;
   }
 
   .urai-ground-gateway__surface {
+    left: 50% !important;
+    right: auto !important;
     width: min(82vw, 560px) !important;
+    transform: translateX(-50%) !important;
   }
 }
