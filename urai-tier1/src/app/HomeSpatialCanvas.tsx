@@ -17,8 +17,8 @@ const TREES: readonly [number, number, number, number][] = [
 ]
 
 const HILLS: readonly [number, number, number, number, number, number][] = [
-  [-13, 0.5, -8, 5.5, 2.4, 4.5], [-8, 0.38, -14, 7, 2.2, 5.2],
-  [8, 0.42, -14, 7.4, 2.5, 5.4], [13, 0.5, -7, 5.5, 2.5, 4.5],
+  [-12.5, 0.3, -9.5, 4.5, 1.4, 3.8], [-7.5, 0.25, -16, 4.8, 1.2, 3.8],
+  [7.5, 0.28, -16, 5, 1.35, 4], [12.5, 0.32, -9, 4.5, 1.45, 3.8],
 ]
 
 let cachedWebGLAvailable: boolean | null = null
@@ -83,12 +83,12 @@ function CameraRig() {
 
   useEffect(() => {
     const mobile = size.width < 720
-    camera.position.set(0, mobile ? 6.4 : 5.25, mobile ? 19.2 : 14.6)
+    camera.position.set(0, mobile ? 7.2 : 5.25, mobile ? 24.5 : 14.6)
     if (camera instanceof THREE.PerspectiveCamera) {
-      camera.fov = mobile ? 58 : 50
+      camera.fov = mobile ? 64 : 50
       camera.updateProjectionMatrix()
     }
-    camera.lookAt(0, 1.35, -2.25)
+    camera.lookAt(0, 1.4, -2.35)
   }, [camera, size.width])
 
   return null
@@ -132,6 +132,34 @@ function HorizonMonoliths() {
   )
 }
 
+function AtmosphericVeils({ reducedMotion }: { reducedMotion: boolean }) {
+  const near = useRef<THREE.Mesh>(null)
+  const far = useRef<THREE.Mesh>(null)
+
+  useFrame(({ clock }) => {
+    if (reducedMotion) return
+    if (near.current) near.current.rotation.z = 0.06 + Math.sin(clock.elapsedTime * 0.035) * 0.025
+    if (far.current) far.current.rotation.z = -0.05 + Math.cos(clock.elapsedTime * 0.025) * 0.02
+  })
+
+  return (
+    <group data-testid="urai-home-layered-atmosphere">
+      <mesh ref={near} position={[0, 7.8, -23]} scale={[23, 1.15, 7.5]} rotation={[0.02, 0, 0.06]}>
+        <sphereGeometry args={[1, 64, 28]} />
+        <meshBasicMaterial color="#8fdce8" transparent opacity={0.05} depthWrite={false} blending={THREE.AdditiveBlending} toneMapped={false} />
+      </mesh>
+      <mesh ref={far} position={[0, 11.4, -36]} scale={[31, 1.5, 10]} rotation={[-0.02, 0, -0.05]}>
+        <sphereGeometry args={[1, 64, 28]} />
+        <meshBasicMaterial color="#b8a7ff" transparent opacity={0.035} depthWrite={false} blending={THREE.AdditiveBlending} toneMapped={false} />
+      </mesh>
+      <mesh position={[0, 3.5, -19]} rotation={[-Math.PI / 2, 0, 0]}>
+        <ringGeometry args={[7.8, 8.05, 128]} />
+        <meshBasicMaterial color="#73edf3" transparent opacity={0.1} depthWrite={false} toneMapped={false} />
+      </mesh>
+    </group>
+  )
+}
+
 function LivingGround() {
   return (
     <group data-testid="urai-home-living-ground">
@@ -139,7 +167,7 @@ function LivingGround() {
         <planeGeometry args={[48, 48]} />
         <meshStandardMaterial color="#223d34" roughness={0.9} metalness={0.04} />
       </mesh>
-      <mesh position={[0, -0.035, -1.5]} receiveShadow>
+      <mesh position={[0, -0.035, -1.5]} receiveShadow data-testid="urai-home-horizontal-plaza">
         <cylinderGeometry args={[6.3, 6.8, 0.12, 128]} />
         <meshStandardMaterial color="#334a45" roughness={0.64} metalness={0.18} />
       </mesh>
@@ -168,31 +196,44 @@ function LivingGround() {
 function Orb({ reducedMotion, onOpen }: { reducedMotion: boolean; onOpen: () => void }) {
   const group = useRef<THREE.Group>(null)
   const outerRing = useRef<THREE.Mesh>(null)
+  const [hovered, setHovered] = useState(false)
 
   useFrame(({ clock }) => {
-    if (!group.current || reducedMotion) return
+    if (!group.current) return
+    const targetScale = hovered ? 1.08 : 1
+    group.current.scale.setScalar(THREE.MathUtils.lerp(group.current.scale.x, targetScale, reducedMotion ? 1 : 0.12))
+    if (reducedMotion) return
     group.current.position.y = 2.05 + Math.sin(clock.elapsedTime * 1.1) * 0.1
     group.current.rotation.y = clock.elapsedTime * 0.2
     if (outerRing.current) outerRing.current.rotation.z = clock.elapsedTime * 0.28
   })
 
+  const enter = () => {
+    setHovered(true)
+    document.body.style.cursor = 'pointer'
+  }
+  const leave = () => {
+    setHovered(false)
+    document.body.style.cursor = 'default'
+  }
+
   return (
     <group ref={group} position={[0, 2.05, -1.5]} data-testid="urai-home-webgl-orb">
-      <mesh castShadow onClick={(event: ThreeEvent<MouseEvent>) => { event.stopPropagation(); onOpen() }} onPointerOver={() => { document.body.style.cursor = 'pointer' }} onPointerOut={() => { document.body.style.cursor = 'default' }}>
+      <mesh castShadow onClick={(event: ThreeEvent<MouseEvent>) => { event.stopPropagation(); onOpen() }} onPointerOver={enter} onPointerOut={leave}>
         <sphereGeometry args={[0.62, 64, 64]} />
-        <meshPhysicalMaterial color="#e9feff" emissive="#54e8f4" emissiveIntensity={2.8} roughness={0.06} metalness={0.25} clearcoat={1} clearcoatRoughness={0.03} />
+        <meshPhysicalMaterial color="#e9feff" emissive={hovered ? '#8df7ff' : '#54e8f4'} emissiveIntensity={hovered ? 3.5 : 2.8} roughness={0.06} metalness={0.25} clearcoat={1} clearcoatRoughness={0.03} />
       </mesh>
       <mesh ref={outerRing} rotation={[Math.PI / 2, 0, 0]}>
         <torusGeometry args={[0.98, 0.045, 18, 128]} />
-        <meshBasicMaterial color="#a7f5f8" transparent opacity={0.9} toneMapped={false} />
+        <meshBasicMaterial color="#a7f5f8" transparent opacity={hovered ? 1 : 0.9} toneMapped={false} />
       </mesh>
       <mesh rotation={[0.35, 0.1, 0]}>
         <torusGeometry args={[0.82, 0.025, 14, 112]} />
-        <meshBasicMaterial color="#ffd98a" transparent opacity={0.62} toneMapped={false} />
+        <meshBasicMaterial color="#ffd98a" transparent opacity={hovered ? 0.82 : 0.62} toneMapped={false} />
       </mesh>
-      <pointLight color="#79f3fa" intensity={14} distance={12} decay={2} />
+      <pointLight color="#79f3fa" intensity={hovered ? 17 : 14} distance={12} decay={2} />
       <Html center position={[0, -1.1, 0]} distanceFactor={9} transform sprite>
-        <button type="button" className="urai-home-spatial-portal-label" onClick={onOpen}><strong>Orb</strong><span>private companion</span></button>
+        <button type="button" className="urai-home-spatial-portal-label" onFocus={() => setHovered(true)} onBlur={() => setHovered(false)} onClick={onOpen}><strong>Orb</strong><span>private companion</span></button>
       </Html>
     </group>
   )
@@ -204,16 +245,19 @@ function Scene({ reducedMotion, onOrbOpen }: { reducedMotion: boolean; onOrbOpen
       <FirstHomeFrame />
       <CameraRig />
       <color attach="background" args={['#071821']} />
-      <fog attach="fog" args={['#0b1d29', 30, 80]} />
+      <fog attach="fog" args={['#0b1d29', 26, 78]} />
       <ambientLight intensity={1.25} color="#dceff4" />
       <hemisphereLight args={['#dff6ff', '#24382d', 2.1]} />
       <directionalLight position={[-6, 12, 8]} intensity={4.1} color="#fff0d8" castShadow shadow-mapSize-width={1536} shadow-mapSize-height={1536} />
       <directionalLight position={[8, 6, -10]} intensity={2.2} color="#78c9ff" />
       <pointLight position={[0, 7, -7]} color="#b5efff" intensity={6} distance={28} />
+      <pointLight position={[-9, 3.2, -13]} color="#86efac" intensity={2.2} distance={18} />
+      <pointLight position={[9, 4.1, -17]} color="#a78bfa" intensity={2} distance={20} />
       <Stars radius={62} depth={42} count={reducedMotion ? 900 : 1900} factor={3.8} saturation={0.18} fade speed={reducedMotion ? 0 : 0.16} />
+      <AtmosphericVeils reducedMotion={reducedMotion} />
       <LivingGround />
       <Orb reducedMotion={reducedMotion} onOpen={onOrbOpen} />
-      <OrbitControls makeDefault enablePan={false} enableDamping={!reducedMotion} dampingFactor={0.07} rotateSpeed={0.36} zoomSpeed={0.5} minDistance={9} maxDistance={20} minPolarAngle={0.62} maxPolarAngle={1.42} minAzimuthAngle={-1.28} maxAzimuthAngle={1.28} target={[0, 1.35, -2.25]} />
+      <OrbitControls makeDefault enablePan={false} enableDamping={!reducedMotion} dampingFactor={0.07} rotateSpeed={0.36} zoomSpeed={0.5} minDistance={9} maxDistance={28} minPolarAngle={0.62} maxPolarAngle={1.42} minAzimuthAngle={-1.28} maxAzimuthAngle={1.28} target={[0, 1.4, -2.35]} />
     </>
   )
 }
@@ -226,7 +270,7 @@ export default function HomeSpatialCanvas({ onOrbOpen, webglAvailable }: HomeSpa
   if (!webglAvailable) return null
 
   return (
-    <div className="urai-home-spatial-canvas-shell" data-home-spatial-renderer="webgl" data-webgl-ready="true" data-home-spatial-geometry="terrain-orb-ground-gateway" data-tier0-ground-gateway="true" aria-label="Interactive spatial Home world">
+    <div className="urai-home-spatial-canvas-shell" data-home-spatial-renderer="webgl" data-webgl-ready="true" data-home-spatial-geometry="terrain-orb-ground-gateway" data-home-spatial-atmosphere="layered" data-tier0-ground-gateway="true" aria-label="Interactive spatial Home world">
       <Canvas className="urai-home-spatial-canvas" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%' }} shadows frameloop="always" dpr={[1, 1.45]} camera={{ position: [0, 5.25, 14.6], fov: 50, near: 0.1, far: 110 }} gl={{ antialias: true, alpha: false, powerPreference: 'high-performance' }} onCreated={({ gl }) => {
         gl.outputColorSpace = THREE.SRGBColorSpace
         gl.toneMapping = THREE.ACESFilmicToneMapping
