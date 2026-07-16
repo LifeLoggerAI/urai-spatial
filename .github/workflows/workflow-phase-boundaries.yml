@@ -10,6 +10,7 @@ on:
       - ".github/workflows/urai-spatial-release-certification.yml"
       - ".github/workflows/spatial-live-deploy.yml"
       - ".github/workflows/workflow-phase-boundaries.yml"
+      - "scripts/aaa-launch-proof.mjs"
       - "scripts/check-workflow-phase-boundaries.mjs"
   push:
     branches: [main]
@@ -20,6 +21,7 @@ on:
       - ".github/workflows/urai-spatial-release-certification.yml"
       - ".github/workflows/spatial-live-deploy.yml"
       - ".github/workflows/workflow-phase-boundaries.yml"
+      - "scripts/aaa-launch-proof.mjs"
       - "scripts/check-workflow-phase-boundaries.mjs"
   workflow_dispatch:
 
