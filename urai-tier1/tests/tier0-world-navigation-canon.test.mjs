@@ -8,6 +8,7 @@ const worldTypes = read('src/spatial/world/worldTypes.ts')
 const registry = read('src/spatial/world/destinationRegistry.ts')
 const provider = read('src/spatial/world/WorldStateProvider.tsx')
 const controller = read('src/spatial/world/WorldTransitionController.tsx')
+const gateway = read('src/spatial/world/GroundGateway.tsx')
 const shell = read('src/spatial/world/UraiWorldShell.tsx')
 const layout = read('src/app/layout.tsx')
 
@@ -36,12 +37,17 @@ test('Ground is the canonical gateway to Hidden Infrastructure', () => {
   assert.match(registry, /entryPortal:\s*['"]ground-gateway['"]/)
   assert.match(registry, /environmentalForm:\s*['"]underground-network['"]/)
   assert.match(registry, /\['"]\/ground['"],\s*['"]infrastructure-hub['"]\]/)
+  assert.match(gateway, /destination:\s*['"]infrastructure-hub['"]/)
+  assert.match(gateway, /href:\s*['"]\/ground\?from=ground-gateway['"]/)
+  assert.match(gateway, /Open the ground and descend into Hidden Infrastructure/)
+  assert.match(gateway, /type=['"]button['"]/)
 })
 
 test('The root application owns one persistent world shell', () => {
   assert.match(layout, /WorldRuntimeBoundary/)
   assert.match(layout, /<WorldRuntimeBoundary>/)
   assert.match(shell, /data-testid=['"]urai-persistent-world-shell['"]/)
+  assert.match(shell, /<GroundGateway\s*\/>/)
   assert.match(shell, /WorldTransitionController/)
 })
 
