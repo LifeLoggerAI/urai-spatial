@@ -66,9 +66,11 @@ export function WorldTransitionController() {
   const timer = useRef<number | null>(null)
   const worldRef = useRef(world)
   const phaseRef = useRef(phase)
+  const beginTravelRef = useRef(beginTravel)
 
   useEffect(() => { worldRef.current = world }, [world])
   useEffect(() => { phaseRef.current = phase }, [phase])
+  useEffect(() => { beginTravelRef.current = beginTravel }, [beginTravel])
 
   const clearTimer = useCallback(() => {
     if (timer.current === null) return
@@ -79,7 +81,7 @@ export function WorldTransitionController() {
   const executeTravel = useCallback((request: UraiWorldTravelRequest) => {
     clearTimer()
     const currentWorld = worldRef.current
-    beginTravel(request)
+    beginTravelRef.current(request)
 
     if (currentWorld.destination === 'home') {
       window.sessionStorage.setItem('urai-world-home-checkpoint', JSON.stringify({
@@ -95,7 +97,7 @@ export function WorldTransitionController() {
       router.push(href)
       timer.current = null
     }, transitionDuration(request.destination))
-  }, [beginTravel, clearTimer, router])
+  }, [clearTimer, router])
 
   const reverseTravel = useCallback(() => {
     const currentWorld = worldRef.current
