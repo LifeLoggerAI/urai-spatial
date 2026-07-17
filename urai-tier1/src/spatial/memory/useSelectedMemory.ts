@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { doc, getDoc } from 'firebase/firestore'
 import { getAuth, onAuthStateChanged } from 'firebase/auth'
 import { app, firebasePublicEnvReady, getFirebaseDb } from '@/lib/firebase/client'
@@ -12,4 +12,7 @@ import {
   type SelectedMemoryResult,
 } from './selectedMemoryContract'
 
-const LOADING:
+const LOADING: SelectedMemoryResult = {
+  status: 'loading',
+  memory: null,
+ 
