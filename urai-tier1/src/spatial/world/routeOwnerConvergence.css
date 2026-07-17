@@ -1,0 +1,10 @@
+/* Final persistent-world ownership boundary.
+ * Focus and Replay already have canonical route-owned clients. The legacy
+ * autonomous overlay must not cover them, otherwise the user sees a second,
+ * hard-coded page owner instead of the selected-memory world state.
+ */
+
+.urai-world-runtime[data-world-destination='focus'] .uraiAutoFocus,
+.urai-world-runtime[data-world-destination='replay'] .uraiAutoReplay {
+  display: none !important;
+}
