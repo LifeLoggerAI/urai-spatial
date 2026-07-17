@@ -8,6 +8,8 @@ const worldTypes = read('src/spatial/world/worldTypes.ts')
 const registry = read('src/spatial/world/destinationRegistry.ts')
 const shell = read('src/spatial/world/UraiWorldShell.tsx')
 const companion = read('src/spatial/world/PersistentWorldCompanion.tsx')
+const atmosphere = read('src/spatial/world/PersistentRealmAtmosphere.tsx')
+const atmosphereCss = read('src/spatial/world/persistentRealmAtmosphere.css')
 const worldEvents = read('src/spatial/world/worldEvents.ts')
 const homeRuntime = read('src/app/HomeSpatialRuntimeLayer.tsx')
 const chrome = read('src/spatial/world/persistentWorldCompanion.css')
@@ -54,6 +56,23 @@ test('one persistent Orb owns all canonical travel and Home opens that same comp
   assert.match(homeRuntime, /onOrbOpen={requestUraiWorldOrbOpen}/)
   assert.doesNotMatch(homeRuntime, /urai-home-spatial-orb-trigger/)
   assert.doesNotMatch(homeRuntime, /urai-home-spatial-runtime-orb/)
+})
+
+test('one environmental continuity layer persists across every route transition', () => {
+  assert.match(shell, /PersistentRealmAtmosphere/)
+  assert.match(shell, /<PersistentRealmAtmosphere\s*\/>/)
+  assert.match(shell, /import '\.\/persistentRealmAtmosphere\.css'/)
+  assert.match(atmosphere, /data-realm={world\.destination}/)
+  assert.match(atmosphere, /data-phase={phase}/)
+  assert.match(atmosphere, /urai-world-atmosphere__horizon/)
+  assert.match(atmosphere, /urai-world-atmosphere__threshold/)
+  for (const destination of ['infrastructure-hub', 'life-map', 'focus', 'replay', 'mirror', 'passport', 'privacy-controls', 'location-map']) {
+    assert.match(atmosphereCss, new RegExp(`data-realm=['"]${destination}['"]`))
+  }
+  assert.match(atmosphereCss, /pointer-events:\s*none/)
+  assert.match(atmosphereCss, /data-phase/)
+  assert.match(atmosphereCss, /env\(safe-area-inset-bottom\)/)
+  assert.match(atmosphereCss, /prefers-reduced-motion: reduce/)
 })
 
 test('page-like route chrome is removed from the active world', () => {
