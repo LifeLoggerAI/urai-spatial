@@ -1,8 +1,8 @@
 'use client'
 
-import { useCallback, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { definitionForDestination, URAI_DESTINATION_REGISTRY } from './destinationRegistry'
-import { requestUraiWorldTravel } from './worldEvents'
+import { requestUraiWorldTravel, URAI_WORLD_ORB_OPEN_EVENT } from './worldEvents'
 import { useUraiWorldState } from './WorldStateProvider'
 import type { UraiDestination } from './worldTypes'
 
@@ -18,6 +18,16 @@ export function PersistentWorldCompanion() {
   const { world, phase } = useUraiWorldState()
   const [open, setOpen] = useState(false)
   const current = definitionForDestination(world.destination)
+
+  useEffect(() => {
+    const openCompanion = () => setOpen(true)
+    window.addEventListener(URAI_WORLD_ORB_OPEN_EVENT, openCompanion)
+    return () => window.removeEventListener(URAI_WORLD_ORB_OPEN_EVENT, openCompanion)
+  }, [])
+
+  useEffect(() => {
+    if (phase !== 'idle') setOpen(false)
+  }, [phase])
 
   const destinations = useMemo(
     () => PRIMARY_DESTINATIONS.map((id) => URAI_DESTINATION_REGISTRY[id]),
