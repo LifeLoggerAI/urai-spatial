@@ -38,21 +38,21 @@ if (!source.includes("const selectedControl = page.getByRole('button', { name: '
   )
 }
 
-if (!source.includes('portalLabelSemanticallyRetained')) {
+if (!source.includes('sceneLabelRetired')) {
   replaceRequired(
     'Home verifier',
     /const sceneLabels = page\.locator\('\.urai-home-spatial-portal-label'\)\s*const sceneLabelCount = await sceneLabels\.count\(\)\s*const visibleSceneLabelCount = await visibleElementCount\(sceneLabels\)\s*const orbLabelVisible = sceneLabelCount === 1 && visibleSceneLabelCount === 1/,
     `const sceneLabels = page.locator('.urai-home-spatial-portal-label')
       const sceneLabelCount = await sceneLabels.count()
       const visibleSceneLabelCount = await visibleElementCount(sceneLabels)
-      const portalLabelSemanticallyRetained = sceneLabelCount === 1
+      const sceneLabelRetired = sceneLabelCount === 0 && visibleSceneLabelCount === 0
       const marketingPortalLabelSuppressed = visibleSceneLabelCount === 0`,
   )
   replaceRequired(
     'Home verification receipt',
     /\s*orbLabelVisible,\s*permanentFeatureShortcutsAbsent,/,
     `
-        portalLabelSemanticallyRetained,
+        sceneLabelRetired,
         marketingPortalLabelSuppressed,
         permanentFeatureShortcutsAbsent,`,
   )
@@ -120,7 +120,7 @@ if (!source.includes('singleSelectedActionOwner')) {
 replaceRequired(
   'visual proof schema version',
   /schemaVersion: 'urai-continuous-spatial-visual-proof-[0-9]+'/,
-  "schemaVersion: 'urai-continuous-spatial-visual-proof-11'",
+  "schemaVersion: 'urai-continuous-spatial-visual-proof-12'",
 )
 
 await writeFile(patchedPath, source)
