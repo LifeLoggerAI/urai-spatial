@@ -18,14 +18,14 @@ jobs:
         uses: actions/github-script@v7
         with:
           script: |
-            // Second push intentionally triggers this already-installed dispatcher.
+            // Dispatch the repaired exact current main through protected production authority.
             await github.rest.actions.createWorkflowDispatch({
               owner: context.repo.owner,
               repo: context.repo.repo,
               workflow_id: 'spatial-live-deploy.yml',
               ref: 'main',
               inputs: {
-                release_sha: 'abc2cec2886d56517e3ab6e484e498a574ca9378',
+                release_sha: 'f79bd561a7ef1472c1575c7707a68d71cfa35905',
                 rollback_sha: 'e2850a8b9dbd2fd11ee0197505da278322916aa0',
                 confirm: 'DEPLOY_URAI_APP'
               }
