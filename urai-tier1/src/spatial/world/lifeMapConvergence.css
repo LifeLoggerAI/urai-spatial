@@ -46,6 +46,15 @@
   bottom: max(16px, env(safe-area-inset-bottom));
 }
 
+/* A restored selected-memory deep link already owns the contextual Focus and
+   Replay actions. Keep the persistent Orb available, but do not show a second
+   competing action panel over the same memory. */
+body:has(.urai-lifemap-deep-link-controls)
+  .urai-world-runtime[data-world-destination='life-map']
+  .urai-world-companion__menu {
+  display: none !important;
+}
+
 @media (max-width: 760px) {
   .urai-world-runtime[data-world-destination='life-map'] main[data-testid='urai-true-3d-life-map'] canvas {
     transform: translate3d(4vw, -2vh, 0) scale(1.16);
