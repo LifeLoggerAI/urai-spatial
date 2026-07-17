@@ -31,6 +31,7 @@ const tests = [
   'tests/sensory-asset-resolution-contract.test.mjs',
   'tests/spatial-launch-boundaries.test.mjs',
   'tests/tier0-world-navigation-canon.test.mjs',
+  'tests/world-navigation-stack-contract.test.mjs',
   'tests/spatial-missing-resource-diagnostic-contract.test.mjs',
   'tests/unit-runner-coverage.test.mjs',
   'tests/v2-asset-gating.test.mjs',
