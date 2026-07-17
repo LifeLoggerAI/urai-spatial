@@ -87,35 +87,53 @@ test('bundle producer and verifier use one global manifest path order', () => {
   assert.ok(operator.includes(marker), 'bundle verifier must globally sort paths')
 })
 
-test('build, authority attestation, and protected deploy are separate jobs', () => {
-  const build = job(workflow, 'build-release-output')
-  const attest = job(workflow, 'attest-release-bundle')
+test('target build, recovery build, authority attestation, and protected deploy are separate jobs', () => {
+  const buildTarget = job(workflow, 'build-target')
+  const buildRecovery = job(workflow, 'build-recovery')
+  const attest = job(workflow, 'attest-bundles')
   const deploy = job(workflow, 'deploy')
 
-  hasAll(build, [
-    'Build exact static target without production authority or credentials',
-    'Checkout exact release target only',
+  hasAll(buildTarget, [
+    'Build exact target static output without production credentials',
+    'Checkout exact target only',
+    'path: target',
     'pnpm install --frozen-lockfile',
     'pnpm build:static',
-    'Upload unattested raw static output',
-  ], 'build job')
-  assert.doesNotMatch(build, /environment:\s*production|FIREBASE_SERVICE_ACCOUNT_JSON|GOOGLE_APPLICATION_CREDENTIALS/)
+    'Upload exact target raw output',
+  ], 'target build job')
+  assert.doesNotMatch(buildTarget, /environment:\s*production|FIREBASE_SERVICE_ACCOUNT_JSON|GOOGLE_APPLICATION_CREDENTIALS/)
+
+  hasAll(buildRecovery, [
+    'Build exact recovery static output without production credentials',
+    'Checkout exact recovery target only',
+    'path: recovery',
+    'pnpm install --frozen-lockfile',
+    'pnpm build:static',
+    'Upload exact recovery raw output',
+  ], 'recovery build job')
+  assert.doesNotMatch(buildRecovery, /environment:\s*production|FIREBASE_SERVICE_ACCOUNT_JSON|GOOGLE_APPLICATION_CREDENTIALS/)
 
   hasAll(attest, [
-    'Attest raw static output with clean current authority',
-    'Checkout clean current release authority only',
-    'Download unattested raw static output',
-    'node scripts/verify-release-credential-boundary.mjs',
+    'Attest target and recovery bundles with clean current authority',
+    'Checkout clean current authority only',
+    'Download target raw output',
+    'Download recovery raw output',
     'node scripts/create-static-release-bundle.mjs',
-    'Upload authority-attested static release bundle',
+    'Upload exact target bundle',
+    'Upload exact recovery bundle',
   ], 'attestation job')
   assert.doesNotMatch(attest, /environment:\s*production|FIREBASE_SERVICE_ACCOUNT_JSON|GOOGLE_APPLICATION_CREDENTIALS|pnpm\s+build:static/)
 
   hasAll(deploy, [
-    'Deploy or roll back verified static bundle on urai.app',
+    'Deploy target or restore exact attested recovery bundle on urai.app',
     'environment: production',
     'Checkout current release authority only',
+    'Initialize protected bundle paths',
+    'TARGET_BUNDLE_DIR=${RUNNER_TEMP}/urai-v2-target-bundle',
+    'RECOVERY_BUNDLE_DIR=${RUNNER_TEMP}/urai-v2-recovery-bundle',
     'pnpm install --frozen-lockfile --ignore-scripts',
+    'Download exact target bundle',
+    'Download exact recovery bundle',
     'node scripts/live-release.mjs --verify-prebuilt',
     'node scripts/live-release.mjs --deploy-prebuilt',
     'node scripts/urai-release-control-smoke.mjs',
@@ -123,7 +141,7 @@ test('build, authority attestation, and protected deploy are separate jobs', () 
   ], 'deploy job')
   assert.match(deploy, /GOOGLE_APPLICATION_CREDENTIALS: \$\{\{ runner\.temp \}\}\/urai-firebase-service-account\.json/)
   assert.match(deploy, /URAI_FIREBASE_CLI: \$\{\{ github\.workspace \}\}\/node_modules\/\.bin\/firebase/)
-  assert.doesNotMatch(deploy, /working-directory:\s*target|pnpm\s+build:static/)
+  assert.doesNotMatch(deploy, /working-directory:\s*target|working-directory:\s*recovery|pnpm\s+build:static/)
 })
 
 test('authority bundle and credential verifier bind the complete immutable hosted release', () => {
@@ -207,8 +225,8 @@ test('legacy bootstrap is fingerprint-absence-only and recovery-bound', () => {
 
 test('static SHA proofs avoid pipefail SIGPIPE false negatives', () => {
   hasAll(workflow, [
-    'grep -R --fixed-strings --include=\'*.html\' -q "$PROOF_SHA" urai-tier1/out',
-    'grep -R --fixed-strings --include=\'*.html\' -q "$RELEASE_SHA" target/urai-tier1/out',
+    'grep -R --fixed-strings --include=\'*.html\' -q "$TARGET_SHA" target/urai-tier1/out',
+    'grep -R --fixed-strings --include=\'*.html\' -q "$RECOVERY_SHA" recovery/urai-tier1/out',
   ], 'direct static SHA proof')
   assert.doesNotMatch(workflow, /--include='\*\.html' -l \| grep -q \./)
 })
@@ -216,14 +234,20 @@ test('static SHA proofs avoid pipefail SIGPIPE false negatives', () => {
 test('manual deploy and rollback preserve distinct target and recovery identities', () => {
   hasAll(workflow, [
     'workflow_dispatch:',
-    'rollback-verify:',
-    'build-release-output:',
-    'attest-release-bundle:',
+    'build-target:',
+    'build-recovery:',
+    'attest-bundles:',
     'ROLLBACK_SHA: ${{ inputs.rollback_sha }}',
+    "inputs.confirm == 'DEPLOY_URAI_APP'",
+    "inputs.confirm == 'ROLLBACK_URAI_APP'",
     'test "$RELEASE_SHA" = "$CURRENT_MAIN_SHA"',
     'test "$ROLLBACK_SHA" = "$CURRENT_MAIN_SHA"',
-    'test "$RELEASE_SHA" != "$CURRENT_MAIN_SHA"',
+    'test "$RELEASE_SHA" != "$ROLLBACK_SHA"',
     'git merge-base --is-ancestor',
-    'gh workflow run spatial-live-deploy.yml --ref main',
+    "URAI_RELEASE_OPERATION: ${{ inputs.confirm == 'ROLLBACK_URAI_APP' && 'deploy' || 'rollback' }}",
+    'if test "$PRIMARY_OPERATION" = \'deploy\'; then',
+    "export URAI_RELEASE_OPERATION='rollback'",
+    "export URAI_RELEASE_OPERATION='deploy'",
+    'gh workflow run spatial-live-deploy-v2.yml --ref main',
   ], 'protected release workflow')
 })
