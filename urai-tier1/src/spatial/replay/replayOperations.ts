@@ -161,6 +161,13 @@ export async function executeReplayOperation(options: {
     const latest = optimisticStored
       ? readReplayOperationState(storage, operation.ownerId, operation.memoryId)
       : optimistic
+    const alreadySettled = latest.audit.some((entry) => entry.id === operation.id)
+      && !latest.pending.some((entry) => entry.id === operation.id)
+    if (alreadySettled) {
+      const accepted = { ...latest, error: undefined }
+      onSettled?.(accepted)
+      return accepted
+    }
     const rolledBack = rollbackReplayOperation(
       latest,
       operation,
