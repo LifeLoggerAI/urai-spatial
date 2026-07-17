@@ -16,7 +16,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
-      - name: Dispatch and record canonical production run
+      - name: Bootstrap legacy production and record canonical run
         uses: actions/github-script@v7
         with:
           script: |
@@ -34,7 +34,7 @@ jobs:
               inputs: {
                 release_sha: releaseSha,
                 rollback_sha: 'e2850a8b9dbd2fd11ee0197505da278322916aa0',
-                confirm: 'DEPLOY_URAI_APP'
+                confirm: 'BOOTSTRAP_LEGACY_URAI_APP'
               }
             });
 
@@ -69,7 +69,7 @@ jobs:
             });
             const jobLines = jobsResponse.data.jobs.map((job) => `- ${job.name}: ${job.status}/${job.conclusion || 'none'}`);
             const body = [
-              '## URAI canonical production receipt',
+              '## URAI legacy bootstrap production receipt',
               '',
               `- Release SHA: \`${releaseSha}\``,
               `- Workflow run: ${run.html_url}`,
@@ -84,8 +84,8 @@ jobs:
             await github.rest.issues.create({
               owner,
               repo,
-              title: `Production receipt ${releaseSha.slice(0, 12)} — ${run.conclusion || run.status}`,
+              title: `Bootstrap receipt ${releaseSha.slice(0, 12)} — ${run.conclusion || run.status}`,
               body
             });
             core.summary.addRaw(body).write();
-            if (run.conclusion !== 'success') core.setFailed(`Canonical production run concluded ${run.conclusion || run.status}`);
+            if (run.conclusion !== 'success') core.setFailed(`Legacy bootstrap run concluded ${run.conclusion || run.status}`);
