@@ -2,7 +2,7 @@
 
 import { Stars } from '@react-three/drei'
 import { Canvas, useFrame, useThree, type ThreeEvent } from '@react-three/fiber'
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import * as THREE from 'three'
 import { requestUraiWorldTravel } from '@/spatial/world/worldEvents'
 
@@ -15,6 +15,7 @@ type HomeSpatialCanvasProps = {
 type CameraMode = 'arrival' | 'idle' | 'look' | 'orb' | 'avatar' | 'ascending' | 'descending'
 type DeviceTier = 'low' | 'medium' | 'high'
 type Mood = 'calm' | 'joy' | 'focus' | 'grief' | 'tense'
+type PointerRef = { current: { x: number; y: number } }
 
 type HomeProfile = {
   mood: Mood
@@ -43,34 +44,35 @@ const PALETTES: Record<Mood, { sky: string; fog: string; accent: string; seconda
 }
 
 function seedFrom(value: unknown) {
-  const input = typeof value === 'string' ? value : 'private-home'
+  const input = value !== undefined && value !== null ? String(value) : 'private-home'
   let seed = 0
   for (let index = 0; index < input.length; index += 1) seed = ((seed << 5) - seed + input.charCodeAt(index)) | 0
   return Math.abs(seed)
 }
 
+const DEFAULT_HOME_PROFILE: HomeProfile = {
+  mood: 'calm',
+  groundHealth: 0.62,
+  relationshipCount: 4,
+  returning: false,
+  reducedGraphics: false,
+  seed: seedFrom('private-home'),
+}
+
 function readProfile(): HomeProfile {
-  const fallback: HomeProfile = {
-    mood: 'calm',
-    groundHealth: 0.62,
-    relationshipCount: 4,
-    returning: false,
-    reducedGraphics: false,
-    seed: seedFrom('private-home'),
-  }
-  if (typeof window === 'undefined') return fallback
+  if (typeof window === 'undefined') return DEFAULT_HOME_PROFILE
   try {
     const raw = window.localStorage.getItem(PROFILE_KEY)
     const saved = raw ? JSON.parse(raw) as Record<string, unknown> : {}
     const mood = saved.mood === 'joy' || saved.mood === 'focus' || saved.mood === 'grief' || saved.mood === 'tense'
       ? saved.mood
       : 'calm'
-    const groundHealth = typeof saved.groundHealth === 'number'
+    const groundHealth = typeof saved.groundHealth === 'number' && Number.isFinite(saved.groundHealth)
       ? Math.min(1, Math.max(0, saved.groundHealth))
-      : fallback.groundHealth
-    const relationshipCount = typeof saved.relationshipCount === 'number'
+      : DEFAULT_HOME_PROFILE.groundHealth
+    const relationshipCount = typeof saved.relationshipCount === 'number' && Number.isFinite(saved.relationshipCount)
       ? Math.max(0, Math.min(8, Math.floor(saved.relationshipCount)))
-      : fallback.relationshipCount
+      : DEFAULT_HOME_PROFILE.relationshipCount
     return {
       mood,
       groundHealth,
@@ -80,7 +82,7 @@ function readProfile(): HomeProfile {
       seed: seedFrom(saved.seed ?? saved.userId),
     }
   } catch {
-    return fallback
+    return DEFAULT_HOME_PROFILE
   }
 }
 
@@ -111,10 +113,11 @@ function useMediaPreference(query: string) {
 }
 
 function useHomeProfile() {
-  const [profile, setProfile] = useState<HomeProfile>(() => readProfile())
+  const [profile, setProfile] = useState<HomeProfile>(DEFAULT_HOME_PROFILE)
   useEffect(() => {
-    window.sessionStorage.setItem('urai:home:visited', 'true')
     const refresh = () => setProfile(readProfile())
+    refresh()
+    window.sessionStorage.setItem('urai:home:visited', 'true')
     window.addEventListener('storage', refresh)
     window.addEventListener('urai:home-world-state', refresh as EventListener)
     return () => {
@@ -158,52 +161,56 @@ function FirstHomeFrame() {
 function FrameScheduler({ fps }: { fps: number }) {
   const invalidate = useThree((state) => state.invalidate)
   useEffect(() => {
-    let stopped = false
-    let timer: ReturnType<typeof setTimeout> | undefined
-    const tick = () => {
-      if (stopped) return
-      if (document.visibilityState === 'visible') invalidate()
-      timer = setTimeout(tick, Math.round(1000 / fps))
+    let frameId = 0
+    let lastFrameTime = performance.now()
+    const frameInterval = 1000 / fps
+    const tick = (now: number) => {
+      const elapsed = now - lastFrameTime
+      if (elapsed >= frameInterval) {
+        lastFrameTime = now - (elapsed % frameInterval)
+        if (document.visibilityState === 'visible') invalidate()
+      }
+      frameId = window.requestAnimationFrame(tick)
     }
-    tick()
-    return () => {
-      stopped = true
-      if (timer) clearTimeout(timer)
-    }
+    frameId = window.requestAnimationFrame(tick)
+    return () => window.cancelAnimationFrame(frameId)
   }, [fps, invalidate])
   return null
 }
 
-function CameraRig({ mode, pointer, reducedMotion }: { mode: CameraMode; pointer: { x: number; y: number }; reducedMotion: boolean }) {
+const cameraBase = new THREE.Vector3()
+const cameraTarget = new THREE.Vector3()
+const cameraDestination = new THREE.Vector3()
+
+function CameraRig({ mode, pointerRef, reducedMotion }: { mode: CameraMode; pointerRef: PointerRef; reducedMotion: boolean }) {
   const { camera, size } = useThree()
   const mobile = size.width < 720
   const compact = size.height < 650
   useFrame((state, delta) => {
     const elapsed = state.clock.getElapsedTime()
-    const base = mobile
-      ? new THREE.Vector3(0, compact ? 5.9 : 6.7, compact ? 15.6 : 17.6)
-      : new THREE.Vector3(0, 5.15, 13.4)
-    const target = new THREE.Vector3(0, 1.9, -2.35)
-    if (mode === 'arrival') base.z += reducedMotion ? 0 : Math.max(0, 4.8 - elapsed * 2.8)
+    if (mobile) cameraBase.set(0, compact ? 5.9 : 6.7, compact ? 15.6 : 17.6)
+    else cameraBase.set(0, 5.15, 13.4)
+    cameraTarget.set(0, 1.9, -2.35)
+    if (mode === 'arrival') cameraBase.z += reducedMotion ? 0 : Math.max(0, 4.8 - elapsed * 2.8)
     if (mode === 'look') {
-      base.x += pointer.x * (mobile ? 1.2 : 2.15)
-      base.y += pointer.y * -0.65
+      cameraBase.x += pointerRef.current.x * (mobile ? 1.2 : 2.15)
+      cameraBase.y += pointerRef.current.y * -0.65
     }
-    if (mode === 'orb') base.lerp(new THREE.Vector3(0, 3.05, 8.4), 0.72)
-    if (mode === 'avatar') base.lerp(new THREE.Vector3(-1.9, 3.25, 8.7), 0.58)
+    if (mode === 'orb') cameraBase.lerp(cameraDestination.set(0, 3.05, 8.4), 0.72)
+    if (mode === 'avatar') cameraBase.lerp(cameraDestination.set(-1.9, 3.25, 8.7), 0.58)
     if (mode === 'ascending') {
-      base.y += reducedMotion ? 1 : Math.min(14, elapsed * 5.5)
-      base.z -= reducedMotion ? 0 : Math.min(7, elapsed * 2.4)
-      target.y += 7
+      cameraBase.y += reducedMotion ? 1 : Math.min(14, elapsed * 5.5)
+      cameraBase.z -= reducedMotion ? 0 : Math.min(7, elapsed * 2.4)
+      cameraTarget.y += 7
     }
     if (mode === 'descending') {
-      base.y -= reducedMotion ? 0.8 : Math.min(4.8, elapsed * 2.7)
-      base.z -= reducedMotion ? 0 : Math.min(5.5, elapsed * 2.2)
-      target.y = -2.5
+      cameraBase.y -= reducedMotion ? 0.8 : Math.min(4.8, elapsed * 2.7)
+      cameraBase.z -= reducedMotion ? 0 : Math.min(5.5, elapsed * 2.2)
+      cameraTarget.y = -2.5
     }
     const easing = reducedMotion ? 1 : 1 - Math.exp(-delta * 4.8)
-    camera.position.lerp(base, easing)
-    camera.lookAt(target)
+    camera.position.lerp(cameraBase, easing)
+    camera.lookAt(cameraTarget)
     if (camera instanceof THREE.PerspectiveCamera) {
       const nextFov = mobile ? (compact ? 58 : 54) : 48
       camera.fov = THREE.MathUtils.lerp(camera.fov, nextFov, easing)
@@ -410,11 +417,11 @@ function Atmosphere({ palette, reducedMotion, tier, onSky }: { palette: typeof P
   )
 }
 
-function Scene({ profile, tier, mode, pointer, reducedMotion, onOrbOpen, onAvatar, onSky, onGround }: {
+function Scene({ profile, tier, mode, pointerRef, reducedMotion, onOrbOpen, onAvatar, onSky, onGround }: {
   profile: HomeProfile
   tier: DeviceTier
   mode: CameraMode
-  pointer: { x: number; y: number }
+  pointerRef: PointerRef
   reducedMotion: boolean
   onOrbOpen: () => void
   onAvatar: () => void
@@ -426,7 +433,7 @@ function Scene({ profile, tier, mode, pointer, reducedMotion, onOrbOpen, onAvata
     <>
       <FirstHomeFrame />
       <FrameScheduler fps={tier === 'low' ? 24 : tier === 'medium' ? 40 : 60} />
-      <CameraRig mode={mode} pointer={pointer} reducedMotion={reducedMotion} />
+      <CameraRig mode={mode} pointerRef={pointerRef} reducedMotion={reducedMotion} />
       <color attach="background" args={[palette.sky]} />
       <fog attach="fog" args={[palette.fog, 18, 64]} />
       <ambientLight intensity={0.58} color="#d7edf5" />
@@ -448,7 +455,7 @@ export default function HomeSpatialCanvas({ onOrbOpen, onContextLost, webglAvail
   const { profile, deviceTier } = useHomeProfile()
   const reducedMotion = useMediaPreference('(prefers-reduced-motion: reduce)')
   const [mode, setMode] = useState<CameraMode>('arrival')
-  const [pointer, setPointer] = useState({ x: 0, y: 0 })
+  const pointerRef = useRef({ x: 0, y: 0 })
 
   const travel = useCallback((destination: 'life-map' | 'infrastructure-hub') => {
     const ascending = destination === 'life-map'
@@ -494,11 +501,11 @@ export default function HomeSpatialCanvas({ onOrbOpen, onContextLost, webglAvail
         const rect = event.currentTarget.getBoundingClientRect()
         const x = ((event.clientX - rect.left) / rect.width - 0.5) * 2
         const y = ((event.clientY - rect.top) / rect.height - 0.5) * 2
-        setPointer({ x: Math.max(-1, Math.min(1, x)), y: Math.max(-1, Math.min(1, y)) })
+        pointerRef.current = { x: Math.max(-1, Math.min(1, x)), y: Math.max(-1, Math.min(1, y)) }
         if (mode === 'idle') setMode('look')
       }}
       onPointerLeave={() => {
-        setPointer({ x: 0, y: 0 })
+        pointerRef.current = { x: 0, y: 0 }
         if (mode === 'look') setMode('idle')
       }}
     >
@@ -524,7 +531,7 @@ export default function HomeSpatialCanvas({ onOrbOpen, onContextLost, webglAvail
           profile={profile}
           tier={deviceTier}
           mode={mode}
-          pointer={pointer}
+          pointerRef={pointerRef}
           reducedMotion={reducedMotion}
           onOrbOpen={openOrb}
           onAvatar={openAvatar}
