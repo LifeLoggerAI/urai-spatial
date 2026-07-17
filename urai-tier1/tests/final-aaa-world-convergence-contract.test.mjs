@@ -13,6 +13,7 @@ const homeRuntime = read('src/app/HomeSpatialRuntimeLayer.tsx')
 const chrome = read('src/spatial/world/persistentWorldCompanion.css')
 const lifeMapConvergence = read('src/spatial/world/lifeMapConvergence.css')
 const routeOwnerConvergence = read('src/spatial/world/routeOwnerConvergence.css')
+const secondaryRealmConvergence = read('src/spatial/world/secondaryRealmConvergence.css')
 
 const canonicalDestinations = [
   'home',
@@ -82,6 +83,21 @@ test('canonical route clients own Focus and Replay without the legacy autonomous
   assert.match(routeOwnerConvergence, /data-world-destination='replay'/)
   assert.match(routeOwnerConvergence, /\.uraiAutoReplay/)
   assert.match(routeOwnerConvergence, /display:\s*none\s*!important/)
+})
+
+test('secondary realms remain full-viewport destinations owned by the shared Orb', () => {
+  assert.match(shell, /import '\.\/secondaryRealmConvergence\.css'/)
+  for (const destination of ['mirror', 'passport', 'privacy-controls', 'location-map']) {
+    assert.match(secondaryRealmConvergence, new RegExp(`data-world-destination=['"]${destination}['"]`))
+  }
+  assert.match(secondaryRealmConvergence, /URAI launch route chain/)
+  assert.match(secondaryRealmConvergence, /URAI passport route chain/)
+  assert.match(secondaryRealmConvergence, /URAI privacy route chain/)
+  assert.match(secondaryRealmConvergence, /display:\s*none\s*!important/)
+  assert.match(secondaryRealmConvergence, /height:\s*100svh/)
+  assert.match(secondaryRealmConvergence, /env\(safe-area-inset-bottom\)/)
+  assert.match(secondaryRealmConvergence, /@media \(max-width: 430px\)/)
+  assert.match(secondaryRealmConvergence, /prefers-reduced-motion: reduce/)
 })
 
 test('mobile safe area, scroll containment, and reduced motion remain explicit', () => {
