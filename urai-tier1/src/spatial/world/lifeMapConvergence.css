@@ -46,8 +46,7 @@
   bottom: max(16px, env(safe-area-inset-bottom));
 }
 
-/* Selected-memory controls own only the local Focus and Replay actions.
-   The persistent Orb remains the global travel owner and must keep its menu usable. */
+/* The persistent Orb owns global travel. Keep it above the selected-memory card. */
 body:has(.urai-lifemap-deep-link-controls)
   .urai-world-runtime[data-world-destination='life-map']
   .urai-world-companion__menu {
@@ -63,6 +62,14 @@ body:has(.urai-lifemap-deep-link-controls)
     bottom: max(98px, calc(env(safe-area-inset-bottom) + 86px)) !important;
     width: min(430px, calc(100vw - 24px)) !important;
     padding: 12px !important;
+  }
+
+  /* On compact screens, the persistent Orb is the single Focus/Replay action owner.
+     Hide only the duplicate local button group; retain the memory card and live text. */
+  body:has(.urai-lifemap-deep-link-controls)
+    .urai-world-runtime[data-world-destination='life-map']
+    .urai-lifemap-deep-link-controls {
+    display: none !important;
   }
 }
 
