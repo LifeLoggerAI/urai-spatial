@@ -4,8 +4,8 @@ import { useEffect, useMemo, useState } from 'react'
 import { doc, getDoc } from 'firebase/firestore'
 import { getAuth, onAuthStateChanged } from 'firebase/auth'
 import { app, firebasePublicEnvReady, getFirebaseDb } from '@/lib/firebase/client'
+import { buildNamedExplicitDemoMemory } from './explicitDemoMemory'
 import {
-  buildExplicitDemoMemory,
   isExplicitDemoRequest,
   parseSelectedMemory,
   sanitizeMemoryId,
@@ -40,7 +40,12 @@ export function useSelectedMemory(): SelectedMemoryResult {
     }
 
     if (isExplicitDemoRequest(params)) {
-      setResult({ status: 'demo', memory: buildExplicitDemoMemory(memoryId), message: 'Explicit demonstration memory ready.' })
+      const memory = buildNamedExplicitDemoMemory(memoryId)
+      if (manifestId && memory.replayManifest.id !== manifestId) {
+        setResult({ status: 'corrupt', memory: null, message: 'The requested replay manifest does not match this demonstration memory.' })
+        return () => { cancelled = true }
+      }
+      setResult({ status: 'demo', memory, message: 'Explicit demonstration memory ready.' })
       return () => { cancelled = true }
     }
 
