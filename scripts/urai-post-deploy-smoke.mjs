@@ -61,17 +61,20 @@ function sleep(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms))
 }
 
-async function fetchWithRetries(url, options) {
+async function fetchTextWithRetries(url, options) {
   let lastError
   for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
     try {
-      const response = await fetch(url, options)
+      const response = await fetch(url, {
+        ...options,
+        signal: AbortSignal.timeout(20_000),
+      })
+      const text = await response.text()
       if (response.status >= 500 && attempt < maxAttempts) {
-        await response.arrayBuffer().catch(() => {})
         await sleep(retryBaseMs * attempt)
         continue
       }
-      return { response, attemptsUsed: attempt }
+      return { response, text, attemptsUsed: attempt }
     } catch (error) {
       lastError = error
       if (attempt === maxAttempts) break
@@ -83,14 +86,12 @@ async function fetchWithRetries(url, options) {
 
 async function fetchFingerprint() {
   const url = new URL('/release-fingerprint.json', `${baseUrl}/`)
-  const { response, attemptsUsed } = await fetchWithRetries(url, {
+  const { response, text, attemptsUsed } = await fetchTextWithRetries(url, {
     redirect: 'manual',
     cache: 'no-store',
-    signal: AbortSignal.timeout(20_000),
     headers: { 'cache-control': 'no-cache', 'user-agent': 'urai-static-release-verifier/2.3' },
   })
   const finalUrl = new URL(response.url)
-  const text = await response.text()
   let payload = null
   try { payload = JSON.parse(text) } catch {}
   const passed = response.ok
@@ -121,13 +122,11 @@ for (const [route, required, forbidden] of contracts) {
   for (const requested of variants(route)) {
     const startedAt = new Date().toISOString()
     try {
-      const { response, attemptsUsed } = await fetchWithRetries(requested, {
+      const { response, text: html, attemptsUsed } = await fetchTextWithRetries(requested, {
         redirect: 'follow',
         cache: 'no-store',
-        signal: AbortSignal.timeout(20_000),
         headers: { 'cache-control': 'no-cache', 'user-agent': 'urai-static-release-verifier/2.3' },
       })
-      const html = await response.text()
       const finalUrl = new URL(response.url)
       const sha = deployedSha(response, html)
       const missing = required.filter((marker) => !html.includes(marker))
