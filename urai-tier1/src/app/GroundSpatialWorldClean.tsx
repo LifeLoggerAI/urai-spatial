@@ -4,8 +4,9 @@ import { Html, PerspectiveCamera, Stars } from '@react-three/drei'
 import { Canvas, type ThreeEvent, useFrame, useThree } from '@react-three/fiber'
 import { Bloom, EffectComposer, Vignette } from '@react-three/postprocessing'
 import { useRouter } from 'next/navigation'
-import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { Suspense, useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from 'react'
 import * as THREE from 'three'
+import { assetCssStack, groundAssets } from '@/spatial/assets/uraiAssets'
 
 type WorkforceState = 'idle' | 'observing-locally' | 'preparing' | 'awaiting-owner-approval' | 'executing' | 'completed' | 'blocked' | 'revoked'
 type ServiceAvailability = 'available' | 'degraded' | 'offline'
@@ -73,7 +74,7 @@ function WorkforcePresence({ destination, index }: { destination: GroundDestinat
   const color = new THREE.Color(destination.color)
   const opacity = destination.workforceState === 'revoked' ? 0.18 : destination.workforceState === 'blocked' ? 0.38 : 0.68
   return (
-    <group ref={group} position={[destination.position[0] * 0.82, 0, destination.position[2] + 1.2]} data-workforce-state={destination.workforceState} data-service-availability={destination.availability}>
+    <group ref={group} position={[destination.position[0] * 0.82, 0, destination.position[2] + 1.2]} userData={{ workforceState: destination.workforceState, serviceAvailability: destination.availability }}>
       <mesh position={[0, 1.38, 0]} castShadow><sphereGeometry args={[0.16, 20, 20]} /><meshStandardMaterial color="#e7f7fb" emissive={color} emissiveIntensity={0.32} transparent opacity={opacity} /></mesh>
       <mesh position={[0, 0.82, 0]} castShadow><capsuleGeometry args={[0.21, 0.72, 8, 16]} /><meshStandardMaterial color="#0e1a25" emissive={color} emissiveIntensity={0.2} roughness={0.5} metalness={0.32} transparent opacity={opacity} /></mesh>
       <mesh position={[0, 0.12, 0]} rotation={[-Math.PI / 2, 0, 0]}><ringGeometry args={[0.28, 0.34, 36]} /><meshBasicMaterial color={color} transparent opacity={opacity * 0.7} toneMapped={false} /></mesh>
@@ -93,7 +94,7 @@ function DestinationArchitecture({ destination, active, onSelect }: { destinatio
   const color = new THREE.Color(destination.color)
   const activate = (event: ThreeEvent<MouseEvent>) => { event.stopPropagation(); onSelect() }
   return (
-    <group position={destination.position} data-ground-destination={destination.id} data-service-availability={destination.availability}>
+    <group position={destination.position} userData={{ groundDestination: destination.id, serviceAvailability: destination.availability }}>
       <mesh position={[0, 1.55, 0]} castShadow receiveShadow onClick={activate} onPointerEnter={() => { document.body.style.cursor = 'pointer' }} onPointerLeave={() => { document.body.style.cursor = '' }}><boxGeometry args={[3.7, 3.2, 1.25]} /><meshPhysicalMaterial color="#10212d" emissive={color} emissiveIntensity={active ? 0.28 : 0.1} roughness={0.36} metalness={0.54} clearcoat={0.48} /></mesh>
       <mesh position={[0, 1.22, 0.66]} castShadow onClick={activate}><boxGeometry args={[1.5, 2.35, 0.18]} /><meshStandardMaterial color="#020712" emissive={color} emissiveIntensity={active ? 0.72 : 0.28} roughness={0.2} metalness={0.68} /></mesh>
       <mesh position={[0, 3.35, 0]}><torusGeometry args={[0.68, 0.06, 12, 64]} /><meshBasicMaterial color={color} transparent opacity={active ? 0.9 : 0.46} toneMapped={false} /></mesh>
@@ -117,30 +118,41 @@ export default function GroundSpatialWorldClean() {
   const active = DESTINATIONS.find((destination) => destination.id === activeId) ?? null
   const navigate = useCallback((destination: GroundDestination) => { setActiveId(destination.id); window.setTimeout(() => router.push(destination.href), 520) }, [router])
   useEffect(() => { const requested = new URLSearchParams(window.location.search).get('district'); if (requested && DESTINATIONS.some((destination) => destination.id === requested)) setActiveId(requested) }, [])
+  const artStyle = {
+    '--ground-provider-desktop': assetCssStack(groundAssets.primary),
+    '--ground-provider-mobile': assetCssStack(groundAssets.mobile),
+  } as CSSProperties
   return (
-    <main className="ground-spatial-root" aria-label="URAI Ground embodied private infrastructure" data-testid="urai-ground-private-workforce-world" tabIndex={0} onKeyDown={(event) => {
+    <main className="ground-spatial-root" style={artStyle} aria-label="URAI Ground embodied private infrastructure" data-testid="urai-ground-private-workforce-world" tabIndex={0} onKeyDown={(event) => {
       if (event.key === 'Escape') { setActiveId(null); router.push('/home?returnFrom=ground') }
       if (event.key === 'Enter' && active) navigate(active)
       if (event.key === 'ArrowRight' || event.key === 'ArrowDown') { event.preventDefault(); const index = Math.max(0, DESTINATIONS.findIndex((destination) => destination.id === activeId)); setActiveId(DESTINATIONS[(index + 1) % DESTINATIONS.length].id) }
       if (event.key === 'ArrowLeft' || event.key === 'ArrowUp') { event.preventDefault(); const index = Math.max(0, DESTINATIONS.findIndex((destination) => destination.id === activeId)); setActiveId(DESTINATIONS[(index - 1 + DESTINATIONS.length) % DESTINATIONS.length].id) }
     }}>
+      <div className="ground-authored-art" aria-hidden="true" />
       <Suspense fallback={<div className="ground-loader" role="status">Opening URAI Ground</div>}><Canvas shadows dpr={[1, 1.5]} gl={{ antialias: true, alpha: false, powerPreference: 'high-performance' }} onPointerMissed={() => setActiveId(null)}><GroundScene active={active} onSelect={navigate} /></Canvas></Suspense>
-      <nav className="ground-destination-compass" aria-label="Ground destinations">{DESTINATIONS.map((destination) => <button key={destination.id} type="button" aria-current={activeId === destination.id ? 'location' : undefined} aria-label={`${destination.label}. ${destination.detail}. Workforce state: ${STATE_LABEL[destination.workforceState]}. Service: ${destination.availability}.`} onFocus={() => setActiveId(destination.id)} onMouseEnter={() => setActiveId(destination.id)} onClick={() => navigate(destination)}><span aria-hidden="true" style={{ background: destination.color }} /><strong>{destination.label}</strong></button>)}</nav>
+      <nav className="ground-destination-compass ground-rail" aria-label="Ground destinations">{DESTINATIONS.map((destination, index) => {
+        const shared = { 'data-ground-destination': destination.id, 'data-workforce-state': destination.workforceState, 'data-service-availability': destination.availability, 'aria-label': `${destination.label}. ${destination.detail}. Workforce state: ${STATE_LABEL[destination.workforceState]}. Service: ${destination.availability}.`, onFocus: () => setActiveId(destination.id), onMouseEnter: () => setActiveId(destination.id) }
+        const content = <><span aria-hidden="true" style={{ background: destination.color }} /><strong>{destination.label}</strong></>
+        if (index < 5) return <a key={destination.id} href={destination.href} aria-current={(activeId ?? 'reception') === destination.id ? 'page' : undefined} {...shared} onClick={(event) => { event.preventDefault(); navigate(destination) }}>{content}</a>
+        return <button key={destination.id} type="button" aria-current={activeId === destination.id ? 'location' : undefined} {...shared} onClick={() => navigate(destination)}>{content}</button>
+      })}</nav>
       <p className="ground-accessible-instruction">Use arrow keys to preview destinations, Enter to travel, and Escape to return Home. The persistent Orb remains the global navigation authority.</p>
       <style jsx>{`
         .ground-spatial-root{position:fixed;inset:0;width:100vw;height:100svh;overflow:hidden;background:#010611;color:#f8fbff;isolation:isolate;outline:none;font-family:Inter,ui-sans-serif,system-ui}
-        .ground-spatial-root canvas{position:absolute;inset:0;display:block;width:100%;height:100%;cursor:crosshair}
+        .ground-authored-art{position:absolute;inset:0;z-index:0;background-image:linear-gradient(rgba(1,6,17,.78),rgba(1,6,17,.9)),var(--ground-provider-desktop);background-size:cover;background-position:center;opacity:.42;filter:saturate(.78) contrast(1.08)}
+        .ground-spatial-root canvas{position:absolute;inset:0;z-index:1;display:block;width:100%;height:100%;cursor:crosshair}
         .ground-loader{position:absolute;inset:0;z-index:20;display:grid;place-items:center;background:#010611;color:rgba(226,246,255,.78);letter-spacing:.16em;text-transform:uppercase;font-size:12px}
         .ground-destination-compass{position:absolute;left:max(12px,env(safe-area-inset-left));right:max(12px,env(safe-area-inset-right));bottom:max(14px,env(safe-area-inset-bottom));z-index:6;display:flex;gap:7px;overflow-x:auto;padding:6px;scrollbar-width:none;mask-image:linear-gradient(90deg,transparent,#000 2%,#000 98%,transparent)}
         .ground-destination-compass::-webkit-scrollbar{display:none}
-        .ground-destination-compass button{display:inline-flex;flex:0 0 auto;align-items:center;gap:7px;min-height:44px;padding:8px 11px;border:1px solid rgba(174,225,255,.18);border-radius:999px;background:rgba(1,7,18,.62);box-shadow:0 12px 36px rgba(0,0,0,.32);backdrop-filter:blur(14px);color:rgba(239,249,255,.78);font:700 10px/1 Inter,ui-sans-serif,system-ui;letter-spacing:.05em;cursor:pointer}
-        .ground-destination-compass button:hover,.ground-destination-compass button:focus-visible,.ground-destination-compass button[aria-current]{border-color:rgba(207,250,254,.7);background:rgba(8,27,43,.84);color:#fff;outline:3px solid rgba(255,255,255,.92);outline-offset:2px;transform:translateY(-2px)}
-        .ground-destination-compass button span{width:8px;height:8px;border-radius:50%;box-shadow:0 0 14px currentColor}
+        .ground-destination-compass :is(a,button){display:inline-flex;flex:0 0 auto;align-items:center;gap:7px;min-height:44px;padding:8px 11px;border:1px solid rgba(174,225,255,.18);border-radius:999px;background:rgba(1,7,18,.62);box-shadow:0 12px 36px rgba(0,0,0,.32);backdrop-filter:blur(14px);color:rgba(239,249,255,.78);font:700 10px/1 Inter,ui-sans-serif,system-ui;letter-spacing:.05em;cursor:pointer;text-decoration:none;white-space:nowrap}
+        .ground-destination-compass :is(a,button):hover,.ground-destination-compass :is(a,button):focus-visible,.ground-destination-compass :is(a,button)[aria-current]{border-color:rgba(207,250,254,.7);background:rgba(8,27,43,.84);color:#fff;outline:3px solid rgba(255,255,255,.92);outline-offset:2px;transform:translateY(-2px)}
+        .ground-destination-compass :is(a,button) span{width:8px;height:8px;border-radius:50%;box-shadow:0 0 14px currentColor}
         .ground-accessible-instruction{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;border:0}
         :global(.ground-active-label){display:grid;gap:4px;min-width:150px;padding:10px 12px;border:1px solid rgba(207,250,254,.24);border-radius:16px;background:rgba(1,7,18,.76);box-shadow:0 16px 48px rgba(0,0,0,.42);backdrop-filter:blur(14px);text-align:center;pointer-events:none}
         :global(.ground-active-label strong){font-size:11px;letter-spacing:.1em;text-transform:uppercase}:global(.ground-active-label span){font-size:9px;color:rgba(235,244,255,.72)}:global(.ground-active-label em){font-size:8px;font-style:normal;color:#a5f3fc;text-transform:uppercase;letter-spacing:.08em}
-        @media(max-width:700px){.ground-destination-compass{bottom:max(10px,env(safe-area-inset-bottom));gap:5px}.ground-destination-compass button{min-height:44px;padding:7px 9px;font-size:9px}:global(.ground-active-label){min-width:124px;padding:8px 9px}}
-        @media(prefers-reduced-motion:reduce){.ground-destination-compass button{transition:none!important;transform:none!important}}
+        @media(max-width:700px){.ground-authored-art{background-image:linear-gradient(rgba(1,6,17,.8),rgba(1,6,17,.92)),var(--ground-provider-mobile)}.ground-destination-compass{bottom:max(10px,env(safe-area-inset-bottom));gap:5px}.ground-destination-compass :is(a,button){min-height:44px;padding:7px 9px;font-size:9px}:global(.ground-active-label){min-width:124px;padding:8px 9px}}
+        @media(prefers-reduced-motion:reduce){.ground-destination-compass :is(a,button){transition:none!important;transform:none!important}}
       `}</style>
     </main>
   )
