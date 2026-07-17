@@ -19,15 +19,15 @@ on:
   workflow_dispatch:
     inputs:
       expected_sha:
-        description: Exact production SHA expected on both custom-domain hosts
-        required: false
+        description: Exact deployed production SHA expected on both custom-domain hosts
+        required: true
         type: string
 
 permissions:
   contents: read
 
 concurrency:
-  group: urai-production-host-parity-${{ github.event.pull_request.head.sha || github.sha }}
+  group: urai-production-host-parity-${{ github.event.pull_request.head.sha || inputs.expected_sha || github.sha }}
   cancel-in-progress: true
 
 jobs:
@@ -63,18 +63,30 @@ jobs:
 
   live-parity:
     name: Prove apex and www serve one certified world
-    if: github.event_name != 'pull_request'
+    if: github.event_name == 'workflow_dispatch'
     needs: static-contract
     runs-on: ubuntu-24.04
     timeout-minutes: 25
     env:
-      URAI_EXPECTED_LIVE_SHA: ${{ inputs.expected_sha || github.sha }}
+      URAI_EXPECTED_LIVE_SHA: ${{ inputs.expected_sha }}
     steps:
-      - name: Checkout exact source
+      - name: Validate certified deployment input
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -n "$URAI_EXPECTED_LIVE_SHA"
+          test "${#URAI_EXPECTED_LIVE_SHA}" -eq 40
+          case "$URAI_EXPECTED_LIVE_SHA" in
+            *[!0-9a-f]*) exit 1 ;;
+          esac
+      - name: Checkout deployed authority
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
         with:
-          ref: ${{ github.sha }}
+          ref: ${{ inputs.expected_sha }}
           persist-credentials: false
+      - name: Prove checkout matches deployed authority
+        shell: bash
+        run: test "$(git rev-parse HEAD)" = "$URAI_EXPECTED_LIVE_SHA"
       - name: Wait for protected hosting convergence and verify
         shell: bash
         run: |
