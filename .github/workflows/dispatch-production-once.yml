@@ -14,9 +14,9 @@ permissions:
 jobs:
   dispatch:
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 60
     steps:
-      - name: Bootstrap legacy production and record canonical run
+      - name: Bootstrap legacy authority then deploy fingerprinted production
         uses: actions/github-script@v7
         with:
           script: |
@@ -24,68 +24,114 @@ jobs:
             const repo = context.repo.repo;
             const workflow_id = 'spatial-live-deploy.yml';
             const releaseSha = context.sha;
+            const rollbackSha = 'e2850a8b9dbd2fd11ee0197505da278322916aa0';
             const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
-            // Dispatch the current main authority, including merged immersive Replay, to production.
-            await github.rest.actions.createWorkflowDispatch({
-              owner,
-              repo,
-              workflow_id,
-              ref: 'main',
-              inputs: {
-                release_sha: releaseSha,
-                rollback_sha: 'e2850a8b9dbd2fd11ee0197505da278322916aa0',
-                confirm: 'BOOTSTRAP_LEGACY_URAI_APP'
-              }
-            });
-
-            let run = null;
-            for (let attempt = 0; attempt < 60; attempt += 1) {
-              const response = await github.rest.actions.listWorkflowRuns({
+            async function dispatchAndWait(confirm, excludedRunIds = new Set()) {
+              await github.rest.actions.createWorkflowDispatch({
                 owner,
                 repo,
                 workflow_id,
-                event: 'workflow_dispatch',
-                head_sha: releaseSha,
-                per_page: 20
+                ref: 'main',
+                inputs: {
+                  release_sha: releaseSha,
+                  rollback_sha: rollbackSha,
+                  confirm
+                }
               });
-              run = response.data.workflow_runs.find((candidate) => candidate.head_sha === releaseSha) || null;
-              if (run) break;
-              await sleep(10000);
-            }
-            if (!run) throw new Error(`No canonical production run appeared for ${releaseSha}`);
 
-            for (let attempt = 0; attempt < 120 && run.status !== 'completed'; attempt += 1) {
-              await sleep(10000);
-              const response = await github.rest.actions.getWorkflowRun({ owner, repo, run_id: run.id });
-              run = response.data;
+              let run = null;
+              for (let attempt = 0; attempt < 90; attempt += 1) {
+                const response = await github.rest.actions.listWorkflowRuns({
+                  owner,
+                  repo,
+                  workflow_id,
+                  event: 'workflow_dispatch',
+                  head_sha: releaseSha,
+                  per_page: 30
+                });
+                run = response.data.workflow_runs.find((candidate) =>
+                  candidate.head_sha === releaseSha && !excludedRunIds.has(candidate.id)
+                ) || null;
+                if (run) break;
+                await sleep(10000);
+              }
+              if (!run) throw new Error(`No ${confirm} run appeared for ${releaseSha}`);
+
+              for (let attempt = 0; attempt < 240 && run.status !== 'completed'; attempt += 1) {
+                await sleep(10000);
+                const response = await github.rest.actions.getWorkflowRun({ owner, repo, run_id: run.id });
+                run = response.data;
+              }
+              if (run.status !== 'completed') throw new Error(`${confirm} run ${run.id} did not complete`);
+
+              const jobsResponse = await github.rest.actions.listJobsForWorkflowRun({
+                owner,
+                repo,
+                run_id: run.id,
+                filter: 'latest',
+                per_page: 100
+              });
+              return { run, jobs: jobsResponse.data.jobs };
             }
 
-            const jobsResponse = await github.rest.actions.listJobsForWorkflowRun({
+            function receiptSection(label, result) {
+              const jobLines = result.jobs.map((job) =>
+                `- ${job.name}: ${job.status}/${job.conclusion || 'none'}`
+              );
+              return [
+                `## ${label}`,
+                '',
+                `- Release SHA: \`${releaseSha}\``,
+                `- Workflow run: ${result.run.html_url}`,
+                `- Run ID: \`${result.run.id}\``,
+                `- Status: \`${result.run.status}\``,
+                `- Conclusion: \`${result.run.conclusion || 'none'}\``,
+                '',
+                '### Jobs',
+                ...jobLines
+              ].join('\n');
+            }
+
+            const existingRuns = await github.rest.actions.listWorkflowRuns({
               owner,
               repo,
-              run_id: run.id,
-              filter: 'latest',
-              per_page: 100
+              workflow_id,
+              event: 'workflow_dispatch',
+              head_sha: releaseSha,
+              per_page: 30
             });
-            const jobLines = jobsResponse.data.jobs.map((job) => `- ${job.name}: ${job.status}/${job.conclusion || 'none'}`);
+            const excludedRunIds = new Set(existingRuns.data.workflow_runs.map((run) => run.id));
+
+            const bootstrap = await dispatchAndWait('BOOTSTRAP_LEGACY_URAI_APP', excludedRunIds);
+            excludedRunIds.add(bootstrap.run.id);
+            if (bootstrap.run.conclusion !== 'success') {
+              const body = receiptSection('URAI legacy bootstrap production receipt', bootstrap);
+              await github.rest.issues.create({
+                owner,
+                repo,
+                title: `Bootstrap receipt ${releaseSha.slice(0, 12)} — ${bootstrap.run.conclusion}`,
+                body
+              });
+              core.summary.addRaw(body).write();
+              core.setFailed(`Legacy bootstrap concluded ${bootstrap.run.conclusion}`);
+              return;
+            }
+
+            const deployment = await dispatchAndWait('DEPLOY_URAI_APP', excludedRunIds);
             const body = [
-              '## URAI legacy bootstrap production receipt',
+              receiptSection('URAI legacy bootstrap production receipt', bootstrap),
               '',
-              `- Release SHA: \`${releaseSha}\``,
-              `- Workflow run: ${run.html_url}`,
-              `- Run ID: \`${run.id}\``,
-              `- Status: \`${run.status}\``,
-              `- Conclusion: \`${run.conclusion || 'none'}\``,
-              '',
-              '### Jobs',
-              ...jobLines
+              receiptSection('URAI fingerprinted production deployment receipt', deployment)
             ].join('\n');
 
             await github.rest.issues.create({
               owner,
               repo,
-              title: `Bootstrap receipt ${releaseSha.slice(0, 12)} — ${run.conclusion || run.status}`,
+              title: `Production convergence ${releaseSha.slice(0, 12)} — ${deployment.run.conclusion}`,
               body
             });
             core.summary.addRaw(body).write();
+            if (deployment.run.conclusion !== 'success') {
+              core.setFailed(`Fingerprinted production deployment concluded ${deployment.run.conclusion}`);
+            }
