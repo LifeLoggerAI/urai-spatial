@@ -38,6 +38,7 @@ for (const host of hosts) {
     try {
       const response = await fetch(requested, {
         redirect: 'follow',
+        signal: AbortSignal.timeout(10_000),
         headers: {
           accept: 'text/html,application/xhtml+xml,application/json;q=0.9,*/*;q=0.8',
           'user-agent': 'urai-production-host-parity/1.0',
