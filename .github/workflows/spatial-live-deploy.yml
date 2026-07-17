@@ -321,7 +321,7 @@ jobs:
   deploy:
     name: Deploy target or restore exact attested recovery bundle on urai.app
     needs: [verify, build-target, build-recovery, attest-bundles]
-    if: github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main' && inputs.confirm != 'CHECK_ONLY'
+    if: github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main' && (inputs.confirm == 'DEPLOY_URAI_APP' || inputs.confirm == 'ROLLBACK_URAI_APP' || inputs.confirm == 'BOOTSTRAP_LEGACY_URAI_APP')
     runs-on: ubuntu-latest
     timeout-minutes: 90
     environment: production
