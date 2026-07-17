@@ -7,6 +7,7 @@ import { WorldTransitionController } from './WorldTransitionController'
 import { useUraiWorldState } from './WorldStateProvider'
 import './worldNavigation.css'
 import './persistentWorldCompanion.css'
+import './lifeMapConvergence.css'
 
 export function UraiWorldShell({ children }: { children: ReactNode }) {
   const { world, phase } = useUraiWorldState()
