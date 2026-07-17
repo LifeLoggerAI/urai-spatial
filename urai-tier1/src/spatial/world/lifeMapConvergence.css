@@ -68,7 +68,7 @@ body:has(.urai-lifemap-deep-link-controls)
      Hide only the duplicate local button group; retain the memory card and live text. */
   body:has(.urai-lifemap-deep-link-controls)
     .urai-world-runtime[data-world-destination='life-map']
-    .urai-lifemap-deep-link-controls {
+    .urai-lifemap-deep-link-controls__actions {
     display: none !important;
   }
 }
