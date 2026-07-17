@@ -19,51 +19,47 @@ function assertNotIncludes(path, content, forbidden) {
 const replayPagePath = 'urai-tier1/src/app/replay/page.tsx'
 const replayClientPath = 'urai-tier1/src/app/replay/CinematicReplayClient.tsx'
 const replayStatePath = 'urai-tier1/src/spatial/scene/replayState.ts'
-const replayTimelinePath = 'urai-tier1/src/spatial/replay/ReplayTimeline.tsx'
-const replayMetaPath = 'urai-tier1/src/spatial/replay/ReplayMetaPanel.tsx'
-const replayRingsPath = 'urai-tier1/src/spatial/replay/ReplayPhaseRings.tsx'
 const autonomousIsolationPath = 'urai-tier1/src/app/urai-autonomous-v1-isolation.css'
 
 const replayPage = read(replayPagePath)
 const replayClient = read(replayClientPath)
 const replayState = read(replayStatePath)
-const replayTimeline = read(replayTimelinePath)
-const replayMeta = read(replayMetaPath)
-const replayRings = read(replayRingsPath)
 const autonomousIsolation = read(autonomousIsolationPath)
 
 for (const token of [
   'CinematicReplayClient',
   'replay-route-launch-fingerprint',
   'cinematic-memory-camera-film',
-  'proofSurfaceStyle',
+  'ReplayRouteProofSurface',
   'data-proof-only="true"',
   'aria-hidden="true"',
-  'opacity: 0',
-  "pointerEvents: 'none'",
+  'data-replay-phase="replay_playing"',
+  'data-testid="urai-replay-timeline"',
+  'data-testid="urai-replay-meta-panel"',
   'style={proofSurfaceStyle}',
 ]) {
   assertIncludes(replayPagePath, replayPage, token)
 }
 
-for (const forbidden of [
-  '<Suspense',
-  "background: 'rgba(3, 7, 19, 0.72)'",
-  "border: '1px solid rgba(155, 231, 255, 0.28)'",
-  'maxWidth: 320',
-]) {
-  assertNotIncludes(replayPagePath, replayPage, forbidden)
-}
-
 for (const token of [
   'data-testid="cinematic-replay-client"',
-  'data-replay-phase={replayPhase}',
-  'data-replay-segment={activeSegment.id}',
-  'ReplayMetaPanel',
-  'ReplayTimeline',
-  'ReplayPhaseRings',
-  'onScrubbingChange={setScrubbing}',
-  'returnToFocus',
+  'data-memory-status={result.status}',
+  'data-memory-id={memory.id}',
+  'data-star-id={memory.star.id}',
+  'data-manifest-id={memory.replayManifest.id}',
+  "data-playing={playing ? 'true' : 'false'}",
+  'useSelectedMemory()',
+  'requestUraiWorldReturn()',
+  "event.key === 'Escape'",
+  "event.key === ' ' || event.key === 'Enter'",
+  'type="range"',
+  "aria-label={playing ? 'Pause replay' : 'Play replay'}",
+  'Replay timeline, ${percent} percent complete',
+  'DEMO FIXTURE · NOT PERSONAL DATA',
+  'memory.replayManifest.transcript',
+  'prefers-reduced-motion:reduce',
+  'forced-colors:active',
+  'assetCssStack(replayAssets.primary)',
 ]) {
   assertIncludes(replayClientPath, replayClient, token)
 }
@@ -72,6 +68,10 @@ for (const forbidden of [
   'READINESS 87%',
   'INTENSITY 88%',
   'BOUNDARY 75%',
+  'sessionStorage',
+  'window.location.assign',
+  'quiet-reset',
+  'seed-memory-bloom',
 ]) {
   assertNotIncludes(replayClientPath, replayClient, forbidden)
 }
@@ -94,32 +94,6 @@ for (const token of [
 }
 
 for (const token of [
-  'Pause',
-  'Play',
-  'Esc returns to Focus',
-  'type="range"',
-  'onScrubbingChange',
-  'data-testid="urai-replay-timeline"',
-]) {
-  assertIncludes(replayTimelinePath, replayTimeline, token)
-}
-
-for (const token of [
-  'Pattern Replay',
-  '<dt>Source</dt>',
-  'LifeMap ·',
-  'Why this appeared',
-  'Private · Only visible to you',
-  'Save',
-  'Hide',
-  'Correct',
-  'Return to Focus',
-  'data-testid="urai-replay-meta-panel"',
-]) {
-  assertIncludes(replayMetaPath, replayMeta, token)
-}
-
-for (const token of [
   'body:has(> .uraiAutoWorld:not(.uraiAutoReplay))',
   'body > .uraiAutoReplay',
   'display: none !important',
@@ -127,12 +101,11 @@ for (const token of [
 ]) {
   assertIncludes(autonomousIsolationPath, autonomousIsolation, token)
 }
+
 assertNotIncludes(
   autonomousIsolationPath,
   autonomousIsolation,
   'body:has(> .uraiAutoWorld) > :not(.uraiAutoWorld):not(script):not(style)',
 )
 
-assertIncludes(replayRingsPath, replayRings, 'data-testid="urai-replay-phase-rings"')
-
-console.log('Replay Memory Theater composed runtime, visibility ownership, and proof-presentation contract passed.')
+console.log('Replay authenticated cinematic owner, identity, playback, accessibility, and route-proof contract passed.')
