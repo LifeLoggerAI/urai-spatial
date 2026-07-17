@@ -69,6 +69,7 @@ jobs:
     timeout-minutes: 25
     env:
       URAI_EXPECTED_LIVE_SHA: ${{ inputs.expected_sha }}
+      URAI_VERIFIER_AUTHORITY_SHA: ${{ github.sha }}
     steps:
       - name: Validate certified deployment input
         shell: bash
@@ -79,14 +80,29 @@ jobs:
           case "$URAI_EXPECTED_LIVE_SHA" in
             *[!0-9a-f]*) exit 1 ;;
           esac
-      - name: Checkout deployed authority
+      - name: Checkout current verifier authority
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+      - name: Prove verifier authority identity
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$URAI_VERIFIER_AUTHORITY_SHA"
+          test -z "$(git status --porcelain --untracked-files=all)"
+      - name: Checkout deployed authority separately
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
         with:
           ref: ${{ inputs.expected_sha }}
+          path: deployed-authority
           persist-credentials: false
-      - name: Prove checkout matches deployed authority
+      - name: Prove deployed authority identity
         shell: bash
-        run: test "$(git rev-parse HEAD)" = "$URAI_EXPECTED_LIVE_SHA"
+        run: |
+          set -euo pipefail
+          test "$(git -C deployed-authority rev-parse HEAD)" = "$URAI_EXPECTED_LIVE_SHA"
+          test -z "$(git -C deployed-authority status --porcelain --untracked-files=all)"
       - name: Wait for protected hosting convergence and verify
         shell: bash
         run: |
