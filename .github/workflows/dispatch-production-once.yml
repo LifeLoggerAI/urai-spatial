@@ -14,124 +14,43 @@ permissions:
 jobs:
   dispatch:
     runs-on: ubuntu-latest
-    timeout-minutes: 60
+    timeout-minutes: 10
     steps:
-      - name: Bootstrap legacy authority then deploy fingerprinted production
+      - name: Dispatch protected bootstrap and record request
         uses: actions/github-script@v7
         with:
           script: |
             const owner = context.repo.owner;
             const repo = context.repo.repo;
-            const workflow_id = 'spatial-live-deploy.yml';
             const releaseSha = context.sha;
             const rollbackSha = 'e2850a8b9dbd2fd11ee0197505da278322916aa0';
-            const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
-            async function dispatchAndWait(confirm, excludedRunIds = new Set()) {
-              await github.rest.actions.createWorkflowDispatch({
-                owner,
-                repo,
-                workflow_id,
-                ref: 'main',
-                inputs: {
-                  release_sha: releaseSha,
-                  rollback_sha: rollbackSha,
-                  confirm
-                }
-              });
-
-              let run = null;
-              for (let attempt = 0; attempt < 90; attempt += 1) {
-                const response = await github.rest.actions.listWorkflowRuns({
-                  owner,
-                  repo,
-                  workflow_id,
-                  event: 'workflow_dispatch',
-                  head_sha: releaseSha,
-                  per_page: 30
-                });
-                run = response.data.workflow_runs.find((candidate) =>
-                  candidate.head_sha === releaseSha && !excludedRunIds.has(candidate.id)
-                ) || null;
-                if (run) break;
-                await sleep(10000);
-              }
-              if (!run) throw new Error(`No ${confirm} run appeared for ${releaseSha}`);
-
-              for (let attempt = 0; attempt < 240 && run.status !== 'completed'; attempt += 1) {
-                await sleep(10000);
-                const response = await github.rest.actions.getWorkflowRun({ owner, repo, run_id: run.id });
-                run = response.data;
-              }
-              if (run.status !== 'completed') throw new Error(`${confirm} run ${run.id} did not complete`);
-
-              const jobsResponse = await github.rest.actions.listJobsForWorkflowRun({
-                owner,
-                repo,
-                run_id: run.id,
-                filter: 'latest',
-                per_page: 100
-              });
-              return { run, jobs: jobsResponse.data.jobs };
-            }
-
-            function receiptSection(label, result) {
-              const jobLines = result.jobs.map((job) =>
-                `- ${job.name}: ${job.status}/${job.conclusion || 'none'}`
-              );
-              return [
-                `## ${label}`,
-                '',
-                `- Release SHA: \`${releaseSha}\``,
-                `- Workflow run: ${result.run.html_url}`,
-                `- Run ID: \`${result.run.id}\``,
-                `- Status: \`${result.run.status}\``,
-                `- Conclusion: \`${result.run.conclusion || 'none'}\``,
-                '',
-                '### Jobs',
-                ...jobLines
-              ].join('\n');
-            }
-
-            const existingRuns = await github.rest.actions.listWorkflowRuns({
+            await github.rest.actions.createWorkflowDispatch({
               owner,
               repo,
-              workflow_id,
-              event: 'workflow_dispatch',
-              head_sha: releaseSha,
-              per_page: 30
+              workflow_id: 'spatial-live-deploy.yml',
+              ref: 'main',
+              inputs: {
+                release_sha: releaseSha,
+                rollback_sha: rollbackSha,
+                confirm: 'BOOTSTRAP_LEGACY_URAI_APP'
+              }
             });
-            const excludedRunIds = new Set(existingRuns.data.workflow_runs.map((run) => run.id));
 
-            const bootstrap = await dispatchAndWait('BOOTSTRAP_LEGACY_URAI_APP', excludedRunIds);
-            excludedRunIds.add(bootstrap.run.id);
-            if (bootstrap.run.conclusion !== 'success') {
-              const body = receiptSection('URAI legacy bootstrap production receipt', bootstrap);
-              await github.rest.issues.create({
-                owner,
-                repo,
-                title: `Bootstrap receipt ${releaseSha.slice(0, 12)} — ${bootstrap.run.conclusion}`,
-                body
-              });
-              core.summary.addRaw(body).write();
-              core.setFailed(`Legacy bootstrap concluded ${bootstrap.run.conclusion}`);
-              return;
-            }
-
-            const deployment = await dispatchAndWait('DEPLOY_URAI_APP', excludedRunIds);
             const body = [
-              receiptSection('URAI legacy bootstrap production receipt', bootstrap),
+              '## URAI protected bootstrap request',
               '',
-              receiptSection('URAI fingerprinted production deployment receipt', deployment)
+              `- Release SHA: \`${releaseSha}\``,
+              `- Rollback SHA: \`${rollbackSha}\``,
+              '- Workflow: `spatial-live-deploy.yml`',
+              '- Confirmation: `BOOTSTRAP_LEGACY_URAI_APP`',
+              '- Dispatch result: accepted by GitHub Actions'
             ].join('\n');
 
             await github.rest.issues.create({
               owner,
               repo,
-              title: `Production convergence ${releaseSha.slice(0, 12)} — ${deployment.run.conclusion}`,
+              title: `Bootstrap requested ${releaseSha.slice(0, 12)}`,
               body
             });
             core.summary.addRaw(body).write();
-            if (deployment.run.conclusion !== 'success') {
-              core.setFailed(`Fingerprinted production deployment concluded ${deployment.run.conclusion}`);
-            }
