@@ -34,12 +34,8 @@ const replacements = new Map([
     `start: '/focus?${demoMemoryQuery}',`,
   ],
   [
-    "'a[data-urai-audit-action=\"focus-replay\"]',",
-    "'button[data-world-target=\"replay\"]',\n      'a[data-urai-audit-action=\"focus-replay\"]',",
-  ],
-  [
     '    const found = await firstVisible(page, check.selectors)',
-    "    const orb = page.locator('button[aria-label=\"Open Orb travel controls\"]')\n    if (await orb.isVisible({ timeout: 1200 }).catch(() => false)) {\n      await orb.click({ timeout: 10000 })\n      await page.waitForTimeout(250)\n    }\n    const found = await firstVisible(page, check.selectors)",
+    "    let found = await firstVisible(page, check.selectors)\n    if (!found) {\n      const orb = page.locator('button[aria-label=\"Open Orb travel controls\"]')\n      if (await orb.isVisible({ timeout: 1200 }).catch(() => false)) {\n        await orb.click({ timeout: 10000 })\n        await page.waitForTimeout(250)\n        found = await firstVisible(page, check.selectors)\n      }\n    }",
   ],
 ])
 
