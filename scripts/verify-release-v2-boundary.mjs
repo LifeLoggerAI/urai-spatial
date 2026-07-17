@@ -10,8 +10,8 @@ const failures = []
 function requireMarker(label, marker) {
   if (!workflow.includes(marker)) failures.push(`${label} missing marker: ${marker}`)
 }
-function forbid(label, pattern, description) {
-  if (pattern.test(workflow)) failures.push(`${label} contains forbidden ${description}`)
+function forbid(label, source, pattern, description) {
+  if (pattern.test(source)) failures.push(`${label} contains forbidden ${description}`)
 }
 function jobSection(jobName) {
   const marker = `\n  ${jobName}:\n`
@@ -44,7 +44,7 @@ const immutableActions = [
   'actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093',
 ]
 for (const action of immutableActions) requireMarker('Immutable action', action)
-forbid('Workflow', /uses:\s+actions\/(?:checkout|setup-node|upload-artifact|download-artifact)@v\d+/, 'mutable core action tag')
+forbid('Workflow', workflow, /uses:\s+actions\/(?:checkout|setup-node|upload-artifact|download-artifact)@v\d+/, 'mutable core action tag')
 
 const secretMarker = 'FIREBASE_SERVICE_ACCOUNT_JSON: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_JSON }}'
 const secretOccurrences = workflow.split(secretMarker).length - 1
@@ -81,11 +81,11 @@ const strictSmoke = deployJob.indexOf('Run canonical live smoke after successful
 const cleanup = deployJob.indexOf('name: Remove temporary credentials')
 const sequence = [targetDownload, recoveryDownload, boundary, recoveryVerify, secretIndex, primaryDeploy, strictSmoke, cleanup]
 if (sequence.some((value) => value < 0) || sequence.some((value, index) => index > 0 && value <= sequence[index - 1])) failures.push('Protected deploy ordering must be target/recovery download, boundary checks, secret, deploy, smoke, cleanup')
-forbid('Protected deploy', /pnpm\s+build:static/, 'in-job production build')
-forbid('Protected deploy', /uses:\s+[^\n]+@(?:main|master|v\d+)/, 'mutable action reference')
+forbid('Protected deploy', deployJob, /pnpm\s+build:static/, 'in-job production build')
+forbid('Protected deploy', deployJob, /uses:\s+[^\n]+@(?:main|master|v\d+)/, 'mutable action reference')
 
 const report = {
-  schemaVersion: 'urai-release-v2-boundary-2', ok: failures.length === 0,
+  schemaVersion: 'urai-release-v2-boundary-3', ok: failures.length === 0,
   workflow: '.github/workflows/spatial-live-deploy.yml', dualBundleAttestation: true,
   recoveryBundleRequired: true, rawSecretOccurrences: secretOccurrences,
   recoveryPreservesFailureConclusion: true, boundedPropagationAttempts: 8, failures,
