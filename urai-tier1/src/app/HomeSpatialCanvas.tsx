@@ -1,6 +1,6 @@
 'use client'
 
-import { OrbitControls, Stars } from '@react-three/drei'
+import { Stars } from '@react-three/drei'
 import { Canvas, useFrame, useThree, type ThreeEvent } from '@react-three/fiber'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import * as THREE from 'three'
@@ -8,36 +8,124 @@ import { requestUraiWorldTravel } from '@/spatial/world/worldEvents'
 
 type HomeSpatialCanvasProps = {
   onOrbOpen: () => void
+  onContextLost: () => void
   webglAvailable: true
 }
 
-const TREES: readonly [number, number, number, number][] = [
-  [-8.4, 0, -7.2, 1.15], [-5.8, 0, -9.2, 0.92], [-1.8, 0, -11.2, 1.04],
-  [2.8, 0, -11, 0.96], [7.8, 0, -8, 1.08], [9.8, 0, -2.5, 0.88],
-  [-9.8, 0, -2.2, 0.96], [-8.8, 0, 5, 0.86], [8.9, 0, 5.1, 0.94],
-]
+type CameraMode = 'arrival' | 'idle' | 'look' | 'orb' | 'avatar' | 'ascending' | 'descending'
+type DeviceTier = 'low' | 'medium' | 'high'
+type Mood = 'calm' | 'joy' | 'focus' | 'grief' | 'tense'
+type PointerRef = { current: { x: number; y: number } }
 
-const HILLS: readonly [number, number, number, number, number, number][] = [
-  [-12.5, 0.3, -9.5, 4.5, 1.4, 3.8], [-7.5, 0.25, -16, 4.8, 1.2, 3.8],
-  [7.5, 0.28, -16, 5, 1.35, 4], [12.5, 0.32, -9, 4.5, 1.45, 3.8],
-]
+type HomeProfile = {
+  mood: Mood
+  groundHealth: number
+  relationshipCount: number
+  returning: boolean
+  reducedGraphics: boolean
+  seed: number
+}
 
+type NavigatorCapabilities = Navigator & {
+  deviceMemory?: number
+  connection?: { saveData?: boolean }
+}
+
+const PROFILE_KEY = 'urai:home-world-state'
+const REDUCED_GRAPHICS_KEY = 'urai:reduced-graphics'
 let cachedWebGLAvailable: boolean | null = null
 
-function useReducedMotion() {
-  const [reducedMotion, setReducedMotion] = useState(false)
-  useEffect(() => {
-    const query = window.matchMedia('(prefers-reduced-motion: reduce)')
-    const update = () => setReducedMotion(query.matches)
-    update()
-    if (typeof query.addEventListener === 'function') {
-      query.addEventListener('change', update)
-      return () => query.removeEventListener('change', update)
+const PALETTES: Record<Mood, { sky: string; fog: string; accent: string; secondary: string; ground: string }> = {
+  calm: { sky: '#061523', fog: '#0b2331', accent: '#7cecf2', secondary: '#9f91ff', ground: '#0a1117' },
+  joy: { sky: '#071c2c', fog: '#173747', accent: '#aafaff', secondary: '#94d8ff', ground: '#0b171c' },
+  focus: { sky: '#061624', fog: '#102a3a', accent: '#63edf4', secondary: '#789dff', ground: '#081319' },
+  grief: { sky: '#08121e', fog: '#182331', accent: '#a7cadf', secondary: '#77789b', ground: '#0b1015' },
+  tense: { sky: '#101426', fog: '#2a2639', accent: '#9ed7ec', secondary: '#ae8ee2', ground: '#15151d' },
+}
+
+function seedFrom(value: unknown) {
+  const input = value !== undefined && value !== null ? String(value) : 'private-home'
+  let seed = 0
+  for (let index = 0; index < input.length; index += 1) seed = ((seed << 5) - seed + input.charCodeAt(index)) | 0
+  return Math.abs(seed)
+}
+
+const DEFAULT_HOME_PROFILE: HomeProfile = {
+  mood: 'calm',
+  groundHealth: 0.62,
+  relationshipCount: 4,
+  returning: false,
+  reducedGraphics: false,
+  seed: seedFrom('private-home'),
+}
+
+function readProfile(): HomeProfile {
+  if (typeof window === 'undefined') return DEFAULT_HOME_PROFILE
+  try {
+    const raw = window.localStorage.getItem(PROFILE_KEY)
+    const saved = raw ? JSON.parse(raw) as Record<string, unknown> : {}
+    const mood = saved.mood === 'joy' || saved.mood === 'focus' || saved.mood === 'grief' || saved.mood === 'tense'
+      ? saved.mood
+      : 'calm'
+    const groundHealth = typeof saved.groundHealth === 'number' && Number.isFinite(saved.groundHealth)
+      ? Math.min(1, Math.max(0, saved.groundHealth))
+      : DEFAULT_HOME_PROFILE.groundHealth
+    const relationshipCount = typeof saved.relationshipCount === 'number' && Number.isFinite(saved.relationshipCount)
+      ? Math.max(0, Math.min(8, Math.floor(saved.relationshipCount)))
+      : DEFAULT_HOME_PROFILE.relationshipCount
+    return {
+      mood,
+      groundHealth,
+      relationshipCount,
+      returning: saved.returning === true || window.sessionStorage.getItem('urai:home:visited') === 'true',
+      reducedGraphics: window.localStorage.getItem(REDUCED_GRAPHICS_KEY) === 'true',
+      seed: seedFrom(saved.seed ?? saved.userId),
     }
-    query.addListener(update)
-    return () => query.removeListener(update)
+  } catch {
+    return DEFAULT_HOME_PROFILE
+  }
+}
+
+function deviceTierFor(reducedGraphics: boolean): DeviceTier {
+  if (typeof navigator === 'undefined') return 'medium'
+  const capabilities = navigator as NavigatorCapabilities
+  const memory = capabilities.deviceMemory ?? 4
+  const cores = navigator.hardwareConcurrency ?? 4
+  if (reducedGraphics || capabilities.connection?.saveData || memory <= 2 || cores <= 2) return 'low'
+  if (memory >= 8 && cores >= 8) return 'high'
+  return 'medium'
+}
+
+function useMediaPreference(query: string) {
+  const [matches, setMatches] = useState(false)
+  useEffect(() => {
+    const media = window.matchMedia(query)
+    const update = () => setMatches(media.matches)
+    update()
+    if (typeof media.addEventListener === 'function') {
+      media.addEventListener('change', update)
+      return () => media.removeEventListener('change', update)
+    }
+    media.addListener(update)
+    return () => media.removeListener(update)
+  }, [query])
+  return matches
+}
+
+function useHomeProfile() {
+  const [profile, setProfile] = useState<HomeProfile>(DEFAULT_HOME_PROFILE)
+  useEffect(() => {
+    const refresh = () => setProfile(readProfile())
+    refresh()
+    window.sessionStorage.setItem('urai:home:visited', 'true')
+    window.addEventListener('storage', refresh)
+    window.addEventListener('urai:home-world-state', refresh as EventListener)
+    return () => {
+      window.removeEventListener('storage', refresh)
+      window.removeEventListener('urai:home-world-state', refresh as EventListener)
+    }
   }, [])
-  return reducedMotion
+  return { profile, deviceTier: deviceTierFor(profile.reducedGraphics) }
 }
 
 export function useWebGLAvailable() {
@@ -49,13 +137,11 @@ export function useWebGLAvailable() {
     }
     try {
       const canvas = document.createElement('canvas')
-      const isAvailable = Boolean(canvas.getContext('webgl2') ?? canvas.getContext('webgl'))
-      cachedWebGLAvailable = isAvailable
-      setAvailable(isAvailable)
+      cachedWebGLAvailable = Boolean(canvas.getContext('webgl2') ?? canvas.getContext('webgl'))
     } catch {
       cachedWebGLAvailable = false
-      setAvailable(false)
     }
+    setAvailable(cachedWebGLAvailable)
   }, [])
   return available
 }
@@ -65,119 +151,400 @@ function FirstHomeFrame() {
   useFrame(() => {
     if (marked.current) return
     marked.current = true
-    if (performance.getEntriesByName('urai:first-home-spatial-frame').length === 0) performance.mark('urai:first-home-spatial-frame')
+    if (performance.getEntriesByName('urai:first-home-spatial-frame').length === 0) {
+      performance.mark('urai:first-home-spatial-frame')
+    }
   })
   return null
 }
 
-function CameraRig() {
-  const { camera, size } = useThree()
+function FrameScheduler({ fps }: { fps: number }) {
+  const invalidate = useThree((state) => state.invalidate)
   useEffect(() => {
-    const mobile = size.width < 720
-    camera.position.set(0, mobile ? 4.9 : 4.6, mobile ? 16.4 : 14.6)
+    let frameId = 0
+    let lastFrameTime = performance.now()
+    const frameInterval = 1000 / fps
+    const tick = (now: number) => {
+      const elapsed = now - lastFrameTime
+      if (elapsed >= frameInterval) {
+        lastFrameTime = now - (elapsed % frameInterval)
+        if (document.visibilityState === 'visible') invalidate()
+      }
+      frameId = window.requestAnimationFrame(tick)
+    }
+    frameId = window.requestAnimationFrame(tick)
+    return () => window.cancelAnimationFrame(frameId)
+  }, [fps, invalidate])
+  return null
+}
+
+const cameraBase = new THREE.Vector3()
+const cameraTarget = new THREE.Vector3()
+const cameraDestination = new THREE.Vector3()
+
+function CameraRig({ mode, pointerRef, reducedMotion }: { mode: CameraMode; pointerRef: PointerRef; reducedMotion: boolean }) {
+  const { camera, size } = useThree()
+  const mobile = size.width < 720
+  const compact = size.height < 650
+  useFrame((state, delta) => {
+    const elapsed = state.clock.getElapsedTime()
+    if (mobile) cameraBase.set(0, compact ? 5.9 : 6.7, compact ? 15.6 : 17.6)
+    else cameraBase.set(0, 5.15, 13.4)
+    cameraTarget.set(0, 1.9, -2.35)
+    if (mode === 'arrival') cameraBase.z += reducedMotion ? 0 : Math.max(0, 4.8 - elapsed * 2.8)
+    if (mode === 'look') {
+      cameraBase.x += pointerRef.current.x * (mobile ? 1.2 : 2.15)
+      cameraBase.y += pointerRef.current.y * -0.65
+    }
+    if (mode === 'orb') cameraBase.lerp(cameraDestination.set(0, 3.05, 8.4), 0.72)
+    if (mode === 'avatar') cameraBase.lerp(cameraDestination.set(-1.9, 3.25, 8.7), 0.58)
+    if (mode === 'ascending') {
+      cameraBase.y += reducedMotion ? 1 : Math.min(14, elapsed * 5.5)
+      cameraBase.z -= reducedMotion ? 0 : Math.min(7, elapsed * 2.4)
+      cameraTarget.y += 7
+    }
+    if (mode === 'descending') {
+      cameraBase.y -= reducedMotion ? 0.8 : Math.min(4.8, elapsed * 2.7)
+      cameraBase.z -= reducedMotion ? 0 : Math.min(5.5, elapsed * 2.2)
+      cameraTarget.y = -2.5
+    }
+    const easing = reducedMotion ? 1 : 1 - Math.exp(-delta * 4.8)
+    camera.position.lerp(cameraBase, easing)
+    camera.lookAt(cameraTarget)
     if (camera instanceof THREE.PerspectiveCamera) {
-      camera.fov = mobile ? 52 : 50
+      const nextFov = mobile ? (compact ? 58 : 54) : 48
+      camera.fov = THREE.MathUtils.lerp(camera.fov, nextFov, easing)
       camera.updateProjectionMatrix()
     }
-    camera.lookAt(0, 1.4, -2.35)
-  }, [camera, size.width])
+  })
   return null
 }
 
-function Tree({ position, scale = 1 }: { position: [number, number, number]; scale?: number }) {
-  return <group position={position} scale={scale}>
-    <mesh position={[0, 0.9, 0]} castShadow><cylinderGeometry args={[0.12, 0.22, 1.8, 12]} /><meshStandardMaterial color="#6c4d38" roughness={0.94} /></mesh>
-    <mesh position={[0, 2.1, 0]} castShadow><icosahedronGeometry args={[0.9, 3]} /><meshStandardMaterial color="#3f7054" roughness={0.82} /></mesh>
-    <mesh position={[0.28, 2.65, -0.08]} castShadow><icosahedronGeometry args={[0.55, 3]} /><meshStandardMaterial color="#57906a" roughness={0.78} /></mesh>
-  </group>
+function SanctuaryFloor({ palette, groundHealth, onGround }: { palette: typeof PALETTES.calm; groundHealth: number; onGround: () => void }) {
+  const energy = 0.32 + groundHealth * 0.5
+  const stop = (event: ThreeEvent<MouseEvent>) => {
+    event.stopPropagation()
+    onGround()
+  }
+  return (
+    <group data-testid="urai-home-authored-sanctuary">
+      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.22, -2.2]} receiveShadow onClick={stop}>
+        <circleGeometry args={[13.5, 128]} />
+        <meshPhysicalMaterial color={palette.ground} roughness={0.2} metalness={0.78} clearcoat={1} clearcoatRoughness={0.09} />
+      </mesh>
+      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.205, -2.2]} receiveShadow>
+        <ringGeometry args={[5.7, 6.25, 128]} />
+        <meshStandardMaterial color="#67737e" metalness={0.94} roughness={0.18} />
+      </mesh>
+      {[2.25, 3.8, 5.85, 8.1].map((radius, index) => (
+        <mesh key={radius} rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.18 + index * 0.004, -2.2]}>
+          <ringGeometry args={[radius, radius + (index === 0 ? 0.11 : 0.055), 160]} />
+          <meshBasicMaterial color={index % 2 ? palette.secondary : palette.accent} transparent opacity={energy - index * 0.055} toneMapped={false} />
+        </mesh>
+      ))}
+      {Array.from({ length: 12 }, (_, index) => {
+        const angle = index * Math.PI / 6
+        return (
+          <mesh key={index} rotation={[-Math.PI / 2, 0, angle]} position={[Math.sin(angle) * 3.4, -0.17, -2.2 + Math.cos(angle) * 3.4]}>
+            <planeGeometry args={[0.045, 8.5]} />
+            <meshBasicMaterial color={palette.accent} transparent opacity={0.18 + groundHealth * 0.18} toneMapped={false} />
+          </mesh>
+        )
+      })}
+      <mesh position={[0, 0.22, -2.2]} receiveShadow>
+        <cylinderGeometry args={[1.18, 1.48, 0.7, 96]} />
+        <meshPhysicalMaterial color="#111b22" metalness={0.82} roughness={0.24} clearcoat={1} />
+      </mesh>
+      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.59, -2.2]}>
+        <ringGeometry args={[0.72, 1.02, 96]} />
+        <meshBasicMaterial color={palette.accent} transparent opacity={0.58} toneMapped={false} />
+      </mesh>
+    </group>
+  )
 }
 
-function HorizonMonoliths() {
-  return <group position={[0, 0, -13.5]} data-testid="urai-home-horizon-architecture">
-    {[-8.5, -6.2, -3.3, 3.3, 6.2, 8.5].map((x, index) => <group key={x} position={[x, 0, index % 2 ? 0.8 : 0]}>
-      <mesh position={[0, 2.4 + (index % 3) * 0.45, 0]} castShadow><boxGeometry args={[0.42, 4.8 + (index % 3) * 0.9, 0.85]} /><meshStandardMaterial color="#243a42" emissive={index % 2 ? '#66d9d2' : '#8d7ad6'} emissiveIntensity={0.08} roughness={0.52} metalness={0.34} /></mesh>
-      <mesh position={[0, 2.5 + (index % 3) * 0.45, 0.46]}><boxGeometry args={[0.08, 3.5 + (index % 3) * 0.6, 0.025]} /><meshBasicMaterial color={index % 2 ? '#7ee8de' : '#bdadff'} transparent opacity={0.46} toneMapped={false} /></mesh>
-    </group>)}
-  </group>
-}
-
-function AtmosphericVeils({ reducedMotion }: { reducedMotion: boolean }) {
-  const near = useRef<THREE.Mesh>(null)
-  const far = useRef<THREE.Mesh>(null)
-  useFrame(({ clock }) => {
-    if (reducedMotion) return
-    if (near.current) near.current.rotation.z = 0.06 + Math.sin(clock.elapsedTime * 0.035) * 0.025
-    if (far.current) far.current.rotation.z = -0.05 + Math.cos(clock.elapsedTime * 0.025) * 0.02
-  })
-  return <group data-testid="urai-home-layered-atmosphere">
-    <mesh ref={near} position={[0, 7.8, -23]} scale={[23, 1.15, 7.5]} rotation={[0.02, 0, 0.06]}><sphereGeometry args={[1, 64, 28]} /><meshBasicMaterial color="#8fdce8" transparent opacity={0.05} depthWrite={false} blending={THREE.AdditiveBlending} toneMapped={false} /></mesh>
-    <mesh ref={far} position={[0, 11.4, -36]} scale={[31, 1.5, 10]} rotation={[-0.02, 0, -0.05]}><sphereGeometry args={[1, 64, 28]} /><meshBasicMaterial color="#b8a7ff" transparent opacity={0.035} depthWrite={false} blending={THREE.AdditiveBlending} toneMapped={false} /></mesh>
-    <mesh position={[0, 3.5, -19]} rotation={[-Math.PI / 2, 0, 0]}><ringGeometry args={[7.8, 8.05, 128]} /><meshBasicMaterial color="#73edf3" transparent opacity={0.1} depthWrite={false} toneMapped={false} /></mesh>
-  </group>
-}
-
-function LivingGround({ onOpen }: { onOpen: () => void }) {
-  const enter = () => { document.body.style.cursor = 'pointer' }
-  const leave = () => { document.body.style.cursor = 'default' }
-  const activate = (event: ThreeEvent<MouseEvent>) => { event.stopPropagation(); onOpen() }
-  return <group data-testid="urai-home-living-ground">
-    <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.12, -1.5]} receiveShadow onClick={activate} onPointerOver={enter} onPointerOut={leave}>
-      <planeGeometry args={[48, 48]} /><meshStandardMaterial color="#223d34" roughness={0.9} metalness={0.04} />
-    </mesh>
-    <mesh position={[0, -0.035, -1.5]} receiveShadow data-testid="urai-home-horizontal-plaza" onClick={activate} onPointerOver={enter} onPointerOut={leave}>
-      <cylinderGeometry args={[6.3, 6.8, 0.12, 128]} /><meshStandardMaterial color="#334a45" roughness={0.64} metalness={0.18} />
-    </mesh>
-    <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.04, -1.5]}><ringGeometry args={[2.15, 2.3, 128]} /><meshBasicMaterial color="#79eef3" transparent opacity={0.78} toneMapped={false} /></mesh>
-    <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.045, -1.5]}><ringGeometry args={[3.8, 3.9, 128]} /><meshBasicMaterial color="#8de6ce" transparent opacity={0.34} toneMapped={false} /></mesh>
-    {HILLS.map(([x, y, z, sx, sy, sz], index) => <mesh key={`hill-${index}`} position={[x, y, z]} scale={[sx, sy, sz]} receiveShadow><dodecahedronGeometry args={[1, 3]} /><meshStandardMaterial color={index % 2 ? '#304e40' : '#375747'} roughness={0.94} /></mesh>)}
-    {TREES.map(([x, y, z, scale], index) => <Tree key={`tree-${index}`} position={[x, y, z]} scale={scale} />)}
-    <HorizonMonoliths />
-  </group>
-}
-
-function Orb({ reducedMotion, onOpen }: { reducedMotion: boolean; onOpen: () => void }) {
+function EmbodiedAvatar({ palette, reducedMotion, onAvatar }: { palette: typeof PALETTES.calm; reducedMotion: boolean; onAvatar: () => void }) {
   const group = useRef<THREE.Group>(null)
-  const outerRing = useRef<THREE.Mesh>(null)
-  const [hovered, setHovered] = useState(false)
-  useFrame(({ clock }) => {
-    if (!group.current) return
-    group.current.scale.setScalar(THREE.MathUtils.lerp(group.current.scale.x, hovered ? 1.08 : 1, reducedMotion ? 1 : 0.12))
-    if (reducedMotion) return
-    group.current.position.y = 2.05 + Math.sin(clock.elapsedTime * 1.1) * 0.1
-    group.current.rotation.y = clock.elapsedTime * 0.2
-    if (outerRing.current) outerRing.current.rotation.z = clock.elapsedTime * 0.28
+  useFrame((state) => {
+    if (!group.current || reducedMotion) return
+    const breath = Math.sin(state.clock.getElapsedTime() * 1.25) * 0.018
+    group.current.scale.y = 1 + breath
+    group.current.rotation.z = Math.sin(state.clock.getElapsedTime() * 0.42) * 0.008
   })
-  const enter = () => { setHovered(true); document.body.style.cursor = 'pointer' }
-  const leave = () => { setHovered(false); document.body.style.cursor = 'default' }
-  return <group ref={group} position={[0, 2.05, -1.5]} data-testid="urai-home-webgl-orb" aria-label="URAI companion Orb">
-    <mesh castShadow onClick={(event: ThreeEvent<MouseEvent>) => { event.stopPropagation(); onOpen() }} onPointerOver={enter} onPointerOut={leave}><sphereGeometry args={[0.62, 64, 64]} /><meshPhysicalMaterial color="#e9feff" emissive={hovered ? '#8df7ff' : '#54e8f4'} emissiveIntensity={hovered ? 3.5 : 2.8} roughness={0.06} metalness={0.25} clearcoat={1} clearcoatRoughness={0.03} /></mesh>
-    <mesh ref={outerRing} rotation={[Math.PI / 2, 0, 0]}><torusGeometry args={[0.98, 0.045, 18, 128]} /><meshBasicMaterial color="#a7f5f8" transparent opacity={hovered ? 1 : 0.9} toneMapped={false} /></mesh>
-    <mesh rotation={[0.35, 0.1, 0]}><torusGeometry args={[0.82, 0.025, 14, 112]} /><meshBasicMaterial color="#ffd98a" transparent opacity={hovered ? 0.82 : 0.62} toneMapped={false} /></mesh>
-    <pointLight color="#79f3fa" intensity={hovered ? 17 : 14} distance={12} decay={2} />
-  </group>
+  const activate = (event: ThreeEvent<MouseEvent>) => {
+    event.stopPropagation()
+    onAvatar()
+  }
+  return (
+    <group ref={group} position={[-1.75, 0.02, 0.35]} rotation={[0, -0.32, 0]} data-testid="urai-home-embodied-avatar">
+      <mesh position={[0, 2.98, 0]} castShadow onClick={activate}>
+        <sphereGeometry args={[0.32, 40, 40]} />
+        <meshPhysicalMaterial color="#111923" roughness={0.28} metalness={0.22} clearcoat={0.55} />
+      </mesh>
+      <mesh position={[0, 1.72, 0]} castShadow onClick={activate}>
+        <capsuleGeometry args={[0.43, 1.55, 10, 28]} />
+        <meshPhysicalMaterial color="#0c151d" roughness={0.34} metalness={0.3} clearcoat={0.68} />
+      </mesh>
+      {[-0.38, 0.38].map((x) => (
+        <mesh key={`arm-${x}`} position={[x, 1.75, 0]} rotation={[0, 0, x > 0 ? -0.13 : 0.13]} castShadow onClick={activate}>
+          <capsuleGeometry args={[0.12, 1.35, 8, 20]} />
+          <meshStandardMaterial color="#111d25" metalness={0.22} roughness={0.4} />
+        </mesh>
+      ))}
+      {[-0.2, 0.2].map((x) => (
+        <mesh key={`leg-${x}`} position={[x, 0.45, 0]} castShadow onClick={activate}>
+          <capsuleGeometry args={[0.15, 1.35, 8, 20]} />
+          <meshStandardMaterial color="#0c141b" metalness={0.25} roughness={0.38} />
+        </mesh>
+      ))}
+      <mesh position={[0, 1.72, 0]} scale={[1.15, 1.6, 0.75]}>
+        <sphereGeometry args={[0.72, 48, 30]} />
+        <meshBasicMaterial color={palette.secondary} transparent opacity={0.055} blending={THREE.AdditiveBlending} depthWrite={false} toneMapped={false} />
+      </mesh>
+      <pointLight position={[0, 1.85, 0.2]} color={palette.secondary} intensity={1.6} distance={5} />
+    </group>
+  )
 }
 
-function Scene({ reducedMotion, onOrbOpen, onGroundOpen }: { reducedMotion: boolean; onOrbOpen: () => void; onGroundOpen: () => void }) {
-  return <>
-    <FirstHomeFrame /><CameraRig /><color attach="background" args={['#071821']} /><fog attach="fog" args={['#0b1d29', 26, 78]} />
-    <ambientLight intensity={1.25} color="#dceff4" /><hemisphereLight args={['#dff6ff', '#24382d', 2.1]} />
-    <directionalLight position={[-6, 12, 8]} intensity={4.1} color="#fff0d8" castShadow shadow-mapSize-width={1536} shadow-mapSize-height={1536} />
-    <directionalLight position={[8, 6, -10]} intensity={2.2} color="#78c9ff" /><pointLight position={[0, 7, -7]} color="#b5efff" intensity={6} distance={28} />
-    <pointLight position={[-9, 3.2, -13]} color="#86efac" intensity={2.2} distance={18} /><pointLight position={[9, 4.1, -17]} color="#a78bfa" intensity={2} distance={20} />
-    <Stars radius={62} depth={42} count={reducedMotion ? 900 : 1900} factor={3.8} saturation={0.18} fade speed={reducedMotion ? 0 : 0.16} />
-    <AtmosphericVeils reducedMotion={reducedMotion} /><LivingGround onOpen={onGroundOpen} /><Orb reducedMotion={reducedMotion} onOpen={onOrbOpen} />
-    <OrbitControls makeDefault enablePan={false} enableDamping={!reducedMotion} dampingFactor={0.07} rotateSpeed={0.36} zoomSpeed={0.5} minDistance={9} maxDistance={28} minPolarAngle={0.62} maxPolarAngle={1.42} minAzimuthAngle={-1.28} maxAzimuthAngle={1.28} target={[0, 1.4, -2.35]} />
-  </>
+function RelationshipPresences({ count, palette }: { count: number; palette: typeof PALETTES.calm }) {
+  return (
+    <group data-testid="urai-home-relationship-presences">
+      {Array.from({ length: count }, (_, index) => {
+        const side = index % 2 === 0 ? -1 : 1
+        const rank = Math.floor(index / 2)
+        return (
+          <group key={index} position={[side * (5.2 + rank * 1.35), 0.15, -6.8 - rank * 1.5]} scale={0.78 - rank * 0.08}>
+            <mesh position={[0, 1.9, 0]}>
+              <capsuleGeometry args={[0.18, 1.65, 8, 16]} />
+              <meshBasicMaterial color={palette.secondary} transparent opacity={0.12} depthWrite={false} />
+            </mesh>
+            <mesh position={[0, 2.95, 0]}>
+              <sphereGeometry args={[0.24, 20, 20]} />
+              <meshBasicMaterial color={palette.accent} transparent opacity={0.16} depthWrite={false} />
+            </mesh>
+          </group>
+        )
+      })}
+    </group>
+  )
 }
 
-export default function HomeSpatialCanvas({ onOrbOpen, webglAvailable }: HomeSpatialCanvasProps) {
-  const reducedMotion = useReducedMotion()
-  const onGroundOpen = useCallback(() => requestUraiWorldTravel({ destination: 'infrastructure-hub', href: '/ground/', entryPortal: 'home-ground-gateway', cameraCheckpoint: 'home:ground' }), [])
+function Orb({ palette, reducedMotion, onOpen }: { palette: typeof PALETTES.calm; reducedMotion: boolean; onOpen: () => void }) {
+  const group = useRef<THREE.Group>(null)
+  const [hovered, setHovered] = useState(false)
+  useFrame((state, delta) => {
+    if (!group.current) return
+    const targetScale = hovered ? 1.08 : 1
+    const easing = reducedMotion ? 1 : 1 - Math.exp(-delta * 8)
+    group.current.scale.setScalar(THREE.MathUtils.lerp(group.current.scale.x, targetScale, easing))
+    if (!reducedMotion) {
+      group.current.position.y = 1.53 + Math.sin(state.clock.getElapsedTime() * 1.05) * 0.08
+      group.current.rotation.y = state.clock.getElapsedTime() * 0.12
+    }
+  })
+  const activate = (event: ThreeEvent<MouseEvent>) => {
+    event.stopPropagation()
+    onOpen()
+  }
+  return (
+    <group ref={group} position={[0, 1.53, -2.2]} data-testid="urai-home-webgl-orb">
+      <mesh castShadow onClick={activate} onPointerOver={() => setHovered(true)} onPointerOut={() => setHovered(false)}>
+        <sphereGeometry args={[0.62, 64, 64]} />
+        <meshPhysicalMaterial color="#efffff" emissive={palette.accent} emissiveIntensity={hovered ? 4.2 : 3.2} roughness={0.035} metalness={0.3} clearcoat={1} clearcoatRoughness={0.02} />
+      </mesh>
+      <mesh rotation={[Math.PI / 2, 0, 0]}>
+        <torusGeometry args={[0.98, 0.035, 16, 128]} />
+        <meshBasicMaterial color={palette.accent} transparent opacity={0.92} toneMapped={false} />
+      </mesh>
+      <mesh rotation={[0.48, 0.18, 0]}>
+        <torusGeometry args={[0.82, 0.022, 12, 96]} />
+        <meshBasicMaterial color="#f4d59a" transparent opacity={0.66} toneMapped={false} />
+      </mesh>
+      <pointLight color={palette.accent} intensity={hovered ? 19 : 15} distance={13} decay={2} />
+    </group>
+  )
+}
+
+function HorizonArchitecture({ palette }: { palette: typeof PALETTES.calm }) {
+  return (
+    <group position={[0, 0, -13.8]} data-testid="urai-home-horizon-architecture">
+      {[-8.4, -5.6, -2.8, 2.8, 5.6, 8.4].map((x, index) => (
+        <group key={x} position={[x, 0, index % 2 ? 0.7 : 0]}>
+          <mesh position={[0, 2.7 + (index % 3) * 0.65, 0]} castShadow>
+            <cylinderGeometry args={[0.28, 0.68, 5.4 + (index % 3) * 1.15, 6]} />
+            <meshPhysicalMaterial color="#101b25" emissive={index % 2 ? palette.accent : palette.secondary} emissiveIntensity={0.14} metalness={0.72} roughness={0.28} clearcoat={0.65} />
+          </mesh>
+          <mesh position={[0, 0.42, 0]} rotation={[-Math.PI / 2, 0, 0]}>
+            <ringGeometry args={[0.72, 1.05, 48]} />
+            <meshBasicMaterial color={index % 2 ? palette.accent : palette.secondary} transparent opacity={0.24} toneMapped={false} />
+          </mesh>
+        </group>
+      ))}
+      <mesh position={[0, 5.4, -1.6]} scale={[12, 0.18, 1.8]}>
+        <sphereGeometry args={[1, 64, 24]} />
+        <meshBasicMaterial color={palette.accent} transparent opacity={0.055} blending={THREE.AdditiveBlending} depthWrite={false} toneMapped={false} />
+      </mesh>
+    </group>
+  )
+}
+
+function Atmosphere({ palette, reducedMotion, tier, onSky }: { palette: typeof PALETTES.calm; reducedMotion: boolean; tier: DeviceTier; onSky: () => void }) {
+  const veil = useRef<THREE.Mesh>(null)
+  useFrame((state) => {
+    if (!veil.current || reducedMotion) return
+    veil.current.rotation.z = Math.sin(state.clock.getElapsedTime() * 0.04) * 0.035
+  })
+  const activate = (event: ThreeEvent<MouseEvent>) => {
+    event.stopPropagation()
+    onSky()
+  }
+  return (
+    <group data-testid="urai-home-layered-atmosphere">
+      <mesh position={[0, 8.8, -24]} scale={[24, 1.5, 8]} ref={veil}>
+        <sphereGeometry args={[1, 64, 28]} />
+        <meshBasicMaterial color={palette.accent} transparent opacity={0.045} blending={THREE.AdditiveBlending} depthWrite={false} toneMapped={false} />
+      </mesh>
+      <mesh position={[0, 13.4, -34]} scale={[29, 2.3, 10]} rotation={[0, 0, -0.08]}>
+        <sphereGeometry args={[1, 64, 28]} />
+        <meshBasicMaterial color={palette.secondary} transparent opacity={0.035} blending={THREE.AdditiveBlending} depthWrite={false} toneMapped={false} />
+      </mesh>
+      <mesh position={[0, 10, -18]} onClick={activate}>
+        <planeGeometry args={[38, 20]} />
+        <meshBasicMaterial transparent opacity={0} depthWrite={false} />
+      </mesh>
+      {tier !== 'low' ? <Stars radius={68} depth={44} count={tier === 'high' ? 1900 : 1100} factor={3.6} saturation={0.2} fade speed={reducedMotion ? 0 : 0.12} /> : null}
+    </group>
+  )
+}
+
+function Scene({ profile, tier, mode, pointerRef, reducedMotion, onOrbOpen, onAvatar, onSky, onGround }: {
+  profile: HomeProfile
+  tier: DeviceTier
+  mode: CameraMode
+  pointerRef: PointerRef
+  reducedMotion: boolean
+  onOrbOpen: () => void
+  onAvatar: () => void
+  onSky: () => void
+  onGround: () => void
+}) {
+  const palette = PALETTES[profile.mood]
+  return (
+    <>
+      <FirstHomeFrame />
+      <FrameScheduler fps={tier === 'low' ? 24 : tier === 'medium' ? 40 : 60} />
+      <CameraRig mode={mode} pointerRef={pointerRef} reducedMotion={reducedMotion} />
+      <color attach="background" args={[palette.sky]} />
+      <fog attach="fog" args={[palette.fog, 18, 64]} />
+      <ambientLight intensity={0.58} color="#d7edf5" />
+      <hemisphereLight args={['#d9f4ff', '#090e12', 1.45]} />
+      <directionalLight position={[-7, 13, 8]} intensity={3.1} color="#f7e7cd" castShadow shadow-mapSize-width={tier === 'high' ? 1536 : 1024} shadow-mapSize-height={tier === 'high' ? 1536 : 1024} />
+      <directionalLight position={[8, 7, -9]} intensity={1.7} color="#7ccfff" />
+      <pointLight position={[0, 8, -10]} intensity={5.2} color={palette.secondary} distance={30} />
+      <Atmosphere palette={palette} reducedMotion={reducedMotion} tier={tier} onSky={onSky} />
+      <SanctuaryFloor palette={palette} groundHealth={profile.groundHealth} onGround={onGround} />
+      <HorizonArchitecture palette={palette} />
+      <RelationshipPresences count={profile.relationshipCount} palette={palette} />
+      <EmbodiedAvatar palette={palette} reducedMotion={reducedMotion} onAvatar={onAvatar} />
+      <Orb palette={palette} reducedMotion={reducedMotion} onOpen={onOrbOpen} />
+    </>
+  )
+}
+
+export default function HomeSpatialCanvas({ onOrbOpen, onContextLost, webglAvailable }: HomeSpatialCanvasProps) {
+  const { profile, deviceTier } = useHomeProfile()
+  const reducedMotion = useMediaPreference('(prefers-reduced-motion: reduce)')
+  const [mode, setMode] = useState<CameraMode>('arrival')
+  const pointerRef = useRef({ x: 0, y: 0 })
+
+  const travel = useCallback((destination: 'life-map' | 'infrastructure-hub') => {
+    const ascending = destination === 'life-map'
+    setMode(ascending ? 'ascending' : 'descending')
+    requestUraiWorldTravel({
+      destination,
+      href: ascending ? '/life-map?from=home-sky' : '/ground?from=home',
+      entryPortal: ascending ? 'home-sky' : 'home-ground',
+      cameraCheckpoint: ascending ? 'home-sky-ascent' : 'home-ground-descent',
+    })
+  }, [])
+
+  const openOrb = useCallback(() => {
+    setMode('orb')
+    onOrbOpen()
+  }, [onOrbOpen])
+
+  const openAvatar = useCallback(() => {
+    setMode('avatar')
+    window.dispatchEvent(new CustomEvent('urai:home-avatar-open', { detail: { source: 'home-sanctuary' } }))
+  }, [])
+
+  useEffect(() => {
+    const timer = window.setTimeout(() => setMode('idle'), reducedMotion ? 180 : profile.returning ? 500 : 1200)
+    return () => window.clearTimeout(timer)
+  }, [profile.returning, reducedMotion])
+
   useEffect(() => () => { document.body.style.cursor = 'default' }, [])
+
   if (!webglAvailable) return null
-  return <div className="urai-home-spatial-canvas-shell" data-home-spatial-renderer="webgl" data-webgl-ready="true" data-home-spatial-geometry="terrain-orb-ground-gateway" data-home-spatial-atmosphere="layered" data-tier0-ground-gateway="true" aria-label="Interactive spatial Home world">
-    <Canvas className="urai-home-spatial-canvas" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%' }} shadows frameloop="always" dpr={[1, 1.45]} camera={{ position: [0, 4.6, 14.6], fov: 50, near: 0.1, far: 110 }} gl={{ antialias: true, alpha: false, powerPreference: 'high-performance' }} onCreated={({ gl }) => { gl.outputColorSpace = THREE.SRGBColorSpace; gl.toneMapping = THREE.ACESFilmicToneMapping; gl.toneMappingExposure = 1.22 }}>
-      <Scene reducedMotion={reducedMotion} onOrbOpen={onOrbOpen} onGroundOpen={onGroundOpen} />
-    </Canvas>
-  </div>
+
+  return (
+    <div
+      className="urai-home-spatial-canvas-shell"
+      data-home-spatial-renderer="webgl"
+      data-webgl-ready="true"
+      data-home-spatial-geometry="authored-sanctuary-avatar-orb-sky-ground"
+      data-home-device-tier={deviceTier}
+      data-home-camera-mode={mode}
+      data-home-personalized="true"
+      aria-label="Interactive URAI personal sanctuary"
+      onPointerMove={(event) => {
+        const rect = event.currentTarget.getBoundingClientRect()
+        const x = ((event.clientX - rect.left) / rect.width - 0.5) * 2
+        const y = ((event.clientY - rect.top) / rect.height - 0.5) * 2
+        pointerRef.current = { x: Math.max(-1, Math.min(1, x)), y: Math.max(-1, Math.min(1, y)) }
+        if (mode === 'idle') setMode('look')
+      }}
+      onPointerLeave={() => {
+        pointerRef.current = { x: 0, y: 0 }
+        if (mode === 'look') setMode('idle')
+      }}
+    >
+      <Canvas
+        className="urai-home-spatial-canvas"
+        style={{ position: 'absolute', inset: 0, width: '100%', height: '100%' }}
+        shadows
+        frameloop="demand"
+        dpr={deviceTier === 'low' ? [0.85, 1] : deviceTier === 'medium' ? [1, 1.35] : [1, 1.7]}
+        camera={{ position: [0, 5.15, 13.4], fov: 48, near: 0.1, far: 100 }}
+        gl={{ antialias: deviceTier !== 'low', alpha: false, powerPreference: deviceTier === 'low' ? 'low-power' : 'high-performance' }}
+        onCreated={({ gl }) => {
+          gl.outputColorSpace = THREE.SRGBColorSpace
+          gl.toneMapping = THREE.ACESFilmicToneMapping
+          gl.toneMappingExposure = 1.08
+          gl.domElement.addEventListener('webglcontextlost', (event) => {
+            event.preventDefault()
+            onContextLost()
+          }, { once: true })
+        }}
+      >
+        <Scene
+          profile={profile}
+          tier={deviceTier}
+          mode={mode}
+          pointerRef={pointerRef}
+          reducedMotion={reducedMotion}
+          onOrbOpen={openOrb}
+          onAvatar={openAvatar}
+          onSky={() => travel('life-map')}
+          onGround={() => travel('infrastructure-hub')}
+        />
+      </Canvas>
+      <div className="sr-only" aria-label="URAI Home sanctuary actions">
+        <button type="button" onClick={openOrb}>Open Orb companion</button>
+        <button type="button" onClick={openAvatar}>Open embodied self</button>
+        <button type="button" onClick={() => travel('life-map')}>Ascend to Life Map</button>
+        <button type="button" onClick={() => travel('infrastructure-hub')}>Descend to Ground</button>
+      </div>
+    </div>
+  )
 }

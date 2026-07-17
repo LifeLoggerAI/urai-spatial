@@ -1,0 +1,297 @@
+/* Final Home sanctuary composition. Loaded after the restoration layers so the
+ * authored world, not legacy route chrome, owns the visible Home experience. */
+
+.urai-home-spatial-runtime-layer,
+.urai-home-spatial-canvas-shell,
+.urai-home-fallback {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  isolation: isolate;
+  background: #061523;
+}
+
+.urai-home-spatial-canvas-shell {
+  touch-action: none;
+  user-select: none;
+}
+
+.urai-home-spatial-canvas {
+  filter: none !important;
+  transform: none !important;
+}
+
+.urai-home-fallback {
+  color: #efffff;
+  background:
+    radial-gradient(ellipse at 50% 43%, rgba(111, 238, 244, .13), transparent 30%),
+    radial-gradient(ellipse at 22% 24%, rgba(159, 145, 255, .11), transparent 36%),
+    linear-gradient(180deg, #061523 0%, #081822 48%, #070d12 100%);
+}
+
+.urai-home-fallback button {
+  appearance: none;
+  border: 0;
+  padding: 0;
+  color: inherit;
+  background: transparent;
+  cursor: pointer;
+}
+
+.urai-home-fallback button:focus-visible {
+  outline: 3px solid #7cecf2;
+  outline-offset: 5px;
+}
+
+.urai-home-fallback__sky {
+  position: absolute;
+  inset: 0 0 44%;
+  width: 100%;
+  overflow: hidden;
+}
+
+.urai-home-fallback__stars,
+.urai-home-fallback__stars::before,
+.urai-home-fallback__stars::after {
+  position: absolute;
+  inset: 0;
+  content: '';
+  background-image:
+    radial-gradient(circle at 8% 18%, rgba(255,255,255,.8) 0 1px, transparent 1.5px),
+    radial-gradient(circle at 21% 37%, rgba(170,245,255,.75) 0 1px, transparent 1.5px),
+    radial-gradient(circle at 36% 12%, rgba(255,255,255,.55) 0 1px, transparent 1.5px),
+    radial-gradient(circle at 52% 29%, rgba(190,180,255,.65) 0 1px, transparent 1.5px),
+    radial-gradient(circle at 69% 14%, rgba(255,255,255,.7) 0 1px, transparent 1.5px),
+    radial-gradient(circle at 84% 34%, rgba(155,240,248,.7) 0 1px, transparent 1.5px),
+    radial-gradient(circle at 94% 9%, rgba(255,255,255,.55) 0 1px, transparent 1.5px);
+  background-size: 100% 100%;
+}
+
+.urai-home-fallback__stars::before { transform: translateY(18%); opacity: .65; }
+.urai-home-fallback__stars::after { transform: translateY(36%) scaleX(-1); opacity: .42; }
+
+.urai-home-fallback__aurora {
+  position: absolute;
+  left: 50%;
+  width: 125%;
+  height: 28%;
+  border-radius: 50%;
+  filter: blur(22px);
+  transform: translateX(-50%) rotate(-4deg);
+  opacity: .18;
+}
+
+.urai-home-fallback__aurora--one {
+  top: 19%;
+  background: linear-gradient(90deg, transparent, #65e6ee, #8f82ff, transparent);
+}
+
+.urai-home-fallback__aurora--two {
+  top: 35%;
+  transform: translateX(-50%) rotate(5deg);
+  background: linear-gradient(90deg, transparent, #9f91ff, #64dce7, transparent);
+  opacity: .1;
+}
+
+.urai-home-fallback__horizon {
+  position: absolute;
+  left: 50%;
+  top: 43%;
+  z-index: 2;
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  width: min(88vw, 960px);
+  height: 24%;
+  transform: translateX(-50%);
+  pointer-events: none;
+}
+
+.urai-home-fallback__horizon span {
+  width: clamp(8px, 1.2vw, 16px);
+  height: var(--height, 72%);
+  clip-path: polygon(50% 0, 100% 14%, 82% 100%, 18% 100%, 0 14%);
+  background: linear-gradient(180deg, rgba(113,226,237,.3), rgba(11,22,31,.96));
+  box-shadow: 0 0 24px rgba(124,236,242,.13);
+}
+
+.urai-home-fallback__horizon span:nth-child(2),
+.urai-home-fallback__horizon span:nth-child(5) { height: 91%; }
+.urai-home-fallback__horizon span:nth-child(3),
+.urai-home-fallback__horizon span:nth-child(4) { height: 66%; }
+
+.urai-home-fallback__ground {
+  position: absolute;
+  inset: 45% 0 0;
+  width: 100%;
+  perspective: 900px;
+}
+
+.urai-home-fallback__floor {
+  position: absolute;
+  left: 50%;
+  top: 22%;
+  width: min(112vw, 1180px);
+  aspect-ratio: 1.55;
+  border: 1px solid rgba(196, 216, 226, .21);
+  border-radius: 50%;
+  transform: translateX(-50%) rotateX(66deg);
+  background:
+    repeating-radial-gradient(ellipse at center, transparent 0 13%, rgba(124,236,242,.1) 13.3% 13.7%, transparent 14% 22%),
+    radial-gradient(ellipse at 50% 42%, rgba(91,220,229,.13), transparent 28%),
+    linear-gradient(180deg, #14232b, #050a0e 78%);
+  box-shadow:
+    inset 0 0 70px rgba(105,224,232,.08),
+    0 30px 80px rgba(0,0,0,.56);
+}
+
+.urai-home-fallback__circuit {
+  position: absolute;
+  left: 50%;
+  top: 53%;
+  width: min(74vw, 760px);
+  height: 1px;
+  transform-origin: center;
+  background: linear-gradient(90deg, transparent, rgba(124,236,242,.65), transparent);
+  box-shadow: 0 0 13px rgba(124,236,242,.46);
+}
+
+.urai-home-fallback__circuit--one { transform: translateX(-50%) rotate(16deg); }
+.urai-home-fallback__circuit--two { transform: translateX(-50%) rotate(-16deg); }
+
+.urai-home-fallback__pedestal {
+  position: absolute;
+  left: 50%;
+  top: 43%;
+  width: clamp(72px, 11vw, 128px);
+  height: clamp(32px, 5vw, 58px);
+  border: 1px solid rgba(185, 208, 220, .3);
+  border-radius: 50%;
+  transform: translateX(-50%);
+  background: linear-gradient(180deg, #23343d, #080e13);
+  box-shadow: inset 0 3px 14px rgba(124,236,242,.11), 0 14px 34px rgba(0,0,0,.5);
+}
+
+.urai-home-fallback__orb {
+  position: absolute;
+  left: 50%;
+  top: 57%;
+  z-index: 8;
+  width: clamp(66px, 10vw, 110px);
+  aspect-ratio: 1;
+  border-radius: 50% !important;
+  transform: translate(-50%, -50%);
+  background: radial-gradient(circle at 38% 33%, #fff, #c9fbff 23%, #75e8ef 46%, rgba(79,199,212,.2) 69%, transparent 72%) !important;
+  filter: drop-shadow(0 0 18px rgba(124,236,242,.75));
+}
+
+.urai-home-fallback__orb::before,
+.urai-home-fallback__orb::after {
+  position: absolute;
+  inset: -18%;
+  content: '';
+  border: 1px solid rgba(124,236,242,.7);
+  border-radius: 50%;
+  transform: rotateX(64deg);
+}
+
+.urai-home-fallback__orb::after {
+  inset: -8%;
+  border-color: rgba(245,213,154,.65);
+  transform: rotate(32deg) rotateX(64deg);
+}
+
+.urai-home-fallback__avatar {
+  position: absolute;
+  left: calc(50% - clamp(64px, 11vw, 142px));
+  top: 55%;
+  z-index: 7;
+  width: clamp(48px, 7vw, 78px);
+  height: clamp(130px, 25vh, 228px);
+  transform: translate(-50%, -50%) rotate(3deg);
+}
+
+.urai-home-fallback__avatar-head,
+.urai-home-fallback__avatar-body {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  background: linear-gradient(135deg, #172630, #080f15);
+  box-shadow: inset 0 0 14px rgba(159,145,255,.1);
+}
+
+.urai-home-fallback__avatar-head {
+  top: 0;
+  width: 38%;
+  aspect-ratio: 1;
+  border-radius: 50%;
+}
+
+.urai-home-fallback__avatar-body {
+  top: 21%;
+  width: 62%;
+  height: 78%;
+  border-radius: 44% 44% 23% 23%;
+  clip-path: polygon(24% 0, 76% 0, 100% 39%, 72% 43%, 69% 100%, 52% 100%, 50% 51%, 48% 100%, 31% 100%, 28% 43%, 0 39%);
+}
+
+.urai-home-fallback__avatar-aura {
+  position: absolute;
+  inset: -12%;
+  border-radius: 48%;
+  background: radial-gradient(ellipse, rgba(159,145,255,.13), transparent 66%);
+  filter: blur(8px);
+}
+
+.urai-home-fallback__presences {
+  position: absolute;
+  inset: 42% 8% auto;
+  z-index: 3;
+  display: flex;
+  justify-content: space-between;
+  pointer-events: none;
+}
+
+.urai-home-fallback__presences span {
+  width: clamp(14px, 2.4vw, 28px);
+  height: clamp(54px, 11vh, 105px);
+  border-radius: 50% 50% 34% 34%;
+  background: linear-gradient(180deg, rgba(164,239,245,.16), rgba(85,98,128,.04));
+  filter: blur(.3px);
+}
+
+@media (max-height: 650px) {
+  .urai-home-fallback__horizon { top: 36%; height: 28%; }
+  .urai-home-fallback__ground { inset-block-start: 38%; }
+  .urai-home-fallback__orb { top: 60%; }
+  .urai-home-fallback__avatar { top: 57%; height: 128px; }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .urai-home-fallback__orb { animation: urai-home-orb-breathe 3.8s ease-in-out infinite; }
+  .urai-home-fallback__aurora { animation: urai-home-aurora-drift 13s ease-in-out infinite alternate; }
+  .urai-home-fallback__avatar { animation: urai-home-avatar-breathe 5.4s ease-in-out infinite; }
+}
+
+@keyframes urai-home-orb-breathe {
+  0%, 100% { transform: translate(-50%, -50%) scale(.98); }
+  50% { transform: translate(-50%, -50%) scale(1.035); }
+}
+
+@keyframes urai-home-aurora-drift {
+  from { translate: -2% 0; }
+  to { translate: 2% 2%; }
+}
+
+@keyframes urai-home-avatar-breathe {
+  0%, 100% { scale: 1 1; }
+  50% { scale: 1 1.012; }
+}
+
+@media (prefers-contrast: more) {
+  .urai-home-fallback__floor,
+  .urai-home-fallback__pedestal { border-color: rgba(255,255,255,.68); }
+  .urai-home-fallback__orb { filter: drop-shadow(0 0 12px #fff); }
+}
