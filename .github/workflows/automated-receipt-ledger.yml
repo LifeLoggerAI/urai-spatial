@@ -1,0 +1,124 @@
+name: URAI Automated Receipt Ledger
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+  schedule:
+    - cron: '17 9 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: read
+  pull-requests: read
+
+concurrency:
+  group: urai-receipt-ledger-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  receipt-ledger:
+    name: Build exact-head receipt bundle
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout exact source
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Verify exact checkout identity
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "${GITHUB_SHA}"
+          test -z "$(git status --porcelain)"
+
+      - name: Verify authority files exist
+        shell: bash
+        run: |
+          set -euo pipefail
+          required=(
+            STATUS.md
+            EVIDENCE.md
+            docs/system/DEPLOYMENT_AUTHORITY.md
+            docs/release/PRODUCTION_EVIDENCE.md
+          )
+          for file in "${required[@]}"; do
+            test -s "$file" || { echo "Missing required authority file: $file" >&2; exit 1; }
+          done
+
+      - name: Reject secrets and production mutation in this ledger
+        shell: bash
+        run: |
+          set -euo pipefail
+          workflow=.github/workflows/automated-receipt-ledger.yml
+          ! grep -Eiq '(firebase[[:space:]]+deploy|gcloud[[:space:]]+deploy|terraform[[:space:]]+apply|kubectl[[:space:]]+(apply|delete)|stripe.*(secret|live)|BEGIN (RSA|OPENSSH|EC) PRIVATE KEY)' "$workflow"
+          ! git grep -IEn '(BEGIN (RSA|OPENSSH|EC) PRIVATE KEY|AIza[0-9A-Za-z_-]{30,}|sk_live_[0-9A-Za-z]+)' -- ':!*.lock' ':!*.md' ':!operations/receipts/**'
+
+      - name: Run repository receipt controls
+        shell: bash
+        run: |
+          set -euo pipefail
+          if test -f scripts/check-workflow-phase-boundaries.mjs; then
+            node scripts/check-workflow-phase-boundaries.mjs
+          fi
+          if test -f scripts/urai-release-control-smoke.mjs; then
+            node scripts/urai-release-control-smoke.mjs
+          fi
+
+      - name: Build receipt bundle
+        shell: bash
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          REF_NAME: ${{ github.ref_name }}
+          REPOSITORY: ${{ github.repository }}
+          RUN_ID: ${{ github.run_id }}
+          RUN_ATTEMPT: ${{ github.run_attempt }}
+          ACTOR: ${{ github.actor }}
+        run: |
+          set -euo pipefail
+          mkdir -p receipt-ledger
+          git ls-files -z | sort -z | xargs -0 sha256sum > receipt-ledger/tracked-files.sha256
+          find .github/workflows -maxdepth 1 -type f -print0 | sort -z | xargs -0 sha256sum > receipt-ledger/workflows.sha256
+          sha256sum STATUS.md EVIDENCE.md docs/system/DEPLOYMENT_AUTHORITY.md docs/release/PRODUCTION_EVIDENCE.md > receipt-ledger/authority.sha256
+          cat > receipt-ledger/receipt.json <<JSON
+          {
+            "schema": "urai.receipt-ledger.v1",
+            "repository": "${REPOSITORY}",
+            "sha": "${GITHUB_SHA}",
+            "ref": "${REF_NAME}",
+            "event": "${EVENT_NAME}",
+            "run_id": "${RUN_ID}",
+            "run_attempt": "${RUN_ATTEMPT}",
+            "actor": "${ACTOR}",
+            "generated_utc": "$(date -u +%Y-%m-%dT%H:%M:%SZ)",
+            "working_tree_clean": true,
+            "production_mutation": false,
+            "credential_use": false
+          }
+          JSON
+          sha256sum receipt-ledger/* > receipt-ledger/bundle.sha256
+
+      - name: Publish immutable receipt artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: urai-receipt-ledger-${{ github.sha }}-${{ github.run_attempt }}
+          path: receipt-ledger/
+          if-no-files-found: error
+          retention-days: 365
+
+      - name: Summary
+        shell: bash
+        run: |
+          {
+            echo '## URAI exact-head receipt ledger'
+            echo
+            echo "- Repository: \`${GITHUB_REPOSITORY}\`"
+            echo "- SHA: \`${GITHUB_SHA}\`"
+            echo "- Event: \`${GITHUB_EVENT_NAME}\`"
+            echo '- Mode: read-only, non-deploying, no credentials'
+            echo '- Artifact retention: 365 days'
+          } >> "$GITHUB_STEP_SUMMARY"
