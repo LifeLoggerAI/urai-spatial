@@ -1,0 +1,56 @@
+name: Dispatch URAI Production Once
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/dispatch-production-once.yml'
+
+permissions:
+  actions: write
+  contents: read
+  issues: write
+
+jobs:
+  dispatch:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Dispatch protected bootstrap and record request
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const owner = context.repo.owner;
+            const repo = context.repo.repo;
+            const releaseSha = context.sha;
+            const rollbackSha = 'e2850a8b9dbd2fd11ee0197505da278322916aa0';
+
+            await github.rest.actions.createWorkflowDispatch({
+              owner,
+              repo,
+              workflow_id: 'spatial-live-deploy.yml',
+              ref: 'main',
+              inputs: {
+                release_sha: releaseSha,
+                rollback_sha: rollbackSha,
+                confirm: 'BOOTSTRAP_LEGACY_URAI_APP'
+              }
+            });
+
+            const body = [
+              '## URAI protected bootstrap request',
+              '',
+              `- Release SHA: \`${releaseSha}\``,
+              `- Rollback SHA: \`${rollbackSha}\``,
+              '- Workflow: `spatial-live-deploy.yml`',
+              '- Confirmation: `BOOTSTRAP_LEGACY_URAI_APP`',
+              '- Dispatch result: accepted by GitHub Actions'
+            ].join('\n');
+
+            await github.rest.issues.create({
+              owner,
+              repo,
+              title: `Bootstrap requested ${releaseSha.slice(0, 12)}`,
+              body
+            });
+            core.summary.addRaw(body).write();
