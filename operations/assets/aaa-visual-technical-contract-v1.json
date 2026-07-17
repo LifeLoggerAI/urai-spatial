@@ -1,0 +1,50 @@
+{
+  "schemaVersion": 1,
+  "contractId": "urai-aaa-visual-technical-contract-v1",
+  "authority": {
+    "repository": "LifeLoggerAI/urai-spatial",
+    "baseSha": "63cd8885bf3b09c8d42aace7d36edd1689e22d3c",
+    "runtimeRoot": "urai-tier1",
+    "assetNamespace": "urai-tier1/public/assets/urai/generated",
+    "canonicalManifest": "operations/assets/launch-critical-assets.json"
+  },
+  "artDirection": {
+    "attributes": ["calm", "intelligent", "private", "premium", "cinematic", "inhabitable", "emotionally restrained"],
+    "avoid": ["fantasy glitter", "game-menu framing", "flat dashboard composition", "neon overload", "unreadable underexposure", "generic stock-futurism"],
+    "palette": {
+      "obsidian": "#070A0E",
+      "deepGlass": "#111923",
+      "cyan": "#8FD8DC",
+      "violet": "#8178BC",
+      "gold": "#E4D3A3",
+      "safeText": "#F5F7F8"
+    }
+  },
+  "coordinates": {
+    "units": "meters",
+    "upAxis": "+Y",
+    "forwardAxis": "-Z",
+    "rightAxis": "+X",
+    "origin": "walkable-floor center or documented portal anchor",
+    "scaleTolerancePercent": 1,
+    "pivotRule": "ground-contact center for architecture and avatars; geometric center for orb and memory stars"
+  },
+  "materials": {
+    "roughnessRange": [0.22, 0.88],
+    "metalnessRange": [0, 0.72],
+    "emissiveIntensityDesktop": [0, 2.2],
+    "emissiveIntensityMobile": [0, 1.35],
+    "minimumTextContrastRatio": 4.5,
+    "reflectionRule": "reflections must remain subordinate to navigation and readable foreground silhouettes"
+  },
+  "budgets": {
+    "desktop": {"routeAssetBytes": 25165824, "initialCriticalBytes": 8388608, "drawCalls": 180, "textureMaxDimension": 4096},
+    "mobile": {"routeAssetBytes": 12582912, "initialCriticalBytes": 4194304, "drawCalls": 110, "textureMaxDimension": 2048},
+    "lowPower": {"routeAssetBytes": 6291456, "initialCriticalBytes": 2621440, "drawCalls": 70, "textureMaxDimension": 1024},
+    "animation": {"simultaneousSkinnedCharactersDesktop": 18, "simultaneousSkinnedCharactersMobile": 8, "backgroundFpsCap": 30}
+  },
+  "requiredVariants": ["desktop", "mobile-portrait", "reduced-motion", "no-webgl-static", "context-loss-fallback", "low-power"],
+  "sourcePackage": ["source file", "export settings", "tool or provider and version", "generation prompt and seed when applicable", "license", "commercial-use record", "sha256", "preview renders", "optimization report", "bounds", "triangle count", "material count", "texture inventory"],
+  "reviewMatrix": ["desktop 1440x900", "mobile portrait 390x844", "mobile portrait 430x932", "reduced motion", "no WebGL", "context loss", "slow network", "XR framing where applicable"],
+  "promotionGates": ["file exists", "sha256 recorded", "license recorded", "fallback retained", "manifest path unique", "budget pass", "visual review pass", "accessibility review pass", "exact-head checks terminal green", "human approval"]
+}
