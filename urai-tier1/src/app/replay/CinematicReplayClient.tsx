@@ -26,7 +26,11 @@ function safeToken(value: string | null | undefined, fallback: string) {
 
 function nodeNameFromParams(value: string | null | undefined) {
   if (!value) return 'Evening Pattern'
-  return value.replace(/[-_]+/g, ' ').replace(/\s+/g, ' ').trim().replace(/\b\w/g, (letter) => letter.toUpperCase())
+  return value
+    .replace(/[-_]+/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim()
+    .replace(/\b\w/g, (letter) => letter.toUpperCase())
 }
 
 function focusReturnUrl(memoryId: string, manifestId: string, node: string) {
@@ -43,7 +47,11 @@ export default function CinematicReplayClient() {
   const [playing, setPlaying] = useState(true)
   const [scrubbing, setScrubbing] = useState(false)
   const [progressMs, setProgressMs] = useState(0)
-  const [identity, setIdentity] = useState(() => ({ memoryId: DEFAULT_MEMORY_ID, manifestId: DEFAULT_REPLAY_MANIFEST_ID, node: DEFAULT_MEMORY_ID }))
+  const [identity, setIdentity] = useState(() => ({
+    memoryId: DEFAULT_MEMORY_ID,
+    manifestId: DEFAULT_REPLAY_MANIFEST_ID,
+    node: DEFAULT_MEMORY_ID,
+  }))
   const { memoryId, manifestId, node } = identity
   const nodeName = nodeNameFromParams(node)
 
@@ -54,7 +62,6 @@ export default function CinematicReplayClient() {
     const nextNode = safeToken(params.get('node'), nextMemoryId)
     setIdentity({ memoryId: nextMemoryId, manifestId: nextManifestId, node: nextNode })
   }, [])
-
   const morphology = useMemo(() => buildMemoryMorphology(null, 'mirror'), [])
   const activeSegment = getReplaySegmentAt(progressMs)
   const replayPhase = resolveReplayPhase({
@@ -78,7 +85,9 @@ export default function CinematicReplayClient() {
     window.history.pushState(null, '', target)
     window.dispatchEvent(new PopStateEvent('popstate'))
     window.setTimeout(() => {
-      if (window.location.pathname !== '/focus' || window.location.search !== target.slice('/focus'.length)) window.location.assign(target)
+      if (window.location.pathname !== '/focus' || window.location.search !== target.slice('/focus'.length)) {
+        window.location.assign(target)
+      }
     }, 80)
   }, [manifestId, memoryId, node])
 
@@ -97,6 +106,7 @@ export default function CinematicReplayClient() {
 
   useEffect(() => {
     if (!playing || scrubbing) return
+
     const interval = window.setInterval(() => {
       setProgressMs((current) => {
         const next = clampReplayProgress(current + (reducedMotion ? 250 : 120))
@@ -107,6 +117,7 @@ export default function CinematicReplayClient() {
         return next
       })
     }, reducedMotion ? 250 : 120)
+
     return () => window.clearInterval(interval)
   }, [playing, reducedMotion, scrubbing])
 
@@ -119,11 +130,13 @@ export default function CinematicReplayClient() {
         returnToFocus()
         return
       }
+
       if (event.key === ' ' || event.key === 'Enter') {
         event.preventDefault()
         togglePlay()
       }
     }
+
     window.addEventListener('keydown', onKey, { capture: true })
     document.addEventListener('keydown', onKey, { capture: true })
     return () => {
@@ -134,7 +147,6 @@ export default function CinematicReplayClient() {
 
   return (
     <main
-      className="replayWorld"
       data-testid="cinematic-replay-client"
       data-mode="replay"
       data-memory-id={memoryId}
@@ -145,32 +157,60 @@ export default function CinematicReplayClient() {
       data-replay-segment={activeSegment.id}
       data-reduced-motion={reducedMotion ? 'true' : 'false'}
       data-canonical-asset={replayAssets.primary.src}
-      style={{ '--replay-route-art': assetCssStack(replayAssets.primary), '--replay-progress': `${progressPercent}%` } as React.CSSProperties}
+      style={{
+        position: 'fixed',
+        inset: 0,
+        overflow: 'hidden',
+        color: '#eef3ff',
+        background:
+          'radial-gradient(circle at 50% 36%, rgba(103, 232, 249, 0.18), transparent 24%), radial-gradient(circle at 50% 62%, rgba(139, 92, 246, 0.24), transparent 42%), linear-gradient(180deg, #08112a 0%, #030713 56%, #010208 100%)',
+      }}
     >
-      <div className="replayEntryVeil" aria-hidden="true" />
-      <div className="replayWorldArt" aria-hidden="true" />
-      <div className="replayWorldDepth replayWorldDepthBack" aria-hidden="true" />
-      <div className="replayWorldDepth replayWorldDepthMid" aria-hidden="true" />
-      <div className="replayWorldDepth replayWorldDepthFront" aria-hidden="true" />
-      <div className="replayLightField" aria-hidden="true" />
-      <div className="replayMemoryParticles" aria-hidden="true" />
-      <div className="replayVignette" aria-hidden="true" />
+      <div
+        aria-hidden="true"
+        style={{
+          position: 'absolute',
+          inset: 0,
+          zIndex: 0,
+          backgroundImage: assetCssStack(replayAssets.primary),
+          backgroundSize: 'cover',
+          backgroundPosition: 'center',
+          mixBlendMode: 'screen',
+          opacity: 0.14,
+          pointerEvents: 'none',
+        }}
+      />
+      <div
+        aria-hidden="true"
+        style={{
+          position: 'absolute',
+          inset: 0,
+          background:
+            'radial-gradient(2px 2px at 18% 24%, rgba(255,255,255,0.52), transparent), radial-gradient(1px 1px at 68% 14%, rgba(255,255,255,0.4), transparent), radial-gradient(2px 2px at 72% 74%, rgba(146,166,255,0.46), transparent), radial-gradient(1px 1px at 36% 58%, rgba(178,224,255,0.42), transparent)',
+          opacity: 0.68,
+        }}
+      />
 
-      <header className="replayIdentity" aria-label="Replay location">
-        <p>Inside memory</p>
-        <h1>{nodeName}</h1>
-        <span>{phaseDefinition.userVisibleUi}</span>
-      </header>
-
-      <section className="replaySpatialCaption" aria-live="polite">
-        <small>{activeSegment.label}</small>
-        <strong>{activeSegment.caption}</strong>
+      <section
+        aria-label="Replay location"
+        style={{
+          position: 'absolute',
+          left: 22,
+          top: 22,
+          zIndex: 14,
+          maxWidth: 'min(390px, calc(100vw - 44px))',
+          padding: '18px 20px',
+          border: '1px solid rgba(180, 215, 255, 0.18)',
+          borderRadius: 24,
+          background: 'linear-gradient(150deg, rgba(5, 9, 22, 0.62), rgba(16, 11, 35, 0.42))',
+          backdropFilter: 'blur(16px)',
+        }}
+      >
+        <p style={{ margin: '0 0 6px', color: '#9be7ff', letterSpacing: '0.18em', textTransform: 'uppercase', fontSize: 11 }}>Replay chamber</p>
+        <p style={{ margin: '0 0 10px', color: '#ffffff', fontSize: 13 }}>URAI Replay · Source: Life Map</p>
+        <h1 style={{ margin: 0, fontSize: 'clamp(1.45rem, 4vw, 2.5rem)' }}>{nodeName}</h1>
+        <p style={{ margin: '8px 0 0', color: 'rgba(238,243,255,0.72)', lineHeight: 1.45 }}>{phaseDefinition.userVisibleUi}</p>
       </section>
-
-      <div className="replayPhaseStage" aria-hidden="true" data-phase={replayPhase}>
-        <span className="replayPhasePulse" />
-        <span className="replayPhasePortal" />
-      </div>
 
       <ReplayPhaseRings activeSegment={activeSegment} progressPercent={progressPercent} reducedMotion={reducedMotion} />
       <ReplayTimeline
@@ -193,29 +233,6 @@ export default function CinematicReplayClient() {
         manifestId={manifestId}
         onReturnToFocus={returnToFocus}
       />
-
-      <button type="button" className="replayUnwind" onClick={returnToFocus} aria-label="Unwind replay to Focus">← Unwind to Focus</button>
-
-      <style>{`
-        .replayWorld{position:fixed;inset:0;overflow:hidden;color:#eef3ff;background:#010208;isolation:isolate;perspective:1500px}
-        .replayWorldArt{position:absolute;inset:-5%;z-index:0;background-image:linear-gradient(180deg,rgba(2,4,10,.05),rgba(0,0,0,.72)),var(--replay-route-art);background-size:cover;background-position:center;filter:saturate(.9) contrast(1.08);animation:replayCameraDrift 18s ease-in-out infinite alternate}
-        .replayEntryVeil{position:absolute;inset:-20%;z-index:40;pointer-events:none;background:radial-gradient(circle at 50% 48%,transparent 0 8%,rgba(255,193,116,.34) 11%,#03060d 24%,#000 62%);animation:replayEnter 1.1s cubic-bezier(.2,.72,.16,1) both}
-        .replayWorldDepth{position:absolute;inset:-10%;pointer-events:none;transform-style:preserve-3d}.replayWorldDepth:before,.replayWorldDepth:after{content:'';position:absolute;border-radius:50%;border:1px solid rgba(203,232,255,.1);box-shadow:0 0 70px rgba(109,191,255,.08)}.replayWorldDepthBack{z-index:1;transform:translateZ(-240px) scale(1.18)}.replayWorldDepthBack:before{width:70vw;height:70vw;left:-20vw;top:8vh}.replayWorldDepthBack:after{width:56vw;height:56vw;right:-18vw;bottom:3vh}.replayWorldDepthMid{z-index:2;transform:translateZ(-80px) scale(1.05)}.replayWorldDepthMid:before{width:40vw;height:40vw;left:8vw;bottom:-10vw}.replayWorldDepthMid:after{width:34vw;height:34vw;right:4vw;top:-8vw}.replayWorldDepthFront{z-index:3;transform:translateZ(120px)}.replayWorldDepthFront:before{width:28vw;height:28vw;left:-12vw;top:35vh}.replayWorldDepthFront:after{width:22vw;height:22vw;right:-9vw;top:24vh}
-        .replayLightField{position:absolute;inset:-20%;z-index:4;pointer-events:none;background:radial-gradient(circle at 50% 55%,rgba(255,202,133,.18),transparent 17%),radial-gradient(circle at 43% 38%,rgba(91,222,255,.11),transparent 31%),radial-gradient(circle at 72% 61%,rgba(178,98,255,.13),transparent 35%);mix-blend-mode:screen;animation:replayLightBreathe 7s ease-in-out infinite alternate}
-        .replayMemoryParticles{position:absolute;inset:-10%;z-index:5;pointer-events:none;background-image:radial-gradient(circle,rgba(255,255,255,.64) 0 1px,transparent 1.5px),radial-gradient(circle,rgba(255,194,121,.45) 0 1px,transparent 1.4px);background-size:127px 127px,191px 191px;background-position:0 0,61px 39px;opacity:.46;animation:replayParticles 26s linear infinite}
-        .replayVignette{position:absolute;inset:0;z-index:8;pointer-events:none;background:radial-gradient(circle at 50% 46%,transparent 0 35%,rgba(0,0,0,.1) 58%,rgba(0,0,0,.84) 100%),linear-gradient(180deg,rgba(0,0,0,.3),transparent 24%,transparent 70%,rgba(0,0,0,.78))}
-        .replayIdentity{position:absolute;z-index:14;left:max(18px,env(safe-area-inset-left));top:max(18px,env(safe-area-inset-top));max-width:min(330px,calc(100vw - 36px));padding:8px 0 8px 13px;border-left:1px solid rgba(166,229,255,.42);text-shadow:0 2px 22px #000}.replayIdentity p{margin:0;color:#9be7ff;font-size:9px;font-weight:900;letter-spacing:.22em;text-transform:uppercase}.replayIdentity h1{margin:4px 0 2px;font-size:clamp(1.05rem,3vw,1.7rem);letter-spacing:-.03em}.replayIdentity span{display:block;color:rgba(238,243,255,.64);font-size:10px;line-height:1.4}
-        .replaySpatialCaption{position:absolute;z-index:15;left:50%;bottom:25svh;transform:translateX(-50%);width:min(820px,86vw);text-align:center;text-shadow:0 3px 30px #000}.replaySpatialCaption small{display:block;margin-bottom:8px;color:#ffd49b;font-size:9px;font-weight:900;letter-spacing:.22em;text-transform:uppercase}.replaySpatialCaption strong{display:block;font-family:Georgia,serif;font-size:clamp(1.3rem,4vw,2.8rem);font-weight:500;line-height:1.08}
-        .replayPhaseStage{position:absolute;z-index:6;left:50%;top:48%;width:min(52vw,540px);aspect-ratio:1;transform:translate(-50%,-50%);display:grid;place-items:center;pointer-events:none}.replayPhasePulse{position:absolute;inset:12%;border-radius:50%;border:1px solid rgba(255,210,151,.18);box-shadow:0 0 80px rgba(255,167,73,.12),inset 0 0 80px rgba(99,206,255,.08);animation:replayPulse 4.8s ease-in-out infinite}.replayPhasePortal{position:absolute;width:18%;aspect-ratio:1;border-radius:50%;background:radial-gradient(circle,#fff 0 5%,#ffd397 15%,rgba(255,172,79,.48) 32%,rgba(94,203,255,.1) 58%,transparent 72%);box-shadow:0 0 34px rgba(255,226,181,.88),0 0 100px rgba(255,155,54,.42)}
-        .replayUnwind{position:absolute;z-index:30;left:max(16px,env(safe-area-inset-left));bottom:max(14px,env(safe-area-inset-bottom));min-height:44px;border:0;background:transparent;color:rgba(235,248,255,.78);font-size:9px;font-weight:850;letter-spacing:.14em;text-transform:uppercase;cursor:pointer;text-shadow:0 2px 18px #000}.replayUnwind:focus-visible{outline:2px solid white;outline-offset:5px}
-        @keyframes replayEnter{0%{opacity:1;transform:scale(.72)}65%{opacity:.42}100%{opacity:0;transform:scale(2.45)}}
-        @keyframes replayCameraDrift{from{transform:scale(1.03) translate3d(-.8%,.3%,0)}to{transform:scale(1.1) translate3d(.9%,-.8%,0)}}
-        @keyframes replayLightBreathe{to{opacity:.66;transform:scale(1.04)}}
-        @keyframes replayParticles{to{transform:translate3d(2%,4%,0)}}
-        @keyframes replayPulse{50%{transform:scale(1.08);opacity:.55}}
-        @media(max-width:700px){.replayIdentity{left:12px;top:max(12px,env(safe-area-inset-top));max-width:210px}.replaySpatialCaption{bottom:24svh;width:90vw}.replaySpatialCaption strong{font-size:clamp(1.18rem,6vw,2rem)}.replayPhaseStage{width:78vw;top:47%}.replayUnwind{left:10px;bottom:max(8px,env(safe-area-inset-bottom))}.replayWorldDepthFront{opacity:.45}}
-        @media(prefers-reduced-motion:reduce){.replayEntryVeil{display:none}.replayWorldArt,.replayLightField,.replayMemoryParticles,.replayPhasePulse{animation:none!important}}
-      `}</style>
     </main>
   )
 }
