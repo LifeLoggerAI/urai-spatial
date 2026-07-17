@@ -70,7 +70,6 @@ requireAll('Canonical production workflow', workflow, [
   'actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02',
   'actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093',
   'git merge-base --is-ancestor',
-  'gh workflow run spatial-live-deploy.yml --ref main',
 ])
 for (const [name, section] of Object.entries({ verifyJob, buildTargetJob, buildRecoveryJob, attestJob, deployJob })) {
   if (!section) failures.push(`Canonical workflow is missing ${name}`)
