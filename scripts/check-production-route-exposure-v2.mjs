@@ -52,14 +52,15 @@ if (!focusImport) {
 
 requireTokens('urai-tier1/src/app/focus/FocusChamberClient.tsx', [
   'data-testid="urai-final-focus-chamber"',
-  'data-route-polish="selected-memory-camera-chamber"',
-  'data-canon="camera-from-life-map-entered-memory-world"',
+  'data-memory-id={memory.id}',
+  'data-star-id={memory.star.id}',
+  'data-manifest-id={memory.replayManifest.id}',
   'requestUraiWorldTravel({',
   "destination: 'replay'",
   "entryPortal: 'focus-memory-aperture'",
-  'replayManifestId: manifestId',
+  'replayManifestId: memory.replayManifest.id',
   'requestUraiWorldReturn()',
-  'aria-label={`Enter Replay for ${memoryName}`}',
+  'aria-label={`Open Replay for ${memory.title}`}',
 ])
 requireTokens('urai-tier1/src/app/layout.tsx', ['NEXT_PUBLIC_URAI_BUILD_SHA', "'urai-deployed-sha': deployedSha", 'data-deployed-sha={deployedSha}', "data-deployment-evidence={deployedSha === 'unverified' ? 'missing' : 'embedded'}"])
 

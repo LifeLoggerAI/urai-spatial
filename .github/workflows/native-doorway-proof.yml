@@ -3,58 +3,78 @@ name: Native Doorway Proof
 on:
   pull_request:
     branches: [main]
-    paths:
-      - "urai-tier1/src/app/HomeSpatialRuntimeLayer.tsx"
-      - "tests/native-doorway-proof.mjs"
-      - ".github/workflows/native-doorway-proof.yml"
-      - ".github/workflows/aaa-final-proof.yml"
   workflow_dispatch:
 
 permissions:
   contents: read
 
 concurrency:
-  group: native-doorway-proof-${{ github.event.pull_request.head.sha || github.sha }}
+  group: native-doorway-proof-${{ github.event.pull_request.number || github.ref }}-${{ github.event.pull_request.head.sha || github.sha }}
   cancel-in-progress: true
+
+env:
+  URAI_PROOF_SOURCE_SHA: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
+  URAI_AUDIT_BASE_URL: http://127.0.0.1:4173
+  URAI_NATIVE_DOORWAY_OUT_DIR: native-doorway-proof
+  PLAYWRIGHT_BROWSERS_PATH: '0'
 
 jobs:
   native-doorway-proof:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 35
-    env:
-      CI: "1"
-      URAI_PROOF_SOURCE_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
-      URAI_AUDIT_BASE_URL: http://127.0.0.1:4173
-      URAI_NATIVE_DOORWAY_OUT_DIR: native-doorway-proof
     steps:
       - name: Checkout exact commit
-        uses: actions/checkout@v4
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
         with:
           ref: ${{ env.URAI_PROOF_SOURCE_SHA }}
+          fetch-depth: 1
           persist-credentials: false
-      - uses: actions/setup-node@v4
-        with:
-          node-version: "22"
-      - uses: pnpm/action-setup@v4
+          show-progress: false
+      - name: Verify exact clean candidate
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$URAI_PROOF_SOURCE_SHA"
+          test -z "$(git status --porcelain --untracked-files=all)"
+      - name: Setup pnpm
+        uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1
         with:
           version: 10.0.0
-      - name: Install
-        run: pnpm install --frozen-lockfile
+          run_install: false
+      - name: Setup Node
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: pnpm-lock.yaml
+      - name: Install exact lockfile
+        run: |
+          corepack enable
+          pnpm install --frozen-lockfile
       - name: Build static app
         run: pnpm build:static
       - name: Serve static app
+        shell: bash
         run: |
-          python3 -m http.server 4173 --directory urai-tier1/out > /tmp/urai-native-doorway.log 2>&1 &
-          sleep 3
-          curl --fail --silent http://127.0.0.1:4173/home > /dev/null
-      - name: Install Chromium
-        run: pnpm exec playwright install chromium --with-deps
+          set -euo pipefail
+          python3 -m http.server 4173 --bind 127.0.0.1 --directory urai-tier1/out > /tmp/urai-native-doorway.log 2>&1 &
+          for attempt in $(seq 1 60); do
+            if curl --fail --silent http://127.0.0.1:4173/home/ >/dev/null; then
+              exit 0
+            fi
+            sleep 1
+          done
+          cat /tmp/urai-native-doorway.log
+          exit 1
+      - name: Install exact Chromium
+        run: pnpm --dir urai-tier1 exec playwright install chromium --with-deps
       - name: Prove native doorways
         run: node tests/native-doorway-proof.mjs
       - name: Upload native doorway receipt
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
           name: native-doorway-proof-${{ env.URAI_PROOF_SOURCE_SHA }}
           path: native-doorway-proof
           if-no-files-found: error
+          retention-days: 365

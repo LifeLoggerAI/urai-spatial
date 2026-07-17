@@ -2,33 +2,65 @@ name: URAI Spatial Firebase Preview
 
 on:
   pull_request:
-    paths:
-      - "**"
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pull-requests: read
+
+concurrency:
+  group: urai-spatial-preview-${{ github.event.pull_request.number || github.ref }}-${{ github.event.pull_request.head.sha || github.sha }}
+  cancel-in-progress: true
+
+env:
+  URAI_EXACT_HEAD: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
 
 jobs:
   preview:
     name: Preview deploy guard
     runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      pull-requests: write
+    timeout-minutes: 30
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+      - name: Checkout exact candidate
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: ${{ env.URAI_EXACT_HEAD }}
+          fetch-depth: 1
+          persist-credentials: false
+          show-progress: false
+      - name: Verify exact clean candidate
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$URAI_EXACT_HEAD"
+          test -z "$(git status --porcelain --untracked-files=all)"
       - name: Setup pnpm
-        uses: pnpm/action-setup@v4
+        uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1
+        with:
+          version: 10.0.0
+          run_install: false
       - name: Setup Node
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
         with:
           node-version: 22
           cache: pnpm
-      - name: Install
-        run: pnpm install --no-frozen-lockfile
+          cache-dependency-path: pnpm-lock.yaml
+      - name: Install exact lockfile
+        run: |
+          corepack enable
+          pnpm install --frozen-lockfile
       - name: Preflight
         run: pnpm preflight
-      - name: Build app
-        run: pnpm --filter urai-tier1 build
-      - name: Preview deploy instructions
+      - name: Build exact static candidate
+        run: pnpm build:static
+      - name: Prove exact source remained clean
+        shell: bash
+        run: test -z "$(git status --porcelain --untracked-files=all)"
+      - name: Preview deploy boundary
+        shell: bash
         run: |
-          echo "To enable Firebase preview deploys, add FIREBASE_SERVICE_ACCOUNT_URAI_SPATIAL and URAI_SPATIAL_FIREBASE_PROJECT_ID secrets."
-          echo "Then replace this guard with firebase hosting:channel:deploy pr-${{ github.event.pull_request.number }} --project ${{ secrets.URAI_SPATIAL_FIREBASE_PROJECT_ID }} --expires 7d"
+          set -euo pipefail
+          echo "Preview deployment is intentionally non-mutating on pull requests."
+          echo "Exact candidate verified: ${URAI_EXACT_HEAD}"
+          echo "Protected deployment requires the canonical release workflow and authorized environment."

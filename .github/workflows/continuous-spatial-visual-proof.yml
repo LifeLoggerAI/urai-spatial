@@ -25,8 +25,6 @@ permissions:
   contents: read
 
 concurrency:
-  # One visual-proof lane per PR. A new exact head cancels stale queued/running
-  # evidence, while the job still checks out and verifies the immutable head SHA.
   group: continuous-spatial-visual-proof-${{ github.event.pull_request.number || inputs.verification_sha || github.ref }}
   cancel-in-progress: true
 
@@ -74,7 +72,17 @@ jobs:
           pnpm install --frozen-lockfile
 
       - name: Build exact static release candidate before browser installation
-        run: pnpm build:static
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p artifacts/continuous-spatial-proof
+          set +e
+          set -o pipefail
+          pnpm build:static 2>&1 | tee artifacts/continuous-spatial-proof/build-static.log
+          build_status=${PIPESTATUS[0]}
+          printf '%s\n' "$build_status" > artifacts/continuous-spatial-proof/build-static-exit-code.txt
+          set -e
+          exit "$build_status"
 
       - name: Install and prove exact Tier-1 Chromium
         shell: bash

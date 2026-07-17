@@ -45,14 +45,17 @@ test('Ground is the canonical gateway to Hidden Infrastructure', () => {
   assert.match(gateway, /type=['"]button['"]/)
 })
 
-test('Home stays calm and does not expose permanent feature portals', () => {
+test('Home stays calm and exposes Ground through world geometry without tutorial residue', () => {
   assert.doesNotMatch(homeRuntime, /urai-home-spatial-runtime-portals/)
   assert.doesNotMatch(homeRuntime, />Mirror</)
   assert.doesNotMatch(homeRuntime, />Passport</)
   assert.doesNotMatch(homeCanvas, /data-urai-home-portal/)
   assert.doesNotMatch(homeCanvas, /const portals/)
   assert.match(homeCanvas, /data-tier0-ground-gateway=['"]true['"]/)
-  assert.match(homeCanvas, /tap the ground to enter below/)
+  assert.match(homeCanvas, /requestUraiWorldTravel/)
+  assert.match(homeCanvas, /destination:\s*['"]infrastructure-hub['"]/)
+  assert.match(homeCanvas, /href:\s*['"]\/ground\/['"]/)
+  assert.doesNotMatch(homeCanvas, /tap the ground to enter below|Drag to look/)
 })
 
 test('The root application owns one persistent world shell', () => {

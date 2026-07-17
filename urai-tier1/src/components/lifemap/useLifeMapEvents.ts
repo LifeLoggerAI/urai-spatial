@@ -15,12 +15,15 @@ import {
   type LifeMapNodeType,
 } from "./lifeMapData";
 
+export type LifeMapSourceMode = "private" | "explicit-demo" | "signed-out" | "unavailable" | "empty" | "error";
+
 type LifeMapEventState = {
   nodes: LifeMapNode[];
   eras: LifeMapEra[];
   loading: boolean;
   error: string | null;
   usingSeedData: boolean;
+  sourceMode: LifeMapSourceMode;
 };
 
 const LIFE_MAP_NODE_TYPES = [
@@ -86,10 +89,10 @@ function asStringArray(value: unknown): string[] {
   return Array.isArray(value) ? value.filter((item): item is string => typeof item === "string") : [];
 }
 
-function normalizeEvent(id: string, data: DocumentData): LifeMapEvent {
+function normalizeEvent(id: string, data: DocumentData, ownerId = ""): LifeMapEvent {
   return {
     id,
-    userId: typeof data.userId === "string" ? data.userId : "demo-user",
+    userId: typeof data.userId === "string" ? data.userId : ownerId,
     title: typeof data.title === "string" ? data.title : "Life Map Signal",
     subtitle: typeof data.subtitle === "string" ? data.subtitle : undefined,
     summary: typeof data.summary === "string" ? data.summary : "A private URAI Life Map signal ready for spatial rendering.",
@@ -113,10 +116,10 @@ function normalizeEvent(id: string, data: DocumentData): LifeMapEvent {
   };
 }
 
-function normalizeEra(id: string, data: DocumentData): LifeMapEra {
+function normalizeEra(id: string, data: DocumentData, ownerId = ""): LifeMapEra {
   return {
     id,
-    userId: typeof data.userId === "string" ? data.userId : "demo-user",
+    userId: typeof data.userId === "string" ? data.userId : ownerId,
     title: typeof data.title === "string" ? data.title : "Life Map Era",
     subtitle: typeof data.subtitle === "string" ? data.subtitle : undefined,
     startLabel: typeof data.startLabel === "string" ? data.startLabel : "Now",
@@ -128,33 +131,57 @@ function normalizeEra(id: string, data: DocumentData): LifeMapEra {
   };
 }
 
-function resolveUserId(explicitUserId?: string) {
-  if (explicitUserId) return explicitUserId;
-  if (typeof window === "undefined") return "demo-user";
-  return window.localStorage.getItem("urai:userId") || "demo-user";
+function explicitDemoEnabled(explicitUserId?: string) {
+  if (explicitUserId === "demo-user") return true;
+  if (process.env.NEXT_PUBLIC_URAI_EXPLICIT_DEMO === "true") return true;
+  if (typeof window === "undefined") return false;
+  return window.localStorage.getItem("urai:lifeMapDemoMode") === "true";
+}
+
+function resolveUserId(explicitUserId?: string): string | null {
+  if (explicitUserId && explicitUserId !== "demo-user") return explicitUserId;
+  if (typeof window === "undefined") return null;
+  const stored = window.localStorage.getItem("urai:userId")?.trim();
+  return stored || null;
 }
 
 export function useLifeMapEvents(userId?: string): LifeMapEventState {
+  const explicitDemo = useMemo(() => explicitDemoEnabled(userId), [userId]);
   const resolvedUserId = useMemo(() => resolveUserId(userId), [userId]);
-  const [nodes, setNodes] = useState<LifeMapNode[]>(lifeMapNodes);
-  const [eras, setEras] = useState<LifeMapEra[]>(lifeMapEras);
-  const [eventsLoading, setEventsLoading] = useState(true);
-  const [erasLoading, setErasLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [usingSeedNodes, setUsingSeedNodes] = useState(true);
-  const [usingSeedEras, setUsingSeedEras] = useState(true);
+  const [nodes, setNodes] = useState<LifeMapNode[]>(() => explicitDemo ? lifeMapNodes : []);
+  const [eras, setEras] = useState<LifeMapEra[]>(() => explicitDemo ? lifeMapEras : []);
+  const [eventsLoading, setEventsLoading] = useState(!explicitDemo);
+  const [erasLoading, setErasLoading] = useState(!explicitDemo);
+  const [eventsError, setEventsError] = useState<string | null>(null);
+  const [erasError, setErasError] = useState<string | null>(null);
+  const [usingSeedNodes, setUsingSeedNodes] = useState(explicitDemo);
+  const [usingSeedEras, setUsingSeedEras] = useState(explicitDemo);
 
   useEffect(() => {
     let cancelled = false;
 
-    if (!firebasePublicEnvReady) {
+    if (explicitDemo) {
       setNodes(lifeMapNodes);
       setUsingSeedNodes(true);
       setEventsLoading(false);
-      setError(null);
-      return () => {
-        cancelled = true;
-      };
+      setEventsError(null);
+      return () => { cancelled = true; };
+    }
+
+    setUsingSeedNodes(false);
+
+    if (!resolvedUserId) {
+      setNodes([]);
+      setEventsLoading(false);
+      setEventsError("Sign in to open your private Life Map.");
+      return () => { cancelled = true; };
+    }
+
+    if (!firebasePublicEnvReady) {
+      setNodes([]);
+      setEventsLoading(false);
+      setEventsError("Your private Life Map is temporarily unavailable.");
+      return () => { cancelled = true; };
     }
 
     try {
@@ -166,21 +193,16 @@ export function useLifeMapEvents(userId?: string): LifeMapEventState {
         eventsQuery,
         (snapshot) => {
           if (cancelled) return;
-
-          const nextNodes = snapshot.docs.map((doc) => mapLifeMapEventToNode(normalizeEvent(doc.id, doc.data())));
-
-          setNodes(nextNodes.length ? nextNodes : lifeMapNodes);
-          setUsingSeedNodes(nextNodes.length === 0);
+          const nextNodes = snapshot.docs.map((doc) => mapLifeMapEventToNode(normalizeEvent(doc.id, doc.data(), resolvedUserId)));
+          setNodes(nextNodes);
           setEventsLoading(false);
-          setError(null);
+          setEventsError(null);
         },
-        (error) => {
+        (snapshotError) => {
           if (cancelled) return;
-
-          setNodes(lifeMapNodes);
-          setUsingSeedNodes(true);
+          setNodes([]);
           setEventsLoading(false);
-          setError(error instanceof Error ? error.message : "Life Map events could not be loaded.");
+          setEventsError(snapshotError instanceof Error ? snapshotError.message : "Life Map events could not be loaded.");
         },
       );
 
@@ -188,29 +210,39 @@ export function useLifeMapEvents(userId?: string): LifeMapEventState {
         cancelled = true;
         unsubscribe();
       };
-    } catch (error) {
-      setNodes(lifeMapNodes);
-      setUsingSeedNodes(true);
+    } catch (caught) {
+      setNodes([]);
       setEventsLoading(false);
-      setError(error instanceof Error ? error.message : "Life Map events could not be loaded.");
-
-      return () => {
-        cancelled = true;
-      };
+      setEventsError(caught instanceof Error ? caught.message : "Life Map events could not be loaded.");
+      return () => { cancelled = true; };
     }
-  }, [resolvedUserId]);
+  }, [explicitDemo, resolvedUserId]);
 
   useEffect(() => {
     let cancelled = false;
 
-    if (!firebasePublicEnvReady) {
+    if (explicitDemo) {
       setEras(lifeMapEras);
       setUsingSeedEras(true);
       setErasLoading(false);
-      setError(null);
-      return () => {
-        cancelled = true;
-      };
+      setErasError(null);
+      return () => { cancelled = true; };
+    }
+
+    setUsingSeedEras(false);
+
+    if (!resolvedUserId) {
+      setEras([]);
+      setErasLoading(false);
+      setErasError(null);
+      return () => { cancelled = true; };
+    }
+
+    if (!firebasePublicEnvReady) {
+      setEras([]);
+      setErasLoading(false);
+      setErasError(null);
+      return () => { cancelled = true; };
     }
 
     try {
@@ -222,20 +254,15 @@ export function useLifeMapEvents(userId?: string): LifeMapEventState {
         erasQuery,
         (snapshot) => {
           if (cancelled) return;
-
-          const nextEras = snapshot.docs.map((doc) => normalizeEra(doc.id, doc.data()));
-
-          setEras(nextEras.length ? nextEras : lifeMapEras);
-          setUsingSeedEras(nextEras.length === 0);
+          setEras(snapshot.docs.map((doc) => normalizeEra(doc.id, doc.data(), resolvedUserId)));
           setErasLoading(false);
+          setErasError(null);
         },
-        (error) => {
+        (snapshotError) => {
           if (cancelled) return;
-
-          setEras(lifeMapEras);
-          setUsingSeedEras(true);
+          setEras([]);
           setErasLoading(false);
-          setError(error instanceof Error ? error.message : "Life Map eras could not be loaded.");
+          setErasError(snapshotError instanceof Error ? snapshotError.message : "Life Map eras could not be loaded.");
         },
       );
 
@@ -243,25 +270,30 @@ export function useLifeMapEvents(userId?: string): LifeMapEventState {
         cancelled = true;
         unsubscribe();
       };
-    } catch (error) {
-      setEras(lifeMapEras);
-      setUsingSeedEras(true);
+    } catch (caught) {
+      setEras([]);
       setErasLoading(false);
-      setError(error instanceof Error ? error.message : "Life Map eras could not be loaded.");
-
-      return () => {
-        cancelled = true;
-      };
+      setErasError(caught instanceof Error ? caught.message : "Life Map eras could not be loaded.");
+      return () => { cancelled = true; };
     }
-  }, [resolvedUserId]);
+  }, [explicitDemo, resolvedUserId]);
 
-  return {
-    nodes,
-    eras,
-    loading: eventsLoading || erasLoading,
-    error,
-    usingSeedData: usingSeedNodes || usingSeedEras,
-  };
+  const loading = eventsLoading || erasLoading;
+  const error = eventsError || erasError;
+  const usingSeedData = explicitDemo && (usingSeedNodes || usingSeedEras);
+  const sourceMode: LifeMapSourceMode = explicitDemo
+    ? "explicit-demo"
+    : !resolvedUserId
+      ? "signed-out"
+      : !firebasePublicEnvReady
+        ? "unavailable"
+        : error
+          ? "error"
+          : !loading && nodes.length === 0
+            ? "empty"
+            : "private";
+
+  return { nodes, eras, loading, error, usingSeedData, sourceMode };
 }
 
 export const __lifeMapEventNormalizationForTests = {
@@ -270,4 +302,6 @@ export const __lifeMapEventNormalizationForTests = {
   asLifeMapEraType,
   normalizeEvent,
   normalizeEra,
+  resolveUserId,
+  explicitDemoEnabled,
 };

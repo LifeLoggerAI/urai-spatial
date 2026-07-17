@@ -23,6 +23,7 @@ export type ReplayVisibleAction =
 export type ReplaySegmentDefinition = {
   id: ReplaySegmentId
   label: string
+  caption: string
   startsAtMs: number
   durationMs: number
   narratorLine: string
@@ -54,6 +55,7 @@ export const REPLAY_SEGMENTS: ReplaySegmentDefinition[] = [
   {
     id: 'memory',
     label: 'Memory',
+    caption: 'The moment opens around you.',
     startsAtMs: 0,
     durationMs: 2400,
     narratorLine: 'The memory opens as a quiet field.',
@@ -62,6 +64,7 @@ export const REPLAY_SEGMENTS: ReplaySegmentDefinition[] = [
   {
     id: 'emotion',
     label: 'Emotion',
+    caption: 'The feeling becomes visible.',
     startsAtMs: 2400,
     durationMs: 2600,
     narratorLine: 'The emotional signal becomes visible without needing a label.',
@@ -70,6 +73,7 @@ export const REPLAY_SEGMENTS: ReplaySegmentDefinition[] = [
   {
     id: 'pattern',
     label: 'Pattern',
+    caption: 'A shape repeats across the moment.',
     startsAtMs: 5000,
     durationMs: 2800,
     narratorLine: 'A repeated shape appears across the moment.',
@@ -78,6 +82,7 @@ export const REPLAY_SEGMENTS: ReplaySegmentDefinition[] = [
   {
     id: 'return',
     label: 'Return',
+    caption: 'The memory settles without disappearing.',
     startsAtMs: 7800,
     durationMs: 2200,
     narratorLine: 'The replay settles back into Focus.',

@@ -169,6 +169,39 @@ async function openReplay(page, report) {
   }
 }
 
+function rectanglesOverlap(a, b, gap = 0) {
+  return !(
+    a.x + a.width + gap <= b.x ||
+    b.x + b.width + gap <= a.x ||
+    a.y + a.height + gap <= b.y ||
+    b.y + b.height + gap <= a.y
+  );
+}
+
+async function expectNoOverlap(first, second, label, gap = 2) {
+  const firstBox = await first.boundingBox();
+  const secondBox = await second.boundingBox();
+  if (!firstBox || !secondBox) throw new Error(`${label}: missing measurable bounding box`);
+  if (rectanglesOverlap(firstBox, secondBox, gap)) {
+    throw new Error(`${label}: controls overlap (${JSON.stringify({ firstBox, secondBox, gap })})`);
+  }
+}
+
+async function expectInsideViewport(locator, page, label, padding = 2) {
+  const box = await locator.boundingBox();
+  if (!box) throw new Error(`${label}: missing measurable bounding box`);
+  const viewport = page.viewportSize();
+  if (!viewport) throw new Error(`${label}: viewport unavailable`);
+  if (
+    box.x < padding ||
+    box.y < padding ||
+    box.x + box.width > viewport.width - padding ||
+    box.y + box.height > viewport.height - padding
+  ) {
+    throw new Error(`${label}: outside viewport (${JSON.stringify({ box, viewport, padding })})`);
+  }
+}
+
 async function elementState(locator) {
   const count = await locator.count().catch(() => 0);
   if (!count) return { count: 0, visible: false };
@@ -186,7 +219,7 @@ async function elementState(locator) {
 async function run() {
   const server = await startServer();
   const report = {
-    schemaVersion: 'urai-replay-tier5-report-2',
+    schemaVersion: 'urai-replay-tier5-report-3',
     screenshots: [],
     console: [],
     pageErrors: [],
@@ -266,9 +299,29 @@ async function run() {
     await page.goto(`${server.baseUrl}/replay?manifestId=${SEED}`, { waitUntil: 'domcontentloaded' });
     await settleReplayRoute(page);
     const mobileReplay = page.getByTestId('cinematic-replay-client').first();
+    const mobileTimeline = page.locator('[data-testid="urai-replay-timeline"], [aria-label="Replay playback controls"]').last();
+    const mobileMetaPanel = page.locator('[data-testid="urai-replay-meta-panel"], [aria-label="Replay narrator panel"]').last();
+    const mobileCaption = page.locator('.replaySpatialCaption').first();
+    const mobileUnwind = page.locator('.replayUnwind').first();
+    const mobileCompanion = page.locator('.urai-world-companion').first();
     await expectVisible(mobileReplay, 'mobile cinematic replay client', 30000);
-    await expectVisible(page.locator('[data-testid="urai-replay-timeline"], [aria-label="Replay playback controls"]').last(), 'mobile replay timeline', 30000);
-    await expectVisible(page.locator('[data-testid="urai-replay-meta-panel"], [aria-label="Replay narrator panel"]').last(), 'mobile replay meta panel', 30000);
+    await expectVisible(mobileTimeline, 'mobile replay timeline', 30000);
+    await expectVisible(mobileMetaPanel, 'mobile replay meta panel', 30000);
+    await expectVisible(mobileCaption, 'mobile replay caption', 30000);
+    await expectVisible(mobileUnwind, 'mobile replay unwind control', 30000);
+    await expectInsideViewport(mobileMetaPanel, page, 'mobile replay meta panel');
+    await expectInsideViewport(mobileTimeline, page, 'mobile replay timeline');
+    await expectInsideViewport(mobileUnwind, page, 'mobile replay unwind control');
+    await expectNoOverlap(mobileMetaPanel, mobileTimeline, 'mobile meta panel and timeline');
+    await expectNoOverlap(mobileMetaPanel, mobileCaption, 'mobile meta panel and caption');
+    await expectNoOverlap(mobileCaption, mobileTimeline, 'mobile caption and timeline');
+    await expectNoOverlap(mobileUnwind, mobileTimeline, 'mobile unwind and timeline');
+    if (await mobileCompanion.isVisible().catch(() => false)) {
+      await expectInsideViewport(mobileCompanion, page, 'mobile persistent companion');
+      await expectNoOverlap(mobileCompanion, mobileTimeline, 'mobile companion and timeline');
+      await expectNoOverlap(mobileCompanion, mobileMetaPanel, 'mobile companion and meta panel');
+    }
+    report.audits.push('mobile replay safe-area geometry verified with no panel, caption, timeline, unwind, or companion overlap');
     await page.screenshot({ path: `${ARTIFACT_DIR}/03-mobile-memory-theater-replay.png`, fullPage: true });
     report.screenshots.push('03-mobile-memory-theater-replay.png');
 

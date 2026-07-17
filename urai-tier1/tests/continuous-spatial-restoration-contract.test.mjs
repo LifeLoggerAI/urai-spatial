@@ -55,9 +55,10 @@ test('Home is a premium coherent world with aspect-aware framing and one canonic
     'data-testid="urai-home-webgl-orb"',
     'urai:first-home-spatial-frame',
     'toneMappingExposure = 1.22',
-    'tap the ground to enter below',
   ]) assert.ok(canvas.includes(marker), `missing Home spatial marker: ${marker}`)
 
+  assert.doesNotMatch(canvas, /tap the ground to enter below/i)
+  assert.match(canvas, /data-tier0-ground-gateway="true"/)
   assert.match(canvas, /const \[available, setAvailable\] = useState<boolean \| null>\(null\)/)
   assert.match(canvas, /if \(cachedWebGLAvailable !== null\)/)
   assert.doesNotMatch(canvas, /useState<boolean \| null>\(cachedWebGLAvailable\)/)

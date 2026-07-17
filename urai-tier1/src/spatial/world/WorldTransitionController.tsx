@@ -12,6 +12,7 @@ import type { UraiDestination, UraiWorldTravelRequest } from './worldTypes'
 
 const CONTEXT_KEYS = [
   'memoryId',
+  'node',
   'thread',
   'personId',
   'placeId',
@@ -52,12 +53,30 @@ function buildTravelHref(request: UraiWorldTravelRequest) {
   if (request.entryPortal) target.searchParams.set('entryPortal', request.entryPortal)
   if (request.cameraCheckpoint) target.searchParams.set('cameraCheckpoint', request.cameraCheckpoint)
 
+  const activeMemoryId = target.searchParams.get('memoryId') ?? target.searchParams.get('node')
+  if (activeMemoryId) {
+    if (request.destination === 'life-map') {
+      target.searchParams.set('node', activeMemoryId)
+      target.searchParams.delete('memoryId')
+    } else {
+      target.searchParams.set('memoryId', activeMemoryId)
+      target.searchParams.delete('node')
+    }
+  }
+
   return `${target.pathname}${target.search}${target.hash}`
 }
 
 function isEditableTarget(target: EventTarget | null) {
   if (!(target instanceof HTMLElement)) return false
   return target.isContentEditable || target.matches('input, textarea, select, [role="textbox"]')
+}
+
+function fallbackReturnDestination(destination: UraiDestination): UraiDestination {
+  if (destination === 'focus') return 'life-map'
+  if (destination === 'replay') return 'focus'
+  if (destination === 'infrastructure-hub') return 'home'
+  return 'infrastructure-hub'
 }
 
 export function WorldTransitionController() {
@@ -102,7 +121,7 @@ export function WorldTransitionController() {
   const reverseTravel = useCallback(() => {
     const currentWorld = worldRef.current
     if (phaseRef.current !== 'idle') return
-    const destination = currentWorld.previousDestination ?? (currentWorld.destination === 'infrastructure-hub' ? 'home' : 'infrastructure-hub')
+    const destination = currentWorld.previousDestination ?? fallbackReturnDestination(currentWorld.destination)
     const definition = definitionForDestination(destination)
     executeTravel({
       destination,

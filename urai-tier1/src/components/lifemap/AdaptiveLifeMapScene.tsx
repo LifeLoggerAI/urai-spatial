@@ -11,7 +11,6 @@ import {
   useRef,
   useState,
   type PointerEvent,
-  type WheelEvent,
 } from "react";
 import * as THREE from "three";
 import { useLifeMapEvents } from "./useLifeMapEvents";
@@ -34,6 +33,12 @@ type CameraIntent = {
 type PersistedLifeMapState = {
   selectedId: string | null;
   cameraIntent: CameraIntent;
+};
+
+type WebGLState = "starting" | "ready" | "lost" | "recovering" | "failed";
+
+type LoseContextExtension = {
+  restoreContext?: () => void;
 };
 
 const OVERVIEW_CAMERA: CameraIntent = {
@@ -87,11 +92,7 @@ function FirstFrame({ profile }: { profile: SpatialQualityProfile }) {
   return null;
 }
 
-function CameraRig({
-  intent,
-  reducedMotion,
-  visible,
-}: {
+function CameraRig({ intent, reducedMotion, visible }: {
   intent: CameraIntent;
   reducedMotion: boolean;
   visible: boolean;
@@ -155,6 +156,66 @@ function AdaptiveGalaxy({ profile }: { profile: SpatialQualityProfile }) {
   );
 }
 
+function LifeCore({ profile }: { profile: SpatialQualityProfile }) {
+  const core = useRef<THREE.Group>(null);
+  useFrame(({ clock }) => {
+    if (!core.current || profile.reducedMotion || !profile.documentVisible) return;
+    core.current.rotation.z = clock.elapsedTime * 0.055;
+    core.current.rotation.y = Math.sin(clock.elapsedTime * 0.15) * 0.12;
+  });
+
+  return (
+    <group ref={core} position={[0, 0.15, -1.25]} name="urai-life-core">
+      <mesh>
+        <icosahedronGeometry args={[0.46, profile.tier === "high" ? 4 : 2]} />
+        <meshStandardMaterial color="#f6ffff" emissive="#78ecff" emissiveIntensity={2.3} roughness={0.18} metalness={0.24} />
+      </mesh>
+      <mesh rotation={[Math.PI / 2, 0, 0]}>
+        <torusGeometry args={[0.82, 0.026, 12, 96]} />
+        <meshBasicMaterial color="#9bf7ff" transparent opacity={0.54} depthWrite={false} blending={THREE.AdditiveBlending} />
+      </mesh>
+      <mesh rotation={[Math.PI / 2.6, 0.6, 0.25]}>
+        <torusGeometry args={[1.12, 0.014, 10, 96]} />
+        <meshBasicMaterial color="#d7a8ff" transparent opacity={0.28} depthWrite={false} blending={THREE.AdditiveBlending} />
+      </mesh>
+    </group>
+  );
+}
+
+function EraRegions({ nodes }: { nodes: LifeMapNode[] }) {
+  const regions = useMemo(() => {
+    const grouped = new Map<string, LifeMapNode[]>();
+    nodes.forEach((node) => {
+      const key = node.eraId || node.clusterId || "present";
+      grouped.set(key, [...(grouped.get(key) || []), node]);
+    });
+    return [...grouped.entries()].map(([id, members]) => {
+      const total = members.reduce<[number, number, number]>((sum, node) => [
+        sum[0] + node.position[0],
+        sum[1] + node.position[1],
+        sum[2] + node.position[2],
+      ], [0, 0, 0]);
+      const center: [number, number, number] = [
+        total[0] / members.length,
+        total[1] / members.length,
+        total[2] / members.length,
+      ];
+      return { id, center, radius: 0.95 + members.length * 0.22, aura: members[0]?.aura || "#8adfff" };
+    });
+  }, [nodes]);
+
+  return (
+    <group name="urai-era-regions">
+      {regions.map((region, index) => (
+        <mesh key={region.id} position={region.center} rotation={[Math.PI / 2 + index * 0.08, index * 0.18, 0]}>
+          <torusGeometry args={[region.radius, 0.012, 8, 80]} />
+          <meshBasicMaterial color={region.aura} transparent opacity={0.12} depthWrite={false} blending={THREE.AdditiveBlending} />
+        </mesh>
+      ))}
+    </group>
+  );
+}
+
 function Connections({ nodes, selectedId }: { nodes: LifeMapNode[]; selectedId: string | null }) {
   const geometry = useMemo(() => {
     const byId = new Map(nodes.map((node) => [node.id, node]));
@@ -180,12 +241,28 @@ function Connections({ nodes, selectedId }: { nodes: LifeMapNode[]; selectedId: 
   );
 }
 
-function MemoryStar({
-  node,
-  selected,
-  profile,
-  onSelect,
-}: {
+function NodeGeometry({ node, segments }: { node: LifeMapNode; segments: number }) {
+  switch (node.type) {
+    case "relationship":
+      return <torusKnotGeometry args={[0.25 + node.intensity * 0.12, 0.075, segments * 2, 10, 2, 3]} />;
+    case "ritual":
+      return <octahedronGeometry args={[0.38 + node.intensity * 0.16, 1]} />;
+    case "recovery":
+      return <dodecahedronGeometry args={[0.36 + node.intensity * 0.15, 1]} />;
+    case "threshold":
+      return <coneGeometry args={[0.36 + node.intensity * 0.12, 0.72, Math.max(12, segments)]} />;
+    case "season":
+      return <torusGeometry args={[0.32 + node.intensity * 0.1, 0.11, 12, Math.max(24, segments)]} />;
+    case "forecast":
+      return <tetrahedronGeometry args={[0.43 + node.intensity * 0.14, 1]} />;
+    case "legacy":
+      return <boxGeometry args={[0.55, 0.55, 0.55, 2, 2, 2]} />;
+    default:
+      return <sphereGeometry args={[0.32 + node.intensity * 0.22, segments, segments]} />;
+  }
+}
+
+function MemoryStar({ node, selected, profile, onSelect }: {
   node: LifeMapNode;
   selected: boolean;
   profile: SpatialQualityProfile;
@@ -208,9 +285,9 @@ function MemoryStar({
   };
 
   return (
-    <group ref={group} position={node.position}>
+    <group ref={group} position={node.position} name={`life-map-node-${node.type}`}>
       <mesh onClick={choose} castShadow={profile.shadows}>
-        <sphereGeometry args={[0.32 + node.intensity * 0.22, segments, segments]} />
+        <NodeGeometry node={node} segments={segments} />
         <meshStandardMaterial color="#ffffff" emissive={color} emissiveIntensity={selected ? 2.2 : 0.8} roughness={0.2} metalness={0.12} />
       </mesh>
       <mesh>
@@ -228,13 +305,7 @@ function MemoryStar({
   );
 }
 
-function LifeMapWorld({
-  nodes,
-  selectedId,
-  profile,
-  cameraIntent,
-  onSelect,
-}: {
+function LifeMapWorld({ nodes, selectedId, profile, cameraIntent, onSelect }: {
   nodes: LifeMapNode[];
   selectedId: string | null;
   profile: SpatialQualityProfile;
@@ -255,6 +326,8 @@ function LifeMapWorld({
       <pointLight position={[4, 1.4, 2]} color="#ff7bd6" intensity={1.8} />
       <Stars radius={104} depth={72} count={starCount} factor={4.8} saturation={0.5} fade speed={profile.reducedMotion ? 0 : 0.22} />
       <AdaptiveGalaxy profile={profile} />
+      <LifeCore profile={profile} />
+      <EraRegions nodes={nodes} />
       <group rotation={[-0.13, 0.08, -0.025]} position={[0, -0.08, 0]}>
         <Connections nodes={nodes} selectedId={selectedId} />
         {nodes.map((node) => (
@@ -284,8 +357,13 @@ export default function AdaptiveLifeMapScene() {
   const [selectedId, setSelectedId] = useState<string | null>(() => queryNodeId || initial.current?.selectedId || null);
   const [cameraIntent, setCameraIntent] = useState<CameraIntent>(() => initial.current?.cameraIntent || OVERVIEW_CAMERA);
   const [narratorText, setNarratorText] = useState("The Life Map is open. Select a star to move inside the memory field.");
+  const [webglState, setWebglState] = useState<WebGLState>("starting");
+  const mainRef = useRef<HTMLElement>(null);
   const dragRef = useRef<{ x: number; y: number; camera: CameraIntent } | null>(null);
+  const rendererCleanupRef = useRef<(() => void) | null>(null);
+  const recoveryTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const selectedNode = useMemo(() => nodes.find((node) => node.id === selectedId) || null, [nodes, selectedId]);
+  const stableCanvas = useRef({ antialias: profile.antialias, pixelRatioMax: profile.pixelRatioMax });
 
   useEffect(() => {
     if (!queryNodeId || !nodes.length) return;
@@ -342,13 +420,56 @@ export default function AdaptiveLifeMapScene() {
     return () => window.removeEventListener("keydown", onKeyDown);
   }, [recenter, router, selectedId]);
 
-  const onWheel = useCallback((event: WheelEvent<HTMLElement>) => {
-    event.preventDefault();
-    setCameraIntent((current) => ({
-      position: [current.position[0], current.position[1], THREE.MathUtils.clamp(current.position[2] + event.deltaY * 0.005, 3.7, 12.4)],
-      target: current.target,
-    }));
+  useEffect(() => {
+    const target = mainRef.current;
+    if (!target) return;
+    const onWheel = (event: WheelEvent) => {
+      event.preventDefault();
+      setCameraIntent((current) => ({
+        position: [current.position[0], current.position[1], THREE.MathUtils.clamp(current.position[2] + event.deltaY * 0.005, 3.7, 12.4)],
+        target: current.target,
+      }));
+    };
+    target.addEventListener("wheel", onWheel, { passive: false });
+    return () => target.removeEventListener("wheel", onWheel);
   }, []);
+
+  useEffect(() => () => {
+    rendererCleanupRef.current?.();
+    if (recoveryTimerRef.current) clearTimeout(recoveryTimerRef.current);
+  }, []);
+
+  const configureRenderer = useCallback(({ gl }: { gl: THREE.WebGLRenderer }) => {
+    rendererCleanupRef.current?.();
+    const canvas = gl.domElement;
+    const onContextLost = (event: Event) => {
+      event.preventDefault();
+      setWebglState("lost");
+      setNarratorText("The visual field paused safely. Your map and selected memory are still here.");
+      if (recoveryTimerRef.current) clearTimeout(recoveryTimerRef.current);
+      recoveryTimerRef.current = setTimeout(() => {
+        setWebglState("recovering");
+        const extension = gl.getContext().getExtension("WEBGL_lose_context") as LoseContextExtension | null;
+        extension?.restoreContext?.();
+        recoveryTimerRef.current = setTimeout(() => setWebglState((current) => current === "ready" ? current : "failed"), 8000);
+      }, 250);
+    };
+    const onContextRestored = () => {
+      if (recoveryTimerRef.current) clearTimeout(recoveryTimerRef.current);
+      gl.setPixelRatio(Math.min(window.devicePixelRatio, stableCanvas.current.pixelRatioMax));
+      gl.shadowMap.enabled = profile.shadows;
+      setWebglState("ready");
+    };
+    canvas.addEventListener("webglcontextlost", onContextLost, false);
+    canvas.addEventListener("webglcontextrestored", onContextRestored, false);
+    rendererCleanupRef.current = () => {
+      canvas.removeEventListener("webglcontextlost", onContextLost, false);
+      canvas.removeEventListener("webglcontextrestored", onContextRestored, false);
+    };
+    gl.setPixelRatio(Math.min(window.devicePixelRatio, stableCanvas.current.pixelRatioMax));
+    gl.shadowMap.enabled = profile.shadows;
+    setWebglState("ready");
+  }, [profile.shadows]);
 
   const onPointerDown = useCallback((event: PointerEvent<HTMLElement>) => {
     event.currentTarget.setPointerCapture(event.pointerId);
@@ -377,33 +498,34 @@ export default function AdaptiveLifeMapScene() {
     }
   }, []);
 
+  const semanticRecoveryVisible = webglState === "lost" || webglState === "recovering" || webglState === "failed";
+
   return (
     <main
+      ref={mainRef}
       className="relative min-h-screen overflow-hidden bg-[#01030a] text-white"
       data-testid="urai-true-3d-life-map"
       data-spatial-quality={profile.tier}
       data-spatial-visible={profile.documentVisible ? "true" : "false"}
-      onWheel={onWheel}
+      data-webgl-state={webglState}
+      data-life-map-source={usingSeedData ? "explicit-sample" : "private"}
       onPointerDown={onPointerDown}
       onPointerMove={onPointerMove}
       onPointerUp={onPointerUp}
       onPointerCancel={onPointerUp}
+      style={{ touchAction: "none" }}
     >
       <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_34%,rgba(74,222,255,0.14),transparent_28%),radial-gradient(circle_at_71%_43%,rgba(255,80,210,0.13),transparent_30%),linear-gradient(180deg,#01030a_0%,#030712_55%,#010208_100%)]" />
       <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_50%_50%,transparent_0_40%,rgba(0,0,0,0.74)_100%)]" />
 
       <Canvas
-        key={`${profile.tier}-${profile.antialias ? "aa" : "noaa"}`}
         className="absolute inset-0"
         camera={{ position: OVERVIEW_CAMERA.position, fov: 42, near: 0.1, far: 140 }}
         dpr={[1, profile.pixelRatioMax]}
         shadows={profile.shadows}
         frameloop={profile.documentVisible ? "always" : "never"}
-        gl={{ antialias: profile.antialias, alpha: false, powerPreference: "high-performance" }}
-        onCreated={({ gl }) => {
-          gl.setPixelRatio(Math.min(window.devicePixelRatio, profile.pixelRatioMax));
-          gl.shadowMap.enabled = profile.shadows;
-        }}
+        gl={{ antialias: stableCanvas.current.antialias, alpha: false, powerPreference: "high-performance" }}
+        onCreated={configureRenderer}
       >
         <LifeMapWorld nodes={nodes} selectedId={selectedId} profile={profile} cameraIntent={cameraIntent} onSelect={selectNode} />
       </Canvas>
@@ -416,8 +538,30 @@ export default function AdaptiveLifeMapScene() {
 
       <aside className="pointer-events-none absolute right-5 top-5 z-20 hidden max-w-[270px] rounded-2xl border border-white/10 bg-black/30 p-3 text-cyan-50/75 backdrop-blur-xl md:block">
         <p className="m-0 text-[9px] font-black uppercase tracking-[0.22em] text-cyan-200/80">Adaptive spatial controls</p>
-        <span className="mt-1 block text-[11px] font-bold leading-4">{profile.tier} quality · {profile.reducedMotion ? "reduced motion" : "motion active"} · {loading ? "opening galaxy" : error ? "seed galaxy active" : usingSeedData ? "seed memories awake" : "private memories awake"}</span>
+        <span className="mt-1 block text-[11px] font-bold leading-4">{profile.tier} quality · {profile.reducedMotion ? "reduced motion" : "motion active"} · {loading ? "opening galaxy" : error ? "recovery state" : usingSeedData ? "explicit sample constellation" : "private memories awake"}</span>
       </aside>
+
+      {usingSeedData ? (
+        <div className="pointer-events-none absolute left-1/2 top-4 z-30 -translate-x-1/2 rounded-full border border-amber-200/25 bg-amber-950/60 px-4 py-2 text-[10px] font-black uppercase tracking-[0.18em] text-amber-100 backdrop-blur-xl" role="status">
+          Sample constellation · not your memories
+        </div>
+      ) : null}
+
+      {semanticRecoveryVisible ? (
+        <section className="absolute inset-x-4 top-1/2 z-40 mx-auto max-w-xl -translate-y-1/2 rounded-[30px] border border-cyan-100/20 bg-slate-950/92 p-6 shadow-[0_30px_120px_rgba(0,0,0,.72)] backdrop-blur-2xl" role="status" aria-live="assertive">
+          <p className="m-0 text-[10px] font-black uppercase tracking-[0.24em] text-cyan-200">Life Map protected mode</p>
+          <h2 className="mt-2 text-2xl font-black tracking-[-0.04em]">{webglState === "failed" ? "The visual field could not restart." : "Restoring the visual field…"}</h2>
+          <p className="mt-2 text-sm font-semibold leading-6 text-slate-200">Your selected memory and camera context remain preserved. Continue through the semantic map below or return Home.</p>
+          <div className="mt-4 flex flex-wrap gap-2">
+            {nodes.map((node) => (
+              <button key={node.id} type="button" onClick={() => selectNode(node)} className="rounded-full border border-white/15 bg-white/5 px-3 py-2 text-xs font-black text-white">
+                {node.title}
+              </button>
+            ))}
+            <button type="button" onClick={() => router.push("/home")} className="rounded-full bg-cyan-100 px-4 py-2 text-xs font-black text-slate-950">Return Home</button>
+          </div>
+        </section>
+      ) : null}
 
       <section className="pointer-events-auto absolute bottom-20 left-1/2 z-30 w-[min(540px,calc(100vw-34px))] -translate-x-1/2 rounded-[28px] border border-cyan-100/15 bg-slate-950/60 p-4 shadow-[0_0_110px_rgba(80,230,255,.16)] backdrop-blur-2xl" aria-live="polite">
         <p className="m-0 text-[10px] font-black uppercase tracking-[0.24em] text-cyan-200/85">{selectedNode ? selectedNode.title : "Orb companion"}</p>
@@ -434,11 +578,15 @@ export default function AdaptiveLifeMapScene() {
       <nav className="absolute bottom-4 left-1/2 z-20 flex max-w-[calc(100vw-24px)] -translate-x-1/2 gap-1 overflow-x-auto rounded-full border border-white/10 bg-black/35 p-1.5 backdrop-blur-2xl" aria-label="URAI Life Map route portals">
         <button type="button" onClick={() => router.push("/home")} className="rounded-full border border-cyan-100/10 px-3 py-1.5 text-[10px] font-black text-cyan-50/78">Home</button>
         <button type="button" onClick={() => router.push("/ground")} className="rounded-full border border-cyan-100/10 px-3 py-1.5 text-[10px] font-black text-cyan-50/78">Ground</button>
-        {selectedNode ? <button type="button" onClick={() => router.push(identityHref("focus", selectedNode))} className="rounded-full border border-cyan-100/10 px-3 py-1.5 text-[10px] font-black text-cyan-50/78">Focus</button> : null}
-        {selectedNode?.replayAvailable ? <button type="button" onClick={() => router.push(identityHref("replay", selectedNode))} className="rounded-full border border-cyan-100/10 px-3 py-1.5 text-[10px] font-black text-cyan-50/78">Replay</button> : null}
         <button type="button" onClick={() => router.push("/mirror")} className="rounded-full border border-cyan-100/10 px-3 py-1.5 text-[10px] font-black text-cyan-50/78">Mirror</button>
         <button type="button" onClick={() => router.push("/passport")} className="rounded-full border border-cyan-100/10 px-3 py-1.5 text-[10px] font-black text-cyan-50/78">Passport</button>
       </nav>
+
+      <div className="sr-only" aria-label="Semantic Life Map">
+        {nodes.map((node) => (
+          <button key={node.id} type="button" onClick={() => selectNode(node)}>{node.title}: {node.summary}</button>
+        ))}
+      </div>
     </main>
   );
 }
