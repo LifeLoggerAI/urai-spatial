@@ -31,6 +31,15 @@ export const URAI_DESTINATION_REGISTRY: Record<UraiDestination, UraiDestinationD
     environmentalForm: 'underground-network',
     deepLinkAliases: ['/infrastructure'],
   },
+  'life-map': {
+    id: 'life-map',
+    label: 'Life Map',
+    href: '/life-map',
+    layer: 'infrastructure-world',
+    entryPortal: 'constellation-threshold',
+    cameraCheckpoint: 'life-map-overview',
+    environmentalForm: 'explorable-memory-constellation',
+  },
   mirror: {
     id: 'mirror',
     label: 'Reflection Realm',
@@ -92,6 +101,7 @@ const PATH_DESTINATIONS: readonly [string, UraiDestination][] = [
   ['/location-map', 'location-map'],
   ['/infrastructure', 'infrastructure-hub'],
   ['/ground', 'infrastructure-hub'],
+  ['/life-map', 'life-map'],
   ['/passport', 'passport'],
   ['/mirror', 'mirror'],
   ['/focus', 'focus'],
