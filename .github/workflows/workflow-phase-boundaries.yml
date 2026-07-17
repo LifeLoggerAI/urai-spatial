@@ -12,6 +12,8 @@ on:
       - ".github/workflows/workflow-phase-boundaries.yml"
       - "scripts/aaa-launch-proof.mjs"
       - "scripts/check-workflow-phase-boundaries.mjs"
+      - "urai-tier1/src/spatial/world/WorldTransitionController.tsx"
+      - "urai-tier1/tests/persistent-world-doorway-regression.test.mjs"
   push:
     branches: [main]
     paths:
@@ -23,6 +25,8 @@ on:
       - ".github/workflows/workflow-phase-boundaries.yml"
       - "scripts/aaa-launch-proof.mjs"
       - "scripts/check-workflow-phase-boundaries.mjs"
+      - "urai-tier1/src/spatial/world/WorldTransitionController.tsx"
+      - "urai-tier1/tests/persistent-world-doorway-regression.test.mjs"
   workflow_dispatch:
 
 permissions:
@@ -50,11 +54,11 @@ jobs:
         run: node scripts/check-workflow-phase-boundaries.mjs
 
   aaa-proof:
-    name: Exact PR-head AAA proof
-    if: ${{ github.event_name == 'pull_request' }}
+    name: Exact selected-head AAA proof
+    if: ${{ github.event_name == 'pull_request' || github.event_name == 'workflow_dispatch' }}
     needs: verify
     uses: ./.github/workflows/aaa-final-proof.yml
     with:
-      target_sha: ${{ github.event.pull_request.head.sha }}
+      target_sha: ${{ github.event.pull_request.head.sha || github.sha }}
       base_url: http://127.0.0.1:4173
       screenshots: "true"
