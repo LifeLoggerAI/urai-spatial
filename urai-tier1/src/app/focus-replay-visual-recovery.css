@@ -6,11 +6,16 @@
   --urai-auto-ink: rgba(255, 255, 255, 0.98);
   --urai-auto-muted: rgba(239, 246, 252, 0.84);
   z-index: 2147482600 !important;
+  opacity: 1 !important;
+  visibility: visible !important;
+  filter: none !important;
 }
 
-/* Focus and Replay own the viewport. Decorative route skins cannot sit above them. */
+/* Focus and Replay own the viewport. Duplicate decorative route art cannot sit above them. */
 .urai-route-graphic-skin[data-route='focus'],
-.urai-route-graphic-skin[data-route='replay'] {
+.urai-route-graphic-skin[data-route='replay'],
+.urai-cinematic-backdrop[data-route='focus'],
+.urai-cinematic-backdrop[data-route='replay'] {
   display: none !important;
 }
 
@@ -39,6 +44,7 @@
 .uraiAutoFocus .uraiFocusMemoryImage,
 .uraiAutoReplay .uraiReplaySceneArt {
   opacity: 1 !important;
+  visibility: visible !important;
   filter: brightness(1.75) contrast(1.06) saturate(1.18) !important;
 }
 
