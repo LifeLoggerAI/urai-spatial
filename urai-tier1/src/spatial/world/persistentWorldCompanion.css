@@ -1,0 +1,200 @@
+.urai-world-companion {
+  position: fixed;
+  left: 50%;
+  bottom: max(14px, env(safe-area-inset-bottom));
+  z-index: 2147483000;
+  display: grid;
+  justify-items: center;
+  gap: 10px;
+  transform: translateX(-50%);
+  pointer-events: none;
+}
+
+.urai-world-companion__orb {
+  position: relative;
+  width: 64px;
+  height: 64px;
+  border: 1px solid rgba(207, 250, 254, .52);
+  border-radius: 999px;
+  padding: 0;
+  background:
+    radial-gradient(circle at 42% 34%, rgba(255,255,255,.98) 0 5%, rgba(174,249,255,.94) 12%, rgba(81,226,235,.7) 28%, rgba(17,71,91,.78) 52%, rgba(3,12,24,.96) 76%);
+  box-shadow:
+    0 0 22px rgba(103,232,249,.48),
+    0 0 70px rgba(103,232,249,.24),
+    inset 0 0 28px rgba(255,255,255,.3);
+  cursor: pointer;
+  pointer-events: auto;
+  transition: transform 180ms ease, box-shadow 180ms ease;
+}
+
+.urai-world-companion__orb::before,
+.urai-world-companion__orb::after,
+.urai-world-companion__orb span {
+  content: '';
+  position: absolute;
+  inset: -8px;
+  border: 1px solid rgba(134,239,255,.24);
+  border-radius: inherit;
+}
+
+.urai-world-companion__orb::after {
+  inset: -17px;
+  border-color: rgba(167,139,250,.15);
+}
+
+.urai-world-companion__orb span {
+  inset: 15px;
+  border: 0;
+  background: rgba(255,255,255,.68);
+  filter: blur(8px);
+}
+
+.urai-world-companion__orb:hover,
+.urai-world-companion__orb:focus-visible,
+.urai-world-companion[data-open='true'] .urai-world-companion__orb {
+  transform: scale(1.08);
+  box-shadow: 0 0 28px rgba(103,232,249,.7), 0 0 96px rgba(103,232,249,.34), inset 0 0 32px rgba(255,255,255,.4);
+}
+
+.urai-world-companion__orb:focus-visible {
+  outline: 3px solid rgba(224,255,255,.96);
+  outline-offset: 6px;
+}
+
+.urai-world-companion__menu {
+  width: min(520px, calc(100vw - 24px));
+  padding: 10px;
+  border: 1px solid rgba(207,250,254,.18);
+  border-radius: 24px;
+  background: linear-gradient(145deg, rgba(2,8,24,.88), rgba(17,14,40,.72));
+  box-shadow: 0 28px 100px rgba(0,0,0,.5), inset 0 1px 0 rgba(255,255,255,.08);
+  backdrop-filter: blur(22px);
+  -webkit-backdrop-filter: blur(22px);
+  opacity: 0;
+  transform: translateY(12px) scale(.96);
+  visibility: hidden;
+  pointer-events: none;
+  transition: opacity 180ms ease, transform 180ms ease, visibility 180ms step-end;
+}
+
+.urai-world-companion[data-open='true'] .urai-world-companion__menu {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+  visibility: visible;
+  pointer-events: auto;
+  transition: opacity 180ms ease, transform 180ms ease, visibility 0s step-start;
+}
+
+.urai-world-companion__menu p {
+  margin: 0 0 8px;
+  color: rgba(207,250,254,.76);
+  font-size: 10px;
+  font-weight: 900;
+  letter-spacing: .18em;
+  text-align: center;
+  text-transform: uppercase;
+}
+
+.urai-world-companion__menu nav {
+  display: flex;
+  justify-content: center;
+  gap: 6px;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.urai-world-companion__menu nav::-webkit-scrollbar { display: none; }
+
+.urai-world-companion__menu button {
+  flex: 0 0 auto;
+  min-height: 40px;
+  border: 1px solid rgba(207,250,254,.14);
+  border-radius: 999px;
+  padding: 8px 12px;
+  background: rgba(255,255,255,.045);
+  color: rgba(240,253,255,.82);
+  font: inherit;
+  font-size: 11px;
+  font-weight: 850;
+  cursor: pointer;
+}
+
+.urai-world-companion__menu button[data-active='true'] {
+  background: rgba(207,250,254,.94);
+  color: #020617;
+}
+
+.urai-world-companion__menu button:focus-visible {
+  outline: 2px solid white;
+  outline-offset: 2px;
+}
+
+.urai-world-companion[data-phase]:not([data-phase='idle']) .urai-world-companion__orb {
+  animation: urai-world-orb-travel 900ms ease-in-out infinite alternate;
+}
+
+.urai-world-runtime[data-world-destination='infrastructure-hub'] .ground-card,
+.urai-world-runtime[data-world-destination='infrastructure-hub'] .ground-status,
+.urai-world-runtime[data-world-destination='infrastructure-hub'] .ground-pins,
+.urai-world-runtime[data-world-destination='infrastructure-hub'] .ground-rail,
+.urai-world-runtime[data-world-destination='life-map'] [aria-label='URAI Life Map route portals'],
+.urai-world-runtime[data-world-destination='life-map'] [aria-label='Adaptive spatial controls'],
+.urai-world-runtime[data-world-destination='focus'] .focusTitle,
+.urai-world-runtime[data-world-destination='focus'] .focusNav,
+.urai-world-runtime[data-world-destination='focus'] .focusOrbEcho,
+.urai-world-runtime[data-world-destination='replay'] [aria-label='Replay location'] {
+  display: none !important;
+}
+
+.urai-world-runtime[data-world-destination='life-map'] header {
+  max-width: min(240px, calc(100vw - 32px)) !important;
+  opacity: .72;
+  transform: scale(.72);
+  transform-origin: top left;
+}
+
+.urai-world-runtime[data-world-destination='life-map'] header h1,
+.urai-world-runtime[data-world-destination='life-map'] header span {
+  display: none !important;
+}
+
+.urai-world-runtime[data-world-destination='life-map'] section[aria-live='polite'] {
+  bottom: max(100px, calc(env(safe-area-inset-bottom) + 88px)) !important;
+  width: min(410px, calc(100vw - 28px)) !important;
+  border-radius: 20px !important;
+  background: rgba(2,8,24,.44) !important;
+}
+
+.urai-world-runtime[data-world-destination='focus'] .focusStage {
+  grid-template-columns: minmax(0, 1fr) !important;
+  justify-items: center;
+  padding: 3rem 1rem 7rem !important;
+}
+
+.urai-world-runtime[data-world-destination='focus'] .focusPanel {
+  width: min(560px, calc(100vw - 28px));
+  margin: 0 !important;
+  background: rgba(1,6,18,.26) !important;
+  border-color: rgba(207,250,254,.14) !important;
+}
+
+@keyframes urai-world-orb-travel {
+  from { transform: scale(.96); filter: brightness(.92); }
+  to { transform: scale(1.08); filter: brightness(1.18); }
+}
+
+@media (max-width: 560px) {
+  .urai-world-companion__orb { width: 56px; height: 56px; }
+  .urai-world-companion__menu { border-radius: 20px; }
+  .urai-world-companion__menu nav { justify-content: flex-start; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .urai-world-companion *,
+  .urai-world-companion *::before,
+  .urai-world-companion *::after {
+    animation: none !important;
+    transition-duration: 1ms !important;
+  }
+}
