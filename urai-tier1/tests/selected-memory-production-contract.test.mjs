@@ -36,7 +36,7 @@ test('Focus and Replay share exact selected memory and manifest identity', () =>
   assert.match(focus, /data-star-id=\{memory\.star\.id\}/)
   assert.match(replay, /data-star-id=\{memory\.star\.id\}/)
   assert.match(focus, /memory\.replayManifest\.id/)
-  assert.match(replay, /memory\.replayManifest\.segments/)
+  assert.match(replay, /memory\?\.replayManifest\.segments/)
   assert.doesNotMatch(focus, /quiet-reset|replay-recovery-thread|The pressure became permission/)
   assert.doesNotMatch(replay, /quiet-reset|seed-memory-bloom|Evening Pattern/)
 })
