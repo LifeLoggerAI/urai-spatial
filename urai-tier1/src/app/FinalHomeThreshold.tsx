@@ -5,36 +5,21 @@ import { useWebGLAvailable } from './HomeSpatialCanvas'
 
 /**
  * Home has exactly one visual owner. The template-mounted WebGL runtime owns
- * capable devices; the DOM/CSS world is an accessible no-WebGL fallback only.
+ * capable devices; the DOM/CSS world is rendered first so no-JS, hydration
+ * failure, capability detection, and no-WebGL paths always retain a complete
+ * accessible Home. It is removed only after WebGL is positively confirmed.
  */
 export default function FinalHomeThreshold() {
   const webglAvailable = useWebGLAvailable()
 
   if (webglAvailable === true) return null
 
-  if (webglAvailable === null) {
-    return (
-      <main
-        aria-label="Opening URAI Home"
-        data-testid="urai-home-runtime-probe"
-        style={{
-          position: 'fixed',
-          inset: 0,
-          display: 'grid',
-          placeItems: 'center',
-          minHeight: '100svh',
-          color: '#dffbff',
-          background: 'radial-gradient(circle at 50% 52%, rgba(103,232,249,.14), transparent 26%), #071821',
-          fontSize: 12,
-          fontWeight: 900,
-          letterSpacing: '.16em',
-          textTransform: 'uppercase',
-        }}
-      >
-        Opening Home
-      </main>
-    )
-  }
-
-  return <HomeSpatialWorldFinal />
+  return (
+    <div
+      data-testid="urai-home-accessible-fallback"
+      data-webgl-state={webglAvailable === null ? 'detecting' : 'unavailable'}
+    >
+      <HomeSpatialWorldFinal />
+    </div>
+  )
 }
