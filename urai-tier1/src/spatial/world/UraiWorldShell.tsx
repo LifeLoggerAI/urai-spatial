@@ -9,6 +9,7 @@ import './worldNavigation.css'
 import './persistentWorldCompanion.css'
 import './lifeMapConvergence.css'
 import './routeOwnerConvergence.css'
+import './secondaryRealmConvergence.css'
 
 export function UraiWorldShell({ children }: { children: ReactNode }) {
   const { world, phase } = useUraiWorldState()
