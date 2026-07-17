@@ -1,0 +1,24 @@
+name: AAA Asset Governance
+
+on:
+  pull_request:
+    paths:
+      - 'operations/assets/**'
+      - 'urai-tier1/public/assets/urai/generated/fallbacks/**'
+      - 'urai-tier1/public/assets/urai/generated/haptics/**'
+      - 'scripts/verify-aaa-asset-governance.mjs'
+      - '.github/workflows/aaa-asset-governance.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: node scripts/verify-aaa-asset-governance.mjs
