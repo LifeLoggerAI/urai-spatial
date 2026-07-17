@@ -12,14 +12,15 @@ const cases = [
 ]
 const doorways = [
   { id: 'ground', destination: '/ground', name: 'Open the ground and descend into Hidden Infrastructure' },
-  { id: 'life-map', destination: '/life-map', name: 'Open the Life Map sky' },
+  { id: 'life-map', destination: '/life-map', name: 'Life Map' },
 ]
 if (!/^[0-9a-f]{40}$/.test(exactSha)) throw new Error('Exact source SHA required')
 const normalize = (value) => new URL(value).pathname.replace(/\/$/, '') || '/'
 
-async function activate(target, method) {
-  if (method === 'pointer') return target.click({ timeout: 10000, noWaitAfter: true })
-  if (method === 'touch') return target.tap({ timeout: 10000, noWaitAfter: true })
+async function activate(target, method, position) {
+  const options = { timeout: 10000, noWaitAfter: true, ...(position ? { position } : {}) }
+  if (method === 'pointer') return target.click(options)
+  if (method === 'touch') return target.tap(options)
   await target.focus()
   if (!await target.evaluate((node) => node === document.activeElement)) throw new Error('target did not receive focus')
   return target.press('Enter', { noWaitAfter: true })
@@ -27,12 +28,21 @@ async function activate(target, method) {
 
 async function resolveTarget(page, doorway, method) {
   if (doorway.id === 'ground') return page.getByRole('button', { name: doorway.name, exact: true })
-  const orb = page.getByRole('button', { name: /Orb.*private companion/i }).first()
+
+  const orb = page.getByRole('button', { name: 'Open Orb travel controls', exact: true })
   await orb.waitFor({ state: 'visible', timeout: 15000 })
   await activate(orb, method)
-  const link = page.getByRole('link', { name: doorway.name, exact: true })
-  await link.waitFor({ state: 'visible', timeout: 15000 })
-  return link
+
+  const destination = page.getByRole('button', { name: doorway.name, exact: true })
+  await destination.waitFor({ state: 'visible', timeout: 15000 })
+  return destination
+}
+
+function safeGroundPosition(box) {
+  return {
+    x: Math.max(24, Math.min(box.width * 0.18, box.width - 24)),
+    y: Math.max(24, Math.min(box.height * 0.55, box.height - 24)),
+  }
 }
 
 async function prove(browser, doorway, testCase) {
@@ -46,7 +56,8 @@ async function prove(browser, doorway, testCase) {
     const target = await resolveTarget(page, doorway, testCase.method)
     const box = await target.boundingBox()
     if (!box || box.width < 44 || box.height < 44) throw new Error(`invalid hit target ${JSON.stringify(box)}`)
-    await activate(target, testCase.method)
+    const position = doorway.id === 'ground' && testCase.method !== 'keyboard' ? safeGroundPosition(box) : undefined
+    await activate(target, testCase.method, position)
     await page.waitForURL((url) => normalize(url.toString()) === doorway.destination, { timeout: 20000 })
     record.resultingUrl = page.url()
     await page.screenshot({ path: path.join(outDir, screenshot), animations: 'disabled' })
@@ -69,7 +80,7 @@ try {
   await browser.close()
 }
 const errors = interactions.filter((item) => !item.success).map((item) => `${item.device}:${item.activationMethod}:${item.destinationRoute}: ${item.failureReason}`)
-const receipt = { schemaVersion: 2, exactSha, baseUrl, createdAt: new Date().toISOString(), persistentWorldCanon: true, directDestinationNavigationPermitted: false, interactions, status: errors.length ? 'failed' : 'passed', errors }
+const receipt = { schemaVersion: 3, exactSha, baseUrl, createdAt: new Date().toISOString(), persistentWorldCanon: true, directDestinationNavigationPermitted: false, interactions, status: errors.length ? 'failed' : 'passed', errors }
 await fs.writeFile(path.join(outDir, 'native-doorway-receipt.json'), `${JSON.stringify(receipt, null, 2)}\n`)
 console.log(errors.length ? 'NATIVE_DOORWAY_PROOF_FAILED' : 'NATIVE_DOORWAY_PROOF_PASSED')
 console.log(JSON.stringify(receipt, null, 2))
