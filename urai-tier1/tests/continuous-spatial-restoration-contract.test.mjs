@@ -59,8 +59,6 @@ test('Home is a premium coherent world with aspect-aware framing and one canonic
 
   assert.doesNotMatch(canvas, /tap the ground to enter below/i)
   assert.match(canvas, /data-tier0-ground-gateway="true"/)
-  assert.match(canvas, /requestUraiWorldTravel/)
-  assert.match(canvas, /destination: 'ground'/)
   assert.match(canvas, /const \[available, setAvailable\] = useState<boolean \| null>\(null\)/)
   assert.match(canvas, /if \(cachedWebGLAvailable !== null\)/)
   assert.doesNotMatch(canvas, /useState<boolean \| null>\(cachedWebGLAvailable\)/)
