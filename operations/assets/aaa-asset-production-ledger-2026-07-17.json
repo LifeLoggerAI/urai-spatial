@@ -1,0 +1,21 @@
+{
+  "schemaVersion": 1,
+  "ledgerId": "urai-aaa-asset-production-ledger-2026-07-17",
+  "recordedAt": "2026-07-17T00:00:00-05:00",
+  "baseSha": "63cd8885bf3b09c8d42aace7d36edd1689e22d3c",
+  "paidProviderCalls": 0,
+  "productionDeployments": 0,
+  "assetPromotions": 0,
+  "classifications": [
+    {"family":"Home","current":"functional production placeholder / authored runtime candidate","target":"final bespoke approved","blocker":"reviewed GLB and route proof remain absent","issue":524},
+    {"family":"Ground","current":"functional production placeholder / authored runtime candidate","target":"final bespoke approved","blocker":"reviewed world model, population kit, and route proof remain absent","issue":526},
+    {"family":"Life Map","current":"candidate skybox and deterministic fallback","target":"final bespoke approved","blocker":"reviewed HDR, node kit, mobile variant, and route proof remain absent","issue":527},
+    {"family":"Focus and Replay","current":"deterministic fallbacks plus runtime environments","target":"promotion-ready candidate","blocker":"final model/audio package and exact-head visual proof remain absent","issue":528},
+    {"family":"Materials, particles, loading","current":"ready internal deterministic assets","target":"reviewed production authority","blocker":"independent visual review and full provenance receipt incomplete","issue":529},
+    {"family":"Spatial audio","current":"single ambient candidate plus semantic specification","target":"mixed normalized reviewed cue set","blocker":"final authored audio binaries are not available without production work or provider approval","issue":529},
+    {"family":"Haptics","current":"semantic candidate manifest authored in this lane","target":"device-verified approved patterns","blocker":"physical device verification required","issue":530},
+    {"family":"Static accessible fallbacks","current":"Home Ground and Life Map candidate SVGs authored in this lane","target":"route-integrated reviewed fallback","blocker":"runtime wiring and screenshot review required","issue":530},
+    {"family":"Avatar and population","current":"orb candidate and procedural figures","target":"optimized avatar council population kit","blocker":"source models animations diversity review and licensing receipts absent","issue":525}
+  ],
+  "approvalControlled": ["paid provider generation", "candidate promotion", "merge to protected main", "production deployment", "credential or billing mutation"]
+}
