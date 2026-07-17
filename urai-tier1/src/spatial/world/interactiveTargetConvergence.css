@@ -1,0 +1,9 @@
+.urai-world-companion__menu button {
+  min-height: 50px;
+}
+
+@media (pointer: coarse) {
+  .urai-world-companion__menu button {
+    min-width: 50px;
+  }
+}
