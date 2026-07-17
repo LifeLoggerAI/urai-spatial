@@ -99,7 +99,7 @@ test('Life Map reads as a full-viewport world instead of a landing page', () => 
 
 test('canonical route clients own Focus and Replay without the legacy autonomous overlay', () => {
   assert.match(shell, /import '\.\/routeOwnerConvergence\.css'/)
-  assert.match(focusClient, /data-testid="focus-chamber-client"/)
+  assert.match(focusClient, /data-testid="urai-final-focus-chamber"/)
   assert.match(focusClient, /useSelectedMemory\(\)/)
   assert.match(focusClient, /requestUraiWorldTravel/)
   assert.match(focusClient, /requestUraiWorldReturn/)
