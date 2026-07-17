@@ -27,7 +27,8 @@ if (!source.includes("const selectedControl = page.getByRole('button', { name: '
   if (!box) return false`,
   )
 
-  source = source.replace(
+  replaceRequired(
+    'canvas click timeout',
     /await canvas\.click\(\{\s*position: \{ x: Math\.round\(box\.width \* xRatio\), y: Math\.round\(box\.height \* yRatio\) \},\s*force: true,\s*\}\)/,
     `await canvas.click({
       position: { x: Math.round(box.width * xRatio), y: Math.round(box.height * yRatio) },
@@ -49,11 +50,11 @@ if (!source.includes('portalLabelSemanticallyRetained')) {
   )
   replaceRequired(
     'Home verification receipt',
-    /\s*orbLabelVisible,\s*permanentFeatureShortcutsAbsent,/,
+    /\s*orbLabelVisible,\s*permanentFeatureShortcutsAbsent/,
     `
         portalLabelSemanticallyRetained,
         marketingPortalLabelSuppressed,
-        permanentFeatureShortcutsAbsent,`,
+        permanentFeatureShortcutsAbsent`,
   )
 }
 
@@ -83,7 +84,8 @@ if (!source.includes('unselectedActionControlsAbsent')) {
       const canvas = await canvasEvidence(page, '[data-testid="urai-true-3d-life-map"] canvas')
       return {`,
   )
-  source = source.replace(
+  replaceRequired(
+    'Life Map receipt ownership',
     /spatialDocumentVisible: spatialVisible === 'true',\s*canvasSized:/,
     `spatialDocumentVisible: spatialVisible === 'true',
         unselectedActionControlsAbsent,
@@ -101,19 +103,22 @@ if (!source.includes('singleSelectedActionOwner')) {
       const replayControlVisible = await visibleElementCount(replayControl) === 1
       const singleSelectedActionOwner = selectedMemoryControlsVisible && replayControlVisible`,
   )
-  source = source.replace(
+  replaceRequired(
+    'selected-memory duplicate replay visibility',
     /const replayControlVisible = await replayControl\.count\(\) >= 1 && await replayControl\.first\(\)\.isVisible\(\)\s*const canvas/,
     `const canvas`,
   )
-  source = source.replace(
-    /selectedMemoryControlsVisible,\s*replayControlVisible,/,
+  replaceRequired(
+    'selected-memory ownership receipt',
+    /selectedMemoryControlsVisible,\s*replayControlVisible/,
     `selectedMemoryControlsVisible,
         replayControlVisible,
-        singleSelectedActionOwner,`,
+        singleSelectedActionOwner`,
   )
 }
 
-source = source.replace(
+replaceRequired(
+  'visual proof schema version',
   /schemaVersion: 'urai-continuous-spatial-visual-proof-[0-9]+'/,
   "schemaVersion: 'urai-continuous-spatial-visual-proof-11'",
 )
