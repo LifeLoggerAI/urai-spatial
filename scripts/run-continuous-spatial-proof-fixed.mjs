@@ -49,11 +49,11 @@ if (!source.includes('portalLabelSemanticallyRetained')) {
   )
   replaceRequired(
     'Home verification receipt',
-    /\s*orbLabelVisible,\s*permanentFeatureShortcutsAbsent,/,
+    /\s*orbLabelVisible,\s*permanentFeatureShortcutsAbsent/,
     `
         portalLabelSemanticallyRetained,
         marketingPortalLabelSuppressed,
-        permanentFeatureShortcutsAbsent,`,
+        permanentFeatureShortcutsAbsent`,
   )
 }
 
@@ -63,7 +63,7 @@ if (!source.includes('activeGroundLinkSuppressed')) {
     /const activeGroundLink = rail\.locator\('a\[aria-current="page"\]'\)\s*const activeGroundLinkVisible = await activeGroundLink\.count\(\) === 1 && await activeGroundLink\.isVisible\(\)\s*const canvas = await canvasEvidence\(page, '\.ground-spatial-root canvas'\)\s*return \{ providerHidden, canvasVisible, navigationPillsStyled, navigationRailContained, activeGroundLinkVisible, canvasSized: canvas\.canvasSized, \.\.\.canvas \}/,
     `const activeGroundLink = rail.locator('a[aria-current="page"]')
       const activeGroundLinkSuppressed = await visibleElementCount(activeGroundLink) === 0
-      const groundRouteOwned = new URL(page.url()).pathname.replace(/\\\/$/, '') === '/ground'
+      const groundRouteOwned = new URL(page.url()).pathname.replace(/\/$/, '') === '/ground'
       const canvas = await canvasEvidence(page, '.ground-spatial-root canvas')
       return { providerHidden, canvasVisible, navigationPillsStyled, navigationRailContained, activeGroundLinkSuppressed, groundRouteOwned, canvasSized: canvas.canvasSized, ...canvas }`,
   )
@@ -106,10 +106,10 @@ if (!source.includes('singleSelectedActionOwner')) {
     `const canvas`,
   )
   source = source.replace(
-    /selectedMemoryControlsVisible,\s*replayControlVisible,/,
+    /selectedMemoryControlsVisible,\s*replayControlVisible/,
     `selectedMemoryControlsVisible,
         replayControlVisible,
-        singleSelectedActionOwner,`,
+        singleSelectedActionOwner`,
   )
 }
 
