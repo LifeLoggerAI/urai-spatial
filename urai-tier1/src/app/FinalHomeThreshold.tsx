@@ -1,5 +1,6 @@
 'use client'
 
+import { useEffect, useState } from 'react'
 import HomeSpatialWorldFinal from './HomeSpatialWorldFinal'
 import { useWebGLAvailable } from './HomeSpatialCanvas'
 
@@ -11,13 +12,18 @@ import { useWebGLAvailable } from './HomeSpatialCanvas'
  */
 export default function FinalHomeThreshold() {
   const webglAvailable = useWebGLAvailable()
+  const [mounted, setMounted] = useState(false)
 
-  if (webglAvailable === true) return null
+  useEffect(() => {
+    setMounted(true)
+  }, [])
+
+  if (mounted && webglAvailable === true) return null
 
   return (
     <div
       data-testid="urai-home-accessible-fallback"
-      data-webgl-state={webglAvailable === null ? 'detecting' : 'unavailable'}
+      data-webgl-state={!mounted || webglAvailable === null ? 'detecting' : 'unavailable'}
     >
       <HomeSpatialWorldFinal />
     </div>
