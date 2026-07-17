@@ -53,6 +53,17 @@ function buildTravelHref(request: UraiWorldTravelRequest) {
   if (request.entryPortal) target.searchParams.set('entryPortal', request.entryPortal)
   if (request.cameraCheckpoint) target.searchParams.set('cameraCheckpoint', request.cameraCheckpoint)
 
+  const activeMemoryId = target.searchParams.get('memoryId') ?? target.searchParams.get('node')
+  if (activeMemoryId) {
+    if (request.destination === 'life-map') {
+      target.searchParams.set('node', activeMemoryId)
+      target.searchParams.delete('memoryId')
+    } else {
+      target.searchParams.set('memoryId', activeMemoryId)
+      target.searchParams.delete('node')
+    }
+  }
+
   return `${target.pathname}${target.search}${target.hash}`
 }
 
