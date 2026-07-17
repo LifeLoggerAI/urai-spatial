@@ -8,11 +8,37 @@ const sourcePath = join(scriptDir, 'live-visual-audit.mjs')
 const generatedPath = join(scriptDir, `.live-visual-audit-current-${process.pid}.mjs`)
 
 const replacements = new Map([
-  ["markers: ['Your real life has a place', 'private operating world']", "markers: ['Your private workforce.', 'Nothing acts without you']"],
-  ["markers: ['Life Map', 'Wheel', 'Drag', 'memory star']", "markers: ['Step inside the map.', 'Focus', 'Replay']"],
+  ["markers: ['Own your life', 'Step inside yourself']", "markers: ['ENTER BELOW', 'URAI destination home. World layer living-world.']"],
+  ["markers: ['Your real life has a place', 'private operating world']", "markers: ['PRIVATE COUNCIL', 'Nothing acts without you', 'RECEPTION']"],
+  ["markers: ['Life Map', 'Wheel', 'Drag', 'memory star']", "markers: ['URAI destination life-map.', 'World layer infrastructure-world.']"],
+  ["route: '/focus?memoryId=quiet-reset',", "route: '/focus?memoryId=quiet-reset&manifestId=replay-recovery-thread&node=quiet-reset',"],
   ["markers: ['The Quiet Reset', 'Selected memory camera chamber', 'Replay']", "markers: ['The Quiet Reset', 'Selected memory chamber.', 'Replay']"],
   ["markers: ['World online', 'Route matrix', 'Tracked']", "markers: ['Launch locked. Proof before expansion.', 'Tracked', 'Pending proof']"],
   ["markers: ['Step inside the Life Map', 'Quest', 'manual']", "markers: ['Explorable entry chamber', 'Enter VR in Quest', 'Desktop and mobile']"],
+  [
+    "'a[data-urai-audit-action=\"home-life-map\"]',",
+    "'button[data-world-target=\"life-map\"]',\n      'a[data-urai-audit-action=\"home-life-map\"]',",
+  ],
+  [
+    "'a[data-urai-audit-action=\"home-ground\"]',",
+    "'button[data-world-target=\"infrastructure-hub\"]',\n      'a[data-urai-audit-action=\"home-ground\"]',",
+  ],
+  [
+    "'a[data-urai-audit-action=\"life-map-focus\"]',",
+    "'button[data-world-target=\"focus\"]',\n      'a[data-urai-audit-action=\"life-map-focus\"]',",
+  ],
+  [
+    "start: '/focus?memoryId=quiet-reset',",
+    "start: '/focus?memoryId=quiet-reset&manifestId=replay-recovery-thread&node=quiet-reset',",
+  ],
+  [
+    "'a[data-urai-audit-action=\"focus-replay\"]',",
+    "'button[data-world-target=\"replay\"]',\n      'a[data-urai-audit-action=\"focus-replay\"]',",
+  ],
+  [
+    "    const found = await firstVisible(page, check.selectors)",
+    "    const orb = page.locator('button[aria-label=\"Open Orb travel controls\"]')\n    if (await orb.isVisible({ timeout: 1200 }).catch(() => false)) {\n      await orb.click({ timeout: 10000 })\n      await page.waitForTimeout(250)\n    }\n    const found = await firstVisible(page, check.selectors)",
+  ],
 ])
 
 let source = readFileSync(sourcePath, 'utf8')
@@ -20,7 +46,7 @@ for (const [before, after] of replacements) {
   if (!source.includes(before)) {
     throw new Error(`Current-canon audit wrapper could not find expected marker contract: ${before}`)
   }
-  source = source.replace(before, after)
+  source = source.replaceAll(before, after)
 }
 
 writeFileSync(generatedPath, source)
