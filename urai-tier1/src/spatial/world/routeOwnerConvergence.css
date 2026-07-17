@@ -1,6 +1,7 @@
 /* Final persistent-world ownership boundary.
  * Canonical route clients own Home, Focus and Replay. The shared world owns
  * travel and the persistent Orb; no duplicate route owner is hidden here.
+ * Mobile Replay clearance is enforced by geometric browser assertions.
  */
 
 body.urai-home-webgl-active .urai-home-spatial-runtime-layer,
