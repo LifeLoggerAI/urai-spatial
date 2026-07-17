@@ -89,6 +89,28 @@ test('settlement re-reads storage and preserves a concurrent queued operation', 
   assert.deepEqual(result.audit.map((entry) => entry.id), ['op-1', 'op-2'])
 })
 
+test('preserves an accepted duplicate when a concurrent attempt later fails', async () => {
+  const storage = memoryStorage()
+  const result = await executeReplayOperation({
+    storage,
+    operation: baseOperation,
+    transport: {
+      async persist() {
+        const latest = readReplayOperationState(storage, 'owner-1', 'memory-1')
+        writeReplayOperationState(storage, 'owner-1', 'memory-1', {
+          ...latest,
+          pending: latest.pending.filter((entry) => entry.id !== baseOperation.id),
+        })
+        throw new Error('duplicate attempt failed')
+      },
+    },
+  })
+  assert.equal(result.saved, true)
+  assert.equal(result.pending.length, 0)
+  assert.equal(result.audit.length, 1)
+  assert.equal(result.error, undefined)
+})
+
 test('queue flush preserves operations added while transport is awaiting', async () => {
   const storage = memoryStorage()
   const first = { ...baseOperation, id: 'op-3', kind: 'hide' }
