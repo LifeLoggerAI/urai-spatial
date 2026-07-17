@@ -16,3 +16,4 @@ permissions:
 
 concurrency:
   group: urai-receipt-ledger-${{ github.ref }}
+  cancel-in-progress: false
