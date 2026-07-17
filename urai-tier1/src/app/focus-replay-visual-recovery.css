@@ -5,6 +5,13 @@
 .uraiAutoReplay {
   --urai-auto-ink: rgba(255, 255, 255, 0.98);
   --urai-auto-muted: rgba(239, 246, 252, 0.84);
+  z-index: 2147482600 !important;
+}
+
+/* Focus and Replay own the viewport. Decorative route skins cannot sit above them. */
+.urai-route-graphic-skin[data-route='focus'],
+.urai-route-graphic-skin[data-route='replay'] {
+  display: none !important;
 }
 
 .uraiAutoFocus::before,
@@ -15,94 +22,83 @@
   z-index: 3;
   pointer-events: none;
   background:
-    radial-gradient(circle at 50% 42%, rgba(142, 226, 255, 0.18), transparent 34%),
-    radial-gradient(circle at 50% 58%, rgba(247, 189, 117, 0.12), transparent 42%);
+    radial-gradient(circle at 50% 42%, rgba(142, 226, 255, 0.24), transparent 34%),
+    radial-gradient(circle at 50% 58%, rgba(247, 189, 117, 0.18), transparent 42%);
   mix-blend-mode: screen;
 }
 
 .uraiAutoFocus .uraiAutoAtmosphere {
   z-index: 4;
   background:
-    radial-gradient(circle at 50% 38%, rgba(190, 235, 255, 0.28), transparent 28%),
-    radial-gradient(circle at 50% 54%, rgba(126, 154, 255, 0.18), transparent 48%),
-    linear-gradient(180deg, rgba(9, 20, 34, 0.02), rgba(0, 0, 0, 0.28));
+    radial-gradient(circle at 50% 38%, rgba(190, 235, 255, 0.36), transparent 28%),
+    radial-gradient(circle at 50% 54%, rgba(126, 154, 255, 0.24), transparent 48%),
+    linear-gradient(180deg, rgba(9, 20, 34, 0), rgba(0, 0, 0, 0.18));
 }
 
 .uraiAutoFocus .uraiFocusSceneArt,
 .uraiAutoFocus .uraiFocusMemoryImage,
 .uraiAutoReplay .uraiReplaySceneArt {
-  filter: brightness(1.42) contrast(1.08) saturate(1.14);
+  opacity: 1 !important;
+  filter: brightness(1.75) contrast(1.06) saturate(1.18) !important;
 }
 
 .uraiAutoFocus .uraiFocusMemory {
-  border-color: rgba(229, 249, 255, 0.7);
+  border-color: rgba(229, 249, 255, 0.82);
   box-shadow:
-    0 0 90px rgba(137, 222, 255, 0.48),
-    0 0 220px rgba(145, 119, 255, 0.3),
-    inset 0 0 55px rgba(244, 253, 255, 0.16);
+    0 0 110px rgba(137, 222, 255, 0.62),
+    0 0 260px rgba(145, 119, 255, 0.38),
+    inset 0 0 55px rgba(244, 253, 255, 0.2);
 }
 
 .uraiAutoFocus .uraiFocusMeaning,
 .uraiAutoFocus .uraiAutoHud,
 .uraiAutoReplay .uraiAutoHud {
-  border-color: rgba(232, 247, 255, 0.28);
-  background: linear-gradient(145deg, rgba(4, 10, 17, 0.88), rgba(10, 18, 27, 0.76));
-  box-shadow: 0 22px 72px rgba(0, 0, 0, 0.46), inset 0 1px rgba(255, 255, 255, 0.12);
+  border-color: rgba(232, 247, 255, 0.36);
+  background: linear-gradient(145deg, rgba(4, 10, 17, 0.92), rgba(10, 18, 27, 0.82));
+  box-shadow: 0 22px 72px rgba(0, 0, 0, 0.46), inset 0 1px rgba(255, 255, 255, 0.14);
 }
 
 .uraiAutoFocus .uraiFocusMeaning strong,
 .uraiAutoFocus .uraiAutoHud strong,
 .uraiAutoReplay .uraiAutoHud strong,
 .uraiAutoReplay .uraiReplayCaption strong {
-  color: rgba(255, 255, 255, 0.98);
-  text-shadow: 0 2px 20px rgba(0, 0, 0, 0.9);
+  color: rgba(255, 255, 255, 1) !important;
+  text-shadow: 0 2px 18px rgba(0, 0, 0, 0.85);
 }
 
 .uraiAutoFocus .uraiFocusMeaning small,
 .uraiAutoFocus .uraiAutoHud small,
 .uraiAutoReplay .uraiAutoHud small,
 .uraiAutoReplay .uraiReplayBeats li {
-  color: rgba(238, 246, 252, 0.82);
+  color: rgba(244, 249, 253, 0.9) !important;
 }
 
 .uraiAutoReplay .uraiReplayCinema {
   background:
-    radial-gradient(circle at 50% 40%, rgba(255, 196, 126, 0.28), transparent 32%),
-    radial-gradient(circle at 50% 50%, rgba(102, 188, 255, 0.14), transparent 54%),
-    linear-gradient(180deg, #0b1a28, #03070d 76%);
+    radial-gradient(circle at 50% 40%, rgba(255, 196, 126, 0.38), transparent 34%),
+    radial-gradient(circle at 50% 50%, rgba(102, 188, 255, 0.22), transparent 56%),
+    linear-gradient(180deg, #10283b, #06101a 76%);
 }
 
 .uraiAutoReplay .uraiReplayLight {
   background:
-    linear-gradient(90deg, rgba(0, 0, 0, 0.34), transparent 18% 82%, rgba(0, 0, 0, 0.34)),
-    linear-gradient(180deg, rgba(0, 0, 0, 0.24), transparent 20% 76%, rgba(0, 0, 0, 0.5));
+    linear-gradient(90deg, rgba(0, 0, 0, 0.2), transparent 16% 84%, rgba(0, 0, 0, 0.2)),
+    linear-gradient(180deg, rgba(0, 0, 0, 0.12), transparent 18% 78%, rgba(0, 0, 0, 0.34));
 }
 
 .uraiAutoReplay .uraiReplayScene-1 {
-  filter: brightness(1.3) saturate(1.12);
-  border-color: rgba(255, 255, 255, 0.2);
-  box-shadow: 0 38px 120px rgba(0, 0, 0, 0.45), 0 0 80px rgba(255, 194, 120, 0.16), inset 0 0 54px rgba(0, 0, 0, 0.24);
+  filter: brightness(1.62) saturate(1.16) !important;
+  border-color: rgba(255, 255, 255, 0.3);
+  box-shadow: 0 38px 120px rgba(0, 0, 0, 0.34), 0 0 100px rgba(255, 194, 120, 0.24), inset 0 0 42px rgba(0, 0, 0, 0.18);
 }
 
 .uraiAutoReplay .uraiReplayControls,
 .uraiAutoReplay .uraiAutoNav {
-  background: rgba(3, 8, 14, 0.9);
-  border-color: rgba(255, 255, 255, 0.24);
-}
-
-/* The decorative route poster must never cover the persistent Orb or controls. */
-.urai-route-graphic-skin[data-route='focus'] .urai-route-graphic-skin__poster,
-.urai-route-graphic-skin[data-route='replay'] .urai-route-graphic-skin__poster {
-  bottom: max(116px, 12vh);
-  opacity: 0.78;
+  background: rgba(3, 8, 14, 0.94);
+  border-color: rgba(255, 255, 255, 0.3);
 }
 
 @media (max-width: 680px) {
-  .urai-route-graphic-skin[data-route='focus'] .urai-route-graphic-skin__poster,
-  .urai-route-graphic-skin[data-route='replay'] .urai-route-graphic-skin__poster {
-    display: none;
-  }
-
   .uraiAutoFocus .uraiFocusMemory {
     top: 42%;
     width: min(72vw, 300px);
@@ -110,7 +106,7 @@
 
   .uraiAutoFocus .uraiFocusMeaning {
     bottom: calc(88px + env(safe-area-inset-bottom));
-    background: rgba(4, 10, 17, 0.9);
+    background: rgba(4, 10, 17, 0.94);
   }
 
   .uraiAutoReplay .uraiReplayScene-1 {
