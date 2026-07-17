@@ -1,0 +1,25 @@
+{
+  "schemaVersion": 1,
+  "manifestId": "urai-semantic-haptic-patterns-v1",
+  "owner": "URAI Labs",
+  "status": "candidate",
+  "policy": {
+    "essentialInformationMayDependOnHaptics": false,
+    "userDisableRequired": true,
+    "reducedMotionCompatible": true,
+    "maxPatternDurationMs": 1200,
+    "maxPulseDurationMs": 160,
+    "maxPulseCount": 8,
+    "intensityScale": "0.0-1.0 advisory; platform may quantize"
+  },
+  "patterns": [
+    {"id":"navigation-step","intent":"spatial navigation acknowledgement","vibrationMs":[35],"intensity":[0.24],"cooldownMs":120},
+    {"id":"focus-enter","intent":"enter focused memory space","vibrationMs":[55,45,85],"intensity":[0.28,0.0,0.42],"cooldownMs":500},
+    {"id":"confirmation","intent":"successful reversible action","vibrationMs":[45,35,45],"intensity":[0.34,0.0,0.34],"cooldownMs":300},
+    {"id":"warning","intent":"non-emergency attention request","vibrationMs":[90,70,90],"intensity":[0.48,0.0,0.48],"cooldownMs":1000},
+    {"id":"portal-travel","intent":"transition between spatial realms","vibrationMs":[35,35,50,35,70],"intensity":[0.2,0.0,0.28,0.0,0.4],"cooldownMs":1200},
+    {"id":"orb-listening","intent":"companion began listening","vibrationMs":[30,40,30],"intensity":[0.18,0.0,0.18],"cooldownMs":500},
+    {"id":"orb-complete","intent":"companion response completed","vibrationMs":[40,30,65],"intensity":[0.24,0.0,0.36],"cooldownMs":500},
+    {"id":"offline","intent":"operation deferred because network is unavailable","vibrationMs":[80,60,45],"intensity":[0.42,0.0,0.24],"cooldownMs":1200}
+  ]
+}
