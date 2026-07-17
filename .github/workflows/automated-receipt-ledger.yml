@@ -91,7 +91,12 @@ jobs:
           mkdir -p receipt-ledger
 
           while IFS= read -r -d '' file; do
-            sha256sum -- "$file"
+            if [[ -f "$file" ]]; then
+              sha256sum -- "$file"
+            else
+              object_id="$(git ls-files -s -- "$file" | awk '{print $2}')"
+              printf 'gitlink:%s  %s\n' "$object_id" "$file"
+            fi
           done < <(git ls-files -z | sort -z) > receipt-ledger/tracked-files.sha256
 
           while IFS= read -r -d '' file; do
