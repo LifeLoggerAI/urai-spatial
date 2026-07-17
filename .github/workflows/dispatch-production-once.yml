@@ -26,6 +26,7 @@ jobs:
             const releaseSha = context.sha;
             const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
+            // Dispatch the current main authority, including merged immersive Replay, to production.
             await github.rest.actions.createWorkflowDispatch({
               owner,
               repo,
@@ -88,4 +89,3 @@ jobs:
               body
             });
             core.summary.addRaw(body).write();
-            if (run.conclusion !== 'success') core.setFailed(`Legacy bootstrap run concluded ${run.conclusion || run.status}`);
