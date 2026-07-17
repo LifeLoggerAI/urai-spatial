@@ -55,6 +55,7 @@ import './spatial-first-root-launch.css'
 import './urai-design-system.css'
 import './route-layering-hotfix.css'
 import './native-doorway-final-fix.css'
+import './focus-replay-visual-recovery.css'
 import WorldRuntimeBoundary from '@/spatial/world/WorldRuntimeBoundary'
 import LifeMapPersistentDoorways from '@/components/lifemap/LifeMapPersistentDoorways'
 
