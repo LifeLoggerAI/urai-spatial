@@ -11,6 +11,7 @@ const companion = read('src/spatial/world/PersistentWorldCompanion.tsx')
 const worldEvents = read('src/spatial/world/worldEvents.ts')
 const homeRuntime = read('src/app/HomeSpatialRuntimeLayer.tsx')
 const chrome = read('src/spatial/world/persistentWorldCompanion.css')
+const lifeMapConvergence = read('src/spatial/world/lifeMapConvergence.css')
 
 test('the full journey participates in one persistent world model', () => {
   for (const destination of ['home', 'infrastructure-hub', 'life-map', 'focus', 'replay']) {
@@ -18,7 +19,7 @@ test('the full journey participates in one persistent world model', () => {
     assert.match(registry, new RegExp(`['"]${destination}['"]`))
   }
   assert.match(registry, /\[\s*['"]\/life-map['"]\s*,\s*['"]life-map['"]\s*\]/)
-  assert.match(registry, /environmentalForm:\s*['"]explorable-memory-constellation['"]/) 
+  assert.match(registry, /environmentalForm:\s*['"]explorable-memory-constellation['"]/)
 })
 
 test('one persistent Orb owns primary travel and Home opens that same companion', () => {
@@ -44,8 +45,20 @@ test('page-like route chrome is removed from the active world', () => {
   assert.match(chrome, /display:\s*none\s*!important/)
 })
 
+test('Life Map reads as a full-viewport world instead of a landing page', () => {
+  assert.match(shell, /import '\.\/lifeMapConvergence\.css'/)
+  assert.match(lifeMapConvergence, /data-world-destination='life-map'/)
+  assert.match(lifeMapConvergence, /data-testid='urai-true-3d-life-map'/)
+  assert.match(lifeMapConvergence, /> header[\s\S]*display:\s*none\s*!important/)
+  assert.match(lifeMapConvergence, /aria-label='URAI Life Map route portals'/)
+  assert.match(lifeMapConvergence, /height:\s*100svh/)
+  assert.match(lifeMapConvergence, /env\(safe-area-inset-bottom\)/)
+  assert.match(lifeMapConvergence, /@media \(max-width: 430px\)/)
+})
+
 test('mobile safe area and reduced motion remain explicit', () => {
   assert.match(chrome, /env\(safe-area-inset-bottom\)/)
   assert.match(chrome, /@media \(max-width: 560px\)/)
   assert.match(chrome, /prefers-reduced-motion: reduce/)
+  assert.match(lifeMapConvergence, /prefers-reduced-motion: reduce/)
 })
