@@ -4,15 +4,7 @@
     "ignore": ["firebase.json", "**/.*", "**/node_modules/**"],
     "cleanUrls": true,
     "trailingSlash": true,
-    "redirects": [
-      { "source": "/home", "destination": "/home/", "type": 301 },
-      { "source": "/ground", "destination": "/ground/", "type": 301 },
-      { "source": "/life-map", "destination": "/life-map/", "type": 301 },
-      { "source": "/focus", "destination": "/focus/", "type": 301 },
-      { "source": "/replay", "destination": "/replay/", "type": 301 },
-      { "source": "/mirror", "destination": "/mirror/", "type": 301 },
-      { "source": "/passport", "destination": "/passport/", "type": 301 }
-    ],
+    "redirects": [],
     "headers": [
       {
         "source": "**/*.html",
