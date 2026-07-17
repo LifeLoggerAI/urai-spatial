@@ -16,6 +16,9 @@ test('persistent world navigation preserves canonical ownership and separate hit
 
   assert.match(controller, /beginTravelRef\.current\(request\)/)
   assert.doesNotMatch(controller, /\[beginTravel, clearTimer, router\]/)
+  assert.match(controller, /import \{ useCallback, useEffect, useLayoutEffect, useRef \} from 'react'/)
+  assert.match(controller, /useLayoutEffect\(\(\) => \{[\s\S]*addEventListener\(URAI_WORLD_TRAVEL_EVENT/)
+  assert.doesNotMatch(controller, /useEffect\(\(\) => \{[\s\S]*addEventListener\(URAI_WORLD_TRAVEL_EVENT/)
   assert.match(gateway, /requestUraiWorldTravel\(/)
   assert.match(gateway, /destination: 'infrastructure-hub'/)
   assert.doesNotMatch(gateway, /router\.push\(['"]\/ground/)
