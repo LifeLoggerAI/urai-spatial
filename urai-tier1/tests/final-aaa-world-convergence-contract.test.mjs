@@ -8,6 +8,8 @@ const worldTypes = read('src/spatial/world/worldTypes.ts')
 const registry = read('src/spatial/world/destinationRegistry.ts')
 const shell = read('src/spatial/world/UraiWorldShell.tsx')
 const companion = read('src/spatial/world/PersistentWorldCompanion.tsx')
+const worldEvents = read('src/spatial/world/worldEvents.ts')
+const homeRuntime = read('src/app/HomeSpatialRuntimeLayer.tsx')
 const chrome = read('src/spatial/world/persistentWorldCompanion.css')
 
 test('the full journey participates in one persistent world model', () => {
@@ -16,16 +18,21 @@ test('the full journey participates in one persistent world model', () => {
     assert.match(registry, new RegExp(`['"]${destination}['"]`))
   }
   assert.match(registry, /\[\s*['"]\/life-map['"]\s*,\s*['"]life-map['"]\s*\]/)
-  assert.match(registry, /environmentalForm:\s*['"]explorable-memory-constellation['"]/)
+  assert.match(registry, /environmentalForm:\s*['"]explorable-memory-constellation['"]/) 
 })
 
-test('one persistent Orb owns primary travel', () => {
+test('one persistent Orb owns primary travel and Home opens that same companion', () => {
   assert.match(shell, /PersistentWorldCompanion/)
   assert.match(shell, /<PersistentWorldCompanion\s*\/>/)
   assert.match(companion, /PRIMARY_DESTINATIONS/)
   assert.match(companion, /requestUraiWorldTravel/)
+  assert.match(companion, /URAI_WORLD_ORB_OPEN_EVENT/)
   assert.match(companion, /aria-label={open \? 'Close Orb travel controls' : 'Open Orb travel controls'}/)
   assert.doesNotMatch(companion, /next\/link/)
+  assert.match(worldEvents, /requestUraiWorldOrbOpen/)
+  assert.match(homeRuntime, /onOrbOpen={requestUraiWorldOrbOpen}/)
+  assert.doesNotMatch(homeRuntime, /urai-home-spatial-orb-trigger/)
+  assert.doesNotMatch(homeRuntime, /urai-home-spatial-runtime-orb/)
 })
 
 test('page-like route chrome is removed from the active world', () => {
