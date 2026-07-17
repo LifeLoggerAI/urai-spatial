@@ -23,7 +23,7 @@ async function disableWebGL(page: Page) {
     const original = HTMLCanvasElement.prototype.getContext
     HTMLCanvasElement.prototype.getContext = function (type: string, ...args: unknown[]) {
       if (type === 'webgl' || type === 'webgl2' || type === 'experimental-webgl') return null
-      return original.call(this, type, ...args as [])
+      return Reflect.apply(original, this, [type, ...args])
     } as typeof HTMLCanvasElement.prototype.getContext
   })
 }
