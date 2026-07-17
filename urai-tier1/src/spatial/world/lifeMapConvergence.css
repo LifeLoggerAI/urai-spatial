@@ -1,0 +1,76 @@
+.urai-world-runtime[data-world-destination='life-map'] {
+  min-height: 100svh;
+  overflow: hidden;
+  background: #01030a;
+}
+
+.urai-world-runtime[data-world-destination='life-map'] main[data-testid='urai-true-3d-life-map'] {
+  min-height: 100svh;
+  height: 100svh;
+  overflow: hidden;
+  isolation: isolate;
+}
+
+.urai-world-runtime[data-world-destination='life-map'] main[data-testid='urai-true-3d-life-map'] > header,
+.urai-world-runtime[data-world-destination='life-map'] main[data-testid='urai-true-3d-life-map'] > aside,
+.urai-world-runtime[data-world-destination='life-map'] [aria-label='URAI Life Map route portals'] {
+  display: none !important;
+}
+
+.urai-world-runtime[data-world-destination='life-map'] main[data-testid='urai-true-3d-life-map'] canvas {
+  transform: translate3d(8vw, -1.5vh, 0) scale(1.08);
+  transform-origin: 50% 50%;
+}
+
+.urai-world-runtime[data-world-destination='life-map'] main[data-testid='urai-true-3d-life-map'] section[aria-live='polite'] {
+  bottom: max(104px, calc(env(safe-area-inset-bottom) + 92px)) !important;
+  width: min(480px, calc(100vw - 32px)) !important;
+  padding: 14px !important;
+  border-radius: 22px !important;
+  border-color: rgba(207, 250, 254, .16) !important;
+  background: linear-gradient(145deg, rgba(2, 8, 24, .62), rgba(10, 10, 31, .48)) !important;
+  box-shadow: 0 24px 90px rgba(0, 0, 0, .46), 0 0 72px rgba(80, 230, 255, .12) !important;
+  backdrop-filter: blur(20px) !important;
+  -webkit-backdrop-filter: blur(20px) !important;
+}
+
+.urai-world-runtime[data-world-destination='life-map'] main[data-testid='urai-true-3d-life-map'] section[aria-live='polite'] p:first-child {
+  color: rgba(207, 250, 254, .84) !important;
+}
+
+.urai-world-runtime[data-world-destination='life-map'] main[data-testid='urai-true-3d-life-map'] section[aria-live='polite'] button {
+  min-height: 42px;
+}
+
+.urai-world-runtime[data-world-destination='life-map'] .urai-world-companion {
+  bottom: max(16px, env(safe-area-inset-bottom));
+}
+
+@media (max-width: 760px) {
+  .urai-world-runtime[data-world-destination='life-map'] main[data-testid='urai-true-3d-life-map'] canvas {
+    transform: translate3d(4vw, -2vh, 0) scale(1.16);
+  }
+
+  .urai-world-runtime[data-world-destination='life-map'] main[data-testid='urai-true-3d-life-map'] section[aria-live='polite'] {
+    bottom: max(98px, calc(env(safe-area-inset-bottom) + 86px)) !important;
+    width: min(430px, calc(100vw - 24px)) !important;
+    padding: 12px !important;
+  }
+}
+
+@media (max-width: 430px) {
+  .urai-world-runtime[data-world-destination='life-map'] main[data-testid='urai-true-3d-life-map'] canvas {
+    transform: translate3d(2vw, -3vh, 0) scale(1.22);
+  }
+
+  .urai-world-runtime[data-world-destination='life-map'] main[data-testid='urai-true-3d-life-map'] section[aria-live='polite'] {
+    max-height: 36svh;
+    overflow: auto;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .urai-world-runtime[data-world-destination='life-map'] main[data-testid='urai-true-3d-life-map'] canvas {
+    transition: none !important;
+  }
+}
