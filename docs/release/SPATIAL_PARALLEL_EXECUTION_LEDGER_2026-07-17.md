@@ -4,10 +4,12 @@
 
 - Repository: `LifeLoggerAI/urai-spatial`
 - Canonical branch: `main`
-- Ledger base: `ac3c44370828ed6e9a791b567f85d9459c6647a7`
+- Ledger authority: `a1720202e28443df38c032bb82bd66b365632db2`
 - Navigation validation merged through PR #669.
 - Fingerprint-aware release dispatch merged through PR #670.
 - Live rollback provenance repair merged through PR #672.
+- Bounded post-deploy smoke retries merged through PR #677.
+- Replay persistence foundation continues in PR #675 at `ef3b34dec1e35a99daeba0a20205d3358cf0e109`.
 - Production mutation remains owned exclusively by `.github/workflows/spatial-live-deploy.yml`.
 - No feature branch may claim production certification from branch CI.
 
@@ -27,9 +29,10 @@
 | 1 | Navigation checkpoint validation | PR #669 / `bb9bd6f3...` | Merged | Complete |
 | 2 | Fingerprint-aware dispatch | PR #670 / `17ed2057...` | Merged | Complete |
 | 3 | Live rollback SHA authority | PR #672 / `ac3c4437...` | Merged | Complete |
-| 4 | Stable merged-main verification | `main@ac3c4437...` | Running / receipt pending | All required checks terminal-success |
-| 5 | Protected deployment | `spatial-live-deploy.yml` | Pending receipt | Exact stable main SHA and validated live rollback SHA |
-| 6 | Live certification | apex + `www` | Pending | SHA parity, route journey, console/network, monitoring and rollback evidence |
+| 4 | Bounded post-deploy smoke retries | PR #677 / `a1720202...` | Merged | Complete |
+| 5 | Stable merged-main verification | `main@a1720202...` | Exact push/main receipt not yet retained | All required merged-main checks terminal-success |
+| 6 | Protected deployment | `spatial-live-deploy.yml` | Pending | Exact stable main SHA and validated live rollback SHA |
+| 7 | Live certification | apex + `www` | Pending | SHA parity, route journey, console/network, monitoring and rollback evidence |
 
 ## Parallel lane ownership matrix
 
@@ -51,7 +54,7 @@
 | Replay camera | replay-local camera module/tests | Replay route owner | Reduced-motion contract | Independent module |
 | Replay narration | cue queue/captions/provider adapter | Global audio bus | Audio and memory contracts | Independent module |
 | Replay score | score layers/mixer tests | Global audio bus | Audio contract | Independent module |
-| Replay operations | fresh extraction from PR #663 | Navigation/shared storage owners | Persistence contract | Recreate; do not merge #663 wholesale |
+| Replay operations | PR #675, three-file persistence foundation | Navigation/shared storage owners | Persistence contract | Exact-head checks running; review findings resolved |
 | QA/evidence | tests, profiling scripts, evidence docs | Product ownership files | Every lane | Continuous parallel lane |
 
 ## Stale PR disposition
