@@ -101,6 +101,12 @@ The test viewport must account for real mobile browser chrome and safe areas.
 - Returning restores exact memory, camera, and world context.
 - Accessibility, security, privacy, static export, performance, release governance, and rollback controls remain intact.
 
+## Exact-head visual certification retry
+
+The prior exact-head visual workflow was cancelled after successful checkout, build, and browser installation. This documentation-only commit intentionally creates a new immutable candidate so the complete visual-proof workflow and all dependent release gates can run again without reusing evidence from a superseded SHA.
+
+Promotion remains blocked until the new exact head has terminal-success visual evidence and the retained screenshots are manually inspected.
+
 ## Safety
 
 No intermediate production deployment. No weakening of exact-head proof, protected release, credentials, consent, privacy, provider, billing, data, or rollback boundaries.
