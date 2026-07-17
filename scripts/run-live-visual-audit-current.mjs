@@ -11,8 +11,8 @@ const replacements = new Map([
   ["markers: ['Own your life', 'Step inside yourself']", "markers: ['ENTER BELOW', 'URAI destination home. World layer living-world.']"],
   ["markers: ['Your real life has a place', 'private operating world']", "markers: ['PRIVATE COUNCIL', 'Nothing acts without you', 'RECEPTION']"],
   ["markers: ['Life Map', 'Wheel', 'Drag', 'memory star']", "markers: ['URAI destination life-map.', 'World layer infrastructure-world.']"],
-  ["route: '/focus?memoryId=quiet-reset',", "route: '/focus?memoryId=quiet-reset&manifestId=replay-recovery-thread&node=quiet-reset',"],
-  ["markers: ['The Quiet Reset', 'Selected memory camera chamber', 'Replay']", "markers: ['The Quiet Reset', 'Selected memory chamber.', 'Replay']"],
+  ["route: '/focus?memoryId=quiet-reset',", "route: '/focus?memoryId=demo:quiet-reset&demo=1',"],
+  ["markers: ['The Quiet Reset', 'Selected memory camera chamber', 'Replay']", "markers: ['DEMO FIXTURE · NOT PERSONAL DATA', 'Demonstration Memory', 'Replay this memory']"],
   ["markers: ['World online', 'Route matrix', 'Tracked']", "markers: ['Launch locked. Proof before expansion.', 'Tracked', 'Pending proof']"],
   ["markers: ['Step inside the Life Map', 'Quest', 'manual']", "markers: ['Explorable entry chamber', 'Enter VR in Quest', 'Desktop and mobile']"],
   [
@@ -29,15 +29,15 @@ const replacements = new Map([
   ],
   [
     "start: '/focus?memoryId=quiet-reset',",
-    "start: '/focus?memoryId=quiet-reset&manifestId=replay-recovery-thread&node=quiet-reset',",
+    "start: '/focus?memoryId=demo:quiet-reset&demo=1',",
   ],
   [
     "'a[data-urai-audit-action=\"focus-replay\"]',",
-    "'button[data-world-target=\"replay\"]',\n      'a[data-urai-audit-action=\"focus-replay\"]',",
+    "'button[aria-label^=\"Open Replay for\"]',\n      'button[data-world-target=\"replay\"]',\n      'a[data-urai-audit-action=\"focus-replay\"]',",
   ],
   [
     "    const found = await firstVisible(page, check.selectors)",
-    "    const orb = page.locator('button[aria-label=\"Open Orb travel controls\"]')\n    if (await orb.isVisible({ timeout: 1200 }).catch(() => false)) {\n      await orb.click({ timeout: 10000 })\n      await page.waitForTimeout(250)\n    }\n    const found = await firstVisible(page, check.selectors)",
+    "    let found = await firstVisible(page, check.selectors)\n    if (!found) {\n      const orb = page.locator('button[aria-label=\"Open Orb travel controls\"]')\n      if (await orb.isVisible({ timeout: 1200 }).catch(() => false)) {\n        await orb.click({ timeout: 10000 })\n        await page.waitForTimeout(250)\n        found = await firstVisible(page, check.selectors)\n      }\n    }",
   ],
 ])
 
