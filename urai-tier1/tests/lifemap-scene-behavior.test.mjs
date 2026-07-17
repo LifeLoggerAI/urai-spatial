@@ -46,9 +46,11 @@ test('LifeMap visual language remains adaptive, mobile-safe, and more than color
 })
 
 test('LifeMap wheel input and WebGL lifecycle remain production-safe', () => {
+  const canvasOpeningTag = source.match(/<Canvas\b[\s\S]*?>/)?.[0] ?? ''
+  assert.ok(canvasOpeningTag, 'Life Map must expose one stable Canvas opening tag.')
   assert.ok(source.includes('addEventListener("wheel", onWheel, { passive: false })'), 'Wheel zoom must use an explicit non-passive native listener.')
   assert.doesNotMatch(source, /onWheel=\{onWheel\}/, 'React passive wheel ownership must not return.')
-  assert.doesNotMatch(source, /<Canvas[\s\S]*?key=\{/, 'Adaptive quality must not recreate the Canvas through a React key.')
+  assert.doesNotMatch(canvasOpeningTag, /key=\{/, 'Adaptive quality must not recreate the Canvas through a React key.')
   assert.ok(source.includes('webglcontextlost'), 'Life Map must handle WebGL context loss.')
   assert.ok(source.includes('webglcontextrestored'), 'Life Map must handle WebGL context restoration.')
   assert.ok(source.includes('data-webgl-state={webglState}'), 'Life Map must expose recovery state for browser proof.')
