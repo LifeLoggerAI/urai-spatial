@@ -1,0 +1,39 @@
+name: URAI Production Recovery Compatibility
+
+on:
+  workflow_dispatch:
+    inputs:
+      release_sha:
+        required: true
+        type: string
+      rollback_sha:
+        required: true
+        type: string
+      confirm:
+        required: true
+        type: string
+
+permissions:
+  actions: write
+  contents: read
+
+jobs:
+  forward:
+    name: Forward recovery request to canonical authority
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Dispatch canonical protected release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_SHA: ${{ inputs.release_sha }}
+          ROLLBACK_SHA: ${{ inputs.rollback_sha }}
+          CONFIRM: ${{ inputs.confirm }}
+        run: |
+          set -euo pipefail
+          gh workflow run spatial-live-deploy.yml \
+            --repo "$GITHUB_REPOSITORY" \
+            --ref main \
+            -f release_sha="$RELEASE_SHA" \
+            -f rollback_sha="$ROLLBACK_SHA" \
+            -f confirm="$CONFIRM"
