@@ -41,7 +41,7 @@ export default function FocusChamberClient() {
     '--focus-asset': assetCssStack(focusAssets.primary),
   } as React.CSSProperties
 
-  return <main className="focusWorld" style={style} data-testid="urai-final-focus-chamber" data-memory-status={result.status} data-memory-id={memory.id} data-star-id={memory.star.id} data-manifest-id={memory.replayManifest.id} data-canonical-asset={focusAssets.primary.src}>
+  return <main className="focusWorld" style={style} data-testid="urai-final-focus-chamber" data-memory-status={result.status} data-memory-id={memory.id} data-star-id={memory.star.id} data-node={memory.star.id} data-manifest-id={memory.replayManifest.id} data-canonical-asset={focusAssets.primary.src}>
     <div className="focusFog" aria-hidden="true" />
     <header><p>{memory.demo ? 'DEMO FIXTURE · NOT PERSONAL DATA' : `${memory.privacy} memory`}</p><h1>{memory.title}</h1><span>{dateLabel(memory.occurredAt)}</span></header>
     <section className="artifactStage" aria-label={`Selected memory ${memory.title}`}>
