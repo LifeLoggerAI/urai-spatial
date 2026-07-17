@@ -341,8 +341,6 @@ jobs:
       URAI_FIREBASE_CLI: ${{ github.workspace }}/node_modules/.bin/firebase
       URAI_SMOKE_FETCH_ATTEMPTS: '8'
       URAI_SMOKE_RETRY_BASE_MS: '2000'
-      TARGET_BUNDLE_DIR: ${{ runner.temp }}/urai-v2-target-bundle
-      RECOVERY_BUNDLE_DIR: ${{ runner.temp }}/urai-v2-recovery-bundle
     steps:
       - name: Checkout current release authority only
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
@@ -363,6 +361,12 @@ jobs:
           [[ "$RELEASE_SHA" =~ ^[0-9a-f]{40}$ ]]
           [[ "$ROLLBACK_SHA" =~ ^[0-9a-f]{40}$ ]]
           test "$RELEASE_SHA" != "$ROLLBACK_SHA"
+      - name: Initialize protected bundle paths
+        shell: bash
+        run: |
+          set -euo pipefail
+          echo "TARGET_BUNDLE_DIR=${RUNNER_TEMP}/urai-v2-target-bundle" >> "$GITHUB_ENV"
+          echo "RECOVERY_BUNDLE_DIR=${RUNNER_TEMP}/urai-v2-recovery-bundle" >> "$GITHUB_ENV"
       - name: Set up Node
         uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
         with:
@@ -402,7 +406,7 @@ jobs:
           NEXT_PUBLIC_URAI_BUILD_SHA: ${{ env.ROLLBACK_SHA }}
           URAI_TARGET_SHA: ${{ env.ROLLBACK_SHA }}
           ROLLBACK_SHA: ${{ env.RELEASE_SHA }}
-          URAI_RELEASE_OPERATION: rollback
+          URAI_RELEASE_OPERATION: ${{ inputs.confirm == 'ROLLBACK_URAI_APP' && 'deploy' || 'rollback' }}
         run: node scripts/live-release.mjs --verify-prebuilt
       - name: Deploy target and recover exact attested bundle on failure
         id: protected_operation
@@ -429,7 +433,11 @@ jobs:
           export NEXT_PUBLIC_URAI_BUILD_SHA="$PRIMARY_ROLLBACK_SHA"
           export URAI_TARGET_SHA="$PRIMARY_ROLLBACK_SHA"
           export ROLLBACK_SHA="$PRIMARY_RELEASE_SHA"
-          export URAI_RELEASE_OPERATION='rollback'
+          if test "$PRIMARY_OPERATION" = 'deploy'; then
+            export URAI_RELEASE_OPERATION='rollback'
+          else
+            export URAI_RELEASE_OPERATION='deploy'
+          fi
           node scripts/live-release.mjs --deploy-prebuilt
           recovery_rc=$?
           mkdir -p "deployment-receipt/$PRIMARY_RELEASE_SHA"
