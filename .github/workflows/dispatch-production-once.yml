@@ -16,7 +16,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 60
     steps:
-      - name: Bootstrap legacy authority then deploy fingerprinted production
+      - name: Detect live authority and dispatch the correct protected release mode
         uses: actions/github-script@v7
         with:
           script: |
@@ -27,17 +27,32 @@ jobs:
             const rollbackSha = 'e2850a8b9dbd2fd11ee0197505da278322916aa0';
             const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
+            async function liveHasFingerprint() {
+              const detectionTimeoutMs = 10_000;
+              try {
+                const response = await fetch(`https://urai.app/release-fingerprint.json?dispatch_check=${Date.now()}`, {
+                  redirect: 'manual',
+                  signal: AbortSignal.timeout(detectionTimeoutMs),
+                  headers: { accept: 'application/json', 'cache-control': 'no-cache, no-store, max-age=0' }
+                });
+                if (response.status !== 200) return false;
+                const contentType = response.headers.get('content-type') || '';
+                if (!contentType.toLowerCase().includes('application/json')) return false;
+                const body = await response.json();
+                return body?.schemaVersion === 'urai-release-fingerprint-1';
+              } catch (error) {
+                const message = error instanceof Error ? error.message : String(error);
+                throw new Error(`Live fingerprint detection failed within ${detectionTimeoutMs}ms: ${message}`);
+              }
+            }
+
             async function dispatchAndWait(confirm, excludedRunIds = new Set()) {
               await github.rest.actions.createWorkflowDispatch({
                 owner,
                 repo,
                 workflow_id,
                 ref: 'main',
-                inputs: {
-                  release_sha: releaseSha,
-                  rollback_sha: rollbackSha,
-                  confirm
-                }
+                inputs: { release_sha: releaseSha, rollback_sha: rollbackSha, confirm }
               });
 
               let run = null;
@@ -102,28 +117,26 @@ jobs:
               per_page: 30
             });
             const excludedRunIds = new Set(existingRuns.data.workflow_runs.map((run) => run.id));
+            const sections = [];
 
-            const bootstrap = await dispatchAndWait('BOOTSTRAP_LEGACY_URAI_APP', excludedRunIds);
-            excludedRunIds.add(bootstrap.run.id);
-            if (bootstrap.run.conclusion !== 'success') {
-              const body = receiptSection('URAI legacy bootstrap production receipt', bootstrap);
-              await github.rest.issues.create({
-                owner,
-                repo,
-                title: `Bootstrap receipt ${releaseSha.slice(0, 12)} — ${bootstrap.run.conclusion}`,
-                body
-              });
-              core.summary.addRaw(body).write();
-              core.setFailed(`Legacy bootstrap concluded ${bootstrap.run.conclusion}`);
-              return;
+            if (!(await liveHasFingerprint())) {
+              const bootstrap = await dispatchAndWait('BOOTSTRAP_LEGACY_URAI_APP', excludedRunIds);
+              excludedRunIds.add(bootstrap.run.id);
+              sections.push(receiptSection('URAI legacy bootstrap production receipt', bootstrap));
+              if (bootstrap.run.conclusion !== 'success') {
+                const body = sections.join('\n\n');
+                await github.rest.issues.create({ owner, repo, title: `Bootstrap receipt ${releaseSha.slice(0, 12)} — ${bootstrap.run.conclusion}`, body });
+                core.summary.addRaw(body).write();
+                core.setFailed(`Legacy bootstrap concluded ${bootstrap.run.conclusion}`);
+                return;
+              }
+            } else {
+              sections.push('## URAI live authority detection\n\n- Valid release fingerprint already exists.\n- Legacy bootstrap skipped.');
             }
 
             const deployment = await dispatchAndWait('DEPLOY_URAI_APP', excludedRunIds);
-            const body = [
-              receiptSection('URAI legacy bootstrap production receipt', bootstrap),
-              '',
-              receiptSection('URAI fingerprinted production deployment receipt', deployment)
-            ].join('\n');
+            sections.push(receiptSection('URAI fingerprinted production deployment receipt', deployment));
+            const body = sections.join('\n\n');
 
             await github.rest.issues.create({
               owner,
