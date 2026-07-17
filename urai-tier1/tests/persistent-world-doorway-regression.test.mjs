@@ -13,6 +13,7 @@ test('persistent world navigation preserves canonical ownership and separate hit
   const finalCss = read('src/app/native-doorway-final-fix.css')
   const lifeMap = read('src/components/lifemap/AdaptiveLifeMapScene.tsx')
   const layout = read('src/app/layout.tsx')
+  const visualAudit = read('../scripts/run-live-visual-audit-current.mjs')
 
   assert.match(controller, /beginTravelRef\.current\(request\)/)
   assert.doesNotMatch(controller, /\[beginTravel, clearTimer, router\]/)
@@ -41,4 +42,8 @@ test('persistent world navigation preserves canonical ownership and separate hit
   assert.doesNotMatch(layout, /LifeMapPersistentDoorways/)
   assert.doesNotMatch(layout, /data-urai-audit-action="life-map-focus"/)
   assert.doesNotMatch(layout, /data-urai-audit-action="life-map-replay"/)
+
+  assert.match(visualAudit, /let found = await firstVisible\(page, check\.selectors\)/)
+  assert.match(visualAudit, /if \(!found\) \{[\s\S]*Open Orb travel controls[\s\S]*found = await firstVisible/)
+  assert.doesNotMatch(visualAudit, /const orb =[\s\S]*const found = await firstVisible/)
 })
