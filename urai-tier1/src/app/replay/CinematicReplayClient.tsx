@@ -164,7 +164,7 @@ export default function CinematicReplayClient() {
 
       <section className="replaySpatialCaption" aria-live="polite">
         <small>{activeSegment.label}</small>
-        <strong>{activeSegment.caption}</strong>
+        <strong>{activeSegment.narratorLine}</strong>
       </section>
 
       <div className="replayPhaseStage" aria-hidden="true" data-phase={replayPhase}>
