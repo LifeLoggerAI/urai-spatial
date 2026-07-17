@@ -1,7 +1,7 @@
 'use client'
 
 import { useRouter } from 'next/navigation'
-import { useCallback, useEffect, useRef } from 'react'
+import { useCallback, useEffect, useLayoutEffect, useRef } from 'react'
 import { definitionForDestination } from './destinationRegistry'
 import { useUraiWorldState } from './WorldStateProvider'
 import {
@@ -139,7 +139,7 @@ export function WorldTransitionController() {
     })
   }, [executeTravel])
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     const onTravel = (event: WindowEventMap[typeof URAI_WORLD_TRAVEL_EVENT]) => executeTravel(event.detail)
     const onReturn = () => reverseTravel()
     const onKeyDown = (event: KeyboardEvent) => {
