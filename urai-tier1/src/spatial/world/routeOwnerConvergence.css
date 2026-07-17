@@ -1,0 +1,125 @@
+/* Final persistent-world ownership boundary.
+ * Route owners provide content; the shared world owns composition, travel and
+ * the persistent Orb. Conventional page chrome must not dominate the scene.
+ */
+
+.urai-world-runtime[data-world-destination='focus'] .uraiAutoFocus,
+.urai-world-runtime[data-world-destination='replay'] .uraiAutoReplay {
+  display: none !important;
+}
+
+/* Home must open as a place, not a landing page. Keep the semantic heading in
+ * the DOM for assistive technology while removing the visible marketing block
+ * whenever the living WebGL world is active. */
+body:has(.urai-home-spatial-runtime-layer[data-webgl-ready='true'])
+  .urai-genesis-home__hero,
+body:has(.urai-home-spatial-runtime-layer[data-webgl-ready='true'])
+  .urai-genesis-home__memory-orbit,
+body:has(.urai-home-spatial-runtime-layer[data-webgl-ready='true'])
+  .urai-genesis-home__threshold-gate,
+body:has(.urai-home-spatial-runtime-layer[data-webgl-ready='true'])
+  .urai-genesis-home__camera-ascent-signal {
+  position: absolute !important;
+  width: 1px !important;
+  height: 1px !important;
+  padding: 0 !important;
+  margin: -1px !important;
+  overflow: hidden !important;
+  clip: rect(0 0 0 0) !important;
+  white-space: nowrap !important;
+  border: 0 !important;
+}
+
+body:has(.urai-home-spatial-runtime-layer[data-webgl-ready='true'])
+  .urai-home-spatial-runtime-layer {
+  position: fixed !important;
+  inset: 0 !important;
+  width: 100vw !important;
+  height: 100svh !important;
+  min-height: 100svh !important;
+  z-index: 1 !important;
+}
+
+body:has(.urai-home-spatial-runtime-layer[data-webgl-ready='true'])
+  .urai-home-spatial-runtime-layer canvas {
+  width: 100vw !important;
+  height: 100svh !important;
+}
+
+/* The shared Orb is the only persistent companion control. The tiny in-world
+ * DOM label and instructional copy made the scene read like a tutorial/demo. */
+body:has(.urai-home-spatial-runtime-layer[data-webgl-ready='true'])
+  .urai-home-spatial-portal-label,
+body:has(.urai-home-spatial-runtime-layer[data-webgl-ready='true'])
+  .urai-home-spatial-instruction {
+  display: none !important;
+}
+
+/* Ground is a realm, not a miniature dashboard. Route chrome remains available
+ * through the persistent Orb; the environment receives the entire viewport. */
+.urai-world-runtime[data-world-destination='infrastructure-hub'] .ground-spatial-root {
+  width: 100vw !important;
+  height: 100svh !important;
+  min-height: 100svh !important;
+}
+
+.urai-world-runtime[data-world-destination='infrastructure-hub'] .ground-provider-art {
+  opacity: .13 !important;
+}
+
+.urai-world-runtime[data-world-destination='infrastructure-hub'] .ground-district-label {
+  border-color: rgba(207, 250, 254, .2) !important;
+  background: rgba(1, 6, 18, .54) !important;
+  box-shadow: 0 18px 58px rgba(0,0,0,.38), 0 0 34px rgba(103,232,249,.12) !important;
+}
+
+/* On initial Life Map arrival, the universe itself is the instruction. The
+ * selected-memory controls may return after a star has been chosen. */
+.urai-world-runtime[data-world-destination='life-map']
+  main[data-testid='urai-true-3d-life-map']:not(:has(.urai-lifemap-deep-link-controls))
+  section[aria-live='polite'] {
+  display: none !important;
+}
+
+.urai-world-runtime[data-world-destination='life-map'] .urai-world-companion {
+  z-index: 30 !important;
+}
+
+@media (max-width: 760px) {
+  body:has(.urai-home-spatial-runtime-layer[data-webgl-ready='true'])
+    .urai-home-spatial-runtime-layer .urai-home-spatial-canvas {
+    transform: scale(1.14) translateY(-2.5svh);
+    transform-origin: 50% 50%;
+  }
+
+  .urai-world-runtime[data-world-destination='infrastructure-hub'] .ground-spatial-root canvas {
+    transform: scale(1.22) translateY(-1.5svh);
+    transform-origin: 50% 54%;
+  }
+
+  .urai-world-runtime[data-world-destination='infrastructure-hub'] .ground-district-label {
+    min-width: 104px !important;
+    padding: 7px 8px !important;
+  }
+
+  .urai-world-runtime[data-world-destination='infrastructure-hub'] .ground-district-label strong {
+    font-size: 9px !important;
+  }
+
+  .urai-world-runtime[data-world-destination='life-map']
+    main[data-testid='urai-true-3d-life-map'] canvas {
+    transform: translate3d(0, -1svh, 0) scale(1.34) !important;
+    transform-origin: 50% 48% !important;
+  }
+}
+
+@media (max-width: 430px) {
+  .urai-world-runtime[data-world-destination='infrastructure-hub'] .ground-spatial-root canvas {
+    transform: scale(1.3) translateY(-2svh);
+  }
+
+  .urai-world-runtime[data-world-destination='life-map']
+    main[data-testid='urai-true-3d-life-map'] canvas {
+    transform: translate3d(0, -2svh, 0) scale(1.42) !important;
+  }
+}

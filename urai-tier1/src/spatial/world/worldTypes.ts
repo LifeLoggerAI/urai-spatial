@@ -1,6 +1,7 @@
 export const URAI_DESTINATIONS = [
   'home',
   'infrastructure-hub',
+  'life-map',
   'mirror',
   'passport',
   'privacy-controls',

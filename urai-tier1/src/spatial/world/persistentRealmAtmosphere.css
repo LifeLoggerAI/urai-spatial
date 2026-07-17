@@ -1,0 +1,110 @@
+.urai-world-atmosphere {
+  position: fixed;
+  inset: 0;
+  z-index: 2;
+  overflow: hidden;
+  pointer-events: none;
+  isolation: isolate;
+}
+
+.urai-world-atmosphere > span {
+  position: absolute;
+  inset: 0;
+  display: block;
+  pointer-events: none;
+  transition: opacity 520ms ease, transform 720ms cubic-bezier(.2,.75,.2,1), filter 520ms ease;
+}
+
+.urai-world-atmosphere__sky {
+  background:
+    radial-gradient(circle at 50% 18%, rgba(128, 244, 239, .13), transparent 26rem),
+    radial-gradient(circle at 76% 32%, rgba(161, 130, 255, .1), transparent 28rem),
+    linear-gradient(180deg, rgba(3, 12, 20, .08), rgba(2, 7, 13, .32));
+  mix-blend-mode: screen;
+}
+
+.urai-world-atmosphere__horizon {
+  top: auto;
+  height: 42vh;
+  background: linear-gradient(180deg, transparent, rgba(60, 205, 196, .08) 48%, rgba(0, 0, 0, .28));
+  mask-image: linear-gradient(180deg, transparent, black 38%);
+}
+
+.urai-world-atmosphere__weather {
+  inset: -12%;
+  opacity: .4;
+  background-image:
+    radial-gradient(circle, rgba(255,255,255,.48) 0 1px, transparent 1.3px),
+    radial-gradient(circle, rgba(99,230,223,.32) 0 1px, transparent 1.2px);
+  background-size: 157px 157px, 223px 223px;
+  background-position: 0 0, 73px 49px;
+  animation: urai-world-weather-drift 28s linear infinite;
+}
+
+.urai-world-atmosphere__threshold {
+  inset: auto 8vw max(82px, env(safe-area-inset-bottom)) 8vw;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(132,246,238,.7), rgba(196,169,255,.56), transparent);
+  box-shadow: 0 0 42px rgba(99,230,223,.28);
+}
+
+.urai-world-atmosphere__depth {
+  box-shadow: inset 0 0 130px rgba(0,0,0,.42), inset 0 -16vh 120px rgba(0,0,0,.34);
+}
+
+.urai-world-atmosphere[data-realm='infrastructure-hub'] .urai-world-atmosphere__sky {
+  background:
+    radial-gradient(circle at 50% 38%, rgba(94, 234, 212, .12), transparent 22rem),
+    linear-gradient(180deg, rgba(6,20,24,.06), rgba(4,12,15,.42));
+}
+
+.urai-world-atmosphere[data-realm='life-map'] .urai-world-atmosphere__weather,
+.urai-world-atmosphere[data-realm='focus'] .urai-world-atmosphere__weather,
+.urai-world-atmosphere[data-realm='replay'] .urai-world-atmosphere__weather {
+  opacity: .72;
+  filter: saturate(1.2);
+}
+
+.urai-world-atmosphere[data-realm='focus'] .urai-world-atmosphere__threshold {
+  inset-inline: 20vw;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,.9), transparent);
+}
+
+.urai-world-atmosphere[data-realm='replay'] .urai-world-atmosphere__sky {
+  background:
+    radial-gradient(circle at 50% 42%, rgba(255, 219, 151, .12), transparent 20rem),
+    radial-gradient(circle at 68% 32%, rgba(180, 112, 255, .14), transparent 27rem),
+    linear-gradient(180deg, rgba(5,4,13,.08), rgba(0,0,0,.5));
+}
+
+.urai-world-atmosphere[data-realm='mirror'] .urai-world-atmosphere__sky,
+.urai-world-atmosphere[data-realm='passport'] .urai-world-atmosphere__sky,
+.urai-world-atmosphere[data-realm='privacy-controls'] .urai-world-atmosphere__sky,
+.urai-world-atmosphere[data-realm='location-map'] .urai-world-atmosphere__sky {
+  opacity: .72;
+}
+
+.urai-world-atmosphere[data-phase]:not([data-phase='idle']) .urai-world-atmosphere__sky {
+  transform: scale(1.045);
+  filter: blur(2px) saturate(1.18);
+}
+
+.urai-world-atmosphere[data-phase]:not([data-phase='idle']) .urai-world-atmosphere__threshold {
+  transform: scaleX(.72);
+  opacity: .22;
+}
+
+@keyframes urai-world-weather-drift {
+  from { transform: translate3d(0, 0, 0); }
+  to { transform: translate3d(-84px, 46px, 0); }
+}
+
+@media (max-width: 560px) {
+  .urai-world-atmosphere__horizon { height: 34vh; }
+  .urai-world-atmosphere__threshold { inset-inline: 12vw; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .urai-world-atmosphere > span { transition: none; }
+  .urai-world-atmosphere__weather { animation: none; }
+}

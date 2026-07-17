@@ -1,8 +1,8 @@
 'use client'
 
-import Link from 'next/link'
-import { useEffect, useMemo, useState } from 'react'
-import { assetCssStack, focusAssets, uiAssets } from '@/spatial/assets/uraiAssets'
+import { useCallback, useEffect, useMemo, useState } from 'react'
+import { assetCssStack, focusAssets } from '@/spatial/assets/uraiAssets'
+import { requestUraiWorldReturn, requestUraiWorldTravel } from '@/spatial/world/worldEvents'
 
 const DEFAULT_MEMORY_ID = 'quiet-reset'
 const DEFAULT_MANIFEST_ID = 'replay-recovery-thread'
@@ -14,19 +14,11 @@ function safeToken(value: string | null, fallback: string) {
 }
 
 function readableName(value: string) {
-  return value
-    .replace(/[-_:]+/g, ' ')
-    .replace(/\s+/g, ' ')
-    .trim()
-    .replace(/\b\w/g, (letter) => letter.toUpperCase())
+  return value.replace(/[-_:]+/g, ' ').replace(/\s+/g, ' ').trim().replace(/\b\w/g, (letter) => letter.toUpperCase())
 }
 
 export default function FocusChamberClient() {
-  const [identity, setIdentity] = useState(() => ({
-    memoryId: DEFAULT_MEMORY_ID,
-    manifestId: DEFAULT_MANIFEST_ID,
-    node: DEFAULT_MEMORY_ID,
-  }))
+  const [identity, setIdentity] = useState(() => ({ memoryId: DEFAULT_MEMORY_ID, manifestId: DEFAULT_MANIFEST_ID, node: DEFAULT_MEMORY_ID }))
   const { memoryId, manifestId, node } = identity
   const memoryName = readableName(node)
 
@@ -42,98 +34,105 @@ export default function FocusChamberClient() {
   }, [])
 
   const replayHref = useMemo(() => {
-    const next = new URLSearchParams()
-    next.set('memoryId', memoryId)
-    next.set('manifestId', manifestId)
-    next.set('node', node)
-    next.set('from', 'focus-camera')
+    const next = new URLSearchParams({ memoryId, manifestId, node, from: 'focus-camera' })
     return `/replay?${next.toString()}`
   }, [manifestId, memoryId, node])
 
-  const lifeMapHref = useMemo(() => {
-    const next = new URLSearchParams()
-    next.set('memoryId', memoryId)
-    next.set('manifestId', manifestId)
-    next.set('node', node)
-    next.set('unwind', 'focus')
-    return `/life-map?${next.toString()}`
-  }, [manifestId, memoryId, node])
+  const enterReplay = useCallback(() => {
+    requestUraiWorldTravel({
+      destination: 'replay',
+      href: replayHref,
+      entryPortal: 'focus-memory-aperture',
+      cameraCheckpoint: 'focus-core',
+      context: { memoryId, replayManifestId: manifestId },
+    })
+  }, [manifestId, memoryId, replayHref])
 
-  const focusHref = useMemo(() => {
-    const next = new URLSearchParams()
-    next.set('memoryId', memoryId)
-    next.set('manifestId', manifestId)
-    next.set('node', node)
-    return `/focus?${next.toString()}`
-  }, [manifestId, memoryId, node])
+  const returnToLifeMap = useCallback(() => requestUraiWorldReturn(), [])
 
   return (
     <main
       className="focusMemorySurface"
       data-testid="urai-final-focus-chamber"
       data-route-polish="selected-memory-camera-chamber"
-      data-canon="camera-from-life-map-no-avatar-orb"
+      data-canon="camera-from-life-map-entered-memory-world"
       data-memory-id={memoryId}
       data-manifest-id={manifestId}
       data-node={node}
-      style={{
-        '--focus-route-art': assetCssStack(focusAssets.primary),
-        '--focus-orb-art': assetCssStack(uiAssets.orbActive),
-      } as React.CSSProperties}
+      style={{ '--focus-route-art': assetCssStack(focusAssets.primary) } as React.CSSProperties}
     >
-      <div className="focusVoid" aria-hidden="true" />
-      <div className="focusCloud focusCloudA" aria-hidden="true" />
-      <div className="focusCloud focusCloudB" aria-hidden="true" />
-      <div className="focusDust" aria-hidden="true" />
-      <span className="focusOrbEcho" aria-hidden="true" />
+      <div className="focusArrivalVeil" aria-hidden="true" />
+      <div className="focusAtmosphere" aria-hidden="true" />
+      <div className="focusConstellationRemnant focusConstellationRemnantA" aria-hidden="true" />
+      <div className="focusConstellationRemnant focusConstellationRemnantB" aria-hidden="true" />
+      <div className="focusFloor" aria-hidden="true"><span /><span /><span /></div>
 
-      <section className="focusStage">
-        <div className="focusTitle">
-          <p>URAI · Focus</p>
-          <h1>Selected memory chamber.</h1>
-          <span>The Life Map camera is inside one private star. Its identity remains attached while you move into Replay and return.</span>
-          <div className="focusActions">
-            <Link href={replayHref}>Camera into Replay</Link>
-            <Link href={lifeMapHref}>Unwind to Life Map</Link>
-          </div>
+      <section className="focusChamber" aria-label={`${memoryName} selected memory chamber`}>
+        <header className="focusIdentity">
+          <p>Memory entered</p>
+          <h1>{memoryName}</h1>
+          <span>Private chamber · identity preserved</span>
+        </header>
+
+        <div className="focusMemoryArchitecture">
+          <div className="focusOrbit focusOrbitOuter" aria-hidden="true" />
+          <div className="focusOrbit focusOrbitMiddle" aria-hidden="true" />
+          <div className="focusOrbit focusOrbitInner" aria-hidden="true" />
+          <div className="focusRelationshipTrace focusRelationshipTraceA" aria-hidden="true" />
+          <div className="focusRelationshipTrace focusRelationshipTraceB" aria-hidden="true" />
+
+          <button type="button" className="focusMemoryPortal" aria-label={`Enter Replay for ${memoryName}`} onClick={enterReplay}>
+            <span className="focusMemoryShell" aria-hidden="true">
+              <span className="focusMemoryImage" />
+              <span className="focusMemoryCore" />
+              <span className="focusMemoryDepth" />
+            </span>
+            <span className="focusPortalLabel">Enter the memory</span>
+          </button>
+
+          <div className="focusFragment focusFragmentA" aria-hidden="true"><span>Before</span></div>
+          <div className="focusFragment focusFragmentB" aria-hidden="true"><span>Place</span></div>
+          <div className="focusFragment focusFragmentC" aria-hidden="true"><span>Person</span></div>
+          <div className="focusFragment focusFragmentD" aria-hidden="true"><span>After</span></div>
         </div>
 
-        <aside className="focusPanel">
-          <div className="focusCard" aria-label={`${memoryName} selected memory image`}>
-            <div className="focusStar" aria-hidden="true"><span /></div>
-          </div>
-          <p>Memory readout</p>
-          <h2>{memoryName}</h2>
-          <span>Memory <code>{memoryId}</code> is bound to manifest <code>{manifestId}</code>. Replay receives the complete identity.</span>
-          <div className="focusBeatRail">
-            <span data-active="true">Private star selected</span>
-            <span>Identity preserved</span>
-            <span>Replay ready</span>
-          </div>
+        <aside className="focusInsight" aria-label="Memory context">
+          <p>The pressure became permission again.</p>
+          <span>The chamber is holding the people, place and pattern around this moment.</span>
         </aside>
+
+        <button type="button" className="focusReturn" onClick={returnToLifeMap} aria-label="Unwind to Life Map">← Unwind</button>
       </section>
 
-      <nav className="focusNav" aria-label="URAI memory route chain">
-        <Link href={lifeMapHref}>Life Map</Link>
-        <Link href={focusHref} data-active="true">Focus</Link>
-        <Link href={replayHref}>Replay</Link>
-        <Link href="/mirror">Mirror</Link>
-        <Link href="/passport">Passport</Link>
-      </nav>
-
       <style>{`
-        .focusMemorySurface{position:relative;min-height:100svh;overflow:hidden;color:white;background:#000107;isolation:isolate}
-        .focusMemorySurface:before{content:'';position:absolute;inset:-10vh -10vw;z-index:0;background:radial-gradient(circle at 50% 38%,rgba(255,255,255,.14),transparent 10rem),radial-gradient(circle at 31% 48%,rgba(80,228,255,.14),transparent 24rem),radial-gradient(circle at 72% 38%,rgba(178,94,255,.16),transparent 24rem),linear-gradient(180deg,#00020a 0%,#020411 56%,#000106 100%)}
-        .focusVoid,.focusCloud,.focusDust{position:absolute;pointer-events:none}.focusVoid{inset:0;background:radial-gradient(ellipse at 50% 50%,rgba(255,255,255,.05),transparent 34%),radial-gradient(ellipse at 42% 54%,rgba(80,228,255,.12),transparent 38%),radial-gradient(ellipse at 66% 42%,rgba(178,94,255,.13),transparent 38%)}
-        .focusCloud{z-index:1;border-radius:999px;filter:blur(36px);opacity:.42}.focusCloudA{left:8%;top:24%;width:64vw;height:42vh;background:radial-gradient(ellipse,rgba(95,232,255,.28),rgba(95,232,255,.06) 48%,transparent 74%);transform:rotate(-8deg)}.focusCloudB{right:-6%;top:18%;width:60vw;height:46vh;background:radial-gradient(ellipse,rgba(210,126,255,.28),rgba(210,126,255,.06) 48%,transparent 74%);transform:rotate(9deg)}
-        .focusDust{inset:-12%;z-index:2;opacity:.42;background-image:radial-gradient(circle,rgba(255,255,255,.84) 0 1px,transparent 1.24px),radial-gradient(circle,rgba(140,232,255,.64) 0 1px,transparent 1.2px);background-size:101px 101px,163px 163px;background-position:0 0,41px 62px}
-        .focusStage{position:relative;z-index:10;min-height:100svh;display:grid;grid-template-columns:minmax(0,1fr) minmax(320px,430px);align-items:center;gap:2rem;padding:5.5rem 2rem 7.5rem}.focusTitle,.focusPanel{border:1px solid rgba(255,255,255,.12);background:linear-gradient(145deg,rgba(0,0,0,.58),rgba(8,16,30,.34));box-shadow:0 28px 90px rgba(0,0,0,.52),inset 0 1px 0 rgba(255,255,255,.08);backdrop-filter:blur(20px);border-radius:2rem;padding:1rem}.focusTitle{max-width:540px}.focusTitle p,.focusPanel p{margin:0;color:rgba(165,243,252,.9);font-size:10px;font-weight:950;letter-spacing:.25em;text-transform:uppercase}.focusTitle h1{margin:.45rem 0 0;font-size:clamp(3.2rem,8vw,7.8rem);line-height:.8;letter-spacing:-.1em}.focusTitle span,.focusPanel>span{display:block;margin-top:.75rem;color:rgba(235,252,255,.78);font-size:.94rem;font-weight:750;line-height:1.5}.focusPanel h2{margin:.45rem 0 0;font-size:clamp(1.65rem,3vw,2.4rem)}
-        .focusCard{position:relative;min-height:318px;margin-bottom:1rem;overflow:hidden;border:1px solid rgba(255,255,255,.12);border-radius:1.5rem;background:linear-gradient(180deg,rgba(0,0,0,.08),rgba(0,0,0,.72)),var(--focus-route-art),radial-gradient(circle at 50% 36%,rgba(255,255,255,.24),transparent 16%),linear-gradient(135deg,#09131f,#17293b 42%,#3a2445 70%,#05080f);background-size:cover;background-position:center}.focusStar{position:absolute;left:50%;top:25%;width:180px;height:180px;transform:translate(-50%,-50%);border-radius:999px;background:radial-gradient(circle,rgba(255,255,255,.9) 0 3%,#9ff7ff 12%,rgba(159,247,255,.12) 34%,transparent 70%);filter:blur(4px);animation:focusBreath 4.6s ease-in-out infinite alternate}.focusStar span{position:absolute;left:50%;top:50%;width:16px;height:16px;transform:translate(-50%,-50%);border-radius:999px;background:white;box-shadow:0 0 18px white,0 0 52px #7df8ff,0 0 120px rgba(125,248,255,.42)}
-        .focusActions{display:flex;flex-wrap:wrap;gap:.55rem;margin-top:1rem}.focusActions a,.focusNav a{border:1px solid rgba(255,255,255,.16);border-radius:999px;padding:.72rem 1rem;background:rgba(255,255,255,.06);color:white;font-size:12px;font-weight:950;text-decoration:none}.focusActions a:first-child,.focusNav a[data-active='true']{background:rgba(207,250,254,.96);color:#020617}.focusBeatRail{display:grid;gap:.5rem;margin-top:1rem}.focusBeatRail span{border:1px solid rgba(255,255,255,.12);border-radius:1rem;background:rgba(255,255,255,.055);padding:.65rem .8rem;color:rgba(236,254,255,.84);font-size:12px;font-weight:900}.focusBeatRail span[data-active='true']{background:rgba(207,250,254,.92);color:#020617}.focusOrbEcho{position:absolute;right:1rem;top:1rem;z-index:30;width:58px;height:58px;border-radius:999px;background-image:var(--focus-orb-art);background-size:cover;box-shadow:0 0 60px rgba(103,232,249,.28)}
-        .focusNav{position:fixed;left:50%;bottom:1rem;z-index:40;display:flex;max-width:calc(100vw - 1.5rem);transform:translateX(-50%);gap:.35rem;overflow-x:auto;border:1px solid rgba(255,255,255,.12);border-radius:999px;background:rgba(0,0,0,.52);padding:.42rem;backdrop-filter:blur(18px)}.focusNav a{padding:.52rem .82rem;font-size:11px;white-space:nowrap}
-        @keyframes focusBreath{from{transform:translate(-50%,-50%) scale(.9);opacity:.62}to{transform:translate(-50%,-50%) scale(1.1);opacity:.88}}
-        @media(max-width:850px){.focusStage{grid-template-columns:1fr;padding:4.75rem .75rem 9rem;align-items:start}.focusTitle{max-width:330px}.focusTitle h1{font-size:2.6rem}.focusPanel{margin-top:min(33vh,240px)}.focusCard{min-height:230px}.focusOrbEcho{display:none}.focusNav{width:calc(100vw - 1rem);justify-content:flex-start;bottom:.75rem}}
-        @media(prefers-reduced-motion:reduce){.focusStar{animation:none}}
+        .focusMemorySurface{position:fixed;inset:0;min-height:100svh;overflow:hidden;color:#f8fdff;background:#010309;isolation:isolate;perspective:1400px}
+        .focusMemorySurface:before{content:'';position:absolute;inset:-12%;z-index:0;background:radial-gradient(circle at 50% 42%,rgba(255,189,103,.24),transparent 12%),radial-gradient(circle at 38% 48%,rgba(80,228,255,.13),transparent 32%),radial-gradient(circle at 68% 40%,rgba(178,94,255,.14),transparent 34%),linear-gradient(180deg,#02050c 0%,#060b12 48%,#010207 100%);animation:focusWorldBreathe 9s ease-in-out infinite alternate}
+        .focusArrivalVeil{position:absolute;inset:-20%;z-index:40;pointer-events:none;background:radial-gradient(circle at 50% 46%,transparent 0 9%,rgba(255,207,143,.34) 12%,#02040a 26%,#000 62%);animation:focusArrive 1.15s cubic-bezier(.2,.72,.16,1) both}
+        .focusAtmosphere{position:absolute;inset:-10%;z-index:1;pointer-events:none;background-image:radial-gradient(circle,rgba(255,255,255,.64) 0 1px,transparent 1.4px),radial-gradient(circle,rgba(255,197,119,.5) 0 1px,transparent 1.3px);background-size:113px 113px,173px 173px;background-position:0 0,47px 61px;opacity:.42;animation:focusAtmosphereDrift 24s linear infinite}
+        .focusConstellationRemnant{position:absolute;z-index:2;width:44vw;height:1px;background:linear-gradient(90deg,transparent,rgba(166,232,255,.38),transparent);transform-origin:center;opacity:.42}.focusConstellationRemnant:before,.focusConstellationRemnant:after{content:'';position:absolute;top:-3px;width:7px;height:7px;border-radius:50%;background:#d9f8ff;box-shadow:0 0 16px rgba(166,232,255,.82)}.focusConstellationRemnant:before{left:18%}.focusConstellationRemnant:after{right:22%}.focusConstellationRemnantA{left:-8vw;top:31%;transform:rotate(13deg)}.focusConstellationRemnantB{right:-10vw;top:39%;transform:rotate(-16deg)}
+        .focusFloor{position:absolute;left:50%;bottom:-20svh;z-index:2;width:min(1080px,100vw);height:55svh;transform:translateX(-50%) rotateX(68deg);border-radius:50%;background:radial-gradient(ellipse,rgba(255,177,86,.2),rgba(22,40,51,.16) 36%,rgba(0,0,0,.72) 70%);border:1px solid rgba(255,204,142,.18);box-shadow:0 -20px 90px rgba(255,153,59,.12),inset 0 0 100px rgba(0,0,0,.8)}.focusFloor span{position:absolute;inset:14%;border:1px solid rgba(255,210,153,.12);border-radius:50%}.focusFloor span:nth-child(2){inset:28%}.focusFloor span:nth-child(3){inset:42%}
+        .focusChamber{position:relative;z-index:10;min-height:100svh;display:grid;place-items:center;padding:max(18px,env(safe-area-inset-top)) 18px max(76px,calc(env(safe-area-inset-bottom) + 64px));animation:focusSettle 1.25s cubic-bezier(.18,.76,.2,1) both}
+        .focusIdentity{position:absolute;left:max(18px,env(safe-area-inset-left));top:max(18px,env(safe-area-inset-top));max-width:min(320px,calc(100vw - 36px));padding:8px 0 8px 13px;border-left:1px solid rgba(255,211,154,.48);text-shadow:0 2px 18px #000}.focusIdentity p{margin:0;color:rgba(255,211,154,.88);font-size:9px;font-weight:900;letter-spacing:.22em;text-transform:uppercase}.focusIdentity h1{margin:4px 0 2px;font-size:clamp(1.05rem,3vw,1.65rem);letter-spacing:-.03em}.focusIdentity span{color:rgba(230,245,248,.62);font-size:10px}
+        .focusMemoryArchitecture{position:relative;width:min(76vw,760px);aspect-ratio:1;display:grid;place-items:center;perspective:1200px;transform-style:preserve-3d}
+        .focusOrbit{position:absolute;border:1px solid rgba(180,228,238,.16);border-radius:50%;animation:focusOrbitTurn 18s linear infinite}.focusOrbitOuter{inset:2%;transform:rotateX(64deg) rotateZ(12deg)}.focusOrbitMiddle{inset:14%;transform:rotateY(68deg) rotateZ(-18deg);animation-direction:reverse;animation-duration:22s}.focusOrbitInner{inset:25%;border-color:rgba(255,196,121,.22);transform:rotateX(72deg) rotateZ(32deg);animation-duration:14s}
+        .focusRelationshipTrace{position:absolute;width:36%;height:1px;background:linear-gradient(90deg,transparent,rgba(211,246,255,.5),transparent);opacity:.45}.focusRelationshipTrace:after{content:'';position:absolute;right:12%;top:-3px;width:7px;height:7px;border-radius:50%;background:#e7fbff;box-shadow:0 0 20px #9deeff}.focusRelationshipTraceA{left:-7%;top:39%;transform:rotate(-12deg)}.focusRelationshipTraceB{right:-8%;bottom:35%;transform:rotate(16deg)}
+        .focusMemoryPortal{position:relative;width:min(43vw,390px);aspect-ratio:1;border:0;padding:0;border-radius:50%;background:transparent;color:white;cursor:pointer;display:grid;place-items:center;filter:drop-shadow(0 28px 70px rgba(0,0,0,.58));transition:transform .45s cubic-bezier(.2,.8,.2,1),filter .45s ease}.focusMemoryPortal:hover,.focusMemoryPortal:focus-visible{transform:translateZ(42px) scale(1.055);filter:drop-shadow(0 36px 96px rgba(255,170,75,.3))}.focusMemoryPortal:focus-visible{outline:3px solid rgba(222,252,255,.94);outline-offset:10px}
+        .focusMemoryShell{position:absolute;inset:0;border-radius:34% 66% 48% 52% / 54% 42% 58% 46%;overflow:hidden;border:1px solid rgba(255,223,183,.36);background:radial-gradient(circle at 50% 46%,rgba(0,0,0,.18),rgba(0,0,0,.78) 61%),linear-gradient(135deg,rgba(255,190,111,.36),rgba(78,186,204,.16) 42%,rgba(176,104,255,.18) 72%,rgba(0,0,0,.8));box-shadow:inset 0 0 80px rgba(255,190,111,.16),0 0 90px rgba(255,161,68,.16);animation:focusShellBreathe 5.6s ease-in-out infinite alternate}.focusMemoryImage{position:absolute;inset:12%;border-radius:50%;background:linear-gradient(180deg,rgba(0,0,0,.02),rgba(0,0,0,.48)),var(--focus-route-art),linear-gradient(145deg,#122531,#3a2a32 58%,#090b10);background-size:cover;background-position:center;box-shadow:inset 0 0 60px rgba(0,0,0,.64);filter:saturate(.96) contrast(1.06)}.focusMemoryCore{position:absolute;left:50%;top:50%;width:18%;aspect-ratio:1;transform:translate(-50%,-50%);border-radius:50%;background:radial-gradient(circle,#fff 0 5%,#ffd092 16%,rgba(255,165,69,.7) 34%,rgba(255,165,69,.12) 58%,transparent 72%);box-shadow:0 0 30px rgba(255,226,181,.9),0 0 90px rgba(255,155,54,.55),0 0 180px rgba(255,126,39,.25)}.focusMemoryDepth{position:absolute;inset:4%;border-radius:inherit;border:1px solid rgba(255,236,207,.16);box-shadow:inset 0 0 50px rgba(0,0,0,.5);animation:focusDepthPulse 4.5s ease-in-out infinite}
+        .focusPortalLabel{position:absolute;left:50%;bottom:-46px;transform:translateX(-50%);font-size:10px;font-weight:900;letter-spacing:.17em;text-transform:uppercase;white-space:nowrap;text-shadow:0 2px 18px #000}.focusPortalLabel:before{content:'';display:inline-block;width:22px;height:1px;margin:0 9px 3px 0;background:rgba(255,214,158,.62)}
+        .focusFragment{position:absolute;width:88px;aspect-ratio:1;border:1px solid rgba(188,230,239,.17);border-radius:44% 56% 52% 48%;background:linear-gradient(145deg,rgba(10,20,29,.5),rgba(30,20,33,.28));box-shadow:0 18px 54px rgba(0,0,0,.42);display:grid;place-items:center;color:rgba(227,250,255,.68);font-size:8px;font-weight:850;letter-spacing:.15em;text-transform:uppercase;backdrop-filter:blur(7px);animation:focusFragmentFloat 6s ease-in-out infinite alternate}.focusFragmentA{left:1%;top:19%;transform:rotate(-9deg)}.focusFragmentB{right:2%;top:24%;transform:rotate(8deg);animation-delay:-1.5s}.focusFragmentC{left:10%;bottom:10%;transform:rotate(7deg);animation-delay:-3s}.focusFragmentD{right:8%;bottom:12%;transform:rotate(-7deg);animation-delay:-4.5s}
+        .focusInsight{position:absolute;right:max(18px,env(safe-area-inset-right));top:50%;width:min(260px,calc(100vw - 36px));transform:translateY(-50%);padding:10px 14px 10px 0;border-right:1px solid rgba(255,211,154,.42);text-align:right;text-shadow:0 2px 20px #000}.focusInsight p{margin:0;color:#fff7ed;font-size:clamp(.95rem,2vw,1.25rem);font-weight:800;line-height:1.08}.focusInsight span{display:block;margin-top:7px;color:rgba(230,245,248,.58);font-size:10px;line-height:1.45}
+        .focusReturn{position:absolute;left:max(18px,env(safe-area-inset-left));bottom:max(18px,env(safe-area-inset-bottom));min-height:44px;border:0;padding:10px 2px;background:transparent;color:rgba(235,252,255,.78);font-size:10px;font-weight:850;letter-spacing:.13em;text-transform:uppercase;cursor:pointer;text-shadow:0 2px 18px #000}.focusReturn:focus-visible{outline:2px solid white;outline-offset:5px}
+        @keyframes focusArrive{0%{opacity:1;transform:scale(.7)}65%{opacity:.45}100%{opacity:0;transform:scale(2.4)}}
+        @keyframes focusSettle{from{opacity:0;transform:translateZ(260px) scale(1.22)}to{opacity:1;transform:translateZ(0) scale(1)}}
+        @keyframes focusWorldBreathe{to{transform:scale(1.025)}}
+        @keyframes focusAtmosphereDrift{to{transform:translate3d(2%,3%,0)}}
+        @keyframes focusOrbitTurn{to{rotate:1 1 0 360deg}}
+        @keyframes focusShellBreathe{from{transform:scale(.97) rotate(-1deg)}to{transform:scale(1.025) rotate(1deg)}}
+        @keyframes focusDepthPulse{50%{opacity:.45;transform:scale(.96)}}
+        @keyframes focusFragmentFloat{to{translate:0 -12px;rotate:2deg}}
+        @media(max-width:900px){.focusMemoryArchitecture{width:min(94vw,620px);transform:translateY(2svh)}.focusMemoryPortal{width:min(59vw,350px)}.focusInsight{top:auto;right:14px;bottom:max(76px,calc(env(safe-area-inset-bottom) + 64px));transform:none;width:min(226px,59vw)}.focusFragment{width:68px}.focusIdentity{max-width:220px}.focusPortalLabel{bottom:-40px}.focusFloor{bottom:-25svh}}
+        @media(max-width:520px){.focusChamber{padding-left:8px;padding-right:8px}.focusMemoryArchitecture{width:104vw;transform:translateY(1svh)}.focusMemoryPortal{width:min(65vw,292px)}.focusFragment{width:56px;font-size:7px}.focusFragmentA{left:4%;top:23%}.focusFragmentB{right:4%;top:27%}.focusFragmentC{left:9%;bottom:17%}.focusFragmentD{right:8%;bottom:17%}.focusInsight{right:10px;bottom:max(68px,calc(env(safe-area-inset-bottom) + 56px));width:min(205px,56vw);padding:8px}.focusInsight p{font-size:.86rem}.focusIdentity{left:10px;top:max(10px,env(safe-area-inset-top));max-width:188px;padding:7px 0 7px 9px}.focusReturn{left:10px;bottom:max(8px,env(safe-area-inset-bottom));font-size:9px}.focusPortalLabel{font-size:9px}}
+        @media(prefers-reduced-motion:reduce){.focusArrivalVeil{display:none}.focusMemorySurface:before,.focusChamber,.focusAtmosphere,.focusOrbit,.focusMemoryShell,.focusMemoryDepth,.focusFragment{animation:none!important}.focusMemoryPortal{transition:none}}
       `}</style>
     </main>
   )
