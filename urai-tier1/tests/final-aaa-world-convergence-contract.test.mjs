@@ -14,9 +14,20 @@ const chrome = read('src/spatial/world/persistentWorldCompanion.css')
 const lifeMapConvergence = read('src/spatial/world/lifeMapConvergence.css')
 const routeOwnerConvergence = read('src/spatial/world/routeOwnerConvergence.css')
 
+const canonicalDestinations = [
+  'home',
+  'infrastructure-hub',
+  'life-map',
+  'focus',
+  'replay',
+  'mirror',
+  'passport',
+  'privacy-controls',
+  'location-map',
+]
 
 test('the full journey participates in one persistent world model', () => {
-  for (const destination of ['home', 'infrastructure-hub', 'life-map', 'focus', 'replay']) {
+  for (const destination of canonicalDestinations) {
     assert.match(worldTypes, new RegExp(`['"]${destination}['"]`))
     assert.match(registry, new RegExp(`['"]${destination}['"]`))
   }
@@ -24,21 +35,25 @@ test('the full journey participates in one persistent world model', () => {
   assert.match(registry, /environmentalForm:\s*['"]explorable-memory-constellation['"]/) 
 })
 
-
-test('one persistent Orb owns primary travel and Home opens that same companion', () => {
+test('one persistent Orb owns all canonical travel and Home opens that same companion', () => {
   assert.match(shell, /PersistentWorldCompanion/)
   assert.match(shell, /<PersistentWorldCompanion\s*\/>/)
   assert.match(companion, /PRIMARY_DESTINATIONS/)
+  assert.match(companion, /SECONDARY_DESTINATIONS/)
+  for (const destination of canonicalDestinations) {
+    assert.match(companion, new RegExp(`['"]${destination}['"]`))
+  }
   assert.match(companion, /requestUraiWorldTravel/)
+  assert.match(companion, /requestUraiWorldReturn/)
   assert.match(companion, /URAI_WORLD_ORB_OPEN_EVENT/)
   assert.match(companion, /aria-label={open \? 'Close Orb travel controls' : 'Open Orb travel controls'}/)
+  assert.match(companion, /aria-label="Return through the world"/)
   assert.doesNotMatch(companion, /next\/link/)
   assert.match(worldEvents, /requestUraiWorldOrbOpen/)
   assert.match(homeRuntime, /onOrbOpen={requestUraiWorldOrbOpen}/)
   assert.doesNotMatch(homeRuntime, /urai-home-spatial-orb-trigger/)
   assert.doesNotMatch(homeRuntime, /urai-home-spatial-runtime-orb/)
 })
-
 
 test('page-like route chrome is removed from the active world', () => {
   for (const selector of ['.ground-card', '.ground-rail', '.focusTitle', '.focusNav']) {
@@ -48,7 +63,6 @@ test('page-like route chrome is removed from the active world', () => {
   assert.match(chrome, /\[aria-label='Replay location'\]/)
   assert.match(chrome, /display:\s*none\s*!important/)
 })
-
 
 test('Life Map reads as a full-viewport world instead of a landing page', () => {
   assert.match(shell, /import '\.\/lifeMapConvergence\.css'/)
@@ -61,7 +75,6 @@ test('Life Map reads as a full-viewport world instead of a landing page', () => 
   assert.match(lifeMapConvergence, /@media \(max-width: 430px\)/)
 })
 
-
 test('canonical route clients own Focus and Replay without the legacy autonomous overlay', () => {
   assert.match(shell, /import '\.\/routeOwnerConvergence\.css'/)
   assert.match(routeOwnerConvergence, /data-world-destination='focus'/)
@@ -71,9 +84,10 @@ test('canonical route clients own Focus and Replay without the legacy autonomous
   assert.match(routeOwnerConvergence, /display:\s*none\s*!important/)
 })
 
-
-test('mobile safe area and reduced motion remain explicit', () => {
+test('mobile safe area, scroll containment, and reduced motion remain explicit', () => {
   assert.match(chrome, /env\(safe-area-inset-bottom\)/)
+  assert.match(chrome, /max-height:\s*min\(68svh, 520px\)/)
+  assert.match(chrome, /overflow-y:\s*auto/)
   assert.match(chrome, /@media \(max-width: 560px\)/)
   assert.match(chrome, /prefers-reduced-motion: reduce/)
   assert.match(lifeMapConvergence, /prefers-reduced-motion: reduce/)
