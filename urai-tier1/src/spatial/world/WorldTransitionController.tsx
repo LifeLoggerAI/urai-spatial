@@ -12,6 +12,7 @@ import type { UraiDestination, UraiWorldTravelRequest } from './worldTypes'
 
 const CONTEXT_KEYS = [
   'memoryId',
+  'node',
   'thread',
   'personId',
   'placeId',
@@ -60,6 +61,13 @@ function isEditableTarget(target: EventTarget | null) {
   return target.isContentEditable || target.matches('input, textarea, select, [role="textbox"]')
 }
 
+function fallbackReturnDestination(destination: UraiDestination): UraiDestination {
+  if (destination === 'focus') return 'life-map'
+  if (destination === 'replay') return 'focus'
+  if (destination === 'infrastructure-hub') return 'home'
+  return 'infrastructure-hub'
+}
+
 export function WorldTransitionController() {
   const router = useRouter()
   const { world, phase, beginTravel } = useUraiWorldState()
@@ -102,7 +110,7 @@ export function WorldTransitionController() {
   const reverseTravel = useCallback(() => {
     const currentWorld = worldRef.current
     if (phaseRef.current !== 'idle') return
-    const destination = currentWorld.previousDestination ?? (currentWorld.destination === 'infrastructure-hub' ? 'home' : 'infrastructure-hub')
+    const destination = currentWorld.previousDestination ?? fallbackReturnDestination(currentWorld.destination)
     const definition = definitionForDestination(destination)
     executeTravel({
       destination,
