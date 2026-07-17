@@ -27,7 +27,7 @@ export default function FocusChamberClient() {
   const unwind = useCallback(() => requestUraiWorldReturn(), [])
 
   if (!memory) {
-    return <main className="focusState" data-testid="urai-final-focus-chamber" data-memory-status={result.status} data-canonical-asset={focusAssets.primary.src}><section role={result.status === 'loading' ? 'status' : 'alert'}><p>{result.status === 'loading' ? 'Opening selected memory' : 'Memory unavailable'}</p><h1>{result.message}</h1><button type="button" onClick={unwind}>Return to Life Map</button></section><style>{stateCss}</style></main>
+    return <main className="focusState" data-testid="urai-final-focus-chamber" data-memory-status={result.status} data-canonical-asset={focusAssets.primary.src}><section role={result.status === 'loading' ? 'status' : 'alert'}><p>{result.status === 'loading' ? 'Selected memory chamber.' : 'Memory unavailable'}</p><h1>{result.message}</h1><button type="button" onClick={unwind}>Return to Life Map</button></section><style>{stateCss}</style></main>
   }
 
   const people = memory.people.map((person) => person.relationship ? `${person.label} · ${person.relationship}` : person.label).join(', ')
