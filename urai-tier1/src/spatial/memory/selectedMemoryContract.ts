@@ -182,7 +182,7 @@ export function parseSelectedMemory(raw: Record<string, unknown>, expectedOwnerI
     const caption = stringValue(value.caption)
     const narratorLine = stringValue(value.narratorLine)
     if (!label || !caption || !narratorLine) return []
-    return [{ id: segmentId, label, caption, narratorLine, startsAtMs: numberValue(value.startsAtMs, 0), durationMs: numberValue(value.durationMs, 0) }]
+    return [{ id: segmentId as SelectedMemoryReplaySegment['id'], label, caption, narratorLine, startsAtMs: numberValue(value.startsAtMs, 0), durationMs: numberValue(value.durationMs, 0) }]
   })
   if (segments.length !== 4 || segments.some((segment) => segment.durationMs <= 0)) {
     return { status: 'corrupt', memory: null, message: 'The replay manifest is incomplete.' }
@@ -197,7 +197,7 @@ export function parseSelectedMemory(raw: Record<string, unknown>, expectedOwnerI
   }) : []
   const placeRaw = raw.place && typeof raw.place === 'object' ? raw.place as Record<string, unknown> : null
   const placeLabel = placeRaw ? stringValue(placeRaw.label) : null
-  const privacy = raw.privacy === 'hidden' || raw.privacy === 'shareable' ? raw.privacy : 'private'
+  const privacy: SelectedMemoryPrivacy = raw.privacy === 'hidden' || raw.privacy === 'shareable' ? raw.privacy as SelectedMemoryPrivacy : 'private'
   const starRaw = raw.star && typeof raw.star === 'object' ? raw.star as Record<string, unknown> : {}
   const visualsRaw = raw.visuals && typeof raw.visuals === 'object' ? raw.visuals as Record<string, unknown> : {}
 
@@ -220,7 +220,7 @@ export function parseSelectedMemory(raw: Record<string, unknown>, expectedOwnerI
         const value = item as Record<string, unknown>
         const kind = value.kind
         const url = stringValue(value.url)
-        return url && (kind === 'image' || kind === 'video' || kind === 'audio') ? [{ kind, url, caption: stringValue(value.caption) ?? undefined }] : []
+        return url && (kind === 'image' || kind === 'video' || kind === 'audio') ? [{ kind: kind as SelectedMemoryMedia['kind'], url, caption: stringValue(value.caption) ?? undefined }] : []
       }) : [],
       privacy,
       replayManifest: {
@@ -240,7 +240,7 @@ export function parseSelectedMemory(raw: Record<string, unknown>, expectedOwnerI
         position,
         scale: numberValue(starRaw.scale, 1),
         aura: stringValue(starRaw.aura ?? raw.aura) ?? '#8adfff',
-        material: starRaw.material === 'ember' || starRaw.material === 'mist' || starRaw.material === 'crystal' ? starRaw.material : 'glass',
+        material: starRaw.material === 'ember' || starRaw.material === 'mist' || starRaw.material === 'crystal' ? starRaw.material as SelectedMemoryStar['material'] : 'glass',
       },
       visuals: {
         sky: stringValue(visualsRaw.sky) ?? '#061526',
