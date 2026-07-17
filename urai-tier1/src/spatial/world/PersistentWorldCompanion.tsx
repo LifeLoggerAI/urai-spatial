@@ -129,6 +129,8 @@ export function PersistentWorldCompanion() {
         className="urai-world-companion__orb"
         aria-label={open ? 'Close Orb travel controls' : 'Open Orb travel controls'}
         aria-expanded={open}
+        data-world-target="orb-controls"
+        data-urai-audit-action="orb-controls"
         onClick={() => setOpen((value) => !value)}
       >
         <span aria-hidden="true" />
