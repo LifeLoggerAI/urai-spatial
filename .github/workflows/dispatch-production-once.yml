@@ -9,24 +9,83 @@ on:
 permissions:
   actions: write
   contents: read
+  issues: write
 
 jobs:
   dispatch:
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     steps:
-      - name: Dispatch canonical production workflow
+      - name: Dispatch and record canonical production run
         uses: actions/github-script@v7
         with:
           script: |
-            // Dispatch the hosting parity repair from the exact latest main authority.
+            const owner = context.repo.owner;
+            const repo = context.repo.repo;
+            const workflow_id = 'spatial-live-deploy.yml';
+            const releaseSha = context.sha;
+            const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
             await github.rest.actions.createWorkflowDispatch({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              workflow_id: 'spatial-live-deploy.yml',
+              owner,
+              repo,
+              workflow_id,
               ref: 'main',
               inputs: {
-                release_sha: context.sha,
+                release_sha: releaseSha,
                 rollback_sha: 'e2850a8b9dbd2fd11ee0197505da278322916aa0',
                 confirm: 'DEPLOY_URAI_APP'
               }
-            })
+            });
+
+            let run = null;
+            for (let attempt = 0; attempt < 60; attempt += 1) {
+              const response = await github.rest.actions.listWorkflowRuns({
+                owner,
+                repo,
+                workflow_id,
+                event: 'workflow_dispatch',
+                head_sha: releaseSha,
+                per_page: 20
+              });
+              run = response.data.workflow_runs.find((candidate) => candidate.head_sha === releaseSha) || null;
+              if (run) break;
+              await sleep(10000);
+            }
+            if (!run) throw new Error(`No canonical production run appeared for ${releaseSha}`);
+
+            for (let attempt = 0; attempt < 120 && run.status !== 'completed'; attempt += 1) {
+              await sleep(10000);
+              const response = await github.rest.actions.getWorkflowRun({ owner, repo, run_id: run.id });
+              run = response.data;
+            }
+
+            const jobsResponse = await github.rest.actions.listJobsForWorkflowRun({
+              owner,
+              repo,
+              run_id: run.id,
+              filter: 'latest',
+              per_page: 100
+            });
+            const jobLines = jobsResponse.data.jobs.map((job) => `- ${job.name}: ${job.status}/${job.conclusion || 'none'}`);
+            const body = [
+              '## URAI canonical production receipt',
+              '',
+              `- Release SHA: \`${releaseSha}\``,
+              `- Workflow run: ${run.html_url}`,
+              `- Run ID: \`${run.id}\``,
+              `- Status: \`${run.status}\``,
+              `- Conclusion: \`${run.conclusion || 'none'}\``,
+              '',
+              '### Jobs',
+              ...jobLines
+            ].join('\n');
+
+            await github.rest.issues.create({
+              owner,
+              repo,
+              title: `Production receipt ${releaseSha.slice(0, 12)} — ${run.conclusion || run.status}`,
+              body
+            });
+            core.summary.addRaw(body).write();
+            if (run.conclusion !== 'success') core.setFailed(`Canonical production run concluded ${run.conclusion || run.status}`);
