@@ -45,7 +45,7 @@ export default function FocusChamberClient() {
     <div className="focusFog" aria-hidden="true" />
     <header><p>{memory.demo ? 'DEMO FIXTURE · NOT PERSONAL DATA' : `${memory.privacy} memory`}</p><h1>{memory.title}</h1><span>{dateLabel(memory.occurredAt)}</span></header>
     <section className="artifactStage" aria-label={`Selected memory ${memory.title}`}>
-      <button className="artifact" type="button" onClick={enterReplay} aria-label={`Open Replay for ${memory.title}`}>
+      <button className="artifact" type="button" onClick={enterReplay} aria-label={`Open Replay for ${memory.title}`} data-world-target="replay" data-urai-audit-action="focus-replay">
         <span className="artifactImage" aria-hidden="true" />
         <span className="artifactCore" aria-hidden="true" />
         <strong>Replay this memory</strong>
