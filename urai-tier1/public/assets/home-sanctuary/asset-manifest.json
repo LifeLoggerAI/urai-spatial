@@ -1,0 +1,85 @@
+{
+  "schema": "urai.home-sanctuary-assets.v1",
+  "authority": {
+    "repository": "LifeLoggerAI/urai-spatial",
+    "runtimeRoot": "urai-tier1",
+    "owner": "URAI Labs",
+    "license": "Proprietary work-for-hire and original in-house procedural implementation",
+    "externalAttributionRequired": false
+  },
+  "status": "in-house-authored-procedural-production-candidate",
+  "assets": [
+    {
+      "id": "sanctuary-floor",
+      "source": "HomeSpatialCanvas.tsx procedural Three.js geometry",
+      "creator": "URAI Labs",
+      "runtimePurpose": "Reflective obsidian platform, moon-silver ring system, radial energy paths and Orb socket",
+      "format": "runtime geometry",
+      "textureDimensions": null,
+      "polygonBudget": 11000,
+      "deviceTierBehavior": "Shared geometry; antialiasing, DPR and shadow resolution adapt by tier",
+      "temporary": false
+    },
+    {
+      "id": "embodied-avatar",
+      "source": "HomeSpatialCanvas.tsx procedural Three.js geometry",
+      "creator": "URAI Labs",
+      "runtimePurpose": "Abstract full-body symbolic user presence, breathing state and emotional aura",
+      "format": "runtime geometry",
+      "textureDimensions": null,
+      "polygonBudget": 9000,
+      "deviceTierBehavior": "Same semantic silhouette at every tier; motion respects reduced-motion preference",
+      "temporary": false
+    },
+    {
+      "id": "orb-companion",
+      "source": "HomeSpatialCanvas.tsx procedural Three.js geometry",
+      "creator": "URAI Labs",
+      "runtimePurpose": "Sole visible Home companion and direct interaction owner",
+      "format": "runtime geometry",
+      "textureDimensions": null,
+      "polygonBudget": 12000,
+      "deviceTierBehavior": "Same hit target and state owner at every tier",
+      "temporary": false
+    },
+    {
+      "id": "horizon-architecture",
+      "source": "HomeSpatialCanvas.tsx procedural Three.js geometry",
+      "creator": "URAI Labs",
+      "runtimePurpose": "Reachable landmark silhouettes and sanctuary depth",
+      "format": "runtime geometry",
+      "textureDimensions": null,
+      "polygonBudget": 7000,
+      "deviceTierBehavior": "Shared across tiers with adaptive shadows",
+      "temporary": false
+    },
+    {
+      "id": "layered-2d-fallback",
+      "source": "HomeSanctuaryFallback.tsx and home-sanctuary-final.css",
+      "creator": "URAI Labs",
+      "runtimePurpose": "No-WebGL, context-loss and reduced graphics sanctuary preserving identical actions",
+      "format": "HTML and CSS gradients",
+      "textureDimensions": null,
+      "polygonBudget": 0,
+      "deviceTierBehavior": "Used when WebGL is unavailable or lost",
+      "temporary": false
+    }
+  ],
+  "budgets": {
+    "adaptiveDpr": {
+      "low": [0.85, 1.0],
+      "medium": [1.0, 1.35],
+      "high": [1.0, 1.7]
+    },
+    "targetFps": {
+      "low": 24,
+      "medium": 40,
+      "high": 60
+    },
+    "textureMemoryMb": 24,
+    "firstInteractiveMsP75": 2500,
+    "longTaskMsMaximum": 200,
+    "requiredMissingAssets": 0
+  },
+  "externalArtBoundary": "No third-party, scraped, watermarked or unverifiable asset is used by this candidate. Future artist-authored GLB or KTX2 replacement must preserve this manifest, prove ownership, and pass exact-head visual and performance gates before promotion."
+}
