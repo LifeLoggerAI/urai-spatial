@@ -4,21 +4,11 @@ import { useRouter } from 'next/navigation'
 import { useCallback, useEffect, useRef } from 'react'
 import { definitionForDestination } from './destinationRegistry'
 import { useUraiWorldState } from './WorldStateProvider'
-import {
-  URAI_WORLD_RETURN_EVENT,
-  URAI_WORLD_TRAVEL_EVENT,
-} from './worldEvents'
+import { URAI_WORLD_RETURN_EVENT, URAI_WORLD_TRAVEL_EVENT } from './worldEvents'
+import { popWorldNavigationCheckpoint, pushWorldNavigationCheckpoint } from './worldNavigationStack'
 import type { UraiDestination, UraiWorldTravelRequest } from './worldTypes'
 
-const CONTEXT_KEYS = [
-  'memoryId',
-  'node',
-  'thread',
-  'personId',
-  'placeId',
-  'manifestId',
-  'privacyMode',
-] as const
+const CONTEXT_KEYS = ['memoryId', 'node', 'thread', 'personId', 'placeId', 'manifestId', 'privacyMode'] as const
 
 function prefersReducedMotion() {
   return typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches
@@ -33,16 +23,11 @@ function transitionDuration(destination: UraiDestination) {
 function buildTravelHref(request: UraiWorldTravelRequest) {
   const definition = definitionForDestination(request.destination)
   if (typeof window === 'undefined') return request.href ?? definition.href
-
   const target = new URL(request.href ?? definition.href, window.location.origin)
   const current = new URLSearchParams(window.location.search)
-
   for (const key of CONTEXT_KEYS) {
-    if (!target.searchParams.has(key) && current.has(key)) {
-      target.searchParams.set(key, current.get(key) ?? '')
-    }
+    if (!target.searchParams.has(key) && current.has(key)) target.searchParams.set(key, current.get(key) ?? '')
   }
-
   const context = request.context
   if (context?.memoryId) target.searchParams.set('memoryId', context.memoryId)
   if (context?.threadId) target.searchParams.set('thread', context.threadId)
@@ -52,7 +37,6 @@ function buildTravelHref(request: UraiWorldTravelRequest) {
   if (context?.privacyMode) target.searchParams.set('privacyMode', context.privacyMode)
   if (request.entryPortal) target.searchParams.set('entryPortal', request.entryPortal)
   if (request.cameraCheckpoint) target.searchParams.set('cameraCheckpoint', request.cameraCheckpoint)
-
   const activeMemoryId = target.searchParams.get('memoryId') ?? target.searchParams.get('node')
   if (activeMemoryId) {
     if (request.destination === 'life-map') {
@@ -63,13 +47,11 @@ function buildTravelHref(request: UraiWorldTravelRequest) {
       target.searchParams.delete('node')
     }
   }
-
   return `${target.pathname}${target.search}${target.hash}`
 }
 
 function isEditableTarget(target: EventTarget | null) {
-  if (!(target instanceof HTMLElement)) return false
-  return target.isContentEditable || target.matches('input, textarea, select, [role="textbox"]')
+  return target instanceof HTMLElement && (target.isContentEditable || target.matches('input, textarea, select, [role="textbox"]'))
 }
 
 function fallbackReturnDestination(destination: UraiDestination): UraiDestination {
@@ -87,21 +69,30 @@ export function WorldTransitionController() {
   const phaseRef = useRef(phase)
   const beginTravelRef = useRef(beginTravel)
 
-  useEffect(() => { worldRef.current = world }, [world])
-  useEffect(() => { phaseRef.current = phase }, [phase])
-  useEffect(() => { beginTravelRef.current = beginTravel }, [beginTravel])
+  useEffect(() => {
+    worldRef.current = world
+    phaseRef.current = phase
+    beginTravelRef.current = beginTravel
+  }, [beginTravel, phase, world])
 
   const clearTimer = useCallback(() => {
-    if (timer.current === null) return
-    window.clearTimeout(timer.current)
+    if (timer.current !== null) window.clearTimeout(timer.current)
     timer.current = null
   }, [])
 
-  const executeTravel = useCallback((request: UraiWorldTravelRequest) => {
+  const executeTravel = useCallback((request: UraiWorldTravelRequest, options?: { preserveStack?: boolean }) => {
     clearTimer()
     const currentWorld = worldRef.current
+    if (!options?.preserveStack) {
+      pushWorldNavigationCheckpoint(window.sessionStorage, {
+        destination: currentWorld.destination,
+        href: `${window.location.pathname}${window.location.search}${window.location.hash}`,
+        entryPortal: currentWorld.entryPortal,
+        cameraCheckpoint: currentWorld.cameraCheckpoint,
+        savedAt: Date.now(),
+      })
+    }
     beginTravelRef.current(request)
-
     if (currentWorld.destination === 'home') {
       window.sessionStorage.setItem('urai-world-home-checkpoint', JSON.stringify({
         destination: currentWorld.destination,
@@ -110,7 +101,6 @@ export function WorldTransitionController() {
         savedAt: Date.now(),
       }))
     }
-
     const href = buildTravelHref(request)
     timer.current = window.setTimeout(() => {
       router.push(href)
@@ -121,6 +111,24 @@ export function WorldTransitionController() {
   const reverseTravel = useCallback(() => {
     const currentWorld = worldRef.current
     if (phaseRef.current !== 'idle') return
+    const checkpoint = popWorldNavigationCheckpoint(window.sessionStorage)
+    if (checkpoint) {
+      executeTravel({
+        destination: checkpoint.destination,
+        href: checkpoint.href,
+        entryPortal: checkpoint.entryPortal,
+        cameraCheckpoint: checkpoint.cameraCheckpoint,
+        context: {
+          memoryId: currentWorld.memoryId,
+          threadId: currentWorld.threadId,
+          personId: currentWorld.personId,
+          placeId: currentWorld.placeId,
+          replayManifestId: currentWorld.replayManifestId,
+          privacyMode: currentWorld.privacyMode,
+        },
+      }, { preserveStack: true })
+      return
+    }
     const destination = currentWorld.previousDestination ?? fallbackReturnDestination(currentWorld.destination)
     const definition = definitionForDestination(destination)
     executeTravel({
@@ -136,7 +144,7 @@ export function WorldTransitionController() {
         replayManifestId: currentWorld.replayManifestId,
         privacyMode: currentWorld.privacyMode,
       },
-    })
+    }, { preserveStack: true })
   }, [executeTravel])
 
   useEffect(() => {
@@ -149,7 +157,6 @@ export function WorldTransitionController() {
       event.preventDefault()
       reverseTravel()
     }
-
     window.addEventListener(URAI_WORLD_TRAVEL_EVENT, onTravel)
     window.addEventListener(URAI_WORLD_RETURN_EVENT, onReturn)
     window.addEventListener('keydown', onKeyDown)
@@ -161,17 +168,5 @@ export function WorldTransitionController() {
     }
   }, [clearTimer, executeTravel, reverseTravel])
 
-  return (
-    <div
-      className="urai-world-transition"
-      data-phase={phase}
-      data-from={world.destination}
-      data-to={world.destination}
-      aria-hidden="true"
-    >
-      <span className="urai-world-transition__surface" />
-      <span className="urai-world-transition__aperture" />
-      <span className="urai-world-transition__depth" />
-    </div>
-  )
+  return <div className="urai-world-transition" data-phase={phase} data-from={world.destination} data-to={world.destination} aria-hidden="true"><span className="urai-world-transition__surface" /><span className="urai-world-transition__aperture" /><span className="urai-world-transition__depth" /></div>
 }
