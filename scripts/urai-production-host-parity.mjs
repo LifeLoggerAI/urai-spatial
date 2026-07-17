@@ -32,17 +32,31 @@ const normalizePath = (value) => {
 const failures = []
 const receipts = []
 
+function errorDetails(error) {
+  if (!(error instanceof Error)) return { message: String(error) }
+  const cause = error.cause instanceof Error
+    ? { name: error.cause.name, message: error.cause.message, code: error.cause.code || null }
+    : error.cause || null
+  return { name: error.name, message: error.message, cause }
+}
+
+async function fetchRoute(url) {
+  return fetch(url, {
+    redirect: 'follow',
+    headers: {
+      accept: 'text/html,application/xhtml+xml,application/json;q=0.9,*/*;q=0.8',
+      'user-agent': 'urai-production-host-parity/1.1',
+      connection: 'close',
+      'cache-control': 'no-cache',
+    },
+  })
+}
+
 for (const host of hosts) {
   for (const routePath of routePaths) {
     const requested = new URL(routePath, host)
     try {
-      const response = await fetch(requested, {
-        redirect: 'follow',
-        headers: {
-          accept: 'text/html,application/xhtml+xml,application/json;q=0.9,*/*;q=0.8',
-          'user-agent': 'urai-production-host-parity/1.0',
-        },
-      })
+      const response = await fetchRoute(requested)
       const body = await response.text()
       const finalUrl = new URL(response.url)
       const routeKey = normalizePath(requested.pathname)
@@ -76,7 +90,7 @@ for (const host of hosts) {
     } catch (error) {
       const receipt = {
         requestedUrl: requested.toString(),
-        error: error instanceof Error ? error.message : String(error),
+        error: errorDetails(error),
       }
       receipts.push(receipt)
       failures.push(JSON.stringify(receipt))
