@@ -172,7 +172,7 @@ function Scene({ reducedMotion, onOrbOpen, onGroundOpen }: { reducedMotion: bool
 
 export default function HomeSpatialCanvas({ onOrbOpen, webglAvailable }: HomeSpatialCanvasProps) {
   const reducedMotion = useReducedMotion()
-  const onGroundOpen = useCallback(() => requestUraiWorldTravel({ destination: 'ground', href: '/ground/', entryPortal: 'home-ground-gateway', cameraCheckpoint: 'home:ground' }), [])
+  const onGroundOpen = useCallback(() => requestUraiWorldTravel({ destination: 'infrastructure-hub', href: '/ground/', entryPortal: 'home-ground-gateway', cameraCheckpoint: 'home:ground' }), [])
   useEffect(() => () => { document.body.style.cursor = 'default' }, [])
   if (!webglAvailable) return null
   return <div className="urai-home-spatial-canvas-shell" data-home-spatial-renderer="webgl" data-webgl-ready="true" data-home-spatial-geometry="terrain-orb-ground-gateway" data-home-spatial-atmosphere="layered" data-tier0-ground-gateway="true" aria-label="Interactive spatial Home world">
