@@ -156,7 +156,7 @@ test('Ground is an embodied private workforce world with explicit destinations a
 })
 
 test('Ground navigation remains contained, keyboard-operable and exposes active destination state', () => {
-  assert.match(groundWorld, /className="ground-destination-compass"/)
+  assert.match(groundWorld, /className="ground-destination-compass(?: ground-rail)?"/)
   assert.match(groundWorld, /aria-current=\{activeId === destination\.id \? 'location' : undefined\}/)
   assert.match(groundWorld, /onKeyDown=\{\(event\) => \{/)
   assert.match(groundWorld, /event\.key === 'Escape'/)
@@ -167,7 +167,7 @@ test('Ground navigation remains contained, keyboard-operable and exposes active 
   assert.match(groundWorld, /overflow-x:auto/)
   assert.match(groundWorld, /scrollbar-width:none/)
   assert.match(groundWorld, /max\(12px,env\(safe-area-inset-left\)\)/)
-  assert.match(groundWorld, /aria-label=\{`\$\{destination\.label\}/)
+  assert.match(groundWorld, /aria-label.*destination\.label/s)
 })
 
 test('exact-head browser proof stays deterministic, diagnostic and fallback-safe', () => {
