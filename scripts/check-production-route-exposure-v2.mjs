@@ -42,7 +42,7 @@ requireTokens('urai-tier1/src/app/privacy-controls/page.tsx', ["title: 'URAI Pri
 
 const focusRoutePath = 'urai-tier1/src/app/focus/page.tsx'
 const focusRouteSource = read(focusRoutePath)
-const focusImport = focusRouteSource.match(/import\s+([A-Za-z_$][\w$]*)\s+from\s+['"]\.\/FocusChamberClient['"]/)
+const focusImport = focusRouteSource.match(/import\s+([A-Za-z_$][\w$]*)\s+from\s+['"]\.\/FocusChamberClient['"]/) 
 if (!focusImport) {
   failures.push(`${focusRoutePath} must default-import ./FocusChamberClient`)
 } else {
@@ -50,7 +50,17 @@ if (!focusImport) {
   if (!focusRouteSource.includes(`return <${focusImport[1]} />`)) failures.push(`${focusRoutePath} must directly render the imported FocusChamberClient component`)
 }
 
-requireTokens('urai-tier1/src/app/focus/FocusChamberClient.tsx', ['data-testid="urai-final-focus-chamber"', 'data-route-polish="selected-memory-camera-chamber"', 'Selected memory chamber.', "next.set('memoryId', memoryId)", "next.set('manifestId', manifestId)", "next.set('node', node)"])
+requireTokens('urai-tier1/src/app/focus/FocusChamberClient.tsx', [
+  'data-testid="urai-final-focus-chamber"',
+  'data-route-polish="selected-memory-camera-chamber"',
+  'data-canon="camera-from-life-map-entered-memory-world"',
+  'requestUraiWorldTravel({',
+  "destination: 'replay'",
+  "entryPortal: 'focus-memory-aperture'",
+  'replayManifestId: manifestId',
+  'requestUraiWorldReturn()',
+  'aria-label={`Enter Replay for ${memoryName}`}',
+])
 requireTokens('urai-tier1/src/app/layout.tsx', ['NEXT_PUBLIC_URAI_BUILD_SHA', "'urai-deployed-sha': deployedSha", 'data-deployed-sha={deployedSha}', "data-deployment-evidence={deployedSha === 'unverified' ? 'missing' : 'embedded'}"])
 
 const staticConfig = JSON.parse(read('firebase.static.json') || '{}').hosting || {}
