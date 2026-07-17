@@ -12,7 +12,7 @@ const cases = [
 ]
 const doorways = [
   { id: 'ground', destination: '/ground', name: 'Open the ground and descend into Hidden Infrastructure' },
-  { id: 'life-map', destination: '/life-map', name: 'Life Map' },
+  { id: 'life-map', destination: '/life-map', name: 'Ascend to Life Map' },
 ]
 if (!/^[0-9a-f]{40}$/.test(exactSha)) throw new Error('Exact source SHA required')
 const normalize = (value) => new URL(value).pathname.replace(/\/$/, '') || '/'
@@ -26,18 +26,6 @@ async function activate(target, method, position) {
   return target.press('Enter', { noWaitAfter: true })
 }
 
-async function resolveTarget(page, doorway, method) {
-  if (doorway.id === 'ground') return page.getByRole('button', { name: doorway.name, exact: true })
-
-  const orb = page.getByRole('button', { name: 'Open Orb travel controls', exact: true })
-  await orb.waitFor({ state: 'visible', timeout: 15000 })
-  await activate(orb, method)
-
-  const destination = page.getByRole('button', { name: doorway.name, exact: true })
-  await destination.waitFor({ state: 'visible', timeout: 15000 })
-  return destination
-}
-
 function safeGroundPosition(box) {
   return {
     x: Math.max(24, Math.min(box.width * 0.18, box.width - 24)),
@@ -45,19 +33,47 @@ function safeGroundPosition(box) {
   }
 }
 
+function safeSkyPosition(box) {
+  return {
+    x: Math.max(24, Math.min(box.width * 0.5, box.width - 24)),
+    y: Math.max(24, Math.min(box.height * 0.18, box.height - 24)),
+  }
+}
+
+async function resolveActivation(page, doorway, method) {
+  if (doorway.id === 'ground') {
+    const target = page.getByRole('button', { name: doorway.name, exact: true })
+    await target.waitFor({ state: 'attached', timeout: 15000 })
+    const box = await target.boundingBox()
+    if (!box || box.width < 44 || box.height < 44) throw new Error(`invalid Ground hit target ${JSON.stringify(box)}`)
+    return { target, position: method === 'keyboard' ? undefined : safeGroundPosition(box), owner: 'ground-gateway' }
+  }
+
+  if (method === 'keyboard') {
+    const target = page.getByRole('button', { name: doorway.name, exact: true })
+    await target.waitFor({ state: 'attached', timeout: 15000 })
+    return { target, position: undefined, owner: 'semantic-sky-control' }
+  }
+
+  const target = page.locator('[data-home-spatial-renderer="webgl"] canvas').first()
+  await target.waitFor({ state: 'visible', timeout: 15000 })
+  const box = await target.boundingBox()
+  if (!box || box.width < 240 || box.height < 240) throw new Error(`invalid Home canvas ${JSON.stringify(box)}`)
+  return { target, position: safeSkyPosition(box), owner: 'rendered-sky' }
+}
+
 async function prove(browser, doorway, testCase) {
   const context = await browser.newContext({ viewport: testCase.viewport, isMobile: !!testCase.isMobile, hasTouch: !!testCase.hasTouch, deviceScaleFactor: testCase.isMobile ? 2 : 1 })
   const page = await context.newPage()
   const screenshot = `screenshots/${testCase.device}-${testCase.method}-home-to-${doorway.id}.png`
-  const record = { exactSha, sourceRoute: '/home', destinationRoute: doorway.destination, device: testCase.device, activationMethod: testCase.method, viewport: testCase.viewport, targetAccessibleName: doorway.name, resultingUrl: '', screenshot, success: false, failureReason: '' }
+  const record = { exactSha, sourceRoute: '/home', destinationRoute: doorway.destination, device: testCase.device, activationMethod: testCase.method, viewport: testCase.viewport, targetAccessibleName: doorway.name, interactionOwner: '', resultingUrl: '', screenshot, success: false, failureReason: '' }
   try {
     await page.goto(`${baseUrl}/home`, { waitUntil: 'domcontentloaded', timeout: 60000 })
     await page.waitForLoadState('networkidle', { timeout: 15000 }).catch(() => {})
-    const target = await resolveTarget(page, doorway, testCase.method)
-    const box = await target.boundingBox()
-    if (!box || box.width < 44 || box.height < 44) throw new Error(`invalid hit target ${JSON.stringify(box)}`)
-    const position = doorway.id === 'ground' && testCase.method !== 'keyboard' ? safeGroundPosition(box) : undefined
-    await activate(target, testCase.method, position)
+    await page.locator('[data-urai-home-runtime="single-authoritative-sanctuary"]').waitFor({ state: 'attached', timeout: 15000 })
+    const activation = await resolveActivation(page, doorway, testCase.method)
+    record.interactionOwner = activation.owner
+    await activate(activation.target, testCase.method, activation.position)
     await page.waitForURL((url) => normalize(url.toString()) === doorway.destination, { timeout: 20000 })
     record.resultingUrl = page.url()
     await page.screenshot({ path: path.join(outDir, screenshot), animations: 'disabled' })
@@ -80,7 +96,7 @@ try {
   await browser.close()
 }
 const errors = interactions.filter((item) => !item.success).map((item) => `${item.device}:${item.activationMethod}:${item.destinationRoute}: ${item.failureReason}`)
-const receipt = { schemaVersion: 3, exactSha, baseUrl, createdAt: new Date().toISOString(), persistentWorldCanon: true, directDestinationNavigationPermitted: false, interactions, status: errors.length ? 'failed' : 'passed', errors }
+const receipt = { schemaVersion: 4, exactSha, baseUrl, createdAt: new Date().toISOString(), persistentWorldCanon: true, directDestinationNavigationPermitted: false, interactions, status: errors.length ? 'failed' : 'passed', errors }
 await fs.writeFile(path.join(outDir, 'native-doorway-receipt.json'), `${JSON.stringify(receipt, null, 2)}\n`)
 console.log(errors.length ? 'NATIVE_DOORWAY_PROOF_FAILED' : 'NATIVE_DOORWAY_PROOF_PASSED')
 console.log(JSON.stringify(receipt, null, 2))
