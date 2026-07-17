@@ -18,13 +18,24 @@ const PRIMARY_DESTINATIONS: readonly UraiDestination[] = [
   'replay',
 ]
 
+const SECONDARY_DESTINATIONS: readonly UraiDestination[] = [
+  'mirror',
+  'passport',
+  'privacy-controls',
+  'location-map',
+]
+
 export function PersistentWorldCompanion() {
   const { world, phase } = useUraiWorldState()
   const [open, setOpen] = useState(false)
   const current = definitionForDestination(world.destination)
 
-  const destinations = useMemo(
+  const primaryDestinations = useMemo(
     () => PRIMARY_DESTINATIONS.map((id) => URAI_DESTINATION_REGISTRY[id]),
+    [],
+  )
+  const secondaryDestinations = useMemo(
+    () => SECONDARY_DESTINATIONS.map((id) => URAI_DESTINATION_REGISTRY[id]),
     [],
   )
 
@@ -71,6 +82,19 @@ export function PersistentWorldCompanion() {
     setOpen(false)
   }, [phase, world.destination])
 
+  const destinationButtons = (destinations: typeof primaryDestinations) => destinations.map((destination) => (
+    <button
+      key={destination.id}
+      type="button"
+      disabled={phase !== 'idle'}
+      data-active={destination.id === world.destination ? 'true' : 'false'}
+      aria-current={destination.id === world.destination ? 'page' : undefined}
+      onClick={() => travel(destination.id)}
+    >
+      {destination.label}
+    </button>
+  ))
+
   return (
     <aside
       className="urai-world-companion"
@@ -81,29 +105,23 @@ export function PersistentWorldCompanion() {
       <div className="urai-world-companion__menu" aria-hidden={!open}>
         <p>{current.label}</p>
         <nav aria-label="Travel through the URAI world">
-          {destinations.map((destination) => (
-            <button
-              key={destination.id}
-              type="button"
-              disabled={phase !== 'idle'}
-              data-active={destination.id === world.destination ? 'true' : 'false'}
-              aria-current={destination.id === world.destination ? 'page' : undefined}
-              onClick={() => travel(destination.id)}
-            >
-              {destination.label}
-            </button>
-          ))}
-          {world.destination !== 'home' ? (
-            <button
-              type="button"
-              disabled={phase !== 'idle'}
-              data-return="true"
-              onClick={returnThroughWorld}
-            >
-              Return
-            </button>
-          ) : null}
+          {destinationButtons(primaryDestinations)}
         </nav>
+        <nav className="urai-world-companion__secondary" aria-label="Travel to private URAI realms">
+          {destinationButtons(secondaryDestinations)}
+        </nav>
+        {world.destination !== 'home' ? (
+          <button
+            type="button"
+            className="urai-world-companion__return"
+            aria-label="Return through the world"
+            disabled={phase !== 'idle'}
+            data-return="true"
+            onClick={returnThroughWorld}
+          >
+            Return
+          </button>
+        ) : null}
       </div>
       <button
         type="button"
