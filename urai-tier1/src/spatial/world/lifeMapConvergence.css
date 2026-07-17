@@ -46,13 +46,12 @@
   bottom: max(16px, env(safe-area-inset-bottom));
 }
 
-/* A restored selected-memory deep link already owns the contextual Focus and
-   Replay actions. Keep the persistent Orb available, but do not show a second
-   competing action panel over the same memory. */
+/* Selected-memory controls own only the local Focus and Replay actions.
+   The persistent Orb remains the global travel owner and must keep its menu usable. */
 body:has(.urai-lifemap-deep-link-controls)
   .urai-world-runtime[data-world-destination='life-map']
   .urai-world-companion__menu {
-  display: none !important;
+  z-index: 80;
 }
 
 @media (max-width: 760px) {
