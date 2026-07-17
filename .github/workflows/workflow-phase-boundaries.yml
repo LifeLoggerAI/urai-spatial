@@ -54,11 +54,11 @@ jobs:
         run: node scripts/check-workflow-phase-boundaries.mjs
 
   aaa-proof:
-    name: Exact selected-head AAA proof
-    if: ${{ github.event_name == 'pull_request' || github.event_name == 'workflow_dispatch' }}
+    name: Exact PR-head AAA proof
+    if: ${{ github.event_name == 'pull_request' }}
     needs: verify
     uses: ./.github/workflows/aaa-final-proof.yml
     with:
-      target_sha: ${{ github.event.pull_request.head.sha || github.sha }}
+      target_sha: ${{ github.event.pull_request.head.sha }}
       base_url: http://127.0.0.1:4173
       screenshots: "true"
