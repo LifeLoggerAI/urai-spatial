@@ -173,7 +173,7 @@ export function parseSelectedMemory(raw: Record<string, unknown>, expectedOwnerI
     return { status: 'corrupt', memory: null, message: 'This memory is incomplete and cannot be opened safely.' }
   }
 
-  const segments = replaySegments.flatMap((item) => {
+  const segments: SelectedMemoryReplaySegment[] = replaySegments.flatMap((item): SelectedMemoryReplaySegment[] => {
     if (!item || typeof item !== 'object') return []
     const value = item as Record<string, unknown>
     const segmentId = value.id
