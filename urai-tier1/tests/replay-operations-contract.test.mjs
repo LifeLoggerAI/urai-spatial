@@ -5,6 +5,7 @@ import {
   executeReplayOperation,
   flushReplayOperationQueue,
   readReplayOperationState,
+  rollbackReplayOperation,
   writeReplayOperationState,
 } from '../src/spatial/replay/replayOperations.ts'
 
@@ -56,6 +57,16 @@ test('rolls back a failed optimistic operation without erasing prior accepted hi
   assert.equal(result.saved, true)
   assert.equal(result.hidden, false)
   assert.equal(result.audit.length, 1)
+  assert.equal(result.error, 'offline')
+})
+
+test('rollback preserves accepted state that is older than the bounded audit window', () => {
+  const optimisticBase = { saved: true, hidden: false, pending: [], audit: [] }
+  const hide = { ...baseOperation, id: 'op-2', kind: 'hide', createdAt: '2026-07-17T13:01:00.000Z' }
+  const optimistic = applyReplayOperation(optimisticBase, hide)
+  const result = rollbackReplayOperation(optimistic, hide, 'offline', optimisticBase)
+  assert.equal(result.saved, true)
+  assert.equal(result.hidden, false)
   assert.equal(result.error, 'offline')
 })
 
@@ -114,7 +125,7 @@ test('drops malformed corrections and operations from untrusted storage', () => 
   assert.deepEqual(state.audit, [])
 })
 
-test('restricted or full storage does not crash replay operations', async () => {
+test('restricted or full storage does not crash replay operations or erase successful state', async () => {
   const storage = {
     getItem() { return null },
     setItem() { throw new Error('QuotaExceededError') },
@@ -122,5 +133,7 @@ test('restricted or full storage does not crash replay operations', async () => 
   }
   assert.equal(writeReplayOperationState(storage, 'owner-1', 'memory-1', emptyState()), false)
   const result = await executeReplayOperation({ storage, operation: baseOperation, transport: { async persist() {} } })
+  assert.equal(result.saved, true)
   assert.equal(result.pending.length, 0)
+  assert.equal(result.audit.length, 1)
 })
