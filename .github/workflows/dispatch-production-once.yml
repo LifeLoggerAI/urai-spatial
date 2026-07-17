@@ -18,7 +18,7 @@ jobs:
         uses: actions/github-script@v7
         with:
           script: |
-            // Redispatch the exact latest main after parity evidence landed.
+            // Dispatch the hosting parity repair from the exact latest main authority.
             await github.rest.actions.createWorkflowDispatch({
               owner: context.repo.owner,
               repo: context.repo.repo,
