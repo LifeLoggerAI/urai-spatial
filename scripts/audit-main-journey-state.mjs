@@ -33,9 +33,15 @@ requireMatch('Replay route', replayRoute, /CinematicReplayClient/)
 for (const token of ['memoryId', 'manifestId', 'node']) {
   requireMatch(`Focus reads ${token}`, focusClient, new RegExp(`params\\.get\\('${token}'\\)`))
   requireMatch(`Replay reads ${token}`, replayClient, new RegExp(`params\\.get\\('${token}'\\)`))
-  requireMatch(`Focus forwards ${token}`, focusClient, new RegExp(`next\\.set\\('${token}', ${token}\\)`))
   requireMatch(`Replay returns ${token}`, replayClient, new RegExp(`next\\.set\\('${token}', ${token}\\)`))
 }
+
+requireMatch('Focus forwards complete identity', focusClient, /new URLSearchParams\(\{ memoryId, manifestId, node, from: 'focus-camera' \}\)/)
+requireMatch('Focus enters Replay through world travel', focusClient, /requestUraiWorldTravel\(\{/)
+requireMatch('Focus Replay destination', focusClient, /destination: 'replay'/)
+requireMatch('Focus Replay manifest context', focusClient, /replayManifestId: manifestId/)
+requireMatch('Focus Replay portal accessibility', focusClient, /aria-label={`Enter Replay for \${memoryName}`}/)
+requireMatch('Focus deterministic world return', focusClient, /requestUraiWorldReturn\(\)/)
 
 requireMatch('Focus session memory receipt', focusClient, /urai-focus-memory-id/)
 requireMatch('Focus session manifest receipt', focusClient, /urai-focus-manifest-id/)
@@ -45,14 +51,14 @@ requireMatch('Replay session manifest receipt', replayClient, /urai-replay-retur
 requireMatch('Replay session node receipt', replayClient, /urai-replay-return-node/)
 requireMatch('Replay direct-navigation fallback', replayClient, /window\.location\.assign\(target\)/)
 requireMatch('Replay Escape return', replayClient, /event\.key === 'Escape'/)
-requireMatch('Focus Life Map return', focusClient, /return `\/life-map\?\$\{next\.toString\(\)\}`/)
+requireMatch('Replay Focus return URL', replayClient, /return `\/focus\?\$\{next\.toString\(\)\}`/)
 
 forbidMatch('Focus client', focusClient, /href="\/replay\?memoryId=quiet-reset/)
 forbidMatch('Replay client', replayClient, /function focusReturnUrl\(manifestId: string\)/)
 
 const result = {
   ok: failures.length === 0,
-  contract: 'home-life-map-focus-replay-return-v2',
+  contract: 'home-life-map-focus-replay-return-v3',
   requiredState: ['memoryId', 'manifestId', 'node'],
   failures,
 }
