@@ -1,7 +1,8 @@
-import type { UraiDestination } from './worldTypes'
+import { URAI_DESTINATIONS, type UraiDestination } from './worldTypes'
 
 const STORAGE_KEY = 'urai-world-navigation-stack-v1'
 const MAX_DEPTH = 16
+const DESTINATIONS = new Set<string>(URAI_DESTINATIONS)
 
 export type UraiWorldNavigationCheckpoint = {
   destination: UraiDestination
@@ -15,6 +16,7 @@ function isCheckpoint(value: unknown): value is UraiWorldNavigationCheckpoint {
   if (!value || typeof value !== 'object') return false
   const checkpoint = value as Partial<UraiWorldNavigationCheckpoint>
   return typeof checkpoint.destination === 'string'
+    && DESTINATIONS.has(checkpoint.destination)
     && typeof checkpoint.href === 'string'
     && typeof checkpoint.savedAt === 'number'
 }
@@ -37,7 +39,11 @@ export function writeWorldNavigationStack(storage: Pick<Storage, 'setItem'>, sta
 export function pushWorldNavigationCheckpoint(storage: Pick<Storage, 'getItem' | 'setItem'>, checkpoint: UraiWorldNavigationCheckpoint) {
   const stack = readWorldNavigationStack(storage)
   const previous = stack.at(-1)
-  if (previous?.destination === checkpoint.destination && previous.href === checkpoint.href) return stack
+  if (previous?.destination === checkpoint.destination && previous.href === checkpoint.href) {
+    const next = [...stack.slice(0, -1), checkpoint]
+    writeWorldNavigationStack(storage, next)
+    return next
+  }
   const next = [...stack, checkpoint].slice(-MAX_DEPTH)
   writeWorldNavigationStack(storage, next)
   return next
