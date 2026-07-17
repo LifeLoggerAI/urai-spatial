@@ -9,6 +9,8 @@ const expectedSha = (process.env.URAI_EXPECTED_DEPLOYED_SHA || '').trim()
 const expectedRollbackSha = (process.env.URAI_EXPECTED_ROLLBACK_SHA || process.env.ROLLBACK_SHA || '').trim()
 const expectedAuthoritySha = (process.env.URAI_EXPECTED_AUTHORITY_SHA || process.env.CURRENT_MAIN_SHA || '').trim()
 const receiptPath = process.env.URAI_LIVE_RECEIPT_PATH || 'deployment-receipt/live-content-parity.json'
+const maxAttempts = Number.parseInt(process.env.URAI_SMOKE_FETCH_ATTEMPTS || '4', 10)
+const retryBaseMs = Number.parseInt(process.env.URAI_SMOKE_RETRY_BASE_MS || '750', 10)
 
 if (!baseUrl) throw new Error('URAI_DEPLOY_URL is required')
 const canonicalOrigin = new URL(baseUrl).origin
@@ -17,6 +19,8 @@ if (!/^[0-9a-f]{40}$/.test(expectedSha)) throw new Error('URAI_EXPECTED_DEPLOYED
 if (!/^[0-9a-f]{40}$/.test(expectedRollbackSha)) throw new Error('URAI_EXPECTED_ROLLBACK_SHA must be a full lowercase SHA')
 if (!/^[0-9a-f]{40}$/.test(expectedAuthoritySha)) throw new Error('URAI_EXPECTED_AUTHORITY_SHA or CURRENT_MAIN_SHA must be a full lowercase SHA')
 if (expectedRollbackSha === expectedSha) throw new Error('Rollback SHA must be distinct from deployed SHA')
+if (!Number.isInteger(maxAttempts) || maxAttempts < 1 || maxAttempts > 8) throw new Error('URAI_SMOKE_FETCH_ATTEMPTS must be an integer from 1 to 8')
+if (!Number.isInteger(retryBaseMs) || retryBaseMs < 100 || retryBaseMs > 10_000) throw new Error('URAI_SMOKE_RETRY_BASE_MS must be an integer from 100 to 10000')
 
 const contracts = [
   ['/', ['aaa-final-home-sky-ground-orb-body-portals', 'Own your life.', 'Ground', 'Life Map'], []],
@@ -53,16 +57,41 @@ function deployedSha(response, html) {
   return (header || bodyMarker || metaMarker || '').trim()
 }
 
+function sleep(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms))
+}
+
+async function fetchTextWithRetries(url, options) {
+  let lastError
+  for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
+    try {
+      const response = await fetch(url, {
+        ...options,
+        signal: AbortSignal.timeout(20_000),
+      })
+      const text = await response.text()
+      if (response.status >= 500 && attempt < maxAttempts) {
+        await sleep(retryBaseMs * attempt)
+        continue
+      }
+      return { response, text, attemptsUsed: attempt }
+    } catch (error) {
+      lastError = error
+      if (attempt === maxAttempts) break
+      await sleep(retryBaseMs * attempt)
+    }
+  }
+  throw Object.assign(lastError instanceof Error ? lastError : new Error(String(lastError)), { attemptsUsed: maxAttempts })
+}
+
 async function fetchFingerprint() {
   const url = new URL('/release-fingerprint.json', `${baseUrl}/`)
-  const response = await fetch(url, {
+  const { response, text, attemptsUsed } = await fetchTextWithRetries(url, {
     redirect: 'manual',
     cache: 'no-store',
-    signal: AbortSignal.timeout(20_000),
-    headers: { 'cache-control': 'no-cache', 'user-agent': 'urai-static-release-verifier/2.2' },
+    headers: { 'cache-control': 'no-cache', 'user-agent': 'urai-static-release-verifier/2.3' },
   })
   const finalUrl = new URL(response.url)
-  const text = await response.text()
   let payload = null
   try { payload = JSON.parse(text) } catch {}
   const passed = response.ok
@@ -83,6 +112,7 @@ async function fetchFingerprint() {
     status: response.status,
     contentSha256: createHash('sha256').update(text).digest('hex'),
     payload,
+    attemptsUsed,
     passed,
   }
 }
@@ -92,13 +122,11 @@ for (const [route, required, forbidden] of contracts) {
   for (const requested of variants(route)) {
     const startedAt = new Date().toISOString()
     try {
-      const response = await fetch(requested, {
+      const { response, text: html, attemptsUsed } = await fetchTextWithRetries(requested, {
         redirect: 'follow',
         cache: 'no-store',
-        signal: AbortSignal.timeout(20_000),
-        headers: { 'cache-control': 'no-cache', 'user-agent': 'urai-static-release-verifier/2.2' },
+        headers: { 'cache-control': 'no-cache', 'user-agent': 'urai-static-release-verifier/2.3' },
       })
-      const html = await response.text()
       const finalUrl = new URL(response.url)
       const sha = deployedSha(response, html)
       const missing = required.filter((marker) => !html.includes(marker))
@@ -123,6 +151,7 @@ for (const [route, required, forbidden] of contracts) {
         bytes: Buffer.byteLength(html),
         deployedSha: sha || null,
         expectedSha,
+        attemptsUsed,
         missingMarkers: missing,
         forbiddenMarkers: stale,
         passed,
@@ -134,6 +163,7 @@ for (const [route, required, forbidden] of contracts) {
         startedAt,
         completedAt: new Date().toISOString(),
         error: error instanceof Error ? error.message : String(error),
+        attemptsUsed: error?.attemptsUsed || maxAttempts,
         expectedSha,
         passed: false,
       })
@@ -145,7 +175,11 @@ let fingerprint
 try {
   fingerprint = await fetchFingerprint()
 } catch (error) {
-  fingerprint = { error: error instanceof Error ? error.message : String(error), passed: false }
+  fingerprint = {
+    error: error instanceof Error ? error.message : String(error),
+    attemptsUsed: error?.attemptsUsed || maxAttempts,
+    passed: false,
+  }
 }
 
 const passed = results.every((result) => result.passed) && fingerprint.passed
@@ -158,6 +192,7 @@ const receipt = {
   expectedAuthoritySha,
   routeContracts: contracts.length,
   checkedVariants: results.length,
+  fetchPolicy: { maxAttempts, retryBaseMs },
   hydratedIdentityProof: 'scripts/urai-release-control-smoke.mjs',
   fingerprint,
   passed,
