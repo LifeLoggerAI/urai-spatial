@@ -23,10 +23,12 @@ test('duplicate-owner visual recovery and suppression rules stay retired', () =>
   assert.doesNotMatch(ownerCss, /uraiAutoFocus|uraiAutoReplay/)
 })
 
-test('Home mounts the DOM world only as a no-WebGL fallback', () => {
+test('Home retains a complete semantic fallback until WebGL is positively confirmed', () => {
   assert.match(homeOwner, /useWebGLAvailable/)
-  assert.match(homeOwner, /webglAvailable === true\) return null/)
-  assert.match(homeOwner, /return <HomeSpatialWorldFinal \/>/)
+  assert.match(homeOwner, /mounted && webglAvailable === true\) return null/)
+  assert.match(homeOwner, /data-testid="urai-home-accessible-fallback"/)
+  assert.match(homeOwner, /data-webgl-state=\{!mounted \|\| webglAvailable === null \? 'detecting' : 'unavailable'\}/)
+  assert.match(homeOwner, /<HomeSpatialWorldFinal \/>/)
 })
 
 test('WebGL Home contains neither tutorial chrome nor a second DOM Orb control', () => {
