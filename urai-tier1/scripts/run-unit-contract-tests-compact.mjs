@@ -28,6 +28,7 @@ const tests = [
   'tests/replay-memory-theater-contract.test.mjs',
   'tests/replay-mobile-control-clearance-contract.test.mjs',
   'tests/route-owner-exclusivity-contract.test.mjs',
+  'tests/selected-memory-production-contract.test.mjs',
   'tests/sensory-asset-resolution-contract.test.mjs',
   'tests/spatial-launch-boundaries.test.mjs',
   'tests/tier0-world-navigation-canon.test.mjs',
@@ -43,9 +44,7 @@ for (const testPath of tests) {
     console.error(`MISSING ${testPath}`)
     process.exit(1)
   }
-  const result = spawnSync(process.execPath, ['--import', 'tsx', '--test', testPath], {
-    encoding: 'utf8',
-  })
+  const result = spawnSync(process.execPath, ['--import', 'tsx', '--test', testPath], { encoding: 'utf8' })
   if (result.status === 0) {
     console.log(`PASS ${testPath}`)
     continue
