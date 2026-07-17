@@ -37,6 +37,10 @@ const replacements = new Map([
     '    const found = await firstVisible(page, check.selectors)',
     "    let found = await firstVisible(page, check.selectors)\n    if (!found) {\n      const orb = page.locator('button[aria-label=\"Open Orb travel controls\"]')\n      if (await orb.isVisible({ timeout: 1200 }).catch(() => false)) {\n        await orb.click({ timeout: 10000 })\n        await page.waitForTimeout(250)\n        found = await firstVisible(page, check.selectors)\n      }\n    }",
   ],
+  [
+    '      const action = await clickOrFollowHref(page, found.locator)',
+    "      const action = await clickOrFollowHref(page, found.locator)\n      await page.waitForURL((url) => url.toString().includes(check.expected), { timeout: 7000 }).catch(() => {})",
+  ],
 ])
 
 let source = readFileSync(sourcePath, 'utf8')
