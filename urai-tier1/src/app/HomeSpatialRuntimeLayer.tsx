@@ -9,13 +9,24 @@ export default function HomeSpatialRuntimeLayer() {
   const pathname = usePathname() ?? '/'
   const normalizedPathname = pathname.replace(/\/+$/, '') || '/'
   const webglAvailable = useWebGLAvailable()
+  const homeRuntimeActive = (normalizedPathname === '/' || normalizedPathname === '/home') && webglAvailable === true
 
-  useEffect(() => () => {
+  useEffect(() => {
     document.body.style.cursor = 'default'
-  }, [])
 
-  if (normalizedPathname !== '/' && normalizedPathname !== '/home') return null
-  if (webglAvailable !== true) return null
+    if (!homeRuntimeActive) {
+      document.body.classList.remove('urai-home-webgl-active')
+      return
+    }
+
+    document.body.classList.add('urai-home-webgl-active')
+    return () => {
+      document.body.classList.remove('urai-home-webgl-active')
+      document.body.style.cursor = 'default'
+    }
+  }, [homeRuntimeActive])
+
+  if (!homeRuntimeActive) return null
 
   return (
     <section
@@ -24,7 +35,7 @@ export default function HomeSpatialRuntimeLayer() {
       data-webgl-ready="true"
       aria-label="URAI living spatial Home"
     >
-      <HomeSpatialCanvas webglAvailable={webglAvailable} onOrbOpen={requestUraiWorldOrbOpen} />
+      <HomeSpatialCanvas webglAvailable={true} onOrbOpen={requestUraiWorldOrbOpen} />
       <style jsx global>{`
         .urai-home-spatial-runtime-layer .urai-home-spatial-canvas {
           filter: brightness(1.34) saturate(1.2) contrast(1.02);
