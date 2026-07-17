@@ -24,43 +24,59 @@ const selectedMemoryAfter = `async function chooseVisibleLifeMapStar(page) {
   if (!box) return false
 `
 
+const selectedControlsBefore = `      const selectedControls = page.getByRole('button', { name: 'Enter Focus' })
+      const selectedMemoryControlsVisible = await selectedControls.count() >= 1 && await selectedControls.first().isVisible()
+      const replayControl = page.getByRole('button', { name: 'Replay' })
+`
+
+const selectedControlsAfter = `      const routeOwnedFocus = page.getByRole('button', { name: 'Enter Focus' })
+      const persistentOrbFocus = page.getByRole('button', { name: 'Focus', exact: true })
+      const selectedMemoryControlsVisible = (
+        await routeOwnedFocus.count() >= 1 && await routeOwnedFocus.first().isVisible()
+      ) || (
+        await persistentOrbFocus.count() >= 1 && await persistentOrbFocus.first().isVisible()
+      )
+      const replayControl = page.getByRole('button', { name: 'Replay' })
+`
+
 const homeBefore = `      const sceneLabels = page.locator('.urai-home-spatial-portal-label')
-      const sceneLabelCount = await sceneLabels.count()
-      const visibleSceneLabelCount = await visibleElementCount(sceneLabels)
-      const orbLabelVisible = sceneLabelCount === 1 && visibleSceneLabelCount === 1
+       const sceneLabelCount = await sceneLabels.count()
+       const visibleSceneLabelCount = await visibleElementCount(sceneLabels)
+       const orbLabelVisible = sceneLabelCount === 1 && visibleSceneLabelCount === 1
 `
 
 const homeAfter = `      const sceneLabels = page.locator('.urai-home-spatial-portal-label')
-      const sceneLabelCount = await sceneLabels.count()
-      const visibleSceneLabelCount = await visibleElementCount(sceneLabels)
-      const portalLabelSemanticallyRetained = sceneLabelCount === 1
-      const marketingPortalLabelSuppressed = visibleSceneLabelCount === 0
+       const sceneLabelCount = await sceneLabels.count()
+       const visibleSceneLabelCount = await visibleElementCount(sceneLabels)
+       const portalLabelSemanticallyRetained = sceneLabelCount === 1
+       const marketingPortalLabelSuppressed = visibleSceneLabelCount === 0
 `
 
 const homeReturnBefore = `        orbLabelVisible,
-        permanentFeatureShortcutsAbsent,
+         permanentFeatureShortcutsAbsent,
 `
 
 const homeReturnAfter = `        portalLabelSemanticallyRetained,
-        marketingPortalLabelSuppressed,
-        permanentFeatureShortcutsAbsent,
+         marketingPortalLabelSuppressed,
+         permanentFeatureShortcutsAbsent,
 `
 
 const groundBefore = `      const activeGroundLink = rail.locator('a[aria-current="page"]')
-      const activeGroundLinkVisible = await activeGroundLink.count() === 1 && await activeGroundLink.isVisible()
-      const canvas = await canvasEvidence(page, '.ground-spatial-root canvas')
-      return { providerHidden, canvasVisible, navigationPillsStyled, navigationRailContained, activeGroundLinkVisible, canvasSized: canvas.canvasSized, ...canvas }
+       const activeGroundLinkVisible = await activeGroundLink.count() === 1 && await activeGroundLink.isVisible()
+       const canvas = await canvasEvidence(page, '.ground-spatial-root canvas')
+       return { providerHidden, canvasVisible, navigationPillsStyled, navigationRailContained, activeGroundLinkVisible, canvasSized: canvas.canvasSized, ...canvas }
 `
 
 const groundAfter = `      const activeGroundLink = rail.locator('a[aria-current="page"]')
-      const activeGroundLinkSuppressed = await visibleElementCount(activeGroundLink) === 0
-      const groundRouteOwned = new URL(page.url()).pathname.replace(/\\\/$/, '') === '/ground'
-      const canvas = await canvasEvidence(page, '.ground-spatial-root canvas')
-      return { providerHidden, canvasVisible, navigationPillsStyled, navigationRailContained, activeGroundLinkSuppressed, groundRouteOwned, canvasSized: canvas.canvasSized, ...canvas }
+       const activeGroundLinkSuppressed = await visibleElementCount(activeGroundLink) === 0
+       const groundRouteOwned = new URL(page.url()).pathname.replace(/\\\/$/, '') === '/ground'
+       const canvas = await canvasEvidence(page, '.ground-spatial-root canvas')
+       return { providerHidden, canvasVisible, navigationPillsStyled, navigationRailContained, activeGroundLinkSuppressed, groundRouteOwned, canvasSized: canvas.canvasSized, ...canvas }
 `
 
 for (const [label, expected] of [
   ['selected-memory', selectedMemoryBefore],
+  ['selected-memory controls', selectedControlsBefore],
   ['Home verifier', homeBefore],
   ['Home return receipt', homeReturnBefore],
   ['Ground verifier', groundBefore],
@@ -70,6 +86,7 @@ for (const [label, expected] of [
 
 source = source
   .replace(selectedMemoryBefore, selectedMemoryAfter)
+  .replace(selectedControlsBefore, selectedControlsAfter)
   .replace(homeBefore, homeAfter)
   .replace(homeReturnBefore, homeReturnAfter)
   .replace(groundBefore, groundAfter)
