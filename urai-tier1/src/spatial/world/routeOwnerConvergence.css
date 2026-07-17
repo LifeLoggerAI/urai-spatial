@@ -1,42 +1,7 @@
 /* Final persistent-world ownership boundary.
- * Route owners provide content; the shared world owns composition, travel and
- * the persistent Orb. Conventional page chrome must not dominate the scene.
+ * Canonical route clients own Home, Focus and Replay. The shared world owns
+ * travel and the persistent Orb; no duplicate route owner is hidden here.
  */
-
-.urai-world-runtime[data-world-destination='focus'] .uraiAutoFocus,
-.urai-world-runtime[data-world-destination='replay'] .uraiAutoReplay {
-  display: none !important;
-}
-
-/* Home must open as a place, not a landing page. The explicit body class is
- * installed by HomeSpatialRuntimeLayer and is the reliable mobile-browser
- * authority; :has remains as a progressive fallback for static proof. */
-body.urai-home-webgl-active .urai-genesis-home__hero,
-body.urai-home-webgl-active .urai-genesis-home__memory-orbit,
-body.urai-home-webgl-active .urai-genesis-home__threshold-gate,
-body.urai-home-webgl-active .urai-genesis-home__camera-ascent-signal,
-body:has(.urai-home-spatial-runtime-layer[data-webgl-ready='true']) .urai-genesis-home__hero,
-body:has(.urai-home-spatial-runtime-layer[data-webgl-ready='true']) .urai-genesis-home__memory-orbit,
-body:has(.urai-home-spatial-runtime-layer[data-webgl-ready='true']) .urai-genesis-home__threshold-gate,
-body:has(.urai-home-spatial-runtime-layer[data-webgl-ready='true']) .urai-genesis-home__camera-ascent-signal {
-  position: absolute !important;
-  width: 1px !important;
-  height: 1px !important;
-  padding: 0 !important;
-  margin: -1px !important;
-  overflow: hidden !important;
-  clip: rect(0 0 0 0) !important;
-  clip-path: inset(50%) !important;
-  white-space: nowrap !important;
-  border: 0 !important;
-  pointer-events: none !important;
-}
-
-body.urai-home-webgl-active .urai-home-spatial-world-final {
-  min-height: 100svh !important;
-  overflow: hidden !important;
-  background: #071821 !important;
-}
 
 body.urai-home-webgl-active .urai-home-spatial-runtime-layer,
 body:has(.urai-home-spatial-runtime-layer[data-webgl-ready='true']) .urai-home-spatial-runtime-layer {
@@ -53,15 +18,6 @@ body.urai-home-webgl-active .urai-home-spatial-runtime-layer canvas,
 body:has(.urai-home-spatial-runtime-layer[data-webgl-ready='true']) .urai-home-spatial-runtime-layer canvas {
   width: 100vw !important;
   height: 100svh !important;
-}
-
-/* The shared Orb is the only persistent companion control. The tiny in-world
- * DOM label and instructional copy made the scene read like a tutorial/demo. */
-body.urai-home-webgl-active .urai-home-spatial-portal-label,
-body.urai-home-webgl-active .urai-home-spatial-instruction,
-body:has(.urai-home-spatial-runtime-layer[data-webgl-ready='true']) .urai-home-spatial-portal-label,
-body:has(.urai-home-spatial-runtime-layer[data-webgl-ready='true']) .urai-home-spatial-instruction {
-  display: none !important;
 }
 
 /* Ground is a realm, not a miniature dashboard. Route chrome remains available
@@ -95,12 +51,6 @@ body:has(.urai-home-spatial-runtime-layer[data-webgl-ready='true']) .urai-home-s
 }
 
 @media (max-width: 760px) {
-  body.urai-home-webgl-active .urai-home-spatial-runtime-layer .urai-home-spatial-canvas,
-  body:has(.urai-home-spatial-runtime-layer[data-webgl-ready='true']) .urai-home-spatial-runtime-layer .urai-home-spatial-canvas {
-    transform: scale(1.34) translateY(-5svh) !important;
-    transform-origin: 50% 56% !important;
-  }
-
   .urai-world-runtime[data-world-destination='infrastructure-hub'] .ground-spatial-root canvas {
     transform: scale(1.22) translateY(-1.5svh);
     transform-origin: 50% 54%;
@@ -122,12 +72,6 @@ body:has(.urai-home-spatial-runtime-layer[data-webgl-ready='true']) .urai-home-s
 }
 
 @media (max-width: 430px) {
-  body.urai-home-webgl-active .urai-home-spatial-runtime-layer .urai-home-spatial-canvas,
-  body:has(.urai-home-spatial-runtime-layer[data-webgl-ready='true']) .urai-home-spatial-runtime-layer .urai-home-spatial-canvas {
-    transform: scale(1.46) translateY(-6svh) !important;
-    transform-origin: 50% 58% !important;
-  }
-
   .urai-world-runtime[data-world-destination='infrastructure-hub'] .ground-spatial-root canvas {
     transform: scale(1.3) translateY(-2svh);
   }
