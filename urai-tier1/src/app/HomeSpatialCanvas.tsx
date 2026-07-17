@@ -1,6 +1,6 @@
 'use client'
 
-import { Html, OrbitControls, Stars } from '@react-three/drei'
+import { OrbitControls, Stars } from '@react-three/drei'
 import { Canvas, useFrame, useThree, type ThreeEvent } from '@react-three/fiber'
 import { useEffect, useRef, useState } from 'react'
 import * as THREE from 'three'
@@ -82,14 +82,19 @@ function CameraRig() {
   const { camera, size } = useThree()
 
   useEffect(() => {
-    const mobile = size.width < 720
-    camera.position.set(0, mobile ? 7.2 : 5.25, mobile ? 24.5 : 14.6)
+    const portrait = size.height > size.width
+    const compact = size.width < 720
+    const position: [number, number, number] = portrait
+      ? [0, compact ? 4.7 : 4.9, compact ? 15.8 : 15.1]
+      : [0, 5.25, 14.6]
+
+    camera.position.set(...position)
     if (camera instanceof THREE.PerspectiveCamera) {
-      camera.fov = mobile ? 64 : 50
+      camera.fov = portrait ? (compact ? 47 : 45) : 50
       camera.updateProjectionMatrix()
     }
-    camera.lookAt(0, 1.4, -2.35)
-  }, [camera, size.width])
+    camera.lookAt(0, 1.55, -1.8)
+  }, [camera, size.height, size.width])
 
   return null
 }
@@ -218,7 +223,7 @@ function Orb({ reducedMotion, onOpen }: { reducedMotion: boolean; onOpen: () => 
   }
 
   return (
-    <group ref={group} position={[0, 2.05, -1.5]} data-testid="urai-home-webgl-orb">
+    <group ref={group} position={[0, 2.05, -1.5]} data-testid="urai-home-webgl-orb" aria-label="URAI companion Orb">
       <mesh castShadow onClick={(event: ThreeEvent<MouseEvent>) => { event.stopPropagation(); onOpen() }} onPointerOver={enter} onPointerOut={leave}>
         <sphereGeometry args={[0.62, 64, 64]} />
         <meshPhysicalMaterial color="#e9feff" emissive={hovered ? '#8df7ff' : '#54e8f4'} emissiveIntensity={hovered ? 3.5 : 2.8} roughness={0.06} metalness={0.25} clearcoat={1} clearcoatRoughness={0.03} />
@@ -232,9 +237,6 @@ function Orb({ reducedMotion, onOpen }: { reducedMotion: boolean; onOpen: () => 
         <meshBasicMaterial color="#ffd98a" transparent opacity={hovered ? 0.82 : 0.62} toneMapped={false} />
       </mesh>
       <pointLight color="#79f3fa" intensity={hovered ? 17 : 14} distance={12} decay={2} />
-      <Html center position={[0, -1.1, 0]} distanceFactor={9} transform sprite>
-        <button type="button" className="urai-home-spatial-portal-label" onFocus={() => setHovered(true)} onBlur={() => setHovered(false)} onClick={onOpen}><strong>Orb</strong><span>private companion</span></button>
-      </Html>
     </group>
   )
 }
@@ -257,7 +259,7 @@ function Scene({ reducedMotion, onOrbOpen }: { reducedMotion: boolean; onOrbOpen
       <AtmosphericVeils reducedMotion={reducedMotion} />
       <LivingGround />
       <Orb reducedMotion={reducedMotion} onOpen={onOrbOpen} />
-      <OrbitControls makeDefault enablePan={false} enableDamping={!reducedMotion} dampingFactor={0.07} rotateSpeed={0.36} zoomSpeed={0.5} minDistance={9} maxDistance={28} minPolarAngle={0.62} maxPolarAngle={1.42} minAzimuthAngle={-1.28} maxAzimuthAngle={1.28} target={[0, 1.4, -2.35]} />
+      <OrbitControls makeDefault enablePan={false} enableDamping={!reducedMotion} dampingFactor={0.07} rotateSpeed={0.28} zoomSpeed={0.42} minDistance={11} maxDistance={22} minPolarAngle={0.74} maxPolarAngle={1.28} minAzimuthAngle={-0.72} maxAzimuthAngle={0.72} target={[0, 1.55, -1.8]} />
     </>
   )
 }
@@ -278,7 +280,6 @@ export default function HomeSpatialCanvas({ onOrbOpen, webglAvailable }: HomeSpa
       }}>
         <Scene reducedMotion={reducedMotion} onOrbOpen={onOrbOpen} />
       </Canvas>
-      <div className="urai-home-spatial-canvas-hint" aria-hidden="true"><span /> Drag to look · tap the ground to enter below</div>
     </div>
   )
 }
