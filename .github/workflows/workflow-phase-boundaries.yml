@@ -12,6 +12,8 @@ on:
       - ".github/workflows/workflow-phase-boundaries.yml"
       - "scripts/aaa-launch-proof.mjs"
       - "scripts/check-workflow-phase-boundaries.mjs"
+      - "urai-tier1/src/spatial/world/WorldTransitionController.tsx"
+      - "urai-tier1/tests/persistent-world-doorway-regression.test.mjs"
   push:
     branches: [main]
     paths:
@@ -23,6 +25,8 @@ on:
       - ".github/workflows/workflow-phase-boundaries.yml"
       - "scripts/aaa-launch-proof.mjs"
       - "scripts/check-workflow-phase-boundaries.mjs"
+      - "urai-tier1/src/spatial/world/WorldTransitionController.tsx"
+      - "urai-tier1/tests/persistent-world-doorway-regression.test.mjs"
   workflow_dispatch:
 
 permissions:
