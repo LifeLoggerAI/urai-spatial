@@ -1,5 +1,5 @@
 name: Dispatch URAI Production Once
-# One-shot production convergence trigger for main@8c67abad4ad7181ac4a904f0e379a0e348655e9f after merged PR #675.
+# One-shot production convergence trigger for the durable v2 protected release authority.
 
 on:
   push:
@@ -23,7 +23,7 @@ jobs:
           script: |
             const owner = context.repo.owner;
             const repo = context.repo.repo;
-            const workflow_id = 'spatial-live-deploy.yml';
+            const workflow_id = 'spatial-live-deploy-v2.yml';
             const releaseSha = context.sha;
             let rollbackSha = 'e2850a8b9dbd2fd11ee0197505da278322916aa0';
             const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
@@ -143,7 +143,7 @@ jobs:
             }
 
             const deployment = await dispatchAndWait('DEPLOY_URAI_APP', excludedRunIds);
-            sections.push(receiptSection('URAI fingerprinted production deployment receipt', deployment));
+            sections.push(receiptSection('URAI durable protected production deployment receipt', deployment));
             const body = sections.join('\n\n');
 
             await github.rest.issues.create({
@@ -154,5 +154,5 @@ jobs:
             });
             core.summary.addRaw(body).write();
             if (deployment.run.conclusion !== 'success') {
-              core.setFailed(`Fingerprinted production deployment concluded ${deployment.run.conclusion}`);
+              core.setFailed(`Durable protected production deployment concluded ${deployment.run.conclusion}`);
             }
