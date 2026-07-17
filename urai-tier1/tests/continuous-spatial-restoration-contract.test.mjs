@@ -119,51 +119,74 @@ test('Home visual overrides remain scoped to the active WebGL runtime and remove
   assert.match(structuralCss, /display: none !important/)
 })
 
-test('Ground is a six-chamber private workforce world rather than an anonymous runway', () => {
+test('Ground is an embodied destination world with architecture, population, atmosphere, and truthful service state', () => {
   for (const marker of [
-    'const GROUND_DISTRICTS',
+    'const DESTINATIONS',
     "id: 'reception'",
-    "id: 'sanctuary'",
+    "id: 'privacy'",
     "id: 'council'",
     "id: 'logistics'",
     "id: 'wellness'",
     "id: 'archive'",
-    'Reception',
-    'Privacy Sanctuary',
-    'Council Table',
-    'Logistics',
-    'Wellness',
-    'Archive',
-    'GroundDistrict',
-    'WorkforceAvatar',
-    'CouncilPlaza',
-    'GroundPaths',
-    'data-ground-district',
-    'data-ground-workforce-avatar',
-    'data-testid="urai-ground-council-plaza"',
+    "id: 'mirror'",
+    "id: 'passport'",
+    "id: 'consent'",
+    "id: 'atlas'",
+    "id: 'focus'",
+    "id: 'replay'",
+    'GroundDestination',
+    'WalkingPresence',
+    'CouncilPopulation',
+    'DestinationArchitecture',
+    'EnvironmentMotion',
+    'Corridor',
+    'CameraRig',
+    'data-ground-destination',
+    'data-ground-workforce-avatar="walking"',
+    'data-workforce-state',
+    'data-service-availability',
+    'data-testid="urai-ground-council-population"',
     'data-testid="urai-ground-private-workforce-world"',
-    'Your private workforce.',
-    'Nothing acts without you.',
-  ]) assert.ok(groundWorld.includes(marker), `missing Ground workforce marker: ${marker}`)
+    'capsuleGeometry',
+    'DESTINATIONS.map',
+    "availability: 'degraded'",
+    "workforceState: 'blocked'",
+  ]) assert.ok(groundWorld.includes(marker), `missing Ground embodied-world marker: ${marker}`)
 
   assert.doesNotMatch(groundWorld, /function GroundPin/)
   assert.doesNotMatch(groundWorld, /<GroundPin/)
-  assert.match(groundWorld, /GROUND_DISTRICTS\.map/)
-  assert.match(groundWorld, /WORKFORCE\.map/)
-  assert.match(groundWorld, /ground-district-label/)
-  assert.match(groundWorld, /capsuleGeometry/)
+  assert.doesNotMatch(groundWorld, /OrbitControls/)
+  assert.match(groundWorld, /requestUraiWorldTravel/)
+  assert.match(groundWorld, /requestUraiWorldReturn/)
 })
 
-test('Ground navigation remains contained, touch-safe and exposes the active route', () => {
-  assert.match(groundWorld, /const groundLinkStyle: CSSProperties/)
-  assert.match(groundWorld, /const groundActiveLinkStyle: CSSProperties/)
-  assert.match(groundWorld, /display: 'inline-flex'/)
-  assert.match(groundWorld, /whiteSpace: 'nowrap'/)
-  assert.match(groundWorld, /aria-current=\{active \? 'page' : undefined\}/)
-  assert.match(groundWorld, /style=\{active \? groundActiveLinkStyle : groundLinkStyle\}/)
-  assert.match(groundWorld, /max-width:calc\(100vw - 28px\)/)
-  assert.match(groundWorld, /scrollbar-width:none/)
-  assert.match(structuralCss, /\.ground-rail a/)
+test('Ground is keyboard-operable, 48px touch-safe, reduced-motion aware, and safe without WebGL', () => {
+  for (const marker of [
+    'ground-destination-compass ground-rail',
+    "event.key === 'Escape'",
+    "event.key === 'Enter'",
+    "event.key === 'ArrowRight' || event.key === 'ArrowDown'",
+    "event.key === 'ArrowLeft' || event.key === 'ArrowUp'",
+    'min-width:48px',
+    'min-height:48px',
+    'overflow-x:auto',
+    'scrollbar-width:none',
+    'safe-area-inset-left',
+    'safe-area-inset-bottom',
+    'aria-live="polite"',
+    'useReducedMotion',
+    'useWebGLAvailable',
+    'webglcontextlost',
+    'webglcontextrestored',
+    'data-testid="urai-ground-webgl-fallback"',
+    'data-quality-tier',
+    'deviceMemory',
+  ]) assert.ok(groundWorld.includes(marker), `missing Ground accessibility or resilience marker: ${marker}`)
+
+  assert.match(groundWorld, /aria-current=\{activeId === destination\.id \? 'location' : undefined\}/)
+  assert.match(groundWorld, /aria-label=\{`\$\{destination\.label\}/)
+  assert.match(groundWorld, /@media\(prefers-reduced-motion:reduce\)/)
+  assert.doesNotMatch(groundWorld, /min-height:44px/)
 })
 
 test('exact-head browser proof stays deterministic, diagnostic and fallback-safe', () => {
