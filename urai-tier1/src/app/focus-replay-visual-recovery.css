@@ -129,8 +129,26 @@
   }
 
   .uraiAutoReplay .uraiReplayControls {
-    bottom: max(10px, env(safe-area-inset-bottom));
+    bottom: calc(88px + env(safe-area-inset-bottom));
     z-index: 45;
+  }
+
+  .uraiAutoReplay [data-testid='urai-replay-timeline'],
+  .uraiAutoReplay [aria-label='Replay playback controls'] {
+    position: fixed !important;
+    left: 16px !important;
+    right: 16px !important;
+    bottom: calc(92px + env(safe-area-inset-bottom)) !important;
+    width: auto !important;
+    max-width: none !important;
+    margin: 0 !important;
+    z-index: 2147482700 !important;
+  }
+
+  .uraiAutoReplay [data-testid='urai-replay-meta-panel'],
+  .uraiAutoReplay [aria-label='Replay narrator panel'] {
+    max-height: calc(100svh - 238px - env(safe-area-inset-bottom)) !important;
+    overflow-y: auto !important;
   }
 }
 
