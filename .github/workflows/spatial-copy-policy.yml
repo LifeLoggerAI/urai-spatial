@@ -3,22 +3,8 @@ name: URAI Spatial Copy Policy
 on:
   pull_request:
     branches: [main]
-    paths:
-      - 'README.md'
-      - 'ENVIRONMENT.md'
-      - 'docs/**'
-      - 'urai-tier1/src/**'
-      - 'scripts/check-spatial-copy.mjs'
-      - '.github/workflows/spatial-copy-policy.yml'
   push:
     branches: [main]
-    paths:
-      - 'README.md'
-      - 'ENVIRONMENT.md'
-      - 'docs/**'
-      - 'urai-tier1/src/**'
-      - 'scripts/check-spatial-copy.mjs'
-      - '.github/workflows/spatial-copy-policy.yml'
   workflow_dispatch:
 
 permissions:
@@ -28,13 +14,29 @@ concurrency:
   group: spatial-copy-policy-${{ github.event.pull_request.number || github.ref }}-${{ github.event.pull_request.head.sha || github.sha }}
   cancel-in-progress: true
 
+env:
+  URAI_EXACT_HEAD: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
+
 jobs:
   copy-policy:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - name: Checkout exact candidate
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: ${{ env.URAI_EXACT_HEAD }}
+          fetch-depth: 1
+          persist-credentials: false
+          show-progress: false
+      - name: Verify exact clean candidate
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$URAI_EXACT_HEAD"
+          test -z "$(git status --porcelain --untracked-files=all)"
+      - name: Setup Node
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
         with:
           node-version: 22
       - name: Capture public provider and XR policy output
@@ -49,12 +51,12 @@ jobs:
           exit 0
       - name: Upload policy output
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
-          name: spatial-copy-policy-output
+          name: spatial-copy-policy-output-${{ env.URAI_EXACT_HEAD }}
           path: copy-policy.log
           if-no-files-found: error
-          retention-days: 7
+          retention-days: 30
       - name: Enforce policy result
         shell: bash
         run: test "${{ steps.policy.outputs.status }}" = "0"
