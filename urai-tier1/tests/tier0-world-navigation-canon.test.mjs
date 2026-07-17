@@ -13,8 +13,9 @@ const shell = read('src/spatial/world/UraiWorldShell.tsx')
 const layout = read('src/app/layout.tsx')
 const homeRuntime = read('src/app/HomeSpatialRuntimeLayer.tsx')
 const homeCanvas = read('src/app/HomeSpatialCanvas.tsx')
+const fallback = read('src/app/HomeSanctuaryFallback.tsx')
 
-test('Tier-0 canon defines the required persistent-world destinations', () => {
+ test('Tier-0 canon defines the required persistent-world destinations', () => {
   for (const destination of [
     'home',
     'infrastructure-hub',
@@ -45,14 +46,23 @@ test('Ground is the canonical gateway to Hidden Infrastructure', () => {
   assert.match(gateway, /type=['"]button['"]/)
 })
 
-test('Home stays calm and does not expose permanent feature portals', () => {
+test('Home stays calm and exposes one sanctuary interaction owner', () => {
   assert.doesNotMatch(homeRuntime, /urai-home-spatial-runtime-portals/)
   assert.doesNotMatch(homeRuntime, />Mirror</)
   assert.doesNotMatch(homeRuntime, />Passport</)
+  assert.match(homeRuntime, /single-authoritative-sanctuary/)
+  assert.match(homeRuntime, /HomeSanctuaryFallback/)
   assert.doesNotMatch(homeCanvas, /data-urai-home-portal/)
   assert.doesNotMatch(homeCanvas, /const portals/)
-  assert.match(homeCanvas, /data-tier0-ground-gateway=['"]true['"]/)
-  assert.match(homeCanvas, /tap the ground to enter below/)
+  assert.match(homeCanvas, /data-testid="urai-home-authored-sanctuary"/)
+  assert.match(homeCanvas, /data-testid="urai-home-embodied-avatar"/)
+  assert.match(homeCanvas, /data-testid="urai-home-webgl-orb"/)
+  assert.match(homeCanvas, /aria-label="URAI Home sanctuary actions"/)
+  assert.match(homeCanvas, />Ascend to Life Map</)
+  assert.match(homeCanvas, />Descend to Ground</)
+  assert.match(fallback, /data-home-spatial-renderer="layered-2d"/)
+  assert.match(fallback, /Ascend to Life Map/)
+  assert.match(fallback, /Descend to Ground/)
 })
 
 test('The root application owns one persistent world shell', () => {
