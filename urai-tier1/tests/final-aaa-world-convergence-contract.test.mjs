@@ -1,0 +1,44 @@
+import assert from 'node:assert/strict'
+import fs from 'node:fs'
+import test from 'node:test'
+
+const read = (path) => fs.readFileSync(path, 'utf8')
+
+const worldTypes = read('src/spatial/world/worldTypes.ts')
+const registry = read('src/spatial/world/destinationRegistry.ts')
+const shell = read('src/spatial/world/UraiWorldShell.tsx')
+const companion = read('src/spatial/world/PersistentWorldCompanion.tsx')
+const chrome = read('src/spatial/world/persistentWorldCompanion.css')
+
+test('the full journey participates in one persistent world model', () => {
+  for (const destination of ['home', 'infrastructure-hub', 'life-map', 'focus', 'replay']) {
+    assert.match(worldTypes, new RegExp(`['"]${destination}['"]`))
+    assert.match(registry, new RegExp(`['"]${destination}['"]`))
+  }
+  assert.match(registry, /\[\s*['"]\/life-map['"]\s*,\s*['"]life-map['"]\s*\]/)
+  assert.match(registry, /environmentalForm:\s*['"]explorable-memory-constellation['"]/)
+})
+
+test('one persistent Orb owns primary travel', () => {
+  assert.match(shell, /PersistentWorldCompanion/)
+  assert.match(shell, /<PersistentWorldCompanion\s*\/>/)
+  assert.match(companion, /PRIMARY_DESTINATIONS/)
+  assert.match(companion, /requestUraiWorldTravel/)
+  assert.match(companion, /aria-label={open \? 'Close Orb travel controls' : 'Open Orb travel controls'}/)
+  assert.doesNotMatch(companion, /next\/link/)
+})
+
+test('page-like route chrome is removed from the active world', () => {
+  for (const selector of ['.ground-card', '.ground-rail', '.focusTitle', '.focusNav']) {
+    assert.match(chrome, new RegExp(selector.replace('.', '\\.')))
+  }
+  assert.match(chrome, /\[aria-label='URAI Life Map route portals'\]/)
+  assert.match(chrome, /\[aria-label='Replay location'\]/)
+  assert.match(chrome, /display:\s*none\s*!important/)
+})
+
+test('mobile safe area and reduced motion remain explicit', () => {
+  assert.match(chrome, /env\(safe-area-inset-bottom\)/)
+  assert.match(chrome, /@media \(max-width: 560px\)/)
+  assert.match(chrome, /prefers-reduced-motion: reduce/)
+})
