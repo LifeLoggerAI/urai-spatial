@@ -119,51 +119,55 @@ test('Home visual overrides remain scoped to the active WebGL runtime and remove
   assert.match(structuralCss, /display: none !important/)
 })
 
-test('Ground is a six-chamber private workforce world rather than an anonymous runway', () => {
+test('Ground is an embodied private workforce world with explicit destinations and service state', () => {
   for (const marker of [
-    'const GROUND_DISTRICTS',
+    'const DESTINATIONS',
     "id: 'reception'",
-    "id: 'sanctuary'",
+    "id: 'privacy'",
     "id: 'council'",
     "id: 'logistics'",
     "id: 'wellness'",
     "id: 'archive'",
-    'Reception',
-    'Privacy Sanctuary',
-    'Council Table',
-    'Logistics',
-    'Wellness',
-    'Archive',
-    'GroundDistrict',
-    'WorkforceAvatar',
-    'CouncilPlaza',
-    'GroundPaths',
-    'data-ground-district',
-    'data-ground-workforce-avatar',
-    'data-testid="urai-ground-council-plaza"',
+    "id: 'mirror'",
+    "id: 'passport'",
+    "id: 'consent'",
+    "id: 'atlas'",
+    "id: 'focus'",
+    "id: 'replay'",
+    'GroundDestination',
+    'WorkforcePresence',
+    'DestinationArchitecture',
+    'Corridor',
+    'CameraRig',
+    'data-ground-destination',
+    'data-workforce-state',
+    'data-service-availability',
     'data-testid="urai-ground-private-workforce-world"',
-    'Your private workforce.',
-    'Nothing acts without you.',
-  ]) assert.ok(groundWorld.includes(marker), `missing Ground workforce marker: ${marker}`)
+    'capsuleGeometry',
+    'DESTINATIONS.map',
+    'DESTINATIONS.slice(0, 8).map',
+    "availability: 'degraded'",
+    "workforceState: 'blocked'",
+  ]) assert.ok(groundWorld.includes(marker), `missing Ground embodied-world marker: ${marker}`)
 
   assert.doesNotMatch(groundWorld, /function GroundPin/)
   assert.doesNotMatch(groundWorld, /<GroundPin/)
-  assert.match(groundWorld, /GROUND_DISTRICTS\.map/)
-  assert.match(groundWorld, /WORKFORCE\.map/)
-  assert.match(groundWorld, /ground-district-label/)
-  assert.match(groundWorld, /capsuleGeometry/)
+  assert.doesNotMatch(groundWorld, /OrbitControls/)
 })
 
-test('Ground navigation remains contained, touch-safe and exposes the active route', () => {
-  assert.match(groundWorld, /const groundLinkStyle: CSSProperties/)
-  assert.match(groundWorld, /const groundActiveLinkStyle: CSSProperties/)
-  assert.match(groundWorld, /display: 'inline-flex'/)
-  assert.match(groundWorld, /whiteSpace: 'nowrap'/)
-  assert.match(groundWorld, /aria-current=\{active \? 'page' : undefined\}/)
-  assert.match(groundWorld, /style=\{active \? groundActiveLinkStyle : groundLinkStyle\}/)
-  assert.match(groundWorld, /max-width:calc\(100vw - 28px\)/)
+test('Ground navigation remains contained, keyboard-operable and exposes active destination state', () => {
+  assert.match(groundWorld, /className="ground-destination-compass"/)
+  assert.match(groundWorld, /aria-current=\{activeId === destination\.id \? 'location' : undefined\}/)
+  assert.match(groundWorld, /onKeyDown=\{\(event\) => \{/)
+  assert.match(groundWorld, /event\.key === 'Escape'/)
+  assert.match(groundWorld, /event\.key === 'Enter'/)
+  assert.match(groundWorld, /event\.key === 'ArrowRight' \|\| event\.key === 'ArrowDown'/)
+  assert.match(groundWorld, /event\.key === 'ArrowLeft' \|\| event\.key === 'ArrowUp'/)
+  assert.match(groundWorld, /min-height:44px/)
+  assert.match(groundWorld, /overflow-x:auto/)
   assert.match(groundWorld, /scrollbar-width:none/)
-  assert.match(structuralCss, /\.ground-rail a/)
+  assert.match(groundWorld, /max\(12px,env\(safe-area-inset-left\)\)/)
+  assert.match(groundWorld, /aria-label=\{`\$\{destination\.label\}/)
 })
 
 test('exact-head browser proof stays deterministic, diagnostic and fallback-safe', () => {
