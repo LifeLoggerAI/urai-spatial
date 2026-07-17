@@ -1,0 +1,102 @@
+name: URAI Production Host Parity
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'scripts/urai-production-host-parity.mjs'
+      - '.github/workflows/production-host-parity.yml'
+      - '.github/workflows/spatial-live-deploy.yml'
+      - 'firebase.static.json'
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/one-time-production-bootstrap-dispatch.yml'
+      - 'scripts/urai-production-host-parity.mjs'
+      - '.github/workflows/production-host-parity.yml'
+      - '.github/workflows/spatial-live-deploy.yml'
+      - 'firebase.static.json'
+  workflow_dispatch:
+    inputs:
+      expected_sha:
+        description: Exact production SHA expected on both custom-domain hosts
+        required: false
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: urai-production-host-parity-${{ github.event.pull_request.head.sha || github.sha }}
+  cancel-in-progress: true
+
+jobs:
+  static-contract:
+    name: Verify dual-host production contract
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - name: Checkout exact source
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
+      - name: Prove exact clean source
+        shell: bash
+        run: |
+          set -euo pipefail
+          expected='${{ github.event.pull_request.head.sha || github.sha }}'
+          test "$(git rev-parse HEAD)" = "$expected"
+          test -z "$(git status --porcelain --untracked-files=all)"
+      - name: Verify host-parity verifier syntax
+        run: node --check scripts/urai-production-host-parity.mjs
+      - name: Verify canonical hosting contract
+        shell: bash
+        run: |
+          set -euo pipefail
+          grep -Fq '"public": "urai-tier1/out"' firebase.static.json
+          grep -Fq '"trailingSlash": true' firebase.static.json
+          grep -Fq "'https://urai.app'" scripts/urai-production-host-parity.mjs
+          grep -Fq "'https://www.urai.app'" scripts/urai-production-host-parity.mjs
+          grep -Fq 'Help us tune the Life Movie' scripts/urai-production-host-parity.mjs
+          grep -Fq 'Genesis home preview' scripts/urai-production-host-parity.mjs
+
+  live-parity:
+    name: Prove apex and www serve one certified world
+    if: github.event_name != 'pull_request'
+    needs: static-contract
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    env:
+      URAI_EXPECTED_LIVE_SHA: ${{ inputs.expected_sha || github.sha }}
+    steps:
+      - name: Checkout exact source
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+      - name: Wait for protected hosting convergence and verify
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p production-host-parity
+          status=1
+          for attempt in 1 2 3 4 5 6; do
+            echo "Production host parity attempt $attempt" | tee "production-host-parity/attempt-$attempt.log"
+            if node scripts/urai-production-host-parity.mjs > "production-host-parity/attempt-$attempt.json" 2> "production-host-parity/attempt-$attempt.err"; then
+              status=0
+              cp "production-host-parity/attempt-$attempt.json" production-host-parity/final.json
+              break
+            fi
+            cat "production-host-parity/attempt-$attempt.err" || true
+            sleep 120
+          done
+          exit "$status"
+      - name: Upload production host-parity receipt
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: urai-production-host-parity-${{ env.URAI_EXPECTED_LIVE_SHA }}
+          path: production-host-parity
+          if-no-files-found: error
+          retention-days: 365
