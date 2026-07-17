@@ -12,6 +12,8 @@ const atmosphere = read('src/spatial/world/PersistentRealmAtmosphere.tsx')
 const atmosphereCss = read('src/spatial/world/persistentRealmAtmosphere.css')
 const worldEvents = read('src/spatial/world/worldEvents.ts')
 const homeRuntime = read('src/app/HomeSpatialRuntimeLayer.tsx')
+const focusClient = read('src/app/focus/FocusChamberClient.tsx')
+const replayClient = read('src/app/replay/CinematicReplayClient.tsx')
 const chrome = read('src/spatial/world/persistentWorldCompanion.css')
 const lifeMapConvergence = read('src/spatial/world/lifeMapConvergence.css')
 const routeOwnerConvergence = read('src/spatial/world/routeOwnerConvergence.css')
@@ -35,7 +37,7 @@ test('the full journey participates in one persistent world model', () => {
     assert.match(registry, new RegExp(`['"]${destination}['"]`))
   }
   assert.match(registry, /\[\s*['"]\/life-map['"]\s*,\s*['"]life-map['"]\s*\]/)
-  assert.match(registry, /environmentalForm:\s*['"]explorable-memory-constellation['"]/) 
+  assert.match(registry, /environmentalForm:\s*['"]explorable-memory-constellation['"]/)
 })
 
 test('one persistent Orb owns all canonical travel and Home opens that same companion', () => {
@@ -97,11 +99,17 @@ test('Life Map reads as a full-viewport world instead of a landing page', () => 
 
 test('canonical route clients own Focus and Replay without the legacy autonomous overlay', () => {
   assert.match(shell, /import '\.\/routeOwnerConvergence\.css'/)
-  assert.match(routeOwnerConvergence, /data-world-destination='focus'/)
-  assert.match(routeOwnerConvergence, /\.uraiAutoFocus/)
+  assert.match(focusClient, /data-testid="focus-chamber-client"/)
+  assert.match(focusClient, /useSelectedMemory\(\)/)
+  assert.match(focusClient, /requestUraiWorldTravel/)
+  assert.match(focusClient, /requestUraiWorldReturn/)
+  assert.doesNotMatch(focusClient, /uraiAutoFocus|quiet-reset|replay-recovery-thread/)
+  assert.match(replayClient, /data-testid="cinematic-replay-client"/)
+  assert.match(replayClient, /useSelectedMemory\(\)/)
+  assert.match(replayClient, /requestUraiWorldReturn/)
+  assert.doesNotMatch(replayClient, /uraiAutoReplay|quiet-reset|replay-recovery-thread|seed-memory-bloom/)
+  assert.doesNotMatch(routeOwnerConvergence, /\.uraiAutoFocus|\.uraiAutoReplay/)
   assert.match(routeOwnerConvergence, /data-world-destination='replay'/)
-  assert.match(routeOwnerConvergence, /\.uraiAutoReplay/)
-  assert.match(routeOwnerConvergence, /display:\s*none\s*!important/)
 })
 
 test('secondary realms remain full-viewport destinations owned by the shared Orb', () => {
