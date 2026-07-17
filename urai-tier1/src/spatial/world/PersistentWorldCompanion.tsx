@@ -88,6 +88,7 @@ export function PersistentWorldCompanion() {
       type="button"
       disabled={phase !== 'idle'}
       data-active={destination.id === world.destination ? 'true' : 'false'}
+      data-world-target={destination.id}
       aria-current={destination.id === world.destination ? 'page' : undefined}
       onClick={() => travel(destination.id)}
     >
