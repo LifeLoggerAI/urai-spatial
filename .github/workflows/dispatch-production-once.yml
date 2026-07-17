@@ -18,14 +18,14 @@ jobs:
         uses: actions/github-script@v7
         with:
           script: |
-            // Dispatch the repaired exact current main through protected production authority.
+            // Dispatch the exact push commit so protected deploy validation sees current main.
             await github.rest.actions.createWorkflowDispatch({
               owner: context.repo.owner,
               repo: context.repo.repo,
               workflow_id: 'spatial-live-deploy.yml',
               ref: 'main',
               inputs: {
-                release_sha: 'f79bd561a7ef1472c1575c7707a68d71cfa35905',
+                release_sha: context.sha,
                 rollback_sha: 'e2850a8b9dbd2fd11ee0197505da278322916aa0',
                 confirm: 'DEPLOY_URAI_APP'
               }
