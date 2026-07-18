@@ -36,6 +36,9 @@ test('accessibility and performance implementation contracts are present', () =>
   requireText(companion, "event.key !== 'Enter' && event.key !== ' '")
   requireText(companion, 'event.stopPropagation()')
   requireText(companion, 'onClick={toggleCompanion}')
+  requireText(companion, 'const [hydrated, setHydrated] = useState(false)')
+  requireText(companion, 'setHydrated(true)')
+  requireText(companion, "disabled={!hydrated || phase !== 'idle'}")
   requireText(companion, "aria-current={destination.id === world.destination ? 'page' : undefined}")
   requireText(companion, 'aria-label="Return through the world"')
 
