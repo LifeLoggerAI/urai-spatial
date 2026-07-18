@@ -18,8 +18,8 @@ export const metadata: Metadata = {
     images: [
       {
         url: lifeMapSocialImage,
-        width: 1200,
-        height: 630,
+        width: 1600,
+        height: 900,
         alt: 'URAI Life Map — step inside your private constellation',
       },
     ],
