@@ -11,7 +11,7 @@ test.describe('Replay authorization boundary', () => {
     await page.goto(LIFE_MAP_LOCKED_PATH, { waitUntil: 'domcontentloaded' })
     const semanticControls = page.getByTestId('urai-lifemap-selected-memory-controls')
     await expect(semanticControls).toBeVisible()
-    await expect(semanticControls.getByText('Forecast Path', { exact: true })).toBeVisible()
+    await expect(semanticControls.getByRole('button', { name: 'Forecast Path', exact: true })).toHaveAttribute('aria-pressed', 'true')
     const railReplay = semanticControls.getByRole('button', { name: /replay unavailable for this memory/i })
     await expect(railReplay).toBeDisabled()
 
