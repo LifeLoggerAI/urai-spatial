@@ -63,6 +63,8 @@ test('accessibility and performance implementation contracts are present', () =>
   requireText(homeRuntime, 'role="status"')
 
   requireText(ground, "event.currentTarget.scrollIntoView({ block: 'nearest', inline: 'center' })")
+  assert.equal(ground.includes('min-height:44px'), false, 'Ground destinations must not retain 44px targets')
+  requireText(ground, 'min-height:48px')
 
   requireText(focus, 'aria-label={`Open Replay for ${memory.title}`}')
   assert.equal(focus.includes('min-height:44px'), false, 'Focus controls must not retain 44px minimum targets')
