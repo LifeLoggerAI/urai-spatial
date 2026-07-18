@@ -1,0 +1,31 @@
+name: Canonical six-fix comment authority
+
+on:
+  issue_comment:
+    types: [created]
+
+permissions:
+  contents: write
+  issues: write
+
+concurrency:
+  group: canonical-six-fix-comment-authority
+  cancel-in-progress: false
+
+jobs:
+  repair:
+    if: github.event.issue.number == 788 && github.event.issue.pull_request && github.event.comment.body == '/run-canonical-six-fix-384fd963'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    env:
+      CLEAN_BASE: 1d172afdce8ce1e0b70152b62892dace4cf06fab
+      EXPECTED_HEAD: 384fd9633de1b705107b2988d776fe4d30c2af7f
+      TARGET_BRANCH: fix/canonical-six-fix-direct-1d172afd-20260718
+    steps:
+      - name: Checkout exact isolated repair head
+        id: checkout
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: ${{ env.EXPECTED_HEAD }}
+          fetch-depth: 0
+          persist-credentials
