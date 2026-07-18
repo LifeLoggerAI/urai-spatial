@@ -1,24 +1,27 @@
 name: Life Map overview contrast repair
 
 on:
-  push:
+  pull_request:
+    types: [opened, synchronize, reopened]
     branches:
-      - fix/lifemap-compact-overview-891c1b9f
+      - feat/home-ground-lifemap-art-bible-convergence-20260718
     paths:
       - .github/workflows/lifemap-overview-contrast-repair.yml
+      - scripts/apply-lifemap-overview-contrast.mjs
 
 permissions:
   contents: write
 
 concurrency:
-  group: lifemap-overview-contrast-repair
-  cancel-in-progress: false
+  group: lifemap-overview-contrast-repair-${{ github.event.pull_request.head.sha }}
+  cancel-in-progress: true
 
 env:
   CLEAN_BASE: 891c1b9ffb8f7c1828af30e6ba8091b5ea08436c
 
 jobs:
   repair:
+    if: github.event.pull_request.number == 804 && github.event.pull_request.head.ref == 'fix/lifemap-compact-overview-891c1b9f'
     runs-on: ubuntu-24.04
     timeout-minutes: 45
     steps:
