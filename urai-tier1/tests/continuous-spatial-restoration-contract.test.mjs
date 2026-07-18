@@ -24,6 +24,7 @@ const homeOwner = read('src/app/FinalHomeThreshold.tsx')
 const groundOwner = read('src/app/ground/page.tsx')
 const groundWorld = read('src/app/GroundSpatialWorldClean.tsx')
 const lifeMapOwner = read('src/app/life-map/page.tsx')
+const groundGateway = read('src/spatial/world/GroundGateway.tsx')
 
 test('app template mounts the restored WebGL owners without redirecting certified routes', () => {
   assert.match(template, /HomeSpatialRuntimeLayer/)
@@ -68,8 +69,9 @@ test('Home is an authored sanctuary with adaptive framing and canonical Ground a
   assert.doesNotMatch(canvas, /portals\.map/)
   assert.doesNotMatch(canvas, /data-urai-home-portal/)
   assert.doesNotMatch(canvas, /id: 'mirror'|id: 'passport'|id: 'xr'/)
-  assert.match(canvas, /aria-label="Open the ground and descend into Hidden Infrastructure"/)
+  assert.match(groundGateway, /aria-label="Open the ground and descend into Hidden Infrastructure"/)
   assert.match(canvas, /aria-label="Open the Life Map and ascend into Memory Sky"/)
+  assert.doesNotMatch(canvas, /aria-label="Open the ground and descend into Hidden Infrastructure"/)
   assert.doesNotMatch(canvas, /onContextLost/)
   assert.doesNotMatch(canvas, /EffectComposer|Bloom|Vignette/)
 })

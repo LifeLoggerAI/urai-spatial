@@ -101,11 +101,6 @@ body:has([data-testid="urai-r3f-canonical-lifemap"]) .urai-final-asset-spine-sce
   transition: transform .18s ease, background .18s ease, border-color .18s ease;
 }
 
-.urai-home-spatial-threshold--ground {
-  left: clamp(18px, 4vw, 58px);
-  bottom: clamp(84px, 13svh, 126px);
-}
-
 .urai-home-spatial-threshold--sky {
   right: clamp(18px, 4vw, 58px);
   top: clamp(92px, 15svh, 142px);
@@ -291,11 +286,6 @@ body:has(.urai-home-spatial-runtime-layer) .urai-home-spatial-world-final .urai-
   .urai-home-spatial-threshold {
     min-width: 88px;
     padding: 6px 8px;
-  }
-
-  .urai-home-spatial-threshold--ground {
-    left: 14px;
-    bottom: max(86px, calc(env(safe-area-inset-bottom) + 74px));
   }
 
   .urai-home-spatial-threshold--sky {

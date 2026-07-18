@@ -573,16 +573,7 @@ export default function HomeSpatialCanvas({ onOrbOpen, webglAvailable }: HomeSpa
           onGround={() => travel('infrastructure-hub')}
         />
       </Canvas>
-      <div className="urai-home-spatial-thresholds" data-testid="urai-home-threshold-controls" aria-label="Home world thresholds">
-        <button
-          type="button"
-          className="urai-home-spatial-threshold urai-home-spatial-threshold--ground"
-          aria-label="Open the ground and descend into Hidden Infrastructure"
-          onClick={() => travel('infrastructure-hub')}
-        >
-          <strong>Ground</strong>
-          <span>Descend into your private infrastructure</span>
-        </button>
+      <div className="urai-home-spatial-thresholds" data-testid="urai-home-threshold-controls" aria-label="Home sky threshold">
         <button
           type="button"
           className="urai-home-spatial-threshold urai-home-spatial-threshold--sky"

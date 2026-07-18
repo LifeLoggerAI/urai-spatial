@@ -120,7 +120,7 @@ const routes = [
       const sceneLabels = page.locator('.urai-home-spatial-threshold')
       const sceneLabelCount = await sceneLabels.count()
       const visibleSceneLabelCount = await visibleElementCount(sceneLabels)
-      const thresholdLabelsVisible = sceneLabelCount === 2 && visibleSceneLabelCount === 2
+      const thresholdLabelsVisible = sceneLabelCount === 1 && visibleSceneLabelCount === 1
       const authoredSceneMounted = await page.locator('[data-home-spatial-geometry="authored-sanctuary-avatar-orb-sky-ground"]').count() === 1
 
       const portalShortcuts = page.locator('.urai-home-spatial-runtime-portals a')
