@@ -141,6 +141,9 @@ async function validateReplay(page, report, screenshotName) {
   const proof = page.getByTestId('urai-replay-surface').first();
   const client = page.getByTestId('cinematic-replay-client').first();
   const controls = page.locator('[aria-label="Replay controls"]').first();
+  const productControls = page.locator('[aria-label="Replay memory controls"]').first();
+  const companion = page.getByRole('button', { name: /Orb travel controls/i }).first();
+  const heading = page.locator('.replayWorld header h1').first();
   const caption = page.locator('.caption').first();
   const unwind = page.locator('.unwind').first();
 
@@ -152,8 +155,12 @@ async function validateReplay(page, report, screenshotName) {
   await expectAttribute(client, 'data-manifest-id', MANIFEST_ID);
   await expectAttribute(client, 'data-playing', 'false');
   await expectVisible(controls, 'Replay controls');
+  await expectVisible(productControls, 'Replay memory controls');
+  await expectVisible(companion, 'persistent Orb travel control');
   await expectVisible(caption, 'Replay caption');
   await expectVisible(unwind, 'Replay unwind control');
+  await expectNoOverlap(heading, unwind, 'Replay heading and unwind control', 4);
+  await expectNoOverlap(productControls, companion, 'Replay memory controls and persistent Orb', 4);
 
   const play = page.getByRole('button', { name: 'Play replay' }).first();
   await expectVisible(play, 'Play replay control');
@@ -169,7 +176,7 @@ async function validateReplay(page, report, screenshotName) {
   await page.screenshot({ path: `${ARTIFACT_DIR}/${screenshotName}`, fullPage: true });
   report.screenshots.push(screenshotName);
 
-  return { client, controls, caption, unwind };
+  return { client, controls, productControls, companion, caption, unwind };
 }
 
 async function run() {
@@ -222,6 +229,8 @@ async function run() {
     await page.waitForLoadState('networkidle', { timeout: 30000 }).catch(() => {});
     const mobile = await validateReplay(page, report, '03-mobile-memory-theater-replay.png');
     await expectInsideViewport(mobile.controls, page, 'mobile Replay controls');
+    await expectInsideViewport(mobile.productControls, page, 'mobile Replay memory controls');
+    await expectInsideViewport(mobile.companion, page, 'mobile persistent Orb control');
     await expectInsideViewport(mobile.unwind, page, 'mobile Replay unwind');
     await expectNoOverlap(mobile.caption, mobile.controls, 'mobile caption and controls');
     await expectNoOverlap(mobile.unwind, mobile.controls, 'mobile unwind and controls');
