@@ -176,6 +176,44 @@ body:has([data-testid="urai-true-3d-life-map"]) {
   outline-offset: 3px;
 }
 
+/* The authored Life Map spine is now the visible realm owner. The full-viewport
+   R3F shell must remain transparent and screen-composited rather than repainting
+   an opaque black field over the provider artwork and selected-memory surface. */
+[data-testid="urai-r3f-canonical-lifemap"][data-life-map-active-visual="authored-memory-universe"] [data-testid="urai-true-3d-life-map"] {
+  z-index: 4 !important;
+  background: transparent !important;
+  isolation: auto !important;
+}
+
+[data-testid="urai-r3f-canonical-lifemap"][data-life-map-active-visual="authored-memory-universe"] [data-testid="urai-true-3d-life-map"] > div:has(> canvas) {
+  z-index: 3 !important;
+  background: transparent !important;
+  mix-blend-mode: screen !important;
+}
+
+[data-testid="urai-r3f-canonical-lifemap"][data-life-map-active-visual="authored-memory-universe"] [data-testid="urai-true-3d-life-map"] canvas {
+  background: transparent !important;
+  mix-blend-mode: screen !important;
+  filter: brightness(1.34) saturate(1.28) contrast(1.08) !important;
+}
+
+[data-testid="urai-r3f-canonical-lifemap"][data-life-map-active-visual="authored-memory-universe"] .life-map-visual-spine {
+  z-index: 1 !important;
+  opacity: 1 !important;
+  visibility: visible !important;
+}
+
+[data-testid="urai-r3f-canonical-lifemap"][data-life-map-active-visual="authored-memory-universe"] .urai-lifemap-selected-visual {
+  position: absolute !important;
+  z-index: 72 !important;
+  opacity: 1 !important;
+  visibility: visible !important;
+}
+
+[data-testid="urai-r3f-canonical-lifemap"][data-life-map-active-visual="authored-memory-universe"] .urai-lifemap-deep-link-controls {
+  z-index: 84 !important;
+}
+
 @media (max-width: 760px) {
   body:has(.urai-home-spatial-runtime-layer) .urai-home-spatial-world-final .urai-genesis-home__hero {
     max-width: calc(100vw - 28px) !important;
