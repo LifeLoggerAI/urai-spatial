@@ -81,8 +81,10 @@ export function LifeMapIndependentInputBoundary() {
     }
 
     const attach = () => {
-      attached.forEach((element) => {
-        if (!document.contains(element)) removeGestureBoundary(element)
+      const detached = [...attached].filter((element) => !document.contains(element))
+      detached.forEach((element) => {
+        removeGestureBoundary(element)
+        attached.delete(element)
       })
 
       document.querySelectorAll<HTMLElement>(LIFE_MAP_CONTROL_SELECTOR).forEach((element) => {
