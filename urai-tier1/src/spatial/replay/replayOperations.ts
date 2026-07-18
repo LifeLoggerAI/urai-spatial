@@ -15,6 +15,7 @@ export type ReplayOperation = {
   kind: ReplayOperationKind
   createdAt: string
   correction?: ReplayCorrection
+  hidden?: boolean
 }
 
 export type ReplayOperationState = {
@@ -56,6 +57,7 @@ function isOperation(value: unknown): value is ReplayOperation {
     || !kindIsValid
     || typeof operation.createdAt !== 'string') return false
   if (operation.kind === 'correct') return isCorrection(operation.correction)
+  if (operation.kind === 'hide' && operation.hidden !== undefined && typeof operation.hidden !== 'boolean') return false
   return operation.correction === undefined || isCorrection(operation.correction)
 }
 
@@ -103,7 +105,7 @@ export function applyReplayOperation(state: ReplayOperationState, operation: Rep
     : [...state.audit, operation].slice(-MAX_AUDIT_ENTRIES)
   const next: ReplayOperationState = { ...state, error: undefined, pending, audit }
   if (operation.kind === 'save') next.saved = true
-  if (operation.kind === 'hide') next.hidden = true
+  if (operation.kind === 'hide') next.hidden = operation.hidden ?? true
   if (operation.kind === 'correct' && operation.correction) next.correction = operation.correction
   return next
 }
