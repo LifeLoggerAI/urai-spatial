@@ -3,7 +3,7 @@ import fs from 'node:fs'
 const path = '/tmp/apply-pr793-memory-lens-redesign.mjs'
 let source = fs.readFileSync(path, 'utf8')
 
-const clickPattern = /(?m)^(\s*)if \(menu\) menu\.open = true\n\1window\.setTimeout\(keepSelectedControlsOpen, 0\)/
+const clickPattern = /^(\s*)if \(menu\) menu\.open = true\n\1window\.setTimeout\(keepSelectedControlsOpen, 0\)/m
 let clickCount = 0
 source = source.replace(clickPattern, (match, indent) => {
   clickCount += 1
