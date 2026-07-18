@@ -9,6 +9,7 @@ const source = fs.readFileSync(new URL('../src/components/lifemap/AdaptiveLifeMa
 const convergenceCss = fs.readFileSync(new URL('../src/spatial/world/lifeMapConvergence.css', import.meta.url), 'utf8')
 const interactionCss = fs.readFileSync(new URL('../src/spatial/world/lifeMapIndependentInteraction.css', import.meta.url), 'utf8')
 const eventSource = fs.readFileSync(new URL('../src/components/lifemap/useLifeMapEvents.ts', import.meta.url), 'utf8')
+const deepLinkControls = fs.readFileSync(new URL('../src/spatial/lifemap/LifeMapDeepLinkControls.tsx', import.meta.url), 'utf8')
 
 test('LifeMap route uses the final canonical adaptive scene chain', () => {
   assert.match(page, /SpatialLifeMapCanonical/, 'Life Map route must render SpatialLifeMapCanonical.')
@@ -63,6 +64,12 @@ test('LifeMap memories route into Focus and Replay with selected identity', () =
   assert.ok(source.includes('next.set("node", node.id)'), 'Focus and Replay must preserve node identity.')
   assert.ok(source.includes('next.set("returnNode", node.id)'), 'Focus and Replay must preserve the exact return node.')
   assert.ok(source.includes('router.replace(`/life-map?${next.toString()}`'), 'Selection must remain inside Life Map before explicit navigation.')
+})
+
+test('LifeMap Overview preserves URL identity without restoring selected semantic controls', () => {
+  assert.ok(deepLinkControls.includes("const overviewRequested = searchParams.get('overview') === '1'"), 'Semantic controls must read the canonical Overview query state.')
+  assert.ok(deepLinkControls.includes('if (!memoryId || overviewRequested) return null'), 'Overview must suppress selected-memory Focus and Replay controls while preserving the URL memory identity.')
+  assert.ok(deepLinkControls.includes('data-testid="urai-lifemap-selected-memory-controls"'), 'Selected state must retain a deterministic browser-proof owner.')
 })
 
 test('LifeMap visual language is layered, authored, adaptive, mobile-safe, and not primitive-only', () => {
