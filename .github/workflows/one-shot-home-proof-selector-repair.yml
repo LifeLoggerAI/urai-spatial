@@ -1,0 +1,79 @@
+name: One-shot Home proof selector repair
+
+on:
+  pull_request:
+    branches:
+      - feat/home-ground-lifemap-art-bible-convergence-20260718
+    paths:
+      - .github/workflows/one-shot-home-proof-selector-repair.yml
+
+permissions:
+  contents: write
+
+jobs:
+  repair:
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout frozen product branch
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: feat/embodied-exploration-frozen-85f9754-20260718
+          fetch-depth: 0
+          persist-credentials: true
+
+      - name: Repair exact Home proof selectors
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+
+          path = Path('scripts/capture-continuous-spatial-proof.mjs')
+          text = path.read_text()
+
+          replacements = [
+              (
+                  'ready: \'[data-home-spatial-renderer="webgl"][data-webgl-ready="true"] canvas\'',
+                  'ready: \'.urai-home-spatial-runtime-layer[data-webgl-ready="true"] [data-home-spatial-renderer="webgl"] canvas\'',
+              ),
+              (
+                  'const runtime = await page.locator(\'[data-urai-home-runtime="one-continuous-webgl-world"]\').count()',
+                  'const runtime = await page.locator(\'[data-urai-home-runtime="embodied-continuous-webgl-world"]\').count()',
+              ),
+              (
+                  'const thresholdLabelsVisible = sceneLabelCount === 1 && visibleSceneLabelCount === 1',
+                  "const thresholdLabelsVisible = await page.getByRole('navigation', { name: 'Direct Home destinations' }).getByRole('button').count() === 3",
+              ),
+              (
+                  'const authoredSceneMounted = await page.locator(\'[data-home-spatial-geometry="authored-sanctuary-avatar-orb-sky-ground"]\').count() === 1',
+                  "const authoredSceneMounted = await page.locator('.urai-home-embodied-art').count() === 1",
+              ),
+          ]
+
+          for old, new in replacements:
+              count = text.count(old)
+              if count != 1:
+                  raise SystemExit(f'expected exactly one match, found {count}: {old}')
+              text = text.replace(old, new, 1)
+
+          path.write_text(text)
+          PY
+
+      - name: Prove browser proof source contract
+        shell: bash
+        run: |
+          set -euo pipefail
+          node --test urai-tier1/tests/continuous-spatial-restoration-contract.test.mjs
+          git diff --check
+
+      - name: Finalize self-cleaned repair
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm .github/workflows/one-shot-home-proof-selector-repair.yml
+          test ! -e .github/workflows/one-shot-home-proof-selector-repair.yml
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -A
+          git commit -m 'fix(proof): align Home evidence with embodied runtime'
+          git push origin HEAD:feat/embodied-exploration-frozen-85f9754-20260718
