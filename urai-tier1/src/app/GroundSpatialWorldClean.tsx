@@ -153,8 +153,8 @@ export default function GroundSpatialWorldClean() {
             "aria-label": `${destination.label}. ${destination.detail}. ${destination.signature}. ${destination.emotionalSentence} Workforce state: ${STATE_LABEL[destination.workforceState]}. Service: ${destination.availability}. Direct travel.`,
             onFocus: (event: FocusEvent<HTMLElement>) => {
               setActiveId(destination.id);
+              event.currentTarget.scrollIntoView({ block: "nearest", inline: "center" });
               const target = event.currentTarget;
-              target.scrollIntoView({ block: "nearest", inline: "center" });
               window.requestAnimationFrame(() => target.scrollIntoView({ block: "nearest", inline: "center" }));
             },
             onMouseEnter: () => setActiveId(destination.id),
