@@ -1,0 +1,155 @@
+name: Canonical six-fix command authority
+
+on:
+  issue_comment:
+    types: [created]
+
+permissions:
+  contents: write
+  issues: write
+  pull-requests: read
+
+concurrency:
+  group: canonical-six-fix-command-authority
+  cancel-in-progress: false
+
+jobs:
+  repair:
+    if: github.event.issue.number == 788 && github.event.issue.pull_request && startsWith(github.event.comment.body, '/run-canonical-six-fix-')
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    env:
+      CLEAN_BASE: 1d172afdce8ce1e0b70152b62892dace4cf06fab
+      TARGET_BRANCH: fix/canonical-six-fix-direct-1d172afd-20260718
+    steps:
+      - name: Resolve and validate exact PR head
+        id: authority
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          COMMAND: ${{ github.event.comment.body }}
+        run: |
+          set -euo pipefail
+          test "${{ github.event.comment.user.login }}" = "LifeLoggerAI"
+          pr="$(curl --fail-with-body -sS \
+            -H "Authorization: Bearer $GH_TOKEN" \
+            -H "Accept: application/vnd.github+json" \
+            -H "X-GitHub-Api-Version: 2022-11-28" \
+            "${GITHUB_API_URL}/repos/${GITHUB_REPOSITORY}/pulls/788")"
+          head_sha="$(jq -r '.head.sha' <<<"$pr")"
+          head_ref="$(jq -r '.head.ref' <<<"$pr")"
+          head_repo="$(jq -r '.head.repo.full_name' <<<"$pr")"
+          expected_command="/run-canonical-six-fix-${head_sha}"
+          test "$COMMAND" = "$expected_command"
+          test "$head_ref" = "$TARGET_BRANCH"
+          test "$head_repo" = "$GITHUB_REPOSITORY"
+          echo "head_sha=$head_sha" >> "$GITHUB_OUTPUT"
+
+      - name: Checkout exact isolated repair head
+        id: checkout
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: ${{ steps.authority.outputs.head_sha }}
+          fetch-depth: 0
+          persist-credentials: true
+          show-progress: false
+
+      - name: Prove exact authority and apply bounded repair
+        id: repair
+        shell: bash
+        env:
+          EXPECTED_HEAD: ${{ steps.authority.outputs.head_sha }}
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$EXPECTED_HEAD"
+          test "$(git merge-base "$CLEAN_BASE" HEAD)" = "$CLEAN_BASE"
+          test -z "$(git status --porcelain --untracked-files=all)"
+          test "$(git diff --name-only "$CLEAN_BASE...HEAD" | sort)" = "$(printf '%s\n' .github/workflows/one-shot-six-fix-direct-push.yml .github/workflows/one-shot-six-fix-direct.yml docs/verification/TRIGGER_CANONICAL_SIX_FIX_DIRECT.md scripts/one-shot-six-fix-direct.mjs | sort)"
+          node scripts/one-shot-six-fix-direct.mjs
+          git diff --check
+          mapfile -t changed < <(git diff --name-only | sort)
+          expected=(
+            urai-tier1/src/app/EmbodiedHomeSpatialCanvas.tsx
+            urai-tier1/src/app/GroundSpatialWorldClean.tsx
+            urai-tier1/src/components/lifemap/AdaptiveLifeMapScene.tsx
+            urai-tier1/src/spatial/navigation/EmbodiedNavigation.tsx
+          )
+          test "${changed[*]}" = "${expected[*]}"
+
+      - name: Install exact dependencies
+        id: install
+        shell: bash
+        run: |
+          set -euo pipefail
+          corepack enable
+          corepack pnpm install --frozen-lockfile
+
+      - name: Verify contracts, types and build
+        id: verify
+        shell: bash
+        run: |
+          set -euo pipefail
+          corepack pnpm --dir urai-tier1 test
+          corepack pnpm --dir urai-tier1 typecheck
+          corepack pnpm --dir urai-tier1 build
+
+      - name: Install Chromium
+        id: chromium
+        run: corepack pnpm --dir urai-tier1 exec playwright install --with-deps chromium
+
+      - name: Verify exact prior accessibility failures
+        id: browser
+        shell: bash
+        run: |
+          set -euo pipefail
+          corepack pnpm --dir urai-tier1 exec playwright test tests/accessibility-performance-evidence.spec.ts tests/accessibility-performance-lifemap-independent.spec.ts --project=chromium --grep "mobile visible controls stay inside the visual viewport and safe area|reduced motion keeps selection and unwind behavior equivalent"
+
+      - name: Rewrite branch to one clean four-file product commit
+        id: rewrite
+        shell: bash
+        env:
+          EXPECTED_HEAD: ${{ steps.authority.outputs.head_sha }}
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/urai-six-fix/urai-tier1/src/app /tmp/urai-six-fix/urai-tier1/src/components/lifemap /tmp/urai-six-fix/urai-tier1/src/spatial/navigation
+          cp urai-tier1/src/app/EmbodiedHomeSpatialCanvas.tsx /tmp/urai-six-fix/urai-tier1/src/app/
+          cp urai-tier1/src/app/GroundSpatialWorldClean.tsx /tmp/urai-six-fix/urai-tier1/src/app/
+          cp urai-tier1/src/components/lifemap/AdaptiveLifeMapScene.tsx /tmp/urai-six-fix/urai-tier1/src/components/lifemap/
+          cp urai-tier1/src/spatial/navigation/EmbodiedNavigation.tsx /tmp/urai-six-fix/urai-tier1/src/spatial/navigation/
+          git checkout --detach "$CLEAN_BASE"
+          cp /tmp/urai-six-fix/urai-tier1/src/app/EmbodiedHomeSpatialCanvas.tsx urai-tier1/src/app/
+          cp /tmp/urai-six-fix/urai-tier1/src/app/GroundSpatialWorldClean.tsx urai-tier1/src/app/
+          cp /tmp/urai-six-fix/urai-tier1/src/components/lifemap/AdaptiveLifeMapScene.tsx urai-tier1/src/components/lifemap/
+          cp /tmp/urai-six-fix/urai-tier1/src/spatial/navigation/EmbodiedNavigation.tsx urai-tier1/src/spatial/navigation/
+          git diff --check
+          test "$(git diff --name-only | sort)" = "$(printf '%s\n' urai-tier1/src/app/EmbodiedHomeSpatialCanvas.tsx urai-tier1/src/app/GroundSpatialWorldClean.tsx urai-tier1/src/components/lifemap/AdaptiveLifeMapScene.tsx urai-tier1/src/spatial/navigation/EmbodiedNavigation.tsx | sort)"
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add -A
+          git commit -m "fix(spatial): close bounded accessibility and runtime defects"
+          git push --force-with-lease=refs/heads/$TARGET_BRANCH:$EXPECTED_HEAD origin HEAD:refs/heads/$TARGET_BRANCH
+
+      - name: Post exact authority receipt
+        if: always()
+        env:
+          GH_TOKEN: ${{ github.token }}
+          HEAD_SHA: ${{ steps.authority.outputs.head_sha }}
+          AUTHORITY: ${{ steps.authority.outcome }}
+          CHECKOUT: ${{ steps.checkout.outcome }}
+          REPAIR: ${{ steps.repair.outcome }}
+          INSTALL: ${{ steps.install.outcome }}
+          VERIFY: ${{ steps.verify.outcome }}
+          CHROMIUM: ${{ steps.chromium.outcome }}
+          BROWSER: ${{ steps.browser.outcome }}
+          REWRITE: ${{ steps.rewrite.outcome }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          body="Six-fix authority receipt for ${HEAD_SHA:-unknown}: authority=${AUTHORITY}; checkout=${CHECKOUT}; repair=${REPAIR}; install=${INSTALL}; verify=${VERIFY}; chromium=${CHROMIUM}; browser=${BROWSER}; rewrite=${REWRITE}."
+          payload="$(jq -n --arg body "$body" '{body:$body}')"
+          curl --fail-with-body -sS -X POST \
+            -H "Authorization: Bearer $GH_TOKEN" \
+            -H "Accept: application/vnd.github+json" \
+            -H "X-GitHub-Api-Version: 2022-11-28" \
+            "${GITHUB_API_URL}/repos/${GITHUB_REPOSITORY}/issues/788/comments" \
+            -d "$payload"
