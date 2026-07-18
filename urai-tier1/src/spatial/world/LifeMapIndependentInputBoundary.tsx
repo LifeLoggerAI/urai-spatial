@@ -38,12 +38,23 @@ export function LifeMapIndependentInputBoundary() {
     const attached = new Set<HTMLElement>()
     const stopCameraGesture = (event: Event) => event.stopPropagation()
 
+    const removeGestureBoundary = (element: HTMLElement) => {
+      CONTROL_GESTURE_EVENTS.forEach((eventName) => {
+        element.removeEventListener(eventName, stopCameraGesture)
+      })
+      attached.delete(element)
+    }
+
     const keepSelectedControlsOpen = () => {
       const menu = document.querySelector<HTMLDetailsElement>('.life-map-accessibility-menu')
       if (menu && selectedMemoryIsActive()) menu.open = true
     }
 
     const attach = () => {
+      attached.forEach((element) => {
+        if (!document.contains(element)) removeGestureBoundary(element)
+      })
+
       document.querySelectorAll<HTMLElement>(LIFE_MAP_CONTROL_SELECTOR).forEach((element) => {
         if (attached.has(element)) return
         attached.add(element)
@@ -91,11 +102,7 @@ export function LifeMapIndependentInputBoundary() {
       observer.disconnect()
       document.removeEventListener('click', onClickCapture, true)
       window.removeEventListener('keydown', onKeyDownCapture, true)
-      attached.forEach((element) => {
-        CONTROL_GESTURE_EVENTS.forEach((eventName) => {
-          element.removeEventListener(eventName, stopCameraGesture)
-        })
-      })
+      attached.forEach(removeGestureBoundary)
       attached.clear()
     }
   }, [])
