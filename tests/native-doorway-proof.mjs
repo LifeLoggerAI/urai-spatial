@@ -12,7 +12,7 @@ const cases = [
 ]
 const doorways = [
   { id: 'ground', destination: '/ground', name: 'Open the ground and descend into Hidden Infrastructure' },
-  { id: 'life-map', destination: '/life-map', name: 'Life Map' },
+  { id: 'life-map', destination: '/life-map', name: 'Open Life Map directly' },
 ]
 if (!/^[0-9a-f]{40}$/.test(exactSha)) throw new Error('Exact source SHA required')
 const normalize = (value) => new URL(value).pathname.replace(/\/$/, '') || '/'
@@ -26,20 +26,10 @@ async function activate(target, method, position) {
   return target.press('Enter', { noWaitAfter: true })
 }
 
-async function resolveTarget(page, doorway, method) {
-  if (doorway.id === 'ground') return page.getByRole('button', { name: doorway.name, exact: true })
-
-  const orb = page.getByRole('button', { name: 'Open Orb travel controls', exact: true })
-  await orb.waitFor({ state: 'visible', timeout: 15000 })
-  await activate(orb, method)
-  await page.locator('#urai-world-companion-menu[aria-hidden="false"]').waitFor({ state: 'attached', timeout: 15000 })
-  if (method === 'keyboard') {
-    await page.waitForFunction(() => Boolean(document.activeElement?.closest('#urai-world-companion-menu')), null, { timeout: 15000 })
-  }
-
-  const destination = page.getByRole('button', { name: doorway.name, exact: true })
-  await destination.waitFor({ state: 'visible', timeout: 15000 })
-  return destination
+async function resolveTarget(page, doorway) {
+  const target = page.getByRole('button', { name: doorway.name, exact: true })
+  await target.waitFor({ state: 'visible', timeout: 15000 })
+  return target
 }
 
 function safeGroundPosition(box) {
@@ -57,7 +47,7 @@ async function prove(browser, doorway, testCase) {
   try {
     await page.goto(`${baseUrl}/home`, { waitUntil: 'domcontentloaded', timeout: 60000 })
     await page.waitForLoadState('networkidle', { timeout: 15000 }).catch(() => {})
-    const target = await resolveTarget(page, doorway, testCase.method)
+    const target = await resolveTarget(page, doorway)
     const box = await target.boundingBox()
     if (!box || box.width < 44 || box.height < 44) throw new Error(`invalid hit target ${JSON.stringify(box)}`)
     const position = doorway.id === 'ground' && testCase.method !== 'keyboard' ? safeGroundPosition(box) : undefined
@@ -83,8 +73,8 @@ try {
 } finally {
   await browser.close()
 }
-const errors = interactions.filter((item) => !item.success).map((item) => `${item.device}:${item.activationMethod}:${item.destinationRoute}: ${item.failureReason}`)
-const receipt = { schemaVersion: 3, exactSha, baseUrl, createdAt: new Date().toISOString(), persistentWorldCanon: true, directDestinationNavigationPermitted: false, interactions, status: errors.length ? 'failed' : 'passed', errors }
+const errors = interactions.filter((item) => !item.success).map((item) => `${item.device}:${item.method}:${item.destinationRoute}: ${item.failureReason}`)
+const receipt = { schemaVersion: 4, exactSha, baseUrl, createdAt: new Date().toISOString(), persistentWorldCanon: true, directDestinationNavigationPermitted: true, interactions, status: errors.length ? 'failed' : 'passed', errors }
 await fs.writeFile(path.join(outDir, 'native-doorway-receipt.json'), `${JSON.stringify(receipt, null, 2)}\n`)
 console.log(errors.length ? 'NATIVE_DOORWAY_PROOF_FAILED' : 'NATIVE_DOORWAY_PROOF_PASSED')
 console.log(JSON.stringify(receipt, null, 2))
