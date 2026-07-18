@@ -39,12 +39,30 @@ jobs:
       - name: Prove execution authority and apply to latest product head
         shell: bash
         run: |
-          set -euo pipefail
+          exec > >(tee /tmp/pr793-memory-lens-apply.log) 2>&1
+          set -euxo pipefail
           test "$(git rev-parse HEAD)" = "${{ github.event.pull_request.head.sha }}"
           test "$(git merge-base "$SOURCE_BASE" HEAD)" = "$SOURCE_BASE"
           test -z "$(git status --porcelain --untracked-files=all)"
           test "$(git diff --name-only "$SOURCE_BASE...HEAD" | sort)" = "$(printf '%s\n' .github/workflows/pr793-memory-lens-r1-execution.yml scripts/apply-pr793-memory-lens-redesign.mjs | sort)"
           cp scripts/apply-pr793-memory-lens-redesign.mjs /tmp/apply-pr793-memory-lens-redesign.mjs
+          python3 - <<'PY'
+          from pathlib import Path
+          path = Path('/tmp/apply-pr793-memory-lens-redesign.mjs')
+          source = path.read_text()
+          old = """        const menu = button.closest<HTMLDetailsElement>('.life-map-accessibility-menu')
+                  if (menu) menu.open = true
+                  window.setTimeout(keepSelectedControlsOpen, 0)
+          """
+          new = """        const menu = button.closest<HTMLDetailsElement>('.life-map-accessibility-menu')
+                  if (menu) menu.open = true
+                  queueMicrotask(keepSelectedControlsOpen)
+                  window.setTimeout(keepSelectedControlsOpen, 0)
+          """
+          if old not in source:
+              raise SystemExit('applicator repair target missing')
+          path.write_text(source.replace(old, new, 1))
+          PY
           test "$(git rev-parse origin/$PRODUCT_BRANCH)" = "$PRODUCT_BASE"
           git checkout --detach "$PRODUCT_BASE"
           test -z "$(git status --porcelain --untracked-files=all)"
