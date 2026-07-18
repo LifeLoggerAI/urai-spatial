@@ -193,3 +193,120 @@ body:has([data-testid="urai-true-3d-life-map"]) {
     padding: 14px;
   }
 }
+
+/* Selected Life Map memory is a cinematic spatial surface, not an open menu over a blank plane. */
+.urai-lifemap-selected-visual {
+  position: fixed;
+  z-index: 72;
+  left: clamp(32px, 7vw, 112px);
+  top: clamp(150px, 22svh, 220px);
+  width: min(640px, 58vw);
+  height: min(520px, 58svh);
+  pointer-events: none;
+  perspective: 1200px;
+}
+
+.urai-lifemap-selected-visual__halo {
+  position: absolute;
+  inset: -18%;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(126, 231, 255, .18), rgba(148, 94, 255, .08) 34%, transparent 68%);
+  filter: blur(34px);
+}
+
+.urai-lifemap-selected-visual__frame {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  transform: rotateY(7deg) rotateX(-2deg);
+  border: 1px solid rgba(205, 247, 255, .34);
+  border-radius: 36px;
+  background:
+    radial-gradient(circle at 34% 28%, rgba(255,255,255,.92) 0 1px, transparent 2px),
+    radial-gradient(circle at 68% 36%, rgba(143,237,255,.74) 0 2px, transparent 3px),
+    radial-gradient(circle at 53% 56%, rgba(203,166,255,.7) 0 2px, transparent 3px),
+    linear-gradient(145deg, rgba(12, 37, 70, .92), rgba(6, 8, 25, .96) 48%, rgba(35, 12, 59, .92));
+  background-size: 72px 72px, 116px 116px, 164px 164px, auto;
+  box-shadow: 0 50px 140px rgba(0,0,0,.66), 0 0 90px rgba(90,224,255,.18), inset 0 1px 0 rgba(255,255,255,.18);
+}
+
+.urai-lifemap-selected-visual__frame::before {
+  content: "";
+  position: absolute;
+  inset: 8% 8% 30%;
+  clip-path: polygon(0 78%, 20% 42%, 38% 62%, 58% 18%, 76% 50%, 100% 25%, 100% 100%, 0 100%);
+  background: linear-gradient(135deg, rgba(118,232,255,.25), rgba(176,116,255,.14));
+  border-bottom: 1px solid rgba(204,247,255,.22);
+}
+
+.urai-lifemap-selected-visual__constellation i {
+  position: absolute;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #effeff;
+  box-shadow: 0 0 22px rgba(157,243,255,.9);
+}
+
+.urai-lifemap-selected-visual__constellation i:nth-child(1) { left: 18%; top: 24%; }
+.urai-lifemap-selected-visual__constellation i:nth-child(2) { left: 42%; top: 17%; width: 5px; height: 5px; }
+.urai-lifemap-selected-visual__constellation i:nth-child(3) { left: 65%; top: 32%; width: 11px; height: 11px; }
+.urai-lifemap-selected-visual__constellation i:nth-child(4) { left: 78%; top: 19%; width: 4px; height: 4px; }
+.urai-lifemap-selected-visual__constellation i:nth-child(5) { left: 53%; top: 47%; width: 6px; height: 6px; }
+
+.urai-lifemap-selected-visual__copy {
+  position: absolute;
+  left: clamp(22px, 4vw, 52px);
+  right: clamp(22px, 4vw, 52px);
+  bottom: clamp(22px, 4vw, 48px);
+  display: grid;
+  gap: 8px;
+  color: #f6fdff;
+  text-shadow: 0 2px 20px rgba(0,0,0,.7);
+}
+
+.urai-lifemap-selected-visual__copy span,
+.urai-lifemap-selected-visual__copy i {
+  font-size: 10px;
+  font-weight: 850;
+  font-style: normal;
+  letter-spacing: .18em;
+  text-transform: uppercase;
+  color: rgba(206,244,255,.72);
+}
+
+.urai-lifemap-selected-visual__copy strong {
+  font-size: clamp(34px, 5vw, 72px);
+  line-height: .9;
+  letter-spacing: -.055em;
+}
+
+@media (max-width: 760px) {
+  .urai-lifemap-selected-visual {
+    left: 14px;
+    right: 14px;
+    top: max(92px, calc(env(safe-area-inset-top) + 72px));
+    width: auto;
+    height: 34svh;
+  }
+
+  .urai-lifemap-selected-visual__frame {
+    transform: none;
+    border-radius: 24px;
+  }
+
+  .urai-lifemap-selected-visual__copy strong {
+    font-size: clamp(28px, 10vw, 46px);
+  }
+
+  .urai-lifemap-deep-link-controls {
+    top: auto;
+    bottom: max(18px, env(safe-area-inset-bottom));
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .urai-lifemap-selected-visual__frame {
+    transform: none;
+  }
+}

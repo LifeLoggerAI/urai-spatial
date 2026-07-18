@@ -37,3 +37,12 @@
   .life-map-whisper[aria-live='polite'] {
   display: block !important;
 }
+
+/* Native details ownership must remain correct before world-state hydration. */
+.life-map-accessibility-menu:not([open]) > div {
+  display: none !important;
+}
+
+.life-map-accessibility-menu[open] > div {
+  display: grid !important;
+}

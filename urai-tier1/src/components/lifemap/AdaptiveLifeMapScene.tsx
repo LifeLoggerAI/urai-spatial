@@ -611,6 +611,7 @@ function MemoryArtifact({ node, selected, related, overview, profile, onSelect, 
     : profile.tier === "high" ? 128 : 96;
   const [texture, setTexture] = useState<THREE.CanvasTexture | null>(null);
   const scale = 0.72 + node.intensity * 0.24;
+  const textureKey = texture?.uuid ?? `pending-${node.id}-${textureResolution}`;
 
   useEffect(() => {
     const nextTexture = createMemorySurface(node, textureResolution);
@@ -649,7 +650,15 @@ function MemoryArtifact({ node, selected, related, overview, profile, onSelect, 
         scale={[scale * 1.12, scale * 1.12, 1]}
       >
         <planeGeometry args={[1.42, 1.42, 1, 1]} />
-        <meshBasicMaterial map={texture ?? undefined} transparent opacity={selected ? 1 : related ? 0.88 : 0.42} toneMapped={false} />
+        <meshBasicMaterial
+          key={`${textureKey}-main`}
+          map={texture ?? undefined}
+          color={texture ? "#ffffff" : "#071425"}
+          transparent
+          opacity={texture ? selected ? 1 : related ? 0.88 : 0.42 : 0.12}
+          toneMapped={false}
+          depthWrite={false}
+        />
       </mesh>
 
       <mesh position={[0, 0, -0.045]} scale={[scale * 1.27, scale * 1.27, 1]}>
@@ -668,11 +677,27 @@ function MemoryArtifact({ node, selected, related, overview, profile, onSelect, 
 
       <mesh position={[-scale * 0.86, scale * 0.52, -0.08]} rotation={[0, 0, -0.24]} scale={[scale * 0.34, scale * 0.18, 1]}>
         <planeGeometry args={[1, 1]} />
-        <meshBasicMaterial map={texture ?? undefined} transparent opacity={selected ? 0.52 : related ? 0.2 : 0.04} depthWrite={false} />
+        <meshBasicMaterial
+          key={`${textureKey}-left`}
+          map={texture ?? undefined}
+          color={texture ? "#ffffff" : "#071425"}
+          transparent
+          opacity={texture ? selected ? 0.52 : related ? 0.2 : 0.04 : 0}
+          toneMapped={false}
+          depthWrite={false}
+        />
       </mesh>
       <mesh position={[scale * 0.82, -scale * 0.46, -0.1]} rotation={[0, 0, 0.2]} scale={[scale * 0.28, scale * 0.22, 1]}>
         <planeGeometry args={[1, 1]} />
-        <meshBasicMaterial map={texture ?? undefined} transparent opacity={selected ? 0.42 : related ? 0.16 : 0.03} depthWrite={false} />
+        <meshBasicMaterial
+          key={`${textureKey}-right`}
+          map={texture ?? undefined}
+          color={texture ? "#ffffff" : "#071425"}
+          transparent
+          opacity={texture ? selected ? 0.42 : related ? 0.16 : 0.03 : 0}
+          toneMapped={false}
+          depthWrite={false}
+        />
       </mesh>
 
       {node.privacyLevel === "hidden" || node.locked ? (
@@ -857,6 +882,10 @@ export default function AdaptiveLifeMapScene() {
   }, [cameraIntent.position, manifestId]);
 
   const selectNode = useCallback((node: LifeMapNode) => {
+    document.querySelectorAll<HTMLDetailsElement>(".life-map-accessibility-menu").forEach((controls) => {
+      controls.open = false;
+      controls.removeAttribute("open");
+    });
     setSelectedId(node.id);
     setCameraIntent(cameraForNode(node));
     setNarratorText(narrationForNode(node).text);
