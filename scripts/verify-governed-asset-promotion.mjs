@@ -10,7 +10,7 @@ const failures = []
 const requireCondition = (condition, message) => { if (!condition) failures.push(message) }
 const readJson = (relative) => JSON.parse(readFileSync(path.resolve(root, relative), 'utf8'))
 const sha256 = (buffer) => createHash('sha256').update(buffer).digest('hex')
-const safePath = (value) => typeof value === 'string' && value.length > 0 && !value.startsWith('/') && !value.includes('\\\\') && path.posix.normalize(value) === value && value.split('/').every((segment) => segment && segment !== '.' && segment !== '..')
+const safePath = (value) => typeof value === 'string' && value.length > 0 && !value.startsWith('/') && !value.includes('\\') && path.posix.normalize(value) === value && value.split('/').every((segment) => segment && segment !== '.' && segment !== '..')
 
 requireCondition(existsSync(path.resolve(root, manifestPath)), `missing canonical manifest: ${manifestPath}`)
 requireCondition(safePath(decisionPath), 'promotion decision path is unsafe')
