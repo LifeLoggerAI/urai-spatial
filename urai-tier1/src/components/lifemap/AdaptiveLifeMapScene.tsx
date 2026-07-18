@@ -115,6 +115,7 @@ function roundedRect(ctx: CanvasRenderingContext2D, x: number, y: number, width:
 function hexToRgba(hex: string, alpha: number) {
   const value = hex.replace("#", "");
   const normalized = value.length === 3 ? value.split("").map((part) => part + part).join("") : value.padEnd(6, "0").slice(0, 6);
+  if (!/^[0-9a-f]{6}$/i.test(normalized)) return `rgba(138, 223, 255, ${alpha})`;
   const number = Number.parseInt(normalized, 16);
   const red = (number >> 16) & 255;
   const green = (number >> 8) & 255;
@@ -618,7 +619,13 @@ function MemoryArtifact({ node, selected, related, overview, profile, onSelect, 
   useEffect(() => {
     const nextTexture = createMemorySurface(node, textureResolution);
     setTexture(nextTexture);
-    return () => nextTexture?.dispose();
+    return () => {
+      if (typeof window === "undefined") {
+        nextTexture?.dispose();
+        return;
+      }
+      window.requestAnimationFrame(() => nextTexture?.dispose());
+    };
   }, [node, textureResolution]);
 
   useFrame(({ clock }) => {
