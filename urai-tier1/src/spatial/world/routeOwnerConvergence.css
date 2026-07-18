@@ -1,6 +1,6 @@
 /* Final persistent-world ownership boundary.
  * Canonical route clients own Home, Focus and Replay. The shared world owns
- * travel and the Home companion where destination canon permits it.
+ * travel and the companion only where destination canon permits it.
  * Mobile Replay clearance is enforced by geometric browser assertions.
  */
 
@@ -21,8 +21,13 @@ body:has(.urai-home-spatial-runtime-layer[data-webgl-ready='true']) .urai-home-s
   height: 100svh !important;
 }
 
+/* Home owns one authored sanctuary Orb. The generic dock must never duplicate it. */
+.urai-world-runtime[data-world-destination='home'] .urai-world-companion {
+  display: none !important;
+}
+
 /* Ground is a realm, not a miniature dashboard. Route chrome remains available
- * through the Home companion outside Life Map; the environment receives the entire viewport. */
+ * through the shared companion; the environment receives the entire viewport. */
 .urai-world-runtime[data-world-destination='infrastructure-hub'] .ground-spatial-root {
   width: 100vw !important;
   height: 100svh !important;
@@ -98,8 +103,12 @@ body:has(.urai-home-spatial-runtime-layer[data-webgl-ready='true']) .urai-home-s
   }
 
   .urai-world-runtime[data-world-destination='infrastructure-hub'] .ground-spatial-root canvas {
-    transform: scale(1.22) translateY(-1.5svh);
-    transform-origin: 50% 54%;
+    width: 100vw !important;
+    height: 100svh !important;
+    max-width: 100vw !important;
+    max-height: 100svh !important;
+    transform: none !important;
+    transform-origin: 50% 50%;
   }
 
   .urai-world-runtime[data-world-destination='infrastructure-hub'] .ground-district-label {
@@ -119,9 +128,5 @@ body:has(.urai-home-spatial-runtime-layer[data-webgl-ready='true']) .urai-home-s
 
   .urai-world-runtime[data-world-destination='replay'] .replaySpatialCaption {
     bottom: 31svh !important;
-  }
-
-  .urai-world-runtime[data-world-destination='infrastructure-hub'] .ground-spatial-root canvas {
-    transform: scale(1.3) translateY(-2svh);
   }
 }
