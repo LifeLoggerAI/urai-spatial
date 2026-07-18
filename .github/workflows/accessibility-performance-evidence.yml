@@ -23,6 +23,7 @@ on:
       - 'urai-tier1/src/app/focus/FocusChamberCinematic.module.css'
       - 'urai-tier1/src/app/focus/FocusChamberLandscape.module.css'
       - 'urai-tier1/src/spatial/memory/explicitDemoMemory.ts'
+      - 'urai-tier1/src/spatial/memory/selectedMemoryContract.ts'
       - 'urai-tier1/src/spatial/memory/useSelectedMemory.ts'
       - 'urai-tier1/src/spatial/world/PersistentWorldCompanion.tsx'
       - 'urai-tier1/src/spatial/world/persistentWorldCompanion.css'
@@ -87,10 +88,13 @@ jobs:
           cd urai-tier1
           node scripts/run-unit-contract-tests-compact.mjs 2>&1 | tee ../accessibility-performance-evidence/focused-unit-contracts.log
 
-      - name: Typecheck and build exact candidate
+      - name: Typecheck and build exact static candidate
         run: |
           pnpm --dir urai-tier1 typecheck
-          pnpm --dir urai-tier1 build
+          pnpm build:static
+          test -f urai-tier1/out/focus/index.html
+          test -f urai-tier1/out/replay/index.html
+          test -f urai-tier1/out/life-map/index.html
 
       - name: Install Chromium
         run: pnpm exec playwright install --with-deps chromium
@@ -103,6 +107,8 @@ jobs:
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
           name: accessibility-performance-evidence-${{ env.URAI_EXACT_HEAD }}
-          path: accessibility-performance-evidence
+          path: |
+            accessibility-performance-evidence
+            artifacts/accessibility-performance
           if-no-files-found: error
           retention-days: 90
