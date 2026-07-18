@@ -38,7 +38,7 @@ type HomeSceneProps = {
 
 const HOME_BOUNDS = { minX: -8.4, maxX: 8.4, minZ: -10.2, maxZ: 8.4 }
 const HOME_SPAWN = new THREE.Vector3(0, 0, 7.4)
-const ORB_POSITION = new THREE.Vector3(2.45, 1.55, -1.15)
+const ORB_POSITION = new THREE.Vector3(0, 1.55, -1.15)
 const AVATAR_POSITION = new THREE.Vector3(-2.2, 0, -0.25)
 const GROUND_GATE_POSITION = new THREE.Vector3(0, 0, -8.7)
 const LIFE_MAP_POSITION = new THREE.Vector3(0, 0, -5.45)
@@ -98,28 +98,17 @@ function HomeOrb({ walkTarget, nearby, onOrbOpen }: {
   nearby: MutableRefObject<NearbyHomeTarget>
   onOrbOpen: () => void
 }) {
-  const group = useRef<THREE.Group>(null)
-  const [hovered, setHovered] = useState(false)
-  useFrame(({ clock }) => {
-    if (!group.current) return
-    group.current.position.y = ORB_POSITION.y + Math.sin(clock.elapsedTime * 0.8) * 0.045
-  })
   const activate = (event: ThreeEvent<MouseEvent>) => {
     event.stopPropagation()
     if (nearby.current === 'orb') onOrbOpen()
     else walkTarget.current = approachPoint(ORB_POSITION, 1.4)
   }
   return (
-    <group ref={group} position={ORB_POSITION} name="home-only-companion" data-testid="urai-home-webgl-orb">
-      <mesh onClick={activate} onPointerOver={() => setHovered(true)} onPointerOut={() => setHovered(false)}>
-        <sphereGeometry args={[0.34, 40, 40]} />
-        <meshPhysicalMaterial color="#ecffff" emissive="#7cecf2" emissiveIntensity={hovered ? 3.5 : 2.45} roughness={0.04} metalness={0.14} clearcoat={1} transmission={0.18} />
+    <group position={ORB_POSITION} name="home-authored-orb-physical-hit-target" data-testid="urai-home-webgl-orb">
+      <mesh onClick={activate}>
+        <sphereGeometry args={[0.82, 24, 24]} />
+        <meshBasicMaterial transparent opacity={0} colorWrite={false} depthWrite={false} />
       </mesh>
-      <mesh scale={1.36}>
-        <sphereGeometry args={[0.34, 30, 30]} />
-        <meshBasicMaterial color="#9f91ff" transparent opacity={0.075} depthWrite={false} blending={THREE.AdditiveBlending} toneMapped={false} />
-      </mesh>
-      <pointLight color="#7cecf2" intensity={hovered ? 7 : 5} distance={7.5} decay={2} />
     </group>
   )
 }

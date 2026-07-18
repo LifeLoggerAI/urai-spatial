@@ -17,7 +17,8 @@ test('accessibility and performance implementation contracts are present', () =>
   const worldShell = read('src/spatial/world/UraiWorldShell.tsx')
   const companionCss = read('src/spatial/world/persistentWorldCompanion.css')
   const routeOwnerCss = read('src/spatial/world/routeOwnerConvergence.css')
-  const homeCanvas = read('src/app/HomeSpatialCanvas.tsx')
+  const homeCapability = read('src/app/HomeSpatialCanvas.tsx')
+  const embodiedHome = read('src/app/EmbodiedHomeSpatialCanvas.tsx')
   const homeRuntime = read('src/app/HomeSpatialRuntimeLayer.tsx')
   const homeFallback = read('src/app/FinalHomeThreshold.tsx')
   const focus = read('src/app/focus/FocusChamberClient.tsx')
@@ -30,9 +31,7 @@ test('accessibility and performance implementation contracts are present', () =>
   requireText(reducedMotion, "addEventListener?.('change', update)")
   requireText(reducedMotion, "removeEventListener?.('change', update)")
 
-  for (const marker of ['saveData', 'deviceMemory', 'effectiveType', 'visibilitychange', 'markFirstSpatialFrame']) {
-    requireText(adaptiveQuality, marker)
-  }
+  for (const marker of ['saveData', 'deviceMemory', 'effectiveType', 'visibilitychange', 'markFirstSpatialFrame']) requireText(adaptiveQuality, marker)
 
   requireText(companion, "open ? 'Close Orb travel controls' : 'Open Orb travel controls'")
   requireText(companion, 'aria-expanded={open}')
@@ -44,27 +43,39 @@ test('accessibility and performance implementation contracts are present', () =>
   requireText(companion, "event.key !== 'Enter' && event.key !== ' '")
   requireText(companion, 'event.stopPropagation()')
   requireText(companion, 'onClick={toggleCompanion}')
+  requireText(companion, 'anchorToPhysicalHomeOrb?: boolean')
+  requireText(companion, "data-home-physical-orb-anchor={anchorToPhysicalHomeOrb ? 'true' : 'false'}")
+  requireText(companion, "data-visual-orb-owner={anchorToPhysicalHomeOrb ? 'physical-home-orb' : 'persistent-companion'}")
+  requireText(companion, 'anchorToPhysicalHomeOrb ? null : <span aria-hidden="true" />')
   requireText(companion, 'const [hydrated, setHydrated] = useState(false)')
   requireText(companion, 'setHydrated(true)')
   requireText(companion, "disabled={!hydrated || phase !== 'idle'}")
   requireText(companion, "aria-current={destination.id === world.destination ? 'page' : undefined}")
   requireText(companion, 'aria-label="Return through the world"')
-  requireText(worldShell, "const showWorldCompanion = world.destination !== 'life-map' && world.destination !== 'home'")
-  requireText(worldShell, 'showWorldCompanion ? <PersistentWorldCompanion /> : null')
-  requireText(routeOwnerCss, ".urai-world-runtime[data-world-destination='home'] .urai-world-companion")
-  requireText(routeOwnerCss, 'display: none !important;')
+  requireText(worldShell, "const showWorldCompanion = world.destination !== 'life-map'")
+  requireText(worldShell, "const anchorToPhysicalHomeOrb = world.destination === 'home'")
+  requireText(worldShell, '<PersistentWorldCompanion anchorToPhysicalHomeOrb={anchorToPhysicalHomeOrb} />')
+  requireText(routeOwnerCss, ".urai-world-runtime[data-world-destination='home'] .urai-world-companion__orb")
+  requireText(routeOwnerCss, 'background: transparent !important;')
+  requireText(routeOwnerCss, 'box-shadow: none !important;')
+  requireText(routeOwnerCss, 'width: 96px !important;')
+  requireText(routeOwnerCss, 'height: 96px !important;')
+  requireText(routeOwnerCss, 'outline: 3px solid rgba(224,255,255,.96) !important;')
 
   requireText(companionCss, 'width: 64px;')
   requireText(companionCss, 'height: 64px;')
   requireText(companionCss, 'min-height: 48px;')
   requireText(companionCss, 'min-width: 48px;')
+  requireText(companionCss, "data-home-physical-orb-anchor='true'")
   requireText(companionCss, 'env(safe-area-inset-bottom)')
   requireText(companionCss, '@media (prefers-reduced-motion: reduce)')
 
-  requireNormalizedPattern(homeCanvas, /canvas\.getContext\('webgl2'(?:,\s*\{[^)]*\})?\)\s*\?\?\s*canvas\.getContext\('webgl'(?:,\s*\{[^)]*\})?\)/, 'Home must test WebGL2 and WebGL capability with optional hardened context settings')
-  requireText(homeCanvas, 'name="home-only-companion-hit-target"')
-  requireText(homeCanvas, 'colorWrite={false}')
-  assert.doesNotMatch(homeCanvas, /emissiveIntensity=\{hovered|home-only-companion"/, 'Home must not render a second visible WebGL Orb beside the authored sanctuary Orb')
+  requireNormalizedPattern(homeCapability, /canvas\.getContext\('webgl2'(?:,\s*\{[^)]*\})?\)\s*\?\?\s*canvas\.getContext\('webgl'(?:,\s*\{[^)]*\})?\)/, 'Home must test WebGL2 and WebGL capability with optional hardened context settings')
+  requireText(homeRuntime, 'EmbodiedHomeSpatialCanvas')
+  requireText(embodiedHome, 'name="home-authored-orb-physical-hit-target"')
+  requireText(embodiedHome, 'const ORB_POSITION = new THREE.Vector3(0, 1.55, -1.15)')
+  requireText(embodiedHome, '<meshBasicMaterial transparent opacity={0} colorWrite={false} depthWrite={false} />')
+  assert.doesNotMatch(embodiedHome, /name="home-only-companion"|emissiveIntensity=\{hovered|<pointLight color="#7cecf2"/, 'Embodied Home must not paint a second Orb over the authored sanctuary Orb')
   requireText(homeFallback, 'data-testid="urai-home-accessible-fallback"')
   requireText(homeFallback, '<HomeSpatialWorldFinal />')
   requireText(homeRuntime, "addEventListener('webglcontextlost', onContextLost)")
@@ -90,26 +101,7 @@ test('accessibility and performance implementation contracts are present', () =>
 
   requireText(playwrightConfig, 'python3 -m http.server 3000')
   assert.equal(playwrightConfig.includes('next dev'), false, 'Performance evidence must not use a development server')
-  for (const marker of [
-    'DESKTOP_FRAME_P95_BUDGET_MS = 20',
-    'MOBILE_FRAME_P95_BUDGET_MS = 33.3',
-    'MAX_HEAP_GROWTH_BYTES = 32 * 1024 * 1024',
-    'JOURNEY_CYCLES = 5',
-    "serverMode: 'static-export'",
-    'WEBGL_debug_renderer_info',
-    'NOT_AVAILABLE_HARDWARE_RENDERER',
-    'hardwareAcceleration',
-  ]) {
-    requireText(performanceMetrics, marker)
-  }
+  for (const marker of ['DESKTOP_FRAME_P95_BUDGET_MS = 20', 'MOBILE_FRAME_P95_BUDGET_MS = 33.3', 'MAX_HEAP_GROWTH_BYTES = 32 * 1024 * 1024', 'JOURNEY_CYCLES = 5', "serverMode: 'static-export'", 'WEBGL_debug_renderer_info', 'NOT_AVAILABLE_HARDWARE_RENDERER', 'hardwareAcceleration']) requireText(performanceMetrics, marker)
 
-  for (const marker of [
-    '[data-urai-audit-action="orb-controls"]',
-    'toHaveAccessibleName(/close orb travel controls/i)',
-    'hasScrollableAncestor',
-    'scrollableGroundRail',
-    'focusContainment.filter',
-  ]) {
-    requireText(accessibilityEvidence, marker)
-  }
+  for (const marker of ['[data-urai-audit-action="orb-controls"]', 'toHaveAccessibleName(/close orb travel controls/i)', 'hasScrollableAncestor', 'scrollableGroundRail', 'focusContainment.filter']) requireText(accessibilityEvidence, marker)
 })

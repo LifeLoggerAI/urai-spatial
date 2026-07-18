@@ -12,7 +12,7 @@ const atmosphere = read('src/spatial/world/PersistentRealmAtmosphere.tsx')
 const atmosphereCss = read('src/spatial/world/persistentRealmAtmosphere.css')
 const worldEvents = read('src/spatial/world/worldEvents.ts')
 const homeRuntime = read('src/app/HomeSpatialRuntimeLayer.tsx')
-const homeCanvas = read('src/app/HomeSpatialCanvas.tsx')
+const embodiedHome = read('src/app/EmbodiedHomeSpatialCanvas.tsx')
 const focusClient = read('src/app/focus/FocusChamberClient.tsx')
 const replayClient = read('src/app/replay/CinematicReplayClient.tsx')
 const chrome = read('src/spatial/world/persistentWorldCompanion.css')
@@ -20,17 +20,7 @@ const lifeMapConvergence = read('src/spatial/world/lifeMapConvergence.css')
 const routeOwnerConvergence = read('src/spatial/world/routeOwnerConvergence.css')
 const secondaryRealmConvergence = read('src/spatial/world/secondaryRealmConvergence.css')
 
-const canonicalDestinations = [
-  'home',
-  'infrastructure-hub',
-  'life-map',
-  'focus',
-  'replay',
-  'mirror',
-  'passport',
-  'privacy-controls',
-  'location-map',
-]
+const canonicalDestinations = ['home','infrastructure-hub','life-map','focus','replay','mirror','passport','privacy-controls','location-map']
 
 test('the full journey participates in one persistent world model', () => {
   for (const destination of canonicalDestinations) {
@@ -38,29 +28,37 @@ test('the full journey participates in one persistent world model', () => {
     assert.match(registry, new RegExp(`['"]${destination}['"]`))
   }
   assert.match(registry, /\[\s*['"]\/life-map['"]\s*,\s*['"]life-map['"]\s*\]/)
-  assert.match(registry, /environmentalForm:\s*['"]explorable-memory-constellation['"]/) 
+  assert.match(registry, /environmentalForm:\s*['"]explorable-memory-constellation['"]/)
 })
 
-test('Orb ownership follows destination canon without visual duplication', () => {
+test('one authored Home Orb owns physical and semantic interaction without Life Map leakage', () => {
   assert.match(shell, /PersistentWorldCompanion/)
-  assert.match(shell, /const showWorldCompanion = world\.destination !== 'life-map' && world\.destination !== 'home'/)
-  assert.match(shell, /\{showWorldCompanion \? <PersistentWorldCompanion \/> : null\}/)
+  assert.match(shell, /const showWorldCompanion = world\.destination !== 'life-map'/)
+  assert.match(shell, /const anchorToPhysicalHomeOrb = world\.destination === 'home'/)
+  assert.match(shell, /\{showWorldCompanion \? <PersistentWorldCompanion anchorToPhysicalHomeOrb=\{anchorToPhysicalHomeOrb\} \/> : null\}/)
+  assert.match(companion, /anchorToPhysicalHomeOrb\?: boolean/)
   assert.match(companion, /PRIMARY_DESTINATIONS/)
   assert.match(companion, /SECONDARY_DESTINATIONS/)
-  for (const destination of canonicalDestinations) {
-    assert.match(companion, new RegExp(`['"]${destination}['"]`))
-  }
+  for (const destination of canonicalDestinations) assert.match(companion, new RegExp(`['"]${destination}['"]`))
   assert.match(companion, /requestUraiWorldTravel/)
   assert.match(companion, /requestUraiWorldReturn/)
   assert.match(companion, /URAI_WORLD_ORB_OPEN_EVENT/)
   assert.match(companion, /aria-label=\{open \? 'Close Orb travel controls' : 'Open Orb travel controls'\}/)
+  assert.match(companion, /data-visual-orb-owner=\{anchorToPhysicalHomeOrb \? 'physical-home-orb' : 'persistent-companion'\}/)
+  assert.match(companion, /anchorToPhysicalHomeOrb \? null : <span aria-hidden="true" \/>/)
   assert.match(companion, /aria-label="Return through the world"/)
   assert.doesNotMatch(companion, /next\/link/)
   assert.match(worldEvents, /requestUraiWorldOrbOpen/)
   assert.match(homeRuntime, /onOrbOpen=\{requestUraiWorldOrbOpen\}/)
-  assert.match(homeCanvas, /name="home-only-companion-hit-target"/)
-  assert.match(homeCanvas, /colorWrite=\{false\}/)
-  assert.doesNotMatch(homeCanvas, /emissiveIntensity=\{hovered|name="home-only-companion"/)
+  assert.match(homeRuntime, /EmbodiedHomeSpatialCanvas/)
+  assert.match(embodiedHome, /name="home-authored-orb-physical-hit-target"/)
+  assert.match(embodiedHome, /const ORB_POSITION = new THREE\.Vector3\(0, 1\.55, -1\.15\)/)
+  assert.match(embodiedHome, /<meshBasicMaterial transparent opacity=\{0\} colorWrite=\{false\} depthWrite=\{false\} \/>/)
+  assert.doesNotMatch(embodiedHome, /name="home-only-companion"|emissiveIntensity=\{hovered|<pointLight color="#7cecf2"/)
+  assert.match(routeOwnerConvergence, /data-world-destination='home'[\s\S]*\.urai-world-companion__orb/)
+  assert.match(routeOwnerConvergence, /background:\s*transparent\s*!important/)
+  assert.match(routeOwnerConvergence, /box-shadow:\s*none\s*!important/)
+  assert.match(routeOwnerConvergence, /outline:\s*3px solid rgba\(224,255,255,.96\)\s*!important/)
   assert.doesNotMatch(homeRuntime, /urai-home-spatial-orb-trigger/)
   assert.doesNotMatch(homeRuntime, /urai-home-spatial-runtime-orb/)
 })
@@ -73,9 +71,7 @@ test('one environmental continuity layer persists across every route transition'
   assert.match(atmosphere, /data-phase=\{phase\}/)
   assert.match(atmosphere, /urai-world-atmosphere__horizon/)
   assert.match(atmosphere, /urai-world-atmosphere__threshold/)
-  for (const destination of ['infrastructure-hub', 'life-map', 'focus', 'replay', 'mirror', 'passport', 'privacy-controls', 'location-map']) {
-    assert.match(atmosphereCss, new RegExp(`data-realm=['"]${destination}['"]`))
-  }
+  for (const destination of ['infrastructure-hub','life-map','focus','replay','mirror','passport','privacy-controls','location-map']) assert.match(atmosphereCss, new RegExp(`data-realm=['"]${destination}['"]`))
   assert.match(atmosphereCss, /pointer-events:\s*none/)
   assert.match(atmosphereCss, /data-phase/)
   assert.match(atmosphereCss, /env\(safe-area-inset-bottom\)/)
@@ -83,9 +79,7 @@ test('one environmental continuity layer persists across every route transition'
 })
 
 test('page-like route chrome is removed from the active world', () => {
-  for (const selector of ['.ground-card', '.ground-rail', '.focusTitle', '.focusNav']) {
-    assert.match(chrome, new RegExp(selector.replace('.', '\\.')))
-  }
+  for (const selector of ['.ground-card','.ground-rail','.focusTitle','.focusNav']) assert.match(chrome, new RegExp(selector.replace('.', '\\.')))
   assert.match(chrome, /\[aria-label='URAI Life Map route portals'\]/)
   assert.match(chrome, /\[aria-label='Replay location'\]/)
   assert.match(chrome, /display:\s*none\s*!important/)
@@ -119,9 +113,7 @@ test('canonical route clients own Focus and Replay without the legacy autonomous
 
 test('secondary realms remain full-viewport destinations owned by the shared Orb', () => {
   assert.match(shell, /import '\.\/secondaryRealmConvergence\.css'/)
-  for (const destination of ['mirror', 'passport', 'privacy-controls', 'location-map']) {
-    assert.match(secondaryRealmConvergence, new RegExp(`data-world-destination=['"]${destination}['"]`))
-  }
+  for (const destination of ['mirror','passport','privacy-controls','location-map']) assert.match(secondaryRealmConvergence, new RegExp(`data-world-destination=['"]${destination}['"]`))
   assert.match(secondaryRealmConvergence, /URAI launch route chain/)
   assert.match(secondaryRealmConvergence, /URAI passport route chain/)
   assert.match(secondaryRealmConvergence, /URAI privacy route chain/)
