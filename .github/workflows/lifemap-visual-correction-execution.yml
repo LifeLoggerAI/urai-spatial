@@ -17,13 +17,13 @@ concurrency:
   cancel-in-progress: true
 
 env:
-  CLEAN_BASE: ac1a43d7cd5e2b057116a22830ed20a2199f568b
-  SOURCE_BRANCH: exec/lifemap-visual-correction-v1-20260718
+  CLEAN_BASE: f9e03c97acbf9d9667e499b602fb2c520a54b356
+  SOURCE_BRANCH: exec/lifemap-visual-correction-v2-20260718
   PRODUCT_BRANCH: product/canonical-six-fix-clean-v3-20260718
 
 jobs:
   correct-and-publish:
-    if: github.event.pull_request.head.repo.full_name == github.repository && github.event.pull_request.head.ref == 'exec/lifemap-visual-correction-v1-20260718'
+    if: github.event.pull_request.head.repo.full_name == github.repository && github.event.pull_request.head.ref == 'exec/lifemap-visual-correction-v2-20260718'
     runs-on: ubuntu-24.04
     timeout-minutes: 70
     steps:
