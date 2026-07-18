@@ -1,5 +1,5 @@
 name: Canonical six-fix isolated execution
-# trigger: exact static browser candidate 2026-07-18T18:16:00Z
+# trigger: guarded clean product publication 2026-07-18T18:20:00Z
 
 on:
   pull_request:
@@ -124,7 +124,12 @@ jobs:
           git config user.email 41898282+github-actions[bot]@users.noreply.github.com
           git add -A
           git commit -m "fix(spatial): close bounded accessibility and runtime defects"
-          git push --force-with-lease=refs/heads/$PRODUCT_BRANCH:$CLEAN_BASE origin HEAD:refs/heads/$PRODUCT_BRANCH
+          remote_sha="$(git ls-remote --heads origin "refs/heads/$PRODUCT_BRANCH" | awk '{print $1}')"
+          if [ -n "$remote_sha" ]; then
+            git push --force-with-lease=refs/heads/$PRODUCT_BRANCH:$remote_sha origin HEAD:refs/heads/$PRODUCT_BRANCH
+          else
+            git push origin HEAD:refs/heads/$PRODUCT_BRANCH
+          fi
           echo "product_sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
 
       - name: Retain exact verification diagnostics
