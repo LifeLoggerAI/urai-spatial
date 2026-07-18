@@ -99,6 +99,39 @@ test.describe('URAI accessibility and performance evidence', () => {
     await expect(page.locator('[data-urai-audit-action="orb-controls"]')).toHaveCount(0)
   })
 
+  test('same-path Focus recovery opens the disclosed demo without a reload', async ({ page }) => {
+    await page.goto('/focus', { waitUntil: 'domcontentloaded' })
+    const recovery = page.locator('[data-testid="urai-final-focus-chamber"][data-memory-status="unavailable"]')
+    await expect(recovery).toBeVisible()
+    await recovery.getByRole('button', { name: /open disclosed demo/i }).click()
+    await expect(page.locator('[data-testid="urai-final-focus-chamber"][data-memory-status="demo"]')).toBeVisible({ timeout: 10_000 })
+    await expect.poll(() => page.url()).toContain('memoryId=demo%3Aquiet-reset')
+  })
+
+  test('short-landscape Focus keeps the Replay CTA fully inside the visual viewport', async ({ page }) => {
+    await page.setViewportSize({ width: 844, height: 390 })
+    await page.goto(FOCUS_DEMO_PATH, { waitUntil: 'domcontentloaded' })
+    const replay = page.getByRole('button', { name: /open replay for the quiet reset/i })
+    await expect(replay).toBeVisible()
+    const containment = await replay.evaluate((element) => {
+      const rect = element.getBoundingClientRect()
+      const viewport = window.visualViewport
+      const left = viewport?.offsetLeft ?? 0
+      const top = viewport?.offsetTop ?? 0
+      const right = left + (viewport?.width ?? window.innerWidth)
+      const bottom = top + (viewport?.height ?? window.innerHeight)
+      return {
+        left: rect.left,
+        top: rect.top,
+        right: rect.right,
+        bottom: rect.bottom,
+        fullyContained: rect.left >= left && rect.right <= right && rect.top >= top && rect.bottom <= bottom,
+      }
+    })
+    await test.info().attach('focus-short-landscape-containment.json', { body: JSON.stringify(containment, null, 2), contentType: 'application/json' })
+    expect(containment.fullyContained).toBe(true)
+  })
+
   test('Orb menu enters focus, closes on Escape, and returns focus', async ({ page }) => {
     await page.goto('/', { waitUntil: 'domcontentloaded' })
     const orb = page.locator('[data-urai-audit-action="orb-controls"]')
