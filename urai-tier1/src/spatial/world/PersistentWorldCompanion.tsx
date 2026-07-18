@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { definitionForDestination, URAI_DESTINATION_REGISTRY } from './destinationRegistry'
 import {
   requestUraiWorldReturn,
@@ -29,6 +29,9 @@ export function PersistentWorldCompanion() {
   const { world, phase } = useUraiWorldState()
   const [open, setOpen] = useState(false)
   const current = definitionForDestination(world.destination)
+  const menuRef = useRef<HTMLDivElement>(null)
+  const orbRef = useRef<HTMLButtonElement>(null)
+  const restoreFocusRef = useRef(false)
 
   const primaryDestinations = useMemo(
     () => PRIMARY_DESTINATIONS.map((id) => URAI_DESTINATION_REGISTRY[id]),
@@ -39,6 +42,11 @@ export function PersistentWorldCompanion() {
     [],
   )
 
+  const closeCompanion = useCallback((restoreFocus = true) => {
+    restoreFocusRef.current = restoreFocus
+    setOpen(false)
+  }, [])
+
   useEffect(() => {
     const openCompanion = () => setOpen(true)
     window.addEventListener(URAI_WORLD_ORB_OPEN_EVENT, openCompanion)
@@ -46,12 +54,37 @@ export function PersistentWorldCompanion() {
   }, [])
 
   useEffect(() => {
-    if (phase !== 'idle') setOpen(false)
-  }, [phase])
+    if (phase !== 'idle') closeCompanion(false)
+  }, [closeCompanion, phase])
+
+  useEffect(() => {
+    if (open) {
+      restoreFocusRef.current = false
+      const firstControl = menuRef.current?.querySelector<HTMLElement>('button:not([disabled])')
+      firstControl?.focus()
+      return
+    }
+
+    if (restoreFocusRef.current) {
+      restoreFocusRef.current = false
+      orbRef.current?.focus()
+    }
+  }, [open])
+
+  useEffect(() => {
+    if (!open) return
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key !== 'Escape') return
+      event.preventDefault()
+      closeCompanion(true)
+    }
+    window.addEventListener('keydown', onKeyDown)
+    return () => window.removeEventListener('keydown', onKeyDown)
+  }, [closeCompanion, open])
 
   const travel = useCallback((destination: UraiDestination) => {
     if (phase !== 'idle' || destination === world.destination) {
-      setOpen(false)
+      closeCompanion(true)
       return
     }
 
@@ -70,17 +103,17 @@ export function PersistentWorldCompanion() {
         privacyMode: world.privacyMode,
       },
     })
-    setOpen(false)
-  }, [phase, world])
+    closeCompanion(false)
+  }, [closeCompanion, phase, world])
 
   const returnThroughWorld = useCallback(() => {
     if (phase !== 'idle' || world.destination === 'home') {
-      setOpen(false)
+      closeCompanion(true)
       return
     }
     requestUraiWorldReturn()
-    setOpen(false)
-  }, [phase, world.destination])
+    closeCompanion(false)
+  }, [closeCompanion, phase, world.destination])
 
   const destinationButtons = (destinations: typeof primaryDestinations) => destinations.map((destination) => (
     <button
@@ -103,7 +136,13 @@ export function PersistentWorldCompanion() {
       data-phase={phase}
       data-destination={world.destination}
     >
-      <div className="urai-world-companion__menu" aria-hidden={!open}>
+      <div
+        ref={menuRef}
+        id="urai-world-companion-menu"
+        className="urai-world-companion__menu"
+        aria-hidden={!open}
+        inert={!open ? true : undefined}
+      >
         <p>{current.label}</p>
         <nav aria-label="Travel through the URAI world">
           {destinationButtons(primaryDestinations)}
@@ -125,13 +164,18 @@ export function PersistentWorldCompanion() {
         ) : null}
       </div>
       <button
+        ref={orbRef}
         type="button"
         className="urai-world-companion__orb"
         aria-label={open ? 'Close Orb travel controls' : 'Open Orb travel controls'}
         aria-expanded={open}
+        aria-controls="urai-world-companion-menu"
         data-world-target="orb-controls"
         data-urai-audit-action="orb-controls"
-        onClick={() => setOpen((value) => !value)}
+        onClick={() => {
+          if (open) closeCompanion(true)
+          else setOpen(true)
+        }}
       >
         <span aria-hidden="true" />
       </button>
