@@ -4,7 +4,6 @@ import dynamic from "next/dynamic";
 import { Suspense, useEffect } from "react";
 import { assetCssStack, lifeMapAssets } from "@/spatial/assets/uraiAssets";
 import { requestUraiWorldReturn } from "@/spatial/world/worldEvents";
-import LifeMapDeepLinkControls from "./LifeMapDeepLinkControls";
 
 const FALLBACK_MEMORIES = [
   { title: "People", detail: "Relationship constellations", left: "18%", top: "31%", size: 108, color: "#c4b5fd" },
@@ -42,8 +41,8 @@ function LifeMapLoading({ label = "Opening your memory universe" }: { label?: st
 const LifeMapRouteBoundary = dynamic(() => import("@/components/lifemap/LifeMapRouteBoundary"), { ssr: false, loading: () => <LifeMapLoading /> });
 
 export default function SpatialLifeMapCanonical() {
-  return <section data-testid="urai-r3f-canonical-lifemap" data-canonical-asset={lifeMapAssets.primary.src} aria-label="URAI canonical spatial Life Map" style={{ position: "relative", minHeight: "100svh", overflow: "hidden", background: "#01030a" }}>
-    <Suspense fallback={<LifeMapLoading label="Preserving your map while the spatial field opens" />}><LifeMapRouteBoundary /><LifeMapDeepLinkControls /></Suspense>
+  return <section data-testid="urai-r3f-canonical-lifemap" data-canonical-asset={lifeMapAssets.primary.src} data-selected-memory-owner="spatial-lens-only" aria-label="URAI canonical spatial Life Map" style={{ position: "relative", minHeight: "100svh", overflow: "hidden", background: "#01030a" }}>
+    <Suspense fallback={<LifeMapLoading label="Preserving your map while the spatial field opens" />}><LifeMapRouteBoundary /></Suspense>
     <picture aria-hidden="true" data-life-map-authored-universe="primary" style={{ position: "absolute", inset: 0, zIndex: 60, pointerEvents: "none", mixBlendMode: "screen", opacity: .78 }}>
       <source media="(max-width: 700px)" srcSet={lifeMapAssets.mobile.src} />
       <img src={lifeMapAssets.primary.src} alt="" draggable={false} style={{ display: "block", width: "100%", height: "100%", objectFit: "cover", objectPosition: "center", filter: "saturate(1.12) contrast(1.06) brightness(.9)" }} />
