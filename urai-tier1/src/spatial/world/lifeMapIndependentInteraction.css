@@ -18,11 +18,14 @@
   overscroll-behavior: contain;
 }
 
-.urai-world-runtime[data-world-destination='life-map'] .life-map-accessibility-menu:not([open]) > div {
+/* The disclosure is closed by default regardless of hydration order. Restricting
+ * this rule to a world-state data attribute allowed first-paint route races to
+ * expose the entire drawer over the selected memory. */
+.life-map-accessibility-menu:not([open]) > div {
   display: none !important;
 }
 
-.urai-world-runtime[data-world-destination='life-map'] .life-map-accessibility-menu[open] > div {
+.life-map-accessibility-menu[open] > div {
   display: grid !important;
 }
 
