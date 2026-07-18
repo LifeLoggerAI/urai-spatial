@@ -23,6 +23,7 @@ replaceOnce(
   `  assert.match(controls, /requestAnimationFrame\\(closeSemanticDrawers\\)/)\n  assert.doesNotMatch(controls, /MutationObserver|observer\\.observe|document\\.body/, 'Selected-memory controls must not install a body-wide DOM observer')`,
 )
 
+execFileSync('git', ['add', '-N', contract])
 const changed = execFileSync('git', ['diff', '--name-only'], { encoding: 'utf8' }).trim().split('\n').filter(Boolean).sort()
 console.log('visual_correction_changed_files_begin')
 for (const path of changed) console.log(path)
