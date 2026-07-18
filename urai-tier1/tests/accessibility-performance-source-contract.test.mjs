@@ -89,11 +89,18 @@ test('accessibility and performance implementation contracts are present', () =>
     'urai-tier1/src/app/focus/FocusChamber.module.css',
     'urai-tier1/src/app/focus/FocusChamberCinematic.module.css',
     'urai-tier1/src/app/focus/FocusChamberLandscape.module.css',
+    'urai-tier1/src/spatial/memory/selectedMemoryContract.ts',
     'urai-tier1/src/spatial/world/WorldStateProvider.tsx',
     'urai-tier1/src/spatial/world/WorldTransitionController.tsx',
   ]) {
     requireText(accessibilityWorkflow, workflowPath, `Accessibility evidence must trigger for ${workflowPath}`)
   }
+  requireText(accessibilityWorkflow, 'pnpm build:static', 'Accessibility evidence must build the exact static export consumed by Playwright.')
+  assert.equal(accessibilityWorkflow.includes('pnpm --dir urai-tier1 build\n'), false, 'Accessibility evidence must not run a non-export Next build.')
+  requireText(accessibilityWorkflow, 'test -f urai-tier1/out/focus/index.html')
+  requireText(accessibilityWorkflow, 'test -f urai-tier1/out/replay/index.html')
+  requireText(accessibilityWorkflow, 'test -f urai-tier1/out/life-map/index.html')
+  requireText(accessibilityWorkflow, 'artifacts/accessibility-performance', 'Browser reports, screenshots, traces, and attachments must be retained.')
 
   requireText(playwrightConfig, 'python3 -m http.server 3000')
   assert.equal(playwrightConfig.includes('next dev'), false, 'Performance evidence must not use a development server')
