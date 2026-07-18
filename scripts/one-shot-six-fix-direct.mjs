@@ -115,3 +115,8 @@ String.raw`  requireNormalizedPattern(ground, /event\.currentTarget\.scrollIntoV
 String.raw`  requireText(ground, 'event.currentTarget.scrollIntoView')
   requireNormalizedPattern(ground, /block:\s*'nearest'/, 'Ground focus reveal must use the nearest block boundary')
   requireNormalizedPattern(ground, /inline:\s*'center'/, 'Ground focus reveal must center the destination inline')`)
+
+const restorationContract = 'urai-tier1/tests/continuous-spatial-restoration-contract.test.mjs'
+replaceOnce(restorationContract,
+String.raw`  assert.match(layer, /data-urai-home-runtime="one-continuous-webgl-world"/)`,
+String.raw`  assert.match(layer, /data-urai-home-runtime="embodied-continuous-webgl-world"/)`)
