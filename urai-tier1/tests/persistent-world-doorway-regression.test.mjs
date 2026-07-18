@@ -44,7 +44,8 @@ test('persistent world navigation preserves canonical ownership and separate hit
   assert.doesNotMatch(layout, /data-urai-audit-action="life-map-replay"/)
 
   assert.match(visualAudit, /let found = await firstVisible\(page, check\.selectors\)/)
-  assert.match(visualAudit, /if \(!found\) \{[\s\S]*Open Orb travel controls[\s\S]*found = await firstVisible/)
+  assert.match(visualAudit, /if \(!found && check\.name === 'life-map-to-focus'\) \{[\s\S]*Semantic Life Map[\s\S]*semanticStar\.click\(\{ force: true/)
+  assert.match(visualAudit, /if \(!found && check\.name !== 'life-map-to-focus'\) \{[\s\S]*Open Orb travel controls[\s\S]*found = await firstVisible/)
   assert.doesNotMatch(visualAudit, /const orb =[\s\S]*const found = await firstVisible/)
   assert.match(visualAudit, /waitForURL\(\(url\) => url\.toString\(\)\.includes\(check\.expected\), \{ timeout: 7000 \}\)/)
 })
