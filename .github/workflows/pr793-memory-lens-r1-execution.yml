@@ -1,0 +1,134 @@
+name: PR 793 memory lens R1 execution
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+    branches:
+      - product/canonical-seven-fix-clean-r3-20260718
+    paths:
+      - .github/workflows/pr793-memory-lens-r1-execution.yml
+      - scripts/apply-pr793-memory-lens-redesign.mjs
+
+permissions:
+  contents: write
+
+concurrency:
+  group: pr793-memory-lens-r1-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+env:
+  SOURCE_BASE: 7a7ce6583d8d65a82b6b0d3d86c799296f4b4168
+  PRODUCT_BASE: d54ac27578b4d1399c87211ffbffd9e58f82f82a
+  SOURCE_BRANCH: exec/pr793-memory-lens-r1-20260718
+  PRODUCT_BRANCH: product/canonical-seven-fix-clean-r3-20260718
+
+jobs:
+  redesign:
+    if: github.event.pull_request.head.repo.full_name == github.repository && github.event.pull_request.head.ref == 'exec/pr793-memory-lens-r1-20260718'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 70
+    steps:
+      - name: Checkout exact memory-lens execution head
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+          persist-credentials: true
+          show-progress: false
+
+      - name: Prove execution authority and apply to latest product head
+        shell: bash
+        run: |
+          exec > >(tee /tmp/pr793-memory-lens-apply.log) 2>&1
+          set -euxo pipefail
+          test "$(git rev-parse HEAD)" = "${{ github.event.pull_request.head.sha }}"
+          test "$(git merge-base "$SOURCE_BASE" HEAD)" = "$SOURCE_BASE"
+          test -z "$(git status --porcelain --untracked-files=all)"
+          test "$(git diff --name-only "$PRODUCT_BASE" HEAD | sort)" = "$(printf '%s\n' .github/workflows/pr793-memory-lens-r1-execution.yml scripts/apply-pr793-memory-lens-redesign.mjs | sort)"
+          cp scripts/apply-pr793-memory-lens-redesign.mjs /tmp/apply-pr793-memory-lens-redesign.mjs
+          python3 - <<'PY'
+          from pathlib import Path
+          path = Path('/tmp/apply-pr793-memory-lens-redesign.mjs')
+          source = path.read_text()
+          old_pair = "         if (menu) menu.open = true\n         window.setTimeout(keepSelectedControlsOpen, 0)"
+          new_pair = "         if (menu) menu.open = true\n         queueMicrotask(keepSelectedControlsOpen)\n         window.setTimeout(keepSelectedControlsOpen, 0)"
+          old_call = "replaceOnce(boundary, '      queueMicrotask(keepSelectedControlsOpen)\\n', '')"
+          new_call = """replaceOnce(
+            boundary,
+            `      queueMicrotask(keepSelectedControlsOpen)\n      return true\n`,
+            `      return true\n`,
+          )"""
+          if source.count(old_pair) != 1:
+              raise SystemExit(f'click-selection applicator target count={source.count(old_pair)}')
+          if source.count(old_call) != 1:
+              raise SystemExit(f'cycle-selection applicator target count={source.count(old_call)}')
+          source = source.replace(old_pair, new_pair, 1).replace(old_call, new_call, 1)
+          path.write_text(source)
+          PY
+          test "$(git rev-parse origin/$PRODUCT_BRANCH)" = "$PRODUCT_BASE"
+          git checkout --detach "$PRODUCT_BASE"
+          test -z "$(git status --porcelain --untracked-files=all)"
+          node /tmp/apply-pr793-memory-lens-redesign.mjs
+          git diff --check
+          test "$(git diff --name-only | sort)" = "$(printf '%s\n' urai-tier1/src/components/lifemap/AdaptiveLifeMapScene.tsx urai-tier1/src/spatial/world/LifeMapIndependentInputBoundary.tsx urai-tier1/src/spatial/world/lifeMapConvergence.css urai-tier1/tests/accessibility-performance-embodied-exploration.spec.ts urai-tier1/tests/embodied-exploration-contract.test.mjs urai-tier1/tests/final-aaa-world-convergence-contract.test.mjs | sort)"
+
+      - name: Install exact dependencies
+        shell: bash
+        run: |
+          set -euo pipefail
+          corepack enable
+          corepack pnpm install --frozen-lockfile
+
+      - name: Unit contracts
+        shell: bash
+        run: |
+          set -o pipefail
+          corepack pnpm --dir urai-tier1 test 2>&1 | tee /tmp/pr793-memory-lens-unit.log
+
+      - name: Typecheck
+        shell: bash
+        run: |
+          set -o pipefail
+          corepack pnpm --dir urai-tier1 typecheck 2>&1 | tee /tmp/pr793-memory-lens-typecheck.log
+
+      - name: Build exact static candidate
+        shell: bash
+        env:
+          URAI_FIREBASE_STATIC_EXPORT: "true"
+        run: |
+          set -o pipefail
+          corepack pnpm --dir urai-tier1 build 2>&1 | tee /tmp/pr793-memory-lens-build.log
+          test -f urai-tier1/out/life-map/index.html
+
+      - name: Install Chromium
+        run: corepack pnpm exec playwright install --with-deps chromium
+
+      - name: Verify Life Map interaction and accessibility regressions
+        shell: bash
+        run: |
+          set -o pipefail
+          corepack pnpm exec playwright test --config=playwright.accessibility.config.ts --project=chromium urai-tier1/tests/accessibility-performance-embodied-exploration.spec.ts urai-tier1/tests/accessibility-performance-lifemap-independent.spec.ts 2>&1 | tee /tmp/pr793-memory-lens-browser.log
+
+      - name: Publish clean six-file memory-lens redesign
+        id: publish
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$PRODUCT_BASE"
+          git diff --check
+          test "$(git diff --name-only | sort)" = "$(printf '%s\n' urai-tier1/src/components/lifemap/AdaptiveLifeMapScene.tsx urai-tier1/src/spatial/world/LifeMapIndependentInputBoundary.tsx urai-tier1/src/spatial/world/lifeMapConvergence.css urai-tier1/tests/accessibility-performance-embodied-exploration.spec.ts urai-tier1/tests/embodied-exploration-contract.test.mjs urai-tier1/tests/final-aaa-world-convergence-contract.test.mjs | sort)"
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add -A
+          git commit -m "feat(life-map): replace memory slabs with synchronous luminous lenses"
+          git push --force-with-lease=refs/heads/$PRODUCT_BRANCH:$PRODUCT_BASE origin HEAD:refs/heads/$PRODUCT_BRANCH
+          echo "product_sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+
+      - name: Retain exact memory-lens diagnostics
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: pr793-memory-lens-${{ github.event.pull_request.head.sha }}-${{ github.run_id }}
+          path: /tmp/pr793-memory-lens-*.log
+          if-no-files-found: ignore
+          retention-days: 90
