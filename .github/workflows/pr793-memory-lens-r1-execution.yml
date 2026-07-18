@@ -17,7 +17,7 @@ concurrency:
   cancel-in-progress: true
 
 env:
-  SOURCE_BASE: d54ac27578b4d1399c87211ffbffd9e58f82f82a
+  SOURCE_BASE: 7a7ce6583d8d65a82b6b0d3d86c799296f4b4168
   PRODUCT_BASE: d54ac27578b4d1399c87211ffbffd9e58f82f82a
   SOURCE_BRANCH: exec/pr793-memory-lens-r1-20260718
   PRODUCT_BRANCH: product/canonical-seven-fix-clean-r3-20260718
@@ -50,26 +50,19 @@ jobs:
           from pathlib import Path
           path = Path('/tmp/apply-pr793-memory-lens-redesign.mjs')
           source = path.read_text()
-          old_block = """        const menu = button.closest<HTMLDetailsElement>('.life-map-accessibility-menu')
-                  if (menu) menu.open = true
-                  window.setTimeout(keepSelectedControlsOpen, 0)
-          """
-          new_block = """        const menu = button.closest<HTMLDetailsElement>('.life-map-accessibility-menu')
-                  if (menu) menu.open = true
-                  queueMicrotask(keepSelectedControlsOpen)
-                  window.setTimeout(keepSelectedControlsOpen, 0)
-          """
+          old_pair = "         if (menu) menu.open = true\n         window.setTimeout(keepSelectedControlsOpen, 0)"
+          new_pair = "         if (menu) menu.open = true\n         queueMicrotask(keepSelectedControlsOpen)\n         window.setTimeout(keepSelectedControlsOpen, 0)"
           old_call = "replaceOnce(boundary, '      queueMicrotask(keepSelectedControlsOpen)\\n', '')"
           new_call = """replaceOnce(
             boundary,
             `      queueMicrotask(keepSelectedControlsOpen)\n      return true\n`,
             `      return true\n`,
           )"""
-          if old_block not in source:
-              raise SystemExit('click-selection applicator target missing')
-          if old_call not in source:
-              raise SystemExit('cycle-selection applicator target missing')
-          source = source.replace(old_block, new_block, 1).replace(old_call, new_call, 1)
+          if source.count(old_pair) != 1:
+              raise SystemExit(f'click-selection applicator target count={source.count(old_pair)}')
+          if source.count(old_call) != 1:
+              raise SystemExit(f'cycle-selection applicator target count={source.count(old_call)}')
+          source = source.replace(old_pair, new_pair, 1).replace(old_call, new_call, 1)
           path.write_text(source)
           PY
           test "$(git rev-parse origin/$PRODUCT_BRANCH)" = "$PRODUCT_BASE"
