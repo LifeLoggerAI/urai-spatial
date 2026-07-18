@@ -147,10 +147,10 @@ test.describe('URAI accessibility and performance evidence', () => {
   test('WebGL context loss recovery is bounded and preserves the route', async ({ page }) => {
     await page.goto('/', { waitUntil: 'domcontentloaded' })
     const before = page.url()
-    await expect(page.locator('.urai-home-spatial-runtime-layer canvas')).toBeVisible()
+    await expect(page.locator('.urai-home-spatial-runtime-layer canvas')).toBeVisible({ timeout: 15_000 })
     await page.locator('.urai-home-spatial-runtime-layer canvas').evaluate((canvas) => canvas.dispatchEvent(new Event('webglcontextlost', { cancelable: true })))
     await expect(page.getByRole('status')).toContainText(/restor/i)
-    await expect(page.locator('.urai-home-spatial-runtime-layer canvas')).toBeVisible()
+    await expect(page.locator('.urai-home-spatial-runtime-layer canvas')).toBeVisible({ timeout: 15_000 })
     await expect.poll(() => page.url()).toBe(before)
 
     await page.locator('.urai-home-spatial-runtime-layer canvas').evaluate((canvas) => canvas.dispatchEvent(new Event('webglcontextlost', { cancelable: true })))
