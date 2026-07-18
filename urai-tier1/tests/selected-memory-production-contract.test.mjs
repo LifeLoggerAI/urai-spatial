@@ -87,7 +87,7 @@ test('Focus visual hierarchy keeps the memory dominant and reveals metadata prog
   assert.match(focus, /cinematicStyles\.cinematic/)
   assert.match(focus, /cinematicStyles\.recoveryCinematic/)
   assert.match(cinematicStyles, /button\[aria-describedby='focus-replay-description'\][\s\S]*aspect-ratio: 1;/)
-  assert.match(cinematicStyles, /figure[\s\S]*aspect-ratio: \.88;/)
+  assert.match(cinematicStyles, /figure[\s\S]*aspect-ratio: \.9;/)
   assert.match(cinematicStyles, /details summary[\s\S]*min-height: 48px;/)
   assert.match(cinematicStyles, /recoveryCinematic section\[role\][\s\S]*background: transparent;/)
   assert.match(cinematicStyles, /orientation: landscape/)
