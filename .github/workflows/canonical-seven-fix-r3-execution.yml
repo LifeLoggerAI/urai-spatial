@@ -79,7 +79,7 @@ jobs:
         shell: bash
         run: |
           set -o pipefail
-          corepack pnpm --dir urai-tier1 exec playwright test tests/accessibility-performance-evidence.spec.ts tests/accessibility-performance-lifemap-independent.spec.ts --project=chromium --grep "mobile visible controls stay inside the visual viewport and safe area|reduced motion keeps selection and unwind behavior equivalent" 2>&1 | tee /tmp/canonical-seven-fix-browser.log
+          corepack pnpm --dir urai-tier1 exec playwright test tests/accessibility-performance-evidence.spec.ts tests/accessibility-performance-lifemap-independent.spec.ts --grep "mobile visible controls stay inside the visual viewport and safe area|reduced motion keeps selection and unwind behavior equivalent" 2>&1 | tee /tmp/canonical-seven-fix-browser.log
 
       - name: Publish one clean eight-file product commit
         id: publish
