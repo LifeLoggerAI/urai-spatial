@@ -151,3 +151,11 @@ replaceOnce(finalConvergenceContract,
 String.raw`  assert.match(lifeMapConvergence, /data-testid='urai-true-3d-life-map'/)`,
 String.raw`  assert.match(adaptiveLifeMap, /data-testid="urai-true-3d-life-map"/)
   assert.match(lifeMapConvergence, /\.life-map-independent-realm/)`)
+replaceOnce(finalConvergenceContract,
+String.raw`  assert.match(lifeMapConvergence, /> header[\s\S]*display:\s*none\s*!important/)`,
+String.raw`  assert.doesNotMatch(adaptiveLifeMap, /<header\b/)
+  assert.match(adaptiveLifeMap, /className="life-map-accessibility-menu"/)`)
+replaceOnce(finalConvergenceContract,
+String.raw`  assert.match(lifeMapConvergence, /aria-label='URAI Life Map route portals'/)`,
+String.raw`  assert.match(adaptiveLifeMap, />Ground<\/button>/)
+  assert.match(adaptiveLifeMap, />Home<\/button>/)`)
