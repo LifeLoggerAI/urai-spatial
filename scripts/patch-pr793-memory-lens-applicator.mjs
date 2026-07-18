@@ -38,7 +38,7 @@ const newTextureBlock = [
 replaceExactlyOnce(oldTextureBlock, newTextureBlock, 'texture-key')
 replaceExactlyOnce(
   '      <mesh scale={[scale * 1.5, scale * 1.5, 1]}>',
-  '      <mesh key={`${textureKey}-main`} scale={[scale * 1.5, scale * 1.5, 1]}>',
+  '      <mesh key={textureKey + "-main"} scale={[scale * 1.5, scale * 1.5, 1]}>',
   'main-lens-remount',
 )
 replaceExactlyOnce(
