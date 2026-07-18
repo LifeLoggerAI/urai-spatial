@@ -52,7 +52,7 @@ export default function CinematicReplayClient() {
     '--replay-progress': `${percent}%`,
   } as React.CSSProperties
 
-  return <main className="replayWorld" style={style} data-testid="cinematic-replay-client" data-memory-status={result.status} data-memory-id={memory.id} data-star-id={memory.star.id} data-manifest-id={memory.replayManifest.id} data-playing={playing ? 'true' : 'false'} data-canonical-asset={replayAssets.primary.src}>
+  return <main className="replayWorld" style={style} data-testid="cinematic-replay-client" data-memory-status={result.status} data-memory-id={memory.id} data-star-id={memory.star.id} data-manifest-id={memory.replayManifest.id} data-node={memory.star.id} data-playing={playing ? 'true' : 'false'} data-canonical-asset={replayAssets.primary.src}>
     <div className="replayBackdrop" aria-hidden="true" />
     <div className="replayPortal" aria-hidden="true"><span /></div>
     <header><p>{memory.demo ? 'DEMO FIXTURE · NOT PERSONAL DATA' : `${memory.privacy} replay`}</p><h1>{memory.title}</h1><span>{active?.label ?? 'Replay'}</span></header>
