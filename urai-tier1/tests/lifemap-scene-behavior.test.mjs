@@ -15,6 +15,9 @@ test('LifeMap route uses the final canonical adaptive scene chain', () => {
   assert.doesNotMatch(page, /RealLifeMapGalaxy|LifeMapScene/, 'Life Map route must not revert to retired direct owners.')
   assert.match(canonical, /LifeMapRouteBoundary/, 'Canonical owner must keep the route boundary.')
   assert.match(boundary, /AdaptiveLifeMapScene/, 'Route boundary must render the adaptive R3F scene.')
+  assert.ok(canonical.includes('data-life-map-fallback-escape="world-return"'), 'The loading/restoration fallback must expose its Escape ownership.')
+  assert.ok(canonical.includes('requestUraiWorldReturn()'), 'Fallback Escape must use the canonical reverse-travel event.')
+  assert.ok(canonical.includes('window.addEventListener("keydown", onKeyDown, true)'), 'Fallback Escape must capture before the global bubble listener.')
 })
 
 test('AdaptiveLifeMapScene preserves authored memory artifacts and selected-memory camera travel', () => {
