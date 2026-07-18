@@ -10,6 +10,7 @@ on:
       - scripts/pr793-lifemap-depth-scene-v3.mjs
       - scripts/pr793-lifemap-depth-composition-v3.mjs
       - scripts/pr793-lifemap-depth-proof-v3.mjs
+      - scripts/pr793-lifemap-close-controls-v3.mjs
 
 permissions:
   contents: write
@@ -43,11 +44,12 @@ jobs:
           test "$(git rev-parse HEAD)" = "${{ github.event.pull_request.head.sha }}"
           test "$(git merge-base "$CLEAN_BASE" HEAD)" = "$CLEAN_BASE"
           test -z "$(git status --porcelain --untracked-files=all)"
-          expected_exec="$(printf '%s\n' .github/workflows/pr793-lifemap-visual-depth-v3-execution.yml scripts/pr793-lifemap-depth-scene-v3.mjs scripts/pr793-lifemap-depth-composition-v3.mjs scripts/pr793-lifemap-depth-proof-v3.mjs | sort)"
+          expected_exec="$(printf '%s\n' .github/workflows/pr793-lifemap-visual-depth-v3-execution.yml scripts/pr793-lifemap-depth-scene-v3.mjs scripts/pr793-lifemap-depth-composition-v3.mjs scripts/pr793-lifemap-depth-proof-v3.mjs scripts/pr793-lifemap-close-controls-v3.mjs | sort)"
           test "$(git diff --name-only "$CLEAN_BASE...HEAD" | sort)" = "$expected_exec"
           node scripts/pr793-lifemap-depth-scene-v3.mjs 2>&1 | tee /tmp/pr793-lifemap-depth-v3-scene.log
           node scripts/pr793-lifemap-depth-composition-v3.mjs 2>&1 | tee /tmp/pr793-lifemap-depth-v3-composition.log
           node scripts/pr793-lifemap-depth-proof-v3.mjs 2>&1 | tee /tmp/pr793-lifemap-depth-v3-proof.log
+          node scripts/pr793-lifemap-close-controls-v3.mjs 2>&1 | tee /tmp/pr793-lifemap-depth-v3-controls.log
           git diff --check
           expected_product="$(printf '%s\n' scripts/capture-continuous-spatial-proof.mjs urai-tier1/src/app/continuous-spatial-proof-defects.css urai-tier1/src/components/lifemap/AdaptiveLifeMapScene.tsx urai-tier1/src/spatial/lifemap/SpatialLifeMapCanonical.tsx urai-tier1/tests/lifemap-deep-link-controls-contract.test.mjs urai-tier1/tests/lifemap-scene-behavior.test.mjs | sort)"
           test "$(git diff --name-only | sort)" = "$expected_product"
@@ -114,6 +116,8 @@ jobs:
           cp urai-tier1/src/spatial/lifemap/SpatialLifeMapCanonical.tsx /tmp/pr793-depth-clean/urai-tier1/src/spatial/lifemap/
           cp urai-tier1/tests/lifemap-deep-link-controls-contract.test.mjs /tmp/pr793-depth-clean/urai-tier1/tests/
           cp urai-tier1/tests/lifemap-scene-behavior.test.mjs /tmp/pr793-depth-clean/urai-tier1/tests/
+          git fetch origin "refs/heads/$PRODUCT_BRANCH:refs/remotes/origin/$PRODUCT_BRANCH"
+          test "$(git rev-parse refs/remotes/origin/$PRODUCT_BRANCH)" = "$CLEAN_BASE"
           git checkout --detach "$CLEAN_BASE"
           cp /tmp/pr793-depth-clean/scripts/capture-continuous-spatial-proof.mjs scripts/
           cp /tmp/pr793-depth-clean/urai-tier1/src/app/continuous-spatial-proof-defects.css urai-tier1/src/app/
@@ -127,8 +131,8 @@ jobs:
           git config user.name github-actions[bot]
           git config user.email 41898282+github-actions[bot]@users.noreply.github.com
           git add -A
-          git commit -m "fix(life-map): reveal spatial depth and remove remaining veil geometry"
-          git push --force-with-lease=refs/heads/$PRODUCT_BRANCH:$CLEAN_BASE origin HEAD:refs/heads/$PRODUCT_BRANCH
+          git commit -m "fix(life-map): reveal spatial depth and close selected controls"
+          git push origin HEAD:"refs/heads/$PRODUCT_BRANCH" 2>&1 | tee /tmp/pr793-lifemap-depth-v3-publish.log
           git rev-parse HEAD | tee /tmp/pr793-lifemap-depth-v3-product-sha.log
 
       - name: Retain exact repair evidence
