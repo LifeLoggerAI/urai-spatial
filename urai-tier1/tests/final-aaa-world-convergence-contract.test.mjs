@@ -43,7 +43,7 @@ test('the full journey participates in one persistent world model', () => {
 
 test('Orb ownership follows destination canon without visual duplication', () => {
   assert.match(shell, /PersistentWorldCompanion/)
-  assert.match(shell, /const showWorldCompanion = world\.destination !== 'life-map' && world\.destination !== 'home'/)
+  assert.match(shell, /const showWorldCompanion = world\.destination !== 'life-map'/)
   assert.match(shell, /\{showWorldCompanion \? <PersistentWorldCompanion \/> : null\}/)
   assert.match(companion, /PRIMARY_DESTINATIONS/)
   assert.match(companion, /SECONDARY_DESTINATIONS/)
@@ -61,6 +61,10 @@ test('Orb ownership follows destination canon without visual duplication', () =>
   assert.match(homeCanvas, /name="home-only-companion-hit-target"/)
   assert.match(homeCanvas, /colorWrite=\{false\}/)
   assert.doesNotMatch(homeCanvas, /emissiveIntensity=\{hovered|name="home-only-companion"/)
+  assert.match(routeOwnerConvergence, /data-world-destination='home'[\s\S]*\.urai-world-companion__orb/)
+  assert.match(routeOwnerConvergence, /background:\s*transparent\s*!important/)
+  assert.match(routeOwnerConvergence, /box-shadow:\s*none\s*!important/)
+  assert.match(routeOwnerConvergence, /outline:\s*3px solid rgba\(224,255,255,.96\)\s*!important/)
   assert.doesNotMatch(homeRuntime, /urai-home-spatial-orb-trigger/)
   assert.doesNotMatch(homeRuntime, /urai-home-spatial-runtime-orb/)
 })
