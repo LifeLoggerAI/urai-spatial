@@ -1,0 +1,160 @@
+name: One-shot canonical accessibility and review repair
+
+on:
+  push:
+    branches:
+      - fix/canonical-a11y-review-1d172afd-20260718
+
+permissions:
+  contents: write
+
+concurrency:
+  group: one-shot-canonical-a11y-review-repair
+  cancel-in-progress: false
+
+jobs:
+  repair:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: fix/canonical-a11y-review-1d172afd-20260718
+          fetch-depth: 0
+          persist-credentials: true
+
+      - uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1
+        with:
+          version: 10.17.1
+
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Apply exact fail-closed repairs
+        shell: bash
+        run: |
+          cat > /tmp/repair.mjs <<'NODE'
+          import fs from 'node:fs'
+
+          const read = (path) => fs.readFileSync(path, 'utf8')
+          const write = (path, value) => fs.writeFileSync(path, value)
+          const replaceOnce = (path, before, after) => {
+            const source = read(path)
+            const first = source.indexOf(before)
+            if (first < 0) throw new Error(`Expected source not found in ${path}: ${before.slice(0, 100)}`)
+            if (source.indexOf(before, first + before.length) >= 0) throw new Error(`Expected unique source is duplicated in ${path}`)
+            write(path, source.slice(0, first) + after + source.slice(first + before.length))
+          }
+
+          const hookPath = 'urai-tier1/src/spatial/navigation/useMediaPreference.ts'
+          if (fs.existsSync(hookPath)) throw new Error(`${hookPath} already exists; refusing ambiguous overwrite`)
+          write(hookPath, `'use client'\n\nimport { useEffect, useState } from 'react'\n\nexport function useMediaPreference(query: string) {\n  const [matches, setMatches] = useState(false)\n\n  useEffect(() => {\n    const media = window.matchMedia(query)\n    const update = () => setMatches(media.matches)\n    update()\n\n    if (typeof media.addEventListener === 'function') media.addEventListener('change', update)\n    else media.addListener(update)\n\n    return () => {\n      if (typeof media.removeEventListener === 'function') media.removeEventListener('change', update)\n      else media.removeListener(update)\n    }\n  }, [query])\n\n  return matches\n}\n`)
+
+          const home = 'urai-tier1/src/app/EmbodiedHomeSpatialCanvas.tsx'
+          replaceOnce(home,
+            "import { requestUraiWorldTravel } from '@/spatial/world/worldEvents'",
+            "import { useMediaPreference } from '@/spatial/navigation/useMediaPreference'\nimport { requestUraiWorldTravel } from '@/spatial/world/worldEvents'")
+          replaceOnce(home,
+            "function useMediaPreference(query: string) {\n  const [matches, setMatches] = useState(false)\n  useEffect(() => {\n    const media = window.matchMedia(query)\n    const update = () => setMatches(media.matches)\n    update()\n    media.addEventListener?.('change', update)\n    return () => media.removeEventListener?.('change', update)\n  }, [query])\n  return matches\n}\n\n",
+            '')
+          replaceOnce(home,
+            "  useFrame((_, delta) => {\n    stepEmbodiedMotion({",
+            "  useFrame((_, delta) => {\n    const frameDelta = Math.min(delta, 1 / 30)\n    stepEmbodiedMotion({")
+          replaceOnce(home, "      delta,\n      speed:", "      delta: frameDelta,\n      speed:")
+          replaceOnce(home,
+            "camera.fov = THREE.MathUtils.damp(camera.fov, 56, reducedMotion ? 100 : 6, delta)",
+            "camera.fov = THREE.MathUtils.damp(camera.fov, 56, reducedMotion ? 100 : 6, frameDelta)")
+
+          const groundRoot = 'urai-tier1/src/app/GroundSpatialWorldClean.tsx'
+          replaceOnce(groundRoot,
+            'import { MobileMovementPad, MovementHelp, useDragLook, useMovementInput } from "@/spatial/navigation/EmbodiedNavigation";',
+            'import { MobileMovementPad, MovementHelp, useDragLook, useMovementInput } from "@/spatial/navigation/EmbodiedNavigation";\nimport { useMediaPreference } from "@/spatial/navigation/useMediaPreference";')
+          replaceOnce(groundRoot,
+            'function useReducedMotion() {\n  const [reduced, setReduced] = useState(false);\n  useEffect(() => {\n    const query = window.matchMedia("(prefers-reduced-motion: reduce)");\n    const update = () => setReduced(query.matches);\n    update();\n    query.addEventListener?.("change", update);\n    return () => query.removeEventListener?.("change", update);\n  }, []);\n  return reduced;\n}\n\n',
+            '')
+          replaceOnce(groundRoot, '  const reducedMotion = useReducedMotion();', '  const reducedMotion = useMediaPreference("(prefers-reduced-motion: reduce)");')
+          replaceOnce(groundRoot,
+            '              window.requestAnimationFrame(() => target.scrollIntoView({ block: "nearest", inline: "center" }));',
+            '              window.requestAnimationFrame(() => window.requestAnimationFrame(() => target.scrollIntoView({ block: "nearest", inline: "nearest" })));')
+          replaceOnce(groundRoot,
+            'touch-action:pan-x}',
+            'touch-action:pan-x;scroll-padding-inline:12px}')
+          replaceOnce(groundRoot,
+            '.ground-destination-compass :is(a,button){display:inline-flex;',
+            '.ground-destination-compass :is(a,button){display:inline-flex;scroll-margin-inline:12px;')
+
+          const groundScene = 'urai-tier1/src/app/ground/EmbodiedGroundScene.tsx'
+          replaceOnce(groundScene,
+            '  useFrame((_, delta) => {\n    const result = stepEmbodiedMotion({',
+            '  useFrame((_, delta) => {\n    const frameDelta = Math.min(delta, 1 / 30)\n    const result = stepEmbodiedMotion({')
+          replaceOnce(groundScene, '      delta,\n      speed:', '      delta: frameDelta,\n      speed:')
+          replaceOnce(groundScene,
+            'camera.fov = THREE.MathUtils.damp(camera.fov, size.width < 700 ? 62 : 55, reducedMotion ? 100 : 6, delta)',
+            'camera.fov = THREE.MathUtils.damp(camera.fov, size.width < 700 ? 62 : 55, reducedMotion ? 100 : 6, frameDelta)')
+
+          const lifeMap = 'urai-tier1/src/components/lifemap/AdaptiveLifeMapScene.tsx'
+          replaceOnce(lifeMap,
+            '  const pulse = useRef<THREE.Mesh>(null);\n  const curve = useMemo(() => {',
+            '  const pulse = useRef<THREE.Mesh>(null);\n  const scratch = useRef(new THREE.Vector3());\n  const curve = useMemo(() => {')
+          replaceOnce(lifeMap,
+            '    pulse.current.position.copy(curve.getPointAt(t));',
+            '    curve.getPointAt(t, scratch.current);\n    pulse.current.position.copy(scratch.current);')
+          replaceOnce(lifeMap, '  const glass = useRef<THREE.MeshPhysicalMaterial>(null);\n', '')
+          replaceOnce(lifeMap,
+            '  const textureResolution = selected\n    ? profile.tier === "high" ? 512 : 384\n    : overview\n      ? profile.tier === "high" ? 128 : 96\n      : related\n        ? profile.tier === "high" ? 224 : 160\n        : 80;',
+            '  const textureResolution = selected\n    ? profile.tier === "high" ? 512 : 384\n    : profile.tier === "high" ? 160 : 112;')
+          replaceOnce(lifeMap,
+            '    return () => {\n      if (typeof window === "undefined") {',
+            '    return () => {\n      document.body.style.cursor = "";\n      if (typeof window === "undefined") {')
+          replaceOnce(lifeMap,
+            '    if (glass.current) glass.current.opacity = selected ? 0.34 : related ? 0.16 : 0.06;\n',
+            '')
+          replaceOnce(lifeMap, '          ref={glass}\n', '')
+          replaceOnce(lifeMap,
+            '          opacity={selected ? 0.34 : 0.12}',
+            '          opacity={selected ? 0.34 : related ? 0.16 : 0.06}')
+          replaceOnce(lifeMap,
+            '  const recenter = useCallback(() => {\n    setSelectedId(null);\n    setCameraIntent(OVERVIEW_CAMERA);\n    setNarratorText("Back to the whole private constellation. Select any star to enter it.");\n    router.replace("/life-map", { scroll: false });\n  }, [router]);',
+            '  const recenter = useCallback(() => {\n    const preservedId = selectedId || queryNodeId;\n    setSelectedId(null);\n    setCameraIntent(OVERVIEW_CAMERA);\n    setNarratorText("Back to the whole private constellation. Select any star to enter it.");\n    const next = new URLSearchParams();\n    if (preservedId) next.set("memoryId", preservedId);\n    if (manifestId) next.set("manifestId", manifestId);\n    router.replace(next.size ? `/life-map?${next.toString()}` : "/life-map", { scroll: false });\n  }, [manifestId, queryNodeId, router, selectedId]);')
+
+          fs.rmSync('.github/workflows/one-shot-canonical-a11y-review-repair.yml')
+          NODE
+          node /tmp/repair.mjs
+          git diff --check
+          git status --short
+
+      - name: Install exact lockfile
+        run: pnpm install --frozen-lockfile
+
+      - name: Typecheck
+        run: pnpm --dir urai-tier1 typecheck
+
+      - name: Build exact candidate
+        run: pnpm --dir urai-tier1 build
+
+      - name: Install Chromium
+        run: pnpm --dir urai-tier1 exec playwright install --with-deps chromium
+
+      - name: Re-run deterministic failing evidence
+        run: |
+          pnpm --dir urai-tier1 exec playwright test \
+            tests/accessibility-performance-evidence.spec.ts \
+            tests/accessibility-performance-lifemap-independent.spec.ts \
+            --project=chromium \
+            --grep "mobile visible controls stay inside the visual viewport and safe area|reduced motion keeps selection and unwind behavior equivalent"
+
+      - name: Commit verified product repair
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add urai-tier1/src/app/EmbodiedHomeSpatialCanvas.tsx \
+            urai-tier1/src/app/GroundSpatialWorldClean.tsx \
+            urai-tier1/src/app/ground/EmbodiedGroundScene.tsx \
+            urai-tier1/src/components/lifemap/AdaptiveLifeMapScene.tsx \
+            urai-tier1/src/spatial/navigation/useMediaPreference.ts \
+            .github/workflows/one-shot-canonical-a11y-review-repair.yml
+          git commit -m "fix: close canonical accessibility and review debt"
+          git push origin HEAD:fix/canonical-a11y-review-1d172afd-20260718
