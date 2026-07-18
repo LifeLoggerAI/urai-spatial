@@ -11,6 +11,7 @@ on:
     branches: [main]
     paths:
       - '.github/workflows/accessibility-performance-evidence.yml'
+      - 'playwright.accessibility.config.ts'
       - 'urai-tier1/tests/accessibility-performance-*.spec.ts'
       - 'urai-tier1/src/app/HomeSpatialRuntimeLayer.tsx'
       - 'urai-tier1/src/app/focus/FocusChamberClient.tsx'
@@ -80,21 +81,14 @@ jobs:
         run: |
           set -euo pipefail
           mkdir -p artifacts/accessibility-performance
-          pnpm exec playwright test \
-            urai-tier1/tests/accessibility-performance-evidence.spec.ts \
-            urai-tier1/tests/accessibility-performance-metrics.spec.ts \
-            --config playwright.config.ts \
-            --reporter=line,html \
+          pnpm exec playwright test --config playwright.accessibility.config.ts \
             2>&1 | tee artifacts/accessibility-performance/playwright.log
-          cp -R playwright-report artifacts/accessibility-performance/playwright-report
 
       - name: Retain exact-head evidence
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
           name: accessibility-performance-evidence-${{ env.URAI_EXACT_HEAD }}
-          path: |
-            artifacts/accessibility-performance
-            test-results
+          path: artifacts/accessibility-performance
           if-no-files-found: error
           retention-days: 365
