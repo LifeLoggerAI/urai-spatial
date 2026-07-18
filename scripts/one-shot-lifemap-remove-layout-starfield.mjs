@@ -2,11 +2,11 @@ import fs from 'node:fs'
 
 const layoutPath = 'urai-tier1/src/app/life-map/layout.tsx'
 const layout = fs.readFileSync(layoutPath, 'utf8')
-const before = `export default function LifeMapLayout({ children }: { children: React.ReactNode }) {
+const before = `export default function LifeMapLayout({ children }: { children: ReactNode }) {
   return <div className="lifemap-starfield-shell">{children}</div>
 }
 `
-const after = `export default function LifeMapLayout({ children }: { children: React.ReactNode }) {
+const after = `export default function LifeMapLayout({ children }: { children: ReactNode }) {
   return children
 }
 `
