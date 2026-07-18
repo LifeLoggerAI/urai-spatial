@@ -1,5 +1,6 @@
 'use client'
 
+// Exact-head visual ownership: selection closes the semantic drawer before the cinematic memory surface is shown.
 import { useEffect } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 
