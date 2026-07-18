@@ -8,69 +8,154 @@ const routes = [
   ['replay', '/replay?memoryId=seed-memory-bloom&manifestId=seed-memory-bloom&node=seed-memory-bloom&demo=1'],
 ] as const
 
-test('retain route timing, long-task, frame, and heap evidence', async ({ page }) => {
-  test.setTimeout(60_000)
+const DESKTOP_FRAME_P95_BUDGET_MS = 20
+const MOBILE_FRAME_P95_BUDGET_MS = 33.3
+const STEADY_STATE_LONG_TASK_BUDGET = 1
+const STEADY_STATE_LONGEST_TASK_BUDGET_MS = 100
+const MAX_HEAP_GROWTH_BYTES = 32 * 1024 * 1024
+const JOURNEY_CYCLES = 5
 
-  await page.addInitScript(() => {
-    ;(window as Window & { __uraiLongTasks?: number[] }).__uraiLongTasks = []
-    try {
-      new PerformanceObserver((list) => {
-        const target = (window as Window & { __uraiLongTasks?: number[] }).__uraiLongTasks
-        for (const entry of list.getEntries()) target?.push(entry.duration)
-      }).observe({ type: 'longtask', buffered: true })
-    } catch {}
-  })
+type Profile = {
+  name: 'desktop' | 'mobile'
+  viewport: { width: number; height: number }
+  frameP95BudgetMs: number
+}
 
-  const measurements: Array<Record<string, unknown>> = []
-  for (const [name, path] of routes) {
-    const started = Date.now()
-    await page.goto(path, { waitUntil: 'domcontentloaded' })
-    await expect(page.locator('body')).toBeVisible()
-    const metrics = await page.evaluate(async () => {
-      const frameTimes: number[] = []
-      await new Promise<void>((resolve) => {
-        let previous = performance.now()
-        const sampleStarted = previous
-        let frames = 0
-        let finished = false
-        let timeoutId = 0
+const profiles: Profile[] = [
+  { name: 'desktop', viewport: { width: 1440, height: 900 }, frameP95BudgetMs: DESKTOP_FRAME_P95_BUDGET_MS },
+  { name: 'mobile', viewport: { width: 393, height: 873 }, frameP95BudgetMs: MOBILE_FRAME_P95_BUDGET_MS },
+]
 
-        const finish = () => {
-          if (finished) return
-          finished = true
-          window.clearTimeout(timeoutId)
-          resolve()
-        }
+type RouteMeasurement = {
+  profile: Profile['name']
+  route: string
+  navigationMs: number
+  frameCount: number
+  frameP95Ms: number | null
+  longTaskCount: number
+  longestTaskMs: number
+  usedJSHeapSize: number | null
+}
 
-        const tick = (now: number) => {
-          if (finished) return
-          frameTimes.push(now - previous)
-          previous = now
-          frames += 1
-          if (frames >= 60 || now - sampleStarted >= 2_000) finish()
-          else requestAnimationFrame(tick)
-        }
-
-        timeoutId = window.setTimeout(finish, 2_500)
-        requestAnimationFrame(tick)
+test.describe('production accessibility performance budgets', () => {
+  for (const profile of profiles) {
+    test(`${profile.name} route frame, long-task, and five-cycle heap budgets`, async ({ page }) => {
+      test.setTimeout(360_000)
+      await page.setViewportSize(profile.viewport)
+      await page.addInitScript(() => {
+        ;(window as Window & { __uraiLongTasks?: number[] }).__uraiLongTasks = []
+        try {
+          new PerformanceObserver((list) => {
+            const target = (window as Window & { __uraiLongTasks?: number[] }).__uraiLongTasks
+            for (const entry of list.getEntries()) target?.push(entry.duration)
+          }).observe({ type: 'longtask', buffered: true })
+        } catch {}
       })
-      const sorted = frameTimes.slice().sort((a, b) => a - b)
-      const memory = (performance as Performance & { memory?: { usedJSHeapSize: number } }).memory
-      const longTasks = (window as Window & { __uraiLongTasks?: number[] }).__uraiLongTasks ?? []
-      return {
-        frameCount: frameTimes.length,
-        frameP95Ms: sorted.length ? sorted[Math.max(0, Math.ceil(sorted.length * 0.95) - 1)] : null,
-        longTaskCount: longTasks.length,
-        longestTaskMs: longTasks.length ? Math.max(...longTasks) : 0,
-        usedJSHeapSize: memory?.usedJSHeapSize ?? null,
-      }
-    })
-    measurements.push({ route: name, navigationMs: Date.now() - started, ...metrics })
-  }
 
-  await test.info().attach('accessibility-performance-metrics.json', {
-    body: JSON.stringify({ generatedAt: new Date().toISOString(), measurements }, null, 2),
-    contentType: 'application/json',
-  })
-  expect(measurements).toHaveLength(routes.length)
+      const routeMeasurements: RouteMeasurement[] = []
+      const cycleHeapSizes: number[] = []
+
+      for (let cycle = 0; cycle < JOURNEY_CYCLES; cycle += 1) {
+        for (const [route, path] of routes) {
+          const started = Date.now()
+          await page.goto(path, { waitUntil: 'load' })
+          await expect(page.locator('body')).toBeVisible()
+          await page.evaluate(async () => {
+            await document.fonts?.ready
+            await new Promise<void>((resolve) => requestAnimationFrame(() => requestAnimationFrame(() => resolve())))
+          })
+          await page.waitForTimeout(cycle === 0 ? 1_000 : 250)
+
+          if (cycle !== 0) continue
+
+          const metrics = await page.evaluate(async () => {
+            ;(window as Window & { __uraiLongTasks?: number[] }).__uraiLongTasks = []
+            const frameTimes: number[] = []
+            await new Promise<void>((resolve) => {
+              let previous = performance.now()
+              let frames = 0
+              let finished = false
+              const timeoutId = window.setTimeout(finish, 5_000)
+
+              function finish() {
+                if (finished) return
+                finished = true
+                window.clearTimeout(timeoutId)
+                resolve()
+              }
+
+              function tick(now: number) {
+                if (finished) return
+                frameTimes.push(now - previous)
+                previous = now
+                frames += 1
+                if (frames >= 120) finish()
+                else requestAnimationFrame(tick)
+              }
+
+              requestAnimationFrame(tick)
+            })
+            const sorted = frameTimes.slice().sort((a, b) => a - b)
+            const memory = (performance as Performance & { memory?: { usedJSHeapSize: number } }).memory
+            const longTasks = (window as Window & { __uraiLongTasks?: number[] }).__uraiLongTasks ?? []
+            return {
+              frameCount: frameTimes.length,
+              frameP95Ms: sorted.length ? sorted[Math.max(0, Math.ceil(sorted.length * 0.95) - 1)] : null,
+              longTaskCount: longTasks.length,
+              longestTaskMs: longTasks.length ? Math.max(...longTasks) : 0,
+              usedJSHeapSize: memory?.usedJSHeapSize ?? null,
+            }
+          })
+
+          routeMeasurements.push({
+            profile: profile.name,
+            route,
+            navigationMs: Date.now() - started,
+            ...metrics,
+          })
+        }
+
+        const cycleHeap = await page.evaluate(() => {
+          const memory = (performance as Performance & { memory?: { usedJSHeapSize: number } }).memory
+          return memory?.usedJSHeapSize ?? null
+        })
+        if (cycleHeap !== null) cycleHeapSizes.push(cycleHeap)
+      }
+
+      const heapGrowthBytes = cycleHeapSizes.length > 1
+        ? cycleHeapSizes[cycleHeapSizes.length - 1] - cycleHeapSizes[0]
+        : null
+      const evidence = {
+        generatedAt: new Date().toISOString(),
+        profile,
+        serverMode: 'static-export',
+        routeMeasurements,
+        cycleHeapSizes,
+        heapGrowthBytes,
+        budgets: {
+          frameP95Ms: profile.frameP95BudgetMs,
+          steadyStateLongTaskCount: STEADY_STATE_LONG_TASK_BUDGET,
+          steadyStateLongestTaskMs: STEADY_STATE_LONGEST_TASK_BUDGET_MS,
+          maxHeapGrowthBytes: MAX_HEAP_GROWTH_BYTES,
+          journeyCycles: JOURNEY_CYCLES,
+        },
+      }
+
+      await test.info().attach(`accessibility-performance-metrics-${profile.name}.json`, {
+        body: JSON.stringify(evidence, null, 2),
+        contentType: 'application/json',
+      })
+
+      expect(routeMeasurements).toHaveLength(routes.length)
+      for (const measurement of routeMeasurements) {
+        expect(measurement.frameCount, `${profile.name}/${measurement.route} frame sample`).toBeGreaterThanOrEqual(90)
+        expect(measurement.frameP95Ms, `${profile.name}/${measurement.route} p95 frame time`).not.toBeNull()
+        expect(measurement.frameP95Ms ?? Number.POSITIVE_INFINITY, `${profile.name}/${measurement.route} p95 frame budget`).toBeLessThanOrEqual(profile.frameP95BudgetMs)
+        expect(measurement.longTaskCount, `${profile.name}/${measurement.route} steady-state long tasks`).toBeLessThanOrEqual(STEADY_STATE_LONG_TASK_BUDGET)
+        expect(measurement.longestTaskMs, `${profile.name}/${measurement.route} longest steady-state task`).toBeLessThanOrEqual(STEADY_STATE_LONGEST_TASK_BUDGET_MS)
+      }
+      expect(cycleHeapSizes).toHaveLength(JOURNEY_CYCLES)
+      expect(heapGrowthBytes ?? Number.POSITIVE_INFINITY, `${profile.name} heap growth across five route cycles`).toBeLessThanOrEqual(MAX_HEAP_GROWTH_BYTES)
+    })
+  }
 })
