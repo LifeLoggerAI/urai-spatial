@@ -8,6 +8,7 @@ on:
     paths:
       - .github/workflows/pr793-lifemap-visual-repair-v2-execution.yml
       - scripts/one-shot-pr793-lifemap-visual-repair.mjs
+      - scripts/one-shot-pr793-lifemap-browser-contract.mjs
 
 permissions:
   contents: write
@@ -42,11 +43,12 @@ jobs:
           test "$(git rev-parse HEAD)" = "${{ github.event.pull_request.head.sha }}"
           test "$(git merge-base "$CLEAN_BASE" HEAD)" = "$CLEAN_BASE"
           test -z "$(git status --porcelain --untracked-files=all)"
-          expected_exec="$(printf '%s\n' .github/workflows/pr793-lifemap-visual-repair-v2-execution.yml scripts/one-shot-pr793-lifemap-visual-repair.mjs | sort)"
+          expected_exec="$(printf '%s\n' .github/workflows/pr793-lifemap-visual-repair-v2-execution.yml scripts/one-shot-pr793-lifemap-visual-repair.mjs scripts/one-shot-pr793-lifemap-browser-contract.mjs | sort)"
           test "$(git diff --name-only "$CLEAN_BASE...HEAD" | sort)" = "$expected_exec"
           node scripts/one-shot-pr793-lifemap-visual-repair.mjs 2>&1 | tee /tmp/pr793-lifemap-visual-v2-apply.log
+          node scripts/one-shot-pr793-lifemap-browser-contract.mjs 2>&1 | tee /tmp/pr793-lifemap-browser-contract-v2-apply.log
           git diff --check
-          expected_product="$(printf '%s\n' urai-tier1/src/components/lifemap/AdaptiveLifeMapScene.tsx urai-tier1/tests/lifemap-scene-behavior.test.mjs | sort)"
+          expected_product="$(printf '%s\n' urai-tier1/src/components/lifemap/AdaptiveLifeMapScene.tsx urai-tier1/tests/lifemap-scene-behavior.test.mjs urai-tier1/tests/accessibility-performance-lifemap-independent.spec.ts | sort)"
           test "$(git diff --name-only | sort)" = "$expected_product"
 
       - name: Install exact dependencies
@@ -100,23 +102,25 @@ jobs:
           URAI_EXACT_HEAD="${{ github.event.pull_request.head.sha }}" \
             node scripts/run-continuous-spatial-proof-fixed.mjs 2>&1 | tee /tmp/pr793-lifemap-visual-v2-capture.log
 
-      - name: Publish one clean two-file product commit
+      - name: Publish one clean three-file product commit
         shell: bash
         run: |
           set -euo pipefail
           mkdir -p /tmp/pr793-lifemap-v2-clean/urai-tier1/src/components/lifemap /tmp/pr793-lifemap-v2-clean/urai-tier1/tests
           cp urai-tier1/src/components/lifemap/AdaptiveLifeMapScene.tsx /tmp/pr793-lifemap-v2-clean/urai-tier1/src/components/lifemap/
           cp urai-tier1/tests/lifemap-scene-behavior.test.mjs /tmp/pr793-lifemap-v2-clean/urai-tier1/tests/
+          cp urai-tier1/tests/accessibility-performance-lifemap-independent.spec.ts /tmp/pr793-lifemap-v2-clean/urai-tier1/tests/
           git checkout --detach "$CLEAN_BASE"
           cp /tmp/pr793-lifemap-v2-clean/urai-tier1/src/components/lifemap/AdaptiveLifeMapScene.tsx urai-tier1/src/components/lifemap/
           cp /tmp/pr793-lifemap-v2-clean/urai-tier1/tests/lifemap-scene-behavior.test.mjs urai-tier1/tests/
+          cp /tmp/pr793-lifemap-v2-clean/urai-tier1/tests/accessibility-performance-lifemap-independent.spec.ts urai-tier1/tests/
           git diff --check
-          expected_product="$(printf '%s\n' urai-tier1/src/components/lifemap/AdaptiveLifeMapScene.tsx urai-tier1/tests/lifemap-scene-behavior.test.mjs | sort)"
+          expected_product="$(printf '%s\n' urai-tier1/src/components/lifemap/AdaptiveLifeMapScene.tsx urai-tier1/tests/lifemap-scene-behavior.test.mjs urai-tier1/tests/accessibility-performance-lifemap-independent.spec.ts | sort)"
           test "$(git diff --name-only | sort)" = "$expected_product"
           git config user.name github-actions[bot]
           git config user.email 41898282+github-actions[bot]@users.noreply.github.com
           git add -A
-          git commit -m "fix(life-map): replace debug nexus with authored continuity threads"
+          git commit -m "fix(life-map): replace debug nexus and certify Overview navigation"
           git push --force-with-lease=refs/heads/$PRODUCT_BRANCH:$CLEAN_BASE origin HEAD:refs/heads/$PRODUCT_BRANCH
           git rev-parse HEAD | tee /tmp/pr793-lifemap-visual-v2-product-sha.log
 
@@ -127,6 +131,7 @@ jobs:
           name: pr793-lifemap-visual-repair-v2-${{ github.event.pull_request.head.sha }}-${{ github.run_id }}
           path: |
             /tmp/pr793-lifemap-visual-v2-*.log
+            /tmp/pr793-lifemap-browser-contract-v2-*.log
             /tmp/pr793-lifemap-visual-v2-artifact
           if-no-files-found: ignore
           retention-days: 90
