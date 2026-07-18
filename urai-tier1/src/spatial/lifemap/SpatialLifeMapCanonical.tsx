@@ -35,6 +35,7 @@ export default function SpatialLifeMapCanonical() {
     <section
       data-testid="urai-r3f-canonical-lifemap"
       data-canonical-asset={lifeMapAssets.primary.src}
+      data-life-map-orb-owner="none"
       aria-label="URAI canonical spatial Life Map"
       style={{ position: 'relative', minHeight: '100svh', overflow: 'hidden', background: '#01030a' }}
     >
@@ -42,6 +43,41 @@ export default function SpatialLifeMapCanonical() {
         <LifeMapRouteBoundary />
         <LifeMapDeepLinkControls />
       </Suspense>
+
+      <div
+        data-testid="urai-lifemap-orb-free-center"
+        aria-hidden="true"
+        style={{
+          position: 'absolute',
+          left: '50%',
+          top: '50%',
+          width: 'min(31rem, 72vw)',
+          aspectRatio: '1',
+          zIndex: 12,
+          pointerEvents: 'none',
+          transform: 'translate(-50%, -50%)',
+          borderRadius: '50%',
+          background: 'radial-gradient(circle, rgba(1,3,10,.99) 0 18%, rgba(1,3,10,.94) 30%, rgba(1,3,10,.62) 48%, rgba(1,3,10,.14) 66%, transparent 76%)',
+        }}
+      />
+
+      <div
+        data-testid="urai-lifemap-legacy-companion-mask"
+        aria-hidden="true"
+        style={{
+          position: 'absolute',
+          left: '50%',
+          bottom: 54,
+          width: 'min(590px, calc(100vw - 20px))',
+          height: 'min(230px, 28svh)',
+          zIndex: 70,
+          pointerEvents: 'none',
+          transform: 'translateX(-50%)',
+          borderRadius: 36,
+          background: 'linear-gradient(180deg, rgba(1,3,10,0), rgba(1,3,10,.92) 38%, #01030a 100%)',
+        }}
+      />
+
       <div
         aria-hidden="true"
         style={{
