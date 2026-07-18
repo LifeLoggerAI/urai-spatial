@@ -39,7 +39,9 @@ test('semantic memory rail preserves durable private and disclosed-demo identity
 test('Life Map-owned controls remain visible and keyboard operable without the Home Orb', () => {
   assert.match(controls, /aria-label="Semantic Life Map"/)
   assert.match(controls, /data-life-map-owner="independent"/)
-  assert.match(controls, /aria-label="Available memories"/)
+  assert.match(controls, /<ul[\s\S]*aria-label="Available memories"/)
+  assert.match(controls, /<li key=\{node\.id\}>[\s\S]*<button/)
+  assert.doesNotMatch(controls, /role="listitem"/)
   assert.match(controls, /aria-pressed=\{selected\}/)
   assert.match(controls, /data-urai-audit-action="life-map-focus"/)
   assert.match(controls, /data-urai-audit-action="life-map-replay"/)
