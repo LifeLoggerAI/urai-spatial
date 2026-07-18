@@ -1,0 +1,34 @@
+name: Governed Asset Promotion
+
+on:
+  pull_request:
+    paths:
+      - 'operations/assets/launch-critical-assets.json'
+      - 'operations/assets/promotion-decisions/**'
+      - 'operations/assets/promotion-rehearsal/**'
+      - 'operations/assets/generated-receipts/**'
+      - 'operations/assets/production-receipts/**'
+      - 'urai-tier1/public/assets/urai/generated/**'
+      - 'scripts/verify-governed-asset-promotion.mjs'
+      - '.github/workflows/governed-asset-promotion.yml'
+  workflow_dispatch:
+    inputs:
+      decision_path:
+        description: Promotion decision JSON path
+        required: false
+        default: operations/assets/promotion-rehearsal/spatial-particle-atlas-v1.json
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    env:
+      URAI_ASSET_PROMOTION_DECISION: ${{ inputs.decision_path || 'operations/assets/promotion-rehearsal/spatial-particle-atlas-v1.json' }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: node scripts/verify-governed-asset-promotion.mjs
