@@ -15,7 +15,7 @@ Date: 2026-07-18
 - `URAI-cinematic-product-demo-exact-build-9x16.mp4` — 1080×1920 vertical social cut — SHA-256 `9bfc836206f256418cc574d9d15499fc68b0801838b8ce069af2faa02378fc25`
 - `URAI-final-launch-screenshot-selection.zip` — exact-build press/store/investor/social selection — SHA-256 `f3ddf1219b523071e414572ef3edc1b63f4c387ef036d70ba36d6ff1134d9faa`
 
-Selected journey: Home → Ground → Life Map → Location → Mirror → Passport → Privacy → Status.
+Selected journey: Home → Ground → Life Map → Location Map → Mirror → Passport → Privacy Controls → Status.
 
 ## Claim boundary
 
