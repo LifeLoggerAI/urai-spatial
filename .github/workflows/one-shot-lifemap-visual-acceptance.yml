@@ -1,4 +1,5 @@
 name: One-shot Life Map visual acceptance
+# trigger: retain unit diagnostics 2026-07-18T19:12:00Z
 
 on:
   pull_request:
@@ -41,7 +42,7 @@ jobs:
           test "$(git merge-base "$CLEAN_BASE" HEAD)" = "$CLEAN_BASE"
           test -z "$(git status --porcelain --untracked-files=all)"
           test "$(git diff --name-only "$CLEAN_BASE...HEAD" | sort)" = "$(printf '%s\n' .github/workflows/one-shot-lifemap-visual-acceptance.yml scripts/one-shot-lifemap-visual-acceptance.mjs | sort)"
-          node scripts/one-shot-lifemap-visual-acceptance.mjs
+          node scripts/one-shot-lifemap-visual-acceptance.mjs 2>&1 | tee /tmp/urai-lifemap-visual-apply.log
           git diff --check
           test "$(git diff --name-only | sort)" = "$(printf '%s\n' scripts/capture-continuous-spatial-proof.mjs urai-tier1/src/components/lifemap/AdaptiveLifeMapScene.tsx urai-tier1/src/spatial/lifemap/SpatialLifeMapCanonical.tsx urai-tier1/tests/lifemap-scene-behavior.test.mjs | sort)"
 
@@ -54,17 +55,21 @@ jobs:
 
       - name: Run exact unit contracts
         shell: bash
-        run: corepack pnpm --dir urai-tier1 test
+        run: |
+          set -o pipefail
+          corepack pnpm --dir urai-tier1 test 2>&1 | tee /tmp/urai-lifemap-visual-unit.log
 
       - name: Typecheck exact candidate
         shell: bash
-        run: corepack pnpm --dir urai-tier1 typecheck
+        run: |
+          set -o pipefail
+          corepack pnpm --dir urai-tier1 typecheck 2>&1 | tee /tmp/urai-lifemap-visual-typecheck.log
 
       - name: Build exact static candidate
         shell: bash
         run: |
-          set -euo pipefail
-          corepack pnpm build:static
+          set -o pipefail
+          corepack pnpm build:static 2>&1 | tee /tmp/urai-lifemap-visual-build.log
           test -f urai-tier1/out/home/index.html
           test -f urai-tier1/out/life-map/index.html
 
@@ -97,6 +102,10 @@ jobs:
           path: |
             /tmp/urai-lifemap-visual-proof
             /tmp/urai-lifemap-visual-http.log
+            /tmp/urai-lifemap-visual-apply.log
+            /tmp/urai-lifemap-visual-unit.log
+            /tmp/urai-lifemap-visual-typecheck.log
+            /tmp/urai-lifemap-visual-build.log
           if-no-files-found: warn
           retention-days: 90
 
