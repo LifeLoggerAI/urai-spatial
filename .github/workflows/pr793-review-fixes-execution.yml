@@ -1,0 +1,123 @@
+name: PR 793 review fixes execution
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+    branches:
+      - product/canonical-seven-fix-clean-r3-20260718
+    paths:
+      - .github/workflows/pr793-review-fixes-execution.yml
+      - scripts/apply-pr793-review-fixes.mjs
+
+permissions:
+  contents: write
+
+concurrency:
+  group: pr793-review-fixes-${{ github.event.pull_request.number }}
+  cancel-in-progress: false
+
+env:
+  CLEAN_BASE: 88efc0e0600c921f6b88facdfd0386026685b108
+  SOURCE_BRANCH: exec/pr793-review-fixes-20260718
+  PRODUCT_BRANCH: product/canonical-seven-fix-clean-r3-20260718
+
+jobs:
+  repair:
+    if: github.event.pull_request.head.repo.full_name == github.repository && github.event.pull_request.head.ref == 'exec/pr793-review-fixes-20260718'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    steps:
+      - name: Checkout exact review-fix head
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+          persist-credentials: true
+          show-progress: false
+
+      - name: Prove exact authority and apply bounded fixes
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "${{ github.event.pull_request.head.sha }}"
+          test "$(git merge-base "$CLEAN_BASE" HEAD)" = "$CLEAN_BASE"
+          test -z "$(git status --porcelain --untracked-files=all)"
+          test "$(git diff --name-only "$CLEAN_BASE...HEAD" | sort)" = "$(printf '%s\n' .github/workflows/pr793-review-fixes-execution.yml scripts/apply-pr793-review-fixes.mjs | sort)"
+          node scripts/apply-pr793-review-fixes.mjs
+          git diff --check
+          test "$(git diff --name-only | sort)" = "$(printf '%s\n' urai-tier1/src/app/GroundSpatialWorldClean.tsx urai-tier1/src/components/lifemap/AdaptiveLifeMapScene.tsx urai-tier1/src/spatial/navigation/EmbodiedNavigation.tsx urai-tier1/src/spatial/world/LifeMapIndependentInputBoundary.tsx urai-tier1/tests/embodied-exploration-contract.test.mjs urai-tier1/tests/final-aaa-world-convergence-contract.test.mjs | sort)"
+
+      - name: Install exact dependencies
+        shell: bash
+        run: |
+          set -euo pipefail
+          corepack enable
+          corepack pnpm install --frozen-lockfile
+
+      - name: Unit contracts
+        shell: bash
+        run: |
+          set -o pipefail
+          corepack pnpm --dir urai-tier1 test 2>&1 | tee /tmp/pr793-review-unit.log
+
+      - name: Typecheck
+        shell: bash
+        run: |
+          set -o pipefail
+          corepack pnpm --dir urai-tier1 typecheck 2>&1 | tee /tmp/pr793-review-typecheck.log
+
+      - name: Build exact static candidate
+        shell: bash
+        env:
+          URAI_FIREBASE_STATIC_EXPORT: "true"
+        run: |
+          set -o pipefail
+          corepack pnpm --dir urai-tier1 build 2>&1 | tee /tmp/pr793-review-build.log
+          test -f urai-tier1/out/ground/index.html
+          test -f urai-tier1/out/life-map/index.html
+
+      - name: Install Chromium
+        run: corepack pnpm exec playwright install --with-deps chromium
+
+      - name: Verify Life Map and Ground interaction regressions
+        shell: bash
+        run: |
+          set -o pipefail
+          corepack pnpm exec playwright test --config=playwright.accessibility.config.ts --project=chromium urai-tier1/tests/accessibility-performance-embodied-exploration.spec.ts urai-tier1/tests/accessibility-performance-lifemap-independent.spec.ts 2>&1 | tee /tmp/pr793-review-browser.log
+
+      - name: Publish clean six-file review repair
+        id: publish
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/pr793-fixes/urai-tier1/src/app /tmp/pr793-fixes/urai-tier1/src/components/lifemap /tmp/pr793-fixes/urai-tier1/src/spatial/navigation /tmp/pr793-fixes/urai-tier1/src/spatial/world /tmp/pr793-fixes/urai-tier1/tests
+          cp urai-tier1/src/app/GroundSpatialWorldClean.tsx /tmp/pr793-fixes/urai-tier1/src/app/
+          cp urai-tier1/src/components/lifemap/AdaptiveLifeMapScene.tsx /tmp/pr793-fixes/urai-tier1/src/components/lifemap/
+          cp urai-tier1/src/spatial/navigation/EmbodiedNavigation.tsx /tmp/pr793-fixes/urai-tier1/src/spatial/navigation/
+          cp urai-tier1/src/spatial/world/LifeMapIndependentInputBoundary.tsx /tmp/pr793-fixes/urai-tier1/src/spatial/world/
+          cp urai-tier1/tests/embodied-exploration-contract.test.mjs /tmp/pr793-fixes/urai-tier1/tests/
+          cp urai-tier1/tests/final-aaa-world-convergence-contract.test.mjs /tmp/pr793-fixes/urai-tier1/tests/
+          git checkout --detach "$CLEAN_BASE"
+          cp /tmp/pr793-fixes/urai-tier1/src/app/GroundSpatialWorldClean.tsx urai-tier1/src/app/
+          cp /tmp/pr793-fixes/urai-tier1/src/components/lifemap/AdaptiveLifeMapScene.tsx urai-tier1/src/components/lifemap/
+          cp /tmp/pr793-fixes/urai-tier1/src/spatial/navigation/EmbodiedNavigation.tsx urai-tier1/src/spatial/navigation/
+          cp /tmp/pr793-fixes/urai-tier1/src/spatial/world/LifeMapIndependentInputBoundary.tsx urai-tier1/src/spatial/world/
+          cp /tmp/pr793-fixes/urai-tier1/tests/embodied-exploration-contract.test.mjs urai-tier1/tests/
+          cp /tmp/pr793-fixes/urai-tier1/tests/final-aaa-world-convergence-contract.test.mjs urai-tier1/tests/
+          git diff --check
+          test "$(git diff --name-only | sort)" = "$(printf '%s\n' urai-tier1/src/app/GroundSpatialWorldClean.tsx urai-tier1/src/components/lifemap/AdaptiveLifeMapScene.tsx urai-tier1/src/spatial/navigation/EmbodiedNavigation.tsx urai-tier1/src/spatial/world/LifeMapIndependentInputBoundary.tsx urai-tier1/tests/embodied-exploration-contract.test.mjs urai-tier1/tests/final-aaa-world-convergence-contract.test.mjs | sort)"
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add -A
+          git commit -m "fix(spatial): resolve Life Map and Ground review findings"
+          git push --force-with-lease=refs/heads/$PRODUCT_BRANCH:$CLEAN_BASE origin HEAD:refs/heads/$PRODUCT_BRANCH
+          echo "product_sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+
+      - name: Retain exact review-fix diagnostics
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: pr793-review-fixes-${{ github.event.pull_request.head.sha }}-${{ github.run_id }}
+          path: /tmp/pr793-review-*.log
+          if-no-files-found: ignore
+          retention-days: 90
