@@ -39,6 +39,61 @@ try {
     })
     await page.screenshot({ path: path.join(outputDir, `lifemap-${viewport.name}-webgl-only.png`), fullPage: false })
 
+    const diagnostic = await page.evaluate(({ width, height }) => {
+      document.querySelectorAll('canvas').forEach((node) => {
+        node.style.visibility = 'hidden'
+      })
+
+      const summarizeStyle = (style) => ({
+        display: style.display,
+        visibility: style.visibility,
+        position: style.position,
+        zIndex: style.zIndex,
+        opacity: style.opacity,
+        background: style.background,
+        backgroundColor: style.backgroundColor,
+        backgroundImage: style.backgroundImage,
+        mixBlendMode: style.mixBlendMode,
+        filter: style.filter,
+        backdropFilter: style.backdropFilter,
+        overflow: style.overflow,
+        clipPath: style.clipPath,
+        maskImage: style.maskImage,
+        content: style.content,
+        inset: style.inset,
+      })
+
+      const summarizeElement = (element) => {
+        const rect = element.getBoundingClientRect()
+        return {
+          tag: element.tagName.toLowerCase(),
+          id: element.id,
+          className: typeof element.className === 'string' ? element.className : '',
+          testId: element.getAttribute('data-testid'),
+          lifeMapUniverse: element.getAttribute('data-life-map-authored-universe'),
+          rect: { x: rect.x, y: rect.y, width: rect.width, height: rect.height },
+          style: summarizeStyle(getComputedStyle(element)),
+          before: summarizeStyle(getComputedStyle(element, '::before')),
+          after: summarizeStyle(getComputedStyle(element, '::after')),
+        }
+      }
+
+      const points = [
+        { name: 'center-33', x: Math.round(width * 0.5), y: Math.round(height * 0.33) },
+        { name: 'center-42', x: Math.round(width * 0.5), y: Math.round(height * 0.42) },
+        { name: 'left-42', x: Math.round(width * 0.25), y: Math.round(height * 0.42) },
+        { name: 'right-42', x: Math.round(width * 0.75), y: Math.round(height * 0.42) },
+      ]
+
+      return points.map((point) => ({
+        ...point,
+        elements: document.elementsFromPoint(point.x, point.y).map(summarizeElement),
+      }))
+    }, { width: viewport.width, height: viewport.height })
+
+    await page.screenshot({ path: path.join(outputDir, `lifemap-${viewport.name}-dom-only.png`), fullPage: false })
+    await fs.writeFile(path.join(outputDir, `lifemap-${viewport.name}-seam-stack.json`), JSON.stringify(diagnostic, null, 2))
+
     await page.close()
   }
 } finally {
