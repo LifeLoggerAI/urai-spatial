@@ -2,7 +2,7 @@
 
 import { Canvas } from '@react-three/fiber'
 import { useRouter } from 'next/navigation'
-import { Suspense, useCallback, useEffect, useRef, useState, type CSSProperties } from 'react'
+import { Suspense, useCallback, useEffect, useRef, useState, type CSSProperties, type FocusEvent } from 'react'
 import { assetCssStack, groundAssets } from '@/spatial/assets/uraiAssets'
 import { DESTINATIONS, STATE_LABEL, type GroundDestination } from './ground/GroundWorldModel'
 import { GroundScene } from './ground/GroundWorldScene'
@@ -99,7 +99,17 @@ export default function GroundSpatialWorldClean() {
         </Canvas>
       </Suspense>
       <nav className="ground-destination-compass ground-rail" aria-label="Ground destinations">{DESTINATIONS.map((destination, index) => {
-        const shared = { 'data-ground-destination': destination.id, 'data-workforce-state': destination.workforceState, 'data-service-availability': destination.availability, 'aria-label': `${destination.label}. ${destination.detail}. Workforce state: ${STATE_LABEL[destination.workforceState]}. Service: ${destination.availability}.`, onFocus: () => setActiveId(destination.id), onMouseEnter: () => setActiveId(destination.id) }
+        const shared = {
+          'data-ground-destination': destination.id,
+          'data-workforce-state': destination.workforceState,
+          'data-service-availability': destination.availability,
+          'aria-label': `${destination.label}. ${destination.detail}. Workforce state: ${STATE_LABEL[destination.workforceState]}. Service: ${destination.availability}.`,
+          onFocus: (event: FocusEvent<HTMLElement>) => {
+            setActiveId(destination.id)
+            event.currentTarget.scrollIntoView({ block: 'nearest', inline: 'center' })
+          },
+          onMouseEnter: () => setActiveId(destination.id),
+        }
         const content = <><span aria-hidden="true" style={{ background: destination.color }} /><strong>{destination.label}</strong></>
         if (index < 5) return <a key={destination.id} href={destination.href} aria-current={activeId === destination.id ? 'page' : undefined} {...shared} onClick={(event) => { event.preventDefault(); navigate(destination) }}>{content}</a>
         return <button key={destination.id} type="button" aria-current={activeId === destination.id ? 'location' : undefined} {...shared} onClick={() => navigate(destination)}>{content}</button>
@@ -117,13 +127,13 @@ export default function GroundSpatialWorldClean() {
         .ground-destination-compass{position:absolute;left:max(12px,env(safe-area-inset-left));right:max(12px,env(safe-area-inset-right));bottom:max(14px,env(safe-area-inset-bottom));z-index:6;display:flex;justify-content:center;gap:7px;overflow-x:auto;padding:6px;scrollbar-width:none;mask-image:linear-gradient(90deg,transparent,#000 2%,#000 98%,transparent)}
         :global(.urai-world-runtime[data-world-destination='infrastructure-hub'] .ground-destination-compass){display:flex!important}
         .ground-destination-compass::-webkit-scrollbar{display:none}
-        .ground-destination-compass :is(a,button){display:inline-flex;flex:0 0 auto;align-items:center;gap:7px;min-height:44px;padding:8px 11px;border:1px solid rgba(174,225,255,.18);border-radius:999px;background:linear-gradient(180deg,rgba(11,28,43,.74),rgba(1,7,18,.72));box-shadow:0 14px 40px rgba(0,0,0,.36),inset 0 1px 0 rgba(255,255,255,.07);backdrop-filter:blur(18px);color:rgba(239,249,255,.8);font:700 10px/1 Inter,ui-sans-serif,system-ui;letter-spacing:.05em;cursor:pointer;text-decoration:none;white-space:nowrap;transition:border-color .18s ease,background .18s ease,transform .18s ease,color .18s ease}
+        .ground-destination-compass :is(a,button){display:inline-flex;flex:0 0 auto;align-items:center;gap:7px;min-height:48px;padding:8px 11px;border:1px solid rgba(174,225,255,.18);border-radius:999px;background:linear-gradient(180deg,rgba(11,28,43,.74),rgba(1,7,18,.72));box-shadow:0 14px 40px rgba(0,0,0,.36),inset 0 1px 0 rgba(255,255,255,.07);backdrop-filter:blur(18px);color:rgba(239,249,255,.8);font:700 10px/1 Inter,ui-sans-serif,system-ui;letter-spacing:.05em;cursor:pointer;text-decoration:none;white-space:nowrap;transition:border-color .18s ease,background .18s ease,transform .18s ease,color .18s ease}
         .ground-destination-compass :is(a,button):hover,.ground-destination-compass :is(a,button):focus-visible,.ground-destination-compass :is(a,button)[aria-current]{border-color:rgba(207,250,254,.72);background:linear-gradient(180deg,rgba(20,57,79,.9),rgba(5,22,35,.88));color:#fff;outline:3px solid rgba(255,255,255,.9);outline-offset:2px;transform:translateY(-2px)}
         .ground-destination-compass :is(a,button) span{width:8px;height:8px;border-radius:50%;box-shadow:0 0 16px currentColor}
         .ground-accessible-instruction{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;border:0}
         :global(.ground-active-label){display:grid;gap:5px;min-width:170px;padding:12px 14px;border:1px solid rgba(207,250,254,.26);border-radius:18px;background:linear-gradient(180deg,rgba(7,22,35,.88),rgba(1,7,18,.8));box-shadow:0 18px 60px rgba(0,0,0,.48),inset 0 1px 0 rgba(255,255,255,.07);backdrop-filter:blur(18px);text-align:center;pointer-events:none}
         :global(.ground-active-label strong){font-size:11px;letter-spacing:.12em;text-transform:uppercase}:global(.ground-active-label span){font-size:9px;color:rgba(235,244,255,.72)}:global(.ground-active-label em){font-size:8px;font-style:normal;color:#a5f3fc;text-transform:uppercase;letter-spacing:.09em}
-        @media(max-width:700px){.ground-authored-art{background-image:linear-gradient(rgba(1,6,17,.68),rgba(1,6,17,.88)),var(--ground-provider-mobile)}.ground-title{top:max(15px,env(safe-area-inset-top));left:max(16px,env(safe-area-inset-left))}.ground-title strong{font-size:18px}.ground-destination-compass{justify-content:flex-start;bottom:max(10px,env(safe-area-inset-bottom));gap:5px}.ground-destination-compass :is(a,button){min-height:44px;padding:7px 9px;font-size:9px}:global(.ground-active-label){min-width:138px;padding:9px 10px}}
+        @media(max-width:700px){.ground-authored-art{background-image:linear-gradient(rgba(1,6,17,.68),rgba(1,6,17,.88)),var(--ground-provider-mobile)}.ground-title{top:max(15px,env(safe-area-inset-top));left:max(16px,env(safe-area-inset-left))}.ground-title strong{font-size:18px}.ground-destination-compass{justify-content:flex-start;bottom:max(10px,env(safe-area-inset-bottom));gap:5px}.ground-destination-compass :is(a,button){min-height:48px;padding:7px 9px;font-size:9px}:global(.ground-active-label){min-width:138px;padding:9px 10px}}
         @media(prefers-reduced-motion:reduce){.ground-destination-compass :is(a,button){transition:none!important;transform:none!important}}
       `}</style>
     </main>
