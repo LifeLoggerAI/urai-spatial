@@ -93,7 +93,7 @@ test('Focus visual hierarchy keeps the memory dominant and reveals metadata prog
   assert.match(cinematicStyles, /details summary[\s\S]*min-height: 48px;/)
   assert.match(cinematicStyles, /recoveryCinematic section\[role\][\s\S]*width: min\(680px, 100%\);/)
   assert.match(cinematicStyles, /recoveryCinematic section\[role\][\s\S]*background: transparent;/)
-  assert.match(targetGuardStyles, /data-testid="urai-final-focus-chamber"/)
+  assert.match(targetGuardStyles, /\.focusTargetGuard > section\[role\]/)
   assert.match(targetGuardStyles, /section\[role\][\s\S]*background: transparent;/)
   assert.match(targetGuardStyles, /orientation: landscape/)
   assert.match(targetGuardStyles, /details summary[\s\S]*min-height: 48px;/)
