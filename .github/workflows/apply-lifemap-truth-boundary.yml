@@ -77,3 +77,5 @@ jobs:
           git add urai-tier1/src/components/lifemap/AdaptiveLifeMapScene.tsx urai-tier1/tests/lifemap-scene-behavior.test.mjs
           git commit -m 'Fix Life Map sample and private error truth states'
           git push origin HEAD:fix/life-map-independent-universe-20260718
+
+# exact-head trigger 2026-07-18T06:48Z
