@@ -1,5 +1,5 @@
 name: Dispatch URAI Production Once
-# One-shot production convergence trigger for main@9094d54c0740762c9f63be2de52ac9a3106c17a9 after portable receipt repair PR #723.
+# One-shot production convergence trigger for main@8d13766a5603e67971852fd880b6f3ba309f9d55 after merged Life Map canon PR #728.
 
 on:
   push:
