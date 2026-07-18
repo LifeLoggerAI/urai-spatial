@@ -32,6 +32,7 @@ test('shared movement kernel owns stable input listeners, calm motion, boundarie
     'MOTION_NEXT',
   ]) assert.match(kernel, new RegExp(marker.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')))
   assert.match(kernel, /callbacksRef\.current = \{ onEscape, onInteract, onReset \}/)
+  assert.match(kernel, /event\.code === 'Enter' \|\| event\.code === 'Space'[\s\S]*event\.preventDefault\(\)/)
   assert.match(kernel, /\}, \[enabled\]\)/)
   assert.match(kernel, /const requested = MOTION_REQUESTED\.set\(0, 0, 0\)/)
   assert.match(kernel, /const next = MOTION_NEXT\.copy\(position\)/)
@@ -123,6 +124,8 @@ test('Life Map keeps its independent non-Orb movement language and orientation r
   assert.match(lifeMapBoundary, /aria-live="polite"/)
   assert.match(lifeMapBoundary, /life-map-accessibility-menu/)
   assert.match(lifeMapBoundary, /life-map-memory-portals/)
+  assert.match(lifeMapBoundary, /const detached = \[\.\.\.attached\]\.filter\(\(element\) => !document\.contains\(element\)\)/)
+  assert.match(lifeMapBoundary, /detached\.forEach\(\(element\) => \{[\s\S]*removeGestureBoundary\(element\)[\s\S]*attached\.delete\(element\)/)
   assert.match(embodiedLayout, /data-world-destination='life-map'[\s\S]*\.life-map-movement-help[\s\S]*top: max\(78px/)
   assert.doesNotMatch(lifeMapBoundary, /Orb companion|PersistentWorldCompanion|requestPointerLock/)
 })
