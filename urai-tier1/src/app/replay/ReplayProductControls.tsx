@@ -15,6 +15,7 @@ import {
 import {
   createAuthenticatedReplayTransport,
   readAuthenticatedReplayServerState,
+  type ReplayServerState,
 } from '@/spatial/replay/replayServerTransport'
 
 const emptyState = (): ReplayOperationState => ({ saved: false, hidden: false, pending: [], audit: [] })
@@ -31,7 +32,7 @@ function safeWriteDraft(ownerId: string, memoryId: string, value: string) {
   } catch { /* Persistence failure is surfaced by the operation state, not by draft typing. */ }
 }
 
-function mergeState(local: ReplayOperationState, server: ReplayOperationState): ReplayOperationState {
+function mergeState(local: ReplayOperationState, server: ReplayServerState): ReplayOperationState {
   const serverIds = new Set(server.audit.map((entry) => entry.id))
   return {
     saved: server.saved,
