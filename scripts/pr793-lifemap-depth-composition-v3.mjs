@@ -3,7 +3,7 @@ const canonical='urai-tier1/src/spatial/lifemap/SpatialLifeMapCanonical.tsx'
 const css='urai-tier1/src/app/continuous-spatial-proof-defects.css'
 const read=(p)=>fs.readFileSync(p,'utf8'),write=(p,v)=>fs.writeFileSync(p,v)
 function once(p,a,b){const s=read(p),i=s.indexOf(a);if(i<0||s.indexOf(a,i+a.length)>=0)throw new Error(`source ${a}`);write(p,s.slice(0,i)+b+s.slice(i+a.length))}
-function between(p,a,b,v){const s=read(p),i=s.indexOf(a),j=s.indexOf(b,i);if(i<0||j<0||s.indexOf(a,i+a.length)>=0)throw new Error(`marker ${a}`);write(p,s.slice(0,i)+v+s.slice(j))}
+function between(p,a,b,v){const s=read(p),i=s.indexOf(a),j=s.indexOf(b,i);if(i<0||j<0)throw new Error(`marker ${a}`);write(p,s.slice(0,i)+v+s.slice(j))}
 
 once(canonical,'<picture aria-hidden="true" data-life-map-authored-universe="primary" style={{ position: "absolute", inset: 0, zIndex: 60, pointerEvents: "none", mixBlendMode: "screen", opacity: .78 }}>','<picture aria-hidden="true" data-life-map-authored-universe="atmospheric" style={{ position: "absolute", inset: 0, zIndex: 60, pointerEvents: "none", mixBlendMode: "screen", opacity: .22, maskImage: "radial-gradient(ellipse at 50% 48%, rgba(0,0,0,.72) 0%, rgba(0,0,0,.48) 48%, rgba(0,0,0,.18) 82%, transparent 100%)", WebkitMaskImage: "radial-gradient(ellipse at 50% 48%, rgba(0,0,0,.72) 0%, rgba(0,0,0,.48) 48%, rgba(0,0,0,.18) 82%, transparent 100%)" }}>')
 once(canonical,'style={{ display: "block", width: "100%", height: "100%", objectFit: "cover", objectPosition: "center", filter: "saturate(1.12) contrast(1.06) brightness(.9)" }}','style={{ display: "block", width: "100%", height: "100%", objectFit: "cover", objectPosition: "center", transform: "scale(1.035)", filter: "saturate(.84) contrast(1.04) brightness(.68) blur(.35px)" }}')
