@@ -51,10 +51,9 @@ test('persistent world navigation preserves canonical ownership and separate hit
   assert.doesNotMatch(layout, /data-urai-audit-action="life-map-focus"/)
   assert.doesNotMatch(layout, /data-urai-audit-action="life-map-replay"/)
 
-  assert.match(visualAudit, /check\.name === 'life-map-to-focus'/)
-  assert.match(visualAudit, /summary:has-text\("Map controls"\)/)
-  assert.match(visualAudit, /\.life-map-accessibility-menu button/)
-  assert.match(visualAudit, /check\.name !== 'life-map-to-focus'/)
+  assert.match(visualAudit, /data-world-target=\\"focus\\"/)
+  assert.match(visualAudit, /firstVisible\(page, check\.selectors\)/)
   assert.match(visualAudit, /Open Orb travel controls/)
+  assert.match(visualAudit, /clickOrFollowHref\(page, found\.locator\)/)
   assert.match(visualAudit, /waitForURL\(\(url\) => url\.toString\(\)\.includes\(check\.expected\), \{ timeout: 7000 \}\)/)
 })

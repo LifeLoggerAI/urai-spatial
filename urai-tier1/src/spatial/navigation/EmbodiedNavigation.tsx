@@ -216,10 +216,11 @@ export function stepEmbodiedMotion({
 
   if (requested.lengthSq() > 0.0001) requested.normalize().multiplyScalar(speed)
   const damping = requested.lengthSq() > 0 ? acceleration : deceleration
-  velocity.x = THREE.MathUtils.damp(velocity.x, requested.x, damping, delta)
-  velocity.z = THREE.MathUtils.damp(velocity.z, requested.z, damping, delta)
+  const clampedDelta = Math.min(delta, 0.05)
+  velocity.x = THREE.MathUtils.damp(velocity.x, requested.x, damping, clampedDelta)
+  velocity.z = THREE.MathUtils.damp(velocity.z, requested.z, damping, clampedDelta)
 
-  const next = MOTION_NEXT.copy(position).addScaledVector(velocity, Math.min(delta, 0.05))
+  const next = MOTION_NEXT.copy(position).addScaledVector(velocity, clampedDelta)
   next.x = THREE.MathUtils.clamp(next.x, bounds.minX, bounds.maxX)
   next.z = THREE.MathUtils.clamp(next.z, bounds.minZ, bounds.maxZ)
 
