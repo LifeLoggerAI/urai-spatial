@@ -1,5 +1,5 @@
 name: Canonical six-fix isolated execution
-# trigger: configured accessibility browser proof 2026-07-18T18:45:00Z
+# trigger: nine-file strict product publication 2026-07-18T18:50:00Z
 
 on:
   pull_request:
@@ -50,7 +50,7 @@ jobs:
           node scripts/one-shot-six-fix-direct.mjs 2>&1 | tee /tmp/canonical-six-fix-apply.log
           node scripts/one-shot-six-fix-doorway-correction.mjs 2>&1 | tee -a /tmp/canonical-six-fix-apply.log
           git diff --check
-          test "$(git diff --name-only | sort)" = "$(printf '%s\n' scripts/run-live-visual-audit-current.mjs urai-tier1/src/app/EmbodiedHomeSpatialCanvas.tsx urai-tier1/src/app/GroundSpatialWorldClean.tsx urai-tier1/src/components/lifemap/AdaptiveLifeMapScene.tsx urai-tier1/src/spatial/navigation/EmbodiedNavigation.tsx urai-tier1/tests/accessibility-performance-source-contract.test.mjs urai-tier1/tests/continuous-spatial-restoration-contract.test.mjs urai-tier1/tests/final-aaa-world-convergence-contract.test.mjs urai-tier1/tests/lifemap-scene-behavior.test.mjs urai-tier1/tests/persistent-world-doorway-regression.test.mjs | sort)"
+          test "$(git diff --name-only | sort)" = "$(printf '%s\n' scripts/run-live-visual-audit-current.mjs urai-tier1/src/app/EmbodiedHomeSpatialCanvas.tsx urai-tier1/src/app/GroundSpatialWorldClean.tsx urai-tier1/src/components/lifemap/AdaptiveLifeMapScene.tsx urai-tier1/src/spatial/navigation/EmbodiedNavigation.tsx urai-tier1/tests/accessibility-performance-source-contract.test.mjs urai-tier1/tests/continuous-spatial-restoration-contract.test.mjs urai-tier1/tests/final-aaa-world-convergence-contract.test.mjs urai-tier1/tests/lifemap-scene-behavior.test.mjs | sort)"
 
       - name: Install exact dependencies
         id: install
@@ -92,7 +92,7 @@ jobs:
           set -o pipefail
           corepack pnpm exec playwright test --config=playwright.accessibility.config.ts accessibility-performance-evidence.spec.ts accessibility-performance-lifemap-independent.spec.ts --project=chromium --grep "mobile visible controls stay inside the visual viewport and safe area|reduced motion keeps selection and unwind behavior equivalent" 2>&1 | tee /tmp/canonical-six-fix-browser.log
 
-      - name: Publish one clean ten-file product commit
+      - name: Publish one clean nine-file product commit
         id: publish
         shell: bash
         run: |
@@ -107,7 +107,6 @@ jobs:
           cp urai-tier1/tests/continuous-spatial-restoration-contract.test.mjs /tmp/urai-six-fix/urai-tier1/tests/
           cp urai-tier1/tests/final-aaa-world-convergence-contract.test.mjs /tmp/urai-six-fix/urai-tier1/tests/
           cp urai-tier1/tests/lifemap-scene-behavior.test.mjs /tmp/urai-six-fix/urai-tier1/tests/
-          cp urai-tier1/tests/persistent-world-doorway-regression.test.mjs /tmp/urai-six-fix/urai-tier1/tests/
           git checkout --detach "$CLEAN_BASE"
           cp /tmp/urai-six-fix/scripts/run-live-visual-audit-current.mjs scripts/
           cp /tmp/urai-six-fix/urai-tier1/src/app/EmbodiedHomeSpatialCanvas.tsx urai-tier1/src/app/
@@ -118,9 +117,8 @@ jobs:
           cp /tmp/urai-six-fix/urai-tier1/tests/continuous-spatial-restoration-contract.test.mjs urai-tier1/tests/
           cp /tmp/urai-six-fix/urai-tier1/tests/final-aaa-world-convergence-contract.test.mjs urai-tier1/tests/
           cp /tmp/urai-six-fix/urai-tier1/tests/lifemap-scene-behavior.test.mjs urai-tier1/tests/
-          cp /tmp/urai-six-fix/urai-tier1/tests/persistent-world-doorway-regression.test.mjs urai-tier1/tests/
           git diff --check
-          test "$(git diff --name-only | sort)" = "$(printf '%s\n' scripts/run-live-visual-audit-current.mjs urai-tier1/src/app/EmbodiedHomeSpatialCanvas.tsx urai-tier1/src/app/GroundSpatialWorldClean.tsx urai-tier1/src/components/lifemap/AdaptiveLifeMapScene.tsx urai-tier1/src/spatial/navigation/EmbodiedNavigation.tsx urai-tier1/tests/accessibility-performance-source-contract.test.mjs urai-tier1/tests/continuous-spatial-restoration-contract.test.mjs urai-tier1/tests/final-aaa-world-convergence-contract.test.mjs urai-tier1/tests/lifemap-scene-behavior.test.mjs urai-tier1/tests/persistent-world-doorway-regression.test.mjs | sort)"
+          test "$(git diff --name-only | sort)" = "$(printf '%s\n' scripts/run-live-visual-audit-current.mjs urai-tier1/src/app/EmbodiedHomeSpatialCanvas.tsx urai-tier1/src/app/GroundSpatialWorldClean.tsx urai-tier1/src/components/lifemap/AdaptiveLifeMapScene.tsx urai-tier1/src/spatial/navigation/EmbodiedNavigation.tsx urai-tier1/tests/accessibility-performance-source-contract.test.mjs urai-tier1/tests/continuous-spatial-restoration-contract.test.mjs urai-tier1/tests/final-aaa-world-convergence-contract.test.mjs urai-tier1/tests/lifemap-scene-behavior.test.mjs | sort)"
           git config user.name github-actions[bot]
           git config user.email 41898282+github-actions[bot]@users.noreply.github.com
           git add -A
