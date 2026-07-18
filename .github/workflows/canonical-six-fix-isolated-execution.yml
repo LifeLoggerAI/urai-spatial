@@ -1,5 +1,5 @@
 name: Canonical six-fix isolated execution
-# trigger: isolated canonical execution 2026-07-18T17:25:00Z
+# trigger: isolated canonical execution diagnostics 2026-07-18T17:30:00Z
 
 on:
   pull_request:
@@ -60,14 +60,26 @@ jobs:
           corepack enable
           corepack pnpm install --frozen-lockfile
 
-      - name: Verify contracts, types and build
-        id: verify
+      - name: Unit contracts
+        id: unit
         shell: bash
         run: |
-          set -euo pipefail
-          corepack pnpm --dir urai-tier1 test
-          corepack pnpm --dir urai-tier1 typecheck
-          corepack pnpm --dir urai-tier1 build
+          set -o pipefail
+          corepack pnpm --dir urai-tier1 test 2>&1 | tee /tmp/canonical-six-fix-unit.log
+
+      - name: Typecheck
+        id: typecheck
+        shell: bash
+        run: |
+          set -o pipefail
+          corepack pnpm --dir urai-tier1 typecheck 2>&1 | tee /tmp/canonical-six-fix-typecheck.log
+
+      - name: Build exact candidate
+        id: build
+        shell: bash
+        run: |
+          set -o pipefail
+          corepack pnpm --dir urai-tier1 build 2>&1 | tee /tmp/canonical-six-fix-build.log
 
       - name: Install Chromium
         id: chromium
@@ -77,8 +89,8 @@ jobs:
         id: browser
         shell: bash
         run: |
-          set -euo pipefail
-          corepack pnpm --dir urai-tier1 exec playwright test tests/accessibility-performance-evidence.spec.ts tests/accessibility-performance-lifemap-independent.spec.ts --project=chromium --grep "mobile visible controls stay inside the visual viewport and safe area|reduced motion keeps selection and unwind behavior equivalent"
+          set -o pipefail
+          corepack pnpm --dir urai-tier1 exec playwright test tests/accessibility-performance-evidence.spec.ts tests/accessibility-performance-lifemap-independent.spec.ts --project=chromium --grep "mobile visible controls stay inside the visual viewport and safe area|reduced motion keeps selection and unwind behavior equivalent" 2>&1 | tee /tmp/canonical-six-fix-browser.log
 
       - name: Publish one clean four-file product commit
         id: publish
@@ -104,16 +116,27 @@ jobs:
           git push --force-with-lease=refs/heads/$PRODUCT_BRANCH:$CLEAN_BASE origin HEAD:refs/heads/$PRODUCT_BRANCH
           echo "product_sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
 
+      - name: Retain exact verification diagnostics
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: canonical-six-fix-diagnostics-${{ github.event.pull_request.head.sha }}-${{ github.run_id }}
+          path: /tmp/canonical-six-fix-*.log
+          if-no-files-found: ignore
+          retention-days: 90
+
       - name: Post exact execution receipt
         if: always()
-        uses: actions/github-script@60a0d83039c74a4aee543508d2ffcb1c3799cdea
+        uses: actions/github-script@60a0d83039c74aee543508d2ffcb1c3799cdea
         with:
           script: |
             const rows = [
               ['checkout', '${{ steps.checkout.outcome }}'],
               ['repair', '${{ steps.repair.outcome }}'],
               ['install', '${{ steps.install.outcome }}'],
-              ['verify', '${{ steps.verify.outcome }}'],
+              ['unit', '${{ steps.unit.outcome }}'],
+              ['typecheck', '${{ steps.typecheck.outcome }}'],
+              ['build', '${{ steps.build.outcome }}'],
               ['chromium', '${{ steps.chromium.outcome }}'],
               ['browser', '${{ steps.browser.outcome }}'],
               ['publish', '${{ steps.publish.outcome }}']
