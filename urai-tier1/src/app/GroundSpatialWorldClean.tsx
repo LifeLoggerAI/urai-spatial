@@ -15,8 +15,12 @@ function useReducedMotion() {
     const query = window.matchMedia("(prefers-reduced-motion: reduce)");
     const update = () => setReduced(query.matches);
     update();
-    query.addEventListener?.("change", update);
-    return () => query.removeEventListener?.("change", update);
+    if (typeof query.addEventListener === "function") {
+      query.addEventListener("change", update);
+      return () => query.removeEventListener("change", update);
+    }
+    query.addListener(update);
+    return () => query.removeListener(update);
   }, []);
   return reduced;
 }
@@ -153,9 +157,10 @@ export default function GroundSpatialWorldClean() {
             "aria-label": `${destination.label}. ${destination.detail}. ${destination.signature}. ${destination.emotionalSentence} Workforce state: ${STATE_LABEL[destination.workforceState]}. Service: ${destination.availability}. Direct travel.`,
             onFocus: (event: FocusEvent<HTMLElement>) => {
               setActiveId(destination.id);
+              event.currentTarget.scrollIntoView({ block: "nearest", inline: "center" });
               const target = event.currentTarget;
-              target.scrollIntoView({ block: "nearest", inline: "center" });
-              window.requestAnimationFrame(() => target.scrollIntoView({ block: "nearest", inline: "center" }));
+              const reveal = () => target.scrollIntoView({ block: "nearest", inline: "center" });
+              window.requestAnimationFrame(() => window.requestAnimationFrame(reveal));
             },
             onMouseEnter: () => setActiveId(destination.id),
           };
@@ -174,9 +179,9 @@ export default function GroundSpatialWorldClean() {
         .ground-title span{font:800 10px/1 Inter,ui-sans-serif,system-ui;letter-spacing:.24em;text-transform:uppercase;color:rgba(165,243,252,.82)}.ground-title strong{font:800 clamp(18px,2.2vw,30px)/1.05 Inter,ui-sans-serif,system-ui;letter-spacing:-.035em;color:rgba(247,253,255,.92)}.ground-title em{font:700 10px/1.2 Inter,ui-sans-serif,system-ui;font-style:normal;letter-spacing:.08em;text-transform:uppercase;color:rgba(203,239,255,.58)}
         .ground-spatial-root canvas{position:absolute!important;inset:0;z-index:1;display:block;width:100%!important;height:100%!important;background:transparent!important;touch-action:none}.ground-loader{position:absolute;inset:0;z-index:20;display:grid;place-items:center;background:radial-gradient(circle at 50% 45%,rgba(103,232,249,.12),transparent 28%),#010611;color:rgba(226,246,255,.78);letter-spacing:.16em;text-transform:uppercase;font-size:12px}
         .ground-movement-prompt{position:absolute;left:50%;bottom:max(90px,calc(env(safe-area-inset-bottom) + 80px));z-index:7;transform:translateX(-50%);display:grid;gap:3px;min-width:min(430px,calc(100vw - 32px));padding:10px 16px;border:1px solid rgba(207,250,254,.18);border-radius:18px;background:rgba(2,10,22,.62);backdrop-filter:blur(16px);text-align:center;pointer-events:none}.ground-movement-prompt strong{font:800 11px/1.2 Inter,system-ui;letter-spacing:.08em;text-transform:uppercase}.ground-movement-prompt span{font:600 10px/1.3 Inter,system-ui;color:rgba(199,235,247,.66)}
-        .ground-destination-compass{position:absolute;left:max(12px,env(safe-area-inset-left));right:max(12px,env(safe-area-inset-right));bottom:max(14px,env(safe-area-inset-bottom));z-index:9;display:flex;justify-content:center;gap:6px;overflow-x:auto;padding:6px;scrollbar-width:none;mask-image:linear-gradient(90deg,transparent,#000 2%,#000 98%,transparent);touch-action:pan-x}
+        .ground-destination-compass{position:absolute;left:max(12px,env(safe-area-inset-left));right:max(12px,env(safe-area-inset-right));bottom:max(14px,env(safe-area-inset-bottom));z-index:9;display:flex;justify-content:center;gap:6px;overflow-x:auto;padding:6px;scrollbar-width:none;mask-image:linear-gradient(90deg,transparent,#000 2%,#000 98%,transparent);touch-action:pan-x;scroll-padding-inline:12px}
         :global(.urai-world-runtime[data-world-destination='infrastructure-hub'] .ground-destination-compass){display:flex!important}.ground-destination-compass::-webkit-scrollbar{display:none}
-        .ground-destination-compass :is(a,button){display:inline-flex;flex:0 0 auto;align-items:center;gap:7px;min-height:48px;max-width:48px;padding:8px 12px;border:1px solid rgba(174,225,255,.14);border-radius:999px;background:linear-gradient(180deg,rgba(11,28,43,.72),rgba(1,7,18,.72));box-shadow:0 14px 40px rgba(0,0,0,.32),inset 0 1px 0 rgba(255,255,255,.06);backdrop-filter:blur(18px);color:rgba(239,249,255,.8);font:700 10px/1 Inter,ui-sans-serif,system-ui;letter-spacing:.05em;cursor:pointer;text-decoration:none;white-space:nowrap;overflow:hidden;transition:max-width .22s ease,border-color .18s ease,background .18s ease,transform .18s ease,color .18s ease}
+        .ground-destination-compass :is(a,button){display:inline-flex;scroll-margin-inline:12px;flex:0 0 auto;align-items:center;gap:7px;min-height:48px;max-width:48px;padding:8px 12px;border:1px solid rgba(174,225,255,.14);border-radius:999px;background:linear-gradient(180deg,rgba(11,28,43,.72),rgba(1,7,18,.72));box-shadow:0 14px 40px rgba(0,0,0,.32),inset 0 1px 0 rgba(255,255,255,.06);backdrop-filter:blur(18px);color:rgba(239,249,255,.8);font:700 10px/1 Inter,ui-sans-serif,system-ui;letter-spacing:.05em;cursor:pointer;text-decoration:none;white-space:nowrap;overflow:hidden;transition:max-width .22s ease,border-color .18s ease,background .18s ease,transform .18s ease,color .18s ease}
         .ground-destination-compass :is(a,button):hover,.ground-destination-compass :is(a,button):focus-visible,.ground-destination-compass :is(a,button)[aria-current]{max-width:220px;border-color:rgba(207,250,254,.72);background:linear-gradient(180deg,rgba(20,57,79,.92),rgba(5,22,35,.9));color:#fff;outline:3px solid rgba(255,255,255,.9);outline-offset:2px;transform:translateY(-2px)}
         .ground-destination-compass :is(a,button) span{width:8px;height:8px;flex:0 0 auto;border-radius:50%;box-shadow:0 0 16px currentColor}.ground-destination-compass :is(a,button) strong{opacity:0;max-width:0;overflow:hidden;transition:opacity .16s ease,max-width .22s ease}.ground-destination-compass :is(a,button):hover strong,.ground-destination-compass :is(a,button):focus-visible strong,.ground-destination-compass :is(a,button)[aria-current] strong{opacity:1;max-width:170px}.ground-destination-compass :is(a,button) i{font-style:normal;font-size:12px;color:rgba(255,255,255,.72)}
         .ground-accessible-instruction{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;border:0}

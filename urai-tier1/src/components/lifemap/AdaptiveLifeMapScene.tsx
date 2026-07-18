@@ -608,11 +608,7 @@ function MemoryArtifact({ node, selected, related, overview, profile, onSelect, 
   const { camera } = useThree();
   const textureResolution = selected
     ? profile.tier === "high" ? 512 : 384
-    : overview
-      ? profile.tier === "high" ? 128 : 96
-      : related
-        ? profile.tier === "high" ? 224 : 160
-        : 80;
+    : profile.tier === "high" ? 128 : 96;
   const [texture, setTexture] = useState<THREE.CanvasTexture | null>(null);
   const scale = 0.72 + node.intensity * 0.24;
 
@@ -819,6 +815,7 @@ export default function AdaptiveLifeMapScene() {
   if (!initial.current) initial.current = readPersistedState();
 
   const queryNodeId = safeToken(params.get("node") || params.get("nodeId") || params.get("memoryId"));
+  const overviewRequested = params.get("overview") === "1";
   const manifestId = safeToken(params.get("manifestId"), DEFAULT_MANIFEST_ID);
   const [selectedId, setSelectedId] = useState<string | null>(() => queryNodeId || initial.current?.selectedId || null);
   const [cameraIntent, setCameraIntent] = useState<CameraIntent>(() => initial.current?.cameraIntent || OVERVIEW_CAMERA);
@@ -832,13 +829,13 @@ export default function AdaptiveLifeMapScene() {
   const stableCanvas = useRef({ antialias: profile.antialias, pixelRatioMax: profile.pixelRatioMax });
 
   useEffect(() => {
-    if (!queryNodeId || !nodes.length) return;
+    if (overviewRequested || !queryNodeId || !nodes.length) return;
     const node = nodes.find((candidate) => candidate.id === queryNodeId);
     if (!node) return;
     setSelectedId(node.id);
     setCameraIntent(cameraForNode(node));
     setNarratorText(narrationForNode(node).text);
-  }, [nodes, queryNodeId]);
+  }, [nodes, overviewRequested, queryNodeId]);
 
   useEffect(() => {
     try {
@@ -871,11 +868,16 @@ export default function AdaptiveLifeMapScene() {
   }, [manifestId, router]);
 
   const recenter = useCallback(() => {
+    const preservedMemoryId = selectedId || queryNodeId;
     setSelectedId(null);
     setCameraIntent(OVERVIEW_CAMERA);
     setNarratorText("Back to the whole private constellation. Select any star to enter it.");
-    router.replace("/life-map", { scroll: false });
-  }, [router]);
+    const next = new URLSearchParams();
+    if (preservedMemoryId) next.set("memoryId", preservedMemoryId);
+    if (manifestId) next.set("manifestId", manifestId);
+    next.set("overview", "1");
+    router.replace(`/life-map?${next.toString()}`, { scroll: false });
+  }, [manifestId, queryNodeId, router, selectedId]);
 
   const enterFocus = useCallback((node: LifeMapNode) => {
     router.push(identityHref("focus", node));
