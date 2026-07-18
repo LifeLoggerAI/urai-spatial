@@ -1,0 +1,113 @@
+name: Apply Life Map bounded repair
+
+on:
+  push:
+    branches:
+      - automation/lifemap-bounded-repair-20260718
+
+permissions:
+  contents: write
+
+concurrency:
+  group: lifemap-bounded-repair-20260718
+  cancel-in-progress: false
+
+jobs:
+  repair:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout exact Life Map candidate
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: fix/life-map-independent-universe-20260718
+          fetch-depth: 0
+          persist-credentials: true
+
+      - name: Verify unchanged authority
+        shell: bash
+        run: |
+          set -euo pipefail
+          expected='67a8372af437850fe9b2371768caa718e9030df7'
+          actual="$(git rev-parse HEAD)"
+          test "$actual" = "$expected" || { echo "Refusing to patch moved head: $actual"; exit 1; }
+          test "$(git status --porcelain)" = ""
+
+      - name: Apply bounded source and proof repairs
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          def replace_once(text: str, old: str, new: str, label: str) -> str:
+              count = text.count(old)
+              if count != 1:
+                  raise SystemExit(f"{label}: expected one match, found {count}")
+              return text.replace(old, new, 1)
+
+          scene_path = Path('urai-tier1/src/components/lifemap/AdaptiveLifeMapScene.tsx')
+          scene = scene_path.read_text()
+          scene = replace_once(
+              scene,
+              'function createMemorySurface(node: LifeMapNode) {\n  if (typeof document === "undefined") return null;\n\n  const canvas = document.createElement("canvas");\n  canvas.width = 768;\n  canvas.height = 768;\n  const ctx = canvas.getContext("2d");\n  if (!ctx) return null;\n\n  ctx.clearRect(0, 0, canvas.width, canvas.height);',
+              '''const MEMORY_SURFACE_DESIGN_SIZE = 768;\ntype MemoryTextureState = "overview" | "related" | "selected";\n\nfunction memoryTextureResolution(profile: SpatialQualityProfile, state: MemoryTextureState) {\n  const resolutions = {\n    low: { overview: 96, related: 192, selected: 384 },\n    medium: { overview: 128, related: 256, selected: 512 },\n    high: { overview: 160, related: 320, selected: 768 },\n  } as const;\n  return resolutions[profile.tier][state];\n}\n\nfunction createMemorySurface(node: LifeMapNode, resolution: number) {\n  if (typeof document === "undefined") return null;\n\n  const canvas = document.createElement("canvas");\n  canvas.width = resolution;\n  canvas.height = resolution;\n  const ctx = canvas.getContext("2d");\n  if (!ctx) return null;\n\n  const scale = resolution / MEMORY_SURFACE_DESIGN_SIZE;\n  ctx.scale(scale, scale);\n  ctx.clearRect(0, 0, MEMORY_SURFACE_DESIGN_SIZE, MEMORY_SURFACE_DESIGN_SIZE);''',
+              'memory surface resolution boundary',
+          )
+          scene = replace_once(
+              scene,
+              '  texture.anisotropy = 8;\n',
+              '  texture.anisotropy = resolution >= 768 ? 8 : resolution >= 384 ? 4 : 2;\n',
+              'memory texture anisotropy',
+          )
+          scene = replace_once(
+              scene,
+              '  const texture = useMemo(() => createMemorySurface(node), [node]);\n  const scale = 0.72 + node.intensity * 0.24;\n',
+              '''  const textureState: MemoryTextureState = selected ? "selected" : related ? "related" : "overview";\n  const textureResolution = memoryTextureResolution(profile, textureState);\n  const texture = useMemo(() => createMemorySurface(node, textureResolution), [node, textureResolution]);\n  const scale = 0.72 + node.intensity * 0.24;\n''',
+              'memory texture state integration',
+          )
+          scene_path.write_text(scene)
+
+          boundary_path = Path('urai-tier1/src/spatial/world/LifeMapIndependentInputBoundary.tsx')
+          boundary_path.write_text('''\'use client\'\n\nimport { useEffect } from \'react\'\n\nconst LIFE_MAP_CONTROL_SELECTOR = [\n  \'.life-map-accessibility-menu\',\n  \'.life-map-recovery\',\n  \'.life-map-memory-portals\',\n].join(\', \')\n\nconst CONTROL_GESTURE_EVENTS = [\n  \'wheel\',\n  \'pointerdown\',\n  \'pointermove\',\n  \'pointerup\',\n  \'pointercancel\',\n] as const\n\nfunction isEditableTarget(target: EventTarget | null) {\n  return target instanceof HTMLElement && (target.isContentEditable || target.matches(\'input, textarea, select, [role="textbox"]\'))\n}\n\nfunction selectedOverviewControl() {\n  return Array.from(document.querySelectorAll<HTMLButtonElement>(\n    \'.life-map-memory-portals button, .life-map-accessibility-menu button\',\n  )).find((button) => button.textContent?.trim() === \'Overview\') ?? null\n}\n\nexport function LifeMapIndependentInputBoundary() {\n  useEffect(() => {\n    const attached = new Set<HTMLElement>()\n    const stopCameraGesture = (event: Event) => event.stopPropagation()\n    const keepEscapeInsideSelectedMemory = (event: KeyboardEvent) => {\n      if (event.key !== \'Escape\' || isEditableTarget(event.target)) return\n      const overview = selectedOverviewControl()\n      if (!overview) return\n      event.preventDefault()\n      event.stopPropagation()\n      event.stopImmediatePropagation()\n      overview.click()\n    }\n\n    const attach = () => {\n      document.querySelectorAll<HTMLElement>(LIFE_MAP_CONTROL_SELECTOR).forEach((element) => {\n        if (attached.has(element)) return\n        attached.add(element)\n        CONTROL_GESTURE_EVENTS.forEach((eventName) => {\n          element.addEventListener(eventName, stopCameraGesture, { passive: true })\n        })\n      })\n    }\n\n    attach()\n    const observer = new MutationObserver(attach)\n    observer.observe(document.body, { childList: true, subtree: true })\n    window.addEventListener(\'keydown\', keepEscapeInsideSelectedMemory, { capture: true })\n\n    return () => {\n      observer.disconnect()\n      window.removeEventListener(\'keydown\', keepEscapeInsideSelectedMemory, { capture: true })\n      attached.forEach((element) => {\n        CONTROL_GESTURE_EVENTS.forEach((eventName) => {\n          element.removeEventListener(eventName, stopCameraGesture)\n        })\n      })\n      attached.clear()\n    }\n  }, [])\n\n  return null\n}\n\nexport default LifeMapIndependentInputBoundary\n''')
+
+          runtime_path = Path('urai-tier1/tests/accessibility-performance-lifemap-independent.spec.ts')
+          runtime = runtime_path.read_text()
+          runtime = replace_once(
+              runtime,
+              "    const focus = menu.getByRole('button', { name: 'Enter Focus' })\n",
+              "    const focus = page.locator('.life-map-memory-portals').getByRole('button', { name: 'Enter Focus' }).first()\n",
+              'visible focus portal locator',
+          )
+          runtime_path.write_text(runtime)
+
+          contract_path = Path('urai-tier1/tests/final-aaa-world-convergence-contract.test.mjs')
+          contract = contract_path.read_text()
+          contract = replace_once(
+              contract,
+              "const lifeMapScene = read('src/components/lifemap/AdaptiveLifeMapScene.tsx')\n",
+              "const lifeMapScene = read('src/components/lifemap/AdaptiveLifeMapScene.tsx')\nconst lifeMapInputBoundary = read('src/spatial/world/LifeMapIndependentInputBoundary.tsx')\n",
+              'input boundary source registration',
+          )
+          contract = replace_once(
+              contract,
+              "  assert.doesNotMatch(lifeMapScene, /function LifeCore|<icosahedronGeometry|function NodeGeometry/)\n",
+              "  assert.match(lifeMapScene, /MEMORY_SURFACE_DESIGN_SIZE = 768/)\n  assert.match(lifeMapScene, /memoryTextureResolution/)\n  assert.match(lifeMapScene, /overview: 160, related: 320, selected: 768/)\n  assert.match(lifeMapScene, /ctx\\.scale\\(scale, scale\\)/)\n  assert.match(lifeMapScene, /texture\\?\\.dispose\\(\\)/)\n  assert.match(lifeMapInputBoundary, /keepEscapeInsideSelectedMemory/)\n  assert.match(lifeMapInputBoundary, /stopImmediatePropagation/)\n  assert.match(lifeMapInputBoundary, /overview\\.click\\(\\)/)\n  assert.doesNotMatch(lifeMapScene, /function LifeCore|<icosahedronGeometry|function NodeGeometry/)\n",
+              'texture and Escape source contracts',
+          )
+          contract_path.write_text(contract)
+          PY
+
+          git diff --check
+          git diff --stat
+
+      - name: Commit exact bounded repair
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add urai-tier1/src/components/lifemap/AdaptiveLifeMapScene.tsx \
+                  urai-tier1/src/spatial/world/LifeMapIndependentInputBoundary.tsx \
+                  urai-tier1/tests/accessibility-performance-lifemap-independent.spec.ts \
+                  urai-tier1/tests/final-aaa-world-convergence-contract.test.mjs
+          git commit -m 'Fix Life Map texture and Escape boundaries'
+          git push origin HEAD:fix/life-map-independent-universe-20260718
