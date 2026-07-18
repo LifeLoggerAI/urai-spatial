@@ -85,15 +85,19 @@ test.describe('URAI accessibility and performance evidence', () => {
 
   test('Orb menu enters focus, closes on Escape, and returns focus', async ({ page }) => {
     await page.goto('/', { waitUntil: 'domcontentloaded' })
-    const orb = page.getByRole('button', { name: /open orb travel controls/i })
+    const orb = page.locator('[data-urai-audit-action="orb-controls"]')
+    await expect(orb).toHaveAccessibleName(/open orb travel controls/i)
     await expect(orb).toBeEnabled()
     await orb.focus()
     await orb.press('Enter')
     await expect(orb).toHaveAttribute('aria-expanded', 'true')
+    await expect(orb).toHaveAccessibleName(/close orb travel controls/i)
     const firstDestination = page.locator('#urai-world-companion-menu button:not([disabled])').first()
     await expect(firstDestination).toBeFocused()
     await page.keyboard.press('Escape')
-    await expect(page.getByRole('button', { name: /open orb travel controls/i })).toBeFocused()
+    await expect(orb).toBeFocused()
+    await expect(orb).toHaveAttribute('aria-expanded', 'false')
+    await expect(orb).toHaveAccessibleName(/open orb travel controls/i)
     await expect(page.locator('#urai-world-companion-menu')).toHaveAttribute('aria-hidden', 'true')
   })
 
@@ -124,20 +128,60 @@ test.describe('URAI accessibility and performance evidence', () => {
         const top = viewport?.offsetTop ?? 0
         const right = left + (viewport?.width ?? window.innerWidth)
         const bottom = top + (viewport?.height ?? window.innerHeight)
+        const hasScrollableAncestor = (element: Element) => {
+          let current = element.parentElement
+          while (current) {
+            const style = getComputedStyle(current)
+            if (/auto|scroll/.test(style.overflowX) && current.scrollWidth > current.clientWidth) return true
+            current = current.parentElement
+          }
+          return false
+        }
         return elements
           .map((element) => ({ element, rect: element.getBoundingClientRect(), style: getComputedStyle(element) }))
           .filter(({ rect, style }) => style.visibility !== 'hidden' && style.display !== 'none' && rect.width > 0 && rect.height > 0)
-          .filter(({ rect }) => {
+          .filter(({ element, rect }) => {
             const intersects = rect.left < right && rect.right > left && rect.top < bottom && rect.bottom > top
             const fullyContained = rect.left >= left && rect.right <= right && rect.top >= top && rect.bottom <= bottom
-            return intersects && !fullyContained
+            return intersects && !fullyContained && !hasScrollableAncestor(element)
           })
           .map(({ element, rect }) => ({ html: element.outerHTML.slice(0, 240), left: rect.left, top: rect.top, right: rect.right, bottom: rect.bottom }))
       })
       report.push({ route: route.name, clipped })
     }
-    await test.info().attach('mobile-safe-area-report.json', { body: JSON.stringify(report, null, 2), contentType: 'application/json' })
+
+    await page.goto('/ground', { waitUntil: 'domcontentloaded' })
+    const railTargets = page.locator('.ground-destination-compass :is(a,button)')
+    const focusContainment: Array<{ label: string; fullyContained: boolean; left: number; right: number }> = []
+    for (let index = 0; index < await railTargets.count(); index += 1) {
+      const target = railTargets.nth(index)
+      await target.focus()
+      await expect(target).toBeFocused()
+      focusContainment.push(await target.evaluate((element) => {
+        const rect = element.getBoundingClientRect()
+        const rail = element.closest<HTMLElement>('.ground-destination-compass')
+        const railRect = rail?.getBoundingClientRect() ?? rect
+        const viewport = window.visualViewport
+        const leftBoundary = Math.max(viewport?.offsetLeft ?? 0, railRect.left)
+        const rightBoundary = Math.min(
+          (viewport?.offsetLeft ?? 0) + (viewport?.width ?? window.innerWidth),
+          railRect.right,
+        )
+        return {
+          label: element.getAttribute('aria-label') ?? element.textContent?.trim() ?? 'unknown',
+          fullyContained: rect.left >= leftBoundary && rect.right <= rightBoundary,
+          left: rect.left,
+          right: rect.right,
+        }
+      }))
+    }
+
+    await test.info().attach('mobile-safe-area-report.json', {
+      body: JSON.stringify({ fixedControls: report, scrollableGroundRail: focusContainment }, null, 2),
+      contentType: 'application/json',
+    })
     expect(report.flatMap((entry) => entry.clipped)).toEqual([])
+    expect(focusContainment.filter((entry) => !entry.fullyContained)).toEqual([])
   })
 
   test('no-WebGL mode exposes the complete keyboard-operable Home fallback', async ({ page }) => {
