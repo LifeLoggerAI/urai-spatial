@@ -1,6 +1,6 @@
 /* Final persistent-world ownership boundary.
  * Canonical route clients own Home, Focus and Replay. The shared world owns
- * travel and the persistent Orb; no duplicate route owner is hidden here.
+ * travel and the companion only where destination canon permits it.
  * Mobile Replay clearance is enforced by geometric browser assertions.
  */
 
@@ -21,8 +21,56 @@ body:has(.urai-home-spatial-runtime-layer[data-webgl-ready='true']) .urai-home-s
   height: 100svh !important;
 }
 
+/* Home keeps the companion controller and menu, but the authored sanctuary image
+ * owns the only visible Orb. While closed, the generic button is a transparent
+ * accessible hit target aligned over that Orb. */
+.urai-world-runtime[data-world-destination='home'] .urai-world-companion__orb,
+.urai-world-runtime[data-world-destination='home'] .urai-world-companion__orb:hover {
+  position: fixed !important;
+  left: 50% !important;
+  top: 55% !important;
+  width: 96px !important;
+  height: 96px !important;
+  transform: translate(-50%, -50%) !important;
+  border-color: transparent !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  filter: none !important;
+}
+
+/* Once open, return the transparent controller to its normal grid position below
+ * the menu. This preserves a pointer-close target without covering destination
+ * buttons such as Life Map. */
+.urai-world-runtime[data-world-destination='home']
+  .urai-world-companion[data-open='true'] .urai-world-companion__orb,
+.urai-world-runtime[data-world-destination='home']
+  .urai-world-companion[data-open='true'] .urai-world-companion__orb:hover {
+  position: relative !important;
+  left: auto !important;
+  top: auto !important;
+  width: 64px !important;
+  height: 64px !important;
+  transform: none !important;
+  border-color: transparent !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  filter: none !important;
+}
+
+.urai-world-runtime[data-world-destination='home'] .urai-world-companion__orb::before,
+.urai-world-runtime[data-world-destination='home'] .urai-world-companion__orb::after,
+.urai-world-runtime[data-world-destination='home'] .urai-world-companion__orb span {
+  content: none !important;
+  display: none !important;
+}
+
+.urai-world-runtime[data-world-destination='home'] .urai-world-companion__orb:focus-visible {
+  outline: 3px solid rgba(224,255,255,.96) !important;
+  outline-offset: 8px !important;
+}
+
 /* Ground is a realm, not a miniature dashboard. Route chrome remains available
- * through the persistent Orb; the environment receives the entire viewport. */
+ * through the shared companion; the environment receives the entire viewport. */
 .urai-world-runtime[data-world-destination='infrastructure-hub'] .ground-spatial-root {
   width: 100vw !important;
   height: 100svh !important;
@@ -39,20 +87,16 @@ body:has(.urai-home-spatial-runtime-layer[data-webgl-ready='true']) .urai-home-s
   box-shadow: 0 18px 58px rgba(0,0,0,.38), 0 0 34px rgba(103,232,249,.12) !important;
 }
 
-/* On initial Life Map arrival, the universe itself is the instruction. The
- * selected-memory controls may return after a star has been chosen. */
+/* Retired generic arrival panels remain suppressed. The independent Life Map
+ * whisper is environmental narration and must stay visible and announced. */
 .urai-world-runtime[data-world-destination='life-map']
   main[data-testid='urai-true-3d-life-map']:not(:has(.urai-lifemap-deep-link-controls))
-  section[aria-live='polite'] {
+  section[aria-live='polite']:not(.life-map-whisper) {
   display: none !important;
 }
 
-.urai-world-runtime[data-world-destination='life-map'] .urai-world-companion {
-  z-index: 30 !important;
-}
-
 /* Replay uses one compact control stack on phones. Keep the timeline, details,
- * captions and persistent Orb in distinct safe-area bands. */
+ * captions and companion in distinct safe-area bands where canon permits it. */
 @media (max-width: 700px) {
   .urai-world-runtime[data-world-destination='replay'] [data-testid='urai-replay-meta-panel'] {
     top: max(78px, calc(env(safe-area-inset-top) + 62px)) !important;
@@ -102,8 +146,12 @@ body:has(.urai-home-spatial-runtime-layer[data-webgl-ready='true']) .urai-home-s
   }
 
   .urai-world-runtime[data-world-destination='infrastructure-hub'] .ground-spatial-root canvas {
-    transform: scale(1.22) translateY(-1.5svh);
-    transform-origin: 50% 54%;
+    width: 100vw !important;
+    height: 100svh !important;
+    max-width: 100vw !important;
+    max-height: 100svh !important;
+    transform: none !important;
+    transform-origin: 50% 50%;
   }
 
   .urai-world-runtime[data-world-destination='infrastructure-hub'] .ground-district-label {
@@ -114,11 +162,6 @@ body:has(.urai-home-spatial-runtime-layer[data-webgl-ready='true']) .urai-home-s
   .urai-world-runtime[data-world-destination='infrastructure-hub'] .ground-district-label strong {
     font-size: 9px !important;
   }
-
-  .urai-world-runtime[data-world-destination='life-map'] main[data-testid='urai-true-3d-life-map'] canvas {
-    transform: translate3d(0, -1svh, 0) scale(1.34) !important;
-    transform-origin: 50% 48% !important;
-  }
 }
 
 @media (max-width: 430px) {
@@ -128,13 +171,5 @@ body:has(.urai-home-spatial-runtime-layer[data-webgl-ready='true']) .urai-home-s
 
   .urai-world-runtime[data-world-destination='replay'] .replaySpatialCaption {
     bottom: 31svh !important;
-  }
-
-  .urai-world-runtime[data-world-destination='infrastructure-hub'] .ground-spatial-root canvas {
-    transform: scale(1.3) translateY(-2svh);
-  }
-
-  .urai-world-runtime[data-world-destination='life-map'] main[data-testid='urai-true-3d-life-map'] canvas {
-    transform: translate3d(0, -2svh, 0) scale(1.42) !important;
   }
 }

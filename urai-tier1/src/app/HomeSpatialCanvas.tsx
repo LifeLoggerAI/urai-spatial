@@ -200,7 +200,7 @@ function CameraRig({ mode, pointerRef, reducedMotion }: { mode: CameraMode; poin
       cameraBase.x += pointerRef.current.x * (mobile ? 0.65 : 1.15)
       cameraBase.y += pointerRef.current.y * -0.32
     }
-    if (mode === 'orb') cameraBase.lerp(cameraDestination.set(1.25, 3.1, 9.4), 0.58)
+    if (mode === 'orb') cameraBase.lerp(cameraDestination.set(0, 3.05, 9.2), 0.58)
     if (mode === 'avatar') cameraBase.lerp(cameraDestination.set(-1.5, 3.1, 9.2), 0.5)
     if (mode === 'ascending') {
       cameraBase.y += reducedMotion ? 1 : Math.min(12, elapsed * 5)
@@ -298,31 +298,17 @@ function RelationshipPresences({ count, palette }: { count: number; palette: typ
   )
 }
 
-function Orb({ palette, reducedMotion, onOpen }: { palette: typeof PALETTES.calm; reducedMotion: boolean; onOpen: () => void }) {
-  const group = useRef<THREE.Group>(null)
-  const [hovered, setHovered] = useState(false)
-  useFrame((state, delta) => {
-    if (!group.current) return
-    const targetScale = hovered ? 1.08 : 1
-    const easing = reducedMotion ? 1 : 1 - Math.exp(-delta * 8)
-    group.current.scale.setScalar(THREE.MathUtils.lerp(group.current.scale.x, targetScale, easing))
-    if (!reducedMotion) group.current.position.y = 1.55 + Math.sin(state.clock.getElapsedTime() * 0.9) * 0.055
-  })
+function Orb({ onOpen }: { onOpen: () => void }) {
   const activate = (event: ThreeEvent<MouseEvent>) => {
     event.stopPropagation()
     onOpen()
   }
   return (
-    <group ref={group} position={[2.45, 1.55, -1.15]} data-testid="urai-home-webgl-orb" name="home-only-companion">
-      <mesh onClick={activate} onPointerOver={() => setHovered(true)} onPointerOut={() => setHovered(false)}>
-        <sphereGeometry args={[0.34, 48, 48]} />
-        <meshPhysicalMaterial color="#ecffff" emissive={palette.accent} emissiveIntensity={hovered ? 3.4 : 2.5} roughness={0.04} metalness={0.16} clearcoat={1} transmission={0.18} />
+    <group position={[0, 1.35, -2.3]} data-testid="urai-home-webgl-orb" name="home-only-companion-hit-target">
+      <mesh onClick={activate}>
+        <sphereGeometry args={[0.82, 24, 24]} />
+        <meshBasicMaterial transparent opacity={0} colorWrite={false} depthWrite={false} />
       </mesh>
-      <mesh scale={1.38}>
-        <sphereGeometry args={[0.34, 32, 32]} />
-        <meshBasicMaterial color={palette.secondary} transparent opacity={0.08} depthWrite={false} blending={THREE.AdditiveBlending} toneMapped={false} />
-      </mesh>
-      <pointLight color={palette.accent} intensity={hovered ? 7.5 : 5.5} distance={7.5} decay={2} />
     </group>
   )
 }
@@ -367,7 +353,7 @@ function Scene({ profile, tier, mode, pointerRef, reducedMotion, onOrbOpen, onAv
       <SanctuaryGardens palette={palette} />
       <RelationshipPresences count={profile.relationshipCount} palette={palette} />
       <EmbodiedAvatar palette={palette} reducedMotion={reducedMotion} onAvatar={onAvatar} />
-      <Orb palette={palette} reducedMotion={reducedMotion} onOpen={onOrbOpen} />
+      <Orb onOpen={onOrbOpen} />
     </>
   )
 }

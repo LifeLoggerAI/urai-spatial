@@ -41,9 +41,15 @@ type LoseContextExtension = {
   restoreContext?: () => void;
 };
 
+type MemoryPortalHandlers = {
+  onEnterFocus: (node: LifeMapNode) => void;
+  onEnterReplay: (node: LifeMapNode) => void;
+  onOverview: () => void;
+};
+
 const OVERVIEW_CAMERA: CameraIntent = {
-  position: [0.72, 2.18, 9.65],
-  target: [0.05, 0.06, -1.25],
+  position: [0.35, 2.55, 11.8],
+  target: [0.05, 0.05, -2.6],
 };
 
 const LIFE_MAP_STATE_KEY = "urai:spatial:lifeMapState";
@@ -57,6 +63,10 @@ function safeToken(value: string | null, fallback = "") {
 
 function validVector(value: unknown): value is [number, number, number] {
   return Array.isArray(value) && value.length === 3 && value.every((item) => typeof item === "number" && Number.isFinite(item));
+}
+
+function isLifeMapUiTarget(target: EventTarget | null) {
+  return target instanceof Element && Boolean(target.closest(".life-map-accessibility-menu, .life-map-recovery, .life-map-memory-portals"));
 }
 
 function readPersistedState(): PersistedLifeMapState {
@@ -76,10 +86,197 @@ function readPersistedState(): PersistedLifeMapState {
 }
 
 function cameraForNode(node: LifeMapNode): CameraIntent {
+  const lateral = node.position[0] >= 0 ? 0.95 : -0.95;
   return {
-    position: [node.position[0] + 0.82, node.position[1] + 0.7, node.position[2] + 3.05],
-    target: [node.position[0], node.position[1] + 0.04, node.position[2]],
+    position: [node.position[0] + lateral, node.position[1] + 0.72, node.position[2] + 3.35],
+    target: [node.position[0], node.position[1] + 0.05, node.position[2] - 0.18],
   };
+}
+
+function titleize(value: string) {
+  return value
+    .split(/[-_]/g)
+    .filter(Boolean)
+    .map((part) => `${part.slice(0, 1).toUpperCase()}${part.slice(1)}`)
+    .join(" ");
+}
+
+function roundedRect(ctx: CanvasRenderingContext2D, x: number, y: number, width: number, height: number, radius: number) {
+  const r = Math.min(radius, width / 2, height / 2);
+  ctx.beginPath();
+  ctx.moveTo(x + r, y);
+  ctx.arcTo(x + width, y, x + width, y + height, r);
+  ctx.arcTo(x + width, y + height, x, y + height, r);
+  ctx.arcTo(x, y + height, x, y, r);
+  ctx.arcTo(x, y, x + width, y, r);
+  ctx.closePath();
+}
+
+function hexToRgba(hex: string, alpha: number) {
+  const value = hex.replace("#", "");
+  const normalized = value.length === 3 ? value.split("").map((part) => part + part).join("") : value.padEnd(6, "0").slice(0, 6);
+  if (!/^[0-9a-f]{6}$/i.test(normalized)) return `rgba(138, 223, 255, ${alpha})`;
+  const number = Number.parseInt(normalized, 16);
+  const red = (number >> 16) & 255;
+  const green = (number >> 8) & 255;
+  const blue = number & 255;
+  return `rgba(${red}, ${green}, ${blue}, ${alpha})`;
+}
+
+function createMemorySurface(node: LifeMapNode, resolution: number) {
+  if (typeof document === "undefined") return null;
+
+  const canvas = document.createElement("canvas");
+  canvas.width = resolution;
+  canvas.height = resolution;
+  const ctx = canvas.getContext("2d");
+  if (!ctx) return null;
+
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  const designScale = resolution / 768;
+  ctx.scale(designScale, designScale);
+  const aura = node.aura || "#8adfff";
+  const deep = ctx.createLinearGradient(80, 40, 688, 728);
+  deep.addColorStop(0, "rgba(230,250,255,.96)");
+  deep.addColorStop(0.08, hexToRgba(aura, 0.92));
+  deep.addColorStop(0.46, "rgba(8,20,48,.98)");
+  deep.addColorStop(1, "rgba(1,4,14,.99)");
+
+  roundedRect(ctx, 52, 52, 664, 664, 78);
+  ctx.fillStyle = deep;
+  ctx.fill();
+
+  ctx.save();
+  roundedRect(ctx, 64, 64, 640, 640, 68);
+  ctx.clip();
+
+  const horizon = ctx.createLinearGradient(0, 180, 0, 650);
+  horizon.addColorStop(0, "rgba(255,255,255,.03)");
+  horizon.addColorStop(0.5, hexToRgba(aura, 0.12));
+  horizon.addColorStop(1, "rgba(0,0,0,.72)");
+  ctx.fillStyle = horizon;
+  ctx.fillRect(64, 64, 640, 640);
+
+  for (let index = 0; index < 48; index += 1) {
+    const x = 80 + ((Math.sin(index * 17.13 + node.id.length) * 0.5 + 0.5) * 610);
+    const y = 80 + ((Math.cos(index * 11.71 + node.title.length) * 0.5 + 0.5) * 560);
+    const radius = 1.2 + (index % 5) * 0.55;
+    ctx.fillStyle = index % 4 === 0 ? "rgba(255,255,255,.78)" : hexToRgba(aura, 0.48);
+    ctx.beginPath();
+    ctx.arc(x, y, radius, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  ctx.globalCompositeOperation = "screen";
+  if (node.type === "relationship") {
+    ctx.fillStyle = "rgba(245,252,255,.7)";
+    ctx.beginPath();
+    ctx.arc(286, 328, 64, 0, Math.PI * 2);
+    ctx.arc(494, 300, 72, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.strokeStyle = hexToRgba(aura, 0.74);
+    ctx.lineWidth = 9;
+    ctx.beginPath();
+    ctx.moveTo(340, 316);
+    ctx.bezierCurveTo(382, 250, 438, 382, 456, 322);
+    ctx.stroke();
+  } else if (node.type === "threshold") {
+    ctx.fillStyle = hexToRgba(aura, 0.4);
+    ctx.beginPath();
+    ctx.moveTo(382, 142);
+    ctx.lineTo(586, 520);
+    ctx.lineTo(182, 520);
+    ctx.closePath();
+    ctx.fill();
+    ctx.fillStyle = "rgba(255,255,255,.58)";
+    ctx.fillRect(366, 252, 34, 274);
+  } else if (node.type === "ritual") {
+    ctx.strokeStyle = hexToRgba(aura, 0.68);
+    ctx.lineWidth = 8;
+    for (let ring = 0; ring < 4; ring += 1) {
+      ctx.beginPath();
+      ctx.ellipse(384, 380, 96 + ring * 58, 30 + ring * 14, -0.08, 0, Math.PI * 2);
+      ctx.stroke();
+    }
+  } else if (node.type === "recovery") {
+    ctx.strokeStyle = hexToRgba(aura, 0.78);
+    ctx.lineWidth = 7;
+    for (let arc = 0; arc < 5; arc += 1) {
+      ctx.beginPath();
+      ctx.arc(384, 430, 58 + arc * 48, Math.PI * 1.06, Math.PI * 1.94);
+      ctx.stroke();
+    }
+    ctx.fillStyle = "rgba(245,255,255,.7)";
+    ctx.beginPath();
+    ctx.arc(384, 360, 58, 0, Math.PI * 2);
+    ctx.fill();
+  } else if (node.type === "forecast") {
+    ctx.strokeStyle = hexToRgba(aura, 0.66);
+    ctx.lineWidth = 7;
+    ctx.beginPath();
+    ctx.moveTo(170, 500);
+    ctx.bezierCurveTo(260, 420, 330, 464, 404, 350);
+    ctx.bezierCurveTo(486, 230, 552, 300, 624, 190);
+    ctx.stroke();
+  } else if (node.type === "legacy") {
+    ctx.fillStyle = "rgba(3,9,24,.72)";
+    for (let slab = 0; slab < 5; slab += 1) {
+      const inset = slab * 32;
+      roundedRect(ctx, 176 + inset, 172 + inset * 0.55, 416 - inset * 2, 318 - inset, 24);
+      ctx.fill();
+      ctx.strokeStyle = hexToRgba(aura, 0.34 + slab * 0.06);
+      ctx.lineWidth = 4;
+      ctx.stroke();
+    }
+  } else {
+    const glow = ctx.createRadialGradient(330, 292, 18, 384, 372, 280);
+    glow.addColorStop(0, "rgba(255,255,255,.86)");
+    glow.addColorStop(0.22, hexToRgba(aura, 0.66));
+    glow.addColorStop(1, "rgba(0,0,0,0)");
+    ctx.fillStyle = glow;
+    ctx.fillRect(92, 92, 584, 540);
+
+    ctx.strokeStyle = "rgba(235,251,255,.48)";
+    ctx.lineWidth = 8;
+    ctx.beginPath();
+    ctx.moveTo(170, 490);
+    ctx.bezierCurveTo(258, 420, 318, 520, 408, 438);
+    ctx.bezierCurveTo(480, 374, 548, 408, 618, 326);
+    ctx.stroke();
+  }
+
+  ctx.globalCompositeOperation = "source-over";
+  const lower = ctx.createLinearGradient(0, 440, 0, 704);
+  lower.addColorStop(0, "rgba(1,5,16,0)");
+  lower.addColorStop(1, "rgba(1,5,16,.92)");
+  ctx.fillStyle = lower;
+  ctx.fillRect(64, 420, 640, 284);
+
+  ctx.fillStyle = "rgba(235,250,255,.72)";
+  ctx.font = "700 22px system-ui, sans-serif";
+  ctx.fillText(lifeMapTypeLabels[node.type].toUpperCase(), 108, 552);
+
+  ctx.fillStyle = "rgba(255,255,255,.98)";
+  ctx.font = "800 40px system-ui, sans-serif";
+  const title = node.title.length > 28 ? `${node.title.slice(0, 26)}…` : node.title;
+  ctx.fillText(title, 108, 608);
+
+  ctx.fillStyle = "rgba(219,241,255,.72)";
+  ctx.font = "600 22px system-ui, sans-serif";
+  ctx.fillText(node.dateLabel, 108, 648);
+
+  ctx.restore();
+
+  roundedRect(ctx, 52, 52, 664, 664, 78);
+  ctx.strokeStyle = "rgba(235,252,255,.42)";
+  ctx.lineWidth = 5;
+  ctx.stroke();
+
+  const texture = new THREE.CanvasTexture(canvas);
+  texture.colorSpace = THREE.SRGBColorSpace;
+  texture.anisotropy = resolution >= 384 ? 8 : 4;
+  texture.needsUpdate = true;
+  return texture;
 }
 
 function FirstFrame({ profile }: { profile: SpatialQualityProfile }) {
@@ -99,35 +296,73 @@ function CameraRig({ intent, reducedMotion, visible }: {
 }) {
   const { camera } = useThree();
   const desired = useMemo(() => new THREE.Vector3(...intent.position), [intent.position]);
-  const target = useMemo(() => new THREE.Vector3(...intent.target), [intent.target]);
+  const desiredTarget = useMemo(() => new THREE.Vector3(...intent.target), [intent.target]);
+  const currentTarget = useRef(new THREE.Vector3(...intent.target));
+  const transition = useRef({
+    startPosition: camera.position.clone(),
+    startTarget: currentTarget.current.clone(),
+    progress: 1,
+  });
+  const workingPosition = useRef(new THREE.Vector3());
 
-  useFrame(() => {
+  useEffect(() => {
+    transition.current = {
+      startPosition: camera.position.clone(),
+      startTarget: currentTarget.current.clone(),
+      progress: reducedMotion ? 1 : 0,
+    };
+  }, [camera, desired, desiredTarget, reducedMotion]);
+
+  useFrame((_, delta) => {
     if (!visible) return;
-    camera.position.lerp(desired, reducedMotion ? 1 : 0.095);
-    camera.lookAt(target);
+    if (reducedMotion) {
+      camera.position.copy(desired);
+      currentTarget.current.copy(desiredTarget);
+      camera.lookAt(currentTarget.current);
+      return;
+    }
+
+    const state = transition.current;
+    state.progress = Math.min(1, state.progress + delta * 0.48);
+    const eased = THREE.MathUtils.smootherstep(state.progress, 0, 1);
+    workingPosition.current.lerpVectors(state.startPosition, desired, eased);
+    const distance = state.startPosition.distanceTo(desired);
+    const arc = Math.sin(Math.PI * eased);
+    workingPosition.current.y += arc * Math.min(1.2, distance * 0.12);
+    workingPosition.current.x += arc * (desired.x >= state.startPosition.x ? 0.18 : -0.18);
+    camera.position.copy(workingPosition.current);
+    currentTarget.current.lerpVectors(state.startTarget, desiredTarget, eased);
+    camera.lookAt(currentTarget.current);
   });
 
   return null;
 }
 
-function AdaptiveGalaxy({ profile }: { profile: SpatialQualityProfile }) {
+function ParallaxLayer({ profile, countMultiplier, radius, depth, opacity, size, seed }: {
+  profile: SpatialQualityProfile;
+  countMultiplier: number;
+  radius: number;
+  depth: number;
+  opacity: number;
+  size: number;
+  seed: number;
+}) {
   const group = useRef<THREE.Group>(null);
-  const count = Math.max(360, profile.particleCount * 3);
+  const count = Math.max(180, Math.round(profile.particleCount * countMultiplier));
   const geometry = useMemo(() => {
     const positions = new Float32Array(count * 3);
     const colors = new Float32Array(count * 3);
     const color = new THREE.Color();
 
     for (let index = 0; index < count; index += 1) {
-      const arm = index % 5;
-      const progress = index / count;
-      const radius = 0.55 + Math.sqrt(progress) * 7.6;
-      const angle = progress * 13.8 + arm * ((Math.PI * 2) / 5);
-      const jitter = Math.sin(index * 12.9898) * 0.18;
-      positions[index * 3] = Math.cos(angle) * radius + jitter;
-      positions[index * 3 + 1] = Math.sin(index * 0.43) * 0.6 + (arm - 2) * 0.025;
-      positions[index * 3 + 2] = Math.sin(angle) * radius * 0.62 - 2.15 + Math.cos(index * 0.31) * 0.25;
-      color.setHSL(0.52 + arm * 0.025, 0.88, 0.68 + Math.sin(index) * 0.1);
+      const normalized = index / Math.max(1, count - 1);
+      const angle = index * 2.399963229728653 + seed;
+      const radial = Math.sqrt(normalized) * radius;
+      const wave = Math.sin(index * 0.37 + seed) * radius * 0.08;
+      positions[index * 3] = Math.cos(angle) * radial + wave;
+      positions[index * 3 + 1] = (Math.sin(index * 0.61 + seed) * 0.5 + Math.cos(index * 0.13) * 0.5) * radius * 0.34;
+      positions[index * 3 + 2] = -Math.abs(Math.sin(angle * 0.72)) * depth - normalized * depth - 1.5;
+      color.setHSL(0.52 + ((index + seed) % 7) * 0.012, 0.72, 0.58 + (index % 5) * 0.055);
       colors[index * 3] = color.r;
       colors[index * 3 + 1] = color.g;
       colors[index * 3 + 2] = color.b;
@@ -137,59 +372,75 @@ function AdaptiveGalaxy({ profile }: { profile: SpatialQualityProfile }) {
     next.setAttribute("position", new THREE.BufferAttribute(positions, 3));
     next.setAttribute("color", new THREE.BufferAttribute(colors, 3));
     return next;
-  }, [count]);
+  }, [count, depth, radius, seed]);
 
   useEffect(() => () => geometry.dispose(), [geometry]);
 
   useFrame(({ clock }) => {
     if (!group.current || profile.reducedMotion || !profile.documentVisible) return;
-    group.current.rotation.y = -0.12 + Math.sin(clock.elapsedTime * 0.08) * 0.055;
-    group.current.rotation.z = -0.08 + Math.cos(clock.elapsedTime * 0.06) * 0.025;
+    group.current.rotation.y = Math.sin(clock.elapsedTime * (0.018 + seed * 0.002)) * 0.035;
+    group.current.rotation.z = Math.cos(clock.elapsedTime * (0.014 + seed * 0.001)) * 0.018;
   });
 
   return (
-    <group ref={group} rotation={[-0.18, -0.12, -0.06]} position={[0.1, -0.15, -1.25]}>
+    <group ref={group} name={`life-map-parallax-layer-${seed}`}>
       <points geometry={geometry} frustumCulled={false}>
-        <pointsMaterial size={0.038} vertexColors transparent opacity={0.54} sizeAttenuation depthWrite={false} blending={THREE.AdditiveBlending} />
+        <pointsMaterial size={size} vertexColors transparent opacity={opacity} sizeAttenuation depthWrite={false} blending={THREE.AdditiveBlending} />
       </points>
     </group>
   );
 }
 
-function LifeCore({ profile }: { profile: SpatialQualityProfile }) {
-  const core = useRef<THREE.Group>(null);
+function ContinuityNexus({ profile }: { profile: SpatialQualityProfile }) {
+  const group = useRef<THREE.Group>(null);
+  const shards = useMemo(() => [
+    { position: [-0.82, 0.4, 0.2] as [number, number, number], scale: [0.18, 1.8, 0.42] as [number, number, number], rotation: [0.22, -0.18, -0.14] as [number, number, number] },
+    { position: [-0.28, -0.2, -0.15] as [number, number, number], scale: [0.28, 2.5, 0.58] as [number, number, number], rotation: [-0.12, 0.2, 0.1] as [number, number, number] },
+    { position: [0.42, 0.48, 0.08] as [number, number, number], scale: [0.22, 2.05, 0.5] as [number, number, number], rotation: [0.18, -0.1, 0.2] as [number, number, number] },
+    { position: [0.92, -0.18, -0.32] as [number, number, number], scale: [0.15, 1.45, 0.36] as [number, number, number], rotation: [-0.24, 0.26, -0.18] as [number, number, number] },
+    { position: [0.08, 1.2, -0.45] as [number, number, number], scale: [1.8, 0.12, 0.34] as [number, number, number], rotation: [0.04, -0.2, -0.08] as [number, number, number] },
+  ], []);
+
   useFrame(({ clock }) => {
-    if (!core.current || profile.reducedMotion || !profile.documentVisible) return;
-    core.current.rotation.z = clock.elapsedTime * 0.055;
-    core.current.rotation.y = Math.sin(clock.elapsedTime * 0.15) * 0.12;
+    if (!group.current || profile.reducedMotion || !profile.documentVisible) return;
+    group.current.rotation.y = -0.18 + Math.sin(clock.elapsedTime * 0.05) * 0.035;
+    group.current.position.y = 0.2 + Math.sin(clock.elapsedTime * 0.11) * 0.08;
   });
 
   return (
-    <group ref={core} position={[0, 0.15, -1.25]} name="urai-life-core">
-      <mesh>
-        <icosahedronGeometry args={[0.46, profile.tier === "high" ? 4 : 2]} />
-        <meshStandardMaterial color="#f6ffff" emissive="#78ecff" emissiveIntensity={2.3} roughness={0.18} metalness={0.24} />
+    <group ref={group} position={[0.45, 0.2, -10.4]} rotation={[0.06, -0.18, -0.04]} name="life-map-continuity-nexus">
+      {shards.map((shard, index) => (
+        <mesh key={index} position={shard.position} rotation={shard.rotation} scale={shard.scale}>
+          <boxGeometry args={[1, 1, 1]} />
+          <meshPhysicalMaterial
+            color={index % 2 === 0 ? "#071425" : "#0b0c1f"}
+            emissive={index === 2 ? "#5ce8ff" : "#342450"}
+            emissiveIntensity={index === 2 ? 0.42 : 0.11}
+            roughness={0.16}
+            metalness={0.72}
+            transmission={0.08}
+            transparent
+            opacity={0.94}
+          />
+        </mesh>
+      ))}
+      <mesh position={[0.08, 0.08, 0.18]} rotation={[0, 0.12, 0]}>
+        <planeGeometry args={[2.6, 4.5]} />
+        <meshBasicMaterial color="#90f5ff" transparent opacity={0.055} depthWrite={false} blending={THREE.AdditiveBlending} />
       </mesh>
-      <mesh rotation={[Math.PI / 2, 0, 0]}>
-        <torusGeometry args={[0.82, 0.026, 12, 96]} />
-        <meshBasicMaterial color="#9bf7ff" transparent opacity={0.54} depthWrite={false} blending={THREE.AdditiveBlending} />
-      </mesh>
-      <mesh rotation={[Math.PI / 2.6, 0.6, 0.25]}>
-        <torusGeometry args={[1.12, 0.014, 10, 96]} />
-        <meshBasicMaterial color="#d7a8ff" transparent opacity={0.28} depthWrite={false} blending={THREE.AdditiveBlending} />
-      </mesh>
+      <pointLight position={[0.08, 0.4, 1.2]} color="#9ff7ff" intensity={1.1} distance={8} />
     </group>
   );
 }
 
-function EraRegions({ nodes }: { nodes: LifeMapNode[] }) {
+function ChapterRegions({ nodes, selectedId }: { nodes: LifeMapNode[]; selectedId: string | null }) {
   const regions = useMemo(() => {
     const grouped = new Map<string, LifeMapNode[]>();
     nodes.forEach((node) => {
       const key = node.eraId || node.clusterId || "present";
       grouped.set(key, [...(grouped.get(key) || []), node]);
     });
-    return [...grouped.entries()].map(([id, members]) => {
+    return [...grouped.entries()].map(([id, members], index) => {
       const total = members.reduce<[number, number, number]>((sum, node) => [
         sum[0] + node.position[0],
         sum[1] + node.position[1],
@@ -198,85 +449,190 @@ function EraRegions({ nodes }: { nodes: LifeMapNode[] }) {
       const center: [number, number, number] = [
         total[0] / members.length,
         total[1] / members.length,
-        total[2] / members.length,
+        total[2] / members.length - 0.24,
       ];
-      return { id, center, radius: 0.95 + members.length * 0.22, aura: members[0]?.aura || "#8adfff" };
+      return {
+        id,
+        center,
+        radius: 1.05 + members.length * 0.28,
+        aura: members[0]?.aura || "#8adfff",
+        selected: members.some((node) => node.id === selectedId),
+        start: index * 0.65,
+      };
     });
-  }, [nodes]);
+  }, [nodes, selectedId]);
 
   return (
-    <group name="urai-era-regions">
+    <group name="life-map-middle-chapter-regions">
       {regions.map((region, index) => (
-        <mesh key={region.id} position={region.center} rotation={[Math.PI / 2 + index * 0.08, index * 0.18, 0]}>
-          <torusGeometry args={[region.radius, 0.012, 8, 80]} />
-          <meshBasicMaterial color={region.aura} transparent opacity={0.12} depthWrite={false} blending={THREE.AdditiveBlending} />
-        </mesh>
+        <group key={region.id} position={region.center} rotation={[Math.PI / 2 + index * 0.07, index * 0.16, index * 0.04]}>
+          <mesh>
+            <ringGeometry args={[region.radius, region.radius + 0.035, 96, 1, region.start, Math.PI * 1.42]} />
+            <meshBasicMaterial color={region.aura} transparent opacity={region.selected ? 0.34 : 0.11} depthWrite={false} blending={THREE.AdditiveBlending} />
+          </mesh>
+          <mesh rotation={[0.08, 0.18, 0]} position={[0, 0, -0.08]}>
+            <ringGeometry args={[region.radius * 0.72, region.radius * 0.735, 80, 1, region.start + 0.8, Math.PI * 0.92]} />
+            <meshBasicMaterial color="#d8fbff" transparent opacity={region.selected ? 0.22 : 0.055} depthWrite={false} />
+          </mesh>
+          {!selectedId ? (
+            <Html distanceFactor={12} position={[region.radius * 0.28, region.radius * 0.72, 0]} center zIndexRange={[24, 4]}>
+              <span className="life-map-region-label">{titleize(region.id)}</span>
+            </Html>
+          ) : null}
+        </group>
       ))}
     </group>
   );
 }
 
-function Connections({ nodes, selectedId }: { nodes: LifeMapNode[]; selectedId: string | null }) {
-  const geometry = useMemo(() => {
-    const byId = new Map(nodes.map((node) => [node.id, node]));
-    const positions: number[] = [];
-    nodes.forEach((node) => {
-      node.connectedTo.forEach((targetId) => {
-        const target = byId.get(targetId);
-        if (!target || node.id > target.id) return;
-        positions.push(...node.position, ...target.position);
-      });
-    });
-    const next = new THREE.BufferGeometry();
-    next.setAttribute("position", new THREE.Float32BufferAttribute(positions, 3));
-    return next;
-  }, [nodes]);
-
-  useEffect(() => () => geometry.dispose(), [geometry]);
+function GoalMonuments() {
+  const monuments = [
+    { position: [-7.4, 0.15, -19.5] as [number, number, number], height: 4.8, width: 0.8 },
+    { position: [6.8, 1.1, -22.5] as [number, number, number], height: 6.2, width: 1.05 },
+    { position: [2.6, -0.4, -26.5] as [number, number, number], height: 5.4, width: 0.72 },
+  ];
 
   return (
-    <lineSegments geometry={geometry} frustumCulled={false}>
-      <lineBasicMaterial color={selectedId ? "#8ff6ff" : "#547397"} transparent opacity={selectedId ? 0.34 : 0.16} depthWrite={false} blending={THREE.AdditiveBlending} />
-    </lineSegments>
+    <group name="life-map-far-goal-monuments">
+      {monuments.map((monument, index) => (
+        <group key={index} position={monument.position} rotation={[0, index * 0.42 - 0.36, 0]}>
+          <mesh scale={[monument.width, monument.height, 0.7]}>
+            <boxGeometry args={[1, 1, 1]} />
+            <meshStandardMaterial color="#050b18" emissive={index === 1 ? "#d9c98e" : "#557a91"} emissiveIntensity={0.18} roughness={0.26} metalness={0.82} />
+          </mesh>
+          <mesh position={[0, monument.height * 0.56, 0.15]} scale={[monument.width * 1.35, 0.08, 0.9]}>
+            <boxGeometry args={[1, 1, 1]} />
+            <meshBasicMaterial color={index === 1 ? "#fff0b8" : "#b7efff"} transparent opacity={0.28} depthWrite={false} />
+          </mesh>
+        </group>
+      ))}
+    </group>
   );
 }
 
-function NodeGeometry({ node, segments }: { node: LifeMapNode; segments: number }) {
-  switch (node.type) {
-    case "relationship":
-      return <torusKnotGeometry args={[0.25 + node.intensity * 0.12, 0.075, segments * 2, 10, 2, 3]} />;
-    case "ritual":
-      return <octahedronGeometry args={[0.38 + node.intensity * 0.16, 1]} />;
-    case "recovery":
-      return <dodecahedronGeometry args={[0.36 + node.intensity * 0.15, 1]} />;
-    case "threshold":
-      return <coneGeometry args={[0.36 + node.intensity * 0.12, 0.72, Math.max(12, segments)]} />;
-    case "season":
-      return <torusGeometry args={[0.32 + node.intensity * 0.1, 0.11, 12, Math.max(24, segments)]} />;
-    case "forecast":
-      return <tetrahedronGeometry args={[0.43 + node.intensity * 0.14, 1]} />;
-    case "legacy":
-      return <boxGeometry args={[0.55, 0.55, 0.55, 2, 2, 2]} />;
-    default:
-      return <sphereGeometry args={[0.32 + node.intensity * 0.22, segments, segments]} />;
-  }
+function PrivateVaults() {
+  return (
+    <group name="life-map-private-vaults">
+      <group position={[-5.6, -2.4, -7.2]} rotation={[0.08, 0.44, -0.06]}>
+        <mesh scale={[1.45, 0.72, 1.15]}>
+          <boxGeometry args={[1, 1, 1]} />
+          <meshStandardMaterial color="#01040a" emissive="#182338" emissiveIntensity={0.14} roughness={0.18} metalness={0.88} />
+        </mesh>
+        <mesh position={[0, 0.02, 0.59]} scale={[0.34, 0.34, 0.03]}>
+          <boxGeometry args={[1, 1, 1]} />
+          <meshBasicMaterial color="#d9f7ff" transparent opacity={0.22} />
+        </mesh>
+      </group>
+      <group position={[5.7, -2.05, -9.2]} rotation={[-0.04, -0.38, 0.04]}>
+        <mesh scale={[1.12, 0.58, 0.92]}>
+          <boxGeometry args={[1, 1, 1]} />
+          <meshStandardMaterial color="#02030a" emissive="#271c38" emissiveIntensity={0.12} roughness={0.2} metalness={0.84} />
+        </mesh>
+      </group>
+    </group>
+  );
 }
 
-function MemoryStar({ node, selected, profile, onSelect }: {
-  node: LifeMapNode;
-  selected: boolean;
-  profile: SpatialQualityProfile;
-  onSelect: (node: LifeMapNode) => void;
-}) {
+function EmotionalWeather({ profile }: { profile: SpatialQualityProfile }) {
   const group = useRef<THREE.Group>(null);
-  const segments = profile.tier === "high" ? 48 : profile.tier === "medium" ? 28 : 18;
-  const color = useMemo(() => new THREE.Color(node.aura), [node.aura]);
-
   useFrame(({ clock }) => {
     if (!group.current || profile.reducedMotion || !profile.documentVisible) return;
-    const pulse = 1 + Math.sin(clock.elapsedTime * (0.62 + node.intensity) + node.position[0]) * 0.045;
-    group.current.scale.setScalar(selected ? pulse * 1.34 : pulse * 0.9);
-    group.current.rotation.y += selected ? 0.004 : 0.0014;
+    group.current.position.x = Math.sin(clock.elapsedTime * 0.035) * 0.8;
+    group.current.rotation.z = Math.sin(clock.elapsedTime * 0.022) * 0.04;
+  });
+
+  return (
+    <group ref={group} position={[0, 0.3, -8]} name="life-map-emotional-weather">
+      <mesh position={[-3.4, 1.1, -0.8]} rotation={[0.18, -0.28, 0.12]}>
+        <planeGeometry args={[9.2, 4.8]} />
+        <meshBasicMaterial color="#4fdfff" transparent opacity={0.026} depthWrite={false} blending={THREE.AdditiveBlending} />
+      </mesh>
+      <mesh position={[3.5, -0.4, -1.8]} rotation={[-0.12, 0.32, -0.18]}>
+        <planeGeometry args={[10.8, 5.6]} />
+        <meshBasicMaterial color="#b177ff" transparent opacity={0.035} depthWrite={false} blending={THREE.AdditiveBlending} />
+      </mesh>
+      <mesh position={[0.8, 2.4, -4.2]} rotation={[0.14, 0.08, 0.2]}>
+        <planeGeometry args={[8.4, 3.2]} />
+        <meshBasicMaterial color="#fff1bd" transparent opacity={0.018} depthWrite={false} blending={THREE.AdditiveBlending} />
+      </mesh>
+    </group>
+  );
+}
+
+function MemoryPath({ from, to, active, profile }: {
+  from: LifeMapNode;
+  to: LifeMapNode;
+  active: boolean;
+  profile: SpatialQualityProfile;
+}) {
+  const pulse = useRef<THREE.Mesh>(null);
+  const curve = useMemo(() => {
+    const start = new THREE.Vector3(...from.position);
+    const end = new THREE.Vector3(...to.position);
+    const middle = start.clone().lerp(end, 0.5);
+    middle.y += 0.7 + Math.abs(start.x - end.x) * 0.11;
+    middle.z -= 0.55 + Math.abs(start.z - end.z) * 0.08;
+    return new THREE.CatmullRomCurve3([start, middle, end]);
+  }, [from, to]);
+
+  useFrame(({ clock }) => {
+    if (!pulse.current || !active || profile.reducedMotion || !profile.documentVisible) return;
+    const t = (clock.elapsedTime * 0.075 + from.intensity * 0.17) % 1;
+    pulse.current.position.copy(curve.getPointAt(t));
+  });
+
+  return (
+    <group name="life-map-temporal-path">
+      <mesh>
+        <tubeGeometry args={[curve, 72, active ? 0.012 : 0.005, 6, false]} />
+        <meshBasicMaterial color={active ? "#a5f7ff" : "#24344d"} transparent opacity={active ? 0.38 : 0.055} depthWrite={false} blending={THREE.AdditiveBlending} />
+      </mesh>
+      <mesh ref={pulse} visible={active && !profile.reducedMotion}>
+        <sphereGeometry args={[0.034, 10, 10]} />
+        <meshBasicMaterial color="#f4ffff" transparent opacity={0.78} depthWrite={false} blending={THREE.AdditiveBlending} />
+      </mesh>
+    </group>
+  );
+}
+
+function MemoryArtifact({ node, selected, related, overview, profile, onSelect, onEnterFocus, onEnterReplay, onOverview }: {
+  node: LifeMapNode;
+  selected: boolean;
+  related: boolean;
+  overview: boolean;
+  profile: SpatialQualityProfile;
+  onSelect: (node: LifeMapNode) => void;
+} & MemoryPortalHandlers) {
+  const group = useRef<THREE.Group>(null);
+  const glass = useRef<THREE.MeshPhysicalMaterial>(null);
+  const { camera } = useThree();
+  const textureResolution = selected
+    ? profile.tier === "high" ? 512 : 384
+    : profile.tier === "high" ? 128 : 96;
+  const [texture, setTexture] = useState<THREE.CanvasTexture | null>(null);
+  const scale = 0.72 + node.intensity * 0.24;
+
+  useEffect(() => {
+    const nextTexture = createMemorySurface(node, textureResolution);
+    setTexture(nextTexture);
+    return () => {
+      if (typeof window === "undefined") {
+        nextTexture?.dispose();
+        return;
+      }
+      window.requestAnimationFrame(() => nextTexture?.dispose());
+    };
+  }, [node, textureResolution]);
+
+  useFrame(({ clock }) => {
+    if (!group.current) return;
+    group.current.quaternion.slerp(camera.quaternion, profile.reducedMotion ? 1 : 0.075);
+    if (!profile.reducedMotion && profile.documentVisible) {
+      const breath = 1 + Math.sin(clock.elapsedTime * (0.52 + node.intensity) + node.position[0]) * 0.026;
+      group.current.scale.setScalar(selected ? breath * 1.26 : related ? breath : breath * 0.78);
+      group.current.position.y = node.position[1] + Math.sin(clock.elapsedTime * 0.22 + node.position[2]) * 0.035;
+    }
+    if (glass.current) glass.current.opacity = selected ? 0.34 : related ? 0.16 : 0.06;
   });
 
   const choose = (event: ThreeEvent<MouseEvent>) => {
@@ -285,59 +641,165 @@ function MemoryStar({ node, selected, profile, onSelect }: {
   };
 
   return (
-    <group ref={group} position={node.position} name={`life-map-node-${node.type}`}>
-      <mesh onClick={choose} castShadow={profile.shadows}>
-        <NodeGeometry node={node} segments={segments} />
-        <meshStandardMaterial color="#ffffff" emissive={color} emissiveIntensity={selected ? 2.2 : 0.8} roughness={0.2} metalness={0.12} />
+    <group ref={group} position={node.position} name={`life-map-memory-artifact-${node.type}`}>
+      <mesh
+        onClick={choose}
+        onPointerOver={() => { document.body.style.cursor = "pointer"; }}
+        onPointerOut={() => { document.body.style.cursor = ""; }}
+        scale={[scale * 1.12, scale * 1.12, 1]}
+      >
+        <planeGeometry args={[1.42, 1.42, 1, 1]} />
+        <meshBasicMaterial map={texture ?? undefined} transparent opacity={selected ? 1 : related ? 0.88 : 0.42} toneMapped={false} />
       </mesh>
-      <mesh>
-        <sphereGeometry args={[0.78 + node.intensity * 0.35, segments, segments]} />
-        <meshBasicMaterial color={node.aura} transparent opacity={selected ? 0.2 : 0.055} depthWrite={false} blending={THREE.AdditiveBlending} />
+
+      <mesh position={[0, 0, -0.045]} scale={[scale * 1.27, scale * 1.27, 1]}>
+        <planeGeometry args={[1.42, 1.42]} />
+        <meshPhysicalMaterial
+          ref={glass}
+          color={node.aura}
+          transparent
+          opacity={selected ? 0.34 : 0.12}
+          roughness={0.08}
+          metalness={0.12}
+          transmission={0.36}
+          depthWrite={false}
+        />
       </mesh>
+
+      <mesh position={[-scale * 0.86, scale * 0.52, -0.08]} rotation={[0, 0, -0.24]} scale={[scale * 0.34, scale * 0.18, 1]}>
+        <planeGeometry args={[1, 1]} />
+        <meshBasicMaterial map={texture ?? undefined} transparent opacity={selected ? 0.52 : related ? 0.2 : 0.04} depthWrite={false} />
+      </mesh>
+      <mesh position={[scale * 0.82, -scale * 0.46, -0.1]} rotation={[0, 0, 0.2]} scale={[scale * 0.28, scale * 0.22, 1]}>
+        <planeGeometry args={[1, 1]} />
+        <meshBasicMaterial map={texture ?? undefined} transparent opacity={selected ? 0.42 : related ? 0.16 : 0.03} depthWrite={false} />
+      </mesh>
+
+      {node.privacyLevel === "hidden" || node.locked ? (
+        <mesh position={[0, 0, 0.08]} scale={[scale * 1.18, scale * 1.18, 1]}>
+          <planeGeometry args={[1.42, 1.42]} />
+          <meshBasicMaterial color="#01040a" transparent opacity={0.52} depthWrite={false} />
+        </mesh>
+      ) : null}
+
       {selected ? (
-        <Html distanceFactor={8.2} position={[0, 0.9, 0]} center zIndexRange={[80, 20]}>
-          <span className="rounded-full border border-white/30 bg-slate-950/70 px-3 py-1 text-[10px] font-black uppercase tracking-[0.18em] text-white backdrop-blur-xl">
-            {lifeMapTypeLabels[node.type]}
-          </span>
+        <Html distanceFactor={8.6} position={[0, -scale * 1.18, 0.12]} center zIndexRange={[90, 30]}>
+          <div className="life-map-memory-portals" onPointerDown={(event) => event.stopPropagation()}>
+            <button type="button" onClick={() => onEnterFocus(node)}>Enter Focus</button>
+            <button type="button" onClick={() => onEnterReplay(node)} disabled={!node.replayAvailable || node.locked}>Replay</button>
+            <button type="button" onClick={onOverview}>Overview</button>
+          </div>
         </Html>
       ) : null}
     </group>
   );
 }
 
-function LifeMapWorld({ nodes, selectedId, profile, cameraIntent, onSelect }: {
+function ForegroundDepthCrossings({ profile }: { profile: SpatialQualityProfile }) {
+  const group = useRef<THREE.Group>(null);
+  useFrame(({ clock }) => {
+    if (!group.current || profile.reducedMotion || !profile.documentVisible) return;
+    group.current.rotation.y = Math.sin(clock.elapsedTime * 0.04) * 0.025;
+  });
+
+  return (
+    <group ref={group} name="life-map-near-depth-crossings">
+      <mesh position={[-6.8, -2.7, 3.4]} rotation={[0.1, 0.62, -0.12]} scale={[1.5, 4.8, 0.18]}>
+        <boxGeometry args={[1, 1, 1]} />
+        <meshStandardMaterial color="#02050b" emissive="#102235" emissiveIntensity={0.12} roughness={0.16} metalness={0.86} />
+      </mesh>
+      <mesh position={[7.1, 2.3, 2.2]} rotation={[-0.18, -0.48, 0.2]} scale={[1.2, 3.9, 0.14]}>
+        <boxGeometry args={[1, 1, 1]} />
+        <meshStandardMaterial color="#03040b" emissive="#241833" emissiveIntensity={0.1} roughness={0.18} metalness={0.82} />
+      </mesh>
+    </group>
+  );
+}
+
+function LifeMapWorld({ nodes, selectedNode, profile, cameraIntent, onSelect, onEnterFocus, onEnterReplay, onOverview }: {
   nodes: LifeMapNode[];
-  selectedId: string | null;
+  selectedNode: LifeMapNode | null;
   profile: SpatialQualityProfile;
   cameraIntent: CameraIntent;
   onSelect: (node: LifeMapNode) => void;
-}) {
-  const starCount = profile.tier === "high" ? 4200 : profile.tier === "medium" ? 2400 : 1200;
+} & MemoryPortalHandlers) {
+  const nodeById = useMemo(() => new Map(nodes.map((node) => [node.id, node])), [nodes]);
+  const related = useMemo(() => {
+    if (!selectedNode) return new Set(nodes.map((node) => node.id));
+    const next = new Set<string>([selectedNode.id, ...selectedNode.connectedTo]);
+    nodes.forEach((node) => {
+      if (node.connectedTo.includes(selectedNode.id)) next.add(node.id);
+    });
+    return next;
+  }, [nodes, selectedNode]);
+
+  const edges = useMemo(() => {
+    const seen = new Set<string>();
+    return nodes.flatMap((node) => node.connectedTo.flatMap((targetId) => {
+      const target = nodeById.get(targetId);
+      if (!target) return [];
+      const key = [node.id, target.id].sort().join("::");
+      if (seen.has(key)) return [];
+      seen.add(key);
+      return [{ from: node, to: target, key }];
+    }));
+  }, [nodeById, nodes]);
 
   return (
     <>
       <FirstFrame profile={profile} />
       <color attach="background" args={["#01030a"]} />
-      <fog attach="fog" args={["#01030a", selectedId ? 5 : 7, selectedId ? 20 : 28]} />
+      <fog attach="fog" args={["#01030a", selectedNode ? 5.5 : 8, selectedNode ? 30 : 44]} />
       <CameraRig intent={cameraIntent} reducedMotion={profile.reducedMotion} visible={profile.documentVisible} />
-      <ambientLight intensity={0.42} />
-      <directionalLight position={[-4, 6, 4]} intensity={1.35} color="#dffbff" castShadow={profile.shadows} />
-      <pointLight position={[-4, 3, 5]} color="#7df8ff" intensity={2.4} />
-      <pointLight position={[4, 1.4, 2]} color="#ff7bd6" intensity={1.8} />
-      <Stars radius={104} depth={72} count={starCount} factor={4.8} saturation={0.5} fade speed={profile.reducedMotion ? 0 : 0.22} />
-      <AdaptiveGalaxy profile={profile} />
-      <LifeCore profile={profile} />
-      <EraRegions nodes={nodes} />
-      <group rotation={[-0.13, 0.08, -0.025]} position={[0, -0.08, 0]}>
-        <Connections nodes={nodes} selectedId={selectedId} />
+      <ambientLight intensity={0.28} />
+      <directionalLight position={[-5, 8, 5]} intensity={1.1} color="#dffbff" castShadow={profile.shadows} />
+      <pointLight position={[-4, 3, 5]} color="#7df8ff" intensity={1.8} />
+      <pointLight position={[5, 1.2, 1]} color="#c887ff" intensity={1.25} />
+      <pointLight position={[0, -2, 2]} color="#fff0c2" intensity={0.42} />
+
+      <Stars radius={120} depth={92} count={profile.tier === "high" ? 5200 : profile.tier === "medium" ? 3200 : 1600} factor={4.2} saturation={0.42} fade speed={profile.reducedMotion ? 0 : 0.14} />
+      <ParallaxLayer profile={profile} countMultiplier={1.1} radius={9} depth={7} opacity={0.62} size={0.034} seed={1} />
+      <ParallaxLayer profile={profile} countMultiplier={1.65} radius={17} depth={19} opacity={0.34} size={0.052} seed={3} />
+      <ParallaxLayer profile={profile} countMultiplier={2.1} radius={31} depth={42} opacity={0.2} size={0.075} seed={5} />
+
+      <EmotionalWeather profile={profile} />
+      <ContinuityNexus profile={profile} />
+      <GoalMonuments />
+      <PrivateVaults />
+      <ChapterRegions nodes={nodes} selectedId={selectedNode?.id || null} />
+
+      <group rotation={[-0.11, 0.05, -0.02]} position={[0, -0.05, -0.4]} name="life-map-memory-field">
+        {edges.map(({ from, to, key }) => (
+          <MemoryPath
+            key={key}
+            from={from}
+            to={to}
+            active={!selectedNode || related.has(from.id) || related.has(to.id)}
+            profile={profile}
+          />
+        ))}
         {nodes.map((node) => (
-          <MemoryStar key={node.id} node={node} selected={selectedId === node.id} profile={profile} onSelect={onSelect} />
+          <MemoryArtifact
+            key={node.id}
+            node={node}
+            selected={selectedNode?.id === node.id}
+            related={related.has(node.id)}
+            overview={!selectedNode}
+            profile={profile}
+            onSelect={onSelect}
+            onEnterFocus={onEnterFocus}
+            onEnterReplay={onEnterReplay}
+            onOverview={onOverview}
+          />
         ))}
       </group>
+
+      <ForegroundDepthCrossings profile={profile} />
+
       {profile.postprocessing && !profile.reducedMotion ? (
         <EffectComposer>
-          <Bloom intensity={0.72} luminanceThreshold={0.14} luminanceSmoothing={0.3} />
-          <Vignette eskil={false} offset={0.18} darkness={0.58} />
+          <Bloom intensity={0.46} luminanceThreshold={0.24} luminanceSmoothing={0.38} />
+          <Vignette eskil={false} offset={0.2} darkness={0.54} />
         </EffectComposer>
       ) : null}
     </>
@@ -353,6 +815,7 @@ export default function AdaptiveLifeMapScene() {
   if (!initial.current) initial.current = readPersistedState();
 
   const queryNodeId = safeToken(params.get("node") || params.get("nodeId") || params.get("memoryId"));
+  const overviewRequested = params.get("overview") === "1";
   const manifestId = safeToken(params.get("manifestId"), DEFAULT_MANIFEST_ID);
   const [selectedId, setSelectedId] = useState<string | null>(() => queryNodeId || initial.current?.selectedId || null);
   const [cameraIntent, setCameraIntent] = useState<CameraIntent>(() => initial.current?.cameraIntent || OVERVIEW_CAMERA);
@@ -366,13 +829,13 @@ export default function AdaptiveLifeMapScene() {
   const stableCanvas = useRef({ antialias: profile.antialias, pixelRatioMax: profile.pixelRatioMax });
 
   useEffect(() => {
-    if (!queryNodeId || !nodes.length) return;
+    if (overviewRequested || !queryNodeId || !nodes.length) return;
     const node = nodes.find((candidate) => candidate.id === queryNodeId);
     if (!node) return;
     setSelectedId(node.id);
     setCameraIntent(cameraForNode(node));
     setNarratorText(narrationForNode(node).text);
-  }, [nodes, queryNodeId]);
+  }, [nodes, overviewRequested, queryNodeId]);
 
   useEffect(() => {
     try {
@@ -387,9 +850,11 @@ export default function AdaptiveLifeMapScene() {
     next.set("memoryId", node.id);
     next.set("manifestId", manifestId);
     next.set("node", node.id);
+    next.set("returnNode", node.id);
+    next.set("lifeMapOrigin", cameraIntent.position.map((value) => value.toFixed(3)).join(","));
     next.set("from", "life-map-camera");
     return `/${route}?${next.toString()}`;
-  }, [manifestId]);
+  }, [cameraIntent.position, manifestId]);
 
   const selectNode = useCallback((node: LifeMapNode) => {
     setSelectedId(node.id);
@@ -403,30 +868,45 @@ export default function AdaptiveLifeMapScene() {
   }, [manifestId, router]);
 
   const recenter = useCallback(() => {
+    const preservedMemoryId = selectedId || queryNodeId;
     setSelectedId(null);
     setCameraIntent(OVERVIEW_CAMERA);
     setNarratorText("Back to the whole private constellation. Select any star to enter it.");
-    router.replace("/life-map", { scroll: false });
-  }, [router]);
+    const next = new URLSearchParams();
+    if (preservedMemoryId) next.set("memoryId", preservedMemoryId);
+    if (manifestId) next.set("manifestId", manifestId);
+    next.set("overview", "1");
+    router.replace(`/life-map?${next.toString()}`, { scroll: false });
+  }, [manifestId, queryNodeId, router, selectedId]);
+
+  const enterFocus = useCallback((node: LifeMapNode) => {
+    router.push(identityHref("focus", node));
+  }, [identityHref, router]);
+
+  const enterReplay = useCallback((node: LifeMapNode) => {
+    router.push(identityHref("replay", node));
+  }, [identityHref, router]);
 
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
       if (event.key !== "Escape") return;
       event.preventDefault();
+      event.stopImmediatePropagation();
       if (selectedId) recenter();
       else router.push("/home");
     };
-    window.addEventListener("keydown", onKeyDown);
-    return () => window.removeEventListener("keydown", onKeyDown);
+    window.addEventListener("keydown", onKeyDown, true);
+    return () => window.removeEventListener("keydown", onKeyDown, true);
   }, [recenter, router, selectedId]);
 
   useEffect(() => {
     const target = mainRef.current;
     if (!target) return;
     const onWheel = (event: WheelEvent) => {
+      if (isLifeMapUiTarget(event.target)) return;
       event.preventDefault();
       setCameraIntent((current) => ({
-        position: [current.position[0], current.position[1], THREE.MathUtils.clamp(current.position[2] + event.deltaY * 0.005, 3.7, 12.4)],
+        position: [current.position[0], current.position[1], THREE.MathUtils.clamp(current.position[2] + event.deltaY * 0.005, 4.2, 14.8)],
         target: current.target,
       }));
     };
@@ -472,6 +952,7 @@ export default function AdaptiveLifeMapScene() {
   }, [profile.shadows]);
 
   const onPointerDown = useCallback((event: PointerEvent<HTMLElement>) => {
+    if (isLifeMapUiTarget(event.target)) return;
     event.currentTarget.setPointerCapture(event.pointerId);
     dragRef.current = { x: event.clientX, y: event.clientY, camera: cameraIntent };
   }, [cameraIntent]);
@@ -484,8 +965,8 @@ export default function AdaptiveLifeMapScene() {
     const shiftX = dx * -0.008;
     const shiftY = dy * 0.005;
     setCameraIntent({
-      position: [THREE.MathUtils.clamp(base.position[0] + shiftX, -4.8, 4.8), THREE.MathUtils.clamp(base.position[1] + shiftY, -0.9, 3.2), base.position[2]],
-      target: [THREE.MathUtils.clamp(base.target[0] + shiftX * 0.7, -3.8, 3.8), THREE.MathUtils.clamp(base.target[1] + shiftY * 0.45, -1.2, 2.1), base.target[2]],
+      position: [THREE.MathUtils.clamp(base.position[0] + shiftX, -5.8, 5.8), THREE.MathUtils.clamp(base.position[1] + shiftY, -1.4, 4.2), base.position[2]],
+      target: [THREE.MathUtils.clamp(base.target[0] + shiftX * 0.7, -4.8, 4.8), THREE.MathUtils.clamp(base.target[1] + shiftY * 0.45, -1.8, 2.8), base.target[2]],
     });
   }, [selectedId]);
 
@@ -503,90 +984,108 @@ export default function AdaptiveLifeMapScene() {
   return (
     <main
       ref={mainRef}
-      className="relative min-h-screen overflow-hidden bg-[#01030a] text-white"
+      className="life-map-independent-realm"
       data-testid="urai-true-3d-life-map"
       data-spatial-quality={profile.tier}
       data-spatial-visible={profile.documentVisible ? "true" : "false"}
       data-webgl-state={webglState}
       data-life-map-source={usingSeedData ? "explicit-sample" : "private"}
+      data-home-companion-owned="false"
       onPointerDown={onPointerDown}
       onPointerMove={onPointerMove}
       onPointerUp={onPointerUp}
       onPointerCancel={onPointerUp}
-      style={{ touchAction: "none" }}
     >
-      <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_34%,rgba(74,222,255,0.14),transparent_28%),radial-gradient(circle_at_71%_43%,rgba(255,80,210,0.13),transparent_30%),linear-gradient(180deg,#01030a_0%,#030712_55%,#010208_100%)]" />
-      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_50%_50%,transparent_0_40%,rgba(0,0,0,0.74)_100%)]" />
+      <h1 className="sr-only">Step inside the map.</h1>
+      <div
+        className="sr-only"
+        data-life-map-layer-contract="near middle far"
+        data-life-map-memory-contract="authored-media-surfaces"
+        data-life-map-companion-contract="home-companion-unmounted"
+      >
+        Life Map independent memory universe
+      </div>
+
+      <div className="life-map-cosmic-wash" aria-hidden="true" />
+      <div className="life-map-depth-vignette" aria-hidden="true" />
 
       <Canvas
-        className="absolute inset-0"
-        camera={{ position: OVERVIEW_CAMERA.position, fov: 42, near: 0.1, far: 140 }}
+        className="life-map-canvas"
+        camera={{ position: OVERVIEW_CAMERA.position, fov: 43, near: 0.1, far: 180 }}
         dpr={[1, profile.pixelRatioMax]}
         shadows={profile.shadows}
         frameloop={profile.documentVisible ? "always" : "never"}
         gl={{ antialias: stableCanvas.current.antialias, alpha: false, powerPreference: "high-performance" }}
         onCreated={configureRenderer}
       >
-        <LifeMapWorld nodes={nodes} selectedId={selectedId} profile={profile} cameraIntent={cameraIntent} onSelect={selectNode} />
+        <LifeMapWorld
+          nodes={nodes}
+          selectedNode={selectedNode}
+          profile={profile}
+          cameraIntent={cameraIntent}
+          onSelect={selectNode}
+          onEnterFocus={enterFocus}
+          onEnterReplay={enterReplay}
+          onOverview={recenter}
+        />
       </Canvas>
 
-      <header className="pointer-events-none absolute left-5 top-5 z-20 max-w-[min(350px,calc(100vw-40px))] drop-shadow-[0_24px_70px_rgba(0,0,0,.62)]">
-        <p className="m-0 text-[10px] font-black uppercase tracking-[0.28em] text-cyan-200/90">URAI · Life Map</p>
-        <h1 className="mt-1 text-[clamp(2.15rem,4.8vw,4.9rem)] font-black leading-[0.82] tracking-[-0.09em]">Step inside the map.</h1>
-        <span className="mt-3 block max-w-[290px] text-xs font-bold leading-5 text-cyan-50/70">Drag, wheel, or select. Focus and Replay keep the same memory identity and return context.</span>
-      </header>
-
-      <aside className="pointer-events-none absolute right-5 top-5 z-20 hidden max-w-[270px] rounded-2xl border border-white/10 bg-black/30 p-3 text-cyan-50/75 backdrop-blur-xl md:block">
-        <p className="m-0 text-[9px] font-black uppercase tracking-[0.22em] text-cyan-200/80">Adaptive spatial controls</p>
-        <span className="mt-1 block text-[11px] font-bold leading-4">{profile.tier} quality · {profile.reducedMotion ? "reduced motion" : "motion active"} · {loading ? "opening galaxy" : error ? "recovery state" : usingSeedData ? "explicit sample constellation" : "private memories awake"}</span>
-      </aside>
+      <div className="life-map-realm-mark" aria-hidden="true">
+        <span>URAI · LIFE MAP</span>
+        <i>{selectedNode ? selectedNode.dateLabel : "PRIVATE CONSTELLATION"}</i>
+      </div>
 
       {usingSeedData ? (
-        <div className="pointer-events-none absolute left-1/2 top-4 z-30 -translate-x-1/2 rounded-full border border-amber-200/25 bg-amber-950/60 px-4 py-2 text-[10px] font-black uppercase tracking-[0.18em] text-amber-100 backdrop-blur-xl" role="status">
+        <div className="life-map-sample-boundary" role="status">
           Sample constellation · not your memories
         </div>
       ) : null}
 
       {semanticRecoveryVisible ? (
-        <section className="absolute inset-x-4 top-1/2 z-40 mx-auto max-w-xl -translate-y-1/2 rounded-[30px] border border-cyan-100/20 bg-slate-950/92 p-6 shadow-[0_30px_120px_rgba(0,0,0,.72)] backdrop-blur-2xl" role="status" aria-live="assertive">
-          <p className="m-0 text-[10px] font-black uppercase tracking-[0.24em] text-cyan-200">Life Map protected mode</p>
-          <h2 className="mt-2 text-2xl font-black tracking-[-0.04em]">{webglState === "failed" ? "The visual field could not restart." : "Restoring the visual field…"}</h2>
-          <p className="mt-2 text-sm font-semibold leading-6 text-slate-200">Your selected memory and camera context remain preserved. Continue through the semantic map below or return Home.</p>
-          <div className="mt-4 flex flex-wrap gap-2">
+        <section className="life-map-recovery" role="status" aria-live="assertive">
+          <p>Life Map protected mode</p>
+          <h2>{webglState === "failed" ? "The visual field could not restart." : "Restoring the visual field…"}</h2>
+          <span>Your selected memory and camera context remain preserved.</span>
+          <div>
             {nodes.map((node) => (
-              <button key={node.id} type="button" onClick={() => selectNode(node)} className="rounded-full border border-white/15 bg-white/5 px-3 py-2 text-xs font-black text-white">
+              <button key={node.id} type="button" onClick={() => selectNode(node)}>
                 {node.title}
               </button>
             ))}
-            <button type="button" onClick={() => router.push("/home")} className="rounded-full bg-cyan-100 px-4 py-2 text-xs font-black text-slate-950">Return Home</button>
+            <button type="button" onClick={() => router.push("/home")}>Return Home</button>
           </div>
         </section>
       ) : null}
 
-      <section className="pointer-events-auto absolute bottom-20 left-1/2 z-30 w-[min(540px,calc(100vw-34px))] -translate-x-1/2 rounded-[28px] border border-cyan-100/15 bg-slate-950/60 p-4 shadow-[0_0_110px_rgba(80,230,255,.16)] backdrop-blur-2xl" aria-live="polite">
-        <p className="m-0 text-[10px] font-black uppercase tracking-[0.24em] text-cyan-200/85">{selectedNode ? selectedNode.title : "Orb companion"}</p>
-        <p className="mt-1 text-sm font-semibold leading-5 text-slate-100/86">{narratorText}</p>
-        {selectedNode ? (
-          <div className="mt-3 flex flex-wrap gap-2">
-            <button type="button" onClick={() => router.push(identityHref("focus", selectedNode))} className="rounded-full bg-cyan-100 px-4 py-2 text-xs font-black text-slate-950">Enter Focus</button>
-            <button type="button" onClick={() => router.push(identityHref("replay", selectedNode))} disabled={!selectedNode.replayAvailable || selectedNode.locked} className="rounded-full border border-white/20 bg-white/5 px-4 py-2 text-xs font-black text-white disabled:opacity-35">Replay</button>
-            <button type="button" onClick={recenter} className="rounded-full border border-white/20 bg-white/5 px-4 py-2 text-xs font-black text-white">Overview</button>
-          </div>
-        ) : null}
+      <section className="life-map-whisper" data-life-map-whisper="true" aria-live="polite" aria-atomic="true">
+        <p>{selectedNode ? selectedNode.title : loading ? "Opening the constellation" : error ? usingSeedData ? "Protected sample field" : "Private constellation unavailable" : "Private constellation"}</p>
+        <span>{narratorText}</span>
       </section>
 
-      <nav className="absolute bottom-4 left-1/2 z-20 flex max-w-[calc(100vw-24px)] -translate-x-1/2 gap-1 overflow-x-auto rounded-full border border-white/10 bg-black/35 p-1.5 backdrop-blur-2xl" aria-label="URAI Life Map route portals">
-        <button type="button" onClick={() => router.push("/home")} className="rounded-full border border-cyan-100/10 px-3 py-1.5 text-[10px] font-black text-cyan-50/78">Home</button>
-        <button type="button" onClick={() => router.push("/ground")} className="rounded-full border border-cyan-100/10 px-3 py-1.5 text-[10px] font-black text-cyan-50/78">Ground</button>
-        <button type="button" onClick={() => router.push("/mirror")} className="rounded-full border border-cyan-100/10 px-3 py-1.5 text-[10px] font-black text-cyan-50/78">Mirror</button>
-        <button type="button" onClick={() => router.push("/passport")} className="rounded-full border border-cyan-100/10 px-3 py-1.5 text-[10px] font-black text-cyan-50/78">Passport</button>
-      </nav>
-
-      <div className="sr-only" aria-label="Semantic Life Map">
-        {nodes.map((node) => (
-          <button key={node.id} type="button" onClick={() => selectNode(node)}>{node.title}: {node.summary}</button>
-        ))}
-      </div>
+      <details
+        className="life-map-accessibility-menu"
+        onPointerDown={(event) => event.stopPropagation()}
+        onWheel={(event) => event.stopPropagation()}
+      >
+        <summary>Map controls</summary>
+        <div>
+          <p>Explore memories without the visual field.</p>
+          {nodes.map((node) => (
+            <button key={node.id} type="button" onClick={() => selectNode(node)}>
+              {node.title}: {node.summary}
+            </button>
+          ))}
+          {selectedNode ? (
+            <>
+              <button type="button" onClick={() => router.push(identityHref("focus", selectedNode))}>Enter Focus</button>
+              <button type="button" onClick={() => router.push(identityHref("replay", selectedNode))} disabled={!selectedNode.replayAvailable || selectedNode.locked}>Replay</button>
+              <button type="button" onClick={recenter}>Overview</button>
+            </>
+          ) : null}
+          <button type="button" onClick={() => router.push("/ground")}>Ground</button>
+          <button type="button" onClick={() => router.push("/home")}>Home</button>
+        </div>
+      </details>
     </main>
   );
 }

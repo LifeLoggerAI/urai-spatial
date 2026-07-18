@@ -1,0 +1,39 @@
+/* Founder-canon Life Map interaction boundary.
+ * The Home companion is not mounted here. The visual field owns camera gestures,
+ * while the minimal non-Orb accessibility layer remains independently scrollable.
+ */
+
+.urai-world-runtime[data-world-destination='life-map'] .life-map-independent-realm {
+  touch-action: auto !important;
+}
+
+.urai-world-runtime[data-world-destination='life-map'] .life-map-canvas {
+  touch-action: none;
+}
+
+.urai-world-runtime[data-world-destination='life-map'] .life-map-accessibility-menu,
+.urai-world-runtime[data-world-destination='life-map'] .life-map-recovery,
+.urai-world-runtime[data-world-destination='life-map'] .life-map-memory-portals {
+  touch-action: pan-y !important;
+  overscroll-behavior: contain;
+}
+
+.urai-world-runtime[data-world-destination='life-map'] .life-map-accessibility-menu > div,
+.urai-world-runtime[data-world-destination='life-map'] .life-map-recovery {
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Author CSS must not override the native closed state of details. */
+.urai-world-runtime[data-world-destination='life-map']
+  .life-map-accessibility-menu:not([open]) > div {
+  display: none !important;
+}
+
+/* This intentionally overrides the obsolete generic polite-region suppression in
+ * routeOwnerConvergence.css. Life Map narration belongs to the independent realm,
+ * is not an Orb surface, and must remain visible and announced. */
+.urai-world-runtime[data-world-destination='life-map']
+  main[data-testid='urai-true-3d-life-map']
+  .life-map-whisper[aria-live='polite'] {
+  display: block !important;
+}
