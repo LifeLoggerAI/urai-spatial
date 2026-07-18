@@ -1,0 +1,9 @@
+.focusTargetGuard {
+  min-width: 0;
+}
+
+@media (orientation: landscape) and (max-height: 520px) {
+  .focusTargetGuard details summary {
+    min-height: 48px;
+  }
+}
