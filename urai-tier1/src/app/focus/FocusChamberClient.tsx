@@ -1,62 +1,314 @@
 'use client'
 
-import { useCallback, useMemo } from 'react'
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type CSSProperties,
+} from 'react'
 import { assetCssStack, focusAssets } from '@/spatial/assets/uraiAssets'
-import { requestUraiWorldReturn, requestUraiWorldTravel } from '@/spatial/world/worldEvents'
+import { requestUraiWorldTravel } from '@/spatial/world/worldEvents'
 import { useSelectedMemory } from '@/spatial/memory/useSelectedMemory'
+import type { SelectedMemoryResult } from '@/spatial/memory/selectedMemoryContract'
+import styles from './FocusChamber.module.css'
+
+const DEMO_FOCUS_HREF = '/focus?memoryId=demo%3Aquiet-reset&node=quiet-reset&manifestId=replay-recovery-thread&demo=1&from=focus-recovery'
+
+type MediaState = 'absent' | 'loading' | 'ready' | 'failed'
 
 function dateLabel(value: string) {
-  try { return new Intl.DateTimeFormat(undefined, { dateStyle: 'medium', timeStyle: 'short' }).format(new Date(value)) } catch { return value }
+  try {
+    return new Intl.DateTimeFormat(undefined, { dateStyle: 'long', timeStyle: 'short' }).format(new Date(value))
+  } catch {
+    return value
+  }
+}
+
+function recoveryCopy(result: SelectedMemoryResult) {
+  const message = result.message.toLowerCase()
+  if (result.status === 'loading') {
+    return {
+      eyebrow: 'Crossing the threshold',
+      title: 'Opening the memory chamber',
+      body: 'The selected memory is being resolved privately. Its identity and return path remain held while the chamber forms.',
+      canRetry: false,
+    }
+  }
+  if (result.status === 'unauthorized') {
+    return {
+      eyebrow: 'Private boundary held',
+      title: 'This chamber is still locked',
+      body: result.message,
+      canRetry: true,
+    }
+  }
+  if (result.status === 'deleted') {
+    return {
+      eyebrow: 'Memory released',
+      title: 'This chamber is no longer here',
+      body: result.message,
+      canRetry: false,
+    }
+  }
+  if (result.status === 'corrupt') {
+    return {
+      eyebrow: 'Path protected',
+      title: 'The memory and Replay path no longer match',
+      body: result.message,
+      canRetry: false,
+    }
+  }
+  if (message.includes('no memory was selected')) {
+    return {
+      eyebrow: 'No star selected',
+      title: 'Choose a memory before entering Focus',
+      body: result.message,
+      canRetry: false,
+    }
+  }
+  if (message.includes('offline')) {
+    return {
+      eyebrow: 'Connection paused',
+      title: 'The chamber is waiting safely',
+      body: result.message,
+      canRetry: true,
+    }
+  }
+  if (message.includes('temporarily unavailable')) {
+    return {
+      eyebrow: 'Private service protected',
+      title: 'The chamber cannot open yet',
+      body: result.message,
+      canRetry: true,
+    }
+  }
+  return {
+    eyebrow: 'Memory path protected',
+    title: 'This chamber could not open safely',
+    body: result.message,
+    canRetry: true,
+  }
+}
+
+function FocusRecovery({ result }: { result: SelectedMemoryResult }) {
+  const copy = recoveryCopy(result)
+  const returnToLifeMap = useCallback(() => {
+    requestUraiWorldTravel({
+      destination: 'life-map',
+      href: '/life-map',
+      entryPortal: 'focus-recovery-return',
+      cameraCheckpoint: 'life-map-overview',
+    })
+  }, [])
+  const openDemo = useCallback(() => {
+    requestUraiWorldTravel({
+      destination: 'focus',
+      href: DEMO_FOCUS_HREF,
+      entryPortal: 'focus-recovery-demo',
+      cameraCheckpoint: 'focus:quiet-reset',
+    })
+  }, [])
+
+  return (
+    <main
+      className={styles.recovery}
+      data-testid="urai-final-focus-chamber"
+      data-memory-status={result.status}
+      data-orb-owner="none"
+      data-canonical-asset={focusAssets.primary.src}
+    >
+      <div className={styles.recoveryAtmosphere} aria-hidden="true" />
+      <div className={styles.recoveryThreshold} aria-hidden="true">
+        <span />
+        <span />
+        <span />
+      </div>
+      <section
+        className={styles.recoveryContent}
+        role={result.status === 'loading' ? 'status' : 'alert'}
+        aria-live={result.status === 'loading' ? 'polite' : 'assertive'}
+      >
+        <p className={styles.eyebrow}>{copy.eyebrow}</p>
+        <h1>{copy.title}</h1>
+        <p className={styles.recoveryBody}>{copy.body}</p>
+        <div className={styles.recoveryActions}>
+          <button type="button" className={styles.primaryAction} onClick={returnToLifeMap}>Return to Life Map</button>
+          {copy.canRetry ? <button type="button" className={styles.secondaryAction} onClick={() => window.location.reload()}>Try again</button> : null}
+          {result.status !== 'loading' ? <button type="button" className={styles.textAction} onClick={openDemo}>Open disclosed demo</button> : null}
+        </div>
+        <p className={styles.privacyNote}>No substitute personal memory was created, exposed, or inferred.</p>
+      </section>
+    </main>
+  )
 }
 
 export default function FocusChamberClient() {
   const result = useSelectedMemory()
   const memory = result.memory
+  const mainRef = useRef<HTMLElement>(null)
+  const media = memory?.sourceMedia.find((item) => item.kind === 'image')
+  const [mediaState, setMediaState] = useState<MediaState>(media ? 'loading' : 'absent')
+
+  useEffect(() => {
+    setMediaState(media ? 'loading' : 'absent')
+  }, [media?.url])
+
+  useEffect(() => {
+    if (!memory) return
+    const frame = window.requestAnimationFrame(() => mainRef.current?.focus({ preventScroll: true }))
+    return () => window.cancelAnimationFrame(frame)
+  }, [memory?.id])
+
   const replayHref = useMemo(() => {
     if (!memory) return null
-    const next = new URLSearchParams({ memoryId: memory.id, manifestId: memory.replayManifest.id, node: memory.star.id, from: 'focus-artifact' })
+    const next = new URLSearchParams({
+      memoryId: memory.id,
+      manifestId: memory.replayManifest.id,
+      node: memory.star.id,
+      from: 'focus-memory-aperture',
+    })
     if (memory.demo) next.set('demo', '1')
     return `/replay?${next.toString()}`
   }, [memory])
 
+  const lifeMapHref = useMemo(() => {
+    if (!memory) return '/life-map'
+    const next = new URLSearchParams({ node: memory.star.id, from: 'focus-return' })
+    if (memory.demo) next.set('demo', '1')
+    return `/life-map?${next.toString()}`
+  }, [memory])
+
   const enterReplay = useCallback(() => {
     if (!memory || !replayHref) return
-    requestUraiWorldTravel({ destination: 'replay', href: replayHref, entryPortal: 'focus-memory-aperture', cameraCheckpoint: `focus:${memory.star.id}`, context: { memoryId: memory.id, replayManifestId: memory.replayManifest.id, privacyMode: memory.privacy === 'private' ? 'held-private' : 'private' } })
+    requestUraiWorldTravel({
+      destination: 'replay',
+      href: replayHref,
+      entryPortal: 'focus-memory-aperture',
+      cameraCheckpoint: `focus:${memory.star.id}`,
+      context: {
+        memoryId: memory.id,
+        replayManifestId: memory.replayManifest.id,
+        privacyMode: memory.privacy === 'private' ? 'held-private' : 'private',
+      },
+    })
   }, [memory, replayHref])
 
-  const unwind = useCallback(() => requestUraiWorldReturn(), [])
+  const returnToLifeMap = useCallback(() => {
+    if (!memory) return
+    requestUraiWorldTravel({
+      destination: 'life-map',
+      href: lifeMapHref,
+      entryPortal: 'focus-return-threshold',
+      cameraCheckpoint: `life-map:${memory.star.id}`,
+    })
+  }, [lifeMapHref, memory])
 
-  if (!memory) {
-    return <main className="focusState" data-testid="urai-final-focus-chamber" data-memory-status={result.status} data-canonical-asset={focusAssets.primary.src}><section role={result.status === 'loading' ? 'status' : 'alert'}><p>{result.status === 'loading' ? 'Selected memory chamber.' : 'Memory unavailable'}</p><h1>{result.message}</h1><button type="button" onClick={unwind}>Return to Life Map</button></section><style>{stateCss}</style></main>
-  }
+  if (!memory) return <FocusRecovery result={result} />
 
-  const people = memory.people.map((person) => person.relationship ? `${person.label} · ${person.relationship}` : person.label).join(', ')
-  const media = memory.sourceMedia.find((item) => item.kind === 'image')
+  const people = memory.privacy === 'hidden'
+    ? 'Held private'
+    : memory.people.map((person) => person.relationship ? `${person.label} · ${person.relationship}` : person.label).join(', ') || 'Not recorded'
+  const place = memory.privacy === 'hidden' ? 'Held private' : memory.place?.label ?? 'Not recorded'
+  const replayAvailable = memory.replayManifest.segments.length > 0 && memory.replayManifest.durationMs > 0
   const style = {
-    '--memory-accent': memory.visuals.accent,
-    '--memory-light': memory.visuals.light,
-    '--memory-sky': memory.visuals.sky,
-    '--memory-ground': memory.visuals.ground,
-    '--memory-image': media ? `url("${media.url.replaceAll('"', '%22')}")` : 'none',
-    '--focus-asset': assetCssStack(focusAssets.primary),
-  } as React.CSSProperties
+    '--focus-accent': memory.visuals.accent,
+    '--focus-light': memory.visuals.light,
+    '--focus-sky': memory.visuals.sky,
+    '--focus-ground': memory.visuals.ground,
+    '--focus-fallback': assetCssStack(focusAssets.primary),
+    '--focus-fog': String(memory.visuals.fog),
+    '--focus-reflection': String(memory.visuals.reflection),
+  } as CSSProperties
 
-  return <main className="focusWorld" style={style} data-testid="urai-final-focus-chamber" data-memory-status={result.status} data-memory-id={memory.id} data-star-id={memory.star.id} data-node={memory.star.id} data-manifest-id={memory.replayManifest.id} data-canonical-asset={focusAssets.primary.src}>
-    <div className="focusFog" aria-hidden="true" />
-    <header><p>{memory.demo ? 'DEMO FIXTURE · NOT PERSONAL DATA' : `${memory.privacy} memory`}</p><h1>{memory.title}</h1><span>{dateLabel(memory.occurredAt)}</span></header>
-    <section className="artifactStage" aria-label={`Selected memory ${memory.title}`}>
-      <button className="artifact" type="button" onClick={enterReplay} aria-label={`Open Replay for ${memory.title}`}>
-        <span className="artifactImage" aria-hidden="true" />
-        <span className="artifactCore" aria-hidden="true" />
-        <strong>Replay this memory</strong>
-      </button>
-    </section>
-    <aside className="memoryMeaning"><p>{memory.narrator.focus}</p><dl><div><dt>Emotion</dt><dd>{memory.emotionalState}</dd></div><div><dt>Place</dt><dd>{memory.place?.label ?? 'Not recorded'}</dd></div><div><dt>People</dt><dd>{people || 'Not recorded'}</dd></div><div><dt>Privacy</dt><dd>{memory.privacy}</dd></div></dl></aside>
-    <button className="unwind" type="button" onClick={unwind}>← Life Map</button>
-    <style>{focusCss}</style>
-  </main>
+  return (
+    <main
+      ref={mainRef}
+      tabIndex={-1}
+      className={styles.world}
+      style={style}
+      data-testid="urai-final-focus-chamber"
+      data-memory-status={result.status}
+      data-memory-id={memory.id}
+      data-star-id={memory.star.id}
+      data-node={memory.star.id}
+      data-manifest-id={memory.replayManifest.id}
+      data-media-state={mediaState}
+      data-orb-owner="none"
+      data-canonical-asset={focusAssets.primary.src}
+      aria-labelledby="focus-memory-title"
+      aria-describedby="focus-memory-summary"
+    >
+      <div className={styles.sky} aria-hidden="true" />
+      <div className={styles.horizon} aria-hidden="true" />
+      <div className={styles.depthField} aria-hidden="true"><span /><span /><span /><span /></div>
+      <div className={styles.arrivalVeil} aria-hidden="true" />
+
+      <header className={styles.identity}>
+        <p className={styles.eyebrow}>{memory.demo ? 'Disclosed demonstration · not personal data' : `${memory.privacy} memory`}</p>
+        <h1 id="focus-memory-title">{memory.title}</h1>
+        <p className={styles.when}>{dateLabel(memory.occurredAt)}</p>
+        <p id="focus-memory-summary" className={styles.summary}>{memory.summary}</p>
+      </header>
+
+      <section className={styles.chamber} aria-label={`Memory chamber for ${memory.title}`}>
+        <div className={styles.shell} data-material={memory.star.material} aria-hidden="true">
+          <span className={styles.shellOuter} />
+          <span className={styles.shellMiddle} />
+          <span className={styles.shellInner} />
+        </div>
+
+        <figure className={styles.memoryPortal} data-media-state={mediaState}>
+          <div className={styles.portalLight} aria-hidden="true" />
+          {media && mediaState !== 'failed' ? (
+            <img
+              src={media.url}
+              alt={media.caption ?? `Memory media for ${memory.title}`}
+              onLoad={() => setMediaState('ready')}
+              onError={() => setMediaState('failed')}
+            />
+          ) : (
+            <div className={styles.mediaFallback} role="img" aria-label={`Atmospheric representation for ${memory.title}`}>
+              <span />
+              <strong>{memory.title}</strong>
+            </div>
+          )}
+          <figcaption>{media?.caption ?? memory.narrator.focus}</figcaption>
+        </figure>
+
+        <button
+          className={styles.replayPortal}
+          type="button"
+          onClick={enterReplay}
+          disabled={!replayAvailable}
+          aria-describedby="focus-replay-description"
+        >
+          <span className={styles.replayPulse} aria-hidden="true" />
+          <small>{replayAvailable ? 'Continue inward' : 'Replay not available'}</small>
+          <strong>{replayAvailable ? 'Enter Replay' : 'Stay with this memory'}</strong>
+          <span id="focus-replay-description">{replayAvailable ? memory.narrator.replay : 'This memory can be held in Focus without entering a cinematic Replay.'}</span>
+        </button>
+      </section>
+
+      <aside className={styles.meaning} aria-label="Memory details">
+        <p>{memory.narrator.focus}</p>
+        <dl>
+          <div><dt>Emotion</dt><dd>{memory.emotionalState || 'Not recorded'}</dd></div>
+          <div><dt>Place</dt><dd>{place}</dd></div>
+          <div><dt>People</dt><dd>{people}</dd></div>
+          <div><dt>Privacy</dt><dd>{memory.privacy}</dd></div>
+        </dl>
+      </aside>
+
+      <nav className={styles.navigation} aria-label="Focus navigation">
+        <button type="button" onClick={returnToLifeMap}>← Return to Life Map</button>
+        <span>Escape returns safely</span>
+      </nav>
+
+      <div className={styles.srStatus} aria-live="polite">
+        {mediaState === 'loading' ? 'Memory media loading.' : mediaState === 'failed' ? 'Memory media unavailable. Atmospheric fallback shown.' : ''}
+      </div>
+    </main>
+  )
 }
-
-const stateCss = `.focusState{position:fixed;inset:0;display:grid;place-items:center;padding:24px;background-image:linear-gradient(180deg,rgba(1,4,10,.68),rgba(1,4,10,.94)),${assetCssStack(focusAssets.primary)};background-size:cover;background-position:center;color:#fff}.focusState section{max-width:540px;text-align:center}.focusState button{min-width:48px;min-height:48px;margin-top:18px;padding:0 20px;border-radius:999px;border:1px solid #aeefff;background:#dffbff;color:#041019;font-weight:800}.focusState button:focus-visible{outline:3px solid #fff;outline-offset:4px}`
-
-const focusCss = `.focusWorld{position:fixed;inset:0;overflow:hidden;color:#fff;background:radial-gradient(circle at 50% 38%,color-mix(in srgb,var(--memory-accent) 26%,transparent),transparent 28%),linear-gradient(180deg,var(--memory-sky),#02040a 52%,var(--memory-ground));isolation:isolate}.focusFog{position:absolute;inset:-20%;background:radial-gradient(circle at 50% 44%,transparent 0 17%,rgba(0,0,0,.18) 42%,rgba(0,0,0,.82) 100%);pointer-events:none}.focusWorld header{position:absolute;z-index:4;left:max(18px,env(safe-area-inset-left));top:max(18px,env(safe-area-inset-top));max-width:min(360px,calc(100vw - 36px));text-shadow:0 3px 24px #000}.focusWorld header p{margin:0;color:var(--memory-light);font-size:10px;font-weight:900;letter-spacing:.18em;text-transform:uppercase}.focusWorld header h1{margin:5px 0;font-size:clamp(1.3rem,4vw,2.5rem);line-height:.95}.focusWorld header span{font-size:12px;color:rgba(255,255,255,.7)}.artifactStage{position:absolute;inset:10svh 0 16svh;display:grid;place-items:center;perspective:1200px}.artifact{position:relative;width:min(54vw,460px);min-width:220px;min-height:48px;aspect-ratio:1;border:0;background:transparent;color:#fff;cursor:pointer;display:grid;place-items:center}.artifact:focus-visible{outline:3px solid #fff;outline-offset:12px;border-radius:50%}.artifactImage{position:absolute;inset:0;border-radius:38% 62% 53% 47%;background-image:linear-gradient(180deg,rgba(0,0,0,.05),rgba(0,0,0,.56)),var(--memory-image),var(--focus-asset),radial-gradient(circle,var(--memory-accent),#07131f 66%);background-size:cover;background-position:center;border:1px solid color-mix(in srgb,var(--memory-light) 60%,transparent);box-shadow:0 0 120px color-mix(in srgb,var(--memory-accent) 28%,transparent),inset 0 0 100px rgba(0,0,0,.5);animation:artifactFloat 6s ease-in-out infinite alternate}.artifactCore{position:absolute;width:18%;aspect-ratio:1;border-radius:50%;background:radial-gradient(circle,#fff 0 7%,var(--memory-light) 18%,var(--memory-accent) 48%,transparent 72%);box-shadow:0 0 60px var(--memory-accent)}.artifact strong{position:absolute;bottom:-52px;min-width:48px;min-height:48px;display:grid;place-items:center;padding:0 22px;border-radius:999px;background:rgba(2,8,15,.78);border:1px solid color-mix(in srgb,var(--memory-light) 55%,transparent);font-size:12px;letter-spacing:.08em;text-transform:uppercase}.memoryMeaning{position:absolute;z-index:5;right:max(18px,env(safe-area-inset-right));bottom:max(18px,calc(env(safe-area-inset-bottom) + 16px));width:min(360px,calc(100vw - 36px));padding:14px 16px;border-left:1px solid color-mix(in srgb,var(--memory-light) 50%,transparent);background:linear-gradient(90deg,rgba(2,7,12,.72),rgba(2,7,12,.24));backdrop-filter:blur(12px)}.memoryMeaning p{margin:0 0 10px;font:500 clamp(1rem,2vw,1.3rem)/1.3 Georgia,serif}.memoryMeaning dl{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:0}.memoryMeaning dt{font-size:9px;text-transform:uppercase;letter-spacing:.14em;color:var(--memory-light)}.memoryMeaning dd{margin:2px 0 0;font-size:11px;color:rgba(255,255,255,.78)}.unwind{position:absolute;z-index:8;left:max(14px,env(safe-area-inset-left));bottom:max(14px,env(safe-area-inset-bottom));min-width:48px;min-height:48px;padding:0 16px;border-radius:999px;border:1px solid rgba(255,255,255,.28);background:rgba(2,7,12,.72);color:#fff;font-weight:800}.unwind:focus-visible{outline:3px solid #fff;outline-offset:3px}@keyframes artifactFloat{to{transform:translateY(-10px) rotate(1deg)}}@media(max-width:700px){.artifactStage{inset:15svh 0 31svh}.artifact{width:min(72vw,330px)}.memoryMeaning{left:14px;right:14px;bottom:max(76px,calc(env(safe-area-inset-bottom) + 66px));width:auto;padding:10px 12px}.memoryMeaning p{font-size:.98rem}.memoryMeaning dl{grid-template-columns:1fr 1fr}.artifact strong{bottom:-50px}.focusWorld header{max-width:260px}.focusWorld header h1{font-size:1.4rem}}@media(max-height:720px){.artifactStage{inset:12svh 0 28svh}.artifact{width:min(48vh,300px)}.memoryMeaning p{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}}@media(prefers-reduced-motion:reduce){.artifactImage{animation:none}}@media(forced-colors:active){.artifact strong,.unwind,.memoryMeaning{forced-color-adjust:auto;border:2px solid CanvasText}}`
