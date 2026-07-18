@@ -62,17 +62,7 @@ export default function HomeSpatialRuntimeLayer() {
       setRendererState('ready')
     }
 
-    const labelDirectTravelControls = () => {
-      root.querySelectorAll<HTMLButtonElement>('.urai-home-direct-controls button').forEach((button) => {
-        const label = button.textContent?.trim()
-        if (label === 'Life Map') button.setAttribute('aria-label', 'Open Life Map directly')
-        if (label === 'Ground') button.setAttribute('aria-label', 'Open Ground directly')
-        if (label === 'Orb') button.setAttribute('aria-label', 'Open Orb directly')
-      })
-    }
-
     const attach = () => {
-      labelDirectTravelControls()
       const canvas = root.querySelector('canvas')
       if (!canvas || canvas === attachedCanvas) return
       attachedCanvas?.removeEventListener('webglcontextlost', onContextLost)
