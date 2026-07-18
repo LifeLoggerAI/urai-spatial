@@ -65,13 +65,15 @@ if (safePath(decision.canonicalPath)) {
 
 if (decision.mode === 'rehearsal') {
   requireCondition(decision.promote === false, 'rehearsal must set promote=false')
-  requireCondition(decision.humanReviewApproved === false, 'rehearsal must not claim human approval')
   requireCondition(asset?.releaseState !== 'production-ready', 'rehearsal may not mark canonical manifest production-ready')
+  requireCondition(decision.humanReviewApproved === false, 'rehearsal must not claim human approval')
+  requireCondition(decision.visualProofVerified === false, 'rehearsal must not claim final visual proof')
+  requireCondition(!decision.receiptPath, 'rehearsal must not attach a production receipt')
 } else {
   requireCondition(decision.promote === true, 'promotion must set promote=true')
-  requireCondition(decision.humanReviewApproved === true, 'promotion requires human approval')
-  requireCondition(decision.visualProofVerified === true, 'promotion requires visual proof')
   requireCondition(asset?.releaseState === 'production-ready', 'promotion requires manifest releaseState=production-ready')
+  requireCondition(decision.humanReviewApproved === true, 'promotion requires human review approval')
+  requireCondition(decision.visualProofVerified === true, 'promotion requires verified visual proof')
   requireCondition(typeof decision.receiptPath === 'string' && safePath(decision.receiptPath), 'promotion receiptPath must be safe')
   if (typeof decision.receiptPath === 'string' && safePath(decision.receiptPath)) {
     requireCondition(existsSync(path.resolve(root, decision.receiptPath)), `promotion receipt missing: ${decision.receiptPath}`)
