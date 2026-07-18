@@ -1,6 +1,7 @@
 import { expect, test, type Page } from '@playwright/test'
 
 const FOCUS_DEMO_PATH = '/focus?memoryId=demo%3Aquiet-reset&manifestId=replay-recovery-thread&node=quiet-reset&demo=1'
+const FOCUS_RAW_DEMO_PATH = '/focus?memoryId=quiet-reset&manifestId=replay-recovery-thread&node=quiet-reset&demo=1'
 const REPLAY_DEMO_PATH = '/replay?memoryId=demo%3Aquiet-reset&manifestId=replay-recovery-thread&node=quiet-reset&demo=1'
 
 const routes = [
@@ -99,7 +100,19 @@ test.describe('URAI accessibility and performance evidence', () => {
     await expect(page.locator('[data-urai-audit-action="orb-controls"]')).toHaveCount(0)
   })
 
-  test('same-path Focus recovery opens the disclosed demo without a reload', async ({ page }) => {
+  test('demo=1 resolves a known raw Life Map star without storage or private Firestore', async ({ page }) => {
+    await page.addInitScript(() => {
+      window.localStorage.removeItem('urai:lifeMapDemoMode')
+      window.localStorage.removeItem('urai:userId')
+    })
+    await page.goto(FOCUS_RAW_DEMO_PATH, { waitUntil: 'domcontentloaded' })
+    const chamber = page.locator('[data-testid="urai-final-focus-chamber"][data-memory-status="demo"]')
+    await expect(chamber).toBeVisible()
+    await expect(chamber).toHaveAttribute('data-memory-id', 'demo:quiet-reset')
+    await expect(chamber).toHaveAttribute('data-star-id', 'quiet-reset')
+  })
+
+  test('same-path Focus recovery completes world state and Escape returns to Life Map', async ({ page }) => {
     await page.goto('/focus', { waitUntil: 'domcontentloaded' })
     const recovery = page.locator('[data-testid="urai-final-focus-chamber"][data-memory-status="unavailable"]')
     await expect(recovery).toBeVisible()
@@ -119,6 +132,11 @@ test.describe('URAI accessibility and performance evidence', () => {
     await recovery.getByRole('button', { name: /open disclosed demo/i }).click()
     await expect(page.locator('[data-testid="urai-final-focus-chamber"][data-memory-status="demo"]')).toBeVisible({ timeout: 10_000 })
     await expect.poll(() => page.url()).toContain('memoryId=demo%3Aquiet-reset')
+    await expect(page.locator('.urai-world-transition')).toHaveAttribute('data-phase', 'idle')
+
+    await page.keyboard.press('Escape')
+    await expect.poll(() => new URL(page.url()).pathname, { timeout: 10_000 }).toBe('/life-map')
+    await expect(page.locator('[data-testid="urai-true-3d-life-map"]')).toBeVisible()
   })
 
   test('Focus keeps the aperture dominant, Replay spatial, and metadata progressive', async ({ page }) => {
