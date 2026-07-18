@@ -19,7 +19,7 @@ import {
 } from '@/spatial/replay/replayServerTransport'
 
 const emptyState = (): ReplayOperationState => ({ saved: false, hidden: false, pending: [], audit: [] })
-const draftKey = (ownerId: string, memoryId: string) => `urai-replay-correction-draft-v1:${ownerId}:${memoryId}`
+const draftKey = (ownerId: string, memoryId: string) => `urai-replay-correction-draft-v1:${encodeURIComponent(ownerId)}:${encodeURIComponent(memoryId)}`
 
 function safeReadDraft(ownerId: string, memoryId: string) {
   try { return window.localStorage.getItem(draftKey(ownerId, memoryId)) ?? '' } catch { return '' }
@@ -70,7 +70,7 @@ export function ReplayProductControls({ memory }: { memory: SelectedMemory }) {
     let cancelled = false
     if (!mutable) {
       setOperations(emptyState())
-      setStatus('Demo Replay controls are read-only.')
+      setStatus(memory.demo ? 'Demo Replay controls are read-only.' : 'Sign in as the owner to change this Replay.')
       return () => { cancelled = true }
     }
 
@@ -81,7 +81,8 @@ export function ReplayProductControls({ memory }: { memory: SelectedMemory }) {
     readAuthenticatedReplayServerState(memory.ownerId, memory.id)
       .then((server) => {
         if (cancelled || activeIdentity.current !== identity) return
-        const merged = mergeState(local, server)
+        const current = readReplayOperationState(window.localStorage, memory.ownerId, memory.id)
+        const merged = mergeState(current, server)
         writeReplayOperationState(window.localStorage, memory.ownerId, memory.id, merged)
         setOperations(merged)
         setStatus(merged.pending.length ? `${merged.pending.length} change${merged.pending.length === 1 ? '' : 's'} waiting to sync.` : 'Replay changes are synchronized.')
@@ -147,12 +148,15 @@ export function ReplayProductControls({ memory }: { memory: SelectedMemory }) {
     }
 
     setStatus(`Saving ${kind === 'hide' && options.hidden === false ? 'restore' : kind}…`)
+    const applyIfCurrent = (state: ReplayOperationState) => {
+      if (activeIdentity.current === requestedIdentity) setOperations(state)
+    }
     const next = await executeReplayOperation({
       storage: window.localStorage,
       transport,
       operation,
-      onOptimistic: setOperations,
-      onSettled: setOperations,
+      onOptimistic: applyIfCurrent,
+      onSettled: applyIfCurrent,
     })
     if (activeIdentity.current !== requestedIdentity) return false
     if (next.error) {
