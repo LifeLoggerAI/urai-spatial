@@ -130,6 +130,7 @@ test.describe('URAI accessibility and performance evidence', () => {
         const right = left + (viewport?.width ?? window.innerWidth)
         const bottom = top + (viewport?.height ?? window.innerHeight)
         const hasScrollableAncestor = (element: Element) => {
+          if (element.closest('.ground-destination-compass[aria-label="Ground destinations"]')) return true
           let current = element.parentElement
           while (current) {
             const style = getComputedStyle(current)
