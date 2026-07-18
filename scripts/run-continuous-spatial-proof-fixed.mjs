@@ -13,6 +13,49 @@ function replaceRequired(label, pattern, replacement) {
   source = source.replace(pattern, replacement)
 }
 
+if (source.includes("ready: '[data-home-spatial-renderer=\"webgl\"][data-webgl-ready=\"true\"] canvas'")) {
+  replaceRequired(
+    'embodied Home ready selector',
+    /ready: '\[data-home-spatial-renderer="webgl"\]\[data-webgl-ready="true"\] canvas'/,
+    `ready: '[data-home-spatial-renderer="webgl"] canvas'`,
+  )
+}
+
+if (source.includes("const runtime = await page.locator('[data-urai-home-runtime=\"one-continuous-webgl-world\"]')")) {
+  replaceRequired(
+    'embodied Home verifier',
+    /verify: async \(page\) => \{[\s\S]*?\n    \},\n  \},\n  \{\n    id: 'ground'/,
+    `verify: async (page) => {
+      const runtimeMounted = await page.locator('[data-urai-home-runtime="embodied-continuous-webgl-world"]').count() === 1
+      const embodiedShell = page.locator('[data-home-spatial-renderer="webgl"][data-home-movement="walk-keyboard-click-touch"]').first()
+      const embodiedShellVisible = await embodiedShell.isVisible()
+      const walkableSurfaceMounted = await page.locator('[data-testid="urai-home-walkable-surface"]').count() === 1
+      const authoredOrbTargetMounted = await page.locator('[data-testid="urai-home-webgl-orb"]').count() === 1
+      const directControls = page.locator('.urai-home-direct-controls').first()
+      const directControlsVisible = await directControls.isVisible()
+      const directControlCount = await directControls.locator('button').count()
+      const pointerLockDisabled = await embodiedShell.getAttribute('data-home-pointer-lock') === 'false'
+      const firstHomeFrameMarked = await page.evaluate(() => performance.getEntriesByName('urai:first-home-spatial-frame').length > 0)
+      const canvas = await canvasEvidence(page, '[data-home-spatial-renderer="webgl"] canvas')
+      return {
+        runtimeMounted,
+        embodiedShellVisible,
+        walkableSurfaceMounted,
+        authoredOrbTargetMounted,
+        directControlsVisible,
+        directControlCount,
+        pointerLockDisabled,
+        firstHomeFrameMarked,
+        canvasSized: canvas.canvasSized,
+        ...canvas,
+      }
+    },
+  },
+  {
+    id: 'ground'`,
+  )
+}
+
 if (!source.includes("const selectedControl = page.getByRole('button', { name: 'Enter Focus' }).first()")) {
   replaceRequired(
     'selected-memory chooser',
@@ -50,11 +93,11 @@ if (!source.includes('sceneLabelRetired') && !source.includes('thresholdLabelsVi
   )
   replaceRequired(
     'Home verification receipt',
-    /\s*orbLabelVisible,\s*permanentFeatureShortcutsAbsent,/,
+    /\s*orbLabelVisible,\s*permanentFeatureShortcutsAbsent/,
     `
         sceneLabelRetired,
         marketingPortalLabelSuppressed,
-        permanentFeatureShortcutsAbsent,`,
+        permanentFeatureShortcutsAbsent`,
   )
 }
 
@@ -120,7 +163,7 @@ if (!source.includes('singleSelectedActionOwner')) {
 replaceRequired(
   'visual proof schema version',
   /schemaVersion: 'urai-continuous-spatial-visual-proof-[0-9]+'/,
-  "schemaVersion: 'urai-continuous-spatial-visual-proof-12'",
+  "schemaVersion: 'urai-continuous-spatial-visual-proof-13'",
 )
 
 await writeFile(patchedPath, source)
