@@ -30,6 +30,7 @@
     0 44px 150px rgba(0, 0, 0, .68),
     0 0 170px var(--focus-glow),
     inset 0 0 110px rgba(0, 0, 0, .34);
+  animation: cinematicPortalArrive 1.2s .08s cubic-bezier(.16, .8, .22, 1) both;
 }
 
 .cinematic figure img {
@@ -230,6 +231,17 @@
   color: rgba(239, 250, 255, .84);
 }
 
+@keyframes cinematicPortalArrive {
+  from {
+    opacity: 0;
+    filter: blur(12px) saturate(.72);
+  }
+  to {
+    opacity: 1;
+    filter: blur(0) saturate(1);
+  }
+}
+
 @keyframes cinematicReplayBreathe {
   50% {
     transform: scale(1.08);
@@ -362,6 +374,7 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
+  .cinematic figure,
   .cinematic button[aria-describedby='focus-replay-description'] > span[aria-hidden='true'] {
     animation: none !important;
   }
