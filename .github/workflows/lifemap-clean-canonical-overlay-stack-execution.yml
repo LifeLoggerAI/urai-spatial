@@ -1,0 +1,141 @@
+name: Life Map clean canonical overlay stack execution
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+    branches:
+      - product/canonical-six-fix-clean-v3-20260718
+    paths:
+      - .github/workflows/lifemap-clean-canonical-overlay-stack-execution.yml
+      - scripts/one-shot-lifemap-clean-overlay-stack.mjs
+
+permissions:
+  contents: write
+
+concurrency:
+  group: lifemap-clean-overlay-stack-${{ github.event.pull_request.head.sha }}
+  cancel-in-progress: true
+
+env:
+  CLEAN_BASE: 23cd1bb1aef71f3f43c97b5bdbf557a64e9b1b48
+  PRODUCT_BRANCH: product/canonical-six-fix-clean-v3-20260718
+
+jobs:
+  clean-and-publish:
+    if: github.event.pull_request.head.repo.full_name == github.repository && github.event.pull_request.head.ref == 'exec/lifemap-clean-canonical-overlay-stack-20260718'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 70
+    steps:
+      - name: Checkout exact execution head
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+          persist-credentials: true
+          show-progress: false
+
+      - name: Prove authority and apply bounded overlay cleanup
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "${{ github.event.pull_request.head.sha }}"
+          test "$(git merge-base "$CLEAN_BASE" HEAD)" = "$CLEAN_BASE"
+          test -z "$(git status --porcelain --untracked-files=all)"
+          actual="$(git diff --name-only "$CLEAN_BASE...HEAD" | sort)"
+          expected="$(printf '%s\n' .github/workflows/lifemap-clean-canonical-overlay-stack-execution.yml scripts/one-shot-lifemap-clean-overlay-stack.mjs | sort)"
+          printf 'Execution files:\n%s\n' "$actual"
+          test "$actual" = "$expected"
+          node scripts/one-shot-lifemap-clean-overlay-stack.mjs 2>&1 | tee /tmp/lifemap-clean-overlay-stack-apply.log
+          git diff --check
+          actual_product="$(git diff --name-only | sort)"
+          expected_product="$(printf '%s\n' urai-tier1/src/app/continuous-spatial-proof-defects.css urai-tier1/tests/lifemap-visual-material-contract.test.mjs | sort)"
+          printf 'Product files:\n%s\n' "$actual_product"
+          test "$actual_product" = "$expected_product"
+
+      - name: Install exact dependencies
+        shell: bash
+        run: |
+          set -euo pipefail
+          corepack enable
+          corepack pnpm install --frozen-lockfile
+
+      - name: Run Life Map material contract
+        run: corepack pnpm --dir urai-tier1 exec node --test tests/lifemap-visual-material-contract.test.mjs
+
+      - name: Run full source contracts
+        shell: bash
+        run: |
+          set -o pipefail
+          corepack pnpm --dir urai-tier1 test 2>&1 | tee /tmp/lifemap-clean-overlay-stack-unit.log
+
+      - name: Typecheck exact candidate
+        shell: bash
+        run: |
+          set -o pipefail
+          corepack pnpm --dir urai-tier1 typecheck 2>&1 | tee /tmp/lifemap-clean-overlay-stack-typecheck.log
+
+      - name: Build exact static candidate
+        shell: bash
+        run: |
+          set -o pipefail
+          corepack pnpm build:static 2>&1 | tee /tmp/lifemap-clean-overlay-stack-build.log
+          test -f urai-tier1/out/life-map/index.html
+
+      - name: Install exact Chromium
+        run: corepack pnpm --dir urai-tier1 exec playwright install --with-deps chromium
+
+      - name: Run Life Map accessibility regression
+        shell: bash
+        run: |
+          set -o pipefail
+          corepack pnpm exec playwright test --config=playwright.accessibility.config.ts accessibility-performance-lifemap-independent.spec.ts --project=chromium 2>&1 | tee /tmp/lifemap-clean-overlay-stack-accessibility.log
+
+      - name: Capture exact visual artifact
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/lifemap-clean-overlay-stack-artifact
+          python3 -m http.server 4173 --bind 127.0.0.1 --directory urai-tier1/out > /tmp/lifemap-clean-overlay-stack-http.log 2>&1 &
+          server_pid=$!
+          trap 'kill "$server_pid" 2>/dev/null || true' EXIT
+          for attempt in $(seq 1 60); do
+            if curl --fail --silent http://127.0.0.1:4173/life-map/ >/dev/null; then break; fi
+            sleep 1
+          done
+          curl --fail --silent http://127.0.0.1:4173/life-map/ >/dev/null
+          URAI_PROOF_BASE=http://127.0.0.1:4173 \
+          URAI_PROOF_DIR=/tmp/lifemap-clean-overlay-stack-artifact \
+          URAI_EXACT_HEAD="${{ github.event.pull_request.head.sha }}" \
+            node scripts/run-continuous-spatial-proof-fixed.mjs 2>&1 | tee /tmp/lifemap-clean-overlay-stack-capture.log
+
+      - name: Publish one clean two-file product commit
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/lifemap-overlay-clean/urai-tier1/src/app /tmp/lifemap-overlay-clean/urai-tier1/tests
+          cp urai-tier1/src/app/continuous-spatial-proof-defects.css /tmp/lifemap-overlay-clean/urai-tier1/src/app/
+          cp urai-tier1/tests/lifemap-visual-material-contract.test.mjs /tmp/lifemap-overlay-clean/urai-tier1/tests/
+          git checkout --detach "$CLEAN_BASE"
+          cp /tmp/lifemap-overlay-clean/urai-tier1/src/app/continuous-spatial-proof-defects.css urai-tier1/src/app/
+          cp /tmp/lifemap-overlay-clean/urai-tier1/tests/lifemap-visual-material-contract.test.mjs urai-tier1/tests/
+          git diff --check
+          actual="$(git diff --name-only | sort)"
+          expected="$(printf '%s\n' urai-tier1/src/app/continuous-spatial-proof-defects.css urai-tier1/tests/lifemap-visual-material-contract.test.mjs | sort)"
+          test "$actual" = "$expected"
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add -A
+          git commit -m "fix(life-map): remove retired canonical overlay stack"
+          git push --force-with-lease=refs/heads/$PRODUCT_BRANCH:$CLEAN_BASE origin HEAD:refs/heads/$PRODUCT_BRANCH
+          git rev-parse HEAD | tee /tmp/lifemap-clean-overlay-stack-product-sha.log
+
+      - name: Retain exact cleanup evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: lifemap-clean-overlay-stack-${{ github.event.pull_request.head.sha }}-${{ github.run_id }}
+          path: |
+            /tmp/lifemap-clean-overlay-stack-*.log
+            /tmp/lifemap-clean-overlay-stack-artifact
+          if-no-files-found: ignore
+          retention-days: 90
