@@ -1,0 +1,115 @@
+name: One-shot Life Map visual acceptance
+
+on:
+  pull_request:
+    types: [synchronize, reopened]
+    branches: [main]
+    paths:
+      - .github/workflows/one-shot-lifemap-visual-acceptance.yml
+      - scripts/one-shot-lifemap-visual-acceptance.mjs
+
+permissions:
+  contents: write
+
+concurrency:
+  group: one-shot-lifemap-visual-${{ github.event.pull_request.head.sha }}
+  cancel-in-progress: true
+
+env:
+  CLEAN_BASE: a9c32f7d8a870b749b13aa9d7f6c83db18d11458
+  SOURCE_BRANCH: integrate/final-world-main-88287-20260718
+
+jobs:
+  repair-and-prove:
+    if: github.event.pull_request.head.repo.full_name == github.repository && github.event.pull_request.head.ref == 'integrate/final-world-main-88287-20260718'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 70
+    steps:
+      - name: Checkout exact staged head
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+          persist-credentials: true
+          show-progress: false
+
+      - name: Prove bounded authority and apply repair
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "${{ github.event.pull_request.head.sha }}"
+          test "$(git merge-base "$CLEAN_BASE" HEAD)" = "$CLEAN_BASE"
+          test -z "$(git status --porcelain --untracked-files=all)"
+          test "$(git diff --name-only "$CLEAN_BASE...HEAD" | sort)" = "$(printf '%s\n' .github/workflows/one-shot-lifemap-visual-acceptance.yml scripts/one-shot-lifemap-visual-acceptance.mjs | sort)"
+          node scripts/one-shot-lifemap-visual-acceptance.mjs
+          git diff --check
+          test "$(git diff --name-only | sort)" = "$(printf '%s\n' scripts/capture-continuous-spatial-proof.mjs urai-tier1/src/components/lifemap/AdaptiveLifeMapScene.tsx urai-tier1/src/spatial/lifemap/SpatialLifeMapCanonical.tsx urai-tier1/tests/lifemap-scene-behavior.test.mjs | sort)"
+
+      - name: Install exact dependencies
+        shell: bash
+        run: |
+          set -euo pipefail
+          corepack enable
+          corepack pnpm install --frozen-lockfile
+
+      - name: Run exact unit contracts
+        shell: bash
+        run: corepack pnpm --dir urai-tier1 test
+
+      - name: Typecheck exact candidate
+        shell: bash
+        run: corepack pnpm --dir urai-tier1 typecheck
+
+      - name: Build exact static candidate
+        shell: bash
+        run: |
+          set -euo pipefail
+          corepack pnpm build:static
+          test -f urai-tier1/out/home/index.html
+          test -f urai-tier1/out/life-map/index.html
+
+      - name: Install Chromium
+        run: corepack pnpm --dir urai-tier1 exec playwright install --with-deps chromium
+
+      - name: Capture repaired desktop mobile selected and fallback proof
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 -m http.server 4173 --directory urai-tier1/out >/tmp/urai-lifemap-visual-http.log 2>&1 &
+          server_pid=$!
+          trap 'kill "$server_pid" 2>/dev/null || true' EXIT
+          for attempt in $(seq 1 60); do
+            if curl -fsS http://127.0.0.1:4173/life-map/ >/dev/null; then break; fi
+            sleep 1
+          done
+          curl -fsS http://127.0.0.1:4173/life-map/ >/dev/null
+          URAI_PROOF_BASE=http://127.0.0.1:4173 \
+          URAI_PROOF_DIR=/tmp/urai-lifemap-visual-proof \
+          URAI_EXACT_HEAD='${{ github.event.pull_request.head.sha }}' \
+          node scripts/capture-continuous-spatial-proof.mjs
+          test "$(node -e "const r=require('/tmp/urai-lifemap-visual-proof/receipt.json'); process.stdout.write(String(r.passed))")" = true
+
+      - name: Retain repaired visual receipt
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: lifemap-visual-acceptance-${{ github.event.pull_request.head.sha }}-${{ github.run_id }}
+          path: |
+            /tmp/urai-lifemap-visual-proof
+            /tmp/urai-lifemap-visual-http.log
+          if-no-files-found: warn
+          retention-days: 90
+
+      - name: Publish clean self-removing product commit
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm .github/workflows/one-shot-lifemap-visual-acceptance.yml
+          rm scripts/one-shot-lifemap-visual-acceptance.mjs
+          git diff --check
+          test "$(git diff --name-only "$CLEAN_BASE" | sort)" = "$(printf '%s\n' scripts/capture-continuous-spatial-proof.mjs urai-tier1/src/components/lifemap/AdaptiveLifeMapScene.tsx urai-tier1/src/spatial/lifemap/SpatialLifeMapCanonical.tsx urai-tier1/tests/lifemap-scene-behavior.test.mjs | sort)"
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add -A
+          git commit -m "fix(life-map): remove blank planes and compositing seams"
+          git push origin HEAD:refs/heads/$SOURCE_BRANCH
